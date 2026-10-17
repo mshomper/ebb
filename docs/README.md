@@ -1,0 +1,54 @@
+# ebb architecture docs
+
+ebb: a tended island. A cozy idler and living diorama built on raw WebGPU.
+
+Start with `../CLAUDE.md`, then `01-vision-and-pillars.md`, then `20-roadmap-and-vertical-slice.md` for the build order.
+
+```mermaid
+flowchart TD
+    V[01 Vision] --> L[02 Core loop and idle]
+    V --> T[03 Tech stack]
+    T --> R[04 Render pipeline]
+    R --> P[05 Look and palette]
+    R --> S[06 Sky and lighting]
+    R --> W[07 Water and tide]
+    L --> G[10 Growth and seasons]
+    L --> C[11 Creatures and ecology]
+    C --> CR[12 Creature roadmap]
+    C --> PX[13 Progression and expansion]
+    W --> TE[08 Terrain and sculpt]
+    TE --> ST[09 Structures]
+    G --> RC[14 Recipes and tuning panel]
+    C --> RC
+    T --> UI[15 Camera, input and UI]
+    UI --> CU[16 Customization and photo]
+    UI --> AU[17 Audio]
+    L --> SV[18 Saves]
+    R --> PF[19 Performance tiers]
+    PX --> RM[20 Roadmap and slice]
+    V --> B[21 Brand]
+```
+
+| Doc | Covers |
+|---|---|
+| 01-vision-and-pillars | What ebb is, the five pillars, non-goals |
+| 02-core-loop-and-idle-model | Session loop, world clock, live and offline simulation, the return reveal |
+| 03-tech-stack-and-module-map | Modules, events, store, workers, conventions, deploy |
+| 04-render-pipeline | Frame graph, passes, targets, instancing |
+| 05-look-and-palette | Physical light painted last, palette LUTs, outlines, grading |
+| 06-sky-and-lighting | Physical sky, sun and moon, shadows, ambient light, fog |
+| 07-water-and-tide | Shallow-water simulation, tide, water shading |
+| 08-terrain-and-sculpt | Heightfield, paint layers, brushes, undo |
+| 09-structures | Paths, stone walls, bridge, lanterns, weathering |
+| 10-growth-and-seasons | Flora models, moss, dispersal, seasons, weather |
+| 11-creatures-and-ecology | Needs, habitat, arrival, behavior, interactions, procedural bodies |
+| 12-creature-roadmap | Species by tier, unlocks, build order |
+| 13-progression-and-expansion | Milestones, new land, pacing, journal |
+| 14-asset-recipes-and-tuning-panel | Recipe format, generators, tuning panel |
+| 15-camera-input-and-ui | Camera, desktop and touch input, HUD, icons, layouts |
+| 16-customization-and-photo-mode | Palettes, time and weather controls, accessibility, photo mode |
+| 17-audio | Ambience, creature voices, mixing |
+| 18-saves-and-persistence | Autosave, world file, migrations, catch-up timestamps |
+| 19-performance-and-quality-tiers | Budgets, tiers, benchmark page |
+| 20-roadmap-and-vertical-slice | Milestones, slice steps, how to feed docs to Claude Code |
+| 21-brand-identity | Name, wordmark, icon, favicon, colors, type |
