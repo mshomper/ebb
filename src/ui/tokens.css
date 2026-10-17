@@ -1,0 +1,73 @@
+/* ebb color and type tokens (docs/21-brand-identity.md). */
+
+@font-face {
+  font-family: 'Nunito';
+  src: url('../vendor/fonts/nunito-latin-600-normal.woff2') format('woff2');
+  font-weight: 600;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Nunito';
+  src: url('../vendor/fonts/nunito-latin-800-normal.woff2') format('woff2');
+  font-weight: 800;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Fraunces';
+  src: url('../vendor/fonts/fraunces-latin-full-italic.woff2') format('woff2');
+  font-style: italic;
+  font-weight: 100 900;
+  font-display: swap;
+}
+
+:root {
+  --sky-high: #B8A9CC;
+  --sky-mid: #EBC6C0;
+  --sky-low: #F8DEC8;
+  --sea-light: #AFC6CF;
+  --sea-deep: #5F8196;
+  --moss-1: #6A8B66;
+  --moss-3: #8DAE80;
+  --sand: #E8D4B4;
+  --moonlight: #FBF1DC;
+  --wordmark-light: #5F7F5B;
+  --wordmark-dark: #BFD5A8;
+  --tagline-light: #7B8B84;
+  --tagline-dark: #A9B6B0;
+  --ui-cream: #F4EEE4;
+  --ui-night: #1E2624;
+
+  --font-ui: 'Nunito', system-ui, sans-serif;
+  --font-voice: 'Fraunces', Georgia, serif;
+  --text-body: 16px;
+  --text-small: 15px;
+}
+
+@media (pointer: coarse) {
+  :root { --text-body: 17px; --text-small: 16px; }
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: var(--ui-night);
+  color: var(--ui-cream);
+  font-family: var(--font-ui);
+  font-weight: 600;
+  font-size: var(--text-body);
+  -webkit-text-size-adjust: 100%;
+}
+
+#view {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}

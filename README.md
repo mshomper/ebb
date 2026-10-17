@@ -9,7 +9,7 @@ The look is soft and painted, but the light, sky and water underneath are physic
 
 ## Status
 
-Pre-build. The architecture docs are written, and the first target is the vertical slice described in [docs/20-roadmap-and-vertical-slice.md](docs/20-roadmap-and-vertical-slice.md).
+M0 foundations: the page, core services, frame graph and orbit camera over a placeholder island. Next is the vertical slice described in [docs/20-roadmap-and-vertical-slice.md](docs/20-roadmap-and-vertical-slice.md).
 
 ## What's here
 
@@ -37,4 +37,10 @@ Pre-build. The architecture docs are written, and the first target is the vertic
 
 ## Running it
 
-Once code exists, open `index.html` through any local static server, or visit the GitHub Pages site. A WebGPU-capable browser is required: Chrome, Edge, Firefox on Windows, or Safari 26 and later.
+A WebGPU-capable browser is required: Chrome, Edge, Firefox on Windows, or Safari 26 and later.
+
+- **Live:** https://mshomper.github.io/ebb/ (the `main` branch).
+- **Branch previews:** https://mshomper.github.io/ebb/preview/ lists every other branch, each at `/ebb/preview/<branch>/`.
+- **On this PC:** choose the branch in GitHub Desktop, then double-click `play.cmd` in the repo folder. It starts a small local server (nothing to install), opens the game in your browser, and finds a free port from 8080 to 8099. Close its window to stop. Local test pages are at `/tools/`.
+
+The corner badge shows which build you are looking at: `local · <branch>`, `preview · <branch> · <commit>`, or `build <commit>` on the live site.

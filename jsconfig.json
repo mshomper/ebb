@@ -1,0 +1,13 @@
+{
+  "compilerOptions": {
+    "checkJs": true,
+    "module": "ES2022",
+    "target": "ES2022",
+    "moduleResolution": "bundler",
+    "lib": ["ES2022", "DOM", "DOM.Iterable", "WebWorker"],
+    "types": ["@webgpu/types"],
+    "paths": { "wgpu-matrix": ["./src/vendor/wgpu-matrix/wgpu-matrix.module.js"] }
+  },
+  "include": ["src/**/*.js", "tools/**/*.js"],
+  "exclude": ["src/vendor"]
+}

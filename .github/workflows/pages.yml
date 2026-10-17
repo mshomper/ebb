@@ -1,0 +1,91 @@
+# Publishes the site to GitHub Pages:
+#   main            -> https://mshomper.github.io/ebb/
+#   other branches  -> https://mshomper.github.io/ebb/preview/<branch>/
+#   preview list    -> https://mshomper.github.io/ebb/preview/
+# Needs repo Settings > Pages > Source set to "GitHub Actions".
+
+name: Pages
+
+on:
+  push:
+  delete:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: repo
+          fetch-depth: 0
+
+      - name: Assemble main and branch previews
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd repo
+          git fetch --prune origin '+refs/heads/*:refs/remotes/origin/*'
+          site="$GITHUB_WORKSPACE/site"
+          mkdir -p "$site/preview"
+
+          write_build() { # dir branch
+            local sha date
+            sha=$(git rev-parse --short "origin/$2")
+            date=$(git log -1 --format=%cI "origin/$2")
+            printf '{"branch":"%s","commit":"%s","date":"%s"}\n' "$2" "$sha" "$date" > "$1/build.json"
+          }
+
+          git archive origin/main | tar -x -C "$site"
+          write_build "$site" main
+
+          items=""
+          for ref in $(git for-each-ref --format='%(refname:strip=3)' refs/remotes/origin); do
+            [ "$ref" = "main" ] || [ "$ref" = "HEAD" ] && continue
+            slug=$(echo "$ref" | tr '/' '-' | tr -cd 'A-Za-z0-9._-')
+            dir="$site/preview/$slug"
+            mkdir -p "$dir"
+            git archive "origin/$ref" | tar -x -C "$dir"
+            write_build "$dir" "$ref"
+            when=$(git log -1 --format=%cd --date=format:'%d %b %Y, %H:%M' "origin/$ref")
+            items="$items<li><a href=\"$slug/\">$ref</a><span>updated $when UTC</span></li>"
+          done
+          [ -n "$items" ] || items="<li><span>No branch previews right now.</span></li>"
+
+          cat > "$site/preview/index.html" <<EOF
+          <!doctype html><html lang="en"><head><meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1">
+          <title>ebb previews</title><link rel="icon" href="../brand/ebb-favicon.svg" type="image/svg+xml">
+          <style>
+          body{margin:0;padding:24px 16px;background:#F4EEE4;color:#1E2624;font:600 18px/1.5 system-ui,sans-serif}
+          main{max-width:640px;margin:0 auto}h1{font-size:28px;margin:0 0 4px}p{margin:0 0 20px;color:#5c6b65}
+          ul{list-style:none;margin:0;padding:0}li{padding:14px 0;border-bottom:1px solid #ddd3c4;overflow-wrap:anywhere}
+          a{color:#4a6a47;font-size:20px;display:block}span{font-size:16px;color:#5c6b65}
+          </style></head><body><main><h1>ebb branch previews</h1>
+          <p>Each branch on GitHub, published for click-testing. The live game is <a style="display:inline;font-size:18px" href="../">here</a>.</p>
+          <ul>$items</ul></main></body></html>
+          EOF
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
