@@ -39,6 +39,8 @@ struct WaterDraw {
   filmDepth: vec4f,            // xy depth range (m) over which a broken film becomes a coherent surface
   debugView: f32,             // ?waterdbg=1 sea or grid, 2 reflection, 3 transmitted, 4 Fresnel/path/depth
   _q0: f32, _q1: f32, _q2: f32,
+  riffle: vec4f,              // white water: x, y speed range (m/s) it fades in over, z depth (m) it is gone by, w coverage
+  riffle2: vec4f,             // x streak size (m), y white-water albedo
 };
 
 @group(0) @binding(0) var<uniform> frame: FrameUniforms;
@@ -87,7 +89,14 @@ fn simDepth(c: vec2i) -> f32 {
 fn vertexSurface(c: vec2i) -> vec2f {   // x height, y depth
   let d = simDepth(c);
   let bed = waterBed(heightTex, c);
-  if (d > wd.dry) { return vec2f(bed + d, d); }
+  if (d > wd.dry) {
+    // The bed is the lowest of the cell's ground; on a slope the rest of the cell stands higher
+    // than a thin stream's surface. Thin water is drawn on the actual ground (lifted a few mm so
+    // the terrain never covers it); deep water keeps its flat level.
+    let ground = terrainHeight(heightTex, waterCellCenter(c));
+    let thin = 1.0 - smoothstep(0.03, 0.15, d);
+    return vec2f(bed + d + (max(ground - bed, 0.0) + 0.006) * thin, d);
+  }
   var sum = 0.0;
   var n = 0.0;
   for (var j = -1; j <= 1; j++) {
@@ -97,7 +106,8 @@ fn vertexSurface(c: vec2i) -> vec2f {   // x height, y depth
       if (dq > wd.dry) { sum += waterBed(heightTex, q) + dq; n += 1.0; }
     }
   }
-  if (n > 0.0) { return vec2f(sum / n, 0.0); }
+  // Never above the ground here: downhill of a pool the plane would otherwise hover over the grass.
+  if (n > 0.0) { return vec2f(min(sum / n, terrainHeight(heightTex, waterCellCenter(c))), 0.0); }
   return vec2f(bed - 0.05, 0.0);
 }
 
@@ -191,6 +201,15 @@ fn ripples(xz: vec2f, t: f32) -> vec2f {
   return g;
 }
 
+// White-water flecks: soft noise blobs (the caller advects them with the current), thresholded
+// to the white-water coverage with a soft edge.
+fn flecks(xz: vec2f) -> f32 {
+  let q = xz / wd.riffle2.x;
+  let n = noiseGrad(q, 911u).x * 0.6 + noiseGrad(q * 2.7 + vec2f(5.1, 2.7), 912u).x * 0.4;
+  let c = wd.riffle.w;
+  return smoothstep(1.0 - c, 1.0 - c + 0.3, n);
+}
+
 // Gentle open-water swell: a sum of sine waves with deep-water dispersion, slope only.
 fn swell(xz: vec2f, t: f32) -> vec2f {
   var g = vec2f(0.0);
@@ -249,7 +268,7 @@ fn fsWater(in: VsOut) -> FsOut {
   // Thin water is a broken film: stones and blades stand through it, so it reflects weakly and
   // scatters the sun broadly. Deeper water is a coherent surface.
   // Running water is glossy however thin: its rippled surface glints like a deep one.
-  let cohere = max(smoothstep(wd.filmDepth.x, wd.filmDepth.y, d), 0.85 * smoothstep(0.05, 0.3, speed));
+  let cohere = max(smoothstep(wd.filmDepth.x, wd.filmDepth.y, d), 0.85 * smoothstep(0.05, 0.3, speed) * smoothstep(0.004, 0.015, d));
   let rough = mix(0.3, sqrt(wd.absorbPond.w * wd.absorbPond.w + 0.012 * far), cohere);
 
   // ---- light ----
@@ -310,11 +329,6 @@ fn fsWater(in: VsOut) -> FsOut {
     sceneHere = scene;
   }
 
-  // Ground under ponds and streams is soaked, so its albedo drops like the sea floor's already
-  // does in the terrain shader (below the tide line). Darkening the lit scene is the same thing.
-  let soaked = smoothstep(wd.tide, wd.tide + 0.1, in.bed) * smoothstep(0.0, 0.004, d);
-  scene *= mix(1.0, wd.seabed.w, soaked);
-
   // ---- the water body ----
   // Sea or pond by how deep the bed lies below the tide (ponds are peatier and greener).
   let seaness = smoothstep(0.3, 1.5, wd.tide - in.bed);
@@ -329,12 +343,32 @@ fn fsWater(in: VsOut) -> FsOut {
 
   // The scene copy already carries its own aerial perspective; only the water's own light gets it here.
   let own = inScatter * (1.0 - F) + refl * F + glint;
-  let surface = applyAerial(own, screenUv, viewDist) + scene * Tbed * (1.0 - F);
+  var surface = applyAerial(own, screenUv, viewDist) + scene * Tbed * (1.0 - F);
+
+  // ---- riffles ----
+  // Fast, shallow water churns over its bed and takes in air, which shows as white flecks
+  // drifting with the current (docs/07 foam; the advected foam field arrives in S4c). Only real
+  // running water (a centimeter or so), never a film. Lit like a rough white surface.
+  let rifMask = smoothstep(wd.riffle.x, wd.riffle.y, speed) * smoothstep(0.006, 0.015, d)
+              * (1.0 - smoothstep(wd.riffle.z * 0.5, wd.riffle.z, d));
+  if (rifMask > 0.001) {
+    // A short cycle of their own, so the flecks drift without smearing into long streaks.
+    let fp = 0.7;
+    let f0p = fract(t / fp);
+    let f1p = fract(t / fp + 0.5);
+    let a = flecks(P.xz - in.vel * f0p * fp);
+    let b = flecks(P.xz - in.vel * f1p * fp + vec2f(3.7, 1.3));
+    let white = mix(a, b, abs(2.0 * f0p - 1.0)) * rifMask;
+    let foam = applyAerial(wd.riffle2.y * lightIn * frame.exposure, screenUv, viewDist);
+    surface = mix(surface, foam, white);
+  }
 
   // Shoreline: the water fades out over the last half cell toward a dry bank and where the plane
   // meets the ground (thickness under edgeFade), so banks never show a hard line. Thin streams
   // stay visible; their film look comes from `cohere` above.
-  let edge = smoothstep(0.0, 0.7, in.cover) * smoothstep(0.0, wd.edgeFade, L);
+  // A sheet only a few millimeters thick shows as damp ground (the terrain soaks it), not water.
+  let sheet = select(smoothstep(0.002, 0.006, d), 1.0, in.bed < -40.0);
+  let edge = smoothstep(0.0, 0.7, in.cover) * smoothstep(0.0, wd.edgeFade, L) * sheet;
   var color = mix(sceneHere, surface, edge);
   // Debug views for tuning (tools and ?waterdbg=N): one term of the shading at a time.
   let dv = u32(wd.debugView + 0.5);

@@ -139,6 +139,7 @@ export async function startApp(canvas, hooks = {}) {
     createTerrainPass({
       terrain, recipe: terrainRecipe, seed: subSeed(seed, 'terrain-look'), getEye: () => camera.eye, tier,
       ground: groundDetail, groundTier: tierSettings.ground, getTide: () => water.tide,
+      water: { depthTextures: water.sim.depthTextures, current: () => water.sim.current },
     }),
     createWaterPass({
       water, terrain, atmosphere, recipe: waterRecipe, seaExtent: terrainRecipe.sea.extent, getTime: () => clock.animT(),

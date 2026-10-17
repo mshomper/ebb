@@ -18,13 +18,14 @@ const TILING_MODES = { grid: 0, hex: 1, two: 2 };
 /**
  * @param {{ terrain: import('../../world/terrain/index.js').Terrain, recipe: any, seed: number,
  *   getEye: () => ArrayLike<number>, tier: string, getTide?: () => number,
+ *   water: { depthTextures: GPUTexture[], current: () => number },
  *   ground: { views: { a: GPUTextureView, b: GPUTextureView }, sampler: GPUSampler, version: number, fade: number },
  *   groundTier: any }} opts  ground: src/render/ground-detail.js; groundTier: the tier's `ground` block
  */
 export function createTerrainPass(opts) {
   const { terrain, recipe } = opts;
   /** @type {GPURenderPipeline} */ let landPipeline;
-  /** @type {GPUBindGroup} */ let group;
+  /** @type {GPUBindGroup[]} */ let groups = [];
   /** @type {GPUBuffer} */ let drawBuffer;
   /** @type {GPUBuffer} */ let chunkBuffer;
   /** @type {{ buffer: GPUBuffer, count: number }[]} */ let indexBuffers = [];
@@ -99,6 +100,7 @@ export function createTerrainPass(opts) {
           { binding: 6, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: 'float', viewDimension: '2d-array' } },
           { binding: 7, visibility: GPUShaderStage.FRAGMENT, sampler: { type: 'filtering' } },
           { binding: 8, visibility: GPUShaderStage.FRAGMENT, buffer: {} },
+          { binding: 9, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: 'unfilterable-float' } },
         ],
       });
       const layout = device.createPipelineLayout({ label: 'opaque', bindGroupLayouts: [ctx.layouts.frame, ctx.layouts.lighting, layout2] });
@@ -121,7 +123,8 @@ export function createTerrainPass(opts) {
       groundBuffer = makeBuffer(device, { label: 'ground-detail', size: GROUND_BYTES, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
       // Rebuilt whenever the ground detail arrays are replaced (placeholder, then the loaded set).
       makeGroup = () => {
-        group = device.createBindGroup({
+        // One group per water depth texture (the simulation ping-pongs them each step).
+        groups = opts.water.depthTextures.map((/** @type {GPUTexture} */ wt) => device.createBindGroup({
           label: 'terrain-draw',
           layout: layout2,
           entries: [
@@ -134,8 +137,9 @@ export function createTerrainPass(opts) {
             { binding: 6, resource: opts.ground.views.b },
             { binding: 7, resource: opts.ground.sampler },
             { binding: 8, resource: { buffer: groundBuffer } },
+            { binding: 9, resource: wt.createView() },
           ],
-        });
+        }));
         groundVersion = opts.ground.version;
       };
       makeGroup();
@@ -182,7 +186,7 @@ export function createTerrainPass(opts) {
       });
       pass.setBindGroup(0, ctx.groups.frame);
       pass.setBindGroup(1, ctx.groups.lighting);
-      pass.setBindGroup(2, group);
+      pass.setBindGroup(2, groups[opts.water.current()]);
       pass.setPipeline(landPipeline);
       for (const d of draws) {
         const ib = indexBuffers[d.lod];

@@ -46,6 +46,7 @@
     ],
     "seaFadeDepthM": 0.5,
     "openSeaFloorSlope": 0.08,
+    "riffle": { "note": "White water on fast, shallow flow: fades in over the speed range (m/s), gone in water deeper than depthM; coverage is the share of the surface that is white at full strength; streakM the streak size; albedo of the aerated water.", "speed": [0.25, 0.8], "depthM": 0.12, "coverage": 0.34, "streakM": 0.07, "albedo": 0.75 },
     "flowNormalScale": 0.6
   }
 }

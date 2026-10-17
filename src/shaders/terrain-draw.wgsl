@@ -12,6 +12,7 @@
 // #include lib-terrain
 // #include lib-lighting
 // #include lib-ground
+// #include lib-water
 
 struct TerrainDraw {
   albedoGrass: vec3f, variation: f32,
@@ -36,6 +37,23 @@ struct TerrainDraw {
 @group(2) @binding(6) var groundB: texture_2d_array<f32>;
 @group(2) @binding(7) var groundSampler: sampler;
 @group(2) @binding(8) var<uniform> ground: GroundDetail;
+@group(2) @binding(9) var waterDepth: texture_2d<f32>;   // live water depth (m), water-depth.wgsl
+
+// How soaked the ground is from live water nearby: 1 under water, fading out over about 0.75 m of
+// bank (capillary rise). The visual wetness pass (S4c) adds drying over time and the tide flats.
+fn wetFromWater(xz: vec2f) -> f32 {
+  let c = vec2i(floor(waterCellCoord(xz) + 0.5));
+  var w = 0.0;
+  for (var j = -1; j <= 1; j++) {
+    for (var i = -1; i <= 1; i++) {
+      let q = clamp(c + vec2i(i, j), vec2i(0), vec2i(WATER_CELLS - 1));
+      // A film of a few millimeters dampens; a centimeter or more soaks.
+      let wd = smoothstep(0.002, 0.012, textureLoad(waterDepth, q, 0).r);
+      w = max(w, wd * (1.0 - smoothstep(0.2, 0.75, distance(xz, waterCellCenter(q)))));
+    }
+  }
+  return w;
+}
 
 // Second target (normalId, rgb10a2unorm): octahedral world normal in RG, water flag in B,
 // outline group in A (0 none, 1 terrain, 2 structures and foliage, 3 creatures; docs/04, 05).
@@ -108,8 +126,9 @@ fn fsLand(in: VsOut) -> FsOut {
   // Macro variation (docs/22): a slow tone drift near and far, so no repeat survives at a distance.
   albedo *= groundMacro(xz, td.seed);
   // Wet ground is darker: below the tide line always, and everywhere while it rains (docs/06).
-  // The visual wetness pass (S4c) adds banks, the spray line and drying flats.
-  let wet = max(1.0 - smoothstep(td.tide - 0.05, td.tide + 0.25, y), light.weather.w);
+  // Near live water (ponds, streams) the banks are soaked too. The visual wetness pass (S4c)
+  // adds drying over time, the spray line and the tide flats.
+  let wet = max(max(1.0 - smoothstep(td.tide - 0.05, td.tide + 0.25, y), light.weather.w), wetFromWater(xz));
   albedo *= mix(1.0, td.wetDarkening, wet);
 
   var color = shadeGround(albedo, in.world, n, gd.normal, gd.roughness, gd.cavity, in.pos, ground.terminator, ground.f0, ground.specMode);

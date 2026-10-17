@@ -169,6 +169,7 @@ function makeContext(land, seed) {
       halfWidth: sp.channel.widthM * 0.5, depth: sp.channel.depthM,
       meander: sp.channel.meanderM ?? 0, bends: sp.channel.bends ?? 1,
       thalwegHalf: (sp.channel.thalwegWidthM ?? 0.8) * 0.5, thalwegDepth: sp.channel.thalwegDepthM ?? 0,
+      gravel: sp.channel.bedGravel ?? 0.85,
     };
   }
   return {
@@ -266,6 +267,7 @@ function sampleCell(c, x, z, out) {
   // The spring's channel: a soft trough along the warped line from the spring to the pond, so
   // the stream has a bed to run in and meanders a little with the domain warp.
   let chanW = 0;
+  let bedW = 0;
   const ch = c.channel;
   if (ch && landMask > 0) {
     const vx = ch.ex - ch.sx, vz = ch.ez - ch.sz;
@@ -276,13 +278,15 @@ function sampleCell(c, x, z, out) {
     const swing = ch.meander * det.sin(2 * det.PI * ch.bends * t) * 4 * t * (1 - t);
     const inv = 1 / Math.sqrt(len2);
     const qx = px - (ch.sx + vx * t - vz * inv * swing), qz = pz - (ch.sz + vz * t + vx * inv * swing);
-    // A wide soft swale with a narrow V-shaped thread (the thalweg) along its middle, where the
-    // flow gathers into a stream instead of spreading as a sheet.
+    // A wide, gentle grassy swale with a narrow rounded bed (the thalweg) along its middle, where
+    // the flow gathers into a stream. Both stay well under the steep-rock angle.
     const q = Math.sqrt(qx * qx + qz * qz);
     const head = smoothstep(0, 0.08, t);
     chanW = bump(q / ch.halfWidth) * head;
-    const tw = Math.max(0, 1 - q / ch.thalwegHalf);
-    h -= landMask * (ch.depth * chanW + ch.thalwegDepth * tw * Math.sqrt(tw) * head);
+    bedW = bump(q / ch.thalwegHalf) * head;
+    h -= landMask * (ch.depth * chanW + ch.thalwegDepth * bedW);
+    // The bed itself, a little wider than the thread: washed gravel and stones.
+    bedW = bump(q / (ch.thalwegHalf * 1.3)) * head * landMask;
   }
 
   // Outer falloff: everything joins the open seabed before falloffEnd.
@@ -302,8 +306,9 @@ function sampleCell(c, x, z, out) {
     }
     soil = M.soilMax * smoothstep(M.soilLow, M.soilHigh, fbm(c.soil, x, z));
     soil = Math.max(soil, basinW * M.basinSoil);
-    // Running water scours the channel bed down to soil and gravel.
-    soil = Math.max(soil, chanW * M.basinSoil);
+    // Running water washes the bed down to gravel and pebbles: the soil scan is a gravelly one,
+    // so the bed is soil, fading out into the grass banks.
+    if (ch) soil = Math.max(soil, smoothstep(0.05, 0.5, bedW) * ch.gravel);
   }
   const sandW = sand * (1 - rock);
   const soilW = soil * (1 - rock) * (1 - sand);

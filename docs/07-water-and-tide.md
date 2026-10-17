@@ -19,7 +19,9 @@
   - Until the summary exists, hollows at least 0.1 m deep and 30 m² in size start full to their lip (`src/world/water/init.js`, priority-flood).
   - Beyond the terrain, the island's sea floor continues at `seabedDepth` and deepens by `openSeaFloorSlope`, so the open sea darkens gradually with no seam.
   - The sea swell and the ripples change only the surface normal (no vertex displacement), so the simulated grid and the sea plane always meet. Ripples are procedural noise layers flow-mapped by the velocity field.
-  - Water thinner than `edgeFadeM` (8 cm) fades into the ground beneath, which reads as wet ground: grass blades stand through such a film. The ground under ponds and streams is darkened like the sea floor.
+  - Thin still water is drawn as a broken, weakly reflecting film (grass and stones stand through it); running water stays glossy, and fast shallow water shows white riffle streaks drawn out along the current (a procedural slice of the S4c foam).
+  - Flow is capped by Manning's law (`manningN`), so thin water on slopes runs at realistic speed and depth instead of racing off as an invisible film.
+  - The terrain reads the live water depth: ground under water and within about 0.75 m of it is soaked and dark (a first slice of the S4c wetness pass, without drying).
 
 ## How it works
 
@@ -106,7 +108,7 @@ export function coarseStep(state, hourIndex, env) {}
 // rebuilds the summary for dirty chunks (edits, land rises from doc 13), else no-op
 ```
 
-Store slice `water` (saved): `{ springs: [{id, x, z, rateLps}], tideStone, version }`, where `tideStone` is the tide stone setting (gentle or strong tides, the herons' gift). Ponds and channels are not stored here; they are terrain edits (`08-terrain-and-sculpt.md`). The starter spring runs at 6 L/s (a small trickling stream). Springs placed with the stream tool choose a rate from 1 to 30 L/s.
+Store slice `water` (saved): `{ springs: [{id, x, z, rateLps}], tideStone, version }`, where `tideStone` is the tide stone setting (gentle or strong tides, the herons' gift). Ponds and channels are not stored here; they are terrain edits (`08-terrain-and-sculpt.md`). The starter spring runs at 12 L/s (a small brook; raised from 6 in S4a so the stream reads as running water), at the head of a gentle grassy channel with a gravel bed that the land recipe carves down to the pond hollow. Springs placed with the stream tool choose a rate from 1 to 30 L/s.
 
 Events: `water:summary-updated {chunks}` (doc 11 rebuilds distance transforms on it), `tide:turned`, `water:spring-added`, `water:spring-removed`.
 
