@@ -1,0 +1,71 @@
+/* Look button (src/ui/look.js). Top right (docs/15), the same night glass as the tool bar and the
+   time-flow button. Under 420 px wide only the icon shows, so it never meets the build badge at
+   the top left. */
+
+.ebb-look {
+  --lk-btn: 48px;
+  --lk-icon: 28px;
+  --lk-edge: 12px;
+
+  position: fixed;
+  top: max(var(--lk-edge), env(safe-area-inset-top));
+  right: max(var(--lk-edge), env(safe-area-inset-right));
+  z-index: 10;
+  pointer-events: none;
+  /* Never wider than half the screen, so the badge at the top left keeps its side. */
+  max-width: calc(50vw - var(--lk-edge));
+}
+
+@media (pointer: coarse) {
+  .ebb-look { --lk-btn: 52px; --lk-icon: 26px; }
+}
+
+.ebb-look__btn {
+  appearance: none;
+  -webkit-appearance: none;
+  pointer-events: auto;
+  height: var(--lk-btn);
+  min-width: var(--lk-btn);
+  max-width: 100%;
+  margin: 0;
+  padding: 0 16px 0 11px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(30, 38, 36, 0.72);
+  border: 1px solid rgba(244, 238, 228, 0.12);
+  border-radius: 16px;
+  box-shadow: 0 6px 24px rgba(10, 14, 13, 0.28);
+  color: var(--ui-cream);
+  font-family: var(--font-ui);
+  font-weight: 600;
+  font-size: var(--text-body);
+  line-height: 1.2;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color 160ms ease;
+}
+@media (pointer: fine) {
+  .ebb-look__btn { -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
+}
+.ebb-look__btn:hover { background: rgba(48, 58, 55, 0.8); }
+.ebb-look__btn:focus-visible {
+  outline: 2px solid var(--wordmark-dark);
+  outline-offset: 2px;
+}
+
+.ebb-look .icon { display: block; flex: none; }
+.ebb-look__icon { width: var(--lk-icon); height: var(--lk-icon); }
+.ebb-look__name {
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Phone portrait and other narrow screens: icon only, a square button. */
+@media (max-width: 420px) {
+  .ebb-look__name { display: none; }
+  .ebb-look__btn { width: var(--lk-btn); padding: 0; justify-content: center; }
+}

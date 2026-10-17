@@ -32,6 +32,19 @@ struct TerrainDraw {
 @group(2) @binding(3) var materialTex: texture_2d<f32>;
 @group(2) @binding(4) var linearSampler: sampler;
 
+// Second target (normalId, rgb10a2unorm): octahedral world normal in RG, water flag in B,
+// outline group in A (0 none, 1 terrain, 2 structures and foliage, 3 creatures; docs/04, 05).
+struct FsOut {
+  @location(0) color: vec4f,
+  @location(1) normalId: vec4f,
+};
+
+fn octEncode(n: vec3f) -> vec2f {
+  var p = n.xz / (abs(n.x) + abs(n.y) + abs(n.z));
+  if (n.y < 0.0) { p = (1.0 - abs(p.yx)) * select(vec2f(-1.0), vec2f(1.0), p >= vec2f(0.0)); }
+  return p * 0.5 + 0.5;
+}
+
 struct VsOut {
   @builtin(position) pos: vec4f,
   @location(0) world: vec3f,
@@ -67,7 +80,7 @@ fn ringAlpha(xz: vec2f) -> f32 {
 }
 
 @fragment
-fn fsLand(in: VsOut) -> @location(0) vec4f {
+fn fsLand(in: VsOut) -> FsOut {
   let xz = in.world.xz;
   let y = in.world.y;
   let n = terrainNormal(heightTex, xz);
@@ -101,11 +114,11 @@ fn fsLand(in: VsOut) -> @location(0) vec4f {
 
   var color = shadeSurface(albedo, in.world, n, in.pos, 1.0);
   color = mix(color, td.ringColor, ringAlpha(xz));
-  return vec4f(color, 1.0);
+  return FsOut(vec4f(color, 1.0), vec4f(octEncode(n), 0.0, 1.0 / 3.0));
 }
 
 @fragment
-fn fsSea(in: VsOut) -> @location(0) vec4f {
+fn fsSea(in: VsOut) -> FsOut {
   let v = normalize(frame.cameraPos - in.world);
   let up = vec3f(0.0, 1.0, 0.0);
   let depth = -terrainHeight(heightTex, in.world.xz);
@@ -119,5 +132,6 @@ fn fsSea(in: VsOut) -> @location(0) vec4f {
   let refl = applyAerial(skyAmbient(r) * frame.exposure, in.pos.xy * frame.invRenderSize, distance(in.world, frame.cameraPos));
   var color = mix(body, refl, fresnel);
   color = mix(color, td.ringColor, ringAlpha(in.world.xz));
-  return vec4f(color, 1.0);
+  // Water: flagged in B so outlines stay off it (docs/05).
+  return FsOut(vec4f(color, 1.0), vec4f(octEncode(up), 1.0, 0.0));
 }

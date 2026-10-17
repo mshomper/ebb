@@ -25,7 +25,8 @@ import { emit } from '../core/events.js';
  *   | { type: 'brush.resize', factor: number, source?: Source }
  *   | { type: 'history.undo', source?: Source }
  *   | { type: 'history.redo', source?: Source }
- *   | { type: 'time.flow', flow: 0|1|2|4 }} Action
+ *   | { type: 'time.flow', flow: 0|1|2|4 }
+ *   | { type: 'look.palette', id: string }} Action
  */
 
 /** @type {((a: Action) => void)[]} */

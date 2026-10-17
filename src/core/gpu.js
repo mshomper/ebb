@@ -61,7 +61,8 @@ export async function initGpu(canvas) {
 
   const context = /** @type {GPUCanvasContext} */ (canvas.getContext('webgpu'));
   const format = navigator.gpu.getPreferredCanvasFormat();
-  context.configure({ device, format, alphaMode: 'opaque' });
+  // COPY_SRC lets tools pages read a pixel of the final image (the palette lab's eyedropper).
+  context.configure({ device, format, alphaMode: 'opaque', usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_SRC });
 
   return { ok: true, gpu: { adapter, device, context, format, features: new Set(requiredFeatures) } };
 }

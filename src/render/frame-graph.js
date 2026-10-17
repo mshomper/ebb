@@ -24,7 +24,7 @@ import { FRAME_UNIFORM_BYTES } from './frame-uniforms.js';
  * @property {GPUTextureFormat} format
  * @property {{ frame: GPUBindGroupLayout, lighting: GPUBindGroupLayout }} layouts
  * @property {{ frame: GPUBindGroup, lighting: GPUBindGroup }} groups
- * @property {{ hdr: GPUTexture, depth: GPUTexture }} targets
+ * @property {{ hdr: GPUTexture, depth: GPUTexture, normalId: GPUTexture }} targets  normalId: oct normal RG, B water flag, A outline group (docs/04)
  * @property {[number, number]} size   internal render size in pixels
  * @property {(name: string) => GPURenderPassTimestampWrites | undefined} timestampWrites
  */
@@ -113,8 +113,10 @@ export function createFrameGraph(gpu, passes, opts) {
     if (width === ctx.size[0] && height === ctx.size[1]) return;
     ctx.targets.hdr?.destroy();
     ctx.targets.depth?.destroy();
+    ctx.targets.normalId?.destroy();
     untrack('hdr');
     untrack('depth');
+    untrack('normalId');
     ctx.size = [width, height];
     ctx.targets = {
       hdr: makeTexture(device, {
@@ -123,6 +125,10 @@ export function createFrameGraph(gpu, passes, opts) {
       }),
       depth: makeTexture(device, {
         label: 'depth', size: [width, height], format: 'depth32float',
+        usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING,
+      }),
+      normalId: makeTexture(device, {
+        label: 'normalId', size: [width, height], format: 'rgb10a2unorm',
         usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING,
       }),
     };
@@ -178,6 +184,7 @@ export function createFrameGraph(gpu, passes, opts) {
   function dispose() {
     ctx.targets.hdr?.destroy();
     ctx.targets.depth?.destroy();
+    ctx.targets.normalId?.destroy();
     querySet?.destroy();
   }
 

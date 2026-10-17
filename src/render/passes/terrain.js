@@ -71,7 +71,7 @@ export function createTerrainPass(opts) {
         label: `opaque-${vs}`,
         layout,
         vertex: { module, entryPoint: vs },
-        fragment: { module, entryPoint: fs, targets: [{ format: 'rgba16float' }] },
+        fragment: { module, entryPoint: fs, targets: [{ format: 'rgba16float' }, { format: 'rgb10a2unorm' }] },
         primitive: { topology: 'triangle-list', cullMode: 'none' },
         depthStencil: { format: 'depth32float', depthWriteEnabled: true, depthCompare: 'greater' },
       });
@@ -123,7 +123,10 @@ export function createTerrainPass(opts) {
 
       const pass = encoder.beginRenderPass({
         label: 'opaque',
-        colorAttachments: [{ view: ctx.targets.hdr.createView(), loadOp: 'clear', storeOp: 'store', clearValue: [0, 0, 0, 1] }],
+        colorAttachments: [
+          { view: ctx.targets.hdr.createView(), loadOp: 'clear', storeOp: 'store', clearValue: [0, 0, 0, 1] },
+          { view: ctx.targets.normalId.createView(), loadOp: 'clear', storeOp: 'store', clearValue: [0.5, 0.5, 0, 0] },
+        ],
         depthStencilAttachment: { view: ctx.targets.depth.createView(), depthLoadOp: 'clear', depthStoreOp: 'store', depthClearValue: 0 },
         timestampWrites: ctx.timestampWrites('opaque'),
       });

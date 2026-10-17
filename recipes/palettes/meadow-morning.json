@@ -1,0 +1,36 @@
+{
+  "id": "meadow-morning", "name": "Meadow morning", "version": 1,
+  "look": { "slope": 1.0, "power": 1.18, "saturation": 1.22 },
+  "keepLuminance": 0.9,
+  "anchors": [
+    { "role": "sky-high",      "from": "#7D8FA8", "to": "#A9C7DA", "radius": 0.12, "strength": 0.35 },
+    { "role": "sky-mid",       "from": "#8A939E", "to": "#CFE1E6", "radius": 0.12, "strength": 0.35 },
+    { "role": "horizon",       "from": "#6E767A", "to": "#F3E9CF", "radius": 0.11, "strength": 0.35 },
+    { "role": "water-shallow", "from": "#5C5D5A", "to": "#B9D6D2", "radius": 0.10, "strength": 0.35 },
+    { "role": "water-deep",    "from": "#475665", "to": "#6E98A0", "radius": 0.10, "strength": 0.35 },
+    { "role": "leaf-shade",    "from": "#4B6040", "to": "#5E8A5A", "radius": 0.06, "strength": 0.35 },
+    { "role": "leaf-mid",      "from": "#5F754D", "to": "#93B878", "radius": 0.06, "strength": 0.35 },
+    { "role": "leaf-sun",      "from": "#6E8656", "to": "#CFE0A4", "radius": 0.06, "strength": 0.35 },
+    { "role": "sand",          "from": "#A49681", "to": "#EDE0C4", "radius": 0.10, "strength": 0.35 },
+    { "role": "bark",          "from": "#5A4634", "to": "#86705C", "radius": 0.10, "strength": 0.35 },
+    { "role": "highlight",     "from": "#FFF6E8", "to": "#FFF8E6", "radius": 0.10, "strength": 0.35 },
+    { "role": "lantern",       "from": "#FFC774", "to": "#F9E3A8", "radius": 0.10, "strength": 0.35 }
+  ],
+  "grade": { "lift": 0.01, "gamma": 1.0, "gain": 1.0, "chroma": 1.0,
+             "shadowTint": "#6F8794", "shadowAmt": 0.18,
+             "highlightTint": "#F9E3A8", "highlightAmt": 0.08 },
+  "keys": {
+    "night":     { "grade": { "chroma": 0.75, "shadowTint": "#3E4A63", "shadowAmt": 0.3 }, "exposureComp": 0.0 },
+    "blue-hour": { "grade": { "chroma": 0.82, "shadowTint": "#4F6280", "shadowAmt": 0.24, "highlightTint": "#D9DFEC", "highlightAmt": 0.06 } },
+    "golden":    { "grade": { "highlightTint": "#FFDE95", "highlightAmt": 0.18 } },
+    "morning":   { "grade": { "highlightAmt": 0.1 } },
+    "day":       { "grade": { "highlightAmt": 0.06 } },
+    "spring":    { "grade": { "chroma": 1.04, "highlightTint": "#F3EDC4" } },
+    "summer":    {},
+    "autumn":    { "grade": { "chroma": 1.02, "highlightTint": "#FBDDA8", "highlightAmt": 0.12 } },
+    "winter":    { "grade": { "chroma": 0.86 } }
+  },
+  "outline": { "amount": 0.35, "terrainAmount": 0.1, "chroma": 1.1 },
+  "painterly": { "enabled": false, "radius": 4, "sharpness": 8, "strength": 0.6 },
+  "colorSafe": false
+}

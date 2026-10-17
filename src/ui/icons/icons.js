@@ -78,6 +78,15 @@ const ICONS = {
     <path d="M4.6 11.4A8.4 8.4 0 0 1 19 10.8"/>
     <path d="M19.9 7.9L19 10.8L16.1 10.2"/>`,
 
+  // Look (palette choice): a painter's palette with a thumb notch and three dabs of paint.
+  look: `
+    <path ${ACCENT} d="M12 3.5C6.9 3.5 3 7.3 3 12C3 16.7 6.8 20.5 11.5 20.5C12.9 20.5 13.8 19.7 13.8 18.6C13.8 17.6 13 17 13 16C13 14.9 13.9 14.2 15 14.2H16.8C19.2 14.2 21 12.5 21 10.2C21 6.4 17 3.5 12 3.5Z"/>
+    <path d="M12 3.5C6.9 3.5 3 7.3 3 12C3 16.7 6.8 20.5 11.5 20.5C12.9 20.5 13.8 19.7 13.8 18.6C13.8 17.6 13 17 13 16C13 14.9 13.9 14.2 15 14.2H16.8C19.2 14.2 21 12.5 21 10.2C21 6.4 17 3.5 12 3.5Z"/>
+    <circle cx="7.6" cy="12.6" r="1.5" fill="currentColor" stroke="none"/>
+    <circle cx="9.4" cy="8.1" r="1.5" fill="currentColor" stroke="none"/>
+    <circle cx="14.4" cy="7.4" r="1.5" fill="currentColor" stroke="none"/>
+    <circle cx="9.6" cy="16.6" r="1.4" opacity="0.6"/>`,
+
   // Time-flow states, drawn beside the time icon: one, two or three lit pips (with the unlit
   // ones as faint rings) for 1x, 2x, 4x; two rest bars for pause.
   'flow-1': `
