@@ -10,7 +10,7 @@ import { LODS, MAX_CHUNKS, createIndexBuffers, packChunks } from '../terrain-mes
 /** @typedef {import('../frame-graph.js').PassContext} PassContext */
 
 const DRAW_BYTES = 160;
-const GROUND_BYTES = 208;
+const GROUND_BYTES = 224;
 const DEG = Math.PI / 180;
 /** @type {Record<string, number>} GroundDetail.tiling.x in lib-ground.wgsl */
 const TILING_MODES = { grid: 0, hex: 1, two: 2 };
@@ -67,6 +67,7 @@ export function createTerrainPass(opts) {
     gf.set([ml.heightAmplitudeM, ml.normalStrength, ml.roughness[0], ml.roughness[1]], 44);
     gf[48] = 1 / (ml.tileMeters ?? d.tileMeters);
     gf.set(recipe.materials.albedoMoss, 49);
+    gf[52] = recipe.moss.onSand; gf[53] = recipe.moss.onRock;
   }
 
   function packStatic() {

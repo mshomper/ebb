@@ -32,6 +32,7 @@ struct GroundDetail {
   // stays damp (world/growth/moss-live.js), so its weight comes from the moss mask, not paint.
   moss: vec4f,              // heightAmplitudeM, normalStrength, roughMin, roughMax
   mossTile: vec4f,          // x 1 / tile size (m); yzw flat moss albedo for the far look
+  mossRules: vec4f,         // x how much sand suppresses moss (0..1), y how much damp stone favors it
 };
 
 const GROUND_LAYERS: i32 = 5;

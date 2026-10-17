@@ -63,7 +63,10 @@
     "minHollowM2": 3,
     "growHours": 18,
     "spreadFrom": 0.35,
-    "fadeHours": 48
+    "fadeHours": 48,
+    "onSand": 0.9,
+    "onRock": 0.8,
+    "onSandNote": "How much sand (painted, or the derived beach band) suppresses moss: loose sand dries fast and shifts. onRock: how much more readily moss holds on damp stone than on grass or soil."
   },
   "steepRockDeg": 38,
   "steepRockSoftDeg": 5,

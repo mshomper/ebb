@@ -125,8 +125,15 @@ fn fsLand(in: VsOut) -> FsOut {
   // Moss (world/growth/moss-live.js) lies over the painted layers where the ground stays damp. Its
   // edge is broken up by noise, so a patch creeps outward in lobes rather than a smooth blob.
   let mossCover = textureSampleLevel(mossTex, linearSampler, terrainUv(xz), 0.0).r;
-  let mossNoise = (valueNoise2(xz * 0.7, td.seed + 9u) - 0.5) * 0.5 + (valueNoise2(xz * 2.3 + vec2f(5.3, 1.9), td.seed + 10u) - 0.5) * 0.35;
-  let moss = select(0.0, smoothstep(0.35, 0.65, mossCover + mossNoise), mossCover > 0.01);
+  // Three scales: the band widens and narrows along a bank (4 m), lobes (1.4 m), small bare gaps (0.4 m).
+  let mossNoise = (valueNoise2(xz * 0.25 + vec2f(2.1, 7.7), td.seed + 11u) - 0.5) * 0.6
+                + (valueNoise2(xz * 0.7, td.seed + 9u) - 0.5) * 0.4
+                + (valueNoise2(xz * 2.5 + vec2f(5.3, 1.9), td.seed + 10u) - 0.5) * 0.3;
+  // The damp map says where moss could grow; the ground says how well. Loose sand (painted, or the
+  // beach band) dries fast and shifts, so moss barely holds; damp stone holds it best (moss fills
+  // the cracks first and, with more cover, climbs over the stone tops through the height blend).
+  let substrate = (1.0 - ground.mossRules.x * w.y) * (1.0 + ground.mossRules.y * w.z);
+  let moss = select(0.0, smoothstep(0.35, 0.65, mossCover * substrate + mossNoise), mossCover > 0.01);
   albedo = mix(albedo, ground.mossTile.yzw, moss);
   // Scanned detail (docs/22) takes over once loaded and near enough; the flat look stays the fallback.
   let gd = groundDetail(in.world, n, w, moss, distance(in.world, frame.cameraPos));
