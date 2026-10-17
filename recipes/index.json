@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "recipes": {
+    "quality-tiers": "quality-tiers.json",
+    "world/camera": "world/camera.json",
+    "world/sky": "world/sky.json",
+    "world/placeholder-island": "world/placeholder-island.json"
+  }
+}

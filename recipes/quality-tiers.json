@@ -1,0 +1,42 @@
+{
+  "type": "quality-tiers",
+  "version": 1,
+  "tiers": {
+    "high": {
+      "targetFps": 60, "calmFps": 30, "gpuBudgetMs": 12,
+      "renderScale": 1.0, "renderScaleMin": 0.67,
+      "maxDpr": 2, "maxMegapixels": 3.7,
+      "shadows": { "cascades": 3, "size": 2048, "filter": "pcss" },
+      "ao": "full",
+      "skyViewLut": "full", "aerialVolume": 32,
+      "waterReach": 60, "waterStep": 0.008333,
+      "grassDensity": 1.0, "grassDistance": 40, "foliageLodScale": 1.0,
+      "liveCreatures": 120, "boids": 4096, "particlesMax": 20000,
+      "lights": 64, "bloomLevels": 6, "workerMax": 14
+    },
+    "medium": {
+      "targetFps": 60, "calmFps": 30, "gpuBudgetMs": 13,
+      "renderScale": 0.85, "renderScaleMin": 0.6,
+      "maxDpr": 2, "maxMegapixels": 2.1,
+      "shadows": { "cascades": 2, "size": 1536, "filter": "9tap" },
+      "ao": "half",
+      "skyViewLut": "full", "aerialVolume": 32,
+      "waterReach": 60, "waterStep": 0.008333,
+      "grassDensity": 0.6, "grassDistance": 30, "foliageLodScale": 0.75,
+      "liveCreatures": 80, "boids": 2048, "particlesMax": 10000,
+      "lights": 32, "bloomLevels": 5, "workerMax": 14
+    },
+    "low": {
+      "targetFps": 30, "calmFps": 20, "gpuBudgetMs": 18,
+      "renderScale": 0.75, "renderScaleMin": 0.5,
+      "maxDpr": 2, "maxMegapixels": 1.2,
+      "shadows": { "cascades": 1, "size": 1024, "filter": "4tap" },
+      "ao": "off",
+      "skyViewLut": "half", "aerialVolume": 16,
+      "waterReach": 40, "waterStep": 0.016667,
+      "grassDensity": 0.35, "grassDistance": 20, "foliageLodScale": 0.5,
+      "liveCreatures": 50, "boids": 1024, "particlesMax": 4000,
+      "lights": 8, "bloomLevels": 4, "workerMax": 4
+    }
+  }
+}
