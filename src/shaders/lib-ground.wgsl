@@ -28,15 +28,32 @@ struct GroundDetail {
   tiling: vec4f,            // x mode (0 plain grid, 1 hex, 2 two-scale), y hex density, z hex sharpness, w two-scale size
   macroTone: vec4f,         // x, y 1 / macro scales in meters; z strength; w hue shift
   mixing: vec4f,            // x macro second-octave weight, y 1 / two-scale noise size in meters
+  // Moss, the fifth layer (array layer 4): it grows over the painted layers where the ground
+  // stays damp (world/growth/moss-live.js), so its weight comes from the moss mask, not paint.
+  moss: vec4f,              // heightAmplitudeM, normalStrength, roughMin, roughMax
+  mossTile: vec4f,          // x 1 / tile size (m); yzw flat moss albedo for the far look
 };
+
+const GROUND_LAYERS: i32 = 5;
+
+fn layerParams(i: i32) -> vec4f {
+  if (i == 4) { return ground.moss; }
+  return ground.layers[i];
+}
+
+fn layerTileInv(i: i32) -> f32 {
+  if (i == 4) { return ground.mossTile.x; }
+  return ground.tileInv[i];
+}
 
 struct GroundSample {
   albedo: vec3f,      // linear albedo of the textured blend
   normal: vec3f,      // detail normal (world)
   roughness: f32,
   cavity: f32,        // occlusion for sky light only (docs/06)
-  weights: vec4f,     // height-blended material weights
+  weights: vec4f,     // height-blended material weights (grass, sand, rock, soil)
   amount: f32,        // how much detail applies here (load fade x distance fade)
+  mossWeight: f32,    // height-blended moss weight
 };
 
 struct LayerSample {
@@ -54,12 +71,12 @@ fn groundFetch(i: i32, uv: vec2f, gx: vec2f, gy: vec2f, u: vec3f, v: vec3f) -> L
   // OpenGL normal map: +X along +u; +Y is image-up, which is -v.
   let t = vec2f(b.r, b.g) * 2.0 - 1.0;
   let tz = sqrt(max(1.0 - dot(t, t), 1e-4));
-  let s = ground.layers[i].y;
+  let lp = layerParams(i);
   var o: LayerSample;
   o.albedo = a.rgb;
   o.height = a.a;
-  o.grad = (u * (-t.x / tz) + v * (t.y / tz)) * s;
-  o.rough = mix(ground.layers[i].z, ground.layers[i].w, b.b);
+  o.grad = (u * (-t.x / tz) + v * (t.y / tz)) * lp.y;
+  o.rough = mix(lp.z, lp.w, b.b);
   o.cavity = b.a;
   return o;
 }
@@ -89,7 +106,7 @@ fn hexOffset(vtx: vec2f, i: i32) -> vec2f {
 // One projection of one layer. `u` and `v` are the world axes the image runs along; gradients
 // are the screen derivatives of the world position, so all three projections mip correctly.
 fn groundProject(i: i32, p: vec3f, dpx: vec3f, dpy: vec3f, u: vec3f, v: vec3f) -> LayerSample {
-  let k = ground.tileInv[i];
+  let k = layerTileInv(i);
   let uv = vec2f(dot(p, u), dot(p, v)) * k;
   let gx = vec2f(dot(dpx, u), dot(dpx, v)) * k;
   let gy = vec2f(dot(dpy, u), dot(dpy, v)) * k;
@@ -138,10 +155,11 @@ fn groundMacro(xz: vec2f, seed: u32) -> vec3f {
   return (1.0 + ground.macroTone.z * m) * vec3f(1.0 + hue, 1.0, 1.0 - hue);
 }
 
-// Detail at a world point. `w` are the material weights after the derived layers (steep rock,
-// beach sand); `nMesh` the mesh normal. The scanned albedos are calibrated to the recipe means
-// (tools/texture-lab.html), so the caller mixes `albedo` with its flat recipe blend by `amount`.
-fn groundDetail(p: vec3f, nMesh: vec3f, w: vec4f, viewDist: f32) -> GroundSample {
+// Detail at a world point. `w4` are the material weights after the derived layers (steep rock,
+// beach sand); `moss` the moss cover (0..1), which lies over them; `nMesh` the mesh normal. The
+// scanned albedos are calibrated to the recipe means (tools/texture-lab.html), so the caller
+// mixes `albedo` with its flat recipe blend by `amount`.
+fn groundDetail(p: vec3f, nMesh: vec3f, w4: vec4f, moss: f32, viewDist: f32) -> GroundSample {
   // Screen derivatives once, here, so sampling inside branches needs no uniform control flow.
   let dpx = dpdx(p);
   let dpy = dpdy(p);
@@ -150,12 +168,14 @@ fn groundDetail(p: vec3f, nMesh: vec3f, w: vec4f, viewDist: f32) -> GroundSample
   var tw = pow(abs(nMesh), vec3f(6.0));
   tw /= max(tw.x + tw.y + tw.z, 1e-5);
 
-  var hs = vec4f(0.5);
-  var albedo = array<vec3f, 4>(vec3f(0.0), vec3f(0.0), vec3f(0.0), vec3f(0.0));
-  var grad = array<vec3f, 4>(vec3f(0.0), vec3f(0.0), vec3f(0.0), vec3f(0.0));
-  var rough = vec4f(0.85);
-  var cav = vec4f(1.0);
-  for (var i = 0; i < 4; i++) {
+  // Five weights: moss covers the painted layers in proportion to its cover.
+  var w = array<f32, 5>(w4.x * (1.0 - moss), w4.y * (1.0 - moss), w4.z * (1.0 - moss), w4.w * (1.0 - moss), moss);
+  var hs = array<f32, 5>(0.5, 0.5, 0.5, 0.5, 0.5);
+  var albedo = array<vec3f, 5>(vec3f(0.0), vec3f(0.0), vec3f(0.0), vec3f(0.0), vec3f(0.0));
+  var grad = array<vec3f, 5>(vec3f(0.0), vec3f(0.0), vec3f(0.0), vec3f(0.0), vec3f(0.0));
+  var rough = array<f32, 5>(0.85, 0.85, 0.85, 0.85, 0.85);
+  var cav = array<f32, 5>(1.0, 1.0, 1.0, 1.0, 1.0);
+  for (var i = 0; i < GROUND_LAYERS; i++) {
     if (w[i] < 0.004) { continue; }
     // From above: image u along +x, v along +z.
     var s = groundProject(i, p, dpx, dpy, vec3f(1.0, 0.0, 0.0), vec3f(0.0, 0.0, 1.0));
@@ -174,18 +194,31 @@ fn groundDetail(p: vec3f, nMesh: vec3f, w: vec4f, viewDist: f32) -> GroundSample
   }
 
   // Height blend (docs/22): the taller surface wins, within blendDepth.
-  let present = step(vec4f(0.004), w);
-  let a4 = (w + hs * ground.heightInfluence) * present - (1.0 - present);
-  let top4 = max(max(a4.x, a4.y), max(a4.z, a4.w));
-  var b4 = max(a4 - (top4 - ground.blendDepth), vec4f(0.0));
-  b4 /= max(b4.x + b4.y + b4.z + b4.w, 1e-4);
+  var a = array<f32, 5>(-1.0, -1.0, -1.0, -1.0, -1.0);
+  var top = -1.0;
+  for (var i = 0; i < GROUND_LAYERS; i++) {
+    if (w[i] >= 0.004) { a[i] = w[i] + hs[i] * ground.heightInfluence; }
+    top = max(top, a[i]);
+  }
+  var b = array<f32, 5>(0.0, 0.0, 0.0, 0.0, 0.0);
+  var sum = 0.0;
+  for (var i = 0; i < GROUND_LAYERS; i++) { b[i] = max(a[i] - (top - ground.blendDepth), 0.0); sum += b[i]; }
 
   var out: GroundSample;
-  out.albedo = albedo[0] * b4.x + albedo[1] * b4.y + albedo[2] * b4.z + albedo[3] * b4.w;
-  let g3 = grad[0] * b4.x + grad[1] * b4.y + grad[2] * b4.z + grad[3] * b4.w;
-  out.roughness = dot(rough, b4);
-  out.cavity = dot(cav, b4);
-  out.weights = b4;
+  out.albedo = vec3f(0.0);
+  var g3 = vec3f(0.0);
+  out.roughness = 0.0;
+  out.cavity = 0.0;
+  for (var i = 0; i < GROUND_LAYERS; i++) {
+    let k = b[i] / max(sum, 1e-4);
+    out.albedo += albedo[i] * k;
+    g3 += grad[i] * k;
+    out.roughness += rough[i] * k;
+    out.cavity += cav[i] * k;
+  }
+  let s4 = max(sum, 1e-4);
+  out.weights = vec4f(b[0], b[1], b[2], b[3]) / s4;
+  out.mossWeight = b[4] / s4;
   out.amount = ground.fade * (1.0 - smoothstep(ground.fadeMeters * 0.6, ground.fadeMeters, viewDist));
 
   // Surface gradient: keep only the part of the gradient that lies in the surface, then tilt.

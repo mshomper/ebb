@@ -39,6 +39,7 @@ struct TerrainDraw {
 @group(2) @binding(8) var<uniform> ground: GroundDetail;
 @group(2) @binding(9) var waterDepth: texture_2d<f32>;   // live water depth (m), water-depth.wgsl
 @group(2) @binding(10) var dampHollows: texture_2d<f32>; // the water summary's damp hollows (r8unorm, 0.5 m)
+@group(2) @binding(11) var mossTex: texture_2d<f32>;     // moss cover 0..1 (r8unorm, 0.5 m), moss-live.js
 
 // How soaked the ground is from live water nearby: 1 under water, fading out over about 0.75 m of
 // bank (capillary rise). The visual wetness pass (S4c) adds drying over time and the tide flats.
@@ -121,8 +122,14 @@ fn fsLand(in: VsOut) -> FsOut {
 
   var albedo = td.albedoGrass * wf.x + td.albedoSand * wf.y + td.albedoRock * wf.z + td.albedoSoil * wf.w;
   albedo *= 1.0 + td.variation * (valueNoise2(p * 3.1 + vec2f(41.0, 17.0), td.seed + 4u) - 0.5);
+  // Moss (world/growth/moss-live.js) lies over the painted layers where the ground stays damp. Its
+  // edge is broken up by noise, so a patch creeps outward in lobes rather than a smooth blob.
+  let mossCover = textureSampleLevel(mossTex, linearSampler, terrainUv(xz), 0.0).r;
+  let mossNoise = (valueNoise2(xz * 0.7, td.seed + 9u) - 0.5) * 0.5 + (valueNoise2(xz * 2.3 + vec2f(5.3, 1.9), td.seed + 10u) - 0.5) * 0.35;
+  let moss = select(0.0, smoothstep(0.35, 0.65, mossCover + mossNoise), mossCover > 0.01);
+  albedo = mix(albedo, ground.mossTile.yzw, moss);
   // Scanned detail (docs/22) takes over once loaded and near enough; the flat look stays the fallback.
-  let gd = groundDetail(in.world, n, w, distance(in.world, frame.cameraPos));
+  let gd = groundDetail(in.world, n, w, moss, distance(in.world, frame.cameraPos));
   albedo = mix(albedo, gd.albedo, gd.amount);
   // Macro variation (docs/22): a slow tone drift near and far, so no repeat survives at a distance.
   albedo *= groundMacro(xz, td.seed);
@@ -133,7 +140,8 @@ fn fsLand(in: VsOut) -> FsOut {
   // soft edges from the filtered 0.5 m map.
   let damp = textureSampleLevel(dampHollows, linearSampler, terrainUv(xz), 0.0).r * td.dampWet;
   let wet = max(max(max(1.0 - smoothstep(td.tide - 0.05, td.tide + 0.25, y), light.weather.w), wetFromWater(xz)), damp);
-  albedo *= mix(1.0, td.wetDarkening, wet);
+  // Moss is already a damp surface; its color changes less when wet than bare soil does.
+  albedo *= mix(1.0, td.wetDarkening, wet * (1.0 - 0.6 * moss));
 
   var color = shadeGround(albedo, in.world, n, gd.normal, gd.roughness, gd.cavity, in.pos, ground.terminator, ground.f0, ground.specMode);
   color = mix(color, td.ringColor, ringAlpha(xz));

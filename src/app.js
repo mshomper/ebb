@@ -29,6 +29,7 @@ import { initialWorldState, makeEnv, runHour } from './sim/tick.js';
 import { createTerrain } from './world/terrain/index.js';
 import { createWater } from './world/water/index.js';
 import { createWaterPass } from './render/passes/water.js';
+import { createMossLive } from './world/growth/moss-live.js';
 import { onAction, history } from './input/actions.js';
 import { attachDesktopInput } from './input/desktop.js';
 import { attachTouchInput } from './input/touch.js';
@@ -110,6 +111,9 @@ export async function startApp(canvas, hooks = {}) {
     springs: getStore('water')?.springs ?? [],
   });
   sim.addSystem(water);
+  // Moss creeps over ground that stays damp (interim live form; doc 10's growth takes over later).
+  const moss = createMossLive(gpu.device, { water, recipe: terrainRecipe.moss });
+  sim.addSystem(moss);
   const waterTools = waterRecipe.tools;
   /** Mirror the placed springs into the saved `water` slice and the tool bar's `waterUi` slice. */
   function syncWater(selectedId = getStore('waterUi')?.selectedId ?? null) {
@@ -164,6 +168,7 @@ export async function startApp(canvas, hooks = {}) {
     terrain, recipe: terrainRecipe, seed: subSeed(seed, 'terrain-look'), getEye: () => camera.eye, tier,
     ground: groundDetail, groundTier: tierSettings.ground, getTide: () => water.tide, lodDistances: tierSettings.lodDistances,
     water: { depthTextures: water.sim.depthTextures, current: () => water.sim.current, damp: water.sim.damp, dampWet: waterRecipe.look.dampHollowWet },
+    moss: moss.texture,
   });
   const waterPass = createWaterPass({
     water, terrain, atmosphere, recipe: waterRecipe, seaExtent: terrainRecipe.sea.extent, getTime: () => clock.animT(),

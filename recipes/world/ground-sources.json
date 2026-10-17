@@ -8,8 +8,10 @@
     "grass": { "id": "grass_ground", "name": "Grass Ground", "page": "https://polyhaven.com/a/grass_ground", "delight": 0.7 },
     "sand":  { "id": "aerial_beach_01", "name": "Aerial Beach 01", "page": "https://polyhaven.com/a/aerial_beach_01", "delight": 0.6 },
     "rock":  { "id": "dry_riverbed_rock", "name": "Dry Riverbed Rock", "page": "https://polyhaven.com/a/dry_riverbed_rock", "delight": 0.5 },
-    "soil":  { "id": "dirt_aerial_03", "name": "Dirt Aerial 03", "page": "https://polyhaven.com/a/dirt_aerial_03", "delight": 0.6 }
+    "soil":  { "id": "dirt_aerial_03", "name": "Dirt Aerial 03", "page": "https://polyhaven.com/a/dirt_aerial_03", "delight": 0.6 },
+    "moss":  { "source": "ambientcg", "id": "Moss003", "name": "Moss 003", "page": "https://ambientcg.com/view?id=Moss003", "zip": "Moss003_1K-JPG.zip", "delight": 0.6 }
   },
+  "ambientcgNote": "ambientCG sets are zips (CC0). The lab fetches them through play.cmd's local server (GET /__fetch/ambientcg?file=...), because ambientCG does not let other sites download directly. Files by suffix: _Color (diff), _NormalGL (nor_gl), _Roughness (rough), _Displacement (disp), _AmbientOcclusion (ao, optional).",
   "maps": ["diff", "nor_gl", "rough", "disp", "ao"],
   "sizes": [1024, 512],
   "webpQuality": { "a": 0.9, "b": 1.0, "c": 0.95 },

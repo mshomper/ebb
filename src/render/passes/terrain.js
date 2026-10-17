@@ -10,7 +10,7 @@ import { LODS, MAX_CHUNKS, createIndexBuffers, packChunks } from '../terrain-mes
 /** @typedef {import('../frame-graph.js').PassContext} PassContext */
 
 const DRAW_BYTES = 160;
-const GROUND_BYTES = 176;
+const GROUND_BYTES = 208;
 const DEG = Math.PI / 180;
 /** @type {Record<string, number>} GroundDetail.tiling.x in lib-ground.wgsl */
 const TILING_MODES = { grid: 0, hex: 1, two: 2 };
@@ -18,7 +18,7 @@ const TILING_MODES = { grid: 0, hex: 1, two: 2 };
 /**
  * @param {{ terrain: import('../../world/terrain/index.js').Terrain, recipe: any, seed: number,
  *   getEye: () => ArrayLike<number>, tier: string, getTide?: () => number, lodDistances?: number[],
- *   water: { depthTextures: GPUTexture[], current: () => number, damp: GPUTexture, dampWet: number },
+ *   water: { depthTextures: GPUTexture[], current: () => number, damp: GPUTexture, dampWet: number }, moss: GPUTexture,
  *   ground: { views: { a: GPUTextureView, b: GPUTextureView }, sampler: GPUSampler, version: number, fade: number },
  *   groundTier: any }} opts  ground: src/render/ground-detail.js; groundTier: the tier's `ground` block
  */
@@ -62,6 +62,11 @@ export function createTerrainPass(opts) {
     gf[32] = mode; gf[33] = d.hex.density; gf[34] = d.hex.sharpness; gf[35] = d.twoScale.size;
     gf[36] = 1 / d.macro.scalesM[0]; gf[37] = 1 / d.macro.scalesM[1]; gf[38] = d.macro.strength; gf[39] = d.macro.hue;
     gf[40] = d.macro.second; gf[41] = 1 / d.twoScale.noiseMeters;
+    // Moss, the fifth layer: its detail parameters, tile size and flat albedo for the far look.
+    const ml = d.layers.moss;
+    gf.set([ml.heightAmplitudeM, ml.normalStrength, ml.roughness[0], ml.roughness[1]], 44);
+    gf[48] = 1 / (ml.tileMeters ?? d.tileMeters);
+    gf.set(recipe.materials.albedoMoss, 49);
   }
 
   function packStatic() {
@@ -113,6 +118,7 @@ export function createTerrainPass(opts) {
           { binding: 8, visibility: GPUShaderStage.FRAGMENT, buffer: {} },
           { binding: 9, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: 'unfilterable-float' } },
           { binding: 10, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: 'float' } },
+          { binding: 11, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: 'float' } },
         ],
       });
       const layout = device.createPipelineLayout({ label: 'opaque', bindGroupLayouts: [ctx.layouts.frame, ctx.layouts.lighting, layout2] });
@@ -151,6 +157,7 @@ export function createTerrainPass(opts) {
             { binding: 8, resource: { buffer: groundBuffer } },
             { binding: 9, resource: wt.createView() },
             { binding: 10, resource: opts.water.damp.createView() },
+            { binding: 11, resource: opts.moss.createView() },
           ],
         }));
         groundVersion = opts.ground.version;

@@ -32,6 +32,7 @@
     "albedoSand": [0.62, 0.52, 0.38],
     "albedoRock": [0.36, 0.34, 0.31],
     "albedoSoil": [0.21, 0.15, 0.10],
+    "albedoMoss": [0.15, 0.21, 0.045],
     "variation": 0.18,
     "variationScale": 0.6,
     "blendSharpness": 0.22,
@@ -53,8 +54,16 @@
       "grass": { "tileMeters": 3, "heightAmplitudeM": 0.02, "normalStrength": 0.8, "roughness": [0.75, 0.95], "porosity": 0.6 },
       "sand":  { "tileMeters": 3, "heightAmplitudeM": 0.015, "normalStrength": 1.0, "roughness": [0.7, 0.95], "porosity": 0.9 },
       "rock":  { "tileMeters": 1.2, "heightAmplitudeM": 0.05, "normalStrength": 1.0, "roughness": [0.45, 0.8], "porosity": 0.15 },
-      "soil":  { "tileMeters": 3, "heightAmplitudeM": 0.03, "normalStrength": 0.9, "roughness": [0.7, 0.95], "porosity": 0.8 }
+      "soil":  { "tileMeters": 3, "heightAmplitudeM": 0.03, "normalStrength": 0.9, "roughness": [0.7, 0.95], "porosity": 0.8 },
+      "moss":  { "tileMeters": 1.2, "heightAmplitudeM": 0.025, "normalStrength": 1.0, "roughness": [0.8, 1.0], "porosity": 0.95 }
     }
+  },
+  "moss": {
+    "note": "Live moss (interim until doc 10's growth system): grows where the water summary says the ground stays damp (hollows of at least minHollowM2, banks of ponds and streams, never the tide band). growHours: game hours for a cell to fill once reached; it spreads to a neighbor once cover passes spreadFrom; fadeHours: game hours to vanish where the ground dried out.",
+    "minHollowM2": 3,
+    "growHours": 18,
+    "spreadFrom": 0.35,
+    "fadeHours": 48
   },
   "steepRockDeg": 38,
   "steepRockSoftDeg": 5,
