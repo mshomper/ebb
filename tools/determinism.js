@@ -1,0 +1,189 @@
+// @ts-check
+// Determinism page: builds the 9 starter chunks on the main thread, on 1 worker and on
+// the full pool, compares landform hashes, and draws the island from above (docs/08).
+
+import { hash32, subSeed } from '../src/core/rng.js';
+import { initWorkers, run, dispose, defaultPoolSize } from '../src/core/workers.js';
+import { CHUNK_CELLS, dequantize } from '../src/world/terrain/grid.js';
+import { buildBase, hashBase } from '../src/world/terrain/landform.js';
+
+const JOB = { module: './world/terrain/landform.js', fn: 'buildBase' };
+/** The 3 x 3 starter chunks, row by row. */
+const CHUNKS = /** @type {[number, number][]} */ ([]);
+for (let cz = -1; cz <= 1; cz++) for (let cx = -1; cx <= 1; cx++) CHUNKS.push([cx, cz]);
+
+/**
+ * @typedef {Object} RunResult
+ * @property {string} name
+ * @property {number[]} hashes  one per chunk, in CHUNKS order
+ * @property {number} combined
+ * @property {number} ms
+ * @property {{heightQ: Uint16Array, material: Uint8Array}[]} bases
+ */
+
+const $ = (/** @type {string} */ id) => /** @type {HTMLElement} */ (document.getElementById(id));
+/** @param {number} h */
+const hex = (h) => (h >>> 0).toString(16).toUpperCase().padStart(8, '0');
+/** @param {number[]} hashes */
+const combine = (hashes) => hashes.reduce((h, c) => hash32(h, c), 0x5eed);
+
+const CHECK = '<path d="M4.5 12.5l4.8 4.8L19.5 7"/>';
+const WARN = '<path d="M12 3.5L2.8 19.8h18.4z"/><path d="M12 9.5v4.8"/><path d="M12 17.2v.1"/>';
+/** @param {boolean} ok */
+function icon(ok) {
+  const color = ok ? '#5F7F5B' : '#B5654A';
+  return `<svg viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ok ? CHECK : WARN}</svg>`;
+}
+
+// ---------------------------------------------------------------------------
+// The three runs
+
+/** @param {any} land @param {number} seed @returns {Promise<RunResult>} */
+async function runMain(land, seed) {
+  const t0 = performance.now();
+  const bases = CHUNKS.map(([cx, cz]) => buildBase({ land, seed, cx, cz }));
+  const ms = performance.now() - t0;
+  return finish('Main thread', bases, ms);
+}
+
+/**
+ * Build on a pool of `size` workers. A warm-up job per worker loads the module first,
+ * so the time shown is the build itself.
+ * @param {any} land @param {number} seed @param {number} size @param {string} name
+ * @returns {Promise<RunResult>}
+ */
+async function runPool(land, seed, size, name) {
+  initWorkers({ size });
+  try {
+    await Promise.all(Array.from({ length: size }, () => run(JOB, { land, seed, cx: 3, cz: 3 })));
+    const t0 = performance.now();
+    const bases = await Promise.all(CHUNKS.map(([cx, cz]) => run(JOB, { land, seed, cx, cz })));
+    const ms = performance.now() - t0;
+    return finish(name, bases, ms);
+  } finally {
+    dispose();
+  }
+}
+
+/** @param {string} name @param {{heightQ: Uint16Array, material: Uint8Array}[]} bases @param {number} ms */
+function finish(name, bases, ms) {
+  const hashes = bases.map((b) => hashBase(b.heightQ, b.material));
+  return { name, hashes, combined: combine(hashes), ms, bases };
+}
+
+// ---------------------------------------------------------------------------
+// Drawing
+
+const COLORS = {
+  grass: [127, 164, 99],
+  sand: [220, 201, 160],
+  rock: [154, 149, 140],
+  soil: [140, 106, 72],
+  shallow: [120, 186, 196],
+  deep: [52, 112, 140],
+};
+
+/** Draw the 384 x 384 cell island, shaded by slope, colored by material weights. @param {RunResult} r */
+function drawMap(r) {
+  const canvas = /** @type {HTMLCanvasElement} */ ($('map'));
+  const N = CHUNK_CELLS * 3;
+  const ctx = /** @type {CanvasRenderingContext2D} */ (canvas.getContext('2d'));
+  const img = ctx.createImageData(N, N);
+  const H = new Float32Array(N * N);
+  const M = new Uint8Array(N * N * 4);
+  r.bases.forEach((b, k) => {
+    const [cx, cz] = CHUNKS[k];
+    for (let j = 0; j < CHUNK_CELLS; j++) for (let i = 0; i < CHUNK_CELLS; i++) {
+      const g = ((cz + 1) * CHUNK_CELLS + j) * N + (cx + 1) * CHUNK_CELLS + i;
+      const c = j * CHUNK_CELLS + i;
+      H[g] = dequantize(b.heightQ[c]);
+      for (let m = 0; m < 4; m++) M[g * 4 + m] = b.material[c * 4 + m];
+    }
+  });
+  let peak = -Infinity;
+  for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) {
+    const k = j * N + i, h = H[k];
+    peak = Math.max(peak, h);
+    const hx = H[j * N + Math.min(N - 1, i + 1)] - H[j * N + Math.max(0, i - 1)];
+    const hz = H[Math.min(N - 1, j + 1) * N + i] - H[Math.max(0, j - 1) * N + i];
+    // Light from the upper left: shade = n . l, with n from the height gradient (cells 0.25 m).
+    const nx = -hx / 0.5, nz = -hz / 0.5, len = Math.sqrt(nx * nx + nz * nz + 1);
+    const shade = Math.max(0.35, (nx * -0.55 + nz * -0.55 + 0.63) / len / 0.63);
+    let col;
+    if (h < 0) {
+      const t = Math.min(1, -h / 3);
+      col = COLORS.shallow.map((v, c) => v + (COLORS.deep[c] - v) * t);
+    } else {
+      const w = [M[k * 4], M[k * 4 + 1], M[k * 4 + 2], M[k * 4 + 3]];
+      col = [0, 1, 2].map((c) => (w[0] * COLORS.grass[c] + w[1] * COLORS.sand[c] + w[2] * COLORS.rock[c] + w[3] * COLORS.soil[c]) / 255 * shade);
+      const near = Math.abs(h - Math.round(h));
+      if (Math.round(h) > 0 && near < 0.03) col = col.map((v) => v * 0.8);
+    }
+    img.data[k * 4] = col[0]; img.data[k * 4 + 1] = col[1]; img.data[k * 4 + 2] = col[2]; img.data[k * 4 + 3] = 255;
+  }
+  ctx.putImageData(img, 0, 0);
+  $('mapNote').textContent = `96 m across, the 3 by 3 starter chunks. Highest point ${peak.toFixed(1)} m above sea level. Thin lines mark every meter of height.`;
+}
+
+// ---------------------------------------------------------------------------
+// Results
+
+/** @param {RunResult[]} runs */
+function showResults(runs) {
+  const ref = runs[0];
+  $('runs').innerHTML = runs.map((r) => `<div class="run"><span class="name">${r.name}</span>` +
+    `<b class="${r.combined === ref.combined ? 'ok' : 'bad'}">${hex(r.combined)}</b>` +
+    `<span>${r.ms.toFixed(1)} ms for 9 chunks</span></div>`).join('');
+
+  /** @param {string} label @param {number[]} hs @param {string} [cls] */
+  const row = (label, hs, cls = '') => {
+    const ok = hs.every((h) => h === hs[0]);
+    return `<div class="row ${cls}"><span class="label">${label}</span>` +
+      hs.map((h, k) => `<span class="hash">${hex(h)}<small>${runs[k].name}</small></span>`).join('') +
+      `<span class="v ${ok ? 'ok' : 'bad'}">${icon(ok)}${ok ? 'match' : 'differ'}</span></div>`;
+  };
+  let html = row('All 9 chunks', runs.map((r) => r.combined), 'total');
+  CHUNKS.forEach(([cx, cz], k) => { html += row(`Chunk ${cx}, ${cz}`, runs.map((r) => r.hashes[k])); });
+  $('chunks').innerHTML = html;
+
+  const allOk = runs.every((r) => r.combined === ref.combined && r.hashes.every((h, k) => h === ref.hashes[k]));
+  $('verdict').className = allOk ? 'ok' : 'bad';
+  $('verdict').innerHTML = `${icon(allOk)}<span>${allOk ? 'All three runs match' : 'The runs differ'}</span>`;
+  $('detail').textContent = allOk
+    ? 'Same seed, same island, on every thread. This combined hash should also match on your phone.'
+    : 'Some chunks came out different. Something in the landform is not deterministic.';
+}
+
+async function build() {
+  const button = /** @type {HTMLButtonElement} */ ($('go'));
+  const input = /** @type {HTMLInputElement} */ ($('seed'));
+  button.disabled = true;
+  const worldSeed = Math.floor(Math.abs(Number(input.value) || 0)) >>> 0;
+  input.value = String(worldSeed);
+  $('verdict').className = '';
+  $('verdict').textContent = 'Building';
+  $('detail').textContent = '';
+  try {
+    const land = await (await fetch('../recipes/land/starter-island.json')).json();
+    const seed = subSeed(worldSeed, 'terrain');
+    const pool = defaultPoolSize();
+    const runs = [
+      await runMain(land, seed),
+      await runPool(land, seed, 1, '1 worker'),
+      await runPool(land, seed, pool, `${pool} workers`),
+    ];
+    showResults(runs);
+    drawMap(runs[0]);
+  } catch (e) {
+    console.error('[determinism]', e);
+    $('verdict').className = 'bad';
+    $('verdict').innerHTML = `${icon(false)}<span>Could not build the island</span>`;
+    $('detail').textContent = e instanceof Error ? `${e.name}: ${e.message}` : String(e);
+  } finally {
+    button.disabled = false;
+  }
+}
+
+$('go').addEventListener('click', build);
+$('seed').addEventListener('keydown', (e) => { if (/** @type {KeyboardEvent} */ (e).key === 'Enter') build(); });
+build();

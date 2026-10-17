@@ -1,31 +1,68 @@
 // @ts-check
-// Mouse, pen and wheel input in the look state (docs/15, desktop bindings):
-// left or middle drag (or Space + left drag) pans, right drag orbits, wheel or trackpad pinch zooms toward the cursor.
+// Mouse, pen, wheel and keyboard input (docs/15, desktop bindings):
+// left drag uses the active tool (pans in the look state), middle drag or Space + left drag pans,
+// right drag orbits, wheel or trackpad pinch zooms toward the cursor.
+// Keys: 1 2 3 pick a tool (again returns to look), Esc returns to look, [ ] resize the brush,
+// Ctrl+Z undo, Ctrl+Shift+Z or Ctrl+Y redo.
 
 import { dispatch } from './actions.js';
+import { get } from '../core/store.js';
+
+const TOOL_KEYS = /** @type {const} */ (['sculpt', 'smooth', 'paint']);
 
 /**
  * @param {HTMLCanvasElement} canvas
  * @param {{ wheelZoomPerNotch: number }} opts
+ * @param {{ resizeStep: number }} brush
  * @returns {() => void} detach
  */
-export function attachDesktopInput(canvas, opts) {
-  /** @type {{ id: number, mode: 'pan'|'orbit', x: number, y: number } | null} */
+export function attachDesktopInput(canvas, opts, brush) {
+  /** @type {{ id: number, mode: 'pan'|'orbit'|'tool', x: number, y: number } | null} */
   let drag = null;
+  let spaceHeld = false;
+
+  const toolActive = () => !!get('tools')?.tool;
+  const local = (/** @type {PointerEvent} */ e) => {
+    const r = canvas.getBoundingClientRect();
+    return { x: e.clientX - r.left, y: e.clientY - r.top };
+  };
+  const source = (/** @type {PointerEvent} */ e) => (e.pointerType === 'pen' ? 'pen' : 'mouse');
+  const pressure = (/** @type {PointerEvent} */ e) => (e.pointerType === 'pen' ? Math.max(0.05, e.pressure || 0.5) : 1);
 
   /** @param {PointerEvent} e */
   const down = (e) => {
     if (e.pointerType === 'touch' || drag) return;
-    const mode = e.button === 2 ? 'orbit' : e.button === 0 || e.button === 1 ? 'pan' : null;
+    let mode = /** @type {'pan'|'orbit'|'tool'|null} */ (null);
+    if (e.button === 2) mode = 'orbit';
+    else if (e.button === 1) mode = 'pan';
+    else if (e.button === 0) mode = toolActive() && !spaceHeld ? 'tool' : 'pan';
     if (!mode) return;
     e.preventDefault();
+    canvas.focus?.({ preventScroll: true });
     try { canvas.setPointerCapture(e.pointerId); } catch { /* pointer already gone */ }
     drag = { id: e.pointerId, mode, x: e.clientX, y: e.clientY };
+    if (mode === 'tool') {
+      const p = local(e);
+      dispatch({ type: 'tool.begin', x: p.x, y: p.y, pressure: pressure(e), source: source(e) });
+    }
   };
 
   /** @param {PointerEvent} e */
   const move = (e) => {
-    if (!drag || e.pointerId !== drag.id) return;
+    if (e.pointerType === 'touch') return;
+    if (!drag || e.pointerId !== drag.id) {
+      if (!drag) {
+        const p = local(e);
+        dispatch({ type: 'tool.hover', x: p.x, y: p.y, inside: true, source: source(e) });
+      }
+      return;
+    }
+    if (drag.mode === 'tool') {
+      const p = local(e);
+      dispatch({ type: 'tool.hover', x: p.x, y: p.y, inside: true, source: source(e) });
+      dispatch({ type: 'tool.move', x: p.x, y: p.y, pressure: pressure(e), source: source(e) });
+      return;
+    }
     const dx = e.clientX - drag.x;
     const dy = e.clientY - drag.y;
     drag.x = e.clientX;
@@ -36,7 +73,15 @@ export function attachDesktopInput(canvas, opts) {
 
   /** @param {PointerEvent} e */
   const up = (e) => {
-    if (drag && e.pointerId === drag.id) drag = null;
+    if (!drag || e.pointerId !== drag.id) return;
+    if (drag.mode === 'tool') dispatch({ type: e.type === 'pointercancel' ? 'tool.cancel' : 'tool.end', source: source(e) });
+    drag = null;
+  };
+
+  /** @param {PointerEvent} e */
+  const leave = (e) => {
+    if (e.pointerType === 'touch' || drag) return;
+    dispatch({ type: 'tool.hover', x: 0, y: 0, inside: false, source: source(e) });
   };
 
   /** @param {WheelEvent} e */
@@ -51,6 +96,39 @@ export function attachDesktopInput(canvas, opts) {
     dispatch({ type: 'camera.zoom', factor, x: e.clientX - r.left, y: e.clientY - r.top });
   };
 
+  /** @param {KeyboardEvent} e */
+  const keydown = (e) => {
+    const t = /** @type {HTMLElement | null} */ (e.target);
+    if (t && (t.tagName === 'TEXTAREA' || (t.tagName === 'INPUT' && /** @type {HTMLInputElement} */ (t).type !== 'range'))) return;
+    const ctrl = e.ctrlKey || e.metaKey;
+    if (ctrl && (e.key === 'z' || e.key === 'Z')) {
+      e.preventDefault();
+      dispatch({ type: e.shiftKey ? 'history.redo' : 'history.undo', source: 'key' });
+    } else if (ctrl && (e.key === 'y' || e.key === 'Y')) {
+      e.preventDefault();
+      dispatch({ type: 'history.redo', source: 'key' });
+    } else if (ctrl || e.altKey) {
+      return;
+    } else if (e.code === 'Space') {
+      if (t && t.tagName === 'BUTTON') return;
+      spaceHeld = true;
+      e.preventDefault();
+    } else if (/^Digit[1-3]$/.test(e.code)) {
+      const id = TOOL_KEYS[Number(e.code.slice(5)) - 1];
+      dispatch({ type: 'tool.select', toolId: get('tools')?.tool === id ? null : id, source: 'key' });
+    } else if (e.key === 'Escape') {
+      dispatch({ type: 'tool.select', toolId: null, source: 'key' });
+    } else if (e.key === '[' || e.key === ']') {
+      dispatch({ type: 'brush.resize', factor: e.key === ']' ? brush.resizeStep : 1 / brush.resizeStep, source: 'key' });
+    }
+  };
+
+  /** @param {KeyboardEvent} e */
+  const keyup = (e) => {
+    if (e.code === 'Space') spaceHeld = false;
+  };
+  const blur = () => { spaceHeld = false; };
+
   /** @param {Event} e */
   const noMenu = (e) => e.preventDefault();
 
@@ -58,15 +136,23 @@ export function attachDesktopInput(canvas, opts) {
   canvas.addEventListener('pointermove', move);
   canvas.addEventListener('pointerup', up);
   canvas.addEventListener('pointercancel', up);
+  canvas.addEventListener('pointerleave', leave);
   canvas.addEventListener('wheel', wheel, { passive: false });
   canvas.addEventListener('contextmenu', noMenu);
+  window.addEventListener('keydown', keydown);
+  window.addEventListener('keyup', keyup);
+  window.addEventListener('blur', blur);
 
   return () => {
     canvas.removeEventListener('pointerdown', down);
     canvas.removeEventListener('pointermove', move);
     canvas.removeEventListener('pointerup', up);
     canvas.removeEventListener('pointercancel', up);
+    canvas.removeEventListener('pointerleave', leave);
     canvas.removeEventListener('wheel', wheel);
     canvas.removeEventListener('contextmenu', noMenu);
+    window.removeEventListener('keydown', keydown);
+    window.removeEventListener('keyup', keyup);
+    window.removeEventListener('blur', blur);
   };
 }

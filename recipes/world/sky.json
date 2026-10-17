@@ -2,12 +2,12 @@
   "type": "sky",
   "version": 1,
   "note": "M0 placeholder sky: a plain analytic gradient in physical units. Replaced by the physical sky in M1 S2.",
-  "sunDir": [-0.55, 0.16, -0.82],
-  "sunIlluminanceLux": [9500, 7200, 5200],
+  "sunDir": [-0.62, 0.42, 0.66],
+  "sunIlluminanceLux": [28500, 21600, 15600],
   "skyZenithNits": [900, 1000, 1600],
   "skyHorizonNits": [3400, 2900, 2700],
   "sunGlowNits": [5200, 3300, 2000],
   "sunGlowPower": 18,
   "groundBounceNits": [350, 380, 400],
-  "ev100": 11.6
+  "ev100": 12.7
 }

@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ebb determinism</title>
+<link rel="icon" href="../brand/ebb-favicon.svg" type="image/svg+xml">
+<style>
+  @font-face { font-family: 'Nunito'; src: url('../src/vendor/fonts/nunito-latin-600-normal.woff2') format('woff2'); font-weight: 600; font-display: swap; }
+  @font-face { font-family: 'Nunito'; src: url('../src/vendor/fonts/nunito-latin-800-normal.woff2') format('woff2'); font-weight: 800; font-display: swap; }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; max-width: 100%; overflow-x: hidden; }
+  body { background: #F4EEE4; color: #1E2624; font: 600 18px/1.45 'Nunito', system-ui, sans-serif; padding: 16px; overflow-wrap: anywhere; }
+  main { max-width: 820px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+  h1 { font-size: 28px; font-weight: 800; margin: 0; }
+  h2 { font-size: 20px; font-weight: 800; margin: 0 0 10px; }
+  p { margin: 0; }
+  .muted { color: #4A5551; font-size: 16px; }
+  a { color: #4a6a47; }
+  .card { background: #FBF7F0; border: 1px solid #E3D9C9; border-radius: 14px; padding: 14px 16px; min-width: 0; }
+  .controls { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+  .controls label { font-weight: 800; }
+  input[type=number] { font: inherit; font-size: 18px; width: 9em; max-width: 100%; padding: 8px 10px; border: 1px solid #CFC3B0; border-radius: 10px; background: #fff; color: inherit; }
+  button { font: inherit; font-weight: 800; font-size: 18px; padding: 9px 18px; border: 0; border-radius: 10px; background: #5F7F5B; color: #FBF7F0; cursor: pointer; }
+  button:disabled { opacity: 0.55; cursor: default; }
+  #verdict { display: flex; gap: 12px; align-items: center; font-size: 22px; font-weight: 800; }
+  #verdict svg, .v svg { flex: 0 0 auto; }
+  #verdict svg { width: 30px; height: 30px; }
+  .ok { color: #5F7F5B; }
+  .bad { color: #B5654A; }
+  .runs { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; }
+  .run b { display: block; font-size: 26px; font-weight: 800; font-variant-numeric: tabular-nums; letter-spacing: 0.02em; }
+  .run span { display: block; font-size: 16px; color: #4A5551; }
+  .run .name { font-size: 18px; font-weight: 800; color: #1E2624; }
+  .map-wrap { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start; }
+  #map { width: 100%; max-width: 480px; aspect-ratio: 1; display: block; border-radius: 12px; background: #3E7F9A; }
+  .legend { display: flex; flex-direction: column; gap: 6px; font-size: 16px; min-width: 0; flex: 1 1 160px; }
+  .legend i { display: inline-block; width: 18px; height: 18px; border-radius: 5px; vertical-align: -3px; margin-right: 8px; border: 1px solid rgba(30, 38, 36, 0.15); }
+  .chunks { display: flex; flex-direction: column; }
+  .row { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 4px 12px; padding: 10px 0; border-bottom: 1px solid #E3D9C9; align-items: center; }
+  .row:last-child { border-bottom: 0; }
+  .row .label { font-weight: 800; }
+  .row .hash { font-size: 20px; font-weight: 800; font-variant-numeric: tabular-nums; letter-spacing: 0.02em; }
+  .row .hash small { display: block; font-size: 16px; font-weight: 600; color: #4A5551; letter-spacing: 0; }
+  .v { display: flex; gap: 8px; align-items: center; font-weight: 800; font-size: 20px; }
+  .v svg { width: 24px; height: 24px; }
+  .row.total { background: #F1EADF; border-radius: 10px; padding: 10px; border-bottom: 0; margin-bottom: 6px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>ebb determinism</h1>
+  <p class="muted">Builds the 9 chunks of the starter island three ways: on the main thread, on one worker, and on the full worker pool. The same seed must give the same island every time, on every device. <a href="./">All tools</a></p>
+  <div class="card controls">
+    <label for="seed">World seed</label>
+    <input id="seed" type="number" min="0" max="4294967295" step="1" value="1" inputmode="numeric">
+    <button id="go" type="button">Build the island</button>
+  </div>
+  <div class="card"><div id="verdict">Starting</div><p class="muted" id="detail"></p></div>
+  <div class="card">
+    <h2>The three runs</h2>
+    <div class="runs" id="runs"></div>
+  </div>
+  <div class="card">
+    <h2>The island from above</h2>
+    <div class="map-wrap">
+      <canvas id="map" width="384" height="384" aria-label="Top-down map of the starter island"></canvas>
+      <div class="legend">
+        <span><i style="background:#7FA463"></i>Grass</span>
+        <span><i style="background:#DCC9A0"></i>Sand</span>
+        <span><i style="background:#9A958C"></i>Rock</span>
+        <span><i style="background:#8C6A48"></i>Soil</span>
+        <span><i style="background:#5A9AAE"></i>Water, darker where deeper</span>
+        <span class="muted" id="mapNote">96 m across, the 3 by 3 starter chunks. Thin lines mark every meter of height.</span>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <h2>Each chunk</h2>
+    <div class="chunks" id="chunks"></div>
+  </div>
+  <p class="muted">Open this page through the local server (double-click play.cmd, then go to tools/determinism.html). Workers do not load from a file on disk.</p>
+</main>
+<script type="module" src="./determinism.js"></script>
+</body>
+</html>

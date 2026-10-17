@@ -1,25 +1,29 @@
 // @ts-check
-// Starts ebb on a canvas: GPU, tier, camera, frame graph, input and the frame loop.
+// Starts ebb on a canvas: GPU, tier, camera, terrain, frame graph, input, history and the frame loop.
 // Shared by index.html (through main.js) and the tools pages, so they measure the same code.
 
 import { initGpu, onDeviceLost } from './core/gpu.js';
 import * as clock from './core/clock.js';
 import { flushDeferred, emitDeferred } from './core/events.js';
-import { update as updateStore } from './core/store.js';
+import { get as getStore, update as updateStore } from './core/store.js';
 import { loadRecipe } from './core/recipes.js';
+import { subSeed } from './core/rng.js';
 import { pickTier } from './render/quality.js';
 import { createOrbitCamera } from './render/camera.js';
 import { createFrameGraph } from './render/frame-graph.js';
 import { createFrameUniformWriter } from './render/frame-uniforms.js';
-import { createPlaceholderIslandPass, placeholderGroundProbe } from './render/passes/placeholder-island.js';
+import { createTerrainPass } from './render/passes/terrain.js';
 import { createSkyPlainPass } from './render/passes/sky-plain.js';
 import { createTonemapPass } from './render/passes/post/tonemap.js';
-import { onAction } from './input/actions.js';
+import { createLiveSim } from './sim/live-sim.js';
+import { createTerrain } from './world/terrain/index.js';
+import { onAction, history } from './input/actions.js';
 import { attachDesktopInput } from './input/desktop.js';
 import { attachTouchInput } from './input/touch.js';
 
 /**
- * @typedef {{ ok: true, tier: string, tierReasons: string[], adapterInfo: GPUAdapterInfo | null, features: string[], stop: () => void }
+ * @typedef {{ ok: true, tier: string, tierReasons: string[], adapterInfo: GPUAdapterInfo | null, features: string[], stop: () => void,
+ *   terrain: import('./world/terrain/index.js').Terrain }
  *   | { ok: false, reason: 'missing'|'no-adapter'|'device-failed' }} StartResult
  */
 
@@ -37,19 +41,36 @@ export async function startApp(canvas, hooks = {}) {
   const seed = Number.parseInt(params.get('seed') ?? '1', 10) >>> 0;
   updateStore('meta', (m) => { m.seed = seed; });
 
-  const [{ tier, settings: tierSettings, reasons }, camRecipe, skyRecipe, islandRecipe] = await Promise.all([
+  const [{ tier, settings: tierSettings, reasons }, camRecipe, skyRecipe, terrainRecipe] = await Promise.all([
     pickTier(gpu.adapter),
     loadRecipe('world/camera'),
     loadRecipe('world/sky'),
-    loadRecipe('world/placeholder-island'),
+    loadRecipe('world/terrain'),
   ]);
+  const landRecipe = await loadRecipe(terrainRecipe.starter.land);
   updateStore('settings', (s) => { s.quality = tier; });
+  const rb = terrainRecipe.brush;
+
+  // Tool state for the tool bar (ui/tools.js reads it; actions below change it).
+  updateStore('tools', (t) => t ?? {
+    tool: null, sculptMode: 'raise', paintLayer: 'grass',
+    size: rb.radiusDefault, strength: rb.strengthDefault, sizeRange: rb.radiusRange,
+  });
+  const syncHistory = () => updateStore('history', () => ({ canUndo: history.canUndo(), canRedo: history.canRedo() }));
+  history.setBudget((terrainRecipe.undoBudgetMB[tier] ?? 12) * 1024 * 1024);
+  const unHistory = history.onChange(syncHistory);
+  syncHistory();
+
+  const terrain = await createTerrain(gpu, { seed: subSeed(seed, 'terrain'), recipe: terrainRecipe, land: landRecipe });
+  history.setApplier('terrain', (cmd, dir) => terrain.applyTiles(dir === 'undo' ? cmd.before : cmd.after));
+  const sim = createLiveSim();
+  sim.addSystem(terrain);
 
   const camera = createOrbitCamera(camRecipe);
-  camera.setGroundProbe(placeholderGroundProbe(islandRecipe));
+  camera.setGroundProbe((x, z) => terrain.sampleHeight(x, z));
 
   const graph = createFrameGraph(gpu, [
-    createPlaceholderIslandPass({ seed }),
+    createTerrainPass({ terrain, recipe: terrainRecipe, seed: subSeed(seed, 'terrain-look'), getEye: () => camera.eye, tier }),
     createSkyPlainPass(),
     createTonemapPass(),
   ], { tier });
@@ -84,14 +105,103 @@ export async function startApp(canvas, hooks = {}) {
   });
   observer.observe(canvas);
 
+  // ---- tools and strokes ----
+  const pointer = { x: 0, y: 0, inside: false };
+  let stroking = false;
+  let wantStroke = false;
+  /** @type {null | 'undo' | 'redo'} */
+  let queuedHistory = null;
+
+  const tools = () => getStore('tools');
+  /** @returns {import('./world/terrain/brushes.js').Brush} */
+  function currentBrush() {
+    const t = tools();
+    const kind = t.tool === 'sculpt' ? t.sculptMode : t.tool === 'smooth' ? 'smooth' : 'paint';
+    return { kind, radius: t.size, strength: t.strength, layer: t.paintLayer };
+  }
+  /** @param {number} x @param {number} y */
+  function groundAt(x, y) {
+    const r = camera.ray(x, y);
+    const hit = terrain.raycast(r.o, r.d);
+    if (!hit.hit) return null;
+    const ob = terrain.openBounds();
+    const [px, , pz] = hit.point;
+    if (px < ob.openMin[0] || px > ob.openMax[0] || pz < ob.openMin[1] || pz > ob.openMax[1]) return null;
+    return hit.point;
+  }
+  /** @param {number} size */
+  const clampSize = (size) => Math.min(rb.radiusRange[1], Math.max(rb.radiusRange[0], size));
+
+  function finishStroke() {
+    if (!stroking) { wantStroke = false; return; }
+    stroking = false;
+    wantStroke = false;
+    terrain.endStroke().then((cmd) => { if (cmd) history.push(cmd); });
+  }
+
+  /** @param {'undo'|'redo'} dir */
+  function runHistory(dir) {
+    const ok = dir === 'undo' ? history.undo() : history.redo();
+    queuedHistory = ok ? null : dir; // busy: retry once the stroke has settled
+  }
+
   const unAction = onAction((a) => {
-    if (a.type === 'camera.orbit') camera.orbit(a.dx, a.dy);
-    else if (a.type === 'camera.pan') camera.pan(a.dx, a.dy);
-    else if (a.type === 'camera.zoom') camera.zoom(a.factor, a.x, a.y);
-    else if (a.type === 'camera.twist') camera.twist(a.angle);
+    switch (a.type) {
+      case 'camera.orbit': camera.orbit(a.dx, a.dy); break;
+      case 'camera.pan': camera.pan(a.dx, a.dy); break;
+      case 'camera.zoom': camera.zoom(a.factor, a.x, a.y); break;
+      case 'camera.twist': camera.twist(a.angle); break;
+      case 'tool.select': {
+        const next = a.toolId && a.toolId !== tools().tool ? a.toolId : null;
+        if (!next) finishStroke();
+        updateStore('tools', (t) => { t.tool = next; });
+        emitDeferred('tool:selected', { toolId: next });
+        break;
+      }
+      case 'brush.set':
+        updateStore('tools', (t) => {
+          Object.assign(t, a.patch);
+          t.size = clampSize(t.size);
+          t.strength = Math.min(1, Math.max(0, t.strength));
+        });
+        break;
+      case 'brush.resize':
+        updateStore('tools', (t) => { t.size = clampSize(t.size * a.factor); });
+        break;
+      case 'tool.hover':
+        pointer.x = a.x;
+        pointer.y = a.y;
+        pointer.inside = a.inside;
+        break;
+      case 'tool.begin':
+      case 'tool.move': {
+        if (!tools().tool) break;
+        if (a.type === 'tool.begin') wantStroke = true;
+        if (!wantStroke) break;
+        const p = groundAt(a.x, a.y);
+        if (!p) break;
+        if (!stroking) stroking = terrain.beginStroke(currentBrush(), p, a.pressure);
+        else terrain.strokeTo(p, a.pressure);
+        break;
+      }
+      case 'tool.end':
+      case 'tool.cancel':
+        finishStroke();
+        break;
+      case 'history.undo': if (!stroking) runHistory('undo'); break;
+      case 'history.redo': if (!stroking) runHistory('redo'); break;
+    }
   });
-  const detachDesktop = attachDesktopInput(canvas, camRecipe);
+  const detachDesktop = attachDesktopInput(canvas, camRecipe, rb);
   const detachTouch = attachTouchInput(canvas, camRecipe);
+
+  /** Keep the brush ring on the ground under the pointer, even as the camera moves. */
+  function updateRing() {
+    const t = tools();
+    const p = t.tool && pointer.inside ? groundAt(pointer.x, pointer.y) : null;
+    if (p) terrain.setRing({ x: p[0], z: p[2], radius: t.size, visible: true });
+    else terrain.setRing({ visible: false });
+  }
 
   let running = true;
   let frameIndex = 0;
@@ -117,6 +227,8 @@ export async function startApp(canvas, hooks = {}) {
     const t = clock.advance(realDt);
     camera.setViewport(cssW, cssH);
     camera.update(realDt);
+    updateRing();
+    if (queuedHistory && !terrain.isBusy()) runHistory(queuedHistory);
 
     const display = clock.display();
     const season = clock.seasonOf(display);
@@ -138,10 +250,15 @@ export async function startApp(canvas, hooks = {}) {
     }));
     prevViewProj.set(camera.viewProj);
 
+    /** @type {import('./sim/live-sim.js').FrameInfo} */
+    const info = { dt: t.dt, realDt, worldT: t.worldT, animT: t.animT, displayT: display, tier };
+    sim.update(info);
     const encoder = gpu.device.createCommandEncoder({ label: 'frame' });
+    sim.encode(encoder, info);
     graph.render(encoder);
     gpu.device.queue.submit([encoder.finish()]);
     graph.afterSubmit();
+    sim.afterSubmit();
 
     if (frameIndex > 0) emitDeferred('render:frame-ended', { frameMs, cpuMs: performance.now() - cpuStart, frameIndex });
     flushDeferred();
@@ -157,9 +274,11 @@ export async function startApp(canvas, hooks = {}) {
     cancelAnimationFrame(raf);
     observer.disconnect();
     unAction();
+    unHistory();
     detachDesktop();
     detachTouch();
     graph.dispose();
+    sim.dispose();
   }
 
   onDeviceLost((info) => {
@@ -176,6 +295,7 @@ export async function startApp(canvas, hooks = {}) {
     adapterInfo: gpu.adapter.info ?? null,
     features: [...gpu.features],
     stop,
+    terrain,
   };
 }
 
