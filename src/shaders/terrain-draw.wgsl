@@ -114,7 +114,7 @@ fn fsLand(in: VsOut) -> FsOut {
   var albedo = td.albedoGrass * wf.x + td.albedoSand * wf.y + td.albedoRock * wf.z + td.albedoSoil * wf.w;
   albedo *= 1.0 + td.variation * (valueNoise2(p * 3.1 + vec2f(41.0, 17.0), td.seed + 4u) - 0.5);
   // Scanned detail (docs/22) takes over once loaded and near enough; the flat look stays the fallback.
-  let gd = groundDetail(xz, n, w, distance(in.world, frame.cameraPos));
+  let gd = groundDetail(in.world, n, w, distance(in.world, frame.cameraPos));
   albedo = mix(albedo, gd.albedo, gd.amount);
   // Wet ground is darker: below the waterline always, and everywhere while it rains (docs/06).
   let wet = max(1.0 - smoothstep(-0.05, 0.25, y), light.weather.w);

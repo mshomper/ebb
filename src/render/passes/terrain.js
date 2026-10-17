@@ -9,7 +9,7 @@ import { LODS, MAX_CHUNKS, createIndexBuffers, packChunks } from '../terrain-mes
 /** @typedef {import('../frame-graph.js').PassContext} PassContext */
 
 const DRAW_BYTES = 160;
-const GROUND_BYTES = 112;
+const GROUND_BYTES = 128;
 const DEG = Math.PI / 180;
 
 /**
@@ -42,9 +42,14 @@ export function createTerrainPass(opts) {
       const l = d.layers[id];
       gf.set([l.heightAmplitudeM, l.normalStrength, l.roughness[0], l.roughness[1]], i * 4);
     });
-    gf[16] = 1 / d.tileMeters; gf[17] = d.heightInfluence; gf[18] = d.blendDepth; gf[19] = 0;
+    gf[16] = 0; gf[17] = d.heightInfluence; gf[18] = d.blendDepth; gf[19] = 0;
     gf[20] = d.sunTerminator[0]; gf[21] = d.sunTerminator[1]; gf[22] = d.f0; gf[23] = opts.groundTier.detailFadeMeters;
     gf[24] = opts.groundTier.specular === 'full' ? 2 : opts.groundTier.specular === 'sun' ? 1 : 0;
+    // Cliff projection (triplanar) on steep slopes, per tier; cos of the from and full slope angles.
+    gf[25] = opts.groundTier.triplanar ? 1 : 0;
+    gf[26] = Math.cos(d.steepDeg[0] * DEG); gf[27] = Math.cos(d.steepDeg[1] * DEG);
+    // Each material repeats at its own tile size (rock finer than grass and sand).
+    ['grass', 'sand', 'rock', 'soil'].forEach((id, i) => { gf[28 + i] = 1 / (d.layers[id].tileMeters ?? d.tileMeters); });
   }
 
   function packStatic() {
