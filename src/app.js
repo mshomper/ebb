@@ -9,7 +9,7 @@ import { flushDeferred, emitDeferred, on } from './core/events.js';
 import { get as getStore, update as updateStore } from './core/store.js';
 import { loadRecipe } from './core/recipes.js';
 import { subSeed } from './core/rng.js';
-import { pickTier } from './render/quality.js';
+import { pickTier, probeResult, settingsFor } from './render/quality.js';
 import { createOrbitCamera } from './render/camera.js';
 import { createFrameGraph } from './render/frame-graph.js';
 import { createFrameUniformWriter } from './render/frame-uniforms.js';
@@ -59,7 +59,8 @@ export async function startApp(canvas, hooks = {}) {
   const seed = Number.parseInt(params.get('seed') ?? '1', 10) >>> 0;
   updateStore('meta', (m) => { m.seed = seed; });
 
-  const [{ tier, settings: tierSettings, reasons }, camRecipe, skyRecipe, terrainRecipe, waterRecipe, seasonsRecipe, exposureRecipe, shadowRecipe, postRecipe, ...paletteRecipes] = await Promise.all([
+  // `tier` and `tierSettings` may change once, if the startup probe steps ultra down to high.
+  let [{ tier, settings: tierSettings, reasons, probe }, camRecipe, skyRecipe, terrainRecipe, waterRecipe, seasonsRecipe, exposureRecipe, shadowRecipe, postRecipe, ...paletteRecipes] = await Promise.all([
     pickTier(gpu.adapter),
     loadRecipe('world/camera'),
     loadRecipe('world/sky'),
@@ -159,18 +160,21 @@ export async function startApp(canvas, hooks = {}) {
   const bloom = createBloomPass({ levels: tierSettings.bloomLevels, mix: postRecipe.bloom.mix, radius: postRecipe.bloom.radius, karis: postRecipe.bloom.karis });
   const tonemap = createTonemapPass({ bloom, luts: baker.views, recipe: postRecipe });
 
+  const terrainPass = createTerrainPass({
+    terrain, recipe: terrainRecipe, seed: subSeed(seed, 'terrain-look'), getEye: () => camera.eye, tier,
+    ground: groundDetail, groundTier: tierSettings.ground, getTide: () => water.tide, lodDistances: tierSettings.lodDistances,
+    water: { depthTextures: water.sim.depthTextures, current: () => water.sim.current },
+  });
+  const waterPass = createWaterPass({
+    water, terrain, atmosphere, recipe: waterRecipe, seaExtent: terrainRecipe.sea.extent, getTime: () => clock.animT(),
+    seabed: { y: landRecipe.seabedDepth, albedo: terrainRecipe.materials.albedoSand.map((/** @type {number} */ a) => a * terrainRecipe.materials.wetDarkening),
+      wetDarkening: terrainRecipe.materials.wetDarkening },
+    detailFadeM: tierSettings.waterDetailFadeM,
+  });
   const graph = createFrameGraph(gpu, [
     shadowPass,
-    createTerrainPass({
-      terrain, recipe: terrainRecipe, seed: subSeed(seed, 'terrain-look'), getEye: () => camera.eye, tier,
-      ground: groundDetail, groundTier: tierSettings.ground, getTide: () => water.tide,
-      water: { depthTextures: water.sim.depthTextures, current: () => water.sim.current },
-    }),
-    createWaterPass({
-      water, terrain, atmosphere, recipe: waterRecipe, seaExtent: terrainRecipe.sea.extent, getTime: () => clock.animT(),
-      seabed: { y: landRecipe.seabedDepth, albedo: terrainRecipe.materials.albedoSand.map((/** @type {number} */ a) => a * terrainRecipe.materials.wetDarkening),
-        wetDarkening: terrainRecipe.materials.wetDarkening },
-    }),
+    terrainPass,
+    waterPass,
     createSkyPass(atmosphere, skyRecipe),
     exposure,
     bloom,
@@ -186,8 +190,10 @@ export async function startApp(canvas, hooks = {}) {
   let cssH = 1;
   let devW = 1;
   let devH = 1;
-  const observer = new ResizeObserver((entries) => {
-    const e = entries[0];
+  /** @type {ResizeObserverEntry | null} */ let lastEntry = null;
+  /** @param {ResizeObserverEntry} e */
+  function sizeCanvas(e) {
+    lastEntry = e;
     cssW = e.contentRect.width;
     cssH = e.contentRect.height;
     const dpr = Math.min(window.devicePixelRatio || 1, tierSettings.maxDpr);
@@ -202,8 +208,46 @@ export async function startApp(canvas, hooks = {}) {
     }
     devW = Math.max(1, Math.round(w));
     devH = Math.max(1, Math.round(h));
-  });
+  }
+  const observer = new ResizeObserver((entries) => sizeCanvas(entries[0]));
   observer.observe(canvas);
+
+  // Startup probe (docs/19): a device trying ultra measures GPU time for a couple of seconds once
+  // the ground detail has faded in, then keeps ultra or steps back to high, with no reload.
+  /** @param {any} t tier name */
+  function applyTier(t) {
+    tier = t;
+    tierSettings = settingsFor(t);
+    terrainPass.setTier(tierSettings);
+    waterPass.setDetailFade(tierSettings.waterDetailFadeM);
+    if (lastEntry) sizeCanvas(lastEntry);
+    updateStore('settings', (s) => { s.quality = t; });
+  }
+  /** @type {number[]} */ const probeMs = [];
+  let probeFrames = 0;
+  let probeStart = 0;
+  let unProbe = () => {};
+  if (probe) {
+    if (!graph.timingSupported) {
+      // Without GPU timestamps there is nothing to measure; stay on the safe side.
+      applyTier(probeResult(false, probe.fallback));
+    } else {
+      unProbe = on('render:timings', (/** @type {{ passes: { ms: number }[], gpu: boolean }} */ p) => {
+        if (!probe || groundDetail.fade < 1) return;
+        if (++probeFrames < probe.settleFrames) return;
+        if (!probeStart) probeStart = performance.now();
+        probeMs.push(p.passes.reduce((sum, x) => sum + x.ms, 0));
+        if (performance.now() - probeStart < probe.seconds * 1000) return;
+        const sorted = probeMs.slice().sort((a, b) => a - b);
+        const p95 = sorted[Math.floor(sorted.length * 0.95)] ?? 0;
+        const passed = p95 <= probe.maxMs;
+        console.info(`quality probe: GPU p95 ${p95.toFixed(2)} ms over ${sorted.length} frames, ${passed ? 'keeping' : 'stepping down from'} ${tier}`);
+        applyTier(probeResult(passed, probe.fallback));
+        probe = null;
+        unProbe();
+      });
+    }
+  }
 
   // ---- tools and strokes ----
   const pointer = { x: 0, y: 0, inside: false };
@@ -441,7 +485,7 @@ export async function startApp(canvas, hooks = {}) {
       ev100,
       sunDir: day.sm.sunDir, sunIlluminance: day.sunIlluminance,
       moonDir: day.sm.moonDir, moonIlluminance: day.moonIlluminance,
-      tierFlags: tier === 'high' ? 2 : tier === 'medium' ? 1 : 0,
+      tierFlags: tier === 'ultra' || tier === 'high' ? 2 : tier === 'medium' ? 1 : 0,
       frameIndex,
     }));
     prevViewProj.set(camera.viewProj);
@@ -488,6 +532,7 @@ export async function startApp(canvas, hooks = {}) {
     unHistory();
     unHour();
     unStroke();
+    unProbe();
     detachDesktop();
     detachTouch();
     graph.dispose();
@@ -506,7 +551,7 @@ export async function startApp(canvas, hooks = {}) {
   });
 
   return {
-    ok: true, tier, tierReasons: reasons,
+    ok: true, get tier() { return tier; }, tierReasons: reasons,
     adapterInfo: gpu.adapter.info ?? null,
     features: [...gpu.features],
     stop,

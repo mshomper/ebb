@@ -17,7 +17,7 @@ const TILING_MODES = { grid: 0, hex: 1, two: 2 };
 
 /**
  * @param {{ terrain: import('../../world/terrain/index.js').Terrain, recipe: any, seed: number,
- *   getEye: () => ArrayLike<number>, tier: string, getTide?: () => number,
+ *   getEye: () => ArrayLike<number>, tier: string, getTide?: () => number, lodDistances?: number[],
  *   water: { depthTextures: GPUTexture[], current: () => number },
  *   ground: { views: { a: GPUTextureView, b: GPUTextureView }, sampler: GPUSampler, version: number, fade: number },
  *   groundTier: any }} opts  ground: src/render/ground-detail.js; groundTier: the tier's `ground` block
@@ -34,6 +34,8 @@ export function createTerrainPass(opts) {
   const u = new Uint32Array(draw);
   const chunkData = new Float32Array(MAX_CHUNKS * 4);
   const maxQuads = opts.tier === 'low' ? recipe.render.lowTierMaxQuads : LODS[0];
+  /** Mesh LOD switch distances (m): the tier's, else the terrain recipe's. @type {number[]} */
+  let lodDistances = opts.lodDistances ?? recipe.render.lodDistances;
   /** @type {GPUBuffer} */ let groundBuffer;
   /** @type {() => void} */ let makeGroup = () => {};
   let groundVersion = -1;
@@ -80,6 +82,15 @@ export function createTerrainPass(opts) {
 
   return {
     name: 'opaque',
+
+    /**
+     * Apply a quality tier's distances without rebuilding (the startup probe may step down).
+     * @param {{ lodDistances?: number[], ground: { detailFadeMeters: number } }} t
+     */
+    setTier(t) {
+      lodDistances = t.lodDistances ?? recipe.render.lodDistances;
+      gf[23] = t.ground.detailFadeMeters;
+    },
     reads: [],
     writes: ['hdr', 'depth'],
     enabled: () => true,
@@ -166,7 +177,7 @@ export function createTerrainPass(opts) {
         for (let cx = CHUNK_MIN; cx < CHUNK_MIN + 6; cx++) {
           if (terrain.chunkState(cx, cz) !== 'open') continue;
           const d = Math.hypot(eye[0] - cx * CHUNK_SIZE, eye[1] - 2, eye[2] - cz * CHUNK_SIZE) - CHUNK_SIZE * 0.5;
-          let lod = d < recipe.render.lodDistances[0] ? 0 : d < recipe.render.lodDistances[1] ? 1 : 2;
+          let lod = d < lodDistances[0] ? 0 : d < lodDistances[1] ? 1 : 2;
           while (LODS[lod] > maxQuads && lod < 2) lod++;
           byLod[lod].push(cx, cz);
         }

@@ -1,7 +1,23 @@
 {
   "type": "quality-tiers",
   "version": 1,
+  "note": "Quality tiers (docs/19). ultra is for strong desktop GPUs: picked when a discrete GPU passes the startup probe (GPU p95 under probeMaxMs while the island fades in), else high. lodDistances: terrain mesh LOD switch distances (m); waterDetailFadeM: ripples and glints calm down by this distance.",
+  "probe": { "seconds": 2, "settleFrames": 30 },
   "tiers": {
+    "ultra": {
+      "targetFps": 60, "calmFps": 30, "gpuBudgetMs": 12, "probeMaxMs": 4,
+      "renderScale": 1.0, "renderScaleMin": 0.67,
+      "maxDpr": 2, "maxMegapixels": 8.3,
+      "shadows": { "cascades": 3, "size": 4096, "filter": "pcss" },
+      "ao": "full",
+      "skyViewLut": "full", "aerialVolume": 32,
+      "waterReach": 60, "waterStep": 0.008333,
+      "grassDensity": 1.0, "grassDistance": 60, "foliageLodScale": 1.5,
+      "liveCreatures": 120, "boids": 4096, "particlesMax": 20000,
+      "lights": 64, "bloomLevels": 6, "workerMax": 14,
+      "lodDistances": [120, 240], "waterDetailFadeM": 250,
+      "ground": { "mapSize": 1024, "hexTiling": true, "triplanar": true, "specular": "full", "puddles": true, "anisotropy": 16, "detailFadeMeters": 260 }
+    },
     "high": {
       "targetFps": 60, "calmFps": 30, "gpuBudgetMs": 12,
       "renderScale": 1.0, "renderScaleMin": 0.67,
@@ -13,7 +29,8 @@
       "grassDensity": 1.0, "grassDistance": 40, "foliageLodScale": 1.0,
       "liveCreatures": 120, "boids": 4096, "particlesMax": 20000,
       "lights": 64, "bloomLevels": 6, "workerMax": 14,
-      "ground": { "mapSize": 1024, "hexTiling": true, "triplanar": true, "specular": "full", "puddles": true, "anisotropy": 16, "detailFadeMeters": 80 }
+      "lodDistances": [45, 95], "waterDetailFadeM": 140,
+      "ground": { "mapSize": 1024, "hexTiling": true, "triplanar": true, "specular": "full", "puddles": true, "anisotropy": 16, "detailFadeMeters": 140 }
     },
     "medium": {
       "targetFps": 60, "calmFps": 30, "gpuBudgetMs": 13,
@@ -26,6 +43,7 @@
       "grassDensity": 0.6, "grassDistance": 30, "foliageLodScale": 0.75,
       "liveCreatures": 80, "boids": 2048, "particlesMax": 10000,
       "lights": 32, "bloomLevels": 5, "workerMax": 14,
+      "lodDistances": [45, 95], "waterDetailFadeM": 120,
       "ground": { "mapSize": 1024, "hexTiling": true, "triplanar": true, "specular": "full", "puddles": true, "anisotropy": 8, "detailFadeMeters": 60 }
     },
     "low": {
@@ -39,6 +57,7 @@
       "grassDensity": 0.35, "grassDistance": 20, "foliageLodScale": 0.5,
       "liveCreatures": 50, "boids": 1024, "particlesMax": 4000,
       "lights": 8, "bloomLevels": 4, "workerMax": 4,
+      "lodDistances": [45, 95], "waterDetailFadeM": 80,
       "ground": { "mapSize": 512, "hexTiling": false, "triplanar": false, "specular": "sun", "puddles": false, "anisotropy": 4, "detailFadeMeters": 35 }
     }
   }

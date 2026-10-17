@@ -1,46 +1,79 @@
 // @ts-check
-// Quality tier pick: high, medium or low (docs/19, heuristic pick).
-// M0 runs the heuristic and remembers it per adapter and screen; the 2 s probe arrives with M1 S8.
+// Quality tier pick: ultra, high, medium or low (docs/19). A heuristic picks high, medium or low
+// from the adapter and screen; a discrete desktop GPU starts on ultra and keeps it only if the
+// startup probe passes (the app measures GPU time while the island fades in and calls
+// probeResult). The pick is remembered per adapter and screen.
 
 import { loadRecipe } from '../core/recipes.js';
 
 const STORAGE_KEY = 'ebb.quality';
 /** @type {Tier[]} */
-const ORDER = ['low', 'medium', 'high'];
+const ORDER = ['low', 'medium', 'high', 'ultra'];
 
-/** @typedef {'high'|'medium'|'low'} Tier */
+/** @typedef {'ultra'|'high'|'medium'|'low'} Tier */
 
 /** @type {Tier} */
 let current = 'medium';
 /** @type {Record<Tier, any> | null} */
 let table = null;
 
+let identityNow = '';
+
 /**
  * Pick a tier for this device, using a remembered pick when the adapter and screen match.
+ * `probe` is set when the pick still has to prove itself: the app measures GPU p95 over
+ * `seconds` (after `settleFrames`) and calls probeResult.
  * @param {GPUAdapter} adapter
- * @returns {Promise<{tier: Tier, settings: any, reasons: string[]}>}
+ * @returns {Promise<{tier: Tier, settings: any, reasons: string[], probe: null | { maxMs: number, seconds: number, settleFrames: number, fallback: Tier }}>}
  */
 export async function pickTier(adapter) {
-  table = (await loadRecipe('quality-tiers')).tiers;
+  const recipe = await loadRecipe('quality-tiers');
+  table = recipe.tiers;
   const identity = adapterIdentity(adapter);
+  identityNow = identity;
   const forced = new URLSearchParams(location.search).get('tier');
   /** @type {string[]} */
   const reasons = [];
+  let probe = null;
 
   if (forced && ORDER.includes(/** @type {Tier} */ (forced))) {
     current = /** @type {Tier} */ (forced);
     reasons.push(`forced by ?tier=${forced}`);
   } else {
     const saved = readSaved();
-    if (saved && saved.identity === identity && ORDER.includes(saved.tier)) {
+    if (saved && saved.identity === identity && ORDER.includes(saved.tier) && saved.probed) {
       current = saved.tier;
       reasons.push('remembered for this device');
     } else {
       current = heuristic(adapter, reasons);
-      writeSaved({ identity, tier: current });
+      if (current === 'high') {
+        // A discrete desktop GPU tries ultra first; the probe keeps it or steps back to high.
+        current = 'ultra';
+        reasons.push('trying ultra: measuring the GPU while the island fades in');
+        probe = { maxMs: /** @type {any} */ (table).ultra.probeMaxMs, seconds: recipe.probe.seconds, settleFrames: recipe.probe.settleFrames, fallback: /** @type {Tier} */ ('high') };
+        writeSaved({ identity, tier: 'high', probed: false });
+      } else {
+        writeSaved({ identity, tier: current, probed: true });
+      }
     }
   }
-  return { tier: current, settings: /** @type {any} */ (table)[current], reasons };
+  return { tier: current, settings: /** @type {any} */ (table)[current], reasons, probe };
+}
+
+/**
+ * The startup probe's verdict: keep the tier, or step to `fallback`. Remembered for this device.
+ * @param {boolean} passed @param {Tier} fallback
+ * @returns {Tier} the tier to use from now on
+ */
+export function probeResult(passed, fallback) {
+  if (!passed) current = fallback;
+  writeSaved({ identity: identityNow, tier: current, probed: true });
+  return current;
+}
+
+/** Settings for any tier (after pickTier). @param {Tier} t */
+export function settingsFor(t) {
+  return table ? table[t] : null;
 }
 
 /** @returns {Tier} */
@@ -95,7 +128,7 @@ function heuristic(adapter, reasons) {
     pick -= 1;
     reasons.push('under 4 GB memory');
   }
-  return ORDER[Math.max(0, Math.min(2, pick))];
+  return ORDER[Math.max(0, Math.min(2, pick))]; // ultra is never a guess: only the probe grants it
 }
 
 /** @param {GPUAdapter} adapter */
@@ -112,7 +145,7 @@ function readSaved() {
   }
 }
 
-/** @param {{identity: string, tier: Tier}} v */
+/** @param {{identity: string, tier: Tier, probed: boolean}} v */
 function writeSaved(v) {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(v));

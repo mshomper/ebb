@@ -38,7 +38,8 @@ struct WaterDraw {
   seabed: vec4f,              // rgb wet sand albedo for the sea floor beyond the terrain, w wet darkening
   filmDepth: vec4f,            // xy depth range (m) over which a broken film becomes a coherent surface
   debugView: f32,             // ?waterdbg=1 sea or grid, 2 reflection, 3 transmitted, 4 Fresnel/path/depth
-  _q0: f32, _q1: f32, _q2: f32,
+  detailFadeM: f32,           // ripples calm and move into roughness by this distance (quality tier)
+  _q1: f32, _q2: f32,
   riffle: vec4f,              // white water: x, y speed range (m/s) it fades in over, z depth (m) it is gone by, w coverage
   riffle2: vec4f,             // x streak size (m), y white-water albedo
 };
@@ -249,7 +250,7 @@ fn fsWater(in: VsOut) -> FsOut {
   // ---- surface normal ----
   // Ripples calm down in very thin water and with distance (their slope variance moves into
   // roughness instead, so far water never sparkles or crawls).
-  let far = clamp(viewDist / 120.0, 0.0, 1.0);
+  let far = clamp(viewDist / wd.detailFadeM, 0.0, 1.0);
   let shallow = smoothstep(0.0, 0.06, d);
   // Flow map: two phases half a cycle apart, each advected by the velocity, cross-faded.
   let period = 2.0;
