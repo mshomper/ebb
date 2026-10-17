@@ -27,6 +27,8 @@ import { createDaylight } from './render/daylight.js';
 import { createLiveSim } from './sim/live-sim.js';
 import { initialWorldState, makeEnv, runHour } from './sim/tick.js';
 import { createTerrain } from './world/terrain/index.js';
+import { createWater } from './world/water/index.js';
+import { createWaterPass } from './render/passes/water.js';
 import { onAction, history } from './input/actions.js';
 import { attachDesktopInput } from './input/desktop.js';
 import { attachTouchInput } from './input/touch.js';
@@ -34,6 +36,7 @@ import { attachTouchInput } from './input/touch.js';
 /**
  * @typedef {{ ok: true, tier: string, tierReasons: string[], adapterInfo: GPUAdapterInfo | null, features: string[], stop: () => void,
  *   terrain: import('./world/terrain/index.js').Terrain,
+ *   water: import('./world/water/index.js').Water,
  *   palette: { list: () => { id: string, name: string }[], current: () => any, apply: (json: any, fadeS?: number) => void },
  *   pickColor: (cssX: number, cssY: number) => Promise<string> }
  *   | { ok: false, reason: 'missing'|'no-adapter'|'device-failed' }} StartResult
@@ -56,11 +59,12 @@ export async function startApp(canvas, hooks = {}) {
   const seed = Number.parseInt(params.get('seed') ?? '1', 10) >>> 0;
   updateStore('meta', (m) => { m.seed = seed; });
 
-  const [{ tier, settings: tierSettings, reasons }, camRecipe, skyRecipe, terrainRecipe, seasonsRecipe, exposureRecipe, shadowRecipe, postRecipe, ...paletteRecipes] = await Promise.all([
+  const [{ tier, settings: tierSettings, reasons }, camRecipe, skyRecipe, terrainRecipe, waterRecipe, seasonsRecipe, exposureRecipe, shadowRecipe, postRecipe, ...paletteRecipes] = await Promise.all([
     pickTier(gpu.adapter),
     loadRecipe('world/camera'),
     loadRecipe('world/sky'),
     loadRecipe('world/terrain'),
+    loadRecipe('world/water'),
     loadRecipe('world/seasons'),
     loadRecipe('world/exposure'),
     loadRecipe('world/shadows'),
@@ -88,12 +92,18 @@ export async function startApp(canvas, hooks = {}) {
   // The world clock and the shared hourly tick (weather, seasons). A new world starts mid-morning.
   if (clock.worldT() === 0) clock.reset((skyRecipe.orbit.startHour ?? 10) * clock.SECONDS_PER_HOUR);
   updateStore('meta', (m) => { m.flow = clock.flow(); });
-  const env = makeEnv(seed, { seasons: seasonsRecipe, sky: skyRecipe.orbit });
+  const env = makeEnv(seed, { seasons: seasonsRecipe, sky: skyRecipe.orbit, water: waterRecipe });
   /** @type {import('./sim/live-sim.js').LiveWorld} */
   const world = { state: getStore('world') ?? runHour(initialWorldState(seed), clock.hourIndex(), env).state, env };
   updateStore('world', () => world.state);
   const sim = createLiveSim({ world });
   sim.addSystem(terrain);
+  // Live water (docs/07): the sea at the display tide, the starter spring, flowing over the terrain.
+  const water = await createWater(gpu, {
+    terrain, recipe: waterRecipe, land: landRecipe, terrainSeed: subSeed(seed, 'terrain'), tier,
+    displayHours: clock.display() / clock.SECONDS_PER_HOUR,
+  });
+  sim.addSystem(water);
   const unHour = on('clock:hour', (/** @type {{ hour: number }} */ p) => {
     for (const e of sim.hourlyTick(p.hour)) emitDeferred(e.name, e.payload);
     updateStore('world', () => world.state);
@@ -128,7 +138,13 @@ export async function startApp(canvas, hooks = {}) {
     shadowPass,
     createTerrainPass({
       terrain, recipe: terrainRecipe, seed: subSeed(seed, 'terrain-look'), getEye: () => camera.eye, tier,
-      ground: groundDetail, groundTier: tierSettings.ground,
+      ground: groundDetail, groundTier: tierSettings.ground, getTide: () => water.tide,
+      water: { depthTextures: water.sim.depthTextures, current: () => water.sim.current },
+    }),
+    createWaterPass({
+      water, terrain, atmosphere, recipe: waterRecipe, seaExtent: terrainRecipe.sea.extent, getTime: () => clock.animT(),
+      seabed: { y: landRecipe.seabedDepth, albedo: terrainRecipe.materials.albedoSand.map((/** @type {number} */ a) => a * terrainRecipe.materials.wetDarkening),
+        wetDarkening: terrainRecipe.materials.wetDarkening },
     }),
     createSkyPass(atmosphere, skyRecipe),
     exposure,
@@ -406,6 +422,7 @@ export async function startApp(canvas, hooks = {}) {
     features: [...gpu.features],
     stop,
     terrain,
+    water,
     /** Palette access for the palette lab (tools/palette-lab.html). */
     palette: {
       list: () => PALETTES.slice(),

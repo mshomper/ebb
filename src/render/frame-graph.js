@@ -121,11 +121,12 @@ export function createFrameGraph(gpu, passes, opts) {
     ctx.targets = {
       hdr: makeTexture(device, {
         label: 'hdr', size: [width, height], format: 'rgba16float',
-        usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING,
+        // COPY_SRC: the water pass copies the opaque scene for refraction (docs/04).
+        usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_SRC,
       }),
       depth: makeTexture(device, {
         label: 'depth', size: [width, height], format: 'depth32float',
-        usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING,
+        usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_SRC,
       }),
       normalId: makeTexture(device, {
         label: 'normalId', size: [width, height], format: 'rgb10a2unorm',

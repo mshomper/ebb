@@ -3,7 +3,7 @@
 // between LODs; heights come from the height texture in the vertex shader. Materials blend by
 // weight with a little height-style sharpening; steep slopes turn to rock and the shore band to sand.
 // Lighting is physical (lib-lighting: sun and moon with shadows, sky SH fill, aerial perspective);
-// no palette colors here (docs/05). The sea is still the flat M0 plane until the water step (S4).
+// no palette colors here (docs/05). Water and the sea are drawn by the water pass (water-draw.wgsl).
 
 // #include common
 // #include lib-hash
@@ -12,6 +12,7 @@
 // #include lib-terrain
 // #include lib-lighting
 // #include lib-ground
+// #include lib-water
 
 struct TerrainDraw {
   albedoGrass: vec3f, variation: f32,
@@ -23,7 +24,7 @@ struct TerrainDraw {
   ringCenter: vec2f, ringRadius: f32, ringHardness: f32,
   ringVisible: f32, ringWidth: f32, steepCosLow: f32, steepCosHigh: f32,
   beachLow: f32, beachHigh: f32, skirtDepth: f32, seaExtent: f32,
-  shallowDepth: f32, seed: u32, _p0: f32, _p1: f32,
+  shallowDepth: f32, seed: u32, tide: f32, _p1: f32,   // tide: sea level now (m)
 };
 
 @group(0) @binding(0) var<uniform> frame: FrameUniforms;
@@ -36,6 +37,23 @@ struct TerrainDraw {
 @group(2) @binding(6) var groundB: texture_2d_array<f32>;
 @group(2) @binding(7) var groundSampler: sampler;
 @group(2) @binding(8) var<uniform> ground: GroundDetail;
+@group(2) @binding(9) var waterDepth: texture_2d<f32>;   // live water depth (m), water-depth.wgsl
+
+// How soaked the ground is from live water nearby: 1 under water, fading out over about 0.75 m of
+// bank (capillary rise). The visual wetness pass (S4c) adds drying over time and the tide flats.
+fn wetFromWater(xz: vec2f) -> f32 {
+  let c = vec2i(floor(waterCellCoord(xz) + 0.5));
+  var w = 0.0;
+  for (var j = -1; j <= 1; j++) {
+    for (var i = -1; i <= 1; i++) {
+      let q = clamp(c + vec2i(i, j), vec2i(0), vec2i(WATER_CELLS - 1));
+      // A film of a few millimeters dampens; a centimeter or more soaks.
+      let wd = smoothstep(0.002, 0.012, textureLoad(waterDepth, q, 0).r);
+      w = max(w, wd * (1.0 - smoothstep(0.2, 0.75, distance(xz, waterCellCenter(q)))));
+    }
+  }
+  return w;
+}
 
 // Second target (normalId, rgb10a2unorm): octahedral world normal in RG, water flag in B,
 // outline group in A (0 none, 1 terrain, 2 structures and foliage, 3 creatures; docs/04, 05).
@@ -59,17 +77,6 @@ struct VsOut {
 fn vsLand(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> VsOut {
   var out: VsOut;
   out.world = terrainMeshVertex(heightTex, chunks[ii], vi, td.skirtDepth);
-  out.pos = frame.viewProj * vec4f(out.world, 1.0);
-  return out;
-}
-
-@vertex
-fn vsSea(@builtin(vertex_index) vi: u32) -> VsOut {
-  let c = array<vec2f, 6>(vec2f(-1.0, -1.0), vec2f(-1.0, 1.0), vec2f(1.0, -1.0),
-                          vec2f(1.0, -1.0), vec2f(-1.0, 1.0), vec2f(1.0, 1.0))[vi];
-  let xz = c * td.seaExtent * 0.5;
-  var out: VsOut;
-  out.world = vec3f(xz.x, 0.0, xz.y);
   out.pos = frame.viewProj * vec4f(out.world, 1.0);
   return out;
 }
@@ -118,31 +125,14 @@ fn fsLand(in: VsOut) -> FsOut {
   albedo = mix(albedo, gd.albedo, gd.amount);
   // Macro variation (docs/22): a slow tone drift near and far, so no repeat survives at a distance.
   albedo *= groundMacro(xz, td.seed);
-  // Wet ground is darker: below the waterline always, and everywhere while it rains (docs/06).
-  let wet = max(1.0 - smoothstep(-0.05, 0.25, y), light.weather.w);
+  // Wet ground is darker: below the tide line always, and everywhere while it rains (docs/06).
+  // Near live water (ponds, streams) the banks are soaked too. The visual wetness pass (S4c)
+  // adds drying over time, the spray line and the tide flats.
+  let wet = max(max(1.0 - smoothstep(td.tide - 0.05, td.tide + 0.25, y), light.weather.w), wetFromWater(xz));
   albedo *= mix(1.0, td.wetDarkening, wet);
 
   var color = shadeGround(albedo, in.world, n, gd.normal, gd.roughness, gd.cavity, in.pos, ground.terminator, ground.f0, ground.specMode);
   color = mix(color, td.ringColor, ringAlpha(xz));
   // normalId keeps the mesh normal, so pebbles and cracks never get outlines (docs/22).
   return FsOut(vec4f(color, 1.0), vec4f(octEncode(n), 0.0, 1.0 / 3.0));
-}
-
-@fragment
-fn fsSea(in: VsOut) -> FsOut {
-  let v = normalize(frame.cameraPos - in.world);
-  let up = vec3f(0.0, 1.0, 0.0);
-  let depth = -terrainHeight(heightTex, in.world.xz);
-  let shallow = 1.0 - smoothstep(0.0, td.shallowDepth, depth);
-  let albedo = mix(td.albedoSea, td.albedoSand * 0.55, shallow * 0.6);
-  let body = shadeSurface(albedo, in.world, up, in.pos, 1.0);
-  // Placeholder sky reflection from the SH fill (a blurred sky); real water optics arrive in S4.
-  let r = reflect(-v, up);
-  let f0 = td.seaSpecular;
-  let fresnel = f0 + (1.0 - f0) * pow(1.0 - max(v.y, 0.0), 5.0);
-  let refl = applyAerial(skyAmbient(r) * frame.exposure, in.pos.xy * frame.invRenderSize, distance(in.world, frame.cameraPos));
-  var color = mix(body, refl, fresnel);
-  color = mix(color, td.ringColor, ringAlpha(in.world.xz));
-  // Water: flagged in B so outlines stay off it (docs/05).
-  return FsOut(vec4f(color, 1.0), vec4f(octEncode(up), 1.0, 0.0));
 }

@@ -5,7 +5,7 @@
 // browser and worker produces bit-identical chunks. Height is a pure function of world
 // (x, z), seed and recipe, so chunk seams match with no blending.
 
-import { hash32 } from '../../core/rng.js';
+import { hash32, det } from '../../core/rng.js';
 import { CELL, CHUNK_CELLS, CHUNK_SIZE, quantize } from './grid.js';
 
 /**
@@ -152,6 +152,26 @@ const signedHash = (seed, a, b) => (hash32(seed, a, b) >>> 8) * (2 / 16777215) -
 /** @param {LandRecipe} land @param {number} seed */
 function makeContext(land, seed) {
   const r = land.rise, b = land.basin, m = land.materials;
+  const riseX = r.x + r.jitter * signedHash(seed, L_RISE_POS, 0);
+  const riseZ = r.z + r.jitter * signedHash(seed, L_RISE_POS, 1);
+  const basinX = b.x + b.jitter * signedHash(seed, L_BASIN_POS, 0);
+  const basinZ = b.z + b.jitter * signedHash(seed, L_BASIN_POS, 1);
+  // The spring's channel: from the spring down to the edge of the basin floor (docs/07).
+  const sp = /** @type {any} */ (land).spring;
+  let channel = null;
+  if (sp?.channel) {
+    const dx = riseX - basinX, dz = riseZ - basinZ;
+    const dl = Math.sqrt(dx * dx + dz * dz) || 1;
+    const ux = dx / dl, uz = dz / dl;
+    channel = {
+      sx: basinX + ux * sp.fromBasinM, sz: basinZ + uz * sp.fromBasinM,
+      ex: basinX + ux * b.innerRadius, ez: basinZ + uz * b.innerRadius,
+      halfWidth: sp.channel.widthM * 0.5, depth: sp.channel.depthM,
+      meander: sp.channel.meanderM ?? 0, bends: sp.channel.bends ?? 1,
+      thalwegHalf: (sp.channel.thalwegWidthM ?? 0.8) * 0.5, thalwegDepth: sp.channel.thalwegDepthM ?? 0,
+      gravel: sp.channel.bedGravel ?? 0.85,
+    };
+  }
   return {
     land,
     warpX: makeFbm(seed, L_WARP_X, land.warp),
@@ -163,10 +183,7 @@ function makeContext(land, seed) {
     rock: makeFbm(seed, L_ROCK, { scale: m.rockScale, octaves: 2 }),
     basinWobble: makeFbm(seed, L_BASIN, { scale: b.wobbleScale, octaves: 2 }),
     floor: makeFbm(seed, L_FLOOR, { scale: 0.3, octaves: 2 }),
-    riseX: r.x + r.jitter * signedHash(seed, L_RISE_POS, 0),
-    riseZ: r.z + r.jitter * signedHash(seed, L_RISE_POS, 1),
-    basinX: b.x + b.jitter * signedHash(seed, L_BASIN_POS, 0),
-    basinZ: b.z + b.jitter * signedHash(seed, L_BASIN_POS, 1),
+    riseX, riseZ, basinX, basinZ, channel,
     // Hermite end slopes, in units of the ramp parameter, so both sides meet the
     // waterline with the same gentle beach slope (no crease at the shore).
     landM0: land.beachSlope * land.inlandWidth,
@@ -174,6 +191,33 @@ function makeContext(land, seed) {
   };
 }
 /** @typedef {ReturnType<typeof makeContext>} Ctx */
+
+/**
+ * The starter spring (docs/07): `fromBasinM` from the basin center toward the rise, so its
+ * channel runs down into the pond hollow. Null when the land has no spring.
+ * @param {Ctx} c
+ */
+function springOf(c) {
+  const sp = /** @type {any} */ (c.land).spring;
+  if (!sp) return null;
+  const dx = c.riseX - c.basinX, dz = c.riseZ - c.basinZ;
+  const dl = Math.sqrt(dx * dx + dz * dz) || 1;
+  return { x: c.basinX + (dx / dl) * sp.fromBasinM, z: c.basinZ + (dz / dl) * sp.fromBasinM, spec: sp };
+}
+
+/**
+ * Seeded centers of the land's rise and pond basin and the starter spring, for systems that place
+ * things on the landform (the water simulation, docs/07).
+ * @param {LandRecipe} land @param {number} seed the terrain sub-seed
+ */
+export function landmarks(land, seed) {
+  const c = makeContext(land, seed >>> 0);
+  const s = springOf(c);
+  return {
+    rise: { x: c.riseX, z: c.riseZ }, basin: { x: c.basinX, z: c.basinZ },
+    spring: s ? { x: s.x, z: s.z, rateLps: s.spec.rateLps } : null,
+  };
+}
 
 /**
  * Base height and material weights at world (x, z). Writes [h, grass, sand, rock, soil] to out.
@@ -220,6 +264,31 @@ function sampleCell(c, x, z, out) {
     }
   }
 
+  // The spring's channel: a soft trough along the warped line from the spring to the pond, so
+  // the stream has a bed to run in and meanders a little with the domain warp.
+  let chanW = 0;
+  let bedW = 0;
+  const ch = c.channel;
+  if (ch && landMask > 0) {
+    const vx = ch.ex - ch.sx, vz = ch.ez - ch.sz;
+    const len2 = vx * vx + vz * vz;
+    const t = Math.min(1, Math.max(0, ((px - ch.sx) * vx + (pz - ch.sz) * vz) / len2));
+    // Meander: a sideways swing along the run, tapering to nothing at the spring and the pond.
+    // det.sin, not Math.sin: the landform must be bit-identical in every browser (CLAUDE.md).
+    const swing = ch.meander * det.sin(2 * det.PI * ch.bends * t) * 4 * t * (1 - t);
+    const inv = 1 / Math.sqrt(len2);
+    const qx = px - (ch.sx + vx * t - vz * inv * swing), qz = pz - (ch.sz + vz * t + vx * inv * swing);
+    // A wide, gentle grassy swale with a narrow rounded bed (the thalweg) along its middle, where
+    // the flow gathers into a stream. Both stay well under the steep-rock angle.
+    const q = Math.sqrt(qx * qx + qz * qz);
+    const head = smoothstep(0, 0.08, t);
+    chanW = bump(q / ch.halfWidth) * head;
+    bedW = bump(q / ch.thalwegHalf) * head;
+    h -= landMask * (ch.depth * chanW + ch.thalwegDepth * bedW);
+    // The bed itself, a little wider than the thread: washed gravel and stones.
+    bedW = bump(q / (ch.thalwegHalf * 1.3)) * head * landMask;
+  }
+
   // Outer falloff: everything joins the open seabed before falloffEnd.
   const fall = smoothstep(L.falloffStart, L.falloffEnd, r);
   if (fall > 0) h += (L.seabedDepth - h) * fall;
@@ -237,6 +306,9 @@ function sampleCell(c, x, z, out) {
     }
     soil = M.soilMax * smoothstep(M.soilLow, M.soilHigh, fbm(c.soil, x, z));
     soil = Math.max(soil, basinW * M.basinSoil);
+    // Running water washes the bed down to gravel and pebbles: the soil scan is a gravelly one,
+    // so the bed is soil, fading out into the grass banks.
+    if (ch) soil = Math.max(soil, smoothstep(0.05, 0.5, bedW) * ch.gravel);
   }
   const sandW = sand * (1 - rock);
   const soilW = soil * (1 - rock) * (1 - sand);

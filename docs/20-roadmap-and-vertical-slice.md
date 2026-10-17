@@ -37,7 +37,7 @@ Click-test: the page opens on desktop and phone, the camera orbits, pans and zoo
 
 ### M1 — Vertical slice
 
-One island, everything in miniature. Built in eleven steps, each its own click-test. G1 to G3 (ground detail) were added in October 2026 after the realism review; they upgrade S1's surfaces and sit between the original steps:
+One island, everything in miniature. Built in thirteen steps, each its own click-test. G1 to G3 (ground detail) were added in October 2026 after the realism review; they upgrade S1's surfaces and sit between the original steps. S4 (water) was split into S4a to S4c in October 2026 so each piece stays click-testable, with realism a priority:
 
 | Step | What appears | Main docs |
 |---|---|---|
@@ -46,8 +46,10 @@ One island, everything in miniature. Built in eleven steps, each its own click-t
 | S3 | Palette-last tonemap with two palettes ("dusk" and "meadow morning"), tuned toward realism, and a soft outline | 05, 04 |
 | G1 | Textured ground: CC0 scanned detail maps per material (calibrated in `tools/texture-lab.html`), texture arrays with GPU mips, height blending, micro-normal lighting | 22, 08 |
 | G2 | No tiles, no stretch: hex tiling, triplanar on steep slopes, macro variation, ground quality-tier settings | 22, 19 |
-| S4 | Shallow-water simulation coupled to sculpting, a spring source, and the tide rising and falling | 07 |
-| G3 | Wet ground: roughness and specular, damp darkening and puddles in rain (reads S4's wetness pass and sky probe) | 22, 06 |
+| S4a | Water you see: analytic tide, the GPU shallow-water simulation coupled to sculpting, the starter spring, and physically based water drawing (Fresnel sky reflection, sun and moon glints, refraction, Beer-Lambert depth color, flow-mapped ripples, gentle sea swell); `tools/water-lab.html` | 07 |
+| S4b | Water the island knows: the deterministic water summary (priority-flood), the pond refill nudge, pour and soak tools, the live readback for creatures, tide events for ecology | 07, 11 |
+| S4c | Water optics and wet ground: sky probe with specular mips, screen-space reflection on high, caustics, foam, ripples from rain and creatures, the visual wetness pass with drying tide flats | 07, 06, 08 |
+| G3 | Wet ground: roughness and specular, damp darkening and puddles in rain (reads S4c's wetness pass and sky probe) | 22, 06 |
 | S5 | One plant species, reeds, spreading along wet ground and the tide band, plus a grass layer | 10, 14 |
 | S6 | Frogs: needs, arrival, settling, behavior, feeding and naming, one journal page | 11, 12 |
 | S7 | Autosave, reload, and offline catch-up with the "while you were away" reveal | 02, 18 |

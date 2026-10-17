@@ -1,6 +1,7 @@
 // @ts-check
-// Opaque pass for M1: the heightfield terrain (one LOD'd grid mesh per open chunk) and the sea
-// plane, into the HDR target (docs/04, 08). Reads the terrain's GPU textures; never changes them.
+// Opaque pass for M1: the heightfield terrain (one LOD'd grid mesh per open chunk) into the HDR
+// target (docs/04, 08). The sea is the water pass's (passes/water.js). Reads the terrain's GPU
+// textures; never changes them.
 
 import { makeBuffer, makeShaderModule } from '../../core/gpu.js';
 import { CHUNK_SIZE, CHUNK_MIN } from '../../world/terrain/grid.js';
@@ -16,15 +17,15 @@ const TILING_MODES = { grid: 0, hex: 1, two: 2 };
 
 /**
  * @param {{ terrain: import('../../world/terrain/index.js').Terrain, recipe: any, seed: number,
- *   getEye: () => ArrayLike<number>, tier: string,
+ *   getEye: () => ArrayLike<number>, tier: string, getTide?: () => number,
+ *   water: { depthTextures: GPUTexture[], current: () => number },
  *   ground: { views: { a: GPUTextureView, b: GPUTextureView }, sampler: GPUSampler, version: number, fade: number },
  *   groundTier: any }} opts  ground: src/render/ground-detail.js; groundTier: the tier's `ground` block
  */
 export function createTerrainPass(opts) {
   const { terrain, recipe } = opts;
   /** @type {GPURenderPipeline} */ let landPipeline;
-  /** @type {GPURenderPipeline} */ let seaPipeline;
-  /** @type {GPUBindGroup} */ let group;
+  /** @type {GPUBindGroup[]} */ let groups = [];
   /** @type {GPUBuffer} */ let drawBuffer;
   /** @type {GPUBuffer} */ let chunkBuffer;
   /** @type {{ buffer: GPUBuffer, count: number }[]} */ let indexBuffers = [];
@@ -99,6 +100,7 @@ export function createTerrainPass(opts) {
           { binding: 6, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: 'float', viewDimension: '2d-array' } },
           { binding: 7, visibility: GPUShaderStage.FRAGMENT, sampler: { type: 'filtering' } },
           { binding: 8, visibility: GPUShaderStage.FRAGMENT, buffer: {} },
+          { binding: 9, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: 'unfilterable-float' } },
         ],
       });
       const layout = device.createPipelineLayout({ label: 'opaque', bindGroupLayouts: [ctx.layouts.frame, ctx.layouts.lighting, layout2] });
@@ -111,7 +113,7 @@ export function createTerrainPass(opts) {
         primitive: { topology: 'triangle-list', cullMode: 'none' },
         depthStencil: { format: 'depth32float', depthWriteEnabled: true, depthCompare: 'greater' },
       });
-      [landPipeline, seaPipeline] = await Promise.all([make('vsLand', 'fsLand'), make('vsSea', 'fsSea')]);
+      landPipeline = await make('vsLand', 'fsLand');
 
       drawBuffer = makeBuffer(device, { label: 'terrain-draw', size: DRAW_BYTES, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
       chunkBuffer = makeBuffer(device, { label: 'terrain-chunks', size: MAX_CHUNKS * 16, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
@@ -121,7 +123,8 @@ export function createTerrainPass(opts) {
       groundBuffer = makeBuffer(device, { label: 'ground-detail', size: GROUND_BYTES, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
       // Rebuilt whenever the ground detail arrays are replaced (placeholder, then the loaded set).
       makeGroup = () => {
-        group = device.createBindGroup({
+        // One group per water depth texture (the simulation ping-pongs them each step).
+        groups = opts.water.depthTextures.map((/** @type {GPUTexture} */ wt) => device.createBindGroup({
           label: 'terrain-draw',
           layout: layout2,
           entries: [
@@ -134,8 +137,9 @@ export function createTerrainPass(opts) {
             { binding: 6, resource: opts.ground.views.b },
             { binding: 7, resource: opts.ground.sampler },
             { binding: 8, resource: { buffer: groundBuffer } },
+            { binding: 9, resource: wt.createView() },
           ],
-        });
+        }));
         groundVersion = opts.ground.version;
       };
       makeGroup();
@@ -149,6 +153,7 @@ export function createTerrainPass(opts) {
       const { device } = ctx;
       const ring = terrain.ring;
       f[24] = ring.x; f[25] = ring.z; f[26] = ring.radius; f[27] = ring.hardness; f[28] = ring.visible ? 1 : 0;
+      f[38] = opts.getTide?.() ?? 0;
       device.queue.writeBuffer(drawBuffer, 0, draw);
       if (opts.ground.version !== groundVersion) makeGroup();
       gf[19] = opts.ground.fade;
@@ -181,15 +186,13 @@ export function createTerrainPass(opts) {
       });
       pass.setBindGroup(0, ctx.groups.frame);
       pass.setBindGroup(1, ctx.groups.lighting);
-      pass.setBindGroup(2, group);
+      pass.setBindGroup(2, groups[opts.water.current()]);
       pass.setPipeline(landPipeline);
       for (const d of draws) {
         const ib = indexBuffers[d.lod];
         pass.setIndexBuffer(ib.buffer, 'uint16');
         pass.drawIndexed(ib.count, d.count, 0, 0, d.first);
       }
-      pass.setPipeline(seaPipeline);
-      pass.draw(6);
       pass.end();
     },
   };
