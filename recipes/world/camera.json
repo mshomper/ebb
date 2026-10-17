@@ -1,0 +1,23 @@
+{
+  "type": "camera",
+  "version": 1,
+  "fovYDeg": 40,
+  "near": 0.05,
+  "start": { "yawDeg": 35, "pitchDeg": 24, "distance": 82, "target": [0, 0.5, 0] },
+  "pitchSoftDeg": [18, 72],
+  "pitchHardDeg": [10, 84],
+  "distanceSoft": [5, null],
+  "distanceHard": [3, null],
+  "distanceHardMaxFactor": 1.25,
+  "worldRadius": 32,
+  "targetMargin": 8,
+  "minEyeHeight": 1.2,
+  "halfLifeDirect": 0.07,
+  "halfLifeGlide": 0.25,
+  "softReturnDelay": 0.15,
+  "orbitDegPerPx": 0.25,
+  "panScale": 1.0,
+  "wheelZoomPerNotch": 0.12,
+  "zoomToCursor": 0.6,
+  "gestureDeadZone": { "px": 4, "pinch": 0.02, "twistDeg": 3 }
+}

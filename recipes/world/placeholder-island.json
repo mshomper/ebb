@@ -1,0 +1,18 @@
+{
+  "type": "placeholder-island",
+  "version": 1,
+  "note": "M0 stand-in island: a gently domed disc. Replaced by the sculptable heightfield in M1 S1.",
+  "radius": 30,
+  "coastNoise": 3.5,
+  "coastNoiseScale": 0.09,
+  "plateauHeight": 1.4,
+  "beachWidth": 4.5,
+  "seabedDepth": -3,
+  "gridSize": 192,
+  "gridExtent": 96,
+  "seaExtent": 40000,
+  "albedoSand": [0.62, 0.52, 0.38],
+  "albedoGrass": [0.16, 0.26, 0.12],
+  "albedoSea": [0.04, 0.09, 0.12],
+  "seaSpecular": 0.06
+}
