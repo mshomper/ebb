@@ -79,6 +79,11 @@ if (!result.ok) {
   setInterval(() => updateText(simBudget), 500);
   requestAnimationFrame(drawCharts);
 
+  // The water summary map: redrawn whenever a new summary arrives.
+  const drawMap = () => drawSummaryMap(water.getSummary(), water.springs());
+  on('water:summary-updated', drawMap);
+  setTimeout(drawMap, 0); // after the rest of this module has run (its constants are declared below)
+
   bHollow.disabled = false;
   bMound.disabled = false;
   bHollow.addEventListener('click', () => {
@@ -210,6 +215,48 @@ function updateText(simBudget) {
       : simOk ? `Simulation costs ${fmt(sim95)} ms, inside the ${simBudget} ms budget.`
       : `Simulation costs ${fmt(sim95)} ms, over the ${simBudget} ms budget.`, !simKnown) +
     `<p class="muted" id="device">${$('device')?.textContent ?? ''}</p>`;
+}
+
+/** Summary class colors (sea, still, slow, running, damp; dry ground, dry tide band). */
+const CLASS_RGB = /** @type {Record<number, number[]>} */ ({
+  1: [47, 110, 134], 2: [59, 127, 168], 3: [127, 184, 214], 4: [232, 243, 248], 5: [140, 122, 91],
+});
+const DRY_RGB = [110, 145, 80];
+const BAND_RGB = [159, 211, 224];
+
+/**
+ * Draw the water summary from above, one pixel per 0.5 m cell, north (-z) up.
+ * @param {any} s  water.getSummary() @param {{ x: number, z: number }[]} springs
+ */
+function drawSummaryMap(s, springs) {
+  const cv = /** @type {HTMLCanvasElement} */ ($('g-map'));
+  if (!s) return;
+  const { w, h } = s.rect;
+  cv.width = w; cv.height = h;
+  const g = /** @type {CanvasRenderingContext2D} */ (cv.getContext('2d'));
+  const img = g.createImageData(w, h);
+  let still = 0, running = 0, damp = 0;
+  for (let j = 0; j < h; j++) {
+    for (let i = 0; i < w; i++) {
+      const k = j * w + i;
+      const c = s.cls[k];
+      const rgb = CLASS_RGB[c] ?? (s.band[k] ? BAND_RGB : DRY_RGB);
+      if (c === 2) still++; else if (c === 3 || c === 4) running++; else if (c === 5) damp++;
+      const o = k * 4;
+      img.data[o] = rgb[0]; img.data[o + 1] = rgb[1]; img.data[o + 2] = rgb[2]; img.data[o + 3] = 255;
+    }
+  }
+  g.putImageData(img, 0, 0);
+  g.fillStyle = '#185FA5';
+  g.strokeStyle = '#FFFFFF';
+  for (const sp of springs) {
+    const x = (sp.x + 80) / 0.5 - s.rect.x;
+    const y = (sp.z + 80) / 0.5 - s.rect.y;
+    g.beginPath(); g.arc(x, y, 2.5, 0, Math.PI * 2); g.fill(); g.stroke();
+  }
+  $('map-stats').textContent =
+    `Pond ${fmt(still * 0.25, 0)} m², streams ${fmt(running * 0.25, 0)} m², damp hollows ${fmt(damp * 0.25, 0)} m². ` +
+    `Springs: ${springs.length}. Summary hash ${(s.hash >>> 0).toString(16).toUpperCase().padStart(8, '0')}.`;
 }
 
 function drawCharts() {

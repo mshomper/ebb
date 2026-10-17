@@ -11,7 +11,7 @@
 - Rendering reads tide at **display time**; ecology and `coarseStep` read it at **world time** (see `16-customization-and-photo-mode.md`).
 - **Chunk-aware.** Water textures cover the world chunk grid of doc 08 at 0.5 m (the world limit of 192 m by 192 m, 6×6 chunks of 32 m, so at most 384×384 cells), allocated once. Simulation dispatches **per active 32 m chunk tile** (64×64 cells). At that limit (doc 13's expansion ceiling) the worst case is 36 tiles, 147,456 cells.
 - Activity per chunk (doc 13): chunks within 60 m of the camera focus run every step. Other chunks with water, shoreline or summary-flagged flow run at quarter rate with 4× step. Open sea outside land chunks is an analytic tide plane with procedural waves.
-- Starter water tools: **pour** (temporary brush source) and **soak** (temporary brush sink), plus one fixed **starter spring** (persistent source) placed by the land recipe. Player-placed springs and streams arrive only with the dragonflies' gift, the **stream tool** (`12-creature-roadmap.md`). Springs are saved in the store slice `water`.
+- Starter water tools: **pour** (temporary brush source) and **soak** (temporary brush sink), plus one fixed **starter spring** (persistent source) placed by the land recipe. Player-placed springs and streams arrive only with the dragonflies' gift, the **stream tool** (`12-creature-roadmap.md`). Springs are saved in the store slice `water`. (S4b, October 2026: the spring mechanism is built into the Water tool's Spring mode: up to 4 placed springs, each trickle 3, brook 12 or stream 30 L/s, undoable. It is locked behind the store flag `unlocks.springs`, which the dragonflies' gift sets; the `?sandbox` address flag sets it early for testing.)
 - One hourly `coarseStep` for tide (in `src/world/tide.js`) and one for the water summary (`src/world/water/coarse.js`), run in the shared order from `02-core-loop-and-idle-model.md`: tide, weather, seasons, water summary, growth, ecology, creatures, expansion.
 
 - **Built in three slice steps** (doc 20, October 2026): **S4a** the tide, the live simulation, the starter spring and the water drawing; **S4b** the water summary, the nudge, pour and soak, readback and tide events; **S4c** the sky probe, screen-space reflection, caustics, foam, ripples and the visual wetness pass. S4a's interim choices:
@@ -22,6 +22,13 @@
   - Thin still water is drawn as a broken, weakly reflecting film (grass and stones stand through it); running water stays glossy, and fast shallow water shows white riffle streaks drawn out along the current (a procedural slice of the S4c foam).
   - Flow is capped by Manning's law (`manningN`), so thin water on slopes runs at realistic speed and depth instead of racing off as an invisible film.
   - The terrain reads the live water depth: ground under water and within about 0.75 m of it is soaked and dark (a first slice of the S4c wetness pass, without drying).
+
+- **S4b as built** (October 2026):
+  - `src/world/water/summary.js`: integer Priority-Flood with first-in-first-out flow directions (fixed neighbor order, flats resolved by breadth-first distance to the outlet); the tide band also requires a connection to the sea through ground no higher than the band top. About 5 to 25 ms for the starter island; same hash on every thread (tools/determinism.html).
+  - Pond rule tuned for an island meadow: a hollow is a pond when spring water reaches it, or when at least `pondMinCatchmentM2` (120 m²) drains into it and it is at least `pondMinDepthM` (0.15 m) deep. The doc's original 30 m² filled every small dip on the plateau.
+  - Stream depth from the law above is capped by the Manning depth for the local slope, so the summary agrees with the live water (steep runs 1 to 3 cm, flatter runs deeper).
+  - The nudge tops live water up toward `targetMm` (τ 20 s) and never drains it. Starting water is the sea at the current tide plus the summary's targets.
+  - Water tool: Pour and Soak at up to 60 L/s under the brush; Spring (locked behind `unlocks.springs`). `water.sampleLive(x, z)` reads a CPU copy of depth and velocity made four times a second through a ring of three buffers.
 
 ## How it works
 

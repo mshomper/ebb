@@ -47,7 +47,7 @@ One island, everything in miniature. Built in thirteen steps, each its own click
 | G1 | Textured ground: CC0 scanned detail maps per material (calibrated in `tools/texture-lab.html`), texture arrays with GPU mips, height blending, micro-normal lighting | 22, 08 |
 | G2 | No tiles, no stretch: hex tiling, triplanar on steep slopes, macro variation, ground quality-tier settings | 22, 19 |
 | S4a | Water you see: analytic tide, the GPU shallow-water simulation coupled to sculpting, the starter spring, and physically based water drawing (Fresnel sky reflection, sun and moon glints, refraction, Beer-Lambert depth color, flow-mapped ripples, gentle sea swell); `tools/water-lab.html` | 07 |
-| S4b | Water the island knows: the deterministic water summary (priority-flood), the pond refill nudge, pour and soak tools, the live readback for creatures, tide events for ecology | 07, 11 |
+| S4b | Water the island knows: the deterministic water summary (priority-flood), the pond refill nudge, pour and soak tools, spring placing (built, locked until the dragonflies' gift; `?sandbox` opens it), the live readback for creatures, tide events for ecology | 07, 11, 12 |
 | S4c | Water optics and wet ground: sky probe with specular mips, screen-space reflection on high, caustics, foam, ripples from rain and creatures, the visual wetness pass with drying tide flats | 07, 06, 08 |
 | G3 | Wet ground: roughness and specular, damp darkening and puddles in rain (reads S4c's wetness pass and sky probe) | 22, 06 |
 | S5 | One plant species, reeds, spreading along wet ground and the tide band, plus a grass layer | 10, 14 |

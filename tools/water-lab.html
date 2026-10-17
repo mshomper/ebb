@@ -25,6 +25,8 @@
   .status { display: flex; gap: 10px; align-items: flex-start; font-weight: 800; margin: 4px 0; }
   .status svg { width: 22px; height: 22px; flex: 0 0 auto; margin-top: 2px; }
   .chart { width: 100%; height: 170px; display: block; }
+  .map { width: 100%; max-width: 520px; aspect-ratio: 1; display: block; margin: 8px 0; border-radius: 10px; image-rendering: pixelated; }
+  .legend.swatch i { width: 14px; height: 14px; border-radius: 3px; }
   .legend { display: flex; flex-wrap: wrap; gap: 16px; font-size: 16px; margin: 6px 0 14px; }
   .legend i { display: inline-block; width: 22px; height: 4px; border-radius: 2px; vertical-align: middle; margin-right: 6px; }
   .buttons { display: flex; flex-wrap: wrap; gap: 12px; margin: 4px 0 10px; }
@@ -62,6 +64,21 @@
       <span><i style="background:#7C9D72"></i>fastest flow</span>
       <span><i style="background:#B5654A"></i>4 m/s cap</span>
     </div>
+  </div>
+  <div class="card">
+    <h2>Water summary: what the island knows</h2>
+    <p class="muted">The deterministic map ecology reads (doc 07), rebuilt after every sculpt stroke and spring change. Seen from above, north up.</p>
+    <canvas id="g-map" class="map" aria-label="Water summary map"></canvas>
+    <div class="legend swatch">
+      <span><i style="background:#2F6E86"></i>sea</span>
+      <span><i style="background:#9FD3E0"></i>tide band</span>
+      <span><i style="background:#3B7FA8"></i>still (pond)</span>
+      <span><i style="background:#7FB8D6"></i>slow</span>
+      <span><i style="background:#E8F3F8;border:1px solid #888780"></i>running</span>
+      <span><i style="background:#8C7A5B"></i>damp hollow</span>
+      <span><i style="background:#185FA5;border-radius:50%"></i>spring</span>
+    </div>
+    <p class="muted" id="map-stats">Waiting for the first summary.</p>
   </div>
   <div class="card">
     <h2>Scripted checks</h2>

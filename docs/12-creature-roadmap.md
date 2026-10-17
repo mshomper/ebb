@@ -54,7 +54,7 @@ Gifts are chosen so one species helps the next: frogs give water lilies, which g
 | Shelter | Water lily pads and reed stems at the water's edge | Reeds as perches and emergence stems |
 | Quiet | Low sensitivity (shade from structures is fine) | Low sensitivity |
 | Company | School of 8 to 30 | 3 to 8 |
-| Gift | Pondweed seed (underwater meadow, holds more fish) | Stream tool (a spring that feeds running water) |
+| Gift | Pondweed seed (underwater meadow, holds more fish) | Stream tool: unlocks the Water tool's Spring mode (`unlocks.springs`; up to 4 springs, trickle, brook or stream; built in S4b) |
 | Signature | School turns as one, flashes silver when the sun hits | Hovering patrol over the pond; pairs in tandem flight |
 | Interaction | Feed: crumbs make the school swirl up to the surface | Follow camera rides along a patrol route |
 | Body | Capsule body tapered with a round-cone tail fin; impostor at distance | Thin capsule abdomen, sphere thorax and head, four flat wing ellipsoids |

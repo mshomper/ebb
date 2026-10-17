@@ -130,6 +130,8 @@
   gap: 6px;
 }
 .ebb-tools__chips[hidden] { display: none; }
+/* Chips, sliders and the spring parts set their own display; the hidden attribute still wins. */
+.ebb-tools [hidden] { display: none; }
 /* Paint chips stack the swatch above the label so four fit on every width. */
 .ebb-tools__chips--paint { --tb-cols: 4; }
 .ebb-tools__chips--paint .ebb-tools__chip { flex-direction: column; gap: 3px; padding: 6px 4px; }
@@ -166,6 +168,38 @@
   height: 18px;
   flex: none;
   display: block;
+}
+
+/* water: spring flow chips, the spring count with Remove, and the placing hint */
+.ebb-tools__spring {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+.ebb-tools__spring-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+}
+.ebb-tools__count {
+  min-width: 0;
+  font-size: var(--text-body);
+  font-variant-numeric: tabular-nums;
+  opacity: 0.85;
+}
+.ebb-tools__remove { margin-left: auto; padding: 6px 14px 6px 10px; }
+.ebb-tools__hint {
+  margin: 0;
+  min-width: 0;
+  font-size: var(--text-body);
+  font-weight: 600;
+  line-height: 1.35;
+  overflow-wrap: break-word;
+  opacity: 0.85;
 }
 
 /* sliders */
@@ -238,7 +272,18 @@
    sculpt chips stack their icon above the label too. */
 @media (max-width: 420px) {
   .ebb-tools__card { width: 100%; }
-  .ebb-tools__chips--sculpt .ebb-tools__chip { flex-direction: column; gap: 2px; padding: 6px 4px; }
+  .ebb-tools__chips--sculpt .ebb-tools__chip,
+  .ebb-tools__chips--water .ebb-tools__chip,
+  .ebb-tools__chips--rate .ebb-tools__chip { flex-direction: column; gap: 2px; padding: 6px 4px; }
+}
+/* Seven bar items (two history, divider, four tools) at 52 px: tighten gaps so the bar fits a
+   375 px phone (339 px of 351), and drop to 48 px buttons below that. */
+@media (max-width: 400px) {
+  .ebb-tools { --tb-gap: 2px; --tb-pad: 4px; }
+  .ebb-tools__divider { margin: 8px 2px; }
+}
+@media (max-width: 370px) {
+  .ebb-tools { --tb-btn: 48px; }
 }
 
 /* Short screens (phone landscape): the card stays compact, with each slider's label,
