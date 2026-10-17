@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ebb unit tests</title>
+<style>
+  @font-face {
+    font-family: 'Nunito';
+    src: url('../src/vendor/fonts/nunito-latin-600-normal.woff2') format('woff2');
+    font-weight: 600;
+    font-display: swap;
+  }
+  @font-face {
+    font-family: 'Nunito';
+    src: url('../src/vendor/fonts/nunito-latin-800-normal.woff2') format('woff2');
+    font-weight: 800;
+    font-display: swap;
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; max-width: 100%; overflow-x: hidden; }
+  body {
+    background: #F4EEE4;
+    color: #1E2624;
+    font-family: 'Nunito', system-ui, sans-serif;
+    font-weight: 600;
+    font-size: 18px;
+    line-height: 1.45;
+    padding: 16px;
+    overflow-wrap: anywhere;
+  }
+  main { max-width: 100%; }
+  h1 { font-size: 24px; font-weight: 800; margin: 0 0 8px; }
+  #summary { font-size: 20px; font-weight: 800; margin: 0 0 16px; }
+  #results { list-style: none; margin: 0; padding: 0; max-width: 100%; }
+  #results li { display: flex; gap: 10px; align-items: flex-start; padding: 6px 0; border-bottom: 1px solid #E3D9C9; max-width: 100%; }
+  #results svg { flex: 0 0 auto; width: 22px; height: 22px; margin-top: 3px; }
+  .text { min-width: 0; flex: 1 1 auto; }
+  .word { font-weight: 800; }
+  .ok .word { color: #5F7F5B; }
+  .bad .word { color: #B5654A; }
+  .detail { display: block; font-size: 16px; color: #4A5551; }
+  .note { font-size: 16px; color: #4A5551; }
+</style>
+</head>
+<body>
+<main>
+  <h1>ebb unit tests</h1>
+  <p id="summary">Running tests</p>
+  <ul id="results"></ul>
+  <p class="note">Open this page through the local server (double-click play.cmd, then go to tools/unit-tests.html). Modules and workers do not load from a file on disk.</p>
+</main>
+<script type="module" src="./unit-tests.js"></script>
+</body>
+</html>
