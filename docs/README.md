@@ -27,6 +27,8 @@ flowchart TD
     R --> PF[19 Performance tiers]
     PX --> RM[20 Roadmap and slice]
     V --> B[21 Brand]
+    TE --> GD[22 Ground detail]
+    P --> GD
 ```
 
 | Doc | Covers |
@@ -52,3 +54,4 @@ flowchart TD
 | 19-performance-and-quality-tiers | Budgets, tiers, benchmark page |
 | 20-roadmap-and-vertical-slice | Milestones, slice steps, how to feed docs to Claude Code |
 | 21-brand-identity | Name, wordmark, icon, favicon, colors, type |
+| 22-ground-detail | Scanned ground textures, height blending, hex tiling, micro-normals, wet ground |

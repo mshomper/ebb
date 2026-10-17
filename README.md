@@ -5,7 +5,7 @@
 
 A cozy idler and living diorama built on raw WebGPU. Shape a small island, plant seeds, and make room for creatures. They arrive and settle when the ecology suits them, and the island keeps growing while you are away. When you come back, it has moved on without you.
 
-The look is soft and painted, but the light, sky and water underneath are physical. Everything grows from seeded recipes, so it can all be tuned without code.
+The look is soft and natural: physical light, sky and water, ground built from scanned materials, and a gentle palette applied last. Everything grows from seeded recipes, so it can all be tuned without code.
 
 ## Status
 
@@ -16,7 +16,7 @@ M1 vertical slice, step S1: a seeded heightfield island you can sculpt (raise, l
 | Path | What it is |
 |---|---|
 | `CLAUDE.md` | Working rules for Claude Code sessions on this repo |
-| `docs/` | 21 architecture docs, starting with [01 Vision and pillars](docs/01-vision-and-pillars.md). See the [docs index](docs/README.md) |
+| `docs/` | 22 architecture docs, starting with [01 Vision and pillars](docs/01-vision-and-pillars.md). See the [docs index](docs/README.md) |
 | `brand/` | Icon, favicon in all sizes, and the identity review page |
 
 ## Pillars

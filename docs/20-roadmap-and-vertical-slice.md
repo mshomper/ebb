@@ -36,14 +36,17 @@ Click-test: the page opens on desktop and phone, the camera orbits, pans and zoo
 
 ### M1 — Vertical slice
 
-One island, everything in miniature. Built in eight steps, each its own click-test:
+One island, everything in miniature. Built in eleven steps, each its own click-test. G1 to G3 (ground detail) were added in October 2026 after the realism review; they upgrade S1's surfaces and sit between the original steps:
 
 | Step | What appears | Main docs |
 |---|---|---|
 | S1 | Sculptable heightfield island with grass, sand, soil and rock paint; undo and redo | 08 |
 | S2 | Physical sky, sun and moon moving with the world clock, shadows, day and night, plus a minimal seasons and weather step (season index, day length, light rain, frog and reed dormancy) so catch-up across seasons works | 06, 10 |
-| S3 | Palette-last tonemap with two palettes ("dusk" and "meadow morning") and a soft outline | 05, 04 |
+| S3 | Palette-last tonemap with two palettes ("dusk" and "meadow morning"), tuned toward realism, and a soft outline | 05, 04 |
+| G1 | Textured ground: CC0 scanned detail maps per material (calibrated in `tools/texture-lab.html`), texture arrays with GPU mips, height blending, micro-normal lighting | 22, 08 |
+| G2 | No tiles, no stretch: hex tiling, triplanar on steep slopes, macro variation, ground quality-tier settings | 22, 19 |
 | S4 | Shallow-water simulation coupled to sculpting, a spring source, and the tide rising and falling | 07 |
+| G3 | Wet ground: roughness and specular, damp darkening and puddles in rain (reads S4's wetness pass and sky probe) | 22, 06 |
 | S5 | One plant species, reeds, spreading along wet ground and the tide band, plus a grass layer | 10, 14 |
 | S6 | Frogs: needs, arrival, settling, behavior, feeding and naming, one journal page | 11, 12 |
 | S7 | Autosave, reload, and offline catch-up with the "while you were away" reveal | 02, 18 |
@@ -55,6 +58,7 @@ Slice acceptance, all together:
 - Watch for a few game hours. The tide visibly ebbs and returns; reeds creep along the wet edge.
 - After enough reeds and water, a frog visits, then settles; you can feed it and give it a name.
 - Switch palettes. The whole scene changes mood instantly, and the light still behaves the same.
+- Orbit in close at a low sun, then let it rain. Sand, rock and soil read as real material, show no tiling, and turn dark and glossy with puddles in the rain.
 - Close the tab, come back the next day. The island has moved on, and a short calm reveal shows what changed.
 - The same steps work on a phone with touch, at lower detail.
 

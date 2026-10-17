@@ -1,6 +1,6 @@
 # 05 — Look and Palette
 
-> ebb looks soft and painted, but the light underneath behaves like real light. The rule is **physical light, painted last**: the sun, sky, shadows, water and lanterns are all computed in real physical units, and only at the very end does a small color table (a palette LUT) remap that physical image into the pastel palette. Because the palette is applied after the light, a dusk palette and a morning palette both keep correct shadows, reflections and depth, and swapping the whole mood of the island means swapping one tiny texture. This doc defines exposure, the tonemap curve, how palettes are authored and stored, the soft outline, the optional painterly filter, and how the grade follows time of day and season.
+> ebb looks soft and natural: real light falling on real materials, finished by a gentle palette. The rule is **physical light, painted last**: the sun, sky, shadows, water and lanterns are all computed in real physical units, and only at the very end does a small color table (a palette LUT) nudge that physical image toward the palette's mood. Palettes are tuned toward realism: they tint the image rather than repaint it. Because the palette is applied after the light, a dusk palette and a morning palette both keep correct shadows, reflections and depth, and swapping the whole mood of the island means swapping one tiny texture. This doc defines exposure, the tonemap curve, how palettes are authored and stored, the soft outline, the optional painterly filter, and how the grade follows time of day and season.
 
 ## Locked decisions
 
@@ -9,7 +9,8 @@
 - Tonemap curve: **AgX** (Troy Sobotka), base transform with a per-palette "look" (slope, power, saturation). AgX desaturates bright light smoothly toward white, which suits pastels.
 - Palette LUT: **32 × 32 × 32 3D texture, `rgba16float`** (matches `16-customization-and-photo-mode.md`), input domain is the AgX output in display-encoded sRGB (0 to 1). Two LUT textures exist (current and next) for crossfades.
 - Palettes are JSON recipes in `recipes/palettes/*.json`, baked into the LUT on the GPU at runtime by `src/render/passes/post/lut-bake.js` (`src/shaders/lut-bake.wgsl`). Baking happens in **OKLab** (Björn Ottosson 2020).
-- **Luminance is mostly preserved by the palette.** Each palette sets how much of the physical lightness survives (default 0.7). This is what keeps "the light still behaves the same" after a swap.
+- **Luminance is mostly preserved by the palette.** Each palette sets how much of the physical lightness survives (default 0.9). This is what keeps "the light still behaves the same" after a swap.
+- **Realism first** (decided October 2026, with the ground detail work in `22-ground-detail.md`). Anchor strengths sit around 0.3 to 0.4, so a palette moves colors part of the way toward its targets and texture variety survives (a full-strength anchor would pull every green to one green). Chroma stays near 1.0. The painterly filter is off by default in every palette. Terrain outlines are faint; creature outlines stay clear.
 - Time of day keys follow **sun elevation**, not clock hour, so longer summer days grade correctly. Season keys follow `seasonPhase`. Both come from **display time** (`clock.display()`), which equals world time in normal play and is moved by time and season preview and photo mode (`16-customization-and-photo-mode.md`). Grading never reads the world clock directly.
 - Palette swap = 0.6 s crossfade between two LUTs inside the tonemap pass. No other pass changes.
 - **Palette roster (fixed names):** **Dusk** (`dusk.json`) and **Meadow morning** (`meadow-morning.json`) available from the start; **Moonlight** (`moonlight.json`) unlocked as the bats' gift (`12-creature-roadmap.md`); **Clear sight** (`clear-sight.json`), the color-safe palette, always available. The vertical slice ships Dusk and Meadow morning.
@@ -17,7 +18,7 @@
 
 ## How it works
 
-Plain version: the renderer first makes a "photograph" of the island in real light. Auto-exposure sets the camera's exposure like a real camera would, slowly. A film-like curve (AgX) squeezes that photograph into screen range. Then the palette table moves each color toward the palette's colors: the sky's pale blue drifts to lilac, sunlit grass to soft moss, shallow water to sea glass. Light and dark stay mostly where physics put them, so shadows and glints still read. Last, optional soft ink lines and a brushy filter finish the painted feel.
+Plain version: the renderer first makes a "photograph" of the island in real light. Auto-exposure sets the camera's exposure like a real camera would, slowly. A film-like curve (AgX) squeezes that photograph into screen range. Then the palette table moves each color part of the way toward the palette's colors: the sky's pale blue drifts toward lilac, sunlit grass toward soft moss, shallow water toward sea glass. Light and dark stay where physics put them, so shadows, glints and the texture of the ground still read. Last, soft ink lines mark silhouettes and creatures, and an optional brushy filter (off by default) is there for players who want a painted look.
 
 ```mermaid
 flowchart LR
@@ -81,11 +82,12 @@ The new palette bakes into the spare LUT. The tonemap pass samples both and cros
 - Width is 1.25 px at 1440p, scaled by render height, faded out beyond 60 m, smoothed with a small soft kernel so lines look drawn, not aliased.
 - **Ink color is never black.** It is the underlying pixel in OKLab with lightness multiplied by `1 − amount` and chroma raised slightly: a darker shade of the same hue.
 - Creatures (group 3) get a stronger line so they read at a distance.
+- Terrain (group 1) uses the palette's `terrainAmount` (default 0.1), so ground reads as ground and only strong landform edges get a hint of a line. Outlines read `normalId`, which holds the mesh normal, never the ground detail normal (doc 22), so pebbles and cracks never get lines.
 - Where final depth differs from `depthCopy`, the pixel is water; outlines are suppressed there so pebbles under the surface stay soft.
 
 ### Painterly filter (optional)
 
-Anisotropic Kuwahara filter (Kyprianidis, Kang and Döllner, "Image and Video Abstraction by Anisotropic Kuwahara Filtering", 2009): a smoothed structure tensor gives local stroke direction, then 8 sectors around each pixel are weighted and the least-varied sector wins. Applied to the LDR image before the outline so lines stay crisp. Strength blends with the unfiltered image. Full resolution on the high tier, quarter resolution on medium and low (as in doc 16). An optional paper grain texture (multiply at about 3%) is part of this toggle.
+Anisotropic Kuwahara filter (Kyprianidis, Kang and Döllner, "Image and Video Abstraction by Anisotropic Kuwahara Filtering", 2009): a smoothed structure tensor gives local stroke direction, then 8 sectors around each pixel are weighted and the least-varied sector wins. Applied to the LDR image before the outline so lines stay crisp. Strength blends with the unfiltered image. Off by default in every palette (realism first); the player can turn it on in Settings, and photo mode keeps it as a filter (doc 16). Full resolution on the high tier, quarter resolution on medium and low (as in doc 16). An optional paper grain texture (multiply at about 3%) is part of this toggle.
 
 ### Dither
 
@@ -99,10 +101,10 @@ Pastel skies band badly in 8 bits. Every write to an 8-bit target adds triangula
 {
   "id": "dusk", "name": "Dusk", "version": 1,
   "look": { "slope": 1.0, "power": 1.08, "saturation": 0.92 },
-  "keepLuminance": 0.7,
+  "keepLuminance": 0.9,
   "anchors": [
     // role is a label for the tuning panel; from = typical AgX output, to = target
-    { "role": "sky-high", "from": "#9EB4D2", "to": "#B8A9CC", "radius": 0.10, "strength": 1 }
+    { "role": "sky-high", "from": "#9EB4D2", "to": "#B8A9CC", "radius": 0.10, "strength": 0.35 }
   ],
   "grade": { "lift": 0.03, "gamma": 1.0, "gain": 0.98, "chroma": 0.88,
              "shadowTint": "#5E6E7D", "shadowAmt": 0.15,
@@ -112,8 +114,8 @@ Pastel skies band badly in 8 bits. Every write to an 8-bit target adds triangula
     "golden": { "grade": { "highlightTint": "#FFDE95", "highlightAmt": 0.2 } },
     "winter": { "grade": { "chroma": 0.75 } }
   },
-  "outline": { "amount": 0.35, "chroma": 1.1 },
-  "painterly": { "radius": 4, "sharpness": 8, "strength": 0.6 },
+  "outline": { "amount": 0.35, "terrainAmount": 0.1, "chroma": 1.1 },
+  "painterly": { "enabled": false, "radius": 4, "sharpness": 8, "strength": 0.6 },
   "colorSafe": false
 }
 ```
@@ -141,7 +143,7 @@ export function exportCube(size=32) {}      // .cube file for use in photo tools
 
 ## Palettes
 
-All four palettes share the same anchor roles, so the tuning panel can compare them side by side. Values for `from` are first estimates. During slice step S3 they get replaced by eyedropper samples from the real render (see tuning knobs).
+All four palettes share the same anchor roles, so the tuning panel can compare them side by side. The `to` colors are full-strength targets; at the realism-first strength of about 0.35 the result lands roughly a third of the way there. Values for `from` are first estimates. During slice step S3 they get replaced by eyedropper samples from the real render (see tuning knobs).
 
 **Dusk** (brand palette, the icon's mood): lilac high sky, peach horizon, slate shadows.
 
@@ -160,7 +162,7 @@ All four palettes share the same anchor roles, so the tuning panel can compare t
 | highlight | #FFF6E8 | #FBF1DC |
 | lantern | #FFC774 | #FFDE95 |
 
-Grade: shadow tint #5E6E7D at 15%, highlight tint #FBF1DC, chroma 0.88, keepLuminance 0.7.
+Grade: shadow tint #5E6E7D at 15%, highlight tint #FBF1DC, chroma 0.95, keepLuminance 0.9.
 
 **Meadow morning**: cool clear air, dew-bright greens, warm low sun, blue-gray shadows.
 
@@ -179,7 +181,7 @@ Grade: shadow tint #5E6E7D at 15%, highlight tint #FBF1DC, chroma 0.88, keepLumi
 | highlight | #FFF6E8 | #FFF8E6 |
 | lantern | #FFC774 | #F9E3A8 |
 
-Grade: shadow tint #6F8794 at 18%, highlight tint #F9E3A8 at 8%, chroma 0.95, keepLuminance 0.75, lift 0.02.
+Grade: shadow tint #6F8794 at 18%, highlight tint #F9E3A8 at 8%, chroma 1.0, keepLuminance 0.9, lift 0.02.
 
 **Moonlight** (bats' gift): built for the night tier. Pulls the whole range toward the moonlight and heron-slate end of the brand palette: sky-high to #3E4A63, horizon to #7D86A0, water-deep to #2F4656 with highlight #FBF1DC, leaves to cool blue-greens (#4F6B62 to #8FA79A), lantern kept warm at #FFDE95 so lights stay the one warm accent. Grade: chroma 0.7, keepLuminance 0.85 (night must stay dark and readable), lower Purkinje strength so moonlit color survives. By day it reads as a silvery, overcast-moon look; it is meant to be scheduled for evening and night.
 
@@ -214,7 +216,7 @@ Desktop high tier at 1440p: exposure 0.05 ms, bloom 0.35 ms, tonemap plus LUT 0.
 ## Open questions
 
 - Should the palette follow the time of day automatically by default, or stay on the player's choice all day?
-- Is support for HDR monitors worth adding later, or is the painted look better kept in standard range?
+- Is support for HDR monitors worth adding later, or is the look better kept in standard range?
 - Should the painterly filter include a visible paper texture, or stay purely brushy?
 
 ## Depends on / feeds into

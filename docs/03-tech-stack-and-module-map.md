@@ -13,7 +13,7 @@
 - Coarse code never calls `Math.exp`, `Math.sin`, `Math.pow` or other transcendental functions (their last bits differ between browsers). It uses `+ - * /`, `Math.sqrt` (exactly rounded by spec) and the deterministic helpers exported by `core/rng.js` as `det`.
 - **Two times.** World time (`worldT`) drives simulation and saves. **Display time** drives what the player sees and hears (sky, foliage color and leaf cover, tide visuals, ambience) and equals world time except during previews and photo mode (`16-customization-and-photo-mode.md`). Renderers read display time; simulation reads world time only.
 - Workers exchange data by transferring `ArrayBuffer`s. No `SharedArrayBuffer` (GitHub Pages cannot send the cross-origin isolation headers it needs).
-- Additions beyond the brief's map: `src/core/recipes.js` (recipe loader, validator, generator registry), `recipes/index.json` (a static host cannot list a folder), `recipes/land/` (land pieces, doc 13), `recipes/world/` (global tuning: `terrain.json`, `structures.json`, `growth.json`, `water.json`, `sky.json`), `recipes/quality-tiers.json` (doc 19), `recipes/schemas/` (slider ranges per recipe type, doc 14), `src/vendor/` (libraries and fonts), `assets/audio/` (CC0 sounds, doc 17).
+- Additions beyond the brief's map: `src/core/recipes.js` (recipe loader, validator, generator registry), `recipes/index.json` (a static host cannot list a folder), `recipes/land/` (land pieces, doc 13), `recipes/world/` (global tuning: `terrain.json`, `structures.json`, `growth.json`, `water.json`, `sky.json`), `recipes/quality-tiers.json` (doc 19), `recipes/schemas/` (slider ranges per recipe type, doc 14), `src/vendor/` (libraries and fonts), `assets/audio/` (CC0 sounds, doc 17), `assets/textures/` (CC0 ground scans, doc 22).
 
 ## How it works
 
@@ -41,6 +41,7 @@ src/
   vendor/ wgpu-matrix/ fonts/ (Nunito, Fraunces woff2) gltf/ (later)
 recipes/  index.json quality-tiers.json species/ flora/ palettes/ land/ world/ schemas/
 assets/   audio/ (beds/ oneshots/ tools/ CREDITS.md)
+          textures/ (ground/<material>/<size>/ CREDITS.md, CC0 scans, doc 22)
 brand/    ebb-icon.svg ebb-favicon.svg favicon.ico icon-*.png apple-touch-icon.png
 docs/     architecture docs
 tools/    local test and benchmark pages
