@@ -24,7 +24,8 @@ import { emit } from '../core/events.js';
  *   | { type: 'brush.set', patch: { sculptMode?: 'raise'|'lower'|'flatten', paintLayer?: 'grass'|'sand'|'soil'|'rock', size?: number, strength?: number } }
  *   | { type: 'brush.resize', factor: number, source?: Source }
  *   | { type: 'history.undo', source?: Source }
- *   | { type: 'history.redo', source?: Source }} Action
+ *   | { type: 'history.redo', source?: Source }
+ *   | { type: 'time.flow', flow: 0|1|2|4 }} Action
  */
 
 /** @type {((a: Action) => void)[]} */

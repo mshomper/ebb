@@ -1,0 +1,16 @@
+{
+  "type": "shadows",
+  "version": 1,
+  "note": "Cascaded shadow tuning (docs/06, Shadows). Tier sizes and cascade counts live in quality-tiers.json.",
+  "splitLambda": 0.6,
+  "minDistance": 60,
+  "worldRadiusFactor": 1.5,
+  "lightPullBack": 60,
+  "depthBias": 2,
+  "depthBiasSlopeScale": 2.5,
+  "shadowLod": 64,
+  "sunFadeDeg": [-4, 0],
+  "moonFadeDeg": [0, 6],
+  "moonFullForShadow": 0.5,
+  "cloudSoftening": 0.85
+}

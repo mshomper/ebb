@@ -1,10 +1,11 @@
 // @ts-check
-// Starts ebb on a canvas: GPU, tier, camera, terrain, frame graph, input, history and the frame loop.
+// Starts ebb on a canvas: GPU, tier, camera, terrain, sky and light, the hourly tick, frame graph,
+// input, history and the frame loop.
 // Shared by index.html (through main.js) and the tools pages, so they measure the same code.
 
 import { initGpu, onDeviceLost } from './core/gpu.js';
 import * as clock from './core/clock.js';
-import { flushDeferred, emitDeferred } from './core/events.js';
+import { flushDeferred, emitDeferred, on } from './core/events.js';
 import { get as getStore, update as updateStore } from './core/store.js';
 import { loadRecipe } from './core/recipes.js';
 import { subSeed } from './core/rng.js';
@@ -13,9 +14,15 @@ import { createOrbitCamera } from './render/camera.js';
 import { createFrameGraph } from './render/frame-graph.js';
 import { createFrameUniformWriter } from './render/frame-uniforms.js';
 import { createTerrainPass } from './render/passes/terrain.js';
-import { createSkyPlainPass } from './render/passes/sky-plain.js';
+import { createShadowPass } from './render/passes/shadow.js';
+import { createSkyPass } from './render/passes/sky.js';
+import { createExposurePass } from './render/passes/post/exposure.js';
 import { createTonemapPass } from './render/passes/post/tonemap.js';
+import { createAtmosphere } from './render/sky/atmosphere.js';
+import { createLighting } from './render/lighting.js';
+import { createDaylight } from './render/daylight.js';
 import { createLiveSim } from './sim/live-sim.js';
+import { initialWorldState, makeEnv, runHour } from './sim/tick.js';
 import { createTerrain } from './world/terrain/index.js';
 import { onAction, history } from './input/actions.js';
 import { attachDesktopInput } from './input/desktop.js';
@@ -41,11 +48,14 @@ export async function startApp(canvas, hooks = {}) {
   const seed = Number.parseInt(params.get('seed') ?? '1', 10) >>> 0;
   updateStore('meta', (m) => { m.seed = seed; });
 
-  const [{ tier, settings: tierSettings, reasons }, camRecipe, skyRecipe, terrainRecipe] = await Promise.all([
+  const [{ tier, settings: tierSettings, reasons }, camRecipe, skyRecipe, terrainRecipe, seasonsRecipe, exposureRecipe, shadowRecipe] = await Promise.all([
     pickTier(gpu.adapter),
     loadRecipe('world/camera'),
     loadRecipe('world/sky'),
     loadRecipe('world/terrain'),
+    loadRecipe('world/seasons'),
+    loadRecipe('world/exposure'),
+    loadRecipe('world/shadows'),
   ]);
   const landRecipe = await loadRecipe(terrainRecipe.starter.land);
   updateStore('settings', (s) => { s.quality = tier; });
@@ -63,21 +73,39 @@ export async function startApp(canvas, hooks = {}) {
 
   const terrain = await createTerrain(gpu, { seed: subSeed(seed, 'terrain'), recipe: terrainRecipe, land: landRecipe });
   history.setApplier('terrain', (cmd, dir) => terrain.applyTiles(dir === 'undo' ? cmd.before : cmd.after));
-  const sim = createLiveSim();
+  // The world clock and the shared hourly tick (weather, seasons). A new world starts mid-morning.
+  if (clock.worldT() === 0) clock.reset((skyRecipe.orbit.startHour ?? 10) * clock.SECONDS_PER_HOUR);
+  updateStore('meta', (m) => { m.flow = clock.flow(); });
+  const env = makeEnv(seed, { seasons: seasonsRecipe, sky: skyRecipe.orbit });
+  /** @type {import('./sim/live-sim.js').LiveWorld} */
+  const world = { state: getStore('world') ?? runHour(initialWorldState(seed), clock.hourIndex(), env).state, env };
+  updateStore('world', () => world.state);
+  const sim = createLiveSim({ world });
   sim.addSystem(terrain);
+  const unHour = on('clock:hour', (/** @type {{ hour: number }} */ p) => {
+    for (const e of sim.hourlyTick(p.hour)) emitDeferred(e.name, e.payload);
+    updateStore('world', () => world.state);
+  });
 
   const camera = createOrbitCamera(camRecipe);
   camera.setGroundProbe((x, z) => terrain.sampleHeight(x, z));
 
-  const graph = createFrameGraph(gpu, [
-    createTerrainPass({ terrain, recipe: terrainRecipe, seed: subSeed(seed, 'terrain-look'), getEye: () => camera.eye, tier }),
-    createSkyPlainPass(),
-    createTonemapPass(),
-  ], { tier });
-  await graph.setup();
-  graph.setSky(skyRecipe);
+  // Light: the physical sky, sun or moon shadows, the shared lighting group, slow eye adaptation.
+  const atmosphere = await createAtmosphere(gpu.device, skyRecipe, tierSettings);
+  const shadowPass = createShadowPass({ terrain, recipe: shadowRecipe, terrainRecipe, tierShadows: tierSettings.shadows, worldRadius: camRecipe.worldRadius });
+  const lighting = createLighting(gpu.device, atmosphere, shadowPass.resources(gpu.device));
+  const exposure = createExposurePass(exposureRecipe);
+  const daylight = createDaylight({ sky: skyRecipe, seasons: seasonsRecipe, shadows: shadowRecipe });
 
-  const sunDir = normalize3(skyRecipe.sunDir);
+  const graph = createFrameGraph(gpu, [
+    shadowPass,
+    createTerrainPass({ terrain, recipe: terrainRecipe, seed: subSeed(seed, 'terrain-look'), getEye: () => camera.eye, tier }),
+    createSkyPass(atmosphere, skyRecipe),
+    exposure,
+    createTonemapPass(),
+  ], { tier, lighting });
+  await graph.setup();
+
   const uniforms = createFrameUniformWriter();
   const prevViewProj = new Float32Array(16);
 
@@ -190,6 +218,10 @@ export async function startApp(canvas, hooks = {}) {
         break;
       case 'history.undo': if (!stroking) runHistory('undo'); break;
       case 'history.redo': if (!stroking) runHistory('redo'); break;
+      case 'time.flow':
+        clock.setFlow(a.flow);
+        updateStore('meta', (m) => { m.flow = a.flow; });
+        break;
     }
   });
   const detachDesktop = attachDesktopInput(canvas, camRecipe, rb);
@@ -230,8 +262,15 @@ export async function startApp(canvas, hooks = {}) {
     updateRing();
     if (queuedHistory && !terrain.isBusy()) runHistory(queuedHistory);
 
+    // Sun, moon and weather at display time (a sky-lab preview moves only the look, never the world).
     const display = clock.display();
     const season = clock.seasonOf(display);
+    const day = daylight.update(display, world.state, getStore('preview')?.weather ?? null, atmosphere.aerosolScale);
+    atmosphere.setAtmosphere({ cloud: day.weather.cloud, mist: day.weather.mist, rain: day.weather.rain });
+    for (const event of day.events) emitDeferred('sky:sun-crossed', { event });
+    const ev100 = exposure.ev100(realDt);
+    if (frameIndex % 15 === 0) updateStore('render', (r) => ({ ...(r ?? {}), ev100 }));
+
     graph.writeFrameUniforms(uniforms.pack({
       view: camera.view, proj: camera.proj, viewProj: camera.viewProj, invViewProj: camera.invViewProj,
       prevViewProj, cameraPos: camera.eye, near: camera.near,
@@ -241,24 +280,37 @@ export async function startApp(canvas, hooks = {}) {
       dayFrac: clock.dayFractionOf(display),
       yearFrac: clock.yearFractionOf(display),
       seasonPhase: season.phase,
-      moonPhase: 0,
-      ev100: skyRecipe.ev100,
-      sunDir, sunIlluminance: skyRecipe.sunIlluminanceLux,
-      moonDir: [0, 1, 0], moonIlluminance: [0, 0, 0],
+      moonPhase: day.sm.moonPhase,
+      ev100,
+      sunDir: day.sm.sunDir, sunIlluminance: day.sunIlluminance,
+      moonDir: day.sm.moonDir, moonIlluminance: day.moonIlluminance,
       tierFlags: tier === 'high' ? 2 : tier === 'medium' ? 1 : 0,
       frameIndex,
     }));
     prevViewProj.set(camera.viewProj);
+
+    shadowPass.update({ eye: camera.eye, view: camera.view, proj: camera.proj, near: camera.near, targetDistance: camera.distance },
+      day.shadowDir, day.shadowStrength);
+    lighting.write({
+      shadow: shadowPass.state, weather: day.weather,
+      aerial: { maxDistance: atmosphere.aerialMaxDistance, slices: atmosphere.aerialSlices },
+    });
 
     /** @type {import('./sim/live-sim.js').FrameInfo} */
     const info = { dt: t.dt, realDt, worldT: t.worldT, animT: t.animT, displayT: display, tier };
     sim.update(info);
     const encoder = gpu.device.createCommandEncoder({ label: 'frame' });
     sim.encode(encoder, info);
+    atmosphere.update(encoder, {
+      sunDir: day.sm.sunDir, moonDir: day.sm.moonDir,
+      sunIlluminanceTOA: day.sunTOA, moonIlluminanceTOA: day.moonTOA,
+      cameraPos: camera.eye, invViewProj: camera.invViewProj, view: camera.view,
+    });
     graph.render(encoder);
     gpu.device.queue.submit([encoder.finish()]);
     graph.afterSubmit();
     sim.afterSubmit();
+    exposure.afterSubmit();
 
     if (frameIndex > 0) emitDeferred('render:frame-ended', { frameMs, cpuMs: performance.now() - cpuStart, frameIndex });
     flushDeferred();
@@ -275,10 +327,12 @@ export async function startApp(canvas, hooks = {}) {
     observer.disconnect();
     unAction();
     unHistory();
+    unHour();
     detachDesktop();
     detachTouch();
     graph.dispose();
     sim.dispose();
+    atmosphere.dispose();
   }
 
   onDeviceLost((info) => {
@@ -297,10 +351,4 @@ export async function startApp(canvas, hooks = {}) {
     stop,
     terrain,
   };
-}
-
-/** @param {number[]} v */
-function normalize3(v) {
-  const l = Math.hypot(v[0], v[1], v[2]) || 1;
-  return [v[0] / l, v[1] / l, v[2] / l];
 }

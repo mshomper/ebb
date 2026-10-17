@@ -68,6 +68,35 @@ const ICONS = {
     <path d="M16.2 12C17.4 15.5 19 20 21.5 20"/>
     <path d="M3.5 12H20.5"/>
     <path d="M8.6 9.6C9.5 8.4 10.6 8 12 8S14.5 8.4 15.4 9.6" stroke-dasharray="0.01 2.9" opacity="0.7"/>`,
+
+  // Time flow: half sun on a horizon, with a flow arc passing over it.
+  time: `
+    <path ${ACCENT} d="M7.5 16.5A4.5 4.5 0 0 1 16.5 16.5Z"/>
+    <path d="M7.5 16.5A4.5 4.5 0 0 1 16.5 16.5"/>
+    <path d="M2.5 16.5H21.5"/>
+    <path d="M7 20H17"/>
+    <path d="M4.6 11.4A8.4 8.4 0 0 1 19 10.8"/>
+    <path d="M19.9 7.9L19 10.8L16.1 10.2"/>`,
+
+  // Time-flow states, drawn beside the time icon: one, two or three lit pips (with the unlit
+  // ones as faint rings) for 1x, 2x, 4x; two rest bars for pause.
+  'flow-1': `
+    <circle cx="5" cy="12" r="3" fill="currentColor" stroke="none"/>
+    <circle cx="12" cy="12" r="2.1" opacity="0.45"/>
+    <circle cx="19" cy="12" r="2.1" opacity="0.45"/>`,
+  'flow-2': `
+    <circle cx="5" cy="12" r="3" fill="currentColor" stroke="none"/>
+    <circle cx="12" cy="12" r="3" fill="currentColor" stroke="none"/>
+    <circle cx="19" cy="12" r="2.1" opacity="0.45"/>`,
+  'flow-4': `
+    <circle cx="5" cy="12" r="3" fill="currentColor" stroke="none"/>
+    <circle cx="12" cy="12" r="3" fill="currentColor" stroke="none"/>
+    <circle cx="19" cy="12" r="3" fill="currentColor" stroke="none"/>`,
+  'flow-pause': `
+    <rect ${ACCENT} x="7" y="6.5" width="3.5" height="11" rx="1.75"/>
+    <rect x="7" y="6.5" width="3.5" height="11" rx="1.75"/>
+    <rect ${ACCENT} x="13.5" y="6.5" width="3.5" height="11" rx="1.75"/>
+    <rect x="13.5" y="6.5" width="3.5" height="11" rx="1.75"/>`,
 };
 
 /** Names of every icon in the sprite. */

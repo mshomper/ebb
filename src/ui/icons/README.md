@@ -32,5 +32,8 @@ Size and color come from CSS: set `width`/`height` on `.icon` and `color` on the
 | `raise` | mound with an up stroke |
 | `lower` | hollow with a down stroke |
 | `flatten` | level shelf line over a mound, the cut-away top dotted |
+| `time` | half sun on a horizon with a flow arc |
+| `flow-1`, `flow-2`, `flow-4` | one, two or three pips: normal, 2x and 4x speed |
+| `flow-pause` | two rest bars: time paused |
 
 Adding an icon: add an entry to `ICONS` in `icons.js` following the rules above, then add a row here.

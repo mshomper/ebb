@@ -209,6 +209,8 @@ export function createOrbitCamera(r) {
     get viewProj() { return viewProj; },
     get invViewProj() { return invViewProj; },
     get near() { return r.near; },
+    /** Current distance from the eye to the orbit target, meters. */
+    get distance() { return cur.distance; },
   };
 }
 

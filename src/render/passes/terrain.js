@@ -3,45 +3,13 @@
 // plane, into the HDR target (docs/04, 08). Reads the terrain's GPU textures; never changes them.
 
 import { makeBuffer, makeShaderModule } from '../../core/gpu.js';
-import { CHUNK_CELLS, CHUNK_SIZE, CHUNK_MIN } from '../../world/terrain/grid.js';
+import { CHUNK_SIZE, CHUNK_MIN } from '../../world/terrain/grid.js';
+import { LODS, MAX_CHUNKS, createIndexBuffers, packChunks } from '../terrain-mesh.js';
 
 /** @typedef {import('../frame-graph.js').PassContext} PassContext */
 
 const DRAW_BYTES = 160;
-const MAX_CHUNKS = 36;
-const LODS = [128, 64, 32];
 const DEG = Math.PI / 180;
-
-/**
- * Index buffer for one chunk grid of n quads a side, plus skirts on all four edges.
- * Vertex ids follow vsLand: grid vertices first (row-major), then four edges of skirt vertices.
- * @param {number} n
- */
-function buildIndices(n) {
-  const row = n + 1;
-  const grid = (/** @type {number} */ i, /** @type {number} */ j) => j * row + i;
-  const edgeVertex = [
-    (/** @type {number} */ t) => grid(t, 0),
-    (/** @type {number} */ t) => grid(n, t),
-    (/** @type {number} */ t) => grid(t, n),
-    (/** @type {number} */ t) => grid(0, t),
-  ];
-  const out = [];
-  for (let j = 0; j < n; j++) {
-    for (let i = 0; i < n; i++) {
-      const a = grid(i, j), b = grid(i + 1, j), c = grid(i, j + 1), d = grid(i + 1, j + 1);
-      out.push(a, c, b, b, c, d);
-    }
-  }
-  for (let e = 0; e < 4; e++) {
-    for (let t = 0; t < n; t++) {
-      const a = edgeVertex[e](t), b = edgeVertex[e](t + 1);
-      const sa = row * row + e * row + t, sb = sa + 1;
-      out.push(a, sa, b, b, sa, sb);
-    }
-  }
-  return new Uint16Array(out);
-}
 
 /**
  * @param {{ terrain: import('../../world/terrain/index.js').Terrain, recipe: any, seed: number,
@@ -54,7 +22,7 @@ export function createTerrainPass(opts) {
   /** @type {GPUBindGroup} */ let group;
   /** @type {GPUBuffer} */ let drawBuffer;
   /** @type {GPUBuffer} */ let chunkBuffer;
-  /** @type {{ buffer: GPUBuffer, count: number }[]} */ const indexBuffers = [];
+  /** @type {{ buffer: GPUBuffer, count: number }[]} */ let indexBuffers = [];
   const draw = new ArrayBuffer(DRAW_BYTES);
   const f = new Float32Array(draw);
   const u = new Uint32Array(draw);
@@ -111,13 +79,8 @@ export function createTerrainPass(opts) {
 
       drawBuffer = makeBuffer(device, { label: 'terrain-draw', size: DRAW_BYTES, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
       chunkBuffer = makeBuffer(device, { label: 'terrain-chunks', size: MAX_CHUNKS * 16, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
-      for (const n of LODS) {
-        const idx = buildIndices(n);
-        // 6n^2 + 24n indices is always even, so the byte length is a multiple of 4 as writeBuffer needs.
-        const buffer = makeBuffer(device, { label: `terrain-index-${n}`, size: idx.byteLength, usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST });
-        device.queue.writeBuffer(buffer, 0, idx);
-        indexBuffers.push({ buffer, count: idx.length });
-      }
+      indexBuffers = createIndexBuffers(device);
+
       const sampler = device.createSampler({ label: 'terrain-linear', magFilter: 'linear', minFilter: 'linear', addressModeU: 'clamp-to-edge', addressModeV: 'clamp-to-edge' });
       group = device.createBindGroup({
         label: 'terrain-draw',
@@ -154,20 +117,9 @@ export function createTerrainPass(opts) {
           byLod[lod].push(cx, cz);
         }
       }
-      let k = 0;
-      /** @type {{ lod: number, first: number, count: number }[]} */ const draws = [];
-      byLod.forEach((list, lod) => {
-        const first = k;
-        for (let i = 0; i < list.length; i += 2) {
-          chunkData[k * 4] = (list[i] - CHUNK_MIN) * CHUNK_CELLS;
-          chunkData[k * 4 + 1] = (list[i + 1] - CHUNK_MIN) * CHUNK_CELLS;
-          chunkData[k * 4 + 2] = CHUNK_CELLS / LODS[lod];
-          chunkData[k * 4 + 3] = LODS[lod];
-          k++;
-        }
-        if (k > first) draws.push({ lod, first, count: k - first });
-      });
-      device.queue.writeBuffer(chunkBuffer, 0, chunkData, 0, Math.max(4, k * 4));
+      const draws = packChunks(chunkData, byLod);
+      device.queue.writeBuffer(chunkBuffer, 0, chunkData);
+
 
       const pass = encoder.beginRenderPass({
         label: 'opaque',

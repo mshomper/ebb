@@ -6,7 +6,7 @@
 
 - Sky model: **Sébastien Hillaire, "A Scalable and Production Ready Sky and Atmosphere Rendering Technique" (EGSR 2020)**. Four LUTs: transmittance, multiple scattering, sky-view, aerial perspective. Earth-like atmosphere (Rayleigh, Mie, ozone).
 - Units: sun illuminance at the top of the atmosphere **120,000 lux**. Ground illuminance comes out of the transmittance LUT (about 100,000 to 110,000 lux at noon). Full moon about 0.27 lux at the ground. Lanterns in candela.
-- World orientation: +X east, −Z north, Y up. Fictional latitude **40° N**, axial tilt **18°**, so day length runs from about 9.5 game hours (midwinter) to 14.5 (midsummer). Both are tuning values.
+- World orientation: +X east, −Z north, Y up. Fictional latitude **40° N**, axial tilt **21°** (S2: 18° gave only 9.9 to 14.1 hours), so day length runs from about 9.5 game hours (midwinter) to 14.5 (midsummer). Both are tuning values.
 - Year: `yearFrac` 0 is the spring equinox (start of season 0 in `src/core/clock.js`).
 - Moon: **synodic cycle of 7 game days**, one full lunar cycle per season. New moon at the start of each season, full moon at day 3.5. `src/world/tide.js` reads moon phase for spring and neap tides (see `07-water-and-tide.md`).
 - One directional shadow caster: the sun, or the moon when the sun is below −4° elevation. Crossfade between them through twilight.

@@ -32,6 +32,39 @@ fn terrainHeight(heightTex: texture_2d<f32>, xz: vec2f) -> f32 {
   return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
 }
 
+// One chunk of the terrain mesh, as drawn (terrain-draw) and as shadow caster (shadow).
+struct TerrainChunk {
+  originCell: vec2f,  // window cell of the chunk's first vertex
+  step: f32,          // cells per quad
+  quads: f32,         // quads per side
+};
+
+// World position of mesh vertex `vi` of a chunk. Grid vertices come first (row-major), then four
+// edges of skirt vertices dropped `skirtDepth` below the ground to hide cracks between LODs.
+fn terrainMeshVertex(heightTex: texture_2d<f32>, ch: TerrainChunk, vi: u32, skirtDepth: f32) -> vec3f {
+  let n = u32(ch.quads);
+  let row = n + 1u;
+  var g: vec2u;
+  var skirt = false;
+  if (vi < row * row) {
+    g = vec2u(vi % row, vi / row);
+  } else {
+    let k = vi - row * row;
+    let e = k / row;
+    let t = k % row;
+    skirt = true;
+    if (e == 0u) { g = vec2u(t, 0u); }
+    else if (e == 1u) { g = vec2u(n, t); }
+    else if (e == 2u) { g = vec2u(t, n); }
+    else { g = vec2u(0u, t); }
+  }
+  let cell = min(vec2i(ch.originCell + vec2f(g) * ch.step), vec2i(TERRAIN_CELLS - 1));
+  let xz = TERRAIN_ORIGIN + (vec2f(cell) + 0.5) * TERRAIN_CELL;
+  var h = terrainLoad(heightTex, cell);
+  if (skirt) { h -= skirtDepth; }
+  return vec3f(xz.x, h, xz.y);
+}
+
 // Ground normal from central differences of the bilinear height.
 fn terrainNormal(heightTex: texture_2d<f32>, xz: vec2f) -> vec3f {
   let e = TERRAIN_CELL;

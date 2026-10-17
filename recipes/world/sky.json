@@ -1,13 +1,56 @@
 {
   "type": "sky",
-  "version": 1,
-  "note": "M0 placeholder sky: a plain analytic gradient in physical units. Replaced by the physical sky in M1 S2.",
-  "sunDir": [-0.62, 0.42, 0.66],
-  "sunIlluminanceLux": [28500, 21600, 15600],
-  "skyZenithNits": [900, 1000, 1600],
-  "skyHorizonNits": [3400, 2900, 2700],
-  "sunGlowNits": [5200, 3300, 2000],
-  "sunGlowPower": 18,
-  "groundBounceNits": [350, 380, 400],
-  "ev100": 12.7
+  "version": 2,
+  "note": "Physical sky after Hillaire 2020 (docs/06). Planet radii are fixed at 6360 km and 6460 km in lib-atmosphere.wgsl and atmosphere-cpu.js. Coefficients are per km, heights in km unless the name says m. Stars and the Milky Way are the one art-directed term: their brightness is set in EV above the night exposure floor (EV100 -1, docs/05), not in physical units.",
+  "orbit": { "latitudeDeg": 40, "tiltDeg": 21, "moonCycleDays": 7, "startHour": 10, "note": "tilt 21 gives the 9.5 h midwinter and 14.5 h midsummer days doc 06 asks for; startHour sets a new world's first hour" },
+  "sun": {
+    "illuminanceTOA": [122000, 119700, 116000],
+    "angularDiameterDeg": 0.53,
+    "limbDarkening": [0.48, 0.58, 0.68],
+    "maxPreExposed": 30000
+  },
+  "moon": {
+    "illuminanceFull": 0.27,
+    "angularDiameterDeg": 0.52,
+    "albedo": { "highlands": 1.12, "maria": 0.68, "note": "relative albedo; the full disk averages about 1 so it integrates to illuminanceFull" },
+    "earthshine": 0.0004
+  },
+  "atmosphere": {
+    "rayleigh": { "scatteringPerKm": [0.005802, 0.013558, 0.0331], "scaleHeightKm": 8.0 },
+    "mie": { "scatteringPerKm": [0.003996, 0.003996, 0.003996], "absorptionPerKm": [0.000444, 0.000444, 0.000444], "scaleHeightKm": 1.2, "g": 0.8 },
+    "ozone": { "absorptionPerKm": [0.00065, 0.001881, 0.000085], "centerKm": 25, "halfWidthKm": 15 },
+    "groundAlbedo": [0.25, 0.25, 0.25],
+    "probeGroundAlbedo": [0.15, 0.15, 0.15],
+    "frostGroundAlbedo": [0.45, 0.45, 0.45]
+  },
+  "groundAerosol": {
+    "note": "Diorama haze: a local Mie layer hugging the ground. scatteringPerKm is at sea level for density 1; slightly bluer at short wavelengths (Angstrom exponent about 1.3).",
+    "scatteringPerKm": [0.6, 0.8, 1.07],
+    "absorptionPerKm": [0.06, 0.08, 0.107],
+    "g": 0.75,
+    "scaleHeight": 40,
+    "density": 1.0,
+    "dawnBoost": 2.5,
+    "mistBoost": 3.0,
+    "rainBoost": 2.0
+  },
+  "aerial": { "maxDistance": 400 },
+  "stars": {
+    "count": 4000,
+    "brightnessAboveFloorEV": 3.0,
+    "magnitudeLimit": 6.5,
+    "twinkle": 0.25,
+    "twinkleHz": 0.35,
+    "colorAmount": 0.55,
+    "fadeSkyNits": 0.02,
+    "milkyWayAboveFloorEV": -1.5,
+    "milkyWayWidthDeg": 11
+  },
+  "airglow": { "radianceNits": [0.00011, 0.00016, 0.0001], "heightKm": 90 },
+  "overcast": {
+    "note": "cloud blends the sky toward a gray CIE overcast dome whose horizontal illuminance is the clear sky plus sunToDome of the direct sun",
+    "sunToDome": 0.3,
+    "sunOcclusion": 0.9,
+    "diskOcclusion": 0.97
+  }
 }

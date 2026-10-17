@@ -1,0 +1,88 @@
+/* Time-flow button (src/ui/time-flow.js). Bottom right, the same night glass as the tool bar.
+   Where the bottom-center tool bar leaves no room beside it (narrow portrait) or sits at the
+   right edge (phone landscape), the button stacks just above the bar at the right edge. */
+
+.ebb-time {
+  --tf-btn: 48px;
+  --tf-icon: 28px;
+  --tf-state: 26px;
+  /* Tool bar height: button + 2 x 6 px padding + 2 x 1 px border (tools.css). */
+  --tf-bar: calc(var(--tf-btn) + 14px);
+  --tf-edge: 12px;
+
+  position: fixed;
+  right: max(var(--tf-edge), env(safe-area-inset-right));
+  bottom: max(var(--tf-edge), env(safe-area-inset-bottom));
+  z-index: 10;
+  pointer-events: none;
+  transition: opacity 200ms ease, transform 220ms ease, visibility 0s;
+}
+
+@media (pointer: coarse) {
+  .ebb-time { --tf-btn: 52px; --tf-icon: 26px; }
+}
+
+.ebb-time__btn {
+  appearance: none;
+  -webkit-appearance: none;
+  pointer-events: auto;
+  height: var(--tf-btn);
+  min-width: var(--tf-btn);
+  margin: 0;
+  padding: 0 12px 0 10px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(30, 38, 36, 0.72);
+  border: 1px solid rgba(244, 238, 228, 0.12);
+  border-radius: 16px;
+  box-shadow: 0 6px 24px rgba(10, 14, 13, 0.28);
+  color: var(--ui-cream);
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color 160ms ease;
+}
+@media (pointer: fine) {
+  .ebb-time__btn { -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
+}
+.ebb-time__btn:hover { background: rgba(48, 58, 55, 0.8); }
+.ebb-time__btn:focus-visible {
+  outline: 2px solid var(--wordmark-dark);
+  outline-offset: 2px;
+}
+.ebb-time__btn[data-flow='0'] .ebb-time__state { color: var(--wordmark-dark); }
+
+.ebb-time .icon { display: block; flex: none; }
+.ebb-time__icon { width: var(--tf-icon); height: var(--tf-icon); }
+.ebb-time__state {
+  width: var(--tf-state);
+  height: var(--tf-state);
+  display: grid;
+  place-items: center;
+  flex: none;
+}
+.ebb-time__pips { width: var(--tf-state); height: var(--tf-state); }
+
+/* Narrow portrait: no room beside the centered bar, so sit just above it at the right edge.
+   The brush card opens full width over that spot, so the button steps aside while a tool is on. */
+@media (max-width: 560px) {
+  .ebb-time { bottom: calc(max(var(--tf-edge), env(safe-area-inset-bottom)) + var(--tf-bar) + 10px); }
+  .ebb-time.has-tool {
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(8px);
+    transition: opacity 200ms ease, transform 220ms ease, visibility 0s linear 220ms;
+  }
+  .ebb-time.has-tool .ebb-time__btn { pointer-events: none; }
+}
+
+/* Phone landscape: the bar sits at the bottom of the right edge with the brush card to its left,
+   so the space above the bar is free. */
+@media (max-height: 500px) and (min-width: 600px) {
+  .ebb-time { bottom: calc(max(var(--tf-edge), env(safe-area-inset-bottom)) + var(--tf-bar) + 10px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ebb-time, .ebb-time.has-tool { transform: none; }
+}

@@ -29,40 +29,41 @@ import { FRAME_UNIFORM_BYTES } from './frame-uniforms.js';
  * @property {(name: string) => GPURenderPassTimestampWrites | undefined} timestampWrites
  */
 
-const SKY_BYTES = 64;
 const READBACK_RING = 3;
+
+/**
+ * Group 0 layout (FrameUniforms), shared so other modules can build pipelines before the graph exists.
+ * @param {GPUDevice} device
+ */
+export function createFrameLayout(device) {
+  return device.createBindGroupLayout({
+    label: 'group0-frame',
+    entries: [{ binding: 0, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT | GPUShaderStage.COMPUTE, buffer: {} }],
+  });
+}
 
 /**
  * @param {import('../core/gpu.js').Gpu} gpu
  * @param {Pass[]} passes   in the order they run
- * @param {{ tier: string }} opts
+ * @param {{ tier: string, lighting: { layout: GPUBindGroupLayout, group: GPUBindGroup } }} opts
+ *   lighting is group 1 (src/render/lighting.js)
  */
 export function createFrameGraph(gpu, passes, opts) {
   const { device, context, format } = gpu;
   const canTime = gpu.features.has('timestamp-query');
 
-  const frameLayout = device.createBindGroupLayout({
-    label: 'group0-frame',
-    entries: [{ binding: 0, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT | GPUShaderStage.COMPUTE, buffer: {} }],
-  });
-  const lightingLayout = device.createBindGroupLayout({
-    label: 'group1-lighting',
-    entries: [{ binding: 0, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT | GPUShaderStage.COMPUTE, buffer: {} }],
-  });
+  const frameLayout = createFrameLayout(device);
   const frameBuffer = makeBuffer(device, {
     label: 'frame-uniforms', size: FRAME_UNIFORM_BYTES, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-  });
-  const skyBuffer = makeBuffer(device, {
-    label: 'sky-plain-uniforms', size: SKY_BYTES, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
   });
 
   /** @type {PassContext} */
   const ctx = {
     device, context, format,
-    layouts: { frame: frameLayout, lighting: lightingLayout },
+    layouts: { frame: frameLayout, lighting: opts.lighting.layout },
     groups: {
       frame: device.createBindGroup({ label: 'frame', layout: frameLayout, entries: [{ binding: 0, resource: { buffer: frameBuffer } }] }),
-      lighting: device.createBindGroup({ label: 'lighting', layout: lightingLayout, entries: [{ binding: 0, resource: { buffer: skyBuffer } }] }),
+      lighting: opts.lighting.group,
     },
     targets: /** @type {any} */ ({}),
     size: [0, 0],
@@ -99,20 +100,6 @@ export function createFrameGraph(gpu, passes, opts) {
 
   async function setup() {
     await Promise.all(passes.map((p) => p.setup(ctx)));
-  }
-
-  /**
-   * Sky placeholder values in nits (docs/06 replaces this with sky LUTs).
-   * @param {any} sky
-   */
-  function setSky(sky) {
-    const f = new Float32Array(SKY_BYTES / 4);
-    f.set(sky.skyZenithNits, 0);
-    f[3] = sky.sunGlowPower;
-    f.set(sky.skyHorizonNits, 4);
-    f.set(sky.sunGlowNits, 8);
-    f.set(sky.groundBounceNits, 12);
-    device.queue.writeBuffer(skyBuffer, 0, f);
   }
 
   /**
@@ -195,7 +182,7 @@ export function createFrameGraph(gpu, passes, opts) {
   }
 
   return {
-    setup, setSky, resize, writeFrameUniforms, render, afterSubmit, dispose,
+    setup, resize, writeFrameUniforms, render, afterSubmit, dispose,
     get size() { return ctx.size; },
     get timingSupported() { return canTime; },
     passNames: () => active().map((p) => p.name),
