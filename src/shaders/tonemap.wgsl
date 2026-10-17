@@ -1,12 +1,33 @@
-// Placeholder tonemap and present: pre-exposed HDR -> AgX-style curve -> dither -> screen.
-// The palette LUT lookup is added here in M1 S3 (docs/05); this is the only place it will live.
+// Tonemap and present (docs/05): pre-exposed HDR + bloom -> Purkinje night shift -> AgX with the
+// palette's look -> palette LUT (two LUTs, crossfaded) -> soft outline -> dither -> screen.
+// Everything before the LUT is physical or perceptual; the palette is the only painted step.
 
 // #include common
 // #include lib-hash
+// #include lib-oklab
+
+struct Post {
+  bloomMix: f32, lutFade: f32, lutFrom: u32, lutTo: u32,
+  lookSlope: f32, lookPower: f32, lookSat: f32, purkinje: f32,
+  outlineAmount: f32, terrainAmount: f32, outlineChroma: f32, outlineWidthPx: f32,
+  fadeStart: f32, fadeEnd: f32, split: f32, ditherCode: f32,
+  rodFull: f32, rodNone: f32, creatureBoost: f32, _p0: f32,
+  depthEdge: vec2f, normalEdge: vec2f,
+  rodWeights: vec3f, _p1: f32,
+  tint: vec3f, _p2: f32,
+};
 
 @group(0) @binding(0) var<uniform> frame: FrameUniforms;
 @group(2) @binding(0) var hdrTex: texture_2d<f32>;
-@group(2) @binding(1) var hdrSampler: sampler;
+@group(2) @binding(1) var linearSampler: sampler;
+@group(2) @binding(2) var bloomTex: texture_2d<f32>;
+@group(2) @binding(3) var lutA: texture_3d<f32>;
+@group(2) @binding(4) var lutB: texture_3d<f32>;
+@group(2) @binding(5) var normalIdTex: texture_2d<f32>;
+@group(2) @binding(6) var depthTex: texture_depth_2d;
+@group(2) @binding(7) var<uniform> post: Post;
+
+const LUM = vec3f(0.2126, 0.7152, 0.0722);
 
 // AgX base, polynomial sigmoid fit (Benjamin Wrensch, "Minimal AgX implementation", 2023).
 fn agxContrast(x: vec3f) -> vec3f {
@@ -28,12 +49,72 @@ fn agx(color: vec3f) -> vec3f {
   return agxContrast(c);
 }
 
+// The palette's AgX "look": ASC CDL slope and power, then saturation (as Blender's AgX looks).
+fn agxLook(c: vec3f) -> vec3f {
+  var v = pow(max(c * post.lookSlope, vec3f(0.0)), vec3f(post.lookPower));
+  let luma = dot(v, LUM);
+  return luma + post.lookSat * (v - luma);
+}
+
 fn agxEotf(c: vec3f) -> vec3f {
   let outset = mat3x3f(
     vec3f(1.19687900512017, -0.0528968517574562, -0.0529716355144438),
     vec3f(-0.0980208811401368, 1.15190312990417, -0.0980434501171241),
     vec3f(-0.0990297440797205, -0.0989611768448433, 1.15107367264116));
   return outset * c; // stays display-encoded (approximately sRGB), written to a non-sRGB swapchain
+}
+
+// Purkinje shift (after Patry, SIGGRAPH 2021): below a few hundredths of a nit the eye sees with
+// rods, so color fades toward a blue-shifted rod response. Perception, so it precedes the palette.
+fn nightShift(c: vec3f) -> vec3f {
+  let nits = dot(c, LUM) / max(frame.exposure, 1e-12);
+  let w = post.purkinje * (1.0 - smoothstep(post.rodFull, post.rodNone, nits));
+  let rod = dot(c, post.rodWeights);
+  let night = rod * post.tint / dot(post.tint, LUM);
+  return mix(c, night, w);
+}
+
+fn octDecode(e: vec2f) -> vec3f {
+  let f = e * 2.0 - 1.0;
+  var n = vec3f(f.x, 1.0 - abs(f.x) - abs(f.y), f.y);
+  let t = clamp(-n.y, 0.0, 1.0);
+  n.x += select(t, -t, n.x >= 0.0);
+  n.z += select(t, -t, n.z >= 0.0);
+  return normalize(n);
+}
+
+// Soft outline strength at an internal-resolution pixel, and the line amount for its group.
+// Lines sit on the nearer object; water and sky pixels never get lines (docs/05).
+fn outlineAt(p: vec2f) -> f32 {
+  let size = vec2i(textureDimensions(depthTex));
+  let c = clamp(vec2i(p), vec2i(0), size - 1);
+  let d0 = textureLoad(depthTex, c, 0);
+  let nid0 = textureLoad(normalIdTex, c, 0);
+  let group = i32(round(nid0.a * 3.0));
+  if (d0 <= 0.0 || nid0.b > 0.5 || group == 0) { return 0.0; }
+  let z0 = frame.near / d0;
+  let n0 = octDecode(nid0.rg);
+  let w = post.outlineWidthPx;
+  var edge = 0.0;
+  for (var i = 0; i < 4; i++) {
+    let dir = array<vec2f, 4>(vec2f(1.0, 0.0), vec2f(-1.0, 0.0), vec2f(0.0, 1.0), vec2f(0.0, -1.0))[i];
+    let q = clamp(vec2i(p + dir * w), vec2i(0), size - 1);
+    let d = textureLoad(depthTex, q, 0);
+    let nid = textureLoad(normalIdTex, q, 0);
+    if (nid.b > 0.5) { continue; }
+    if (d <= 0.0) { edge = max(edge, 1.0); continue; } // silhouette against the sky
+    let z = frame.near / d;
+    edge = max(edge, smoothstep(post.depthEdge.x, post.depthEdge.y, (z - z0) / z0));
+    let g = i32(round(nid.a * 3.0));
+    if (g != group && g != 0) { edge = max(edge, 1.0); }
+    let nd = dot(octDecode(nid.rg), n0);
+    edge = max(edge, 1.0 - smoothstep(post.normalEdge.y, post.normalEdge.x, nd));
+  }
+  var amount = post.outlineAmount;
+  if (group == 1) { amount = post.terrainAmount; }
+  if (group == 3) { amount = post.outlineAmount * post.creatureBoost; }
+  let fade = 1.0 - smoothstep(post.fadeStart, post.fadeEnd, z0);
+  return clamp(edge * amount * fade, 0.0, 1.0);
 }
 
 @vertex
@@ -43,9 +124,33 @@ fn vs(@builtin(vertex_index) vi: u32) -> FullscreenOut {
 
 @fragment
 fn fs(in: FullscreenOut) -> @location(0) vec4f {
-  let hdr = textureSampleLevel(hdrTex, hdrSampler, in.uv, 0.0).rgb;
-  var c = agxEotf(agx(hdr));
-  let noise = hashToFloat(hash3(vec3u(vec2u(in.pos.xy), frame.frameIndex & 63u))) - 0.5;
-  c += noise / 255.0;
+  var hdr = textureSampleLevel(hdrTex, linearSampler, in.uv, 0.0).rgb;
+  hdr += textureSampleLevel(bloomTex, linearSampler, in.uv, 0.0).rgb * post.bloomMix;
+  hdr = nightShift(hdr);
+  let display = clamp(agxEotf(agxLook(agx(hdr))), vec3f(0.0), vec3f(1.0));
+
+  // Palette LUT, sampled at texel centers, crossfading between the two LUTs during a swap.
+  let uvw = display * (31.0 / 32.0) + 0.5 / 32.0;
+  let a = textureSampleLevel(lutA, linearSampler, uvw, 0.0).rgb;
+  let b = textureSampleLevel(lutB, linearSampler, uvw, 0.0).rgb;
+  let fromC = select(a, b, post.lutFrom == 1u);
+  let toC = select(a, b, post.lutTo == 1u);
+  var c = mix(fromC, toC, post.lutFade);
+  // Palette lab before/after split: left of the divider shows the image without the palette.
+  if (post.split >= 0.0 && in.uv.x < post.split) { c = display; }
+
+  // Soft outline: a darker shade of the pixel's own color in OKLab, never black.
+  let ink = outlineAt(in.uv * frame.renderSize);
+  if (ink > 0.0) {
+    var lab = linearToOklab(srgbToLinear3(c));
+    lab.x *= 1.0 - ink;
+    lab = vec3f(lab.x, lab.yz * mix(1.0, post.outlineChroma, ink));
+    c = clamp(linearToSrgb3(oklabToLinear(lab)), vec3f(0.0), vec3f(1.0));
+  }
+
+  // Triangular dither of about one code value so pastel skies never band.
+  let h = hash3(vec3u(vec2u(in.pos.xy), frame.frameIndex & 63u));
+  let n = hashToFloat(h) + hashToFloat(pcg(h)) - 1.0;
+  c += n * post.ditherCode / 255.0;
   return vec4f(clamp(c, vec3f(0.0), vec3f(1.0)), 1.0);
 }

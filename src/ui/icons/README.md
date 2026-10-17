@@ -35,5 +35,6 @@ Size and color come from CSS: set `width`/`height` on `.icon` and `color` on the
 | `time` | half sun on a horizon with a flow arc |
 | `flow-1`, `flow-2`, `flow-4` | one, two or three pips: normal, 2x and 4x speed |
 | `flow-pause` | two rest bars: time paused |
+| `look` | painter's palette with a thumb notch, three dabs of paint and one empty well: the Look (palette) button |
 
 Adding an icon: add an entry to `ICONS` in `icons.js` following the rules above, then add a row here.

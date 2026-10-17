@@ -18,6 +18,8 @@ import { createShadowPass } from './render/passes/shadow.js';
 import { createSkyPass } from './render/passes/sky.js';
 import { createExposurePass } from './render/passes/post/exposure.js';
 import { createTonemapPass } from './render/passes/post/tonemap.js';
+import { createBloomPass } from './render/passes/post/bloom.js';
+import { createPaletteBaker } from './render/passes/post/lut-bake.js';
 import { createAtmosphere } from './render/sky/atmosphere.js';
 import { createLighting } from './render/lighting.js';
 import { createDaylight } from './render/daylight.js';
@@ -30,9 +32,14 @@ import { attachTouchInput } from './input/touch.js';
 
 /**
  * @typedef {{ ok: true, tier: string, tierReasons: string[], adapterInfo: GPUAdapterInfo | null, features: string[], stop: () => void,
- *   terrain: import('./world/terrain/index.js').Terrain }
+ *   terrain: import('./world/terrain/index.js').Terrain,
+ *   palette: { list: () => { id: string, name: string }[], current: () => any, apply: (json: any, fadeS?: number) => void },
+ *   pickColor: (cssX: number, cssY: number) => Promise<string> }
  *   | { ok: false, reason: 'missing'|'no-adapter'|'device-failed' }} StartResult
  */
+
+/** Palettes available in the slice (docs/05): Moonlight and Clear sight join later. */
+const PALETTES = [{ id: 'dusk', name: 'Dusk' }, { id: 'meadow-morning', name: 'Meadow morning' }];
 
 /**
  * @param {HTMLCanvasElement} canvas
@@ -48,7 +55,7 @@ export async function startApp(canvas, hooks = {}) {
   const seed = Number.parseInt(params.get('seed') ?? '1', 10) >>> 0;
   updateStore('meta', (m) => { m.seed = seed; });
 
-  const [{ tier, settings: tierSettings, reasons }, camRecipe, skyRecipe, terrainRecipe, seasonsRecipe, exposureRecipe, shadowRecipe] = await Promise.all([
+  const [{ tier, settings: tierSettings, reasons }, camRecipe, skyRecipe, terrainRecipe, seasonsRecipe, exposureRecipe, shadowRecipe, postRecipe, ...paletteRecipes] = await Promise.all([
     pickTier(gpu.adapter),
     loadRecipe('world/camera'),
     loadRecipe('world/sky'),
@@ -56,7 +63,11 @@ export async function startApp(canvas, hooks = {}) {
     loadRecipe('world/seasons'),
     loadRecipe('world/exposure'),
     loadRecipe('world/shadows'),
+    loadRecipe('world/post'),
+    ...PALETTES.map((p) => loadRecipe(`palettes/${p.id}`)),
   ]);
+  /** @type {Record<string, any>} */
+  const palettes = Object.fromEntries(PALETTES.map((p, i) => [p.id, paletteRecipes[i]]));
   const landRecipe = await loadRecipe(terrainRecipe.starter.land);
   updateStore('settings', (s) => { s.quality = tier; });
   const rb = terrainRecipe.brush;
@@ -97,12 +108,25 @@ export async function startApp(canvas, hooks = {}) {
   const exposure = createExposurePass(exposureRecipe);
   const daylight = createDaylight({ sky: skyRecipe, seasons: seasonsRecipe, shadows: shadowRecipe });
 
+  // Look: bloom, then the palette LUT in the tonemap (physical light, painted last; docs/05).
+  const baker = await createPaletteBaker(gpu.device);
+  // The palette is a device setting (doc 18): remembered in this browser until saves arrive in S7.
+  let savedPalette = null;
+  try { savedPalette = localStorage.getItem('ebb.palette'); } catch { /* storage blocked: use the default */ }
+  const wanted = savedPalette ?? getStore('settings')?.palette;
+  const startPalette = palettes[wanted] ? wanted : PALETTES[0].id;
+  updateStore('settings', (s) => { s.palette = startPalette; });
+  baker.setPalette(palettes[startPalette], { fadeS: 0 });
+  const bloom = createBloomPass({ levels: tierSettings.bloomLevels, mix: postRecipe.bloom.mix, radius: postRecipe.bloom.radius, karis: postRecipe.bloom.karis });
+  const tonemap = createTonemapPass({ bloom, luts: baker.views, recipe: postRecipe });
+
   const graph = createFrameGraph(gpu, [
     shadowPass,
     createTerrainPass({ terrain, recipe: terrainRecipe, seed: subSeed(seed, 'terrain-look'), getEye: () => camera.eye, tier }),
     createSkyPass(atmosphere, skyRecipe),
     exposure,
-    createTonemapPass(),
+    bloom,
+    tonemap,
   ], { tier, lighting });
   await graph.setup();
 
@@ -222,6 +246,13 @@ export async function startApp(canvas, hooks = {}) {
         clock.setFlow(a.flow);
         updateStore('meta', (m) => { m.flow = a.flow; });
         break;
+      case 'look.palette':
+        if (!palettes[a.id]) break;
+        baker.setPalette(palettes[a.id]);
+        updateStore('settings', (s) => { s.palette = a.id; });
+        try { localStorage.setItem('ebb.palette', a.id); } catch { /* storage blocked: the choice lasts this visit */ }
+        emitDeferred('palette:changed', { id: a.id });
+        break;
     }
   });
   const detachDesktop = attachDesktopInput(canvas, camRecipe, rb);
@@ -268,7 +299,16 @@ export async function startApp(canvas, hooks = {}) {
     const day = daylight.update(display, world.state, getStore('preview')?.weather ?? null, atmosphere.aerosolScale);
     atmosphere.setAtmosphere({ cloud: day.weather.cloud, mist: day.weather.mist, rain: day.weather.rain });
     for (const event of day.events) emitDeferred('sky:sun-crossed', { event });
-    const ev100 = exposure.ev100(realDt);
+    // Palette keys follow the displayed sun, season and weather; positive exposureComp brightens.
+    const look = baker.update(realDt, {
+      sunAltDeg: (day.sm.sunAlt * 180) / Math.PI, seasonPhase: season.index + season.phase, weather: day.weather,
+    });
+    const split = getStore('preview')?.split;
+    tonemap.set({
+      lutFade: look.fade, lutFrom: look.from, lutTo: look.to, look: look.look, purkinje: look.purkinje,
+      outline: look.outline, split: typeof split === 'number' ? split : -1,
+    });
+    const ev100 = exposure.ev100(realDt) - (look.exposureComp ?? 0);
     if (frameIndex % 15 === 0) updateStore('render', (r) => ({ ...(r ?? {}), ev100 }));
 
     graph.writeFrameUniforms(uniforms.pack({
@@ -306,11 +346,13 @@ export async function startApp(canvas, hooks = {}) {
       sunIlluminanceTOA: day.sunTOA, moonIlluminanceTOA: day.moonTOA,
       cameraPos: camera.eye, invViewProj: camera.invViewProj, view: camera.view,
     });
+    baker.encode(encoder);
     graph.render(encoder);
     gpu.device.queue.submit([encoder.finish()]);
     graph.afterSubmit();
     sim.afterSubmit();
     exposure.afterSubmit();
+    tonemap.afterSubmit();
 
     if (frameIndex > 0) emitDeferred('render:frame-ended', { frameMs, cpuMs: performance.now() - cpuStart, frameIndex });
     flushDeferred();
@@ -350,5 +392,17 @@ export async function startApp(canvas, hooks = {}) {
     features: [...gpu.features],
     stop,
     terrain,
+    /** Palette access for the palette lab (tools/palette-lab.html). */
+    palette: {
+      list: () => PALETTES.slice(),
+      current: () => structuredClone(baker.current()),
+      /** @param {any} json @param {number} [fadeS] */
+      apply: (json, fadeS = 0) => baker.setPalette(json, { fadeS }),
+    },
+    /**
+     * Final on-screen color at a point given in CSS pixels from the canvas's top-left.
+     * @param {number} cssX @param {number} cssY
+     */
+    pickColor: (cssX, cssY) => tonemap.pick((cssX * canvas.width) / Math.max(1, cssW), (cssY * canvas.height) / Math.max(1, cssH)),
   };
 }

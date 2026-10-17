@@ -7,7 +7,10 @@
     "world/seasons": "world/seasons.json",
     "world/exposure": "world/exposure.json",
     "world/shadows": "world/shadows.json",
+    "world/post": "world/post.json",
     "world/terrain": "world/terrain.json",
-    "land/starter-island": "land/starter-island.json"
+    "land/starter-island": "land/starter-island.json",
+    "palettes/dusk": "palettes/dusk.json",
+    "palettes/meadow-morning": "palettes/meadow-morning.json"
   }
 }

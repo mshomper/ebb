@@ -1,0 +1,22 @@
+{
+  "type": "post",
+  "version": 1,
+  "note": "Post chain tuning (docs/05). Palette-specific numbers (look, outline amounts, exposure comp) live in recipes/palettes/*.json.",
+  "bloom": { "mix": 0.04, "radius": 1, "karis": true },
+  "purkinje": {
+    "strength": 0.55,
+    "fullAtNits": 0.004,
+    "noneAtNits": 0.08,
+    "rodWeights": [0.08, 0.62, 0.30],
+    "tint": [0.62, 0.76, 1.0]
+  },
+  "outline": {
+    "widthAt1440": 1.25,
+    "fadeStartMeters": 40,
+    "fadeEndMeters": 60,
+    "depthEdge": [0.015, 0.06],
+    "normalEdge": [0.96, 0.82],
+    "creatureBoost": 1.6
+  },
+  "dither": { "codeValues": 1.0 }
+}

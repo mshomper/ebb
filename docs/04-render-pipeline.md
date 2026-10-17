@@ -76,7 +76,7 @@ Technical notes on the order:
 | `ao` | rgba8unorm (R used) | storage, sampled | full res on high, half res on medium, off on low |
 | `sceneColorCopy` | rgba16float, 4 mips | copy dst, sampled | refraction source |
 | `depthCopy` | depth32float | copy dst, sampled | water and particle depth reads |
-| `bloom[0..5]` | rgba16float | storage, sampled | half res down to 1/64 |
+| `bloom-down`, `bloom-up` | rgba16float, mip chains | attachment, sampled | half res down to 1/64 (render passes, no storage, so phones run it) |
 | `ldr` / `ldr2` | rgba8unorm | attachment, storage, sampled | display-encoded, ping-pong for painterly and outline |
 | `shadowMap` | depth32float 2D array | attachment, sampled | one layer per cascade, see `06-sky-and-lighting.md` |
 | swapchain | `navigator.gpu.getPreferredCanvasFormat()` | attachment | canvas size, written only by present |

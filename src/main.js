@@ -6,9 +6,10 @@ import { showNoWebGPU, showRebuildingNote } from './ui/no-webgpu.js';
 import { showBuildBadge } from './ui/build-badge.js';
 import { mountTools } from './ui/tools.js';
 import { mountTimeFlow } from './ui/time-flow.js';
+import { mountLook } from './ui/look.js';
 
 /** Shown in the corner badge when no build.json or local server info is available. */
-export const BUILD = 'm1-s2-sky';
+export const BUILD = 'm1-s3-palette';
 
 const canvas = /** @type {HTMLCanvasElement} */ (document.getElementById('view'));
 
@@ -33,6 +34,7 @@ startApp(canvas, { onDeviceLost: (rebuilding) => showRebuildingNote(rebuilding) 
       toolsMounted = true;
       mountTools(document.body);
       mountTimeFlow(document.body);
+      mountLook(document.body, r.palette.list());
     }
   })
   .catch((err) => {
