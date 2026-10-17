@@ -13,6 +13,7 @@
   - Array B, `rgba8unorm`: RG normal (Z rebuilt), B roughness, A cavity.
 - **Map size by tier:** 1024² on high and medium, 512² on low. Phones download only the 512 set.
 - **Files are WebP**, no build step. Mips are built on the GPU at load. KTX2 with BC7 or ASTC is deferred until memory needs it.
+- **Three opaque files per material and size** (G1 decision): browsers premultiply alpha when they encode a canvas, which would corrupt data kept in an alpha channel. So `a.webp` is albedo RGB, `b.webp` is normal X and Y (OpenGL convention, as scanned) plus roughness, and `c.webp` is height plus cavity. A compute pass repacks them into the two arrays at load.
 - **Textures load after the first calm frame.** Until they arrive the ground draws with flat recipe albedo (the S1 look), then the detail fades in over 0.5 s. Boot budgets in doc 19 are unchanged.
 - **The mesh normal stays the reference** for the shadow normal offset, `normalId` (outline) and GTAO. Only shading uses the detail normal, so pebbles never get ink lines or shadow acne.
 
@@ -77,8 +78,9 @@ This is consistent with "physical light, painted last". Palettes are tuned towar
 Files:
 
 ```
-assets/textures/ground/<material>/<size>/a.webp   albedo + height (alpha)
-assets/textures/ground/<material>/<size>/b.webp   normal RG, roughness, cavity
+assets/textures/ground/<material>/<size>/a.webp   albedo RGB (calibrated to the recipe mean)
+assets/textures/ground/<material>/<size>/b.webp   normal X, Y (OpenGL), roughness
+assets/textures/ground/<material>/<size>/c.webp   height, cavity
 assets/textures/CREDITS.md
 src/render/ground-detail.js        load WebP, build arrays, mip pass, fade-in
 src/shaders/ground-mips.wgsl       mip generation with Toksvig roughness

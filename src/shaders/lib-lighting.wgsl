@@ -45,6 +45,48 @@ fn shadowVisibility(worldPos: vec3f, n: vec3f, viewDist: f32, pixel: vec2f) -> f
   return mix(1.0, s, light.shadowStrength);
 }
 
+// GGX specular lobe for one light: D·G·F / (4 n·l n·v), times n·l (Walter et al. 2007, Smith-GGX
+// height-correlated visibility, Schlick Fresnel). Roughness is perceptual (alpha = r²).
+fn ggxSpecular(n: vec3f, v: vec3f, l: vec3f, roughness: f32, f0: f32) -> f32 {
+  let h = normalize(v + l);
+  let nl = max(dot(n, l), 0.0);
+  let nv = max(dot(n, v), 1e-4);
+  let nh = max(dot(n, h), 0.0);
+  let a = max(roughness * roughness, 0.002);
+  let a2 = a * a;
+  let d = a2 / (PI * pow(nh * nh * (a2 - 1.0) + 1.0, 2.0));
+  let gv = nl * sqrt(nv * nv * (1.0 - a2) + a2);
+  let gl = nv * sqrt(nl * nl * (1.0 - a2) + a2);
+  let vis = 0.5 / max(gv + gl, 1e-5);
+  let f = f0 + (1.0 - f0) * pow(1.0 - max(dot(v, h), 0.0), 5.0);
+  return d * vis * f * nl;
+}
+
+// Textured ground (docs/22): direct light on the detail normal, faded across the mesh terminator
+// so detail never lights the dark side of a hill; sky fill at the detail normal times cavity; GGX
+// sun (and moon) specular by `specMode`. Shadows, outline and AO keep using the mesh normal.
+fn shadeGround(albedo: vec3f, worldPos: vec3f, nMesh: vec3f, nDetail: vec3f, roughness: f32, cavity: f32,
+               fragPos: vec4f, terminator: vec2f, f0: f32, specMode: f32) -> vec3f {
+  let viewDist = distance(worldPos, frame.cameraPos);
+  let v = (frame.cameraPos - worldPos) / max(viewDist, 1e-4);
+  let vis = shadowVisibility(worldPos, nMesh, viewDist, fragPos.xy);
+  let casterIsSun = dot(light.shadowDir, frame.sunDir) > 0.999;
+  let sunVis = select(1.0, vis, casterIsSun) * smoothstep(terminator.x, terminator.y, dot(nMesh, frame.sunDir));
+  let moonVis = select(vis, 1.0, casterIsSun) * smoothstep(terminator.x, terminator.y, dot(nMesh, frame.moonDir));
+  let sunNl = max(dot(nDetail, frame.sunDir), 0.0);
+  let moonNl = max(dot(nDetail, frame.moonDir), 0.0);
+  var radiance = albedo * ((frame.sunIlluminance * sunNl * sunVis + frame.moonIlluminance * moonNl * moonVis) / PI
+                           + skyAmbient(nDetail) * cavity);
+  if (specMode > 0.5) {
+    radiance += frame.sunIlluminance * sunVis * ggxSpecular(nDetail, v, frame.sunDir, roughness, f0);
+  }
+  if (specMode > 1.5) {
+    radiance += frame.moonIlluminance * moonVis * ggxSpecular(nDetail, v, frame.moonDir, roughness, f0);
+  }
+  let screenUv = fragPos.xy * frame.invRenderSize;
+  return applyAerial(radiance * frame.exposure, screenUv, viewDist);
+}
+
 // Lambert surface lit by sun, moon and sky, with shadows and aerial perspective. Pre-exposed.
 // `ambientOcclusion` scales only the sky fill (doc 06: AO never touches sun or moon light).
 fn shadeSurface(albedo: vec3f, worldPos: vec3f, n: vec3f, fragPos: vec4f, ambientOcclusion: f32) -> vec3f {

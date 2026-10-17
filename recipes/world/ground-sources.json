@@ -1,0 +1,17 @@
+{
+  "type": "ground-sources",
+  "version": 1,
+  "note": "CC0 photo scans for the ground detail (docs/22), fetched by tools/texture-lab.html straight from Poly Haven at 1k. Maps: diff (albedo), nor_gl (OpenGL normal), rough, disp (height), ao (cavity). Packed results live in assets/textures/ground/<material>/<size>/a|b|c.webp.",
+  "baseUrl": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/",
+  "license": "CC0 1.0",
+  "materials": {
+    "grass": { "id": "grass_ground", "name": "Grass Ground", "page": "https://polyhaven.com/a/grass_ground", "delight": 0.7 },
+    "sand":  { "id": "aerial_beach_01", "name": "Aerial Beach 01", "page": "https://polyhaven.com/a/aerial_beach_01", "delight": 0.6 },
+    "rock":  { "id": "dry_riverbed_rock", "name": "Dry Riverbed Rock", "page": "https://polyhaven.com/a/dry_riverbed_rock", "delight": 0.5 },
+    "soil":  { "id": "dirt_aerial_03", "name": "Dirt Aerial 03", "page": "https://polyhaven.com/a/dirt_aerial_03", "delight": 0.6 }
+  },
+  "maps": ["diff", "nor_gl", "rough", "disp", "ao"],
+  "sizes": [1024, 512],
+  "webpQuality": { "a": 0.9, "b": 1.0, "c": 0.95 },
+  "webpNote": "1.0 makes Chrome write lossless WebP. b (normals, roughness) is lossless because lossy 4:2:0 WebP bleeds channels into the normals (mean error about 5/255, up to 42); a and c tolerate lossy."
+}

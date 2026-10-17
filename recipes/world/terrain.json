@@ -37,6 +37,22 @@
     "blendSharpness": 0.22,
     "wetDarkening": 0.62
   },
+  "detail": {
+    "note": "Scanned ground detail (docs/22). Layers follow the material weight order: grass, sand, rock, soil. Colors still come from materials.albedo*; the scans add variation around them.",
+    "tileMeters": 3,
+    "steepDeg": [30, 40],
+    "heightInfluence": 0.6,
+    "blendDepth": 0.12,
+    "fadeInS": 0.5,
+    "sunTerminator": [-0.02, 0.12],
+    "f0": 0.04,
+    "layers": {
+      "grass": { "tileMeters": 3, "heightAmplitudeM": 0.02, "normalStrength": 0.8, "roughness": [0.75, 0.95], "porosity": 0.6 },
+      "sand":  { "tileMeters": 3, "heightAmplitudeM": 0.015, "normalStrength": 1.0, "roughness": [0.7, 0.95], "porosity": 0.9 },
+      "rock":  { "tileMeters": 1.2, "heightAmplitudeM": 0.05, "normalStrength": 1.0, "roughness": [0.45, 0.8], "porosity": 0.15 },
+      "soil":  { "tileMeters": 3, "heightAmplitudeM": 0.03, "normalStrength": 0.9, "roughness": [0.7, 0.95], "porosity": 0.8 }
+    }
+  },
   "steepRockDeg": 38,
   "steepRockSoftDeg": 5,
   "beachBand": [-0.6, 0.45],

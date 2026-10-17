@@ -9,11 +9,14 @@ import { LODS, MAX_CHUNKS, createIndexBuffers, packChunks } from '../terrain-mes
 /** @typedef {import('../frame-graph.js').PassContext} PassContext */
 
 const DRAW_BYTES = 160;
+const GROUND_BYTES = 128;
 const DEG = Math.PI / 180;
 
 /**
  * @param {{ terrain: import('../../world/terrain/index.js').Terrain, recipe: any, seed: number,
- *   getEye: () => ArrayLike<number>, tier: string }} opts
+ *   getEye: () => ArrayLike<number>, tier: string,
+ *   ground: { views: { a: GPUTextureView, b: GPUTextureView }, sampler: GPUSampler, version: number, fade: number },
+ *   groundTier: any }} opts  ground: src/render/ground-detail.js; groundTier: the tier's `ground` block
  */
 export function createTerrainPass(opts) {
   const { terrain, recipe } = opts;
@@ -28,6 +31,26 @@ export function createTerrainPass(opts) {
   const u = new Uint32Array(draw);
   const chunkData = new Float32Array(MAX_CHUNKS * 4);
   const maxQuads = opts.tier === 'low' ? recipe.render.lowTierMaxQuads : LODS[0];
+  /** @type {GPUBuffer} */ let groundBuffer;
+  /** @type {() => void} */ let makeGroup = () => {};
+  let groundVersion = -1;
+  // GroundDetail uniform (lib-ground.wgsl): per-layer params, then the shared settings.
+  const gf = new Float32Array(GROUND_BYTES / 4);
+  {
+    const d = recipe.detail;
+    ['grass', 'sand', 'rock', 'soil'].forEach((id, i) => {
+      const l = d.layers[id];
+      gf.set([l.heightAmplitudeM, l.normalStrength, l.roughness[0], l.roughness[1]], i * 4);
+    });
+    gf[16] = 0; gf[17] = d.heightInfluence; gf[18] = d.blendDepth; gf[19] = 0;
+    gf[20] = d.sunTerminator[0]; gf[21] = d.sunTerminator[1]; gf[22] = d.f0; gf[23] = opts.groundTier.detailFadeMeters;
+    gf[24] = opts.groundTier.specular === 'full' ? 2 : opts.groundTier.specular === 'sun' ? 1 : 0;
+    // Cliff projection (triplanar) on steep slopes, per tier; cos of the from and full slope angles.
+    gf[25] = opts.groundTier.triplanar ? 1 : 0;
+    gf[26] = Math.cos(d.steepDeg[0] * DEG); gf[27] = Math.cos(d.steepDeg[1] * DEG);
+    // Each material repeats at its own tile size (rock finer than grass and sand).
+    ['grass', 'sand', 'rock', 'soil'].forEach((id, i) => { gf[28 + i] = 1 / (d.layers[id].tileMeters ?? d.tileMeters); });
+  }
 
   function packStatic() {
     const m = recipe.materials;
@@ -63,6 +86,10 @@ export function createTerrainPass(opts) {
           { binding: 2, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, texture: { sampleType: 'unfilterable-float' } },
           { binding: 3, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: 'float' } },
           { binding: 4, visibility: GPUShaderStage.FRAGMENT, sampler: { type: 'filtering' } },
+          { binding: 5, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: 'float', viewDimension: '2d-array' } },
+          { binding: 6, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: 'float', viewDimension: '2d-array' } },
+          { binding: 7, visibility: GPUShaderStage.FRAGMENT, sampler: { type: 'filtering' } },
+          { binding: 8, visibility: GPUShaderStage.FRAGMENT, buffer: {} },
         ],
       });
       const layout = device.createPipelineLayout({ label: 'opaque', bindGroupLayouts: [ctx.layouts.frame, ctx.layouts.lighting, layout2] });
@@ -82,17 +109,27 @@ export function createTerrainPass(opts) {
       indexBuffers = createIndexBuffers(device);
 
       const sampler = device.createSampler({ label: 'terrain-linear', magFilter: 'linear', minFilter: 'linear', addressModeU: 'clamp-to-edge', addressModeV: 'clamp-to-edge' });
-      group = device.createBindGroup({
-        label: 'terrain-draw',
-        layout: layout2,
-        entries: [
-          { binding: 0, resource: { buffer: drawBuffer } },
-          { binding: 1, resource: { buffer: chunkBuffer } },
-          { binding: 2, resource: terrain.gpu.height.createView() },
-          { binding: 3, resource: terrain.gpu.material.createView() },
-          { binding: 4, resource: sampler },
-        ],
-      });
+      groundBuffer = makeBuffer(device, { label: 'ground-detail', size: GROUND_BYTES, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
+      // Rebuilt whenever the ground detail arrays are replaced (placeholder, then the loaded set).
+      makeGroup = () => {
+        group = device.createBindGroup({
+          label: 'terrain-draw',
+          layout: layout2,
+          entries: [
+            { binding: 0, resource: { buffer: drawBuffer } },
+            { binding: 1, resource: { buffer: chunkBuffer } },
+            { binding: 2, resource: terrain.gpu.height.createView() },
+            { binding: 3, resource: terrain.gpu.material.createView() },
+            { binding: 4, resource: sampler },
+            { binding: 5, resource: opts.ground.views.a },
+            { binding: 6, resource: opts.ground.views.b },
+            { binding: 7, resource: opts.ground.sampler },
+            { binding: 8, resource: { buffer: groundBuffer } },
+          ],
+        });
+        groundVersion = opts.ground.version;
+      };
+      makeGroup();
       packStatic();
     },
 
@@ -104,6 +141,9 @@ export function createTerrainPass(opts) {
       const ring = terrain.ring;
       f[24] = ring.x; f[25] = ring.z; f[26] = ring.radius; f[27] = ring.hardness; f[28] = ring.visible ? 1 : 0;
       device.queue.writeBuffer(drawBuffer, 0, draw);
+      if (opts.ground.version !== groundVersion) makeGroup();
+      gf[19] = opts.ground.fade;
+      device.queue.writeBuffer(groundBuffer, 0, gf);
 
       // Pick a LOD per open chunk by distance from the eye, grouped so each LOD is one draw.
       const eye = opts.getEye();

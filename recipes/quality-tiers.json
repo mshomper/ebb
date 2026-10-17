@@ -12,7 +12,8 @@
       "waterReach": 60, "waterStep": 0.008333,
       "grassDensity": 1.0, "grassDistance": 40, "foliageLodScale": 1.0,
       "liveCreatures": 120, "boids": 4096, "particlesMax": 20000,
-      "lights": 64, "bloomLevels": 6, "workerMax": 14
+      "lights": 64, "bloomLevels": 6, "workerMax": 14,
+      "ground": { "mapSize": 1024, "hexTiling": true, "triplanar": true, "specular": "full", "puddles": true, "anisotropy": 16, "detailFadeMeters": 80 }
     },
     "medium": {
       "targetFps": 60, "calmFps": 30, "gpuBudgetMs": 13,
@@ -24,7 +25,8 @@
       "waterReach": 60, "waterStep": 0.008333,
       "grassDensity": 0.6, "grassDistance": 30, "foliageLodScale": 0.75,
       "liveCreatures": 80, "boids": 2048, "particlesMax": 10000,
-      "lights": 32, "bloomLevels": 5, "workerMax": 14
+      "lights": 32, "bloomLevels": 5, "workerMax": 14,
+      "ground": { "mapSize": 1024, "hexTiling": true, "triplanar": true, "specular": "full", "puddles": true, "anisotropy": 8, "detailFadeMeters": 60 }
     },
     "low": {
       "targetFps": 30, "calmFps": 20, "gpuBudgetMs": 18,
@@ -36,7 +38,8 @@
       "waterReach": 40, "waterStep": 0.016667,
       "grassDensity": 0.35, "grassDistance": 20, "foliageLodScale": 0.5,
       "liveCreatures": 50, "boids": 1024, "particlesMax": 4000,
-      "lights": 8, "bloomLevels": 4, "workerMax": 4
+      "lights": 8, "bloomLevels": 4, "workerMax": 4,
+      "ground": { "mapSize": 512, "hexTiling": false, "triplanar": false, "specular": "sun", "puddles": false, "anisotropy": 4, "detailFadeMeters": 35 }
     }
   }
 }
