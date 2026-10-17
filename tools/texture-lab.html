@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ebb texture lab</title>
+<link rel="icon" href="../brand/ebb-favicon.svg" type="image/svg+xml">
+<style>
+  @font-face { font-family: 'Nunito'; src: url('../src/vendor/fonts/nunito-latin-600-normal.woff2') format('woff2'); font-weight: 600; }
+  @font-face { font-family: 'Nunito'; src: url('../src/vendor/fonts/nunito-latin-800-normal.woff2') format('woff2'); font-weight: 800; }
+  *, *::before, *::after { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; max-width: 100%; overflow-x: hidden; }
+  body { background: #F4EEE4; color: #1E2624; font: 600 17px/1.45 'Nunito', system-ui, sans-serif; padding: 16px; overflow-wrap: anywhere; }
+  main { max-width: 1040px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+  h1 { font-size: 24px; font-weight: 800; margin: 0; }
+  h2 { font-size: 21px; font-weight: 800; margin: 0; }
+  h3 { font-size: 18px; font-weight: 800; margin: 0 0 6px; }
+  p { margin: 0; }
+  .muted { color: #4A5551; font-size: 16px; }
+  .card { background: #FBF7F0; border: 1px solid #E3D9C9; border-radius: 14px; padding: 14px 16px; min-width: 0; display: flex; flex-direction: column; gap: 12px; }
+  .status { display: flex; gap: 10px; align-items: flex-start; font-weight: 800; }
+  .status svg { width: 24px; height: 24px; flex: 0 0 auto; margin-top: 1px; }
+  .actions { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+  button { font: inherit; font-size: 17px; font-weight: 800; color: #1E2624; min-height: 48px; border-radius: 12px; border: 1px solid #CFC3B0; background: #FFFDF8; padding: 8px 14px; max-width: 100%; cursor: pointer; }
+  button.primary { background: #5F7F5B; border-color: #5F7F5B; color: #F4EEE4; }
+  button:disabled { opacity: 0.5; cursor: default; }
+  button:focus-visible, input:focus-visible, a:focus-visible { outline: 2px solid #5F7F5B; outline-offset: 2px; }
+  a { color: #4a6a47; }
+  .field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+  .field .row { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+  .field output { font-weight: 800; font-variant-numeric: tabular-nums; }
+  input[type=range] { width: 100%; min-width: 0; height: 40px; margin: 0; accent-color: #5F7F5B; cursor: pointer; }
+  .controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px 24px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+  .grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+  figure { margin: 0; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+  figure img, figure canvas { width: 100%; height: auto; display: block; border-radius: 10px; background: #E3D9C9; image-rendering: auto; }
+  figcaption { font-size: 16px; color: #4A5551; }
+  .preview { touch-action: none; cursor: grab; }
+  .swatches { display: flex; flex-wrap: wrap; gap: 16px; }
+  .sw { display: flex; gap: 10px; align-items: center; }
+  .sw i { width: 48px; height: 48px; border-radius: 10px; border: 1px solid #CFC3B0; flex: 0 0 auto; }
+  table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; font-size: 16px; }
+  th, td { text-align: left; padding: 4px 8px 4px 0; vertical-align: top; }
+  th { font-weight: 800; }
+  .table-wrap { min-width: 0; }
+  .progress { height: 10px; border-radius: 5px; background: #E3D9C9; overflow: hidden; }
+  .progress i { display: block; height: 100%; width: 0; background: #5F7F5B; transition: width 0.2s; }
+  .msg { font-size: 16px; }
+  .msg.err { color: #9A4A33; }
+  .msg.ok { color: #3F5F3B; }
+  .downloads { display: flex; flex-wrap: wrap; gap: 8px 16px; font-size: 16px; }
+  .head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>ebb texture lab</h1>
+  <p class="muted">Turns the four Poly Haven ground scans into ebb's detail maps (docs/22): downloads the 1k maps, removes leftover baked shading, matches each albedo's average to the recipe color, packs the maps and saves the WebP files into the repo. <a href="./">All tools</a></p>
+
+  <div class="card">
+    <div class="status" id="status">Starting</div>
+    <div class="progress" aria-hidden="true"><i id="bar"></i></div>
+    <p class="muted" id="totals">Nothing downloaded yet.</p>
+    <div class="actions">
+      <button id="build-all" class="primary" type="button" disabled>Build all</button>
+      <button id="save-all" type="button" disabled>Save all</button>
+    </div>
+    <p class="msg" id="save-msg"></p>
+  </div>
+
+  <div class="card">
+    <h2>Low sun for the previews</h2>
+    <div class="controls">
+      <div class="field">
+        <div class="row"><label for="sun-alt">Sun height</label><output id="sun-alt-out" for="sun-alt">-</output></div>
+        <input id="sun-alt" type="range" min="2" max="90" step="1" value="14">
+      </div>
+      <div class="field">
+        <div class="row"><label for="sun-az">Sun direction</label><output id="sun-az-out" for="sun-az">-</output></div>
+        <input id="sun-az" type="range" min="0" max="360" step="1" value="210">
+      </div>
+    </div>
+    <p class="muted">You can also drag across any tiled preview to swing the sun around.</p>
+  </div>
+
+  <div id="materials" style="display:flex;flex-direction:column;gap:16px"></div>
+</main>
+<script type="module" src="./texture-lab.js"></script>
+</body>
+</html>

@@ -11,6 +11,7 @@
 // #include lib-sky
 // #include lib-terrain
 // #include lib-lighting
+// #include lib-ground
 
 struct TerrainDraw {
   albedoGrass: vec3f, variation: f32,
@@ -31,6 +32,10 @@ struct TerrainDraw {
 @group(2) @binding(2) var heightTex: texture_2d<f32>;
 @group(2) @binding(3) var materialTex: texture_2d<f32>;
 @group(2) @binding(4) var linearSampler: sampler;
+@group(2) @binding(5) var groundA: texture_2d_array<f32>;
+@group(2) @binding(6) var groundB: texture_2d_array<f32>;
+@group(2) @binding(7) var groundSampler: sampler;
+@group(2) @binding(8) var<uniform> ground: GroundDetail;
 
 // Second target (normalId, rgb10a2unorm): octahedral world normal in RG, water flag in B,
 // outline group in A (0 none, 1 terrain, 2 structures and foliage, 3 creatures; docs/04, 05).
@@ -108,12 +113,16 @@ fn fsLand(in: VsOut) -> FsOut {
 
   var albedo = td.albedoGrass * wf.x + td.albedoSand * wf.y + td.albedoRock * wf.z + td.albedoSoil * wf.w;
   albedo *= 1.0 + td.variation * (valueNoise2(p * 3.1 + vec2f(41.0, 17.0), td.seed + 4u) - 0.5);
+  // Scanned detail (docs/22) takes over once loaded and near enough; the flat look stays the fallback.
+  let gd = groundDetail(xz, n, w, distance(in.world, frame.cameraPos));
+  albedo = mix(albedo, gd.albedo, gd.amount);
   // Wet ground is darker: below the waterline always, and everywhere while it rains (docs/06).
   let wet = max(1.0 - smoothstep(-0.05, 0.25, y), light.weather.w);
   albedo *= mix(1.0, td.wetDarkening, wet);
 
-  var color = shadeSurface(albedo, in.world, n, in.pos, 1.0);
+  var color = shadeGround(albedo, in.world, n, gd.normal, gd.roughness, gd.cavity, in.pos, ground.terminator, ground.f0, ground.specMode);
   color = mix(color, td.ringColor, ringAlpha(xz));
+  // normalId keeps the mesh normal, so pebbles and cracks never get outlines (docs/22).
   return FsOut(vec4f(color, 1.0), vec4f(octEncode(n), 0.0, 1.0 / 3.0));
 }
 

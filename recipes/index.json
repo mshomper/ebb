@@ -9,6 +9,7 @@
     "world/shadows": "world/shadows.json",
     "world/post": "world/post.json",
     "world/terrain": "world/terrain.json",
+    "world/ground-sources": "world/ground-sources.json",
     "land/starter-island": "land/starter-island.json",
     "palettes/dusk": "palettes/dusk.json",
     "palettes/meadow-morning": "palettes/meadow-morning.json"

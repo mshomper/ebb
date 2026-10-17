@@ -20,6 +20,7 @@ import { createExposurePass } from './render/passes/post/exposure.js';
 import { createTonemapPass } from './render/passes/post/tonemap.js';
 import { createBloomPass } from './render/passes/post/bloom.js';
 import { createPaletteBaker } from './render/passes/post/lut-bake.js';
+import { createGroundDetail } from './render/ground-detail.js';
 import { createAtmosphere } from './render/sky/atmosphere.js';
 import { createLighting } from './render/lighting.js';
 import { createDaylight } from './render/daylight.js';
@@ -117,12 +118,18 @@ export async function startApp(canvas, hooks = {}) {
   const startPalette = palettes[wanted] ? wanted : PALETTES[0].id;
   updateStore('settings', (s) => { s.palette = startPalette; });
   baker.setPalette(palettes[startPalette], { fadeS: 0 });
+  // Scanned ground detail (docs/22): placeholders now, the real maps load after the first calm frames.
+  const groundDetail = createGroundDetail(gpu.device, { tier: tierSettings.ground, recipe: terrainRecipe.detail });
+  let groundRequested = false;
   const bloom = createBloomPass({ levels: tierSettings.bloomLevels, mix: postRecipe.bloom.mix, radius: postRecipe.bloom.radius, karis: postRecipe.bloom.karis });
   const tonemap = createTonemapPass({ bloom, luts: baker.views, recipe: postRecipe });
 
   const graph = createFrameGraph(gpu, [
     shadowPass,
-    createTerrainPass({ terrain, recipe: terrainRecipe, seed: subSeed(seed, 'terrain-look'), getEye: () => camera.eye, tier }),
+    createTerrainPass({
+      terrain, recipe: terrainRecipe, seed: subSeed(seed, 'terrain-look'), getEye: () => camera.eye, tier,
+      ground: groundDetail, groundTier: tierSettings.ground,
+    }),
     createSkyPass(atmosphere, skyRecipe),
     exposure,
     bloom,
@@ -292,6 +299,12 @@ export async function startApp(canvas, hooks = {}) {
     camera.update(realDt);
     updateRing();
     if (queuedHistory && !terrain.isBusy()) runHistory(queuedHistory);
+    // Ground detail waits for a few calm frames so the first picture is as quick as before (docs/22).
+    if (!groundRequested && frameIndex > 10 && frameMs < 50) {
+      groundRequested = true;
+      groundDetail.load().catch((err) => console.warn('ground detail did not load; keeping the flat look', err));
+    }
+    groundDetail.tick(realDt);
 
     // Sun, moon and weather at display time (a sky-lab preview moves only the look, never the world).
     const display = clock.display();
@@ -375,6 +388,7 @@ export async function startApp(canvas, hooks = {}) {
     graph.dispose();
     sim.dispose();
     atmosphere.dispose();
+    groundDetail.dispose();
   }
 
   onDeviceLost((info) => {

@@ -44,6 +44,67 @@ $mime = @{
   '.wgsl' = 'text/plain; charset=utf-8'; '.txt' = 'text/plain; charset=utf-8'; '.md' = 'text/plain; charset=utf-8'
   '.svg' = 'image/svg+xml'; '.png' = 'image/png'; '.jpg' = 'image/jpeg'; '.ico' = 'image/x-icon'
   '.woff2' = 'font/woff2'; '.wasm' = 'application/wasm'; '.ogg' = 'audio/ogg'; '.mp3' = 'audio/mpeg'
+  '.webp' = 'image/webp'
+}
+
+# ---------- Save endpoint for tools pages ----------
+# PUT /__save/<relative path>   body = the file's bytes
+# Lets a page under tools/ (the texture lab, docs/22) write its output into the repo.
+# A request is refused (4xx with a small JSON error) unless ALL of these hold:
+#   - the method is PUT and the request comes from this computer (127.0.0.1 or ::1),
+#   - the Origin header, when present, is this server's own origin (another website
+#     open in the browser cannot write files),
+#   - the path uses only letters, digits, '.', '_', '-' and '/', and after normalizing
+#     it stays inside <repo>/assets/textures/ground/ or is exactly <repo>/assets/textures/CREDITS.md,
+#   - the extension is .webp or .md,
+#   - the body is under 8 MB.
+# Folders are created as needed and an existing file is replaced.
+# Success answers 200 {"ok":true,"path":"assets/...","bytes":N}.
+$saveMaxBytes = 8 * 1024 * 1024
+$saveExts = @('.webp', '.md')
+
+function Send-Json($res, [int]$status, [string]$body) {
+  $bytes = [System.Text.Encoding]::UTF8.GetBytes($body)
+  $res.StatusCode = $status
+  $res.ContentType = 'application/json; charset=utf-8'
+  $res.ContentLength64 = $bytes.Length
+  $res.OutputStream.Write($bytes, 0, $bytes.Length)
+}
+
+function Invoke-Save($ctx, [string]$path) {
+  $req = $ctx.Request
+  $res = $ctx.Response
+  if ($req.HttpMethod -ne 'PUT') { $res.Headers.Add('Allow', 'PUT'); Send-Json $res 405 '{"ok":false,"error":"use PUT"}'; return }
+  if (-not [System.Net.IPAddress]::IsLoopback($req.RemoteEndPoint.Address)) { Send-Json $res 403 '{"ok":false,"error":"only from this computer"}'; return }
+  $origin = $req.Headers['Origin']
+  if ($origin) {
+    $own = @("http://localhost:$port", "http://127.0.0.1:$port", "http://[::1]:$port")
+    if ($own -notcontains $origin.TrimEnd('/').ToLowerInvariant()) { Send-Json $res 403 '{"ok":false,"error":"origin not allowed"}'; return }
+  }
+  $rel = $path.Substring('/__save/'.Length)
+  if ($rel -notmatch '^[A-Za-z0-9._/-]+$') { Send-Json $res 400 '{"ok":false,"error":"bad characters in path"}'; return }
+  $full = [System.IO.Path]::GetFullPath((Join-Path $root $rel.Replace('/', '\')))
+  $groundDir = [System.IO.Path]::GetFullPath((Join-Path $root 'assets\textures\ground')).TrimEnd('\') + '\'
+  $credits = [System.IO.Path]::GetFullPath((Join-Path $root 'assets\textures\CREDITS.md'))
+  $allowed = $full.StartsWith($groundDir, [System.StringComparison]::OrdinalIgnoreCase) -or
+    $full.Equals($credits, [System.StringComparison]::OrdinalIgnoreCase)
+  if (-not $allowed) { Send-Json $res 403 '{"ok":false,"error":"path outside assets/textures/ground"}'; return }
+  $ext = [System.IO.Path]::GetExtension($full).ToLowerInvariant()
+  if ($saveExts -notcontains $ext) { Send-Json $res 415 '{"ok":false,"error":"only .webp or .md"}'; return }
+  if ($req.ContentLength64 -ge $saveMaxBytes) { Send-Json $res 413 '{"ok":false,"error":"body is 8 MB or more"}'; return }
+  # Read the body with a hard cap (also covers chunked uploads with no length).
+  $mem = New-Object System.IO.MemoryStream
+  $buf = New-Object byte[] 65536
+  while (($n = $req.InputStream.Read($buf, 0, $buf.Length)) -gt 0) {
+    $mem.Write($buf, 0, $n)
+    if ($mem.Length -ge $saveMaxBytes) { Send-Json $res 413 '{"ok":false,"error":"body is 8 MB or more"}'; return }
+  }
+  if ($mem.Length -eq 0) { Send-Json $res 400 '{"ok":false,"error":"empty body"}'; return }
+  [void][System.IO.Directory]::CreateDirectory([System.IO.Path]::GetDirectoryName($full))
+  [System.IO.File]::WriteAllBytes($full, $mem.ToArray())
+  $relOut = $full.Substring($rootFull.Length).Replace('\', '/')
+  Write-Host "  saved $relOut ($($mem.Length) bytes)"
+  Send-Json $res 200 ('{"ok":true,"path":"' + $relOut + '","bytes":' + $mem.Length + '}')
 }
 
 try {
@@ -106,6 +167,11 @@ while ($listener.IsListening) {
     $res.Headers.Add('Cache-Control', 'no-store, must-revalidate')
     $res.Headers.Add('Pragma', 'no-cache')
     $path = [System.Uri]::UnescapeDataString($ctx.Request.Url.AbsolutePath)
+
+    if ($path.StartsWith('/__save/')) {
+      try { Invoke-Save $ctx $path } catch { try { Send-Json $res 500 '{"ok":false,"error":"could not write the file"}' } catch {} }
+      continue
+    }
 
     $isBuildInfo = $path -eq '/__local.json' -or
       ($path -eq '/build.json' -and -not (Test-Path -LiteralPath (Join-Path $root 'build.json')))
