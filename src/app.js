@@ -110,7 +110,11 @@ export async function startApp(canvas, hooks = {}) {
 
   // Look: bloom, then the palette LUT in the tonemap (physical light, painted last; docs/05).
   const baker = await createPaletteBaker(gpu.device);
-  const startPalette = palettes[getStore('settings')?.palette] ? getStore('settings').palette : PALETTES[0].id;
+  // The palette is a device setting (doc 18): remembered in this browser until saves arrive in S7.
+  let savedPalette = null;
+  try { savedPalette = localStorage.getItem('ebb.palette'); } catch { /* storage blocked: use the default */ }
+  const wanted = savedPalette ?? getStore('settings')?.palette;
+  const startPalette = palettes[wanted] ? wanted : PALETTES[0].id;
   updateStore('settings', (s) => { s.palette = startPalette; });
   baker.setPalette(palettes[startPalette], { fadeS: 0 });
   const bloom = createBloomPass({ levels: tierSettings.bloomLevels, mix: postRecipe.bloom.mix, radius: postRecipe.bloom.radius, karis: postRecipe.bloom.karis });
@@ -246,6 +250,7 @@ export async function startApp(canvas, hooks = {}) {
         if (!palettes[a.id]) break;
         baker.setPalette(palettes[a.id]);
         updateStore('settings', (s) => { s.palette = a.id; });
+        try { localStorage.setItem('ebb.palette', a.id); } catch { /* storage blocked: the choice lasts this visit */ }
         emitDeferred('palette:changed', { id: a.id });
         break;
     }
