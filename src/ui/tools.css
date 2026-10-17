@@ -1,0 +1,273 @@
+/* S1 tool bar and brush card (src/ui/tools.js). Bottom center, night panels, cream text.
+   Panels animate only opacity and transform (docs/15). */
+
+.ebb-tools {
+  --tb-btn: 48px;
+  --tb-icon: 28px;
+  --tb-gap: 4px;
+  --tb-pad: 6px;
+  --tb-panel: rgba(30, 38, 36, 0.72);
+  --tb-line: rgba(244, 238, 228, 0.12);
+  --tb-hover: rgba(244, 238, 228, 0.1);
+  --tb-active: var(--wordmark-light);
+  --tb-focus: var(--wordmark-dark);
+  --tb-thumb: 22px;
+  --tb-range-h: 32px;
+
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: max(12px, env(safe-area-inset-bottom));
+  padding: 0 max(12px, env(safe-area-inset-right)) 0 max(12px, env(safe-area-inset-left));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  pointer-events: none;
+  font-family: var(--font-ui);
+  font-weight: 600;
+  font-size: var(--text-body);
+  color: var(--ui-cream);
+  z-index: 10;
+}
+
+@media (pointer: coarse) {
+  .ebb-tools { --tb-btn: 52px; --tb-icon: 26px; --tb-thumb: 28px; --tb-range-h: 40px; }
+}
+
+.ebb-tools .icon {
+  width: var(--tb-icon);
+  height: var(--tb-icon);
+  display: block;
+  flex: none;
+}
+
+/* Panels share the night glass look. */
+.ebb-tools__bar,
+.ebb-tools__card {
+  pointer-events: auto;
+  background: var(--tb-panel);
+  border: 1px solid var(--tb-line);
+  border-radius: 16px;
+  box-shadow: 0 6px 24px rgba(10, 14, 13, 0.28);
+  touch-action: manipulation;
+  max-width: 100%;
+}
+@media (pointer: fine) {
+  .ebb-tools__bar,
+  .ebb-tools__card { -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
+}
+
+/* --- the bar --- */
+.ebb-tools__bar {
+  display: flex;
+  align-items: center;
+  gap: var(--tb-gap);
+  padding: var(--tb-pad);
+  flex: none;
+}
+
+.ebb-tools__divider {
+  width: 1px;
+  align-self: stretch;
+  margin: 8px 4px;
+  background: var(--tb-line);
+  flex: none;
+}
+
+.ebb-tools__btn {
+  appearance: none;
+  -webkit-appearance: none;
+  width: var(--tb-btn);
+  height: var(--tb-btn);
+  padding: 0;
+  margin: 0;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--ui-cream);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  flex: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color 160ms ease, opacity 160ms ease;
+}
+.ebb-tools__btn:hover { background: var(--tb-hover); }
+.ebb-tools__btn[aria-pressed='true'] { background: var(--tb-active); color: var(--ui-cream); }
+.ebb-tools__btn[aria-disabled='true'] { opacity: 0.38; cursor: default; }
+.ebb-tools__btn[aria-disabled='true']:hover { background: transparent; }
+
+.ebb-tools :focus-visible {
+  outline: 2px solid var(--tb-focus);
+  outline-offset: 2px;
+}
+
+/* --- the brush card --- */
+.ebb-tools__card {
+  width: 360px;
+  padding: 12px 14px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  opacity: 0;
+  transform: translateY(10px);
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 200ms ease, transform 220ms ease, visibility 0s linear 220ms;
+}
+.ebb-tools__card.is-open {
+  opacity: 1;
+  transform: none;
+  visibility: visible;
+  pointer-events: auto;
+  transition: opacity 200ms ease, transform 220ms ease, visibility 0s;
+}
+
+.ebb-tools__chips {
+  display: grid;
+  grid-template-columns: repeat(var(--tb-cols, 3), minmax(0, 1fr));
+  gap: 6px;
+}
+.ebb-tools__chips[hidden] { display: none; }
+/* Paint chips stack the swatch above the label so four fit on every width. */
+.ebb-tools__chips--paint { --tb-cols: 4; }
+.ebb-tools__chips--paint .ebb-tools__chip { flex-direction: column; gap: 3px; padding: 6px 4px; }
+
+.ebb-tools__chip {
+  appearance: none;
+  -webkit-appearance: none;
+  min-height: 44px;
+  min-width: 0;
+  padding: 6px 8px;
+  margin: 0;
+  border: 1px solid var(--tb-line);
+  border-radius: 12px;
+  background: transparent;
+  color: var(--ui-cream);
+  font: inherit;
+  font-size: var(--text-body);
+  line-height: 1.2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color 160ms ease, border-color 160ms ease;
+}
+@media (pointer: coarse) { .ebb-tools__chip { min-height: 48px; } }
+.ebb-tools__chip:hover { background: var(--tb-hover); }
+.ebb-tools__chip[aria-pressed='true'] { background: var(--tb-active); border-color: transparent; }
+.ebb-tools__chip .icon { width: 22px; height: 22px; }
+.ebb-tools__chip span { min-width: 0; overflow-wrap: break-word; }
+.ebb-tools__swatch {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  display: block;
+}
+
+/* sliders */
+.ebb-tools__slider {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-areas: 'label value' 'range range';
+  align-items: center;
+  column-gap: 8px;
+  row-gap: 2px;
+}
+.ebb-tools__slider label { grid-area: label; font-size: var(--text-body); }
+.ebb-tools__slider output {
+  grid-area: value;
+  font-size: var(--text-body);
+  font-variant-numeric: tabular-nums;
+  opacity: 0.85;
+}
+
+.ebb-tools__range {
+  grid-area: range;
+  --fill: 50%;
+  appearance: none;
+  -webkit-appearance: none;
+  width: 100%;
+  min-width: 0;
+  height: var(--tb-range-h);
+  margin: 0;
+  background: transparent;
+  cursor: pointer;
+  touch-action: none;
+}
+.ebb-tools__range::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 3px;
+  background: linear-gradient(to right, var(--moss-3) var(--fill), rgba(244, 238, 228, 0.18) var(--fill));
+}
+.ebb-tools__range::-moz-range-track {
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(244, 238, 228, 0.18);
+}
+.ebb-tools__range::-moz-range-progress {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--moss-3);
+}
+.ebb-tools__range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: var(--tb-thumb);
+  height: var(--tb-thumb);
+  margin-top: calc((6px - var(--tb-thumb)) / 2);
+  border-radius: 50%;
+  background: var(--ui-cream);
+  border: 2px solid var(--wordmark-light);
+  box-shadow: 0 1px 4px rgba(10, 14, 13, 0.35);
+}
+.ebb-tools__range::-moz-range-thumb {
+  width: var(--tb-thumb);
+  height: var(--tb-thumb);
+  border-radius: 50%;
+  background: var(--ui-cream);
+  border: 2px solid var(--wordmark-light);
+  box-shadow: 0 1px 4px rgba(10, 14, 13, 0.35);
+}
+.ebb-tools__range:focus-visible { outline-offset: 0; border-radius: 8px; }
+
+/* Phone portrait and other narrow screens: the card spans the gutter-to-gutter width,
+   sculpt chips stack their icon above the label too. */
+@media (max-width: 420px) {
+  .ebb-tools__card { width: 100%; }
+  .ebb-tools__chips--sculpt .ebb-tools__chip { flex-direction: column; gap: 2px; padding: 6px 4px; }
+}
+
+/* Short screens (phone landscape): the card stays compact, with each slider's label,
+   track and value on one row; when there is room it sits to the left of the bar. */
+@media (max-height: 500px) {
+  .ebb-tools__card { padding: 10px 12px; gap: 8px; }
+  .ebb-tools__chip { flex-direction: column; gap: 2px; padding: 5px 4px; min-height: 48px; }
+  .ebb-tools__slider {
+    grid-template-columns: 4.6em minmax(0, 1fr) 4.2em;
+    grid-template-areas: 'label range value';
+  }
+  .ebb-tools__slider output { text-align: right; }
+}
+@media (max-height: 500px) and (min-width: 600px) {
+  /* Anchored to the right edge (docs/15 landscape), so the bar does not move when the card opens. */
+  .ebb-tools {
+    flex-direction: row;
+    justify-content: flex-end;
+    align-items: flex-end;
+  }
+  .ebb-tools__card {
+    width: auto;
+    flex: 0 1 380px;
+    min-width: 0;
+    transform: translateX(-10px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ebb-tools__card,
+  .ebb-tools__card.is-open { transition: visibility 0s; transform: none; }
+}

@@ -18,7 +18,7 @@ export async function showBuildBadge(fallbackBuild) {
   badge.id = 'ebb-build';
   badge.textContent = text;
   Object.assign(badge.style, {
-    position: 'fixed', left: 'max(12px, env(safe-area-inset-left))', bottom: 'max(12px, env(safe-area-inset-bottom))',
+    position: 'fixed', left: 'max(12px, env(safe-area-inset-left))', top: 'max(12px, env(safe-area-inset-top))',
     padding: '6px 12px', borderRadius: '999px', fontSize: 'var(--text-small)', lineHeight: '1.3',
     maxWidth: 'calc(100% - 24px)', overflowWrap: 'anywhere', pointerEvents: 'none',
     background: 'rgba(30, 38, 36, 0.55)', color: 'var(--ui-cream)',

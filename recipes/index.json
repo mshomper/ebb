@@ -4,6 +4,7 @@
     "quality-tiers": "quality-tiers.json",
     "world/camera": "world/camera.json",
     "world/sky": "world/sky.json",
-    "world/placeholder-island": "world/placeholder-island.json"
+    "world/terrain": "world/terrain.json",
+    "land/starter-island": "land/starter-island.json"
   }
 }

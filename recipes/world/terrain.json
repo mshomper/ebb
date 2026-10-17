@@ -1,0 +1,56 @@
+{
+  "type": "terrain",
+  "version": 1,
+  "note": "Terrain tuning (docs/08). Albedos are linear and physical; the painted look comes from the palette at tonemap (docs/05).",
+  "starter": { "land": "land/starter-island", "chunkMin": -1, "chunkMax": 1 },
+  "brush": {
+    "radiusRange": [0.5, 8],
+    "radiusDefault": 2.5,
+    "strengthDefault": 0.5,
+    "strengthCurve": 1.6,
+    "hardness": 0.3,
+    "raiseMetersPerSecond": 1.6,
+    "smoothRatePerSecond": 7,
+    "smoothSpanFraction": 0.15,
+    "flattenRatePerSecond": 5,
+    "paintRatePerSecond": 6,
+    "spacing": 0.25,
+    "stepCap": 0.15,
+    "edgeFadeMeters": 2,
+    "resizeStep": 1.2,
+    "maxStampsPerFrame": 24
+  },
+  "erosion": {
+    "iterations": 24,
+    "talusSoilDeg": 33,
+    "talusRockDeg": 45,
+    "rate": 0.5,
+    "marginMeters": 2
+  },
+  "materials": {
+    "albedoGrass": [0.16, 0.26, 0.12],
+    "albedoSand": [0.62, 0.52, 0.38],
+    "albedoRock": [0.36, 0.34, 0.31],
+    "albedoSoil": [0.21, 0.15, 0.10],
+    "variation": 0.18,
+    "variationScale": 0.6,
+    "blendSharpness": 0.22,
+    "wetDarkening": 0.62
+  },
+  "steepRockDeg": 38,
+  "steepRockSoftDeg": 5,
+  "beachBand": [-0.6, 0.45],
+  "render": {
+    "lodDistances": [45, 95],
+    "lowTierMaxQuads": 64,
+    "skirtDepth": 0.6
+  },
+  "sea": {
+    "extent": 40000,
+    "albedo": [0.04, 0.09, 0.12],
+    "specular": 0.06,
+    "shallowDepth": 2.5
+  },
+  "ring": { "color": [0.96, 0.93, 0.87], "opacity": 0.75, "width": 0.07 },
+  "undoBudgetMB": { "high": 48, "medium": 24, "low": 12 }
+}

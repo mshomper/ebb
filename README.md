@@ -9,7 +9,7 @@ The look is soft and painted, but the light, sky and water underneath are physic
 
 ## Status
 
-M0 foundations: the page, core services, frame graph and orbit camera over a placeholder island. Next is the vertical slice described in [docs/20-roadmap-and-vertical-slice.md](docs/20-roadmap-and-vertical-slice.md).
+M1 vertical slice, step S1: a seeded heightfield island you can sculpt (raise, lower, flatten), smooth and paint (grass, sand, soil, rock), with undo and redo. The remaining slice steps are in [docs/20-roadmap-and-vertical-slice.md](docs/20-roadmap-and-vertical-slice.md).
 
 ## What's here
 

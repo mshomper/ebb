@@ -121,9 +121,9 @@ export const terrain = {
   chunkState(cx, cz),              // 'sea' | 'rising' | 'open'
 };
 
-/** world/terrain/landform.js (worker, deterministic) */
-export function buildBase(landRecipe, seed, cx, cz)
-  // -> {heightQ: Uint16Array(128*128), material: Uint8Array(128*128*4)}
+/** world/terrain/landform.js (worker, deterministic; one args object, as worker jobs take) */
+export function buildBase({ land, seed, cx, cz })
+  // -> {cx, cz, heightQ: Uint16Array(128*128), material: Uint8Array(128*128*4)}
 
 /** per-chunk record inside store slice `chunks['cx,cz']` (doc 18) */
 // state: 'open' | 'rising', land: recipe id, seed, edited: bool,
@@ -134,7 +134,7 @@ Height quantization: `q = round((h + 4) / 16 · 65535)`. Delta: `(q − baseQ) &
 
 Events: `terrain:edited {rect}` (each frame of a stroke, deferred), `terrain:stroke-ended {rect}`, `terrain:grid-updated {chunks}`. Listens to `land:rise-started` and `land:joined` (doc 13).
 
-**Undo and redo.** The command stack in `input/actions.js` holds terrain commands (`history:undone` fires on undo). Before a brush first touches an 8 m tile (32 x 32 cells) during a stroke, `undo.js` copies that tile's height, material and damp into an undo pool texture (`copyTextureToTexture`, no CPU stall). Undo copies the tiles back and refreshes the mirror and grid. Pool: 48 MB desktop, 12 MB mobile, about 50 strokes; the oldest steps drop off silently. Redo saves the after-state tiles the same way. Plants and structures are not undone with terrain; they re-settle onto the new ground.
+**Undo and redo.** The command stack in `input/actions.js` holds terrain commands (`history:undone` fires on undo). Before a brush first touches an 8 m tile (32 x 32 cells) during a stroke, `undo.js` copies that tile's quantized height, material and damp from the CPU mirror (exact between strokes, so no GPU readback or stall is needed). Undo writes the tiles back into the mirror and uploads them, then refreshes the grid. Budget: 48 MB desktop, 12 MB mobile (`undoBudgetMB` in `recipes/world/terrain.json`), far more than 50 strokes; the oldest steps drop off silently. Redo keeps the after-state tiles, copied once the stroke has settled. (S1 decision: CPU tiles instead of a GPU pool texture, because the exact mirror already exists.) Plants and structures are not undone with terrain; they re-settle onto the new ground.
 
 **Expansion.** `expansion.js` calls `openChunk` for each chunk of a land piece. The landform worker builds the base from the piece's land recipe (domain-warped fbm masked by a soft island shape, blended over 6 m into neighboring open land). While rising, the drawn height is `base − 3 m · (1 − ease(t))`; when `land:joined` fires, the chunk becomes normal open land with an empty delta. Rising never changes cells the player has edited on existing land.
 

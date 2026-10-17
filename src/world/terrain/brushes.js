@@ -1,0 +1,165 @@
+// @ts-check
+// Brushes (docs/08): turn a stroke's cursor path into evenly spaced stamps, apply each on the
+// GPU over its bounding rect, and nudge the CPU mirror the same way so the cursor keeps
+// hugging the ground. Raise and lower share one mode with a signed amount.
+
+import { makeBuffer, makeShaderModule } from '../../core/gpu.js';
+import { CELL, WORLD_CELLS as N, WORLD_ORIGIN } from './grid.js';
+import { toCell } from './heightfield.js';
+
+const STAMP_STRIDE = 256;
+const STAMP_BYTES = 80;
+
+/** @typedef {'raise'|'lower'|'flatten'|'smooth'|'paint'} BrushKind */
+/** @typedef {'grass'|'sand'|'rock'|'soil'} PaintLayer */
+
+/**
+ * @typedef {Object} Brush
+ * @property {BrushKind} kind
+ * @property {number} radius     meters
+ * @property {number} strength   0..1 (slider value; the recipe curve shapes it)
+ * @property {PaintLayer} [layer]
+ */
+
+/**
+ * @typedef {Object} Stamp
+ * @property {number} x @property {number} z   world center
+ * @property {number} radius @property {number} hardness
+ * @property {number} amount @property {number} target
+ * @property {number} mode @property {number} layer
+ * @property {number} span   smooth tap spacing in cells
+ * @property {import('./heightfield.js').CellRect} rect
+ */
+
+export const LAYER_INDEX = { grass: 0, sand: 1, rock: 2, soil: 3 };
+const MODE = { raise: 0, lower: 0, smooth: 1, flatten: 2, paint: 3 };
+
+/**
+ * Cell rect covered by a circle, clamped to a bounding cell rect.
+ * @param {number} x @param {number} z @param {number} r
+ * @param {import('./heightfield.js').CellRect} clampTo
+ */
+export function circleRect(x, z, r, clampTo) {
+  const x0 = Math.max(clampTo.x, Math.floor(toCell(x - r)));
+  const z0 = Math.max(clampTo.y, Math.floor(toCell(z - r)));
+  const x1 = Math.min(clampTo.x + clampTo.w, Math.ceil(toCell(x + r)) + 1);
+  const z1 = Math.min(clampTo.y + clampTo.h, Math.ceil(toCell(z + r)) + 1);
+  return { x: x0, y: z0, w: Math.max(0, x1 - x0), h: Math.max(0, z1 - z0) };
+}
+
+/**
+ * Per-frame amount for a brush (before splitting across the frame's stamps).
+ * Raise and lower are capped so one frame cannot make a neighbor step over stepCap.
+ * @param {Brush} brush @param {number} pressure @param {number} dt @param {any} rb recipe.brush
+ */
+export function frameAmount(brush, pressure, dt, rb) {
+  const s = Math.pow(Math.max(0, Math.min(1, brush.strength)), rb.strengthCurve) * pressure;
+  if (brush.kind === 'raise' || brush.kind === 'lower') {
+    // Steepest slope of the falloff is 1.5 / ((1 - hardness) r) per meter.
+    const cap = (rb.stepCap * (1 - rb.hardness) * brush.radius) / (1.5 * CELL);
+    const a = Math.min(rb.raiseMetersPerSecond * s * dt, cap);
+    return brush.kind === 'raise' ? a : -a;
+  }
+  const rate = brush.kind === 'smooth' ? rb.smoothRatePerSecond : brush.kind === 'flatten' ? rb.flattenRatePerSecond : rb.paintRatePerSecond;
+  return rate * s * dt;
+}
+
+/**
+ * The CPU twin of csHeight for raise, lower and flatten (approximate: smoothing and paint skip it).
+ * @param {Float32Array} hf @param {Stamp} st @param {{openMin: number[], openMax: number[], edgeFade: number}} edge
+ */
+export function applyStampCpu(hf, st, edge) {
+  if (st.mode !== 0 && st.mode !== 2) return;
+  const r = st.rect;
+  const inner = st.hardness * st.radius;
+  for (let j = r.y; j < r.y + r.h; j++) {
+    const z = WORLD_ORIGIN + (j + 0.5) * CELL;
+    for (let i = r.x; i < r.x + r.w; i++) {
+      const x = WORLD_ORIGIN + (i + 0.5) * CELL;
+      const d = Math.hypot(x - st.x, z - st.z);
+      if (d >= st.radius) continue;
+      const u = Math.min(1, Math.max(0, (d - inner) / (st.radius - inner)));
+      const inside = Math.min(x - edge.openMin[0], edge.openMax[0] - x, z - edge.openMin[1], edge.openMax[1] - z);
+      const f = (1 - u * u * (3 - 2 * u)) * Math.min(1, Math.max(0, inside / edge.edgeFade));
+      const k = j * N + i;
+      if (st.mode === 0) hf[k] = Math.min(12, Math.max(-4, hf[k] + st.amount * f));
+      else hf[k] += (st.target - hf[k]) * (1 - Math.pow(2, -st.amount * f));
+    }
+  }
+}
+
+/**
+ * GPU side of the brushes: pipelines, the stamp uniform ring and pass encoding.
+ * @param {GPUDevice} device
+ * @param {import('./heightfield.js').TerrainTextures} tex
+ * @param {number} maxStamps
+ */
+export async function createBrushGpu(device, tex, maxStamps) {
+  const module = await makeShaderModule(device, 'terrain-brush');
+  const layout = device.createBindGroupLayout({
+    label: 'terrain-brush',
+    entries: [
+      { binding: 0, visibility: GPUShaderStage.COMPUTE, buffer: { hasDynamicOffset: true, minBindingSize: STAMP_BYTES } },
+      { binding: 1, visibility: GPUShaderStage.COMPUTE, texture: { sampleType: 'unfilterable-float' } },
+      { binding: 2, visibility: GPUShaderStage.COMPUTE, storageTexture: { access: 'write-only', format: 'r32float' } },
+      { binding: 3, visibility: GPUShaderStage.COMPUTE, texture: { sampleType: 'float' } },
+      { binding: 4, visibility: GPUShaderStage.COMPUTE, storageTexture: { access: 'write-only', format: 'rgba8unorm' } },
+    ],
+  });
+  const pipeLayout = device.createPipelineLayout({ label: 'terrain-brush', bindGroupLayouts: [layout] });
+  const [heightPipe, paintPipe] = await Promise.all([
+    device.createComputePipelineAsync({ label: 'terrain-brush-height', layout: pipeLayout, compute: { module, entryPoint: 'csHeight' } }),
+    device.createComputePipelineAsync({ label: 'terrain-brush-paint', layout: pipeLayout, compute: { module, entryPoint: 'csPaint' } }),
+  ]);
+  const uniforms = makeBuffer(device, {
+    label: 'terrain-stamps', size: STAMP_STRIDE * maxStamps, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+  });
+  const group = device.createBindGroup({
+    label: 'terrain-brush',
+    layout,
+    entries: [
+      { binding: 0, resource: { buffer: uniforms, size: STAMP_BYTES } },
+      { binding: 1, resource: tex.height.createView() },
+      { binding: 2, resource: tex.heightScratch.createView() },
+      { binding: 3, resource: tex.material.createView() },
+      { binding: 4, resource: tex.materialScratch.createView() },
+    ],
+  });
+  const data = new ArrayBuffer(STAMP_STRIDE * maxStamps);
+  const f32 = new Float32Array(data);
+  const u32 = new Uint32Array(data);
+
+  /**
+   * Record stamps in order; each reads the result of the one before.
+   * @param {GPUCommandEncoder} encoder
+   * @param {Stamp[]} stamps
+   * @param {{openMin: number[], openMax: number[], edgeFade: number}} edge
+   */
+  function encode(encoder, stamps, edge) {
+    const list = stamps.slice(0, maxStamps).filter((s) => s.rect.w > 0 && s.rect.h > 0);
+    if (list.length === 0) return;
+    list.forEach((st, i) => {
+      const o = (i * STAMP_STRIDE) / 4;
+      f32[o] = st.x; f32[o + 1] = st.z; f32[o + 2] = st.radius; f32[o + 3] = st.hardness;
+      f32[o + 4] = st.amount; f32[o + 5] = st.target; u32[o + 6] = st.mode; u32[o + 7] = st.layer;
+      u32[o + 8] = st.rect.x; u32[o + 9] = st.rect.y; u32[o + 10] = st.rect.w; u32[o + 11] = st.rect.h;
+      f32[o + 12] = edge.openMin[0]; f32[o + 13] = edge.openMin[1]; f32[o + 14] = edge.openMax[0]; f32[o + 15] = edge.openMax[1];
+      f32[o + 16] = edge.edgeFade; f32[o + 17] = WORLD_ORIGIN; f32[o + 18] = CELL; f32[o + 19] = st.span;
+    });
+    device.queue.writeBuffer(uniforms, 0, data, 0, list.length * STAMP_STRIDE);
+    list.forEach((st, i) => {
+      const paint = st.mode === 3;
+      const pass = encoder.beginComputePass({ label: 'terrain-stamp' });
+      pass.setPipeline(paint ? paintPipe : heightPipe);
+      pass.setBindGroup(0, group, [i * STAMP_STRIDE]);
+      pass.dispatchWorkgroups(Math.ceil(st.rect.w / 8), Math.ceil(st.rect.h / 8));
+      pass.end();
+      const origin = [st.rect.x, st.rect.y];
+      const size = [st.rect.w, st.rect.h];
+      if (paint) encoder.copyTextureToTexture({ texture: tex.materialScratch, origin }, { texture: tex.material, origin }, size);
+      else encoder.copyTextureToTexture({ texture: tex.heightScratch, origin }, { texture: tex.height, origin }, size);
+    });
+  }
+
+  return { encode, modeOf: (/** @type {BrushKind} */ k) => MODE[k] };
+}

@@ -173,8 +173,20 @@ export function createOrbitCamera(r) {
     eye[2] = cur.target[2] + cur.distance * cp * Math.cos(cur.yaw);
   }
 
+  /**
+   * World ray from the eye through a CSS pixel (for picking and brushes).
+   * @param {number} x @param {number} y
+   * @returns {{ o: Float32Array, d: Float32Array }}
+   */
+  function ray(x, y) {
+    const ndcX = (x / viewW) * 2 - 1;
+    const ndcY = 1 - (y / viewH) * 2;
+    const p = vec3.transformMat4([ndcX, ndcY, 0.5], invViewProj);
+    return { o: vec3.copy(eye), d: vec3.normalize(vec3.subtract(p, eye)) };
+  }
+
   return {
-    orbit, pan, zoom, twist, update,
+    orbit, pan, zoom, twist, update, ray,
     /** @param {number} w CSS px @param {number} h CSS px */
     setViewport(w, h) {
       viewW = Math.max(1, w);
