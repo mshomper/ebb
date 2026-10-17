@@ -1,0 +1,32 @@
+{
+  "type": "seasons",
+  "version": 1,
+  "note": "Seasons and weather (doc 10). weather.seasons: per-season mood odds (clear, cloud, rain, mist; renormalized) and rainKind ('rain' or 'drizzle': winter swaps rain for cold drizzle, no snow). Leaning scales rain and mist odds by (1 + leanStep * lean), clear and cloud absorb the difference. weather.rainKinds: startH and hours are integer game-hour ranges [min, max] inclusive, kept inside the day; intensity is the 0..1 rain level while it falls; cloud is the overcast cover all day; mmPerHourAtFull turns intensity into rainAmount (mm). weather.moods: per-mood cloud cover range [min, max] (rolled per day) and wind strength range 0..1. weather.mist: peak density, startH when it forms, formHours to reach peak, hours = rolled total duration from startH [min, max], fadeHours to burn off at the end. weather.wind: prevailingDir in radians (direction the wind blows toward, 0 = +X east, pi/2 = -Z north), dirSpread = +- jitter, diurnalAmount = share of strength that follows the day curve peaking at peakH. blendMinutes: display blend around hour boundaries. dormancy: season-position windows [from, to] where 0 = start of spring, 1 summer, 2 autumn, 3 winter, 4 = next spring; a window with to <= from wraps through the new year.",
+  "weather": {
+    "blendMinutes": 20,
+    "leanStep": 0.25,
+    "seasons": {
+      "spring": { "clear": 0.30, "cloud": 0.30, "rain": 0.28, "mist": 0.12, "rainKind": "rain" },
+      "summer": { "clear": 0.48, "cloud": 0.27, "rain": 0.18, "mist": 0.07, "rainKind": "rain" },
+      "autumn": { "clear": 0.25, "cloud": 0.32, "rain": 0.25, "mist": 0.18, "rainKind": "rain" },
+      "winter": { "clear": 0.20, "cloud": 0.30, "rain": 0.22, "mist": 0.28, "rainKind": "drizzle" }
+    },
+    "rainKinds": {
+      "rain": { "startH": [3, 19], "hours": [2, 6], "intensity": [0.3, 0.6], "cloud": 0.95 },
+      "drizzle": { "startH": [1, 15], "hours": [4, 9], "intensity": [0.1, 0.22], "cloud": 0.9 }
+    },
+    "mmPerHourAtFull": 8,
+    "moods": {
+      "clear": { "cloud": [0.03, 0.07], "wind": [0.15, 0.45] },
+      "cloud": { "cloud": [0.4, 0.8], "wind": [0.25, 0.6] },
+      "rain": { "wind": [0.45, 0.85] },
+      "mist": { "cloud": [0.3, 0.3], "wind": [0.0, 0.15] }
+    },
+    "mist": { "peak": 0.8, "startH": 1, "formHours": 3, "hours": [7, 10], "fadeHours": 3 },
+    "wind": { "prevailingDir": 0.785, "dirSpread": 1.2, "diurnalAmount": 0.4, "peakH": 15 }
+  },
+  "dormancy": {
+    "frogs": [2.6, 0.3],
+    "reeds": [3.0, 4.0]
+  }
+}

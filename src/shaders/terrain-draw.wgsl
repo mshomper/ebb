@@ -2,13 +2,15 @@
 // Land: one grid mesh per open chunk, LOD 128/64/32 quads a side, with skirts that hide cracks
 // between LODs; heights come from the height texture in the vertex shader. Materials blend by
 // weight with a little height-style sharpening; steep slopes turn to rock and the shore band to sand.
-// Lighting is physical (lux in, nits out, pre-exposed); no palette colors here (docs/05).
-// The sea is still the flat M0 plane until the water step (S4).
+// Lighting is physical (lib-lighting: sun and moon with shadows, sky SH fill, aerial perspective);
+// no palette colors here (docs/05). The sea is still the flat M0 plane until the water step (S4).
 
 // #include common
 // #include lib-hash
-// #include lib-sky-plain
+// #include lighting-bindings
+// #include lib-sky
 // #include lib-terrain
+// #include lib-lighting
 
 struct TerrainDraw {
   albedoGrass: vec3f, variation: f32,
@@ -23,16 +25,9 @@ struct TerrainDraw {
   shallowDepth: f32, seed: u32, _p0: f32, _p1: f32,
 };
 
-struct Chunk {
-  originCell: vec2f,  // window cell of the chunk's first vertex
-  step: f32,          // cells per quad
-  quads: f32,         // quads per side
-};
-
 @group(0) @binding(0) var<uniform> frame: FrameUniforms;
-@group(1) @binding(0) var<uniform> sky: SkyPlain;
 @group(2) @binding(0) var<uniform> td: TerrainDraw;
-@group(2) @binding(1) var<uniform> chunks: array<Chunk, 36>;
+@group(2) @binding(1) var<uniform> chunks: array<TerrainChunk, 36>;
 @group(2) @binding(2) var heightTex: texture_2d<f32>;
 @group(2) @binding(3) var materialTex: texture_2d<f32>;
 @group(2) @binding(4) var linearSampler: sampler;
@@ -44,30 +39,8 @@ struct VsOut {
 
 @vertex
 fn vsLand(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> VsOut {
-  let ch = chunks[ii];
-  let n = u32(ch.quads);
-  let row = n + 1u;
-  var g: vec2u;
-  var skirt = false;
-  if (vi < row * row) {
-    g = vec2u(vi % row, vi / row);
-  } else {
-    // Skirt vertices: four edges of row vertices each, dropped below the ground.
-    let k = vi - row * row;
-    let e = k / row;
-    let t = k % row;
-    skirt = true;
-    if (e == 0u) { g = vec2u(t, 0u); }
-    else if (e == 1u) { g = vec2u(n, t); }
-    else if (e == 2u) { g = vec2u(t, n); }
-    else { g = vec2u(0u, t); }
-  }
-  let cell = min(vec2i(ch.originCell + vec2f(g) * ch.step), vec2i(TERRAIN_CELLS - 1));
-  let xz = TERRAIN_ORIGIN + (vec2f(cell) + 0.5) * TERRAIN_CELL;
-  var h = terrainLoad(heightTex, cell);
-  if (skirt) { h -= td.skirtDepth; }
   var out: VsOut;
-  out.world = vec3f(xz.x, h, xz.y);
+  out.world = terrainMeshVertex(heightTex, chunks[ii], vi, td.skirtDepth);
   out.pos = frame.viewProj * vec4f(out.world, 1.0);
   return out;
 }
@@ -81,11 +54,6 @@ fn vsSea(@builtin(vertex_index) vi: u32) -> VsOut {
   out.world = vec3f(xz.x, 0.0, xz.y);
   out.pos = frame.viewProj * vec4f(out.world, 1.0);
   return out;
-}
-
-fn shadeDiffuse(albedo: vec3f, n: vec3f) -> vec3f {
-  let sun = frame.sunIlluminance * max(dot(n, frame.sunDir), 0.0) / PI;
-  return albedo * (sun + skyAmbient(sky, n));
 }
 
 // Soft brush ring: an outer ring at the radius and a faint inner one where the falloff starts.
@@ -127,10 +95,11 @@ fn fsLand(in: VsOut) -> @location(0) vec4f {
 
   var albedo = td.albedoGrass * wf.x + td.albedoSand * wf.y + td.albedoRock * wf.z + td.albedoSoil * wf.w;
   albedo *= 1.0 + td.variation * (valueNoise2(p * 3.1 + vec2f(41.0, 17.0), td.seed + 4u) - 0.5);
-  // Wet ground below the waterline is darker (wetness proper arrives with water in S4).
-  albedo *= mix(1.0, td.wetDarkening, 1.0 - smoothstep(-0.05, 0.25, y));
+  // Wet ground is darker: below the waterline always, and everywhere while it rains (docs/06).
+  let wet = max(1.0 - smoothstep(-0.05, 0.25, y), light.weather.w);
+  albedo *= mix(1.0, td.wetDarkening, wet);
 
-  var color = shadeDiffuse(albedo, n) * frame.exposure;
+  var color = shadeSurface(albedo, in.world, n, in.pos, 1.0);
   color = mix(color, td.ringColor, ringAlpha(xz));
   return vec4f(color, 1.0);
 }
@@ -138,15 +107,17 @@ fn fsLand(in: VsOut) -> @location(0) vec4f {
 @fragment
 fn fsSea(in: VsOut) -> @location(0) vec4f {
   let v = normalize(frame.cameraPos - in.world);
+  let up = vec3f(0.0, 1.0, 0.0);
   let depth = -terrainHeight(heightTex, in.world.xz);
   let shallow = 1.0 - smoothstep(0.0, td.shallowDepth, depth);
   let albedo = mix(td.albedoSea, td.albedoSand * 0.55, shallow * 0.6);
-  let body = shadeDiffuse(albedo, vec3f(0.0, 1.0, 0.0));
-  let r = reflect(-v, vec3f(0.0, 1.0, 0.0));
+  let body = shadeSurface(albedo, in.world, up, in.pos, 1.0);
+  // Placeholder sky reflection from the SH fill (a blurred sky); real water optics arrive in S4.
+  let r = reflect(-v, up);
   let f0 = td.seaSpecular;
   let fresnel = f0 + (1.0 - f0) * pow(1.0 - max(v.y, 0.0), 5.0);
-  let refl = skyRadiance(sky, r, frame.sunDir);
-  var color = mix(body, refl, fresnel) * frame.exposure;
+  let refl = applyAerial(skyAmbient(r) * frame.exposure, in.pos.xy * frame.invRenderSize, distance(in.world, frame.cameraPos));
+  var color = mix(body, refl, fresnel);
   color = mix(color, td.ringColor, ringAlpha(in.world.xz));
   return vec4f(color, 1.0);
 }

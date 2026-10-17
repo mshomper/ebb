@@ -29,6 +29,17 @@ struct FrameUniforms {
   _pad1: f32,
 };
 
+// Group 1 binding 0 in every lit pipeline. Layout is mirrored in src/render/lighting.js.
+struct LightUniforms {
+  cascadeViewProj: array<mat4x4f, 3>,
+  cascadeSplits: vec4f,     // xyz: view distance where cascades 0..2 end (meters), w: cascade count
+  shadowDir: vec3f,         // unit vector toward the shadow-casting light (sun, or moon at night)
+  shadowStrength: f32,      // 0..1, fades through twilight while the caster swaps
+  shadowTexel: vec4f,       // world-space texel size per cascade (xyz), w: filter taps for this tier
+  weather: vec4f,           // x cloud cover, y rain, z mist, w ground wetness (all 0..1)
+  aerial: vec4f,            // x aerial-perspective max distance (m), y slice count, zw spare
+};
+
 const PI: f32 = 3.14159265358979;
 
 struct FullscreenOut {

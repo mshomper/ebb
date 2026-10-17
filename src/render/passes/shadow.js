@@ -1,0 +1,214 @@
+// @ts-check
+// Cascaded shadow maps from the sun, or the moon at night (docs/06, Shadows): practical splits,
+// one bounding sphere per split so the cascade size never changes as the camera turns, and the
+// light-space origin snapped to whole texels, so shadows do not shimmer while orbiting.
+
+import { mat4, vec3 } from 'wgpu-matrix';
+import { makeBuffer, makeShaderModule, makeTexture } from '../../core/gpu.js';
+import { CHUNK_MIN } from '../../world/terrain/grid.js';
+import { LODS, MAX_CHUNKS, createIndexBuffers, packChunks } from '../terrain-mesh.js';
+
+/** @typedef {import('../frame-graph.js').PassContext} PassContext */
+
+const MAX_CASCADES = 3;
+const CASCADE_STRIDE = 256;
+const TAPS = { pcss: 16, '9tap': 9, '4tap': 4 };
+
+/**
+ * @param {{ terrain: import('../../world/terrain/index.js').Terrain, recipe: any, terrainRecipe: any,
+ *   tierShadows: { cascades: number, size: number, filter: string }, worldRadius: number }} opts
+ */
+export function createShadowPass(opts) {
+  const { terrain, recipe } = opts;
+  const cascades = Math.max(1, Math.min(MAX_CASCADES, opts.tierShadows.cascades));
+  const size = opts.tierShadows.size;
+  /** @type {GPUTexture} */ let map;
+  /** @type {GPUSampler} */ let sampler;
+  /** @type {GPURenderPipeline} */ let pipeline;
+  /** @type {GPUBindGroup} */ let group;
+  /** @type {GPUBuffer} */ let cascadeBuffer;
+  /** @type {{ buffer: GPUBuffer, count: number }[]} */ let indexBuffers = [];
+  /** @type {GPUTextureView[]} */ const layerViews = [];
+  const chunkData = new Float32Array(MAX_CHUNKS * 4);
+  /** @type {{ lod: number, first: number, count: number }[]} */ let draws = [];
+  const lodIndex = Math.max(0, LODS.indexOf(recipe.shadowLod));
+
+  // Results of the last update(), read by the lighting uniforms.
+  const state = {
+    viewProj: [mat4.identity(), mat4.identity(), mat4.identity()],
+    splits: [0, 0, 0],
+    texel: [0, 0, 0],
+    dir: vec3.fromValues(0, 1, 0),
+    strength: 0,
+    count: cascades,
+    taps: TAPS[/** @type {'pcss'} */ (opts.tierShadows.filter)] ?? 9,
+  };
+
+  /**
+   * Fit the cascades to the camera and the light.
+   * @param {{ eye: Float32Array, view: Float32Array, proj: Float32Array, near: number, targetDistance: number }} cam
+   * @param {ArrayLike<number>} dir  unit vector toward the caster
+   * @param {number} strength 0..1
+   */
+  function update(cam, dir, strength) {
+    vec3.copy(/** @type {any} */ (dir), state.dir);
+    state.strength = strength;
+    const reach = opts.worldRadius * recipe.worldRadiusFactor;
+    const near = Math.max(cam.near, cam.targetDistance - reach);
+    const far = Math.max(near + recipe.minDistance, cam.targetDistance + reach);
+    const tanY = 1 / cam.proj[5];
+    const tanX = 1 / cam.proj[0];
+    const invView = mat4.inverse(cam.view);
+    let prev = near;
+    for (let c = 0; c < cascades; c++) {
+      const i = (c + 1) / cascades;
+      const logSplit = near * Math.pow(far / near, i);
+      const linSplit = near + (far - near) * i;
+      const split = recipe.splitLambda * logSplit + (1 - recipe.splitLambda) * linSplit;
+      state.splits[c] = split;
+      fitCascade(c, prev, split, tanX, tanY, invView, dir);
+      prev = split;
+    }
+  }
+
+  /**
+   * @param {number} c @param {number} d0 @param {number} d1 @param {number} tanX @param {number} tanY
+   * @param {Float32Array} invView @param {ArrayLike<number>} dir
+   */
+  function fitCascade(c, d0, d1, tanX, tanY, invView, dir) {
+    // Bounding sphere of the frustum slice: its size depends only on the split, never on camera turn.
+    const corners = [];
+    for (const d of [d0, d1]) {
+      for (const sx of [-1, 1]) for (const sy of [-1, 1]) corners.push(vec3.transformMat4([sx * tanX * d, sy * tanY * d, -d], invView));
+    }
+    const center = vec3.create();
+    for (const p of corners) vec3.add(center, p, center);
+    vec3.scale(center, 1 / corners.length, center);
+    let radius = 0;
+    for (const p of corners) radius = Math.max(radius, vec3.distance(p, center));
+    radius = Math.ceil(radius * 8) / 8;
+
+    const up = Math.abs(dir[1]) > 0.98 ? [0, 0, 1] : [0, 1, 0];
+    const back = radius + recipe.lightPullBack;
+    const eye = [center[0] + dir[0] * back, center[1] + dir[1] * back, center[2] + dir[2] * back];
+    const view = mat4.lookAt(eye, center, up);
+    const proj = mat4.ortho(-radius, radius, -radius, radius, 0.1, back + radius + recipe.lightPullBack);
+    const vp = mat4.multiply(proj, view);
+    // Snap the world origin to a whole shadow texel so the map slides in texel steps only.
+    const o = vec3.transformMat4([0, 0, 0], vp);
+    const half = size / 2;
+    const dx = (Math.round(o[0] * half) - o[0] * half) / half;
+    const dy = (Math.round(o[1] * half) - o[1] * half) / half;
+    const snap = mat4.translation([dx, dy, 0]);
+    mat4.multiply(snap, vp, state.viewProj[c]);
+    state.texel[c] = (2 * radius) / size;
+  }
+
+  return {
+    name: 'shadow',
+    reads: [],
+    writes: ['shadow'],
+    enabled: () => true,
+    state,
+    update,
+
+    /** The shadow map and its comparison sampler, created on first call (lighting binds them). @param {GPUDevice} device */
+    resources(device) {
+      if (!map) {
+        map = makeTexture(device, {
+          label: 'shadow-map', size: [size, size, MAX_CASCADES], format: 'depth32float',
+          usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING,
+        });
+        sampler = device.createSampler({ label: 'shadow-compare', compare: 'less-equal', magFilter: 'linear', minFilter: 'linear' });
+        for (let i = 0; i < MAX_CASCADES; i++) layerViews.push(map.createView({ dimension: '2d', baseArrayLayer: i, arrayLayerCount: 1 }));
+      }
+      return { view: map.createView({ dimension: '2d-array' }), sampler };
+    },
+
+    /** @param {PassContext} ctx */
+    async setup(ctx) {
+      const { device } = ctx;
+      this.resources(device);
+      const module = await makeShaderModule(device, 'shadow');
+      const layout = device.createBindGroupLayout({
+        label: 'shadow',
+        entries: [
+          { binding: 0, visibility: GPUShaderStage.VERTEX, buffer: { hasDynamicOffset: true, minBindingSize: 64 } },
+          { binding: 1, visibility: GPUShaderStage.VERTEX, buffer: {} },
+          { binding: 2, visibility: GPUShaderStage.VERTEX, texture: { sampleType: 'unfilterable-float' } },
+          { binding: 3, visibility: GPUShaderStage.VERTEX, buffer: {} },
+        ],
+      });
+      pipeline = await device.createRenderPipelineAsync({
+        label: 'shadow',
+        layout: device.createPipelineLayout({ bindGroupLayouts: [layout] }),
+        vertex: { module, entryPoint: 'vsTerrain' },
+        primitive: { topology: 'triangle-list', cullMode: 'none' },
+        depthStencil: {
+          format: 'depth32float', depthWriteEnabled: true, depthCompare: 'less',
+          depthBias: recipe.depthBias, depthBiasSlopeScale: recipe.depthBiasSlopeScale,
+        },
+      });
+      cascadeBuffer = makeBuffer(device, { label: 'shadow-cascades', size: CASCADE_STRIDE * MAX_CASCADES, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
+      const chunkBuffer = makeBuffer(device, { label: 'shadow-chunks', size: MAX_CHUNKS * 16, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
+      const skirtBuffer = makeBuffer(device, { label: 'shadow-skirt', size: 16, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
+      device.queue.writeBuffer(skirtBuffer, 0, new Float32Array([opts.terrainRecipe.render.skirtDepth, 0, 0, 0]));
+      indexBuffers = createIndexBuffers(device);
+      // Every open chunk at one LOD; chunks only change when land opens (M2), so pack once.
+      /** @type {number[][]} */ const byLod = [[], [], []];
+      for (let cz = CHUNK_MIN; cz < CHUNK_MIN + 6; cz++) {
+        for (let cx = CHUNK_MIN; cx < CHUNK_MIN + 6; cx++) if (terrain.chunkState(cx, cz) === 'open') byLod[lodIndex].push(cx, cz);
+      }
+      draws = packChunks(chunkData, byLod);
+      device.queue.writeBuffer(chunkBuffer, 0, chunkData);
+      group = device.createBindGroup({
+        label: 'shadow',
+        layout,
+        entries: [
+          { binding: 0, resource: { buffer: cascadeBuffer, size: 64 } },
+          { binding: 1, resource: { buffer: chunkBuffer } },
+          { binding: 2, resource: terrain.gpu.height.createView() },
+          { binding: 3, resource: { buffer: skirtBuffer } },
+        ],
+      });
+    },
+
+    resize() {},
+
+    /** @param {GPUCommandEncoder} encoder @param {PassContext} ctx */
+    record(encoder, ctx) {
+      const data = new Float32Array((CASCADE_STRIDE / 4) * MAX_CASCADES);
+      for (let c = 0; c < cascades; c++) data.set(state.viewProj[c], (c * CASCADE_STRIDE) / 4);
+      ctx.device.queue.writeBuffer(cascadeBuffer, 0, data);
+      // One timing for all cascades: start stamp on the first pass, end stamp on the last.
+      const ts = ctx.timestampWrites('shadow');
+      for (let c = 0; c < cascades; c++) {
+        /** @type {GPURenderPassTimestampWrites | undefined} */
+        let stamp;
+        if (ts && (c === 0 || c === cascades - 1)) {
+          stamp = { querySet: ts.querySet };
+          if (c === 0) stamp.beginningOfPassWriteIndex = ts.beginningOfPassWriteIndex;
+          if (c === cascades - 1) stamp.endOfPassWriteIndex = ts.endOfPassWriteIndex;
+        }
+        const pass = encoder.beginRenderPass({
+          label: `shadow-${c}`,
+          colorAttachments: [],
+          depthStencilAttachment: { view: layerViews[c], depthLoadOp: 'clear', depthStoreOp: 'store', depthClearValue: 1 },
+          timestampWrites: stamp,
+        });
+        if (state.strength > 0) {
+          pass.setPipeline(pipeline);
+          pass.setBindGroup(0, group, [c * CASCADE_STRIDE]);
+          for (const d of draws) {
+            const ib = indexBuffers[d.lod];
+            pass.setIndexBuffer(ib.buffer, 'uint16');
+            pass.drawIndexed(ib.count, d.count, 0, 0, d.first);
+          }
+        }
+        pass.end();
+      }
+    },
+  };
+}
+
+/** @typedef {ReturnType<typeof createShadowPass>} ShadowPass */
