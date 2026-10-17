@@ -52,17 +52,14 @@ const ICONS = {
     <path ${ACCENT} d="M6.5 20C8 18.6 15 18.6 16.5 20Z"/>
     <path d="M2.5 20H21.5"/>`,
 
-  // Soak: a down stroke into the ground line, a drop sinking below it, damp specks around.
-  soak: `
-    <path d="M12 3V7"/>
-    <path d="M10 5.2L12 7.2L14 5.2"/>
-    <path d="M2.5 9.5H21.5"/>
-    <path ${ACCENT} d="M12 11.5C10.6 13.5 9.2 15 9.2 16.6A2.8 2.8 0 0 0 14.8 16.6C14.8 15 13.4 13.5 12 11.5Z"/>
-    <path d="M12 11.5C10.6 13.5 9.2 15 9.2 16.6A2.8 2.8 0 0 0 14.8 16.6C14.8 15 13.4 13.5 12 11.5Z"/>
-    <circle cx="5.5" cy="13.5" r="0.7" fill="currentColor" stroke="none"/>
-    <circle cx="6.8" cy="18" r="0.7" fill="currentColor" stroke="none"/>
-    <circle cx="18.5" cy="13.5" r="0.7" fill="currentColor" stroke="none"/>
-    <circle cx="17.2" cy="18" r="0.7" fill="currentColor" stroke="none"/>`,
+  // Drain: a shallow pool over a gap in the ground line, water leaving downward through it.
+  drain: `
+    <path ${ACCENT} d="M4.5 9.5C6.5 7.6 17.5 7.6 19.5 9.5Z"/>
+    <path d="M4.5 9.5C6.5 7.6 17.5 7.6 19.5 9.5"/>
+    <path d="M2.5 9.5H9.5M14.5 9.5H21.5"/>
+    <path d="M9.5 9.5V12M14.5 9.5V12"/>
+    <path d="M12 12.5V20"/>
+    <path d="M9.5 17.5L12 20L14.5 17.5"/>`,
 
   // Spring: water welling up from the ground and arcing over, a ripple at its foot.
   wellspring: `

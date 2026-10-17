@@ -11,10 +11,10 @@
 - Rendering reads tide at **display time**; ecology and `coarseStep` read it at **world time** (see `16-customization-and-photo-mode.md`).
 - **Chunk-aware.** Water textures cover the world chunk grid of doc 08 at 0.5 m (the world limit of 192 m by 192 m, 6×6 chunks of 32 m, so at most 384×384 cells), allocated once. Simulation dispatches **per active 32 m chunk tile** (64×64 cells). At that limit (doc 13's expansion ceiling) the worst case is 36 tiles, 147,456 cells.
 - Activity per chunk (doc 13): chunks within 60 m of the camera focus run every step. Other chunks with water, shoreline or summary-flagged flow run at quarter rate with 4× step. Open sea outside land chunks is an analytic tide plane with procedural waves.
-- Starter water tools: **pour** (temporary brush source) and **soak** (temporary brush sink), plus one fixed **starter spring** (persistent source) placed by the land recipe. Player-placed springs and streams arrive only with the dragonflies' gift, the **stream tool** (`12-creature-roadmap.md`). Springs are saved in the store slice `water`. (S4b, October 2026: the spring mechanism is built into the Water tool's Spring mode: up to 4 placed springs, each trickle 3, brook 12 or stream 30 L/s, undoable. It is locked behind the store flag `unlocks.springs`, which the dragonflies' gift sets; the `?sandbox` address flag sets it early for testing.)
+- Starter water tools: **pour** (temporary brush source) and **drain** (temporary brush sink), plus one fixed **starter spring** (persistent source) placed by the land recipe. Player-placed springs and streams arrive only with the dragonflies' gift, the **stream tool** (`12-creature-roadmap.md`). Springs are saved in the store slice `water`. (S4b, October 2026: the spring mechanism is built into the Water tool's Spring mode: up to 4 placed springs, each trickle 3, brook 12 or stream 30 L/s, undoable. It is locked behind the store flag `unlocks.springs`, which the dragonflies' gift sets; the `?sandbox` address flag sets it early for testing.)
 - One hourly `coarseStep` for tide (in `src/world/tide.js`) and one for the water summary (`src/world/water/coarse.js`), run in the shared order from `02-core-loop-and-idle-model.md`: tide, weather, seasons, water summary, growth, ecology, creatures, expansion.
 
-- **Built in three slice steps** (doc 20, October 2026): **S4a** the tide, the live simulation, the starter spring and the water drawing; **S4b** the water summary, the nudge, pour and soak, readback and tide events; **S4c** the sky probe, screen-space reflection, caustics, foam, ripples and the visual wetness pass. S4a's interim choices:
+- **Built in three slice steps** (doc 20, October 2026): **S4a** the tide, the live simulation, the starter spring and the water drawing; **S4b** the water summary, the nudge, pour and drain, readback and tide events; **S4c** the sky probe, screen-space reflection, caustics, foam, ripples and the visual wetness pass. S4a's interim choices:
   - The whole opened area simulates every step (0.5 m, 192 x 192 cells for the starter island). Per-chunk activity and quarter-rate tiles arrive when the world grows past the starter chunks.
   - Until the summary exists, hollows at least 0.1 m deep and 30 m² in size start full to their lip (`src/world/water/init.js`, priority-flood).
   - Beyond the terrain, the island's sea floor continues at `seabedDepth` and deepens by `openSeaFloorSlope`, so the open sea darkens gradually with no seam.
@@ -28,7 +28,8 @@
   - Pond rule tuned for an island meadow: a hollow is a pond when spring water reaches it, or when at least `pondMinCatchmentM2` (120 m²) drains into it and it is at least `pondMinDepthM` (0.15 m) deep. The doc's original 30 m² filled every small dip on the plateau.
   - Stream depth from the law above is capped by the Manning depth for the local slope, so the summary agrees with the live water (steep runs 1 to 3 cm, flatter runs deeper).
   - The nudge tops live water up toward `targetMm` (τ 20 s) and never drains it. Starting water is the sea at the current tide plus the summary's targets.
-  - Water tool: Pour and Soak at up to 60 L/s under the brush; Spring (locked behind `unlocks.springs`). `water.sampleLive(x, z)` reads a CPU copy of depth and velocity made four times a second through a ring of three buffers.
+  - Damp hollows read on the ground: the summary's damp cells (hollows of at least `dampHollowMinM2`, 3 m²) go to a small 0.5 m texture the terrain reads, darkening them by `dampHollowWet` (a slice of the S4c wetness pass, without drying).
+  - Water tool: Pour and Drain (named Soak in the first plan) at up to 60 L/s under the brush; Spring (locked behind `unlocks.springs`). `water.sampleLive(x, z)` reads a CPU copy of depth and velocity made four times a second through a ring of three buffers.
 
 ## How it works
 
@@ -48,7 +49,7 @@ flowchart TD
   subgraph Live - GPU, animation time
     SUM -->|upsample, nudge target| NUD[Summary nudge]
     TD[tide.js level at display time] --> BC[Sea boundary cells]
-    SRC[springs, pour, soak, rain] --> FL
+    SRC[springs, pour, drain, rain] --> FL
     BC --> FL[Flux pass: pipes]
     NUD --> DP
     FL --> DP[Depth pass]
@@ -171,7 +172,7 @@ u   ← (f_left_in − f_left_out + f_right_out − f_right_in) / (2 · l · d̄
 ## Tuning knobs
 
 - Tuning panel (`recipes/world/water.json`): base tide amplitude, spring and neap swing, tide phase; friction; foam thresholds and decay; nudge time; rain-fed pond catchment threshold; stream depth law; absorption coefficients per water body; scattering albedo; caustic strength; Gerstner wave set; refraction strength. Overlays: flow class map, basin labels, live minus summary difference.
-- Player: starter water tool modes (pour, soak). The stream tool (dragonflies' gift) places springs and sets their rate (three steps: trickle, brook, stream).
+- Player: starter water tool modes (pour, drain). The stream tool (dragonflies' gift) places springs and sets their rate (three steps: trickle, brook, stream).
 
 ## Performance budget
 

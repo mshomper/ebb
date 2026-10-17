@@ -18,7 +18,7 @@ const TILING_MODES = { grid: 0, hex: 1, two: 2 };
 /**
  * @param {{ terrain: import('../../world/terrain/index.js').Terrain, recipe: any, seed: number,
  *   getEye: () => ArrayLike<number>, tier: string, getTide?: () => number, lodDistances?: number[],
- *   water: { depthTextures: GPUTexture[], current: () => number },
+ *   water: { depthTextures: GPUTexture[], current: () => number, damp: GPUTexture, dampWet: number },
  *   ground: { views: { a: GPUTextureView, b: GPUTextureView }, sampler: GPUSampler, version: number, fade: number },
  *   groundTier: any }} opts  ground: src/render/ground-detail.js; groundTier: the tier's `ground` block
  */
@@ -112,6 +112,7 @@ export function createTerrainPass(opts) {
           { binding: 7, visibility: GPUShaderStage.FRAGMENT, sampler: { type: 'filtering' } },
           { binding: 8, visibility: GPUShaderStage.FRAGMENT, buffer: {} },
           { binding: 9, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: 'unfilterable-float' } },
+          { binding: 10, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: 'float' } },
         ],
       });
       const layout = device.createPipelineLayout({ label: 'opaque', bindGroupLayouts: [ctx.layouts.frame, ctx.layouts.lighting, layout2] });
@@ -149,6 +150,7 @@ export function createTerrainPass(opts) {
             { binding: 7, resource: opts.ground.sampler },
             { binding: 8, resource: { buffer: groundBuffer } },
             { binding: 9, resource: wt.createView() },
+            { binding: 10, resource: opts.water.damp.createView() },
           ],
         }));
         groundVersion = opts.ground.version;
@@ -165,6 +167,7 @@ export function createTerrainPass(opts) {
       const ring = terrain.ring;
       f[24] = ring.x; f[25] = ring.z; f[26] = ring.radius; f[27] = ring.hardness; f[28] = ring.visible ? 1 : 0;
       f[38] = opts.getTide?.() ?? 0;
+      f[39] = opts.water.dampWet;
       device.queue.writeBuffer(drawBuffer, 0, draw);
       if (opts.ground.version !== groundVersion) makeGroup();
       gf[19] = opts.ground.fade;

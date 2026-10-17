@@ -22,7 +22,7 @@ struct WaterSim {
   sourceCount: u32,
   manningInv: f32,     // 1 / Manning's n: caps flow speed by depth and slope
   _p0: f32,
-  // Sources (springs, the pour and soak brush): xy cell center, z volume rate (m^3/s, negative
+  // Sources (springs, the pour and drain brush): xy cell center, z volume rate (m^3/s, negative
   // drains), w radius in cells (0: the single cell).
   sources: array<vec4f, 6>,
 };

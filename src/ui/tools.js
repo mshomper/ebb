@@ -15,7 +15,7 @@ import { ensureIconSprite, iconSvg } from './icons/icons.js';
 /** @typedef {'sculpt'|'smooth'|'paint'|'water'} ToolId */
 /** @typedef {'raise'|'lower'|'flatten'} SculptMode */
 /** @typedef {'grass'|'sand'|'soil'|'rock'} PaintLayer */
-/** @typedef {'pour'|'soak'|'spring'} WaterMode */
+/** @typedef {'pour'|'drain'|'spring'} WaterMode */
 /** @typedef {'trickle'|'brook'|'stream'} SpringRate */
 
 /**
@@ -47,7 +47,7 @@ const TOOLS = [
 /** Water modes; 'spring' shows only once `unlocks.springs` is true. @type {{id: WaterMode, label: string, icon: string}[]} */
 const WATER_MODES = [
   { id: 'pour', label: 'Pour', icon: 'pour' },
-  { id: 'soak', label: 'Soak', icon: 'soak' },
+  { id: 'drain', label: 'Drain', icon: 'drain' },
   { id: 'spring', label: 'Spring', icon: 'wellspring' },
 ];
 /** @type {{id: SpringRate, label: string}[]} */

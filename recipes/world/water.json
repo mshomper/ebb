@@ -43,9 +43,9 @@
     "tauS": 20
   },
   "tools": {
-    "note": "Pour and soak (water tool) add or remove water under the brush at up to rateLps at full strength. Springs: up to maxSprings placed by the player (sandbox now, the dragonflies' gift in normal play), each at one of the rates (L/s).",
+    "note": "Pour and drain (water tool) add or remove water under the brush at up to rateLps at full strength. Springs: up to maxSprings placed by the player (sandbox now, the dragonflies' gift in normal play), each at one of the rates (L/s).",
     "pourLps": 60,
-    "soakLps": 60,
+    "drainLps": 60,
     "maxSprings": 4,
     "springRates": { "trickle": 3, "brook": 12, "stream": 30 }
   },
@@ -72,6 +72,9 @@
     ],
     "seaFadeDepthM": 0.5,
     "openSeaFloorSlope": 0.08,
+    "dampHollowWet": 0.6,
+    "dampHollowMinM2": 3,
+    "dampHollowNote": "How wet the summary's damp hollows look (0 dry, 1 as soaked as a stream bank); hollows smaller than dampHollowMinM2 stay plain.",
     "riffle": { "note": "White water on fast, shallow flow: fades in over the speed range (m/s), gone in water deeper than depthM; coverage is the share of the surface that is white at full strength; streakM the streak size; albedo of the aerated water.", "speed": [0.25, 0.8], "depthM": 0.12, "coverage": 0.34, "streakM": 0.07, "albedo": 0.75 },
     "flowNormalScale": 0.6
   }

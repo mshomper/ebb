@@ -1,6 +1,6 @@
 // Virtual pipe model, step 2 of 2: new depth from the pipe flows, the spring, and the sea ring,
 // plus the velocity field the drawing uses for flow-mapped ripples (docs/07). Sources (springs,
-// pour and soak) add or remove water, and the summary nudge tops ponds and streams up.
+// pour and drain) add or remove water, and the summary nudge tops ponds and streams up.
 //   d <- d + dt (sum f_in - sum f_out) / l^2 + dt * source
 //   u <- (f_left_in - f_left_out + f_right_out - f_right_in) / (2 l d_avg)   (same for v)
 // The outer ring of the rect is open sea, held at the tide level every step.

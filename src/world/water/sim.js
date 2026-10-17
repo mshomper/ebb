@@ -7,7 +7,7 @@ import { makeBuffer, makeShaderModule, makeTexture } from '../../core/gpu.js';
 import { WATER_CELLS } from './grid.js';
 
 const SIM_BYTES = 160;
-/** Most sources at once: the starter spring, up to four placed springs, the pour or soak brush. */
+/** Most sources at once: the starter spring, up to four placed springs, the pour or drain brush. */
 export const MAX_SOURCES = 6;
 const READ_RING = 3;
 const STATS_BYTES = 16;
@@ -27,6 +27,8 @@ export async function createWaterSim(device, terrainTex) {
   const vel = tex('water-vel', 'rg32float');
   // Summary target depth (m) for the refill nudge; written from the CPU when a summary arrives.
   const target = makeTexture(device, { label: 'water-target', size: [N, N], format: 'r32float', usage: T.TEXTURE_BINDING | T.COPY_DST });
+  // The summary's damp hollows (1 = damp), for the terrain's damp look; filterable, so edges blur.
+  const damp = makeTexture(device, { label: 'water-damp', size: [N, N], format: 'r8unorm', usage: T.TEXTURE_BINDING | T.COPY_DST });
   const uniforms = makeBuffer(device, { label: 'water-sim', size: SIM_BYTES, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
   const statsBuf = makeBuffer(device, { label: 'water-stats', size: STATS_BYTES, usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST });
   const statsRead = makeBuffer(device, { label: 'water-stats-read', size: STATS_BYTES, usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST });
@@ -102,8 +104,16 @@ export async function createWaterSim(device, terrainTex) {
   }
 
   /**
+   * Set the summary's damp hollows for a rect (0 or 255 per cell).
+   * @param {{ x: number, y: number, w: number, h: number }} r @param {Uint8Array} m
+   */
+  function setDamp(r, m) {
+    device.queue.writeTexture({ texture: damp, origin: [r.x, r.y] }, m, { bytesPerRow: r.w, rowsPerImage: r.h }, [r.w, r.h]);
+  }
+
+  /**
    * @typedef {{ cell: [number, number], rateM3s: number, radius: number }} Source
-   *   rateM3s negative drains (soak); radius in cells, 0 for a single cell
+   *   rateM3s negative drains (the drain mode); radius in cells, 0 for a single cell
    */
 
   /**
@@ -237,13 +247,15 @@ export async function createWaterSim(device, terrainTex) {
   }
 
   function dispose() {
-    for (const t of [...depth, ...flux, vel, target]) t.destroy();
+    for (const t of [...depth, ...flux, vel, target, damp]) t.destroy();
     for (const s of ring) s.buffer.destroy();
     uniforms.destroy(); statsBuf.destroy(); statsRead.destroy();
   }
 
   return {
-    seed, encode, afterSubmit, dispose, readDepth, setTarget, encodeReadback,
+    seed, encode, afterSubmit, dispose, readDepth, setTarget, setDamp, encodeReadback,
+    /** The summary's damp hollows (r8unorm, 0.5 m), for the terrain. */
+    damp,
     /** Latest CPU copy of depth and velocity (a few times a second), or null. */
     get live() { return live; },
     /** Latest depth texture (r32float, m). */

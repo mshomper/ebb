@@ -163,7 +163,7 @@ export async function startApp(canvas, hooks = {}) {
   const terrainPass = createTerrainPass({
     terrain, recipe: terrainRecipe, seed: subSeed(seed, 'terrain-look'), getEye: () => camera.eye, tier,
     ground: groundDetail, groundTier: tierSettings.ground, getTide: () => water.tide, lodDistances: tierSettings.lodDistances,
-    water: { depthTextures: water.sim.depthTextures, current: () => water.sim.current },
+    water: { depthTextures: water.sim.depthTextures, current: () => water.sim.current, damp: water.sim.damp, dampWet: waterRecipe.look.dampHollowWet },
   });
   const waterPass = createWaterPass({
     water, terrain, atmosphere, recipe: waterRecipe, seaExtent: terrainRecipe.sea.extent, getTime: () => clock.animT(),
@@ -283,17 +283,17 @@ export async function startApp(canvas, hooks = {}) {
     terrain.endStroke().then((cmd) => { if (cmd) history.push(cmd); });
   }
 
-  // ---- the water tool (docs/07): pour and soak while held; springs on tap (when unlocked) ----
-  /** Screen point of a held pour or soak, or null. @type {null | { x: number, y: number }} */
+  // ---- the water tool (docs/07): pour and drain while held; springs on tap (when unlocked) ----
+  /** Screen point of a held pour or drain, or null. @type {null | { x: number, y: number }} */
   let pouring = null;
   const springRateLps = () => waterTools.springRates[tools().springRate ?? 'brook'] ?? waterTools.springRates.brook;
 
-  /** Each frame while pour or soak is held: the brush source under the pointer. */
+  /** Each frame while pour or drain is held: the brush source under the pointer. */
   function updatePour() {
     const t = tools();
     const p = pouring && t.tool === 'water' ? groundAt(pouring.x, pouring.y) : null;
-    if (!p || (t.waterMode !== 'pour' && t.waterMode !== 'soak')) { water.setBrush(null); return; }
-    const lps = (t.waterMode === 'pour' ? waterTools.pourLps : -waterTools.soakLps) * Math.max(0.05, t.strength);
+    if (!p || (t.waterMode !== 'pour' && t.waterMode !== 'drain')) { water.setBrush(null); return; }
+    const lps = (t.waterMode === 'pour' ? waterTools.pourLps : -waterTools.drainLps) * Math.max(0.05, t.strength);
     water.setBrush({ x: p[0], z: p[2], radiusM: t.size, rateLps: lps });
   }
 

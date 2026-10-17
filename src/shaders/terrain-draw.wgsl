@@ -24,7 +24,7 @@ struct TerrainDraw {
   ringCenter: vec2f, ringRadius: f32, ringHardness: f32,
   ringVisible: f32, ringWidth: f32, steepCosLow: f32, steepCosHigh: f32,
   beachLow: f32, beachHigh: f32, skirtDepth: f32, seaExtent: f32,
-  shallowDepth: f32, seed: u32, tide: f32, _p1: f32,   // tide: sea level now (m)
+  shallowDepth: f32, seed: u32, tide: f32, dampWet: f32,   // tide: sea level now (m); dampWet: damp hollow wetness
 };
 
 @group(0) @binding(0) var<uniform> frame: FrameUniforms;
@@ -38,6 +38,7 @@ struct TerrainDraw {
 @group(2) @binding(7) var groundSampler: sampler;
 @group(2) @binding(8) var<uniform> ground: GroundDetail;
 @group(2) @binding(9) var waterDepth: texture_2d<f32>;   // live water depth (m), water-depth.wgsl
+@group(2) @binding(10) var dampHollows: texture_2d<f32>; // the water summary's damp hollows (r8unorm, 0.5 m)
 
 // How soaked the ground is from live water nearby: 1 under water, fading out over about 0.75 m of
 // bank (capillary rise). The visual wetness pass (S4c) adds drying over time and the tide flats.
@@ -128,7 +129,10 @@ fn fsLand(in: VsOut) -> FsOut {
   // Wet ground is darker: below the tide line always, and everywhere while it rains (docs/06).
   // Near live water (ponds, streams) the banks are soaked too. The visual wetness pass (S4c)
   // adds drying over time, the spray line and the tide flats.
-  let wet = max(max(1.0 - smoothstep(td.tide - 0.05, td.tide + 0.25, y), light.weather.w), wetFromWater(xz));
+  // Damp hollows (the water summary: dips that collect water but hold no pond) stay damp, with
+  // soft edges from the filtered 0.5 m map.
+  let damp = textureSampleLevel(dampHollows, linearSampler, terrainUv(xz), 0.0).r * td.dampWet;
+  let wet = max(max(max(1.0 - smoothstep(td.tide - 0.05, td.tide + 0.25, y), light.weather.w), wetFromWater(xz)), damp);
   albedo *= mix(1.0, td.wetDarkening, wet);
 
   var color = shadeGround(albedo, in.world, n, gd.normal, gd.roughness, gd.cavity, in.pos, ground.terminator, ground.f0, ground.specMode);
