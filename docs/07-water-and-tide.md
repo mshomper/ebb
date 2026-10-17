@@ -14,6 +14,13 @@
 - Starter water tools: **pour** (temporary brush source) and **soak** (temporary brush sink), plus one fixed **starter spring** (persistent source) placed by the land recipe. Player-placed springs and streams arrive only with the dragonflies' gift, the **stream tool** (`12-creature-roadmap.md`). Springs are saved in the store slice `water`.
 - One hourly `coarseStep` for tide (in `src/world/tide.js`) and one for the water summary (`src/world/water/coarse.js`), run in the shared order from `02-core-loop-and-idle-model.md`: tide, weather, seasons, water summary, growth, ecology, creatures, expansion.
 
+- **Built in three slice steps** (doc 20, October 2026): **S4a** the tide, the live simulation, the starter spring and the water drawing; **S4b** the water summary, the nudge, pour and soak, readback and tide events; **S4c** the sky probe, screen-space reflection, caustics, foam, ripples and the visual wetness pass. S4a's interim choices:
+  - The whole opened area simulates every step (0.5 m, 192 x 192 cells for the starter island). Per-chunk activity and quarter-rate tiles arrive when the world grows past the starter chunks.
+  - Until the summary exists, hollows at least 0.1 m deep and 30 m² in size start full to their lip (`src/world/water/init.js`, priority-flood).
+  - Beyond the terrain, the island's sea floor continues at `seabedDepth` and deepens by `openSeaFloorSlope`, so the open sea darkens gradually with no seam.
+  - The sea swell and the ripples change only the surface normal (no vertex displacement), so the simulated grid and the sea plane always meet. Ripples are procedural noise layers flow-mapped by the velocity field.
+  - Water thinner than `edgeFadeM` (8 cm) fades into the ground beneath, which reads as wet ground: grass blades stand through such a film. The ground under ponds and streams is darkened like the sea floor.
+
 ## How it works
 
 Plain version: the island is a grid of half-meter squares. Each square holds a column of water. Between neighboring squares are imaginary pipes. Every tiny time step, water pushes through each pipe in proportion to the difference in water surface height, so it flows downhill and levels out. A ring of "sea" squares around the island is held at the current tide level, so as the tide rises, the sea pushes water onto the flats, and as it falls the flats drain. Springs (the starter spring, and later ones placed with the stream tool) add water; pouring adds more for a moment. Separately, a calm bookkeeping step works out where water would settle and flow in the long run (ponds full to their lip, streams from springs to sea) and hands that map to the ecology. The live water is gently nudged toward that map, so what you see and what the creatures "know" never drift apart.
@@ -50,7 +57,7 @@ flowchart TD
 The terrain height texture is the water bed. When a brush changes the bed under water:
 
 - **Lowering**: depth stays, so the surface dips and neighbors flow in. A dug hollow fills from its surroundings, and from the summary nudge if it is a new pond.
-- **Raising**: depth is reduced by the rise, clamped at zero, and the removed volume is re-added on the brush's outer falloff ring that frame. The result is a soft bow wave instead of water vanishing.
+- **Raising**: depth is kept, so the water rides up on the new ground and runs off it downhill on the next steps. Volume is conserved and the result is a soft bow wave instead of water vanishing. (Decided in S4a, October 2026: simpler than removing the rise and re-adding it on the brush ring, with the same look.)
 - On `terrain:stroke-ended`, the summary is rebuilt (debounced 300 ms), which updates the ecology and the nudge targets.
 
 ### The water summary (deterministic)

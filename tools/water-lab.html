@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ebb water lab</title>
+<link rel="icon" href="../brand/ebb-favicon.svg" type="image/svg+xml">
+<style>
+  @font-face { font-family: 'Nunito'; src: url('../src/vendor/fonts/nunito-latin-600-normal.woff2') format('woff2'); font-weight: 600; }
+  @font-face { font-family: 'Nunito'; src: url('../src/vendor/fonts/nunito-latin-800-normal.woff2') format('woff2'); font-weight: 800; }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; max-width: 100%; overflow-x: hidden; }
+  body { background: #F4EEE4; color: #1E2624; font: 600 17px/1.45 'Nunito', system-ui, sans-serif; padding: 16px; overflow-wrap: anywhere; }
+  main { max-width: 960px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+  h1 { font-size: 24px; font-weight: 800; margin: 0; }
+  h2 { font-size: 19px; font-weight: 800; margin: 0 0 8px; }
+  .muted { color: #4A5551; font-size: 16px; margin: 0; }
+  #view { width: 100%; aspect-ratio: 16 / 9; max-height: 52vh; display: block; border-radius: 14px; background: #1E2624; touch-action: none; }
+  .card { background: #FBF7F0; border: 1px solid #E3D9C9; border-radius: 14px; padding: 14px 16px; min-width: 0; }
+  .card.bad { border-color: #B5654A; background: #F8EAE3; }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+  .tile b { display: flex; align-items: center; gap: 8px; font-size: 26px; font-weight: 800; }
+  .tile b svg { width: 24px; height: 24px; flex: 0 0 auto; }
+  .tile span { font-size: 16px; color: #4A5551; }
+  .status { display: flex; gap: 10px; align-items: flex-start; font-weight: 800; margin: 4px 0; }
+  .status svg { width: 22px; height: 22px; flex: 0 0 auto; margin-top: 2px; }
+  .chart { width: 100%; height: 170px; display: block; }
+  .legend { display: flex; flex-wrap: wrap; gap: 16px; font-size: 16px; margin: 6px 0 14px; }
+  .legend i { display: inline-block; width: 22px; height: 4px; border-radius: 2px; vertical-align: middle; margin-right: 6px; }
+  .buttons { display: flex; flex-wrap: wrap; gap: 12px; margin: 4px 0 10px; }
+  button { font: 800 17px/1.2 'Nunito', system-ui, sans-serif; color: #FBF7F0; background: #4a6a47; border: 0; border-radius: 12px; padding: 12px 18px; cursor: pointer; flex: 1 1 220px; min-height: 48px; }
+  button:disabled { background: #A9B3A6; cursor: default; }
+  a { color: #4a6a47; }
+  @media (max-width: 600px) { body { font-size: 17px; } .muted, .tile span, .legend { font-size: 16px; } }
+</style>
+</head>
+<body>
+<main>
+  <h1>ebb water lab</h1>
+  <p class="muted">The real island with its live water. This page checks three things: the water stays put (no water appears or vanishes on its own, the volume only follows the tide and the spring), nothing explodes (no runaway speeds, no broken cells), and it costs little on the graphics card. <a href="./">All tools</a></p>
+  <canvas id="view" aria-label="The island"></canvas>
+  <div class="card" id="summary"><div class="status">Starting</div><p class="muted" id="device"></p></div>
+  <div class="tiles">
+    <div class="card tile"><b id="t-vol">-</b><span>water volume, m³</span></div>
+    <div class="card tile"><b id="t-wet">-</b><span>wet area, m²</span></div>
+    <div class="card tile"><b id="t-speed">-</b><span>fastest flow, m/s (capped at 4)</span></div>
+    <div class="card tile" id="c-nan"><b id="t-nan">-</b><span>broken (NaN) cells, should be 0</span></div>
+    <div class="card tile"><b id="t-sim">-</b><span id="s-sim">simulation GPU ms, p95</span></div>
+    <div class="card tile"><b id="t-draw">-</b><span>water drawing GPU ms, p95</span></div>
+    <div class="card tile"><b id="t-tide">-</b><span>tide level, m</span></div>
+  </div>
+  <div class="card">
+    <h2>Last 2 minutes</h2>
+    <canvas id="g-vol" class="chart"></canvas>
+    <div class="legend">
+      <span><i style="background:#5F8196"></i>water volume</span>
+      <span><i style="background:#C9BBA4"></i>tide level (its own scale)</span>
+      <span><i style="background:#B8A9CC"></i>a scripted check ran</span>
+    </div>
+    <canvas id="g-speed" class="chart"></canvas>
+    <div class="legend">
+      <span><i style="background:#7C9D72"></i>fastest flow</span>
+      <span><i style="background:#B5654A"></i>4 m/s cap</span>
+    </div>
+  </div>
+  <div class="card">
+    <h2>Scripted checks</h2>
+    <p class="muted">Each button sculpts the ground near the water for about 3 seconds, then watches the water for 10 seconds and reports what happened.</p>
+    <div class="buttons">
+      <button id="b-hollow" disabled>Dig a hollow by the spring</button>
+      <button id="b-mound" disabled>Raise a mound in the pond</button>
+    </div>
+    <div id="check"><p class="muted">No check run yet.</p></div>
+  </div>
+  <p class="muted">Simulation GPU time needs timestamp support; Chrome rounds it to 0.1 ms unless chrome://flags "WebGPU Developer Features" is turned on. Add ?tier=low, ?tier=medium or ?tier=high to the address to try a tier.</p>
+</main>
+<script type="importmap">{ "imports": {
+  "wgpu-matrix": "../src/vendor/wgpu-matrix/wgpu-matrix.module.js" } }</script>
+<script type="module" src="./water-lab.js"></script>
+</body>
+</html>

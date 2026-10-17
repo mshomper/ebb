@@ -4,6 +4,7 @@
 // and an hour simulated while away produce the same world. Pure and worker-safe.
 
 import { subSeed, det } from '../core/rng.js';
+import * as tide from '../world/tide.js';
 import * as weather from '../world/weather.js';
 import * as seasons from '../world/seasons.js';
 
@@ -14,13 +15,13 @@ import * as seasons from '../world/seasons.js';
  * @typedef {Object} Env
  * @property {number} seed         world seed (uint32)
  * @property {number} weatherSeed  subSeed(seed, 'weather')
- * @property {any} recipes         loaded recipes by short name: {seasons, sky?, ...}
+ * @property {any} recipes         loaded recipes by short name: {seasons, sky?, water?, ...}
  * @property {typeof det} det
  */
 
 /**
  * Fixed order of the hourly tick. Doc 03 order with the S2 systems in place:
- *   tide            (M1 S3: src/world/tide.js, before weather)
+ *   tide            (M1 S4: src/world/tide.js, before weather)
  *   weather
  *   seasons
  *   water summary   (after seasons)
@@ -31,6 +32,7 @@ import * as seasons from '../world/seasons.js';
  * @type {ReadonlyArray<{id: string, coarseStep: CoarseStep}>}
  */
 export const COARSE_ORDER = Object.freeze([
+  { id: 'tide', coarseStep: tide.coarseStep },
   { id: 'weather', coarseStep: weather.coarseStep },
   { id: 'seasons', coarseStep: seasons.coarseStep },
 ]);
@@ -41,13 +43,13 @@ export const COARSE_ORDER = Object.freeze([
  */
 export function initialWorldState(worldSeed) {
   void worldSeed; // later systems seed their starting state from it
-  return { weather: weather.initialWeather(), seasons: seasons.initialSeasons() };
+  return { tide: tide.initialTide(), weather: weather.initialWeather(), seasons: seasons.initialSeasons() };
 }
 
 /**
  * The environment every coarseStep receives.
  * @param {number} worldSeed
- * @param {any} recipes loaded recipes by short name, e.g. {seasons: <recipes/world/seasons.json>, sky: <recipes/world/sky.json>}
+ * @param {any} recipes loaded recipes by short name, e.g. {seasons: <recipes/world/seasons.json>, sky: <recipes/world/sky.json>, water: <recipes/world/water.json>}
  * @returns {Env}
  */
 export function makeEnv(worldSeed, recipes) {

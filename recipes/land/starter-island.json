@@ -25,6 +25,7 @@
     "rimWobble": 0.6,
     "wobbleScale": 0.15
   },
+  "spring": { "note": "The starter spring (docs/07): fromBasinM meters from the basin center toward the rise, so its stream runs down into the pond hollow. rateLps in liters per second. channel: the soft swale the stream has cut from the spring to the pond (width and depth in meters), with a narrow V-shaped thalweg along its middle where the water gathers; meanderM swings it sideways in `bends` full bends, plus the domain warp.", "fromBasinM": 13, "rateLps": 6, "channel": { "widthM": 2.4, "depthM": 0.08, "thalwegWidthM": 0.9, "thalwegDepthM": 0.14, "meanderM": 1.4, "bends": 1.5 } },
   "materials": {
     "sandLow": 0.3,
     "sandHigh": 0.75,

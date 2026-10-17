@@ -1,0 +1,51 @@
+{
+  "type": "water",
+  "version": 1,
+  "note": "Water and tide (docs/07). Meters, seconds, Y-up, mean sea level 0. The live simulation is visual only and runs on real seconds; the tide is analytic and read at display time for the look and at world time for the hourly tick.",
+  "tide": {
+    "note": "level(t) = A(t) cos(2 pi t / periodH + phase), A(t) = amplitudeM (1 + springNeap cos(4 pi moonPhase)). phaseH shifts high water in game hours.",
+    "amplitudeM": 0.6,
+    "springNeap": 0.15,
+    "periodH": 12,
+    "phaseH": 0
+  },
+  "sim": {
+    "note": "Virtual pipe model (O'Brien and Hodgins 1995; Mei et al. 2007) on 0.5 m cells. stepS: fixed step in real seconds per tier; maxSteps per frame. friction: c_f per second; thinFriction adds drag on sheets under thinDepthM so thin films stop sliding. maxSpeed clamps velocity. manningN: Manning roughness of the ground (0.03 smooth earth channel, 0.05 grass); it caps flow speed by depth and slope, so thin water runs slowly and stays visible. dryDepthM: below this a cell counts as dry.",
+    "stepS": { "high": 0.008333, "medium": 0.008333, "low": 0.016667 },
+    "maxSteps": 4,
+    "friction": 0.6,
+    "thinFriction": 6,
+    "thinDepthM": 0.02,
+    "maxSpeed": 4,
+    "manningN": 0.045,
+    "dryDepthM": 0.001,
+    "prefillNote": "At start, hollows deeper than prefillMinDepthM and larger than prefillMinAreaM2 begin full to their lip (until the water summary arrives in S4b). The starter spring lives in the land recipe.",
+    "prefillMinDepthM": 0.1,
+    "prefillMinAreaM2": 30
+  },
+  "look": {
+    "note": "Water optics (docs/07). absorption: sigma_a per meter (Beer-Lambert) for sea and ponds; scatterAlbedo: single-scatter albedo of the water body; f0: Fresnel at normal incidence (n = 1.333); refraction: screen offset per unit normal tilt; edgeFadeM: where the water plane meets the bank, it fades in over this much water thickness (the last half cell toward a dry bank fades too); coherentDepthM: water thinner than the first value is a broken, rough film (grass and stones stand through it, reflection weak), reaching a full mirror-like surface by the second; waves: detail normal layers (wavelength m, strength, speed m/s); sea: Gerstner waves on open water (wavelength m, amplitude m, direction deg), faded out in water shallower than seaFadeDepthM.",
+    "f0": 0.02,
+    "absorptionSea": [0.45, 0.065, 0.05],
+    "absorptionPond": [0.6, 0.14, 0.22],
+    "scatterAlbedo": [0.04, 0.09, 0.1],
+    "refraction": 0.06,
+    "edgeFadeM": 0.004,
+    "coherentDepthM": [0.02, 0.12],
+    "roughness": 0.04,
+    "waves": [
+      { "wavelengthM": 2.6, "strength": 0.2, "speed": 0.55, "dirDeg": 20 },
+      { "wavelengthM": 0.9, "strength": 0.16, "speed": 0.35, "dirDeg": 145 },
+      { "wavelengthM": 0.31, "strength": 0.1, "speed": 0.22, "dirDeg": 260 }
+    ],
+    "sea": [
+      { "wavelengthM": 9, "amplitudeM": 0.05, "dirDeg": 200 },
+      { "wavelengthM": 5.5, "amplitudeM": 0.03, "dirDeg": 235 },
+      { "wavelengthM": 3.1, "amplitudeM": 0.015, "dirDeg": 170 },
+      { "wavelengthM": 1.7, "amplitudeM": 0.008, "dirDeg": 215 }
+    ],
+    "seaFadeDepthM": 0.5,
+    "openSeaFloorSlope": 0.08,
+    "flowNormalScale": 0.6
+  }
+}

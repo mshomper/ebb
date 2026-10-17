@@ -3,7 +3,7 @@
 // between LODs; heights come from the height texture in the vertex shader. Materials blend by
 // weight with a little height-style sharpening; steep slopes turn to rock and the shore band to sand.
 // Lighting is physical (lib-lighting: sun and moon with shadows, sky SH fill, aerial perspective);
-// no palette colors here (docs/05). The sea is still the flat M0 plane until the water step (S4).
+// no palette colors here (docs/05). Water and the sea are drawn by the water pass (water-draw.wgsl).
 
 // #include common
 // #include lib-hash
@@ -23,7 +23,7 @@ struct TerrainDraw {
   ringCenter: vec2f, ringRadius: f32, ringHardness: f32,
   ringVisible: f32, ringWidth: f32, steepCosLow: f32, steepCosHigh: f32,
   beachLow: f32, beachHigh: f32, skirtDepth: f32, seaExtent: f32,
-  shallowDepth: f32, seed: u32, _p0: f32, _p1: f32,
+  shallowDepth: f32, seed: u32, tide: f32, _p1: f32,   // tide: sea level now (m)
 };
 
 @group(0) @binding(0) var<uniform> frame: FrameUniforms;
@@ -59,17 +59,6 @@ struct VsOut {
 fn vsLand(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> VsOut {
   var out: VsOut;
   out.world = terrainMeshVertex(heightTex, chunks[ii], vi, td.skirtDepth);
-  out.pos = frame.viewProj * vec4f(out.world, 1.0);
-  return out;
-}
-
-@vertex
-fn vsSea(@builtin(vertex_index) vi: u32) -> VsOut {
-  let c = array<vec2f, 6>(vec2f(-1.0, -1.0), vec2f(-1.0, 1.0), vec2f(1.0, -1.0),
-                          vec2f(1.0, -1.0), vec2f(-1.0, 1.0), vec2f(1.0, 1.0))[vi];
-  let xz = c * td.seaExtent * 0.5;
-  var out: VsOut;
-  out.world = vec3f(xz.x, 0.0, xz.y);
   out.pos = frame.viewProj * vec4f(out.world, 1.0);
   return out;
 }
@@ -118,31 +107,13 @@ fn fsLand(in: VsOut) -> FsOut {
   albedo = mix(albedo, gd.albedo, gd.amount);
   // Macro variation (docs/22): a slow tone drift near and far, so no repeat survives at a distance.
   albedo *= groundMacro(xz, td.seed);
-  // Wet ground is darker: below the waterline always, and everywhere while it rains (docs/06).
-  let wet = max(1.0 - smoothstep(-0.05, 0.25, y), light.weather.w);
+  // Wet ground is darker: below the tide line always, and everywhere while it rains (docs/06).
+  // The visual wetness pass (S4c) adds banks, the spray line and drying flats.
+  let wet = max(1.0 - smoothstep(td.tide - 0.05, td.tide + 0.25, y), light.weather.w);
   albedo *= mix(1.0, td.wetDarkening, wet);
 
   var color = shadeGround(albedo, in.world, n, gd.normal, gd.roughness, gd.cavity, in.pos, ground.terminator, ground.f0, ground.specMode);
   color = mix(color, td.ringColor, ringAlpha(xz));
   // normalId keeps the mesh normal, so pebbles and cracks never get outlines (docs/22).
   return FsOut(vec4f(color, 1.0), vec4f(octEncode(n), 0.0, 1.0 / 3.0));
-}
-
-@fragment
-fn fsSea(in: VsOut) -> FsOut {
-  let v = normalize(frame.cameraPos - in.world);
-  let up = vec3f(0.0, 1.0, 0.0);
-  let depth = -terrainHeight(heightTex, in.world.xz);
-  let shallow = 1.0 - smoothstep(0.0, td.shallowDepth, depth);
-  let albedo = mix(td.albedoSea, td.albedoSand * 0.55, shallow * 0.6);
-  let body = shadeSurface(albedo, in.world, up, in.pos, 1.0);
-  // Placeholder sky reflection from the SH fill (a blurred sky); real water optics arrive in S4.
-  let r = reflect(-v, up);
-  let f0 = td.seaSpecular;
-  let fresnel = f0 + (1.0 - f0) * pow(1.0 - max(v.y, 0.0), 5.0);
-  let refl = applyAerial(skyAmbient(r) * frame.exposure, in.pos.xy * frame.invRenderSize, distance(in.world, frame.cameraPos));
-  var color = mix(body, refl, fresnel);
-  color = mix(color, td.ringColor, ringAlpha(in.world.xz));
-  // Water: flagged in B so outlines stay off it (docs/05).
-  return FsOut(vec4f(color, 1.0), vec4f(octEncode(up), 1.0, 0.0));
 }
