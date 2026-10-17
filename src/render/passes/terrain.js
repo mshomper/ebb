@@ -9,8 +9,10 @@ import { LODS, MAX_CHUNKS, createIndexBuffers, packChunks } from '../terrain-mes
 /** @typedef {import('../frame-graph.js').PassContext} PassContext */
 
 const DRAW_BYTES = 160;
-const GROUND_BYTES = 128;
+const GROUND_BYTES = 176;
 const DEG = Math.PI / 180;
+/** @type {Record<string, number>} GroundDetail.tiling.x in lib-ground.wgsl */
+const TILING_MODES = { grid: 0, hex: 1, two: 2 };
 
 /**
  * @param {{ terrain: import('../../world/terrain/index.js').Terrain, recipe: any, seed: number,
@@ -50,6 +52,13 @@ export function createTerrainPass(opts) {
     gf[26] = Math.cos(d.steepDeg[0] * DEG); gf[27] = Math.cos(d.steepDeg[1] * DEG);
     // Each material repeats at its own tile size (rock finer than grass and sand).
     ['grass', 'sand', 'rock', 'soil'].forEach((id, i) => { gf[28 + i] = 1 / (d.layers[id].tileMeters ?? d.tileMeters); });
+    // Repeat hiding (G2): hex tiling on desktop tiers, the two-scale mix on low. `?tiling=grid|hex|two`
+    // forces one for side-by-side checks.
+    const forced = new URLSearchParams(location.search).get('tiling');
+    const mode = forced ? (TILING_MODES[forced] ?? 1) : opts.groundTier.hexTiling ? 1 : 2;
+    gf[32] = mode; gf[33] = d.hex.density; gf[34] = d.hex.sharpness; gf[35] = d.twoScale.size;
+    gf[36] = 1 / d.macro.scalesM[0]; gf[37] = 1 / d.macro.scalesM[1]; gf[38] = d.macro.strength; gf[39] = d.macro.hue;
+    gf[40] = d.macro.second; gf[41] = 1 / d.twoScale.noiseMeters;
   }
 
   function packStatic() {
