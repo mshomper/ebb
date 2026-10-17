@@ -3,9 +3,10 @@
 // millimeter-scale detail normal by the surface gradient method (Mikkelsen 2020).
 // Flat ground uses one projection from above; steep ground (past ground.steep) blends three
 // projections by |n|^6 (triplanar), so cliffs show the scan without stretching. Each material
-// has its own tile size. Hex tiling and macro variation arrive in G2.
+// has its own tile size. Repeats are hidden by hex tiling (Heitz and Neyret 2018, Mikkelsen 2022)
+// on desktop tiers, by a two-scale mix on the low tier, and by a slow macro tone drift everywhere.
 //
-// The including shader declares these bindings (terrain-draw.wgsl, group 2):
+// The including shader includes lib-hash first and declares these bindings (terrain-draw.wgsl, group 2):
 //   groundA: texture_2d_array<f32>  (rgba8unorm-srgb view) RGB albedo (linear after decode), A height
 //   groundB: texture_2d_array<f32>  R,G normal X,Y (OpenGL, 0..1), B roughness, A cavity
 //   groundSampler: sampler (anisotropic, repeat)
@@ -24,6 +25,9 @@ struct GroundDetail {
   triplanar: f32,           // 1 on tiers with the cliff projection, 0 to stay planar
   steep: vec2f,             // cos of the slope angles where the cliff projection fades in (from, full)
   tileInv: vec4f,           // 1 / tile size in meters, per material
+  tiling: vec4f,            // x mode (0 plain grid, 1 hex, 2 two-scale), y hex density, z hex sharpness, w two-scale size
+  macroTone: vec4f,         // x, y 1 / macro scales in meters; z strength; w hue shift
+  mixing: vec4f,            // x macro second-octave weight, y 1 / two-scale noise size in meters
 };
 
 struct GroundSample {
@@ -43,13 +47,8 @@ struct LayerSample {
   cavity: f32,
 };
 
-// One projection of one layer. `u` and `v` are the world axes the image runs along; gradients
-// are the screen derivatives of the world position, so all three projections mip correctly.
-fn groundProject(i: i32, p: vec3f, dpx: vec3f, dpy: vec3f, u: vec3f, v: vec3f) -> LayerSample {
-  let k = ground.tileInv[i];
-  let uv = vec2f(dot(p, u), dot(p, v)) * k;
-  let gx = vec2f(dot(dpx, u), dot(dpx, v)) * k;
-  let gy = vec2f(dot(dpy, u), dot(dpy, v)) * k;
+// One read of one layer's maps at `uv`, with explicit UV gradients `gx`, `gy`.
+fn groundFetch(i: i32, uv: vec2f, gx: vec2f, gy: vec2f, u: vec3f, v: vec3f) -> LayerSample {
   let a = textureSampleGrad(groundA, groundSampler, uv, i, gx, gy);
   let b = textureSampleGrad(groundB, groundSampler, uv, i, gx, gy);
   // OpenGL normal map: +X along +u; +Y is image-up, which is -v.
@@ -73,6 +72,70 @@ fn mixLayer(a: LayerSample, b: LayerSample, k: f32) -> LayerSample {
   o.rough = a.rough + b.rough * k;
   o.cavity = a.cavity + b.cavity * k;
   return o;
+}
+
+fn zeroLayer() -> LayerSample {
+  var o: LayerSample;
+  o.albedo = vec3f(0.0); o.height = 0.0; o.grad = vec3f(0.0); o.rough = 0.0; o.cavity = 0.0;
+  return o;
+}
+
+// Random image offset (in tiles) for one triangle-grid vertex of one layer.
+fn hexOffset(vtx: vec2f, i: i32) -> vec2f {
+  let h = hash3(vec3u(vec2u(vec2i(vtx) + vec2i(1 << 20)), u32(i) + 0x51edu));
+  return vec2f(hashToFloat(h), hashToFloat(pcg(h)));
+}
+
+// One projection of one layer. `u` and `v` are the world axes the image runs along; gradients
+// are the screen derivatives of the world position, so all three projections mip correctly.
+fn groundProject(i: i32, p: vec3f, dpx: vec3f, dpy: vec3f, u: vec3f, v: vec3f) -> LayerSample {
+  let k = ground.tileInv[i];
+  let uv = vec2f(dot(p, u), dot(p, v)) * k;
+  let gx = vec2f(dot(dpx, u), dot(dpx, v)) * k;
+  let gy = vec2f(dot(dpy, u), dot(dpy, v)) * k;
+  let mode = ground.tiling.x;
+  if (mode > 1.5) {
+    // Two-scale mix (low tier): a second read at a larger size, mixed in by slow noise.
+    let t = 1.0 / ground.tiling.w;
+    let a = groundFetch(i, uv, gx, gy, u, v);
+    let b = groundFetch(i, uv * t + vec2f(0.37, 0.71), gx * t, gy * t, u, v);
+    let n = valueNoise2(vec2f(dot(p, u), dot(p, v)) * ground.mixing.y, 0x7a3u + u32(i));
+    let m = smoothstep(0.3, 0.7, n);
+    return mixLayer(mixLayer(zeroLayer(), a, 1.0 - m), b, m);
+  }
+  if (mode < 0.5) { return groundFetch(i, uv, gx, gy, u, v); }
+
+  // Hex tiling (Mikkelsen 2022): the three vertices of the triangle-grid cell around this point
+  // each read the image at their own random offset. Offsets are constant per vertex, so the
+  // unoffset gradients stay right and mips never seam.
+  let q = uv * ground.tiling.y;
+  let g = vec2f(q.x - 0.57735027 * q.y, 1.15470054 * q.y);
+  let base = floor(g);
+  let f = g - base;
+  let z = 1.0 - f.x - f.y;
+  let s = select(0.0, 1.0, z < 0.0);
+  let s2 = 2.0 * s - 1.0;
+  let bw = max(vec3f(-z * s2, s - f.y * s2, s - f.x * s2), vec3f(0.0));
+  let v1 = base + vec2f(s, s);
+  let v2 = base + vec2f(s, 1.0 - s);
+  let v3 = base + vec2f(1.0 - s, s);
+  let a = groundFetch(i, uv + hexOffset(v1, i), gx, gy, u, v);
+  let b = groundFetch(i, uv + hexOffset(v2, i), gx, gy, u, v);
+  let c = groundFetch(i, uv + hexOffset(v3, i), gx, gy, u, v);
+  // Weights sharpened by height (docs/22): the taller sample wins, so seams hide in the cracks.
+  var hw = pow(bw, vec3f(ground.tiling.z)) * pow(vec3f(a.height, b.height, c.height) + 0.25, vec3f(4.0));
+  hw /= max(hw.x + hw.y + hw.z, 1e-6);
+  return mixLayer(mixLayer(mixLayer(zeroLayer(), a, hw.x), b, hw.y), c, hw.z);
+}
+
+// Slow brightness and hue drift over tens of meters (docs/22), for the textured and flat ground
+// alike, so far views lose the last hint of repeats. Multiplies linear albedo around 1.
+fn groundMacro(xz: vec2f, seed: u32) -> vec3f {
+  let m1 = valueNoise2(xz * ground.macroTone.x, seed + 11u) - 0.5;
+  let m2 = valueNoise2(xz * ground.macroTone.y + vec2f(17.3, 5.9), seed + 12u) - 0.5;
+  let m = m1 + ground.mixing.x * m2;
+  let hue = ground.macroTone.w * m;
+  return (1.0 + ground.macroTone.z * m) * vec3f(1.0 + hue, 1.0, 1.0 - hue);
 }
 
 // Detail at a world point. `w` are the material weights after the derived layers (steep rock,
@@ -100,14 +163,8 @@ fn groundDetail(p: vec3f, nMesh: vec3f, w: vec4f, viewDist: f32) -> GroundSample
       // Side projections keep the image upright (v runs down the slope, -y).
       let sx = groundProject(i, p, dpx, dpy, vec3f(0.0, 0.0, 1.0), vec3f(0.0, -1.0, 0.0));
       let sz = groundProject(i, p, dpx, dpy, vec3f(1.0, 0.0, 0.0), vec3f(0.0, -1.0, 0.0));
-      var tri: LayerSample;
-      tri.albedo = vec3f(0.0); tri.height = 0.0; tri.grad = vec3f(0.0); tri.rough = 0.0; tri.cavity = 0.0;
-      tri = mixLayer(tri, sx, tw.x);
-      tri = mixLayer(tri, s, tw.y);
-      tri = mixLayer(tri, sz, tw.z);
-      var top: LayerSample;
-      top.albedo = vec3f(0.0); top.height = 0.0; top.grad = vec3f(0.0); top.rough = 0.0; top.cavity = 0.0;
-      s = mixLayer(mixLayer(top, s, 1.0 - steep), tri, steep);
+      let tri = mixLayer(mixLayer(mixLayer(zeroLayer(), sx, tw.x), s, tw.y), sz, tw.z);
+      s = mixLayer(mixLayer(zeroLayer(), s, 1.0 - steep), tri, steep);
     }
     albedo[i] = s.albedo;
     hs[i] = s.height;

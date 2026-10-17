@@ -51,6 +51,14 @@
   .msg.err { color: #9A4A33; }
   .msg.ok { color: #3F5F3B; }
   .downloads { display: flex; flex-wrap: wrap; gap: 8px 16px; font-size: 16px; }
+  fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
+  legend { padding: 0; margin-bottom: 6px; }
+  .seg { display: flex; flex-wrap: wrap; gap: 4px; padding: 4px; border-radius: 14px; background: #EFE7DA; border: 1px solid #E3D9C9; }
+  .seg label { flex: 1 1 auto; display: flex; position: relative; min-width: 0; }
+  .seg input { position: absolute; opacity: 0; width: 1px; height: 1px; margin: 0; pointer-events: none; }
+  .seg span { flex: 1; display: flex; align-items: center; justify-content: center; text-align: center; min-height: 44px; padding: 6px 14px; border-radius: 10px; font-weight: 800; cursor: pointer; }
+  .seg input:checked + span { background: #5F7F5B; color: #F4EEE4; }
+  .seg input:focus-visible + span { outline: 2px solid #5F7F5B; outline-offset: 2px; }
   .head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; }
 </style>
 </head>
@@ -71,7 +79,7 @@
   </div>
 
   <div class="card">
-    <h2>Low sun for the previews</h2>
+    <h2>Light and tiling for the previews</h2>
     <div class="controls">
       <div class="field">
         <div class="row"><label for="sun-alt">Sun height</label><output id="sun-alt-out" for="sun-alt">-</output></div>
@@ -82,7 +90,15 @@
         <input id="sun-az" type="range" min="0" max="360" step="1" value="210">
       </div>
     </div>
-    <p class="muted">You can also drag across any tiled preview to swing the sun around.</p>
+    <fieldset>
+      <legend>Tiling in the 24 m preview</legend>
+      <div class="seg">
+        <label><input type="radio" name="tiling" value="grid"><span>Grid</span></label>
+        <label><input type="radio" name="tiling" value="hex" checked><span>Hex</span></label>
+        <label><input type="radio" name="tiling" value="hexmacro"><span>Hex and macro</span></label>
+      </div>
+    </fieldset>
+    <p class="muted">Hex is what the game does on desktop tiers. You can also drag across any tiled preview to swing the sun around.</p>
   </div>
 
   <div id="materials" style="display:flex;flex-direction:column;gap:16px"></div>

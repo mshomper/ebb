@@ -19,6 +19,18 @@ const PHYS_MIN = 0.04;
 const PHYS_MAX = 0.9;
 const PREVIEW_TILE = 128; // px per 3 m tile in the 24 m preview
 const PREVIEW_TILES = 8;
+const PREVIEW_TILE_M = 3; // meters per tile, so the preview spans 24 m
+// Defaults for the hex tiling and macro tone drift, used where recipes/world/terrain.json
+// has no detail.hex or detail.macro yet. Keep in step with that recipe.
+const HEX_DEFAULTS = { density: 3.4641016, sharpness: 3 };
+const MACRO_DEFAULTS = { scalesM: [40, 12], strength: 0.3, second: 0.4, hue: 0.06 };
+/** @typedef {'grid'|'hex'|'hexmacro'} Tiling */
+/** @type {Record<Tiling, string>} */
+const TILING_CAPTION = {
+  grid: '24 m of ground, 8 by 8 tiles of 3 m in a plain grid repeat, lit through the normal map. Drag to move the sun.',
+  hex: '24 m of ground in 3 m tiles, hex tiled as the game does on desktop: three offset copies blended by height. Lit through the normal map. Drag to move the sun.',
+  hexmacro: '24 m of ground in 3 m tiles, hex tiled, plus the slow macro tone drift (40 m and 12 m noise). Lit through the normal map. Drag to move the sun.',
+};
 const KINDS = /** @type {const} */ (['a', 'b', 'c']);
 const MIME = { webp: 'image/webp', md: 'text/markdown' };
 
@@ -48,8 +60,9 @@ let busy = false;
  *   blur: Float32Array | null, blurMean: number,
  *   files: Record<number, Record<string, PackedFile>> | null,
  *   means: Record<number, number[]>,
- *   prevTile: { alb: Float32Array, n: Float32Array, cav: Float32Array } | null,
+ *   prevTile: { alb: Float32Array, n: Float32Array, cav: Float32Array, h: Float32Array } | null,
  *   prevWrap: { alb: Float32Array, n: Float32Array, cav: Float32Array, size: number } | null,
+ *   prevHex: { mode: Tiling, src: object, alb: Float32Array, n: Float32Array, cav: Float32Array } | null,
  *   ui: Record<string, HTMLElement>
  * }} Mat
  */
@@ -280,7 +293,7 @@ async function pack(m) {
     if (size === Math.min(...sizes)) m.prevWrap = { alb: L, n: Nn, cav: C, size };
   }
   const tf = N / PREVIEW_TILE;
-  m.prevTile = { alb: shrink(lin, N, 3, tf), n: renormalize(shrink(nrm, N, 3, tf)), cav: shrink(cav, N, 1, tf) };
+  m.prevTile = { alb: shrink(lin, N, 3, tf), n: renormalize(shrink(nrm, N, 3, tf)), cav: shrink(cav, N, 1, tf), h: shrink(height, N, 1, tf) };
   if (m.files) for (const s in m.files) for (const k in m.files[s]) URL.revokeObjectURL(m.files[s][k].url);
   m.files = files;
 }
@@ -308,6 +321,81 @@ function shade(/** @type {{alb: Float32Array, n: Float32Array, cav: Float32Array
   return img;
 }
 
+/** Integer lattice hash to [0,1); s picks an independent stream. Deterministic. @param {number} x @param {number} y @param {number} s */
+function hash01(x, y, s) {
+  let h = Math.imul(x | 0, 0x27d4eb2d) ^ Math.imul(y | 0, 0x165667b1) ^ Math.imul(s, 0x9e3779b9);
+  h = Math.imul(h ^ (h >>> 15), 0x85ebca6b);
+  h = Math.imul(h ^ (h >>> 13), 0xc2b2ae35);
+  return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+}
+
+/** Smoothstep-interpolated value noise on the integer lattice, 0..1. @param {number} x @param {number} y */
+function valueNoise(x, y) {
+  const ix = Math.floor(x), iy = Math.floor(y), fx = x - ix, fy = y - iy;
+  const ux = fx * fx * (3 - 2 * fx), uy = fy * fy * (3 - 2 * fy);
+  const a = hash01(ix, iy, 7), b = hash01(ix + 1, iy, 7), c = hash01(ix, iy + 1, 7), d = hash01(ix + 1, iy + 1, 7);
+  return a + (b - a) * ux + (c - a) * uy + (a - b - c + d) * ux * uy;
+}
+
+/**
+ * Lays the 3 m tile over the 24 m preview the way the game shader does on desktop tiers:
+ * Mikkelsen's triangle-grid hex tiling (offsets only, no rotation), three samples per pixel
+ * blended by barycentric weight and height, optionally with the macro tone drift on albedo.
+ * Returns unlit maps at preview size; shade() lights them, so a sun drag skips this step.
+ * @param {{alb: Float32Array, n: Float32Array, cav: Float32Array, h: Float32Array}} src @param {boolean} withMacro
+ */
+function blendHex(src, withMacro) {
+  const T = PREVIEW_TILE, S = PREVIEW_TILE * PREVIEW_TILES;
+  const hx = { ...HEX_DEFAULTS, ...(terrain?.detail?.hex || {}) };
+  const mc = { ...MACRO_DEFAULTS, ...(terrain?.detail?.macro || {}) };
+  const D = hx.density, sharp = hx.sharpness;
+  const alb = new Float32Array(S * S * 3), n = new Float32Array(S * S * 3), cav = new Float32Array(S * S);
+  // Height term of the blend weight, once per texel: (h + 0.25)^4.
+  const hw = new Float32Array(T * T);
+  for (let i = 0; i < T * T; i++) { const t = (src.h[i] + 0.25) * (src.h[i] + 0.25); hw[i] = t * t; }
+  // Per-pixel scratch, allocated once: the three vertices and their barycentric weights.
+  const VX = new Int32Array(3), VY = new Int32Array(3), VW = new Float64Array(3);
+  for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
+    const u = x / T, v = y / T;
+    const qx = u * D, qy = v * D;
+    const gx = qx - 0.57735027 * qy, gy = 1.15470054 * qy;
+    const bx = Math.floor(gx), by = Math.floor(gy), fx = gx - bx, fy = gy - by, z = 1 - fx - fy;
+    const s = z < 0 ? 1 : 0, s2 = 2 * s - 1;
+    VW[0] = -z * s2; VW[1] = s - fy * s2; VW[2] = s - fx * s2;
+    VX[0] = bx + s; VY[0] = by + s;
+    VX[1] = bx + s; VY[1] = by + 1 - s;
+    VX[2] = bx + 1 - s; VY[2] = by + s;
+    let sw = 0, r = 0, g = 0, b = 0, nx = 0, ny = 0, nz = 0, cv = 0;
+    for (let k = 0; k < 3; k++) {
+      // Each vertex shifts the tile by its own random offset, wrapped into the tile.
+      const tx = (x + Math.floor(hash01(VX[k], VY[k], 1) * T)) % T;
+      const ty = (y + Math.floor(hash01(VX[k], VY[k], 2) * T)) % T;
+      const i = ty * T + tx;
+      const W = Math.pow(Math.max(VW[k], 0), sharp) * hw[i];
+      sw += W;
+      r += W * src.alb[i * 3]; g += W * src.alb[i * 3 + 1]; b += W * src.alb[i * 3 + 2];
+      nx += W * src.n[i * 3]; ny += W * src.n[i * 3 + 1]; nz += W * src.n[i * 3 + 2];
+      cv += W * src.cav[i];
+    }
+    const inv = sw > 0 ? 1 / sw : 0, o = y * S + x;
+    if (withMacro) {
+      // Macro drift in world meters: a slow and a mid noise darken or lift the tone, nudging hue warm or cool.
+      const xm = u * PREVIEW_TILE_M, ym = v * PREVIEW_TILE_M;
+      const m1 = valueNoise(xm / mc.scalesM[0], ym / mc.scalesM[0]) - 0.5;
+      const m2 = valueNoise(xm / mc.scalesM[1] + 17.3, ym / mc.scalesM[1] + 17.3) - 0.5;
+      const mm = m1 + mc.second * m2, tone = 1 + mc.strength * mm;
+      r *= tone * (1 + mc.hue * mm); g *= tone; b *= tone * (1 - mc.hue * mm);
+    }
+    alb[o * 3] = r * inv; alb[o * 3 + 1] = g * inv; alb[o * 3 + 2] = b * inv;
+    const nl = Math.hypot(nx, ny, nz) || 1;
+    n[o * 3] = nx / nl; n[o * 3 + 1] = ny / nl; n[o * 3 + 2] = nz / nl;
+    cav[o] = cv * inv;
+  }
+  return { alb, n, cav };
+}
+
+/** @type {Tiling} */ let tiling = 'hex';
+
 let previewQueued = false;
 function queuePreviews() {
   $('sun-alt-out').textContent = `${sunAltIn.value} deg`;
@@ -318,13 +406,23 @@ function queuePreviews() {
     previewQueued = false;
     for (const name of ORDER) {
       const m = mats[name];
-      if (!m || !m.prevTile || !m.prevWrap) continue;
-      const tile = new OffscreenCanvas(PREVIEW_TILE, PREVIEW_TILE);
-      /** @type {OffscreenCanvasRenderingContext2D} */ (tile.getContext('2d')).putImageData(shade(m.prevTile, PREVIEW_TILE, 0), 0, 0);
+      if (!m) continue;
+      m.ui.tiledcap.textContent = TILING_CAPTION[tiling];
+      if (!m.prevTile || !m.prevWrap) continue;
       const cv = /** @type {HTMLCanvasElement} */ (m.ui.tiled);
       const ctx = /** @type {CanvasRenderingContext2D} */ (cv.getContext('2d'));
-      ctx.fillStyle = /** @type {CanvasPattern} */ (ctx.createPattern(tile, 'repeat'));
-      ctx.fillRect(0, 0, cv.width, cv.height);
+      if (tiling === 'grid') {
+        const tile = new OffscreenCanvas(PREVIEW_TILE, PREVIEW_TILE);
+        /** @type {OffscreenCanvasRenderingContext2D} */ (tile.getContext('2d')).putImageData(shade(m.prevTile, PREVIEW_TILE, 0), 0, 0);
+        ctx.fillStyle = /** @type {CanvasPattern} */ (ctx.createPattern(tile, 'repeat'));
+        ctx.fillRect(0, 0, cv.width, cv.height);
+      } else {
+        // The blend depends only on the maps and the mode, so it is kept until either changes.
+        if (!m.prevHex || m.prevHex.mode !== tiling || m.prevHex.src !== m.prevTile) {
+          m.prevHex = { mode: tiling, src: m.prevTile, ...blendHex(m.prevTile, tiling === 'hexmacro') };
+        }
+        ctx.putImageData(shade(m.prevHex, cv.width, 0), 0, 0);
+      }
       const wcv = /** @type {HTMLCanvasElement} */ (m.ui.wrap);
       const S = m.prevWrap.size;
       wcv.width = wcv.height = S;
@@ -387,7 +485,7 @@ function makeCard(name) {
       </div>
       <div class="grid2">
         <figure><canvas class="preview" data-k="tiled" width="${PREVIEW_TILE * PREVIEW_TILES}" height="${PREVIEW_TILE * PREVIEW_TILES}" aria-label="24 meters of tiled ground"></canvas>
-          <figcaption>24 m of ground, 8 by 8 tiles of 3 m, lit through the normal map. Drag to move the sun.</figcaption></figure>
+          <figcaption data-k="tiledcap">${TILING_CAPTION[tiling]}</figcaption></figure>
         <figure><canvas class="preview" data-k="wrap" aria-label="Wrap check"></canvas>
           <figcaption>Wrap check: one tile shifted by half, so its edges meet in a cross through the middle. A visible cross is a seam.</figcaption></figure>
       </div>
@@ -590,7 +688,7 @@ async function boot() {
     const src = sources.materials[name];
     const target = terrain.materials['albedo' + cap(name)];
     if (!src || !target) continue;
-    mats[name] = { name, src, target, delight: src.delight, raw: null, jpgUrl: '', blur: null, blurMean: 1, files: null, means: {}, prevTile: null, prevWrap: null, ui: {} };
+    mats[name] = { name, src, target, delight: src.delight, raw: null, jpgUrl: '', blur: null, blurMean: 1, files: null, means: {}, prevTile: null, prevWrap: null, prevHex: null, ui: {} };
     makeCard(name);
   }
   try { const j = await (await fetch('../__local.json', { cache: 'no-store' })).json(); localServer = !!j.local; } catch { localServer = false; }
@@ -607,6 +705,12 @@ async function boot() {
   sunAltIn.addEventListener('input', queuePreviews);
   sunAzIn.addEventListener('input', queuePreviews);
   queuePreviews();
+}
+
+// The tiling switch works from the first paint, before the recipes load.
+for (const el of /** @type {NodeListOf<HTMLInputElement>} */ (document.querySelectorAll('input[name=tiling]'))) {
+  if (el.checked) tiling = /** @type {Tiling} */ (el.value);
+  el.addEventListener('change', () => { if (el.checked) { tiling = /** @type {Tiling} */ (el.value); queuePreviews(); } });
 }
 
 boot();

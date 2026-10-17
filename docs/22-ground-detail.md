@@ -38,9 +38,10 @@ flowchart LR
 
 - **Planar** from above on ground flatter than about 35 degrees: `uv = xz / 3 m`.
 - **Triplanar** where the mesh normal is steeper (where steep rock already takes over): three projections blended by `|n|^6`. Flat ground never pays for it.
-- **Hex tiling** (Heitz and Neyret, "High-Performance By-Example Noise using a Histogram-Preserving Blending Operator", 2018; Mikkelsen, "Practical Real-Time Hex-Tiling", 2022): three samples on a triangle grid with random offsets per vertex, weights sharpened by height. Offsets only, no rotation, so gradients need no rotating. All samples use `textureSampleGrad` with the unoffset UV derivatives, so mips never seam.
-- **Low tier** skips hex tiling and instead mixes a second sample of the same map at 2.7x scale by a low-frequency noise.
-- **Macro variation** on every tier: a very low-frequency brightness and hue drift (tens of meters) that removes the last hint of repeats at a distance.
+- **Hex tiling** (Heitz and Neyret, "High-Performance By-Example Noise using a Histogram-Preserving Blending Operator", 2018; Mikkelsen, "Practical Real-Time Hex-Tiling", 2022): three samples on a triangle grid with random offsets per vertex, weights sharpened by height. Offsets only, no rotation, so gradients need no rotating. All samples use `textureSampleGrad` with the unoffset UV derivatives, so mips never seam. G2 settled on 2 grid vertices per tile (Mikkelsen's 2√3 cut the rock scan's stones into fragments) and weight exponent 6, so each stone stays whole and seams fall in cracks. It applies inside every triplanar projection too.
+- **Low tier** skips hex tiling and instead mixes a second sample of the same map at 2.7x scale by noise about 6 m across.
+- **Macro variation** on every tier: a low-frequency brightness and hue drift (noise at 40 m plus a weaker 12 m layer, ±30% brightness swing at the extremes, a slight warm-cool shift) that removes the last hint of repeats at a distance. It multiplies the flat far look too.
+- **Side-by-side check:** `?tiling=grid`, `?tiling=hex` or `?tiling=two` forces one mode; the texture lab's 24 m preview has the same Grid / Hex / Hex and macro switch.
 - Materials with weight under 0.004 are skipped, so most pixels sample one or two layers.
 
 ### Height blend
@@ -88,7 +89,7 @@ src/shaders/lib-ground.wgsl        sampling, hex tiling, triplanar, height blend
 tools/texture-lab.html             calibrate, check wrap, pack, export, tiled preview
 ```
 
-`recipes/world/terrain.json` gains a `detail` block (per material: `heightAmplitudeM`, `normalStrength`, `roughness` range, `porosity`; global: `tileMeters`, `heightInfluence`, `blendDepth`, `macroVariation`, `fadeInS`, puddle fill and drain rates).
+`recipes/world/terrain.json` gains a `detail` block (per material: `heightAmplitudeM`, `normalStrength`, `roughness` range, `porosity`; global: `tileMeters`, `heightInfluence`, `blendDepth`, `fadeInS`, puddle fill and drain rates; G2 adds `hex` {density, sharpness}, `twoScale` {size, noiseMeters} and `macro` {scalesM, strength, second, hue}).
 
 `recipes/quality-tiers.json` gains a `ground` block per tier:
 
@@ -108,7 +109,7 @@ Bindings: both arrays and one sampler join terrain's group 2 (doc 04), not group
 
 ## Algorithms and shaders
 
-- Hex tiling: Mikkelsen 2022 triangle grid, height-weighted blend `w_i³ · (h_i + 0.25)⁴`, normalized.
+- Hex tiling: Mikkelsen 2022 triangle grid, height-weighted blend `w_i^s · (h_i + 0.25)⁴`, normalized, with `s` = `detail.hex.sharpness` (6).
 - Surface gradient bump mapping: Mikkelsen 2020.
 - Normal mip roughness: Toksvig 2004.
 - Wetness: Lagarde 2013.

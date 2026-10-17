@@ -46,6 +46,9 @@
     "fadeInS": 0.5,
     "sunTerminator": [-0.02, 0.12],
     "f0": 0.04,
+    "hex": { "note": "Hex tiling (G2, high and medium tiers). density: triangle-grid vertices per tile along one axis (Mikkelsen uses 2 * sqrt(3); 2 keeps whole stones). sharpness: weight exponent before the height bias; higher means narrower seams.", "density": 2.0, "sharpness": 6 },
+    "twoScale": { "note": "Low tier: a second read at size x the tile, mixed in by noise of noiseMeters.", "size": 2.7, "noiseMeters": 6 },
+    "macro": { "note": "Slow tone drift on all tiers. scalesM: the two noise sizes; strength: brightness swing; second: weight of the smaller one; hue: warm-cool swing.", "scalesM": [40, 12], "strength": 0.3, "second": 0.4, "hue": 0.06 },
     "layers": {
       "grass": { "tileMeters": 3, "heightAmplitudeM": 0.02, "normalStrength": 0.8, "roughness": [0.75, 0.95], "porosity": 0.6 },
       "sand":  { "tileMeters": 3, "heightAmplitudeM": 0.015, "normalStrength": 1.0, "roughness": [0.7, 0.95], "porosity": 0.9 },

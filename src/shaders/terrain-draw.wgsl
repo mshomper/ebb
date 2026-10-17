@@ -116,6 +116,8 @@ fn fsLand(in: VsOut) -> FsOut {
   // Scanned detail (docs/22) takes over once loaded and near enough; the flat look stays the fallback.
   let gd = groundDetail(in.world, n, w, distance(in.world, frame.cameraPos));
   albedo = mix(albedo, gd.albedo, gd.amount);
+  // Macro variation (docs/22): a slow tone drift near and far, so no repeat survives at a distance.
+  albedo *= groundMacro(xz, td.seed);
   // Wet ground is darker: below the waterline always, and everywhere while it rains (docs/06).
   let wet = max(1.0 - smoothstep(-0.05, 0.25, y), light.weather.w);
   albedo *= mix(1.0, td.wetDarkening, wet);
