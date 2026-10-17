@@ -67,7 +67,8 @@ export function createTerrainPass(opts) {
     gf.set([ml.heightAmplitudeM, ml.normalStrength, ml.roughness[0], ml.roughness[1]], 44);
     gf[48] = 1 / (ml.tileMeters ?? d.tileMeters);
     gf.set(recipe.materials.albedoMoss, 49);
-    gf[52] = recipe.moss.onSand; gf[53] = recipe.moss.onRock;
+    const cap = recipe.moss.maxCover;
+    gf.set([cap.grass, cap.sand, cap.rock, cap.soil], 52);
   }
 
   function packStatic() {

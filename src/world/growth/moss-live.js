@@ -34,7 +34,7 @@ export function createMossLive(device, opts) {
   const NB = [[-1, -1], [0, -1], [1, -1], [-1, 0], [1, 0], [-1, 1], [0, 1], [1, 1]];
   /** Bank width in cells and how much moss each ring from the water supports. */
   const BANK = 3;
-  const BANK_FALLOFF = [1, 0.6, 0.3];
+  const BANK_FALLOFF = [0.85, 0.45, 0.15];
 
   /** Habitat from the summary: damp hollows big enough to read, and banks next to fresh water. */
   function rebuildHabitat(/** @type {any} */ s) {

@@ -64,9 +64,8 @@
     "growHours": 18,
     "spreadFrom": 0.35,
     "fadeHours": 48,
-    "onSand": 0.9,
-    "onRock": 0.8,
-    "onSandNote": "How much sand (painted, or the derived beach band) suppresses moss: loose sand dries fast and shifts. onRock: how much more readily moss holds on damp stone than on grass or soil."
+    "maxCover": { "grass": 0.6, "sand": 0.08, "rock": 0.9, "soil": 0.85 },
+    "maxCoverNote": "The most moss each ground can carry, even fully grown: grass competes and always shows through; damp soil and stone hold the most; loose sand (painted, or the beach band) dries fast and shifts. In the terrain shader moss is a soft, clumpy partial cover below this cap, and the height blend lets grass tufts and stone tops stand through it."
   },
   "steepRockDeg": 38,
   "steepRockSoftDeg": 5,
