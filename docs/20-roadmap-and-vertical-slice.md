@@ -20,6 +20,7 @@ flowchart TD
     M3 --> M4[M4 Woodland and first expansion]
     M4 --> M5[M5 Wetland shore]
     M5 --> M6[M6 Night tier and polish]
+    M6 -.-> M7[M7 Headland expansion, after v1]
 ```
 
 ### M0 — Foundations
@@ -64,6 +65,7 @@ Slice acceptance, all together:
 
 ### M2 — Pond tier complete and the meadow islet
 
+- **First step: the Cliff tool** (decided October 2026). Terrace and Cut modes that build or carve level shelves with sheer rock faces, painted rock that stays sheer (talus about 82 degrees), full mesh detail near cliffs, and a shadow offset for near-vertical faces. Available from the start of play, not a gift; built first so it lands as early as possible without interrupting the slice (docs 08, 15, 04, 19). Branch `m2-cliff-tool`.
 - Minnows (schooling) and dragonflies (darting flight) join the frogs.
 - Gifts: the first gift card from a happy species; the dragonflies' stream tool.
 - The Tier 1 milestone: the meadow islet rises at low tide with a sandbar to the main island (doc 13).
@@ -84,7 +86,7 @@ Slice acceptance, all together:
 
 - Trees grown by space colonization, with shrubs and ferns.
 - Hedgehogs, squirrels and owls; shelter in hollows, logs and walls.
-- Moss and lichen spreading by reaction-diffusion.
+- Moss and lichen spreading by reaction-diffusion, including sea-cliff lichen in bands on rock faces in the spray zone (doc 10).
 - The Tier 3 milestone: the shore widens into tide flats and a marsh spit.
 
 ### M5 — Wetland shore and the outer skerry
@@ -99,6 +101,13 @@ Slice acceptance, all together:
 - Night lighting polish, lantern glow, firefly light; the Moonlight palette as the bats' gift.
 - The journal year page (all fifteen species photographed and all four seasons passed).
 - Mobile tier tuning, accessibility pass, store page and promo capture.
+
+### M7 — Headland expansion (after v1)
+
+- A new chapter after the year page, so the fifteen-species year and the five land pieces stay as designed (docs 12, 13).
+- A Headland land piece with sea cliffs of about 6 to 10 m, cliff-top turf and a sea stack.
+- Puffins (burrows in cliff-top turf, sand eels offshore) and kittiwakes (ledge colonies on sheer faces above water) first; feral goats later on the headland's heights.
+- Placed rock pieces for arches and sea caves, which the heightfield cannot hold.
 
 ## Data and interfaces
 

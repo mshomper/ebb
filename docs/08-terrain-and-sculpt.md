@@ -81,10 +81,14 @@ flowchart TD
 | Smooth | blend toward 3 x 3 Gaussian mean | ping-pong between two textures over the brush rect |
 | Flatten | blend toward a target height | target = height under the cursor at stroke start; the "level to water" toggle uses mean sea level |
 | Paint | blend material weights toward the chosen layer, renormalize | layers: grass, sand, rock, soil, damp |
+| Cliff: Terrace | raise to a set level with a hard edge (M2) | tap or click sets the level; dragging builds a level shelf whose edge drops within one cell |
+| Cliff: Cut | lower to a set level with a hard edge (M2) | tap sets the depth; dragging carves, leaving a sheer face on the uphill side |
+
+**Cliff tool** (decided October 2026; built as the first step of M2, available from the start of play, not a gift). Terrace and Cut share one falloff: level inside the stroke, a one-cell drop at the stroke edge on the cliff side, and the normal soft falloff on the far side so the shelf blends back into the land. Faces steeper than about 60 degrees are painted rock automatically, so they draw as stone and stay sheer. The tool is exempt from the 0.15 m step cap. Shift (desktop) snaps the level to mean sea level for sea walls and beach shelves. Undo copies tiles as for every stroke. A heightfield gives walls up to about 85 degrees (a 3 m drop across one 0.25 m cell); overhangs, sea caves and arches stay out of the heightfield and arrive later as placed rock pieces.
 
 Falloff `f(d) = 1 − smoothstep(hardness · r, r, d)`. Radius 0.5 to 8 m, strength 0 to 1 mapped by the recipe. Pen and touch pressure scale strength. Stamps are spaced at 25% of the radius along the stroke so fast drags stay even.
 
-**Steepness and edges.** Raise and Lower are capped so a single frame cannot create a step over 0.15 m between neighbors; erosion-lite cleans up what is left. Brushes fade out over the last 2 m before an unopened chunk, so no wall forms at the edge of the world.
+**Steepness and edges.** Raise and Lower are capped so a single frame cannot create a step over 0.15 m between neighbors; erosion-lite cleans up what is left. The Cliff tool is the one exception. Smooth softens rock faces only at full strength, so a casual smoothing pass never erases a cliff. Brushes fade out over the last 2 m before an unopened chunk, so no wall forms at the edge of the world.
 
 **Structures.** Brushes avoid cells under walls and bridge abutments by default (a mask from `world/structures/`); flatten and paint still work there. When a stroke ends under a path, the path re-fits (doc 09).
 
@@ -144,13 +148,13 @@ Events: `terrain:edited {rect}` (each frame of a stroke, deferred), `terrain:str
 
 - **Landform**: value-gradient noise built from `hash32` and polynomial fades (quintic), fbm with domain warping (Quilez, "Domain Warping"), only `+ − * /`, so the same integers come out in every browser. Quantized before anything reads it.
 - **Brush compute**: one dispatch over the brush's bounding rect per stamp (8 x 8 workgroups). Smooth uses a ping-pong pair limited to the rect.
-- **Erosion-lite**: thermal erosion (Musgrave, Kolb, Mace, "The Synthesis and Rendering of Eroded Fractal Terrains", SIGGRAPH 1989). Material moves downhill when the slope between neighbors exceeds the talus angle (33 degrees soil, 45 painted rock). 24 iterations on the dirty rect plus a 2 m margin, checkerboard update so it runs race-free in parallel. Its result becomes part of the delta, so GPU float differences never reach other devices: the quantized CPU mirror is what gets saved.
+- **Erosion-lite**: thermal erosion (Musgrave, Kolb, Mace, "The Synthesis and Rendering of Eroded Fractal Terrains", SIGGRAPH 1989). Material moves downhill when the slope between neighbors exceeds the talus angle (33 degrees soil; painted rock about 82 degrees from M2, so painted rock is the hard-rock mask and rock cliffs stay sheer while turf on top still slumps; 45 degrees in the slice). 24 iterations on the dirty rect plus a 2 m margin, checkerboard update so it runs race-free in parallel. Its result becomes part of the delta, so GPU float differences never reach other devices: the quantized CPU mirror is what gets saved.
 - **Raycast**: 2D DDA across cells with per-cell bilinear patch intersection (Tevs, Ihrke, Seidel, "Maximum Mipmaps for Fast, Accurate, and Scalable Dynamic Height Field Rendering", 2008, without the mip acceleration since the world is small).
-- **Rendering mesh** (owned by doc 04): per chunk, a grid mesh sampling height in the vertex shader, LOD 128/64/32 quads per side by distance, skirts to hide cracks; height-based material blending (sand fills cracks between rock, grass tufts at edges). From slice step G1 the surface detail (scanned albedo, normal, roughness and height maps per material, hex tiling, triplanar cliffs, wet ground) is specified in `22-ground-detail.md`.
+- **Rendering mesh** (owned by doc 04): per chunk, a grid mesh sampling height in the vertex shader, LOD 128/64/32 quads per side by distance, skirts to hide cracks (from M2, a chunk that holds a cliff face stays at full detail within the tier's cliff distance, so walls never go soft or jagged; doc 19); height-based material blending (sand fills cracks between rock, grass tufts at edges). From slice step G1 the surface detail (scanned albedo, normal, roughness and height maps per material, hex tiling, triplanar cliffs, wet ground) is specified in `22-ground-detail.md`.
 
 ## Tuning knobs
 
-`recipes/world/terrain.json` and the tuning panel: brush radius range, strength curve, falloff hardness, step cap; talus angles and erosion iterations; visual wetness spread, drying rate, tide-flat linger; steep-rock angle, beach band height. `recipes/land/*.json`: noise scale, octaves, warp, island falloff, base materials, peak height. Player settings: brush size and strength sliders, pressure on or off.
+`recipes/world/terrain.json` and the tuning panel: brush radius range, strength curve, falloff hardness, step cap; Cliff tool face angle for automatic rock and far-side blend width; talus angles and erosion iterations; visual wetness spread, drying rate, tide-flat linger; steep-rock angle, beach band height. `recipes/land/*.json`: noise scale, octaves, warp, island falloff, base materials, peak height. Player settings: brush size and strength sliders, pressure on or off.
 
 ## Performance budget
 
@@ -177,7 +181,7 @@ Events: `terrain:edited {rect}` (each frame of a stroke, deferred), `terrain:str
 
 ## Open questions
 
-- Should there be a "carve channel" brush that cuts a narrow streambed along a stroke, or is Lower enough?
+- Should there be a "carve channel" brush that cuts a narrow streambed along a stroke, or is Lower enough? (The Cliff tool's Cut mode covers straight-sided channels from M2.)
 - Should painted rock bring boulders with it automatically, or should boulders be placed on purpose?
 - When land is raised out of the water, should it start as bare soil or keep the material it had underwater?
 

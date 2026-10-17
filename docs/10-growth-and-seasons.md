@@ -83,7 +83,7 @@ Growth between stages is shown without remeshing: each skeleton vertex stores it
 
 ### Moss and lichen
 
-- **Simulation:** moss and lichen cover per 1 m cell are cover fields in the growth step. Moss grows where moisture is high and light is low to medium (north slopes, under trees, wall bases, stone); lichen grows slowly on sunlit rock.
+- **Simulation:** moss and lichen cover per 1 m cell are cover fields in the growth step. Moss grows where moisture is high and light is low to medium (north slopes, under trees, wall bases, stone); lichen grows slowly on sunlit rock. **Sea-cliff lichen** (M4, with the reaction-diffusion work) bands rock faces in the spray zone the way real sea cliffs do: black near the tide line, orange higher up, grey on top, set by height above high tide and spray exposure. Over a few game weeks it turns a bare cliff from the Cliff tool (doc 08) into a living one.
 - **Look:** a **Gray-Scott reaction-diffusion** texture in terrain texture space (0.25 m texels, only for open chunks near the camera) makes the organic blotch patterns. Feed and kill rates vary with moisture and shade, and the coarse cover field acts as a mask: the RD pattern may only occupy the fraction the simulation allows. Moss settles into blotchy spots and lichen into small rings (different feed and kill settings). The result is written into the terrain ground texture's moss channel (doc 08).
 - On re-seed after catch-up, the RD texture is started from noise thresholded by the cover fraction and run for about 200 silent steps behind the reveal fade (doc 02). Stones and walls use their own triplanar mask driven by the same rates (doc 09).
 
