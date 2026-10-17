@@ -146,7 +146,7 @@ Events: `terrain:edited {rect}` (each frame of a stroke, deferred), `terrain:str
 - **Brush compute**: one dispatch over the brush's bounding rect per stamp (8 x 8 workgroups). Smooth uses a ping-pong pair limited to the rect.
 - **Erosion-lite**: thermal erosion (Musgrave, Kolb, Mace, "The Synthesis and Rendering of Eroded Fractal Terrains", SIGGRAPH 1989). Material moves downhill when the slope between neighbors exceeds the talus angle (33 degrees soil, 45 painted rock). 24 iterations on the dirty rect plus a 2 m margin, checkerboard update so it runs race-free in parallel. Its result becomes part of the delta, so GPU float differences never reach other devices: the quantized CPU mirror is what gets saved.
 - **Raycast**: 2D DDA across cells with per-cell bilinear patch intersection (Tevs, Ihrke, Seidel, "Maximum Mipmaps for Fast, Accurate, and Scalable Dynamic Height Field Rendering", 2008, without the mip acceleration since the world is small).
-- **Rendering mesh** (owned by doc 04): per chunk, a grid mesh sampling height in the vertex shader, LOD 128/64/32 quads per side by distance, skirts to hide cracks; height-based material blending (sand fills cracks between rock, grass tufts at edges).
+- **Rendering mesh** (owned by doc 04): per chunk, a grid mesh sampling height in the vertex shader, LOD 128/64/32 quads per side by distance, skirts to hide cracks; height-based material blending (sand fills cracks between rock, grass tufts at edges). From slice step G1 the surface detail (scanned albedo, normal, roughness and height maps per material, hex tiling, triplanar cliffs, wet ground) is specified in `22-ground-detail.md`.
 
 ## Tuning knobs
 
@@ -161,7 +161,7 @@ Events: `terrain:edited {rect}` (each frame of a stroke, deferred), `terrain:str
 | Visual wetness | every 0.5 s, 0.3 ms | every 1.5 s, 0.8 ms |
 | Readback + grid refresh after stroke | under 5 ms async, no hitch | under 15 ms async |
 | Landform build, one chunk | under 15 ms in a worker | under 40 ms |
-| Terrain draw | under 1 ms | under 2.5 ms |
+| Terrain draw (with ground detail, doc 22) | about 1.3 ms | under 2.5 ms |
 
 ## Acceptance checks
 

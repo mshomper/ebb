@@ -1,6 +1,6 @@
 # 01 — Vision and pillars
 
-> ebb is a small island you tend. You shape land and water, plant seeds, and leave room for creatures. They arrive, settle and thrive when the ecology suits them, and the island keeps growing whether you watch or not. When you come back, the island has moved on without you: moss on the stones, a sapling now a tree, frogs where the pond was bare. It is a game for flow and calm, not for winning. The look is soft and painted, but the light and water underneath behave like the real thing.
+> ebb is a small island you tend. You shape land and water, plant seeds, and leave room for creatures. They arrive, settle and thrive when the ecology suits them, and the island keeps growing whether you watch or not. When you come back, the island has moved on without you: moss on the stones, a sapling now a tree, frogs where the pond was bare. It is a game for flow and calm, not for winning. The look is soft and natural: real light, real water and real-looking ground, finished by a gentle palette.
 
 ## Locked decisions
 
@@ -39,7 +39,7 @@ flowchart LR
 
 ### What makes ebb different
 
-- **Real systems under a soft surface.** The water is a simulation, the light is physical, the plants grow by algorithms drawn from biology. The style is applied last, so it never fights the realism.
+- **Real systems, real surfaces.** The water is a simulation, the light is physical, the ground is built from scanned materials, the plants grow by algorithms drawn from biology. A gentle palette is applied last, so the style never fights the realism.
 - **The tide.** The name is literal. A gentle tide rises and falls twice a game day, exposing flats and shallows. Some creatures only come at low tide; some plants only grow in the band between tides.
 - **Creatures as the goal.** There is no score. Progress is the list of species that have made the island home, recorded in a field journal the player fills with their own photographs.
 - **A designer's tool inside a game.** A tuning panel lets you reshape any species, plant or palette with sliders and save it as a recipe. Customization goes all the way down.
@@ -63,7 +63,7 @@ The vision has no code of its own. Every system doc carries these pillars forwar
 | Welcome | `11-creatures-and-ecology.md`, `12-creature-roadmap.md` |
 | Tend | `11-creatures-and-ecology.md`, `13-progression-and-expansion.md` |
 | Return | `02-core-loop-and-idle-model.md`, `18-saves-and-persistence.md` |
-| Look | `04-render-pipeline.md`, `05-look-and-palette.md`, `06-sky-and-lighting.md` |
+| Look | `04-render-pipeline.md`, `05-look-and-palette.md`, `06-sky-and-lighting.md`, `22-ground-detail.md` |
 
 ## Algorithms and shaders
 

@@ -121,7 +121,8 @@ Headroom to 16.6 ms: 4.6 ms. Photo-mode extras (depth of field 1.5 ms, long-expo
 | Particles max | 20,000 | 10,000 | 4,000 |
 | Lights (shader loop / tiled) | 64 tiled | 32 tiled | 8 loop |
 | Bloom levels | 6 | 5 | 4 |
-| Painterly | full res | quarter res | quarter res, off by default |
+| Ground detail (doc 22): map size, hex tiling, triplanar, puddles, anisotropy | 1024, on, on, on, 16x | 1024, on, on, on, 8x | 512, two-scale mix, off, damp only, 4x |
+| Painterly (off by default on every tier, doc 05) | full res | quarter res | quarter res |
 | Outline | separate pass | separate pass | fused into tonemap |
 | HUD backdrop blur (doc 15) | on | on | off |
 | Worker pool | `hardwareConcurrency − 2`, max 14 | same | max 4 |
@@ -134,11 +135,12 @@ Headroom to 16.6 ms: 4.6 ms. Photo-mode extras (depth of field 1.5 ms, long-expo
 | Render targets (doc 04 list at internal size) | about 170 MB at 1440p | about 50 MB |
 | Shadow maps | 50 MB | 4 MB |
 | Terrain textures, 192 m grid at 0.25 m, 768 × 768 (doc 08: height, material, ground) | 7 MB | 7 MB |
+| Ground detail arrays, 2 × 4 layers with mips (doc 22: 1024² high and medium, 512² low) | 43 MB | 11 MB |
 | Water fields, at most 384 × 384 at 0.5 m plus ripple window (doc 07) | 11 MB | 11 MB |
 | Foliage instances and compacted lists | 12 MB | 12 MB |
 | Meshes (flora library, creature bodies, structures) | 40 MB | 25 MB |
 | Moss, sky LUTs, palette LUTs, noise | 20 MB | 12 MB |
-| **GPU total steady** | **under 335 MB** | **under 135 MB** |
+| **GPU total steady** | **under 380 MB** | **under 150 MB** |
 | Photo mode extra (accumulator, export target) | up to 250 MB at 4096 px | up to 40 MB |
 | JS heap (store, ecology grid, recipes) | under 200 MB | under 120 MB |
 
