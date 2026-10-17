@@ -88,7 +88,7 @@ The moon uses the same formulas with `λ☾ = λ☉ + 2π · moonPhase`. Its rig
 
 - Splits: practical split scheme (log/linear blend 0.6). Max shadow distance = 1.5 × world radius, at least 60 m.
 - Stable cascades: bounding sphere per split, light-space origin snapped to whole texels, so shadows do not shimmer as the camera orbits.
-- Normal-offset plus slope-scaled bias. Foliage casts with alpha testing.
+- Normal-offset plus slope-scaled bias. Foliage casts with alpha testing. Near-vertical rock faces from the Cliff tool (M2, doc 08) get a little extra normal offset so they never self-shadow in stripes.
 - **Cloud shadows:** a 512² tiling noise map scrolled by wind, projected along the sun direction, coverage from weather. They multiply sun illuminance only.
 - **Terrain horizon map** (128² per land chunk, 8 azimuth directions): rebuilt when a sculpt stroke ends. It provides low-sun self-shadowing past the last cascade and sky visibility in valleys.
 

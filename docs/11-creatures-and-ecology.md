@@ -30,6 +30,7 @@ The ecology `coarseStep` maintains per-cell fields on the 1 m grid. Creatures ne
 | Tide band | cells wetted between low and high tide | water (shore species), food (waders) |
 | Plant biomass per species | growth model (`10-growth-and-seasons.md`) | food, shelter |
 | Cover | weighted sum of cover-giving plants, walls, logs, leaf litter | shelter |
+| Cliff (from M2; used from M7) | per 1 m cell: rock face height, steepness, ledge cells (narrow level steps in a sheer face), height above high tide, cliff-top turf | shelter (ledge and burrow nesters), quiet |
 | Prey fields | insect (midge) field, fish field, nectar field, seed and nut field | food |
 | Disturbance | paths (day), lanterns (night), structures, larger wary species | quiet |
 | Occupancy | residents and swarm densities per species | company, crowding |

@@ -158,10 +158,13 @@ export function setRecorder(fn) {}
 export function createOrbitCamera(opts) {} // {update(dt), view, proj, eye, follow(id), glideTo(p), setBounds(aabb)}
 
 // src/ui/tools.js
-export const TOOL_GROUPS = { land:['sculpt','smooth','paint'], water:['water','stream','tide-stone'],
+export const TOOL_GROUPS = { land:['sculpt','smooth','paint','cliff'], water:['water','stream','tide-stone'],
   life:['seed'], build:['path','wall','bridge','lantern','drift-log'], creatures:['call','feed'] };
 // a tool shows only when progression lists it as unlocked
+// 'cliff' (M2) is unlocked from the start of play; its brush card holds Terrace and Cut chips
 ```
+
+**Cliff tool input** (M2, `08-terrain-and-sculpt.md`). Desktop: a click sets the shelf level, left drag builds (Terrace) or carves (Cut), and Shift snaps the level to sea level. Touch: a tap sets the level, a one-finger drag builds or carves, and two fingers still move the camera. While the tool is active, a faint level plane shows the shelf height under the ring.
 
 Events (past tense, per 03-tech-stack-and-module-map.md) emitted: `tool:selected`, `camera:follow-started`, `camera:follow-ended`, `ui:panel-opened`, `ui:panel-closed`, `note:posted`. Listened to: `land:joined`, `progress:gifted`, `creature:settled`, `creature:left`, `species:moved-on`, `journal:page-updated`, `reveal:started`, `reveal:note-shown`, `reveal:ended`, `clock:hour`.
 
@@ -174,6 +177,7 @@ One `<symbol id="i-NAME" viewBox="0 0 24 24">` per icon: 24 px grid, 2 px paddin
 | sculpt | trowel lifting a soft mound |
 | smooth | flat float over a wavy line that straightens |
 | paint | round brush with a leaf-shaped dab |
+| cliff | chisel edge over a stepped ground profile (M2) |
 | water | droplet over one ripple line |
 | seed | split seed with two first leaves |
 | path | three stepping stones on a curve |

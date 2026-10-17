@@ -155,6 +155,18 @@ Per-species additions must stay inside doc 11 totals. Rule of thumb: swarm speci
 10. Herons (FABRIK neck), 11. Turtles, 12. Otters (swim plus land gait)
 13. Fireflies (oscillator sync), 14. Bats, 15. Cranes (visitor system)
 
+## After v1: the Headland expansion (M7)
+
+A new chapter after the year page, so the fifteen species above stay the whole first year. Cliffs come from the Cliff tool (M2, `08-terrain-and-sculpt.md`) and from the Headland land piece (`13-progression-and-expansion.md`). Needs use the cliff field in `11-creatures-and-ecology.md`.
+
+| | Puffin (first) | Kittiwake (first) | Feral goat (later) |
+|---|---|---|---|
+| Shelter | burrows in soft cliff-top turf, 3 m or more above high tide | narrow ledges on rock faces steeper than 70 degrees, above water | rock ledges out of the wind |
+| Food | sand eels in deep, clear water within 30 m | surface fish on open sea | grass and heather on steep ground |
+| Quiet and space | no lantern or path within 6 m | a sheer drop, nothing walking above the ledge | 40 m of land or more to roam |
+| Company | colony of 6 to 20 | ledge colony, calls at dawn | small herd of 3 to 6 |
+| Signature | waddle, beak full of fish | dawn calling along the ledge | sure-footed climb up a face |
+
 ## Open questions
 
 - Should songbirds be one species with three looks, or three separate journal pages?
