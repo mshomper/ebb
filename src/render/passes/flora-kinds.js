@@ -79,7 +79,7 @@ export const FLORA_KINDS = {
       f.set(C.young, 28); f[31] = C.youngShare;
       f.set(C.flower, 32); f[35] = C.roughness;
       f.set(C.heart, 36); f[39] = C.f0;
-      f.set([r.wind.bob, r.wind.turnDeg * DEG, S.flowersPerPlant, 0], 40);
+      f.set([r.wind.bob, r.wind.turnDeg * DEG, S.flowersPerPlant, r.wind.swingM], 40);
     },
     frame: common,
   },

@@ -1,8 +1,10 @@
 // Water lilies (docs 10, 14): flat notched pads floating on the live water, one instance per plant
 // from the growth engine's instance buffer, no mesh. Each pad is a fan of twelve triangles around
-// its center with a wedge cut to the middle; it sits a little above the water simulation's surface
-// (bed plus depth, interpolated like the water mesh), so pads ride the level as a pond fills or
-// drains and lie on the mud where it dries. Pads bob and turn a little in the wind. A flowering
+// its center with a wedge cut to the middle; every point of it sits a little above the water
+// simulation's surface there (bed plus depth, interpolated like the water mesh), so pads ride the
+// level as a pond fills or drains and lie on the mud where it dries. Overlapping pads stack in thin
+// layers and share one slow swell, so they never cross; they turn a little and swing on their stems
+// downwind, anchored to the plant. A flowering
 // plant opens a cup of pointed white petals with a yellow heart. Lit like the reeds, with a waxy
 // GGX sun highlight on the pads; season albedo is physical and comes from recipes/flora/lilies.json.
 
@@ -24,7 +26,7 @@ struct LilyDraw {
   young: vec4f,     // xyz young pad albedo (linear), w share of young pads
   petal: vec4f,     // xyz petal albedo (linear), w pad roughness
   heart: vec4f,     // xyz heart albedo (linear), w pad reflectance f0
-  wind: vec4f,      // x bob (m), y turn in the wind (radians), z flowers per plant, w spare
+  wind: vec4f,      // x bob (m), y turn in the wind (radians), z flowers per plant, w swing on the stem (m)
 };
 
 const PAD_VERTS: u32 = 36u;      // twelve fan triangles
@@ -77,6 +79,36 @@ fn surfaceAt(xz: vec2f) -> f32 {
   return max(sum / w, ground);
 }
 
+// Pads stack in 16 layers this far apart, so two that overlap never share a height.
+const LAYER_M: f32 = 0.0008;
+
+// The bob: one slow, gentle swell over the pond, the same for every pad at a point, so pads that
+// overlap rise and fall together. It grows a little with the wind.
+fn bobAt(xz: vec2f) -> f32 {
+  let w = ld.c.wind.xy;
+  let t = ld.c.wind.z;
+  let a = ld.wind.x * (0.3 + ld.c.wind.w);
+  return a * (0.6 * sin(dot(xz, w) * 4.0 - t * 1.3) + 0.4 * sin(dot(xz, vec2f(-w.y, w.x)) * 3.1 + t * 0.9));
+}
+
+// The bob's slope (dy/dx, dy/dz), for tilting a pad with the swell.
+fn bobSlope(xz: vec2f) -> vec2f {
+  let w = ld.c.wind.xy;
+  let q = vec2f(-w.y, w.x);
+  let t = ld.c.wind.z;
+  let a = ld.wind.x * (0.3 + ld.c.wind.w);
+  return a * (0.6 * 4.0 * cos(dot(xz, w) * 4.0 - t * 1.3) * w + 0.4 * 3.1 * cos(dot(xz, q) * 3.1 + t * 0.9) * q);
+}
+
+// How far a pad has swung on its stem: downwind by the wind's strength (share `reach` of the stem's
+// swing), easing with slow gusts, plus a small slow wander (phase h 0..1) so calm pads still drift.
+fn swing(plant: vec2f, reach: f32, h: f32) -> vec2f {
+  let t = ld.c.wind.z;
+  let gust = 0.75 + 0.25 * sin(t * 0.35 + dot(plant, ld.c.wind.xy) * 0.4);
+  let wander = vec2f(sin(t * 0.21 + h * 6.2831853), cos(t * 0.17 + h * 4.1)) * 0.25;
+  return (ld.c.wind.xy * ld.c.wind.w * gust * reach + wander) * ld.wind.w;
+}
+
 fn emit(p: vec3f, n: vec3f, albedo: vec3f, look: vec3f) -> VsOut {
   var o: VsOut;
   o.world = p;
@@ -118,14 +150,11 @@ fn vsLily(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> V
     // Spread evenly over a disc (r = R sqrt(u)); pad 0 near the middle.
     let ang = v.x * 6.2831853;
     let r = spread * sqrt(v.y) * select(1.0, 0.3, pad == 0u);
-    let center = a.xy + vec2f(cos(ang), sin(ang)) * r;
+    let center = a.xy + vec2f(cos(ang), sin(ang)) * r + swing(a.xy, 0.7 + 0.3 * v.z, v.w);
     let radius = ld.shape.w * scale * (1.0 - ld.pad.x * 0.5 + ld.pad.x * v.z);
-    // Turn and bob with the wind; each pad a little out of step.
+    // Turn a little in the wind, each pad out of step.
     let sway = ld.c.wind.w * sin(windT * 0.7 + v.w * 6.2831853);
     let yaw = v.w * 6.2831853 + ld.wind.y * sway;
-    let bob = ld.wind.x * (0.3 + ld.c.wind.w) * sin(windT * 1.3 + v.x * 6.2831853);
-    // Stacked by index so overlapping pads never fight.
-    let y = surfaceAt(center) + ld.pad.z + bob + f32(pad) * 0.0015;
     // The fan: twelve wedges from the notch's edge around to its other edge.
     let tri = slot / 3u;
     let corner = slot % 3u;
@@ -136,9 +165,14 @@ fn vsLily(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> V
       let t = yaw + notch * 0.5 + wedge * f32(tri + corner - 1u);
       local = vec2f(cos(t), sin(t)) * radius;
     }
-    let p = vec3f(center.x + local.x, y, center.y + local.y);
-    // A slight hashed tilt, so neighboring pads catch the sun differently.
-    let n = normalize(vec3f((v.z - 0.5) * 0.08, 1.0, (v.w - 0.5) * 0.08));
+    // Every point of the pad on the water at that point, plus the shared bob and its own layer, so
+    // overlapping pads (of this plant or a neighbor) ride the same surface and never cross.
+    let xz = center + local;
+    let layer = f32((pad * 5u + plantU) % 16u);
+    let p = vec3f(xz.x, surfaceAt(xz) + ld.pad.z + bobAt(xz) + layer * LAYER_M, xz.y);
+    // Tilted with the bob, and slightly by hash so neighboring pads catch the sun differently.
+    let g = bobSlope(center);
+    let n = normalize(vec3f(-g.x + (v.z - 0.5) * 0.08, 1.0, -g.y + (v.w - 0.5) * 0.08));
     let tint = 0.85 + 0.3 * hashToFloat(pcg(h3));
     let young = hashToFloat(pcg(h3 ^ 0x9e37u)) < ld.young.w;
     let albedo = select(ld.c.albedo.xyz, ld.young.xyz, young) * tint;
@@ -154,8 +188,9 @@ fn vsLily(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> V
   if (hashToFloat(hf) > ld.stages.w) { return nothing(); }
   // Beside the middle pad, a little in from its rim.
   let fa = hashToFloat(pcg(hf)) * 6.2831853;
-  let center = a.xy + vec2f(cos(fa), sin(fa)) * ld.shape.w * 0.6 * f32(fi + 1u);
-  let base = vec3f(center.x, surfaceAt(center) + ld.pad.z + 0.006, center.y);
+  let center = a.xy + vec2f(cos(fa), sin(fa)) * ld.shape.w * 0.6 * f32(fi + 1u) + swing(a.xy, 0.85, hashToFloat(hf));
+  // Above the top pad layer.
+  let base = vec3f(center.x, surfaceAt(center) + ld.pad.z + bobAt(center) + 16.0 * LAYER_M + 0.004, center.y);
   let len = ld.flower.y * (0.9 + 0.2 * hashToFloat(pcg(pcg(hf))));
   let petals = min(u32(ld.flower.x), MAX_PETALS);
   let up = vec3f(0.0, 1.0, 0.0);

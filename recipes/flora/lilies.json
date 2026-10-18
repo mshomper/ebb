@@ -3,7 +3,7 @@
   "tags": ["tier1", "wetland", "aquatic"],
   "generator": "pads",
   "layer": "individual",
-  "note": "White water lily (docs 10, 14). habitat, growth, flowering, dormant, spread and starter work as in reeds.json; still is 1 for still water and damp ground, 0 in streams, so lilies keep to ponds; with no moisture axis named, only depth, still water and salt count. Shape (flora-lilies.wgsl): a plant is padsPerPlant pads (more as it grows) at r = spreadRadius x sqrt(u) from its center, the spread growing from radiusMin of spreadRadius when new; each pad a flat disc of padRadius (varied by padVar, smaller while the plant is young) with a notch of notchDeg cut to its center, floating lift above the live water surface (the water simulation's depth over the bed) so it rides the water as the level changes, bobbing by bob (m) and turning by turnDeg in the wind. A seed shows as sproutPads small pads; a dormant plant keeps dormantPads pads at dormantSize. A flowering plant opens a flower on flowerShare of plants (at most flowersPerPlant): petals pointed petals of flowerRadius, cupped up by cup (0 flat, 1 upright), with a yellow heart of heartShare of the radius. season: albedo of the pads (linear) per season, youngShare of pads carry the young reddish tint young; the waxy pads catch a sun highlight of roughness and reflectance f0 (GGX). look: wetDarken in rain.",
+  "note": "White water lily (docs 10, 14). habitat, growth, flowering, dormant, spread and starter work as in reeds.json; still is 1 for still water and damp ground, 0 in streams, so lilies keep to ponds; with no moisture axis named, only depth, still water and salt count. Shape (flora-lilies.wgsl): a plant is padsPerPlant pads (more as it grows) at r = spreadRadius x sqrt(u) from its center, the spread growing from radiusMin of spreadRadius when new; each pad a flat disc of padRadius (varied by padVar, smaller while the plant is young) with a notch of notchDeg cut to its center, floating lift above the live water surface (the water simulation's depth over the bed) at every point of the pad, so it rides the water as the level changes; pads that overlap stack in thin layers and never cross. Pads ride one slow swell of bob (m) shared by the whole pond, turn by turnDeg in the wind, and swing on their stems up to swingM downwind (easing with slow gusts, with a little wander when calm), staying anchored to the plant. A seed shows as sproutPads small pads; a dormant plant keeps dormantPads pads at dormantSize. A flowering plant opens a flower on flowerShare of plants (at most flowersPerPlant): petals pointed petals of flowerRadius, cupped up by cup (0 flat, 1 upright), with a yellow heart of heartShare of the radius. season: albedo of the pads (linear) per season, youngShare of pads carry the young reddish tint young; the waxy pads catch a sun highlight of roughness and reflectance f0 (GGX). look: wetDarken in rain.",
   "index": 1,
   "shape": { "padsPerPlant": [3, 9], "spreadRadius": 0.55, "padRadius": 0.15, "padVar": 0.35, "notchDeg": 30,
              "flowersPerPlant": 1, "petals": 10, "flowerRadius": 0.08, "cup": 0.55, "heartShare": 0.3 },
@@ -20,7 +20,7 @@
               "young": [0.07, 0.05, 0.03], "youngShare": 0.2,
               "flower": [0.82, 0.78, 0.72], "heart": [0.75, 0.52, 0.06], "roughness": 0.35, "f0": 0.04 },
   "outputs": { "cover": { "lilies": 1 } },
-  "wind": { "bob": 0.004, "turnDeg": 6 },
-  "look": { "lift": 0.012, "radiusMin": 0.4, "sproutPads": 2, "dormantPads": 2, "dormantSize": 0.45, "flowerShare": 0.7,
+  "wind": { "bob": 0.004, "turnDeg": 6, "swingM": 0.07 },
+  "look": { "lift": 0.008, "radiusMin": 0.4, "sproutPads": 2, "dormantPads": 2, "dormantSize": 0.45, "flowerShare": 0.7,
             "wetDarken": 0.85 }
 }
