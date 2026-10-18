@@ -39,6 +39,7 @@ Size and color come from CSS: set `width`/`height` on `.icon` and `color` on the
 | `iris` | fan of three sword leaves and a flower on a stalk with three drooping falls: species chip |
 | `thrift` | low cushion on the ground line with three stalks topped by round pompoms: species chip |
 | `grass` | five blades of different heights on the ground line: the grass journal page |
+| `rushes` | a tussock of stiff straight stems splaying from one base, a small flower tuft on the middle stem: the rushes journal page |
 | `journal` | bound book with a ribbon marker and a pressed leaf on the cover: the journal button |
 | `season-spring`, `season-summer`, `season-autumn`, `season-winter` | a bud, a sun, a falling leaf, a frost star: the journal's season boxes |
 | `soil`, `sand`, `rock`, `moss`, `shore` | a mound with clods and a sprout, wind ripples, a faceted boulder, soft cushions, waves over a sandy curve: the journal's Ground pages |

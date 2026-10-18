@@ -160,6 +160,19 @@ const ICONS = {
     <path d="M14.5 20.5C14.8 16 16 12.5 18 10"/>
     <path d="M17.5 20.5C17.6 17.5 18.6 15.6 20.5 14.2"/>`,
 
+  // Rushes and sedges (journal page): a tussock of stiff straight stems splaying from one base,
+  // a small flower tuft on the side of the middle stem near its top.
+  rushes: `
+    <path ${ACCENT} d="M7.5 20.5C8.5 19 15.5 19 16.5 20.5Z"/>
+    <path d="M3.5 20.5H20.5"/>
+    <path d="M12 20.5V3.5"/>
+    <path d="M10.5 20.5L6.5 5.5"/>
+    <path d="M13.5 20.5L17.5 5.5"/>
+    <path d="M9 20.5L3.8 11"/>
+    <path d="M15 20.5L20.2 11"/>
+    <path ${ACCENT} d="M12 7.5C13.4 6.7 14.5 7.4 14.3 9C13.3 9.4 12.3 8.8 12 7.5Z"/>
+    <path d="M12 7.5C13.4 6.7 14.5 7.4 14.3 9C13.3 9.4 12.3 8.8 12 7.5Z"/>`,
+
   // Journal (docs/15): a bound book with a ribbon marker and a pressed leaf on the cover.
   journal: `
     <path ${ACCENT} d="M5 18.5V5.5A1 1 0 0 1 6 4.5H19V17H6.5A1.5 1.5 0 0 0 5 18.5Z"/>

@@ -2,7 +2,7 @@
 // Live side of the field journal (docs 13, 15): keeps the store slice `journal` current by looking at
 // the world after every game hour (the `world:ticked` event with that hour's tick events), after
 // edits and plantings, and when the Plant tool refuses a spot. It posts the journal's new notes as
-// `note:posted`; names what a tap lands on, a plant, grass or the ground itself (store slice
+// `note:posted`; names what a tap lands on, a plant, grass, rushes or the ground itself (store slice
 // `identify`), and catches the moment if it is a special one; answers a page's Show me by gliding
 // the camera to it; and opens and closes the journal on the `ui.journal` action (store slice
 // `journalUi`). The model is pure (observe.js, describe.js, ground.js, almanac.js); this file only
@@ -43,7 +43,9 @@ export function createJournal(opts) {
   update('journalUi', (u) => u ?? { open: false, view: 'living', page: null, size: 'half' });
 
   const habitat = () => world.env.habitat?.() ?? null;
-  const flora = () => world.env.recipes?.flora ?? {};
+  // The plant recipes with the cover plants' (rushes; grass has no habitat axes), so a tap on the
+  // ground and a page's wash know where each would do well.
+  const flora = () => ({ ...(world.env.recipes?.flora ?? {}), ...(world.env.recipes?.covers ?? {}) });
   /** The terrain's painted materials (rgba8 per 0.25 m texel), once the terrain is up. */
   const material = () => get('terrainLive')?.mirror?.material ?? null;
   let paintVersion = 0;
@@ -86,7 +88,7 @@ export function createJournal(opts) {
     return { stage, season: world.state?.seasons?.index ?? 0, hourOfDay: hours - Math.floor(hours / HOURS_PER_DAY) * HOURS_PER_DAY, rain: w.rain, mist: w.mist };
   }
 
-  /** What a ground point holds: a plant, grass, or the ground itself. @param {number} x @param {number} z */
+  /** What a ground point holds: a plant, a cover plant (grass, rushes), or the ground itself. @param {number} x @param {number} z */
   function cardAt(x, z) {
     const hab = habitat();
     const living = identify(world.state, hab, x, z, words);

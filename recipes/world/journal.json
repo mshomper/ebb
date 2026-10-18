@@ -1,8 +1,8 @@
 {
   "type": "journal",
   "version": 1,
-  "note": "The field journal (docs 13, 15): the words it writes and the numbers that shape them. order: the living things with pages, in page order. Each species: name and icon (src/ui/icons), riddle (shown before it has been seen), amount ([at least this many plants, words] steps; grass uses share of the dry ground instead), place and compass (where words: compass false skips the side of the island), none (after it has gone), clause words (flowering, dormant, spreading, receding), stages (what tapping one says, by growth stage: seed, sprout, young, mature, flowering, dormant), seasons (what each season box says: grow per season, flower, dormant), likes (lines learned when one of the learn triggers happens: seen, spread, flower, lost:drown, lost:seed, refused:<need>, grass:flooded), gives (a pencil line until the when trigger, then the ink line), notes (the lines the journal writes). trend: a species is spreading when it has gained at least max(upMin, upShare x then) plants over trend hours, receding when it has lost at least max(downMin, downShare x then). where: spreadOut is the mean distance from the plants' middle, as a share of the island's radius, past which they are all around the island; centerShare is how close to the island's middle counts as the middle. notesKept: notes the journal keeps; pageNotes: notes on a species page. islandNote: how long a note stays on the island (showS), the gap between two (gapS) and how many may wait (queue). identify: how near a tap must be to a plant (radiusM), how long the card stays (showS), and the size of the breathing ring around what was tapped (ringM for a full-grown plant, smaller for young ones; grassRingM on grass; its timing is in recipes/world/growth.json marks). arrivedHours: plants seen within this many hours of the journal starting were here when you arrived. J1.5: each species also has plural (for the story lines), field (field notes: natural history lines learned like likes, by triggers that include dormant, woke and moment:<id>) and fieldHint (the pencil line while some are still to learn). story: the lines of 'your island's story' ({Plural}, {plural} and {date} are filled in; peak shows when the count has fallen under peakShare of its best). moments: four frames per page by kind (plant, cover for grass, ground in journal-island.json), each filled the first time you tap that thing at that moment: flower (in flower), summer, winter, rain (rain at least rainAt), mist (at least mistAt), dawn and dusk (hours of the day, inclusive start, exclusive end), frost (a winter dawn); note is the line written. showMe: how long (showS) the ring and card stay after a page's Show me rings the example nearest the middle of your view (the camera does not move).",
-  "order": ["grass", "reeds", "lilies", "iris", "thrift"],
+  "note": "The field journal (docs 13, 15): the words it writes and the numbers that shape them. order: the living things with pages, in page order. Each species: name and icon (src/ui/icons), riddle (shown before it has been seen), amount ([at least this many plants, words] steps; a cover plant (kind cover: grass, rushes) uses its share of the dry ground instead, or with amountBy area the square meters it covers), place and compass (where words: compass false skips the side of the island), none (after it has gone), clause words (flowering, dormant, spreading, receding), stages (what tapping one says, by growth stage: seed, sprout, young, mature, flowering, dormant), seasons (what each season box says: grow per season, flower, dormant), likes (lines learned when one of the learn triggers happens: seen, spread, flower, lost:drown, lost:seed, refused:<need>, grass:flooded), gives (a pencil line until the when trigger, then the ink line), notes (the lines the journal writes). trend: a species is spreading when it has gained at least max(upMin, upShare x then) plants over trend hours, receding when it has lost at least max(downMin, downShare x then). where: spreadOut is the mean distance from the plants' middle, as a share of the island's radius, past which they are all around the island; centerShare is how close to the island's middle counts as the middle. notesKept: notes the journal keeps; pageNotes: notes on a species page. islandNote: how long a note stays on the island (showS), the gap between two (gapS) and how many may wait (queue). identify: how near a tap must be to a plant (radiusM), how long the card stays (showS), and the size of the breathing ring around what was tapped (ringM for a full-grown plant, smaller for young ones; grassRingM on grass; its timing is in recipes/world/growth.json marks). arrivedHours: plants seen within this many hours of the journal starting were here when you arrived. J1.5: each species also has plural (for the story lines), field (field notes: natural history lines learned like likes, by triggers that include dormant, woke and moment:<id>) and fieldHint (the pencil line while some are still to learn). story: the lines of 'your island's story' ({Plural}, {plural} and {date} are filled in; peak shows when the count has fallen under peakShare of its best). moments: four frames per page by kind (plant, cover for grass and rushes, ground in journal-island.json), each filled the first time you tap that thing at that moment: flower (in flower), summer, winter, rain (rain at least rainAt), mist (at least mistAt), dawn and dusk (hours of the day, inclusive start, exclusive end), frost (a winter dawn); note is the line written. showMe: how long (showS) the ring and card stay after a page's Show me rings the example nearest the middle of your view (the camera does not move).",
+  "order": ["grass", "rushes", "reeds", "lilies", "iris", "thrift"],
   "notesKept": 60,
   "pageNotes": 5,
   "arrivedHours": 2,
@@ -68,6 +68,40 @@
         "seen": "Grass is growing on the island.",
         "flooded": "Grass is drowning where the water spread.",
         "gone": "The last of the grass is gone."
+      }
+    },
+    "rushes": {
+      "name": "Rushes and sedges", "icon": "rushes", "kind": "cover", "amountBy": "area", "plural": "rushes",
+      "field": [
+        { "text": "Rushes and sedges are grass-like plants of wet ground. They grow in tight tussocks.", "learn": ["seen"] },
+        { "text": "In summer small brown flower tufts sprout near the top of the stems.", "learn": ["moment:summer"] },
+        { "text": "Their stems are full of soft pith, which carries air down to roots in the soaked mud.", "learn": ["moment:rain"] },
+        { "text": "The stems stay standing through winter, brown at the tips, and frost silvers them at dawn.", "learn": ["moment:frost"] }
+      ],
+      "fieldHint": "Watch the marsh in other weather to learn more.",
+      "sketch": { "scale": "about 75 cm", "labels": {
+        "tuft": { "text": ["flower tuft,", "high summer"], "learn": ["moment:summer"] },
+        "stem": { "text": ["pith carries", "air down"], "learn": ["moment:rain"] },
+        "base": { "text": ["a tussock in", "the shallows"], "learn": ["seen"] } } },
+      "riddle": "Something stiff and green would stand in shallow, still water, if the ground were wet enough.",
+      "amount": [[1, "A few tussocks of rushes"], [10, "A stand of rushes"], [40, "A broad bed of rushes"], [150, "Wide beds of rushes"]],
+      "place": "in the wet margins", "compass": true,
+      "none": "No rushes grow on the island now.",
+      "spreading": "spreading", "receding": "thinning",
+      "stages": ["A tussock of rushes"],
+      "seasons": { "grow": ["fresh green stems", "tall, with brown flower tufts", "browning at the tips", "standing brown for winter"] },
+      "likes": [
+        { "text": "Still, shallow water and soaked ground", "learn": ["seen"] },
+        { "text": "Never the moving water of a stream", "learn": ["seen"] },
+        { "text": "Fresh water, never the salt", "learn": ["seen"] }
+      ],
+      "gives": [
+        { "pencil": "Something small might hide among these stems one day.", "ink": "Cover for frogs in the marsh margins.", "when": "frogs:settled" }
+      ],
+      "notes": {
+        "arrived": "Rushes stood in the wet margins when you arrived.",
+        "seen": "Rushes are growing in the wet ground.",
+        "gone": "The last of the rushes is gone."
       }
     },
     "reeds": {

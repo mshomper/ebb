@@ -1,6 +1,6 @@
 // @ts-check
-// Field sketches of the living things (J1.6): grass, reeds, water lilies, yellow flag iris and sea
-// thrift, each drawn with the journal pen (pen.js) so pencil, ink and wash come from one drawing.
+// Field sketches of the living things (J1.6): grass, rushes, reeds, water lilies, yellow flag iris
+// and sea thrift, each drawn with the journal pen (pen.js) so pencil, ink and wash come from one drawing.
 //
 // Layout for every sheet (380 wide): the drawing sits in x 40..236 on a ground line, a scale bar
 // (when there is one) at x 30 on the left, and labels in the right column from x 250, each with a
@@ -99,6 +99,40 @@ export function grass(p, scale) {
   p.label('roots', 250, 262, rx + 14, ry + 8);
   p.scale(30, 30, 228, scale);
   return p.svg(380, 300, 'Field sketch of grass');
+}
+
+/** @param {import('./pen.js').Pen} p @param {string} [scale] */
+export function rushes(p, scale) {
+  // Shallow water over the mud; the tussock's crown sits on the mud, its stems rise out of the water.
+  p.tint('M40 236H236V262H40Z', WASH.water, 0.32);
+  p.tint('M40 262H236V296H40Z', WASH.mud, 0.22);
+  p.line(wave(40, 236, 236, 1.5, 28), 1.4);
+  p.line('M40 262C90 258 180 266 236 261', 1.2);
+  /** Stems: base x at the water, tip x and y; outer ones first so the inner ones stand in front. @type {[number, number, number][]} */
+  const stems = [[122, 62, 104], [154, 214, 96], [126, 84, 70], [150, 196, 66], [130, 104, 46], [146, 180, 52],
+    [132, 116, 92], [144, 164, 84], [134, 124, 30], [140, 150, 36], [137, 138, 58]];
+  /** @type {Record<number, [number, number, number, number, number]>} */ const S = {};
+  stems.forEach(([bx, tx, ty], i) => {
+    const s = /** @type {[number, number, number, number, number]} */ ([bx, 236, tx, ty, (tx - bx) * 0.06]);
+    S[i] = s;
+    // Under the water each stem carries on down to the crown.
+    p.fine(`M${bx} 238L${p.f(138 + (bx - 138) * 0.5)} 258`, 0.9, 0.5);
+    p.shape(blade(bx, 236, tx, ty, 1.7, s[4]), WASH.green, 0.45, 1);
+  });
+  p.shape('M110 262C118 252 158 252 166 262C158 270 118 270 110 262Z', WASH.mud, 0.55, 1.4);
+  for (const x of [118, 130, 146, 158]) p.line(`M${x} 267l${x < 138 ? -3 : 3} 12`, 0.9);
+  // Flower tufts break out from the side of a few stems, a little below the tip.
+  for (const [i, t, side] of /** @type {[number, number, number][]} */ ([[8, 0.84, 1], [3, 0.8, 1], [2, 0.8, -1]])) {
+    const [x, y] = along(...S[i], t);
+    for (const [dx, dy] of [[9, -5], [11, 1], [7, 6]]) p.shape(petal(x, y, x + side * dx, y + dy, 2.4), WASH.brown, 0.65, 0.9);
+  }
+  const [fx, fy] = along(...S[3], 0.8);
+  p.label('tuft', 250, 44, fx + 10, fy - 2);
+  const [sx, sy] = along(...S[1], 0.55);
+  p.label('stem', 250, 150, sx + 2, sy);
+  p.label('base', 250, 252, 166, 262);
+  p.scale(30, 30, 236, scale);
+  return p.svg(380, 300, 'Field sketch of rushes and sedges');
 }
 
 /** A notched lily pad seen low, its notch toward angle a. @param {number} cx @param {number} cy @param {number} rx @param {number} ry @param {number} a */

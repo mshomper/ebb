@@ -351,4 +351,36 @@ export function addJournalTests(test, assert, eq) {
     assert(!none || none.sp === 'lilies', `tap on open water: ${none?.sp}`);
     return `${id?.name}: "${id?.text}"; ${g?.name}`;
   });
+
+  test(JOURNAL, 'rushes: a marsh on a new island has its page, a tap names them, the wash finds them', async () => {
+    const { words, state, first, hab, recipes } = await setup();
+    const island = await loadIsland();
+    const wash = await fetch('../recipes/world/journal-wash.json').then((r) => r.json());
+    const k = first.journal.species.rushes;
+    assert(k?.ever && k.seen && k.arrived, 'rushes in the pond margin are seen at the first look, as already there');
+    const d = describe(first.journal, 'rushes', state, hab, words);
+    assert(d.known && d.canShow && d.status.includes('rushes') && !/\d/.test(d.status), `status: "${d.status}"`);
+    eq(d.icon, 'rushes', 'page icon');
+    // With no plants nearby, a tap in the shallow margin names rushes; one on the painted dry ground is still grass.
+    const bare = { ...state, growth: { ...state.growth, plants: [] } };
+    const r = identify(bare, hab, at('edge')[0], at('edge')[1] + 60, words);
+    eq(r?.sp, 'rushes', 'tap in the shallow margin');
+    eq(r?.text, words.species.rushes.stages[0], 'card text');
+    eq(identify(bare, hab, at('dry')[0], at('dry')[1] + 60, words)?.sp, 'grass', 'tap on the painted dry ground');
+    eq(identify(bare, hab, at('pond')[0], at('pond')[1] + 60, words), null, 'tap on deep open water');
+    const spot = showMeSpot('rushes', state, hab, words, [at('edge')[0], 30]);
+    assert(spot && Math.abs(spot.wx - at('edge')[0]) < 2 && Math.abs(spot.wz - 30) < 1, `Show me rings rushes in the margin: ${spot?.wx}, ${spot?.wz}`);
+    const ctx = { state, hab, material: soilEverywhere(), island, flora: { ...recipes.flora, ...recipes.covers }, words, journal: first.journal, wash };
+    const m = washMap('rushes', ctx);
+    const cellAt = (/** @type {number} */ x, /** @type {number} */ z) => (Math.floor((z - m.origin) * 2) * m.n + Math.floor((x - m.origin) * 2)) * 2;
+    assert(m && m.data[cellAt(at('edge')[0], 20)] > 200, 'the wash lives in the margin');
+    assert(m.data[cellAt(at('edge')[0], 20) + 1] > 200, 'and would do well there');
+    eq(m.data[cellAt(at('dry')[0], 20)] + m.data[cellAt(at('pond')[0], 20)], 0, 'no wash on the dry ground or the deep pond');
+    // A world that has lost its rushes says so.
+    const gone = { ...state, growth: { ...state.growth, cover: { rushes: new Uint8Array(hab.n * hab.n) } } };
+    const after = observe(first.journal, { state: gone, events: [], hour: 1, habitat: hab, words });
+    assert(!after.journal.species.rushes.seen && after.notes.some((n) => n.text === words.species.rushes.notes.gone), 'the gone note');
+    eq(describe(after.journal, 'rushes', gone, hab, words).status, words.species.rushes.none, 'status once gone');
+    return `${d.status} / tap: ${r?.name}`;
+  });
 }
