@@ -33,7 +33,7 @@ import { CELL, CHUNK_CELLS, CHUNK_SIZE, quantize } from './grid.js';
 
 // Layer ids mixed into the seed so each noise field is independent.
 const L_WARP_X = 1, L_WARP_Z = 2, L_COAST = 3, L_DETAIL = 4, L_SAND = 5, L_SOIL = 6, L_ROCK = 7;
-const L_BASIN = 8, L_FLOOR = 9, L_RISE_POS = 10, L_BASIN_POS = 11;
+const L_BASIN = 8, L_FLOOR = 9, L_RISE_POS = 10, L_BASIN_POS = 11, L_OUTCROP = 12, L_STONE_LUMP = 13;
 
 const CELLS = CHUNK_CELLS * CHUNK_CELLS;
 
@@ -159,6 +159,7 @@ function makeContext(land, seed) {
   // The spring's channel: from the spring down to the edge of the basin floor (docs/07).
   const sp = /** @type {any} */ (land).spring;
   let channel = null;
+  let outcrop = null;
   if (sp?.channel) {
     const dx = riseX - basinX, dz = riseZ - basinZ;
     const dl = Math.sqrt(dx * dx + dz * dz) || 1;
@@ -169,10 +170,12 @@ function makeContext(land, seed) {
       halfWidth: sp.channel.widthM * 0.5, depth: sp.channel.depthM,
       meander: sp.channel.meanderM ?? 0, bends: sp.channel.bends ?? 1,
       thalwegHalf: (sp.channel.thalwegWidthM ?? 0.8) * 0.5, thalwegDepth: sp.channel.thalwegDepthM ?? 0,
-      gravel: sp.channel.bedGravel ?? 0.85,
+      gravel: sp.channel.bedGravel ?? 0.85, headTaper: sp.channel.headTaper ?? 0.08,
     };
+    // Uphill is from the pond toward the rise, the way the channel climbs to the spring.
+    if (sp.outcrop) outcrop = makeOutcrop(seed, sp.outcrop, channel.sx, channel.sz, ux, uz);
   }
-  return {
+  const c = {
     land,
     warpX: makeFbm(seed, L_WARP_X, land.warp),
     warpZ: makeFbm(seed, L_WARP_Z, land.warp),
@@ -183,18 +186,94 @@ function makeContext(land, seed) {
     rock: makeFbm(seed, L_ROCK, { scale: m.rockScale, octaves: 2 }),
     basinWobble: makeFbm(seed, L_BASIN, { scale: b.wobbleScale, octaves: 2 }),
     floor: makeFbm(seed, L_FLOOR, { scale: 0.3, octaves: 2 }),
-    riseX, riseZ, basinX, basinZ, channel,
+    riseX, riseZ, basinX, basinZ, channel, outcrop,
     // Hermite end slopes, in units of the ramp parameter, so both sides meet the
     // waterline with the same gentle beach slope (no crease at the shore).
     landM0: land.beachSlope * land.inlandWidth,
     seaM0: -land.beachSlope * land.seaFallWidth,
   };
+  if (outcrop) {
+    // The pool's water level: the meadow (before the channel is cut) where the notch crosses the
+    // rim, plus lipRise. The pool is leveled to it, so it holds water even on a slope.
+    const bare = { ...c, channel: null, outcrop: null };
+    const [x, z] = unwarp(c, outcrop.x + outcrop.dnx * outcrop.poolR, outcrop.z + outcrop.dnz * outcrop.poolR);
+    const out = new Float64Array(5);
+    sampleCell(bare, x, z, out);
+    outcrop.level = out[0] + outcrop.lipRise;
+  }
+  return c;
 }
 /** @typedef {ReturnType<typeof makeContext>} Ctx */
 
 /**
+ * The world point the domain warp carries onto (px, pz) in the warped frame: p + warp(p) = s,
+ * solved by fixed-point iteration (the warp moves slowly, so each step shrinks the error about
+ * fivefold).
+ * @param {{ land: LandRecipe, warpX: Fbm, warpZ: Fbm }} c @param {number} px @param {number} pz
+ * @returns {[number, number]}
+ */
+function unwarp(c, px, pz) {
+  const W = c.land.warp.strength;
+  let x = px, z = pz;
+  for (let k = 0; k < 16; k++) {
+    const wx = W * fbm(c.warpX, x, z), wz = W * fbm(c.warpZ, x, z);
+    x = px - wx; z = pz - wz;
+  }
+  return [x, z];
+}
+
+/**
+ * The spring's rock outcrop (docs/07): a horseshoe of stones around a small pool, open downhill
+ * where the pool spills into the channel. Everything comes from the seed, so one seed always
+ * gives the same stones. Laid out in the warped frame, like the channel, so the pool sits
+ * exactly at the head of the bed.
+ * @param {number} seed @param {any} o  the land recipe's spring.outcrop
+ * @param {number} cx @param {number} cz  pool center (warped frame) @param {number} ux @param {number} uz  uphill
+ */
+function makeOutcrop(seed, o, cx, cz, ux, uz) {
+  const s = hash32(seed, L_OUTCROP, 0);
+  /** Uniform in [0, 1). @param {number} a @param {number} b */
+  const u = (a, b) => (hash32(s, a, b) >>> 8) / 16777216;
+  /** @param {number[]} r @param {number} t */
+  const lerp = (r, t) => r[0] + (r[1] - r[0]) * t;
+  const DEG = det.PI / 180;
+  const n = o.stones[0] + Math.floor(u(0, 0) * (o.stones[1] - o.stones[0] + 1));
+  const arc = o.arcDeg * DEG;
+  const turn = (2 * u(0, 1) - 1) * o.turnDeg * DEG;
+  const stones = [];
+  let reach = o.poolRadiusM;
+  for (let i = 0; i < n; i++) {
+    // Spread over the arc centered on uphill, so the open side faces down the channel.
+    const a = turn - arc / 2 + arc * (i + 0.5 + (u(i + 1, 0) - 0.5) * o.angleJitter) / n;
+    const ca = det.cos(a), sa = det.sin(a);
+    const dx = ux * ca - uz * sa, dz = ux * sa + uz * ca;
+    const ring = o.ringM + (2 * u(i + 1, 1) - 1) * o.ringJitterM;
+    const r = lerp(o.radiusM, u(i + 1, 2));
+    const aspect = 1 + o.elongate * u(i + 1, 4);
+    const phi = u(i + 1, 5) * det.PI;
+    stones.push({
+      x: cx + dx * ring, z: cz + dz * ring, h: lerp(o.heightM, u(i + 1, 3)),
+      ra: r * Math.sqrt(aspect), rb: r / Math.sqrt(aspect), cp: det.cos(phi), sp: det.sin(phi),
+    });
+    reach = Math.max(reach, ring + r * Math.sqrt(aspect) * (1 + o.lump));
+  }
+  return {
+    x: cx, z: cz, dnx: -ux, dnz: -uz, stones, sink: o.sinkM, lump: o.lump,
+    lumps: makeFbm(seed, L_STONE_LUMP, { scale: o.lumpScale, octaves: 2 }),
+    poolR: o.poolRadiusM, poolDepth: o.poolDepthM, gravel: o.poolGravel, lipRise: o.lipRiseM,
+    rimAbove: o.rimAboveM, rimW: o.rimWidthM, notchHalf: o.notchWidthM * 0.5, apron: o.apronSlope,
+    spillHalf: o.spillwayWidthM * 0.5, spillSlope: o.spillSlope,
+    // Far enough out that the apron has sunk below the meadow before the stamp ends.
+    reach: Math.max(reach + 0.5, o.poolRadiusM + o.rimWidthM + 1.8),
+    level: 0, // the pool's water level (m), set once the context exists (makeContext)
+  };
+}
+
+/**
  * The starter spring (docs/07): `fromBasinM` from the basin center toward the rise, so its
- * channel runs down into the pond hollow. Null when the land has no spring.
+ * channel runs down into the pond hollow. Null when the land has no spring. The channel and
+ * the outcrop are laid out in the warped frame, so the spring sits at the world point the warp
+ * carries onto their head.
  * @param {Ctx} c
  */
 function springOf(c) {
@@ -202,7 +281,8 @@ function springOf(c) {
   if (!sp) return null;
   const dx = c.riseX - c.basinX, dz = c.riseZ - c.basinZ;
   const dl = Math.sqrt(dx * dx + dz * dz) || 1;
-  return { x: c.basinX + (dx / dl) * sp.fromBasinM, z: c.basinZ + (dz / dl) * sp.fromBasinM, spec: sp };
+  const [x, z] = unwarp(c, c.basinX + (dx / dl) * sp.fromBasinM, c.basinZ + (dz / dl) * sp.fromBasinM);
+  return { x, z, spec: sp };
 }
 
 /**
@@ -281,12 +361,60 @@ function sampleCell(c, x, z, out) {
     // A wide, gentle grassy swale with a narrow rounded bed (the thalweg) along its middle, where
     // the flow gathers into a stream. Both stay well under the steep-rock angle.
     const q = Math.sqrt(qx * qx + qz * qz);
-    const head = smoothstep(0, 0.08, t);
+    // headTaper 0: the bed starts at full depth (under the outcrop's pool), with a rounded end.
+    const head = ch.headTaper > 0 ? smoothstep(0, ch.headTaper, t) : 1;
     chanW = bump(q / ch.halfWidth) * head;
     bedW = bump(q / ch.thalwegHalf) * head;
     h -= landMask * (ch.depth * chanW + ch.thalwegDepth * bedW);
     // The bed itself, a little wider than the thread: washed gravel and stones.
     bedW = bump(q / (ch.thalwegHalf * 1.3)) * head * landMask;
+  }
+
+  // The spring's outcrop: a small pool leveled into the head of the bed, ringed by a low rim
+  // with a notch on the downhill side, so the water wells up, stands, and leaves only through
+  // the notch down a short spillway into the channel; a horseshoe of stones stands around it.
+  let poolW = 0;
+  let stoneLift = 0;
+  const oc = c.outcrop;
+  if (oc && landMask > 0) {
+    const ox = px - oc.x, oz = pz - oc.z;
+    if (ox * ox + oz * oz < oc.reach * oc.reach) {
+      const d = Math.sqrt(ox * ox + oz * oz);
+      const along = ox * oc.dnx + oz * oc.dnz, across = oz * oc.dnx - ox * oc.dnz;
+      // The rim stands rimAbove over the water, down to the water level in the notch.
+      const notch = along > 0 ? bump(Math.abs(across) / oc.notchHalf) : 0;
+      const rimH = oc.level + oc.rimAbove * (1 - notch);
+      // A bowl from the floor up to the rim, carried on outward so the banks above it are cut
+      // back smoothly. Low ground around it is lifted to the rim, which falls away outside as a
+      // short apron, except down the bed's line: there the sill drops into the bed, so the
+      // spill stays in the channel instead of fanning out over a raised apron.
+      const floorH = oc.level - oc.poolDepth;
+      const t = d / oc.poolR;
+      const bowl = floorH + (rimH - floorH) * t * t;
+      let hh = t < 1 ? bowl : Math.min(h, bowl);
+      if (t >= 1) {
+        const past = d - oc.poolR - oc.rimW;
+        const lift = past > 0 ? rimH - past * oc.apron : rimH;
+        const w = past > 0 && along > 0 ? 1 - bump(Math.abs(across) / oc.spillHalf) : 1;
+        if (lift > hh) hh += (lift - hh) * w;
+        // Below the sill, a short ramp down the notch's line eases the spill into the bed.
+        const ramp = oc.level - Math.max(0, past) * oc.spillSlope;
+        if (notch > 0 && ramp > hh) hh += (ramp - hh) * notch;
+      }
+      h += (hh - h) * landMask;
+      poolW = t < 1 ? (1 - t * t) * landMask : 0;
+      const lump = 1 + oc.lump * fbm(oc.lumps, px, pz);
+      for (const s of oc.stones) {
+        const sx = px - s.x, sz = pz - s.z;
+        const a = (sx * s.cp + sz * s.sp) / s.ra, b = (sz * s.cp - sx * s.sp) / s.rb;
+        const t2 = (a * a + b * b) / (lump * lump);
+        if (t2 >= 1) continue;
+        // A rounded dome, set into the ground by `sink`; lumps roughen the outline and the top.
+        const lift = s.h * lump * Math.sqrt(1 - t2) - oc.sink;
+        if (lift > stoneLift) stoneLift = lift;
+      }
+      h += stoneLift * landMask;
+    }
   }
 
   // Outer falloff: everything joins the open seabed before falloffEnd.
@@ -309,6 +437,10 @@ function sampleCell(c, x, z, out) {
     // Running water washes the bed down to gravel and pebbles: the soil scan is a gravelly one,
     // so the bed is soil, fading out into the grass banks.
     if (ch) soil = Math.max(soil, smoothstep(0.05, 0.5, bedW) * ch.gravel);
+    if (oc) {
+      soil = Math.max(soil, smoothstep(0.05, 0.4, poolW) * oc.gravel);
+      rock = Math.max(rock, smoothstep(0, 0.03, stoneLift));
+    }
   }
   const sandW = sand * (1 - rock);
   const soilW = soil * (1 - rock) * (1 - sand);

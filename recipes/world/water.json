@@ -70,7 +70,7 @@
     "springRates": { "trickle": 3, "brook": 12, "stream": 30 }
   },
   "look": {
-    "note": "Water optics (docs/07). absorption: sigma_a per meter (Beer-Lambert) for sea and ponds; scatterAlbedo: single-scatter albedo of the water body; f0: Fresnel at normal incidence (n = 1.333); refraction: screen offset per unit normal tilt; edgeFadeM: where the water plane meets the bank, it fades in over this much water thickness (the last half cell toward a dry bank fades too); coherentDepthM: water thinner than the first value is a broken, rough film (grass and stones stand through it, reflection weak), reaching a full mirror-like surface by the second; waves: detail normal layers (wavelength m, strength, speed m/s); sea: Gerstner waves on open water (wavelength m, amplitude m, direction deg), faded out in water shallower than seaFadeDepthM.",
+    "note": "Water optics (docs/07). absorption: sigma_a per meter (Beer-Lambert) for sea and ponds; scatterAlbedo: single-scatter albedo of the water body; f0: Fresnel at normal incidence (n = 1.333); refraction: screen offset per unit normal tilt; edgeFadeM: where the water plane meets the bank, it fades in over this much water thickness (the last half cell toward a dry bank fades too); coherentDepthM: water thinner than the first value is a broken, rough film (grass and stones stand through it, reflection weak), reaching a full mirror-like surface by the second; glossyDepthM: moving water (faster than 0.05 m/s) turns glossy over this depth range, so a brook glints but a film of a few millimeters sliding over grass does not; sheetDepthM: water thinner than the first value shows only as damp ground (the terrain soaks it), fully water by the second; waves: detail normal layers (wavelength m, strength, speed m/s); sea: Gerstner waves on open water (wavelength m, amplitude m, direction deg), faded out in water shallower than seaFadeDepthM.",
     "f0": 0.02,
     "absorptionSea": [0.45, 0.065, 0.05],
     "absorptionPond": [0.4, 0.32, 1.2],
@@ -80,6 +80,8 @@
     "refraction": 0.06,
     "edgeFadeM": 0.004,
     "coherentDepthM": [0.02, 0.12],
+    "glossyDepthM": [0.008, 0.02],
+    "sheetDepthM": [0.004, 0.008],
     "roughness": 0.04,
     "waves": [
       { "wavelengthM": 2.6, "strength": 0.2, "speed": 0.55, "dirDeg": 20 },

@@ -40,10 +40,10 @@ struct WaterDraw {
   floorY: f32,                // the island's sea floor height at the edge of the opened area (m)
   floorSlope: f32,            // how fast the open sea floor deepens beyond it (m per m)
   seabed: vec4f,              // rgb wet sand albedo for the sea floor beyond the terrain, w wet darkening
-  filmDepth: vec4f,            // xy depth range (m) over which a broken film becomes a coherent surface
+  filmDepth: vec4f,            // xy depth range (m) over which a broken film becomes a coherent surface; zw over which moving water turns glossy
   debugView: f32,             // ?waterdbg=1 sea or grid, 2 reflection, 3 transmitted, 4 Fresnel/path/depth, 5 island hits, 6 ripple slope
   detailFadeM: f32,           // ripples calm and move into roughness by this distance (quality tier)
-  _q1: f32, _q2: f32,
+  sheetDepth: vec2f,          // depth range (m) over which a sheet shows as water rather than damp ground
   rain: vec4f,                // raindrop rings: x share of drop cells active (rain), y cell size (m), z ring life (s), w crest spacing (m)
   rain2: vec4f,               // x ring radius at the end of its life (m), y crest slope, z foam lace flow cycle (s), w most it slides a cycle (m)
   scatterPond: vec4f,         // rgb single-scatter albedo of pond water (fine silt and peat stain it)
@@ -381,8 +381,9 @@ fn fsWater(in: VsOut) -> FsOut {
   let n = normalize(vec3f(-grad.x, 1.0, -grad.y));
   // Thin water is a broken film: stones and blades stand through it, so it reflects weakly and
   // scatters the sun broadly. Deeper water is a coherent surface.
-  // Running water is glossy however thin: its rippled surface glints like a deep one.
-  let cohere = max(smoothstep(wd.filmDepth.x, wd.filmDepth.y, d), 0.85 * smoothstep(0.05, 0.3, speed) * smoothstep(0.004, 0.015, d));
+  // Running water a centimeter or more deep is glossy: its rippled surface glints like a deep one.
+  // A film of a few millimeters sliding over grass stays broken, so it never shines like a mirror.
+  let cohere = max(smoothstep(wd.filmDepth.x, wd.filmDepth.y, d), 0.85 * smoothstep(0.05, 0.3, speed) * smoothstep(wd.filmDepth.z, wd.filmDepth.w, d));
   let rough = mix(0.3, sqrt(wd.absorbPond.w * wd.absorbPond.w + 0.012 * far), cohere);
 
   // ---- light ----
@@ -495,7 +496,7 @@ fn fsWater(in: VsOut) -> FsOut {
   // meets the ground (thickness under edgeFade), so banks never show a hard line. Thin streams
   // stay visible; their film look comes from `cohere` above.
   // A sheet only a few millimeters thick shows as damp ground (the terrain soaks it), not water.
-  let sheet = select(smoothstep(0.002, 0.006, d), 1.0, in.bed < -40.0);
+  let sheet = select(smoothstep(wd.sheetDepth.x, wd.sheetDepth.y, d), 1.0, in.bed < -40.0);
   let edge = smoothstep(0.0, 0.7, in.cover) * smoothstep(0.0, wd.edgeFade, L) * sheet;
   var color = mix(sceneHere, surface, edge);
   // Debug views for tuning (tools and ?waterdbg=N): one term of the shading at a time.

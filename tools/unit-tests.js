@@ -26,6 +26,7 @@ import { keyWeights, blendPalette, paramsDistance, TIME_KEYS, SEASON_KEYS } from
 import { createPaletteBaker, bakeColor, IDENTITY_PALETTE, LUT_SIZE } from '../src/render/passes/post/lut-bake.js';
 import { addGrowthTests } from './unit-tests-growth.js';
 import { addJournalTests } from './unit-tests-journal.js';
+import { addSpringTests } from './unit-tests-spring.js';
 
 /** @type {{group: string, name: string, fn: () => any}[]} */
 const tests = [];
@@ -1325,6 +1326,10 @@ addGrowthTests(test, assert, eq);
 // ---- journal (tools/unit-tests-journal.js) ----
 
 addJournalTests(test, assert, eq);
+
+// ---- spring (tools/unit-tests-spring.js) ----
+
+addSpringTests(test, assert, eq);
 
 // ---- runner and rendering ----
 
