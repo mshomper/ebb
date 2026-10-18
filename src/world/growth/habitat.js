@@ -24,6 +24,7 @@ export const HABITAT_ORIGIN = -80;
  * @property {Uint8Array} depthCm @property {Uint8Array} moisture @property {Uint8Array} salt
  * @property {Uint8Array} still   @property {Uint8Array} sea      @property {Uint8Array} grass
  * @property {Uint8Array} open
+ * @property {Uint8Array} [band]  1 in the tide band (wetted between low and high tide)
  * @property {number} hash        FNV-1a over the arrays (uint32), for the determinism page
  */
 
@@ -145,7 +146,9 @@ export function buildHabitat(args) {
   for (const arr of [depthCm, moisture, salt, still, sea, grass, open]) {
     for (let k = 0; k < arr.length; k++) h = Math.imul(h ^ arr[k], 0x01000193) >>> 0;
   }
-  return { n: N, depthCm, moisture, salt, still, sea, grass, open, hash: h >>> 0 };
+  // band (the tide band, for the journal's ground words) is derived from the summary like the rest
+  // and left out of the hash, which keeps its S5 meaning.
+  return { n: N, depthCm, moisture, salt, still, sea, grass, open, band, hash: h >>> 0 };
 }
 
 /**

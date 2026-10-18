@@ -10,6 +10,8 @@ import { startApp } from '../src/app.js';
 import { runHour, hashWorldState } from '../src/sim/tick.js';
 import { hourIndex } from '../src/core/clock.js';
 import { HABITAT_CELLS, HABITAT_ORIGIN } from '../src/world/growth/habitat.js';
+import { initialJournal, observe } from '../src/world/journal/observe.js';
+import { loadRecipe } from '../src/core/recipes.js';
 
 const DAYS = 14;
 const HOURS = DAYS * 24;
@@ -112,12 +114,16 @@ if (!result.ok) {
     const land = landMask(hab);
     const ids = speciesIds(start?.growth?.plants ?? []);
     const tiles = buildSpeciesUi(ids);
+    // The journal starts having already seen the island as it is, so the list shows only what changes.
+    const words = await loadRecipe('world/journal');
+    const j0 = observe(initialJournal(h0 - 100), { state: start, events: [], hour: h0 - 1, habitat: hab, words }).journal;
+    const look = { words, journal: j0 };
     const t0 = performance.now();
 
-    const a = await runDays(structuredClone(start), h0, env, land, ids, 1);
+    const a = await runDays(structuredClone(start), h0, env, land, ids, 1, look);
     run1 = a.series;
     drawCharts();
-    const b = await runDays(structuredClone(start), h0, env, land, ids, 2);
+    const b = await runDays(structuredClone(start), h0, env, land, ids, 2, look);
     run2 = b.series;
     const secs = (performance.now() - t0) / 1000;
     drawCharts();
@@ -136,6 +142,10 @@ if (!result.ok) {
       const s = a.series.counts[i];
       tiles[i].innerHTML = `${fmt(s[0])}<small>to</small>${fmt(s[HOURS])}`;
     });
+    const sameJournal = JSON.stringify(a.journal) === JSON.stringify(b.journal);
+    $('journal-title').textContent = `${a.notes.length} notes in ${DAYS} days, oldest first. ` +
+      (sameJournal ? 'Both runs wrote the same journal.' : 'The two runs wrote different journals: this is a bug to report.');
+    $('journal-notes').innerHTML = a.notes.map((n) => `<li><span>${n.date}</span><span>${n.text}</span></li>`).join('');
     $('t-grass').textContent = `${fmt(a.series.grass[HOURS], 1)}%`;
     $('t-time').textContent = fmt(secs, 1);
     $('progress').textContent = `Ran game hours ${h0} to ${h0 + HOURS - 1} twice, in ${fmt(secs, 1)} s. The live island was not changed.`;
@@ -203,10 +213,13 @@ function swatch(cls, color) {
  * hour (index 0 is the start), in chunks so the page stays responsive.
  * @param {any} state @param {number} h0 first hour index @param {any} env
  * @param {Uint8Array} land 1 for land cells @param {string[]} ids species to count @param {number} pass 1 or 2
- * @returns {Promise<{ state: any, series: Series }>}
+ * @param {{ words: any, journal: any }} look the journal's words and its starting journal; it looks after every hour
+ * @returns {Promise<{ state: any, series: Series, journal: any, notes: any[] }>}
  */
-async function runDays(state, h0, env, land, ids, pass) {
+async function runDays(state, h0, env, land, ids, pass, look) {
   /** @type {Series} */ const series = { ids, counts: ids.map(() => []), grass: [] };
+  let journal = look.journal;
+  /** @type {any[]} */ const notes = [];
   const record = () => {
     const c = speciesCounts(state, ids);
     for (let i = 0; i < ids.length; i++) series.counts[i].push(c[i]);
@@ -217,7 +230,11 @@ async function runDays(state, h0, env, land, ids, pass) {
   while (h < HOURS) {
     const t = performance.now();
     do {
-      state = runHour(state, h0 + h, env).state;
+      const r = runHour(state, h0 + h, env);
+      state = r.state;
+      const o = observe(journal, { state, events: r.events, hour: h0 + h, habitat: env.habitat(), words: look.words });
+      journal = o.journal;
+      notes.push(...o.notes);
       h++;
       record();
     } while (h < HOURS && performance.now() - t < CHUNK_MS);
@@ -225,7 +242,7 @@ async function runDays(state, h0, env, land, ids, pass) {
     if (pass === 1) { run1 = series; drawCharts(); }
     await new Promise(requestAnimationFrame);
   }
-  return { state, series };
+  return { state, series, journal, notes };
 }
 
 /** Plants of each species, in the order of `ids`. @param {any} state @param {string[]} ids */

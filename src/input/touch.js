@@ -1,6 +1,7 @@
 // @ts-check
 // Touch input (docs/15, touch bindings):
-// one finger uses the active tool, or pans in the look state; two fingers drag to orbit,
+// one finger uses the active tool, or pans in the look state (a quick still tap there is look.tap,
+// which the journal answers by naming what grows under the finger); two fingers drag to orbit,
 // pinch to zoom and twist to turn; a three-finger tap undoes.
 // Each two-finger motion waits behind its own dead zone so a pinch does not wobble the yaw.
 // A one-finger stroke starts only after a short delay or a little travel, so a second finger
@@ -24,7 +25,7 @@ export function attachTouchInput(canvas, opts, tool = {}) {
   const fingers = new Map();
   /** @type {null | { cx: number, cy: number, dist: number, angle: number, live: { orbit: boolean, pinch: boolean, twist: boolean }, start: { cx: number, cy: number, dist: number, angle: number } }} */
   let pair = null;
-  /** @type {null | { x: number, y: number, live: boolean, sx: number, sy: number, mode: 'pan'|'tool'|'none', stroking: boolean, timer: number }} */
+  /** @type {null | { x: number, y: number, live: boolean, sx: number, sy: number, mode: 'pan'|'tool'|'none', stroking: boolean, timer: number, t: number }} */
   let single = null;
   /** @type {null | { t: number, start: Map<number, {x: number, y: number}>, moved: boolean }} */
   let triple = null;
@@ -62,7 +63,7 @@ export function attachTouchInput(canvas, opts, tool = {}) {
     if (pts.length === 1) {
       // A finger left over from a two-finger gesture pans in the look state but never sculpts.
       const mode = toolActive() ? (hadMultiple ? 'none' : 'tool') : 'pan';
-      single = { x: pts[0].x, y: pts[0].y, sx: pts[0].x, sy: pts[0].y, live: false, mode, stroking: false, timer: 0 };
+      single = { x: pts[0].x, y: pts[0].y, sx: pts[0].x, sy: pts[0].y, live: false, mode, stroking: false, timer: 0, t: performance.now() };
       if (mode === 'tool') single.timer = window.setTimeout(startStroke, strokeDelay);
     } else if (pts.length >= 2) {
       const g = measure(pts[0], pts[1]);
@@ -137,6 +138,10 @@ export function attachTouchInput(canvas, opts, tool = {}) {
     if (!fingers.delete(e.pointerId)) return;
     if (fingers.size === 0) {
       if (triple && !triple.moved && performance.now() - triple.t < tapMs) dispatch({ type: 'history.undo', source: 'touch' });
+      // A quick one-finger tap with no tool, that never panned: the journal names what grows there.
+      if (single && single.mode === 'pan' && !single.live && !hadMultiple && performance.now() - single.t < tapMs) {
+        dispatch({ type: 'look.tap', x: single.sx, y: single.sy, source: 'touch' });
+      }
       triple = null;
       hadMultiple = false;
       endSingle();

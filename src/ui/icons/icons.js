@@ -151,6 +151,143 @@ const ICONS = {
     <circle ${ACCENT} cx="17" cy="10" r="2.1"/>
     <circle cx="17" cy="10" r="2.1"/>`,
 
+  // Grass (journal page): five blades of different heights rising from the ground line.
+  grass: `
+    <path d="M3.5 20.5H20.5"/>
+    <path d="M6 20.5C6 16.5 5 13.5 3.5 11.5"/>
+    <path d="M8.5 20.5C8.7 15 9.5 10.5 11 7.5"/>
+    <path d="M12 20.5C11.6 16.5 10.6 13.5 9 11.8"/>
+    <path d="M14.5 20.5C14.8 16 16 12.5 18 10"/>
+    <path d="M17.5 20.5C17.6 17.5 18.6 15.6 20.5 14.2"/>`,
+
+  // Journal (docs/15): a bound book with a ribbon marker and a pressed leaf on the cover.
+  journal: `
+    <path ${ACCENT} d="M5 18.5V5.5A1 1 0 0 1 6 4.5H19V17H6.5A1.5 1.5 0 0 0 5 18.5Z"/>
+    <path d="M5 18.5V5.5A1 1 0 0 1 6 4.5H19V17H6.5A1.5 1.5 0 0 0 5 18.5A1.5 1.5 0 0 0 6.5 20H19"/>
+    <path d="M8 4.5V10L9.5 8.8L11 10V4.5"/>
+    <path d="M12.5 14C12.7 11.5 14.3 10 16.5 9.8C16.6 12.1 15 13.8 12.5 14Z"/>
+    <path d="M12.5 14L14.6 11.9"/>`,
+
+  // Season marks for the journal's season boxes: a bud, a sun, a falling leaf, a frost star.
+  'season-spring': `
+    <path d="M7.5 20.5H16.5"/>
+    <path d="M12 20.5V11.5"/>
+    <path ${ACCENT} d="M12 15C9.5 15 7.5 13.3 7 10.5C9.6 10.4 11.6 12.1 12 15Z"/>
+    <path d="M12 15C9.5 15 7.5 13.3 7 10.5C9.6 10.4 11.6 12.1 12 15Z"/>
+    <path ${ACCENT} d="M12 11.5C12.4 8.6 14.3 6.6 17 6.5C17 9.3 15 11.3 12 11.5Z"/>
+    <path d="M12 11.5C12.4 8.6 14.3 6.6 17 6.5C17 9.3 15 11.3 12 11.5Z"/>`,
+  'season-summer': `
+    <circle ${ACCENT} cx="12" cy="12" r="3.8"/>
+    <circle cx="12" cy="12" r="3.8"/>
+    <path d="M12 3.5V5.5M12 18.5V20.5M3.5 12H5.5M18.5 12H20.5M6 6L7.4 7.4M16.6 16.6L18 18M6 18L7.4 16.6M16.6 7.4L18 6"/>`,
+  'season-autumn': `
+    <path ${ACCENT} d="M5.5 17.5C5.5 11 9.8 6 17.5 5.5C17.5 13 12.5 17.5 5.5 17.5Z"/>
+    <path d="M5.5 17.5C5.5 11 9.8 6 17.5 5.5C17.5 13 12.5 17.5 5.5 17.5Z"/>
+    <path d="M5.5 17.5L13 10"/>
+    <path d="M3.5 21C5 20 6 19.5 7.5 19.8"/>`,
+  'season-winter': `
+    <path d="M12 3.5V20.5M4.6 7.75L19.4 16.25M4.6 16.25L19.4 7.75"/>
+    <path d="M10 5.3L12 7.3L14 5.3M10 18.7L12 16.7L14 18.7"/>
+    <path d="M5.4 10.3L8.1 9.6L7.4 6.9M18.6 13.7L15.9 14.4L16.6 17.1"/>
+    <path d="M7.4 17.1L8.1 14.4L5.4 13.7M16.6 6.9L15.9 9.6L18.6 10.3"/>`,
+
+  // Ground pages: soil (a low mound with clods), sand (wind ripples), rock (a faceted boulder),
+  // moss (soft cushions), shore (waves over a sandy curve).
+  soil: `
+    <path ${ACCENT} d="M3 17.5C6 13.5 9 12.5 12 12.5S18 13.5 21 17.5Z"/>
+    <path d="M3 17.5C6 13.5 9 12.5 12 12.5S18 13.5 21 17.5"/>
+    <path d="M2.5 17.5H21.5"/>
+    <circle cx="9" cy="15.2" r="0.9" fill="currentColor" stroke="none"/>
+    <circle cx="13" cy="14.6" r="0.9" fill="currentColor" stroke="none"/>
+    <circle cx="16.2" cy="16" r="0.9" fill="currentColor" stroke="none"/>
+    <path d="M12 12.5V8.5M12 10C10.8 8.6 9.6 8.2 8.5 8.5M12 9.5C13 8 14.3 7.5 15.5 7.8"/>`,
+  sand: `
+    <path d="M3 8C5 6.5 7 6.5 9 8S13 9.5 15 8S19 6.5 21 8"/>
+    <path d="M3 13C5 11.5 7 11.5 9 13S13 14.5 15 13S19 11.5 21 13"/>
+    <path d="M3 18C5 16.5 7 16.5 9 18S13 19.5 15 18S19 16.5 21 18"/>
+    <circle cx="6" cy="10.4" r="0.7" fill="currentColor" stroke="none"/>
+    <circle cx="16.5" cy="15.6" r="0.7" fill="currentColor" stroke="none"/>`,
+  rock: `
+    <path ${ACCENT} d="M4 19.5L6.5 11.5L11 8L16.5 9.5L20 14.5L19 19.5Z"/>
+    <path d="M4 19.5L6.5 11.5L11 8L16.5 9.5L20 14.5L19 19.5Z"/>
+    <path d="M11 8L12.5 13.5L20 14.5M12.5 13.5L9.5 19.5"/>
+    <path d="M2.5 19.5H21.5"/>`,
+  moss: `
+    <path ${ACCENT} d="M3 18.5C3 15.5 5.5 14 8 14.5C9 12 12.5 11.5 14 14C16 12.5 20.5 13.5 21 18.5Z"/>
+    <path d="M3 18.5C3 15.5 5.5 14 8 14.5C9 12 12.5 11.5 14 14C16 12.5 20.5 13.5 21 18.5"/>
+    <path d="M2.5 18.5H21.5"/>
+    <path d="M8 14.5V12.5M14 14V11.5M18 14.5V13" />
+    <circle cx="8" cy="11.8" r="0.8" fill="currentColor" stroke="none"/>
+    <circle cx="14" cy="10.8" r="0.8" fill="currentColor" stroke="none"/>
+    <circle cx="18" cy="12.3" r="0.8" fill="currentColor" stroke="none"/>`,
+  shore: `
+    <path d="M3 9C5 7.5 7 7.5 9 9S13 10.5 15 9S19 7.5 21 9"/>
+    <path d="M3 13.5C5 12 7 12 9 13.5S13 15 15 13.5S19 12 21 13.5"/>
+    <path ${ACCENT} d="M2.5 20.5C8 17.5 16 17.5 21.5 20.5Z"/>
+    <path d="M2.5 20.5C8 17.5 16 17.5 21.5 20.5"/>`,
+
+  // Almanac: a calendar page with a crescent moon on it.
+  almanac: `
+    <rect ${ACCENT} x="4.5" y="5" width="15" height="15.5" rx="2"/>
+    <rect x="4.5" y="5" width="15" height="15.5" rx="2"/>
+    <path d="M4.5 9H19.5M8.5 3.5V6.5M15.5 3.5V6.5"/>
+    <path d="M12.6 11.6A3.4 3.4 0 1 0 15.2 17A2.8 2.8 0 0 1 12.6 11.6Z"/>`,
+
+  // Show me: a looking glass.
+  find: `
+    <circle ${ACCENT} cx="10.5" cy="10.5" r="6"/>
+    <circle cx="10.5" cy="10.5" r="6"/>
+    <path d="M15 15L20.5 20.5"/>`,
+
+  // Moments: a flower, rain, dusk (a sun setting), dawn (a sun rising), mist.
+  'moment-flower': `
+    <circle cx="12" cy="7.3" r="2.6"/>
+    <circle cx="16.5" cy="10.6" r="2.6"/>
+    <circle cx="14.8" cy="15.8" r="2.6"/>
+    <circle cx="9.2" cy="15.8" r="2.6"/>
+    <circle cx="7.5" cy="10.6" r="2.6"/>
+    <circle ${ACCENT} cx="12" cy="12" r="2"/>`,
+  'moment-rain': `
+    <path ${ACCENT} d="M7 14.5A3.5 3.5 0 0 1 7.6 7.6A4.5 4.5 0 0 1 16.2 7A3.6 3.6 0 0 1 17 14.5Z"/>
+    <path d="M7 14.5A3.5 3.5 0 0 1 7.6 7.6A4.5 4.5 0 0 1 16.2 7A3.6 3.6 0 0 1 17 14.5Z"/>
+    <path d="M8.5 17.5L7.5 20M12.5 17.5L11.5 20M16.5 17.5L15.5 20"/>`,
+  'moment-dusk': `
+    <path ${ACCENT} d="M7 16A5 5 0 0 1 17 16Z"/>
+    <path d="M7 16A5 5 0 0 1 17 16"/>
+    <path d="M2.5 16H21.5M6 19.5H18"/>
+    <path d="M12 12.5V14.5M9 11.5L10 13M15 11.5L14 13"/>`,
+  'moment-dawn': `
+    <path ${ACCENT} d="M7 16A5 5 0 0 1 17 16Z"/>
+    <path d="M7 16A5 5 0 0 1 17 16"/>
+    <path d="M2.5 16H21.5"/>
+    <path d="M12 3.5V8.5M9.5 6L12 3.5L14.5 6"/>`,
+  'moment-mist': `
+    <path d="M3.5 7.5H16.5M6.5 11H20.5M3.5 14.5H15M8 18H18"/>`,
+
+  // Journal notes: a page with a folded corner and three written lines.
+  notes: `
+    <path ${ACCENT} d="M6 3.5H14.5L18.5 7.5V20.5H6Z"/>
+    <path d="M6 3.5H14.5L18.5 7.5V20.5H6Z"/>
+    <path d="M14.5 3.5V7.5H18.5"/>
+    <path d="M9 11.5H15.5M9 14.5H15.5M9 17.5H13"/>`,
+
+  // A living thing not seen yet: a pencil circle, drawn in short dashes.
+  unknown: `
+    <circle cx="12" cy="12" r="8" stroke-dasharray="2.4 3"/>`,
+
+  // Close: two crossing strokes.
+  close: `
+    <path d="M6.5 6.5L17.5 17.5"/>
+    <path d="M17.5 6.5L6.5 17.5"/>`,
+
+  // Back: a chevron pointing left.
+  back: `
+    <path d="M14.5 5.5L8 12L14.5 18.5"/>`,
+
+  // A chevron pointing up (the phone sheet grows); CSS turns it over to point down.
+  chevron: `
+    <path d="M5.5 15L12 8.5L18.5 15"/>`,
+
   // Curved arrow to the left.
   undo: `
     <path d="M8.5 5L4 9.5L8.5 14"/>

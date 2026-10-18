@@ -20,6 +20,7 @@ const DEG = Math.PI / 180;
  * @property {number} minEyeHeight
  * @property {number} halfLifeDirect
  * @property {number} halfLifeGlide
+ * @property {number} [halfLifeFocus]  the slower glide of focus() (the journal's Show me)
  * @property {number} softReturnDelay
  * @property {number} orbitDegPerPx
  * @property {number} panScale
@@ -59,8 +60,25 @@ export function createOrbitCamera(r) {
   const hardMaxDistance = () => r.distanceHard[1] ?? softMaxDistance() * r.distanceHardMaxFactor;
   const clamp = (/** @type {number} */ x, /** @type {number} */ a, /** @type {number} */ b) => Math.min(b, Math.max(a, x));
 
+  /** True while gliding to a point the journal asked to show; any input ends it. */
+  let focusing = false;
+
   function touched() {
     sinceInput = 0;
+    focusing = false;
+  }
+
+  /**
+   * Glide to look at a ground point from a set distance and pitch (the journal's Show me).
+   * @param {number} x @param {number} z world meters @param {number} distance meters @param {number} pitchDeg
+   */
+  function focus(x, z, distance, pitchDeg) {
+    goal.target[0] = x;
+    goal.target[2] = z;
+    clampTarget();
+    goal.distance = clamp(distance, r.distanceSoft[0], softMaxDistance());
+    goal.pitch = clamp(pitchDeg * DEG, r.pitchSoftDeg[0] * DEG, r.pitchSoftDeg[1] * DEG);
+    focusing = true;
   }
 
   /** Orbit by a pointer delta in CSS pixels. @param {number} dx @param {number} dy */
@@ -139,8 +157,14 @@ export function createOrbitCamera(r) {
       goal.distance = clamp(goal.distance, r.distanceSoft[0], softMaxDistance());
     }
     const halfLife = returning ? r.halfLifeGlide : r.halfLifeDirect;
-    const k = 1 - 2 ** (-dt / halfLife);
-    const kd = 1 - 2 ** (-dt / r.halfLifeDirect);
+    let k = 1 - 2 ** (-dt / halfLife);
+    let kd = 1 - 2 ** (-dt / r.halfLifeDirect);
+    if (focusing) {
+      // A slow, even glide for Show me; it ends on arrival.
+      k = kd = 1 - 2 ** (-dt / (r.halfLifeFocus ?? 0.5));
+      const far = Math.hypot(goal.target[0] - cur.target[0], goal.target[2] - cur.target[2]) + Math.abs(goal.distance - cur.distance);
+      if (far < 0.02) focusing = false;
+    }
     cur.yaw += (goal.yaw - cur.yaw) * kd;
     cur.pitch += (goal.pitch - cur.pitch) * k;
     cur.distance += (goal.distance - cur.distance) * k;
@@ -186,7 +210,7 @@ export function createOrbitCamera(r) {
   }
 
   return {
-    orbit, pan, zoom, twist, update, ray,
+    orbit, pan, zoom, twist, update, ray, focus,
     /** @param {number} w CSS px @param {number} h CSS px */
     setViewport(w, h) {
       viewW = Math.max(1, w);
