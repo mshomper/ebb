@@ -22,7 +22,7 @@ import { emit } from '../core/events.js';
  *   | { type: 'tool.cancel', source: Source }
  *   | { type: 'tool.hover', x: number, y: number, inside: boolean, source: Source }
  *   | { type: 'brush.set', patch: { sculptMode?: 'raise'|'lower'|'flatten', paintLayer?: 'grass'|'sand'|'soil'|'rock', size?: number, strength?: number,
- *       waterMode?: 'pour'|'soak'|'spring', springRate?: 'trickle'|'brook'|'stream' } }
+ *       waterMode?: 'pour'|'drain'|'spring', springRate?: 'trickle'|'brook'|'stream' } }
  *   | { type: 'water.springRemove', id: string }
  *   | { type: 'brush.resize', factor: number, source?: Source }
  *   | { type: 'history.undo', source?: Source }

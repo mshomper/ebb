@@ -39,7 +39,8 @@ flowchart LR
 ### Exposure
 
 - `src/render/passes/post/exposure.js` builds a 64-bin histogram of log2 luminance (range EV100 −6 to +18) with a center-weighted mask, discards the darkest 40% and brightest 5% of pixels, and averages the rest.
-- Target EV100 is clamped to **[−1, 15]**. Physical full moonlight would adapt to about EV −3; clamping at −1 keeps night clearly darker than day while the moon, stars and lanterns still read.
+- **Night key.** Below EV100 2 (deep twilight) the exposure follows the measured scene only 72% of the way, like an eye that is partly dark-adapted, with a hard floor at EV −6. A full-moon night (physically about EV −3.5) then sits about 1.6 EV under day's key; a moonless night sits about 2.8 EV under. Night is clearly darker than day but never black. (The first version clamped at EV −1, which left moonless nights pitch black.)
+- Moonless nights also get an art-directed starlight glow (`sky.json` `starlight`, docs/06), so they are about 4 EV darker than full moon instead of the physical 8.
 - Adaptation is exponential and slow on purpose: brightening at 1.2 EV per second, darkening at 0.8 EV per second, for calm transitions out of shade or at sunrise.
 - Exposure multiplier = `1 / (1.2 · 2^EV100)` (Lagarde and de Rousiers, "Moving Frostbite to PBR", 2014), plus per-key exposure compensation from the palette.
 

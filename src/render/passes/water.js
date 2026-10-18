@@ -8,7 +8,7 @@ import { makeBuffer, makeShaderModule, makeTexture, untrack } from '../../core/g
 
 /** @typedef {import('../frame-graph.js').PassContext} PassContext */
 
-const DRAW_BYTES = 304;
+const DRAW_BYTES = 320;
 const DEG = Math.PI / 180;
 /** Open sea mesh: rings x segments around the camera (SEA_RINGS, SEA_SEGMENTS in water-draw.wgsl). */
 const SEA_RINGS = 28;
@@ -17,7 +17,7 @@ const SEA_SEGMENTS = 48;
 /**
  * @param {{ water: import('../../world/water/index.js').Water, terrain: import('../../world/terrain/index.js').Terrain,
  *   atmosphere: import('../sky/atmosphere.js').Atmosphere, recipe: any, seaExtent: number, getTime: () => number,
- *   seabed: { y: number, albedo: number[], wetDarkening: number } }} opts
+ *   seabed: { y: number, albedo: number[], wetDarkening: number }, detailFadeM?: number }} opts
  *   recipe: recipes/world/water.json; getTime: real seconds for the moving surface; seabed: the land's sea
  *   floor height and wet sand albedo, continued beyond the terrain as open sea floor
  */
@@ -58,9 +58,11 @@ export function createWaterPass(opts) {
     f[60] = L.coherentDepthM[0]; f[61] = L.coherentDepthM[1];
     // ?waterdbg=1..4 shows one shading term at a time (water-draw.wgsl, debugView).
     f[64] = Number(new URLSearchParams(location.search).get('waterdbg') ?? 0) || 0;
+    f[65] = opts.detailFadeM ?? 120;
     const R = L.riffle;
     f[68] = R.speed[0]; f[69] = R.speed[1]; f[70] = R.depthM; f[71] = R.coverage;
     f[72] = R.streakM; f[73] = R.albedo;
+    f.set(L.scatterAlbedoPond, 76);
   }
 
   /** @param {PassContext} ctx */
@@ -88,6 +90,9 @@ export function createWaterPass(opts) {
 
   return {
     name: 'water',
+
+    /** Apply a quality tier's ripple distance (the startup probe may step down). @param {number} m */
+    setDetailFade(m) { f[65] = m; },
     reads: ['hdr', 'depth'],
     writes: ['hdr', 'depth', 'normalId'],
     enabled: () => true,

@@ -1,6 +1,6 @@
 # Texture credits
 
-Ground detail maps for ebb (docs/22-ground-detail.md), made with tools/texture-lab.html from CC0 1.0 photo scans on Poly Haven. CC0 asks for no credit; this file thanks the authors and records what we changed.
+Ground detail maps for ebb (docs/22-ground-detail.md), made with tools/texture-lab.html from CC0 1.0 photo scans on Poly Haven and ambientCG. CC0 asks for no credit; this file thanks the authors and records what we changed.
 
 ## Grass: Grass Ground
 
@@ -33,3 +33,11 @@ Ground detail maps for ebb (docs/22-ground-detail.md), made with tools/texture-l
 - License: CC0 1.0
 - Changes: albedo delit (heavily blurred luminance divided out at strength 0.6), recalibrated so its linear mean equals the recipe albedo [0.21, 0.15, 0.1] from recipes/world/terrain.json and clamped to 0.04..0.9; height stretched to 0..1 (0.5th to 99.5th percentile); repacked into a.webp (albedo), b.webp (normal X, Y and roughness), c.webp (height and cavity); resized to 512 for the low tier.
 - Files: assets/textures/ground/soil/
+
+## Moss: Moss 003
+
+- Source page: https://ambientcg.com/view?id=Moss003
+- Original asset: Moss 003 (`Moss003`), Moss003_1K-JPG.zip: maps Color, NormalGL, Roughness, Displacement, AmbientOcclusion at 1K
+- License: ambientCG, CC0 1.0
+- Changes: albedo delit (heavily blurred luminance divided out at strength 0.6), recalibrated so its linear mean equals the recipe albedo [0.15, 0.21, 0.045] from recipes/world/terrain.json and clamped to 0.04..0.9; height stretched to 0..1 (0.5th to 99.5th percentile); repacked into a.webp (albedo), b.webp (normal X, Y and roughness), c.webp (height and cavity); resized to 512 for the low tier.
+- Files: assets/textures/ground/moss/

@@ -22,7 +22,7 @@
  * @property {string} palette            palette id, e.g. 'dusk' (doc 05)
  * @property {100|115|130|160} textSize  percent (doc 16)
  * @property {'full'|'reduced'} motion
- * @property {'auto'|'high'|'medium'|'low'} quality  'auto' lets render/quality.js pick (doc 19)
+ * @property {'auto'|'ultra'|'high'|'medium'|'low'} quality  'auto' lets render/quality.js pick (doc 19)
  * @property {AudioSettings} audio
  */
 

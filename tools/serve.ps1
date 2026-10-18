@@ -107,6 +107,37 @@ function Invoke-Save($ctx, [string]$path) {
   Send-Json $res 200 ('{"ok":true,"path":"' + $relOut + '","bytes":' + $mem.Length + '}')
 }
 
+# ---------- ambientCG fetch for the texture lab ----------
+# GET /__fetch/ambientcg?file=<Name>_1K-JPG.zip
+# ambientCG does not allow pages on other sites to download its zips directly, so the texture lab
+# asks this server, which fetches the zip from https://ambientcg.com/get and passes it back.
+# Refused unless: GET, from this computer, Origin (when present) is this server, and the file name
+# is a plain ambientCG 1K or 2K JPG zip. At most 40 MB. Only ambientcg.com is ever contacted.
+$fetchMaxBytes = 40 * 1024 * 1024
+
+function Invoke-AmbientFetch($ctx) {
+  $req = $ctx.Request
+  $res = $ctx.Response
+  if ($req.HttpMethod -ne 'GET') { $res.Headers.Add('Allow', 'GET'); Send-Json $res 405 '{"ok":false,"error":"use GET"}'; return }
+  if (-not [System.Net.IPAddress]::IsLoopback($req.RemoteEndPoint.Address)) { Send-Json $res 403 '{"ok":false,"error":"only from this computer"}'; return }
+  $origin = $req.Headers['Origin']
+  if ($origin) {
+    $own = @("http://localhost:$port", "http://127.0.0.1:$port", "http://[::1]:$port")
+    if ($own -notcontains $origin.TrimEnd('/').ToLowerInvariant()) { Send-Json $res 403 '{"ok":false,"error":"origin not allowed"}'; return }
+  }
+  $file = $req.QueryString['file']
+  if (-not $file -or $file -notmatch '^[A-Za-z0-9]+_[12]K-JPG\.zip$') { Send-Json $res 400 '{"ok":false,"error":"file must look like Name_1K-JPG.zip"}'; return }
+  [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+  $web = New-Object System.Net.WebClient
+  $web.Headers.Add('User-Agent', 'ebb-texture-lab')
+  $bytes = $web.DownloadData("https://ambientcg.com/get?file=$file")
+  if ($bytes.Length -ge $fetchMaxBytes) { Send-Json $res 413 '{"ok":false,"error":"zip is 40 MB or more"}'; return }
+  Write-Host "  fetched $file from ambientcg.com ($($bytes.Length) bytes)"
+  $res.ContentType = 'application/zip'
+  $res.ContentLength64 = $bytes.Length
+  $res.OutputStream.Write($bytes, 0, $bytes.Length)
+}
+
 try {
   $root = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 } catch {
@@ -170,6 +201,10 @@ while ($listener.IsListening) {
 
     if ($path.StartsWith('/__save/')) {
       try { Invoke-Save $ctx $path } catch { try { Send-Json $res 500 '{"ok":false,"error":"could not write the file"}' } catch {} }
+      continue
+    }
+    if ($path -eq '/__fetch/ambientcg') {
+      try { Invoke-AmbientFetch $ctx } catch { try { Send-Json $res 502 '{"ok":false,"error":"could not reach ambientcg.com"}' } catch {} }
       continue
     }
 

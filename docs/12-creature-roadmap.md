@@ -8,7 +8,7 @@
 - Every species gives **one gift** (a seed or a tool) when it first becomes happy. Land comes from **tier milestones**: when the second species of a tier becomes happy, new land joins. Gifts never expire and do not depend on order.
 - Need models, mood, arrival and leaving follow `11-creatures-and-ecology.md`. Numbers below are starting values for the tuning panel, not final.
 - **Winter dormancy**: frogs, hedgehogs, turtles, bees, butterflies, fireflies and bats go quiet in winter (hidden, mood held, not counted as unhappy). Their journal pages say where they sleep.
-- **Starter kit** (before any gift): sculpt, water (pond and shallows, with the pour and soak tools), reeds and grass seeds. The slice has no structures; stepping stones and one lantern join the kit in M2, and paths in M3 (`20-roadmap-and-vertical-slice.md`). Every other seed and tool is a gift.
+- **Starter kit** (before any gift): sculpt, water (pond and shallows, with the pour and drain tools), reeds and grass seeds. The slice has no structures; stepping stones and one lantern join the kit in M2, and paths in M3 (`20-roadmap-and-vertical-slice.md`). Every other seed and tool is a gift.
 - **Colors**: species albedo regions are physical linear albedo (0 to 1), never palette hex. The palette maps them into its colors at tonemap (`05-look-and-palette.md`).
 - **Frogs are the vertical-slice species.** Reeds give them cover, the pond and shallows give them water, and midges (the insect field fed by reeds near still water) give them food.
 

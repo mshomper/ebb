@@ -4,7 +4,8 @@
 
 ## Locked decisions
 
-- **Three tiers: `high`, `medium`, `low`** (names from `03-tech-stack-and-module-map.md`). Data resolutions never change between tiers (terrain 0.25 m, water 0.5 m, ecology 1 m), so saves and simulation results are identical on every device. Only render detail, live-sim reach and update rates change.
+- **Ultra (added October 2026)** sits above high for strong desktop GPUs: ground detail to 260 m (high 140 m), the finest terrain mesh to 120 m, a 4096 shadow map, water ripples to 250 m, native resolution up to 8.3 MP. It is never a guess: a discrete GPU starts on ultra and the startup probe (2 s of GPU timestamps once the ground detail has faded in, pulled forward from S8) keeps it when GPU p95 is under 4 ms, else steps down to high at runtime without a reload. The verdict is remembered per adapter and screen; `?tier=ultra` forces it. On Matt's RTX 4070 Ti Super at 3440×1440 the probe measures about 2 ms.
+- **Three base tiers: `high`, `medium`, `low`** (names from `03-tech-stack-and-module-map.md`). Data resolutions never change between tiers (terrain 0.25 m, water 0.5 m, ecology 1 m), so saves and simulation results are identical on every device. Only render detail, live-sim reach and update rates change.
 - **Desktop target (high):** RTX 4070 Ti Super, Ryzen 7 7700X, 2560×1440, **60 fps**, GPU at most **12 ms** per frame, main-thread CPU at most **4 ms**, in the worst-case world.
 - **Mobile target (low):** a 2023 or newer phone (iPhone 15 or newer on Safari 26; Android 12+ on Chrome with an Adreno 7xx or Mali-G7xx class GPU) at a steady **30 fps**, GPU sustained at most **18 ms** (hard ceiling 24 ms, `04-render-pipeline.md`) so the phone stays cool, main thread at most 8 ms.
 - **Medium:** laptops with integrated graphics, Apple Silicon Macs and M-series iPads at 60 fps, GPU at most 13 ms at a reduced render scale.
@@ -122,6 +123,7 @@ Headroom to 16.6 ms: 4.6 ms. Photo-mode extras (depth of field 1.5 ms, long-expo
 | Lights (shader loop / tiled) | 64 tiled | 32 tiled | 8 loop |
 | Bloom levels | 6 | 5 | 4 |
 | Ground detail (doc 22): map size, hex tiling (3 reads per projection), triplanar, puddles, anisotropy; macro variation on every tier | 1024, on, on, on, 16x | 1024, on, on, on, 8x | 512, two-scale mix (2 reads), off, damp only, 4x |
+| Ground detail fade (m), terrain LOD distances (m), water ripple fade (m); ultra: 260, 120/240, 250 | 140, 45/95, 140 | 60, 45/95, 120 | 35, 45/95, 80 |
 | Cliff chunks at full mesh detail (M2, doc 08), and the extra cost per cliff chunk | within 60 m, about 0.2 ms | within 45 m, about 0.2 ms | within 30 m, about 0.4 ms |
 | Painterly (off by default on every tier, doc 05) | full res | quarter res | quarter res |
 | Outline | separate pass | separate pass | fused into tonemap |

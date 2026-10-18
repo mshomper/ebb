@@ -24,7 +24,9 @@ struct TerrainDraw {
   ringCenter: vec2f, ringRadius: f32, ringHardness: f32,
   ringVisible: f32, ringWidth: f32, steepCosLow: f32, steepCosHigh: f32,
   beachLow: f32, beachHigh: f32, skirtDepth: f32, seaExtent: f32,
-  shallowDepth: f32, seed: u32, tide: f32, _p1: f32,   // tide: sea level now (m)
+  shallowDepth: f32, seed: u32, tide: f32, dampWet: f32,   // tide: sea level now (m); dampWet: damp hollow wetness
+  albedoSilt: vec3f, siltCover: f32,    // the fine mud that settles on pond beds; most of the bed it covers
+  bedDepth: vec2f, siltDepth: vec2f,    // water depths (m) over which grass gives way to a bare bed, and silt settles
 };
 
 @group(0) @binding(0) var<uniform> frame: FrameUniforms;
@@ -38,6 +40,8 @@ struct TerrainDraw {
 @group(2) @binding(7) var groundSampler: sampler;
 @group(2) @binding(8) var<uniform> ground: GroundDetail;
 @group(2) @binding(9) var waterDepth: texture_2d<f32>;   // live water depth (m), water-depth.wgsl
+@group(2) @binding(10) var dampHollows: texture_2d<f32>; // the water summary's damp hollows (r8unorm, 0.5 m)
+@group(2) @binding(11) var mossTex: texture_2d<f32>;     // moss cover 0..1 (r8unorm, 0.5 m), moss-live.js
 
 // How soaked the ground is from live water nearby: 1 under water, fading out over about 0.75 m of
 // bank (capillary rise). The visual wetness pass (S4c) adds drying over time and the tide flats.
@@ -53,6 +57,19 @@ fn wetFromWater(xz: vec2f) -> f32 {
     }
   }
   return w;
+}
+
+// Live water depth (m) here, bilinear between the 0.5 m cells.
+fn waterDepthAt(xz: vec2f) -> f32 {
+  let g = waterCellCoord(xz);
+  let c = vec2i(floor(g));
+  let f = g - floor(g);
+  let hi = vec2i(WATER_CELLS - 1);
+  let d00 = textureLoad(waterDepth, clamp(c, vec2i(0), hi), 0).r;
+  let d10 = textureLoad(waterDepth, clamp(c + vec2i(1, 0), vec2i(0), hi), 0).r;
+  let d01 = textureLoad(waterDepth, clamp(c + vec2i(0, 1), vec2i(0), hi), 0).r;
+  let d11 = textureLoad(waterDepth, clamp(c + vec2i(1, 1), vec2i(0), hi), 0).r;
+  return mix(mix(d00, d10, f.x), mix(d01, d11, f.x), f.y);
 }
 
 // Second target (normalId, rgb10a2unorm): octahedral world normal in RG, water flag in B,
@@ -103,6 +120,11 @@ fn fsLand(in: VsOut) -> FsOut {
   w = mix(w, vec4f(0.0, 0.0, 1.0, 0.0), steep);
   let beach = 1.0 - smoothstep(td.beachHigh - 0.15, td.beachHigh + 0.15, y);
   w = mix(w, vec4f(0.0, 1.0 - w.z, w.z, 0.0), beach);
+  // Grass does not grow under water: past the first few centimeters of depth a grassy bed is bare
+  // soil, so from above the waterline reads as grass giving way to the bed (sand and stone stay).
+  let wdep = waterDepthAt(xz);
+  let sub = smoothstep(td.bedDepth.x, td.bedDepth.y, wdep);
+  w = vec4f(w.x * (1.0 - sub), w.y, w.z, w.w + w.x * sub);
 
   // Height-style blend: each layer gets its own noise "relief"; layers within blendSharpness
   // of the top score share the pixel, so edges break up softly instead of fading flat.
@@ -120,16 +142,40 @@ fn fsLand(in: VsOut) -> FsOut {
 
   var albedo = td.albedoGrass * wf.x + td.albedoSand * wf.y + td.albedoRock * wf.z + td.albedoSoil * wf.w;
   albedo *= 1.0 + td.variation * (valueNoise2(p * 3.1 + vec2f(41.0, 17.0), td.seed + 4u) - 0.5);
+  // Moss (world/growth/moss-live.js) where the ground stays damp. It is a mosaic, not a carpet: a
+  // soft partial cover in clumps at three scales (patches of a few meters, clumps of about a meter,
+  // tufts of 20 to 30 cm), never a hard edge. More cover fills more of the clumps in.
+  let mossCover = textureSampleLevel(mossTex, linearSampler, terrainUv(xz), 0.0).r;
+  let clumps = valueNoise2(xz * 0.3 + vec2f(2.1, 7.7), td.seed + 11u) * 0.45
+             + valueNoise2(xz * 1.0, td.seed + 9u) * 0.35
+             + valueNoise2(xz * 3.6 + vec2f(5.3, 1.9), td.seed + 10u) * 0.2;
+  let density = mossCover * smoothstep(0.3, 0.75, clumps + (mossCover - 0.5) * 0.35);
+  // The ground caps how far moss can take over: grass competes and always shows through, damp soil
+  // and stone hold the most, loose sand (painted, or the beach band) almost none. Below the cap the
+  // height blend lets grass tufts and stone tops stand up through the moss.
+  let cap = dot(w, ground.mossRules) / max(w.x + w.y + w.z + w.w, 1e-4);
+  let moss = min(density, 1.0) * cap * (1.0 - sub);
+  albedo = mix(albedo, ground.mossTile.yzw, moss);
   // Scanned detail (docs/22) takes over once loaded and near enough; the flat look stays the fallback.
-  let gd = groundDetail(in.world, n, w, distance(in.world, frame.cameraPos));
+  let gd = groundDetail(in.world, n, w, moss, distance(in.world, frame.cameraPos));
   albedo = mix(albedo, gd.albedo, gd.amount);
+  // Silt: in deeper, quieter water fine mud settles over the soft parts of the bed (not on sand or
+  // stone), in soft drifts, so a pond floor is a dark, even brown with the bed showing through.
+  let soft = w.w / max(w.x + w.y + w.z + w.w, 1e-4);
+  let drift = 0.75 + 0.5 * valueNoise2(xz * 0.45 + vec2f(17.3, 4.1), td.seed + 12u);
+  let silt = clamp(smoothstep(td.siltDepth.x, td.siltDepth.y, wdep) * td.siltCover * soft * drift, 0.0, 1.0);
+  albedo = mix(albedo, td.albedoSilt, silt);
   // Macro variation (docs/22): a slow tone drift near and far, so no repeat survives at a distance.
   albedo *= groundMacro(xz, td.seed);
   // Wet ground is darker: below the tide line always, and everywhere while it rains (docs/06).
   // Near live water (ponds, streams) the banks are soaked too. The visual wetness pass (S4c)
   // adds drying over time, the spray line and the tide flats.
-  let wet = max(max(1.0 - smoothstep(td.tide - 0.05, td.tide + 0.25, y), light.weather.w), wetFromWater(xz));
-  albedo *= mix(1.0, td.wetDarkening, wet);
+  // Damp hollows (the water summary: dips that collect water but hold no pond) stay damp, with
+  // soft edges from the filtered 0.5 m map.
+  let damp = textureSampleLevel(dampHollows, linearSampler, terrainUv(xz), 0.0).r * td.dampWet;
+  let wet = max(max(max(1.0 - smoothstep(td.tide - 0.05, td.tide + 0.25, y), light.weather.w), wetFromWater(xz)), damp);
+  // Moss is already a damp surface; its color changes less when wet than bare soil does.
+  albedo *= mix(1.0, td.wetDarkening, wet * (1.0 - 0.6 * moss));
 
   var color = shadeGround(albedo, in.world, n, gd.normal, gd.roughness, gd.cavity, in.pos, ground.terminator, ground.f0, ground.specMode);
   color = mix(color, td.ringColor, ringAlpha(xz));

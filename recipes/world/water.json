@@ -43,9 +43,9 @@
     "tauS": 20
   },
   "tools": {
-    "note": "Pour and soak (water tool) add or remove water under the brush at up to rateLps at full strength. Springs: up to maxSprings placed by the player (sandbox now, the dragonflies' gift in normal play), each at one of the rates (L/s).",
+    "note": "Pour and drain (water tool) add or remove water under the brush at up to rateLps at full strength. Springs: up to maxSprings placed by the player (sandbox now, the dragonflies' gift in normal play), each at one of the rates (L/s).",
     "pourLps": 60,
-    "soakLps": 60,
+    "drainLps": 60,
     "maxSprings": 4,
     "springRates": { "trickle": 3, "brook": 12, "stream": 30 }
   },
@@ -53,8 +53,10 @@
     "note": "Water optics (docs/07). absorption: sigma_a per meter (Beer-Lambert) for sea and ponds; scatterAlbedo: single-scatter albedo of the water body; f0: Fresnel at normal incidence (n = 1.333); refraction: screen offset per unit normal tilt; edgeFadeM: where the water plane meets the bank, it fades in over this much water thickness (the last half cell toward a dry bank fades too); coherentDepthM: water thinner than the first value is a broken, rough film (grass and stones stand through it, reflection weak), reaching a full mirror-like surface by the second; waves: detail normal layers (wavelength m, strength, speed m/s); sea: Gerstner waves on open water (wavelength m, amplitude m, direction deg), faded out in water shallower than seaFadeDepthM.",
     "f0": 0.02,
     "absorptionSea": [0.45, 0.065, 0.05],
-    "absorptionPond": [0.6, 0.14, 0.22],
+    "absorptionPond": [0.4, 0.32, 1.2],
     "scatterAlbedo": [0.04, 0.09, 0.1],
+    "scatterAlbedoPond": [0.05, 0.055, 0.03],
+    "pondNote": "Pond water is peaty and a little cloudy: dissolved peat (tannins) absorbs blue strongly, water itself absorbs red, so the bed tints green-brown within a few tens of centimeters; fine silt scatters a soft olive glow (scatterAlbedoPond). The sea keeps absorptionSea and scatterAlbedo.",
     "refraction": 0.06,
     "edgeFadeM": 0.004,
     "coherentDepthM": [0.02, 0.12],
@@ -72,6 +74,9 @@
     ],
     "seaFadeDepthM": 0.5,
     "openSeaFloorSlope": 0.08,
+    "dampHollowWet": 0.6,
+    "dampHollowMinM2": 3,
+    "dampHollowNote": "How wet the summary's damp hollows look (0 dry, 1 as soaked as a stream bank); hollows smaller than dampHollowMinM2 stay plain.",
     "riffle": { "note": "White water on fast, shallow flow: fades in over the speed range (m/s), gone in water deeper than depthM; coverage is the share of the surface that is white at full strength; streakM the streak size; albedo of the aerated water.", "speed": [0.25, 0.8], "depthM": 0.12, "coverage": 0.34, "streakM": 0.07, "albedo": 0.75 },
     "flowNormalScale": 0.6
   }

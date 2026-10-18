@@ -4,6 +4,8 @@
 
 ## Locked decisions
 
+- **Interim moss (October 2026, before this doc's moss arrives):** `src/world/growth/moss-live.js` grows moss where the water summary says the ground stays damp: hollows of at least 3 m², and banks of ponds and streams (full next to the water, thinning over three 0.5 m rings, never in the tide band). Cover starts inside a hollow and at the water's edge, spreads to neighbors, fills in about 18 game hours, and fades over 48 where the ground dries (`recipes/world/terrain.json` `moss`). It is visual and not saved; on load, existing habitat starts fully grown. The reaction-diffusion moss here replaces it and drives the same fifth ground layer (doc 22).
+
 - **Two layers of flora.** *Cover plants* (grass, clover, moss, lichen, low flowers) live as biomass fields on the 1 m ecology grid. *Individual plants* (reed clumps, ferns, shrubs, trees, tall flowers) are records with id, position, seed, age, size and stage. This matches the save layout in `18-saves-and-persistence.md`.
 - **Growth lives in the shared hourly tick** at its fixed slot: tide, weather, seasons, water summary, **growth**, ecology, creatures, expansion. `world/growth/coarse.js` exports `coarseStep(state, hourIndex, env)`. Structure weathering (doc 09) runs inside it.
 - Growth reads only the ecology grid, the water summary, the day's weather record and the season state. Moisture comes from the previous hour's ecology step (a one-hour lag, by design).

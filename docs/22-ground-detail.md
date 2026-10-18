@@ -17,6 +17,8 @@
 - **Textures load after the first calm frame.** Until they arrive the ground draws with flat recipe albedo (the S1 look), then the detail fades in over 0.5 s. Boot budgets in doc 19 are unchanged.
 - **The mesh normal stays the reference** for the shadow normal offset, `normalId` (outline) and GTAO. Only shading uses the detail normal, so pebbles never get ink lines or shadow acne.
 
+- **Moss, the fifth layer** (October 2026, with S4b): array layer 4 is moss from ambientCG's CC0 "Moss 003" (the texture lab fetches ambientCG zips through play.cmd's local server, `GET /__fetch/ambientcg`), calibrated to `materials.albedoMoss`, tiled at 1.2 m. Its weight is not painted: it comes from the moss cover (`src/world/growth/moss-live.js`, an interim live form until doc 10's growth system), which lies over the four painted layers and joins the height blend.
+
 ## How it works
 
 Plain version: every pixel of ground already knows how much grass, sand, rock and soil it holds (the 0.25 m weight map from doc 08). For each material that is present, the shader reads its detail maps at that spot. The material whose surface stands taller at that pixel wins the blend, which is how real sand fills gaps between stones. The resulting detail normal tilts the light at millimeter scale, so a low sun rakes across ripples and cracks. In rain, porous ground darkens and turns satin, then water collects in the lowest parts of the height map as puddles that reflect the sky.

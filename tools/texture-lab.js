@@ -1,6 +1,7 @@
 // @ts-check
-// Texture lab (docs/22): fetches the CC0 Poly Haven ground scans named in
-// recipes/world/ground-sources.json, calibrates each albedo to its recipe mean
+// Texture lab (docs/22): fetches the CC0 ground scans named in recipes/world/ground-sources.json
+// (Poly Haven maps one by one, ambientCG sets as a zip through play.cmd's local server),
+// calibrates each albedo to its recipe mean
 // (recipes/world/terrain.json materials.albedo*), packs the maps and saves them as WebP.
 //
 // Output per material and size (three opaque RGB files, because browsers premultiply alpha
@@ -14,7 +15,11 @@ const ICON_OK = '<svg viewBox="0 0 24 24" fill="none" stroke="#5F7F5B" stroke-wi
 const ICON_WARN = '<svg viewBox="0 0 24 24" fill="none" stroke="#B5654A" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5l9.5 16.5h-19z"/><path d="M12 10v4.5M12 17.5v.2"/></svg>';
 const ICON_WAIT = '<svg viewBox="0 0 24 24" fill="none" stroke="#7B8B84" stroke-width="2.4" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 6.5V12l3.5 2.5"/></svg>';
 
-const ORDER = ['grass', 'sand', 'rock', 'soil'];
+// Layer order of the game's texture arrays (moss is layer 4).
+const ORDER = ['grass', 'sand', 'rock', 'soil', 'moss'];
+// ambientCG file name endings (lower case) for each map the packer reads. AO is optional.
+const ACG_SUFFIX = { diff: '_color.jpg', nor_gl: '_normalgl.jpg', rough: '_roughness.jpg', disp: '_displacement.jpg', ao: '_ambientocclusion.jpg' };
+const acgNoServer = (/** @type {string} */ name) => `${name[0].toUpperCase() + name.slice(1)} comes from ambientCG through play.cmd's local server. Double-click play.cmd and open the lab from there.`;
 const PHYS_MIN = 0.04;
 const PHYS_MAX = 0.9;
 const PREVIEW_TILE = 128; // px per 3 m tile in the 24 m preview
@@ -56,7 +61,7 @@ let busy = false;
  * @typedef {{ blob: Blob, url: string, bytes: number, kind: string, err: number[], max: number[] }} PackedFile
  * @typedef {{
  *   name: string, src: any, target: number[], delight: number,
- *   raw: Record<string, Uint8ClampedArray> | null, jpgUrl: string,
+ *   raw: Record<string, Uint8ClampedArray> | null, jpgUrl: string, noAo: boolean,
  *   blur: Float32Array | null, blurMean: number,
  *   files: Record<number, Record<string, PackedFile>> | null,
  *   means: Record<number, number[]>,
@@ -124,19 +129,71 @@ async function webpKind(blob) {
   return 'unknown';
 }
 
-/** @param {string} url @param {(n: number) => void} onBytes */
-async function fetchBytes(url, onBytes) {
+/**
+ * Streams a download, reporting bytes as they arrive.
+ * @param {string} url @param {(n: number, total: number) => void} onBytes total is 0 when unknown
+ * @param {string} who names the server in errors @param {string} type
+ */
+async function fetchBytes(url, onBytes, who = 'Poly Haven', type = 'image/jpeg') {
   const r = await fetch(url);
-  if (!r.ok) throw new Error(`Poly Haven answered ${r.status} for ${url.split('/').pop()}`);
+  if (!r.ok) throw new Error(`${who} answered ${r.status} for ${decodeURIComponent(url.split(/[/=]/).pop() || url)}`);
+  const length = Number(r.headers.get('Content-Length')) || 0;
   const reader = /** @type {ReadableStream<Uint8Array>} */ (r.body).getReader();
   /** @type {Uint8Array[]} */ const parts = [];
   let total = 0;
   for (;;) {
     const { done, value } = await reader.read();
     if (done) break;
-    parts.push(value); total += value.length; onBytes(value.length);
+    parts.push(value); total += value.length; onBytes(value.length, length);
   }
-  return { blob: new Blob(parts, { type: 'image/jpeg' }), bytes: total };
+  return { blob: new Blob(parts, { type }), bytes: total };
+}
+
+/**
+ * Minimal zip reader for ambientCG sets (no library). Finds the End Of Central Directory
+ * record, walks the central directory, and reads each entry's data through its local header.
+ * Stored (method 0) entries are copied; deflated (method 8) entries are inflated with the
+ * browser's DecompressionStream. No zip64 or encryption: ambientCG 1K sets are about 10 MB.
+ * @param {ArrayBuffer} buf @param {string} type MIME type for the returned blobs
+ * @returns {Promise<Map<string, Blob>>} entry name (with any folder) -> file contents
+ */
+async function readZip(buf, type = 'image/jpeg') {
+  const dv = new DataView(buf), u8 = new Uint8Array(buf);
+  // The EOCD record is 22 bytes plus a comment of up to 65535 bytes, so search back from the end.
+  let eocd = -1;
+  for (let o = buf.byteLength - 22; o >= Math.max(0, buf.byteLength - 22 - 65535); o--) {
+    if (dv.getUint32(o, true) === 0x06054b50) { eocd = o; break; }
+  }
+  if (eocd < 0) throw new Error('The download is not a zip file.');
+  const count = dv.getUint16(eocd + 10, true); // entries in the central directory
+  let o = dv.getUint32(eocd + 16, true); // offset of the central directory
+  const utf8 = new TextDecoder();
+  /** @type {Map<string, Blob>} */ const out = new Map();
+  for (let i = 0; i < count; i++) {
+    if (dv.getUint32(o, true) !== 0x02014b50) throw new Error('The zip file is damaged (central directory).');
+    const flags = dv.getUint16(o + 8, true);
+    const method = dv.getUint16(o + 10, true);
+    // Sizes come from the central directory: they are exact even when the local header defers
+    // them to a data descriptor (flag bit 3).
+    const csize = dv.getUint32(o + 20, true);
+    const nameLen = dv.getUint16(o + 28, true), extraLen = dv.getUint16(o + 30, true), commentLen = dv.getUint16(o + 32, true);
+    const local = dv.getUint32(o + 42, true);
+    const name = utf8.decode(u8.subarray(o + 46, o + 46 + nameLen));
+    o += 46 + nameLen + extraLen + commentLen;
+    if (name.endsWith('/')) continue; // folder entry
+    if (flags & 1) throw new Error(`The zip entry ${name} is encrypted.`);
+    // Local header: 30 fixed bytes, then its own name and extra field (which can differ in length
+    // from the central copy), then the data.
+    if (dv.getUint32(local, true) !== 0x04034b50) throw new Error(`The zip file is damaged (${name}).`);
+    const start = local + 30 + dv.getUint16(local + 26, true) + dv.getUint16(local + 28, true);
+    const data = u8.subarray(start, start + csize);
+    if (method === 0) out.set(name, new Blob([data], { type }));
+    else if (method === 8) {
+      const inflated = new Blob([data]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
+      out.set(name, new Blob([await new Response(inflated).arrayBuffer()], { type }));
+    } else throw new Error(`The zip entry ${name} uses compression method ${method}, which the lab cannot read.`);
+  }
+  return out;
 }
 
 // ---------- processing ----------
@@ -458,7 +515,7 @@ function setMsg(/** @type {HTMLElement} */ el, /** @type {string} */ text, /** @
   el.textContent = text; el.className = 'msg' + (kind ? ' ' + kind : '');
 }
 function showTotals() {
-  totalsEl.textContent = downloadedFiles ? `Downloaded ${downloadedFiles} scan files, ${kb(downloadedBytes)} in all.` : 'Nothing downloaded yet.';
+  totalsEl.textContent = downloadedFiles ? `Downloaded ${downloadedFiles} scan files or zips, ${kb(downloadedBytes)} in all.` : 'Nothing downloaded yet.';
 }
 const cap = (/** @type {string} */ s) => s[0].toUpperCase() + s.slice(1);
 
@@ -560,31 +617,78 @@ async function run(job) {
   busy = false;
 }
 
+/** Downloads the 1k JPEG maps from Poly Haven one by one. @param {Mat} m @returns {Promise<Record<string, Blob>>} */
+async function downloadPolyHaven(m) {
+  /** @type {Record<string, Blob>} */ const blobs = {};
+  const maps = /** @type {string[]} */ (sources.maps);
+  let mine = 0;
+  for (let i = 0; i < maps.length; i++) {
+    const map = maps[i];
+    setMsg(m.ui.msg, `Downloading ${map} (${i + 1} of ${maps.length}), ${kb(mine)} so far`);
+    setStatus('wait', `Downloading ${cap(m.name)}`);
+    barEl.style.width = `${(i / maps.length) * 100}%`;
+    const url = `${sources.baseUrl}${m.src.id}/${m.src.id}_${map}_1k.jpg`;
+    try {
+      blobs[map] = (await fetchBytes(url, (n) => { mine += n; downloadedBytes += n; showTotals(); })).blob;
+    } catch (e) {
+      throw new Error(e instanceof TypeError ? 'Could not reach dl.polyhaven.org. Check the internet connection and try again.' : /** @type {Error} */ (e).message);
+    }
+    downloadedFiles++; showTotals();
+  }
+  return blobs;
+}
+
+/**
+ * Downloads an ambientCG zip through play.cmd's local server (ambientCG blocks cross-origin
+ * downloads) and picks the maps out of it by file name ending. @param {Mat} m
+ * @returns {Promise<Record<string, Blob>>}
+ */
+async function downloadAmbientcg(m) {
+  if (!localServer) throw new Error(acgNoServer(m.name));
+  const file = /** @type {string} */ (m.src.zip);
+  setMsg(m.ui.msg, `Downloading ${file}`);
+  setStatus('wait', `Downloading ${cap(m.name)}`);
+  barEl.style.width = '0%';
+  let mine = 0;
+  /** @type {Blob} */ let zip;
+  try {
+    zip = (await fetchBytes(`../__fetch/ambientcg?file=${encodeURIComponent(file)}`, (n, total) => {
+      mine += n; downloadedBytes += n; showTotals();
+      if (total) barEl.style.width = `${Math.min(100, (mine / total) * 100)}%`;
+      setMsg(m.ui.msg, `Downloading ${file}, ${kb(mine)}${total ? ` of ${kb(total)}` : ' so far'}`);
+    }, "ambientCG (through play.cmd's server)", 'application/zip')).blob;
+  } catch (e) {
+    throw new Error(e instanceof TypeError ? "Could not reach play.cmd's local server. Check that play.cmd is still running and try again." : /** @type {Error} */ (e).message);
+  }
+  downloadedFiles++; showTotals();
+  setMsg(m.ui.msg, `Unpacking ${file}`);
+  /** @type {Map<string, Blob>} */ let entries;
+  try { entries = await readZip(await zip.arrayBuffer()); } catch (e) { throw new Error(`${file}: ${/** @type {Error} */ (e).message}`); }
+  /** @type {Record<string, Blob>} */ const blobs = {};
+  for (const [entry, blob] of entries) {
+    const low = entry.toLowerCase();
+    for (const [map, suffix] of Object.entries(ACG_SUFFIX)) if (low.endsWith(suffix)) blobs[map] = blob;
+  }
+  const missing = Object.keys(ACG_SUFFIX).filter((map) => map !== 'ao' && !blobs[map]);
+  if (missing.length) throw new Error(`${file} has no ${missing.map((map) => ACG_SUFFIX[/** @type {keyof typeof ACG_SUFFIX} */ (map)]).join(', ')} file.`);
+  return blobs;
+}
+
 /** Downloads (once) and builds one material. @param {string} name */
 async function build(name) {
   const m = mats[name];
   const N = Math.max(...sources.sizes);
   try {
     if (!m.raw) {
+      const blobs = m.src.source === 'ambientcg' ? await downloadAmbientcg(m) : await downloadPolyHaven(m);
+      // Same decode path for both sources from here on.
       /** @type {Record<string, Uint8ClampedArray>} */ const raw = {};
-      const maps = /** @type {string[]} */ (sources.maps);
-      let mine = 0;
-      for (let i = 0; i < maps.length; i++) {
-        const map = maps[i];
-        setMsg(m.ui.msg, `Downloading ${map} (${i + 1} of ${maps.length}), ${kb(mine)} so far`);
-        setStatus('wait', `Downloading ${cap(name)}`);
-        barEl.style.width = `${(i / maps.length) * 100}%`;
-        const url = `${sources.baseUrl}${m.src.id}/${m.src.id}_${map}_1k.jpg`;
-        let got;
-        try {
-          got = await fetchBytes(url, (n) => { mine += n; downloadedBytes += n; showTotals(); });
-        } catch (e) {
-          throw new Error(e instanceof TypeError ? 'Could not reach dl.polyhaven.org. Check the internet connection and try again.' : /** @type {Error} */ (e).message);
-        }
-        downloadedFiles++; showTotals();
-        raw[map] = await decodePixels(got.blob, N);
-        if (map === 'diff') { if (m.jpgUrl) URL.revokeObjectURL(m.jpgUrl); m.jpgUrl = URL.createObjectURL(got.blob); }
-      }
+      for (const map of /** @type {string[]} */ (sources.maps)) if (blobs[map]) raw[map] = await decodePixels(blobs[map], N);
+      // A set without AO gets white cavity (all 1), which leaves the sky light unshadowed.
+      m.noAo = !raw.ao;
+      if (!raw.ao) raw.ao = new Uint8ClampedArray(N * N * 4).fill(255);
+      if (m.jpgUrl) URL.revokeObjectURL(m.jpgUrl);
+      m.jpgUrl = URL.createObjectURL(blobs.diff);
       barEl.style.width = '100%';
       m.raw = raw;
       m.blur = null;
@@ -607,15 +711,17 @@ async function build(name) {
 
 function creditsText() {
   const lines = ['# Texture credits', '',
-    'Ground detail maps for ebb (docs/22-ground-detail.md), made with tools/texture-lab.html from CC0 1.0 photo scans on Poly Haven. CC0 asks for no credit; this file thanks the authors and records what we changed.', ''];
+    'Ground detail maps for ebb (docs/22-ground-detail.md), made with tools/texture-lab.html from CC0 1.0 photo scans on Poly Haven and ambientCG. CC0 asks for no credit; this file thanks the authors and records what we changed.', ''];
   for (const name of ORDER) {
     const m = mats[name];
     if (!m) continue;
+    const acg = m.src.source === 'ambientcg';
     lines.push(`## ${cap(name)}: ${m.src.name}`, '',
       `- Source page: ${m.src.page}`,
-      `- Original asset: ${m.src.name} (\`${m.src.id}\`), maps ${sources.maps.join(', ')} at 1k`,
-      `- License: ${sources.license}`,
-      `- Changes: albedo delit (heavily blurred luminance divided out at strength ${m.delight}), recalibrated so its linear mean equals the recipe albedo [${m.target.join(', ')}] from recipes/world/terrain.json and clamped to ${PHYS_MIN}..${PHYS_MAX}; height stretched to 0..1 (0.5th to 99.5th percentile); repacked into a.webp (albedo), b.webp (normal X, Y and roughness), c.webp (height and cavity); resized to 512 for the low tier.`,
+      acg ? `- Original asset: ${m.src.name} (\`${m.src.id}\`), ${m.src.zip}: maps Color, NormalGL, Roughness, Displacement${m.noAo ? '' : ', AmbientOcclusion'} at 1K`
+        : `- Original asset: ${m.src.name} (\`${m.src.id}\`), maps ${sources.maps.join(', ')} at 1k`,
+      `- License: ${acg ? 'ambientCG, CC0 1.0' : sources.license}`,
+      `- Changes: albedo delit (heavily blurred luminance divided out at strength ${m.delight}), recalibrated so its linear mean equals the recipe albedo [${m.target.join(', ')}] from recipes/world/terrain.json and clamped to ${PHYS_MIN}..${PHYS_MAX}; height stretched to 0..1 (0.5th to 99.5th percentile); repacked into a.webp (albedo), b.webp (normal X, Y and roughness), c.webp (height and cavity); resized to 512 for the low tier.${m.noAo ? ' The set has no ambient occlusion map, so cavity is white.' : ''}`,
       `- Files: assets/textures/ground/${name}/`, '');
   }
   return lines.join('\n');
@@ -688,7 +794,7 @@ async function boot() {
     const src = sources.materials[name];
     const target = terrain.materials['albedo' + cap(name)];
     if (!src || !target) continue;
-    mats[name] = { name, src, target, delight: src.delight, raw: null, jpgUrl: '', blur: null, blurMean: 1, files: null, means: {}, prevTile: null, prevWrap: null, prevHex: null, ui: {} };
+    mats[name] = { name, src, target, delight: src.delight, raw: null, jpgUrl: '', noAo: false, blur: null, blurMean: 1, files: null, means: {}, prevTile: null, prevWrap: null, prevHex: null, ui: {} };
     makeCard(name);
   }
   try { const j = await (await fetch('../__local.json', { cache: 'no-store' })).json(); localServer = !!j.local; } catch { localServer = false; }
@@ -696,8 +802,8 @@ async function boot() {
   try { await encodeWebp(new Uint8ClampedArray([0, 0, 0, 255]), 1, 0.9); } catch { webpOk = false; }
   if (!webpOk) { setStatus('warn', 'This browser cannot write WebP files. Open this page in Chrome or Edge.'); return; }
   setStatus(localServer ? 'ok' : 'warn', localServer
-    ? 'Ready. Build a material to download its scans from Poly Haven; Save writes into the repo.'
-    : 'Ready. This page is not on the play.cmd server, so saving into the repo is off; Download links will appear after a build.');
+    ? 'Ready. Build a material to download its scans from Poly Haven or ambientCG; Save writes into the repo.'
+    : 'Ready. This page is not on the play.cmd server, so saving into the repo and ambientCG materials are off; Download links will appear after a build.');
   buildAllBtn.disabled = false;
   saveAllBtn.disabled = false;
   buildAllBtn.addEventListener('click', () => run(async () => { for (const n of ORDER) if (mats[n]) await build(n); }));

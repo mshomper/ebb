@@ -1,7 +1,7 @@
 // @ts-check
 // Water system (docs/07): the live shallow-water simulation over the opened chunks, held at the
 // analytic tide on its outer ring, fed by springs (the starter spring and up to four the player
-// places) and by the pour and soak brush, and gently topped up toward the deterministic water
+// places) and by the pour and drain brush, and gently topped up toward the deterministic water
 // summary (ponds to their lip, streams to their natural depth). The summary is what ecology reads;
 // the live water is visual only and never saved. Springs are saved (store slice `water`, S7).
 
@@ -12,7 +12,7 @@ import { level, tideParams } from '../tide.js';
 import { landmarks } from '../terrain/landform.js';
 import { createWaterSim } from './sim.js';
 import { bedHeights, initialDepths } from './init.js';
-import { buildSummary } from './summary.js';
+import { buildSummary, WATER_CLASS } from './summary.js';
 import { WATER_CELL, WATER_ORIGIN, rectForBounds, waterCellOf, waterCellCenter } from './grid.js';
 
 const SUMMARY_JOB = { module: './world/water/summary.js', fn: 'buildSummary' };
@@ -55,6 +55,13 @@ export async function createWater(gpu, opts) {
     const t = new Float32Array(s.targetMm.length);
     for (let i = 0; i < t.length; i++) t[i] = s.targetMm[i] * 0.001;
     sim.setTarget(s.rect, t);
+    // Damp hollows for the look: only ones big enough to read (a dip of a cell or two is noise).
+    /** @type {Map<number, number>} */ const size = new Map();
+    for (let i = 0; i < s.cls.length; i++) if (s.cls[i] === WATER_CLASS.damp) size.set(s.basin[i], (size.get(s.basin[i]) ?? 0) + 1);
+    const minCells = recipe.look.dampHollowMinM2 / (WATER_CELL * WATER_CELL);
+    const damp = new Uint8Array(s.cls.length);
+    for (let i = 0; i < damp.length; i++) damp[i] = s.cls[i] === WATER_CLASS.damp && (size.get(s.basin[i]) ?? 0) >= minCells ? 255 : 0;
+    sim.setDamp(s.rect, damp);
     emitDeferred('water:summary-updated', { rect: s.rect, hash: s.hash });
   }
 
@@ -231,8 +238,8 @@ export async function createWater(gpu, opts) {
       return best;
     },
 
-    // ---- pour and soak ----
-    /** The pour (positive) or soak (negative) brush for this frame, or null. @param {typeof brush} b */
+    // ---- pour and drain ----
+    /** The pour (positive) or drain (negative) brush for this frame, or null. @param {typeof brush} b */
     setBrush(b) { brush = b; },
 
     // ---- summary ----

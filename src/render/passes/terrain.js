@@ -9,16 +9,16 @@ import { LODS, MAX_CHUNKS, createIndexBuffers, packChunks } from '../terrain-mes
 
 /** @typedef {import('../frame-graph.js').PassContext} PassContext */
 
-const DRAW_BYTES = 160;
-const GROUND_BYTES = 176;
+const DRAW_BYTES = 192;
+const GROUND_BYTES = 224;
 const DEG = Math.PI / 180;
 /** @type {Record<string, number>} GroundDetail.tiling.x in lib-ground.wgsl */
 const TILING_MODES = { grid: 0, hex: 1, two: 2 };
 
 /**
  * @param {{ terrain: import('../../world/terrain/index.js').Terrain, recipe: any, seed: number,
- *   getEye: () => ArrayLike<number>, tier: string, getTide?: () => number,
- *   water: { depthTextures: GPUTexture[], current: () => number },
+ *   getEye: () => ArrayLike<number>, tier: string, getTide?: () => number, lodDistances?: number[],
+ *   water: { depthTextures: GPUTexture[], current: () => number, damp: GPUTexture, dampWet: number }, moss: GPUTexture,
  *   ground: { views: { a: GPUTextureView, b: GPUTextureView }, sampler: GPUSampler, version: number, fade: number },
  *   groundTier: any }} opts  ground: src/render/ground-detail.js; groundTier: the tier's `ground` block
  */
@@ -34,6 +34,8 @@ export function createTerrainPass(opts) {
   const u = new Uint32Array(draw);
   const chunkData = new Float32Array(MAX_CHUNKS * 4);
   const maxQuads = opts.tier === 'low' ? recipe.render.lowTierMaxQuads : LODS[0];
+  /** Mesh LOD switch distances (m): the tier's, else the terrain recipe's. @type {number[]} */
+  let lodDistances = opts.lodDistances ?? recipe.render.lodDistances;
   /** @type {GPUBuffer} */ let groundBuffer;
   /** @type {() => void} */ let makeGroup = () => {};
   let groundVersion = -1;
@@ -60,6 +62,13 @@ export function createTerrainPass(opts) {
     gf[32] = mode; gf[33] = d.hex.density; gf[34] = d.hex.sharpness; gf[35] = d.twoScale.size;
     gf[36] = 1 / d.macro.scalesM[0]; gf[37] = 1 / d.macro.scalesM[1]; gf[38] = d.macro.strength; gf[39] = d.macro.hue;
     gf[40] = d.macro.second; gf[41] = 1 / d.twoScale.noiseMeters;
+    // Moss, the fifth layer: its detail parameters, tile size and flat albedo for the far look.
+    const ml = d.layers.moss;
+    gf.set([ml.heightAmplitudeM, ml.normalStrength, ml.roughness[0], ml.roughness[1]], 44);
+    gf[48] = 1 / (ml.tileMeters ?? d.tileMeters);
+    gf.set(recipe.materials.albedoMoss, 49);
+    const cap = recipe.moss.maxCover;
+    gf.set([cap.grass, cap.sand, cap.rock, cap.soil], 52);
   }
 
   function packStatic() {
@@ -76,10 +85,22 @@ export function createTerrainPass(opts) {
     f[32] = recipe.beachBand[0]; f[33] = recipe.beachBand[1];
     f[34] = recipe.render.skirtDepth; f[35] = recipe.sea.extent;
     f[36] = recipe.sea.shallowDepth; u[37] = opts.seed >>> 0;
+    const uw = recipe.underwater;
+    f.set(m.albedoSilt, 40); f[43] = uw.siltCover;
+    f[44] = uw.bedDepthM[0]; f[45] = uw.bedDepthM[1]; f[46] = uw.siltDepthM[0]; f[47] = uw.siltDepthM[1];
   }
 
   return {
     name: 'opaque',
+
+    /**
+     * Apply a quality tier's distances without rebuilding (the startup probe may step down).
+     * @param {{ lodDistances?: number[], ground: { detailFadeMeters: number } }} t
+     */
+    setTier(t) {
+      lodDistances = t.lodDistances ?? recipe.render.lodDistances;
+      gf[23] = t.ground.detailFadeMeters;
+    },
     reads: [],
     writes: ['hdr', 'depth'],
     enabled: () => true,
@@ -101,6 +122,8 @@ export function createTerrainPass(opts) {
           { binding: 7, visibility: GPUShaderStage.FRAGMENT, sampler: { type: 'filtering' } },
           { binding: 8, visibility: GPUShaderStage.FRAGMENT, buffer: {} },
           { binding: 9, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: 'unfilterable-float' } },
+          { binding: 10, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: 'float' } },
+          { binding: 11, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: 'float' } },
         ],
       });
       const layout = device.createPipelineLayout({ label: 'opaque', bindGroupLayouts: [ctx.layouts.frame, ctx.layouts.lighting, layout2] });
@@ -138,6 +161,8 @@ export function createTerrainPass(opts) {
             { binding: 7, resource: opts.ground.sampler },
             { binding: 8, resource: { buffer: groundBuffer } },
             { binding: 9, resource: wt.createView() },
+            { binding: 10, resource: opts.water.damp.createView() },
+            { binding: 11, resource: opts.moss.createView() },
           ],
         }));
         groundVersion = opts.ground.version;
@@ -154,6 +179,7 @@ export function createTerrainPass(opts) {
       const ring = terrain.ring;
       f[24] = ring.x; f[25] = ring.z; f[26] = ring.radius; f[27] = ring.hardness; f[28] = ring.visible ? 1 : 0;
       f[38] = opts.getTide?.() ?? 0;
+      f[39] = opts.water.dampWet;
       device.queue.writeBuffer(drawBuffer, 0, draw);
       if (opts.ground.version !== groundVersion) makeGroup();
       gf[19] = opts.ground.fade;
@@ -166,7 +192,7 @@ export function createTerrainPass(opts) {
         for (let cx = CHUNK_MIN; cx < CHUNK_MIN + 6; cx++) {
           if (terrain.chunkState(cx, cz) !== 'open') continue;
           const d = Math.hypot(eye[0] - cx * CHUNK_SIZE, eye[1] - 2, eye[2] - cz * CHUNK_SIZE) - CHUNK_SIZE * 0.5;
-          let lod = d < recipe.render.lodDistances[0] ? 0 : d < recipe.render.lodDistances[1] ? 1 : 2;
+          let lod = d < lodDistances[0] ? 0 : d < lodDistances[1] ? 1 : 2;
           while (LODS[lod] > maxQuads && lod < 2) lod++;
           byLod[lod].push(cx, cz);
         }

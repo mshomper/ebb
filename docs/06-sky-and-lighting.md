@@ -14,7 +14,7 @@
 - Ambient: **sky probe** (small cube rendered from the sky-view LUT) projected to **order-2 spherical harmonics (9 coefficients)** for diffuse, plus prefiltered mips for specular.
 - Ambient occlusion: **GTAO** (Jimenez et al., "Practical Real-Time Strategies for Accurate Indirect Occlusion", 2016). It applies only to ambient light, never to sun or moon light.
 - **Sun, moon, stars, sky LUTs, fog and weather blending read display time** (`clock.display()`), not world time. Display time equals world time in normal play and only differs during time and season preview and photo mode (`16-customization-and-photo-mode.md`). The ecology's daily light exposure uses the same `sunMoon()` function with world time.
-- Stars and the Milky Way are the **one art-directed sky term**. Physically they would be invisible at our night exposure floor (EV −1, see 05). Their brightness is set relative to that floor and labeled as such in code.
+- Stars, the Milky Way and the starlight glow are the **art-directed sky terms**. Physically the stars would be invisible at our night exposure (see 05). Their brightness is set relative to an EV −1 reference and held there on screen as the night key opens further, labeled as such in code. The starlight glow is a faint cool radiance added to the airglow shell (`sky.json` `starlight`), so moonless nights light the island softly.
 - No volumetric clouds in v1. One procedural 2D cloud layer plus cloud shadows.
 
 ## How it works
