@@ -3,7 +3,7 @@
 // seconds, and made where water churns:
 //   falls        the surface drops sharply into a downstream neighbor (little steps, the spring's run)
 //   convergence  flows meet and pile up (−div u), where streams enter ponds
-//   swash        thin, fast water at the edge (the beach, the stream's riffles)
+//   churn        fast, shallow water tumbling over its bed (the stream's riffles, beach swash)
 // Visual only, real seconds; water-draw.wgsl draws it broken into lace with its own noise.
 
 // #include lib-terrain
@@ -13,10 +13,10 @@ struct Foam {
   rectOrigin: vec2u, rectSize: vec2u,
   dt: f32, decay: f32,            // real step (s); exp(-dt / fadeS)
   fallFrom: f32, fallGain: f32,   // surface drop per cell (m) where falls start foaming; foam per m beyond it, per s
-  convGain: f32, swashGain: f32,  // foam per unit convergence (1/s) per s; foam per s in swash
-  swashDepth: f32, swashSpeed: f32, // thinner than this (m) and faster than this (m/s) is swash
+  convGain: f32, swashGain: f32,  // foam per unit convergence (1/s) per s; foam per s in full churn
+  swashDepth: f32, swashSpeed: f32, // churn: shallower than this (m), fading in from this speed (m/s)
   dry: f32, maxFoam: f32,
-  _p0: f32, _p1: f32,
+  swashSpeedHi: f32, _p1: f32,      // ... to full churn at this speed (m/s)
 };
 
 @group(0) @binding(0) var<uniform> fm: Foam;
@@ -83,10 +83,10 @@ fn csFoam(@builtin(global_invocation_id) gid: vec3u) {
           / (2.0 * WATER_CELL);
   make += fm.convGain * max(-div, 0.0);
 
-  // Swash: thin and fast.
-  // Real swash is a centimeter or more; the millimeter films spilling over a bank never froth.
+  // Churn: fast, shallow water tumbling over its bed takes in air (stream riffles, beach swash).
+  // Real churn is a centimeter or more deep; films spilling over a bank never froth.
   make += fm.swashGain * smoothstep(0.012, 0.02, d) * (1.0 - smoothstep(fm.swashDepth * 0.5, fm.swashDepth, d))
-        * smoothstep(fm.swashSpeed, fm.swashSpeed * 2.0, speed);
+        * smoothstep(fm.swashSpeed, fm.swashSpeedHi, speed);
 
   foam = clamp(foam + make * fm.dt, 0.0, fm.maxFoam);
   if (foam != foam) { foam = 0.0; }

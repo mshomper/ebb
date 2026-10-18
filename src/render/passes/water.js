@@ -62,9 +62,10 @@ export function createWaterPass(opts) {
     // ?waterdbg=1..4 shows one shading term at a time (water-draw.wgsl, debugView).
     f[64] = Number(new URLSearchParams(location.search).get('waterdbg') ?? 0) || 0;
     f[65] = opts.detailFadeM ?? 120;
-    const R = L.riffle;
-    f[68] = R.speed[0]; f[69] = R.speed[1]; f[70] = R.depthM; f[71] = R.coverage;
-    f[72] = R.streakM; f[73] = R.albedo;
+    // Raindrop rings (ripples.rings); f[68], the share of drops falling, follows the rain (setRain).
+    const RR = recipe.ripples.rings;
+    f[69] = RR.cellM; f[70] = RR.lifeS; f[71] = RR.crestM;
+    f[72] = RR.radiusM; f[73] = RR.slope;
     f.set(L.scatterAlbedoPond, 76);
     const S = L.reflection;
     f[82] = S.reachM; f[83] = S.thicknessM;
@@ -72,7 +73,7 @@ export function createWaterPass(opts) {
     f[88] = S.rippleTilt;
     // Sky from the probe (blurred by roughness); `?probe=0` shows the sharp sky-view LUT instead.
     f[89] = new URLSearchParams(location.search).get('probe') === '0' ? 0 : 1;
-    f[92] = recipe.foam.laceM; f[93] = recipe.foam.albedo;
+    f[92] = recipe.foam.laceM; f[93] = recipe.foam.albedo; f[94] = recipe.foam.opacity; f[95] = recipe.foam.boil;
     setSSR(opts.ssr ?? null);
   }
 
@@ -120,6 +121,8 @@ export function createWaterPass(opts) {
     /** Apply a quality tier's ripple distance (the startup probe may step down). @param {number} m */
     setDetailFade(m) { f[65] = m; },
     setSSR,
+    /** Rain now, 0..1: how many raindrop rings fall (ripples.rings.maxShare at full rain). @param {number} r */
+    setRain(r) { f[68] = Math.min(1, Math.max(0, r)) * recipe.ripples.rings.maxShare; },
     reads: ['hdr', 'depth'],
     writes: ['hdr', 'depth', 'normalId'],
     enabled: () => true,

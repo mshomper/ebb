@@ -1,6 +1,6 @@
 // @ts-check
 // Foam on the live water (docs/07): a coverage field on the water cells, made at little falls,
-// where flows meet and in thin fast swash, carried by the current and fading over a few seconds
+// where flows meet and where fast shallow water churns, carried by the current and fading over a few seconds
 // (water-foam.wgsl). One dispatch per frame after the water simulation, ping-ponging two r32float
 // textures. Visual only, real seconds, never saved. Drawn by water-draw.wgsl.
 
@@ -63,9 +63,9 @@ export async function createFoam(device, opts) {
       u[0] = r.x; u[1] = r.y; u[2] = r.w; u[3] = r.h;
       f[4] = dt; f[5] = Math.exp(-dt / recipe.fadeS);
       f[6] = recipe.fallFromM; f[7] = recipe.fallGain;
-      f[8] = recipe.convergenceGain; f[9] = recipe.swashGain;
-      f[10] = recipe.swashDepthM; f[11] = recipe.swashSpeed;
-      f[12] = 0.001; f[13] = recipe.maxCover;
+      f[8] = recipe.convergenceGain; f[9] = recipe.churnGain;
+      f[10] = recipe.churnDepthM; f[11] = recipe.churnSpeed[0];
+      f[12] = 0.001; f[13] = recipe.maxCover; f[14] = recipe.churnSpeed[1];
       device.queue.writeBuffer(uniforms, 0, data);
       const pass = encoder.beginComputePass({ label: 'water-foam' });
       pass.setPipeline(pipeline);

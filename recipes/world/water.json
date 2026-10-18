@@ -43,16 +43,18 @@
     "tauS": 20
   },
   "foam": {
-    "note": "Foam on the live water (docs/07, water-foam.wgsl, drawn in water-draw.wgsl). A coverage field on the 0.5 m cells, carried by the current and fading over fadeS. Made at falls: where the surface drops more than fallFromM into the neighbor the water flows toward, fallGain cover per meter of extra drop per second (full at 0.3 m/s or faster); where flows meet: convergenceGain cover per unit of convergence (1/s) per second; in swash: swashGain cover per second where water is thinner than swashDepthM and faster than swashSpeed. maxCover caps it. Drawing: lace breaks the cover into bubbly patches of laceM; albedo is the foam's whiteness, lit like a rough surface.",
+    "note": "Foam on the live water (docs/07, water-foam.wgsl, drawn in water-draw.wgsl). A coverage field on the 0.5 m cells, carried by the current and fading over fadeS. Made at falls: where the surface drops more than fallFromM into the neighbor the water flows toward, fallGain cover per meter of extra drop per second (full at 0.3 m/s or faster); where flows meet: convergenceGain cover per unit of convergence (1/s) per second; churn (stream riffles, beach swash; this replaced S4a's separate riffle flecks): churnGain cover per second where water is shallower than churnDepthM, fading in over the churnSpeed range (m/s). maxCover caps it. Drawing: lace breaks the cover into bubbly froth of laceM cells that boils in place at boil cells per second (no reset cycle, so nothing blinks); opacity is the most of a pixel foam covers; albedo is the foam's whiteness, lit like a rough surface.",
     "fadeS": 6,
     "fallFromM": 0.05,
     "fallGain": 1.5,
     "convergenceGain": 0.25,
-    "swashGain": 0.12,
-    "swashDepthM": 0.04,
-    "swashSpeed": 0.5,
+    "churnGain": 0.8,
+    "churnDepthM": 0.12,
+    "churnSpeed": [0.25, 0.8],
     "maxCover": 0.65,
-    "laceM": 0.18,
+    "laceM": 0.08,
+    "boil": 0.15,
+    "opacity": 0.85,
     "albedo": 0.8
   },
   "tools": {
@@ -90,7 +92,6 @@
     "dampHollowWet": 0.6,
     "dampHollowMinM2": 3,
     "dampHollowNote": "How wet the summary's damp hollows look (0 dry, 1 as soaked as a stream bank); hollows smaller than dampHollowMinM2 stay plain.",
-    "riffle": { "note": "White water on fast, shallow flow: fades in over the speed range (m/s), gone in water deeper than depthM; coverage is the share of the surface that is white at full strength; streakM the streak size; albedo of the aerated water.", "speed": [0.25, 0.8], "depthM": 0.12, "coverage": 0.34, "streakM": 0.07, "albedo": 0.75 },
     "flowNormalScale": 0.6,
     "reflection": {
       "note": "Island reflection (screen-space, high tiers; steps per tier in quality-tiers.json waterSSR). reachM: farthest a reflected ray looks for the island; thicknessM: how far behind a surface a ray may pass and still count as hitting it (grows 4% with distance); edgeFade: screen-edge fade width (uv); roughFade: water roughness range over which it gives way to the sky alone; startM: first step off the surface; rippleTilt: share of the ripple tilt the reflected ray follows (1 full: blotchy; lower: the bank wobbles but hangs together).",
@@ -128,7 +129,8 @@
     "maxSubsteps": 4,
     "minWaterDepthM": 0.01,
     "dropCellM": 0.4,
-    "rain": { "dropsPerM2S": 4, "radiusM": 0.12, "strengthM": 0.03 },
+    "rain": { "note": "Unused since raindrops became rings in the water shader (rings below); kept so the ripple field can still take rain if wanted.", "dropsPerM2S": 0, "radiusM": 0.12, "strengthM": 0.03 },
+    "rings": { "note": "Raindrop rings drawn in water-draw.wgsl (finer than the ripple field holds): drops fall on cellM cells, each lasting lifeS while its ring spreads to radiusM; crests crestM apart with peak slope `slope`; maxShare of the cells hold a drop at full rain. They fade where a pixel is too coarse for the crests.", "cellM": 0.35, "lifeS": 0.9, "crestM": 0.025, "radiusM": 0.18, "slope": 0.22, "maxShare": 0.7 },
     "pour": { "dropsPerS": 60, "radiusM": 0.12, "strengthM": 0.02, "brushRadiusM": 0.5 },
     "impulse": { "radiusM": 0.25, "strengthM": 0.01 },
     "normalStrength": 3,

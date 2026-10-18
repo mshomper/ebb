@@ -536,7 +536,8 @@ export async function startApp(canvas, hooks = {}) {
     const info = { dt: t.dt, realDt, worldT: t.worldT, animT: t.animT, displayT: display, tier };
     ripples.setCenter(camera.target[0], camera.target[2]);
     // `?ripplerain=1` rains ripples in any weather, to judge rings in sunshine (tools, tuning).
-    ripples.setRain(params.has('ripplerain') ? 1 : day.weather.rain);
+    // Raindrops ring the water in the water shader; the ripple field keeps the pour and creatures.
+    waterPass.setRain(params.has('ripplerain') ? 1 : day.weather.rain);
     sim.update(info);
     const encoder = gpu.device.createCommandEncoder({ label: 'frame' });
     sim.encode(encoder, info);
