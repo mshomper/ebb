@@ -55,7 +55,7 @@ One island, everything in miniature. Built in seventeen steps, each its own clic
 | J1.5 | More to explore: tap the ground too (soil, sand, rock, moss, fresh water, shore) and a Ground section; Show me glides the camera to a page's finest example; field notes, your island's story and four "?" moment frames per page; the Almanac; `?day=N` to start a new world later in the year | 13, 15 |
 | J1.6 | Field sketches: a drawn illustration for each page, in pencil until known, then inked | 13, 15 |
 | J2 | The journal's "show where" wash on the island and the web of what needs what | 13, 15 |
-| S6 | Frogs: needs, arrival, settling, behavior, presence, feeding and naming; midges and frogs get journal pages | 11, 12 |
+| S6 | Frogs: needs, arrival, settling, behavior, presence (a list of sources, the camera first), feeding for trust and naming; midges and frogs get journal pages and sketches | 11, 12, 23 |
 | S7 | Autosave, reload, and offline catch-up with the "while you were away" reveal | 02, 18 |
 | S8 | Minimal HUD with drawn icons, touch layout on phone, low quality tier | 15, 19 |
 
@@ -80,6 +80,7 @@ Slice acceptance, all together:
 - Tuning panel v1: live sliders for species and flora recipes, saving recipe files.
 - First audio pass: water bed, wind bed, frog voice with chorus (doc 17).
 - First human touches: stepping stones and one lantern, so the icon's dusk scene can be recreated in game.
+- Presence rung 2, the seat (doc 23): "sit here" at eye height, where trust grows fastest; it brings the ground-level view up to standard before the walker.
 
 ### M3 — Meadow, seasons and the woodland knoll
 
@@ -87,6 +88,7 @@ Slice acceptance, all together:
 - Full seasonal look: color shifts, blooming, leaf drop, frosty winter mornings (no snow).
 - Full weather: rain, mist, wind, and the drier or wetter leaning.
 - Paths and stone walls, with moss growing over them in time.
+- Presence rung 3, the walker (doc 23), may start here and finish in M4: a small traveler you step into and walk along paths and over the bridge. It is large enough to be scheduled as its own step when M3 is planned.
 - The Tier 2 milestone: the woodland knoll rises beyond a channel, and the bridge gift arrives with it.
 
 ### M4 — Woodland and the tide flats
@@ -106,6 +108,7 @@ Slice acceptance, all together:
 
 - Fireflies, bats, and migrating cranes as rare seasonal visitors.
 - Night lighting polish, lantern glow, firefly light; the Moonlight palette as the bats' gift.
+- Presence rung 4, the camp (doc 23), here or with the M7 chapter: a bedroll, a fire and a home point that keeps a gentle presence while you are away.
 - The journal year page (all fifteen species photographed and all four seasons passed).
 - Mobile tier tuning, accessibility pass, store page and promo capture.
 
