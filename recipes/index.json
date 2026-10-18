@@ -14,6 +14,9 @@
     "land/starter-island": "land/starter-island.json",
     "flora/grass": "flora/grass.json",
     "flora/reeds": "flora/reeds.json",
+    "flora/lilies": "flora/lilies.json",
+    "flora/iris": "flora/iris.json",
+    "flora/thrift": "flora/thrift.json",
     "world/growth": "world/growth.json",
     "palettes/dusk": "palettes/dusk.json",
     "palettes/meadow-morning": "palettes/meadow-morning.json"

@@ -33,6 +33,9 @@ export function createGrowth(device, opts) {
     { bytesPerRow: HABITAT_CELLS }, [HABITAT_CELLS, HABITAT_CELLS]);
   const data = new Float32Array(cap * PLANT_FLOATS);
   const speciesIndex = (/** @type {string} */ sp) => recipes.flora[sp]?.index ?? 0;
+  const kinds = 1 + Math.max(0, ...Object.values(recipes.flora).map((r) => r.index ?? 0));
+  /** Per species index: [first instance, instances], so each species draws only its own plants. */
+  const ranges = Array.from({ length: kinds }, () => [0, 0]);
 
   /** @type {import('./habitat.js').Habitat | null} */ let habitat = null;
   let count = 0;
@@ -59,8 +62,13 @@ export function createGrowth(device, opts) {
     if (!g || g === shown) return;
     shown = g;
     count = Math.min(g.plants.length, cap);
+    // Grouped by species (in plant order within each), one range per species.
+    const order = g.plants.slice(0, count).map((p, i) => ({ s: speciesIndex(p.sp), i }));
+    order.sort((a, b) => a.s - b.s || a.i - b.i);
+    for (const r of ranges) { r[0] = 0; r[1] = 0; }
+    for (let n = order.length - 1; n >= 0; n--) { const r = ranges[order[n].s]; r[0] = n; r[1]++; }
     for (let i = 0; i < count; i++) {
-      const p = g.plants[i];
+      const p = g.plants[order[i].i];
       const o = i * PLANT_FLOATS;
       data[o] = p.x; data[o + 1] = p.z; data[o + 2] = p.size; data[o + 3] = p.stage;
       data[o + 4] = speciesIndex(p.sp); data[o + 5] = hash32(p.id, 0x51ed) / 4294967296;
@@ -76,6 +84,8 @@ export function createGrowth(device, opts) {
     instances,
     /** Plants in `instances`. */
     count: () => count,
+    /** The instances of one species (its recipe index): [first, count]. @param {number} index */
+    range: (index) => ranges[index] ?? [0, 0],
     /** Grass cover 0..1 on the 1 m world grid (r8unorm, 192 x 192 from -80 m): how well grass likes the ground. */
     coverTex,
     /** The current habitat grid, or null before the first water summary. */

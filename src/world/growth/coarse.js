@@ -3,9 +3,10 @@
 // events; seeded randomness only (core/rng.js stream), and only + - * / and Math.floor/min/max/abs
 // on numbers, so a watched hour and an hour simulated while away give the same island.
 //
-// Each hour every plant asks: is the ground right (moisture, water depth, salt from the habitat
-// grid), is it the season to grow, and is it drowning? It grows toward full size by the answer,
-// changes stage, and a mature clump of a spreading species sends a rhizome along the best bearing.
+// Each hour every plant asks: is the ground right (moisture, water depth, still water, salt from
+// the habitat grid, each axis only if its recipe names it), is it the season to grow, and is it
+// drowning? It grows toward full size by the answer, changes stage, and a mature plant of a
+// spreading species sends a rhizome along the best bearing or drops a seed nearby.
 // The grass cover per square meter moves toward what the ground supports. A new island gets a few
 // starter clumps the first time the habitat is known.
 //
@@ -58,29 +59,50 @@ function bell(x, r) {
 
 /**
  * What the ground offers a plant at a world point: moisture and salt 0..1, water depth (m; the
- * sea counts as far too deep), or null off the grid.
+ * sea counts as far too deep), still 1 in still water and damp ground, or null off the grid or
+ * outside the opened island.
  * @param {import('./habitat.js').Habitat} hab @param {number} x @param {number} z
  */
 export function groundAt(hab, x, z) {
   const k = habitatCell(x, z);
-  if (k < 0) return null;
-  return { moisture: hab.moisture[k] / 255, salt: hab.salt[k] / 255, depth: hab.sea[k] ? 9 : hab.depthCm[k] / 100, k };
+  if (k < 0 || !hab.open[k]) return null;
+  return { moisture: hab.moisture[k] / 255, salt: hab.salt[k] / 255, depth: hab.sea[k] ? 9 : hab.depthCm[k] / 100, still: hab.still[k], k };
 }
+
+/** @typedef {'dry'|'wet'|'shallow'|'deep'|'fresh'|'salt'|'flow'|'outside'} Need */
+
+/**
+ * The habitat axes a recipe may use, in the order a tie names the need: [recipe key, ground key,
+ * need when too low, need when too high]. A recipe leaves out the axes it does not care about.
+ * @type {[string, 'moisture'|'depth'|'salt'|'still', Need, Need][]}
+ */
+const AXES = [
+  ['waterDepthM', 'depth', 'shallow', 'deep'],
+  ['still', 'still', 'flow', 'flow'],
+  ['moisture', 'moisture', 'dry', 'wet'],
+  ['salt', 'salt', 'fresh', 'salt'],
+];
 
 /**
  * How well a species likes a point, 0..1, and which need is furthest from met.
  * @param {any} rec the species recipe @param {import('./habitat.js').Habitat} hab @param {number} x @param {number} z
- * @returns {{ suit: number, worst: 'moisture'|'depth'|'salt'|'outside' }}
+ * @returns {{ suit: number, worst: Need }}
  */
 export function suitability(rec, hab, x, z) {
   const g = groundAt(hab, x, z);
   if (!g) return { suit: 0, worst: 'outside' };
   const H = rec.habitat;
-  const m = bell(g.moisture, H.moisture);
-  const d = bell(g.depth, H.waterDepthM);
-  const s = bell(g.salt, H.salt);
-  const worst = m <= d && m <= s ? 'moisture' : d <= s ? 'depth' : 'salt';
-  return { suit: m * d * s, worst };
+  let suit = 1, low = 2;
+  /** @type {Need} */ let worst = 'dry';
+  for (const [key, at, tooLow, tooHigh] of AXES) {
+    const r = H[key];
+    if (!r) continue;
+    const v = g[at];
+    const b = bell(v, r);
+    suit *= b;
+    if (b < low) { low = b; worst = v < r[0] ? tooLow : tooHigh; }
+  }
+  return { suit, worst };
 }
 
 /** Season position (0 spring .. 4) inside a [from, to) window, wrapping. @param {number} pos @param {number[]} w */
@@ -205,7 +227,7 @@ function plantStarters(g, hab, env) {
 /**
  * Plant a seed by hand (the Plant tool). Returns the new state, or the reason it would not take.
  * @param {any} state @param {string} sp @param {number} x @param {number} z @param {any} env
- * @returns {{ state: any, ok: boolean, id?: number, reason?: 'moisture'|'depth'|'salt'|'outside'|'crowded'|'full'|'unknown' }}
+ * @returns {{ state: any, ok: boolean, id?: number, reason?: Need|'crowded'|'full'|'unknown' }}
  */
 export function plantSeed(state, sp, x, z, env) {
   const hab = env.habitat?.();
@@ -268,13 +290,14 @@ export function coarseStep(state, hourIndex, env) {
   }
   g.plants = alive;
 
-  // Rhizomes: mature clumps creep along the best of eight bearings.
+  // Spread: a rhizome creeps along the best of eight bearings; a dropped seed lands on the one
+  // bearing it rolled, and takes only if the ground there is good.
   const index = cellIndex(g.plants);
   const born = [];
   for (const p of g.plants) {
     const rec = env.recipes.flora[p.sp];
     const R = rec.spread;
-    if (!R || R.kind !== 'rhizome' || p.stage < STAGE.mature || p.stage === STAGE.dormant) continue;
+    if (!R || (R.kind !== 'rhizome' && R.kind !== 'seed') || p.stage < STAGE.mature || p.stage === STAGE.dormant) continue;
     if (hourIndex - p.last < R.everyH) continue;
     if (g.plants.length + born.length >= GR.maxPlants) break;
     p.last = hourIndex;
@@ -283,7 +306,7 @@ export function coarseStep(state, hourIndex, env) {
     const dist = R.distanceM[0] + (R.distanceM[1] - R.distanceM[0]) * r.next();
     const turn = r.int(8);
     let best = -1, bx = 0, bz = 0;
-    for (let b = 0; b < 8; b++) {
+    for (let b = 0; b < (R.kind === 'seed' ? 1 : 8); b++) {
       const dir = BEARINGS[(b + turn) % 8];
       const x = p.x + dir[0] * dist, z = p.z + dir[1] * dist;
       const s = suitability(rec, hab, x, z).suit;

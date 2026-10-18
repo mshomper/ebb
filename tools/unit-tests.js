@@ -24,6 +24,7 @@ import {
 } from '../src/render/color/oklab.js';
 import { keyWeights, blendPalette, paramsDistance, TIME_KEYS, SEASON_KEYS } from '../src/render/passes/post/palette-keys.js';
 import { createPaletteBaker, bakeColor, IDENTITY_PALETTE, LUT_SIZE } from '../src/render/passes/post/lut-bake.js';
+import { addGrowthTests } from './unit-tests-growth.js';
 
 /** @type {{group: string, name: string, fn: () => any}[]} */
 const tests = [];
@@ -1315,6 +1316,10 @@ test(PAL, 'setPalette crossfades over fadeS, and fadeS 0 swaps at once', async (
   baker.destroy();
   return `${bakeFrames.length} rebakes (frames ${bakeFrames.join(', ')}) in one second while the sun fell from 25 to -19 deg`;
 });
+
+// ---- growth (tools/unit-tests-growth.js) ----
+
+addGrowthTests(test, assert, eq);
 
 // ---- runner and rendering ----
 

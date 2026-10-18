@@ -11,17 +11,53 @@ import { STAGE } from './coarse.js';
 /** Ring slots the terrain shader holds (terrain-draw.wgsl marks). */
 const SLOTS = 16;
 
-/** What the tool says after a tap, by outcome. @type {Record<string, (name: string) => string>} */
+/**
+ * What the tool says after a tap: by species and the need the ground misses most (coarse.js
+ * suitability), then by outcome for every species. @type {Record<string, Record<string, string>>}
+ */
 const SAYS = {
-  ok: (n) => `${n} planted`,
-  moisture: (n) => `${n} need wetter ground`,
-  depth: (n) => `Too deep for ${n.toLowerCase()}`,
-  salt: (n) => `Too salty for ${n.toLowerCase()}`,
-  crowded: () => 'A clump grows here already',
-  full: () => 'The island is full of plants',
-  outside: () => 'Plant on the island',
-  unknown: () => 'Wait a moment for the island to settle',
+  reeds: {
+    dry: 'Reeds need wetter ground',
+    deep: 'Too deep for reeds',
+    salt: 'Too salty for reeds',
+  },
+  lilies: {
+    shallow: 'Water lilies need a pond 0.3 to 1.5 m deep',
+    deep: 'Too deep for water lilies',
+    flow: 'Water lilies need still water, not a stream',
+    salt: 'Too salty for water lilies',
+  },
+  iris: {
+    dry: 'Iris needs wetter ground, close to the water',
+    deep: 'Too deep for iris; plant it on the bank',
+    salt: 'Too salty for iris',
+  },
+  thrift: {
+    fresh: 'Sea thrift needs salty ground near the sea',
+    wet: 'Too wet for sea thrift',
+    deep: 'Too wet for sea thrift',
+  },
+  any: {
+    ok: '{name} planted',
+    dry: '{name}: the ground is too dry here',
+    wet: '{name}: the ground is too wet here',
+    shallow: '{name}: the water is too shallow here',
+    deep: '{name}: the water is too deep here',
+    flow: '{name}: the water moves too much here',
+    fresh: '{name}: not salty enough here',
+    salt: '{name}: too salty here',
+    crowded: 'A plant like this grows here already',
+    full: 'The island is full of plants',
+    outside: 'Plant on the island',
+    unknown: 'Wait a moment for the island to settle',
+  },
 };
+
+/** @param {string} sp @param {string} name @param {string} outcome */
+function say(sp, name, outcome) {
+  const s = SAYS[sp]?.[outcome] ?? SAYS.any[outcome] ?? SAYS.any.unknown;
+  return s.replace('{name}', name);
+}
 
 /**
  * @param {{ growth: import('./index.js').Growth, world: { state: any }, flora: Record<string, any>, recipe: any }} opts
@@ -43,7 +79,7 @@ export function createPlantTool(opts) {
     tap(sp, p) {
       const r = growth.plant(sp, p[0], p[2]);
       const name = flora[sp]?.name ?? sp;
-      updateStore('plantUi', () => ({ message: (SAYS[r.ok ? 'ok' : r.reason ?? 'unknown'] ?? SAYS.unknown)(name), at: performance.now() }));
+      updateStore('plantUi', () => ({ message: say(sp, name, r.ok ? 'ok' : r.reason ?? 'unknown'), at: performance.now() }));
       if (!r.ok) return false;
       taps.push({ x: p[0], z: p[2], at: performance.now() });
       if (r.id !== undefined) mine = [r.id, ...mine].slice(0, SLOTS - 1);

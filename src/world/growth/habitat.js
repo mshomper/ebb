@@ -9,6 +9,7 @@
 //   still     1 where the water is still (ponds, damp), 0 in streams and the sea
 //   sea       1 in the sea
 //   grass     0..255: the painted grass share (mean over the cell's 16 terrain texels)
+//   open      1 inside the water summary's area (the opened island); nothing grows outside it
 // Built from the water summary (rebuilt after every sculpt) and the terrain's painted materials.
 
 import { WATER_CLASS } from '../water/summary.js';
@@ -22,6 +23,7 @@ export const HABITAT_ORIGIN = -80;
  * @property {number} n           cells per side
  * @property {Uint8Array} depthCm @property {Uint8Array} moisture @property {Uint8Array} salt
  * @property {Uint8Array} still   @property {Uint8Array} sea      @property {Uint8Array} grass
+ * @property {Uint8Array} open
  * @property {number} hash        FNV-1a over the arrays (uint32), for the determinism page
  */
 
@@ -90,6 +92,7 @@ export function buildHabitat(args) {
   const still = new Uint8Array(N * N);
   const sea = new Uint8Array(N * N);
   const grass = new Uint8Array(N * N);
+  const open = new Uint8Array(N * N);
   const fresh = new Uint8Array(N * N);   // fresh water or damp: the bank's source
   const salty = new Uint8Array(N * N);   // sea or tide band
   const band = new Uint8Array(N * N);
@@ -99,6 +102,7 @@ export function buildHabitat(args) {
       const i = eco.x + a, j = eco.y + b;
       if (i < 0 || j < 0 || i >= N || j >= N) continue;
       const e = b * eco.w + a, k = j * N + i;
+      open[k] = 1;
       const c = eco.cls[e];
       if (c === WATER_CLASS.sea) { sea[k] = 1; salty[k] = 1; }
       else if (c === WATER_CLASS.still || c === WATER_CLASS.slow || c === WATER_CLASS.running) {
@@ -138,10 +142,10 @@ export function buildHabitat(args) {
 
   // FNV-1a over everything, so two machines can compare.
   let h = 0x811c9dc5;
-  for (const arr of [depthCm, moisture, salt, still, sea, grass]) {
+  for (const arr of [depthCm, moisture, salt, still, sea, grass, open]) {
     for (let k = 0; k < arr.length; k++) h = Math.imul(h ^ arr[k], 0x01000193) >>> 0;
   }
-  return { n: N, depthCm, moisture, salt, still, sea, grass, hash: h >>> 0 };
+  return { n: N, depthCm, moisture, salt, still, sea, grass, open, hash: h >>> 0 };
 }
 
 /**

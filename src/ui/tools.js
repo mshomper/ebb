@@ -56,15 +56,15 @@ const TOOLS = [
   { id: 'plant', label: 'Plant' },
 ];
 /**
- * Species the Plant tool offers, in chip order. S5b-2 adds the others here, each with a drawn
- * icon of the same name in icons.js:
- *   { id: 'lilies', label: 'Water lilies', icon: 'lilies', hint: '...' }
- *   { id: 'iris', label: 'Yellow iris', icon: 'iris', hint: '...' }
- *   { id: 'thrift', label: 'Sea thrift', icon: 'thrift', hint: '...' }
+ * Species the Plant tool offers, in chip order (four chips form a 2 x 2 grid). Each `icon` is a
+ * drawn icon of the same name in icons.js; `hint` says where the species grows.
  * @type {{id: PlantSpecies, label: string, icon: string, hint: string}[]}
  */
 const PLANT_SPECIES = [
   { id: 'reeds', label: 'Reeds', icon: 'reeds', hint: 'Reeds like wet banks and shallow fresh water. Tap the ground to plant a seed.' },
+  { id: 'lilies', label: 'Water lilies', icon: 'lilies', hint: 'Water lilies like still fresh water 0.3 to 1.5 m deep. Tap the water to plant one.' },
+  { id: 'iris', label: 'Yellow iris', icon: 'iris', hint: 'Yellow flag iris likes the wet bank just above the water. Tap the ground to plant a seed.' },
+  { id: 'thrift', label: 'Sea thrift', icon: 'thrift', hint: 'Sea thrift likes the salty shore by the sea. Tap the ground to plant a seed.' },
 ];
 /** How long a Plant tap's result stays before it fades, ms. */
 const PLANT_MESSAGE_MS = 2500;

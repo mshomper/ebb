@@ -169,8 +169,8 @@ export async function startApp(canvas, hooks = {}) {
     terrain, recipe: await loadRecipe('flora/grass'), terrainRecipe, seed: subSeed(seed, 'grass'), tier: tierSettings,
     water: { depthTextures: water.sim.depthTextures, current: () => water.sim.current }, cover: growth.coverTex,
   });
-  // Plants (docs 10): reed clumps from the growth step's instances, after the grass.
-  const floraPass = createFloraPass({ growth, recipes: { reeds: flora.reeds } });
+  // Plants (docs 10): every species from the growth step's instances, after the grass.
+  const floraPass = createFloraPass({ growth, terrain, water: { depthTextures: water.sim.depthTextures, current: () => water.sim.current }, recipes: flora });
   const waterPass = createWaterPass({
     water, terrain, atmosphere, recipe: waterRecipe, seaExtent: terrainRecipe.sea.extent, getTime: () => clock.animT(),
     seabed: { y: landRecipe.seabedDepth, albedo: terrainRecipe.materials.albedoSand.map((/** @type {number} */ a) => a * terrainRecipe.materials.wetDarkening),
