@@ -27,13 +27,9 @@ import { createDaylight } from './render/daylight.js';
 import { createLiveSim } from './sim/live-sim.js';
 import { initialWorldState, makeEnv, runHour } from './sim/tick.js';
 import { createTerrain } from './world/terrain/index.js';
-import { createWater } from './world/water/index.js';
-import { createFoam } from './world/water/foam.js';
-import { createRipples } from './world/water/ripples.js';
-import { createWetness } from './world/terrain/wetness.js';
+import { createWaterWorld } from './world/water-world.js';
 import { weatherAt } from './world/weather.js';
 import { createWaterPass } from './render/passes/water.js';
-import { createMossLive } from './world/growth/moss-live.js';
 import { onAction, history } from './input/actions.js';
 import { attachDesktopInput } from './input/desktop.js';
 import { attachTouchInput } from './input/touch.js';
@@ -112,52 +108,11 @@ export async function startApp(canvas, hooks = {}) {
   updateStore('world', () => world.state);
   const sim = createLiveSim({ world });
   sim.addSystem(terrain);
-  // Live water (docs/07): the sea at the display tide, the springs, flowing over the terrain and
-  // topped up toward the deterministic water summary.
-  const water = await createWater(gpu, {
-    terrain, recipe: waterRecipe, land: landRecipe, terrainSeed: subSeed(seed, 'terrain'), tier,
-    displayHours: clock.display() / clock.SECONDS_PER_HOUR,
-    getHeightQ: () => getStore('terrainLive')?.mirror?.heightQ ?? null,
-    springs: getStore('water')?.springs ?? [],
+  // The live water world (docs/07, 08): water, foam, wet ground, ripples and moss, in tick order.
+  const ww = await createWaterWorld(gpu, {
+    terrain, sim, seed, tier, history, recipes: { water: waterRecipe, terrain: terrainRecipe, land: landRecipe },
   });
-  sim.addSystem(water);
-  // Foam where the water churns, carried by the current (docs/07); right after the water steps.
-  const foam = await createFoam(gpu.device, { water, terrain, recipe: waterRecipe.foam });
-  sim.addSystem(foam);
-  // Wet ground for the look (docs/08): soaked by water, tide and rain, drying over game hours.
-  const wetSky = { rain: 0, sunY: 0, wind: 0 };
-  const wetness = await createWetness(gpu.device, {
-    terrain, water, recipe: terrainRecipe.wetness, dampWet: waterRecipe.look.dampHollowWet,
-    getRain: () => wetSky.rain, getSun: () => wetSky.sunY, getWind: () => wetSky.wind,
-    puddles: terrainRecipe.wetGround.puddles,
-  });
-  sim.addSystem(wetness);
-  // Ripples: a fine wave field around the view, rung by raindrops, the pour brush and (later) creatures.
-  const ripples = await createRipples(gpu.device, { water, recipe: waterRecipe.ripples, size: waterRecipe.ripples.size[tier] ?? waterRecipe.ripples.size.high });
-  sim.addSystem(ripples);
-  // Moss creeps over ground that stays damp (interim live form; doc 10's growth takes over later).
-  const moss = createMossLive(gpu.device, { water, recipe: terrainRecipe.moss });
-  sim.addSystem(moss);
-  const waterTools = waterRecipe.tools;
-  /** Mirror the placed springs into the saved `water` slice and the tool bar's `waterUi` slice. */
-  function syncWater(selectedId = getStore('waterUi')?.selectedId ?? null) {
-    const placed = water.placedSprings();
-    updateStore('water', (w) => ({ ...(w ?? {}), springs: placed, version: 1 }));
-    const sel = placed.some((s) => s.id === selectedId) ? selectedId : null;
-    updateStore('waterUi', () => ({ springCount: placed.length, maxSprings: waterTools.maxSprings, selectedId: sel }));
-  }
-  syncWater(null);
-  // Spring edits are undoable commands (docs/07): add, remove, or a change of rate.
-  history.setApplier('water-spring', (/** @type {any} */ cmd, dir) => {
-    const undo = dir === 'undo';
-    if (cmd.op === 'add') { if (undo) water.removeSpring(cmd.spring.id); else water.addSpring(cmd.spring); }
-    else if (cmd.op === 'remove') { if (undo) water.addSpring(cmd.spring); else water.removeSpring(cmd.spring.id); }
-    else if (cmd.op === 'rate') water.setSpringRate(cmd.spring.id, undo ? cmd.before : cmd.after);
-    syncWater();
-    return true;
-  });
-  // The summary follows the ground: rebuild after every settled stroke, undo and redo.
-  const unStroke = on('terrain:stroke-ended', () => water.requestSummary());
+  const { water, foam, ripples, wetness, moss } = ww;
   const unHour = on('clock:hour', (/** @type {{ hour: number }} */ p) => {
     for (const e of sim.hourlyTick(p.hour)) emitDeferred(e.name, e.payload);
     updateStore('world', () => world.state);
@@ -318,30 +273,18 @@ export async function startApp(canvas, hooks = {}) {
   // ---- the water tool (docs/07): pour and drain while held; springs on tap (when unlocked) ----
   /** Screen point of a held pour or drain, or null. @type {null | { x: number, y: number }} */
   let pouring = null;
-  const springRateLps = () => waterTools.springRates[tools().springRate ?? 'brook'] ?? waterTools.springRates.brook;
 
   /** Each frame while pour or drain is held: the brush source under the pointer. */
   function updatePour() {
     const t = tools();
-    const p = pouring && t.tool === 'water' ? groundAt(pouring.x, pouring.y) : null;
-    if (!p || (t.waterMode !== 'pour' && t.waterMode !== 'drain')) { water.setBrush(null); ripples.setPour(0, 0, 0); return; }
-    const lps = (t.waterMode === 'pour' ? waterTools.pourLps : -waterTools.drainLps) * Math.max(0.05, t.strength);
-    water.setBrush({ x: p[0], z: p[2], radiusM: t.size, rateLps: lps });
-    // Pouring drops rain into the water under the brush: rings spread from it.
-    if (t.waterMode === 'pour') ripples.setPour(p[0], p[2], t.strength, t.size); else ripples.setPour(0, 0, 0);
+    ww.holdBrush(pouring && t.tool === 'water' ? groundAt(pouring.x, pouring.y) : null, t);
   }
 
   /** Tap with the spring mode: select a placed spring, or place a new one under the cap. @param {number} x @param {number} y */
   function springTap(x, y) {
     if (!getStore('unlocks')?.springs) return;
     const p = groundAt(x, y);
-    if (!p) return;
-    const hit = water.springAt(p[0], p[2], 1.0);
-    if (hit) { syncWater(hit); return; }
-    if (water.placedSprings().length >= waterTools.maxSprings) { syncWater(null); return; }
-    const s = water.addSpring({ x: p[0], z: p[2], rateLps: springRateLps() });
-    history.push({ kind: 'water-spring', bytes: 64, op: 'add', spring: s });
-    syncWater(s.id);
+    if (p) ww.tapSpring(p, tools().springRate);
   }
 
   /** @param {'undo'|'redo'} dir */
@@ -371,24 +314,13 @@ export async function startApp(canvas, hooks = {}) {
           t.strength = Math.min(1, Math.max(0, t.strength));
         });
         // A new flow step applies to the selected spring too (undoable).
-        const sel = getStore('waterUi')?.selectedId;
-        if (a.patch.springRate && sel) {
-          const s = water.springs().find((x) => x.id === sel);
-          const after = springRateLps();
-          if (s && s.rateLps !== after && water.setSpringRate(sel, after)) {
-            history.push({ kind: 'water-spring', bytes: 64, op: 'rate', spring: s, before: s.rateLps, after });
-            syncWater(sel);
-          }
-        }
-        if (a.patch.waterMode && a.patch.waterMode !== 'spring') syncWater(null);
+        if (a.patch.springRate) ww.rateSelected(a.patch.springRate);
+        if (a.patch.waterMode && a.patch.waterMode !== 'spring') ww.syncSprings(null);
         break;
       }
-      case 'water.springRemove': {
-        const s = water.removeSpring(a.id);
-        if (s) history.push({ kind: 'water-spring', bytes: 64, op: 'remove', spring: s });
-        syncWater(null);
+      case 'water.springRemove':
+        ww.removeSpring(a.id);
         break;
-      }
       case 'brush.resize':
         updateStore('tools', (t) => { t.size = clampSize(t.size * a.factor); });
         break;
@@ -493,9 +425,6 @@ export async function startApp(canvas, hooks = {}) {
     const season = clock.seasonOf(display);
     const day = daylight.update(display, world.state, getStore('preview')?.weather ?? null, atmosphere.aerosolScale);
     atmosphere.setAtmosphere({ cloud: day.weather.cloud, mist: day.weather.mist, rain: day.weather.rain });
-    wetSky.rain = day.weather.rain;
-    wetSky.sunY = day.sm.sunDir[1];
-    wetSky.wind = weatherAt(world.state?.weather, display, seasonsRecipe).wind;
     for (const event of day.events) emitDeferred('sky:sun-crossed', { event });
     // Palette keys follow the displayed sun, season and weather; positive exposureComp brightens.
     const look = baker.update(realDt, {
@@ -536,7 +465,7 @@ export async function startApp(canvas, hooks = {}) {
 
     /** @type {import('./sim/live-sim.js').FrameInfo} */
     const info = { dt: t.dt, realDt, worldT: t.worldT, animT: t.animT, displayT: display, tier };
-    ripples.setCenter(camera.target[0], camera.target[2]);
+    ww.update({ rain: day.weather.rain, sunY: day.sm.sunDir[1], wind: weatherAt(world.state?.weather, display, seasonsRecipe).wind }, camera.target);
     // `?ripplerain=1` rains ripples in any weather, to judge rings in sunshine (tools, tuning).
     // Raindrops ring the water in the water shader; the ripple field keeps the pour and creatures.
     const ringRain = params.has('ripplerain') ? 1 : day.weather.rain;
@@ -574,7 +503,7 @@ export async function startApp(canvas, hooks = {}) {
     unAction();
     unHistory();
     unHour();
-    unStroke();
+    ww.dispose();
     unProbe();
     detachDesktop();
     detachTouch();

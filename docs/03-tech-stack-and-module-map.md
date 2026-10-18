@@ -122,6 +122,7 @@ Time: 1 game day = 24 real minutes at 1x, so 1 real minute = 1 game hour. `clock
 | `core/recipes.js` | recipe manifest, validation, generator registry | `loadRecipe(id)`, `registerGenerator(g)`, `validate(r)` (doc 14) |
 | `world/terrain/` | heightfield, materials, ground state, sculpt | doc 08 |
 | `world/water/`, `world/tide.js` | visual-only live water (0.5 m grid per 32 m chunk); deterministic 1 m water summary rebuilt in a worker; tide as a pure function of time (moon cycle 7 game days) | doc 07 |
+| `world/water-world.js` | assembles the live water world for the app: water, foam, ripples, the wet-ground map and interim moss, in tick order, plus spring bookkeeping (undo comes in as an option, so it never imports `input/`) | docs 07, 08 |
 | `world/growth/`, `seasons.js`, `weather.js` | flora, moss and lichen, seasons, weather | doc 10 |
 | `world/structures/` | paths, walls, bridge, lanterns | doc 09 |
 | `world/ecology/`, `world/creatures/` | 1 m ecology grid, habitat, creatures | doc 11 |
