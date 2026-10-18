@@ -9,7 +9,7 @@
 // wires it to the bus, the store, the clock and the actions.
 
 import { on, emitDeferred } from '../../core/events.js';
-import { get, update } from '../../core/store.js';
+import { get, update, subscribe } from '../../core/store.js';
 import { hourIndex, display, SECONDS_PER_HOUR, HOURS_PER_DAY } from '../../core/clock.js';
 import { onAction } from '../../input/actions.js';
 import { weatherAt } from '../weather.js';
@@ -19,6 +19,7 @@ import { describe, identify, showMeSpot } from './describe.js';
 import { groundKind, groundCard, groundSurvey, describeGround, groundSpot } from './ground.js';
 import { almanac } from './almanac.js';
 import { inkWeb, describeWeb } from './web.js';
+import { washMap } from './wash.js';
 
 /**
  * @typedef {Object} JournalUiSlice
@@ -29,12 +30,13 @@ import { inkWeb, describeWeb } from './web.js';
  */
 
 /**
- * @param {{ world: { state: any, env: any }, words: any, island: any, web: any }} opts
+ * @param {{ world: { state: any, env: any }, words: any, island: any, web: any, wash?: any }} opts
  *   world: the live world (state and env of the hourly tick); words: recipes/world/journal.json;
- *   island: recipes/world/journal-island.json; web: recipes/world/journal-web.json
+ *   island: recipes/world/journal-island.json; web: recipes/world/journal-web.json;
+ *   wash: recipes/world/journal-wash.json
  */
 export function createJournal(opts) {
-  const { world, words, island, web } = opts;
+  const { world, words, island, web, wash } = opts;
   /** @type {import('./observe.js').Journal} */
   let journal = get('journal') ?? initialJournal(hourIndex());
   update('journal', () => journal);
@@ -55,10 +57,25 @@ export function createJournal(opts) {
     }
     for (const n of r.notes) emitDeferred('note:posted', n);
   }
+  /**
+   * The show-where wash for the page open in the journal, if any (store slice `wash`, painted by
+   * the tonemap pass after the palette). The recipe rides along so the renderer needs no journal.
+   */
+  function rewash() {
+    /** @type {JournalUiSlice | undefined} */ const u = get('journalUi');
+    const page = u?.open && (u.view === 'living' || u.view === 'ground') ? u.page : null;
+    const map = page && wash && habitat()
+      ? washMap(page, { state: world.state, hab: habitat(), material: material(), island, flora: flora(), words, journal, wash })
+      : null;
+    update('wash', () => ({ map, recipe: wash ?? null }));
+  }
+  let washedPage = /** @type {string | null} */ (null);
+
   /** Look at the island, then ink any link of the web that has now been seen. @param {any[]} events @param {number} hour @param {any} [state] */
   const look = (events, hour, state = world.state) => {
     commit(observe(journal, { state, events, hour, habitat: habitat(), words }));
     if (habitat()) commit(inkWeb(journal, survey(), { web, words, state, hour }));
+    if (washedPage) rewash();
   };
 
   /** The weather and time now, as moments read them. @param {number} stage */
@@ -114,7 +131,14 @@ export function createJournal(opts) {
     on('world:ticked', (/** @type {{ hour: number, events: any[], state: any }} */ p) => look(p.events ?? [], p.hour, p.state)),
     // Edits move water and plants between hours: look again (the habitat is rebuilt first).
     on('water:summary-updated', () => look([], hourIndex())),
-    on('terrain:stroke-ended', () => { paintVersion++; }),
+    on('terrain:stroke-ended', () => { paintVersion++; if (washedPage) rewash(); }),
+    // A page opened or closed (or the journal itself): wash for the new page, or clear the wash.
+    subscribe('journalUi', (/** @type {JournalUiSlice} */ u) => {
+      const page = u.open && (u.view === 'living' || u.view === 'ground') ? u.page : null;
+      if (page === washedPage) return;
+      washedPage = page;
+      rewash();
+    }),
     on('growth:planted', (/** @type {{ species: string }} */ p) => {
       journal = notePlanted(journal, p.species, hourIndex());
       look([], hourIndex());
@@ -156,10 +180,10 @@ export function createJournal(opts) {
     describe: (id) => (words.species[id]
       ? describe(journal, id, world.state, habitat(), words, hourIndex())
       : describeGround(journal, id, survey(), island, words)),
-    /** The almanac's rows for the time shown. */
     web,
     /** The web of what needs what: its bands of names and its links, inked or in pencil. */
     describeWeb: () => describeWeb(journal, habitat() ? survey() : null, web),
+    /** The almanac's rows for the time shown. */
     almanac: () => almanac({ state: world.state, tHours: display() / SECONDS_PER_HOUR,
       weatherNow: weatherAt(world.state?.weather, display(), world.env.recipes?.seasons),
       tideParams: tideParams(world.env.recipes?.water?.tide), words, island }),

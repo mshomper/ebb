@@ -47,6 +47,16 @@ function paintedKind(material, x, z) {
 /** The Ground page a kind of ground belongs to. @param {string} kind */
 export const pageOf = (kind) => (kind === 'sea' || kind === 'band' ? 'shore' : kind === 'grass' ? 'soil' : kind);
 
+/**
+ * Is a point of this kind part of Ground page `id`? The open sea belongs to no page here, and a
+ * tide band painted with sand counts as sand as well as shore.
+ * @param {string} id @param {string | null} kind @param {Uint8Array | null} material @param {number} x @param {number} z
+ */
+export function onPage(id, kind, material, x, z) {
+  if (!kind || kind === 'sea') return false;
+  return pageOf(kind) === id || (id === 'sand' && kind === 'band' && paintedKind(material, x, z) === 'sand');
+}
+
 /** The words of a ladder of [at least, words] steps, from the top. @param {[number, string][]} ladder @param {number} v */
 function stepOf(ladder, v) {
   for (const [at, t] of ladder) if (v >= at) return t;
@@ -186,8 +196,7 @@ export function groundSpot(id, hab, material, survey, island, near = null) {
     if (!hab.open[k]) continue;
     const x = HABITAT_ORIGIN + (k % hab.n) + 0.5, z = HABITAT_ORIGIN + Math.floor(k / hab.n) + 0.5;
     const kind = groundKind(hab, material, x, z, island);
-    if (!kind || kind === 'sea' || kind === 'grass') continue;
-    if (pageOf(kind) !== id && !(id === 'sand' && kind === 'band' && paintedKind(material, x, z) === 'sand')) continue;
+    if (kind === 'grass' || !onPage(id, kind, material, x, z)) continue;
     const d = (x - cx) ** 2 + (z - cz) ** 2;
     if (d < bestD) { bestD = d; best = { x, z, kind }; }
   }
