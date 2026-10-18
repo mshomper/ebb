@@ -25,7 +25,7 @@ const bHollow = /** @type {HTMLButtonElement} */ ($('b-hollow'));
 const bMound = /** @type {HTMLButtonElement} */ ($('b-mound'));
 
 // Optics buttons: reload with one effect off (or a debug view), keeping any tier choice.
-const OPTICS_KEYS = ['ssr', 'probe', 'caustics', 'waterdbg'];
+const OPTICS_KEYS = ['ssr', 'probe', 'caustics', 'waterdbg', 'ripplerain', 'weather'];
 for (const b of /** @type {NodeListOf<HTMLButtonElement>} */ (document.querySelectorAll('#optics button'))) {
   const here = new URLSearchParams(location.search);
   const want = new URLSearchParams(b.dataset.q ?? '');

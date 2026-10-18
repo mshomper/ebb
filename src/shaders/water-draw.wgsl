@@ -19,6 +19,7 @@
 // #include lib-lighting
 // #include lib-water
 // #include lib-probe
+// #include lib-ripples
 
 struct WaterDraw {
   rectOrigin: vec2u,          // simulated rect (water cells); the mesh covers its interior
@@ -39,15 +40,16 @@ struct WaterDraw {
   floorSlope: f32,            // how fast the open sea floor deepens beyond it (m per m)
   seabed: vec4f,              // rgb wet sand albedo for the sea floor beyond the terrain, w wet darkening
   filmDepth: vec4f,            // xy depth range (m) over which a broken film becomes a coherent surface
-  debugView: f32,             // ?waterdbg=1 sea or grid, 2 reflection, 3 transmitted, 4 Fresnel/path/depth, 5 island hits
+  debugView: f32,             // ?waterdbg=1 sea or grid, 2 reflection, 3 transmitted, 4 Fresnel/path/depth, 5 island hits, 6 ripple slope
   detailFadeM: f32,           // ripples calm and move into roughness by this distance (quality tier)
   _q1: f32, _q2: f32,
-  riffle: vec4f,              // white water: x, y speed range (m/s) it fades in over, z depth (m) it is gone by, w coverage
-  riffle2: vec4f,             // x streak size (m), y white-water albedo
+  rain: vec4f,                // raindrop rings: x share of drop cells active (rain), y cell size (m), z ring life (s), w crest spacing (m)
+  rain2: vec4f,               // x ring radius at the end of its life (m), y crest slope, z foam lace flow cycle (s)
   scatterPond: vec4f,         // rgb single-scatter albedo of pond water (fine silt and peat stain it)
   ssr: vec4f,                 // island reflection: x march steps (0 off), y refine steps, z reach (m), w hit thickness (m)
   ssr2: vec4f,                // x screen-edge fade (uv), y, z roughness range it fades out over, w start offset (m)
   ssr3: vec4f,                // x share of the ripple tilt the march follows, y 1 = sky from the probe
+  foam: vec4f,                // x lace size (m), y foam albedo, z most of a pixel foam covers, w boil speed (cells/s)
 };
 
 @group(0) @binding(0) var<uniform> frame: FrameUniforms;
@@ -64,6 +66,9 @@ struct WaterDraw {
 @group(2) @binding(10) var<storage, read> skyState: SkyState;
 @group(2) @binding(11) var probeTex: texture_cube<f32>;   // sky probe (lib-probe.wgsl)
 @group(2) @binding(12) var probeSampler: sampler;
+@group(2) @binding(13) var foamTex: texture_2d<f32>;      // foam cover 0..1 on the water cells (water-foam.wgsl)
+@group(2) @binding(14) var rippleTex: texture_2d<f32>;    // ripple heights around the view (lib-ripples.wgsl)
+@group(2) @binding(15) var<uniform> rippleInfo: RippleInfo;
 
 const G: f32 = 9.81;
 
@@ -210,13 +215,73 @@ fn ripples(xz: vec2f, t: f32) -> vec2f {
   return g;
 }
 
-// White-water flecks: soft noise blobs (the caller advects them with the current), thresholded
-// to the white-water coverage with a soft edge.
-fn flecks(xz: vec2f) -> f32 {
-  let q = xz / wd.riffle2.x;
-  let n = noiseGrad(q, 911u).x * 0.6 + noiseGrad(q * 2.7 + vec2f(5.1, 2.7), 912u).x * 0.4;
-  let c = wd.riffle.w;
-  return smoothstep(1.0 - c, 1.0 - c + 0.3, n);
+// Raindrop rings (docs/07): each drop leaves two or three fine crests that spread out and fade
+// within a second, finer than the ripple field can hold. Drops fall on a world grid of cells;
+// each cell holds one drop per lifetime at a hashed spot and time, and how many cells are
+// active follows the rain. Returns the surface slope (dh/dx, dh/dz). Two offset grids layered,
+// so the drops never line up.
+fn rainRingLayer(xz: vec2f, t: f32, layer: u32) -> vec2f {
+  let cellM = wd.rain.y;
+  let life = wd.rain.z;
+  let k = 6.2831853 / wd.rain.w;            // crest wavenumber
+  let p = xz / cellM + f32(layer) * vec2f(0.37, 0.71);
+  let base = floor(p);
+  var g = vec2f(0.0);
+  for (var j = -1; j <= 1; j++) {
+    for (var i = -1; i <= 1; i++) {
+      let cell = base + vec2f(f32(i), f32(j));
+      let ci = vec2u(vec2i(cell) + vec2i(1 << 20));
+      // A new drop every lifetime: hash the cell and which lifetime this is.
+      let h0 = hash3(vec3u(ci, layer * 7919u + 3u));
+      let tt = t / life + hashToFloat(h0);
+      let n = u32(floor(tt));
+      let age = fract(tt);                    // 0..1 through this drop's life
+      let h = hash3(vec3u(ci, n * 2u + layer));
+      if (hashToFloat(h) > wd.rain.x) { continue; }   // fewer drops in light rain
+      let spot = (cell + 0.15 + 0.7 * vec2f(hashToFloat(pcg(h)), hashToFloat(pcg(h ^ 0x9e37u)))) * cellM;
+      let off = xz - spot;
+      let dist = length(off);
+      let radius = wd.rain2.x * sqrt(age);    // fast at first, slowing as it spreads
+      let x = dist - radius;
+      // A short train of crests just inside the front, fading as the ring ages and widens.
+      let envelope = exp(-x * x / (wd.rain.w * wd.rain.w * 1.5)) * (1.0 - age) * (1.0 - age);
+      let dh = wd.rain2.y * envelope * cos(k * x);   // slope along the radius
+      g += off / max(dist, 1e-4) * dh;
+    }
+  }
+  return g;
+}
+
+// Foam cover at xz between the cells, with smoothstepped weights so no cell corners show.
+fn foamCover(xz: vec2f) -> f32 {
+  let g = waterCellCoord(xz);
+  let c = vec2i(floor(g));
+  let fl = g - floor(g);
+  let f = fl * fl * (3.0 - 2.0 * fl);
+  let hi = vec2i(WATER_CELLS - 1);
+  let a = textureLoad(foamTex, clamp(c, vec2i(0), hi), 0).r;
+  let b = textureLoad(foamTex, clamp(c + vec2i(1, 0), vec2i(0), hi), 0).r;
+  let d = textureLoad(foamTex, clamp(c + vec2i(0, 1), vec2i(0), hi), 0).r;
+  let e = textureLoad(foamTex, clamp(c + vec2i(1, 1), vec2i(0), hi), 0).r;
+  return mix(mix(a, b, f.x), mix(d, e, f.x), f.y);
+}
+
+// Foam lace: bubbly froth with holes, so cover reads as foam, not paint. Each octave is the mean
+// of two copies drifting slowly in different directions, so the bubbles swell, merge and pop
+// continuously with no cycle to reset. Cover c fills more of the pattern; soft edges.
+fn foamLace(xz: vec2f, c: f32, t: f32) -> f32 {
+  let q = xz / wd.foam.x;
+  let b = wd.foam.w;   // boil speed (lace cells per second)
+  let n0 = 0.5 * (noiseGrad(q + vec2f(b, 0.3 * b) * t, 921u).x + noiseGrad(q + vec2f(-0.4 * b, b) * t + 3.1, 924u).x);
+  let q1 = q * 2.3 + vec2f(1.7, 4.2);
+  let n1 = 0.5 * (noiseGrad(q1 + vec2f(-b, 0.5 * b) * t, 922u).x + noiseGrad(q1 + vec2f(0.6 * b, -b) * t + 7.9, 925u).x);
+  let n2 = noiseGrad(q * 5.1 + vec2f(3.3, 0.9) + vec2f(0.7 * b, 0.7 * b) * t, 923u).x;
+  // Averaged noise bunches toward 0.5; stretch it back out.
+  let n = clamp(0.5 + 1.6 * ((n0 * 0.55 + n1 * 0.3 + n2 * 0.15) - 0.5), 0.0, 1.0);
+  // A connected froth with dark holes; more cover opens the pattern a little and makes it whiter
+  // (the caller scales by cover), so thin foam is a faint veil, not scattered specks.
+  let edge = 0.52 - 0.12 * c;
+  return smoothstep(edge, edge + 0.3, n);
 }
 
 // Gentle open-water swell: a sum of sine waves with deep-water dispersion, slope only.
@@ -247,7 +312,7 @@ fn skyRadiance(dir: vec3f, rough: f32) -> vec3f {
 
 // Where the reflected ray r from P meets the island in the opaque scene copy (screen-space
 // reflection, docs/07): march out at quadratically growing steps (fine near the water, coarse far
-// away) with a fixed per-pixel jitter, then bisect the crossing. Returns the scene copy's color
+// away), then bisect the crossing. Returns the scene copy's color
 // there (pre-exposed, its own aerial perspective included) and a weight that fades out toward the
 // screen edges, at the end of the reach, and on rough water. The sky and the sea are not in the
 // copy, so rays that miss fall back to the sky.
@@ -255,11 +320,12 @@ fn reflectScene(P: vec3f, r: vec3f, pixel: vec2f, rough: f32) -> vec4f {
   if (wd.ssr.x < 0.5 || r.y < -0.05) { return vec4f(0.0); }
   let steps = u32(wd.ssr.x);
   let reach = wd.ssr.z;
-  let jitter = hashToFloat(hash2(vec2u(pixel) + vec2u(7u, 13u)));
+  // Every pixel marches the same steps: a per-pixel jitter turned near misses into speckle.
   var lo = wd.ssr2.w;
   var hi = -1.0;
+  var held = 1.0;
   for (var i = 0u; i < steps; i++) {
-    let s = (f32(i) + jitter) / f32(steps);
+    let s = (f32(i) + 0.5) / f32(steps);
     let tt = wd.ssr2.w + reach * s * s;
     let q = P + r * tt;
     let c = frame.viewProj * vec4f(q, 1.0);
@@ -273,7 +339,9 @@ fn reflectScene(P: vec3f, r: vec3f, pixel: vec2f, rough: f32) -> vec4f {
       let wp = frame.invViewProj * vec4f(ndc.xy, sd, 1.0);
       let behind = distance(q, frame.cameraPos) - distance(wp.xyz / wp.w, frame.cameraPos);
       // Only a crossing counts: a ray that passes far behind a thin bank is hidden, not a hit.
-      if (behind < wd.ssr.w + tt * 0.04) { hi = tt; }
+      // Near the limit the hit fades out instead of flipping, so neighbors never speckle.
+      let thick = wd.ssr.w + tt * 0.04;
+      if (behind < 2.0 * thick) { hi = tt; held = 1.0 - smoothstep(thick, 2.0 * thick, behind); }
       break;
     }
     lo = tt;
@@ -291,8 +359,15 @@ fn reflectScene(P: vec3f, r: vec3f, pixel: vec2f, rough: f32) -> vec4f {
   let uv = vec2f(c.x / c.w * 0.5 + 0.5, 0.5 - c.y / c.w * 0.5);
   let edge = min(min(uv.x, 1.0 - uv.x), min(uv.y, 1.0 - uv.y));
   let w = smoothstep(0.0, wd.ssr2.x, edge) * (1.0 - smoothstep(0.75 * reach, reach, hi))
-        * (1.0 - smoothstep(wd.ssr2.y, wd.ssr2.z, rough));
-  return vec4f(textureSampleLevel(sceneColor, clampSampler, uv, 0.0).rgb, w);
+        * (1.0 - smoothstep(wd.ssr2.y, wd.ssr2.z, rough)) * held;
+  // At flat angles a reflection squeezes the bank's grass detail into a few pixels; four taps a
+  // pixel apart filter it, so it reads as a soft reflection rather than glitter.
+  let px = frame.invRenderSize * 1.5;
+  let col = textureSampleLevel(sceneColor, clampSampler, uv + vec2f(-px.x, -px.y), 0.0).rgb
+          + textureSampleLevel(sceneColor, clampSampler, uv + vec2f(px.x, -px.y), 0.0).rgb
+          + textureSampleLevel(sceneColor, clampSampler, uv + vec2f(-px.x, px.y), 0.0).rgb
+          + textureSampleLevel(sceneColor, clampSampler, uv + vec2f(px.x, px.y), 0.0).rgb;
+  return vec4f(col * 0.25, w);
 }
 
 @fragment
@@ -329,6 +404,15 @@ fn fsWater(in: VsOut) -> FsOut {
   var grad = mix(g0, g1, blend) * shallow * (1.0 - 0.75 * far) * (1.0 + 1.5 * min(speed, 1.0));
   grad += swell(P.xz, t) * smoothstep(0.0, wd.scatter.w, d);
   grad += in.slope;
+  // Rings from raindrops, the pour brush and (later) creatures: the fine ripple field near the view.
+  grad += rippleSlope(rippleTex, rippleInfo, P.xz) * (1.0 - far);
+  // Raindrop rings, only where a pixel is small enough to hold their crests (a few cm apart);
+  // farther away and at flat angles they fade rather than shimmer.
+  let pixM = viewDist * 2.0 / (frame.proj[1][1] * frame.renderSize.y) / max(abs(v.y), 0.15);
+  let ringNear = 1.0 - smoothstep(0.25, 0.5, pixM / wd.rain.w);
+  if (wd.rain.x > 0.001 && ringNear > 0.0 && d > 0.01) {
+    grad += (rainRingLayer(P.xz, t, 0u) + rainRingLayer(P.xz, t + 0.37, 1u)) * ringNear;
+  }
   let n = normalize(vec3f(-grad.x, 1.0, -grad.y));
   // Thin water is a broken film: stones and blades stand through it, so it reflects weakly and
   // scatters the sun broadly. Deeper water is a coherent surface.
@@ -419,22 +503,24 @@ fn fsWater(in: VsOut) -> FsOut {
   let own = inScatter * (1.0 - F) + refl * F * (1.0 - island.a) + glint;
   var surface = applyAerial(own, screenUv, viewDist) + island.rgb * (F * island.a) + scene * Tbed * (1.0 - F);
 
-  // ---- riffles ----
-  // Fast, shallow water churns over its bed and takes in air, which shows as white flecks
-  // drifting with the current (docs/07 foam; the advected foam field arrives in S4c). Only real
-  // running water (a centimeter or so), never a film. Lit like a rough white surface.
-  let rifMask = smoothstep(wd.riffle.x, wd.riffle.y, speed) * smoothstep(0.006, 0.015, d)
-              * (1.0 - smoothstep(wd.riffle.z * 0.5, wd.riffle.z, d));
-  if (rifMask > 0.001) {
-    // A short cycle of their own, so the flecks drift without smearing into long streaks.
-    let fp = 0.7;
-    let f0p = fract(t / fp);
-    let f1p = fract(t / fp + 0.5);
-    let a = flecks(P.xz - in.vel * f0p * fp);
-    let b = flecks(P.xz - in.vel * f1p * fp + vec2f(3.7, 1.3));
-    let white = mix(a, b, abs(2.0 * f0p - 1.0)) * rifMask;
-    let foam = applyAerial(wd.riffle2.y * lightIn * frame.exposure, screenUv, viewDist);
-    surface = mix(surface, foam, white);
+  // ---- foam ----
+  // All white water is one field (water-foam.wgsl: falls, meeting flows, fast shallow churn),
+  // carried downstream by the simulation on 0.5 m cells. Its lace rides the current too: two
+  // copies, each sliding with the water for one cycle and faded out as it resets, half a cycle
+  // apart. Every spot resets at its own moment (a slow noise offsets the cycle), so the surface
+  // never blinks together. On still water the lace just boils in place.
+  let cover = foamCover(P.xz);
+  if (cover > 0.01 && in.bed > -40.0) {
+    let fp = wd.rain2.z;
+    let phase = t / fp + noiseGrad(P.xz * 0.45, 931u).x * 2.0;
+    let fa = fract(phase);
+    let fb = fract(phase + 0.5);
+    let la = foamLace(P.xz - in.vel * fa * fp, cover, t);
+    let lb = foamLace(P.xz - in.vel * fb * fp + vec2f(2.9, 6.1), cover, t);
+    let lace = mix(la, lb, abs(2.0 * fa - 1.0));
+    let froth = applyAerial(wd.foam.y * lightIn * frame.exposure, screenUv, viewDist);
+    // Films only millimeters thick (spilling over a bank) never froth.
+    surface = mix(surface, froth, lace * wd.foam.z * smoothstep(0.0, 0.5, cover) * smoothstep(0.01, 0.025, d));
   }
 
   // Shoreline: the water fades out over the last half cell toward a dry bank and where the plane
@@ -448,6 +534,7 @@ fn fsWater(in: VsOut) -> FsOut {
   let dv = u32(wd.debugView + 0.5);
   if (dv == 1u) { color = select(vec3f(0.0, 4.0, 0.0), vec3f(4.0, 0.0, 0.0), in.bed < -40.0); if (any(surface != surface)) { color = vec3f(0.0, 0.0, 4.0); } }
   if (dv == 2u) { color = mix(refl, island.rgb, island.a) * 4.0; }
+  if (dv == 6u) { let rs = rippleSlope(rippleTex, rippleInfo, P.xz); color = vec3f(abs(rs) * 20.0, 0.2); }
   if (dv == 5u) { color = vec3f(island.a, 0.0, 1.0 - island.a) * 2.0; }
   if (dv == 3u) { color = (scene * Tbed + inScatter) * 4.0; }
   if (dv == 4u) { color = vec3f(F * 10.0, min(L / 50.0, 1.0) * 4.0, d / 10.0 * 4.0); }

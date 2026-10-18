@@ -8,7 +8,7 @@ import { makeBuffer, makeShaderModule, makeTexture, untrack } from '../../core/g
 
 /** @typedef {import('../frame-graph.js').PassContext} PassContext */
 
-const DRAW_BYTES = 368;
+const DRAW_BYTES = 384;
 const DEG = Math.PI / 180;
 /** Open sea mesh: rings x segments around the camera (SEA_RINGS, SEA_SEGMENTS in water-draw.wgsl). */
 const SEA_RINGS = 28;
@@ -18,7 +18,9 @@ const SEA_SEGMENTS = 48;
  * @param {{ water: import('../../world/water/index.js').Water, terrain: import('../../world/terrain/index.js').Terrain,
  *   atmosphere: import('../sky/atmosphere.js').Atmosphere, recipe: any, seaExtent: number, getTime: () => number,
  *   seabed: { y: number, albedo: number[], wetDarkening: number }, detailFadeM?: number,
- *   ssr?: { steps: number, refine: number } | null }} opts  ssr: the tier's island reflection (null: sky only)
+ *   ssr?: { steps: number, refine: number } | null, foam: import('../../world/water/foam.js').WaterFoam,
+ *   ripples: { view: GPUTextureView, info: GPUBuffer } }} opts
+ *   ssr: the tier's island reflection (null: sky only); foam: the foam field (world/water/foam.js)
  *   recipe: recipes/world/water.json; getTime: real seconds for the moving surface; seabed: the land's sea
  *   floor height and wet sand albedo, continued beyond the terrain as open sea floor
  */
@@ -60,9 +62,11 @@ export function createWaterPass(opts) {
     // ?waterdbg=1..4 shows one shading term at a time (water-draw.wgsl, debugView).
     f[64] = Number(new URLSearchParams(location.search).get('waterdbg') ?? 0) || 0;
     f[65] = opts.detailFadeM ?? 120;
-    const R = L.riffle;
-    f[68] = R.speed[0]; f[69] = R.speed[1]; f[70] = R.depthM; f[71] = R.coverage;
-    f[72] = R.streakM; f[73] = R.albedo;
+    // Raindrop rings (ripples.rings); f[68], the share of drops falling, follows the rain (setRain).
+    const RR = recipe.ripples.rings;
+    f[69] = RR.cellM; f[70] = RR.lifeS; f[71] = RR.crestM;
+    f[72] = RR.radiusM; f[73] = RR.slope;
+    f[74] = recipe.foam.flowCycleS;
     f.set(L.scatterAlbedoPond, 76);
     const S = L.reflection;
     f[82] = S.reachM; f[83] = S.thicknessM;
@@ -70,6 +74,7 @@ export function createWaterPass(opts) {
     f[88] = S.rippleTilt;
     // Sky from the probe (blurred by roughness); `?probe=0` shows the sharp sky-view LUT instead.
     f[89] = new URLSearchParams(location.search).get('probe') === '0' ? 0 : 1;
+    f[92] = recipe.foam.laceM; f[93] = recipe.foam.albedo; f[94] = recipe.foam.opacity; f[95] = recipe.foam.boil;
     setSSR(opts.ssr ?? null);
   }
 
@@ -86,13 +91,14 @@ export function createWaterPass(opts) {
   function makeGroups(ctx) {
     if (!sceneCopy || !depthCopy) return;
     const sim = water.sim;
-    groups = [0, 1].map((p) => ctx.device.createBindGroup({
-      label: `water-draw-${p}`,
+    // One group per (water depth, foam) ping-pong pair: index p * 2 + q.
+    groups = [0, 1, 2, 3].map((i) => ctx.device.createBindGroup({
+      label: `water-draw-${i}`,
       layout,
       entries: [
         { binding: 0, resource: { buffer: drawBuffer } },
         { binding: 1, resource: opts.terrain.gpu.height.createView() },
-        { binding: 2, resource: sim.depthTextures[p].createView() },
+        { binding: 2, resource: sim.depthTextures[i >> 1].createView() },
         { binding: 3, resource: sim.vel.createView() },
         { binding: 4, resource: /** @type {GPUTexture} */ (sceneCopy).createView() },
         { binding: 5, resource: /** @type {GPUTexture} */ (depthCopy).createView() },
@@ -103,6 +109,9 @@ export function createWaterPass(opts) {
         { binding: 10, resource: { buffer: opts.atmosphere.state } },
         { binding: 11, resource: opts.atmosphere.probeView },
         { binding: 12, resource: opts.atmosphere.probeSampler },
+        { binding: 13, resource: opts.foam.textures[i & 1].createView() },
+        { binding: 14, resource: opts.ripples.view },
+        { binding: 15, resource: { buffer: opts.ripples.info } },
       ],
     }));
   }
@@ -113,6 +122,8 @@ export function createWaterPass(opts) {
     /** Apply a quality tier's ripple distance (the startup probe may step down). @param {number} m */
     setDetailFade(m) { f[65] = m; },
     setSSR,
+    /** Rain now, 0..1: how many raindrop rings fall (ripples.rings.maxShare at full rain). @param {number} r */
+    setRain(r) { f[68] = Math.min(1, Math.max(0, r)) * recipe.ripples.rings.maxShare; },
     reads: ['hdr', 'depth'],
     writes: ['hdr', 'depth', 'normalId'],
     enabled: () => true,
@@ -138,6 +149,9 @@ export function createWaterPass(opts) {
           { binding: 10, visibility: F, buffer: { type: 'read-only-storage' } },
           { binding: 11, visibility: F, texture: { sampleType: 'float', viewDimension: 'cube' } },
           { binding: 12, visibility: F, sampler: { type: 'filtering' } },
+          { binding: 13, visibility: F, texture: { sampleType: 'unfilterable-float' } },
+          { binding: 14, visibility: F, texture: { sampleType: 'unfilterable-float' } },
+          { binding: 15, visibility: F, buffer: {} },
         ],
       });
       const module = await makeShaderModule(device, 'water-draw');
@@ -191,7 +205,7 @@ export function createWaterPass(opts) {
       });
       pass.setBindGroup(0, ctx.groups.frame);
       pass.setBindGroup(1, ctx.groups.lighting);
-      pass.setBindGroup(2, groups[water.sim.current]);
+      pass.setBindGroup(2, groups[water.sim.current * 2 + opts.foam.current]);
       if (r.w > 3 && r.h > 3) {
         pass.setPipeline(simPipeline);
         pass.draw((r.w - 3) * (r.h - 3) * 6);

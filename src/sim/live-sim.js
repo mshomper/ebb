@@ -6,7 +6,8 @@ import { runHour } from './tick.js';
 
 /**
  * @typedef {Object} FrameInfo
- * @property {number} dt        game-time step in seconds
+ * @property {number} dt        the clock's clamped real step in seconds (not scaled by the time flow;
+ *                              for game time use the change in worldT, which follows 1x to 4x and pause)
  * @property {number} realDt    real seconds since the last frame
  * @property {number} worldT
  * @property {number} animT

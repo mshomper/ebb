@@ -211,6 +211,8 @@ export function createOrbitCamera(r) {
     get near() { return r.near; },
     /** Current distance from the eye to the orbit target, meters. */
     get distance() { return cur.distance; },
+    /** The point the camera orbits around (world meters, on the ground). */
+    get target() { return cur.target; },
   };
 }
 
