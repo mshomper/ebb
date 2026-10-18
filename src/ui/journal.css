@@ -208,10 +208,23 @@
 .ebb-jpage__list li.is-pencil { color: var(--jr-pencil); }
 .ebb-jpage__list li.is-pencil::before { background: transparent; border: 1.5px dashed var(--jr-pencil); width: 8px; height: 8px; }
 .ebb-jpage__seasons { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
-.ebb-jpage__season { min-width: 0; min-height: 76px; padding: 6px 7px; border: 1.5px solid var(--jr-rule); border-radius: 10px; display: grid; align-content: start; gap: 2px; overflow-wrap: break-word; }
-.ebb-jpage__season b { font-size: var(--text-small); font-weight: 800; }
+/* Each season box wears a soft wash of its season, with its drawn mark; an unseen season stays pencil. */
+.ebb-jpage__season {
+  --s-wash: transparent; --s-line: var(--jr-rule); --s-ink: var(--jr-ink);
+  min-width: 0; min-height: 80px; padding: 6px 7px;
+  background: var(--s-wash); border: 1.5px solid var(--s-line); border-radius: 10px;
+  display: grid; align-content: start; gap: 2px; overflow-wrap: break-word;
+}
+.ebb-jpage__season.is-spring { --s-wash: #E6EFD8; --s-line: #A7C489; --s-ink: #4F6E3E; }
+.ebb-jpage__season.is-summer { --s-wash: #F7E9C2; --s-line: #DDB65A; --s-ink: #7E5A12; }
+.ebb-jpage__season.is-autumn { --s-wash: #F3DCCB; --s-line: #CF8C5F; --s-ink: #8A4524; }
+.ebb-jpage__season.is-winter { --s-wash: #E1E8EE; --s-line: #9FB3C2; --s-ink: #45606F; }
+.ebb-jpage__season b { display: flex; align-items: center; gap: 4px; min-width: 0; font-size: var(--text-small); font-weight: 800; color: var(--s-ink); }
+.ebb-jpage__season b .icon { width: 18px; height: 18px; }
 .ebb-jpage__season span { font-family: var(--font-voice); font-style: italic; font-weight: 400; font-size: var(--text-small); line-height: 1.3; }
-.ebb-jpage__season.is-empty { border-style: dashed; color: var(--jr-pencil); }
+.ebb-jpage__season.is-empty { background: transparent; border-style: dashed; color: var(--jr-pencil); }
+.ebb-jpage__season.is-empty b { color: var(--jr-pencil); }
+.ebb-jpage__season.is-empty b .icon { opacity: 0.6; }
 .ebb-jpage__notes { display: grid; gap: 8px; }
 .ebb-jpage__notes li { overflow-wrap: break-word; }
 .ebb-jpage__notes small, .ebb-jnotes small { font-size: var(--text-small); color: var(--jr-soft); white-space: nowrap; }

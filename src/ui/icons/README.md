@@ -40,6 +40,7 @@ Size and color come from CSS: set `width`/`height` on `.icon` and `color` on the
 | `thrift` | low cushion on the ground line with three stalks topped by round pompoms: species chip |
 | `grass` | five blades of different heights on the ground line: the grass journal page |
 | `journal` | bound book with a ribbon marker and a pressed leaf on the cover: the journal button |
+| `season-spring`, `season-summer`, `season-autumn`, `season-winter` | a bud, a sun, a falling leaf, a frost star: the journal's season boxes |
 | `notes` | page with a folded corner and three written lines: the journal's Notes section |
 | `unknown` | a circle drawn in short pencil dashes: a living thing not seen yet |
 | `close` | two crossing strokes: close a panel or card |

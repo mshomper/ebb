@@ -94,10 +94,19 @@ export function createPlantTool(opts) {
     /**
      * The rings to draw now, for the terrain pass's setMarks.
      * @param {number} now performance.now ms @param {boolean} open whether the Plant tool is open
+     * @param {{ wx: number, wz: number, r: number, at: number } | null} [sel] a living thing the player
+     *   tapped (store slice `identify`): it gets a ring that blooms in, then breathes gently
      */
-    marks(now, open) {
+    marks(now, open, sel = null) {
       marks.fill(0);
       let n = 0;
+      if (sel && Number.isFinite(sel.wx)) {
+        const k = Math.min(1, (now - sel.at) / (recipe.selectBloomS * 1000));
+        const bloom = 1 - (1 - k) * (1 - k);
+        const breath = 0.5 + 0.5 * Math.sin(((now - sel.at) / 1000) * Math.PI * 2 / recipe.selectPulseS);
+        const r = sel.r * (0.6 + 0.4 * bloom) * (1 + recipe.selectPulse * breath);
+        marks.set([sel.wx, sel.wz, r, bloom * (recipe.selectOpacity[0] + (recipe.selectOpacity[1] - recipe.selectOpacity[0]) * breath)], n++ * 4);
+      }
       const life = recipe.tapS * 1000;
       taps = taps.filter((t) => now - t.at < life);
       for (const t of taps) {

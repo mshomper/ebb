@@ -343,11 +343,12 @@ export function describe(journal, sp, state, hab, words) {
 /**
  * The plant nearest a tapped ground point, within words.identify.radiusM, or grass where it grows.
  * @param {any} state @param {any} hab @param {number} x @param {number} z @param {any} words
- * @returns {{ sp: string, name: string, icon: string, text: string } | null}
+ * @returns {{ sp: string, name: string, icon: string, text: string, wx: number, wz: number, r: number } | null}
+ *   wx, wz, r: where to ring the selection on the ground (the plant's middle, or the tap on grass)
  */
 export function identify(state, hab, x, z, words) {
-  const r = words.identify.radiusM;
-  let best = null, bestD = r * r;
+  const I = words.identify;
+  let best = null, bestD = I.radiusM * I.radiusM;
   for (const p of state?.growth?.plants ?? []) {
     if (!words.species[p.sp]) continue;
     const d = (p.x - x) * (p.x - x) + (p.z - z) * (p.z - z);
@@ -355,12 +356,13 @@ export function identify(state, hab, x, z, words) {
   }
   if (best) {
     const rec = words.species[best.sp];
-    return { sp: best.sp, name: rec.name, icon: rec.icon, text: rec.stages?.[best.stage] ?? rec.name };
+    return { sp: best.sp, name: rec.name, icon: rec.icon, text: rec.stages?.[best.stage] ?? rec.name,
+      wx: best.x, wz: best.z, r: I.ringM * (0.6 + 0.4 * Math.max(0, Math.min(1, best.size))) };
   }
   const g = state?.growth?.grass, grass = words.species.grass;
   const c = habitatCell(x, z);
   if (grass && g && hab && c >= 0 && hab.open[c] && hab.grass[c] * g[c] > 0.25 * 255 * 255) {
-    return { sp: 'grass', name: grass.name, icon: grass.icon, text: grass.stages[0] };
+    return { sp: 'grass', name: grass.name, icon: grass.icon, text: grass.stages[0], wx: x, wz: z, r: I.grassRingM };
   }
   return null;
 }

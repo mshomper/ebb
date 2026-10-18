@@ -121,8 +121,8 @@ export function mountJournal(parent, live) {
     const moreToLearn = known.length < d.likes.length;
     const likes = known.map((l) => `<li>${esc(l.text)}</li>`).join('') +
       (moreToLearn ? '<li class="is-pencil">More to learn by watching.</li>' : '');
-    const seasons = d.seasons.map((s) => `<div class="ebb-jpage__season${s.text === null ? ' is-empty' : ''}">
-      <b>${esc(s.name)}</b><span>${esc(s.text === null ? 'not yet' : s.text)}</span></div>`).join('');
+    const seasons = d.seasons.map((s, i) => `<div class="ebb-jpage__season is-${SEASON_KEYS[i]}${s.text === null ? ' is-empty' : ''}">
+      <b>${iconSvg(`season-${SEASON_KEYS[i]}`)}${esc(s.name)}</b><span>${esc(s.text === null ? 'not yet' : s.text)}</span></div>`).join('');
     const gives = d.gives.map((g) => `<li class="${g.known ? '' : 'is-pencil'}">${esc(g.text)}</li>`).join('');
     const notes = d.notes.map((n) => `<li><span class="ebb-journal__voice">${esc(n.text)}</span> <small>${esc(n.date)}</small></li>`).join('');
     return `<article class="ebb-jpage">
@@ -160,6 +160,9 @@ export function mountJournal(parent, live) {
     document.documentElement.classList.remove('ebb-journal-open');
   };
 }
+
+/** Season box keys, spring first: each box takes its color and drawn mark from these (journal.css, icons.js). */
+const SEASON_KEYS = ['spring', 'summer', 'autumn', 'winter'];
 
 /** @param {string} s */
 function esc(s) {

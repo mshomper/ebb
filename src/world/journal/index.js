@@ -64,7 +64,8 @@ export function createJournal(opts) {
       if (a.view) patch.view = a.view;
       if (a.page !== undefined) { patch.page = a.page; if (a.page) patch.view = 'living'; }
       if (a.size) patch.size = a.size;
-      if (open && !u.open && get('identify')) update('identify', () => null);
+      // Opening the journal, or a page in it, puts the tap card away (the page now says it all).
+      if (open && (!u.open || a.page) && get('identify')) update('identify', () => null);
       update('journalUi', (s) => ({ ...s, ...patch }));
       if (open !== u.open) emitDeferred(open ? 'ui:panel-opened' : 'ui:panel-closed', { panel: 'journal' });
     }),

@@ -105,7 +105,9 @@ export async function startApp(canvas, hooks = {}) {
   const terrain = await createTerrain(gpu, { seed: subSeed(seed, 'terrain'), recipe: terrainRecipe, land: landRecipe });
   history.setApplier('terrain', (cmd, dir) => terrain.applyTiles(dir === 'undo' ? cmd.before : cmd.after));
   // The world clock and the shared hourly tick (weather, seasons). A new world starts mid-morning.
-  if (clock.worldT() === 0) clock.reset((skyRecipe.orbit.startHour ?? 10) * clock.SECONDS_PER_HOUR);
+  // `?day=N` starts a new world N game days in (7 per season: 8 is early summer), to see later seasons sooner.
+  const startDay = Math.max(0, Number.parseInt(params.get('day') ?? '0', 10) || 0);
+  if (clock.worldT() === 0) clock.reset(((skyRecipe.orbit.startHour ?? 10) + 24 * startDay) * clock.SECONDS_PER_HOUR);
   updateStore('meta', (m) => { m.flow = clock.flow(); });
   const env = makeEnv(seed, { seasons: seasonsRecipe, sky: skyRecipe.orbit, water: waterRecipe });
   /** @type {import('./sim/live-sim.js').LiveWorld} */
@@ -449,7 +451,8 @@ export async function startApp(canvas, hooks = {}) {
     camera.setViewport(cssW, cssH);
     camera.update(realDt);
     updateRing();
-    terrainPass.setMarks(plantTool.marks(now, tools().tool === 'plant'));
+    // Plant tool rings, and a breathing ring round whatever the journal's tap card names.
+    terrainPass.setMarks(plantTool.marks(now, tools().tool === 'plant', getStore('identify')));
     updatePour();
     if (queuedHistory && !terrain.isBusy()) runHistory(queuedHistory);
     // Ground detail waits for a few calm frames so the first picture is as quick as before (docs/22).
