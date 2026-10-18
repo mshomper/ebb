@@ -9,13 +9,14 @@ import { makeBuffer, makeShaderModule } from '../../core/gpu.js';
 
 /** @typedef {import('../frame-graph.js').PassContext} PassContext */
 
-const DRAW_BYTES = 144;
+const DRAW_BYTES = 160;
 const SEASONS = /** @type {const} */ (['spring', 'summer', 'autumn', 'winter']);
 
 /**
- * @param {{ terrain: import('../../world/terrain/index.js').Terrain, recipe: any, seed: number,
+ * @param {{ terrain: import('../../world/terrain/index.js').Terrain, recipe: any, terrainRecipe: any, seed: number,
  *   water: { depthTextures: GPUTexture[], current: () => number },
- *   tier: { grassDensity: number, grassDistance: number } }} opts  recipe: recipes/flora/grass.json
+ *   tier: { grassDensity: number, grassDistance: number } }} opts  recipe: recipes/flora/grass.json;
+ *   terrainRecipe: recipes/world/terrain.json (its beach band and steep-rock angles)
  */
 export function createGrassPass(opts) {
   const { terrain, recipe } = opts;
@@ -56,6 +57,10 @@ export function createGrassPass(opts) {
     f[26] = 1 / recipe.wind.gustM; f[27] = recipe.wind.gustSpeed;
     f[28] = recipe.wetDarken; f[29] = (opts.seed >>> 0) % 100000; f[30] = 1.2;
     f[32] = B.tuftM; f[33] = B.tuftDensity; f[34] = B.tuftHeight;
+    // The terrain's derived layers (terrain.json): no blades on the beach band or steep rock.
+    const T = opts.terrainRecipe;
+    f[36] = T.beachBand[1];
+    f[37] = Math.cos((T.steepRockDeg - T.steepRockSoftDeg) * Math.PI / 180); f[38] = Math.cos((T.steepRockDeg + T.steepRockSoftDeg) * Math.PI / 180);
     setTier(opts.tier);
   }
 

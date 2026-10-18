@@ -154,7 +154,7 @@ export async function startApp(canvas, hooks = {}) {
   });
   // The meadow (docs 10): GPU grass blades where grass is painted, after the terrain.
   const grassPass = createGrassPass({
-    terrain, recipe: await loadRecipe('flora/grass'), seed: subSeed(seed, 'grass'), tier: tierSettings,
+    terrain, recipe: await loadRecipe('flora/grass'), terrainRecipe, seed: subSeed(seed, 'grass'), tier: tierSettings,
     water: { depthTextures: water.sim.depthTextures, current: () => water.sim.current },
   });
   const waterPass = createWaterPass({

@@ -24,6 +24,7 @@ struct GrassDraw {
   look: vec4f,                                 // x fade from (m), y fade to (m), z 1 / gust size (1/m), w gust speed (m/s)
   look2: vec4f,                                // x wet darkening, y seed, z pixel width floor (pixels), w far-ring widening
   shape2: vec4f,                               // x tuft size (m), y how much tufts thicken and thin, z how much they raise and lower
+  derived: vec4f,                              // the terrain's derived layers: x beach band top (m), y, z cos of the steep-rock slope range
 };
 
 @group(0) @binding(0) var<uniform> frame: FrameUniforms;
@@ -97,15 +98,28 @@ fn vsBlade(@builtin(vertex_index) vi: u32, @builtin(instance_index) ring: u32) -
   let dist = length(xz - gd.focus);
   if (dist > gd.look.y) { return nothing(); }
   // Where grass is painted, at the ring's density; never in water.
-  let grassW = textureSampleLevel(materialTex, linearSampler, terrainUv(xz), 0.0).r;
+  // Painted grass, less what the terrain shader turns to sand (the beach band) and rock (steep
+  // slopes), with the same rules, so blades never stand on the beach or a cliff.
+  let groundH = terrainHeight(heightTex, xz);
+  let nGround = terrainNormal(heightTex, xz);
+  let steepRock = 1.0 - smoothstep(gd.derived.z, gd.derived.y, nGround.y);
+  let beachSand = 1.0 - smoothstep(gd.derived.x - 0.15, gd.derived.x + 0.15, groundH);
+  // The material weights after the same derived layers the terrain applies, then the terrain's
+  // own rule: the top layer wins the look. Blades stand only where grass is that layer, so they
+  // stop where sand or rock shows, even where the paint blends a little grass in.
+  var w = textureSampleLevel(materialTex, linearSampler, terrainUv(xz), 0.0);   // grass, sand, rock, soil
+  w = mix(w, vec4f(0.0, 0.0, 1.0, 0.0), steepRock);
+  w = mix(w, vec4f(0.0, 1.0 - w.z, w.z, 0.0), beachSand);
+  let others = max(w.y, max(w.z, w.w));
+  let grassW = w.x * smoothstep(-0.05, 0.15, w.x - others);
   // Tufts: a meadow is clumpy, thicker and taller in patches of half a meter or so.
   let seedU = u32(gd.look2.y);
   let tuft = valueNoise2(xz / gd.shape2.x, seedU + 7u) * 0.65 + valueNoise2(xz / gd.shape2.x * 2.7 + 3.1, seedU + 8u) * 0.35;
   let thick = mix(1.0 - gd.shape2.y, 1.0 + gd.shape2.y, tuft);
   if (hashToFloat(h2) > grassW * r.w * thick || waterAt(xz) > 0.01) { return nothing(); }
 
-  let groundY = terrainHeight(heightTex, xz);
-  let nG = terrainNormal(heightTex, xz);
+  let groundY = groundH;
+  let nG = nGround;
   let v3 = vec4f(hashToFloat(h3), hashToFloat(pcg(h3)), hashToFloat(pcg(h3 ^ 0x5bd1u)), hashToFloat(pcg(h3 ^ 0x2c9fu)));
   let fade = 1.0 - smoothstep(gd.look.x, gd.look.y, dist);
   let height = gd.height * (1.0 - gd.shape.x * 0.5 + gd.shape.x * v3.x) * mix(1.0 - gd.shape2.z, 1.0 + gd.shape2.z, tuft) * fade;
