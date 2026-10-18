@@ -1,7 +1,7 @@
 // @ts-check
 // Flora pass (docs 10, 14): the growth engine's plants as GPU geometry (flora-draw.wgsl), one
-// instance per plant from its instance buffer. S5b-1 draws reed clumps; other species and seeds
-// draw nothing yet. Drawn after the grass and before the water, into the same HDR, normal and depth
+// instance per plant from its instance buffer. S5b-1 draws reed clumps (a seed as a few short
+// shoots); other species draw nothing yet. Drawn after the grass and before the water, into the same HDR, normal and depth
 // targets, so the water's scene copy shows the lower stems through the water. Shape, season and
 // wind come from recipes/flora/reeds.json; nothing here is simulated.
 
@@ -9,7 +9,7 @@ import { makeBuffer, makeShaderModule } from '../../core/gpu.js';
 
 /** @typedef {import('../frame-graph.js').PassContext} PassContext */
 
-const DRAW_BYTES = 144;
+const DRAW_BYTES = 160;
 /** Vertices per stem: 15 for the stem (two segments and a tip), 6 for a seed head. */
 const PER_STEM = 21;
 const SEASONS = /** @type {const} */ (['spring', 'summer', 'autumn', 'winter']);
@@ -44,6 +44,7 @@ export function createFloraPass(opts) {
     f.set([W.stiffness, W.sway, 1 / L.gustM, L.gustSpeed], 24);
     f.set([L.heightVar, L.headGapM, L.pixelWidth, L.rootShade], 28);
     f.set([L.sinkM, L.edgeShorter, (recipe.seed >>> 0) % 100000, L.radiusMin], 32);
+    f[36] = L.sproutM; f[37] = L.seedShoots;
   }
 
   /**

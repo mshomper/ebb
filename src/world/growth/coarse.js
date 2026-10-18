@@ -205,7 +205,7 @@ function plantStarters(g, hab, env) {
 /**
  * Plant a seed by hand (the Plant tool). Returns the new state, or the reason it would not take.
  * @param {any} state @param {string} sp @param {number} x @param {number} z @param {any} env
- * @returns {{ state: any, ok: boolean, reason?: 'moisture'|'depth'|'salt'|'outside'|'crowded'|'full'|'unknown' }}
+ * @returns {{ state: any, ok: boolean, id?: number, reason?: 'moisture'|'depth'|'salt'|'outside'|'crowded'|'full'|'unknown' }}
  */
 export function plantSeed(state, sp, x, z, env) {
   const hab = env.habitat?.();
@@ -217,7 +217,7 @@ export function plantSeed(state, sp, x, z, env) {
   if (s.suit < 0.2) return { state, ok: false, reason: s.worst };
   if (crowded(cellIndex(g.plants), g.plants, sp, x, z, rec.spread?.minSpacingM ?? 0.5)) return { state, ok: false, reason: 'crowded' };
   const p = { id: g.nextId, sp, x, z, age: 0, size: 0, best: 0, stage: STAGE.seed, low: 0, drown: 0, last: 0 };
-  return { state: { ...state, growth: { ...g, nextId: g.nextId + 1, plants: [...g.plants, p] } }, ok: true };
+  return { state: { ...state, growth: { ...g, nextId: g.nextId + 1, plants: [...g.plants, p] } }, ok: true, id: p.id };
 }
 
 /**

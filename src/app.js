@@ -29,6 +29,7 @@ import { initialWorldState, makeEnv, runHour } from './sim/tick.js';
 import { createTerrain } from './world/terrain/index.js';
 import { createWaterWorld } from './world/water-world.js';
 import { createGrowth } from './world/growth/index.js';
+import { createPlantTool } from './world/growth/plant-tool.js';
 import { weatherAt } from './world/weather.js';
 import { createWaterPass } from './render/passes/water.js';
 import { createGrassPass } from './render/passes/grass.js';
@@ -309,27 +310,12 @@ export async function startApp(canvas, hooks = {}) {
     if (p) ww.tapSpring(p, tools().springRate);
   }
 
-  /** What the Plant tool says after a tap, by outcome. @type {Record<string, (name: string) => string>} */
-  const PLANT_SAYS = {
-    ok: (n) => `${n} planted`,
-    moisture: (n) => `${n} need wetter ground`,
-    depth: (n) => `Too deep for ${n.toLowerCase()}`,
-    salt: (n) => `Too salty for ${n.toLowerCase()}`,
-    crowded: () => 'A clump grows here already',
-    full: () => 'The island is full of plants',
-    outside: () => 'Plant on the island',
-    unknown: () => 'Wait a moment for the island to settle',
-  };
-  /** Tap with the Plant tool: plant a seed of the chosen species if the ground suits it. @param {number} x @param {number} y */
+  // The Plant tool (src/world/growth/plant-tool.js): plants a seed where the ground suits it, rings where.
+  const plantTool = createPlantTool({ growth, world, flora, recipe: growthRecipe.marks });
+  /** @param {number} x @param {number} y */
   function plantTap(x, y) {
     const p = groundAt(x, y);
-    if (!p) return;
-    const sp = tools().plantSpecies ?? 'reeds';
-    const r = growth.plant(sp, p[0], p[2]);
-    if (r.ok) updateStore('world', () => world.state);
-    const name = flora[sp]?.name ?? sp;
-    updateStore('plantUi', () => ({ message: (PLANT_SAYS[r.ok ? 'ok' : r.reason ?? 'unknown'] ?? PLANT_SAYS.unknown)(name), at: performance.now() }));
-    if (r.ok) emitDeferred('growth:planted', { species: sp, x: p[0], z: p[2] });
+    if (p && plantTool.tap(tools().plantSpecies ?? 'reeds', p)) updateStore('world', () => world.state);
   }
 
   /** @param {'undo'|'redo'} dir */
@@ -458,6 +444,7 @@ export async function startApp(canvas, hooks = {}) {
     camera.setViewport(cssW, cssH);
     camera.update(realDt);
     updateRing();
+    terrainPass.setMarks(plantTool.marks(now, tools().tool === 'plant'));
     updatePour();
     if (queuedHistory && !terrain.isBusy()) runHistory(queuedHistory);
     // Ground detail waits for a few calm frames so the first picture is as quick as before (docs/22).

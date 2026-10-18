@@ -9,7 +9,7 @@ import { LODS, MAX_CHUNKS, createIndexBuffers, packChunks } from '../terrain-mes
 
 /** @typedef {import('../frame-graph.js').PassContext} PassContext */
 
-const DRAW_BYTES = 384;
+const DRAW_BYTES = 640;   // 384 of look, then 16 marker rings (floats 96..159)
 const GROUND_BYTES = 256;
 const DEG = Math.PI / 180;
 /** @type {Record<string, number>} GroundDetail.tiling.x in lib-ground.wgsl */
@@ -136,6 +136,12 @@ export function createTerrainPass(opts) {
      */
     /** Rain now, 0..1: how many raindrop rings fall in puddles. @param {number} r */
     setRain(r) { f[88] = Math.min(1, Math.max(0, r)) * (opts.rings?.maxShare ?? 0); },
+
+    /**
+     * Marker rings on the ground (the Plant tool): up to 16 of (x, z, radius m, opacity 0..1),
+     * the list ending at the first opacity of 0. @param {Float32Array} marks 64 floats
+     */
+    setMarks(marks) { f.set(marks.subarray(0, 64), 96); },
 
     setTier(t) {
       lodDistances = t.lodDistances ?? recipe.render.lodDistances;

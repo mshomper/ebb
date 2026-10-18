@@ -1,5 +1,6 @@
 // Flora (docs 10, 14): reed clumps as GPU geometry with no mesh, one instance per plant from the
-// growth engine's instance buffer. Each stem is five triangles (two segments and a tip) built from
+// growth engine's instance buffer. A seed shows as a few short shoots; no stem stands shorter than a
+// sprout. Each stem is five triangles (two segments and a tip) built from
 // vertex_index, at a hashed spot in the clump (denser in the middle) with a hashed lean that fans
 // outward; it sways with the wind and passing gusts, stiff at the base and freer at the top. A
 // flowering clump carries brown cattail heads near the top of most stems: a short camera-facing
@@ -23,10 +24,12 @@ struct FloraDraw {
   sway: vec4f,      // x stiffness 0..1, y sway per unit wind, z 1 / gust size (1/m), w gust speed (m/s)
   look: vec4f,      // x height variation, y gap above the head (m), z pixel width floor (pixels), w root shade
   look2: vec4f,     // x sink below the ground (m), y how much shorter outer stems are, z seed, w new clump radius share
+  look3: vec4f,     // x sprout height (m): the shortest a stem stands, and a seed's shoots; y shoots on a seed; zw spare
 };
 
 // Reeds are species 0 (recipes/flora/reeds.json index). Stages as in src/world/growth/coarse.js.
 const REEDS: u32 = 0u;
+const STAGE_SEED: u32 = 0u;
 const STAGE_FLOWERING: u32 = 4u;
 const STAGE_DORMANT: u32 = 5u;
 const PER_STEM: u32 = 21u;   // 15 stem corners and 6 head corners
@@ -96,12 +99,14 @@ fn vsFlora(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> 
   let species = u32(round(b.x));
   let stage = u32(round(a.w));
   let size = clamp(a.z, 0.0, 1.0);
-  if (species != REEDS || stage == 0u || size < 0.01) { return nothing(); }
+  if (species != REEDS) { return nothing(); }
+  // A seed shows as a few short shoots from the day it is planted, so the spot is easy to find.
+  let seed = stage == STAGE_SEED;
 
   // More stems as the clump grows; stem i keeps its spot as new ones join.
   let stem = vi / PER_STEM;
   let slot = vi % PER_STEM;
-  let stems = u32(round(mix(fd.shape.x, fd.shape.y, size)));
+  let stems = select(u32(round(mix(fd.shape.x, fd.shape.y, size))), u32(fd.look3.y), seed);
   if (stem >= stems) { return nothing(); }
   let plantU = u32(b.y * 16777216.0);
   let h0 = hash3(vec3u(plantU, stem, u32(fd.look2.z)));
@@ -112,7 +117,7 @@ fn vsFlora(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> 
   let v = vec4f(hashToFloat(h1), hashToFloat(h2), hashToFloat(h3), hashToFloat(h4));
 
   // Where the stem stands: radius r = R u (denser in the middle than an even spread).
-  let radius = fd.shape.z * mix(fd.look2.w, 1.0, size);
+  let radius = fd.shape.z * select(mix(fd.look2.w, 1.0, size), 0.25, seed);
   let ang = hashToFloat(h0) * 6.2831853;
   let rShare = v.x;
   let off = vec2f(cos(ang), sin(ang)) * radius * rShare;
@@ -120,8 +125,8 @@ fn vsFlora(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> 
   let xz = center + off;
   let base = vec3f(xz.x, b.w - fd.look2.x, xz.y);
 
-  // Height: the clump's size, varied per stem, outer stems a little shorter.
-  let height = fd.shape.w * size * (1.0 - fd.look.x * 0.5 + fd.look.x * v.y) * (1.0 - fd.look2.y * rShare);
+  // Height: the clump's size (never under a sprout), varied per stem, outer stems a little shorter.
+  let height = max(fd.shape.w * size, fd.look3.x) * (1.0 - fd.look.x * 0.5 + fd.look.x * v.y) * (1.0 - fd.look2.y * rShare);
   if (height < 0.01) { return nothing(); }
 
   // Rest lean in a hashed direction, fanned outward; dormant stalks lean further.

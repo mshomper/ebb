@@ -101,7 +101,7 @@ export function createGrowth(device, opts) {
     plant(sp, x, z) {
       const r = plantSeed(world.state, sp, x, z, world.env);
       if (r.ok) world.state = r.state;
-      return { ok: r.ok, reason: r.reason };
+      return { ok: r.ok, id: r.id, reason: r.reason };
     },
 
     dispose() {
