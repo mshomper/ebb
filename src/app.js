@@ -187,7 +187,7 @@ export async function startApp(canvas, hooks = {}) {
     const mesh = bakeBody(recipe.body, recipe.bake.cellM);
     const pass = createCreaturePass({ mesh, recipe });
     camera.setClose({ minDistance: recipe.preview.closeMinDistanceM, minEyeHeight: recipe.preview.closeMinEyeHeightM });
-    let size = 1;
+    let size = recipe.body.displayScale ?? 1;
     /** @type {ReturnType<typeof previewSpots>} */ let found = null;
     const place = () => pass.setBeings((found?.spots ?? []).map((s) => ({ ...s, size })));
     return {

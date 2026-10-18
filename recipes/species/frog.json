@@ -3,9 +3,10 @@
   "id": "frog",
   "name": "Common frog",
   "version": 1,
-  "note": "Draft for the frog size preview (?frogscale), ahead of S6. body: the blended-SDF frog from Matt's pond tier 1 prototype (frog recipe v2), in real meters, body-local +z forward, origin on the ground under the body. prims are blended in order with a smooth minimum of radius k (m); rot is degrees about x, y, z; a capsule's r is [radius at a, radius at b]; a roundCone's scale stretches it about a. The throat sac is at rest (blend kRest). variation, needs, presence and motion arrive with S6. bake: the cell size (m) the body is meshed at by surface nets. preview: the sizes the preview offers (times real), the camera distances (m) and pitches (degrees) of its views.",
+  "note": "Draft for the frog size preview (?frogscale), ahead of S6. body: the blended-SDF frog from Matt's pond tier 1 prototype (frog recipe v2), in real meters, body-local +z forward, origin on the ground under the body. prims are blended in order with a smooth minimum of radius k (m); rot is degrees about x, y, z; a capsule's r is [radius at a, radius at b]; a roundCone's scale stretches it about a. The throat sac is at rest (blend kRest). displayScale: how much larger than life the frog is drawn (Matt, 2026-10-18: 1.5, so frogs read from a little way off on a big screen and show more detail on a phone); the preview opens at it. variation, needs, presence and motion arrive with S6. bake: the cell size (m) the body is meshed at by surface nets. preview: the sizes the preview offers (times real), the camera distances (m) and pitches (degrees) of its views.",
   "body": {
     "scaleReal": [0.07, 0.09],
+    "displayScale": 1.5,
     "prims": [
       { "type": "ellipsoid", "bone": "torso", "c": [0, 0.0163, -0.004], "r": [0.0223, 0.0128, 0.0282], "rot": [17.1887, 0, 0], "k": 0, "region": "back" },
       { "type": "roundCone", "bone": "head", "a": [0, 0.029, 0.0156], "b": [0, 0.031, 0.0357], "ra": 0.0142, "rb": 0.0068, "scale": [1.36, 0.72, 1], "k": 0.02, "region": "back" },
