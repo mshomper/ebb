@@ -15,6 +15,8 @@
 // #include lib-ground
 // #include lib-water
 // #include lib-caustics
+// #include lib-probe
+// #include lib-rain
 
 struct TerrainDraw {
   albedoGrass: vec3f, variation: f32,
@@ -26,11 +28,14 @@ struct TerrainDraw {
   ringCenter: vec2f, ringRadius: f32, ringHardness: f32,
   ringVisible: f32, ringWidth: f32, steepCosLow: f32, steepCosHigh: f32,
   beachLow: f32, beachHigh: f32, skirtDepth: f32, seaExtent: f32,
-  shallowDepth: f32, seed: u32, tide: f32, _p0: f32,   // tide: sea level now (m)
+  shallowDepth: f32, seed: u32, tide: f32, turf: f32,   // tide: sea level now (m); turf: how much grass lowers the puddle level
   albedoSilt: vec3f, siltCover: f32,    // the fine mud that settles on pond beds; most of the bed it covers
   bedDepth: vec2f, siltDepth: vec2f,    // water depths (m) over which grass gives way to a bare bed, and silt settles
   caustics: Caustics,                   // lib-caustics.wgsl
-  wetLook: vec4f,                       // x roughness of soaked ground, y how far it goes there, z wetness where the sheen starts
+  wetLook: vec4f,                       // G3 damp: x roughness soaked dense ground (rock) reaches, y porous (soil), z albedo factor dense, w porous
+  puddle: vec4f,                        // x, y mesh-normal y over which ground counts as flat; z 1 / undulation size (1/m); w undulation share
+  puddle2: vec4f,                       // x puddle roughness, y puddle albedo factor, z most of the low spots a full level covers, w puddle F0
+  rain: vec4f, rain2: vec4f,            // raindrop rings in puddles (lib-rain RainRings)
 };
 
 @group(0) @binding(0) var<uniform> frame: FrameUniforms;
@@ -47,6 +52,8 @@ struct TerrainDraw {
 @group(2) @binding(10) var wetMap: texture_2d<f32>;      // visual wetness, r 0..1 (rgba8unorm, 0.25 m), terrain-wetness.wgsl
 @group(2) @binding(11) var mossTex: texture_2d<f32>;     // moss cover 0..1 (r8unorm, 0.5 m), moss-live.js
 @group(2) @binding(12) var waterVel: texture_2d<f32>;    // live water velocity (rg32float, m/s, x and z)
+@group(2) @binding(13) var probeTex: texture_cube<f32>;  // sky probe (lib-probe.wgsl): wet ground reflects it
+@group(2) @binding(14) var probeSampler: sampler;
 
 // Live water depth (m) here, bilinear between the 0.5 m cells.
 fn waterDepthAt(xz: vec2f) -> f32 {
@@ -170,16 +177,54 @@ fn fsLand(in: VsOut) -> FsOut {
   albedo = mix(albedo, td.albedoSilt, silt);
   // Macro variation (docs/22): a slow tone drift near and far, so no repeat survives at a distance.
   albedo *= groundMacro(xz, td.seed);
-  // Wet ground is darker (docs/06, 08). The visual wetness map (world/terrain/wetness.js) remembers
-  // live water, the tide, rain and damp hollows, spreads into banks and dries over game time, so
-  // the flats the tide just uncovered stay dark a while after the sea slides off them.
-  let wet = textureSampleLevel(wetMap, linearSampler, terrainUv(xz), 0.0).r;
-  // Moss is already a damp surface; its color changes less when wet than bare soil does.
-  albedo *= mix(1.0, td.wetDarkening, wet * (1.0 - 0.6 * moss));
-  // Freshly soaked ground has a gentle sheen, gone before the darkness is (not under water; puddles
-  // and the full wet specular are step G3).
-  let sheen = smoothstep(td.wetLook.z, 1.0, wet) * td.wetLook.y * (1.0 - sub);
-  let roughness = mix(gd.roughness, td.wetLook.x, sheen);
+  // Wet ground (docs/22 G3, after Lagarde 2013). The visual wetness map (world/terrain/wetness.js)
+  // remembers live water, the tide, rain and damp hollows, spreads into banks and dries over game
+  // time; its g channel is how far rain has filled the puddles.
+  let wetTex = textureSampleLevel(wetMap, linearSampler, terrainUv(xz), 0.0);
+  let wet = wetTex.r;
+  // Damp: porous ground (sand, soil) drinks the water and goes dark and satin; dense rock darkens
+  // a little but turns shiny. Moss is already a damp surface and changes least.
+  let por = gd.porosity;
+  let damp = wet * (1.0 - 0.6 * moss);
+  albedo *= mix(1.0, mix(td.wetLook.z, td.wetLook.w, por), damp);
+  // Grass blades stay rough when wet (they scatter the light), so the meadow never turns glossy.
+  let grassy = gd.weights.x * (1.0 - moss);
+  var roughness = mix(gd.roughness, mix(td.wetLook.x, td.wetLook.y, por), damp * (1.0 - sub) * (1.0 - 0.85 * grassy));
+  // Puddles: on flat ground, rain fills the low spots first. Where water stands is set by the
+  // ground's own relief (the detail height, so ruts and the gaps between stones fill first) plus a
+  // slow undulation of a few meters, so puddles gather in real dips, not everywhere at once.
+  let flatGround = smoothstep(td.puddle.x, td.puddle.y, n.y);
+  let undulation = valueNoise2(xz * td.puddle.z, td.seed + 21u) * 0.6 + valueNoise2(xz * td.puddle.z * 2.7 + 5.3, td.seed + 22u) * 0.4;
+  let standHeight = mix(gd.height, undulation, td.puddle.w);
+  // Turf soaks rain up: on grass the level rises much less, so only the deepest meadow dips flood.
+  let level = wetTex.g * td.puddle2.z * (1.0 - td.turf * grassy);
+  let standing = (1.0 - smoothstep(level - 0.035, level, standHeight)) * step(0.01, level) * flatGround * (1.0 - sub);
+  albedo *= mix(1.0, td.puddle2.y, standing);
+  roughness = mix(roughness, td.puddle2.x, standing);
+  // Puddle surface: flat water, rung by raindrops where a pixel can hold the rings.
+  let viewDistG = distance(in.world, frame.cameraPos);
+  let vG = (frame.cameraPos - in.world) / max(viewDistG, 1e-4);
+  var nShade = gd.normal;
+  if (standing > 0.001) {
+    let rr = RainRings(td.rain, td.rain2);
+    let pixM = viewDistG * 2.0 / (frame.proj[1][1] * frame.renderSize.y) / max(abs(vG.y), 0.15);
+    let rs = rainRings(rr, xz, frame.animTime) * rainRingsVisible(rr, pixM);
+    nShade = normalize(mix(gd.normal, normalize(vec3f(-rs.x, 1.0, -rs.y)), standing));
+  }
+  // Wet ground and puddles reflect the sky (the probe, blurred to their roughness); dry ground
+  // stays matte. Schlick Fresnel with the roughness-limited rim (Karis 2014), times the cavity
+  // (crevices see little sky).
+  let wetAll = max(smoothstep(0.0, 0.6, damp) * (1.0 - sub) * (1.0 - 0.85 * grassy), standing);
+  var skySpec = vec3f(0.0);
+  if (wetAll > 0.001) {
+    let f0w = mix(ground.f0, td.puddle2.w, standing);
+    let r = reflect(-vG, nShade);
+    let levels = f32(textureNumLevels(probeTex));
+    let skyL = textureSampleLevel(probeTex, probeSampler, r, probeLod(roughness, levels)).rgb * PROBE_INV_SCALE;
+    let nv = max(dot(nShade, vG), 0.0);
+    let fr = f0w + (max(1.0 - roughness, f0w) - f0w) * pow(1.0 - nv, 5.0);
+    skySpec = skyL * fr * mix(gd.cavity, 1.0, standing) * wetAll;
+  }
 
   // Caustics (lib-caustics): focused sun on the bed under live water, or moon at night. They scale
   // only direct light, so they are gone in shadow and nearly so by moonlight.
@@ -190,7 +235,7 @@ fn fsLand(in: VsOut) -> FsOut {
     caustic = causticLight(td.caustics, entry, waterVelAt(entry), wdep, max(fw.x, fw.y), frame.animTime, td.seed);
   }
 
-  var color = shadeGround(albedo, in.world, n, gd.normal, roughness, gd.cavity, in.pos, ground.terminator, ground.f0, ground.specMode, caustic);
+  var color = shadeGround(albedo, in.world, n, nShade, roughness, gd.cavity, in.pos, ground.terminator, mix(ground.f0, td.puddle2.w, standing), ground.specMode, caustic, skySpec);
   color = mix(color, td.ringColor, ringAlpha(xz));
   // normalId keeps the mesh normal, so pebbles and cracks never get outlines (docs/22).
   return FsOut(vec4f(color, 1.0), vec4f(octEncode(n), 0.0, 1.0 / 3.0));

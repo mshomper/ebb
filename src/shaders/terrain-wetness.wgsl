@@ -23,7 +23,9 @@ struct WetStep {
   dampWet: f32,      // wetness of a damp hollow
   rainInit: f32,     // first build only: 1 while it rains
   salt: u32,         // per-update salt for the dithered store
-  _p0: f32,
+  puddleFill: f32,   // puddle level gained this update from rain (G3)
+  puddleDrain: f32,  // puddle level lost this update to drying
+  _p0: f32, _p1: f32, _p2: f32,
 };
 
 @group(0) @binding(0) var<uniform> ws: WetStep;
@@ -65,18 +67,22 @@ fn sourceWet(c: vec2i, h: f32) -> f32 {
 
 // Dithered rounding into the 8-bit store: a slow night-time drying step is smaller than one level,
 // so plain rounding would hold the ground wet forever; this keeps the average exact.
-fn storeWet(c: vec2i, w: f32) {
+// r wetness, g puddle level (G3: how far rain has filled the low spots; the terrain draw decides
+// where on flat ground that much water stands).
+fn storeWet(c: vec2i, w: f32, puddle: f32) {
   let r = hashToFloat(hash3(vec3u(vec2u(c), ws.salt)));
   let q = min(floor(clamp(w, 0.0, 1.0) * 255.0 + r), 255.0) / 255.0;
-  textureStore(wetNext, c, vec4f(q, 0.0, 0.0, 1.0));
+  let p = min(floor(clamp(puddle, 0.0, 1.0) * 255.0 + r), 255.0) / 255.0;
+  textureStore(wetNext, c, vec4f(q, p, 0.0, 1.0));
 }
 
-// First build: sources only, no drying history (and soaked if it is raining now).
+// First build: sources only, no drying history (and soaked, with half-filled puddles, if it is
+// raining now).
 @compute @workgroup_size(8, 8)
 fn csInit(@builtin(global_invocation_id) id: vec3u) {
   if (any(id.xy >= ws.size)) { return; }
   let c = vec2i(ws.origin + id.xy);
-  storeWet(c, max(sourceWet(c, terrainLoad(heightTex, c)), ws.rainInit));
+  storeWet(c, max(sourceWet(c, terrainLoad(heightTex, c)), ws.rainInit), 0.5 * ws.rainInit);
 }
 
 @compute @workgroup_size(8, 8)
@@ -86,7 +92,11 @@ fn csStep(@builtin(global_invocation_id) id: vec3u) {
   let h = terrainLoad(heightTex, c);
   let hi = vec2i(TERRAIN_CELLS - 1);
   // Memory: the last update's wetness, soaked further by rain and dried by sun and wind.
-  var w = clamp(textureLoad(wetPrev, c, 0).r + ws.rainStep - ws.dryStep, 0.0, 1.0);
+  let prev = textureLoad(wetPrev, c, 0);
+  var w = clamp(prev.r + ws.rainStep - ws.dryStep, 0.0, 1.0);
+  // Puddles fill while it rains and drain as the ground dries (they shrink from their edges, since
+  // the shallow rims are the first spots above the falling level).
+  let puddle = clamp(prev.g + ws.puddleFill - ws.puddleDrain, 0.0, 1.0);
   // Capillary spread: a wetter neighbor lends its wetness less a share per meter between them, and
   // more per meter of climb, so a dug bank reads soaked by the water and fades out up the slope.
   for (var j = -SPREAD_R; j <= SPREAD_R; j++) {
@@ -100,5 +110,5 @@ fn csStep(@builtin(global_invocation_id) id: vec3u) {
       w = max(w, nw - run * ws.spreadPerM);
     }
   }
-  storeWet(c, max(w, sourceWet(c, h)));
+  storeWet(c, max(w, sourceWet(c, h)), puddle);
 }

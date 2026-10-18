@@ -65,12 +65,13 @@ Detail normal by the surface gradient method (Mikkelsen, "Surface Gradient Based
 
 ### Wet ground (G3)
 
-Two stages after Lagarde, "Water drop 2a/2b" (2013), driven by `max(rain, visual wetness)` from the ground texture's red channel (doc 08):
+Two stages after Lagarde, "Water drop 2a/2b" (2013), driven by the visual wetness map (doc 08, `world/terrain/wetness.js`: r wetness, g puddle level), which rain soaks and drying empties. Numbers live in `terrain.json` `wetGround`.
 
-1. **Damp.** `albedo *= mix(1, mix(0.8, 0.45, porosity), wet)`; roughness moves toward `mix(0.18, 0.4, porosity)`. Sand and soil (porous) go dark and satin; rock darkens a little and turns shiny.
-2. **Puddles.** On flat ground (mesh normal y above about 0.94) a fill level rises with sustained rain; pixels whose blended height is below it become water: mesh normal, roughness 0.03, F0 0.02, albedo darkened. Drying lowers the level, so puddles shrink from their edges.
+1. **Damp.** `albedo *= mix(1, mix(0.8, 0.45, porosity), wet)`; roughness moves toward `mix(0.18, 0.4, porosity)`. Porosity is blended per pixel from the detail layers (grass 0.6, sand 0.9, rock 0.15, soil 0.8, moss 0.95). Sand and soil (porous) go dark and satin; rock darkens a little and turns shiny. Moss changes least. Grass keeps most of its roughness when wet (its blades scatter the light), so a rainy meadow is a deep wet green, never glossy.
+2. **Sky reflection.** Wet ground and puddles reflect the doc 06 sky probe at the mip for their roughness, with Schlick Fresnel and the roughness-limited rim (Karis 2014) and the cavity as specular occlusion. Dry ground stays matte (sun GGX only, as in G1).
+3. **Puddles.** On flat ground (full below 6°, none past 14°) a level in the wetness map's g channel rises with rain (full in about an hour of heavy rain) and drains over about 1.5 game hours of drying (faster in sun and wind). Water stands where the ground's relief is below the level: the blended detail height (ruts and the gaps between stones fill first) mixed with a slow 2.5 m undulation, so puddles gather in real dips. Turf soaks rain up: on grass the level rises 65% less, so only the deepest meadow dips flood. Puddle pixels: roughness 0.03, F0 0.02, bed albedo × 0.6, and the raindrop rings of `lib-rain.wgsl` (shared with the water) tilt their normal. As the level falls the shallow rims surface first, so puddles shrink from their edges.
 
-Rain-drop ripples in puddles and streaks on rock are later polish, not part of G3.
+Streaks on rock and puddles reflecting the island (screen-space) are later polish, not part of G3.
 
 ### Look
 

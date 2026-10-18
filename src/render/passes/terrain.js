@@ -9,8 +9,8 @@ import { LODS, MAX_CHUNKS, createIndexBuffers, packChunks } from '../terrain-mes
 
 /** @typedef {import('../frame-graph.js').PassContext} PassContext */
 
-const DRAW_BYTES = 320;
-const GROUND_BYTES = 224;
+const DRAW_BYTES = 384;
+const GROUND_BYTES = 256;
 const DEG = Math.PI / 180;
 /** @type {Record<string, number>} GroundDetail.tiling.x in lib-ground.wgsl */
 const TILING_MODES = { grid: 0, hex: 1, two: 2 };
@@ -21,9 +21,12 @@ const TILING_MODES = { grid: 0, hex: 1, two: 2 };
  *   water: { depthTextures: GPUTexture[], current: () => number, damp?: GPUTexture, dampWet?: number, vel: GPUTexture, caustics: any },
  *   moss: GPUTexture, causticLayers?: number, wetness: { textures: GPUTexture[], current: () => number },
  *   ground: { views: { a: GPUTextureView, b: GPUTextureView }, sampler: GPUSampler, version: number, fade: number },
- *   groundTier: any }} opts  ground: src/render/ground-detail.js; groundTier: the tier's `ground` block;
+ *   groundTier: any, probe: { view: GPUTextureView, sampler: GPUSampler }, rings?: any }} opts
+ *   ground: src/render/ground-detail.js; groundTier: the tier's `ground` block;
  *   water.caustics: water.json `caustics`; causticLayers: the tier's (0 off, default 2);
- *   wetness: src/world/terrain/wetness.js (water.damp and water.dampWet now feed it, not this pass)
+ *   wetness: src/world/terrain/wetness.js (water.damp and water.dampWet now feed it, not this pass);
+ *   probe: the sky probe (atmosphere.probeView, probeSampler), reflected by wet ground and puddles;
+ *   rings: water.json `ripples.rings`, the raindrop rings drawn in puddles
  */
 export function createTerrainPass(opts) {
   const { terrain, recipe } = opts;
@@ -76,6 +79,9 @@ export function createTerrainPass(opts) {
     gf.set(recipe.materials.albedoMoss, 49);
     const cap = recipe.moss.maxCover;
     gf.set([cap.grass, cap.sand, cap.rock, cap.soil], 52);
+    // Porosity per material (G3 wet look), from the detail layers.
+    gf.set(['grass', 'sand', 'rock', 'soil'].map((id) => d.layers[id].porosity), 56);
+    gf[60] = d.layers.moss.porosity;
   }
 
   function packStatic() {
@@ -108,10 +114,17 @@ export function createTerrainPass(opts) {
     f[72] = c.softFloor; f[73] = c.softPerM; f[74] = c.minFinestPx;
   }
 
-  /** Wet look (floats 76..79): the sheen of freshly soaked ground. */
+  /** Wet ground (G3, terrain.json wetGround), floats 76..95: damp look, puddles, raindrop rings. */
   function packWet() {
-    const wt = recipe.wetness;
-    f[76] = wt.wetRoughness; f[77] = wt.wetRoughnessShare; f[78] = wt.sheenFrom;
+    const g = recipe.wetGround;
+    f[76] = g.damp.roughness[0]; f[77] = g.damp.roughness[1]; f[78] = g.damp.albedo[0]; f[79] = g.damp.albedo[1];
+    const P = g.puddles;
+    f[80] = Math.cos(P.flatDeg[1] * DEG); f[81] = Math.cos(P.flatDeg[0] * DEG);
+    f[82] = 1 / P.undulationM; f[83] = P.undulationShare;
+    f[84] = P.roughness; f[85] = P.albedo; f[86] = P.maxCover; f[87] = P.f0; f[39] = P.turf;
+    // Raindrop rings (water.json ripples.rings); f[88] follows the rain (setRain).
+    const RR = opts.rings;
+    if (RR) { f[89] = RR.cellM; f[90] = RR.lifeS; f[91] = RR.crestM; f[92] = RR.radiusM; f[93] = RR.slope; }
   }
 
   return {
@@ -121,6 +134,9 @@ export function createTerrainPass(opts) {
      * Apply a quality tier's distances without rebuilding (the startup probe may step down).
      * @param {{ lodDistances?: number[], ground: { detailFadeMeters: number }, causticLayers?: number }} t
      */
+    /** Rain now, 0..1: how many raindrop rings fall in puddles. @param {number} r */
+    setRain(r) { f[88] = Math.min(1, Math.max(0, r)) * (opts.rings?.maxShare ?? 0); },
+
     setTier(t) {
       lodDistances = t.lodDistances ?? recipe.render.lodDistances;
       gf[23] = t.ground.detailFadeMeters;
@@ -150,6 +166,8 @@ export function createTerrainPass(opts) {
           { binding: 10, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: 'float' } }, // visual wetness
           { binding: 11, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: 'float' } },
           { binding: 12, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: 'unfilterable-float' } },
+          { binding: 13, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: 'float', viewDimension: 'cube' } },
+          { binding: 14, visibility: GPUShaderStage.FRAGMENT, sampler: { type: 'filtering' } },
         ],
       });
       const layout = device.createPipelineLayout({ label: 'opaque', bindGroupLayouts: [ctx.layouts.frame, ctx.layouts.lighting, layout2] });
@@ -197,6 +215,8 @@ export function createTerrainPass(opts) {
               { binding: 10, resource: wetView },
               { binding: 11, resource: mossView },
               { binding: 12, resource: velView },
+              { binding: 13, resource: opts.probe.view },
+              { binding: 14, resource: opts.probe.sampler },
             ],
           }));
         });

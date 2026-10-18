@@ -33,6 +33,8 @@ struct GroundDetail {
   moss: vec4f,              // heightAmplitudeM, normalStrength, roughMin, roughMax
   mossTile: vec4f,          // x 1 / tile size (m); yzw flat moss albedo for the far look
   mossRules: vec4f,         // most moss each ground can carry: grass, sand, rock, soil (0..1)
+  porosity: vec4f,          // how much water each ground soaks up (G3): grass, sand, rock, soil (0..1)
+  porosity2: vec4f,         // x moss porosity
 };
 
 const GROUND_LAYERS: i32 = 5;
@@ -55,6 +57,8 @@ struct GroundSample {
   weights: vec4f,     // height-blended material weights (grass, sand, rock, soil)
   amount: f32,        // how much detail applies here (load fade x distance fade)
   mossWeight: f32,    // height-blended moss weight
+  height: f32,        // blended detail height 0..1 (0.5 where no detail applies), for puddles
+  porosity: f32,      // blended porosity 0..1 (G3 wet look)
 };
 
 struct LayerSample {
@@ -210,12 +214,17 @@ fn groundDetail(p: vec3f, nMesh: vec3f, w4: vec4f, moss: f32, viewDist: f32) -> 
   var g3 = vec3f(0.0);
   out.roughness = 0.0;
   out.cavity = 0.0;
+  out.height = 0.0;
+  out.porosity = 0.0;
+  let por = array<f32, 5>(ground.porosity.x, ground.porosity.y, ground.porosity.z, ground.porosity.w, ground.porosity2.x);
   for (var i = 0; i < GROUND_LAYERS; i++) {
     let k = b[i] / max(sum, 1e-4);
     out.albedo += albedo[i] * k;
     g3 += grad[i] * k;
     out.roughness += rough[i] * k;
     out.cavity += cav[i] * k;
+    out.height += hs[i] * k;
+    out.porosity += por[i] * k;
   }
   let s4 = max(sum, 1e-4);
   out.weights = vec4f(b[0], b[1], b[2], b[3]) / s4;
@@ -228,5 +237,6 @@ fn groundDetail(p: vec3f, nMesh: vec3f, w4: vec4f, moss: f32, viewDist: f32) -> 
   out.normal = normalize(nMesh - gs);
   out.roughness = mix(0.85, out.roughness, out.amount);
   out.cavity = mix(1.0, out.cavity, out.amount);
+  out.height = mix(0.5, out.height, out.amount);
   return out;
 }

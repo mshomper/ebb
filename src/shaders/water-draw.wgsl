@@ -20,6 +20,7 @@
 // #include lib-water
 // #include lib-probe
 // #include lib-ripples
+// #include lib-rain
 
 struct WaterDraw {
   rectOrigin: vec2u,          // simulated rect (water cells); the mesh covers its interior
@@ -44,7 +45,7 @@ struct WaterDraw {
   detailFadeM: f32,           // ripples calm and move into roughness by this distance (quality tier)
   _q1: f32, _q2: f32,
   rain: vec4f,                // raindrop rings: x share of drop cells active (rain), y cell size (m), z ring life (s), w crest spacing (m)
-  rain2: vec4f,               // x ring radius at the end of its life (m), y crest slope, z foam lace flow cycle (s)
+  rain2: vec4f,               // x ring radius at the end of its life (m), y crest slope, z foam lace flow cycle (s), w most it slides a cycle (m)
   scatterPond: vec4f,         // rgb single-scatter albedo of pond water (fine silt and peat stain it)
   ssr: vec4f,                 // island reflection: x march steps (0 off), y refine steps, z reach (m), w hit thickness (m)
   ssr2: vec4f,                // x screen-edge fade (uv), y, z roughness range it fades out over, w start offset (m)
@@ -215,43 +216,6 @@ fn ripples(xz: vec2f, t: f32) -> vec2f {
   return g;
 }
 
-// Raindrop rings (docs/07): each drop leaves two or three fine crests that spread out and fade
-// within a second, finer than the ripple field can hold. Drops fall on a world grid of cells;
-// each cell holds one drop per lifetime at a hashed spot and time, and how many cells are
-// active follows the rain. Returns the surface slope (dh/dx, dh/dz). Two offset grids layered,
-// so the drops never line up.
-fn rainRingLayer(xz: vec2f, t: f32, layer: u32) -> vec2f {
-  let cellM = wd.rain.y;
-  let life = wd.rain.z;
-  let k = 6.2831853 / wd.rain.w;            // crest wavenumber
-  let p = xz / cellM + f32(layer) * vec2f(0.37, 0.71);
-  let base = floor(p);
-  var g = vec2f(0.0);
-  for (var j = -1; j <= 1; j++) {
-    for (var i = -1; i <= 1; i++) {
-      let cell = base + vec2f(f32(i), f32(j));
-      let ci = vec2u(vec2i(cell) + vec2i(1 << 20));
-      // A new drop every lifetime: hash the cell and which lifetime this is.
-      let h0 = hash3(vec3u(ci, layer * 7919u + 3u));
-      let tt = t / life + hashToFloat(h0);
-      let n = u32(floor(tt));
-      let age = fract(tt);                    // 0..1 through this drop's life
-      let h = hash3(vec3u(ci, n * 2u + layer));
-      if (hashToFloat(h) > wd.rain.x) { continue; }   // fewer drops in light rain
-      let spot = (cell + 0.15 + 0.7 * vec2f(hashToFloat(pcg(h)), hashToFloat(pcg(h ^ 0x9e37u)))) * cellM;
-      let off = xz - spot;
-      let dist = length(off);
-      let radius = wd.rain2.x * sqrt(age);    // fast at first, slowing as it spreads
-      let x = dist - radius;
-      // A short train of crests just inside the front, fading as the ring ages and widens.
-      let envelope = exp(-x * x / (wd.rain.w * wd.rain.w * 1.5)) * (1.0 - age) * (1.0 - age);
-      let dh = wd.rain2.y * envelope * cos(k * x);   // slope along the radius
-      g += off / max(dist, 1e-4) * dh;
-    }
-  }
-  return g;
-}
-
 // Foam cover at xz between the cells, with smoothstepped weights so no cell corners show.
 fn foamCover(xz: vec2f) -> f32 {
   let g = waterCellCoord(xz);
@@ -280,7 +244,7 @@ fn foamLace(xz: vec2f, c: f32, t: f32) -> f32 {
   let n = clamp(0.5 + 1.6 * ((n0 * 0.55 + n1 * 0.3 + n2 * 0.15) - 0.5), 0.0, 1.0);
   // A connected froth with dark holes; more cover opens the pattern a little and makes it whiter
   // (the caller scales by cover), so thin foam is a faint veil, not scattered specks.
-  let edge = 0.52 - 0.12 * c;
+  let edge = 0.64 - 0.24 * c;
   return smoothstep(edge, edge + 0.3, n);
 }
 
@@ -409,9 +373,10 @@ fn fsWater(in: VsOut) -> FsOut {
   // Raindrop rings, only where a pixel is small enough to hold their crests (a few cm apart);
   // farther away and at flat angles they fade rather than shimmer.
   let pixM = viewDist * 2.0 / (frame.proj[1][1] * frame.renderSize.y) / max(abs(v.y), 0.15);
-  let ringNear = 1.0 - smoothstep(0.25, 0.5, pixM / wd.rain.w);
-  if (wd.rain.x > 0.001 && ringNear > 0.0 && d > 0.01) {
-    grad += (rainRingLayer(P.xz, t, 0u) + rainRingLayer(P.xz, t + 0.37, 1u)) * ringNear;
+  let rr = RainRings(wd.rain, wd.rain2);
+  let ringNear = rainRingsVisible(rr, pixM);
+  if (ringNear > 0.0 && d > 0.01) {
+    grad += rainRings(rr, P.xz, t) * ringNear;
   }
   let n = normalize(vec3f(-grad.x, 1.0, -grad.y));
   // Thin water is a broken film: stones and blades stand through it, so it reflects weakly and
@@ -515,8 +480,11 @@ fn fsWater(in: VsOut) -> FsOut {
     let phase = t / fp + noiseGrad(P.xz * 0.45, 931u).x * 2.0;
     let fa = fract(phase);
     let fb = fract(phase + 0.5);
-    let la = foamLace(P.xz - in.vel * fa * fp, cover, t);
-    let lb = foamLace(P.xz - in.vel * fb * fp + vec2f(2.9, 6.1), cover, t);
+    // In fast water a whole cycle of sliding would carry the lace meters, and neighboring speeds
+    // would shear it into long smears and swirls: cap the slide per cycle, so fast foam churns.
+    let slide = in.vel * min(1.0, wd.rain2.w / max(length(in.vel) * fp, 1e-4));
+    let la = foamLace(P.xz - slide * fa * fp, cover, t);
+    let lb = foamLace(P.xz - slide * fb * fp + vec2f(2.9, 6.1), cover, t);
     let lace = mix(la, lb, abs(2.0 * fa - 1.0));
     let froth = applyAerial(wd.foam.y * lightIn * frame.exposure, screenUv, viewDist);
     // Films only millimeters thick (spilling over a bank) never froth.
