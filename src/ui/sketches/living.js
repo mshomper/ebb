@@ -7,7 +7,7 @@
 // leader from a point on the thing it names. Shapes are solid and drawn back to front; everything
 // grows from or rests on something.
 
-import { blade, stem, along, wave } from './pen.js';
+import { blade, stem, along, wave, cubicPoints, yAt, xAt, polyline } from './pen.js';
 
 export const WASH = Object.freeze({
   green: '#7E9B5E', leaf: '#93AE6E', brown: '#7A5236', water: '#9DB9C8', mud: '#8A6F55', sand: '#D9C49A',
@@ -103,36 +103,71 @@ export function grass(p, scale) {
 
 /** @param {import('./pen.js').Pen} p @param {string} [scale] */
 export function rushes(p, scale) {
-  // Shallow water over the mud; the tussock's crown sits on the mud, its stems rise out of the water.
-  p.tint('M40 236H236V262H40Z', WASH.water, 0.32);
-  p.tint('M40 262H236V296H40Z', WASH.mud, 0.22);
-  p.line(wave(40, 236, 236, 1.5, 28), 1.4);
-  p.line('M40 262C90 258 180 266 236 261', 1.2);
-  /** Stems: base x at the water, tip x and y; outer ones first so the inner ones stand in front. @type {[number, number, number][]} */
-  const stems = [[122, 62, 104], [154, 214, 96], [126, 84, 70], [150, 196, 66], [130, 104, 46], [146, 180, 52],
-    [132, 116, 92], [144, 164, 84], [134, 124, 30], [140, 150, 36], [137, 138, 58]];
-  /** @type {Record<number, [number, number, number, number, number]>} */ const S = {};
-  stems.forEach(([bx, tx, ty], i) => {
-    const s = /** @type {[number, number, number, number, number]} */ ([bx, 236, tx, ty, (tx - bx) * 0.06]);
-    S[i] = s;
-    // Under the water each stem carries on down to the crown.
-    p.fine(`M${bx} 238L${p.f(138 + (bx - 138) * 0.5)} 258`, 0.9, 0.5);
-    p.shape(blade(bx, 236, tx, ty, 1.7, s[4]), WASH.green, 0.45, 1);
-  });
-  p.shape('M110 262C118 252 158 252 166 262C158 270 118 270 110 262Z', WASH.mud, 0.55, 1.4);
-  for (const x of [118, 130, 146, 158]) p.line(`M${x} 267l${x < 138 ? -3 : 3} 12`, 0.9);
-  // Flower tufts break out from the side of a few stems, a little below the tip.
-  for (const [i, t, side] of /** @type {[number, number, number][]} */ ([[8, 0.84, 1], [3, 0.8, 1], [2, 0.8, -1]])) {
-    const [x, y] = along(...S[i], t);
-    for (const [dx, dy] of [[9, -5], [11, 1], [7, 6]]) p.shape(petal(x, y, x + side * dx, y + dy, 2.4), WASH.brown, 0.65, 0.9);
+  const f = p.f;
+  // The marsh in section: shallow water over a soft bed that rises to a low bank on the right.
+  const WATER = 236;
+  const bed = cubicPoints([40, 272, 120, 278, 190, 262, 236, 226]);
+  const edge = xAt(bed.slice(32), WATER);   // where the bed comes up through the water
+  const inWater = bed.filter(([x]) => x <= edge);
+  p.tint(`${polyline(bed)}V306H40Z`, WASH.mud, 0.22);
+  p.line(polyline(bed), 1.3);
+
+  // The tussock: a mound of old stem bases on the bed, its top just under the water.
+  const left = 112, right = 166, top = 242;
+  const crownTop = (/** @type {number} */ x) => top + 7 * ((x - 139) / 27) ** 2;
+  // A sedge grows at the tussock's left side, behind the rushes: flat leaves arching out and one
+  // three-sided stalk with a brown spike hanging from its top.
+  p.shape(blade(118, crownTop(118), 46, 182, 2.6, -10), WASH.leaf, 0.42, 1);
+  p.shape(blade(121, crownTop(121), 58, 214, 2.4, -6), WASH.leaf, 0.42, 1);
+  const sedge = /** @type {[number, number, number, number, number]} */ ([119, crownTop(119), 52, 88, -6]);
+  p.line(stem(...sedge), 1.5);
+  p.fine(stem(sedge[0] + 1.2, sedge[1], sedge[2] + 0.8, sedge[3] + 2, sedge[4]), 0.6, 0.5);
+  p.shape(petal(52, 88, 44, 112, 3.2), WASH.brown, 0.7, 1);
+
+  // The rush stems, round and leafless, rising from the crown: outer ones first so the inner
+  // ones stand in front. [base x, tip x, tip y]
+  /** @type {[number, number, number][]} */
+  const stems = [[124, 66, 104], [154, 214, 96], [127, 86, 70], [151, 196, 66], [130, 106, 46], [147, 180, 52],
+    [133, 118, 92], [144, 164, 84], [135, 124, 30], [141, 150, 36], [138, 138, 58]];
+  /** @type {[number, number, number, number, number][]} */ const S = stems.map(([bx, tx, ty]) => [bx, crownTop(bx) + 2, tx, ty, (tx - bx) * 0.06]);
+  for (const s of S) p.shape(blade(s[0], s[1], s[2], s[3], 1.7, s[4]), WASH.green, 0.45, 1);
+  // The crown in front of the stem bases, on the bed, roots down into the mud.
+  const crown = `M${left} ${f(yAt(bed, left))}C${left + 2} ${top + 6} ${left + 14} ${top} 139 ${top}` +
+    `C${right - 14} ${top} ${right - 2} ${top + 6} ${right} ${f(yAt(bed, right))}` +
+    `${polyline(bed.filter(([x]) => x > left && x < right).reverse()).replace('M', 'L')}Z`;
+  p.shape(crown, WASH.mud, 0.55, 1.3);
+  for (const x of [122, 132, 146, 156]) p.fine(`M${x} ${f(crownTop(x) + 4)}L${f(x + (x - 139) * 0.15)} ${f(yAt(bed, x) - 3)}`, 0.8, 0.5);
+  for (const [x, dx] of [[120, -6], [132, -2], [146, 3], [158, 7]]) {
+    const y = yAt(bed, x);
+    p.line(stem(x, y, x + dx, y + 18, dx * 0.4), 0.9);
   }
-  const [fx, fy] = along(...S[3], 0.8);
-  p.label('tuft', 250, 44, fx + 10, fy - 2);
+  // The water over the crown and the lower stems, and its surface.
+  p.tint(`M40 ${WATER}H${f(edge)}${polyline(inWater.slice().reverse()).replace('M', 'L')}Z`, WASH.water, 0.32);
+  p.line(wave(40, edge, WATER, 1.3, 26), 1.3);
+
+  // Flowers: a loose brown cluster breaking out of one side of a stem, a little below its tip,
+  // each floret on its own short stalk.
+  /** @param {[number, number, number, number, number]} s @param {number} t @param {number} side */
+  const cluster = (s, t, side) => {
+    const [x, y] = along(...s, t);
+    for (const [ang, len] of [[-40, 9], [-18, 11], [4, 10], [24, 8], [-58, 7], [44, 6]]) {
+      const a = (side > 0 ? ang : 180 - ang) * Math.PI / 180;
+      const ex = x + Math.cos(a) * len, ey = y + Math.sin(a) * len + len * 0.15;
+      p.fine(`M${f(x)} ${f(y)}Q${f((x + ex) / 2)} ${f((y + ey) / 2 - 1.5)} ${f(ex)} ${f(ey)}`, 0.8, 0.8);
+      p.dot(ex, ey, 1.7, WASH.brown);
+    }
+    return [x, y];
+  };
+  const [fx, fy] = cluster(S[3], 0.78, 1);
+  cluster(S[8], 0.82, 1);
+  cluster(S[2], 0.8, -1);
+
+  p.label('tuft', 250, 44, fx + 12, fy - 6);
   const [sx, sy] = along(...S[1], 0.55);
   p.label('stem', 250, 150, sx + 2, sy);
-  p.label('base', 250, 252, 166, 262);
-  p.scale(30, 30, 236, scale);
-  return p.svg(380, 300, 'Field sketch of rushes and sedges');
+  p.label('base', 250, 282, right + 1, yAt(bed, right) - 4);
+  p.scale(30, 30, top, scale);
+  return p.svg(380, 312, 'Field sketch of rushes and sedges');
 }
 
 /** A notched lily pad seen low, its notch toward angle a. @param {number} cx @param {number} cy @param {number} rx @param {number} ry @param {number} a */

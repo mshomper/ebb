@@ -304,12 +304,16 @@ export function addJournalTests(test, assert, eq) {
     }
     const blank = { flags: [], species: {} };
     const svg = webView(describeWeb(/** @type {any} */ (blank), null, web), web, null);
-    const W = Number(/viewBox="0 0 ([\d.]+)/.exec(svg)?.[1]);
-    const phonePx = web.textPx * (375 - 32) / W;
-    assert(phonePx >= 16, `names are ${phonePx.toFixed(1)} px on a 375 px phone`);
     assert(!/NaN|undefined/.test(svg), 'the drawing is clean');
     for (const id of ['frogs', 'midges']) assert(!svg.includes(`>${web.nodes[id].label}<`), `${id} is a ? on a new island`);
-    return `widest row ${W.toFixed(0)} units; names at ${phonePx.toFixed(1)} px on a phone`;
+    // The widest case: every name known, so every chip carries its full name.
+    const species = Object.fromEntries(Object.values(web.nodes).filter((/** @type {any} */ n) => n.page).map((/** @type {any} */ n) => [n.page, { ever: true }]));
+    const flags = Object.values(web.nodes).filter((/** @type {any} */ n) => n.flag).map((/** @type {any} */ n) => n.flag);
+    const full = webView(describeWeb(/** @type {any} */ ({ flags, species }), null, web), web, null);
+    const W = Number(/viewBox="0 0 ([\d.]+)/.exec(full)?.[1]);
+    const phonePx = web.textPx * (375 - 32) / W;
+    assert(phonePx >= 16, `with every name known, names are ${phonePx.toFixed(1)} px on a 375 px phone`);
+    return `widest row, every name known: ${W.toFixed(0)} units; names at ${phonePx.toFixed(1)} px on a phone`;
   });
 
   test(JOURNAL, 'the wash: where it lives, where it would do well, and pencil circles for the unseen', async () => {

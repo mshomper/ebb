@@ -35,7 +35,7 @@ export function webView(d, web, focus) {
   // render above 16 px.
   // A name not yet seen is a pencil "?", so the web hints without telling.
   const shown = (/** @type {{ label: string, known: boolean }} */ n) => (n.known ? n.label : web.unknown.label);
-  const chipW = (/** @type {{ label: string, known: boolean }} */ n) => Math.ceil(Math.max(textWidth(shown(n), px) + 18, CHIP_H + 8));
+  const chipW = (/** @type {{ label: string, known: boolean }} */ n) => Math.ceil(Math.max(textWidth(shown(n), px) + (web.chipPadPx ?? 18), CHIP_H + 8));
   // Neighbours linked to each other sit further apart, so the link between them reads as a line.
   const tied = (/** @type {string} */ a, /** @type {string} */ b) => d.links.some((l) => (l.a === a && l.b === b) || (l.a === b && l.b === a));
   const gaps = d.rows.map((r) => r.nodes.slice(1).map((n, i) => (tied(r.nodes[i].id, n.id) ? web.linkGapPx : gap)));
