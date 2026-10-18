@@ -81,8 +81,9 @@ Early gifts come fast so the loop teaches itself; later tiers lean on trees and 
 
 ### The journal as the progression record
 
-`src/ui/journal.js` is the only progression screen. It is a book, not a dashboard:
+`src/ui/journal.js` is the only progression screen. It is a book, not a dashboard, and the way the player reads the whole island. It has four jobs (decided October 2026): **know** (a page for every living thing, plants included), **look** (opening a page washes the island where that species lives, strongly, and where it would do well, palely; J2), **connect** (a web of what needs what, each link inked once it has been seen on the island; J2) and **remember** (notes). Pages fill only from what happens on the island, through the pure model in `src/world/journal/observe.js`, so a later catch-up writes the same journal; all its words are in `recipes/world/journal.json`.
 
+- **Plant pages** (J1): grass and every flora species. The status says in words how much there is, where ("a thick margin of reeds by the water on the west side, creeping along the bank"), whether it is flowering, spreading, pulling back or resting for winter. **Likes** lines are learned as they show themselves: when it is first seen, when it spreads, when some drown or a seed gives up, or when the Plant tool refuses a spot for it; the rest wait as "more to learn by watching". **Seasons** boxes fill as the year turns. **Gives** lines stay in pencil, as a hint, until the species they point to is seen using it.
 - **Species pages**, one per species, in tier order. Unknown species show a soft pencil outline and one riddle-like line about what they like ("likes still water and tall stems"). Seen species add a sketch. A photograph replaces the sketch. Happy species gain a pressed-flower corner and their gift note. Named individuals are listed with their age and markings.
 - **Moments**: photos of signature behaviors (dusk chorus, the heron's strike, firefly sync), a gallery that fills over time.
 - **Away notes**: the notes from each reveal, dated in game days and seasons.

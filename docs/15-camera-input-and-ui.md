@@ -127,13 +127,17 @@ Phone portrait: the palette collapses to five group buttons; a group opens a ver
 
 ### Field journal
 
-`src/ui/journal.js` is the only progression screen (13-progression-and-expansion.md); this doc owns its layout. Desktop: a 440 px panel sliding in from the right, cream paper (#F4EEE4) with night text (#1E2624). Phone: a full-screen sheet with a drawn close icon. Vertical scroll only. Five sections, shown as a vertical list of drawn section icons with labels down the panel's left edge on desktop and as a stacked list on phones (never a tab row that could overflow):
+`src/ui/journal.js` is the only progression screen (13-progression-and-expansion.md); this doc owns its layout. Desktop: a 440 px panel sliding in from the right, cream paper (#F4EEE4) with night text (#1E2624), ending above the bottom row so time flow stays in reach and the island stays in view. Phone: a sheet from the bottom that stops just under half height, so the island shows above it; a drawn chevron makes it nearly full height, and a drawn close icon closes it. Vertical scroll only. The book button sits in the top right corner, with the Look button to its left; J opens and closes it, Esc closes it. Five sections, shown as a vertical list of drawn section icons with labels down the panel's left edge on desktop and as a stacked list on phones (never a tab row that could overflow). J1 ships two of them, Living things (the species pages) and Notes, as two wrapping buttons under the title:
 
 - **Species:** one page per species in tier order, filling as 13 describes (pencil outline and riddle line, then sketch, then photo, then a pressed-flower corner when happy), with named individuals listed. Hints are observations in Fraunces italic ("the frogs keep to the far bank since the lantern went up"), never bars, numbers or checklists.
 - **Moments:** photos of signature behaviors (dusk chorus, the heron's strike), a grid that wraps to the pane width.
 - **Away notes:** notes from each reveal, dated in game days and seasons, newest first.
 - **Island map:** a hand-drawn style map that adds each land piece as it rises, with player-named places.
 - **Year page:** four season boxes and the closing note.
+
+**Tap to identify (J1).** With no tool chosen, a short still click or one-finger tap on the island (the `look.tap` action) opens a small cream card beside the tap: the living thing's name, what it is doing in words ("A young clump of reeds"), and "Open its page". It closes after 8 s, on a tap elsewhere, or when a tool is chosen.
+
+**Island notes (J1).** New journal notes (`note:posted`) appear at the bottom left above the tool bar in Fraunces italic, two at most, each for 6 s; a click opens the journal at that species. They step aside while a tool's card is open on screens narrower than 1180 px, while the phone sheet is open, and leave room for the time-flow button on narrow phones.
 
 ### Settings
 

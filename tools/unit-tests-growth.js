@@ -26,7 +26,7 @@ const ZONES = {
 };
 
 /** The made-up habitat. @returns {import('../src/world/growth/habitat.js').Habitat} */
-function shoreline() {
+export function shoreline() {
   const N = HABITAT_CELLS;
   const hab = {
     n: N, depthCm: new Uint8Array(N * N), moisture: new Uint8Array(N * N), salt: new Uint8Array(N * N),
@@ -45,7 +45,7 @@ function shoreline() {
 }
 
 /** World x at the middle of a zone, and a z on the grid. @param {string} zone */
-const at = (zone) => [HABITAT_ORIGIN + (ZONES[zone][0] + ZONES[zone][1] + 1) / 2, 0];
+export const at = (zone) => [HABITAT_ORIGIN + (ZONES[zone][0] + ZONES[zone][1] + 1) / 2, 0];
 
 /** The zone a world x lies in. @param {number} x */
 function zoneOf(x) {
@@ -54,7 +54,7 @@ function zoneOf(x) {
 }
 
 /** @type {Promise<any> | null} */ let recipesPromise = null;
-function loadRecipes() {
+export function loadRecipes() {
   recipesPromise ??= (async () => {
     const get = (/** @type {string} */ p) => fetch(`../recipes/${p}.json`).then((r) => {
       if (!r.ok) throw new Error(`recipes/${p}.json: HTTP ${r.status}`);

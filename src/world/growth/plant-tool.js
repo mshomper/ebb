@@ -80,7 +80,11 @@ export function createPlantTool(opts) {
       const r = growth.plant(sp, p[0], p[2]);
       const name = flora[sp]?.name ?? sp;
       updateStore('plantUi', () => ({ message: say(sp, name, r.ok ? 'ok' : r.reason ?? 'unknown'), at: performance.now() }));
-      if (!r.ok) return false;
+      if (!r.ok) {
+        // The journal learns what the species needs from a refusal (src/world/journal).
+        if (r.reason && r.reason !== 'unknown') emitDeferred('plant:refused', { species: sp, reason: r.reason });
+        return false;
+      }
       taps.push({ x: p[0], z: p[2], at: performance.now() });
       if (r.id !== undefined) mine = [r.id, ...mine].slice(0, SLOTS - 1);
       emitDeferred('growth:planted', { species: sp, x: p[0], z: p[2] });

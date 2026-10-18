@@ -151,6 +151,47 @@ const ICONS = {
     <circle ${ACCENT} cx="17" cy="10" r="2.1"/>
     <circle cx="17" cy="10" r="2.1"/>`,
 
+  // Grass (journal page): five blades of different heights rising from the ground line.
+  grass: `
+    <path d="M3.5 20.5H20.5"/>
+    <path d="M6 20.5C6 16.5 5 13.5 3.5 11.5"/>
+    <path d="M8.5 20.5C8.7 15 9.5 10.5 11 7.5"/>
+    <path d="M12 20.5C11.6 16.5 10.6 13.5 9 11.8"/>
+    <path d="M14.5 20.5C14.8 16 16 12.5 18 10"/>
+    <path d="M17.5 20.5C17.6 17.5 18.6 15.6 20.5 14.2"/>`,
+
+  // Journal (docs/15): a bound book with a ribbon marker and a pressed leaf on the cover.
+  journal: `
+    <path ${ACCENT} d="M5 18.5V5.5A1 1 0 0 1 6 4.5H19V17H6.5A1.5 1.5 0 0 0 5 18.5Z"/>
+    <path d="M5 18.5V5.5A1 1 0 0 1 6 4.5H19V17H6.5A1.5 1.5 0 0 0 5 18.5A1.5 1.5 0 0 0 6.5 20H19"/>
+    <path d="M8 4.5V10L9.5 8.8L11 10V4.5"/>
+    <path d="M12.5 14C12.7 11.5 14.3 10 16.5 9.8C16.6 12.1 15 13.8 12.5 14Z"/>
+    <path d="M12.5 14L14.6 11.9"/>`,
+
+  // Journal notes: a page with a folded corner and three written lines.
+  notes: `
+    <path ${ACCENT} d="M6 3.5H14.5L18.5 7.5V20.5H6Z"/>
+    <path d="M6 3.5H14.5L18.5 7.5V20.5H6Z"/>
+    <path d="M14.5 3.5V7.5H18.5"/>
+    <path d="M9 11.5H15.5M9 14.5H15.5M9 17.5H13"/>`,
+
+  // A living thing not seen yet: a pencil circle, drawn in short dashes.
+  unknown: `
+    <circle cx="12" cy="12" r="8" stroke-dasharray="2.4 3"/>`,
+
+  // Close: two crossing strokes.
+  close: `
+    <path d="M6.5 6.5L17.5 17.5"/>
+    <path d="M17.5 6.5L6.5 17.5"/>`,
+
+  // Back: a chevron pointing left.
+  back: `
+    <path d="M14.5 5.5L8 12L14.5 18.5"/>`,
+
+  // A chevron pointing up (the phone sheet grows); CSS turns it over to point down.
+  chevron: `
+    <path d="M5.5 15L12 8.5L18.5 15"/>`,
+
   // Curved arrow to the left.
   undo: `
     <path d="M8.5 5L4 9.5L8.5 14"/>

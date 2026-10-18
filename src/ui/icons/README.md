@@ -38,6 +38,13 @@ Size and color come from CSS: set `width`/`height` on `.icon` and `color` on the
 | `lilies` | notched lily pad seen low on a wavy water line, a cup flower of pointed petals on it: species chip |
 | `iris` | fan of three sword leaves and a flower on a stalk with three drooping falls: species chip |
 | `thrift` | low cushion on the ground line with three stalks topped by round pompoms: species chip |
+| `grass` | five blades of different heights on the ground line: the grass journal page |
+| `journal` | bound book with a ribbon marker and a pressed leaf on the cover: the journal button |
+| `notes` | page with a folded corner and three written lines: the journal's Notes section |
+| `unknown` | a circle drawn in short pencil dashes: a living thing not seen yet |
+| `close` | two crossing strokes: close a panel or card |
+| `back` | a chevron pointing left: back to a list |
+| `chevron` | a chevron pointing up (turned over by CSS to point down): the phone sheet's taller or shorter |
 | `undo` | curved arrow to the left |
 | `redo` | the mirror of undo |
 | `raise` | mound with an up stroke |

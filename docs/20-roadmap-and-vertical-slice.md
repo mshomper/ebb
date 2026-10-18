@@ -37,7 +37,7 @@ Click-test: the page opens on desktop and phone, the camera orbits, pans and zoo
 
 ### M1 — Vertical slice
 
-One island, everything in miniature. Built in thirteen steps, each its own click-test. G1 to G3 (ground detail) were added in October 2026 after the realism review; they upgrade S1's surfaces and sit between the original steps. S4 (water) was split into S4a to S4c in October 2026 so each piece stays click-testable, with realism a priority:
+One island, everything in miniature. Built in fifteen steps, each its own click-test. G1 to G3 (ground detail) were added in October 2026 after the realism review; they upgrade S1's surfaces and sit between the original steps. S4 (water) was split into S4a to S4c in October 2026 so each piece stays click-testable, with realism a priority. J1 and J2 (the field journal) were added in October 2026, before frogs, because the journal is how the player reads the whole island, plants included, not a page per creature:
 
 | Step | What appears | Main docs |
 |---|---|---|
@@ -50,8 +50,10 @@ One island, everything in miniature. Built in thirteen steps, each its own click
 | S4b | Water the island knows: the deterministic water summary (priority-flood), the pond refill nudge, pour and drain tools, spring placing (built, locked until the dragonflies' gift; `?sandbox` opens it), the live readback for creatures, tide events for ecology | 07, 11, 12 |
 | S4c | Water optics and wet ground: sky probe with specular mips, screen-space reflection on high, caustics, foam, ripples from rain and creatures, the visual wetness pass with drying tide flats | 07, 06, 08 |
 | G3 | Wet ground: roughness and specular, damp darkening and puddles in rain (reads S4c's wetness pass and sky probe) | 22, 06 |
-| S5 | One plant species, reeds, spreading along wet ground and the tide band, plus a grass layer | 10, 14 |
-| S6 | Frogs: needs, arrival, settling, behavior, feeding and naming, one journal page | 11, 12 |
+| S5 | Shipped grass, reeds, water lilies, yellow flag iris and sea thrift, each growing and spreading on its own ground, with the Plant tool and `tools/growth-lab.html` | 10, 14 |
+| J1 | Field journal v1: the book button, a page for every living thing on the island that fills from what happens there, notes on the island and in the journal, tap a plant to name it | 13, 15 |
+| J2 | The journal's "show where" wash on the island and the web of what needs what | 13, 15 |
+| S6 | Frogs: needs, arrival, settling, behavior, presence, feeding and naming; midges and frogs get journal pages | 11, 12 |
 | S7 | Autosave, reload, and offline catch-up with the "while you were away" reveal | 02, 18 |
 | S8 | Minimal HUD with drawn icons, touch layout on phone, low quality tier | 15, 19 |
 
@@ -60,6 +62,7 @@ Slice acceptance, all together:
 - Sculpt a dip near the spring. Water fills it and finds its way to the sea.
 - Watch for a few game hours. The tide visibly ebbs and returns; reeds creep along the wet edge.
 - After enough reeds and water, a frog visits, then settles; you can feed it and give it a name.
+- Open the journal: every plant on the island has a page that says, in words, where it grows and what it likes, and the notes tell what changed.
 - Switch palettes. The whole scene changes mood instantly, and the light still behaves the same.
 - Orbit in close at a low sun, then let it rain. Sand, rock and soil read as real material, show no tiling, and turn dark and glossy with puddles in the rain.
 - Close the tab, come back the next day. The island has moved on, and a short calm reveal shows what changed.

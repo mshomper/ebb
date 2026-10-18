@@ -7,6 +7,10 @@ import { showBuildBadge } from './ui/build-badge.js';
 import { mountTools } from './ui/tools.js';
 import { mountTimeFlow } from './ui/time-flow.js';
 import { mountLook } from './ui/look.js';
+import { mountJournal } from './ui/journal.js';
+import { mountIslandNotes } from './ui/island-notes.js';
+import { createJournal } from './world/journal/index.js';
+import { loadRecipe } from './core/recipes.js';
 
 /** Shown in the corner badge when no build.json or local server info is available. */
 export const BUILD = 'm1-s3-palette';
@@ -27,7 +31,7 @@ if (new URLSearchParams(location.search).has('debug')) {
 let toolsMounted = false;
 
 startApp(canvas, { onDeviceLost: (rebuilding) => showRebuildingNote(rebuilding) })
-  .then((r) => {
+  .then(async (r) => {
     if (!r.ok) showNoWebGPU(r.reason);
     else if (new URLSearchParams(location.search).has('debug')) /** @type {any} */ (window).ebb = r;
     if (r.ok && !toolsMounted) {
@@ -35,6 +39,12 @@ startApp(canvas, { onDeviceLost: (rebuilding) => showRebuildingNote(rebuilding) 
       mountTools(document.body);
       mountTimeFlow(document.body);
       mountLook(document.body, r.palette.list());
+      // The field journal (docs 13, 15): watches the world, writes notes, names what you tap.
+      const words = await loadRecipe('world/journal');
+      const journal = createJournal({ world: r.world, words });
+      mountJournal(document.body, journal);
+      mountIslandNotes(document.body, words);
+      if (new URLSearchParams(location.search).has('debug')) /** @type {any} */ (window).ebbJournal = journal;
     }
   })
   .catch((err) => {

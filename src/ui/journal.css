@@ -1,0 +1,373 @@
+/* The field journal (src/ui/journal.js), the island notes and the tap card (src/ui/island-notes.js).
+   Cream paper with night text and Fraunces italic for observations (docs/15). Desktop: a 440 px
+   panel on the right, above the bottom controls. Phone (under 700 px wide): a sheet from the bottom
+   that stops half way, or nearly full height. Panels animate only opacity and transform. */
+
+:root {
+  --jr-paper: #F4EEE4;
+  --jr-ink: #1E2624;
+  --jr-soft: #4A5551;
+  --jr-pencil: #8A8478;
+  --jr-rule: #DCCFBB;
+  --jr-binding: #C8B89A;
+  --jr-moss: #5F7F5B;
+  --jr-btn: 48px;
+  --jr-edge: 12px;
+}
+@media (pointer: coarse) {
+  :root { --jr-btn: 52px; }
+}
+
+/* --- the book button, top right (the Look button sits to its left, look.css) --- */
+.ebb-jbtn {
+  position: fixed;
+  top: max(var(--jr-edge), env(safe-area-inset-top));
+  right: max(var(--jr-edge), env(safe-area-inset-right));
+  z-index: 11;
+  pointer-events: none;
+}
+.ebb-jbtn__btn {
+  appearance: none;
+  -webkit-appearance: none;
+  pointer-events: auto;
+  width: var(--jr-btn);
+  height: var(--jr-btn);
+  margin: 0;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(30, 38, 36, 0.72);
+  border: 1px solid rgba(244, 238, 228, 0.12);
+  border-radius: 16px;
+  box-shadow: 0 6px 24px rgba(10, 14, 13, 0.28);
+  color: var(--ui-cream);
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color 160ms ease;
+}
+@media (pointer: fine) {
+  .ebb-jbtn__btn { -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
+}
+.ebb-jbtn__btn:hover { background: rgba(48, 58, 55, 0.8); }
+.ebb-jbtn__btn.is-on { background: var(--wordmark-light); }
+.ebb-jbtn__btn:focus-visible { outline: 2px solid var(--wordmark-dark); outline-offset: 2px; }
+.ebb-jbtn .icon { width: 28px; height: 28px; display: block; }
+
+/* --- the panel --- */
+.ebb-journal {
+  position: fixed;
+  z-index: 20;
+  top: calc(max(var(--jr-edge), env(safe-area-inset-top)) + var(--jr-btn) + 10px);
+  right: max(var(--jr-edge), env(safe-area-inset-right));
+  /* Above the bottom row (tool bar and time flow, 62 px tall) so time can still be changed. */
+  bottom: calc(max(var(--jr-edge), env(safe-area-inset-bottom)) + var(--jr-btn) + 26px);
+  width: min(440px, calc(100vw - 2 * var(--jr-edge)));
+  display: flex;
+  flex-direction: column;
+  background: var(--jr-paper);
+  color: var(--jr-ink);
+  border-left: 10px solid var(--jr-binding);
+  border-radius: 8px 16px 16px 8px;
+  box-shadow: 0 10px 36px rgba(10, 14, 13, 0.35);
+  font-family: var(--font-ui);
+  font-weight: 600;
+  font-size: var(--text-body);
+  line-height: 1.45;
+  opacity: 0;
+  transform: translateX(16px);
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 200ms ease, transform 240ms ease, visibility 0s linear 240ms;
+}
+.ebb-journal.is-open {
+  opacity: 1;
+  transform: none;
+  visibility: visible;
+  pointer-events: auto;
+  transition: opacity 200ms ease, transform 240ms ease, visibility 0s;
+}
+.ebb-journal [hidden] { display: none !important; }
+.ebb-journal .icon { width: 24px; height: 24px; display: block; flex: none; }
+.ebb-journal button { font: inherit; color: inherit; -webkit-tap-highlight-color: transparent; }
+.ebb-journal :focus-visible { outline: 2px solid var(--jr-moss); outline-offset: 2px; }
+
+.ebb-journal__head {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 10px 4px 16px;
+}
+.ebb-journal__title {
+  margin: 0 auto 0 0;
+  min-width: 0;
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+.ebb-journal__icon-btn {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 44px;
+  height: 44px;
+  flex: none;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+.ebb-journal__icon-btn:hover { background: rgba(30, 38, 36, 0.07); }
+.ebb-journal__size { display: none; }
+
+.ebb-journal__nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 4px 16px 10px;
+  border-bottom: 1px solid var(--jr-rule);
+}
+.ebb-journal__tab {
+  appearance: none;
+  -webkit-appearance: none;
+  min-height: 44px;
+  padding: 6px 14px 6px 10px;
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1.5px solid var(--jr-rule);
+  border-radius: 12px;
+  background: transparent;
+  cursor: pointer;
+}
+.ebb-journal__tab:hover { background: rgba(30, 38, 36, 0.05); }
+.ebb-journal__tab[aria-pressed='true'] { background: var(--jr-moss); border-color: var(--jr-moss); color: var(--jr-paper); }
+
+.ebb-journal__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  padding: 12px 16px 18px;
+  outline: none;
+}
+.ebb-journal__voice {
+  font-family: var(--font-voice);
+  font-style: italic;
+  font-weight: 400;
+}
+.ebb-journal__empty { margin: 8px 0; font-size: 18px; color: var(--jr-soft); }
+
+/* living things list */
+.ebb-jlist, .ebb-jnotes, .ebb-jpage__list, .ebb-jpage__notes { list-style: none; margin: 0; padding: 0; }
+.ebb-jlist { display: grid; gap: 4px; }
+.ebb-jlist__row {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 100%;
+  margin: 0;
+  padding: 10px 10px;
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+  text-align: left;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  cursor: pointer;
+}
+.ebb-jlist__row:hover { background: rgba(30, 38, 36, 0.06); }
+.ebb-jlist__icon { width: 40px; height: 40px; display: grid; place-items: center; border-radius: 50%; background: rgba(95, 127, 91, 0.14); color: var(--jr-moss); }
+.ebb-jlist__icon .icon { width: 28px; height: 28px; }
+.ebb-jlist__text { display: grid; gap: 2px; min-width: 0; overflow-wrap: break-word; }
+.ebb-jlist__text b { font-weight: 800; }
+.ebb-jlist__text .ebb-journal__voice { font-size: 17px; color: var(--jr-soft); line-height: 1.35; }
+.ebb-jlist__row.is-pencil b, .ebb-jlist__row.is-pencil .ebb-journal__voice { color: var(--jr-pencil); }
+.ebb-jlist__row.is-pencil .ebb-jlist__icon { background: transparent; color: var(--jr-pencil); }
+
+/* a species page */
+.ebb-jpage { display: grid; gap: 14px; }
+.ebb-jpage__top { display: flex; align-items: center; gap: 14px; }
+.ebb-jpage__top h3 { margin: 0; font-size: 24px; font-weight: 800; line-height: 1.2; min-width: 0; }
+.ebb-jpage__sketch { width: 72px; height: 72px; flex: none; display: grid; place-items: center; border-radius: 50%; background: rgba(95, 127, 91, 0.14); color: var(--jr-moss); }
+.ebb-jpage__sketch .icon { width: 48px; height: 48px; }
+.ebb-jpage__sketch.is-pencil { background: transparent; border: 1.5px dashed var(--jr-pencil); color: var(--jr-pencil); }
+.ebb-jpage__status { margin: 0; font-size: 19px; line-height: 1.45; }
+.ebb-jpage__status.is-pencil { color: var(--jr-pencil); }
+.ebb-jpage section { display: grid; gap: 6px; }
+.ebb-jpage h4 { margin: 0; font-size: var(--text-small); font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--jr-moss); }
+.ebb-jpage__list { display: grid; gap: 6px; }
+.ebb-jpage__list li { display: grid; grid-template-columns: 16px minmax(0, 1fr); gap: 8px; align-items: start; overflow-wrap: break-word; }
+.ebb-jpage__list li::before { content: ''; width: 9px; height: 9px; margin-top: 8px; border-radius: 50%; background: var(--jr-moss); }
+.ebb-jpage__list li.is-pencil { color: var(--jr-pencil); }
+.ebb-jpage__list li.is-pencil::before { background: transparent; border: 1.5px dashed var(--jr-pencil); width: 8px; height: 8px; }
+.ebb-jpage__seasons { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.ebb-jpage__season { min-width: 0; min-height: 76px; padding: 6px 7px; border: 1.5px solid var(--jr-rule); border-radius: 10px; display: grid; align-content: start; gap: 2px; overflow-wrap: break-word; }
+.ebb-jpage__season b { font-size: var(--text-small); font-weight: 800; }
+.ebb-jpage__season span { font-family: var(--font-voice); font-style: italic; font-weight: 400; font-size: var(--text-small); line-height: 1.3; }
+.ebb-jpage__season.is-empty { border-style: dashed; color: var(--jr-pencil); }
+.ebb-jpage__notes { display: grid; gap: 8px; }
+.ebb-jpage__notes li { overflow-wrap: break-word; }
+.ebb-jpage__notes small, .ebb-jnotes small { font-size: var(--text-small); color: var(--jr-soft); white-space: nowrap; }
+
+/* notes view */
+.ebb-jnotes { display: grid; gap: 2px; }
+.ebb-jnotes__row {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 100%;
+  margin: 0;
+  padding: 8px 10px;
+  display: grid;
+  gap: 2px;
+  text-align: left;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  overflow-wrap: break-word;
+}
+button.ebb-jnotes__row { cursor: pointer; }
+button.ebb-jnotes__row:hover { background: rgba(30, 38, 36, 0.06); }
+.ebb-jnotes__row .ebb-journal__voice { font-size: 18px; }
+
+/* Phone: a sheet from the bottom, half height or nearly full. */
+@media (max-width: 699px) {
+  .ebb-journal {
+    top: auto;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: auto;
+    height: 48vh;
+    height: 48dvh;
+    border-left: 0;
+    border-top: 8px solid var(--jr-binding);
+    border-radius: 18px 18px 0 0;
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+    transform: translateY(24px);
+  }
+  .ebb-journal.is-full { height: calc(100vh - 76px); height: calc(100dvh - 76px - env(safe-area-inset-top)); }
+  .ebb-journal__size { display: grid; }
+  .ebb-journal__size .icon { transition: transform 200ms ease; }
+  .ebb-journal.is-full .ebb-journal__size .icon { transform: rotate(180deg); }
+  .ebb-journal__title { font-size: 20px; }
+  /* The sheet covers the bottom controls, so the notes step aside. */
+  .ebb-journal-open .ebb-notes { opacity: 0; visibility: hidden; }
+}
+@media (max-width: 380px) {
+  .ebb-jpage__seasons { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+/* --- notes on the island, bottom left above the tool bar --- */
+.ebb-notes {
+  position: fixed;
+  z-index: 9;
+  left: max(var(--jr-edge), env(safe-area-inset-left));
+  bottom: calc(max(var(--jr-edge), env(safe-area-inset-bottom)) + var(--jr-btn) + 26px);
+  max-width: min(420px, calc(100vw - 2 * var(--jr-edge)));
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  pointer-events: none;
+  transition: opacity 200ms ease, visibility 0s;
+}
+.ebb-notes__note {
+  appearance: none;
+  -webkit-appearance: none;
+  pointer-events: auto;
+  max-width: 100%;
+  margin: 0;
+  padding: 8px 14px;
+  border: 1px solid rgba(244, 238, 228, 0.12);
+  border-radius: 14px;
+  background: rgba(30, 38, 36, 0.62);
+  color: var(--ui-cream);
+  font-family: var(--font-voice);
+  font-style: italic;
+  font-weight: 400;
+  font-size: 18px;
+  line-height: 1.35;
+  text-align: left;
+  overflow-wrap: break-word;
+  cursor: pointer;
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 500ms ease, transform 500ms ease;
+}
+@media (pointer: fine) {
+  .ebb-notes__note { -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
+}
+.ebb-notes__note.is-shown { opacity: 1; transform: none; }
+.ebb-notes__note:focus-visible { outline: 2px solid var(--wordmark-dark); outline-offset: 2px; }
+/* Narrow portrait: the time-flow button sits at the right just above the bar (time-flow.css), so
+   the notes leave it room. */
+@media (max-width: 560px) {
+  .ebb-notes { max-width: calc(100vw - 2 * var(--jr-edge) - var(--jr-btn) - 12px); }
+}
+/* A tool's card opens above the bar in the middle; on narrower screens the notes step aside. */
+@media (max-width: 1180px) {
+  .ebb-notes.has-tool { opacity: 0; visibility: hidden; }
+}
+
+/* --- the tap card --- */
+.ebb-idcard {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 15;
+  width: min(300px, calc(100vw - 2 * var(--jr-edge)));
+  padding: 12px 14px 14px;
+  display: grid;
+  gap: 8px;
+  background: var(--jr-paper);
+  color: var(--jr-ink);
+  border-radius: 14px;
+  box-shadow: 0 8px 28px rgba(10, 14, 13, 0.35);
+  font-family: var(--font-ui);
+  font-weight: 600;
+  font-size: var(--text-body);
+  line-height: 1.4;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 160ms ease, visibility 0s linear 160ms;
+}
+.ebb-idcard.is-open { opacity: 1; visibility: visible; pointer-events: auto; transition: opacity 160ms ease, visibility 0s; }
+.ebb-idcard .icon { width: 24px; height: 24px; display: block; flex: none; }
+.ebb-idcard button { font: inherit; color: inherit; -webkit-tap-highlight-color: transparent; }
+.ebb-idcard :focus-visible { outline: 2px solid var(--jr-moss); outline-offset: 2px; }
+.ebb-idcard__head { display: flex; align-items: center; gap: 10px; }
+.ebb-idcard__head b { font-weight: 800; font-size: 18px; margin-right: auto; min-width: 0; }
+.ebb-idcard__icon { width: 36px; height: 36px; flex: none; display: grid; place-items: center; border-radius: 50%; background: rgba(95, 127, 91, 0.14); color: var(--jr-moss); }
+.ebb-idcard__close { appearance: none; -webkit-appearance: none; width: 40px; height: 40px; margin: -6px -6px -6px 0; padding: 0; border: 0; border-radius: 10px; background: transparent; display: grid; place-items: center; cursor: pointer; }
+.ebb-idcard__text { margin: 0; font-family: var(--font-voice); font-style: italic; font-weight: 400; font-size: 18px; }
+.ebb-idcard__open {
+  appearance: none;
+  -webkit-appearance: none;
+  justify-self: start;
+  min-height: 44px;
+  margin: 0;
+  padding: 6px 14px 6px 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1.5px solid var(--jr-moss);
+  border-radius: 12px;
+  background: transparent;
+  cursor: pointer;
+}
+.ebb-idcard__open:hover { background: rgba(95, 127, 91, 0.12); }
+
+@media (prefers-reduced-motion: reduce) {
+  .ebb-journal, .ebb-journal.is-open { transform: none; transition: opacity 120ms ease, visibility 0s; }
+  .ebb-notes__note { transform: none; transition: opacity 200ms ease; }
+}

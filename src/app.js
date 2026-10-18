@@ -127,8 +127,11 @@ export async function startApp(canvas, hooks = {}) {
   sim.addSystem(growth);
   updateStore('world', () => world.state);
   const unHour = on('clock:hour', (/** @type {{ hour: number }} */ p) => {
-    for (const e of sim.hourlyTick(p.hour)) emitDeferred(e.name, e.payload);
+    const events = sim.hourlyTick(p.hour);
+    for (const e of events) emitDeferred(e.name, e.payload);
     updateStore('world', () => world.state);
+    // The hour as a whole, for watchers of the world such as the journal (src/world/journal).
+    emitDeferred('world:ticked', { hour: p.hour, events, state: world.state });
   });
 
   const camera = createOrbitCamera(camRecipe);
@@ -382,6 +385,8 @@ export async function startApp(canvas, hooks = {}) {
         pouring = null;
         finishStroke();
         break;
+      // A tap with no tool: the journal names what grows there (src/world/journal).
+      case 'look.tap': emitDeferred('look:tapped', { x: a.x, y: a.y, point: groundAt(a.x, a.y) }); break;
       case 'history.undo': if (!stroking) runHistory('undo'); break;
       case 'history.redo': if (!stroking) runHistory('redo'); break;
       case 'time.flow':
