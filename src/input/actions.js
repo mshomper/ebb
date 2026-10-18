@@ -16,7 +16,7 @@ import { emit } from '../core/events.js';
  *   | { type: 'camera.pan', dx: number, dy: number }
  *   | { type: 'camera.zoom', factor: number, x?: number, y?: number }
  *   | { type: 'camera.twist', angle: number }
- *   | { type: 'camera.focus', x: number, z: number, distance: number, pitchDeg: number }
+ *   | { type: 'camera.focus', x: number, z: number, distance: number, pitchDeg: number, y?: number }
  *   | { type: 'journal.showMe', sp: string }
  *   | { type: 'tool.select', toolId: ToolId | null, source?: Source }
  *   | { type: 'tool.begin', x: number, y: number, pressure: number, source: Source }

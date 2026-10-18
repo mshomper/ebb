@@ -62,6 +62,16 @@ export function createOrbitCamera(r) {
 
   /** True while gliding to a point the journal asked to show; any input ends it. */
   let focusing = false;
+  /**
+   * Close-up limits (the frog size preview, ?frogscale): a nearer zoom and a lower eye; while set,
+   * the target sits on the ground (or at the height a focus asked for) instead of half way down.
+   * @type {{ minDistance: number, minEyeHeight: number } | null}
+   */
+  let close = null;
+  /** A focus's exact target height (m), kept until the next pan. @type {number | null} */
+  let targetY = null;
+  const minSoft = () => close?.minDistance ?? r.distanceSoft[0];
+  const minHard = () => close?.minDistance ?? r.distanceHard[0];
 
   function touched() {
     sinceInput = 0;
@@ -71,12 +81,14 @@ export function createOrbitCamera(r) {
   /**
    * Glide to look at a ground point from a set distance and pitch (the journal's Show me).
    * @param {number} x @param {number} z world meters @param {number} distance meters @param {number} pitchDeg
+   * @param {number} [y] the target's height (m); left out, it follows the ground
    */
-  function focus(x, z, distance, pitchDeg) {
+  function focus(x, z, distance, pitchDeg, y) {
     goal.target[0] = x;
     goal.target[2] = z;
+    targetY = y ?? null;
     clampTarget();
-    goal.distance = clamp(distance, r.distanceSoft[0], softMaxDistance());
+    goal.distance = clamp(distance, minSoft(), softMaxDistance());
     goal.pitch = clamp(pitchDeg * DEG, r.pitchSoftDeg[0] * DEG, r.pitchSoftDeg[1] * DEG);
     focusing = true;
   }
@@ -102,6 +114,7 @@ export function createOrbitCamera(r) {
     // Camera right is (cos yaw, 0, -sin yaw); forward along the ground is (-sin yaw, 0, -cos yaw).
     goal.target[0] += (-dx * cy - dy * sy) * metersPerPx;
     goal.target[2] += (dx * sy - dy * cy) * metersPerPx;
+    targetY = null;
     clampTarget();
     touched();
   }
@@ -112,7 +125,7 @@ export function createOrbitCamera(r) {
    */
   function zoom(factor, x, y) {
     const old = goal.distance;
-    const next = clamp(old * factor, r.distanceHard[0], hardMaxDistance());
+    const next = clamp(old * factor, minHard(), hardMaxDistance());
     if (x !== undefined && y !== undefined) {
       const hit = groundHit(x, y);
       if (hit) {
@@ -154,7 +167,7 @@ export function createOrbitCamera(r) {
     const returning = sinceInput > r.softReturnDelay;
     if (returning) {
       goal.pitch = clamp(goal.pitch, r.pitchSoftDeg[0] * DEG, r.pitchSoftDeg[1] * DEG);
-      goal.distance = clamp(goal.distance, r.distanceSoft[0], softMaxDistance());
+      goal.distance = clamp(goal.distance, minSoft(), softMaxDistance());
     }
     const halfLife = returning ? r.halfLifeGlide : r.halfLifeDirect;
     let k = 1 - 2 ** (-dt / halfLife);
@@ -168,15 +181,18 @@ export function createOrbitCamera(r) {
     cur.yaw += (goal.yaw - cur.yaw) * kd;
     cur.pitch += (goal.pitch - cur.pitch) * k;
     cur.distance += (goal.distance - cur.distance) * k;
+    // Close-ups aim at the ground itself (or the height a focus asked for); otherwise the target
+    // sits half way down, as it always has.
+    if (close) goal.target[1] = targetY ?? Math.max(groundProbe(goal.target[0], goal.target[2]), 0);
     vec3.lerp(cur.target, goal.target, kd, cur.target);
 
     const ground = groundProbe(cur.target[0], cur.target[2]);
-    cur.target[1] = ground * 0.5;
+    if (!close) cur.target[1] = ground * 0.5;
 
     let pitch = cur.pitch;
     for (let i = 0; i < 2; i++) {
       placeEye(pitch);
-      const floor = Math.max(groundProbe(eye[0], eye[2]), 0) + r.minEyeHeight;
+      const floor = Math.max(groundProbe(eye[0], eye[2]), 0) + (close?.minEyeHeight ?? r.minEyeHeight);
       if (eye[1] >= floor) break;
       pitch = Math.asin(clamp((floor - cur.target[1]) / cur.distance, -1, 1));
       cur.pitch = Math.max(cur.pitch, pitch);
@@ -225,6 +241,11 @@ export function createOrbitCamera(r) {
     },
     /** @param {(x: number, z: number) => number} fn */
     setGroundProbe(fn) { groundProbe = fn; },
+    /**
+     * Allow close-ups (the frog size preview), or null for the recipe's limits.
+     * @param {{ minDistance: number, minEyeHeight: number } | null} limits
+     */
+    setClose(limits) { close = limits; },
     /** @param {number} radius */
     setWorldRadius(radius) { worldRadius = radius; },
     get eye() { return eye; },

@@ -34,6 +34,9 @@ import { weatherAt } from './world/weather.js';
 import { createWaterPass } from './render/passes/water.js';
 import { createGrassPass } from './render/passes/grass.js';
 import { createFloraPass } from './render/passes/flora.js';
+import { createCreaturePass } from './render/passes/creatures.js';
+import { bakeBody } from './world/creatures/body-bake.js';
+import { previewSpots } from './world/creatures/preview-spots.js';
 import { onAction, history } from './input/actions.js';
 import { attachDesktopInput } from './input/desktop.js';
 import { attachTouchInput } from './input/touch.js';
@@ -176,6 +179,37 @@ export async function startApp(canvas, hooks = {}) {
   });
   // Plants (docs 10): every species from the growth step's instances, after the grass.
   const floraPass = createFloraPass({ growth, terrain, water: { depthTextures: water.sim.depthTextures, current: () => water.sim.current }, recipes: flora });
+  // `?frogscale` (ahead of S6): real-size frogs from the species recipe around the pond, and a
+  // camera that may come close, to judge creature size on the island (src/ui/frog-scale.js).
+  const frogScale = params.has('frogscale') ? await createFrogScale() : null;
+  async function createFrogScale() {
+    const recipe = await loadRecipe('species/frog');
+    const mesh = bakeBody(recipe.body, recipe.bake.cellM);
+    const pass = createCreaturePass({ mesh, recipe });
+    camera.setClose({ minDistance: recipe.preview.closeMinDistanceM, minEyeHeight: recipe.preview.closeMinEyeHeightM });
+    let size = 1;
+    /** @type {ReturnType<typeof previewSpots>} */ let found = null;
+    const place = () => pass.setBeings((found?.spots ?? []).map((s) => ({ ...s, size })));
+    return {
+      pass, recipe, triangles: mesh.indices.length / 3,
+      /** Find the spots (once the island has fresh water); null until then. */
+      find() {
+        if (found) return found;   // found once, from where the camera first looks, then kept
+        if (!water.sim.live) return null;   // the live water copy gives the pad heights
+        const target = camera.eye;
+        found = previewSpots(growth.habitat?.() ?? world.env.habitat?.() ?? null, world.state?.growth, {
+          ground: (x, z) => terrain.sampleHeight(x, z),
+          surface: (x, z) => water.sampleLive(x, z).surface,
+          from: [target[0], target[2]],
+        });
+        place();
+        return found;
+      },
+      /** @param {number} s times real size */
+      setSize(s) { size = s; place(); },
+      get size() { return size; },
+    };
+  }
   const waterPass = createWaterPass({
     water, terrain, atmosphere, recipe: waterRecipe, seaExtent: terrainRecipe.sea.extent, getTime: () => clock.animT(),
     seabed: { y: landRecipe.seabedDepth, albedo: terrainRecipe.materials.albedoSand.map((/** @type {number} */ a) => a * terrainRecipe.materials.wetDarkening),
@@ -187,6 +221,7 @@ export async function startApp(canvas, hooks = {}) {
     terrainPass,
     grassPass,
     floraPass,
+    ...(frogScale ? [frogScale.pass] : []),
     waterPass,
     createSkyPass(atmosphere, skyRecipe),
     exposure,
@@ -335,7 +370,7 @@ export async function startApp(canvas, hooks = {}) {
       case 'camera.pan': camera.pan(a.dx, a.dy); break;
       case 'camera.zoom': camera.zoom(a.factor, a.x, a.y); break;
       case 'camera.twist': camera.twist(a.angle); break;
-      case 'camera.focus': camera.focus(a.x, a.z, a.distance, a.pitchDeg); break;
+      case 'camera.focus': camera.focus(a.x, a.z, a.distance, a.pitchDeg, a.y); break;
       case 'tool.select': {
         const next = a.toolId && a.toolId !== tools().tool ? a.toolId : null;
         if (!next) finishStroke();
@@ -581,6 +616,10 @@ export async function startApp(canvas, hooks = {}) {
     /** The live growth (habitat, plants) and the world the hourly tick runs on (tools/growth-lab.html). */
     growth,
     world,
+    /** The frog size preview (`?frogscale`), or null. */
+    frogScale,
+    /** The orbit camera, for tools and checks (eye, target, distance). */
+    camera,
     /** Palette access for the palette lab (tools/palette-lab.html). */
     palette: {
       list: () => PALETTES.slice(),

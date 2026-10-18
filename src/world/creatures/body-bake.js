@@ -1,0 +1,173 @@
+// @ts-check
+// Creature bodies (doc 11): a species recipe's blended-SDF primitives, baked to a triangle mesh by
+// surface nets on a regular grid, with a normal and a linear albedo per vertex (region colors, a
+// pale belly underneath, seeded blotches on the back). Pure and deterministic: the same recipe
+// gives the same mesh. First used by the frog size preview (?frogscale); S6b skins and animates it.
+
+const DEG = Math.PI / 180;
+
+/** @param {number} a @param {number} b @param {number} k smooth minimum radius (m); 0 is a hard union */
+function smin(a, b, k) {
+  if (k <= 0) return Math.min(a, b);
+  const h = Math.max(k - Math.abs(a - b), 0) / k;
+  return Math.min(a, b) - h * h * k * 0.25;
+}
+
+/** Rotate p by the inverse of rot (degrees about x, then y, then z). @param {number[]} p @param {number[]} rot */
+function unrotate(p, rot) {
+  let [x, y, z] = p;
+  if (rot[2]) { const c = Math.cos(-rot[2] * DEG), s = Math.sin(-rot[2] * DEG); [x, y] = [c * x - s * y, s * x + c * y]; }
+  if (rot[1]) { const c = Math.cos(-rot[1] * DEG), s = Math.sin(-rot[1] * DEG); [x, z] = [c * x + s * z, -s * x + c * z]; }
+  if (rot[0]) { const c = Math.cos(-rot[0] * DEG), s = Math.sin(-rot[0] * DEG); [y, z] = [c * y - s * z, s * y + c * z]; }
+  return [x, y, z];
+}
+
+/** Round cone (capsule with two radii) from a to b. @param {number[]} p @param {number[]} a @param {number[]} b @param {number} ra @param {number} rb */
+function roundCone(p, a, b, ra, rb) {
+  const ba = [b[0] - a[0], b[1] - a[1], b[2] - a[2]];
+  const pa = [p[0] - a[0], p[1] - a[1], p[2] - a[2]];
+  const l2 = ba[0] * ba[0] + ba[1] * ba[1] + ba[2] * ba[2];
+  const t = Math.min(1, Math.max(0, (pa[0] * ba[0] + pa[1] * ba[1] + pa[2] * ba[2]) / Math.max(l2, 1e-12)));
+  const d = Math.hypot(pa[0] - ba[0] * t, pa[1] - ba[1] * t, pa[2] - ba[2] * t);
+  return d - (ra + (rb - ra) * t);
+}
+
+/** Signed distance (m) to one primitive. @param {any} q @param {number[]} p */
+export function primDistance(q, p) {
+  switch (q.type) {
+    case 'sphere': return Math.hypot(p[0] - q.c[0], p[1] - q.c[1], p[2] - q.c[2]) - q.r;
+    case 'ellipsoid': {
+      const l = unrotate([p[0] - q.c[0], p[1] - q.c[1], p[2] - q.c[2]], q.rot ?? [0, 0, 0]);
+      const k0 = Math.hypot(l[0] / q.r[0], l[1] / q.r[1], l[2] / q.r[2]);
+      const k1 = Math.hypot(l[0] / (q.r[0] * q.r[0]), l[1] / (q.r[1] * q.r[1]), l[2] / (q.r[2] * q.r[2]));
+      return k1 > 1e-12 ? (k0 * (k0 - 1)) / k1 : -Math.min(...q.r);
+    }
+    case 'capsule': return roundCone(p, q.a, q.b, q.r[0], q.r[1]);
+    case 'roundCone': {
+      const s = q.scale ?? [1, 1, 1];
+      const local = [q.a[0] + (p[0] - q.a[0]) / s[0], q.a[1] + (p[1] - q.a[1]) / s[1], q.a[2] + (p[2] - q.a[2]) / s[2]];
+      return roundCone(local, q.a, q.b, q.ra, q.rb) * Math.min(s[0], s[1], s[2]);
+    }
+    default: return Infinity;
+  }
+}
+
+/** The body's signed distance at p, and the primitive nearest it. @param {any[]} prims @param {number[]} p */
+export function bodyDistance(prims, p) {
+  let d = Infinity, best = Infinity, near = 0;
+  prims.forEach((q, i) => {
+    const di = primDistance(q, p);
+    d = i === 0 ? di : smin(d, di, q.k ?? 0);
+    if (di < best) { best = di; near = i; }
+  });
+  return { d, near };
+}
+
+/** A smooth 0..1 value noise in 3D, seeded by integer lattice hashes. @param {number} x @param {number} y @param {number} z */
+function valueNoise(x, y, z) {
+  const xi = Math.floor(x), yi = Math.floor(y), zi = Math.floor(z);
+  const fx = x - xi, fy = y - yi, fz = z - zi;
+  const u = fx * fx * (3 - 2 * fx), v = fy * fy * (3 - 2 * fy), w = fz * fz * (3 - 2 * fz);
+  const h = (/** @type {number} */ i, /** @type {number} */ j, /** @type {number} */ k) => {
+    let n = Math.imul(i, 374761393) + Math.imul(j, 668265263) + Math.imul(k, 2147483647);
+    n = Math.imul(n ^ (n >>> 13), 1274126177);
+    return ((n ^ (n >>> 16)) >>> 0) / 4294967296;
+  };
+  const lerp = (/** @type {number} */ a, /** @type {number} */ b, /** @type {number} */ t) => a + (b - a) * t;
+  return lerp(
+    lerp(lerp(h(xi, yi, zi), h(xi + 1, yi, zi), u), lerp(h(xi, yi + 1, zi), h(xi + 1, yi + 1, zi), u), v),
+    lerp(lerp(h(xi, yi, zi + 1), h(xi + 1, yi, zi + 1), u), lerp(h(xi, yi + 1, zi + 1), h(xi + 1, yi + 1, zi + 1), u), v), w);
+}
+
+/**
+ * Bake a body to a mesh: interleaved position, normal and albedo (9 floats a vertex), and indices.
+ * @param {any} body the species recipe's body @param {number} cellM grid cell size (m)
+ * @returns {{ vertices: Float32Array, indices: Uint32Array, count: number, bounds: { min: number[], max: number[] } }}
+ */
+export function bakeBody(body, cellM) {
+  const prims = body.prims;
+  // Bounds: every primitive's reach, plus blend room.
+  const min = [Infinity, Infinity, Infinity], max = [-Infinity, -Infinity, -Infinity];
+  for (const q of prims) {
+    const pts = q.c ? [q.c] : [q.a, q.b];
+    const r = Array.isArray(q.r) ? Math.max(...q.r) : (q.r ?? Math.max(q.ra ?? 0, q.rb ?? 0) * Math.max(...(q.scale ?? [1, 1, 1])));
+    for (const c of pts) for (let a = 0; a < 3; a++) { min[a] = Math.min(min[a], c[a] - r); max[a] = Math.max(max[a], c[a] + r); }
+  }
+  for (let a = 0; a < 3; a++) { min[a] -= 3 * cellM; max[a] += 3 * cellM; }
+  const n = min.map((m, a) => Math.ceil((max[a] - m) / cellM) + 1);
+  const at = (/** @type {number} */ i, /** @type {number} */ j, /** @type {number} */ k) => (k * n[1] + j) * n[0] + i;
+
+  const field = new Float32Array(n[0] * n[1] * n[2]);
+  for (let k = 0; k < n[2]; k++) for (let j = 0; j < n[1]; j++) for (let i = 0; i < n[0]; i++) {
+    field[at(i, j, k)] = bodyDistance(prims, [min[0] + i * cellM, min[1] + j * cellM, min[2] + k * cellM]).d;
+  }
+
+  // Surface nets: one vertex per cell the surface crosses, at the mean of its edge crossings.
+  const cellVert = new Int32Array((n[0] - 1) * (n[1] - 1) * (n[2] - 1)).fill(-1);
+  const cAt = (/** @type {number} */ i, /** @type {number} */ j, /** @type {number} */ k) => (k * (n[1] - 1) + j) * (n[0] - 1) + i;
+  /** @type {number[]} */ const pos = [];
+  const EDGES = [[0, 1], [2, 3], [4, 5], [6, 7], [0, 2], [1, 3], [4, 6], [5, 7], [0, 4], [1, 5], [2, 6], [3, 7]];
+  for (let k = 0; k < n[2] - 1; k++) for (let j = 0; j < n[1] - 1; j++) for (let i = 0; i < n[0] - 1; i++) {
+    const v = [];
+    for (let c = 0; c < 8; c++) v.push(field[at(i + (c & 1), j + ((c >> 1) & 1), k + ((c >> 2) & 1))]);
+    if (v.every((x) => x > 0) || v.every((x) => x <= 0)) continue;
+    let sx = 0, sy = 0, sz = 0, m = 0;
+    for (const [a, b] of EDGES) {
+      if ((v[a] > 0) === (v[b] > 0)) continue;
+      const t = v[a] / (v[a] - v[b]);
+      sx += (a & 1) + ((b & 1) - (a & 1)) * t; sy += ((a >> 1) & 1) + (((b >> 1) & 1) - ((a >> 1) & 1)) * t; sz += ((a >> 2) & 1) + (((b >> 2) & 1) - ((a >> 2) & 1)) * t;
+      m++;
+    }
+    cellVert[cAt(i, j, k)] = pos.length / 3;
+    pos.push(min[0] + (i + sx / m) * cellM, min[1] + (j + sy / m) * cellM, min[2] + (k + sz / m) * cellM);
+  }
+
+  // Quads across every grid edge the surface crosses, wound so they face outward.
+  /** @type {number[]} */ const idx = [];
+  for (let k = 1; k < n[2] - 1; k++) for (let j = 1; j < n[1] - 1; j++) for (let i = 1; i < n[0] - 1; i++) {
+    const d0 = field[at(i, j, k)];
+    for (let axis = 0; axis < 3; axis++) {
+      const d1 = axis === 0 ? field[at(i + 1, j, k)] : axis === 1 ? field[at(i, j + 1, k)] : field[at(i, j, k + 1)];
+      if ((d0 > 0) === (d1 > 0)) continue;
+      // The four cells around this edge.
+      const cells = axis === 0 ? [[i, j - 1, k - 1], [i, j, k - 1], [i, j, k], [i, j - 1, k]]
+        : axis === 1 ? [[i - 1, j, k - 1], [i - 1, j, k], [i, j, k], [i, j, k - 1]]
+          : [[i - 1, j - 1, k], [i, j - 1, k], [i, j, k], [i - 1, j, k]];
+      const q = cells.map(([a, b, c]) => cellVert[cAt(a, b, c)]);
+      if (q.some((x) => x < 0)) continue;
+      if (d0 <= 0) idx.push(q[0], q[1], q[2], q[0], q[2], q[3]);
+      else idx.push(q[0], q[2], q[1], q[0], q[3], q[2]);
+    }
+  }
+
+  // Normals from the field's gradient; albedo from the nearest primitive's region.
+  const count = pos.length / 3;
+  const out = new Float32Array(count * 9);
+  const A = body.albedo, e = cellM * 0.5;
+  for (let vi = 0; vi < count; vi++) {
+    const p = [pos[vi * 3], pos[vi * 3 + 1], pos[vi * 3 + 2]];
+    const g = [0, 1, 2].map((a) => {
+      const hi = p.slice(), lo = p.slice();
+      hi[a] += e; lo[a] -= e;
+      return bodyDistance(prims, hi).d - bodyDistance(prims, lo).d;
+    });
+    const gl = Math.hypot(g[0], g[1], g[2]) || 1;
+    const nrm = g.map((x) => x / gl);
+    const region = prims[bodyDistance(prims, p).near].region;
+    let col = A[region] ?? A.back;
+    if (region === 'eye') {
+      // A gold ring around a dark eye, from how far the point sits off the eye's forward-up axis.
+      const q = prims[bodyDistance(prims, p).near];
+      const dir = [p[0] - q.c[0], p[1] - q.c[1], p[2] - q.c[2]].map((x) => x / q.r);
+      col = dir[1] > 0.75 || dir[2] > 0.55 ? A.eye : A.eyeRing;
+      if (dir[1] < -0.2) col = A.back;
+    } else if (region === 'back') {
+      if (nrm[1] < body.bellyBelowNormalY) col = A.belly;
+      else if (valueNoise(p[0] * body.blotch.scale, p[1] * body.blotch.scale, p[2] * body.blotch.scale) < body.blotch.amount * 0.75) col = A.blotch;
+    }
+    out.set(p, vi * 9);
+    out.set(nrm, vi * 9 + 3);
+    out.set(col, vi * 9 + 6);
+  }
+  return { vertices: out, indices: new Uint32Array(idx), count, bounds: { min, max } };
+}

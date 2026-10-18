@@ -1,0 +1,43 @@
+{
+  "type": "species",
+  "id": "frog",
+  "name": "Common frog",
+  "version": 1,
+  "note": "Draft for the frog size preview (?frogscale), ahead of S6. body: the blended-SDF frog from Matt's pond tier 1 prototype (frog recipe v2), in real meters, body-local +z forward, origin on the ground under the body. prims are blended in order with a smooth minimum of radius k (m); rot is degrees about x, y, z; a capsule's r is [radius at a, radius at b]; a roundCone's scale stretches it about a. The throat sac is at rest (blend kRest). variation, needs, presence and motion arrive with S6. bake: the cell size (m) the body is meshed at by surface nets. preview: the sizes the preview offers (times real), the camera distances (m) and pitches (degrees) of its views.",
+  "body": {
+    "scaleReal": [0.07, 0.09],
+    "prims": [
+      { "type": "ellipsoid", "bone": "torso", "c": [0, 0.0163, -0.004], "r": [0.0223, 0.0128, 0.0282], "rot": [17.1887, 0, 0], "k": 0, "region": "back" },
+      { "type": "roundCone", "bone": "head", "a": [0, 0.029, 0.0156], "b": [0, 0.031, 0.0357], "ra": 0.0142, "rb": 0.0068, "scale": [1.36, 0.72, 1], "k": 0.02, "region": "back" },
+      { "type": "sphere", "bone": "eye.l", "c": [0.0112, 0.0388, 0.0151], "r": 0.0065, "k": 0.0025, "region": "eye" },
+      { "type": "sphere", "bone": "eye.r", "c": [-0.0112, 0.0388, 0.0151], "r": 0.0065, "k": 0.0025, "region": "eye" },
+      { "type": "ellipsoid", "bone": "throat", "c": [0, 0.0212, 0.0253], "r": [0.009, 0.0063, 0.0078], "rot": [17.1887, 0, 0], "k": 0.003, "region": "belly" },
+      { "type": "capsule", "bone": "thigh.l", "a": [0.0138, 0.0066, -0.0222], "b": [0.0276, 0.0152, -0.0043], "r": [0.0086, 0.0067], "k": 0.0042, "region": "back" },
+      { "type": "capsule", "bone": "shank.l", "a": [0.0276, 0.0152, -0.0043], "b": [0.029, 0.005, -0.0262], "r": [0.0061, 0.0044], "k": 0.0022, "region": "back" },
+      { "type": "capsule", "bone": "foot.l", "a": [0.029, 0.005, -0.0262], "b": [0.0377, 0.0016, 0.0014], "r": [0.0031, 0.0021], "k": 0.0016, "region": "back" },
+      { "type": "capsule", "bone": "arm.l", "a": [0.0112, 0.0144, 0.0093], "b": [0.017, 0.0084, 0.014], "r": [0.0033, 0.0028], "k": 0.0042, "region": "back" },
+      { "type": "capsule", "bone": "forearm.l", "a": [0.017, 0.0084, 0.014], "b": [0.0212, 0.0024, 0.0225], "r": [0.0028, 0.0024], "k": 0.0015, "region": "back" },
+      { "type": "capsule", "bone": "thigh.r", "a": [-0.0138, 0.0066, -0.0222], "b": [-0.0276, 0.0152, -0.0043], "r": [0.0086, 0.0067], "k": 0.0042, "region": "back" },
+      { "type": "capsule", "bone": "shank.r", "a": [-0.0276, 0.0152, -0.0043], "b": [-0.029, 0.005, -0.0262], "r": [0.0061, 0.0044], "k": 0.0022, "region": "back" },
+      { "type": "capsule", "bone": "foot.r", "a": [-0.029, 0.005, -0.0262], "b": [-0.0377, 0.0016, 0.0014], "r": [0.0031, 0.0021], "k": 0.0016, "region": "back" },
+      { "type": "capsule", "bone": "arm.r", "a": [-0.0112, 0.0144, 0.0093], "b": [-0.017, 0.0084, 0.014], "r": [0.0033, 0.0028], "k": 0.0042, "region": "back" },
+      { "type": "capsule", "bone": "forearm.r", "a": [-0.017, 0.0084, 0.014], "b": [-0.0212, 0.0024, 0.0225], "r": [0.0028, 0.0024], "k": 0.0015, "region": "back" }
+    ],
+    "albedo": { "back": [0.0872, 0.1618, 0.0797], "belly": [0.5377, 0.4387, 0.3041], "blotch": [0.0573, 0.07, 0.0382], "eye": [0.06, 0.045, 0.02], "eyeRing": [0.78, 0.62, 0.3] },
+    "blotch": { "scale": 150, "amount": 0.45 },
+    "wetSpecular": { "roughness": 0.34, "strength": 0.75 },
+    "bellyBelowNormalY": -0.25
+  },
+  "bake": { "cellM": 0.0011 },
+  "preview": {
+    "sizes": [1, 1.5, 2.5],
+    "views": [
+      { "label": "3 m", "distanceM": 3, "pitchDeg": 26 },
+      { "label": "1 m", "distanceM": 1, "pitchDeg": 20 },
+      { "label": "40 cm", "distanceM": 0.4, "pitchDeg": 16 }
+    ],
+    "closeMinDistanceM": 0.25,
+    "closeMinEyeHeightM": 0.06,
+    "frogsPerEdgeM": 3
+  }
+}
