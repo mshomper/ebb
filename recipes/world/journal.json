@@ -1,0 +1,251 @@
+{
+  "type": "journal",
+  "version": 1,
+  "note": "The field journal (docs 13, 15): the words it writes and the numbers that shape them. order: the living things with pages, in page order. Each species: name and icon (src/ui/icons), riddle (shown before it has been seen), amount ([at least this many plants, words] steps; grass uses share of the dry ground instead), place and compass (where words: compass false skips the side of the island), none (after it has gone), clause words (flowering, dormant, spreading, receding), stages (what tapping one says, by growth stage: seed, sprout, young, mature, flowering, dormant), seasons (what each season box says: grow per season, flower, dormant), likes (lines learned when one of the learn triggers happens: seen, spread, flower, lost:drown, lost:seed, refused:<need>, grass:flooded), gives (a pencil line until the when trigger, then the ink line), notes (the lines the journal writes). trend: a species is spreading when it has gained at least max(upMin, upShare x then) plants over trend hours, receding when it has lost at least max(downMin, downShare x then). where: spreadOut is the mean distance from the plants' middle, as a share of the island's radius, past which they are all around the island; centerShare is how close to the island's middle counts as the middle. notesKept: notes the journal keeps; pageNotes: notes on a species page. islandNote: how long a note stays on the island (showS), the gap between two (gapS) and how many may wait (queue). identify: how near a tap must be to a plant (radiusM), how long the card stays (showS), and the size of the breathing ring around what was tapped (ringM for a full-grown plant, smaller for young ones; grassRingM on grass; its timing is in recipes/world/growth.json marks). arrivedHours: plants seen within this many hours of the journal starting were here when you arrived. J1.5: each species also has plural (for the story lines), field (field notes: natural history lines learned like likes, by triggers that include dormant, woke and moment:<id>) and fieldHint (the pencil line while some are still to learn). story: the lines of 'your island's story' ({Plural}, {plural} and {date} are filled in; peak shows when the count has fallen under peakShare of its best). moments: four frames per page by kind (plant, cover for grass, ground in journal-island.json), each filled the first time you tap that thing at that moment: flower (in flower), summer, winter, rain (rain at least rainAt), mist (at least mistAt), dawn and dusk (hours of the day, inclusive start, exclusive end), frost (a winter dawn); note is the line written. showMe: how close (distanceM) and how steep (pitchDeg) the camera comes when a page's Show me is pressed.",
+  "order": ["grass", "reeds", "lilies", "iris", "thrift"],
+  "notesKept": 60,
+  "pageNotes": 5,
+  "arrivedHours": 2,
+  "islandNote": { "showS": 6, "gapS": 1.2, "queue": 3 },
+  "identify": { "radiusM": 0.9, "showS": 8, "ringM": 0.6, "grassRingM": 0.45 },
+  "trend": { "hours": 24, "upShare": 0.1, "upMin": 2, "downShare": 0.1, "downMin": 1 },
+  "where": { "spreadOut": 0.5, "centerShare": 0.2 },
+  "compass": ["east", "north-east", "north", "north-west", "west", "south-west", "south", "south-east"],
+  "seasonNames": ["Spring", "Summer", "Autumn", "Winter"],
+  "seasonNotes": ["Spring has come to the island.", "Summer has come.", "Autumn has come.", "Winter has come, and the island rests."],
+  "story": {
+    "arrived": "{Plural} were here when you arrived.",
+    "firstSeen": "The first {plural} appeared on {date}.",
+    "planted": "You first planted {plural} on {date}.",
+    "ownMost": "Most of them grew on their own.",
+    "ownHalf": "About half of them you planted.",
+    "ownFew": "Most of them you planted.",
+    "oldestArrived": "The oldest has stood since you arrived.",
+    "oldest": "The oldest has stood since {date}.",
+    "peak": "They were thicker on {date} than they are now.",
+    "peakShare": 0.8
+  },
+  "moments": {
+    "plant": [{ "id": "flower", "label": "in flower" }, { "id": "rain", "label": "in the rain" }, { "id": "dusk", "label": "at dusk" }, { "id": "winter", "label": "in winter" }],
+    "cover": [{ "id": "summer", "label": "in summer" }, { "id": "rain", "label": "in the rain" }, { "id": "dusk", "label": "at dusk" }, { "id": "frost", "label": "on a frosty dawn" }],
+    "ground": [{ "id": "rain", "label": "in the rain" }, { "id": "mist", "label": "in the mist" }, { "id": "dawn", "label": "at dawn" }, { "id": "winter", "label": "in winter" }],
+    "note": "A moment for the journal: {name}, {label}.",
+    "rainAt": 0.15,
+    "mistAt": 0.3,
+    "hours": { "dawn": [5, 8], "dusk": [18, 21] }
+  },
+  "showMe": { "distanceM": 7, "pitchDeg": 30 },
+  "species": {
+    "grass": {
+      "name": "Grass", "icon": "grass", "kind": "cover", "plural": "grass",
+      "field": [
+        { "text": "Grass grows from the base of each blade, so it recovers quickly when it is grazed or trodden.", "learn": ["seen"] },
+        { "text": "Its roots need air: standing water drowns them in a day or two.", "learn": ["grass:flooded"] },
+        { "text": "Rain soaks into a meadow instead of running off, because the roots hold the soil open.", "learn": ["moment:rain"] },
+        { "text": "On cold dawns, frost whitens the tip of every blade.", "learn": ["moment:frost"] }
+      ],
+      "fieldHint": "Watch the meadow in other weather to learn more.",
+      "sketch": { "scale": "about 30 cm", "labels": {
+        "base": { "text": ["grows from", "its base"], "learn": ["seen"] },
+        "seed": { "text": ["seed heads,", "high summer"], "learn": ["moment:summer"] },
+        "roots": { "text": ["roots keep the", "soil open"], "learn": ["moment:rain"] } } },
+      "riddle": "Something soft would cover the dry ground, if it were painted for it.",
+      "amount": [[0.01, "A few patches of grass grow on the island"], [0.15, "Grass grows over part of the island"], [0.45, "Grass covers most of the dry ground"]],
+      "none": "No grass grows on the island now.",
+      "spreading": "spreading", "receding": "thinning",
+      "stages": ["Meadow grass"],
+      "seasons": { "grow": ["fresh and short", "tall by midsummer", "seeding and tawny", "short, frosted at dawn"] },
+      "likes": [
+        { "text": "Ground you paint as grass", "learn": ["seen"] },
+        { "text": "Thins in the salt spray near the shore", "learn": ["seen"] },
+        { "text": "Drowns where water comes to stand", "learn": ["grass:flooded"] }
+      ],
+      "gives": [
+        { "pencil": "Something small might hide in the long grass one day.", "ink": "A little cover for frogs.", "when": "frogs:settled" }
+      ],
+      "notes": {
+        "arrived": "Grass covered the dry ground when you arrived.",
+        "seen": "Grass is growing on the island.",
+        "flooded": "Grass is drowning where the water spread.",
+        "gone": "The last of the grass is gone."
+      }
+    },
+    "reeds": {
+      "name": "Reeds", "icon": "reeds", "plural": "reeds",
+      "field": [
+        { "text": "Their roots knit the soft bank together, so the water's edge keeps its shape.", "learn": ["seen"] },
+        { "text": "One clump becomes many: new shoots rise from roots creeping under the mud.", "learn": ["spread"] },
+        { "text": "Each brown head is packed with thousands of tiny seeds, every one with its own fluff to fly on.", "learn": ["flower"] },
+        { "text": "In winter the dry stalks stand on, and small creatures shelter among them from the wind.", "learn": ["dormant", "moment:winter"] },
+        { "text": "Rain runs down the blades and into the mud around their feet.", "learn": ["moment:rain"] }
+      ],
+      "fieldHint": "Watch them through the seasons to learn more.",
+      "sketch": { "scale": "about 1.6 m", "labels": {
+        "spike": { "text": ["pollen spike"], "learn": ["flower"] },
+        "head": { "text": ["seed head,", "soft as velvet"], "learn": ["flower"] },
+        "blade": { "text": ["flat blade"], "learn": ["seen"] },
+        "root": { "text": ["creeping root,", "new shoot"], "learn": ["spread"] } } },
+      "riddle": "Something tall would stand at the water's edge, if the bank were wet enough.",
+      "amount": [[1, "A single clump of reeds"], [2, "A few reed clumps"], [6, "A good stand of reeds"], [20, "A thick margin of reeds"]],
+      "place": "by the water", "compass": true,
+      "none": "No reeds grow on the island now.",
+      "flowering": "carrying brown seed heads", "dormant": "standing pale for winter",
+      "spreading": "creeping along the bank", "receding": "pulling back",
+      "stages": ["A reed seed, waiting for good ground", "A new reed shoot", "A young clump of reeds", "A full clump of reeds", "Reeds with brown seed heads", "Reeds standing pale for winter"],
+      "seasons": { "grow": ["fresh green shoots", "tall and green", "turning gold", "pale standing stalks"], "flower": "brown velvet seed heads", "dormant": "pale standing stalks" },
+      "likes": [
+        { "text": "Wet ground at the water's edge", "learn": ["seen"] },
+        { "text": "Creeps along the bank by its roots", "learn": ["spread"] },
+        { "text": "Water no deeper than your knee", "learn": ["refused:deep", "lost:drown"] },
+        { "text": "Turns away from dry ground", "learn": ["refused:dry", "lost:seed"] },
+        { "text": "A little salt, but never the sea", "learn": ["refused:salt"] }
+      ],
+      "gives": [
+        { "pencil": "Something tiny might dance over these on warm evenings.", "ink": "Midges gather over them by still water.", "when": "midges:seen" },
+        { "pencil": "Something might hide in these one day.", "ink": "Frogs hide among them.", "when": "frogs:settled" }
+      ],
+      "notes": {
+        "arrived": "Reeds were already growing by the water when you arrived.",
+        "seen": "The first reeds have sprouted.",
+        "spread": "The reeds have begun to creep along the bank.",
+        "flower": "Brown seed heads have appeared on the reeds.",
+        "dormant": "The reeds stand pale for winter.",
+        "woke": "Green reed shoots are coming up again.",
+        "drown": "Some reeds drowned where the water grew too deep.",
+        "seed": "A reed seed gave up on dry ground.",
+        "gone": "The last of the reeds is gone."
+      }
+    },
+    "lilies": {
+      "name": "Water lilies", "icon": "lilies", "plural": "water lilies",
+      "field": [
+        { "text": "Their pads float, but each one rises on a long stalk from roots anchored in the mud below.", "learn": ["seen"] },
+        { "text": "The flowers open in the morning sun and close again toward evening.", "learn": ["flower"] },
+        { "text": "Raindrops bead and roll on the waxy pads without wetting them.", "learn": ["moment:rain"] },
+        { "text": "In winter they rest as thick roots in the mud, waiting for the water to warm.", "learn": ["dormant", "moment:winter"] },
+        { "text": "Shade from the pads keeps the water beneath them cool.", "learn": ["spread"] }
+      ],
+      "fieldHint": "Watch the pond through the day and the year to learn more.",
+      "sketch": { "scale": "about 1 m deep", "labels": {
+        "flower": { "text": ["opens in the", "morning sun"], "learn": ["flower"] },
+        "pad": { "text": ["floating pad"], "learn": ["seen"] },
+        "stalk": { "text": ["long stalk", "to the mud"], "learn": ["seen"] },
+        "root": { "text": ["resting root"], "learn": ["dormant", "moment:winter"] } } },
+      "riddle": "Something round would float on still water, if a pond were deep enough.",
+      "amount": [[1, "A single lily pad"], [2, "A few lily pads"], [6, "A scatter of lily pads"], [16, "Lily pads across much of the pond"]],
+      "place": "on the still water", "compass": false,
+      "none": "No water lilies grow on the island now.",
+      "flowering": "with white flowers open", "dormant": "sunk low for winter",
+      "spreading": "spreading across the pond", "receding": "thinning out",
+      "stages": ["A lily seed, waiting in the mud", "A new lily leaf", "A young water lily", "A water lily in full leaf", "A water lily in flower", "A water lily resting for winter"],
+      "seasons": { "grow": ["first pads", "pads in full leaf", "yellowing pads", "resting under the water"], "flower": "white cups", "dormant": "resting under the water" },
+      "likes": [
+        { "text": "Still water deeper than your knee", "learn": ["seen"] },
+        { "text": "Never the moving water of a stream", "learn": ["refused:flow"] },
+        { "text": "Not too deep: no deeper than you are tall", "learn": ["refused:deep", "lost:drown"] },
+        { "text": "Needs water over its roots, not a damp bank", "learn": ["refused:shallow", "lost:seed"] },
+        { "text": "Spreads slowly across the pond", "learn": ["spread"] }
+      ],
+      "gives": [
+        { "pencil": "Something might sit on these pads one day.", "ink": "A pad for a frog to sit on.", "when": "frogs:settled" }
+      ],
+      "notes": {
+        "arrived": "Water lilies were already floating on the pond when you arrived.",
+        "seen": "The first lily pad has opened on the water.",
+        "spread": "The water lilies are spreading across the pond.",
+        "flower": "The first water lily has flowered.",
+        "dormant": "The water lilies have sunk low for winter.",
+        "woke": "New lily pads are rising to the surface.",
+        "drown": "Some water lilies were lost where the water grew too deep.",
+        "seed": "A lily seed found no still water and gave up.",
+        "gone": "The last of the water lilies is gone."
+      }
+    },
+    "iris": {
+      "name": "Yellow flag iris", "icon": "iris", "plural": "iris clumps",
+      "field": [
+        { "text": "Its roots help clean the water that seeps through the bank.", "learn": ["seen"] },
+        { "text": "It spreads by thick roots that creep just under the surface.", "learn": ["spread"] },
+        { "text": "Each flower lasts only a day or two, but a clump opens them one after another for weeks.", "learn": ["flower"] },
+        { "text": "The leaves die back in winter, but the roots stay alive under the soil.", "learn": ["dormant", "moment:winter"] },
+        { "text": "At dusk the yellow flags seem to glow after the green has gone grey.", "learn": ["moment:dusk"] }
+      ],
+      "fieldHint": "Watch them through the seasons to learn more.",
+      "sketch": { "scale": "about 1 m", "labels": {
+        "falls": { "text": ["falls and", "standards"], "learn": ["flower"] },
+        "leaves": { "text": ["sword leaves", "in a fan"], "learn": ["seen"] },
+        "root": { "text": ["thick creeping", "root"], "learn": ["spread"] } } },
+      "riddle": "Something yellow would flower on a damp bank, a step back from the water.",
+      "amount": [[1, "A single iris"], [2, "A few iris clumps"], [6, "A good stand of iris"], [16, "Iris all along the bank"]],
+      "place": "a step back from the water", "compass": true,
+      "none": "No iris grows on the island now.",
+      "flowering": "in yellow flower", "dormant": "cut back by winter",
+      "spreading": "spreading along the bank", "receding": "pulling back",
+      "stages": ["An iris seed, waiting for damp ground", "A new iris shoot", "A young iris fan", "A full iris clump", "An iris in yellow flower", "An iris cut back by winter"],
+      "seasons": { "grow": ["green sword leaves", "tall green fans", "browning leaves", "cut back"], "flower": "yellow flags", "dormant": "cut back" },
+      "likes": [
+        { "text": "A damp bank, a little drier than reeds like", "learn": ["seen"] },
+        { "text": "Keeps its feet out of deep water", "learn": ["refused:deep", "lost:drown"] },
+        { "text": "Wilts on dry ground away from the water", "learn": ["refused:dry", "lost:seed"] },
+        { "text": "Spreads along the bank by its roots", "learn": ["spread"] }
+      ],
+      "gives": [
+        { "pencil": "Something might shelter under these leaves one day.", "ink": "Shelter for frogs.", "when": "frogs:settled" }
+      ],
+      "notes": {
+        "arrived": "Iris was already growing on the bank when you arrived.",
+        "seen": "The first iris has sprouted on the bank.",
+        "spread": "The iris is spreading along the bank.",
+        "flower": "The iris has opened its yellow flags.",
+        "dormant": "The iris has died back for winter.",
+        "woke": "New iris leaves are coming up.",
+        "drown": "Some iris drowned where the water rose.",
+        "seed": "An iris seed gave up on dry ground.",
+        "gone": "The last of the iris is gone."
+      }
+    },
+    "thrift": {
+      "name": "Sea thrift", "icon": "thrift", "plural": "thrift cushions",
+      "field": [
+        { "text": "Its tight cushion keeps the salt wind from drying it out.", "learn": ["seen"] },
+        { "text": "Each pompom is many tiny papery flowers, packed together.", "learn": ["flower"] },
+        { "text": "Its seeds ride the wind and only take where the ground is salty.", "learn": ["spread"] },
+        { "text": "Rain and sea spray alike bead on its narrow leaves.", "learn": ["moment:rain"] },
+        { "text": "It stays green all winter, low and hunched against the cold.", "learn": ["moment:winter"] }
+      ],
+      "fieldHint": "Watch the shore in other weather to learn more.",
+      "sketch": { "scale": "about 20 cm", "labels": {
+        "cushion": { "text": ["tight cushion"], "learn": ["seen"] },
+        "pompom": { "text": ["papery", "pompoms"], "learn": ["flower"] },
+        "seeds": { "text": ["seeds ride", "the wind"], "learn": ["spread"] } } },
+      "riddle": "Something pink would cushion the shore, if the ground were salty enough.",
+      "amount": [[1, "A single thrift cushion"], [2, "A few thrift cushions"], [6, "Thrift cushions"], [20, "Thrift cushions in drifts"]],
+      "place": "along the shore", "compass": true,
+      "none": "No sea thrift grows on the island now.",
+      "flowering": "in pink flower", "dormant": "low and grey for winter",
+      "spreading": "seeding along the shore", "receding": "thinning out",
+      "stages": ["A thrift seed, waiting for salty ground", "A new thrift tuft", "A young thrift cushion", "A full thrift cushion", "Thrift in pink flower", "Thrift low and grey for winter"],
+      "seasons": { "grow": ["green cushions", "full cushions", "seed heads", "low and grey"], "flower": "pink pompoms", "dormant": "low and grey" },
+      "likes": [
+        { "text": "Salty ground in the sea spray", "learn": ["seen"] },
+        { "text": "Turns away from fresh ground inland", "learn": ["refused:fresh", "lost:seed"] },
+        { "text": "Hates wet feet", "learn": ["refused:wet", "refused:deep", "lost:drown"] },
+        { "text": "Drops seeds that only take on good ground", "learn": ["spread"] }
+      ],
+      "gives": [
+        { "pencil": "Something small and buzzing might want these one day.", "ink": "Nectar for bees.", "when": "bees:seen" }
+      ],
+      "notes": {
+        "arrived": "Sea thrift was already growing along the shore when you arrived.",
+        "seen": "The first sea thrift has sprouted by the shore.",
+        "spread": "Sea thrift has seeded itself along the shore.",
+        "flower": "The thrift has come into pink flower.",
+        "dormant": "The thrift has gone low and grey for winter.",
+        "woke": "The thrift is greening again.",
+        "drown": "Some thrift drowned where the water rose.",
+        "seed": "A thrift seed gave up away from the salt.",
+        "gone": "The last of the sea thrift is gone."
+      }
+    }
+  }
+}

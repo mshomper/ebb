@@ -105,7 +105,9 @@ export async function startApp(canvas, hooks = {}) {
   const terrain = await createTerrain(gpu, { seed: subSeed(seed, 'terrain'), recipe: terrainRecipe, land: landRecipe });
   history.setApplier('terrain', (cmd, dir) => terrain.applyTiles(dir === 'undo' ? cmd.before : cmd.after));
   // The world clock and the shared hourly tick (weather, seasons). A new world starts mid-morning.
-  if (clock.worldT() === 0) clock.reset((skyRecipe.orbit.startHour ?? 10) * clock.SECONDS_PER_HOUR);
+  // `?day=N` starts a new world N game days in (7 per season: 8 is early summer), to see later seasons sooner.
+  const startDay = Math.max(0, Number.parseInt(params.get('day') ?? '0', 10) || 0);
+  if (clock.worldT() === 0) clock.reset(((skyRecipe.orbit.startHour ?? 10) + 24 * startDay) * clock.SECONDS_PER_HOUR);
   updateStore('meta', (m) => { m.flow = clock.flow(); });
   const env = makeEnv(seed, { seasons: seasonsRecipe, sky: skyRecipe.orbit, water: waterRecipe });
   /** @type {import('./sim/live-sim.js').LiveWorld} */
@@ -127,8 +129,11 @@ export async function startApp(canvas, hooks = {}) {
   sim.addSystem(growth);
   updateStore('world', () => world.state);
   const unHour = on('clock:hour', (/** @type {{ hour: number }} */ p) => {
-    for (const e of sim.hourlyTick(p.hour)) emitDeferred(e.name, e.payload);
+    const events = sim.hourlyTick(p.hour);
+    for (const e of events) emitDeferred(e.name, e.payload);
     updateStore('world', () => world.state);
+    // The hour as a whole, for watchers of the world such as the journal (src/world/journal).
+    emitDeferred('world:ticked', { hour: p.hour, events, state: world.state });
   });
 
   const camera = createOrbitCamera(camRecipe);
@@ -330,6 +335,7 @@ export async function startApp(canvas, hooks = {}) {
       case 'camera.pan': camera.pan(a.dx, a.dy); break;
       case 'camera.zoom': camera.zoom(a.factor, a.x, a.y); break;
       case 'camera.twist': camera.twist(a.angle); break;
+      case 'camera.focus': camera.focus(a.x, a.z, a.distance, a.pitchDeg); break;
       case 'tool.select': {
         const next = a.toolId && a.toolId !== tools().tool ? a.toolId : null;
         if (!next) finishStroke();
@@ -382,6 +388,8 @@ export async function startApp(canvas, hooks = {}) {
         pouring = null;
         finishStroke();
         break;
+      // A tap with no tool: the journal names what grows there (src/world/journal).
+      case 'look.tap': emitDeferred('look:tapped', { x: a.x, y: a.y, point: groundAt(a.x, a.y) }); break;
       case 'history.undo': if (!stroking) runHistory('undo'); break;
       case 'history.redo': if (!stroking) runHistory('redo'); break;
       case 'time.flow':
@@ -444,7 +452,8 @@ export async function startApp(canvas, hooks = {}) {
     camera.setViewport(cssW, cssH);
     camera.update(realDt);
     updateRing();
-    terrainPass.setMarks(plantTool.marks(now, tools().tool === 'plant'));
+    // Plant tool rings, and a breathing ring round whatever the journal's tap card names.
+    terrainPass.setMarks(plantTool.marks(now, tools().tool === 'plant', getStore('identify')));
     updatePour();
     if (queuedHistory && !terrain.isBusy()) runHistory(queuedHistory);
     // Ground detail waits for a few calm frames so the first picture is as quick as before (docs/22).

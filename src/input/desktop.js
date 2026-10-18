@@ -2,13 +2,17 @@
 // Mouse, pen, wheel and keyboard input (docs/15, desktop bindings):
 // left drag uses the active tool (pans in the look state), middle drag or Space + left drag pans,
 // right drag orbits, wheel or trackpad pinch zooms toward the cursor.
-// Keys: 1 2 3 pick a tool (again returns to look), Esc returns to look, [ ] resize the brush,
-// Ctrl+Z undo, Ctrl+Shift+Z or Ctrl+Y redo.
+// A short still left click with no tool is a tap (look.tap: the journal names what grows there).
+// Keys: 1 2 3 pick a tool (again returns to look), J opens or closes the journal, Esc closes the
+// journal or returns to look, [ ] resize the brush, Ctrl+Z undo, Ctrl+Shift+Z or Ctrl+Y redo.
 
 import { dispatch } from './actions.js';
 import { get } from '../core/store.js';
 
 const TOOL_KEYS = /** @type {const} */ (['sculpt', 'smooth', 'paint']);
+/** A click that moves less than this (px) and lasts less than this (ms) is a tap. */
+const TAP_PX = 6;
+const TAP_MS = 400;
 
 /**
  * @param {HTMLCanvasElement} canvas
@@ -17,7 +21,7 @@ const TOOL_KEYS = /** @type {const} */ (['sculpt', 'smooth', 'paint']);
  * @returns {() => void} detach
  */
 export function attachDesktopInput(canvas, opts, brush) {
-  /** @type {{ id: number, mode: 'pan'|'orbit'|'tool', x: number, y: number } | null} */
+  /** @type {{ id: number, mode: 'pan'|'orbit'|'tool', x: number, y: number, sx: number, sy: number, t: number, tap: boolean } | null} */
   let drag = null;
   let spaceHeld = false;
 
@@ -40,7 +44,9 @@ export function attachDesktopInput(canvas, opts, brush) {
     e.preventDefault();
     canvas.focus?.({ preventScroll: true });
     try { canvas.setPointerCapture(e.pointerId); } catch { /* pointer already gone */ }
-    drag = { id: e.pointerId, mode, x: e.clientX, y: e.clientY };
+    // A short, still left click with no tool is a tap: the journal names what grows there.
+    drag = { id: e.pointerId, mode, x: e.clientX, y: e.clientY, sx: e.clientX, sy: e.clientY, t: performance.now(),
+      tap: e.button === 0 && mode === 'pan' && !toolActive() };
     if (mode === 'tool') {
       const p = local(e);
       dispatch({ type: 'tool.begin', x: p.x, y: p.y, pressure: pressure(e), source: source(e) });
@@ -75,6 +81,10 @@ export function attachDesktopInput(canvas, opts, brush) {
   const up = (e) => {
     if (!drag || e.pointerId !== drag.id) return;
     if (drag.mode === 'tool') dispatch({ type: e.type === 'pointercancel' ? 'tool.cancel' : 'tool.end', source: source(e) });
+    if (drag.tap && e.type === 'pointerup' && Math.hypot(e.clientX - drag.sx, e.clientY - drag.sy) < TAP_PX && performance.now() - drag.t < TAP_MS) {
+      const p = local(e);
+      dispatch({ type: 'look.tap', x: p.x, y: p.y, source: source(e) });
+    }
     drag = null;
   };
 
@@ -116,8 +126,11 @@ export function attachDesktopInput(canvas, opts, brush) {
     } else if (/^Digit[1-3]$/.test(e.code)) {
       const id = TOOL_KEYS[Number(e.code.slice(5)) - 1];
       dispatch({ type: 'tool.select', toolId: get('tools')?.tool === id ? null : id, source: 'key' });
+    } else if (e.code === 'KeyJ') {
+      dispatch({ type: 'ui.journal', toggle: true });
     } else if (e.key === 'Escape') {
-      dispatch({ type: 'tool.select', toolId: null, source: 'key' });
+      if (get('journalUi')?.open) dispatch({ type: 'ui.journal', open: false });
+      else dispatch({ type: 'tool.select', toolId: null, source: 'key' });
     } else if (e.key === '[' || e.key === ']') {
       dispatch({ type: 'brush.resize', factor: e.key === ']' ? brush.resizeStep : 1 / brush.resizeStep, source: 'key' });
     }

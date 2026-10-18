@@ -29,6 +29,7 @@ flowchart TD
     V --> B[21 Brand]
     TE --> GD[22 Ground detail]
     P --> GD
+    C --> PR[23 Presence]
 ```
 
 | Doc | Covers |
@@ -55,3 +56,4 @@ flowchart TD
 | 20-roadmap-and-vertical-slice | Milestones, slice steps, how to feed docs to Claude Code |
 | 21-brand-identity | Name, wordmark, icon, favicon, colors, type |
 | 22-ground-detail | Scanned ground textures, height blending, hex tiling, micro-normals, wet ground |
+| 23-presence | How creatures read the player: presence sources, comfort rings, trust and wariness, the seat, walker and camp |

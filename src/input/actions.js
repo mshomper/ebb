@@ -16,6 +16,8 @@ import { emit } from '../core/events.js';
  *   | { type: 'camera.pan', dx: number, dy: number }
  *   | { type: 'camera.zoom', factor: number, x?: number, y?: number }
  *   | { type: 'camera.twist', angle: number }
+ *   | { type: 'camera.focus', x: number, z: number, distance: number, pitchDeg: number }
+ *   | { type: 'journal.showMe', sp: string }
  *   | { type: 'tool.select', toolId: ToolId | null, source?: Source }
  *   | { type: 'tool.begin', x: number, y: number, pressure: number, source: Source }
  *   | { type: 'tool.move', x: number, y: number, pressure: number, source: Source }
@@ -29,7 +31,10 @@ import { emit } from '../core/events.js';
  *   | { type: 'history.undo', source?: Source }
  *   | { type: 'history.redo', source?: Source }
  *   | { type: 'time.flow', flow: 0|1|2|4 }
- *   | { type: 'look.palette', id: string }} Action
+ *   | { type: 'look.palette', id: string }
+ *   | { type: 'look.tap', x: number, y: number, source: Source }
+ *   | { type: 'ui.identify' }
+ *   | { type: 'ui.journal', open?: boolean, toggle?: boolean, view?: 'living'|'ground'|'almanac'|'notes', page?: string|null, size?: 'half'|'full' }} Action
  */
 
 /** @type {((a: Action) => void)[]} */

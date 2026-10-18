@@ -39,10 +39,13 @@ Gifts are chosen so one species helps the next: frogs give water lilies, which g
 | Gift | Water lily seed. In the slice, happiness shows through behavior and the journal page only; the gift card and the lilies themselves arrive in M2, the first unlock in `20-roadmap-and-vertical-slice.md`. |
 | Signature behavior | **Dusk chorus**: content frogs call from the reed margin with the throat sac swelling; neighbors alternate rather than overlap (each frog delays its call if another started within 0.4 s), so the chorus ripples around the pond. In spring, nesting shows as frogspawn clumps in the shallows. |
 | Other behaviors | Tongue-flick at midges (forage); sit still on a stone or pad (rest, linger); plop into water and surface eyes-up 2 m away (startle); slow hop along the far edge (restless wander). |
-| Interaction hook | Call: a soft croak whistle, answered by frogs with trust above 0.3. Feed: a pinch of midges at the cursor. Photograph moments: "dusk chorus", "frogspawn", "a frog that came when called". |
+| Interaction hook | Call: a soft croak whistle, answered by frogs with trust above 0.3 (waits for M2 and the frog voice). Feed: a pinch of midges at the cursor, for trust only. Photograph moments: "dusk chorus", "frogspawn", "a frog that came when called". |
+| Presence (doc 23) | Comfort ring about 1.5 m when shy, shrinking to 0.3 m with trust; startles only at a fast swoop inside it or an edit beside it, a plop and back within a minute. Trust from feeding and quiet watching. Ceiling: Familiar, sitting still for a portrait at arm's length. |
 | Body recipe | Ellipsoid torso (squashed 1 : 0.6 : 1.3); round-cone head blended k 0.02 m; two eye spheres raised on the head top; throat sac sphere under the jaw (spring-scaled); hind legs as three capsules each (thigh, shank, long foot) folded at rest; short foreleg capsules. Length 7 to 9 cm. Albedo regions (linear): moss-green back about 0.12 to 0.16, sand-pale belly about 0.40 to 0.50, seeded dark bark-brown blotches about 0.05 to 0.08; the palette maps them into its colors at tonemap. |
 | Motion | Hop: ballistic arc 0.3 to 0.6 m, legs extend via IK then fold, squash-and-stretch spring on landing. Swim: frog-kick cycle at the surface, floats with eyes above water. Breathing spring on throat at rest. Faces the camera slowly when lingering. |
 | Audio | Call voice and chorus layering in `17-audio.md`. |
+
+Every species also gets a presence block and a wildness ceiling, the closest it will ever let you come; starting ceilings for all fifteen are in `23-presence.md`.
 
 ## Tier 1 — pond island (starter, about 64 m)
 

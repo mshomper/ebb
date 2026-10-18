@@ -37,7 +37,7 @@ Click-test: the page opens on desktop and phone, the camera orbits, pans and zoo
 
 ### M1 — Vertical slice
 
-One island, everything in miniature. Built in thirteen steps, each its own click-test. G1 to G3 (ground detail) were added in October 2026 after the realism review; they upgrade S1's surfaces and sit between the original steps. S4 (water) was split into S4a to S4c in October 2026 so each piece stays click-testable, with realism a priority:
+One island, everything in miniature. Built in seventeen steps, each its own click-test. G1 to G3 (ground detail) were added in October 2026 after the realism review; they upgrade S1's surfaces and sit between the original steps. S4 (water) was split into S4a to S4c in October 2026 so each piece stays click-testable, with realism a priority. J1 and J2 (the field journal) were added in October 2026, before frogs, because the journal is how the player reads the whole island, plants included, not a page per creature:
 
 | Step | What appears | Main docs |
 |---|---|---|
@@ -50,8 +50,12 @@ One island, everything in miniature. Built in thirteen steps, each its own click
 | S4b | Water the island knows: the deterministic water summary (priority-flood), the pond refill nudge, pour and drain tools, spring placing (built, locked until the dragonflies' gift; `?sandbox` opens it), the live readback for creatures, tide events for ecology | 07, 11, 12 |
 | S4c | Water optics and wet ground: sky probe with specular mips, screen-space reflection on high, caustics, foam, ripples from rain and creatures, the visual wetness pass with drying tide flats | 07, 06, 08 |
 | G3 | Wet ground: roughness and specular, damp darkening and puddles in rain (reads S4c's wetness pass and sky probe) | 22, 06 |
-| S5 | One plant species, reeds, spreading along wet ground and the tide band, plus a grass layer | 10, 14 |
-| S6 | Frogs: needs, arrival, settling, behavior, feeding and naming, one journal page | 11, 12 |
+| S5 | Shipped grass, reeds, water lilies, yellow flag iris and sea thrift, each growing and spreading on its own ground, with the Plant tool and `tools/growth-lab.html` | 10, 14 |
+| J1 | Field journal v1: the book button, a page for every living thing on the island that fills from what happens there, notes on the island and in the journal, tap a plant to name it | 13, 15 |
+| J1.5 | More to explore: tap the ground too (soil, sand, rock, moss, fresh water, shore) and a Ground section; Show me glides the camera to a page's finest example; field notes, your island's story and four "?" moment frames per page; the Almanac; `?day=N` to start a new world later in the year | 13, 15 |
+| J1.6 | Field sketches: a drawn illustration for each page, in pencil until known, then inked | 13, 15 |
+| J2 | The journal's "show where" wash on the island and the web of what needs what | 13, 15 |
+| S6 | Frogs: needs, arrival, settling, behavior, presence (a list of sources, the camera first), feeding for trust and naming; midges and frogs get journal pages and sketches | 11, 12, 23 |
 | S7 | Autosave, reload, and offline catch-up with the "while you were away" reveal | 02, 18 |
 | S8 | Minimal HUD with drawn icons, touch layout on phone, low quality tier | 15, 19 |
 
@@ -60,6 +64,7 @@ Slice acceptance, all together:
 - Sculpt a dip near the spring. Water fills it and finds its way to the sea.
 - Watch for a few game hours. The tide visibly ebbs and returns; reeds creep along the wet edge.
 - After enough reeds and water, a frog visits, then settles; you can feed it and give it a name.
+- Open the journal: every plant on the island has a page that says, in words, where it grows and what it likes, and the notes tell what changed.
 - Switch palettes. The whole scene changes mood instantly, and the light still behaves the same.
 - Orbit in close at a low sun, then let it rain. Sand, rock and soil read as real material, show no tiling, and turn dark and glossy with puddles in the rain.
 - Close the tab, come back the next day. The island has moved on, and a short calm reveal shows what changed.
@@ -75,6 +80,7 @@ Slice acceptance, all together:
 - Tuning panel v1: live sliders for species and flora recipes, saving recipe files.
 - First audio pass: water bed, wind bed, frog voice with chorus (doc 17).
 - First human touches: stepping stones and one lantern, so the icon's dusk scene can be recreated in game.
+- Presence rung 2, the seat (doc 23): "sit here" at eye height, where trust grows fastest; it brings the ground-level view up to standard before the walker.
 
 ### M3 — Meadow, seasons and the woodland knoll
 
@@ -82,6 +88,7 @@ Slice acceptance, all together:
 - Full seasonal look: color shifts, blooming, leaf drop, frosty winter mornings (no snow).
 - Full weather: rain, mist, wind, and the drier or wetter leaning.
 - Paths and stone walls, with moss growing over them in time.
+- Presence rung 3, the walker (doc 23), may start here and finish in M4: a small traveler you step into and walk along paths and over the bridge. It is large enough to be scheduled as its own step when M3 is planned.
 - The Tier 2 milestone: the woodland knoll rises beyond a channel, and the bridge gift arrives with it.
 
 ### M4 — Woodland and the tide flats
@@ -101,6 +108,7 @@ Slice acceptance, all together:
 
 - Fireflies, bats, and migrating cranes as rare seasonal visitors.
 - Night lighting polish, lantern glow, firefly light; the Moonlight palette as the bats' gift.
+- Presence rung 4, the camp (doc 23), here or with the M7 chapter: a bedroll, a fire and a home point that keeps a gentle presence while you are away.
 - The journal year page (all fifteen species photographed and all four seasons passed).
 - Mobile tier tuning, accessibility pass, store page and promo capture.
 

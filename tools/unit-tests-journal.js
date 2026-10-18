@@ -1,0 +1,253 @@
+// @ts-check
+// Field journal tests (docs 13, 15) for tools/unit-tests.html: a new island's plants are noted as
+// already there, the journal built over game hours is the same twice, a Plant tool refusal teaches
+// a like line once, status words carry no numbers, and a tap names the nearest plant. Uses the
+// made-up shoreline habitat of the growth tests.
+
+import { initialWorldState, makeEnv, runHour } from '../src/sim/tick.js';
+import { settleGrowth, plantSeed } from '../src/world/growth/coarse.js';
+import { initialJournal, observe, learn, notePlanted, momentsNow, catchMoments, sketchOf } from '../src/world/journal/observe.js';
+import { drawSketch, hasSketch } from '../src/ui/sketches/index.js';
+import { describe, identify, showMeSpot } from '../src/world/journal/describe.js';
+import { groundKind, groundCard, groundSurvey, describeGround } from '../src/world/journal/ground.js';
+import { almanac } from '../src/world/journal/almanac.js';
+import { STAGE } from '../src/world/growth/coarse.js';
+import { WORLD_CELLS } from '../src/world/terrain/grid.js';
+import { shoreline, at, loadRecipes } from './unit-tests-growth.js';
+
+/** @type {Promise<any> | null} */ let islandPromise = null;
+function loadIsland() {
+  islandPromise ??= fetch('../recipes/world/journal-island.json').then((r) => {
+    if (!r.ok) throw new Error(`recipes/world/journal-island.json: HTTP ${r.status}`);
+    return r.json();
+  });
+  return islandPromise;
+}
+
+/** Painted ground for the shoreline: soil everywhere (grass, sand, rock, soil per texel). */
+function soilEverywhere() {
+  const m = new Uint8Array(WORLD_CELLS * WORLD_CELLS * 4);
+  for (let i = 3; i < m.length; i += 4) m[i] = 255;
+  return m;
+}
+
+const JOURNAL = 'journal';
+
+/** @type {Promise<any> | null} */ let wordsPromise = null;
+function loadWords() {
+  wordsPromise ??= fetch('../recipes/world/journal.json').then((r) => {
+    if (!r.ok) throw new Error(`recipes/world/journal.json: HTTP ${r.status}`);
+    return r.json();
+  });
+  return wordsPromise;
+}
+
+/** The shoreline with grass painted on its dry middle. */
+function grassyShoreline() {
+  const hab = shoreline();
+  for (let k = 0; k < hab.n * hab.n; k++) if (!hab.sea[k] && !hab.depthCm[k] && hab.salt[k] === 0 && hab.moisture[k] === 0) hab.grass[k] = 255;
+  return hab;
+}
+
+/** A fresh island on the shoreline, its journal after the first look, and what is needed to go on. */
+async function setup(seed = 9) {
+  const recipes = await loadRecipes();
+  const words = await loadWords();
+  const hab = grassyShoreline();
+  const env = { ...makeEnv(seed, recipes), habitat: () => hab };
+  const state = settleGrowth(initialWorldState(seed), env);
+  const first = observe(initialJournal(0), { state, events: [], hour: 0, habitat: hab, words });
+  return { recipes, words, hab, env, state, first };
+}
+
+/** Run hours 1..n, the journal looking after each. @param {any} s */
+function live(s, n) {
+  let state = s.state, journal = s.first.journal;
+  /** @type {string[]} */ const texts = [];
+  for (let h = 1; h <= n; h++) {
+    const r = runHour(state, h, s.env);
+    state = r.state;
+    const o = observe(journal, { state, events: r.events, hour: h, habitat: s.hab, words: s.words });
+    journal = o.journal;
+    for (const note of o.notes) texts.push(note.text);
+  }
+  return { state, journal, texts };
+}
+
+/**
+ * @param {(group: string, name: string, fn: () => any) => void} test
+ * @param {(cond: any, msg?: string) => void} assert @param {(a: any, b: any, msg?: string) => void} eq
+ */
+export function addJournalTests(test, assert, eq) {
+  test(JOURNAL, 'a new island: every living thing on it is noted as already there', async () => {
+    const { words, first } = await setup();
+    for (const sp of words.order) {
+      assert(first.journal.species[sp]?.ever, `${sp} is seen at the first look`);
+      assert(first.notes.some((n) => n.sp === sp && n.text === words.species[sp].notes.arrived), `${sp} has its "arrived" note`);
+    }
+    return `${first.notes.length} notes at the first look`;
+  });
+
+  test(JOURNAL, '96 hours twice give the same journal, and spreading is learned and noted once', async () => {
+    const s = await setup();
+    const a = live(s, 96);
+    const b = live(s, 96);
+    eq(JSON.stringify(a.journal), JSON.stringify(b.journal), 'journal of the two runs');
+    const spread = s.words.order.filter((/** @type {string} */ sp) => a.journal.species[sp]?.learned.includes('spread'));
+    assert(spread.length > 0, 'some species spread in 96 hours');
+    for (const sp of spread) {
+      const text = s.words.species[sp].notes.spread;
+      eq(a.texts.filter((t) => t === text).length, 1, `${sp} spread note`);
+    }
+    return `spread learned by ${spread.join(', ')}; ${a.texts.length} notes in 96 hours`;
+  });
+
+  test(JOURNAL, 'a Plant tool refusal teaches a like line once', async () => {
+    const { words, state, first } = await setup();
+    const ctx = { state, hour: 3, words };
+    const r1 = learn(first.journal, 'reeds', 'refused:dry', ctx);
+    eq(r1.notes.length, 1, 'notes from the first refusal');
+    assert(r1.notes[0].text.startsWith('Reeds: '), `note text "${r1.notes[0].text}"`);
+    const r2 = learn(r1.journal, 'reeds', 'refused:dry', ctx);
+    eq(r2.notes.length, 0, 'notes from the same refusal again');
+    eq(r2.journal, r1.journal, 'the journal is unchanged by a repeat');
+    const like = describe(r1.journal, 'reeds', state, null, words).likes.find((l) => l.text === 'Turns away from dry ground');
+    assert(like?.known, 'the like line shows on the page');
+    return r1.notes[0].text;
+  });
+
+  test(JOURNAL, 'page words: a status for every species, with no numbers in it', async () => {
+    const s = await setup();
+    const a = live(s, 30);
+    const lines = [];
+    for (const sp of s.words.order) {
+      const d = describe(a.journal, sp, a.state, s.hab, s.words);
+      assert(d.known, `${sp} known`);
+      assert(d.status.length > 0, `${sp} has a status`);
+      assert(!/\d/.test(d.status), `${sp} status has a number: "${d.status}"`);
+      eq(d.seasons.length, 4, `${sp} season boxes`);
+      assert(d.seasons[0].text, `${sp} spring box filled`);
+      lines.push(d.status);
+    }
+    return lines.join(' / ');
+  });
+
+  test(JOURNAL, 'grass learns it drowns only when water comes over growing grass', async () => {
+    const { words, env, hab } = await setup();
+    for (let k = 0; k < hab.n * hab.n; k++) if (hab.depthCm[k] > 0) hab.grass[k] = 255;   // painted under the pond
+    const fresh = settleGrowth(initialWorldState(9), env);
+    const a = observe(initialJournal(0), { state: fresh, events: [], hour: 0, habitat: hab, words });
+    assert(!a.journal.species.grass.learned.includes('grass:flooded'), 'a new island with a pond on painted grass is not flooding');
+    const wet = { ...fresh, growth: { ...fresh.growth, grass: new Uint8Array(fresh.growth.grass.length).fill(255) } };
+    const b = observe(a.journal, { state: wet, events: [], hour: 1, habitat: hab, words });
+    assert(b.journal.species.grass.learned.includes('grass:flooded'), 'grass still growing under new water is flooding');
+    eq(b.notes.filter((n) => n.text === words.species.grass.notes.flooded).length, 1, 'flooded notes');
+    return words.species.grass.notes.flooded;
+  });
+
+  test(JOURNAL, 'moments: caught once when tapped at the right time, teaching a field note', async () => {
+    const { words, state, first } = await setup();
+    const M = words.moments;
+    const list = M.plant;
+    const rainyDusk = { stage: STAGE.flowering, season: 1, hourOfDay: 19, rain: 0.5, mist: 0 };
+    const ids = momentsNow(list, rainyDusk, M);
+    eq(ids.join(','), 'flower,rain,dusk', 'moments of a flowering clump on a rainy summer dusk');
+    eq(momentsNow(list, { stage: STAGE.mature, season: 0, hourOfDay: 11, rain: 0, mist: 0 }, M).length, 0, 'moments of a plain spring noon');
+    const ctx = { state, hour: 30, words, name: 'reeds', list };
+    const a = catchMoments(first.journal, 'reeds', ids, ctx);
+    eq(a.notes.length, 3, 'notes for three new moments');
+    const b = catchMoments(a.journal, 'reeds', ids, ctx);
+    eq(b.notes.length, 0, 'the same moments again');
+    const d = describe(a.journal, 'reeds', state, null, words);
+    eq(d.moments.filter((m) => m.date !== null).length, 3, 'filled frames');
+    assert(d.field.find((f) => f.text.startsWith('Rain runs'))?.known, 'the rain field note is learned');
+    return a.notes[1].text;
+  });
+
+  test(JOURNAL, "your island's story: here when you arrived, then what you planted", async () => {
+    const { words, env, state, first, hab } = await setup();
+    let j = first.journal;
+    let s = state;
+    for (const dz of [50, 52, 54]) {
+      const r = plantSeed(s, 'iris', at('bank')[0], at('bank')[1] + dz, env);
+      assert(r.ok, 'iris seed takes');
+      s = r.state;
+      j = notePlanted(j, 'iris', 5);
+    }
+    const d = describe(j, 'iris', s, hab, words, 6);
+    eq(d.story[0], 'Iris clumps were here when you arrived.', 'first story line');
+    assert(d.story.some((l) => l.startsWith('You first planted iris clumps on ')), `planted line in: ${d.story.join(' / ')}`);
+    assert(d.story.includes(words.story.oldestArrived), 'oldest line');
+    const spot = showMeSpot('iris', s, hab, words);
+    assert(spot && spot.sp === 'iris' && spot.stage === STAGE.mature, 'Show me goes to a full-grown iris');
+    return d.story.join(' / ');
+  });
+
+  test(JOURNAL, 'the ground: taps name water, shore and soil, with the plants that would suit', async () => {
+    const { words, state, first, hab, recipes } = await setup();
+    const island = await loadIsland();
+    hab.band = new Uint8Array(hab.n * hab.n);
+    for (let k = 0; k < hab.n * hab.n; k++) if ((k % hab.n) >= 20 && (k % hab.n) <= 22) hab.band[k] = 1;
+    const mat = soilEverywhere();
+    const kind = (/** @type {string} */ zone) => groundKind(hab, mat, at(zone)[0], at(zone)[1] + 10, island);
+    eq(kind('sea'), 'sea', 'sea'); eq(kind('band'), 'band', 'tide band'); eq(kind('pond'), 'fresh', 'pond');
+    eq(kind('dry'), 'soil', 'dry ground'); eq(kind('edge'), 'fresh', 'pond edge');
+    const card = groundCard('soil', hab, at('bank')[0], at('bank')[1] + 10, { island, flora: recipes.flora, journal: first.journal, words });
+    assert(card.suits.includes('Yellow flag iris'), `bank card: ${card.text} ${card.suits}`);
+    const pond = groundCard('fresh', hab, at('pond')[0], at('pond')[1] + 10, { island, flora: recipes.flora, journal: first.journal, words });
+    eq(pond.text, 'About waist deep, still fresh water.', 'pond card (80 cm)');
+    const survey = groundSurvey(hab, mat, state, island, 1);
+    const soil = describeGround(first.journal, 'soil', survey, island, words);
+    assert(soil.known && soil.status.length > 0 && soil.grows.length > 0, `soil page: ${soil.status} / ${soil.grows.join(', ')}`);
+    return `${card.text} ${card.suits} / ${pond.text} / ${soil.status}`;
+  });
+
+  test(JOURNAL, 'the almanac: today, weather, tide, moon, daylight and flowering in words', async () => {
+    const s = await setup();
+    const island = await loadIsland();
+    const a = live(s, 12);
+    const rows = almanac({ state: a.state, tHours: 12.5, weatherNow: { rain: 0, mist: 0, wind: 0.5 }, words: s.words, island });
+    const ids = rows.map((r) => r.id);
+    for (const id of ['today', 'weather', 'tide', 'moon', 'daylight', 'flowering']) assert(ids.includes(id), `row ${id}`);
+    for (const r of rows) if (r.id !== 'today') assert(!/\d/.test(r.text), `${r.id} has a number: ${r.text}`);
+    return rows.map((r) => `${r.label}: ${r.text}`).join(' / ');
+  });
+
+  test(JOURNAL, 'field sketches: pencil, ink, then washed, labels as they are learned, every drawing clean', async () => {
+    const { words, first } = await setup();
+    const island = await loadIsland();
+    const rec = words.species.reeds;
+    eq(sketchOf(undefined, false, rec.sketch).stage, 0, 'unseen reeds');
+    const seen = sketchOf(first.journal.species.reeds, true, rec.sketch);
+    eq(seen.stage, 1, 'seen reeds');
+    eq(Object.keys(seen.labels).join(','), 'blade', 'labels once seen');
+    const caught = catchMoments(first.journal, 'reeds', ['rain'], { state: first.journal, hour: 3, words, name: 'reeds', list: words.moments.plant });
+    eq(sketchOf(caught.journal.species.reeds, true, rec.sketch).stage, 2, 'reeds caught in the rain');
+    const ids = [...words.order, ...island.groundOrder];
+    for (const id of ids) {
+      const sk = words.species[id]?.sketch ?? island.ground[id]?.sketch;
+      assert(hasSketch(id), `a drawing for ${id}`);
+      const all = Object.fromEntries(Object.entries(sk?.labels ?? {}).map(([k, v]) => [k, /** @type {any} */ (v).text]));
+      for (const stage of /** @type {(0|1|2)[]} */ ([0, 1, 2])) {
+        const svg = drawSketch(id, { stage, labels: all, scale: sk?.scale });
+        assert(svg.startsWith('<svg') && !/NaN|undefined/.test(svg), `${id} stage ${stage} draws cleanly`);
+        if (stage === 0) assert(!svg.includes('<text'), `${id} pencil has no labels`);
+      }
+    }
+    return `${ids.length} drawings, each in three stages`;
+  });
+
+  test(JOURNAL, 'a tap names the nearest plant, or grass, or nothing', async () => {
+    const { words, env, state, hab } = await setup();
+    const r = plantSeed(state, 'iris', at('bank')[0], at('bank')[1] + 40, env);
+    assert(r.ok, 'iris seed takes on the bank');
+    const id = identify(r.state, hab, at('bank')[0] + 0.3, at('bank')[1] + 40, words);
+    eq(id?.sp, 'iris', 'tap beside the iris');
+    eq(id?.text, words.species.iris.stages[0], 'a seed says it is waiting');
+    const g = identify(r.state, hab, at('dry')[0], at('dry')[1] + 70, words);
+    eq(g?.sp, 'grass', 'tap on the painted dry ground');
+    const none = identify(r.state, hab, at('pond')[0], at('pond')[1] + 90, words);
+    assert(!none || none.sp === 'lilies', `tap on open water: ${none?.sp}`);
+    return `${id?.name}: "${id?.text}"; ${g?.name}`;
+  });
+}

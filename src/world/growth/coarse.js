@@ -263,8 +263,10 @@ export function coarseStep(state, hourIndex, env) {
   const season = Math.min(3, Math.max(0, state.seasons?.index ?? 0));
   const seed = subSeed(env.seed, 'growth');
 
-  // Grow, age, change stage; drop the dead.
+  // Grow, age, change stage; drop the dead (counted per species and reason for the journal).
   /** @type {Plant[]} */ const alive = [];
+  /** @type {Map<string, number>} */ const lost = new Map();
+  const lose = (/** @type {string} */ sp, /** @type {string} */ why) => lost.set(`${sp}|${why}`, (lost.get(`${sp}|${why}`) ?? 0) + 1);
   for (const p of g.plants) {
     const rec = env.recipes.flora[p.sp];
     if (!rec) continue;
@@ -275,7 +277,7 @@ export function coarseStep(state, hourIndex, env) {
     if (p.stage === STAGE.seed) {
       // A seed waits for good ground; in poor ground it gives up after a while.
       p.low = suit < 0.3 ? p.low + 1 : 0;
-      if (p.low > G.seedDieHours) continue;
+      if (p.low > G.seedDieHours) { lose(p.sp, 'seed'); continue; }
       if (p.age >= G.stages.sproutH && suit >= 0.3) p.size = Math.max(p.size, 0.05);
     } else {
       p.size += G.ratePerH * G.seasonRate[season] * suit * (1 - p.size);
@@ -284,11 +286,16 @@ export function coarseStep(state, hourIndex, env) {
       if (p.low > G.lowHours) p.size = Math.max(G.floor * p.best, p.size - G.shrinkPerH);
     }
     p.drown = ground && ground.depth > G.drownDepthM ? p.drown + 1 : 0;
-    if (p.drown > G.drownHours || !ground) continue;
+    if (p.drown > G.drownHours) { lose(p.sp, 'drown'); continue; }
+    if (!ground) { lose(p.sp, 'outside'); continue; }
     p.stage = p.size <= 0 ? STAGE.seed : stageOf(rec, p, pos);
     alive.push(p);
   }
   g.plants = alive;
+  for (const [key, count] of lost) {
+    const [sp, why] = key.split('|');
+    events.push({ name: 'growth:lost', payload: { species: sp, why, count } });
+  }
 
   // Spread: a rhizome creeps along the best of eight bearings; a dropped seed lands on the one
   // bearing it rolled, and takes only if the ground there is good.
@@ -319,7 +326,9 @@ export function coarseStep(state, hourIndex, env) {
   }
   if (born.length) {
     g.plants = [...g.plants, ...born];
-    events.push({ name: 'growth:spread', payload: { count: born.length } });
+    /** @type {Record<string, number>} */ const bySpecies = {};
+    for (const q of born) bySpecies[q.sp] = (bySpecies[q.sp] ?? 0) + 1;
+    events.push({ name: 'growth:spread', payload: { count: born.length, bySpecies } });
   }
 
   // Grass cover: toward what the ground supports, a share of the gap each hour (integers).

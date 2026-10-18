@@ -38,6 +38,18 @@ Size and color come from CSS: set `width`/`height` on `.icon` and `color` on the
 | `lilies` | notched lily pad seen low on a wavy water line, a cup flower of pointed petals on it: species chip |
 | `iris` | fan of three sword leaves and a flower on a stalk with three drooping falls: species chip |
 | `thrift` | low cushion on the ground line with three stalks topped by round pompoms: species chip |
+| `grass` | five blades of different heights on the ground line: the grass journal page |
+| `journal` | bound book with a ribbon marker and a pressed leaf on the cover: the journal button |
+| `season-spring`, `season-summer`, `season-autumn`, `season-winter` | a bud, a sun, a falling leaf, a frost star: the journal's season boxes |
+| `soil`, `sand`, `rock`, `moss`, `shore` | a mound with clods and a sprout, wind ripples, a faceted boulder, soft cushions, waves over a sandy curve: the journal's Ground pages |
+| `almanac` | a calendar page with a crescent moon: the journal's Almanac |
+| `find` | a looking glass: a journal page's Show me |
+| `moment-flower`, `moment-rain`, `moment-dusk`, `moment-dawn`, `moment-mist` | a five-petal flower, a raining cloud, a sun setting, a sun rising, drifting mist: the journal's moment frames |
+| `notes` | page with a folded corner and three written lines: the journal's Notes section |
+| `unknown` | a circle drawn in short pencil dashes: a living thing not seen yet |
+| `close` | two crossing strokes: close a panel or card |
+| `back` | a chevron pointing left: back to a list |
+| `chevron` | a chevron pointing up (turned over by CSS to point down): the phone sheet's taller or shorter |
 | `undo` | curved arrow to the left |
 | `redo` | the mirror of undo |
 | `raise` | mound with an up stroke |

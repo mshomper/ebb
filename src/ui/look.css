@@ -1,5 +1,5 @@
-/* Look button (src/ui/look.js). Top right (docs/15), the same night glass as the tool bar and the
-   time-flow button. Under 420 px wide only the icon shows, so it never meets the build badge at
+/* Look button (src/ui/look.js). Top right (docs/15), beside the journal's book button, the same
+   night glass as the tool bar and the time-flow button. Under 420 px wide only the icon shows, so it never meets the build badge at
    the top left. */
 
 .ebb-look {
@@ -9,11 +9,12 @@
 
   position: fixed;
   top: max(var(--lk-edge), env(safe-area-inset-top));
-  right: max(var(--lk-edge), env(safe-area-inset-right));
+  /* Left of the journal's book button (journal.css), which has the corner. */
+  right: calc(max(var(--lk-edge), env(safe-area-inset-right)) + var(--lk-btn) + 8px);
   z-index: 10;
   pointer-events: none;
   /* Never wider than half the screen, so the badge at the top left keeps its side. */
-  max-width: calc(50vw - var(--lk-edge));
+  max-width: calc(50vw - var(--lk-edge) - var(--lk-btn) - 8px);
 }
 
 @media (pointer: coarse) {
