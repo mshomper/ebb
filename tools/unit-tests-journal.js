@@ -13,6 +13,7 @@ import { groundKind, groundCard, groundSurvey, describeGround } from '../src/wor
 import { almanac } from '../src/world/journal/almanac.js';
 import { inkWeb, describeWeb } from '../src/world/journal/web.js';
 import { webView } from '../src/ui/journal-web.js';
+import { washMap } from '../src/world/journal/wash.js';
 import { STAGE } from '../src/world/growth/coarse.js';
 import { WORLD_CELLS } from '../src/world/terrain/grid.js';
 import { shoreline, at, loadRecipes } from './unit-tests-growth.js';
@@ -309,6 +310,32 @@ export function addJournalTests(test, assert, eq) {
     assert(!/NaN|undefined/.test(svg), 'the drawing is clean');
     for (const id of ['frogs', 'midges']) assert(!svg.includes(`>${web.nodes[id].label}<`), `${id} is a ? on a new island`);
     return `widest row ${W.toFixed(0)} units; names at ${phonePx.toFixed(1)} px on a phone`;
+  });
+
+  test(JOURNAL, 'the wash: where it lives, where it would do well, and pencil circles for the unseen', async () => {
+    const { words, state, first, hab, recipes } = await setup();
+    const island = await loadIsland();
+    const wash = await fetch('../recipes/world/journal-wash.json').then((r) => r.json());
+    const mat = soilEverywhere();
+    const ctx = { state, hab, material: mat, island, flora: recipes.flora, words, journal: first.journal, wash };
+    const count = (/** @type {any} */ m, /** @type {number} */ ch) => { let c = 0; for (let k = ch; k < m.data.length; k += 2) if (m.data[k] > 128) c++; return c; };
+    const reeds = washMap('reeds', ctx);
+    assert(reeds && reeds.n === hab.n * 2 && reeds.cell === 0.5, 'a half-meter map over the habitat');
+    assert(count(reeds, 0) > 0, 'reeds wash where reeds grow');
+    eq(reeds?.circles.length, 0, 'no pencil circles for a species already seen');
+    const p = state.growth.plants.find((/** @type {any} */ q) => q.sp === 'reeds');
+    const at2 = (/** @type {number} */ x, /** @type {number} */ z) => (Math.floor((z - reeds.origin) * 2) * reeds.n + Math.floor((x - reeds.origin) * 2)) * 2;
+    assert(reeds.data[at2(p.x, p.z)] > 200, 'full wash on a reed clump');
+    const fresh = { ...first.journal, species: {} };
+    const unseen = washMap('iris', { ...ctx, journal: fresh });
+    eq(count(unseen, 0) + count(unseen, 1), 0, 'nothing washed for a species not yet seen');
+    assert(unseen && unseen.circles.length >= 1 && unseen.circles.length <= wash.circles, `pencil circles: ${unseen?.circles.length}`);
+    for (const c of unseen?.circles ?? []) eq(c[2], wash.circleM / 2, 'circle radius');
+    eq(JSON.stringify(washMap('iris', { ...ctx, journal: fresh })?.circles), JSON.stringify(unseen?.circles), 'the same circles twice');
+    const shore = washMap('shore', ctx);
+    assert(shore && count(shore, 0) === 0, 'no tide band on this habitat, so no shore wash (the open sea is never washed)');
+    eq(washMap('web', ctx), null, 'a page with no place on the island');
+    return `reeds ${count(reeds, 0)} half-meter squares, would do well ${count(reeds, 1)}; ${unseen?.circles.length} pencil circles for unseen iris`;
   });
 
   test(JOURNAL, 'a tap names the nearest plant, or grass, or nothing', async () => {

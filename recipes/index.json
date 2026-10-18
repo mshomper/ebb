@@ -21,6 +21,7 @@
     "world/journal": "world/journal.json",
     "world/journal-island": "world/journal-island.json",
     "world/journal-web": "world/journal-web.json",
+    "world/journal-wash": "world/journal-wash.json",
     "palettes/dusk": "palettes/dusk.json",
     "palettes/meadow-morning": "palettes/meadow-morning.json"
   }

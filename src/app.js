@@ -6,7 +6,7 @@
 import { initGpu, onDeviceLost } from './core/gpu.js';
 import * as clock from './core/clock.js';
 import { flushDeferred, emitDeferred, on } from './core/events.js';
-import { get as getStore, update as updateStore } from './core/store.js';
+import { get as getStore, update as updateStore, subscribe as subscribeStore } from './core/store.js';
 import { loadRecipe } from './core/recipes.js';
 import { subSeed } from './core/rng.js';
 import { pickTier, probeResult, settingsFor } from './render/quality.js';
@@ -175,6 +175,9 @@ export async function startApp(canvas, hooks = {}) {
   let groundRequested = false;
   const bloom = createBloomPass({ levels: tierSettings.bloomLevels, mix: postRecipe.bloom.mix, radius: postRecipe.bloom.radius, karis: postRecipe.bloom.karis });
   const tonemap = createTonemapPass({ bloom, luts: baker.views, recipe: postRecipe });
+  // The journal's show-where wash (store slice `wash`, src/world/journal/wash.js), painted last.
+  tonemap.setWash(getStore('wash') ?? null);
+  const unWash = subscribeStore('wash', (/** @type {any} */ w) => tonemap.setWash(w));
 
   const terrainPass = createTerrainPass({
     terrain, recipe: terrainRecipe, seed: subSeed(seed, 'terrain-look'), getEye: () => camera.eye, tier,
@@ -567,6 +570,7 @@ export async function startApp(canvas, hooks = {}) {
     unAction();
     unHistory();
     unHour();
+    unWash();
     ww.dispose();
     unProbe();
     detachDesktop();

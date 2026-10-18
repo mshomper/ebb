@@ -1,0 +1,20 @@
+{
+  "type": "journal-wash",
+  "version": 1,
+  "note": "The journal's show-where wash (J2b, docs 13, 05): opening a page washes the island in one journal ink, painted after the palette. ink: the wash color (display sRGB hex), the same for every page so a growing cast stays in harmony. liveAlpha: how strongly it covers where the page's thing lives now; wellAlpha: the pale wash where a known species would do well but does not grow yet. edgePx and edgeAlpha: the inked line around where it lives, in pixels at 1440 px tall. plantM: the wash around one full-grown plant (a seed gets 60 percent). fadeS: the fade in and out when a page opens or closes. For a species not yet seen, nothing is washed: circles (at most this many) are drawn in pencil (pencil, circleAlpha, circleWidthPx at 1440 px, dashes per ring) around the best places it would do well, circleM across, each nudged nudgeM off the spot so they hint rather than tell, and at least apartM apart.",
+  "ink": "#B8653A",
+  "liveAlpha": 0.42,
+  "wellAlpha": 0.16,
+  "edgePx": 2.2,
+  "edgeAlpha": 0.85,
+  "plantM": 3,
+  "fadeS": 0.45,
+  "pencil": "#4A4843",
+  "circles": 3,
+  "circleM": 3.2,
+  "nudgeM": 1.8,
+  "apartM": 9,
+  "circleAlpha": 0.75,
+  "circleWidthPx": 2,
+  "dashes": 16
+}
