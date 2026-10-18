@@ -24,6 +24,21 @@ const gSpeed = /** @type {HTMLCanvasElement} */ ($('g-speed'));
 const bHollow = /** @type {HTMLButtonElement} */ ($('b-hollow'));
 const bMound = /** @type {HTMLButtonElement} */ ($('b-mound'));
 
+// Optics buttons: reload with one effect off (or a debug view), keeping any tier choice.
+const OPTICS_KEYS = ['ssr', 'probe', 'caustics', 'waterdbg'];
+for (const b of /** @type {NodeListOf<HTMLButtonElement>} */ (document.querySelectorAll('#optics button'))) {
+  const here = new URLSearchParams(location.search);
+  const want = new URLSearchParams(b.dataset.q ?? '');
+  const active = OPTICS_KEYS.every((k) => here.get(k) === want.get(k));
+  if (active) b.disabled = true;
+  b.addEventListener('click', () => {
+    const q = new URLSearchParams(location.search);
+    for (const k of OPTICS_KEYS) q.delete(k);
+    for (const [k, v] of want) q.set(k, v);
+    location.search = q.toString();
+  });
+}
+
 /** @typedef {{ t: number, vol: number, speed: number, tide: number }} Sample */
 /** @type {Sample[]} */ const samples = [];
 /** @type {number[]} */ const simMs = [];

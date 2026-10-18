@@ -15,9 +15,14 @@
 //   sh             GPUBuffer, 9 x vec4f: sky + ground irradiance SH9 pre-convolved with the cosine lobe and
 //                  divided by pi, so lib-sky skyAmbient(n) is nits for albedo 1 (not pre-exposed).
 //   state          GPUBuffer, SkyState (64 bytes): overcast dome, sky irradiance, ground radiance, sun at ground.
+//   probe          cube (2d, 6 layers +X -X +Y -Y +Z -Z) rgba16float, 64² (32² on medium and low), full mip
+//                  chain, nits * SKY_LUT_SCALE. Sky-view LUT plus overcast dome plus ground hemisphere, no
+//                  sun, moon or stars; mip m is GGX-prefiltered for perceptual roughness m / (mips - 1).
+//                  Rebuilt every frame after sh-project. Sampling rules: src/shaders/lib-probe.wgsl.
 // Nothing here is pre-exposed; the sky draw and applyAerial multiply by frame.exposure.
 
 import { makeShaderModule, makeBuffer, makeTexture, untrack } from '../../core/gpu.js';
+import { emit } from '../../core/events.js';
 import { DAYS_PER_SEASON, SEASONS_PER_YEAR } from '../../core/clock.js';
 import { aerosolScaleFor, atmosphereCoefficients } from './atmosphere-cpu.js';
 
@@ -27,6 +32,8 @@ const SKY_UNIFORM_BYTES = 288;
 const SH_BYTES = 9 * 16;
 const STATE_BYTES = 64;
 const REBUILD_MS = 1000;
+/** One ProbeParams (16 bytes) per probe mip, each at a uniform-offset-aligned slot. */
+const PROBE_PARAM_STRIDE = 256;
 /** Radiance landing on mid-gray at the EV100 -1 night floor (docs/05): 0.18 * 1.2 * 2^-1 nits. */
 const NIGHT_FLOOR_MID_NITS = 0.108;
 
@@ -46,15 +53,17 @@ const smooth = (/** @type {number} */ a, /** @type {number} */ b, /** @type {num
  * @property {Float32Array} [view]                 unused, accepted for symmetry with FrameUniforms
  * @property {{ querySet: GPUQuerySet, beginIndex: number, endIndex: number }} [timestamps]  whole sky compute work
  * @property {{ querySet: GPUQuerySet, base: number }} [stageTimestamps]  debug: one pass per stage, 2 queries each
- *   in run order (transmittance, multiscatter when rebuilding, then sky-view, sh-project, aerial)
+ *   in run order (transmittance, multiscatter when rebuilding, then sky-view, sh-project, sky-probe with all
+ *   its mips in one pass, aerial)
  */
 
 /** @param {any} tier 'high'|'medium'|'low' or a quality-tiers.json tier object */
 function tierSettings(tier) {
   if (tier && typeof tier === 'object') {
-    return { skyViewScale: tier.skyViewLut === 'half' ? 0.5 : 1, aerialSlices: tier.aerialVolume ?? 32 };
+    return { skyViewScale: tier.skyViewLut === 'half' ? 0.5 : 1, aerialSlices: tier.aerialVolume ?? 32, probeSize: tier.skyProbeSize ?? 64 };
   }
-  return tier === 'low' ? { skyViewScale: 0.5, aerialSlices: 16 } : { skyViewScale: 1, aerialSlices: 32 };
+  if (tier === 'low') return { skyViewScale: 0.5, aerialSlices: 16, probeSize: 32 };
+  return { skyViewScale: 1, aerialSlices: 32, probeSize: tier === 'medium' ? 32 : 64 };
 }
 
 /**
@@ -80,14 +89,27 @@ export async function createAtmosphere(device, recipe, tier) {
   const sh = makeBuffer(device, { label: 'sky-sh9', size: SH_BYTES, usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST });
   const state = makeBuffer(device, { label: 'sky-state', size: STATE_BYTES, usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC });
 
+  // Sky probe: full mip chain down to 1 px, one params slot per mip.
+  const probeSize = ts.probeSize;
+  const probeMips = Math.floor(Math.log2(probeSize)) + 1;
+  const probe = makeTexture(device, {
+    label: 'sky-probe', size: [probeSize, probeSize, 6], dimension: '2d', mipLevelCount: probeMips, format: 'rgba16float', usage: storageTex,
+  });
+  const probeParamBuf = makeBuffer(device, { label: 'sky-probe-params', size: probeMips * PROBE_PARAM_STRIDE, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
+
   const lutSampler = device.createSampler({ label: 'sky-lut', magFilter: 'linear', minFilter: 'linear', addressModeU: 'clamp-to-edge', addressModeV: 'clamp-to-edge', addressModeW: 'clamp-to-edge' });
   const skySampler = device.createSampler({ label: 'sky-view', magFilter: 'linear', minFilter: 'linear', addressModeU: 'repeat', addressModeV: 'clamp-to-edge' });
+  const probeSampler = device.createSampler({
+    label: 'sky-probe', magFilter: 'linear', minFilter: 'linear', mipmapFilter: 'linear',
+    addressModeU: 'clamp-to-edge', addressModeV: 'clamp-to-edge', addressModeW: 'clamp-to-edge',
+  });
 
   const C = GPUShaderStage.COMPUTE;
   const uni = (/** @type {number} */ binding) => ({ binding, visibility: C, buffer: { type: /** @type {const} */ ('uniform') } });
   const tex = (/** @type {number} */ binding) => ({ binding, visibility: C, texture: { sampleType: /** @type {const} */ ('float') } });
   const smp = (/** @type {number} */ binding) => ({ binding, visibility: C, sampler: { type: /** @type {const} */ ('filtering') } });
   const out2d = (/** @type {number} */ binding) => ({ binding, visibility: C, storageTexture: { access: /** @type {const} */ ('write-only'), format: /** @type {const} */ ('rgba16float') } });
+  const probeOut = { binding: 4, visibility: C, storageTexture: { access: /** @type {const} */ ('write-only'), format: /** @type {const} */ ('rgba16float'), viewDimension: /** @type {const} */ ('2d-array') } };
 
   const layouts = {
     trans: device.createBindGroupLayout({ label: 'sky-transmittance', entries: [uni(0), out2d(1)] }),
@@ -102,18 +124,32 @@ export async function createAtmosphere(device, recipe, tier) {
         { binding: 5, visibility: C, buffer: { type: 'read-only-storage' } },
         { binding: 6, visibility: C, storageTexture: { access: 'write-only', format: 'rgba16float', viewDimension: '3d' } }],
     }),
+    // sky-probe.wgsl: probeBase reads bindings 0-5, probePrefilter reads 4-7.
+    probeBase: device.createBindGroupLayout({
+      label: 'sky-probe-base', entries: [uni(0), tex(1), smp(2), { binding: 3, visibility: C, buffer: { type: 'read-only-storage' } }, probeOut, uni(5)],
+    }),
+    probeMip: device.createBindGroupLayout({
+      label: 'sky-probe-mip', entries: [probeOut, uni(5),
+        { binding: 6, visibility: C, texture: { sampleType: 'float', viewDimension: 'cube' } }, smp(7)],
+    }),
   };
 
-  /** @param {string} name @param {GPUBindGroupLayout} layout */
-  async function pipeline(name, layout) {
-    const module = await makeShaderModule(device, name);
+  /**
+   * @param {string} name @param {GPUBindGroupLayout} layout
+   * @param {string} [entryPoint] @param {Promise<GPUShaderModule>} [modulePromise]  share one module between entry points
+   */
+  async function pipeline(name, layout, entryPoint = 'main', modulePromise) {
+    const module = await (modulePromise ?? makeShaderModule(device, name));
     return device.createComputePipelineAsync({
-      label: name, layout: device.createPipelineLayout({ bindGroupLayouts: [layout] }), compute: { module, entryPoint: 'main' },
+      label: entryPoint === 'main' ? name : `${name}-${entryPoint}`,
+      layout: device.createPipelineLayout({ bindGroupLayouts: [layout] }), compute: { module, entryPoint },
     });
   }
-  const [pTrans, pMs, pView, pSh, pAerial] = await Promise.all([
+  const probeModule = makeShaderModule(device, 'sky-probe');
+  const [pTrans, pMs, pView, pSh, pAerial, pProbeBase, pProbeMip] = await Promise.all([
     pipeline('sky-transmittance', layouts.trans), pipeline('sky-multiscatter', layouts.ms),
     pipeline('sky-view', layouts.view), pipeline('sh-project', layouts.sh), pipeline('sky-aerial', layouts.aerial),
+    pipeline('sky-probe', layouts.probeBase, 'probeBase', probeModule), pipeline('sky-probe', layouts.probeMip, 'probePrefilter', probeModule),
   ]);
 
   const tv = transmittance.createView();
@@ -137,6 +173,53 @@ export async function createAtmosphere(device, recipe, tier) {
       { binding: 2, resource: tv }, { binding: 3, resource: mv }, { binding: 4, resource: lutSampler },
       { binding: 5, resource: { buffer: state } }, { binding: 6, resource: aerial.createView({ dimension: '3d' }) }] }),
   };
+
+  // Probe: mip 0 from the sky, then mip m from a cube view of mip m - 1 alone, one bind group each.
+  const probeView = probe.createView({ label: 'sky-probe-cube', dimension: 'cube' });
+  const probeStore = (/** @type {number} */ m) => probe.createView({ dimension: '2d-array', baseMipLevel: m, mipLevelCount: 1 });
+  const probeSlot = (/** @type {number} */ m) => ({ buffer: probeParamBuf, offset: m * PROBE_PARAM_STRIDE, size: 16 });
+  const probeFace = (/** @type {number} */ m) => Math.max(1, probeSize >> m);
+  /** @type {[GPUComputePipeline, GPUBindGroup, number, number, number][]} */
+  const probeSteps = [[pProbeBase, device.createBindGroup({ label: 'sky-probe-base', layout: layouts.probeBase, entries: [
+    { binding: 0, resource: { buffer: skyBuf } }, { binding: 1, resource: sv }, { binding: 2, resource: skySampler },
+    { binding: 3, resource: { buffer: state } }, { binding: 4, resource: probeStore(0) }, { binding: 5, resource: probeSlot(0) }] }),
+  Math.ceil(probeSize / 8), Math.ceil(probeSize / 8), 6]];
+  for (let m = 1; m < probeMips; m++) {
+    const g = device.createBindGroup({ label: `sky-probe-mip${m}`, layout: layouts.probeMip, entries: [
+      { binding: 4, resource: probeStore(m) }, { binding: 5, resource: probeSlot(m) },
+      { binding: 6, resource: probe.createView({ dimension: 'cube', baseMipLevel: m - 1, mipLevelCount: 1 }) },
+      { binding: 7, resource: probeSampler }] });
+    probeSteps.push([pProbeMip, g, Math.ceil(probeFace(m) / 8), Math.ceil(probeFace(m) / 8), 6]);
+  }
+
+  // Per-mip ProbeParams (alpha, samples, faceSize, horizonSin), rewritten only when the recipe changes.
+  const probeBytes = new ArrayBuffer(probeMips * PROBE_PARAM_STRIDE);
+  const probeF32 = new Float32Array(probeBytes);
+  const probeU32 = new Uint32Array(probeBytes);
+  let probeKey = '';
+  function writeProbeParams() {
+    const pr = recipe.probe ?? {};
+    const samples = Math.max(1, Math.round(pr.prefilterSamples ?? 32));
+    const blendDeg = Math.max(0.1, pr.horizonBlendDeg ?? 3);
+    const key = `${samples}|${blendDeg}`;
+    if (key === probeKey) return;
+    probeKey = key;
+    // Perceptual roughness r = m / (mips - 1), GGX alpha = r^2; mip m adds the alpha^2 that mip m - 1 lacks.
+    const alpha = (/** @type {number} */ k) => (k / Math.max(1, probeMips - 1)) ** 2;
+    for (let m = 0; m < probeMips; m++) {
+      const o = (m * PROBE_PARAM_STRIDE) / 4;
+      probeF32[o] = m === 0 ? 0 : Math.sqrt(Math.max(alpha(m) ** 2 - alpha(m - 1) ** 2, 0));
+      probeU32[o + 1] = samples;
+      probeU32[o + 2] = probeFace(m);
+      probeF32[o + 3] = Math.sin(blendDeg * DEG);
+    }
+    device.queue.writeBuffer(probeParamBuf, 0, probeBytes);
+  }
+
+  // Lets tools/sky-lab.html draw the probe faces on the same device (debug only; nothing in the game listens).
+  emit('sky:probe-ready', {
+    device, probe, probeView, probeSampler, probeMips, probeSize, skyView, skySampler, uniforms: skyBuf, state,
+  });
 
   // ---- Weather and rebuild throttling ----
   const weather = { cloud: 0, mist: 0, rain: 0, frost: 0 };
@@ -238,25 +321,36 @@ export async function createAtmosphere(device, recipe, tier) {
       lastBuild = now;
     }
     writeSkyUniforms(frame);
+    writeProbeParams();
 
-    /** @type {[GPUComputePipeline, GPUBindGroup, number, number][]} */
+    // Each stage is one or more dispatches [pipeline, group, x, y, z]; the probe is one stage of all its mips.
+    /** @typedef {[GPUComputePipeline, GPUBindGroup, number, number, number]} Step */
+    /** @type {{ label: string, steps: Step[] }[]} */
     const stages = [];
-    if (rebuild) stages.push([pTrans, groups.trans, 32, 8], [pMs, groups.ms, 32, 32]);
+    if (rebuild) {
+      stages.push({ label: 'sky-transmittance', steps: [[pTrans, groups.trans, 32, 8, 1]] },
+        { label: 'sky-multiscatter', steps: [[pMs, groups.ms, 32, 32, 1]] });
+    }
     stages.push(
-      [pView, groups.view, Math.ceil(svW / 8), Math.ceil(svH / 8)],
-      [pSh, groups.sh, 1, 1],
-      [pAerial, groups.aerial, (slices * slices * slices) / 64, 1],
+      { label: 'sky-view', steps: [[pView, groups.view, Math.ceil(svW / 8), Math.ceil(svH / 8), 1]] },
+      { label: 'sh-project', steps: [[pSh, groups.sh, 1, 1, 1]] },
+      { label: 'sky-probe', steps: probeSteps },
+      { label: 'sky-aerial', steps: [[pAerial, groups.aerial, (slices * slices * slices) / 64, 1, 1]] },
     );
+    /** @param {GPUComputePassEncoder} pass @param {Step[]} steps */
+    const run = (pass, steps) => {
+      for (const [p, g, x, y, z] of steps) { pass.setPipeline(p); pass.setBindGroup(0, g); pass.dispatchWorkgroups(x, y, z); }
+    };
     const t = frame.timestamps;
     const per = frame.stageTimestamps;
     if (per) {
       // Debug timing: one compute pass per stage, queries at base + 2 * stage index in run order.
-      stages.forEach(([p, g, x, y], i) => {
+      stages.forEach(({ label, steps }, i) => {
         const pass = encoder.beginComputePass({
-          label: `sky-${p.label}`,
+          label: `sky-${label}`,
           timestampWrites: { querySet: per.querySet, beginningOfPassWriteIndex: per.base + 2 * i, endOfPassWriteIndex: per.base + 2 * i + 1 },
         });
-        pass.setPipeline(p); pass.setBindGroup(0, g); pass.dispatchWorkgroups(x, y); pass.end();
+        run(pass, steps); pass.end();
       });
       return;
     }
@@ -264,14 +358,15 @@ export async function createAtmosphere(device, recipe, tier) {
       label: 'sky-luts',
       timestampWrites: t ? { querySet: t.querySet, beginningOfPassWriteIndex: t.beginIndex, endOfPassWriteIndex: t.endIndex } : undefined,
     });
-    for (const [p, g, x, y] of stages) { pass.setPipeline(p); pass.setBindGroup(0, g); pass.dispatchWorkgroups(x, y); }
+    for (const { steps } of stages) run(pass, steps);
     pass.end();
   }
 
   function dispose() {
-    for (const t of [transmittance, multiScatter, skyView, aerial]) t.destroy();
-    for (const b of [paramBuf, skyBuf, sh, state]) b.destroy();
-    for (const l of ['sky-transmittance', 'sky-multiscatter', 'sky-view', 'sky-aerial', 'sky-atmosphere-params', 'sky-uniforms', 'sky-sh9', 'sky-state']) untrack(l);
+    for (const t of [transmittance, multiScatter, skyView, aerial, probe]) t.destroy();
+    for (const b of [paramBuf, skyBuf, sh, state, probeParamBuf]) b.destroy();
+    for (const l of ['sky-transmittance', 'sky-multiscatter', 'sky-view', 'sky-aerial', 'sky-probe', 'sky-atmosphere-params',
+      'sky-uniforms', 'sky-sh9', 'sky-state', 'sky-probe-params']) untrack(l);
   }
 
   return {
@@ -290,6 +385,14 @@ export async function createAtmosphere(device, recipe, tier) {
     get aerialMaxDistance() { return recipe.aerial.maxDistance; },
     get aerialSlices() { return slices; },
     get skyViewSize() { return /** @type {[number, number]} */ ([svW, svH]); },
+    /** Sky probe cube texture (6 layers, probeMips mips); sample through probeView (lib-probe.wgsl). */
+    get probe() { return probe; },
+    /** Cube view over all probe mips: texture_cube<f32>, sampleType 'float', viewDimension 'cube'. */
+    get probeView() { return probeView; },
+    /** Linear min, mag and mip filtering, clamp to edge ('filtering' sampler). */
+    get probeSampler() { return probeSampler; },
+    /** Mip count; mip m is perceptual roughness m / (probeMips - 1), see probeLod in lib-probe.wgsl. */
+    get probeMips() { return probeMips; },
     /** Ground aerosol multiplier the current LUTs were built with; pass it to transmittanceToLight. */
     get aerosolScale() { return Number.isNaN(builtScale) ? aerosolScaleFor(recipe, weather, [0, 1, 0]) : builtScale; },
     get weather() { return { ...weather }; },

@@ -3,7 +3,8 @@
 // between LODs; heights come from the height texture in the vertex shader. Materials blend by
 // weight with a little height-style sharpening; steep slopes turn to rock and the shore band to sand.
 // Lighting is physical (lib-lighting: sun and moon with shadows, sky SH fill, aerial perspective);
-// no palette colors here (docs/05). Water and the sea are drawn by the water pass (water-draw.wgsl).
+// no palette colors here (docs/05). Water and the sea are drawn by the water pass (water-draw.wgsl);
+// the bed under them gets its caustics here, where the live water depth is already read.
 
 // #include common
 // #include lib-hash
@@ -13,6 +14,7 @@
 // #include lib-lighting
 // #include lib-ground
 // #include lib-water
+// #include lib-caustics
 
 struct TerrainDraw {
   albedoGrass: vec3f, variation: f32,
@@ -27,6 +29,7 @@ struct TerrainDraw {
   shallowDepth: f32, seed: u32, tide: f32, dampWet: f32,   // tide: sea level now (m); dampWet: damp hollow wetness
   albedoSilt: vec3f, siltCover: f32,    // the fine mud that settles on pond beds; most of the bed it covers
   bedDepth: vec2f, siltDepth: vec2f,    // water depths (m) over which grass gives way to a bare bed, and silt settles
+  caustics: Caustics,                   // lib-caustics.wgsl
 };
 
 @group(0) @binding(0) var<uniform> frame: FrameUniforms;
@@ -42,6 +45,7 @@ struct TerrainDraw {
 @group(2) @binding(9) var waterDepth: texture_2d<f32>;   // live water depth (m), water-depth.wgsl
 @group(2) @binding(10) var dampHollows: texture_2d<f32>; // the water summary's damp hollows (r8unorm, 0.5 m)
 @group(2) @binding(11) var mossTex: texture_2d<f32>;     // moss cover 0..1 (r8unorm, 0.5 m), moss-live.js
+@group(2) @binding(12) var waterVel: texture_2d<f32>;    // live water velocity (rg32float, m/s, x and z)
 
 // How soaked the ground is from live water nearby: 1 under water, fading out over about 0.75 m of
 // bank (capillary rise). The visual wetness pass (S4c) adds drying over time and the tide flats.
@@ -70,6 +74,19 @@ fn waterDepthAt(xz: vec2f) -> f32 {
   let d01 = textureLoad(waterDepth, clamp(c + vec2i(0, 1), vec2i(0), hi), 0).r;
   let d11 = textureLoad(waterDepth, clamp(c + vec2i(1, 1), vec2i(0), hi), 0).r;
   return mix(mix(d00, d10, f.x), mix(d01, d11, f.x), f.y);
+}
+
+// Live water velocity (m/s, x and z) here, bilinear between the 0.5 m cells.
+fn waterVelAt(xz: vec2f) -> vec2f {
+  let g = waterCellCoord(xz);
+  let c = vec2i(floor(g));
+  let f = g - floor(g);
+  let hi = vec2i(WATER_CELLS - 1);
+  let v00 = textureLoad(waterVel, clamp(c, vec2i(0), hi), 0).rg;
+  let v10 = textureLoad(waterVel, clamp(c + vec2i(1, 0), vec2i(0), hi), 0).rg;
+  let v01 = textureLoad(waterVel, clamp(c + vec2i(0, 1), vec2i(0), hi), 0).rg;
+  let v11 = textureLoad(waterVel, clamp(c + vec2i(1, 1), vec2i(0), hi), 0).rg;
+  return mix(mix(v00, v10, f.x), mix(v01, v11, f.x), f.y);
 }
 
 // Second target (normalId, rgb10a2unorm): octahedral world normal in RG, water flag in B,
@@ -112,6 +129,7 @@ fn ringAlpha(xz: vec2f) -> f32 {
 fn fsLand(in: VsOut) -> FsOut {
   let xz = in.world.xz;
   let y = in.world.y;
+  let fw = fwidth(xz);   // world size of this pixel, for filtering the caustic lines
   let n = terrainNormal(heightTex, xz);
   var w = textureSampleLevel(materialTex, linearSampler, terrainUv(xz), 0.0); // grass, sand, rock, soil
 
@@ -177,7 +195,16 @@ fn fsLand(in: VsOut) -> FsOut {
   // Moss is already a damp surface; its color changes less when wet than bare soil does.
   albedo *= mix(1.0, td.wetDarkening, wet * (1.0 - 0.6 * moss));
 
-  var color = shadeGround(albedo, in.world, n, gd.normal, gd.roughness, gd.cavity, in.pos, ground.terminator, ground.f0, ground.specMode);
+  // Caustics (lib-caustics): focused sun on the bed under live water, or moon at night. They scale
+  // only direct light, so they are gone in shadow and nearly so by moonlight.
+  let toLight = select(frame.moonDir, frame.sunDir, frame.sunDir.y > 0.0);
+  var caustic = 1.0;
+  if (wdep > td.caustics.depthFade.x && toLight.y > 0.0 && td.caustics.look.y > 0.5) {
+    let entry = causticEntry(xz, toLight, wdep, td.caustics.motion.w);
+    caustic = causticLight(td.caustics, entry, waterVelAt(entry), wdep, max(fw.x, fw.y), frame.animTime, td.seed);
+  }
+
+  var color = shadeGround(albedo, in.world, n, gd.normal, gd.roughness, gd.cavity, in.pos, ground.terminator, ground.f0, ground.specMode, caustic);
   color = mix(color, td.ringColor, ringAlpha(xz));
   // normalId keeps the mesh normal, so pebbles and cracks never get outlines (docs/22).
   return FsOut(vec4f(color, 1.0), vec4f(octEncode(n), 0.0, 1.0 / 3.0));

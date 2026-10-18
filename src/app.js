@@ -167,14 +167,15 @@ export async function startApp(canvas, hooks = {}) {
   const terrainPass = createTerrainPass({
     terrain, recipe: terrainRecipe, seed: subSeed(seed, 'terrain-look'), getEye: () => camera.eye, tier,
     ground: groundDetail, groundTier: tierSettings.ground, getTide: () => water.tide, lodDistances: tierSettings.lodDistances,
-    water: { depthTextures: water.sim.depthTextures, current: () => water.sim.current, damp: water.sim.damp, dampWet: waterRecipe.look.dampHollowWet },
-    moss: moss.texture,
+    water: { depthTextures: water.sim.depthTextures, current: () => water.sim.current, damp: water.sim.damp, dampWet: waterRecipe.look.dampHollowWet,
+      vel: water.sim.vel, caustics: waterRecipe.caustics },
+    moss: moss.texture, causticLayers: tierSettings.causticLayers,
   });
   const waterPass = createWaterPass({
     water, terrain, atmosphere, recipe: waterRecipe, seaExtent: terrainRecipe.sea.extent, getTime: () => clock.animT(),
     seabed: { y: landRecipe.seabedDepth, albedo: terrainRecipe.materials.albedoSand.map((/** @type {number} */ a) => a * terrainRecipe.materials.wetDarkening),
       wetDarkening: terrainRecipe.materials.wetDarkening },
-    detailFadeM: tierSettings.waterDetailFadeM,
+    detailFadeM: tierSettings.waterDetailFadeM, ssr: tierSettings.waterSSR ?? null,
   });
   const graph = createFrameGraph(gpu, [
     shadowPass,
@@ -225,6 +226,7 @@ export async function startApp(canvas, hooks = {}) {
     tierSettings = settingsFor(t);
     terrainPass.setTier(tierSettings);
     waterPass.setDetailFade(tierSettings.waterDetailFadeM);
+    waterPass.setSSR(tierSettings.waterSSR ?? null);
     if (lastEntry) sizeCanvas(lastEntry);
     updateStore('settings', (s) => { s.quality = t; });
   }

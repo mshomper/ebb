@@ -78,6 +78,39 @@
     "dampHollowMinM2": 3,
     "dampHollowNote": "How wet the summary's damp hollows look (0 dry, 1 as soaked as a stream bank); hollows smaller than dampHollowMinM2 stay plain.",
     "riffle": { "note": "White water on fast, shallow flow: fades in over the speed range (m/s), gone in water deeper than depthM; coverage is the share of the surface that is white at full strength; streakM the streak size; albedo of the aerated water.", "speed": [0.25, 0.8], "depthM": 0.12, "coverage": 0.34, "streakM": 0.07, "albedo": 0.75 },
-    "flowNormalScale": 0.6
+    "flowNormalScale": 0.6,
+    "reflection": {
+      "note": "Island reflection (screen-space, high tiers; steps per tier in quality-tiers.json waterSSR). reachM: farthest a reflected ray looks for the island; thicknessM: how far behind a surface a ray may pass and still count as hitting it (grows 4% with distance); edgeFade: screen-edge fade width (uv); roughFade: water roughness range over which it gives way to the sky alone; startM: first step off the surface; rippleTilt: share of the ripple tilt the reflected ray follows (1 full: blotchy; lower: the bank wobbles but hangs together).",
+      "rippleTilt": 0.3,
+      "reachM": 90,
+      "thicknessM": 1.5,
+      "edgeFade": 0.08,
+      "roughFade": [0.2, 0.4],
+      "startM": 0.05
+    }
+  },
+  "caustics": {
+    "note": "Caustic lines on underwater ground (docs/07, lib-caustics.wgsl). They multiply direct sun and moon light on the bed and average 1, so they move light around without adding any; gone in shadow. strength: contrast at full depth (cells darken to 1 - strength, lines brighten to several times the light). Two layers (quality tier causticLayers; ?caustics=0 turns them off) of Voronoi ridge lines: scalesM cell size, scrollDirDeg and scrollSpeedMs the slow drift in still water (deg from +x toward +z), orbitSpeed how fast each cell point circles its spot (rad/s, varied per point), orbitRadius that circle in cells (keep at or under 0.2). lineWidth in cells. meanFit: the pattern's measured mean per layer, m(w) = a w + b w^2 for line width w in cells (fit for the default orbit; refit if orbitRadius changes a lot). Depth: faded in over fadeInM, shallowContrast of full contrast at the end of that fade rising to full at peakM, faded out over fadeOutM; lines widen by blurPerM of their width per meter past the peak. projection: how far the pattern shifts along the light with depth (1: refraction at n = 1.333). flowDrift: share of the water speed the pattern drifts with; flowPeriodS: the flow map's cycle. minLinePx: lines thinner than this many pixels widen and soften instead of shimmering.",
+    "strength": 0.35,
+    "scalesM": [0.22, 0.34],
+    "scrollDirDeg": [30, 205],
+    "scrollSpeedMs": [0.025, 0.015],
+    "orbitSpeed": [1.4, 1.1],
+    "orbitRadius": 0.18,
+    "lineWidth": 0.04,
+    "meanFit": [1.167, -0.411],
+    "fadeInM": [0.01, 0.05],
+    "shallowContrast": 0.4,
+    "peakM": 0.45,
+    "fadeOutM": [0.7, 2.0],
+    "blurPerM": 1.5,
+    "projection": 1.0,
+    "flowDrift": 1.0,
+    "flowPeriodS": 1.6,
+    "minLinePx": 1.5,
+    "warpCells": 1.4,
+    "brightnessDrift": 0.85,
+    "glow": 0.35,
+    "lookNote": "warpCells: a slow swirl that bends the cell walls into curved lines (cells); brightnessDrift: how much the brightness wanders along a line (0 even, 1 lines fade in and out). glow: a soft halo three times the line width, as a share of the bright core. The two layers add, so crossings glow brightest."
   }
 }

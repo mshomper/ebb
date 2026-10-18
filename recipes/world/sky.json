@@ -35,6 +35,11 @@
     "rainBoost": 2.0
   },
   "aerial": { "maxDistance": 400 },
+  "probe": {
+    "note": "Sky probe cube for reflections (docs/06, 07): face size per tier in quality-tiers.json skyProbeSize, full mip chain, mip m = perceptual roughness m / (mips - 1). prefilterSamples is the GGX sample count per texel for each blurred mip (more is smoother and slower; 16 to 64). horizonBlendDeg is how far below the horizon the sky fades into the ground hemisphere, so reflections show no seam.",
+    "prefilterSamples": 32,
+    "horizonBlendDeg": 3
+  },
   "stars": {
     "count": 4000,
     "brightnessAboveFloorEV": 3.0,

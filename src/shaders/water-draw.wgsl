@@ -1,5 +1,6 @@
 // Water drawing (docs/07, Shading), after the opaque pass and before the sky. Physically based:
-//   reflection   the clear-sky view LUT (with the overcast dome) in the reflected direction,
+//   reflection   the island itself where a screen-space march along the reflected ray finds it in
+//                the scene copy (high tiers), else the clear-sky view LUT (with the overcast dome),
 //                plus GGX sun and moon glints; Schlick Fresnel with F0 0.02 (n = 1.333)
 //   refraction   the opaque scene copy, offset by the surface normal and rejected where the
 //                offset sample lies in front of the water
@@ -17,6 +18,7 @@
 // #include lib-terrain
 // #include lib-lighting
 // #include lib-water
+// #include lib-probe
 
 struct WaterDraw {
   rectOrigin: vec2u,          // simulated rect (water cells); the mesh covers its interior
@@ -37,12 +39,15 @@ struct WaterDraw {
   floorSlope: f32,            // how fast the open sea floor deepens beyond it (m per m)
   seabed: vec4f,              // rgb wet sand albedo for the sea floor beyond the terrain, w wet darkening
   filmDepth: vec4f,            // xy depth range (m) over which a broken film becomes a coherent surface
-  debugView: f32,             // ?waterdbg=1 sea or grid, 2 reflection, 3 transmitted, 4 Fresnel/path/depth
+  debugView: f32,             // ?waterdbg=1 sea or grid, 2 reflection, 3 transmitted, 4 Fresnel/path/depth, 5 island hits
   detailFadeM: f32,           // ripples calm and move into roughness by this distance (quality tier)
   _q1: f32, _q2: f32,
   riffle: vec4f,              // white water: x, y speed range (m/s) it fades in over, z depth (m) it is gone by, w coverage
   riffle2: vec4f,             // x streak size (m), y white-water albedo
   scatterPond: vec4f,         // rgb single-scatter albedo of pond water (fine silt and peat stain it)
+  ssr: vec4f,                 // island reflection: x march steps (0 off), y refine steps, z reach (m), w hit thickness (m)
+  ssr2: vec4f,                // x screen-edge fade (uv), y, z roughness range it fades out over, w start offset (m)
+  ssr3: vec4f,                // x share of the ripple tilt the march follows, y 1 = sky from the probe
 };
 
 @group(0) @binding(0) var<uniform> frame: FrameUniforms;
@@ -57,6 +62,8 @@ struct WaterDraw {
 @group(2) @binding(8) var skySampler: sampler;
 @group(2) @binding(9) var<uniform> sky: SkyUniforms;
 @group(2) @binding(10) var<storage, read> skyState: SkyState;
+@group(2) @binding(11) var probeTex: texture_cube<f32>;   // sky probe (lib-probe.wgsl)
+@group(2) @binding(12) var probeSampler: sampler;
 
 const G: f32 = 9.81;
 
@@ -225,11 +232,67 @@ fn swell(xz: vec2f, t: f32) -> vec2f {
   return g;
 }
 
-fn skyRadiance(dir: vec3f) -> vec3f {
+// Sky in direction dir for water of perceptual roughness `rough`, nits: the sky probe at the mip
+// for that roughness (docs/06), or with ?probe=0 the sharp sky-view LUT for comparison.
+fn skyRadiance(dir: vec3f, rough: f32) -> vec3f {
+  if (wd.ssr3.y > 0.5) {
+    let levels = f32(textureNumLevels(probeTex));
+    return textureSampleLevel(probeTex, probeSampler, dir, probeLod(rough, levels)).rgb * PROBE_INV_SCALE;
+  }
   let d = normalize(vec3f(dir.x, max(dir.y, 0.003), dir.z));
   var L = textureSampleLevel(skyViewLut, skySampler, skyViewUv(d, sky.cameraHeightKm, sky.sizes.xy), 0.0).rgb * SKY_LUT_INV_SCALE;
   let domeL = skyState.dome.rgb * (1.0 + 2.0 * d.y) / 3.0;
   return mix(L, domeL, sky.weather.x);
+}
+
+// Where the reflected ray r from P meets the island in the opaque scene copy (screen-space
+// reflection, docs/07): march out at quadratically growing steps (fine near the water, coarse far
+// away) with a fixed per-pixel jitter, then bisect the crossing. Returns the scene copy's color
+// there (pre-exposed, its own aerial perspective included) and a weight that fades out toward the
+// screen edges, at the end of the reach, and on rough water. The sky and the sea are not in the
+// copy, so rays that miss fall back to the sky.
+fn reflectScene(P: vec3f, r: vec3f, pixel: vec2f, rough: f32) -> vec4f {
+  if (wd.ssr.x < 0.5 || r.y < -0.05) { return vec4f(0.0); }
+  let steps = u32(wd.ssr.x);
+  let reach = wd.ssr.z;
+  let jitter = hashToFloat(hash2(vec2u(pixel) + vec2u(7u, 13u)));
+  var lo = wd.ssr2.w;
+  var hi = -1.0;
+  for (var i = 0u; i < steps; i++) {
+    let s = (f32(i) + jitter) / f32(steps);
+    let tt = wd.ssr2.w + reach * s * s;
+    let q = P + r * tt;
+    let c = frame.viewProj * vec4f(q, 1.0);
+    if (c.w <= 0.0) { break; }
+    let ndc = c.xyz / c.w;
+    let uv = vec2f(ndc.x * 0.5 + 0.5, 0.5 - ndc.y * 0.5);
+    if (any(uv < vec2f(0.0)) || any(uv > vec2f(1.0))) { break; }
+    let sd = textureLoad(sceneDepth, vec2i(uv * frame.renderSize), 0);
+    // Reverse-Z: the scene is nearer than the ray point once its depth is larger.
+    if (sd > ndc.z) {
+      let wp = frame.invViewProj * vec4f(ndc.xy, sd, 1.0);
+      let behind = distance(q, frame.cameraPos) - distance(wp.xyz / wp.w, frame.cameraPos);
+      // Only a crossing counts: a ray that passes far behind a thin bank is hidden, not a hit.
+      if (behind < wd.ssr.w + tt * 0.04) { hi = tt; }
+      break;
+    }
+    lo = tt;
+  }
+  if (hi < 0.0) { return vec4f(0.0); }
+  for (var k = 0u; k < u32(wd.ssr.y); k++) {
+    let mid = 0.5 * (lo + hi);
+    let c = frame.viewProj * vec4f(P + r * mid, 1.0);
+    let ndc = c.xyz / c.w;
+    let uv = vec2f(ndc.x * 0.5 + 0.5, 0.5 - ndc.y * 0.5);
+    let sd = textureLoad(sceneDepth, vec2i(clamp(uv, vec2f(0.0), vec2f(1.0)) * frame.renderSize), 0);
+    if (sd > ndc.z) { hi = mid; } else { lo = mid; }
+  }
+  let c = frame.viewProj * vec4f(P + r * hi, 1.0);
+  let uv = vec2f(c.x / c.w * 0.5 + 0.5, 0.5 - c.y / c.w * 0.5);
+  let edge = min(min(uv.x, 1.0 - uv.x), min(uv.y, 1.0 - uv.y));
+  let w = smoothstep(0.0, wd.ssr2.x, edge) * (1.0 - smoothstep(0.75 * reach, reach, hi))
+        * (1.0 - smoothstep(wd.ssr2.y, wd.ssr2.z, rough));
+  return vec4f(textureSampleLevel(sceneColor, clampSampler, uv, 0.0).rgb, w);
 }
 
 @fragment
@@ -282,11 +345,17 @@ fn fsWater(in: VsOut) -> FsOut {
   let nv = max(dot(n, v), 0.0);
   let F = (f0 + (1.0 - f0) * pow(1.0 - nv, 5.0)) * mix(0.3, 1.0, cohere);
 
-  // Reflection of the sky; the sun and moon disks come in as GGX glints.
+  // Reflection of the island where the screen-space march finds it, else of the sky; the sun and
+  // moon disks come in as GGX glints (hidden where the island stands in front of them).
   let r = reflect(-v, n);
-  let refl = skyRadiance(r) * frame.exposure;
+  // The march follows a calmer normal: full ripple tilt flings neighboring rays between bank and
+  // sky, which reads as blotches; real reflections of a bank wobble but hang together.
+  let nCalm = normalize(vec3f(n.x * wd.ssr3.x, n.y, n.z * wd.ssr3.x));
+  let island = reflectScene(P, reflect(-v, nCalm), in.pos.xy, rough);
+  let refl = skyRadiance(r, rough) * frame.exposure;
   let glint = (frame.sunIlluminance * sunVis * ggxSpecular(n, v, frame.sunDir, rough, f0)
-             + frame.moonIlluminance * moonVis * ggxSpecular(n, v, frame.moonDir, rough, f0)) * frame.exposure;
+             + frame.moonIlluminance * moonVis * ggxSpecular(n, v, frame.moonDir, rough, f0)) * frame.exposure
+             * (1.0 - island.a);
 
   // ---- refraction ----
   let thick = min(d, 1.0);
@@ -345,9 +414,10 @@ fn fsWater(in: VsOut) -> FsOut {
   // is water (1 - Tview), so a deep sea reads as its own color.
   let inScatter = mix(wd.scatterPond.rgb, wd.scatter.rgb, seaness) * lightIn * (vec3f(1.0) - Tview) * frame.exposure;
 
-  // The scene copy already carries its own aerial perspective; only the water's own light gets it here.
-  let own = inScatter * (1.0 - F) + refl * F + glint;
-  var surface = applyAerial(own, screenUv, viewDist) + scene * Tbed * (1.0 - F);
+  // The scene copy already carries its own aerial perspective (the refracted bed and the reflected
+  // island); only the water's own light gets it here.
+  let own = inScatter * (1.0 - F) + refl * F * (1.0 - island.a) + glint;
+  var surface = applyAerial(own, screenUv, viewDist) + island.rgb * (F * island.a) + scene * Tbed * (1.0 - F);
 
   // ---- riffles ----
   // Fast, shallow water churns over its bed and takes in air, which shows as white flecks
@@ -377,7 +447,8 @@ fn fsWater(in: VsOut) -> FsOut {
   // Debug views for tuning (tools and ?waterdbg=N): one term of the shading at a time.
   let dv = u32(wd.debugView + 0.5);
   if (dv == 1u) { color = select(vec3f(0.0, 4.0, 0.0), vec3f(4.0, 0.0, 0.0), in.bed < -40.0); if (any(surface != surface)) { color = vec3f(0.0, 0.0, 4.0); } }
-  if (dv == 2u) { color = refl * 4.0; }
+  if (dv == 2u) { color = mix(refl, island.rgb, island.a) * 4.0; }
+  if (dv == 5u) { color = vec3f(island.a, 0.0, 1.0 - island.a) * 2.0; }
   if (dv == 3u) { color = (scene * Tbed + inScatter) * 4.0; }
   if (dv == 4u) { color = vec3f(F * 10.0, min(L / 50.0, 1.0) * 4.0, d / 10.0 * 4.0); }
   // Water flag in B keeps outlines off the water (docs/05).

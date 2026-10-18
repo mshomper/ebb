@@ -11,7 +11,7 @@
 - Moon: **synodic cycle of 7 game days**, one full lunar cycle per season. New moon at the start of each season, full moon at day 3.5. `src/world/tide.js` reads moon phase for spring and neap tides (see `07-water-and-tide.md`).
 - One directional shadow caster: the sun, or the moon when the sun is below −4° elevation. Crossfade between them through twilight.
 - Cascaded shadow maps, `depth32float` 2D array, stable (texel-snapped) cascades.
-- Ambient: **sky probe** (small cube rendered from the sky-view LUT) projected to **order-2 spherical harmonics (9 coefficients)** for diffuse, plus prefiltered mips for specular.
+- Ambient: the sky-view LUT projected to **order-2 spherical harmonics (9 coefficients)** for diffuse, plus a **sky probe** (small cube rendered from the same LUT) with GGX-prefiltered mips for specular.
 - Ambient occlusion: **GTAO** (Jimenez et al., "Practical Real-Time Strategies for Accurate Indirect Occlusion", 2016). It applies only to ambient light, never to sun or moon light.
 - **Sun, moon, stars, sky LUTs, fog and weather blending read display time** (`clock.display()`), not world time. Display time equals world time in normal play and only differs during time and season preview and photo mode (`16-customization-and-photo-mode.md`). The ecology's daily light exposure uses the same `sunMoon()` function with world time.
 - Stars, the Milky Way and the starlight glow are the **art-directed sky terms**. Physically the stars would be invisible at our night exposure (see 05). Their brightness is set relative to an EV −1 reference and held there on screen as the night key opens further, labeled as such in code. The starlight glow is a faint cool radiance added to the airglow shell (`sky.json` `starlight`), so moonless nights light the island softly.
@@ -31,12 +31,13 @@ flowchart TD
   T --> SV
   MS --> SV
   SV --> AP[Aerial perspective 3D 32x32x32]
-  SV --> PR[Sky probe cube 32², 1 face per frame]
-  PR --> SH[SH9 diffuse + specular mips]
+  SV --> SH[SH9 diffuse]
+  SV --> PR[Sky probe cube 64², GGX specular mips, every frame]
   SM --> CSM[Shadow cascades]
   SV --> SKY[Sky pass: sky, sun disk, moon, stars, clouds]
   T --> LIT[Lighting in opaque, foliage, creatures, water]
   SH --> LIT
+  PR --> LIT
   AP --> LIT
   CSM --> LIT
   AO[GTAO] --> LIT
@@ -94,9 +95,9 @@ The moon uses the same formulas with `λ☾ = λ☉ + 2π · moonPhase`. Its rig
 
 ### Ambient light
 
-- Sky probe: the sky-view LUT plus a ground hemisphere (average terrain albedo × sun and sky illuminance) rendered into a 32² cube. One face per frame, so a full refresh every 6 frames. That is fine because the sky changes slowly.
-- **SH9** projection (Ramamoorthi and Hanrahan, "An Efficient Representation for Irradiance Environment Maps", 2001) for diffuse ambient. The coefficients go into the group 1 uniform.
-- Specular ambient: 5 GGX-prefiltered mips of the cube (split-sum, Karis 2013) for water, wet stone and creature eyes.
+- **Sky probe** (`sky-probe.wgsl`, S4c): a small `rgba16float` cube, 64² on high and ultra and 32² on medium and low (`skyProbeSize` in `quality-tiers.json`), with a full mip chain down to 1 px. Mip 0 is the sky-view LUT blended toward the overcast dome exactly as the sky pass does, over the ground hemisphere (probe albedo × ground illuminance, from `sh-project`). The ground fades in over `probe.horizonBlendDeg` (3°) below the horizon, so reflections show no seam. Sun and moon disks and stars are left out: surfaces add them as analytic GGX glints. All six faces and all mips are rebuilt every frame right after `sh-project`, in the same compute pass (well under 0.05 ms at 64²). Values are nits × 1/32 like the sky-view LUT, not pre-exposed.
+- **SH9** projection (Ramamoorthi and Hanrahan, "An Efficient Representation for Irradiance Environment Maps", 2001) for diffuse ambient, integrated straight from the sky-view LUT with an analytic dome and ground. The coefficients go into the group 1 uniform.
+- Specular ambient: GGX-prefiltered mips of the probe (split-sum, Karis 2013) for water, wet stone and creature eyes. Mip m stands for perceptual roughness m / (mips − 1), so mip 0 is the mirror sky. Each mip is prefiltered from the one above it with `probe.prefilterSamples` (32) Hammersley GGX samples, N = V = R, weighted by n·l, using the incremental alpha √(α_m² − α_(m−1)²). Consumers bind `atmosphere.probeView` (a `cube` view) and `atmosphere.probeSampler` and read `textureSampleLevel(probe, sampler, dir, probeLod(r, levels)).rgb × 32` for nits (`lib-probe.wgsl`). `tools/sky-lab.html` shows the faces, a blurred mip and a direction check.
 - Occlusion of ambient = min(GTAO, horizon-map sky visibility). Specular occlusion from AO and roughness (Lagarde's approximation).
 
 ### Ambient occlusion
