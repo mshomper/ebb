@@ -52,9 +52,10 @@ One island, everything in miniature. Built in seventeen steps, each its own clic
 | G3 | Wet ground: roughness and specular, damp darkening and puddles in rain (reads S4c's wetness pass and sky probe) | 22, 06 |
 | S5 | Shipped grass, reeds, water lilies, yellow flag iris and sea thrift, each growing and spreading on its own ground, with the Plant tool and `tools/growth-lab.html` | 10, 14 |
 | J1 | Field journal v1: the book button, a page for every living thing on the island that fills from what happens there, notes on the island and in the journal, tap a plant to name it | 13, 15 |
-| J1.5 | More to explore: tap the ground too (soil, sand, rock, moss, fresh water, shore) and a Ground section; Show me glides the camera to a page's finest example; field notes, your island's story and four "?" moment frames per page; the Almanac; `?day=N` to start a new world later in the year | 13, 15 |
+| J1.5 | More to explore: tap the ground too (soil, sand, rock, moss, fresh water, shore) and a Ground section; Show me rings a page's example nearest the middle of your view (first built as a camera glide; since J2a the camera stays put); field notes, your island's story and four "?" moment frames per page; the Almanac; `?day=N` to start a new world later in the year | 13, 15 |
 | J1.6 | Field sketches: a drawn illustration for each page, in pencil until known, then inked | 13, 15 |
-| J2 | The journal's "show where" wash on the island and the web of what needs what | 13, 15 |
+| J2a | The journal's Web: what needs what, in bands (ground, plants, animals, you); links inked once seen on the island, in one journal ink; names not yet seen are a pencil "?" | 13, 15 |
+| J2b | The "show where" wash: opening a page washes the island in one journal ink with an inked edge, strong where the species lives and pale where it would do well, painted after the palette; the camera stays where it is; an unseen species gets two or three pencil circles a little off the spot, a hint rather than the answer | 13, 05, 15 |
 | S6 | Frogs: needs, arrival, settling, behavior, presence (a list of sources, the camera first), feeding for trust and naming; midges and frogs get journal pages and sketches | 11, 12, 23 |
 | S7 | Autosave, reload, and offline catch-up with the "while you were away" reveal | 02, 18 |
 | S8 | Minimal HUD with drawn icons, touch layout on phone, low quality tier | 15, 19 |

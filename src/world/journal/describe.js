@@ -177,17 +177,19 @@ function plantCard(p, words) {
 }
 
 /**
- * Where a page's Show me goes: the finest plant of the species (largest, then oldest, then first
- * planted), or for grass the covered square nearest the island's middle. With its card.
+ * What a page's Show me rings: the plant of the species nearest `near` (the middle of your view;
+ * ties go to the larger, then older, then first planted), or for grass the covered square nearest
+ * it. Without `near`, the finest plant, or the grass nearest the island's middle. With its card.
  * @param {string} sp @param {any} state @param {any} hab @param {any} words
+ * @param {number[] | null} [near] a world point [x, z]
  */
-export function showMeSpot(sp, state, hab, words) {
+export function showMeSpot(sp, state, hab, words, near = null) {
   const rec = words.species[sp];
   if (!rec) return null;
   if (rec.kind === 'cover') {
     const g = state?.growth?.grass;
     if (!g || !hab) return null;
-    const isl = islandShape(hab);
+    const isl = near ? { x: near[0], z: near[1] } : islandShape(hab);
     let best = -1, bestD = Infinity;
     for (let k = 0; k < hab.n * hab.n; k++) {
       if (!hab.open[k] || hab.depthCm[k] > 0 || hab.sea[k] || hab.grass[k] * g[k] <= 0.5 * 255 * 255) continue;
@@ -199,10 +201,11 @@ export function showMeSpot(sp, state, hab, words) {
     const x = HABITAT_ORIGIN + (best % hab.n) + 0.5, z = HABITAT_ORIGIN + Math.floor(best / hab.n) + 0.5;
     return { sp, name: rec.name, icon: rec.icon, text: rec.stages[0], wx: x, wz: z, r: words.identify.grassRingM, stage: -1 };
   }
-  let best = null;
+  let best = null, bestD = Infinity;
   for (const p of state?.growth?.plants ?? []) {
     if (p.sp !== sp) continue;
-    if (!best || p.size > best.size || (p.size === best.size && (p.age > best.age || (p.age === best.age && p.id < best.id)))) best = p;
+    const d = near ? Math.round(((p.x - near[0]) ** 2 + (p.z - near[1]) ** 2) * 100) : 0;   // cm² steps, so ties are real
+    if (!best || d < bestD || (d === bestD && (p.size > best.size || (p.size === best.size && (p.age > best.age || (p.age === best.age && p.id < best.id)))))) { best = p; bestD = d; }
   }
   return best ? plantCard(best, words) : null;
 }

@@ -43,6 +43,7 @@ Size and color come from CSS: set `width`/`height` on `.icon` and `color` on the
 | `season-spring`, `season-summer`, `season-autumn`, `season-winter` | a bud, a sun, a falling leaf, a frost star: the journal's season boxes |
 | `soil`, `sand`, `rock`, `moss`, `shore` | a mound with clods and a sprout, wind ripples, a faceted boulder, soft cushions, waves over a sandy curve: the journal's Ground pages |
 | `almanac` | a calendar page with a crescent moon: the journal's Almanac |
+| `web` | three knots in a row, each joined by a thread to one knot below: the journal's Web (what needs what) |
 | `find` | a looking glass: a journal page's Show me |
 | `moment-flower`, `moment-rain`, `moment-dusk`, `moment-dawn`, `moment-mist` | a five-petal flower, a raining cloud, a sun setting, a sun rising, drifting mist: the journal's moment frames |
 | `notes` | page with a folded corner and three written lines: the journal's Notes section |

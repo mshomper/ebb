@@ -5,7 +5,8 @@
 ## Locked decisions
 
 - Lighting is linear Rec.709 HDR in photometric units, pre-exposed (see `04-render-pipeline.md`). Materials hold physical albedo (sRGB textures decoded to linear). **Nobody paints palette colors into materials or lights.** Style changes go in the palette.
-- Post order: auto-exposure (from previous frame) → bloom (added in HDR) → Purkinje night shift → **AgX tonemap** → **palette LUT** → painterly (optional) → soft outline → blue-noise dither → present.
+- Post order: auto-exposure (from previous frame) → bloom (added in HDR) → Purkinje night shift → **AgX tonemap** → **palette LUT** → painterly (optional) → soft outline → journal wash (J2b, only while a journal page is open) → blue-noise dither → present.
+- **The journal wash is the one painted mark on the island** (J2b, `13-progression-and-expansion.md`). It is applied after the palette, in display color, so it is never lit, graded or tonemapped. It uses one journal ink for every page, so a growing cast never needs harmonized species colors. It touches only ground and water pixels (outline group 1 or the water flag): plants, creatures and the sky keep their own look.
 - Tonemap curve: **AgX** (Troy Sobotka), base transform with a per-palette "look" (slope, power, saturation). AgX desaturates bright light smoothly toward white, which suits pastels.
 - Palette LUT: **32 × 32 × 32 3D texture, `rgba16float`** (matches `16-customization-and-photo-mode.md`), input domain is the AgX output in display-encoded sRGB (0 to 1). Two LUT textures exist (current and next) for crossfades.
 - Palettes are JSON recipes in `recipes/palettes/*.json`, baked into the LUT on the GPU at runtime by `src/render/passes/post/lut-bake.js` (`src/shaders/lut-bake.wgsl`). Baking happens in **OKLab** (Björn Ottosson 2020).
@@ -28,7 +29,8 @@ flowchart LR
   AGX --> LUT[(Palette LUT 32³<br/>current and next)]
   LUT --> PT[Painterly<br/>optional]
   PT --> OL[Soft outline]
-  OL --> DI[Blue-noise dither] --> OUT[Screen]
+  OL --> WA[Journal wash<br/>while a page is open]
+  WA --> DI[Blue-noise dither] --> OUT[Screen]
   subgraph Bake on change
     PJ[palette JSON] --> BLEND[Blend time + season + weather keys]
     BLEND --> BAKE[lut-bake.wgsl in OKLab]
@@ -89,6 +91,10 @@ The new palette bakes into the spare LUT. The tonemap pass samples both and cros
 ### Painterly filter (optional)
 
 Anisotropic Kuwahara filter (Kyprianidis, Kang and Döllner, "Image and Video Abstraction by Anisotropic Kuwahara Filtering", 2009): a smoothed structure tensor gives local stroke direction, then 8 sectors around each pixel are weighted and the least-varied sector wins. Applied to the LDR image before the outline so lines stay crisp. Strength blends with the unfiltered image. Off by default in every palette (realism first); the player can turn it on in Settings, and photo mode keeps it as a filter (doc 16). Full resolution on the high tier, quarter resolution on medium and low (as in doc 16). An optional paper grain texture (multiply at about 3%) is part of this toggle.
+
+### Journal wash
+
+The journal publishes a half-meter map of the island (store slice `wash`, from `src/world/journal/wash.js`). R is where the open page's thing lives and G is where a known species would do well. For each ground or water pixel, the tonemap pass rebuilds the world position from depth and `invViewProj` and samples the map. It mixes in the journal ink: strong where the thing lives, pale where it would do well. An inked edge is drawn where the "lives" field crosses one half; its width is set in pixels through the field's screen derivative. For a species not yet seen nothing is washed. Up to three dashed pencil rings sit a little off its best places instead. The wash fades in and out over `fadeS`. All its numbers are in `recipes/world/journal-wash.json`. Cost: one depth load, one normal load and one bilinear sample per pixel, only while a page is open.
 
 ### Dither
 

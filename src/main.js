@@ -41,8 +41,9 @@ startApp(canvas, { onDeviceLost: (rebuilding) => showRebuildingNote(rebuilding) 
       mountTimeFlow(document.body);
       mountLook(document.body, r.palette.list());
       // The field journal (docs 13, 15): watches the world, writes notes, names what you tap.
-      const [words, island] = await Promise.all([loadRecipe('world/journal'), loadRecipe('world/journal-island')]);
-      const journal = createJournal({ world: r.world, words, island });
+      const [words, island, web, wash] = await Promise.all([loadRecipe('world/journal'), loadRecipe('world/journal-island'),
+        loadRecipe('world/journal-web'), loadRecipe('world/journal-wash')]);
+      const journal = createJournal({ world: r.world, words, island, web, wash });
       mountJournal(document.body, journal);
       mountIslandNotes(document.body, words);
       // `?frogscale`: real-size frogs around the pond to judge creature size (ahead of S6).

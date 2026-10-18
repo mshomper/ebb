@@ -20,6 +20,8 @@
     "world/growth": "world/growth.json",
     "world/journal": "world/journal.json",
     "world/journal-island": "world/journal-island.json",
+    "world/journal-web": "world/journal-web.json",
+    "world/journal-wash": "world/journal-wash.json",
     "species/frog": "species/frog.json",
     "palettes/dusk": "palettes/dusk.json",
     "palettes/meadow-morning": "palettes/meadow-morning.json"

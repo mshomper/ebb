@@ -1,13 +1,16 @@
 // @ts-check
 // Tonemap and present (docs/05): bloom add, Purkinje, AgX with the palette's look, the palette
-// LUT crossfade, the soft outline and dither, into the canvas. Also reads back single pixels of
+// LUT crossfade, the soft outline, the journal's show-where wash (J2b) and dither, into the canvas. Also reads back single pixels of
 // the final image for the palette lab's eyedropper.
 
 import { makeBuffer, makeShaderModule } from '../../../core/gpu.js';
 
 /** @typedef {import('../../frame-graph.js').PassContext} PassContext */
 
-const POST_BYTES = 128;
+const POST_BYTES = 256;
+
+/** '#rrggbb' to [r, g, b] 0..1 (display sRGB, as the palette's output). @param {string} hex */
+const rgb = (hex) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255);
 
 /**
  * @param {{ bloom: { view: () => GPUTextureView }, luts: GPUTextureView[], recipe: any }} opts
@@ -31,11 +34,30 @@ export function createTonemapPass(opts) {
     outline: { amount: 0.35, terrainAmount: 0.1, chroma: 1.1 },
     split: -1,
   };
+  // The journal's show-where wash: a 1 m map (rg8: lives, would do well), its recipe, pencil
+  // circles, and a fade. The last map stays while the wash fades out.
+  /** @type {GPUDevice | null} */ let device = null;
+  /** @type {GPUTexture | null} */ let washTex = null;
+  /** @type {any} */ let wash = null;
+  /** @type {any} */ let washShown = null;
+  let washAmount = 0, washLast = 0, groupDirty = false;
+  /** @type {PassContext | null} */ let lastCtx = null;
+  function uploadWash() {
+    const m = wash?.map;
+    if (!device || !m) return;
+    if (!washTex || washTex.width !== m.n) {
+      washTex?.destroy();
+      washTex = device.createTexture({ label: 'journal-wash', size: [m.n, m.n], format: 'rg8unorm', usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST });
+      groupDirty = true;
+    }
+    device.queue.writeTexture({ texture: washTex }, m.data, { bytesPerRow: m.n * 2 }, [m.n, m.n]);
+    washShown = wash;
+  }
   /** @type {{ x: number, y: number, resolve: (hex: string) => void }[]} */ let picks = [];
   /** @type {{ buffer: GPUBuffer, resolve: (hex: string) => void }[]} */ let inFlight = [];
   let swapIsBgra = false;
 
-  return {
+  const self = {
     name: 'tonemap',
     reads: ['hdr', 'bloom', 'normalId', 'depth'],
     writes: ['swapchain'],
@@ -43,6 +65,15 @@ export function createTonemapPass(opts) {
 
     /** @param {Partial<typeof state>} v */
     set(v) { Object.assign(state, v); },
+
+    /**
+     * The journal's wash to show, or none (store slice `wash`).
+     * @param {{ map: import('../../../world/journal/wash.js').WashMap | null, recipe: any } | null} w
+     */
+    setWash(w) {
+      wash = w;
+      uploadWash();
+    },
 
     /**
      * Read the final color at a canvas pixel (device pixels of the canvas). Resolves after the next frame.
@@ -55,7 +86,9 @@ export function createTonemapPass(opts) {
 
     /** @param {PassContext} ctx */
     async setup(ctx) {
-      const { device } = ctx;
+      device = ctx.device;
+      washTex = device.createTexture({ label: 'journal-wash', size: [1, 1], format: 'rg8unorm', usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST });
+      uploadWash();
       swapIsBgra = ctx.format.startsWith('bgra');
       const module = await makeShaderModule(device, 'tonemap');
       const F = GPUShaderStage.FRAGMENT;
@@ -70,6 +103,7 @@ export function createTonemapPass(opts) {
           { binding: 5, visibility: F, texture: { sampleType: 'float' } },
           { binding: 6, visibility: F, texture: { sampleType: 'depth' } },
           { binding: 7, visibility: F, buffer: {} },
+          { binding: 8, visibility: F, texture: { sampleType: 'float' } },
         ],
       });
       sampler = device.createSampler({ label: 'tonemap-linear', magFilter: 'linear', minFilter: 'linear', addressModeU: 'clamp-to-edge', addressModeV: 'clamp-to-edge', addressModeW: 'clamp-to-edge' });
@@ -85,6 +119,8 @@ export function createTonemapPass(opts) {
 
     /** @param {PassContext} ctx */
     resize(ctx) {
+      lastCtx = ctx;
+      groupDirty = false;
       group = ctx.device.createBindGroup({
         label: 'tonemap-input',
         layout,
@@ -97,6 +133,7 @@ export function createTonemapPass(opts) {
           { binding: 5, resource: ctx.targets.normalId.createView() },
           { binding: 6, resource: ctx.targets.depth.createView() },
           { binding: 7, resource: { buffer: postBuffer } },
+          { binding: 8, resource: /** @type {GPUTexture} */ (washTex).createView() },
         ],
       });
     },
@@ -113,6 +150,23 @@ export function createTonemapPass(opts) {
       f[20] = r.outline.depthEdge[0]; f[21] = r.outline.depthEdge[1]; f[22] = r.outline.normalEdge[0]; f[23] = r.outline.normalEdge[1];
       f.set(r.purkinje.rodWeights, 24); f[27] = 0;
       f.set(r.purkinje.tint, 28); f[31] = 0;
+      if (groupDirty && lastCtx) self.resize(lastCtx);   // the wash map changed size: bind the new one
+      // Wash: ease toward shown (a map is set) or hidden; the last map stays while it fades out.
+      const now = performance.now() / 1000, dt = washLast ? Math.min(0.1, now - washLast) : 0;
+      washLast = now;
+      const W = washShown?.recipe, M = washShown?.map;
+      const goal = wash?.map ? 1 : 0;
+      washAmount += (goal - washAmount) * (W ? 1 - Math.exp(-dt * 3 / Math.max(0.05, W.fadeS)) : 1);
+      if (washAmount < 0.002 && !goal) washAmount = 0;
+      const px = height / 1440;
+      f.fill(0, 32, 64);
+      if (W && M) {
+        f[32] = M.origin; f[33] = M.origin; f[34] = 1 / (M.n * M.cell); f[35] = washAmount;
+        f.set(rgb(W.ink), 36); f[39] = W.liveAlpha;
+        f.set(rgb(W.pencil), 40); f[43] = W.wellAlpha;
+        f[44] = Math.max(1, W.edgePx * px); f[45] = W.edgeAlpha; f[46] = Math.max(1, W.circleWidthPx * px); f[47] = W.circleAlpha;
+        M.circles.slice(0, 3).forEach((/** @type {number[]} */ c, /** @type {number} */ i) => { f[48 + i * 4] = c[0]; f[49 + i * 4] = c[1]; f[50 + i * 4] = c[2]; f[51 + i * 4] = W.dashes; });
+      }
       ctx.device.queue.writeBuffer(postBuffer, 0, data);
 
       const swap = ctx.context.getCurrentTexture();
@@ -153,4 +207,5 @@ export function createTonemapPass(opts) {
       }
     },
   };
+  return self;
 }

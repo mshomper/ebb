@@ -1,5 +1,5 @@
 // Tonemap and present (docs/05): pre-exposed HDR + bloom -> Purkinje night shift -> AgX with the
-// palette's look -> palette LUT (two LUTs, crossfaded) -> soft outline -> dither -> screen.
+// palette's look -> palette LUT (two LUTs, crossfaded) -> soft outline -> journal wash -> dither -> screen.
 // Everything before the LUT is physical or perceptual; the palette is the only painted step.
 
 // #include common
@@ -15,6 +15,12 @@ struct Post {
   depthEdge: vec2f, normalEdge: vec2f,
   rodWeights: vec3f, _p1: f32,
   tint: vec3f, _p2: f32,
+  // The journal's show-where wash (J2b), painted after the palette in one journal ink.
+  wash: vec4f,          // map origin x, origin z (m), 1 / map size (m), amount 0..1 (fade)
+  washInk: vec3f, washLive: f32,
+  washPencil: vec3f, washWell: f32,
+  washLine: vec4f,      // edge width (px), edge alpha, circle line width (px), circle alpha
+  circles: array<vec4f, 3>, // pencil circles: x, z, radius (m), dashes per ring (0 = none)
 };
 
 @group(0) @binding(0) var<uniform> frame: FrameUniforms;
@@ -26,6 +32,7 @@ struct Post {
 @group(2) @binding(5) var normalIdTex: texture_2d<f32>;
 @group(2) @binding(6) var depthTex: texture_depth_2d;
 @group(2) @binding(7) var<uniform> post: Post;
+@group(2) @binding(8) var washTex: texture_2d<f32>;   // half a meter a texel: r where it lives, g where it would do well
 
 const LUM = vec3f(0.2126, 0.7152, 0.0722);
 
@@ -117,6 +124,51 @@ fn outlineAt(p: vec2f) -> f32 {
   return clamp(edge * amount * fade, 0.0, 1.0);
 }
 
+// The show-where wash over the finished, paletted color. Only ground and water pixels take it
+// (plants, creatures and the sky keep their own look), so the wash reads as ink on the land. The
+// edge is where the "lives" field crosses one half, measured in pixels through its screen
+// derivative; pencil circles are dashed rings at a fixed pixel width. Derivatives are taken before
+// any branch, so the control flow stays uniform.
+fn washOver(c: vec3f, uv: vec2f) -> vec3f {
+  let size = vec2i(textureDimensions(depthTex));
+  let px = clamp(vec2i(uv * frame.renderSize), vec2i(0), size - 1);
+  let d = textureLoad(depthTex, px, 0);
+  let nid = textureLoad(normalIdTex, px, 0);
+  let onGround = d > 0.0 && (nid.b > 0.5 || i32(round(nid.a * 3.0)) == 1);
+  let h = frame.invViewProj * vec4f(uv.x * 2.0 - 1.0, 1.0 - uv.y * 2.0, max(d, 1e-7), 1.0);
+  let xz = h.xz / h.w;
+  let m = textureSampleLevel(washTex, linearSampler, (xz - post.wash.xy) * post.wash.z, 0.0).rg;
+  let fw = fwidth(m.r);
+  let mpp = length(fwidth(xz));   // meters per pixel here
+  if (!onGround || post.wash.w <= 0.0) { return c; }
+
+  let amt = post.wash.w;
+  let live = smoothstep(0.3, 0.7, m.r);
+  let fill = max(live * post.washLive, (1.0 - live) * m.g * post.washWell);
+  var out = mix(c, post.washInk, fill * amt);
+  // Inked edge: within edge-width pixels of the half contour; skipped where the derivative jumps
+  // (at a silhouette), so no stray lines.
+  if (fw > 1e-5 && fw < 0.35) {
+    let distPx = abs(m.r - 0.5) / fw;
+    let edge = 1.0 - smoothstep(post.washLine.x * 0.5, post.washLine.x * 0.5 + 1.0, distPx);
+    out = mix(out, post.washInk * 0.72, edge * post.washLine.y * amt);
+  }
+  // Pencil circles for a species not seen yet: dashed rings, a hint of where to look.
+  if (mpp > 0.0 && mpp < 2.0) {
+    for (var i = 0; i < 3; i++) {
+      let k = post.circles[i];
+      if (k.z <= 0.0) { continue; }
+      let rel = xz - k.xy;
+      let ringPx = abs(length(rel) - k.z) / mpp;
+      let line = 1.0 - smoothstep(post.washLine.z * 0.5, post.washLine.z * 0.5 + 1.0, ringPx);
+      let turn = atan2(rel.y, rel.x) / 6.2831853 + 0.5;
+      let dash = step(0.38, fract(turn * k.w + f32(i) * 0.37));
+      out = mix(out, post.washPencil, line * dash * post.washLine.w * amt);
+    }
+  }
+  return out;
+}
+
 @vertex
 fn vs(@builtin(vertex_index) vi: u32) -> FullscreenOut {
   return fullscreenTriangle(vi);
@@ -147,6 +199,9 @@ fn fs(in: FullscreenOut) -> @location(0) vec4f {
     lab = vec3f(lab.x, lab.yz * mix(1.0, post.outlineChroma, ink));
     c = clamp(linearToSrgb3(oklabToLinear(lab)), vec3f(0.0), vec3f(1.0));
   }
+
+  // The journal's show-where wash: the one painted mark on the island, after the palette.
+  c = washOver(c, in.uv);
 
   // Triangular dither of about one code value so pastel skies never band.
   let h = hash3(vec3u(vec2u(in.pos.xy), frame.frameIndex & 63u));

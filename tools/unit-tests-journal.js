@@ -11,6 +11,9 @@ import { drawSketch, hasSketch } from '../src/ui/sketches/index.js';
 import { describe, identify, showMeSpot } from '../src/world/journal/describe.js';
 import { groundKind, groundCard, groundSurvey, describeGround } from '../src/world/journal/ground.js';
 import { almanac } from '../src/world/journal/almanac.js';
+import { inkWeb, describeWeb } from '../src/world/journal/web.js';
+import { webView } from '../src/ui/journal-web.js';
+import { washMap } from '../src/world/journal/wash.js';
 import { STAGE } from '../src/world/growth/coarse.js';
 import { WORLD_CELLS } from '../src/world/terrain/grid.js';
 import { shoreline, at, loadRecipes } from './unit-tests-growth.js';
@@ -22,6 +25,15 @@ function loadIsland() {
     return r.json();
   });
   return islandPromise;
+}
+
+/** @type {Promise<any> | null} */ let webPromise = null;
+function loadWeb() {
+  webPromise ??= fetch('../recipes/world/journal-web.json').then((r) => {
+    if (!r.ok) throw new Error(`recipes/world/journal-web.json: HTTP ${r.status}`);
+    return r.json();
+  });
+  return webPromise;
 }
 
 /** Painted ground for the shoreline: soil everywhere (grass, sand, rock, soil per texel). */
@@ -179,7 +191,10 @@ export function addJournalTests(test, assert, eq) {
     assert(d.story.some((l) => l.startsWith('You first planted iris clumps on ')), `planted line in: ${d.story.join(' / ')}`);
     assert(d.story.includes(words.story.oldestArrived), 'oldest line');
     const spot = showMeSpot('iris', s, hab, words);
-    assert(spot && spot.sp === 'iris' && spot.stage === STAGE.mature, 'Show me goes to a full-grown iris');
+    assert(spot && spot.sp === 'iris' && spot.stage === STAGE.mature, 'with no view, Show me picks a full-grown iris');
+    const near = [at('bank')[0], at('bank')[1] + 54];
+    const close = showMeSpot('iris', s, hab, words, near);
+    assert(close && Math.hypot(close.wx - near[0], close.wz - near[1]) < 0.5, `Show me rings the iris nearest the view: ${close?.wx}, ${close?.wz}`);
     return d.story.join(' / ');
   });
 
@@ -235,6 +250,92 @@ export function addJournalTests(test, assert, eq) {
       }
     }
     return `${ids.length} drawings, each in three stages`;
+  });
+
+  test(JOURNAL, 'the web: links already true ink quietly, later ones write their note once', async () => {
+    const { words, state, first, hab } = await setup();
+    const island = await loadIsland();
+    const web = await loadWeb();
+    const survey = groundSurvey(hab, soilEverywhere(), state, island, 1);
+    const a = inkWeb(first.journal, survey, { web, words, state, hour: 0 });
+    eq(a.notes.length, 0, 'notes while the island is new');
+    assert(a.journal.flags.includes('web:soil>grass'), 'grass on the soil is inked from the start');
+    assert(!a.journal.flags.includes('web:midges>frogs'), 'frogs eating midges is not inked before frogs come');
+    const late = words.arrivedHours + 50;
+    const fed = { ...a.journal, flags: [...a.journal.flags, 'frogs:ate'] };
+    const b = inkWeb(fed, survey, { web, words, state, hour: late });
+    eq(b.notes.map((n) => n.text).join(' | '), 'Frogs feed on the midges.', 'notes when frogs first eat');
+    eq(b.notes[0].sp, 'frogs', 'the note is about the frogs');
+    const c = inkWeb(b.journal, survey, { web, words, state, hour: late + 1 });
+    eq(c.notes.length, 0, 'notes a second time');
+    eq(c.journal, b.journal, 'the journal is unchanged by a repeat');
+    const d = describeWeb(b.journal, survey, web);
+    const node = (/** @type {string} */ id) => d.rows.flatMap((r) => r.nodes).find((n) => n.id === id);
+    assert(node('soil')?.known && node('grass')?.known, 'soil and grass are known');
+    assert(node('frogs')?.known, 'frogs are known once seen eating');
+    assert(node('you')?.known, 'you are always known');
+    assert(node('midges')?.known, 'midges are known once frogs are seen eating them');
+    const before = describeWeb(a.journal, survey, web);
+    assert(!before.rows.flatMap((r) => r.nodes).find((n) => n.id === 'midges')?.known, 'midges are not known before');
+    const page = webView(before, web, 'midges');
+    assert(!page.includes('Midges'), 'an unknown name is never written, even when tapped');
+    assert(page.includes(web.unknown.hint.replace('{list}', 'reeds')), 'tapping it hints at what it needs');
+    assert(d.links.find((l) => l.a === 'midges' && l.b === 'frogs')?.inked, 'the midges link is inked');
+    assert(!d.links.find((l) => l.a === 'you')?.inked, 'feeding is still pencil');
+    return `${b.journal.flags.filter((f) => f.startsWith('web:')).length} of ${web.links.length} links inked`;
+  });
+
+  test(JOURNAL, 'the web drawing: links join neighbours without crossing, names read at 16 px on a phone', async () => {
+    const web = await loadWeb();
+    const rowOf = /** @type {Record<string, [number, number]>} */ ({});
+    web.rows.forEach((/** @type {any} */ r, /** @type {number} */ i) => r.ids.forEach((/** @type {string} */ id, /** @type {number} */ j) => { rowOf[id] = [i, j]; }));
+    for (const id of Object.keys(web.nodes)) assert(rowOf[id], `${id} is in a row`);
+    for (const l of web.links) {
+      const [ra, ja] = rowOf[l.a] ?? [-9, 0], [rb, jb] = rowOf[l.b] ?? [-9, 0];
+      assert(Math.abs(ra - rb) === 1 || (ra === rb && Math.abs(ja - jb) === 1), `${l.a} to ${l.b} joins neighbouring rows, or neighbours in a row`);
+    }
+    // Two links between the same pair of rows cross when their ends are in opposite order.
+    const down = web.links.filter((/** @type {any} */ l) => rowOf[l.a][0] !== rowOf[l.b][0]).map((/** @type {any} */ l) => {
+      const [p, q] = rowOf[l.a][0] < rowOf[l.b][0] ? [rowOf[l.a], rowOf[l.b]] : [rowOf[l.b], rowOf[l.a]];
+      return { row: p[0], top: p[1], bot: q[1], name: `${l.a}-${l.b}` };
+    });
+    for (const s of down) for (const t of down) {
+      if (s.row === t.row) assert((s.top - t.top) * (s.bot - t.bot) >= 0, `${s.name} crosses ${t.name}`);
+    }
+    const blank = { flags: [], species: {} };
+    const svg = webView(describeWeb(/** @type {any} */ (blank), null, web), web, null);
+    const W = Number(/viewBox="0 0 ([\d.]+)/.exec(svg)?.[1]);
+    const phonePx = web.textPx * (375 - 32) / W;
+    assert(phonePx >= 16, `names are ${phonePx.toFixed(1)} px on a 375 px phone`);
+    assert(!/NaN|undefined/.test(svg), 'the drawing is clean');
+    for (const id of ['frogs', 'midges']) assert(!svg.includes(`>${web.nodes[id].label}<`), `${id} is a ? on a new island`);
+    return `widest row ${W.toFixed(0)} units; names at ${phonePx.toFixed(1)} px on a phone`;
+  });
+
+  test(JOURNAL, 'the wash: where it lives, where it would do well, and pencil circles for the unseen', async () => {
+    const { words, state, first, hab, recipes } = await setup();
+    const island = await loadIsland();
+    const wash = await fetch('../recipes/world/journal-wash.json').then((r) => r.json());
+    const mat = soilEverywhere();
+    const ctx = { state, hab, material: mat, island, flora: recipes.flora, words, journal: first.journal, wash };
+    const count = (/** @type {any} */ m, /** @type {number} */ ch) => { let c = 0; for (let k = ch; k < m.data.length; k += 2) if (m.data[k] > 128) c++; return c; };
+    const reeds = washMap('reeds', ctx);
+    assert(reeds && reeds.n === hab.n * 2 && reeds.cell === 0.5, 'a half-meter map over the habitat');
+    assert(count(reeds, 0) > 0, 'reeds wash where reeds grow');
+    eq(reeds?.circles.length, 0, 'no pencil circles for a species already seen');
+    const p = state.growth.plants.find((/** @type {any} */ q) => q.sp === 'reeds');
+    const at2 = (/** @type {number} */ x, /** @type {number} */ z) => (Math.floor((z - reeds.origin) * 2) * reeds.n + Math.floor((x - reeds.origin) * 2)) * 2;
+    assert(reeds.data[at2(p.x, p.z)] > 200, 'full wash on a reed clump');
+    const fresh = { ...first.journal, species: {} };
+    const unseen = washMap('iris', { ...ctx, journal: fresh });
+    eq(count(unseen, 0) + count(unseen, 1), 0, 'nothing washed for a species not yet seen');
+    assert(unseen && unseen.circles.length >= 1 && unseen.circles.length <= wash.circles, `pencil circles: ${unseen?.circles.length}`);
+    for (const c of unseen?.circles ?? []) eq(c[2], wash.circleM / 2, 'circle radius');
+    eq(JSON.stringify(washMap('iris', { ...ctx, journal: fresh })?.circles), JSON.stringify(unseen?.circles), 'the same circles twice');
+    const shore = washMap('shore', ctx);
+    assert(shore && count(shore, 0) === 0, 'no tide band on this habitat, so no shore wash (the open sea is never washed)');
+    eq(washMap('web', ctx), null, 'a page with no place on the island');
+    return `reeds ${count(reeds, 0)} half-meter squares, would do well ${count(reeds, 1)}; ${unseen?.circles.length} pencil circles for unseen iris`;
   });
 
   test(JOURNAL, 'a tap names the nearest plant, or grass, or nothing', async () => {
