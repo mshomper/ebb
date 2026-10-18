@@ -45,7 +45,7 @@ struct WaterDraw {
   detailFadeM: f32,           // ripples calm and move into roughness by this distance (quality tier)
   _q1: f32, _q2: f32,
   rain: vec4f,                // raindrop rings: x share of drop cells active (rain), y cell size (m), z ring life (s), w crest spacing (m)
-  rain2: vec4f,               // x ring radius at the end of its life (m), y crest slope, z foam lace flow cycle (s)
+  rain2: vec4f,               // x ring radius at the end of its life (m), y crest slope, z foam lace flow cycle (s), w most it slides a cycle (m)
   scatterPond: vec4f,         // rgb single-scatter albedo of pond water (fine silt and peat stain it)
   ssr: vec4f,                 // island reflection: x march steps (0 off), y refine steps, z reach (m), w hit thickness (m)
   ssr2: vec4f,                // x screen-edge fade (uv), y, z roughness range it fades out over, w start offset (m)
@@ -244,7 +244,7 @@ fn foamLace(xz: vec2f, c: f32, t: f32) -> f32 {
   let n = clamp(0.5 + 1.6 * ((n0 * 0.55 + n1 * 0.3 + n2 * 0.15) - 0.5), 0.0, 1.0);
   // A connected froth with dark holes; more cover opens the pattern a little and makes it whiter
   // (the caller scales by cover), so thin foam is a faint veil, not scattered specks.
-  let edge = 0.52 - 0.12 * c;
+  let edge = 0.64 - 0.24 * c;
   return smoothstep(edge, edge + 0.3, n);
 }
 
@@ -480,8 +480,11 @@ fn fsWater(in: VsOut) -> FsOut {
     let phase = t / fp + noiseGrad(P.xz * 0.45, 931u).x * 2.0;
     let fa = fract(phase);
     let fb = fract(phase + 0.5);
-    let la = foamLace(P.xz - in.vel * fa * fp, cover, t);
-    let lb = foamLace(P.xz - in.vel * fb * fp + vec2f(2.9, 6.1), cover, t);
+    // In fast water a whole cycle of sliding would carry the lace meters, and neighboring speeds
+    // would shear it into long smears and swirls: cap the slide per cycle, so fast foam churns.
+    let slide = in.vel * min(1.0, wd.rain2.w / max(length(in.vel) * fp, 1e-4));
+    let la = foamLace(P.xz - slide * fa * fp, cover, t);
+    let lb = foamLace(P.xz - slide * fb * fp + vec2f(2.9, 6.1), cover, t);
     let lace = mix(la, lb, abs(2.0 * fa - 1.0));
     let froth = applyAerial(wd.foam.y * lightIn * frame.exposure, screenUv, viewDist);
     // Films only millimeters thick (spilling over a bank) never froth.

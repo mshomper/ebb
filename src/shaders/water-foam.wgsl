@@ -68,7 +68,8 @@ fn csFoam(@builtin(global_invocation_id) gid: vec3u) {
   // water it is carried and breaks up sooner.
   let still = 1.0 - smoothstep(fm.stillBelow * 0.5, fm.stillBelow, speed);
   let around = 0.25 * (foamAt(c + vec2i(1, 0)) + foamAt(c - vec2i(1, 0)) + foamAt(c + vec2i(0, 1)) + foamAt(c - vec2i(0, 1)));
-  foam = mix(foam, around, min(fm.spread * still * fm.dt, 0.5));
+  // Moving water mixes too, a little, so neighboring cells never differ sharply (no patchwork).
+  foam = mix(foam, around, min(fm.spread * mix(0.3, 1.0, still) * fm.dt, 0.5));
   foam *= exp(-fm.dt / mix(fm.fadeMoving, fm.fadeStill, still));
 
   // Falls: the steepest surface drop into a neighbor the water is flowing toward.
