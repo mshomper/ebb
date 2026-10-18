@@ -3,6 +3,13 @@
   "version": 1,
   "note": "Terrain tuning (docs/08). Albedos are linear and physical; the painted look comes from the palette at tonemap (docs/05).",
   "starter": { "land": "land/starter-island", "chunkMin": -1, "chunkMax": 1 },
+  "islands": {
+    "note": "Islands to start from (recipes/land/<id>.json). `?island=<id>` picks one; without it the starter island. The badge in the top left corner switches between them (each starts fresh until saves arrive in S7).",
+    "list": [
+      { "id": "starter-island", "name": "Starter island" },
+      { "id": "two-ponds", "name": "Two ponds" }
+    ]
+  },
   "brush": {
     "radiusRange": [0.5, 8],
     "radiusDefault": 2.5,

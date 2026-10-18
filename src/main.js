@@ -30,9 +30,12 @@ if (new URLSearchParams(location.search).has('debug')) {
   };
 }
 let toolsMounted = false;
+/** The island this world started from, for the badge's island switch. @type {any} */
+let islandInfo = null;
 
 startApp(canvas, { onDeviceLost: (rebuilding) => showRebuildingNote(rebuilding) })
   .then(async (r) => {
+    if (r.ok) islandInfo = /** @type {any} */ (r).island ?? null;
     if (!r.ok) showNoWebGPU(r.reason);
     else if (new URLSearchParams(location.search).has('debug')) /** @type {any} */ (window).ebb = r;
     if (r.ok && !toolsMounted) {
@@ -61,4 +64,4 @@ startApp(canvas, { onDeviceLost: (rebuilding) => showRebuildingNote(rebuilding) 
     console.error(err);
     showNoWebGPU('device-failed');
   })
-  .finally(() => showBuildBadge(BUILD));
+  .finally(() => showBuildBadge(BUILD, islandInfo));

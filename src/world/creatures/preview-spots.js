@@ -15,7 +15,9 @@ import { HABITAT_ORIGIN } from '../growth/habitat.js';
  * @param {{ plants?: any[] } | null | undefined} growth the world state's growth (plants)
  * @param {{ ground: (x: number, z: number) => number, surface: (x: number, z: number) => number, from: number[] }} at
  *   ground and water surface heights (m); from: the point the camera looks from (x, z)
- * @returns {{ spots: Spot[], edgeM: number, pondM2: number } | null} null until the island has fresh water
+ * @returns {{ spots: Spot[], edgeM: number, pondM2: number, islandEdgeM: number, waters: number } | null}
+ *   edgeM and pondM2: the pond the frogs sit by (the one nearest the camera); islandEdgeM: every fresh
+ *   water's edge; waters: how many bodies of at least 30 m2. Null until the island has fresh water.
  */
 export function previewSpots(hab, growth, at) {
   if (!hab) return null;
@@ -29,24 +31,52 @@ export function previewSpots(hab, growth, at) {
     return [i > 0 ? k - 1 : -1, i < n - 1 ? k + 1 : -1, j > 0 ? k - n : -1, j < n - 1 ? k + n : -1];
   };
 
-  // The pond: its middle, area, and the land squares along its edge.
-  let cx = 0, cz = 0, area = 0, faces = 0;
+  // Every body of fresh water (4-connected squares), and the island's whole fresh-water edge.
+  const label = new Int32Array(n * n);
+  /** @type {{ area: number, cx: number, cz: number }[]} */ const bodies = [{ area: 0, cx: 0, cz: 0 }];
+  let allFaces = 0;
+  for (let k0 = 0; k0 < n * n; k0++) {
+    if (land(k0)) allFaces += nb(k0).filter(fresh).length;
+    if (!fresh(k0) || label[k0]) continue;
+    const id = bodies.length, body = { area: 0, cx: 0, cz: 0 };
+    const queue = [k0];
+    label[k0] = id;
+    while (queue.length) {
+      const k = /** @type {number} */ (queue.pop());
+      body.area++; body.cx += xOf(k); body.cz += zOf(k);
+      for (const q of nb(k)) if (fresh(q) && !label[q]) { label[q] = id; queue.push(q); }
+    }
+    body.cx /= body.area; body.cz /= body.area;
+    bodies.push(body);
+  }
+  // The pond: the body of at least 30 m2 nearest the camera (the island may have several ponds
+  // and marshes), its middle, area, and the land squares along its edge.
+  let pick = 0, pickD = Infinity;
+  bodies.forEach((b, id) => {
+    if (!id || b.area < 30) return;
+    const d = Math.hypot(b.cx - at.from[0], b.cz - at.from[1]);
+    if (d < pickD) { pickD = d; pick = id; }
+  });
+  if (!pick) return null;
+  const { cx, cz, area } = bodies[pick];
+  const inPond = (/** @type {number} */ k) => k >= 0 && label[k] === pick;
+  let faces = 0;
   /** @type {{ k: number, w: number }[]} */ const bank = [];
   /** @type {number[]} */ const shallows = [];
   for (let k = 0; k < n * n; k++) {
-    if (fresh(k)) {
-      cx += xOf(k); cz += zOf(k); area++;
+    if (inPond(k)) {
       const d = hab.depthCm[k];
       if (d >= 2 && d <= 12 && nb(k).some(land)) shallows.push(k);
     } else if (land(k)) {
-      const w = nb(k).find(fresh);
-      if (w !== undefined) { bank.push({ k, w }); faces += nb(k).filter(fresh).length; }
+      const w = nb(k).find(inPond);
+      if (w !== undefined) { bank.push({ k, w }); faces += nb(k).filter(inPond).length; }
     }
   }
-  if (!area || !bank.length) return null;
-  cx /= area; cz /= area;
+  if (!bank.length) return null;
   // Square edges overcount a smooth shore by about 4 / pi.
   const edgeM = Math.round(faces * Math.PI / 4);
+  const islandEdgeM = Math.round(allFaces * Math.PI / 4);
+  const waters = bodies.filter((b, id) => id && b.area >= 30).length;
 
   // Bank squares on the camera's side of the pond, spread a little around it.
   const view = Math.atan2(at.from[1] - cz, at.from[0] - cx);
@@ -67,7 +97,8 @@ export function previewSpots(hab, growth, at) {
   });
 
   // One on the lily pad nearest the camera's side, one half in the shallows.
-  const lilies = (growth?.plants ?? []).filter((p) => p.sp === 'lilies');
+  const cellOf = (/** @type {number} */ x, /** @type {number} */ z) => Math.floor(z - HABITAT_ORIGIN) * n + Math.floor(x - HABITAT_ORIGIN);
+  const lilies = (growth?.plants ?? []).filter((p) => p.sp === 'lilies' && inPond(cellOf(p.x, p.z)));
   if (lilies.length) {
     let best = lilies[0], bestD = Infinity;
     for (const p of lilies) {
@@ -85,5 +116,5 @@ export function previewSpots(hab, growth, at) {
     const x = xOf(best), z = zOf(best);
     spots.push({ x, y: at.surface(x, z) - 0.016, z, yaw: Math.atan2(cx - x, cz - z) + Math.PI, where: 'shallows' });
   }
-  return { spots, edgeM, pondM2: area };
+  return { spots, edgeM, pondM2: area, islandEdgeM, waters };
 }

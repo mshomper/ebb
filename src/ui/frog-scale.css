@@ -1,10 +1,10 @@
-/* The frog size preview panel (?frogscale). Top left, under the build badge; never wider than the
-   screen; text at 16 px or more. */
+/* The frog size preview panel (?frogscale). Top left, under the build badge and its island switch;
+   never wider than the screen; text at 16 px or more. */
 .ebb-frogscale {
   position: fixed;
   z-index: 12;
   left: 12px;
-  top: 76px;
+  top: 104px;
   width: min(340px, calc(100vw - 24px));
   box-sizing: border-box;
   padding: 10px 12px 12px;

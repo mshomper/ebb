@@ -29,7 +29,9 @@ export function mountFrogScale(parent, fs) {
         <button type="button" class="ebb-frogscale__hide" data-act="hide">Hide</button></div>
       <div class="ebb-frogscale__body">
         <p class="ebb-frogscale__line">${ready
-          ? `Pond edge about ${found.edgeM} m. At one frog per ${P.frogsPerEdgeM} m, about ${Math.round(found.edgeM / P.frogsPerEdgeM)} frogs.`
+          ? (found.waters > 1
+            ? `This pond's edge is about ${found.edgeM} m; all ${found.waters} waters, about ${found.islandEdgeM} m. At one frog per ${P.frogsPerEdgeM} m, about ${Math.round(found.edgeM / P.frogsPerEdgeM)} here and ${Math.round(found.islandEdgeM / P.frogsPerEdgeM)} in all.`
+            : `Pond edge about ${found.edgeM} m. At one frog per ${P.frogsPerEdgeM} m, about ${Math.round(found.edgeM / P.frogsPerEdgeM)} frogs.`)
           : 'Waiting for the pond to settle.'}</p>
         <div class="ebb-frogscale__row"><span>Frog ${ready ? `${frog + 1} of ${spots.length}, ${s.where}` : ''}</span>
           <button type="button" data-act="next" ${ready ? '' : 'disabled'}>Next frog</button></div>
