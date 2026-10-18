@@ -233,6 +233,18 @@ const ICONS = {
     <path d="M4.5 9H19.5M8.5 3.5V6.5M15.5 3.5V6.5"/>
     <path d="M12.6 11.6A3.4 3.4 0 1 0 15.2 17A2.8 2.8 0 0 1 12.6 11.6Z"/>`,
 
+  // Web (what needs what): three knots on a line above, one below, joined by curving threads.
+  web: `
+    <path d="M6 8.8C6 12.5 12 12 12 15.4M12 8.8V15.4M18 8.8C18 12.5 12 12 12 15.4"/>
+    <circle ${ACCENT} cx="6" cy="6.5" r="2.3"/>
+    <circle cx="6" cy="6.5" r="2.3"/>
+    <circle ${ACCENT} cx="12" cy="6.5" r="2.3"/>
+    <circle cx="12" cy="6.5" r="2.3"/>
+    <circle ${ACCENT} cx="18" cy="6.5" r="2.3"/>
+    <circle cx="18" cy="6.5" r="2.3"/>
+    <circle ${ACCENT} cx="12" cy="18" r="2.6"/>
+    <circle cx="12" cy="18" r="2.6"/>`,
+
   // Show me: a looking glass.
   find: `
     <circle ${ACCENT} cx="10.5" cy="10.5" r="6"/>

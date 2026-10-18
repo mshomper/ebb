@@ -102,7 +102,7 @@ export function groundSurvey(hab, material, state, island, paintVersion = 0) {
   /** @type {Record<string, { cells: number, plants: Record<string, number>, sx: number, sz: number }>} */
   const by = {};
   for (const id of island.groundOrder) by[id] = { cells: 0, plants: {}, sx: 0, sz: 0 };
-  let land = 0, stream = 0;
+  let land = 0, stream = 0, mossOnRock = 0;
   /**
    * The Ground pages a square counts toward: grass-painted land toward none (it has its own page
    * under Living things), the sea toward none (only its band), and a sandy tide band toward both
@@ -122,16 +122,19 @@ export function groundSurvey(hab, material, state, island, paintVersion = 0) {
       if (!kind) continue;
       if (kind !== 'sea' && kind !== 'fresh') land++;
       if (kind === 'fresh' && !hab.still[k]) stream++;
+      if (kind === 'moss' && paintedKind(material, x, z) === 'rock') mossOnRock++;
       for (const id of pagesOf(kind, x, z)) {
         const b = by[id];
         b.cells++; b.sx += x; b.sz += z;
       }
     }
+    // A plant on grass-painted ground grows in the soil under the grass.
     for (const p of state?.growth?.plants ?? []) {
-      for (const id of pagesOf(groundKind(hab, material, p.x, p.z, island), p.x, p.z)) by[id].plants[p.sp] = (by[id].plants[p.sp] ?? 0) + 1;
+      const kind = groundKind(hab, material, p.x, p.z, island);
+      for (const id of kind === 'grass' ? ['soil'] : pagesOf(kind, p.x, p.z)) by[id].plants[p.sp] = (by[id].plants[p.sp] ?? 0) + 1;
     }
   }
-  const survey = { by, land, stream };
+  const survey = { by, land, stream, mossOnRock };
   cache = { hab, growth: state?.growth, key, survey };
   return survey;
 }

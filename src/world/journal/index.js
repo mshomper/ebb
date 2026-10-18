@@ -18,22 +18,23 @@ import { initialJournal, observe, learn, notePlanted, momentsNow, catchMoments }
 import { describe, identify, showMeSpot } from './describe.js';
 import { groundKind, groundCard, groundSurvey, describeGround, groundSpot } from './ground.js';
 import { almanac } from './almanac.js';
+import { inkWeb, describeWeb } from './web.js';
 
 /**
  * @typedef {Object} JournalUiSlice
  * @property {boolean} open
- * @property {'living'|'ground'|'almanac'|'notes'} view
+ * @property {'living'|'ground'|'web'|'almanac'|'notes'} view
  * @property {string|null} page   the page shown in the living or ground view, or null for the list
  * @property {'half'|'full'} size  the phone sheet's height
  */
 
 /**
- * @param {{ world: { state: any, env: any }, words: any, island: any }} opts
+ * @param {{ world: { state: any, env: any }, words: any, island: any, web: any }} opts
  *   world: the live world (state and env of the hourly tick); words: recipes/world/journal.json;
- *   island: recipes/world/journal-island.json
+ *   island: recipes/world/journal-island.json; web: recipes/world/journal-web.json
  */
 export function createJournal(opts) {
-  const { world, words, island } = opts;
+  const { world, words, island, web } = opts;
   /** @type {import('./observe.js').Journal} */
   let journal = get('journal') ?? initialJournal(hourIndex());
   update('journal', () => journal);
@@ -54,8 +55,11 @@ export function createJournal(opts) {
     }
     for (const n of r.notes) emitDeferred('note:posted', n);
   }
-  /** @param {any[]} events @param {number} hour @param {any} [state] */
-  const look = (events, hour, state = world.state) => commit(observe(journal, { state, events, hour, habitat: habitat(), words }));
+  /** Look at the island, then ink any link of the web that has now been seen. @param {any[]} events @param {number} hour @param {any} [state] */
+  const look = (events, hour, state = world.state) => {
+    commit(observe(journal, { state, events, hour, habitat: habitat(), words }));
+    if (habitat()) commit(inkWeb(journal, survey(), { web, words, state, hour }));
+  };
 
   /** The weather and time now, as moments read them. @param {number} stage */
   function now(stage) {
@@ -148,6 +152,9 @@ export function createJournal(opts) {
       ? describe(journal, id, world.state, habitat(), words, hourIndex())
       : describeGround(journal, id, survey(), island, words)),
     /** The almanac's rows for the time shown. */
+    web,
+    /** The web of what needs what: its bands of names and its links, inked or in pencil. */
+    describeWeb: () => describeWeb(journal, habitat() ? survey() : null, web),
     almanac: () => almanac({ state: world.state, tHours: display() / SECONDS_PER_HOUR,
       weatherNow: weatherAt(world.state?.weather, display(), world.env.recipes?.seasons),
       tideParams: tideParams(world.env.recipes?.water?.tide), words, island }),

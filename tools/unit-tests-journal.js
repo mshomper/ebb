@@ -11,6 +11,8 @@ import { drawSketch, hasSketch } from '../src/ui/sketches/index.js';
 import { describe, identify, showMeSpot } from '../src/world/journal/describe.js';
 import { groundKind, groundCard, groundSurvey, describeGround } from '../src/world/journal/ground.js';
 import { almanac } from '../src/world/journal/almanac.js';
+import { inkWeb, describeWeb } from '../src/world/journal/web.js';
+import { webView } from '../src/ui/journal-web.js';
 import { STAGE } from '../src/world/growth/coarse.js';
 import { WORLD_CELLS } from '../src/world/terrain/grid.js';
 import { shoreline, at, loadRecipes } from './unit-tests-growth.js';
@@ -22,6 +24,15 @@ function loadIsland() {
     return r.json();
   });
   return islandPromise;
+}
+
+/** @type {Promise<any> | null} */ let webPromise = null;
+function loadWeb() {
+  webPromise ??= fetch('../recipes/world/journal-web.json').then((r) => {
+    if (!r.ok) throw new Error(`recipes/world/journal-web.json: HTTP ${r.status}`);
+    return r.json();
+  });
+  return webPromise;
 }
 
 /** Painted ground for the shoreline: soil everywhere (grass, sand, rock, soil per texel). */
@@ -235,6 +246,59 @@ export function addJournalTests(test, assert, eq) {
       }
     }
     return `${ids.length} drawings, each in three stages`;
+  });
+
+  test(JOURNAL, 'the web: links already true ink quietly, later ones write their note once', async () => {
+    const { words, state, first, hab } = await setup();
+    const island = await loadIsland();
+    const web = await loadWeb();
+    const survey = groundSurvey(hab, soilEverywhere(), state, island, 1);
+    const a = inkWeb(first.journal, survey, { web, words, state, hour: 0 });
+    eq(a.notes.length, 0, 'notes while the island is new');
+    assert(a.journal.flags.includes('web:soil>grass'), 'grass on the soil is inked from the start');
+    assert(!a.journal.flags.includes('web:midges>frogs'), 'frogs eating midges is not inked before frogs come');
+    const late = words.arrivedHours + 50;
+    const fed = { ...a.journal, flags: [...a.journal.flags, 'frogs:ate'] };
+    const b = inkWeb(fed, survey, { web, words, state, hour: late });
+    eq(b.notes.map((n) => n.text).join(' | '), 'Frogs feed on the midges.', 'notes when frogs first eat');
+    eq(b.notes[0].sp, 'frogs', 'the note is about the frogs');
+    const c = inkWeb(b.journal, survey, { web, words, state, hour: late + 1 });
+    eq(c.notes.length, 0, 'notes a second time');
+    eq(c.journal, b.journal, 'the journal is unchanged by a repeat');
+    const d = describeWeb(b.journal, survey, web);
+    const node = (/** @type {string} */ id) => d.rows.flatMap((r) => r.nodes).find((n) => n.id === id);
+    assert(node('soil')?.known && node('grass')?.known, 'soil and grass are known');
+    assert(node('frogs')?.known, 'frogs are known once seen eating');
+    assert(!node('you')?.known, 'you are still in pencil');
+    assert(d.links.find((l) => l.a === 'midges' && l.b === 'frogs')?.inked, 'the midges link is inked');
+    assert(!d.links.find((l) => l.a === 'you')?.inked, 'feeding is still pencil');
+    return `${b.journal.flags.filter((f) => f.startsWith('web:')).length} of ${web.links.length} links inked`;
+  });
+
+  test(JOURNAL, 'the web drawing: links join neighbours without crossing, names read at 16 px on a phone', async () => {
+    const web = await loadWeb();
+    const rowOf = /** @type {Record<string, [number, number]>} */ ({});
+    web.rows.forEach((/** @type {any} */ r, /** @type {number} */ i) => r.ids.forEach((/** @type {string} */ id, /** @type {number} */ j) => { rowOf[id] = [i, j]; }));
+    for (const id of Object.keys(web.nodes)) assert(rowOf[id], `${id} is in a row`);
+    for (const l of web.links) {
+      const [ra, ja] = rowOf[l.a] ?? [-9, 0], [rb, jb] = rowOf[l.b] ?? [-9, 0];
+      assert(Math.abs(ra - rb) === 1 || (ra === rb && Math.abs(ja - jb) === 1), `${l.a} to ${l.b} joins neighbouring rows, or neighbours in a row`);
+    }
+    // Two links between the same pair of rows cross when their ends are in opposite order.
+    const down = web.links.filter((/** @type {any} */ l) => rowOf[l.a][0] !== rowOf[l.b][0]).map((/** @type {any} */ l) => {
+      const [p, q] = rowOf[l.a][0] < rowOf[l.b][0] ? [rowOf[l.a], rowOf[l.b]] : [rowOf[l.b], rowOf[l.a]];
+      return { row: p[0], top: p[1], bot: q[1], name: `${l.a}-${l.b}` };
+    });
+    for (const s of down) for (const t of down) {
+      if (s.row === t.row) assert((s.top - t.top) * (s.bot - t.bot) >= 0, `${s.name} crosses ${t.name}`);
+    }
+    const blank = { flags: [], species: {} };
+    const svg = webView(describeWeb(/** @type {any} */ (blank), null, web), web, null);
+    const W = Number(/viewBox="0 0 ([\d.]+)/.exec(svg)?.[1]);
+    const phonePx = web.textPx * (375 - 32) / W;
+    assert(phonePx >= 16, `names are ${phonePx.toFixed(1)} px on a 375 px phone`);
+    assert(!/NaN|undefined/.test(svg), 'the drawing is clean');
+    return `widest row ${W.toFixed(0)} units; names at ${phonePx.toFixed(1)} px on a phone`;
   });
 
   test(JOURNAL, 'a tap names the nearest plant, or grass, or nothing', async () => {
