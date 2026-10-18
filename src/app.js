@@ -90,6 +90,12 @@ export async function startApp(canvas, hooks = {}) {
   });
   // Unlocks (docs 12, 13): placing springs is the dragonflies' gift; `?sandbox` opens it early.
   updateStore('unlocks', (u) => ({ ...(u ?? {}), springs: !!u?.springs || params.has('sandbox') }));
+  // `?weather=clear|cloud|rain|mist` previews a weather look (as the sky lab does); the world's
+  // own weather record is untouched.
+  const weatherPreview = params.get('weather');
+  if (weatherPreview && ['clear', 'cloud', 'rain', 'mist'].includes(weatherPreview)) {
+    updateStore('preview', (p) => ({ ...(p ?? {}), weather: weatherPreview }));
+  }
   const syncHistory = () => updateStore('history', () => ({ canUndo: history.canUndo(), canRedo: history.canRedo() }));
   history.setBudget((terrainRecipe.undoBudgetMB[tier] ?? 12) * 1024 * 1024);
   const unHistory = history.onChange(syncHistory);
