@@ -138,6 +138,21 @@ export async function startApp(canvas, hooks = {}) {
 
   const camera = createOrbitCamera(camRecipe);
   camera.setGroundProbe((x, z) => terrain.sampleHeight(x, z));
+  // The view, for the UI (store slice `view`): the ground point in the middle of the screen, and
+  // where a ground point lands on screen in CSS pixels (behind: it is behind the camera, and x, y
+  // are mirrored so they still say which way to turn).
+  updateStore('view', () => ({
+    center: () => [camera.target[0], camera.target[2]],
+    /** @param {number} x @param {number} z @returns {{ x: number, y: number, behind: boolean }} */
+    project(x, z) {
+      const m = camera.viewProj, y = terrain.sampleHeight(x, z);
+      const cx = m[0] * x + m[4] * y + m[8] * z + m[12], cy = m[1] * x + m[5] * y + m[9] * z + m[13];
+      const w = m[3] * x + m[7] * y + m[11] * z + m[15];
+      const behind = w <= 1e-4, s = behind ? -1 / Math.max(Math.abs(w), 1e-4) : 1 / w;
+      const r = canvas.getBoundingClientRect();
+      return { x: r.left + (cx * s * 0.5 + 0.5) * r.width, y: r.top + (0.5 - cy * s * 0.5) * r.height, behind };
+    },
+  }));
 
   // Light: the physical sky, sun or moon shadows, the shared lighting group, slow eye adaptation.
   const atmosphere = await createAtmosphere(gpu.device, skyRecipe, tierSettings);

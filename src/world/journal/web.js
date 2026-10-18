@@ -51,7 +51,7 @@ export function describeWeb(journal, survey, web) {
   /** @param {string} id */
   const known = (id) => {
     const n = web.nodes[id];
-    if (links.some((l) => l.inked && (l.a === id || l.b === id))) return true;   // a link seen names both ends
+    if (n.always || links.some((l) => l.inked && (l.a === id || l.b === id))) return true;   // a link seen names both ends
     if (n.flag) return journal.flags.includes(n.flag);
     if (journal.species[n.page]?.ever) return true;
     return !!survey && (survey.by[n.page]?.cells ?? 0) > 0;   // a ground page is known once it is on the island

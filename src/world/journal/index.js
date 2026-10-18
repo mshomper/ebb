@@ -11,7 +11,7 @@
 import { on, emitDeferred } from '../../core/events.js';
 import { get, update } from '../../core/store.js';
 import { hourIndex, display, SECONDS_PER_HOUR, HOURS_PER_DAY } from '../../core/clock.js';
-import { onAction, dispatch } from '../../input/actions.js';
+import { onAction } from '../../input/actions.js';
 import { weatherAt } from '../weather.js';
 import { tideParams } from '../tide.js';
 import { initialJournal, observe, learn, notePlanted, momentsNow, catchMoments } from './observe.js';
@@ -91,18 +91,23 @@ export function createJournal(opts) {
     commit(catchMoments(journal, card.sp, ids, { state: world.state, hour: hourIndex(), words, name, list }));
   }
 
-  /** Glide the camera to the page's finest example and ring it. @param {string} sp */
+  /**
+   * Ring the example nearest the middle of your view. The camera stays where it is (a game-driven
+   * move is distracting); the card follows the ring on screen, and an arrow at the edge points to
+   * it while it is out of view (src/ui/island-notes.js). @param {string} sp
+   */
   function showMe(sp) {
+    const view = get('view');
+    const near = view?.center() ?? null;
     let card = null;
-    if (words.species[sp]) card = showMeSpot(sp, world.state, habitat(), words);
+    if (words.species[sp]) card = showMeSpot(sp, world.state, habitat(), words, near);
     else if (island.ground[sp]) {
-      const spot = groundSpot(sp, habitat(), material(), survey(), island);
+      const spot = groundSpot(sp, habitat(), material(), survey(), island, near);
       if (spot) card = groundCard(spot.kind, habitat(), spot.x, spot.z, { island, flora: flora(), journal, words });
     }
     if (!card) return;
-    dispatch({ type: 'camera.focus', x: card.wx, z: card.wz, distance: words.showMe.distanceM, pitchDeg: words.showMe.pitchDeg });
-    const w = typeof window !== 'undefined' ? window : null;
-    select(card, w ? w.innerWidth / 2 : 0, w ? w.innerHeight / 2 : 0);
+    const at = view?.project(card.wx, card.wz);
+    select({ ...card, pinned: true }, at?.x ?? 0, at?.y ?? 0);
   }
 
   const offs = [

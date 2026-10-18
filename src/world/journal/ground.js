@@ -171,14 +171,16 @@ export function describeGround(journal, id, survey, island, words) {
 }
 
 /**
- * Where a Ground page's Show me goes: the square of that ground nearest the middle of all of it.
+ * What a Ground page's Show me rings: the square of that ground nearest `near` (the middle of your
+ * view), or without it the square nearest the middle of all of it.
  * @param {string} id @param {any} hab @param {Uint8Array | null} material @param {any} survey @param {any} island
+ * @param {number[] | null} [near] a world point [x, z]
  * @returns {{ x: number, z: number, kind: string } | null} the point and its kind, for groundCard()
  */
-export function groundSpot(id, hab, material, survey, island) {
+export function groundSpot(id, hab, material, survey, island, near = null) {
   const b = survey.by[id];
   if (!b || !b.cells || !hab) return null;
-  const cx = b.sx / b.cells, cz = b.sz / b.cells;
+  const cx = near ? near[0] : b.sx / b.cells, cz = near ? near[1] : b.sz / b.cells;
   let best = null, bestD = Infinity;
   for (let k = 0; k < hab.n * hab.n; k++) {
     if (!hab.open[k]) continue;

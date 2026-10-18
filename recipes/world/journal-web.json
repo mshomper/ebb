@@ -1,7 +1,9 @@
 {
   "type": "journal-web",
   "version": 1,
-  "note": "The journal's web of what needs what (J2a, docs 13, 15). rows: the bands top to bottom, each a list of node ids in left-to-right order; the order is chosen so no two links cross and no link passes behind a name (keep that when adding species). nodes: the label, and what the node stands for: page (a journal page id; the node is pencil until that page is known) or flag (a journal flag that makes it known). links: a, b and ink, the trigger that inks the link: grows:<ground>:<plant> (that plant seen growing on that ground; plants on grass-painted ground count as growing in soil), seen:<page> (that page known), mossOnRock (moss seen on painted rock), or flag:<name> (a journal flag, such as frogs:settled, set when frogs arrive in S6). note: the line the journal writes the first time a link inks (links already true when the journal starts ink quietly). textPx: the label size in drawing units (18 reads at 16 px on a 375 px phone). gapPx: the space between names in a row; linkGapPx: the wider space between two neighbours linked to each other, so that link reads as a line; rowGap: the space between rows; bandPad: the padding of each band's background.",
+  "note": "The journal's web of what needs what (J2a, docs 13, 15). rows: the bands top to bottom, each a list of node ids in left-to-right order; the order is chosen so no two links cross and no link passes behind a name (keep that when adding species). nodes: the label, and what the node stands for: page (a journal page id; the node is a pencil ? until that page is known), flag (a journal flag that makes it known) or always (known from the start, as you are). A name is also known once any of its links is inked. intro: the line under the web before a name is tapped. unknown: how a name not yet seen shows (label), and what tapping it says (line, then hint, which names the known things linked into it so it hints without telling). links: a, b and ink, the trigger that inks the link: grows:<ground>:<plant> (that plant seen growing on that ground; plants on grass-painted ground count as growing in soil), seen:<page> (that page known), mossOnRock (moss seen on painted rock), or flag:<name> (a journal flag, such as frogs:settled, set when frogs arrive in S6). note: the line the journal writes the first time a link inks (links already true when the journal starts ink quietly). textPx: the label size in drawing units (18 reads at 16 px on a 375 px phone). gapPx: the space between names in a row; linkGapPx: the wider space between two neighbours linked to each other, so that link reads as a line; rowGap: the space between rows; bandPad: the padding of each band's background.",
+  "intro": "Ground at the top, plants in the middle, animals below. Inked links are ones you have seen happen; pencil ones you have not, yet. A ? is something you have not met. Tap a name to follow its links.",
+  "unknown": { "label": "?", "line": "Not yet seen.", "hint": "Something here seems to need {list}." },
   "textPx": 18,
   "gapPx": 6,
   "linkGapPx": 48,
@@ -28,7 +30,7 @@
     "thrift": { "label": "Thrift", "page": "thrift" },
     "frogs": { "label": "Frogs", "flag": "frogs:seen" },
     "midges": { "label": "Midges", "flag": "midges:seen" },
-    "you": { "label": "You", "flag": "you:fed" }
+    "you": { "label": "You", "always": true }
   },
   "links": [
     { "a": "rock", "b": "moss", "ink": "mossOnRock", "note": "Moss has found a hold on the rock." },

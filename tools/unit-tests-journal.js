@@ -190,7 +190,10 @@ export function addJournalTests(test, assert, eq) {
     assert(d.story.some((l) => l.startsWith('You first planted iris clumps on ')), `planted line in: ${d.story.join(' / ')}`);
     assert(d.story.includes(words.story.oldestArrived), 'oldest line');
     const spot = showMeSpot('iris', s, hab, words);
-    assert(spot && spot.sp === 'iris' && spot.stage === STAGE.mature, 'Show me goes to a full-grown iris');
+    assert(spot && spot.sp === 'iris' && spot.stage === STAGE.mature, 'with no view, Show me picks a full-grown iris');
+    const near = [at('bank')[0], at('bank')[1] + 54];
+    const close = showMeSpot('iris', s, hab, words, near);
+    assert(close && Math.hypot(close.wx - near[0], close.wz - near[1]) < 0.5, `Show me rings the iris nearest the view: ${close?.wx}, ${close?.wz}`);
     return d.story.join(' / ');
   });
 
@@ -269,7 +272,13 @@ export function addJournalTests(test, assert, eq) {
     const node = (/** @type {string} */ id) => d.rows.flatMap((r) => r.nodes).find((n) => n.id === id);
     assert(node('soil')?.known && node('grass')?.known, 'soil and grass are known');
     assert(node('frogs')?.known, 'frogs are known once seen eating');
-    assert(!node('you')?.known, 'you are still in pencil');
+    assert(node('you')?.known, 'you are always known');
+    assert(node('midges')?.known, 'midges are known once frogs are seen eating them');
+    const before = describeWeb(a.journal, survey, web);
+    assert(!before.rows.flatMap((r) => r.nodes).find((n) => n.id === 'midges')?.known, 'midges are not known before');
+    const page = webView(before, web, 'midges');
+    assert(!page.includes('Midges'), 'an unknown name is never written, even when tapped');
+    assert(page.includes(web.unknown.hint.replace('{list}', 'reeds')), 'tapping it hints at what it needs');
     assert(d.links.find((l) => l.a === 'midges' && l.b === 'frogs')?.inked, 'the midges link is inked');
     assert(!d.links.find((l) => l.a === 'you')?.inked, 'feeding is still pencil');
     return `${b.journal.flags.filter((f) => f.startsWith('web:')).length} of ${web.links.length} links inked`;
@@ -298,6 +307,7 @@ export function addJournalTests(test, assert, eq) {
     const phonePx = web.textPx * (375 - 32) / W;
     assert(phonePx >= 16, `names are ${phonePx.toFixed(1)} px on a 375 px phone`);
     assert(!/NaN|undefined/.test(svg), 'the drawing is clean');
+    for (const id of ['frogs', 'midges']) assert(!svg.includes(`>${web.nodes[id].label}<`), `${id} is a ? on a new island`);
     return `widest row ${W.toFixed(0)} units; names at ${phonePx.toFixed(1)} px on a phone`;
   });
 

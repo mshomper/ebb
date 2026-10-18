@@ -434,7 +434,48 @@ button.ebb-jnotes__row:hover { background: rgba(30, 38, 36, 0.06); }
   transition: opacity 160ms ease, visibility 0s linear 160ms;
 }
 .ebb-idcard.is-open { opacity: 1; visibility: visible; pointer-events: auto; transition: opacity 160ms ease, visibility 0s; }
+.ebb-idcard.is-open.is-away { opacity: 0; visibility: hidden; pointer-events: none; }
 .ebb-idcard .icon { width: 24px; height: 24px; display: block; flex: none; }
+
+/* Show me: the arrow at the screen edge pointing to a ring out of view. */
+.ebb-pointer {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 14;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--jr-paper);
+  color: var(--jr-ink);
+  box-shadow: 0 4px 16px rgba(10, 14, 13, 0.3);
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 200ms ease, visibility 0s linear 200ms;
+}
+/* Show me: the spot, ringed at a size that reads from any distance; it breathes gently. */
+.ebb-mark { position: fixed; left: 0; top: 0; z-index: 13; width: 0; height: 0; pointer-events: none; opacity: 0; visibility: hidden; transition: opacity 200ms ease, visibility 0s linear 200ms; }
+.ebb-mark.is-on { opacity: 1; visibility: visible; transition: opacity 200ms ease, visibility 0s; }
+.ebb-mark::before, .ebb-mark::after {
+  content: '';
+  position: absolute;
+  left: -20px;
+  top: -20px;
+  width: 40px;
+  height: 40px;
+  box-sizing: border-box;
+  border-radius: 50%;
+  border: 3px solid var(--jr-paper);
+  box-shadow: 0 0 0 1.5px rgba(30, 38, 36, 0.55), inset 0 0 0 1.5px rgba(30, 38, 36, 0.55);
+}
+.ebb-mark::after { border-width: 2px; box-shadow: none; animation: ebb-mark-breathe 2.4s ease-out infinite; }
+@keyframes ebb-mark-breathe { from { transform: scale(1); opacity: 0.9; } to { transform: scale(1.9); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .ebb-mark::after { animation: none; opacity: 0; } }
+.ebb-pointer.is-on { opacity: 1; visibility: visible; transition: opacity 200ms ease, visibility 0s; }
+.ebb-pointer .icon { width: 26px; height: 26px; display: block; }
 .ebb-idcard button { font: inherit; color: inherit; -webkit-tap-highlight-color: transparent; }
 .ebb-idcard :focus-visible { outline: 2px solid var(--jr-moss); outline-offset: 2px; }
 .ebb-idcard__head { display: flex; align-items: center; gap: 10px; }
