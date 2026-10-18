@@ -8,7 +8,7 @@ import { makeBuffer, makeShaderModule, makeTexture, untrack } from '../../core/g
 
 /** @typedef {import('../frame-graph.js').PassContext} PassContext */
 
-const DRAW_BYTES = 320;
+const DRAW_BYTES = 368;
 const DEG = Math.PI / 180;
 /** Open sea mesh: rings x segments around the camera (SEA_RINGS, SEA_SEGMENTS in water-draw.wgsl). */
 const SEA_RINGS = 28;
@@ -17,7 +17,8 @@ const SEA_SEGMENTS = 48;
 /**
  * @param {{ water: import('../../world/water/index.js').Water, terrain: import('../../world/terrain/index.js').Terrain,
  *   atmosphere: import('../sky/atmosphere.js').Atmosphere, recipe: any, seaExtent: number, getTime: () => number,
- *   seabed: { y: number, albedo: number[], wetDarkening: number }, detailFadeM?: number }} opts
+ *   seabed: { y: number, albedo: number[], wetDarkening: number }, detailFadeM?: number,
+ *   ssr?: { steps: number, refine: number } | null }} opts  ssr: the tier's island reflection (null: sky only)
  *   recipe: recipes/world/water.json; getTime: real seconds for the moving surface; seabed: the land's sea
  *   floor height and wet sand albedo, continued beyond the terrain as open sea floor
  */
@@ -63,6 +64,22 @@ export function createWaterPass(opts) {
     f[68] = R.speed[0]; f[69] = R.speed[1]; f[70] = R.depthM; f[71] = R.coverage;
     f[72] = R.streakM; f[73] = R.albedo;
     f.set(L.scatterAlbedoPond, 76);
+    const S = L.reflection;
+    f[82] = S.reachM; f[83] = S.thicknessM;
+    f[84] = S.edgeFade; f[85] = S.roughFade[0]; f[86] = S.roughFade[1]; f[87] = S.startM;
+    f[88] = S.rippleTilt;
+    // Sky from the probe (blurred by roughness); `?probe=0` shows the sharp sky-view LUT instead.
+    f[89] = new URLSearchParams(location.search).get('probe') === '0' ? 0 : 1;
+    setSSR(opts.ssr ?? null);
+  }
+
+  /**
+   * Island reflection steps for a tier (null: sky only). `?ssr=0` turns it off for side-by-side checks.
+   * @param {{ steps: number, refine: number } | null} s
+   */
+  function setSSR(s) {
+    const off = new URLSearchParams(location.search).get('ssr') === '0';
+    f[80] = s && !off ? s.steps : 0; f[81] = s ? s.refine : 0;
   }
 
   /** @param {PassContext} ctx */
@@ -84,6 +101,8 @@ export function createWaterPass(opts) {
         { binding: 8, resource: opts.atmosphere.skySampler },
         { binding: 9, resource: { buffer: opts.atmosphere.uniforms } },
         { binding: 10, resource: { buffer: opts.atmosphere.state } },
+        { binding: 11, resource: opts.atmosphere.probeView },
+        { binding: 12, resource: opts.atmosphere.probeSampler },
       ],
     }));
   }
@@ -93,6 +112,7 @@ export function createWaterPass(opts) {
 
     /** Apply a quality tier's ripple distance (the startup probe may step down). @param {number} m */
     setDetailFade(m) { f[65] = m; },
+    setSSR,
     reads: ['hdr', 'depth'],
     writes: ['hdr', 'depth', 'normalId'],
     enabled: () => true,
@@ -116,6 +136,8 @@ export function createWaterPass(opts) {
           { binding: 8, visibility: F, sampler: { type: 'filtering' } },
           { binding: 9, visibility: F, buffer: {} },
           { binding: 10, visibility: F, buffer: { type: 'read-only-storage' } },
+          { binding: 11, visibility: F, texture: { sampleType: 'float', viewDimension: 'cube' } },
+          { binding: 12, visibility: F, sampler: { type: 'filtering' } },
         ],
       });
       const module = await makeShaderModule(device, 'water-draw');

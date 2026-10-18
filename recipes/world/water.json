@@ -78,6 +78,31 @@
     "dampHollowMinM2": 3,
     "dampHollowNote": "How wet the summary's damp hollows look (0 dry, 1 as soaked as a stream bank); hollows smaller than dampHollowMinM2 stay plain.",
     "riffle": { "note": "White water on fast, shallow flow: fades in over the speed range (m/s), gone in water deeper than depthM; coverage is the share of the surface that is white at full strength; streakM the streak size; albedo of the aerated water.", "speed": [0.25, 0.8], "depthM": 0.12, "coverage": 0.34, "streakM": 0.07, "albedo": 0.75 },
-    "flowNormalScale": 0.6
+    "flowNormalScale": 0.6,
+    "reflection": {
+      "note": "Island reflection (screen-space, high tiers; steps per tier in quality-tiers.json waterSSR). reachM: farthest a reflected ray looks for the island; thicknessM: how far behind a surface a ray may pass and still count as hitting it (grows 4% with distance); edgeFade: screen-edge fade width (uv); roughFade: water roughness range over which it gives way to the sky alone; startM: first step off the surface; rippleTilt: share of the ripple tilt the reflected ray follows (1 full: blotchy; lower: the bank wobbles but hangs together).",
+      "rippleTilt": 0.3,
+      "reachM": 90,
+      "thicknessM": 1.5,
+      "edgeFade": 0.08,
+      "roughFade": [0.2, 0.4],
+      "startM": 0.05
+    }
+  },
+  "caustics": {
+    "note": "Caustics on underwater ground (docs/07, lib-caustics.wgsl), computed physically: a small rippled surface (waves: count plane waves in scattered directions, wavelengths spread between wavelengthM, each bending light equally (slope: the shortest wave's peak slope; longer waves are taller in proportion), moving at speedShare of real water-wave speed, directions jittered by directionJitterDeg around golden-angle steps) bends the sunlight entering it, and the light on the bed scales with 1 / |det(I + k Hessian)|, k = depth x 0.25 x focusGain. Ripples that curve like lenses gather light into soft bright filaments; the rest dims a little. They multiply direct sun and moon light only, so they vanish in shadow. strength: how far the light follows the computed focus (0 none, 1 full). softFloor and softPerM soften |det| so folds are filaments, not spikes, and deeper water blurs. Depth: faded in over fadeInM, shallowContrast of the contrast at the end of that fade rising to full at peakM, faded out over fadeOutM. projection: how far the pattern shifts along the light with depth (1: refraction at n = 1.333). flowDrift: share of the water speed the pattern drifts with; flowPeriodS: the flow map's cycle. minFinestPx: the caustics fade out once the shortest wave spans fewer pixels than this, so nothing shimmers far away Quality tier causticLayers: 2 sums all the waves, 1 drops the finest 40%, 0 off; ?caustics=0 turns them off.",
+    "strength": 0.8,
+    "waves": { "count": 24, "wavelengthM": [0.1, 0.8], "slope": 0.02, "speedShare": 0.3, "directionJitterDeg": 20 },
+    "focusGain": 1.0,
+    "softFloor": 0.25,
+    "softPerM": 0.3,
+    "fadeInM": [0.01, 0.05],
+    "shallowContrast": 0.3,
+    "peakM": 0.5,
+    "fadeOutM": [0.9, 2.2],
+    "projection": 1.0,
+    "flowDrift": 1.0,
+    "flowPeriodS": 1.6,
+    "minFinestPx": 6
   }
 }

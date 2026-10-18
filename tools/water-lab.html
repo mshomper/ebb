@@ -81,6 +81,18 @@
     <p class="muted" id="map-stats">Waiting for the first summary.</p>
   </div>
   <div class="card">
+    <h2>Water optics: one effect at a time</h2>
+    <p class="muted">Each button reloads this page with one optics effect off, or with a debug view, so you can compare it with everything on. Open two tabs to look side by side.</p>
+    <div class="buttons" id="optics">
+      <button data-q="">Everything on</button>
+      <button data-q="ssr=0">No island reflection</button>
+      <button data-q="probe=0">Sharp sky only (no blur)</button>
+      <button data-q="caustics=0">No caustics</button>
+      <button data-q="waterdbg=5">Where the island reflects (red)</button>
+      <button data-q="waterdbg=2">Reflection only</button>
+    </div>
+  </div>
+  <div class="card">
     <h2>Scripted checks</h2>
     <p class="muted">Each button sculpts the ground near the water for about 3 seconds, then watches the water for 10 seconds and reports what happened.</p>
     <div class="buttons">

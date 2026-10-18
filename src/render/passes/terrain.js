@@ -9,7 +9,7 @@ import { LODS, MAX_CHUNKS, createIndexBuffers, packChunks } from '../terrain-mes
 
 /** @typedef {import('../frame-graph.js').PassContext} PassContext */
 
-const DRAW_BYTES = 192;
+const DRAW_BYTES = 304;
 const GROUND_BYTES = 224;
 const DEG = Math.PI / 180;
 /** @type {Record<string, number>} GroundDetail.tiling.x in lib-ground.wgsl */
@@ -18,9 +18,11 @@ const TILING_MODES = { grid: 0, hex: 1, two: 2 };
 /**
  * @param {{ terrain: import('../../world/terrain/index.js').Terrain, recipe: any, seed: number,
  *   getEye: () => ArrayLike<number>, tier: string, getTide?: () => number, lodDistances?: number[],
- *   water: { depthTextures: GPUTexture[], current: () => number, damp: GPUTexture, dampWet: number }, moss: GPUTexture,
+ *   water: { depthTextures: GPUTexture[], current: () => number, damp: GPUTexture, dampWet: number, vel: GPUTexture, caustics: any },
+ *   moss: GPUTexture, causticLayers?: number,
  *   ground: { views: { a: GPUTextureView, b: GPUTextureView }, sampler: GPUSampler, version: number, fade: number },
- *   groundTier: any }} opts  ground: src/render/ground-detail.js; groundTier: the tier's `ground` block
+ *   groundTier: any }} opts  ground: src/render/ground-detail.js; groundTier: the tier's `ground` block;
+ *   water.caustics: water.json `caustics`; causticLayers: the tier's (0 off, default 2)
  */
 export function createTerrainPass(opts) {
   const { terrain, recipe } = opts;
@@ -36,6 +38,10 @@ export function createTerrainPass(opts) {
   const maxQuads = opts.tier === 'low' ? recipe.render.lowTierMaxQuads : LODS[0];
   /** Mesh LOD switch distances (m): the tier's, else the terrain recipe's. @type {number[]} */
   let lodDistances = opts.lodDistances ?? recipe.render.lodDistances;
+  // Caustic layers on underwater ground, per tier; `?caustics=0` turns them off for side-by-side checks.
+  const causticsOff = new URLSearchParams(location.search).get('caustics') === '0' || !opts.water.caustics;
+  /** @param {number | undefined} n */
+  const causticLayers = (n) => (causticsOff ? 0 : n ?? 2);
   /** @type {GPUBuffer} */ let groundBuffer;
   /** @type {() => void} */ let makeGroup = () => {};
   let groundVersion = -1;
@@ -88,6 +94,17 @@ export function createTerrainPass(opts) {
     const uw = recipe.underwater;
     f.set(m.albedoSilt, 40); f[43] = uw.siltCover;
     f[44] = uw.bedDepthM[0]; f[45] = uw.bedDepthM[1]; f[46] = uw.siltDepthM[0]; f[47] = uw.siltDepthM[1];
+    // Caustics (lib-caustics.wgsl), floats 48..75: look, depthFade, wave0..2, motion, misc.
+    const c = opts.water.caustics;
+    f[49] = causticLayers(opts.causticLayers);
+    if (!c) return;
+    f[48] = c.strength; f[50] = c.peakM; f[51] = c.shallowContrast;
+    f[52] = c.fadeInM[0]; f[53] = c.fadeInM[1]; f[54] = c.fadeOutM[0]; f[55] = c.fadeOutM[1];
+    const W = c.waves;
+    f.set([W.count, W.wavelengthM[0], W.wavelengthM[1], W.slope], 56);
+    f[60] = W.speedShare; f[61] = W.directionJitterDeg * DEG;
+    f[68] = c.focusGain; f[69] = c.flowDrift; f[70] = c.flowPeriodS; f[71] = c.projection;
+    f[72] = c.softFloor; f[73] = c.softPerM; f[74] = c.minFinestPx;
   }
 
   return {
@@ -95,11 +112,12 @@ export function createTerrainPass(opts) {
 
     /**
      * Apply a quality tier's distances without rebuilding (the startup probe may step down).
-     * @param {{ lodDistances?: number[], ground: { detailFadeMeters: number } }} t
+     * @param {{ lodDistances?: number[], ground: { detailFadeMeters: number }, causticLayers?: number }} t
      */
     setTier(t) {
       lodDistances = t.lodDistances ?? recipe.render.lodDistances;
       gf[23] = t.ground.detailFadeMeters;
+      f[49] = causticLayers(t.causticLayers);
     },
     reads: [],
     writes: ['hdr', 'depth'],
@@ -124,6 +142,7 @@ export function createTerrainPass(opts) {
           { binding: 9, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: 'unfilterable-float' } },
           { binding: 10, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: 'float' } },
           { binding: 11, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: 'float' } },
+          { binding: 12, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: 'unfilterable-float' } },
         ],
       });
       const layout = device.createPipelineLayout({ label: 'opaque', bindGroupLayouts: [ctx.layouts.frame, ctx.layouts.lighting, layout2] });
@@ -163,6 +182,7 @@ export function createTerrainPass(opts) {
             { binding: 9, resource: wt.createView() },
             { binding: 10, resource: opts.water.damp.createView() },
             { binding: 11, resource: opts.moss.createView() },
+            { binding: 12, resource: opts.water.vel.createView() },
           ],
         }));
         groundVersion = opts.ground.version;

@@ -37,6 +37,11 @@
   .legend { display: flex; flex-wrap: wrap; gap: 16px; font-size: 16px; margin-top: 8px; }
   .legend i { display: inline-block; width: 22px; height: 4px; border-radius: 2px; vertical-align: middle; margin-right: 6px; }
   a { color: #4a6a47; }
+  .probe-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin-top: 12px; }
+  figure { margin: 0; min-width: 0; }
+  figcaption { font-size: 16px; color: #4A5551; margin-top: 4px; }
+  canvas.cross { width: 100%; aspect-ratio: 4 / 3; display: block; border-radius: 10px; }
+  #probe-check { width: 100%; aspect-ratio: 2 / 1; display: block; border-radius: 10px; margin-top: 4px; }
 </style>
 </head>
 <body>
@@ -101,6 +106,30 @@
       <span><i style="background:#1E2624"></i>the hour shown</span>
     </div>
     <p class="muted" style="margin-top:8px">Tap or drag on the chart to pick an hour.</p>
+  </div>
+
+  <div class="card">
+    <h2>Sky probe: the sky that water reflects</h2>
+    <p class="muted">A small cube of six square faces holds the whole sky. Calm water reflects the sharp level; rough or rippled water reflects a blurred level. The sun, moon and stars are left out on purpose: the water adds them itself as glints.</p>
+    <div class="probe-grid">
+      <figure>
+        <canvas id="probe-sharp" class="cross" aria-label="Probe faces, sharp level"></canvas>
+        <figcaption>Sharp (level 0, a mirror)</figcaption>
+      </figure>
+      <figure>
+        <canvas id="probe-blur" class="cross" aria-label="Probe faces, blurred level"></canvas>
+        <figcaption id="probe-blur-cap">Blurred</figcaption>
+      </figure>
+    </div>
+    <div class="field" style="margin-top:12px">
+      <div class="row"><label for="probe-mip">Blur level</label><output id="probe-mip-out" for="probe-mip">-</output></div>
+      <input id="probe-mip" type="range" min="1" max="6" step="1" value="3">
+    </div>
+    <p class="muted" style="margin-top:8px">Each cross is the six faces as stored: middle row west, south, east, north; sky on top, ground below. Seen from inside the cube it reads mirrored left to right, which is how cube textures are laid out. The edges between faces should meet without a seam.</p>
+    <h2 style="margin-top:16px">Direction check</h2>
+    <canvas id="probe-check" aria-label="Direction check: probe above, sky table below"></canvas>
+    <p class="muted" style="margin-top:8px">Both strips are the whole sky unrolled, left to right west, north, east, south, west, zenith at the top, with a light line at the horizon. Top: the probe looked up by direction. Bottom: the sky table the probe is made from. Above the horizon line the two should match, with the bright glow in the same place. Below it the probe shows flat ground and the table shows haze.</p>
+    <p class="muted" id="probe-status" style="margin-top:8px">Waiting for the island to start.</p>
   </div>
 </main>
 <script type="importmap">{ "imports": {

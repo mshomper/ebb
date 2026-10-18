@@ -65,8 +65,10 @@ fn ggxSpecular(n: vec3f, v: vec3f, l: vec3f, roughness: f32, f0: f32) -> f32 {
 // Textured ground (docs/22): direct light on the detail normal, faded across the mesh terminator
 // so detail never lights the dark side of a hill; sky fill at the detail normal times cavity; GGX
 // sun (and moon) specular by `specMode`. Shadows, outline and AO keep using the mesh normal.
+// `direct` scales the sun and moon diffuse only (underwater caustics: focused direct light on the
+// bed, lib-caustics); sky fill and specular keep 1.
 fn shadeGround(albedo: vec3f, worldPos: vec3f, nMesh: vec3f, nDetail: vec3f, roughness: f32, cavity: f32,
-               fragPos: vec4f, terminator: vec2f, f0: f32, specMode: f32) -> vec3f {
+               fragPos: vec4f, terminator: vec2f, f0: f32, specMode: f32, direct: f32) -> vec3f {
   let viewDist = distance(worldPos, frame.cameraPos);
   let v = (frame.cameraPos - worldPos) / max(viewDist, 1e-4);
   let vis = shadowVisibility(worldPos, nMesh, viewDist, fragPos.xy);
@@ -75,7 +77,7 @@ fn shadeGround(albedo: vec3f, worldPos: vec3f, nMesh: vec3f, nDetail: vec3f, rou
   let moonVis = select(vis, 1.0, casterIsSun) * smoothstep(terminator.x, terminator.y, dot(nMesh, frame.moonDir));
   let sunNl = max(dot(nDetail, frame.sunDir), 0.0);
   let moonNl = max(dot(nDetail, frame.moonDir), 0.0);
-  var radiance = albedo * ((frame.sunIlluminance * sunNl * sunVis + frame.moonIlluminance * moonNl * moonVis) / PI
+  var radiance = albedo * ((frame.sunIlluminance * sunNl * sunVis + frame.moonIlluminance * moonNl * moonVis) * (direct / PI)
                            + skyAmbient(nDetail) * cavity);
   if (specMode > 0.5) {
     radiance += frame.sunIlluminance * sunVis * ggxSpecular(nDetail, v, frame.sunDir, roughness, f0);
