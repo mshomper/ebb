@@ -30,6 +30,7 @@ import { createTerrain } from './world/terrain/index.js';
 import { createWaterWorld } from './world/water-world.js';
 import { weatherAt } from './world/weather.js';
 import { createWaterPass } from './render/passes/water.js';
+import { createGrassPass } from './render/passes/grass.js';
 import { onAction, history } from './input/actions.js';
 import { attachDesktopInput } from './input/desktop.js';
 import { attachTouchInput } from './input/touch.js';
@@ -151,6 +152,11 @@ export async function startApp(canvas, hooks = {}) {
     moss: moss.texture, causticLayers: tierSettings.causticLayers, wetness,
     probe: { view: atmosphere.probeView, sampler: atmosphere.probeSampler }, rings: waterRecipe.ripples.rings,
   });
+  // The meadow (docs 10): GPU grass blades where grass is painted, after the terrain.
+  const grassPass = createGrassPass({
+    terrain, recipe: await loadRecipe('flora/grass'), seed: subSeed(seed, 'grass'), tier: tierSettings,
+    water: { depthTextures: water.sim.depthTextures, current: () => water.sim.current },
+  });
   const waterPass = createWaterPass({
     water, terrain, atmosphere, recipe: waterRecipe, seaExtent: terrainRecipe.sea.extent, getTime: () => clock.animT(),
     seabed: { y: landRecipe.seabedDepth, albedo: terrainRecipe.materials.albedoSand.map((/** @type {number} */ a) => a * terrainRecipe.materials.wetDarkening),
@@ -160,6 +166,7 @@ export async function startApp(canvas, hooks = {}) {
   const graph = createFrameGraph(gpu, [
     shadowPass,
     terrainPass,
+    grassPass,
     waterPass,
     createSkyPass(atmosphere, skyRecipe),
     exposure,
@@ -205,6 +212,7 @@ export async function startApp(canvas, hooks = {}) {
     tier = t;
     tierSettings = settingsFor(t);
     terrainPass.setTier(tierSettings);
+    grassPass.setTier(tierSettings);
     waterPass.setDetailFade(tierSettings.waterDetailFadeM);
     waterPass.setSSR(tierSettings.waterSSR ?? null);
     if (lastEntry) sizeCanvas(lastEntry);
@@ -465,7 +473,12 @@ export async function startApp(canvas, hooks = {}) {
 
     /** @type {import('./sim/live-sim.js').FrameInfo} */
     const info = { dt: t.dt, realDt, worldT: t.worldT, animT: t.animT, displayT: display, tier };
-    ww.update({ rain: day.weather.rain, sunY: day.sm.sunDir[1], wind: weatherAt(world.state?.weather, display, seasonsRecipe).wind }, camera.target);
+    const windNow = weatherAt(world.state?.weather, display, seasonsRecipe).wind;
+    ww.update({ rain: day.weather.rain, sunY: day.sm.sunDir[1], wind: windNow }, camera.target);
+    grassPass.update({
+      focus: camera.target, time: t.animT, wind: windNow, windDir: world.state?.weather?.today?.windDir ?? 0,
+      season: season.index + season.phase,
+    });
     // `?ripplerain=1` rains ripples in any weather, to judge rings in sunshine (tools, tuning).
     // Raindrops ring the water in the water shader; the ripple field keeps the pour and creatures.
     const ringRain = params.has('ripplerain') ? 1 : day.weather.rain;

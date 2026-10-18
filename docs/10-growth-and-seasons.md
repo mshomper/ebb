@@ -72,6 +72,8 @@ Cover plants use the same rule on biomass per cell (0..1), with spread to the 4 
 
 Grass is a cover field drawn as GPU blades with no mesh (doc 04). Blade density per 0.25 m texel = `grassCover(c) · materialGrass · (1 − wear)`. Blade height follows biomass and season (short in winter, tall by midsummer); tint comes from the season ramp, the moisture field, and a per-blade hash. Clover and low flowers ride on the same blade system as flower-headed variants.
 
+As built in S5a (`render/passes/grass.js`, `grass-blades.wgsl`, `recipes/flora/grass.json`): blades stand on a world-anchored jittered grid in two square rings around the camera's focus, a dense near ring (140 blades per m² at full tier density, out to a quarter of the tier's grass distance) and a sparser far ring (12% of that, blades a little wider), both drawn from `vertex_index` with nine vertices per blade (two segments and a tip). A blade exists where a hash falls under the painted grass weight times a tuft pattern (patches of about 0.45 m up to 60% thicker or thinner, and 40% taller or shorter), never in water deeper than 1 cm; it shrinks away over the last quarter of the distance, so the meadow meets the textured ground with no edge. Blades bend at rest, sway with the day's wind and passing gusts (6 m, 2.5 m/s), take their height and albedo from the season blended through the year, darken in rain, and are lit like the ground (sun and moon with shadows, sky fill, a little wrap) with a darker root. They write the ground's normal and the terrain's outline group, so they never get outlines. Until S5b's growth step the cover is the painted grass weight itself. `?grass=0` turns them off. Cost on ultra about 0.2 ms.
+
 ### Other flora (later milestones)
 
 | Kind | Generator | Notes |
