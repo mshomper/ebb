@@ -44,7 +44,7 @@ struct WaterDraw {
   detailFadeM: f32,           // ripples calm and move into roughness by this distance (quality tier)
   _q1: f32, _q2: f32,
   rain: vec4f,                // raindrop rings: x share of drop cells active (rain), y cell size (m), z ring life (s), w crest spacing (m)
-  rain2: vec4f,               // x ring radius at the end of its life (m), y crest slope
+  rain2: vec4f,               // x ring radius at the end of its life (m), y crest slope, z foam lace flow cycle (s)
   scatterPond: vec4f,         // rgb single-scatter albedo of pond water (fine silt and peat stain it)
   ssr: vec4f,                 // island reflection: x march steps (0 off), y refine steps, z reach (m), w hit thickness (m)
   ssr2: vec4f,                // x screen-edge fade (uv), y, z roughness range it fades out over, w start offset (m)
@@ -505,11 +505,19 @@ fn fsWater(in: VsOut) -> FsOut {
 
   // ---- foam ----
   // All white water is one field (water-foam.wgsl: falls, meeting flows, fast shallow churn),
-  // carried downstream by the simulation itself. Here it only gets its lace, which boils in place
-  // (bubbles swell and pop) and never resets, so nothing blinks.
+  // carried downstream by the simulation on 0.5 m cells. Its lace rides the current too: two
+  // copies, each sliding with the water for one cycle and faded out as it resets, half a cycle
+  // apart. Every spot resets at its own moment (a slow noise offsets the cycle), so the surface
+  // never blinks together. On still water the lace just boils in place.
   let cover = foamCover(P.xz);
   if (cover > 0.01 && in.bed > -40.0) {
-    let lace = foamLace(P.xz, cover, t);
+    let fp = wd.rain2.z;
+    let phase = t / fp + noiseGrad(P.xz * 0.45, 931u).x * 2.0;
+    let fa = fract(phase);
+    let fb = fract(phase + 0.5);
+    let la = foamLace(P.xz - in.vel * fa * fp, cover, t);
+    let lb = foamLace(P.xz - in.vel * fb * fp + vec2f(2.9, 6.1), cover, t);
+    let lace = mix(la, lb, abs(2.0 * fa - 1.0));
     let froth = applyAerial(wd.foam.y * lightIn * frame.exposure, screenUv, viewDist);
     // Films only millimeters thick (spilling over a bank) never froth.
     surface = mix(surface, froth, lace * wd.foam.z * smoothstep(0.0, 0.5, cover) * smoothstep(0.01, 0.025, d));

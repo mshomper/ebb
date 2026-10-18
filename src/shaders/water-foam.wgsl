@@ -11,12 +11,14 @@
 
 struct Foam {
   rectOrigin: vec2u, rectSize: vec2u,
-  dt: f32, decay: f32,            // real step (s); exp(-dt / fadeS)
+  dt: f32, fadeMoving: f32,       // real step (s); fade time (s) on moving water
   fallFrom: f32, fallGain: f32,   // surface drop per cell (m) where falls start foaming; foam per m beyond it, per s
   convGain: f32, swashGain: f32,  // foam per unit convergence (1/s) per s; foam per s in full churn
   swashDepth: f32, swashSpeed: f32, // churn: shallower than this (m), fading in from this speed (m/s)
   dry: f32, maxFoam: f32,
-  swashSpeedHi: f32, _p1: f32,      // ... to full churn at this speed (m/s)
+  swashSpeedHi: f32, fadeStill: f32, // ... to full churn at this speed (m/s); fade time (s) on still water
+  spread: f32, stillBelow: f32,     // spreading rate on still water (per s); water slower than this (m/s) counts as still
+  _p0: f32, _p1: f32,
 };
 
 @group(0) @binding(0) var<uniform> fm: Foam;
@@ -59,8 +61,15 @@ fn csFoam(@builtin(global_invocation_id) gid: vec3u) {
     return;
   }
   let v = velAt(c);
+  let speed = length(v);
   // Carried by the current: what was upstream one step ago arrives here.
-  var foam = foamBilinear(vec2f(c) - v * fm.dt / WATER_CELL) * fm.decay;
+  var foam = foamBilinear(vec2f(c) - v * fm.dt / WATER_CELL);
+  // On still water foam spreads out (it floats apart into a thin veil) and lingers; on moving
+  // water it is carried and breaks up sooner.
+  let still = 1.0 - smoothstep(fm.stillBelow * 0.5, fm.stillBelow, speed);
+  let around = 0.25 * (foamAt(c + vec2i(1, 0)) + foamAt(c - vec2i(1, 0)) + foamAt(c + vec2i(0, 1)) + foamAt(c - vec2i(0, 1)));
+  foam = mix(foam, around, min(fm.spread * still * fm.dt, 0.5));
+  foam *= exp(-fm.dt / mix(fm.fadeMoving, fm.fadeStill, still));
 
   // Falls: the steepest surface drop into a neighbor the water is flowing toward.
   let s = waterBed(heightTex, c) + d;
@@ -75,7 +84,6 @@ fn csFoam(@builtin(global_invocation_id) gid: vec3u) {
     if (toward <= 0.0) { continue; }
     drop = max(drop, s - (waterBed(heightTex, q) + dq));
   }
-  let speed = length(v);
   var make = fm.fallGain * max(drop - fm.fallFrom, 0.0) * min(speed / 0.3, 1.0);
 
   // Convergence: flows meeting (negative divergence).

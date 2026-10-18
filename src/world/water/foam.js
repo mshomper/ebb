@@ -7,7 +7,7 @@
 import { makeBuffer, makeShaderModule, makeTexture } from '../../core/gpu.js';
 import { WATER_CELLS } from './grid.js';
 
-const FOAM_BYTES = 64;
+const FOAM_BYTES = 80;
 
 /**
  * @param {GPUDevice} device
@@ -61,11 +61,12 @@ export async function createFoam(device, opts) {
       const r = water.rect;
       if (r.w < 3 || r.h < 3 || dt <= 0) return;
       u[0] = r.x; u[1] = r.y; u[2] = r.w; u[3] = r.h;
-      f[4] = dt; f[5] = Math.exp(-dt / recipe.fadeS);
+      f[4] = dt; f[5] = recipe.fadeS;
       f[6] = recipe.fallFromM; f[7] = recipe.fallGain;
       f[8] = recipe.convergenceGain; f[9] = recipe.churnGain;
       f[10] = recipe.churnDepthM; f[11] = recipe.churnSpeed[0];
-      f[12] = 0.001; f[13] = recipe.maxCover; f[14] = recipe.churnSpeed[1];
+      f[12] = 0.001; f[13] = recipe.maxCover; f[14] = recipe.churnSpeed[1]; f[15] = recipe.fadeStillS;
+      f[16] = recipe.spreadPerS; f[17] = recipe.stillBelowMs;
       device.queue.writeBuffer(uniforms, 0, data);
       const pass = encoder.beginComputePass({ label: 'water-foam' });
       pass.setPipeline(pipeline);

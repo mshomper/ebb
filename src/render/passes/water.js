@@ -66,6 +66,7 @@ export function createWaterPass(opts) {
     const RR = recipe.ripples.rings;
     f[69] = RR.cellM; f[70] = RR.lifeS; f[71] = RR.crestM;
     f[72] = RR.radiusM; f[73] = RR.slope;
+    f[74] = recipe.foam.flowCycleS;
     f.set(L.scatterAlbedoPond, 76);
     const S = L.reflection;
     f[82] = S.reachM; f[83] = S.thicknessM;
