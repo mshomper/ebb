@@ -52,7 +52,7 @@ export function mountIslandNotes(parent, words) {
     b.className = 'ebb-notes__note';
     b.textContent = n.text;
     b.title = 'Open the journal';
-    b.addEventListener('click', () => dispatch(n.sp && words.species[n.sp] ? { type: 'ui.journal', open: true, page: n.sp } : { type: 'ui.journal', open: true, view: 'notes' }));
+    b.addEventListener('click', () => dispatch(n.sp ? { type: 'ui.journal', open: true, page: n.sp } : { type: 'ui.journal', open: true, view: 'notes' }));
     root.appendChild(b);
     requestAnimationFrame(() => b.classList.add('is-shown'));
     setTimeout(() => {
@@ -80,6 +80,8 @@ export function mountIslandNotes(parent, words) {
       <div class="ebb-idcard__head"><span class="ebb-idcard__icon">${iconSvg(id.icon)}</span><b>${esc(id.name)}</b>
         <button type="button" class="ebb-idcard__close" data-act="close" aria-label="Close" title="Close">${iconSvg('close')}</button></div>
       <p class="ebb-idcard__text">${esc(id.text)}</p>
+      ${id.suits ? `<p class="ebb-idcard__suits">${esc(id.suits)}</p>` : ''}
+      ${id.suitsPencil ? `<p class="ebb-idcard__suits is-pencil">${esc(id.suitsPencil)}</p>` : ''}
       <button type="button" class="ebb-idcard__open" data-act="open">${iconSvg('journal')}<span>Open its page</span></button>`;
     card.inert = false;
     card.classList.add('is-open');

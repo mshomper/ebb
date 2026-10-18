@@ -1,0 +1,208 @@
+// @ts-check
+// Page words for the field journal's living things (docs 13, 15): turns the journal (observe.js)
+// and the world into what a species page shows (status, likes, field notes, its story on your
+// island, seasons, moments, gives, notes), names the plant under a tap, and picks the plant a page's
+// Show me goes to. Pure; words from recipes/world/journal.json.
+
+import { HABITAT_ORIGIN, habitatCell } from '../growth/habitat.js';
+import { measure, present, knownLines, dateOfHour, FLOWER, DORMANT } from './observe.js';
+
+/** The island's middle and size from the habitat, cached per habitat. @type {WeakMap<object, { x: number, z: number, r: number }>} */
+const shapes = new WeakMap();
+/** @param {any} hab */
+export function islandShape(hab) {
+  let s = shapes.get(hab);
+  if (s) return s;
+  let n = 0, sx = 0, sz = 0;
+  for (let k = 0; k < hab.n * hab.n; k++) {
+    if (!hab.open[k] || hab.sea[k]) continue;
+    n++; sx += k % hab.n; sz += Math.floor(k / hab.n);
+  }
+  s = n ? { x: HABITAT_ORIGIN + sx / n + 0.5, z: HABITAT_ORIGIN + sz / n + 0.5, r: Math.sqrt(n / Math.PI) } : { x: 0, z: 0, r: 1 };
+  shapes.set(hab, s);
+  return s;
+}
+
+/**
+ * Where a set of points sits: "on the west side", "all around the island", "in the middle of the island".
+ * @param {{ x: number, z: number }[]} plants @param {any} hab @param {any} words
+ */
+export function whereWords(plants, hab, words) {
+  if (!plants.length || !hab) return '';
+  const isl = islandShape(hab);
+  let cx = 0, cz = 0;
+  for (const p of plants) { cx += p.x; cz += p.z; }
+  cx /= plants.length; cz /= plants.length;
+  let spread = 0;
+  for (const p of plants) spread += Math.hypot(p.x - cx, p.z - cz);
+  spread /= plants.length;
+  if (plants.length > 2 && spread > words.where.spreadOut * isl.r) return 'all around the island';
+  const dx = cx - isl.x, dz = cz - isl.z;
+  if (Math.hypot(dx, dz) < words.where.centerShare * isl.r) return 'in the middle of the island';
+  // North is -z (docs/08); sectors run counterclockwise from east.
+  const a = Math.atan2(-dz, dx);
+  const i = ((Math.round(a / (Math.PI / 4)) % 8) + 8) % 8;
+  return `on the ${words.compass[i]} side`;
+}
+
+/**
+ * Spreading (+1), receding (-1) or steady (0), from the counts over the last trend.hours hours.
+ * @param {import('./observe.js').SpeciesKnowledge | undefined} k @param {any} words
+ */
+export function trendOf(k, words) {
+  const T = words.trend;
+  if (!k || k.counts.length <= T.hours) return 0;
+  const now = k.counts[k.counts.length - 1], then = k.counts[k.counts.length - 1 - T.hours];
+  if (now - then >= Math.max(T.upMin, T.upShare * then)) return 1;
+  if (then - now >= Math.max(T.downMin, T.downShare * then)) return -1;
+  return 0;
+}
+
+/** The words of an amount ladder for a value. @param {[number, string][]} ladder @param {number} v */
+export function amountOf(ladder, v) {
+  let text = ladder[0][1];
+  for (const [at, t] of ladder) if (v >= at) text = t;
+  return text;
+}
+
+/** @param {string} s */
+const upper = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+
+/**
+ * The species' story on this island, in a few lines.
+ * @param {import('./observe.js').SpeciesKnowledge} k @param {any} rec @param {{ count: number, value: number, plants: any[] }} m
+ * @param {number} hour now @param {import('./observe.js').Journal} journal @param {any} words
+ */
+function storyOf(k, rec, m, hour, journal, words) {
+  const S = words.story;
+  // Inside a sentence the date reads "on summer, day 3".
+  const date = (/** @type {number} */ h) => { const d = dateOfHour(h, words); return d.charAt(0).toLowerCase() + d.slice(1); };
+  const fill = (/** @type {string} */ t, /** @type {number} */ h = -1) =>
+    t.replace('{Plural}', upper(rec.plural ?? rec.name)).replace('{plural}', rec.plural ?? rec.name).replace('{date}', h >= 0 ? date(h) : '');
+  /** @type {string[]} */ const lines = [];
+  if (rec.kind === 'cover') {
+    lines.push(k.arrived ? rec.notes.arrived : fill(S.firstSeen, k.first));
+  } else {
+    lines.push(k.arrived ? fill(S.arrived) : fill(S.firstSeen, k.first));
+    if (k.planted > 0) {
+      lines.push(fill(S.planted, k.plantedAt));
+      if (m.count > 0) lines.push(k.planted >= m.count ? S.ownFew : k.planted * 2 >= m.count ? S.ownHalf : S.ownMost);
+    }
+    let oldest = 0;
+    for (const p of m.plants) if (p.age > oldest) oldest = p.age;
+    if (oldest > 0) lines.push(hour - oldest <= journal.born ? S.oldestArrived : fill(S.oldest, hour - oldest));
+  }
+  if (k.peakAt >= 0 && m.value < S.peakShare * k.peak && k.peak >= 2) lines.push(fill(S.peak, k.peakAt));
+  return lines;
+}
+
+/**
+ * Everything a species page shows, in words.
+ * @param {import('./observe.js').Journal} journal @param {string} sp @param {any} state @param {any} hab @param {any} words
+ * @param {number} [hour] now (for the story's ages; the journal's last look when left out)
+ */
+export function describe(journal, sp, state, hab, words, hour = journal.last) {
+  const rec = words.species[sp];
+  const k = journal.species[sp];
+  const known = !!k?.ever;
+  const m = measure(sp, state, hab, rec);
+  let status = '';
+  if (known) {
+    if (!present(rec, m)) status = rec.none;
+    else {
+      const t = trendOf(k, words);
+      const trend = t > 0 ? rec.spreading : t < 0 ? rec.receding : '';
+      if (rec.kind === 'cover') status = `${amountOf(rec.amount, m.count)}${trend ? `, ${trend}` : ''}.`;
+      else {
+        const where = rec.compass ? whereWords(m.plants, hab, words) : '';
+        const isDormant = m.dormant > 0 && m.dormant * 2 >= m.count;
+        const clause = isDormant ? rec.dormant : m.flowering > 0 && m.flowering * 2 >= m.mature ? rec.flowering : trend;
+        status = `${amountOf(rec.amount, m.count)} ${rec.place}${where ? ` ${where}` : ''}${clause ? `, ${clause}` : ''}.`;
+      }
+    }
+  }
+  const likeKnown = knownLines(k, rec.likes);
+  const likes = (rec.likes ?? []).map((/** @type {any} */ l, /** @type {number} */ i) => ({ text: l.text, known: likeKnown[i] }));
+  const fieldKnown = knownLines(k, rec.field);
+  const field = (rec.field ?? []).map((/** @type {any} */ l, /** @type {number} */ i) => ({ text: l.text, known: fieldKnown[i] }));
+  const seasons = [0, 1, 2, 3].map((i) => {
+    const bits = k?.seasons[i] ?? 0;
+    const S = rec.seasons ?? {};
+    const text = bits & FLOWER && S.flower ? S.flower : bits & DORMANT && S.dormant ? S.dormant : bits ? S.grow?.[i] ?? '' : null;
+    return { name: words.seasonNames[i], text };
+  });
+  const list = words.moments[rec.kind === 'cover' ? 'cover' : 'plant'];
+  const moments = list.map((/** @type {any} */ x) => {
+    const at = k?.moments?.[x.id];
+    return { id: x.id, label: x.label, date: at === undefined ? null : dateOfHour(at, words) };
+  });
+  const gives = (rec.gives ?? []).map((/** @type {any} */ g) => {
+    const inked = journal.flags.includes(g.when);
+    return { text: inked ? g.ink : g.pencil, known: inked };
+  });
+  const story = known && k ? storyOf(k, rec, m, hour, journal, words) : [];
+  const notes = journal.notes.filter((n) => n.sp === sp).slice(0, words.pageNotes);
+  return { sp, kind: 'living', name: rec.name, icon: rec.icon, known, riddle: rec.riddle, status, likes, field,
+    fieldHint: rec.fieldHint, story, seasons, moments, gives, notes, canShow: known && present(rec, m) };
+}
+
+/**
+ * The plant nearest a tapped ground point, within words.identify.radiusM, or grass where it grows.
+ * @param {any} state @param {any} hab @param {number} x @param {number} z @param {any} words
+ * @returns {{ sp: string, name: string, icon: string, text: string, wx: number, wz: number, r: number, stage: number } | null}
+ *   wx, wz, r: where to ring the selection on the ground (the plant's middle, or the tap on grass)
+ */
+export function identify(state, hab, x, z, words) {
+  const I = words.identify;
+  let best = null, bestD = I.radiusM * I.radiusM;
+  for (const p of state?.growth?.plants ?? []) {
+    if (!words.species[p.sp]) continue;
+    const d = (p.x - x) * (p.x - x) + (p.z - z) * (p.z - z);
+    if (d < bestD) { bestD = d; best = p; }
+  }
+  if (best) return plantCard(best, words);
+  const g = state?.growth?.grass, grass = words.species.grass;
+  const c = habitatCell(x, z);
+  if (grass && g && hab && c >= 0 && hab.open[c] && hab.grass[c] * g[c] > 0.25 * 255 * 255) {
+    return { sp: 'grass', name: grass.name, icon: grass.icon, text: grass.stages[0], wx: x, wz: z, r: I.grassRingM, stage: -1 };
+  }
+  return null;
+}
+
+/** The card for one plant. @param {any} p @param {any} words */
+function plantCard(p, words) {
+  const rec = words.species[p.sp];
+  return { sp: p.sp, name: rec.name, icon: rec.icon, text: rec.stages?.[p.stage] ?? rec.name,
+    wx: p.x, wz: p.z, r: words.identify.ringM * (0.6 + 0.4 * Math.max(0, Math.min(1, p.size))), stage: p.stage };
+}
+
+/**
+ * Where a page's Show me goes: the finest plant of the species (largest, then oldest, then first
+ * planted), or for grass the covered square nearest the island's middle. With its card.
+ * @param {string} sp @param {any} state @param {any} hab @param {any} words
+ */
+export function showMeSpot(sp, state, hab, words) {
+  const rec = words.species[sp];
+  if (!rec) return null;
+  if (rec.kind === 'cover') {
+    const g = state?.growth?.grass;
+    if (!g || !hab) return null;
+    const isl = islandShape(hab);
+    let best = -1, bestD = Infinity;
+    for (let k = 0; k < hab.n * hab.n; k++) {
+      if (!hab.open[k] || hab.depthCm[k] > 0 || hab.sea[k] || hab.grass[k] * g[k] <= 0.5 * 255 * 255) continue;
+      const x = HABITAT_ORIGIN + (k % hab.n) + 0.5, z = HABITAT_ORIGIN + Math.floor(k / hab.n) + 0.5;
+      const d = (x - isl.x) ** 2 + (z - isl.z) ** 2;
+      if (d < bestD) { bestD = d; best = k; }
+    }
+    if (best < 0) return null;
+    const x = HABITAT_ORIGIN + (best % hab.n) + 0.5, z = HABITAT_ORIGIN + Math.floor(best / hab.n) + 0.5;
+    return { sp, name: rec.name, icon: rec.icon, text: rec.stages[0], wx: x, wz: z, r: words.identify.grassRingM, stage: -1 };
+  }
+  let best = null;
+  for (const p of state?.growth?.plants ?? []) {
+    if (p.sp !== sp) continue;
+    if (!best || p.size > best.size || (p.size === best.size && (p.age > best.age || (p.age === best.age && p.id < best.id)))) best = p;
+  }
+  return best ? plantCard(best, words) : null;
+}

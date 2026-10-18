@@ -335,6 +335,7 @@ export async function startApp(canvas, hooks = {}) {
       case 'camera.pan': camera.pan(a.dx, a.dy); break;
       case 'camera.zoom': camera.zoom(a.factor, a.x, a.y); break;
       case 'camera.twist': camera.twist(a.angle); break;
+      case 'camera.focus': camera.focus(a.x, a.z, a.distance, a.pitchDeg); break;
       case 'tool.select': {
         const next = a.toolId && a.toolId !== tools().tool ? a.toolId : null;
         if (!next) finishStroke();

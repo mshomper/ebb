@@ -1,0 +1,99 @@
+{
+  "type": "journal-island",
+  "version": 1,
+  "note": "The journal's ground pages, what a tap on the ground says, and the almanac (docs 13, 15). groundOrder: the ground pages, in order. Each ground: name, icon, measure (share: of the open dry land; area: square meters), amount ([at least, words] steps, as for plants), field (field notes learned by triggers: seen, moment:<id>), fieldHint, and tap (the noun a tap uses). moss: ground counts as mossy where moisture is at least mossMoisture and salt under mossSalt (0..1), on land that is not standing water, as the live moss grows. wet and salt: words for a tapped spot by its moisture and salt (0..1), the first step it reaches from the top. depth: words for a tapped water's depth in meters ([under, words]). suits: plants you know with suitability at least suitAt are named on the card; unknown: the pencil line when a species you have not met would like it. almanac: words for the almanac page: parts of the day by hour ([from hour, words]); moods; wind by strength ([at least, words]); the moon by phase (0 new, 0.5 full; [under, words]); daylight by day length in hours; tide words; hourWords to say a few hours in words.",
+  "groundOrder": ["soil", "sand", "rock", "moss", "fresh", "shore"],
+  "mossMoisture": 0.75,
+  "mossSalt": 0.25,
+  "suitAt": 0.6,
+  "ground": {
+    "soil": {
+      "name": "Soil", "icon": "soil", "measure": "share", "tap": "soil",
+      "amount": [[0, "Hardly any bare soil shows on the island."], [0.02, "Bare soil shows here and there."], [0.2, "Much of the island is bare soil."]],
+      "field": [
+        { "text": "Soil holds water and food for roots; most plants start here.", "learn": ["seen"] },
+        { "text": "After rain the soil darkens and smells sweet.", "learn": ["moment:rain"] },
+        { "text": "Morning mist settles low over damp soil and lifts as the sun warms it.", "learn": ["moment:mist"] }
+      ],
+      "fieldHint": "Watch the ground in other weather to learn more."
+    },
+    "sand": {
+      "name": "Sand", "icon": "sand", "measure": "share", "tap": "sand",
+      "amount": [[0, "Hardly any sand on the island."], [0.02, "Sand rings the shore."], [0.3, "Sand covers much of the island."]],
+      "field": [
+        { "text": "Sand drains fast, so little can hold on to it except where the sea keeps it wet.", "learn": ["seen"] },
+        { "text": "Wet sand darkens and firms; you could almost walk on it like a road.", "learn": ["moment:rain"] },
+        { "text": "At dawn the low sun picks out every ripple the wind left in it.", "learn": ["moment:dawn"] }
+      ],
+      "fieldHint": "Watch the shore in other light and weather to learn more."
+    },
+    "rock": {
+      "name": "Rock", "icon": "rock", "measure": "share", "tap": "rock",
+      "amount": [[0, "Hardly any rock shows on the island."], [0.01, "Rock breaks through in places."], [0.15, "Rock covers much of the island."]],
+      "field": [
+        { "text": "Rock sheds water quickly; only moss finds a hold on it, and only where it stays damp.", "learn": ["seen"] },
+        { "text": "Wet rock glistens, and the moss on it greens up within hours.", "learn": ["moment:rain"] },
+        { "text": "Rock warms slowly and cools slowly: on a winter morning it is the last place the frost leaves.", "learn": ["moment:winter"] }
+      ],
+      "fieldHint": "Watch the rocks in other weather to learn more."
+    },
+    "moss": {
+      "name": "Moss", "icon": "moss", "measure": "share", "tap": "moss",
+      "amount": [[0, "No moss grows on the island yet."], [0.002, "A little moss grows on the damp ground."], [0.03, "Moss carpets the damp banks."], [0.12, "Moss covers much of the damp ground."]],
+      "field": [
+        { "text": "Moss has no roots; it drinks through its leaves wherever the ground stays damp.", "learn": ["seen"] },
+        { "text": "After rain it swells and brightens in a few hours.", "learn": ["moment:rain"] },
+        { "text": "In mist it holds the droplets like a sponge.", "learn": ["moment:mist"] }
+      ],
+      "fieldHint": "Watch the moss in other weather to learn more."
+    },
+    "fresh": {
+      "name": "Fresh water", "icon": "water", "measure": "area", "tap": "water",
+      "amount": [[0, "No fresh water stands on the island."], [1, "A small pool of fresh water."], [30, "A pond of fresh water."], [150, "A large pond of fresh water."]],
+      "stream": "A stream runs from it to the sea.",
+      "field": [
+        { "text": "Still water warms quickly in the sun and fills with tiny life that others feed on.", "learn": ["seen"] },
+        { "text": "Rain rings the pond's surface and slowly raises it.", "learn": ["moment:rain"] },
+        { "text": "Mist forms first over still water on calm, cool mornings.", "learn": ["moment:mist"] }
+      ],
+      "fieldHint": "Watch the water in other weather to learn more."
+    },
+    "shore": {
+      "name": "Shore and sea", "icon": "shore", "measure": "area", "tap": "shore",
+      "amount": [[0, "The sea comes right up to the land."], [1, "A narrow tide band rings the island."], [150, "A wide tide band rings the island."]],
+      "field": [
+        { "text": "Twice a day the tide covers the band, and twice a day it leaves it bare.", "learn": ["seen"] },
+        { "text": "Only plants that can bear salt grow in the spray above it.", "learn": ["moment:dawn", "moment:rain"] },
+        { "text": "In winter the sea runs grey and the band stays wet longer.", "learn": ["moment:winter"] }
+      ],
+      "fieldHint": "Watch the shore at other times to learn more."
+    }
+  },
+  "wet": [[0.85, "Wet"], [0.5, "Damp"], [0.2, "A little damp"], [0, "Dry"]],
+  "salt": [[0.6, ", and salty"], [0.3, ", with a touch of salt"], [0, ""]],
+  "depth": [[0.15, "Ankle deep"], [0.45, "About knee deep"], [0.9, "About waist deep"], [1.6, "About chest deep"], [99, "Deeper than you are tall"]],
+  "water": { "still": "still fresh water", "moving": "moving fresh water", "sea": "The open sea, deep and salty.", "band": "The tide band: wet twice a day when the sea comes in." },
+  "suits": "Would suit: {names}.",
+  "suitsNone": "Nothing you know would grow here.",
+  "unknown": "Something you have not met might like it here.",
+  "almanac": {
+    "labels": { "today": "Today", "weather": "Weather", "tide": "Tide", "moon": "Moon", "daylight": "Daylight", "flowering": "Flowering", "resting": "Resting" },
+    "dayParts": [[0, "deep in the night"], [4, "before dawn"], [6, "early morning"], [9, "mid-morning"], [12, "around noon"], [14, "afternoon"], [17, "early evening"], [19, "dusk"], [21, "night"]],
+    "moods": { "clear": "Clear", "cloud": "Cloudy", "rain": "Rainy", "mist": "Misty" },
+    "drizzle": "Cold drizzle",
+    "rainNow": "rain is falling now",
+    "mistNow": "mist hangs over the island",
+    "wind": [[0, "still air"], [0.2, "a light breeze"], [0.45, "a steady breeze"], [0.7, "a strong wind"]],
+    "windFrom": "from the {dir}",
+    "moon": [[0.04, "New moon"], [0.21, "A thin waxing crescent"], [0.29, "Half moon, waxing"], [0.46, "Waxing, nearly full"], [0.54, "Full moon"], [0.71, "Waning, past full"], [0.79, "Half moon, waning"], [0.96, "A thin waning crescent"], [1.01, "New moon"]],
+    "daylight": [[0, "Short days now"], [11, "Days and nights about even"], [13, "Long days now"]],
+    "tideIn": "Coming in",
+    "tideOut": "Going out",
+    "tideHigh": "high water {when}",
+    "tideLow": "low water {when}",
+    "hourWords": ["within the hour", "in about an hour", "in about two hours", "in about three hours", "in about four hours", "in about five hours", "in about six hours"],
+    "flowering": "In flower: {names}",
+    "floweringNone": "Nothing is in flower just now",
+    "resting": "Resting for winter: {names}"
+  }
+}

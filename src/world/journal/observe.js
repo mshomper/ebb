@@ -1,30 +1,38 @@
 // @ts-check
 // The field journal's model (docs 13, 15): what the player has come to know about each living
-// thing, and the notes the island writes. Pure, with no DOM, store or events, so live play and a
-// later catch-up (S7) build the same journal from the same hours.
+// thing and each kind of ground, and the notes the island writes. Pure, with no DOM, store or
+// events, so live play and a later catch-up (S7) build the same journal from the same hours.
 //
 // observe() looks at the world after each game hour (and after edits) together with that hour's
-// tick events: a species is seen once it grows on the island, likes are learned when something
-// shows them (it spreads, drowns, or the Plant tool refuses a spot), season boxes fill as the year
-// turns, and short notes mark firsts. describe() turns the journal and the world into the words a
-// page shows; identify() names the plant under a tapped point. All words come from
-// recipes/world/journal.json ("words" below).
+// tick events: a species is seen once it grows on the island, likes and field notes are learned
+// when something shows them (it spreads, flowers, rests for winter, drowns, the Plant tool refuses
+// a spot, or the player catches it at a moment), season boxes fill as the year turns, its story is
+// kept (when it came, what you planted, its best showing), and short notes mark firsts.
+// Page words are in describe.js, the ground in ground.js, the almanac in almanac.js. All words come
+// from recipes/world/journal.json ("words") and recipes/world/journal-island.json ("island").
 
-import { HABITAT_ORIGIN, habitatCell } from '../growth/habitat.js';
 import { STAGE } from '../growth/coarse.js';
+import { seasonOf, SECONDS_PER_HOUR } from '../../core/clock.js';
 
 /** Season box bits. */
-const GROW = 1, FLOWER = 2, DORMANT = 4;
+export const GROW = 1, FLOWER = 2, DORMANT = 4;
 
 /**
  * @typedef {Object} SpeciesKnowledge
  * @property {boolean} seen       growing on the island at the last look
  * @property {boolean} ever       seen at least once
- * @property {string[]} learned   triggers that have happened (seen, spread, lost:drown, refused:dry, ...)
+ * @property {string[]} learned   triggers that have happened (seen, spread, dormant, lost:drown, refused:dry, moment:rain, ...)
  * @property {number[]} seasons   per season (spring .. winter): GROW | FLOWER | DORMANT bits seen
  * @property {number[]} counts    plants (or grass share x 1000) at each observed hour, newest last
  * @property {number} flowerYear  the year it last flowered, -1 before
  * @property {boolean} dormant    mostly dormant at the last look
+ * @property {number} first       hour first seen, -1 before
+ * @property {boolean} arrived    it was here when the journal started
+ * @property {number} planted     seeds of it the player has planted
+ * @property {number} plantedAt   hour of the first planting, -1 before
+ * @property {number} peak        the most there have been (count, or grass share x 1000)
+ * @property {number} peakAt      hour of that best showing
+ * @property {Record<string, number>} moments  moment id to the hour it was caught
  */
 
 /** @typedef {{ hour: number, date: string, text: string, sp: string | null }} Note */
@@ -34,7 +42,7 @@ const GROW = 1, FLOWER = 2, DORMANT = 4;
  * @property {number} v
  * @property {number} born   hour the journal started
  * @property {number} last   last hour observed
- * @property {Record<string, SpeciesKnowledge>} species
+ * @property {Record<string, SpeciesKnowledge>} species  living things and grounds, by id
  * @property {string[]} flags  island-wide things learned (e.g. frogs:settled)
  * @property {Note[]} notes   newest first
  */
@@ -45,8 +53,17 @@ export function initialJournal(hour) {
 }
 
 /** @returns {SpeciesKnowledge} */
-function blank() {
-  return { seen: false, ever: false, learned: [], seasons: [0, 0, 0, 0], counts: [], flowerYear: -1, dormant: false };
+export function blank() {
+  return { seen: false, ever: false, learned: [], seasons: [0, 0, 0, 0], counts: [], flowerYear: -1, dormant: false,
+    first: -1, arrived: false, planted: 0, plantedAt: -1, peak: 0, peakAt: -1, moments: {} };
+}
+
+/** Knowledge of one species, with any fields older journals lack. @param {Journal} j @param {string} sp */
+function know(j, sp) {
+  const k = j.species[sp];
+  if (!k) return (j.species[sp] = blank());
+  if (k.moments === undefined) Object.assign(k, { ...blank(), ...k });
+  return k;
 }
 
 /**
@@ -58,6 +75,9 @@ export function dateText(seasons, words) {
   const base = `${words.seasonNames[s.index] ?? ''}, day ${s.day + 1}`;
   return s.year > 0 ? `${base}, year ${s.year + 1}` : base;
 }
+
+/** The date of a game hour, in words. @param {number} hour @param {any} words */
+export const dateOfHour = (hour, words) => dateText(seasonOf(hour * SECONDS_PER_HOUR), words);
 
 /**
  * What one species looks like on the island now.
@@ -87,7 +107,7 @@ export function measure(sp, state, hab, rec) {
 }
 
 /** Is a measured species on the island? @param {any} rec @param {{ count: number }} m */
-const present = (rec, m) => (rec.kind === 'cover' ? m.count >= rec.amount[0][0] : m.count > 0);
+export const present = (rec, m) => (rec.kind === 'cover' ? m.count >= rec.amount[0][0] : m.count > 0);
 
 /**
  * Note `kind` for a species, if its words have one.
@@ -111,7 +131,9 @@ function learnTrigger(k, trigger) {
 /** Copy a journal deep enough to change it. @param {Journal} j @returns {Journal} */
 function copy(j) {
   /** @type {Record<string, SpeciesKnowledge>} */ const species = {};
-  for (const [sp, k] of Object.entries(j.species)) species[sp] = { ...k, learned: k.learned.slice(), seasons: k.seasons.slice(), counts: k.counts.slice() };
+  for (const [sp, k] of Object.entries(j.species)) {
+    species[sp] = { ...k, learned: k.learned.slice(), seasons: k.seasons.slice(), counts: k.counts.slice(), moments: { ...(k.moments ?? {}) } };
+  }
   return { ...j, species, flags: j.flags.slice(), notes: j.notes.slice() };
 }
 
@@ -142,11 +164,13 @@ export function observe(journal, ctx) {
   for (const sp of words.order) {
     const rec = words.species[sp];
     if (!rec) continue;
-    const k = j.species[sp] ?? (j.species[sp] = blank());
+    const k = know(j, sp);
     const m = measure(sp, state, hab, rec);
     const here = present(rec, m);
     if (here && !k.seen) {
-      note(out, rec, !k.ever && hour - j.born <= words.arrivedHours ? 'arrived' : 'seen', sp, hour, date);
+      const arrived = !k.ever && hour - j.born <= words.arrivedHours;
+      note(out, rec, arrived ? 'arrived' : 'seen', sp, hour, date);
+      if (!k.ever) { k.first = hour; k.arrived = arrived; }
       k.seen = true;
       k.ever = true;
       learnTrigger(k, 'seen');
@@ -164,9 +188,10 @@ export function observe(journal, ctx) {
         k.flowerYear = year;
         learnTrigger(k, 'flower');
       }
-      if (isDormant && !k.dormant) note(out, rec, 'dormant', sp, hour, date);
-      else if (!isDormant && k.dormant) note(out, rec, 'woke', sp, hour, date);
+      if (isDormant && !k.dormant) { note(out, rec, 'dormant', sp, hour, date); learnTrigger(k, 'dormant'); }
+      else if (!isDormant && k.dormant) { note(out, rec, 'woke', sp, hour, date); learnTrigger(k, 'woke'); }
       k.dormant = isDormant;
+      if (m.value > k.peak) { k.peak = m.value; k.peakAt = hour; }
     }
     if (newHour) {
       k.counts.push(m.value);
@@ -203,6 +228,14 @@ export function observe(journal, ctx) {
   return { journal: j, notes: out };
 }
 
+/** Which lines of a list ({ learn: string[] }[]) are known. @param {SpeciesKnowledge | undefined} k @param {any[] | undefined} lines */
+export function knownLines(k, lines) {
+  return (lines ?? []).map((l) => !!k && l.learn.some((/** @type {string} */ t) => k.learned.includes(t)));
+}
+
+/** @param {string} s */
+const lower = (s) => s.charAt(0).toLowerCase() + s.slice(1);
+
 /**
  * Learn something outside the hourly look, such as a Plant tool refusal ('refused:dry'). Writes a
  * note only when it teaches a like line the page did not show yet.
@@ -213,12 +246,12 @@ export function observe(journal, ctx) {
 export function learn(journal, sp, trigger, ctx) {
   const rec = ctx.words.species[sp];
   if (!rec) return { journal, notes: [] };
-  const before = knownLikes(journal.species[sp], rec);
+  const before = knownLines(journal.species[sp], rec.likes);
   const j = copy(journal);
-  const k = j.species[sp] ?? (j.species[sp] = blank());
+  const k = know(j, sp);
   if (!learnTrigger(k, trigger)) return { journal, notes: [] };
   /** @type {Note[]} */ const out = [];
-  const after = knownLikes(k, rec);
+  const after = knownLines(k, rec.likes);
   for (let i = 0; i < after.length; i++) {
     if (after[i] && !before[i]) out.push({ hour: ctx.hour, date: dateText(ctx.state?.seasons, ctx.words), text: `${rec.name}: ${lower(rec.likes[i].text)}.`, sp });
   }
@@ -226,12 +259,63 @@ export function learn(journal, sp, trigger, ctx) {
   return { journal: j, notes: out };
 }
 
-/** @param {string} s */
-const lower = (s) => s.charAt(0).toLowerCase() + s.slice(1);
+/**
+ * The player planted a seed of `sp` (the Plant tool): part of its story on the island.
+ * @param {Journal} journal @param {string} sp @param {number} hour
+ */
+export function notePlanted(journal, sp, hour) {
+  const j = copy(journal);
+  const k = know(j, sp);
+  k.planted += 1;
+  if (k.plantedAt < 0) k.plantedAt = hour;
+  return j;
+}
 
-/** Which like lines are known. @param {SpeciesKnowledge | undefined} k @param {any} rec */
-function knownLikes(k, rec) {
-  return (rec.likes ?? []).map((/** @type {any} */ l) => !!k && l.learn.some((/** @type {string} */ t) => k.learned.includes(t)));
+/**
+ * Which of a page's moments are happening now for something tapped.
+ * @param {{ id: string }[]} list the page's moments
+ * @param {{ stage?: number, season: number, hourOfDay: number, rain: number, mist: number }} now
+ * @param {any} M words.moments
+ * @returns {string[]} moment ids
+ */
+export function momentsNow(list, now, M) {
+  const inHours = (/** @type {number[]} */ h) => now.hourOfDay >= h[0] && now.hourOfDay < h[1];
+  /** @type {Record<string, boolean>} */
+  const is = {
+    flower: now.stage === STAGE.flowering,
+    summer: now.season === 1,
+    winter: now.season === 3,
+    rain: now.rain >= M.rainAt,
+    mist: now.mist >= M.mistAt,
+    dawn: inHours(M.hours.dawn),
+    dusk: inHours(M.hours.dusk),
+    frost: now.season === 3 && inHours(M.hours.dawn),
+  };
+  return list.filter((m) => is[m.id]).map((m) => m.id);
+}
+
+/**
+ * Record the moments just caught for a species or ground (tapped while they hold). Each moment is
+ * kept once, with a note, and teaches its field notes (`moment:<id>`).
+ * @param {Journal} journal @param {string} id species or ground id @param {string[]} ids moment ids happening now
+ * @param {{ state: any, hour: number, words: any, name: string, list: { id: string, label: string }[] }} ctx
+ * @returns {{ journal: Journal, notes: Note[] }}
+ */
+export function catchMoments(journal, id, ids, ctx) {
+  const fresh = ids.filter((m) => journal.species[id]?.moments?.[m] === undefined);
+  if (!fresh.length) return { journal, notes: [] };
+  const j = copy(journal);
+  const k = know(j, id);
+  /** @type {Note[]} */ const out = [];
+  const date = dateText(ctx.state?.seasons, ctx.words);
+  for (const m of fresh) {
+    k.moments[m] = ctx.hour;
+    learnTrigger(k, `moment:${m}`);
+    const label = ctx.list.find((x) => x.id === m)?.label ?? m;
+    out.push({ hour: ctx.hour, date, text: ctx.words.moments.note.replace('{name}', ctx.name).replace('{label}', label), sp: id });
+  }
+  keep(j, out, ctx.words);
+  return { journal: j, notes: out };
 }
 
 /**
@@ -241,128 +325,4 @@ function knownLikes(k, rec) {
 export function flag(journal, flag) {
   if (journal.flags.includes(flag)) return journal;
   return { ...journal, flags: [...journal.flags, flag] };
-}
-
-/** The island's middle and size from the habitat, cached per habitat. @type {WeakMap<object, { x: number, z: number, r: number }>} */
-const shapes = new WeakMap();
-/** @param {any} hab */
-function islandShape(hab) {
-  let s = shapes.get(hab);
-  if (s) return s;
-  let n = 0, sx = 0, sz = 0;
-  for (let k = 0; k < hab.n * hab.n; k++) {
-    if (!hab.open[k] || hab.sea[k]) continue;
-    n++; sx += k % hab.n; sz += Math.floor(k / hab.n);
-  }
-  s = n ? { x: HABITAT_ORIGIN + sx / n + 0.5, z: HABITAT_ORIGIN + sz / n + 0.5, r: Math.sqrt(n / Math.PI) } : { x: 0, z: 0, r: 1 };
-  shapes.set(hab, s);
-  return s;
-}
-
-/**
- * Where a set of plants sits: "on the west side", "all around the island", "in the middle of the island".
- * @param {{ x: number, z: number }[]} plants @param {any} hab @param {any} words
- */
-export function whereWords(plants, hab, words) {
-  if (!plants.length || !hab) return '';
-  const isl = islandShape(hab);
-  let cx = 0, cz = 0;
-  for (const p of plants) { cx += p.x; cz += p.z; }
-  cx /= plants.length; cz /= plants.length;
-  let spread = 0;
-  for (const p of plants) spread += Math.hypot(p.x - cx, p.z - cz);
-  spread /= plants.length;
-  if (plants.length > 2 && spread > words.where.spreadOut * isl.r) return 'all around the island';
-  const dx = cx - isl.x, dz = cz - isl.z;
-  if (Math.hypot(dx, dz) < words.where.centerShare * isl.r) return 'in the middle of the island';
-  // North is -z (docs/08); sectors run counterclockwise from east.
-  const a = Math.atan2(-dz, dx);
-  const i = ((Math.round(a / (Math.PI / 4)) % 8) + 8) % 8;
-  return `on the ${words.compass[i]} side`;
-}
-
-/**
- * Spreading (+1), receding (-1) or steady (0), from the counts over the last trend.hours hours.
- * @param {SpeciesKnowledge} k @param {any} words
- */
-export function trendOf(k, words) {
-  const T = words.trend;
-  if (!k || k.counts.length <= T.hours) return 0;
-  const now = k.counts[k.counts.length - 1], then = k.counts[k.counts.length - 1 - T.hours];
-  if (now - then >= Math.max(T.upMin, T.upShare * then)) return 1;
-  if (then - now >= Math.max(T.downMin, T.downShare * then)) return -1;
-  return 0;
-}
-
-/** The words of an amount ladder for a value. @param {[number, string][]} ladder @param {number} v */
-function amountOf(ladder, v) {
-  let text = ladder[0][1];
-  for (const [at, t] of ladder) if (v >= at) text = t;
-  return text;
-}
-
-/**
- * Everything a species page shows, in words.
- * @param {Journal} journal @param {string} sp @param {any} state @param {any} hab @param {any} words
- */
-export function describe(journal, sp, state, hab, words) {
-  const rec = words.species[sp];
-  const k = journal.species[sp];
-  const known = !!k?.ever;
-  const m = measure(sp, state, hab, rec);
-  let status = '';
-  if (known) {
-    if (!present(rec, m)) status = rec.none;
-    else {
-      const t = trendOf(k, words);
-      const trend = t > 0 ? rec.spreading : t < 0 ? rec.receding : '';
-      if (rec.kind === 'cover') status = `${amountOf(rec.amount, m.count)}${trend ? `, ${trend}` : ''}.`;
-      else {
-        const where = rec.compass ? whereWords(m.plants, hab, words) : '';
-        const isDormant = m.dormant > 0 && m.dormant * 2 >= m.count;
-        const clause = isDormant ? rec.dormant : m.flowering > 0 && m.flowering * 2 >= m.mature ? rec.flowering : trend;
-        status = `${amountOf(rec.amount, m.count)} ${rec.place}${where ? ` ${where}` : ''}${clause ? `, ${clause}` : ''}.`;
-      }
-    }
-  }
-  const likes = (rec.likes ?? []).map((/** @type {any} */ l, /** @type {number} */ i) => ({ text: l.text, known: knownLikes(k, rec)[i] }));
-  const seasons = [0, 1, 2, 3].map((i) => {
-    const bits = k?.seasons[i] ?? 0;
-    const S = rec.seasons ?? {};
-    const text = bits & FLOWER && S.flower ? S.flower : bits & DORMANT && S.dormant ? S.dormant : bits ? S.grow?.[i] ?? '' : null;
-    return { name: words.seasonNames[i], text };
-  });
-  const gives = (rec.gives ?? []).map((/** @type {any} */ g) => {
-    const inked = journal.flags.includes(g.when);
-    return { text: inked ? g.ink : g.pencil, known: inked };
-  });
-  const notes = journal.notes.filter((n) => n.sp === sp).slice(0, words.pageNotes);
-  return { sp, name: rec.name, icon: rec.icon, known, riddle: rec.riddle, status, likes, seasons, gives, notes };
-}
-
-/**
- * The plant nearest a tapped ground point, within words.identify.radiusM, or grass where it grows.
- * @param {any} state @param {any} hab @param {number} x @param {number} z @param {any} words
- * @returns {{ sp: string, name: string, icon: string, text: string, wx: number, wz: number, r: number } | null}
- *   wx, wz, r: where to ring the selection on the ground (the plant's middle, or the tap on grass)
- */
-export function identify(state, hab, x, z, words) {
-  const I = words.identify;
-  let best = null, bestD = I.radiusM * I.radiusM;
-  for (const p of state?.growth?.plants ?? []) {
-    if (!words.species[p.sp]) continue;
-    const d = (p.x - x) * (p.x - x) + (p.z - z) * (p.z - z);
-    if (d < bestD) { bestD = d; best = p; }
-  }
-  if (best) {
-    const rec = words.species[best.sp];
-    return { sp: best.sp, name: rec.name, icon: rec.icon, text: rec.stages?.[best.stage] ?? rec.name,
-      wx: best.x, wz: best.z, r: I.ringM * (0.6 + 0.4 * Math.max(0, Math.min(1, best.size))) };
-  }
-  const g = state?.growth?.grass, grass = words.species.grass;
-  const c = habitatCell(x, z);
-  if (grass && g && hab && c >= 0 && hab.open[c] && hab.grass[c] * g[c] > 0.25 * 255 * 255) {
-    return { sp: 'grass', name: grass.name, icon: grass.icon, text: grass.stages[0], wx: x, wz: z, r: I.grassRingM };
-  }
-  return null;
 }

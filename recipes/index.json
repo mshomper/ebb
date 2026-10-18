@@ -19,6 +19,7 @@
     "flora/thrift": "flora/thrift.json",
     "world/growth": "world/growth.json",
     "world/journal": "world/journal.json",
+    "world/journal-island": "world/journal-island.json",
     "palettes/dusk": "palettes/dusk.json",
     "palettes/meadow-morning": "palettes/meadow-morning.json"
   }
