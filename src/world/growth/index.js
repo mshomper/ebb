@@ -10,7 +10,7 @@ import { get as getStore } from '../../core/store.js';
 import { hash32 } from '../../core/rng.js';
 import { WORLD_CELLS } from '../terrain/grid.js';
 import { buildHabitat, HABITAT_CELLS } from './habitat.js';
-import { suitability, plantSeed, settleGrowth } from './coarse.js';
+import { suitability, plantSeed, plantCover, settleGrowth } from './coarse.js';
 
 /** Floats per plant instance: x, z, size, stage, species index, hash 0..1, age (h), ground height (m). */
 export const PLANT_FLOATS = 8;
@@ -120,9 +120,10 @@ export function createGrowth(device, opts) {
      * @param {string} sp @param {number} x @param {number} z
      */
     plant(sp, x, z) {
-      const r = plantSeed(world.state, sp, x, z, world.env);
+      // A cover plant (rushes) starts a tussock in its cover; the others plant a seed.
+      const r = world.env.recipes.covers?.[sp] ? plantCover(world.state, sp, x, z, world.env) : plantSeed(world.state, sp, x, z, world.env);
       if (r.ok) world.state = r.state;
-      return { ok: r.ok, id: r.id, reason: r.reason };
+      return { ok: r.ok, id: 'id' in r ? r.id : undefined, reason: r.reason };
     },
 
     dispose() {

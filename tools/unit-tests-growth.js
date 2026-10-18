@@ -6,7 +6,7 @@
 
 import { initialWorldState, makeEnv, runHour, hashWorldState } from '../src/sim/tick.js';
 import { HABITAT_CELLS, HABITAT_ORIGIN } from '../src/world/growth/habitat.js';
-import { suitability, plantSeed, settleGrowth } from '../src/world/growth/coarse.js';
+import { suitability, plantSeed, plantCover, settleGrowth } from '../src/world/growth/coarse.js';
 
 const GROWTH = 'growth';
 
@@ -168,13 +168,63 @@ export function addGrowthTests(test, assert, eq) {
     const cell = (/** @type {string} */ zone) => rush[20 * HABITAT_CELLS + ZONES[zone][0] + 1];
     assert(cell('edge') >= 230, `rushes in the shallow margin: ${cell('edge')} of 255`);
     for (const z of ['sea', 'band', 'shore', 'dry', 'bank', 'pond', 'stream']) eq(cell(z), 0, `rushes on ${z}:`);
-    // A world whose rushes have not grown yet: they fill in over the hours, not at once.
-    const bare = { ...settled, growth: { ...settled.growth, cover: { rushes: new Uint8Array(rush.length) } } };
+    return `margin ${cell('edge')} of 255 on a new island, none elsewhere`;
+  });
+
+  test(GROWTH, 'rushes spread from a stand, never out of nowhere; a seed now and then starts a new tussock', async () => {
+    const recipes = await loadRecipes();
+    const hab = shoreline();
+    // Creeping only (no seed jumps), so the reach is the creep alone.
+    const creep = { ...recipes, covers: { rushes: { ...recipes.covers.rushes, spread: { ...recipes.covers.rushes.spread, jumpPerH: 0 } } } };
+    const env = { ...makeEnv(9, creep), habitat: () => hab };
+    const settled = settleGrowth(initialWorldState(9), env);
+    const col = ZONES.edge[0] + 1;
+    const bare = { ...settled, growth: { ...settled.growth, cover: { rushes: new Uint8Array(settled.growth.cover.rushes.length) } } };
     let s = bare;
-    for (let h = 0; h < 24; h++) s = runHour(s, h, env).state;
-    const grown = s.growth.cover.rushes[20 * HABITAT_CELLS + ZONES.edge[0] + 1];
-    assert(grown > 60 && grown < cell('edge'), `after a day the margin holds ${grown} of 255`);
-    return `margin ${cell('edge')} of 255 at once, none elsewhere; from bare, ${grown} after 24 hours`;
+    for (let h = 0; h < 48; h++) s = runHour(s, h, env).state;
+    eq(s.growth.cover.rushes.reduce((/** @type {number} */ a, /** @type {number} */ b) => a + b, 0), 0, 'rushes on a margin with none nearby after two days');
+    // One tussock planted at row 20 creeps along the margin, about a meter a day.
+    const planted = plantCover(bare, 'rushes', HABITAT_ORIGIN + col + 0.5, HABITAT_ORIGIN + 20.5, env);
+    assert(planted.ok, `planting rushes in the margin: ${planted.reason}`);
+    s = planted.state;
+    for (let h = 0; h < 96; h++) s = runHour(s, h, env).state;
+    const r = s.growth.cover.rushes;
+    const row = (/** @type {number} */ j) => r[j * HABITAT_CELLS + col];
+    let reach = 0;
+    while (reach < 40 && row(20 + reach + 1) > 0) reach++;
+    assert(row(20) > 128, `the planted tussock after four days: ${row(20)} of 255`);
+    assert(reach >= 2 && reach <= 8, `crept ${reach} m along the margin in four days`);
+    // With a seed carried off every hour, a tussock starts away from the stand.
+    const jumpy = { ...recipes, covers: { rushes: { ...recipes.covers.rushes, spread: { ...recipes.covers.rushes.spread, jumpPerH: 1 } } } };
+    const envJ = { ...makeEnv(9, jumpy), habitat: () => hab };
+    let t = plantCover(bare, 'rushes', HABITAT_ORIGIN + col + 0.5, HABITAT_ORIGIN + 20.5, envJ).state;
+    const events = [];
+    for (let h = 0; h < 24; h++) { const o = runHour(t, h, envJ); t = o.state; events.push(...o.events); }
+    let far = 0;
+    t.growth.cover.rushes.forEach((/** @type {number} */ v, /** @type {number} */ k) => { if (v > 0 && Math.abs(Math.floor(k / HABITAT_CELLS) - 20) > 3) far++; });
+    assert(far > 0, 'a seed started a tussock away from the stand');
+    assert(events.some((e) => e.name === 'growth:spread' && e.payload.bySpecies.rushes), 'the journal hears that rushes spread');
+    return `none from nowhere in two days; a planted tussock crept ${reach} m in four days; seeds started ${far} squares away`;
+  });
+
+  test(GROWTH, 'grass gives way to rushes on soaked ground; the Plant tool names what rushes need', async () => {
+    const recipes = await loadRecipes();
+    const hab = shoreline();
+    // Make the bank soaked ground (no standing water): both grass and rushes like it.
+    for (let j = 0; j < hab.n; j++) for (let i = ZONES.bank[0]; i <= ZONES.bank[1]; i++) { hab.moisture[j * hab.n + i] = 255; hab.still[j * hab.n + i] = 1; }
+    const env = { ...makeEnv(9, recipes), habitat: () => hab };
+    const st = settleGrowth(initialWorldState(9), env);
+    const k = 20 * HABITAT_CELLS + ZONES.bank[0];
+    const kd = 20 * HABITAT_CELLS + ZONES.dry[0] + 5;
+    assert(st.growth.cover.rushes[k] > 200, `rushes on the soaked bank: ${st.growth.cover.rushes[k]}`);
+    assert(st.growth.grass[k] < st.growth.grass[kd] / 2, `grass on the soaked bank ${st.growth.grass[k]} against ${st.growth.grass[kd]} on dry ground`);
+    const plant = (/** @type {string} */ zone) => plantCover(st, 'rushes', at(zone)[0], 20.5 + HABITAT_ORIGIN, env);
+    eq(plant('dry').reason, 'dry', 'planting rushes on dry ground');
+    // A shallow stretch of the stream, so moving water is the need it misses most.
+    for (let j = 0; j < hab.n; j++) for (let i = ZONES.stream[0]; i <= ZONES.stream[1]; i++) hab.depthCm[j * hab.n + i] = 10;
+    eq(plant('stream').reason, 'flow', 'planting rushes in a shallow stream');
+    eq(plant('edge').reason, 'crowded', 'planting rushes where they already stand');
+    return `grass ${st.growth.grass[k]} on the soaked bank, ${st.growth.grass[kd]} on dry ground; refusals: dry, flow, crowded`;
   });
 
   test(GROWTH, 'a basin with starters of its own starts with them, on their own ground', async () => {

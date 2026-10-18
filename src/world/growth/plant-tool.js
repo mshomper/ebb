@@ -32,6 +32,13 @@ const SAYS = {
     deep: 'Too deep for iris; plant it on the bank',
     salt: 'Too salty for iris',
   },
+  rushes: {
+    dry: 'Rushes need soaked ground or shallow water',
+    deep: 'Too deep for rushes; plant them in the shallows',
+    flow: 'Rushes need still water, not a stream',
+    salt: 'Too salty for rushes',
+    crowded: 'Rushes grow here already',
+  },
   thrift: {
     fresh: 'Sea thrift needs salty ground near the sea',
     wet: 'Too wet for sea thrift',

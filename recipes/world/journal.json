@@ -92,8 +92,10 @@
       "seasons": { "grow": ["fresh green stems", "tall, with brown flower tufts", "browning at the tips", "standing brown for winter"] },
       "likes": [
         { "text": "Still, shallow water and soaked ground", "learn": ["seen"] },
-        { "text": "Never the moving water of a stream", "learn": ["seen"] },
-        { "text": "Fresh water, never the salt", "learn": ["seen"] }
+        { "text": "Creeps out from its tussocks, and its seed finds new wet ground", "learn": ["spread"] },
+        { "text": "Turns away from dry ground", "learn": ["refused:dry"] },
+        { "text": "Never the moving water of a stream", "learn": ["refused:flow"] },
+        { "text": "Fresh water, never the salt", "learn": ["refused:salt"] }
       ],
       "gives": [
         { "pencil": "Something small might hide among these stems one day.", "ink": "Cover for frogs in the marsh margins.", "when": "frogs:settled" }
@@ -101,6 +103,7 @@
       "notes": {
         "arrived": "Rushes stood in the wet margins when you arrived.",
         "seen": "Rushes are growing in the wet ground.",
+        "spread": "Rushes have taken hold somewhere new.",
         "gone": "The last of the rushes is gone."
       }
     },

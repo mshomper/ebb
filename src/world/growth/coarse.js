@@ -16,7 +16,7 @@
 // env.habitat() returns the current Habitat (world/growth/habitat.js) or null; env.recipes.growth
 // is recipes/world/growth.json and env.recipes.flora maps species id to its recipe.
 
-import { stream, subSeed, hash32 } from '../../core/rng.js';
+import { stream, subSeed, hash32, det } from '../../core/rng.js';
 import { HABITAT_CELLS, HABITAT_ORIGIN, habitatCell } from './habitat.js';
 
 /** Stages, in order. */
@@ -75,7 +75,10 @@ export function groundAt(hab, x, z) {
 /** groundAt() for a habitat cell index (-1 off the grid). @param {import('./habitat.js').Habitat} hab @param {number} k */
 function groundAtCell(hab, k) {
   if (k < 0 || !hab.open[k]) return null;
-  return { moisture: hab.moisture[k] / 255, salt: hab.salt[k] / 255, depth: hab.sea[k] ? 9 : hab.depthCm[k] / 100, still: hab.still[k], k };
+  // Water can only move where there is water: ground with none standing on it counts as still, so a
+  // plant refused there hears that it is too dry, not that the water moves too much.
+  const still = !hab.sea[k] && hab.depthCm[k] === 0 ? 1 : hab.still[k];
+  return { moisture: hab.moisture[k] / 255, salt: hab.salt[k] / 255, depth: hab.sea[k] ? 9 : hab.depthCm[k] / 100, still, k };
 }
 
 /** @typedef {'dry'|'wet'|'shallow'|'deep'|'fresh'|'salt'|'flow'|'outside'} Need */
@@ -199,6 +202,21 @@ function coverTarget(rec, hab, k) {
   return Math.floor(255 * suitabilityOf(rec, groundAtCell(hab, k)).suit);
 }
 
+/** The first cover plant other than grass (rushes), as it stands in this growth state. @param {any} g @param {any} env */
+function firstCover(g, env) {
+  const id = env.recipes.growth.cover?.[0];
+  return id ? g.cover?.[id] ?? null : null;
+}
+
+/**
+ * Grass's target where rushes stand: it gives way by yieldToCover of the rushes' share.
+ * @param {number} target @param {number | undefined} rush 0..255 @param {any} G recipes/world/growth.json grass
+ */
+function yieldTo(target, rush, G) {
+  if (!rush || !G.yieldToCover) return target;
+  return Math.floor(target * (1 - (G.yieldToCover * rush) / 255));
+}
+
 /** The cover plants other than grass that this world grows: [id, recipe]. @param {any} env */
 function coverSpecies(env) {
   return (env.recipes.growth.cover ?? []).map((/** @type {string} */ sp) => [sp, env.recipes.covers?.[sp]]).filter((/** @type {any[]} */ e) => e[1]);
@@ -219,11 +237,7 @@ export function settleGrowth(state, env) {
   if (prev.starterDone && prev.grass && coverDone) return state;
   const g = { ...prev, plants: prev.plants.map((/** @type {Plant} */ p) => ({ ...p })) };
   if (!g.starterDone) { plantStarters(g, hab, env); g.starterDone = true; }
-  if (!g.grass) {
-    const grass = new Uint8Array(hab.n * hab.n);
-    for (let k = 0; k < grass.length; k++) grass[k] = grassTarget(hab, env.recipes.growth.grass, k);
-    g.grass = grass;
-  }
+  // The cover plants first (the rushes were here when you arrived), then grass, which gives way to them.
   if (!coverDone) {
     g.cover = { ...(prev.cover ?? {}) };
     for (const [sp, rec] of covers) {
@@ -232,6 +246,12 @@ export function settleGrowth(state, env) {
       for (let k = 0; k < c.length; k++) c[k] = coverTarget(rec, hab, k);
       g.cover[sp] = c;
     }
+  }
+  if (!g.grass) {
+    const grass = new Uint8Array(hab.n * hab.n);
+    const rival = firstCover(g, env);
+    for (let k = 0; k < grass.length; k++) grass[k] = yieldTo(grassTarget(hab, env.recipes.growth.grass, k), rival?.[k], env.recipes.growth.grass);
+    g.grass = grass;
   }
   return { ...state, growth: g };
 }
@@ -329,6 +349,29 @@ export function plantSeed(state, sp, x, z, env) {
 }
 
 /**
+ * Start a tussock of a cover plant (rushes) at a world point: the Plant tool. Like plantSeed: it
+ * says which need the ground misses most, or that one already grows there.
+ * @param {any} state @param {string} sp @param {number} x @param {number} z @param {any} env
+ * @returns {{ state: any, ok: boolean, reason?: string }}
+ */
+export function plantCover(state, sp, x, z, env) {
+  const hab = env.habitat?.();
+  const rec = env.recipes.covers?.[sp];
+  const g = state.growth ?? initialGrowth();
+  const cur = g.cover?.[sp];
+  if (!hab || !rec || !cur) return { state, ok: false, reason: 'unknown' };
+  const k = habitatCell(x, z);
+  if (k < 0 || !hab.open[k]) return { state, ok: false, reason: 'outside' };
+  const s = suitability(rec, hab, x, z);
+  if (s.suit < 0.2) return { state, ok: false, reason: s.worst };
+  const start = rec.spread?.plantStart ?? 60;
+  if (cur[k] >= start) return { state, ok: false, reason: 'crowded' };
+  const c = cur.slice();
+  c[k] = start;
+  return { state: { ...state, growth: { ...g, cover: { ...g.cover, [sp]: c } } }, ok: true };
+}
+
+/**
  * One game hour of growth.
  * @param {any} state @param {number} hourIndex @param {any} env
  * @returns {{ state: any, events: { name: string, payload: any }[] }}
@@ -417,33 +460,95 @@ export function coarseStep(state, hourIndex, env) {
     events.push({ name: 'growth:spread', payload: { count: born.length, bySpecies } });
   }
 
-  // Grass cover: toward what the ground supports, a share of the gap each hour (integers).
+  // Grass cover: toward what the ground supports, a share of the gap each hour (integers). Where
+  // rushes stand thick on soaked ground, grass gives way to them.
   const n = hab.n * hab.n;
   const grass = new Uint8Array(n);
   const G2 = GR.grass;
+  const rival = firstCover(prev, env);
   for (let k = 0; k < n; k++) {
-    const target = grassTarget(hab, G2, k);
+    const target = yieldTo(grassTarget(hab, G2, k), rival?.[k], G2);
     grass[k] = prev.grass ? approach(prev.grass[k], target, G2.ratePerH) : target;
   }
   g.grass = grass;
 
-  // The other cover plants (rushes): the same rule toward how well each likes the ground.
+  // The other cover plants (rushes): the same rule toward how well each likes the ground, but bare
+  // ground is only taken from a stand next to it (creeping), or now and then by a seed that lands
+  // within reach of a stand, so a new marsh has to be found by them.
   const covers = coverSpecies(env);
   if (covers.length) {
     /** @type {Record<string, Uint8Array>} */ const cover = {};
+    /** @type {Record<string, number>} */ const took = {};
     for (const [sp, rec] of covers) {
       const was = prev.cover?.[sp];
       const c = new Uint8Array(n);
+      const SP = rec.spread ?? {};
+      const from = Math.round(255 * (SP.fromShare ?? 0));
+      let newly = 0;
       for (let k = 0; k < n; k++) {
         const target = coverTarget(rec, hab, k);
-        c[k] = was ? approach(was[k], target, rec.growth.ratePerH) : target;
+        if (!was) { c[k] = target; continue; }
+        if (was[k] === 0 && target > 0 && from > 0 && !standNear(was, hab.n, k, from)) continue;
+        c[k] = approach(was[k], target, rec.growth.ratePerH);
+        if (was[k] === 0 && c[k] > 0) newly++;
       }
+      if (was && SP.jumpPerH > 0) newly += seedJump(c, was, rec, hab, from, subSeed(env.seed, `cover-seed-${sp}`), hourIndex);
       cover[sp] = c;
+      if (newly) took[sp] = newly;
     }
     g.cover = cover;
+    if (Object.keys(took).length) events.push({ name: 'growth:spread', payload: { count: Object.values(took).reduce((a, b) => a + b, 0), bySpecies: took } });
   }
 
   return { state: { ...state, growth: g }, events };
+}
+
+/**
+ * Is there a stand (a share of at least `from`) in one of the eight cells around k?
+ * @param {Uint8Array} c @param {number} n grid side @param {number} k @param {number} from
+ */
+function standNear(c, n, k, from) {
+  const i = k % n, j = Math.floor(k / n);
+  for (let dj = -1; dj <= 1; dj++) {
+    for (let di = -1; di <= 1; di++) {
+      if (!di && !dj) continue;
+      const ii = i + di, jj = j + dj;
+      if (ii >= 0 && jj >= 0 && ii < n && jj < n && c[jj * n + ii] >= from) return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * Now and then a cover plant's seed is carried off a stand (wind, birds, water) and lands within
+ * reach of it: if the ground there suits it well and it is not already growing there or beside
+ * there, a new tussock starts. Seeded by the hour, so the same island grows the same way.
+ * @param {Uint8Array} c this hour's cover (changed in place) @param {Uint8Array} was last hour's
+ * @param {any} rec the flora recipe (spread: jumpPerH, jumpM, jumpMinSuit, jumpStart)
+ * @param {import('./habitat.js').Habitat} hab @param {number} from @param {number} seed @param {number} hourIndex
+ * @returns {number} 1 when a seed took, else 0
+ */
+function seedJump(c, was, rec, hab, from, seed, hourIndex) {
+  const SP = rec.spread;
+  const r = stream(seed, hourIndex);
+  if (r.next() >= SP.jumpPerH) return 0;
+  /** @type {number[]} */ const stands = [];
+  for (let k = 0; k < was.length; k++) if (was[k] >= from) stands.push(k);
+  if (!stands.length) return 0;
+  const n = hab.n;
+  // Most seeds land on ground that will not do; a few tries per carried seed find the wet places.
+  for (let tries = 0; tries < (SP.jumpTries ?? 4); tries++) {
+    const s = stands[r.int(stands.length)];
+    const a = r.next() * 2 * det.PI, d = 2 + r.next() * (SP.jumpM - 2);
+    const i = (s % n) + Math.round(det.cos(a) * d), j = Math.floor(s / n) + Math.round(det.sin(a) * d);
+    if (i < 0 || j < 0 || i >= n || j >= n) continue;
+    const k = j * n + i;
+    if (c[k] > 0 || standNear(was, n, k, 1)) continue;
+    if (coverTarget(rec, hab, k) < 255 * SP.jumpMinSuit) continue;
+    c[k] = SP.jumpStart;
+    return 1;
+  }
+  return 0;
 }
 
 /**
