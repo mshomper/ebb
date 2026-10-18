@@ -13,11 +13,13 @@ import { get, subscribe } from '../core/store.js';
 import { dispatch } from '../input/actions.js';
 import { ensureIconSprite, iconSvg } from './icons/icons.js';
 import { drawSketch, hasSketch } from './sketches/index.js';
+import { webView } from './journal-web.js';
 
 /** Sections, in order, with their drawn icons. */
 const VIEWS = [
   { id: 'living', label: 'Living things', icon: 'plant' },
   { id: 'ground', label: 'Ground', icon: 'soil' },
+  { id: 'web', label: 'Web', icon: 'web' },
   { id: 'almanac', label: 'Almanac', icon: 'almanac' },
   { id: 'notes', label: 'Notes', icon: 'notes' },
 ];
@@ -67,8 +69,18 @@ export function mountJournal(parent, live) {
   const sizeBtn = /** @type {HTMLButtonElement} */ (panel.querySelector('[data-act="size"]'));
   const tabs = /** @type {HTMLButtonElement[]} */ ([...panel.querySelectorAll('[data-view]')]);
 
+  /** The name tapped in the Web section, whose links stand out (null for the whole web). @type {string | null} */
+  let webFocus = null;
+  /** Tap a name in the web: bring its links forward, or let go if it was already chosen. @param {string} id */
+  function focusWeb(id) {
+    webFocus = webFocus === id ? null : id;
+    render();
+  }
+
   /** @param {MouseEvent} e */
   function onClick(e) {
+    const node = /** @type {HTMLElement | null} */ (/** @type {HTMLElement} */ (e.target).closest('[data-web-node]'));
+    if (node?.dataset.webNode) { focusWeb(node.dataset.webNode); return; }
     const b = /** @type {HTMLElement | null} */ (/** @type {HTMLElement} */ (e.target).closest('button'));
     if (!b) return;
     const ui = get('journalUi') ?? {};
@@ -85,6 +97,11 @@ export function mountJournal(parent, live) {
   }
   /** Keep pointer and wheel input on the journal from reaching the island. @param {Event} e */
   const stop = (e) => e.stopPropagation();
+  // Names in the web are focusable: Enter or Space chooses one.
+  panel.addEventListener('keydown', (e) => {
+    const node = /** @type {HTMLElement | null} */ (/** @type {HTMLElement} */ (e.target).closest?.('[data-web-node]'));
+    if (node?.dataset.webNode && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); focusWeb(node.dataset.webNode); }
+  });
   for (const r of [btnRoot, panel]) {
     r.addEventListener('click', onClick);
     r.addEventListener('pointerdown', stop);
@@ -110,6 +127,7 @@ export function mountJournal(parent, live) {
     const paged = (ui.view === 'living' || ui.view === 'ground') && !!ui.page && live.hasPage(ui.page);
     backBtn.hidden = !paged;
     const html = ui.view === 'notes' ? notesView() : ui.view === 'almanac' ? almanacView()
+      : ui.view === 'web' ? webView(live.describeWeb(), live.web, webFocus)
       : paged ? pageView(/** @type {string} */ (ui.page)) : ui.view === 'ground' ? listView(island.groundOrder) : listView(words.order);
     const key = `${ui.view}|${ui.page}`;
     if (html === body.dataset.html) return;

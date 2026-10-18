@@ -276,6 +276,31 @@
 .ebb-jalm dt { font-size: var(--text-small); font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--jr-moss); }
 .ebb-jalm dd { margin: 0; font-size: 18px; line-height: 1.4; overflow-wrap: break-word; }
 
+/* web: what needs what. The drawing scales to the page width and never wider. */
+.ebb-jweb { display: grid; gap: 12px; }
+.ebb-jweb__svg { display: block; width: 100%; max-width: 560px; height: auto; margin: 0 auto; }
+.ebb-jweb__node { cursor: pointer; outline: none; }
+.ebb-jweb__node:hover rect { stroke-width: 2.4; }
+.ebb-jweb__node:focus-visible rect { stroke: #CF8C5F; stroke-width: 3; }
+.ebb-jweb__cap { margin: 0; font-size: 18px; line-height: 1.4; }
+.ebb-jweb__focus { display: grid; gap: 8px; justify-items: start; }
+.ebb-jweb__focus p { margin: 0; font-size: 18px; line-height: 1.4; }
+.ebb-jweb__lines { margin: 0; padding: 0 0 0 18px; display: grid; gap: 4px; font-size: 18px; line-height: 1.4; }
+.ebb-jweb__open {
+  appearance: none;
+  -webkit-appearance: none;
+  min-height: 44px;
+  padding: 6px 16px;
+  border: 1.5px solid var(--jr-moss);
+  border-radius: 12px;
+  background: transparent;
+  color: var(--jr-moss);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.ebb-jweb__open:hover { background: rgba(95, 127, 91, 0.1); }
+
 /* notes view */
 .ebb-jnotes { display: grid; gap: 2px; }
 .ebb-jnotes__row {
@@ -325,10 +350,12 @@ button.ebb-jnotes__row:hover { background: rgba(30, 38, 36, 0.06); }
 @media (max-width: 380px) {
   .ebb-jpage__seasons, .ebb-jpage__moments { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
-/* Four section buttons: two to a row on narrow screens, so they never run off the side. */
+/* Section buttons: two to a row on narrow screens, so they never run off the side; an odd one out
+   at the end takes the whole row. */
 @media (max-width: 480px) {
   .ebb-journal__nav { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .ebb-journal__tab { min-width: 0; }
+  .ebb-journal__tab:last-child:nth-child(odd) { grid-column: 1 / -1; }
 }
 
 /* --- notes on the island, bottom left above the tool bar --- */
@@ -407,7 +434,48 @@ button.ebb-jnotes__row:hover { background: rgba(30, 38, 36, 0.06); }
   transition: opacity 160ms ease, visibility 0s linear 160ms;
 }
 .ebb-idcard.is-open { opacity: 1; visibility: visible; pointer-events: auto; transition: opacity 160ms ease, visibility 0s; }
+.ebb-idcard.is-open.is-away { opacity: 0; visibility: hidden; pointer-events: none; }
 .ebb-idcard .icon { width: 24px; height: 24px; display: block; flex: none; }
+
+/* Show me: the arrow at the screen edge pointing to a ring out of view. */
+.ebb-pointer {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 14;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--jr-paper);
+  color: var(--jr-ink);
+  box-shadow: 0 4px 16px rgba(10, 14, 13, 0.3);
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 200ms ease, visibility 0s linear 200ms;
+}
+/* Show me: the spot, ringed at a size that reads from any distance; it breathes gently. */
+.ebb-mark { position: fixed; left: 0; top: 0; z-index: 13; width: 0; height: 0; pointer-events: none; opacity: 0; visibility: hidden; transition: opacity 200ms ease, visibility 0s linear 200ms; }
+.ebb-mark.is-on { opacity: 1; visibility: visible; transition: opacity 200ms ease, visibility 0s; }
+.ebb-mark::before, .ebb-mark::after {
+  content: '';
+  position: absolute;
+  left: -20px;
+  top: -20px;
+  width: 40px;
+  height: 40px;
+  box-sizing: border-box;
+  border-radius: 50%;
+  border: 3px solid var(--jr-paper);
+  box-shadow: 0 0 0 1.5px rgba(30, 38, 36, 0.55), inset 0 0 0 1.5px rgba(30, 38, 36, 0.55);
+}
+.ebb-mark::after { border-width: 2px; box-shadow: none; animation: ebb-mark-breathe 2.4s ease-out infinite; }
+@keyframes ebb-mark-breathe { from { transform: scale(1); opacity: 0.9; } to { transform: scale(1.9); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .ebb-mark::after { animation: none; opacity: 0; } }
+.ebb-pointer.is-on { opacity: 1; visibility: visible; transition: opacity 200ms ease, visibility 0s; }
+.ebb-pointer .icon { width: 26px; height: 26px; display: block; }
 .ebb-idcard button { font: inherit; color: inherit; -webkit-tap-highlight-color: transparent; }
 .ebb-idcard :focus-visible { outline: 2px solid var(--jr-moss); outline-offset: 2px; }
 .ebb-idcard__head { display: flex; align-items: center; gap: 10px; }
