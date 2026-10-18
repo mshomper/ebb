@@ -33,6 +33,11 @@ Size and color come from CSS: set `width`/`height` on `.icon` and `color` on the
 | `wellspring` | water welling up from the ground and arcing over, a ripple at its foot |
 | `rate-trickle`, `rate-brook`, `rate-stream` | one, two or three small wave lines: spring flow |
 | `spring-remove` | drop with a small cross drawn as two strokes |
+| `plant` | seedling with two leaves rising from a small mound on the ground line: the Plant tool |
+| `reeds` | stem with a cattail seed head between two curving blades: species chip |
+| `lilies` | notched lily pad seen low on a wavy water line, a cup flower of pointed petals on it: species chip |
+| `iris` | fan of three sword leaves and a flower on a stalk with three drooping falls: species chip |
+| `thrift` | low cushion on the ground line with three stalks topped by round pompoms: species chip |
 | `undo` | curved arrow to the left |
 | `redo` | the mirror of undo |
 | `raise` | mound with an up stroke |

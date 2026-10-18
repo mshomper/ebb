@@ -1,0 +1,20 @@
+{
+  "type": "flora", "id": "grass", "name": "Grass", "schema": 1, "version": 1, "seed": 4111,
+  "tags": ["slice", "cover"],
+  "generator": "blades",
+  "layer": "cover",
+  "note": "The meadow (docs 10, 14): GPU blades with no mesh (grass-blades.wgsl). Where they stand follows the painted grass weight (S5b adds the cover field that grows hour by hour). blades: blade height (m) and width (m), each varied by heightVar and widthVar; lean is how far a blade bends at rest (share of its height); rootShade darkens the base (self-shadow in the sward); tufts: the meadow is clumpy, with tufts about tuftM across where blades are up to tuftDensity thicker or thinner and tuftHeight taller or shorter. density: blades per square meter near the view at full tier density (the tier's grassDensity scales it); the far ring holds farShare of that, its blades widened farWiden of the way toward covering the same ground; nearShare of the tier's grassDistance is the dense ring; blades shrink away over the last fadeShare of the distance, so the meadow meets the textured ground with no edge. wind: sway (bend per unit wind), gustM (size of passing gusts), gustSpeed (m/s). season: height factor and physical albedo (linear) per season, blended through the year; the palette maps them at tonemap. wetDarken: albedo factor in rain. Blades skip water deeper than 1 cm.",
+  "blades": { "height": 0.2, "heightVar": 0.5, "width": 0.014, "widthVar": 0.4, "lean": 0.3, "rootShade": 0.6, "tuftM": 0.45, "tuftDensity": 0.6, "tuftHeight": 0.4 },
+  "density": { "perM2": 350, "farShare": 0.08, "farWiden": 0.25, "nearShare": 0.25, "fadeShare": 0.25 },
+  "wind": { "sway": 0.35, "gustM": 6, "gustSpeed": 2.5 },
+  "season": {
+    "height": { "spring": 0.75, "summer": 1.0, "autumn": 0.85, "winter": 0.45 },
+    "albedo": {
+      "spring": [0.14, 0.26, 0.07],
+      "summer": [0.12, 0.21, 0.06],
+      "autumn": [0.24, 0.22, 0.09],
+      "winter": [0.22, 0.21, 0.13]
+    }
+  },
+  "wetDarken": 0.75
+}

@@ -28,8 +28,12 @@ import { createLiveSim } from './sim/live-sim.js';
 import { initialWorldState, makeEnv, runHour } from './sim/tick.js';
 import { createTerrain } from './world/terrain/index.js';
 import { createWaterWorld } from './world/water-world.js';
+import { createGrowth } from './world/growth/index.js';
+import { createPlantTool } from './world/growth/plant-tool.js';
 import { weatherAt } from './world/weather.js';
 import { createWaterPass } from './render/passes/water.js';
+import { createGrassPass } from './render/passes/grass.js';
+import { createFloraPass } from './render/passes/flora.js';
 import { onAction, history } from './input/actions.js';
 import { attachDesktopInput } from './input/desktop.js';
 import { attachTouchInput } from './input/touch.js';
@@ -38,6 +42,7 @@ import { attachTouchInput } from './input/touch.js';
  * @typedef {{ ok: true, tier: string, tierReasons: string[], adapterInfo: GPUAdapterInfo | null, features: string[], stop: () => void,
  *   terrain: import('./world/terrain/index.js').Terrain,
  *   water: import('./world/water/index.js').Water,
+ *   growth: import('./world/growth/index.js').Growth, world: { state: any, env: any },
  *   palette: { list: () => { id: string, name: string }[], current: () => any, apply: (json: any, fadeS?: number) => void },
  *   pickColor: (cssX: number, cssY: number) => Promise<string> }
  *   | { ok: false, reason: 'missing'|'no-adapter'|'device-failed' }} StartResult
@@ -81,7 +86,7 @@ export async function startApp(canvas, hooks = {}) {
 
   // Tool state for the tool bar (ui/tools.js reads it; actions below change it).
   updateStore('tools', (t) => t ?? {
-    tool: null, sculptMode: 'raise', paintLayer: 'grass', waterMode: 'pour', springRate: 'brook',
+    tool: null, sculptMode: 'raise', paintLayer: 'grass', waterMode: 'pour', springRate: 'brook', plantSpecies: 'reeds',
     size: rb.radiusDefault, strength: rb.strengthDefault, sizeRange: rb.radiusRange,
   });
   // Unlocks (docs 12, 13): placing springs is the dragonflies' gift; `?sandbox` opens it early.
@@ -113,6 +118,14 @@ export async function startApp(canvas, hooks = {}) {
     terrain, sim, seed, tier, history, recipes: { water: waterRecipe, terrain: terrainRecipe, land: landRecipe },
   });
   const { water, foam, ripples, wetness, moss } = ww;
+  // Growth (docs 10, 11): the habitat grid from the water summary, plants and grass cover grown in
+  // the hourly tick; this keeps the habitat current and uploads what the drawing needs.
+  const growthRecipe = await loadRecipe('world/growth');
+  /** @type {Record<string, any>} */
+  const flora = Object.fromEntries(await Promise.all(growthRecipe.species.map(async (/** @type {string} */ sp) => [sp, await loadRecipe(`flora/${sp}`)])));
+  const growth = createGrowth(gpu.device, { terrain, water, world, recipes: { growth: growthRecipe, flora } });
+  sim.addSystem(growth);
+  updateStore('world', () => world.state);
   const unHour = on('clock:hour', (/** @type {{ hour: number }} */ p) => {
     for (const e of sim.hourlyTick(p.hour)) emitDeferred(e.name, e.payload);
     updateStore('world', () => world.state);
@@ -151,6 +164,13 @@ export async function startApp(canvas, hooks = {}) {
     moss: moss.texture, causticLayers: tierSettings.causticLayers, wetness,
     probe: { view: atmosphere.probeView, sampler: atmosphere.probeSampler }, rings: waterRecipe.ripples.rings,
   });
+  // The meadow (docs 10): GPU grass blades where grass is painted, after the terrain.
+  const grassPass = createGrassPass({
+    terrain, recipe: await loadRecipe('flora/grass'), terrainRecipe, seed: subSeed(seed, 'grass'), tier: tierSettings,
+    water: { depthTextures: water.sim.depthTextures, current: () => water.sim.current }, cover: growth.coverTex,
+  });
+  // Plants (docs 10): every species from the growth step's instances, after the grass.
+  const floraPass = createFloraPass({ growth, terrain, water: { depthTextures: water.sim.depthTextures, current: () => water.sim.current }, recipes: flora });
   const waterPass = createWaterPass({
     water, terrain, atmosphere, recipe: waterRecipe, seaExtent: terrainRecipe.sea.extent, getTime: () => clock.animT(),
     seabed: { y: landRecipe.seabedDepth, albedo: terrainRecipe.materials.albedoSand.map((/** @type {number} */ a) => a * terrainRecipe.materials.wetDarkening),
@@ -160,6 +180,8 @@ export async function startApp(canvas, hooks = {}) {
   const graph = createFrameGraph(gpu, [
     shadowPass,
     terrainPass,
+    grassPass,
+    floraPass,
     waterPass,
     createSkyPass(atmosphere, skyRecipe),
     exposure,
@@ -205,6 +227,7 @@ export async function startApp(canvas, hooks = {}) {
     tier = t;
     tierSettings = settingsFor(t);
     terrainPass.setTier(tierSettings);
+    grassPass.setTier(tierSettings);
     waterPass.setDetailFade(tierSettings.waterDetailFadeM);
     waterPass.setSSR(tierSettings.waterSSR ?? null);
     if (lastEntry) sizeCanvas(lastEntry);
@@ -287,6 +310,14 @@ export async function startApp(canvas, hooks = {}) {
     if (p) ww.tapSpring(p, tools().springRate);
   }
 
+  // The Plant tool (src/world/growth/plant-tool.js): plants a seed where the ground suits it, rings where.
+  const plantTool = createPlantTool({ growth, world, flora, recipe: growthRecipe.marks });
+  /** @param {number} x @param {number} y */
+  function plantTap(x, y) {
+    const p = groundAt(x, y);
+    if (p && plantTool.tap(tools().plantSpecies ?? 'reeds', p)) updateStore('world', () => world.state);
+  }
+
   /** @param {'undo'|'redo'} dir */
   function runHistory(dir) {
     const ok = dir === 'undo' ? history.undo() : history.redo();
@@ -332,6 +363,7 @@ export async function startApp(canvas, hooks = {}) {
       case 'tool.begin':
       case 'tool.move': {
         if (!tools().tool) break;
+        if (tools().tool === 'plant') { if (a.type === 'tool.begin') plantTap(a.x, a.y); break; }
         if (tools().tool === 'water') {
           if (tools().waterMode === 'spring') { if (a.type === 'tool.begin') springTap(a.x, a.y); }
           else if (a.type === 'tool.begin' || pouring) pouring = { x: a.x, y: a.y };
@@ -382,7 +414,8 @@ export async function startApp(canvas, hooks = {}) {
       return;
     }
     const p = t.tool && pointer.inside ? groundAt(pointer.x, pointer.y) : null;
-    if (p) terrain.setRing({ x: p[0], z: p[2], radius: t.size, visible: true });
+    // The Plant tool marks just the spot a seed would go.
+    if (p) terrain.setRing({ x: p[0], z: p[2], radius: t.tool === 'plant' ? 0.4 : t.size, visible: true });
     else terrain.setRing({ visible: false });
   }
 
@@ -411,6 +444,7 @@ export async function startApp(canvas, hooks = {}) {
     camera.setViewport(cssW, cssH);
     camera.update(realDt);
     updateRing();
+    terrainPass.setMarks(plantTool.marks(now, tools().tool === 'plant'));
     updatePour();
     if (queuedHistory && !terrain.isBusy()) runHistory(queuedHistory);
     // Ground detail waits for a few calm frames so the first picture is as quick as before (docs/22).
@@ -465,7 +499,13 @@ export async function startApp(canvas, hooks = {}) {
 
     /** @type {import('./sim/live-sim.js').FrameInfo} */
     const info = { dt: t.dt, realDt, worldT: t.worldT, animT: t.animT, displayT: display, tier };
-    ww.update({ rain: day.weather.rain, sunY: day.sm.sunDir[1], wind: weatherAt(world.state?.weather, display, seasonsRecipe).wind }, camera.target);
+    const windNow = weatherAt(world.state?.weather, display, seasonsRecipe).wind;
+    ww.update({ rain: day.weather.rain, sunY: day.sm.sunDir[1], wind: windNow }, camera.target);
+    grassPass.update({
+      focus: camera.target, time: t.animT, wind: windNow, windDir: world.state?.weather?.today?.windDir ?? 0,
+      season: season.index + season.phase,
+    });
+    floraPass.update({ time: t.animT, wind: windNow, windDir: world.state?.weather?.today?.windDir ?? 0, season: season.index + season.phase });
     // `?ripplerain=1` rains ripples in any weather, to judge rings in sunshine (tools, tuning).
     // Raindrops ring the water in the water shader; the ripple field keeps the pour and creatures.
     const ringRain = params.has('ripplerain') ? 1 : day.weather.rain;
@@ -529,6 +569,9 @@ export async function startApp(canvas, hooks = {}) {
     stop,
     terrain,
     water,
+    /** The live growth (habitat, plants) and the world the hourly tick runs on (tools/growth-lab.html). */
+    growth,
+    world,
     /** Palette access for the palette lab (tools/palette-lab.html). */
     palette: {
       list: () => PALETTES.slice(),

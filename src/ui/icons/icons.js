@@ -90,6 +90,67 @@ const ICONS = {
     <path d="M15.5 15.5L20 20"/>
     <path d="M20 15.5L15.5 20"/>`,
 
+  // Plant tool: a seedling with two leaves rising from a small mound on the ground line.
+  plant: `
+    <path ${ACCENT} d="M7 20.5C8 18.6 16 18.6 17 20.5Z"/>
+    <path d="M7 20.5C8 18.6 16 18.6 17 20.5"/>
+    <path d="M2.5 20.5H21.5"/>
+    <path d="M12 19V10.5"/>
+    <path ${ACCENT} d="M12 14C9.4 14 6.6 12.3 6 8.8C9 8.6 11.6 10.4 12 14Z"/>
+    <path d="M12 14C9.4 14 6.6 12.3 6 8.8C9 8.6 11.6 10.4 12 14Z"/>
+    <path ${ACCENT} d="M12 11C12.3 7.4 14.8 4.6 18.5 4.5C18.6 8.2 15.8 10.8 12 11Z"/>
+    <path d="M12 11C12.3 7.4 14.8 4.6 18.5 4.5C18.6 8.2 15.8 10.8 12 11Z"/>`,
+
+  // Reeds (species chip): a stem with a cattail seed head between two curving blades.
+  reeds: `
+    <path d="M3.5 20.5H20.5"/>
+    <path d="M12 20.5V12"/>
+    <rect ${ACCENT} x="10.6" y="5.5" width="2.8" height="6.5" rx="1.4"/>
+    <rect x="10.6" y="5.5" width="2.8" height="6.5" rx="1.4"/>
+    <path d="M12 5.5V3"/>
+    <path d="M9.5 20.5C9.3 15.5 8 11 5.5 7.5"/>
+    <path d="M14.5 20.5C14.8 16 16.2 12.5 18.5 10"/>`,
+
+  // Water lilies (species chip): a notched pad seen low on a wavy water line, a cup flower of
+  // pointed petals sitting on it (the flower hides the back edge of the pad).
+  lilies: `
+    <path ${ACCENT} d="M8.5 12.63A8.5 2.6 0 0 0 11.26 17.59L12.6 15.1L16.25 17.25A8.5 2.6 0 0 0 15.5 12.63A8.5 2.6 0 0 0 8.5 12.63Z"/>
+    <path d="M8.5 12.63A8.5 2.6 0 0 0 11.26 17.59L12.6 15.1L16.25 17.25A8.5 2.6 0 0 0 15.5 12.63"/>
+    <path d="M12 7.5C13.4 9.1 14 11 12 14C10 11 10.6 9.1 12 7.5Z"/>
+    <path d="M12 14C9.6 14 7.8 12.3 7.5 9.7C9.6 10.1 11.2 11.5 12 14Z"/>
+    <path d="M12 14C14.4 14 16.2 12.3 16.5 9.7C14.4 10.1 12.8 11.5 12 14Z"/>
+    <path d="M3 20.5C4.5 19.5 6 19.5 7.5 20.5S10.5 21.5 12 20.5S15 19.5 16.5 20.5S19.5 21.5 21 20.5"/>`,
+
+  // Yellow iris (species chip): a fan of three sword leaves from one base, and a flower on a
+  // stalk with three drooping falls and one short upright standard.
+  iris: `
+    <path d="M3.5 20.5H20.5"/>
+    <path d="M9 20.5C7.9 15.5 7.5 10 8 4.5C9.9 9 10.5 15 9 20.5Z"/>
+    <path d="M9 20.5C8 16.5 6.4 12.8 4 10C7.3 11.8 9.5 15.6 9 20.5Z"/>
+    <path d="M9 20.5C7.6 18 5.6 16.2 2.8 15C6 14.8 8.6 17 9 20.5Z"/>
+    <path d="M12 20.5C12.2 17 13.8 14.6 16 13.2"/>
+    <path ${ACCENT} d="M16 7.5C13.6 6.4 11.4 7.8 11.4 11.6C13.9 11.6 15.6 9.8 16 7.5ZM16 7.5C18.4 6.4 20.6 7.8 20.6 11.6C18.1 11.6 16.4 9.8 16 7.5ZM16 7.5C17 9.1 17 11.4 16 13.2C15 11.4 15 9.1 16 7.5Z"/>
+    <path d="M16 7.5C13.6 6.4 11.4 7.8 11.4 11.6C13.9 11.6 15.6 9.8 16 7.5Z"/>
+    <path d="M16 7.5C18.4 6.4 20.6 7.8 20.6 11.6C18.1 11.6 16.4 9.8 16 7.5Z"/>
+    <path d="M16 7.5C17 9.1 17 11.4 16 13.2C15 11.4 15 9.1 16 7.5Z"/>
+    <path d="M16 7.5C15.4 6 15.6 4.4 16.8 3"/>`,
+
+  // Sea thrift (species chip): a low rounded cushion on the ground line, three thin stalks each
+  // topped by a round pompom.
+  thrift: `
+    <path ${ACCENT} d="M5 20.5C5 16.8 8 15.5 12 15.5S19 16.8 19 20.5Z"/>
+    <path d="M5 20.5C5 16.8 8 15.5 12 15.5S19 16.8 19 20.5"/>
+    <path d="M3.5 20.5H20.5"/>
+    <path d="M9.5 15.9C9 13.8 8.2 12.8 7.6 12"/>
+    <path d="M12 15.5V7.1"/>
+    <path d="M14.5 15.9C15 13.8 15.8 12.8 16.4 12"/>
+    <circle ${ACCENT} cx="7" cy="10" r="2.1"/>
+    <circle cx="7" cy="10" r="2.1"/>
+    <circle ${ACCENT} cx="12" cy="5" r="2.1"/>
+    <circle cx="12" cy="5" r="2.1"/>
+    <circle ${ACCENT} cx="17" cy="10" r="2.1"/>
+    <circle cx="17" cy="10" r="2.1"/>`,
+
   // Curved arrow to the left.
   undo: `
     <path d="M8.5 5L4 9.5L8.5 14"/>

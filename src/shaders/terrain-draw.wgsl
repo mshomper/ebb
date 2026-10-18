@@ -36,6 +36,7 @@ struct TerrainDraw {
   puddle: vec4f,                        // x, y mesh-normal y over which ground counts as flat; z 1 / undulation size (1/m); w undulation share
   puddle2: vec4f,                       // x puddle roughness, y puddle albedo factor, z most of the low spots a full level covers, w puddle F0
   rain: vec4f, rain2: vec4f,            // raindrop rings in puddles (lib-rain RainRings)
+  marks: array<vec4f, 16>,              // UI rings (the Plant tool): x, z, radius (m), opacity; the first with opacity 0 ends the list
 };
 
 @group(0) @binding(0) var<uniform> frame: FrameUniforms;
@@ -115,6 +116,18 @@ fn ringAlpha(xz: vec2f) -> f32 {
   let outer = 1.0 - smoothstep(0.0, w, abs(d - td.ringRadius));
   let inner = 1.0 - smoothstep(0.0, w * 0.7, abs(d - td.ringRadius * td.ringHardness));
   return clamp(outer + 0.35 * inner, 0.0, 1.0) * td.ringOpacity;
+}
+
+// Thin marker rings (a tap's bloom, young plantings), kept a couple of pixels wide at any distance.
+fn marksAlpha(xz: vec2f, pixM: f32) -> f32 {
+  var a = 0.0;
+  let w = max(0.025, pixM * 1.5);
+  for (var i = 0u; i < 16u; i++) {
+    let m = td.marks[i];
+    if (m.w <= 0.0) { break; }
+    a = max(a, (1.0 - smoothstep(0.0, w, abs(distance(xz, m.xy) - m.z))) * m.w);
+  }
+  return a;
 }
 
 @fragment
@@ -236,7 +249,7 @@ fn fsLand(in: VsOut) -> FsOut {
   }
 
   var color = shadeGround(albedo, in.world, n, nShade, roughness, gd.cavity, in.pos, ground.terminator, mix(ground.f0, td.puddle2.w, standing), ground.specMode, caustic, skySpec);
-  color = mix(color, td.ringColor, ringAlpha(xz));
+  color = mix(color, td.ringColor, max(ringAlpha(xz), marksAlpha(xz, max(fw.x, fw.y)) * td.ringOpacity));
   // normalId keeps the mesh normal, so pebbles and cracks never get outlines (docs/22).
   return FsOut(vec4f(color, 1.0), vec4f(octEncode(n), 0.0, 1.0 / 3.0));
 }
