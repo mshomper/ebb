@@ -9,7 +9,7 @@ import { LODS, MAX_CHUNKS, createIndexBuffers, packChunks } from '../terrain-mes
 
 /** @typedef {import('../frame-graph.js').PassContext} PassContext */
 
-const DRAW_BYTES = 160;
+const DRAW_BYTES = 192;
 const GROUND_BYTES = 224;
 const DEG = Math.PI / 180;
 /** @type {Record<string, number>} GroundDetail.tiling.x in lib-ground.wgsl */
@@ -85,6 +85,9 @@ export function createTerrainPass(opts) {
     f[32] = recipe.beachBand[0]; f[33] = recipe.beachBand[1];
     f[34] = recipe.render.skirtDepth; f[35] = recipe.sea.extent;
     f[36] = recipe.sea.shallowDepth; u[37] = opts.seed >>> 0;
+    const uw = recipe.underwater;
+    f.set(m.albedoSilt, 40); f[43] = uw.siltCover;
+    f[44] = uw.bedDepthM[0]; f[45] = uw.bedDepthM[1]; f[46] = uw.siltDepthM[0]; f[47] = uw.siltDepthM[1];
   }
 
   return {

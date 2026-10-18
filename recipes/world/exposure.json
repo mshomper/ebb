@@ -1,16 +1,18 @@
 {
   "type": "exposure",
   "version": 1,
-  "note": "Auto-exposure (docs/05, Exposure). EV100 values; lower EV100 = brighter image. Adaptation rates are exponential rate constants per second: at 1 EV from the target the eye moves 1.2 EV/s brightening, 0.8 EV/s darkening.",
-  "minEV": -1,
+  "note": "Auto-exposure (docs/05, Exposure). EV100 values; lower EV100 = brighter image. Adaptation rates are exponential rate constants per second: at 1 EV from the target the eye moves 1.2 EV/s brightening, 0.8 EV/s darkening. Night key: below nightKneeEV (deep twilight) the exposure follows the measured scene only nightFollow of the way, like an eye that is partly dark-adapted, so a full-moon night sits about 1.6 EV under day's key and a moonless night about 2.8 EV under, never black. minEV is the hard floor.",
+  "minEV": -6,
   "maxEV": 15,
+  "nightKneeEV": 2,
+  "nightFollow": 0.72,
   "brightenEVperSec": 1.2,
   "darkenEVperSec": 0.8,
   "lowCut": 0.4,
   "highCut": 0.05,
   "initialEV": 12.7,
   "centerWeight": 3,
-  "histogramMinEV": -6,
+  "histogramMinEV": -12,
   "histogramMaxEV": 18,
   "sampleGrid": [128, 72]
 }

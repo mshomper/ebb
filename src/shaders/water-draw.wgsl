@@ -42,6 +42,7 @@ struct WaterDraw {
   _q1: f32, _q2: f32,
   riffle: vec4f,              // white water: x, y speed range (m/s) it fades in over, z depth (m) it is gone by, w coverage
   riffle2: vec4f,             // x streak size (m), y white-water albedo
+  scatterPond: vec4f,         // rgb single-scatter albedo of pond water (fine silt and peat stain it)
 };
 
 @group(0) @binding(0) var<uniform> frame: FrameUniforms;
@@ -331,8 +332,10 @@ fn fsWater(in: VsOut) -> FsOut {
   }
 
   // ---- the water body ----
-  // Sea or pond by how deep the bed lies below the tide (ponds are peatier and greener).
-  let seaness = smoothstep(0.3, 1.5, wd.tide - in.bed);
+  // Sea or pond (ponds are peaty and cloudy) by where the surface sits: the sea's is at the tide,
+  // fresh water stands above it. The bed cannot tell: pond floors dip below sea level, and the
+  // sea is shallow at the beach.
+  let seaness = 1.0 - smoothstep(0.2, 0.45, P.y - wd.tide);
   let sigma = mix(wd.absorbPond.rgb, wd.absorbSea.rgb, seaness);
   // Light reaches the bed through the water above it, then comes back along the view ray.
   let sunDown = 1.0 / max(frame.sunDir.y, 0.25);
@@ -340,7 +343,7 @@ fn fsWater(in: VsOut) -> FsOut {
   let Tbed = Tview * exp(-sigma * d * sunDown);
   // Single scattering: sky and sun light the water body, weighted by how much of the view ray
   // is water (1 - Tview), so a deep sea reads as its own color.
-  let inScatter = wd.scatter.rgb * lightIn * (vec3f(1.0) - Tview) * frame.exposure;
+  let inScatter = mix(wd.scatterPond.rgb, wd.scatter.rgb, seaness) * lightIn * (vec3f(1.0) - Tview) * frame.exposure;
 
   // The scene copy already carries its own aerial perspective; only the water's own light gets it here.
   let own = inScatter * (1.0 - F) + refl * F + glint;

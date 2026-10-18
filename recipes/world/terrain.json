@@ -33,6 +33,7 @@
     "albedoRock": [0.36, 0.34, 0.31],
     "albedoSoil": [0.21, 0.15, 0.10],
     "albedoMoss": [0.15, 0.21, 0.045],
+    "albedoSilt": [0.14, 0.115, 0.075],
     "variation": 0.18,
     "variationScale": 0.6,
     "blendSharpness": 0.22,
@@ -66,6 +67,12 @@
     "fadeHours": 48,
     "maxCover": { "grass": 0.6, "sand": 0.08, "rock": 0.9, "soil": 0.85 },
     "maxCoverNote": "The most moss each ground can carry, even fully grown: grass competes and always shows through; damp soil and stone hold the most; loose sand (painted, or the beach band) dries fast and shifts. In the terrain shader moss is a soft, clumpy partial cover below this cap, and the height blend lets grass tufts and stone tops stand through it."
+  },
+  "underwater": {
+    "note": "The ground under live water (ponds, streams, the sea). bedDepthM: water depths over which grass gives way to a bare soil bed (sand and stone stay), so the waterline reads from straight above. siltDepthM: depths over which fine mud (materials.albedoSilt) settles on the soft bed; siltCover: the most of the bed it covers.",
+    "bedDepthM": [0.004, 0.03],
+    "siltDepthM": [0.04, 0.3],
+    "siltCover": 0.8
   },
   "steepRockDeg": 38,
   "steepRockSoftDeg": 5,

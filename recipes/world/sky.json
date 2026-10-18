@@ -47,6 +47,10 @@
     "milkyWayWidthDeg": 11
   },
   "airglow": { "radianceNits": [0.00011, 0.00016, 0.0001], "heightKm": 90 },
+  "starlight": {
+    "note": "Art-directed, like the stars: a faint cool glow added to the airglow shell, standing in for starlight, zodiacal light and the eye's dark adaptation. Physically a moonless sky is about 8 EV darker than a full-moon one; with this it is about 4 EV darker, so moonless nights keep readable shapes (docs/05 night key). Ignored by day: it is a millionth of daylight.",
+    "radianceNits": [0.0024, 0.003, 0.0038]
+  },
   "overcast": {
     "note": "cloud blends the sky toward a gray CIE overcast dome whose horizontal illuminance is the clear sky plus sunToDome of the direct sun",
     "sunToDome": 0.3,

@@ -25,6 +25,8 @@ struct TerrainDraw {
   ringVisible: f32, ringWidth: f32, steepCosLow: f32, steepCosHigh: f32,
   beachLow: f32, beachHigh: f32, skirtDepth: f32, seaExtent: f32,
   shallowDepth: f32, seed: u32, tide: f32, dampWet: f32,   // tide: sea level now (m); dampWet: damp hollow wetness
+  albedoSilt: vec3f, siltCover: f32,    // the fine mud that settles on pond beds; most of the bed it covers
+  bedDepth: vec2f, siltDepth: vec2f,    // water depths (m) over which grass gives way to a bare bed, and silt settles
 };
 
 @group(0) @binding(0) var<uniform> frame: FrameUniforms;
@@ -55,6 +57,19 @@ fn wetFromWater(xz: vec2f) -> f32 {
     }
   }
   return w;
+}
+
+// Live water depth (m) here, bilinear between the 0.5 m cells.
+fn waterDepthAt(xz: vec2f) -> f32 {
+  let g = waterCellCoord(xz);
+  let c = vec2i(floor(g));
+  let f = g - floor(g);
+  let hi = vec2i(WATER_CELLS - 1);
+  let d00 = textureLoad(waterDepth, clamp(c, vec2i(0), hi), 0).r;
+  let d10 = textureLoad(waterDepth, clamp(c + vec2i(1, 0), vec2i(0), hi), 0).r;
+  let d01 = textureLoad(waterDepth, clamp(c + vec2i(0, 1), vec2i(0), hi), 0).r;
+  let d11 = textureLoad(waterDepth, clamp(c + vec2i(1, 1), vec2i(0), hi), 0).r;
+  return mix(mix(d00, d10, f.x), mix(d01, d11, f.x), f.y);
 }
 
 // Second target (normalId, rgb10a2unorm): octahedral world normal in RG, water flag in B,
@@ -105,6 +120,11 @@ fn fsLand(in: VsOut) -> FsOut {
   w = mix(w, vec4f(0.0, 0.0, 1.0, 0.0), steep);
   let beach = 1.0 - smoothstep(td.beachHigh - 0.15, td.beachHigh + 0.15, y);
   w = mix(w, vec4f(0.0, 1.0 - w.z, w.z, 0.0), beach);
+  // Grass does not grow under water: past the first few centimeters of depth a grassy bed is bare
+  // soil, so from above the waterline reads as grass giving way to the bed (sand and stone stay).
+  let wdep = waterDepthAt(xz);
+  let sub = smoothstep(td.bedDepth.x, td.bedDepth.y, wdep);
+  w = vec4f(w.x * (1.0 - sub), w.y, w.z, w.w + w.x * sub);
 
   // Height-style blend: each layer gets its own noise "relief"; layers within blendSharpness
   // of the top score share the pixel, so edges break up softly instead of fading flat.
@@ -134,11 +154,17 @@ fn fsLand(in: VsOut) -> FsOut {
   // and stone hold the most, loose sand (painted, or the beach band) almost none. Below the cap the
   // height blend lets grass tufts and stone tops stand up through the moss.
   let cap = dot(w, ground.mossRules) / max(w.x + w.y + w.z + w.w, 1e-4);
-  let moss = min(density, 1.0) * cap;
+  let moss = min(density, 1.0) * cap * (1.0 - sub);
   albedo = mix(albedo, ground.mossTile.yzw, moss);
   // Scanned detail (docs/22) takes over once loaded and near enough; the flat look stays the fallback.
   let gd = groundDetail(in.world, n, w, moss, distance(in.world, frame.cameraPos));
   albedo = mix(albedo, gd.albedo, gd.amount);
+  // Silt: in deeper, quieter water fine mud settles over the soft parts of the bed (not on sand or
+  // stone), in soft drifts, so a pond floor is a dark, even brown with the bed showing through.
+  let soft = w.w / max(w.x + w.y + w.z + w.w, 1e-4);
+  let drift = 0.75 + 0.5 * valueNoise2(xz * 0.45 + vec2f(17.3, 4.1), td.seed + 12u);
+  let silt = clamp(smoothstep(td.siltDepth.x, td.siltDepth.y, wdep) * td.siltCover * soft * drift, 0.0, 1.0);
+  albedo = mix(albedo, td.albedoSilt, silt);
   // Macro variation (docs/22): a slow tone drift near and far, so no repeat survives at a distance.
   albedo *= groundMacro(xz, td.seed);
   // Wet ground is darker: below the tide line always, and everywhere while it rains (docs/06).

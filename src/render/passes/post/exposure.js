@@ -17,6 +17,8 @@ import { makeBuffer, makeShaderModule } from '../../../core/gpu.js';
  * @property {number} lowCut            share of weight dropped at the dark end, 0..1
  * @property {number} highCut           share of weight dropped at the bright end, 0..1
  * @property {number} initialEV         EV100 before the first measurement arrives
+ * @property {number} [nightKneeEV]     below this measured EV100 the exposure follows only part of the way
+ * @property {number} [nightFollow]     that part, 0..1 (1 follows fully)
  * @property {number} centerWeight      weight of the screen center relative to the edges
  * @property {number} [histogramMinEV]  histogram range, default -6
  * @property {number} [histogramMaxEV]  default 18
@@ -52,6 +54,10 @@ export function createExposurePass(recipe) {
   const lowCut = clamp(recipe.lowCut ?? 0.4, 0, 0.95);
   const highCut = clamp(recipe.highCut ?? 0.05, 0, 0.95 - lowCut);
   const initialEV = clamp(recipe.initialEV ?? 12, minEV, maxEV);
+  // Night key: below the knee the eye only partly adapts, so night stays darker than day but never black.
+  const knee = recipe.nightKneeEV ?? -Infinity;
+  const follow = clamp(recipe.nightFollow ?? 1, 0, 1);
+  const soften = (/** @type {number} */ ev) => (ev < knee ? knee + (ev - knee) * follow : ev);
   const histMinEV = recipe.histogramMinEV ?? -6;
   const histMaxEV = recipe.histogramMaxEV ?? 18;
   const [baseGX, baseGY] = recipe.sampleGrid ?? [128, 72];
@@ -174,7 +180,7 @@ export function createExposurePass(recipe) {
         slot.busy = false;
         if (valid && slot.seq > lastSeq) {
           lastSeq = slot.seq;
-          targetEV = clamp(ev, minEV, maxEV);
+          targetEV = clamp(soften(ev), minEV, maxEV);
         }
       }).catch(() => { slot.busy = false; });
     },

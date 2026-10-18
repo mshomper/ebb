@@ -169,7 +169,10 @@ fn fs(in: FullscreenOut) -> @location(0) vec4f {
 
   var bodies = sunDisk(dir, px) * (1.0 - moon.a) + moon.rgb;
   let sf = toStarFrame(dir);
-  let night = (stars(sf, px) + vec3f(milkyWay(sf))) * fade * (1.0 - moon.a);
+  // Stars are set relative to the old EV100 -1 floor; below it the eye adapts further (the night
+  // key, docs/05), so scale them back to keep their brightness on screen.
+  let starKey = exp2(min(frame.ev100 + 1.0, 0.0));
+  let night = (stars(sf, px) + vec3f(milkyWay(sf))) * fade * (1.0 - moon.a) * starKey;
   bodies += night;
   L += bodies * t * clearView;
 

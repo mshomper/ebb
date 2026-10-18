@@ -8,7 +8,7 @@ import { makeBuffer, makeShaderModule, makeTexture, untrack } from '../../core/g
 
 /** @typedef {import('../frame-graph.js').PassContext} PassContext */
 
-const DRAW_BYTES = 304;
+const DRAW_BYTES = 320;
 const DEG = Math.PI / 180;
 /** Open sea mesh: rings x segments around the camera (SEA_RINGS, SEA_SEGMENTS in water-draw.wgsl). */
 const SEA_RINGS = 28;
@@ -62,6 +62,7 @@ export function createWaterPass(opts) {
     const R = L.riffle;
     f[68] = R.speed[0]; f[69] = R.speed[1]; f[70] = R.depthM; f[71] = R.coverage;
     f[72] = R.streakM; f[73] = R.albedo;
+    f.set(L.scatterAlbedoPond, 76);
   }
 
   /** @param {PassContext} ctx */

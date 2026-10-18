@@ -202,7 +202,10 @@ export async function createAtmosphere(device, recipe, tier) {
     sf.set(Array.from(f.sunIlluminanceTOA ?? recipe.sun.illuminanceTOA).slice(0, 3), 24); sf[27] = Math.cos(sunR);
     sf.set(Array.from(f.moonDir).slice(0, 3), 28); sf[31] = Math.sin(moonR);
     sf.set(Array.from(f.moonIlluminanceTOA).slice(0, 3), 32); sf[35] = Math.cos(moonR);
-    sf.set(recipe.airglow.radianceNits, 36); sf[39] = recipe.airglow.heightKm;
+    // Airglow plus the art-directed starlight glow (sky.json `starlight`), both from the same shell.
+    const glow = recipe.starlight?.radianceNits ?? [0, 0, 0];
+    sf.set(recipe.airglow.radianceNits.map((/** @type {number} */ v, /** @type {number} */ i) => v + glow[i]), 36);
+    sf[39] = recipe.airglow.heightKm;
     sf[40] = weather.cloud; sf[41] = recipe.overcast.sunToDome; sf[42] = recipe.overcast.sunOcclusion; sf[43] = recipe.overcast.diskOcclusion;
     const fr = weather.frost;
     for (let i = 0; i < 3; i++) sf[44 + i] = a.probeGroundAlbedo[i] + (a.frostGroundAlbedo[i] - a.probeGroundAlbedo[i]) * fr;
