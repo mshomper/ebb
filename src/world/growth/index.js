@@ -18,19 +18,24 @@ export const PLANT_FLOATS = 8;
 /**
  * @param {GPUDevice} device
  * @param {{ terrain: import('../terrain/index.js').Terrain, water: import('../water/index.js').Water,
- *   world: { state: any, env: any }, recipes: { growth: any, flora: Record<string, any> } }} opts
- *   world: the live world (state and env of the hourly tick); env.habitat is set here
+ *   world: { state: any, env: any }, recipes: { growth: any, flora: Record<string, any>, covers?: Record<string, any>, land?: any } }} opts
+ *   world: the live world (state and env of the hourly tick); env.habitat is set here.
+ *   recipes.covers: the cover plants other than grass (growth.json `cover`); recipes.land: the
+ *   island's land recipe (its basins may carry starter plants)
  */
 export function createGrowth(device, opts) {
   const { terrain, water, world, recipes } = opts;
   const cap = recipes.growth.maxPlants;
   const instances = makeBuffer(device, { label: 'flora-instances', size: cap * PLANT_FLOATS * 4, usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST });
+  // Cover per square meter: r grass, g rushes (the first of growth.json `cover`).
   const coverTex = makeTexture(device, {
-    label: 'grass-cover', size: [HABITAT_CELLS, HABITAT_CELLS], format: 'r8unorm',
+    label: 'plant-cover', size: [HABITAT_CELLS, HABITAT_CELLS], format: 'rg8unorm',
     usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST,
   });
-  device.queue.writeTexture({ texture: coverTex }, new Uint8Array(HABITAT_CELLS * HABITAT_CELLS).fill(255),
-    { bytesPerRow: HABITAT_CELLS }, [HABITAT_CELLS, HABITAT_CELLS]);
+  const coverData = new Uint8Array(HABITAT_CELLS * HABITAT_CELLS * 2);
+  for (let k = 0; k < HABITAT_CELLS * HABITAT_CELLS; k++) coverData[2 * k] = 255;
+  device.queue.writeTexture({ texture: coverTex }, coverData, { bytesPerRow: HABITAT_CELLS * 2 }, [HABITAT_CELLS, HABITAT_CELLS]);
+  const coverIds = /** @type {string[]} */ (recipes.growth.cover ?? []);
   const data = new Float32Array(cap * PLANT_FLOATS);
   const speciesIndex = (/** @type {string} */ sp) => recipes.flora[sp]?.index ?? 0;
   const kinds = 1 + Math.max(0, ...Object.values(recipes.flora).map((r) => r.index ?? 0));
@@ -43,6 +48,8 @@ export function createGrowth(device, opts) {
   world.env.habitat = () => habitat;
   world.env.recipes.growth = recipes.growth;
   world.env.recipes.flora = recipes.flora;
+  world.env.recipes.covers = recipes.covers ?? {};
+  world.env.recipes.land = recipes.land ?? null;
 
   /** Rebuild the habitat from the latest water summary and the painted ground. */
   function rebuildHabitat() {
@@ -75,7 +82,11 @@ export function createGrowth(device, opts) {
       data[o + 6] = p.age; data[o + 7] = terrain.sampleHeight(p.x, p.z);
     }
     if (count) device.queue.writeBuffer(instances, 0, data, 0, count * PLANT_FLOATS);
-    if (g.grass) device.queue.writeTexture({ texture: coverTex }, g.grass, { bytesPerRow: HABITAT_CELLS }, [HABITAT_CELLS, HABITAT_CELLS]);
+    if (g.grass) {
+      const rush = coverIds.length ? g.cover?.[coverIds[0]] : null;
+      for (let k = 0; k < g.grass.length; k++) { coverData[2 * k] = g.grass[k]; coverData[2 * k + 1] = rush ? rush[k] : 0; }
+      device.queue.writeTexture({ texture: coverTex }, coverData, { bytesPerRow: HABITAT_CELLS * 2 }, [HABITAT_CELLS, HABITAT_CELLS]);
+    }
   }
 
   return {
@@ -86,7 +97,7 @@ export function createGrowth(device, opts) {
     count: () => count,
     /** The instances of one species (its recipe index): [first, count]. @param {number} index */
     range: (index) => ranges[index] ?? [0, 0],
-    /** Grass cover 0..1 on the 1 m world grid (r8unorm, 192 x 192 from -80 m): how well grass likes the ground. */
+    /** Cover 0..1 on the 1 m world grid (rg8unorm, 192 x 192 from -80 m): r grass, g rushes. */
     coverTex,
     /** The current habitat grid, or null before the first water summary. */
     habitat: () => habitat,

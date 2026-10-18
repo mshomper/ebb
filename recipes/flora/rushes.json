@@ -1,0 +1,23 @@
+{
+  "type": "flora", "id": "rushes", "name": "Rushes and sedges", "schema": 1, "version": 1, "seed": 5323,
+  "tags": ["slice", "cover", "wetland"],
+  "generator": "blades",
+  "layer": "cover",
+  "note": "Rushes and sedges (docs 10, 14): the marsh's own sward, a cover plant like grass, so a share per square meter rather than plants one by one. habitat: each axis [ideal low, ideal high, tolerance] as in reeds.json; rushes want still, shallow fresh water or soaked ground (a marsh, a pond's shallow edge, a damp hollow), never running water or salt. growth: the cover per square meter moves ratePerH of the gap toward how well rushes like the ground each game hour, so a new marsh fills over a few days and a drained one thins out; a new island starts with it full. Drawn as stiff upright blades by grass-blades.wgsl, which stand on the bed and rise out of water up to maxWaterM deep. blades: as grass.json (height, width, variation, rest lean, root shade); stems lean out from their tussock's core, so a tussock splays; pixelWidth keeps far stems at least that many pixels wide, so thin stems never break into dots on a phone. clumps: rushes grow in tussocks clumpM across with open water between them; threshold is how much of the cover's ground the tussocks fill at full cover (0.5 about half, higher less), sparse raises it where the cover is thin, edge softens a tussock's rim, and core is how much taller the middle of a tussock stands than its rim. density, wind and season as grass.json; on a tier with thinner grass (quality-tiers grassDensity under 1) stems widen tierWiden of the way toward covering the same ground, so tussocks keep their mass on a phone; season albedo is physical (linear), tips brown in autumn and winter.",
+  "habitat": { "moisture": [0.8, 1, 0.3], "waterDepthM": [0, 0.3, 0.12], "still": [1, 1, 0.5], "salt": [0, 0.2, 0.15] },
+  "growth": { "ratePerH": 0.03 },
+  "blades": { "height": 0.75, "heightVar": 0.4, "width": 0.012, "widthVar": 0.3, "lean": 0.16, "rootShade": 0.45, "maxWaterM": 0.5, "pixelWidth": 2.0 },
+  "clumps": { "clumpM": 0.55, "threshold": 0.5, "sparse": 0.3, "edge": 0.05, "core": 0.45 },
+  "density": { "perM2": 240, "farShare": 0.15, "farWiden": 0.5, "nearShare": 0.3, "fadeShare": 0.25, "tierWiden": 0.6 },
+  "wind": { "sway": 0.14, "gustM": 6, "gustSpeed": 2.5 },
+  "season": {
+    "height": { "spring": 0.8, "summer": 1.0, "autumn": 0.95, "winter": 0.75 },
+    "albedo": {
+      "spring": [0.08, 0.15, 0.05],
+      "summer": [0.07, 0.13, 0.045],
+      "autumn": [0.17, 0.14, 0.06],
+      "winter": [0.22, 0.17, 0.09]
+    }
+  },
+  "wetDarken": 0.8
+}

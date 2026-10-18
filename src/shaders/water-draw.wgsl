@@ -51,6 +51,8 @@ struct WaterDraw {
   ssr2: vec4f,                // x screen-edge fade (uv), y, z roughness range it fades out over, w start offset (m)
   ssr3: vec4f,                // x share of the ripple tilt the march follows, y 1 = sky from the probe
   foam: vec4f,                // x lace size (m), y foam albedo, z most of a pixel foam covers, w boil speed (cells/s)
+  marsh: vec4f,               // rgb sigma_a per meter of shallow, still marsh water (peat-stained)
+  marsh2: vec4f,              // xy depths (m) over which it gives way to pond water, zw speeds (m/s) over which moving water clears it
 };
 
 @group(0) @binding(0) var<uniform> frame: FrameUniforms;
@@ -455,7 +457,10 @@ fn fsWater(in: VsOut) -> FsOut {
   // fresh water stands above it. The bed cannot tell: pond floors dip below sea level, and the
   // sea is shallow at the beach.
   let seaness = 1.0 - smoothstep(0.2, 0.45, P.y - wd.tide);
-  let sigma = mix(wd.absorbPond.rgb, wd.absorbSea.rgb, seaness);
+  // Shallow, still fresh water among drowned plants (a marsh, a pond's shallow margin) holds more
+  // dissolved peat: it reads darker, tea-brown, so the sky's reflection shows on it.
+  let stain = (1.0 - smoothstep(wd.marsh2.x, wd.marsh2.y, d)) * (1.0 - smoothstep(wd.marsh2.z, wd.marsh2.w, speed));
+  let sigma = mix(mix(wd.absorbPond.rgb, wd.marsh.rgb, stain), wd.absorbSea.rgb, seaness);
   // Light reaches the bed through the water above it, then comes back along the view ray.
   let sunDown = 1.0 / max(frame.sunDir.y, 0.25);
   let Tview = exp(-sigma * L);

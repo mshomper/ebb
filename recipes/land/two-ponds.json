@@ -2,7 +2,7 @@
   "type": "land",
   "version": 1,
   "name": "Two ponds",
-  "note": "A second island for tests (?island=two-ponds), built by src/world/terrain/landform.js like the starter island; the fields are the same (see starter-island.json's note). It differs in shape: a low central rise, two smaller ponds on opposite sides each fed by its own spring, and three marshes: wide, shallow hollows with lumpy floors and no stream, which the rain keeps as standing water with tussocks showing (each must be at least 15 cm deep at its deepest and drain at least 120 m2 of ground, world/water.json summary). basins: ponds and marshes; a basin's floorScale gives it its own floor-noise frequency, and floorNoise large enough that tussocks break the water; soil sets how much of its floor is bare soil (a marsh is mostly grassy). springs: each with basin (the index it feeds) and fromBasinM toward the rise.",
+  "note": "A second island for tests (?island=two-ponds), built by src/world/terrain/landform.js like the starter island; the fields are the same (see starter-island.json's note). It differs in shape: a low central rise, two smaller ponds on opposite sides each fed by its own spring, and three marshes: wide, shallow hollows with lumpy floors and no stream, which the rain keeps as standing water with tussocks showing (each must be at least 15 cm deep at its deepest and drain at least 120 m2 of ground, world/water.json summary). basins: ponds and marshes; a basin's floorScale gives it its own floor-noise frequency, and floorNoise large enough that tussocks break the water; soil sets how much of its floor is bare soil (a marsh is mostly grassy, drowned meadow under its water); starters gives it plants of its own on a new island (species id to count, on its suitable cells; src/world/growth/coarse.js), so every marsh starts with reeds and iris. springs: each with basin (the index it feeds) and fromBasinM toward the rise.",
   "radius": 29.5,
   "plateauHeight": 1.25,
   "inlandWidth": 7,
@@ -18,9 +18,9 @@
   "basins": [
     { "x": 12.5, "z": 7.5, "jitter": 1, "innerRadius": 2, "outerRadius": 7.5, "floor": 0.55, "floorNoise": 0.06, "rimWobble": 0.6, "wobbleScale": 0.15 },
     { "x": -12, "z": -8.5, "jitter": 1, "innerRadius": 2, "outerRadius": 7, "floor": 0.55, "floorNoise": 0.06, "rimWobble": 0.6, "wobbleScale": 0.15 },
-    { "x": -15, "z": 9, "jitter": 1.5, "innerRadius": 2.5, "outerRadius": 7, "floor": 0.92, "floorNoise": 0.34, "floorScale": 0.6, "soil": 0.35, "rimWobble": 1.4, "wobbleScale": 0.25 },
-    { "x": 11.5, "z": -12, "jitter": 1.5, "innerRadius": 2.5, "outerRadius": 6.5, "floor": 0.88, "floorNoise": 0.34, "floorScale": 0.6, "soil": 0.35, "rimWobble": 1.4, "wobbleScale": 0.25 },
-    { "x": 1, "z": -19, "jitter": 1.5, "innerRadius": 2, "outerRadius": 6, "floor": 0.92, "floorNoise": 0.34, "floorScale": 0.6, "soil": 0.35, "rimWobble": 1.4, "wobbleScale": 0.25 }
+    { "x": -15, "z": 9, "jitter": 1.5, "innerRadius": 2.5, "outerRadius": 7, "floor": 0.92, "floorNoise": 0.34, "floorScale": 0.6, "soil": 0.1, "rimWobble": 1.4, "wobbleScale": 0.25, "starters": { "reeds": 4, "iris": 2 } },
+    { "x": 11.5, "z": -12, "jitter": 1.5, "innerRadius": 2.5, "outerRadius": 6.5, "floor": 0.88, "floorNoise": 0.34, "floorScale": 0.6, "soil": 0.1, "rimWobble": 1.4, "wobbleScale": 0.25, "starters": { "reeds": 4, "iris": 2 } },
+    { "x": 1, "z": -19, "jitter": 1.5, "innerRadius": 2, "outerRadius": 6, "floor": 0.92, "floorNoise": 0.34, "floorScale": 0.6, "soil": 0.1, "rimWobble": 1.4, "wobbleScale": 0.25, "starters": { "reeds": 3, "iris": 2 } }
   ],
   "springs": [
     { "basin": 0, "fromBasinM": 9.5, "rateLps": 8, "channel": { "widthM": 2.2, "depthM": 0.13, "thalwegWidthM": 0.8, "thalwegDepthM": 0.18, "bedGravel": 0.9, "meanderM": 0.4, "bends": 1.5, "headTaper": 0 }, "outcrop": { "stones": [4, 6], "arcDeg": 230, "turnDeg": 15, "angleJitter": 0.5, "ringM": 1.2, "ringJitterM": 0.12, "radiusM": [0.22, 0.42], "heightM": [0.16, 0.38], "elongate": 0.6, "sinkM": 0.05, "lump": 0.2, "lumpScale": 1.8, "poolRadiusM": 0.75, "poolDepthM": 0.14, "poolGravel": 0.9, "lipRiseM": 0.03, "rimAboveM": 0.1, "rimWidthM": 0.5, "notchWidthM": 0.6, "apronSlope": 0.5, "spillwayWidthM": 1.8, "spillSlope": 0.5 } },

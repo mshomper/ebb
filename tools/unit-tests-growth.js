@@ -62,7 +62,8 @@ export function loadRecipes() {
     });
     const growth = await get('world/growth');
     const flora = Object.fromEntries(await Promise.all(growth.species.map(async (/** @type {string} */ sp) => [sp, await get(`flora/${sp}`)])));
-    return { seasons: await get('world/seasons'), growth, flora };
+    const covers = Object.fromEntries(await Promise.all((growth.cover ?? []).map(async (/** @type {string} */ sp) => [sp, await get(`flora/${sp}`)])));
+    return { seasons: await get('world/seasons'), growth, flora, covers };
   })();
   return recipesPromise;
 }
@@ -155,5 +156,46 @@ export function addGrowthTests(test, assert, eq) {
       lines.push(`${sp} ${before[sp]} to ${after}`);
     }
     return lines.join(', ');
+  });
+
+  test(GROWTH, 'rushes cover the shallow still water and soaked ground, and fill in hour by hour', async () => {
+    const recipes = await loadRecipes();
+    assert(recipes.covers.rushes, 'recipes/flora/rushes.json is listed in growth.json cover');
+    const hab = shoreline();
+    const env = { ...makeEnv(9, recipes), habitat: () => hab };
+    const settled = settleGrowth(initialWorldState(9), env);
+    const rush = settled.growth.cover.rushes;
+    const cell = (/** @type {string} */ zone) => rush[20 * HABITAT_CELLS + ZONES[zone][0] + 1];
+    assert(cell('edge') >= 230, `rushes in the shallow margin: ${cell('edge')} of 255`);
+    for (const z of ['sea', 'band', 'shore', 'dry', 'bank', 'pond', 'stream']) eq(cell(z), 0, `rushes on ${z}:`);
+    // A world whose rushes have not grown yet: they fill in over the hours, not at once.
+    const bare = { ...settled, growth: { ...settled.growth, cover: { rushes: new Uint8Array(rush.length) } } };
+    let s = bare;
+    for (let h = 0; h < 24; h++) s = runHour(s, h, env).state;
+    const grown = s.growth.cover.rushes[20 * HABITAT_CELLS + ZONES.edge[0] + 1];
+    assert(grown > 60 && grown < cell('edge'), `after a day the margin holds ${grown} of 255`);
+    return `margin ${cell('edge')} of 255 at once, none elsewhere; from bare, ${grown} after 24 hours`;
+  });
+
+  test(GROWTH, 'a basin with starters of its own starts with them, on their own ground', async () => {
+    const recipes = await loadRecipes();
+    const hab = shoreline();
+    const bx = at('edge')[0];
+    const basin = { x: bx, z: 0, jitter: 0, outerRadius: 6, starters: { reeds: 3, iris: 2 } };
+    const plain = settleGrowth(initialWorldState(9), { ...makeEnv(9, recipes), habitat: () => hab });
+    const env = { ...makeEnv(9, { ...recipes, land: { basins: [basin] } }), habitat: () => hab };
+    const marsh = settleGrowth(initialWorldState(9), env);
+    const near = (/** @type {any} */ st, /** @type {string} */ sp) => st.growth.plants.filter((/** @type {any} */ p) => p.sp === sp && Math.hypot(p.x - bx, p.z) <= 6);
+    const reeds = near(marsh, 'reeds').length - near(plain, 'reeds').length;
+    const iris = near(marsh, 'iris').length - near(plain, 'iris').length;
+    eq(reeds, 3, 'reeds added in the basin');
+    eq(iris, 2, 'iris added in the basin');
+    for (const p of near(marsh, 'reeds')) eq(zoneOf(p.x), 'edge', 'a starter reed');
+    for (const p of near(marsh, 'iris')) eq(zoneOf(p.x), 'bank', 'a starter iris');
+    // The island-wide starters are the same either way.
+    const first = (/** @type {any} */ st) => JSON.stringify(st.growth.plants.slice(0, plain.growth.plants.length));
+    eq(first(marsh), first(plain), 'island-wide starters');
+    eq(hashWorldState(settleGrowth(initialWorldState(9), env)), hashWorldState(marsh), 'the same twice');
+    return `${reeds} reeds and ${iris} iris added in the basin; the island-wide starters unchanged`;
   });
 }

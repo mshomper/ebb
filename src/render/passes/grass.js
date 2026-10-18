@@ -4,23 +4,28 @@
 // exposure all see it. Two draws: a dense near ring and a sparser far ring around the view's focus,
 // sized from the tier's grassDensity and grassDistance. Season, wind and the blade look come from
 // recipes/flora/grass.json; nothing here is simulated.
+// The same pass draws the marsh's rushes (kind 'rushes', recipes/flora/rushes.json): stiff blades in
+// tussocks where the rush cover is, standing on the bed and rising out of shallow water.
 
 import { makeBuffer, makeShaderModule } from '../../core/gpu.js';
 
 /** @typedef {import('../frame-graph.js').PassContext} PassContext */
 
-const DRAW_BYTES = 160;
+const DRAW_BYTES = 192;
 const SEASONS = /** @type {const} */ (['spring', 'summer', 'autumn', 'winter']);
 
 /**
  * @param {{ terrain: import('../../world/terrain/index.js').Terrain, recipe: any, terrainRecipe: any, seed: number,
  *   water: { depthTextures: GPUTexture[], current: () => number }, cover: GPUTexture,
- *   tier: { grassDensity: number, grassDistance: number } }} opts  recipe: recipes/flora/grass.json;
+ *   tier: { grassDensity: number, grassDistance: number }, kind?: 'grass' | 'rushes' }} opts
+ *   recipe: recipes/flora/grass.json (or rushes.json for kind 'rushes');
  *   terrainRecipe: recipes/world/terrain.json (its beach band and steep-rock angles);
- *   cover: the growth step's grass cover (world/growth coverTex), 1 m world grid
+ *   cover: the growth step's cover (world/growth coverTex: r grass, g rushes), 1 m world grid
  */
 export function createGrassPass(opts) {
   const { terrain, recipe } = opts;
+  const rushes = opts.kind === 'rushes';
+  const name = rushes ? 'rushes' : 'grass';
   /** @type {GPURenderPipeline} */ let pipeline;
   /** @type {GPUBindGroup[]} */ let groups = [];
   /** @type {GPUBuffer} */ let drawBuffer;
@@ -29,8 +34,8 @@ export function createGrassPass(opts) {
   /** Blades per side of the near and far rings. */
   const perSide = [0, 0];
 
-  // `?grass=0` turns the meadow off for side-by-side checks.
-  const off = new URLSearchParams(location.search).get('grass') === '0';
+  // `?grass=0` turns the meadow off for side-by-side checks, `?rushes=0` the marsh's rushes.
+  const off = new URLSearchParams(location.search).get(name) === '0';
 
   /** Ring sizes for a tier: spacing from the density, extents from the distance. @param {{ grassDensity: number, grassDistance: number }} t */
   function setTier(t) {
@@ -49,6 +54,8 @@ export function createGrassPass(opts) {
     f[24] = reach * (1 - D.fadeShare); f[25] = reach;
     // Far blades are fewer: widen them part of the way toward covering the same ground.
     f[31] = 1 + (Math.sqrt(1 / D.farShare) - 1) * D.farWiden;
+    // Rushes on a thinner tier: wider stems keep a tussock's mass with fewer blades.
+    if (rushes) f[46] = 1 + (Math.sqrt(1 / Math.max(t.grassDensity, 0.05)) - 1) * (D.tierWiden ?? 0);
   }
 
   {
@@ -56,8 +63,18 @@ export function createGrassPass(opts) {
     f[7] = B.width; f[11] = B.rootShade;
     f.set([B.heightVar, B.widthVar, B.lean, recipe.wind.sway], 20);
     f[26] = 1 / recipe.wind.gustM; f[27] = recipe.wind.gustSpeed;
-    f[28] = recipe.wetDarken; f[29] = (opts.seed >>> 0) % 100000; f[30] = 1.2;
-    f[32] = B.tuftM; f[33] = B.tuftDensity; f[34] = B.tuftHeight;
+    f[28] = recipe.wetDarken; f[29] = (opts.seed >>> 0) % 100000; f[30] = B.pixelWidth ?? 1.2;
+    if (rushes) {
+      // Cover from the g channel; blades rise out of water up to maxWaterM; tussocks (clumps).
+      const C = recipe.clumps;
+      f[32] = C.clumpM; f[33] = 0; f[34] = 0;
+      f.set([1, B.maxWaterM, C.threshold, C.sparse], 40);
+      f[44] = C.edge; f[45] = C.core;
+    } else {
+      f[32] = B.tuftM; f[33] = B.tuftDensity; f[34] = B.tuftHeight;
+      // Grass: the r channel, never in water deeper than 1 cm, tufts rather than tussocks.
+      f.set([0, 0.01, -1, 0], 40);
+    }
     // The terrain's derived layers (terrain.json): no blades on the beach band or steep rock.
     const T = opts.terrainRecipe;
     f[36] = T.beachBand[1];
@@ -85,7 +102,7 @@ export function createGrassPass(opts) {
   }
 
   return {
-    name: 'grass',
+    name,
     reads: ['hdr', 'depth'],
     writes: ['hdr', 'depth', 'normalId'],
     enabled: () => !off,
@@ -153,13 +170,13 @@ export function createGrassPass(opts) {
     record(encoder, ctx) {
       ctx.device.queue.writeBuffer(drawBuffer, 0, data);
       const pass = encoder.beginRenderPass({
-        label: 'grass',
+        label: name,
         colorAttachments: [
           { view: ctx.targets.hdr.createView(), loadOp: 'load', storeOp: 'store' },
           { view: ctx.targets.normalId.createView(), loadOp: 'load', storeOp: 'store' },
         ],
         depthStencilAttachment: { view: ctx.targets.depth.createView(), depthLoadOp: 'load', depthStoreOp: 'store' },
-        timestampWrites: ctx.timestampWrites('grass'),
+        timestampWrites: ctx.timestampWrites(name),
       });
       pass.setPipeline(pipeline);
       pass.setBindGroup(0, ctx.groups.frame);

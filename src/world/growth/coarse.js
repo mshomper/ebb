@@ -35,11 +35,16 @@ export const STAGE = Object.freeze({ seed: 0, sprout: 1, young: 2, mature: 3, fl
  * @property {number} last  hour index of its last rhizome
  */
 
-/** @typedef {{ nextId: number, starterDone: boolean, plants: Plant[], grass: Uint8Array | null, habitatHash: number }} GrowthState */
+/**
+ * cover: the cover plants other than grass (recipes/world/growth.json `cover`), each a share per
+ * habitat cell 0..255, like `grass`.
+ * @typedef {{ nextId: number, starterDone: boolean, plants: Plant[], grass: Uint8Array | null,
+ *   cover: Record<string, Uint8Array> | null, habitatHash: number }} GrowthState
+ */
 
 /** @returns {GrowthState} */
 export function initialGrowth() {
-  return { nextId: 1, starterDone: false, plants: [], grass: null, habitatHash: 0 };
+  return { nextId: 1, starterDone: false, plants: [], grass: null, cover: null, habitatHash: 0 };
 }
 
 const smooth01 = (/** @type {number} */ t) => {
@@ -64,7 +69,11 @@ function bell(x, r) {
  * @param {import('./habitat.js').Habitat} hab @param {number} x @param {number} z
  */
 export function groundAt(hab, x, z) {
-  const k = habitatCell(x, z);
+  return groundAtCell(hab, habitatCell(x, z));
+}
+
+/** groundAt() for a habitat cell index (-1 off the grid). @param {import('./habitat.js').Habitat} hab @param {number} k */
+function groundAtCell(hab, k) {
   if (k < 0 || !hab.open[k]) return null;
   return { moisture: hab.moisture[k] / 255, salt: hab.salt[k] / 255, depth: hab.sea[k] ? 9 : hab.depthCm[k] / 100, still: hab.still[k], k };
 }
@@ -89,7 +98,14 @@ const AXES = [
  * @returns {{ suit: number, worst: Need }}
  */
 export function suitability(rec, hab, x, z) {
-  const g = groundAt(hab, x, z);
+  return suitabilityOf(rec, groundAt(hab, x, z));
+}
+
+/**
+ * suitability() for ground already read. @param {any} rec @param {ReturnType<typeof groundAt>} g
+ * @returns {{ suit: number, worst: Need }}
+ */
+function suitabilityOf(rec, g) {
   if (!g) return { suit: 0, worst: 'outside' };
   const H = rec.habitat;
   let suit = 1, low = 2;
@@ -176,21 +192,46 @@ function grassTarget(hab, G, k) {
 }
 
 /**
+ * Cover target per cell, 0..255, for a cover plant other than grass: how well it likes the ground.
+ * @param {any} rec its flora recipe @param {import('./habitat.js').Habitat} hab @param {number} k
+ */
+function coverTarget(rec, hab, k) {
+  return Math.floor(255 * suitabilityOf(rec, groundAtCell(hab, k)).suit);
+}
+
+/** The cover plants other than grass that this world grows: [id, recipe]. @param {any} env */
+function coverSpecies(env) {
+  return (env.recipes.growth.cover ?? []).map((/** @type {string} */ sp) => [sp, env.recipes.covers?.[sp]]).filter((/** @type {any[]} */ e) => e[1]);
+}
+
+/**
  * Bring a world up to its habitat right away, without waiting for the next hour: the starter
- * plants of a new island and a first grass cover. A no-op once both exist. Pure.
+ * plants of a new island and a first cover of grass and the other cover plants. A no-op once they
+ * all exist. Pure.
  * @param {any} state @param {any} env
  */
 export function settleGrowth(state, env) {
   const hab = env.habitat?.();
   if (!hab || !env.recipes?.growth || !env.recipes.flora) return state;
   const prev = state.growth ?? initialGrowth();
-  if (prev.starterDone && prev.grass) return state;
+  const covers = coverSpecies(env);
+  const coverDone = covers.every(([sp]) => prev.cover?.[sp]);
+  if (prev.starterDone && prev.grass && coverDone) return state;
   const g = { ...prev, plants: prev.plants.map((/** @type {Plant} */ p) => ({ ...p })) };
   if (!g.starterDone) { plantStarters(g, hab, env); g.starterDone = true; }
   if (!g.grass) {
     const grass = new Uint8Array(hab.n * hab.n);
     for (let k = 0; k < grass.length; k++) grass[k] = grassTarget(hab, env.recipes.growth.grass, k);
     g.grass = grass;
+  }
+  if (!coverDone) {
+    g.cover = { ...(prev.cover ?? {}) };
+    for (const [sp, rec] of covers) {
+      if (g.cover[sp]) continue;
+      const c = new Uint8Array(hab.n * hab.n);
+      for (let k = 0; k < c.length; k++) c[k] = coverTarget(rec, hab, k);
+      g.cover[sp] = c;
+    }
   }
   return { ...state, growth: g };
 }
@@ -222,6 +263,51 @@ function plantStarters(g, hab, env) {
     }
     g.plants.push(...placed);
   }
+  basinStarters(g, hab, env);
+}
+
+/**
+ * An island recipe may give a basin starter plants of its own (recipes/land `basins[].starters`,
+ * species id to count), so a marsh starts with reeds and iris even when the island-wide starters
+ * landed elsewhere. They go on the suitable cells within the basin's reach, in seeded hash order,
+ * the species' starter spacing apart (from every plant of that species). Islands without them are
+ * unchanged.
+ * @param {GrowthState} g @param {import('./habitat.js').Habitat} hab @param {any} env
+ */
+function basinStarters(g, hab, env) {
+  const basins = env.recipes.land?.basins;
+  if (!basins) return;
+  const seed = subSeed(env.seed, 'growth-basin-starter');
+  basins.forEach((/** @type {any} */ b, /** @type {number} */ bi) => {
+    if (!b.starters) return;
+    const reach = b.outerRadius + (b.jitter ?? 0);
+    for (const sp of Object.keys(b.starters).sort()) {
+      const rec = env.recipes.flora[sp];
+      if (!rec?.starter) continue;
+      /** @type {{ k: number, h: number }[]} */ const cand = [];
+      const i0 = Math.max(0, Math.floor(b.x - reach - HABITAT_ORIGIN)), i1 = Math.min(hab.n - 1, Math.floor(b.x + reach - HABITAT_ORIGIN));
+      const j0 = Math.max(0, Math.floor(b.z - reach - HABITAT_ORIGIN)), j1 = Math.min(hab.n - 1, Math.floor(b.z + reach - HABITAT_ORIGIN));
+      for (let j = j0; j <= j1; j++) {
+        for (let i = i0; i <= i1; i++) {
+          const x = HABITAT_ORIGIN + i + 0.5, z = HABITAT_ORIGIN + j + 0.5;
+          if ((x - b.x) * (x - b.x) + (z - b.z) * (z - b.z) > reach * reach) continue;
+          const k = j * hab.n + i;
+          if (suitabilityOf(rec, groundAtCell(hab, k)).suit >= rec.starter.minSuit) cand.push({ k, h: hash32(seed, bi, k) });
+        }
+      }
+      cand.sort((a, b2) => a.h - b2.h || a.k - b2.k);
+      const sp2 = rec.starter.spacingM * rec.starter.spacingM;
+      let placed = 0;
+      for (const c of cand) {
+        if (placed >= b.starters[sp]) break;
+        const x = HABITAT_ORIGIN + (c.k % hab.n) + 0.5, z = HABITAT_ORIGIN + Math.floor(c.k / hab.n) + 0.5;
+        if (g.plants.some((p) => p.sp === sp && (p.x - x) * (p.x - x) + (p.z - z) * (p.z - z) < sp2)) continue;
+        const size = rec.growth.stages.matureSize + 0.1;
+        g.plants.push({ id: g.nextId++, sp, x, z, age: 48, size, best: size, stage: STAGE.mature, low: 0, drown: 0, last: 0 });
+        placed++;
+      }
+    }
+  });
 }
 
 /**
@@ -337,14 +423,36 @@ export function coarseStep(state, hourIndex, env) {
   const G2 = GR.grass;
   for (let k = 0; k < n; k++) {
     const target = grassTarget(hab, G2, k);
-    if (!prev.grass) { grass[k] = target; continue; }
-    const cur = prev.grass[k];
-    const diff = target - cur;
-    let step = Math.floor(Math.abs(diff) * G2.ratePerH);
-    if (step === 0 && diff !== 0) step = 1;
-    grass[k] = diff > 0 ? cur + step : diff < 0 ? cur - step : cur;
+    grass[k] = prev.grass ? approach(prev.grass[k], target, G2.ratePerH) : target;
   }
   g.grass = grass;
 
+  // The other cover plants (rushes): the same rule toward how well each likes the ground.
+  const covers = coverSpecies(env);
+  if (covers.length) {
+    /** @type {Record<string, Uint8Array>} */ const cover = {};
+    for (const [sp, rec] of covers) {
+      const was = prev.cover?.[sp];
+      const c = new Uint8Array(n);
+      for (let k = 0; k < n; k++) {
+        const target = coverTarget(rec, hab, k);
+        c[k] = was ? approach(was[k], target, rec.growth.ratePerH) : target;
+      }
+      cover[sp] = c;
+    }
+    g.cover = cover;
+  }
+
   return { state: { ...state, growth: g }, events };
+}
+
+/**
+ * One hour's move of a cover share toward its target: ratePerH of the gap, at least one step
+ * (integers). @param {number} cur @param {number} target @param {number} ratePerH
+ */
+function approach(cur, target, ratePerH) {
+  const diff = target - cur;
+  let step = Math.floor(Math.abs(diff) * ratePerH);
+  if (step === 0 && diff !== 0) step = 1;
+  return diff > 0 ? cur + step : diff < 0 ? cur - step : cur;
 }

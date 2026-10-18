@@ -8,7 +8,7 @@ import { makeBuffer, makeShaderModule, makeTexture, untrack } from '../../core/g
 
 /** @typedef {import('../frame-graph.js').PassContext} PassContext */
 
-const DRAW_BYTES = 384;
+const DRAW_BYTES = 416;
 const DEG = Math.PI / 180;
 /** Open sea mesh: rings x segments around the camera (SEA_RINGS, SEA_SEGMENTS in water-draw.wgsl). */
 const SEA_RINGS = 28;
@@ -77,6 +77,10 @@ export function createWaterPass(opts) {
     // Sky from the probe (blurred by roughness); `?probe=0` shows the sharp sky-view LUT instead.
     f[89] = new URLSearchParams(location.search).get('probe') === '0' ? 0 : 1;
     f[92] = recipe.foam.laceM; f[93] = recipe.foam.albedo; f[94] = recipe.foam.opacity; f[95] = recipe.foam.boil;
+    // Marsh water (floats 96..103): shallow, still fresh water stained darker by peat.
+    const M = L.marshWater;
+    if (M) { f.set(M.absorption, 96); f[100] = M.depthM[0]; f[101] = M.depthM[1]; f[102] = M.stillMps[0]; f[103] = M.stillMps[1]; }
+    else { f.set(L.absorptionPond, 96); f[100] = 0; f[101] = 1; f[102] = 0; f[103] = 1; }
     setSSR(opts.ssr ?? null);
   }
 
