@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ebb sketch lab</title>
+<link rel="icon" href="../brand/ebb-favicon.svg" type="image/svg+xml">
+<style>
+  @font-face { font-family: 'Nunito'; src: url('../src/vendor/fonts/nunito-latin-600-normal.woff2') format('woff2'); font-weight: 600; }
+  @font-face { font-family: 'Nunito'; src: url('../src/vendor/fonts/nunito-latin-800-normal.woff2') format('woff2'); font-weight: 800; }
+  @font-face { font-family: 'Fraunces'; src: url('../src/vendor/fonts/fraunces-latin-full-italic.woff2') format('woff2'); font-style: italic; font-weight: 100 900; }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; max-width: 100%; overflow-x: hidden; }
+  body { background: #F4EEE4; color: #1E2624; font: 600 17px/1.45 'Nunito', system-ui, sans-serif; padding: 16px; }
+  main { max-width: 1200px; margin: 0 auto; display: grid; gap: 14px; }
+  h1 { font-size: 24px; font-weight: 800; margin: 0; }
+  .muted { color: #4A5551; font-size: 16px; margin: 0; }
+  .bar { display: flex; flex-wrap: wrap; gap: 8px; }
+  button { font: 800 16px/1.2 'Nunito', system-ui, sans-serif; color: #1E2624; background: #FBF7F0; border: 1.5px solid #8DAE80; border-radius: 12px; padding: 10px 16px; min-height: 44px; cursor: pointer; }
+  button[aria-pressed="true"] { background: #5F7F5B; border-color: #5F7F5B; color: #FBF7F0; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 360px), 1fr)); gap: 14px; align-items: start; }
+  .grid.big { grid-template-columns: minmax(0, 1fr); }
+  figure { margin: 0; background: #F4EEE4; border: 1px solid #E3D9C9; border-left: 8px solid #C8B89A; border-radius: 6px 14px 14px 6px; padding: 10px 12px; display: grid; gap: 6px; min-width: 0; }
+  figcaption { font-weight: 800; font-size: 19px; }
+  figure button { justify-self: start; }
+  figure svg { width: 100%; height: auto; display: block; }
+  .grid.big svg { max-height: 86vh; }
+</style>
+</head>
+<body>
+<main>
+  <h1>ebb sketch lab</h1>
+  <p class="muted">Every journal field sketch (J1.6), as the journal would draw it at each stage: pencil before the thing is seen, ink once it is, washed once it has flowered or been caught at a moment. Labels here are all shown; in the game they arrive one by one. <a href="./">All tools</a></p>
+  <div class="bar" role="group" aria-label="Stage">
+    <button data-stage="0" aria-pressed="false">Pencil</button>
+    <button data-stage="1" aria-pressed="false">Ink</button>
+    <button data-stage="2" aria-pressed="true">Washed</button>
+  </div>
+  <div class="grid" id="grid"></div>
+</main>
+<script type="module">
+  import { drawSketch } from '../src/ui/sketches/index.js';
+  const get = (p) => fetch(p, { cache: 'no-cache' }).then((r) => r.json());
+  const [words, island] = await Promise.all([get('../recipes/world/journal.json'), get('../recipes/world/journal-island.json')]);
+  const all = { ...words.species, ...island.ground };
+  const ids = [...words.order, ...island.groundOrder];
+  const q = new URLSearchParams(location.search);
+  let stage = Number(q.get('stage') ?? 2);
+  let only = q.get('id');
+  const grid = document.getElementById('grid');
+  function render() {
+    for (const b of document.querySelectorAll('[data-stage]')) b.setAttribute('aria-pressed', String(Number(b.dataset.stage) === stage));
+    grid.classList.toggle('big', !!only);
+    grid.innerHTML = (only ? [only] : ids).map((id) => {
+      const s = all[id].sketch ?? {};
+      const labels = Object.fromEntries(Object.entries(s.labels ?? {}).map(([k, v]) => [k, v.text]));
+      return `<figure><figcaption>${all[id].name}</figcaption>${drawSketch(id, { stage, labels, scale: s.scale })}
+        <button data-id="${only ? '' : id}">${only ? 'Show all' : 'Show large'}</button></figure>`;
+    }).join('');
+  }
+  document.addEventListener('click', (e) => {
+    const b = e.target.closest('button');
+    if (!b) return;
+    if (b.dataset.stage) stage = Number(b.dataset.stage);
+    else if ('id' in b.dataset) only = b.dataset.id || null;
+    render();
+  });
+  render();
+</script>
+</body>
+</html>

@@ -172,7 +172,7 @@
       ],
       "fieldHint": "Watch them through the seasons to learn more.",
       "sketch": { "scale": "about 1 m", "labels": {
-        "falls": { "text": ["three falls,", "three standards"], "learn": ["flower"] },
+        "falls": { "text": ["falls and", "standards"], "learn": ["flower"] },
         "leaves": { "text": ["sword leaves", "in a fan"], "learn": ["seen"] },
         "root": { "text": ["thick creeping", "root"], "learn": ["spread"] } } },
       "riddle": "Something yellow would flower on a damp bank, a step back from the water.",

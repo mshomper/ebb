@@ -45,7 +45,7 @@
       ],
       "fieldHint": "Watch the rocks in other weather to learn more.",
       "sketch": { "labels": {
-        "moss": { "text": ["moss on the", "damp side"], "learn": ["seen"] },
+        "moss": { "text": ["moss where", "it stays damp"], "learn": ["seen"] },
         "sheds": { "text": ["sheds water"], "learn": ["seen"] },
         "frost": { "text": ["frost stays", "longest here"], "learn": ["moment:winter"] } } }
     },
@@ -60,7 +60,7 @@
       "fieldHint": "Watch the moss in other weather to learn more.",
       "sketch": { "labels": {
         "caps": { "text": ["spore", "capsules"], "learn": ["seen"] },
-        "drinks": { "text": ["drinks", "through its", "leaves"], "learn": ["seen"] },
+        "drinks": { "text": ["drinks through", "its leaves"], "learn": ["seen"] },
         "rain": { "text": ["swells after", "rain"], "learn": ["moment:rain"] } } }
     },
     "fresh": {
@@ -91,7 +91,7 @@
         "high": { "text": ["high water"], "learn": ["seen"] },
         "low": { "text": ["low water"], "learn": ["seen"] },
         "band": { "text": ["the tide band"], "learn": ["seen"] },
-        "spray": { "text": ["salt spray"], "learn": ["moment:dawn", "moment:rain"] } } }
+        "spray": { "text": ["thrift in", "the spray"], "learn": ["moment:dawn", "moment:rain"] } } }
     }
   },
   "wet": [[0.85, "Wet"], [0.5, "Damp"], [0.2, "A little damp"], [0, "Dry"]],

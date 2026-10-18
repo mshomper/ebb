@@ -7,6 +7,8 @@
 
 const PENCIL = '#A7A196';
 const INK = '#2F3A35';
+/** The journal's paper: shapes are filled with it so whatever is in front hides what is behind. */
+const PAPER = '#F4EEE4';
 const NOTE = '#4A5551';
 const LEADER = '#8A8478';
 /** Label size in drawing units: about 16 px on a 343 px wide phone page, 18 px on desktop. */
@@ -40,8 +42,13 @@ export function makePen(stage, labels) {
     tint(d, c, opacity = 0.4) {
       if (wash) out += `<path d="${d}" fill="${c}" opacity="${opacity}"/>`;
     },
-    /** A closed shape: washed fill and an outline. @param {string} d @param {string} c @param {number} [opacity] @param {number} [w] */
+    /**
+     * A solid closed shape: paper fill (so it hides what was drawn behind it), its wash, and an
+     * outline. Draw back to front.
+     * @param {string} d @param {string} c @param {number} [opacity] @param {number} [w]
+     */
     shape(d, c, opacity = 0.4, w = 1.4) {
+      out += `<path d="${d}" fill="${PAPER}" stroke="none"/>`;
       pen.tint(d, c, opacity);
       pen.line(d, w);
     },
@@ -58,14 +65,15 @@ export function makePen(stage, labels) {
       pen.shape(`M${f(cx - rx)} ${f(cy)}A${f(rx)} ${f(ry)} 0 1 0 ${f(cx + rx)} ${f(cy)}A${f(rx)} ${f(ry)} 0 1 0 ${f(cx - rx)} ${f(cy)}Z`, c, opacity, w);
     },
     /**
-     * A learned label in the italic hand, with a leader from the drawing to the text. Drawn only in
-     * ink stages and only once the page knows it.
+     * A learned label in the italic hand, to the right of what it names, with a leader from a point
+     * on the drawing to the start of its first line. Drawn only in ink stages and only once the page
+     * knows it.
      * @param {string} key @param {number} x @param {number} y first baseline @param {number} lx @param {number} ly the point on the drawing
      */
     label(key, x, y, lx, ly) {
       const lines = labels[key];
       if (pencil || !lines?.length) return;
-      out += `<path d="M${f(lx)} ${f(ly)}L${f(x - 4)} ${f(y - 6)}" stroke="${LEADER}" stroke-width="1" fill="none"/>`;
+      out += `<path d="M${f(lx)} ${f(ly)}L${f(x - 6)} ${f(y - 6)}" stroke="${LEADER}" stroke-width="1" fill="none"/>`;
       out += `<text x="${f(x)}" y="${f(y)}" font-family="Fraunces, Georgia, serif" font-style="italic" font-size="${TEXT}" fill="${NOTE}">` +
         lines.map((t, i) => `<tspan x="${f(x)}" dy="${i ? TEXT * 1.15 : 0}">${esc(t)}</tspan>`).join('') + '</text>';
     },
@@ -107,6 +115,67 @@ export function blade(bx, by, tx, ty, w, bend = 0) {
 /** A gently bowed line from a to b. @param {number} ax @param {number} ay @param {number} bx @param {number} by @param {number} [bend] */
 export function stem(ax, ay, bx, by, bend = 0) {
   return `M${f(ax)} ${f(ay)}Q${f((ax + bx) / 2 + bend)} ${f((ay + by) / 2)} ${f(bx)} ${f(by)}`;
+}
+
+/**
+ * The point a share t (0..1) along a stem() from a to b, so things can be attached to it.
+ * @param {number} ax @param {number} ay @param {number} bx @param {number} by @param {number} bend @param {number} t
+ * @returns {[number, number]}
+ */
+export function along(ax, ay, bx, by, bend, t) {
+  const cx = (ax + bx) / 2 + bend, cy = (ay + by) / 2, u = 1 - t;
+  return [u * u * ax + 2 * u * t * cx + t * t * bx, u * u * ay + 2 * u * t * cy + t * t * by];
+}
+
+/**
+ * Points along a cubic Bezier, for profiles that other parts must sit on exactly.
+ * @param {number[]} p [x0, y0, x1, y1, x2, y2, x3, y3] @param {number} [n] samples
+ * @returns {[number, number][]}
+ */
+export function cubicPoints(p, n = 64) {
+  /** @type {[number, number][]} */ const pts = [];
+  for (let i = 0; i <= n; i++) {
+    const t = i / n, u = 1 - t;
+    const a = u * u * u, b = 3 * u * u * t, c = 3 * u * t * t, d = t * t * t;
+    pts.push([a * p[0] + b * p[2] + c * p[4] + d * p[6], a * p[1] + b * p[3] + c * p[5] + d * p[7]]);
+  }
+  return pts;
+}
+
+/** The height of a sampled profile at x (linear between samples). @param {[number, number][]} pts @param {number} x */
+export function yAt(pts, x) {
+  for (let i = 1; i < pts.length; i++) {
+    const [x0, y0] = pts[i - 1], [x1, y1] = pts[i];
+    if ((x >= x0 && x <= x1) || (x <= x0 && x >= x1)) return x1 === x0 ? y0 : y0 + ((x - x0) * (y1 - y0)) / (x1 - x0);
+  }
+  return pts[pts.length - 1][1];
+}
+
+/** Where a sampled, falling profile reaches height y. @param {[number, number][]} pts @param {number} y */
+export function xAt(pts, y) {
+  for (let i = 1; i < pts.length; i++) {
+    const [x0, y0] = pts[i - 1], [x1, y1] = pts[i];
+    if ((y >= y0 && y <= y1) || (y <= y0 && y >= y1)) return y1 === y0 ? x0 : x0 + ((y - y0) * (x1 - x0)) / (y1 - y0);
+  }
+  return pts[pts.length - 1][0];
+}
+
+/** A path through points. @param {[number, number][]} pts */
+export const polyline = (pts) => pts.map(([x, y], i) => `${i ? 'L' : 'M'}${f(x)} ${f(y)}`).join('');
+
+/**
+ * A straight line from a to b with small ripples across it (sand ripples on a slope).
+ * @param {number} ax @param {number} ay @param {number} bx @param {number} by @param {number} amp @param {number} step
+ */
+export function ripple(ax, ay, bx, by, amp, step) {
+  const len = Math.hypot(bx - ax, by - ay), n = Math.max(1, Math.round(len / step));
+  const ux = (bx - ax) / len, uy = (by - ay) / len, nx = uy, ny = -ux;
+  let d = `M${f(ax)} ${f(ay)}`;
+  for (let i = 0; i < n; i++) {
+    const s0 = (i / n) * len, s1 = ((i + 1) / n) * len, sm = (s0 + s1) / 2, k = i % 2 ? -amp : amp;
+    d += `Q${f(ax + ux * sm + nx * k)} ${f(ay + uy * sm + ny * k)} ${f(ax + ux * s1)} ${f(ay + uy * s1)}`;
+  }
+  return d;
 }
 
 /** A wavy horizontal line. @param {number} x0 @param {number} x1 @param {number} y @param {number} amp @param {number} step */

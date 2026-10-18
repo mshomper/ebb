@@ -1,139 +1,185 @@
 // @ts-check
-// Field sketches of the ground (J1.6): soil, sand, rock, moss, fresh water, and shore and sea, as
-// small cross-sections and close views drawn with the journal pen (pen.js). Labels sit in the right
-// margin with leaders to what they name.
+// Field sketches of the ground (J1.6): soil, sand, rock, moss, fresh water, and shore and sea. Each
+// is a side view or cross-section in x 40..236 with labels in the right column (see living.js for
+// the layout). Shapes are solid and drawn back to front; everything rests on a ground line or grows
+// from something.
 
-import { blade, stem, wave } from './pen.js';
-import { WASH } from './living.js';
+import { blade, stem, along, wave, cubicPoints, xAt, yAt, polyline, ripple } from './pen.js';
+import { WASH, petal } from './living.js';
 
 const EARTH = '#7B5C42';
 const SUBSOIL = '#A88B6A';
 
 /** @param {import('./pen.js').Pen} p */
 export function soil(p) {
-  p.tint('M20 70H250V170H20Z', EARTH, 0.4);
-  p.tint('M20 170H250V230H20Z', SUBSOIL, 0.35);
-  p.line(wave(20, 250, 70, 2, 28), 1.6);
-  p.line('M20 170C70 166 130 174 180 168S230 166 250 170', 1);
-  p.line('M20 70V230H250V70', 1.1);
-  // Clods, stones and a worm.
-  for (const [x, y, r] of [[48, 96, 5], [92, 120, 4], [150, 100, 6], [210, 130, 5], [70, 150, 4], [180, 150, 3]]) p.oval(x, y, r * 1.4, r, EARTH, 0.6, 1);
-  for (const [x, y, rx, ry] of [[60, 200, 12, 7], [140, 210, 9, 6], [220, 196, 14, 8]]) p.oval(x, y, rx, ry, WASH.grey, 0.5, 1.1);
-  p.line('M84 140C92 132 104 136 110 142S126 152 134 144', 3.2);
-  // A sprout and its roots.
-  p.shape(blade(190, 70, 176, 36, 2, -2), WASH.leaf, 0.6, 1);
-  p.shape(blade(190, 70, 206, 40, 2, 2), WASH.leaf, 0.6, 1);
-  p.line('M190 72C188 96 182 118 172 140M190 74C194 100 204 120 214 146M190 76C190 100 192 130 190 160', 1);
-  p.fine('M180 120l-8 2M200 112l8-2M190 140l-6 6', 0.8, 0.8);
-  // Rain falling on it.
-  p.fine('M60 20l-4 14M110 14l-4 14M160 22l-4 14M220 16l-4 14', 1, 0.6);
-  p.label('top', 262, 112, 236, 112);
-  p.label('roots', 262, 160, 214, 146);
-  p.label('rain', 262, 30, 222, 26);
+  p.tint('M40 70H236V170H40Z', EARTH, 0.4);
+  p.tint('M40 170H236V236H40Z', SUBSOIL, 0.35);
+  // The block: its surface, the line between topsoil and subsoil, and its sides.
+  p.line(wave(40, 236, 70, 1.6, 28), 1.6);
+  p.line('M40 170C90 166 150 174 236 168', 1);
+  p.line('M40 70V236H236V70', 1.1);
+  // Clods in the topsoil, stones in the subsoil, and a worm.
+  for (const [x, y, rx, ry] of [[70, 96, 7, 5], [104, 118, 5, 4], [84, 152, 6, 4], [200, 100, 6, 4], [210, 124, 5, 3.5]]) p.oval(x, y, rx, ry, EARTH, 0.6, 1);
+  for (const [x, y, rx, ry] of [[72, 206, 13, 8], [140, 214, 10, 6], [204, 200, 14, 8]]) p.oval(x, y, rx, ry, WASH.grey, 0.5, 1.1);
+  p.line('M60 134C68 126 80 128 86 134S100 144 108 136', 3);
+  // A sprout with its roots: side roots grow from the main one.
+  const R = /** @type {[number, number, number, number, number]} */ ([150, 72, 146, 156, 4]);
+  p.line(stem(...R), 1.2);
+  for (const [t, dx, dy] of [[0.35, -22, 12], [0.55, 24, 12], [0.8, -16, 8]]) {
+    const [x, y] = along(...R, t);
+    p.line(stem(x, y, x + dx, y + dy, dy * 0.3), 0.9);
+  }
+  p.shape(blade(150, 70, 134, 40, 2.4, -3), WASH.leaf, 0.6, 1);
+  p.shape(blade(150, 70, 168, 44, 2.4, 3), WASH.leaf, 0.6, 1);
+  // After rain: drops resting on the surface.
+  for (const x of [84, 112, 206]) p.shape(`M${x - 4.5} 70A4.5 5 0 0 1 ${x + 4.5} 70Z`, WASH.water, 0.8, 1);
+  const [rx, ry] = along(...R, 0.55);
+  p.label('rain', 250, 46, 209, 65);
+  p.label('top', 250, 92, 226, 92);
+  p.label('roots', 250, 140, rx + 24, ry + 12);
   return p.svg(380, 250, 'Field sketch of soil');
 }
 
 /** @param {import('./pen.js').Pen} p */
 export function sand(p) {
-  p.tint('M20 70H64V210H20Z', WASH.water, 0.4);
-  p.tint('M64 70H250V210H64Z', WASH.sand, 0.5);
-  p.line('M64 70C58 100 70 130 62 160S66 196 64 210', 1.4);
-  p.fine(wave(30, 58, 110, 2, 8) + wave(30, 58, 160, 2, 8), 0.8, 0.6);
-  for (const y of [86, 112, 138, 164, 190]) p.line(wave(76, 246, y, 3, 22), 1.1);
-  for (let i = 0; i < 26; i++) p.dot(80 + ((i * 37) % 166), 78 + ((i * 53) % 128), 1.2);
-  // A shell lying on the ripples.
-  p.shape('M150 160L132 140A24 24 0 0 1 168 140Z', WASH.petal, 0.9, 1.2);
-  p.fine('M150 160L138 138M150 160L146 134M150 160L154 134M150 160L162 138', 0.8, 0.8);
-  p.label('ripples', 262, 92, 240, 88);
-  p.label('drains', 262, 144, 236, 150);
-  p.label('wet', 262, 196, 80, 182);
+  // A beach in section: water on the left, the sand rising from it to the right.
+  p.tint('M40 112H92L40 140Z', WASH.water, 0.4);
+  p.tint('M40 140L92 112L236 84V210H40Z', WASH.sand, 0.5);
+  p.line(wave(40, 92, 112, 1.2, 13), 1.2);
+  // Under the water the bed is smooth; above it the wind has rippled the sand.
+  const ripples = ripple(92, 112, 236, 84, 2.4, 16);
+  p.line(`M40 140L92 112${ripples.slice(ripples.indexOf('Q'))}`, 1.5);
+  p.line('M40 140V210H236V84', 1.1);
+  // Rain soaks straight down to where the sand stays wet.
+  const surfY = (/** @type {number} */ x) => 112 - ((x - 92) * 28) / 144;
+  let table = '';
+  for (let x = 46; x < 232; x += 12) table += `M${x} 152h7`;
+  p.fine(table, 1, 0.7);
+  for (const x of [134, 196]) {
+    let d = '';
+    for (let y = surfY(x) + 6; y < 148; y += 8) d += `M${x} ${p.f(y)}v4`;
+    p.fine(d, 1, 0.7);
+  }
+  // Grains through the body, a little thicker in the wet sand below the line.
+  for (let i = 0; i < 40; i++) {
+    const x = 50 + ((i * 47) % 180), y = 120 + ((i * 29) % 84);
+    if (y > surfY(Math.max(92, x)) + 6 && y < 204 && Math.abs(y - 152) > 4) p.dot(x, y, 1.1);
+  }
+  // A shell lying on the slope.
+  const sx = 168, sy = surfY(168);
+  p.shape(`M${sx} ${p.f(sy)}L${sx - 14} ${p.f(sy - 13)}A18 18 0 0 1 ${sx + 14} ${p.f(sy - 15)}Z`, WASH.petal, 0.9, 1.2);
+  p.fine(`M${sx} ${p.f(sy)}L${sx - 8} ${p.f(sy - 15)}M${sx} ${p.f(sy)}L${sx} ${p.f(sy - 18)}M${sx} ${p.f(sy)}L${sx + 8} ${p.f(sy - 16)}`, 0.8, 0.8);
+  p.label('ripples', 250, 66, 226, surfY(226) - 1);
+  p.label('drains', 250, 124, 196, 126);
+  p.label('wet', 250, 176, 214, 172);
   return p.svg(380, 230, 'Field sketch of sand');
 }
 
 /** @param {import('./pen.js').Pen} p */
 export function rock(p) {
-  const body = 'M40 220L68 122L128 72L200 86L240 150L230 220Z';
-  p.shape(body, WASH.grey, 0.5, 1.8);
-  p.line('M128 72L140 140L240 150M140 140L100 220M68 122L140 140', 1.2);
-  // Shade hatching on the faces away from the light.
-  for (let y = 150; y < 216; y += 8) p.fine(`M${150 + (y - 150) * 0.1} ${y}L${222 - (y - 150) * 0.05} ${y - 6}`, 0.8, 0.5);
-  // Moss on the damp top facet.
-  p.shape('M140 84C150 74 172 76 186 84C180 92 158 96 140 92Z', WASH.green, 0.7, 1.1);
-  for (const [x, y] of [[150, 84], [160, 82], [170, 86], [178, 84]]) p.dot(x, y, 1.4, WASH.green);
-  // Rain running off, a little frost on the shaded foot.
-  p.fine('M212 110l6 18M224 130l5 16M232 160l3 16', 1, 0.6);
-  p.fine('M180 212l4-6 4 6M196 214l4-6 4 6M212 212l4-6 4 6', 0.9, 0.7);
-  p.line('M20 220H250', 1.4);
-  for (const [x, rx] of [[28, 6], [252, 8], [262, 5]]) p.oval(x, 216, rx, 4, WASH.grey, 0.5, 1);
-  p.label('moss', 262, 50, 186, 82);
-  p.label('sheds', 262, 120, 228, 128);
-  p.label('frost', 262, 186, 216, 208);
+  p.line('M40 214H236', 1.4);
+  p.oval(46, 211, 5, 3, WASH.grey, 0.5, 1);
+  p.oval(230, 210, 6, 4, WASH.grey, 0.5, 1);
+  // The boulder and its facets: every facet line ends on a corner or an edge.
+  p.shape('M52 214L66 130L118 82L176 90L220 146L214 214Z', WASH.grey, 0.5, 1.8);
+  p.line('M118 82L132 146M66 130L132 146L220 146M132 146L96 214', 1.2);
+  // Shade on the front facet, kept inside it.
+  let hatch = '';
+  for (let y = 156; y <= 206; y += 8) {
+    const x0 = 132 - ((y - 146) * 36) / 68 + 7, x1 = 220 - ((y - 146) * 6) / 68 - 7;
+    hatch += `M${p.f(x0)} ${y}L${p.f(x1)} ${y - 5}`;
+  }
+  p.fine(hatch, 0.8, 0.5);
+  // Rain running down the right facet.
+  p.fine('M168 100L200 142M156 104L182 140', 1, 0.6);
+  // Frost along the shaded foot.
+  let frost = '';
+  for (let x = 150; x <= 202; x += 13) frost += `M${x} 213l3-7 3 7`;
+  p.fine(frost, 0.9, 0.8);
+  // Moss sitting on the top edge.
+  p.shape('M128 83.4C132 74 144 72 150 76C156 70 168 72 170 88.8L128 83.4Z', WASH.green, 0.7, 1.1);
+  for (const [x, y] of [[140, 80], [150, 79], [160, 80]]) p.dot(x, y, 1.3, WASH.green);
+  p.label('moss', 250, 56, 160, 73);
+  p.label('sheds', 250, 140, 221, 145);
+  p.label('frost', 250, 196, 215, 212);
   return p.svg(380, 250, 'Field sketch of rock');
 }
 
 /** @param {import('./pen.js').Pen} p */
 export function moss(p) {
-  p.shape('M36 226C52 162 210 150 248 226Z', WASH.grey, 0.45, 1.6);
-  const cushion = 'M50 206C54 176 78 164 100 168C112 152 142 148 160 158C182 150 214 158 230 184C236 194 238 202 236 208C180 196 110 196 50 206Z';
-  p.shape(cushion, WASH.green, 0.6, 1.4);
-  // Tiny star-shaped leaves all over the cushion.
-  for (let i = 0; i < 34; i++) {
-    const x = 64 + ((i * 41) % 166), y = 172 + ((i * 23) % 26);
-    p.fine(`M${x - 3} ${y}h6M${x - 2} ${y - 3}l4 6M${x + 2} ${y - 3}l-4 6`, 0.7, 0.6);
+  p.line('M40 214H236', 1.4);
+  // Spore capsules on thin stalks, drawn first so the cushion covers their feet.
+  /** @type {[number, number, number, number][]} */
+  const caps = [[96, 186, 94, 112], [140, 176, 142, 98], [186, 182, 190, 116]];
+  for (const [bx, by, tx, ty] of caps) p.line(stem(bx, by, tx, ty, 2), 1);
+  // The stone, then the moss cushion lying over its top.
+  p.shape('M44 214C52 172 214 164 230 214Z', WASH.grey, 0.45, 1.6);
+  p.shape('M56 198C58 180 76 172 92 176C100 162 126 158 142 166C158 158 188 162 202 178C212 184 218 192 220 200C186 192 96 192 56 198Z', WASH.green, 0.6, 1.4);
+  // Tiny star-shaped leaves, kept inside the cushion.
+  let stars = '';
+  let i = 0;
+  for (const [y0, x0, x1] of [[181, 86, 194], [189, 72, 208]]) {
+    for (let x = x0; x <= x1; x += 12, i++) {
+      const sx = x + ((i * 7) % 5) - 2, sy = y0 + ((i * 3) % 3) - 1;
+      stars += `M${sx - 3} ${sy}h6M${sx - 2} ${sy - 3}l4 6M${sx + 2} ${sy - 3}l-4 6`;
+    }
   }
-  // Spore capsules on thin stalks.
-  for (const [bx, by, tx, ty] of [[100, 166, 94, 112], [150, 154, 156, 96], [200, 162, 212, 120]]) {
-    p.line(stem(bx, by, tx, ty, 2), 1);
-    p.oval(tx, ty - 6, 3.5, 7, WASH.brown, 0.7, 1);
-  }
-  // Rain drops beading.
-  for (const [x, y] of [[80, 176], [130, 160], [184, 168], [222, 190]]) p.dot(x, y, 2.2, WASH.water);
-  p.label('caps', 262, 96, 214, 112);
-  p.label('drinks', 262, 168, 236, 196);
-  p.label('rain', 262, 36, 186, 164);
+  p.fine(stars, 0.7, 0.6);
+  for (const [, , tx, ty] of caps) p.oval(tx, ty - 8, 3.6, 8, WASH.brown, 0.7, 1);
+  // Rain drops resting on the cushion.
+  for (const [x, y, r] of [[120, 157, 3], [164, 157, 3], [208, 176, 3]]) p.oval(x, y, r, r, WASH.water, 0.8, 1);
+  p.label('caps', 250, 64, 194, 100);
+  p.label('rain', 250, 150, 211, 175);
+  p.label('drinks', 250, 206, 220, 199);
   return p.svg(380, 240, 'Field sketch of moss');
 }
 
 /** @param {import('./pen.js').Pen} p */
 export function fresh(p) {
-  const bed = 'M40 100C70 104 90 170 160 190C230 200 270 150 300 100';
+  // A pond in section: a steep bank on the left, a deep middle, a long shallow shelf on the right.
+  const segs = [[62, 100, 76, 108, 90, 172, 128, 182], [128, 182, 164, 190, 176, 126, 194, 114], [194, 114, 206, 108, 218, 104, 228, 100]];
+  const bed = 'M62 100C76 108 90 172 128 182C164 190 176 126 194 114C206 108 218 104 228 100';
+  const pts = segs.flatMap((s) => cubicPoints(s, 24));
   p.tint(`${bed}Z`, WASH.water, 0.45);
-  p.tint('M110 150C140 176 200 186 240 160C210 178 150 180 110 150Z', '#5F8196', 0.3);
-  p.line('M10 92Q28 94 40 100', 1.4);
-  p.line('M300 100Q322 92 346 92', 1.4);
+  p.tint('M92 150C110 172 150 180 168 160C150 170 112 168 92 150Z', '#5F8196', 0.3);
+  p.line('M40 92Q52 94 62 100', 1.4);
+  p.line('M228 100Q232 98 236 97', 1.4);
   p.line(bed, 1.5);
-  p.line(wave(40, 300, 100, 1.5, 26), 1.3);
-  p.fine('M120 112h18M190 116h24M240 110h14', 0.9, 0.6);
-  // Reeds at the shallow margin.
-  for (const [bx, tx, ty] of [[52, 46, 40], [58, 62, 32], [64, 72, 48]]) p.line(stem(bx, 104, tx, ty, 2), 1.2);
-  for (const [x, y] of [[47, 50], [62, 42]]) p.oval(x, y, 3.5, 9, WASH.brown, 0.7, 1);
+  p.line(wave(62, 228, 100, 1.2, 24), 1.3);
+  p.fine('M96 110h16M136 114h22', 0.9, 0.6);
+  // Stones resting on the bottom.
+  for (const [x, rx, ry] of [[110, 7, 4], [140, 9, 5], [158, 5, 3]]) p.oval(x, yAt(pts, x) - ry + 1, rx, ry, WASH.grey, 0.6, 1);
   // Mist lying on the water.
-  p.fine('M110 82c20-6 40 6 60 0s40-6 60 0M140 66c20-6 40 6 60 0', 1.2, 0.45);
-  p.label('mist', 150, 30, 176, 64);
-  p.label('warm', 268, 34, 226, 98);
-  p.label('margin', 10, 216, 70, 120);
-  return p.svg(380, 250, 'Field sketch of fresh water');
+  p.fine('M92 94c16-4 32 4 48 0s32-4 48 0M116 87c14-4 28 4 42 0', 1.2, 0.45);
+  p.label('mist', 250, 46, 186, 88);
+  p.label('warm', 250, 118, 200, 101);
+  p.label('margin', 250, 168, 206, yAt(pts, 206));
+  return p.svg(380, 230, 'Field sketch of fresh water');
 }
 
 /** @param {import('./pen.js').Pen} p */
 export function shore(p) {
-  const beach = 'M10 80C80 84 140 120 210 150C260 170 320 186 370 192';
-  p.tint(`${beach}V250H10Z`, WASH.sand, 0.5);
-  p.tint('M170 132C210 150 250 166 300 180L370 186V128H170Z', WASH.water, 0.4);
-  p.tint('M170 132C200 146 236 160 268 172L290 176C250 160 214 146 184 132Z', EARTH, 0.25);
-  p.line(beach, 1.6);
-  p.line(wave(196, 370, 146, 2.5, 22), 1.2);
-  p.fine(wave(230, 370, 160, 2, 18), 0.8, 0.5);
-  // High and low water marks.
-  p.line('M150 128H370', 0.8);
-  p.line('M250 176H370', 0.8);
-  // Spray and a thrift tuft above the band.
-  for (const [x, y] of [[100, 76], [112, 70], [124, 78], [90, 66]]) p.dot(x, y, 1.6, WASH.water);
-  p.shape('M68 86C70 74 86 72 92 86Z', WASH.green, 0.6, 1);
-  p.oval(80, 70, 4, 4, WASH.pink, 0.8, 1);
-  p.label('high', 278, 116, 300, 126);
-  p.label('low', 286, 206, 300, 178);
-  p.label('band', 10, 186, 220, 160);
-  p.label('spray', 10, 38, 96, 66);
-  return p.svg(380, 250, 'Field sketch of the shore');
+  // A shore in section: the land falls to the sea; marks for high and low water.
+  const prof = cubicPoints([40, 92, 100, 96, 150, 150, 236, 186]);
+  const xHigh = xAt(prof, 134), xNow = xAt(prof, 152), xLow = xAt(prof, 170);
+  p.tint(`${polyline(prof)}V230H40Z`, WASH.sand, 0.5);
+  const below = prof.filter(([x]) => x >= xNow);
+  p.tint(`M${p.f(xNow)} 152H236V${p.f(prof[prof.length - 1][1])}${polyline(below.slice().reverse()).replace('M', 'L')}Z`, WASH.water, 0.45);
+  const band = prof.filter(([x]) => x >= xHigh && x <= xLow);
+  p.tint(`${polyline(band)}${polyline(band.slice().reverse().map(([x, y]) => [x, y + 7])).replace('M', 'L')}Z`, EARTH, 0.25);
+  p.line(polyline(prof), 1.6);
+  p.line(wave(xNow, 236, 152, 2.2, 20), 1.2);
+  let marks = '';
+  for (const [x0, y] of [[xHigh, 134], [xLow, 170]]) for (let x = x0 + 2; x < 232; x += 10) marks += `M${p.f(x)} ${y}h6`;
+  p.line(marks, 0.9);
+  // Thrift on the turf above the band, in the salt spray.
+  const tx = 72, ty = yAt(prof, tx);
+  p.line(stem(tx, ty - 6, tx + 4, ty - 32, 2), 1);
+  p.shape(`M${tx - 12} ${p.f(yAt(prof, tx - 12))}A12 9 0 0 1 ${tx + 12} ${p.f(yAt(prof, tx + 12))}Z`, WASH.green, 0.6, 1.1);
+  p.oval(tx + 4, ty - 38, 6, 6, WASH.pink, 0.8, 1);
+  p.label('spray', 250, 40, tx + 10, ty - 40);
+  p.label('band', 250, 94, xHigh - 2, 133);
+  p.label('high', 250, 140, 234, 134);
+  p.label('low', 250, 182, 234, 170);
+  return p.svg(380, 240, 'Field sketch of the shore');
 }
