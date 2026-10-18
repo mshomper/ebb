@@ -24,14 +24,25 @@ import { CELL, CHUNK_CELLS, CHUNK_SIZE, quantize } from './grid.js';
  * @property {{strength: number} & FbmRecipe} warp
  * @property {{amplitude: number} & FbmRecipe} detail
  * @property {{x: number, z: number, jitter: number, radius: number, height: number}} rise
- * @property {{x: number, z: number, jitter: number, innerRadius: number, outerRadius: number,
- *   floor: number, floorNoise: number, rimWobble: number, wobbleScale: number}} basin
+ * @property {Basin} [basin]    one pond hollow (the starter island), or
+ * @property {Basin[]} [basins] several: ponds and marshes (a marsh is a wide, shallow basin)
+ * @property {any} [spring]     one spring feeding the basin, or
+ * @property {any[]} [springs]  several, each with `basin` (index) and optional `bearingDeg`
  * @property {{sandLow: number, sandHigh: number, sandJitter: number, sandJitterScale: number,
  *   soilScale: number, soilLow: number, soilHigh: number, soilMax: number, basinSoil: number,
  *   rockScale: number, rockLow: number, rockHigh: number, rockMinHeight: number, rockFade: number}} materials
  */
 
-// Layer ids mixed into the seed so each noise field is independent.
+/**
+ * @typedef {{x: number, z: number, jitter: number, innerRadius: number, outerRadius: number,
+ *   floor: number, floorNoise: number, rimWobble: number, wobbleScale: number, floorScale?: number, soil?: number}} Basin
+ *   floorScale: its own floor-noise frequency (cycles per meter; marsh tussocks), else the shared one;
+ *   soil: how much of its floor is soil (0..1), else the land's materials.basinSoil
+ */
+
+// Layer ids mixed into the seed so each noise field is independent. A second basin or spring adds
+// LAYER_STEP times its index to its layers, so the first keeps exactly the ids it always had.
+const LAYER_STEP = 16;
 const L_WARP_X = 1, L_WARP_Z = 2, L_COAST = 3, L_DETAIL = 4, L_SAND = 5, L_SOIL = 6, L_ROCK = 7;
 const L_BASIN = 8, L_FLOOR = 9, L_RISE_POS = 10, L_BASIN_POS = 11, L_OUTCROP = 12, L_STONE_LUMP = 13;
 
@@ -151,30 +162,50 @@ const signedHash = (seed, a, b) => (hash32(seed, a, b) >>> 8) * (2 / 16777215) -
 
 /** @param {LandRecipe} land @param {number} seed */
 function makeContext(land, seed) {
-  const r = land.rise, b = land.basin, m = land.materials;
+  const r = land.rise, m = land.materials;
   const riseX = r.x + r.jitter * signedHash(seed, L_RISE_POS, 0);
   const riseZ = r.z + r.jitter * signedHash(seed, L_RISE_POS, 1);
-  const basinX = b.x + b.jitter * signedHash(seed, L_BASIN_POS, 0);
-  const basinZ = b.z + b.jitter * signedHash(seed, L_BASIN_POS, 1);
-  // The spring's channel: from the spring down to the edge of the basin floor (docs/07).
-  const sp = /** @type {any} */ (land).spring;
-  let channel = null;
-  let outcrop = null;
-  if (sp?.channel) {
-    const dx = riseX - basinX, dz = riseZ - basinZ;
-    const dl = Math.sqrt(dx * dx + dz * dz) || 1;
-    const ux = dx / dl, uz = dz / dl;
-    channel = {
-      sx: basinX + ux * sp.fromBasinM, sz: basinZ + uz * sp.fromBasinM,
-      ex: basinX + ux * b.innerRadius, ez: basinZ + uz * b.innerRadius,
+  // Basins: ponds and marshes, each placed and wobbled by its own seeded layers.
+  const sharedFloor = makeFbm(seed, L_FLOOR, { scale: 0.3, octaves: 2 });
+  const basins = (land.basins ?? (land.basin ? [land.basin] : [])).map((b, i) => ({
+    B: b,
+    x: b.x + b.jitter * signedHash(seed, L_BASIN_POS + LAYER_STEP * i, 0),
+    z: b.z + b.jitter * signedHash(seed, L_BASIN_POS + LAYER_STEP * i, 1),
+    wobble: makeFbm(seed, L_BASIN + LAYER_STEP * i, { scale: b.wobbleScale, octaves: 2 }),
+    floor: b.floorScale ? makeFbm(seed, L_FLOOR + LAYER_STEP * i, { scale: b.floorScale, octaves: 2 }) : sharedFloor,
+  }));
+  // Springs: each one's channel runs from the spring down to the edge of its basin's floor
+  // (docs/07), uphill toward the rise unless the recipe gives a bearing.
+  /** @type {any[]} */ const springSpecs = /** @type {any} */ (land).springs ?? (/** @type {any} */ (land).spring ? [/** @type {any} */ (land).spring] : []);
+  /** @type {any[]} */ const channels = [];
+  /** @type {any[]} */ const outcrops = [];
+  /** @type {{ x: number, z: number, spec: any }[]} */ const springHeads = [];
+  springSpecs.forEach((sp, j) => {
+    const basin = basins[sp.basin ?? 0];
+    if (!basin) return;
+    let ux, uz;
+    if (sp.bearingDeg !== undefined) {
+      ux = det.cos(sp.bearingDeg * det.PI / 180); uz = det.sin(sp.bearingDeg * det.PI / 180);
+    } else {
+      const dx = riseX - basin.x, dz = riseZ - basin.z;
+      const dl = Math.sqrt(dx * dx + dz * dz) || 1;
+      ux = dx / dl; uz = dz / dl;
+    }
+    const head = { sx: basin.x + ux * sp.fromBasinM, sz: basin.z + uz * sp.fromBasinM };
+    springHeads.push({ x: head.sx, z: head.sz, spec: sp });
+    if (!sp.channel) return;
+    const channel = {
+      ...head,
+      ex: basin.x + ux * basin.B.innerRadius, ez: basin.z + uz * basin.B.innerRadius,
       halfWidth: sp.channel.widthM * 0.5, depth: sp.channel.depthM,
       meander: sp.channel.meanderM ?? 0, bends: sp.channel.bends ?? 1,
       thalwegHalf: (sp.channel.thalwegWidthM ?? 0.8) * 0.5, thalwegDepth: sp.channel.thalwegDepthM ?? 0,
       gravel: sp.channel.bedGravel ?? 0.85, headTaper: sp.channel.headTaper ?? 0.08,
     };
-    // Uphill is from the pond toward the rise, the way the channel climbs to the spring.
-    if (sp.outcrop) outcrop = makeOutcrop(seed, sp.outcrop, channel.sx, channel.sz, ux, uz);
-  }
+    channels.push(channel);
+    // Uphill is from the pond toward the spring, the way the channel climbs.
+    if (sp.outcrop) outcrops.push(makeOutcrop(seed, sp.outcrop, channel.sx, channel.sz, ux, uz, LAYER_STEP * j));
+  });
   const c = {
     land,
     warpX: makeFbm(seed, L_WARP_X, land.warp),
@@ -184,18 +215,16 @@ function makeContext(land, seed) {
     sand: makeFbm(seed, L_SAND, { scale: m.sandJitterScale, octaves: 2 }),
     soil: makeFbm(seed, L_SOIL, { scale: m.soilScale, octaves: 3 }),
     rock: makeFbm(seed, L_ROCK, { scale: m.rockScale, octaves: 2 }),
-    basinWobble: makeFbm(seed, L_BASIN, { scale: b.wobbleScale, octaves: 2 }),
-    floor: makeFbm(seed, L_FLOOR, { scale: 0.3, octaves: 2 }),
-    riseX, riseZ, basinX, basinZ, channel, outcrop,
+    riseX, riseZ, basins, channels, outcrops, springHeads,
     // Hermite end slopes, in units of the ramp parameter, so both sides meet the
     // waterline with the same gentle beach slope (no crease at the shore).
     landM0: land.beachSlope * land.inlandWidth,
     seaM0: -land.beachSlope * land.seaFallWidth,
   };
-  if (outcrop) {
-    // The pool's water level: the meadow (before the channel is cut) where the notch crosses the
-    // rim, plus lipRise. The pool is leveled to it, so it holds water even on a slope.
-    const bare = { ...c, channel: null, outcrop: null };
+  // Each pool's water level: the meadow (before any channel or outcrop is cut) where the notch
+  // crosses the rim, plus lipRise. The pool is leveled to it, so it holds water even on a slope.
+  const bare = { ...c, channels: [], outcrops: [] };
+  for (const outcrop of outcrops) {
     const [x, z] = unwarp(c, outcrop.x + outcrop.dnx * outcrop.poolR, outcrop.z + outcrop.dnz * outcrop.poolR);
     const out = new Float64Array(5);
     sampleCell(bare, x, z, out);
@@ -229,9 +258,10 @@ function unwarp(c, px, pz) {
  * exactly at the head of the bed.
  * @param {number} seed @param {any} o  the land recipe's spring.outcrop
  * @param {number} cx @param {number} cz  pool center (warped frame) @param {number} ux @param {number} uz  uphill
+ * @param {number} [layer] added to its layer ids (0 for the first spring)
  */
-function makeOutcrop(seed, o, cx, cz, ux, uz) {
-  const s = hash32(seed, L_OUTCROP, 0);
+function makeOutcrop(seed, o, cx, cz, ux, uz, layer = 0) {
+  const s = hash32(seed, L_OUTCROP + layer, 0);
   /** Uniform in [0, 1). @param {number} a @param {number} b */
   const u = (a, b) => (hash32(s, a, b) >>> 8) / 16777216;
   /** @param {number[]} r @param {number} t */
@@ -259,7 +289,7 @@ function makeOutcrop(seed, o, cx, cz, ux, uz) {
   }
   return {
     x: cx, z: cz, dnx: -ux, dnz: -uz, stones, sink: o.sinkM, lump: o.lump,
-    lumps: makeFbm(seed, L_STONE_LUMP, { scale: o.lumpScale, octaves: 2 }),
+    lumps: makeFbm(seed, L_STONE_LUMP + layer, { scale: o.lumpScale, octaves: 2 }),
     poolR: o.poolRadiusM, poolDepth: o.poolDepthM, gravel: o.poolGravel, lipRise: o.lipRiseM,
     rimAbove: o.rimAboveM, rimW: o.rimWidthM, notchHalf: o.notchWidthM * 0.5, apron: o.apronSlope,
     spillHalf: o.spillwayWidthM * 0.5, spillSlope: o.spillSlope,
@@ -270,32 +300,31 @@ function makeOutcrop(seed, o, cx, cz, ux, uz) {
 }
 
 /**
- * The starter spring (docs/07): `fromBasinM` from the basin center toward the rise, so its
- * channel runs down into the pond hollow. Null when the land has no spring. The channel and
- * the outcrop are laid out in the warped frame, so the spring sits at the world point the warp
+ * The island's springs (docs/07): each `fromBasinM` from its basin's center, uphill toward the rise
+ * (or along its bearing), so its channel runs down into the pond hollow. The channel and the
+ * outcrop are laid out in the warped frame, so each spring sits at the world point the warp
  * carries onto their head.
  * @param {Ctx} c
  */
-function springOf(c) {
-  const sp = /** @type {any} */ (c.land).spring;
-  if (!sp) return null;
-  const dx = c.riseX - c.basinX, dz = c.riseZ - c.basinZ;
-  const dl = Math.sqrt(dx * dx + dz * dz) || 1;
-  const [x, z] = unwarp(c, c.basinX + (dx / dl) * sp.fromBasinM, c.basinZ + (dz / dl) * sp.fromBasinM);
-  return { x, z, spec: sp };
+function springsOf(c) {
+  return c.springHeads.map((h) => {
+    const [x, z] = unwarp(c, h.sx ?? h.x, h.sz ?? h.z);
+    return { x, z, spec: h.spec };
+  });
 }
 
 /**
- * Seeded centers of the land's rise and pond basin and the starter spring, for systems that place
- * things on the landform (the water simulation, docs/07).
+ * Seeded centers of the land's rise, basins (ponds and marshes) and springs, for systems that place
+ * things on the landform (the water simulation, docs/07). `basin` and `spring` are the first of each.
  * @param {LandRecipe} land @param {number} seed the terrain sub-seed
  */
 export function landmarks(land, seed) {
   const c = makeContext(land, seed >>> 0);
-  const s = springOf(c);
+  const springs = springsOf(c).map((s) => ({ x: s.x, z: s.z, rateLps: s.spec.rateLps }));
+  const basins = c.basins.map((b) => ({ x: b.x, z: b.z }));
   return {
-    rise: { x: c.riseX, z: c.riseZ }, basin: { x: c.basinX, z: c.basinZ },
-    spring: s ? { x: s.x, z: s.z, rateLps: s.spec.rateLps } : null,
+    rise: { x: c.riseX, z: c.riseZ }, basin: basins[0] ?? null, basins,
+    spring: springs[0] ?? null, springs,
   };
 }
 
@@ -330,26 +359,34 @@ function sampleCell(c, x, z, out) {
     h += landMask * (L.rise.height * riseW + L.detail.amplitude * fbm(c.detail, px, pz));
   }
 
-  // Basin: blend toward a flat floor above sea level, bank shape smoothstep.
-  const bx = x - c.basinX, bz = z - c.basinZ;
-  const B = L.basin;
+  // Basins (ponds and marshes): blend toward a floor above sea level, bank shape smoothstep. A
+  // marsh's floor is shallow and lumpy, so tussocks stand out of its water.
   let basinW = 0;
-  const bd = Math.sqrt(bx * bx + bz * bz);
-  if (bd < B.outerRadius + 2 * B.rimWobble) { // 2x: fbm can slightly exceed [-1, 1]
-    const wob = bd + B.rimWobble * fbm(c.basinWobble, x, z);
-    basinW = 1 - smoothstep(B.innerRadius, B.outerRadius, wob);
-    if (basinW > 0) {
-      const floorH = B.floor + B.floorNoise * fbm(c.floor, x, z);
-      if (h > floorH) h += (floorH - h) * basinW;
+  let basinSoil = 0; // the basins' soil on their floors (a marsh's own `soil`, else the land's basinSoil)
+  for (const bs of c.basins) {
+    const bx = x - bs.x, bz = z - bs.z;
+    const B = bs.B;
+    const bd = Math.sqrt(bx * bx + bz * bz);
+    if (bd < B.outerRadius + 2 * B.rimWobble) { // 2x: fbm can slightly exceed [-1, 1]
+      const wob = bd + B.rimWobble * fbm(bs.wobble, x, z);
+      const w = 1 - smoothstep(B.innerRadius, B.outerRadius, wob);
+      if (w > 0) {
+        const floorH = B.floor + B.floorNoise * fbm(bs.floor, x, z);
+        if (h > floorH) h += (floorH - h) * w;
+      }
+      if (w > basinW) basinW = w;
+      const sw = w * (B.soil ?? M.basinSoil);
+      if (sw > basinSoil) basinSoil = sw;
     }
   }
 
-  // The spring's channel: a soft trough along the warped line from the spring to the pond, so
+  // Each spring's channel: a soft trough along the warped line from the spring to its pond, so
   // the stream has a bed to run in and meanders a little with the domain warp.
-  let chanW = 0;
-  let bedW = 0;
-  const ch = c.channel;
-  if (ch && landMask > 0) {
+  let bedSoil = 0;
+  for (const ch of c.channels) {
+    if (landMask <= 0) break;
+    let chanW = 0;
+    let bedW = 0;
     const vx = ch.ex - ch.sx, vz = ch.ez - ch.sz;
     const len2 = vx * vx + vz * vz;
     const t = Math.min(1, Math.max(0, ((px - ch.sx) * vx + (pz - ch.sz) * vz) / len2));
@@ -368,15 +405,20 @@ function sampleCell(c, x, z, out) {
     h -= landMask * (ch.depth * chanW + ch.thalwegDepth * bedW);
     // The bed itself, a little wider than the thread: washed gravel and stones.
     bedW = bump(q / (ch.thalwegHalf * 1.3)) * head * landMask;
+    // Running water washes the bed down to gravel and pebbles: the soil scan is a gravelly one,
+    // so the bed is soil, fading out into the grass banks.
+    bedSoil = Math.max(bedSoil, smoothstep(0.05, 0.5, bedW) * ch.gravel);
   }
 
-  // The spring's outcrop: a small pool leveled into the head of the bed, ringed by a low rim
+  // Each spring's outcrop: a small pool leveled into the head of the bed, ringed by a low rim
   // with a notch on the downhill side, so the water wells up, stands, and leaves only through
   // the notch down a short spillway into the channel; a horseshoe of stones stands around it.
-  let poolW = 0;
-  let stoneLift = 0;
-  const oc = c.outcrop;
-  if (oc && landMask > 0) {
+  let poolSoil = 0;
+  let stoneRock = 0;
+  for (const oc of c.outcrops) {
+    if (landMask <= 0) break;
+    let poolW = 0;
+    let stoneLift = 0;
     const ox = px - oc.x, oz = pz - oc.z;
     if (ox * ox + oz * oz < oc.reach * oc.reach) {
       const d = Math.sqrt(ox * ox + oz * oz);
@@ -415,6 +457,8 @@ function sampleCell(c, x, z, out) {
       }
       h += stoneLift * landMask;
     }
+    poolSoil = Math.max(poolSoil, smoothstep(0.05, 0.4, poolW) * oc.gravel);
+    stoneRock = Math.max(stoneRock, smoothstep(0, 0.03, stoneLift));
   }
 
   // Outer falloff: everything joins the open seabed before falloffEnd.
@@ -433,13 +477,11 @@ function sampleCell(c, x, z, out) {
         smoothstep(M.rockLow, M.rockHigh, fbm(c.rock, x, z));
     }
     soil = M.soilMax * smoothstep(M.soilLow, M.soilHigh, fbm(c.soil, x, z));
-    soil = Math.max(soil, basinW * M.basinSoil);
-    // Running water washes the bed down to gravel and pebbles: the soil scan is a gravelly one,
-    // so the bed is soil, fading out into the grass banks.
-    if (ch) soil = Math.max(soil, smoothstep(0.05, 0.5, bedW) * ch.gravel);
-    if (oc) {
-      soil = Math.max(soil, smoothstep(0.05, 0.4, poolW) * oc.gravel);
-      rock = Math.max(rock, smoothstep(0, 0.03, stoneLift));
+    soil = Math.max(soil, basinSoil);
+    if (c.channels.length) soil = Math.max(soil, bedSoil);
+    if (c.outcrops.length) {
+      soil = Math.max(soil, poolSoil);
+      rock = Math.max(rock, stoneRock);
     }
   }
   const sandW = sand * (1 - rock);
