@@ -90,27 +90,19 @@
     }
   },
   "caustics": {
-    "note": "Caustic lines on underwater ground (docs/07, lib-caustics.wgsl). They multiply direct sun and moon light on the bed and average 1, so they move light around without adding any; gone in shadow. strength: contrast at full depth (cells darken to 1 - strength, lines brighten to several times the light). Two layers (quality tier causticLayers; ?caustics=0 turns them off) of Voronoi ridge lines: scalesM cell size, scrollDirDeg and scrollSpeedMs the slow drift in still water (deg from +x toward +z), orbitSpeed how fast each cell point circles its spot (rad/s, varied per point), orbitRadius that circle in cells (keep at or under 0.2). lineWidth in cells. meanFit: the pattern's measured mean per layer, m(w) = a w + b w^2 for line width w in cells (fit for the default orbit; refit if orbitRadius changes a lot). Depth: faded in over fadeInM, shallowContrast of full contrast at the end of that fade rising to full at peakM, faded out over fadeOutM; lines widen by blurPerM of their width per meter past the peak. projection: how far the pattern shifts along the light with depth (1: refraction at n = 1.333). flowDrift: share of the water speed the pattern drifts with; flowPeriodS: the flow map's cycle. minLinePx: lines thinner than this many pixels widen and soften instead of shimmering.",
-    "strength": 0.35,
-    "scalesM": [0.22, 0.34],
-    "scrollDirDeg": [30, 205],
-    "scrollSpeedMs": [0.025, 0.015],
-    "orbitSpeed": [1.4, 1.1],
-    "orbitRadius": 0.18,
-    "lineWidth": 0.04,
-    "meanFit": [1.167, -0.411],
+    "note": "Caustics on underwater ground (docs/07, lib-caustics.wgsl), computed physically: a small rippled surface (waves: count plane waves in scattered directions, wavelengths spread between wavelengthM, each bending light equally (slope: the shortest wave's peak slope; longer waves are taller in proportion), moving at speedShare of real water-wave speed, directions jittered by directionJitterDeg around golden-angle steps) bends the sunlight entering it, and the light on the bed scales with 1 / |det(I + k Hessian)|, k = depth x 0.25 x focusGain. Ripples that curve like lenses gather light into soft bright filaments; the rest dims a little. They multiply direct sun and moon light only, so they vanish in shadow. strength: how far the light follows the computed focus (0 none, 1 full). softFloor and softPerM soften |det| so folds are filaments, not spikes, and deeper water blurs. Depth: faded in over fadeInM, shallowContrast of the contrast at the end of that fade rising to full at peakM, faded out over fadeOutM. projection: how far the pattern shifts along the light with depth (1: refraction at n = 1.333). flowDrift: share of the water speed the pattern drifts with; flowPeriodS: the flow map's cycle. minFinestPx: the caustics fade out once the shortest wave spans fewer pixels than this, so nothing shimmers far away Quality tier causticLayers: 2 sums all the waves, 1 drops the finest 40%, 0 off; ?caustics=0 turns them off.",
+    "strength": 0.8,
+    "waves": { "count": 24, "wavelengthM": [0.1, 0.8], "slope": 0.02, "speedShare": 0.3, "directionJitterDeg": 20 },
+    "focusGain": 1.0,
+    "softFloor": 0.25,
+    "softPerM": 0.3,
     "fadeInM": [0.01, 0.05],
-    "shallowContrast": 0.4,
-    "peakM": 0.45,
-    "fadeOutM": [0.7, 2.0],
-    "blurPerM": 1.5,
+    "shallowContrast": 0.3,
+    "peakM": 0.5,
+    "fadeOutM": [0.9, 2.2],
     "projection": 1.0,
     "flowDrift": 1.0,
     "flowPeriodS": 1.6,
-    "minLinePx": 1.5,
-    "warpCells": 1.4,
-    "brightnessDrift": 0.85,
-    "glow": 0.35,
-    "lookNote": "warpCells: a slow swirl that bends the cell walls into curved lines (cells); brightnessDrift: how much the brightness wanders along a line (0 even, 1 lines fade in and out). glow: a soft halo three times the line width, as a share of the bright core. The two layers add, so crossings glow brightest."
+    "minFinestPx": 6
   }
 }

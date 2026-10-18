@@ -94,19 +94,17 @@ export function createTerrainPass(opts) {
     const uw = recipe.underwater;
     f.set(m.albedoSilt, 40); f[43] = uw.siltCover;
     f[44] = uw.bedDepthM[0]; f[45] = uw.bedDepthM[1]; f[46] = uw.siltDepthM[0]; f[47] = uw.siltDepthM[1];
-    // Caustics (lib-caustics.wgsl), floats 48..75: look, depthFade, layer0, layer1, width, motion, misc.
+    // Caustics (lib-caustics.wgsl), floats 48..75: look, depthFade, wave0..2, motion, misc.
     const c = opts.water.caustics;
     f[49] = causticLayers(opts.causticLayers);
     if (!c) return;
     f[48] = c.strength; f[50] = c.peakM; f[51] = c.shallowContrast;
     f[52] = c.fadeInM[0]; f[53] = c.fadeInM[1]; f[54] = c.fadeOutM[0]; f[55] = c.fadeOutM[1];
-    for (let i = 0; i < 2; i++) {
-      const a = c.scrollDirDeg[i] * DEG;
-      f.set([1 / c.scalesM[i], Math.cos(a) * c.scrollSpeedMs[i], Math.sin(a) * c.scrollSpeedMs[i], c.orbitSpeed[i]], 56 + i * 4);
-    }
-    f[64] = c.lineWidth; f[65] = c.blurPerM; f[66] = c.meanFit[0]; f[67] = c.meanFit[1];
-    f[68] = c.orbitRadius; f[69] = c.flowDrift; f[70] = c.flowPeriodS; f[71] = c.projection;
-    f[72] = c.minLinePx; f[73] = c.warpCells; f[74] = c.brightnessDrift; f[75] = c.glow;
+    const W = c.waves;
+    f.set([W.count, W.wavelengthM[0], W.wavelengthM[1], W.slope], 56);
+    f[60] = W.speedShare; f[61] = W.directionJitterDeg * DEG;
+    f[68] = c.focusGain; f[69] = c.flowDrift; f[70] = c.flowPeriodS; f[71] = c.projection;
+    f[72] = c.softFloor; f[73] = c.softPerM; f[74] = c.minFinestPx;
   }
 
   return {
