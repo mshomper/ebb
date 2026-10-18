@@ -1,0 +1,43 @@
+/* The frog size preview panel (?frogscale). Top left, under the build badge and its island switch;
+   never wider than the screen; text at 16 px or more. */
+.ebb-frogscale {
+  position: fixed;
+  z-index: 12;
+  left: 12px;
+  top: 104px;
+  width: min(340px, calc(100vw - 24px));
+  box-sizing: border-box;
+  padding: 10px 12px 12px;
+  display: grid;
+  gap: 8px;
+  background: #F4EEE4;
+  color: #1E2624;
+  border-radius: 14px;
+  box-shadow: 0 8px 28px rgba(10, 14, 13, 0.3);
+  font-family: Nunito, system-ui, sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+.ebb-frogscale__head { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 18px; }
+.ebb-frogscale__body { display: grid; gap: 8px; }
+.ebb-frogscale.is-hidden .ebb-frogscale__body { display: none; }
+.ebb-frogscale__line { margin: 0; font-weight: 500; }
+.ebb-frogscale__label { color: #5F7F5B; font-weight: 800; }
+.ebb-frogscale__row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.ebb-frogscale__row > span { flex: 1 1 auto; min-width: 0; }
+.ebb-frogscale button {
+  appearance: none;
+  -webkit-appearance: none;
+  min-height: 44px;
+  min-width: 64px;
+  padding: 6px 12px;
+  border: 1.5px solid #CFC5B3;
+  border-radius: 12px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.ebb-frogscale button[aria-pressed='true'] { background: #5F7F5B; border-color: #5F7F5B; color: #F4EEE4; }
+.ebb-frogscale button:disabled { opacity: 0.45; cursor: default; }

@@ -27,6 +27,7 @@ import { createPaletteBaker, bakeColor, IDENTITY_PALETTE, LUT_SIZE } from '../sr
 import { addGrowthTests } from './unit-tests-growth.js';
 import { addJournalTests } from './unit-tests-journal.js';
 import { addSpringTests } from './unit-tests-spring.js';
+import { addCreatureTests } from './unit-tests-creatures.js';
 import { addIslandTests } from './unit-tests-islands.js';
 
 /** @type {{group: string, name: string, fn: () => any}[]} */
@@ -1331,6 +1332,10 @@ addJournalTests(test, assert, eq);
 // ---- spring (tools/unit-tests-spring.js) ----
 
 addSpringTests(test, assert, eq);
+
+// ---- creatures (tools/unit-tests-creatures.js) ----
+
+addCreatureTests(test, assert, eq);
 
 // ---- islands (tools/unit-tests-islands.js) ----
 

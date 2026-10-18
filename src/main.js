@@ -9,6 +9,7 @@ import { mountTimeFlow } from './ui/time-flow.js';
 import { mountLook } from './ui/look.js';
 import { mountJournal } from './ui/journal.js';
 import { mountIslandNotes } from './ui/island-notes.js';
+import { mountFrogScale } from './ui/frog-scale.js';
 import { createJournal } from './world/journal/index.js';
 import { loadRecipe } from './core/recipes.js';
 
@@ -48,6 +49,14 @@ startApp(canvas, { onDeviceLost: (rebuilding) => showRebuildingNote(rebuilding) 
       const journal = createJournal({ world: r.world, words, island, web, wash });
       mountJournal(document.body, journal);
       mountIslandNotes(document.body, words);
+      // `?frogscale`: real-size frogs around the pond to judge creature size (ahead of S6).
+      if (r.frogScale) {
+        const css = document.createElement('link');
+        css.rel = 'stylesheet';
+        css.href = 'src/ui/frog-scale.css';
+        document.head.appendChild(css);
+        mountFrogScale(document.body, r.frogScale);
+      }
       if (new URLSearchParams(location.search).has('debug')) /** @type {any} */ (window).ebbJournal = journal;
     }
   })
