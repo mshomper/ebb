@@ -158,7 +158,7 @@ export function createGrassPass(opts) {
       pass.setBindGroup(1, ctx.groups.lighting);
       pass.setBindGroup(2, groups[opts.water.current()]);
       for (let ring = 0; ring < 2; ring++) {
-        if (f[6] > 0.001) pass.draw(9 * perSide[ring] * perSide[ring], 1, 0, ring);
+        if (f[6] > 0.001) pass.draw((ring === 0 ? 9 : 3) * perSide[ring] * perSide[ring], 1, 0, ring);
       }
       pass.end();
     },

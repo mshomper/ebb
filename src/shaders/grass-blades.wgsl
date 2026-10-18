@@ -54,6 +54,7 @@ fn octEncode(n: vec3f) -> vec2f {
 }
 
 // The nine corners of a blade: (side -1..1, level 0..1) for three triangles.
+var<private> CORNERS_FAR: array<vec2f, 3> = array<vec2f, 3>(vec2f(-1.0, 0.0), vec2f(1.0, 0.0), vec2f(0.0, 1.0));
 var<private> CORNERS: array<vec2f, 9> = array<vec2f, 9>(
   vec2f(-1.0, 0.0), vec2f(1.0, 0.0), vec2f(-1.0, 0.5),
   vec2f(1.0, 0.0), vec2f(1.0, 0.5), vec2f(-1.0, 0.5),
@@ -75,8 +76,10 @@ fn nothing() -> VsOut {
 fn vsBlade(@builtin(vertex_index) vi: u32, @builtin(instance_index) ring: u32) -> VsOut {
   let r = gd.rings[ring];
   let perSide = u32(r.y);
-  let blade = vi / 9u;
-  let corner = CORNERS[vi % 9u];
+  // Near blades are three triangles (two segments and a tip); far blades, a few pixels tall, are one.
+  let per = select(9u, 3u, ring == 1u);
+  let blade = vi / per;
+  let corner = select(CORNERS[vi % 9u], CORNERS_FAR[vi % 3u], ring == 1u);
   // World-anchored grid: the ring is centered on the focus snapped to the spacing, so a blade keeps
   // its world cell (and its hash) as the view moves.
   let s = r.x;
