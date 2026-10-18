@@ -1,7 +1,7 @@
 // @ts-check
 // Scanned ground detail (docs/22): two 2d-array textures, one layer per material in the order
 // grass, sand, rock, soil (the material weight order, doc 08), then moss (its weight comes from
-// the moss cover, not the paint).
+// the moss cover, not the paint), then cliff (rock's scan for steep faces, read by the rock layer).
 //   Array A  rgba8unorm, sampled through an rgba8unorm-srgb view: RGB albedo, A height.
 //   Array B  rgba8unorm: RG normal X,Y (OpenGL, Z rebuilt), B roughness, A cavity.
 // Starts as tiny neutral placeholders so bind groups can be built at boot. load() fetches the tier's
@@ -13,7 +13,7 @@ import { makeShaderModule, makeTexture, untrack } from '../core/gpu.js';
 import { emitDeferred } from '../core/events.js';
 
 /** Array layer order. */
-export const MATERIALS = /** @type {const} */ (['grass', 'sand', 'rock', 'soil', 'moss']);
+export const MATERIALS = /** @type {const} */ (['grass', 'sand', 'rock', 'soil', 'moss', 'cliff']);
 const FILES = /** @type {const} */ (['a', 'b', 'c']);
 const REPO_ROOT = new URL('../../', import.meta.url);
 const PLACEHOLDER_SIZE = 4;

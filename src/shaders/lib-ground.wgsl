@@ -2,9 +2,11 @@
 // materials by height so sand settles into the cracks between stones, and build the
 // millimeter-scale detail normal by the surface gradient method (Mikkelsen 2020).
 // Flat ground uses one projection from above; steep ground (past ground.steep) blends three
-// projections by |n|^6 (triplanar), so cliffs show the scan without stretching. Each material
+// projections by |n|^6 (triplanar), so cliffs show the scan without stretching. Rock has two
+// scans: boulder top on flat ground, rock face (array layer 5) on steep ground. Each material
 // has its own tile size. Repeats are hidden by hex tiling (Heitz and Neyret 2018, Mikkelsen 2022)
-// on desktop tiers, by a two-scale mix on the low tier, and by a slow macro tone drift everywhere.
+// with a drifting grain on desktop tiers, by a two-scale mix on the low tier, and by a slow macro
+// tone drift everywhere.
 //
 // The including shader includes lib-hash first and declares these bindings (terrain-draw.wgsl, group 2):
 //   groundA: texture_2d_array<f32>  (rgba8unorm-srgb view) RGB albedo (linear after decode), A height
@@ -35,18 +37,37 @@ struct GroundDetail {
   mossRules: vec4f,         // most moss each ground can carry: grass, sand, rock, soil (0..1)
   porosity: vec4f,          // how much water each ground soaks up (G3): grass, sand, rock, soil (0..1)
   porosity2: vec4f,         // x moss porosity
+  // Cliff rock (G4), array layer 5: rock's own scan on steep faces. Not a painted weight; the rock
+  // layer reads it in place of its flat scan where the slope passes `steep`.
+  cliff: vec4f,             // heightAmplitudeM, normalStrength, roughMin, roughMax
+  cliffTile: vec4f,         // x 1 / tile size (m)
+  // Drifting grain (G4): in hex tiling, each vertex turns its copy by a slow angle field plus a
+  // little jitter and scales it, so a scan has no common direction over a large patch.
+  grain: vec4f,             // x angle spread (rad), y 1 / field size (m), z jitter (rad), w scale jitter
+  grainLayers: vec4f,       // how much grain each layer takes: grass, sand, rock, soil (0..1)
+  grainLayers2: vec4f,      // x moss, y cliff
 };
 
 const GROUND_LAYERS: i32 = 5;
+const ROCK_LAYER: i32 = 2;
+const CLIFF_LAYER: i32 = 5;
 
 fn layerParams(i: i32) -> vec4f {
   if (i == 4) { return ground.moss; }
+  if (i == CLIFF_LAYER) { return ground.cliff; }
   return ground.layers[i];
 }
 
 fn layerTileInv(i: i32) -> f32 {
   if (i == 4) { return ground.mossTile.x; }
+  if (i == CLIFF_LAYER) { return ground.cliffTile.x; }
   return ground.tileInv[i];
+}
+
+fn layerGrain(i: i32) -> f32 {
+  if (i == 4) { return ground.grainLayers2.x; }
+  if (i == CLIFF_LAYER) { return ground.grainLayers2.y; }
+  return ground.grainLayers[i];
 }
 
 struct GroundSample {
@@ -108,6 +129,34 @@ fn hexOffset(vtx: vec2f, i: i32) -> vec2f {
   return vec2f(hashToFloat(h), hashToFloat(pcg(h)));
 }
 
+// One hex vertex's read: the image at the vertex's random offset, turned and scaled by the
+// drifting grain when the layer takes it. Angle and scale are constant per vertex, and the
+// gradients and image axes turn with them, so mips and the detail normal stay right.
+fn hexRead(i: i32, vtx: vec2f, p: vec3f, dpx: vec3f, dpy: vec3f, u: vec3f, v: vec3f, k: f32) -> LayerSample {
+  let off = hexOffset(vtx, i);
+  let gs = layerGrain(i);
+  if (gs <= 0.0) {
+    return groundFetch(i, vec2f(dot(p, u), dot(p, v)) * k + off,
+      vec2f(dot(dpx, u), dot(dpx, v)) * k, vec2f(dot(dpy, u), dot(dpy, v)) * k, u, v);
+  }
+  // The vertex's spot in meters on this projection's plane, for the slow angle field.
+  let qy = vtx.y / 1.15470054;
+  let m = vec2f(vtx.x + 0.57735027 * qy, qy) / (ground.tiling.y * k);
+  let field = valueNoise2(m * ground.grain.y, 0x6a1u + u32(i)) * 2.0 - 1.0;
+  let h = hash3(vec3u(vec2u(vec2i(vtx) + vec2i(1 << 20)), u32(i) + 0x7b3u));
+  let th = gs * (ground.grain.x * field + ground.grain.z * (hashToFloat(h) * 2.0 - 1.0));
+  let sc = 1.0 + gs * ground.grain.w * (hashToFloat(pcg(h)) * 2.0 - 1.0);
+  let c = cos(th);
+  let s = sin(th);
+  let ru = u * c + v * s;
+  let rv = v * c - u * s;
+  let kk = k / sc;
+  var o = groundFetch(i, vec2f(dot(p, ru), dot(p, rv)) * kk + off,
+    vec2f(dot(dpx, ru), dot(dpx, rv)) * kk, vec2f(dot(dpy, ru), dot(dpy, rv)) * kk, ru, rv);
+  o.grad /= sc;  // a stretched copy has gentler slopes
+  return o;
+}
+
 // One projection of one layer. `u` and `v` are the world axes the image runs along; gradients
 // are the screen derivatives of the world position, so all three projections mip correctly.
 fn groundProject(i: i32, p: vec3f, dpx: vec3f, dpy: vec3f, u: vec3f, v: vec3f) -> LayerSample {
@@ -141,9 +190,9 @@ fn groundProject(i: i32, p: vec3f, dpx: vec3f, dpy: vec3f, u: vec3f, v: vec3f) -
   let v1 = base + vec2f(s, s);
   let v2 = base + vec2f(s, 1.0 - s);
   let v3 = base + vec2f(1.0 - s, s);
-  let a = groundFetch(i, uv + hexOffset(v1, i), gx, gy, u, v);
-  let b = groundFetch(i, uv + hexOffset(v2, i), gx, gy, u, v);
-  let c = groundFetch(i, uv + hexOffset(v3, i), gx, gy, u, v);
+  let a = hexRead(i, v1, p, dpx, dpy, u, v, k);
+  let b = hexRead(i, v2, p, dpx, dpy, u, v, k);
+  let c = hexRead(i, v3, p, dpx, dpy, u, v, k);
   // Weights sharpened by height (docs/22): the taller sample wins, so seams hide in the cracks.
   var hw = pow(bw, vec3f(ground.tiling.z)) * pow(vec3f(a.height, b.height, c.height) + 0.25, vec3f(4.0));
   hw /= max(hw.x + hw.y + hw.z, 1e-6);
@@ -168,8 +217,10 @@ fn groundDetail(p: vec3f, nMesh: vec3f, w4: vec4f, moss: f32, viewDist: f32) -> 
   // Screen derivatives once, here, so sampling inside branches needs no uniform control flow.
   let dpx = dpdx(p);
   let dpy = dpdy(p);
-  // How much of the cliff projection this slope gets, and the triplanar weights.
-  let steep = (1.0 - smoothstep(ground.steep.y, ground.steep.x, nMesh.y)) * ground.triplanar;
+  // How steep this is (0 flat .. 1 past steepDeg's far angle), how much of the cliff projection
+  // it gets, and the triplanar weights.
+  let slope = 1.0 - smoothstep(ground.steep.y, ground.steep.x, nMesh.y);
+  let steep = slope * ground.triplanar;
   var tw = pow(abs(nMesh), vec3f(6.0));
   tw /= max(tw.x + tw.y + tw.z, 1e-5);
 
@@ -184,12 +235,22 @@ fn groundDetail(p: vec3f, nMesh: vec3f, w4: vec4f, moss: f32, viewDist: f32) -> 
     if (w[i] < 0.004) { continue; }
     // From above: image u along +x, v along +z.
     var s = groundProject(i, p, dpx, dpy, vec3f(1.0, 0.0, 0.0), vec3f(0.0, 0.0, 1.0));
+    // Rock turns to its cliff scan (G4) as the slope steepens: flat rock is boulder top,
+    // steep rock is rock face.
+    let cliff = i == ROCK_LAYER && slope > 0.001;
+    let j = select(i, CLIFF_LAYER, cliff);
     if (steep > 0.001) {
       // Side projections keep the image upright (v runs down the slope, -y).
-      let sx = groundProject(i, p, dpx, dpy, vec3f(0.0, 0.0, 1.0), vec3f(0.0, -1.0, 0.0));
-      let sz = groundProject(i, p, dpx, dpy, vec3f(1.0, 0.0, 0.0), vec3f(0.0, -1.0, 0.0));
-      let tri = mixLayer(mixLayer(mixLayer(zeroLayer(), sx, tw.x), s, tw.y), sz, tw.z);
+      let sx = groundProject(j, p, dpx, dpy, vec3f(0.0, 0.0, 1.0), vec3f(0.0, -1.0, 0.0));
+      let sz = groundProject(j, p, dpx, dpy, vec3f(1.0, 0.0, 0.0), vec3f(0.0, -1.0, 0.0));
+      var sy = s;
+      if (cliff) { sy = groundProject(j, p, dpx, dpy, vec3f(1.0, 0.0, 0.0), vec3f(0.0, 0.0, 1.0)); }
+      let tri = mixLayer(mixLayer(mixLayer(zeroLayer(), sx, tw.x), sy, tw.y), sz, tw.z);
       s = mixLayer(mixLayer(zeroLayer(), s, 1.0 - steep), tri, steep);
+    } else if (cliff) {
+      // Tiers without the cliff projection still swap scans, read from above.
+      let sy = groundProject(j, p, dpx, dpy, vec3f(1.0, 0.0, 0.0), vec3f(0.0, 0.0, 1.0));
+      s = mixLayer(mixLayer(zeroLayer(), s, 1.0 - slope), sy, slope);
     }
     albedo[i] = s.albedo;
     hs[i] = s.height;

@@ -18,10 +18,10 @@ Ground detail maps for ebb (docs/22-ground-detail.md), made with tools/texture-l
 - Changes: albedo delit (heavily blurred luminance divided out at strength 0.6), recalibrated so its linear mean equals the recipe albedo [0.62, 0.52, 0.38] from recipes/world/terrain.json and clamped to 0.04..0.9; height stretched to 0..1 (0.5th to 99.5th percentile); repacked into a.webp (albedo), b.webp (normal X, Y and roughness), c.webp (height and cavity); resized to 512 for the low tier.
 - Files: assets/textures/ground/sand/
 
-## Rock: Dry Riverbed Rock
+## Rock: Rock Boulder Dry
 
-- Source page: https://polyhaven.com/a/dry_riverbed_rock
-- Original asset: Dry Riverbed Rock (`dry_riverbed_rock`), maps diff, nor_gl, rough, disp, ao at 1k
+- Source page: https://polyhaven.com/a/rock_boulder_dry
+- Original asset: Rock Boulder Dry (`rock_boulder_dry`), maps diff, nor_gl, rough, disp, ao at 1k
 - License: CC0 1.0
 - Changes: albedo delit (heavily blurred luminance divided out at strength 0.5), recalibrated so its linear mean equals the recipe albedo [0.36, 0.34, 0.31] from recipes/world/terrain.json and clamped to 0.04..0.9; height stretched to 0..1 (0.5th to 99.5th percentile); repacked into a.webp (albedo), b.webp (normal X, Y and roughness), c.webp (height and cavity); resized to 512 for the low tier.
 - Files: assets/textures/ground/rock/
@@ -41,3 +41,11 @@ Ground detail maps for ebb (docs/22-ground-detail.md), made with tools/texture-l
 - License: ambientCG, CC0 1.0
 - Changes: albedo delit (heavily blurred luminance divided out at strength 0.6), recalibrated so its linear mean equals the recipe albedo [0.15, 0.21, 0.045] from recipes/world/terrain.json and clamped to 0.04..0.9; height stretched to 0..1 (0.5th to 99.5th percentile); repacked into a.webp (albedo), b.webp (normal X, Y and roughness), c.webp (height and cavity); resized to 512 for the low tier.
 - Files: assets/textures/ground/moss/
+
+## Cliff: Rock Face 03
+
+- Source page: https://polyhaven.com/a/rock_face_03
+- Original asset: Rock Face 03 (`rock_face_03`), maps diff, nor_gl, rough, disp, ao at 1k
+- License: CC0 1.0
+- Changes: albedo delit (heavily blurred luminance divided out at strength 0.5), recalibrated so its linear mean equals the recipe albedo [0.36, 0.34, 0.31] from recipes/world/terrain.json and clamped to 0.04..0.9; height stretched to 0..1 (0.5th to 99.5th percentile); repacked into a.webp (albedo), b.webp (normal X, Y and roughness), c.webp (height and cavity); resized to 512 for the low tier.
+- Files: assets/textures/ground/cliff/

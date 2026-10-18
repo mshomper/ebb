@@ -15,8 +15,8 @@ const ICON_OK = '<svg viewBox="0 0 24 24" fill="none" stroke="#5F7F5B" stroke-wi
 const ICON_WARN = '<svg viewBox="0 0 24 24" fill="none" stroke="#B5654A" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5l9.5 16.5h-19z"/><path d="M12 10v4.5M12 17.5v.2"/></svg>';
 const ICON_WAIT = '<svg viewBox="0 0 24 24" fill="none" stroke="#7B8B84" stroke-width="2.4" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 6.5V12l3.5 2.5"/></svg>';
 
-// Layer order of the game's texture arrays (moss is layer 4).
-const ORDER = ['grass', 'sand', 'rock', 'soil', 'moss'];
+// Layer order of the game's texture arrays (moss is layer 4, cliff rock for steep slopes layer 5).
+const ORDER = ['grass', 'sand', 'rock', 'soil', 'moss', 'cliff'];
 // ambientCG file name endings (lower case) for each map the packer reads. AO is optional.
 const ACG_SUFFIX = { diff: '_color.jpg', nor_gl: '_normalgl.jpg', rough: '_roughness.jpg', disp: '_displacement.jpg', ao: '_ambientocclusion.jpg' };
 const acgNoServer = (/** @type {string} */ name) => `${name[0].toUpperCase() + name.slice(1)} comes from ambientCG through play.cmd's local server. Double-click play.cmd and open the lab from there.`;
@@ -792,7 +792,8 @@ async function boot() {
   }
   for (const name of ORDER) {
     const src = sources.materials[name];
-    const target = terrain.materials['albedo' + cap(name)];
+    // A scan can borrow another material's recipe color (cliff rock uses albedoRock).
+    const target = terrain.materials['albedo' + cap(src?.albedoFrom ?? name)];
     if (!src || !target) continue;
     mats[name] = { name, src, target, delight: src.delight, raw: null, jpgUrl: '', noAo: false, blur: null, blurMean: 1, files: null, means: {}, prevTile: null, prevWrap: null, prevHex: null, ui: {} };
     makeCard(name);
