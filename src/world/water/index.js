@@ -37,10 +37,11 @@ export async function createWater(gpu, opts) {
   const sim = await createWaterSim(device, terrain.gpu);
   const rect = rectForBounds(terrain.openBounds());
 
-  // Springs: the starter spring from the land recipe (fixed), then any the player placed.
-  const lm = landmarks(opts.land, opts.terrainSeed).spring;
+  // Springs: the island's own from the land recipe (fixed; the first keeps the id 'starter'), then
+  // any the player placed.
   /** @type {Spring[]} */
-  const springs = lm ? [{ id: 'starter', x: lm.x, z: lm.z, rateLps: lm.rateLps, fixed: true }] : [];
+  const springs = landmarks(opts.land, opts.terrainSeed).springs.map((lm, i) => (
+    { id: i ? `starter-${i + 1}` : 'starter', x: lm.x, z: lm.z, rateLps: lm.rateLps, fixed: true }));
   for (const s of opts.springs ?? []) springs.push({ ...s });
   /** @type {null | { x: number, z: number, radiusM: number, rateLps: number }} */
   let brush = null;

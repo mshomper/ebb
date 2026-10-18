@@ -80,7 +80,12 @@ export async function startApp(canvas, hooks = {}) {
   ]);
   /** @type {Record<string, any>} */
   const palettes = Object.fromEntries(PALETTES.map((p, i) => [p.id, paletteRecipes[i]]));
-  const landRecipe = await loadRecipe(terrainRecipe.starter.land);
+  // `?island=<id>` starts another island from recipes/world/terrain.json's list (tests, comparisons).
+  /** @type {{ id: string, name: string }[]} */ const islands = terrainRecipe.islands?.list ?? [];
+  const asked = params.get('island');
+  const island = islands.find((i) => i.id === asked) ?? islands.find((i) => `land/${i.id}` === terrainRecipe.starter.land) ?? { id: terrainRecipe.starter.land.slice(5), name: 'Starter island' };
+  const landRecipe = await loadRecipe(`land/${island.id}`);
+  updateStore('meta', (m) => { m.island = island.id; });
   updateStore('settings', (s) => { s.quality = tier; });
   const rb = terrainRecipe.brush;
 
@@ -600,6 +605,8 @@ export async function startApp(canvas, hooks = {}) {
     /** The live growth (habitat, plants) and the world the hourly tick runs on (tools/growth-lab.html). */
     growth,
     world,
+    /** The island this world started from, and the islands there are (the badge's switch). */
+    island: { current: island, list: islands },
     /** Palette access for the palette lab (tools/palette-lab.html). */
     palette: {
       list: () => PALETTES.slice(),

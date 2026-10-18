@@ -251,7 +251,9 @@ async function build() {
   $('verdict').textContent = 'Building';
   $('detail').textContent = '';
   try {
-    const land = await (await fetch('../recipes/land/starter-island.json')).json();
+    // `?island=two-ponds` checks another island (recipes/world/terrain.json lists them).
+    const islandId = (new URLSearchParams(location.search).get('island') ?? 'starter-island').replace(/[^a-z0-9-]/g, '');
+    const land = await (await fetch(`../recipes/land/${islandId}.json`)).json();
     const seed = subSeed(worldSeed, 'terrain');
     const pool = defaultPoolSize();
     const runs = [
