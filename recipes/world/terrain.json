@@ -51,12 +51,15 @@
     "hex": { "note": "Hex tiling (G2, high and medium tiers). density: triangle-grid vertices per tile along one axis (Mikkelsen uses 2 * sqrt(3); 2 keeps whole stones). sharpness: weight exponent before the height bias; higher means narrower seams.", "density": 2.0, "sharpness": 6 },
     "twoScale": { "note": "Low tier: a second read at size x the tile, mixed in by noise of noiseMeters.", "size": 2.7, "noiseMeters": 6 },
     "macro": { "note": "Slow tone drift on all tiers. scalesM: the two noise sizes; strength: brightness swing; second: weight of the smaller one; hue: warm-cool swing.", "scalesM": [40, 12], "strength": 0.3, "second": 0.4, "hue": 0.06 },
+    "grain": { "note": "Drifting grain (G4, hex tiling tiers): each hex vertex turns its copy of the scan by a slow angle field (up to spreadDeg either way, varying over fieldM meters) plus jitterDeg of random turn, and scales it by up to scaleJitter, so a large patch has no common direction. layers: how much of it each scan takes (0 none, 1 all); cliff takes a little so cliff faces stay mostly upright.", "spreadDeg": 90, "fieldM": 7, "jitterDeg": 12, "scaleJitter": 0.2,
+      "layers": { "grass": 0, "sand": 0, "rock": 1, "soil": 0, "moss": 0, "cliff": 0.25 } },
     "layers": {
       "grass": { "tileMeters": 3, "heightAmplitudeM": 0.02, "normalStrength": 0.8, "roughness": [0.75, 0.95], "porosity": 0.6 },
       "sand":  { "tileMeters": 3, "heightAmplitudeM": 0.015, "normalStrength": 1.0, "roughness": [0.7, 0.95], "porosity": 0.9 },
-      "rock":  { "tileMeters": 1.2, "heightAmplitudeM": 0.05, "normalStrength": 1.0, "roughness": [0.45, 0.8], "porosity": 0.15 },
+      "rock":  { "tileMeters": 2, "heightAmplitudeM": 0.05, "normalStrength": 1.0, "roughness": [0.45, 0.8], "porosity": 0.15 },
       "soil":  { "tileMeters": 3, "heightAmplitudeM": 0.03, "normalStrength": 0.9, "roughness": [0.7, 0.95], "porosity": 0.8 },
-      "moss":  { "tileMeters": 1.2, "heightAmplitudeM": 0.025, "normalStrength": 1.0, "roughness": [0.8, 1.0], "porosity": 0.95 }
+      "moss":  { "tileMeters": 1.2, "heightAmplitudeM": 0.025, "normalStrength": 1.0, "roughness": [0.8, 1.0], "porosity": 0.95 },
+      "cliff": { "note": "Rock's scan on steep faces (G4): the rock layer reads it in place of its flat scan past steepDeg. Wet look uses rock's porosity.", "tileMeters": 2.5, "heightAmplitudeM": 0.06, "normalStrength": 1.0, "roughness": [0.5, 0.85] }
     }
   },
   "moss": {

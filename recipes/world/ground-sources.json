@@ -7,10 +7,12 @@
   "materials": {
     "grass": { "id": "grass_ground", "name": "Grass Ground", "page": "https://polyhaven.com/a/grass_ground", "delight": 0.7 },
     "sand":  { "id": "aerial_beach_01", "name": "Aerial Beach 01", "page": "https://polyhaven.com/a/aerial_beach_01", "delight": 0.6 },
-    "rock":  { "id": "dry_riverbed_rock", "name": "Dry Riverbed Rock", "page": "https://polyhaven.com/a/dry_riverbed_rock", "delight": 0.5 },
+    "rock":  { "id": "rock_boulder_dry", "name": "Rock Boulder Dry", "page": "https://polyhaven.com/a/rock_boulder_dry", "delight": 0.5 },
     "soil":  { "id": "dirt_aerial_03", "name": "Dirt Aerial 03", "page": "https://polyhaven.com/a/dirt_aerial_03", "delight": 0.6 },
-    "moss":  { "source": "ambientcg", "id": "Moss003", "name": "Moss 003", "page": "https://ambientcg.com/view?id=Moss003", "zip": "Moss003_1K-JPG.zip", "delight": 0.6 }
+    "moss":  { "source": "ambientcg", "id": "Moss003", "name": "Moss 003", "page": "https://ambientcg.com/view?id=Moss003", "zip": "Moss003_1K-JPG.zip", "delight": 0.6 },
+    "cliff": { "id": "rock_face_03", "name": "Rock Face 03", "page": "https://polyhaven.com/a/rock_face_03", "delight": 0.5, "albedoFrom": "rock" }
   },
+  "cliffNote": "Rock has two scans (G4): rock_boulder_dry on flat and gently sloped rock, rock_face_03 on steep faces (the cliff projection past detail.steepDeg). Both are calibrated to materials.albedoRock. dry_riverbed_rock was replaced because it is a stacked-stone face: on flat ground its joints read as paving.",
   "ambientcgNote": "ambientCG sets are zips (CC0). The lab fetches them through play.cmd's local server (GET /__fetch/ambientcg?file=...), because ambientCG does not let other sites download directly. Files by suffix: _Color (diff), _NormalGL (nor_gl), _Roughness (rough), _Displacement (disp), _AmbientOcclusion (ao, optional).",
   "maps": ["diff", "nor_gl", "rough", "disp", "ao"],
   "sizes": [1024, 512],

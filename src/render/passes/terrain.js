@@ -10,7 +10,7 @@ import { LODS, MAX_CHUNKS, createIndexBuffers, packChunks } from '../terrain-mes
 /** @typedef {import('../frame-graph.js').PassContext} PassContext */
 
 const DRAW_BYTES = 640;   // 384 of look, then 16 marker rings (floats 96..159)
-const GROUND_BYTES = 256;
+const GROUND_BYTES = 336;
 const DEG = Math.PI / 180;
 /** @type {Record<string, number>} GroundDetail.tiling.x in lib-ground.wgsl */
 const TILING_MODES = { grid: 0, hex: 1, two: 2 };
@@ -82,6 +82,15 @@ export function createTerrainPass(opts) {
     // Porosity per material (G3 wet look), from the detail layers.
     gf.set(['grass', 'sand', 'rock', 'soil'].map((id) => d.layers[id].porosity), 56);
     gf[60] = d.layers.moss.porosity;
+    // Cliff rock (G4), layer 5: rock's scan for steep faces.
+    const cl = d.layers.cliff;
+    gf.set([cl.heightAmplitudeM, cl.normalStrength, cl.roughness[0], cl.roughness[1]], 64);
+    gf[68] = 1 / (cl.tileMeters ?? d.tileMeters);
+    // Drifting grain (G4): angle field, jitter and scale jitter, then each layer's share.
+    const G = d.grain;
+    gf[72] = G.spreadDeg * DEG; gf[73] = 1 / G.fieldM; gf[74] = G.jitterDeg * DEG; gf[75] = G.scaleJitter;
+    gf.set(['grass', 'sand', 'rock', 'soil'].map((id) => G.layers[id] ?? 0), 76);
+    gf[80] = G.layers.moss ?? 0; gf[81] = G.layers.cliff ?? 0;
   }
 
   function packStatic() {
