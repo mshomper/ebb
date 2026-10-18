@@ -45,6 +45,10 @@
         { "text": "On cold dawns, frost whitens the tip of every blade.", "learn": ["moment:frost"] }
       ],
       "fieldHint": "Watch the meadow in other weather to learn more.",
+      "sketch": { "scale": "about 30 cm", "labels": {
+        "base": { "text": ["grows from", "its base"], "learn": ["seen"] },
+        "seed": { "text": ["seed heads,", "high summer"], "learn": ["moment:summer"] },
+        "roots": { "text": ["roots keep the", "soil open"], "learn": ["moment:rain"] } } },
       "riddle": "Something soft would cover the dry ground, if it were painted for it.",
       "amount": [[0.01, "A few patches of grass grow on the island"], [0.15, "Grass grows over part of the island"], [0.45, "Grass covers most of the dry ground"]],
       "none": "No grass grows on the island now.",
@@ -76,6 +80,11 @@
         { "text": "Rain runs down the blades and into the mud around their feet.", "learn": ["moment:rain"] }
       ],
       "fieldHint": "Watch them through the seasons to learn more.",
+      "sketch": { "scale": "about 1.6 m", "labels": {
+        "spike": { "text": ["pollen spike"], "learn": ["flower"] },
+        "head": { "text": ["seed head,", "soft as velvet"], "learn": ["flower"] },
+        "blade": { "text": ["flat blade"], "learn": ["seen"] },
+        "root": { "text": ["creeping root,", "new shoot"], "learn": ["spread"] } } },
       "riddle": "Something tall would stand at the water's edge, if the bank were wet enough.",
       "amount": [[1, "A single clump of reeds"], [2, "A few reed clumps"], [6, "A good stand of reeds"], [20, "A thick margin of reeds"]],
       "place": "by the water", "compass": true,
@@ -117,6 +126,11 @@
         { "text": "Shade from the pads keeps the water beneath them cool.", "learn": ["spread"] }
       ],
       "fieldHint": "Watch the pond through the day and the year to learn more.",
+      "sketch": { "scale": "about 1 m deep", "labels": {
+        "flower": { "text": ["opens in the", "morning sun"], "learn": ["flower"] },
+        "pad": { "text": ["floating pad"], "learn": ["seen"] },
+        "stalk": { "text": ["long stalk", "to the mud"], "learn": ["seen"] },
+        "root": { "text": ["resting root"], "learn": ["dormant", "moment:winter"] } } },
       "riddle": "Something round would float on still water, if a pond were deep enough.",
       "amount": [[1, "A single lily pad"], [2, "A few lily pads"], [6, "A scatter of lily pads"], [16, "Lily pads across much of the pond"]],
       "place": "on the still water", "compass": false,
@@ -157,6 +171,10 @@
         { "text": "At dusk the yellow flags seem to glow after the green has gone grey.", "learn": ["moment:dusk"] }
       ],
       "fieldHint": "Watch them through the seasons to learn more.",
+      "sketch": { "scale": "about 1 m", "labels": {
+        "falls": { "text": ["three falls,", "three standards"], "learn": ["flower"] },
+        "leaves": { "text": ["sword leaves", "in a fan"], "learn": ["seen"] },
+        "root": { "text": ["thick creeping", "root"], "learn": ["spread"] } } },
       "riddle": "Something yellow would flower on a damp bank, a step back from the water.",
       "amount": [[1, "A single iris"], [2, "A few iris clumps"], [6, "A good stand of iris"], [16, "Iris all along the bank"]],
       "place": "a step back from the water", "compass": true,
@@ -196,6 +214,10 @@
         { "text": "It stays green all winter, low and hunched against the cold.", "learn": ["moment:winter"] }
       ],
       "fieldHint": "Watch the shore in other weather to learn more.",
+      "sketch": { "scale": "about 20 cm", "labels": {
+        "cushion": { "text": ["tight cushion"], "learn": ["seen"] },
+        "pompom": { "text": ["papery", "pompoms"], "learn": ["flower"] },
+        "seeds": { "text": ["seeds ride", "the wind"], "learn": ["spread"] } } },
       "riddle": "Something pink would cushion the shore, if the ground were salty enough.",
       "amount": [[1, "A single thrift cushion"], [2, "A few thrift cushions"], [6, "Thrift cushions"], [20, "Thrift cushions in drifts"]],
       "place": "along the shore", "compass": true,

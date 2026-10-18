@@ -229,6 +229,11 @@
 .ebb-jpage__notes li { overflow-wrap: break-word; }
 .ebb-jpage__notes small, .ebb-jnotes small { font-size: var(--text-small); color: var(--jr-soft); white-space: nowrap; }
 
+/* The field sketch across the top of a page (J1.6): drawn at the page's width. Its labels are 18
+   drawing units, so it stays wide enough (about 340 px or more) for them to read at 16 px. */
+.ebb-jpage__art { margin: 0; display: grid; justify-items: center; }
+.ebb-jpage__art .ebb-sketch { width: 100%; max-width: 400px; height: auto; max-height: 380px; display: block; }
+
 /* Show me, beside the page's name */
 .ebb-jpage__top .ebb-jpage__show { margin-left: auto; }
 .ebb-jpage__show {

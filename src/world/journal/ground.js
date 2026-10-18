@@ -8,7 +8,7 @@
 import { HABITAT_ORIGIN, habitatCell } from '../growth/habitat.js';
 import { WORLD_CELLS, WORLD_ORIGIN, CELL } from '../terrain/grid.js';
 import { suitability } from '../growth/coarse.js';
-import { knownLines, dateOfHour } from './observe.js';
+import { knownLines, dateOfHour, sketchOf } from './observe.js';
 import { amountOf } from './describe.js';
 
 /** Painted weights 0..255 at a world point: [grass, sand, rock, soil], or null off the window. @param {Uint8Array | null} material @param {number} x @param {number} z */
@@ -164,7 +164,7 @@ export function describeGround(journal, id, survey, island, words) {
   });
   const notes = journal.notes.filter((n) => n.sp === id).slice(0, words.pageNotes);
   return { sp: id, kind: 'ground', name: g.name, icon: g.icon, known: true, status, grows, field, fieldHint: g.fieldHint,
-    moments, notes, canShow: b.cells > 0 };
+    moments, notes, canShow: b.cells > 0, sketch: sketchOf(learned, true, g.sketch) };
 }
 
 /**

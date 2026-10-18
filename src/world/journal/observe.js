@@ -233,6 +233,21 @@ export function knownLines(k, lines) {
   return (lines ?? []).map((l) => !!k && l.learn.some((/** @type {string} */ t) => k.learned.includes(t)));
 }
 
+/**
+ * What a page's field sketch shows (J1.6): stage 0 pencil before it is known, 1 ink once known, 2
+ * washed once it has flowered or been caught at a moment; and the labels learned so far.
+ * @param {{ learned: string[] } | undefined} k @param {boolean} known
+ * @param {{ scale?: string, labels?: Record<string, { text: string[], learn: string[] }> } | undefined} sketch the recipe's sketch block
+ * @returns {{ stage: 0|1|2, labels: Record<string, string[]>, scale?: string }}
+ */
+export function sketchOf(k, known, sketch) {
+  const learned = k?.learned ?? [];
+  const stage = !known ? 0 : learned.some((t) => t === 'flower' || t.startsWith('moment:')) ? 2 : 1;
+  /** @type {Record<string, string[]>} */ const labels = {};
+  for (const [key, l] of Object.entries(sketch?.labels ?? {})) if (l.learn.some((t) => learned.includes(t))) labels[key] = l.text;
+  return { stage, labels, scale: sketch?.scale };
+}
+
 /** @param {string} s */
 const lower = (s) => s.charAt(0).toLowerCase() + s.slice(1);
 

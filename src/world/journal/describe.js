@@ -5,7 +5,7 @@
 // Show me goes to. Pure; words from recipes/world/journal.json.
 
 import { HABITAT_ORIGIN, habitatCell } from '../growth/habitat.js';
-import { measure, present, knownLines, dateOfHour, FLOWER, DORMANT } from './observe.js';
+import { measure, present, knownLines, dateOfHour, sketchOf, FLOWER, DORMANT } from './observe.js';
 
 /** The island's middle and size from the habitat, cached per habitat. @type {WeakMap<object, { x: number, z: number, r: number }>} */
 const shapes = new WeakMap();
@@ -143,7 +143,7 @@ export function describe(journal, sp, state, hab, words, hour = journal.last) {
   const story = known && k ? storyOf(k, rec, m, hour, journal, words) : [];
   const notes = journal.notes.filter((n) => n.sp === sp).slice(0, words.pageNotes);
   return { sp, kind: 'living', name: rec.name, icon: rec.icon, known, riddle: rec.riddle, status, likes, field,
-    fieldHint: rec.fieldHint, story, seasons, moments, gives, notes, canShow: known && present(rec, m) };
+    fieldHint: rec.fieldHint, story, seasons, moments, gives, notes, canShow: known && present(rec, m), sketch: sketchOf(k, known, rec.sketch) };
 }
 
 /**

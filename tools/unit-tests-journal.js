@@ -6,7 +6,8 @@
 
 import { initialWorldState, makeEnv, runHour } from '../src/sim/tick.js';
 import { settleGrowth, plantSeed } from '../src/world/growth/coarse.js';
-import { initialJournal, observe, learn, notePlanted, momentsNow, catchMoments } from '../src/world/journal/observe.js';
+import { initialJournal, observe, learn, notePlanted, momentsNow, catchMoments, sketchOf } from '../src/world/journal/observe.js';
+import { drawSketch, hasSketch } from '../src/ui/sketches/index.js';
 import { describe, identify, showMeSpot } from '../src/world/journal/describe.js';
 import { groundKind, groundCard, groundSurvey, describeGround } from '../src/world/journal/ground.js';
 import { almanac } from '../src/world/journal/almanac.js';
@@ -210,6 +211,30 @@ export function addJournalTests(test, assert, eq) {
     for (const id of ['today', 'weather', 'tide', 'moon', 'daylight', 'flowering']) assert(ids.includes(id), `row ${id}`);
     for (const r of rows) if (r.id !== 'today') assert(!/\d/.test(r.text), `${r.id} has a number: ${r.text}`);
     return rows.map((r) => `${r.label}: ${r.text}`).join(' / ');
+  });
+
+  test(JOURNAL, 'field sketches: pencil, ink, then washed, labels as they are learned, every drawing clean', async () => {
+    const { words, first } = await setup();
+    const island = await loadIsland();
+    const rec = words.species.reeds;
+    eq(sketchOf(undefined, false, rec.sketch).stage, 0, 'unseen reeds');
+    const seen = sketchOf(first.journal.species.reeds, true, rec.sketch);
+    eq(seen.stage, 1, 'seen reeds');
+    eq(Object.keys(seen.labels).join(','), 'blade', 'labels once seen');
+    const caught = catchMoments(first.journal, 'reeds', ['rain'], { state: first.journal, hour: 3, words, name: 'reeds', list: words.moments.plant });
+    eq(sketchOf(caught.journal.species.reeds, true, rec.sketch).stage, 2, 'reeds caught in the rain');
+    const ids = [...words.order, ...island.groundOrder];
+    for (const id of ids) {
+      const sk = words.species[id]?.sketch ?? island.ground[id]?.sketch;
+      assert(hasSketch(id), `a drawing for ${id}`);
+      const all = Object.fromEntries(Object.entries(sk?.labels ?? {}).map(([k, v]) => [k, /** @type {any} */ (v).text]));
+      for (const stage of /** @type {(0|1|2)[]} */ ([0, 1, 2])) {
+        const svg = drawSketch(id, { stage, labels: all, scale: sk?.scale });
+        assert(svg.startsWith('<svg') && !/NaN|undefined/.test(svg), `${id} stage ${stage} draws cleanly`);
+        if (stage === 0) assert(!svg.includes('<text'), `${id} pencil has no labels`);
+      }
+    }
+    return `${ids.length} drawings, each in three stages`;
   });
 
   test(JOURNAL, 'a tap names the nearest plant, or grass, or nothing', async () => {

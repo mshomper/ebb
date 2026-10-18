@@ -12,6 +12,7 @@
 import { get, subscribe } from '../core/store.js';
 import { dispatch } from '../input/actions.js';
 import { ensureIconSprite, iconSvg } from './icons/icons.js';
+import { drawSketch, hasSketch } from './sketches/index.js';
 
 /** Sections, in order, with their drawn icons. */
 const VIEWS = [
@@ -149,9 +150,12 @@ export function mountJournal(parent, live) {
   /** A living thing's or a ground's page. @param {string} id */
   function pageView(id) {
     const d = /** @type {any} */ (live.describe(id));
+    // The field sketch across the top of the page (J1.6), in the stage the page has reached.
+    const art = hasSketch(id) && d.sketch ? `<figure class="ebb-jpage__art">${drawSketch(id, d.sketch)}</figure>` : '';
     if (!d.known) {
       return `<article class="ebb-jpage">
-        <div class="ebb-jpage__top"><span class="ebb-jpage__sketch is-pencil">${iconSvg('unknown')}</span><h3>Not yet seen</h3></div>
+        <div class="ebb-jpage__top">${art ? '' : `<span class="ebb-jpage__sketch is-pencil">${iconSvg('unknown')}</span>`}<h3>Not yet seen</h3></div>
+        ${art}
         <p class="ebb-jpage__status ebb-journal__voice is-pencil">${esc(d.riddle)}</p></article>`;
     }
     const show = d.canShow ? `<button type="button" class="ebb-jpage__show" data-show="${esc(id)}">${iconSvg('find')}<span>Show me</span></button>` : '';
@@ -171,7 +175,8 @@ export function mountJournal(parent, live) {
     const story = d.story?.length ? section("Your island's story", `<ul class="ebb-jpage__list ebb-jpage__story">${d.story.map((/** @type {string} */ s) => `<li>${esc(s)}</li>`).join('')}</ul>`) : '';
     const gives = d.gives?.length ? section('Gives', `<ul class="ebb-jpage__list">${d.gives.map((/** @type {any} */ g) => `<li class="${g.known ? '' : 'is-pencil'}">${esc(g.text)}</li>`).join('')}</ul>`) : '';
     return `<article class="ebb-jpage">
-      <div class="ebb-jpage__top"><span class="ebb-jpage__sketch">${iconSvg(d.icon)}</span><h3>${esc(d.name)}</h3>${show}</div>
+      <div class="ebb-jpage__top">${art ? '' : `<span class="ebb-jpage__sketch">${iconSvg(d.icon)}</span>`}<h3>${esc(d.name)}</h3>${show}</div>
+      ${art}
       <p class="ebb-jpage__status ebb-journal__voice">${esc(d.status)}</p>
       ${middle}
       ${section('Field notes', `<ul class="ebb-jpage__list ebb-jpage__field">${lines(d.field, d.fieldHint)}</ul>`)}

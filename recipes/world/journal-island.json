@@ -15,7 +15,11 @@
         { "text": "After rain the soil darkens and smells sweet.", "learn": ["moment:rain"] },
         { "text": "Morning mist settles low over damp soil and lifts as the sun warms it.", "learn": ["moment:mist"] }
       ],
-      "fieldHint": "Watch the ground in other weather to learn more."
+      "fieldHint": "Watch the ground in other weather to learn more.",
+      "sketch": { "labels": {
+        "top": { "text": ["dark topsoil"], "learn": ["seen"] },
+        "roots": { "text": ["roots find", "water here"], "learn": ["seen"] },
+        "rain": { "text": ["smells sweet", "after rain"], "learn": ["moment:rain"] } } }
     },
     "sand": {
       "name": "Sand", "icon": "sand", "measure": "share", "tap": "sand",
@@ -25,7 +29,11 @@
         { "text": "Wet sand darkens and firms; you could almost walk on it like a road.", "learn": ["moment:rain"] },
         { "text": "At dawn the low sun picks out every ripple the wind left in it.", "learn": ["moment:dawn"] }
       ],
-      "fieldHint": "Watch the shore in other light and weather to learn more."
+      "fieldHint": "Watch the shore in other light and weather to learn more.",
+      "sketch": { "labels": {
+        "ripples": { "text": ["wind ripples"], "learn": ["seen"] },
+        "drains": { "text": ["drains fast"], "learn": ["seen"] },
+        "wet": { "text": ["firm when", "wet"], "learn": ["moment:rain"] } } }
     },
     "rock": {
       "name": "Rock", "icon": "rock", "measure": "share", "tap": "rock",
@@ -35,7 +43,11 @@
         { "text": "Wet rock glistens, and the moss on it greens up within hours.", "learn": ["moment:rain"] },
         { "text": "Rock warms slowly and cools slowly: on a winter morning it is the last place the frost leaves.", "learn": ["moment:winter"] }
       ],
-      "fieldHint": "Watch the rocks in other weather to learn more."
+      "fieldHint": "Watch the rocks in other weather to learn more.",
+      "sketch": { "labels": {
+        "moss": { "text": ["moss on the", "damp side"], "learn": ["seen"] },
+        "sheds": { "text": ["sheds water"], "learn": ["seen"] },
+        "frost": { "text": ["frost stays", "longest here"], "learn": ["moment:winter"] } } }
     },
     "moss": {
       "name": "Moss", "icon": "moss", "measure": "share", "tap": "moss",
@@ -45,7 +57,11 @@
         { "text": "After rain it swells and brightens in a few hours.", "learn": ["moment:rain"] },
         { "text": "In mist it holds the droplets like a sponge.", "learn": ["moment:mist"] }
       ],
-      "fieldHint": "Watch the moss in other weather to learn more."
+      "fieldHint": "Watch the moss in other weather to learn more.",
+      "sketch": { "labels": {
+        "caps": { "text": ["spore", "capsules"], "learn": ["seen"] },
+        "drinks": { "text": ["drinks", "through its", "leaves"], "learn": ["seen"] },
+        "rain": { "text": ["swells after", "rain"], "learn": ["moment:rain"] } } }
     },
     "fresh": {
       "name": "Fresh water", "icon": "water", "measure": "area", "tap": "water",
@@ -56,7 +72,11 @@
         { "text": "Rain rings the pond's surface and slowly raises it.", "learn": ["moment:rain"] },
         { "text": "Mist forms first over still water on calm, cool mornings.", "learn": ["moment:mist"] }
       ],
-      "fieldHint": "Watch the water in other weather to learn more."
+      "fieldHint": "Watch the water in other weather to learn more.",
+      "sketch": { "labels": {
+        "mist": { "text": ["mist forms", "here first"], "learn": ["moment:mist"] },
+        "warm": { "text": ["warms in", "the sun"], "learn": ["seen"] },
+        "margin": { "text": ["shallow", "margin"], "learn": ["seen"] } } }
     },
     "shore": {
       "name": "Shore and sea", "icon": "shore", "measure": "area", "tap": "shore",
@@ -66,7 +86,12 @@
         { "text": "Only plants that can bear salt grow in the spray above it.", "learn": ["moment:dawn", "moment:rain"] },
         { "text": "In winter the sea runs grey and the band stays wet longer.", "learn": ["moment:winter"] }
       ],
-      "fieldHint": "Watch the shore at other times to learn more."
+      "fieldHint": "Watch the shore at other times to learn more.",
+      "sketch": { "labels": {
+        "high": { "text": ["high water"], "learn": ["seen"] },
+        "low": { "text": ["low water"], "learn": ["seen"] },
+        "band": { "text": ["the tide band"], "learn": ["seen"] },
+        "spray": { "text": ["salt spray"], "learn": ["moment:dawn", "moment:rain"] } } }
     }
   },
   "wet": [[0.85, "Wet"], [0.5, "Damp"], [0.2, "A little damp"], [0, "Dry"]],
