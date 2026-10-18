@@ -14,9 +14,10 @@ const SEASONS = /** @type {const} */ (['spring', 'summer', 'autumn', 'winter']);
 
 /**
  * @param {{ terrain: import('../../world/terrain/index.js').Terrain, recipe: any, terrainRecipe: any, seed: number,
- *   water: { depthTextures: GPUTexture[], current: () => number },
+ *   water: { depthTextures: GPUTexture[], current: () => number }, cover: GPUTexture,
  *   tier: { grassDensity: number, grassDistance: number } }} opts  recipe: recipes/flora/grass.json;
- *   terrainRecipe: recipes/world/terrain.json (its beach band and steep-rock angles)
+ *   terrainRecipe: recipes/world/terrain.json (its beach band and steep-rock angles);
+ *   cover: the growth step's grass cover (world/growth coverTex), 1 m world grid
  */
 export function createGrassPass(opts) {
   const { terrain, recipe } = opts;
@@ -116,6 +117,7 @@ export function createGrassPass(opts) {
           { binding: 2, visibility: GPUShaderStage.VERTEX, texture: { sampleType: 'float' } },
           { binding: 3, visibility: GPUShaderStage.VERTEX, sampler: { type: 'filtering' } },
           { binding: 4, visibility: GPUShaderStage.VERTEX, texture: { sampleType: 'unfilterable-float' } },
+          { binding: 5, visibility: GPUShaderStage.VERTEX, texture: { sampleType: 'float' } },
         ],
       });
       const module = await makeShaderModule(device, 'grass-blades');
@@ -140,6 +142,7 @@ export function createGrassPass(opts) {
           { binding: 2, resource: materialView },
           { binding: 3, resource: sampler },
           { binding: 4, resource: t.createView() },
+          { binding: 5, resource: opts.cover.createView() },
         ],
       }));
     },

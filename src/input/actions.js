@@ -7,7 +7,8 @@ import { emit } from '../core/events.js';
 
 /**
  * @typedef {'mouse'|'pen'|'touch'|'key'} Source
- * @typedef {'sculpt'|'smooth'|'paint'|'water'} ToolId
+ * @typedef {'sculpt'|'smooth'|'paint'|'water'|'plant'} ToolId
+ * @typedef {'reeds'|'lilies'|'iris'|'thrift'} PlantSpecies
  */
 
 /**
@@ -22,7 +23,7 @@ import { emit } from '../core/events.js';
  *   | { type: 'tool.cancel', source: Source }
  *   | { type: 'tool.hover', x: number, y: number, inside: boolean, source: Source }
  *   | { type: 'brush.set', patch: { sculptMode?: 'raise'|'lower'|'flatten', paintLayer?: 'grass'|'sand'|'soil'|'rock', size?: number, strength?: number,
- *       waterMode?: 'pour'|'drain'|'spring', springRate?: 'trickle'|'brook'|'stream' } }
+ *       waterMode?: 'pour'|'drain'|'spring', springRate?: 'trickle'|'brook'|'stream', plantSpecies?: PlantSpecies } }
  *   | { type: 'water.springRemove', id: string }
  *   | { type: 'brush.resize', factor: number, source?: Source }
  *   | { type: 'history.undo', source?: Source }

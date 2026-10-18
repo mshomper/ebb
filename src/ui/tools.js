@@ -1,18 +1,20 @@
 // @ts-check
-// The S1 tool bar (docs/15, docs/20 step S1): [undo][redo] | [sculpt][smooth][paint][water]
+// The S1 tool bar (docs/15, docs/20 step S1): [undo][redo] | [sculpt][smooth][paint][water][plant]
 // at the bottom center, and above it a brush card with mode or layer chips and size and
 // strength sliders while a tool is active (water's spring mode swaps the sliders for flow
-// chips, a spring count and Remove). S8 grows this into the full HUD palette.
+// chips, a spring count and Remove; the Plant tool shows species chips, a hint and the last
+// tap's result instead). S8 grows this into the full HUD palette.
 //
-// Reads the store slices `tools`, `history`, `unlocks` and `waterUi` (created by app.js);
-// never writes the store. Every user choice goes out as an action through
+// Reads the store slices `tools`, `history`, `unlocks`, `waterUi` and `plantUi` (created by
+// app.js); never writes the store. Every user choice goes out as an action through
 // src/input/actions.js. Styles: tools.css.
 
 import { get, subscribe } from '../core/store.js';
 import { dispatch } from '../input/actions.js';
 import { ensureIconSprite, iconSvg } from './icons/icons.js';
 
-/** @typedef {'sculpt'|'smooth'|'paint'|'water'} ToolId */
+/** @typedef {'sculpt'|'smooth'|'paint'|'water'|'plant'} ToolId */
+/** @typedef {'reeds'|'lilies'|'iris'|'thrift'} PlantSpecies */
 /** @typedef {'raise'|'lower'|'flatten'} SculptMode */
 /** @typedef {'grass'|'sand'|'soil'|'rock'} PaintLayer */
 /** @typedef {'pour'|'drain'|'spring'} WaterMode */
@@ -25,6 +27,7 @@ import { ensureIconSprite, iconSvg } from './icons/icons.js';
  * @property {PaintLayer} paintLayer
  * @property {WaterMode} [waterMode]   undefined reads as 'pour'
  * @property {SpringRate} [springRate] undefined reads as 'brook'
+ * @property {PlantSpecies} [plantSpecies] undefined reads as the first of PLANT_SPECIES
  * @property {number} size        brush radius, meters
  * @property {number} strength    0..1
  * @property {[number, number]} sizeRange  [min, max] meters
@@ -37,13 +40,34 @@ import { ensureIconSprite, iconSvg } from './icons/icons.js';
  * @property {string|null} selectedId  the selected spring, if any
  */
 
+/**
+ * The result of the last Plant tap, written by app.js.
+ * @typedef {Object} PlantUiSlice
+ * @property {string} message  e.g. "Planted", "Reeds need wetter ground"
+ * @property {number} at       when it was written
+ */
+
 /** @type {{id: ToolId, label: string}[]} */
 const TOOLS = [
   { id: 'sculpt', label: 'Sculpt' },
   { id: 'smooth', label: 'Smooth' },
   { id: 'paint', label: 'Paint' },
   { id: 'water', label: 'Water' },
+  { id: 'plant', label: 'Plant' },
 ];
+/**
+ * Species the Plant tool offers, in chip order. S5b-2 adds the others here, each with a drawn
+ * icon of the same name in icons.js:
+ *   { id: 'lilies', label: 'Water lilies', icon: 'lilies', hint: '...' }
+ *   { id: 'iris', label: 'Yellow iris', icon: 'iris', hint: '...' }
+ *   { id: 'thrift', label: 'Sea thrift', icon: 'thrift', hint: '...' }
+ * @type {{id: PlantSpecies, label: string, icon: string, hint: string}[]}
+ */
+const PLANT_SPECIES = [
+  { id: 'reeds', label: 'Reeds', icon: 'reeds', hint: 'Reeds like wet banks and shallow fresh water. Tap the ground to plant a seed.' },
+];
+/** How long a Plant tap's result stays before it fades, ms. */
+const PLANT_MESSAGE_MS = 2500;
 /** Water modes; 'spring' shows only once `unlocks.springs` is true. @type {{id: WaterMode, label: string, icon: string}[]} */
 const WATER_MODES = [
   { id: 'pour', label: 'Pour', icon: 'pour' },
@@ -109,6 +133,15 @@ export function mountTools(parent = document.body) {
         </div>
         <p class="ebb-tools__hint">Tap to place a spring. Tap one to select it.</p>
       </div>
+      <div class="ebb-tools__plant" role="group" aria-label="Plant" hidden>
+        <div class="ebb-tools__chips ebb-tools__chips--species" role="group" aria-label="Species"
+          style="--tb-cols: ${Math.min(2, PLANT_SPECIES.length)}">
+          ${PLANT_SPECIES.map((s) => `<button type="button" class="ebb-tools__chip" data-species="${s.id}"
+            aria-pressed="false" title="${s.label}">${iconSvg(s.icon)}<span>${s.label}</span></button>`).join('')}
+        </div>
+        <p class="ebb-tools__hint" data-out="plant-hint"></p>
+        <p class="ebb-tools__message" data-out="plant-message" role="status" aria-live="polite"></p>
+      </div>
       <div class="ebb-tools__slider" data-slider="size">
         <label for="ebb-tools-size">Size</label>
         <output for="ebb-tools-size" data-out="size"></output>
@@ -149,14 +182,19 @@ export function mountTools(parent = document.body) {
   const waterModeBtns = /** @type {HTMLButtonElement[]} */ ([...root.querySelectorAll('[data-water-mode]')]);
   const springModeBtn = /** @type {HTMLButtonElement} */ (root.querySelector('[data-water-mode="spring"]'));
   const rateBtns = /** @type {HTMLButtonElement[]} */ ([...root.querySelectorAll('[data-rate]')]);
+  const plantPanel = /** @type {HTMLElement} */ (root.querySelector('.ebb-tools__plant'));
+  const speciesBtns = /** @type {HTMLButtonElement[]} */ ([...root.querySelectorAll('[data-species]')]);
+  const plantHint = /** @type {HTMLElement} */ (root.querySelector('[data-out="plant-hint"]'));
+  const plantMessage = /** @type {HTMLElement} */ (root.querySelector('[data-out="plant-message"]'));
 
   // --- user input -> actions ---
   /** @param {MouseEvent} e */
   function onClick(e) {
     const btn = /** @type {HTMLElement|null} */ (/** @type {HTMLElement} */ (e.target).closest('button'));
     if (!btn || !root.contains(btn)) return;
-    const { tool, mode, layer, waterMode, rate, springRemove, history } = btn.dataset;
+    const { tool, mode, layer, waterMode, rate, species, springRemove, history } = btn.dataset;
     if (tool) dispatch(/** @type {any} */ ({ type: 'tool.select', toolId: tool }));
+    else if (species) dispatch(/** @type {any} */ ({ type: 'brush.set', patch: { plantSpecies: species } }));
     else if (mode) dispatch(/** @type {any} */ ({ type: 'brush.set', patch: { sculptMode: mode } }));
     else if (layer) dispatch(/** @type {any} */ ({ type: 'brush.set', patch: { paintLayer: layer } }));
     else if (waterMode) dispatch(/** @type {any} */ ({ type: 'brush.set', patch: { waterMode } }));
@@ -215,8 +253,15 @@ export function mountTools(parent = document.body) {
     for (const b of rateBtns) b.setAttribute('aria-pressed', String(b.dataset.rate === springRate));
     renderSprings();
 
-    const open = tool === 'sculpt' || tool === 'smooth' || tool === 'paint' || tool === 'water';
+    // Plant: the stored species, or the first offered one if it is not (yet) in the list.
+    const species = PLANT_SPECIES.find((s) => s.id === t.plantSpecies) ?? PLANT_SPECIES[0];
+    for (const b of speciesBtns) b.setAttribute('aria-pressed', String(b.dataset.species === species.id));
+    if (plantHint.textContent !== species.hint) plantHint.textContent = species.hint;
+
+    const open = tool === 'sculpt' || tool === 'smooth' || tool === 'paint' || tool === 'water' || tool === 'plant';
     if (tool !== shownTool) {
+      // A result from an earlier visit to the Plant tool does not linger.
+      if (tool === 'plant') clearPlantMessage();
       shownTool = tool;
       card.classList.toggle('is-open', open);
       card.setAttribute('aria-hidden', String(!open));
@@ -225,11 +270,13 @@ export function mountTools(parent = document.body) {
     // Keep the last chips while the card fades out, so it does not jump.
     if (open) {
       const inSpring = tool === 'water' && waterMode === 'spring';
+      const inPlant = tool === 'plant';
       sculptChips.hidden = tool !== 'sculpt';
       paintChips.hidden = tool !== 'paint';
       waterChips.hidden = tool !== 'water';
       springPanel.hidden = !inSpring;
-      for (const s of sliders) s.hidden = inSpring;
+      plantPanel.hidden = !inPlant;
+      for (const s of sliders) s.hidden = inSpring || inPlant;
     }
 
     const [min, max] = validRange(t.sizeRange);
@@ -269,6 +316,28 @@ export function mountTools(parent = document.body) {
     setDisabled(redoBtn, !h.canRedo);
   }
 
+  // The last Plant tap's result: shown at once, faded out after PLANT_MESSAGE_MS. The text stays
+  // in place while it fades (and the line keeps its height), so the card does not jump.
+  /** @type {ReturnType<typeof setTimeout> | undefined} */
+  let plantTimer;
+  function clearPlantMessage() {
+    clearTimeout(plantTimer);
+    plantMessage.classList.remove('is-shown');
+  }
+  function renderPlantMessage() {
+    /** @type {Partial<PlantUiSlice>} */
+    const p = get('plantUi') ?? {};
+    const text = typeof p.message === 'string' ? p.message : '';
+    clearTimeout(plantTimer);
+    if (!text) { plantMessage.classList.remove('is-shown'); return; }
+    plantMessage.textContent = text;
+    // Restart the fade-in even when the same message comes twice in a row.
+    plantMessage.classList.remove('is-shown');
+    void plantMessage.offsetWidth;
+    plantMessage.classList.add('is-shown');
+    plantTimer = setTimeout(() => plantMessage.classList.remove('is-shown'), PLANT_MESSAGE_MS);
+  }
+
   renderTools();
   renderHistory();
   const unsubs = [
@@ -276,11 +345,13 @@ export function mountTools(parent = document.body) {
     subscribe('unlocks', renderTools),
     subscribe('waterUi', renderSprings),
     subscribe('history', renderHistory),
+    subscribe('plantUi', renderPlantMessage),
   ];
   parent.appendChild(root);
 
   return function dispose() {
     for (const u of unsubs) u();
+    clearTimeout(plantTimer);
     root.removeEventListener('click', onClick);
     root.remove();
   };

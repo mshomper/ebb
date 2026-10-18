@@ -33,6 +33,7 @@ struct GrassDraw {
 @group(2) @binding(2) var materialTex: texture_2d<f32>;
 @group(2) @binding(3) var linearSampler: sampler;
 @group(2) @binding(4) var waterDepth: texture_2d<f32>;
+@group(2) @binding(5) var coverTex: texture_2d<f32>;   // grass cover 0..1, 1 m world grid from -80 m (world/growth)
 
 struct VsOut {
   @builtin(position) pos: vec4f,
@@ -111,7 +112,10 @@ fn vsBlade(@builtin(vertex_index) vi: u32, @builtin(instance_index) ring: u32) -
   w = mix(w, vec4f(0.0, 0.0, 1.0, 0.0), steepRock);
   w = mix(w, vec4f(0.0, 1.0 - w.z, w.z, 0.0), beachSand);
   let others = max(w.y, max(w.z, w.w));
-  let grassW = w.x * smoothstep(-0.05, 0.15, w.x - others);
+  // The growth step's grass cover: how well grass likes this ground (it drowns slowly in a new pond,
+  // thins on salt, greens again when the ground recovers).
+  let cover = textureSampleLevel(coverTex, linearSampler, (xz + 80.0) / 192.0, 0.0).r;
+  let grassW = w.x * smoothstep(-0.05, 0.15, w.x - others) * cover;
   // Tufts: a meadow is clumpy, thicker and taller in patches of half a meter or so.
   let seedU = u32(gd.look2.y);
   let tuft = valueNoise2(xz / gd.shape2.x, seedU + 7u) * 0.65 + valueNoise2(xz / gd.shape2.x * 2.7 + 3.1, seedU + 8u) * 0.35;

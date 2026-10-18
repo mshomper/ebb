@@ -7,6 +7,7 @@ import { subSeed, det } from '../core/rng.js';
 import * as tide from '../world/tide.js';
 import * as weather from '../world/weather.js';
 import * as seasons from '../world/seasons.js';
+import * as growth from '../world/growth/coarse.js';
 
 /** @typedef {{name: string, payload: any, hour?: number}} CoarseEvent */
 /** @typedef {(state: any, hourIndex: number, env: Env) => {state: any, events: CoarseEvent[]}} CoarseStep */
@@ -15,7 +16,8 @@ import * as seasons from '../world/seasons.js';
  * @typedef {Object} Env
  * @property {number} seed         world seed (uint32)
  * @property {number} weatherSeed  subSeed(seed, 'weather')
- * @property {any} recipes         loaded recipes by short name: {seasons, sky?, water?, ...}
+ * @property {any} recipes         loaded recipes by short name: {seasons, sky?, water?, growth?, flora?: {<species>: recipe}}
+ * @property {() => any} [habitat] the current habitat grid (world/growth/habitat.js), or null until the water summary exists
  * @property {typeof det} det
  */
 
@@ -35,6 +37,8 @@ export const COARSE_ORDER = Object.freeze([
   { id: 'tide', coarseStep: tide.coarseStep },
   { id: 'weather', coarseStep: weather.coarseStep },
   { id: 'seasons', coarseStep: seasons.coarseStep },
+  // Growth (S5b): reads env.habitat(), built from the water summary; skips until it exists.
+  { id: 'growth', coarseStep: growth.coarseStep },
 ]);
 
 /**
@@ -43,7 +47,7 @@ export const COARSE_ORDER = Object.freeze([
  */
 export function initialWorldState(worldSeed) {
   void worldSeed; // later systems seed their starting state from it
-  return { tide: tide.initialTide(), weather: weather.initialWeather(), seasons: seasons.initialSeasons() };
+  return { tide: tide.initialTide(), weather: weather.initialWeather(), seasons: seasons.initialSeasons(), growth: growth.initialGrowth() };
 }
 
 /**

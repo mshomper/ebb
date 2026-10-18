@@ -202,6 +202,26 @@
   opacity: 0.85;
 }
 
+/* plant: species chips, the hint, and the last tap's result (fades after about 2.5 s) */
+.ebb-tools__plant {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+.ebb-tools__message {
+  margin: 0;
+  min-width: 0;
+  min-height: 1.35em;
+  font-size: var(--text-body);
+  font-weight: 800;
+  line-height: 1.35;
+  overflow-wrap: break-word;
+  opacity: 0;
+  transition: opacity 600ms ease;
+}
+.ebb-tools__message.is-shown { opacity: 1; transition: opacity 120ms ease; }
+
 /* sliders */
 .ebb-tools__slider {
   display: grid;
@@ -276,14 +296,18 @@
   .ebb-tools__chips--water .ebb-tools__chip,
   .ebb-tools__chips--rate .ebb-tools__chip { flex-direction: column; gap: 2px; padding: 6px 4px; }
 }
-/* Seven bar items (two history, divider, four tools) at 52 px: tighten gaps so the bar fits a
-   375 px phone (339 px of 351), and drop to 48 px buttons below that. */
-@media (max-width: 400px) {
-  .ebb-tools { --tb-gap: 2px; --tb-pad: 4px; }
+/* Seven buttons (two history, five tools) and a divider. With tight gaps the bar's own parts
+   take 29 px (2 x 4 padding, 7 x 2 gaps, divider 1 + 2 x 2, border 2) plus the 24 px page gutter,
+   so below 460 px the buttons share what is left: 52 px when it fits, 45 px on a 375 px phone,
+   38 px on a 320 px one, so the bar never runs past the screen. */
+@media (max-width: 460px) {
+  .ebb-tools {
+    --tb-gap: 2px;
+    --tb-pad: 4px;
+    --tb-btn: clamp(34px, calc((100vw - 56px) / 7), 52px);
+    --tb-icon: clamp(22px, calc(var(--tb-btn) - 20px), 26px);
+  }
   .ebb-tools__divider { margin: 8px 2px; }
-}
-@media (max-width: 370px) {
-  .ebb-tools { --tb-btn: 48px; }
 }
 
 /* Short screens (phone landscape): the card stays compact, with each slider's label,
@@ -315,4 +339,6 @@
 @media (prefers-reduced-motion: reduce) {
   .ebb-tools__card,
   .ebb-tools__card.is-open { transition: visibility 0s; transform: none; }
+  .ebb-tools__message,
+  .ebb-tools__message.is-shown { transition: none; }
 }

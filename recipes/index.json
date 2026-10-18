@@ -13,6 +13,8 @@
     "world/ground-sources": "world/ground-sources.json",
     "land/starter-island": "land/starter-island.json",
     "flora/grass": "flora/grass.json",
+    "flora/reeds": "flora/reeds.json",
+    "world/growth": "world/growth.json",
     "palettes/dusk": "palettes/dusk.json",
     "palettes/meadow-morning": "palettes/meadow-morning.json"
   }

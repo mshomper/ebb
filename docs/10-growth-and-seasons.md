@@ -68,6 +68,15 @@ Cover plants use the same rule on biomass per cell (0..1), with spread to the 4 
 - Seasons: fresh green in spring, brown velvet seed heads in summer, gold in autumn, pale standing stalks in winter (dormant, still counted as cover, which frogs need).
 - Outputs to the grid: reed cover (frog shelter), biomass for the midge field (doc 11).
 
+As built in S5b-1 (`world/growth/habitat.js`, `coarse.js`, `index.js`; `recipes/flora/reeds.json`, `recipes/world/growth.json`):
+- **Habitat grid** (1 m, 192 × 192 from −80 m, aligned with the water summary's ecology aggregate), integers only: standing fresh water depth, moisture (255 in water and damp hollows, the tide band at least 200, falling to 0 over 3 m from fresh water by a chamfer distance), salt (255 in the sea, at least 210 in the tide band, falling over 4 m), still water, sea, and the painted grass share. Rebuilt whenever the water summary changes (after every sculpt or paint stroke); `env.habitat()` hands it to the tick.
+- **Suitability** is a product of plateau bells, one per axis (moisture, water depth, salt), each `[ideal low, ideal high, tolerance]` in the species recipe. The sea counts as far too deep.
+- **The growth step** runs after seasons in the hourly tick (`sim/tick.js`), seeded by `stream(subSeed(seed, 'growth'), hour, plantId)`. Each plant ages, grows `size += rate · seasonRate · suit · (1 − size)`, shrinks toward `floor · best` after 48 poor hours, dies after 72 hours too deep or a seed's 24 poor hours, and takes its stage from age, size and the season windows (flowering summer, dormant winter). A mature reed clump with suitability over 0.6 sends a rhizome every 12 hours, 0.6 to 1.4 m along the best of eight bearings (starting at a seeded bearing), unless another clump stands within 0.8 m.
+- **Grass cover** per square meter moves 4% of the gap per hour toward how well grass likes the ground (none in standing water, thinning on salt). Painting decides where grass is at once; the cover only thins it where the ground turns against it, so a dug pond drowns its grass over a day.
+- **New islands** get 7 mature reed clumps on the most suitable cells (2.5 m apart, chosen by a seeded hash order) the moment the habitat first exists (`settleGrowth`), not at the next hour.
+- **The Plant tool** plants a seed through `growth.plant(species, x, z)`, which changes the world state like any other edit; it refuses ground under 0.2 suitability and says why (too dry, too deep, too salty, crowded).
+- Two runs of 96 game hours from the same state give the same world hash; 96 hours take about 33 ms on desktop. `tools/growth-lab.html` charts 14 days and checks the two runs match.
+
 ### Grass
 
 Grass is a cover field drawn as GPU blades with no mesh (doc 04). Blade density per 0.25 m texel = `grassCover(c) · materialGrass · (1 − wear)`. Blade height follows biomass and season (short in winter, tall by midsummer); tint comes from the season ramp, the moisture field, and a per-blade hash. Clover and low flowers ride on the same blade system as flower-headed variants.

@@ -90,6 +90,27 @@ const ICONS = {
     <path d="M15.5 15.5L20 20"/>
     <path d="M20 15.5L15.5 20"/>`,
 
+  // Plant tool: a seedling with two leaves rising from a small mound on the ground line.
+  plant: `
+    <path ${ACCENT} d="M7 20.5C8 18.6 16 18.6 17 20.5Z"/>
+    <path d="M7 20.5C8 18.6 16 18.6 17 20.5"/>
+    <path d="M2.5 20.5H21.5"/>
+    <path d="M12 19V10.5"/>
+    <path ${ACCENT} d="M12 14C9.4 14 6.6 12.3 6 8.8C9 8.6 11.6 10.4 12 14Z"/>
+    <path d="M12 14C9.4 14 6.6 12.3 6 8.8C9 8.6 11.6 10.4 12 14Z"/>
+    <path ${ACCENT} d="M12 11C12.3 7.4 14.8 4.6 18.5 4.5C18.6 8.2 15.8 10.8 12 11Z"/>
+    <path d="M12 11C12.3 7.4 14.8 4.6 18.5 4.5C18.6 8.2 15.8 10.8 12 11Z"/>`,
+
+  // Reeds (species chip): a stem with a cattail seed head between two curving blades.
+  reeds: `
+    <path d="M3.5 20.5H20.5"/>
+    <path d="M12 20.5V12"/>
+    <rect ${ACCENT} x="10.6" y="5.5" width="2.8" height="6.5" rx="1.4"/>
+    <rect x="10.6" y="5.5" width="2.8" height="6.5" rx="1.4"/>
+    <path d="M12 5.5V3"/>
+    <path d="M9.5 20.5C9.3 15.5 8 11 5.5 7.5"/>
+    <path d="M14.5 20.5C14.8 16 16.2 12.5 18.5 10"/>`,
+
   // Curved arrow to the left.
   undo: `
     <path d="M8.5 5L4 9.5L8.5 14"/>
