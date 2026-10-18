@@ -59,6 +59,8 @@ export function createWaterPass(opts) {
     f[54] = opts.seabed.y; f[55] = L.openSeaFloorSlope;
     f.set(opts.seabed.albedo, 56); f[59] = opts.seabed.wetDarkening;
     f[60] = L.coherentDepthM[0]; f[61] = L.coherentDepthM[1];
+    f[62] = L.glossyDepthM[0]; f[63] = L.glossyDepthM[1];
+    f[66] = L.sheetDepthM[0]; f[67] = L.sheetDepthM[1];
     // ?waterdbg=1..4 shows one shading term at a time (water-draw.wgsl, debugView).
     f[64] = Number(new URLSearchParams(location.search).get('waterdbg') ?? 0) || 0;
     f[65] = opts.detailFadeM ?? 120;
