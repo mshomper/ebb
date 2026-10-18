@@ -81,10 +81,23 @@
     "bankSpreadM": 1.5,
     "bankRiseWeight": 2,
     "tideBandM": 0.25,
-    "waterDepthM": [0.002, 0.012],
-    "wetRoughness": 0.3,
-    "wetRoughnessShare": 0.6,
-    "sheenFrom": 0.4
+    "waterDepthM": [0.002, 0.012]
+  },
+  "wetGround": {
+    "note": "G3 wet ground (docs/22, after Lagarde 2013), driven by the visual wetness map (wetness above). damp: soaked ground's roughness and albedo factor for dense ground (rock) and porous ground (soil, sand), blended by each material's detail.layers porosity; so sand and soil go dark and satin, rock darkens a little and turns shiny. Wet ground and puddles reflect the sky probe; dry ground stays matte. puddles: on ground flatter than flatDeg (full below the first angle, none past the second), rain raises a level at fillPerHour at full rain; it drains over drainHours of drying (sun and wind speed it, as for wetness). Water stands where the ground's relief is below the level: the detail height (ruts, the gaps between stones) mixed with a slow undulation of undulationM by undulationShare, so puddles gather in real dips first; maxCover is the most of the low spots a full level covers; turf: on grass the level rises this much less (turf soaks rain up), so only the deepest meadow dips flood. Puddle water: roughness, albedo factor of the bed under it, f0 of water. Raindrop rings in puddles use water.json ripples.rings.",
+    "damp": { "roughness": [0.18, 0.4], "albedo": [0.8, 0.45] },
+    "puddles": {
+      "flatDeg": [6, 14],
+      "fillPerHour": 1.0,
+      "drainHours": 1.5,
+      "undulationM": 2.5,
+      "undulationShare": 0.45,
+      "maxCover": 0.7,
+      "turf": 0.65,
+      "roughness": 0.03,
+      "albedo": 0.6,
+      "f0": 0.02
+    }
   },
   "underwater": {
     "note": "The ground under live water (ponds, streams, the sea). bedDepthM: water depths over which grass gives way to a bare soil bed (sand and stone stay), so the waterline reads from straight above. siltDepthM: depths over which fine mud (materials.albedoSilt) settles on the soft bed; siltCover: the most of the bed it covers.",

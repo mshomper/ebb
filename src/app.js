@@ -129,6 +129,7 @@ export async function startApp(canvas, hooks = {}) {
   const wetness = await createWetness(gpu.device, {
     terrain, water, recipe: terrainRecipe.wetness, dampWet: waterRecipe.look.dampHollowWet,
     getRain: () => wetSky.rain, getSun: () => wetSky.sunY, getWind: () => wetSky.wind,
+    puddles: terrainRecipe.wetGround.puddles,
   });
   sim.addSystem(wetness);
   // Ripples: a fine wave field around the view, rung by raindrops, the pour brush and (later) creatures.
@@ -193,6 +194,7 @@ export async function startApp(canvas, hooks = {}) {
     water: { depthTextures: water.sim.depthTextures, current: () => water.sim.current, damp: water.sim.damp, dampWet: waterRecipe.look.dampHollowWet,
       vel: water.sim.vel, caustics: waterRecipe.caustics },
     moss: moss.texture, causticLayers: tierSettings.causticLayers, wetness,
+    probe: { view: atmosphere.probeView, sampler: atmosphere.probeSampler }, rings: waterRecipe.ripples.rings,
   });
   const waterPass = createWaterPass({
     water, terrain, atmosphere, recipe: waterRecipe, seaExtent: terrainRecipe.sea.extent, getTime: () => clock.animT(),
@@ -537,7 +539,9 @@ export async function startApp(canvas, hooks = {}) {
     ripples.setCenter(camera.target[0], camera.target[2]);
     // `?ripplerain=1` rains ripples in any weather, to judge rings in sunshine (tools, tuning).
     // Raindrops ring the water in the water shader; the ripple field keeps the pour and creatures.
-    waterPass.setRain(params.has('ripplerain') ? 1 : day.weather.rain);
+    const ringRain = params.has('ripplerain') ? 1 : day.weather.rain;
+    waterPass.setRain(ringRain);
+    terrainPass.setRain(ringRain);
     sim.update(info);
     const encoder = gpu.device.createCommandEncoder({ label: 'frame' });
     sim.encode(encoder, info);

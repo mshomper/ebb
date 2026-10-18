@@ -6,12 +6,13 @@
 // time, faster in sun and wind, slower at night, and not at all while paused. So the flats the tide
 // just uncovered stay dark and shiny for a while, then dull. Look only: never saved, never read by
 // the simulation, and it follows the live water, which is not deterministic either.
-// The map is an rgba8unorm ping-pong pair (r wetness 0..1) the terrain draw samples filtered.
+// The map is an rgba8unorm ping-pong pair (r wetness 0..1, g puddle level 0..1) the terrain draw
+// samples filtered.
 
 import { makeBuffer, makeShaderModule, makeTexture } from '../../core/gpu.js';
 import { WATER_CELLS } from '../water/grid.js';
 
-const WET_BYTES = 64;
+const WET_BYTES = 80;
 const DEG = Math.PI / 180;
 /** Meters one spread step reaches (the shader's SPREAD_R texels of 0.25 m). */
 const SPREAD_REACH_M = 0.5;
@@ -25,9 +26,11 @@ const smoothstep = (a, b, x) => {
 /**
  * @param {GPUDevice} device
  * @param {{ terrain: import('./index.js').Terrain, water: import('../water/index.js').Water, recipe: any,
- *   dampWet: number, getRain: () => number, getSun: () => number, getWind?: () => number }} opts
+ *   dampWet: number, getRain: () => number, getSun: () => number, getWind?: () => number,
+ *   puddles?: { fillPerHour: number, drainHours: number } }} opts
  *   recipe: terrain.json `wetness`; dampWet: water.json `look.dampHollowWet`; getRain: rain intensity
- *   0..1; getSun: sine of the sun's elevation (the sun direction's y); getWind: wind strength 0..1
+ *   0..1; getSun: sine of the sun's elevation (the sun direction's y); getWind: wind strength 0..1;
+ *   puddles: terrain.json `wetGround.puddles` (the g channel's fill and drain rates)
  */
 export async function createWetness(device, opts) {
   const { terrain, water, recipe } = opts;
@@ -120,6 +123,10 @@ export async function createWetness(device, opts) {
       fv[10] = 1 / recipe.bankSpreadM; fv[11] = recipe.bankRiseWeight;
       fv[12] = opts.dampWet; fv[13] = rain > recipe.rainStopsDrying ? 1 : 0;
       uv[14] = salt = (salt + 1) >>> 0;
+      // Puddles (G3, terrain.json wetGround): fill with sustained rain, drain as the ground dries.
+      const pg = opts.puddles;
+      fv[15] = pg ? hours * rain * pg.fillPerHour : 0;
+      fv[16] = pg ? (hours * speed) / pg.drainHours : 1;
       device.queue.writeBuffer(uniforms, 0, data);
 
       const d = water.sim.current;

@@ -20,6 +20,7 @@
 // #include lib-water
 // #include lib-probe
 // #include lib-ripples
+// #include lib-rain
 
 struct WaterDraw {
   rectOrigin: vec2u,          // simulated rect (water cells); the mesh covers its interior
@@ -215,43 +216,6 @@ fn ripples(xz: vec2f, t: f32) -> vec2f {
   return g;
 }
 
-// Raindrop rings (docs/07): each drop leaves two or three fine crests that spread out and fade
-// within a second, finer than the ripple field can hold. Drops fall on a world grid of cells;
-// each cell holds one drop per lifetime at a hashed spot and time, and how many cells are
-// active follows the rain. Returns the surface slope (dh/dx, dh/dz). Two offset grids layered,
-// so the drops never line up.
-fn rainRingLayer(xz: vec2f, t: f32, layer: u32) -> vec2f {
-  let cellM = wd.rain.y;
-  let life = wd.rain.z;
-  let k = 6.2831853 / wd.rain.w;            // crest wavenumber
-  let p = xz / cellM + f32(layer) * vec2f(0.37, 0.71);
-  let base = floor(p);
-  var g = vec2f(0.0);
-  for (var j = -1; j <= 1; j++) {
-    for (var i = -1; i <= 1; i++) {
-      let cell = base + vec2f(f32(i), f32(j));
-      let ci = vec2u(vec2i(cell) + vec2i(1 << 20));
-      // A new drop every lifetime: hash the cell and which lifetime this is.
-      let h0 = hash3(vec3u(ci, layer * 7919u + 3u));
-      let tt = t / life + hashToFloat(h0);
-      let n = u32(floor(tt));
-      let age = fract(tt);                    // 0..1 through this drop's life
-      let h = hash3(vec3u(ci, n * 2u + layer));
-      if (hashToFloat(h) > wd.rain.x) { continue; }   // fewer drops in light rain
-      let spot = (cell + 0.15 + 0.7 * vec2f(hashToFloat(pcg(h)), hashToFloat(pcg(h ^ 0x9e37u)))) * cellM;
-      let off = xz - spot;
-      let dist = length(off);
-      let radius = wd.rain2.x * sqrt(age);    // fast at first, slowing as it spreads
-      let x = dist - radius;
-      // A short train of crests just inside the front, fading as the ring ages and widens.
-      let envelope = exp(-x * x / (wd.rain.w * wd.rain.w * 1.5)) * (1.0 - age) * (1.0 - age);
-      let dh = wd.rain2.y * envelope * cos(k * x);   // slope along the radius
-      g += off / max(dist, 1e-4) * dh;
-    }
-  }
-  return g;
-}
-
 // Foam cover at xz between the cells, with smoothstepped weights so no cell corners show.
 fn foamCover(xz: vec2f) -> f32 {
   let g = waterCellCoord(xz);
@@ -409,9 +373,10 @@ fn fsWater(in: VsOut) -> FsOut {
   // Raindrop rings, only where a pixel is small enough to hold their crests (a few cm apart);
   // farther away and at flat angles they fade rather than shimmer.
   let pixM = viewDist * 2.0 / (frame.proj[1][1] * frame.renderSize.y) / max(abs(v.y), 0.15);
-  let ringNear = 1.0 - smoothstep(0.25, 0.5, pixM / wd.rain.w);
-  if (wd.rain.x > 0.001 && ringNear > 0.0 && d > 0.01) {
-    grad += (rainRingLayer(P.xz, t, 0u) + rainRingLayer(P.xz, t + 0.37, 1u)) * ringNear;
+  let rr = RainRings(wd.rain, wd.rain2);
+  let ringNear = rainRingsVisible(rr, pixM);
+  if (ringNear > 0.0 && d > 0.01) {
+    grad += rainRings(rr, P.xz, t) * ringNear;
   }
   let n = normalize(vec3f(-grad.x, 1.0, -grad.y));
   // Thin water is a broken film: stones and blades stand through it, so it reflects weakly and
