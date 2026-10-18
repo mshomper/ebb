@@ -4,8 +4,10 @@
 
 import { hash32, subSeed } from '../src/core/rng.js';
 import { initWorkers, run, dispose, defaultPoolSize } from '../src/core/workers.js';
-import { CHUNK_CELLS, dequantize } from '../src/world/terrain/grid.js';
-import { buildBase, hashBase } from '../src/world/terrain/landform.js';
+import { CHUNK_CELLS, CHUNK_MIN, WORLD_CELLS, quantize, dequantize } from '../src/world/terrain/grid.js';
+import { buildBase, hashBase, landmarks } from '../src/world/terrain/landform.js';
+import { waterCellOf } from '../src/world/water/grid.js';
+import { buildSummary, hashSummary, WATER_CLASS } from '../src/world/water/summary.js';
 
 const JOB = { module: './world/terrain/landform.js', fn: 'buildBase' };
 /** The 3 x 3 starter chunks, row by row. */
@@ -154,6 +156,91 @@ function showResults(runs) {
     : 'Some chunks came out different. Something in the landform is not deterministic.';
 }
 
+// ---------------------------------------------------------------------------
+// Water summary: the same island's water, on the main thread and on a worker
+
+const WATER_JOB = { module: './world/water/summary.js', fn: 'buildSummary' };
+/** The starter chunks' water cells: terrain cells 128..511 on each axis. */
+const WATER_RECT = { x: 64, y: 64, w: 192, h: 192 };
+/** @type {Record<number, number[]>} */
+const CLASS_COLORS = {
+  [WATER_CLASS.sea]: [62, 127, 154],
+  [WATER_CLASS.still]: [92, 160, 178],
+  [WATER_CLASS.slow]: [126, 196, 206],
+  [WATER_CLASS.running]: [236, 244, 240],
+  [WATER_CLASS.damp]: [140, 106, 72],
+};
+
+/** The 768 x 768 heightQ: the 9 starter chunks in place, open seabed everywhere else. @param {any} land @param {RunResult} r */
+function worldHeights(land, r) {
+  const T = WORLD_CELLS;
+  const heightQ = new Uint16Array(T * T).fill(quantize(land.seabedDepth));
+  r.bases.forEach((b, k) => {
+    const [cx, cz] = CHUNKS[k];
+    const x0 = (cx - CHUNK_MIN) * CHUNK_CELLS, y0 = (cz - CHUNK_MIN) * CHUNK_CELLS;
+    for (let j = 0; j < CHUNK_CELLS; j++) heightQ.set(b.heightQ.subarray(j * CHUNK_CELLS, (j + 1) * CHUNK_CELLS), (y0 + j) * T + x0);
+  });
+  return heightQ;
+}
+
+/** @param {any} land @param {number} seed @param {RunResult} r */
+async function runWater(land, seed, r) {
+  const water = await (await fetch('../recipes/world/water.json')).json();
+  const sp = landmarks(land, seed).spring;
+  const springs = sp ? [{ cellX: waterCellOf(sp.x), cellY: waterCellOf(sp.z), rateLps: sp.rateLps ?? 12 }] : [];
+  const args = { heightQ: worldHeights(land, r), rect: WATER_RECT, springs, params: water.summary, tide: water.tide };
+  const main = buildSummary(args);
+  initWorkers({ size: 1 });
+  let worker, workerMs = 0;
+  try {
+    await run(WATER_JOB, args); // warm-up: loads the module in the worker
+    const t0 = performance.now();
+    worker = await run(WATER_JOB, args);
+    workerMs = performance.now() - t0;
+  } finally {
+    dispose();
+  }
+  return { main, worker, workerMs, rehash: hashSummary(worker) };
+}
+
+/** @param {Awaited<ReturnType<typeof runWater>>} w */
+function showWater(w) {
+  let card = document.getElementById('waterCard');
+  if (!card) {
+    card = document.createElement('div');
+    card.className = 'card';
+    card.id = 'waterCard';
+    /** @type {HTMLElement} */ ($('chunks').closest('.card')).after(card);
+  }
+  const { main, worker } = w;
+  const ok = main.hash === worker.hash && w.rehash === main.hash;
+  const legend = [
+    ['#3E7F9A', 'Sea'], ['#5CA0B2', 'Pond (still water)'], ['#7EC4CE', 'Slow stream'], ['#ECF4F0', 'Running stream'],
+    ['#8C6A48', 'Damp hollow'], ['#DCC9A0', 'Dry ground in the tide band'], ['#7FA463', 'Dry ground'],
+  ].map(([c, t]) => `<span><i style="background:${c}"></i>${t}</span>`).join('');
+  card.innerHTML = '<h2>Water summary</h2>' +
+    `<div class="row total"><span class="label">Water, 96 m</span>` +
+    `<span class="hash">${hex(main.hash)}<small>Main thread, ${(main.stats.ms ?? 0).toFixed(1)} ms</small></span>` +
+    `<span class="hash">${hex(worker.hash)}<small>1 worker, ${w.workerMs.toFixed(1)} ms</small></span>` +
+    `<span class="v ${ok ? 'ok' : 'bad'}">${icon(ok)}${ok ? 'match' : 'differ'}</span></div>` +
+    `<p class="muted">${main.stats.ponds} ${main.stats.ponds === 1 ? 'pond' : 'ponds'}, ${main.stats.streamCells} stream cells of half a meter. ` +
+    'The worker time includes sending the heights across.</p>' +
+    '<div class="map-wrap" style="margin-top:12px"><canvas id="waterMap" width="192" height="192" ' +
+    'style="width:100%;max-width:480px;aspect-ratio:1;display:block;border-radius:12px;image-rendering:pixelated" ' +
+    `aria-label="Map of water classes on the starter island"></canvas><div class="legend">${legend}</div></div>`;
+
+  const canvas = /** @type {HTMLCanvasElement} */ ($('waterMap'));
+  const ctx = /** @type {CanvasRenderingContext2D} */ (canvas.getContext('2d'));
+  const N = WATER_RECT.w;
+  const img = ctx.createImageData(N, N);
+  for (let k = 0; k < N * N; k++) {
+    const c = main.cls[k];
+    const col = CLASS_COLORS[c] ?? (main.band[k] ? [220, 201, 160] : [127, 164, 99]);
+    img.data.set([col[0], col[1], col[2], 255], k * 4);
+  }
+  ctx.putImageData(img, 0, 0);
+}
+
 async function build() {
   const button = /** @type {HTMLButtonElement} */ ($('go'));
   const input = /** @type {HTMLInputElement} */ ($('seed'));
@@ -174,6 +261,12 @@ async function build() {
     ];
     showResults(runs);
     drawMap(runs[0]);
+    try {
+      showWater(await runWater(land, seed, runs[0]));
+    } catch (e) {
+      console.error('[determinism] water summary', e);
+      $('detail').textContent += ` The water summary failed: ${e instanceof Error ? e.message : String(e)}`;
+    }
   } catch (e) {
     console.error('[determinism]', e);
     $('verdict').className = 'bad';

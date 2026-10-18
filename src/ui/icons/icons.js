@@ -37,6 +37,62 @@ const ICONS = {
       <path d="M0 -8V-11.5"/>
     </g>`,
 
+  // Water tool (docs/15): a droplet over one ripple line.
+  water: `
+    <path ${ACCENT} d="M12 2.5C9.5 6 7 9 7 11.8A5 5 0 0 0 17 11.8C17 9 14.5 6 12 2.5Z"/>
+    <path d="M12 2.5C9.5 6 7 9 7 11.8A5 5 0 0 0 17 11.8C17 9 14.5 6 12 2.5Z"/>
+    <path d="M9.6 12.2A2.4 2.4 0 0 0 11.4 14.3" opacity="0.7"/>
+    <path d="M3 20C4.5 18.8 6 18.8 7.5 20S10.5 21.2 12 20S15 18.8 16.5 20S19.5 21.2 21 20"/>`,
+
+  // Pour: a spout bending down, a falling drop, a small pool on the ground line.
+  pour: `
+    <path d="M2.5 4.5H8.5A3 3 0 0 1 11.5 7.5V8.5"/>
+    <path ${ACCENT} d="M11.5 10.5C10.5 12 9.5 13.2 9.5 14.3A2 2 0 0 0 13.5 14.3C13.5 13.2 12.5 12 11.5 10.5Z"/>
+    <path d="M11.5 10.5C10.5 12 9.5 13.2 9.5 14.3A2 2 0 0 0 13.5 14.3C13.5 13.2 12.5 12 11.5 10.5Z"/>
+    <path ${ACCENT} d="M6.5 20C8 18.6 15 18.6 16.5 20Z"/>
+    <path d="M2.5 20H21.5"/>`,
+
+  // Soak: a down stroke into the ground line, a drop sinking below it, damp specks around.
+  soak: `
+    <path d="M12 3V7"/>
+    <path d="M10 5.2L12 7.2L14 5.2"/>
+    <path d="M2.5 9.5H21.5"/>
+    <path ${ACCENT} d="M12 11.5C10.6 13.5 9.2 15 9.2 16.6A2.8 2.8 0 0 0 14.8 16.6C14.8 15 13.4 13.5 12 11.5Z"/>
+    <path d="M12 11.5C10.6 13.5 9.2 15 9.2 16.6A2.8 2.8 0 0 0 14.8 16.6C14.8 15 13.4 13.5 12 11.5Z"/>
+    <circle cx="5.5" cy="13.5" r="0.7" fill="currentColor" stroke="none"/>
+    <circle cx="6.8" cy="18" r="0.7" fill="currentColor" stroke="none"/>
+    <circle cx="18.5" cy="13.5" r="0.7" fill="currentColor" stroke="none"/>
+    <circle cx="17.2" cy="18" r="0.7" fill="currentColor" stroke="none"/>`,
+
+  // Spring: water welling up from the ground and arcing over, a ripple at its foot.
+  wellspring: `
+    <path ${ACCENT} d="M6.5 20.5C7.5 18.6 16.5 18.6 17.5 20.5Z"/>
+    <path d="M6.5 20.5C7.5 18.6 16.5 18.6 17.5 20.5"/>
+    <path d="M2.5 20.5H21.5"/>
+    <path d="M12 18V10"/>
+    <path d="M12 10C12 6.5 8.5 5 6.5 7.8"/>
+    <path d="M12 10C12 6.5 15.5 5 17.5 7.8"/>
+    <circle cx="6" cy="10.8" r="0.9" fill="currentColor" stroke="none"/>
+    <circle cx="18" cy="10.8" r="0.9" fill="currentColor" stroke="none"/>`,
+
+  // Spring flow rates: one, two or three small wave lines.
+  'rate-trickle': `
+    <path d="M4.5 12C5.75 10.5 7 10.5 8.25 12S10.75 13.5 12 12S14.5 10.5 15.75 12S18.25 13.5 19.5 12"/>`,
+  'rate-brook': `
+    <path d="M4.5 9.5C5.75 8 7 8 8.25 9.5S10.75 11 12 9.5S14.5 8 15.75 9.5S18.25 11 19.5 9.5"/>
+    <path d="M4.5 14.5C5.75 13 7 13 8.25 14.5S10.75 16 12 14.5S14.5 13 15.75 14.5S18.25 16 19.5 14.5"/>`,
+  'rate-stream': `
+    <path d="M4.5 7C5.75 5.5 7 5.5 8.25 7S10.75 8.5 12 7S14.5 5.5 15.75 7S18.25 8.5 19.5 7"/>
+    <path d="M4.5 12C5.75 10.5 7 10.5 8.25 12S10.75 13.5 12 12S14.5 10.5 15.75 12S18.25 13.5 19.5 12"/>
+    <path d="M4.5 17C5.75 15.5 7 15.5 8.25 17S10.75 18.5 12 17S14.5 15.5 15.75 17S18.25 18.5 19.5 17"/>`,
+
+  // Remove a spring: a drop with a small cross drawn as two strokes beside its foot.
+  'spring-remove': `
+    <path ${ACCENT} d="M10 3C7.8 6.2 5.5 8.6 5.5 11.5A4.5 4.5 0 0 0 14.5 11.5C14.5 8.6 12.2 6.2 10 3Z"/>
+    <path d="M10 3C7.8 6.2 5.5 8.6 5.5 11.5A4.5 4.5 0 0 0 14.5 11.5C14.5 8.6 12.2 6.2 10 3Z"/>
+    <path d="M15.5 15.5L20 20"/>
+    <path d="M20 15.5L15.5 20"/>`,
+
   // Curved arrow to the left.
   undo: `
     <path d="M8.5 5L4 9.5L8.5 14"/>

@@ -23,6 +23,32 @@
     "prefillMinDepthM": 0.1,
     "prefillMinAreaM2": 30
   },
+  "summary": {
+    "note": "The deterministic water summary (docs/07): integers only, rebuilt after terrain edits and spring changes, read by ecology and used as the live refill target. pondMinCatchmentM2 and pondMinDepthM: a dry hollow becomes a rain-fed pond when at least this much ground drains into it and it is at least this deep at its deepest; other hollows stay damp. Spring-fed hollows always fill. Stream depth d = clamp(streamK Q^streamExp, streamMinM, streamMaxM) with Q in L/s, capped by Manning depth for the local slope (manningN) over width w = streamW0 + streamW1 sqrt(Q). Classes by speed: still under slowSpeed, slow under runningSpeed, running above. debounceS after a stroke before rebuilding.",
+    "pondMinCatchmentM2": 120,
+    "pondMinDepthM": 0.15,
+    "streamK": 0.08,
+    "streamExp": 0.4,
+    "streamMinM": 0.02,
+    "streamMaxM": 0.3,
+    "streamW0": 0.5,
+    "streamW1": 0.1,
+    "slowSpeed": 0.05,
+    "runningSpeed": 0.3,
+    "bandFactor": 1.15,
+    "debounceS": 0.3
+  },
+  "nudge": {
+    "note": "Live water is topped up toward the summary target, never drained by it: d += (target - d)(1 - exp(-dt / tauS)) where d < target. Ponds refill and dug hollows that count as ponds fill to their lip in about a minute.",
+    "tauS": 20
+  },
+  "tools": {
+    "note": "Pour and soak (water tool) add or remove water under the brush at up to rateLps at full strength. Springs: up to maxSprings placed by the player (sandbox now, the dragonflies' gift in normal play), each at one of the rates (L/s).",
+    "pourLps": 60,
+    "soakLps": 60,
+    "maxSprings": 4,
+    "springRates": { "trickle": 3, "brook": 12, "stream": 30 }
+  },
   "look": {
     "note": "Water optics (docs/07). absorption: sigma_a per meter (Beer-Lambert) for sea and ponds; scatterAlbedo: single-scatter albedo of the water body; f0: Fresnel at normal incidence (n = 1.333); refraction: screen offset per unit normal tilt; edgeFadeM: where the water plane meets the bank, it fades in over this much water thickness (the last half cell toward a dry bank fades too); coherentDepthM: water thinner than the first value is a broken, rough film (grass and stones stand through it, reflection weak), reaching a full mirror-like surface by the second; waves: detail normal layers (wavelength m, strength, speed m/s); sea: Gerstner waves on open water (wavelength m, amplitude m, direction deg), faded out in water shallower than seaFadeDepthM.",
     "f0": 0.02,

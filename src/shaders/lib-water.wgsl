@@ -18,11 +18,36 @@ struct WaterSim {
   maxSpeed: f32,       // m/s
   dry: f32,            // depth below which a cell counts as dry (m)
   tide: f32,           // sea level now (m), display time
-  springRate: f32,     // spring inflow as depth per second over its cell (m/s)
-  springCell: vec2u,
+  nudgeK: f32,         // 1 - exp(-dt / tau): share of the gap to the summary target closed per step
+  sourceCount: u32,
   manningInv: f32,     // 1 / Manning's n: caps flow speed by depth and slope
   _p0: f32,
+  // Sources (springs, the pour and soak brush): xy cell center, z volume rate (m^3/s, negative
+  // drains), w radius in cells (0: the single cell).
+  sources: array<vec4f, 6>,
 };
+
+const PI_W: f32 = 3.14159265;
+
+// Depth change per second at cell c from all sources. A radius spreads the rate over a soft disk
+// with profile (1 - t^2)^2, whose area is pi r^2 / 3, so the total volume rate is kept.
+fn sourceRate(c: vec2i, s: WaterSim) -> f32 {
+  var rate = 0.0;
+  for (var i = 0u; i < s.sourceCount; i++) {
+    let src = s.sources[i];
+    if (src.w < 0.5) {
+      if (all(vec2f(c) == src.xy)) { rate += src.z / (WATER_CELL * WATER_CELL); }
+    } else {
+      let t = distance(vec2f(c), src.xy) / src.w;
+      if (t < 1.0) {
+        let k = (1.0 - t * t) * (1.0 - t * t);
+        let area = PI_W * src.w * src.w / 3.0 * WATER_CELL * WATER_CELL;
+        rate += src.z * k / area;
+      }
+    }
+  }
+  return rate;
+}
 
 fn waterBed(heightTex: texture_2d<f32>, c: vec2i) -> f32 {
   let t = c * 2;

@@ -1,27 +1,40 @@
 // @ts-check
-// The S1 tool bar (docs/15, docs/20 step S1): [undo][redo] | [sculpt][smooth][paint] at the
-// bottom center, and above it a brush card with mode or layer chips and size and strength
-// sliders while a tool is active. S8 grows this into the full HUD palette.
+// The S1 tool bar (docs/15, docs/20 step S1): [undo][redo] | [sculpt][smooth][paint][water]
+// at the bottom center, and above it a brush card with mode or layer chips and size and
+// strength sliders while a tool is active (water's spring mode swaps the sliders for flow
+// chips, a spring count and Remove). S8 grows this into the full HUD palette.
 //
-// Reads the store slices `tools` and `history` (created by app.js); never writes the store.
-// Every user choice goes out as an action through src/input/actions.js. Styles: tools.css.
+// Reads the store slices `tools`, `history`, `unlocks` and `waterUi` (created by app.js);
+// never writes the store. Every user choice goes out as an action through
+// src/input/actions.js. Styles: tools.css.
 
 import { get, subscribe } from '../core/store.js';
 import { dispatch } from '../input/actions.js';
 import { ensureIconSprite, iconSvg } from './icons/icons.js';
 
-/** @typedef {'sculpt'|'smooth'|'paint'} ToolId */
+/** @typedef {'sculpt'|'smooth'|'paint'|'water'} ToolId */
 /** @typedef {'raise'|'lower'|'flatten'} SculptMode */
 /** @typedef {'grass'|'sand'|'soil'|'rock'} PaintLayer */
+/** @typedef {'pour'|'soak'|'spring'} WaterMode */
+/** @typedef {'trickle'|'brook'|'stream'} SpringRate */
 
 /**
  * @typedef {Object} ToolsSlice
  * @property {ToolId|null} tool
  * @property {SculptMode} sculptMode
  * @property {PaintLayer} paintLayer
+ * @property {WaterMode} [waterMode]   undefined reads as 'pour'
+ * @property {SpringRate} [springRate] undefined reads as 'brook'
  * @property {number} size        brush radius, meters
  * @property {number} strength    0..1
  * @property {[number, number]} sizeRange  [min, max] meters
+ */
+
+/**
+ * @typedef {Object} WaterUiSlice
+ * @property {number} springCount
+ * @property {number} maxSprings
+ * @property {string|null} selectedId  the selected spring, if any
  */
 
 /** @type {{id: ToolId, label: string}[]} */
@@ -29,6 +42,19 @@ const TOOLS = [
   { id: 'sculpt', label: 'Sculpt' },
   { id: 'smooth', label: 'Smooth' },
   { id: 'paint', label: 'Paint' },
+  { id: 'water', label: 'Water' },
+];
+/** Water modes; 'spring' shows only once `unlocks.springs` is true. @type {{id: WaterMode, label: string, icon: string}[]} */
+const WATER_MODES = [
+  { id: 'pour', label: 'Pour', icon: 'pour' },
+  { id: 'soak', label: 'Soak', icon: 'soak' },
+  { id: 'spring', label: 'Spring', icon: 'wellspring' },
+];
+/** @type {{id: SpringRate, label: string}[]} */
+const SPRING_RATES = [
+  { id: 'trickle', label: 'Trickle' },
+  { id: 'brook', label: 'Brook' },
+  { id: 'stream', label: 'Stream' },
 ];
 /** @type {{id: SculptMode, label: string}[]} */
 const MODES = [
@@ -67,12 +93,28 @@ export function mountTools(parent = document.body) {
         ${LAYERS.map((l) => `<button type="button" class="ebb-tools__chip" data-layer="${l.id}"
           aria-pressed="false" title="${l.label}">${swatchSvg(SWATCH[l.id])}<span>${l.label}</span></button>`).join('')}
       </div>
-      <div class="ebb-tools__slider">
+      <div class="ebb-tools__chips ebb-tools__chips--water" role="group" aria-label="Water mode" hidden>
+        ${WATER_MODES.map((m) => `<button type="button" class="ebb-tools__chip" data-water-mode="${m.id}"
+          aria-pressed="false" title="${m.label}">${iconSvg(m.icon)}<span>${m.label}</span></button>`).join('')}
+      </div>
+      <div class="ebb-tools__spring" role="group" aria-label="Spring" hidden>
+        <div class="ebb-tools__chips ebb-tools__chips--rate" role="group" aria-label="Spring flow">
+          ${SPRING_RATES.map((r) => `<button type="button" class="ebb-tools__chip" data-rate="${r.id}"
+            aria-pressed="false" title="${r.label}">${iconSvg(`rate-${r.id}`)}<span>${r.label}</span></button>`).join('')}
+        </div>
+        <div class="ebb-tools__spring-row">
+          <span class="ebb-tools__count" data-out="springs" aria-live="polite"></span>
+          <button type="button" class="ebb-tools__chip ebb-tools__remove" data-spring-remove="true"
+            title="Remove spring">${iconSvg('spring-remove')}<span>Remove</span></button>
+        </div>
+        <p class="ebb-tools__hint">Tap to place a spring. Tap one to select it.</p>
+      </div>
+      <div class="ebb-tools__slider" data-slider="size">
         <label for="ebb-tools-size">Size</label>
         <output for="ebb-tools-size" data-out="size"></output>
         <input class="ebb-tools__range" id="ebb-tools-size" type="range" data-range="size">
       </div>
-      <div class="ebb-tools__slider">
+      <div class="ebb-tools__slider" data-slider="strength">
         <label for="ebb-tools-strength">Strength</label>
         <output for="ebb-tools-strength" data-out="strength"></output>
         <input class="ebb-tools__range" id="ebb-tools-strength" type="range" min="0" max="100" step="1" data-range="strength">
@@ -88,6 +130,13 @@ export function mountTools(parent = document.body) {
   const card = /** @type {HTMLElement} */ (root.querySelector('.ebb-tools__card'));
   const sculptChips = /** @type {HTMLElement} */ (root.querySelector('.ebb-tools__chips--sculpt'));
   const paintChips = /** @type {HTMLElement} */ (root.querySelector('.ebb-tools__chips--paint'));
+  const waterChips = /** @type {HTMLElement} */ (root.querySelector('.ebb-tools__chips--water'));
+  const springPanel = /** @type {HTMLElement} */ (root.querySelector('.ebb-tools__spring'));
+  const springRow = /** @type {HTMLElement} */ (root.querySelector('.ebb-tools__spring-row'));
+  const springCount = /** @type {HTMLElement} */ (root.querySelector('[data-out="springs"]'));
+  const springHint = /** @type {HTMLElement} */ (root.querySelector('.ebb-tools__hint'));
+  const removeBtn = /** @type {HTMLButtonElement} */ (root.querySelector('[data-spring-remove]'));
+  const sliders = /** @type {HTMLElement[]} */ ([...root.querySelectorAll('[data-slider]')]);
   const sizeRange = /** @type {HTMLInputElement} */ (root.querySelector('[data-range="size"]'));
   const strengthRange = /** @type {HTMLInputElement} */ (root.querySelector('[data-range="strength"]'));
   const sizeOut = /** @type {HTMLOutputElement} */ (root.querySelector('[data-out="size"]'));
@@ -97,17 +146,26 @@ export function mountTools(parent = document.body) {
   const toolBtns = /** @type {HTMLButtonElement[]} */ ([...root.querySelectorAll('[data-tool]')]);
   const modeBtns = /** @type {HTMLButtonElement[]} */ ([...root.querySelectorAll('[data-mode]')]);
   const layerBtns = /** @type {HTMLButtonElement[]} */ ([...root.querySelectorAll('[data-layer]')]);
+  const waterModeBtns = /** @type {HTMLButtonElement[]} */ ([...root.querySelectorAll('[data-water-mode]')]);
+  const springModeBtn = /** @type {HTMLButtonElement} */ (root.querySelector('[data-water-mode="spring"]'));
+  const rateBtns = /** @type {HTMLButtonElement[]} */ ([...root.querySelectorAll('[data-rate]')]);
 
   // --- user input -> actions ---
   /** @param {MouseEvent} e */
   function onClick(e) {
     const btn = /** @type {HTMLElement|null} */ (/** @type {HTMLElement} */ (e.target).closest('button'));
     if (!btn || !root.contains(btn)) return;
-    const { tool, mode, layer, history } = btn.dataset;
+    const { tool, mode, layer, waterMode, rate, springRemove, history } = btn.dataset;
     if (tool) dispatch(/** @type {any} */ ({ type: 'tool.select', toolId: tool }));
     else if (mode) dispatch(/** @type {any} */ ({ type: 'brush.set', patch: { sculptMode: mode } }));
     else if (layer) dispatch(/** @type {any} */ ({ type: 'brush.set', patch: { paintLayer: layer } }));
-    else if (history && btn.getAttribute('aria-disabled') !== 'true') {
+    else if (waterMode) dispatch(/** @type {any} */ ({ type: 'brush.set', patch: { waterMode } }));
+    else if (rate) dispatch(/** @type {any} */ ({ type: 'brush.set', patch: { springRate: rate } }));
+    else if (springRemove) {
+      /** @type {Partial<WaterUiSlice>} */
+      const w = get('waterUi') ?? {};
+      if (w.selectedId) dispatch(/** @type {any} */ ({ type: 'water.springRemove', id: w.selectedId }));
+    } else if (history && btn.getAttribute('aria-disabled') !== 'true') {
       dispatch(/** @type {any} */ ({ type: history === 'undo' ? 'history.undo' : 'history.redo', source: 'mouse' }));
     }
   }
@@ -146,17 +204,32 @@ export function mountTools(parent = document.body) {
     for (const b of modeBtns) b.setAttribute('aria-pressed', String(b.dataset.mode === t.sculptMode));
     for (const b of layerBtns) b.setAttribute('aria-pressed', String(b.dataset.layer === t.paintLayer));
 
+    // Water: the spring mode exists only once unlocked; a stored 'spring' reads as 'pour' until then.
+    const springsOn = !!get('unlocks')?.springs;
+    const storedMode = t.waterMode ?? 'pour';
+    const waterMode = storedMode === 'spring' && !springsOn ? 'pour' : storedMode;
+    const springRate = t.springRate ?? 'brook';
+    springModeBtn.hidden = !springsOn;
+    waterChips.style.setProperty('--tb-cols', springsOn ? '3' : '2');
+    for (const b of waterModeBtns) b.setAttribute('aria-pressed', String(b.dataset.waterMode === waterMode));
+    for (const b of rateBtns) b.setAttribute('aria-pressed', String(b.dataset.rate === springRate));
+    renderSprings();
+
+    const open = tool === 'sculpt' || tool === 'smooth' || tool === 'paint' || tool === 'water';
     if (tool !== shownTool) {
       shownTool = tool;
-      const open = tool === 'sculpt' || tool === 'smooth' || tool === 'paint';
       card.classList.toggle('is-open', open);
       card.setAttribute('aria-hidden', String(!open));
       card.inert = !open;
-      // Keep the last chips while the card fades out, so it does not jump.
-      if (open) {
-        sculptChips.hidden = tool !== 'sculpt';
-        paintChips.hidden = tool !== 'paint';
-      }
+    }
+    // Keep the last chips while the card fades out, so it does not jump.
+    if (open) {
+      const inSpring = tool === 'water' && waterMode === 'spring';
+      sculptChips.hidden = tool !== 'sculpt';
+      paintChips.hidden = tool !== 'paint';
+      waterChips.hidden = tool !== 'water';
+      springPanel.hidden = !inSpring;
+      for (const s of sliders) s.hidden = inSpring;
     }
 
     const [min, max] = validRange(t.sizeRange);
@@ -173,6 +246,23 @@ export function mountTools(parent = document.body) {
     strengthOut.textContent = `${Math.round(strength * 100)}%`;
   }
 
+  /** Spring count, and Remove when a spring is selected, else the placing hint. */
+  function renderSprings() {
+    /** @type {Partial<WaterUiSlice>} */
+    const w = get('waterUi') ?? {};
+    const hasCount = Number.isFinite(w.springCount) && Number.isFinite(w.maxSprings);
+    const selected = !!w.selectedId;
+    springCount.hidden = !hasCount;
+    if (hasCount) {
+      const max = /** @type {number} */ (w.maxSprings);
+      const text = `${w.springCount} of ${max} ${max === 1 ? 'spring' : 'springs'}`;
+      if (springCount.textContent !== text) springCount.textContent = text;
+    }
+    removeBtn.hidden = !selected;
+    springRow.hidden = !hasCount && !selected;
+    springHint.hidden = selected;
+  }
+
   function renderHistory() {
     const h = get('history') ?? {};
     setDisabled(undoBtn, !h.canUndo);
@@ -181,7 +271,12 @@ export function mountTools(parent = document.body) {
 
   renderTools();
   renderHistory();
-  const unsubs = [subscribe('tools', renderTools), subscribe('history', renderHistory)];
+  const unsubs = [
+    subscribe('tools', renderTools),
+    subscribe('unlocks', renderTools),
+    subscribe('waterUi', renderSprings),
+    subscribe('history', renderHistory),
+  ];
   parent.appendChild(root);
 
   return function dispose() {

@@ -79,9 +79,11 @@ export async function startApp(canvas, hooks = {}) {
 
   // Tool state for the tool bar (ui/tools.js reads it; actions below change it).
   updateStore('tools', (t) => t ?? {
-    tool: null, sculptMode: 'raise', paintLayer: 'grass',
+    tool: null, sculptMode: 'raise', paintLayer: 'grass', waterMode: 'pour', springRate: 'brook',
     size: rb.radiusDefault, strength: rb.strengthDefault, sizeRange: rb.radiusRange,
   });
+  // Unlocks (docs 12, 13): placing springs is the dragonflies' gift; `?sandbox` opens it early.
+  updateStore('unlocks', (u) => ({ ...(u ?? {}), springs: !!u?.springs || params.has('sandbox') }));
   const syncHistory = () => updateStore('history', () => ({ canUndo: history.canUndo(), canRedo: history.canRedo() }));
   history.setBudget((terrainRecipe.undoBudgetMB[tier] ?? 12) * 1024 * 1024);
   const unHistory = history.onChange(syncHistory);
@@ -98,12 +100,35 @@ export async function startApp(canvas, hooks = {}) {
   updateStore('world', () => world.state);
   const sim = createLiveSim({ world });
   sim.addSystem(terrain);
-  // Live water (docs/07): the sea at the display tide, the starter spring, flowing over the terrain.
+  // Live water (docs/07): the sea at the display tide, the springs, flowing over the terrain and
+  // topped up toward the deterministic water summary.
   const water = await createWater(gpu, {
     terrain, recipe: waterRecipe, land: landRecipe, terrainSeed: subSeed(seed, 'terrain'), tier,
     displayHours: clock.display() / clock.SECONDS_PER_HOUR,
+    getHeightQ: () => getStore('terrainLive')?.mirror?.heightQ ?? null,
+    springs: getStore('water')?.springs ?? [],
   });
   sim.addSystem(water);
+  const waterTools = waterRecipe.tools;
+  /** Mirror the placed springs into the saved `water` slice and the tool bar's `waterUi` slice. */
+  function syncWater(selectedId = getStore('waterUi')?.selectedId ?? null) {
+    const placed = water.placedSprings();
+    updateStore('water', (w) => ({ ...(w ?? {}), springs: placed, version: 1 }));
+    const sel = placed.some((s) => s.id === selectedId) ? selectedId : null;
+    updateStore('waterUi', () => ({ springCount: placed.length, maxSprings: waterTools.maxSprings, selectedId: sel }));
+  }
+  syncWater(null);
+  // Spring edits are undoable commands (docs/07): add, remove, or a change of rate.
+  history.setApplier('water-spring', (/** @type {any} */ cmd, dir) => {
+    const undo = dir === 'undo';
+    if (cmd.op === 'add') { if (undo) water.removeSpring(cmd.spring.id); else water.addSpring(cmd.spring); }
+    else if (cmd.op === 'remove') { if (undo) water.addSpring(cmd.spring); else water.removeSpring(cmd.spring.id); }
+    else if (cmd.op === 'rate') water.setSpringRate(cmd.spring.id, undo ? cmd.before : cmd.after);
+    syncWater();
+    return true;
+  });
+  // The summary follows the ground: rebuild after every settled stroke, undo and redo.
+  const unStroke = on('terrain:stroke-ended', () => water.requestSummary());
   const unHour = on('clock:hour', (/** @type {{ hour: number }} */ p) => {
     for (const e of sim.hourlyTick(p.hour)) emitDeferred(e.name, e.payload);
     updateStore('world', () => world.state);
@@ -214,6 +239,33 @@ export async function startApp(canvas, hooks = {}) {
     terrain.endStroke().then((cmd) => { if (cmd) history.push(cmd); });
   }
 
+  // ---- the water tool (docs/07): pour and soak while held; springs on tap (when unlocked) ----
+  /** Screen point of a held pour or soak, or null. @type {null | { x: number, y: number }} */
+  let pouring = null;
+  const springRateLps = () => waterTools.springRates[tools().springRate ?? 'brook'] ?? waterTools.springRates.brook;
+
+  /** Each frame while pour or soak is held: the brush source under the pointer. */
+  function updatePour() {
+    const t = tools();
+    const p = pouring && t.tool === 'water' ? groundAt(pouring.x, pouring.y) : null;
+    if (!p || (t.waterMode !== 'pour' && t.waterMode !== 'soak')) { water.setBrush(null); return; }
+    const lps = (t.waterMode === 'pour' ? waterTools.pourLps : -waterTools.soakLps) * Math.max(0.05, t.strength);
+    water.setBrush({ x: p[0], z: p[2], radiusM: t.size, rateLps: lps });
+  }
+
+  /** Tap with the spring mode: select a placed spring, or place a new one under the cap. @param {number} x @param {number} y */
+  function springTap(x, y) {
+    if (!getStore('unlocks')?.springs) return;
+    const p = groundAt(x, y);
+    if (!p) return;
+    const hit = water.springAt(p[0], p[2], 1.0);
+    if (hit) { syncWater(hit); return; }
+    if (water.placedSprings().length >= waterTools.maxSprings) { syncWater(null); return; }
+    const s = water.addSpring({ x: p[0], z: p[2], rateLps: springRateLps() });
+    history.push({ kind: 'water-spring', bytes: 64, op: 'add', spring: s });
+    syncWater(s.id);
+  }
+
   /** @param {'undo'|'redo'} dir */
   function runHistory(dir) {
     const ok = dir === 'undo' ? history.undo() : history.redo();
@@ -229,17 +281,36 @@ export async function startApp(canvas, hooks = {}) {
       case 'tool.select': {
         const next = a.toolId && a.toolId !== tools().tool ? a.toolId : null;
         if (!next) finishStroke();
+        pouring = null;
         updateStore('tools', (t) => { t.tool = next; });
         emitDeferred('tool:selected', { toolId: next });
         break;
       }
-      case 'brush.set':
+      case 'brush.set': {
         updateStore('tools', (t) => {
           Object.assign(t, a.patch);
           t.size = clampSize(t.size);
           t.strength = Math.min(1, Math.max(0, t.strength));
         });
+        // A new flow step applies to the selected spring too (undoable).
+        const sel = getStore('waterUi')?.selectedId;
+        if (a.patch.springRate && sel) {
+          const s = water.springs().find((x) => x.id === sel);
+          const after = springRateLps();
+          if (s && s.rateLps !== after && water.setSpringRate(sel, after)) {
+            history.push({ kind: 'water-spring', bytes: 64, op: 'rate', spring: s, before: s.rateLps, after });
+            syncWater(sel);
+          }
+        }
+        if (a.patch.waterMode && a.patch.waterMode !== 'spring') syncWater(null);
         break;
+      }
+      case 'water.springRemove': {
+        const s = water.removeSpring(a.id);
+        if (s) history.push({ kind: 'water-spring', bytes: 64, op: 'remove', spring: s });
+        syncWater(null);
+        break;
+      }
       case 'brush.resize':
         updateStore('tools', (t) => { t.size = clampSize(t.size * a.factor); });
         break;
@@ -251,6 +322,11 @@ export async function startApp(canvas, hooks = {}) {
       case 'tool.begin':
       case 'tool.move': {
         if (!tools().tool) break;
+        if (tools().tool === 'water') {
+          if (tools().waterMode === 'spring') { if (a.type === 'tool.begin') springTap(a.x, a.y); }
+          else if (a.type === 'tool.begin' || pouring) pouring = { x: a.x, y: a.y };
+          break;
+        }
         if (a.type === 'tool.begin') wantStroke = true;
         if (!wantStroke) break;
         const p = groundAt(a.x, a.y);
@@ -261,6 +337,7 @@ export async function startApp(canvas, hooks = {}) {
       }
       case 'tool.end':
       case 'tool.cancel':
+        pouring = null;
         finishStroke();
         break;
       case 'history.undo': if (!stroking) runHistory('undo'); break;
@@ -284,6 +361,16 @@ export async function startApp(canvas, hooks = {}) {
   /** Keep the brush ring on the ground under the pointer, even as the camera moves. */
   function updateRing() {
     const t = tools();
+    // Spring mode marks the selected spring, else a small ring where a tap would place one.
+    if (t.tool === 'water' && t.waterMode === 'spring') {
+      const sel = getStore('waterUi')?.selectedId;
+      const s = sel ? water.springs().find((x) => x.id === sel) : null;
+      const p = !s && pointer.inside ? groundAt(pointer.x, pointer.y) : null;
+      if (s) terrain.setRing({ x: s.x, z: s.z, radius: 0.8, visible: true });
+      else if (p) terrain.setRing({ x: p[0], z: p[2], radius: 0.6, visible: true });
+      else terrain.setRing({ visible: false });
+      return;
+    }
     const p = t.tool && pointer.inside ? groundAt(pointer.x, pointer.y) : null;
     if (p) terrain.setRing({ x: p[0], z: p[2], radius: t.size, visible: true });
     else terrain.setRing({ visible: false });
@@ -314,6 +401,7 @@ export async function startApp(canvas, hooks = {}) {
     camera.setViewport(cssW, cssH);
     camera.update(realDt);
     updateRing();
+    updatePour();
     if (queuedHistory && !terrain.isBusy()) runHistory(queuedHistory);
     // Ground detail waits for a few calm frames so the first picture is as quick as before (docs/22).
     if (!groundRequested && frameIndex > 10 && frameMs < 50) {
@@ -399,6 +487,7 @@ export async function startApp(canvas, hooks = {}) {
     unAction();
     unHistory();
     unHour();
+    unStroke();
     detachDesktop();
     detachTouch();
     graph.dispose();

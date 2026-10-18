@@ -27,6 +27,12 @@ Size and color come from CSS: set `width`/`height` on `.icon` and `color` on the
 | `sculpt` | trowel lifting a soft mound |
 | `smooth` | flat float over a wavy line that straightens |
 | `paint` | round brush with a leaf-shaped dab |
+| `water` | droplet over one ripple line |
+| `pour` | spout bending down, a falling drop, a small pool on the ground line |
+| `soak` | down stroke into the ground line, a drop sinking below it, damp specks |
+| `wellspring` | water welling up from the ground and arcing over, a ripple at its foot |
+| `rate-trickle`, `rate-brook`, `rate-stream` | one, two or three small wave lines: spring flow |
+| `spring-remove` | drop with a small cross drawn as two strokes |
 | `undo` | curved arrow to the left |
 | `redo` | the mirror of undo |
 | `raise` | mound with an up stroke |
