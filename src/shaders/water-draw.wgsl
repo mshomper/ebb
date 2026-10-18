@@ -19,6 +19,7 @@
 // #include lib-lighting
 // #include lib-water
 // #include lib-probe
+// #include lib-ripples
 
 struct WaterDraw {
   rectOrigin: vec2u,          // simulated rect (water cells); the mesh covers its interior
@@ -39,7 +40,7 @@ struct WaterDraw {
   floorSlope: f32,            // how fast the open sea floor deepens beyond it (m per m)
   seabed: vec4f,              // rgb wet sand albedo for the sea floor beyond the terrain, w wet darkening
   filmDepth: vec4f,            // xy depth range (m) over which a broken film becomes a coherent surface
-  debugView: f32,             // ?waterdbg=1 sea or grid, 2 reflection, 3 transmitted, 4 Fresnel/path/depth, 5 island hits
+  debugView: f32,             // ?waterdbg=1 sea or grid, 2 reflection, 3 transmitted, 4 Fresnel/path/depth, 5 island hits, 6 ripple slope
   detailFadeM: f32,           // ripples calm and move into roughness by this distance (quality tier)
   _q1: f32, _q2: f32,
   riffle: vec4f,              // white water: x, y speed range (m/s) it fades in over, z depth (m) it is gone by, w coverage
@@ -48,6 +49,7 @@ struct WaterDraw {
   ssr: vec4f,                 // island reflection: x march steps (0 off), y refine steps, z reach (m), w hit thickness (m)
   ssr2: vec4f,                // x screen-edge fade (uv), y, z roughness range it fades out over, w start offset (m)
   ssr3: vec4f,                // x share of the ripple tilt the march follows, y 1 = sky from the probe
+  foam: vec4f,                // x lace size (m), y foam albedo
 };
 
 @group(0) @binding(0) var<uniform> frame: FrameUniforms;
@@ -64,6 +66,9 @@ struct WaterDraw {
 @group(2) @binding(10) var<storage, read> skyState: SkyState;
 @group(2) @binding(11) var probeTex: texture_cube<f32>;   // sky probe (lib-probe.wgsl)
 @group(2) @binding(12) var probeSampler: sampler;
+@group(2) @binding(13) var foamTex: texture_2d<f32>;      // foam cover 0..1 on the water cells (water-foam.wgsl)
+@group(2) @binding(14) var rippleTex: texture_2d<f32>;    // ripple heights around the view (lib-ripples.wgsl)
+@group(2) @binding(15) var<uniform> rippleInfo: RippleInfo;
 
 const G: f32 = 9.81;
 
@@ -219,6 +224,30 @@ fn flecks(xz: vec2f) -> f32 {
   return smoothstep(1.0 - c, 1.0 - c + 0.3, n);
 }
 
+// Foam cover at xz, bilinear between the cells.
+fn foamCover(xz: vec2f) -> f32 {
+  let g = waterCellCoord(xz);
+  let c = vec2i(floor(g));
+  let f = g - floor(g);
+  let hi = vec2i(WATER_CELLS - 1);
+  let a = textureLoad(foamTex, clamp(c, vec2i(0), hi), 0).r;
+  let b = textureLoad(foamTex, clamp(c + vec2i(1, 0), vec2i(0), hi), 0).r;
+  let d = textureLoad(foamTex, clamp(c + vec2i(0, 1), vec2i(0), hi), 0).r;
+  let e = textureLoad(foamTex, clamp(c + vec2i(1, 1), vec2i(0), hi), 0).r;
+  return mix(mix(a, b, f.x), mix(d, e, f.x), f.y);
+}
+
+// Foam lace: bubbly patches with holes, so cover reads as froth, not paint. Cover c fills more
+// of the pattern; full cover is solid.
+fn foamLace(xz: vec2f, c: f32) -> f32 {
+  let q = xz / wd.foam.x;
+  let n = noiseGrad(q, 921u).x * 0.55 + noiseGrad(q * 2.3 + vec2f(1.7, 4.2), 922u).x * 0.3
+        + noiseGrad(q * 5.1 + vec2f(3.3, 0.9), 923u).x * 0.15;
+  // Even full cover leaves dark holes between the bubbles (about 40% at c = 1).
+  let edge = 0.78 - 0.33 * c;
+  return smoothstep(edge, edge + 0.12, n);
+}
+
 // Gentle open-water swell: a sum of sine waves with deep-water dispersion, slope only.
 fn swell(xz: vec2f, t: f32) -> vec2f {
   var g = vec2f(0.0);
@@ -329,6 +358,8 @@ fn fsWater(in: VsOut) -> FsOut {
   var grad = mix(g0, g1, blend) * shallow * (1.0 - 0.75 * far) * (1.0 + 1.5 * min(speed, 1.0));
   grad += swell(P.xz, t) * smoothstep(0.0, wd.scatter.w, d);
   grad += in.slope;
+  // Rings from raindrops, the pour brush and (later) creatures: the fine ripple field near the view.
+  grad += rippleSlope(rippleTex, rippleInfo, P.xz) * (1.0 - far);
   let n = normalize(vec3f(-grad.x, 1.0, -grad.y));
   // Thin water is a broken film: stones and blades stand through it, so it reflects weakly and
   // scatters the sun broadly. Deeper water is a coherent surface.
@@ -437,6 +468,17 @@ fn fsWater(in: VsOut) -> FsOut {
     surface = mix(surface, foam, white);
   }
 
+  // ---- foam ----
+  // The foam field (falls, meeting flows, swash), drifting with the current through the same
+  // two-phase flow map as the ripples so its lace never smears.
+  let cover = foamCover(P.xz);
+  if (cover > 0.01 && in.bed > -40.0) {
+    let lace = mix(foamLace(P.xz - in.vel * ph0 * period, cover), foamLace(P.xz - in.vel * ph1 * period + vec2f(2.9, 6.1), cover), blend);
+    let froth = applyAerial(wd.foam.y * lightIn * frame.exposure, screenUv, viewDist);
+    // Films only millimeters thick (spilling over a bank) never froth.
+    surface = mix(surface, froth, lace * smoothstep(0.0, 0.15, cover) * smoothstep(0.01, 0.025, d));
+  }
+
   // Shoreline: the water fades out over the last half cell toward a dry bank and where the plane
   // meets the ground (thickness under edgeFade), so banks never show a hard line. Thin streams
   // stay visible; their film look comes from `cohere` above.
@@ -448,6 +490,7 @@ fn fsWater(in: VsOut) -> FsOut {
   let dv = u32(wd.debugView + 0.5);
   if (dv == 1u) { color = select(vec3f(0.0, 4.0, 0.0), vec3f(4.0, 0.0, 0.0), in.bed < -40.0); if (any(surface != surface)) { color = vec3f(0.0, 0.0, 4.0); } }
   if (dv == 2u) { color = mix(refl, island.rgb, island.a) * 4.0; }
+  if (dv == 6u) { let rs = rippleSlope(rippleTex, rippleInfo, P.xz); color = vec3f(abs(rs) * 20.0, 0.2); }
   if (dv == 5u) { color = vec3f(island.a, 0.0, 1.0 - island.a) * 2.0; }
   if (dv == 3u) { color = (scene * Tbed + inScatter) * 4.0; }
   if (dv == 4u) { color = vec3f(F * 10.0, min(L / 50.0, 1.0) * 4.0, d / 10.0 * 4.0); }

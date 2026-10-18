@@ -42,6 +42,19 @@
     "note": "Live water is topped up toward the summary target, never drained by it: d += (target - d)(1 - exp(-dt / tauS)) where d < target. Ponds refill and dug hollows that count as ponds fill to their lip in about a minute.",
     "tauS": 20
   },
+  "foam": {
+    "note": "Foam on the live water (docs/07, water-foam.wgsl, drawn in water-draw.wgsl). A coverage field on the 0.5 m cells, carried by the current and fading over fadeS. Made at falls: where the surface drops more than fallFromM into the neighbor the water flows toward, fallGain cover per meter of extra drop per second (full at 0.3 m/s or faster); where flows meet: convergenceGain cover per unit of convergence (1/s) per second; in swash: swashGain cover per second where water is thinner than swashDepthM and faster than swashSpeed. maxCover caps it. Drawing: lace breaks the cover into bubbly patches of laceM; albedo is the foam's whiteness, lit like a rough surface.",
+    "fadeS": 6,
+    "fallFromM": 0.05,
+    "fallGain": 1.5,
+    "convergenceGain": 0.25,
+    "swashGain": 0.12,
+    "swashDepthM": 0.04,
+    "swashSpeed": 0.5,
+    "maxCover": 0.65,
+    "laceM": 0.18,
+    "albedo": 0.8
+  },
   "tools": {
     "note": "Pour and drain (water tool) add or remove water under the brush at up to rateLps at full strength. Springs: up to maxSprings placed by the player (sandbox now, the dragonflies' gift in normal play), each at one of the rates (L/s).",
     "pourLps": 60,
@@ -104,5 +117,21 @@
     "flowDrift": 1.0,
     "flowPeriodS": 1.6,
     "minFinestPx": 6
+  },
+  "ripples": {
+    "note": "Ripples (docs/07, src/world/water/ripples.js, water-ripples.wgsl): a damped 2D wave equation h' = (2h - h_prev + C^2 lap h) x damping, C = waveSpeed x substepS / texelM, on a window of size[tier] texels of texelM meters centered on the camera focus, stepped every substepS real seconds (at most maxSubsteps a frame). waveSpeed: ring speed (m/s; capillary-gravity ripples are about 0.23). fadeS: rings fall to 5% over this time (plus their own spreading). Held at rest where the live water is thinner than minWaterDepthM, fading in to full by three times that, so rings stop at the shore. Drops are smooth dips (1 - t^2)^2 of radiusM and strengthM (dip depth, m) pressed into the water at rest. rain: dropsPerM2S at full rain (the weather's rain is 0.1 to 0.6). pour: dropsPerS over the brush at full strength; brushRadiusM if the app gives none. impulse: defaults for addImpulse (frogs, fish). Rain and pour drops fall on a world grid of dropCellM cells, at most one per cell per substep; drop radii are capped at dropCellM. normalStrength scales the slope added to the water normal; edgeFadeM fades it out toward the window edge.",
+    "texelM": 0.1,
+    "size": { "ultra": 256, "high": 256, "medium": 256, "low": 128 },
+    "waveSpeed": 0.25,
+    "fadeS": 2,
+    "substepS": 0.008333,
+    "maxSubsteps": 4,
+    "minWaterDepthM": 0.01,
+    "dropCellM": 0.4,
+    "rain": { "dropsPerM2S": 4, "radiusM": 0.12, "strengthM": 0.03 },
+    "pour": { "dropsPerS": 60, "radiusM": 0.12, "strengthM": 0.02, "brushRadiusM": 0.5 },
+    "impulse": { "radiusM": 0.25, "strengthM": 0.01 },
+    "normalStrength": 3,
+    "edgeFadeM": 2
   }
 }

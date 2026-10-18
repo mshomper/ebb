@@ -68,6 +68,24 @@
     "maxCover": { "grass": 0.6, "sand": 0.08, "rock": 0.9, "soil": 0.85 },
     "maxCoverNote": "The most moss each ground can carry, even fully grown: grass competes and always shows through; damp soil and stone hold the most; loose sand (painted, or the beach band) dries fast and shifts. In the terrain shader moss is a soft, clumpy partial cover below this cap, and the height blend lets grass tufts and stone tops stand through it."
   },
+  "wetness": {
+    "note": "Visual wetness (docs/08; world/terrain/wetness.js, terrain-wetness.wgsl). Rebuilt every intervalS real seconds (lowTierIntervalS on the low tier). Held at 1 under live water deeper than waterDepthM (from the first to the second depth) and below the tide, plus a splash band tideBandM above it; damp hollows hold water.json look.dampHollowWet. Rain soaks it at rainSoakPerHour x intensity per game hour. Spreads bankSpreadM into banks (linear fade; each meter of climb counts as bankRiseWeight meters). Where nothing holds it, it falls from soaked to dry in dryHours game hours, times sunFactor (night, then full sun at sunFullDeg and above) and 1 + windFactor x wind; no drying while rain passes rainStopsDrying. Look: wetness above sheenFrom moves ground roughness toward wetRoughness, by up to wetRoughnessShare.",
+    "intervalS": 0.5,
+    "lowTierIntervalS": 1.5,
+    "dryHours": 2,
+    "sunFactor": [0.35, 1.5],
+    "sunFullDeg": 35,
+    "windFactor": 0.8,
+    "rainSoakPerHour": 6,
+    "rainStopsDrying": 0.02,
+    "bankSpreadM": 1.5,
+    "bankRiseWeight": 2,
+    "tideBandM": 0.25,
+    "waterDepthM": [0.002, 0.012],
+    "wetRoughness": 0.3,
+    "wetRoughnessShare": 0.6,
+    "sheenFrom": 0.4
+  },
   "underwater": {
     "note": "The ground under live water (ponds, streams, the sea). bedDepthM: water depths over which grass gives way to a bare soil bed (sand and stone stay), so the waterline reads from straight above. siltDepthM: depths over which fine mud (materials.albedoSilt) settles on the soft bed; siltCover: the most of the bed it covers.",
     "bedDepthM": [0.004, 0.03],

@@ -9,7 +9,7 @@ import { LODS, MAX_CHUNKS, createIndexBuffers, packChunks } from '../terrain-mes
 
 /** @typedef {import('../frame-graph.js').PassContext} PassContext */
 
-const DRAW_BYTES = 304;
+const DRAW_BYTES = 320;
 const GROUND_BYTES = 224;
 const DEG = Math.PI / 180;
 /** @type {Record<string, number>} GroundDetail.tiling.x in lib-ground.wgsl */
@@ -18,16 +18,17 @@ const TILING_MODES = { grid: 0, hex: 1, two: 2 };
 /**
  * @param {{ terrain: import('../../world/terrain/index.js').Terrain, recipe: any, seed: number,
  *   getEye: () => ArrayLike<number>, tier: string, getTide?: () => number, lodDistances?: number[],
- *   water: { depthTextures: GPUTexture[], current: () => number, damp: GPUTexture, dampWet: number, vel: GPUTexture, caustics: any },
- *   moss: GPUTexture, causticLayers?: number,
+ *   water: { depthTextures: GPUTexture[], current: () => number, damp?: GPUTexture, dampWet?: number, vel: GPUTexture, caustics: any },
+ *   moss: GPUTexture, causticLayers?: number, wetness: { textures: GPUTexture[], current: () => number },
  *   ground: { views: { a: GPUTextureView, b: GPUTextureView }, sampler: GPUSampler, version: number, fade: number },
  *   groundTier: any }} opts  ground: src/render/ground-detail.js; groundTier: the tier's `ground` block;
- *   water.caustics: water.json `caustics`; causticLayers: the tier's (0 off, default 2)
+ *   water.caustics: water.json `caustics`; causticLayers: the tier's (0 off, default 2);
+ *   wetness: src/world/terrain/wetness.js (water.damp and water.dampWet now feed it, not this pass)
  */
 export function createTerrainPass(opts) {
   const { terrain, recipe } = opts;
   /** @type {GPURenderPipeline} */ let landPipeline;
-  /** @type {GPUBindGroup[]} */ let groups = [];
+  /** @type {GPUBindGroup[][]} groups[water depth index][wetness index] */ let groups = [];
   /** @type {GPUBuffer} */ let drawBuffer;
   /** @type {GPUBuffer} */ let chunkBuffer;
   /** @type {{ buffer: GPUBuffer, count: number }[]} */ let indexBuffers = [];
@@ -107,6 +108,12 @@ export function createTerrainPass(opts) {
     f[72] = c.softFloor; f[73] = c.softPerM; f[74] = c.minFinestPx;
   }
 
+  /** Wet look (floats 76..79): the sheen of freshly soaked ground. */
+  function packWet() {
+    const wt = recipe.wetness;
+    f[76] = wt.wetRoughness; f[77] = wt.wetRoughnessShare; f[78] = wt.sheenFrom;
+  }
+
   return {
     name: 'opaque',
 
@@ -140,7 +147,7 @@ export function createTerrainPass(opts) {
           { binding: 7, visibility: GPUShaderStage.FRAGMENT, sampler: { type: 'filtering' } },
           { binding: 8, visibility: GPUShaderStage.FRAGMENT, buffer: {} },
           { binding: 9, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: 'unfilterable-float' } },
-          { binding: 10, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: 'float' } },
+          { binding: 10, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: 'float' } }, // visual wetness
           { binding: 11, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: 'float' } },
           { binding: 12, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: 'unfilterable-float' } },
         ],
@@ -165,30 +172,39 @@ export function createTerrainPass(opts) {
       groundBuffer = makeBuffer(device, { label: 'ground-detail', size: GROUND_BYTES, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
       // Rebuilt whenever the ground detail arrays are replaced (placeholder, then the loaded set).
       makeGroup = () => {
-        // One group per water depth texture (the simulation ping-pongs them each step).
-        groups = opts.water.depthTextures.map((/** @type {GPUTexture} */ wt) => device.createBindGroup({
-          label: 'terrain-draw',
-          layout: layout2,
-          entries: [
-            { binding: 0, resource: { buffer: drawBuffer } },
-            { binding: 1, resource: { buffer: chunkBuffer } },
-            { binding: 2, resource: terrain.gpu.height.createView() },
-            { binding: 3, resource: terrain.gpu.material.createView() },
-            { binding: 4, resource: sampler },
-            { binding: 5, resource: opts.ground.views.a },
-            { binding: 6, resource: opts.ground.views.b },
-            { binding: 7, resource: opts.ground.sampler },
-            { binding: 8, resource: { buffer: groundBuffer } },
-            { binding: 9, resource: wt.createView() },
-            { binding: 10, resource: opts.water.damp.createView() },
-            { binding: 11, resource: opts.moss.createView() },
-            { binding: 12, resource: opts.water.vel.createView() },
-          ],
-        }));
+        // One group per pair of water depth and wetness textures (both ping-pong).
+        const heightView = terrain.gpu.height.createView();
+        const materialView = terrain.gpu.material.createView();
+        const mossView = opts.moss.createView();
+        const velView = opts.water.vel.createView();
+        const wetViews = opts.wetness.textures.map((t) => t.createView());
+        groups = opts.water.depthTextures.map((/** @type {GPUTexture} */ wt) => {
+          const depthView = wt.createView();
+          return wetViews.map((wetView) => device.createBindGroup({
+            label: 'terrain-draw',
+            layout: layout2,
+            entries: [
+              { binding: 0, resource: { buffer: drawBuffer } },
+              { binding: 1, resource: { buffer: chunkBuffer } },
+              { binding: 2, resource: heightView },
+              { binding: 3, resource: materialView },
+              { binding: 4, resource: sampler },
+              { binding: 5, resource: opts.ground.views.a },
+              { binding: 6, resource: opts.ground.views.b },
+              { binding: 7, resource: opts.ground.sampler },
+              { binding: 8, resource: { buffer: groundBuffer } },
+              { binding: 9, resource: depthView },
+              { binding: 10, resource: wetView },
+              { binding: 11, resource: mossView },
+              { binding: 12, resource: velView },
+            ],
+          }));
+        });
         groundVersion = opts.ground.version;
       };
       makeGroup();
       packStatic();
+      packWet();
     },
 
     resize() {},
@@ -199,7 +215,6 @@ export function createTerrainPass(opts) {
       const ring = terrain.ring;
       f[24] = ring.x; f[25] = ring.z; f[26] = ring.radius; f[27] = ring.hardness; f[28] = ring.visible ? 1 : 0;
       f[38] = opts.getTide?.() ?? 0;
-      f[39] = opts.water.dampWet;
       device.queue.writeBuffer(drawBuffer, 0, draw);
       if (opts.ground.version !== groundVersion) makeGroup();
       gf[19] = opts.ground.fade;
@@ -232,7 +247,7 @@ export function createTerrainPass(opts) {
       });
       pass.setBindGroup(0, ctx.groups.frame);
       pass.setBindGroup(1, ctx.groups.lighting);
-      pass.setBindGroup(2, groups[opts.water.current()]);
+      pass.setBindGroup(2, groups[opts.water.current()][opts.wetness.current()]);
       pass.setPipeline(landPipeline);
       for (const d of draws) {
         const ib = indexBuffers[d.lod];

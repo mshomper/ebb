@@ -30,6 +30,7 @@ export function createMossLive(device, opts) {
   let first = true;
   let hours = 0;     // game hours waiting to be applied
   let clockS = 0;    // real seconds since the last update
+  /** @type {number | null} */ let lastWorldT = null;
 
   const NB = [[-1, -1], [0, -1], [1, -1], [-1, 0], [1, 0], [-1, 1], [0, 1], [1, 1]];
   /** Bank width in cells and how much moss each ring from the water supports. */
@@ -113,7 +114,9 @@ export function createMossLive(device, opts) {
     tick(f) {
       const s = water.getSummary();
       if (s && s !== summary) { summary = s; rebuildHabitat(s); upload(); }
-      hours += f.dt / 3600;
+      // Game hours from the world clock (FrameInfo.dt is real seconds; worldT follows 1x to 4x and pause).
+      if (lastWorldT !== null) hours += Math.max(0, f.worldT - lastWorldT) / 3600;
+      lastWorldT = f.worldT;
       clockS += f.realDt;
       if (clockS < 0.5 || !summary) return;
       clockS = 0;

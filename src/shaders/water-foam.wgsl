@@ -1,0 +1,94 @@
+// Foam on the live water (docs/07 "Foam"): a coverage field on the 0.5 m water cells, carried by
+// the current (semi-Lagrangian: each cell looks back along its velocity), fading over a few
+// seconds, and made where water churns:
+//   falls        the surface drops sharply into a downstream neighbor (little steps, the spring's run)
+//   convergence  flows meet and pile up (−div u), where streams enter ponds
+//   swash        thin, fast water at the edge (the beach, the stream's riffles)
+// Visual only, real seconds; water-draw.wgsl draws it broken into lace with its own noise.
+
+// #include lib-terrain
+// #include lib-water
+
+struct Foam {
+  rectOrigin: vec2u, rectSize: vec2u,
+  dt: f32, decay: f32,            // real step (s); exp(-dt / fadeS)
+  fallFrom: f32, fallGain: f32,   // surface drop per cell (m) where falls start foaming; foam per m beyond it, per s
+  convGain: f32, swashGain: f32,  // foam per unit convergence (1/s) per s; foam per s in swash
+  swashDepth: f32, swashSpeed: f32, // thinner than this (m) and faster than this (m/s) is swash
+  dry: f32, maxFoam: f32,
+  _p0: f32, _p1: f32,
+};
+
+@group(0) @binding(0) var<uniform> fm: Foam;
+@group(0) @binding(1) var heightTex: texture_2d<f32>;
+@group(0) @binding(2) var depthTex: texture_2d<f32>;
+@group(0) @binding(3) var velTex: texture_2d<f32>;
+@group(0) @binding(4) var foamIn: texture_2d<f32>;
+@group(0) @binding(5) var foamOut: texture_storage_2d<r32float, write>;
+
+fn inRect(c: vec2i) -> bool {
+  let o = vec2i(fm.rectOrigin);
+  return all(c >= o) && all(c < o + vec2i(fm.rectSize));
+}
+
+fn foamAt(c: vec2i) -> f32 {
+  if (!inRect(c)) { return 0.0; }
+  return textureLoad(foamIn, c, 0).r;
+}
+
+fn velAt(c: vec2i) -> vec2f {
+  if (!inRect(c)) { return vec2f(0.0); }
+  return textureLoad(velTex, c, 0).rg;
+}
+
+// Foam at a fractional cell position, bilinear.
+fn foamBilinear(p: vec2f) -> f32 {
+  let c = vec2i(floor(p));
+  let f = p - floor(p);
+  return mix(mix(foamAt(c), foamAt(c + vec2i(1, 0)), f.x), mix(foamAt(c + vec2i(0, 1)), foamAt(c + vec2i(1, 1)), f.x), f.y);
+}
+
+@compute @workgroup_size(8, 8)
+fn csFoam(@builtin(global_invocation_id) gid: vec3u) {
+  if (any(gid.xy >= fm.rectSize)) { return; }
+  let c = vec2i(gid.xy + fm.rectOrigin);
+  let d = textureLoad(depthTex, c, 0).r;
+  // Films of a few millimeters (spilling over a bank) hold no foam.
+  if (d < 0.01) {
+    textureStore(foamOut, vec2u(c), vec4f(0.0));
+    return;
+  }
+  let v = velAt(c);
+  // Carried by the current: what was upstream one step ago arrives here.
+  var foam = foamBilinear(vec2f(c) - v * fm.dt / WATER_CELL) * fm.decay;
+
+  // Falls: the steepest surface drop into a neighbor the water is flowing toward.
+  let s = waterBed(heightTex, c) + d;
+  var drop = 0.0;
+  let nb = array<vec2i, 4>(vec2i(1, 0), vec2i(-1, 0), vec2i(0, 1), vec2i(0, -1));
+  for (var i = 0; i < 4; i++) {
+    let q = c + nb[i];
+    if (!inRect(q)) { continue; }
+    let dq = textureLoad(depthTex, q, 0).r;
+    if (dq < fm.dry * 3.0) { continue; }
+    let toward = dot(v, vec2f(nb[i]));
+    if (toward <= 0.0) { continue; }
+    drop = max(drop, s - (waterBed(heightTex, q) + dq));
+  }
+  let speed = length(v);
+  var make = fm.fallGain * max(drop - fm.fallFrom, 0.0) * min(speed / 0.3, 1.0);
+
+  // Convergence: flows meeting (negative divergence).
+  let div = (velAt(c + vec2i(1, 0)).x - velAt(c - vec2i(1, 0)).x + velAt(c + vec2i(0, 1)).y - velAt(c - vec2i(0, 1)).y)
+          / (2.0 * WATER_CELL);
+  make += fm.convGain * max(-div, 0.0);
+
+  // Swash: thin and fast.
+  // Real swash is a centimeter or more; the millimeter films spilling over a bank never froth.
+  make += fm.swashGain * smoothstep(0.012, 0.02, d) * (1.0 - smoothstep(fm.swashDepth * 0.5, fm.swashDepth, d))
+        * smoothstep(fm.swashSpeed, fm.swashSpeed * 2.0, speed);
+
+  foam = clamp(foam + make * fm.dt, 0.0, fm.maxFoam);
+  if (foam != foam) { foam = 0.0; }
+  textureStore(foamOut, vec2u(c), vec4f(foam, 0.0, 0.0, 0.0));
+}

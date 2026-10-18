@@ -26,10 +26,11 @@ struct TerrainDraw {
   ringCenter: vec2f, ringRadius: f32, ringHardness: f32,
   ringVisible: f32, ringWidth: f32, steepCosLow: f32, steepCosHigh: f32,
   beachLow: f32, beachHigh: f32, skirtDepth: f32, seaExtent: f32,
-  shallowDepth: f32, seed: u32, tide: f32, dampWet: f32,   // tide: sea level now (m); dampWet: damp hollow wetness
+  shallowDepth: f32, seed: u32, tide: f32, _p0: f32,   // tide: sea level now (m)
   albedoSilt: vec3f, siltCover: f32,    // the fine mud that settles on pond beds; most of the bed it covers
   bedDepth: vec2f, siltDepth: vec2f,    // water depths (m) over which grass gives way to a bare bed, and silt settles
   caustics: Caustics,                   // lib-caustics.wgsl
+  wetLook: vec4f,                       // x roughness of soaked ground, y how far it goes there, z wetness where the sheen starts
 };
 
 @group(0) @binding(0) var<uniform> frame: FrameUniforms;
@@ -43,25 +44,9 @@ struct TerrainDraw {
 @group(2) @binding(7) var groundSampler: sampler;
 @group(2) @binding(8) var<uniform> ground: GroundDetail;
 @group(2) @binding(9) var waterDepth: texture_2d<f32>;   // live water depth (m), water-depth.wgsl
-@group(2) @binding(10) var dampHollows: texture_2d<f32>; // the water summary's damp hollows (r8unorm, 0.5 m)
+@group(2) @binding(10) var wetMap: texture_2d<f32>;      // visual wetness, r 0..1 (rgba8unorm, 0.25 m), terrain-wetness.wgsl
 @group(2) @binding(11) var mossTex: texture_2d<f32>;     // moss cover 0..1 (r8unorm, 0.5 m), moss-live.js
 @group(2) @binding(12) var waterVel: texture_2d<f32>;    // live water velocity (rg32float, m/s, x and z)
-
-// How soaked the ground is from live water nearby: 1 under water, fading out over about 0.75 m of
-// bank (capillary rise). The visual wetness pass (S4c) adds drying over time and the tide flats.
-fn wetFromWater(xz: vec2f) -> f32 {
-  let c = vec2i(floor(waterCellCoord(xz) + 0.5));
-  var w = 0.0;
-  for (var j = -1; j <= 1; j++) {
-    for (var i = -1; i <= 1; i++) {
-      let q = clamp(c + vec2i(i, j), vec2i(0), vec2i(WATER_CELLS - 1));
-      // A film of a few millimeters dampens; a centimeter or more soaks.
-      let wd = smoothstep(0.002, 0.012, textureLoad(waterDepth, q, 0).r);
-      w = max(w, wd * (1.0 - smoothstep(0.2, 0.75, distance(xz, waterCellCenter(q)))));
-    }
-  }
-  return w;
-}
 
 // Live water depth (m) here, bilinear between the 0.5 m cells.
 fn waterDepthAt(xz: vec2f) -> f32 {
@@ -185,15 +170,16 @@ fn fsLand(in: VsOut) -> FsOut {
   albedo = mix(albedo, td.albedoSilt, silt);
   // Macro variation (docs/22): a slow tone drift near and far, so no repeat survives at a distance.
   albedo *= groundMacro(xz, td.seed);
-  // Wet ground is darker: below the tide line always, and everywhere while it rains (docs/06).
-  // Near live water (ponds, streams) the banks are soaked too. The visual wetness pass (S4c)
-  // adds drying over time, the spray line and the tide flats.
-  // Damp hollows (the water summary: dips that collect water but hold no pond) stay damp, with
-  // soft edges from the filtered 0.5 m map.
-  let damp = textureSampleLevel(dampHollows, linearSampler, terrainUv(xz), 0.0).r * td.dampWet;
-  let wet = max(max(max(1.0 - smoothstep(td.tide - 0.05, td.tide + 0.25, y), light.weather.w), wetFromWater(xz)), damp);
+  // Wet ground is darker (docs/06, 08). The visual wetness map (world/terrain/wetness.js) remembers
+  // live water, the tide, rain and damp hollows, spreads into banks and dries over game time, so
+  // the flats the tide just uncovered stay dark a while after the sea slides off them.
+  let wet = textureSampleLevel(wetMap, linearSampler, terrainUv(xz), 0.0).r;
   // Moss is already a damp surface; its color changes less when wet than bare soil does.
   albedo *= mix(1.0, td.wetDarkening, wet * (1.0 - 0.6 * moss));
+  // Freshly soaked ground has a gentle sheen, gone before the darkness is (not under water; puddles
+  // and the full wet specular are step G3).
+  let sheen = smoothstep(td.wetLook.z, 1.0, wet) * td.wetLook.y * (1.0 - sub);
+  let roughness = mix(gd.roughness, td.wetLook.x, sheen);
 
   // Caustics (lib-caustics): focused sun on the bed under live water, or moon at night. They scale
   // only direct light, so they are gone in shadow and nearly so by moonlight.
@@ -204,7 +190,7 @@ fn fsLand(in: VsOut) -> FsOut {
     caustic = causticLight(td.caustics, entry, waterVelAt(entry), wdep, max(fw.x, fw.y), frame.animTime, td.seed);
   }
 
-  var color = shadeGround(albedo, in.world, n, gd.normal, gd.roughness, gd.cavity, in.pos, ground.terminator, ground.f0, ground.specMode, caustic);
+  var color = shadeGround(albedo, in.world, n, gd.normal, roughness, gd.cavity, in.pos, ground.terminator, ground.f0, ground.specMode, caustic);
   color = mix(color, td.ringColor, ringAlpha(xz));
   // normalId keeps the mesh normal, so pebbles and cracks never get outlines (docs/22).
   return FsOut(vec4f(color, 1.0), vec4f(octEncode(n), 0.0, 1.0 / 3.0));

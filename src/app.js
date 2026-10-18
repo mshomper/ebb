@@ -28,6 +28,10 @@ import { createLiveSim } from './sim/live-sim.js';
 import { initialWorldState, makeEnv, runHour } from './sim/tick.js';
 import { createTerrain } from './world/terrain/index.js';
 import { createWater } from './world/water/index.js';
+import { createFoam } from './world/water/foam.js';
+import { createRipples } from './world/water/ripples.js';
+import { createWetness } from './world/terrain/wetness.js';
+import { weatherAt } from './world/weather.js';
 import { createWaterPass } from './render/passes/water.js';
 import { createMossLive } from './world/growth/moss-live.js';
 import { onAction, history } from './input/actions.js';
@@ -111,6 +115,19 @@ export async function startApp(canvas, hooks = {}) {
     springs: getStore('water')?.springs ?? [],
   });
   sim.addSystem(water);
+  // Foam where the water churns, carried by the current (docs/07); right after the water steps.
+  const foam = await createFoam(gpu.device, { water, terrain, recipe: waterRecipe.foam });
+  sim.addSystem(foam);
+  // Wet ground for the look (docs/08): soaked by water, tide and rain, drying over game hours.
+  const wetSky = { rain: 0, sunY: 0, wind: 0 };
+  const wetness = await createWetness(gpu.device, {
+    terrain, water, recipe: terrainRecipe.wetness, dampWet: waterRecipe.look.dampHollowWet,
+    getRain: () => wetSky.rain, getSun: () => wetSky.sunY, getWind: () => wetSky.wind,
+  });
+  sim.addSystem(wetness);
+  // Ripples: a fine wave field around the view, rung by raindrops, the pour brush and (later) creatures.
+  const ripples = await createRipples(gpu.device, { water, recipe: waterRecipe.ripples, size: waterRecipe.ripples.size[tier] ?? waterRecipe.ripples.size.high });
+  sim.addSystem(ripples);
   // Moss creeps over ground that stays damp (interim live form; doc 10's growth takes over later).
   const moss = createMossLive(gpu.device, { water, recipe: terrainRecipe.moss });
   sim.addSystem(moss);
@@ -169,13 +186,13 @@ export async function startApp(canvas, hooks = {}) {
     ground: groundDetail, groundTier: tierSettings.ground, getTide: () => water.tide, lodDistances: tierSettings.lodDistances,
     water: { depthTextures: water.sim.depthTextures, current: () => water.sim.current, damp: water.sim.damp, dampWet: waterRecipe.look.dampHollowWet,
       vel: water.sim.vel, caustics: waterRecipe.caustics },
-    moss: moss.texture, causticLayers: tierSettings.causticLayers,
+    moss: moss.texture, causticLayers: tierSettings.causticLayers, wetness,
   });
   const waterPass = createWaterPass({
     water, terrain, atmosphere, recipe: waterRecipe, seaExtent: terrainRecipe.sea.extent, getTime: () => clock.animT(),
     seabed: { y: landRecipe.seabedDepth, albedo: terrainRecipe.materials.albedoSand.map((/** @type {number} */ a) => a * terrainRecipe.materials.wetDarkening),
       wetDarkening: terrainRecipe.materials.wetDarkening },
-    detailFadeM: tierSettings.waterDetailFadeM, ssr: tierSettings.waterSSR ?? null,
+    detailFadeM: tierSettings.waterDetailFadeM, ssr: tierSettings.waterSSR ?? null, foam, ripples,
   });
   const graph = createFrameGraph(gpu, [
     shadowPass,
@@ -299,9 +316,11 @@ export async function startApp(canvas, hooks = {}) {
   function updatePour() {
     const t = tools();
     const p = pouring && t.tool === 'water' ? groundAt(pouring.x, pouring.y) : null;
-    if (!p || (t.waterMode !== 'pour' && t.waterMode !== 'drain')) { water.setBrush(null); return; }
+    if (!p || (t.waterMode !== 'pour' && t.waterMode !== 'drain')) { water.setBrush(null); ripples.setPour(0, 0, 0); return; }
     const lps = (t.waterMode === 'pour' ? waterTools.pourLps : -waterTools.drainLps) * Math.max(0.05, t.strength);
     water.setBrush({ x: p[0], z: p[2], radiusM: t.size, rateLps: lps });
+    // Pouring drops rain into the water under the brush: rings spread from it.
+    if (t.waterMode === 'pour') ripples.setPour(p[0], p[2], t.strength, t.size); else ripples.setPour(0, 0, 0);
   }
 
   /** Tap with the spring mode: select a placed spring, or place a new one under the cap. @param {number} x @param {number} y */
@@ -466,6 +485,9 @@ export async function startApp(canvas, hooks = {}) {
     const season = clock.seasonOf(display);
     const day = daylight.update(display, world.state, getStore('preview')?.weather ?? null, atmosphere.aerosolScale);
     atmosphere.setAtmosphere({ cloud: day.weather.cloud, mist: day.weather.mist, rain: day.weather.rain });
+    wetSky.rain = day.weather.rain;
+    wetSky.sunY = day.sm.sunDir[1];
+    wetSky.wind = weatherAt(world.state?.weather, display, seasonsRecipe).wind;
     for (const event of day.events) emitDeferred('sky:sun-crossed', { event });
     // Palette keys follow the displayed sun, season and weather; positive exposureComp brightens.
     const look = baker.update(realDt, {
@@ -506,6 +528,9 @@ export async function startApp(canvas, hooks = {}) {
 
     /** @type {import('./sim/live-sim.js').FrameInfo} */
     const info = { dt: t.dt, realDt, worldT: t.worldT, animT: t.animT, displayT: display, tier };
+    ripples.setCenter(camera.target[0], camera.target[2]);
+    // `?ripplerain=1` rains ripples in any weather, to judge rings in sunshine (tools, tuning).
+    ripples.setRain(params.has('ripplerain') ? 1 : day.weather.rain);
     sim.update(info);
     const encoder = gpu.device.createCommandEncoder({ label: 'frame' });
     sim.encode(encoder, info);
