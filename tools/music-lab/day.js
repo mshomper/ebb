@@ -25,7 +25,9 @@ const SLOT = /** @type {Record<string, {fill: string, ink: string, labels: strin
   nocturne: { fill: '#4D5F8F', ink: '#FFFDF8', labels: ['nocturne', 'noct.', 'N'] },
   hush: { fill: '#8E9895', ink: '#1E2624', labels: ['pre-dawn hush', 'hush', 'H'] },
 });
-const SLOT_NAME = /** @type {Record<string, string>} */ ({ morning: 'Morning', interlude: 'Interlude', evening: 'Evening', frogs: 'Frog window', 'early-nocturne': 'Early nocturne', nocturne: 'Nocturne', hush: 'Pre-dawn hush' });
+/** The main lane's background: the page's light color by day, a soft cool tint by night, between at twilight. */
+const LANE = { day: '#FFFDF8', twilight: '#EEEFF1', night: '#DEE3EC', edge: '#E3D9C9' };
+const SLOT_NAME =/** @type {Record<string, string>} */ ({ morning: 'Morning', interlude: 'Interlude', evening: 'Evening', frogs: 'Frog window', 'early-nocturne': 'Early nocturne', nocturne: 'Nocturne', hush: 'Pre-dawn hush' });
 
 const INPUT_STYLE = 'font:800 19px Nunito,sans-serif;width:9em;max-width:100%;padding:10px;border-radius:12px;border:1px solid #CFC3AF;background:#FFFDF8;color:#1E2624';
 
@@ -125,7 +127,7 @@ export async function initDay(host) {
     <div class="card">
       <div class="tiles" id="dy-tiles"></div>
       <h3>The day, midnight to midnight</h3>
-      <p class="muted">Each row is one game day. Faint bands are the windows where each slot may start; solid bars are pieces playing, numbered as in the list below; hatched bars are the rests after them. Night is shaded, twilight lighter, and the gold ticks are sunrise and sunset.</p>
+      <p class="muted">Each row is one game day. The thin strip on top shows when each slot may start. Below it, solid bars are pieces playing, numbered as in the list below, and hatched bars are the rests after them. The lane is tinted cool at night and lighter at twilight; the gold dots on the time line are sunrise and sunset.</p>
       <div id="dy-legend" class="row" style="gap:8px 16px;margin:6px 0 10px"></div>
       <div id="dy-rows"></div>
       <h3>Pieces played</h3>
@@ -152,9 +154,9 @@ export async function initDay(host) {
   $('dy-run').addEventListener('click', () => run());
 
   $('dy-legend').innerHTML = [
-    ...['morning', 'interlude', 'evening', 'frogs', 'early-nocturne', 'nocturne', 'hush'].map((s) => legendItem(`<rect x="1" y="3" width="26" height="14" rx="3" fill="${SLOT[s].fill}"/>`, SLOT_NAME[s])),
+    ...['morning', 'interlude', 'evening', 'frogs', 'early-nocturne', 'nocturne', 'hush'].map((s) => legendItem(`<rect x="1" y="3" width="26" height="14" rx="3" fill="${SLOT[s].fill}"/>`, s === 'hush' ? 'Hush' : SLOT_NAME[s])),
     legendItem(`<defs>${hatchDef('lg-hatch')}</defs><rect x="1" y="3" width="26" height="14" rx="3" fill="url(#lg-hatch)" stroke="#B9AD99"/>`, 'Rest'),
-    legendItem('<rect x="1" y="3" width="26" height="14" rx="3" fill="#33405A" fill-opacity="0.22"/>', 'Night'),
+    legendItem(`<rect x="1" y="3" width="26" height="14" rx="3" fill="${LANE.night}" stroke="#CFC3AF"/>`, 'Night'),
   ].join('');
 
   /** @type {any} */
@@ -250,81 +252,70 @@ export async function initDay(host) {
     if (!res) return;
     const rows = $('dy-rows');
     const W = Math.max(240, Math.floor(rows.clientWidth || host.clientWidth || 320));
-    const phone = W < 520;
     const px = 14;
-    const padL = 2, padR = 2;
+    const padL = 1, padR = 1;
     const x = (/** @type {number} */ h) => padL + (h / 24) * (W - padL - padR);
-    const top = 14, bandH = 30, gap = 4, trackH = 32;
-    const trackY = top + bandH + gap, axisY = trackY + trackH + 18, H = axisY + 4;
+    // Slot strip, then the main lane, then the time line with its labels.
+    const stripY = 0, stripH = 8, laneY = 12, laneH = 38, axisY = laneY + laneH + 8, labelY = axisY + 21, H = labelY + 5;
     const endGameT = res.startT + res.endRealS * 60 * res.flow;
     const toGame = (/** @type {number} */ realS) => res.startT + realS * 60 * res.flow;
 
     rows.innerHTML = res.days.map((/** @type {any} */ d, /** @type {number} */ i) => {
       const day0 = d.day * DAY;
       const prev = i > 0 ? res.days[i - 1] : null;
-      const hatch = `dyh-${i}`;
-      /** @type {string[]} */
-      const parts = [`<defs>${hatchDef(hatch)}</defs>`];
+      const hatch = `dyh-${i}`, clip = `dyc-${i}`;
       const rect = (/** @type {number} */ h0, /** @type {number} */ h1, /** @type {number} */ y, /** @type {number} */ hh, /** @type {string} */ attrs) =>
         `<rect x="${x(h0).toFixed(1)}" y="${y}" width="${Math.max(0, x(h1) - x(h0)).toFixed(1)}" height="${hh}" ${attrs}/>`;
-      // Sky: day, twilight and night behind the bands and the track.
-      parts.push(rect(0, 24, top, trackY + trackH - top, 'fill="#FFFDF8" stroke="#E3D9C9"'));
-      const sky = (/** @type {number} */ a, /** @type {number} */ b, /** @type {number} */ op) => { if (Number.isFinite(a) && Number.isFinite(b) && b > a) parts.push(rect(Math.max(0, a), Math.min(24, b), top, trackY + trackH - top, `fill="#33405A" fill-opacity="${op}"`)); };
-      sky(0, d.dawn, 0.2); sky(d.dawn, d.sunrise, 0.09); sky(d.sunset, d.dusk, 0.09); sky(d.dusk, 24, 0.2);
-      // Slot windows.
-      for (const w of windows(d, prev)) {
-        const c = SLOT[w.slot];
-        const strong = w.slot === 'frogs';
-        parts.push(rect(w.from, w.to, top, bandH, `rx="4" fill="${c.fill}" fill-opacity="${strong ? 0.55 : 0.2}"`));
-        if (strong) parts.push(rect(w.from, w.to, trackY, trackH, `fill="${c.fill}" fill-opacity="0.28"`));
-        const label = fit(c.labels, x(w.to) - x(w.from), px);
-        if (label) parts.push(`<text x="${((x(w.from) + x(w.to)) / 2).toFixed(1)}" y="${top + bandH / 2 + 5}" text-anchor="middle" style="fill:${strong ? '#FFFDF8' : '#1E2624'}">${esc(label)}</text>`);
-      }
-      // Rests and pieces, in game time, cut to this row.
+      /** @type {string[]} */
+      const parts = [`<defs>${hatchDef(hatch)}<clipPath id="${clip}">${rect(0, 24, laneY, laneH, 'rx="6"')}</clipPath></defs>`];
+
+      // Slot strip: color only, the legend names them.
+      for (const w of windows(d, prev)) parts.push(rect(w.from, w.to, stripY, stripH, `rx="3" fill="${SLOT[w.slot].fill}"${w.slot === 'frogs' ? '' : ' fill-opacity="0.75"'}`));
+
+      // Main lane background: day, twilight and night.
+      /** @type {string[]} */
+      const lane = [rect(0, 24, laneY, laneH, `fill="${LANE.day}"`)];
+      const tint = (/** @type {number} */ a, /** @type {number} */ b, /** @type {string} */ fill) => {
+        const a1 = Math.max(0, a), b1 = Math.min(24, b);
+        if (Number.isFinite(a1) && Number.isFinite(b1) && b1 > a1) lane.push(rect(a1, b1, laneY, laneH, `fill="${fill}"`));
+      };
+      tint(0, d.dawn, LANE.night); tint(d.dawn, d.sunrise, LANE.twilight); tint(d.sunset, d.dusk, LANE.twilight); tint(d.dusk, 24, LANE.night);
+
+      // Rests and pieces, in game time, cut to this row; parts of the day not simulated stay blank.
       const span = (/** @type {number} */ g0, /** @type {number} */ g1) => {
         const a = Math.max(g0, day0, res.startT), b = Math.min(g1, day0 + DAY, endGameT);
         return b > a ? [(a - day0) / 3600, (b - day0) / 3600] : null;
       };
       for (const r of res.rests) {
         const s = span(toGame(r.fromRealS), toGame(r.toRealS));
-        if (s) parts.push(rect(s[0], s[1], trackY + 4, trackH - 8, `rx="3" fill="url(#${hatch})" stroke="#B9AD99"`));
+        if (s) lane.push(rect(s[0], s[1], laneY + 9, laneH - 18, `rx="3" fill="url(#${hatch})" stroke="#B9AD99"`));
       }
       res.pieces.forEach((/** @type {any} */ p, /** @type {number} */ n) => {
         const s = span(toGame(p.startRealS), toGame(p.endRealS));
         if (!s) return;
         const c = SLOT[p.slot] ?? SLOT.interlude;
-        const w = Math.max(3, x(s[1]) - x(s[0]));
-        parts.push(`<rect x="${x(s[0]).toFixed(1)}" y="${trackY}" width="${w.toFixed(1)}" height="${trackH}" rx="4" fill="${c.fill}"><title>${esc(`${n + 1}. ${SLOT_NAME[p.slot] ?? p.slot}, ${p.id}, seed ${p.seed}`)}</title></rect>`);
-        const label = fit([`${n + 1} ${c.labels[0]}`, `${n + 1} ${c.labels[1]}`, `${n + 1}`], w, px);
-        if (label) parts.push(`<text x="${(x(s[0]) + w / 2).toFixed(1)}" y="${trackY + trackH / 2 + 5}" text-anchor="middle" style="fill:${c.ink}">${esc(label)}</text>`);
+        const x0 = x(s[0]), w = Math.max(3, x(s[1]) - x0);
+        lane.push(`<rect x="${x0.toFixed(1)}" y="${laneY + 3}" width="${w.toFixed(1)}" height="${laneH - 6}" rx="4" fill="${c.fill}"><title>${esc(`${n + 1}. ${SLOT_NAME[p.slot] ?? p.slot}, ${p.id}, seed ${p.seed}`)}</title></rect>`);
+        // "5 morning" if it fits, else "5", else nothing: a label never spills out of its bar.
+        const label = fit([`${n + 1} ${c.labels[0]}`, `${n + 1}`], w, px);
+        if (label) lane.push(`<text x="${(x0 + w / 2).toFixed(1)}" y="${laneY + laneH / 2 + 5}" text-anchor="middle" style="fill:${c.ink}">${esc(label)}</text>`);
       });
-      // Outside the simulated span.
-      const simFrom = Math.max(0, (res.startT - day0) / 3600), simTo = Math.min(24, (endGameT - day0) / 3600);
-      const cover = (/** @type {number} */ a, /** @type {number} */ b) => {
-        if (b <= a) return;
-        parts.push(rect(a, b, top, trackY + trackH - top, 'fill="#E9E1D3" fill-opacity="0.92"'));
-        const label = fit(['not simulated', 'not run', ''], x(b) - x(a), px);
-        if (label) parts.push(`<text x="${((x(a) + x(b)) / 2).toFixed(1)}" y="${trackY + trackH / 2 + 5}" text-anchor="middle">${label}</text>`);
-      };
-      cover(0, simFrom); cover(Math.max(0, simTo), 24);
-      // Sunrise and sunset ticks.
-      for (const h of [d.sunrise, d.sunset]) if (Number.isFinite(h)) {
-        parts.push(`<line x1="${x(h).toFixed(1)}" x2="${x(h).toFixed(1)}" y1="${top - 8}" y2="${trackY + trackH}" stroke="#B8801F" stroke-width="2"/>`);
-        parts.push(`<circle cx="${x(h).toFixed(1)}" cy="${top - 6}" r="5" fill="#E6B84A" stroke="#B8801F" stroke-width="1.5"/>`);
-      }
-      // Hour axis.
+      parts.push(`<g clip-path="url(#${clip})">${lane.join('')}</g>`, rect(0, 24, laneY, laneH, `rx="6" fill="none" stroke="${LANE.edge}"`));
+
+      // Time line: hour ticks, labels at 0, 6, 12, 18 and 24, sunrise and sunset as dots on the line.
+      parts.push(`<line x1="${x(0)}" x2="${x(24)}" y1="${axisY}" y2="${axisY}" stroke="#B9AD99" stroke-width="1.5"/>`);
       for (let h = 0; h <= 24; h += 3) {
         const big = h % 6 === 0;
-        parts.push(`<line x1="${x(h).toFixed(1)}" x2="${x(h).toFixed(1)}" y1="${trackY + trackH}" y2="${trackY + trackH + (big ? 6 : 3)}" stroke="#8E9895"/>`);
-        if (big) parts.push(`<text x="${x(h).toFixed(1)}" y="${axisY}" text-anchor="${h === 0 ? 'start' : h === 24 ? 'end' : 'middle'}">${phone ? h : `${String(h).padStart(2, '0')}:00`}</text>`);
+        parts.push(`<line x1="${x(h).toFixed(1)}" x2="${x(h).toFixed(1)}" y1="${axisY - (big ? 4 : 2)}" y2="${axisY + (big ? 4 : 2)}" stroke="#8E9895"/>`);
+        if (big) parts.push(`<text x="${x(h).toFixed(1)}" y="${labelY}" text-anchor="${h === 0 ? 'start' : h === 24 ? 'end' : 'middle'}">${String(h).padStart(2, '0')}:00</text>`);
       }
-      const season = SEASON_LABEL[Math.floor(d.day / 7) % 4];
-      const head = `${season} day ${d.day % 7}` + (phone ? '' : ` (game day ${d.day})`);
+      for (const h of [d.sunrise, d.sunset]) if (Number.isFinite(h)) parts.push(`<circle cx="${x(h).toFixed(1)}" cy="${axisY}" r="4.5" fill="#E6B84A" stroke="#B8801F" stroke-width="1.5"/>`);
+
+      const head = `${SEASON_LABEL[Math.floor(d.day / 7) % 4]} day ${d.day % 7}`;
       const sun = Number.isFinite(d.sunrise) ? `sunrise ${hhmm(d.sunrise)}, sunset ${hhmm(d.sunset)}` : '';
       const frogNote = opt.frogs ? (frogsAwakeAt(day0 + (d.dusk + 1) * 3600) ? 'frogs awake at dusk' : 'frogs asleep in the mud') : 'no frogs';
-      return `<div style="margin:10px 0 4px"><b style="font-size:17px">${esc(head)}</b> <span class="muted">${esc(sun)} · ${frogNote}</span></div>
-        <svg class="chart dy-row" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" style="width:100%;max-width:${W}px;height:auto" role="img" aria-label="${esc(`${head}: ${sun}`)}">
-        <g style="font:700 ${px}px Nunito, system-ui, sans-serif">${parts.join('')}</g></svg>`;
+      return `<div style="margin:14px 0 6px"><b style="font-size:17px">${esc(head)}</b> <span class="muted">${esc(sun)} · ${frogNote}</span></div>
+        <svg class="chart dy-row" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" style="width:100%;max-width:${W}px;height:auto" role="img" aria-label="${esc(`${head}: ${sun}`)}">${parts.join('')}</svg>`;
     }).join('');
     // svg.chart text in the lab's stylesheet is 13 px; the rows' labels are 14 px.
     for (const t of rows.querySelectorAll('text')) /** @type {any} */ (t).style.font = `700 ${px}px Nunito, system-ui, sans-serif`;
