@@ -31,16 +31,19 @@ Gifts are chosen so one species helps the next: frogs give water lilies, which g
 | Aspect | Spec |
 |---|---|
 | Kind, activity | Individual. Crepuscular: active 18:00 to 02:00 and 04:00 to 07:00 game time; rests in reeds at midday. Dormant in winter (buried in pond mud). |
-| Water (w 0.25) | Still water or tide band, depth 0.05 to 0.6 m; full score within 2 m, zero beyond 8 m. |
-| Food (w 0.25) | Midge field within 6 m; demand 0.08 per frog per hour. Midges grow where reed biomass is within 3 m of still water, scaled by warmth. |
-| Shelter (w 0.20) | Reed cover 1.0, grass 0.3, within 3 m; cover 0.2 starts counting, 0.6 is full. |
-| Quiet (w 0.15) | Lanterns within 8 m at night, paths within 3 m by day. |
-| Company (w 0.15) | Group 2 to 9, ideal 5; cap 12; happy needs 4 or more. Small bonus near dragonflies. |
+| Water (w 0.25) | Still fresh water 0.05 to 0.6 m deep, or a damp hollow; full score within 2 m, zero beyond 8 m. Not the tide band: common frogs avoid salt (changed in S6a). |
+| Food (w 0.25) | The midge field summed over 6 m around the frog, against 2.5 square meters of full midge cloud per frog in the group. Midges are an ecology field, not a species (see below). |
+| Shelter (w 0.20) | The best cover within 3 m: reeds 1.0, rushes 0.9, iris 0.7, lilies 0.5, grass 0.3; cover 0.3 starts counting, 0.6 is full, so grass alone is no shelter and a bare grassy bank holds no frogs. |
+| Quiet (w 0.15) | Lanterns within 8 m at night, paths within 3 m by day (none exist in the slice, so quiet is full). |
+| Company (w 0.15) | Group 2 to 9, ideal 5; a lone frog is a little lonely, a crowd past 9 a little less content; happy needs 4 or more. Small bonus near dragonflies (M2). |
+| Numbers | **One frog per 3 m of good edge** (Matt, October 2026): a bank square beside still water whose habitat score is 0.5 or more is good edge, and the island holds one frog per 3 m of it, so the count follows the habitat and a bare stretch holds none. No fixed cap. The starter pond has about 85 m of good edge (about 28 frogs in time), Two ponds about 200 m. The shore fills slowly: a pair first, then about one more on most evenings while there is room. |
+| Arrival (S6a) | 1) The pond becomes right: the journal's Frogs "?" gains a hint and the page's pencil circles sit near the best edge. 2) A sign at dusk, never "a frog arrived": a plop and rings by the reeds, and a note that something slipped into the water. 3) First sighting, only when the player finds one (taps it, or watches it closely): the page inks, the moment is written, the web's frog links ink. 4) Settling after a day, a second frog the next dusk. 5) The shore fills; if the habitat fails, one frog a day moves on, quietly. Numbers and timings in `recipes/species/frog.json` (ecology); `tools/ecology-lab.html` shows the arc on both islands. |
 | Gift | Water lily seed. In the slice, happiness shows through behavior and the journal page only; the gift card and the lilies themselves arrive in M2, the first unlock in `20-roadmap-and-vertical-slice.md`. |
 | Signature behavior | **Dusk chorus**: content frogs call from the reed margin with the throat sac swelling; neighbors alternate rather than overlap (each frog delays its call if another started within 0.4 s), so the chorus ripples around the pond. In spring, nesting shows as frogspawn clumps in the shallows. |
 | Other behaviors | Tongue-flick at midges (forage); sit still on a stone or pad (rest, linger); plop into water and surface eyes-up 2 m away (startle); slow hop along the far edge (restless wander). |
 | Interaction hook | Call: a soft croak whistle, answered by frogs with trust above 0.3 (waits for M2 and the frog voice). Feed: a pinch of midges at the cursor, for trust only. Photograph moments: "dusk chorus", "frogspawn", "a frog that came when called". |
-| Presence (doc 23) | Comfort ring about 1.5 m when shy, shrinking to 0.3 m with trust; startles only at a fast swoop inside it or an edit beside it, a plop and back within a minute. Trust from feeding and quiet watching. Ceiling: Familiar, sitting still for a portrait at arm's length. |
+| Presence (doc 23) | Comfort ring about 1.5 m when shy, shrinking to 0.3 m with trust, always at real size (not scaled with the drawn frog); startles only at a fast swoop inside it or an edit beside it, a plop and back within a minute. Trust from feeding and quiet watching, at doc 23's pace (several play sessions). Named from trust 0.5. Ceiling: Familiar, sitting still for a portrait at arm's length (Bonded is kept for later rungs). The camera may come to 35 cm in normal play from S6b (the size preview allowed 25 cm). |
+| Display size | Drawn at **1.5 times real size** (`body.displayScale`, Matt, October 2026), so frogs read from a little way off on a big screen and show more detail on a phone. Hops and tongue reach scale with it; comfort rings, needs and numbers stay in real meters. |
 | Body recipe | Ellipsoid torso (squashed 1 : 0.6 : 1.3); round-cone head blended k 0.02 m; two eye spheres raised on the head top; throat sac sphere under the jaw (spring-scaled); hind legs as three capsules each (thigh, shank, long foot) folded at rest; short foreleg capsules. Length 7 to 9 cm. Albedo regions (linear): moss-green back about 0.12 to 0.16, sand-pale belly about 0.40 to 0.50, seeded dark bark-brown blotches about 0.05 to 0.08; the palette maps them into its colors at tonemap. |
 | Motion | Hop: ballistic arc 0.3 to 0.6 m, legs extend via IK then fold, squash-and-stretch spring on landing. Swim: frog-kick cycle at the surface, floats with eyes above water. Breathing spring on throat at rest. Faces the camera slowly when lingering. |
 | Audio | Call voice and chorus layering in `17-audio.md`. |
@@ -175,6 +178,7 @@ A new chapter after the year page, so the fifteen species above stay the whole f
 - Should songbirds be one species with three looks, or three separate journal pages?
 - Should herons ever eat a frog, or only fish?
 - Is a gift every species too frequent late in the game, or about right?
+- Matt's pin (October 2026), not scheduled: small burrows or caves, an exception to the heightfield's no-undercuts rule, that draw a landmark land creature such as a bear. Landmark creatures want landmark places the player can discover. Keep the door open: placed rock pieces (M7's arches and sea caves, doc 20) are the natural way to build them.
 
 ## Depends on / feeds into
 

@@ -35,7 +35,7 @@ The ecology `coarseStep` maintains per-cell fields on the 1 m grid. Creatures ne
 | Disturbance | paths (day), lanterns (night), structures, larger wary species | quiet |
 | Occupancy | residents and swarm densities per species | company, crowding |
 
-The **insect field** matters for the slice: midge density grows logistically where reed biomass sits within 3 m of still water, scaled by warmth (season and time of day), and is consumed by frogs. In the live sim it is drawn as a faint shimmer of midges over the reeds; it is not a species with its own needs.
+The **insect field** matters for the slice. **Midges are an ecology field, not a creature** (decided October 2026): one share per square meter, kept in the hourly tick (`src/world/ecology/midges.js`, `recipes/species/midge.json`). Midges gather over still fresh water and the ground within 2 m of it, where reeds and rushes within 3 m feed them, scaled by the season's warmth (almost none in winter). Each hour the field moves part of the way toward what the ground can hold, so a new reed bed fills over a day or so and a drained one empties faster; a new world starts with none. Frogs read it as food. In S6a frogs do not eat it down; that can come with feeding in S6c. Time of day changes only the live swarm (more at dusk, fewer at night and in wind), drawn on the GPU in S6b from this field. Midges have a journal page, known by themselves at the first dusk they gather, but no needs, arrival or trust.
 
 ### Need scores
 
@@ -49,7 +49,7 @@ For species *s* at cell *c*, with recipe radii and preferences:
 
 **Target mood** `M* = Π sᵢ^wᵢ` with weights summing to 1. It is computed as `det.exp(Σ wᵢ · det.log(max(sᵢ, 0.01)))` with the deterministic math from `src/core/rng.js`. Actual mood eases toward it each tick: `M ← M + 0.15 · (M* − M)`, about a 4-hour half-life, so a single edit never flips a creature instantly.
 
-**Habitat score** of a cell is `M*` evaluated with the species' ideal group size. Contiguous cells scoring above 0.5 form a **patch**; patch **capacity** is `floor(area · density)` capped by the species limit.
+**Habitat score** of a cell is `M*` evaluated with the species' ideal group size. Contiguous cells scoring above 0.5 form a **patch**; patch **capacity** is `floor(area · density)` capped by the species limit. **Frogs instead count their numbers along the shore** (decided October 2026): a bank square beside still water whose score is 0.5 or more is good edge, and the island holds one frog per 3 m of it, with no fixed cap, so a bare stretch of bank holds none. Each frog has a home square on the bank (`src/world/creatures/coarse.js`), which S6b animates from.
 
 ### Arrival, settling, leaving
 
@@ -70,6 +70,8 @@ flowchart LR
 ```
 
 Scouts are scheduled with the deterministic RNG keyed by species and day index. A species that has fully moved on returns through the same scout path. Swarm species skip scouting: their density field seeds at the patch edge and grows logistically toward capacity, shrinking when mood falls.
+
+**As built for frogs in S6a.** Arrival is something the player discovers, not something they are told. The scout comes at dusk, and the journal gets a sign (a plop and rings by the reeds, "Something slipped into the water by the reeds"), never "a frog arrived". The frog page inks only when the player finds one: a tap on it, or watching it in the middle of the view, zoomed in. Until then the notes speak of something, and the page shows a riddle, then hints. A content scout stays after a day, and a second frog comes the next dusk. More come on most evenings while the edge has room, and if the habitat fails, one frog a day moves on, quietly. Frogs sleep in the pond mud through the winter dormancy window (`recipes/world/seasons.json`). Events: `creature:habitat-right`, `creature:arrived` (the scout), `creature:settled`, `creature:joined`, `creature:left`, `creature:dormant`, `creature:woke`, `species:happy`, and the live `creature:found`. `tools/ecology-lab.html` runs the arc on both islands, twice, and must end the same.
 
 ### Mood expressed through behavior
 
@@ -133,15 +135,18 @@ The coarse model keeps only **group records** (species, patch, population, group
 ## Data and interfaces
 
 ```js
-// recipes/species/frog.json (shape; values in doc 12)
-{ "id":"frog", "kind":"individual", "tier":1, "activity":"crepuscular",
-  "needs": { "water":{"classes":["still","tide"],"depth":[0.05,0.6],"rOk":2,"rMax":8,"w":0.25},
-             "food":{"fields":{"insect":1.0},"radius":6,"demand":0.08,"w":0.25},
-             "shelter":{"cover":{"reeds":1.0,"grass":0.3},"radius":3,"c":[0.2,0.6],"w":0.2},
-             "quiet":{"night":["lantern"],"day":["path"],"q":[0.2,0.6],"w":0.15},
-             "company":{"n":[2,5,9],"companions":{"dragonfly":0.1},"w":0.15} },
-  "density":0.02, "cap":12, "minHappyPop":4,
-  "body":{ "prims":[ /* {type,bone,c,r,k,region} */ ] }, "motion":{ "gait":"hop" } }
+// recipes/species/frog.json (shape as built in S6a; values in doc 12). Two halves: the look
+// (body, bake, preview) a creature studio or a player's look layer may change, and the life
+// (ecology, presence, find) that nothing but the recipe changes, so catch-up stays the same.
+{ "id":"frog", "body":{ "displayScale":1.5, "prims":[ /* {type,bone,c,r,k,region} */ ] }, "bake":{...},
+  "ecology":{ "dormancy":"frogs", "activity":{"pattern":"crepuscular"},
+    "needs": { "water":{"depthM":[0.05,0.6],"okM":2,"maxM":8,"w":0.25},
+               "food":{"field":"midges","radiusM":6,"perFrog":2.5,"w":0.25},
+               "shelter":{"cover":{"reeds":1,"rushes":0.9,"iris":0.7,"lilies":0.5,"grass":0.3},"radiusM":3,"from":0.3,"full":0.6,"w":0.2},
+               "quiet":{"night":["lantern"],"day":["path"],"w":0.15},
+               "company":{"n":[2,5,9],"alone":0.6,"crowded":0.4,"w":0.15} },
+    "edge":{"metresPerFrog":3,"goodScore":0.5}, "arrival":{ /* scout, settle, join, leave, happy */ }, "gift":{...} },
+  "presence":{ /* doc 23 */ }, "find":{ /* tap or watch to find one */ } }
 ```
 
 Modules:
@@ -185,6 +190,7 @@ Tuning panel, per species: need weights and radii, accepted water and food, cove
 - Should the journal ever hint at the exact weakest need, or only describe the behavior and let the player guess?
 - Should named individuals ever leave, or always stay as long as their species stays?
 - Is there room for gentle predator-prey moments (a heron near the frog pond making frogs warier), or should all species simply coexist?
+- Matt's pin (October 2026): small burrows or caves for a landmark land creature such as a bear (doc 12's open questions). The ecology grid would need a "den" field from placed rock pieces, since the heightfield holds no undercuts.
 
 ## Depends on / feeds into
 

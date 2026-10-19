@@ -291,8 +291,9 @@ The map above lists each module's main files. The system docs name these additio
 
 | Folder | Files | Defined in |
 |---|---|---|
-| `src/world/creatures/` | `agents.js`, `bodies.js`, `motion.js`, `interact.js` | 11 |
-| `src/world/ecology/` | `fields.js`, `habitat.js`, `populations.js` | 11 |
+| `src/world/creatures/` | `coarse.js` (arrival arc, S6a), `index.js` (live frogs, S6a), `body-bake.js`, `agents.js`, `motion.js`, `interact.js` | 11 |
+| `src/world/ecology/` | `coarse.js`, `fields.js`, `habitat.js`, `midges.js` (S6a), `populations.js` | 11 |
+| `src/world/` | `island-model.js`: a whole island without the GPU, for tools and tests (S6a) | 07, 08, 11 |
 | `src/world/water/` | `summary.js` | 07 |
 | `src/world/sky/` | `sun-moon.js` | 06 |
 | `src/world/structures/` | `lights.js` | 09 |
