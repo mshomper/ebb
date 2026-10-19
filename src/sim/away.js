@@ -22,7 +22,8 @@ import { showCatchingUp } from '../ui/catching-up.js';
 export async function mountAway(opts) {
   const { app, jr } = opts;
   const save = app.save ?? null;
-  const recipe = (await loadRecipe('world/save')).catchUp;
+  const saveRecipe = await loadRecipe('world/save');
+  const recipe = saveRecipe.catchUp, reveal = saveRecipe.reveal;
   let busy = false;
 
   /** Game hours earned since `since` (UTC ms), with the carried minutes, by doc 18's rules. @param {number} since @param {number} [highWater] */
@@ -40,10 +41,13 @@ export async function mountAway(opts) {
     busy = true;
     save?.hold(true);
     clock.hold(true);
-    const screen = showCatchingUp({ afterS: recipe.screenAfterS });
+    // Long enough away for the reveal (src/ui/reveal.js): it opens from cream, so the screen is up at once.
+    const revealing = hours >= reveal.thresholdHours;
+    const screen = showCatchingUp({ afterS: revealing ? 0 : recipe.screenAfterS });
     const t0 = performance.now();
     try {
       const world = app.world;
+      const before = { growth: world.state?.growth ?? null };
       const r = await catchUp({
         seed: world.env.seed, recipes: world.env.recipes, habitat: world.env.habitat?.() ?? null,
         material: get('terrainLive')?.mirror?.material ?? null, state: world.state, journal: get('journal') ?? null, jr,
@@ -56,12 +60,12 @@ export async function mountAway(opts) {
       // The water starts again at the new tide rather than draining or filling for minutes.
       app.water?.reseed?.(clock.display() / clock.SECONDS_PER_HOUR);
       console.info(`caught up ${hours} game hours (${why}) in ${Math.round(performance.now() - t0)} ms; ${r.notes.length} notes`);
-      emitDeferred('world:caught-up', { hours, why, notes: r.notes, events: r.events });
+      emitDeferred('world:caught-up', { hours, why, notes: r.notes, events: r.events, before, reveal: revealing });
     } catch (err) {
       console.error('catch-up failed; the island carries on from where it was', err);
     } finally {
       clock.hold(false);
-      screen.done();
+      screen.done(revealing ? reveal.creamFadeS : undefined);
       save?.hold(false);
       save?.saveSoon('event');
       busy = false;

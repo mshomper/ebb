@@ -4,5 +4,7 @@
   "minIntervalS": 10,
   "generationsKept": 3,
   "_catchUp": "Time away (docs/02, src/sim/away.js). blockHours: game hours per worker job (progress steps); screenAfterS: the catching-up screen shows only if catch-up takes longer than this; pretendHours: the badge's Pretend I was away choices.",
-  "catchUp": { "blockHours": 24, "screenAfterS": 0.5, "pretendHours": [1, 10, 48, 720] }
+  "catchUp": { "blockHours": 24, "screenAfterS": 0.5, "pretendHours": [1, 10, 48, 720] },
+  "_reveal": "The reveal on return (docs/02, src/ui/reveal.js). thresholdHours: from this much time away the full reveal plays, below it a short growth time-lapse; creamFadeS: the cream opening; growS / shortGrowS: the time-lapse; growSpread: share of growS by which plants start apart (the ripple); notesAtS, noteS, notes: when notes start, each one's time, how many; places: rings on the island, ringM their radius (m); animalsAtS: when the animals come back, all within animalsWindowS with at most animalEffects plops or ripples island-wide, the nearest the camera.",
+  "reveal": { "thresholdHours": 6, "creamFadeS": 1.2, "growS": 8, "shortGrowS": 2, "growSpread": 0.35, "notesAtS": 2, "noteS": 4, "notes": 5, "places": 3, "ringM": 1.2, "animalsAtS": 9, "animalsWindowS": 1.5, "animalEffects": 3 }
 }

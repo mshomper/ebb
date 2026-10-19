@@ -8,6 +8,18 @@
   "arrivedHours": 2,
   "islandNote": { "showS": 6, "gapS": 1.2, "queue": 3, "more": "{n} more in the journal", "moreOne": "1 more in the journal" },
   "readMarks": { "missed": "You may have missed", "rest": "All notes" },
+  "reveal": {
+    "_doc": "The reveal on return (docs/02, src/world/journal/reveal-plan.js) shows its notes best first: by the first class whose kinds hold the note's kind (doc 02's order), then newer first; kinds not listed come last. Kinds are shared by every species, so a new plant or animal ranks by the kinds of its notes.",
+    "rank": [
+      { "class": "arrival", "kinds": ["arrived", "seen", "sign", "signAgain", "back", "settled", "settledUnseen", "joined", "joinedUnseen"] },
+      { "class": "named", "kinds": ["named"] },
+      { "class": "content", "kinds": ["happy"] },
+      { "class": "season", "kinds": ["season"] },
+      { "class": "maturing", "kinds": ["flower", "woke"] },
+      { "class": "spread", "kinds": ["spread"] }
+    ],
+    "placeApartM": 8
+  },
   "identify": { "radiusM": 0.9, "showS": 8, "ringM": 0.6, "grassRingM": 0.45 },
   "trend": { "hours": 24, "upShare": 0.1, "upMin": 2, "downShare": 0.1, "downMin": 1 },
   "where": { "spreadOut": 0.5, "centerShare": 0.2 },

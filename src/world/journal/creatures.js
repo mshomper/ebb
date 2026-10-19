@@ -60,7 +60,7 @@ export function measureAnimal(sp, state, rec) {
 export function observeAnimals(j, out, ctx, at) {
   const { state, hour, words } = ctx;
   /** @param {any} rec @param {string} kind @param {string} sp */
-  const note = (rec, kind, sp) => { const t = rec.notes?.[kind]; if (t) out.push({ hour, date: at.date, text: t, sp }); };
+  const note = (rec, kind, sp) => { const t = rec.notes?.[kind]; if (t) out.push({ hour, date: at.date, text: t, sp, kind }); };
 
   // Frogs.
   const rec = words.species.frogs;

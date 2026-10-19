@@ -33,6 +33,7 @@ import { addEcologyTests } from './unit-tests-ecology.js';
 import { addFrogTests } from './unit-tests-frogs.js';
 import { addSaveTests } from './unit-tests-save.js';
 import { addAwayTests } from './unit-tests-away.js';
+import { addRevealTests } from './unit-tests-reveal.js';
 
 /** @type {{group: string, name: string, fn: () => any}[]} */
 const tests = [];
@@ -1360,6 +1361,10 @@ addSaveTests(test, assert, eq);
 // ---- time away (tools/unit-tests-away.js) ----
 
 addAwayTests(test, assert, eq);
+
+// ---- the reveal (tools/unit-tests-reveal.js) ----
+
+addRevealTests(test, assert, eq);
 
 // ---- runner and rendering ----
 

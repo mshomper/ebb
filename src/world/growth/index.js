@@ -70,29 +70,50 @@ export function createGrowth(device, opts) {
   const unSummary = on('water:summary-updated', rebuildHabitat);
   rebuildHabitat();
 
-  /** Upload the plants and the grass cover if the growth state changed. */
+  /**
+   * The reveal's time-lapse (S7c): every plant, of whatever species, and the drawn cover grow from
+   * the island before catch-up to the island now, each starting a little apart (by its hash) so
+   * growth ripples rather than snaps. Plants gone while away shrink out.
+   * @type {null | { t: number, dur: number, spread: number, size: Map<number, number>, gone: any[], grass: Uint8Array | null, rush: Uint8Array | null }}
+   */
+  let lapse = null;
+  /** How far along one thing is (0..1), starting `spread` of the way apart by hash. @param {number} h 0..1 */
+  const along = (h) => {
+    if (!lapse) return 1;
+    const start = h * lapse.spread, f = Math.min(1, Math.max(0, (lapse.t / lapse.dur - start) / Math.max(1e-6, 1 - lapse.spread)));
+    return f * f * (3 - 2 * f);
+  };
+  const lerp = (/** @type {number} */ a, /** @type {number} */ b, /** @type {number} */ k) => a + (b - a) * k;
+
+  /** Upload the plants and the grass cover if the growth state changed (each frame of a time-lapse). */
   function upload() {
     const g = world.state?.growth;
-    if (!g || g === shown) return;
+    if (!g || (g === shown && !lapse)) return;
     shown = g;
-    count = Math.min(g.plants.length, cap);
+    // During a time-lapse the plants gone while away are drawn too, shrinking out.
+    const all = lapse ? [...g.plants, ...lapse.gone] : g.plants;
+    count = Math.min(all.length, cap);
     // Grouped by species (in plant order within each), one range per species.
-    const order = g.plants.slice(0, count).map((p, i) => ({ s: speciesIndex(p.sp), i }));
+    const order = all.slice(0, count).map((p, i) => ({ s: speciesIndex(p.sp), i }));
     order.sort((a, b) => a.s - b.s || a.i - b.i);
     for (const r of ranges) { r[0] = 0; r[1] = 0; }
     for (let n = order.length - 1; n >= 0; n--) { const r = ranges[order[n].s]; r[0] = n; r[1]++; }
     for (let i = 0; i < count; i++) {
-      const p = g.plants[order[i].i];
+      const p = all[order[i].i];
       const o = i * PLANT_FLOATS;
-      data[o] = p.x; data[o + 1] = p.z; data[o + 2] = p.size; data[o + 3] = p.stage;
-      data[o + 4] = speciesIndex(p.sp); data[o + 5] = hash32(p.id, 0x51ed) / 4294967296;
+      const h = hash32(p.id, 0x51ed) / 4294967296;
+      const size = lapse ? lerp(lapse.size.get(p.id) ?? 0, p.gone ? 0 : p.size, along(h)) : p.size;
+      data[o] = p.x; data[o + 1] = p.z; data[o + 2] = size; data[o + 3] = p.stage;
+      data[o + 4] = speciesIndex(p.sp); data[o + 5] = h;
       data[o + 6] = p.age; data[o + 7] = terrain.sampleHeight(p.x, p.z);
     }
     if (count) device.queue.writeBuffer(instances, 0, data, 0, count * PLANT_FLOATS);
     if (g.grass) {
       const rush = coverIds.length ? g.cover?.[coverIds[0]] : null;
       for (let k = 0; k < g.grass.length; k++) {
-        coverData[4 * k] = g.grass[k]; coverData[4 * k + 1] = rush ? rush[k] : 0;
+        const c = lapse ? along(hash32(k, 0xc0e7) / 4294967296) : 1;
+        coverData[4 * k] = lapse?.grass ? lerp(lapse.grass[k], g.grass[k], c) : g.grass[k];
+        coverData[4 * k + 1] = rush ? (lapse?.rush ? lerp(lapse.rush[k], rush[k], c) : rush[k]) : 0;
         coverData[4 * k + 2] = lush ? lush[k] : 90;
       }
       writeCover();
@@ -114,7 +135,36 @@ export function createGrowth(device, opts) {
     /** The current habitat grid, or null before the first water summary. */
     habitat: () => habitat,
 
-    tick() { upload(); },
+    /** @param {{ realDt: number }} [f] */
+    tick(f) {
+      if (lapse) {
+        lapse.t += f?.realDt ?? 0;
+        if (lapse.t >= lapse.dur) { lapse = null; shown = null; }
+      }
+      upload();
+    },
+
+    /**
+     * Grow the drawing from an earlier growth state to the one now over `seconds` (the reveal).
+     * The world's state is untouched: this is drawing only.
+     * @param {any} before the growth state before catch-up @param {number} seconds
+     * @param {number} spread share of the time by which plants start apart
+     */
+    timeLapse(before, seconds, spread) {
+      if (!before || !(seconds > 0)) return;
+      const now = new Set((world.state?.growth?.plants ?? []).map((/** @type {any} */ p) => p.id));
+      lapse = {
+        t: 0, dur: seconds, spread: Math.min(0.9, Math.max(0, spread)),
+        size: new Map((before.plants ?? []).map((/** @type {any} */ p) => [p.id, p.size])),
+        gone: (before.plants ?? []).filter((/** @type {any} */ p) => !now.has(p.id)).map((/** @type {any} */ p) => ({ ...p, gone: true })),
+        grass: before.grass ?? null, rush: coverIds.length ? before.cover?.[coverIds[0]] ?? null : null,
+      };
+      shown = null;
+    },
+    /** Land the time-lapse at its end now (any input ends the reveal). */
+    endTimeLapse() { if (lapse) { lapse = null; shown = null; } },
+    /** Is a time-lapse running? */
+    lapsing: () => !!lapse,
 
     /**
      * How well a species likes a point (0..1) and its least-met need, for the Plant tool.

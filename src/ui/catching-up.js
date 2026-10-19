@@ -5,8 +5,9 @@
 // covers the toolbar, so nothing is edited while the hours run.
 
 /**
- * @param {{ afterS: number }} opts
- * @returns {{ progress: (f: number) => void, done: () => void }}
+ * @param {{ afterS: number }} opts  afterS 0 shows it at once (the reveal opens from it)
+ * @returns {{ progress: (f: number) => void, done: (fadeS?: number) => void }}
+ *   done: fade out over fadeS (the reveal's cream opening is slower than the plain screen's)
  */
 export function showCatchingUp(opts) {
   ensureStyle();
@@ -17,14 +18,18 @@ export function showCatchingUp(opts) {
     + '<div class="ebb-catchup__bar" aria-hidden="true"><i></i></div>';
   const fill = /** @type {HTMLElement} */ (wrap.querySelector('i'));
   document.body.appendChild(wrap);   // blocks input at once; seen only once it fades in
-  const timer = setTimeout(() => wrap.classList.add('is-shown'), opts.afterS * 1000);
+  if (opts.afterS <= 0) { wrap.style.transition = 'none'; wrap.classList.add('is-shown'); }
+  const timer = opts.afterS > 0 ? setTimeout(() => wrap.classList.add('is-shown'), opts.afterS * 1000) : 0;
   return {
     progress(f) { fill.style.width = `${Math.round(Math.max(0, Math.min(1, f)) * 100)}%`; },
-    done() {
+    done(fadeS = 0.4) {
       clearTimeout(timer);
       if (!wrap.classList.contains('is-shown')) { wrap.remove(); return; }
+      if (matchMedia('(prefers-reduced-motion: reduce)').matches) fadeS = 0;
+      wrap.style.pointerEvents = 'none';
+      wrap.style.transition = `opacity ${fadeS}s ease`;
       wrap.classList.remove('is-shown');
-      setTimeout(() => wrap.remove(), 450);
+      setTimeout(() => wrap.remove(), fadeS * 1000 + 50);
     },
   };
 }

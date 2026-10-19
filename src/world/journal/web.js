@@ -36,7 +36,7 @@ export function inkWeb(journal, survey, ctx) {
   const quiet = ctx.hour - journal.born <= ctx.words.arrivedHours;
   const date = dateText(ctx.state?.seasons, ctx.words);
   /** @type {import('./observe.js').Note[]} */
-  const notes = quiet ? [] : fresh.map((/** @type {any} */ l) => ({ hour: ctx.hour, date, text: l.note, sp: l.b }));
+  const notes = quiet ? [] : fresh.map((/** @type {any} */ l) => ({ hour: ctx.hour, date, text: l.note, sp: l.b, kind: 'web' }));
   const flags = [...journal.flags, ...fresh.map(inkFlag)];
   const kept = notes.length ? [...notes.slice().reverse(), ...journal.notes].slice(0, ctx.words.notesKept) : journal.notes;
   return { journal: { ...journal, flags, notes: kept }, notes };

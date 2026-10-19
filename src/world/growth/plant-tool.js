@@ -103,10 +103,12 @@ export function createPlantTool(opts) {
      * @param {number} now performance.now ms @param {boolean} open whether the Plant tool is open
      * @param {{ wx: number, wz: number, r: number, at: number } | null} [sel] a living thing the player
      *   tapped (store slice `identify`): it gets a ring that blooms in, then breathes gently
+     * @param {number[][]} [extra] more rings [x, z, radius, opacity] first (the reveal's, src/ui/reveal.js)
      */
-    marks(now, open, sel = null) {
+    marks(now, open, sel = null, extra = []) {
       marks.fill(0);
       let n = 0;
+      for (const m of extra) if (n < SLOTS) marks.set(m, n++ * 4);
       if (sel && Number.isFinite(sel.wx)) {
         const k = Math.min(1, (now - sel.at) / (recipe.selectBloomS * 1000));
         const bloom = 1 - (1 - k) * (1 - k);
