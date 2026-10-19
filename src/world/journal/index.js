@@ -20,6 +20,7 @@ import { groundKind, groundCard, groundSurvey, describeGround, groundSpot } from
 import { almanac } from './almanac.js';
 import { inkWeb, describeWeb } from './web.js';
 import { washMap } from './wash.js';
+import { stampNotes, markShown, markNotesSeen, markPageSeen, readOf, pageSince, unread, noteState } from './read.js';
 
 /**
  * @typedef {Object} JournalUiSlice
@@ -27,6 +28,8 @@ import { washMap } from './wash.js';
  * @property {'living'|'ground'|'web'|'almanac'|'notes'} view
  * @property {string|null} page   the page shown in the living or ground view, or null for the list
  * @property {'half'|'full'} size  the phone sheet's height
+ * @property {number} [notesSince] the last note number seen before Notes was opened (read.js): newer ones show as new
+ * @property {number} [pageSince]  the same for the page open
  */
 
 /**
@@ -39,6 +42,7 @@ import { washMap } from './wash.js';
  */
 export function createJournal(opts) {
   const { world, words, island, web, wash, creatures } = opts;
+  const fresh = !get('journal');
   /** @type {import('./observe.js').Journal} */
   let journal = get('journal') ?? initialJournal(hourIndex());
   update('journal', () => journal);
@@ -55,8 +59,15 @@ export function createJournal(opts) {
 
   /** @param {{ journal: import('./observe.js').Journal, notes: import('./observe.js').Note[] }} r */
   function commit(r) {
-    if (r.journal !== journal) {
-      journal = r.journal;
+    // Each new note gets its number (read.js); with Notes or its page open, it is read as it comes.
+    let next = stampNotes(r.journal, r.notes);
+    if (r.notes.length) {
+      /** @type {JournalUiSlice | undefined} */ const u = get('journalUi');
+      if (u?.open && u.view === 'notes') next = markNotesSeen(next);
+      if (u?.open && u.page) next = markPageSeen(next, u.page);
+    }
+    if (next !== journal) {
+      journal = next;
       update('journal', () => journal);
     }
     for (const n of r.notes) emitDeferred('note:posted', n);
@@ -169,6 +180,12 @@ export function createJournal(opts) {
       // Choosing a tool or closing the card puts the tap card away.
       if (a.type === 'tool.select' || a.type === 'ui.identify') { if (get('identify')) update('identify', () => null); return; }
       if (a.type === 'journal.showMe') { showMe(a.sp); return; }
+      // A note was shown on the island (src/ui/island-notes.js): it is no longer one you may have missed.
+      if (a.type === 'journal.noteShown') {
+        const next = markShown(journal, a.n);
+        if (next !== journal) { journal = next; update('journal', () => journal); }
+        return;
+      }
       if (a.type !== 'ui.journal') return;
       /** @type {JournalUiSlice} */ const u = get('journalUi');
       const open = a.toggle ? !u.open : a.open ?? u.open;
@@ -181,17 +198,31 @@ export function createJournal(opts) {
       if (a.size) patch.size = a.size;
       // Opening the journal, or a page in it, puts the tap card away (the page now says it all).
       if (open && (!u.open || a.page) && get('identify')) update('identify', () => null);
+      // Opening Notes, or a page: what was unread stays marked new while you look (since), and
+      // counts as read from now on.
+      const view = patch.view ?? u.view, page = patch.page !== undefined ? patch.page : u.page;
+      const read = readOf(journal);
+      let next = journal;
+      if (open && view === 'notes' && !(u.open && u.view === 'notes')) { patch.notesSince = read.notes; next = markNotesSeen(next); }
+      if (open && page && (page !== u.page || !u.open)) { patch.pageSince = pageSince(read, page); next = markPageSeen(next, page); }
+      if (next !== journal) { journal = next; update('journal', () => journal); }
       update('journalUi', (s) => ({ ...s, ...patch }));
       if (open !== u.open) emitDeferred(open ? 'ui:panel-opened' : 'ui:panel-closed', { panel: 'journal' });
     }),
   ];
   look([], hourIndex());
+  // On a new journal, the first look describes the island you start with: read, not news.
+  if (fresh) { journal = markNotesSeen(journal); update('journal', () => journal); }
 
   return {
     words,
     island,
     /** The journal now. */
     journal: () => journal,
+    /** What is unread: notes since Notes was last opened, and pages with notes since each was opened (read.js). */
+    unread: () => unread(journal),
+    /** A note against the last one seen: 'missed', 'new' or 'seen' (read.js). */
+    noteState,
     /** Is there a page for this id? @param {string} id */
     hasPage: (id) => !!(words.species[id] || island.ground[id]),
     /** A living thing's or a ground's page, in words. @param {string} id */

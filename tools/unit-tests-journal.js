@@ -14,6 +14,7 @@ import { almanac } from '../src/world/journal/almanac.js';
 import { inkWeb, describeWeb } from '../src/world/journal/web.js';
 import { webView } from '../src/ui/journal-web.js';
 import { washMap } from '../src/world/journal/wash.js';
+import { stampNotes, markShown, markNotesSeen, markPageSeen, readOf, noteState, unread } from '../src/world/journal/read.js';
 import { STAGE } from '../src/world/growth/coarse.js';
 import { WORLD_CELLS } from '../src/world/terrain/grid.js';
 import { shoreline, at, loadRecipes } from './unit-tests-growth.js';
@@ -94,6 +95,34 @@ function live(s, n) {
  * @param {(cond: any, msg?: string) => void} assert @param {(a: any, b: any, msg?: string) => void} eq
  */
 export function addJournalTests(test, assert, eq) {
+  test(JOURNAL, 'read marks: new notes since you looked, notes you may have missed, and pages with news', async () => {
+    let j = { ...initialJournal(0), notes: [{ hour: 0, date: 'old', text: 'an old note', sp: 'reeds' }] };
+    // Three notes at once; the first two shown on the island, the third lost in the burst.
+    const burst = [1, 2, 3].map((i) => ({ hour: 5, date: 'd', text: `note ${i}`, sp: i === 3 ? 'frogs' : 'reeds' }));
+    j = stampNotes({ ...j, notes: [...burst.slice().reverse(), ...j.notes] }, burst);
+    eq(burst.map((n) => n.n).join(','), '1,2,3', 'note numbers');
+    j = markShown(markShown(j, 1), 2);
+    const since = readOf(j).notes;
+    eq(since, 0, 'nothing read yet');
+    const states = j.notes.map((n) => noteState(n, since));
+    eq(states.join(','), 'missed,new,new,seen', 'newest first: missed, new, new, and the old note seen');
+    let u = unread(j);
+    eq(u.notes, 3, 'unread notes');
+    eq([...u.pages].sort().join(','), 'frogs,reeds', 'pages with news');
+    // Open the frogs page: only reeds still has news.
+    j = markPageSeen(j, 'frogs');
+    eq([...unread(j).pages].join(','), 'reeds', 'pages with news after opening frogs');
+    // Open Notes: everything read; a later note is new again.
+    j = markNotesSeen(j);
+    u = unread(j);
+    eq(u.notes + u.pages.size, 0, 'unread after opening Notes');
+    const later = [{ hour: 6, date: 'd', text: 'later', sp: null }];
+    j = stampNotes({ ...j, notes: [...later, ...j.notes] }, later);
+    eq(unread(j).notes, 1, 'a later note is unread');
+    eq(noteState(j.notes[0], readOf(j).notes), 'missed', 'never shown, so missed');
+    return 'missed, new and seen read right; pages and Notes clear when opened';
+  });
+
   test(JOURNAL, 'a new island: every plant on it is noted as already there', async () => {
     const { words, first } = await setup();
     for (const sp of plantsOf(words)) {

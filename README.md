@@ -17,8 +17,8 @@ The M1 vertical slice, one small island with every pillar working in miniature, 
 | Done | G1 to G4 | Realistic ground from scanned materials: no visible tiling, wet ground in rain, natural rock |
 | Done | S4 | Water: a shallow-water simulation coupled to sculpting, the tide, springs welling up from rock outcrops, streams, ponds and marshes, with reflections, caustics and foam. Ponds lie still, ruffled only by the wind and their inflow; the swell is the sea's |
 | Done | S5 | Six plants that grow, spread and compete on their own ground: grass, rushes, reeds, water lilies, yellow flag iris and sea thrift, with a Plant tool |
-| Done | J1 to J2 | The field journal: a page and a field sketch for every living thing and every kind of ground, notes as things happen, the Almanac, a web of what needs what, and a wash that shows where each thing lives |
-| In progress | S6 | Frogs: they find the island, arrive and settle (S6a), then move, call and react to you (S6b; by day they hide in the reeds and rushes, at dusk they come out to the edge), then come to trust you and take a name (S6c) |
+| Done | J1 to J2 | The field journal: a page and a field sketch for every living thing and every kind of ground, notes as things happen (new ones marked, and the ones you may have missed kept at the top), the Almanac, a web of what needs what, and a wash that shows where each thing lives |
+| In progress | S6 | Frogs: they find the island, arrive and settle (S6a), then move, call and react to you (S6b; by day they hide in the reeds and rushes, at dusk they come out to the edge), then come to trust you and take a name (S6c). Midges dance over the reeds at dusk, and shelter from rain |
 | Next | S7 | Saving, and the island moving on while you are away. Until then every load starts a fresh world |
 | Next | S8 | The final touch layout and the low quality tier for phones |
 
