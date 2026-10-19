@@ -1,0 +1,296 @@
+{
+  "type": "instrument",
+  "id": "glass",
+  "name": "Wine glasses (rubbed)",
+  "version": 1,
+  "note": "An instrument recipe for the sampler (doc 24, Instruments, Sample preparation and Sampler rules). It describes exactly the files the prep step produced; nothing here is a tuning choice. type, id, name, version: what this is. source: where the recordings come from. channels: 1, every file is mono, taken from one microphone of the library's spaced stereo pair (see source.notes). formats: each file exists once per format under root, as <file>.ogg (Ogg Opus, 48 kHz mono, 56 kbps, variable bitrate) and <file>.m4a (AAC-LC, 48 kHz mono, 80 kbps); the browser picks the first it can play. Every file was processed at 48 kHz, so the sample positions of the decoded .ogg are the positions of the processed file (checked by cross-correlation: offset 0 for every file, length equal to the sample). The .m4a starts in the same place (offset 0) and decodes 0 to 21 ms longer, because AAC pads its last frame; for a looped file that padding lies after loop.endS and is never played. root: folder of the files, relative to the repo. layers: the most velocity layers any set has, layer 1 the quietest. sets: one entry per articulation, each with source (the library subfolder) and zones; a zone is one recorded note: note (scientific pitch, C4 = middle C, sharps written s), midi (C4 = 60). measuredCents: the zone's measured pitch offset from 12-tone equal temperament at A4 = 440 Hz, in cents, as recorded (the mean of its layers): the frequency of the first partial from a zero-padded Hann spectrum, measured in two windows (struck: 0.2 to 1 s and 1 to 2 s after the onset, 0.1 to 0.6 and 0.6 to 1.2 s above 1 kHz; looped: the second before the loop and the loop itself); tuneWindowSpreadCents is how far the two windows disagree, layerSpreadCents how far the layers disagree, and tuneConfidence (0 to 1) falls as either grows. layers: the files of the zone, quietest first; file is the path under root without extension. peakDb: sample peak in dBFS. attackRmsDb: RMS of the first 300 ms after the onset, in dBFS. brightness: share of energy above 1.5 times the fundamental (or 1 kHz, whichever is higher) in those first 300 ms. lenS: length of the file in seconds. trimStartMs: how much was cut from the start (the onset, the first point above -50 dB of the file's peak, is kept with 3 ms before it). measuredCents on a layer is that file's own measurement. src: the original file name. mic: which microphone of the pair the file was taken from. No gain was changed anywhere. levels: normalized false means the library kept the recorded levels, so the layers already step up in level as they were played. range: the lowest and highest zone. problems: anything odd found while preparing, in plain words. loop (looped sets only): startS and endS in seconds from the start of the file as encoded (sample = seconds x 48000, exact). The file ends at loop.endS. A note plays the file from 0, then repeats loop.startS to loop.endS sample for sample for as long as it is held, and the sampler's own release envelope ends it. The loop was chosen in the steady part of the sound by matching level, spectrum and level contour at both ends, the start sits on an upward zero crossing, the end was placed (on an upward crossing, within 12 ms) where the waveform best matches the material before the start, and the 250 ms before the start were blended into the last 250 ms of the loop with an equal-power crossfade corrected for that match (crossfadeCorrelation), so the wrap is seamless without any sampler crossfade. loopRmsDb: RMS of the loop region in dBFS (the held level). loopCheck, measured on the decoded .ogg with the loop played four times: seamStepVsSteadyMax, the largest sample-to-sample step at a seam divided by the largest step inside the loop (below 1 means the seam is smoother than the sound itself); seamLevelDb, the level change from the 50 ms before a seam to the 50 ms after it; naturalLevelDbMedian, the same 50 ms to 50 ms change measured everywhere inside the loop, for comparison. GLASS: one set, sus, the rim of a wine glass rubbed with a wet finger, looped. Two layers by rubbing speed: layer 1 slow (softer, slower warble), layer 2 fast (louder, about 5 Hz warble); see rub on each layer. The glasses are household glasses, not tuned instruments: each is placed at the note nearest its measured pitch, and measuredCents is large (up to 49 cents flat), so the sampler must apply it. The level of a rubbed glass swings by several dB a few times a second; that warble is part of the sound and is kept in the loop, which is why seamLevelDb is compared to naturalLevelDbMedian rather than to the 0.5 dB aim for steady sounds. The library's release recordings (the ring after the finger lifts, Releases/Slow and Releases/Fast) are not included; the sampler's release envelope stands in for them.",
+  "source": {
+    "library": "VCSL (Versilian Community Sample Library)",
+    "url": "https://github.com/sgossner/VCSL/tree/master/Idiophones/Friction%20Idiophones/Wine%20Glasses",
+    "license": "CC0 1.0",
+    "commit": "c1ea7bcc3c73",
+    "notes": "Folder Idiophones/Friction Idiophones/Wine Glasses, 44.1 kHz 24-bit stereo: four glasses (glass1 to glass4), Sustains/Slow and Sustains/Fast (11.7 to 25.4 s of continuous rubbing) and Releases/Slow and Releases/Fast. The file names are one octave low, and glass3, named A#4, sounds 963 Hz, 43 to 49 cents below B5, so it is placed at B5. Each glass uses its left microphone, which carries more of the sound for all four (a left-plus-right fold lost up to 7.7 dB, the pair being out of phase on glass3 and glass4). Levels are as recorded."
+  },
+  "channels": 1,
+  "formats": [
+    "ogg",
+    "m4a"
+  ],
+  "root": "assets/audio/instruments/glass/",
+  "layers": 2,
+  "sets": {
+    "sus": {
+      "source": "Sustains/Slow (layer 1) and Sustains/Fast (layer 2)",
+      "looped": true,
+      "crossfadeS": 0.25,
+      "zones": [
+        {
+          "note": "Ds5",
+          "midi": 75,
+          "measuredCents": 32.36,
+          "tuneConfidence": 0.1,
+          "layerSpreadCents": 5.33,
+          "tuneWindowSpreadCents": 1.83,
+          "layers": [
+            {
+              "file": "sus/Ds5-v1",
+              "layer": 1,
+              "peakDb": -34.64,
+              "attackRmsDb": -52.5,
+              "brightness": 6e-05,
+              "lenS": 4.5282,
+              "trimStartMs": 0.0,
+              "measuredCents": 29.69,
+              "src": "glass1_D#4_Slow_1_Main.wav",
+              "channels": 1,
+              "mic": "left",
+              "loop": {
+                "startS": 1.059375,
+                "endS": 4.52825
+              },
+              "loopRmsDb": -44.48,
+              "loopCheck": {
+                "seamStepVsSteadyMax": 0.8,
+                "seamLevelDb": 2.521,
+                "naturalLevelDbMedian": 3.46,
+                "crossfadeCorrelation": 0.9639
+              },
+              "rub": "slow"
+            },
+            {
+              "file": "sus/Ds5-v2",
+              "layer": 2,
+              "peakDb": -20.38,
+              "attackRmsDb": -37.4,
+              "brightness": 0.00063,
+              "lenS": 4.8813,
+              "trimStartMs": 0.0,
+              "measuredCents": 35.02,
+              "src": "glass1_D#4_Fast_1_main.wav",
+              "channels": 1,
+              "mic": "left",
+              "loop": {
+                "startS": 3.370104,
+                "endS": 4.881312
+              },
+              "loopRmsDb": -32.32,
+              "loopCheck": {
+                "seamStepVsSteadyMax": 0.091,
+                "seamLevelDb": 5.237,
+                "naturalLevelDbMedian": 4.595,
+                "crossfadeCorrelation": 0.9577
+              },
+              "rub": "fast"
+            }
+          ],
+          "namedInSource": "D#4"
+        },
+        {
+          "note": "Fs5",
+          "midi": 78,
+          "measuredCents": -8.37,
+          "tuneConfidence": 0.46,
+          "layerSpreadCents": 3.3,
+          "tuneWindowSpreadCents": 1.05,
+          "layers": [
+            {
+              "file": "sus/Fs5-v1",
+              "layer": 1,
+              "peakDb": -40.59,
+              "attackRmsDb": -49.99,
+              "brightness": 0.00272,
+              "lenS": 2.3998,
+              "trimStartMs": 0.0,
+              "measuredCents": -10.02,
+              "src": "glass2_F#4_Slow_1_Main.wav",
+              "channels": 1,
+              "mic": "left",
+              "loop": {
+                "startS": 0.589354,
+                "endS": 2.399812
+              },
+              "loopRmsDb": -48.14,
+              "loopCheck": {
+                "seamStepVsSteadyMax": 0.879,
+                "seamLevelDb": 1.977,
+                "naturalLevelDbMedian": 1.779,
+                "crossfadeCorrelation": 0.99
+              },
+              "rub": "slow"
+            },
+            {
+              "file": "sus/Fs5-v2",
+              "layer": 2,
+              "peakDb": -34.41,
+              "attackRmsDb": -44.8,
+              "brightness": 0.00117,
+              "lenS": 7.1656,
+              "trimStartMs": 0.0,
+              "measuredCents": -6.72,
+              "src": "glass2_F#4_Fast_1_Main.wav",
+              "channels": 1,
+              "mic": "left",
+              "loop": {
+                "startS": 3.929458,
+                "endS": 7.165583
+              },
+              "loopRmsDb": -42.89,
+              "loopCheck": {
+                "seamStepVsSteadyMax": 0.512,
+                "seamLevelDb": 0.175,
+                "naturalLevelDbMedian": 2.104,
+                "crossfadeCorrelation": 0.8451
+              },
+              "rub": "fast"
+            }
+          ],
+          "namedInSource": "F#4"
+        },
+        {
+          "note": "B5",
+          "midi": 83,
+          "measuredCents": -45.84,
+          "tuneConfidence": 0.18,
+          "layerSpreadCents": 6.09,
+          "tuneWindowSpreadCents": 0.49,
+          "layers": [
+            {
+              "file": "sus/B5-v1",
+              "layer": 1,
+              "peakDb": -32.62,
+              "attackRmsDb": -40.05,
+              "brightness": 0.00021,
+              "lenS": 5.93,
+              "trimStartMs": 0.0,
+              "measuredCents": -48.89,
+              "src": "glass3_A#4_Slow_1_Main.wav",
+              "channels": 1,
+              "mic": "left",
+              "loop": {
+                "startS": 2.69025,
+                "endS": 5.93
+              },
+              "loopRmsDb": -41.23,
+              "loopCheck": {
+                "seamStepVsSteadyMax": 0.378,
+                "seamLevelDb": 2.002,
+                "naturalLevelDbMedian": 3.476,
+                "crossfadeCorrelation": 0.9671
+              },
+              "rub": "slow"
+            },
+            {
+              "file": "sus/B5-v2",
+              "layer": 2,
+              "peakDb": -27.07,
+              "attackRmsDb": -43.28,
+              "brightness": 0.00074,
+              "lenS": 6.3046,
+              "trimStartMs": 0.0,
+              "measuredCents": -42.8,
+              "src": "glass3_A#4_Fast_1_Main.wav",
+              "channels": 1,
+              "mic": "left",
+              "loop": {
+                "startS": 3.23975,
+                "endS": 6.304583
+              },
+              "loopRmsDb": -35.69,
+              "loopCheck": {
+                "seamStepVsSteadyMax": 0.521,
+                "seamLevelDb": 4.396,
+                "naturalLevelDbMedian": 4.338,
+                "crossfadeCorrelation": 0.9936
+              },
+              "rub": "fast"
+            }
+          ],
+          "namedInSource": "A#4"
+        },
+        {
+          "note": "D6",
+          "midi": 86,
+          "measuredCents": 4.67,
+          "tuneConfidence": 0.6,
+          "layerSpreadCents": 0.93,
+          "tuneWindowSpreadCents": 1.04,
+          "layers": [
+            {
+              "file": "sus/D6-v1",
+              "layer": 1,
+              "peakDb": -34.63,
+              "attackRmsDb": -44.05,
+              "brightness": 3e-05,
+              "lenS": 4.8138,
+              "trimStartMs": 0.0,
+              "measuredCents": 5.14,
+              "src": "glass4_D5_Slow_2_Main.wav",
+              "channels": 1,
+              "mic": "left",
+              "loop": {
+                "startS": 1.650354,
+                "endS": 4.813792
+              },
+              "loopRmsDb": -44.59,
+              "loopCheck": {
+                "seamStepVsSteadyMax": 0.765,
+                "seamLevelDb": 1.545,
+                "naturalLevelDbMedian": 1.918,
+                "crossfadeCorrelation": 0.8747
+              },
+              "rub": "slow"
+            },
+            {
+              "file": "sus/D6-v2",
+              "layer": 2,
+              "peakDb": -28.6,
+              "attackRmsDb": -38.24,
+              "brightness": 9e-05,
+              "lenS": 6.0254,
+              "trimStartMs": 0.0,
+              "measuredCents": 4.21,
+              "src": "glass4_D5_Fast_1_Main.wav",
+              "channels": 1,
+              "mic": "left",
+              "loop": {
+                "startS": 2.949833,
+                "endS": 6.025375
+              },
+              "loopRmsDb": -37.64,
+              "loopCheck": {
+                "seamStepVsSteadyMax": 0.432,
+                "seamLevelDb": 3.152,
+                "naturalLevelDbMedian": 3.676,
+                "crossfadeCorrelation": 0.9855
+              },
+              "rub": "fast"
+            }
+          ],
+          "namedInSource": "D5"
+        }
+      ]
+    }
+  },
+  "levels": {
+    "normalized": false,
+    "note": "Recorded levels: slow peaks -40.6 to -32.6 dBFS, fast -34.4 to -20.4 dBFS; loop RMS -48.1 to -32.3 dBFS."
+  },
+  "range": {
+    "low": "Ds5",
+    "high": "D6"
+  },
+  "sizes": {
+    "sus": {
+      "files": 8,
+      "oggBytes": 377948,
+      "m4aBytes": 438858,
+      "decodedBytes": 8073348
+    }
+  },
+  "problems": [
+    "Only four glasses: Ds5, Fs5, B5, D6 (gaps D#5 to F#5 (3 semitones), F#5 to B5 (5 semitones), B5 to D6 (3 semitones)). Lines that leave these notes are shifted by up to 2.5 semitones, and a rubbed glass shifted far sounds less like glass; it suits held tones and shimmer near these pitches.",
+    "Untuned glasses: zone pitches Ds5 +32.4 c, Fs5 -8.4 c, B5 -45.8 c, D6 +4.7 c. The slow and fast takes of one glass differ by up to 6.1 cents, and the pitch drifts a few cents while rubbing.",
+    "glass3 is named A#4 in the library but sounds near B5 (963 Hz); placed at B5.",
+    "The warble makes the level at a loop seam move by 0.2 to 5.2 dB over 50 ms, against a median of 1.8 to 4.6 dB anywhere inside the same loops; the seams are as smooth as the sound around them."
+  ]
+}

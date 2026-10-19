@@ -1,0 +1,241 @@
+{
+  "type": "music",
+  "id": "names",
+  "version": 1,
+  "note": "How the composer names a piece it grows (doc 24, Naming). The same seed, season and slot always give the same name, so a name can be shown, remembered and found again. templates: one is drawn per piece; {key} is filled from the word lists, each word used at most once in a name. Lists merge from common, the season and the slot (the season's and slot's words are drawn twice as often, so names lean seasonal). one: singular things, for 'The {one} {verb}'; many: plural or mass things; verb: present tense for a singular subject. Edit or swap any list freely: names change, nothing else does. Authored pieces keep their own titles. Words are checked against avoid before use.",
+  "templates": [
+    "{adj} {many}",
+    "{many} {prep} {place}",
+    "{many} and {many}",
+    "The {one} {verb}",
+    "{many} at {when}",
+    "{adj} {one}",
+    "Song for {a} {one}"
+  ],
+  "seasonWeight": 2,
+  "words": {
+    "common": {
+      "one": [
+        "Heron",
+        "Tide",
+        "Sandbar",
+        "Lantern",
+        "Boat",
+        "Footbridge",
+        "Stone",
+        "Pool",
+        "Shore",
+        "Willow",
+        "Frog",
+        "Feather",
+        "Current",
+        "Breeze"
+      ],
+      "many": [
+        "Reeds",
+        "Shallows",
+        "Pebbles",
+        "Ripples",
+        "Lily Pads",
+        "Rushes",
+        "Tidepools",
+        "Mosses",
+        "Dragonflies",
+        "Footprints",
+        "Small Waves",
+        "Moorings"
+      ],
+      "adj": [
+        "Slow",
+        "Still",
+        "Quiet",
+        "Little",
+        "Low",
+        "Soft",
+        "Gentle",
+        "Far",
+        "Shallow",
+        "Half-Lit",
+        "Unhurried"
+      ],
+      "place": [
+        "the Shallows",
+        "the Reed Bed",
+        "the Sandbar",
+        "the Low Bank",
+        "the Far Shore",
+        "the Footbridge",
+        "the Pond",
+        "the Island"
+      ],
+      "prep": [
+        "over",
+        "by",
+        "across",
+        "beneath",
+        "beyond",
+        "along"
+      ],
+      "verb": [
+        "Waits",
+        "Turns",
+        "Returns",
+        "Rests",
+        "Listens",
+        "Wanders",
+        "Settles",
+        "Drifts",
+        "Sleeps",
+        "Remembers"
+      ],
+      "a": [
+        "a",
+        "the"
+      ]
+    },
+    "spring": {
+      "one": [
+        "Bud",
+        "Tadpole",
+        "Rain Cloud",
+        "Sprout",
+        "Wren"
+      ],
+      "many": [
+        "New Leaves",
+        "Spring Rains",
+        "Catkins",
+        "Green Shoots",
+        "First Flowers"
+      ],
+      "adj": [
+        "Green",
+        "Fresh",
+        "Waking",
+        "Early",
+        "Budding"
+      ],
+      "place": [
+        "the Wet Meadow",
+        "the Spring Bank"
+      ]
+    },
+    "summer": {
+      "one": [
+        "Sun",
+        "Long Day",
+        "Dragonfly",
+        "Honeybee",
+        "Warm Stone"
+      ],
+      "many": [
+        "Long Days",
+        "Tall Grasses",
+        "Warm Shallows",
+        "Seed Heads",
+        "Clover"
+      ],
+      "adj": [
+        "Warm",
+        "Golden",
+        "Bright",
+        "Lazy",
+        "Sunlit"
+      ],
+      "place": [
+        "the Warm Shallows",
+        "the Tall Grass"
+      ]
+    },
+    "autumn": {
+      "one": [
+        "Gold Reed",
+        "Mist",
+        "Mushroom",
+        "Ember",
+        "Harvest Moon"
+      ],
+      "many": [
+        "Falling Leaves",
+        "Gold Reeds",
+        "Mushrooms",
+        "Low Mists",
+        "Acorns"
+      ],
+      "adj": [
+        "Amber",
+        "Misty",
+        "Russet",
+        "Fading",
+        "Wistful"
+      ],
+      "place": [
+        "the Misty Bank",
+        "the Gold Reeds"
+      ]
+    },
+    "winter": {
+      "one": [
+        "Frost",
+        "Snowfall",
+        "Longest Night",
+        "Bare Willow",
+        "Hearth"
+      ],
+      "many": [
+        "Frost Ferns",
+        "Bare Stalks",
+        "Snowflakes",
+        "Still Waters",
+        "Ice Rings"
+      ],
+      "adj": [
+        "Frozen",
+        "Hushed",
+        "Silver",
+        "Pale",
+        "Lonely"
+      ],
+      "place": [
+        "the Frozen Pond",
+        "the Bare Reeds"
+      ]
+    },
+    "slots": {
+      "morning": {
+        "when": [
+          "Dawn",
+          "First Light",
+          "Sunrise"
+        ]
+      },
+      "interlude": {
+        "when": [
+          "Noon",
+          "Midday"
+        ]
+      },
+      "evening": {
+        "when": [
+          "Dusk",
+          "Evening",
+          "Golden Hour"
+        ]
+      },
+      "nocturne": {
+        "when": [
+          "Midnight",
+          "Moonrise",
+          "Night"
+        ]
+      },
+      "early-nocturne": {
+        "when": [
+          "Moonrise",
+          "Nightfall"
+        ]
+      }
+    }
+  },
+  "avoid": []
+}

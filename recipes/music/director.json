@@ -1,0 +1,149 @@
+{
+  "type": "music",
+  "id": "director",
+  "version": 1,
+  "note": "When music plays (doc 24, The shape of a day, Anti-repetition, Director recipe). frequency: the player's setting (Often, Now and then, Rarely, Off) as a target share of real time; it scales every slot chance by chanceScale and the rests by restScale. restRealMin: the rest after every piece, drawn between these real minutes at the default setting. slots, in game time and sun height: morning starts within withinH game hours after sunrise; interlude from fromSunriseH hours after sunrise until the sun drops below toSunDeg, at most max a day; evening while the sun falls from sunDeg[0] to sunDeg[1] degrees, and it must end before the frog window; frogWindow from fromDuskH to toDuskH hours around dusk (sun at -6 degrees): no piece starts while frogs call, and if none are awake the window offers an early nocturne at elseNocturneChance; nocturne from fromDuskH after dusk to toDawnH before dawn, at most max a night; preDawnHushH before sunrise nothing starts. Each slot rolls its chance once per game day when it opens; a slot with several chances (max) waits a rest's length before the next roll. graceH: a slot whose chance comes up while a piece or a rest is running waits, and starts when the rest ends if that is within this many game hours after the slot closes (doc 24's morning and evening windows are only a real minute or two long at 1x, shorter than a rest); the evening's grace never reaches into the frog window, where no piece starts while frogs call. lenMin is each slot's target length in real minutes (the realizer picks the short form if the piece would run long). history: keep the last keep plays; a piece may not return within minGapDays game days or minGapRealMin real minutes, whichever is longer, unless its pool is spent (then the least recently played). freshnessRealMin: the weight of a recently played piece grows back to full over this many real minutes. keyDrift: avoid starting two pieces in a row in the same key. dayColor: continuous values that follow sun height with the palette's own key boundaries (boundsDeg, blendDeg, the same as src/render/passes/post/palette-keys.js, copied so music never reads render code): for each key night, blueHour, golden, morning (morning and afternoon) and day, the melody's register centre (MIDI), the note density ceiling (notes per second, all voices), the tempo multiplier, the music room's wet level, the brightness (lowpass Hz) and the most voices at once. preloadRealS: how long before a slot opens the director picks the piece and asks the instruments to unpack its notes. tides (Matt, October 19, 2026): the four island themes, each a tide. home: each season's own tide by candidate number (1 First water, 2 Sandbar, 3 Breath, 4 Moon pull); the first morning of a season always plays it (firstMorning), waiting up to firstMorningGraceH game hours after the morning window if a piece or a rest is still running, and the return reveal and the gift bloom use it. All four tides also join the ordinary pools in each season's setting, at this weight against other pieces (1).",
+  "frequency": {
+    "often": {
+      "chanceScale": 1.4,
+      "restScale": 0.75
+    },
+    "now-and-then": {
+      "chanceScale": 1.15,
+      "restScale": 1.0
+    },
+    "rarely": {
+      "chanceScale": 0.55,
+      "restScale": 1.6
+    },
+    "off": {
+      "chanceScale": 0,
+      "restScale": 1
+    }
+  },
+  "restRealMin": [
+    2,
+    4
+  ],
+  "slots": {
+    "morning": {
+      "withinH": 1,
+      "chance": 0.85,
+      "lenMin": [
+        2.5,
+        4
+      ],
+      "graceH": 1.5
+    },
+    "interlude": {
+      "fromSunriseH": 3,
+      "toSunDeg": 10,
+      "max": 2,
+      "chance": 0.6,
+      "lenMin": [
+        2,
+        3.5
+      ],
+      "graceH": 0
+    },
+    "evening": {
+      "sunDeg": [
+        10,
+        2
+      ],
+      "chance": 0.7,
+      "lenMin": [
+        2.5,
+        3.5
+      ],
+      "graceH": 0.5
+    },
+    "frogWindow": {
+      "fromDuskH": -0.5,
+      "toDuskH": 3,
+      "elseNocturneChance": 0.4
+    },
+    "nocturne": {
+      "fromDuskH": 3,
+      "toDawnH": -1,
+      "chance": 0.5,
+      "max": 1,
+      "lenMin": [
+        2,
+        3
+      ],
+      "graceH": 1
+    },
+    "preDawnHushH": 1
+  },
+  "history": {
+    "keep": 40,
+    "minGapDays": 3,
+    "minGapRealMin": 90,
+    "freshnessRealMin": 240
+  },
+  "keyDrift": true,
+  "preloadRealS": 60,
+  "dayColor": {
+    "boundsDeg": [
+      -12,
+      -4,
+      6,
+      20
+    ],
+    "blendDeg": 1.5,
+    "keys": {
+      "night": {
+        "register": 60,
+        "density": 0.6,
+        "tempo": 0.88,
+        "wet": 0.45,
+        "brightHz": 5500,
+        "voices": 3
+      },
+      "blueHour": {
+        "register": 62,
+        "density": 1.2,
+        "tempo": 0.94,
+        "wet": 0.38,
+        "brightHz": 7000,
+        "voices": 4
+      },
+      "golden": {
+        "register": 62,
+        "density": 1.5,
+        "tempo": 0.94,
+        "wet": 0.32,
+        "brightHz": 9000,
+        "voices": 5
+      },
+      "morning": {
+        "register": 69,
+        "density": 3.0,
+        "tempo": 1.04,
+        "wet": 0.22,
+        "brightHz": 14000,
+        "voices": 6
+      },
+      "day": {
+        "register": 67,
+        "density": 2.0,
+        "tempo": 1.0,
+        "wet": 0.25,
+        "brightHz": 12000,
+        "voices": 5
+      }
+    }
+  },
+  "tides": {
+    "home": {
+      "spring": 1,
+      "summer": 4,
+      "autumn": 2,
+      "winter": 3
+    },
+    "firstMorning": true,
+    "weight": 0.6,
+    "firstMorningGraceH": 5
+  }
+}

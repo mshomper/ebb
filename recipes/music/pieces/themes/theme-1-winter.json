@@ -1,0 +1,89 @@
+{
+ "id": "theme-1-winter",
+ "title": "Theme 1, First water: winter",
+ "version": 1,
+ "theme": {
+  "candidate": 1,
+  "name": "First water",
+  "season": "winter"
+ },
+ "slots": [
+  "morning",
+  "interlude",
+  "nocturne"
+ ],
+ "seasons": [
+  "winter"
+ ],
+ "weather": [
+  "clear",
+  "cloud"
+ ],
+ "requires": {},
+ "avoidWhen": {},
+ "keys": [
+  "Dm"
+ ],
+ "mode": "aeolian",
+ "meter": "3/4",
+ "tempo": [
+  50,
+  56
+ ],
+ "palette": {
+  "melody": [
+   "piano"
+  ],
+  "accomp": [
+   "piano"
+  ],
+  "counter": [
+   "vibraphone-bowed",
+   "glass",
+   "pad"
+  ],
+  "bed": [
+   "strings",
+   "pad"
+  ],
+  "touch": [
+   "bell"
+  ]
+ },
+ "layers": {
+  "bed": {
+   "style": "open-fifths",
+   "sections": {
+    "A": "swell",
+    "coda": "thin"
+   }
+  },
+  "touch": {
+   "chance": 0.5
+  }
+ },
+ "form": {
+  "grammar": "A coda",
+  "short": "A coda",
+  "optional": {}
+ },
+ "sections": {
+  "A": {
+   "bars": 8,
+   "abc": "X:1\nM:3/4\nL:1/8\nK:Dm\nV:mel\n!p!\"Dm\"D6 | \"Dm\"E2 F4 | \"Gm\"G4 A2- | \"F\"A6- | \"Am7\"A4 G2 | \"Gm7\"F2 E4 | \"Dm\"D6- | \"Dm\"D2 \"Am/C\"C4 |\nV:counter\nz6 | z6 | d6- | d6 | c6 | B6 | z6 | z6 |\nV:acc\n[D,,A,,]6 | [D,,A,,]6 | [G,,D,]6 | [F,,C,]6 | [A,,E,]6 | [G,,D,]6 | [D,,A,,]6 | [D,,A,,]2 [C,G,]4 |\n"
+  },
+  "coda": {
+   "bars": 2,
+   "abc": "X:1\nM:3/4\nL:1/8\nK:Dm\nV:mel\n!pp!\"Gm/Bb\"D2 C2 B,2 | \"Dm\"!fermata!A,6 |\nV:acc\n[G,,D,]6 | [D,,A,,]6 |\n"
+  }
+ },
+ "variation": {
+  "octave": [
+   0
+  ],
+  "paraphrase": 0,
+  "ornament": 0.1
+ },
+ "motifs": [],
+ "notes": "A waltz-like tide in 3/4: up by step from the home note to the fifth, held across the bar, then down past the start to the leading note. Plain and singable; the held note is the high water. Winter: D minor, the theme in augmentation over open fifths, a bowed high line, and an inverted fragment to close."
+}

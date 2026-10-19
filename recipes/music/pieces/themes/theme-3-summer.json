@@ -1,0 +1,99 @@
+{
+ "id": "theme-3-summer",
+ "title": "Theme 3, Breath: summer",
+ "version": 1,
+ "theme": {
+  "candidate": 3,
+  "name": "Breath",
+  "season": "summer"
+ },
+ "slots": [
+  "morning",
+  "interlude"
+ ],
+ "seasons": [
+  "summer"
+ ],
+ "weather": [
+  "clear",
+  "cloud"
+ ],
+ "requires": {},
+ "avoidWhen": {},
+ "keys": [
+  "F"
+ ],
+ "mode": "ionian",
+ "meter": "4/4",
+ "tempo": [
+  76,
+  84
+ ],
+ "palette": {
+  "melody": [
+   "fm-piano",
+   "piano"
+  ],
+  "accomp": [
+   "piano"
+  ],
+  "counter": [
+   "vibraphone",
+   "bell"
+  ],
+  "bed": [
+   "strings",
+   "pad"
+  ],
+  "touch": [
+   "vibraphone",
+   "bell"
+  ]
+ },
+ "layers": {
+  "bed": {
+   "style": "warm",
+   "sections": {
+    "A": "in",
+    "B": "swell",
+    "A'": "steady",
+    "coda": "thin"
+   }
+  },
+  "touch": {
+   "chance": 0.9
+  }
+ },
+ "form": {
+  "grammar": "A B A' coda",
+  "short": "A B A' coda",
+  "optional": {}
+ },
+ "sections": {
+  "A": {
+   "bars": 4,
+   "abc": "X:1\nM:4/4\nL:1/8\nK:F\nV:mel\n!mp!\"F\"A2 B2 c4- | \"Bbmaj7\"c2 B A \"C7sus4\"G2 F2 | \"Dm7\"A2 B2 d4- | \"Gm7\"d2 c B \"C7\"A2 G2 |\n"
+  },
+  "B": {
+   "bars": 2,
+   "abc": "X:1\nM:4/4\nL:1/8\nK:F\nV:mel\n\"Dm7\"f2 e d \"Am7\"c2 A2 | \"Bbmaj7\"B2 A G \"C7sus4\"G4 |\n"
+  },
+  "A'": {
+   "bars": 2,
+   "abc": "X:1\nM:4/4\nL:1/8\nK:F\nV:mel\n\"F\"A2 B2 c4- | \"Bb\"c2 B A \"C7\"G2 \"F\"F2 |\nV:counter\nz4 e4 | f8 |\n"
+  },
+  "coda": {
+   "bars": 2,
+   "abc": "X:1\nM:4/4\nL:1/8\nK:F\nV:mel\n!p!\"Bb/F\"D2 F2 B4 | \"F\"!fermata!A8 |\n"
+  }
+ },
+ "variation": {
+  "octave": [
+   0
+  ],
+  "paraphrase": 0,
+  "ornament": 0.1
+ },
+ "motifs": [],
+ "notes": "The smallest tide: two bars in 4/4, a breath in (third, fourth, fifth, held) and a breath out (down by step to the home note). Hymn-like; it says the most when it is said slowly. Summer: F major with the morning lift (a busier answer); the code-built piano leads, a warm string bed, vibraphone touches."
+}

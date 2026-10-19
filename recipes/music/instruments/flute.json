@@ -1,0 +1,1197 @@
+{
+ "type": "instrument",
+ "id": "flute",
+ "name": "Flute",
+ "version": 1,
+ "note": "An instrument recipe for the sampler (doc 24). Looped sustains. Every file: mono from its louder channel, resampled to 48 kHz, trimmed to 3 ms before the onset (the library files already start at the breath, so trimStartMs is 0 to 4.4 ms), then given a loop in its steady part: loop (startS, endS, seconds from the file start as encoded, exact 48 kHz sample positions) is at least 1.8 s and at most 3.9 s long, starts at an upward zero crossing after the attack and ends at the upward zero crossing whose waveform best matches the start. The region was chosen from about 24 candidates per crossfade length by spectrum, level and pitch match (pitch matters for the vibrato set: the loop joins at the same point of the vibrato cycle), then checked by playing it four times. A crossfade is baked in (crossfadeMs, 150 to 250 ms; equal-gain where the two ends are in phase, equal-power otherwise): the crossfadeMs before loopStart are blended into the end of the loop, so a plain sample-accurate jump from loopEnd back to loopStart is seamless. The file ends at loopEnd (the sampler releases with its own envelope). seamLevelDb is the level change across the seam (200 ms RMS before against after, decoded .ogg); seamStepRatio is the largest sample step at the seam over the 99.9th-percentile step inside the loop (below 1 means the seam is not a click). formats: <file>.ogg is Ogg Opus 56 kbps mono; <file>.m4a is AAC-LC 80 kbps mono at 48 kHz. The .ogg decodes to exactly the WAV length with loop points in place (cross-correlation lag 0 samples at both points). The .m4a was encoded with 2048 samples of the loop's own continuation after loopEnd, because AAC can return a few samples short; it decodes 43 to 64 ms longer, its loop points also sit at lag 0, and a player that ignores the extra tail loses nothing. sets: nv is sustain non-vibrato (mist mornings, soft leads), 2 layers; vib is sustain with vibrato, 1 layer with round robins at C5, E5, E6. measuredCents: harmonic fit of partials 1 to 8 over 1.2 s in the middle of the loop (for vib, the vibrato's centre).",
+ "source": {
+  "library": "VSCO 2 Community Edition",
+  "url": "https://github.com/sgossner/VSCO-2-CE/tree/master/Woodwinds/Flute",
+  "license": "CC0 1.0 (repository LICENSE file: CC0 1.0 Universal)",
+  "commit": "440300901dfe",
+  "notes": "Folders susNV (files LDFlute_susNV_*) and susvib (LDFlute_susvib_*). The library's Readme asks for credit to Versilian Studios / Sam Gossner and a link to the VSCO: CE homepage, and not to sell the samples on their own; the license itself is CC0. Layers in the source: susNV v1 and v3 (v2 at C5 and E5 there, C6 and E6 here); susvib v1 only, with second takes (_2) at C4, E4, E5 there."
+ },
+ "channels": 1,
+ "formats": [
+  "ogg",
+  "m4a"
+ ],
+ "root": "assets/audio/instruments/flute/",
+ "layers": 2,
+ "sets": {
+  "nv": {
+   "source": "Woodwinds/Flute/susNV",
+   "zones": [
+    {
+     "note": "C4",
+     "midi": 60,
+     "measuredCents": -1.25,
+     "tuneConfidence": 0.75,
+     "tuneResidualCents": 0.05,
+     "tunePartials": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8
+     ],
+     "tuneLayer": 2,
+     "layerSpreadCents": 2.3,
+     "layers": [
+      {
+       "file": "nv/C4-v1",
+       "layer": 1,
+       "peakDb": -40.56,
+       "attackRmsDb": -52.18,
+       "brightness": 0.07785,
+       "lenS": 3.7417,
+       "trimStartMs": 0.0,
+       "measuredCents": -3.55,
+       "loop": {
+        "startS": 0.753521,
+        "endS": 3.741729
+       },
+       "loopRmsDb": -47.33,
+       "crossfadeMs": 150,
+       "crossfadeShape": "equal-gain",
+       "seamLevelDb": 0.025,
+       "seamStepRatio": 0.595,
+       "monoFrom": "L",
+       "src": "LDFlute_susNV_C3_v1_1.wav",
+       "channels": 1
+      },
+      {
+       "file": "nv/C4-v2",
+       "layer": 2,
+       "peakDb": -29.21,
+       "attackRmsDb": -52.26,
+       "brightness": 0.18032,
+       "lenS": 4.9029,
+       "trimStartMs": 0.0,
+       "measuredCents": -1.25,
+       "loop": {
+        "startS": 1.612521,
+        "endS": 4.902938
+       },
+       "loopRmsDb": -40.13,
+       "crossfadeMs": 150,
+       "crossfadeShape": "equal-gain",
+       "seamLevelDb": 0.057,
+       "seamStepRatio": 0.056,
+       "monoFrom": "R",
+       "src": "LDFlute_susNV_C3_v3_1.wav",
+       "channels": 1
+      }
+     ]
+    },
+    {
+     "note": "E4",
+     "midi": 64,
+     "measuredCents": -0.06,
+     "tuneConfidence": 0.97,
+     "tuneResidualCents": 0.01,
+     "tunePartials": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8
+     ],
+     "tuneLayer": 2,
+     "layerSpreadCents": 0.72,
+     "layers": [
+      {
+       "file": "nv/E4-v1",
+       "layer": 1,
+       "peakDb": -37.77,
+       "attackRmsDb": -46.33,
+       "brightness": 0.00941,
+       "lenS": 3.111,
+       "trimStartMs": 0.0,
+       "measuredCents": -0.78,
+       "loop": {
+        "startS": 0.881833,
+        "endS": 3.110958
+       },
+       "loopRmsDb": -45.33,
+       "crossfadeMs": 250,
+       "crossfadeShape": "equal-gain",
+       "seamLevelDb": 0.028,
+       "seamStepRatio": 0.297,
+       "monoFrom": "R",
+       "src": "LDFlute_susNV_E3_v1_1.wav",
+       "channels": 1
+      },
+      {
+       "file": "nv/E4-v2",
+       "layer": 2,
+       "peakDb": -22.43,
+       "attackRmsDb": -34.04,
+       "brightness": 0.05738,
+       "lenS": 5.1597,
+       "trimStartMs": 0.0,
+       "measuredCents": -0.06,
+       "loop": {
+        "startS": 1.652562,
+        "endS": 5.15975
+       },
+       "loopRmsDb": -31.01,
+       "crossfadeMs": 150,
+       "crossfadeShape": "equal-gain",
+       "seamLevelDb": 0.102,
+       "seamStepRatio": 0.266,
+       "monoFrom": "L",
+       "src": "LDFlute_susNV_E3_v3_1.wav",
+       "channels": 1
+      }
+     ]
+    },
+    {
+     "note": "A4",
+     "midi": 69,
+     "measuredCents": 0.13,
+     "tuneConfidence": 0.98,
+     "tuneResidualCents": 0.3,
+     "tunePartials": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8
+     ],
+     "tuneLayer": 2,
+     "layerSpreadCents": 0.17,
+     "layers": [
+      {
+       "file": "nv/A4-v1",
+       "layer": 1,
+       "peakDb": -28.75,
+       "attackRmsDb": -40.41,
+       "brightness": 0.0156,
+       "lenS": 4.4822,
+       "trimStartMs": 0.0,
+       "measuredCents": -0.04,
+       "loop": {
+        "startS": 2.122833,
+        "endS": 4.482229
+       },
+       "loopRmsDb": -34.88,
+       "crossfadeMs": 150,
+       "crossfadeShape": "equal-gain",
+       "seamLevelDb": 0.018,
+       "seamStepRatio": 0.109,
+       "monoFrom": "R",
+       "src": "LDFlute_susNV_A3_v1_1.wav",
+       "channels": 1
+      },
+      {
+       "file": "nv/A4-v2",
+       "layer": 2,
+       "peakDb": -17.21,
+       "attackRmsDb": -27.31,
+       "brightness": 0.06759,
+       "lenS": 3.7073,
+       "trimStartMs": 0.0,
+       "measuredCents": 0.13,
+       "loop": {
+        "startS": 1.432271,
+        "endS": 3.707271
+       },
+       "loopRmsDb": -23.78,
+       "crossfadeMs": 200,
+       "crossfadeShape": "equal-gain",
+       "seamLevelDb": 0.005,
+       "seamStepRatio": 0.413,
+       "monoFrom": "L",
+       "src": "LDFlute_susNV_A3_v3_1.wav",
+       "channels": 1
+      }
+     ]
+    },
+    {
+     "note": "C5",
+     "midi": 72,
+     "measuredCents": -0.0,
+     "tuneConfidence": 1.0,
+     "tuneResidualCents": 0.01,
+     "tunePartials": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8
+     ],
+     "tuneLayer": 2,
+     "layerSpreadCents": 0.26,
+     "layers": [
+      {
+       "file": "nv/C5-v1",
+       "layer": 1,
+       "peakDb": -23.55,
+       "attackRmsDb": -32.51,
+       "brightness": 0.03395,
+       "lenS": 4.34,
+       "trimStartMs": 0.0,
+       "measuredCents": 0.26,
+       "loop": {
+        "startS": 0.941917,
+        "endS": 4.339979
+       },
+       "loopRmsDb": -30.2,
+       "crossfadeMs": 150,
+       "crossfadeShape": "equal-gain",
+       "seamLevelDb": 0.075,
+       "seamStepRatio": 0.51,
+       "monoFrom": "L",
+       "src": "LDFlute_susNV_C4_v1_1.wav",
+       "channels": 1
+      },
+      {
+       "file": "nv/C5-v2",
+       "layer": 2,
+       "peakDb": -13.52,
+       "attackRmsDb": -21.84,
+       "brightness": 0.23959,
+       "lenS": 3.4926,
+       "trimStartMs": 0.0,
+       "measuredCents": -0.0,
+       "loop": {
+        "startS": 0.912667,
+        "endS": 3.492646
+       },
+       "loopRmsDb": -19.73,
+       "crossfadeMs": 150,
+       "crossfadeShape": "equal-gain",
+       "seamLevelDb": 0.089,
+       "seamStepRatio": 0.427,
+       "monoFrom": "R",
+       "src": "LDFlute_susNV_C4_v3_1.wav",
+       "channels": 1
+      }
+     ]
+    },
+    {
+     "note": "E5",
+     "midi": 76,
+     "measuredCents": 0.06,
+     "tuneConfidence": 0.97,
+     "tuneResidualCents": 0.38,
+     "tunePartials": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8
+     ],
+     "tuneLayer": 2,
+     "layerSpreadCents": 0.24,
+     "layers": [
+      {
+       "file": "nv/E5-v1",
+       "layer": 1,
+       "peakDb": -18.33,
+       "attackRmsDb": -25.62,
+       "brightness": 0.01935,
+       "lenS": 4.419,
+       "trimStartMs": 0.0,
+       "measuredCents": -0.18,
+       "loop": {
+        "startS": 0.922667,
+        "endS": 4.419042
+       },
+       "loopRmsDb": -25.08,
+       "crossfadeMs": 200,
+       "crossfadeShape": "equal-gain",
+       "seamLevelDb": 0.052,
+       "seamStepRatio": 0.768,
+       "monoFrom": "L",
+       "src": "LDFlute_susNV_E4_v1_1.wav",
+       "channels": 1
+      },
+      {
+       "file": "nv/E5-v2",
+       "layer": 2,
+       "peakDb": -14.92,
+       "attackRmsDb": -21.52,
+       "brightness": 0.08317,
+       "lenS": 5.4782,
+       "trimStartMs": 0.0,
+       "measuredCents": 0.06,
+       "loop": {
+        "startS": 2.543042,
+        "endS": 5.478187
+       },
+       "loopRmsDb": -23.45,
+       "crossfadeMs": 200,
+       "crossfadeShape": "equal-gain",
+       "seamLevelDb": 0.148,
+       "seamStepRatio": 0.741,
+       "monoFrom": "L",
+       "src": "LDFlute_susNV_E4_v3_1.wav",
+       "channels": 1
+      }
+     ]
+    },
+    {
+     "note": "A5",
+     "midi": 81,
+     "measuredCents": -0.06,
+     "tuneConfidence": 1.0,
+     "tuneResidualCents": 0.05,
+     "tunePartials": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8
+     ],
+     "tuneLayer": 2,
+     "layerSpreadCents": 0.11,
+     "layers": [
+      {
+       "file": "nv/A5-v1",
+       "layer": 1,
+       "peakDb": -16.34,
+       "attackRmsDb": -25.43,
+       "brightness": 0.00275,
+       "lenS": 4.2849,
+       "trimStartMs": 0.0,
+       "measuredCents": 0.05,
+       "loop": {
+        "startS": 0.86225,
+        "endS": 4.284937
+       },
+       "loopRmsDb": -21.84,
+       "crossfadeMs": 250,
+       "crossfadeShape": "equal-gain",
+       "seamLevelDb": 0.051,
+       "seamStepRatio": 0.581,
+       "monoFrom": "L",
+       "src": "LDFlute_susNV_A4_v1_1.wav",
+       "channels": 1
+      },
+      {
+       "file": "nv/A5-v2",
+       "layer": 2,
+       "peakDb": -13.95,
+       "attackRmsDb": -20.16,
+       "brightness": 0.00481,
+       "lenS": 5.2293,
+       "trimStartMs": 0.0,
+       "measuredCents": -0.06,
+       "loop": {
+        "startS": 1.912313,
+        "endS": 5.229333
+       },
+       "loopRmsDb": -21.21,
+       "crossfadeMs": 250,
+       "crossfadeShape": "equal-gain",
+       "seamLevelDb": 0.138,
+       "seamStepRatio": 0.925,
+       "monoFrom": "L",
+       "src": "LDFlute_susNV_A4_v3_1.wav",
+       "channels": 1
+      }
+     ]
+    },
+    {
+     "note": "C6",
+     "midi": 84,
+     "measuredCents": -0.29,
+     "tuneConfidence": 0.95,
+     "tuneResidualCents": 0.53,
+     "tunePartials": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8
+     ],
+     "tuneLayer": 2,
+     "layerSpreadCents": 0.23,
+     "layers": [
+      {
+       "file": "nv/C6-v1",
+       "layer": 1,
+       "peakDb": -18.61,
+       "attackRmsDb": -30.6,
+       "brightness": 0.01856,
+       "lenS": 3.0521,
+       "trimStartMs": 0.0,
+       "measuredCents": -0.52,
+       "loop": {
+        "startS": 1.212687,
+        "endS": 3.052146
+       },
+       "loopRmsDb": -24.03,
+       "crossfadeMs": 250,
+       "crossfadeShape": "equal-gain",
+       "seamLevelDb": 0.258,
+       "seamStepRatio": 0.698,
+       "monoFrom": "R",
+       "src": "LDFlute_susNV_C5_v1_1.wav",
+       "channels": 1
+      },
+      {
+       "file": "nv/C6-v2",
+       "layer": 2,
+       "peakDb": -13.52,
+       "attackRmsDb": -20.46,
+       "brightness": 0.01034,
+       "lenS": 3.1333,
+       "trimStartMs": 0.0,
+       "measuredCents": -0.29,
+       "loop": {
+        "startS": 0.872417,
+        "endS": 3.133313
+       },
+       "loopRmsDb": -17.8,
+       "crossfadeMs": 250,
+       "crossfadeShape": "equal-gain",
+       "seamLevelDb": 0.022,
+       "seamStepRatio": 0.654,
+       "monoFrom": "R",
+       "src": "LDFlute_susNV_C5_v2_1.wav",
+       "channels": 1
+      }
+     ]
+    },
+    {
+     "note": "E6",
+     "midi": 88,
+     "measuredCents": -0.11,
+     "tuneConfidence": 0.97,
+     "tuneResidualCents": 0.05,
+     "tunePartials": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8
+     ],
+     "tuneLayer": 2,
+     "layerSpreadCents": 0.7,
+     "layers": [
+      {
+       "file": "nv/E6-v1",
+       "layer": 1,
+       "peakDb": -18.22,
+       "attackRmsDb": -31.18,
+       "brightness": 0.19624,
+       "lenS": 4.0042,
+       "trimStartMs": 0.0,
+       "measuredCents": -0.81,
+       "loop": {
+        "startS": 1.642396,
+        "endS": 4.004208
+       },
+       "loopRmsDb": -28.71,
+       "crossfadeMs": 150,
+       "crossfadeShape": "equal-gain",
+       "seamLevelDb": 0.049,
+       "seamStepRatio": 0.795,
+       "monoFrom": "R",
+       "src": "LDFlute_susNV_E5_v1_1.wav",
+       "channels": 1
+      },
+      {
+       "file": "nv/E6-v2",
+       "layer": 2,
+       "peakDb": -12.06,
+       "attackRmsDb": -19.95,
+       "brightness": 0.00625,
+       "lenS": 5.4505,
+       "trimStartMs": 0.0,
+       "measuredCents": -0.11,
+       "loop": {
+        "startS": 3.452729,
+        "endS": 5.450521
+       },
+       "loopRmsDb": -22.94,
+       "crossfadeMs": 250,
+       "crossfadeShape": "equal-gain",
+       "seamLevelDb": 0.255,
+       "seamStepRatio": 0.557,
+       "monoFrom": "R",
+       "src": "LDFlute_susNV_E5_v2_1.wav",
+       "channels": 1
+      }
+     ]
+    },
+    {
+     "note": "A6",
+     "midi": 93,
+     "measuredCents": 0.02,
+     "tuneConfidence": 0.99,
+     "tuneResidualCents": 0.09,
+     "tunePartials": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8
+     ],
+     "tuneLayer": 2,
+     "layerSpreadCents": 0.36,
+     "layers": [
+      {
+       "file": "nv/A6-v1",
+       "layer": 1,
+       "peakDb": -13.93,
+       "attackRmsDb": -23.73,
+       "brightness": 0.00335,
+       "lenS": 4.3117,
+       "trimStartMs": 0.0,
+       "measuredCents": -0.34,
+       "loop": {
+        "startS": 1.112771,
+        "endS": 4.311708
+       },
+       "loopRmsDb": -20.28,
+       "crossfadeMs": 250,
+       "crossfadeShape": "equal-gain",
+       "seamLevelDb": 0.006,
+       "seamStepRatio": 0.855,
+       "monoFrom": "R",
+       "src": "LDFlute_susNV_A5_v1_1.wav",
+       "channels": 1
+      },
+      {
+       "file": "nv/A6-v2",
+       "layer": 2,
+       "peakDb": -9.27,
+       "attackRmsDb": -20.61,
+       "brightness": 0.00417,
+       "lenS": 4.9923,
+       "trimStartMs": 0.0,
+       "measuredCents": 0.02,
+       "loop": {
+        "startS": 3.152479,
+        "endS": 4.992271
+       },
+       "loopRmsDb": -13.7,
+       "crossfadeMs": 250,
+       "crossfadeShape": "equal-gain",
+       "seamLevelDb": 0.347,
+       "seamStepRatio": 0.558,
+       "monoFrom": "L",
+       "src": "LDFlute_susNV_A5_v3_1.wav",
+       "channels": 1
+      }
+     ]
+    },
+    {
+     "note": "C7",
+     "midi": 96,
+     "measuredCents": -0.42,
+     "tuneConfidence": 0.87,
+     "tuneResidualCents": 0.97,
+     "tunePartials": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8
+     ],
+     "tuneLayer": 1,
+     "layerSpreadCents": 0.0,
+     "layers": [
+      {
+       "file": "nv/C7-v1",
+       "layer": 1,
+       "peakDb": -4.79,
+       "attackRmsDb": -11.14,
+       "brightness": 0.01409,
+       "lenS": 4.1316,
+       "trimStartMs": 0.0,
+       "measuredCents": -0.42,
+       "loop": {
+        "startS": 2.192729,
+        "endS": 4.131604
+       },
+       "loopRmsDb": -12.81,
+       "crossfadeMs": 150,
+       "crossfadeShape": "equal-gain",
+       "seamLevelDb": 0.086,
+       "seamStepRatio": 0.731,
+       "monoFrom": "L",
+       "src": "LDFlute_susNV_C6_v1_1.wav",
+       "channels": 1
+      }
+     ]
+    }
+   ]
+  },
+  "vib": {
+   "source": "Woodwinds/Flute/susvib",
+   "layers": 1,
+   "zones": [
+    {
+     "note": "C4",
+     "midi": 60,
+     "measuredCents": 1.24,
+     "tuneConfidence": 0.63,
+     "tuneResidualCents": 1.91,
+     "tunePartials": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8
+     ],
+     "tuneLayer": 1,
+     "layerSpreadCents": 0.0,
+     "layers": [
+      {
+       "file": "vib/C4-v1",
+       "layer": 1,
+       "peakDb": -24.32,
+       "attackRmsDb": -45.29,
+       "brightness": 0.11856,
+       "lenS": 4.6324,
+       "trimStartMs": 4.4,
+       "measuredCents": 1.24,
+       "loop": {
+        "startS": 1.322521,
+        "endS": 4.632437
+       },
+       "loopRmsDb": -34.84,
+       "crossfadeMs": 150,
+       "crossfadeShape": "equal-gain",
+       "seamLevelDb": 0.204,
+       "seamStepRatio": 0.13,
+       "monoFrom": "R",
+       "fadeInMs": 2.0,
+       "src": "LDFlute_susvib_C3_v1_1.wav",
+       "channels": 1
+      }
+     ]
+    },
+    {
+     "note": "E4",
+     "midi": 64,
+     "measuredCents": -0.5,
+     "tuneConfidence": 0.74,
+     "tuneResidualCents": 1.47,
+     "tunePartials": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8
+     ],
+     "tuneLayer": 1,
+     "layerSpreadCents": 0.0,
+     "layers": [
+      {
+       "file": "vib/E4-v1",
+       "layer": 1,
+       "peakDb": -21.19,
+       "attackRmsDb": -33.84,
+       "brightness": 0.0565,
+       "lenS": 4.5857,
+       "trimStartMs": 0.0,
+       "measuredCents": -0.5,
+       "loop": {
+        "startS": 1.092917,
+        "endS": 4.585708
+       },
+       "loopRmsDb": -30.33,
+       "crossfadeMs": 150,
+       "crossfadeShape": "equal-gain",
+       "seamLevelDb": 0.026,
+       "seamStepRatio": 0.346,
+       "monoFrom": "L",
+       "src": "LDFlute_susvib_E3_v1_1.wav",
+       "channels": 1
+      }
+     ]
+    },
+    {
+     "note": "A4",
+     "midi": 69,
+     "measuredCents": 2.0,
+     "tuneConfidence": 0.44,
+     "tuneResidualCents": 2.84,
+     "tunePartials": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8
+     ],
+     "tuneLayer": 1,
+     "layerSpreadCents": 0.0,
+     "layers": [
+      {
+       "file": "vib/A4-v1",
+       "layer": 1,
+       "peakDb": -18.04,
+       "attackRmsDb": -29.14,
+       "brightness": 0.13857,
+       "lenS": 4.9822,
+       "trimStartMs": 3.8,
+       "measuredCents": 2.0,
+       "loop": {
+        "startS": 1.243354,
+        "endS": 4.982208
+       },
+       "loopRmsDb": -28.95,
+       "crossfadeMs": 250,
+       "crossfadeShape": "equal-gain",
+       "seamLevelDb": 0.006,
+       "seamStepRatio": 0.176,
+       "monoFrom": "L",
+       "fadeInMs": 2.0,
+       "src": "LDFlute_susvib_A3_v1_1.wav",
+       "channels": 1
+      }
+     ]
+    },
+    {
+     "note": "C5",
+     "midi": 72,
+     "measuredCents": 2.25,
+     "tuneConfidence": 0.4,
+     "tuneResidualCents": 2.81,
+     "tunePartials": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8
+     ],
+     "tuneLayer": 1,
+     "layerSpreadCents": 1.28,
+     "layers": [
+      {
+       "file": "vib/C5-v1-rr1",
+       "layer": 1,
+       "rr": 1,
+       "peakDb": -19.93,
+       "attackRmsDb": -30.23,
+       "brightness": 0.54087,
+       "lenS": 3.9366,
+       "trimStartMs": 0.0,
+       "measuredCents": 2.25,
+       "loop": {
+        "startS": 1.172708,
+        "endS": 3.936625
+       },
+       "loopRmsDb": -29.03,
+       "crossfadeMs": 250,
+       "crossfadeShape": "equal-gain",
+       "seamLevelDb": 0.195,
+       "seamStepRatio": 0.368,
+       "monoFrom": "R",
+       "src": "LDFlute_susvib_C4_v1_1.wav",
+       "channels": 1
+      },
+      {
+       "file": "vib/C5-v1-rr2",
+       "layer": 1,
+       "rr": 2,
+       "peakDb": -17.88,
+       "attackRmsDb": -28.84,
+       "brightness": 0.85694,
+       "lenS": 4.4183,
+       "trimStartMs": 1.2,
+       "measuredCents": 3.53,
+       "loop": {
+        "startS": 1.383125,
+        "endS": 4.418271
+       },
+       "loopRmsDb": -27.14,
+       "crossfadeMs": 150,
+       "crossfadeShape": "equal-power",
+       "seamLevelDb": 0.297,
+       "seamStepRatio": 0.415,
+       "monoFrom": "R",
+       "src": "LDFlute_susvib_C4_v1_2.wav",
+       "channels": 1
+      }
+     ]
+    },
+    {
+     "note": "E5",
+     "midi": 76,
+     "measuredCents": 0.9,
+     "tuneConfidence": 0.53,
+     "tuneResidualCents": 2.22,
+     "tunePartials": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8
+     ],
+     "tuneLayer": 1,
+     "layerSpreadCents": 0.95,
+     "layers": [
+      {
+       "file": "vib/E5-v1-rr1",
+       "layer": 1,
+       "rr": 1,
+       "peakDb": -15.51,
+       "attackRmsDb": -25.12,
+       "brightness": 0.13429,
+       "lenS": 4.7416,
+       "trimStartMs": 2.3,
+       "measuredCents": 0.9,
+       "loop": {
+        "startS": 0.882062,
+        "endS": 4.741604
+       },
+       "loopRmsDb": -23.06,
+       "crossfadeMs": 150,
+       "crossfadeShape": "equal-gain",
+       "seamLevelDb": 0.152,
+       "seamStepRatio": 0.277,
+       "monoFrom": "L",
+       "fadeInMs": 2.0,
+       "src": "LDFlute_susvib_E4_v1_1.wav",
+       "channels": 1
+      },
+      {
+       "file": "vib/E5-v1-rr2",
+       "layer": 1,
+       "rr": 2,
+       "peakDb": -14.68,
+       "attackRmsDb": -23.11,
+       "brightness": 0.2459,
+       "lenS": 3.2561,
+       "trimStartMs": 0.0,
+       "measuredCents": 1.85,
+       "loop": {
+        "startS": 0.873208,
+        "endS": 3.256104
+       },
+       "loopRmsDb": -22.08,
+       "crossfadeMs": 150,
+       "crossfadeShape": "equal-gain",
+       "seamLevelDb": 0.002,
+       "seamStepRatio": 0.584,
+       "monoFrom": "L",
+       "src": "LDFlute_susvib_E4_v1_2.wav",
+       "channels": 1
+      }
+     ]
+    },
+    {
+     "note": "A5",
+     "midi": 81,
+     "measuredCents": 1.73,
+     "tuneConfidence": 0.52,
+     "tuneResidualCents": 2.39,
+     "tunePartials": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8
+     ],
+     "tuneLayer": 1,
+     "layerSpreadCents": 0.0,
+     "layers": [
+      {
+       "file": "vib/A5-v1",
+       "layer": 1,
+       "peakDb": -15.25,
+       "attackRmsDb": -23.49,
+       "brightness": 0.08027,
+       "lenS": 5.2856,
+       "trimStartMs": 0.0,
+       "measuredCents": 1.73,
+       "loop": {
+        "startS": 1.862417,
+        "endS": 5.285604
+       },
+       "loopRmsDb": -23.25,
+       "crossfadeMs": 200,
+       "crossfadeShape": "equal-gain",
+       "seamLevelDb": 0.026,
+       "seamStepRatio": 0.482,
+       "monoFrom": "L",
+       "src": "LDFlute_susvib_A4_v1_1.wav",
+       "channels": 1
+      }
+     ]
+    },
+    {
+     "note": "C6",
+     "midi": 84,
+     "measuredCents": -2.33,
+     "tuneConfidence": 0.34,
+     "tuneResidualCents": 3.16,
+     "tunePartials": [
+      1,
+      2,
+      4,
+      5,
+      6,
+      7,
+      8
+     ],
+     "tuneLayer": 1,
+     "layerSpreadCents": 0.0,
+     "layers": [
+      {
+       "file": "vib/C6-v1",
+       "layer": 1,
+       "peakDb": -10.29,
+       "attackRmsDb": -18.29,
+       "brightness": 0.01252,
+       "lenS": 3.9947,
+       "trimStartMs": 0.4,
+       "measuredCents": -2.33,
+       "loop": {
+        "startS": 1.012354,
+        "endS": 3.99475
+       },
+       "loopRmsDb": -15.6,
+       "crossfadeMs": 200,
+       "crossfadeShape": "equal-power",
+       "seamLevelDb": 0.078,
+       "seamStepRatio": 0.804,
+       "monoFrom": "R",
+       "fadeInMs": 2.0,
+       "src": "LDFlute_susvib_C5_v1_1.wav",
+       "channels": 1
+      }
+     ]
+    },
+    {
+     "note": "E6",
+     "midi": 88,
+     "measuredCents": -1.18,
+     "tuneConfidence": 0.36,
+     "tuneResidualCents": 1.49,
+     "tunePartials": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8
+     ],
+     "tuneLayer": 1,
+     "layerSpreadCents": 4.14,
+     "layers": [
+      {
+       "file": "vib/E6-v1-rr1",
+       "layer": 1,
+       "rr": 1,
+       "peakDb": -8.95,
+       "attackRmsDb": -16.81,
+       "brightness": 0.01692,
+       "lenS": 4.3922,
+       "trimStartMs": 0.0,
+       "measuredCents": -1.18,
+       "loop": {
+        "startS": 0.752313,
+        "endS": 4.39225
+       },
+       "loopRmsDb": -15.31,
+       "crossfadeMs": 150,
+       "crossfadeShape": "equal-gain",
+       "seamLevelDb": 0.149,
+       "seamStepRatio": 0.621,
+       "monoFrom": "L",
+       "src": "LDFlute_susvib_E5_v1_1.wav",
+       "channels": 1
+      },
+      {
+       "file": "vib/E6-v1-rr2",
+       "layer": 1,
+       "rr": 2,
+       "peakDb": -8.91,
+       "attackRmsDb": -20.09,
+       "brightness": 0.04678,
+       "lenS": 4.0125,
+       "trimStartMs": 0.0,
+       "measuredCents": 2.96,
+       "loop": {
+        "startS": 1.712833,
+        "endS": 4.012458
+       },
+       "loopRmsDb": -16.49,
+       "crossfadeMs": 200,
+       "crossfadeShape": "equal-gain",
+       "seamLevelDb": 0.076,
+       "seamStepRatio": 0.233,
+       "monoFrom": "R",
+       "src": "LDFlute_susvib_E5_v1_2.wav",
+       "channels": 1
+      }
+     ]
+    },
+    {
+     "note": "A6",
+     "midi": 93,
+     "measuredCents": 3.98,
+     "tuneConfidence": 0.43,
+     "tuneResidualCents": 2.85,
+     "tunePartials": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8
+     ],
+     "tuneLayer": 1,
+     "layerSpreadCents": 0.0,
+     "layers": [
+      {
+       "file": "vib/A6-v1",
+       "layer": 1,
+       "peakDb": -4.86,
+       "attackRmsDb": -19.42,
+       "brightness": 0.00441,
+       "lenS": 4.404,
+       "trimStartMs": 0.0,
+       "measuredCents": 3.98,
+       "loop": {
+        "startS": 0.982875,
+        "endS": 4.403979
+       },
+       "loopRmsDb": -13.43,
+       "crossfadeMs": 200,
+       "crossfadeShape": "equal-power",
+       "seamLevelDb": 0.167,
+       "seamStepRatio": 0.334,
+       "monoFrom": "R",
+       "src": "LDFlute_susvib_A5_v1_1.wav",
+       "channels": 1
+      }
+     ]
+    },
+    {
+     "note": "C7",
+     "midi": 96,
+     "measuredCents": 4.32,
+     "tuneConfidence": 0.76,
+     "tuneResidualCents": 0.96,
+     "tunePartials": [
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8
+     ],
+     "tuneLayer": 1,
+     "layerSpreadCents": 0.0,
+     "layers": [
+      {
+       "file": "vib/C7-v1",
+       "layer": 1,
+       "peakDb": -3.07,
+       "attackRmsDb": -9.89,
+       "brightness": 0.00051,
+       "lenS": 3.3441,
+       "trimStartMs": 0.0,
+       "measuredCents": 4.32,
+       "loop": {
+        "startS": 0.782563,
+        "endS": 3.344083
+       },
+       "loopRmsDb": -10.02,
+       "crossfadeMs": 150,
+       "crossfadeShape": "equal-power",
+       "seamLevelDb": 0.086,
+       "seamStepRatio": 0.761,
+       "monoFrom": "L",
+       "src": "LDFlute_susvib_C6_v1_1.wav",
+       "channels": 1
+      }
+     ]
+    }
+   ]
+  }
+ },
+ "levels": {
+  "normalized": false,
+  "note": "Recorded levels, not normalized. loopRmsDb (RMS of the loop region, dBFS) is the better level measure for a sustained note than attackRmsDb, since the flute speaks slowly: the loud layer is 3 to 13 dB above the soft one in attack RMS except at C4, where the two are level in the first 300 ms. Play layers at their own level."
+ },
+ "range": {
+  "low": "C4",
+  "high": "C7",
+  "playable": "A#3 to D7"
+ },
+ "loops": {
+  "worstSeamLevelDb": 0.347,
+  "worstSeamLevelFile": "nv/A6-v2",
+  "worstSeamStepRatio": 0.925,
+  "worstSeamStepFile": "nv/A5-v2"
+ },
+ "size": {
+  "files": 32,
+  "oggBytes": 1270631,
+  "m4aBytes": 1454242,
+  "decodedBytes48kFloat": 26382828
+ },
+ "problems": [
+  "VSCO 2 CE names the flute an octave low (its C3 sounds C4: the strongest partial and the fundamental sit at 261.6 Hz, nothing at 130.8 Hz). Every zone here is placed at the pitch it sounds, C4 to C7.",
+  "The recordings are a spaced stereo pair whose channels partly cancel when summed (the steady part loses up to 8 dB in an L+R fold-down), so each file is mono from its louder channel (monoFrom on each layer). The two layers of a zone can come from different channels, which may sound slightly different in room tone.",
+  "vib: layers of the same note disagree in pitch by more than 3 cents in 1 zones: E6 (v1-rr1 -1.2, v1-rr2 +3.0)",
+  "nv: brightness does not rise with layer in 2 of 10 zones: C6 (v1 0.019, v2 0.010); E6 (v1 0.196, v2 0.006) (E6 v1 is a quiet take whose first 300 ms carry more breath than tone, which inflates the number)",
+  "nv: C7 has one layer only (the library has no second one there); C6 and E6 use the library's v2 as the loud layer, the others its v3.",
+  "vib has one dynamic layer (the library's v1) with two round-robin takes at C5, E5 and E6 (files -rr1 and -rr2).",
+  "Levels are as recorded (not normalized); quiet layers sit low (nv C4 v1 peaks at -41 dBFS). Level by loopRmsDb.",
+  "Four vib files (C4, A4, E5 rr1, C6) start with no silence: their very first sample is already only 54 to 58 dB below the peak, so they got a 2 ms fade-in (fadeInMs) against a start click; nothing else was changed at the start."
+ ]
+}

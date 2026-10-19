@@ -1,0 +1,98 @@
+{
+ "id": "theme-2-spring",
+ "title": "Theme 2, Sandbar: spring",
+ "version": 1,
+ "theme": {
+  "candidate": 2,
+  "name": "Sandbar",
+  "season": "spring"
+ },
+ "slots": [
+  "morning",
+  "interlude"
+ ],
+ "seasons": [
+  "spring"
+ ],
+ "weather": [
+  "clear",
+  "cloud"
+ ],
+ "requires": {},
+ "avoidWhen": {},
+ "keys": [
+  "D"
+ ],
+ "mode": "ionian",
+ "meter": "6/8",
+ "tempo": [
+  66,
+  72
+ ],
+ "palette": {
+  "melody": [
+   "piano"
+  ],
+  "accomp": [
+   "piano"
+  ],
+  "counter": [
+   "flute",
+   "bell"
+  ],
+  "bed": [
+   "strings",
+   "pad"
+  ],
+  "touch": [
+   "harp",
+   "bell"
+  ]
+ },
+ "layers": {
+  "bed": {
+   "style": "warm",
+   "sections": {
+    "A": "out",
+    "B": "swell",
+    "A'": "steady",
+    "coda": "thin"
+   }
+  },
+  "touch": {
+   "chance": 0.8
+  }
+ },
+ "form": {
+  "grammar": "A B A' coda",
+  "short": "A B A' coda",
+  "optional": {}
+ },
+ "sections": {
+  "A": {
+   "bars": 4,
+   "abc": "X:1\nM:6/8\nL:1/8\nK:D\nV:mel\n!mp!\"Bm7\"B,2 C D2 E | \"Gmaj7\"F6- | \"Em7\"F2 E D \"A7\"C B, | \"D/A\"A,6 |\n"
+  },
+  "B": {
+   "bars": 4,
+   "abc": "X:1\nM:6/8\nL:1/8\nK:D\nV:mel\n\"Gmaj7\"D2 E F2 A | \"F#m7\"A3 G2 F | \"Em9\"E2 F G2 B | \"A7sus4\"A6 |\n"
+  },
+  "A'": {
+   "bars": 4,
+   "abc": "X:1\nM:6/8\nL:1/8\nK:D\nV:mel\n\"Bm7\"B,2 C D2 E | \"Gmaj7\"F3- F2 A | \"Em7\"G2 F E \"A7\"D C | \"D\"D6 |\nV:counter\nz6 | z3 c3 | B3 A3 | F6 |\n"
+  },
+  "coda": {
+   "bars": 2,
+   "abc": "X:1\nM:6/8\nL:1/8\nK:D\nV:mel\n!p!\"G/D\"B,2 D G2 B | \"D\"!fermata!A6 |\n"
+  }
+ },
+ "variation": {
+  "octave": [
+   0
+  ],
+  "paraphrase": 0,
+  "ornament": 0.1
+ },
+ "motifs": [],
+ "notes": "A lilting 6/8 tide that starts below the home note, on the sixth, climbs by step to the third and holds it a whole bar, then slips down past the start to the fifth below. A little wistful; it begins on the minor chord. Spring: D major, bright piano; the bed comes in for the answer, a flute echoes the held note, harp touches the cadences."
+}

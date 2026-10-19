@@ -8,6 +8,12 @@
 // it lifts; a repeated key damps its old string; when too many voices sound, the quietest released
 // one is faded out over 30 ms, never cut.
 //
+// Other instruments use the same sampler. A held sound (strings, flute, bowed vibraphone) has a
+// baked, crossfaded loop in each file (layer.loop {startS, endS}), so a note sounds for as long as
+// it is held. The settings' envelope gives such instruments a soft attack and a release time in
+// place of the piano's dampers; an instrument with several articulations (struck and bowed) is
+// played as one sampler per articulation (opts.articulation picks the set).
+//
 // All behaviour comes from recipes/music/sampler.json (see samplerSettingsFor in ../recipes.js) and
 // the instrument recipe (recipes/music/instruments/<id>.json). Everything is scheduled on the
 // audio clock, so callers pass the time each event should happen.
@@ -34,6 +40,7 @@ import { stream } from '../../core/rng.js';
  * @property {string} set
  * @property {number} layer        the main layer sounded (for the release sound)
  * @property {boolean} ended
+ * @property {boolean} looped     a held, looping sound: its level does not decay
  */
 
 /** Pick the file format this browser can decode. */
@@ -47,9 +54,11 @@ export function pickFormat() {
  * @param {AudioNode} output  where voices connect (the music bus input, or a bench gain)
  * @param {any} instrument    recipes/music/instruments/<id>.json
  * @param {any} settings      samplerSettingsFor(recipes/music/sampler.json, id)
- * @param {{tier?: 'desktop'|'mobile', format?: 'ogg'|'m4a', pedalNoise?: any}} [opts]
+ * @param {{tier?: 'desktop'|'mobile', format?: 'ogg'|'m4a', pedalNoise?: any, articulation?: string}} [opts]
+ *   tier: 'mobile' plays the recipe's lighter `mobile` set when it has one (and its own pedal sound);
  *   pedalNoise: the recipe of the pedal mechanism recordings (music/instruments/pedal-knight),
- *   played on each press and lift when the settings' pedalNoise is on
+ *   played on each press and lift when the settings' pedalNoise is on;
+ *   articulation: the one set to play (for example 'bowed'), for instruments recorded several ways
  */
 export function createSampler(ctx, output, instrument, settings, opts = {}) {
   const tier = opts.tier ?? 'desktop';
@@ -66,19 +75,32 @@ export function createSampler(ctx, output, instrument, settings, opts = {}) {
   let nextId = 1;
   let decodedBytes = 0;
   let downloadedBytes = 0;
+  /** @type {Map<string, number>} when each decoded file last sounded (audio time), for freeing memory */
+  const lastUse = new Map();
+  /** @type {Map<string, number>} each decoded file's midi, so a range can be protected */
+  const fileMidi = new Map();
   /** @type {((name: string) => void) | null} */
   let onPedalNoise = null;
   /** @type {{down: AudioBuffer[], up: AudioBuffer[]}} the pedal mechanism's recordings */
   const pedalBufs = { down: [], up: [] };
   let pedalTurn = 0;
 
-  const sets = instrument.sets ?? {};
+  // Phones play the instrument's lighter set when its recipe has one (doc 24, Performance budget):
+  // its own zones, layer count, folder and pedal sound stand in for the full ones. On the desktop,
+  // or for a recipe without one, this is the recipe itself.
+  const inst = tier === 'mobile' && instrument.mobile ? { ...instrument, ...instrument.mobile } : instrument;
+  /** The pedal mechanism's recordings: the lighter set's own on phones, otherwise the ones passed in. */
+  const pedalRecipe = inst.pedalNoise ?? opts.pedalNoise;
+  const sets = inst.sets ?? {};
   /** @param {string} name */
   const zonesOf = (name) => /** @type {any[]} */ (sets[name]?.zones ?? []);
   /** @param {string} name */
   const zoneMidis = (name) => zonesOf(name).map((z) => z.midi);
+  /** @type {Map<string, any>} each file's layer entry (for its loop) */
+  const fileInfo = new Map();
+  for (const st of Object.values(sets)) for (const z of /** @type {any} */ (st).zones ?? []) for (const L of z.layers ?? [z]) if (L.file) fileInfo.set(L.file, L);
   /** How many loudness layers the instrument was recorded with (zones may lack some). */
-  const layerCount = instrument.layers ?? Math.max(1, ...Object.values(sets).flatMap((st) => (/** @type {any} */ (st).zones ?? []).map((/** @type {any} */ z) => (z.layers ?? []).length)));
+  const layerCount = inst.layers ?? Math.max(1, ...Object.values(sets).flatMap((st) => (/** @type {any} */ (st).zones ?? []).map((/** @type {any} */ z) => (z.layers ?? []).length)));
   /** @type {Map<string, number>} round-robin turn per zone and layer */
   const turns = new Map();
   // Seeded choices for the 'pick' blend (never Math.random): the same performance always picks
@@ -108,7 +130,7 @@ export function createSampler(ctx, output, instrument, settings, opts = {}) {
 
   /** @param {string} file */
   function urlOf(file) {
-    return new URL(`${instrument.root}${file}.${format}`, REPO_ROOT).href;
+    return new URL(`${inst.root}${file}.${format}`, REPO_ROOT).href;
   }
 
   /**
@@ -128,8 +150,10 @@ export function createSampler(ctx, output, instrument, settings, opts = {}) {
           const bytes = await r.arrayBuffer();
           downloadedBytes += bytes.byteLength;
           let buf = await ctx.decodeAudioData(bytes);
-          buf = shape(buf, midi);
+          buf = shape(buf, midi, key);
           buffers.set(key, buf);
+          fileMidi.set(key, midi);
+          lastUse.set(key, ctx.currentTime);
           decodedBytes += buf.length * buf.numberOfChannels * 4;
           return buf;
         } catch (e) {
@@ -146,10 +170,11 @@ export function createSampler(ctx, output, instrument, settings, opts = {}) {
 
   /**
    * Trim a long tail with a gentle fade, and fold to mono below a key, if the settings ask.
-   * @param {AudioBuffer} buf @param {number} midi
+   * @param {AudioBuffer} buf @param {number} midi @param {string} [key] the file, for its loop
    */
-  function shape(buf, midi) {
-    const maxS = cfg.load.maxTailS;
+  function shape(buf, midi, key = '') {
+    const loop = fileInfo.get(key)?.loop;
+    const maxS = loop ? 0 : cfg.load.maxTailS;
     const mono = cfg.load.monoBelowMidi > 0 && midi < cfg.load.monoBelowMidi && buf.numberOfChannels > 1;
     const len = maxS > 0 ? Math.min(buf.length, Math.round(maxS * buf.sampleRate)) : buf.length;
     if (!mono && len === buf.length) return buf;
@@ -189,7 +214,7 @@ export function createSampler(ctx, output, instrument, settings, opts = {}) {
       for (const i of needed) for (const L of zones[i].layers ?? [zones[i]]) if (L.file) jobs.push([L.file, zones[i].midi]);
     }
     if (sets.pedal?.files) for (const f of sets.pedal.files) jobs.push([f.file, 60]);
-    const pn = opts.pedalNoise;
+    const pn = pedalRecipe;
     if (pn?.sets?.pedal?.files && !pedalBufs.down.length && !pedalBufs.up.length) {
       await Promise.all(pn.sets.pedal.files.map(async (/** @type {any} */ f) => {
         if (f.kind !== 'down' && f.kind !== 'up') return;
@@ -231,6 +256,7 @@ export function createSampler(ctx, output, instrument, settings, opts = {}) {
 
   /** The set to sound: the pedal-down recordings while the pedal is down, if this piano has them. @param {boolean} pedal */
   function setFor(pedal) {
+    if (opts.articulation && zonesOf(opts.articulation).length) return opts.articulation;
     const order = pedal ? ['sus', 'nosus'] : ['nosus', 'sus'];
     for (const s of order) if (zonesOf(s).length) return s;
     return Object.keys(sets).find((s) => zonesOf(s).length) ?? 'sus';
@@ -239,6 +265,7 @@ export function createSampler(ctx, output, instrument, settings, opts = {}) {
   /** Estimated level of a voice now, in dB, for voice stealing. @param {Voice} v @param {number} t */
   function levelNow(v, t) {
     if (v.dampT !== null && t > v.dampT) return -120;
+    if (v.looped) return v.peakDb;
     return v.peakDb - decayDbPerS(v.midi, cfg.stealing.decay) * Math.max(0, t - v.startT);
   }
 
@@ -257,10 +284,16 @@ export function createSampler(ctx, output, instrument, settings, opts = {}) {
    * @param {Voice} v @param {number} t @param {number} [extraDb]
    */
   function release(v, t, extraDb = 0) {
-    const tau = damperTau(v.midi, cfg.dampers);
+    const tau = releaseTau(v.midi);
     if (!Number.isFinite(tau)) return; // undamped top strings ring on
     damp(v, t, tau);
     playReleaseSound(v, t, extraDb);
+  }
+
+  /** How fast a released note dies away: the envelope's release time if set, else the dampers. @param {number} midi */
+  function releaseTau(midi) {
+    const r = cfg.envelope?.releaseS ?? 0;
+    return r > 0 ? r / 3 : damperTau(midi, cfg.dampers);
   }
 
   /** @param {Voice} v @param {number} t @param {number} extraDb */
@@ -341,7 +374,8 @@ export function createSampler(ctx, output, instrument, settings, opts = {}) {
     const rate = playbackRate(midi, zone.midi, corr);
 
     const env = ctx.createGain();
-    env.gain.value = 1;
+    const attackS = cfg.envelope?.attackS ?? 0;
+    if (attackS > 0) { env.gain.setValueAtTime(0, t); env.gain.linearRampToValueAtTime(1, t + attackS); } else env.gain.value = 1;
     const lp = ctx.createBiquadFilter();
     lp.type = 'lowpass';
     lp.frequency.value = velocityCutoffHz(velocity, midi, cfg.brightness);
@@ -352,16 +386,25 @@ export function createSampler(ctx, output, instrument, settings, opts = {}) {
     const srcs = [];
     let mainLayer = 0;
     let mainW = 0;
+    let looped = false;
     for (const w of plan.values()) {
       const L = w.L;
       const buf = buffers.get(L.file);
       if (!buf) continue;
+      lastUse.set(L.file, t);
       if (w.weight > mainW) { mainW = w.weight; mainLayer = w.layer; }
       const src = ctx.createBufferSource();
       src.buffer = buf;
       src.playbackRate.value = rate;
+      if (L.loop && L.loop.endS > L.loop.startS) {
+        src.loop = true;
+        src.loopStart = L.loop.startS;
+        src.loopEnd = Math.min(L.loop.endS, buf.duration);
+        looped = true;
+      }
       const g = ctx.createGain();
-      g.gain.value = w.weight * dbToGain(fileGainDb(targetDb, L.attackRmsDb ?? -20, tiltDb));
+      // A held (looped) note is leveled by its steady level: a bow or a rub swells in, so its attack says little.
+      g.gain.value = w.weight * dbToGain(fileGainDb(targetDb, (L.loop ? L.loopRmsDb : undefined) ?? L.attackRmsDb ?? -20, tiltDb));
       src.connect(g).connect(lp);
       src.start(t);
       srcs.push(src);
@@ -369,7 +412,7 @@ export function createSampler(ctx, output, instrument, settings, opts = {}) {
     if (!srcs.length) { lp.disconnect(); env.disconnect(); return 0; }
 
     /** @type {Voice} */
-    const v = { id: nextId++, midi, velocity, startT: t, peakDb: targetDb + tiltDb, keyUpT: null, dampT: null, env, srcs, zoneIndex: zi, set, layer: mainLayer, ended: false };
+    const v = { id: nextId++, midi, velocity, startT: t, peakDb: targetDb + tiltDb, keyUpT: null, dampT: null, env, srcs, zoneIndex: zi, set, layer: mainLayer, ended: false, looped };
     let left = srcs.length;
     for (const s of srcs) s.onended = () => { if (--left === 0) { v.ended = true; env.disconnect(); voices = voices.filter((x) => x !== v); } };
     voices.push(v);
@@ -410,7 +453,7 @@ export function createSampler(ctx, output, instrument, settings, opts = {}) {
       let sounded = 0;
       for (const v of voices) {
         if (v.keyUpT !== null && v.keyUpT <= t && v.dampT === null && !v.ended) {
-          const tau = damperTau(v.midi, cfg.dampers);
+          const tau = releaseTau(v.midi);
           if (!Number.isFinite(tau)) continue;
           damp(v, t, tau);
           if (sounded++ < 6) playReleaseSound(v, t, -6);
@@ -434,6 +477,80 @@ export function createSampler(ctx, output, instrument, settings, opts = {}) {
     src.start(t);
   }
 
+  /**
+   * The recordings a note would sound, without playing it: every take of each layer the velocity
+   * reaches, in the set the pedal picks, plus its key-off sound. Used to unpack exactly what a
+   * performance needs (instruments.js prepare).
+   * @param {number} midi @param {number} velocity @param {boolean} pedalDown
+   * @returns {string[]}
+   */
+  function filesFor(midi, velocity, pedalDown) {
+    /** @type {string[]} */
+    const out = [];
+    const set = setFor(pedalDown);
+    const zones = zonesOf(set);
+    const zi = nearestZone(midi, zones.map((z) => z.midi));
+    if (zi < 0) return out;
+    const zone = zones[zi];
+    const bounds = cfg.layers.bounds?.length === layerCount - 1 ? cfg.layers.bounds : evenBounds(layerCount);
+    const all = /** @type {any[]} */ (zone.layers ?? [zone]).filter((L) => L.file && !(cfg.exclude ?? []).includes(L.file));
+    const numOf = (/** @type {any} */ L, /** @type {number} */ i) => (L.layer ?? i + 1) - 1;
+    const have = [...new Set(all.map((L, i) => numOf(L, i)))];
+    for (const w of layerWeights(velocity, bounds, cfg.layers.fadeWidth, cfg.layers.law ?? 1)) {
+      let pick = have[0];
+      for (const h of have) if (Math.abs(h - w.layer) < Math.abs(pick - w.layer)) pick = h;
+      for (const [i, L] of all.entries()) if (numOf(L, i) === pick) out.push(L.file);
+    }
+    const rel = zonesOf('rel');
+    if (rel.length) {
+      const rz = rel[nearestZone(midi, rel.map((z) => z.midi))];
+      for (const L of rz.layers ?? [rz]) if (L.file) out.push(L.file);
+    }
+    return [...new Set(out)];
+  }
+
+  /**
+   * Unpack exactly these recordings (and the pedal sounds), eight at a time.
+   * @param {string[]} files
+   */
+  async function loadFiles(files) {
+    const midiOf = new Map();
+    for (const st of Object.values(sets)) for (const z of /** @type {any} */ (st).zones ?? []) for (const L of z.layers ?? [z]) if (L.file) midiOf.set(L.file, z.midi);
+    const todo = files.filter((f) => !buffers.has(f));
+    let k = 0;
+    await Promise.all(Array.from({ length: Math.min(8, todo.length) }, async () => {
+      while (k < todo.length) { const f = todo[k++]; await loadFile(f, midiOf.get(f) ?? 60); }
+    }));
+    if (pedalRecipe && !pedalBufs.down.length && !pedalBufs.up.length) await load({ low: 0, high: -1 });
+  }
+
+  /**
+   * Free decoded recordings until the instrument uses at most budgetMB, least recently sounded
+   * first, never touching notes inside the protected ranges (the piece playing or about to). The
+   * files stay in the browser's cache, so unpacking them again later needs no download.
+   * @param {number} budgetMB @param {{low: number, high: number}[]} [protect]
+   */
+  function trim(budgetMB, protect = []) {
+    if (decodedBytes / 1048576 <= budgetMB) return 0;
+    const inUse = new Set(voices.filter((v) => !v.ended).flatMap((v) => v.srcs.map((x) => x.buffer)));
+    const safe = (/** @type {string} */ f) => {
+      const m = fileMidi.get(f) ?? 60;
+      return protect.some((r) => m >= r.low - 2 && m <= r.high + 2);
+    };
+    const order = [...buffers.keys()].filter((f) => !safe(f) && !inUse.has(buffers.get(f) ?? null)).sort((a, b) => (lastUse.get(a) ?? 0) - (lastUse.get(b) ?? 0));
+    let freed = 0;
+    for (const f of order) {
+      if (decodedBytes / 1048576 <= budgetMB) break;
+      const b = buffers.get(f);
+      if (!b) continue;
+      decodedBytes -= b.length * b.numberOfChannels * 4;
+      buffers.delete(f);
+      lastUse.delete(f);
+      freed++;
+    }
+    return freed;
+  }
+
   /** Fade everything out (mute, tab hidden, piece stopped). @param {number} [fadeS] */
   function stopAll(fadeS = 0.3) {
     const t = ctx.currentTime;
@@ -443,6 +560,9 @@ export function createSampler(ctx, output, instrument, settings, opts = {}) {
 
   return {
     load,
+    loadFiles,
+    filesFor,
+    trim,
     noteOn,
     noteOff,
     pedal,
@@ -464,7 +584,8 @@ export function createSampler(ctx, output, instrument, settings, opts = {}) {
       const i = nearestZone(midi, z.map((x) => x.midi));
       return i >= 0 && (z[i].layers ?? [z[i]]).every((/** @type {any} */ L) => buffers.has(L.file));
     },
-    instrument,
+    /** The recipe this sampler plays: the lighter set merged in on phones. */
+    instrument: inst,
   };
 }
 
