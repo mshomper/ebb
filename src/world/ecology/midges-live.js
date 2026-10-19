@@ -29,7 +29,9 @@ export function createMidges(opts) {
   /** The swarms for the field as it stands (it changes each game hour). */
   function choose() {
     field = world.state?.ecology?.midges ?? null;
-    swarms = pickSwarms(field, S).map((s) => ({ ...s, y: Math.max(opts.ground(s.x, s.z), opts.water(s.x, s.z).surface), lastDip: -1 }));
+    // Over the reed clumps first, then the densest ground (midge-paths.js).
+    const reeds = (world.state?.growth?.plants ?? []).filter((/** @type {any} */ p) => p.sp === 'reeds');
+    swarms = pickSwarms(field, S, reeds).map((s) => ({ ...s, y: Math.max(opts.ground(s.x, s.z), opts.water(s.x, s.z).surface), lastDip: -1 }));
   }
 
   return {

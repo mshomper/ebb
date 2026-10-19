@@ -7,7 +7,7 @@ import { makeBuffer, makeShaderModule } from '../../core/gpu.js';
 
 /** @typedef {import('../frame-graph.js').PassContext} PassContext */
 
-const DRAW_BYTES = 64;
+const DRAW_BYTES = 80;
 const MAX_SWARMS = 32;
 const SWARM_BYTES = 48;
 
@@ -15,10 +15,12 @@ const SWARM_BYTES = 48;
 export function createMidgePass(opts) {
   const S = opts.recipe.swarm;
   const data = new Float32Array(DRAW_BYTES / 4);
+  // Real midges are 2 to 4 mm; they are drawn `readability` times that, or nobody would see them.
+  const k = S.body.readability ?? 1;
   data.set([S.radiusM[0], S.radiusM[1], S.heightM[0], S.heightM[1],
-    S.speedHz[0], S.speedHz[1], S.body.scaleReal[0], S.body.scaleReal[1],
+    S.speedHz[0], S.speedHz[1], S.body.scaleReal[0] * k, S.body.scaleReal[1] * k,
     S.body.albedo[0], S.body.albedo[1], S.body.albedo[2], S.body.glint.strength,
-    S.body.glint.g, S.body.minPx, 0, 0]);
+    S.body.glint.g, S.body.minPx, 0, 0, S.body.wingSheen ?? 0, 0, 0, 0]);
   const swarmData = new ArrayBuffer(MAX_SWARMS * SWARM_BYTES);
   const sf = new Float32Array(swarmData), su = new Uint32Array(swarmData);
   let total = 0, swarmCount = 0;

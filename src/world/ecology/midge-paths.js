@@ -12,25 +12,44 @@ import { HABITAT_ORIGIN } from '../growth/habitat.js';
 const u01 = (h) => (h >>> 8) / 16777216;
 
 /**
- * The swarm centres: the densest squares of the field holding at least fromShare of a full cloud,
- * no two closer than apartM, at most `max`, densest first (ties to the lower square). Each gets
- * a seed from its square, so a swarm keeps its look while the field changes around it.
+ * The swarm centres. Midges dance over tall stems by the water, so the reed clumps come first: up
+ * to overReeds swarms hang over clumps whose square holds at least fromShare of a full cloud. The
+ * rest go to the densest squares, no two closer than apartM, at most `max` in all; squares equally
+ * dense (in summer hundreds are full) are taken in a seeded order, so swarms spread over the whole
+ * island instead of piling into the first rows of the grid. Each gets a seed from its square, so a
+ * swarm keeps its look while the field changes around it.
  * @param {Uint8Array | null | undefined} field state.ecology.midges @param {any} S recipes/species/midge.json swarm
+ * @param {{ x: number, z: number }[]} [anchors] the reed clumps (growth plants), in plant order
  * @returns {{ x: number, z: number, share: number, seed: number }[]}
  */
-export function pickSwarms(field, S) {
+export function pickSwarms(field, S, anchors = []) {
   if (!field) return [];
   const n = Math.round(Math.sqrt(field.length));
   const at = 255 * S.swarms.fromShare;
-  /** @type {number[]} */ const cand = [];
-  for (let k = 0; k < field.length; k++) if (field[k] >= at) cand.push(k);
-  cand.sort((a, b) => field[b] - field[a] || a - b);
   /** @type {{ x: number, z: number, share: number, seed: number }[]} */ const out = [];
   const apart2 = S.swarms.apartM * S.swarms.apartM;
+  const clear = (/** @type {number} */ x, /** @type {number} */ z) => !out.some((s) => (s.x - x) ** 2 + (s.z - z) ** 2 < apart2);
+  const cellOf = (/** @type {number} */ x, /** @type {number} */ z) => {
+    const i = Math.floor(x - HABITAT_ORIGIN), j = Math.floor(z - HABITAT_ORIGIN);
+    return i < 0 || j < 0 || i >= n || j >= n ? -1 : j * n + i;
+  };
+  // Over the reeds first, densest clumps first (ties by the clump's place, seeded).
+  const reeds = anchors.map((a) => ({ a, k: cellOf(a.x, a.z) })).filter((r) => r.k >= 0 && field[r.k] >= at);
+  reeds.sort((p, q) => field[q.k] - field[p.k] || hash32(0x7e3d, p.k) - hash32(0x7e3d, q.k));
+  const overReeds = Math.min(S.swarms.max, S.swarms.overReeds ?? 0);
+  for (const r of reeds) {
+    if (out.length >= overReeds) break;
+    if (!clear(r.a.x, r.a.z)) continue;
+    out.push({ x: r.a.x, z: r.a.z, share: field[r.k] / 255, seed: hash32(0x3d6e, r.k) });
+  }
+  // Then the densest ground, equally dense squares in a seeded order.
+  /** @type {number[]} */ const cand = [];
+  for (let k = 0; k < field.length; k++) if (field[k] >= at) cand.push(k);
+  cand.sort((a, b) => field[b] - field[a] || hash32(0x5a17, a) - hash32(0x5a17, b));
   for (const k of cand) {
     if (out.length >= S.swarms.max) break;
     const x = HABITAT_ORIGIN + (k % n) + 0.5, z = HABITAT_ORIGIN + Math.floor(k / n) + 0.5;
-    if (out.some((s) => (s.x - x) ** 2 + (s.z - z) ** 2 < apart2)) continue;
+    if (!clear(x, z)) continue;
     out.push({ x, z, share: field[k] / 255, seed: hash32(0x3d6e, k) });
   }
   return out;

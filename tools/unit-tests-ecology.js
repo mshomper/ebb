@@ -182,6 +182,15 @@ export function addEcologyTests(test, assert, eq) {
     for (let i = 1; i < swarms.length; i++) assert(swarms[i].share <= swarms[i - 1].share, 'swarms out of order');
     for (const a of swarms) for (const b of swarms) if (a !== b) assert(Math.hypot(a.x - b.x, a.z - b.z) >= S.swarms.apartM, 'two swarms too close');
     eq(JSON.stringify(pickSwarms(st.ecology.midges, S)), JSON.stringify(swarms), 'the same swarms twice');
+    // With the reeds: swarms hang over the reed clumps first, and the rest spread over the island
+    // (in summer hundreds of squares are equally full; they used to pile into the grid's first rows).
+    const reeds = st.growth.plants.filter((/** @type {any} */ p) => p.sp === 'reeds');
+    const withReeds = pickSwarms(st.ecology.midges, S, reeds);
+    const overReeds = withReeds.filter((s) => reeds.some((/** @type {any} */ p) => p.x === s.x && p.z === s.z)).length;
+    assert(overReeds >= Math.min(3, S.swarms.overReeds), `only ${overReeds} swarms over the reeds`);
+    eq(JSON.stringify(pickSwarms(st.ecology.midges, S, reeds)), JSON.stringify(withReeds), 'the same swarms over the reeds twice');
+    const zs = swarms.map((s) => s.z);
+    assert(Math.max(...zs) - Math.min(...zs) > 20, `swarms bunched in a band ${Math.min(...zs)} to ${Math.max(...zs)}`);
     const D = S.density;
     const dusk = swarmShareNow(19.5, 18, 12, 0, D), day = swarmShareNow(12, 18, 12, 0, D), night = swarmShareNow(2, 18, 12, 0, D);
     assert(dusk > day && day > night, `dusk ${dusk}, day ${day}, night ${night}`);
@@ -199,7 +208,7 @@ export function addEcologyTests(test, assert, eq) {
     const o1 = orbit(swarms[0].seed, 7, 12.3, S), o2 = orbit(swarms[0].seed, 7, 12.3, S);
     eq(o1.join(','), o2.join(','), 'the same midge at the same time');
     assert(Math.hypot(o1[0], o1[2]) <= S.radiusM[1] * 1.36 + 1e-9 && o1[1] >= S.heightM[0] - 0.07 && o1[1] <= S.heightM[1] + 0.07, `a midge off its loop: ${o1.map((v) => v.toFixed(2))}`);
-    return `${swarms.length} swarms; share at dusk ${dusk.toFixed(2)}, day ${day.toFixed(2)}, night ${night.toFixed(2)}; drizzle ${drizzle.toFixed(2)}, downpour 0, just after rain ${swarmShareNow(19.5, 18, 12, 0, D, 0, justAfter).toFixed(2)}`;
+    return `${swarms.length} swarms, ${overReeds} over the reeds; share at dusk ${dusk.toFixed(2)}, day ${day.toFixed(2)}, night ${night.toFixed(2)}; drizzle ${drizzle.toFixed(2)}, downpour 0, just after rain ${swarmShareNow(19.5, 18, 12, 0, D, 0, justAfter).toFixed(2)}`;
   });
 
   test(ECOLOGY, 'the ?frogs test shortcut brings a scout, or a settled group, on the bank at once', async () => {
