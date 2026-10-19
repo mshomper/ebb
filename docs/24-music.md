@@ -232,11 +232,11 @@ All from CC0 sources, checked file by file into `assets/audio/instruments/CREDIT
 | Role | First choice | Source and notes |
 |---|---|---|
 | Piano (lead and bed) | Grand Piano, Steinway B (chosen by Matt, October 19, 2026) | VCSL `Chordophones/Zithers/Grand Piano, Steinway B`: sustain, no-sustain and release sets, close mic, sampled every whole tone, 3 velocity layers, normalized (rebuild the dynamic range with a velocity curve; do not re-gain layers). Played with gentle stretch tuning and the Knight upright's recorded pedal mechanism under the pedal. The Kawai grand and the Yamaha and Knight uprights were compared on the bench and set aside. |
-| Harp | Concert Harp (VCSL) | mf and f layers; VSCO 2 CE harp as alternate. |
-| Flute | VSCO 2 CE Flute | sustain non-vibrato, sustain vibrato, expressive vibrato, staccato. |
+| Harp | Concert Harp (VCSL) | mf and f layers; VSCO 2 CE harp as alternate (its takes are mostly the same recordings). Built October 19, 2026: 19 zones B1 to D7, stereo. |
+| Flute | VSCO 2 CE Flute | sustain non-vibrato, sustain vibrato, expressive vibrato, staccato. Built October 19, 2026: non-vibrato and vibrato sustains, C4 to C7, looped. |
 | Clarinet | VSCO 2 CE Clarinet | long sustain, staccato with round-robins. |
-| Strings | VSCO 2 CE cello, viola and violin sections; solo violin; contrabass | sustain with vibrato, tremolo, pizzicato, spiccato. |
-| Mallets | VCSL Vibraphone (struck and bowed), Marimba, Glockenspiel | bowed vibraphone is a key winter and mist color. |
+| Strings | VSCO 2 CE cello, viola and violin sections; solo violin; contrabass | sustain with vibrato, tremolo, pizzicato, spiccato. Built October 19, 2026: the three sections and the solo contrabass, sustain with vibrato, looped, played as one string section split by register. No CC0 solo cello exists (docs/audio-future-work.md). |
+| Mallets | VCSL Vibraphone (struck and bowed), Marimba, Glockenspiel | bowed vibraphone is a key winter and mist color. Built October 19, 2026: soft mallets (motor off) and bowed, looped; wine glasses too. |
 | Glass | VCSL Wine Glasses | winter lead and shimmer layer. |
 | Kalimba | VCSL Kalimba (Kenya, Tanzania) | spring accents, sparingly. |
 | Others available | VCSL hand chimes, psaltery, recorders, ocarina; VSCO oboe, bassoon, French horn | reserved for later species and variety. |

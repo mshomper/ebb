@@ -53,6 +53,15 @@ The ambience, voices and `tools/audio-check.html` run on a simulated island. To 
 - Nylon guitar: the instrument slot is built empty; another session is searching for a sample set.
 - Future species (songbirds, owls, herons and the rest): instruments, motifs and voices wait until each species is designed (doc 24, "The score grows with the island").
 
+## Support kit: still to do (October 19, 2026)
+
+The support kit (strings, harp, flute, vibraphone struck and bowed, glass) is built for the desktop, 8 MB in all. Still open:
+
+- **Solo cello.** Neither CC0 library has one (VSCO 2 CE has a cello section, VCSL no cello). The autumn cello line plays the cello section with solo settings for now. Options: a CC0 single-note set on Freesound, a free or paid library under doc 25's rules, or the viola section or VSCO's solo violin for a solo timbre. Matt decides by ear.
+- **Phone versions.** None yet, so phones would decode the desktop files. Suggested by the strings session: soft layer only, mono, core ranges (about 22 MB decoded for all strings); harp and vibraphone mono with shorter tails. Build before phase 6.
+- **Memory on the desktop.** A piece unpacks only the notes it uses, but a full piano piece (about 110 MB) plus a string bed (10 to 20 MB) can pass the 128 MB line while it plays; the shared budget frees the extra after it ends. If that is too much, decode string notes in mono or shorten the soft layers' settling time.
+- **Gaps in the recordings.** Bowed vibraphone has six notes only (a note may be 3.5 semitones from its recording); the harp is recorded 10 to 20 cents flat (the sampler corrects it); the four glasses are untuned household glasses placed at their nearest notes.
+
 ## Could not be finished here
 
 ### No clean CC0 recording found on Freesound (October 19, 2026)
