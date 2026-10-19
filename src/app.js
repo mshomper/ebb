@@ -46,6 +46,7 @@ import { attachDesktopInput } from './input/desktop.js';
 import { attachTouchInput } from './input/touch.js';
 import { beginSave, TEST_PARAMS } from './save/autosave.js';
 import { loadPrefs, keepPrefs } from './save/prefs.js';
+import { fingerprint } from './save/backup.js';
 
 /**
  * @typedef {{ ok: true, tier: string, tierReasons: string[], adapterInfo: GPUAdapterInfo | null, features: string[], stop: () => void,
@@ -55,7 +56,8 @@ import { loadPrefs, keepPrefs } from './save/prefs.js';
  *   palette: { list: () => { id: string, name: string }[], current: () => any, apply: (json: any, fadeS?: number) => void },
  *   pickColor: (cssX: number, cssY: number) => Promise<string> }
  *   | { ok: false, reason: 'missing'|'no-adapter'|'device-failed' }
- *   | { ok: false, reason: 'elsewhere', takeOver: () => void }} StartResult
+ *   | { ok: false, reason: 'elsewhere', takeOver: () => void }
+ *   | { ok: false, reason: 'damaged', save: any, islands: { id: string, name: string }[] }} StartResult
  */
 
 /** Palettes available in the slice (docs/05): Moonlight and Clear sight join later. */
@@ -103,6 +105,8 @@ export async function startApp(canvas, hooks = {}) {
   // Saving (doc 18, src/save): each island keeps its own save; a test link runs unsaved.
   const save = await beginSave({ enabled: !!hooks.save, islandId: island.id, test: TEST_PARAMS.some((k) => params.has(k)) });
   if (save.status === 'elsewhere') return { ok: false, reason: 'elsewhere', takeOver: save.takeOver };
+  // No copy of the save reads at all: the recovery card (src/ui/damaged.js) offers a file or a new island.
+  if (save.status === 'damaged') return { ok: false, reason: 'damaged', save, islands };
   // What came back from the save, applied once (a GPU rebuild finds it all in the store already).
   const back = save.restored;
   if (back) {
@@ -740,8 +744,7 @@ export async function startApp(canvas, hooks = {}) {
     /** The island this world started from, and the islands there are (the badge's switch). */
     island: { current: island, list: islands },
     /** This island's save (the badge says whether it is kept, and can start it again). */
-    save: { status: save.status, startAgain: save.startAgain, takeOver: save.takeOver, lastSeen: save.lastSeen,
-      hold: save.hold, setHighWater: save.setHighWater, saveSoon: save.saveSoon },
+    save: Object.assign(save, { fingerprint: () => fingerprint(world.state) }),
     /** Palette access for the palette lab (tools/palette-lab.html). */
     palette: {
       list: () => PALETTES.slice(),

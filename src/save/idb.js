@@ -3,7 +3,8 @@
 // the device settings (`prefs`). Thin promise wrappers; only src/save/ touches it.
 
 const DB_NAME = 'ebb';
-const DB_VERSION = 1;
+/** 1: slots, saves, prefs (S7a). 2: quarantine, damaged copies kept aside (S7d). */
+const DB_VERSION = 2;
 
 /**
  * @typedef {Object} SlotRecord
@@ -13,6 +14,7 @@ const DB_VERSION = 1;
  * @property {number} gen       the newest generation
  * @property {number} created   UTC ms
  * @property {number} lastPlayed UTC ms
+ * @property {number} [lastBackupAt] UTC ms of the last backup to a file (S7d's reminder)
  */
 /**
  * @typedef {Object} SaveRecord
@@ -46,8 +48,13 @@ export function openDb() {
       if (!db.objectStoreNames.contains('slots')) db.createObjectStore('slots', { keyPath: 'id' });
       if (!db.objectStoreNames.contains('saves')) db.createObjectStore('saves', { keyPath: ['slot', 'gen'] });
       if (!db.objectStoreNames.contains('prefs')) db.createObjectStore('prefs');
+      if (!db.objectStoreNames.contains('quarantine')) db.createObjectStore('quarantine', { autoIncrement: true });
     };
-    r.onsuccess = () => resolve(r.result);
+    r.onsuccess = () => {
+      // A newer build in another tab needs a newer database: let it have it.
+      r.result.onversionchange = () => { r.result.close(); opening = null; };
+      resolve(r.result);
+    };
     r.onerror = () => reject(r.error);
     r.onblocked = () => reject(new Error('the save database is blocked by another window'));
   });
@@ -79,6 +86,38 @@ export function writeGeneration(db, slot, save, keep) {
   tx.objectStore('slots').put(slot);
   if (save.gen - keep >= 0) saves.delete(IDBKeyRange.bound([save.slot, -Infinity], [save.slot, save.gen - keep]));
   return done(tx);
+}
+
+/**
+ * Every saved copy of an island, newest first (the Saves menu's earlier saves; recovery).
+ * @param {IDBDatabase} db @param {string} slot @returns {Promise<SaveRecord[]>}
+ */
+export async function listSaves(db, slot) {
+  const all = await req(db.transaction('saves').objectStore('saves').getAll(IDBKeyRange.bound([slot, -Infinity], [slot, Infinity])));
+  return /** @type {SaveRecord[]} */ (all).sort((a, b) => b.gen - a.gen);
+}
+
+/** Point a slot at its newest copy (or keep its backup time). @param {IDBDatabase} db @param {SlotRecord} slot */
+export function putSlot(db, slot) {
+  const tx = db.transaction('slots', 'readwrite');
+  tx.objectStore('slots').put(slot);
+  return done(tx);
+}
+
+/**
+ * Keep a damaged copy aside, with what was wrong. Never deleted; the recovery card can save it.
+ * @param {IDBDatabase} db @param {SaveRecord} save @param {string} error
+ */
+export function quarantine(db, save, error) {
+  const tx = db.transaction('quarantine', 'readwrite');
+  tx.objectStore('quarantine').add({ ...save, error, keptAt: Date.now() });
+  return done(tx);
+}
+
+/** The damaged copies kept for an island, newest first. @param {IDBDatabase} db @param {string} slot */
+export async function quarantined(db, slot) {
+  const all = await req(db.transaction('quarantine').objectStore('quarantine').getAll());
+  return /** @type {any[]} */ (all).filter((q) => q.slot === slot).sort((a, b) => b.keptAt - a.keptAt);
 }
 
 /** Forget an island: its slot and every generation. @param {IDBDatabase} db @param {string} id */

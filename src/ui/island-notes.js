@@ -106,6 +106,8 @@ export function mountIslandNotes(parent, words) {
   // The reveal on return (src/ui/reveal.js) shows its notes here one at a time, now; when it ends,
   // the line says how many more wait in the journal.
   const offRevealNote = on('reveal:note', (/** @type {{ note: any, showS: number }} */ p) => showNow(p.note, p.showS));
+  // A calm word from the island itself, not a journal note (a save that came back from earlier).
+  const offNotice = on('island:notice', (/** @type {{ text: string, showS: number }} */ p) => showNow({ text: p.text, notice: true }, p.showS));
   const offRevealEnd = on('reveal:ended', (/** @type {{ missed: number }} */ p) => { if (p.missed > 0) { more += p.missed; renderMore(); } });
   /** A reveal note: shown at once for showS seconds, marked as shown. @param {any} n @param {number} showS */
   function showNow(n, showS) {
@@ -114,8 +116,11 @@ export function mountIslandNotes(parent, words) {
     b.type = 'button';
     b.className = 'ebb-notes__note';
     b.textContent = n.text;
-    b.title = 'Open the journal';
-    b.addEventListener('click', () => dispatch(n.sp ? { type: 'ui.journal', open: true, page: n.sp } : { type: 'ui.journal', open: true, view: 'notes' }));
+    if (n.notice) b.tabIndex = -1;
+    else {
+      b.title = 'Open the journal';
+      b.addEventListener('click', () => dispatch(n.sp ? { type: 'ui.journal', open: true, page: n.sp } : { type: 'ui.journal', open: true, view: 'notes' }));
+    }
     root.insertBefore(b, moreBtn.isConnected ? moreBtn : null);
     requestAnimationFrame(() => b.classList.add('is-shown'));
     setTimeout(() => {
@@ -228,6 +233,7 @@ export function mountIslandNotes(parent, words) {
     offAway();
     offRevealNote();
     offRevealEnd();
+    offNotice();
     offUi();
     for (const u of unsubs) u();
     clearTimeout(pumpTimer);

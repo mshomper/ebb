@@ -1,0 +1,4 @@
+{
+  "_doc": "Old island saves that tools/migrate-test.html opens with the current build (docs/18, Migrations). Add one entry per .ebb file in this folder: { \"file\": \"name.ebb\", \"note\": \"what it is\", \"expect\": \"8 hex digit world fingerprint after upgrading, or null\" }.",
+  "samples": []
+}

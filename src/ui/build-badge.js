@@ -3,6 +3,8 @@
 // build.json is written by the Pages workflow, or answered by tools/serve.ps1 when running locally
 // ({local: true, branch}). Without either, the BUILD string from main.js is shown.
 
+import { fillSavesPanel } from './saves-menu.js';
+
 /**
  * @param {string} fallbackBuild
  * @param {{ current: { id: string, name: string }, list: { id: string, name: string }[] } | null} [island]
@@ -62,71 +64,26 @@ export async function showBuildBadge(fallbackBuild, island = null, save = null) 
     });
     badge.appendChild(b);
   }
-  // The Saves menu (until S8 brings Settings): start this island again (asked twice, on the page),
-  // and pretend you were away (src/sim/away.js), which a test island can do too.
+  // The Saves menu (src/ui/saves-menu.js; until S8 brings Settings). A test island can still pretend
+  // it was away. Test buttons appear on previews and local builds, never on the live site.
   const kept2 = save?.status === 'loaded' || save?.status === 'fresh';
   if (save && (kept2 || (save.status === 'test' && save.pretend))) {
-    const menu = button('Saves', 'Saving this island, and time away');
+    const menu = button('Saves', 'Saving this island, backups, and time away');
     menu.setAttribute('aria-expanded', 'false');
     const panel = document.createElement('div');
     Object.assign(panel.style, { display: 'grid', gap: '6px', justifyItems: 'start' });
     panel.hidden = true;
+    const testing = !!info?.local || (!!info?.branch && info.branch !== 'main') || !info;
+    const saves = fillSavesPanel(panel, { save, islands: island?.list ?? [], testing, button });
     menu.addEventListener('click', () => {
       panel.hidden = !panel.hidden;
       menu.setAttribute('aria-expanded', String(!panel.hidden));
+      if (!panel.hidden) saves.refresh();
     });
     badge.append(menu, panel);
-    if (save.pretend) panel.appendChild(pretendRow(save.pretend, button));
-    if (!kept2) { document.body.appendChild(badge); return text; }
-    const again = button('Start this island again', 'Forget this island and begin it fresh');
-    let armed = /** @type {ReturnType<typeof setTimeout> | 0} */ (0);
-    again.addEventListener('click', () => {
-      if (!armed) {
-        again.textContent = 'Tap again to start fresh';
-        armed = setTimeout(() => { armed = 0; again.textContent = 'Start this island again'; }, 4000);
-        return;
-      }
-      clearTimeout(armed);
-      again.disabled = true;
-      again.textContent = 'Starting fresh';
-      save.startAgain();
-    });
-    panel.appendChild(again);
   }
   document.body.appendChild(badge);
   return text;
-}
-
-/**
- * "Pretend I was away" and its choices, with a line saying how much time passed.
- * @param {{ pretendHours: number[], pretend: (h: number) => Promise<{ hours: number, why: string }> }} away
- * @param {(label: string, title: string) => HTMLButtonElement} button
- */
-function pretendRow(away, button) {
-  const box = document.createElement('div');
-  Object.assign(box.style, { display: 'grid', gap: '6px', justifyItems: 'start' });
-  const label = document.createElement('span');
-  label.textContent = 'Pretend I was away';
-  const row = document.createElement('div');
-  Object.assign(row.style, { display: 'flex', flexWrap: 'wrap', gap: '6px' });
-  const said = document.createElement('span');
-  said.setAttribute('role', 'status');
-  /** @param {number} h */
-  const words = (h) => (h % 24 === 0 && h >= 24 ? `${h / 24} ${h === 24 ? 'day' : 'days'}` : `${h} ${h === 1 ? 'hour' : 'hours'}`);
-  for (const h of away.pretendHours) {
-    const b = button(words(h), `Catch up as if you had been away for ${words(h)} of game time`);
-    b.addEventListener('click', async () => {
-      for (const x of row.querySelectorAll('button')) /** @type {HTMLButtonElement} */ (x).disabled = true;
-      said.textContent = 'Catching up';
-      const a = await away.pretend(h);
-      said.textContent = a.why === 'paused' ? 'Time is paused: nothing grew'
-        : `${words(a.hours)} passed${a.why === 'capped' ? ' (the 14-day limit)' : ''}`;
-      for (const x of row.querySelectorAll('button')) /** @type {HTMLButtonElement} */ (x).disabled = false;
-    });
-    row.appendChild(b);
-  }
-  box.append(label, row, said);
-  return box;
 }
 
 /** @param {string} url */

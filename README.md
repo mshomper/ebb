@@ -9,7 +9,7 @@ The look is soft and natural: physical light, sky and water, ground built from s
 
 ## Where it is
 
-The M1 vertical slice, one small island with every pillar working in miniature, is about two thirds built. The full step list is in [docs/20-roadmap-and-vertical-slice.md](docs/20-roadmap-and-vertical-slice.md).
+The M1 vertical slice, one small island with every pillar working in miniature, is mostly built: frog trust and names (S6c) and the phone layout (S8) remain. The full step list is in [docs/20-roadmap-and-vertical-slice.md](docs/20-roadmap-and-vertical-slice.md).
 
 | | Step | What it gives you |
 |---|---|---|
@@ -19,10 +19,10 @@ The M1 vertical slice, one small island with every pillar working in miniature, 
 | Done | S5 | Six plants that grow, spread and compete on their own ground: grass, rushes, reeds, water lilies, yellow flag iris and sea thrift, with a Plant tool. Grass stands tall and green by the water and cures to straw on the dry rise in late summer |
 | Done | J1 to J2 | The field journal: a page and a field sketch for every living thing and every kind of ground, notes as things happen (new ones marked, and the ones you may have missed kept at the top), the Almanac, a web of what needs what, and a wash that shows where each thing lives |
 | In progress | S6 | Frogs: they find the island, arrive and settle (S6a), then move, call and react to you (S6b; by day they hide in the reeds and rushes, at dusk they come out to the edge), then come to trust you and take a name (S6c). Midges dance over the reeds at dusk, and shelter from rain |
-| In progress | S7 | Saving, and the island moving on while you are away. Saving is in (S7a): your island, its plants, frogs, springs, journal and view are kept on the device and come back on every load. Time away is in (S7b): one real minute away is one game hour, up to 14 game days, and what the journal wrote meanwhile waits under "You may have missed". The reveal on return is in (S7c): after 6 game hours or more away the island opens from cream, grows into what it became, rings the places that changed, brings its animals back, and shows the best five notes. Next: backups (S7d) |
+| Done | S7 | Saving, and the island moving on while you are away. Your island, its plants, frogs, springs, journal and view are kept on the device and come back on every load (S7a). One real minute away is one game hour, up to 14 game days, and what the journal wrote meanwhile waits under "You may have missed" (S7b). After 6 game hours or more away the island opens from cream, grows into what it became, rings the places that changed, brings its animals back, and shows the best five notes (S7c). An island backs up to a small file to carry to another device, earlier saves can be opened, and a damaged save comes back part by part from earlier copies with a calm note (S7d) |
 | Next | S8 | The final touch layout and the low quality tier for phones |
 
-There are two islands to start from: the **Starter island** (one large spring-fed pond under a hill) and **Two ponds** (a low island with two spring-fed ponds and three rain-fed marshes). The **Island** button on the corner badge switches between them, and each keeps its own save. **Saves** on the badge can start an island again. Test links (`?seed`, `?day`, `?frogs`) open throwaway islands that are never saved.
+There are two islands to start from: the **Starter island** (one large spring-fed pond under a hill) and **Two ponds** (a low island with two spring-fed ponds and three rain-fed marshes). The **Island** button on the corner badge switches between them, and each keeps its own save. **Saves** on the badge backs an island up to a file, opens one, steps back to an earlier save, pretends you were away, or starts the island again. Test links (`?seed`, `?day`, `?frogs`) open throwaway islands that are never saved.
 
 ## What you can do in it
 
