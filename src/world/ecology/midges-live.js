@@ -20,7 +20,8 @@ import { pickSwarms, swarmShareNow, afterRainNow, orbit, dipNow } from './midge-
  *   weather's rain 0..1 at display time, or that many game hours before
  */
 export function createMidges(opts) {
-  const { world, recipe, budget, ripples } = opts;
+  const { world, recipe, ripples } = opts;
+  let budget = opts.budget;
   const S = recipe.swarm;
   const pass = createMidgePass({ recipe });
   /** @type {any} */ let field = null;
@@ -52,6 +53,8 @@ export function createMidges(opts) {
     },
     /** How many midges are out now (tools). */
     total: () => total,
+    /** A new quality tier's cap on midges (its boids), from the next frame. @param {number} n */
+    setBudget(n) { budget = Math.max(0, n); },
     /** The swarms now, with their centres (the frog lab, S6c's tongue catches). */
     swarms: () => swarms.slice(),
 

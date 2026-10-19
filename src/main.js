@@ -3,7 +3,9 @@
 
 import { startApp } from './app.js';
 import { showNoWebGPU, showRebuildingNote } from './ui/no-webgpu.js';
-import { showBuildBadge } from './ui/build-badge.js';
+import { buildInfo, showBuildTag } from './ui/build-badge.js';
+import { mountSettings } from './ui/settings.js';
+import { applyDisplayPrefs } from './ui/motion.js';
 import { mountTools } from './ui/tools.js';
 import { mountTimeFlow } from './ui/time-flow.js';
 import { mountLook } from './ui/look.js';
@@ -13,6 +15,7 @@ import { mountFrogScale } from './ui/frog-scale.js';
 import { createJournal } from './world/journal/index.js';
 import { loadRecipe } from './core/recipes.js';
 import { on } from './core/events.js';
+import { get as getStore } from './core/store.js';
 import { showElsewhere } from './ui/elsewhere.js';
 import { mountAway } from './sim/away.js';
 import { mountReveal } from './ui/reveal.js';
@@ -36,12 +39,16 @@ if (new URLSearchParams(location.search).has('debug')) {
     original(...args);
   };
 }
+// Text size and motion from this device's settings (src/ui/motion.js), on the page from the start.
+applyDisplayPrefs();
+/** Which build this is: a line for Settings, and a tag under the dial on previews and local builds. */
+const build = buildInfo(BUILD);
 let toolsMounted = false;
-/** The island this world started from, for the badge's island switch. @type {any} */
+/** The island this world started from, for Settings' island switch. @type {any} */
 let islandInfo = null;
-/** This island's save, for the badge (kept, or a test island; start again). @type {any} */
+/** This island's save, for Settings > Saves (kept, or a test island; start again). @type {any} */
 let saveInfo = null;
-/** The HUD layer (src/ui/hud.js) that holds every corner button, the badge included. @type {HTMLElement | null} */
+/** The HUD layer (src/ui/hud.js) that holds every corner button, the build tag included. @type {HTMLElement | null} */
 let hudLayer = null;
 
 // The game keeps your island (src/save); tool pages that start the app do not.
@@ -72,11 +79,19 @@ startApp(canvas, { onDeviceLost: (rebuilding) => showRebuildingNote(rebuilding),
       // A save that came back from earlier copies says so, calmly (src/ui/damaged.js).
       noticeRecovered(saveInfo);
       // Time away (src/sim/away.js): catch up now on the time since the last save, and later on a
-      // hidden tab's time; the badge's Pretend I was away runs through it too.
+      // hidden tab's time; Settings > Tests' Pretend I was away runs through it too.
       // The reveal on return (src/ui/reveal.js) listens first, so the catch-up on opening gets one.
       await mountReveal({ app: r, words });
       const away = await mountAway({ app: r, jr: { words, island, web } });
       if (saveInfo) saveInfo.pretend = away;
+      // Settings (docs/15): the button in the top right corner. Quality appears once the app can
+      // switch tiers live; a tier chosen there is kept on this device and applied here.
+      const quality = /** @type {any} */ (r).quality ?? null;
+      const autoTier = quality?.tier() ?? 'medium';
+      const choice = getStore('settings')?.qualityChoice;
+      if (quality && choice && choice !== 'auto' && choice !== autoTier) quality.set(choice);
+      mountSettings({ hudLayer: hud.layer, palettes: r.palette.list(), save: saveInfo, island: islandInfo,
+        build: await build, quality, autoTier });
       // `?frogscale`: real-size frogs around the pond to judge creature size (ahead of S6).
       if (r.frogScale) {
         const css = document.createElement('link');
@@ -92,4 +107,4 @@ startApp(canvas, { onDeviceLost: (rebuilding) => showRebuildingNote(rebuilding),
     console.error(err);
     showNoWebGPU('device-failed');
   })
-  .finally(() => showBuildBadge(BUILD, islandInfo, saveInfo, hudLayer));
+  .finally(async () => showBuildTag(await build, hudLayer));

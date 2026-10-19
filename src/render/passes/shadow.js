@@ -4,7 +4,7 @@
 // light-space origin snapped to whole texels, so shadows do not shimmer while orbiting.
 
 import { mat4, vec3 } from 'wgpu-matrix';
-import { makeBuffer, makeShaderModule, makeTexture } from '../../core/gpu.js';
+import { makeBuffer, makeShaderModule, makeTexture, untrack } from '../../core/gpu.js';
 import { CHUNK_MIN } from '../../world/terrain/grid.js';
 import { LODS, MAX_CHUNKS, createIndexBuffers, packChunks } from '../terrain-mesh.js';
 
@@ -20,9 +20,9 @@ const TAPS = { pcss: 16, '9tap': 9, '4tap': 4 };
  */
 export function createShadowPass(opts) {
   const { terrain, recipe } = opts;
-  const cascades = Math.max(1, Math.min(MAX_CASCADES, opts.tierShadows.cascades));
-  const size = opts.tierShadows.size;
-  /** @type {GPUTexture} */ let map;
+  let cascades = Math.max(1, Math.min(MAX_CASCADES, opts.tierShadows.cascades));
+  let size = opts.tierShadows.size;
+  /** @type {GPUTexture | null} */ let map = null;
   /** @type {GPUSampler} */ let sampler;
   /** @type {GPURenderPipeline} */ let pipeline;
   /** @type {GPUBindGroup} */ let group;
@@ -115,14 +115,37 @@ export function createShadowPass(opts) {
     /** The shadow map and its comparison sampler, created on first call (lighting binds them). @param {GPUDevice} device */
     resources(device) {
       if (!map) {
-        map = makeTexture(device, {
+        const made = makeTexture(device, {
           label: 'shadow-map', size: [size, size, MAX_CASCADES], format: 'depth32float',
           usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING,
         });
-        sampler = device.createSampler({ label: 'shadow-compare', compare: 'less-equal', magFilter: 'linear', minFilter: 'linear' });
-        for (let i = 0; i < MAX_CASCADES; i++) layerViews.push(map.createView({ dimension: '2d', baseArrayLayer: i, arrayLayerCount: 1 }));
+        map = made;
+        sampler ??= device.createSampler({ label: 'shadow-compare', compare: 'less-equal', magFilter: 'linear', minFilter: 'linear' });
+        layerViews.length = 0;
+        for (let i = 0; i < MAX_CASCADES; i++) layerViews.push(made.createView({ dimension: '2d', baseArrayLayer: i, arrayLayerCount: 1 }));
       }
       return { view: map.createView({ dimension: '2d-array' }), sampler };
+    },
+
+    /**
+     * Follow a new quality tier live (S8d-1): the cascade count and filter taps are plain numbers,
+     * read every frame. A texture's size cannot change after it is made, so a new map size makes a
+     * new shadow map; the old one is destroyed (frames already submitted finish with it first), and
+     * the caller must hand resources() to the lighting group again. Returns true when it did.
+     * @param {{ cascades: number, size: number, filter: string }} tierShadows
+     * @param {GPUDevice} device
+     */
+    setTier(tierShadows, device) {
+      cascades = Math.max(1, Math.min(MAX_CASCADES, tierShadows.cascades));
+      state.count = cascades;
+      state.taps = TAPS[/** @type {'pcss'} */ (tierShadows.filter)] ?? 9;
+      if (tierShadows.size === size && map) return false;
+      size = tierShadows.size;
+      map?.destroy();
+      untrack('shadow-map');
+      map = null;
+      this.resources(device);
+      return true;
     },
 
     /** @param {PassContext} ctx */

@@ -34,7 +34,8 @@ export function createLighting(device, atmosphere, shadow) {
   const layout = createLightingLayout(device);
   const buffer = makeBuffer(device, { label: 'light-uniforms', size: LIGHT_UNIFORM_BYTES, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
   const lutSampler = device.createSampler({ label: 'lut-linear', magFilter: 'linear', minFilter: 'linear', addressModeU: 'clamp-to-edge', addressModeV: 'clamp-to-edge', addressModeW: 'clamp-to-edge' });
-  const group = device.createBindGroup({
+  /** @param {{ view: GPUTextureView, sampler: GPUSampler }} s */
+  const makeGroup = (s) => device.createBindGroup({
     label: 'group1-lighting',
     layout,
     entries: [
@@ -43,10 +44,11 @@ export function createLighting(device, atmosphere, shadow) {
       { binding: 2, resource: atmosphere.aerial.createView({ dimension: '3d' }) },
       { binding: 3, resource: lutSampler },
       { binding: 4, resource: { buffer: atmosphere.sh } },
-      { binding: 5, resource: shadow.view },
-      { binding: 6, resource: shadow.sampler },
+      { binding: 5, resource: s.view },
+      { binding: 6, resource: s.sampler },
     ],
   });
+  let group = makeGroup(shadow);
   const data = new Float32Array(LIGHT_UNIFORM_BYTES / 4);
 
   /**
@@ -64,7 +66,13 @@ export function createLighting(device, atmosphere, shadow) {
     device.queue.writeBuffer(buffer, 0, data);
   }
 
-  return { layout, group, write };
+  return {
+    layout, write,
+    /** The bind group; the frame graph reads it each frame, so a new shadow map takes effect at once. */
+    get group() { return group; },
+    /** A new shadow map (a quality tier with another map size, S8d-1). @param {{ view: GPUTextureView, sampler: GPUSampler }} s */
+    setShadow(s) { group = makeGroup(s); },
+  };
 }
 
 /** @typedef {ReturnType<typeof createLighting>} Lighting */

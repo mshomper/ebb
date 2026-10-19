@@ -20,9 +20,9 @@ The M1 vertical slice, one small island with every pillar working in miniature, 
 | Done | J1 to J2 | The field journal: a page and a field sketch for every living thing and every kind of ground, notes as things happen (new ones marked, and the ones you may have missed kept at the top), the Almanac, a web of what needs what, and a wash that shows where each thing lives |
 | In progress | S6 | Frogs: they find the island, arrive and settle (S6a), then move, call and react to you (S6b; by day they hide in the reeds and rushes, at dusk they come out to the edge), then come to trust you and take a name (S6c). Midges dance over the reeds at dusk, and shelter from rain |
 | Done | S7 | Saving, and the island moving on while you are away. Your island, its plants, frogs, springs, journal and view are kept on the device and come back on every load (S7a). One real minute away is one game hour, up to 14 game days, and what the journal wrote meanwhile waits under "You may have missed" (S7b). After 6 game hours or more away the island opens from cream, grows into what it became, rings the places that changed, brings its animals back, and shows the best five notes (S7c). An island backs up to a small file to carry to another device, earlier saves can be opened, and a damaged save comes back part by part from earlier copies with a calm note (S7d) |
-| In progress | S8 | The HUD, phones and the low tier. The buttons keep to the corners and the bottom edge: a clock dial at the top left draws the sun or moon on its arc, the season and the tide, and says it in a line when tapped; undo and redo sit at the bottom left; the buttons dim after 6 s untouched, H hides them, and on a phone a faint eye brings them back (S8a). Settings, the phone layouts and the low tier measured on a phone follow (S8b to S8d) |
+| In progress | S8 | The HUD, phones and the low tier. The buttons keep to the corners and the bottom edge: a clock dial at the top left draws the sun or moon on its arc, the season and the tide, and says it in a line when tapped; undo and redo sit at the bottom left; the buttons dim after 6 s untouched, H hides them, and on a phone a faint eye brings them back (S8a). Settings, from the sliders button in the top right corner: time speed, growing while away and the reveal on return; palette (now three, with Clear sight, a color-safe palette), text size up to 160 percent and calm motion; sound, kept for when it arrives; dimming; quality, switched with no reload; and saves (S8b). Phones run smoothly on the low tier (S8d-1): the picture softens a little instead of stuttering when the graphics card is busy and sharpens again when it calms (dynamic resolution), the game draws at 30 fps on a 120 Hz phone to stay cool, a phone that warms up eases off a step early, and if the lowest resolution is still too much the island steps down one quality tier once, with a calm note and Undo. The phone layouts follow (S8c) |
 
-There are two islands to start from: the **Starter island** (one large spring-fed pond under a hill) and **Two ponds** (a low island with two spring-fed ponds and three rain-fed marshes). The **Island** button on the corner badge switches between them, and each keeps its own save. **Saves** on the badge backs an island up to a file, opens one, steps back to an earlier save, pretends you were away, or starts the island again. Test links (`?seed`, `?day`, `?frogs`) open throwaway islands that are never saved.
+There are two islands to start from: the **Starter island** (one large spring-fed pond under a hill) and **Two ponds** (a low island with two spring-fed ponds and three rain-fed marshes). The **Island** button in **Settings > Saves** switches between them, and each keeps its own save. **Saves** also backs an island up to a file, opens one, steps back to an earlier save, or starts the island again. On previews and local builds, **Settings > Tests** pretends you were away and checks recovery. Test links (`?seed`, `?day`, `?frogs`) open throwaway islands that are never saved.
 
 ## What you can do in it
 
@@ -43,7 +43,7 @@ You need a WebGPU-capable browser: Chrome, Edge, Firefox on Windows, or Safari 2
   2. Double-click `play.cmd` in the repo folder. It starts a small local server (nothing to install), opens the game in your browser, and uses the first free port from 8080 to 8099.
   3. Close its window to stop.
 
-The corner badge shows which build you are looking at: `local · <branch>`, `preview · <branch> · <commit>`, or `build <commit>` on the live site.
+A small tag under the clock dial shows which build you are looking at, `local · <branch>` or `preview · <branch> · <commit>`; on the live site it is at the foot of Settings as `build <commit>`.
 
 ### Address switches
 
@@ -70,6 +70,7 @@ Open these at `/tools/` while running locally. They are for checks that run on y
 | `unit-tests.html` | Every unit test in one run: the core, terrain, water, growth, the journal, creatures and islands |
 | `determinism.html` | The same seed builds the same island on every thread (`?island=` for another island) |
 | `frame-timing.html` | The island live, with a graph of how long each drawing step takes on the graphics card |
+| `phone-check.html` | The island on this device against its tier's budgets, with a 60 second run, a 15 minute warm run and Save result; open it on the phone from the preview link |
 | `growth-lab.html` | 14 game days of growth on a copy of the island, with charts and a check that two runs end the same |
 | `water-lab.html` | The live water's volume, wet area, flow and cost, with buttons that sculpt near the spring and pond |
 | `sky-lab.html` | The island at any hour and season, without moving the world clock |

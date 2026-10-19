@@ -29,6 +29,7 @@
     "species/frog": "species/frog.json",
     "species/midge": "species/midge.json",
     "palettes/dusk": "palettes/dusk.json",
-    "palettes/meadow-morning": "palettes/meadow-morning.json"
+    "palettes/meadow-morning": "palettes/meadow-morning.json",
+    "palettes/clear-sight": "palettes/clear-sight.json"
   }
 }

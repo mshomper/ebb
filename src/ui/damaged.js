@@ -39,11 +39,11 @@ export async function showDamaged(save, islands) {
       background: var(--ui-night); color: var(--ui-cream); overflow-y: auto; }
     #ebb-damaged .card { max-width: 480px; width: 100%; text-align: center; display: grid; gap: 16px; justify-items: center; }
     #ebb-damaged img { width: 96px; height: 96px; border-radius: 22px; }
-    #ebb-damaged p { margin: 0; font-size: 19px; line-height: 1.5; overflow-wrap: anywhere; }
-    #ebb-damaged .said { font-size: 17px; min-height: 1.5em; }
+    #ebb-damaged p { margin: 0; font-size: calc(19px * var(--text-scale, 1)); line-height: 1.5; overflow-wrap: anywhere; }
+    #ebb-damaged .said { font-size: calc(17px * var(--text-scale, 1)); min-height: 1.5em; }
     #ebb-damaged .row { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
-    #ebb-damaged button, #ebb-damaged label { appearance: none; font: inherit; font-weight: 800; font-size: 18px; min-height: 48px;
-      padding: 10px 18px; border-radius: 14px; cursor: pointer; display: inline-flex; align-items: center; }
+    #ebb-damaged button, #ebb-damaged label { appearance: none; font: inherit; font-weight: 800; font-size: calc(18px * var(--text-scale, 1)); min-height: 48px; max-width: 100%;
+      padding: 10px 18px; border-radius: 14px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; text-align: center; }
     #ebb-damaged .main { border: 0; background: var(--ui-cream); color: var(--ui-night); }
     #ebb-damaged .quiet { border: 1.5px solid rgba(244, 238, 228, 0.5); background: transparent; color: inherit; }
     #ebb-damaged input { position: absolute; width: 1px; height: 1px; opacity: 0; }

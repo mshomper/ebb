@@ -15,11 +15,11 @@
   border-radius: 14px;
   box-shadow: 0 8px 28px rgba(10, 14, 13, 0.3);
   font-family: Nunito, system-ui, sans-serif;
-  font-size: 16px;
+  font-size: calc(16px * var(--text-scale, 1));
   font-weight: 600;
   line-height: 1.35;
 }
-.ebb-frogscale__head { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 18px; }
+.ebb-frogscale__head { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: calc(18px * var(--text-scale, 1)); }
 .ebb-frogscale__body { display: grid; gap: 8px; }
 .ebb-frogscale.is-hidden .ebb-frogscale__body { display: none; }
 .ebb-frogscale__line { margin: 0; font-weight: 500; }

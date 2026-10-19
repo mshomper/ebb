@@ -90,6 +90,17 @@ export function setTier(t) {
   current = t;
 }
 
+/** The next lighter tier, or null below low. @param {Tier} t @returns {Tier | null} */
+export function tierBelow(t) {
+  const i = ORDER.indexOf(t);
+  return i > 0 ? ORDER[i - 1] : null;
+}
+
+/** Is this a tier name? @param {string} t @returns {t is Tier} */
+export function isTier(t) {
+  return ORDER.includes(/** @type {Tier} */ (t));
+}
+
 /**
  * @param {GPUAdapter} adapter
  * @param {string[]} reasons

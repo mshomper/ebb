@@ -9,7 +9,8 @@ import { flushDeferred, emitDeferred, on } from './core/events.js';
 import { get as getStore, update as updateStore, subscribe as subscribeStore } from './core/store.js';
 import { loadRecipe } from './core/recipes.js';
 import { subSeed } from './core/rng.js';
-import { pickTier, probeResult, settingsFor } from './render/quality.js';
+import { pickTier, probeResult, settingsFor, setTier as setQualityTier, isTier } from './render/quality.js';
+import { createQualityLive } from './render/quality-live.js';
 import { createOrbitCamera } from './render/camera.js';
 import { createFrameGraph } from './render/frame-graph.js';
 import { createFrameUniformWriter } from './render/frame-uniforms.js';
@@ -54,6 +55,7 @@ import { fingerprint } from './save/backup.js';
  *   water: import('./world/water/index.js').Water,
  *   growth: import('./world/growth/index.js').Growth, world: { state: any, env: any },
  *   palette: { list: () => { id: string, name: string }[], current: () => any, apply: (json: any, fadeS?: number) => void },
+ *   quality: { set: (tier: string) => boolean, tier: () => string, renderScale: () => number, info: () => any },
  *   pickColor: (cssX: number, cssY: number) => Promise<string> }
  *   | { ok: false, reason: 'missing'|'no-adapter'|'device-failed' }
  *   | { ok: false, reason: 'elsewhere', takeOver: () => void }
@@ -61,7 +63,7 @@ import { fingerprint } from './save/backup.js';
  */
 
 /** Palettes available in the slice (docs/05): Moonlight and Clear sight join later. */
-const PALETTES = [{ id: 'dusk', name: 'Dusk' }, { id: 'meadow-morning', name: 'Meadow morning' }];
+const PALETTES = [{ id: 'dusk', name: 'Dusk' }, { id: 'meadow-morning', name: 'Meadow morning' }, { id: 'clear-sight', name: 'Clear sight' }];
 
 /**
  * @param {HTMLCanvasElement} canvas
@@ -120,7 +122,9 @@ export async function startApp(canvas, hooks = {}) {
   }
   // Device settings (src/save/prefs.js): kept on this device, never in the island.
   const prefs = loadPrefs();
-  updateStore('settings', (s) => { for (const k of ['textSize', 'motion', 'audio']) if (prefs[k] !== undefined) s[k] = prefs[k]; });
+  updateStore('settings', (s) => {
+    for (const k of ['textSize', 'motion', 'audio', 'hudDim', 'reveal', 'qualityChoice']) if (prefs[k] !== undefined) s[k] = prefs[k];
+  });
   keepPrefs();
 
   // Tool state for the tool bar (ui/tools.js reads it; actions below change it).
@@ -320,6 +324,13 @@ export async function startApp(canvas, hooks = {}) {
     tonemap,
   ], { tier, lighting });
   await graph.setup();
+  // Quality while playing (src/render/quality-live.js): dynamic resolution, the frame cap, thermal
+  // care and the one automatic tier step down with its calm note.
+  const live = createQualityLive({
+    recipe: await loadRecipe('quality-tiers'), timestamps: graph.timingSupported,
+    tier: () => tier, settings: () => tierSettings, applyTier: (t, keepScale) => applyTier(t, keepScale),
+  });
+  live.setTier(tier, tierSettings, false);
 
   const uniforms = createFrameUniformWriter();
   const prevViewProj = new Float32Array(16);
@@ -353,15 +364,24 @@ export async function startApp(canvas, hooks = {}) {
 
   // Startup probe (docs/19): a device trying ultra measures GPU time for a couple of seconds once
   // the ground detail has faded in, then keeps ultra or steps back to high, with no reload.
-  /** @param {any} t tier name */
-  function applyTier(t) {
+  // Any tier switch (the probe, the automatic step down and its undo, Settings) comes through here.
+  /** @param {any} t tier name @param {boolean} [keepScale] keep the render scale (an automatic step or its undo) */
+  function applyTier(t, keepScale = false) {
     tier = t;
     tierSettings = settingsFor(t);
+    setQualityTier(t);
     terrainPass.setTier(tierSettings);
     grassPass.setTier(tierSettings);
     rushPass.setTier(tierSettings);
     waterPass.setDetailFade(tierSettings.waterDetailFadeM);
     waterPass.setSSR(tierSettings.waterSSR ?? null);
+    // Shadows, bloom and the midges follow too. A texture's size is fixed once made, so a new
+    // shadow map size re-makes only that map and the lighting group that binds it; new bloom levels
+    // re-make the bloom chain at the next resize, which invalidate() forces.
+    if (shadowPass.setTier(tierSettings.shadows, gpu.device)) lighting.setShadow(shadowPass.resources(gpu.device));
+    if (bloom.setLevels(tierSettings.bloomLevels)) graph.invalidate();
+    midges.setBudget(tierSettings.boids ?? 4096);
+    live.setTier(t, tierSettings, keepScale);
     if (lastEntry) sizeCanvas(lastEntry);
     updateStore('settings', (s) => { s.quality = t; });
   }
@@ -533,6 +553,14 @@ export async function startApp(canvas, hooks = {}) {
         updateStore('settings', (s) => { s.palette = a.id; });
         emitDeferred('palette:changed', { id: a.id });
         break;
+      // Settings (src/ui/settings.js): growing while away belongs to the island; the rest are
+      // this device's settings (src/save/prefs.js keeps them).
+      case 'time.keepGrowing':
+        updateStore('meta', (m) => { m.keepGrowing = a.on; });
+        break;
+      case 'settings.set':
+        updateStore('settings', (s) => { Object.assign(s, a.patch); });
+        break;
     }
   });
   const detachDesktop = attachDesktopInput(canvas, camRecipe, rb);
@@ -566,6 +594,7 @@ export async function startApp(canvas, hooks = {}) {
   function frame(now) {
     if (!running) return;
     raf = requestAnimationFrame(frame);
+    if (!live.due(now)) return;   // the frame cap: a display faster than the tier's target
     const cpuStart = performance.now();
     if (frameIndex === 0) last = now; // the first interval includes loading; don't count it
     const realDt = Math.min((now - last) / 1000, 0.25);
@@ -576,7 +605,8 @@ export async function startApp(canvas, hooks = {}) {
       canvas.width = devW;
       canvas.height = devH;
     }
-    graph.resize(devW * tierSettings.renderScale, devH * tierSettings.renderScale);
+    const [renderW, renderH] = live.internalSize(devW, devH);   // dynamic resolution
+    graph.resize(renderW, renderH);
 
     const t = clock.advance(realDt);
     camera.setViewport(cssW, cssH);
@@ -669,6 +699,7 @@ export async function startApp(canvas, hooks = {}) {
     graph.render(encoder);
     gpu.device.queue.submit([encoder.finish()]);
     graph.afterSubmit();
+    live.afterSubmit(gpu.device.queue, frameIndex > 0 ? frameMs : 0);
     sim.afterSubmit();
     exposure.afterSubmit();
     tonemap.afterSubmit();
@@ -703,6 +734,7 @@ export async function startApp(canvas, hooks = {}) {
     unWash();
     ww.dispose();
     unProbe();
+    live.dispose();
     detachDesktop();
     detachTouch();
     graph.dispose();
@@ -751,6 +783,21 @@ export async function startApp(canvas, hooks = {}) {
       current: () => structuredClone(baker.current()),
       /** @param {any} json @param {number} [fadeS] */
       apply: (json, fadeS = 0) => baker.setPalette(json, { fadeS }),
+    },
+    /** The quality tier and render scale, switched live with no reload (S8b's Settings, tools/phone-check.html). */
+    quality: {
+      /** Switch to a tier now; a chosen tier ends automatic step downs this session. @param {string} t */
+      set(t) {
+        if (!isTier(t) || !settingsFor(t)) return false;
+        if (probe) { probe = null; unProbe(); }   // the player's pick outranks the startup probe
+        live.chosen();
+        applyTier(t, false);
+        return true;
+      },
+      tier: () => tier,
+      renderScale: () => live.scale,
+      /** Scale range, GPU time measure, scale changes, the automatic step (tools). */
+      info: () => live.info(),
     },
     /**
      * Final on-screen color at a point given in CSS pixels from the canvas's top-left.

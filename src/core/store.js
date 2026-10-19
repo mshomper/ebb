@@ -21,9 +21,11 @@
  * @typedef {Object} SettingsSlice
  * @property {string} palette            palette id, e.g. 'dusk' (doc 05)
  * @property {100|115|130|160} textSize  percent (doc 16)
- * @property {'full'|'reduced'} motion
+ * @property {'device'|'full'|'calm'} motion  'device' follows prefers-reduced-motion (src/ui/motion.js)
  * @property {'auto'|'ultra'|'high'|'medium'|'low'} quality  'auto' lets render/quality.js pick (doc 19)
  * @property {AudioSettings} audio
+ * @property {boolean} [hudDim]  false keeps the HUD from dimming when idle; undefined means on
+ * @property {boolean} [reveal]  false skips the reveal on return; undefined means on
  */
 
 /** @typedef {(value: any, slice: string) => void} Subscriber */
@@ -46,7 +48,7 @@ export function initialSlices() {
     settings: {
       palette: 'dusk',
       textSize: 100,
-      motion: 'full',
+      motion: 'device',
       quality: 'auto',
       audio: { master: 1, ambience: 1, creatures: 1, tools: 1, ui: 1, muteInBackground: true },
     },

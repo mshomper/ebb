@@ -29,10 +29,10 @@ export function showNoWebGPU(reason) {
       padding: 24px 16px; background: var(--ui-night); overflow-y: auto; }
     .ebb-card { max-width: 520px; width: 100%; text-align: center; color: var(--ui-cream); }
     .ebb-card img { width: 128px; height: 128px; border-radius: 28px; display: block; margin: 0 auto 20px; }
-    .ebb-card h1 { margin: 0; font-weight: 800; font-size: 44px; letter-spacing: -0.015em; color: var(--wordmark-dark); }
+    .ebb-card h1 { margin: 0; font-weight: 800; font-size: calc(44px * var(--text-scale, 1)); letter-spacing: -0.015em; color: var(--wordmark-dark); }
     .ebb-card .tagline { margin: 2px 0 24px; font-family: var(--font-voice); font-style: italic; font-weight: 400;
-      font-size: 20px; color: var(--tagline-dark); }
-    .ebb-card p { font-size: 18px; line-height: 1.55; margin: 0 0 14px; overflow-wrap: anywhere; }
+      font-size: calc(20px * var(--text-scale, 1)); color: var(--tagline-dark); }
+    .ebb-card p { font-size: calc(18px * var(--text-scale, 1)); line-height: 1.55; margin: 0 0 14px; overflow-wrap: anywhere; }
   `;
   document.head.appendChild(style);
 
@@ -76,7 +76,7 @@ export function showRebuildingNote(visible) {
   note.setAttribute('role', 'status');
   Object.assign(note.style, {
     position: 'fixed', left: '50%', top: '24px', transform: 'translateX(-50%)',
-    padding: '10px 18px', borderRadius: '999px', fontSize: '17px', maxWidth: 'calc(100% - 32px)',
+    padding: '10px 18px', borderRadius: '999px', fontSize: 'calc(17px * var(--text-scale, 1))', maxWidth: 'calc(100% - 32px)',
     background: 'rgba(30, 38, 36, 0.78)', color: 'var(--ui-cream)',
   });
   document.body.appendChild(note);
