@@ -18,12 +18,12 @@
   },
   "wetDarken": 0.75,
   "lush": {
-    "note": "Wet-to-dry grass (island areas step C; src/world/growth/lush.js). A look field, 0..1 per square meter: 1 at fresh water, falling to 0 by waterM from ponds, marshes and streams and by dampM from damp hollows; salt dries it by saltDry at full salt. The grass blades and the ground's grass layer read it: at 0 (the dry rise) the season's grass albedo is multiplied by dryTint and cured toward straw by the season's cure share (held at each season's middle, eased between), at mid it is today's meadow, at 1 (by the water) it is multiplied by wetTint. Blade height goes from height[0] dry, through 1 at mid, to height[1] wet (taller grass sways further in the same wind). Albedos are physical (linear); the palette still paints last. Only the look reads this: no plant's growth changes.",
-    "waterM": 6, "dampM": 2.5, "saltDry": 0.7, "mid": 0.35,
+    "note": "Wet-to-dry grass (island areas step C; src/world/growth/lush.js). A look field, 0..1 per square meter: 1 at fresh water, falling to 0 by waterM from ponds, marshes and streams and by dampM from damp hollows; salt dries it by saltDry at full salt; then it is feathered by a soft blur of about featherM, so wet ground melts into dry with no line. The grass blades and the ground's grass layer read it: at 0 (the dry rise) the season's grass albedo is multiplied by dryTint and cured toward straw by the season's cure share (held at each season's middle, eased between), at mid it is today's meadow, at 1 (by the water) it is multiplied by wetTint. Blade height goes from height[0] dry, through 1 at mid, to height[1] wet (taller grass sways further in the same wind). Albedos are physical (linear); the palette still paints last. Only the look reads this: no plant's growth changes.",
+    "waterM": 6, "dampM": 2.5, "saltDry": 0.7, "mid": 0.35, "featherM": 2,
     "height": [0.8, 1.5],
-    "dryTint": [1.2, 1.12, 1.05],
-    "wetTint": [0.72, 0.9, 0.8],
+    "dryTint": [1.16, 1.1, 1.04],
+    "wetTint": [0.74, 0.9, 0.8],
     "straw": [0.42, 0.33, 0.13],
-    "cure": { "spring": 0, "summer": 0.3, "autumn": 0.65, "winter": 0.4 }
+    "cure": { "spring": 0, "summer": 0.24, "autumn": 0.55, "winter": 0.35 }
   }
 }

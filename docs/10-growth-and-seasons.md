@@ -100,7 +100,7 @@ As built in S5a (`render/passes/grass.js`, `grass-blades.wgsl`, `recipes/flora/g
 The near and far rings no longer meet along the near ring's square (October 2026, after S6; Matt: zoomed out, the dense meadow read as a box). They meet across a soft round band over the outer half of the near ring, its edge wobbled by a slow noise: near blades thin out across it as the far ring's fill in (`density.blendShare`, `density.blendNoise`). The marsh's rushes, drawn by the same shader, blend the same way.
 
 **Wet-to-dry grass** (October 2026, island areas step C; the biome session's plan, Matt chose a 6 m reach and late-summer straw). A look field (`src/world/growth/lush.js`), 0..1 per square meter, built with the habitat:
-- **Where:** 1 at fresh water, easing to 0 by 6 m from ponds, marshes and streams and by 2.5 m from damp hollows. Salt dries the shore ring.
+- **Where:** 1 at fresh water, easing to 0 by 6 m from ponds, marshes and streams and by 2.5 m from damp hollows. Salt dries the shore ring. The field is then feathered by a soft blur (`featherM`, about 2 m), and the tints were softened, after Matt saw the first version read as borders in summer.
 - **Blades:** by the water they stand up to 1.5 times as tall and deeper green; on the dry rise 0.8 times as tall and paler. The dry end cures toward straw through late summer and autumn. A lushness of `mid` is today's meadow.
 - **The far ground:** its grass layer takes the same tint, so the rings show past where blades end, with no edge.
 - **Plumbing:** the field rides in the plant-cover texture's b channel (now rgba8).

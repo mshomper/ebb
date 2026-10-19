@@ -34,10 +34,39 @@ export function lushField(hab, L) {
   }
   const dW = chamfer(water, N, 3 * Math.ceil(L.waterM + 1));
   const dD = chamfer(damp, N, 3 * Math.ceil(L.dampM + 1));
-  const out = new Uint8Array(NN);
+  let f = new Float32Array(NN);
   for (let k = 0; k < NN; k++) {
     const wet = Math.max(reach(dW[k], L.waterM), reach(dD[k], L.dampM));
-    out[k] = Math.round(255 * wet * (1 - L.saltDry * (hab.salt[k] / 255)));
+    f[k] = wet * (1 - L.saltDry * (hab.salt[k] / 255));
+  }
+  // Feathered: a soft blur over featherM (three box passes, close to a Gaussian), so wet ground
+  // melts into dry instead of ending at a line.
+  const r = Math.round(L.featherM ?? 0);
+  if (r > 0) for (let pass = 0; pass < 3; pass++) f = boxBlur(f, N, r);
+  const out = new Uint8Array(NN);
+  for (let k = 0; k < NN; k++) out[k] = Math.round(255 * Math.min(1, Math.max(0, f[k])));
+  return out;
+}
+
+/** One box blur of radius r squares, along rows then columns (running sums). @param {Float32Array} src @param {number} n @param {number} r */
+function boxBlur(src, n, r) {
+  const tmp = new Float32Array(src.length), out = new Float32Array(src.length);
+  const w = 2 * r + 1;
+  for (let j = 0; j < n; j++) {
+    let s = 0;
+    for (let i = -r; i <= r; i++) s += src[j * n + Math.min(n - 1, Math.max(0, i))];
+    for (let i = 0; i < n; i++) {
+      tmp[j * n + i] = s / w;
+      s += src[j * n + Math.min(n - 1, i + r + 1)] - src[j * n + Math.max(0, i - r)];
+    }
+  }
+  for (let i = 0; i < n; i++) {
+    let s = 0;
+    for (let j = -r; j <= r; j++) s += tmp[Math.min(n - 1, Math.max(0, j)) * n + i];
+    for (let j = 0; j < n; j++) {
+      out[j * n + i] = s / w;
+      s += tmp[Math.min(n - 1, j + r + 1) * n + i] - tmp[Math.max(0, j - r) * n + i];
+    }
   }
   return out;
 }

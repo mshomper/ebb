@@ -94,14 +94,19 @@ export function addGrowthTests(test, assert, eq) {
     const f = lushField(/** @type {any} */ (hab), L);
     const at = (/** @type {number} */ i, /** @type {number} */ j) => f[j * n + i] / 255;
     eq(at(30, 30), 1, 'lush in the pond');
-    assert(at(36, 30) > 0.95, `2 m from the pond: ${at(36, 30).toFixed(2)}`);
+    assert(at(36, 30) > 0.7, `2 m from the pond: ${at(36, 30).toFixed(2)}`);
     assert(at(38, 30) > 0.2 && at(38, 30) < 0.9, `4 m from the pond eases: ${at(38, 30).toFixed(2)}`);
-    eq(at(41, 30), 0, 'lush 7 m from the pond');
-    assert(at(9, 50) > 0.9 && at(11, 50) === 0, `the damp hollow's ring: ${at(9, 50).toFixed(2)} at 1 m, ${at(11, 50).toFixed(2)} at 3 m`);
+    eq(at(45, 30), 0, 'lush 11 m from the pond');
+    // Feathered: walking out from the pond, no square is more than a fifth lusher than the next.
+    let steepest = 0;
+    for (let i = 34; i < 46; i++) steepest = Math.max(steepest, at(i, 30) - at(i + 1, 30));
+    assert(steepest < 0.2, `a sharp edge: ${steepest.toFixed(2)} between two squares`);
+    assert(at(8, 50) > 0.1 && at(8, 50) < at(30, 30) && at(15, 50) < 0.02, `the damp hollow's ring: ${at(8, 50).toFixed(2)} on it, ${at(15, 50).toFixed(2)} at 7 m`);
     // Salt dries what would be lush: a pond cell's neighbor under the salty rows.
     hab.depthCm[3 * n + 30] = 60;
     const g = lushField(/** @type {any} */ (hab), L);
-    assert(g[3 * n + 31] / 255 < 0.4, `salt does not dry the shore: ${(g[3 * n + 31] / 255).toFixed(2)}`);
+    const fresh = lushField(/** @type {any} */ ({ ...hab, salt: new Uint8Array(NN) }), L);
+    assert(g[3 * n + 31] < 0.7 * fresh[3 * n + 31], `salt does not dry the shore: ${(g[3 * n + 31] / 255).toFixed(2)} against ${(fresh[3 * n + 31] / 255).toFixed(2)} without salt`);
     // The look: spring keeps the dry rise green (no cure); late summer cures it toward straw.
     const spring = lushLook(grass, 0.5), late = lushLook(grass, 1.95);
     const dist = (/** @type {number[]} */ a, /** @type {number[]} */ b) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
