@@ -81,13 +81,15 @@ export function idleMoves(skeleton, t, id, motion) {
   if (throat >= 0) moves[throat] = { s: [1 + 0.4 * B.sac * breath, 1 + B.sac * breath, 1 + 0.7 * B.sac * breath] };
   const torso = at('torso');
   if (torso >= 0) moves[torso] = { s: [1 + B.torso * breath, 1 + B.torso * breath, 1] };
-  // A blink: the eyes squash for a moment, every few seconds, out of step with other frogs.
+  // A blink, every few seconds, out of step with other frogs: as a frog does, the eyes sink into
+  // the head (retractM) under their lids, a little flattened (squash).
   const span = K.everyS[0] + (K.everyS[1] - K.everyS[0]) * h01(id, 2);
   const into = (t + h01(id, 3) * span) % span;
   if (into < K.s) {
     const closed = 1 - Math.abs(into / K.s * 2 - 1);
     const sy = 1 - (1 - K.squash) * closed;
-    for (const eye of ['eye.l', 'eye.r']) { const i = at(eye); if (i >= 0) moves[i] = { s: [1, sy, 1] }; }
+    const down = (K.retractM ?? 0) * closed;
+    for (const eye of ['eye.l', 'eye.r']) { const i = at(eye); if (i >= 0) moves[i] = down ? { s: [1, sy, 1], t: [0, -down, 0] } : { s: [1, sy, 1] }; }
   }
   return moves;
 }

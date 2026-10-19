@@ -70,7 +70,8 @@ export function skeletonOf(id, prims) {
   const rig = RIGS[/** @type {keyof typeof RIGS} */ (id)];
   if (!rig) return [{ name: 'root', parent: -1, pivot: [0, 0, 0] }];
   /** @type {Record<string, any>} */ const P = {};
-  for (const q of prims) P[q.bone] = q;
+  // A piece is known by its part name if it has one (a lid rides the head bone but is not the head).
+  for (const q of prims) P[q.part ?? q.bone] = q;
   return rig.bones.map((b) => ({ name: b.name, parent: b.parent, pivot: b.pivot(P) }));
 }
 
@@ -88,12 +89,18 @@ export function skinWeights(prims, bones, vertices, count, blendM) {
   for (let v = 0; v < count; v++) {
     const p = [vertices[v * 9], vertices[v * 9 + 1], vertices[v * 9 + 2]];
     perBone.fill(Infinity);
-    let dMin = Infinity;
+    let dMin = Infinity, nearest = 0;
     prims.forEach((q, i) => {
       const d = primDistance(q, p);
       if (d < perBone[boneOf[i]]) perBone[boneOf[i]] = d;
-      if (d < dMin) dMin = d;
+      if (d < dMin) { dMin = d; nearest = i; }
     });
+    // A stiff piece (an eyelid) moves with its own bone alone, so the eye can sink under it.
+    if (prims[nearest].stiff) {
+      joints[v * 4] = boneOf[nearest];
+      weights[v * 4] = 255;
+      continue;
+    }
     /** @type {{ b: number, w: number }[]} */ const pulls = [];
     for (let b = 0; b < bones.length; b++) {
       if (perBone[b] === Infinity) continue;

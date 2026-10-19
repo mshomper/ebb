@@ -93,8 +93,9 @@ export function addCreatureTests(test, assert, eq) {
     let worst = 0;
     for (let v = 0; v < a.count; v++) { const s = skin(v); worst = Math.max(worst, Math.hypot(s[0] - f[v * 11], s[1] - f[v * 11 + 1], s[2] - f[v * 11 + 2])); }
     assert(worst < 1e-6, `a still skeleton moved a vertex ${worst} m`);
-    // A blink: squash the eyes; the feet do not move.
-    const blink = a.bones.map((bone) => (bone.name.startsWith('eye') ? { s: [1, 0.25, 1] } : null));
+    // A blink, fully closed: the eyes sink under their lids, a little flattened; the feet do not move.
+    const K = r.motion.blink;
+    const blink = a.bones.map((bone) => (bone.name.startsWith('eye') ? { s: [1, K.squash, 1], t: [0, -K.retractM, 0] } : null));
     poseSkeleton(a.bones, blink, mats, 0);
     let eyeMove = 0, footMove = 0;
     for (let v = 0; v < a.count; v++) {

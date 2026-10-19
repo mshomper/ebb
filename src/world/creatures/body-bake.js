@@ -156,11 +156,9 @@ export function bakeBody(body, cellM) {
     const region = prims[bodyDistance(prims, p).near].region;
     let col = A[region] ?? A.back;
     if (region === 'eye') {
-      // A gold ring around a dark eye, from how far the point sits off the eye's forward-up axis.
       const q = prims[bodyDistance(prims, p).near];
       const dir = [p[0] - q.c[0], p[1] - q.c[1], p[2] - q.c[2]].map((x) => x / q.r);
-      col = dir[1] > 0.75 || dir[2] > 0.55 ? A.eye : A.eyeRing;
-      if (dir[1] < -0.2) col = A.back;
+      col = body.eyeLook ? eyeColour(body.eyeLook, A, dir, Math.sign(q.c[0]) || 1, p) : oldEye(A, dir);
     } else if (region === 'back') {
       // A body variant moves its blotches by blotch.offset (in noise cells; none by default).
       const o = body.blotch.offset ?? [0, 0, 0], s = body.blotch.scale;
@@ -172,4 +170,37 @@ export function bakeBody(body, cellM) {
     out.set(col, vi * 9 + 6);
   }
   return { vertices: out, indices: new Uint32Array(idx), count, bounds: { min, max } };
+}
+
+/** The first eye: a gold ring around a dark eye, from how far a point sits off its forward-up axis. @param {any} A @param {number[]} dir */
+function oldEye(A, dir) {
+  if (dir[1] < -0.2) return A.back;
+  return dir[1] > 0.75 || dir[2] > 0.55 ? A.eye : A.eyeRing;
+}
+
+/**
+ * A frog's eye (body.eyeLook): it looks out along `axis` (outward, up, forward; mirrored for the
+ * right eye), a wide horizontal pupil (`pupil`, half-widths across and up, as shares of the radius)
+ * in a gold iris (eyeRing) flecked darker (fleck, flecksPerM); the rest of the ball (eye) mostly
+ * sits under the lid. @param {any} L @param {any} A @param {number[]} dir unit, from the eye's centre
+ * @param {number} side 1 left, -1 right @param {number[]} p body point
+ */
+function eyeColour(L, A, dir, side, p) {
+  const ax = [L.axis[0] * side, L.axis[1], L.axis[2]];
+  const al = Math.hypot(ax[0], ax[1], ax[2]);
+  const a = [ax[0] / al, ax[1] / al, ax[2] / al];
+  // Across (horizontal, perpendicular to the axis) and up (perpendicular to both).
+  let h = [a[2], 0, -a[0]];
+  const hl = Math.hypot(h[0], h[2]) || 1;
+  h = [h[0] / hl, 0, h[2] / hl];
+  const v = [a[1] * h[2] - a[2] * h[1], a[2] * h[0] - a[0] * h[2], a[0] * h[1] - a[1] * h[0]];
+  const dot = (/** @type {number[]} */ u, /** @type {number[]} */ w) => u[0] * w[0] + u[1] * w[1] + u[2] * w[2];
+  const along = dot(dir, a), x = dot(dir, h), y = dot(dir, v);
+  if (along > 0 && (x / L.pupil[0]) ** 2 + (y / L.pupil[1]) ** 2 < 1) return A.pupil;
+  if (along > L.irisCos) {
+    const f = L.flecksPerM;
+    const n = Math.sin(p[0] * f) * Math.sin(p[1] * f * 0.85 + 1.3) * Math.sin(p[2] * f * 0.92 + 2.1);
+    return n > L.fleckShare ? A.fleck : A.eyeRing;
+  }
+  return A.eye;
 }

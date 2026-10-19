@@ -159,6 +159,8 @@ A body recipe lists SDF primitives (sphere, ellipsoid, capsule, round cone, roun
 
 **Day hides** (October 2026, after S6; Matt: frogs wouldn't sit out on the grass by day with cover near). By day a frog sits tucked into cover within 3 m of home, among the stems, and comes back out to the edge at dusk to forage and call (`src/world/creatures/day-hide.js`, `motion.dayHide`). Cover is what the island grew: rush and grass cover per square, reed and iris clumps; reeds and rushes count most, thick grass least. A frog on a lily pad at dawn heads for its hide too. With no cover near home it rests at the edge, as before.
 
+**Lidded eyes** (October 2026, after S6; Matt: bare eyes sat on the head like yellow blobs). Matt chose from rendered options after a photo of a frog's face. The eyes are a little smaller and lower. Each is hooded from above and behind by a lid of skin: a piece with a part name (`lid.l`, `lid.r`) on the head bone, marked stiff so its skin follows the head alone. The eye looks out to the side with a wide dark pupil in a flecked gold iris (`body.eyeLook`). A blink sinks the eyes into the head under their lids, as frogs do (`motion.blink.retractM`), instead of squashing them. A piece's part name keys it in the rig and the skeleton, so a lid riding the head bone is never taken for the head.
+
 ### Motion
 
 - **Legs**: analytic two-bone IK; feet plant on the terrain heightfield and lift on a gait phase per leg. Body height and pitch follow the averaged foot plane. Longer chains (heron neck) use FABRIK.
