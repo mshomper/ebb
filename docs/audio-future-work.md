@@ -4,7 +4,7 @@
 
 ## Must be reconciled with the specs
 
-These are Matt's decisions (October 19, 2026) that disagree with, or add to, the docs on main. Each must be written into the doc, and approved by Matt, before the work it affects is built.
+These are Matt's decisions (October 19, 2026) that disagree with, or add to, the docs on main. Each must be written into the doc, and approved by Matt, before the work it affects is built. The summer lift, the signature nights, the winter breadth and the shorter rests are written into doc 24 on the m2-music-engine branch (October 19, 2026) and wait for Matt's approval; the signature nights' four triggers are proposals.
 
 | Decision | Disagrees with | What changes | Before |
 |---|---|---|---|

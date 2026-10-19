@@ -6,7 +6,7 @@
 
 - **Composed material, developed live.** Two kinds of music share one engine. **Anchor pieces** (each season's morning pieces and nocturnes, the island theme settings and the special cues) are fully composed and re-realized each time: new voicings, instruments, register, tempo and phrasing. **Grown pieces** (interludes, evening, rain and mist pieces) are composed at play time by a development engine from authored material: each season's motif bank, chord grammar and form templates. The engine develops motifs the way a composer does and writes accompaniment and counter-lines by voice-leading rules, but never invents a motif from nothing. Matt designs and tunes the engine's rules (decided October 2026: the algorithm is the instrument); the music session writes the material and the anchors, and Matt reviews.
 - **Music is non-diegetic and quiet.** Its own bus, its own reverb, stereo, never spatialized, never louder than the island at default levels. Dynamic ceiling is mezzo-forte. No drums or percussion hits, no sub-bass below 60 Hz.
-- **Silence is part of the score.** At the default setting, music plays about 35 to 45 percent of real time (with rests of at least 3 real minutes between pieces, a 24-minute game day holds three or four pieces, about 9 to 11 minutes); the rest belongs to the island. Every piece is followed by a rest of at least 3 real minutes.
+- **Silence is part of the score.** At the default setting, music plays about 35 to 45 percent of real time (with rests of 2 to 4 real minutes between pieces, a 24-minute game day holds about three pieces, about 9 to 11 minutes); the rest belongs to the island. Every piece is followed by a rest of at least 2 real minutes. (Matt, October 19, 2026: rests shortened from 3 to 7 minutes so the island is a little less silent.)
 - **Day arc by sun, season by season phase, both from display time**, the same keys the palette uses (doc 05): night, blue hour, golden, morning and afternoon, day. Rests and tempo run on real time, so 4x never sounds frantic and pause never sounds frozen.
 - **Frogs own dusk.** From half an hour before dusk to three hours after (the frog call window, `recipes/species/frog.json` `moods.callAfterDuskH`), no piece starts while frogs are calling. The chorus is the music.
 - **Four seasonal identities** (key center, mode family, tempo band, instrument palette), described below. New worlds start in spring, so spring is composed first.
@@ -32,6 +32,9 @@ From Stardew Valley (ConcernedApe), in spirit:
 - **Music comes with the morning and then leaves room.** Long stretches of the day are only ambience, which is a large part of why those scores never wear thin.
 - **Simple, singable, folk-like melodies** with modal color, over warm harmony. Acoustic instruments blended with soft synth warmth.
 - **Rain has its own music**, more inward and spacious.
+- **Layered support.** A simple lead over quiet supporting layers: string beds, pads, a harp or mallet doubling, entering and leaving with the phrases. This layering, more than the melody, is what makes those pieces feel full while staying calm.
+
+Mood references, one per season (Matt, October 19, 2026), for feeling only: spring "It's a Big World Outside", summer "Nature's Crescendo", autumn "The Smell of Mushroom", winter "The Wind Can Be Still". ebb sits on the mellow side of them: the calm, reflective moments, not the brighter, busier ones.
 
 What we do not take: looping tracks, upbeat daytime tempos, festival percussion, chiptune leads, and any melodic material.
 
@@ -44,7 +47,7 @@ game hour   0      3      6      9      12     15     18     21     24
            |--night------|dawn|morning-----day-----|gold|dusk|--night--|
 music      .  nocturne?  . [MORNING]  (interlude) (interlude) [EVENING] . frogs . nocturne?
            .  (50%)      .  (85%)      (60%)        (60%)      (70%)   . only  . (50%)
-rest                       >=3 min     >=3 min      >=3 min    >=3 min
+rest                       >=2 min     >=2 min      >=2 min    >=2 min
 ```
 
 | Slot | When (sun or event) | Chance per day | Length | Character |
@@ -71,7 +74,7 @@ Inside a season, a few continuous parameters follow sun elevation with smoothste
 | Brightness (lowpass on the music bus) | 5.5 kHz | 7 kHz | 9 kHz | 14 kHz | 12 kHz |
 | Max simultaneous voices | 3 | 4 | 5 | 6 | 5 |
 
-The realizer reads these when it picks octave, accompaniment pattern and tempo, so a morning piece that happens to run late into the day softens on its own.
+The realizer reads these when it picks octave, left-hand texture and tempo, so a morning piece that happens to run late into the day softens on its own.
 
 ### The four seasons
 
@@ -79,18 +82,20 @@ New worlds start on spring day 0 at 10:00 (`recipes/world/sky.json` `startHour`)
 
 | | Spring | Summer | Autumn | Winter |
 |---|---|---|---|---|
-| Feeling | First light, waking, fresh green, rain that smells good, the frogs' breeding chorus | Long warm days, stillness, fullness, steady evening chorus | Gold reeds, mist, a little wistful, settling down | Hush, frost, bare stalks, a quiet melancholy; the island asleep |
+| Feeling | First light, waking, fresh green, rain that smells good, the frogs' breeding chorus | Long warm days: mornings and middays lift and move, evenings and nights settle into stillness and fullness, steady evening chorus | Gold reeds, mist, a little wistful, settling down | Hush, frost, bare stalks; lonely and majestic, a quiet melancholy with breadth; the island asleep |
 | Home key | D major | F major | E Dorian | D minor |
 | Mode family | Ionian, Lydian (G Lydian color), Mixolydian lift | Ionian, Mixolydian, Lydian (B-flat Lydian), major pentatonic | Dorian, Aeolian with raised 6th, occasional Mixolydian warmth | Aeolian; Dorian (B natural) for moments of warmth; harmonic minor only at cadences, sparingly; quartal voicings and open fifths |
 | Nearby keys for variety | G, A, B minor | B-flat, C, D minor | A Dorian, B minor, G | F major, A minor, G minor, B-flat major |
-| Tempo band (BPM) | 72 to 86 | 58 to 72 | 62 to 76 | 48 to 60 (often senza misura feel) |
+| Tempo band (BPM) | 72 to 86 | morning and interlude 70 to 84; evening and nocturne 58 to 72 | 62 to 76 | 48 to 60 (often senza misura feel) |
 | Meters | 4/4, 6/8 | 3/4, 4/4 | 3/4, 6/8 | 4/4, 3/4, free |
-| Lead colors | piano (brighter, mid-upper), flute, harp, kalimba accents | piano (warm), vibraphone (soft mallets), FM electric piano, nylon guitar if sourced | piano (lower, rounder), cello, clarinet, viola | piano (soft, long pedal), wine glasses, bowed vibraphone, string harmonics |
-| Bed colors | soft pad, harp rolls, violin section pizzicato (very light) | warm string pad, marimba (soft, low), sustained pad | warm pad, cello sustains, harp | glass pad, low string sustain, open-fifth piano drones |
+| Lead colors | piano (brighter, mid-upper), flute, harp, kalimba accents | piano (warm), vibraphone (soft mallets), FM electric piano, nylon guitar if sourced; mornings and middays add gently rhythmic mallet and guitar patterns | piano (lower, rounder), cello, clarinet, viola | piano (soft, long pedal), wine glasses, bowed vibraphone, string harmonics |
+| Bed colors | soft pad, harp rolls, violin section pizzicato (very light) | warm string pad, marimba (soft, low), sustained pad | warm pad, cello sustains, harp | glass pad, slow low strings, wide open fifths spread across three octaves, open-fifth piano drones; the island theme heard in augmentation |
 | Rain pieces | piano and harp, more pedal, rising figures | electric piano and vibes, slow | cello and piano, inward | piano alone, very sparse |
 | Mist mornings | no plucks; flute and pad only | bowed vibraphone and pad | clarinet and viola | wine glasses and piano |
 
 Home keys approved by Matt (October 2026), with winter in D minor to lean into the melancholy. Spring opens in D major and winter closes in D minor, so the year turns on one tonic: the same home note, brightened in spring and shadowed in winter. Pieces may move to the nearby keys, so a season never sits in one key for hours, but each season's first morning returns home.
+
+The summer lift and the winter breadth are Matt's (October 19, 2026). Summer's lift is in the music only: the island's summer soundscape stays a warm stillness (doc 25).
 
 Season edges blend: on the last day of a season and the first day of the next, pools mix both seasons, weighted by `seasonPhase`. The first morning of each new season (`season:changed`) plays that season's version of the island theme.
 
@@ -128,6 +133,7 @@ Residents change the orchestration and add motifs. This is also one of the stron
 | `progress:gifted` | A "bloom": one sustained chord swelling pp to p and back over 6 to 8 s (strings and glass), in the current key, entering on the next bar line if a piece is playing. No fanfare, no arpeggio flourish. |
 | `creature:found` (first time per species) | The species motif, once, quiet, fitted to the current chord. |
 | Photo mode | Music continues. Tools and UI mute as in doc 17. |
+| Signature night (one per season) | A rare anchor piece tied to something real on the island, heard at most once a season. When its night comes, that night's nocturne slot plays it (chance 1.0, starting after the frog window if frogs are calling). It sits outside the season's anchor pool and history. Proposed nights: spring, the first night the whole settled frog chorus calls; summer, the first full-moon spring-tide night (`src/world/tide.js`, the moon's 7-day cycle); autumn, the first clear night after the reeds turn gold; winter, the longest night of the year. Matt, October 19, 2026: one signature night per season; the nights themselves are proposals for his approval. |
 | Seat (M2, doc 23) | No special cue. Optional later: the seat lowers the music bus 1 dB so the island is closer. |
 | Time or season preview | Day color follows display time smoothly. No new piece starts during a preview. A playing piece continues. |
 | Tab hidden | Master fades out (doc 17); the director pauses and, on return, resumes with a fresh rest. |
@@ -139,7 +145,7 @@ Residents change the orchestration and add motifs. This is also one of the stron
 3. **History**: the device keeps the last 40 piece plays (id, game day, real time) in the settings slice (device, never the world file). A piece cannot be chosen again within 3 game days or 90 real minutes, whichever is longer, unless its pool is exhausted, in which case the least recently played wins.
 4. **Weighted choice**: inside a pool, weight = base weight × freshness (rises with time since last play) × fit (season blend, day color, weather, residents).
 5. **Key drift**: each piece declares allowed keys; the director avoids starting two consecutive pieces in the same key unless one is the season's first morning.
-6. **Ambient distance**: rests are drawn from 3 to 7 real minutes (default setting), never fixed.
+6. **Ambient distance**: rests are drawn from 2 to 4 real minutes (default setting), never fixed.
 
 ### Composition rules (for the music session)
 
@@ -212,7 +218,7 @@ flowchart LR
 
 1. **Form path**: the piece's grammar (for example `A A' B? A'' coda`) is walked; optional sections are rolled; the short form is taken if the slot window is closing.
 2. **Instruments**: melody and accompaniment instruments are drawn from the season and slot palette, filtered by residents and weather, and limited by the day color's voice ceiling.
-3. **Accompaniment**: if a section carries an authored accompaniment voice, it is used, with octave and pattern variants allowed by the piece. Otherwise the voicing generator builds it from the chord symbols with the rules above (shells, drop-2, spread fifths and tenths), choosing the voicing with the smallest total voice motion from the previous chord. Pattern library: sustained, slow roll, broken chord in eighths, harp sweep, left-hand open fifth with offbeat dyad, pad only.
+3. **Accompaniment**: if a section carries an authored accompaniment voice, it is used, with octave variants allowed by the piece. Otherwise the voicing generator builds it from the chord symbols with the rules above (shells, drop-2, spread fifths and tenths), choosing the voicing with the smallest total voice motion from the previous chord. The left hand plays each chord in a texture, the way a pianist does (Matt, October 19, 2026): mostly struck, all notes together; flowing arpeggios in time with the meter, every note held to the chord change (slower toward evening and night); now and then a quick roll close to the melody; rarely the bass and then the chord. Choppier figures (short broken eighths, offbeat dyads) stay rare in this style and are kept for pieces that want them. Each phrase picks a main texture and single chords vary from it, so a piece is never all one thing. A harp sweep and pad-only bed are instrument choices on top of these.
 4. **Paraphrase** (optional per piece, 0 to 0.3): passing tones added, repeated notes tied or split, an anticipation here and there, always keeping the contour and the notes on strong beats.
 5. **Ornament**: grace notes, a turn at a phrase peak, a rolled final chord. Probabilities per piece.
 6. **Tempo and rubato**: tempo drawn in range, times the day color multiplier; each phrase gets a gentle arch (up to 3 percent faster toward the high point, 4 to 8 percent ritardando into the cadence, a fermata on the final chord).
@@ -295,7 +301,7 @@ tools/music-lab.html (+ tools/music-lab.js)
     "coda": { "abc": "...", "bars": 3 }
   },
   "variation": { "octave": [0, 12], "paraphrase": 0.2, "ornament": 0.15,
-                 "patterns": ["slow-roll", "broken-8ths", "sustained"] },
+                 "textures": { "struck": 0.6, "arpeggio": 0.3, "roll": 0.1 } },  // optional; weights or a list
   "motifs": ["frog?"],                           // a counter-line used only if frogs are settled
   "notes": "composer's intent in one or two lines, for Matt"
 }
@@ -305,8 +311,9 @@ tools/music-lab.html (+ tools/music-lab.js)
 
 ```jsonc
 {
-  "frequency": { "often": 0.55, "now-and-then": 0.4, "rarely": 0.2, "off": 0 },  // target share of real time; scales slot chances and rests
-  "restRealMin": [3, 7],
+  "frequency": { "often": { "chanceScale": 1.4, "restScale": 0.75 }, "now-and-then": { "chanceScale": 1.15, "restScale": 1 },
+                 "rarely": { "chanceScale": 0.55, "restScale": 1.6 }, "off": { "chanceScale": 0 } },  // scales slot chances and rests
+  "restRealMin": [2, 4],
   "slots": {
     "morning":   { "from": "sunrise", "withinH": 1, "chance": 0.85, "lenMin": [2.5, 4] },
     "interlude": { "fromH": "sunrise+3", "toSunDeg": 10, "max": 2, "chance": 0.6, "lenMin": [2, 3.5] },
