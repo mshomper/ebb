@@ -63,7 +63,8 @@ export function createFrameGraph(gpu, passes, opts) {
     layouts: { frame: frameLayout, lighting: opts.lighting.layout },
     groups: {
       frame: device.createBindGroup({ label: 'frame', layout: frameLayout, entries: [{ binding: 0, resource: { buffer: frameBuffer } }] }),
-      lighting: opts.lighting.group,
+      // Read through, so a new shadow map (a tier switch) reaches every pass at once.
+      get lighting() { return opts.lighting.group; },
     },
     targets: /** @type {any} */ ({}),
     size: [0, 0],
@@ -98,6 +99,9 @@ export function createFrameGraph(gpu, passes, opts) {
     };
   }
 
+  // Set by invalidate(): the next resize() rebuilds every size-dependent target even at the same size.
+  let stale = false;
+
   async function setup() {
     await Promise.all(passes.map((p) => p.setup(ctx)));
   }
@@ -110,7 +114,8 @@ export function createFrameGraph(gpu, passes, opts) {
   function resize(width, height) {
     width = Math.max(1, Math.round(width));
     height = Math.max(1, Math.round(height));
-    if (width === ctx.size[0] && height === ctx.size[1]) return;
+    if (width === ctx.size[0] && height === ctx.size[1] && !stale) return;
+    stale = false;
     ctx.targets.hdr?.destroy();
     ctx.targets.depth?.destroy();
     ctx.targets.normalId?.destroy();
@@ -191,6 +196,8 @@ export function createFrameGraph(gpu, passes, opts) {
 
   return {
     setup, resize, writeFrameUniforms, render, afterSubmit, dispose,
+    /** A pass changed its own size-dependent targets (bloom levels on a tier switch): rebuild all at the next resize. */
+    invalidate() { stale = true; },
     get size() { return ctx.size; },
     get timingSupported() { return canTime; },
     passNames: () => active().map((p) => p.name),

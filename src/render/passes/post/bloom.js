@@ -18,6 +18,7 @@ import { makeBuffer, makeShaderModule, makeTexture, untrack } from '../../../cor
  *   mix: number,
  *   levels: number,
  *   size: () => [number, number],
+ *   setLevels: (n: number) => boolean,
  * }} BloomPass
  */
 
@@ -35,7 +36,7 @@ const MAX_LEVELS = 8;
  * @returns {BloomPass}
  */
 export function createBloomPass(opts = {}) {
-  const wanted = Math.max(1, Math.min(MAX_LEVELS, Math.round(opts.levels ?? 6)));
+  let wanted = Math.max(1, Math.min(MAX_LEVELS, Math.round(opts.levels ?? 6)));
   const radius = opts.radius ?? 1;
   const useKaris = opts.karis ?? true;
   let mix = Number.isFinite(opts.mix) ? /** @type {number} */ (opts.mix) : 0.04;
@@ -216,6 +217,18 @@ export function createBloomPass(opts = {}) {
 
     /** Levels actually in use (the tier count, capped by the half-res size). */
     get levels() { return levels; },
+
+    /**
+     * A new tier's level count (S8d-1). The chain is rebuilt at the next resize, which the caller
+     * forces with the frame graph's invalidate() so the tonemap binds the new chain too.
+     * @param {number} n @returns {boolean} true when the count changed
+     */
+    setLevels(n) {
+      const next = Math.max(1, Math.min(MAX_LEVELS, Math.round(n)));
+      if (next === wanted) return false;
+      wanted = next;
+      return true;
+    },
 
     /** Size of view() in pixels. @returns {[number, number]} */
     size: () => halfSize,
