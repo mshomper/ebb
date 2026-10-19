@@ -57,9 +57,14 @@ export async function initDay(host) {
     j('recipes/music/pieces/index.json'), j('recipes/music/realize.json'), j('recipes/music/voicing.json'),
   ]);
   /** @type {any[]} */
-  const realPieces = await Promise.all(index.pieces.map((/** @type {string} */ id) => j(`recipes/music/pieces/${id}.json`)));
-  /** Every real piece copied once into every slot, for every season and weather. */
-  const standIns = realPieces.flatMap((p) => STAND_IN_SLOTS.map((slot) => ({ ...p, id: `${p.id}-as-${slot}`, slots: [slot], seasons: [...SEASONS], weather: undefined, requires: {} })));
+  const written = await Promise.all(index.pieces.map((/** @type {string} */ id) => j(`recipes/music/pieces/${id}.json`)));
+  // The four tides in their sixteen seasonal settings join the pools as they are (doc 24, Motifs).
+  const themes = await j('recipes/music/pieces/themes/index.json').catch(() => ({ candidates: [] }));
+  /** @type {any[]} */
+  const tides = await Promise.all(themes.candidates.flatMap((/** @type {any} */ c) => Object.values(c.settings)).map((/** @type {any} */ id) => j(`recipes/music/pieces/themes/${id}.json`)));
+  const realPieces = [...written, ...tides];
+  /** Every written piece copied once into every slot, for every season and weather, plus the tides as they are. */
+  const standIns = [...written.flatMap((p) => STAND_IN_SLOTS.map((slot) => ({ ...p, id: `${p.id}-as-${slot}`, slots: [slot], seasons: [...SEASONS], weather: undefined, requires: {} }))), ...tides];
   const orbit = sky.orbit;
   const dormancy = seasons.dormancy?.frogs ?? [2.6, 0.3];
   const callAfterDuskH = frog.motion?.moods?.callAfterDuskH ?? [-0.5, 3];

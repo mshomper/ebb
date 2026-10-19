@@ -53,6 +53,10 @@ The ambience, voices and `tools/audio-check.html` run on a simulated island. To 
 - Nylon guitar: the instrument slot is built empty; another session is searching for a sample set.
 - Future species (songbirds, owls, herons and the rest): instruments, motifs and voices wait until each species is designed (doc 24, "The score grows with the island").
 
+## Hearted pieces (Matt, October 19, 2026; after the vertical slice)
+
+A player sees what is playing (its name, doc 24 "Naming") and can heart it. Hearted pieces play more often (a weight in the director's choice, still kept fresh by the history) and are saved in the island file, so they follow the island. Needs: a small now-playing line in the UI (drawn heart icon, no glyph), a `music.hearted` list in the save (ids of authored pieces; for grown pieces the seed, season and slot, which regenerate the same piece and name), and a director weight in recipes/music/director.json. Grown pieces must stay reproducible from their seed for this to work, which the engine already guarantees.
+
 ## Support kit: still to do (October 19, 2026)
 
 The support kit (strings, harp, flute, vibraphone struck and bowed, glass) is built for the desktop, 8 MB in all. Still open:

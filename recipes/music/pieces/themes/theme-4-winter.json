@@ -8,12 +8,17 @@
   "season": "winter"
  },
  "slots": [
-  "theme"
+  "morning",
+  "interlude",
+  "nocturne"
  ],
  "seasons": [
   "winter"
  ],
- "weather": [],
+ "weather": [
+  "clear",
+  "cloud"
+ ],
  "requires": {},
  "avoidWhen": {},
  "keys": [
@@ -65,7 +70,7 @@
  "sections": {
   "A": {
    "bars": 8,
-   "abc": "X:1\nM:3/4\nL:1/8\nK:Dm\nV:mel\n!p!\"Dm\"D2 E2 F2 | \"Gm\"G2 A2 B2- | \"Bb\"B6- | \"Bbmaj7\"B2 A4 | \"Dm\"F4 E2- | \"C\"E2 C4 | \"Dm/A\"A,6- | \"A\"A,6 |\nV:counter\nz6 | z6 | f6- | f6 | a6- | a6 | z6 | z6 |\nV:acc\n[D,,A,,]6 | [G,,D,]6 | [B,,F,]6 | [B,,F,]6 | [D,,A,,]6 | [C,G,]6 | [D,,A,,]6 | [A,,E,]6 |\n"
+   "abc": "X:1\nM:3/4\nL:1/8\nK:Dm\nV:mel\n!p!\"Dm\"D2 E2 F2 | \"Gm\"G2 A2 B2- | \"Bb\"B6- | \"Bbmaj7\"B2 A4 | \"Dm\"F4 E2- | \"C\"E2 C4 | \"Dm/A\"A,6- | \"A\"A,6 |\nV:counter\nz6 | z6 | d6- | d6 | A6 | G6 | z6 | z6 |\nV:acc\n[D,,A,,]6 | [G,,D,]6 | [B,,F,]6 | [B,,F,]6 | [D,,A,,]6 | [C,G,]6 | [D,,A,,]6 | [A,,E,]6 |\n"
   },
   "coda": {
    "bars": 2,

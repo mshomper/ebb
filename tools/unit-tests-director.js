@@ -8,6 +8,7 @@ import { createDirector, sunDay } from '../src/audio/music/director.js';
 import { realize } from '../src/audio/music/realize.js';
 import { dayColorAt, dayKeyWeights } from '../src/audio/music/daycolor.js';
 import { createPerformer } from '../src/audio/music/perform.js';
+import { pieceName } from '../src/audio/music/names.js';
 
 const G = 'music: director';
 const R = 'music: realize';
@@ -50,6 +51,21 @@ export function addDirectorTests(test, assert, eq) {
     }
     return { out, d };
   };
+
+  test(G, 'the first morning of each season plays its home tide', async () => {
+    const { director, pool } = await load();
+    const tides = ['spring', 'summer', 'autumn', 'winter'].flatMap((season) => [1, 2, 3, 4].map((n) => ({
+      id: `tide-${n}-${season}`, theme: { candidate: n, season }, slots: ['morning', 'interlude'], seasons: [season], weather: ['clear'], keys: ['D'], requires: {},
+    })));
+    for (const [season, day] of [['spring', 0], ['summer', 7], ['autumn', 14], ['winter', 21]]) {
+      for (const seed of [1, 2, 3]) {
+        const { out } = run(director, [...pool, ...tides], { seed, startH: day * 24 + 4, realS: 60 * 20 });
+        const morning = out.find((p) => p.slot === 'morning');
+        assert(morning, `${season} seed ${seed}: a morning piece played`);
+        eq(morning.id, `tide-${director.tides.home[season]}-${season}`, `${season} seed ${seed}: the home tide opens the season`);
+      }
+    }
+  });
 
   test(G, 'the sun timeline of a test day', () => {
     const s = sunDay(sun, 0, [10, 2]);
@@ -213,6 +229,20 @@ export function addDirectorTests(test, assert, eq) {
         }
       }
     }
+  });
+
+  test('music: names', 'the same seed, season and slot always give the same name, and names vary', async () => {
+    const j = async (/** @type {string} */ p) => {
+      const url = new URL(`../${p}`, import.meta.url);
+      if (url.protocol === 'file:') { const fs = await import('node:fs/promises'); return JSON.parse(await fs.readFile(url, 'utf8')); }
+      return (await fetch(url)).json();
+    };
+    const names = await j('recipes/music/names.json');
+    eq(pieceName(42, { season: 'spring', slot: 'morning' }, names), pieceName(42, { season: 'spring', slot: 'morning' }, names), 'deterministic');
+    const set = new Set();
+    for (let seed = 1; seed <= 200; seed++) set.add(pieceName(seed, { season: 'autumn', slot: 'evening' }, names));
+    assert(set.size > 150, `${set.size} different names in 200 seeds`);
+    for (const n of set) assert(!/\{|\}|undefined|  /.test(n), `well formed: ${n}`);
   });
 
   test('music: perform', 'plays to the end with no bar listener (no stall on the first bar)', async () => {

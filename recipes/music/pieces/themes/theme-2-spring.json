@@ -8,12 +8,16 @@
   "season": "spring"
  },
  "slots": [
-  "theme"
+  "morning",
+  "interlude"
  ],
  "seasons": [
   "spring"
  ],
- "weather": [],
+ "weather": [
+  "clear",
+  "cloud"
+ ],
  "requires": {},
  "avoidWhen": {},
  "keys": [

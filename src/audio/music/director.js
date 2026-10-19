@@ -8,6 +8,11 @@
 // caller realizes and plays it, then reports back. The same code drives the game and the lab's
 // day simulator, so the simulator shows exactly what the game would do.
 //
+// The four tides (the island themes, doc 24 "Motifs") are pieces with a `theme` field. Each season
+// has a home tide (recipes/music/director.json tides.home): the first morning of a season always
+// plays it, and homeTide() hands it to the return reveal and the gift bloom. All four tides also
+// sit in the ordinary pools, in each season's setting, weighted by tides.weight.
+//
 // Pure apart from its own seeded stream (src/core/rng.js, the 'music' system), and it never reads
 // world state: the caller passes the sun height as a function of game time and the rest as data.
 
@@ -145,8 +150,28 @@ export function createDirector(recipes, pieces, opts) {
    * recently (unless every piece has been, then the least recently played); weighted by freshness.
    * @param {string} slot @param {number} gameT @param {DirectorState} st
    */
+  /** The season at a game time. @param {number} gameT */
+  const seasonAt = (gameT) => SEASONS[Math.floor(gameT / (7 * DAY)) % 4];
+  /** Whether a game day is the first of its season. @param {number} day */
+  const firstDayOfSeason = (day) => day % 7 === 0;
+
+  /**
+   * The season's home tide, in that season's setting.
+   * @param {number} gameT
+   */
+  function homeTide(gameT) {
+    const season = seasonAt(gameT);
+    const n = D.tides?.home?.[season];
+    return pieces.find((p) => p.theme && p.theme.candidate === n && p.theme.season === season) ?? null;
+  }
+
   function choose(slot, gameT, st) {
-    const season = SEASONS[Math.floor(gameT / (7 * DAY)) % 4];
+    const season = seasonAt(gameT);
+    // The first morning of a season plays its home tide (doc 24, Special moments).
+    if (slot === 'morning' && firstDayOfSeason(Math.floor(gameT / DAY)) && D.tides?.firstMorning) {
+      const home = homeTide(gameT);
+      if (home) return { piece: home, key: undefined, exhausted: false };
+    }
     const slotName = slot === 'early-nocturne' ? 'nocturne' : slot;
     const wet = st.weather === 'rain' || st.weather === 'mist';
     const fits = (/** @type {any} */ p) => p.seasons.includes(season)
@@ -163,7 +188,7 @@ export function createDirector(recipes, pieces, opts) {
     const ok = pool.filter((p) => { const l = lastOf(p.id); return !l || (day - l.day >= H_.minGapDays && st.realS - l.realS >= H_.minGapRealMin * 60); });
     let exhausted = false;
     if (!ok.length) { exhausted = true; ok.push(pool.slice().sort((a, b) => (lastOf(a.id)?.realS ?? -1) - (lastOf(b.id)?.realS ?? -1))[0]); }
-    const weights = ok.map((p) => { const l = lastOf(p.id); const fresh = l ? Math.min(1, (st.realS - l.realS) / (H_.freshnessRealMin * 60)) : 1; return (p.weight ?? 1) * (0.2 + 0.8 * fresh); });
+    const weights = ok.map((p) => { const l = lastOf(p.id); const fresh = l ? Math.min(1, (st.realS - l.realS) / (H_.freshnessRealMin * 60)) : 1; return (p.weight ?? (p.theme ? D.tides?.weight ?? 1 : 1)) * (0.2 + 0.8 * fresh); });
     let x = r.next() * weights.reduce((a, b) => a + b, 0);
     let piece = ok[ok.length - 1];
     for (let i = 0; i < ok.length; i++) { x -= weights[i]; if (x <= 0) { piece = ok[i]; break; } }
@@ -188,14 +213,16 @@ export function createDirector(recipes, pieces, opts) {
       // are a real minute or two long at 1x, shorter than a rest).
       if (busy) {
         if (open && open.slot !== 'hush' && open.slot !== 'frogs' && !pending.has(`${open.day}:${open.slot}`)) {
+          const first = open.slot === 'morning' && firstDayOfSeason(open.day) && !!D.tides?.firstMorning && !!homeTide(st.gameT);
           const rules = slotRules(open.slot);
           const key = `${open.day}:${open.slot}`;
           const tries = counts.get(key) ?? 0;
           if (tries < (rules.max ?? 1) && !rolls.has(`${key}:${tries}`) && (rules.graceH ?? 0) > 0) {
-            const yes = r.next() < Math.min(1, rules.chance * (D.frequency[st.frequency]?.chanceScale ?? 1));
+            const yes = first || r.next() < Math.min(1, rules.chance * (D.frequency[st.frequency]?.chanceScale ?? 1));
             rolls.set(`${key}:${tries}`, yes);
             log.push({ realS: st.realS, slot: open.slot, decision: yes ? 'rolled yes while resting: waits' : 'rolled no' });
-            if (yes) pending.set(key, { ...open, untilGameT: open.day * DAY + (open.closeH + rules.graceH) * H });
+            const grace = first ? Math.max(rules.graceH, D.tides.firstMorningGraceH ?? 0) : rules.graceH;
+            if (yes) pending.set(key, { ...open, untilGameT: open.day * DAY + (open.closeH + grace) * H });
             else counts.set(key, tries + 1);
           }
         }
@@ -205,12 +232,13 @@ export function createDirector(recipes, pieces, opts) {
       // A piece that waited through a rest starts now, if its grace has not run out.
       for (const [k, p] of pending) {
         pending.delete(k);
-        if (st.gameT < p.untilGameT && !(st.frogsCalling && p.slot !== 'nocturne')) { s = { ...p, closeH: p.closeH + (slotRules(p.slot).graceH ?? 0) }; break; }
+        if (st.gameT < p.untilGameT && !(st.frogsCalling && p.slot !== 'nocturne')) { s = { ...p, closeH: (p.untilGameT - p.day * DAY) / H }; break; }
         log.push({ realS: st.realS, slot: p.slot, decision: 'waited too long: skipped' });
       }
       if (!s || s.slot === 'hush' || s.slot === 'frogs') return null;
       if (st.frogsCalling && s.slot !== 'nocturne') return null;
-      const rules = slotRules(s.slot);
+      const first = s.slot === 'morning' && firstDayOfSeason(s.day) && !!D.tides?.firstMorning && !!homeTide(st.gameT);
+      const rules = first ? { ...slotRules(s.slot), chance: 1 } : slotRules(s.slot);
       const key = `${s.day}:${s.slot}`;
       // Each slot gets up to `max` chances a day (doc 24: interludes "up to 2, each 0.6"). A chance
       // that rolls no is spent, and the next one waits a rest's length before it is rolled.
@@ -219,7 +247,7 @@ export function createDirector(recipes, pieces, opts) {
       if (st.realS < (retryAt.get(key) ?? 0)) return null;
       const rollKey = `${key}:${tries}`;
       if (!rolls.has(rollKey)) {
-        const scale = D.frequency[st.frequency]?.chanceScale ?? 1;
+        const scale = first ? 1 : D.frequency[st.frequency]?.chanceScale ?? 1;
         const yes = r.next() < Math.min(1, rules.chance * scale);
         rolls.set(rollKey, yes);
         log.push({ realS: st.realS, slot: s.slot, decision: yes ? 'rolled yes' : 'rolled no' });
@@ -268,6 +296,7 @@ export function createDirector(recipes, pieces, opts) {
     /** For the lab: the slot open at a game time. @param {number} gameT @param {DirectorState} st */
     slotAt,
     dayInfo,
+    homeTide,
     history: () => history.slice(),
     log: () => log.slice(),
     get restUntilRealS() { return restUntilRealS; },
