@@ -5,7 +5,7 @@
 // Show me goes to. Pure; words from recipes/world/journal.json.
 
 import { HABITAT_ORIGIN, habitatCell } from '../growth/habitat.js';
-import { measure, present, knownLines, dateOfHour, sketchOf, coverShare, hasCover, COVER_HAS, COVER_FULL, FLOWER, DORMANT } from './observe.js';
+import { measure, present, knownLines, dateOfHour, sketchOf, coverShare, hasCover, isAnimal, COVER_HAS, COVER_FULL, FLOWER, DORMANT } from './observe.js';
 
 /** The island's middle and size from the habitat, cached per habitat. @type {WeakMap<object, { x: number, z: number, r: number }>} */
 const shapes = new WeakMap();
@@ -80,7 +80,9 @@ function storyOf(k, rec, m, hour, journal, words) {
   const fill = (/** @type {string} */ t, /** @type {number} */ h = -1) =>
     t.replace('{Plural}', upper(rec.plural ?? rec.name)).replace('{plural}', rec.plural ?? rec.name).replace('{date}', h >= 0 ? date(h) : '');
   /** @type {string[]} */ const lines = [];
-  if (rec.kind === 'cover') {
+  if (isAnimal(rec)) {
+    if (k.first >= 0) lines.push(fill(rec.foundLine ?? S.firstSeen, k.first));
+  } else if (rec.kind === 'cover') {
     lines.push(k.arrived ? rec.notes.arrived : fill(S.firstSeen, k.first));
   } else {
     lines.push(k.arrived ? fill(S.arrived) : fill(S.firstSeen, k.first));
@@ -92,7 +94,7 @@ function storyOf(k, rec, m, hour, journal, words) {
     for (const p of m.plants) if (p.age > oldest) oldest = p.age;
     if (oldest > 0) lines.push(hour - oldest <= journal.born ? S.oldestArrived : fill(S.oldest, hour - oldest));
   }
-  if (k.peakAt >= 0 && m.value < S.peakShare * k.peak && k.peak >= 2) lines.push(fill(S.peak, k.peakAt));
+  if (k.peakAt >= 0 && m.value < S.peakShare * k.peak && k.peak >= 2) lines.push(fill(rec.peakLine ?? S.peak, k.peakAt));
   return lines;
 }
 
@@ -112,7 +114,11 @@ export function describe(journal, sp, state, hab, words, hour = journal.last) {
     else {
       const t = trendOf(k, words);
       const trend = t > 0 ? rec.spreading : t < 0 ? rec.receding : '';
-      if (rec.kind === 'cover') {
+      if (isAnimal(rec)) {
+        const where = rec.compass ? whereWords(rec.kind === 'swarm' ? m.spots ?? [] : m.plants, hab, words) : '';
+        const clause = m.dormant > 0 && rec.dormant ? rec.dormant : trend;
+        status = `${amountOf(rec.amount, m.count)} ${rec.place}${where ? ` ${where}` : ''}${clause ? `, ${clause}` : ''}.`;
+      } else if (rec.kind === 'cover') {
         const where = rec.compass ? whereWords(m.spots ?? [], hab, words) : '';
         status = `${amountOf(rec.amount, m.count)}${rec.place ? ` ${rec.place}` : ''}${where ? ` ${where}` : ''}${trend ? `, ${trend}` : ''}.`;
       }
@@ -134,7 +140,7 @@ export function describe(journal, sp, state, hab, words, hour = journal.last) {
     const text = bits & FLOWER && S.flower ? S.flower : bits & DORMANT && S.dormant ? S.dormant : bits ? S.grow?.[i] ?? '' : null;
     return { name: words.seasonNames[i], text };
   });
-  const list = words.moments[rec.kind === 'cover' ? 'cover' : 'plant'];
+  const list = words.moments[momentKind(rec)];
   const moments = list.map((/** @type {any} */ x) => {
     const at = k?.moments?.[x.id];
     return { id: x.id, label: x.label, date: at === undefined ? null : dateOfHour(at, words) };
@@ -145,8 +151,24 @@ export function describe(journal, sp, state, hab, words, hour = journal.last) {
   });
   const story = known && k ? storyOf(k, rec, m, hour, journal, words) : [];
   const notes = journal.notes.filter((n) => n.sp === sp).slice(0, words.pageNotes);
-  return { sp, kind: 'living', name: rec.name, icon: rec.icon, known, riddle: rec.riddle, status, likes, field,
+  // An animal not yet found: the latest hint the island has given, else its riddle.
+  let riddle = rec.riddle;
+  for (const h of rec.hints ?? []) if (journal.flags.includes(h.when)) riddle = h.text;
+  return { sp, kind: 'living', name: rec.name, icon: rec.icon, known, riddle, status, likes, field,
     fieldHint: rec.fieldHint, story, seasons, moments, gives, notes, canShow: known && present(rec, m), sketch: sketchOf(k, known, rec.sketch) };
+}
+
+/** Which moments list a page uses. @param {any} rec words.species[sp] */
+export const momentKind = (rec) => (isAnimal(rec) ? 'creature' : rec.kind === 'cover' ? 'cover' : 'plant');
+
+/**
+ * The card for one frog (a tap on it, or Show me).
+ * @param {{ x: number, z: number }} f @param {any} state @param {any} words
+ */
+export function frogCard(f, state, words) {
+  const rec = words.species.frogs;
+  const asleep = !!state?.creatures?.frogs?.dormant;
+  return { sp: 'frogs', name: rec.card, icon: rec.icon, text: rec.stages[asleep ? 1 : 0], wx: f.x, wz: f.z, r: words.identify.grassRingM, stage: -1 };
 }
 
 /**
@@ -197,6 +219,20 @@ function plantCard(p, words) {
 export function showMeSpot(sp, state, hab, words, near = null) {
   const rec = words.species[sp];
   if (!rec) return null;
+  if (isAnimal(rec)) {
+    // The frog, or the midge cloud's square, nearest the middle of your view.
+    const m = measure(sp, state, hab, rec);
+    const list = rec.kind === 'swarm' ? m.spots ?? [] : m.plants;
+    const from = near ? { x: near[0], z: near[1] } : hab ? islandShape(hab) : { x: 0, z: 0 };
+    let best = null, bestD = Infinity;
+    for (const p of list) {
+      const d = Math.round(((p.x - from.x) ** 2 + (p.z - from.z) ** 2) * 100);
+      if (d < bestD) { bestD = d; best = p; }
+    }
+    if (!best) return null;
+    if (rec.kind === 'creature') return frogCard(best, state, words);
+    return { sp, name: rec.name, icon: rec.icon, text: rec.stages[0], wx: best.x, wz: best.z, r: words.identify.ringM, stage: -1 };
+  }
   if (rec.kind === 'cover') {
     if (!hab || !hasCover(sp, state)) return null;
     const isl = near ? { x: near[0], z: near[1] } : islandShape(hab);

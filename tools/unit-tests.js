@@ -29,6 +29,7 @@ import { addJournalTests } from './unit-tests-journal.js';
 import { addSpringTests } from './unit-tests-spring.js';
 import { addCreatureTests } from './unit-tests-creatures.js';
 import { addIslandTests } from './unit-tests-islands.js';
+import { addEcologyTests } from './unit-tests-ecology.js';
 
 /** @type {{group: string, name: string, fn: () => any}[]} */
 const tests = [];
@@ -1340,6 +1341,10 @@ addCreatureTests(test, assert, eq);
 // ---- islands (tools/unit-tests-islands.js) ----
 
 addIslandTests(test, assert, eq);
+
+// ---- ecology (tools/unit-tests-ecology.js) ----
+
+addEcologyTests(test, assert, eq);
 
 // ---- runner and rendering ----
 

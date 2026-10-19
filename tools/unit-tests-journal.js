@@ -6,7 +6,7 @@
 
 import { initialWorldState, makeEnv, runHour } from '../src/sim/tick.js';
 import { settleGrowth, plantSeed } from '../src/world/growth/coarse.js';
-import { initialJournal, observe, learn, notePlanted, momentsNow, catchMoments, sketchOf } from '../src/world/journal/observe.js';
+import { initialJournal, observe, learn, notePlanted, momentsNow, catchMoments, sketchOf, isAnimal } from '../src/world/journal/observe.js';
 import { drawSketch, hasSketch } from '../src/ui/sketches/index.js';
 import { describe, identify, showMeSpot } from '../src/world/journal/describe.js';
 import { groundKind, groundCard, groundSurvey, describeGround } from '../src/world/journal/ground.js';
@@ -44,6 +44,9 @@ function soilEverywhere() {
 }
 
 const JOURNAL = 'journal';
+
+/** The plant pages (animals have their own tests below). @param {any} words */
+const plantsOf = (words) => words.order.filter((/** @type {string} */ sp) => !isAnimal(words.species[sp]));
 
 /** @type {Promise<any> | null} */ let wordsPromise = null;
 function loadWords() {
@@ -91,9 +94,9 @@ function live(s, n) {
  * @param {(cond: any, msg?: string) => void} assert @param {(a: any, b: any, msg?: string) => void} eq
  */
 export function addJournalTests(test, assert, eq) {
-  test(JOURNAL, 'a new island: every living thing on it is noted as already there', async () => {
+  test(JOURNAL, 'a new island: every plant on it is noted as already there', async () => {
     const { words, first } = await setup();
-    for (const sp of words.order) {
+    for (const sp of plantsOf(words)) {
       assert(first.journal.species[sp]?.ever, `${sp} is seen at the first look`);
       assert(first.notes.some((n) => n.sp === sp && n.text === words.species[sp].notes.arrived), `${sp} has its "arrived" note`);
     }
@@ -105,7 +108,7 @@ export function addJournalTests(test, assert, eq) {
     const a = live(s, 96);
     const b = live(s, 96);
     eq(JSON.stringify(a.journal), JSON.stringify(b.journal), 'journal of the two runs');
-    const spread = s.words.order.filter((/** @type {string} */ sp) => a.journal.species[sp]?.learned.includes('spread'));
+    const spread = plantsOf(s.words).filter((/** @type {string} */ sp) => a.journal.species[sp]?.learned.includes('spread'));
     assert(spread.length > 0, 'some species spread in 96 hours');
     for (const sp of spread) {
       const text = s.words.species[sp].notes.spread;
@@ -128,11 +131,11 @@ export function addJournalTests(test, assert, eq) {
     return r1.notes[0].text;
   });
 
-  test(JOURNAL, 'page words: a status for every species, with no numbers in it', async () => {
+  test(JOURNAL, 'page words: a status for every plant, with no numbers in it', async () => {
     const s = await setup();
     const a = live(s, 30);
     const lines = [];
-    for (const sp of s.words.order) {
+    for (const sp of plantsOf(s.words)) {
       const d = describe(a.journal, sp, a.state, s.hab, s.words);
       assert(d.known, `${sp} known`);
       assert(d.status.length > 0, `${sp} has a status`);
@@ -238,7 +241,8 @@ export function addJournalTests(test, assert, eq) {
     eq(Object.keys(seen.labels).join(','), 'blade', 'labels once seen');
     const caught = catchMoments(first.journal, 'reeds', ['rain'], { state: first.journal, hour: 3, words, name: 'reeds', list: words.moments.plant });
     eq(sketchOf(caught.journal.species.reeds, true, rec.sketch).stage, 2, 'reeds caught in the rain');
-    const ids = [...words.order, ...island.groundOrder];
+    // Animals get their field sketches in S6c.
+    const ids = [...plantsOf(words), ...island.groundOrder];
     for (const id of ids) {
       const sk = words.species[id]?.sketch ?? island.ground[id]?.sketch;
       assert(hasSketch(id), `a drawing for ${id}`);

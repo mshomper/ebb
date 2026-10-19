@@ -30,10 +30,11 @@ export const HABITAT_ORIGIN = -80;
 
 /**
  * Chamfer distance (3-4 weights, in thirds of a cell) from every cell to the nearest source cell,
- * two passes. Integers only. Sources have distance 0; the result is capped at `cap`.
+ * two passes. Integers only. Sources have distance 0; the result is capped at `cap`. Also used by
+ * the ecology step (world/ecology).
  * @param {Uint8Array} src 1 where a source @param {number} n @param {number} cap
  */
-function chamfer(src, n, cap) {
+export function chamfer(src, n, cap) {
   const d = new Uint16Array(n * n);
   for (let k = 0; k < d.length; k++) d[k] = src[k] ? 0 : cap;
   for (let j = 0; j < n; j++) {

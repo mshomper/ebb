@@ -37,6 +37,7 @@ import { createFloraPass } from './render/passes/flora.js';
 import { createCreaturePass } from './render/passes/creatures.js';
 import { bakeBody } from './world/creatures/body-bake.js';
 import { previewSpots } from './world/creatures/preview-spots.js';
+import { createCreatures } from './world/creatures/index.js';
 import { onAction, history } from './input/actions.js';
 import { attachDesktopInput } from './input/desktop.js';
 import { attachTouchInput } from './input/touch.js';
@@ -137,6 +138,10 @@ export async function startApp(canvas, hooks = {}) {
   const covers = Object.fromEntries(await Promise.all((growthRecipe.cover ?? []).map(async (/** @type {string} */ sp) => [sp, await loadRecipe(`flora/${sp}`)])));
   const growth = createGrowth(gpu.device, { terrain, water, world, recipes: { growth: growthRecipe, flora, covers, land: landRecipe } });
   sim.addSystem(growth);
+  // Ecology and creatures (S6a, docs 11, 12): the midge field, frog habitat and the frogs' arrival
+  // run in the hourly tick from these recipes.
+  const [frogRecipe, midgeRecipe] = await Promise.all([loadRecipe('species/frog'), loadRecipe('species/midge')]);
+  world.env.recipes.species = { frog: frogRecipe, midge: midgeRecipe };
   updateStore('world', () => world.state);
   const unHour = on('clock:hour', (/** @type {{ hour: number }} */ p) => {
     const events = sim.hourlyTick(p.hour);
@@ -210,6 +215,9 @@ export async function startApp(canvas, hooks = {}) {
   });
   // Plants (docs 10): every species from the growth step's instances, after the grass.
   const floraPass = createFloraPass({ growth, terrain, water: { depthTextures: water.sim.depthTextures, current: () => water.sim.current }, recipes: flora });
+  // The frogs (src/world/creatures): posed bodies at their homes until S6b, the plop, finding one.
+  const creatures = createCreatures({ world, recipe: frogRecipe, terrain, water, ripples, camera });
+  sim.addSystem(creatures);
   // `?frogscale` (ahead of S6): real-size frogs from the species recipe around the pond, and a
   // camera that may come close, to judge creature size on the island (src/ui/frog-scale.js).
   const frogScale = params.has('frogscale') ? await createFrogScale() : null;
@@ -253,6 +261,7 @@ export async function startApp(canvas, hooks = {}) {
     grassPass,
     rushPass,
     floraPass,
+    creatures.pass,
     ...(frogScale ? [frogScale.pass] : []),
     waterPass,
     createSkyPass(atmosphere, skyRecipe),
@@ -654,6 +663,8 @@ export async function startApp(canvas, hooks = {}) {
     world,
     /** The frog size preview (`?frogscale`), or null. */
     frogScale,
+    /** The live frogs (the journal asks it what a tap landed on). */
+    creatures,
     /** The orbit camera, for tools and checks (eye, target, distance). */
     camera,
     /** The island this world started from, and the islands there are (the badge's switch). */
