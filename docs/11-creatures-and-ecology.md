@@ -167,6 +167,7 @@ A body recipe lists SDF primitives (sphere, ellipsoid, capsule, round cone, roun
   - Why: it costs nothing to simulate, looks the same on every device, and the main thread can find any midge (S6c's tongue catches).
   - Midges are drawn at real size, fading rather than shrinking below a pixel or so, as dark specks with a forward-scatter glint against a low sun.
   - Many at dusk, few by day, almost none at night, fewer in wind, capped by the tier's boids. One midge of a swarm dips to ring the water every few seconds.
+  - In rain (October 2026, after S6) they stop swarming and shelter in the plants: drizzle thins them, a downpour clears them. For a few game hours after rain stops they come out up to half again as thick, on the still, damp evening (`swarm.density.rain`).
   - The journal's Midges page inks at the first dusk they can be seen.
   - Minnows and dragonflies (M2) may still want boids.
 - **Pathing**: individuals steer on a coarse walkability grid (slope, water depth) with a simple flow field toward goal cells; no full navmesh in v1.
