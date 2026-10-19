@@ -95,9 +95,9 @@ export function observeAnimals(j, out, ctx, at) {
     if (k.ever) track(k, F?.frogs?.length ?? 0, hour, at.newHour, words);
   }
 
-  // Midges: known by themselves at the first dusk they gather.
+  // Midges: known by themselves at the first dusk they gather, once the island draws them (S6b).
   const mrec = words.species.midges;
-  if (mrec) {
+  if (mrec && mrec.seenAt.drawn) {
     const k = at.know(j, 'midges');
     const m = measureAnimal('midges', state, mrec);
     const S = mrec.seenAt;

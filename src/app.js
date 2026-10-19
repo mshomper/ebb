@@ -115,7 +115,8 @@ export async function startApp(canvas, hooks = {}) {
   history.setApplier('terrain', (cmd, dir) => terrain.applyTiles(dir === 'undo' ? cmd.before : cmd.after));
   // The world clock and the shared hourly tick (weather, seasons). A new world starts mid-morning.
   // `?day=N` starts a new world N game days in (7 per season: 8 is early summer), to see later seasons sooner.
-  const startDay = Math.max(0, Number.parseInt(params.get('day') ?? '0', 10) || 0);
+  // `?frogs=N` (testing) starts on spring day 4 unless a day is given, after the frogs' winter sleep.
+  const startDay = Math.max(0, Number.parseInt(params.get('day') ?? (params.has('frogs') ? '3' : '0'), 10) || 0);
   if (clock.worldT() === 0) clock.reset(((skyRecipe.orbit.startHour ?? 10) + 24 * startDay) * clock.SECONDS_PER_HOUR);
   updateStore('meta', (m) => { m.flow = clock.flow(); });
   const env = makeEnv(seed, { seasons: seasonsRecipe, sky: skyRecipe.orbit, water: waterRecipe });
@@ -216,7 +217,9 @@ export async function startApp(canvas, hooks = {}) {
   // Plants (docs 10): every species from the growth step's instances, after the grass.
   const floraPass = createFloraPass({ growth, terrain, water: { depthTextures: water.sim.depthTextures, current: () => water.sim.current }, recipes: flora });
   // The frogs (src/world/creatures): posed bodies at their homes until S6b, the plop, finding one.
-  const creatures = createCreatures({ world, recipe: frogRecipe, terrain, water, ripples, camera });
+  // `?frogs=N` (testing): N frogs come at once instead of over days (1: a scout, the sign).
+  const testFrogs = params.has('frogs') ? Math.max(1, Math.min(12, Number.parseInt(params.get('frogs') ?? '1', 10) || 1)) : 0;
+  const creatures = createCreatures({ world, recipe: frogRecipe, terrain, water, ripples, camera, testFrogs });
   sim.addSystem(creatures);
   // `?frogscale` (ahead of S6): real-size frogs from the species recipe around the pond, and a
   // camera that may come close, to judge creature size on the island (src/ui/frog-scale.js).

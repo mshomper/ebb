@@ -22,6 +22,7 @@
 import { stream, subSeed, hash32, det } from '../../core/rng.js';
 import { HOURS_PER_DAY } from '../../core/clock.js';
 import { moodOf, companyOf, foodAt, goodEdge, cellCenter } from '../ecology/habitat.js';
+import { ecologyNow } from '../ecology/coarse.js';
 
 /**
  * @typedef {Object} Frog
@@ -152,6 +153,52 @@ function freeHomes(eco, frogs, min, apart, seed) {
   }
   out.sort((a, b) => b.s - a.s || a.h - b.h);
   return out;
+}
+
+/**
+ * A test shortcut for click-testing (`?frogs=N`, src/app.js), never used by the game itself: frogs
+ * come now instead of over days. The pond is marked right; one frog comes as a scout (the sign,
+ * then settling a day later as usual), or with N of 2 or more, N frogs are already settled. They
+ * take the best free bank squares. Pure; returns the same events the hourly tick would.
+ * @param {any} state @param {number} hourIndex @param {any} env @param {number} count
+ * @returns {{ state: any, events: { name: string, payload: any }[] }}
+ */
+export function bringFrogs(state, hourIndex, env, count) {
+  const hab = env.habitat?.();
+  const rec = env.recipes?.species?.frog;
+  if (!hab || !rec || count < 1) return { state, events: [] };
+  if (!state.ecology?.frogs) state = { ...state, ecology: ecologyNow(state, env, true) };
+  const eco = state.ecology;
+  const E = rec.ecology, A = E.arrival, N = E.needs;
+  const prev = (state.creatures ?? initialCreatures()).frogs;
+  /** @type {FrogsState} */
+  const fr = { ...prev, frogs: prev.frogs.map((f) => ({ ...f })) };
+  /** @type {{ name: string, payload: any }[]} */ const events = [];
+  const seed = subSeed(env.seed, 'frogs');
+  if (!fr.right) {
+    fr.right = true;
+    const edge = goodEdge(eco.frogs.edge, eco.frogs.score, E);
+    const [x, z] = cellCenter(edge.best, hab.n);
+    events.push({ name: 'creature:habitat-right', payload: { species: 'frogs', x, z } });
+  }
+  fr.rightFor = Math.max(fr.rightFor, A.scoutAfterH);
+  // The good edge; on a brand-new world the midges have not gathered yet, so any bank square will do.
+  let homes = freeHomes(eco, fr.frogs, E.edge.goodScore, A.homeApartM, seed);
+  if (homes.length < count) homes = freeHomes(eco, fr.frogs, 0.01, A.homeApartM, seed);
+  for (let i = 0; i < count && i < homes.length; i++) {
+    const k = homes[i].k, id = fr.nextId++;
+    /** @type {Frog} */ const f = { id, k, ...seat(k, id, hab, seed), since: hourIndex, mood: 1, low: 0, near: nearCover(k, hab, state.growth, N.shelter) };
+    fr.frogs.push(f);
+    fr.arrivals++;
+    const first = fr.frogs.length === 1;
+    events.push({ name: first ? 'creature:arrived' : 'creature:joined', payload: { species: 'frogs', id, x: f.x, z: f.z, scout: first, count: fr.frogs.length } });
+  }
+  if (fr.frogs.length >= 2 && fr.phase !== 'settled') {
+    fr.phase = 'settled';
+    fr.lastJoin = hourIndex;
+    events.push({ name: 'creature:settled', payload: { species: 'frogs', id: fr.frogs[0].id, x: fr.frogs[0].x, z: fr.frogs[0].z } });
+  } else if (fr.frogs.length === 1) fr.phase = 'visiting';
+  return { state: { ...state, creatures: { ...(state.creatures ?? {}), frogs: fr } }, events };
 }
 
 /** The hour of the day dusk falls (an hour after sunset by default). @param {any} seasons @param {any} A */

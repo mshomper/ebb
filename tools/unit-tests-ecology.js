@@ -7,6 +7,7 @@
 import { runHour, hashWorldState } from '../src/sim/tick.js';
 import { frogNeeds, goodEdge } from '../src/world/ecology/habitat.js';
 import { midgeTarget } from '../src/world/ecology/midges.js';
+import { bringFrogs } from '../src/world/creatures/coarse.js';
 import { HABITAT_ORIGIN } from '../src/world/growth/habitat.js';
 import { loadEcologyRecipes, islandWorld } from './ecology-world.js';
 import { initialJournal, observe, foundAnimal } from '../src/world/journal/observe.js';
@@ -151,8 +152,10 @@ export function addEcologyTests(test, assert, eq) {
     const frogNotes = texts.filter((t) => /frog/i.test(t));
     eq(frogNotes.length, 0, `notes naming frogs before one was found (${frogNotes.join(' | ')})`);
     assert(texts.includes(words.species.frogs.notes.sign), 'the sign was noted');
-    assert(texts.includes(words.species.midges.notes.seen), 'midges were noted at dusk');
-    assert(journal.flags.includes('midges:seen') && journal.flags.includes(`web:reeds>midges`), 'the reeds-midges link is inked');
+    // Midges are not drawn until S6b, so nothing names them yet.
+    const midgeNotes = texts.filter((t) => /midge/i.test(t));
+    eq(midgeNotes.length, 0, `notes naming midges before they are drawn (${midgeNotes.join(' | ')})`);
+    eq(journal.flags.includes('midges:seen'), false, 'midges known before they are drawn');
     eq(riddles.length, 3, `the frog page's pencil line: riddle, then two hints (${riddles.join(' | ')})`);
     eq(describe(journal, 'frogs', state, hab, words).known, false, 'frogs known before you find one');
     // You find one.
@@ -163,7 +166,28 @@ export function addEcologyTests(test, assert, eq) {
     assert(d.known && d.status && !/\d/.test(d.status), `status "${d.status}"`);
     const inked = web.links.filter((/** @type {any} */ l) => l.b === 'frogs' && journal.flags.includes(`web:${l.a}>${l.b}`)).map((/** @type {any} */ l) => l.a);
     assert(inked.length >= 2, `frog links inked: ${inked.join(', ')}`);
+    const named = [...d.likes, ...d.field].filter((l) => l.known && /midge/i.test(l.text)).map((l) => l.text);
+    eq(named.length, 0, `frog page lines naming midges (${named.join(' | ')})`);
     return `${d.status} Links inked: ${inked.join(', ')}.`;
+  });
+
+  test(ECOLOGY, 'the ?frogs test shortcut brings a scout, or a settled group, on the bank at once', async () => {
+    const R = await loadEcologyRecipes();
+    const w = islandWorld(R, 'starter-island', 1, 3);
+    const one = bringFrogs(w.state, w.h0, w.env, 1);
+    eq(one.state.creatures.frogs.frogs.length, 1, 'frogs after ?frogs=1');
+    eq(one.state.creatures.frogs.phase, 'visiting', 'phase after ?frogs=1');
+    assert(one.events.some((e) => e.name === 'creature:arrived'), 'the sign event');
+    const four = bringFrogs(w.state, w.h0, w.env, 4);
+    eq(four.state.creatures.frogs.frogs.length, 4, 'frogs after ?frogs=4');
+    eq(four.state.creatures.frogs.phase, 'settled', 'phase after ?frogs=4');
+    const edge = new Set(four.state.ecology.frogs.edge.cells);
+    for (const f of four.state.creatures.frogs.frogs) assert(edge.has(f.k), `frog ${f.id} is not on the bank`);
+    eq(hashWorldState(bringFrogs(w.state, w.h0, w.env, 4).state), hashWorldState(four.state), 'the same frogs twice');
+    // The scout then settles a day later through the hourly tick, as usual.
+    const r = run(one.state, w.env, w.h0 + 1, 30);
+    assert(r.events.some((e) => e.name === 'creature:settled'), 'the scout settled within 30 hours');
+    return `one scout, or four settled frogs; the scout settled at ${when(r.events.find((e) => e.name === 'creature:settled')?.hour ?? -1)}`;
   });
 
   test(ECOLOGY, 'when the pond fails, frogs leave one a day, quietly, and none come back while it stays dry', async () => {
