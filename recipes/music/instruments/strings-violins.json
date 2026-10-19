@@ -1,0 +1,590 @@
+{
+ "type": "instrument",
+ "id": "strings-violins",
+ "name": "Violin section (VSCO 2 CE), sustain with vibrato",
+ "version": 1,
+ "note": "An instrument recipe for the sampler (doc 24, Instruments, Sample preparation and Sampler rules), made for the strings support kit (October 19, 2026). It describes exactly the files the prep step produced; nothing here is a tuning choice. Every file is a held, bowed note with a baked loop: layer.loop gives startS and endS in seconds from the file's start, and the file ends at endS. The 200 ms before loopStart were blended into the end of the loop (equal-power, corrected for the measured correlation of the two passages), so a plain sample-accurate loop from endS back to startS is seamless; the sampler releases the note with its own envelope. formats: each file exists once per format under root, as <file>.ogg (Ogg Opus, 48 kHz, 80 kbps stereo, variable bitrate) and <file>.m4a (AAC-LC, 48 kHz, 128 kbps stereo). Loop times were checked against the decoded .ogg (same length and start to the sample). measuredCents: the median of a frame-by-frame pitch track (10 ms frames, normalised square difference) over the steady part, against 12-TET at A440; vibrato averages out in the median. tuneConfidence: the share of frames with a clear period times (1 - interquartile range of the track / 60 cents). peakDb and attackRmsDb (first 300 ms) are as recorded: VSCO 2 CE keeps its recorded levels, so the soft layer peaks 4 to 22 dB below the loud one (its first 300 ms 6 to 40 dB below, because soft bowing starts slowly). brightness: share of energy above max(1.5 x the fundamental, 1 kHz) in the first 300 ms. loopCheck: the decoded .ogg played with the loop four times; seamLevelDb compares 250 ms either side of the seam, steadyWobbleDb is the same measure between neighbouring 250 ms windows inside the loop, seamStepRatio is the sample step at the seam over the largest step inside the loop. Note names: the library's file names sit one octave low against scientific pitch (its C3 is middle C); every zone here is named by the pitch it sounds, confirmed by measurement (src keeps the original name).",
+ "source": {
+  "library": "VSCO 2 Community Edition (Versilian Studios)",
+  "url": "https://github.com/sgossner/VSCO-2-CE/tree/master/Strings/Violin%20Section/susVib",
+  "license": "CC0 1.0",
+  "commit": "440300901dfe",
+  "notes": "Folder Strings/Violin Section/susVib, sustain with vibrato. Source layers v1 (soft) and v2 (loud), renumbered v1 (soft) and v2 (loud). One take per note. Zones not used: A3 (G3, A3 and B3 are whole tones apart in the source; A3 is played from G3 or B3). LICENSE is CC0 1.0; the library's Readme.txt also asks (without binding terms) that the samples not be sold on their own, and for credit to Versilian Studios/Sam Gossner and Ivy Audio/Simon Dalzell. README.md: recorded by Sam Gossner and Simon Dalzell, sample cutting by Elan Hickler/Soundemote."
+ },
+ "channels": 2,
+ "formats": [
+  "ogg",
+  "m4a"
+ ],
+ "root": "assets/audio/instruments/strings-violins/",
+ "layers": 2,
+ "sets": {
+  "sus": {
+   "source": "susVib",
+   "loop": true,
+   "zones": [
+    {
+     "note": "G3",
+     "midi": 55,
+     "measuredCents": 0.0,
+     "tuneConfidence": 0.98,
+     "tuneLayer": 2,
+     "layerSpreadCents": 0.1,
+     "layers": [
+      {
+       "file": "sus/G3-v1",
+       "layer": 1,
+       "peakDb": -25.68,
+       "attackRmsDb": -55.75,
+       "brightness": 0.32436,
+       "lenS": 3.8886,
+       "loop": {
+        "startS": 2.180333,
+        "endS": 3.888625
+       },
+       "trimStartMs": 0.2,
+       "measuredCents": 0.1,
+       "loopCheck": {
+        "seamLevelDb": 0.19,
+        "steadyWobbleDb": 1.58,
+        "seamStepRatio": 0.033,
+        "seamKinkRatio": 0.632
+       },
+       "src": "VlnEns_susVib_G2_v1.wav",
+       "channels": 2
+      },
+      {
+       "file": "sus/G3-v2",
+       "layer": 2,
+       "peakDb": -17.76,
+       "attackRmsDb": -40.54,
+       "brightness": 0.12482,
+       "lenS": 2.761,
+       "loop": {
+        "startS": 1.050542,
+        "endS": 2.761
+       },
+       "trimStartMs": 0.0,
+       "measuredCents": 0.0,
+       "loopCheck": {
+        "seamLevelDb": 0.19,
+        "steadyWobbleDb": 0.85,
+        "seamStepRatio": 0.241,
+        "seamKinkRatio": 1.0
+       },
+       "src": "VlnEns_susVib_G2_v2.wav",
+       "channels": 2
+      }
+     ]
+    },
+    {
+     "note": "B3",
+     "midi": 59,
+     "measuredCents": 0.22,
+     "tuneConfidence": 0.92,
+     "tuneLayer": 1,
+     "layerSpreadCents": 0.1,
+     "layers": [
+      {
+       "file": "sus/B3-v1",
+       "layer": 1,
+       "peakDb": -23.62,
+       "attackRmsDb": -63.03,
+       "brightness": 0.29612,
+       "lenS": 5.3536,
+       "loop": {
+        "startS": 3.712896,
+        "endS": 5.353583
+       },
+       "trimStartMs": 17.4,
+       "measuredCents": 0.22,
+       "loopCheck": {
+        "seamLevelDb": 0.13,
+        "steadyWobbleDb": 0.87,
+        "seamStepRatio": 0.849,
+        "seamKinkRatio": 1.0
+       },
+       "src": "VlnEns_susVib_B2_v1.wav",
+       "channels": 2
+      },
+      {
+       "file": "sus/B3-v2",
+       "layer": 2,
+       "peakDb": -15.55,
+       "attackRmsDb": -38.55,
+       "brightness": 0.11386,
+       "lenS": 2.891,
+       "loop": {
+        "startS": 1.230417,
+        "endS": 2.891
+       },
+       "trimStartMs": 0.0,
+       "measuredCents": 0.32,
+       "loopCheck": {
+        "seamLevelDb": 0.09,
+        "steadyWobbleDb": 1.17,
+        "seamStepRatio": 0.378,
+        "seamKinkRatio": 0.778
+       },
+       "src": "VlnEns_susVib_B2_v2.wav",
+       "channels": 2
+      }
+     ]
+    },
+    {
+     "note": "D4",
+     "midi": 62,
+     "measuredCents": 0.41,
+     "tuneConfidence": 0.91,
+     "tuneLayer": 2,
+     "layerSpreadCents": 0.49,
+     "layers": [
+      {
+       "file": "sus/D4-v1",
+       "layer": 1,
+       "peakDb": -21.73,
+       "attackRmsDb": -57.12,
+       "brightness": 0.32077,
+       "lenS": 5.4417,
+       "loop": {
+        "startS": 3.442479,
+        "endS": 5.441687
+       },
+       "trimStartMs": 7.8,
+       "measuredCents": -0.08,
+       "loopCheck": {
+        "seamLevelDb": 0.09,
+        "steadyWobbleDb": 1.03,
+        "seamStepRatio": 0.402,
+        "seamKinkRatio": 1.096
+       },
+       "src": "VlnEns_susVib_D3_v1.wav",
+       "channels": 2
+      },
+      {
+       "file": "sus/D4-v2",
+       "layer": 2,
+       "peakDb": -17.73,
+       "attackRmsDb": -38.64,
+       "brightness": 0.06146,
+       "lenS": 3.5718,
+       "loop": {
+        "startS": 1.690792,
+        "endS": 3.57175
+       },
+       "trimStartMs": 8.9,
+       "measuredCents": 0.41,
+       "loopCheck": {
+        "seamLevelDb": 0.05,
+        "steadyWobbleDb": 0.49,
+        "seamStepRatio": 0.31,
+        "seamKinkRatio": 1.146
+       },
+       "src": "VlnEns_susVib_D3_v2.wav",
+       "channels": 2
+      }
+     ]
+    },
+    {
+     "note": "Fs4",
+     "midi": 66,
+     "measuredCents": -0.26,
+     "tuneConfidence": 0.93,
+     "tuneLayer": 1,
+     "layerSpreadCents": 0.27,
+     "layers": [
+      {
+       "file": "sus/Fs4-v1",
+       "layer": 1,
+       "peakDb": -23.55,
+       "attackRmsDb": -56.52,
+       "brightness": 0.55791,
+       "lenS": 3.6497,
+       "loop": {
+        "startS": 1.84975,
+        "endS": 3.649708
+       },
+       "trimStartMs": 0.0,
+       "measuredCents": -0.26,
+       "loopCheck": {
+        "seamLevelDb": 0.04,
+        "steadyWobbleDb": 0.77,
+        "seamStepRatio": 0.596,
+        "seamKinkRatio": 1.0
+       },
+       "src": "VlnEns_susVib_F#3_v1.wav",
+       "channels": 2
+      },
+      {
+       "file": "sus/Fs4-v2",
+       "layer": 2,
+       "peakDb": -15.38,
+       "attackRmsDb": -39.76,
+       "brightness": 0.71966,
+       "lenS": 4.3924,
+       "loop": {
+        "startS": 2.2325,
+        "endS": 4.392396
+       },
+       "trimStartMs": 7.8,
+       "measuredCents": 0.01,
+       "loopCheck": {
+        "seamLevelDb": 0.21,
+        "steadyWobbleDb": 0.92,
+        "seamStepRatio": 0.294,
+        "seamKinkRatio": 1.175
+       },
+       "src": "VlnEns_susVib_F#3_v2.wav",
+       "channels": 2
+      }
+     ]
+    },
+    {
+     "note": "A4",
+     "midi": 69,
+     "measuredCents": -0.09,
+     "tuneConfidence": 0.92,
+     "tuneLayer": 1,
+     "layerSpreadCents": 0.25,
+     "layers": [
+      {
+       "file": "sus/A4-v1",
+       "layer": 1,
+       "peakDb": -19.36,
+       "attackRmsDb": -53.84,
+       "brightness": 0.04552,
+       "lenS": 4.5254,
+       "loop": {
+        "startS": 2.275146,
+        "endS": 4.525396
+       },
+       "trimStartMs": 14.0,
+       "measuredCents": -0.09,
+       "loopCheck": {
+        "seamLevelDb": 0.2,
+        "steadyWobbleDb": 0.44,
+        "seamStepRatio": 0.309,
+        "seamKinkRatio": 0.697
+       },
+       "src": "VlnEns_susVib_A3_v1.wav",
+       "channels": 2
+      },
+      {
+       "file": "sus/A4-v2",
+       "layer": 2,
+       "peakDb": -15.33,
+       "attackRmsDb": -35.31,
+       "brightness": 0.09921,
+       "lenS": 3.0309,
+       "loop": {
+        "startS": 0.817396,
+        "endS": 3.030917
+       },
+       "trimStartMs": 2.2,
+       "measuredCents": 0.16,
+       "loopCheck": {
+        "seamLevelDb": 0.05,
+        "steadyWobbleDb": 0.46,
+        "seamStepRatio": 0.436,
+        "seamKinkRatio": 1.105
+       },
+       "src": "VlnEns_susVib_A3_v2.wav",
+       "channels": 2
+      }
+     ]
+    },
+    {
+     "note": "C5",
+     "midi": 72,
+     "measuredCents": 0.26,
+     "tuneConfidence": 0.93,
+     "tuneLayer": 1,
+     "layerSpreadCents": 0.46,
+     "layers": [
+      {
+       "file": "sus/C5-v1",
+       "layer": 1,
+       "peakDb": -18.18,
+       "attackRmsDb": -49.21,
+       "brightness": 0.26797,
+       "lenS": 5.4264,
+       "loop": {
+        "startS": 3.546646,
+        "endS": 5.426354
+       },
+       "trimStartMs": 2.6,
+       "measuredCents": 0.26,
+       "loopCheck": {
+        "seamLevelDb": 0.0,
+        "steadyWobbleDb": 0.4,
+        "seamStepRatio": 0.11,
+        "seamKinkRatio": 0.578
+       },
+       "src": "VlnEns_susVib_C4_v1.wav",
+       "channels": 2
+      },
+      {
+       "file": "sus/C5-v2",
+       "layer": 2,
+       "peakDb": -11.56,
+       "attackRmsDb": -27.73,
+       "brightness": 0.23047,
+       "lenS": 2.461,
+       "loop": {
+        "startS": 0.829812,
+        "endS": 2.461021
+       },
+       "trimStartMs": 0.0,
+       "measuredCents": -0.2,
+       "loopCheck": {
+        "seamLevelDb": 0.02,
+        "steadyWobbleDb": 1.06,
+        "seamStepRatio": 0.204,
+        "seamKinkRatio": 1.0
+       },
+       "src": "VlnEns_susVib_C4_v2.wav",
+       "channels": 2
+      }
+     ]
+    },
+    {
+     "note": "E5",
+     "midi": 76,
+     "measuredCents": 0.09,
+     "tuneConfidence": 0.93,
+     "tuneLayer": 1,
+     "layerSpreadCents": 0.35,
+     "layers": [
+      {
+       "file": "sus/E5-v1",
+       "layer": 1,
+       "peakDb": -21.62,
+       "attackRmsDb": -57.4,
+       "brightness": 0.55868,
+       "lenS": 4.6903,
+       "loop": {
+        "startS": 3.089625,
+        "endS": 4.690292
+       },
+       "trimStartMs": 0.4,
+       "measuredCents": 0.09,
+       "loopCheck": {
+        "seamLevelDb": 0.1,
+        "steadyWobbleDb": 0.2,
+        "seamStepRatio": 0.311,
+        "seamKinkRatio": 0.448
+       },
+       "src": "VlnEns_susVib_E4_v1.wav",
+       "channels": 2
+      },
+      {
+       "file": "sus/E5-v2",
+       "layer": 2,
+       "peakDb": -16.63,
+       "attackRmsDb": -35.67,
+       "brightness": 0.50534,
+       "lenS": 3.1303,
+       "loop": {
+        "startS": 1.240021,
+        "endS": 3.13025
+       },
+       "trimStartMs": 0.0,
+       "measuredCents": 0.44,
+       "loopCheck": {
+        "seamLevelDb": 0.17,
+        "steadyWobbleDb": 0.36,
+        "seamStepRatio": 0.235,
+        "seamKinkRatio": 0.816
+       },
+       "src": "VlnEns_susVib_E4_v2.wav",
+       "channels": 2
+      }
+     ]
+    },
+    {
+     "note": "G5",
+     "midi": 79,
+     "measuredCents": -0.34,
+     "tuneConfidence": 0.91,
+     "tuneLayer": 1,
+     "layerSpreadCents": 0.09,
+     "layers": [
+      {
+       "file": "sus/G5-v1",
+       "layer": 1,
+       "peakDb": -18.3,
+       "attackRmsDb": -55.63,
+       "brightness": 0.75595,
+       "lenS": 6.1041,
+       "loop": {
+        "startS": 4.224333,
+        "endS": 6.104063
+       },
+       "trimStartMs": 5.7,
+       "measuredCents": -0.34,
+       "loopCheck": {
+        "seamLevelDb": 0.14,
+        "steadyWobbleDb": 2.22,
+        "seamStepRatio": 0.385,
+        "seamKinkRatio": 0.595
+       },
+       "src": "VlnEns_susVib_G4_v1.wav",
+       "channels": 2
+      },
+      {
+       "file": "sus/G5-v2",
+       "layer": 2,
+       "peakDb": -12.85,
+       "attackRmsDb": -38.91,
+       "brightness": 0.38327,
+       "lenS": 3.5954,
+       "loop": {
+        "startS": 1.827604,
+        "endS": 3.595417
+       },
+       "trimStartMs": 2.3,
+       "measuredCents": -0.25,
+       "loopCheck": {
+        "seamLevelDb": 0.16,
+        "steadyWobbleDb": 1.03,
+        "seamStepRatio": 0.015,
+        "seamKinkRatio": 0.689
+       },
+       "src": "VlnEns_susVib_G4_v2.wav",
+       "channels": 2
+      }
+     ]
+    },
+    {
+     "note": "B5",
+     "midi": 83,
+     "measuredCents": 0.09,
+     "tuneConfidence": 0.93,
+     "tuneLayer": 1,
+     "layerSpreadCents": 0.26,
+     "layers": [
+      {
+       "file": "sus/B5-v1",
+       "layer": 1,
+       "peakDb": -25.36,
+       "attackRmsDb": -59.7,
+       "brightness": 0.39186,
+       "lenS": 5.6993,
+       "loop": {
+        "startS": 4.079562,
+        "endS": 5.699312
+       },
+       "trimStartMs": 0.1,
+       "measuredCents": 0.09,
+       "loopCheck": {
+        "seamLevelDb": 0.28,
+        "steadyWobbleDb": 0.56,
+        "seamStepRatio": 0.47,
+        "seamKinkRatio": 0.442
+       },
+       "src": "VlnEns_susVib_B4_v1.wav",
+       "channels": 2
+      },
+      {
+       "file": "sus/B5-v2",
+       "layer": 2,
+       "peakDb": -12.71,
+       "attackRmsDb": -35.29,
+       "brightness": 0.44091,
+       "lenS": 2.86,
+       "loop": {
+        "startS": 1.089833,
+        "endS": 2.859979
+       },
+       "trimStartMs": 0.0,
+       "measuredCents": 0.35,
+       "loopCheck": {
+        "seamLevelDb": 0.03,
+        "steadyWobbleDb": 0.6,
+        "seamStepRatio": 0.419,
+        "seamKinkRatio": 0.545
+       },
+       "src": "VlnEns_susVib_B4_v2.wav",
+       "channels": 2
+      }
+     ]
+    },
+    {
+     "note": "D6",
+     "midi": 86,
+     "measuredCents": -0.18,
+     "tuneConfidence": 0.91,
+     "tuneLayer": 1,
+     "layerSpreadCents": 0.46,
+     "layers": [
+      {
+       "file": "sus/D6-v1",
+       "layer": 1,
+       "peakDb": -19.65,
+       "attackRmsDb": -54.81,
+       "brightness": 0.281,
+       "lenS": 3.6001,
+       "loop": {
+        "startS": 1.999833,
+        "endS": 3.600104
+       },
+       "trimStartMs": 0.0,
+       "measuredCents": -0.18,
+       "loopCheck": {
+        "seamLevelDb": 0.21,
+        "steadyWobbleDb": 0.49,
+        "seamStepRatio": 0.215,
+        "seamKinkRatio": 1.0
+       },
+       "src": "VlnEns_susVib_D5_v1.wav",
+       "channels": 2
+      },
+      {
+       "file": "sus/D6-v2",
+       "layer": 2,
+       "peakDb": -12.12,
+       "attackRmsDb": -38.19,
+       "brightness": 0.44056,
+       "lenS": 3.8679,
+       "loop": {
+        "startS": 1.609938,
+        "endS": 3.867896
+       },
+       "trimStartMs": 0.0,
+       "measuredCents": 0.28,
+       "loopCheck": {
+        "seamLevelDb": 0.01,
+        "steadyWobbleDb": 1.0,
+        "seamStepRatio": 0.05,
+        "seamKinkRatio": 0.401
+       },
+       "src": "VlnEns_susVib_D5_v2.wav",
+       "channels": 2
+      }
+     ]
+    }
+   ]
+  }
+ },
+ "levels": {
+  "normalized": false,
+  "note": "Files keep the library's recorded level (no gain change): build dynamics from the two layers and attackRmsDb, and never re-gain a layer by itself."
+ },
+ "range": {
+  "low": "G3",
+  "high": "D6",
+  "playable": "F3 to E6 (a note plays from the nearest zone, at most 2 semitones away)"
+ },
+ "problems": [
+  "G3: the loud layer is not brighter than the soft one (v1 0.324, v2 0.125); expected for soft bowing, whose first 300 ms is mostly bow noise before the tone builds, so the measure reads it as bright",
+  "B3: the loud layer is not brighter than the soft one (v1 0.296, v2 0.114); expected for soft bowing, whose first 300 ms is mostly bow noise before the tone builds, so the measure reads it as bright",
+  "D4: the loud layer is not brighter than the soft one (v1 0.321, v2 0.061); expected for soft bowing, whose first 300 ms is mostly bow noise before the tone builds, so the measure reads it as bright",
+  "C5: the loud layer is not brighter than the soft one (v1 0.268, v2 0.230); expected for soft bowing, whose first 300 ms is mostly bow noise before the tone builds, so the measure reads it as bright",
+  "E5: the loud layer is not brighter than the soft one (v1 0.559, v2 0.505); expected for soft bowing, whose first 300 ms is mostly bow noise before the tone builds, so the measure reads it as bright",
+  "sus/G5-v2 (VlnEns_susVib_G4_v2.wav): pitch: frame tracker -0.3 c and spectrum comb +9.2 c disagree (the comb reads the vibrato-smeared average spectrum; the frame tracker's median is used)",
+  "G5: the loud layer is not brighter than the soft one (v1 0.756, v2 0.383); expected for soft bowing, whose first 300 ms is mostly bow noise before the tone builds, so the measure reads it as bright",
+  "zones further apart than a whole tone, by design (the kit brief thins to about a minor third; a note is played from the nearer zone, at most 2 semitones away): G3 to B3 (4), B3 to D4 (3), D4 to Fs4 (4), Fs4 to A4 (3), A4 to C5 (3), C5 to E5 (4), E5 to G5 (3), G5 to B5 (4), B5 to D6 (3)",
+  "soft swells: in 6 files the source takes over 3 s to settle, so the loop starts late and the file is longer: sus/B3-v1 (loop from 3.71 s), sus/D4-v1 (loop from 3.44 s), sus/C5-v1 (loop from 3.55 s), sus/E5-v1 (loop from 3.09 s), sus/G5-v1 (loop from 4.22 s), sus/B5-v1 (loop from 4.08 s)",
+  "m4a files decode 52 to 961 samples (1 to 20 ms) longer than the .ogg because AAC pads its last frame; their start is not shifted (lag 0 against the processed file), so the same loop times hold and loop.endS, not the file end, must be the loop end"
+ ]
+}

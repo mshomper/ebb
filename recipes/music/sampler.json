@@ -105,8 +105,8 @@
         "q": 0.5
       },
       "velocity": {
-        "floorDb": -36,
-        "topDb": -12,
+        "floorDb": -44,
+        "topDb": -20,
         "gamma": 1.4
       },
       "stealing": {
@@ -160,8 +160,8 @@
         "q": 0.5
       },
       "velocity": {
-        "floorDb": -36,
-        "topDb": -12,
+        "floorDb": -44,
+        "topDb": -20,
         "gamma": 1.4
       },
       "stealing": {
@@ -215,8 +215,8 @@
         "q": 0.5
       },
       "velocity": {
-        "floorDb": -36,
-        "topDb": -12,
+        "floorDb": -44,
+        "topDb": -20,
         "gamma": 1.4
       },
       "stealing": {
@@ -270,8 +270,8 @@
         "q": 0.5
       },
       "velocity": {
-        "floorDb": -36,
-        "topDb": -12,
+        "floorDb": -44,
+        "topDb": -20,
         "gamma": 1.4
       },
       "stealing": {
@@ -325,8 +325,8 @@
         "q": 0.5
       },
       "velocity": {
-        "floorDb": -32,
-        "topDb": -10,
+        "floorDb": -38,
+        "topDb": -16,
         "gamma": 1.4
       },
       "stealing": {

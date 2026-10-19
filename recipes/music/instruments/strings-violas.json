@@ -1,0 +1,650 @@
+{
+ "type": "instrument",
+ "id": "strings-violas",
+ "name": "Viola section (VSCO 2 CE), sustain with vibrato",
+ "version": 1,
+ "note": "An instrument recipe for the sampler (doc 24, Instruments, Sample preparation and Sampler rules), made for the strings support kit (October 19, 2026). It describes exactly the files the prep step produced; nothing here is a tuning choice. Every file is a held, bowed note with a baked loop: layer.loop gives startS and endS in seconds from the file's start, and the file ends at endS. The 200 ms before loopStart were blended into the end of the loop (equal-power, corrected for the measured correlation of the two passages), so a plain sample-accurate loop from endS back to startS is seamless; the sampler releases the note with its own envelope. formats: each file exists once per format under root, as <file>.ogg (Ogg Opus, 48 kHz, 80 kbps stereo, variable bitrate) and <file>.m4a (AAC-LC, 48 kHz, 128 kbps stereo). Loop times were checked against the decoded .ogg (same length and start to the sample). measuredCents: the median of a frame-by-frame pitch track (10 ms frames, normalised square difference) over the steady part, against 12-TET at A440; vibrato averages out in the median. tuneConfidence: the share of frames with a clear period times (1 - interquartile range of the track / 60 cents). peakDb and attackRmsDb (first 300 ms) are as recorded: VSCO 2 CE keeps its recorded levels, so the soft layer peaks 4 to 22 dB below the loud one (its first 300 ms 6 to 40 dB below, because soft bowing starts slowly). brightness: share of energy above max(1.5 x the fundamental, 1 kHz) in the first 300 ms. loopCheck: the decoded .ogg played with the loop four times; seamLevelDb compares 250 ms either side of the seam, steadyWobbleDb is the same measure between neighbouring 250 ms windows inside the loop, seamStepRatio is the sample step at the seam over the largest step inside the loop. Note names: the library's file names sit one octave low against scientific pitch (its C3 is middle C); every zone here is named by the pitch it sounds, confirmed by measurement (src keeps the original name).",
+ "source": {
+  "library": "VSCO 2 Community Edition (Versilian Studios)",
+  "url": "https://github.com/sgossner/VSCO-2-CE/tree/master/Strings/Viola%20Section/susvib",
+  "license": "CC0 1.0",
+  "commit": "440300901dfe",
+  "notes": "Folder Strings/Viola Section/susvib, sustain with vibrato. Source layers v1 (soft) and v2 (loud), renumbered v1 (soft) and v2 (loud). One take per note. Zones not used: D3 (C3, D3 and E3 are whole tones apart; D3 is played from C3 or E3) and D6 (above the violas' bed range; the violins cover it). LICENSE is CC0 1.0; the library's Readme.txt also asks (without binding terms) that the samples not be sold on their own, and for credit to Versilian Studios/Sam Gossner and Ivy Audio/Simon Dalzell. README.md: recorded by Sam Gossner and Simon Dalzell, sample cutting by Elan Hickler/Soundemote."
+ },
+ "channels": 2,
+ "formats": [
+  "ogg",
+  "m4a"
+ ],
+ "root": "assets/audio/instruments/strings-violas/",
+ "layers": 2,
+ "sets": {
+  "sus": {
+   "source": "susvib",
+   "loop": true,
+   "zones": [
+    {
+     "note": "C3",
+     "midi": 48,
+     "measuredCents": 0.03,
+     "tuneConfidence": 0.98,
+     "tuneLayer": 2,
+     "layerSpreadCents": 0.12,
+     "layers": [
+      {
+       "file": "sus/C3-v1",
+       "layer": 1,
+       "peakDb": -26.86,
+       "attackRmsDb": -52.05,
+       "brightness": 0.09597,
+       "lenS": 6.7098,
+       "loop": {
+        "startS": 4.638333,
+        "endS": 6.709812
+       },
+       "trimStartMs": 0.8,
+       "measuredCents": 0.15,
+       "loopCheck": {
+        "seamLevelDb": 0.27,
+        "steadyWobbleDb": 1.1,
+        "seamStepRatio": 0.733,
+        "seamKinkRatio": 1.465
+       },
+       "src": "ViolaEns_susvib_C2_v1_1.wav",
+       "channels": 2
+      },
+      {
+       "file": "sus/C3-v2",
+       "layer": 2,
+       "peakDb": -10.24,
+       "attackRmsDb": -27.96,
+       "brightness": 0.0875,
+       "lenS": 3.7102,
+       "loop": {
+        "startS": 1.810271,
+        "endS": 3.710167
+       },
+       "trimStartMs": 0.0,
+       "measuredCents": 0.03,
+       "loopCheck": {
+        "seamLevelDb": 0.16,
+        "steadyWobbleDb": 1.35,
+        "seamStepRatio": 0.487,
+        "seamKinkRatio": 0.96
+       },
+       "src": "ViolaEns_susvib_C2_v2_1.wav",
+       "channels": 2
+      }
+     ]
+    },
+    {
+     "note": "E3",
+     "midi": 52,
+     "measuredCents": -0.21,
+     "tuneConfidence": 0.95,
+     "tuneLayer": 1,
+     "layerSpreadCents": 0.78,
+     "layers": [
+      {
+       "file": "sus/E3-v1",
+       "layer": 1,
+       "peakDb": -26.38,
+       "attackRmsDb": -58.72,
+       "brightness": 0.07482,
+       "lenS": 3.9525,
+       "loop": {
+        "startS": 1.713625,
+        "endS": 3.952479
+       },
+       "trimStartMs": 6.2,
+       "measuredCents": -0.21,
+       "loopCheck": {
+        "seamLevelDb": 0.15,
+        "steadyWobbleDb": 1.16,
+        "seamStepRatio": 0.471,
+        "seamKinkRatio": 1.4
+       },
+       "src": "ViolaEns_susvib_E2_v1_1.wav",
+       "channels": 2
+      },
+      {
+       "file": "sus/E3-v2",
+       "layer": 2,
+       "peakDb": -8.86,
+       "attackRmsDb": -23.32,
+       "brightness": 0.10134,
+       "lenS": 2.3975,
+       "loop": {
+        "startS": 0.707333,
+        "endS": 2.397521
+       },
+       "trimStartMs": 2.5,
+       "measuredCents": 0.57,
+       "loopCheck": {
+        "seamLevelDb": 0.16,
+        "steadyWobbleDb": 0.37,
+        "seamStepRatio": 0.162,
+        "seamKinkRatio": 1.131
+       },
+       "src": "ViolaEns_susvib_E2_v2_1.wav",
+       "channels": 2
+      }
+     ]
+    },
+    {
+     "note": "G3",
+     "midi": 55,
+     "measuredCents": 0.81,
+     "tuneConfidence": 0.92,
+     "tuneLayer": 1,
+     "layerSpreadCents": 1.28,
+     "layers": [
+      {
+       "file": "sus/G3-v1",
+       "layer": 1,
+       "peakDb": -21.72,
+       "attackRmsDb": -54.64,
+       "brightness": 0.10615,
+       "lenS": 4.8683,
+       "loop": {
+        "startS": 3.237958,
+        "endS": 4.868333
+       },
+       "trimStartMs": 1.6,
+       "measuredCents": 0.81,
+       "loopCheck": {
+        "seamLevelDb": 0.54,
+        "steadyWobbleDb": 1.18,
+        "seamStepRatio": 0.539,
+        "seamKinkRatio": 1.38
+       },
+       "src": "ViolaEns_susvib_G2_v1_1.wav",
+       "channels": 2
+      },
+      {
+       "file": "sus/G3-v2",
+       "layer": 2,
+       "peakDb": -7.87,
+       "attackRmsDb": -19.59,
+       "brightness": 0.07139,
+       "lenS": 3.1099,
+       "loop": {
+        "startS": 1.069333,
+        "endS": 3.109917
+       },
+       "trimStartMs": 0.8,
+       "measuredCents": -0.47,
+       "loopCheck": {
+        "seamLevelDb": 0.01,
+        "steadyWobbleDb": 0.63,
+        "seamStepRatio": 1.113,
+        "seamKinkRatio": 2.258
+       },
+       "src": "ViolaEns_susvib_G2_v2_1.wav",
+       "channels": 2
+      }
+     ]
+    },
+    {
+     "note": "B3",
+     "midi": 59,
+     "measuredCents": 0.23,
+     "tuneConfidence": 0.93,
+     "tuneLayer": 1,
+     "layerSpreadCents": 0.27,
+     "layers": [
+      {
+       "file": "sus/B3-v1",
+       "layer": 1,
+       "peakDb": -25.26,
+       "attackRmsDb": -50.55,
+       "brightness": 0.13699,
+       "lenS": 3.5805,
+       "loop": {
+        "startS": 1.919729,
+        "endS": 3.5805
+       },
+       "trimStartMs": 0.0,
+       "measuredCents": 0.23,
+       "loopCheck": {
+        "seamLevelDb": 0.02,
+        "steadyWobbleDb": 0.68,
+        "seamStepRatio": 0.345,
+        "seamKinkRatio": 1.0
+       },
+       "src": "ViolaEns_susvib_B2_v1_1.wav",
+       "channels": 2
+      },
+      {
+       "file": "sus/B3-v2",
+       "layer": 2,
+       "peakDb": -8.04,
+       "attackRmsDb": -21.76,
+       "brightness": 0.09368,
+       "lenS": 3.3501,
+       "loop": {
+        "startS": 1.698979,
+        "endS": 3.350062
+       },
+       "trimStartMs": 0.0,
+       "measuredCents": -0.04,
+       "loopCheck": {
+        "seamLevelDb": 0.01,
+        "steadyWobbleDb": 0.93,
+        "seamStepRatio": 0.306,
+        "seamKinkRatio": 1.009
+       },
+       "src": "ViolaEns_susvib_B2_v2_1.wav",
+       "channels": 2
+      }
+     ]
+    },
+    {
+     "note": "D4",
+     "midi": 62,
+     "measuredCents": 0.7,
+     "tuneConfidence": 0.93,
+     "tuneLayer": 1,
+     "layerSpreadCents": 1.65,
+     "layers": [
+      {
+       "file": "sus/D4-v1",
+       "layer": 1,
+       "peakDb": -26.11,
+       "attackRmsDb": -65.81,
+       "brightness": 0.56635,
+       "lenS": 5.0266,
+       "loop": {
+        "startS": 3.036667,
+        "endS": 5.026646
+       },
+       "trimStartMs": 3.2,
+       "measuredCents": 0.7,
+       "loopCheck": {
+        "seamLevelDb": 0.1,
+        "steadyWobbleDb": 0.83,
+        "seamStepRatio": 0.289,
+        "seamKinkRatio": 0.616
+       },
+       "src": "ViolaEns_susvib_D3_v1_1.wav",
+       "channels": 2
+      },
+      {
+       "file": "sus/D4-v2",
+       "layer": 2,
+       "peakDb": -10.12,
+       "attackRmsDb": -25.58,
+       "brightness": 0.28426,
+       "lenS": 4.1584,
+       "loop": {
+        "startS": 1.910625,
+        "endS": 4.158354
+       },
+       "trimStartMs": 0.0,
+       "measuredCents": -0.95,
+       "loopCheck": {
+        "seamLevelDb": 0.1,
+        "steadyWobbleDb": 0.57,
+        "seamStepRatio": 0.378,
+        "seamKinkRatio": 0.905
+       },
+       "src": "ViolaEns_susvib_D3_v2_1.wav",
+       "channels": 2
+      }
+     ]
+    },
+    {
+     "note": "F4",
+     "midi": 65,
+     "measuredCents": -0.21,
+     "tuneConfidence": 0.91,
+     "tuneLayer": 1,
+     "layerSpreadCents": 0.2,
+     "layers": [
+      {
+       "file": "sus/F4-v1",
+       "layer": 1,
+       "peakDb": -25.2,
+       "attackRmsDb": -58.32,
+       "brightness": 0.84269,
+       "lenS": 3.6206,
+       "loop": {
+        "startS": 1.840458,
+        "endS": 3.620625
+       },
+       "trimStartMs": 10.0,
+       "measuredCents": -0.21,
+       "loopCheck": {
+        "seamLevelDb": 0.13,
+        "steadyWobbleDb": 1.14,
+        "seamStepRatio": 0.101,
+        "seamKinkRatio": 0.418
+       },
+       "src": "ViolaEns_susvib_F3_v1_1.wav",
+       "channels": 2
+      },
+      {
+       "file": "sus/F4-v2",
+       "layer": 2,
+       "peakDb": -8.96,
+       "attackRmsDb": -22.69,
+       "brightness": 0.31722,
+       "lenS": 3.0001,
+       "loop": {
+        "startS": 1.219458,
+        "endS": 3.000062
+       },
+       "trimStartMs": 0.0,
+       "measuredCents": -0.01,
+       "loopCheck": {
+        "seamLevelDb": 0.12,
+        "steadyWobbleDb": 1.2,
+        "seamStepRatio": 0.279,
+        "seamKinkRatio": 0.816
+       },
+       "src": "ViolaEns_susvib_F3_v2_1.wav",
+       "channels": 2
+      }
+     ]
+    },
+    {
+     "note": "A4",
+     "midi": 69,
+     "measuredCents": 0.18,
+     "tuneConfidence": 0.96,
+     "tuneLayer": 1,
+     "layerSpreadCents": 1.22,
+     "layers": [
+      {
+       "file": "sus/A4-v1",
+       "layer": 1,
+       "peakDb": -28.11,
+       "attackRmsDb": -50.24,
+       "brightness": 0.13024,
+       "lenS": 4.0597,
+       "loop": {
+        "startS": 2.310979,
+        "endS": 4.059667
+       },
+       "trimStartMs": 0.0,
+       "measuredCents": 0.18,
+       "loopCheck": {
+        "seamLevelDb": 0.1,
+        "steadyWobbleDb": 1.46,
+        "seamStepRatio": 0.209,
+        "seamKinkRatio": 0.57
+       },
+       "src": "ViolaEns_susvib_A3_v1_1.wav",
+       "channels": 2
+      },
+      {
+       "file": "sus/A4-v2",
+       "layer": 2,
+       "peakDb": -5.65,
+       "attackRmsDb": -16.05,
+       "brightness": 0.13739,
+       "lenS": 3.7513,
+       "loop": {
+        "startS": 1.789813,
+        "endS": 3.751292
+       },
+       "trimStartMs": 0.0,
+       "measuredCents": 1.4,
+       "loopCheck": {
+        "seamLevelDb": 0.27,
+        "steadyWobbleDb": 2.21,
+        "seamStepRatio": 0.328,
+        "seamKinkRatio": 0.94
+       },
+       "src": "ViolaEns_susvib_A3_v2_1.wav",
+       "channels": 2
+      }
+     ]
+    },
+    {
+     "note": "C5",
+     "midi": 72,
+     "measuredCents": -0.63,
+     "tuneConfidence": 0.9,
+     "tuneLayer": 1,
+     "layerSpreadCents": 0.16,
+     "layers": [
+      {
+       "file": "sus/C5-v1",
+       "layer": 1,
+       "peakDb": -23.55,
+       "attackRmsDb": -53.52,
+       "brightness": 0.7711,
+       "lenS": 3.4709,
+       "loop": {
+        "startS": 1.499667,
+        "endS": 3.470854
+       },
+       "trimStartMs": 0.4,
+       "measuredCents": -0.63,
+       "loopCheck": {
+        "seamLevelDb": 0.05,
+        "steadyWobbleDb": 0.56,
+        "seamStepRatio": 0.062,
+        "seamKinkRatio": 0.261
+       },
+       "src": "ViolaEns_susvib_C4_v1_1.wav",
+       "channels": 2
+      },
+      {
+       "file": "sus/C5-v2",
+       "layer": 2,
+       "peakDb": -8.68,
+       "attackRmsDb": -21.54,
+       "brightness": 0.34978,
+       "lenS": 3.1103,
+       "loop": {
+        "startS": 1.129958,
+        "endS": 3.110313
+       },
+       "trimStartMs": 0.0,
+       "measuredCents": -0.79,
+       "loopCheck": {
+        "seamLevelDb": 0.03,
+        "steadyWobbleDb": 0.43,
+        "seamStepRatio": 0.31,
+        "seamKinkRatio": 0.274
+       },
+       "src": "ViolaEns_susvib_C4_v2_1.wav",
+       "channels": 2
+      }
+     ]
+    },
+    {
+     "note": "E5",
+     "midi": 76,
+     "measuredCents": 0.48,
+     "tuneConfidence": 0.94,
+     "tuneLayer": 1,
+     "layerSpreadCents": 0.36,
+     "layers": [
+      {
+       "file": "sus/E5-v1",
+       "layer": 1,
+       "peakDb": -26.4,
+       "attackRmsDb": -57.77,
+       "brightness": 0.6531,
+       "lenS": 3.16,
+       "loop": {
+        "startS": 1.3595,
+        "endS": 3.160042
+       },
+       "trimStartMs": 0.0,
+       "measuredCents": 0.48,
+       "loopCheck": {
+        "seamLevelDb": 0.22,
+        "steadyWobbleDb": 0.88,
+        "seamStepRatio": 0.238,
+        "seamKinkRatio": 0.388
+       },
+       "src": "ViolaEns_susvib_E4_v1_1.wav",
+       "channels": 2
+      },
+      {
+       "file": "sus/E5-v2",
+       "layer": 2,
+       "peakDb": -8.53,
+       "attackRmsDb": -24.74,
+       "brightness": 0.70225,
+       "lenS": 5.0599,
+       "loop": {
+        "startS": 3.309354,
+        "endS": 5.059938
+       },
+       "trimStartMs": 0.2,
+       "measuredCents": 0.12,
+       "loopCheck": {
+        "seamLevelDb": 0.16,
+        "steadyWobbleDb": 0.57,
+        "seamStepRatio": 0.344,
+        "seamKinkRatio": 0.451
+       },
+       "src": "ViolaEns_susvib_E4_v2_1.wav",
+       "channels": 2
+      }
+     ]
+    },
+    {
+     "note": "G5",
+     "midi": 79,
+     "measuredCents": -0.51,
+     "tuneConfidence": 0.9,
+     "tuneLayer": 1,
+     "layerSpreadCents": 0.16,
+     "layers": [
+      {
+       "file": "sus/G5-v1",
+       "layer": 1,
+       "peakDb": -18.17,
+       "attackRmsDb": -52.27,
+       "brightness": 0.47746,
+       "lenS": 3.503,
+       "loop": {
+        "startS": 1.893104,
+        "endS": 3.503021
+       },
+       "trimStartMs": 16.8,
+       "measuredCents": -0.51,
+       "loopCheck": {
+        "seamLevelDb": 0.14,
+        "steadyWobbleDb": 1.02,
+        "seamStepRatio": 0.445,
+        "seamKinkRatio": 0.317
+       },
+       "src": "ViolaEns_susvib_G4_v1_1.wav",
+       "channels": 2
+      },
+      {
+       "file": "sus/G5-v2",
+       "layer": 2,
+       "peakDb": -9.13,
+       "attackRmsDb": -21.21,
+       "brightness": 0.63171,
+       "lenS": 3.2601,
+       "loop": {
+        "startS": 1.159979,
+        "endS": 3.260083
+       },
+       "trimStartMs": 0.0,
+       "measuredCents": -0.35,
+       "loopCheck": {
+        "seamLevelDb": 0.06,
+        "steadyWobbleDb": 1.9,
+        "seamStepRatio": 0.453,
+        "seamKinkRatio": 0.517
+       },
+       "src": "ViolaEns_susvib_G4_v2_1.wav",
+       "channels": 2
+      }
+     ]
+    },
+    {
+     "note": "B5",
+     "midi": 83,
+     "measuredCents": 1.65,
+     "tuneConfidence": 0.89,
+     "tuneLayer": 1,
+     "layerSpreadCents": 1.92,
+     "layers": [
+      {
+       "file": "sus/B5-v1",
+       "layer": 1,
+       "peakDb": -28.35,
+       "attackRmsDb": -54.52,
+       "brightness": 0.58245,
+       "lenS": 5.3459,
+       "loop": {
+        "startS": 3.646354,
+        "endS": 5.345917
+       },
+       "trimStartMs": 13.9,
+       "measuredCents": 1.65,
+       "loopCheck": {
+        "seamLevelDb": 0.03,
+        "steadyWobbleDb": 1.18,
+        "seamStepRatio": 0.239,
+        "seamKinkRatio": 0.388
+       },
+       "src": "ViolaEns_susvib_B4_v1_1.wav",
+       "channels": 2
+      },
+      {
+       "file": "sus/B5-v2",
+       "layer": 2,
+       "peakDb": -12.31,
+       "attackRmsDb": -26.9,
+       "brightness": 0.52779,
+       "lenS": 3.3299,
+       "loop": {
+        "startS": 1.599854,
+        "endS": 3.329896
+       },
+       "trimStartMs": 0.0,
+       "measuredCents": -0.27,
+       "loopCheck": {
+        "seamLevelDb": 0.06,
+        "steadyWobbleDb": 1.05,
+        "seamStepRatio": 0.613,
+        "seamKinkRatio": 0.5
+       },
+       "src": "ViolaEns_susvib_B4_v2_1.wav",
+       "channels": 2
+      }
+     ]
+    }
+   ]
+  }
+ },
+ "levels": {
+  "normalized": false,
+  "note": "Files keep the library's recorded level (no gain change): build dynamics from the two layers and attackRmsDb, and never re-gain a layer by itself."
+ },
+ "range": {
+  "low": "C3",
+  "high": "B5",
+  "playable": "A#2 to C#6 (a note plays from the nearest zone, at most 2 semitones away)"
+ },
+ "problems": [
+  "C3: the loud layer is not brighter than the soft one (v1 0.096, v2 0.087); expected for soft bowing, whose first 300 ms is mostly bow noise before the tone builds, so the measure reads it as bright",
+  "sus/E3-v2 (ViolaEns_susvib_E2_v2_1.wav): pitch: frame tracker +0.6 c and spectrum comb +7.6 c disagree (the comb reads the vibrato-smeared average spectrum; the frame tracker's median is used)",
+  "sus/G3-v1: level changes by 0.54 dB across the loop seam (250 ms either side; the note's own 250 ms wobble is 1.18 dB)",
+  "sus/G3-v2: after Opus the sample step at the loop seam is 1.11 times the largest step inside the loop (before encoding 0.53); small, but the worst seam of the set",
+  "sus/G3-v2: after Opus the waveform bends a little at the loop seam (second difference 2.26 times the largest inside the loop; 0.27 before encoding): codec error at the join, very small in level, listen for a faint tick",
+  "G3: the loud layer is not brighter than the soft one (v1 0.106, v2 0.071); expected for soft bowing, whose first 300 ms is mostly bow noise before the tone builds, so the measure reads it as bright",
+  "B3: the loud layer is not brighter than the soft one (v1 0.137, v2 0.094); expected for soft bowing, whose first 300 ms is mostly bow noise before the tone builds, so the measure reads it as bright",
+  "D4: the loud layer is not brighter than the soft one (v1 0.566, v2 0.284); expected for soft bowing, whose first 300 ms is mostly bow noise before the tone builds, so the measure reads it as bright",
+  "F4: the loud layer is not brighter than the soft one (v1 0.843, v2 0.317); expected for soft bowing, whose first 300 ms is mostly bow noise before the tone builds, so the measure reads it as bright",
+  "C5: the loud layer is not brighter than the soft one (v1 0.771, v2 0.350); expected for soft bowing, whose first 300 ms is mostly bow noise before the tone builds, so the measure reads it as bright",
+  "sus/E5-v2 (ViolaEns_susvib_E4_v2_1.wav): pitch: frame tracker +0.1 c and spectrum comb +9.1 c disagree (the comb reads the vibrato-smeared average spectrum; the frame tracker's median is used)",
+  "sus/G5-v1 (ViolaEns_susvib_G4_v1_1.wav): pitch: frame tracker -0.5 c and spectrum comb +8.0 c disagree (the comb reads the vibrato-smeared average spectrum; the frame tracker's median is used)",
+  "B5: the loud layer is not brighter than the soft one (v1 0.582, v2 0.528); expected for soft bowing, whose first 300 ms is mostly bow noise before the tone builds, so the measure reads it as bright",
+  "zones further apart than a whole tone, by design (the kit brief thins to about a minor third; a note is played from the nearer zone, at most 2 semitones away): C3 to E3 (4), E3 to G3 (3), G3 to B3 (4), B3 to D4 (3), D4 to F4 (3), F4 to A4 (4), A4 to C5 (3), C5 to E5 (4), E5 to G5 (3), G5 to B5 (4)",
+  "soft swells: in 5 files the source takes over 3 s to settle, so the loop starts late and the file is longer: sus/C3-v1 (loop from 4.64 s), sus/G3-v1 (loop from 3.24 s), sus/D4-v1 (loop from 3.04 s), sus/E5-v2 (loop from 3.31 s), sus/B5-v1 (loop from 3.65 s)",
+  "m4a files decode 79 to 989 samples (2 to 21 ms) longer than the .ogg because AAC pads its last frame; their start is not shifted (lag 0 against the processed file), so the same loop times hold and loop.endS, not the file end, must be the loop end"
+ ]
+}
