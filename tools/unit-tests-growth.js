@@ -6,6 +6,7 @@
 
 import { initialWorldState, makeEnv, runHour, hashWorldState } from '../src/sim/tick.js';
 import { HABITAT_CELLS, HABITAT_ORIGIN } from '../src/world/growth/habitat.js';
+import { lushField, lushLook, lushAt } from '../src/world/growth/lush.js';
 import { suitability, plantSeed, plantCover, settleGrowth } from '../src/world/growth/coarse.js';
 
 const GROWTH = 'growth';
@@ -81,6 +82,42 @@ const HOMES = {
  * @param {(cond: any, msg?: string) => void} assert @param {(a: any, b: any, msg?: string) => void} eq
  */
 export function addGrowthTests(test, assert, eq) {
+  test(GROWTH, 'wet-to-dry grass: lush by the water out to 6 m, a smaller ring by damp hollows, dried by salt; straw on the dry rise in late summer', async () => {
+    const grass = await fetch('../recipes/flora/grass.json').then((r) => r.json());
+    const L = grass.lush;
+    // A 60 m square: a pond in the middle (x 25..34), a damp hollow at (8, 50), salt along the top row.
+    const n = 60, NN = n * n;
+    const hab = { n, depthCm: new Uint8Array(NN), still: new Uint8Array(NN), sea: new Uint8Array(NN), salt: new Uint8Array(NN) };
+    for (let j = 25; j < 35; j++) for (let i = 25; i < 35; i++) { hab.depthCm[j * n + i] = 60; hab.still[j * n + i] = 1; }
+    hab.still[50 * n + 8] = 1;
+    for (let i = 0; i < n; i++) for (let j = 0; j < 4; j++) hab.salt[j * n + i] = 255;
+    const f = lushField(/** @type {any} */ (hab), L);
+    const at = (/** @type {number} */ i, /** @type {number} */ j) => f[j * n + i] / 255;
+    eq(at(30, 30), 1, 'lush in the pond');
+    assert(at(36, 30) > 0.7, `2 m from the pond: ${at(36, 30).toFixed(2)}`);
+    assert(at(38, 30) > 0.2 && at(38, 30) < 0.9, `4 m from the pond eases: ${at(38, 30).toFixed(2)}`);
+    eq(at(45, 30), 0, 'lush 11 m from the pond');
+    // Feathered: walking out from the pond, no square is more than a fifth lusher than the next.
+    let steepest = 0;
+    for (let i = 34; i < 46; i++) steepest = Math.max(steepest, at(i, 30) - at(i + 1, 30));
+    assert(steepest < 0.2, `a sharp edge: ${steepest.toFixed(2)} between two squares`);
+    assert(at(8, 50) > 0.1 && at(8, 50) < at(30, 30) && at(15, 50) < 0.02, `the damp hollow's ring: ${at(8, 50).toFixed(2)} on it, ${at(15, 50).toFixed(2)} at 7 m`);
+    // Salt dries what would be lush: a pond cell's neighbor under the salty rows.
+    hab.depthCm[3 * n + 30] = 60;
+    const g = lushField(/** @type {any} */ (hab), L);
+    const fresh = lushField(/** @type {any} */ ({ ...hab, salt: new Uint8Array(NN) }), L);
+    assert(g[3 * n + 31] < 0.7 * fresh[3 * n + 31], `salt does not dry the shore: ${(g[3 * n + 31] / 255).toFixed(2)} against ${(fresh[3 * n + 31] / 255).toFixed(2)} without salt`);
+    // The look: spring keeps the dry rise green (no cure); late summer cures it toward straw.
+    const spring = lushLook(grass, 0.5), late = lushLook(grass, 1.95);
+    const dist = (/** @type {number[]} */ a, /** @type {number[]} */ b) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
+    eq(dist(spring.dry, spring.base.map((c, i) => c * L.dryTint[i])) < 1e-9, true, 'spring dry rise is only paler');
+    assert(dist(late.dry, L.straw) < dist(spring.dry, L.straw), 'late summer is no nearer straw');
+    const wet = lushAt(late, 1), mid = lushAt(late, L.mid), dry = lushAt(late, 0);
+    assert(wet.height > mid.height && mid.height > dry.height, 'heights do not rise toward the water');
+    eq(Math.abs(mid.height - 1) < 1e-9, true, "today's meadow at mid");
+    return `pond ring to ${L.waterM} m, damp ring to ${L.dampM} m; heights ${dry.height.toFixed(2)} dry, 1 meadow, ${wet.height.toFixed(2)} wet`;
+  });
+
   test(GROWTH, 'every species likes its own ground and not the others', async () => {
     const { flora } = await loadRecipes();
     const hab = shoreline();

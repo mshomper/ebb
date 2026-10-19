@@ -50,7 +50,7 @@ const scaleR = (r, s) => (Array.isArray(r) ? r.map((x) => x * s) : r * s);
 export function shapeFrogPrims(prims, shape) {
   const out = prims.map((q) => structuredClone(q));
   /** @type {Record<string, any>} */ const P = {};
-  for (const q of out) P[q.bone] = q;
+  for (const q of out) P[q.part ?? q.bone] = q;
   const s = (/** @type {string} */ k) => shape?.[k] ?? 1;
 
   // The torso stretches from the ground under its middle; the head and limbs ride with it.
@@ -73,14 +73,25 @@ export function shapeFrogPrims(prims, shape) {
     P.head.b = P.head.b.map((v, i) => a[i] + (v - a[i]) * hs);
     P.head.ra *= hs;
     P.head.rb *= hs;
-    for (const name of ['eye.l', 'eye.r', 'throat']) {
+    for (const name of ['eye.l', 'eye.r', 'lid.l', 'lid.r', 'throat']) {
       const q = P[name];
+      if (!q) continue;
       q.c = q.c.map((/** @type {number} */ v, /** @type {number} */ i) => a[i] + (v - a[i]) * hs);
       q.r = scaleR(q.r, hs);
     }
   }
+  // Each eye grows about its middle; its lid (if any) grows and moves with it.
   const es = s('eyeSize');
-  if (es !== 1) for (const name of ['eye.l', 'eye.r']) P[name].r = scaleR(P[name].r, es);
+  if (es !== 1) {
+    for (const side of ['l', 'r']) {
+      const eye = P[`eye.${side}`], lid = P[`lid.${side}`];
+      eye.r = scaleR(eye.r, es);
+      if (lid) {
+        lid.c = lid.c.map((/** @type {number} */ v, /** @type {number} */ i) => eye.c[i] + (v - eye.c[i]) * es);
+        lid.r = scaleR(lid.r, es);
+      }
+    }
+  }
   const ss = s('sacSize');
   if (ss !== 1) P.throat.r = scaleR(P.throat.r, ss);
   const ht = s('hindThick');

@@ -8,10 +8,11 @@
 // tussocks where the rush cover is, standing on the bed and rising out of shallow water.
 
 import { makeBuffer, makeShaderModule } from '../../core/gpu.js';
+import { lushLook } from '../../world/growth/lush.js';
 
 /** @typedef {import('../frame-graph.js').PassContext} PassContext */
 
-const DRAW_BYTES = 192;
+const DRAW_BYTES = 240;
 const SEASONS = /** @type {const} */ (['spring', 'summer', 'autumn', 'winter']);
 
 /**
@@ -48,9 +49,12 @@ export function createGrassPass(opts) {
     const half0 = reach * D.nearShare;
     perSide[0] = 2 * Math.ceil(half0 / s0);
     perSide[1] = 2 * Math.ceil(reach / s1);
-    f.set([s0, perSide[0], 0, 1], 12);
-    // The far ring leaves the near ring's square (less half a spacing, so no gap opens at the seam).
-    f.set([s1, perSide[1], half0 - s0 * 0.5, 1], 16);
+    // Near and far meet in a soft round band, from blendShare of the near ring's reach out to its
+    // edge (less a spacing, so the near square always covers it); its edge wobbles by blendNoise.
+    const bandTo = half0 - s0;
+    f.set([s0, perSide[0], Math.min(bandTo - s0, bandTo * (1 - (D.blendShare ?? 0.4))), 1], 12);
+    f.set([s1, perSide[1], bandTo, 1], 16);
+    f[39] = D.blendNoise ?? 0.12;
     f[24] = reach * (1 - D.fadeShare); f[25] = reach;
     // Far blades are fewer: widen them part of the way toward covering the same ground.
     f[31] = 1 + (Math.sqrt(1 / D.farShare) - 1) * D.farWiden;
@@ -120,6 +124,14 @@ export function createGrassPass(opts) {
       const s = seasonBlend(u.season);
       f[6] = recipe.blades.height * s.height;
       f.set(s.albedo, 8);
+      // Wet-to-dry (lush.js): the dry and wet ends of the meadow this season, read per blade from
+      // the cover map's lush channel. Rushes have none.
+      if (recipe.lush) {
+        const L = lushLook(recipe, u.season);
+        f.set(L.dry, 48); f[51] = L.mid;
+        f.set(L.wet, 52); f[55] = 1;
+        f[56] = L.height[0]; f[57] = L.height[1];
+      }
     },
 
     /** @param {PassContext} ctx */

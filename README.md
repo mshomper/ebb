@@ -15,10 +15,10 @@ The M1 vertical slice, one small island with every pillar working in miniature, 
 |---|---|---|
 | Done | S1 to S3 | A seeded island to sculpt, smooth and paint (grass, sand, soil, rock) with undo and redo; a physical sky, sun, moon, shadows, seasons and weather; two palettes applied last |
 | Done | G1 to G4 | Realistic ground from scanned materials: no visible tiling, wet ground in rain, natural rock |
-| Done | S4 | Water: a shallow-water simulation coupled to sculpting, the tide, springs welling up from rock outcrops, streams, ponds and marshes, with reflections, caustics and foam |
-| Done | S5 | Six plants that grow, spread and compete on their own ground: grass, rushes, reeds, water lilies, yellow flag iris and sea thrift, with a Plant tool |
-| Done | J1 to J2 | The field journal: a page and a field sketch for every living thing and every kind of ground, notes as things happen, the Almanac, a web of what needs what, and a wash that shows where each thing lives |
-| In progress | S6 | Frogs: they find the island, arrive and settle (S6a), then move, call and react to you (S6b), then come to trust you and take a name (S6c) |
+| Done | S4 | Water: a shallow-water simulation coupled to sculpting, the tide, springs welling up from rock outcrops, streams, ponds and marshes, with reflections, caustics and foam. Ponds lie still, ruffled only by the wind and their inflow; the swell is the sea's |
+| Done | S5 | Six plants that grow, spread and compete on their own ground: grass, rushes, reeds, water lilies, yellow flag iris and sea thrift, with a Plant tool. Grass stands tall and green by the water and cures to straw on the dry rise in late summer |
+| Done | J1 to J2 | The field journal: a page and a field sketch for every living thing and every kind of ground, notes as things happen (new ones marked, and the ones you may have missed kept at the top), the Almanac, a web of what needs what, and a wash that shows where each thing lives |
+| In progress | S6 | Frogs: they find the island, arrive and settle (S6a), then move, call and react to you (S6b; by day they hide in the reeds and rushes, at dusk they come out to the edge), then come to trust you and take a name (S6c). Midges dance over the reeds at dusk, and shelter from rain |
 | Next | S7 | Saving, and the island moving on while you are away. Until then every load starts a fresh world |
 | Next | S8 | The final touch layout and the low quality tier for phones |
 
@@ -76,6 +76,8 @@ Open these at `/tools/` while running locally. They are for checks that run on y
 | `palette-lab.html` | Tune a palette with a before and after divider, an eyedropper and sliders |
 | `texture-lab.html`, `rock-lab.html` | Prepare the ground photo scans; compare rock tilings and scans |
 | `sketch-lab.html` | Every journal field sketch at each stage: pencil, ink and wash |
+| `ecology-lab.html`, `frog-lab.html` | Frogs arriving over game days on two islands; frogs live at any hour, with the chorus, lily pads and presence checks |
+| `creature-studio.html` | The frog on a stage with sliders for its shape, colors, eyes and idle motion; Save to repo writes only the numbers you moved into `recipes/species/frog.json` |
 | `terrain-brush-bench.html` | Island building, brush strokes and settling, timed against their budgets |
 
 ## What's here

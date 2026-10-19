@@ -1,8 +1,8 @@
 // Midges (S6b-5, docs 11, 12): tiny specks looping around their swarms' centres, one camera-facing
 // quad each, no vertex buffer. Each midge's path is worked out from the time and its number (fn
 // orbit, the same as orbit() in src/world/ecology/midge-paths.js), so the main thread knows where
-// any midge is. Real size (2 to 4 mm, not enlarged): a midge smaller than a pixel or so fades
-// instead of shrinking. Lit physically: a dark body under the sky and sun, plus a bright
+// any midge is. Drawn a little larger than life (body.readability, as the frogs are), and a midge
+// smaller than a pixel or so fades instead of shrinking. Lit physically: a dark body under the sky and sun, plus a bright
 // forward-scatter glint (Henyey-Greenstein) when the low sun is behind it; the palette paints last.
 
 // #include common
@@ -16,6 +16,7 @@ struct MidgeDraw {
   speed: vec4f,   // x, y turns a second range; z, w body size range (m)
   look: vec4f,    // xyz body albedo (linear), w glint strength
   misc: vec4f,    // x glint g, y least width (px), z swarms, w time (s)
+  wing: vec4f,    // x how much of the sky the wings mirror (wing sheen), yzw spare
 };
 
 // A swarm: c = (centre x, ground or water height, centre z, bob), b = (dip phase 0..1 or -1, spare...),
@@ -52,6 +53,7 @@ struct VsOut {
   @location(0) uv: vec2f,
   @location(1) world: vec3f,
   @location(2) fade: f32,
+  @location(3) phase: f32,    // the midge's own wingbeat phase, 0..1
 };
 
 var<private> QUAD: array<vec2f, 6> = array<vec2f, 6>(
@@ -62,7 +64,7 @@ var<private> QUAD: array<vec2f, 6> = array<vec2f, 6>(
 fn vsMidge(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> VsOut {
   var o: VsOut;
   o.pos = vec4f(0.0, 0.0, -2.0, 1.0);   // dropped unless a swarm owns this midge
-  o.uv = vec2f(0.0); o.world = vec3f(0.0); o.fade = 0.0;
+  o.uv = vec2f(0.0); o.world = vec3f(0.0); o.fade = 0.0; o.phase = 0.0;
   let n = u32(md.misc.z);
   for (var s = 0u; s < n; s++) {
     let sw = swarms[s];
@@ -73,6 +75,7 @@ fn vsMidge(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> 
     var p = vec3f(sw.c.x + off.x, sw.c.y + sw.c.w + off.y, sw.c.z + off.z);
     // The one dipping down to touch the water, and back up.
     if (i == sw.k.w && sw.b.x >= 0.0) { p.y = mix(p.y, sw.c.y + 0.01, sin(3.14159265 * sw.b.x)); }
+    // Drawn at a readable size (body.readability times real, folded into speed.zw by the pass).
     let size = mix(md.speed.z, md.speed.w, hashToFloat(hash3(vec3u(sw.k.x, i, 4u))));
     let clip = frame.viewProj * vec4f(p, 1.0);
     if (clip.w <= 0.0) { return o; }
@@ -87,7 +90,10 @@ fn vsMidge(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> 
     o.pos = vec4f(clip.xy + q * vec2f(hx, hy) * clip.w, clip.z, clip.w);
     o.uv = q;
     o.world = p;
-    o.fade = clamp((realY / hy) * (realY / hy), 0.0, 1.0);
+    // A midge narrower than the least width fades in step with it, so a swarm a few meters off
+    // still reads as a cloud of specks, and a far one as a faint haze.
+    o.fade = clamp(realY / hy, 0.0, 1.0);
+    o.phase = hashToFloat(hash3(vec3u(sw.k.x, i, 5u)));
     return o;
   }
   return o;
@@ -107,7 +113,11 @@ fn fsMidge(in: VsOut) -> @location(0) vec4f {
   let cosT = dot(toMidge, frame.sunDir);
   let hg = (1.0 - g * g) / (4.0 * PI * pow(max(1.0 + g * g - 2.0 * g * cosT, 1e-4), 1.5));
   let glint = frame.sunIlluminance * hg * md.look.w * step(0.0, frame.sunDir.y);
-  let color = applyAerial((body + glint) * frame.exposure, in.pos.xy * frame.invRenderSize, viewDist);
+  // The wings: clear membranes that mirror the bright sky as they beat, so a swarm shows as pale,
+  // flickering motes even against dark reeds (a dark body alone vanishes there).
+  let beat = 0.5 + 0.5 * sin(6.2831853 * (md.misc.w * 3.0 + in.phase));
+  let wings = skyAmbient(vec3f(0.0, 1.0, 0.0)) * md.wing.x * beat * beat;
+  let color = applyAerial((body + glint + wings) * frame.exposure, in.pos.xy * frame.invRenderSize, viewDist);
   let safe = select(vec3f(0.0), color, color == color);
   return vec4f(max(safe, vec3f(0.0)) * alpha, alpha);
 }

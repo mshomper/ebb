@@ -97,6 +97,17 @@ Grass is a cover field drawn as GPU blades with no mesh (doc 04). Blade density 
 
 As built in S5a (`render/passes/grass.js`, `grass-blades.wgsl`, `recipes/flora/grass.json`): blades stand on a world-anchored jittered grid in two square rings around the camera's focus, a dense near ring (140 blades per m² at full tier density, out to a quarter of the tier's grass distance) and a sparser far ring (12% of that, blades a little wider), both drawn from `vertex_index` with nine vertices per blade (two segments and a tip). A blade exists where a hash falls under the painted grass weight times a tuft pattern (patches of about 0.45 m up to 60% thicker or thinner, and 40% taller or shorter), never in water deeper than 1 cm; it shrinks away over the last quarter of the distance, so the meadow meets the textured ground with no edge. Blades bend at rest, sway with the day's wind and passing gusts (6 m, 2.5 m/s), take their height and albedo from the season blended through the year, darken in rain, and are lit like the ground (sun and moon with shadows, sky fill, a little wrap) with a darker root. They write the ground's normal and the terrain's outline group, so they never get outlines. Until S5b's growth step the cover is the painted grass weight itself. `?grass=0` turns them off. Cost on ultra about 0.2 ms.
 
+The near and far rings no longer meet along the near ring's square (October 2026, after S6; Matt: zoomed out, the dense meadow read as a box). They meet across a soft round band over the outer half of the near ring, its edge wobbled by a slow noise: near blades thin out across it as the far ring's fill in (`density.blendShare`, `density.blendNoise`). The marsh's rushes, drawn by the same shader, blend the same way.
+
+**Wet-to-dry grass** (October 2026, island areas step C; the biome session's plan, Matt chose a 6 m reach and late-summer straw). A look field (`src/world/growth/lush.js`), 0..1 per square meter, built with the habitat:
+- **Where:** 1 at fresh water, easing to 0 by 6 m from ponds, marshes and streams and by 2.5 m from damp hollows. Salt dries the shore ring. The field is then feathered by a soft blur (`featherM`, about 2 m), and the tints were softened, after Matt saw the first version read as borders in summer.
+- **Blades:** by the water they stand up to 1.5 times as tall and deeper green; on the dry rise 0.8 times as tall and paler. The dry end cures toward straw through late summer and autumn. A lushness of `mid` is today's meadow.
+- **The far ground:** its grass layer takes the same tint, so the rings show past where blades end, with no edge.
+- **Plumbing:** the field rides in the plant-cover texture's b channel (now rgba8).
+- **Look only:** the plants' own moisture, growth, saves and the landform hash are unchanged.
+- **Journal:** the Grass page learns a summer field note about it.
+- **Numbers:** `recipes/flora/grass.json` `lush`.
+
 ### Other flora (later milestones)
 
 | Kind | Generator | Notes |

@@ -39,6 +39,8 @@ struct TerrainDraw {
   marks: array<vec4f, 16>,              // UI rings (the Plant tool): x, z, radius (m), opacity; the first with opacity 0 ends the list
   weed: vec4f,                          // the drowned meadow: rgb albedo of drowned grass and weed (linear), w most of the bed it covers
   weed2: vec4f,                         // xy water depths (m) over which it gives way to bare silt, zw speeds (m/s) over which running water scours it
+  lushDry: vec4f,                       // wet-to-dry grass (lush.js): rgb the dry rise's grass as a share of the season's, w the lushness of today's meadow
+  lushWet: vec4f,                       // rgb the grass by the water as a share of the season's, w 1 when on
 };
 
 @group(0) @binding(0) var<uniform> frame: FrameUniforms;
@@ -57,6 +59,7 @@ struct TerrainDraw {
 @group(2) @binding(12) var waterVel: texture_2d<f32>;    // live water velocity (rg32float, m/s, x and z)
 @group(2) @binding(13) var probeTex: texture_cube<f32>;  // sky probe (lib-probe.wgsl): wet ground reflects it
 @group(2) @binding(14) var probeSampler: sampler;
+@group(2) @binding(15) var coverTex: texture_2d<f32>;    // plant cover (world/growth): b how lush the grass looks, 1 m grid from -80 m
 
 // Live water depth (m) here, bilinear between the 0.5 m cells.
 fn waterDepthAt(xz: vec2f) -> f32 {
@@ -186,6 +189,15 @@ fn fsLand(in: VsOut) -> FsOut {
   // Scanned detail (docs/22) takes over once loaded and near enough; the flat look stays the fallback.
   let gd = groundDetail(in.world, n, w, moss, distance(in.world, frame.cameraPos));
   albedo = mix(albedo, gd.albedo, gd.amount);
+  // Wet to dry (lush.js): the grass layer takes the blades' tint, deeper by the water, paler and
+  // straw-cured on the dry rise, so the areas read past where blades end, with no ring there.
+  if (td.lushWet.w > 0.5) {
+    let lush = textureSampleLevel(coverTex, linearSampler, (xz + 80.0) / 192.0, 0.0).b;
+    let m = td.lushDry.w;
+    let tint = select(mix(td.lushDry.rgb, vec3f(1.0), clamp(lush / m, 0.0, 1.0)),
+                      mix(vec3f(1.0), td.lushWet.rgb, clamp((lush - m) / (1.0 - m), 0.0, 1.0)), lush >= m);
+    albedo *= mix(vec3f(1.0), tint, gd.weights.x * (1.0 - moss));
+  }
   // Silt: in deeper, quieter water fine mud settles over the soft parts of the bed (not on sand or
   // stone), in soft drifts, so a pond floor is a dark, even brown with the bed showing through.
   let soft = w.w / max(w.x + w.y + w.z + w.w, 1e-4);

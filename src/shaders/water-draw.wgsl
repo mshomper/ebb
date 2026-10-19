@@ -53,6 +53,7 @@ struct WaterDraw {
   foam: vec4f,                // x lace size (m), y foam albedo, z most of a pixel foam covers, w boil speed (cells/s)
   marsh: vec4f,               // rgb sigma_a per meter of shallow, still marsh water (peat-stained)
   marsh2: vec4f,              // xy depths (m) over which it gives way to pond water, zw speeds (m/s) over which moving water clears it
+  calm: vec4f,                // x share of the ripple layers on still fresh water now (follows the wind), yzw spare
 };
 
 @group(0) @binding(0) var<uniform> frame: FrameUniforms;
@@ -365,10 +366,18 @@ fn fsWater(in: VsOut) -> FsOut {
   let g0 = ripples(P.xz - fv * ph0 * period, t);
   let g1 = ripples(P.xz - fv * ph1 * period + vec2f(3.7, 1.3), t);
   let blend = abs(2.0 * ph0 - 1.0);
-  // Faster water is choppier.
+  // Sea or pond (ponds are peaty and cloudy) by where the surface sits: the sea's is at the tide,
+  // fresh water stands above it. The bed cannot tell: pond floors dip below sea level, and the
+  // sea is shallow at the beach.
+  let seaness = 1.0 - smoothstep(0.2, 0.45, P.y - wd.tide);
+  // Still fresh water is calm: its wavelets come from the wind alone (calm.x, near a mirror in still
+  // air), while the sea keeps its full ripples. Faster water is choppier either way, so a pond
+  // ruffles where its stream comes in.
   let speed = length(in.vel);
-  var grad = mix(g0, g1, blend) * shallow * (1.0 - 0.75 * far) * (1.0 + 1.5 * min(speed, 1.0));
-  grad += swell(P.xz, t) * smoothstep(0.0, wd.scatter.w, d);
+  let rippleShare = mix(wd.calm.x, 1.0, seaness);
+  var grad = mix(g0, g1, blend) * shallow * (1.0 - 0.75 * far) * (rippleShare + 1.5 * min(speed, 1.0));
+  // The swell is the open sea's; a pond deeper than the swell's fade never rolls with it.
+  grad += swell(P.xz, t) * smoothstep(0.0, wd.scatter.w, d) * seaness;
   grad += in.slope;
   // Rings from raindrops, the pour brush and (later) creatures: the fine ripple field near the view.
   grad += rippleSlope(rippleTex, rippleInfo, P.xz) * (1.0 - far);
@@ -453,10 +462,7 @@ fn fsWater(in: VsOut) -> FsOut {
   }
 
   // ---- the water body ----
-  // Sea or pond (ponds are peaty and cloudy) by where the surface sits: the sea's is at the tide,
-  // fresh water stands above it. The bed cannot tell: pond floors dip below sea level, and the
-  // sea is shallow at the beach.
-  let seaness = 1.0 - smoothstep(0.2, 0.45, P.y - wd.tide);
+  // (seaness, sea or pond, is worked out with the surface above.)
   // Shallow, still fresh water among drowned plants (a marsh, a pond's shallow margin) holds more
   // dissolved peat: it reads darker, tea-brown, so the sky's reflection shows on it.
   let stain = (1.0 - smoothstep(wd.marsh2.x, wd.marsh2.y, d)) * (1.0 - smoothstep(wd.marsh2.z, wd.marsh2.w, speed));

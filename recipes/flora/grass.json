@@ -3,9 +3,9 @@
   "tags": ["slice", "cover"],
   "generator": "blades",
   "layer": "cover",
-  "note": "The meadow (docs 10, 14): GPU blades with no mesh (grass-blades.wgsl). Where they stand follows the painted grass weight (S5b adds the cover field that grows hour by hour). blades: blade height (m) and width (m), each varied by heightVar and widthVar; lean is how far a blade bends at rest (share of its height); rootShade darkens the base (self-shadow in the sward); tufts: the meadow is clumpy, with tufts about tuftM across where blades are up to tuftDensity thicker or thinner and tuftHeight taller or shorter. density: blades per square meter near the view at full tier density (the tier's grassDensity scales it); the far ring holds farShare of that, its blades widened farWiden of the way toward covering the same ground; nearShare of the tier's grassDistance is the dense ring; blades shrink away over the last fadeShare of the distance, so the meadow meets the textured ground with no edge. wind: sway (bend per unit wind), gustM (size of passing gusts), gustSpeed (m/s). season: height factor and physical albedo (linear) per season, blended through the year; the palette maps them at tonemap. wetDarken: albedo factor in rain. Blades skip water deeper than 1 cm.",
+  "note": "The meadow (docs 10, 14): GPU blades with no mesh (grass-blades.wgsl). Where they stand follows the painted grass weight (S5b adds the cover field that grows hour by hour). blades: blade height (m) and width (m), each varied by heightVar and widthVar; lean is how far a blade bends at rest (share of its height); rootShade darkens the base (self-shadow in the sward); tufts: the meadow is clumpy, with tufts about tuftM across where blades are up to tuftDensity thicker or thinner and tuftHeight taller or shorter. density: blades per square meter near the view at full tier density (the tier's grassDensity scales it); the far ring holds farShare of that, its blades widened farWiden of the way toward covering the same ground; nearShare of the tier's grassDistance is the dense ring, which gives way to the far ring across a soft round band over its outer blendShare, the band's edge wobbling by blendNoise (no square shows from above); blades shrink away over the last fadeShare of the distance, so the meadow meets the textured ground with no edge. wind: sway (bend per unit wind), gustM (size of passing gusts), gustSpeed (m/s). season: height factor and physical albedo (linear) per season, blended through the year; the palette maps them at tonemap. wetDarken: albedo factor in rain. Blades skip water deeper than 1 cm.",
   "blades": { "height": 0.2, "heightVar": 0.5, "width": 0.014, "widthVar": 0.4, "lean": 0.3, "rootShade": 0.6, "tuftM": 0.45, "tuftDensity": 0.6, "tuftHeight": 0.4 },
-  "density": { "perM2": 350, "farShare": 0.08, "farWiden": 0.25, "nearShare": 0.25, "fadeShare": 0.25 },
+  "density": { "perM2": 350, "farShare": 0.08, "farWiden": 0.25, "nearShare": 0.25, "fadeShare": 0.25, "blendShare": 0.5, "blendNoise": 0.15 },
   "wind": { "sway": 0.35, "gustM": 6, "gustSpeed": 2.5 },
   "season": {
     "height": { "spring": 0.75, "summer": 1.0, "autumn": 0.85, "winter": 0.45 },
@@ -16,5 +16,14 @@
       "winter": [0.22, 0.21, 0.13]
     }
   },
-  "wetDarken": 0.75
+  "wetDarken": 0.75,
+  "lush": {
+    "note": "Wet-to-dry grass (island areas step C; src/world/growth/lush.js). A look field, 0..1 per square meter: 1 at fresh water, falling to 0 by waterM from ponds, marshes and streams and by dampM from damp hollows; salt dries it by saltDry at full salt; then it is feathered by a soft blur of about featherM, so wet ground melts into dry with no line. The grass blades and the ground's grass layer read it: at 0 (the dry rise) the season's grass albedo is multiplied by dryTint and cured toward straw by the season's cure share (held at each season's middle, eased between), at mid it is today's meadow, at 1 (by the water) it is multiplied by wetTint. Blade height goes from height[0] dry, through 1 at mid, to height[1] wet (taller grass sways further in the same wind). Albedos are physical (linear); the palette still paints last. Only the look reads this: no plant's growth changes.",
+    "waterM": 6, "dampM": 2.5, "saltDry": 0.7, "mid": 0.35, "featherM": 2,
+    "height": [0.8, 1.5],
+    "dryTint": [1.16, 1.1, 1.04],
+    "wetTint": [0.74, 0.9, 0.8],
+    "straw": [0.42, 0.33, 0.13],
+    "cure": { "spring": 0, "summer": 0.24, "autumn": 0.55, "winter": 0.35 }
+  }
 }

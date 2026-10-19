@@ -11,6 +11,7 @@ import { hash32 } from '../../core/rng.js';
 import { WORLD_CELLS } from '../terrain/grid.js';
 import { buildHabitat, HABITAT_CELLS } from './habitat.js';
 import { suitability, plantSeed, plantCover, settleGrowth } from './coarse.js';
+import { lushField } from './lush.js';
 
 /** Floats per plant instance: x, z, size, stage, species index, hash 0..1, age (h), ground height (m). */
 export const PLANT_FLOATS = 8;
@@ -18,23 +19,27 @@ export const PLANT_FLOATS = 8;
 /**
  * @param {GPUDevice} device
  * @param {{ terrain: import('../terrain/index.js').Terrain, water: import('../water/index.js').Water,
- *   world: { state: any, env: any }, recipes: { growth: any, flora: Record<string, any>, covers?: Record<string, any>, land?: any } }} opts
+ *   world: { state: any, env: any }, recipes: { growth: any, flora: Record<string, any>, covers?: Record<string, any>, land?: any, grass?: any } }} opts
  *   world: the live world (state and env of the hourly tick); env.habitat is set here.
  *   recipes.covers: the cover plants other than grass (growth.json `cover`); recipes.land: the
- *   island's land recipe (its basins may carry starter plants)
+ *   island's land recipe (its basins may carry starter plants); recipes.grass: flora/grass.json (its
+ *   `lush` block shapes the wet-to-dry look field, lush.js)
  */
 export function createGrowth(device, opts) {
   const { terrain, water, world, recipes } = opts;
   const cap = recipes.growth.maxPlants;
   const instances = makeBuffer(device, { label: 'flora-instances', size: cap * PLANT_FLOATS * 4, usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST });
-  // Cover per square meter: r grass, g rushes (the first of growth.json `cover`).
+  // Cover per square meter: r grass, g rushes (the first of growth.json `cover`), b how lush the
+  // grass looks (lush.js: wet by the water, dry on the rise; look only).
   const coverTex = makeTexture(device, {
-    label: 'plant-cover', size: [HABITAT_CELLS, HABITAT_CELLS], format: 'rg8unorm',
+    label: 'plant-cover', size: [HABITAT_CELLS, HABITAT_CELLS], format: 'rgba8unorm',
     usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST,
   });
-  const coverData = new Uint8Array(HABITAT_CELLS * HABITAT_CELLS * 2);
-  for (let k = 0; k < HABITAT_CELLS * HABITAT_CELLS; k++) coverData[2 * k] = 255;
-  device.queue.writeTexture({ texture: coverTex }, coverData, { bytesPerRow: HABITAT_CELLS * 2 }, [HABITAT_CELLS, HABITAT_CELLS]);
+  const coverData = new Uint8Array(HABITAT_CELLS * HABITAT_CELLS * 4);
+  for (let k = 0; k < HABITAT_CELLS * HABITAT_CELLS; k++) { coverData[4 * k] = 255; coverData[4 * k + 2] = 90; }
+  const writeCover = () => device.queue.writeTexture({ texture: coverTex }, coverData, { bytesPerRow: HABITAT_CELLS * 4 }, [HABITAT_CELLS, HABITAT_CELLS]);
+  writeCover();
+  /** The lush field (lush.js), rebuilt with the habitat. @type {Uint8Array | null} */ let lush = null;
   const coverIds = /** @type {string[]} */ (recipes.growth.cover ?? []);
   const data = new Float32Array(cap * PLANT_FLOATS);
   const speciesIndex = (/** @type {string} */ sp) => recipes.flora[sp]?.index ?? 0;
@@ -57,8 +62,10 @@ export function createGrowth(device, opts) {
     const mirror = getStore('terrainLive')?.mirror;
     if (!s || !mirror) return;
     habitat = buildHabitat({ eco: s.eco, material: mirror.material, materialCells: WORLD_CELLS, params: recipes.growth.habitat });
+    lush = recipes.grass?.lush ? lushField(habitat, recipes.grass.lush) : null;
     // A new island gets its starter plants and grass cover now rather than at the next hour.
     world.state = settleGrowth(world.state, world.env);
+    shown = null;   // the lush field changed: upload the cover again
   }
   const unSummary = on('water:summary-updated', rebuildHabitat);
   rebuildHabitat();
@@ -84,8 +91,11 @@ export function createGrowth(device, opts) {
     if (count) device.queue.writeBuffer(instances, 0, data, 0, count * PLANT_FLOATS);
     if (g.grass) {
       const rush = coverIds.length ? g.cover?.[coverIds[0]] : null;
-      for (let k = 0; k < g.grass.length; k++) { coverData[2 * k] = g.grass[k]; coverData[2 * k + 1] = rush ? rush[k] : 0; }
-      device.queue.writeTexture({ texture: coverTex }, coverData, { bytesPerRow: HABITAT_CELLS * 2 }, [HABITAT_CELLS, HABITAT_CELLS]);
+      for (let k = 0; k < g.grass.length; k++) {
+        coverData[4 * k] = g.grass[k]; coverData[4 * k + 1] = rush ? rush[k] : 0;
+        coverData[4 * k + 2] = lush ? lush[k] : 90;
+      }
+      writeCover();
     }
   }
 
@@ -97,8 +107,10 @@ export function createGrowth(device, opts) {
     count: () => count,
     /** The instances of one species (its recipe index): [first, count]. @param {number} index */
     range: (index) => ranges[index] ?? [0, 0],
-    /** Cover 0..1 on the 1 m world grid (rg8unorm, 192 x 192 from -80 m): r grass, g rushes. */
+    /** Cover 0..1 on the 1 m world grid (rgba8unorm, 192 x 192 from -80 m): r grass, g rushes, b lush (look). */
     coverTex,
+    /** The lush field (lush.js), 0..255 a square, or null before the first habitat. */
+    lush: () => lush,
     /** The current habitat grid, or null before the first water summary. */
     habitat: () => habitat,
 

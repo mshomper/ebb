@@ -6,7 +6,8 @@
   "notesKept": 60,
   "pageNotes": 5,
   "arrivedHours": 2,
-  "islandNote": { "showS": 6, "gapS": 1.2, "queue": 3 },
+  "islandNote": { "showS": 6, "gapS": 1.2, "queue": 3, "more": "{n} more in the journal", "moreOne": "1 more in the journal" },
+  "readMarks": { "missed": "You may have missed", "rest": "All notes" },
   "identify": { "radiusM": 0.9, "showS": 8, "ringM": 0.6, "grassRingM": 0.45 },
   "trend": { "hours": 24, "upShare": 0.1, "upMin": 2, "downShare": 0.1, "downMin": 1 },
   "where": { "spreadOut": 0.5, "centerShare": 0.2 },
@@ -43,7 +44,8 @@
         { "text": "Grass grows from the base of each blade, so it recovers quickly when it is grazed or trodden.", "learn": ["seen"] },
         { "text": "Its roots need air: standing water drowns them in a day or two.", "learn": ["grass:flooded"] },
         { "text": "Rain soaks into a meadow instead of running off, because the roots hold the soil open.", "learn": ["moment:rain"] },
-        { "text": "On cold dawns, frost whitens the tip of every blade.", "learn": ["moment:frost"] }
+        { "text": "On cold dawns, frost whitens the tip of every blade.", "learn": ["moment:frost"] },
+        { "text": "By the water grass grows tall and dark; on the dry rise it is shorter and cures to straw in late summer.", "learn": ["moment:summer"] }
       ],
       "fieldHint": "Watch the meadow in other weather to learn more.",
       "sketch": { "scale": "about 30 cm", "labels": {

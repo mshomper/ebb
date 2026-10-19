@@ -157,6 +157,10 @@ A body recipe lists SDF primitives (sphere, ellipsoid, capsule, round cone, roun
 
 **As built in S6b-4** (presence; details in doc 23): a fast swoop of the camera through a frog's 1.5 m ring, or an edit within 2 m, sends it into the water. It dives about 2 m away and floats eyes-up, wary for about a minute. Frogs within 4 m hush for 14 to 20 s. Moves the game makes (a glide) never startle. The frog lab has Swoop, Creep and Glide checks.
 
+**Day hides** (October 2026, after S6; Matt: frogs wouldn't sit out on the grass by day with cover near). By day a frog sits tucked into cover within 3 m of home, among the stems, and comes back out to the edge at dusk to forage and call (`src/world/creatures/day-hide.js`, `motion.dayHide`). Cover is what the island grew: rush and grass cover per square, reed and iris clumps; reeds and rushes count most, thick grass least. A frog on a lily pad at dawn heads for its hide too. With no cover near home it rests at the edge, as before.
+
+**Lidded eyes** (October 2026, after S6; Matt: bare eyes sat on the head like yellow blobs). Matt chose from rendered options after a photo of a frog's face. The eyes are a little smaller and lower. Each is hooded from above and behind by a lid of skin: a piece with a part name (`lid.l`, `lid.r`) on the head bone, marked stiff so its skin follows the head alone. The eye looks out to the side with a wide dark pupil in a flecked gold iris (`body.eyeLook`). A blink sinks the eyes into the head under their lids, as frogs do (`motion.blink.retractM`), instead of squashing them. A piece's part name keys it in the rig and the skeleton, so a lid riding the head bone is never taken for the head.
+
 ### Motion
 
 - **Legs**: analytic two-bone IK; feet plant on the terrain heightfield and lift on a gait phase per leg. Body height and pitch follow the averaged foot plane. Longer chains (heron neck) use FABRIK.
@@ -167,6 +171,10 @@ A body recipe lists SDF primitives (sphere, ellipsoid, capsule, round cone, roun
   - Why: it costs nothing to simulate, looks the same on every device, and the main thread can find any midge (S6c's tongue catches).
   - Midges are drawn at real size, fading rather than shrinking below a pixel or so, as dark specks with a forward-scatter glint against a low sun.
   - Many at dusk, few by day, almost none at night, fewer in wind, capped by the tier's boids. One midge of a swarm dips to ring the water every few seconds.
+  - **Where and how they show** (October 2026, after S6; Matt never saw a swarm when the journal said they were out).
+    - **Placement:** in summer hundreds of squares of the field are equally full, and the swarms went to the first of them in grid order, all in one band at the island's edge. Now up to `swarms.overReeds` hang over the reed clumps first, and the rest take the densest ground in a seeded order, so they spread over the island.
+    - **Visibility:** at real size a midge a few meters off was 5 to 20% visible and vanished against dark reeds. They are now drawn `body.readability` times real (3), fade in step below a pixel rather than by its square, and their beating wings mirror the sky (`body.wingSheen`), so a swarm shows as pale, flickering motes. The low-sun glint is stronger.
+  - In rain (October 2026, after S6) they stop swarming and shelter in the plants: drizzle thins them, a downpour clears them. For a few game hours after rain stops they come out up to half again as thick, on the still, damp evening (`swarm.density.rain`).
   - The journal's Midges page inks at the first dusk they can be seen.
   - Minnows and dragonflies (M2) may still want boids.
 - **Pathing**: individuals steer on a coarse walkability grid (slope, water depth) with a simple flow field toward goal cells; no full navmesh in v1.

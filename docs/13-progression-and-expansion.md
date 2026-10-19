@@ -99,6 +99,10 @@ The camera stays where it is; you look around the island to find the wash. A spe
 - **Species pages**, one per species, in tier order. Unknown species show a soft pencil outline and one riddle-like line about what they like ("likes still water and tall stems"). Seen species add a sketch. A photograph replaces the sketch. Happy species gain a pressed-flower corner and their gift note. Named individuals are listed with their age and markings.
 - **Moments**: photos of signature behaviors (dusk chorus, the heron's strike, firefly sync), a gallery that fills over time.
 - **Away notes**: the notes from each reveal, dated in game days and seasons.
+- **New, seen and missed** (October 2026, after S6; Matt: when a lot happens at once it is hard to tell what just happened and what you missed). Each note gets a number as it is written (`src/world/journal/read.js`), and the journal keeps the last number you saw in Notes and on each page, saved with it.
+  - **New:** a note written since you last opened Notes, or its page, has a small ink dot. So does the book button, and the section and page it belongs to, until you open them.
+  - **Missed:** a note that never showed on the island (more at once than the queue holds, or written while the tab was out of sight, and later the reveal's catch-up) goes at the top of Notes under "You may have missed". The island says "3 more in the journal" instead of dropping them silently.
+  - **Seen:** everything else is plain. On a new island, the notes about what was already there count as read.
 - **The island map**: a hand-drawn style map that adds each land piece as it rises, with player-named places.
 - **The year page**: four season boxes that fill as each season is seen with a happy species in it. When all fifteen species pages hold a photograph and all four seasons are filled, the year page completes with a short closing note. Play continues; nothing ends.
 

@@ -8,6 +8,7 @@ import { bakeVariant, bodyFor, VERTEX_BYTES, MAX_BONES } from '../src/world/crea
 import { FROG_BONES, FROG_SHAPE_KEYS, shapeFrogPrims } from '../src/world/creatures/rigs/frog.js';
 import { poseSkeleton } from '../src/world/creatures/pose.js';
 import { shoreline } from './unit-tests-growth.js';
+import { valueSpans, changedPaths, patchText } from './recipe-text.js';
 
 const CREATURES = 'creatures';
 
@@ -75,6 +76,25 @@ export function addCreatureTests(test, assert, eq) {
     return `${a.count} vertices at ${cellM * 1000} mm, ${a.bones.length} bones`;
   });
 
+  test(CREATURES, 'the creature studio saves only the numbers you moved, in the recipe file\'s own layout', async () => {
+    const text = await fetch('../recipes/species/frog.json').then((x) => x.text());
+    const base = JSON.parse(text);
+    eq(patchText(text, base, changedPaths(base, base)), text, 'nothing moved: the file as it was');
+    const next = JSON.parse(text);
+    next.body.shape.headSize = 1.08;
+    next.body.albedo.back = [0.1, 0.17, 0.08];
+    next.motion.breath.hz = 1.3;
+    const paths = changedPaths(base, next);
+    eq(paths.join(','), 'body.albedo.back,body.shape.headSize,motion.breath.hz', 'changed paths');
+    const out = patchText(text, next, paths);
+    eq(JSON.stringify(JSON.parse(out)), JSON.stringify(next), 'the saved file reads back as the edited recipe');
+    const a = text.split('\n'), b = out.split('\n');
+    eq(a.length, b.length, 'lines in the file');
+    const moved = a.filter((l, i) => l !== b[i]).length;
+    eq(moved, 3, 'lines changed for three edits');
+    return `three edits change three lines; ${valueSpans(text).size} values found in the file`;
+  });
+
   test(CREATURES, 'a still skeleton draws the body as baked; a blink moves only the eyes', async () => {
     const r = await fetch('../recipes/species/frog.json').then((x) => x.json());
     const a = bakeVariant({ id: 'frog', body: r.body, variant: 0, cellM: 0.0033 });
@@ -93,8 +113,9 @@ export function addCreatureTests(test, assert, eq) {
     let worst = 0;
     for (let v = 0; v < a.count; v++) { const s = skin(v); worst = Math.max(worst, Math.hypot(s[0] - f[v * 11], s[1] - f[v * 11 + 1], s[2] - f[v * 11 + 2])); }
     assert(worst < 1e-6, `a still skeleton moved a vertex ${worst} m`);
-    // A blink: squash the eyes; the feet do not move.
-    const blink = a.bones.map((bone) => (bone.name.startsWith('eye') ? { s: [1, 0.25, 1] } : null));
+    // A blink, fully closed: the eyes sink under their lids, a little flattened; the feet do not move.
+    const K = r.motion.blink;
+    const blink = a.bones.map((bone) => (bone.name.startsWith('eye') ? { s: [1, K.squash, 1], t: [0, -K.retractM, 0] } : null));
     poseSkeleton(a.bones, blink, mats, 0);
     let eyeMove = 0, footMove = 0;
     for (let v = 0; v < a.count; v++) {
