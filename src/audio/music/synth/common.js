@@ -63,6 +63,27 @@ export function createPedal() {
   };
 }
 
+/** @type {WeakMap<BaseAudioContext, Map<number, PeriodicWave>>} */
+const phased = new WeakMap();
+
+/**
+ * A unit sine that starts at phase 2 pi k / 8 (k in 0..7), cached per context. Lets two copies
+ * of a tone start out of step, chosen from a seeded stream rather than always in phase.
+ * @param {BaseAudioContext} ctx @param {number} k
+ */
+export function phasedSine(ctx, k) {
+  let m = phased.get(ctx);
+  if (!m) { m = new Map(); phased.set(ctx, m); }
+  const i = ((Math.floor(k) % 8) + 8) % 8;
+  let w = m.get(i);
+  if (!w) {
+    const ph = (2 * Math.PI * i) / 8;
+    w = ctx.createPeriodicWave(new Float32Array([0, Math.sin(ph)]), new Float32Array([0, Math.cos(ph)]), { disableNormalization: true });
+    m.set(i, w);
+  }
+  return w;
+}
+
 /** @type {Map<string, Float32Array>} */
 const curves = new Map();
 

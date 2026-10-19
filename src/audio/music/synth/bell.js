@@ -1,7 +1,9 @@
 // @ts-check
 // The soft sine bell (doc 24, "Instruments"): a warm, rounded mallet bell for winter shimmer and
 // night accents. A sine fundamental plus a few inharmonic partials placed like a struck bar
-// (near 2.76, 5.4 and 8.9 times the pitch), each quieter and dying faster than the one below.
+// (near 2.76, 5.4 and 8.9 times the pitch), each quieter and dying faster than the one below,
+// and a quiet hum an octave down that rings longest, for fullness. The fundamental is a slowly
+// beating pair (a second sine a fraction of a hertz above), so it shimmers like a cast bell.
 // The attack is a short raised-sine swell (no click), velocity mostly opens the upper partials,
 // and high notes ring shorter than low ones. Bells are not damped: letting go of the key lets it
 // ring unless the recipe or opts.damped says otherwise. Partials that would pass the top of the
@@ -10,7 +12,7 @@
 
 import { velocityDb, midiToHz, dbToGain, pickVictim } from '../sampler-math.js';
 import { stream } from '../../../core/rng.js';
-import { clamp, createBus, createPedal, swellCurve, tauFor } from './common.js';
+import { clamp, createBus, createPedal, swellCurve, tauFor, phasedSine } from './common.js';
 
 /**
  * @typedef {Object} BellVoice
@@ -107,17 +109,35 @@ export function createBell(ctx, output, recipe, opts = {}) {
       /** @type {OscillatorNode[]} */
       const oscs = [];
       let longest = 0;
-      const parts = /** @type {{ratio: number, db: number, decayRatio: number, velocityDb: number, pan: number}[]} */ (p.partials);
+      let longestOsc = 0;
+      const lowest = midiToHz(p.minPartialMidi);
+      const parts = /** @type {{ratio: number, db: number, decayRatio: number, velocityDb: number, pan: number, pair?: {hz: number[], db: number}}[]} */ (p.partials);
       for (const pt of parts) {
         const pf = f * pt.ratio * Math.pow(2, (r.range(-1, 1) * p.partialJitterCents) / 1200);
-        if (pf > nyq && oscs.length > 0) continue;
+        // Draws above happen for every partial, so each partial's tuning stays fixed per note.
+        const beatHz = pt.pair ? r.range(pt.pair.hz[0], pt.pair.hz[1]) : 0;
+        // The pair starts phaseTurns of a cycle ahead or behind (side from the seed): at a quarter
+        // turn every strike starts at the same level, whichever way the beat then moves.
+        const beatPhase = (r.next() < 0.5 ? 1 : -1) * Math.round((pt.pair?.phaseTurns ?? 0.25) * 8);
+        if ((pf > nyq || pf < lowest) && pt.ratio !== 1) continue;
         // Upper partials: lower at soft velocity (velocityDb is how much they lose at velocity 1).
         const db = pt.db - pt.velocityDb * Math.pow(1 - x, p.velocityGamma);
         const life = decayS * pt.decayRatio;
-        longest = Math.max(longest, life);
+        if (life > longest) { longest = life; longestOsc = oscs.length; }
         const osc = ctx.createOscillator();
         osc.frequency.value = pf;
         const env = ctx.createGain();
+        // The beating pair: a second sine beatHz above, sharing this partial's envelope.
+        /** @type {OscillatorNode|null} */
+        let twin = null;
+        if (pt.pair) {
+          twin = ctx.createOscillator();
+          twin.setPeriodicWave(phasedSine(ctx, beatPhase));
+          twin.frequency.value = pf + beatHz;
+          const tg = ctx.createGain();
+          tg.gain.value = dbToGain(pt.pair.db);
+          twin.connect(tg).connect(env);
+        }
         const top = dbToGain(peakDb + db);
         env.gain.value = 0;
         // Partials swell over the shared attack, then fall `life` seconds to 60 dB down.
@@ -129,12 +149,17 @@ export function createBell(ctx, output, recipe, opts = {}) {
         osc.start(t);
         osc.stop(t + attackS + life * 1.4 + 0.05); // 84 dB down
         oscs.push(osc);
+        if (twin) {
+          twin.start(t);
+          twin.stop(t + attackS + life * 1.4 + 0.05);
+          oscs.push(twin);
+        }
       }
       /** @type {BellVoice} */
       const v = { midi, startT: t, peakDb, decayS, keyUpT: null, relT: null, endT: null, rel, kill: killG, oscs };
       voices.push(v);
-      // The fundamental lives longest; free the voice when it ends.
-      oscs[0].onended = () => { killG.disconnect(); voices = voices.filter((u) => u !== v); };
+      // Free the voice when its longest-ringing partial ends.
+      oscs[longestOsc].onended = () => { killG.disconnect(); voices = voices.filter((u) => u !== v); };
       return 1;
     },
     /** @param {number} midi @param {number} [when] */
