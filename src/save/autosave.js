@@ -1,0 +1,253 @@
+// @ts-check
+// Autosave (doc 18): loads this island's newest good copy at boot, and keeps saving quietly with no
+// save button: a few seconds after an edit, every game hour, when a frog settles, and at once when
+// the tab hides or closes. One tab tends an island at a time (Web Locks); a second tab can take it.
+// Routine saves are packed into .ebb bytes in a worker; a save as the tab hides is written as it
+// is, at once, since the page may be gone before a worker answers.
+//
+// Only the game saves (main.js asks for it). Tool pages, and test links (?seed, ?day, ?frogs),
+// run unsaved test islands that never touch your own.
+
+import { on, emit, emitDeferred } from '../core/events.js';
+import { subscribe } from '../core/store.js';
+import { run } from '../core/workers.js';
+import { openDb, getSlot, getSave, writeGeneration, deleteSlot } from './idb.js';
+import { decode, encode } from './world-file.js';
+import { migrate } from './migrate.js';
+import { snapshot, restore } from './sections.js';
+
+const ENCODE_JOB = { module: './save/world-file.js', fn: 'encodeJob' };
+/** URL parameters that start a throwaway test island. */
+export const TEST_PARAMS = ['seed', 'day', 'frogs'];
+
+/**
+ * @typedef {'off'|'test'|'fresh'|'loaded'|'elsewhere'|'failed'} SaveStatus
+ *   off: this page does not save (tool pages); test: a test link; fresh: no save yet;
+ *   loaded: the island came back from its save; elsewhere: another tab has it; failed: no database
+ */
+/**
+ * @typedef {Object} SaveSession
+ * @property {SaveStatus} status
+ * @property {string} slot
+ * @property {ReturnType<typeof restore> | null} restored  what came back, for app.js to apply once
+ * @property {number} restoredGen  which generation loaded (older than the newest if that was damaged)
+ * @property {(live: { parts: () => import('./sections.js').IslandParts, recipe: any }) => void} start
+ * @property {() => Promise<void>} startAgain  forget this island and reload fresh
+ * @property {() => void} takeOver  (status 'elsewhere') ask the other tab to let go, then reload here
+ * @property {(reason?: string) => void} saveSoon
+ */
+
+/** @type {SaveSession | null} */ let session = null;
+
+/**
+ * Open this island's save, once per page (a GPU rebuild reuses the same session).
+ * @param {{ enabled: boolean, islandId: string, test: boolean }} opts
+ * @returns {Promise<SaveSession>}
+ */
+export async function beginSave(opts) {
+  if (session) return { ...session, restored: null };
+  const slot = opts.islandId;
+  /** @type {SaveStatus} */ let status = !opts.enabled ? 'off' : opts.test ? 'test' : 'fresh';
+  /** @type {IDBDatabase | null} */ let db = null;
+  /** @type {any} */ let slotRec = null;
+  /** @type {ReturnType<typeof restore> | null} */ let restored = null;
+  let restoredGen = -1;
+  let wallHighWater = 0;
+  /** @type {(() => void) | null} */ let releaseLock = null;
+
+  if (status === 'fresh') {
+    const held = await holdLock(slot);
+    if (!held) status = 'elsewhere';
+    else {
+      releaseLock = held.release;
+      try {
+        db = await openDb();
+        slotRec = (await getSlot(db, slot)) ?? null;
+        if (slotRec) {
+          const got = await loadNewest(db, slotRec);
+          if (got) {
+            restored = got.parts;
+            restoredGen = got.gen;
+            wallHighWater = got.header.wallHighWater ?? 0;
+            status = 'loaded';
+            if (got.gen !== slotRec.gen) console.info(`save: the newest copy of ${slot} was damaged; loaded the one from before`);
+            if (got.parts.bad.length) console.info(`save: regrew ${got.parts.bad.join(', ')} from the seed`);
+          }
+        }
+      } catch (err) {
+        console.warn('save: no save database on this device; this visit will not be kept', err);
+        status = 'failed';
+      }
+    }
+  }
+
+  const channel = typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel(`ebb-island-${slot}`) : null;
+  let stopped = status !== 'fresh' && status !== 'loaded';
+  /** @type {null | { parts: () => import('./sections.js').IslandParts, recipe: any }} */ let live = null;
+  let seq = 0, writtenSeq = 0, inFlight = false, dirty = false, lastSave = 0;
+  /** @type {ReturnType<typeof setTimeout> | undefined} */ let timer;
+
+  // Sections from a newer build ride along unchanged.
+  const extra = restored?.extra ?? [];
+  /** The parts to save, with the clock guard's high-water mark kept current. */
+  function partsNow() {
+    const p = /** @type {NonNullable<typeof live>} */ (live).parts();
+    const now = Date.now();
+    wallHighWater = Math.max(wallHighWater, now);
+    return { ...p, savedAt: now, wallHighWater, extra };
+  }
+
+  /** Write one snapshot as the next generation, unless a newer one is already written. */
+  function write(/** @type {number} */ s, /** @type {any} */ save, /** @type {any} */ p) {
+    if (!db || s <= writtenSeq) return Promise.resolve(false);
+    writtenSeq = s;
+    const gen = (slotRec?.gen ?? -1) + 1;
+    slotRec = { id: slot, island: p.island, seed: p.seed, gen, created: slotRec?.created ?? p.savedAt, lastPlayed: p.savedAt };
+    return writeGeneration(db, slotRec, { slot, gen, savedAt: p.savedAt, ...save }, live?.recipe.generationsKept ?? 3).then(() => true);
+  }
+
+  async function routineSave() {
+    if (stopped || !live || !db) return;
+    if (inFlight) { dirty = true; return; }
+    inFlight = true;
+    dirty = false;
+    const t0 = performance.now();
+    try {
+      const p = partsNow();
+      const s = ++seq;
+      const { header, sections } = snapshot(p);
+      let bytes;
+      try { bytes = (await run(ENCODE_JOB, { header, sections }, { lane: 'background' })).bytes; }
+      catch (err) { console.warn('save: packing in a worker failed; packing here', err); bytes = await encode(header, sections); }
+      if (stopped) return;
+      if (await write(s, { codec: 'ebb', bytes }, p)) emitDeferred('save:written', { generation: slotRec.gen, bytes: bytes.length, ms: performance.now() - t0 });
+      lastSave = Date.now();
+    } catch (err) {
+      console.warn('save failed', err);
+      emitDeferred('save:failed', { reason: String(err) });
+    } finally {
+      inFlight = false;
+      if (dirty && !stopped) schedule(0);
+    }
+  }
+
+  /** Save now, as the tab hides or closes: the snapshot goes into the database as it is. */
+  function quickSave() {
+    if (stopped || !live || !db) return;
+    clearTimeout(timer);
+    try {
+      const p = partsNow();
+      write(++seq, { codec: 'raw', raw: snapshot(p) }, p).catch((err) => console.warn('save on leaving failed', err));
+      lastSave = Date.now();
+      try { localStorage.setItem(`ebb.seen.${slot}`, String(p.savedAt)); } catch { /* storage blocked */ }
+    } catch (err) {
+      console.warn('save on leaving failed', err);
+    }
+  }
+
+  /** @param {number} waitMs */
+  function schedule(waitMs) {
+    clearTimeout(timer);
+    const r = live?.recipe;
+    const gap = r ? r.minIntervalS * 1000 - (Date.now() - lastSave) : 0;
+    timer = setTimeout(routineSave, Math.max(waitMs, gap, 0));
+  }
+
+  /** @param {string} [reason] 'edit' waits for the edit to settle; 'hour' and 'event' go next */
+  function saveSoon(reason = 'edit') {
+    if (stopped || !live) return;
+    schedule(reason === 'edit' ? live.recipe.debounceS * 1000 : 0);
+  }
+
+  // A second tab asks for the island: save, let go, and say where it went.
+  channel?.addEventListener('message', (e) => {
+    if (e.data?.type !== 'take' || stopped || !releaseLock) return;
+    quickSave();
+    stopped = true;
+    const release = releaseLock;
+    releaseLock = null;
+    setTimeout(release, 300);   // let the last write land first
+    emit('save:moved-away', {});   // at once: this tab is in the background, with few frames
+  });
+
+  session = {
+    status, slot, restored, restoredGen,
+    start(l) {
+      // A GPU rebuild starts the app again with new live objects: save from those from now on.
+      const first = !live;
+      live = l;
+      if (stopped || !first) return;
+      const soon = () => saveSoon('edit');
+      on('terrain:stroke-ended', soon);
+      on('growth:planted', soon);
+      subscribe('water', soon);
+      subscribe('journal', soon);
+      on('clock:hour', () => saveSoon('hour'));
+      on('creature:settled', () => saveSoon('event'));
+      on('creature:joined', () => saveSoon('event'));
+      document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') quickSave(); });
+      addEventListener('pagehide', quickSave);
+      // A new island is kept from the start, so leaving at once still comes back to it.
+      if (status === 'fresh') schedule(0);
+    },
+    async startAgain() {
+      stopped = true;
+      clearTimeout(timer);
+      if (db) await deleteSlot(db, slot);
+      try { localStorage.removeItem(`ebb.seen.${slot}`); } catch { /* storage blocked */ }
+      location.reload();
+    },
+    takeOver() {
+      channel?.postMessage({ type: 'take' });
+      // Once the other tab lets go, start here from its last save.
+      navigator.locks?.request(`ebb-island-${slot}`, async () => { location.reload(); });
+    },
+    saveSoon,
+  };
+  return session;
+}
+
+/**
+ * Hold this island's Web Lock for the page's life, if no other tab has it.
+ * @param {string} slot
+ * @returns {Promise<{ release: () => void } | null>}
+ */
+function holdLock(slot) {
+  const locks = typeof navigator !== 'undefined' ? navigator.locks : undefined;
+  if (!locks) return Promise.resolve({ release: () => {} });
+  return new Promise((resolve) => {
+    locks.request(`ebb-island-${slot}`, { ifAvailable: true }, (lock) => {
+      if (!lock) { resolve(null); return undefined; }
+      return new Promise((let_go) => resolve({ release: () => let_go(undefined) }));
+    }).catch(() => resolve({ release: () => {} }));
+  });
+}
+
+/**
+ * The newest generation that reads cleanly, trying older ones if it is damaged.
+ * @param {IDBDatabase} db @param {any} slotRec
+ */
+async function loadNewest(db, slotRec) {
+  for (let gen = slotRec.gen; gen >= 0 && gen > slotRec.gen - 8; gen--) {
+    try {
+      const rec = await getSave(db, slotRec.id, gen);
+      if (!rec) continue;
+      let header, sections;
+      if (rec.codec === 'raw') {
+        header = rec.raw.header;
+        sections = Object.fromEntries(rec.raw.sections);
+      } else {
+        const d = await decode(rec.bytes);
+        if (d.bad.includes('meta') || d.bad.includes('world')) throw new Error(`generation ${gen} is damaged`);
+        header = d.header;
+        sections = d.sections;
+      }
+      const parts = restore(migrate(sections, header.format));
+      if (!parts.meta || !parts.world) throw new Error(`generation ${gen} has no world`);
+      return { gen, header, parts };
+    } catch (err) {
+      console.warn(`save: could not read generation ${gen}`, err);
+    }
+  }
+  return null;
+}

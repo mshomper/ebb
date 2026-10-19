@@ -7,9 +7,12 @@
  * @param {string} fallbackBuild
  * @param {{ current: { id: string, name: string }, list: { id: string, name: string }[] } | null} [island]
  *   the island this world started from; with more than one, the badge carries a switch to the next
+ * @param {{ status: string, startAgain: () => Promise<void> } | null} [save]
+ *   this island's save (src/save/autosave.js): the badge says whether it is kept, and its Saves
+ *   menu can start the island again
  * @returns {Promise<string>} the badge text
  */
-export async function showBuildBadge(fallbackBuild, island = null) {
+export async function showBuildBadge(fallbackBuild, island = null, save = null) {
   let text = `build ${fallbackBuild}`;
   const info = await fetchJson('build.json');
   if (info?.local) text = `local · ${info.branch}`;
@@ -27,24 +30,61 @@ export async function showBuildBadge(fallbackBuild, island = null) {
   const line = document.createElement('span');
   line.textContent = text;
   badge.appendChild(line);
-  // The island switch: starts the next island fresh (each island keeps its own `?island=`).
-  if (island && island.list.length > 1) {
-    const i = island.list.findIndex((x) => x.id === island.current.id);
-    const next = island.list[(i + 1) % island.list.length];
+  /** A badge button. @param {string} label @param {string} title */
+  const button = (label, title) => {
     const b = document.createElement('button');
     b.type = 'button';
-    b.textContent = `Island: ${island.current.name}`;
-    b.title = `Switch to ${next.name} (starts it fresh)`;
+    b.textContent = label;
+    b.title = title;
     Object.assign(b.style, {
       pointerEvents: 'auto', appearance: 'none', font: 'inherit', fontWeight: '700', color: 'inherit', cursor: 'pointer',
       padding: '6px 10px', minHeight: '36px', borderRadius: '12px', border: '1.5px solid rgba(244, 238, 228, 0.5)', background: 'transparent',
     });
+    return b;
+  };
+  // Whether this island is kept (doc 18): test links and tool pages run unsaved test islands.
+  const kept = { loaded: 'Your island, kept on this device', fresh: 'Your island, kept on this device',
+    test: 'Test island, not saved', failed: 'Not saved: this browser is not keeping data' }[save?.status ?? ''];
+  if (kept) {
+    const s = document.createElement('span');
+    s.textContent = kept;
+    badge.appendChild(s);
+  }
+  // The island switch: each island keeps its own save, so switching opens it where you left it.
+  if (island && island.list.length > 1) {
+    const i = island.list.findIndex((x) => x.id === island.current.id);
+    const next = island.list[(i + 1) % island.list.length];
+    const b = button(`Island: ${island.current.name}`, `Switch to ${next.name}`);
     b.addEventListener('click', () => {
       const p = new URLSearchParams(location.search);
       p.set('island', next.id);
       location.search = p.toString();
     });
     badge.appendChild(b);
+  }
+  // The Saves menu (until S8 brings Settings): start this island again, asked twice, on the page.
+  if (save && (save.status === 'loaded' || save.status === 'fresh')) {
+    const menu = button('Saves', 'Saving this island');
+    menu.setAttribute('aria-expanded', 'false');
+    const again = button('Start this island again', 'Forget this island and begin it fresh');
+    again.hidden = true;
+    let armed = /** @type {ReturnType<typeof setTimeout> | 0} */ (0);
+    menu.addEventListener('click', () => {
+      again.hidden = !again.hidden;
+      menu.setAttribute('aria-expanded', String(!again.hidden));
+    });
+    again.addEventListener('click', () => {
+      if (!armed) {
+        again.textContent = 'Tap again to start fresh';
+        armed = setTimeout(() => { armed = 0; again.textContent = 'Start this island again'; }, 4000);
+        return;
+      }
+      clearTimeout(armed);
+      again.disabled = true;
+      again.textContent = 'Starting fresh';
+      save.startAgain();
+    });
+    badge.append(menu, again);
   }
   document.body.appendChild(badge);
   return text;

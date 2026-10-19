@@ -12,6 +12,8 @@ import { mountIslandNotes } from './ui/island-notes.js';
 import { mountFrogScale } from './ui/frog-scale.js';
 import { createJournal } from './world/journal/index.js';
 import { loadRecipe } from './core/recipes.js';
+import { on } from './core/events.js';
+import { showElsewhere } from './ui/elsewhere.js';
 
 /** Shown in the corner badge when no build.json or local server info is available. */
 export const BUILD = 'm1-s3-palette';
@@ -32,12 +34,18 @@ if (new URLSearchParams(location.search).has('debug')) {
 let toolsMounted = false;
 /** The island this world started from, for the badge's island switch. @type {any} */
 let islandInfo = null;
+/** This island's save, for the badge (kept, or a test island; start again). @type {any} */
+let saveInfo = null;
 
-startApp(canvas, { onDeviceLost: (rebuilding) => showRebuildingNote(rebuilding) })
+// The game keeps your island (src/save); tool pages that start the app do not.
+startApp(canvas, { onDeviceLost: (rebuilding) => showRebuildingNote(rebuilding), save: true, build: BUILD })
   .then(async (r) => {
-    if (r.ok) islandInfo = /** @type {any} */ (r).island ?? null;
+    if (r.ok) { islandInfo = /** @type {any} */ (r).island ?? null; saveInfo = /** @type {any} */ (r).save ?? null; }
+    if (!r.ok && r.reason === 'elsewhere') { showElsewhere(r.takeOver, false); return; }
     if (!r.ok) showNoWebGPU(r.reason);
     else if (new URLSearchParams(location.search).has('debug')) /** @type {any} */ (window).ebb = r;
+    // Another window took the island over: say so, and offer it back.
+    if (r.ok && saveInfo) on('save:moved-away', () => showElsewhere(saveInfo.takeOver, true));
     if (r.ok && !toolsMounted) {
       toolsMounted = true;
       mountTools(document.body);
@@ -64,4 +72,4 @@ startApp(canvas, { onDeviceLost: (rebuilding) => showRebuildingNote(rebuilding) 
     console.error(err);
     showNoWebGPU('device-failed');
   })
-  .finally(() => showBuildBadge(BUILD, islandInfo));
+  .finally(() => showBuildBadge(BUILD, islandInfo, saveInfo));
