@@ -192,7 +192,7 @@ Per species, a `presence` block in `recipes/species/<id>.json` (frog starting va
   "calmSpeed": 0.5, "calmTrustGain": 2,
   "editReachM": 2, "wariS": [40, 70], "hushReachM": 4, "hushS": [14, 20],
   "watch": { "reachM": 3, "minS": 20, "capS": 600, "trustPerMin": 0.012 },
-  "feedTrust": 0.06, "ceiling": "familiar", "namingTrust": 0.5, "closeMinDistanceM": 0.35,
+  "feedTrust": 0.06, "ceiling": "familiar", "namingTrust": 0.5,
   "multipliers": { "posture": { "stand": 1, "kneel": 0.8, "sit": 0.65 }, "gaze": { "watch": 1.15, "away": 0.9 }, "light": 1.3 }
 }
 ```

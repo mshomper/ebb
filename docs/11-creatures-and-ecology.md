@@ -120,6 +120,14 @@ Trust grows slowly with feeding, calling and time spent watching; it shortens fl
 
 A body recipe lists SDF primitives (sphere, ellipsoid, capsule, round cone, rounded box), each attached to a bone, blended with a polynomial smooth-min of radius *k* (Inigo Quilez, "smooth minimum"). At load, a compute pass evaluates the SDF on a grid around the body and extracts a mesh with **surface nets** at three resolutions (LOD0 48³, LOD1 24³, LOD2 12³). LOD3 is an octahedral impostor atlas, also used for swarm members. Skin weights come from each primitive's share of the smooth-min blend, normalized across the four strongest bones. Albedo regions (back, belly, markings) are physical linear albedo; the painted look comes only from the palette tonemap (`05-look-and-palette.md`). Thin parts (frog throat sac, ears, wings) use a wrap-lighting term for soft translucency. Individual variation: each individual's seed jitters primitive radii by up to 6% and offsets marking noise.
 
+**As built in S6b-1** (`src/world/creatures/bodies.js`, `rigs/frog.js`, `pose.js`):
+- **Shape.** A species' rig reshapes its pieces by named proportions (`body.shape`; 1 is the recipe's body, exactly) before the bake. This is the hook the creature studio needs.
+- **Variants.** Variation is per body variant, not per individual: `body.variants` seeded variants (8 for frogs), each nudging every proportion by up to `body.variation` and moving the blotches. Every individual wears one, picked by its id, and is drawn up to `sizeJitter` larger or smaller. A look change rebakes 8 bodies, not one per frog.
+- **Baking.** Bakes run on the worker pool, coarsest level of detail first: frogs at 3.3, 2.2 and 1.1 mm cells (about 2,000, 7,500 and 30,000 triangles), switched by distance from the eye (`bake.lods`). The baker runs on the CPU; a compute bake can come later if bake time matters.
+- **Skeleton.** Bones and their pivots are read from the pieces (where each piece begins), never typed in. The throat pivots at the top of the sac, so it swells down.
+- **Skinning.** Skin weights come from each piece's distance compared with the nearest piece (`skin.blendM`), with the top four bones kept. Bone matrices go to the draw pass each frame, and the rest pose is every bone still, which draws the bake exactly.
+- **Idle motion.** Breathing (the sac and body) and blinking (`motion.breath`, `motion.blink`).
+
 ### Motion
 
 - **Legs**: analytic two-bone IK; feet plant on the terrain heightfield and lift on a gait phase per leg. Body height and pitch follow the averaged foot plane. Longer chains (heron neck) use FABRIK.

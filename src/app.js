@@ -153,7 +153,8 @@ export async function startApp(canvas, hooks = {}) {
   });
 
   const camera = createOrbitCamera(camRecipe);
-  camera.setGroundProbe((x, z) => terrain.sampleHeight(x, z));
+  // The ground, or the water's surface where it stands higher, so a close-up never dips under a pond.
+  camera.setGroundProbe((x, z) => Math.max(terrain.sampleHeight(x, z), water.sim.live ? water.sampleLive(x, z).surface : -Infinity));
   // The view, for the UI (store slice `view`): the ground point in the middle of the screen, and
   // where a ground point lands on screen in CSS pixels (behind: it is behind the camera, and x, y
   // are mirrored so they still say which way to turn).
