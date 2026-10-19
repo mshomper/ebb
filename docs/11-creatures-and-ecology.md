@@ -155,6 +155,8 @@ A body recipe lists SDF primitives (sphere, ellipsoid, capsule, round cone, roun
 - **Water height.** `water.sampleLive` now gives the surface the way the water and lily shaders draw it (each cell's lowest bed plus its depth, blended between cell centres). Before, it took the ground at the point plus the cell's depth, which stood several centimetres too high over a sloping pond bed, so frogs floated and sat above the water they were drawn on.
 - **Frog lab.** Adds a tile for frogs on pads, a frame-by-frame check that no frog leaves its leaf and no swimmer passes through a pad, a close look at a frog on a pad, and Pad outlines (where the frogs think each pad's rim is, drawn over the view).
 
+**As built in S6b-4** (presence; details in doc 23): a fast swoop of the camera through a frog's 1.5 m ring, or an edit within 2 m, sends it into the water. It dives about 2 m away and floats eyes-up, wary for about a minute. Frogs within 4 m hush for 14 to 20 s. Moves the game makes (a glide) never startle. The frog lab has Swoop, Creep and Glide checks.
+
 ### Motion
 
 - **Legs**: analytic two-bone IK; feet plant on the terrain heightfield and lift on a gait phase per leg. Body height and pitch follow the averaged foot plane. Longer chains (heron neck) use FABRIK.

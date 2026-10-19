@@ -62,7 +62,10 @@ export function createOrbitCamera(r) {
   const hardMaxDistance = () => r.distanceHard[1] ?? softMaxDistance() * r.distanceHardMaxFactor;
   const clamp = (/** @type {number} */ x, /** @type {number} */ a, /** @type {number} */ b) => Math.min(b, Math.max(a, x));
 
-  /** True while gliding to a point the journal asked to show; any input ends it. */
+  /**
+   * True while gliding to a point the game asked to show (the journal's Show me, a tool's Look at);
+   * any input ends it. Presence reads it as `driven`: a move the game makes never startles a creature.
+   */
   let focusing = false;
   /**
    * Close-up limits (the frog size preview, ?frogscale): a nearer zoom and a lower eye; while set,
@@ -241,6 +244,8 @@ export function createOrbitCamera(r) {
 
   return {
     orbit, pan, zoom, twist, update, ray, focus,
+    /** Is the game gliding the camera (not the player moving it)? */
+    driven: () => focusing,
     /** @param {number} w CSS px @param {number} h CSS px */
     setViewport(w, h) {
       viewW = Math.max(1, w);

@@ -7,6 +7,7 @@
 import { createFrogAgents } from '../src/world/creatures/agents.js';
 import { twoBoneIK, qrot } from '../src/world/creatures/motion.js';
 import { createPerches } from '../src/world/creatures/perches.js';
+import { createPresence } from '../src/world/creatures/presence.js';
 import { padsOf, lilyShape, lilyWind } from '../src/world/growth/lily-pads.js';
 import { hash32 } from '../src/core/rng.js';
 
@@ -173,6 +174,101 @@ export function addFrogTests(test, assert, eq) {
     }
     assert(back >= 0, `still in the water after four minutes: ${agents.list().map((a) => `${a.mode} at z ${a.z.toFixed(2)}`).join(', ')}`);
     return `all three ashore after ${back.toFixed(0)} s`;
+  });
+
+  test(FROGS, 'presence: the camera source reads its speed, edits and stillness; a game glide reads still', async () => {
+    const eye = new Float32Array([0, 2, 5]);
+    let driven = false;
+    const presence = createPresence({ camera: { eye, driven: () => driven } });
+    const step = (/** @type {number} */ vx, /** @type {number} */ s) => { for (let t = 0; t < s; t += 1 / 60) { eye[0] += vx / 60; presence.update(1 / 60); } };
+    step(0, 1);
+    const cam = presence.sources()[0];
+    eq(cam.kind, 'camera', 'the one source');
+    assert(cam.stillS > 0.9, `still for ${cam.stillS} s`);
+    step(3, 0.5);
+    assert(Math.abs(cam.speed - 3) < 0.15, `a 3 m/s swoop reads ${cam.speed.toFixed(2)} m/s`);
+    eq(cam.stillS, 0, 'still while moving');
+    driven = true;
+    step(3, 0.1);
+    eq(cam.speed, 0, 'speed during a game glide');
+    driven = false;
+    presence.edit(1, 2);
+    presence.update(1 / 60);
+    assert(cam.editing && cam.edits.length === 1 && cam.edits[0].x === 1, 'an edit this frame');
+    presence.update(1 / 60);
+    assert(!cam.editing && cam.edits.length === 0, 'the edit is gone the next frame');
+    return 'a swoop at 3 m/s reads 3; a glide reads 0; edits last one frame';
+  });
+
+  test(FROGS, 'a fast swoop startles frogs: into the water, up eyes-up 2 m off, the near ones hush; a slow approach does not', async () => {
+    const r = await recipe();
+    const P = r.presence;
+    const env = { ...bank, hourOfDay: 21 };
+    // A source: the camera's eye, its speed and edits, moved by hand.
+    const src = { id: 'camera', kind: 'camera', pos: [0, 0, 0], speed: 0, editing: false, edits: /** @type {{ x: number, z: number }[]} */ ([]), stillS: 0 };
+    /** @param {any} agents @param {number} s @param {(t: number) => void} [move] */
+    const run = (agents, s, move) => {
+      /** @type {number[]} */ const startled = [], hushed = [];
+      for (let k = 0; k < s * 60; k++) {
+        move?.(k / 60);
+        const o = agents.sense([src], env);
+        startled.push(...o.startled); hushed.push(...o.hushed);
+        agents.advance(1 / 60, env);
+        src.edits = [];
+      }
+      return { startled, hushed };
+    };
+    // Eight frogs along the bank, 0.9 m apart, calling at dusk. The eye swoops down at 4 m/s to
+    // 0.3 m over frog 1 and away.
+    const { agents } = pond(r, 8, 21);
+    run(agents, 20);
+    const before = new Map(agents.list().map((a) => [a.id, { x: a.x, z: a.z }]));
+    const f1 = /** @type {{ x: number, z: number }} */ (before.get(1));
+    src.speed = 4;
+    const swoop = run(agents, 1.4, (t) => { const h = t < 0.7 ? 3 - 4 * t : 0.2 + 4 * (t - 0.7); src.pos = [f1.x, Math.max(0.3, h), f1.z]; });
+    src.speed = 0;
+    src.pos = [f1.x, 30, f1.z];
+    assert(swoop.startled.includes(1), 'frog 1 did not startle at a swoop to 0.3 m');
+    for (const id of swoop.startled) {
+      const b = /** @type {{ x: number, z: number }} */ (before.get(id));
+      assert(Math.hypot(b.x - f1.x, b.z - f1.z) < P.ringM, `frog ${id} startled from outside the ring`);
+    }
+    const hushed = new Set(swoop.hushed);
+    const t0 = agents.now();
+    run(agents, 12);
+    const a1 = /** @type {any} */ (agents.list().find((a) => a.id === 1));
+    eq(a1.mode, 'float', 'frog 1 twelve seconds after the swoop');
+    assert(a1.under < 0.002, 'frog 1 is not up at the surface');
+    const off = Math.hypot(a1.x - f1.x, a1.z - f1.z);
+    assert(off > 1.5 && off < 2.8, `frog 1 came up ${off.toFixed(2)} m off`);
+    const early = agents.calls().filter((c) => c.t > t0 && c.t < t0 + P.hushS[0]);
+    for (const c of early) assert(!hushed.has(c.id) && !swoop.startled.includes(c.id), `frog ${c.id} called while hushed`);
+    run(agents, P.wariS[1] + 60);
+    const back = agents.list().filter((a) => swoop.startled.includes(a.id) && a.mode !== 'swim' && a.mode !== 'float').length;
+    eq(back, swoop.startled.length, 'startled frogs out of the water again');
+    const after = agents.calls().filter((c) => c.t > t0 + P.hushS[1]);
+    assert(after.some((c) => hushed.has(c.id)), 'the hushed frogs never called again');
+
+    // The same frogs, a slow approach: the eye comes down to 0.35 m from frog 1 at 0.3 m/s, and stays.
+    const slow = pond(r, 8, 21).agents;
+    run(slow, 20);
+    const g1 = /** @type {any} */ (slow.list().find((a) => a.id === 1));
+    src.speed = 0.3;
+    const creep = run(slow, 10, (t) => { src.pos = [g1.x, 0.35 + Math.max(0, 3 - 0.3 * t), g1.z]; });
+    src.speed = 0;
+    const stay = run(slow, 20);
+    eq(creep.startled.length + stay.startled.length, 0, 'frogs startled by a slow approach');
+
+    // An edit right beside a frog startles it; one 3 m from every frog does not.
+    const ed = pond(r, 8, 21).agents;
+    run(ed, 5);
+    const h1 = /** @type {any} */ (ed.list().find((a) => a.id === 1));
+    src.pos = [0, 30, 0];
+    const far = run(ed, 1, () => { src.edits = [{ x: h1.x - 3, z: h1.z }]; });
+    eq(far.startled.length, 0, 'frogs startled by an edit 3 m off');
+    const near = run(ed, 0.1, () => { src.edits = [{ x: h1.x, z: h1.z + 1 }]; });
+    assert(near.startled.includes(1), 'an edit 1 m from frog 1 did not startle it');
+    return `the swoop startled ${swoop.startled.length}, hushed ${hushed.size}; frog 1 came up ${off.toFixed(1)} m off and was back ashore; a slow approach to 35 cm startled none`;
   });
 
   test(FROGS, 'the same seed moves the same frogs the same way; frogs that leave slip away', async () => {

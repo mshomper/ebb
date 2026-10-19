@@ -45,6 +45,9 @@ import { stream } from '../../core/rng.js';
  * @property {import('./perches.js').Perch | null} perch  sitting on a lily pad (S6b-3), riding it
  * @property {number} under        how far under the surface it swims (ducking under a pad)
  * @property {string | null} seek   the pad it is swimming over to, to climb on
+ * @property {{ x: number, z: number } | null} flee  startled (S6b-4): diving away to here, to surface eyes-up
+ * @property {number} waryUntil    wary after a startle until then (live only)
+ * @property {number} hushUntil    quiet after a neighbor's startle until then
  * @property {ReturnType<typeof stream>} r
  */
 
@@ -59,7 +62,8 @@ export function createFrogAgents(recipe, seed) {
   /** @type {Map<number, Agent>} */ const agents = new Map();
   /** Every call started (for the chorus timeline): frog id and time. @type {{ id: number, t: number }[]} */
   const calls = [];
-  const stats = { hops: 0, hopM: 0, swims: 0, flicks: 0, perches: 0 };
+  const stats = { hops: 0, hopM: 0, swims: 0, flicks: 0, perches: 0, startles: 0, hushes: 0 };
+  const P = recipe.presence;
   let lastCall = -Infinity, clock = 0, owed = 0, synced = false;
 
   const rand = (/** @type {Agent} */ a, /** @type {number[]} */ r) => r[0] + (r[1] - r[0]) * a.r.next();
@@ -92,7 +96,7 @@ export function createFrogAgents(recipe, seed) {
     const r = stream(seed, 0xf20, f.id);
     return { id: f.id, home: { x: f.x, z: f.z, yaw: f.yaw }, mood: f.mood, x: f.x, z: f.z, y: env.ground(f.x, f.z), yaw: f.yaw,
       mode: 'rest', hop: null, swim: null, sq: 0, sqv: 0, sac: 0, sacv: 0, pulseUntil: -1, tongueT0: -1, flicks: 0, nextFlick: 0,
-      nextAt: clock + 0.5 + 3 * r.next(), until: 0, sink: 0, gone: false, perch: null, under: 0, seek: null, r };
+      nextAt: clock + 0.5 + 3 * r.next(), until: 0, sink: 0, gone: false, perch: null, under: 0, seek: null, flee: null, waryUntil: -1, hushUntil: -1, r };
   }
 
   /** A new frog comes up from the water in front of its home, floats a moment, then hops ashore. @param {Agent} a @param {any} env */
@@ -108,6 +112,7 @@ export function createFrogAgents(recipe, seed) {
     a.mode = 'leave';
     a.until = Infinity;
     a.perch = null;
+    a.flee = null;
     if (a.hop) return;
     const spot = findSpot(a, env, true, a.yaw);
     if (spot) startHop(a, spot, env, true);
@@ -124,10 +129,108 @@ export function createFrogAgents(recipe, seed) {
    */
   function duck(a, env, dt) {
     const over = !!env.pads?.underPad(a.x, a.z, 0.04);
-    const want = over ? M.pads.submergeM * scale : 0;
+    // Startled, it swims away under the surface and comes up eyes-up where it stops.
+    const want = over || a.flee ? M.pads.submergeM * scale : 0;
     a.under += (want - a.under) * Math.min(1, dt * (over ? 20 : 8));
     a.y = floatY(env.water(a.x, a.z).surface) - a.under;
     return over;
+  }
+
+  /**
+   * A soft startle (doc 23): it hops into the water if it is not in already, plop, dives away from the
+   * source and surfaces eyes-up about presence.fleeM away in open water, wary for wariS. Frogs within
+   * hushReachM go quiet for hushS; the chorus comes back from the far side. Never a panic.
+   * @param {Agent} a @param {any} env @param {{ x: number, z: number }} from @returns {number[]} the frogs hushed
+   */
+  function startle(a, env, from) {
+    stats.startles++;
+    const away = Math.atan2(a.x - from.x, a.z - from.z);
+    a.waryUntil = clock + rand(a, P.wariS);
+    a.pulseUntil = -1;
+    a.seek = null;
+    a.flee = fleeSpot(a, env, away);
+    const inWater = a.mode === 'swim' || a.mode === 'float';
+    if (inWater) {
+      env.plop(a.x, a.z);
+      a.mode = 'swim';
+      a.swim = { tx: a.flee?.x ?? a.x, tz: a.flee?.z ?? a.z, kickT0: clock };
+    } else {
+      // From the bank or a pad: a hop into the water (off a pad, the deep water beside it), or with
+      // no water in reach, a hop away along the bank.
+      const w = findSpot(a, env, true, away) ?? plunge(a, env, away) ?? findSpot(a, env, false, away);
+      a.perch = null;
+      a.mode = w && env.water(w.x, w.z).depth > 0.005 ? 'swim' : 'rest';
+      if (a.mode === 'rest') a.flee = null;
+      if (w) startHop(a, w, env, a.mode === 'swim');
+      a.nextAt = clock + rand(a, P.wariS);
+    }
+    /** @type {number[]} */ const hushed = [];
+    for (const o of agents.values()) {
+      if (o === a || o.mode === 'leave' || Math.hypot(o.x - a.x, o.z - a.z) > P.hushReachM) continue;
+      o.hushUntil = clock + rand(o, P.hushS);
+      if (o.mode === 'call') { o.mode = 'rest'; o.pulseUntil = -1; o.nextAt = o.hushUntil; }
+      hushed.push(o.id);
+      stats.hushes++;
+    }
+    return hushed;
+  }
+
+  /**
+   * A hop's length into open water of any depth, as nearly away as there is (off a lily pad).
+   * @param {Agent} a @param {any} env @param {number} away bearing
+   */
+  function plunge(a, env, away) {
+    for (let i = 0; i < 8; i++) {
+      const ang = away + (i % 2 ? 1 : -1) * Math.ceil(i / 2) * 0.5;
+      const d = M.hop.distM[0] * scale * 1.3;
+      const x = a.x + Math.sin(ang) * d, z = a.z + Math.cos(ang) * d;
+      const w = env.water(x, z);
+      if (w.depth < 0.02 || env.pads?.underPad(x, z, 0.05)) continue;
+      return { x, z, y: floatY(w.surface) };
+    }
+    return null;
+  }
+
+  /**
+   * Open water about presence.fleeM away, as nearly away from the source as there is.
+   * @param {Agent} a @param {any} env @param {number} away bearing @returns {{ x: number, z: number } | null}
+   */
+  function fleeSpot(a, env, away) {
+    for (let i = 0; i < 12; i++) {
+      const ang = away + (i % 2 ? 1 : -1) * Math.ceil(i / 2) * 0.35;
+      const d = P.fleeM * (0.85 + 0.3 * a.r.next());
+      const x = a.x + Math.sin(ang) * d, z = a.z + Math.cos(ang) * d;
+      if (env.water(x, z).depth < 0.05 || env.pads?.underPad(x, z, 0.05)) continue;
+      return { x, z };
+    }
+    return null;
+  }
+
+  /**
+   * Each frame: does any presence source startle a frog? Inside its comfort ring and faster than its
+   * calm pace, or an edit right beside it. Trust is 0 until S6c, so every ring is the shy one.
+   * @param {import('./presence.js').PresenceSource[]} sources @param {any} env
+   * @returns {{ startled: number[], hushed: number[] }}
+   */
+  function sense(sources, env) {
+    const trust = 0;
+    const ring = Math.max(P.ringMinM, P.ringM * (1 - P.ringTrustShrink * trust));
+    const calm = P.calmSpeed * (1 + P.calmTrustGain * trust);
+    /** @type {number[]} */ const startled = [], hushed = [];
+    for (const a of agents.values()) {
+      if (a.hop || a.flee || a.mode === 'leave' || clock < a.waryUntil) continue;
+      let from = null;
+      for (const s of sources) {
+        const d = Math.hypot(s.pos[0] - a.x, s.pos[1] - a.y, s.pos[2] - a.z);
+        if (d < ring && s.speed > calm) { from = { x: s.pos[0], z: s.pos[2] }; break; }
+        const e = s.edits.find((p) => Math.hypot(p.x - a.x, p.z - a.z) < P.editReachM);
+        if (e) { from = e; break; }
+      }
+      if (!from) continue;
+      startled.push(a.id);
+      hushed.push(...startle(a, env, from));
+    }
+    return { startled, hushed };
   }
 
   /** Is (x, z) clear of every other frog and its landing? @param {Agent} self @param {number} x @param {number} z */
@@ -231,8 +334,9 @@ export function createFrogAgents(recipe, seed) {
     if (h.toWater) {
       env.plop(a.x, a.z);
       stats.swims++;
-      // Swimming over to a pad: to its rim; otherwise somewhere nearby in the shallows.
-      const tgt = (a.seek && padEdge(a, env, a.seek)) || findSpot(a, env, true, a.yaw);
+      // Startled: away under the water. Swimming over to a pad: to its rim. Otherwise somewhere
+      // nearby in the shallows.
+      const tgt = a.flee || (a.seek && padEdge(a, env, a.seek)) || findSpot(a, env, true, a.yaw);
       if (!tgt) a.seek = null;
       a.mode = 'swim';
       a.swim = { tx: tgt ? tgt.x : a.x, tz: tgt ? tgt.z : a.z, kickT0: clock };
@@ -300,7 +404,9 @@ export function createFrogAgents(recipe, seed) {
     const hour = env.hourOfDay;
     const active = inHours(hour, recipe.ecology.activity.hours);
     const sinceDusk = ((hour - env.duskHour) % 24 + 36) % 24 - 12;
-    const callTime = sinceDusk >= M.moods.callAfterDuskH[0] && sinceDusk < M.moods.callAfterDuskH[1] && a.mood >= M.moods.callFromMood;
+    // Hushed by a neighbor's startle, or wary after its own, it keeps quiet a while.
+    const callTime = sinceDusk >= M.moods.callAfterDuskH[0] && sinceDusk < M.moods.callAfterDuskH[1] && a.mood >= M.moods.callFromMood
+      && clock >= a.hushUntil && clock >= a.waryUntil;
     if (a.perch) {
       // On a lily pad: call or sit a while, then hop off to the bank, or into the water.
       if (callTime && a.r.next() < 0.6) { a.mode = 'call'; a.until = clock + rand(a, M.call.boutS); a.nextAt = a.until; return; }
@@ -384,9 +490,17 @@ export function createFrogAgents(recipe, seed) {
     if (a.mode === 'swim' && a.swim) {
       const S = M.swim;
       const ph = ((clock - a.swim.kickT0) % S.kickS) / S.kickS;
-      const v = S.speedMps * scale * 2 * (1 - ph);
+      // Startled, it dashes away under the water (presence.fleeMps, real speed).
+      const v = (a.flee ? P.fleeMps : S.speedMps * scale) * 2 * (1 - ph);
       const dx = a.swim.tx - a.x, dz = a.swim.tz - a.z, d = Math.hypot(dx, dz);
       if (d < 0.03) {
+        // Away from a startle: up eyes-first, and it floats there, wary, a while.
+        if (a.flee) {
+          a.flee = null;
+          if (!env.pads?.underPad(a.x, a.z, 0.03)) {
+            a.mode = 'float'; a.swim = null; a.until = Math.max(a.waryUntil, clock + 1); a.nextAt = a.until; return;
+          }
+        }
         // At the pad it swam to: climb on (or, if that pad is gone or taken now, carry on).
         if (a.seek) {
           a.seek = null;
@@ -443,6 +557,7 @@ export function createFrogAgents(recipe, seed) {
 
   return {
     sync,
+    sense,
     /**
      * Run the steps owed for `realDt` seconds.
      * @param {number} realDt @param {any} env { ground, water, plop, hourOfDay, duskHour }

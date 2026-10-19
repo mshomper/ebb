@@ -54,11 +54,22 @@
     <div class="status" id="status">Starting</div>
     <div class="status" id="pad-status"></div>
   </div>
+  <div class="card">
+    <h2>Presence</h2>
+    <p class="muted">Each check takes the camera to a frog on the bank, then moves in on it the way a player would. A fast swoop through its 1.5 m ring should startle it: a plop, a dive, eyes up about 2 m away, and the frogs near it hush. Creeping in slowly, or the game gliding the camera there, should not. Keep this tab in front while a check runs.</p>
+    <div class="buttons" id="presence" role="group" aria-label="Presence checks">
+      <button type="button" data-check="swoop">Swoop at a frog</button>
+      <button type="button" data-check="creep">Creep up to a frog</button>
+      <button type="button" data-check="glide">Glide to a frog</button>
+    </div>
+    <div class="status" id="presence-status">Pick a check.</div>
+  </div>
   <div class="tiles">
     <div class="card tile"><b id="t-frogs">-</b><span>frogs: resting, foraging, calling, in the water</span></div>
     <div class="card tile"><b id="t-calls">-</b><span>calls a minute, and the tightest gap between two</span></div>
     <div class="card tile"><b id="t-hops">-</b><span>hops a minute, and the mean hop</span></div>
     <div class="card tile"><b id="t-pads">-</b><span>on lily pads now, and hops onto a pad so far</span></div>
+    <div class="card tile"><b id="t-startles">-</b><span>startles and hushes so far</span></div>
     <div class="card tile"><b id="t-cost">-</b><span>ms a frame: moving and posing (CPU), drawing (GPU)</span></div>
   </div>
   <div class="card">

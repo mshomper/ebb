@@ -38,6 +38,7 @@ import { createCreaturePass } from './render/passes/creatures.js';
 import { bakeBody } from './world/creatures/body-bake.js';
 import { previewSpots } from './world/creatures/preview-spots.js';
 import { createCreatures } from './world/creatures/index.js';
+import { createPresence } from './world/creatures/presence.js';
 import { createMidges } from './world/ecology/midges-live.js';
 import { onAction, history } from './input/actions.js';
 import { attachDesktopInput } from './input/desktop.js';
@@ -223,7 +224,9 @@ export async function startApp(canvas, hooks = {}) {
   const testFrogs = params.has('frogs') ? Math.max(1, Math.min(12, Number.parseInt(params.get('frogs') ?? '1', 10) || 1)) : 0;
   // floraFrame: the time and wind the plants were drawn with this frame (frogs on lily pads ride them).
   /** @type {{ time: number, wind: number, windDir: number } | null} */ let floraFrame = null;
-  const creatures = createCreatures({ world, recipe: frogRecipe, terrain, water, ripples, camera, testFrogs, flora, floraFrame: () => floraFrame });
+  // Presence (doc 23): the camera as the one source creatures react to; edits are reported below.
+  const presence = createPresence({ camera });
+  const creatures = createCreatures({ world, recipe: frogRecipe, terrain, water, ripples, camera, testFrogs, flora, floraFrame: () => floraFrame, presence });
   sim.addSystem(creatures);
   // Midges you can see (src/world/ecology/midges-live.js): swarms from the midge field, after the water.
   const midges = createMidges({ world, recipe: midgeRecipe, budget: tierSettings.boids ?? 4096, ripples,
@@ -395,7 +398,9 @@ export async function startApp(canvas, hooks = {}) {
   /** Each frame while pour or drain is held: the brush source under the pointer. */
   function updatePour() {
     const t = tools();
-    ww.holdBrush(pouring && t.tool === 'water' ? groundAt(pouring.x, pouring.y) : null, t);
+    const p = pouring && t.tool === 'water' ? groundAt(pouring.x, pouring.y) : null;
+    if (p) presence.edit(p[0], p[2]);
+    ww.holdBrush(p, t);
   }
 
   /** Tap with the spring mode: select a placed spring, or place a new one under the cap. @param {number} x @param {number} y */
@@ -410,6 +415,7 @@ export async function startApp(canvas, hooks = {}) {
   /** @param {number} x @param {number} y */
   function plantTap(x, y) {
     const p = groundAt(x, y);
+    if (p) presence.edit(p[0], p[2]);
     if (p && plantTool.tap(tools().plantSpecies ?? 'reeds', p)) updateStore('world', () => world.state);
   }
 
@@ -469,6 +475,7 @@ export async function startApp(canvas, hooks = {}) {
         if (!wantStroke) break;
         const p = groundAt(a.x, a.y);
         if (!p) break;
+        presence.edit(p[0], p[2]);
         if (!stroking) stroking = terrain.beginStroke(currentBrush(), p, a.pressure);
         else terrain.strokeTo(p, a.pressure);
         break;
@@ -541,6 +548,7 @@ export async function startApp(canvas, hooks = {}) {
     const t = clock.advance(realDt);
     camera.setViewport(cssW, cssH);
     camera.update(realDt);
+    presence.update(realDt);
     updateRing();
     // Plant tool rings, and a breathing ring round whatever the journal's tap card names.
     terrainPass.setMarks(plantTool.marks(now, tools().tool === 'plant', getStore('identify')));
@@ -681,6 +689,7 @@ export async function startApp(canvas, hooks = {}) {
     creatures,
     /** The live midge swarms (tools). */
     midges,
+    presence,
     /** The orbit camera, for tools and checks (eye, target, distance). */
     camera,
     /** The island this world started from, and the islands there are (the badge's switch). */

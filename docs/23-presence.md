@@ -140,6 +140,14 @@ Live only, recorded when it matters:
 ### Rung 1, the hand (S6b and S6c)
 
 - **S6b (the frog you see, and presence):** each frog has its comfort ring. A fast swoop through it, or sculpting or pouring right beside it, causes a soft startle. Zooming in slowly is welcome. Nearby frogs hush; the chorus returns from the far side.
+- **As built in S6b-4** (`src/world/creatures/presence.js`, `agents.js` `sense` and `startle`; numbers in `recipes/species/frog.json` presence):
+  - The app updates the source list each frame, right after the camera. The camera's speed is smoothed over about a tenth of a second, and reads zero while `camera.driven()`: a game glide (Show me, a tool's Look at), ended by any input.
+  - Sculpt, pour and plant strokes report where they land, for that frame.
+  - A frog startles when the eye is within its ring (1.5 m, real size, 3D distance) and moving faster than 0.5 m/s, or when an edit lands within 2 m. It hops into the water (off a pad, into the deep water beside it), plops, dives and dashes about 2 m away from the source at 0.3 m/s, and comes up to float eyes-up, wary for 40 to 70 s. Then it swims home. It doesn't call while wary.
+  - Frogs within 4 m of a startled frog hush for 14 to 20 s. The chorus carries on from the frogs further away and comes back as the hush ends.
+  - Live events: `creature:startled` and `creature:hushed`. Nothing is saved; trust stays 0 until S6c.
+  - Finding a frog by watching asks for the eye within 1.5 m again (`find.lookDistM`), as planned, now that the camera can come close.
+  - Checked with the frog lab's Swoop, Creep and Glide buttons. On the real camera code at 60 steps a second: a swoop puts the eye 55 cm from the frog at 6.4 m/s, a 25 s creep stays at 0.14 m/s, and a glide reads 0.03 m/s as it settles.
 - **S6c (feed, trust and name):** Feed is for trust only. Feeding and quiet watching earn trust as small saved events; trust shrinks the ring. A curious frog can be named; a familiar frog sits still for a portrait.
 
 ### Rung 2, the seat (M2)

@@ -5,7 +5,8 @@
 // (bodies.js) and posed by its bones each frame (motion.js: hops by IK, the landing squash, the
 // call, the kick; pose.js: breathing and blinking), with a tongue for its flicks. It makes the plop
 // and rings when one comes at dusk (the journal's sign), says whether a tap landed on a frog, and
-// notices when you watch one closely, which finds it for the journal (`creature:found`). Nothing
+// notices when you watch one closely, which finds it for the journal (`creature:found`). A fast
+// swoop or an edit right beside a frog startles it (presence.js; `creature:startled`). Nothing
 // here changes the world (the frogs live in the tick), except the `?frogs=N` test shortcut. The
 // camera never moves.
 
@@ -33,11 +34,13 @@ const TONGUE_M = 0.01;
  *   water: { sim: { live: any }, sampleLive: (x: number, z: number) => { surface: number, depth: number } },
  *   ripples: { addImpulse: (x: number, z: number, strength?: number, radiusM?: number) => void } | null,
  *   camera: { target: ArrayLike<number>, eye: ArrayLike<number>, distance: number }, testFrogs?: number,
- *   flora?: Record<string, any>, floraFrame?: () => { time: number, wind: number, windDir: number } | null }} opts
+ *   flora?: Record<string, any>, floraFrame?: () => { time: number, wind: number, windDir: number } | null,
+ *   presence?: import('./presence.js').Presence }} opts
  *   recipe: recipes/species/frog.json; testFrogs: `?frogs=N`, for click-testing only: once the island
  *   and the journal are up, N frogs come at once (coarse.js bringFrogs) instead of over days;
  *   flora: the flora recipes (lily pads, reed and iris clumps); floraFrame: the time and wind the
- *   flora pass drew this frame with, so frogs on lily pads move exactly with them
+ *   flora pass drew this frame with, so frogs on lily pads move exactly with them; presence: the
+ *   sources frogs react to (presence.js), updated by the app each frame
  */
 export function createCreatures(opts) {
   const { world, recipe, terrain, water, ripples, camera } = opts;
@@ -218,6 +221,12 @@ export function createCreatures(opts) {
       if (perches && fl) perches.update(fl, world.state?.growth?.plants ?? [], opts.flora ?? {});
       const F = world.state?.creatures?.frogs;
       if (F !== shown) { shown = F; agents.sync(F?.frogs ?? [], !!F?.dormant, env); }
+      // Presence (doc 23): a fast swoop through a frog's ring, or an edit beside it, startles it.
+      if (opts.presence) {
+        const r = agents.sense(opts.presence.sources(), env);
+        for (const id of r.startled) emitDeferred('creature:startled', { species: 'frogs', id });
+        if (r.hushed.length) emitDeferred('creature:hushed', { species: 'frogs', ids: r.hushed });
+      }
       agents.advance(f.realDt, env);
       draw(f.animT);
       // Watching one closely finds it: in the middle of the view, zoomed in, for a moment.

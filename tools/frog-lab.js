@@ -123,6 +123,60 @@ if (!result.ok) {
     $('pad-status').innerHTML = `${DOT_WAIT}<span>No frog is on a pad just now; this is the nearest pad. Try Dusk and wait a minute.</span>`;
   }
 
+  // Presence checks (doc 23): the camera goes to a frog on the bank (a game glide), then moves in
+  // as a player would; a swoop should startle it, a creep or a glide should not.
+  let checking = false;
+  const frame = () => new Promise((r) => requestAnimationFrame(() => r(performance.now())));
+  /** @param {(dt: number, t: number) => boolean} each called every frame until it returns false */
+  async function frames(each) {
+    const start = /** @type {number} */ (await frame());
+    let last = start;
+    for (;;) {
+      const now = /** @type {number} */ (await frame());
+      const dt = (now - last) / 1000;
+      last = now;
+      if (!each(dt, (now - start) / 1000)) return;
+    }
+  }
+  $('presence').addEventListener('click', async (e) => {
+    const b = /** @type {HTMLElement} */ (e.target).closest('button');
+    if (!b || checking) return;
+    const kind = b.dataset.check;
+    const frog = creatures.agents.list().find((/** @type {any} */ a) => !a.hop && !a.perch && a.mode !== 'swim' && a.mode !== 'float' && a.mode !== 'leave');
+    const say = (/** @type {string} */ icon, /** @type {string} */ text) => { $('presence-status').innerHTML = `${icon}<span>${text}</span>`; };
+    if (!frog) { say(DOT_WAIT, 'No frog is on the bank just now. Try again in a moment.'); return; }
+    checking = true;
+    const name = `frog ${frog.id}`;
+    say(DOT_WAIT, `Going to ${name}.`);
+    dispatch({ type: 'camera.focus', x: frog.x, z: frog.z, distance: 4, pitchDeg: 35 });
+    await frames((dt, t) => app.camera.driven() && t < 8);
+    await frames((dt, t) => t < 1);
+    const before = creatures.agents.stats().startles;
+    say(DOT_WAIT, kind === 'swoop' ? `Swooping at ${name}.` : kind === 'creep' ? `Creeping up to ${name} (about 30 s).` : `Gliding to ${name}.`);
+    // The camera's distance follows a set path in time, whatever the frame rate.
+    let was = 4;
+    const zoomTo = (/** @type {number} */ d) => { dispatch({ type: 'camera.zoom', factor: d / was }); was = d; };
+    if (kind === 'swoop') {
+      // Down to 40 cm in 0.6 s and back out: the eye moves several meters a second.
+      await frames((dt, t) => { zoomTo(t < 0.6 ? 4 * 0.1 ** (t / 0.6) : 0.4 * 10 ** (Math.min(0.6, t - 0.6) / 0.6)); return t < 1.2; });
+    } else if (kind === 'creep') {
+      // Down to 40 cm over 25 s (inside the ring, well under the calm 0.5 m/s), then a still look.
+      await frames((dt, t) => { zoomTo(4 * 0.1 ** (Math.min(25, t) / 25)); return t < 32; });
+    } else {
+      dispatch({ type: 'camera.focus', x: frog.x, z: frog.z, distance: 0.4, pitchDeg: 25 });
+      await frames((dt, t) => t < 7);
+    }
+    await frames((dt, t) => t < 0.5);
+    const startled = creatures.agents.stats().startles - before;
+    const want = kind === 'swoop';
+    const ok = want === startled > 0;
+    const what = startled ? `${startled} frog${startled > 1 ? 's' : ''} startled` : 'no frog startled';
+    const label = kind === 'swoop' ? 'Swoop' : kind === 'creep' ? 'Creep' : 'Glide';
+    const should = want ? 'A swoop should startle it.' : `A ${kind} should leave it be.`;
+    say(ok ? ICON_CHECK : ICON_WARN, ok ? `${label}: ${what}, as it should.` : `${label}: ${what}. ${should}`);
+    checking = false;
+  });
+
   const started = performance.now();
   let looked = false;
   setInterval(() => {
@@ -145,6 +199,7 @@ if (!result.ok) {
     const minutes = Math.max(1 / 60, (performance.now() - started) / 60000);
     $('t-hops').textContent = `${(st.hops / minutes).toFixed(1)} · ${st.hops ? ((st.hopM / st.hops) * 100).toFixed(0) + ' cm' : '-'}`;
     $('t-cost').textContent = `${cpuMs.toFixed(2)} · ${gpuMs.toFixed(2)}`;
+    $('t-startles').textContent = `${st.startles} · ${st.hushes}`;
     const onPads = list.filter((/** @type {any} */ a) => a.perch).length;
     $('t-pads').textContent = `${onPads} · ${st.perches}`;
     if (!creatures.perches) $('pad-status').innerHTML = `${DOT_WAIT}<span>This island has no lily pads.</span>`;
