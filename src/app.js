@@ -231,7 +231,8 @@ export async function startApp(canvas, hooks = {}) {
   // Midges you can see (src/world/ecology/midges-live.js): swarms from the midge field, after the water.
   const midges = createMidges({ world, recipe: midgeRecipe, budget: tierSettings.boids ?? 4096, ripples,
     ground: (x, z) => terrain.sampleHeight(x, z), water: (x, z) => water.sampleLive(x, z),
-    wind: () => ({ strength: weatherAt(world.state?.weather, clock.display(), seasonsRecipe).wind, dir: world.state?.weather?.today?.windDir ?? 0 }) });
+    wind: () => ({ strength: weatherAt(world.state?.weather, clock.display(), seasonsRecipe).wind, dir: world.state?.weather?.today?.windDir ?? 0 }),
+    rain: (hoursAgo) => weatherAt(world.state?.weather, clock.display() - hoursAgo * clock.SECONDS_PER_HOUR, seasonsRecipe).rain });
   sim.addSystem(midges);
   // `?frogscale` (ahead of S6): real-size frogs from the species recipe around the pond, and a
   // camera that may come close, to judge creature size on the island (src/ui/frog-scale.js).

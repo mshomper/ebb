@@ -1,20 +1,22 @@
 // @ts-check
 // Live midges (S6b-5, docs 11, 12): the swarms you see, from the midge field the hourly tick keeps
 // (midges.js). Swarms sit over the field's densest patches (midge-paths.js pickSwarms), many at
-// dusk, a few by day, almost none at night, fewer in wind, the total capped by the quality tier;
+// dusk, a few by day, almost none at night, fewer in wind, none in a downpour (thicker on the still
+// hours after rain), the total capped by the quality tier;
 // each swarm's centre bobs and drifts downwind, and now and then one midge dips and rings the water.
 // Drawn by src/render/passes/midges.js. Live look only: nothing here changes the world.
 
 import { display, SECONDS_PER_HOUR, HOURS_PER_DAY } from '../../core/clock.js';
 import { createMidgePass } from '../../render/passes/midges.js';
-import { pickSwarms, swarmShareNow, orbit, dipNow } from './midge-paths.js';
+import { pickSwarms, swarmShareNow, afterRainNow, orbit, dipNow } from './midge-paths.js';
 
 /**
  * @param {{ world: { state: any }, recipe: any, budget: number,
  *   ground: (x: number, z: number) => number, water: (x: number, z: number) => { surface: number, depth: number },
- *   wind: () => { strength: number, dir: number },
+ *   wind: () => { strength: number, dir: number }, rain?: (hoursAgo: number) => number,
  *   ripples: { addImpulse: (x: number, z: number, strength?: number, radiusM?: number) => void } | null }} opts
- *   recipe: recipes/species/midge.json; budget: midges the quality tier allows (its boids)
+ *   recipe: recipes/species/midge.json; budget: midges the quality tier allows (its boids); rain: the
+ *   weather's rain 0..1 at display time, or that many game hours before
  */
 export function createMidges(opts) {
   const { world, recipe, budget, ripples } = opts;
@@ -47,7 +49,8 @@ export function createMidges(opts) {
       const hour = h - Math.floor(h / HOURS_PER_DAY) * HOURS_PER_DAY;
       const dayLength = world.state?.seasons?.dayLengthH ?? 12;
       const wind = opts.wind();
-      const share = swarmShareNow(hour, 12 + dayLength / 2, dayLength, wind.strength, S.density);
+      const rainAt = opts.rain ?? (() => 0);
+      const share = swarmShareNow(hour, 12 + dayLength / 2, dayLength, wind.strength, S.density, rainAt(0), afterRainNow(rainAt, S.density.rain));
       let counts = swarms.map((s) => Math.round(S.perSwarm * s.share * share));
       const sum = counts.reduce((a, b) => a + b, 0);
       if (sum > budget) counts = counts.map((c) => Math.floor((c * budget) / sum));

@@ -38,10 +38,14 @@ export function pickSwarms(field, S) {
 
 /**
  * How many of a full swarm are out at this hour: many at dusk (duskFromH to duskToH hours after
- * sunset), almost none at night, a few by day, easing over an hour between; fewer in wind.
+ * sunset), almost none at night, a few by day, easing over an hour between; fewer in wind. In
+ * rain midges stop swarming and shelter in the plants: drizzle thins them (from rain.thinFrom), a
+ * downpour clears them (by rain.goneAt); on the still, damp hours after rain they come out thicker
+ * (afterRain 0..1, how recent the rain was, times rain.afterBoost).
  * @param {number} hourOfDay @param {number} sunsetH @param {number} dayLengthH @param {number} wind 0..1 @param {any} D swarm.density
+ * @param {number} [rain] 0..1 now @param {number} [afterRain] 0..1
  */
-export function swarmShareNow(hourOfDay, sunsetH, dayLengthH, wind, D) {
+export function swarmShareNow(hourOfDay, sunsetH, dayLengthH, wind, D, rain = 0, afterRain = 0) {
   const s = ((hourOfDay - sunsetH) % 24 + 24) % 24;   // hours after sunset, 0..24
   const night = 24 - dayLengthH;                        // sunrise, in hours after sunset
   const ease = (/** @type {number} */ a, /** @type {number} */ b, /** @type {number} */ t) => a + (b - a) * t;
@@ -53,7 +57,23 @@ export function swarmShareNow(hourOfDay, sunsetH, dayLengthH, wind, D) {
   else if (s < 24 + D.duskFromH - 1) f = D.day;
   else if (s < 24 + D.duskFromH) f = ease(D.day, D.dusk, s - (24 + D.duskFromH - 1));
   else f = D.dusk;
-  return f * (1 - D.windDamp * Math.min(1, Math.max(0, wind)));
+  const R = D.rain;
+  let wet = 1;
+  if (R) {
+    const k = Math.min(1, Math.max(0, (rain - R.thinFrom) / (R.goneAt - R.thinFrom)));
+    wet = (1 - k * k * (3 - 2 * k)) * (1 + R.afterBoost * Math.min(1, Math.max(0, afterRain)));
+  }
+  return f * (1 - D.windDamp * Math.min(1, Math.max(0, wind))) * wet;
+}
+
+/**
+ * How recent the last rain was, 0..1: 1 just after it stopped, fading to 0 by afterH game hours;
+ * 0 while it still rains. @param {(hoursAgo: number) => number} rainAt the rain 0..1 that long ago @param {any} R swarm.density.rain
+ */
+export function afterRainNow(rainAt, R) {
+  if (!R || rainAt(0) > R.thinFrom) return 0;
+  for (let h = 0.5; h <= R.afterH; h += 0.5) if (rainAt(h) > R.thinFrom) return 1 - (h - 0.5) / R.afterH;
+  return 0;
 }
 
 /**
