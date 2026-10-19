@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ebb creature studio</title>
+<link rel="icon" href="../brand/ebb-favicon.svg" type="image/svg+xml">
+<style>
+  @font-face { font-family: 'Nunito'; src: url('../src/vendor/fonts/nunito-latin-600-normal.woff2') format('woff2'); font-weight: 600; }
+  @font-face { font-family: 'Nunito'; src: url('../src/vendor/fonts/nunito-latin-800-normal.woff2') format('woff2'); font-weight: 800; }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; max-width: 100%; overflow-x: hidden; }
+  body { background: #F4EEE4; color: #1E2624; font: 600 17px/1.45 'Nunito', system-ui, sans-serif; padding: 16px; overflow-wrap: anywhere; }
+  main { max-width: 1180px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+  h1 { font-size: 24px; font-weight: 800; margin: 0; }
+  h2 { font-size: 19px; font-weight: 800; margin: 0 0 4px; }
+  .muted { color: #4A5551; font-size: 16px; margin: 0 0 6px; }
+  a { color: #4a6a47; }
+  .layout { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+  @media (max-width: 860px) { .layout { grid-template-columns: minmax(0, 1fr); } }
+  .stagecol { position: sticky; top: 16px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+  @media (max-width: 860px) { .stagecol { position: static; } }
+  #stage { width: 100%; aspect-ratio: 4 / 3; display: block; border-radius: 14px; background: #EDE6D8; touch-action: none; cursor: grab; }
+  .card { background: #FBF7F0; border: 1px solid #E3D9C9; border-radius: 14px; padding: 14px 16px; min-width: 0; }
+  .buttons { display: flex; flex-wrap: wrap; gap: 8px; }
+  button, select { font: 800 16px/1.2 'Nunito', system-ui, sans-serif; color: #1E2624; background: #FFFDF8; border: 1px solid #CFC3AF; border-radius: 12px; padding: 10px 14px; cursor: pointer; min-height: 46px; }
+  .buttons button { flex: 1 1 110px; }
+  button[aria-pressed="true"] { background: #4a6a47; color: #FBF7F0; border-color: #4a6a47; }
+  button.primary { background: #4a6a47; color: #FBF7F0; border-color: #4a6a47; }
+  .specimen { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .specimen label { font-weight: 800; }
+  .specimen select { flex: 1 1 200px; min-width: 0; }
+  #groups { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+  .row { display: grid; gap: 4px; padding: 6px 0; border-top: 1px solid #EFE6D6; }
+  .row:first-of-type { border-top: 0; }
+  .lbl { display: flex; justify-content: space-between; gap: 10px; }
+  .val { color: #4A5551; font-variant-numeric: tabular-nums; }
+  .row.moved .lbl > span:first-child::after { content: ''; display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: #B9832F; margin-left: 8px; vertical-align: 2px; }
+  input[type="range"] { width: 100%; accent-color: #4a6a47; min-height: 28px; }
+  input[type="color"] { width: 100%; height: 40px; border: 1px solid #CFC3AF; border-radius: 10px; background: #FFFDF8; padding: 2px; }
+  #status { display: flex; gap: 8px; align-items: flex-start; font-size: 16px; }
+  #status .dot { flex: none; width: 10px; height: 10px; border-radius: 50%; background: #B9832F; margin-top: 7px; }
+  #info, #saved { font-size: 16px; color: #4A5551; margin: 0; }
+</style>
+</head>
+<body>
+<main>
+  <h1>ebb creature studio</h1>
+  <p class="muted">The common frog on a paused stage, baked and posed exactly as the game does it. Move a slider and the frog changes at once. A changed slider gets an orange dot. Your changes stay in this browser until you save them to the recipe file (only the numbers you moved change) or undo them. Drag the frog to turn it, scroll to come closer. The grid is 1 cm, darker every 5 cm, at real size. <a href="./">All tools</a></p>
+  <div class="layout">
+    <div class="stagecol">
+      <canvas id="stage" aria-label="The frog on the stage"></canvas>
+      <div class="card">
+        <div class="buttons" id="views" role="group" aria-label="Views">
+          <button type="button" data-view="three-quarter" aria-pressed="true">Three-quarter</button>
+          <button type="button" data-view="front" aria-pressed="false">Front</button>
+          <button type="button" data-view="side" aria-pressed="false">Side</button>
+          <button type="button" data-view="behind" aria-pressed="false">Behind</button>
+          <button type="button" data-view="top" aria-pressed="false">Top</button>
+        </div>
+      </div>
+      <div class="card" style="display:flex;flex-direction:column;gap:10px">
+        <div class="specimen">
+          <label for="specimen">Specimen</label>
+          <select id="specimen">
+            <option value="-1">The recipe body</option>
+            <option value="0">Variant 1</option><option value="1">Variant 2</option><option value="2">Variant 3</option><option value="3">Variant 4</option>
+            <option value="4">Variant 5</option><option value="5">Variant 6</option><option value="6">Variant 7</option><option value="7">Variant 8</option>
+          </select>
+        </div>
+        <div class="buttons">
+          <button type="button" id="idle" aria-pressed="true">Idle motion</button>
+          <button type="button" id="call" aria-pressed="false">Call every 3 s</button>
+          <button type="button" id="game-size" aria-pressed="false">Game size</button>
+        </div>
+        <p id="info">Baking.</p>
+      </div>
+      <div class="card" style="display:flex;flex-direction:column;gap:10px">
+        <div id="status">Starting.</div>
+        <div class="buttons">
+          <button type="button" id="save" class="primary">Save to repo</button>
+          <button type="button" id="download">Download</button>
+          <button type="button" id="undo">Undo changes</button>
+        </div>
+        <p id="saved">Save to repo asks once for your ebb folder (the one with recipes in it), then writes recipes/species/frog.json. Download saves the same file to your downloads.</p>
+      </div>
+    </div>
+    <div id="groups"></div>
+  </div>
+</main>
+<script src="./boot-guard.js"></script>
+<script type="importmap">{ "imports": {
+  "wgpu-matrix": "../src/vendor/wgpu-matrix/wgpu-matrix.module.js" } }</script>
+<script type="module" src="./creature-studio.js"></script>
+</body>
+</html>

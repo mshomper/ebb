@@ -161,6 +161,20 @@ Desktop: a panel docked on the right, 440 px wide, the world still visible and l
 - **Save to repo:** on desktop Chrome and Edge, Matt connects his local `ebb` folder once (File System Access API); saving then writes `recipes/<type>/<id>.json` directly, bumps `version`, and pretty-prints with stable key order so GitHub Desktop shows a clean diff. **Save as** downloads the file anywhere (the fallback on browsers without folder access, including phones). **Load** opens a file or accepts a dropped file and validates it.
 - **New recipe:** "duplicate" makes a copy under a new id and adds it to `recipes/index.json`.
 
+**The creature studio page, as built** (October 2026, after S6, before S7; the creature studio plan's first step; `tools/creature-studio.html`). The frog on a paused stage, ahead of the tuning panel:
+- **The stage:** the game's own bake on the worker pool, posed by the frog's bones with idle breathing, blinks and a call every 3 s. A 1 cm grid, darker every 5 cm, at real size. Set views (three-quarter, front, side, behind, top) or drag to turn; scroll or pinch to come closer. A Game size switch draws the frog at its in-game size.
+- **The sliders:** the look half only.
+  - the seven proportions;
+  - back, belly and blotch colors, and the blotches' cover and fineness;
+  - the iris and its flecks, the pupil, the wet glint;
+  - variation between frogs, size difference, drawn size;
+  - the idle motion.
+  The life half (needs, arrival, presence, trust) stays in the file, since it changes how the game plays.
+- **While you drag:** a coarse 3.3 mm bake right away, then the full 1.1 mm one when you stop. Specimen picks the recipe body or any of the eight variants.
+- **Unsaved edits** stay in the browser (localStorage) until saved or undone, and each moved slider gets a dot.
+- **Save to repo:** asks once for the ebb folder, then writes `recipes/species/frog.json` through `tools/recipe-text.js`. It changes only the values that moved, in place, so the file's hand-made layout and notes stay and GitHub Desktop shows just those lines. **Download** gives the same file.
+- **Not done yet:** it does not bump `version` or validate against a schema (no species schema yet). The player look layer and the tuning panel come in M2, as planned.
+
 ### Hand-made glTF hero creatures (later)
 
 Not in v1. A species recipe's body can switch generator:

@@ -76,6 +76,8 @@ Open these at `/tools/` while running locally. They are for checks that run on y
 | `palette-lab.html` | Tune a palette with a before and after divider, an eyedropper and sliders |
 | `texture-lab.html`, `rock-lab.html` | Prepare the ground photo scans; compare rock tilings and scans |
 | `sketch-lab.html` | Every journal field sketch at each stage: pencil, ink and wash |
+| `ecology-lab.html`, `frog-lab.html` | Frogs arriving over game days on two islands; frogs live at any hour, with the chorus, lily pads and presence checks |
+| `creature-studio.html` | The frog on a stage with sliders for its shape, colors, eyes and idle motion; Save to repo writes only the numbers you moved into `recipes/species/frog.json` |
 | `terrain-brush-bench.html` | Island building, brush strokes and settling, timed against their budgets |
 
 ## What's here

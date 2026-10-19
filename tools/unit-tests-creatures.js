@@ -8,6 +8,7 @@ import { bakeVariant, bodyFor, VERTEX_BYTES, MAX_BONES } from '../src/world/crea
 import { FROG_BONES, FROG_SHAPE_KEYS, shapeFrogPrims } from '../src/world/creatures/rigs/frog.js';
 import { poseSkeleton } from '../src/world/creatures/pose.js';
 import { shoreline } from './unit-tests-growth.js';
+import { valueSpans, changedPaths, patchText } from './recipe-text.js';
 
 const CREATURES = 'creatures';
 
@@ -73,6 +74,25 @@ export function addCreatureTests(test, assert, eq) {
       if (s !== 255) throw new Error(`vertex ${v} weights sum to ${s}`);
     }
     return `${a.count} vertices at ${cellM * 1000} mm, ${a.bones.length} bones`;
+  });
+
+  test(CREATURES, 'the creature studio saves only the numbers you moved, in the recipe file\'s own layout', async () => {
+    const text = await fetch('../recipes/species/frog.json').then((x) => x.text());
+    const base = JSON.parse(text);
+    eq(patchText(text, base, changedPaths(base, base)), text, 'nothing moved: the file as it was');
+    const next = JSON.parse(text);
+    next.body.shape.headSize = 1.08;
+    next.body.albedo.back = [0.1, 0.17, 0.08];
+    next.motion.breath.hz = 1.3;
+    const paths = changedPaths(base, next);
+    eq(paths.join(','), 'body.albedo.back,body.shape.headSize,motion.breath.hz', 'changed paths');
+    const out = patchText(text, next, paths);
+    eq(JSON.stringify(JSON.parse(out)), JSON.stringify(next), 'the saved file reads back as the edited recipe');
+    const a = text.split('\n'), b = out.split('\n');
+    eq(a.length, b.length, 'lines in the file');
+    const moved = a.filter((l, i) => l !== b[i]).length;
+    eq(moved, 3, 'lines changed for three edits');
+    return `three edits change three lines; ${valueSpans(text).size} values found in the file`;
   });
 
   test(CREATURES, 'a still skeleton draws the body as baked; a blink moves only the eyes', async () => {
