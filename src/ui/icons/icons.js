@@ -384,6 +384,13 @@ const ICONS = {
     <circle cx="14.4" cy="7.4" r="1.5" fill="currentColor" stroke="none"/>
     <circle cx="9.6" cy="16.6" r="1.4" opacity="0.6"/>`,
 
+  // An open eye: brings the hidden HUD buttons back on a touch screen.
+  eye: `
+    <path ${ACCENT} d="M2.5 12C4.6 8.2 8 6 12 6S19.4 8.2 21.5 12C19.4 15.8 16 18 12 18S4.6 15.8 2.5 12Z"/>
+    <path d="M2.5 12C4.6 8.2 8 6 12 6S19.4 8.2 21.5 12C19.4 15.8 16 18 12 18S4.6 15.8 2.5 12Z"/>
+    <circle cx="12" cy="12" r="3"/>
+    <circle cx="12" cy="12" r="0.9" fill="currentColor" stroke="none"/>`,
+
   // Time-flow states, drawn beside the time icon: one, two or three lit pips (with the unlit
   // ones as faint rings) for 1x, 2x, 4x; two rest bars for pause.
   'flow-1': `

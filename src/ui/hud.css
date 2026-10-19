@@ -1,0 +1,135 @@
+/* The HUD frame (src/ui/hud.js) and the clock dial (src/ui/clock-dial.js), docs/15 "The HUD".
+   The layer holds every corner button; dimming, hiding and the reveal fade the layer as a whole,
+   so each button keeps its own fades. Only opacity changes (docs/15 performance). */
+
+:root {
+  --hud-dim: 0.4;
+  --hud-fade: 0.6s;
+  --hud-edge: 12px;
+  --hud-dial: 64px;
+}
+@media (pointer: coarse) {
+  :root { --hud-dial: 60px; }
+}
+
+#ebb-hud {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  pointer-events: none;
+  transition: opacity var(--hud-fade) ease;
+}
+body.ebb-hud-dim #ebb-hud { opacity: var(--hud-dim); }
+body.ebb-hud-hidden #ebb-hud,
+body.ebb-revealing #ebb-hud { opacity: 0; }
+/* H hides the island notes too, for a clean view; the reveal's notes stay. */
+body.ebb-hud-hidden:not(.ebb-revealing) .ebb-notes { visibility: hidden; }
+
+/* --- the faint eye that brings hidden buttons back on a touch screen --- */
+.ebb-hud-show {
+  position: fixed;
+  top: max(var(--hud-edge), env(safe-area-inset-top));
+  right: max(var(--hud-edge), env(safe-area-inset-right));
+  z-index: 10;
+  display: none;
+}
+@media (pointer: coarse) {
+  body.ebb-hud-hidden:not(.ebb-revealing) .ebb-hud-show { display: block; }
+}
+.ebb-hud-show__btn {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 52px;
+  height: 52px;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(244, 238, 228, 0.12);
+  border-radius: 16px;
+  background: rgba(30, 38, 36, 0.4);
+  color: var(--ui-cream);
+  opacity: 0.6;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+.ebb-hud-show__btn .icon { width: 26px; height: 26px; display: block; }
+.ebb-hud-show__btn:focus-visible { outline: 2px solid var(--wordmark-dark); outline-offset: 2px; opacity: 1; }
+
+/* --- the clock dial, top left --- */
+.ebb-dial {
+  position: fixed;
+  top: max(var(--hud-edge), env(safe-area-inset-top));
+  left: max(var(--hud-edge), env(safe-area-inset-left));
+  z-index: 10;
+  pointer-events: none;
+}
+.ebb-dial__btn {
+  appearance: none;
+  -webkit-appearance: none;
+  pointer-events: auto;
+  width: var(--hud-dial);
+  height: var(--hud-dial);
+  margin: 0;
+  padding: 3px;
+  display: block;
+  border: 1px solid rgba(244, 238, 228, 0.12);
+  border-radius: 50%;
+  background: rgba(30, 38, 36, 0.72);
+  box-shadow: 0 6px 24px rgba(10, 14, 13, 0.28);
+  color: var(--ui-cream);
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+@media (pointer: fine) {
+  .ebb-dial__btn { -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
+}
+.ebb-dial__btn:focus-visible { outline: 2px solid var(--wordmark-dark); outline-offset: 2px; }
+.ebb-dial__svg { width: 100%; height: 100%; display: block; }
+
+/* The line beside the dial (clear of the badge under it): on hover or focus, and for a few
+   seconds after a tap. */
+.ebb-dial__card {
+  position: absolute;
+  top: 50%;
+  left: calc(100% + 8px);
+  width: max-content;
+  max-width: min(320px, calc(100vw - 2 * var(--hud-edge) - var(--hud-dial) - 8px));
+  margin: 0;
+  padding: 8px 14px;
+  border: 1px solid rgba(244, 238, 228, 0.12);
+  border-radius: 14px;
+  background: rgba(30, 38, 36, 0.82);
+  color: var(--ui-cream);
+  font-family: var(--font-ui);
+  font-weight: 600;
+  font-size: var(--text-body);
+  line-height: 1.35;
+  overflow-wrap: break-word;
+  opacity: 0;
+  visibility: hidden;
+  transform: translate(-4px, -50%);
+  transition: opacity 200ms ease, transform 200ms ease, visibility 0s linear 200ms;
+}
+.ebb-dial.is-open .ebb-dial__card,
+.ebb-dial__btn:focus-visible + .ebb-dial__card {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(-50%);
+  transition: opacity 200ms ease, transform 200ms ease, visibility 0s;
+}
+@media (hover: hover) {
+  .ebb-dial__btn:hover + .ebb-dial__card {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(-50%);
+    transition: opacity 200ms ease, transform 200ms ease, visibility 0s;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #ebb-hud { transition: none; }
+  .ebb-dial__card, .ebb-dial.is-open .ebb-dial__card { transform: translateY(-50%); transition: visibility 0s; }
+}
