@@ -2,7 +2,7 @@
 // Turns an anchor piece and a seed into a performance (doc 24, "Realizing a piece"): the form path
 // (optional sections rolled, or the short form), a key from the piece's allowed keys, the
 // melody's octave, the instruments, the accompaniment (the piece's own written voice where there
-// is one, otherwise voiced from the chord symbols by voicing.js and played in a pattern), the
+// is one, otherwise voiced from the chord symbols by voicing.js and played in textures, see texture.js), the
 // tempo and its rubato, human timing and velocity, and legato pedaling. The same piece, context
 // and seed always give the same performance; a new seed gives a new performance of the same
 // melody and harmony. Pure: no audio here, so the lab can draw a performance before playing it.
@@ -13,6 +13,7 @@
 import { parseAbc, TICKS_PER_QUARTER } from './score.js';
 import { parseChord } from './chords.js';
 import { voiceProgression } from './voicing.js';
+import { planTextures, playTexture, describeTextures } from './texture.js';
 import { stream, hash32 } from '../../core/rng.js';
 
 const Q = TICKS_PER_QUARTER;
@@ -41,7 +42,8 @@ const FLAT_KEYS = new Set(['F', 'Bb', 'Eb', 'Ab', 'Db', 'Dm', 'Gm', 'Cm', 'Fm', 
  * @property {number} transpose     semitones from the piece as written
  * @property {string} key
  * @property {string[]} path        section names in order
- * @property {string} pattern       the accompaniment pattern chosen
+ * @property {string} pattern       the left-hand textures played, described ("mostly struck, some arpeggio")
+ * @property {string[]} textures     the texture of each generated chord, in order
  * @property {Record<string, string>} instruments  voice to instrument
  * @property {PNote[]} notes
  * @property {{t: number, down: boolean, instrument: string}[]} pedal
@@ -193,54 +195,50 @@ export function realize(piece, ctx, recipes) {
   const choose = (list) => { const ok = list.filter((x) => avail.has(x)); return ok.length > 1 && r.next() < 0.3 ? ok[1] : ok[0]; };
   const melInst = choose(piece.palette.melody) ?? 'piano';
   const accList = piece.palette.accomp.filter((/** @type {string} */ x) => avail.has(x));
-  let pattern = pick(piece.variation?.patterns ?? ['sustained']);
-  const usePad = accList.includes('pad') && (pattern === 'pad-only' || r.next() < 0.5);
+  const usePad = accList.includes('pad') && r.next() < 0.5;
   const accInst = accList.find((/** @type {string} */ x) => x !== 'pad') ?? (usePad ? null : melInst);
 
-  // Tempo, then a thinner pattern if the day's note density ceiling would be exceeded.
+  // Tempo; the day's note density ceiling decides how fast an arpeggio may move, or whether at all.
   const bpm = (piece.tempo[0] + r.next() * (piece.tempo[1] - piece.tempo[0])) * (ctx.dayColor.tempo ?? 1);
   const baseTps = (bpm * beatTicks) / 60;
   const melRate = mel.length / Math.max(1, totalTicks / baseTps);
-  if (pattern === 'broken-8ths' && melRate + (2 * baseTps) / beatTicks * (compound ? 3 : 2) > (ctx.dayColor.density ?? 3)) pattern = 'slow-roll';
+  const ceiling = ctx.dayColor.density ?? 3;
+  // Arpeggio notes are soft and held under the pedal, so they count densityWeight each toward the
+  // ceiling: eighths by day, slower steps toward evening and night, none if even those are too busy.
+  const arpW = R.textures.arpeggio.densityWeight;
+  const arpStep = (compound ? [Q / 2, beatTicks] : [Q / 2, Q, 2 * Q]).find((st) => (arpW * baseTps) / st <= ceiling) ?? 0;
+  const fits = (/** @type {string} */ t) => (t === 'arpeggio' ? arpStep > 0 : t === 'broken' || t === 'offbeat-dyads' ? melRate + baseTps / (Q / 2) <= ceiling : true);
 
-  // Generated accompaniment where a section has no written one.
+  // Generated accompaniment where a section has no written one: a texture per chord, voiced by
+  // the texture's voicing style with the smallest motion from chord to chord.
   const writtenAcc = new Set(raw.filter((n) => n.voice === 'acc').map((n) => n.section));
   /** @type {{tick: number, dur: number, midi: number, voice: string, offsetMs: number, velOffset: number, instrument: string}[]} */
   const gen = [];
   const needs = chords.filter((c) => c.chord && !c.chord.none && !writtenAcc.has(c.section));
-  const styleName = R.patterns[pattern]?.voicing ?? 'open';
-  const style = V.byStyle[styleName];
+  const T = R.textures;
+  /** @type {string[]} */
+  let used = [];
   if (needs.length && (accInst || usePad)) {
-    const rules = needs.map((c) => {
+    const pw = piece.variation?.textures;
+    const weights = pw && !Array.isArray(pw) ? pw : Array.isArray(pw) ? only(T.weights, pw) : T.weights;
+    const marked = needs.map((c, i) => ({ section: c.section, first: i === 0 || needs[i - 1].section !== c.section, last: i === needs.length - 1 || needs[i + 1].section !== c.section }));
+    used = accInst ? planTextures(marked, path, weights, T, r, fits) : needs.map(() => 'struck');
+    const rules = needs.map((c, i) => {
       const under = raw.filter((n) => n.voice === 'mel' && n.tick < c.end && n.tick + n.dur > c.tick).map((n) => n.midi);
-      return { ...style, w: V.weights, leadingPc: (keyPc(key) + 11) % 12, melodyFloor: under.length ? Math.min(...under) : undefined };
+      return { ...V.byStyle[T.voicing[used[i]] ?? 'open'], w: V.weights, leadingPc: (keyPc(key) + 11) % 12, melodyFloor: under.length ? Math.min(...under) : undefined };
     });
     const shifted = needs.map((c) => ({ root: (c.chord.root + shift + 120) % 12, intervals: c.chord.intervals, bass: c.chord.bass === null || c.chord.bass === undefined ? null : (c.chord.bass + shift + 120) % 12 }));
     const voicings = voiceProgression(shifted, rules);
     needs.forEach((c, i) => {
       const v = voicings[i];
-      const len = c.end - c.tick;
       const bass = v[0], upper = v.slice(1);
-      if (usePad) for (const m of upper) gen.push({ tick: c.tick, dur: len, midi: m - (R.pad.octaveDown ?? 0), voice: 'pad', offsetMs: 0, velOffset: -R.dynamics.padOffset, instrument: 'pad' });
-      if (!accInst || pattern === 'pad-only') return;
-      const push = (/** @type {number} */ tick, /** @type {number} */ dur, /** @type {number} */ midi, /** @type {string} */ voice, /** @type {number} */ offsetMs = 0, /** @type {number} */ vo = 0) =>
+      if (usePad) for (const m of upper) gen.push({ tick: c.tick, dur: c.end - c.tick, midi: m - (R.pad.octaveDown ?? 0), voice: 'pad', offsetMs: 0, velOffset: -R.dynamics.padOffset, instrument: 'pad' });
+      if (!accInst) return;
+      const push = (/** @type {number} */ tick, /** @type {number} */ dur, /** @type {number} */ midi, /** @type {string} */ voice, offsetMs = 0, vo = 0) =>
         gen.push({ tick, dur, midi, voice, offsetMs, velOffset: vo - R.dynamics.accompanimentOffset, instrument: accInst });
-      const hold = Math.max(Q / 4, len - Q / 8);
-      if (pattern === 'sustained') { push(c.tick, hold, bass, 'bass'); for (const m of upper) push(c.tick, hold, m, 'acc'); }
-      else if (pattern === 'slow-roll') { push(c.tick, hold, bass, 'bass'); upper.forEach((m, k) => push(c.tick, hold, m, 'acc', (k + 1) * (R.patterns['slow-roll'].stepMs ?? 90), -2)); }
-      else if (pattern === 'broken-8ths') {
-        push(c.tick, hold, bass, 'bass');
-        const order = upper.length > 2 ? [0, 1, 2, 1] : [0, 1];
-        let k = 0;
-        for (let t = c.tick + Q / 2; t < c.end; t += Q / 2) { push(t, (Q / 2) * 0.95, upper[Math.min(order[k % order.length], upper.length - 1)], 'acc', 0, -6); k++; }
-      } else if (pattern === 'open-fifth-offbeat') {
-        push(c.tick, hold, bass, 'bass');
-        if (upper.length) push(c.tick, hold, upper[0], 'acc', 0, -4);
-        const dyad = upper.slice(-2);
-        const offs = compound ? [Q / 2, Q / 2 + beatTicks] : Array.from({ length: Math.round(barTicks / beatTicks) }, (_, b) => b * beatTicks + beatTicks / 2);
-        for (let bt = c.tick; bt < c.end; bt += barTicks) for (const o of offs) if (bt + o < c.end) for (const m of dyad) push(bt + o, Q / 2, m, 'acc', 0, -8);
-      }
+      playTexture(used[i], { tick: c.tick, end: c.end, bass, upper, Q, beatTicks, barTicks, compound, arpStep }, push, T, r);
     });
+    if (!accInst) used = [];
   }
 
   // Tempo map: per section a gentle arch and a ritardando into its end, fermatas held.
@@ -283,6 +281,15 @@ export function realize(piece, ctx, recipes) {
     return R.phraseArch * Math.sin(Math.PI * Math.min(1, (tick - s.start) / Math.max(1, s.end - s.start)));
   };
   const jit = (/** @type {number} */ a) => (r.next() * 2 - 1) * a;
+  // Notes one hand strikes together share their timing wiggle, so a chord stays a chord.
+  /** @type {Map<string, number>} */
+  const handJit = new Map();
+  const handT = (/** @type {string} */ hand, /** @type {number} */ tick) => {
+    const k = `${hand}:${tick}`;
+    let v = handJit.get(k);
+    if (v === undefined) handJit.set(k, (v = jit(R.humanize.jitterMs / 1000)));
+    return v;
+  };
   /** @type {Record<string, string>} */
   const instruments = { mel: melInst };
   /** @type {PNote[]} */
@@ -297,7 +304,7 @@ export function realize(piece, ctx, recipes) {
       ? base + archOf(n.tick) + (down ? 3 : 0) + jit(R.humanize.velJitter)
       : base - (n.voice === 'counter' ? R.dynamics.counterOffset : R.dynamics.accompanimentOffset) + archOf(n.tick) * 0.5 + jit(R.humanize.velJitter);
     const lead = n.voice === 'mel' && n.tick % beatTicks === 0 ? -R.humanize.melodyLeadMs / 1000 : 0;
-    const t0 = time(n.tick) + lead + jit(R.humanize.jitterMs / 1000);
+    const t0 = time(n.tick) + lead + handT(n.voice === 'mel' ? 'right' : 'left', n.tick);
     const inst = n.voice === 'mel' ? melInst : accInst ?? melInst;
     if (n.voice !== 'mel') instruments[n.voice] = inst;
     notes.push({ t: Math.max(0, t0), dur: n.grace ? 0.07 : Math.max(0.05, time(n.tick + n.dur) - time(n.tick) - 0.02), midi: n.midi, vel: clampVel(vel), voice: n.voice, instrument: inst, tick: n.tick });
@@ -306,7 +313,7 @@ export function realize(piece, ctx, recipes) {
   for (const g of gen) {
     const d = raw.filter((n) => n.voice === 'mel' && n.dyn && n.tick <= g.tick).pop()?.dyn ?? null;
     const vel = dynVel(d) + g.velOffset + archOf(g.tick) * 0.5 + jit(R.humanize.velJitter);
-    const t0 = time(g.tick) + g.offsetMs / 1000 + jit(R.humanize.jitterMs / 1000);
+    const t0 = time(g.tick) + g.offsetMs / 1000 + handT(g.voice === 'pad' ? 'pad' : 'left', g.tick);
     instruments[g.voice] = g.instrument;
     notes.push({ t: Math.max(0, t0), dur: Math.max(0.05, time(g.tick + g.dur) - time(g.tick) - 0.02), midi: g.midi, vel: clampVel(vel), voice: g.voice, instrument: g.instrument, tick: g.tick });
   }
@@ -314,7 +321,7 @@ export function realize(piece, ctx, recipes) {
   const lastTick = Math.max(...notes.map((n) => n.tick));
   if (r.next() < (piece.variation?.ornament ?? 0)) {
     const fin = notes.filter((n) => n.tick === lastTick).sort((a, b) => a.midi - b.midi);
-    fin.forEach((n, k) => { n.t += (k * R.roll.rollMs) / 1000; });
+    fin.forEach((n, k) => { n.t += (k * R.textures.roll.stepMs[1]) / 1000; });
   }
   notes.sort((a, b) => a.t - b.t || a.midi - b.midi);
 
@@ -355,7 +362,8 @@ export function realize(piece, ctx, recipes) {
     transpose: shift,
     key,
     path,
-    pattern: usePad && pattern !== 'pad-only' ? `${pattern} with pad` : pattern,
+    pattern: `${describeTextures(used)}${usePad ? (accInst ? ' with pad' : 'pad only') : ''}`.replace(/^written(pad only)$/, '$1'),
+    textures: used,
     instruments,
     notes,
     pedal: pedal.sort((a, b) => a.t - b.t),
@@ -366,6 +374,11 @@ export function realize(piece, ctx, recipes) {
     range: { low: Math.min(...all), high: Math.max(...all) },
     ranges,
   };
+}
+
+/** @param {Record<string, number>} w @param {string[]} keep */
+function only(w, keep) {
+  return Object.fromEntries(Object.entries(w).filter(([k]) => keep.includes(k)));
 }
 
 /** @param {number} v */

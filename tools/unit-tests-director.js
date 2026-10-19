@@ -146,6 +146,44 @@ export function addDirectorTests(test, assert, eq) {
     }
   });
 
+  test(R, 'the left hand is mostly struck, with arpeggios and a few rolls', async () => {
+    const { piece, recipes } = await load();
+    /** @type {Record<string, number>} */
+    const n = {};
+    let all = 0;
+    for (let seed = 1; seed <= 40; seed++) {
+      const p = realize(piece, { seed, dayColor: { register: 67, density: 2, tempo: 1, voices: 5 }, available: ['piano'] }, recipes);
+      for (const t of p.textures) { n[t] = (n[t] ?? 0) + 1; all++; }
+    }
+    assert((n.struck ?? 0) / all > 0.5, `struck ${n.struck}/${all}`);
+    assert((n.arpeggio ?? 0) / all > 0.1, `arpeggio ${n.arpeggio}/${all}`);
+    assert((n.roll ?? 0) > 0, 'some rolls');
+    assert(((n.broken ?? 0) + (n['offbeat-dyads'] ?? 0)) / all < 0.03, 'choppy figures stay rare');
+  });
+
+  test(R, 'a struck chord sounds together and an arpeggio holds to the chord change', async () => {
+    const { piece, recipes } = await load();
+    for (let seed = 1; seed <= 20; seed++) {
+      const p = realize(piece, { seed, dayColor: { register: 67, density: 2, tempo: 1, voices: 5 }, available: ['piano'] }, recipes);
+      /** @type {Map<number, any[]>} */
+      const at = new Map();
+      for (const x of p.notes) if (x.voice !== 'mel') at.set(x.tick, [...(at.get(x.tick) ?? []), x]);
+      for (const [, xs] of at) {
+        const ts = xs.map((/** @type {any} */ x) => x.t);
+        const spread = Math.max(...ts) - Math.min(...ts);
+        // Together (shared timing) or a quick roll: never the old slow 90 ms steps.
+        assert(spread < 1e-6 || spread <= ((xs.length - 1) * 30) / 1000 + 1e-6, `seed ${seed}: spread ${spread}`);
+      }
+      const arps = p.notes.filter((/** @type {any} */ x) => x.voice === 'acc' && !at.get(x.tick)?.some((/** @type {any} */ y) => y.voice === 'bass'));
+      // Held until the chord changes (the pedal lifts), give or take the release gap.
+      const lifts = p.pedal.filter((/** @type {any} */ e) => !e.down).map((/** @type {any} */ e) => e.t);
+      for (const a of arps.filter((/** @type {any} */ x) => p.textures.length && x.dur < 0.15)) {
+        const change = lifts.find((/** @type {number} */ t) => t > a.t + 0.01);
+        assert(change === undefined || a.t + a.dur > change - 0.15, `seed ${seed}: a short arpeggio note ends ${(change - a.t - a.dur).toFixed(2)} s before the chord change`);
+      }
+    }
+  });
+
   test('music: perform', 'plays to the end with no bar listener (no stall on the first bar)', async () => {
     const ctx = /** @type {any} */ ({ currentTime: 0 });
     let on = 0;

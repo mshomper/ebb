@@ -65,13 +65,7 @@
    12
   ],
   "paraphrase": 0,
-  "ornament": 0.15,
-  "patterns": [
-   "slow-roll",
-   "sustained",
-   "broken-8ths",
-   "open-fifth-offbeat"
-  ]
+  "ornament": 0.15
  },
  "motifs": [],
  "notes": "A short test of the engine, not a piece for the game: a spring morning in D, rising to F sharp in bar 4 and settling on a suspension (D to C sharp over A); A' answers lower and closes on the third; the optional B darkens through a borrowed G minor 6 over D (B flat sinking to A); the coda closes plagally. Phrases of 5, 6, 5 and 3 bars. Section A has a written left hand; the rest let the engine voice the chord symbols. Quotes nothing known: plain stepwise diatonic lines over common modal progressions."

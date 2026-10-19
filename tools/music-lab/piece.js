@@ -143,7 +143,7 @@ export async function initPiece(host, env) {
     $('pc-facts').innerHTML = [
       [p.path.join(' '), 'form played'], [p.key, 'key'], [`${Math.round(p.bpm)}`, 'beats a minute'],
       [p.pattern.replace(/-/g, ' '), 'accompaniment'], [`${p.durationS.toFixed(0)} s`, 'length'], [inst, 'instruments'],
-    ].map(([b, s], i) => `<div class="tile"${i === 5 ? ' style="grid-column:1/-1"' : ''}><b style="font-size:19px">${b}</b><span>${s}</span></div>`).join('');
+    ].map(([b, s], i) => `<div class="tile"${i === 3 || i === 5 ? ' style="grid-column:1/-1"' : ''}><b style="font-size:19px">${b}</b><span>${s}</span></div>`).join('');
     $('pc-about').textContent = piece().notes ?? '';
     save();
   }
