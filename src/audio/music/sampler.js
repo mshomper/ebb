@@ -48,6 +48,7 @@ export function pickFormat() {
  * @param {any} instrument    recipes/music/instruments/<id>.json
  * @param {any} settings      samplerSettingsFor(recipes/music/sampler.json, id)
  * @param {{tier?: 'desktop'|'mobile', format?: 'ogg'|'m4a', pedalNoise?: any}} [opts]
+ *   tier: 'mobile' plays the recipe's lighter `mobile` set when it has one (and its own pedal sound);
  *   pedalNoise: the recipe of the pedal mechanism recordings (music/instruments/pedal-knight),
  *   played on each press and lift when the settings' pedalNoise is on
  */
@@ -76,13 +77,19 @@ export function createSampler(ctx, output, instrument, settings, opts = {}) {
   const pedalBufs = { down: [], up: [] };
   let pedalTurn = 0;
 
-  const sets = instrument.sets ?? {};
+  // Phones play the instrument's lighter set when its recipe has one (doc 24, Performance budget):
+  // its own zones, layer count, folder and pedal sound stand in for the full ones. On the desktop,
+  // or for a recipe without one, this is the recipe itself.
+  const inst = tier === 'mobile' && instrument.mobile ? { ...instrument, ...instrument.mobile } : instrument;
+  /** The pedal mechanism's recordings: the lighter set's own on phones, otherwise the ones passed in. */
+  const pedalRecipe = inst.pedalNoise ?? opts.pedalNoise;
+  const sets = inst.sets ?? {};
   /** @param {string} name */
   const zonesOf = (name) => /** @type {any[]} */ (sets[name]?.zones ?? []);
   /** @param {string} name */
   const zoneMidis = (name) => zonesOf(name).map((z) => z.midi);
   /** How many loudness layers the instrument was recorded with (zones may lack some). */
-  const layerCount = instrument.layers ?? Math.max(1, ...Object.values(sets).flatMap((st) => (/** @type {any} */ (st).zones ?? []).map((/** @type {any} */ z) => (z.layers ?? []).length)));
+  const layerCount = inst.layers ?? Math.max(1, ...Object.values(sets).flatMap((st) => (/** @type {any} */ (st).zones ?? []).map((/** @type {any} */ z) => (z.layers ?? []).length)));
   /** @type {Map<string, number>} round-robin turn per zone and layer */
   const turns = new Map();
   // Seeded choices for the 'pick' blend (never Math.random): the same performance always picks
@@ -112,7 +119,7 @@ export function createSampler(ctx, output, instrument, settings, opts = {}) {
 
   /** @param {string} file */
   function urlOf(file) {
-    return new URL(`${instrument.root}${file}.${format}`, REPO_ROOT).href;
+    return new URL(`${inst.root}${file}.${format}`, REPO_ROOT).href;
   }
 
   /**
@@ -195,7 +202,7 @@ export function createSampler(ctx, output, instrument, settings, opts = {}) {
       for (const i of needed) for (const L of zones[i].layers ?? [zones[i]]) if (L.file) jobs.push([L.file, zones[i].midi]);
     }
     if (sets.pedal?.files) for (const f of sets.pedal.files) jobs.push([f.file, 60]);
-    const pn = opts.pedalNoise;
+    const pn = pedalRecipe;
     if (pn?.sets?.pedal?.files && !pedalBufs.down.length && !pedalBufs.up.length) {
       await Promise.all(pn.sets.pedal.files.map(async (/** @type {any} */ f) => {
         if (f.kind !== 'down' && f.kind !== 'up') return;
@@ -485,7 +492,7 @@ export function createSampler(ctx, output, instrument, settings, opts = {}) {
     await Promise.all(Array.from({ length: Math.min(8, todo.length) }, async () => {
       while (k < todo.length) { const f = todo[k++]; await loadFile(f, midiOf.get(f) ?? 60); }
     }));
-    if (opts.pedalNoise && !pedalBufs.down.length && !pedalBufs.up.length) await load({ low: 0, high: -1 });
+    if (pedalRecipe && !pedalBufs.down.length && !pedalBufs.up.length) await load({ low: 0, high: -1 });
   }
 
   /**
@@ -548,7 +555,8 @@ export function createSampler(ctx, output, instrument, settings, opts = {}) {
       const i = nearestZone(midi, z.map((x) => x.midi));
       return i >= 0 && (z[i].layers ?? [z[i]]).every((/** @type {any} */ L) => buffers.has(L.file));
     },
-    instrument,
+    /** The recipe this sampler plays: the lighter set merged in on phones. */
+    instrument: inst,
   };
 }
 
