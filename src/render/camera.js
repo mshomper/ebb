@@ -258,6 +258,21 @@ export function createOrbitCamera(r) {
         cur.distance *= k;
       }
     },
+    /** Where the camera is headed, for saving the view (doc 18). */
+    pose: () => ({ target: [goal.target[0], goal.target[1], goal.target[2]], yaw: goal.yaw, pitch: goal.pitch, distance: goal.distance }),
+    /**
+     * Come back to a saved view at once (no glide, and no portrait widening on top of it).
+     * @param {{ target: number[], yaw: number, pitch: number, distance: number }} p
+     */
+    setPose(p) {
+      if (!p || !Array.isArray(p.target) || ![p.yaw, p.pitch, p.distance, ...p.target].every(Number.isFinite)) return;
+      vec3.set(p.target[0], p.target[1], p.target[2], goal.target);
+      vec3.copy(goal.target, cur.target);
+      cur.yaw = goal.yaw = p.yaw;
+      cur.pitch = goal.pitch = clamp(p.pitch, r.pitchHardDeg[0] * DEG, r.pitchHardDeg[1] * DEG);
+      cur.distance = goal.distance = Math.max(p.distance, 0.05);
+      fitted = true;
+    },
     /** @param {(x: number, z: number) => number} fn */
     setGroundProbe(fn) { groundProbe = fn; },
     /**

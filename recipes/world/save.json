@@ -1,0 +1,6 @@
+{
+  "_doc": "Autosave (docs/18, src/save/autosave.js). debounceS: wait after an edit before saving; minIntervalS: routine saves at most this often (hiding or closing the tab always saves at once); generationsKept: saved copies kept per island, newest first.",
+  "debounceS": 5,
+  "minIntervalS": 10,
+  "generationsKept": 3
+}

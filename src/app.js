@@ -44,6 +44,8 @@ import { createMidges } from './world/ecology/midges-live.js';
 import { onAction, history } from './input/actions.js';
 import { attachDesktopInput } from './input/desktop.js';
 import { attachTouchInput } from './input/touch.js';
+import { beginSave, TEST_PARAMS } from './save/autosave.js';
+import { loadPrefs, keepPrefs } from './save/prefs.js';
 
 /**
  * @typedef {{ ok: true, tier: string, tierReasons: string[], adapterInfo: GPUAdapterInfo | null, features: string[], stop: () => void,
@@ -52,7 +54,8 @@ import { attachTouchInput } from './input/touch.js';
  *   growth: import('./world/growth/index.js').Growth, world: { state: any, env: any },
  *   palette: { list: () => { id: string, name: string }[], current: () => any, apply: (json: any, fadeS?: number) => void },
  *   pickColor: (cssX: number, cssY: number) => Promise<string> }
- *   | { ok: false, reason: 'missing'|'no-adapter'|'device-failed' }} StartResult
+ *   | { ok: false, reason: 'missing'|'no-adapter'|'device-failed' }
+ *   | { ok: false, reason: 'elsewhere', takeOver: () => void }} StartResult
  */
 
 /** Palettes available in the slice (docs/05): Moonlight and Clear sight join later. */
@@ -60,7 +63,8 @@ const PALETTES = [{ id: 'dusk', name: 'Dusk' }, { id: 'meadow-morning', name: 'M
 
 /**
  * @param {HTMLCanvasElement} canvas
- * @param {{ onDeviceLost?: (rebuilding: boolean) => void }} [hooks]
+ * @param {{ onDeviceLost?: (rebuilding: boolean) => void, save?: boolean, build?: string }} [hooks]
+ *   save: keep this island in the device's save (only the game asks; tool pages run unsaved)
  * @returns {Promise<StartResult>}
  */
 export async function startApp(canvas, hooks = {}) {
@@ -69,7 +73,7 @@ export async function startApp(canvas, hooks = {}) {
   const gpu = result.gpu;
 
   const params = new URLSearchParams(location.search);
-  const seed = Number.parseInt(params.get('seed') ?? '1', 10) >>> 0;
+  let seed = Number.parseInt(params.get('seed') ?? '1', 10) >>> 0;
   updateStore('meta', (m) => { m.seed = seed; });
 
   // `tier` and `tierSettings` may change once, if the startup probe steps ultra down to high.
@@ -96,13 +100,36 @@ export async function startApp(canvas, hooks = {}) {
   updateStore('settings', (s) => { s.quality = tier; });
   const rb = terrainRecipe.brush;
 
+  // Saving (doc 18, src/save): each island keeps its own save; a test link runs unsaved.
+  const save = await beginSave({ enabled: !!hooks.save, islandId: island.id, test: TEST_PARAMS.some((k) => params.has(k)) });
+  if (save.status === 'elsewhere') return { ok: false, reason: 'elsewhere', takeOver: save.takeOver };
+  // What came back from the save, applied once (a GPU rebuild finds it all in the store already).
+  const back = save.restored;
+  if (back) {
+    seed = back.meta.seed >>> 0;
+    updateStore('meta', (m) => { m.seed = seed; });
+    clock.reset(back.meta.worldT);
+    clock.setFlow(clock.FLOWS.includes(back.meta.flow) ? back.meta.flow : 1);
+    updateStore('world', () => back.world);
+    if (back.journal) updateStore('journal', () => back.journal);
+    if (back.water) updateStore('water', () => back.water);
+  }
+  // Device settings (src/save/prefs.js): kept on this device, never in the island.
+  const prefs = loadPrefs();
+  updateStore('settings', (s) => { for (const k of ['textSize', 'motion', 'audio']) if (prefs[k] !== undefined) s[k] = prefs[k]; });
+  keepPrefs();
+
   // Tool state for the tool bar (ui/tools.js reads it; actions below change it).
   updateStore('tools', (t) => t ?? {
     tool: null, sculptMode: 'raise', paintLayer: 'grass', waterMode: 'pour', springRate: 'brook', plantSpecies: 'reeds',
     size: rb.radiusDefault, strength: rb.strengthDefault, sizeRange: rb.radiusRange,
   });
-  // Unlocks (docs 12, 13): placing springs is the dragonflies' gift; `?sandbox` opens it early.
-  updateStore('unlocks', (u) => ({ ...(u ?? {}), springs: !!u?.springs || params.has('sandbox') }));
+  // Unlocks (docs 12, 13): placing springs is the dragonflies' gift; `?sandbox` opens it early for
+  // this visit only (`earned` holds what was given, and is what the save keeps).
+  updateStore('unlocks', (u) => {
+    const earned = u?.earned ?? back?.unlocks ?? {};
+    return { earned, ...earned, springs: !!earned.springs || params.has('sandbox') };
+  });
   // `?weather=clear|cloud|rain|mist` previews a weather look (as the sky lab does); the world's
   // own weather record is untouched.
   const weatherPreview = params.get('weather');
@@ -116,6 +143,7 @@ export async function startApp(canvas, hooks = {}) {
 
   const terrain = await createTerrain(gpu, { seed: subSeed(seed, 'terrain'), recipe: terrainRecipe, land: landRecipe });
   history.setApplier('terrain', (cmd, dir) => terrain.applyTiles(dir === 'undo' ? cmd.before : cmd.after));
+  if (back) terrain.restoreChunks(back.chunks);   // before the water reads the ground
   // The world clock and the shared hourly tick (weather, seasons). A new world starts mid-morning.
   // `?day=N` starts a new world N game days in (7 per season: 8 is early summer), to see later seasons sooner.
   // `?frogs=N` (testing) starts on spring day 4 unless a day is given, after the frogs' winter sleep.
@@ -157,6 +185,7 @@ export async function startApp(canvas, hooks = {}) {
   });
 
   const camera = createOrbitCamera(camRecipe);
+  if (back?.view) camera.setPose(back.view);   // the view you left
   // The ground, or the water's surface where it stands higher, so a close-up never dips under a pond.
   camera.setGroundProbe((x, z) => Math.max(terrain.sampleHeight(x, z), water.sim.live ? water.sampleLive(x, z).surface : -Infinity));
   // The view, for the UI (store slice `view`): the ground point in the middle of the screen, and
@@ -184,10 +213,8 @@ export async function startApp(canvas, hooks = {}) {
 
   // Look: bloom, then the palette LUT in the tonemap (physical light, painted last; docs/05).
   const baker = await createPaletteBaker(gpu.device);
-  // The palette is a device setting (doc 18): remembered in this browser until saves arrive in S7.
-  let savedPalette = null;
-  try { savedPalette = localStorage.getItem('ebb.palette'); } catch { /* storage blocked: use the default */ }
-  const wanted = savedPalette ?? getStore('settings')?.palette;
+  // The palette is a device setting (doc 18, src/save/prefs.js).
+  const wanted = prefs.palette ?? getStore('settings')?.palette;
   const startPalette = palettes[wanted] ? wanted : PALETTES[0].id;
   updateStore('settings', (s) => { s.palette = startPalette; });
   baker.setPalette(palettes[startPalette], { fadeS: 0 });
@@ -500,7 +527,6 @@ export async function startApp(canvas, hooks = {}) {
         if (!palettes[a.id]) break;
         baker.setPalette(palettes[a.id]);
         updateStore('settings', (s) => { s.palette = a.id; });
-        try { localStorage.setItem('ebb.palette', a.id); } catch { /* storage blocked: the choice lasts this visit */ }
         emitDeferred('palette:changed', { id: a.id });
         break;
     }
@@ -649,6 +675,16 @@ export async function startApp(canvas, hooks = {}) {
   }
   raf = requestAnimationFrame(frame);
 
+  // Autosave from here on (src/save/autosave.js): what the island is now, whenever it asks.
+  save.start({
+    recipe: await loadRecipe('world/save'),
+    parts: () => ({
+      build: hooks.build ?? 'dev', seed, island: island.id, worldT: clock.worldT(), flow: clock.flow(),
+      world: world.state, journal: getStore('journal'), water: getStore('water'), unlocks: getStore('unlocks')?.earned ?? {},
+      view: camera.pose(), looks: getStore('looks') ?? {}, chunks: getStore('chunks'), mirror: getStore('terrainLive')?.mirror ?? null,
+    }),
+  });
+
   let stopped = false;
   function stop() {
     if (stopped) return;
@@ -700,6 +736,8 @@ export async function startApp(canvas, hooks = {}) {
     camera,
     /** The island this world started from, and the islands there are (the badge's switch). */
     island: { current: island, list: islands },
+    /** This island's save (the badge says whether it is kept, and can start it again). */
+    save: { status: save.status, startAgain: save.startAgain, takeOver: save.takeOver },
     /** Palette access for the palette lab (tools/palette-lab.html). */
     palette: {
       list: () => PALETTES.slice(),

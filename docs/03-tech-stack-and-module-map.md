@@ -37,7 +37,7 @@ src/
   input/  actions.js desktop.js touch.js
   ui/     hud.js tools.js journal.js tuning-panel.js settings.js icons/
   audio/  mixer.js ambience.js voices.js
-  save/   autosave.js world-file.js migrate.js
+  save/   autosave.js world-file.js migrate.js sections.js idb.js prefs.js crc32.js
   vendor/ wgpu-matrix/ fonts/ (Nunito, Fraunces woff2) gltf/ (later)
 recipes/  index.json quality-tiers.json species/ flora/ palettes/ land/ world/ schemas/
 assets/   audio/ (beds/ oneshots/ tools/ CREDITS.md)

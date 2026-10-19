@@ -10,7 +10,7 @@ import {
   createMirror, createTextures, uploadRect, syncFloat,
   sampleHeight, sampleNormal, sampleMaterial, raycast,
 } from './heightfield.js';
-import { createChunkTable, buildBases } from './chunks.js';
+import { createChunkTable, buildBases, pasteChunk } from './chunks.js';
 import { createBrushGpu, circleRect, frameAmount, applyStampCpu, LAYER_INDEX } from './brushes.js';
 import { createErosionGpu, encodeReadback } from './erosion.js';
 import { tilesOf, copyTiles, pasteTiles, TILE_BYTES } from './undo.js';
@@ -262,6 +262,20 @@ export async function createTerrain(gpu, opts) {
       markEdited(r);
       emitDeferred('terrain:stroke-ended', { rect: worldRect(r) });
       return true;
+    },
+
+    /**
+     * Put a save's edited chunks back (doc 18): heights and paint exactly as saved, over the regrown
+     * land. Untouched chunks keep the land regrown from the seed.
+     * @param {import('../../save/sections.js').SavedChunk[]} saved
+     */
+    restoreChunks(saved) {
+      for (const c of saved) {
+        if (!c.edited || !c.heightQ || !c.material || chunks.state(c.cx, c.cz) !== 'open') continue;
+        pasteChunk(mirror, c.cx, c.cz, c.heightQ, c.material);
+        uploadRect(device, tex, mirror, { x: chunkFirstCell(c.cx), y: chunkFirstCell(c.cz), w: CHUNK_CELLS, h: CHUNK_CELLS });
+        updateStore('chunks', (all) => { all[chunkKey(c.cx, c.cz)].edited = true; });
+      }
     },
 
     /** Brush ring drawn by the terrain shader. @param {{ x?: number, z?: number, radius?: number, visible: boolean }} r */

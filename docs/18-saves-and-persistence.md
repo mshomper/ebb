@@ -16,6 +16,12 @@
 - **One writer per island:** the Web Locks API ensures only one tab tends a given island.
 - **Device settings stay on the device** (store slice `settings`, written to the IndexedDB `prefs` store), never in world files.
 - **Vertical slice:** autosave of seed, clock, terrain edits, water features, flora, ecology, frogs; per-chunk sections from day one (the slice has 9 chunks); load with catch-up; three generations; `.ebb` export and import. Seasonal snapshots and the recovery screen follow.
+- **As built in S7a** (`src/save/`):
+  - One save slot per island id, so each island in the badge's list keeps its own save. Slots are kept per page folder (`slotFor` in `autosave.js`): the live site (`/ebb/`) and each branch preview (`/ebb/preview/<branch>/`) share one web address and one database, so each keeps its own islands and never loads or overwrites another's. The local server's root keeps plain island ids. Only the game (`main.js`) saves. Tool pages and test links (`?seed`, `?day`, `?frogs`) run unsaved test islands; `?sandbox` unlocks for the visit only, and the save keeps earned unlocks alone.
+  - The `world` section is the hourly tick's state exactly as the tick and the Plant tool left it, derived frog maps included (small once packed), so a loaded island is bit-for-bit the saved one.
+  - Further sections: `view` (the camera, outside the checksum) and `looks` (empty until the creature studio).
+  - Routine saves are packed into `.ebb` bytes in a worker. The save made as the tab hides is written to IndexedDB as it is (`codec: 'raw'`), at once, because the page may close before a worker answers; the next routine save replaces it.
+  - The Saves menu on the build badge stands in for Settings > Saves until S8.
 
 ## How it works
 
@@ -42,7 +48,7 @@ Per-chunk sections, one record per open chunk, keyed `cx,cz`:
 | Field | Contents | Size per chunk (compressed) |
 |---|---|---|
 | state | `open` (locked chunks are not stored), landform recipe id and seed, `edited` flag | tiny |
-| heightQ | only if edited: `Uint16Array` 128 × 128 (08's 16-bit heights), stored as a wrap-around difference from the regrown landform so untouched areas are zeros | 2 to 15 KB |
+| heightQ | only if edited: `Uint16Array` 128 × 128 (08's 16-bit heights), stored as they are (not as a difference from the regrown landform, so retuning a land recipe never scrambles an edited chunk; decided in S7a) | 10 to 40 KB |
 | material, damp | only if edited: `Uint8Array` 128 × 128 each | 1 to 6 KB |
 | flora | large plants in this chunk (species, position, seed, age, size, stage); small-plant cover per species and moss and lichen cover as 32 × 32 `Uint8Array`s | 2 to 8 KB |
 | ecology | moisture, fertility, litter, light history, swarm densities as 32 × 32 `Uint8Array`s | 2 to 5 KB |
@@ -194,7 +200,7 @@ Events (past tense, per 03): emitted `save:written` (generation, bytes, ms, chun
 ## Algorithms and shaders
 
 - CRC-32 (IEEE polynomial) per section and for the whole file; the header also carries the ecology checksum used by `tools/determinism.html`.
-- Gzip via `CompressionStream('gzip')` and `DecompressionStream`. Edited chunk heights are stored as the wrap-around difference from the regrown landform (mostly zeros), then row-delta encoded before compression.
+- Gzip via `CompressionStream('gzip')` and `DecompressionStream`. Edited chunk heights are stored as they are; a row-delta step before compression can come later if files grow.
 - Encoding runs in a worker from `src/core/workers.js`; transfers typed arrays without copying.
 
 ## Tuning knobs
