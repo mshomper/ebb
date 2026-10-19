@@ -1,0 +1,101 @@
+{
+  "type": "audio",
+  "id": "procedural",
+  "version": 1,
+  "note": "Small island sounds made in code (doc 25, src/audio/procedural.js). They sit under the recordings, so one-shots peak near -18 dBFS at gainDb 0 (peakDb). Ranges written [a, b] are picked at random between a and b from the caller's seeded stream; a jitter j multiplies a value by a random factor between e^-j and e^j. seed: the fixed seed for the shared noise buffers. noise: shotSeconds of mono white noise that one-shots read from at a random point; bedSeconds of stereo pink noise for the beds (a non-integer length so loops never line up, channels independent, its seam crossfaded over seamMs, scaled to bedRms); a second pink loop of lowSeconds at a low sample rate lowRate (Hz) feeds the layers that sit under a few kHz (the wind body, the lap wavelets and wash), so their repeat is far apart for little memory; controlSeconds of a slow random curve with a knot every controlKnotS, used for the beds' wandering. beds: fadeInS when a bed starts, fadeOutS default on stop, lookAheadS how far ahead the lap and trickle schedule their events, and every bed noise source drifts in pitch by up to driftCents over about driftPeriodS so the loop never lines up with itself. drop: a bubble of radius sizeMm (mm) rings at the Minnaert frequency 3.26 / r Hz (1 mm is about 3.3 kHz, 2 mm about 1.6 kHz) and decays at the bubble's natural damping times dampingScale (decayJitter varies it); its pitch rises by a fraction in rise over glideMs, the way real drops do; attackMs rounds the start; click is the impact, a tiny bandpassed noise tick at db under the tone that falls 60 dB in decayMs; second is the chance of a smaller following bubble, its delay, its size as a fraction of the first and its level. plop: a frog-sized entry of sizeCm; bubbles gives the cluster (count, a main bubble of mainRadiusMmPerCm mm per cm of body, others at otherSize of it spread over spreadMs, each at db under the main), with the same bubble fields as drop; splash is a short bandpassed noise body (hz falls and decayMs grows with size); spray is a few small drops falling back after delayMs. knock: modal synthesis, a few sine resonances (modes: hz, relative amp, decayMs to fall 60 dB) struck by strikes (count, spacingMs between them, shape fall, swell or random, fall the level ratio of each next strike) with a contact noise per strike (bandpass hz and q, db under the modes, decayMs); freqJitter and decayJitter vary each knock, strikeJitter the pitch of each strike; db trims the kind. Kinds: reed-green is a soft low creak (several swelling strikes on damped low modes), stalk-dry crisp and quick, stalk-bare a hollow pitched tube (odd overtones), seed-rattle a burst of tiny dry ticks. frostTick: one tick or, by clusterChance, clusterCount ticks spacingMs apart; each tick is a noise impulse that falls with a time constant from widthMs, through a bandpass at hz (q) and a highpass. crackle: rain on dry stalks, ticks at ratePerS for durationS (swelling in and out), level skewed toward quiet by ampSkew above minAmp, a doubled tick by doubleChance after doubleMs, same filter fields as frostTick. aeolian: a whistle through a hollow stem, pink noise through two cascaded narrow bandpasses at hz (q) plus an overtone at ratio (q, db); the pitch rises by gustPitch with the gust swell and wanders by wanderDepth (wanderKnotsPerS), the level flutters by flutterDepth (flutterKnotsPerS), attackFraction of the length swells in and the rest fades; makeupDb restores the level the narrow filters remove. wind: two layers of pink noise, body (two low loops summed, the second at secondRate playback so the pair never lines up) through two lowpasses swept over body hz by strength, air through a soft bandpass swept over air hz (at its own playback rate); levelDb goes from strength 0 to 1, each layer trimmed by db, the air layer brighter with strength by dbPerStrength; gust adds db and brightness (fraction of the strength range) with riseS and fallS; wander moves the cutoffs by cents and the level by a fraction over periodS; rampS is the default glide. air: the seasonal whisper, levelDb overall, the pink loop at rate, a slow wander of the lowpass by wanderCents over wanderPeriodS, crossfadeS the default glide between seasons; each season is a highpass, a low shelf, a peak (hollow is a narrow boost) and a lowpass, plus a level trim db. lap: wavelets of pink noise through a bandpass (hz from glassy to lively, q) and a lowpass (lowpassHz, glassy to lively), at ratePerS from glassy to lively (also scaled by amount) with irregularity in the gaps, each rising over attackS and falling over decayS at db; wash is a quiet steady layer (hz, q, db from glassy to lively, a slow level wander); drops fall on some wavelets with a chance from glassy to lively, sizeMm and db; levelDb is the bed at amount 1. trickle: a soft bandpassed noise (hz, q, db, a slow wander of its center) under a stream of tiny bubbles at ratePerS from amount 0 to 1, radius sizeMm skewed toward the small end by sizeSkew, each at a level in jitterDb, the stream at db; shape overrides the drop bubble fields for these bubbles (no impact click); levelDb is the bed at amount 1.",
+  "seed": 5303,
+  "noise": { "shotSeconds": 4, "bedSeconds": 11.37, "lowSeconds": 37.13, "lowRate": 12000, "seamMs": 60, "bedRms": 0.2, "controlSeconds": 97.3, "controlKnotS": 2.5 },
+  "beds": { "fadeInS": 2, "fadeOutS": 2, "lookAheadS": 1.5, "driftCents": 25, "driftPeriodS": 53 },
+  "drop": {
+    "sizeMm": 2, "sizeJitter": 0.2, "peakDb": -18, "attackMs": 0.6,
+    "rise": [0.1, 0.4], "glideMs": [6, 35], "dampingScale": 0.85, "decayJitter": 0.2,
+    "click": { "hz": 5000, "q": 0.7, "attackMs": 0.3, "decayMs": 4, "db": -26 },
+    "second": { "chance": 0.3, "delayMs": [3, 25], "size": [0.45, 0.75], "db": [-12, -5] }
+  },
+  "plop": {
+    "sizeCm": 3, "sizeJitter": 0.15, "peakDb": -22,
+    "bubbles": {
+      "count": [3, 6], "mainRadiusMmPerCm": 2.4, "otherSize": [0.3, 0.8], "spreadMs": [2, 45], "db": [-12, -3],
+      "attackMs": 1.2, "rise": [0.08, 0.3], "glideMs": [15, 60], "dampingScale": 0.9, "decayJitter": 0.2
+    },
+    "splash": { "hz": 1100, "q": 0.6, "lowpassHz": 4000, "attackMs": 2.5, "decayMs": [60, 140], "db": -4 },
+    "spray": { "count": [0, 4], "delayMs": [60, 260], "sizeMm": [1, 2.5], "db": [-20, -10] }
+  },
+  "knock": {
+    "peakDb": -18, "attackMs": 0.8,
+    "kinds": {
+      "reed-green": {
+        "db": -1, "freqJitter": 0.12, "decayJitter": 0.2, "strikeJitter": 0.04,
+        "strikes": { "count": [3, 7], "spacingMs": [14, 34], "shape": "swell" },
+        "modes": [ { "hz": 185, "amp": 0.55, "decayMs": 110 }, { "hz": 420, "amp": 0.35, "decayMs": 70 }, { "hz": 770, "amp": 0.18, "decayMs": 45 } ],
+        "contact": { "hz": 650, "q": 0.8, "db": -4, "decayMs": 18 }
+      },
+      "stalk-dry": {
+        "db": 0, "freqJitter": 0.12, "decayJitter": 0.2, "strikeJitter": 0.05,
+        "strikes": { "count": [1, 2], "spacingMs": [18, 45], "shape": "fall", "fall": [0.25, 0.5] },
+        "modes": [ { "hz": 1150, "amp": 0.5, "decayMs": 55 }, { "hz": 2650, "amp": 0.3, "decayMs": 32 }, { "hz": 4400, "amp": 0.15, "decayMs": 18 } ],
+        "contact": { "hz": 3200, "q": 0.9, "db": -6, "decayMs": 8 }
+      },
+      "stalk-bare": {
+        "db": 0, "freqJitter": 0.1, "decayJitter": 0.15, "strikeJitter": 0.01,
+        "strikes": { "count": [1, 2], "spacingMs": [25, 60], "shape": "fall", "fall": [0.2, 0.45] },
+        "modes": [ { "hz": 540, "amp": 0.6, "decayMs": 220 }, { "hz": 1620, "amp": 0.22, "decayMs": 110 }, { "hz": 2700, "amp": 0.1, "decayMs": 60 } ],
+        "contact": { "hz": 1800, "q": 0.8, "db": -9, "decayMs": 10 }
+      },
+      "seed-rattle": {
+        "db": -2, "freqJitter": 0.15, "decayJitter": 0.25, "strikeJitter": 0.3,
+        "strikes": { "count": [6, 14], "spacingMs": [7, 32], "shape": "random" },
+        "modes": [ { "hz": 3300, "amp": 0.5, "decayMs": 14 }, { "hz": 5200, "amp": 0.35, "decayMs": 10 }, { "hz": 7600, "amp": 0.2, "decayMs": 7 } ],
+        "contact": { "hz": 4500, "q": 1, "db": -3, "decayMs": 5 }
+      }
+    }
+  },
+  "frostTick": {
+    "peakDb": -14, "clusterChance": 0.4, "clusterCount": [2, 5], "spacingMs": [6, 45],
+    "hz": [5000, 11000], "q": 1.4, "highpassHz": 2500, "widthMs": [0.12, 0.5]
+  },
+  "crackle": {
+    "peakDb": -14, "durationS": 2, "ratePerS": 28, "minAmp": 0.12, "ampSkew": 2.2,
+    "doubleChance": 0.15, "doubleMs": [1.5, 6],
+    "hz": [1400, 4800], "q": 1.1, "highpassHz": 800, "widthMs": [0.2, 1.1]
+  },
+  "aeolian": {
+    "peakDb": -24, "makeupDb": 27, "durationS": 3, "hz": [700, 1300], "q": 28,
+    "overtone": { "ratio": 3, "q": 30, "db": -14 },
+    "attackFraction": [0.3, 0.5], "gustPitch": 0.07, "wanderDepth": 0.012, "wanderKnotsPerS": 1.5,
+    "flutterDepth": 0.25, "flutterKnotsPerS": 4
+  },
+  "wind": {
+    "levelDb": [-44, -24], "rampS": 2.5,
+    "body": { "hz": [230, 1000], "q": 0.5, "db": 0, "secondRate": 0.7931 },
+    "air": { "hz": [700, 2400], "q": 0.6, "db": -7, "dbPerStrength": 3, "rate": 1.37 },
+    "gust": { "db": 5, "brightness": 0.35, "riseS": 1.2, "fallS": 3 },
+    "wander": { "periodS": 70, "cents": 350, "level": 0.25 }
+  },
+  "air": {
+    "levelDb": -50, "rate": 0.83, "wanderPeriodS": 90, "wanderCents": 150, "crossfadeS": 4,
+    "seasons": {
+      "spring": { "db": 0, "highpassHz": 120, "lowShelf": { "hz": 200, "db": -3 }, "peak": { "hz": 3500, "q": 0.8, "db": 3 }, "lowpassHz": 9000 },
+      "summer": { "db": 0, "highpassHz": 55, "lowShelf": { "hz": 180, "db": 3 }, "peak": { "hz": 2500, "q": 0.7, "db": -2 }, "lowpassHz": 6000 },
+      "autumn": { "db": -1, "highpassHz": 150, "lowShelf": { "hz": 200, "db": -4 }, "peak": { "hz": 1150, "q": 2.5, "db": 4 }, "lowpassHz": 7000 },
+      "winter": { "db": -3, "highpassHz": 260, "lowShelf": { "hz": 250, "db": -6 }, "peak": { "hz": 3000, "q": 0.7, "db": -3 }, "lowpassHz": 3500 }
+    }
+  },
+  "lap": {
+    "levelDb": -20, "rampS": 3,
+    "wavelet": {
+      "hz": [260, 600], "q": 0.9, "lowpassHz": [700, 2400], "rate": 0.9,
+      "ratePerS": [0.3, 1.5], "irregularity": 0.5, "attackS": [0.15, 0.4], "decayS": [0.3, 0.9], "db": [-8, 0]
+    },
+    "wash": { "hz": 420, "q": 0.5, "db": [-24, -15], "rate": 0.71, "wanderPeriodS": 40, "wanderLevel": 0.4 },
+    "drops": { "chance": [0.03, 0.25], "sizeMm": [1.5, 4], "db": [-14, -6] }
+  },
+  "trickle": {
+    "levelDb": -6, "rampS": 3,
+    "noise": { "hz": 1700, "q": 0.7, "db": -18, "rate": 1.13, "wanderPeriodS": 30, "wanderCents": 200 },
+    "bubbles": {
+      "db": 0, "ratePerS": [20, 80], "sizeMm": [0.6, 4], "sizeSkew": 2.2, "jitterDb": [-18, 0],
+      "shape": { "click": null, "second": null, "sizeJitter": 0, "rise": [0.1, 0.35], "glideMs": [3, 15], "attackMs": 0.4 }
+    }
+  }
+}

@@ -3,6 +3,7 @@
   "note": "Audio recipe ids and their files, kept apart from recipes/index.json while the audio work is on its own branches, so the branches never conflict with main. At merge, these entries move into recipes/index.json and this file goes (docs/audio-future-work.md). Paths are relative to recipes/.",
   "recipes": {
     "audio/mixer": "audio/mixer.json",
+    "audio/procedural": "audio/procedural.json",
     "music/sampler": "music/sampler.json",
     "music/instruments/piano-steinway-b": "music/instruments/piano-steinway-b.json",
     "music/instruments/piano-kawai": "music/instruments/piano-kawai.json",
