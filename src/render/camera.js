@@ -63,7 +63,7 @@ export function createOrbitCamera(r) {
   const clamp = (/** @type {number} */ x, /** @type {number} */ a, /** @type {number} */ b) => Math.min(b, Math.max(a, x));
 
   /**
-   * True while gliding to a point the game asked to show (the journal's Show me, a tool's Look at);
+   * True while gliding to a point the game asked to show (focus(): a tool's Look at; later Follow);
    * any input ends it. Presence reads it as `driven`: a move the game makes never startles a creature.
    */
   let focusing = false;

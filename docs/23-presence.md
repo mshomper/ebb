@@ -141,7 +141,7 @@ Live only, recorded when it matters:
 
 - **S6b (the frog you see, and presence):** each frog has its comfort ring. A fast swoop through it, or sculpting or pouring right beside it, causes a soft startle. Zooming in slowly is welcome. Nearby frogs hush; the chorus returns from the far side.
 - **As built in S6b-4** (`src/world/creatures/presence.js`, `agents.js` `sense` and `startle`; numbers in `recipes/species/frog.json` presence):
-  - The app updates the source list each frame, right after the camera. The camera's speed is smoothed over about a tenth of a second, and reads zero while `camera.driven()`: a game glide (Show me, a tool's Look at), ended by any input.
+  - The app updates the source list each frame, right after the camera. The camera's speed is smoothed over about a tenth of a second, and reads zero while `camera.driven()`: a glide the game makes (today only tools, such as the frog lab's Look at; later Follow), ended by any input.
   - Sculpt, pour and plant strokes report where they land, for that frame.
   - A frog startles when the eye is within its ring (1.5 m, real size, 3D distance) and moving faster than 0.5 m/s, or when an edit lands within 2 m. It hops into the water (off a pad, into the deep water beside it), plops, dives and dashes about 2 m away from the source at 0.3 m/s, and comes up to float eyes-up, wary for 40 to 70 s. Then it swims home. It doesn't call while wary.
   - Frogs within 4 m of a startled frog hush for 14 to 20 s. The chorus carries on from the frogs further away and comes back as the hush ends.

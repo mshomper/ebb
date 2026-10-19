@@ -2,8 +2,8 @@
 // Presence (S6b-4, doc 23): how the player is on the island, as a list of sources that creatures
 // react to. In the slice the one source is the camera: its eye, how fast the eye moves, the edits
 // made beside a point this frame (a sculpt, pour or plant stroke) and how long the eye has been
-// still. Moves the game makes never count: while the camera glides somewhere on its own (the
-// journal's Show me, a tool's Look at), its speed reads zero, and any input ends the glide. Creatures
+// still. Moves the game makes never count: while the camera glides somewhere on its own (a tool's
+// Look at; later Follow), its speed reads zero, and any input ends the glide. Creatures
 // only ever ask "what sources are there", never "where is the camera". Rebuilt each frame; never saved.
 
 /**
