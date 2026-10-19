@@ -320,6 +320,44 @@
   }
   .ebb-history.has-tool .ebb-tools__bar { pointer-events: none; }
 }
+/* Narrow portrait: the brush size becomes a short upright slider down the card's right side, so the
+   card is a row shorter and more of the island shows above it (docs/15). */
+@media (max-width: 560px) {
+  .ebb-tools__card {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    column-gap: 12px;
+    row-gap: 12px;
+    align-items: start;
+  }
+  .ebb-tools__card > * { grid-column: 1; }
+  .ebb-tools__card > .ebb-tools__slider[data-slider='size'] {
+    grid-column: 2;
+    grid-row: 1 / span 6;
+    grid-template-columns: auto;
+    grid-template-areas: 'label' 'value' 'range';
+    justify-items: center;
+    row-gap: 4px;
+  }
+  .ebb-tools__slider[data-slider='size'] output { text-align: center; }
+  .ebb-tools__slider[data-slider='size'] .ebb-tools__range {
+    writing-mode: vertical-lr;
+    direction: rtl;
+    width: var(--tb-range-h);
+    height: 132px;
+  }
+  .ebb-tools__slider[data-slider='size'] .ebb-tools__range::-webkit-slider-runnable-track {
+    width: 6px;
+    height: 100%;
+    background: linear-gradient(to top, var(--moss-3) var(--fill), rgba(244, 238, 228, 0.18) var(--fill));
+  }
+  .ebb-tools__slider[data-slider='size'] .ebb-tools__range::-webkit-slider-thumb {
+    margin-top: 0;
+    margin-left: calc((6px - var(--tb-thumb)) / 2);
+  }
+  .ebb-tools__slider[data-slider='size'] .ebb-tools__range::-moz-range-track { width: 6px; height: 100%; }
+  .ebb-tools__slider[data-slider='size'] .ebb-tools__range::-moz-range-progress { width: 6px; }
+}
 /* Five tool buttons. With tight gaps the bar's own parts take 18 px (2 x 4 padding, 4 x 2 gaps,
    border 2) plus the 24 px page gutter, so below 460 px the buttons share what is left: 52 px
    down to a 302 px screen, so the bar never runs past the screen. */
@@ -343,18 +381,64 @@
   }
   .ebb-tools__slider output { text-align: right; }
 }
+/* Phone landscape (docs/15): the tools become a column on the right edge, under the top right
+   buttons, with the brush card opening to its left; undo and redo stack on the left edge, half way
+   up. The buttons shrink only if the screen is too short for five, never below 44 px. */
 @media (max-height: 500px) and (min-width: 600px) {
-  /* Anchored to the right edge (docs/15 landscape), so the bar does not move when the card opens. */
+  .ebb-tools,
+  .ebb-history {
+    --tb-top: calc(max(12px, env(safe-area-inset-top)) + 62px);
+    --tb-gap: 2px;
+    --tb-pad: 4px;
+    --tb-btn: clamp(44px, calc((100dvh - var(--tb-top) - max(12px, env(safe-area-inset-bottom)) - 18px) / 5), 52px);
+    --tb-icon: clamp(22px, calc(var(--tb-btn) - 22px), 26px);
+  }
   .ebb-tools {
+    top: var(--tb-top);
+    left: auto;
+    right: max(12px, env(safe-area-inset-right));
+    padding: 0;
     flex-direction: row;
     justify-content: flex-end;
-    align-items: flex-end;
+    align-items: center;
   }
+  .ebb-tools__bar { flex-direction: column; }
   .ebb-tools__card {
-    width: auto;
-    flex: 0 1 380px;
-    min-width: 0;
-    transform: translateX(-10px);
+    width: min(360px, calc(100vw - 2 * var(--tb-btn) - 120px));
+    flex: none;
+    max-height: 100%;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    transform: translateX(10px);
+  }
+  .ebb-history {
+    bottom: auto;
+    top: calc(50% - var(--tb-btn) - var(--tb-pad) - 1px);
+  }
+  .ebb-history .ebb-tools__bar { flex-direction: column; }
+}
+
+/* Left-handed (Settings > Controls; src/ui/motion.js sets the root class): phone layouts mirror,
+   so the tools sit under the left thumb. Desktop layouts do not change. */
+@media (max-width: 560px) {
+  :root.ebb-left-handed .ebb-history {
+    left: auto;
+    right: max(var(--tb-edge), env(safe-area-inset-right));
+  }
+}
+@media (max-height: 500px) and (min-width: 600px) {
+  /* Under the clock dial and the build tag on test builds, rather than under the top right buttons. */
+  :root.ebb-left-handed .ebb-tools { --tb-top: calc(max(12px, env(safe-area-inset-top)) + var(--hud-dial, 64px) + 40px); }
+  :root.ebb-left-handed .ebb-tools {
+    right: auto;
+    left: max(12px, env(safe-area-inset-left));
+    flex-direction: row-reverse;
+  }
+  :root.ebb-left-handed .ebb-tools__card { transform: translateX(-10px); }
+  :root.ebb-left-handed .ebb-tools__card.is-open { transform: none; }
+  :root.ebb-left-handed .ebb-history {
+    left: auto;
+    right: max(var(--tb-edge), env(safe-area-inset-right));
   }
 }
 

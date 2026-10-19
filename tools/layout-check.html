@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ebb layout check</title>
+<link rel="icon" href="../brand/ebb-favicon.svg" type="image/svg+xml">
+<style>
+  @font-face { font-family: 'Nunito'; src: url('../src/vendor/fonts/nunito-latin-600-normal.woff2') format('woff2'); font-weight: 600; }
+  @font-face { font-family: 'Nunito'; src: url('../src/vendor/fonts/nunito-latin-800-normal.woff2') format('woff2'); font-weight: 800; }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; max-width: 100%; overflow-x: hidden; }
+  body { background: #F4EEE4; color: #1E2624; font: 600 17px/1.45 'Nunito', system-ui, sans-serif; padding: 16px; overflow-wrap: anywhere; }
+  main { max-width: 760px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+  h1 { font-size: 24px; font-weight: 800; margin: 0; }
+  h2 { font-size: 19px; font-weight: 800; margin: 0; }
+  h3 { font-size: 17px; font-weight: 800; margin: 12px 0 4px; }
+  p { margin: 0; }
+  .muted { color: #4A5551; font-size: 16px; }
+  a { color: #4a6a47; }
+  .card { background: #FBF7F0; border: 1px solid #E3D9C9; border-radius: 14px; padding: 14px 16px; min-width: 0; display: flex; flex-direction: column; gap: 10px; }
+  .controls { display: flex; flex-direction: column; gap: 12px; }
+  .opt { display: flex; gap: 10px; align-items: center; font-size: 17px; min-height: 44px; cursor: pointer; }
+  .opt input { width: 24px; height: 24px; margin: 0; flex: 0 0 auto; accent-color: #4a6a47; }
+  button { font: 800 17px/1.2 'Nunito', system-ui, sans-serif; min-height: 48px; padding: 10px 18px; border-radius: 12px;
+    border: 1px solid #C9BBA5; background: #FFFDF8; color: #1E2624; cursor: pointer; align-self: flex-start; max-width: 100%; }
+  button.main { background: #4a6a47; border-color: #4a6a47; color: #FBF7F0; }
+  button:disabled { opacity: 0.55; cursor: default; }
+  #status, #summary { display: flex; gap: 10px; align-items: flex-start; font-weight: 800; }
+  .state { display: flex; gap: 10px; align-items: flex-start; font-weight: 800; }
+  svg.mark { width: 24px; height: 24px; flex: 0 0 auto; margin-top: 1px; }
+  .ok { color: #3F6B45; }
+  .warn { color: #9A4A2E; }
+  .wait { color: #4A5551; }
+  .frame-wrap { position: relative; overflow: hidden; border-radius: 10px; background: #1E2624; max-width: 100%; }
+  .frame-wrap iframe { position: absolute; left: 0; top: 0; border: 0; transform-origin: 0 0; display: block; background: #1E2624; }
+  .frame-wrap .empty { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 12px;
+    color: #E9E0D2; font-size: 16px; text-align: center; }
+  .checks { display: flex; flex-direction: column; gap: 4px; }
+  .check { display: flex; flex-direction: column; gap: 2px; padding: 8px 0; border-top: 1px solid #E3D9C9; }
+  .check ul { margin: 2px 0 0; padding-left: 34px; font-size: 16px; color: #4A5551; }
+  .check li { margin: 2px 0; }
+</style>
+</head>
+<body>
+<main>
+  <h1>ebb layout check</h1>
+  <p class="muted">The real game at phone sizes, one size at a time, each checked for sideways scrolling, small buttons, small text and buttons on top of each other. <a href="./">All tools</a></p>
+  <div class="card controls">
+    <div id="status">Starting</div>
+    <div id="summary" hidden></div>
+    <button type="button" class="main" id="check-all" disabled>Check all</button>
+    <label class="opt"><input type="checkbox" id="open-tool">Also open a tool and check the brush card</label>
+    <label class="opt"><input type="checkbox" id="stop-after">Stop each island once checked (lighter on the graphics card)</label>
+  </div>
+  <p class="muted">The frames below use a mouse, so the game's touch styles (bigger buttons, 16 px text on phones) do not show here; text is checked against the 15 px desktop floor and buttons against 44 px. To see the touch styles too, open this page in Chrome's device toolbar (F12, then the phone icon) with a phone picked.</p>
+  <p class="muted">Every frame is a throwaway test island (?seed=1), so nothing here is saved.</p>
+  <div id="sizes" class="controls" style="gap:16px"></div>
+</main>
+<script src="./boot-guard.js"></script>
+<script type="module" src="./layout-check.js"></script>
+</body>
+</html>

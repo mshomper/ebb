@@ -195,6 +195,7 @@ export function mountSettings(o) {
   ]);
   section('controls', 'Controls', 'controls', [
     toggle('Dim the buttons when I am not using them', () => settings().hudDim !== false, (on) => set({ hudDim: on })),
+    toggle('Left-handed layout on phones', () => settings().leftHanded === true, (on) => set({ leftHanded: on })),
     hint('H hides the buttons on a keyboard, and H again brings them back. On a touch screen, the eye in the corner brings them back.'),
   ]);
   if (o.quality) {
