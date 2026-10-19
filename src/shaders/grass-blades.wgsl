@@ -29,6 +29,9 @@ struct GrassDraw {
   derived: vec4f,                              // the terrain's derived layers: x beach band top (m), y, z cos of the steep-rock slope range; w how much the near-to-far band's edge wobbles
   kind: vec4f,                                 // x cover channel (0 grass, 1 rushes), y deepest water a blade stands in (m), z tussock threshold (< 0: grass tufts), w how much thin cover raises it
   kind2: vec4f,                                // rushes: x tussock edge softness, y how much shorter a tussock's rim stands than its core, z stem widening on thinner tiers
+  lushDry: vec4f,                              // wet-to-dry (lush.js): rgb the dry rise's albedo this season, w the lushness that looks like today's meadow
+  lushWet: vec4f,                              // rgb the albedo by the water, w 1 when the grass reads the lush field
+  lushH: vec4f,                                // x height factor on the dry rise, y by the water
 };
 
 @group(0) @binding(0) var<uniform> frame: FrameUniforms;
@@ -37,7 +40,7 @@ struct GrassDraw {
 @group(2) @binding(2) var materialTex: texture_2d<f32>;
 @group(2) @binding(3) var linearSampler: sampler;
 @group(2) @binding(4) var waterDepth: texture_2d<f32>;
-@group(2) @binding(5) var coverTex: texture_2d<f32>;   // cover 0..1 (r grass, g rushes), 1 m world grid from -80 m (world/growth)
+@group(2) @binding(5) var coverTex: texture_2d<f32>;   // cover 0..1 (r grass, g rushes, b lush: wet to dry), 1 m world grid from -80 m (world/growth)
 
 struct VsOut {
   @builtin(position) pos: vec4f,
@@ -46,6 +49,7 @@ struct VsOut {
   @location(2) up: f32,          // 0 at the root, 1 at the tip
   @location(3) tint: f32,        // per-blade albedo variation
   @location(4) groundN: vec3f,
+  @location(5) albedo: vec3f,    // the blade's albedo: the season's, wet or dry by where it stands
 };
 
 struct FsOut {
@@ -75,6 +79,7 @@ fn nothing() -> VsOut {
   var o: VsOut;
   o.pos = vec4f(0.0, 0.0, -2.0, 1.0);   // outside the clip volume: the triangle is dropped
   o.world = vec3f(0.0); o.normal = vec3f(0.0, 1.0, 0.0); o.up = 0.0; o.tint = 0.0; o.groundN = vec3f(0.0, 1.0, 0.0);
+  o.albedo = vec3f(0.0);
   return o;
 }
 
@@ -109,7 +114,7 @@ fn vsBlade(@builtin(vertex_index) vi: u32, @builtin(instance_index) ring: u32) -
   // The growth step's cover: grass, how well grass likes this ground (it drowns slowly in a new
   // pond, thins on salt, greens again when the ground recovers); rushes, where the marsh is. Rushes
   // grow on little of the island, so a blade with none here stops before reading the ground.
-  let covers = textureSampleLevel(coverTex, linearSampler, (xz + 80.0) / 192.0, 0.0).rg;
+  let covers = textureSampleLevel(coverTex, linearSampler, (xz + 80.0) / 192.0, 0.0).rgb;
   if (gd.kind.z >= 0.0 && covers.g < 0.02) { return nothing(); }
   // Where grass is painted, at the ring's density; never in water.
   // Painted grass, less what the terrain shader turns to sand (the beach band) and rock (steep
@@ -131,12 +136,23 @@ fn vsBlade(@builtin(vertex_index) vi: u32, @builtin(instance_index) ring: u32) -
   let water = waterAt(xz);
   var keep = 0.0;
   var tall = 1.0;
+  var bladeAlbedo = gd.albedo;
   var outward = vec2f(0.0);   // rushes: away from the tussock's core, so stems splay out
   if (gd.kind.z < 0.0) {
     // Grass, where it is painted and the top layer.
     let grassW = w.x * smoothstep(-0.05, 0.15, w.x - others) * covers.r;
     keep = grassW * r.w * mix(1.0 - gd.shape2.y, 1.0 + gd.shape2.y, tuft);
     tall = mix(1.0 - gd.shape2.z, 1.0 + gd.shape2.z, tuft);
+    // Wet to dry (lush.js): taller and deeper green by the water, shorter and paler (curing toward
+    // straw through the summer) on the dry rise; at `mid` today's meadow.
+    if (gd.lushWet.w > 0.5) {
+      let lush = covers.b;
+      let m = gd.lushDry.w;
+      let toMid = clamp(lush / m, 0.0, 1.0);
+      let toWet = clamp((lush - m) / (1.0 - m), 0.0, 1.0);
+      bladeAlbedo = select(mix(gd.lushDry.rgb, gd.albedo, toMid), mix(gd.albedo, gd.lushWet.rgb, toWet), lush >= m);
+      tall *= select(mix(gd.lushH.x, 1.0, toMid), mix(1.0, gd.lushH.y, toWet), lush >= m);
+    }
   } else {
     // Rushes: tussocks with open water between them, wherever the rush cover is (not on sand or
     // stone). Thin cover leaves fewer, smaller tussocks; a slower noise opens lanes of water.
@@ -195,6 +211,7 @@ fn vsBlade(@builtin(vertex_index) vi: u32, @builtin(instance_index) ring: u32) -
   o.up = t;
   o.tint = v3.w;
   o.groundN = nG;
+  o.albedo = bladeAlbedo;
   return o;
 }
 
@@ -203,7 +220,7 @@ fn fsBlade(in: VsOut) -> FsOut {
   // Base of the sward is in its own shade; tips catch the light. Rain darkens the blades.
   let ao = mix(gd.rootShade, 1.0, in.up);
   // Tips are younger and thinner: a little lighter, as light comes through them.
-  var albedo = gd.albedo * (0.8 + 0.4 * in.tint) * (0.85 + 0.35 * in.up) * mix(1.0, gd.look2.x, light.weather.w);
+  var albedo = in.albedo * (0.8 + 0.4 * in.tint) * (0.85 + 0.35 * in.up) * mix(1.0, gd.look2.x, light.weather.w);
   let n = normalize(in.normal);
   let viewDist = distance(in.world, frame.cameraPos);
   let vis = shadowVisibility(in.world, in.groundN, viewDist, in.pos.xy);

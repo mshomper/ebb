@@ -39,6 +39,7 @@ import { bakeBody } from './world/creatures/body-bake.js';
 import { previewSpots } from './world/creatures/preview-spots.js';
 import { createCreatures } from './world/creatures/index.js';
 import { createPresence } from './world/creatures/presence.js';
+import { lushLook } from './world/growth/lush.js';
 import { createMidges } from './world/ecology/midges-live.js';
 import { onAction, history } from './input/actions.js';
 import { attachDesktopInput } from './input/desktop.js';
@@ -139,7 +140,8 @@ export async function startApp(canvas, hooks = {}) {
   const flora = Object.fromEntries(await Promise.all(growthRecipe.species.map(async (/** @type {string} */ sp) => [sp, await loadRecipe(`flora/${sp}`)])));
   /** @type {Record<string, any>} the cover plants other than grass (rushes) */
   const covers = Object.fromEntries(await Promise.all((growthRecipe.cover ?? []).map(async (/** @type {string} */ sp) => [sp, await loadRecipe(`flora/${sp}`)])));
-  const growth = createGrowth(gpu.device, { terrain, water, world, recipes: { growth: growthRecipe, flora, covers, land: landRecipe } });
+  const grassRecipe = await loadRecipe('flora/grass');
+  const growth = createGrowth(gpu.device, { terrain, water, world, recipes: { growth: growthRecipe, flora, covers, land: landRecipe, grass: grassRecipe } });
   sim.addSystem(growth);
   // Ecology and creatures (S6a, docs 11, 12): the midge field, frog habitat and the frogs' arrival
   // run in the hourly tick from these recipes.
@@ -203,12 +205,12 @@ export async function startApp(canvas, hooks = {}) {
     ground: groundDetail, groundTier: tierSettings.ground, getTide: () => water.tide, lodDistances: tierSettings.lodDistances,
     water: { depthTextures: water.sim.depthTextures, current: () => water.sim.current, damp: water.sim.damp, dampWet: waterRecipe.look.dampHollowWet,
       vel: water.sim.vel, caustics: waterRecipe.caustics },
-    moss: moss.texture, causticLayers: tierSettings.causticLayers, wetness,
+    moss: moss.texture, causticLayers: tierSettings.causticLayers, wetness, cover: growth.coverTex,
     probe: { view: atmosphere.probeView, sampler: atmosphere.probeSampler }, rings: waterRecipe.ripples.rings,
   });
   // The meadow (docs 10): GPU grass blades where grass is painted, after the terrain.
   const grassPass = createGrassPass({
-    terrain, recipe: await loadRecipe('flora/grass'), terrainRecipe, seed: subSeed(seed, 'grass'), tier: tierSettings,
+    terrain, recipe: grassRecipe, terrainRecipe, seed: subSeed(seed, 'grass'), tier: tierSettings,
     water: { depthTextures: water.sim.depthTextures, current: () => water.sim.current }, cover: growth.coverTex,
   });
   // The marsh's rushes (docs 10): the same blades in tussocks, where the rush cover is, standing in
@@ -614,6 +616,8 @@ export async function startApp(canvas, hooks = {}) {
       season: season.index + season.phase,
     };
     grassPass.update(bladeFrame);
+    // Wet-to-dry grass (lush.js): the ground's grass layer takes the blades' tint this season.
+    terrainPass.setLush(grassRecipe.lush ? lushLook(grassRecipe, bladeFrame.season) : null);
     rushPass.update(bladeFrame);
     floraFrame = { time: t.animT, wind: windNow, windDir: world.state?.weather?.today?.windDir ?? 0 };
     floraPass.update({ ...floraFrame, season: season.index + season.phase, pressed: creatures.pressedPads() });

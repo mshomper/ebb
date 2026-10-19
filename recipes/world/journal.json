@@ -44,7 +44,8 @@
         { "text": "Grass grows from the base of each blade, so it recovers quickly when it is grazed or trodden.", "learn": ["seen"] },
         { "text": "Its roots need air: standing water drowns them in a day or two.", "learn": ["grass:flooded"] },
         { "text": "Rain soaks into a meadow instead of running off, because the roots hold the soil open.", "learn": ["moment:rain"] },
-        { "text": "On cold dawns, frost whitens the tip of every blade.", "learn": ["moment:frost"] }
+        { "text": "On cold dawns, frost whitens the tip of every blade.", "learn": ["moment:frost"] },
+        { "text": "By the water grass grows tall and dark; on the dry rise it is shorter and cures to straw in late summer.", "learn": ["moment:summer"] }
       ],
       "fieldHint": "Watch the meadow in other weather to learn more.",
       "sketch": { "scale": "about 30 cm", "labels": {

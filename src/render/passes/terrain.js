@@ -9,7 +9,7 @@ import { LODS, MAX_CHUNKS, createIndexBuffers, packChunks } from '../terrain-mes
 
 /** @typedef {import('../frame-graph.js').PassContext} PassContext */
 
-const DRAW_BYTES = 672;   // 384 of look, 16 marker rings (floats 96..159), the drowned meadow (160..167)
+const DRAW_BYTES = 704;   // 384 of look, 16 marker rings (floats 96..159), the drowned meadow (160..167), wet-to-dry grass (168..175)
 const GROUND_BYTES = 336;
 const DEG = Math.PI / 180;
 /** @type {Record<string, number>} GroundDetail.tiling.x in lib-ground.wgsl */
@@ -21,12 +21,13 @@ const TILING_MODES = { grid: 0, hex: 1, two: 2 };
  *   water: { depthTextures: GPUTexture[], current: () => number, damp?: GPUTexture, dampWet?: number, vel: GPUTexture, caustics: any },
  *   moss: GPUTexture, causticLayers?: number, wetness: { textures: GPUTexture[], current: () => number },
  *   ground: { views: { a: GPUTextureView, b: GPUTextureView }, sampler: GPUSampler, version: number, fade: number },
- *   groundTier: any, probe: { view: GPUTextureView, sampler: GPUSampler }, rings?: any }} opts
+ *   groundTier: any, probe: { view: GPUTextureView, sampler: GPUSampler }, rings?: any, cover: GPUTexture }} opts
  *   ground: src/render/ground-detail.js; groundTier: the tier's `ground` block;
  *   water.caustics: water.json `caustics`; causticLayers: the tier's (0 off, default 2);
  *   wetness: src/world/terrain/wetness.js (water.damp and water.dampWet now feed it, not this pass);
  *   probe: the sky probe (atmosphere.probeView, probeSampler), reflected by wet ground and puddles;
- *   rings: water.json `ripples.rings`, the raindrop rings drawn in puddles
+ *   rings: water.json `ripples.rings`, the raindrop rings drawn in puddles; cover: the growth step's
+ *   plant cover (world/growth coverTex), whose b channel tints the grass layer wet to dry
  */
 export function createTerrainPass(opts) {
   const { terrain, recipe } = opts;
@@ -153,6 +154,17 @@ export function createTerrainPass(opts) {
     setRain(r) { f[88] = Math.min(1, Math.max(0, r)) * (opts.rings?.maxShare ?? 0); },
 
     /**
+     * Wet-to-dry grass this season (src/world/growth/lush.js lushLook): the ground's grass layer
+     * takes the same tint as the blades, as a share of the season's grass albedo, so the wet rings
+     * and the dry rise still read past where blades end. @param {ReturnType<typeof import('../../world/growth/lush.js').lushLook> | null} L
+     */
+    setLush(L) {
+      if (!L) { f[175] = 0; return; }
+      for (let i = 0; i < 3; i++) { f[168 + i] = L.dry[i] / L.base[i]; f[172 + i] = L.wet[i] / L.base[i]; }
+      f[171] = L.mid; f[175] = 1;
+    },
+
+    /**
      * Marker rings on the ground (the Plant tool): up to 16 of (x, z, radius m, opacity 0..1),
      * the list ending at the first opacity of 0. @param {Float32Array} marks 64 floats
      */
@@ -189,6 +201,7 @@ export function createTerrainPass(opts) {
           { binding: 12, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: 'unfilterable-float' } },
           { binding: 13, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: 'float', viewDimension: 'cube' } },
           { binding: 14, visibility: GPUShaderStage.FRAGMENT, sampler: { type: 'filtering' } },
+          { binding: 15, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: 'float' } }, // plant cover (b: lush)
         ],
       });
       const layout = device.createPipelineLayout({ label: 'opaque', bindGroupLayouts: [ctx.layouts.frame, ctx.layouts.lighting, layout2] });
@@ -216,6 +229,7 @@ export function createTerrainPass(opts) {
         const materialView = terrain.gpu.material.createView();
         const mossView = opts.moss.createView();
         const velView = opts.water.vel.createView();
+        const coverView = opts.cover.createView();
         const wetViews = opts.wetness.textures.map((t) => t.createView());
         groups = opts.water.depthTextures.map((/** @type {GPUTexture} */ wt) => {
           const depthView = wt.createView();
@@ -238,6 +252,7 @@ export function createTerrainPass(opts) {
               { binding: 12, resource: velView },
               { binding: 13, resource: opts.probe.view },
               { binding: 14, resource: opts.probe.sampler },
+              { binding: 15, resource: coverView },
             ],
           }));
         });

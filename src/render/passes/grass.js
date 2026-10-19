@@ -8,10 +8,11 @@
 // tussocks where the rush cover is, standing on the bed and rising out of shallow water.
 
 import { makeBuffer, makeShaderModule } from '../../core/gpu.js';
+import { lushLook } from '../../world/growth/lush.js';
 
 /** @typedef {import('../frame-graph.js').PassContext} PassContext */
 
-const DRAW_BYTES = 192;
+const DRAW_BYTES = 240;
 const SEASONS = /** @type {const} */ (['spring', 'summer', 'autumn', 'winter']);
 
 /**
@@ -123,6 +124,14 @@ export function createGrassPass(opts) {
       const s = seasonBlend(u.season);
       f[6] = recipe.blades.height * s.height;
       f.set(s.albedo, 8);
+      // Wet-to-dry (lush.js): the dry and wet ends of the meadow this season, read per blade from
+      // the cover map's lush channel. Rushes have none.
+      if (recipe.lush) {
+        const L = lushLook(recipe, u.season);
+        f.set(L.dry, 48); f[51] = L.mid;
+        f.set(L.wet, 52); f[55] = 1;
+        f[56] = L.height[0]; f[57] = L.height[1];
+      }
     },
 
     /** @param {PassContext} ctx */
