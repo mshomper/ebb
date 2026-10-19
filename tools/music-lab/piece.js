@@ -5,26 +5,21 @@
 // page address, so a link opens the same performance.
 
 import { realize } from '../../src/audio/music/realize.js';
-import { createPerformer } from '../../src/audio/music/perform.js';
-import { createInstruments } from '../../src/audio/music/instruments.js';
-import { dayColorAt, dayKeyName } from '../../src/audio/music/daycolor.js';
+import { dayColorAt } from '../../src/audio/music/daycolor.js';
 import { createNotation } from './notation.js';
 import { createPianoRoll } from './pianoroll.js';
-
-const KEY_LABEL = { night: 'night', blueHour: 'blue hour', golden: 'golden hour', morning: 'morning or afternoon', day: 'midday' };
+import { createStage, loadJson, loadMusicRecipes, sunLabel } from './perform-ui.js';
 
 /**
  * @param {HTMLElement} host the Piece tab's section
  * @param {{mixer: any}} env
  */
 export async function initPiece(host, env) {
-  const j = async (/** @type {string} */ p) => (await fetch(new URL(`../../${p}`, import.meta.url), { cache: 'no-cache' })).json();
-  const [director, rz, vo, index] = await Promise.all([
-    j('recipes/music/director.json'), j('recipes/music/realize.json'), j('recipes/music/voicing.json'),
-    j('recipes/music/pieces/index.json').catch(() => ({ pieces: ['test-spring-01'] })),
+  const [{ director, recipes }, index] = await Promise.all([
+    loadMusicRecipes(),
+    loadJson('recipes/music/pieces/index.json').catch(() => ({ pieces: ['test-spring-01'] })),
   ]);
-  const pieces = await Promise.all(index.pieces.map((/** @type {string} */ id) => j(`recipes/music/pieces/${id}.json`)));
-  const recipes = { realize: rz, voicing: vo };
+  const pieces = await Promise.all(index.pieces.map((/** @type {string} */ id) => loadJson(`recipes/music/pieces/${id}.json`)));
   const url = new URL(location.href);
   const q = (/** @type {string} */ k, /** @type {string} */ d) => url.searchParams.get(k) ?? d;
 
@@ -87,13 +82,9 @@ export async function initPiece(host, env) {
 
   const roll = createPianoRoll($('pc-roll'), { onSeekBar: (/** @type {number} */ bar) => noteLine(bar) });
   const notation = createNotation($('pc-notation'));
-  /** @type {any} */
-  let inst = null;
-  /** @type {any} */
-  let performer = null;
+  const stage = createStage(env, recipes, { roll, notation, status: (t) => { $('pc-status').textContent = t; } });
   /** @type {any} */
   let perf = null;
-  let raf = 0;
 
   const piece = () => pieces.find((p) => p.id === $('pc-piece').value) ?? pieces[0];
   const seed = () => (Number($('pc-seed').value) >>> 0) || 1;
@@ -127,13 +118,13 @@ export async function initPiece(host, env) {
   function perform(s) {
     const sun = Number($('pc-sun').value);
     const dayColor = dayColorAt(sun, director.dayColor);
-    const available = inst ? inst.available() : ['piano', 'pad', 'bell', 'fm-piano'];
+    const available = stage.available();
     return { p: realize(piece(), { seed: s, dayColor, available, shortForm: short, key: key === 'auto' ? undefined : key }, recipes), dayColor };
   }
 
   function refresh() {
     const sun = Number($('pc-sun').value);
-    $('pc-sun-out').textContent = `${sun} degrees, ${KEY_LABEL[/** @type {'day'} */ (dayKeyName(sun, director.dayColor))]}`;
+    $('pc-sun-out').textContent = sunLabel(sun, director);
     const { p } = perform(seed());
     perf = p;
     roll.setPerformance(p);
@@ -165,52 +156,18 @@ export async function initPiece(host, env) {
     box.append(t, c);
   }
 
-  async function ensure() {
-    if (!inst) {
-      $('pc-status').textContent = 'Getting the instruments ready.';
-      inst = await createInstruments(env.mixer.ctx, env.mixer.input('music'));
-      performer = createPerformer(env.mixer.ctx, inst.set);
-    }
-  }
-
   /** @param {number} s @returns {Promise<void>} */
   async function play(s) {
-    await env.mixer.unlock();
-    await ensure();
-    performer.stop(0.2);
+    const ticket = await stage.begin();
     const { p, dayColor } = perform(s);
     perf = p;
     roll.setPerformance(p);
-    env.mixer.setMusicTone({ lowpassHz: dayColor.brightHz, wet: dayColor.wet }, 0.5);
-    $('pc-status').textContent = 'Unpacking the notes this performance uses.';
-    const t0 = performance.now();
-    await inst.prepare(p);
-    const mem = Object.values(inst.stats()).reduce((n, x) => n + (/** @type {any} */ (x).decodedMB ?? 0), 0);
-    $('pc-status').textContent = `Playing seed ${s}. Unpacked in ${((performance.now() - t0) / 1000).toFixed(1)} s; ${mem.toFixed(0)} MB in memory.`;
-    return new Promise((done) => {
-      // For "Finish gently": the coda alone, at this seed's tempo, to follow the current section.
-      const pc = piece();
-      const coda = pc.sections.coda ? realize(pc, { seed: s, dayColor, available: inst.available(), key: p.key, path: ['coda'] }, recipes) : null;
-      performer.play(p, {
-        coda,
-        onTime: () => {},
-        onEnd: () => { cancelAnimationFrame(raf); roll.setPlayhead(-1); notation.highlight(null); $('pc-status').textContent = `Finished seed ${s}.`; inst.trim(); done(); },
-      });
-      const follow = () => {
-        const pos = performer.position();
-        if (pos >= 0) {
-          roll.setPlayhead(pos);
-          notation.highlight(tickAt(p, pos));
-          raf = requestAnimationFrame(follow);
-        }
-      };
-      raf = requestAnimationFrame(follow);
-    });
+    return stage.play(ticket, piece(), p, { seed: s, dayColor, label: `seed ${s}` });
   }
 
   $('pc-play').addEventListener('click', () => play(seed()));
-  $('pc-stop').addEventListener('click', () => performer?.stop(0.3));
-  $('pc-finish').addEventListener('click', () => { const s = performer?.finish(); if (s !== undefined) $('pc-status').textContent = `Finishing at the end of this section, in about ${Math.ceil(s)} s.`; });
+  $('pc-stop').addEventListener('click', () => stage.stop(0.3));
+  $('pc-finish').addEventListener('click', () => { const s = stage.finish(); if (s !== undefined) $('pc-status').textContent = `Finishing at the end of this section, in about ${Math.ceil(s)} s.`; });
   $('pc-ab').addEventListener('click', async () => {
     const a = seed(), b = (Number($('pc-seed-b').value) >>> 0) || 2;
     $('pc-seed').value = String(a); refresh();
@@ -229,17 +186,4 @@ export async function initPiece(host, env) {
 
   keysButtons();
   refresh();
-}
-
-/** The score tick sounding at a time, from the performance's tick-to-time samples. @param {any} p @param {number} t */
-function tickAt(p, t) {
-  const tt = p.tickTimes;
-  if (!tt.length || t < 0) return null;
-  for (let i = 1; i < tt.length; i++) {
-    if (tt[i][1] >= t) {
-      const [k0, t0] = tt[i - 1], [k1, t1] = tt[i];
-      return k0 + ((k1 - k0) * (t - t0)) / Math.max(1e-6, t1 - t0);
-    }
-  }
-  return tt[tt.length - 1][0];
 }

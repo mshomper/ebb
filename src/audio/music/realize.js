@@ -403,24 +403,36 @@ function clampVel(v) {
 export function assembleAbc(piece, path) {
   /** @type {string[]} */
   const header = [];
+  // Every voice any section on the path has, in order of first appearance, so a voice that only
+  // enters later (a counter-line in the return) rests in the sections before it.
   /** @type {string[]} */
   const voiceOrder = [];
+  /** @type {Record<string, number[]>} each voice's pitches, to choose its clef */
+  const pitches = {};
+  const secs = sectionsOf(piece);
+  for (const name of path) {
+    for (const ln of piece.sections[name].abc.split('\n')) {
+      const v = /^V:\s*(\S+)/.exec(ln);
+      if (v && !voiceOrder.includes(v[1])) voiceOrder.push(v[1]);
+    }
+    for (const v of secs[name].voices) (pitches[v.id] ??= []).push(...v.notes.map((/** @type {any} */ n) => n.midi));
+  }
+  if (!voiceOrder.length) voiceOrder.push('1');
   /** @type {Record<string, string[]>} */
   const bodies = {};
   path.forEach((name, i) => {
     /** @type {Record<string, string[]>} */
     const mine = {};
-    let cur = '1';
+    let cur = voiceOrder[0];
     for (const ln of piece.sections[name].abc.split('\n')) {
       if (/^[XMLQK]:/.test(ln)) { if (i === 0) header.push(ln); continue; }
       if (/^T:/.test(ln)) continue;
       const v = /^V:\s*(\S+)/.exec(ln);
-      if (v) { cur = v[1]; if (!voiceOrder.includes(cur)) voiceOrder.push(cur); continue; }
+      if (v) { cur = v[1]; continue; }
       if (ln.trim()) (mine[cur] ??= []).push(ln.trim().replace(/\|\]\s*$/, '|'));
     }
-    if (!voiceOrder.length) voiceOrder.push('1');
     for (const v of voiceOrder) {
-      // A voice this section does not have rests for its bars.
+      // A voice this section does not have rests (invisibly) for its bars.
       const lines = mine[v] ?? [Array.from({ length: piece.sections[name].bars }, () => 'X |').join(' ')];
       if (v === voiceOrder[0]) lines[0] = `"^${name}"${lines[0]}`;
       (bodies[v] ??= []).push(...lines);
@@ -429,7 +441,12 @@ export function assembleAbc(piece, path) {
   const k = header.find((l) => l.startsWith('K:')) ?? 'K:C';
   const rest = header.filter((l) => !l.startsWith('K:'));
   const top = voiceOrder.length > 1 ? [`%%score {${voiceOrder.join(' ')}}`] : [];
-  const body = voiceOrder.flatMap((v) => [v === 'acc' ? `V:${v} clef=bass` : `V:${v}`, ...bodies[v]]);
+  // The left hand, and any line that mostly sits below middle C (a cello), read in the bass clef.
+  const low = (/** @type {string} */ v) => {
+    const p = [...(pitches[v] ?? [])].sort((x, y) => x - y);
+    return v === 'acc' || (p.length > 0 && p[p.length >> 1] < 60);
+  };
+  const body = voiceOrder.flatMap((v) => [low(v) ? `V:${v} clef=bass` : `V:${v}`, ...bodies[v]]);
   const last = body.length - 1;
   body[last] = body[last].replace(/\|\s*$/, '|]');
   return [...rest, `T:${piece.title}`, ...top, k, ...body, ''].join('\n');
