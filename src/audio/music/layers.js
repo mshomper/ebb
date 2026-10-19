@@ -122,9 +122,11 @@ export function supportLayers(o) {
       if (m !== 'out' && r.next() < L.vary) m = order[Math.max(1, Math.min(order.length - 1, order.indexOf(m) + (r.next() < 0.5 ? -1 : 1)))];
       modeOf[si] = m;
     });
+    /** @type {Map<number, GenNote>} the bed notes sounding into the next chord, by pitch */
+    let tied = new Map();
     live.forEach((c, i) => {
       const mode = modeOf[c.section] ?? 'out';
-      if (mode === 'out') return;
+      if (mode === 'out') { tied = new Map(); return; }
       const sec = live.filter((x) => x.section === c.section);
       const k = sec.indexOf(c);
       const x = sec.length > 1 ? k / (sec.length - 1) : 1;
@@ -132,7 +134,19 @@ export function supportLayers(o) {
       if (mode === 'thin' && k === sec.length - 1 && v.length > 2) v = v.slice(0, -1);
       const db = bedLevel(mode, x, L.bed);
       const last = i === live.length - 1;
-      for (const m of v) notes.push({ tick: c.tick, dur: c.end - c.tick + (last ? 0 : L.bed.overlapTicks), midi: m, voice: 'bed', offsetMs: 0, velOffset: db, instrument: bedInst });
+      const tail = last ? 0 : L.bed.overlapTicks;
+      /** @type {Map<number, GenNote>} */
+      const next = new Map();
+      for (const m of v) {
+        // A note the last chord already holds keeps sounding (a string player does not re-bow a
+        // common tone); only new notes start.
+        const held = tied.get(m);
+        if (held && held.tick + held.dur - L.bed.overlapTicks === c.tick) { held.dur = c.end - held.tick + tail; next.set(m, held); continue; }
+        const n = { tick: c.tick, dur: c.end - c.tick + tail, midi: m, voice: 'bed', offsetMs: 0, velOffset: db, instrument: bedInst };
+        notes.push(n);
+        next.set(m, n);
+      }
+      tied = next;
     });
   }
 

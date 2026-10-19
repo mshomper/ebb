@@ -1,315 +1,325 @@
 {
- "type": "instrument",
- "id": "strings-basses",
- "name": "Contrabass (solo, VSCO 2 CE), sustain with vibrato",
- "version": 1,
- "note": "An instrument recipe for the sampler (doc 24, Instruments, Sample preparation and Sampler rules), made for the strings support kit (October 19, 2026). It describes exactly the files the prep step produced; nothing here is a tuning choice. Every file is a held, bowed note with a baked loop: layer.loop gives startS and endS in seconds from the file's start, and the file ends at endS. The 200 ms before loopStart were blended into the end of the loop (equal-power, corrected for the measured correlation of the two passages), so a plain sample-accurate loop from endS back to startS is seamless; the sampler releases the note with its own envelope. formats: each file exists once per format under root, as <file>.ogg (Ogg Opus, 48 kHz, 80 kbps stereo, variable bitrate) and <file>.m4a (AAC-LC, 48 kHz, 128 kbps stereo). Loop times were checked against the decoded .ogg (same length and start to the sample). measuredCents: the median of a frame-by-frame pitch track (10 ms frames, normalised square difference) over the steady part, against 12-TET at A440; vibrato averages out in the median. tuneConfidence: the share of frames with a clear period times (1 - interquartile range of the track / 60 cents). peakDb and attackRmsDb (first 300 ms) are as recorded: VSCO 2 CE keeps its recorded levels, so the soft layer peaks 4 to 22 dB below the loud one (its first 300 ms 6 to 40 dB below, because soft bowing starts slowly). brightness: share of energy above max(1.5 x the fundamental, 1 kHz) in the first 300 ms. loopCheck: the decoded .ogg played with the loop four times; seamLevelDb compares 250 ms either side of the seam, steadyWobbleDb is the same measure between neighbouring 250 ms windows inside the loop, seamStepRatio is the sample step at the seam over the largest step inside the loop. Note names: the library's file names sit one octave low against scientific pitch (its C3 is middle C); every zone here is named by the pitch it sounds, confirmed by measurement (src keeps the original name).",
- "source": {
-  "library": "VSCO 2 Community Edition (Versilian Studios)",
-  "url": "https://github.com/sgossner/VSCO-2-CE/tree/master/Strings/Solo%20Contrabass/SusVib",
-  "license": "CC0 1.0",
-  "commit": "440300901dfe",
-  "notes": "Folder Strings/Solo Contrabass/SusVib, sustain with vibrato. Source layers v1 (soft) and v3 (loud); the source has no v2, renumbered v1 (soft) and v2 (loud). One take per note. Zones not used: everything below D2 (doc 24: no sub-bass below 60 Hz; the D2 zone reaches down to C2, MIDI 36, and no lower), E2 and G#2 (thinned toward minor thirds), and G#3 and B3 (above E3 the celli take over). LICENSE is CC0 1.0; the library's Readme.txt also asks (without binding terms) that the samples not be sold on their own, and for credit to Versilian Studios/Sam Gossner and Ivy Audio/Simon Dalzell. README.md: recorded by Sam Gossner and Simon Dalzell, sample cutting by Elan Hickler/Soundemote."
- },
- "channels": 2,
- "formats": [
-  "ogg",
-  "m4a"
- ],
- "root": "assets/audio/instruments/strings-basses/",
- "layers": 2,
- "sets": {
-  "sus": {
-   "source": "SusVib",
-   "loop": true,
-   "zones": [
-    {
-     "note": "D2",
-     "midi": 38,
-     "measuredCents": -0.15,
-     "tuneConfidence": 0.94,
-     "tuneLayer": 1,
-     "layerSpreadCents": 0.01,
-     "layers": [
-      {
-       "file": "sus/D2-v1",
-       "layer": 1,
-       "peakDb": -32.17,
-       "attackRmsDb": -46.55,
-       "brightness": 0.01382,
-       "lenS": 5.0515,
-       "loop": {
-        "startS": 2.750417,
-        "endS": 5.051458
-       },
-       "trimStartMs": 0.0,
-       "measuredCents": -0.15,
-       "loopCheck": {
-        "seamLevelDb": 0.54,
-        "steadyWobbleDb": 0.99,
-        "seamStepRatio": 0.272,
-        "seamKinkRatio": 1.0
-       },
-       "src": "BKCtbss_SusVib_D1_v1_rr1.wav",
-       "channels": 2
-      },
-      {
-       "file": "sus/D2-v2",
-       "layer": 2,
-       "peakDb": -19.84,
-       "attackRmsDb": -31.74,
-       "brightness": 0.03248,
-       "lenS": 2.1483,
-       "loop": {
-        "startS": 0.540583,
-        "endS": 2.148312
-       },
-       "trimStartMs": 0.0,
-       "measuredCents": -0.16,
-       "loopCheck": {
-        "seamLevelDb": 0.11,
-        "steadyWobbleDb": 0.81,
-        "seamStepRatio": 0.49,
-        "seamKinkRatio": 1.0
-       },
-       "src": "BKCtbss_SusVib_D1_v3_rr1.wav",
-       "channels": 2
-      }
-     ]
-    },
-    {
-     "note": "Fs2",
-     "midi": 42,
-     "measuredCents": -0.05,
-     "tuneConfidence": 0.96,
-     "tuneLayer": 1,
-     "layerSpreadCents": 0.26,
-     "layers": [
-      {
-       "file": "sus/Fs2-v1",
-       "layer": 1,
-       "peakDb": -30.43,
-       "attackRmsDb": -53.94,
-       "brightness": 0.09289,
-       "lenS": 4.4463,
-       "loop": {
-        "startS": 2.770938,
-        "endS": 4.446333
-       },
-       "trimStartMs": 0.0,
-       "measuredCents": -0.05,
-       "loopCheck": {
-        "seamLevelDb": 0.0,
-        "steadyWobbleDb": 0.31,
-        "seamStepRatio": 0.85,
-        "seamKinkRatio": 1.0
-       },
-       "src": "BKCtbss_SusVib_F#1_v1_rr1.wav",
-       "channels": 2
-      },
-      {
-       "file": "sus/Fs2-v2",
-       "layer": 2,
-       "peakDb": -22.29,
-       "attackRmsDb": -34.39,
-       "brightness": 0.05657,
-       "lenS": 4.143,
-       "loop": {
-        "startS": 1.84075,
-        "endS": 4.143021
-       },
-       "trimStartMs": 0.0,
-       "measuredCents": -0.31,
-       "loopCheck": {
-        "seamLevelDb": 0.16,
-        "steadyWobbleDb": 0.47,
-        "seamStepRatio": 0.146,
-        "seamKinkRatio": 1.0
-       },
-       "src": "BKCtbss_SusVib_F#1_v3_rr1.wav",
-       "channels": 2
-      }
-     ]
-    },
-    {
-     "note": "A2",
-     "midi": 45,
-     "measuredCents": -0.27,
-     "tuneConfidence": 0.95,
-     "tuneLayer": 2,
-     "layerSpreadCents": 0.22,
-     "layers": [
-      {
-       "file": "sus/A2-v1",
-       "layer": 1,
-       "peakDb": -19.29,
-       "attackRmsDb": -36.26,
-       "brightness": 0.0398,
-       "lenS": 4.5673,
-       "loop": {
-        "startS": 2.398938,
-        "endS": 4.567292
-       },
-       "trimStartMs": 0.0,
-       "measuredCents": -0.05,
-       "loopCheck": {
-        "seamLevelDb": 0.05,
-        "steadyWobbleDb": 1.26,
-        "seamStepRatio": 0.242,
-        "seamKinkRatio": 1.0
-       },
-       "src": "BKCtbss_SusVib_A1_v1_rr1.wav",
-       "channels": 2
-      },
-      {
-       "file": "sus/A2-v2",
-       "layer": 2,
-       "peakDb": -11.92,
-       "attackRmsDb": -28.22,
-       "brightness": 0.04899,
-       "lenS": 4.1602,
-       "loop": {
-        "startS": 2.108208,
-        "endS": 4.160229
-       },
-       "trimStartMs": 0.0,
-       "measuredCents": -0.27,
-       "loopCheck": {
-        "seamLevelDb": 0.07,
-        "steadyWobbleDb": 1.74,
-        "seamStepRatio": 0.597,
-        "seamKinkRatio": 1.0
-       },
-       "src": "BKCtbss_SusVib_A1_v3_rr1.wav",
-       "channels": 2
-      }
-     ]
-    },
-    {
-     "note": "Cs3",
-     "midi": 49,
-     "measuredCents": -0.22,
-     "tuneConfidence": 0.96,
-     "tuneLayer": 1,
-     "layerSpreadCents": 0.06,
-     "layers": [
-      {
-       "file": "sus/Cs3-v1",
-       "layer": 1,
-       "peakDb": -27.42,
-       "attackRmsDb": -44.05,
-       "brightness": 0.05838,
-       "lenS": 4.5804,
-       "loop": {
-        "startS": 2.880021,
-        "endS": 4.580438
-       },
-       "trimStartMs": 0.0,
-       "measuredCents": -0.22,
-       "loopCheck": {
-        "seamLevelDb": 0.01,
-        "steadyWobbleDb": 0.61,
-        "seamStepRatio": 0.443,
-        "seamKinkRatio": 1.589
-       },
-       "src": "BKCtbss_SusVib_C#2_v1_rr1.wav",
-       "channels": 2
-      },
-      {
-       "file": "sus/Cs3-v2",
-       "layer": 2,
-       "peakDb": -19.95,
-       "attackRmsDb": -34.5,
-       "brightness": 0.12115,
-       "lenS": 3.4081,
-       "loop": {
-        "startS": 1.761021,
-        "endS": 3.408063
-       },
-       "trimStartMs": 0.0,
-       "measuredCents": -0.28,
-       "loopCheck": {
-        "seamLevelDb": 0.07,
-        "steadyWobbleDb": 1.01,
-        "seamStepRatio": 0.139,
-        "seamKinkRatio": 1.0
-       },
-       "src": "BKCtbss_SusVib_C#2_v3_rr1.wav",
-       "channels": 2
-      }
-     ]
-    },
-    {
-     "note": "E3",
-     "midi": 52,
-     "measuredCents": 0.3,
-     "tuneConfidence": 0.95,
-     "tuneLayer": 1,
-     "layerSpreadCents": 0.25,
-     "layers": [
-      {
-       "file": "sus/E3-v1",
-       "layer": 1,
-       "peakDb": -28.61,
-       "attackRmsDb": -42.94,
-       "brightness": 0.10281,
-       "lenS": 3.4667,
-       "loop": {
-        "startS": 1.598708,
-        "endS": 3.466729
-       },
-       "trimStartMs": 0.0,
-       "measuredCents": 0.3,
-       "loopCheck": {
-        "seamLevelDb": 0.02,
-        "steadyWobbleDb": 0.44,
-        "seamStepRatio": 0.51,
-        "seamKinkRatio": 0.551
-       },
-       "src": "BKCtbss_SusVib_E2_v1_rr1.wav",
-       "channels": 2
-      },
-      {
-       "file": "sus/E3-v2",
-       "layer": 2,
-       "peakDb": -21.6,
-       "attackRmsDb": -36.67,
-       "brightness": 0.16869,
-       "lenS": 3.8096,
-       "loop": {
-        "startS": 1.747604,
-        "endS": 3.809563
-       },
-       "trimStartMs": 0.0,
-       "measuredCents": 0.05,
-       "loopCheck": {
-        "seamLevelDb": 0.01,
-        "steadyWobbleDb": 0.53,
-        "seamStepRatio": 0.606,
-        "seamKinkRatio": 0.588
-       },
-       "src": "BKCtbss_SusVib_E2_v3_rr1.wav",
-       "channels": 2
-      }
-     ]
+  "type": "instrument",
+  "id": "strings-basses",
+  "name": "Contrabass (solo, VSCO 2 CE), sustain with vibrato",
+  "version": 1,
+  "note": "An instrument recipe for the sampler (doc 24, Instruments, Sample preparation and Sampler rules), made for the strings support kit (October 19, 2026). It describes exactly the files the prep step produced; nothing here is a tuning choice. Every file is a held, bowed note with a baked loop: layer.loop gives startS and endS in seconds from the file's start, and the file ends at endS. The 200 ms before loopStart were blended into the end of the loop (equal-power, corrected for the measured correlation of the two passages), so a plain sample-accurate loop from endS back to startS is seamless; the sampler releases the note with its own envelope. formats: each file exists once per format under root, as <file>.ogg (Ogg Opus, 48 kHz, 80 kbps stereo, variable bitrate) and <file>.m4a (AAC-LC, 48 kHz, 128 kbps stereo). Loop times were checked against the decoded .ogg (same length and start to the sample). measuredCents: the median of a frame-by-frame pitch track (10 ms frames, normalised square difference) over the steady part, against 12-TET at A440; vibrato averages out in the median. tuneConfidence: the share of frames with a clear period times (1 - interquartile range of the track / 60 cents). peakDb and attackRmsDb (first 300 ms) are as recorded: VSCO 2 CE keeps its recorded levels, so the soft layer peaks 4 to 22 dB below the loud one (its first 300 ms 6 to 40 dB below, because soft bowing starts slowly). brightness: share of energy above max(1.5 x the fundamental, 1 kHz) in the first 300 ms. loopCheck: the decoded .ogg played with the loop four times; seamLevelDb compares 250 ms either side of the seam, steadyWobbleDb is the same measure between neighbouring 250 ms windows inside the loop, seamStepRatio is the sample step at the seam over the largest step inside the loop. Note names: the library's file names sit one octave low against scientific pitch (its C3 is middle C); every zone here is named by the pitch it sounds, confirmed by measurement (src keeps the original name).",
+  "source": {
+    "library": "VSCO 2 Community Edition (Versilian Studios)",
+    "url": "https://github.com/sgossner/VSCO-2-CE/tree/master/Strings/Solo%20Contrabass/SusVib",
+    "license": "CC0 1.0",
+    "commit": "440300901dfe",
+    "notes": "Folder Strings/Solo Contrabass/SusVib, sustain with vibrato. Source layers v1 (soft) and v3 (loud); the source has no v2, renumbered v1 (soft) and v2 (loud). One take per note. Zones not used: everything below D2 (doc 24: no sub-bass below 60 Hz; the D2 zone reaches down to C2, MIDI 36, and no lower), E2 and G#2 (thinned toward minor thirds), and G#3 and B3 (above E3 the celli take over). LICENSE is CC0 1.0; the library's Readme.txt also asks (without binding terms) that the samples not be sold on their own, and for credit to Versilian Studios/Sam Gossner and Ivy Audio/Simon Dalzell. README.md: recorded by Sam Gossner and Simon Dalzell, sample cutting by Elan Hickler/Soundemote."
+  },
+  "channels": 2,
+  "formats": [
+    "ogg",
+    "m4a"
+  ],
+  "root": "assets/audio/instruments/strings-basses/",
+  "layers": 2,
+  "sets": {
+    "sus": {
+      "source": "SusVib",
+      "loop": true,
+      "zones": [
+        {
+          "note": "D2",
+          "midi": 38,
+          "measuredCents": -0.15,
+          "tuneConfidence": 0.94,
+          "tuneLayer": 1,
+          "layerSpreadCents": 0.01,
+          "layers": [
+            {
+              "file": "sus/D2-v1",
+              "layer": 1,
+              "peakDb": -32.17,
+              "attackRmsDb": -46.55,
+              "brightness": 0.01382,
+              "lenS": 5.0515,
+              "loop": {
+                "startS": 2.750417,
+                "endS": 5.051458
+              },
+              "trimStartMs": 0.0,
+              "measuredCents": -0.15,
+              "loopCheck": {
+                "seamLevelDb": 0.54,
+                "steadyWobbleDb": 0.99,
+                "seamStepRatio": 0.272,
+                "seamKinkRatio": 1.0
+              },
+              "src": "BKCtbss_SusVib_D1_v1_rr1.wav",
+              "channels": 2,
+              "loopRmsDb": -47.57
+            },
+            {
+              "file": "sus/D2-v2",
+              "layer": 2,
+              "peakDb": -19.84,
+              "attackRmsDb": -31.74,
+              "brightness": 0.03248,
+              "lenS": 2.1483,
+              "loop": {
+                "startS": 0.540583,
+                "endS": 2.148312
+              },
+              "trimStartMs": 0.0,
+              "measuredCents": -0.16,
+              "loopCheck": {
+                "seamLevelDb": 0.11,
+                "steadyWobbleDb": 0.81,
+                "seamStepRatio": 0.49,
+                "seamKinkRatio": 1.0
+              },
+              "src": "BKCtbss_SusVib_D1_v3_rr1.wav",
+              "channels": 2,
+              "loopRmsDb": -27.14
+            }
+          ]
+        },
+        {
+          "note": "Fs2",
+          "midi": 42,
+          "measuredCents": -0.05,
+          "tuneConfidence": 0.96,
+          "tuneLayer": 1,
+          "layerSpreadCents": 0.26,
+          "layers": [
+            {
+              "file": "sus/Fs2-v1",
+              "layer": 1,
+              "peakDb": -30.43,
+              "attackRmsDb": -53.94,
+              "brightness": 0.09289,
+              "lenS": 4.4463,
+              "loop": {
+                "startS": 2.770938,
+                "endS": 4.446333
+              },
+              "trimStartMs": 0.0,
+              "measuredCents": -0.05,
+              "loopCheck": {
+                "seamLevelDb": 0.0,
+                "steadyWobbleDb": 0.31,
+                "seamStepRatio": 0.85,
+                "seamKinkRatio": 1.0
+              },
+              "src": "BKCtbss_SusVib_F#1_v1_rr1.wav",
+              "channels": 2,
+              "loopRmsDb": -40.1
+            },
+            {
+              "file": "sus/Fs2-v2",
+              "layer": 2,
+              "peakDb": -22.29,
+              "attackRmsDb": -34.39,
+              "brightness": 0.05657,
+              "lenS": 4.143,
+              "loop": {
+                "startS": 1.84075,
+                "endS": 4.143021
+              },
+              "trimStartMs": 0.0,
+              "measuredCents": -0.31,
+              "loopCheck": {
+                "seamLevelDb": 0.16,
+                "steadyWobbleDb": 0.47,
+                "seamStepRatio": 0.146,
+                "seamKinkRatio": 1.0
+              },
+              "src": "BKCtbss_SusVib_F#1_v3_rr1.wav",
+              "channels": 2,
+              "loopRmsDb": -32.16
+            }
+          ]
+        },
+        {
+          "note": "A2",
+          "midi": 45,
+          "measuredCents": -0.27,
+          "tuneConfidence": 0.95,
+          "tuneLayer": 2,
+          "layerSpreadCents": 0.22,
+          "layers": [
+            {
+              "file": "sus/A2-v1",
+              "layer": 1,
+              "peakDb": -19.29,
+              "attackRmsDb": -36.26,
+              "brightness": 0.0398,
+              "lenS": 4.5673,
+              "loop": {
+                "startS": 2.398938,
+                "endS": 4.567292
+              },
+              "trimStartMs": 0.0,
+              "measuredCents": -0.05,
+              "loopCheck": {
+                "seamLevelDb": 0.05,
+                "steadyWobbleDb": 1.26,
+                "seamStepRatio": 0.242,
+                "seamKinkRatio": 1.0
+              },
+              "src": "BKCtbss_SusVib_A1_v1_rr1.wav",
+              "channels": 2,
+              "loopRmsDb": -27.3
+            },
+            {
+              "file": "sus/A2-v2",
+              "layer": 2,
+              "peakDb": -11.92,
+              "attackRmsDb": -28.22,
+              "brightness": 0.04899,
+              "lenS": 4.1602,
+              "loop": {
+                "startS": 2.108208,
+                "endS": 4.160229
+              },
+              "trimStartMs": 0.0,
+              "measuredCents": -0.27,
+              "loopCheck": {
+                "seamLevelDb": 0.07,
+                "steadyWobbleDb": 1.74,
+                "seamStepRatio": 0.597,
+                "seamKinkRatio": 1.0
+              },
+              "src": "BKCtbss_SusVib_A1_v3_rr1.wav",
+              "channels": 2,
+              "loopRmsDb": -20.6
+            }
+          ]
+        },
+        {
+          "note": "Cs3",
+          "midi": 49,
+          "measuredCents": -0.22,
+          "tuneConfidence": 0.96,
+          "tuneLayer": 1,
+          "layerSpreadCents": 0.06,
+          "layers": [
+            {
+              "file": "sus/Cs3-v1",
+              "layer": 1,
+              "peakDb": -27.42,
+              "attackRmsDb": -44.05,
+              "brightness": 0.05838,
+              "lenS": 4.5804,
+              "loop": {
+                "startS": 2.880021,
+                "endS": 4.580438
+              },
+              "trimStartMs": 0.0,
+              "measuredCents": -0.22,
+              "loopCheck": {
+                "seamLevelDb": 0.01,
+                "steadyWobbleDb": 0.61,
+                "seamStepRatio": 0.443,
+                "seamKinkRatio": 1.589
+              },
+              "src": "BKCtbss_SusVib_C#2_v1_rr1.wav",
+              "channels": 2,
+              "loopRmsDb": -40.87
+            },
+            {
+              "file": "sus/Cs3-v2",
+              "layer": 2,
+              "peakDb": -19.95,
+              "attackRmsDb": -34.5,
+              "brightness": 0.12115,
+              "lenS": 3.4081,
+              "loop": {
+                "startS": 1.761021,
+                "endS": 3.408063
+              },
+              "trimStartMs": 0.0,
+              "measuredCents": -0.28,
+              "loopCheck": {
+                "seamLevelDb": 0.07,
+                "steadyWobbleDb": 1.01,
+                "seamStepRatio": 0.139,
+                "seamKinkRatio": 1.0
+              },
+              "src": "BKCtbss_SusVib_C#2_v3_rr1.wav",
+              "channels": 2,
+              "loopRmsDb": -32.21
+            }
+          ]
+        },
+        {
+          "note": "E3",
+          "midi": 52,
+          "measuredCents": 0.3,
+          "tuneConfidence": 0.95,
+          "tuneLayer": 1,
+          "layerSpreadCents": 0.25,
+          "layers": [
+            {
+              "file": "sus/E3-v1",
+              "layer": 1,
+              "peakDb": -28.61,
+              "attackRmsDb": -42.94,
+              "brightness": 0.10281,
+              "lenS": 3.4667,
+              "loop": {
+                "startS": 1.598708,
+                "endS": 3.466729
+              },
+              "trimStartMs": 0.0,
+              "measuredCents": 0.3,
+              "loopCheck": {
+                "seamLevelDb": 0.02,
+                "steadyWobbleDb": 0.44,
+                "seamStepRatio": 0.51,
+                "seamKinkRatio": 0.551
+              },
+              "src": "BKCtbss_SusVib_E2_v1_rr1.wav",
+              "channels": 2,
+              "loopRmsDb": -38.25
+            },
+            {
+              "file": "sus/E3-v2",
+              "layer": 2,
+              "peakDb": -21.6,
+              "attackRmsDb": -36.67,
+              "brightness": 0.16869,
+              "lenS": 3.8096,
+              "loop": {
+                "startS": 1.747604,
+                "endS": 3.809563
+              },
+              "trimStartMs": 0.0,
+              "measuredCents": 0.05,
+              "loopCheck": {
+                "seamLevelDb": 0.01,
+                "steadyWobbleDb": 0.53,
+                "seamStepRatio": 0.606,
+                "seamKinkRatio": 0.588
+              },
+              "src": "BKCtbss_SusVib_E2_v3_rr1.wav",
+              "channels": 2,
+              "loopRmsDb": -33.14
+            }
+          ]
+        }
+      ]
     }
-   ]
-  }
- },
- "levels": {
-  "normalized": false,
-  "note": "Files keep the library's recorded level (no gain change): build dynamics from the two layers and attackRmsDb, and never re-gain a layer by itself."
- },
- "range": {
-  "low": "D2",
-  "high": "E3",
-  "playable": "C2 to F#3 (a note plays from the nearest zone, at most 2 semitones away)"
- },
- "problems": [
-  "sus/D2-v1: level changes by 0.54 dB across the loop seam (250 ms either side; the note's own 250 ms wobble is 0.99 dB)",
-  "Fs2: the loud layer is not brighter than the soft one (v1 0.093, v2 0.057); expected for soft bowing, whose first 300 ms is mostly bow noise before the tone builds, so the measure reads it as bright",
-  "sus/Cs3-v1: after Opus the waveform bends a little at the loop seam (second difference 1.59 times the largest inside the loop; 0.24 before encoding): codec error at the join, very small in level, listen for a faint tick",
-  "zones further apart than a whole tone, by design (the kit brief thins to about a minor third; a note is played from the nearer zone, at most 2 semitones away): D2 to Fs2 (4), Fs2 to A2 (3), A2 to Cs3 (4), Cs3 to E3 (3)",
-  "m4a files decode -11 to 930 samples (-0 to 19 ms) longer than the .ogg because AAC pads its last frame; their start is not shifted (lag 0 against the processed file), so the same loop times hold and loop.endS, not the file end, must be the loop end"
- ]
+  },
+  "levels": {
+    "normalized": false,
+    "note": "Files keep the library's recorded level (no gain change): build dynamics from the two layers and attackRmsDb, and never re-gain a layer by itself."
+  },
+  "range": {
+    "low": "D2",
+    "high": "E3",
+    "playable": "C2 to F#3 (a note plays from the nearest zone, at most 2 semitones away)"
+  },
+  "problems": [
+    "sus/D2-v1: level changes by 0.54 dB across the loop seam (250 ms either side; the note's own 250 ms wobble is 0.99 dB)",
+    "Fs2: the loud layer is not brighter than the soft one (v1 0.093, v2 0.057); expected for soft bowing, whose first 300 ms is mostly bow noise before the tone builds, so the measure reads it as bright",
+    "sus/Cs3-v1: after Opus the waveform bends a little at the loop seam (second difference 1.59 times the largest inside the loop; 0.24 before encoding): codec error at the join, very small in level, listen for a faint tick",
+    "zones further apart than a whole tone, by design (the kit brief thins to about a minor third; a note is played from the nearer zone, at most 2 semitones away): D2 to Fs2 (4), Fs2 to A2 (3), A2 to Cs3 (4), Cs3 to E3 (3)",
+    "m4a files decode -11 to 930 samples (-0 to 19 ms) longer than the .ogg because AAC pads its last frame; their start is not shifted (lag 0 against the processed file), so the same loop times hold and loop.endS, not the file end, must be the loop end"
+  ]
 }
