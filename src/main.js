@@ -16,6 +16,7 @@ import { on } from './core/events.js';
 import { showElsewhere } from './ui/elsewhere.js';
 import { mountAway } from './sim/away.js';
 import { mountReveal } from './ui/reveal.js';
+import { showDamaged, noticeRecovered } from './ui/damaged.js';
 
 /** Shown in the corner badge when no build.json or local server info is available. */
 export const BUILD = 'm1-s3-palette';
@@ -44,6 +45,7 @@ startApp(canvas, { onDeviceLost: (rebuilding) => showRebuildingNote(rebuilding),
   .then(async (r) => {
     if (r.ok) { islandInfo = /** @type {any} */ (r).island ?? null; saveInfo = /** @type {any} */ (r).save ?? null; }
     if (!r.ok && r.reason === 'elsewhere') { showElsewhere(r.takeOver, false); return; }
+    if (!r.ok && r.reason === 'damaged') { showDamaged(r.save, r.islands); return; }
     if (!r.ok) showNoWebGPU(r.reason);
     else if (new URLSearchParams(location.search).has('debug')) /** @type {any} */ (window).ebb = r;
     // Another window took the island over: say so, and offer it back.
@@ -59,6 +61,8 @@ startApp(canvas, { onDeviceLost: (rebuilding) => showRebuildingNote(rebuilding),
       const journal = createJournal({ world: r.world, words, island, web, wash, creatures: /** @type {any} */ (r).creatures ?? null });
       mountJournal(document.body, journal);
       mountIslandNotes(document.body, words);
+      // A save that came back from earlier copies says so, calmly (src/ui/damaged.js).
+      noticeRecovered(saveInfo);
       // Time away (src/sim/away.js): catch up now on the time since the last save, and later on a
       // hidden tab's time; the badge's Pretend I was away runs through it too.
       // The reveal on return (src/ui/reveal.js) listens first, so the catch-up on opening gets one.

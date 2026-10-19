@@ -10,6 +10,7 @@ import { hashWorldState, runHour } from '../src/sim/tick.js';
 import { createMirror } from '../src/world/terrain/heightfield.js';
 import { CHUNK_CELLS } from '../src/world/terrain/grid.js';
 import { slotFor } from '../src/save/autosave.js';
+import { readCopy, assemble } from '../src/save/recover.js';
 import { loadEcologyRecipes, islandWorld } from './ecology-world.js';
 
 const SAVE = 'save';
@@ -40,6 +41,39 @@ export function addSaveTests(test, assert, eq) {
     eq(live, '/ebb/starter-island', 'live site');
     assert(live !== preview && preview !== other, 'previews are apart from the live site and each other');
     eq(slotFor('two-ponds', '/ebb/index.html'), '/ebb/two-ponds', 'another island on the live site');
+  });
+
+  test(SAVE, 'a damaged save comes back part by part from earlier copies (S7d)', async () => {
+    const m = createMirror();
+    for (let k = 0; k < m.heightQ.length; k++) m.heightQ[k] = (k * 3) & 0xffff;
+    /** Pack a copy, optionally spoiling one section. @param {number} gen @param {number} worldT @param {string} [spoil] */
+    async function copy(gen, worldT, spoil) {
+      const { header, sections } = snapshot({ ...parts({ tide: { level: worldT } }, m), worldT });
+      const bytes = await encode({ ...header, savedAt: 1000 + gen }, sections);
+      if (spoil) {
+        const head = new DataView(bytes.buffer).getUint32(8, true);
+        const s = JSON.parse(new TextDecoder().decode(bytes.subarray(12, 12 + head))).sections.find((/** @type {any} */ x) => x.id === spoil);
+        bytes[12 + head + s.offset + Math.floor(s.length / 2)] ^= 0xff;
+      }
+      return readCopy({ slot: 's', gen, savedAt: 1000 + gen, codec: 'ebb', bytes });
+    }
+    // The newest copy's island is damaged: the one before opens.
+    const a = assemble([await copy(5, 500, 'world'), await copy(4, 400)]);
+    eq(a?.from, 'earlier', 'from');
+    eq(a?.base.gen, 4, 'the copy before');
+    eq(a?.damaged.length, 1, 'the damaged copy is kept aside');
+    // One chunk of the newest copy is damaged: only it comes from the copy before.
+    const b = assemble([await copy(5, 500, 'chunk:0,0'), await copy(4, 400)]);
+    eq(b?.from, 'parts', 'from');
+    eq(b?.parts.meta.worldT, 500, 'the island is the newest');
+    eq(b?.mended.join(','), 'chunk:0,0', 'mended');
+    assert(b?.parts.chunks.some((c) => c.cx === 0 && c.cz === 0 && c.heightQ), 'the chunk is back, with its heights');
+    // The journal is damaged in every copy: it starts fresh, said plainly.
+    const c = assemble([await copy(5, 500, 'journal'), await copy(4, 400, 'journal')]);
+    eq(c?.lost.join(','), 'journal', 'lost');
+    eq(c?.parts.journal, null, 'a fresh journal');
+    // Nothing reads: no island.
+    eq(assemble([await copy(5, 500, 'world')]), null, 'nothing to open');
   });
 
   test(SAVE, 'crc32 matches the standard check value', () => {

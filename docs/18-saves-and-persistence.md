@@ -22,6 +22,15 @@
   - Further sections: `view` (the camera, outside the checksum) and `looks` (empty until the creature studio).
   - Routine saves are packed into `.ebb` bytes in a worker. The save made as the tab hides is written to IndexedDB as it is (`codec: 'raw'`), at once, because the page may close before a worker answers; the next routine save replaces it.
   - The Saves menu on the build badge stands in for Settings > Saves until S8.
+- **As built in S7d** (`src/save/recover.js`, `backup.js`; the Saves menu in `src/ui/saves-menu.js`):
+  - **Part-by-part recovery:** the newest copy whose meta and world read is the island. Any other damaged part (journal, springs, unlocks, view, one chunk) comes from the newest older copy that has it whole. With none, a chunk regrows from the seed and the journal starts fresh.
+  - **Calm note and quarantine:** a note says what happened (`recipes/world/save.json` `recovered`). Damaged copies go to the IndexedDB `quarantine` store (database version 2) once each, never deleted. With no copy readable, a recovery card offers opening a file or a new island. On previews and local builds only, it can also keep the broken save as a file for fixing (Matt: players have no use for it).
+  - **Back up:** to an `.ebb` file. Touch phones use the share sheet, other devices a download. The slot records `lastBackupAt`, and after 7 real days without a backup a quiet line appears in the Saves menu.
+  - **Opening a file:** checked before anything changes (format, checksums, size, an island this build has), then asked twice on the page. It goes in as the newest copy, so the replaced island stays among the earlier saves (Matt: replace, not a second island).
+  - **Earlier saves:** opening one copies it as the newest. Both an opened file and an earlier save are stamped with the time now, so the time they waited earns no time away.
+  - **Fingerprint:** the island fingerprint is `hashWorldState(world)` as 8 hex digits, the same on every device.
+  - **Tests and tools:** buttons to damage the newest save, damage one chunk, or move the clock back a day, on previews and local builds only. `tools/migrate-test.html` (with `tools/save-samples/`) is ready for the first format change.
+  - `navigator.storage.persist()` is asked for after the first edit.
 - **As built in S7b:**
   - `meta.carryMinutes` and `meta.keepGrowing` are kept.
   - A loaded island does not save until its catch-up is done, and no save is made while one runs. A save then would stamp the old island with the time now and lose the time away; if the page closes mid catch-up, the next load counts the same time again.

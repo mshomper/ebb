@@ -11,19 +11,20 @@
 import { on, emit, emitDeferred } from '../core/events.js';
 import { subscribe } from '../core/store.js';
 import { run } from '../core/workers.js';
-import { openDb, getSlot, getSave, writeGeneration, deleteSlot } from './idb.js';
-import { decode, encode } from './world-file.js';
-import { migrate } from './migrate.js';
+import { openDb, getSlot, writeGeneration, deleteSlot, putSlot } from './idb.js';
+import { encode } from './world-file.js';
 import { snapshot, restore } from './sections.js';
+import { loadIsland } from './recover.js';
 
 const ENCODE_JOB = { module: './save/world-file.js', fn: 'encodeJob' };
 /** URL parameters that start a throwaway test island. */
 export const TEST_PARAMS = ['seed', 'day', 'frogs'];
 
 /**
- * @typedef {'off'|'test'|'fresh'|'loaded'|'elsewhere'|'failed'} SaveStatus
+ * @typedef {'off'|'test'|'fresh'|'loaded'|'elsewhere'|'failed'|'damaged'} SaveStatus
  *   off: this page does not save (tool pages); test: a test link; fresh: no save yet;
- *   loaded: the island came back from its save; elsewhere: another tab has it; failed: no database
+ *   loaded: the island came back from its save; elsewhere: another tab has it; failed: no database;
+ *   damaged: there is a save but no copy of it reads (the recovery card offers a file or a new island)
  */
 /**
  * @typedef {Object} SaveSession
@@ -41,6 +42,14 @@ export const TEST_PARAMS = ['seed', 'day', 'frogs'];
  *   island with the time now and lose the time away. A loaded island starts held until its
  *   catch-up is done.
  * @property {(ms: number) => void} setHighWater  the clock guard's mark after a catch-up (doc 18)
+ * @property {{ from: 'current'|'earlier'|'parts', mended: string[], lost: string[] } | null} restoredFrom
+ *   how the island came back (recover.js), for the calm note
+ * @property {() => Promise<void>} saveNow  a full save now (before a backup or a test)
+ * @property {() => void} stop  no more saves from this page (before replacing the island and reloading)
+ * @property {() => any} slotRecord  the slot's record (created, lastBackupAt)
+ * @property {(patch: Record<string, any>) => Promise<void>} noteSlot  keep something on the slot's record
+ * @property {IDBDatabase | null} db
+ * @property {() => any} snapshotNow  the island's header and sections now (a backup)
  */
 
 /** @type {SaveSession | null} */ let session = null;
@@ -72,6 +81,7 @@ export async function beginSave(opts) {
   let restoredGen = -1;
   let wallHighWater = 0;
   /** @type {{ savedAt: number, wallHighWater: number } | null} */ let lastSeen = null;
+  /** @type {SaveSession['restoredFrom']} */ let restoredFrom = null;
   /** @type {(() => void) | null} */ let releaseLock = null;
 
   if (status === 'fresh') {
@@ -83,16 +93,16 @@ export async function beginSave(opts) {
         db = await openDb();
         slotRec = (await getSlot(db, slot)) ?? null;
         if (slotRec) {
-          const got = await loadNewest(db, slotRec);
+          // The newest copy that reads, any damaged part from an older one (recover.js).
+          const got = await loadIsland(db, slot);
           if (got) {
             restored = got.parts;
-            restoredGen = got.gen;
-            wallHighWater = got.header.wallHighWater ?? 0;
-            lastSeen = { savedAt: got.header.savedAt ?? 0, wallHighWater };
+            restoredGen = got.base.gen;
+            wallHighWater = got.base.header.wallHighWater ?? 0;
+            lastSeen = { savedAt: got.base.header.savedAt ?? 0, wallHighWater };
+            restoredFrom = { from: got.from, mended: got.mended, lost: got.lost };
             status = 'loaded';
-            if (got.gen !== slotRec.gen) console.info(`save: the newest copy of ${slot} was damaged; loaded the one from before`);
-            if (got.parts.bad.length) console.info(`save: regrew ${got.parts.bad.join(', ')} from the seed`);
-          }
+          } else status = 'damaged';
         }
       } catch (err) {
         console.warn('save: no save database on this device; this visit will not be kept', err);
@@ -124,7 +134,7 @@ export async function beginSave(opts) {
     if (!db || s <= writtenSeq) return Promise.resolve(false);
     writtenSeq = s;
     const gen = (slotRec?.gen ?? -1) + 1;
-    slotRec = { id: slot, island: p.island, seed: p.seed, gen, created: slotRec?.created ?? p.savedAt, lastPlayed: p.savedAt };
+    slotRec = { ...(slotRec ?? {}), id: slot, island: p.island, seed: p.seed, gen, created: slotRec?.created ?? p.savedAt, lastPlayed: p.savedAt };
     return writeGeneration(db, slotRec, { slot, gen, savedAt: p.savedAt, ...save }, live?.recipe.generationsKept ?? 3).then(() => true);
   }
 
@@ -200,11 +210,17 @@ export async function beginSave(opts) {
       const first = !live;
       live = l;
       if (stopped || !first) return;
-      const soon = () => saveSoon('edit');
+      // After the first edit, ask the browser to keep the island rather than clear it for space.
+      let asked = false;
+      const soon = () => {
+        saveSoon('edit');
+        if (!asked) { asked = true; navigator.storage?.persist?.().catch(() => {}); }
+      };
       on('terrain:stroke-ended', soon);
       on('growth:planted', soon);
-      subscribe('water', soon);
-      subscribe('journal', soon);
+      on('water:spring-added', soon);
+      subscribe('water', () => saveSoon('edit'));
+      subscribe('journal', () => saveSoon('edit'));
       on('clock:hour', () => saveSoon('hour'));
       on('creature:settled', () => saveSoon('event'));
       on('creature:joined', () => saveSoon('event'));
@@ -232,6 +248,21 @@ export async function beginSave(opts) {
       if (!on && dirty && !stopped) schedule(0);
     },
     setHighWater(ms) { wallHighWater = ms; },
+    restoredFrom,
+    async saveNow() {
+      clearTimeout(timer);
+      while (inFlight) await new Promise((ok) => setTimeout(ok, 30));
+      await routineSave();
+    },
+    stop() { stopped = true; clearTimeout(timer); },
+    slotRecord: () => slotRec,
+    async noteSlot(patch) {
+      if (!db || !slotRec) return;
+      slotRec = { ...slotRec, ...patch };
+      await putSlot(db, slotRec);
+    },
+    db,
+    snapshotNow: () => snapshot(partsNow()),
   };
   return session;
 }
@@ -252,31 +283,3 @@ function holdLock(slot) {
   });
 }
 
-/**
- * The newest generation that reads cleanly, trying older ones if it is damaged.
- * @param {IDBDatabase} db @param {any} slotRec
- */
-async function loadNewest(db, slotRec) {
-  for (let gen = slotRec.gen; gen >= 0 && gen > slotRec.gen - 8; gen--) {
-    try {
-      const rec = await getSave(db, slotRec.id, gen);
-      if (!rec) continue;
-      let header, sections;
-      if (rec.codec === 'raw') {
-        header = rec.raw.header;
-        sections = Object.fromEntries(rec.raw.sections);
-      } else {
-        const d = await decode(rec.bytes);
-        if (d.bad.includes('meta') || d.bad.includes('world')) throw new Error(`generation ${gen} is damaged`);
-        header = d.header;
-        sections = d.sections;
-      }
-      const parts = restore(migrate(sections, header.format));
-      if (!parts.meta || !parts.world) throw new Error(`generation ${gen} has no world`);
-      return { gen, header, parts };
-    } catch (err) {
-      console.warn(`save: could not read generation ${gen}`, err);
-    }
-  }
-  return null;
-}
