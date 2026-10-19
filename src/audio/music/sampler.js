@@ -66,6 +66,10 @@ export function createSampler(ctx, output, instrument, settings, opts = {}) {
   let nextId = 1;
   let decodedBytes = 0;
   let downloadedBytes = 0;
+  /** @type {Map<string, number>} when each decoded file last sounded (audio time), for freeing memory */
+  const lastUse = new Map();
+  /** @type {Map<string, number>} each decoded file's midi, so a range can be protected */
+  const fileMidi = new Map();
   /** @type {((name: string) => void) | null} */
   let onPedalNoise = null;
   /** @type {{down: AudioBuffer[], up: AudioBuffer[]}} the pedal mechanism's recordings */
@@ -130,6 +134,8 @@ export function createSampler(ctx, output, instrument, settings, opts = {}) {
           let buf = await ctx.decodeAudioData(bytes);
           buf = shape(buf, midi);
           buffers.set(key, buf);
+          fileMidi.set(key, midi);
+          lastUse.set(key, ctx.currentTime);
           decodedBytes += buf.length * buf.numberOfChannels * 4;
           return buf;
         } catch (e) {
@@ -356,6 +362,7 @@ export function createSampler(ctx, output, instrument, settings, opts = {}) {
       const L = w.L;
       const buf = buffers.get(L.file);
       if (!buf) continue;
+      lastUse.set(L.file, t);
       if (w.weight > mainW) { mainW = w.weight; mainLayer = w.layer; }
       const src = ctx.createBufferSource();
       src.buffer = buf;
@@ -434,6 +441,33 @@ export function createSampler(ctx, output, instrument, settings, opts = {}) {
     src.start(t);
   }
 
+  /**
+   * Free decoded recordings until the instrument uses at most budgetMB, least recently sounded
+   * first, never touching notes inside the protected ranges (the piece playing or about to). The
+   * files stay in the browser's cache, so unpacking them again later needs no download.
+   * @param {number} budgetMB @param {{low: number, high: number}[]} [protect]
+   */
+  function trim(budgetMB, protect = []) {
+    if (decodedBytes / 1048576 <= budgetMB) return 0;
+    const inUse = new Set(voices.filter((v) => !v.ended).flatMap((v) => v.srcs.map((x) => x.buffer)));
+    const safe = (/** @type {string} */ f) => {
+      const m = fileMidi.get(f) ?? 60;
+      return protect.some((r) => m >= r.low - 2 && m <= r.high + 2);
+    };
+    const order = [...buffers.keys()].filter((f) => !safe(f) && !inUse.has(buffers.get(f) ?? null)).sort((a, b) => (lastUse.get(a) ?? 0) - (lastUse.get(b) ?? 0));
+    let freed = 0;
+    for (const f of order) {
+      if (decodedBytes / 1048576 <= budgetMB) break;
+      const b = buffers.get(f);
+      if (!b) continue;
+      decodedBytes -= b.length * b.numberOfChannels * 4;
+      buffers.delete(f);
+      lastUse.delete(f);
+      freed++;
+    }
+    return freed;
+  }
+
   /** Fade everything out (mute, tab hidden, piece stopped). @param {number} [fadeS] */
   function stopAll(fadeS = 0.3) {
     const t = ctx.currentTime;
@@ -443,6 +477,7 @@ export function createSampler(ctx, output, instrument, settings, opts = {}) {
 
   return {
     load,
+    trim,
     noteOn,
     noteOff,
     pedal,
