@@ -122,6 +122,14 @@ export function mountJournal(parent, live) {
     sizeBtn.setAttribute('aria-label', ui.size === 'full' ? 'Make the journal shorter' : 'Make the journal taller');
     sizeBtn.title = ui.size === 'full' ? 'Shorter' : 'Taller';
     document.documentElement.classList.toggle('ebb-journal-open', ui.open);
+    // Read marks: a dot on the book while anything is unread, and on each section that holds it.
+    const U = live.unread();
+    const inSection = (/** @type {string[]} */ ids) => ids.some((id) => U.pages.has(id));
+    dot(openBtn, U.notes > 0 || U.pages.size > 0);
+    for (const t of tabs) {
+      const v = t.dataset.view;
+      dot(t, v === 'notes' ? U.notes > 0 : v === 'living' ? inSection(words.order) : v === 'ground' ? inSection(island.groundOrder) : false);
+    }
     if (!ui.open) return;
     for (const t of tabs) t.setAttribute('aria-pressed', String(t.dataset.view === ui.view));
     const paged = (ui.view === 'living' || ui.view === 'ground') && !!ui.page && live.hasPage(ui.page);
@@ -136,15 +144,29 @@ export function mountJournal(parent, live) {
     if (key !== shownKey) { body.scrollTop = 0; shownKey = key; }
   }
 
+  /** A small ink dot that says "new" (read marks), on a button or in a row. @param {HTMLElement} el @param {boolean} on */
+  function dot(el, on) {
+    let d = /** @type {HTMLElement | null} */ (el.querySelector(':scope > .ebb-new'));
+    if (on && !d) {
+      d = document.createElement('span');
+      d.className = 'ebb-new';
+      d.setAttribute('role', 'img');
+      d.setAttribute('aria-label', 'New');
+      el.appendChild(d);
+    } else if (!on && d) d.remove();
+  }
+  const NEW = '<span class="ebb-new" role="img" aria-label="New"></span>';
+
   /** A list of pages. @param {string[]} ids */
   function listView(ids) {
+    const U = live.unread();
     const rows = ids.map((id) => {
       const d = live.describe(id);
       const icon = d.known ? iconSvg(d.icon) : iconSvg('unknown');
       const line = d.known ? d.status : /** @type {any} */ (d).riddle;
       return `<li><button type="button" class="ebb-jlist__row${d.known ? '' : ' is-pencil'}" data-page="${esc(id)}">
         <span class="ebb-jlist__icon">${icon}</span>
-        <span class="ebb-jlist__text"><b>${esc(d.known ? d.name : 'Not yet seen')}</b><span class="ebb-journal__voice">${esc(line)}</span></span>
+        <span class="ebb-jlist__text"><b>${U.pages.has(id) ? NEW : ''}${esc(d.known ? d.name : 'Not yet seen')}</b><span class="ebb-journal__voice">${esc(line)}</span></span>
       </button></li>`;
     });
     return `<ul class="ebb-jlist">${rows.join('')}</ul>`;
@@ -177,7 +199,8 @@ export function mountJournal(parent, live) {
         <p class="ebb-jpage__status ebb-journal__voice is-pencil">${esc(d.riddle)}</p></article>`;
     }
     const show = d.canShow ? `<button type="button" class="ebb-jpage__show" data-show="${esc(id)}">${iconSvg('find')}<span>Show me</span></button>` : '';
-    const notes = d.notes.map((/** @type {any} */ n) => `<li><span class="ebb-journal__voice">${esc(n.text)}</span> <small>${esc(n.date)}</small></li>`).join('');
+    const since = get('journalUi')?.pageSince ?? Infinity;
+    const notes = d.notes.map((/** @type {any} */ n) => `<li>${n.n > since ? NEW : ''}<span class="ebb-journal__voice">${esc(n.text)}</span> <small>${esc(n.date)}</small></li>`).join('');
     /** @param {string} title @param {string} inner */
     const section = (title, inner) => (inner ? `<section><h4>${title}</h4>${inner}</section>` : '');
     let middle;
@@ -214,13 +237,23 @@ export function mountJournal(parent, live) {
     /** @type {import('../world/journal/observe.js').Journal} */
     const j = get('journal') ?? live.journal();
     if (!j.notes.length) return '<p class="ebb-journal__empty ebb-journal__voice">Nothing written yet. Watch the island for a while.</p>';
-    const items = j.notes.map((n) => {
-      const inner = `<span class="ebb-journal__voice">${esc(n.text)}</span><small>${esc(n.date)}</small>`;
+    // Read marks: notes that never showed on the island come first, under their own heading;
+    // the rest in order, the new ones (since Notes was last opened) with a dot.
+    const since = get('journalUi')?.notesSince ?? Infinity;
+    const R = words.readMarks;
+    const item = (/** @type {any} */ n, /** @type {boolean} */ isNew) => {
+      const inner = `<span class="ebb-journal__voice">${isNew ? NEW : ''}${esc(n.text)}</span><small>${esc(n.date)}</small>`;
       return n.sp && live.hasPage(n.sp)
         ? `<li><button type="button" class="ebb-jnotes__row" data-page="${esc(n.sp)}">${inner}</button></li>`
         : `<li><div class="ebb-jnotes__row">${inner}</div></li>`;
-    });
-    return `<ul class="ebb-jnotes">${items.join('')}</ul>`;
+    };
+    const missed = j.notes.filter((n) => live.noteState(n, since) === 'missed');
+    const rest = j.notes.filter((n) => live.noteState(n, since) !== 'missed');
+    const all = `<ul class="ebb-jnotes">${rest.map((n) => item(n, live.noteState(n, since) === 'new')).join('')}</ul>`;
+    return missed.length
+      ? `<h4 class="ebb-jnotes__head">${esc(R.missed)}</h4><ul class="ebb-jnotes">${missed.map((n) => item(n, true)).join('')}</ul>
+         ${rest.length ? `<h4 class="ebb-jnotes__head">${esc(R.rest)}</h4>${all}` : ''}`
+      : all;
   }
 
   render();

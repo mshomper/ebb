@@ -1,7 +1,8 @@
 // @ts-check
 // Notes on the island (docs/15 HUD): the journal's new notes appear at the bottom left in Fraunces
 // italic, at most two at once, and fade after a few seconds; a click opens the journal at that
-// species. The same file shows the card a tap opens on a living thing: its name, what it is doing
+// species. Notes that never get their turn (a burst past the queue, or written while the tab was
+// out of sight) wait in the journal under "You may have missed", and a quiet line here says so. The same file shows the card a tap opens on a living thing: its name, what it is doing
 // and a way into its journal page. After a page's Show me (`identify.pinned`), the card rides with
 // the ring as the camera moves, and while the ring is out of view a drawn arrow at the screen edge
 // points to it.
@@ -47,15 +48,17 @@ export function mountIslandNotes(parent, words) {
     const showing = root.querySelectorAll('.ebb-notes__note:not(.is-leaving)').length;
     const wait = Math.max(0, lastShown + N.gapS * 1000 - now);
     if (showing >= AT_ONCE || wait > 0) { pumpTimer = setTimeout(pump, showing >= AT_ONCE ? 400 : wait); return; }
-    const n = /** @type {import('../world/journal/observe.js').Note} */ (waiting.shift());
+    const n = /** @type {any} */ (waiting.shift());
     lastShown = now;
+    // Shown: it is no longer one you may have missed (src/world/journal/read.js).
+    if (n.n) dispatch(/** @type {any} */ ({ type: 'journal.noteShown', n: n.n }));
     const b = document.createElement('button');
     b.type = 'button';
     b.className = 'ebb-notes__note';
     b.textContent = n.text;
     b.title = 'Open the journal';
     b.addEventListener('click', () => dispatch(n.sp ? { type: 'ui.journal', open: true, page: n.sp } : { type: 'ui.journal', open: true, view: 'notes' }));
-    root.appendChild(b);
+    root.insertBefore(b, moreBtn.isConnected ? moreBtn : null);
     requestAnimationFrame(() => b.classList.add('is-shown'));
     setTimeout(() => {
       b.classList.add('is-leaving');
@@ -66,11 +69,35 @@ export function mountIslandNotes(parent, words) {
     if (waiting.length) pumpTimer = setTimeout(pump, N.gapS * 1000);
   }
 
+  // More notes than the queue holds, or notes written while the tab is out of sight, are never
+  // shown on the island: the journal keeps them under "You may have missed", and a quiet line here
+  // says how many wait there.
+  let more = 0;
+  const moreBtn = document.createElement('button');
+  moreBtn.type = 'button';
+  moreBtn.className = 'ebb-notes__more';
+  moreBtn.addEventListener('click', () => { more = 0; renderMore(); dispatch({ type: 'ui.journal', open: true, view: 'notes', page: null }); });
+  function renderMore() {
+    moreBtn.textContent = more ? (more === 1 ? N.moreOne : N.more.replace('{n}', String(more))) : '';
+    moreBtn.classList.toggle('is-shown', more > 0);
+    if (more && !moreBtn.isConnected) root.appendChild(moreBtn);
+    if (more) root.appendChild(moreBtn);   // keep it last, under the notes
+  }
+  /** Is this note still unread in the journal (not, say, part of the island you started with)? @param {any} n */
+  const unreadNote = (n) => !!n.n && n.n > (get('journal')?.read?.notes ?? 0);
   const offNote = on('note:posted', (/** @type {import('../world/journal/observe.js').Note} */ n) => {
+    if (document.hidden) { if (unreadNote(n)) { more++; renderMore(); } return; }
     waiting.push(n);
-    if (waiting.length > N.queue) waiting = waiting.slice(waiting.length - N.queue);
+    if (waiting.length > N.queue) {
+      const dropped = waiting.slice(0, waiting.length - N.queue);
+      waiting = waiting.slice(waiting.length - N.queue);
+      more += dropped.filter(unreadNote).length;
+      renderMore();
+    }
     pump();
   });
+  // Opening Notes reads them all: the line goes.
+  const offUi = subscribe('journalUi', (/** @type {any} */ u) => { if (u?.open && u.view === 'notes' && more) { more = 0; renderMore(); } });
 
   // --- the tap card ---
   /** @type {ReturnType<typeof setTimeout> | undefined} */ let cardTimer;
@@ -170,6 +197,7 @@ export function mountIslandNotes(parent, words) {
 
   return function dispose() {
     offNote();
+    offUi();
     for (const u of unsubs) u();
     clearTimeout(pumpTimer);
     clearTimeout(cardTimer);
