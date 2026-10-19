@@ -442,6 +442,53 @@ export function createSampler(ctx, output, instrument, settings, opts = {}) {
   }
 
   /**
+   * The recordings a note would sound, without playing it: every take of each layer the velocity
+   * reaches, in the set the pedal picks, plus its key-off sound. Used to unpack exactly what a
+   * performance needs (instruments.js prepare).
+   * @param {number} midi @param {number} velocity @param {boolean} pedalDown
+   * @returns {string[]}
+   */
+  function filesFor(midi, velocity, pedalDown) {
+    /** @type {string[]} */
+    const out = [];
+    const set = setFor(pedalDown);
+    const zones = zonesOf(set);
+    const zi = nearestZone(midi, zones.map((z) => z.midi));
+    if (zi < 0) return out;
+    const zone = zones[zi];
+    const bounds = cfg.layers.bounds?.length === layerCount - 1 ? cfg.layers.bounds : evenBounds(layerCount);
+    const all = /** @type {any[]} */ (zone.layers ?? [zone]).filter((L) => L.file && !(cfg.exclude ?? []).includes(L.file));
+    const numOf = (/** @type {any} */ L, /** @type {number} */ i) => (L.layer ?? i + 1) - 1;
+    const have = [...new Set(all.map((L, i) => numOf(L, i)))];
+    for (const w of layerWeights(velocity, bounds, cfg.layers.fadeWidth, cfg.layers.law ?? 1)) {
+      let pick = have[0];
+      for (const h of have) if (Math.abs(h - w.layer) < Math.abs(pick - w.layer)) pick = h;
+      for (const [i, L] of all.entries()) if (numOf(L, i) === pick) out.push(L.file);
+    }
+    const rel = zonesOf('rel');
+    if (rel.length) {
+      const rz = rel[nearestZone(midi, rel.map((z) => z.midi))];
+      for (const L of rz.layers ?? [rz]) if (L.file) out.push(L.file);
+    }
+    return [...new Set(out)];
+  }
+
+  /**
+   * Unpack exactly these recordings (and the pedal sounds), eight at a time.
+   * @param {string[]} files
+   */
+  async function loadFiles(files) {
+    const midiOf = new Map();
+    for (const st of Object.values(sets)) for (const z of /** @type {any} */ (st).zones ?? []) for (const L of z.layers ?? [z]) if (L.file) midiOf.set(L.file, z.midi);
+    const todo = files.filter((f) => !buffers.has(f));
+    let k = 0;
+    await Promise.all(Array.from({ length: Math.min(8, todo.length) }, async () => {
+      while (k < todo.length) { const f = todo[k++]; await loadFile(f, midiOf.get(f) ?? 60); }
+    }));
+    if (opts.pedalNoise && !pedalBufs.down.length && !pedalBufs.up.length) await load({ low: 0, high: -1 });
+  }
+
+  /**
    * Free decoded recordings until the instrument uses at most budgetMB, least recently sounded
    * first, never touching notes inside the protected ranges (the piece playing or about to). The
    * files stay in the browser's cache, so unpacking them again later needs no download.
@@ -477,6 +524,8 @@ export function createSampler(ctx, output, instrument, settings, opts = {}) {
 
   return {
     load,
+    loadFiles,
+    filesFor,
     trim,
     noteOn,
     noteOff,

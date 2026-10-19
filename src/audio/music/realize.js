@@ -61,6 +61,7 @@ const FLAT_KEYS = new Set(['F', 'Bb', 'Eb', 'Ab', 'Db', 'Dm', 'Gm', 'Cm', 'Fm', 
  * @property {boolean} [shortForm]
  * @property {string} [key]        force a key (the director's key drift)
  * @property {string[]} [residents]
+ * @property {string[]} [path]     play these sections instead of the form (the performer's coda)
  */
 
 /** @param {string} s */
@@ -139,7 +140,8 @@ export function realize(piece, ctx, recipes) {
   const r = stream(ctx.seed >>> 0, 0x6d75, strHash(piece.id));
   const pick = (/** @type {any[]} */ a) => a[r.int(a.length)];
   const secs = sectionsOf(piece);
-  const path = formPath(piece, !!ctx.shortForm, r);
+  const formed = formPath(piece, !!ctx.shortForm, r);
+  const path = ctx.path?.filter((n) => piece.sections[n]) ?? formed;
 
   // Key: forced by the director, or drawn from the piece's allowed keys (home most often).
   const written = piece.keys[0];

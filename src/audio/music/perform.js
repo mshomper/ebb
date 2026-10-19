@@ -82,6 +82,7 @@ export function createPerformer(ctx, instruments) {
       run.cutAt = next.t - 0.02;
       // Lift every pedal a moment after the cut so nothing hangs on.
       const lifts = Object.keys(instruments).map((name) => ({ t: next.t + 1.2, kind: 0, p: { instrument: name, down: false } }));
+      /** @type {any[]} */
       let tail = lifts;
       let endT = next.t + 1.5;
       if (run.opts.coda) {

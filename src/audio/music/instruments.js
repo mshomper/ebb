@@ -42,10 +42,22 @@ export async function createInstruments(ctx, output, opts = {}) {
     available: () => Object.keys(set),
     /**
      * Unpack what a performance needs. Resolves when every note it uses is ready.
-     * @param {{ranges: Record<string, {low: number, high: number}>}} perf
+     * @param {{ranges: Record<string, {low: number, high: number}>, notes: any[], pedal: any[]}} perf a performance from realize.js
      */
     async prepare(perf) {
-      await Promise.all(Object.entries(perf.ranges).map(([name, r]) => set[name]?.load({ low: r.low, high: r.high })));
+      await Promise.all(Object.entries(perf.ranges).map(async ([name, r]) => {
+        const inst = /** @type {any} */ (set[name]);
+        if (!inst) return;
+        if (!inst.filesFor) return inst.load({ low: r.low, high: r.high });
+        // Exactly the recordings this performance will sound: each note's nearest zone, the layers
+        // its velocity reaches, the set the pedal picks at that moment, and its key-off sound.
+        const pedal = perf.pedal.filter((/** @type {any} */ e) => e.instrument === name);
+        const down = (/** @type {number} */ t) => { let d = false; for (const e of pedal) { if (e.t <= t) d = e.down; else break; } return d; };
+        /** @type {Set<string>} */
+        const files = new Set();
+        for (const n of perf.notes) if (n.instrument === name) for (const f of inst.filesFor(n.midi, n.vel, down(n.t))) files.add(f);
+        await inst.loadFiles([...files]);
+      }));
     },
     /**
      * After a piece: free the least recently sounded notes beyond the memory budget, keeping the
