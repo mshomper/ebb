@@ -6,6 +6,7 @@ import {
   layerWeights, evenBounds, velocityDb, fileGainDb, registerTiltDb, velocityCutoffHz, nearestZone,
   stretchCents, correctionCents, playbackRate, damperTau, pickVictim, midiToHz, dbToGain,
 } from '../src/audio/music/sampler-math.js';
+import { createSampler } from '../src/audio/music/sampler.js';
 
 const G = 'music: sampler';
 
@@ -132,5 +133,34 @@ export function addSamplerTests(test, assert, eq) {
   test(G, 'decibels to gain', () => {
     close(dbToGain(0), 1);
     close(dbToGain(-20), 0.1, 1e-12);
+  });
+
+  test(G, 'phones play the lighter set, the desktop keeps the full one', () => {
+    // A tiny made-up recipe: three layers every whole tone, and a phone set of two layers every
+    // major third. Nothing is decoded; filesFor only names the recordings a note would use.
+    const zone = (/** @type {number} */ midi, /** @type {number[]} */ ls, /** @type {string} */ tag) =>
+      ({ midi, layers: ls.map((l, i) => ({ file: `${tag}/${midi}-v${l}`, layer: i + 1, attackRmsDb: -16 })) });
+    const full = [60, 62, 64, 66, 68].map((m) => zone(m, [1, 2, 3], 'sus'));
+    const recipe = {
+      root: 'full/', layers: 3, sets: { sus: { zones: full } },
+      mobile: { root: 'phone/', layers: 2, sets: { sus: { zones: [60, 64, 68].map((m) => zone(m, [1, 3], 'sus')) } } },
+    };
+    const settings = { layers: { bounds: [], fadeWidth: 20, law: 0.5, blend: 'mix', seed: 1 }, exclude: [] };
+    const ctx = /** @type {any} */ ({ currentTime: 0 });
+    const desk = createSampler(ctx, /** @type {any} */ (null), recipe, settings, { tier: 'desktop', format: 'ogg' });
+    const phone = createSampler(ctx, /** @type {any} */ (null), recipe, settings, { tier: 'mobile', format: 'ogg' });
+    eq(desk.zones('sus').length, 5, 'desktop zones');
+    eq(phone.zones('sus').length, 3, 'phone zones');
+    eq(desk.instrument.root, 'full/', 'desktop folder');
+    eq(phone.instrument.root, 'phone/', 'phone folder');
+    eq(desk.filesFor(62, 64, true).join(' '), 'sus/62-v2', 'desktop middle velocity uses its middle layer');
+    eq(phone.filesFor(60, 1, true).join(' '), 'sus/60-v1', 'phone soft');
+    eq(phone.filesFor(60, 127, true).join(' '), 'sus/60-v3', 'phone loud');
+    eq(phone.filesFor(60, 64, true).join(' '), 'sus/60-v1 sus/60-v3', 'phone blends its two layers in the middle');
+    eq(phone.filesFor(62, 1, true).join(' '), 'sus/60-v1', 'two semitones from two zones: the one below wins');
+    eq(phone.filesFor(63, 1, true).join(' '), 'sus/64-v1', 'one semitone below a zone');
+    // A recipe without a phone set plays the full one on phones too.
+    const plain = createSampler(ctx, /** @type {any} */ (null), { ...recipe, mobile: undefined }, settings, { tier: 'mobile', format: 'ogg' });
+    eq(plain.zones('sus').length, 5, 'no phone set: full zones');
   });
 }

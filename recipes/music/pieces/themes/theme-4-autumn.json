@@ -1,0 +1,99 @@
+{
+ "id": "theme-4-autumn",
+ "title": "Theme 4, Moon pull: autumn",
+ "version": 1,
+ "theme": {
+  "candidate": 4,
+  "name": "Moon pull",
+  "season": "autumn"
+ },
+ "slots": [
+  "morning",
+  "interlude",
+  "evening"
+ ],
+ "seasons": [
+  "autumn"
+ ],
+ "weather": [
+  "clear",
+  "cloud"
+ ],
+ "requires": {},
+ "avoidWhen": {},
+ "keys": [
+  "Edor"
+ ],
+ "mode": "dorian",
+ "meter": "3/4",
+ "tempo": [
+  66,
+  72
+ ],
+ "palette": {
+  "melody": [
+   "piano"
+  ],
+  "accomp": [
+   "piano"
+  ],
+  "counter": [
+   "cello",
+   "piano"
+  ],
+  "bed": [
+   "pad",
+   "strings"
+  ],
+  "touch": [
+   "harp",
+   "bell"
+  ]
+ },
+ "layers": {
+  "bed": {
+   "style": "warm",
+   "sections": {
+    "A": "in",
+    "B": "steady",
+    "A'": "swell",
+    "coda": "thin"
+   }
+  },
+  "touch": {
+   "chance": 0.7
+  }
+ },
+ "form": {
+  "grammar": "A B A' coda",
+  "short": "A B A' coda",
+  "optional": {}
+ },
+ "sections": {
+  "A": {
+   "bars": 4,
+   "abc": "X:1\nM:3/4\nL:1/8\nK:Edor\nV:mel\n!p!\"Em\"E F G A B c- | \"F#m7\"c4 B2 | \"G\"G2 F2 D2 | \"Em/B\"B,6 |\n"
+  },
+  "B": {
+   "bars": 4,
+   "abc": "X:1\nM:3/4\nL:1/8\nK:Edor\nV:mel\n\"Em\"B6 | \"F#m7\"A6 | \"G\"G6 | \"Bm\"F6 |\nV:counter\nE, F, G, A, B, C- | C4 B,2 | G,2 F,2 D,2 | B,,6 |\n"
+  },
+  "A'": {
+   "bars": 4,
+   "abc": "X:1\nM:3/4\nL:1/8\nK:Edor\nV:mel\n\"Em\"E F G A B c- | \"A\"c4 B2 | \"G\"G2 F2 \"D\"D2 | \"Em\"E6 |\n"
+  },
+  "coda": {
+   "bars": 2,
+   "abc": "X:1\nM:3/4\nL:1/8\nK:Edor\nV:mel\n!pp!\"A/E\"c2 e2 a2 | \"Em\"!fermata!g6 |\n"
+  }
+ },
+ "variation": {
+  "octave": [
+   0
+  ],
+  "paraphrase": 0,
+  "ornament": 0.1
+ },
+ "motifs": [],
+ "notes": "A 3/4 tide that runs up the scale in one breath to the sixth and leans on it (the pull of something just out of reach), then falls in thirds and steps past the start to the fifth below. Autumn: E Dorian, lower and rounder; the answer puts the theme in the bass on the cello under a high held line."
+}
