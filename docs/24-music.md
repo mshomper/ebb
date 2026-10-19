@@ -225,7 +225,7 @@ All from CC0 sources, checked file by file into `assets/audio/instruments/CREDIT
 
 | Role | First choice | Source and notes |
 |---|---|---|
-| Piano (lead and bed) | Grand Piano, Steinway B | VCSL `Chordophones/Zithers/Grand Piano, Steinway B`: sustain, no-sustain and release sets, close mic, sampled every whole tone, 3 velocity layers, normalized (rebuild the dynamic range with a velocity curve; do not re-gain layers). Alternates for A/B: Grand Piano, Kawai; Upright Piano, Yamaha (a warmer, homelier color, maybe for winter). |
+| Piano (lead and bed) | Grand Piano, Steinway B (chosen by Matt, October 19, 2026) | VCSL `Chordophones/Zithers/Grand Piano, Steinway B`: sustain, no-sustain and release sets, close mic, sampled every whole tone, 3 velocity layers, normalized (rebuild the dynamic range with a velocity curve; do not re-gain layers). Played with gentle stretch tuning and the Knight upright's recorded pedal mechanism under the pedal. The Kawai grand and the Yamaha and Knight uprights were compared on the bench and set aside. |
 | Harp | Concert Harp (VCSL) | mf and f layers; VSCO 2 CE harp as alternate. |
 | Flute | VSCO 2 CE Flute | sustain non-vibrato, sustain vibrato, expressive vibrato, staccato. |
 | Clarinet | VSCO 2 CE Clarinet | long sustain, staccato with round-robins. |
@@ -235,7 +235,7 @@ All from CC0 sources, checked file by file into `assets/audio/instruments/CREDIT
 | Kalimba | VCSL Kalimba (Kenya, Tanzania) | spring accents, sparingly. |
 | Others available | VCSL hand chimes, psaltery, recorders, ocarina; VSCO oboe, bassoon, French horn | reserved for later species and variety. |
 | Nylon guitar | wanted, being searched | Matt wants it (October 2026): it fits the theme, mainly spring and summer leads and accompaniment. A separate session is searching. Order of preference: a CC0 single-note set (Freesound, CC0 filter); then a free or paid library under the rules in doc 25 ("When CC0 does not land"); then harp and psaltery for the plucked role. A Karplus-Strong model only if Matt approves it by ear. |
-| Soft synth | built in code (`synth.js`) | warm pad (detuned saws or triangles through a slow lowpass), soft sine bell, two-operator FM electric piano for summer. |
+| Soft synth | built in code (`synth.js`) | warm pad (detuned saws or triangles through a slow lowpass), soft sine bell, two-operator FM electric piano for summer (chosen by Matt over the sampled TX81Z, October 19, 2026). |
 
 **Sample preparation** (in the workspace, from the GitHub sources, then auditioned on Matt's machine): trim, fade natural decays to silence (piano up to 8 s at low notes, 4 s at the top), convert to mono for everything except piano and harp on the desktop tier, encode Ogg Opus 96 kbps (stereo) or 64 kbps (mono) with an AAC fallback as in doc 17, tune each zone to A440 within 3 cents (measured, stored as `tuneCents` in the instrument recipe, applied at playback).
 
@@ -357,8 +357,8 @@ Mixer change (doc 17): add a `music` bus. Music goes bus → peaking EQ (chorus)
 
 - Audio thread: music under 8 percent of one core on desktop at 24 sampler voices; mobile under 5 percent at 10 voices.
 - Main thread: director update at 2 Hz under 0.1 ms; realizing a piece (done once when it starts, in small slices) under 2 ms total. Growing a piece (24 candidates and the critic) runs in a worker through `src/core/workers.js`, under 150 ms on desktop and 400 ms on mobile, started a minute of real time before its slot opens.
-- Download: the core set (piano and pad) under 4 MB, loaded after the ambience; each season's extra instruments under 2.5 MB, loaded when that season is a game day away. Total music under 14 MB (budget approved by Matt, October 2026).
-- Decoded memory: under 48 MB desktop, under 20 MB mobile. Mobile uses mono piano, zones every major third, two velocity layers, and drops instruments the current season does not use.
+- Download: the core piano about 10 MB (the Steinway B game set: pedal, no-pedal and key-off recordings across the middle five octaves, 4 s tails, mono below C3, Opus at 90 kbps stereo and 60 kbps mono; Matt, October 19, 2026, who chose full recordings over a smaller set) plus the pedal mechanism and the code-built pad, loaded after the ambience; each season's extra instruments under 2.5 MB, loaded when that season is a game day away. Total music about 20 MB.
+- Decoded memory: under about 128 MB desktop, under 20 MB mobile (Matt, October 19, 2026). The whole piano downloads once and the browser keeps it, but only the notes a piece uses are unpacked, about a minute before it starts, and notes the next piece does not need are released after it ends (the most recent are kept). With every note unpacked the desktop piano is about 260 MB, so unpacking per piece is required. Mobile uses a lighter set (mono piano, zones every major third, two velocity layers, shorter tails) and drops instruments the current season does not use.
 
 ## Acceptance checks
 

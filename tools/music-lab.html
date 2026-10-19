@@ -191,42 +191,13 @@
   </section>
 
   <section class="card">
-    <h2>Download and memory budget</h2>
-    <p class="muted">The game's budget is about 4 MB to download for the core piano and pad, and under 48 MB decoded on desktop (20 MB on phones). A full three-layer piano is far over that. Try these and keep what you can't hear the difference in.</p>
-    <div class="grid2">
-      <div>
-        <h3>Longest tail</h3>
-        <div class="seg" role="group" aria-label="Longest tail">
-          <button data-tail="0" aria-pressed="false">Keep all</button>
-          <button data-tail="6" aria-pressed="false">6 s</button>
-          <button data-tail="4" aria-pressed="false">4 s</button>
-          <button data-tail="3" aria-pressed="false">3 s</button>
-        </div>
-      </div>
-      <div>
-        <h3>Mono below</h3>
-        <div class="seg" role="group" aria-label="Mono below">
-          <button data-mono="0" aria-pressed="false">Stereo everywhere</button>
-          <button data-mono="48" aria-pressed="false">C3</button>
-          <button data-mono="60" aria-pressed="false">Middle C</button>
-        </div>
-      </div>
-      <div>
-        <h3>Range loaded</h3>
-        <div class="seg" role="group" aria-label="Range loaded">
-          <button data-range="mid" aria-pressed="true">Middle five octaves</button>
-          <button data-range="full" aria-pressed="false">Whole keyboard</button>
-        </div>
-      </div>
-      <div>
-        <h3>Recordings loaded</h3>
-        <div class="seg" role="group" aria-label="Recordings">
-          <button data-sets="all" aria-pressed="true">Pedal and no-pedal</button>
-          <button data-sets="nosus" aria-pressed="false">No-pedal only</button>
-        </div>
-      </div>
+    <h2>The game set</h2>
+    <p class="muted">Your choices, made into the files the game ships: the Steinway B across the middle five octaves (playable A1 to D sharp 7), pedal and no-pedal recordings with their key-off sounds, tails of 4 seconds, mono below C3, and the Knight's pedal sounds. About 10.2 MB to download as Opus (90 kbps stereo, 60 kbps mono); the AAC copies for other browsers are 12.6 MB. The figures above show what is unpacked in memory right now. In the game, only the notes a piece uses are unpacked, about a minute before it starts.</p>
+    <div class="seg" role="group" aria-label="Range loaded">
+      <button data-range="mid" aria-pressed="true">Unpack all five octaves</button>
+      <button data-range="piece" aria-pressed="false">Unpack two octaves around middle C, like a piece</button>
     </div>
-    <div class="row" style="margin-top:10px"><button class="big" id="reload" style="flex:1 1 260px">Reload both slots with these</button></div>
+    <div class="row" style="margin-top:10px"><button class="big" id="reload" style="flex:1 1 260px">Reload with this</button></div>
   </section>
 
   <section class="card note" id="problems" hidden>

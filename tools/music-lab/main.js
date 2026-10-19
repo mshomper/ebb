@@ -36,9 +36,9 @@ $('unlock-btn').addEventListener('click', async () => {
 // ---------------- budget options (applied when a slot loads) ----------------
 
 // Phones start light: a full piano decoded is hundreds of megabytes.
-// Start from the recipe (Matt's choices); phones also drop the no-pedal recordings to save memory.
-const budget = { tail: samplerRecipe.defaults.load.maxTailS, mono: samplerRecipe.defaults.load.monoBelowMidi, range: 'mid', sets: tier === 'mobile' ? 'nosus' : 'all' };
-for (const [attr, key] of /** @type {const} */ ([['data-tail', 'tail'], ['data-mono', 'mono'], ['data-range', 'range'], ['data-sets', 'sets']])) {
+// Phones unpack two octaves of pedal recordings by default; desktop all five octaves, both sets.
+const budget = { range: tier === 'mobile' ? 'piece' : 'mid', sets: tier === 'mobile' ? 'sus' : 'all' };
+for (const [attr, key] of /** @type {const} */ ([['data-range', 'range']])) {
   const btns = [...document.querySelectorAll(`[${attr}]`)];
   for (const o of btns) o.setAttribute('aria-pressed', String(o.getAttribute(attr) === String(/** @type {any} */ (budget)[key])));
   for (const b of btns) b.addEventListener('click', () => {
@@ -71,12 +71,11 @@ async function build(id, progress) {
   }
   const recipe = await loadAudioRecipe(`music/instruments/${id}`);
   const settings = samplerSettingsFor(samplerRecipe, id);
-  settings.load.maxTailS = budget.tail;
-  settings.load.monoBelowMidi = budget.mono;
-  if (budget.sets === 'nosus' && recipe.sets?.nosus) settings.load.sets = ['nosus', 'rel'];
+  // Phones unpack only the pedal recordings, to stay light (the game's phone set comes later).
+  if (budget.sets === 'sus' && recipe.sets?.sus) settings.load.sets = ['sus', 'rel'];
   applyLive(settings);
   const inst = createSampler(ctx, out, recipe, settings, { tier, pedalNoise: pedalRecipe });
-  const range = budget.range === 'full' ? { low: 21, high: 108 } : { low: 36, high: 96 };
+  const range = budget.range === 'piece' ? { low: 53, high: 79 } : { low: 33, high: 99 };
   await inst.load({ ...range, onProgress: (d, n) => progress(d / n) });
   return { inst, recipe };
 }
