@@ -112,9 +112,12 @@ export function createQualityLive(opts) {
 
     get scale() { return dyn.scale; },
 
+    /** Hold the render scale, or release it with null (the phone check page's sweep). @param {number | null} s */
+    pinScale: (s) => dyn.pin(s, performance.now()),
+
     /** For tools: the scale range, what the GPU time is measured with, every scale change. */
     info: () => ({
-      scale: dyn.scale, min: dyn.min, max: dyn.max, budgetMs: dyn.budgetMs,
+      scale: dyn.scale, min: dyn.min, max: dyn.max, lowest: dyn.lowest, pinned: dyn.pinned, budgetMs: dyn.budgetMs,
       measure: dyn.measure === 'frame' ? 'frame' : opts.timestamps ? 'timestamps' : 'work-done',
       changes: dyn.changes(), autoStep, autoOff,
     }),
