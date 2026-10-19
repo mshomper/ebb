@@ -580,7 +580,7 @@ export async function startApp(canvas, hooks = {}) {
     presence.update(realDt);
     updateRing();
     // Plant tool rings, and a breathing ring round whatever the journal's tap card names.
-    terrainPass.setMarks(plantTool.marks(now, tools().tool === 'plant', getStore('identify')));
+    terrainPass.setMarks(plantTool.marks(now, tools().tool === 'plant', getStore('identify'), getStore('reveal')?.rings?.(now) ?? []));
     updatePour();
     if (queuedHistory && !terrain.isBusy()) runHistory(queuedHistory);
     // Ground detail waits for a few calm frames so the first picture is as quick as before (docs/22).
@@ -730,6 +730,8 @@ export async function startApp(canvas, hooks = {}) {
     frogScale,
     /** The live frogs (the journal asks it what a tap landed on). */
     creatures,
+    /** Every live animal system's hooks for the reveal on return (src/ui/reveal.js). */
+    animals: [creatures.reveal, midges.reveal],
     /** The live midge swarms (tools). */
     midges,
     presence,

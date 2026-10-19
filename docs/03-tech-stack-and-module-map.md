@@ -131,6 +131,7 @@ Time: 1 game day = 24 real minutes at 1x, so 1 real minute = 1 game hour. `clock
 | `sim/catchup.js` | away-time catch-up in a worker, a day per job (S7b) | `awayHours(p)`, `catchUp(input)`, `catchUpJob(input)` (doc 02) |
 | `sim/hour.js` | one game hour: the tick, then the journal's look | `hourStep(state, journal, hour, env, jc)` |
 | `sim/away.js` | when the game catches up (load, hidden tab, Pretend I was away) | `mountAway({ app, jr })` |
+| `ui/reveal.js` | the reveal on return (S7c) | `mountReveal({ app, words })`; `world/journal/reveal-plan.js` `planReveal(p)`; `world/creatures/reveal-return.js` `createReturn(growS)` |
 | `render/` | frame graph, camera, passes (incl. `passes/ao.js`, `passes/creatures.js`), LUT bake (32³, 0.6 s crossfade) | docs 04, 05 |
 | `render/quality.js` | tier pick (`high`, `medium`, `low`) from `recipes/quality-tiers.json`, live tier changes | `pickTier()`, `tier()`, `setTier()` (doc 19) |
 | `input/`, `ui/` | actions, gestures, HUD, journal, tuning panel, settings | docs 15, 16, 14 |

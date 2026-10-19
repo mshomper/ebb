@@ -98,5 +98,7 @@
     "watch": { "reachM": 3, "minS": 20, "capS": 600, "trustPerMin": 0.012 },
     "feedTrust": 0.06, "ceiling": "familiar", "namingTrust": 0.5
   },
-  "find": { "tapM": 0.3, "tapPerM": 0.03, "lookM": 1.5, "lookDistM": 1.5, "holdS": 1.5 }
+  "find": { "tapM": 0.3, "tapPerM": 0.03, "lookM": 1.5, "lookDistM": 1.5, "holdS": 1.5 },
+  "_reveal": "Coming back in the reveal on return (S7c, src/world/creatures/reveal-return.js): return is how (plop: a ring on the water, for the few nearest the camera); growS is how long one takes to come in.",
+  "reveal": { "return": "plop", "growS": 0.3 }
 }

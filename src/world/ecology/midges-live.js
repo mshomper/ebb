@@ -6,8 +6,9 @@
 // each swarm's centre bobs and drifts downwind, and now and then one midge dips and rings the water.
 // Drawn by src/render/passes/midges.js. Live look only: nothing here changes the world.
 
-import { display, SECONDS_PER_HOUR, HOURS_PER_DAY } from '../../core/clock.js';
+import { display, animT, SECONDS_PER_HOUR, HOURS_PER_DAY } from '../../core/clock.js';
 import { createMidgePass } from '../../render/passes/midges.js';
+import { createReturn } from '../creatures/reveal-return.js';
 import { pickSwarms, swarmShareNow, afterRainNow, orbit, dipNow } from './midge-paths.js';
 
 /**
@@ -34,10 +35,21 @@ export function createMidges(opts) {
     swarms = pickSwarms(field, S, reeds).map((s) => ({ ...s, y: Math.max(opts.ground(s.x, s.z), opts.water(s.x, s.z).surface), lastDip: -1 }));
   }
 
+  const comeBack = createReturn(recipe.reveal?.growS ?? 0.6);
+
   return {
     id: 'midges',
     /** The midges pass, for the frame graph. */
     pass,
+    /** @type {import('../creatures/reveal-return.js').RevealHooks} the reveal on return (src/ui/reveal.js) */
+    reveal: {
+      species: 'midges',
+      style: recipe.reveal?.return ?? 'thicken',
+      spots: () => swarms.map((s) => ({ id: s.seed, x: s.x, z: s.z })),
+      hide: () => comeBack.hide(),
+      back: (o) => comeBack.back(animT(), swarms.map((s) => s.seed), o.windowS, o.effects),
+      end: () => comeBack.end(),
+    },
     /** How many midges are out now (tools). */
     total: () => total,
     /** The swarms now, with their centres (the frog lab, S6c's tongue catches). */
@@ -53,7 +65,8 @@ export function createMidges(opts) {
       const wind = opts.wind();
       const rainAt = opts.rain ?? (() => 0);
       const share = swarmShareNow(hour, 12 + dayLength / 2, dayLength, wind.strength, S.density, rainAt(0), afterRainNow(rainAt, S.density.rain));
-      let counts = swarms.map((s) => Math.round(S.perSwarm * s.share * share));
+      // In the reveal on return each swarm thickens back in with the other animals (reveal-return.js).
+      let counts = swarms.map((s) => Math.round(S.perSwarm * s.share * share * comeBack.at(s.seed, f.animT).k));
       const sum = counts.reduce((a, b) => a + b, 0);
       if (sum > budget) counts = counts.map((c) => Math.floor((c * budget) / sum));
       total = counts.reduce((a, b) => a + b, 0);

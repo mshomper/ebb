@@ -98,10 +98,32 @@ export function mountIslandNotes(parent, words) {
   });
   // Notes written while the island caught up on time away (src/sim/away.js) are never shown here:
   // the line says how many wait in the journal.
-  const offAway = on('world:caught-up', (/** @type {{ notes: any[] }} */ p) => {
+  const offAway = on('world:caught-up', (/** @type {{ notes: any[], reveal?: boolean }} */ p) => {
+    if (p.reveal) return;   // the reveal shows the best of them, then says how many are left (below)
     const n = (p.notes ?? []).filter(unreadNote).length;
     if (n) { more += n; renderMore(); }
   });
+  // The reveal on return (src/ui/reveal.js) shows its notes here one at a time, now; when it ends,
+  // the line says how many more wait in the journal.
+  const offRevealNote = on('reveal:note', (/** @type {{ note: any, showS: number }} */ p) => showNow(p.note, p.showS));
+  const offRevealEnd = on('reveal:ended', (/** @type {{ missed: number }} */ p) => { if (p.missed > 0) { more += p.missed; renderMore(); } });
+  /** A reveal note: shown at once for showS seconds, marked as shown. @param {any} n @param {number} showS */
+  function showNow(n, showS) {
+    if (n.n) dispatch(/** @type {any} */ ({ type: 'journal.noteShown', n: n.n }));
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'ebb-notes__note';
+    b.textContent = n.text;
+    b.title = 'Open the journal';
+    b.addEventListener('click', () => dispatch(n.sp ? { type: 'ui.journal', open: true, page: n.sp } : { type: 'ui.journal', open: true, view: 'notes' }));
+    root.insertBefore(b, moreBtn.isConnected ? moreBtn : null);
+    requestAnimationFrame(() => b.classList.add('is-shown'));
+    setTimeout(() => {
+      b.classList.add('is-leaving');
+      b.classList.remove('is-shown');
+      setTimeout(() => b.remove(), 700);
+    }, showS * 1000);
+  }
   // Opening Notes reads them all: the line goes.
   const offUi = subscribe('journalUi', (/** @type {any} */ u) => { if (u?.open && u.view === 'notes' && more) { more = 0; renderMore(); } });
 
@@ -204,6 +226,8 @@ export function mountIslandNotes(parent, words) {
   return function dispose() {
     offNote();
     offAway();
+    offRevealNote();
+    offRevealEnd();
     offUi();
     for (const u of unsubs) u();
     clearTimeout(pumpTimer);

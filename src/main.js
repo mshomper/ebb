@@ -15,6 +15,7 @@ import { loadRecipe } from './core/recipes.js';
 import { on } from './core/events.js';
 import { showElsewhere } from './ui/elsewhere.js';
 import { mountAway } from './sim/away.js';
+import { mountReveal } from './ui/reveal.js';
 
 /** Shown in the corner badge when no build.json or local server info is available. */
 export const BUILD = 'm1-s3-palette';
@@ -60,6 +61,8 @@ startApp(canvas, { onDeviceLost: (rebuilding) => showRebuildingNote(rebuilding),
       mountIslandNotes(document.body, words);
       // Time away (src/sim/away.js): catch up now on the time since the last save, and later on a
       // hidden tab's time; the badge's Pretend I was away runs through it too.
+      // The reveal on return (src/ui/reveal.js) listens first, so the catch-up on opening gets one.
+      await mountReveal({ app: r, words });
       const away = await mountAway({ app: r, jr: { words, island, web } });
       if (saveInfo) saveInfo.pretend = away;
       // `?frogscale`: real-size frogs around the pond to judge creature size (ahead of S6).

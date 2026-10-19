@@ -13,6 +13,8 @@
     "riseShare": 0.1,
     "fallShare": 0.2
   },
+  "_reveal": "Coming back in the reveal on return (S7c, src/world/creatures/reveal-return.js): each swarm thickens back in over growS seconds, with no plop.",
+  "reveal": { "return": "thicken", "growS": 0.6 },
   "swarm": {
     "body": { "scaleReal": [0.002, 0.004], "albedo": [0.045, 0.04, 0.035], "glint": { "g": 0.75, "strength": 0.12 }, "minPx": 1.2, "readability": 3, "wingSheen": 0.9 },
     "swarms": { "max": 24, "overReeds": 10, "apartM": 3, "fromShare": 0.25 },

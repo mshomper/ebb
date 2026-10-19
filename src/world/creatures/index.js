@@ -12,7 +12,8 @@
 
 import { on, emitDeferred } from '../../core/events.js';
 import { get as getStore, update as updateStore } from '../../core/store.js';
-import { hourIndex, display, SECONDS_PER_HOUR, HOURS_PER_DAY } from '../../core/clock.js';
+import { hourIndex, display, animT, SECONDS_PER_HOUR, HOURS_PER_DAY } from '../../core/clock.js';
+import { createReturn } from './reveal-return.js';
 import { hash32 } from '../../core/rng.js';
 import { run } from '../../core/workers.js';
 import { createCreaturePass } from '../../render/passes/creatures.js';
@@ -138,13 +139,20 @@ export function createCreatures(opts) {
     return undefined;
   }
 
+  // The reveal on return (S7c): hidden while the plants grow in, then back with the rest of the
+  // animals; the few the reveal picks plop (recipe `reveal`).
+  const comeBack = createReturn(recipe.reveal?.growS ?? 0.3);
+
   /** Pose every frog for this frame and hand them to the pass. @param {number} t animation seconds */
   function draw(t) {
     const eye = camera.eye;
     /** @type {import('../../render/passes/creatures.js').Being[]} */ const beings = [];
     for (const a of agents.list()) {
+      const back = comeBack.at(a.id, t);
+      if (back.k <= 0) continue;
       const o = ownOf(a.id);
       const v = agents.view(a);
+      if (back.effect && ripples) { ripples.addImpulse(v.x, v.z); ripples.addImpulse(v.x + 0.08, v.z - 0.05, undefined, 0.12); }
       // A frog on a lily pad is drawn where its pad is this very frame.
       const seat = a.perch && !a.hop ? perches?.seatOf(a.perch) : null;
       if (seat) { v.x = seat.x; v.y = seat.y; v.z = seat.z; v.yaw = seat.yaw; }
@@ -152,14 +160,14 @@ export function createCreatures(opts) {
       if (!mesh) continue;
       const rig = rigs[o.variant] ?? rigs.find((r) => r) ?? null;
       if (rig) poseSkeleton(rig.skeleton, frogMoves(rig.skeleton, rig.legs, { id: a.id, hopT: v.hopT, kick: v.kick, sq: v.sq, sac: v.sac, swimming: v.swimming }, t, M), o.bones, 0);
-      beings.push({ x: v.x, y: v.y, z: v.z, yaw: v.yaw, size: o.size, mesh, bones: rig ? o.bones : null });
+      beings.push({ x: v.x, y: v.y, z: v.z, yaw: v.yaw, size: o.size * back.k, mesh, bones: rig ? o.bones : null });
       // A tongue flick: the tongue rides the head bone, stretched out of the mouth.
       if (v.tongue > 0 && rig) {
         const head = rig.skeleton.findIndex((/** @type {any} */ b) => b.name === 'head');
         const reach = (M.tongue.reachM * M.tongue.readability) / TONGUE_M;
         const stretch = moveMatrix(M.tongue.mouth, { s: [1, 1, Math.max(0.01, reach * v.tongue)] });
         mul(o.bones.subarray(head * 16, head * 16 + 16), stretch, o.tongue, 0);
-        beings.push({ x: v.x, y: v.y, z: v.z, yaw: v.yaw, size: o.size, mesh: 'tongue', bones: o.tongue });
+        beings.push({ x: v.x, y: v.y, z: v.z, yaw: v.yaw, size: o.size * back.k, mesh: 'tongue', bones: o.tongue });
       }
     }
     pass.setBeings(beings);
@@ -189,6 +197,16 @@ export function createCreatures(opts) {
     perches,
     /** Pads frogs sit on, for the lily drawing to dip (flora pass, at most four). */
     pressedPads: () => (perches ? perches.pressed(agents.list()) : []),
+
+    /** @type {import('./reveal-return.js').RevealHooks} the reveal on return (src/ui/reveal.js) */
+    reveal: {
+      species: 'frogs',
+      style: recipe.reveal?.return ?? 'plop',
+      spots: () => agents.list().filter((a) => a.mode !== 'leave').map((a) => { const v = agents.view(a); return { id: a.id, x: v.x, z: v.z }; }),
+      hide: () => comeBack.hide(),
+      back: (o) => comeBack.back(animT(), agents.list().map((a) => a.id), o.windowS, o.effects),
+      end: () => comeBack.end(),
+    },
 
     /**
      * The frog a tap on the ground at (x, z) lands on, or null: within tapM of it, more when the

@@ -37,7 +37,11 @@ export const GROW = 1, FLOWER = 2, DORMANT = 4;
  * @property {Record<string, number>} moments  moment id to the hour it was caught
  */
 
-/** @typedef {{ hour: number, date: string, text: string, sp: string | null }} Note */
+/**
+ * @typedef {{ hour: number, date: string, text: string, sp: string | null, kind?: string }} Note
+ *   kind: what the note is about, shared by every species (arrived, settled, flower, spread,
+ *   season, ...); the reveal ranks notes by it (journal.json `reveal.rank`). Older notes have none.
+ */
 
 /**
  * @typedef {Object} Journal
@@ -154,7 +158,7 @@ export const isAnimal = (rec) => rec?.kind === 'creature' || rec?.kind === 'swar
  */
 function note(out, rec, kind, sp, hour, date) {
   const text = rec.notes?.[kind];
-  if (text) out.push({ hour, date, text, sp });
+  if (text) out.push({ hour, date, text, sp, kind });
 }
 
 /**
@@ -258,7 +262,7 @@ export function observe(journal, ctx) {
       if (rec && k && (why === 'drown' || why === 'seed') && learnTrigger(k, `lost:${why}`)) note(out, rec, why, sp, hour, date);
     } else if (e.name === 'season:changed') {
       const text = words.seasonNotes?.[e.payload?.index];
-      if (text) out.push({ hour, date, text, sp: null });
+      if (text) out.push({ hour, date, text, sp: null, kind: 'season' });
     }
   }
   observeAnimals(j, out, ctx, { date, newHour, season, know });
@@ -308,7 +312,7 @@ export function learn(journal, sp, trigger, ctx) {
   /** @type {Note[]} */ const out = [];
   const after = knownLines(k, rec.likes);
   for (let i = 0; i < after.length; i++) {
-    if (after[i] && !before[i]) out.push({ hour: ctx.hour, date: dateText(ctx.state?.seasons, ctx.words), text: `${rec.name}: ${lower(rec.likes[i].text)}.`, sp });
+    if (after[i] && !before[i]) out.push({ hour: ctx.hour, date: dateText(ctx.state?.seasons, ctx.words), text: `${rec.name}: ${lower(rec.likes[i].text)}.`, sp, kind: 'learned' });
   }
   keep(j, out, ctx.words);
   return { journal: j, notes: out };
@@ -377,7 +381,7 @@ export function catchMoments(journal, id, ids, ctx) {
     k.moments[m] = ctx.hour;
     learnTrigger(k, `moment:${m}`);
     const label = ctx.list.find((x) => x.id === m)?.label ?? m;
-    out.push({ hour: ctx.hour, date, text: ctx.words.moments.note.replace('{name}', ctx.name).replace('{label}', label), sp: id });
+    out.push({ hour: ctx.hour, date, text: ctx.words.moments.note.replace('{name}', ctx.name).replace('{label}', label), sp: id, kind: 'moment' });
   }
   keep(j, out, ctx.words);
   return { journal: j, notes: out };
