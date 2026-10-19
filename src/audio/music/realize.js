@@ -399,7 +399,7 @@ export function assembleAbc(piece, path) {
     if (!voiceOrder.length) voiceOrder.push('1');
     for (const v of voiceOrder) {
       // A voice this section does not have rests for its bars.
-      const lines = mine[v] ?? [Array.from({ length: piece.sections[name].bars }, () => 'Z |').join(' ')];
+      const lines = mine[v] ?? [Array.from({ length: piece.sections[name].bars }, () => 'X |').join(' ')];
       if (v === voiceOrder[0]) lines[0] = `"^${name}"${lines[0]}`;
       (bodies[v] ??= []).push(...lines);
     }

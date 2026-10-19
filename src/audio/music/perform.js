@@ -47,7 +47,8 @@ export function createPerformer(ctx, instruments) {
     }
     const pos = now - run.t0;
     run.opts.onTime?.(pos);
-    while (run.bar < run.perf.bars.length && run.perf.bars[run.bar].t <= pos) run.opts.onBar?.(run.perf.bars[run.bar++]);
+    // Advance first: an optional call skips its argument, so run.bar++ inside it would never run.
+    while (run.bar < run.perf.bars.length && run.perf.bars[run.bar].t <= pos) { const b = run.perf.bars[run.bar++]; run.opts.onBar?.(b); }
     if (run.i >= run.ev.length && pos > run.endT + 0.3) {
       const r = run;
       clearInterval(r.timer);

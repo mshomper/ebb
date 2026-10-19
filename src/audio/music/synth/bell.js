@@ -110,7 +110,7 @@ export function createBell(ctx, output, recipe, opts = {}) {
       const parts = /** @type {{ratio: number, db: number, decayRatio: number, velocityDb: number, pan: number}[]} */ (p.partials);
       for (const pt of parts) {
         const pf = f * pt.ratio * Math.pow(2, (r.range(-1, 1) * p.partialJitterCents) / 1200);
-        if (pf > nyq) continue;
+        if (pf > nyq && oscs.length > 0) continue;
         // Upper partials: lower at soft velocity (velocityDb is how much they lose at velocity 1).
         const db = pt.db - pt.velocityDb * Math.pow(1 - x, p.velocityGamma);
         const life = decayS * pt.decayRatio;
@@ -143,7 +143,9 @@ export function createBell(ctx, output, recipe, opts = {}) {
       for (const v of voices) {
         if (v.midi !== midi || v.keyUpT !== null) continue;
         v.keyUpT = t;
-        if (damped() && !pedal.downAt(t)) release(v, t);
+        if (!damped()) continue;
+        const at = pedal.downAt(t) ? pedal.nextUpAfter(t) : t;
+        if (at !== null) release(v, at);
       }
     },
     /** @param {boolean} down @param {number} [when] */

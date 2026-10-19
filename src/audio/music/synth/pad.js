@@ -43,16 +43,20 @@ export function createPad(ctx, output, recipe, opts = {}) {
   /** @type {Map<string, PeriodicWave>} */
   const waves = new Map();
 
-  /** Band-limited soft saw: harmonic n at 1/n^tilt, up to `harmonics`. */
+  /**
+   * Band-limited soft saw: harmonic n at 1/n^tilt, from `fromHarmonic` up to `harmonics`. Leaving
+   * out the fundamental lets the centred copy own it, so detuned copies never make the level pump.
+   */
   function softSaw() {
-    const { harmonics, tilt } = p.softSaw;
-    const key = `saw:${harmonics}:${tilt}`;
+    const { harmonics, tilt, fromHarmonic = 1 } = p.softSaw;
+    const key = `saw:${harmonics}:${tilt}:${fromHarmonic}`;
     let w = waves.get(key);
     if (!w) {
       const n = Math.max(2, Math.round(harmonics)) + 1;
       const re = new Float32Array(n), im = new Float32Array(n);
-      for (let k = 1; k < n; k++) im[k] = (k % 2 ? 1 : -1) / Math.pow(k, tilt);
-      w = ctx.createPeriodicWave(re, im);
+      for (let k = Math.max(1, fromHarmonic); k < n; k++) im[k] = (k % 2 ? 1 : -1) / Math.pow(k, tilt);
+      // Unnormalized, so a copy's level means the same with or without its fundamental.
+      w = ctx.createPeriodicWave(re, im, { disableNormalization: true });
       waves.set(key, w);
     }
     return w;
@@ -153,7 +157,7 @@ export function createPad(ctx, output, recipe, opts = {}) {
       for (let i = 1; i < filters.length; i++) filters[i - 1].connect(filters[i]);
 
       const amp = ctx.createGain();
-      amp.gain.setValueAtTime(0, t);
+      amp.gain.value = 0;
       amp.gain.setValueCurveAtTime(swellCurve(64, p.amp.attackCurve), t, attackS);
       amp.gain.setTargetAtTime(dbToGain(p.amp.sustainDb), t + attackS + 1e-4, p.amp.settleS / 3);
       const rel = ctx.createGain();
@@ -198,7 +202,9 @@ export function createPad(ctx, output, recipe, opts = {}) {
       for (const v of voices) {
         if (v.midi !== midi || v.keyUpT !== null) continue;
         v.keyUpT = t;
-        if (!pedal.downAt(t)) release(v, t);
+        // Pedal held: release when it lifts, even if that lift was scheduled before this note.
+        const at = pedal.downAt(t) ? pedal.nextUpAfter(t) : t;
+        if (at !== null) release(v, at);
       }
     },
     /** @param {boolean} down @param {number} [when] */

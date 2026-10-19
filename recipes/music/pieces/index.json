@@ -1,0 +1,4 @@
+{
+  "note": "Every piece the music lab and the game's music loader know about, by id; each id names recipes/music/pieces/<id>.json. Add a piece here when its file is added.",
+  "pieces": ["test-spring-01"]
+}

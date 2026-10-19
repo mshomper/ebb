@@ -7,6 +7,7 @@
 import { createDirector, sunDay } from '../src/audio/music/director.js';
 import { realize } from '../src/audio/music/realize.js';
 import { dayColorAt, dayKeyWeights } from '../src/audio/music/daycolor.js';
+import { createPerformer } from '../src/audio/music/perform.js';
 
 const G = 'music: director';
 const R = 'music: realize';
@@ -143,5 +144,20 @@ export function addDirectorTests(test, assert, eq) {
       const lift = p.pedal.find((e) => !e.down && Math.abs(e.t - b.t) < 0.08);
       assert(lift, `a pedal lift near bar ${b.index}`);
     }
+  });
+
+  test('music: perform', 'plays to the end with no bar listener (no stall on the first bar)', async () => {
+    const ctx = /** @type {any} */ ({ currentTime: 0 });
+    let on = 0;
+    const piano = /** @type {any} */ ({ noteOn: () => on++, noteOff: () => {}, pedal: () => {} });
+    const perf = /** @type {any} */ ({ durationS: 0.2, notes: [{ t: 0, dur: 0.1, midi: 60, vel: 64, voice: 'mel', instrument: 'piano' }], pedal: [],
+      bars: [{ index: 1, t: 0, tick: 0, chord: '', section: 'A' }, { index: 2, t: 0.1, tick: 0, chord: '', section: 'A' }] });
+    const pf = createPerformer(ctx, { piano });
+    const ended = new Promise((r) => pf.play(perf, { onEnd: () => r(true) }, 0));
+    const clock = setInterval(() => { ctx.currentTime += 0.05; }, 5);
+    const ok = await Promise.race([ended, new Promise((r) => setTimeout(() => r(false), 3000))]);
+    clearInterval(clock);
+    assert(ok, 'the performance ended');
+    eq(on, 1, 'one note played');
   });
 }

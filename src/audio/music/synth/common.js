@@ -55,6 +55,8 @@ export function createPedal() {
   return {
     /** @param {number} t */
     downAt(t) { let d = false; for (const e of events) { if (e.t <= t) d = e.down; else break; } return d; },
+    /** The first pedal-up after time t, if one is already scheduled. @param {number} t */
+    nextUpAfter(t) { for (const e of events) if (e.t > t && !e.down) return e.t; return null; },
     /** @param {number} t @param {boolean} down */
     push(t, down) { events.push({ t, down }); events.sort((a, b) => a.t - b.t); },
     clear() { events = []; },

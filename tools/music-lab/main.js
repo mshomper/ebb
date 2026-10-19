@@ -323,3 +323,25 @@ if (pickFormat() === 'm4a') showProblem('This browser cannot play Opus files. Th
 refreshCharts();
 loadSlot('a', $('pick-a').value);
 loadSlot('b', $('pick-b').value);
+
+// ---------------- tabs: Instruments, Piece, Day ----------------
+
+/** @type {Record<string, Promise<void> | null>} */
+const started = { piece: null, day: null };
+/** @param {string} name */
+function showTab(name) {
+  if (!['bench', 'piece', 'day'].includes(name)) name = 'bench';
+  for (const t of ['bench', 'piece', 'day']) {
+    $(`tab-${t}`).hidden = t !== name;
+    document.querySelector(`[data-tab="${t}"]`)?.setAttribute('aria-pressed', String(t === name));
+  }
+  if (name !== 'bench') {
+    slots.a?.inst.stopAll(0.2);
+    slots.b?.inst.stopAll(0.2);
+  }
+  if (name === 'piece' && !started.piece) started.piece = import('./piece.js').then((m) => m.initPiece($('tab-piece'), { mixer })).catch((e) => showProblem(`Piece tab: ${e.message}`));
+  if (name === 'day' && !started.day) started.day = import('./day.js').then((m) => m.initDay($('tab-day'))).catch((e) => showProblem(`Day tab: ${e.message}`));
+  if (location.hash.slice(1) !== name) history.replaceState(null, '', `${location.pathname}${location.search}#${name}`);
+}
+for (const b of document.querySelectorAll('[data-tab]')) b.addEventListener('click', () => showTab(b.getAttribute('data-tab') ?? 'bench'));
+showTab(location.hash.slice(1) || 'bench');

@@ -2,7 +2,7 @@
   "type": "music",
   "id": "synth",
   "version": 1,
-  "note": "Soft voices built in code (doc 24, synth.js). fmPiano: a two-operator FM electric piano, made of two stacks played together. body: a sine carrier at the note's pitch modulated by a sine at ratio times the pitch; the modulation index starts at index0 (at full velocity; velocityIndex sets how much softer playing lowers it) and falls to index1 over indexDecayS seconds, which is the warm bloom of the attack fading to a round tone; level in dB. tine: the bright bell-like click of the tine, a carrier at carrierRatio and modulator at ratio, a short burst decaying over decayS. amp: attackS, then the level falls by decayDbPerS (more in the treble, by trebleDecayExtra per octave above middle C) while the key is held; releaseS when the key is let go (pedal holds it). velocity: floorDb at velocity 1 to topDb at 127 with gamma. detuneCents spreads two copies of the body a touch for warmth (0 for none). maxVoices caps polyphony per tier.",
+  "note": "Soft voices built in code (doc 24, synth.js). fmPiano: a two-operator FM electric piano, made of two stacks played together. body: a sine carrier at the note's pitch modulated by a sine at ratio times the pitch; the modulation index starts at index0 (at full velocity; velocityIndex sets how much softer playing lowers it) and falls to index1 over indexDecayS seconds, which is the warm bloom of the attack fading to a round tone; level in dB. tine: the bright bell-like click of the tine, a carrier at carrierRatio and modulator at ratio, a short burst decaying over decayS. amp: attackS, then the level falls by decayDbPerS (more in the treble, by trebleDecayExtra per octave above middle C) while the key is held; releaseS when the key is let go (pedal holds it). velocity: floorDb at velocity 1 to topDb at 127 with gamma. detuneCents spreads two copies of the body a touch for warmth (0 for none). maxVoices caps polyphony per tier. pad: the warm bed under the piano (synth/pad.js). oscillators: the two or three copies sounded per note; wave is softSaw (a band-limited saw, defined by softSaw below), triangle or sine; cents is each copy's detune, db its level, pan its place in the stereo field (scaled by stereoWidth), octave an optional octave offset. softSaw: how many harmonics the saw keeps, tilt, how fast they fall (1 is a plain saw; higher is rounder), and fromHarmonic, the lowest one it plays (2 leaves the fundamental to the centred triangle, so the detuned copies add warmth above it without making the level pump). detune: amount scales every copy's cents, and maxBeatHz caps how fast the outer copies may beat against each other at the note's pitch, so high notes shrink their detune and never shimmer like a chorus. drift: each copy wanders by up to cents on its own slow sine, with a rate drawn from rateHz (cycles per second) from the seeded stream, so held chords breathe. filter: the lowpass, poles 2 or 4 (12 or 24 dB per octave, no resonance); its settled cutoff runs from softHz at velocity 1 to loudHz at 127 (gamma bends the curve) at refMidi, and moves by keyTrack octaves for each octave of pitch (below 1, so low notes are duller and high notes rounder), never below minHarmonic times the pitch nor above maxHz. bloom: the cutoff starts at startRatio of the settled value, opens to peakRatio over the attack, then settles back over settleS seconds; releaseRatio is how far it closes while the note fades. amp: the attack takes attackSoftS seconds at velocity 1 down to attackLoudS at 127, along a swell of shape attackCurve (2 starts with zero slope); after the attack the level eases to sustainDb over settleS; releaseS is the time to fall 40 dB once the key (or the pedal) lets go. velocity: level from floorDb at velocity 1 to topDb at 127 with gamma, less bassDbPerOctave for each octave below refMidi. highpass: a Butterworth high-pass at hz with poles order on the instrument's output, keeping it above 60 Hz. stealS: the fade when a voice is taken for a new note (quietest released voice first); retriggerS: the fade when the same note is struck again. maxVoices caps polyphony per tier. seed keys the drift and starting phases (opts.seed overrides it). bell: the soft sine bell (synth/bell.js). partials: the sine components of one strike; ratio to the pitch (1 is the fundamental; 2.76, 5.4 and 8.93 are the modes of a struck bar), db their level at full velocity, decayRatio their ring time as a share of the fundamental's, velocityDb how much quieter each gets at velocity 1 (so soft strokes are mostly fundamental), pan its place in the stereo field (scaled by stereoWidth); velocityGamma bends that curve. partialJitterCents: each note's partials sit up to this many cents off ideal, fixed per note from the seed, like a hand-tuned bar. decay: the fundamental's ring time to 60 dB down is lowS at lowMidi and highS at highMidi, log-interpolated (high bars ring shorter). attackSoftS and attackLoudS: the strike's soft swell at velocity 1 and 127, in seconds. velocity: level from floorDb at velocity 1 to topDb at 127 with gamma, less trebleDbPerOctave for each octave above decay.lowMidi. maxPartialHz: partials above this are left out. damped: false lets a bell ring after the key is let go (opts.damped overrides it); when damped, dampS is the time to fall 40 dB. highpass, stereoWidth, stealS, retriggerS, maxVoices and seed as for the pad.",
   "fmPiano": {
     "body": { "ratio": 1, "index0": 1.6, "index1": 0.35, "indexDecayS": 0.9, "velocityIndex": 0.75, "db": 0 },
     "tine": { "carrierRatio": 1, "ratio": 14, "index0": 2.2, "decayS": 0.09, "velocityIndex": 0.9, "db": -9 },
@@ -10,5 +10,60 @@
     "velocity": { "floorDb": -36, "topDb": -10, "gamma": 1.4 },
     "detuneCents": 3,
     "maxVoices": { "desktop": 16, "mobile": 8 }
+  },
+  "pad": {
+    "oscillators": [
+      { "wave": "triangle", "cents": 0, "db": 0, "pan": 0 },
+      { "wave": "softSaw", "cents": -3.5, "db": -4, "pan": -0.5 },
+      { "wave": "softSaw", "cents": 3.5, "db": -6, "pan": 0.5 }
+    ],
+    "softSaw": { "harmonics": 24, "tilt": 1.4, "fromHarmonic": 2 },
+    "detune": { "amount": 1, "maxBeatHz": 0.35 },
+    "drift": { "cents": 1.2, "rateHz": [0.03, 0.09] },
+    "filter": {
+      "poles": 2,
+      "softHz": 500,
+      "loudHz": 2200,
+      "gamma": 1,
+      "refMidi": 60,
+      "keyTrack": 0.6,
+      "minHarmonic": 2,
+      "maxHz": 5000,
+      "bloom": { "startRatio": 0.3, "peakRatio": 1.7, "settleS": 3.5 },
+      "releaseRatio": 0.7
+    },
+    "amp": { "attackSoftS": 1.8, "attackLoudS": 0.8, "attackCurve": 2, "sustainDb": -1.5, "settleS": 3, "releaseS": 3 },
+    "velocity": { "floorDb": -34, "topDb": -6, "gamma": 1.3 },
+    "bassDbPerOctave": 1.5,
+    "highpass": { "hz": 60, "poles": 4 },
+    "stereoWidth": 0.6,
+    "stealS": 0.05,
+    "retriggerS": 0.08,
+    "maxVoices": { "desktop": 12, "mobile": 6 },
+    "seed": 1
+  },
+  "bell": {
+    "partials": [
+      { "ratio": 1, "db": 0, "decayRatio": 1, "velocityDb": 0, "pan": 0 },
+      { "ratio": 2.76, "db": -11, "decayRatio": 0.45, "velocityDb": 9, "pan": -0.3 },
+      { "ratio": 5.4, "db": -19, "decayRatio": 0.22, "velocityDb": 14, "pan": 0.3 },
+      { "ratio": 8.93, "db": -27, "decayRatio": 0.11, "velocityDb": 18, "pan": -0.1 }
+    ],
+    "velocityGamma": 1,
+    "partialJitterCents": 4,
+    "decay": { "lowMidi": 60, "lowS": 6, "highMidi": 96, "highS": 2.2 },
+    "attackSoftS": 0.008,
+    "attackLoudS": 0.004,
+    "velocity": { "floorDb": -33, "topDb": -6, "gamma": 1.3 },
+    "trebleDbPerOctave": 1,
+    "maxPartialHz": 12000,
+    "damped": false,
+    "dampS": 0.25,
+    "highpass": { "hz": 60, "poles": 2 },
+    "stereoWidth": 0.5,
+    "stealS": 0.05,
+    "retriggerS": 0.1,
+    "maxVoices": { "desktop": 16, "mobile": 8 },
+    "seed": 1
   }
 }
