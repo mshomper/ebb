@@ -48,6 +48,8 @@ import { stream } from '../../core/rng.js';
  * @property {{ x: number, z: number } | null} flee  startled (S6b-4): diving away to here, to surface eyes-up
  * @property {number} waryUntil    wary after a startle until then (live only)
  * @property {number} hushUntil    quiet after a neighbor's startle until then
+ * @property {{ x: number, z: number } | null} [hide]  where it sits out the day, in cover (day-hide.js)
+ * @property {number} [hideAt]     when the hide was last worked out
  * @property {ReturnType<typeof stream>} r
  */
 
@@ -399,6 +401,26 @@ export function createFrogAgents(recipe, seed) {
     return { x: pad.x + ((a.x - pad.x) / d) * out, z: pad.z + ((a.z - pad.z) / d) * out };
   }
 
+  /**
+   * Its day hide (day-hide.js through env.hide), worked out again every couple of minutes as the
+   * cover grows. @param {Agent} a @param {any} env @returns {{ x: number, z: number } | null}
+   */
+  function hideOf(a, env) {
+    if (!env.hide) return null;
+    if (a.hideAt === undefined || clock - a.hideAt > M.dayHide.againS) { a.hide = env.hide(a.home, a.id); a.hideAt = clock; }
+    return a.hide ?? null;
+  }
+
+  /** A hop toward a point (a day hide), as far as one hop goes, among the stems if need be. @param {Agent} a @param {any} env @param {{ x: number, z: number }} to */
+  function toward(a, env, to) {
+    const d = Math.hypot(to.x - a.x, to.z - a.z);
+    const len = Math.min(d, M.hop.distM[1] * scale);
+    const x = a.x + ((to.x - a.x) / d) * len, z = a.z + ((to.z - a.z) / d) * len;
+    if (env.water(x, z).depth > M.dayHide.maxDepthM || Math.abs(env.ground(x, z) - a.y) > 0.2 * scale || !clear(a, x, z)) return false;
+    startHop(a, { x, z, y: env.ground(x, z) }, env, false);
+    return true;
+  }
+
   /** What to do next. @param {Agent} a @param {any} env */
   function choose(a, env) {
     const hour = env.hourOfDay;
@@ -410,27 +432,35 @@ export function createFrogAgents(recipe, seed) {
     if (a.perch) {
       // On a lily pad: call or sit a while, then hop off to the bank, or into the water.
       if (callTime && a.r.next() < 0.6) { a.mode = 'call'; a.until = clock + rand(a, M.call.boutS); a.nextAt = a.until; return; }
-      if (!active || a.r.next() < 0.5) { a.mode = 'rest'; a.nextAt = clock + 4 + 6 * a.r.next(); return; }
-      const land = findSpot(a, env, false, Math.atan2(a.home.x - a.x, a.home.z - a.z));
+      // By day it leaves the pad for its hide in the cover (or home, with none).
+      const by = (!active && hideOf(a, env)) || a.home;
+      if (active && a.r.next() < 0.5) { a.mode = 'rest'; a.nextAt = clock + 4 + 6 * a.r.next(); return; }
+      const land = findSpot(a, env, false, Math.atan2(by.x - a.x, by.z - a.z));
       if (land) { a.mode = 'forage'; startHop(a, land, env, false); a.nextAt = clock + rand(a, M.forage.everyS); return; }
       const water = findSpot(a, env, true);
       if (water) { a.mode = 'swim'; startHop(a, water, env, true); return; }
       a.nextAt = clock + 3;
       return;
     }
+    if (!active && !callTime) {
+      // By day it sits tucked into cover near home (day-hide.js), hopping there first; with no
+      // cover near, it rests at the edge. It thinks again every few seconds (so dusk wakes it),
+      // shuffling now and then where it has no hide.
+      a.mode = 'rest';
+      const think = 3 + 5 * a.r.next();
+      const hide = hideOf(a, env);
+      if (hide && Math.hypot(hide.x - a.x, hide.z - a.z) > M.dayHide.atM) toward(a, env, hide);
+      else if (!hide) {
+        const mean = (M.rest.shuffleEveryS[0] + M.rest.shuffleEveryS[1]) / 2;
+        if (a.r.next() < think / mean) { const s = findSpot(a, env, false, undefined, 0.45); if (s) startHop(a, s, env, false); }
+      }
+      a.nextAt = clock + think;
+      return;
+    }
     const homeD = Math.hypot(a.x - a.home.x, a.z - a.home.z);
     if (homeD > M.leashM + 0.3) {
       const spot = findSpot(a, env, false);
       if (spot) { startHop(a, spot, env, false); a.mode = 'forage'; a.nextAt = clock + 0.8; return; }
-    }
-    if (!active && !callTime) {
-      // Resting frogs think again every few seconds (so dusk wakes them), shuffling now and then.
-      a.mode = 'rest';
-      const think = 3 + 5 * a.r.next();
-      const mean = (M.rest.shuffleEveryS[0] + M.rest.shuffleEveryS[1]) / 2;
-      if (a.r.next() < think / mean) { const s = findSpot(a, env, false, undefined, 0.45); if (s) startHop(a, s, env, false); }
-      a.nextAt = clock + think;
-      return;
     }
     if (callTime && a.r.next() < 0.6) {
       a.mode = 'call';

@@ -8,6 +8,7 @@ import { createFrogAgents } from '../src/world/creatures/agents.js';
 import { twoBoneIK, qrot } from '../src/world/creatures/motion.js';
 import { createPerches } from '../src/world/creatures/perches.js';
 import { createPresence } from '../src/world/creatures/presence.js';
+import { findHide, coverAt } from '../src/world/creatures/day-hide.js';
 import { padsOf, lilyShape, lilyWind } from '../src/world/growth/lily-pads.js';
 import { hash32 } from '../src/core/rng.js';
 
@@ -269,6 +270,29 @@ export function addFrogTests(test, assert, eq) {
     const near = run(ed, 0.1, () => { src.edits = [{ x: h1.x, z: h1.z + 1 }]; });
     assert(near.startled.includes(1), 'an edit 1 m from frog 1 did not startle it');
     return `the swoop startled ${swoop.startled.length}, hushed ${hushed.size}; frog 1 came up ${off.toFixed(1)} m off and was back ashore; a slow approach to 35 cm startled none`;
+  });
+
+  test(FROGS, 'by day frogs sit tucked into reeds near home; with no cover near, at the edge', async () => {
+    const r = await recipe();
+    const D = r.motion.dayHide;
+    // Eight frogs along the bank at z = -0.3; a reed clump behind the first three, none near the rest.
+    const reeds = { id: 900, sp: 'reeds', x: -3.1, z: -1.6, size: 1, stage: 3 };
+    const flora = { reeds: { shape: { clumpRadius: 0.8 } } };
+    const growth = { plants: [reeds], grass: null, cover: {} };
+    const env = { ...bank, hourOfDay: 12, hide: (/** @type {any} */ home, /** @type {number} */ id) => findHide({ growth, flora, water: bank.water }, home, id, D) };
+    const { agents } = pond(r, 8, 31);
+    for (let s = 0; s < 120 * 30; s++) agents.advance(1 / 30, env);
+    const inReeds = [], atEdge = [];
+    for (const a of agents.list()) {
+      const d = Math.hypot(a.x - reeds.x, a.z - reeds.z);
+      if (Math.hypot(a.home.x - reeds.x, a.home.z - reeds.z) < D.reachM - 0.3) { assert(d < 0.8, `frog ${a.id} is ${d.toFixed(2)} m from the reeds' middle by day`); inReeds.push(a.id); }
+      else if (Math.hypot(a.home.x - reeds.x, a.home.z - reeds.z) > D.reachM + 0.8) { assert(Math.hypot(a.x - a.home.x, a.z - a.home.z) < 0.8, `frog ${a.id} wandered off by day`); atEdge.push(a.id); }
+    }
+    assert(inReeds.length >= 2, `only ${inReeds.length} frogs near the reeds`);
+    assert(atEdge.length >= 2, `only ${atEdge.length} frogs with no cover`);
+    eq(coverAt(growth, flora, D, reeds.x, reeds.z), 1, 'cover in the middle of a reed clump');
+    eq(coverAt(growth, flora, D, 5, 5), 0, 'cover on bare ground');
+    return `frogs ${inReeds.join(', ')} tucked into the reeds; ${atEdge.join(', ')} with no cover near stayed at the edge`;
   });
 
   test(FROGS, 'the same seed moves the same frogs the same way; frogs that leave slip away', async () => {

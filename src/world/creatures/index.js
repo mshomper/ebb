@@ -23,6 +23,7 @@ import { frogMoves, legsOf } from './motion.js';
 import { createFrogAgents } from './agents.js';
 import { createPerches } from './perches.js';
 import { bringFrogs } from './coarse.js';
+import { findHide } from './day-hide.js';
 import { FROG_BONES } from './rigs/frog.js';
 
 const BAKE_JOB = { module: './world/creatures/bodies.js', fn: 'bakeVariant' };
@@ -98,6 +99,9 @@ export function createCreatures(opts) {
     duskHour: 19,
     /** Lily pads as perches, reed and iris clumps (perches.js), or null on a world with no lilies recipe. */
     pads: perches,
+    /** Where a frog sits out the day, tucked into cover near home (day-hide.js), or null with none. */
+    hide: (/** @type {{ x: number, z: number }} */ home, /** @type {number} */ id) =>
+      findHide({ growth: world.state?.growth, flora: opts.flora ?? {}, water: env.water }, home, id, M.dayHide),
   };
 
   /** Hour of the day (display time) and dusk, for the agents' moods. */

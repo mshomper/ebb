@@ -157,6 +157,8 @@ A body recipe lists SDF primitives (sphere, ellipsoid, capsule, round cone, roun
 
 **As built in S6b-4** (presence; details in doc 23): a fast swoop of the camera through a frog's 1.5 m ring, or an edit within 2 m, sends it into the water. It dives about 2 m away and floats eyes-up, wary for about a minute. Frogs within 4 m hush for 14 to 20 s. Moves the game makes (a glide) never startle. The frog lab has Swoop, Creep and Glide checks.
 
+**Day hides** (October 2026, after S6; Matt: frogs wouldn't sit out on the grass by day with cover near). By day a frog sits tucked into cover within 3 m of home, among the stems, and comes back out to the edge at dusk to forage and call (`src/world/creatures/day-hide.js`, `motion.dayHide`). Cover is what the island grew: rush and grass cover per square, reed and iris clumps; reeds and rushes count most, thick grass least. A frog on a lily pad at dawn heads for its hide too. With no cover near home it rests at the edge, as before.
+
 ### Motion
 
 - **Legs**: analytic two-bone IK; feet plant on the terrain heightfield and lift on a gait phase per leg. Body height and pitch follow the averaged foot plane. Longer chains (heron neck) use FABRIK.
