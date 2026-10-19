@@ -38,9 +38,11 @@ $('unlock-btn').addEventListener('click', async () => {
 
 // ---------------- budget options (applied when a slot loads) ----------------
 
-const budget = { tail: 0, mono: 0, range: 'mid', sets: 'all' };
+// Phones start light: a full piano decoded is hundreds of megabytes.
+const budget = tier === 'mobile' ? { tail: 4, mono: 48, range: 'mid', sets: 'nosus' } : { tail: 0, mono: 0, range: 'mid', sets: 'all' };
 for (const [attr, key] of /** @type {const} */ ([['data-tail', 'tail'], ['data-mono', 'mono'], ['data-range', 'range'], ['data-sets', 'sets']])) {
   const btns = [...document.querySelectorAll(`[${attr}]`)];
+  for (const o of btns) o.setAttribute('aria-pressed', String(o.getAttribute(attr) === String(/** @type {any} */ (budget)[key])));
   for (const b of btns) b.addEventListener('click', () => {
     for (const o of btns) o.setAttribute('aria-pressed', String(o === b));
     const v = b.getAttribute(attr) ?? '';
@@ -124,6 +126,7 @@ function cur() {
 function applyLive(s) {
   s.layers.fadeWidth = Number($('fade').value);
   s.layers.law = Number($('law').value);
+  if (blendMode) s.layers.blend = blendMode;
   s.velocity.floorDb = Number($('v-floor').value);
   s.velocity.topDb = Number($('v-top').value);
   s.velocity.gamma = Number($('v-gamma').value);
@@ -173,6 +176,9 @@ function seg(ids, fn) {
   for (const id of ids) $(id).addEventListener('click', () => { for (const o of ids) $(o).setAttribute('aria-pressed', String(o === id)); fn(id); });
 }
 let velFromHeight = false;
+/** @type {'mix'|'pick'|null} null keeps each instrument's own setting until the switch is used */
+let blendMode = null;
+seg(['bl-mix', 'bl-pick'], (id) => { blendMode = id === 'bl-mix' ? 'mix' : 'pick'; pushLive(); });
 seg(['touch-fixed', 'touch-height'], (id) => { velFromHeight = id === 'touch-height'; });
 let tuningPolicy = /** @type {'recorded'|'equal'|'stretch'} */ (samplerRecipe.defaults.tuning.policy);
 for (const p of ['recorded', 'equal', 'stretch']) $(`tu-${p}`).setAttribute('aria-pressed', String(p === tuningPolicy));
@@ -250,6 +256,7 @@ const player = createPlayer();
 function refreshCharts() {
   const L = slots[active];
   const s = L?.inst.settings;
+  if (s?.layers?.blend) for (const [id, m] of [['bl-mix', 'mix'], ['bl-pick', 'pick']]) $(id).setAttribute('aria-pressed', String(s.layers.blend === m));
   const layers = L?.recipe?.layers ?? 3;
   const bounds = s?.layers?.bounds?.length === layers - 1 ? s.layers.bounds : evenBounds(layers);
   layerChart.draw(layers, bounds, Number($('fade').value), Number($('law').value));
@@ -343,6 +350,7 @@ function showProblems() {
   for (const s of [slots.a, slots.b]) for (const p of s?.recipe?.problems ?? []) showProblem(`${s?.recipe?.name}: ${p}`);
 }
 
+if (pickFormat() === 'm4a') showProblem('This browser cannot play the Opus files used for the piano comparison. The AAC copies are made only for the piano you choose, so please compare in Chrome, Edge or Firefox.');
 refreshCharts();
 loadSlot('a', $('pick-a').value);
 loadSlot('b', $('pick-b').value);

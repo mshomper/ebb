@@ -129,7 +129,12 @@
     </div>
     <label class="slider"><span>Blend width</span><input type="range" id="fade" min="0" max="30" value="12"><output id="fade-out">12 steps</output></label>
     <label class="slider"><span>Blend curve</span><input type="range" id="law" min="0" max="1" step="0.05" value="0.5"><output id="law-out">0.50</output></label>
-    <p class="muted">Blend curve: toward 0 suits recordings that are in phase, toward 1 suits unrelated ones. Two recordings of one key sit between. Play the close-up and move it until the blends don't swell or sag.</p>
+    <div class="seg" role="group" aria-label="How two recordings share a blend" style="margin:6px 0">
+      <button id="bl-mix" aria-pressed="true">Mix the two recordings</button>
+      <button id="bl-pick" aria-pressed="false">Pick one per strike</button>
+    </div>
+    <p class="muted">Mix sounds both recordings together through a blend. Pick sounds one of them each time, chosen with the blend's odds, which avoids the two strikes partly cancelling. Mix measured smoothest on most pianos, Pick on the Yamaha upright.</p>
+    <p class="muted">Blend curve (for Mix): toward 0 suits recordings that are in phase, toward 1 suits unrelated ones. Two recordings of one key sit between. Play the close-up and move it until the blends don't swell or sag.</p>
   </section>
 
   <div class="grid2">

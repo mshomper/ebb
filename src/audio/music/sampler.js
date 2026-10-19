@@ -17,6 +17,7 @@ import {
   correctionCents, playbackRate, damperTau, decayDbPerS, pickVictim, dbToGain,
 } from './sampler-math.js';
 import { REPO_ROOT } from '../recipes.js';
+import { stream } from '../../core/rng.js';
 
 /**
  * @typedef {Object} Voice
@@ -71,6 +72,34 @@ export function createSampler(ctx, output, instrument, settings, opts = {}) {
   const zonesOf = (name) => /** @type {any[]} */ (sets[name]?.zones ?? []);
   /** @param {string} name */
   const zoneMidis = (name) => zonesOf(name).map((z) => z.midi);
+  /** How many loudness layers the instrument was recorded with (zones may lack some). */
+  const layerCount = instrument.layers ?? Math.max(1, ...Object.values(sets).flatMap((st) => (/** @type {any} */ (st).zones ?? []).map((/** @type {any} */ z) => (z.layers ?? []).length)));
+  /** @type {Map<string, number>} round-robin turn per zone and layer */
+  const turns = new Map();
+  // Seeded choices for the 'pick' blend (never Math.random): the same performance always picks
+  // the same recordings.
+  const picks = stream(cfg.layers.seed ?? 1, 0x5a3);
+
+  /**
+   * The recording to sound for a zone and a wanted layer (0-based): that layer's takes in turn
+   * (round robin), or the nearest layer the zone has when it lacks this one. Files named in the
+   * settings' exclude list (a bad take) are never used.
+   * @param {string} set @param {any} zone @param {number} want
+   * @returns {{file: any, layer: number} | null}
+   */
+  function takeFor(set, zone, want) {
+    const all = /** @type {any[]} */ (zone.layers ?? [zone]).filter((L) => L.file && !(cfg.exclude ?? []).includes(L.file));
+    if (!all.length) return null;
+    const numOf = (/** @type {any} */ L, /** @type {number} */ i) => (L.layer ?? i + 1) - 1;
+    const have = [...new Set(all.map((L, i) => numOf(L, i)))];
+    let pick = have[0];
+    for (const h of have) if (Math.abs(h - want) < Math.abs(pick - want) || (Math.abs(h - want) === Math.abs(pick - want) && h < pick)) pick = h;
+    const takes = all.filter((L, i) => numOf(L, i) === pick);
+    const key = `${set}:${zone.midi}:${pick}`;
+    const n = turns.get(key) ?? 0;
+    turns.set(key, n + 1);
+    return { file: takes[n % takes.length], layer: pick };
+  }
 
   /** @param {string} file */
   function urlOf(file) {
@@ -220,8 +249,8 @@ export function createSampler(ctx, output, instrument, settings, opts = {}) {
     if (!zones.length) return;
     const zi = nearestZone(v.midi, zones.map((z) => z.midi));
     const z = zones[zi];
-    const layers = z.layers ?? [z];
-    const L = layers[Math.min(v.layer, layers.length - 1)];
+    const take = takeFor('rel', z, v.layer);
+    const L = take?.file;
     const buf = L && buffers.get(L.file);
     if (!buf) return;
     const held = (v.keyUpT ?? t) - v.startT;
@@ -249,9 +278,30 @@ export function createSampler(ctx, output, instrument, settings, opts = {}) {
     const zi = nearestZone(midi, zones.map((z) => z.midi));
     if (zi < 0) return 0;
     const zone = zones[zi];
-    const layers = zone.layers ?? [zone];
-    const bounds = cfg.layers.bounds?.length === layers.length - 1 ? cfg.layers.bounds : evenBounds(layers.length);
-    const weights = layerWeights(velocity, bounds, cfg.layers.fadeWidth, cfg.layers.law ?? 1);
+    const bounds = cfg.layers.bounds?.length === layerCount - 1 ? cfg.layers.bounds : evenBounds(layerCount);
+    // Wanted layers and their blend, mapped onto the takes this zone has; two wanted layers that
+    // land on the same recording add up.
+    /** @type {Map<any, {L: any, layer: number, weight: number}>} */
+    const plan = new Map();
+    let wanted = layerWeights(velocity, bounds, cfg.layers.fadeWidth, cfg.layers.law ?? 1);
+    // 'pick': inside a blend, sound ONE recording per strike, chosen with the blend's odds. Two
+    // different strikes of the same string are partly out of phase, so mixing them cancels some of
+    // the fundamental (a level dip mid-blend); picking avoids that, and the colour still moves
+    // gradually across the blend because the odds do.
+    if (cfg.layers.blend === 'pick' && wanted.length > 1) {
+      const sum = wanted.reduce((n, w) => n + w.weight, 0) || 1;
+      let r = picks.next() * sum;
+      const chosen = wanted.find((w) => (r -= w.weight) <= 0) ?? wanted[wanted.length - 1];
+      wanted = [{ layer: chosen.layer, weight: 1 }];
+    }
+    for (const w of wanted) {
+      if (w.weight <= 0) continue;
+      const take = takeFor(set, zone, w.layer);
+      if (!take) continue;
+      const got = plan.get(take.file);
+      if (got) got.weight += w.weight;
+      else plan.set(take.file, { L: take.file, layer: take.layer, weight: w.weight });
+    }
 
     // A repeated key: the hammer stops the old vibration.
     for (const v of voices) if (v.midi === midi && !v.ended && (v.dampT === null || v.dampT > t)) damp(v, t, cfg.retrigger.dampS / 3);
@@ -280,12 +330,12 @@ export function createSampler(ctx, output, instrument, settings, opts = {}) {
 
     /** @type {AudioBufferSourceNode[]} */
     const srcs = [];
-    let mainLayer = weights[0].layer;
+    let mainLayer = 0;
     let mainW = 0;
-    for (const w of weights) {
-      const L = layers[w.layer];
-      const buf = L && buffers.get(L.file);
-      if (!buf || w.weight <= 0) continue;
+    for (const w of plan.values()) {
+      const L = w.L;
+      const buf = buffers.get(L.file);
+      if (!buf) continue;
       if (w.weight > mainW) { mainW = w.weight; mainLayer = w.layer; }
       const src = ctx.createBufferSource();
       src.buffer = buf;

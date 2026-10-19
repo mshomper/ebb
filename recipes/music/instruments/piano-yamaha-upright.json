@@ -1,0 +1,2053 @@
+{
+ "type": "instrument",
+ "id": "piano-yamaha-upright",
+ "name": "Upright piano (Yamaha)",
+ "version": 1,
+ "note": "An instrument recipe for the sampler (doc 24, Instruments, Sample preparation and Sampler rules). It describes exactly the files the prep step produced; nothing here is a tuning choice. type, id, name, version: what this is. source: where the recordings come from (library, folder url, license) and what the library's own note files say (notes). channels: channel count of every file. formats: each file exists once per format under root, as <file>.ogg (Ogg Opus, 48 kHz, 96 kbps stereo or 64 kbps mono, variable bitrate) and <file>.m4a (AAC-LC at the source rate, 128 kbps stereo or 96 kbps mono); the browser picks the first it can play. root: folder of the files, relative to the repo. layers: the number of velocity layers in the sustain set, layer 1 the quietest. sets: one entry per articulation: sus (sustain, pedal down or natural ring), nosus (dampers working), rel (release or key-off noise, played on note-off), pedal (sounds of the pedal mechanism). Each set has source (the library subfolder) and zones; a zone is one recorded key: note (scientific pitch, C4 = middle C, sharps written s in file names), midi (C4 = 60). measuredCents: the zone's measured pitch offset from 12-tone equal temperament at A4 = 440 Hz, in cents, as recorded; piano strings are inharmonic (partial n sits at n f0 sqrt(1 + B n^2)), so it is fitted from partials 1 to 6 (2 to 8 in the bass, where the fundamental is weak) over a window of the early sustain, each partial taken as the level-weighted centre of its unison-string cluster, and it is the pitch of the fitted first partial. Real pianos are stretch-tuned on purpose (bass flat, treble sharp); nothing has been corrected. tuneLayer: the layer the zone's number comes from (the middle one). tuneResidualCents: how far the found partials sit from the fit (root mean square, cents). tunePartials: which partials were found and used. layerSpreadCents: the largest difference between this zone's layers. inharmonicityB: the fitted B. unisonSplitCents: the widest spread seen inside one partial's cluster (a sign of unison strings tuned apart, which is heard as beating or chorus). tuneConfidence: 0 to 1, falls with fewer partials, a larger residual and a larger layer spread; below about 0.5 trust the ear over the number. layers: the files of the zone, quietest first; file is the path under root without extension; layer is its velocity layer and rr its round-robin take when the set has takes. peakDb: the file's sample peak in dBFS. attackRmsDb: the RMS level of its first 300 ms after the onset, in dBFS. Whether these levels mean anything depends on the source (see levels below). brightness: the share of energy above 1.5 times the note's fundamental (or 1 kHz, whichever is higher) in those first 300 ms, which should rise from layer to layer; in a very quiet file the noise floor can inflate it. lenS: length after the prep, in seconds. trimStartMs: how much was cut from the start (the onset, the first point above -50 dB of the file's peak, is kept with 3 ms before it). measuredCents on a layer is that file's own measurement. src: the original file name. Every file was cut where its 50 ms RMS fell to 60 dB below its peak, or at a maximum length (8 s at A0 falling evenly per semitone to 4 s at C8 for sustains, 2 s for releases), whichever came first, then given an equal-power fade over its last 250 ms (100 ms for releases and pedal sounds) so it ends in true silence. No gain was changed. levels: whether the source normalised each file (normalized true: the levels say nothing about how hard the key was played, so the sampler rebuilds the dynamic range from velocity with its own curve and must not re-gain the layers) or kept the recorded levels (normalized false: the layers already step up in level as they were played, and the sampler should play them at their own level). range: the lowest and highest sustain zone. problems: anything odd found while preparing, in plain words. The .m4a files decode about 23 ms longer than the .ogg files because AAC pads its last frame with silence; the start is in the same place in both. Yamaha upright: zones are a fourth or fifth apart (C and G), wider than the sampler's whole-tone rule; see problems.",
+ "source": {
+  "library": "VCSL (Versilian Community Sample Library)",
+  "url": "https://github.com/sgossner/VCSL/tree/master/Chordophones/Zithers/Upright%20Piano,%20Yamaha",
+  "license": "CC0 1.0",
+  "notes": "Folder 'Upright Piano, Yamaha', files Upright1_Sus_* and Upright1_Rel_*. Note.txt says this is a cleaned, recut and remastered version of the samples found in 'Upright No. 1' and under the same name in VSCO 2 CE. Zones are every fourth and fifth (C and G only), three velocity layers vl1 to vl3, and one to three round robins per layer, kept as -rr1, -rr2, -rr3. The source names are one octave low against scientific pitch (the file named C0 sounds C1, 32.7 Hz), confirmed by pitch measurement; the names here are corrected one octave up and src keeps the original."
+ },
+ "channels": 2,
+ "formats": [
+  "ogg"
+ ],
+ "root": "assets/audio/instruments/piano-yamaha-upright/",
+ "layers": 3,
+ "sets": {
+  "sus": {
+   "source": "Sustains",
+   "zones": [
+    {
+     "note": "As0",
+     "midi": 22,
+     "measuredCents": 12.69,
+     "tuneConfidence": 0.01,
+     "tuneResidualCents": 1.41,
+     "tunePartials": [
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8
+     ],
+     "tuneLayer": 2,
+     "layerSpreadCents": 34.99,
+     "inharmonicityB": 0.000346,
+     "layers": [
+      {
+       "file": "sus/As0-v1-rr1",
+       "layer": 1,
+       "rr": 1,
+       "peakDb": -38.03,
+       "attackRmsDb": -49.65,
+       "brightness": 0.0,
+       "lenS": 6.51,
+       "trimStartMs": 0.0,
+       "measuredCents": 47.68,
+       "src": "Upright1_Sus_C0_vl1_rr1.wav"
+      },
+      {
+       "file": "sus/As0-v1-rr2",
+       "layer": 1,
+       "rr": 2,
+       "peakDb": -32.19,
+       "attackRmsDb": -43.0,
+       "brightness": 0.00018,
+       "lenS": 7.954,
+       "trimStartMs": 0.0,
+       "measuredCents": 11.21,
+       "src": "Upright1_Sus_C0_vl1_rr2.wav"
+      },
+      {
+       "file": "sus/As0-v2-rr1",
+       "layer": 2,
+       "rr": 1,
+       "peakDb": -16.82,
+       "attackRmsDb": -28.09,
+       "brightness": 0.04065,
+       "lenS": 7.954,
+       "trimStartMs": 0.0,
+       "measuredCents": 12.69,
+       "src": "Upright1_Sus_C0_vl2_rr1.wav"
+      },
+      {
+       "file": "sus/As0-v3-rr1",
+       "layer": 3,
+       "rr": 1,
+       "peakDb": -13.09,
+       "attackRmsDb": -25.66,
+       "brightness": 0.05522,
+       "lenS": 7.954,
+       "trimStartMs": 0.0,
+       "measuredCents": 11.07,
+       "src": "Upright1_Sus_C0_vl3_rr1.wav"
+      }
+     ]
+    },
+    {
+     "note": "C1",
+     "midi": 24,
+     "measuredCents": -41.97,
+     "tuneConfidence": 0.78,
+     "tuneResidualCents": 1.31,
+     "tunePartials": [
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8
+     ],
+     "tuneLayer": 3,
+     "layerSpreadCents": 0.0,
+     "inharmonicityB": 0.000323,
+     "layers": [
+      {
+       "file": "sus/C1-v3-rr2",
+       "layer": 3,
+       "rr": 2,
+       "peakDb": -8.33,
+       "attackRmsDb": -19.7,
+       "brightness": 0.0799,
+       "lenS": 7.862,
+       "trimStartMs": 0.0,
+       "measuredCents": -41.97,
+       "src": "Upright1_Sus_C0_vl3_rr2.wav"
+      }
+     ]
+    },
+    {
+     "note": "G1",
+     "midi": 31,
+     "measuredCents": -23.94,
+     "tuneConfidence": 0.14,
+     "tuneResidualCents": 1.86,
+     "tunePartials": [
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8
+     ],
+     "tuneLayer": 2,
+     "layerSpreadCents": 7.48,
+     "inharmonicityB": 0.000267,
+     "layers": [
+      {
+       "file": "sus/G1-v1-rr1",
+       "layer": 1,
+       "rr": 1,
+       "peakDb": -38.53,
+       "attackRmsDb": -48.0,
+       "brightness": 4e-05,
+       "lenS": 7.54,
+       "trimStartMs": 0.0,
+       "measuredCents": -16.46,
+       "src": "Upright1_Sus_G0_vl1_rr1.wav"
+      },
+      {
+       "file": "sus/G1-v2-rr1",
+       "layer": 2,
+       "rr": 1,
+       "peakDb": -13.82,
+       "attackRmsDb": -26.6,
+       "brightness": 0.09563,
+       "lenS": 7.54,
+       "trimStartMs": 0.0,
+       "measuredCents": -23.94,
+       "src": "Upright1_Sus_G0_vl2_rr1.wav"
+      },
+      {
+       "file": "sus/G1-v3-rr1",
+       "layer": 3,
+       "rr": 1,
+       "peakDb": -5.01,
+       "attackRmsDb": -17.84,
+       "brightness": 0.11398,
+       "lenS": 7.54,
+       "trimStartMs": 0.0,
+       "measuredCents": -18.6,
+       "src": "Upright1_Sus_G0_vl3_rr1.wav"
+      }
+     ]
+    },
+    {
+     "note": "C2",
+     "midi": 36,
+     "measuredCents": -15.44,
+     "tuneConfidence": 0.05,
+     "tuneResidualCents": 2.26,
+     "tunePartials": [
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8
+     ],
+     "tuneLayer": 2,
+     "layerSpreadCents": 12.68,
+     "inharmonicityB": 0.000269,
+     "layers": [
+      {
+       "file": "sus/C2-v1-rr1",
+       "layer": 1,
+       "rr": 1,
+       "peakDb": -34.66,
+       "attackRmsDb": -44.77,
+       "brightness": 4e-05,
+       "lenS": 5.11,
+       "trimStartMs": 0.0,
+       "measuredCents": -2.76,
+       "src": "Upright1_Sus_C1_vl1_rr1.wav"
+      },
+      {
+       "file": "sus/C2-v2-rr1",
+       "layer": 2,
+       "rr": 1,
+       "peakDb": -20.1,
+       "attackRmsDb": -31.05,
+       "brightness": 0.00785,
+       "lenS": 7.31,
+       "trimStartMs": 0.0,
+       "measuredCents": -15.44,
+       "src": "Upright1_Sus_C1_vl2_rr1.wav"
+      },
+      {
+       "file": "sus/C2-v2-rr2",
+       "layer": 2,
+       "rr": 2,
+       "peakDb": -10.83,
+       "attackRmsDb": -22.01,
+       "brightness": 0.0646,
+       "lenS": 7.31,
+       "trimStartMs": 0.0,
+       "measuredCents": -15.87,
+       "src": "Upright1_Sus_C1_vl2_rr2.wav"
+      },
+      {
+       "file": "sus/C2-v3-rr1",
+       "layer": 3,
+       "rr": 1,
+       "peakDb": -4.94,
+       "attackRmsDb": -16.76,
+       "brightness": 0.06616,
+       "lenS": 7.31,
+       "trimStartMs": 0.0,
+       "measuredCents": -14.97,
+       "src": "Upright1_Sus_C1_vl3_rr1.wav"
+      },
+      {
+       "file": "sus/C2-v3-rr2",
+       "layer": 3,
+       "rr": 2,
+       "peakDb": -4.36,
+       "attackRmsDb": -15.84,
+       "brightness": 0.07797,
+       "lenS": 7.31,
+       "trimStartMs": 0.0,
+       "measuredCents": -15.36,
+       "src": "Upright1_Sus_C1_vl3_rr2.wav"
+      }
+     ]
+    },
+    {
+     "note": "G2",
+     "midi": 43,
+     "measuredCents": -4.36,
+     "tuneConfidence": 0.41,
+     "tuneResidualCents": 1.44,
+     "tunePartials": [
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8
+     ],
+     "tuneLayer": 2,
+     "layerSpreadCents": 3.61,
+     "inharmonicityB": 4.67e-05,
+     "layers": [
+      {
+       "file": "sus/G2-v1-rr1",
+       "layer": 1,
+       "rr": 1,
+       "peakDb": -27.02,
+       "attackRmsDb": -37.39,
+       "brightness": 0.0027,
+       "lenS": 6.989,
+       "trimStartMs": 0.0,
+       "measuredCents": -0.95,
+       "src": "Upright1_Sus_G1_vl1_rr1.wav"
+      },
+      {
+       "file": "sus/G2-v2-rr1",
+       "layer": 2,
+       "rr": 1,
+       "peakDb": -18.08,
+       "attackRmsDb": -28.3,
+       "brightness": 0.01844,
+       "lenS": 6.989,
+       "trimStartMs": 0.0,
+       "measuredCents": -4.36,
+       "src": "Upright1_Sus_G1_vl2_rr1.wav"
+      },
+      {
+       "file": "sus/G2-v2-rr2",
+       "layer": 2,
+       "rr": 2,
+       "peakDb": -12.33,
+       "attackRmsDb": -22.22,
+       "brightness": 0.0395,
+       "lenS": 6.989,
+       "trimStartMs": 0.0,
+       "measuredCents": -5.56,
+       "src": "Upright1_Sus_G1_vl2_rr2.wav"
+      },
+      {
+       "file": "sus/G2-v3-rr1",
+       "layer": 3,
+       "rr": 1,
+       "peakDb": -2.91,
+       "attackRmsDb": -13.7,
+       "brightness": 0.05748,
+       "lenS": 6.989,
+       "trimStartMs": 0.0,
+       "measuredCents": -7.97,
+       "src": "Upright1_Sus_G1_vl3_rr1.wav"
+      },
+      {
+       "file": "sus/G2-v3-rr2",
+       "layer": 3,
+       "rr": 2,
+       "peakDb": -2.27,
+       "attackRmsDb": -12.54,
+       "brightness": 0.0553,
+       "lenS": 6.989,
+       "trimStartMs": 0.0,
+       "measuredCents": -7.47,
+       "src": "Upright1_Sus_G1_vl3_rr2.wav"
+      }
+     ]
+    },
+    {
+     "note": "C3",
+     "midi": 48,
+     "measuredCents": -4.67,
+     "tuneConfidence": 0.34,
+     "tuneResidualCents": 2.01,
+     "tunePartials": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+     ],
+     "tuneLayer": 2,
+     "layerSpreadCents": 3.51,
+     "inharmonicityB": 0.000168,
+     "layers": [
+      {
+       "file": "sus/C3-v1-rr1",
+       "layer": 1,
+       "rr": 1,
+       "peakDb": -44.04,
+       "attackRmsDb": -53.26,
+       "brightness": 3e-05,
+       "lenS": 6.759,
+       "trimStartMs": 0.0,
+       "measuredCents": -1.16,
+       "src": "Upright1_Sus_C2_vl1_rr1.wav"
+      },
+      {
+       "file": "sus/C3-v1-rr2",
+       "layer": 1,
+       "rr": 2,
+       "peakDb": -35.94,
+       "attackRmsDb": -45.15,
+       "brightness": 0.00056,
+       "lenS": 6.759,
+       "trimStartMs": 0.0,
+       "measuredCents": -4.02,
+       "src": "Upright1_Sus_C2_vl1_rr2.wav"
+      },
+      {
+       "file": "sus/C3-v2-rr1",
+       "layer": 2,
+       "rr": 1,
+       "peakDb": -16.97,
+       "attackRmsDb": -25.33,
+       "brightness": 0.02446,
+       "lenS": 6.759,
+       "trimStartMs": 0.0,
+       "measuredCents": -4.67,
+       "src": "Upright1_Sus_C2_vl2_rr1.wav"
+      },
+      {
+       "file": "sus/C3-v2-rr2",
+       "layer": 2,
+       "rr": 2,
+       "peakDb": -12.02,
+       "attackRmsDb": -20.47,
+       "brightness": 0.04222,
+       "lenS": 6.759,
+       "trimStartMs": 0.0,
+       "measuredCents": -5.12,
+       "src": "Upright1_Sus_C2_vl2_rr2.wav"
+      },
+      {
+       "file": "sus/C3-v3-rr1",
+       "layer": 3,
+       "rr": 1,
+       "peakDb": -5.55,
+       "attackRmsDb": -15.16,
+       "brightness": 0.04842,
+       "lenS": 6.759,
+       "trimStartMs": 0.0,
+       "measuredCents": -5.38,
+       "src": "Upright1_Sus_C2_vl3_rr1.wav"
+      },
+      {
+       "file": "sus/C3-v3-rr2",
+       "layer": 3,
+       "rr": 2,
+       "peakDb": -5.38,
+       "attackRmsDb": -15.3,
+       "brightness": 0.05505,
+       "lenS": 6.759,
+       "trimStartMs": 0.0,
+       "measuredCents": -6.05,
+       "src": "Upright1_Sus_C2_vl3_rr2.wav"
+      }
+     ]
+    },
+    {
+     "note": "G3",
+     "midi": 55,
+     "measuredCents": -4.2,
+     "tuneConfidence": 0.66,
+     "tuneResidualCents": 0.76,
+     "tunePartials": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+     ],
+     "tuneLayer": 2,
+     "layerSpreadCents": 2.52,
+     "inharmonicityB": 0.000195,
+     "layers": [
+      {
+       "file": "sus/G3-v1-rr1",
+       "layer": 1,
+       "rr": 1,
+       "peakDb": -25.07,
+       "attackRmsDb": -35.83,
+       "brightness": 0.0002,
+       "lenS": 5.59,
+       "trimStartMs": 0.0,
+       "measuredCents": -1.68,
+       "src": "Upright1_Sus_G2_vl1_rr1.wav"
+      },
+      {
+       "file": "sus/G3-v1-rr2",
+       "layer": 1,
+       "rr": 2,
+       "peakDb": -20.9,
+       "attackRmsDb": -30.88,
+       "brightness": 0.00361,
+       "lenS": 5.61,
+       "trimStartMs": 0.0,
+       "measuredCents": -2.22,
+       "src": "Upright1_Sus_G2_vl1_rr2.wav"
+      },
+      {
+       "file": "sus/G3-v2-rr1",
+       "layer": 2,
+       "rr": 1,
+       "peakDb": -9.4,
+       "attackRmsDb": -20.73,
+       "brightness": 0.04521,
+       "lenS": 6.437,
+       "trimStartMs": 0.0,
+       "measuredCents": -4.2,
+       "src": "Upright1_Sus_G2_vl2_rr1.wav"
+      },
+      {
+       "file": "sus/G3-v2-rr2",
+       "layer": 2,
+       "rr": 2,
+       "peakDb": -10.19,
+       "attackRmsDb": -20.77,
+       "brightness": 0.04139,
+       "lenS": 6.437,
+       "trimStartMs": 0.0,
+       "measuredCents": -3.44,
+       "src": "Upright1_Sus_G2_vl2_rr2.wav"
+      },
+      {
+       "file": "sus/G3-v3-rr1",
+       "layer": 3,
+       "rr": 1,
+       "peakDb": -0.17,
+       "attackRmsDb": -11.2,
+       "brightness": 0.03432,
+       "lenS": 6.437,
+       "trimStartMs": 0.0,
+       "measuredCents": -3.09,
+       "src": "Upright1_Sus_G2_vl3_rr1.wav"
+      },
+      {
+       "file": "sus/G3-v3-rr2",
+       "layer": 3,
+       "rr": 2,
+       "peakDb": -2.35,
+       "attackRmsDb": -13.11,
+       "brightness": 0.05209,
+       "lenS": 6.437,
+       "trimStartMs": 0.0,
+       "measuredCents": -3.89,
+       "src": "Upright1_Sus_G2_vl3_rr2.wav"
+      }
+     ]
+    },
+    {
+     "note": "C4",
+     "midi": 60,
+     "measuredCents": -1.34,
+     "tuneConfidence": 0.65,
+     "tuneResidualCents": 1.31,
+     "tunePartials": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+     ],
+     "tuneLayer": 2,
+     "layerSpreadCents": 1.85,
+     "inharmonicityB": 0.000263,
+     "layers": [
+      {
+       "file": "sus/C4-v1-rr1",
+       "layer": 1,
+       "rr": 1,
+       "peakDb": -26.05,
+       "attackRmsDb": -36.46,
+       "brightness": 0.01961,
+       "lenS": 6.207,
+       "trimStartMs": 0.0,
+       "measuredCents": -0.38,
+       "src": "Upright1_Sus_C3_vl1_rr1.wav"
+      },
+      {
+       "file": "sus/C4-v1-rr2",
+       "layer": 1,
+       "rr": 2,
+       "peakDb": -43.71,
+       "attackRmsDb": -52.7,
+       "brightness": 0.00028,
+       "lenS": 6.207,
+       "trimStartMs": 0.0,
+       "measuredCents": 0.51,
+       "src": "Upright1_Sus_C3_vl1_rr2.wav"
+      },
+      {
+       "file": "sus/C4-v2-rr1",
+       "layer": 2,
+       "rr": 1,
+       "peakDb": -13.32,
+       "attackRmsDb": -24.35,
+       "brightness": 0.05528,
+       "lenS": 6.207,
+       "trimStartMs": 0.0,
+       "measuredCents": -1.34,
+       "src": "Upright1_Sus_C3_vl2_rr1.wav"
+      },
+      {
+       "file": "sus/C4-v2-rr2",
+       "layer": 2,
+       "rr": 2,
+       "peakDb": -10.26,
+       "attackRmsDb": -21.03,
+       "brightness": 0.05686,
+       "lenS": 6.207,
+       "trimStartMs": 0.0,
+       "measuredCents": -1.75,
+       "src": "Upright1_Sus_C3_vl2_rr2.wav"
+      },
+      {
+       "file": "sus/C4-v3-rr1",
+       "layer": 3,
+       "rr": 1,
+       "peakDb": -2.6,
+       "attackRmsDb": -13.11,
+       "brightness": 0.05065,
+       "lenS": 6.207,
+       "trimStartMs": 0.0,
+       "measuredCents": -1.61,
+       "src": "Upright1_Sus_C3_vl3_rr1.wav"
+      },
+      {
+       "file": "sus/C4-v3-rr2",
+       "layer": 3,
+       "rr": 2,
+       "peakDb": -3.59,
+       "attackRmsDb": -13.78,
+       "brightness": 0.05079,
+       "lenS": 6.207,
+       "trimStartMs": 0.0,
+       "measuredCents": -1.92,
+       "src": "Upright1_Sus_C3_vl3_rr2.wav"
+      }
+     ]
+    },
+    {
+     "note": "G4",
+     "midi": 67,
+     "measuredCents": -0.1,
+     "tuneConfidence": 0.68,
+     "tuneResidualCents": 0.79,
+     "tunePartials": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+     ],
+     "tuneLayer": 2,
+     "layerSpreadCents": 2.29,
+     "inharmonicityB": 0.000538,
+     "layers": [
+      {
+       "file": "sus/G4-v1-rr1",
+       "layer": 1,
+       "rr": 1,
+       "peakDb": -28.79,
+       "attackRmsDb": -38.06,
+       "brightness": 0.01569,
+       "lenS": 3.35,
+       "trimStartMs": 0.0,
+       "measuredCents": 1.02,
+       "src": "Upright1_Sus_G3_vl1_rr1.wav"
+      },
+      {
+       "file": "sus/G4-v1-rr2",
+       "layer": 1,
+       "rr": 2,
+       "peakDb": -32.83,
+       "attackRmsDb": -41.83,
+       "brightness": 0.00625,
+       "lenS": 3.21,
+       "trimStartMs": 0.0,
+       "measuredCents": 2.19,
+       "src": "Upright1_Sus_G3_vl1_rr2.wav"
+      },
+      {
+       "file": "sus/G4-v2-rr1",
+       "layer": 2,
+       "rr": 1,
+       "peakDb": -18.71,
+       "attackRmsDb": -29.42,
+       "brightness": 0.04992,
+       "lenS": 5.44,
+       "trimStartMs": 0.0,
+       "measuredCents": -0.1,
+       "src": "Upright1_Sus_G3_vl2_rr1.wav"
+      },
+      {
+       "file": "sus/G4-v2-rr2",
+       "layer": 2,
+       "rr": 2,
+       "peakDb": -10.77,
+       "attackRmsDb": -22.34,
+       "brightness": 0.05551,
+       "lenS": 5.885,
+       "trimStartMs": 0.0,
+       "measuredCents": -0.2,
+       "src": "Upright1_Sus_G3_vl2_rr2.wav"
+      },
+      {
+       "file": "sus/G4-v3-rr1",
+       "layer": 3,
+       "rr": 1,
+       "peakDb": -4.61,
+       "attackRmsDb": -16.12,
+       "brightness": 0.0571,
+       "lenS": 5.885,
+       "trimStartMs": 0.0,
+       "measuredCents": -0.27,
+       "src": "Upright1_Sus_G3_vl3_rr1.wav"
+      },
+      {
+       "file": "sus/G4-v3-rr2",
+       "layer": 3,
+       "rr": 2,
+       "peakDb": -3.92,
+       "attackRmsDb": -15.7,
+       "brightness": 0.05436,
+       "lenS": 5.885,
+       "trimStartMs": 0.0,
+       "measuredCents": 0.02,
+       "src": "Upright1_Sus_G3_vl3_rr2.wav"
+      }
+     ]
+    },
+    {
+     "note": "C5",
+     "midi": 72,
+     "measuredCents": -2.53,
+     "tuneConfidence": 0.72,
+     "tuneResidualCents": 1.09,
+     "tunePartials": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+     ],
+     "tuneLayer": 2,
+     "layerSpreadCents": 1.64,
+     "inharmonicityB": 0.000999,
+     "layers": [
+      {
+       "file": "sus/C5-v1-rr1",
+       "layer": 1,
+       "rr": 1,
+       "peakDb": -23.74,
+       "attackRmsDb": -34.75,
+       "brightness": 0.02929,
+       "lenS": 4.08,
+       "trimStartMs": 0.0,
+       "measuredCents": -0.89,
+       "src": "Upright1_Sus_C4_vl1_rr1.wav"
+      },
+      {
+       "file": "sus/C5-v1-rr2",
+       "layer": 1,
+       "rr": 2,
+       "peakDb": -25.07,
+       "attackRmsDb": -34.9,
+       "brightness": 0.0279,
+       "lenS": 4.23,
+       "trimStartMs": 0.0,
+       "measuredCents": -1.26,
+       "src": "Upright1_Sus_C4_vl1_rr2.wav"
+      },
+      {
+       "file": "sus/C5-v2-rr1",
+       "layer": 2,
+       "rr": 1,
+       "peakDb": -12.79,
+       "attackRmsDb": -23.98,
+       "brightness": 0.08079,
+       "lenS": 4.24,
+       "trimStartMs": 0.0,
+       "measuredCents": -2.53,
+       "src": "Upright1_Sus_C4_vl2_rr1.wav"
+      },
+      {
+       "file": "sus/C5-v2-rr2",
+       "layer": 2,
+       "rr": 2,
+       "peakDb": -9.6,
+       "attackRmsDb": -20.7,
+       "brightness": 0.08954,
+       "lenS": 5.52,
+       "trimStartMs": 0.0,
+       "measuredCents": -2.49,
+       "src": "Upright1_Sus_C4_vl2_rr2.wav"
+      },
+      {
+       "file": "sus/C5-v3-rr1",
+       "layer": 3,
+       "rr": 1,
+       "peakDb": -1.22,
+       "attackRmsDb": -13.05,
+       "brightness": 0.09686,
+       "lenS": 5.57,
+       "trimStartMs": 0.0,
+       "measuredCents": -2.72,
+       "src": "Upright1_Sus_C4_vl3_rr1.wav"
+      },
+      {
+       "file": "sus/C5-v3-rr2",
+       "layer": 3,
+       "rr": 2,
+       "peakDb": -1.7,
+       "attackRmsDb": -13.62,
+       "brightness": 0.10518,
+       "lenS": 5.54,
+       "trimStartMs": 0.0,
+       "measuredCents": -2.63,
+       "src": "Upright1_Sus_C4_vl3_rr2.wav"
+      }
+     ]
+    },
+    {
+     "note": "G5",
+     "midi": 79,
+     "measuredCents": -0.97,
+     "tuneConfidence": 0.59,
+     "tuneResidualCents": 0.67,
+     "tunePartials": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+     ],
+     "tuneLayer": 2,
+     "layerSpreadCents": 3.02,
+     "inharmonicityB": 0.00166,
+     "unisonSplitCents": 5.1,
+     "layers": [
+      {
+       "file": "sus/G5-v1-rr1",
+       "layer": 1,
+       "rr": 1,
+       "peakDb": -27.97,
+       "attackRmsDb": -39.42,
+       "brightness": 0.00155,
+       "lenS": 2.94,
+       "trimStartMs": 0.0,
+       "measuredCents": -1.96,
+       "src": "Upright1_Sus_G4_vl1_rr1.wav"
+      },
+      {
+       "file": "sus/G5-v1-rr2",
+       "layer": 1,
+       "rr": 2,
+       "peakDb": -29.48,
+       "attackRmsDb": -41.12,
+       "brightness": 0.00111,
+       "lenS": 2.52,
+       "trimStartMs": 0.0,
+       "measuredCents": -3.99,
+       "src": "Upright1_Sus_G4_vl1_rr2.wav"
+      },
+      {
+       "file": "sus/G5-v2-rr1",
+       "layer": 2,
+       "rr": 1,
+       "peakDb": -12.59,
+       "attackRmsDb": -23.94,
+       "brightness": 0.02414,
+       "lenS": 3.02,
+       "trimStartMs": 0.0,
+       "measuredCents": -0.97,
+       "src": "Upright1_Sus_G4_vl2_rr1.wav"
+      },
+      {
+       "file": "sus/G5-v2-rr2",
+       "layer": 2,
+       "rr": 2,
+       "peakDb": -12.87,
+       "attackRmsDb": -24.2,
+       "brightness": 0.01922,
+       "lenS": 2.88,
+       "trimStartMs": 0.0,
+       "measuredCents": -0.75,
+       "src": "Upright1_Sus_G4_vl2_rr2.wav"
+      },
+      {
+       "file": "sus/G5-v3-rr1",
+       "layer": 3,
+       "rr": 1,
+       "peakDb": -5.96,
+       "attackRmsDb": -17.6,
+       "brightness": 0.02405,
+       "lenS": 2.82,
+       "trimStartMs": 0.0,
+       "measuredCents": 0.17,
+       "src": "Upright1_Sus_G4_vl3_rr1.wav"
+      },
+      {
+       "file": "sus/G5-v3-rr2",
+       "layer": 3,
+       "rr": 2,
+       "peakDb": -6.83,
+       "attackRmsDb": -18.53,
+       "brightness": 0.02955,
+       "lenS": 2.69,
+       "trimStartMs": 0.0,
+       "measuredCents": 0.38,
+       "src": "Upright1_Sus_G4_vl3_rr2.wav"
+      }
+     ]
+    },
+    {
+     "note": "C6",
+     "midi": 84,
+     "measuredCents": -3.43,
+     "tuneConfidence": 0.37,
+     "tuneResidualCents": 1.96,
+     "tunePartials": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+     ],
+     "tuneLayer": 2,
+     "layerSpreadCents": 3.31,
+     "inharmonicityB": 0.00268,
+     "unisonSplitCents": 4.0,
+     "layers": [
+      {
+       "file": "sus/C6-v1-rr1",
+       "layer": 1,
+       "rr": 1,
+       "peakDb": -44.36,
+       "attackRmsDb": -59.78,
+       "brightness": 0.00061,
+       "lenS": 1.48,
+       "trimStartMs": 0.0,
+       "measuredCents": -0.12,
+       "src": "Upright1_Sus_C5_vl1_rr1.wav"
+      },
+      {
+       "file": "sus/C6-v1-rr2",
+       "layer": 1,
+       "rr": 2,
+       "peakDb": -32.74,
+       "attackRmsDb": -46.53,
+       "brightness": 0.00249,
+       "lenS": 2.18,
+       "trimStartMs": 0.0,
+       "measuredCents": -3.45,
+       "src": "Upright1_Sus_C5_vl1_rr2.wav"
+      },
+      {
+       "file": "sus/C6-v2-rr1",
+       "layer": 2,
+       "rr": 1,
+       "peakDb": -17.65,
+       "attackRmsDb": -30.81,
+       "brightness": 0.01014,
+       "lenS": 2.63,
+       "trimStartMs": 0.0,
+       "measuredCents": -3.43,
+       "src": "Upright1_Sus_C5_vl2_rr1.wav"
+      },
+      {
+       "file": "sus/C6-v2-rr2",
+       "layer": 2,
+       "rr": 2,
+       "peakDb": -17.11,
+       "attackRmsDb": -30.17,
+       "brightness": 0.01147,
+       "lenS": 3.01,
+       "trimStartMs": 0.0,
+       "measuredCents": -4.31,
+       "src": "Upright1_Sus_C5_vl2_rr2.wav"
+      },
+      {
+       "file": "sus/C6-v3-rr1",
+       "layer": 3,
+       "rr": 1,
+       "peakDb": -6.92,
+       "attackRmsDb": -21.58,
+       "brightness": 0.04141,
+       "lenS": 2.72,
+       "trimStartMs": 0.0,
+       "measuredCents": -4.05,
+       "src": "Upright1_Sus_C5_vl3_rr1.wav"
+      },
+      {
+       "file": "sus/C6-v3-rr2",
+       "layer": 3,
+       "rr": 2,
+       "peakDb": -8.5,
+       "attackRmsDb": -22.44,
+       "brightness": 0.03489,
+       "lenS": 2.92,
+       "trimStartMs": 0.0,
+       "measuredCents": -3.58,
+       "src": "Upright1_Sus_C5_vl3_rr2.wav"
+      }
+     ]
+    },
+    {
+     "note": "G6",
+     "midi": 91,
+     "measuredCents": 1.66,
+     "tuneConfidence": 0.01,
+     "tuneResidualCents": 1.72,
+     "tunePartials": [
+      1,
+      2,
+      3,
+      4
+     ],
+     "tuneLayer": 2,
+     "layerSpreadCents": 38.27,
+     "inharmonicityB": 0.00475,
+     "unisonSplitCents": 19.7,
+     "layers": [
+      {
+       "file": "sus/G6-v1-rr1",
+       "layer": 1,
+       "rr": 1,
+       "peakDb": -35.17,
+       "attackRmsDb": -55.74,
+       "brightness": 0.85012,
+       "lenS": 0.74,
+       "trimStartMs": 0.0,
+       "measuredCents": -36.61,
+       "src": "Upright1_Sus_G5_vl1_rr1.wav"
+      },
+      {
+       "file": "sus/G6-v1-rr2",
+       "layer": 1,
+       "rr": 2,
+       "peakDb": -31.45,
+       "attackRmsDb": -46.43,
+       "brightness": 8e-05,
+       "lenS": 2.11,
+       "trimStartMs": 0.0,
+       "measuredCents": -0.41,
+       "src": "Upright1_Sus_G5_vl1_rr2.wav"
+      },
+      {
+       "file": "sus/G6-v2-rr1",
+       "layer": 2,
+       "rr": 1,
+       "peakDb": -15.55,
+       "attackRmsDb": -30.65,
+       "brightness": 0.00321,
+       "lenS": 1.76,
+       "trimStartMs": 0.0,
+       "measuredCents": 1.66,
+       "src": "Upright1_Sus_G5_vl2_rr1.wav"
+      },
+      {
+       "file": "sus/G6-v2-rr2",
+       "layer": 2,
+       "rr": 2,
+       "peakDb": -12.58,
+       "attackRmsDb": -27.68,
+       "brightness": 0.0097,
+       "lenS": 1.82,
+       "trimStartMs": 0.0,
+       "measuredCents": 1.71,
+       "src": "Upright1_Sus_G5_vl2_rr2.wav"
+      },
+      {
+       "file": "sus/G6-v3-rr1",
+       "layer": 3,
+       "rr": 1,
+       "peakDb": -4.64,
+       "attackRmsDb": -19.7,
+       "brightness": 0.01637,
+       "lenS": 1.6,
+       "trimStartMs": 0.0,
+       "measuredCents": -0.83,
+       "src": "Upright1_Sus_G5_vl3_rr1.wav"
+      },
+      {
+       "file": "sus/G6-v3-rr2",
+       "layer": 3,
+       "rr": 2,
+       "peakDb": -7.43,
+       "attackRmsDb": -27.54,
+       "brightness": 0.97858,
+       "lenS": 0.73,
+       "trimStartMs": 0.0,
+       "measuredCents": 0.36,
+       "src": "Upright1_Sus_G5_vl3_rr2.wav"
+      },
+      {
+       "file": "sus/G6-v3-rr3",
+       "layer": 3,
+       "rr": 3,
+       "peakDb": -5.44,
+       "attackRmsDb": -20.49,
+       "brightness": 0.0166,
+       "lenS": 1.6,
+       "trimStartMs": 0.0,
+       "measuredCents": -0.87,
+       "src": "Upright1_Sus_G5_vl3_rr3.wav"
+      }
+     ]
+    },
+    {
+     "note": "C7",
+     "midi": 96,
+     "measuredCents": -3.27,
+     "tuneConfidence": 0.77,
+     "tuneResidualCents": 1.2,
+     "tunePartials": [
+      1,
+      2,
+      3,
+      4
+     ],
+     "tuneLayer": 2,
+     "layerSpreadCents": 0.91,
+     "inharmonicityB": 0.0076,
+     "unisonSplitCents": 13.7,
+     "layers": [
+      {
+       "file": "sus/C7-v2-rr1",
+       "layer": 2,
+       "rr": 1,
+       "peakDb": -13.27,
+       "attackRmsDb": -29.98,
+       "brightness": 0.00344,
+       "lenS": 1.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -3.27,
+       "src": "Upright1_Sus_C6_vl2_rr1.wav"
+      },
+      {
+       "file": "sus/C7-v2-rr2",
+       "layer": 2,
+       "rr": 2,
+       "peakDb": -21.48,
+       "attackRmsDb": -37.09,
+       "brightness": 0.00074,
+       "lenS": 1.17,
+       "trimStartMs": 0.0,
+       "measuredCents": -2.36,
+       "src": "Upright1_Sus_C6_vl2_rr2.wav"
+      },
+      {
+       "file": "sus/C7-v3-rr1",
+       "layer": 3,
+       "rr": 1,
+       "peakDb": -6.59,
+       "attackRmsDb": -23.72,
+       "brightness": 0.01283,
+       "lenS": 1.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -3.9,
+       "src": "Upright1_Sus_C6_vl3_rr1.wav"
+      },
+      {
+       "file": "sus/C7-v3-rr2",
+       "layer": 3,
+       "rr": 2,
+       "peakDb": -6.93,
+       "attackRmsDb": -23.86,
+       "brightness": 0.01482,
+       "lenS": 1.2,
+       "trimStartMs": 0.0,
+       "measuredCents": -4.14,
+       "src": "Upright1_Sus_C6_vl3_rr2.wav"
+      }
+     ]
+    }
+   ]
+  },
+  "rel": {
+   "source": "Releases",
+   "zones": [
+    {
+     "note": "C1",
+     "midi": 24,
+     "layers": [
+      {
+       "file": "rel/C1-v1-rr1",
+       "layer": 1,
+       "rr": 1,
+       "peakDb": -64.9,
+       "attackRmsDb": -81.62,
+       "brightness": 0.0,
+       "lenS": 0.35,
+       "trimStartMs": 0.0,
+       "src": "Upright1_Rel_C0_vl1_rr1.wav"
+      },
+      {
+       "file": "rel/C1-v1-rr2",
+       "layer": 1,
+       "rr": 2,
+       "peakDb": -70.55,
+       "attackRmsDb": -86.1,
+       "brightness": 0.0,
+       "lenS": 0.35,
+       "trimStartMs": 0.0,
+       "src": "Upright1_Rel_C0_vl1_rr2.wav"
+      },
+      {
+       "file": "rel/C1-v2-rr1",
+       "layer": 2,
+       "rr": 1,
+       "peakDb": -82.6,
+       "attackRmsDb": -94.14,
+       "brightness": 3e-05,
+       "lenS": 0.35,
+       "trimStartMs": 0.0,
+       "src": "Upright1_Rel_C0_vl2_rr1.wav"
+      },
+      {
+       "file": "rel/C1-v3-rr1",
+       "layer": 3,
+       "rr": 1,
+       "peakDb": -71.39,
+       "attackRmsDb": -85.61,
+       "brightness": 1e-05,
+       "lenS": 0.35,
+       "trimStartMs": 0.0,
+       "src": "Upright1_Rel_C0_vl3_rr1.wav"
+      },
+      {
+       "file": "rel/C1-v3-rr2",
+       "layer": 3,
+       "rr": 2,
+       "peakDb": -68.41,
+       "attackRmsDb": -82.48,
+       "brightness": 0.00127,
+       "lenS": 0.35,
+       "trimStartMs": 0.0,
+       "src": "Upright1_Rel_C0_vl3_rr2.wav"
+      }
+     ]
+    },
+    {
+     "note": "G1",
+     "midi": 31,
+     "layers": [
+      {
+       "file": "rel/G1-v1-rr1",
+       "layer": 1,
+       "rr": 1,
+       "peakDb": -71.8,
+       "attackRmsDb": -87.83,
+       "brightness": 0.0,
+       "lenS": 0.35,
+       "trimStartMs": 0.0,
+       "src": "Upright1_Rel_G0_vl1_rr1.wav"
+      },
+      {
+       "file": "rel/G1-v2-rr1",
+       "layer": 2,
+       "rr": 1,
+       "peakDb": -68.72,
+       "attackRmsDb": -84.36,
+       "brightness": 0.001,
+       "lenS": 0.35,
+       "trimStartMs": 0.0,
+       "src": "Upright1_Rel_G0_vl2_rr1.wav"
+      },
+      {
+       "file": "rel/G1-v3-rr1",
+       "layer": 3,
+       "rr": 1,
+       "peakDb": -66.09,
+       "attackRmsDb": -82.95,
+       "brightness": 0.00319,
+       "lenS": 0.35,
+       "trimStartMs": 0.0,
+       "src": "Upright1_Rel_G0_vl3_rr1.wav"
+      }
+     ]
+    },
+    {
+     "note": "C2",
+     "midi": 36,
+     "layers": [
+      {
+       "file": "rel/C2-v1-rr1",
+       "layer": 1,
+       "rr": 1,
+       "peakDb": -80.33,
+       "attackRmsDb": -96.32,
+       "brightness": 0.00291,
+       "lenS": 0.35,
+       "trimStartMs": 0.0,
+       "src": "Upright1_Rel_C1_vl1_rr1.wav"
+      },
+      {
+       "file": "rel/C2-v2-rr1",
+       "layer": 2,
+       "rr": 1,
+       "peakDb": -63.06,
+       "attackRmsDb": -77.04,
+       "brightness": 0.00046,
+       "lenS": 0.35,
+       "trimStartMs": 0.0,
+       "src": "Upright1_Rel_C1_vl2_rr1.wav"
+      },
+      {
+       "file": "rel/C2-v2-rr2",
+       "layer": 2,
+       "rr": 2,
+       "peakDb": -69.87,
+       "attackRmsDb": -86.5,
+       "brightness": 0.00378,
+       "lenS": 0.35,
+       "trimStartMs": 0.0,
+       "src": "Upright1_Rel_C1_vl2_rr2.wav"
+      },
+      {
+       "file": "rel/C2-v3-rr1",
+       "layer": 3,
+       "rr": 1,
+       "peakDb": -70.3,
+       "attackRmsDb": -82.75,
+       "brightness": 8e-05,
+       "lenS": 0.35,
+       "trimStartMs": 0.0,
+       "src": "Upright1_Rel_C1_vl3_rr1.wav"
+      },
+      {
+       "file": "rel/C2-v3-rr2",
+       "layer": 3,
+       "rr": 2,
+       "peakDb": -62.67,
+       "attackRmsDb": -79.41,
+       "brightness": 2e-05,
+       "lenS": 0.35,
+       "trimStartMs": 0.0,
+       "src": "Upright1_Rel_C1_vl3_rr2.wav"
+      }
+     ]
+    },
+    {
+     "note": "G2",
+     "midi": 43,
+     "layers": [
+      {
+       "file": "rel/G2-v1-rr1",
+       "layer": 1,
+       "rr": 1,
+       "peakDb": -73.95,
+       "attackRmsDb": -92.56,
+       "brightness": 0.16529,
+       "lenS": 0.35,
+       "trimStartMs": 0.0,
+       "src": "Upright1_Rel_G1_vl1_rr1.wav"
+      },
+      {
+       "file": "rel/G2-v2-rr1",
+       "layer": 2,
+       "rr": 1,
+       "peakDb": -78.94,
+       "attackRmsDb": -93.11,
+       "brightness": 0.00014,
+       "lenS": 0.35,
+       "trimStartMs": 0.0,
+       "src": "Upright1_Rel_G1_vl2_rr1.wav"
+      },
+      {
+       "file": "rel/G2-v2-rr2",
+       "layer": 2,
+       "rr": 2,
+       "peakDb": -82.07,
+       "attackRmsDb": -97.23,
+       "brightness": 0.00038,
+       "lenS": 0.35,
+       "trimStartMs": 0.0,
+       "src": "Upright1_Rel_G1_vl2_rr2.wav"
+      },
+      {
+       "file": "rel/G2-v3-rr1",
+       "layer": 3,
+       "rr": 1,
+       "peakDb": -72.94,
+       "attackRmsDb": -90.08,
+       "brightness": 0.00262,
+       "lenS": 0.35,
+       "trimStartMs": 0.0,
+       "src": "Upright1_Rel_G1_vl3_rr1.wav"
+      },
+      {
+       "file": "rel/G2-v3-rr2",
+       "layer": 3,
+       "rr": 2,
+       "peakDb": -62.17,
+       "attackRmsDb": -82.17,
+       "brightness": 0.13936,
+       "lenS": 0.35,
+       "trimStartMs": 0.0,
+       "src": "Upright1_Rel_G1_vl3_rr2.wav"
+      }
+     ]
+    },
+    {
+     "note": "C3",
+     "midi": 48,
+     "layers": [
+      {
+       "file": "rel/C3-v1-rr1",
+       "layer": 1,
+       "rr": 1,
+       "peakDb": -75.26,
+       "attackRmsDb": -90.09,
+       "brightness": 6e-05,
+       "lenS": 0.35,
+       "trimStartMs": 0.0,
+       "src": "Upright1_Rel_C2_vl1_rr1.wav"
+      },
+      {
+       "file": "rel/C3-v1-rr2",
+       "layer": 1,
+       "rr": 2,
+       "peakDb": -81.76,
+       "attackRmsDb": -97.27,
+       "brightness": 0.00026,
+       "lenS": 0.35,
+       "trimStartMs": 0.0,
+       "src": "Upright1_Rel_C2_vl1_rr2.wav"
+      },
+      {
+       "file": "rel/C3-v2-rr1",
+       "layer": 2,
+       "rr": 1,
+       "peakDb": -56.18,
+       "attackRmsDb": -72.77,
+       "brightness": 0.00113,
+       "lenS": 0.35,
+       "trimStartMs": 0.0,
+       "src": "Upright1_Rel_C2_vl2_rr1.wav"
+      },
+      {
+       "file": "rel/C3-v2-rr2",
+       "layer": 2,
+       "rr": 2,
+       "peakDb": -71.48,
+       "attackRmsDb": -87.18,
+       "brightness": 0.00711,
+       "lenS": 0.35,
+       "trimStartMs": 0.0,
+       "src": "Upright1_Rel_C2_vl2_rr2.wav"
+      },
+      {
+       "file": "rel/C3-v3-rr1",
+       "layer": 3,
+       "rr": 1,
+       "peakDb": -59.93,
+       "attackRmsDb": -72.78,
+       "brightness": 0.00613,
+       "lenS": 0.35,
+       "trimStartMs": 0.0,
+       "src": "Upright1_Rel_C2_vl3_rr1.wav"
+      },
+      {
+       "file": "rel/C3-v3-rr2",
+       "layer": 3,
+       "rr": 2,
+       "peakDb": -69.43,
+       "attackRmsDb": -85.99,
+       "brightness": 0.0342,
+       "lenS": 0.35,
+       "trimStartMs": 0.0,
+       "src": "Upright1_Rel_C2_vl3_rr2.wav"
+      }
+     ]
+    },
+    {
+     "note": "G3",
+     "midi": 55,
+     "layers": [
+      {
+       "file": "rel/G3-v1-rr1",
+       "layer": 1,
+       "rr": 1,
+       "peakDb": -59.31,
+       "attackRmsDb": -75.69,
+       "brightness": 0.00196,
+       "lenS": 0.35,
+       "trimStartMs": 0.0,
+       "src": "Upright1_Rel_G2_vl1_rr1.wav"
+      },
+      {
+       "file": "rel/G3-v1-rr2",
+       "layer": 1,
+       "rr": 2,
+       "peakDb": -64.93,
+       "attackRmsDb": -82.38,
+       "brightness": 0.00053,
+       "lenS": 0.292,
+       "trimStartMs": 0.0,
+       "src": "Upright1_Rel_G2_vl1_rr2.wav"
+      },
+      {
+       "file": "rel/G3-v2-rr1",
+       "layer": 2,
+       "rr": 1,
+       "peakDb": -63.43,
+       "attackRmsDb": -82.64,
+       "brightness": 0.00876,
+       "lenS": 0.35,
+       "trimStartMs": 0.0,
+       "src": "Upright1_Rel_G2_vl2_rr1.wav"
+      },
+      {
+       "file": "rel/G3-v2-rr2",
+       "layer": 2,
+       "rr": 2,
+       "peakDb": -65.02,
+       "attackRmsDb": -83.24,
+       "brightness": 0.00838,
+       "lenS": 0.267,
+       "trimStartMs": 0.0,
+       "src": "Upright1_Rel_G2_vl2_rr2.wav"
+      },
+      {
+       "file": "rel/G3-v3-rr1",
+       "layer": 3,
+       "rr": 1,
+       "peakDb": -78.47,
+       "attackRmsDb": -96.02,
+       "brightness": 0.00261,
+       "lenS": 0.35,
+       "trimStartMs": 0.0,
+       "src": "Upright1_Rel_G2_vl3_rr1.wav"
+      },
+      {
+       "file": "rel/G3-v3-rr2",
+       "layer": 3,
+       "rr": 2,
+       "peakDb": -68.68,
+       "attackRmsDb": -84.92,
+       "brightness": 0.00374,
+       "lenS": 0.35,
+       "trimStartMs": 0.0,
+       "src": "Upright1_Rel_G2_vl3_rr2.wav"
+      }
+     ]
+    },
+    {
+     "note": "C4",
+     "midi": 60,
+     "layers": [
+      {
+       "file": "rel/C4-v1-rr1",
+       "layer": 1,
+       "rr": 1,
+       "peakDb": -57.57,
+       "attackRmsDb": -73.22,
+       "brightness": 0.00227,
+       "lenS": 0.336,
+       "trimStartMs": 13.9,
+       "src": "Upright1_Rel_C3_vl1_rr1.wav"
+      },
+      {
+       "file": "rel/C4-v1-rr2",
+       "layer": 1,
+       "rr": 2,
+       "peakDb": -80.33,
+       "attackRmsDb": -95.59,
+       "brightness": 0.00014,
+       "lenS": 0.35,
+       "trimStartMs": 0.0,
+       "src": "Upright1_Rel_C3_vl1_rr2.wav"
+      },
+      {
+       "file": "rel/C4-v2-rr1",
+       "layer": 2,
+       "rr": 1,
+       "peakDb": -59.15,
+       "attackRmsDb": -72.58,
+       "brightness": 0.01474,
+       "lenS": 0.35,
+       "trimStartMs": 0.0,
+       "src": "Upright1_Rel_C3_vl2_rr1.wav"
+      },
+      {
+       "file": "rel/C4-v2-rr2",
+       "layer": 2,
+       "rr": 2,
+       "peakDb": -63.77,
+       "attackRmsDb": -80.46,
+       "brightness": 0.00162,
+       "lenS": 0.35,
+       "trimStartMs": 0.0,
+       "src": "Upright1_Rel_C3_vl2_rr2.wav"
+      },
+      {
+       "file": "rel/C4-v3-rr1",
+       "layer": 3,
+       "rr": 1,
+       "peakDb": -65.41,
+       "attackRmsDb": -82.2,
+       "brightness": 3e-05,
+       "lenS": 0.35,
+       "trimStartMs": 0.0,
+       "src": "Upright1_Rel_C3_vl3_rr1.wav"
+      },
+      {
+       "file": "rel/C4-v3-rr2",
+       "layer": 3,
+       "rr": 2,
+       "peakDb": -68.65,
+       "attackRmsDb": -88.81,
+       "brightness": 0.05762,
+       "lenS": 0.35,
+       "trimStartMs": 0.0,
+       "src": "Upright1_Rel_C3_vl3_rr2.wav"
+      }
+     ]
+    },
+    {
+     "note": "G4",
+     "midi": 67,
+     "layers": [
+      {
+       "file": "rel/G4-v1-rr1",
+       "layer": 1,
+       "rr": 1,
+       "peakDb": -80.54,
+       "attackRmsDb": -107.8,
+       "brightness": 0.00176,
+       "lenS": 0.35,
+       "trimStartMs": 0.0,
+       "src": "Upright1_Rel_G3_vl1_rr1.wav"
+      },
+      {
+       "file": "rel/G4-v1-rr2",
+       "layer": 1,
+       "rr": 2,
+       "peakDb": -78.05,
+       "attackRmsDb": -97.33,
+       "brightness": 6e-05,
+       "lenS": 0.431,
+       "trimStartMs": 8.7,
+       "src": "Upright1_Rel_G3_vl1_rr2.wav"
+      },
+      {
+       "file": "rel/G4-v2-rr1",
+       "layer": 2,
+       "rr": 1,
+       "peakDb": -52.64,
+       "attackRmsDb": -71.1,
+       "brightness": 0.00153,
+       "lenS": 0.35,
+       "trimStartMs": 0.0,
+       "src": "Upright1_Rel_G3_vl2_rr1.wav"
+      },
+      {
+       "file": "rel/G4-v2-rr2",
+       "layer": 2,
+       "rr": 2,
+       "peakDb": -59.28,
+       "attackRmsDb": -77.61,
+       "brightness": 0.00325,
+       "lenS": 0.35,
+       "trimStartMs": 0.0,
+       "src": "Upright1_Rel_G3_vl2_rr2.wav"
+      },
+      {
+       "file": "rel/G4-v3-rr1",
+       "layer": 3,
+       "rr": 1,
+       "peakDb": -62.02,
+       "attackRmsDb": -80.56,
+       "brightness": 0.02174,
+       "lenS": 0.35,
+       "trimStartMs": 0.0,
+       "src": "Upright1_Rel_G3_vl3_rr1.wav"
+      },
+      {
+       "file": "rel/G4-v3-rr2",
+       "layer": 3,
+       "rr": 2,
+       "peakDb": -60.01,
+       "attackRmsDb": -77.78,
+       "brightness": 0.00508,
+       "lenS": 0.274,
+       "trimStartMs": 0.0,
+       "src": "Upright1_Rel_G3_vl3_rr2.wav"
+      }
+     ]
+    },
+    {
+     "note": "C5",
+     "midi": 72,
+     "layers": [
+      {
+       "file": "rel/C5-v1-rr1",
+       "layer": 1,
+       "rr": 1,
+       "peakDb": -77.93,
+       "attackRmsDb": -92.28,
+       "brightness": 0.00021,
+       "lenS": 0.35,
+       "trimStartMs": 0.0,
+       "src": "Upright1_Rel_C4_vl1_rr1.wav"
+      },
+      {
+       "file": "rel/C5-v1-rr2",
+       "layer": 1,
+       "rr": 2,
+       "peakDb": -72.27,
+       "attackRmsDb": -88.19,
+       "brightness": 0.00249,
+       "lenS": 0.254,
+       "trimStartMs": 0.0,
+       "src": "Upright1_Rel_C4_vl1_rr2.wav"
+      },
+      {
+       "file": "rel/C5-v2-rr1",
+       "layer": 2,
+       "rr": 1,
+       "peakDb": -57.02,
+       "attackRmsDb": -73.36,
+       "brightness": 0.00193,
+       "lenS": 0.338,
+       "trimStartMs": 11.7,
+       "src": "Upright1_Rel_C4_vl2_rr1.wav"
+      },
+      {
+       "file": "rel/C5-v2-rr2",
+       "layer": 2,
+       "rr": 2,
+       "peakDb": -66.01,
+       "attackRmsDb": -83.56,
+       "brightness": 0.02478,
+       "lenS": 0.35,
+       "trimStartMs": 0.0,
+       "src": "Upright1_Rel_C4_vl2_rr2.wav"
+      },
+      {
+       "file": "rel/C5-v3-rr1",
+       "layer": 3,
+       "rr": 1,
+       "peakDb": -62.94,
+       "attackRmsDb": -80.73,
+       "brightness": 0.02849,
+       "lenS": 0.35,
+       "trimStartMs": 0.0,
+       "src": "Upright1_Rel_C4_vl3_rr1.wav"
+      },
+      {
+       "file": "rel/C5-v3-rr2",
+       "layer": 3,
+       "rr": 2,
+       "peakDb": -57.23,
+       "attackRmsDb": -72.12,
+       "brightness": 0.00306,
+       "lenS": 0.263,
+       "trimStartMs": 0.0,
+       "src": "Upright1_Rel_C4_vl3_rr2.wav"
+      }
+     ]
+    },
+    {
+     "note": "G5",
+     "midi": 79,
+     "layers": [
+      {
+       "file": "rel/G5-v1-rr1",
+       "layer": 1,
+       "rr": 1,
+       "peakDb": -66.33,
+       "attackRmsDb": -83.23,
+       "brightness": 0.01453,
+       "lenS": 0.35,
+       "trimStartMs": 0.0,
+       "src": "Upright1_Rel_G4_vl1_rr1.wav"
+      },
+      {
+       "file": "rel/G5-v1-rr2",
+       "layer": 1,
+       "rr": 2,
+       "peakDb": -64.31,
+       "attackRmsDb": -80.69,
+       "brightness": 0.00909,
+       "lenS": 0.35,
+       "trimStartMs": 0.0,
+       "src": "Upright1_Rel_G4_vl1_rr2.wav"
+      },
+      {
+       "file": "rel/G5-v2-rr1",
+       "layer": 2,
+       "rr": 1,
+       "peakDb": -73.26,
+       "attackRmsDb": -85.58,
+       "brightness": 0.00013,
+       "lenS": 0.35,
+       "trimStartMs": 0.0,
+       "src": "Upright1_Rel_G4_vl2_rr1.wav"
+      },
+      {
+       "file": "rel/G5-v2-rr2",
+       "layer": 2,
+       "rr": 2,
+       "peakDb": -65.9,
+       "attackRmsDb": -81.46,
+       "brightness": 0.00837,
+       "lenS": 0.35,
+       "trimStartMs": 0.0,
+       "src": "Upright1_Rel_G4_vl2_rr2.wav"
+      },
+      {
+       "file": "rel/G5-v3-rr1",
+       "layer": 3,
+       "rr": 1,
+       "peakDb": -69.39,
+       "attackRmsDb": -83.03,
+       "brightness": 0.06906,
+       "lenS": 0.35,
+       "trimStartMs": 0.0,
+       "src": "Upright1_Rel_G4_vl3_rr1.wav"
+      },
+      {
+       "file": "rel/G5-v3-rr2",
+       "layer": 3,
+       "rr": 2,
+       "peakDb": -63.38,
+       "attackRmsDb": -81.35,
+       "brightness": 0.00863,
+       "lenS": 0.35,
+       "trimStartMs": 0.0,
+       "src": "Upright1_Rel_G4_vl3_rr2.wav"
+      }
+     ]
+    },
+    {
+     "note": "C6",
+     "midi": 84,
+     "layers": [
+      {
+       "file": "rel/C6-v1-rr1",
+       "layer": 1,
+       "rr": 1,
+       "peakDb": -79.93,
+       "attackRmsDb": -95.98,
+       "brightness": 9e-05,
+       "lenS": 0.35,
+       "trimStartMs": 0.0,
+       "src": "Upright1_Rel_C5_vl1_rr1.wav"
+      },
+      {
+       "file": "rel/C6-v1-rr2",
+       "layer": 1,
+       "rr": 2,
+       "peakDb": -75.76,
+       "attackRmsDb": -92.18,
+       "brightness": 1e-05,
+       "lenS": 0.35,
+       "trimStartMs": 0.0,
+       "src": "Upright1_Rel_C5_vl1_rr2.wav"
+      },
+      {
+       "file": "rel/C6-v2-rr1",
+       "layer": 2,
+       "rr": 1,
+       "peakDb": -54.02,
+       "attackRmsDb": -68.74,
+       "brightness": 1e-05,
+       "lenS": 0.288,
+       "trimStartMs": 0.0,
+       "src": "Upright1_Rel_C5_vl2_rr1.wav"
+      },
+      {
+       "file": "rel/C6-v2-rr2",
+       "layer": 2,
+       "rr": 2,
+       "peakDb": -61.23,
+       "attackRmsDb": -78.28,
+       "brightness": 2e-05,
+       "lenS": 0.35,
+       "trimStartMs": 0.0,
+       "src": "Upright1_Rel_C5_vl2_rr2.wav"
+      },
+      {
+       "file": "rel/C6-v3-rr1",
+       "layer": 3,
+       "rr": 1,
+       "peakDb": -63.98,
+       "attackRmsDb": -85.22,
+       "brightness": 0.38896,
+       "lenS": 0.35,
+       "trimStartMs": 0.0,
+       "src": "Upright1_Rel_C5_vl3_rr1.wav"
+      },
+      {
+       "file": "rel/C6-v3-rr2",
+       "layer": 3,
+       "rr": 2,
+       "peakDb": -62.87,
+       "attackRmsDb": -79.64,
+       "brightness": 0.00012,
+       "lenS": 0.35,
+       "trimStartMs": 0.0,
+       "src": "Upright1_Rel_C5_vl3_rr2.wav"
+      }
+     ]
+    },
+    {
+     "note": "G6",
+     "midi": 91,
+     "layers": [
+      {
+       "file": "rel/G6-v1-rr1",
+       "layer": 1,
+       "rr": 1,
+       "peakDb": -70.13,
+       "attackRmsDb": -85.64,
+       "brightness": 0.0,
+       "lenS": 0.35,
+       "trimStartMs": 0.0,
+       "src": "Upright1_Rel_G5_vl1_rr1.wav"
+      },
+      {
+       "file": "rel/G6-v1-rr2",
+       "layer": 1,
+       "rr": 2,
+       "peakDb": -62.48,
+       "attackRmsDb": -76.64,
+       "brightness": 0.0,
+       "lenS": 0.316,
+       "trimStartMs": 0.7,
+       "src": "Upright1_Rel_G5_vl1_rr2.wav"
+      },
+      {
+       "file": "rel/G6-v2-rr1",
+       "layer": 2,
+       "rr": 1,
+       "peakDb": -52.53,
+       "attackRmsDb": -70.12,
+       "brightness": 0.0,
+       "lenS": 0.312,
+       "trimStartMs": 0.0,
+       "src": "Upright1_Rel_G5_vl2_rr1.wav"
+      },
+      {
+       "file": "rel/G6-v2-rr2",
+       "layer": 2,
+       "rr": 2,
+       "peakDb": -68.5,
+       "attackRmsDb": -85.97,
+       "brightness": 0.0,
+       "lenS": 0.35,
+       "trimStartMs": 0.0,
+       "src": "Upright1_Rel_G5_vl2_rr2.wav"
+      },
+      {
+       "file": "rel/G6-v3-rr1",
+       "layer": 3,
+       "rr": 1,
+       "peakDb": -67.5,
+       "attackRmsDb": -83.64,
+       "brightness": 0.0,
+       "lenS": 0.35,
+       "trimStartMs": 0.0,
+       "src": "Upright1_Rel_G5_vl3_rr1.wav"
+      },
+      {
+       "file": "rel/G6-v3-rr2",
+       "layer": 3,
+       "rr": 2,
+       "peakDb": -63.92,
+       "attackRmsDb": -80.69,
+       "brightness": 0.0,
+       "lenS": 0.34,
+       "trimStartMs": 9.9,
+       "src": "Upright1_Rel_G5_vl3_rr2.wav"
+      },
+      {
+       "file": "rel/G6-v3-rr3",
+       "layer": 3,
+       "rr": 3,
+       "peakDb": -65.86,
+       "attackRmsDb": -82.74,
+       "brightness": 0.0,
+       "lenS": 0.35,
+       "trimStartMs": 0.0,
+       "src": "Upright1_Rel_G5_vl3_rr3.wav"
+      }
+     ]
+    },
+    {
+     "note": "C7",
+     "midi": 96,
+     "layers": [
+      {
+       "file": "rel/C7-v2-rr1",
+       "layer": 2,
+       "rr": 1,
+       "peakDb": -49.29,
+       "attackRmsDb": -66.56,
+       "brightness": 0.0,
+       "lenS": 0.35,
+       "trimStartMs": 0.0,
+       "src": "Upright1_Rel_C6_vl2_rr1.wav"
+      },
+      {
+       "file": "rel/C7-v2-rr2",
+       "layer": 2,
+       "rr": 2,
+       "peakDb": -61.36,
+       "attackRmsDb": -78.56,
+       "brightness": 0.0,
+       "lenS": 0.35,
+       "trimStartMs": 0.0,
+       "src": "Upright1_Rel_C6_vl2_rr2.wav"
+      },
+      {
+       "file": "rel/C7-v3-rr1",
+       "layer": 3,
+       "rr": 1,
+       "peakDb": -65.01,
+       "attackRmsDb": -80.54,
+       "brightness": 0.0,
+       "lenS": 0.35,
+       "trimStartMs": 0.0,
+       "src": "Upright1_Rel_C6_vl3_rr1.wav"
+      },
+      {
+       "file": "rel/C7-v3-rr2",
+       "layer": 3,
+       "rr": 2,
+       "peakDb": -51.34,
+       "attackRmsDb": -72.44,
+       "brightness": 1e-05,
+       "lenS": 0.35,
+       "trimStartMs": 0.0,
+       "src": "Upright1_Rel_C6_vl3_rr2.wav"
+      }
+     ]
+    }
+   ]
+  }
+ },
+ "levels": {
+  "normalized": false,
+  "note": "Recorded levels kept: v1 peaks near -25 to -44 dBFS, v3 near -0.2 to -7 dBFS. Play the layers at their own level."
+ },
+ "range": {
+  "low": "As0",
+  "high": "C7"
+ },
+ "problems": [
+  "sus/G6-v1-rr1 (Upright1_Sus_G5_vl1_rr1.wav) looks like a bad take: its energy is almost all at 3128 Hz (G7, the second partial) with the G6 fundamental buried, it dies within 0.7 s (the other G6 takes ring 1.6 to 2.1 s) and its brightness is 0.85 against 0.003 to 0.016 for the others; its measured pitch (-36.6 cents) is not trustworthy. Suggest the sampler use sus/G6-v1-rr2 only.",
+  "sus/As0-v1-rr1 (Upright1_Sus_C0_vl1_rr1.wav) is the quietest file of the set (peak -38 dB, mostly rumble below the partials) and measures +47.7 cents where the other three A#0 takes measure +11 to +13; treat its number as unreliable.",
+  "The lowest Yamaha zone is odd: of the five files named C0, four (vl1 rr1, vl1 rr2, vl2 rr1, vl3 rr1) sound A#0 about 11 to 13 cents sharp and only vl3 rr2 sounds C1 (42 cents flat). They are placed as recorded: zone As0 with layers v1 (two takes), v2 and v3, and zone C1 with v3 only. That leaves C1 without soft layers and A#0 without a release sample (the release files named C0 were all left at C1).",
+  "sus: brightness does not rise with layer in 3 of 14 zones: G3 (v1 0.000, v2 0.045, v3 0.034); C4 (v1 0.020, v2 0.055, v3 0.051); G6 (v1 0.850, v2 0.003, v3 0.016)",
+  "sus: layers of the same key disagree in pitch by more than 5 cents in 4 zones (usually a high, fast-dying note or a unison that beats; the zone number uses the middle layer): As0 (v1 +47.7, v1 +11.2, v2 +12.7, v3 +11.1); G1 (v1 -16.5, v2 -23.9, v3 -18.6); C2 (v1 -2.8, v2 -15.4, v2 -15.9, v3 -15.0, v3 -15.4); G6 (v1 -36.6, v1 -0.4, v2 +1.7, v2 +1.7, v3 -0.8, v3 +0.4, v3 -0.9)",
+  "source files begin right at the attack with no silence before it (56 of 71 sus files, 45 of 71 rel files; first sample -39.4 to -5.7 dB below the file's peak). Nothing was cut from them; listen for a start click, and if one is heard a 1 to 2 ms fade-in at playback cures it.",
+  "sus/C6-v1-rr1 (Upright1_Sus_C5_vl1_rr1.wav): pitch check flagged it; reviewed by hand: fundamental at 1046 Hz (C6) with a weak second partial; the note is right",
+  "sus/As0-v1-rr1 (Upright1_Sus_C0_vl1_rr1.wav): placed at As0, not C1 as its name says, because it measurably sounds As0 (47.68 cents)",
+  "sus/As0-v1-rr2 (Upright1_Sus_C0_vl1_rr2.wav): placed at As0, not C1 as its name says, because it measurably sounds As0 (11.21 cents)",
+  "sus/As0-v2-rr1 (Upright1_Sus_C0_vl2_rr1.wav): placed at As0, not C1 as its name says, because it measurably sounds As0 (12.69 cents)",
+  "sus/As0-v3-rr1 (Upright1_Sus_C0_vl3_rr1.wav): placed at As0, not C1 as its name says, because it measurably sounds As0 (11.07 cents)",
+  "onset check: in 15 encoded files the -30 dB threshold crossing moved by more than 2 ms after encoding (codec ripple on a slow, quiet attack); cross-correlation of the first 80 ms against the processed WAV shows no shift in any of them (lag 0 to 0.02 ms), so the starts are in place",
+  "sus zones further apart than a whole tone (doc 24 sampler rule: at most 2 semitones): C1 to G1 (7 semitones), G1 to C2 (5 semitones), C2 to G2 (7 semitones), G2 to C3 (5 semitones), C3 to G3 (7 semitones), G3 to C4 (5 semitones), C4 to G4 (7 semitones), G4 to C5 (5 semitones), C5 to G5 (7 semitones), G5 to C6 (5 semitones), C6 to G6 (7 semitones), G6 to C7 (5 semitones)",
+  "sus: missing layers: C1 lacks v1,2; C7 lacks v1",
+  "rel: missing layers: C7 lacks v1",
+  "rel: no release sample for 1 sus zones: As0"
+ ]
+}
