@@ -146,9 +146,9 @@ export function createTonemapPass(opts) {
       f[8] = state.outline.amount; f[9] = state.outline.terrainAmount; f[10] = state.outline.chroma;
       f[11] = Math.max(1, r.outline.widthAt1440 * height / 1440);
       f[12] = r.outline.fadeStartMeters; f[13] = r.outline.fadeEndMeters; f[14] = state.split; f[15] = r.dither.codeValues;
-      f[16] = r.purkinje.fullAtNits; f[17] = r.purkinje.noneAtNits; f[18] = r.outline.creatureBoost; f[19] = 0;
+      f[16] = r.purkinje.fullAtNits; f[17] = r.purkinje.noneAtNits; f[18] = r.outline.creatureBoost; f[19] = r.outline.creatureFadeMeters[0];
       f[20] = r.outline.depthEdge[0]; f[21] = r.outline.depthEdge[1]; f[22] = r.outline.normalEdge[0]; f[23] = r.outline.normalEdge[1];
-      f.set(r.purkinje.rodWeights, 24); f[27] = 0;
+      f.set(r.purkinje.rodWeights, 24); f[27] = r.outline.creatureFadeMeters[1];
       f.set(r.purkinje.tint, 28); f[31] = 0;
       if (groupDirty && lastCtx) self.resize(lastCtx);   // the wash map changed size: bind the new one
       // Wash: ease toward shown (a map is set) or hidden; the last map stays while it fades out.

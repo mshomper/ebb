@@ -10,7 +10,7 @@ import { packMesh, VERTEX_BYTES, MAX_BONES } from '../../world/creatures/bodies.
 
 /** @typedef {import('../frame-graph.js').PassContext} PassContext */
 
-const DRAW_BYTES = 32;
+const DRAW_BYTES = 48;
 const MAX = 128;
 const IDENTITY = new Float32Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
 
@@ -21,15 +21,19 @@ const IDENTITY = new Float32Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 
  */
 
 /**
- * @param {{ recipe: any, mesh?: { vertices: Float32Array, indices: Uint32Array, count: number } }} opts
- *   recipe: the species recipe (recipes/species/<id>.json); mesh: one unskinned mesh to start with (the size preview)
+ * @param {{ recipe: any, mesh?: { vertices: Float32Array, indices: Uint32Array, count: number }, eyeBones?: number[] }} opts
+ *   recipe: the species recipe (recipes/species/<id>.json); mesh: one unskinned mesh to start with (the size preview);
+ *   eyeBones: the two bones the eyes follow, for their wet glint (body.eyeGlint)
  */
 export function createCreaturePass(opts) {
   const { recipe } = opts;
   const W = recipe.body.wetSpecular;
   const bodyLength = recipe.body.scaleReal[0] + (recipe.body.scaleReal[1] - recipe.body.scaleReal[0]) / 2;
   const data = new Float32Array(DRAW_BYTES / 4);
-  data.set([W.roughness, W.strength, 0.55, 0.62, bodyLength, 0, 0, 0]);
+  // Wet eyes: the skin that follows these two bones (none for the unskinned size preview).
+  const G = recipe.body.eyeGlint, eyes = opts.eyeBones ?? [-1, -1];
+  data.set([W.roughness, W.strength, 0.55, 0.62, bodyLength, 0, 0, 0,
+    eyes[0], eyes[1], G?.roughness ?? 0.1, G ? G.strength : 0]);
   const beings = new Float32Array(MAX * 8);
   const bones = new Float32Array(MAX * MAX_BONES * 16);
   /** Meshes by key, on the CPU until the GPU has them. @type {Map<string, { data: ArrayBuffer, indices: Uint32Array, vbuf?: GPUBuffer, ibuf?: GPUBuffer }>} */

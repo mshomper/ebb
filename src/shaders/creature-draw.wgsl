@@ -13,6 +13,7 @@
 struct CreatureDraw {
   look: vec4f,     // x wet roughness, y wet specular strength, z contact shadow darkness 0..1, w contact radius (body lengths)
   body: vec4f,     // x body length (m, at size 1), yzw spare
+  glint: vec4f,    // x, y the two eye bones (-1 none), z cornea roughness, w strength
 };
 
 @group(0) @binding(0) var<uniform> frame: FrameUniforms;
@@ -27,6 +28,7 @@ struct VsOut {
   @location(0) world: vec3f,
   @location(1) normal: vec3f,
   @location(2) albedo: vec3f,
+  @location(3) eye: f32,       // how much of the skin here follows an eye bone (the wet cornea)
 };
 
 struct FsOut {
@@ -68,6 +70,13 @@ fn vsBody(@location(0) position: vec3f, @location(1) normal: vec3f, @location(2)
   o.pos = frame.viewProj * vec4f(world, 1.0);
   o.normal = vec3f(c * nPosed.x + s * nPosed.z, nPosed.y, -s * nPosed.x + c * nPosed.z);
   o.albedo = albedo;
+  // The eyes are the skin that follows the eye bones.
+  var eye = 0.0;
+  for (var k = 0; k < 4; k++) {
+    let j = f32(joints[k]);
+    if (j == cd.glint.x || j == cd.glint.y) { eye += weights[k]; }
+  }
+  o.eye = eye;
   return o;
 }
 
@@ -88,6 +97,15 @@ fn fsBody(in: VsOut) -> FsOut {
   // Wet skin: a GGX sheen from the sun and moon.
   radiance += cd.look.y * (frame.sunIlluminance * sunVis * ggxSpecular(n, v, frame.sunDir, cd.look.x, 0.02)
                          + frame.moonIlluminance * moonVis * ggxSpecular(n, v, frame.moonDir, cd.look.x, 0.02));
+  // Wet eyes: the cornea is smooth, so the sun and moon make a sharp point in it and the sky shows
+  // in it at a glancing view. Physically lit (water-like Fresnel), never painted.
+  let g = smoothstep(0.5, 0.9, in.eye) * cd.glint.w;
+  if (g > 0.0) {
+    radiance += g * (frame.sunIlluminance * sunVis * ggxSpecular(n, v, frame.sunDir, cd.glint.z, 0.02)
+                   + frame.moonIlluminance * moonVis * ggxSpecular(n, v, frame.moonDir, cd.glint.z, 0.02));
+    let fres = 0.02 + 0.98 * pow(1.0 - max(dot(n, v), 0.0), 5.0);
+    radiance += g * fres * skyAmbient(reflect(-v, n)) / PI;
+  }
   let color = applyAerial(radiance * frame.exposure, in.pos.xy * frame.invRenderSize, viewDist);
   // Never let a bad value through: one NaN would spread over the whole frame through bloom.
   let safe = select(vec3f(0.0), color, color == color);

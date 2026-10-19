@@ -23,6 +23,7 @@ import { frogMoves, legsOf } from './motion.js';
 import { createFrogAgents } from './agents.js';
 import { createPerches } from './perches.js';
 import { bringFrogs } from './coarse.js';
+import { FROG_BONES } from './rigs/frog.js';
 
 const BAKE_JOB = { module: './world/creatures/bodies.js', fn: 'bakeVariant' };
 /** The tongue mesh is baked this long (m) along +z from the mouth, then stretched to its reach. */
@@ -48,7 +49,7 @@ export function createCreatures(opts) {
     ? createPerches({ lily: opts.flora.lilies, P: { ...recipe.motion.pads, clumps: recipe.motion.clumps }, water: (x, z) => water.sampleLive(x, z) })
     : null;
   let testFrogs = opts.testFrogs ?? 0;
-  const pass = createCreaturePass({ recipe });
+  const pass = createCreaturePass({ recipe, eyeBones: ['eye.l', 'eye.r'].map((n) => FROG_BONES.findIndex((b) => b.name === n)) });
   const body = recipe.body, M = recipe.motion;
   const variants = Math.max(1, body.variants ?? 1);
   const lods = recipe.bake.lods ?? [{ cellM: recipe.bake.cellM }];

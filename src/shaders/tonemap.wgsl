@@ -11,9 +11,9 @@ struct Post {
   lookSlope: f32, lookPower: f32, lookSat: f32, purkinje: f32,
   outlineAmount: f32, terrainAmount: f32, outlineChroma: f32, outlineWidthPx: f32,
   fadeStart: f32, fadeEnd: f32, split: f32, ditherCode: f32,
-  rodFull: f32, rodNone: f32, creatureBoost: f32, _p0: f32,
+  rodFull: f32, rodNone: f32, creatureBoost: f32, creatureFadeStart: f32,
   depthEdge: vec2f, normalEdge: vec2f,
-  rodWeights: vec3f, _p1: f32,
+  rodWeights: vec3f, creatureFadeEnd: f32,
   tint: vec3f, _p2: f32,
   // The journal's show-where wash (J2b), painted after the palette in one journal ink.
   wash: vec4f,          // map origin x, origin z (m), 1 / map size (m), amount 0..1 (fade)
@@ -110,17 +110,25 @@ fn outlineAt(p: vec2f) -> f32 {
     let nid = textureLoad(normalIdTex, q, 0);
     if (nid.b > 0.5) { continue; }
     if (d <= 0.0) { edge = max(edge, 1.0); continue; } // silhouette against the sky
+    let g = i32(round(nid.a * 3.0));
+    // Creatures keep only their silhouette: no lines inside the body (eyes, hips), which drew a
+    // small animal on with ink.
+    if (group == 3 && g == 3) { continue; }
     let z = frame.near / d;
     edge = max(edge, smoothstep(post.depthEdge.x, post.depthEdge.y, (z - z0) / z0));
-    let g = i32(round(nid.a * 3.0));
     if (g != group && g != 0) { edge = max(edge, 1.0); }
     let nd = dot(octDecode(nid.rg), n0);
     edge = max(edge, 1.0 - smoothstep(post.normalEdge.y, post.normalEdge.x, nd));
   }
   var amount = post.outlineAmount;
   if (group == 1) { amount = post.terrainAmount; }
-  if (group == 3) { amount = post.outlineAmount * post.creatureBoost; }
-  let fade = 1.0 - smoothstep(post.fadeStart, post.fadeEnd, z0);
+  var fade = 1.0 - smoothstep(post.fadeStart, post.fadeEnd, z0);
+  if (group == 3) {
+    // A creature's line helps up close and fades with distance: a far frog is a small natural
+    // shape in the grass, never an inked dot (found by its call and its movement instead).
+    amount = post.outlineAmount * post.creatureBoost;
+    fade = 1.0 - smoothstep(post.creatureFadeStart, post.creatureFadeEnd, z0);
+  }
   return clamp(edge * amount * fade, 0.0, 1.0);
 }
 
