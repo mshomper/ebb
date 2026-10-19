@@ -1,6 +1,6 @@
 // @ts-check
 // Director and realizer tests (doc 24): the director keeps dusk for the frogs, starts nothing in a
-// preview or the pre-dawn hush, rests at least three real minutes after every piece, keeps
+// preview or the pre-dawn hush, rests at least the recipe's shortest rest after every piece, keeps
 // recently played pieces waiting, and decides the same way for the same seed; the realizer gives
 // the same performance for the same seed, and a new seed keeps the melody and harmony.
 
@@ -65,12 +65,12 @@ export function addDirectorTests(test, assert, eq) {
     }
   });
 
-  test(G, 'every piece is followed by a rest of at least three real minutes', async () => {
+  test(G, 'every piece is followed by a rest of at least the shortest rest (2 real minutes)', async () => {
     const { director, pool } = await load();
     const { out } = run(director, pool, { seed: 9 });
     assert(out.length >= 2, `pieces: ${out.length}`);
-    for (const p of out) assert(p.rest >= 180, `rest ${p.rest}`);
-    for (let i = 1; i < out.length; i++) assert(out[i].start - out[i - 1].end >= 180, 'gap between pieces');
+    for (const p of out) assert(p.rest >= 120, `rest ${p.rest}`);
+    for (let i = 1; i < out.length; i++) assert(out[i].start - out[i - 1].end >= 120, 'gap between pieces');
   });
 
   test(G, 'nothing starts during a preview', async () => {

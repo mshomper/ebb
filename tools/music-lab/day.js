@@ -179,7 +179,7 @@ export async function initDay(host) {
     const perDay = res.pieces.length / opt.days;
     $('dy-tiles').innerHTML = `
       <div class="tile" style="grid-column:1 / -1;min-width:0"><span>Silence</span><b>${Math.round(res.silenceShare * 100)} percent</b>
-        <span>of real time. Doc 24's target is 55 to 65 percent. Over seeds 1 to 6 at 1x, "Now and then" (the default) measures 66 to 81 percent and "Often" 58 to 72. One day is a small sample; 3 days steadies it.</span></div>
+        <span>of real time. Doc 24's target is 55 to 65 percent. Over 12 seeds, 3 days at 1x, "Now and then" (the default) measures 56 to 70 percent (middle 62) and "Often" 54 to 63. One day is a small sample; 3 days steadies it.</span></div>
       <div class="tile"><span>Pieces per game day</span><b>${perDay.toFixed(perDay % 1 ? 1 : 0)}</b><span>${res.pieces.length} in all</span></div>
       <div class="tile"><span>Real time simulated</span><b>${(res.endRealS / 60).toFixed(res.endRealS % 60 ? 1 : 0)} min</b><span>${opt.days} game ${opt.days === 1 ? 'day' : 'days'} at ${opt.flow}x</span></div>
       <div class="tile"><span>Slots that rolled no</span><b>${no}</b><span>chances that came up empty</span></div>`;
