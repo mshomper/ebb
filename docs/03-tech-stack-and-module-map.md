@@ -30,7 +30,7 @@ src/
   core/   gpu.js clock.js rng.js events.js store.js workers.js recipes.js
   world/  terrain/ water/ tide.js growth/ structures/ creatures/ ecology/
           weather.js seasons.js expansion.js
-  sim/    live-sim.js catchup.js
+  sim/    live-sim.js tick.js hour.js catchup.js away.js
   render/ frame-graph.js camera.js quality.js passes/ (shadow, depth-prepass, ao, opaque,
           foliage, creatures, water, sky, particles, post/)
   shaders/ *.wgsl  (common.wgsl, lib-*.wgsl, one concern per file)
@@ -128,7 +128,9 @@ Time: 1 game day = 24 real minutes at 1x, so 1 real minute = 1 game hour. `clock
 | `world/ecology/`, `world/creatures/` | 1 m ecology grid, habitat, creatures | doc 11 |
 | `world/expansion.js` | land pieces, milestones, chunk unlocks | doc 13 |
 | `sim/live-sim.js` | system registry, hourly tick order, per-frame update | `addSystem`, `hourlyTick`, `update`, `encode` |
-| `sim/catchup.js` | away-time catch-up across workers | `catchUp(state, lastWallTime, nowWallTime, opts)` (doc 02) |
+| `sim/catchup.js` | away-time catch-up in a worker, a day per job (S7b) | `awayHours(p)`, `catchUp(input)`, `catchUpJob(input)` (doc 02) |
+| `sim/hour.js` | one game hour: the tick, then the journal's look | `hourStep(state, journal, hour, env, jc)` |
+| `sim/away.js` | when the game catches up (load, hidden tab, Pretend I was away) | `mountAway({ app, jr })` |
 | `render/` | frame graph, camera, passes (incl. `passes/ao.js`, `passes/creatures.js`), LUT bake (32³, 0.6 s crossfade) | docs 04, 05 |
 | `render/quality.js` | tier pick (`high`, `medium`, `low`) from `recipes/quality-tiers.json`, live tier changes | `pickTier()`, `tier()`, `setTier()` (doc 19) |
 | `input/`, `ui/` | actions, gestures, HUD, journal, tuning panel, settings | docs 15, 16, 14 |

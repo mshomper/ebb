@@ -32,6 +32,7 @@ import { addIslandTests } from './unit-tests-islands.js';
 import { addEcologyTests } from './unit-tests-ecology.js';
 import { addFrogTests } from './unit-tests-frogs.js';
 import { addSaveTests } from './unit-tests-save.js';
+import { addAwayTests } from './unit-tests-away.js';
 
 /** @type {{group: string, name: string, fn: () => any}[]} */
 const tests = [];
@@ -1355,6 +1356,10 @@ addFrogTests(test, assert, eq);
 // ---- saving (tools/unit-tests-save.js) ----
 
 addSaveTests(test, assert, eq);
+
+// ---- time away (tools/unit-tests-away.js) ----
+
+addAwayTests(test, assert, eq);
 
 // ---- runner and rendering ----
 

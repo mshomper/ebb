@@ -159,7 +159,9 @@ Save stores: world seed, `worldT`, last wall time, ecology state, away log (last
 - One hourly tick (all systems) on the starter island: about 3 ms in a worker on desktop, under 8 ms on mobile. Full 336-tick catch-up: under 1 s desktop, under 3 s mobile (the reveal's fade covers it).
 - Fully expanded world (see `13-progression-and-expansion.md`): tick under 8 ms desktop, catch-up under 3 s.
 - Live hourly tick never blocks a frame: it runs in a worker and the result is swapped in on the next frame.
-- `tools/catchup-bench.html`: runs 336 ticks on a saved world and reports time per tick and a checksum. `tools/determinism.html` compares two runs (and a live run against a catch-up run) so Matt can confirm they match on his machine.
+- Measured in S7b (Matt's desktop, Starter island, spring day 4): a median of 3.7 ms per hour and 12 to 20 ms at worst, about 1.3 s for 336 hours plus about 0.2 s for the journal's look. That is over the 1 s goal; it runs in a worker, so the page stays smooth and the catching-up screen covers it. If phones run well over 3 s, the next step is to split the hour across workers by chunk.
+- `tools/catchup-bench.html`: checks watched against away (island and journal), in pieces against at once, worker against page, and save and load, on either island, and draws the cost of every one of 336 hours. Matt compares its numbers on desktop and phone. `tools/determinism.html` checks the landform.
+- As built (S7b): world time holds while catch-up runs, then skips on by the hours run with no hour events. The water is re-seeded at the new tide afterwards. A hidden tab earns its hidden time at the 1x away rate whatever the time flow, and short spells add up in the carried minutes.
 
 ## Acceptance checks
 

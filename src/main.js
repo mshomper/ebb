@@ -14,6 +14,7 @@ import { createJournal } from './world/journal/index.js';
 import { loadRecipe } from './core/recipes.js';
 import { on } from './core/events.js';
 import { showElsewhere } from './ui/elsewhere.js';
+import { mountAway } from './sim/away.js';
 
 /** Shown in the corner badge when no build.json or local server info is available. */
 export const BUILD = 'm1-s3-palette';
@@ -57,6 +58,10 @@ startApp(canvas, { onDeviceLost: (rebuilding) => showRebuildingNote(rebuilding),
       const journal = createJournal({ world: r.world, words, island, web, wash, creatures: /** @type {any} */ (r).creatures ?? null });
       mountJournal(document.body, journal);
       mountIslandNotes(document.body, words);
+      // Time away (src/sim/away.js): catch up now on the time since the last save, and later on a
+      // hidden tab's time; the badge's Pretend I was away runs through it too.
+      const away = await mountAway({ app: r, jr: { words, island, web } });
+      if (saveInfo) saveInfo.pretend = away;
       // `?frogscale`: real-size frogs around the pond to judge creature size (ahead of S6).
       if (r.frogScale) {
         const css = document.createElement('link');
