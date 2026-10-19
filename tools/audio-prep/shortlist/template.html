@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ebb sound picks</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;800&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; max-width: 100%; overflow-x: clip; }
+  body { background: #F4EEE4; color: #1E2624; font: 600 17px/1.5 'Nunito', system-ui, sans-serif; padding: 16px; overflow-wrap: anywhere; }
+  main { max-width: 900px; margin: 0 auto; }
+  h1 { font-size: 27px; font-weight: 800; color: #4a6a47; margin: 0 0 4px; }
+  h2 { font-size: 22px; font-weight: 800; margin: 0 0 4px; }
+  h3 { font-size: 17px; font-weight: 800; margin: 14px 0 6px; color: #4A5551; }
+  p { margin: 6px 0; }
+  .muted { color: #4A5551; font-size: 16px; }
+  code { font: 700 15px ui-monospace, Menlo, Consolas, monospace; background: #EFE7DA; padding: 1px 5px; border-radius: 5px; overflow-wrap: anywhere; }
+  .card { background: #FBF7F0; border: 1px solid #E3D9C9; border-radius: 14px; padding: 14px 16px; margin: 12px 0; }
+  .bar { position: sticky; top: 0; z-index: 3; background: #F4EEE4; padding: 8px 0; border-bottom: 1px solid #E3D9C9; }
+  .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  button, a.btn { font: 800 16px/1.2 'Nunito', system-ui, sans-serif; color: #1E2624; background: #FFFDF8; border: 1px solid #CFC3AF; border-radius: 12px; padding: 10px 14px; cursor: pointer; min-height: 46px; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; }
+  button[aria-pressed="true"] { background: #4a6a47; color: #FBF7F0; border-color: #4a6a47; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .chips a { font-size: 15px; font-weight: 800; color: #1E2624; background: #FFFDF8; border: 1px solid #E3D9C9; border-radius: 999px; padding: 6px 12px; text-decoration: none; }
+  .chips a span { color: #4A5551; font-weight: 600; }
+  .tally { font-weight: 800; font-size: 17px; }
+  .tally .k { color: #4a6a47; } .tally .r { color: #9C5B44; }
+  section { scroll-margin-top: 150px; }
+  .item { background: #FFFDF8; border: 2px solid #E3D9C9; border-radius: 14px; padding: 12px 14px; margin: 10px 0; }
+  .item.keep { border-color: #4a6a47; background: #F1F6EE; }
+  .item.reject { border-color: #D8C0B4; background: #F7F0EC; opacity: 0.8; }
+  .item .t { font-weight: 800; font-size: 18px; }
+  .item .by { font-size: 16px; color: #4A5551; }
+  .item .state { display: inline-block; font-size: 14px; font-weight: 800; border-radius: 999px; padding: 2px 10px; margin-left: 6px; vertical-align: 2px; }
+  .item.keep .state { background: #4a6a47; color: #FBF7F0; }
+  .item.reject .state { background: #D8C0B4; color: #1E2624; }
+  .item dl { margin: 8px 0; display: grid; grid-template-columns: minmax(80px, 110px) 1fr; gap: 4px 10px; font-size: 16px; }
+  .item dt { font-weight: 800; color: #4A5551; }
+  .item dd { margin: 0; min-width: 0; }
+  @media (max-width: 520px) { .item dl { grid-template-columns: 1fr; } .item dt { margin-top: 4px; } }
+  .player { margin: 8px 0; }
+  .player iframe { width: 100%; height: 92px; border: 0; border-radius: 10px; background: #EFE7DA; display: block; }
+  .acts { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; margin-top: 8px; }
+  .acts .keepb[aria-pressed="true"] { background: #4a6a47; color: #FBF7F0; border-color: #4a6a47; }
+  .acts .rejb[aria-pressed="true"] { background: #9C5B44; color: #FBF7F0; border-color: #9C5B44; }
+  textarea { width: 100%; font: 600 16px/1.4 'Nunito', sans-serif; border: 1px solid #CFC3AF; border-radius: 10px; padding: 8px 10px; margin-top: 8px; min-height: 46px; background: #FFFDF8; resize: vertical; }
+  .hide { display: none !important; }
+  .note { background: #F6EBD9; border: 1px solid #E8D4B4; border-radius: 12px; padding: 10px 14px; font-size: 16px; }
+  ul.gaps li { margin: 6px 0; }
+  .toast { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); background: #1E2624; color: #FBF7F0; padding: 10px 16px; border-radius: 12px; font-weight: 800; opacity: 0; transition: opacity .2s; pointer-events: none; z-index: 5; max-width: calc(100% - 32px); text-align: center; }
+  .toast.on { opacity: 1; }
+</style>
+</head>
+<body>
+<main>
+  <h1>ebb sound picks</h1>
+  <p class="muted">{{COUNT}} field recordings from Freesound, each checked as CC0 on its own page on October 19, 2026 (except two reed beds that need a credit, the approved exception). Nothing has been listened to yet: your ears decide. Listen with headphones, then mark each one.</p>
+  <div class="card">
+    <b>For each sound</b>
+    <ol style="margin:6px 0 0;padding-left:22px">
+      <li>Press <b>Preview here</b> and listen through. Reject anything with birds, insects, voices, traffic, planes, boats or wind thumping on the microphone (the "listen for" line says what to watch out for).</li>
+      <li>Press <b>Keep</b> or <b>Not this one</b>. Add a note if you like ("good from 0:30", "gull at 1:12").</li>
+      <li>For a keeper, press <b>Open on Freesound</b>, sign in, and download the original. Press <b>Copy file name</b> and save it into <code>C:\Users\mshom\Music\Ebb\</code> under that name (the folder part makes the subfolder).</li>
+    </ol>
+    <p class="muted" style="margin-top:8px">Your marks stay in this browser on this device. When you're done, press <b>Save my picks</b> and send me the file, or just tell me you're done and I'll read the folder.</p>
+  </div>
+
+  <div class="bar">
+    <div class="row">
+      <span class="tally" id="tally"></span>
+    </div>
+    <div class="row" style="margin-top:6px">
+      <button data-f="all" aria-pressed="true">All</button>
+      <button data-f="todo" aria-pressed="false">Not marked yet</button>
+      <button data-f="keep" aria-pressed="false">Kept</button>
+      <button data-f="reject" aria-pressed="false">Not these</button>
+      <button id="save">Save my picks</button>
+    </div>
+  </div>
+  <div class="chips" id="nav" aria-label="Jump to a group"></div>
+
+  <div id="list"></div>
+
+  <section class="card note" id="gaps">
+    <h2>Gaps</h2>
+    <p>Sounds with no clean CC0 recording yet. Sounds made in code cover most of these; the reed bed needs your decision.</p>
+    <ul class="gaps"><!--GAPS--></ul>
+  </section>
+  <p class="muted"><button id="clear">Clear all my marks</button></p>
+</main>
+<div class="toast" id="toast"></div>
+
+<script>
+const DATA = /*DATA*/null;
+const KEY = 'ebb-sound-picks-v1';
+let marks = {};
+try { marks = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (e) { marks = {}; }
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(marks)); } catch (e) { /* private mode: marks last this visit */ } };
+const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+const inl = (s) => esc(s).replace(/`(.+?)`/g, '<code>$1</code>').replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
+let filter = 'all';
+
+function toast(t) { const el = document.getElementById('toast'); el.textContent = t; el.classList.add('on'); clearTimeout(toast.h); toast.h = setTimeout(() => el.classList.remove('on'), 1800); }
+
+function render() {
+  const list = document.getElementById('list');
+  const nav = document.getElementById('nav');
+  list.innerHTML = '';
+  nav.innerHTML = '';
+  DATA.forEach((sec, si) => {
+    const id = `s${si}`;
+    const kept = sec.items.filter((it) => marks[it.id]?.state === 'keep').length;
+    const a = document.createElement('a');
+    a.href = `#${id}`;
+    a.innerHTML = `${esc(sec.title)} <span>${kept}/${sec.items.length}</span>`;
+    nav.appendChild(a);
+    const s = document.createElement('section');
+    s.className = 'card';
+    s.id = id;
+    s.innerHTML = `<h2>${esc(sec.title)}</h2>${sec.folder ? `<p class="muted">Folder: <code>Music\\Ebb\\${esc(sec.folder)}</code></p>` : ''}${sec.needs ? `<p><b>The game needs:</b> ${inl(sec.needs)}</p>` : ''}${sec.intro.map((p) => `<p class="muted">${inl(p)}</p>`).join('')}`;
+    let lastSub = null;
+    for (const it of sec.items) {
+      if (it.sub && it.sub !== lastSub) { const h = document.createElement('h3'); h.textContent = it.sub; s.appendChild(h); lastSub = it.sub; }
+      s.appendChild(card(it));
+    }
+    list.appendChild(s);
+  });
+  applyFilter();
+  tally();
+}
+
+function card(it) {
+  const m = marks[it.id] || {};
+  const d = document.createElement('div');
+  d.className = `item ${m.state || ''}`;
+  d.dataset.id = it.id;
+  d.innerHTML = `
+    <div class="t">${esc(it.title)}<span class="state">${m.state === 'keep' ? 'Kept' : m.state === 'reject' ? 'Not this one' : ''}</span></div>
+    <div class="by">by ${esc(it.author)} · ${esc(it.meta)}</div>
+    <dl>
+      <dt>Why</dt><dd>${inl(it.why)}</dd>
+      ${it.listen ? `<dt>Listen for</dt><dd>${inl(it.listen)}</dd>` : ''}
+      <dt>Save as</dt><dd><code>${esc(it.save.replace(/\//g, '\\'))}</code></dd>
+    </dl>
+    <div class="player"></div>
+    <div class="acts">
+      <button class="prev">Preview here</button>
+      <a class="btn" href="${esc(it.url)}" target="_blank" rel="noopener">Open on Freesound</a>
+      <button class="copy">Copy file name</button>
+      <button class="keepb" aria-pressed="${m.state === 'keep'}">Keep</button>
+      <button class="rejb" aria-pressed="${m.state === 'reject'}">Not this one</button>
+    </div>
+    <textarea placeholder="Note (optional)" aria-label="Note">${esc(m.note || '')}</textarea>`;
+  if (!m.state) d.querySelector('.state').classList.add('hide');
+  d.querySelector('.prev').addEventListener('click', (e) => {
+    const p = d.querySelector('.player');
+    if (p.firstChild) { p.innerHTML = ''; e.target.textContent = 'Preview here'; return; }
+    p.innerHTML = `<iframe loading="lazy" title="Preview of ${esc(it.title)}" src="https://freesound.org/embed/sound/iframe/${it.id}/simple/medium/"></iframe>`;
+    e.target.textContent = 'Hide preview';
+  });
+  d.querySelector('.copy').addEventListener('click', async () => {
+    const name = it.save.replace(/\//g, '\\');
+    try { await navigator.clipboard.writeText(name); toast(`Copied ${name}`); } catch (e) { toast(name); }
+  });
+  const set = (state) => {
+    marks[it.id] = { ...(marks[it.id] || {}), state: marks[it.id]?.state === state ? null : state };
+    if (!marks[it.id].state && !marks[it.id].note) delete marks[it.id];
+    save();
+    const st = marks[it.id]?.state;
+    d.className = `item ${st || ''}`;
+    d.querySelector('.keepb').setAttribute('aria-pressed', String(st === 'keep'));
+    d.querySelector('.rejb').setAttribute('aria-pressed', String(st === 'reject'));
+    const lab = d.querySelector('.state');
+    lab.textContent = st === 'keep' ? 'Kept' : st === 'reject' ? 'Not this one' : '';
+    lab.classList.toggle('hide', !st);
+    tally();
+    applyFilter();
+  };
+  d.querySelector('.keepb').addEventListener('click', () => set('keep'));
+  d.querySelector('.rejb').addEventListener('click', () => set('reject'));
+  d.querySelector('textarea').addEventListener('input', (e) => {
+    marks[it.id] = { ...(marks[it.id] || {}), note: e.target.value };
+    save();
+  });
+  return d;
+}
+
+function tally() {
+  const all = DATA.flatMap((s) => s.items);
+  const k = all.filter((it) => marks[it.id]?.state === 'keep').length;
+  const r = all.filter((it) => marks[it.id]?.state === 'reject').length;
+  document.getElementById('tally').innerHTML = `<span class="k">${k} kept</span> · <span class="r">${r} not these</span> · ${all.length - k - r} still to hear`;
+  document.querySelectorAll('#nav a').forEach((a, i) => {
+    const sec = DATA[i];
+    const kk = sec.items.filter((it) => marks[it.id]?.state === 'keep').length;
+    a.innerHTML = `${esc(sec.title)} <span>${kk}/${sec.items.length}</span>`;
+  });
+}
+
+function applyFilter() {
+  document.querySelectorAll('.item').forEach((d) => {
+    const st = marks[d.dataset.id]?.state || null;
+    const show = filter === 'all' || (filter === 'todo' && !st) || filter === st;
+    d.classList.toggle('hide', !show);
+  });
+}
+
+document.querySelectorAll('[data-f]').forEach((b) => b.addEventListener('click', () => {
+  filter = b.dataset.f;
+  document.querySelectorAll('[data-f]').forEach((o) => o.setAttribute('aria-pressed', String(o === b)));
+  applyFilter();
+}));
+
+document.getElementById('save').addEventListener('click', () => {
+  const lines = ['# ebb sound picks', '', `Saved ${new Date().toLocaleString()}.`, ''];
+  for (const sec of DATA) {
+    const k = sec.items.filter((it) => marks[it.id]?.state === 'keep');
+    const r = sec.items.filter((it) => marks[it.id]?.state === 'reject');
+    if (!k.length && !r.length) continue;
+    lines.push(`## ${sec.title}`, '');
+    for (const it of k) lines.push(`- Keep: ${it.title} (${it.url}), save as ${it.save}${marks[it.id].note ? `. Note: ${marks[it.id].note}` : ''}`);
+    for (const it of r) lines.push(`- Not this one: ${it.title} (${it.url})${marks[it.id].note ? `. Note: ${marks[it.id].note}` : ''}`);
+    lines.push('');
+  }
+  const blob = new Blob([lines.join('\n')], { type: 'text/markdown' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'ebb-sound-picks.md';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  toast('Saved ebb-sound-picks.md');
+});
+
+document.getElementById('clear').addEventListener('click', () => {
+  if (!confirm('Clear every Keep, Not this one and note on this device?')) return;
+  marks = {};
+  save();
+  render();
+});
+
+render();
+</script>
+</body>
+</html>

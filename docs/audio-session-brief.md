@@ -1,5 +1,7 @@
 # ebb audio: brief for the music and sound session
 
+> Continuing the audio work? Read `docs/audio-handoff.md` first: it says what is done (phases 0 to 3), what Matt decided, and what comes next.
+
 Paste or attach this file at the start of a fresh session, with `24-music.md` and `25-soundscape-seasons.md`. It tells the session what to build, in what order, and how to work with Matt.
 
 ## What you are making
