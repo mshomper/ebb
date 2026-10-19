@@ -48,6 +48,8 @@ Size and color come from CSS: set `width`/`height` on `.icon` and `color` on the
 | `find` | a looking glass: a journal page's Show me |
 | `moment-flower`, `moment-rain`, `moment-dusk`, `moment-dawn`, `moment-mist` | a five-petal flower, a raining cloud, a sun setting, a sun rising, drifting mist: the journal's moment frames |
 | `notes` | page with a folded corner and three written lines: the journal's Notes section |
+| `frog` | a frog sitting at the water's edge in profile, eye up, hind leg folded: the frogs journal page |
+| `midges` | a loose cloud of dots over a reed tip: the midges journal page |
 | `unknown` | a circle drawn in short pencil dashes: a living thing not seen yet |
 | `close` | two crossing strokes: close a panel or card |
 | `back` | a chevron pointing left: back to a list |

@@ -37,6 +37,9 @@ import { createFloraPass } from './render/passes/flora.js';
 import { createCreaturePass } from './render/passes/creatures.js';
 import { bakeBody } from './world/creatures/body-bake.js';
 import { previewSpots } from './world/creatures/preview-spots.js';
+import { createCreatures } from './world/creatures/index.js';
+import { createPresence } from './world/creatures/presence.js';
+import { createMidges } from './world/ecology/midges-live.js';
 import { onAction, history } from './input/actions.js';
 import { attachDesktopInput } from './input/desktop.js';
 import { attachTouchInput } from './input/touch.js';
@@ -114,7 +117,8 @@ export async function startApp(canvas, hooks = {}) {
   history.setApplier('terrain', (cmd, dir) => terrain.applyTiles(dir === 'undo' ? cmd.before : cmd.after));
   // The world clock and the shared hourly tick (weather, seasons). A new world starts mid-morning.
   // `?day=N` starts a new world N game days in (7 per season: 8 is early summer), to see later seasons sooner.
-  const startDay = Math.max(0, Number.parseInt(params.get('day') ?? '0', 10) || 0);
+  // `?frogs=N` (testing) starts on spring day 4 unless a day is given, after the frogs' winter sleep.
+  const startDay = Math.max(0, Number.parseInt(params.get('day') ?? (params.has('frogs') ? '3' : '0'), 10) || 0);
   if (clock.worldT() === 0) clock.reset(((skyRecipe.orbit.startHour ?? 10) + 24 * startDay) * clock.SECONDS_PER_HOUR);
   updateStore('meta', (m) => { m.flow = clock.flow(); });
   const env = makeEnv(seed, { seasons: seasonsRecipe, sky: skyRecipe.orbit, water: waterRecipe });
@@ -137,6 +141,10 @@ export async function startApp(canvas, hooks = {}) {
   const covers = Object.fromEntries(await Promise.all((growthRecipe.cover ?? []).map(async (/** @type {string} */ sp) => [sp, await loadRecipe(`flora/${sp}`)])));
   const growth = createGrowth(gpu.device, { terrain, water, world, recipes: { growth: growthRecipe, flora, covers, land: landRecipe } });
   sim.addSystem(growth);
+  // Ecology and creatures (S6a, docs 11, 12): the midge field, frog habitat and the frogs' arrival
+  // run in the hourly tick from these recipes.
+  const [frogRecipe, midgeRecipe] = await Promise.all([loadRecipe('species/frog'), loadRecipe('species/midge')]);
+  world.env.recipes.species = { frog: frogRecipe, midge: midgeRecipe };
   updateStore('world', () => world.state);
   const unHour = on('clock:hour', (/** @type {{ hour: number }} */ p) => {
     const events = sim.hourlyTick(p.hour);
@@ -147,7 +155,8 @@ export async function startApp(canvas, hooks = {}) {
   });
 
   const camera = createOrbitCamera(camRecipe);
-  camera.setGroundProbe((x, z) => terrain.sampleHeight(x, z));
+  // The ground, or the water's surface where it stands higher, so a close-up never dips under a pond.
+  camera.setGroundProbe((x, z) => Math.max(terrain.sampleHeight(x, z), water.sim.live ? water.sampleLive(x, z).surface : -Infinity));
   // The view, for the UI (store slice `view`): the ground point in the middle of the screen, and
   // where a ground point lands on screen in CSS pixels (behind: it is behind the camera, and x, y
   // are mirrored so they still say which way to turn).
@@ -210,6 +219,20 @@ export async function startApp(canvas, hooks = {}) {
   });
   // Plants (docs 10): every species from the growth step's instances, after the grass.
   const floraPass = createFloraPass({ growth, terrain, water: { depthTextures: water.sim.depthTextures, current: () => water.sim.current }, recipes: flora });
+  // The frogs (src/world/creatures): posed bodies at their homes until S6b, the plop, finding one.
+  // `?frogs=N` (testing): N frogs come at once instead of over days (1: a scout, the sign).
+  const testFrogs = params.has('frogs') ? Math.max(1, Math.min(12, Number.parseInt(params.get('frogs') ?? '1', 10) || 1)) : 0;
+  // floraFrame: the time and wind the plants were drawn with this frame (frogs on lily pads ride them).
+  /** @type {{ time: number, wind: number, windDir: number } | null} */ let floraFrame = null;
+  // Presence (doc 23): the camera as the one source creatures react to; edits are reported below.
+  const presence = createPresence({ camera });
+  const creatures = createCreatures({ world, recipe: frogRecipe, terrain, water, ripples, camera, testFrogs, flora, floraFrame: () => floraFrame, presence });
+  sim.addSystem(creatures);
+  // Midges you can see (src/world/ecology/midges-live.js): swarms from the midge field, after the water.
+  const midges = createMidges({ world, recipe: midgeRecipe, budget: tierSettings.boids ?? 4096, ripples,
+    ground: (x, z) => terrain.sampleHeight(x, z), water: (x, z) => water.sampleLive(x, z),
+    wind: () => ({ strength: weatherAt(world.state?.weather, clock.display(), seasonsRecipe).wind, dir: world.state?.weather?.today?.windDir ?? 0 }) });
+  sim.addSystem(midges);
   // `?frogscale` (ahead of S6): real-size frogs from the species recipe around the pond, and a
   // camera that may come close, to judge creature size on the island (src/ui/frog-scale.js).
   const frogScale = params.has('frogscale') ? await createFrogScale() : null;
@@ -253,8 +276,10 @@ export async function startApp(canvas, hooks = {}) {
     grassPass,
     rushPass,
     floraPass,
+    creatures.pass,
     ...(frogScale ? [frogScale.pass] : []),
     waterPass,
+    midges.pass,
     createSkyPass(atmosphere, skyRecipe),
     exposure,
     bloom,
@@ -373,7 +398,9 @@ export async function startApp(canvas, hooks = {}) {
   /** Each frame while pour or drain is held: the brush source under the pointer. */
   function updatePour() {
     const t = tools();
-    ww.holdBrush(pouring && t.tool === 'water' ? groundAt(pouring.x, pouring.y) : null, t);
+    const p = pouring && t.tool === 'water' ? groundAt(pouring.x, pouring.y) : null;
+    if (p) presence.edit(p[0], p[2]);
+    ww.holdBrush(p, t);
   }
 
   /** Tap with the spring mode: select a placed spring, or place a new one under the cap. @param {number} x @param {number} y */
@@ -388,6 +415,7 @@ export async function startApp(canvas, hooks = {}) {
   /** @param {number} x @param {number} y */
   function plantTap(x, y) {
     const p = groundAt(x, y);
+    if (p) presence.edit(p[0], p[2]);
     if (p && plantTool.tap(tools().plantSpecies ?? 'reeds', p)) updateStore('world', () => world.state);
   }
 
@@ -447,6 +475,7 @@ export async function startApp(canvas, hooks = {}) {
         if (!wantStroke) break;
         const p = groundAt(a.x, a.y);
         if (!p) break;
+        presence.edit(p[0], p[2]);
         if (!stroking) stroking = terrain.beginStroke(currentBrush(), p, a.pressure);
         else terrain.strokeTo(p, a.pressure);
         break;
@@ -519,6 +548,7 @@ export async function startApp(canvas, hooks = {}) {
     const t = clock.advance(realDt);
     camera.setViewport(cssW, cssH);
     camera.update(realDt);
+    presence.update(realDt);
     updateRing();
     // Plant tool rings, and a breathing ring round whatever the journal's tap card names.
     terrainPass.setMarks(plantTool.marks(now, tools().tool === 'plant', getStore('identify')));
@@ -584,7 +614,8 @@ export async function startApp(canvas, hooks = {}) {
     };
     grassPass.update(bladeFrame);
     rushPass.update(bladeFrame);
-    floraPass.update({ time: t.animT, wind: windNow, windDir: world.state?.weather?.today?.windDir ?? 0, season: season.index + season.phase });
+    floraFrame = { time: t.animT, wind: windNow, windDir: world.state?.weather?.today?.windDir ?? 0 };
+    floraPass.update({ ...floraFrame, season: season.index + season.phase, pressed: creatures.pressedPads() });
     // `?ripplerain=1` rains ripples in any weather, to judge rings in sunshine (tools, tuning).
     // Raindrops ring the water in the water shader; the ripple field keeps the pour and creatures.
     const ringRain = params.has('ripplerain') ? 1 : day.weather.rain;
@@ -654,6 +685,11 @@ export async function startApp(canvas, hooks = {}) {
     world,
     /** The frog size preview (`?frogscale`), or null. */
     frogScale,
+    /** The live frogs (the journal asks it what a tap landed on). */
+    creatures,
+    /** The live midge swarms (tools). */
+    midges,
+    presence,
     /** The orbit camera, for tools and checks (eye, target, distance). */
     camera,
     /** The island this world started from, and the islands there are (the badge's switch). */

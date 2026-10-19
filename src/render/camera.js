@@ -18,6 +18,8 @@ const DEG = Math.PI / 180;
  * @property {number} worldRadius
  * @property {number} targetMargin
  * @property {number} minEyeHeight
+ * @property {{ fromM: number, toM: number, minEyeHeight: number }} [close]  the close-up (S6b): below fromM the
+ *   view eases to aiming at the ground and a low eye, fully at toM
  * @property {number} halfLifeDirect
  * @property {number} halfLifeGlide
  * @property {number} [halfLifeFocus]  the slower glide of focus() (the journal's Show me)
@@ -60,7 +62,10 @@ export function createOrbitCamera(r) {
   const hardMaxDistance = () => r.distanceHard[1] ?? softMaxDistance() * r.distanceHardMaxFactor;
   const clamp = (/** @type {number} */ x, /** @type {number} */ a, /** @type {number} */ b) => Math.min(b, Math.max(a, x));
 
-  /** True while gliding to a point the journal asked to show; any input ends it. */
+  /**
+   * True while gliding to a point the game asked to show (focus(): a tool's Look at; later Follow);
+   * any input ends it. Presence reads it as `driven`: a move the game makes never startles a creature.
+   */
   let focusing = false;
   /**
    * Close-up limits (the frog size preview, ?frogscale): a nearer zoom and a lower eye; while set,
@@ -72,6 +77,14 @@ export function createOrbitCamera(r) {
   let targetY = null;
   const minSoft = () => close?.minDistance ?? r.distanceSoft[0];
   const minHard = () => close?.minDistance ?? r.distanceHard[0];
+
+  /** 0 at or beyond close.fromM, 1 at or inside close.toM, smooth between. @param {number} d */
+  function nearness(d) {
+    const C = r.close;
+    if (!C) return 0;
+    const t = Math.min(1, Math.max(0, (C.fromM - d) / (C.fromM - C.toM)));
+    return t * t * (3 - 2 * t);
+  }
 
   function touched() {
     sinceInput = 0;
@@ -187,12 +200,16 @@ export function createOrbitCamera(r) {
     vec3.lerp(cur.target, goal.target, kd, cur.target);
 
     const ground = groundProbe(cur.target[0], cur.target[2]);
-    if (!close) cur.target[1] = ground * 0.5;
+    // Zoomed in (recipe `close`), the view eases from aiming half way down the slope to aiming at
+    // the ground itself, and the eye may come down near it.
+    const near = nearness(cur.distance);
+    if (!close) cur.target[1] = ground * 0.5 + (Math.max(ground, 0) - ground * 0.5) * near;
+    const eyeMin = close?.minEyeHeight ?? r.minEyeHeight + ((r.close?.minEyeHeight ?? r.minEyeHeight) - r.minEyeHeight) * near;
 
     let pitch = cur.pitch;
     for (let i = 0; i < 2; i++) {
       placeEye(pitch);
-      const floor = Math.max(groundProbe(eye[0], eye[2]), 0) + (close?.minEyeHeight ?? r.minEyeHeight);
+      const floor = Math.max(groundProbe(eye[0], eye[2]), 0) + eyeMin;
       if (eye[1] >= floor) break;
       pitch = Math.asin(clamp((floor - cur.target[1]) / cur.distance, -1, 1));
       cur.pitch = Math.max(cur.pitch, pitch);
@@ -227,6 +244,8 @@ export function createOrbitCamera(r) {
 
   return {
     orbit, pan, zoom, twist, update, ray, focus,
+    /** Is the game gliding the camera (not the player moving it)? */
+    driven: () => focusing,
     /** @param {number} w CSS px @param {number} h CSS px */
     setViewport(w, h) {
       viewW = Math.max(1, w);

@@ -1,0 +1,248 @@
+// @ts-check
+// Live side of creatures (S6a, S6b; docs 11, 23): the frogs the hourly tick keeps (coarse.js), alive.
+// Each one is an agent (agents.js: resting, foraging, calling, swimming, arriving, leaving) drawn in
+// one of its species' seeded body variants, baked in the background at a few levels of detail
+// (bodies.js) and posed by its bones each frame (motion.js: hops by IK, the landing squash, the
+// call, the kick; pose.js: breathing and blinking), with a tongue for its flicks. It makes the plop
+// and rings when one comes at dusk (the journal's sign), says whether a tap landed on a frog, and
+// notices when you watch one closely, which finds it for the journal (`creature:found`). A fast
+// swoop or an edit right beside a frog startles it (presence.js; `creature:startled`). Nothing
+// here changes the world (the frogs live in the tick), except the `?frogs=N` test shortcut. The
+// camera never moves.
+
+import { on, emitDeferred } from '../../core/events.js';
+import { get as getStore, update as updateStore } from '../../core/store.js';
+import { hourIndex, display, SECONDS_PER_HOUR, HOURS_PER_DAY } from '../../core/clock.js';
+import { hash32 } from '../../core/rng.js';
+import { run } from '../../core/workers.js';
+import { createCreaturePass } from '../../render/passes/creatures.js';
+import { MAX_BONES, bodyFor, packMesh } from './bodies.js';
+import { bakeBody } from './body-bake.js';
+import { poseSkeleton, moveMatrix, mul } from './pose.js';
+import { frogMoves, legsOf } from './motion.js';
+import { createFrogAgents } from './agents.js';
+import { createPerches } from './perches.js';
+import { bringFrogs } from './coarse.js';
+import { FROG_BONES } from './rigs/frog.js';
+
+const BAKE_JOB = { module: './world/creatures/bodies.js', fn: 'bakeVariant' };
+/** The tongue mesh is baked this long (m) along +z from the mouth, then stretched to its reach. */
+const TONGUE_M = 0.01;
+
+/**
+ * @param {{ world: { state: any, env: any }, recipe: any,
+ *   terrain: { sampleHeight: (x: number, z: number) => number },
+ *   water: { sim: { live: any }, sampleLive: (x: number, z: number) => { surface: number, depth: number } },
+ *   ripples: { addImpulse: (x: number, z: number, strength?: number, radiusM?: number) => void } | null,
+ *   camera: { target: ArrayLike<number>, eye: ArrayLike<number>, distance: number }, testFrogs?: number,
+ *   flora?: Record<string, any>, floraFrame?: () => { time: number, wind: number, windDir: number } | null,
+ *   presence?: import('./presence.js').Presence }} opts
+ *   recipe: recipes/species/frog.json; testFrogs: `?frogs=N`, for click-testing only: once the island
+ *   and the journal are up, N frogs come at once (coarse.js bringFrogs) instead of over days;
+ *   flora: the flora recipes (lily pads, reed and iris clumps); floraFrame: the time and wind the
+ *   flora pass drew this frame with, so frogs on lily pads move exactly with them; presence: the
+ *   sources frogs react to (presence.js), updated by the app each frame
+ */
+export function createCreatures(opts) {
+  const { world, recipe, terrain, water, ripples, camera } = opts;
+  const perches = opts.flora?.lilies
+    ? createPerches({ lily: opts.flora.lilies, P: { ...recipe.motion.pads, clumps: recipe.motion.clumps }, water: (x, z) => water.sampleLive(x, z) })
+    : null;
+  let testFrogs = opts.testFrogs ?? 0;
+  const pass = createCreaturePass({ recipe, eyeBones: ['eye.l', 'eye.r'].map((n) => FROG_BONES.findIndex((b) => b.name === n)) });
+  const body = recipe.body, M = recipe.motion;
+  const variants = Math.max(1, body.variants ?? 1);
+  const lods = recipe.bake.lods ?? [{ cellM: recipe.bake.cellM }];
+  const find = recipe.find;
+  const agents = createFrogAgents(recipe, world.env.seed >>> 0);
+  /** Each variant's skeleton and leg geometry, once its first bake is back. @type {({ skeleton: any[], legs: ReturnType<typeof legsOf> } | null)[]} */
+  const rigs = Array.from({ length: variants }, () => null);
+  /** Per frog: its variant, size and bone matrices (kept between frames). @type {Map<number, { variant: number, size: number, bones: Float32Array, tongue: Float32Array }>} */
+  const own = new Map();
+  /** @type {any} */ let shown = null;
+  let watched = 0, testWait = 0;
+
+  // Bake every variant in the background, coarsest first, so frogs can show within a moment and
+  // gain detail as the finer bakes come back.
+  for (let lod = lods.length - 1; lod >= 0; lod--) {
+    for (let v = 0; v < variants; v++) {
+      run(BAKE_JOB, { id: recipe.id, body, variant: v, cellM: lods[lod].cellM }, { lane: 'background' })
+        .then((r) => {
+          if (!rigs[v]) {
+            const prims = bodyFor(recipe.id, body, v).prims;
+            const tip = (/** @type {string} */ side) => prims.find((/** @type {any} */ q) => q.bone === `foot.${side}`).b;
+            rigs[v] = { skeleton: r.bones, legs: legsOf(r.bones, { l: tip('l'), r: tip('r') }) };
+          }
+          pass.setMesh(`${v}:${lod}`, r);
+        })
+        .catch((err) => { if (err?.name !== 'Disposed') console.warn('creature bake failed', err); });
+    }
+  }
+  // The tongue: a short pink capsule from the mouth, stretched out for a flick.
+  {
+    const T = M.tongue, m = T.mouth;
+    const mesh = bakeBody({ prims: [{ type: 'capsule', bone: 'tongue', a: m, b: [m[0], m[1], m[2] + TONGUE_M], r: [T.radiusM, T.radiusM * 0.8], k: 0, region: 'tongue' }],
+      albedo: { back: T.albedo, tongue: T.albedo }, blotch: { scale: 1, amount: 0 }, bellyBelowNormalY: -2 }, T.radiusM / 3);
+    pass.setMesh('tongue', { data: packMesh(mesh), indices: mesh.indices });
+  }
+
+  /** The tick's frogs (none while they sleep in winter). */
+  const tickFrogs = () => world.state?.creatures?.frogs?.frogs ?? [];
+
+  /** What the agents ask of the island. */
+  const env = {
+    ground: (/** @type {number} */ x, /** @type {number} */ z) => terrain.sampleHeight(x, z),
+    water: (/** @type {number} */ x, /** @type {number} */ z) => water.sampleLive(x, z),
+    plop(/** @type {number} */ x, /** @type {number} */ z) { ripples?.addImpulse(x, z, undefined, 0.1); },
+    hourOfDay: 12,
+    duskHour: 19,
+    /** Lily pads as perches, reed and iris clumps (perches.js), or null on a world with no lilies recipe. */
+    pads: perches,
+  };
+
+  /** Hour of the day (display time) and dusk, for the agents' moods. */
+  function setHours() {
+    const h = display() / SECONDS_PER_HOUR;
+    env.hourOfDay = h - Math.floor(h / HOURS_PER_DAY) * HOURS_PER_DAY;
+    env.duskHour = 12 + (world.state?.seasons?.dayLengthH ?? 12) / 2 + (recipe.ecology.arrival.duskOffsetH ?? 1);
+  }
+
+  /** A frog's own numbers. @param {number} id */
+  function ownOf(id) {
+    let o = own.get(id);
+    if (!o) {
+      const jitter = ((hash32(id, 0x51e) >>> 8) / 16777216) * 2 - 1;
+      o = { variant: hash32(id, 0x7a) % variants, size: (body.displayScale ?? 1) * (1 + (body.sizeJitter ?? 0) * jitter),
+        bones: new Float32Array(MAX_BONES * 16), tongue: new Float32Array(16) };
+      own.set(id, o);
+    }
+    return o;
+  }
+
+  /**
+   * The mesh a frog wears: its variant at the detail its distance from the eye asks for, else the
+   * nearest detail of it that is baked, else any variant at that detail.
+   * @param {number} v @param {number} dist
+   */
+  function meshFor(v, dist) {
+    let want = lods.findIndex((/** @type {any} */ l) => l.toM === undefined || dist <= l.toM);
+    if (want < 0) want = lods.length - 1;
+    for (let step = 0; step < lods.length; step++) {
+      for (const lod of [want + step, want - step]) if (lod >= 0 && lod < lods.length && pass.hasMesh(`${v}:${lod}`)) return `${v}:${lod}`;
+    }
+    for (let u = 0; u < variants; u++) if (pass.hasMesh(`${u}:${lods.length - 1}`)) return `${u}:${lods.length - 1}`;
+    return undefined;
+  }
+
+  /** Pose every frog for this frame and hand them to the pass. @param {number} t animation seconds */
+  function draw(t) {
+    const eye = camera.eye;
+    /** @type {import('../../render/passes/creatures.js').Being[]} */ const beings = [];
+    for (const a of agents.list()) {
+      const o = ownOf(a.id);
+      const v = agents.view(a);
+      // A frog on a lily pad is drawn where its pad is this very frame.
+      const seat = a.perch && !a.hop ? perches?.seatOf(a.perch) : null;
+      if (seat) { v.x = seat.x; v.y = seat.y; v.z = seat.z; v.yaw = seat.yaw; }
+      const mesh = meshFor(o.variant, Math.hypot(v.x - eye[0], v.y - eye[1], v.z - eye[2]));
+      if (!mesh) continue;
+      const rig = rigs[o.variant] ?? rigs.find((r) => r) ?? null;
+      if (rig) poseSkeleton(rig.skeleton, frogMoves(rig.skeleton, rig.legs, { id: a.id, hopT: v.hopT, kick: v.kick, sq: v.sq, sac: v.sac, swimming: v.swimming }, t, M), o.bones, 0);
+      beings.push({ x: v.x, y: v.y, z: v.z, yaw: v.yaw, size: o.size, mesh, bones: rig ? o.bones : null });
+      // A tongue flick: the tongue rides the head bone, stretched out of the mouth.
+      if (v.tongue > 0 && rig) {
+        const head = rig.skeleton.findIndex((/** @type {any} */ b) => b.name === 'head');
+        const reach = (M.tongue.reachM * M.tongue.readability) / TONGUE_M;
+        const stretch = moveMatrix(M.tongue.mouth, { s: [1, 1, Math.max(0.01, reach * v.tongue)] });
+        mul(o.bones.subarray(head * 16, head * 16 + 16), stretch, o.tongue, 0);
+        beings.push({ x: v.x, y: v.y, z: v.z, yaw: v.yaw, size: o.size, mesh: 'tongue', bones: o.tongue });
+      }
+    }
+    pass.setBeings(beings);
+  }
+
+  /** A frog comes at dusk: a plop and rings on the water just in front of it. @param {any} p */
+  function plop(p) {
+    if (p?.species !== 'frogs' || !ripples) return;
+    const f = tickFrogs().find((/** @type {any} */ g) => g.id === p.id);
+    const yaw = f?.yaw ?? 0;
+    const x = p.x + Math.sin(yaw) * 0.5, z = p.z + Math.cos(yaw) * 0.5;
+    ripples.addImpulse(x, z);
+    ripples.addImpulse(x + 0.08, z - 0.05, undefined, 0.12);
+  }
+
+  const offs = [on('creature:arrived', plop), on('creature:joined', plop)];
+
+  return {
+    id: 'creatures',
+    /** The creatures pass, for the frame graph. */
+    pass,
+    /** The frogs out now, where they are this moment: { id, x, z, yaw, mode, ... } (agents.js). */
+    frogs: () => agents.list().filter((a) => a.mode !== 'leave'),
+    /** The live frogs (the frog lab reads calls and stats from them). */
+    agents,
+    /** The lily pads as perches (the frog lab draws their outlines). */
+    perches,
+    /** Pads frogs sit on, for the lily drawing to dip (flora pass, at most four). */
+    pressedPads: () => (perches ? perches.pressed(agents.list()) : []),
+
+    /**
+     * The frog a tap on the ground at (x, z) lands on, or null: within tapM of it, more when the
+     * camera is far (a far frog is small on screen).
+     * @param {number} x @param {number} z
+     */
+    frogAt(x, z) {
+      const r = find.tapM + find.tapPerM * camera.distance;
+      let best = null, bestD = r * r;
+      for (const a of agents.list()) {
+        if (a.mode === 'leave') continue;
+        const v = agents.view(a);
+        const d = (v.x - x) * (v.x - x) + (v.z - z) * (v.z - z);
+        if (d < bestD) { bestD = d; best = { x: v.x, z: v.z, id: a.id }; }
+      }
+      return best;
+    },
+
+    /** @param {import('../../sim/live-sim.js').FrameInfo} f */
+    tick(f) {
+      // `?frogs=N`: bring the frogs now, once the island, its water and the journal are up (a tools
+      // page has no journal: there it goes ahead after a few seconds).
+      if (testFrogs && world.env.habitat?.() && water.sim.live) testWait += f.realDt;
+      if (testFrogs && testWait > 0 && (getStore('journal') || testWait > 3)) {
+        const r = bringFrogs(world.state, hourIndex(), world.env, testFrogs);
+        testFrogs = 0;
+        world.state = r.state;
+        updateStore('world', () => world.state);
+        for (const e of r.events) emitDeferred(e.name, e.payload);
+        emitDeferred('world:ticked', { hour: hourIndex(), events: r.events, state: world.state });
+      }
+      if (!water.sim.live) return;   // the water's surface tells a frog where the bank ends
+      setHours();
+      const fl = opts.floraFrame?.();
+      if (perches && fl) perches.update(fl, world.state?.growth?.plants ?? [], opts.flora ?? {});
+      const F = world.state?.creatures?.frogs;
+      if (F !== shown) { shown = F; agents.sync(F?.frogs ?? [], !!F?.dormant, env); }
+      // Presence (doc 23): a fast swoop through a frog's ring, or an edit beside it, startles it.
+      if (opts.presence) {
+        const r = agents.sense(opts.presence.sources(), env);
+        for (const id of r.startled) emitDeferred('creature:startled', { species: 'frogs', id });
+        if (r.hushed.length) emitDeferred('creature:hushed', { species: 'frogs', ids: r.hushed });
+      }
+      agents.advance(f.realDt, env);
+      draw(f.animT);
+      // Watching one closely finds it: in the middle of the view, zoomed in, for a moment.
+      if (getStore('journal')?.species?.frogs?.ever) return;
+      const near = camera.distance <= find.lookDistM && agents.list().some((a) =>
+        a.mode !== 'leave' && (a.x - camera.target[0]) ** 2 + (a.z - camera.target[2]) ** 2 <= find.lookM * find.lookM);
+      watched = near ? watched + f.realDt : 0;
+      if (watched >= find.holdS) {
+        watched = 0;
+        emitDeferred('creature:found', { species: 'frogs', how: 'watched' });
+      }
+    },
+
+    dispose() { for (const off of offs) off(); },
+  };
+}
+
+/** @typedef {ReturnType<typeof createCreatures>} Creatures */

@@ -15,7 +15,8 @@ const SEASONS = /** @type {const} */ (['spring', 'summer', 'autumn', 'winter']);
  * @property {string} fs          fragment entry point
  * @property {(r: any) => number} vertices  vertices one plant may need
  * @property {(r: any, f: Float32Array) => void} pack  the recipe's fixed values
- * @property {(r: any, f: Float32Array, u: { time: number, wind: number, windDir: number, season: number }) => void} frame  each frame
+ * @property {(r: any, f: Float32Array, u: { time: number, wind: number, windDir: number, season: number,
+ *   pressed?: { u: number, pad: number, dipM: number, bearing: number }[] }) => void} frame  each frame (pressed: lily pads frogs sit on)
  */
 
 /**
@@ -81,7 +82,14 @@ export const FLORA_KINDS = {
       f.set(C.heart, 36); f[39] = C.f0;
       f.set([r.wind.bob, r.wind.turnDeg * DEG, S.flowersPerPlant, r.wind.swingM], 40);
     },
-    frame: common,
+    frame(r, f, u) {
+      common(r, f, u);
+      // Pads frogs sit on (S6b-3), at most four: plant hash number, pad, dip (m), bearing to the frog.
+      for (let k = 0; k < 4; k++) {
+        const q = u.pressed?.[k];
+        f.set(q ? [q.u, q.pad, q.dipM, q.bearing] : [0, 0, 0, 0], 44 + k * 4);
+      }
+    },
   },
 
   iris: {

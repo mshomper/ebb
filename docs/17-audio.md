@@ -90,6 +90,8 @@ Soft and material: sculpt a low soil push (pitch tied to stroke speed), smooth a
 
 The `AudioListener` sits at the camera eye with orientation from the view. Creature voices and ambient one-shots use `PannerNode` with `HRTF` on desktop and `equalpower` on mobile, `inverse` distance model, `refDistance` 2 m, `rolloffFactor` 1. Beds are stereo and not panned, but their filters and gains follow camera nearness. An air-absorption lowpass on each voice drops with distance (cutoff from 18 kHz at 2 m to 3 kHz at 60 m).
 
+**Finding creatures by ear** (Matt, October 2026). Creatures are drawn to blend in: a far frog has no outline (doc 05). Sound is the main way to find them, so every calling animal is its own panned voice at its live position, never a mixed-down chorus bed. You turn toward a call and move closer, and the voice gets louder, nearer and brighter. Behind the listener a voice is slightly muffled (HRTF on desktop; on mobile, an extra gentle lowpass when the source is behind the view), so look direction matters. Presence (doc 23) makes this a game: a swoop hushes the frogs near you, and a slow approach keeps them calling.
+
 ### Mobile and autoplay
 
 - The context is created at boot and starts suspended. `mixer.unlock()` runs on the first `pointerdown` or `keydown` anywhere on the page, resumes the context, then fades the master in over 2 s.

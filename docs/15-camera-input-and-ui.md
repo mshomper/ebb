@@ -6,6 +6,7 @@
 
 - **One play camera:** a damped orbit around a target point on the island (yaw, pitch, distance). Photo mode uses a separate free camera (16-customization-and-photo-mode.md).
 - **Soft limits, not walls:** pushing past a limit meets rising resistance and springs back on release.
+- **The close-up (S6b, Matt, October 2026):** the camera may come to 35 cm from what it looks at, anywhere on the island. Below about 5 m the view eases from aiming half way down the slope to aiming at the ground or the water's surface, and the eye may come down to about 6 cm above it, never under a pond (`recipes/world/camera.json` close).
 - **Action layer:** `src/input/desktop.js` and `src/input/touch.js` only translate raw events into actions defined in `src/input/actions.js`. Nothing else reads DOM input events.
 - **Touch grammar:** one finger uses the active tool; two fingers orbit (drag), zoom (pinch) and yaw (twist). With no tool selected (the "look" state), one finger pans.
 - **UI is DOM over the WebGPU canvas**, plain modules in `src/ui/`, no framework.

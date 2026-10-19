@@ -78,7 +78,7 @@ startle when: a source is inside the ring and faster than the calm speed,
 calm speed  = gentle pace × (1 + 2 · trust)
 ```
 
-Every number is a per-species field in the species recipe, so the tuning panel can reach it. Matt's presence sandbox (a walker-form prototype, kept outside the repo) runs this rule for frogs.
+Every number is a per-species field in the species recipe, so the tuning panel can reach it. Rings are in real meters: frogs are drawn 1.5 times real size (doc 12), and their hops and tongue scale with that, but their comfort rings do not. Matt confirmed this pace in October 2026: these trust numbers (0.012 a minute of quiet watching in stretches of 20 to 600 s, 0.06 a feeding, satiation capping one sitting) mean trust grows over several play sessions, and naming opens at 0.5. In normal play the camera may come to 35 cm from what it looks at, from S6b. Matt's presence sandbox (a walker-form prototype, kept outside the repo) runs this rule for frogs.
 
 ### Trust, wariness and familiarity
 
@@ -90,7 +90,7 @@ Every number is a per-species field in the species recipe, so the tuning panel c
 |---|---|---|
 | Wary | 0–0.2 | Keeps its full ring; plops at the first swoop |
 | Tolerant | 0.2–0.45 | Lets you come slowly to about a meter |
-| Curious | 0.45–0.65 | Lets you right up close; can be named |
+| Curious | 0.45–0.65 | Lets you right up close; can be named from 0.5 |
 | Familiar | 0.65–0.85 | Sits still for a portrait; comes to food quickly |
 | Bonded | 0.85 and up | Rests beside you; visits camp (later rungs only) |
 
@@ -140,6 +140,14 @@ Live only, recorded when it matters:
 ### Rung 1, the hand (S6b and S6c)
 
 - **S6b (the frog you see, and presence):** each frog has its comfort ring. A fast swoop through it, or sculpting or pouring right beside it, causes a soft startle. Zooming in slowly is welcome. Nearby frogs hush; the chorus returns from the far side.
+- **As built in S6b-4** (`src/world/creatures/presence.js`, `agents.js` `sense` and `startle`; numbers in `recipes/species/frog.json` presence):
+  - The app updates the source list each frame, right after the camera. The camera's speed is smoothed over about a tenth of a second, and reads zero while `camera.driven()`: a glide the game makes (today only tools, such as the frog lab's Look at; later Follow), ended by any input.
+  - Sculpt, pour and plant strokes report where they land, for that frame.
+  - A frog startles when the eye is within its ring (1.5 m, real size, 3D distance) and moving faster than 0.5 m/s, or when an edit lands within 2 m. It hops into the water (off a pad, into the deep water beside it), plops, dives and dashes about 2 m away from the source at 0.3 m/s, and comes up to float eyes-up, wary for 40 to 70 s. Then it swims home. It doesn't call while wary.
+  - Frogs within 4 m of a startled frog hush for 14 to 20 s. The chorus carries on from the frogs further away and comes back as the hush ends.
+  - Live events: `creature:startled` and `creature:hushed`. Nothing is saved; trust stays 0 until S6c.
+  - Finding a frog by watching asks for the eye within 1.5 m again (`find.lookDistM`), as planned, now that the camera can come close.
+  - Checked with the frog lab's Swoop, Creep and Glide buttons. On the real camera code at 60 steps a second: a swoop puts the eye 55 cm from the frog at 6.4 m/s, a 25 s creep stays at 0.14 m/s, and a glide reads 0.03 m/s as it settles.
 - **S6c (feed, trust and name):** Feed is for trust only. Feeding and quiet watching earn trust as small saved events; trust shrinks the ring. A curious frog can be named; a familiar frog sits still for a portrait.
 
 ### Rung 2, the seat (M2)
@@ -190,9 +198,9 @@ Per species, a `presence` block in `recipes/species/<id>.json` (frog starting va
 "presence": {
   "ringM": 1.5, "ringTrustShrink": 0.8, "ringMinM": 0.3,
   "calmSpeed": 0.5, "calmTrustGain": 2,
-  "editReachM": 2, "wariS": [40, 70], "hushReachM": 4, "hushS": 20,
+  "editReachM": 2, "wariS": [40, 70], "hushReachM": 4, "hushS": [14, 20],
   "watch": { "reachM": 3, "minS": 20, "capS": 600, "trustPerMin": 0.012 },
-  "feedTrust": 0.06, "ceiling": "familiar",
+  "feedTrust": 0.06, "ceiling": "familiar", "namingTrust": 0.5,
   "multipliers": { "posture": { "stand": 1, "kneel": 0.8, "sit": 0.65 }, "gaze": { "watch": 1.15, "away": 0.9 }, "light": 1.3 }
 }
 ```

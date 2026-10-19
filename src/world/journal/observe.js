@@ -14,6 +14,7 @@
 import { STAGE } from '../growth/coarse.js';
 import { HABITAT_ORIGIN } from '../growth/habitat.js';
 import { seasonOf, SECONDS_PER_HOUR } from '../../core/clock.js';
+import { observeAnimals, measureAnimal, foundFrog } from './creatures.js';
 
 /** Season box bits. */
 export const GROW = 1, FLOWER = 2, DORMANT = 4;
@@ -111,6 +112,7 @@ export function coverShare(sp, state, hab, k) {
  *   for a cover plant measured by area, spots are the middles of the squares it covers
  */
 export function measure(sp, state, hab, rec) {
+  if (isAnimal(rec)) return measureAnimal(sp, state, rec);
   if (rec.kind === 'cover') {
     if (!hab || !hasCover(sp, state)) return { count: 0, value: 0, flowering: 0, dormant: 0, mature: 0, plants: [], spots: [] };
     if (rec.amountBy === 'area') {
@@ -141,7 +143,10 @@ export function measure(sp, state, hab, rec) {
 }
 
 /** Is a measured species on the island? @param {any} rec @param {{ count: number }} m */
-export const present = (rec, m) => (rec.kind === 'cover' ? m.count >= rec.amount[0][0] : m.count > 0);
+export const present = (rec, m) => (rec.kind === 'cover' || rec.kind === 'swarm' ? m.count >= rec.amount[0][0] : m.count > 0);
+
+/** Is a page an animal's (frogs, a creature; midges, a swarm)? @param {any} rec words.species[sp] */
+export const isAnimal = (rec) => rec?.kind === 'creature' || rec?.kind === 'swarm';
 
 /**
  * Note `kind` for a species, if its words have one.
@@ -197,7 +202,7 @@ export function observe(journal, ctx) {
 
   for (const sp of words.order) {
     const rec = words.species[sp];
-    if (!rec) continue;
+    if (!rec || isAnimal(rec)) continue;   // animals are looked at below (creatures.js)
     const k = know(j, sp);
     const m = measure(sp, state, hab, rec);
     const here = present(rec, m);
@@ -256,6 +261,7 @@ export function observe(journal, ctx) {
       if (text) out.push({ hour, date, text, sp: null });
     }
   }
+  observeAnimals(j, out, ctx, { date, newHour, season, know });
 
   if (newHour) j.last = hour;
   keep(j, out, words);
@@ -306,6 +312,16 @@ export function learn(journal, sp, trigger, ctx) {
   }
   keep(j, out, ctx.words);
   return { journal: j, notes: out };
+}
+
+/**
+ * You found a frog yourself (a tap on it, or watching it from close by): its page inks and the
+ * journal writes the moment (creatures.js).
+ * @param {Journal} journal @param {{ state: any, hour: number, words: any }} ctx
+ * @returns {{ journal: Journal, notes: Note[] }}
+ */
+export function foundAnimal(journal, ctx) {
+  return foundFrog(journal, { ...ctx, date: dateText(ctx.state?.seasons, ctx.words), know, copy });
 }
 
 /**

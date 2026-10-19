@@ -35,7 +35,7 @@ The ecology `coarseStep` maintains per-cell fields on the 1 m grid. Creatures ne
 | Disturbance | paths (day), lanterns (night), structures, larger wary species | quiet |
 | Occupancy | residents and swarm densities per species | company, crowding |
 
-The **insect field** matters for the slice: midge density grows logistically where reed biomass sits within 3 m of still water, scaled by warmth (season and time of day), and is consumed by frogs. In the live sim it is drawn as a faint shimmer of midges over the reeds; it is not a species with its own needs.
+The **insect field** matters for the slice. **Midges are an ecology field, not a creature** (decided October 2026): one share per square meter, kept in the hourly tick (`src/world/ecology/midges.js`, `recipes/species/midge.json`). Midges gather over still fresh water and the ground within 2 m of it, where reeds and rushes within 3 m feed them, scaled by the season's warmth (almost none in winter). Each hour the field moves part of the way toward what the ground can hold, so a new reed bed fills over a day or so and a drained one empties faster; a new world starts with none. Frogs read it as food. In S6a frogs do not eat it down; that can come with feeding in S6c. Time of day changes only the live swarm (more at dusk, fewer at night and in wind), drawn on the GPU in S6b from this field. Midges have a journal page, known by themselves at the first dusk they gather once the swarm is drawn (S6b; until then they stay a pencil "?" and nothing names them, since the journal only tells what you could see), but no needs, arrival or trust.
 
 ### Need scores
 
@@ -49,7 +49,7 @@ For species *s* at cell *c*, with recipe radii and preferences:
 
 **Target mood** `M* = Π sᵢ^wᵢ` with weights summing to 1. It is computed as `det.exp(Σ wᵢ · det.log(max(sᵢ, 0.01)))` with the deterministic math from `src/core/rng.js`. Actual mood eases toward it each tick: `M ← M + 0.15 · (M* − M)`, about a 4-hour half-life, so a single edit never flips a creature instantly.
 
-**Habitat score** of a cell is `M*` evaluated with the species' ideal group size. Contiguous cells scoring above 0.5 form a **patch**; patch **capacity** is `floor(area · density)` capped by the species limit.
+**Habitat score** of a cell is `M*` evaluated with the species' ideal group size. Contiguous cells scoring above 0.5 form a **patch**; patch **capacity** is `floor(area · density)` capped by the species limit. **Frogs instead count their numbers along the shore** (decided October 2026): a bank square beside still water whose score is 0.5 or more is good edge, and the island holds one frog per 3 m of it, with no fixed cap, so a bare stretch of bank holds none. Each frog has a home square on the bank (`src/world/creatures/coarse.js`), which S6b animates from.
 
 ### Arrival, settling, leaving
 
@@ -70,6 +70,8 @@ flowchart LR
 ```
 
 Scouts are scheduled with the deterministic RNG keyed by species and day index. A species that has fully moved on returns through the same scout path. Swarm species skip scouting: their density field seeds at the patch edge and grows logistically toward capacity, shrinking when mood falls.
+
+**As built for frogs in S6a.** Arrival is something the player discovers, not something they are told. The scout comes at dusk, and the journal gets a sign (a plop and rings by the reeds, "Something slipped into the water by the reeds"), never "a frog arrived". The frog page inks only when the player finds one: a tap on it, or watching it in the middle of the view, zoomed in. Until then the notes speak of something, and the page shows a riddle, then hints. A content scout stays after a day, and a second frog comes the next dusk. More come on most evenings while the edge has room, and if the habitat fails, one frog a day moves on, quietly. Frogs sleep in the pond mud through the winter dormancy window (`recipes/world/seasons.json`). Events: `creature:habitat-right`, `creature:arrived` (the scout), `creature:settled`, `creature:joined`, `creature:left`, `creature:dormant`, `creature:woke`, `species:happy`, and the live `creature:found`. `tools/ecology-lab.html` runs the arc on both islands, twice, and must end the same.
 
 ### Mood expressed through behavior
 
@@ -118,12 +120,55 @@ Trust grows slowly with feeding, calling and time spent watching; it shortens fl
 
 A body recipe lists SDF primitives (sphere, ellipsoid, capsule, round cone, rounded box), each attached to a bone, blended with a polynomial smooth-min of radius *k* (Inigo Quilez, "smooth minimum"). At load, a compute pass evaluates the SDF on a grid around the body and extracts a mesh with **surface nets** at three resolutions (LOD0 48³, LOD1 24³, LOD2 12³). LOD3 is an octahedral impostor atlas, also used for swarm members. Skin weights come from each primitive's share of the smooth-min blend, normalized across the four strongest bones. Albedo regions (back, belly, markings) are physical linear albedo; the painted look comes only from the palette tonemap (`05-look-and-palette.md`). Thin parts (frog throat sac, ears, wings) use a wrap-lighting term for soft translucency. Individual variation: each individual's seed jitters primitive radii by up to 6% and offsets marking noise.
 
+**As built in S6b-1** (`src/world/creatures/bodies.js`, `rigs/frog.js`, `pose.js`):
+- **Shape.** A species' rig reshapes its pieces by named proportions (`body.shape`; 1 is the recipe's body, exactly) before the bake. This is the hook the creature studio needs.
+- **Variants.** Variation is per body variant, not per individual: `body.variants` seeded variants (8 for frogs), each nudging every proportion by up to `body.variation` and moving the blotches. Every individual wears one, picked by its id, and is drawn up to `sizeJitter` larger or smaller. A look change rebakes 8 bodies, not one per frog.
+- **Baking.** Bakes run on the worker pool, coarsest level of detail first: frogs at 3.3, 2.2 and 1.1 mm cells (about 2,000, 7,500 and 30,000 triangles), switched by distance from the eye (`bake.lods`). The baker runs on the CPU; a compute bake can come later if bake time matters.
+- **Skeleton.** Bones and their pivots are read from the pieces (where each piece begins), never typed in. The throat pivots at the top of the sac, so it swells down.
+- **Skinning.** Skin weights come from each piece's distance compared with the nearest piece (`skin.blendM`), with the top four bones kept. Bone matrices go to the draw pass each frame, and the rest pose is every bone still, which draws the bake exactly.
+- **Idle motion.** Breathing (the sac and body) and blinking (`motion.breath`, `motion.blink`).
+
+**As built in S6b-2** (`agents.js`, `motion.js`; numbers in `recipes/species/frog.json` motion, from Matt's prototype):
+- **Steps.** Each live frog runs on a steady 30 steps a second of real time, so hops take as long at 4×. Its choices come from its own seeded stream.
+- **Moods.** Moods follow the hour of the day shown and the frog's mood from the tick:
+  - **rest** by day, with an occasional shuffle;
+  - **forage** when active: short hops along the bank within 2 m of home, then tongue flicks at the air (eating counts from S6c);
+  - **call** for content frogs from half an hour before dusk to three hours after: no call starts within 0.4 s of another frog's, so the chorus runs around the pond;
+  - **swim** in the shallows only, never deeper than 0.25 m, where lilies don't grow: kicks, an eyes-up float, then a hop back out;
+  - **arrive** (up out of the water near its home) and **leave** (slipping into the water and sinking, also for winter sleep).
+- **Spacing.** A hop never lands within 1.6 body lengths of another frog or its landing, and sitting frogs drift apart. This replaces the prototype's stand-ins.
+- **Motion.**
+  - The hop is a ballistic arc with the hind legs reaching out by two-bone IK, the hip, knee and ankle read from the skeleton.
+  - The body pitches nose up leaving and nose down landing, and a landing spring squashes it.
+  - The throat sac swells on a spring for each call.
+  - The legs kick in the water.
+  - The tongue is a small separate mesh that rides the head bone.
+- **Frog lab.** `tools/frog-lab.html` shows the chorus call by call and checks the gap. It also counts hops and swims and times moving, posing and drawing.
+
+**As built in S6b-3** (`src/world/growth/lily-pads.js`, `src/world/creatures/perches.js`, `agents.js`; numbers in `recipes/species/frog.json` motion.pads and motion.clumps):
+- **One pad formula.** `lily-pads.js` is a line-for-line copy of where `flora-lilies.wgsl` puts each pad (spread, swing on the stem, turn, bob, layer). A unit test checks the shader still has the numbers the copy uses, and that one pad matches to the nanometre.
+- **Perches.** A pad at least `minRadiusM` across, not covered by a pad above it, holds one frog, a quarter of the way out from its middle, opposite the notch. The frog rides the pad as it swings, bobs and turns, and the pad dips a few millimetres under it (`dipM`; `LilyDraw.pressed`, up to four pads). If the pad dies back, the frog slips into the water.
+- **Getting on.** A frog hops onto a free pad within one hop. For one further out (up to `seekM`), it hops in, swims to just off the rim (`edgeM`) and climbs on. At most `maxOn` frogs sit on pads at once.
+- **Never through a pad.** A swimming frog ducks `submergeM` under any pad in its way and comes up past it; a pad that swings over a floating frog sends it under and off to open water. Frogs float, and hop into the water, only where it is open.
+- **Clumps.** A frog sits at the edge of a reed or iris clump, never in its stems.
+- **Swimming home.** A floating frog with no bank within a hop (out past the reeds, or out to a far pad) swims to the open water nearest its home and hops out there.
+- **Water height.** `water.sampleLive` now gives the surface the way the water and lily shaders draw it (each cell's lowest bed plus its depth, blended between cell centres). Before, it took the ground at the point plus the cell's depth, which stood several centimetres too high over a sloping pond bed, so frogs floated and sat above the water they were drawn on.
+- **Frog lab.** Adds a tile for frogs on pads, a frame-by-frame check that no frog leaves its leaf and no swimmer passes through a pad, a close look at a frog on a pad, and Pad outlines (where the frogs think each pad's rim is, drawn over the view).
+
+**As built in S6b-4** (presence; details in doc 23): a fast swoop of the camera through a frog's 1.5 m ring, or an edit within 2 m, sends it into the water. It dives about 2 m away and floats eyes-up, wary for about a minute. Frogs within 4 m hush for 14 to 20 s. Moves the game makes (a glide) never startle. The frog lab has Swoop, Creep and Glide checks.
+
 ### Motion
 
 - **Legs**: analytic two-bone IK; feet plant on the terrain heightfield and lift on a gait phase per leg. Body height and pitch follow the averaged foot plane. Longer chains (heron neck) use FABRIK.
 - **Hops** (frogs): a ballistic arc between planted poses, with squash-and-stretch from a spring on body scale.
 - **Springs**: critically damped second-order springs on secondary bones (tails, ears, throat sac, whiskers), driven by root acceleration.
-- **Swarms**: Reynolds boids (separation, alignment, cohesion) on the GPU with a uniform spatial hash, plus attraction to their ecology field and curl noise for insects. Fish stay below the live water surface; birds bank from lateral acceleration.
+- **Swarms**: Reynolds boids (separation, alignment, cohesion) on the GPU with a uniform spatial hash, plus attraction to their ecology field and curl noise for insects. Fish stay below the live water surface; birds bank from lateral acceleration. **Midges, as built in S6b-5, have no flocking:**
+  - Each midge loops around its swarm's centre on a path worked out from the time and its number (`src/world/ecology/midge-paths.js`, the same in `midge-draw.wgsl`), and swarms sit over the field's densest patches.
+  - Why: it costs nothing to simulate, looks the same on every device, and the main thread can find any midge (S6c's tongue catches).
+  - Midges are drawn at real size, fading rather than shrinking below a pixel or so, as dark specks with a forward-scatter glint against a low sun.
+  - Many at dusk, few by day, almost none at night, fewer in wind, capped by the tier's boids. One midge of a swarm dips to ring the water every few seconds.
+  - The journal's Midges page inks at the first dusk they can be seen.
+  - Minnows and dragonflies (M2) may still want boids.
 - **Pathing**: individuals steer on a coarse walkability grid (slope, water depth) with a simple flow field toward goal cells; no full navmesh in v1.
 
 ### Offline handling
@@ -133,15 +178,18 @@ The coarse model keeps only **group records** (species, patch, population, group
 ## Data and interfaces
 
 ```js
-// recipes/species/frog.json (shape; values in doc 12)
-{ "id":"frog", "kind":"individual", "tier":1, "activity":"crepuscular",
-  "needs": { "water":{"classes":["still","tide"],"depth":[0.05,0.6],"rOk":2,"rMax":8,"w":0.25},
-             "food":{"fields":{"insect":1.0},"radius":6,"demand":0.08,"w":0.25},
-             "shelter":{"cover":{"reeds":1.0,"grass":0.3},"radius":3,"c":[0.2,0.6],"w":0.2},
-             "quiet":{"night":["lantern"],"day":["path"],"q":[0.2,0.6],"w":0.15},
-             "company":{"n":[2,5,9],"companions":{"dragonfly":0.1},"w":0.15} },
-  "density":0.02, "cap":12, "minHappyPop":4,
-  "body":{ "prims":[ /* {type,bone,c,r,k,region} */ ] }, "motion":{ "gait":"hop" } }
+// recipes/species/frog.json (shape as built in S6a; values in doc 12). Two halves: the look
+// (body, bake, preview) a creature studio or a player's look layer may change, and the life
+// (ecology, presence, find) that nothing but the recipe changes, so catch-up stays the same.
+{ "id":"frog", "body":{ "displayScale":1.5, "prims":[ /* {type,bone,c,r,k,region} */ ] }, "bake":{...},
+  "ecology":{ "dormancy":"frogs", "activity":{"pattern":"crepuscular"},
+    "needs": { "water":{"depthM":[0.05,0.6],"okM":2,"maxM":8,"w":0.25},
+               "food":{"field":"midges","radiusM":6,"perFrog":2.5,"w":0.25},
+               "shelter":{"cover":{"reeds":1,"rushes":0.9,"iris":0.7,"lilies":0.5,"grass":0.3},"radiusM":3,"from":0.3,"full":0.6,"w":0.2},
+               "quiet":{"night":["lantern"],"day":["path"],"w":0.15},
+               "company":{"n":[2,5,9],"alone":0.6,"crowded":0.4,"w":0.15} },
+    "edge":{"metresPerFrog":3,"goodScore":0.5}, "arrival":{ /* scout, settle, join, leave, happy */ }, "gift":{...} },
+  "presence":{ /* doc 23 */ }, "find":{ /* tap or watch to find one */ } }
 ```
 
 Modules:
@@ -185,6 +233,7 @@ Tuning panel, per species: need weights and radii, accepted water and food, cove
 - Should the journal ever hint at the exact weakest need, or only describe the behavior and let the player guess?
 - Should named individuals ever leave, or always stay as long as their species stays?
 - Is there room for gentle predator-prey moments (a heron near the frog pond making frogs warier), or should all species simply coexist?
+- Matt's pin (October 2026): small burrows or caves for a landmark land creature such as a bear (doc 12's open questions). The ecology grid would need a "den" field from placed rock pieces, since the heightfield holds no undercuts.
 
 ## Depends on / feeds into
 

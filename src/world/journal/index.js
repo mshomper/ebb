@@ -14,8 +14,8 @@ import { hourIndex, display, SECONDS_PER_HOUR, HOURS_PER_DAY } from '../../core/
 import { onAction } from '../../input/actions.js';
 import { weatherAt } from '../weather.js';
 import { tideParams } from '../tide.js';
-import { initialJournal, observe, learn, notePlanted, momentsNow, catchMoments } from './observe.js';
-import { describe, identify, showMeSpot } from './describe.js';
+import { initialJournal, observe, learn, notePlanted, momentsNow, catchMoments, foundAnimal } from './observe.js';
+import { describe, identify, showMeSpot, momentKind, frogCard } from './describe.js';
 import { groundKind, groundCard, groundSurvey, describeGround, groundSpot } from './ground.js';
 import { almanac } from './almanac.js';
 import { inkWeb, describeWeb } from './web.js';
@@ -30,13 +30,15 @@ import { washMap } from './wash.js';
  */
 
 /**
- * @param {{ world: { state: any, env: any }, words: any, island: any, web: any, wash?: any }} opts
+ * @param {{ world: { state: any, env: any }, words: any, island: any, web: any, wash?: any,
+ *   creatures?: { frogAt: (x: number, z: number) => { x: number, z: number } | null } | null }} opts
  *   world: the live world (state and env of the hourly tick); words: recipes/world/journal.json;
  *   island: recipes/world/journal-island.json; web: recipes/world/journal-web.json;
- *   wash: recipes/world/journal-wash.json
+ *   wash: recipes/world/journal-wash.json; creatures: the live creatures (src/world/creatures),
+ *   which say whether a tap landed on a frog
  */
 export function createJournal(opts) {
-  const { world, words, island, web, wash } = opts;
+  const { world, words, island, web, wash, creatures } = opts;
   /** @type {import('./observe.js').Journal} */
   let journal = get('journal') ?? initialJournal(hourIndex());
   update('journal', () => journal);
@@ -90,6 +92,9 @@ export function createJournal(opts) {
 
   /** What a ground point holds: a plant, a cover plant (grass, rushes), or the ground itself. @param {number} x @param {number} z */
   function cardAt(x, z) {
+    // A frog first: they are small, and finding one is the point.
+    const frog = creatures?.frogAt(x, z);
+    if (frog) return frogCard(frog, world.state, words);
     const hab = habitat();
     const living = identify(world.state, hab, x, z, words);
     if (living) return living;
@@ -104,10 +109,19 @@ export function createJournal(opts) {
   function select(card, x, y) {
     update('identify', () => (card ? { ...card, x, y, at: performance.now() } : null));
     if (!card) return;
-    const list = card.ground ? words.moments.ground : words.moments[words.species[card.sp]?.kind === 'cover' ? 'cover' : 'plant'];
+    // Tapping a frog is finding it: its page inks (once).
+    if (card.sp === 'frogs') found();
+    const list = card.ground ? words.moments.ground : words.moments[momentKind(words.species[card.sp])];
     const ids = momentsNow(list, now(card.stage), words.moments);
     const name = card.name.charAt(0).toLowerCase() + card.name.slice(1);
     commit(catchMoments(journal, card.sp, ids, { state: world.state, hour: hourIndex(), words, name, list }));
+  }
+
+  /** You found a frog: the page inks, the moment is written, and the web follows. */
+  function found() {
+    if (journal.species.frogs?.ever) return;
+    commit(foundAnimal(journal, { state: world.state, hour: hourIndex(), words }));
+    look([], hourIndex());
   }
 
   /**
@@ -149,6 +163,8 @@ export function createJournal(opts) {
       commit(learn(journal, p.species, `refused:${p.reason}`, { state: world.state, hour: hourIndex(), words }))),
     on('look:tapped', (/** @type {{ x: number, y: number, point: number[] | null }} */ p) =>
       select(p.point ? cardAt(p.point[0], p.point[2]) : null, p.x, p.y)),
+    // Watching a frog from close by finds it too (src/world/creatures/index.js).
+    on('creature:found', (/** @type {{ species: string }} */ p) => { if (p.species === 'frogs') found(); }),
     onAction((a) => {
       // Choosing a tool or closing the card puts the tap card away.
       if (a.type === 'tool.select' || a.type === 'ui.identify') { if (get('identify')) update('identify', () => null); return; }

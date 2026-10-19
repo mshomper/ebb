@@ -56,7 +56,7 @@ One island, everything in miniature. Built in seventeen steps, each its own clic
 | J1.6 | Field sketches: a drawn illustration for each page, in pencil until known, then inked | 13, 15 |
 | J2a | The journal's Web: what needs what, in bands (ground, plants, animals, you); links inked once seen on the island, in one journal ink; names not yet seen are a pencil "?" | 13, 15 |
 | J2b | The "show where" wash: opening a page washes the island in one journal ink with an inked edge, strong where the species lives and pale where it would do well, painted after the palette; the camera stays where it is; an unseen species gets two or three pencil circles a little off the spot, a hint rather than the answer | 13, 05, 15 |
-| S6 | Frogs: needs, arrival, settling, behavior, presence (a list of sources, the camera first), feeding for trust and naming; midges and frogs get journal pages and sketches | 11, 12, 23 |
+| S6 | Frogs: needs, arrival, settling, behavior, presence (a list of sources, the camera first), feeding for trust and naming; midges and frogs get journal pages and sketches. In three pieces: S6a frogs arrive (the midge field, frog habitat and the arrival arc in the hourly tick, the journal's stages, posed bodies, `tools/ecology-lab.html`); S6b the frog you see (baked body, motion, the chorus, the midge swarm, presence); S6c feeding, trust and naming | 11, 12, 23 |
 | S7 | Autosave, reload, and offline catch-up with the "while you were away" reveal | 02, 18 |
 | S8 | Minimal HUD with drawn icons, touch layout on phone, low quality tier | 15, 19 |
 

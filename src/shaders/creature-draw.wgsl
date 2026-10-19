@@ -1,4 +1,4 @@
-// Creatures (doc 11): a baked body mesh drawn once per individual, lit like the rest of the island
+// Creatures (doc 11): a baked body mesh drawn once per individual and skinned by its bones (S6b), lit like the rest of the island
 // (sun and moon with shadows, sky fill, aerial perspective) plus a wet GGX sheen, into the HDR,
 // normal and depth targets with outline group 3 (creatures get clear lines, docs/05). Under each
 // one a soft contact shadow darkens what it sits on, so a body never floats. Albedo is physical and
@@ -13,18 +13,22 @@
 struct CreatureDraw {
   look: vec4f,     // x wet roughness, y wet specular strength, z contact shadow darkness 0..1, w contact radius (body lengths)
   body: vec4f,     // x body length (m, at size 1), yzw spare
+  glint: vec4f,    // x, y the two eye bones (-1 none), z cornea roughness, w strength
 };
 
 @group(0) @binding(0) var<uniform> frame: FrameUniforms;
 @group(2) @binding(0) var<uniform> cd: CreatureDraw;
-// Two vec4f per individual: (x, y, z, yaw in radians), (size, spare, spare, spare).
+// Two vec4f per individual: (x, y, z, yaw in radians), (size, first bone, spare, spare).
 @group(2) @binding(1) var<storage, read> beings: array<vec4f>;
+// Bone matrices (body space, the rest pose is identity), MAX_BONES per individual (bodies.js).
+@group(2) @binding(2) var<storage, read> bones: array<mat4x4f>;
 
 struct VsOut {
   @builtin(position) pos: vec4f,
   @location(0) world: vec3f,
   @location(1) normal: vec3f,
   @location(2) albedo: vec3f,
+  @location(3) eye: f32,       // how much of the skin here follows an eye bone (the wet cornea)
 };
 
 struct FsOut {
@@ -48,17 +52,31 @@ fn place(local: vec3f, at: vec4f, size: f32) -> vec3f {
 
 @vertex
 fn vsBody(@location(0) position: vec3f, @location(1) normal: vec3f, @location(2) albedo: vec3f,
+          @location(3) joints: vec4u, @location(4) weights: vec4f,
           @builtin(instance_index) ii: u32) -> VsOut {
   let at = beings[ii * 2u];
   let size = beings[ii * 2u + 1u].x;
-  let world = place(position, at, size);
+  let first = u32(beings[ii * 2u + 1u].y);
+  // Skinning: the vertex follows up to four bones by its weights.
+  let m = bones[first + joints.x] * weights.x + bones[first + joints.y] * weights.y
+        + bones[first + joints.z] * weights.z + bones[first + joints.w] * weights.w;
+  let posed = (m * vec4f(position, 1.0)).xyz;
+  let nPosed = normalize((m * vec4f(normal, 0.0)).xyz + vec3f(0.0, 1e-6, 0.0));
+  let world = place(posed, at, size);
   let c = cos(at.w);
   let s = sin(at.w);
   var o: VsOut;
   o.world = world;
   o.pos = frame.viewProj * vec4f(world, 1.0);
-  o.normal = vec3f(c * normal.x + s * normal.z, normal.y, -s * normal.x + c * normal.z);
+  o.normal = vec3f(c * nPosed.x + s * nPosed.z, nPosed.y, -s * nPosed.x + c * nPosed.z);
   o.albedo = albedo;
+  // The eyes are the skin that follows the eye bones.
+  var eye = 0.0;
+  for (var k = 0; k < 4; k++) {
+    let j = f32(joints[k]);
+    if (j == cd.glint.x || j == cd.glint.y) { eye += weights[k]; }
+  }
+  o.eye = eye;
   return o;
 }
 
@@ -79,6 +97,15 @@ fn fsBody(in: VsOut) -> FsOut {
   // Wet skin: a GGX sheen from the sun and moon.
   radiance += cd.look.y * (frame.sunIlluminance * sunVis * ggxSpecular(n, v, frame.sunDir, cd.look.x, 0.02)
                          + frame.moonIlluminance * moonVis * ggxSpecular(n, v, frame.moonDir, cd.look.x, 0.02));
+  // Wet eyes: the cornea is smooth, so the sun and moon make a sharp point in it and the sky shows
+  // in it at a glancing view. Physically lit (water-like Fresnel), never painted.
+  let g = smoothstep(0.5, 0.9, in.eye) * cd.glint.w;
+  if (g > 0.0) {
+    radiance += g * (frame.sunIlluminance * sunVis * ggxSpecular(n, v, frame.sunDir, cd.glint.z, 0.02)
+                   + frame.moonIlluminance * moonVis * ggxSpecular(n, v, frame.moonDir, cd.glint.z, 0.02));
+    let fres = 0.02 + 0.98 * pow(1.0 - max(dot(n, v), 0.0), 5.0);
+    radiance += g * fres * skyAmbient(reflect(-v, n)) / PI;
+  }
   let color = applyAerial(radiance * frame.exposure, in.pos.xy * frame.invRenderSize, viewDist);
   // Never let a bad value through: one NaN would spread over the whole frame through bloom.
   let safe = select(vec3f(0.0), color, color == color);

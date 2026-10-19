@@ -296,6 +296,27 @@ const ICONS = {
     <path d="M14.5 3.5V7.5H18.5"/>
     <path d="M9 11.5H15.5M9 14.5H15.5M9 17.5H13"/>`,
 
+  // Animals (S6a): a frog sitting at the water's edge, in profile, hind leg folded; midges, a loose
+  // cloud of dots over a reed tip.
+  frog: `
+    <path ${ACCENT} d="M4.5 17.5C4.5 13 8.5 10 13.2 9.6C13.8 7.6 16.4 7.2 17.3 9C19.2 9.5 20.6 10.6 20.6 11.8C20.6 13 19.3 13.6 17.8 13.8C16.6 16.3 13.6 17.5 9.8 17.5Z"/>
+    <path d="M4.5 17.5C4.5 13 8.5 10 13.2 9.6C13.8 7.6 16.4 7.2 17.3 9C19.2 9.5 20.6 10.6 20.6 11.8C20.6 13 19.3 13.6 17.8 13.8C16.6 16.3 13.6 17.5 9.8 17.5Z"/>
+    <circle cx="15.6" cy="9.6" r="0.95" fill="currentColor" stroke="none"/>
+    <path d="M6.2 16.2C6.4 13.8 9.6 13 10.8 15.2"/>
+    <path d="M15.6 15.3L16.4 19.5H18.6"/>
+    <path d="M2.5 19.5H12.5"/>`,
+  midges: `
+    <path d="M9 21.5C9.4 18.5 9.8 16.5 10.6 14.5"/>
+    <path d="M14.5 21.5V14"/>
+    <path ${ACCENT} d="M13.6 14.2A0.9 1.6 0 0 1 15.4 14.2V11.6A0.9 1.6 0 0 0 13.6 11.6Z"/>
+    <circle cx="6" cy="7" r="0.85" fill="currentColor" stroke="none"/>
+    <circle cx="10" cy="4.5" r="0.85" fill="currentColor" stroke="none"/>
+    <circle cx="13" cy="7.5" r="0.85" fill="currentColor" stroke="none"/>
+    <circle cx="17.5" cy="5" r="0.85" fill="currentColor" stroke="none"/>
+    <circle cx="19" cy="9.5" r="0.85" fill="currentColor" stroke="none"/>
+    <circle cx="8.5" cy="10.5" r="0.85" fill="currentColor" stroke="none"/>
+    <path d="M4.5 11.5C5.5 10.5 6.5 12.5 7.5 11.5M15.5 3C16.5 2 17.5 4 18.5 3" opacity="0.7"/>`,
+
   // A living thing not seen yet: a pencil circle, drawn in short dashes.
   unknown: `
     <circle cx="12" cy="12" r="8" stroke-dasharray="2.4 3"/>`,

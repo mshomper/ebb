@@ -1,0 +1,28 @@
+{
+  "type": "species",
+  "id": "midge",
+  "name": "Midges",
+  "version": 1,
+  "note": "Midges (docs 11, 12): not a creature with needs, arrival or trust but an ecology field, one share per square meter, that frogs eat (and later minnows, dragonflies and bats). field (S6a, the hourly tick): midges gather over still fresh water and the ground within nearWaterM of it, where plants feed them: each plant's weight (feed; a clump counts its size, a cover plant its share) is summed over a square of feedRadiusM, and fullFeed of it gives the most midges there can be. warmth scales that by season (spring, summer, autumn, winter). Each hour the field moves riseShare of the way up toward it, or fallShare of the way down, so a new reed bed fills with midges over a day or so and a drained one empties faster. A new world starts with none. When the journal first knows them is in recipes/world/journal.json (midges.seenAt). swarm (S6b-5): the live look, after Matt's pond tier 1 prototype but with no flocking: up to swarms.max swarms sit over the densest squares of this field holding at least fromShare of a full cloud, apartM apart; a swarm of a full square holds perSwarm midges, times the time of day's share (density: dusk from duskFromH to duskToH hours after sunset, then night, then day, easing over an hour; fewer by windDamp in full wind); the quality tier caps the total (boids). Each midge loops around its swarm's centre at radiusM, heightM over the ground or water, speedHz turns a second (each drawn from the swarm's seed and its number, the same path in src/world/ecology/midge-paths.js and src/shaders/midge-draw.wgsl), and the centre bobs (bob, m and hz) and drifts up to windDriftM downwind. body: real size (not enlarged), albedo (linear), a forward-scatter glint against the sun (Henyey-Greenstein g, strength), at least minPx pixels wide (a smaller midge fades instead of shrinking). dip: every everyS seconds one midge of a swarm dips to the water for s seconds and rings it.",
+  "field": {
+    "feed": { "reeds": 1, "rushes": 0.8 },
+    "feedRadiusM": 3,
+    "fullFeed": 4,
+    "nearWaterM": 2,
+    "warmth": [0.6, 1, 0.5, 0.05],
+    "riseShare": 0.1,
+    "fallShare": 0.2
+  },
+  "swarm": {
+    "body": { "scaleReal": [0.002, 0.004], "albedo": [0.045, 0.04, 0.035], "glint": { "g": 0.75, "strength": 0.05 }, "minPx": 1.2 },
+    "swarms": { "max": 24, "apartM": 3, "fromShare": 0.25 },
+    "perSwarm": 220,
+    "radiusM": [0.05, 0.38],
+    "heightM": [0.3, 1.2],
+    "speedHz": [0.15, 0.5],
+    "bob": { "amp": 0.12, "hz": 0.48 },
+    "windDriftM": 0.5,
+    "density": { "day": 0.25, "dusk": 1, "night": 0.04, "windDamp": 0.35, "duskFromH": -1, "duskToH": 2 },
+    "dip": { "everyS": [4, 10], "s": 0.7 }
+  }
+}

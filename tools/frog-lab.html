@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ebb frog lab</title>
+<link rel="icon" href="../brand/ebb-favicon.svg" type="image/svg+xml">
+<style>
+  @font-face { font-family: 'Nunito'; src: url('../src/vendor/fonts/nunito-latin-600-normal.woff2') format('woff2'); font-weight: 600; }
+  @font-face { font-family: 'Nunito'; src: url('../src/vendor/fonts/nunito-latin-800-normal.woff2') format('woff2'); font-weight: 800; }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; max-width: 100%; overflow-x: hidden; }
+  body { background: #F4EEE4; color: #1E2624; font: 600 17px/1.45 'Nunito', system-ui, sans-serif; padding: 16px; overflow-wrap: anywhere; }
+  main { max-width: 1100px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+  h1 { font-size: 24px; font-weight: 800; margin: 0; }
+  h2 { font-size: 19px; font-weight: 800; margin: 0 0 6px; }
+  .muted { color: #4A5551; font-size: 16px; margin: 0; }
+  a { color: #4a6a47; }
+  .stage { position: relative; }
+  #outline-layer { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; display: none; }
+  #view { width: 100%; aspect-ratio: 16 / 9; max-height: 56vh; display: block; border-radius: 14px; background: #1E2624; touch-action: none; }
+  .card { background: #FBF7F0; border: 1px solid #E3D9C9; border-radius: 14px; padding: 14px 16px; min-width: 0; }
+  .buttons { display: flex; flex-wrap: wrap; gap: 10px; }
+  button { font: 800 17px/1.2 'Nunito', system-ui, sans-serif; color: #1E2624; background: #FFFDF8; border: 1px solid #CFC3AF; border-radius: 12px; padding: 10px 16px; cursor: pointer; min-height: 48px; flex: 1 1 140px; }
+  button[aria-pressed="true"] { background: #4a6a47; color: #FBF7F0; border-color: #4a6a47; }
+  .status { display: flex; gap: 10px; align-items: flex-start; font-weight: 800; margin: 6px 0 0; }
+  .status svg { width: 22px; height: 22px; flex: 0 0 auto; margin-top: 2px; }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
+  .tile b { display: block; font-size: 24px; font-weight: 800; }
+  .tile span { font-size: 16px; color: #4A5551; }
+  .chart { width: 100%; height: 220px; display: block; }
+  .legend { display: flex; flex-wrap: wrap; gap: 8px 16px; font-size: 16px; color: #4A5551; margin: 6px 0 0; }
+  .legend i { display: inline-block; width: 14px; height: 14px; border-radius: 3px; vertical-align: -2px; margin-right: 6px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>ebb frog lab</h1>
+  <p class="muted">The real island with frogs on it (S6b, docs 11, 12): pick a time of day and watch them rest, forage, call, swim and sit on lily pads. The lab shows the chorus call by call, checks that no two calls start within the gap, draws where the frogs think the pads are (Pad outlines: each yellow ring should sit on the rim of a drawn pad), checks every frame that a frog on a pad sits on the leaf and that no swimmer passes through a pad, counts hops and swims, and measures what moving and drawing the frogs costs. The time buttons change only what is shown, never the world. <a href="./">All tools</a></p>
+  <div class="stage">
+    <canvas id="view" aria-label="The island with its frogs"></canvas>
+    <canvas id="outline-layer" aria-hidden="true"></canvas>
+  </div>
+  <div class="card">
+    <div class="buttons" id="times" role="group" aria-label="Time of day shown">
+      <button type="button" data-hour="12">Midday</button>
+      <button type="button" data-hour="dusk">Dusk</button>
+      <button type="button" data-hour="1">Night</button>
+      <button type="button" data-hour="live" aria-pressed="true">Live time</button>
+      <button type="button" id="look">Look at the frogs</button>
+      <button type="button" id="look-pad">Look at a frog on a pad</button>
+      <button type="button" id="outlines" aria-pressed="false">Pad outlines</button>
+    </div>
+    <div class="status" id="status">Starting</div>
+    <div class="status" id="pad-status"></div>
+  </div>
+  <div class="card">
+    <h2>Presence</h2>
+    <p class="muted">Each check takes the camera to a frog on the bank, then moves in on it the way a player would. A fast swoop through its 1.5 m ring should startle it: a plop, a dive, eyes up about 2 m away, and the frogs near it hush. Creeping in slowly, or the game gliding the camera there, should not. Keep this tab in front while a check runs.</p>
+    <div class="buttons" id="presence" role="group" aria-label="Presence checks">
+      <button type="button" data-check="swoop">Swoop at a frog</button>
+      <button type="button" data-check="creep">Creep up to a frog</button>
+      <button type="button" data-check="glide">Glide to a frog</button>
+    </div>
+    <div class="status" id="presence-status">Pick a check.</div>
+  </div>
+  <div class="tiles">
+    <div class="card tile"><b id="t-frogs">-</b><span>frogs: resting, foraging, calling, in the water</span></div>
+    <div class="card tile"><b id="t-calls">-</b><span>calls a minute, and the tightest gap between two</span></div>
+    <div class="card tile"><b id="t-hops">-</b><span>hops a minute, and the mean hop</span></div>
+    <div class="card tile"><b id="t-pads">-</b><span>on lily pads now, and hops onto a pad so far</span></div>
+    <div class="card tile"><b id="t-startles">-</b><span>startles and hushes so far</span></div>
+    <div class="card tile"><b id="t-cost">-</b><span>ms a frame: moving and posing (CPU), drawing (GPU)</span></div>
+  </div>
+  <div class="card">
+    <h2>The chorus, last 60 seconds</h2>
+    <p class="muted">One row per frog; a mark for each call. Calls should step around the pond, never two within the gap (marked if they ever do).</p>
+    <canvas id="chorus" class="chart" aria-label="Calls by frog over the last minute"></canvas>
+    <div class="legend"><span><i style="background:#5F7F5B"></i>a call</span><span><i style="background:#B5654A"></i>a call too soon after another</span></div>
+  </div>
+</main>
+<script src="./boot-guard.js"></script>
+<script type="importmap">{ "imports": {
+  "wgpu-matrix": "../src/vendor/wgpu-matrix/wgpu-matrix.module.js" } }</script>
+<script type="module" src="./frog-lab.js"></script>
+</body>
+</html>

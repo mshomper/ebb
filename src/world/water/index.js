@@ -46,6 +46,35 @@ export async function createWater(gpu, opts) {
   /** @type {null | { x: number, z: number, radiusM: number, rateLps: number }} */
   let brush = null;
 
+  /**
+   * The live water surface at a world point, as the water and lily shaders draw it: the bed (the
+   * lowest of a cell's 2 x 2 terrain cells) plus depth at the four nearest wet cells, blended between
+   * cell centers, never below the ground; the ground where none is wet. (The ground at the point
+   * plus the cell's depth stood several centimeters too high over a sloping pond bed.)
+   * @param {any} L sim.live @param {number} x @param {number} z
+   */
+  function liveSurface(L, x, z) {
+    const u = (x - WATER_ORIGIN) / WATER_CELL - 0.5, v = (z - WATER_ORIGIN) / WATER_CELL - 0.5;
+    const i0 = Math.floor(u), j0 = Math.floor(v), fu = u - i0, fv = v - j0;
+    const ground = terrain.sampleHeight(x, z);
+    let sum = 0, w = 0;
+    for (let k = 0; k < 4; k++) {
+      const ci = i0 + (k & 1), cj = j0 + (k >> 1);
+      const li = ci - L.rect.x, lj = cj - L.rect.y;
+      if (li < 0 || lj < 0 || li >= L.rect.w || lj >= L.rect.h) continue;
+      const d = L.depth[lj * L.rect.w + li];
+      if (!(d > 0.01)) continue;
+      const wk = (k & 1 ? fu : 1 - fu) * (k >> 1 ? fv : 1 - fv);
+      // The bed as bedHeights (init.js) takes it: terrain cell centers a quarter cell either side.
+      const cx = waterCellCenter(ci), cz = waterCellCenter(cj), q = WATER_CELL * 0.25;
+      const bed = Math.min(terrain.sampleHeight(cx - q, cz - q), terrain.sampleHeight(cx + q, cz - q),
+        terrain.sampleHeight(cx - q, cz + q), terrain.sampleHeight(cx + q, cz + q));
+      sum += (bed + d) * wk;
+      w += wk;
+    }
+    return w < 1e-3 ? ground : Math.max(sum / w, ground);
+  }
+
   /** Springs as the summary wants them. */
   const summarySprings = () => springs.map((s) => ({ cellX: waterCellOf(s.x), cellY: waterCellOf(s.z), rateLps: s.rateLps }));
 
@@ -262,7 +291,7 @@ export async function createWater(gpu, opts) {
       const j = Math.min(L.rect.h - 1, Math.max(0, waterCellOf(z) - L.rect.y));
       const k = j * L.rect.w + i;
       const depth = L.depth[k];
-      return { depth, surface: terrain.sampleHeight(x, z) + depth, vx: L.vel[k * 2], vz: L.vel[k * 2 + 1], fresh: performance.now() - L.at < 600 };
+      return { depth, surface: liveSurface(L, x, z), vx: L.vel[k * 2], vz: L.vel[k * 2 + 1], fresh: performance.now() - L.at < 600 };
     },
 
     /** Turn the health numbers on (water lab). @param {boolean} on */

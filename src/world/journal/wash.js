@@ -8,7 +8,7 @@ import { hash32 } from '../../core/rng.js';
 import { HABITAT_ORIGIN } from '../growth/habitat.js';
 import { suitability } from '../growth/coarse.js';
 import { groundKind, onPage } from './ground.js';
-import { coverShare, COVER_FULL } from './observe.js';
+import { coverShare, isAnimal, COVER_FULL } from './observe.js';
 
 /**
  * @typedef {{ n: number, cell: number, origin: number, data: Uint8Array, circles: number[][] }} WashMap
@@ -41,6 +41,26 @@ export function washMap(page, ctx) {
       if (!hab.open[k]) continue;
       const x = xOf(k), z = zOf(k);
       if (onPage(page, groundKind(hab, ctx.material, x, z, island), ctx.material, x, z)) live[k] = 1;
+    }
+  } else if (isAnimal(words.species[page])) {
+    // Frogs: their homes, and where the habitat score says they would do well; before you have
+    // found one, pencil circles near the best edge. Midges: where their cloud is now.
+    const kind = words.species[page].kind;
+    const eco = ctx.state?.ecology;
+    const field = kind === 'creature' ? eco?.frogs?.score : eco?.midges;
+    const at = (/** @type {number} */ k) => (field ? field[k] / 255 : 0);
+    if (!journal.species[page]?.ever) {
+      // Frogs' circles go near the best stretch of the pond's edge, where one would come.
+      const bank = kind === 'creature' ? new Set(eco?.frogs?.edge?.cells ?? []) : null;
+      circles = hintCircles(page, hab, (k) => (!bank || bank.has(k) ? at(k) : 0), ctx.wash);
+    }
+    else if (kind === 'creature') {
+      stamped = new Float32Array(N * N);
+      for (const f of ctx.state?.creatures?.frogs?.frogs ?? []) stamp(stamped, N, f.x, f.z, ctx.wash.plantM * 0.6);
+      for (let k = 0; k < n * n; k++) if (at(k) >= island.suitAt) well[k] = 1;
+    } else {
+      const share = words.species[page].seenAt.share;
+      for (let k = 0; k < n * n; k++) if (at(k) >= share) live[k] = 1;
     }
   } else if (words.species[page]) {
     const rec = ctx.flora[page];

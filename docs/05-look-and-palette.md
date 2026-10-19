@@ -84,7 +84,7 @@ The new palette bakes into the spare LUT. The tonemap pass samples both and cros
 - Edge strength = max of a linear-depth discontinuity (relative, so it scales with distance), a normal-angle discontinuity, and a change of outline group (terrain, structures and foliage, creatures).
 - Width is 1.25 px at 1440p, scaled by render height, faded out beyond 60 m, smoothed with a small soft kernel so lines look drawn, not aliased.
 - **Ink color is never black.** It is the underlying pixel in OKLab with lightness multiplied by `1 − amount` and chroma raised slightly: a darker shade of the same hue.
-- Creatures (group 3) get a stronger line so they read at a distance.
+- Creatures (group 3) get a stronger line up close, and **only their silhouette**: no lines inside the body (around the eyes, at the hips), which made a small animal look drawn on. Their line fades out between 2 and 6 m (`recipes/world/post.json` `outline.creatureFadeMeters`), so a far frog is a small natural shape in the grass, not an inked dot. Matt decided this in October 2026 after seeing frogs read as black dots: creatures are found by their calls (doc 17, spatial voices) and by their movement, not by ink. Their eyes have a physically lit wet glint (`body.eyeGlint` in the species recipe) that catches the sun or a bright sky.
 - Terrain (group 1) uses the palette's `terrainAmount` (default 0.1), so ground reads as ground and only strong landform edges get a hint of a line. Outlines read `normalId`, which holds the mesh normal, never the ground detail normal (doc 22), so pebbles and cracks never get lines.
 - Where final depth differs from `depthCopy`, the pixel is water; outlines are suppressed there so pebbles under the surface stay soft.
 

@@ -162,8 +162,10 @@ export function bakeBody(body, cellM) {
       col = dir[1] > 0.75 || dir[2] > 0.55 ? A.eye : A.eyeRing;
       if (dir[1] < -0.2) col = A.back;
     } else if (region === 'back') {
+      // A body variant moves its blotches by blotch.offset (in noise cells; none by default).
+      const o = body.blotch.offset ?? [0, 0, 0], s = body.blotch.scale;
       if (nrm[1] < body.bellyBelowNormalY) col = A.belly;
-      else if (valueNoise(p[0] * body.blotch.scale, p[1] * body.blotch.scale, p[2] * body.blotch.scale) < body.blotch.amount * 0.75) col = A.blotch;
+      else if (valueNoise(p[0] * s + o[0], p[1] * s + o[1], p[2] * s + o[2]) < body.blotch.amount * 0.75) col = A.blotch;
     }
     out.set(p, vi * 9);
     out.set(nrm, vi * 9 + 3);

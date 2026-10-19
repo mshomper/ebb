@@ -8,6 +8,8 @@ import * as tide from '../world/tide.js';
 import * as weather from '../world/weather.js';
 import * as seasons from '../world/seasons.js';
 import * as growth from '../world/growth/coarse.js';
+import * as ecology from '../world/ecology/coarse.js';
+import * as creatures from '../world/creatures/coarse.js';
 
 /** @typedef {{name: string, payload: any, hour?: number}} CoarseEvent */
 /** @typedef {(state: any, hourIndex: number, env: Env) => {state: any, events: CoarseEvent[]}} CoarseStep */
@@ -16,7 +18,8 @@ import * as growth from '../world/growth/coarse.js';
  * @typedef {Object} Env
  * @property {number} seed         world seed (uint32)
  * @property {number} weatherSeed  subSeed(seed, 'weather')
- * @property {any} recipes         loaded recipes by short name: {seasons, sky?, water?, growth?, flora?: {<species>: recipe}}
+ * @property {any} recipes         loaded recipes by short name: {seasons, sky?, water?, growth?, flora?: {<species>: recipe},
+ *                                 species?: {frog, midge}}
  * @property {() => any} [habitat] the current habitat grid (world/growth/habitat.js), or null until the water summary exists
  * @property {typeof det} det
  */
@@ -39,6 +42,10 @@ export const COARSE_ORDER = Object.freeze([
   { id: 'seasons', coarseStep: seasons.coarseStep },
   // Growth (S5b): reads env.habitat(), built from the water summary; skips until it exists.
   { id: 'growth', coarseStep: growth.coarseStep },
+  // Ecology and creatures (S6a): the midge field and frog habitat, then frogs arriving, settling
+  // and leaving. Both skip until the habitat and env.recipes.species exist.
+  { id: 'ecology', coarseStep: ecology.coarseStep },
+  { id: 'creatures', coarseStep: creatures.coarseStep },
 ]);
 
 /**
