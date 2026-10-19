@@ -8,6 +8,7 @@ import { runHour, hashWorldState } from '../src/sim/tick.js';
 import { frogNeeds, goodEdge } from '../src/world/ecology/habitat.js';
 import { midgeTarget } from '../src/world/ecology/midges.js';
 import { bringFrogs } from '../src/world/creatures/coarse.js';
+import { pickSwarms, swarmShareNow, orbit } from '../src/world/ecology/midge-paths.js';
 import { HABITAT_ORIGIN } from '../src/world/growth/habitat.js';
 import { loadEcologyRecipes, islandWorld } from './ecology-world.js';
 import { initialJournal, observe, foundAnimal } from '../src/world/journal/observe.js';
@@ -152,10 +153,9 @@ export function addEcologyTests(test, assert, eq) {
     const frogNotes = texts.filter((t) => /frog/i.test(t));
     eq(frogNotes.length, 0, `notes naming frogs before one was found (${frogNotes.join(' | ')})`);
     assert(texts.includes(words.species.frogs.notes.sign), 'the sign was noted');
-    // Midges are not drawn until S6b, so nothing names them yet.
-    const midgeNotes = texts.filter((t) => /midge/i.test(t));
-    eq(midgeNotes.length, 0, `notes naming midges before they are drawn (${midgeNotes.join(' | ')})`);
-    eq(journal.flags.includes('midges:seen'), false, 'midges known before they are drawn');
+    // Midges are drawn (S6b-5): known at the first dusk they gather, with the reeds link inked.
+    assert(texts.includes(words.species.midges.notes.seen), 'midges were noted at dusk');
+    assert(journal.flags.includes('midges:seen') && journal.flags.includes('web:reeds>midges'), 'the reeds-midges link is inked');
     eq(riddles.length, 3, `the frog page's pencil line: riddle, then two hints (${riddles.join(' | ')})`);
     eq(describe(journal, 'frogs', state, hab, words).known, false, 'frogs known before you find one');
     // You find one.
@@ -169,6 +169,28 @@ export function addEcologyTests(test, assert, eq) {
     const named = [...d.likes, ...d.field].filter((l) => l.known && /midge/i.test(l.text)).map((l) => l.text);
     eq(named.length, 0, `frog page lines naming midges (${named.join(' | ')})`);
     return `${d.status} Links inked: ${inked.join(', ')}.`;
+  });
+
+  test(ECOLOGY, 'midge swarms sit over the densest midges; many at dusk, few by day, almost none at night', async () => {
+    const R = await loadEcologyRecipes();
+    const w = islandWorld(R, 'starter-island', 1);
+    let st = w.state;
+    for (let h = w.h0 + 1; h < w.h0 + 30; h++) st = runHour(st, h, w.env).state;
+    const S = R.species.midge.swarm;
+    const swarms = pickSwarms(st.ecology.midges, S);
+    assert(swarms.length >= 3, `only ${swarms.length} swarms`);
+    for (let i = 1; i < swarms.length; i++) assert(swarms[i].share <= swarms[i - 1].share, 'swarms out of order');
+    for (const a of swarms) for (const b of swarms) if (a !== b) assert(Math.hypot(a.x - b.x, a.z - b.z) >= S.swarms.apartM, 'two swarms too close');
+    eq(JSON.stringify(pickSwarms(st.ecology.midges, S)), JSON.stringify(swarms), 'the same swarms twice');
+    const D = S.density;
+    const dusk = swarmShareNow(19.5, 18, 12, 0, D), day = swarmShareNow(12, 18, 12, 0, D), night = swarmShareNow(2, 18, 12, 0, D);
+    assert(dusk > day && day > night, `dusk ${dusk}, day ${day}, night ${night}`);
+    assert(swarmShareNow(19.5, 18, 12, 1, D) < dusk, 'wind does not thin them');
+    // A midge's path stays within its loop and band, and the same time gives the same place.
+    const o1 = orbit(swarms[0].seed, 7, 12.3, S), o2 = orbit(swarms[0].seed, 7, 12.3, S);
+    eq(o1.join(','), o2.join(','), 'the same midge at the same time');
+    assert(Math.hypot(o1[0], o1[2]) <= S.radiusM[1] * 1.36 + 1e-9 && o1[1] >= S.heightM[0] - 0.07 && o1[1] <= S.heightM[1] + 0.07, `a midge off its loop: ${o1.map((v) => v.toFixed(2))}`);
+    return `${swarms.length} swarms; share at dusk ${dusk.toFixed(2)}, day ${day.toFixed(2)}, night ${night.toFixed(2)}`;
   });
 
   test(ECOLOGY, 'the ?frogs test shortcut brings a scout, or a settled group, on the bank at once', async () => {

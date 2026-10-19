@@ -150,7 +150,13 @@ A body recipe lists SDF primitives (sphere, ellipsoid, capsule, round cone, roun
 - **Legs**: analytic two-bone IK; feet plant on the terrain heightfield and lift on a gait phase per leg. Body height and pitch follow the averaged foot plane. Longer chains (heron neck) use FABRIK.
 - **Hops** (frogs): a ballistic arc between planted poses, with squash-and-stretch from a spring on body scale.
 - **Springs**: critically damped second-order springs on secondary bones (tails, ears, throat sac, whiskers), driven by root acceleration.
-- **Swarms**: Reynolds boids (separation, alignment, cohesion) on the GPU with a uniform spatial hash, plus attraction to their ecology field and curl noise for insects. Fish stay below the live water surface; birds bank from lateral acceleration.
+- **Swarms**: Reynolds boids (separation, alignment, cohesion) on the GPU with a uniform spatial hash, plus attraction to their ecology field and curl noise for insects. Fish stay below the live water surface; birds bank from lateral acceleration. **Midges, as built in S6b-5, have no flocking:**
+  - Each midge loops around its swarm's centre on a path worked out from the time and its number (`src/world/ecology/midge-paths.js`, the same in `midge-draw.wgsl`), and swarms sit over the field's densest patches.
+  - Why: it costs nothing to simulate, looks the same on every device, and the main thread can find any midge (S6c's tongue catches).
+  - Midges are drawn at real size, fading rather than shrinking below a pixel or so, as dark specks with a forward-scatter glint against a low sun.
+  - Many at dusk, few by day, almost none at night, fewer in wind, capped by the tier's boids. One midge of a swarm dips to ring the water every few seconds.
+  - The journal's Midges page inks at the first dusk they can be seen.
+  - Minnows and dragonflies (M2) may still want boids.
 - **Pathing**: individuals steer on a coarse walkability grid (slope, water depth) with a simple flow field toward goal cells; no full navmesh in v1.
 
 ### Offline handling

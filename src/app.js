@@ -38,6 +38,7 @@ import { createCreaturePass } from './render/passes/creatures.js';
 import { bakeBody } from './world/creatures/body-bake.js';
 import { previewSpots } from './world/creatures/preview-spots.js';
 import { createCreatures } from './world/creatures/index.js';
+import { createMidges } from './world/ecology/midges-live.js';
 import { onAction, history } from './input/actions.js';
 import { attachDesktopInput } from './input/desktop.js';
 import { attachTouchInput } from './input/touch.js';
@@ -222,6 +223,11 @@ export async function startApp(canvas, hooks = {}) {
   const testFrogs = params.has('frogs') ? Math.max(1, Math.min(12, Number.parseInt(params.get('frogs') ?? '1', 10) || 1)) : 0;
   const creatures = createCreatures({ world, recipe: frogRecipe, terrain, water, ripples, camera, testFrogs });
   sim.addSystem(creatures);
+  // Midges you can see (src/world/ecology/midges-live.js): swarms from the midge field, after the water.
+  const midges = createMidges({ world, recipe: midgeRecipe, budget: tierSettings.boids ?? 4096, ripples,
+    ground: (x, z) => terrain.sampleHeight(x, z), water: (x, z) => water.sampleLive(x, z),
+    wind: () => ({ strength: weatherAt(world.state?.weather, clock.display(), seasonsRecipe).wind, dir: world.state?.weather?.today?.windDir ?? 0 }) });
+  sim.addSystem(midges);
   // `?frogscale` (ahead of S6): real-size frogs from the species recipe around the pond, and a
   // camera that may come close, to judge creature size on the island (src/ui/frog-scale.js).
   const frogScale = params.has('frogscale') ? await createFrogScale() : null;
@@ -268,6 +274,7 @@ export async function startApp(canvas, hooks = {}) {
     creatures.pass,
     ...(frogScale ? [frogScale.pass] : []),
     waterPass,
+    midges.pass,
     createSkyPass(atmosphere, skyRecipe),
     exposure,
     bloom,
@@ -669,6 +676,8 @@ export async function startApp(canvas, hooks = {}) {
     frogScale,
     /** The live frogs (the journal asks it what a tap landed on). */
     creatures,
+    /** The live midge swarms (tools). */
+    midges,
     /** The orbit camera, for tools and checks (eye, target, distance). */
     camera,
     /** The island this world started from, and the islands there are (the badge's switch). */

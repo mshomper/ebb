@@ -337,7 +337,7 @@
     },
     "midges": {
       "name": "Midges", "icon": "midges", "kind": "swarm", "plural": "midges", "card": "A cloud of midges",
-      "seenAt": { "drawn": false, "hours": [18, 22], "share": 0.25, "m2": 3 },
+      "seenAt": { "drawn": true, "hours": [18, 22], "share": 0.25, "m2": 3 },
       "riddle": "Something tiny might dance over the reeds on warm evenings.",
       "field": [
         { "text": "Most midges don't bite. They dance in swarms over a marker, such as a reed tip.", "learn": ["seen"] },
