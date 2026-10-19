@@ -7,7 +7,7 @@
 /** @typedef {{ q?: number[], s?: number[], t?: number[] }} BoneMove  q: quaternion [x, y, z, w]; s: scale; t: shift (body m) */
 
 /** out = a * b, column-major 4x4. @param {Float32Array | number[]} a @param {Float32Array | number[]} b @param {Float32Array} out @param {number} o */
-function mul(a, b, out, o) {
+export function mul(a, b, out, o) {
   for (let c = 0; c < 4; c++) {
     for (let r = 0; r < 4; r++) {
       out[o + c * 4 + r] = a[r] * b[c * 4] + a[4 + r] * b[c * 4 + 1] + a[8 + r] * b[c * 4 + 2] + a[12 + r] * b[c * 4 + 3];

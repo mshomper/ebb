@@ -128,6 +128,23 @@ A body recipe lists SDF primitives (sphere, ellipsoid, capsule, round cone, roun
 - **Skinning.** Skin weights come from each piece's distance compared with the nearest piece (`skin.blendM`), with the top four bones kept. Bone matrices go to the draw pass each frame, and the rest pose is every bone still, which draws the bake exactly.
 - **Idle motion.** Breathing (the sac and body) and blinking (`motion.breath`, `motion.blink`).
 
+**As built in S6b-2** (`agents.js`, `motion.js`; numbers in `recipes/species/frog.json` motion, from Matt's prototype):
+- **Steps.** Each live frog runs on a steady 30 steps a second of real time, so hops take as long at 4×. Its choices come from its own seeded stream.
+- **Moods.** Moods follow the hour of the day shown and the frog's mood from the tick:
+  - **rest** by day, with an occasional shuffle;
+  - **forage** when active: short hops along the bank within 2 m of home, then tongue flicks at the air (eating counts from S6c);
+  - **call** for content frogs from half an hour before dusk to three hours after: no call starts within 0.4 s of another frog's, so the chorus runs around the pond;
+  - **swim** in the shallows only, never deeper than 0.25 m, where lilies don't grow: kicks, an eyes-up float, then a hop back out;
+  - **arrive** (up out of the water near its home) and **leave** (slipping into the water and sinking, also for winter sleep).
+- **Spacing.** A hop never lands within 1.6 body lengths of another frog or its landing, and sitting frogs drift apart. This replaces the prototype's stand-ins.
+- **Motion.**
+  - The hop is a ballistic arc with the hind legs reaching out by two-bone IK, the hip, knee and ankle read from the skeleton.
+  - The body pitches nose up leaving and nose down landing, and a landing spring squashes it.
+  - The throat sac swells on a spring for each call.
+  - The legs kick in the water.
+  - The tongue is a small separate mesh that rides the head bone.
+- **Frog lab.** `tools/frog-lab.html` shows the chorus call by call and checks the gap. It also counts hops and swims and times moving, posing and drawing.
+
 ### Motion
 
 - **Legs**: analytic two-bone IK; feet plant on the terrain heightfield and lift on a gait phase per leg. Body height and pitch follow the averaged foot plane. Longer chains (heron neck) use FABRIK.
