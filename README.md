@@ -15,7 +15,7 @@ The M1 vertical slice, one small island with every pillar working in miniature, 
 |---|---|---|
 | Done | S1 to S3 | A seeded island to sculpt, smooth and paint (grass, sand, soil, rock) with undo and redo; a physical sky, sun, moon, shadows, seasons and weather; two palettes applied last |
 | Done | G1 to G4 | Realistic ground from scanned materials: no visible tiling, wet ground in rain, natural rock |
-| Done | S4 | Water: a shallow-water simulation coupled to sculpting, the tide, springs welling up from rock outcrops, streams, ponds and marshes, with reflections, caustics and foam |
+| Done | S4 | Water: a shallow-water simulation coupled to sculpting, the tide, springs welling up from rock outcrops, streams, ponds and marshes, with reflections, caustics and foam. Ponds lie still, ruffled only by the wind and their inflow; the swell is the sea's |
 | Done | S5 | Six plants that grow, spread and compete on their own ground: grass, rushes, reeds, water lilies, yellow flag iris and sea thrift, with a Plant tool |
 | Done | J1 to J2 | The field journal: a page and a field sketch for every living thing and every kind of ground, notes as things happen, the Almanac, a web of what needs what, and a wash that shows where each thing lives |
 | In progress | S6 | Frogs: they find the island, arrive and settle (S6a), then move, call and react to you (S6b), then come to trust you and take a name (S6c) |

@@ -8,7 +8,7 @@ import { makeBuffer, makeShaderModule, makeTexture, untrack } from '../../core/g
 
 /** @typedef {import('../frame-graph.js').PassContext} PassContext */
 
-const DRAW_BYTES = 416;
+const DRAW_BYTES = 432;
 const DEG = Math.PI / 180;
 /** Open sea mesh: rings x segments around the camera (SEA_RINGS, SEA_SEGMENTS in water-draw.wgsl). */
 const SEA_RINGS = 28;
@@ -82,6 +82,7 @@ export function createWaterPass(opts) {
     if (M) { f.set(M.absorption, 96); f[100] = M.depthM[0]; f[101] = M.depthM[1]; f[102] = M.stillMps[0]; f[103] = M.stillMps[1]; }
     else { f.set(L.absorptionPond, 96); f[100] = 0; f[101] = 1; f[102] = 0; f[103] = 1; }
     setSSR(opts.ssr ?? null);
+    f[104] = L.freshRipples.calm;
   }
 
   /**
@@ -130,6 +131,16 @@ export function createWaterPass(opts) {
     setSSR,
     /** Rain now, 0..1: how many raindrop rings fall (ripples.rings.maxShare at full rain). @param {number} r */
     setRain(r) { f[68] = Math.min(1, Math.max(0, r)) * recipe.ripples.rings.maxShare; },
+    /**
+     * Wind now, 0..1: how ruffled still fresh water is (look.freshRipples, from near a mirror in still
+     * air to wind-blown wavelets). The sea keeps its full ripples and swell.
+     * @param {number} w
+     */
+    setWind(w) {
+      const R = recipe.look.freshRipples;
+      const k = Math.min(1, Math.max(0, w));
+      f[104] = R.calm + (R.wind - R.calm) * k * k * (3 - 2 * k);
+    },
     reads: ['hdr', 'depth'],
     writes: ['hdr', 'depth', 'normalId'],
     enabled: () => true,

@@ -620,6 +620,7 @@ export async function startApp(canvas, hooks = {}) {
     // Raindrops ring the water in the water shader; the ripple field keeps the pour and creatures.
     const ringRain = params.has('ripplerain') ? 1 : day.weather.rain;
     waterPass.setRain(ringRain);
+    waterPass.setWind(windNow);
     terrainPass.setRain(ringRain);
     sim.update(info);
     const encoder = gpu.device.createCommandEncoder({ label: 'frame' });
