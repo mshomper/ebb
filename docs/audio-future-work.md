@@ -34,6 +34,15 @@ Built and heard in the lab now; wired into the game when the system lands.
 - Time and season preview (`preview:started`, `preview:ended`): no new piece starts during a preview.
 - Events the director needs that the game does not announce yet: `season:changed`, `weather:changed`, `creature:settled`, `creature:woke`, `creature:dormant`, `species:happy`. Until they exist, the director derives season and weather changes from the clock and weather state; the creature events are added as small hooks in phase 6.
 
+## Soundscape first pass: what the game still has to supply (phase 6)
+
+The ambience, voices and `tools/audio-check.html` run on a simulated island. To run in the game:
+
+- The game passes the sound state each tenth of a second: `surfaceNear` (water, pads, reeds, grass near the camera, for the rain mix), `listener`, `eye` and `forward` (camera), `afterRain` (from the weather; the page uses a 120 s timer), wetness and frost under the brush.
+- Frog voices follow the frog agents' call timeline (`calls()` in `src/world/creatures/agents.js`), so each call sounds as its throat swells.
+- Still to build: distant visitors (the hook is in place, waiting on recordings), mist's extra reverb send (needs a small mixer hook), the few slow first calls after the frogs wake in spring, and the startle hush near the player (doc 23).
+- `tools/index.html` gets links to the music lab, the audio check page and the sound picks page at merge.
+
 ## Waiting on other work
 
 - Nylon guitar: the instrument slot is built empty; another session is searching for a sample set.

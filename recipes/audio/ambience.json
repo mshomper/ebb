@@ -1,0 +1,143 @@
+{
+  "type": "audio",
+  "id": "ambience",
+  "version": 1,
+  "note": "The island's ambience (docs 17 and 25; src/audio/ambience.js). It reads the sound state about ten times a second and turns it into the level, tone and season blend of each bed, plus a seeded scatter of small one-shot sounds around the camera target. INPUTS that curves can read (all 0..1 unless said): still, slow, running = water of each kind within 12 m of the camera target; water = the most of the three; tideHigh = 1 at high water, 0 at low; lowTide = 1 - tideHigh; rising = 1 while the tide rises; wind, gust; hour = display time mapped onto a standard day where sunrise is 6 and sunset 18 (so one curve fits long summer days and short winter ones); height = camera height above the target in meters; rain = rain falling (0 in winter, where it becomes drizzle); drizzle; rainOnset = 1 in the first minute of rain, fading; afterRain = 1 just after rain stops, fading over afterRainS; mist; frost; life; nearWater, nearPads, nearReeds, nearGrass = what is close to the camera (from the state's surfaceNear if given, otherwise guessed from the water), pulled toward an even wash as the camera rises (surfaces.mergeHeightM, mergeTo); spring, summer, autumn, winter = the season weights. VALUES: a plain number; {in, pts} a curve of one input through [input, value] points, flat past the ends (log: true for frequencies); {bySeason: [spring, summer, autumn, winter]} blended by the season weights; {sum}, {mul}, {max}, {min} of other values. BEDS: each bed is a slot (src/audio/ambience/slot.js) that plays recordings from assets/audio/beds/<layer>/<season>-a.ogg and -b.ogg (season left out for all-season beds) once they exist and are listed in assets/audio/beds/takes.json, and the fallback made in code until then. gainDb values are added (decibels relative to the fallback as made), amount values multiplied; params go to the fallback bed (wind strength and gust, lap liveliness, rain amount and so on); lowpassHz is the bed's own tone (water opens as the camera comes close). seasonal beds keep one take per season and crossfade by the season weights. slot: recordedDb is the level of a recording against the fallback, idleStopS frees a bed silent that long, crossfadeS fades a recording in over its stand-in and one season into the next, takeSwap leans take a or b forward every everyS seconds over fadeS without letting the other drop below floor; rampS is how fast bed levels follow the state (doc 17: 0.8 to 3 s). FALLBACKS: the made-in-code stand-ins that src/audio/procedural.js does not make itself. surf is the sea: a deep body (lowpass hz from calm to windy, q, db, noise rate) and a higher wash band, waves every everyS seconds (faster by rateAtSwell from calm to big swell) rising over riseS and falling over fallS from a floor to peak, the wash swelling washExtra as much; levelDb overall. reeds and grass hold one EQ per season for wind through them (highpass, a peak, lowpass, db) and a rustle layer (bandpass hz and q, db at full wind, a flutter of depth flutter every flutterS seconds, noise rate); the seasons follow doc 25's matrix (reeds green and soft, full and velvet, gold and crisp, bare and hollow; grass fresh, a long tall swish, dry and scratchy, short and quiet). rain holds each surface (open water, lily pads, reeds, grass) and the winter drizzle: a noise texture (highpass, peak, lowpass, db at full rain, rate, a slow level wander) and drops (per second from light to full rain, bubble size mm, level jitter, a lowpass that dulls them; pads use larger, duller drops for a tap); seasons overrides one season's settings. run is a stream run: a band of moving water (bandpass hz, q, lowpass, db, rate, wander) over the procedural trickle's bubbles (amount from a slow to a full run). MIST (doc 25): the whole ambience is lowpassed from 18 kHz to about 7 kHz at full mist, its stereo width narrowed by widthCut (30 percent) and one-shot density cut by oneShotCut (a third). The extra 0.1 reverb send doc 25 asks for needs a mixer hook and is future work. WIDTH: stereo width of the ambience by camera height (narrower as it rises into a wide wash). FROST: a high shelf at hz over the whole ambience, cut by db with frost (doc 17's hushed frosty mornings; the game's frost input already burns off as the day warms). LEVEL: the overall ambience level by hour (the pre-dawn quiet, the night dip, easing up over about twenty game minutes at dawn). SURFACES: defaults for nearPads and nearReeds when the state does not give them. RAIN MEMORY: when the state does not give afterRain and rainOnset, the ambience keeps them itself in real seconds: onsetS of first drops, afterRainS of drips after rain ends (doc 25 asks for one to two game hours; the game should pass afterRain from its weather once it has one). ONE-SHOTS: each pool fires sound (a procedural one-shot: drop, plop, knock with kind, frostTick, crackle, aeolian) at ratePerMin times the product of rate values, never within minGapS of its own last nor within globalGapS of any other, at a seeded spot ringM meters from the camera target and heightM above it, at a gainDb picked in range, with sizeMm or durationS picked in range and an optional lowpassHz to dull it. density scales every pool by camera height; mobile plays mobileDensity of it (doc 17: 60 percent). lookAheadS schedules a little ahead on the audio clock. spatial is the placement of one-shots (doc 17): inverse distance from refDistance with rolloff, an air-absorption lowpass from nearHz at nearM to farHz at farM, and on mobile a gentle lowpass toward behind.hz for sounds behind the view. seed: the sub-seed for this system's streams. seasonEdge: when the state gives no seasonBlend, the season weights are made from season and seasonPhase, crossfading over this share of a season centred on each boundary (0.286 = the last day of one season and the first of the next, doc 25).",
+  "seed": 1717,
+  "seasonEdge": 0.286,
+  "slot": { "recordedDb": 0, "idleStopS": 20, "crossfadeS": 4, "rampS": 2, "takeSwap": { "everyS": [40, 90], "fadeS": 12, "floor": 0.6 } },
+  "surfaces": { "mergeHeightM": [3, 40], "mergeTo": 0.5, "defaults": { "pads": 0.4, "reeds": 0.6 } },
+  "rainMemory": { "onsetS": 60, "afterRainS": 120 },
+  "level": { "in": "hour", "pts": [[0, -6], [4, -7], [5.4, -6], [6.3, 0], [18.6, 0], [20.5, -4], [24, -6]] },
+  "width": { "in": "height", "pts": [[2, 1], [30, 0.75], [100, 0.55]] },
+  "mist": { "lowpassHz": { "in": "mist", "pts": [[0, 18000], [1, 7000]], "log": true }, "widthCut": 0.3, "oneShotCut": 0.333 },
+  "frost": { "hz": 3500, "db": { "in": "frost", "pts": [[0, 0], [1, -10]] } },
+  "beds": {
+    "sea": {
+      "layer": "sea", "seasonal": false, "fallback": "surf",
+      "gainDb": [{ "bySeason": [-2, -5, -1, 0] }, { "in": "height", "pts": [[1, -3], [20, 0], [80, 1.5]] }, { "in": "wind", "pts": [[0, -1], [1, 2]] }],
+      "params": { "level": 1, "swell": { "sum": [{ "in": "tideHigh", "pts": [[0, 0.15], [1, 0.45]] }, { "in": "wind", "pts": [[0, 0], [1, 0.45]] }, { "bySeason": [0.1, 0, 0.1, 0.05] }] }, "brightness": { "sum": [{ "in": "wind", "pts": [[0, 0.1], [1, 0.8]] }, { "in": "gust", "pts": [[0, 0], [1, 0.2]] }] } }
+    },
+    "air": {
+      "layer": "air", "seasonal": true, "fallback": "air",
+      "gainDb": [{ "in": "hour", "pts": [[0, 2], [5, 2], [7, 0], [19, 0], [21, 2], [24, 2]] }],
+      "params": { "level": 1 }
+    },
+    "lap": {
+      "layer": "lap", "seasonal": false, "fallback": "lap",
+      "gainDb": [{ "in": "height", "pts": [[1, 0], [8, -6], [40, -16]] }, { "in": "tideHigh", "pts": [[0, -4], [1, 1]] }],
+      "amount": [{ "in": "still", "pts": [[0, 0], [0.15, 0.4], [1, 1]] }],
+      "params": { "amount": { "sum": [0.5, { "in": "tideHigh", "pts": [[0, 0], [1, 0.3]] }, { "in": "rising", "pts": [[0, 0], [1, 0.1]] }] }, "liveliness": { "sum": [{ "bySeason": [0.85, 0.3, 0.55, 0.08] }, { "in": "wind", "pts": [[0, 0], [1, 0.25]] }] } },
+      "lowpassHz": { "in": "height", "pts": [[1, 16000], [10, 6000], [40, 2500]], "log": true }
+    },
+    "trickle": {
+      "layer": "trickle", "seasonal": false, "fallback": "trickle",
+      "gainDb": [{ "bySeason": [2, -3, 0, 0] }, { "in": "height", "pts": [[1, 0], [8, -8], [40, -20]] }],
+      "amount": [{ "in": "slow", "pts": [[0, 0], [0.2, 0.5], [1, 1]] }],
+      "params": { "amount": { "sum": [0.3, { "in": "slow", "pts": [[0, 0], [1, 0.6]] }] } },
+      "lowpassHz": { "in": "height", "pts": [[1, 18000], [10, 5000], [40, 2000]], "log": true }
+    },
+    "run": {
+      "layer": "run", "seasonal": false, "fallback": "run",
+      "gainDb": [{ "bySeason": [2, -3, 0, 0] }, { "in": "height", "pts": [[1, 0], [10, -6], [50, -14]] }],
+      "amount": [{ "in": "running", "pts": [[0, 0], [0.15, 0.5], [1, 1]] }],
+      "params": { "amount": { "sum": [{ "bySeason": [0.9, 0.5, 0.65, 0.65] }, { "in": "rain", "pts": [[0, 0], [1, 0.1]] }] } },
+      "lowpassHz": { "in": "height", "pts": [[1, 16000], [12, 4000], [50, 1800]], "log": true }
+    },
+    "reeds": {
+      "layer": "reeds", "seasonal": true, "fallback": "reeds",
+      "gainDb": [{ "in": "nearReeds", "pts": [[0, -30], [0.2, -10], [1, 0]] }, { "in": "height", "pts": [[1, 0], [15, -5], [60, -10]] }],
+      "params": { "strength": { "in": "wind", "pts": [[0, 0.05], [1, 1]] }, "gust": { "in": "gust", "pts": [[0, 0], [1, 1]] } }
+    },
+    "grass": {
+      "layer": "grass", "seasonal": true, "fallback": "grass",
+      "gainDb": [{ "in": "nearGrass", "pts": [[0, -30], [0.2, -10], [1, 0]] }, { "in": "height", "pts": [[1, 0], [15, -5], [60, -10]] }],
+      "params": { "strength": { "in": "wind", "pts": [[0, 0.05], [1, 1]] }, "gust": { "in": "gust", "pts": [[0, 0], [1, 1]] } }
+    },
+    "wind": {
+      "layer": "wind", "seasonal": false, "fallback": "wind",
+      "gainDb": [{ "bySeason": [0, -2, 1, -1] }, { "in": "height", "pts": [[1, -6], [15, -1], [60, 2]] }],
+      "params": { "strength": { "in": "wind", "pts": [[0, 0], [1, 1]] }, "gust": { "in": "gust", "pts": [[0, 0], [1, 1]] } }
+    },
+    "rainWater": {
+      "layer": "rain-water", "seasonal": false, "fallback": "rain:water",
+      "gainDb": [{ "in": "nearWater", "pts": [[0, -30], [0.1, -12], [1, 0]] }, { "bySeason": [0, 1, 0, 0] }],
+      "amount": [{ "in": "rain", "pts": [[0, 0], [0.05, 0.3], [1, 1]] }],
+      "params": { "amount": { "in": "rain", "pts": [[0, 0], [1, 1]] } }
+    },
+    "rainPads": {
+      "layer": "rain-pads", "seasonal": false, "fallback": "rain:pads",
+      "gainDb": [{ "in": "nearPads", "pts": [[0, -30], [0.1, -12], [1, 0]] }, { "bySeason": [0, 0, -2, -6] }],
+      "amount": [{ "in": "rain", "pts": [[0, 0], [0.05, 0.3], [1, 1]] }],
+      "params": { "amount": { "in": "rain", "pts": [[0, 0], [1, 1]] } }
+    },
+    "rainReeds": {
+      "layer": "rain-reeds", "seasonal": true, "fallback": "rain:reeds",
+      "gainDb": [{ "in": "nearReeds", "pts": [[0, -30], [0.1, -12], [1, 0]] }],
+      "amount": [{ "in": "rain", "pts": [[0, 0], [0.05, 0.3], [1, 1]] }],
+      "params": { "amount": { "in": "rain", "pts": [[0, 0], [1, 1]] } }
+    },
+    "rainGrass": {
+      "layer": "rain-grass", "seasonal": true, "fallback": "rain:grass",
+      "gainDb": [{ "in": "nearGrass", "pts": [[0, -30], [0.1, -12], [1, 0]] }],
+      "amount": [{ "in": "rain", "pts": [[0, 0], [0.05, 0.3], [1, 1]] }],
+      "params": { "amount": { "in": "rain", "pts": [[0, 0], [1, 1]] } }
+    },
+    "drizzle": {
+      "layer": "drizzle", "seasonal": false, "fallback": "rain:drizzle",
+      "gainDb": [{ "in": "height", "pts": [[1, 0], [40, -4]] }],
+      "amount": [{ "in": "drizzle", "pts": [[0, 0], [0.05, 0.3], [1, 1]] }],
+      "params": { "amount": { "in": "drizzle", "pts": [[0, 0], [1, 1]] } }
+    }
+  },
+  "fallbacks": {
+    "surf": {
+      "levelDb": -9, "rampS": 3, "fadeInS": 3, "fadeOutS": 3, "lookAheadS": 2, "wanderPeriodS": 80, "wanderCents": 250,
+      "body": { "hz": [140, 420], "q": 0.5, "db": 0, "rate": 0.61 },
+      "wash": { "hz": [500, 1400], "q": 0.45, "db": -14, "dbPerBrightness": 4, "rate": 0.83 },
+      "waves": { "everyS": [5, 11], "rateAtSwell": [0.8, 1.5], "riseS": [1.8, 3.2], "fallS": [3, 6], "floor": 0.55, "washFloor": 0.35, "washExtra": 1.3, "peak": [0.85, 1.25] }
+    },
+    "reeds": {
+      "spring": { "highpassHz": 120, "peak": { "hz": 650, "q": 0.7, "db": 2 }, "lowpassHz": 3800, "db": 0, "rustle": { "hz": 900, "q": 0.8, "db": -6, "flutterS": 0.6, "flutter": 0.55, "rate": 1.21 } },
+      "summer": { "highpassHz": 100, "peak": { "hz": 950, "q": 0.6, "db": 2 }, "lowpassHz": 5200, "db": 0, "rustle": { "hz": 1400, "q": 0.6, "db": -5, "flutterS": 0.9, "flutter": 0.45, "rate": 1.17 } },
+      "autumn": { "highpassHz": 380, "peak": { "hz": 3200, "q": 1.2, "db": 5 }, "lowpassHz": 11000, "db": 0, "rustle": { "hz": 4200, "q": 1.3, "db": -3, "flutterS": 0.25, "flutter": 0.9, "rate": 1.31 } },
+      "winter": { "highpassHz": 300, "peak": { "hz": 1150, "q": 3, "db": 5 }, "lowpassHz": 6000, "db": -3, "rustle": { "hz": 1800, "q": 2.5, "db": -12, "flutterS": 0.4, "flutter": 0.7, "rate": 1.07 } }
+    },
+    "grass": {
+      "spring": { "highpassHz": 200, "peak": { "hz": 2500, "q": 0.7, "db": 1 }, "lowpassHz": 7000, "db": -2, "rustle": { "hz": 2600, "q": 0.8, "db": -9, "flutterS": 0.5, "flutter": 0.5, "rate": 1.27 } },
+      "summer": { "highpassHz": 150, "peak": { "hz": 1800, "q": 0.5, "db": 3 }, "lowpassHz": 8000, "db": 0, "rustle": { "hz": 2000, "q": 0.5, "db": -4, "flutterS": 1.6, "flutter": 0.4, "rate": 1.13 } },
+      "autumn": { "highpassHz": 600, "peak": { "hz": 5000, "q": 1, "db": 5 }, "lowpassHz": 12000, "db": -1, "rustle": { "hz": 5500, "q": 1.2, "db": -4, "flutterS": 0.18, "flutter": 1, "rate": 1.37 } },
+      "winter": { "highpassHz": 300, "peak": { "hz": 2000, "q": 0.7, "db": 0 }, "lowpassHz": 5000, "db": -6, "rustle": { "hz": 2200, "q": 0.8, "db": -16, "flutterS": 0.5, "flutter": 0.5, "rate": 1.09 } }
+    },
+    "rain": {
+      "water": { "rampS": 3, "fadeInS": 2, "noise": { "highpassHz": 400, "peak": { "hz": 3500, "q": 0.7, "db": 3 }, "lowpassHz": 9000, "db": -8, "rate": 1.19, "wanderPeriodS": 20, "wanderLevel": 0.2 }, "drops": { "ratePerS": [2, 30], "sizeMm": [1, 3], "jitterDb": [-14, 0], "db": 0, "lowpassHz": 9000 } },
+      "pads": { "rampS": 3, "fadeInS": 2, "noise": { "highpassHz": 300, "peak": { "hz": 1800, "q": 1, "db": 4 }, "lowpassHz": 6000, "db": -18, "rate": 0.97, "wanderPeriodS": 25, "wanderLevel": 0.25 }, "drops": { "ratePerS": [1, 14], "sizeMm": [3, 6], "jitterDb": [-12, 0], "db": 0, "lowpassHz": 3200 } },
+      "reeds": { "rampS": 3, "fadeInS": 2, "noise": { "highpassHz": 800, "peak": { "hz": 4500, "q": 0.8, "db": 4 }, "lowpassHz": 10000, "db": -9, "rate": 1.29, "wanderPeriodS": 15, "wanderLevel": 0.3 }, "drops": { "ratePerS": [0, 4], "sizeMm": [0.8, 1.6], "jitterDb": [-14, -2], "db": -6, "lowpassHz": 9000 },
+        "seasons": { "autumn": { "noise": { "highpassHz": 1200, "peak": { "hz": 5500, "q": 1.2, "db": 6 }, "lowpassHz": 12000, "db": -9, "rate": 1.41, "wanderPeriodS": 8, "wanderLevel": 0.45 } }, "winter": { "noise": { "highpassHz": 900, "peak": { "hz": 3000, "q": 2, "db": 4 }, "lowpassHz": 8000, "db": -12, "rate": 1.23, "wanderPeriodS": 15, "wanderLevel": 0.3 } } } },
+      "grass": { "rampS": 3, "fadeInS": 2, "noise": { "highpassHz": 250, "peak": { "hz": 2000, "q": 0.5, "db": 1 }, "lowpassHz": 7000, "db": -8, "rate": 0.89, "wanderPeriodS": 22, "wanderLevel": 0.2 }, "drops": { "ratePerS": [0, 0], "sizeMm": [1, 2], "jitterDb": [-12, 0], "db": -12, "lowpassHz": 6000 },
+        "seasons": { "summer": { "drops": { "ratePerS": [0, 5], "sizeMm": [2, 4], "jitterDb": [-10, 0], "db": -8, "lowpassHz": 5000 } }, "autumn": { "noise": { "highpassHz": 900, "peak": { "hz": 4800, "q": 1, "db": 5 }, "lowpassHz": 11000, "db": -10, "rate": 1.33, "wanderPeriodS": 6, "wanderLevel": 0.5 } } } },
+      "drizzle": { "rampS": 4, "fadeInS": 3, "noise": { "highpassHz": 2500, "peak": { "hz": 6000, "q": 0.7, "db": 3 }, "lowpassHz": 12000, "db": -12, "rate": 1.43, "wanderPeriodS": 30, "wanderLevel": 0.15 }, "drops": { "ratePerS": [0, 1.5], "sizeMm": [0.8, 1.5], "jitterDb": [-16, -4], "db": -6, "lowpassHz": 9000 } }
+    },
+    "run": { "band": { "hz": 900, "q": 0.6, "lowpassHz": 6000, "db": -6, "rate": 1.07, "wanderPeriodS": 18, "wanderCents": 300 }, "bubbles": [0.4, 1] }
+  },
+  "oneShots": {
+    "lookAheadS": 0.15,
+    "globalGapS": 0.12,
+    "mobileDensity": 0.6,
+    "density": { "in": "height", "pts": [[2, 1], [15, 0.6], [60, 0.25]] },
+    "spatial": { "refDistance": 2, "rolloff": 1, "air": { "nearM": 2, "nearHz": 18000, "farM": 60, "farHz": 3000 }, "behind": { "hz": 6000 } },
+    "pools": {
+      "afterRainDrips": { "sound": "drop", "ratePerMin": 16, "rate": [{ "in": "afterRain", "pts": [[0, 0], [1, 1]] }, { "bySeason": [1, 0.6, 0.6, 0.25] }, { "max": [{ "in": "nearReeds", "pts": [[0, 0.2], [1, 1]] }, { "in": "nearPads", "pts": [[0, 0.2], [1, 1]] }] }], "minGapS": 0.3, "sizeMm": [1.2, 3.5], "gainDb": [-6, 2], "ringM": [0.6, 4], "heightM": [0.05, 0.7] },
+      "firstDrops": { "sound": "drop", "ratePerMin": 40, "rate": [{ "in": "rainOnset", "pts": [[0, 0], [1, 1]] }], "minGapS": 0.2, "sizeMm": [1.5, 3.5], "gainDb": [-4, 2], "ringM": [0.5, 5], "heightM": [0, 0.3] },
+      "mudDrips": { "sound": "drop", "ratePerMin": 10, "rate": [{ "in": "lowTide", "pts": [[0.55, 0], [0.9, 1]] }, { "in": "water", "pts": [[0, 0.2], [0.5, 1]] }], "minGapS": 0.8, "sizeMm": [3, 6.5], "gainDb": [-10, -3], "lowpassHz": 2200, "ringM": [1, 6], "heightM": [0, 0.05] },
+      "dawnDrips": { "sound": "drop", "ratePerMin": 6, "rate": [{ "in": "hour", "pts": [[4.8, 0], [5.6, 1], [7.2, 1], [8, 0]] }, { "bySeason": [1, 0.15, 0.3, 0] }, { "in": "water", "pts": [[0, 0.3], [0.5, 1]] }], "minGapS": 1.5, "sizeMm": [1.5, 3], "gainDb": [-6, 0], "ringM": [1, 5], "heightM": [0.1, 0.8] },
+      "dawnCreaks": { "sound": "knock", "kind": "reed-green", "ratePerMin": 3, "rate": [{ "in": "hour", "pts": [[4.8, 0], [5.6, 1], [7.2, 1], [8, 0]] }, { "bySeason": [1, 0.15, 0, 0] }, { "in": "nearReeds", "pts": [[0, 0], [0.3, 1]] }], "minGapS": 4, "gainDb": [-6, 0], "ringM": [1.5, 6], "heightM": [0.3, 1.2] },
+      "stalkKnocks": { "sound": "knock", "kind": "stalk-dry", "ratePerMin": 5, "rate": [{ "bySeason": [0, 0.1, 1, 0] }, { "max": [{ "in": "gust", "pts": [[0.15, 0], [1, 1]] }, { "in": "hour", "pts": [[4.8, 0], [5.6, 0.5], [7.2, 0.5], [8, 0]] }] }, { "in": "nearReeds", "pts": [[0, 0], [0.3, 1]] }], "minGapS": 1.5, "gainDb": [-6, 0], "ringM": [1, 6], "heightM": [0.3, 1.3] },
+      "bareKnocks": { "sound": "knock", "kind": "stalk-bare", "ratePerMin": 4, "rate": [{ "bySeason": [0, 0, 0.2, 1] }, { "max": [{ "in": "wind", "pts": [[0.15, 0], [1, 1]] }, { "in": "hour", "pts": [[4.8, 0], [5.6, 0.4], [7.2, 0.4], [8, 0]] }] }, { "in": "nearReeds", "pts": [[0, 0], [0.3, 1]] }], "minGapS": 2, "gainDb": [-6, 0], "ringM": [1, 6], "heightM": [0.3, 1.3] },
+      "seedRattles": { "sound": "knock", "kind": "seed-rattle", "ratePerMin": 6, "rate": [{ "bySeason": [0, 0.2, 1, 0] }, { "in": "gust", "pts": [[0.35, 0], [0.9, 1]] }, { "in": "nearReeds", "pts": [[0, 0], [0.3, 1]] }], "minGapS": 1.2, "gainDb": [-8, -1], "ringM": [1, 5], "heightM": [0.8, 1.5] },
+      "frostTicks": { "sound": "frostTick", "ratePerMin": 30, "rate": [{ "in": "frost", "pts": [[0.2, 0], [0.8, 1]] }, { "in": "hour", "pts": [[5.6, 0], [6.4, 1], [9, 1], [10.5, 0]] }, { "in": "height", "pts": [[1.5, 1], [3, 0]] }, { "in": "nearGrass", "pts": [[0, 0.3], [0.5, 1]] }], "minGapS": 0.15, "gainDb": [-8, 0], "ringM": [0.3, 2.5], "heightM": [0, 0.1] },
+      "aeolian": { "sound": "aeolian", "ratePerMin": 2, "rate": [{ "bySeason": [0, 0, 0.3, 1] }, { "in": "gust", "pts": [[0.55, 0], [0.9, 1]] }, { "in": "wind", "pts": [[0.3, 0], [0.7, 1]] }, { "in": "nearReeds", "pts": [[0, 0], [0.3, 1]] }], "minGapS": 8, "durationS": [2, 4], "gainDb": [-6, 0], "ringM": [3, 9], "heightM": [0.5, 1.5] },
+      "dryCrackle": { "sound": "crackle", "ratePerMin": 12, "rate": [{ "in": "rain", "pts": [[0, 0], [0.5, 1]] }, { "bySeason": [0, 0, 1, 0] }, { "in": "nearGrass", "pts": [[0, 0], [0.4, 1]] }], "minGapS": 2, "durationS": [1.5, 3], "gainDb": [-6, 0], "ringM": [0.8, 4], "heightM": [0, 0.3] }
+    }
+  }
+}

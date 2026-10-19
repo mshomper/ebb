@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ebb audio check</title>
+<link rel="icon" href="../brand/ebb-favicon.svg" type="image/svg+xml">
+<style>
+  @font-face { font-family: 'Nunito'; src: url('../src/vendor/fonts/nunito-latin-600-normal.woff2') format('woff2'); font-weight: 600; }
+  @font-face { font-family: 'Nunito'; src: url('../src/vendor/fonts/nunito-latin-800-normal.woff2') format('woff2'); font-weight: 800; }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; max-width: 100%; overflow-x: hidden; }
+  body { background: #F4EEE4; color: #1E2624; font: 600 17px/1.45 'Nunito', system-ui, sans-serif; padding: 16px; overflow-wrap: anywhere; }
+  main { max-width: 1100px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+  h1 { font-size: 24px; font-weight: 800; margin: 0; }
+  h2 { font-size: 19px; font-weight: 800; margin: 0 0 6px; }
+  h3 { font-size: 17px; font-weight: 800; margin: 12px 0 4px; }
+  p { margin: 4px 0 10px; }
+  .muted { color: #4A5551; font-size: 16px; margin: 0 0 8px; }
+  a { color: #4a6a47; }
+  .card { background: #FBF7F0; border: 1px solid #E3D9C9; border-radius: 14px; padding: 14px 16px; min-width: 0; }
+  .grid2 { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); align-items: start; }
+  .buttons { display: flex; flex-wrap: wrap; gap: 10px; }
+  button { font: 800 17px/1.2 'Nunito', system-ui, sans-serif; color: #1E2624; background: #FFFDF8; border: 1px solid #CFC3AF; border-radius: 12px; padding: 10px 16px; cursor: pointer; min-height: 48px; flex: 1 1 140px; min-width: 0; }
+  button[aria-pressed="true"] { background: #4a6a47; color: #FBF7F0; border-color: #4a6a47; }
+  button:disabled { opacity: 0.45; cursor: default; }
+  button.big { font-size: 19px; min-height: 56px; }
+  .status { display: flex; gap: 10px; align-items: flex-start; font-weight: 800; margin: 8px 0 0; }
+  .status svg { width: 22px; height: 22px; flex: 0 0 auto; margin-top: 2px; }
+  label.slider { display: grid; grid-template-columns: minmax(110px, 150px) minmax(0, 1fr) minmax(84px, auto); gap: 10px; align-items: center; margin: 6px 0; }
+  label.slider output { font-weight: 800; text-align: right; }
+  input[type=range] { width: 100%; min-width: 0; accent-color: #4a6a47; height: 32px; margin: 0; }
+  .ticks { position: relative; height: 24px; margin: -4px 0 6px; font-size: 15px; color: #4A5551; }
+  .ticks span { position: absolute; top: 0; white-space: nowrap; }
+  .tickwrap { display: grid; grid-template-columns: minmax(110px, 150px) minmax(0, 1fr) minmax(84px, auto); gap: 10px; }
+  .tickwrap .ticks { grid-column: 2; }
+  label.slider.stack, .tickwrap.stack { grid-template-columns: minmax(0, 1fr) auto; }
+  label.slider.stack span { grid-column: 1 / -1; }
+  label.slider.stack input, .tickwrap.stack .ticks { grid-column: 1; }
+  @media (max-width: 560px) {
+    label.slider, .tickwrap { grid-template-columns: minmax(0, 1fr) auto; }
+    label.slider span { grid-column: 1 / -1; }
+    label.slider input { grid-column: 1; }
+    .tickwrap .ticks { grid-column: 1; }
+  }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr)); gap: 10px; }
+  .tile { background: #FFFDF8; border: 1px solid #E3D9C9; border-radius: 12px; padding: 8px 12px; min-width: 0; }
+  .tile b { display: block; font-size: 22px; font-weight: 800; }
+  .tile span { font-size: 15px; color: #4A5551; }
+  #map { width: 100%; max-width: 560px; aspect-ratio: 1; display: block; margin: 0 auto; touch-action: none; user-select: none; -webkit-user-select: none; border-radius: 14px; background: #E9E2D3; }
+  #map text { font: 800 15px 'Nunito', sans-serif; fill: #4A5551; }
+  .beds { display: flex; flex-direction: column; gap: 8px; }
+  .bed { display: grid; grid-template-columns: minmax(0, 1fr) 72px 72px; grid-template-areas: "name solo mute" "meter solo mute"; gap: 2px 8px; align-items: center; background: #FFFDF8; border: 1px solid #E3D9C9; border-radius: 12px; padding: 8px 10px; }
+  .bed .name { grid-area: name; font-weight: 800; font-size: 16px; }
+  .bed .name small { font-weight: 600; color: #4A5551; font-size: 15px; }
+  .bed .meter { grid-area: meter; display: flex; align-items: center; gap: 8px; min-width: 0; }
+  .bed .bar { flex: 1 1 auto; height: 12px; border-radius: 6px; background: #E3D9C9; overflow: hidden; min-width: 0; }
+  .bed .bar i { display: block; height: 100%; width: 0; background: #8DAE80; border-radius: 6px; }
+  .bed .db { font-size: 15px; color: #4A5551; width: 64px; text-align: right; flex: 0 0 auto; }
+  .bed button { min-height: 44px; padding: 6px 4px; font-size: 16px; flex: none; width: 100%; }
+  .bed .solo { grid-area: solo; } .bed .mute { grid-area: mute; }
+  .bed.quiet .name { color: #7A847F; }
+  .note { background: #F6EBD9; border: 1px solid #E8D4B4; border-radius: 12px; padding: 10px 14px; font-size: 16px; }
+  .list { margin: 6px 0; padding-left: 20px; } .list li { margin: 3px 0; }
+  .legend { display: flex; flex-wrap: wrap; gap: 8px 16px; font-size: 16px; color: #4A5551; margin: 8px 0 0; }
+  .legend i { display: inline-block; width: 14px; height: 14px; border-radius: 7px; vertical-align: -2px; margin-right: 6px; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>ebb audio check</h1>
+    <p class="muted">The island's sound, first pass (docs 17 and 25): the sea, the air, water, wind in reeds and grass, rain and mist, small sounds scattered around you, the frogs at dusk and the midges up close. Move the island through its seasons and hours, change the weather, and walk around the pond on the map to hear the frogs move around you. Everything is made in code until the recordings arrive. <a href="./">All tools</a></p>
+  </header>
+
+  <section class="card" id="start-card">
+    <h2>Start sound</h2>
+    <p>Put on headphones: the frogs are placed around you, and with headphones you can hear which side and how far. Browsers only allow sound after a tap or a key press, so the page waits for this button.</p>
+    <button class="big" id="start" type="button">Start sound</button>
+    <div class="status" id="status">Starting</div>
+  </section>
+
+  <div class="grid2">
+    <section class="card">
+      <h2>The pond</h2>
+      <p class="muted">Seen from above, 24 m across. Drag the listener (the dark figure) around the pond. Each frog flashes when it calls. The faint ring is how close you must be to hear the midges.</p>
+      <svg id="map" viewBox="-12 -12 24 24" aria-label="Map of the pond, the frogs and the listener"></svg>
+      <div class="legend">
+        <span><i style="background:#2B3532"></i>you, and the way you face</span>
+        <span><i style="background:#5F7F5B"></i>a frog</span>
+        <span><i style="background:#E0A84A"></i>a frog calling</span>
+        <span><i style="background:#9C8F7A"></i>the midge swarm</span>
+      </div>
+      <div class="buttons" style="margin-top:10px" role="group" aria-label="Frogs">
+        <button type="button" id="residents" aria-pressed="true">Frogs have settled</button>
+        <button type="button" id="call-now" aria-pressed="false">Call now, any hour</button>
+        <button type="button" id="one-call">One call from a frog</button>
+        <button type="button" id="face" aria-pressed="false">Face the pond</button>
+      </div>
+      <label class="slider"><span>Frogs</span><input type="range" id="frog-count" min="1" max="12" step="1" value="6"><output id="frog-count-out"></output></label>
+      <label class="slider"><span>Frog mood</span><input type="range" id="mood" min="0" max="1" step="0.01" value="0.85"><output id="mood-out"></output></label>
+      <div class="tiles">
+        <div class="tile"><b id="t-window">-</b><span>frog window now</span></div>
+        <div class="tile"><b id="t-calls">-</b><span>calls in the last minute</span></div>
+        <div class="tile"><b id="t-voices">-</b><span>calls sounding, of the cap</span></div>
+        <div class="tile"><b id="t-midge">-</b><span id="t-midge-note">midge density, and how far</span></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>The island</h2>
+      <label class="slider stack"><span>Season</span><input type="range" id="season" min="0" max="3.99" step="0.01" value="0.5"><output id="season-out"></output></label>
+      <div class="tickwrap stack"><div class="ticks" id="season-ticks"></div></div>
+      <label class="slider stack"><span>Hour</span><input type="range" id="hour" min="0" max="24" step="0.05" value="19.5"><output id="hour-out"></output></label>
+      <div class="tickwrap stack"><div class="ticks" id="hour-ticks"></div></div>
+      <h3>Weather</h3>
+      <div class="buttons" id="weather" role="group" aria-label="Weather">
+        <button type="button" data-w="clear" aria-pressed="true">Clear</button>
+        <button type="button" data-w="cloud" aria-pressed="false">Cloud</button>
+        <button type="button" data-w="rain" aria-pressed="false">Rain</button>
+        <button type="button" data-w="mist" aria-pressed="false">Mist</button>
+      </div>
+      <label class="slider"><span>Rain or mist</span><input type="range" id="wx" min="0" max="1" step="0.01" value="0.7"><output id="wx-out"></output></label>
+      <label class="slider"><span>Wind</span><input type="range" id="wind" min="0" max="1" step="0.01" value="0.35"><output id="wind-out"></output></label>
+      <label class="slider"><span>Gust</span><input type="range" id="gust" min="0" max="1" step="0.01" value="0"><output id="gust-out"></output></label>
+      <div class="buttons"><button type="button" id="auto-gust" aria-pressed="true">Gusts come and go</button></div>
+      <label class="slider"><span>Tide</span><input type="range" id="tide" min="0" max="1" step="0.01" value="0.75"><output id="tide-out"></output></label>
+      <label class="slider"><span>Frost</span><input type="range" id="frost" min="0" max="1" step="0.01" value="0"><output id="frost-out"></output></label>
+      <label class="slider"><span>Camera height</span><input type="range" id="height" min="0.5" max="60" step="0.1" value="2"><output id="height-out"></output></label>
+      <label class="slider"><span>Near the water</span><input type="range" id="near" min="0" max="1" step="0.01" value="0.8"><output id="near-out"></output></label>
+      <label class="slider"><span>Stream nearby</span><input type="range" id="stream" min="0" max="1" step="0.01" value="0.2"><output id="stream-out"></output></label>
+    </section>
+  </div>
+
+  <section class="card">
+    <h2>What each layer is doing</h2>
+    <p class="muted">A bar for each bed, live. Solo plays only that layer; Mute takes it out. Every layer says where its sound comes from: made in code now, or a recording once one lands.</p>
+    <div class="buttons" style="margin-bottom:10px"><button type="button" id="solo-off">Hear everything (no solo)</button></div>
+    <div class="beds" id="beds"></div>
+  </section>
+
+  <section class="card">
+    <h2>Small sounds, by hand</h2>
+    <p class="muted">Each plays once, at a random spot a few meters from you, placed the same way the island places them.</p>
+    <div class="buttons" id="shots">
+      <button type="button" data-s="drop">Water drop</button>
+      <button type="button" data-s="plop">Frog plop</button>
+      <button type="button" data-s="knock" data-k="reed-green">Green reed creak</button>
+      <button type="button" data-s="knock" data-k="stalk-dry">Dry stalk knock</button>
+      <button type="button" data-s="knock" data-k="stalk-bare">Bare stalk knock</button>
+      <button type="button" data-s="knock" data-k="seed-rattle">Seed head rattle</button>
+      <button type="button" data-s="frostTick">Frost tick</button>
+      <button type="button" data-s="crackle">Dry crackle</button>
+      <button type="button" data-s="aeolian">Stalk whistle</button>
+    </div>
+    <h3>Scattered by the island so far</h3>
+    <div class="tiles" id="pools"></div>
+  </section>
+
+  <section class="card">
+    <h2>Made in code, and waiting for recordings</h2>
+    <div class="note">
+      <p style="margin-top:0">Every bed above is made in code for now. Each has a slot for two recorded takes per season (in <b>assets/audio/beds</b>), and a recording replaces the made-in-code bed by itself once it is added. The frogs and midges stay made in code (doc 17).</p>
+      <ul class="list">
+        <li>The sea is shaped noise with slow waves until a distant surf recording lands.</li>
+        <li>Wind in reeds and grass is the open wind through a different color for each season, with a rustle on top.</li>
+        <li>Rain on each surface is shaped noise with drops; autumn reeds and grass crackle.</li>
+        <li>Distant visitors (a far gull, geese passing, an owl) need recordings and are not in this pass.</li>
+      </ul>
+    </div>
+  </section>
+</main>
+<script src="./boot-guard.js"></script>
+<script type="module" src="./audio-check/main.js"></script>
+</body>
+</html>
