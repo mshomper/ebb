@@ -1,0 +1,5 @@
+{
+  "version": 1,
+  "note": "The recorded bed takes that exist (doc 25 'Data and interfaces'; read by src/audio/ambience/slot.js). None yet, so every bed plays its made-in-code stand-in. When a recording lands, put its files at assets/audio/beds/<layer>/<season>-a.ogg and <season>-b.ogg (and .m4a for older Safari), or a.ogg and b.ogg for an all-season bed, and list the takes here, for example \"reeds\": {\"autumn\": [\"a\", \"b\"]} or \"sea\": {\"all\": [\"a\", \"b\"]}. Layers: sea, air, lap, trickle, run, reeds, grass, wind, rain-water, rain-pads, rain-reeds, rain-grass, drizzle. Only listed takes are requested, so the page never asks for a file that is not there; a listed take that fails to load keeps the stand-in and leaves one quiet note in the console.",
+  "takes": {}
+}

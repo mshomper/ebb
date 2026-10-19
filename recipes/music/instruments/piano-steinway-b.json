@@ -1,0 +1,4835 @@
+{
+ "type": "instrument",
+ "id": "piano-steinway-b",
+ "name": "Grand piano (Steinway B)",
+ "version": 1,
+ "note": "An instrument recipe for the sampler (doc 24, Instruments, Sample preparation and Sampler rules). It describes exactly the files the prep step produced; nothing here is a tuning choice. type, id, name, version: what this is. source: where the recordings come from (library, folder url, license) and what the library's own note files say (notes). channels: channel count of every file. formats: each file exists once per format under root, as <file>.ogg (Ogg Opus, 48 kHz, 96 kbps stereo or 64 kbps mono, variable bitrate) and <file>.m4a (AAC-LC at the source rate, 128 kbps stereo or 96 kbps mono); the browser picks the first it can play. root: folder of the files, relative to the repo. layers: the number of velocity layers in the sustain set, layer 1 the quietest. sets: one entry per articulation: sus (sustain, pedal down or natural ring), nosus (dampers working), rel (release or key-off noise, played on note-off), pedal (sounds of the pedal mechanism). Each set has source (the library subfolder) and zones; a zone is one recorded key: note (scientific pitch, C4 = middle C, sharps written s in file names), midi (C4 = 60). measuredCents: the zone's measured pitch offset from 12-tone equal temperament at A4 = 440 Hz, in cents, as recorded; piano strings are inharmonic (partial n sits at n f0 sqrt(1 + B n^2)), so it is fitted from partials 1 to 6 (2 to 8 in the bass, where the fundamental is weak) over a window of the early sustain, each partial taken as the level-weighted centre of its unison-string cluster, and it is the pitch of the fitted first partial. Real pianos are stretch-tuned on purpose (bass flat, treble sharp); nothing has been corrected. tuneLayer: the layer the zone's number comes from (the middle one). tuneResidualCents: how far the found partials sit from the fit (root mean square, cents). tunePartials: which partials were found and used. layerSpreadCents: the largest difference between this zone's layers. inharmonicityB: the fitted B. unisonSplitCents: the widest spread seen inside one partial's cluster (a sign of unison strings tuned apart, which is heard as beating or chorus). tuneConfidence: 0 to 1, falls with fewer partials, a larger residual and a larger layer spread; below about 0.5 trust the ear over the number. layers: the files of the zone, quietest first; file is the path under root without extension; layer is its velocity layer and rr its round-robin take when the set has takes. peakDb: the file's sample peak in dBFS. attackRmsDb: the RMS level of its first 300 ms after the onset, in dBFS. Whether these levels mean anything depends on the source (see levels below). brightness: the share of energy above 1.5 times the note's fundamental (or 1 kHz, whichever is higher) in those first 300 ms, which should rise from layer to layer; in a very quiet file the noise floor can inflate it. lenS: length after the prep, in seconds. trimStartMs: how much was cut from the start (the onset, the first point above -50 dB of the file's peak, is kept with 3 ms before it). measuredCents on a layer is that file's own measurement. src: the original file name. Every file was cut where its 50 ms RMS fell to 60 dB below its peak, or at a maximum length (8 s at A0 falling evenly per semitone to 4 s at C8 for sustains, 2 s for releases), whichever came first, then given an equal-power fade over its last 250 ms (100 ms for releases and pedal sounds) so it ends in true silence. No gain was changed. levels: whether the source normalised each file (normalized true: the levels say nothing about how hard the key was played, so the sampler rebuilds the dynamic range from velocity with its own curve and must not re-gain the layers) or kept the recorded levels (normalized false: the layers already step up in level as they were played, and the sampler should play them at their own level). range: the lowest and highest sustain zone. problems: anything odd found while preparing, in plain words. The .m4a files decode about 23 ms longer than the .ogg files because AAC pads its last frame with silence; the start is in the same place in both. Steinway B: rel has a release sample per layer for most zones; a zone without one should fall back to the nearest zone's release. GAME SET (Matt, October 19, 2026): the middle five octaves only (zones A#1 to D7), tails cut to 4 s with a 250 ms fade, notes below C3 folded to mono, encoded Opus at 90 kbps stereo and 60 kbps mono (10.2 MB with the pedal, no-pedal and key-off sets) with AAC at 128 and 80 kbps; every file's peak, attack loudness, length and channels re-measured after shaping (the mono notes came out about 1.3 dB quieter, which the leveling corrects). gameSet records these choices.",
+ "source": {
+  "library": "VCSL (Versilian Community Sample Library)",
+  "url": "https://github.com/sgossner/VCSL/tree/master/Chordophones/Zithers/Grand%20Piano,%20Steinway%20B",
+  "license": "CC0 1.0",
+  "notes": "Folder 'Grand Piano, Steinway B', close mic, recorded by JH (files JHPiano_*). Subfolders: Sus (sustain pedal held down while recording), NoSus (dampers working normally), Rel (the release noise of the NoSus notes, files named NoSusRel). Velocity layers in the source are vl2, vl3 and vl4 (there is no vl1); here they are renumbered v1, v2, v3, quietest first. One round robin (rr1) only, so file names carry no rr. NORMALIZED.txt says: the sustain and no-sustain articulations were normalised; use a velocity curve to rebuild dynamic range and do not adjust the gain of layers or they will not line up. We followed it: no gain change, levels measured and recorded. The release set is not normalised (its peaks sit 30 to 64 dB below full scale) and keeps its recorded level. Note names in the files are standard scientific pitch (A#0 is the second-lowest A-sharp of the keyboard, C4 middle C), confirmed by pitch measurement."
+ },
+ "channels": 2,
+ "formats": [
+  "ogg",
+  "m4a"
+ ],
+ "root": "assets/audio/instruments/piano-steinway-b/",
+ "layers": 3,
+ "sets": {
+  "sus": {
+   "source": "Sus",
+   "zones": [
+    {
+     "note": "As1",
+     "midi": 34,
+     "measuredCents": -8.47,
+     "tuneConfidence": 0.43,
+     "tuneResidualCents": 2.6,
+     "tunePartials": [
+      2,
+      4,
+      5,
+      6,
+      7,
+      8
+     ],
+     "tuneLayer": 2,
+     "layerSpreadCents": 1.41,
+     "inharmonicityB": 0.000177,
+     "layers": [
+      {
+       "file": "sus/As1-v1",
+       "layer": 1,
+       "peakDb": -2.81,
+       "attackRmsDb": -14.95,
+       "brightness": 0.21844,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -9.88,
+       "src": "JHPiano_Sus_Close_A#1_vl2_rr1.wav",
+       "channels": 1
+      },
+      {
+       "file": "sus/As1-v2",
+       "layer": 2,
+       "peakDb": -2.27,
+       "attackRmsDb": -14.62,
+       "brightness": 0.27434,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -8.47,
+       "src": "JHPiano_Sus_Close_A#1_vl3_rr1.wav",
+       "channels": 1
+      },
+      {
+       "file": "sus/As1-v3",
+       "layer": 3,
+       "peakDb": -2.29,
+       "attackRmsDb": -14.64,
+       "brightness": 0.29013,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -7.99,
+       "src": "JHPiano_Sus_Close_A#1_vl4_rr1.wav",
+       "channels": 1
+      }
+     ]
+    },
+    {
+     "note": "C2",
+     "midi": 36,
+     "measuredCents": -4.39,
+     "tuneConfidence": 0.42,
+     "tuneResidualCents": 2.05,
+     "tunePartials": [
+      3,
+      4,
+      5,
+      6,
+      7,
+      8
+     ],
+     "tuneLayer": 2,
+     "layerSpreadCents": 2.56,
+     "inharmonicityB": 2.81e-05,
+     "layers": [
+      {
+       "file": "sus/C2-v1",
+       "layer": 1,
+       "peakDb": -5.76,
+       "attackRmsDb": -16.56,
+       "brightness": 0.15643,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -2.9,
+       "src": "JHPiano_Sus_Close_C2_vl2_rr1.wav",
+       "channels": 1
+      },
+      {
+       "file": "sus/C2-v2",
+       "layer": 2,
+       "peakDb": -5.16,
+       "attackRmsDb": -16.56,
+       "brightness": 0.18115,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -4.39,
+       "src": "JHPiano_Sus_Close_C2_vl3_rr1.wav",
+       "channels": 1
+      },
+      {
+       "file": "sus/C2-v3",
+       "layer": 3,
+       "peakDb": -4.92,
+       "attackRmsDb": -16.36,
+       "brightness": 0.19884,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -1.83,
+       "src": "JHPiano_Sus_Close_C2_vl4_rr1.wav",
+       "channels": 1
+      }
+     ]
+    },
+    {
+     "note": "D2",
+     "midi": 38,
+     "measuredCents": -2.15,
+     "tuneConfidence": 0.27,
+     "tuneResidualCents": 2.37,
+     "tunePartials": [
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8
+     ],
+     "tuneLayer": 2,
+     "layerSpreadCents": 3.94,
+     "inharmonicityB": 9.86e-09,
+     "layers": [
+      {
+       "file": "sus/D2-v1",
+       "layer": 1,
+       "peakDb": -5.05,
+       "attackRmsDb": -14.64,
+       "brightness": 0.02669,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -6.09,
+       "src": "JHPiano_Sus_Close_D2_vl2_rr1.wav",
+       "channels": 1
+      },
+      {
+       "file": "sus/D2-v2",
+       "layer": 2,
+       "peakDb": -5.53,
+       "attackRmsDb": -14.77,
+       "brightness": 0.0457,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -2.15,
+       "src": "JHPiano_Sus_Close_D2_vl3_rr1.wav",
+       "channels": 1
+      },
+      {
+       "file": "sus/D2-v3",
+       "layer": 3,
+       "peakDb": -4.16,
+       "attackRmsDb": -14.0,
+       "brightness": 0.05271,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -0.96,
+       "src": "JHPiano_Sus_Close_D2_vl4_rr1.wav",
+       "channels": 1
+      }
+     ]
+    },
+    {
+     "note": "E2",
+     "midi": 40,
+     "measuredCents": -5.78,
+     "tuneConfidence": 0.58,
+     "tuneResidualCents": 1.95,
+     "tunePartials": [
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8
+     ],
+     "tuneLayer": 2,
+     "layerSpreadCents": 1.09,
+     "inharmonicityB": 0.000186,
+     "unisonSplitCents": 3.9,
+     "layers": [
+      {
+       "file": "sus/E2-v1",
+       "layer": 1,
+       "peakDb": -7.39,
+       "attackRmsDb": -16.65,
+       "brightness": 0.04117,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -6.2,
+       "src": "JHPiano_Sus_Close_E2_vl2_rr1.wav",
+       "channels": 1
+      },
+      {
+       "file": "sus/E2-v2",
+       "layer": 2,
+       "peakDb": -6.24,
+       "attackRmsDb": -16.29,
+       "brightness": 0.08466,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -5.78,
+       "src": "JHPiano_Sus_Close_E2_vl3_rr1.wav",
+       "channels": 1
+      },
+      {
+       "file": "sus/E2-v3",
+       "layer": 3,
+       "peakDb": -5.24,
+       "attackRmsDb": -15.75,
+       "brightness": 0.10854,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -4.69,
+       "src": "JHPiano_Sus_Close_E2_vl4_rr1.wav",
+       "channels": 1
+      }
+     ]
+    },
+    {
+     "note": "Fs2",
+     "midi": 42,
+     "measuredCents": -1.4,
+     "tuneConfidence": 0.68,
+     "tuneResidualCents": 0.89,
+     "tunePartials": [
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8
+     ],
+     "tuneLayer": 2,
+     "layerSpreadCents": 2.19,
+     "inharmonicityB": 8.52e-05,
+     "layers": [
+      {
+       "file": "sus/Fs2-v1",
+       "layer": 1,
+       "peakDb": -3.82,
+       "attackRmsDb": -14.47,
+       "brightness": 0.04683,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -1.87,
+       "src": "JHPiano_Sus_Close_F#2_vl2_rr1.wav",
+       "channels": 1
+      },
+      {
+       "file": "sus/Fs2-v2",
+       "layer": 2,
+       "peakDb": -4.3,
+       "attackRmsDb": -14.51,
+       "brightness": 0.0862,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -1.4,
+       "src": "JHPiano_Sus_Close_F#2_vl3_rr1.wav",
+       "channels": 1
+      },
+      {
+       "file": "sus/Fs2-v3",
+       "layer": 3,
+       "peakDb": -4.91,
+       "attackRmsDb": -15.35,
+       "brightness": 0.13044,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": 0.79,
+       "src": "JHPiano_Sus_Close_F#2_vl4_rr1.wav",
+       "channels": 1
+      }
+     ]
+    },
+    {
+     "note": "Gs2",
+     "midi": 44,
+     "measuredCents": -0.6,
+     "tuneConfidence": 0.71,
+     "tuneResidualCents": 1.43,
+     "tunePartials": [
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8
+     ],
+     "tuneLayer": 2,
+     "layerSpreadCents": 1.04,
+     "inharmonicityB": 6.25e-05,
+     "layers": [
+      {
+       "file": "sus/Gs2-v1",
+       "layer": 1,
+       "peakDb": -7.42,
+       "attackRmsDb": -16.43,
+       "brightness": 0.03832,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -1.15,
+       "src": "JHPiano_Sus_Close_G#2_vl2_rr1.wav",
+       "channels": 1
+      },
+      {
+       "file": "sus/Gs2-v2",
+       "layer": 2,
+       "peakDb": -6.88,
+       "attackRmsDb": -16.79,
+       "brightness": 0.08227,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -0.6,
+       "src": "JHPiano_Sus_Close_G#2_vl3_rr1.wav",
+       "channels": 1
+      },
+      {
+       "file": "sus/Gs2-v3",
+       "layer": 3,
+       "peakDb": -6.7,
+       "attackRmsDb": -16.8,
+       "brightness": 0.08515,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": 0.44,
+       "src": "JHPiano_Sus_Close_G#2_vl4_rr1.wav",
+       "channels": 1
+      }
+     ]
+    },
+    {
+     "note": "As2",
+     "midi": 46,
+     "measuredCents": -3.97,
+     "tuneConfidence": 0.67,
+     "tuneResidualCents": 1.31,
+     "tunePartials": [
+      2,
+      3,
+      4,
+      5,
+      6
+     ],
+     "tuneLayer": 2,
+     "layerSpreadCents": 1.66,
+     "inharmonicityB": 9.41e-05,
+     "layers": [
+      {
+       "file": "sus/As2-v1",
+       "layer": 1,
+       "peakDb": -7.92,
+       "attackRmsDb": -16.72,
+       "brightness": 0.03701,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -4.41,
+       "src": "JHPiano_Sus_Close_A#2_vl2_rr1.wav",
+       "channels": 1
+      },
+      {
+       "file": "sus/As2-v2",
+       "layer": 2,
+       "peakDb": -6.44,
+       "attackRmsDb": -15.76,
+       "brightness": 0.0782,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -3.97,
+       "src": "JHPiano_Sus_Close_A#2_vl3_rr1.wav",
+       "channels": 1
+      },
+      {
+       "file": "sus/As2-v3",
+       "layer": 3,
+       "peakDb": -6.08,
+       "attackRmsDb": -15.23,
+       "brightness": 0.08387,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -2.31,
+       "src": "JHPiano_Sus_Close_A#2_vl4_rr1.wav",
+       "channels": 1
+      }
+     ]
+    },
+    {
+     "note": "C3",
+     "midi": 48,
+     "measuredCents": -1.61,
+     "tuneConfidence": 0.62,
+     "tuneResidualCents": 1.9,
+     "tunePartials": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+     ],
+     "tuneLayer": 2,
+     "layerSpreadCents": 0.66,
+     "inharmonicityB": 0.0,
+     "layers": [
+      {
+       "file": "sus/C3-v1",
+       "layer": 1,
+       "peakDb": -4.71,
+       "attackRmsDb": -15.59,
+       "brightness": 0.06027,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -1.81,
+       "src": "JHPiano_Sus_Close_C3_vl2_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "sus/C3-v2",
+       "layer": 2,
+       "peakDb": -3.51,
+       "attackRmsDb": -15.34,
+       "brightness": 0.11335,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -1.61,
+       "src": "JHPiano_Sus_Close_C3_vl3_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "sus/C3-v3",
+       "layer": 3,
+       "peakDb": -1.93,
+       "attackRmsDb": -14.45,
+       "brightness": 0.13618,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -0.95,
+       "src": "JHPiano_Sus_Close_C3_vl4_rr1.wav",
+       "channels": 2
+      }
+     ]
+    },
+    {
+     "note": "D3",
+     "midi": 50,
+     "measuredCents": -0.53,
+     "tuneConfidence": 0.64,
+     "tuneResidualCents": 1.21,
+     "tunePartials": [
+      1,
+      3,
+      4,
+      5,
+      6
+     ],
+     "tuneLayer": 2,
+     "layerSpreadCents": 2.04,
+     "inharmonicityB": 1.54e-05,
+     "layers": [
+      {
+       "file": "sus/D3-v1",
+       "layer": 1,
+       "peakDb": -4.22,
+       "attackRmsDb": -15.64,
+       "brightness": 0.05592,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -0.86,
+       "src": "JHPiano_Sus_Close_D3_vl2_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "sus/D3-v2",
+       "layer": 2,
+       "peakDb": -2.5,
+       "attackRmsDb": -14.97,
+       "brightness": 0.11013,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -0.53,
+       "src": "JHPiano_Sus_Close_D3_vl3_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "sus/D3-v3",
+       "layer": 3,
+       "peakDb": -3.97,
+       "attackRmsDb": -15.83,
+       "brightness": 0.09637,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": 1.51,
+       "src": "JHPiano_Sus_Close_D3_vl4_rr1.wav",
+       "channels": 2
+      }
+     ]
+    },
+    {
+     "note": "E3",
+     "midi": 52,
+     "measuredCents": -3.12,
+     "tuneConfidence": 0.83,
+     "tuneResidualCents": 0.73,
+     "tunePartials": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+     ],
+     "tuneLayer": 2,
+     "layerSpreadCents": 1.3,
+     "inharmonicityB": 0.000117,
+     "layers": [
+      {
+       "file": "sus/E3-v1",
+       "layer": 1,
+       "peakDb": -5.1,
+       "attackRmsDb": -17.51,
+       "brightness": 0.1982,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -3.6,
+       "src": "JHPiano_Sus_Close_E3_vl2_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "sus/E3-v2",
+       "layer": 2,
+       "peakDb": -3.3,
+       "attackRmsDb": -17.19,
+       "brightness": 0.32401,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -3.12,
+       "src": "JHPiano_Sus_Close_E3_vl3_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "sus/E3-v3",
+       "layer": 3,
+       "peakDb": -2.27,
+       "attackRmsDb": -16.6,
+       "brightness": 0.37949,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -1.82,
+       "src": "JHPiano_Sus_Close_E3_vl4_rr1.wav",
+       "channels": 2
+      }
+     ]
+    },
+    {
+     "note": "Fs3",
+     "midi": 54,
+     "measuredCents": -3.72,
+     "tuneConfidence": 0.87,
+     "tuneResidualCents": 0.72,
+     "tunePartials": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+     ],
+     "tuneLayer": 2,
+     "layerSpreadCents": 0.98,
+     "inharmonicityB": 0.000208,
+     "layers": [
+      {
+       "file": "sus/Fs3-v1",
+       "layer": 1,
+       "peakDb": -5.99,
+       "attackRmsDb": -16.64,
+       "brightness": 0.12203,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -4.07,
+       "src": "JHPiano_Sus_Close_F#3_vl2_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "sus/Fs3-v2",
+       "layer": 2,
+       "peakDb": -5.31,
+       "attackRmsDb": -16.33,
+       "brightness": 0.16426,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -3.72,
+       "src": "JHPiano_Sus_Close_F#3_vl3_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "sus/Fs3-v3",
+       "layer": 3,
+       "peakDb": -4.58,
+       "attackRmsDb": -15.88,
+       "brightness": 0.18462,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -2.74,
+       "src": "JHPiano_Sus_Close_F#3_vl4_rr1.wav",
+       "channels": 2
+      }
+     ]
+    },
+    {
+     "note": "Gs3",
+     "midi": 56,
+     "measuredCents": -3.4,
+     "tuneConfidence": 0.91,
+     "tuneResidualCents": 0.64,
+     "tunePartials": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+     ],
+     "tuneLayer": 2,
+     "layerSpreadCents": 0.7,
+     "inharmonicityB": 0.000272,
+     "layers": [
+      {
+       "file": "sus/Gs3-v1",
+       "layer": 1,
+       "peakDb": -5.91,
+       "attackRmsDb": -16.93,
+       "brightness": 0.05305,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -3.65,
+       "src": "JHPiano_Sus_Close_G#3_vl2_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "sus/Gs3-v2",
+       "layer": 2,
+       "peakDb": -5.2,
+       "attackRmsDb": -16.2,
+       "brightness": 0.09202,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -3.4,
+       "src": "JHPiano_Sus_Close_G#3_vl3_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "sus/Gs3-v3",
+       "layer": 3,
+       "peakDb": -5.68,
+       "attackRmsDb": -16.82,
+       "brightness": 0.09475,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -2.7,
+       "src": "JHPiano_Sus_Close_G#3_vl4_rr1.wav",
+       "channels": 2
+      }
+     ]
+    },
+    {
+     "note": "As3",
+     "midi": 58,
+     "measuredCents": -5.4,
+     "tuneConfidence": 0.33,
+     "tuneResidualCents": 2.91,
+     "tunePartials": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+     ],
+     "tuneLayer": 2,
+     "layerSpreadCents": 2.15,
+     "inharmonicityB": 0.000454,
+     "layers": [
+      {
+       "file": "sus/As3-v1",
+       "layer": 1,
+       "peakDb": -4.73,
+       "attackRmsDb": -15.71,
+       "brightness": 0.03405,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -5.61,
+       "src": "JHPiano_Sus_Close_A#3_vl2_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "sus/As3-v2",
+       "layer": 2,
+       "peakDb": -3.94,
+       "attackRmsDb": -14.94,
+       "brightness": 0.05552,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -5.4,
+       "src": "JHPiano_Sus_Close_A#3_vl3_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "sus/As3-v3",
+       "layer": 3,
+       "peakDb": -2.34,
+       "attackRmsDb": -13.9,
+       "brightness": 0.04916,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -3.25,
+       "src": "JHPiano_Sus_Close_A#3_vl4_rr1.wav",
+       "channels": 2
+      }
+     ]
+    },
+    {
+     "note": "C4",
+     "midi": 60,
+     "measuredCents": -2.34,
+     "tuneConfidence": 0.71,
+     "tuneResidualCents": 0.55,
+     "tunePartials": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+     ],
+     "tuneLayer": 2,
+     "layerSpreadCents": 2.32,
+     "inharmonicityB": 0.000353,
+     "unisonSplitCents": 3.3,
+     "layers": [
+      {
+       "file": "sus/C4-v1",
+       "layer": 1,
+       "peakDb": -3.14,
+       "attackRmsDb": -14.26,
+       "brightness": 0.08578,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -2.57,
+       "src": "JHPiano_Sus_Close_C4_vl2_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "sus/C4-v2",
+       "layer": 2,
+       "peakDb": -1.56,
+       "attackRmsDb": -13.26,
+       "brightness": 0.11186,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -2.34,
+       "src": "JHPiano_Sus_Close_C4_vl3_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "sus/C4-v3",
+       "layer": 3,
+       "peakDb": -2.67,
+       "attackRmsDb": -13.62,
+       "brightness": 0.10325,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -0.02,
+       "src": "JHPiano_Sus_Close_C4_vl4_rr1.wav",
+       "channels": 2
+      }
+     ]
+    },
+    {
+     "note": "D4",
+     "midi": 62,
+     "measuredCents": -4.17,
+     "tuneConfidence": 0.79,
+     "tuneResidualCents": 0.8,
+     "tunePartials": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+     ],
+     "tuneLayer": 2,
+     "layerSpreadCents": 1.53,
+     "inharmonicityB": 0.000478,
+     "layers": [
+      {
+       "file": "sus/D4-v1",
+       "layer": 1,
+       "peakDb": -3.82,
+       "attackRmsDb": -14.32,
+       "brightness": 0.06529,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -4.23,
+       "src": "JHPiano_Sus_Close_D4_vl2_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "sus/D4-v2",
+       "layer": 2,
+       "peakDb": -3.43,
+       "attackRmsDb": -13.74,
+       "brightness": 0.07865,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -4.17,
+       "src": "JHPiano_Sus_Close_D4_vl3_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "sus/D4-v3",
+       "layer": 3,
+       "peakDb": -2.73,
+       "attackRmsDb": -13.4,
+       "brightness": 0.0776,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -2.64,
+       "src": "JHPiano_Sus_Close_D4_vl4_rr1.wav",
+       "channels": 2
+      }
+     ]
+    },
+    {
+     "note": "E4",
+     "midi": 64,
+     "measuredCents": -2.13,
+     "tuneConfidence": 0.51,
+     "tuneResidualCents": 2.16,
+     "tunePartials": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+     ],
+     "tuneLayer": 2,
+     "layerSpreadCents": 1.46,
+     "inharmonicityB": 0.000594,
+     "unisonSplitCents": 6.2,
+     "layers": [
+      {
+       "file": "sus/E4-v1",
+       "layer": 1,
+       "peakDb": -2.51,
+       "attackRmsDb": -13.49,
+       "brightness": 0.02085,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -3.59,
+       "src": "JHPiano_Sus_Close_E4_vl2_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "sus/E4-v2",
+       "layer": 2,
+       "peakDb": -2.34,
+       "attackRmsDb": -13.17,
+       "brightness": 0.03141,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -2.13,
+       "src": "JHPiano_Sus_Close_E4_vl3_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "sus/E4-v3",
+       "layer": 3,
+       "peakDb": -2.07,
+       "attackRmsDb": -13.42,
+       "brightness": 0.04412,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -2.26,
+       "src": "JHPiano_Sus_Close_E4_vl4_rr1.wav",
+       "channels": 2
+      }
+     ]
+    },
+    {
+     "note": "Fs4",
+     "midi": 66,
+     "measuredCents": -1.2,
+     "tuneConfidence": 0.72,
+     "tuneResidualCents": 1.27,
+     "tunePartials": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+     ],
+     "tuneLayer": 2,
+     "layerSpreadCents": 1.28,
+     "inharmonicityB": 0.000764,
+     "layers": [
+      {
+       "file": "sus/Fs4-v1",
+       "layer": 1,
+       "peakDb": -5.73,
+       "attackRmsDb": -16.04,
+       "brightness": 0.19967,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -2.48,
+       "src": "JHPiano_Sus_Close_F#4_vl2_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "sus/Fs4-v2",
+       "layer": 2,
+       "peakDb": -2.95,
+       "attackRmsDb": -15.01,
+       "brightness": 0.29693,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -1.2,
+       "src": "JHPiano_Sus_Close_F#4_vl3_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "sus/Fs4-v3",
+       "layer": 3,
+       "peakDb": -2.1,
+       "attackRmsDb": -14.98,
+       "brightness": 0.27152,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -1.32,
+       "src": "JHPiano_Sus_Close_F#4_vl4_rr1.wav",
+       "channels": 2
+      }
+     ]
+    },
+    {
+     "note": "Gs4",
+     "midi": 68,
+     "measuredCents": -2.66,
+     "tuneConfidence": 0.71,
+     "tuneResidualCents": 1.61,
+     "tunePartials": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+     ],
+     "tuneLayer": 2,
+     "layerSpreadCents": 0.17,
+     "inharmonicityB": 0.000752,
+     "unisonSplitCents": 1.8,
+     "layers": [
+      {
+       "file": "sus/Gs4-v1",
+       "layer": 1,
+       "peakDb": -3.28,
+       "attackRmsDb": -14.86,
+       "brightness": 0.23854,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -2.73,
+       "src": "JHPiano_Sus_Close_G#4_vl2_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "sus/Gs4-v2",
+       "layer": 2,
+       "peakDb": -0.74,
+       "attackRmsDb": -14.04,
+       "brightness": 0.26432,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -2.66,
+       "src": "JHPiano_Sus_Close_G#4_vl3_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "sus/Gs4-v3",
+       "layer": 3,
+       "peakDb": -0.33,
+       "attackRmsDb": -13.43,
+       "brightness": 0.28972,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -2.49,
+       "src": "JHPiano_Sus_Close_G#4_vl4_rr1.wav",
+       "channels": 2
+      }
+     ]
+    },
+    {
+     "note": "As4",
+     "midi": 70,
+     "measuredCents": -1.85,
+     "tuneConfidence": 0.45,
+     "tuneResidualCents": 2.75,
+     "tunePartials": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+     ],
+     "tuneLayer": 2,
+     "layerSpreadCents": 0.18,
+     "inharmonicityB": 0.00109,
+     "unisonSplitCents": 5.6,
+     "layers": [
+      {
+       "file": "sus/As4-v1",
+       "layer": 1,
+       "peakDb": -6.35,
+       "attackRmsDb": -15.91,
+       "brightness": 0.03487,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -1.69,
+       "src": "JHPiano_Sus_Close_A#4_vl2_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "sus/As4-v2",
+       "layer": 2,
+       "peakDb": -4.15,
+       "attackRmsDb": -14.5,
+       "brightness": 0.04698,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -1.85,
+       "src": "JHPiano_Sus_Close_A#4_vl3_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "sus/As4-v3",
+       "layer": 3,
+       "peakDb": -3.21,
+       "attackRmsDb": -13.96,
+       "brightness": 0.06016,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -1.67,
+       "src": "JHPiano_Sus_Close_A#4_vl4_rr1.wav",
+       "channels": 2
+      }
+     ]
+    },
+    {
+     "note": "C5",
+     "midi": 72,
+     "measuredCents": -3.27,
+     "tuneConfidence": 0.66,
+     "tuneResidualCents": 1.6,
+     "tunePartials": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+     ],
+     "tuneLayer": 2,
+     "layerSpreadCents": 1.09,
+     "inharmonicityB": 0.00118,
+     "unisonSplitCents": 4.0,
+     "layers": [
+      {
+       "file": "sus/C5-v1",
+       "layer": 1,
+       "peakDb": -2.57,
+       "attackRmsDb": -15.51,
+       "brightness": 0.20398,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -4.03,
+       "src": "JHPiano_Sus_Close_C5_vl2_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "sus/C5-v2",
+       "layer": 2,
+       "peakDb": -0.47,
+       "attackRmsDb": -14.62,
+       "brightness": 0.36985,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -3.27,
+       "src": "JHPiano_Sus_Close_C5_vl3_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "sus/C5-v3",
+       "layer": 3,
+       "peakDb": -0.41,
+       "attackRmsDb": -14.87,
+       "brightness": 0.42965,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -2.18,
+       "src": "JHPiano_Sus_Close_C5_vl4_rr1.wav",
+       "channels": 2
+      }
+     ]
+    },
+    {
+     "note": "D5",
+     "midi": 74,
+     "measuredCents": -1.25,
+     "tuneConfidence": 0.74,
+     "tuneResidualCents": 1.01,
+     "tunePartials": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+     ],
+     "tuneLayer": 2,
+     "layerSpreadCents": 1.6,
+     "inharmonicityB": 0.00132,
+     "unisonSplitCents": 5.6,
+     "layers": [
+      {
+       "file": "sus/D5-v1",
+       "layer": 1,
+       "peakDb": -5.34,
+       "attackRmsDb": -16.69,
+       "brightness": 0.11582,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -0.8,
+       "src": "JHPiano_Sus_Close_D5_vl2_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "sus/D5-v2",
+       "layer": 2,
+       "peakDb": -4.29,
+       "attackRmsDb": -16.34,
+       "brightness": 0.13661,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -1.25,
+       "src": "JHPiano_Sus_Close_D5_vl3_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "sus/D5-v3",
+       "layer": 3,
+       "peakDb": -2.69,
+       "attackRmsDb": -15.96,
+       "brightness": 0.19904,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": 0.35,
+       "src": "JHPiano_Sus_Close_D5_vl4_rr1.wav",
+       "channels": 2
+      }
+     ]
+    },
+    {
+     "note": "E5",
+     "midi": 76,
+     "measuredCents": 1.01,
+     "tuneConfidence": 0.44,
+     "tuneResidualCents": 1.5,
+     "tunePartials": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+     ],
+     "tuneLayer": 2,
+     "layerSpreadCents": 3.31,
+     "inharmonicityB": 0.00143,
+     "unisonSplitCents": 7.3,
+     "layers": [
+      {
+       "file": "sus/E5-v1",
+       "layer": 1,
+       "peakDb": -7.11,
+       "attackRmsDb": -18.43,
+       "brightness": 0.02861,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": 1.02,
+       "src": "JHPiano_Sus_Close_E5_vl2_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "sus/E5-v2",
+       "layer": 2,
+       "peakDb": -5.73,
+       "attackRmsDb": -18.09,
+       "brightness": 0.05394,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": 1.01,
+       "src": "JHPiano_Sus_Close_E5_vl3_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "sus/E5-v3",
+       "layer": 3,
+       "peakDb": -4.32,
+       "attackRmsDb": -17.85,
+       "brightness": 0.0983,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -2.3,
+       "src": "JHPiano_Sus_Close_E5_vl4_rr1.wav",
+       "channels": 2
+      }
+     ]
+    },
+    {
+     "note": "Fs5",
+     "midi": 78,
+     "measuredCents": 0.13,
+     "tuneConfidence": 0.68,
+     "tuneResidualCents": 1.62,
+     "tunePartials": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+     ],
+     "tuneLayer": 2,
+     "layerSpreadCents": 0.71,
+     "inharmonicityB": 0.00168,
+     "unisonSplitCents": 7.9,
+     "layers": [
+      {
+       "file": "sus/Fs5-v1",
+       "layer": 1,
+       "peakDb": -3.55,
+       "attackRmsDb": -16.97,
+       "brightness": 0.04072,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -0.16,
+       "src": "JHPiano_Sus_Close_F#5_vl2_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "sus/Fs5-v2",
+       "layer": 2,
+       "peakDb": -2.21,
+       "attackRmsDb": -16.11,
+       "brightness": 0.09239,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": 0.13,
+       "src": "JHPiano_Sus_Close_F#5_vl3_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "sus/Fs5-v3",
+       "layer": 3,
+       "peakDb": -1.75,
+       "attackRmsDb": -16.05,
+       "brightness": 0.206,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": 0.84,
+       "src": "JHPiano_Sus_Close_F#5_vl4_rr1.wav",
+       "channels": 2
+      }
+     ]
+    },
+    {
+     "note": "Gs5",
+     "midi": 80,
+     "measuredCents": -1.99,
+     "tuneConfidence": 0.79,
+     "tuneResidualCents": 1.17,
+     "tunePartials": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+     ],
+     "tuneLayer": 2,
+     "layerSpreadCents": 0.8,
+     "inharmonicityB": 0.00212,
+     "unisonSplitCents": 10.0,
+     "layers": [
+      {
+       "file": "sus/Gs5-v1",
+       "layer": 1,
+       "peakDb": -4.06,
+       "attackRmsDb": -16.42,
+       "brightness": 0.0422,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -2.74,
+       "src": "JHPiano_Sus_Close_G#5_vl2_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "sus/Gs5-v2",
+       "layer": 2,
+       "peakDb": -2.89,
+       "attackRmsDb": -15.97,
+       "brightness": 0.07219,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -1.99,
+       "src": "JHPiano_Sus_Close_G#5_vl3_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "sus/Gs5-v3",
+       "layer": 3,
+       "peakDb": -3.64,
+       "attackRmsDb": -15.44,
+       "brightness": 0.12359,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -1.19,
+       "src": "JHPiano_Sus_Close_G#5_vl4_rr1.wav",
+       "channels": 2
+      }
+     ]
+    },
+    {
+     "note": "As5",
+     "midi": 82,
+     "measuredCents": -2.12,
+     "tuneConfidence": 0.23,
+     "tuneResidualCents": 2.19,
+     "tunePartials": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+     ],
+     "tuneLayer": 2,
+     "layerSpreadCents": 4.78,
+     "inharmonicityB": 0.00259,
+     "unisonSplitCents": 8.9,
+     "layers": [
+      {
+       "file": "sus/As5-v1",
+       "layer": 1,
+       "peakDb": -3.95,
+       "attackRmsDb": -17.66,
+       "brightness": 0.06085,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -0.58,
+       "src": "JHPiano_Sus_Close_A#5_vl2_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "sus/As5-v2",
+       "layer": 2,
+       "peakDb": -4.16,
+       "attackRmsDb": -17.19,
+       "brightness": 0.1326,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -2.12,
+       "src": "JHPiano_Sus_Close_A#5_vl3_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "sus/As5-v3",
+       "layer": 3,
+       "peakDb": -4.46,
+       "attackRmsDb": -17.32,
+       "brightness": 0.23835,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": 2.66,
+       "src": "JHPiano_Sus_Close_A#5_vl4_rr1.wav",
+       "channels": 2
+      }
+     ]
+    },
+    {
+     "note": "C6",
+     "midi": 84,
+     "measuredCents": -1.56,
+     "tuneConfidence": 0.41,
+     "tuneResidualCents": 2.72,
+     "tunePartials": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+     ],
+     "tuneLayer": 2,
+     "layerSpreadCents": 1.29,
+     "inharmonicityB": 0.00332,
+     "unisonSplitCents": 12.4,
+     "layers": [
+      {
+       "file": "sus/C6-v1",
+       "layer": 1,
+       "peakDb": -4.54,
+       "attackRmsDb": -17.63,
+       "brightness": 0.04993,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -2.01,
+       "src": "JHPiano_Sus_Close_C6_vl2_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "sus/C6-v2",
+       "layer": 2,
+       "peakDb": -4.43,
+       "attackRmsDb": -17.1,
+       "brightness": 0.08803,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -1.56,
+       "src": "JHPiano_Sus_Close_C6_vl3_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "sus/C6-v3",
+       "layer": 3,
+       "peakDb": -3.08,
+       "attackRmsDb": -16.19,
+       "brightness": 0.12589,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -0.27,
+       "src": "JHPiano_Sus_Close_C6_vl4_rr1.wav",
+       "channels": 2
+      }
+     ]
+    },
+    {
+     "note": "D6",
+     "midi": 86,
+     "measuredCents": 0.25,
+     "tuneConfidence": 0.55,
+     "tuneResidualCents": 2.18,
+     "tunePartials": [
+      1,
+      2,
+      3,
+      5,
+      6
+     ],
+     "tuneLayer": 2,
+     "layerSpreadCents": 0.76,
+     "inharmonicityB": 0.00382,
+     "layers": [
+      {
+       "file": "sus/D6-v1",
+       "layer": 1,
+       "peakDb": -4.05,
+       "attackRmsDb": -17.16,
+       "brightness": 0.00421,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -0.26,
+       "src": "JHPiano_Sus_Close_D6_vl2_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "sus/D6-v2",
+       "layer": 2,
+       "peakDb": -3.47,
+       "attackRmsDb": -16.88,
+       "brightness": 0.01409,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": 0.25,
+       "src": "JHPiano_Sus_Close_D6_vl3_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "sus/D6-v3",
+       "layer": 3,
+       "peakDb": -3.75,
+       "attackRmsDb": -17.27,
+       "brightness": 0.011,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": 1.01,
+       "src": "JHPiano_Sus_Close_D6_vl4_rr1.wav",
+       "channels": 2
+      }
+     ]
+    },
+    {
+     "note": "E6",
+     "midi": 88,
+     "measuredCents": 1.37,
+     "tuneConfidence": 0.43,
+     "tuneResidualCents": 1.85,
+     "tunePartials": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+     ],
+     "tuneLayer": 2,
+     "layerSpreadCents": 2.79,
+     "inharmonicityB": 0.00438,
+     "unisonSplitCents": 11.2,
+     "layers": [
+      {
+       "file": "sus/E6-v1",
+       "layer": 1,
+       "peakDb": -5.52,
+       "attackRmsDb": -18.48,
+       "brightness": 0.00413,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": 1.81,
+       "src": "JHPiano_Sus_Close_E6_vl2_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "sus/E6-v2",
+       "layer": 2,
+       "peakDb": -5.3,
+       "attackRmsDb": -18.24,
+       "brightness": 0.01096,
+       "lenS": 3.48,
+       "trimStartMs": 0.0,
+       "measuredCents": 1.37,
+       "src": "JHPiano_Sus_Close_E6_vl3_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "sus/E6-v3",
+       "layer": 3,
+       "peakDb": -5.82,
+       "attackRmsDb": -18.19,
+       "brightness": 0.01132,
+       "lenS": 3.61,
+       "trimStartMs": 0.0,
+       "measuredCents": 4.16,
+       "src": "JHPiano_Sus_Close_E6_vl4_rr1.wav",
+       "channels": 2
+      }
+     ]
+    },
+    {
+     "note": "Fs6",
+     "midi": 90,
+     "measuredCents": -0.75,
+     "tuneConfidence": 0.57,
+     "tuneResidualCents": 0.12,
+     "tunePartials": [
+      1,
+      2,
+      3
+     ],
+     "tuneLayer": 2,
+     "layerSpreadCents": 0.82,
+     "inharmonicityB": 0.00553,
+     "unisonSplitCents": 12.7,
+     "layers": [
+      {
+       "file": "sus/Fs6-v1",
+       "layer": 1,
+       "peakDb": -9.27,
+       "attackRmsDb": -21.62,
+       "brightness": 0.00025,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -0.81,
+       "src": "JHPiano_Sus_Close_F#6_vl2_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "sus/Fs6-v2",
+       "layer": 2,
+       "peakDb": -9.1,
+       "attackRmsDb": -21.44,
+       "brightness": 0.00029,
+       "lenS": 2.93,
+       "trimStartMs": 0.0,
+       "measuredCents": -0.75,
+       "src": "JHPiano_Sus_Close_F#6_vl3_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "sus/Fs6-v3",
+       "layer": 3,
+       "peakDb": -8.22,
+       "attackRmsDb": -21.22,
+       "brightness": 0.0005,
+       "lenS": 3.37,
+       "trimStartMs": 0.0,
+       "measuredCents": 0.07,
+       "src": "JHPiano_Sus_Close_F#6_vl4_rr1.wav",
+       "channels": 2
+      }
+     ]
+    },
+    {
+     "note": "Gs6",
+     "midi": 92,
+     "measuredCents": 1.97,
+     "tuneConfidence": 0.33,
+     "tuneResidualCents": 3.47,
+     "tunePartials": [
+      1,
+      2,
+      3,
+      4,
+      5
+     ],
+     "tuneLayer": 2,
+     "layerSpreadCents": 0.67,
+     "inharmonicityB": 0.00643,
+     "unisonSplitCents": 14.7,
+     "layers": [
+      {
+       "file": "sus/Gs6-v1",
+       "layer": 1,
+       "peakDb": -8.03,
+       "attackRmsDb": -21.03,
+       "brightness": 0.00125,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": 1.78,
+       "src": "JHPiano_Sus_Close_G#6_vl2_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "sus/Gs6-v2",
+       "layer": 2,
+       "peakDb": -6.94,
+       "attackRmsDb": -20.19,
+       "brightness": 0.0028,
+       "lenS": 3.68,
+       "trimStartMs": 0.0,
+       "measuredCents": 1.97,
+       "src": "JHPiano_Sus_Close_G#6_vl3_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "sus/Gs6-v3",
+       "layer": 3,
+       "peakDb": -6.24,
+       "attackRmsDb": -19.32,
+       "brightness": 0.00379,
+       "lenS": 3.63,
+       "trimStartMs": 0.0,
+       "measuredCents": 2.64,
+       "src": "JHPiano_Sus_Close_G#6_vl4_rr1.wav",
+       "channels": 2
+      }
+     ]
+    },
+    {
+     "note": "As6",
+     "midi": 94,
+     "measuredCents": 2.43,
+     "tuneConfidence": 0.68,
+     "tuneResidualCents": 0.62,
+     "tunePartials": [
+      1,
+      2,
+      3,
+      4
+     ],
+     "tuneLayer": 2,
+     "layerSpreadCents": 2.5,
+     "inharmonicityB": 0.00755,
+     "unisonSplitCents": 11.8,
+     "layers": [
+      {
+       "file": "sus/As6-v1",
+       "layer": 1,
+       "peakDb": -5.09,
+       "attackRmsDb": -21.02,
+       "brightness": 0.00124,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -0.07,
+       "src": "JHPiano_Sus_Close_A#6_vl2_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "sus/As6-v2",
+       "layer": 2,
+       "peakDb": -3.79,
+       "attackRmsDb": -20.23,
+       "brightness": 0.00488,
+       "lenS": 3.28,
+       "trimStartMs": 0.0,
+       "measuredCents": 2.43,
+       "src": "JHPiano_Sus_Close_A#6_vl3_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "sus/As6-v3",
+       "layer": 3,
+       "peakDb": -3.12,
+       "attackRmsDb": -20.18,
+       "brightness": 0.01207,
+       "lenS": 2.54,
+       "trimStartMs": 0.0,
+       "measuredCents": 2.66,
+       "src": "JHPiano_Sus_Close_A#6_vl4_rr1.wav",
+       "channels": 2
+      }
+     ]
+    },
+    {
+     "note": "C7",
+     "midi": 96,
+     "measuredCents": 13.93,
+     "tuneConfidence": 0.74,
+     "tuneResidualCents": 1.47,
+     "tunePartials": [
+      1,
+      2,
+      3,
+      4
+     ],
+     "tuneLayer": 2,
+     "layerSpreadCents": 0.11,
+     "inharmonicityB": 0.00924,
+     "unisonSplitCents": 14.3,
+     "layers": [
+      {
+       "file": "sus/C7-v1",
+       "layer": 1,
+       "peakDb": -4.08,
+       "attackRmsDb": -21.1,
+       "brightness": 0.00095,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": 14.04,
+       "src": "JHPiano_Sus_Close_C7_vl2_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "sus/C7-v2",
+       "layer": 2,
+       "peakDb": -3.07,
+       "attackRmsDb": -20.51,
+       "brightness": 0.00696,
+       "lenS": 3.23,
+       "trimStartMs": 0.0,
+       "measuredCents": 13.93,
+       "src": "JHPiano_Sus_Close_C7_vl3_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "sus/C7-v3",
+       "layer": 3,
+       "peakDb": -3.1,
+       "attackRmsDb": -19.9,
+       "brightness": 0.00898,
+       "lenS": 2.91,
+       "trimStartMs": 0.0,
+       "measuredCents": 13.93,
+       "src": "JHPiano_Sus_Close_C7_vl4_rr1.wav",
+       "channels": 2
+      }
+     ]
+    },
+    {
+     "note": "D7",
+     "midi": 98,
+     "measuredCents": 7.63,
+     "tuneConfidence": 0.92,
+     "tuneResidualCents": 0.35,
+     "tunePartials": [
+      1,
+      2,
+      3
+     ],
+     "tuneLayer": 2,
+     "layerSpreadCents": 1.06,
+     "inharmonicityB": 0.0127,
+     "layers": [
+      {
+       "file": "sus/D7-v1",
+       "layer": 1,
+       "peakDb": -3.52,
+       "attackRmsDb": -21.97,
+       "brightness": 0.00049,
+       "lenS": 3.83,
+       "trimStartMs": 0.0,
+       "measuredCents": 8.69,
+       "src": "JHPiano_Sus_Close_D7_vl2_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "sus/D7-v2",
+       "layer": 2,
+       "peakDb": -2.15,
+       "attackRmsDb": -20.61,
+       "brightness": 0.00077,
+       "lenS": 2.87,
+       "trimStartMs": 0.0,
+       "measuredCents": 7.63,
+       "src": "JHPiano_Sus_Close_D7_vl3_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "sus/D7-v3",
+       "layer": 3,
+       "peakDb": -2.16,
+       "attackRmsDb": -21.23,
+       "brightness": 0.00205,
+       "lenS": 2.46,
+       "trimStartMs": 0.0,
+       "measuredCents": 8.32,
+       "src": "JHPiano_Sus_Close_D7_vl4_rr1.wav",
+       "channels": 2
+      }
+     ]
+    }
+   ]
+  },
+  "nosus": {
+   "source": "NoSus",
+   "zones": [
+    {
+     "note": "As1",
+     "midi": 34,
+     "measuredCents": -8.14,
+     "tuneConfidence": 0.6,
+     "tuneResidualCents": 1.93,
+     "tunePartials": [
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8
+     ],
+     "tuneLayer": 2,
+     "layerSpreadCents": 0.8,
+     "inharmonicityB": 0.000156,
+     "layers": [
+      {
+       "file": "nosus/As1-v1",
+       "layer": 1,
+       "peakDb": -5.66,
+       "attackRmsDb": -15.09,
+       "brightness": 0.00847,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -7.34,
+       "src": "JHPiano_NoSus_Close_A#1_vl2_rr1.wav",
+       "channels": 1
+      },
+      {
+       "file": "nosus/As1-v2",
+       "layer": 2,
+       "peakDb": -2.8,
+       "attackRmsDb": -15.74,
+       "brightness": 0.16801,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -8.14,
+       "src": "JHPiano_NoSus_Close_A#1_vl3_rr1.wav",
+       "channels": 1
+      },
+      {
+       "file": "nosus/As1-v3",
+       "layer": 3,
+       "peakDb": -3.1,
+       "attackRmsDb": -15.94,
+       "brightness": 0.24471,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -8.2,
+       "src": "JHPiano_NoSus_Close_A#1_vl4_rr1.wav",
+       "channels": 1
+      }
+     ]
+    },
+    {
+     "note": "C2",
+     "midi": 36,
+     "measuredCents": -8.48,
+     "tuneConfidence": 0.57,
+     "tuneResidualCents": 2.1,
+     "tunePartials": [
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8
+     ],
+     "tuneLayer": 2,
+     "layerSpreadCents": 0.58,
+     "inharmonicityB": 0.000199,
+     "unisonSplitCents": 3.9,
+     "layers": [
+      {
+       "file": "nosus/C2-v1",
+       "layer": 1,
+       "peakDb": -7.83,
+       "attackRmsDb": -17.75,
+       "brightness": 0.00482,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -9.06,
+       "src": "JHPiano_NoSus_Close_C2_vl2_rr1.wav",
+       "channels": 1
+      },
+      {
+       "file": "nosus/C2-v2",
+       "layer": 2,
+       "peakDb": -7.27,
+       "attackRmsDb": -17.97,
+       "brightness": 0.1385,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -8.48,
+       "src": "JHPiano_NoSus_Close_C2_vl3_rr1.wav",
+       "channels": 1
+      },
+      {
+       "file": "nosus/C2-v3",
+       "layer": 3,
+       "peakDb": -6.04,
+       "attackRmsDb": -17.59,
+       "brightness": 0.1891,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -8.45,
+       "src": "JHPiano_NoSus_Close_C2_vl4_rr1.wav",
+       "channels": 1
+      }
+     ]
+    },
+    {
+     "note": "D2",
+     "midi": 38,
+     "measuredCents": -6.28,
+     "tuneConfidence": 0.83,
+     "tuneResidualCents": 0.41,
+     "tunePartials": [
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8
+     ],
+     "tuneLayer": 2,
+     "layerSpreadCents": 1.67,
+     "inharmonicityB": 0.000127,
+     "layers": [
+      {
+       "file": "nosus/D2-v1",
+       "layer": 1,
+       "peakDb": -7.32,
+       "attackRmsDb": -15.86,
+       "brightness": 7e-05,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -4.61,
+       "src": "JHPiano_NoSus_Close_D2_vl2_rr1.wav",
+       "channels": 1
+      },
+      {
+       "file": "nosus/D2-v2",
+       "layer": 2,
+       "peakDb": -7.03,
+       "attackRmsDb": -16.84,
+       "brightness": 0.03647,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -6.28,
+       "src": "JHPiano_NoSus_Close_D2_vl3_rr1.wav",
+       "channels": 1
+      },
+      {
+       "file": "nosus/D2-v3",
+       "layer": 3,
+       "peakDb": -6.36,
+       "attackRmsDb": -16.01,
+       "brightness": 0.05631,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -6.27,
+       "src": "JHPiano_NoSus_Close_D2_vl4_rr1.wav",
+       "channels": 1
+      }
+     ]
+    },
+    {
+     "note": "E2",
+     "midi": 40,
+     "measuredCents": -5.52,
+     "tuneConfidence": 0.71,
+     "tuneResidualCents": 1.56,
+     "tunePartials": [
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8
+     ],
+     "tuneLayer": 2,
+     "layerSpreadCents": 0.39,
+     "inharmonicityB": 0.000152,
+     "layers": [
+      {
+       "file": "nosus/E2-v1",
+       "layer": 1,
+       "peakDb": -7.52,
+       "attackRmsDb": -16.15,
+       "brightness": 0.00015,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -5.13,
+       "src": "JHPiano_NoSus_Close_E2_vl2_rr1.wav",
+       "channels": 1
+      },
+      {
+       "file": "nosus/E2-v2",
+       "layer": 2,
+       "peakDb": -6.68,
+       "attackRmsDb": -16.21,
+       "brightness": 0.04134,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -5.52,
+       "src": "JHPiano_NoSus_Close_E2_vl3_rr1.wav",
+       "channels": 1
+      },
+      {
+       "file": "nosus/E2-v3",
+       "layer": 3,
+       "peakDb": -5.7,
+       "attackRmsDb": -15.74,
+       "brightness": 0.07564,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -5.65,
+       "src": "JHPiano_NoSus_Close_E2_vl4_rr1.wav",
+       "channels": 1
+      }
+     ]
+    },
+    {
+     "note": "Fs2",
+     "midi": 42,
+     "measuredCents": -2.23,
+     "tuneConfidence": 0.88,
+     "tuneResidualCents": 0.85,
+     "tunePartials": [
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8
+     ],
+     "tuneLayer": 2,
+     "layerSpreadCents": 0.6,
+     "inharmonicityB": 9.47e-05,
+     "layers": [
+      {
+       "file": "nosus/Fs2-v1",
+       "layer": 1,
+       "peakDb": -8.2,
+       "attackRmsDb": -17.1,
+       "brightness": 0.00191,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -1.63,
+       "src": "JHPiano_NoSus_Close_F#2_vl2_rr1.wav",
+       "channels": 1
+      },
+      {
+       "file": "nosus/Fs2-v2",
+       "layer": 2,
+       "peakDb": -7.03,
+       "attackRmsDb": -16.53,
+       "brightness": 0.03067,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -2.23,
+       "src": "JHPiano_NoSus_Close_F#2_vl3_rr1.wav",
+       "channels": 1
+      },
+      {
+       "file": "nosus/Fs2-v3",
+       "layer": 3,
+       "peakDb": -6.85,
+       "attackRmsDb": -16.52,
+       "brightness": 0.09907,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -2.2,
+       "src": "JHPiano_NoSus_Close_F#2_vl4_rr1.wav",
+       "channels": 1
+      }
+     ]
+    },
+    {
+     "note": "Gs2",
+     "midi": 44,
+     "measuredCents": -2.72,
+     "tuneConfidence": 0.86,
+     "tuneResidualCents": 0.3,
+     "tunePartials": [
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8
+     ],
+     "tuneLayer": 2,
+     "layerSpreadCents": 1.51,
+     "inharmonicityB": 0.000118,
+     "layers": [
+      {
+       "file": "nosus/Gs2-v1",
+       "layer": 1,
+       "peakDb": -10.45,
+       "attackRmsDb": -19.68,
+       "brightness": 7e-05,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -1.21,
+       "src": "JHPiano_NoSus_Close_G#2_vl2_rr1.wav",
+       "channels": 1
+      },
+      {
+       "file": "nosus/Gs2-v2",
+       "layer": 2,
+       "peakDb": -9.52,
+       "attackRmsDb": -19.85,
+       "brightness": 0.04688,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -2.72,
+       "src": "JHPiano_NoSus_Close_G#2_vl3_rr1.wav",
+       "channels": 1
+      },
+      {
+       "file": "nosus/Gs2-v3",
+       "layer": 3,
+       "peakDb": -7.87,
+       "attackRmsDb": -18.64,
+       "brightness": 0.10506,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -1.98,
+       "src": "JHPiano_NoSus_Close_G#2_vl4_rr1.wav",
+       "channels": 1
+      }
+     ]
+    },
+    {
+     "note": "As2",
+     "midi": 46,
+     "measuredCents": -4.83,
+     "tuneConfidence": 0.7,
+     "tuneResidualCents": 1.04,
+     "tunePartials": [
+      2,
+      3,
+      4,
+      5,
+      6
+     ],
+     "tuneLayer": 2,
+     "layerSpreadCents": 1.84,
+     "inharmonicityB": 9.21e-05,
+     "layers": [
+      {
+       "file": "nosus/As2-v1",
+       "layer": 1,
+       "peakDb": -12.09,
+       "attackRmsDb": -19.34,
+       "brightness": 0.00034,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -2.99,
+       "src": "JHPiano_NoSus_Close_A#2_vl2_rr1.wav",
+       "channels": 1
+      },
+      {
+       "file": "nosus/As2-v2",
+       "layer": 2,
+       "peakDb": -8.59,
+       "attackRmsDb": -17.72,
+       "brightness": 0.03631,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -4.83,
+       "src": "JHPiano_NoSus_Close_A#2_vl3_rr1.wav",
+       "channels": 1
+      },
+      {
+       "file": "nosus/As2-v3",
+       "layer": 3,
+       "peakDb": -7.91,
+       "attackRmsDb": -17.32,
+       "brightness": 0.07087,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -3.91,
+       "src": "JHPiano_NoSus_Close_A#2_vl4_rr1.wav",
+       "channels": 1
+      }
+     ]
+    },
+    {
+     "note": "C3",
+     "midi": 48,
+     "measuredCents": -3.37,
+     "tuneConfidence": 0.59,
+     "tuneResidualCents": 1.01,
+     "tunePartials": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+     ],
+     "tuneLayer": 2,
+     "layerSpreadCents": 2.7,
+     "inharmonicityB": 0.000101,
+     "layers": [
+      {
+       "file": "nosus/C3-v1",
+       "layer": 1,
+       "peakDb": -8.58,
+       "attackRmsDb": -18.7,
+       "brightness": 0.00154,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -0.67,
+       "src": "JHPiano_NoSus_Close_C3_vl2_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "nosus/C3-v2",
+       "layer": 2,
+       "peakDb": -6.68,
+       "attackRmsDb": -17.05,
+       "brightness": 0.03333,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -3.37,
+       "src": "JHPiano_NoSus_Close_C3_vl3_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "nosus/C3-v3",
+       "layer": 3,
+       "peakDb": -4.74,
+       "attackRmsDb": -16.31,
+       "brightness": 0.08325,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -2.8,
+       "src": "JHPiano_NoSus_Close_C3_vl4_rr1.wav",
+       "channels": 2
+      }
+     ]
+    },
+    {
+     "note": "D3",
+     "midi": 50,
+     "measuredCents": -2.24,
+     "tuneConfidence": 0.8,
+     "tuneResidualCents": 0.83,
+     "tunePartials": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+     ],
+     "tuneLayer": 2,
+     "layerSpreadCents": 1.45,
+     "inharmonicityB": 0.000153,
+     "layers": [
+      {
+       "file": "nosus/D3-v1",
+       "layer": 1,
+       "peakDb": -8.77,
+       "attackRmsDb": -18.12,
+       "brightness": 0.0026,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -0.79,
+       "src": "JHPiano_NoSus_Close_D3_vl2_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "nosus/D3-v2",
+       "layer": 2,
+       "peakDb": -6.74,
+       "attackRmsDb": -17.09,
+       "brightness": 0.01815,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -2.24,
+       "src": "JHPiano_NoSus_Close_D3_vl3_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "nosus/D3-v3",
+       "layer": 3,
+       "peakDb": -4.83,
+       "attackRmsDb": -16.75,
+       "brightness": 0.1199,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -1.87,
+       "src": "JHPiano_NoSus_Close_D3_vl4_rr1.wav",
+       "channels": 2
+      }
+     ]
+    },
+    {
+     "note": "E3",
+     "midi": 52,
+     "measuredCents": -3.07,
+     "tuneConfidence": 0.94,
+     "tuneResidualCents": 0.48,
+     "tunePartials": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+     ],
+     "tuneLayer": 2,
+     "layerSpreadCents": 0.66,
+     "inharmonicityB": 0.000159,
+     "layers": [
+      {
+       "file": "nosus/E3-v1",
+       "layer": 1,
+       "peakDb": -8.83,
+       "attackRmsDb": -20.06,
+       "brightness": 0.00127,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -2.95,
+       "src": "JHPiano_NoSus_Close_E3_vl2_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "nosus/E3-v2",
+       "layer": 2,
+       "peakDb": -7.98,
+       "attackRmsDb": -19.28,
+       "brightness": 0.08288,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -3.07,
+       "src": "JHPiano_NoSus_Close_E3_vl3_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "nosus/E3-v3",
+       "layer": 3,
+       "peakDb": -4.18,
+       "attackRmsDb": -18.0,
+       "brightness": 0.27775,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -3.73,
+       "src": "JHPiano_NoSus_Close_E3_vl4_rr1.wav",
+       "channels": 2
+      }
+     ]
+    },
+    {
+     "note": "Fs3",
+     "midi": 54,
+     "measuredCents": -3.28,
+     "tuneConfidence": 0.97,
+     "tuneResidualCents": 0.25,
+     "tunePartials": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+     ],
+     "tuneLayer": 2,
+     "layerSpreadCents": 0.53,
+     "inharmonicityB": 0.000204,
+     "layers": [
+      {
+       "file": "nosus/Fs3-v1",
+       "layer": 1,
+       "peakDb": -9.16,
+       "attackRmsDb": -19.29,
+       "brightness": 0.00173,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -3.1,
+       "src": "JHPiano_NoSus_Close_F#3_vl2_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "nosus/Fs3-v2",
+       "layer": 2,
+       "peakDb": -6.88,
+       "attackRmsDb": -17.97,
+       "brightness": 0.08589,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -3.28,
+       "src": "JHPiano_NoSus_Close_F#3_vl3_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "nosus/Fs3-v3",
+       "layer": 3,
+       "peakDb": -5.44,
+       "attackRmsDb": -17.42,
+       "brightness": 0.21188,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -3.81,
+       "src": "JHPiano_NoSus_Close_F#3_vl4_rr1.wav",
+       "channels": 2
+      }
+     ]
+    },
+    {
+     "note": "Gs3",
+     "midi": 56,
+     "measuredCents": -2.81,
+     "tuneConfidence": 0.97,
+     "tuneResidualCents": 0.27,
+     "tunePartials": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+     ],
+     "tuneLayer": 2,
+     "layerSpreadCents": 0.57,
+     "inharmonicityB": 0.000274,
+     "layers": [
+      {
+       "file": "nosus/Gs3-v1",
+       "layer": 1,
+       "peakDb": -6.85,
+       "attackRmsDb": -16.42,
+       "brightness": 0.0208,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -2.81,
+       "src": "JHPiano_NoSus_Close_G#3_vl2_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "nosus/Gs3-v2",
+       "layer": 2,
+       "peakDb": -6.32,
+       "attackRmsDb": -16.5,
+       "brightness": 0.04663,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -2.81,
+       "src": "JHPiano_NoSus_Close_G#3_vl3_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "nosus/Gs3-v3",
+       "layer": 3,
+       "peakDb": -6.98,
+       "attackRmsDb": -17.76,
+       "brightness": 0.08152,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -3.38,
+       "src": "JHPiano_NoSus_Close_G#3_vl4_rr1.wav",
+       "channels": 2
+      }
+     ]
+    },
+    {
+     "note": "As3",
+     "midi": 58,
+     "measuredCents": -3.99,
+     "tuneConfidence": 0.77,
+     "tuneResidualCents": 1.37,
+     "tunePartials": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+     ],
+     "tuneLayer": 2,
+     "layerSpreadCents": 0.25,
+     "inharmonicityB": 0.000369,
+     "layers": [
+      {
+       "file": "nosus/As3-v1",
+       "layer": 1,
+       "peakDb": -10.61,
+       "attackRmsDb": -20.15,
+       "brightness": 0.00157,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -4.16,
+       "src": "JHPiano_NoSus_Close_A#3_vl2_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "nosus/As3-v2",
+       "layer": 2,
+       "peakDb": -7.23,
+       "attackRmsDb": -17.94,
+       "brightness": 0.05442,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -3.99,
+       "src": "JHPiano_NoSus_Close_A#3_vl3_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "nosus/As3-v3",
+       "layer": 3,
+       "peakDb": -6.1,
+       "attackRmsDb": -17.72,
+       "brightness": 0.07496,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -3.74,
+       "src": "JHPiano_NoSus_Close_A#3_vl4_rr1.wav",
+       "channels": 2
+      }
+     ]
+    },
+    {
+     "note": "C4",
+     "midi": 60,
+     "measuredCents": -0.23,
+     "tuneConfidence": 0.76,
+     "tuneResidualCents": 1.19,
+     "tunePartials": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+     ],
+     "tuneLayer": 2,
+     "layerSpreadCents": 1.1,
+     "inharmonicityB": 0.000234,
+     "layers": [
+      {
+       "file": "nosus/C4-v1",
+       "layer": 1,
+       "peakDb": -6.92,
+       "attackRmsDb": -17.06,
+       "brightness": 0.00707,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": 0.17,
+       "src": "JHPiano_NoSus_Close_C4_vl2_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "nosus/C4-v2",
+       "layer": 2,
+       "peakDb": -4.72,
+       "attackRmsDb": -15.78,
+       "brightness": 0.14358,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -0.23,
+       "src": "JHPiano_NoSus_Close_C4_vl3_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "nosus/C4-v3",
+       "layer": 3,
+       "peakDb": -3.64,
+       "attackRmsDb": -15.61,
+       "brightness": 0.19244,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": 0.87,
+       "src": "JHPiano_NoSus_Close_C4_vl4_rr1.wav",
+       "channels": 2
+      }
+     ]
+    },
+    {
+     "note": "D4",
+     "midi": 62,
+     "measuredCents": -3.11,
+     "tuneConfidence": 0.84,
+     "tuneResidualCents": 0.71,
+     "tunePartials": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+     ],
+     "tuneLayer": 2,
+     "layerSpreadCents": 1.31,
+     "inharmonicityB": 0.000461,
+     "layers": [
+      {
+       "file": "nosus/D4-v1",
+       "layer": 1,
+       "peakDb": -9.62,
+       "attackRmsDb": -19.87,
+       "brightness": 0.00829,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -1.8,
+       "src": "JHPiano_NoSus_Close_D4_vl2_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "nosus/D4-v2",
+       "layer": 2,
+       "peakDb": -8.57,
+       "attackRmsDb": -19.11,
+       "brightness": 0.04542,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -3.11,
+       "src": "JHPiano_NoSus_Close_D4_vl3_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "nosus/D4-v3",
+       "layer": 3,
+       "peakDb": -7.74,
+       "attackRmsDb": -18.16,
+       "brightness": 0.07565,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -1.9,
+       "src": "JHPiano_NoSus_Close_D4_vl4_rr1.wav",
+       "channels": 2
+      }
+     ]
+    },
+    {
+     "note": "E4",
+     "midi": 64,
+     "measuredCents": -1.59,
+     "tuneConfidence": 0.86,
+     "tuneResidualCents": 0.35,
+     "tunePartials": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+     ],
+     "tuneLayer": 2,
+     "layerSpreadCents": 1.49,
+     "inharmonicityB": 0.000528,
+     "layers": [
+      {
+       "file": "nosus/E4-v1",
+       "layer": 1,
+       "peakDb": -5.24,
+       "attackRmsDb": -14.33,
+       "brightness": 0.00056,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -0.1,
+       "src": "JHPiano_NoSus_Close_E4_vl2_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "nosus/E4-v2",
+       "layer": 2,
+       "peakDb": -6.23,
+       "attackRmsDb": -16.24,
+       "brightness": 0.02016,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -1.59,
+       "src": "JHPiano_NoSus_Close_E4_vl3_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "nosus/E4-v3",
+       "layer": 3,
+       "peakDb": -4.77,
+       "attackRmsDb": -16.07,
+       "brightness": 0.05244,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -0.57,
+       "src": "JHPiano_NoSus_Close_E4_vl4_rr1.wav",
+       "channels": 2
+      }
+     ]
+    },
+    {
+     "note": "Fs4",
+     "midi": 66,
+     "measuredCents": -2.2,
+     "tuneConfidence": 0.69,
+     "tuneResidualCents": 0.95,
+     "tunePartials": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+     ],
+     "tuneLayer": 2,
+     "layerSpreadCents": 2.04,
+     "inharmonicityB": 0.000754,
+     "layers": [
+      {
+       "file": "nosus/Fs4-v1",
+       "layer": 1,
+       "peakDb": -8.98,
+       "attackRmsDb": -20.07,
+       "brightness": 0.04898,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -0.16,
+       "src": "JHPiano_NoSus_Close_F#4_vl2_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "nosus/Fs4-v2",
+       "layer": 2,
+       "peakDb": -7.39,
+       "attackRmsDb": -19.16,
+       "brightness": 0.14426,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -2.2,
+       "src": "JHPiano_NoSus_Close_F#4_vl3_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "nosus/Fs4-v3",
+       "layer": 3,
+       "peakDb": -6.52,
+       "attackRmsDb": -19.05,
+       "brightness": 0.18586,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -1.88,
+       "src": "JHPiano_NoSus_Close_F#4_vl4_rr1.wav",
+       "channels": 2
+      }
+     ]
+    },
+    {
+     "note": "Gs4",
+     "midi": 68,
+     "measuredCents": -3.03,
+     "tuneConfidence": 0.53,
+     "tuneResidualCents": 2.18,
+     "tunePartials": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+     ],
+     "tuneLayer": 2,
+     "layerSpreadCents": 1.1,
+     "inharmonicityB": 0.000705,
+     "unisonSplitCents": 1.8,
+     "layers": [
+      {
+       "file": "nosus/Gs4-v1",
+       "layer": 1,
+       "peakDb": -5.25,
+       "attackRmsDb": -15.31,
+       "brightness": 0.02808,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -1.93,
+       "src": "JHPiano_NoSus_Close_G#4_vl2_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "nosus/Gs4-v2",
+       "layer": 2,
+       "peakDb": -4.4,
+       "attackRmsDb": -15.53,
+       "brightness": 0.19948,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -3.03,
+       "src": "JHPiano_NoSus_Close_G#4_vl3_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "nosus/Gs4-v3",
+       "layer": 3,
+       "peakDb": -2.75,
+       "attackRmsDb": -15.16,
+       "brightness": 0.26324,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -2.54,
+       "src": "JHPiano_NoSus_Close_G#4_vl4_rr1.wav",
+       "channels": 2
+      }
+     ]
+    },
+    {
+     "note": "As4",
+     "midi": 70,
+     "measuredCents": 0.4,
+     "tuneConfidence": 0.73,
+     "tuneResidualCents": 1.41,
+     "tunePartials": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+     ],
+     "tuneLayer": 2,
+     "layerSpreadCents": 0.75,
+     "inharmonicityB": 0.00094,
+     "unisonSplitCents": 2.7,
+     "layers": [
+      {
+       "file": "nosus/As4-v1",
+       "layer": 1,
+       "peakDb": -8.08,
+       "attackRmsDb": -15.93,
+       "brightness": 0.00105,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": 1.15,
+       "src": "JHPiano_NoSus_Close_A#4_vl2_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "nosus/As4-v2",
+       "layer": 2,
+       "peakDb": -6.2,
+       "attackRmsDb": -15.84,
+       "brightness": 0.04086,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": 0.4,
+       "src": "JHPiano_NoSus_Close_A#4_vl3_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "nosus/As4-v3",
+       "layer": 3,
+       "peakDb": -5.5,
+       "attackRmsDb": -15.73,
+       "brightness": 0.06248,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": 0.42,
+       "src": "JHPiano_NoSus_Close_A#4_vl4_rr1.wav",
+       "channels": 2
+      }
+     ]
+    },
+    {
+     "note": "C5",
+     "midi": 72,
+     "measuredCents": -3.0,
+     "tuneConfidence": 0.81,
+     "tuneResidualCents": 0.83,
+     "tunePartials": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+     ],
+     "tuneLayer": 2,
+     "layerSpreadCents": 1.31,
+     "inharmonicityB": 0.00121,
+     "unisonSplitCents": 3.6,
+     "layers": [
+      {
+       "file": "nosus/C5-v1",
+       "layer": 1,
+       "peakDb": -3.0,
+       "attackRmsDb": -16.28,
+       "brightness": 0.01852,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -4.31,
+       "src": "JHPiano_NoSus_Close_C5_vl2_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "nosus/C5-v2",
+       "layer": 2,
+       "peakDb": -4.57,
+       "attackRmsDb": -17.06,
+       "brightness": 0.12853,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -3.0,
+       "src": "JHPiano_NoSus_Close_C5_vl3_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "nosus/C5-v3",
+       "layer": 3,
+       "peakDb": -3.78,
+       "attackRmsDb": -17.64,
+       "brightness": 0.20757,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -3.77,
+       "src": "JHPiano_NoSus_Close_C5_vl4_rr1.wav",
+       "channels": 2
+      }
+     ]
+    },
+    {
+     "note": "D5",
+     "midi": 74,
+     "measuredCents": -1.51,
+     "tuneConfidence": 0.66,
+     "tuneResidualCents": 1.61,
+     "tunePartials": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+     ],
+     "tuneLayer": 2,
+     "layerSpreadCents": 1.11,
+     "inharmonicityB": 0.00143,
+     "unisonSplitCents": 1.9,
+     "layers": [
+      {
+       "file": "nosus/D5-v1",
+       "layer": 1,
+       "peakDb": -9.59,
+       "attackRmsDb": -19.61,
+       "brightness": 0.02497,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -1.79,
+       "src": "JHPiano_NoSus_Close_D5_vl2_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "nosus/D5-v2",
+       "layer": 2,
+       "peakDb": -5.15,
+       "attackRmsDb": -17.02,
+       "brightness": 0.1551,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -1.51,
+       "src": "JHPiano_NoSus_Close_D5_vl3_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "nosus/D5-v3",
+       "layer": 3,
+       "peakDb": -3.86,
+       "attackRmsDb": -16.27,
+       "brightness": 0.15135,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -2.62,
+       "src": "JHPiano_NoSus_Close_D5_vl4_rr1.wav",
+       "channels": 2
+      }
+     ]
+    },
+    {
+     "note": "E5",
+     "midi": 76,
+     "measuredCents": -0.81,
+     "tuneConfidence": 0.68,
+     "tuneResidualCents": 1.23,
+     "tunePartials": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+     ],
+     "tuneLayer": 2,
+     "layerSpreadCents": 1.68,
+     "inharmonicityB": 0.00153,
+     "unisonSplitCents": 6.5,
+     "layers": [
+      {
+       "file": "nosus/E5-v1",
+       "layer": 1,
+       "peakDb": -4.74,
+       "attackRmsDb": -14.74,
+       "brightness": 0.00101,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -2.49,
+       "src": "JHPiano_NoSus_Close_E5_vl2_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "nosus/E5-v2",
+       "layer": 2,
+       "peakDb": -6.71,
+       "attackRmsDb": -18.09,
+       "brightness": 0.01343,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -0.81,
+       "src": "JHPiano_NoSus_Close_E5_vl3_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "nosus/E5-v3",
+       "layer": 3,
+       "peakDb": -5.52,
+       "attackRmsDb": -18.2,
+       "brightness": 0.02595,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -1.49,
+       "src": "JHPiano_NoSus_Close_E5_vl4_rr1.wav",
+       "channels": 2
+      }
+     ]
+    },
+    {
+     "note": "Fs5",
+     "midi": 78,
+     "measuredCents": 0.33,
+     "tuneConfidence": 0.55,
+     "tuneResidualCents": 1.14,
+     "tunePartials": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+     ],
+     "tuneLayer": 2,
+     "layerSpreadCents": 2.85,
+     "inharmonicityB": 0.00171,
+     "unisonSplitCents": 7.2,
+     "layers": [
+      {
+       "file": "nosus/Fs5-v1",
+       "layer": 1,
+       "peakDb": -5.0,
+       "attackRmsDb": -15.9,
+       "brightness": 0.01362,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -2.52,
+       "src": "JHPiano_NoSus_Close_F#5_vl2_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "nosus/Fs5-v2",
+       "layer": 2,
+       "peakDb": -5.26,
+       "attackRmsDb": -18.0,
+       "brightness": 0.0235,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": 0.33,
+       "src": "JHPiano_NoSus_Close_F#5_vl3_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "nosus/Fs5-v3",
+       "layer": 3,
+       "peakDb": -4.22,
+       "attackRmsDb": -17.98,
+       "brightness": 0.05566,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -0.18,
+       "src": "JHPiano_NoSus_Close_F#5_vl4_rr1.wav",
+       "channels": 2
+      }
+     ]
+    },
+    {
+     "note": "Gs5",
+     "midi": 80,
+     "measuredCents": -2.47,
+     "tuneConfidence": 0.49,
+     "tuneResidualCents": 1.14,
+     "tunePartials": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+     ],
+     "tuneLayer": 2,
+     "layerSpreadCents": 3.3,
+     "inharmonicityB": 0.00208,
+     "unisonSplitCents": 6.8,
+     "layers": [
+      {
+       "file": "nosus/Gs5-v1",
+       "layer": 1,
+       "peakDb": -11.03,
+       "attackRmsDb": -21.06,
+       "brightness": 0.00149,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": 0.83,
+       "src": "JHPiano_NoSus_Close_G#5_vl2_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "nosus/Gs5-v2",
+       "layer": 2,
+       "peakDb": -7.13,
+       "attackRmsDb": -18.26,
+       "brightness": 0.01487,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -2.47,
+       "src": "JHPiano_NoSus_Close_G#5_vl3_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "nosus/Gs5-v3",
+       "layer": 3,
+       "peakDb": -6.68,
+       "attackRmsDb": -18.4,
+       "brightness": 0.02338,
+       "lenS": 3.6,
+       "trimStartMs": 0.0,
+       "measuredCents": -2.74,
+       "src": "JHPiano_NoSus_Close_G#5_vl4_rr1.wav",
+       "channels": 2
+      }
+     ]
+    },
+    {
+     "note": "As5",
+     "midi": 82,
+     "measuredCents": 1.55,
+     "tuneConfidence": 0.62,
+     "tuneResidualCents": 0.98,
+     "tunePartials": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+     ],
+     "tuneLayer": 2,
+     "layerSpreadCents": 2.55,
+     "inharmonicityB": 0.00244,
+     "unisonSplitCents": 6.7,
+     "layers": [
+      {
+       "file": "nosus/As5-v1",
+       "layer": 1,
+       "peakDb": -4.84,
+       "attackRmsDb": -16.49,
+       "brightness": 0.00677,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -1.0,
+       "src": "JHPiano_NoSus_Close_A#5_vl2_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "nosus/As5-v2",
+       "layer": 2,
+       "peakDb": -5.11,
+       "attackRmsDb": -18.8,
+       "brightness": 0.08177,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": 1.55,
+       "src": "JHPiano_NoSus_Close_A#5_vl3_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "nosus/As5-v3",
+       "layer": 3,
+       "peakDb": -5.41,
+       "attackRmsDb": -18.74,
+       "brightness": 0.14402,
+       "lenS": 3.68,
+       "trimStartMs": 0.0,
+       "measuredCents": 1.61,
+       "src": "JHPiano_NoSus_Close_A#5_vl4_rr1.wav",
+       "channels": 2
+      }
+     ]
+    },
+    {
+     "note": "C6",
+     "midi": 84,
+     "measuredCents": 1.08,
+     "tuneConfidence": 0.23,
+     "tuneResidualCents": 3.66,
+     "tunePartials": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+     ],
+     "tuneLayer": 2,
+     "layerSpreadCents": 2.43,
+     "inharmonicityB": 0.00322,
+     "unisonSplitCents": 10.3,
+     "layers": [
+      {
+       "file": "nosus/C6-v1",
+       "layer": 1,
+       "peakDb": -7.98,
+       "attackRmsDb": -20.29,
+       "brightness": 0.00618,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": 3.51,
+       "src": "JHPiano_NoSus_Close_C6_vl2_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "nosus/C6-v2",
+       "layer": 2,
+       "peakDb": -8.1,
+       "attackRmsDb": -20.18,
+       "brightness": 0.01959,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": 1.08,
+       "src": "JHPiano_NoSus_Close_C6_vl3_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "nosus/C6-v3",
+       "layer": 3,
+       "peakDb": -7.79,
+       "attackRmsDb": -19.83,
+       "brightness": 0.07599,
+       "lenS": 3.39,
+       "trimStartMs": 0.0,
+       "measuredCents": 2.18,
+       "src": "JHPiano_NoSus_Close_C6_vl4_rr1.wav",
+       "channels": 2
+      }
+     ]
+    },
+    {
+     "note": "D6",
+     "midi": 86,
+     "measuredCents": 3.91,
+     "tuneConfidence": 0.7,
+     "tuneResidualCents": 1.14,
+     "tunePartials": [
+      1,
+      2,
+      3,
+      5,
+      6
+     ],
+     "tuneLayer": 2,
+     "layerSpreadCents": 1.69,
+     "inharmonicityB": 0.00369,
+     "unisonSplitCents": 1.6,
+     "layers": [
+      {
+       "file": "nosus/D6-v1",
+       "layer": 1,
+       "peakDb": -10.11,
+       "attackRmsDb": -22.23,
+       "brightness": 0.00157,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": 2.22,
+       "src": "JHPiano_NoSus_Close_D6_vl2_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "nosus/D6-v2",
+       "layer": 2,
+       "peakDb": -6.5,
+       "attackRmsDb": -19.23,
+       "brightness": 0.00545,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": 3.91,
+       "src": "JHPiano_NoSus_Close_D6_vl3_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "nosus/D6-v3",
+       "layer": 3,
+       "peakDb": -5.05,
+       "attackRmsDb": -18.34,
+       "brightness": 0.00929,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": 4.26,
+       "src": "JHPiano_NoSus_Close_D6_vl4_rr1.wav",
+       "channels": 2
+      }
+     ]
+    },
+    {
+     "note": "E6",
+     "midi": 88,
+     "measuredCents": 1.16,
+     "tuneConfidence": 0.27,
+     "tuneResidualCents": 2.6,
+     "tunePartials": [
+      1,
+      2,
+      3,
+      4,
+      5
+     ],
+     "tuneLayer": 2,
+     "layerSpreadCents": 3.54,
+     "inharmonicityB": 0.00442,
+     "unisonSplitCents": 10.3,
+     "layers": [
+      {
+       "file": "nosus/E6-v1",
+       "layer": 1,
+       "peakDb": -6.93,
+       "attackRmsDb": -18.82,
+       "brightness": 0.0009,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": 4.7,
+       "src": "JHPiano_NoSus_Close_E6_vl2_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "nosus/E6-v2",
+       "layer": 2,
+       "peakDb": -5.95,
+       "attackRmsDb": -19.24,
+       "brightness": 0.00799,
+       "lenS": 3.72,
+       "trimStartMs": 0.0,
+       "measuredCents": 1.16,
+       "src": "JHPiano_NoSus_Close_E6_vl3_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "nosus/E6-v3",
+       "layer": 3,
+       "peakDb": -5.82,
+       "attackRmsDb": -18.91,
+       "brightness": 0.01702,
+       "lenS": 2.58,
+       "trimStartMs": 0.0,
+       "measuredCents": 1.6,
+       "src": "JHPiano_NoSus_Close_E6_vl4_rr1.wav",
+       "channels": 2
+      }
+     ]
+    },
+    {
+     "note": "Fs6",
+     "midi": 90,
+     "measuredCents": -0.9,
+     "tuneConfidence": 0.12,
+     "tuneResidualCents": 0.76,
+     "tunePartials": [
+      1,
+      2,
+      3
+     ],
+     "tuneLayer": 2,
+     "layerSpreadCents": 7.55,
+     "inharmonicityB": 0.00526,
+     "unisonSplitCents": 9.9,
+     "layers": [
+      {
+       "file": "nosus/Fs6-v1",
+       "layer": 1,
+       "peakDb": -11.29,
+       "attackRmsDb": -23.24,
+       "brightness": 0.0005,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": 6.65,
+       "src": "JHPiano_NoSus_Close_F#6_vl2_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "nosus/Fs6-v2",
+       "layer": 2,
+       "peakDb": -10.23,
+       "attackRmsDb": -22.37,
+       "brightness": 0.00019,
+       "lenS": 2.15,
+       "trimStartMs": 0.0,
+       "measuredCents": -0.9,
+       "src": "JHPiano_NoSus_Close_F#6_vl3_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "nosus/Fs6-v3",
+       "layer": 3,
+       "peakDb": -9.21,
+       "attackRmsDb": -22.04,
+       "brightness": 0.00317,
+       "lenS": 1.59,
+       "trimStartMs": 0.0,
+       "measuredCents": -0.68,
+       "src": "JHPiano_NoSus_Close_F#6_vl4_rr1.wav",
+       "channels": 2
+      }
+     ]
+    },
+    {
+     "note": "Gs6",
+     "midi": 92,
+     "measuredCents": 3.87,
+     "tuneConfidence": 0.6,
+     "tuneResidualCents": 1.63,
+     "tunePartials": [
+      1,
+      2,
+      3,
+      4
+     ],
+     "tuneLayer": 2,
+     "layerSpreadCents": 1.67,
+     "inharmonicityB": 0.00613,
+     "unisonSplitCents": 4.5,
+     "layers": [
+      {
+       "file": "nosus/Gs6-v1",
+       "layer": 1,
+       "peakDb": -7.86,
+       "attackRmsDb": -23.35,
+       "brightness": 0.00049,
+       "lenS": 3.73,
+       "trimStartMs": 0.0,
+       "measuredCents": 3.94,
+       "src": "JHPiano_NoSus_Close_G#6_vl2_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "nosus/Gs6-v2",
+       "layer": 2,
+       "peakDb": -9.57,
+       "attackRmsDb": -22.95,
+       "brightness": 0.00096,
+       "lenS": 2.64,
+       "trimStartMs": 0.0,
+       "measuredCents": 3.87,
+       "src": "JHPiano_NoSus_Close_G#6_vl3_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "nosus/Gs6-v3",
+       "layer": 3,
+       "peakDb": -11.12,
+       "attackRmsDb": -24.64,
+       "brightness": 0.00264,
+       "lenS": 1.6,
+       "trimStartMs": 0.0,
+       "measuredCents": 2.2,
+       "src": "JHPiano_NoSus_Close_G#6_vl4_rr1.wav",
+       "channels": 2
+      }
+     ]
+    },
+    {
+     "note": "As6",
+     "midi": 94,
+     "measuredCents": -2.38,
+     "tuneConfidence": 0.05,
+     "tuneResidualCents": 4.09,
+     "tunePartials": [
+      1,
+      2,
+      3,
+      4
+     ],
+     "tuneLayer": 2,
+     "layerSpreadCents": 8.63,
+     "inharmonicityB": 0.00815,
+     "unisonSplitCents": 12.7,
+     "layers": [
+      {
+       "file": "nosus/As6-v1",
+       "layer": 1,
+       "peakDb": -8.1,
+       "attackRmsDb": -23.39,
+       "brightness": 0.00031,
+       "lenS": 2.6,
+       "trimStartMs": 0.0,
+       "measuredCents": 6.25,
+       "src": "JHPiano_NoSus_Close_A#6_vl2_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "nosus/As6-v2",
+       "layer": 2,
+       "peakDb": -5.18,
+       "attackRmsDb": -21.04,
+       "brightness": 0.00162,
+       "lenS": 1.69,
+       "trimStartMs": 0.0,
+       "measuredCents": -2.38,
+       "src": "JHPiano_NoSus_Close_A#6_vl3_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "nosus/As6-v3",
+       "layer": 3,
+       "peakDb": -4.59,
+       "attackRmsDb": -21.94,
+       "brightness": 0.00382,
+       "lenS": 1.35,
+       "trimStartMs": 0.0,
+       "measuredCents": 1.71,
+       "src": "JHPiano_NoSus_Close_A#6_vl4_rr1.wav",
+       "channels": 2
+      }
+     ]
+    },
+    {
+     "note": "C7",
+     "midi": 96,
+     "measuredCents": 9.23,
+     "tuneConfidence": 0.1,
+     "tuneResidualCents": 2.91,
+     "tunePartials": [
+      1,
+      2,
+      3,
+      4
+     ],
+     "tuneLayer": 2,
+     "layerSpreadCents": 7.18,
+     "inharmonicityB": 0.0101,
+     "unisonSplitCents": 13.8,
+     "layers": [
+      {
+       "file": "nosus/C7-v1",
+       "layer": 1,
+       "peakDb": -8.52,
+       "attackRmsDb": -25.14,
+       "brightness": 0.0004,
+       "lenS": 3.53,
+       "trimStartMs": 0.0,
+       "measuredCents": 16.41,
+       "src": "JHPiano_NoSus_Close_C7_vl2_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "nosus/C7-v2",
+       "layer": 2,
+       "peakDb": -6.99,
+       "attackRmsDb": -23.71,
+       "brightness": 0.00098,
+       "lenS": 1.64,
+       "trimStartMs": 0.0,
+       "measuredCents": 9.23,
+       "src": "JHPiano_NoSus_Close_C7_vl3_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "nosus/C7-v3",
+       "layer": 3,
+       "peakDb": -6.78,
+       "attackRmsDb": -23.78,
+       "brightness": 0.00636,
+       "lenS": 1.46,
+       "trimStartMs": 0.0,
+       "measuredCents": 8.89,
+       "src": "JHPiano_NoSus_Close_C7_vl4_rr1.wav",
+       "channels": 2
+      }
+     ]
+    },
+    {
+     "note": "D7",
+     "midi": 98,
+     "measuredCents": 9.47,
+     "tuneConfidence": 0.07,
+     "tuneResidualCents": 3.15,
+     "tunePartials": [
+      1,
+      2,
+      3
+     ],
+     "tuneLayer": 2,
+     "layerSpreadCents": 8.31,
+     "inharmonicityB": 0.0123,
+     "unisonSplitCents": 5.6,
+     "layers": [
+      {
+       "file": "nosus/D7-v1",
+       "layer": 1,
+       "peakDb": -7.63,
+       "attackRmsDb": -28.21,
+       "brightness": 0.00068,
+       "lenS": 1.57,
+       "trimStartMs": 0.0,
+       "measuredCents": 17.78,
+       "src": "JHPiano_NoSus_Close_D7_vl2_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "nosus/D7-v2",
+       "layer": 2,
+       "peakDb": -7.07,
+       "attackRmsDb": -25.63,
+       "brightness": 0.00087,
+       "lenS": 1.07,
+       "trimStartMs": 0.0,
+       "measuredCents": 9.47,
+       "src": "JHPiano_NoSus_Close_D7_vl3_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "nosus/D7-v3",
+       "layer": 3,
+       "peakDb": -7.11,
+       "attackRmsDb": -25.62,
+       "brightness": 0.00191,
+       "lenS": 1.04,
+       "trimStartMs": 0.0,
+       "measuredCents": 10.41,
+       "src": "JHPiano_NoSus_Close_D7_vl4_rr1.wav",
+       "channels": 2
+      }
+     ]
+    }
+   ]
+  },
+  "rel": {
+   "source": "Rel",
+   "zones": [
+    {
+     "note": "As1",
+     "midi": 34,
+     "layers": [
+      {
+       "file": "rel/As1-v1",
+       "layer": 1,
+       "peakDb": -56.72,
+       "attackRmsDb": -70.48,
+       "brightness": 0.00114,
+       "lenS": 0.793,
+       "trimStartMs": 0.0,
+       "src": "JHPiano_NoSusRel_Close_A#1_vl2_rr1.wav",
+       "channels": 1
+      },
+      {
+       "file": "rel/As1-v2",
+       "layer": 2,
+       "peakDb": -41.13,
+       "attackRmsDb": -56.62,
+       "brightness": 0.27126,
+       "lenS": 1.88,
+       "trimStartMs": 0.0,
+       "src": "JHPiano_NoSusRel_Close_A#1_vl3_rr1.wav",
+       "channels": 1
+      },
+      {
+       "file": "rel/As1-v3",
+       "layer": 3,
+       "peakDb": -34.7,
+       "attackRmsDb": -51.55,
+       "brightness": 0.38912,
+       "lenS": 1.71,
+       "trimStartMs": 0.0,
+       "src": "JHPiano_NoSusRel_Close_A#1_vl4_rr1.wav",
+       "channels": 1
+      }
+     ]
+    },
+    {
+     "note": "C2",
+     "midi": 36,
+     "layers": [
+      {
+       "file": "rel/C2-v1",
+       "layer": 1,
+       "peakDb": -60.82,
+       "attackRmsDb": -72.62,
+       "brightness": 0.00146,
+       "lenS": 0.781,
+       "trimStartMs": 0.0,
+       "src": "JHPiano_NoSusRel_Close_C2_vl2_rr1.wav",
+       "channels": 1
+      },
+      {
+       "file": "rel/C2-v2",
+       "layer": 2,
+       "peakDb": -42.86,
+       "attackRmsDb": -58.95,
+       "brightness": 0.27536,
+       "lenS": 1.71,
+       "trimStartMs": 0.0,
+       "src": "JHPiano_NoSusRel_Close_C2_vl3_rr1.wav",
+       "channels": 1
+      },
+      {
+       "file": "rel/C2-v3",
+       "layer": 3,
+       "peakDb": -39.49,
+       "attackRmsDb": -54.45,
+       "brightness": 0.4429,
+       "lenS": 1.19,
+       "trimStartMs": 0.0,
+       "src": "JHPiano_NoSusRel_Close_C2_vl4_rr1.wav",
+       "channels": 1
+      }
+     ]
+    },
+    {
+     "note": "D2",
+     "midi": 38,
+     "layers": [
+      {
+       "file": "rel/D2-v1",
+       "layer": 1,
+       "peakDb": -60.58,
+       "attackRmsDb": -72.55,
+       "brightness": 0.00247,
+       "lenS": 0.77,
+       "trimStartMs": 0.0,
+       "src": "JHPiano_NoSusRel_Close_D2_vl2_rr1.wav",
+       "channels": 1
+      },
+      {
+       "file": "rel/D2-v2",
+       "layer": 2,
+       "peakDb": -39.09,
+       "attackRmsDb": -57.87,
+       "brightness": 0.126,
+       "lenS": 1.68,
+       "trimStartMs": 0.0,
+       "src": "JHPiano_NoSusRel_Close_D2_vl3_rr1.wav",
+       "channels": 1
+      },
+      {
+       "file": "rel/D2-v3",
+       "layer": 3,
+       "peakDb": -31.64,
+       "attackRmsDb": -47.45,
+       "brightness": 0.33795,
+       "lenS": 1.55,
+       "trimStartMs": 0.0,
+       "src": "JHPiano_NoSusRel_Close_D2_vl4_rr1.wav",
+       "channels": 1
+      }
+     ]
+    },
+    {
+     "note": "E2",
+     "midi": 40,
+     "layers": [
+      {
+       "file": "rel/E2-v1",
+       "layer": 1,
+       "peakDb": -57.0,
+       "attackRmsDb": -70.43,
+       "brightness": 0.00155,
+       "lenS": 0.77,
+       "trimStartMs": 0.0,
+       "src": "JHPiano_NoSusRel_Close_E2_vl2_rr1.wav",
+       "channels": 1
+      },
+      {
+       "file": "rel/E2-v2",
+       "layer": 2,
+       "peakDb": -42.07,
+       "attackRmsDb": -53.38,
+       "brightness": 0.00889,
+       "lenS": 1.341,
+       "trimStartMs": 0.0,
+       "src": "JHPiano_NoSusRel_Close_E2_vl3_rr1.wav",
+       "channels": 1
+      },
+      {
+       "file": "rel/E2-v3",
+       "layer": 3,
+       "peakDb": -36.21,
+       "attackRmsDb": -48.51,
+       "brightness": 0.06275,
+       "lenS": 1.52,
+       "trimStartMs": 0.0,
+       "src": "JHPiano_NoSusRel_Close_E2_vl4_rr1.wav",
+       "channels": 1
+      }
+     ]
+    },
+    {
+     "note": "Fs2",
+     "midi": 42,
+     "layers": [
+      {
+       "file": "rel/Fs2-v1",
+       "layer": 1,
+       "peakDb": -48.86,
+       "attackRmsDb": -61.68,
+       "brightness": 0.00742,
+       "lenS": 0.784,
+       "trimStartMs": 0.0,
+       "src": "JHPiano_NoSusRel_Close_F#2_vl2_rr1.wav",
+       "channels": 1
+      },
+      {
+       "file": "rel/Fs2-v2",
+       "layer": 2,
+       "peakDb": -43.42,
+       "attackRmsDb": -57.27,
+       "brightness": 0.04589,
+       "lenS": 1.13,
+       "trimStartMs": 0.0,
+       "src": "JHPiano_NoSusRel_Close_F#2_vl3_rr1.wav",
+       "channels": 1
+      },
+      {
+       "file": "rel/Fs2-v3",
+       "layer": 3,
+       "peakDb": -37.17,
+       "attackRmsDb": -52.64,
+       "brightness": 0.10636,
+       "lenS": 1.39,
+       "trimStartMs": 0.0,
+       "src": "JHPiano_NoSusRel_Close_F#2_vl4_rr1.wav",
+       "channels": 1
+      }
+     ]
+    },
+    {
+     "note": "Gs2",
+     "midi": 44,
+     "layers": [
+      {
+       "file": "rel/Gs2-v1",
+       "layer": 1,
+       "peakDb": -46.27,
+       "attackRmsDb": -61.9,
+       "brightness": 0.00359,
+       "lenS": 0.776,
+       "trimStartMs": 0.0,
+       "src": "JHPiano_NoSusRel_Close_G#2_vl2_rr1.wav",
+       "channels": 1
+      },
+      {
+       "file": "rel/Gs2-v2",
+       "layer": 2,
+       "peakDb": -43.22,
+       "attackRmsDb": -59.55,
+       "brightness": 0.01545,
+       "lenS": 1.166,
+       "trimStartMs": 0.0,
+       "src": "JHPiano_NoSusRel_Close_G#2_vl3_rr1.wav",
+       "channels": 1
+      },
+      {
+       "file": "rel/Gs2-v3",
+       "layer": 3,
+       "peakDb": -39.63,
+       "attackRmsDb": -53.62,
+       "brightness": 0.08178,
+       "lenS": 1.5,
+       "trimStartMs": 0.0,
+       "src": "JHPiano_NoSusRel_Close_G#2_vl4_rr1.wav",
+       "channels": 1
+      }
+     ]
+    },
+    {
+     "note": "As2",
+     "midi": 46,
+     "layers": [
+      {
+       "file": "rel/As2-v1",
+       "layer": 1,
+       "peakDb": -57.05,
+       "attackRmsDb": -68.38,
+       "brightness": 0.00307,
+       "lenS": 0.777,
+       "trimStartMs": 0.0,
+       "src": "JHPiano_NoSusRel_Close_A#2_vl2_rr1.wav",
+       "channels": 1
+      },
+      {
+       "file": "rel/As2-v2",
+       "layer": 2,
+       "peakDb": -37.19,
+       "attackRmsDb": -54.53,
+       "brightness": 0.05326,
+       "lenS": 1.309,
+       "trimStartMs": 0.0,
+       "src": "JHPiano_NoSusRel_Close_A#2_vl3_rr1.wav",
+       "channels": 1
+      },
+      {
+       "file": "rel/As2-v3",
+       "layer": 3,
+       "peakDb": -34.19,
+       "attackRmsDb": -48.93,
+       "brightness": 0.10538,
+       "lenS": 1.05,
+       "trimStartMs": 0.0,
+       "src": "JHPiano_NoSusRel_Close_A#2_vl4_rr1.wav",
+       "channels": 1
+      }
+     ]
+    },
+    {
+     "note": "C3",
+     "midi": 48,
+     "layers": [
+      {
+       "file": "rel/C3-v1",
+       "layer": 1,
+       "peakDb": -61.57,
+       "attackRmsDb": -70.49,
+       "brightness": 0.00093,
+       "lenS": 0.517,
+       "trimStartMs": 0.0,
+       "src": "JHPiano_NoSusRel_Close_C3_vl2_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "rel/C3-v2",
+       "layer": 2,
+       "peakDb": -37.17,
+       "attackRmsDb": -51.72,
+       "brightness": 0.06155,
+       "lenS": 1.33,
+       "trimStartMs": 0.0,
+       "src": "JHPiano_NoSusRel_Close_C3_vl3_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "rel/C3-v3",
+       "layer": 3,
+       "peakDb": -36.12,
+       "attackRmsDb": -48.19,
+       "brightness": 0.15963,
+       "lenS": 1.55,
+       "trimStartMs": 0.0,
+       "src": "JHPiano_NoSusRel_Close_C3_vl4_rr1.wav",
+       "channels": 2
+      }
+     ]
+    },
+    {
+     "note": "D3",
+     "midi": 50,
+     "layers": [
+      {
+       "file": "rel/D3-v1",
+       "layer": 1,
+       "peakDb": -57.11,
+       "attackRmsDb": -68.4,
+       "brightness": 0.00366,
+       "lenS": 0.647,
+       "trimStartMs": 0.0,
+       "src": "JHPiano_NoSusRel_Close_D3_vl2_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "rel/D3-v2",
+       "layer": 2,
+       "peakDb": -41.08,
+       "attackRmsDb": -52.05,
+       "brightness": 0.05328,
+       "lenS": 1.362,
+       "trimStartMs": 0.0,
+       "src": "JHPiano_NoSusRel_Close_D3_vl3_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "rel/D3-v3",
+       "layer": 3,
+       "peakDb": -36.95,
+       "attackRmsDb": -53.3,
+       "brightness": 0.18139,
+       "lenS": 1.22,
+       "trimStartMs": 0.0,
+       "src": "JHPiano_NoSusRel_Close_D3_vl4_rr1.wav",
+       "channels": 2
+      }
+     ]
+    },
+    {
+     "note": "E3",
+     "midi": 52,
+     "layers": [
+      {
+       "file": "rel/E3-v1",
+       "layer": 1,
+       "peakDb": -58.46,
+       "attackRmsDb": -70.45,
+       "brightness": 0.00432,
+       "lenS": 0.767,
+       "trimStartMs": 0.0,
+       "src": "JHPiano_NoSusRel_Close_E3_vl2_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "rel/E3-v2",
+       "layer": 2,
+       "peakDb": -42.76,
+       "attackRmsDb": -60.3,
+       "brightness": 0.08374,
+       "lenS": 1.39,
+       "trimStartMs": 0.0,
+       "src": "JHPiano_NoSusRel_Close_E3_vl3_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "rel/E3-v3",
+       "layer": 3,
+       "peakDb": -43.66,
+       "attackRmsDb": -55.27,
+       "brightness": 0.14458,
+       "lenS": 1.098,
+       "trimStartMs": 0.0,
+       "src": "JHPiano_NoSusRel_Close_E3_vl4_rr1.wav",
+       "channels": 2
+      }
+     ]
+    },
+    {
+     "note": "Fs3",
+     "midi": 54,
+     "layers": [
+      {
+       "file": "rel/Fs3-v1",
+       "layer": 1,
+       "peakDb": -54.3,
+       "attackRmsDb": -67.35,
+       "brightness": 0.01337,
+       "lenS": 0.797,
+       "trimStartMs": 0.0,
+       "src": "JHPiano_NoSusRel_Close_F#3_vl2_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "rel/Fs3-v2",
+       "layer": 2,
+       "peakDb": -48.72,
+       "attackRmsDb": -65.18,
+       "brightness": 0.08582,
+       "lenS": 1.432,
+       "trimStartMs": 0.0,
+       "src": "JHPiano_NoSusRel_Close_F#3_vl3_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "rel/Fs3-v3",
+       "layer": 3,
+       "peakDb": -43.58,
+       "attackRmsDb": -60.24,
+       "brightness": 0.15886,
+       "lenS": 1.238,
+       "trimStartMs": 0.0,
+       "src": "JHPiano_NoSusRel_Close_F#3_vl4_rr1.wav",
+       "channels": 2
+      }
+     ]
+    },
+    {
+     "note": "Gs3",
+     "midi": 56,
+     "layers": [
+      {
+       "file": "rel/Gs3-v1",
+       "layer": 1,
+       "peakDb": -53.34,
+       "attackRmsDb": -64.8,
+       "brightness": 0.01005,
+       "lenS": 0.765,
+       "trimStartMs": 0.0,
+       "src": "JHPiano_NoSusRel_Close_G#3_vl2_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "rel/Gs3-v2",
+       "layer": 2,
+       "peakDb": -46.27,
+       "attackRmsDb": -63.28,
+       "brightness": 0.03358,
+       "lenS": 1.453,
+       "trimStartMs": 0.0,
+       "src": "JHPiano_NoSusRel_Close_G#3_vl3_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "rel/Gs3-v3",
+       "layer": 3,
+       "peakDb": -48.52,
+       "attackRmsDb": -66.0,
+       "brightness": 0.05163,
+       "lenS": 1.256,
+       "trimStartMs": 0.0,
+       "src": "JHPiano_NoSusRel_Close_G#3_vl4_rr1.wav",
+       "channels": 2
+      }
+     ]
+    },
+    {
+     "note": "As3",
+     "midi": 58,
+     "layers": [
+      {
+       "file": "rel/As3-v1",
+       "layer": 1,
+       "peakDb": -56.61,
+       "attackRmsDb": -71.92,
+       "brightness": 0.00897,
+       "lenS": 0.768,
+       "trimStartMs": 0.0,
+       "src": "JHPiano_NoSusRel_Close_A#3_vl2_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "rel/As3-v2",
+       "layer": 2,
+       "peakDb": -44.33,
+       "attackRmsDb": -57.74,
+       "brightness": 0.09692,
+       "lenS": 1.45,
+       "trimStartMs": 0.0,
+       "src": "JHPiano_NoSusRel_Close_A#3_vl3_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "rel/As3-v3",
+       "layer": 3,
+       "peakDb": -38.75,
+       "attackRmsDb": -51.21,
+       "brightness": 0.10274,
+       "lenS": 1.086,
+       "trimStartMs": 0.0,
+       "src": "JHPiano_NoSusRel_Close_A#3_vl4_rr1.wav",
+       "channels": 2
+      }
+     ]
+    },
+    {
+     "note": "C4",
+     "midi": 60,
+     "layers": [
+      {
+       "file": "rel/C4-v1",
+       "layer": 1,
+       "peakDb": -60.32,
+       "attackRmsDb": -70.49,
+       "brightness": 0.00889,
+       "lenS": 0.692,
+       "trimStartMs": 0.0,
+       "src": "JHPiano_NoSusRel_Close_C4_vl2_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "rel/C4-v2",
+       "layer": 2,
+       "peakDb": -44.79,
+       "attackRmsDb": -60.43,
+       "brightness": 0.11781,
+       "lenS": 1.441,
+       "trimStartMs": 0.0,
+       "src": "JHPiano_NoSusRel_Close_C4_vl3_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "rel/C4-v3",
+       "layer": 3,
+       "peakDb": -40.29,
+       "attackRmsDb": -52.26,
+       "brightness": 0.13578,
+       "lenS": 1.21,
+       "trimStartMs": 0.0,
+       "src": "JHPiano_NoSusRel_Close_C4_vl4_rr1.wav",
+       "channels": 2
+      }
+     ]
+    },
+    {
+     "note": "D4",
+     "midi": 62,
+     "layers": [
+      {
+       "file": "rel/D4-v1",
+       "layer": 1,
+       "peakDb": -60.29,
+       "attackRmsDb": -72.28,
+       "brightness": 0.00792,
+       "lenS": 0.684,
+       "trimStartMs": 0.0,
+       "src": "JHPiano_NoSusRel_Close_D4_vl2_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "rel/D4-v2",
+       "layer": 2,
+       "peakDb": -44.49,
+       "attackRmsDb": -60.6,
+       "brightness": 0.04882,
+       "lenS": 1.43,
+       "trimStartMs": 0.0,
+       "src": "JHPiano_NoSusRel_Close_D4_vl3_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "rel/D4-v3",
+       "layer": 3,
+       "peakDb": -43.98,
+       "attackRmsDb": -57.54,
+       "brightness": 0.06556,
+       "lenS": 1.099,
+       "trimStartMs": 0.0,
+       "src": "JHPiano_NoSusRel_Close_D4_vl4_rr1.wav",
+       "channels": 2
+      }
+     ]
+    },
+    {
+     "note": "E4",
+     "midi": 64,
+     "layers": [
+      {
+       "file": "rel/E4-v1",
+       "layer": 1,
+       "peakDb": -56.85,
+       "attackRmsDb": -69.77,
+       "brightness": 0.00098,
+       "lenS": 0.653,
+       "trimStartMs": 0.0,
+       "src": "JHPiano_NoSusRel_Close_E4_vl2_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "rel/E4-v2",
+       "layer": 2,
+       "peakDb": -49.82,
+       "attackRmsDb": -64.69,
+       "brightness": 0.44542,
+       "lenS": 1.438,
+       "trimStartMs": 0.0,
+       "src": "JHPiano_NoSusRel_Close_E4_vl3_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "rel/E4-v3",
+       "layer": 3,
+       "peakDb": -42.93,
+       "attackRmsDb": -55.94,
+       "brightness": 0.14595,
+       "lenS": 0.891,
+       "trimStartMs": 0.0,
+       "src": "JHPiano_NoSusRel_Close_E4_vl4_rr1.wav",
+       "channels": 2
+      }
+     ]
+    },
+    {
+     "note": "Fs4",
+     "midi": 66,
+     "layers": [
+      {
+       "file": "rel/Fs4-v1",
+       "layer": 1,
+       "peakDb": -54.5,
+       "attackRmsDb": -68.48,
+       "brightness": 0.00107,
+       "lenS": 0.62,
+       "trimStartMs": 0.0,
+       "src": "JHPiano_NoSusRel_Close_F#4_vl2_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "rel/Fs4-v2",
+       "layer": 2,
+       "peakDb": -46.5,
+       "attackRmsDb": -59.55,
+       "brightness": 0.02033,
+       "lenS": 1.441,
+       "trimStartMs": 0.0,
+       "src": "JHPiano_NoSusRel_Close_F#4_vl3_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "rel/Fs4-v3",
+       "layer": 3,
+       "peakDb": -50.76,
+       "attackRmsDb": -65.51,
+       "brightness": 0.02596,
+       "lenS": 1.4,
+       "trimStartMs": 0.0,
+       "src": "JHPiano_NoSusRel_Close_F#4_vl4_rr1.wav",
+       "channels": 2
+      }
+     ]
+    },
+    {
+     "note": "Gs4",
+     "midi": 68,
+     "layers": [
+      {
+       "file": "rel/Gs4-v1",
+       "layer": 1,
+       "peakDb": -56.88,
+       "attackRmsDb": -71.15,
+       "brightness": 0.00214,
+       "lenS": 0.594,
+       "trimStartMs": 0.0,
+       "src": "JHPiano_NoSusRel_Close_G#4_vl2_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "rel/Gs4-v2",
+       "layer": 2,
+       "peakDb": -47.21,
+       "attackRmsDb": -61.72,
+       "brightness": 0.09049,
+       "lenS": 1.467,
+       "trimStartMs": 0.0,
+       "src": "JHPiano_NoSusRel_Close_G#4_vl3_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "rel/Gs4-v3",
+       "layer": 3,
+       "peakDb": -46.63,
+       "attackRmsDb": -63.11,
+       "brightness": 0.04399,
+       "lenS": 1.096,
+       "trimStartMs": 0.0,
+       "src": "JHPiano_NoSusRel_Close_G#4_vl4_rr1.wav",
+       "channels": 2
+      }
+     ]
+    },
+    {
+     "note": "As4",
+     "midi": 70,
+     "layers": [
+      {
+       "file": "rel/As4-v1",
+       "layer": 1,
+       "peakDb": -57.68,
+       "attackRmsDb": -70.87,
+       "brightness": 0.00129,
+       "lenS": 0.577,
+       "trimStartMs": 0.0,
+       "src": "JHPiano_NoSusRel_Close_A#4_vl2_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "rel/As4-v2",
+       "layer": 2,
+       "peakDb": -49.37,
+       "attackRmsDb": -64.06,
+       "brightness": 0.03482,
+       "lenS": 1.463,
+       "trimStartMs": 0.0,
+       "src": "JHPiano_NoSusRel_Close_A#4_vl3_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "rel/As4-v3",
+       "layer": 3,
+       "peakDb": -40.52,
+       "attackRmsDb": -54.47,
+       "brightness": 0.01826,
+       "lenS": 1.05,
+       "trimStartMs": 0.0,
+       "src": "JHPiano_NoSusRel_Close_A#4_vl4_rr1.wav",
+       "channels": 2
+      }
+     ]
+    },
+    {
+     "note": "C5",
+     "midi": 72,
+     "layers": [
+      {
+       "file": "rel/C5-v1",
+       "layer": 1,
+       "peakDb": -56.98,
+       "attackRmsDb": -70.56,
+       "brightness": 0.00285,
+       "lenS": 0.542,
+       "trimStartMs": 0.0,
+       "src": "JHPiano_NoSusRel_Close_C5_vl2_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "rel/C5-v2",
+       "layer": 2,
+       "peakDb": -55.23,
+       "attackRmsDb": -70.48,
+       "brightness": 0.07755,
+       "lenS": 1.463,
+       "trimStartMs": 0.0,
+       "src": "JHPiano_NoSusRel_Close_C5_vl3_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "rel/C5-v3",
+       "layer": 3,
+       "peakDb": -46.22,
+       "attackRmsDb": -59.02,
+       "brightness": 0.15911,
+       "lenS": 1.0,
+       "trimStartMs": 0.0,
+       "src": "JHPiano_NoSusRel_Close_C5_vl4_rr1.wav",
+       "channels": 2
+      }
+     ]
+    },
+    {
+     "note": "D5",
+     "midi": 74,
+     "layers": [
+      {
+       "file": "rel/D5-v1",
+       "layer": 1,
+       "peakDb": -57.27,
+       "attackRmsDb": -70.57,
+       "brightness": 0.00147,
+       "lenS": 0.52,
+       "trimStartMs": 0.0,
+       "src": "JHPiano_NoSusRel_Close_D5_vl2_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "rel/D5-v2",
+       "layer": 2,
+       "peakDb": -64.16,
+       "attackRmsDb": -75.04,
+       "brightness": 0.01729,
+       "lenS": 1.088,
+       "trimStartMs": 0.0,
+       "src": "JHPiano_NoSusRel_Close_D5_vl3_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "rel/D5-v3",
+       "layer": 3,
+       "peakDb": -55.69,
+       "attackRmsDb": -70.17,
+       "brightness": 0.01169,
+       "lenS": 1.067,
+       "trimStartMs": 0.0,
+       "src": "JHPiano_NoSusRel_Close_D5_vl4_rr1.wav",
+       "channels": 2
+      }
+     ]
+    },
+    {
+     "note": "E5",
+     "midi": 76,
+     "layers": [
+      {
+       "file": "rel/E5-v1",
+       "layer": 1,
+       "peakDb": -61.12,
+       "attackRmsDb": -72.91,
+       "brightness": 0.0061,
+       "lenS": 0.516,
+       "trimStartMs": 0.0,
+       "src": "JHPiano_NoSusRel_Close_E5_vl2_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "rel/E5-v2",
+       "layer": 2,
+       "peakDb": -58.59,
+       "attackRmsDb": -69.82,
+       "brightness": 0.64467,
+       "lenS": 1.466,
+       "trimStartMs": 0.0,
+       "src": "JHPiano_NoSusRel_Close_E5_vl3_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "rel/E5-v3",
+       "layer": 3,
+       "peakDb": -51.51,
+       "attackRmsDb": -65.48,
+       "brightness": 0.72916,
+       "lenS": 1.046,
+       "trimStartMs": 0.0,
+       "src": "JHPiano_NoSusRel_Close_E5_vl4_rr1.wav",
+       "channels": 2
+      }
+     ]
+    },
+    {
+     "note": "Fs5",
+     "midi": 78,
+     "layers": [
+      {
+       "file": "rel/Fs5-v1",
+       "layer": 1,
+       "peakDb": -55.53,
+       "attackRmsDb": -68.4,
+       "brightness": 0.00154,
+       "lenS": 0.497,
+       "trimStartMs": 0.0,
+       "src": "JHPiano_NoSusRel_Close_F#5_vl2_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "rel/Fs5-v2",
+       "layer": 2,
+       "peakDb": -51.71,
+       "attackRmsDb": -63.52,
+       "brightness": 0.0138,
+       "lenS": 0.966,
+       "trimStartMs": 0.0,
+       "src": "JHPiano_NoSusRel_Close_F#5_vl3_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "rel/Fs5-v3",
+       "layer": 3,
+       "peakDb": -52.39,
+       "attackRmsDb": -64.32,
+       "brightness": 0.09925,
+       "lenS": 1.267,
+       "trimStartMs": 0.0,
+       "src": "JHPiano_NoSusRel_Close_F#5_vl4_rr1.wav",
+       "channels": 2
+      }
+     ]
+    },
+    {
+     "note": "Gs5",
+     "midi": 80,
+     "layers": [
+      {
+       "file": "rel/Gs5-v1",
+       "layer": 1,
+       "peakDb": -57.65,
+       "attackRmsDb": -69.26,
+       "brightness": 0.00044,
+       "lenS": 0.557,
+       "trimStartMs": 0.0,
+       "src": "JHPiano_NoSusRel_Close_G#5_vl2_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "rel/Gs5-v2",
+       "layer": 2,
+       "peakDb": -60.75,
+       "attackRmsDb": -75.29,
+       "brightness": 0.17014,
+       "lenS": 1.106,
+       "trimStartMs": 0.0,
+       "src": "JHPiano_NoSusRel_Close_G#5_vl3_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "rel/Gs5-v3",
+       "layer": 3,
+       "peakDb": -53.79,
+       "attackRmsDb": -67.18,
+       "brightness": 0.03154,
+       "lenS": 1.165,
+       "trimStartMs": 0.0,
+       "src": "JHPiano_NoSusRel_Close_G#5_vl4_rr1.wav",
+       "channels": 2
+      }
+     ]
+    },
+    {
+     "note": "As5",
+     "midi": 82,
+     "layers": [
+      {
+       "file": "rel/As5-v1",
+       "layer": 1,
+       "peakDb": -56.74,
+       "attackRmsDb": -68.79,
+       "brightness": 0.00047,
+       "lenS": 0.549,
+       "trimStartMs": 0.0,
+       "src": "JHPiano_NoSusRel_Close_A#5_vl2_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "rel/As5-v2",
+       "layer": 2,
+       "peakDb": -57.22,
+       "attackRmsDb": -72.4,
+       "brightness": 0.12949,
+       "lenS": 1.119,
+       "trimStartMs": 0.0,
+       "src": "JHPiano_NoSusRel_Close_A#5_vl3_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "rel/As5-v3",
+       "layer": 3,
+       "peakDb": -52.32,
+       "attackRmsDb": -68.85,
+       "brightness": 0.08664,
+       "lenS": 1.426,
+       "trimStartMs": 0.0,
+       "src": "JHPiano_NoSusRel_Close_A#5_vl4_rr1.wav",
+       "channels": 2
+      }
+     ]
+    },
+    {
+     "note": "C6",
+     "midi": 84,
+     "layers": [
+      {
+       "file": "rel/C6-v1",
+       "layer": 1,
+       "peakDb": -58.35,
+       "attackRmsDb": -71.07,
+       "brightness": 0.00114,
+       "lenS": 0.551,
+       "trimStartMs": 0.0,
+       "src": "JHPiano_NoSusRel_Close_C6_vl2_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "rel/C6-v2",
+       "layer": 2,
+       "peakDb": -60.64,
+       "attackRmsDb": -74.52,
+       "brightness": 0.00767,
+       "lenS": 1.2,
+       "trimStartMs": 0.0,
+       "src": "JHPiano_NoSusRel_Close_C6_vl3_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "rel/C6-v3",
+       "layer": 3,
+       "peakDb": -54.88,
+       "attackRmsDb": -68.0,
+       "brightness": 0.00581,
+       "lenS": 1.289,
+       "trimStartMs": 0.0,
+       "src": "JHPiano_NoSusRel_Close_C6_vl4_rr1.wav",
+       "channels": 2
+      }
+     ]
+    },
+    {
+     "note": "D6",
+     "midi": 86,
+     "layers": [
+      {
+       "file": "rel/D6-v1",
+       "layer": 1,
+       "peakDb": -51.74,
+       "attackRmsDb": -67.36,
+       "brightness": 0.00029,
+       "lenS": 0.549,
+       "trimStartMs": 0.0,
+       "src": "JHPiano_NoSusRel_Close_D6_vl2_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "rel/D6-v2",
+       "layer": 2,
+       "peakDb": -55.01,
+       "attackRmsDb": -68.53,
+       "brightness": 0.0007,
+       "lenS": 1.252,
+       "trimStartMs": 0.0,
+       "src": "JHPiano_NoSusRel_Close_D6_vl3_rr1.wav",
+       "channels": 2
+      },
+      {
+       "file": "rel/D6-v3",
+       "layer": 3,
+       "peakDb": -51.06,
+       "attackRmsDb": -64.31,
+       "brightness": 0.00025,
+       "lenS": 0.741,
+       "trimStartMs": 0.0,
+       "src": "JHPiano_NoSusRel_Close_D6_vl4_rr1.wav",
+       "channels": 2
+      }
+     ]
+    }
+   ]
+  }
+ },
+ "levels": {
+  "normalized": true,
+  "note": "Sus and NoSus were normalised per file by the library (peaks -0.2 to -12 dBFS); rebuild dynamics with a velocity curve and never re-gain layers. Rel keeps its recorded level (peaks -29 to -64 dBFS)."
+ },
+ "range": {
+  "low": "A#1",
+  "high": "D7",
+  "playable": "A1 to D#7 (each zone stretches a semitone either way)"
+ },
+ "problems": [
+  "Steinway rel has no release samples from E6 up. That is expected: the top strings of a grand have no dampers, so there is nothing to release.",
+  "sus: brightness does not rise with layer in 6 of 42 zones: D3 (v1 0.056, v2 0.110, v3 0.096); As3 (v1 0.034, v2 0.056, v3 0.049); C4 (v1 0.086, v2 0.112, v3 0.103); Fs4 (v1 0.200, v2 0.297, v3 0.272); D6 (v1 0.004, v2 0.014, v3 0.011); Gs7 (v1 0.015, v2 0.030, v3 0.019)",
+  "nosus: brightness does not rise with layer in 3 of 42 zones: Fs6 (v1 0.001, v2 0.000, v3 0.003); E7 (v1 0.000, v2 0.000, v3 0.000); Fs7 (v1 0.000, v2 0.000, v3 0.000)",
+  "sus: layers of the same key disagree in pitch by more than 5 cents in 1 zones (usually a high, fast-dying note or a unison that beats; the zone number uses the middle layer): Gs7 (v1 +6.0, v2 +5.6, v3 +20.6)",
+  "nosus: layers of the same key disagree in pitch by more than 5 cents in 5 zones (usually a high, fast-dying note or a unison that beats; the zone number uses the middle layer): Fs6 (v1 +6.7, v2 -0.9, v3 -0.7); As6 (v1 +6.2, v2 -2.4, v3 +1.7); C7 (v1 +16.4, v2 +9.2, v3 +8.9); D7 (v1 +17.8, v2 +9.5, v3 +10.4); Fs7 (v1 +18.3, v2 +10.2, v3 +9.1)",
+  "rel: no release sample for 9 sus zones: E6, Fs6, Gs6, As6, C7, D7, E7, Fs7, Gs7"
+ ],
+ "gameSet": {
+  "tailS": 4,
+  "monoBelowMidi": 48,
+  "opusKbps": {
+   "stereo": 90,
+   "mono": 60
+  },
+  "aacKbps": {
+   "stereo": 128,
+   "mono": 80
+  },
+  "downloadMB": {
+   "opus": 10.24,
+   "aac": 12.57
+  },
+  "chosen": "Matt, October 19, 2026"
+ }
+}

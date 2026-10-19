@@ -1,0 +1,114 @@
+{
+ "type": "instrument",
+ "id": "pedal-knight",
+ "name": "Piano pedal mechanism (Knight upright)",
+ "version": 1,
+ "note": "The sustain pedal's own sound, recorded on the Knight upright in VCSL (CC0), kept when the Knight piano itself was set aside (Matt, October 19, 2026) because the Steinway B plays these under its pedal (recipes/music/sampler.json, pedalNoise). sets.pedal.files: each recording, its kind (down: the pedal pressed, the dampers lifting, rings 2 to 3.5 s; up: the pedal let go, a soft thud that dies in about 1 s) and length. formats: Opus, with AAC for browsers without Opus.",
+ "source": {
+  "library": "VCSL (Versilian Community Sample Library)",
+  "url": "https://github.com/sgossner/VCSL/tree/master/Chordophones/Zithers/Upright%20Piano,%20Knight",
+  "license": "CC0 1.0",
+  "notes": "Folder 'Upright Piano, Knight'. Info.txt says it was sampled by Simon Dalzell of Ivy Audio for the VSCO 2 Pro sample set, that the included chart gives the tag (left) for the MIDI key (right), and that the instrument was sampled in a whole-tone scale starting from the low A of the instrument. PitchValueConversionChart.txt maps tags 000 to 044 to MIDI keys 21, 23, 25 ... 107, 108 (A0 then every whole tone to B7, then C8). The files, however, are not tagged 000 to 044: they carry note names (A-1, B-1, C#0 ... B6, C7) that are one octave low against scientific pitch. Mapping used: the 45 distinct note tags were sorted by the pitch they name and paired in order with chart entries 000 to 044, which gives A-1 = 21 (A0), B-1 = 23 (B0), C#0 = 25 (C#1) ... B6 = 107 (B7), C7 = 108 (C8); this is the same as adding one octave to every name, and the last step (B to C, one semitone) matches the chart's 107 to 108. Pitch measurement confirmed it on every zone. Sustains: two velocity layers vl1 and vl2, one round robin. Releases: one file per zone (Player_rel_rr1_<note>), no layers. Pedal: four recordings in Pedal/On (pedal pressed: dampers lift, the hit is followed by a long ring of the undamped strings) and four in Pedal/Off (pedal released: dampers land, a thud then decay to the noise floor); every one is kept, as pedal/down-1..4 and pedal/up-1..4."
+ },
+ "channels": 2,
+ "formats": [
+  "ogg",
+  "m4a"
+ ],
+ "root": "assets/audio/instruments/pedal-knight/",
+ "sets": {
+  "pedal": {
+   "source": "Pedal/On, Pedal/Off",
+   "files": [
+    {
+     "file": "pedal/down-1",
+     "kind": "down",
+     "lenS": 3.801,
+     "peakDb": -31.12,
+     "attackRmsDb": -44.17,
+     "trimStartMs": 0.0,
+     "events": 5,
+     "centroidHz": 70,
+     "src": "Player_PedOn_000.wav"
+    },
+    {
+     "file": "pedal/down-2",
+     "kind": "down",
+     "lenS": 5.488,
+     "peakDb": -35.56,
+     "attackRmsDb": -46.68,
+     "trimStartMs": 0.0,
+     "events": 5,
+     "centroidHz": 100,
+     "src": "Player_PedOn_001.wav"
+    },
+    {
+     "file": "pedal/down-3",
+     "kind": "down",
+     "lenS": 4.306,
+     "peakDb": -30.0,
+     "attackRmsDb": -44.31,
+     "trimStartMs": 0.0,
+     "events": 5,
+     "centroidHz": 100,
+     "src": "Player_PedOn_002.wav"
+    },
+    {
+     "file": "pedal/down-4",
+     "kind": "down",
+     "lenS": 4.477,
+     "peakDb": -32.28,
+     "attackRmsDb": -43.79,
+     "trimStartMs": 0.0,
+     "events": 4,
+     "centroidHz": 91,
+     "src": "Player_PedOn_003.wav"
+    },
+    {
+     "file": "pedal/up-1",
+     "kind": "up",
+     "lenS": 3.228,
+     "peakDb": -23.25,
+     "attackRmsDb": -39.17,
+     "trimStartMs": 0.0,
+     "events": 5,
+     "centroidHz": 93,
+     "src": "Player_PedOff_000.wav"
+    },
+    {
+     "file": "pedal/up-2",
+     "kind": "up",
+     "lenS": 3.401,
+     "peakDb": -27.9,
+     "attackRmsDb": -57.73,
+     "trimStartMs": 0.0,
+     "events": 8,
+     "centroidHz": 89,
+     "src": "Player_PedOff_001.wav"
+    },
+    {
+     "file": "pedal/up-3",
+     "kind": "up",
+     "lenS": 2.897,
+     "peakDb": -22.91,
+     "attackRmsDb": -38.53,
+     "trimStartMs": 0.0,
+     "events": 5,
+     "centroidHz": 102,
+     "src": "Player_PedOff_002.wav"
+    },
+    {
+     "file": "pedal/up-4",
+     "kind": "up",
+     "lenS": 4.29,
+     "peakDb": -20.81,
+     "attackRmsDb": -55.69,
+     "trimStartMs": 4.2,
+     "events": 5,
+     "centroidHz": 99,
+     "src": "Player_PedOff_003.wav"
+    }
+   ]
+  }
+ }
+}
