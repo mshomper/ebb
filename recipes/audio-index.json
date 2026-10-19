@@ -14,6 +14,8 @@
     "music/instruments/pedal-knight": "music/instruments/pedal-knight.json",
     "music/roster": "music/roster.json",
     "music/instruments/vibraphone": "music/instruments/vibraphone.json",
-    "music/instruments/glass": "music/instruments/glass.json"
+    "music/instruments/glass": "music/instruments/glass.json",
+    "music/instruments/harp": "music/instruments/harp.json",
+    "music/instruments/flute": "music/instruments/flute.json"
   }
 }

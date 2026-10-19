@@ -399,7 +399,7 @@
         "maxTailS": 0,
         "monoBelowMidi": 0,
         "sets": [
-          "sus",
+          "nv",
           "vib"
         ]
       },

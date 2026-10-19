@@ -8,7 +8,8 @@
       "recipe": "harp"
     },
     "flute": {
-      "recipe": "flute"
+      "recipe": "flute",
+      "articulation": "nv"
     },
     "cello": {
       "recipe": "cello-solo"
@@ -24,6 +25,11 @@
     },
     "glass": {
       "recipe": "glass"
+    },
+    "flute-vibrato": {
+      "recipe": "flute",
+      "articulation": "vib",
+      "settings": "flute"
     }
   },
   "sections": {
