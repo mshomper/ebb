@@ -16,7 +16,8 @@
     "thermal": { "tiers": ["low"], "bucketSeconds": 60, "windowMinutes": 5, "rise": 0.2, "holdMinutes": 5 }
   },
   "frameCap": {
-    "note": "On a display faster than the tier's targetFps (a 120 Hz phone on low at 30), frames are skipped so the island renders at about targetFps. A frame is drawn once toleranceMs short of a whole frame period has passed since the last one.",
+    "note": "On the tiers listed, on a display faster than the tier's targetFps (a 120 Hz phone on low at 30), frames are skipped so the island renders at about targetFps. A frame is drawn once toleranceMs short of a whole frame period has passed since the last one. Tiers not listed draw every frame the display offers.",
+    "tiers": ["low"],
     "toleranceMs": 4
   },
   "budgetGroups": {

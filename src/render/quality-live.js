@@ -30,6 +30,8 @@ export function createQualityLive(opts) {
   let disposed = false;
   /** @type {null | { from: string, to: string }} */ let autoStep = null;
   let autoOff = false;
+  /** Only the tiers listed in the recipe are capped (low: a phone kept cool); desktops run free. */
+  const capped = () => (opts.recipe.frameCap.tiers ?? []).includes(opts.tier());
 
   /** @param {number} ms @param {import('./dynamic-res.js').Measure} measure */
   function gpuSample(ms, measure) {
@@ -67,7 +69,7 @@ export function createQualityLive(opts) {
      * Should this animation frame be drawn (the frame cap)? Call first thing in the frame.
      * @param {number} now rAF time
      */
-    due: (now) => cap.due(now, opts.settings().targetFps),
+    due: (now) => !capped() || cap.due(now, opts.settings().targetFps),
 
     /**
      * After queue.submit: time the frame with a work-done round trip where there are no
