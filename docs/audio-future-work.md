@@ -41,4 +41,20 @@ Built and heard in the lab now; wired into the game when the system lands.
 
 ## Could not be finished here
 
-(None yet. Anything that cannot be sourced under CC0, or built in this session, is listed here with its fallback options under doc 25's rules.)
+### No clean CC0 recording found on Freesound (October 19, 2026)
+
+From the shortlist search (`docs/audio-freesound-shortlist.md`, "Gaps"). Each needs a decision: a procedural stand-in, a fallback library under doc 25's rules, or a license exception Matt approves.
+
+| Sound | What exists | Likely answer |
+|---|---|---|
+| Wind in reeds, all four seasons | Only Attribution or Noncommercial reed beds (best fit: YleArkisto 326445, Attribution) | The island's main voice, so the most important gap. Dry-grass stand-ins meanwhile; a free royalty-free bundle (Sonniss GDC) next; or allow Attribution for this one sound, with credit |
+| Rain on open water | Nothing | Procedural sizzle and drops over a general light-rain take |
+| Rain on dry grass (autumn crackle) | Nothing clean | Procedural crackle layered on a dry-grass take |
+| Clean summer rain on grass | Only generic light-rain takes | Light rain, filtered |
+| Seasonal air tone, rural and windless | Every rural night take has crickets, dogs or traffic | Procedural shaped noise (built) |
+| Midge or gnat swarm reference | One indoor mosquito take | Tune the procedural hum by ear |
+| Seed-head rattle | Only a hand-through-grass stand-in | Procedural rattle (built) |
+| Aeolian stalk whistle | Three vintage film effects | Procedural whistle (built) |
+| Frog swim kick, lily pad landing | Nothing specific | Procedural or soft foley stand-ins |
+
+Freesound's search pages can't be read from the cloud workspace (robots rules), so the CC0 filter was applied by reading each sound page; a second pass by Matt in his browser, with the CC0 filter on, may find what web search missed.
