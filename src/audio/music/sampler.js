@@ -144,7 +144,7 @@ export function createSampler(ctx, output, instrument, settings, opts = {}) {
    */
   async function load(o = {}) {
     const low = o.low ?? 0, high = o.high ?? 127;
-    const want = (o.sets ?? cfg.load.sets).filter((s) => sets[s]);
+    const want = /** @type {string[]} */ (o.sets ?? cfg.load.sets).filter((s) => sets[s]);
     /** @type {[string, number][]} */
     const jobs = [];
     for (const s of want) {

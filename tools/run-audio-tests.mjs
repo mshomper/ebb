@@ -2,12 +2,18 @@
 //   node tools/run-audio-tests.mjs
 // Matt runs the same tests in the browser on tools/unit-tests-audio.html.
 import { addMusicTests } from './unit-tests-music.js';
+import { addChordExtraTests } from './unit-tests-chords-extra.js';
+import { addSamplerTests } from './unit-tests-sampler.js';
+import { addVoicingTests } from './unit-tests-voicing.js';
 
 const tests = [];
 const test = (group, name, fn) => tests.push({ group, name, fn });
 const assert = (c, m = 'assertion failed') => { if (!c) throw new Error(m); };
 const eq = (a, b, m = '') => { if (a !== b) throw new Error(`${m} expected ${String(b)}, got ${String(a)}`.trim()); };
 addMusicTests(test, assert, eq);
+addChordExtraTests(test, assert, eq);
+addSamplerTests(test, assert, eq);
+addVoicingTests(test, assert, eq);
 
 let passed = 0;
 for (const t of tests) {

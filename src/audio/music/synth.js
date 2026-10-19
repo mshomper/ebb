@@ -13,7 +13,8 @@ import { velocityDb, midiToHz, dbToGain, pickVictim } from './sampler-math.js';
 export function createFmPiano(ctx, output, recipe, opts = {}) {
   let p = structuredClone(recipe.fmPiano);
   const tier = opts.tier ?? 'desktop';
-  /** @type {{midi: number, startT: number, peakDb: number, keyUpT: number|null, endT: number|null, env: GainNode, oscs: OscillatorNode[]}[]} */
+  /** @typedef {{midi: number, startT: number, peakDb: number, keyUpT: number|null, endT: number|null, env: GainNode, oscs: OscillatorNode[]}} FmVoice */
+  /** @type {FmVoice[]} */
   let voices = [];
   /** @type {{t: number, down: boolean}[]} */
   let pedalEvents = [];
@@ -21,7 +22,7 @@ export function createFmPiano(ctx, output, recipe, opts = {}) {
   /** @param {number} t */
   const pedalDownAt = (t) => { let d = false; for (const e of pedalEvents) { if (e.t <= t) d = e.down; else break; } return d; };
 
-  /** @param {(typeof voices)[number]} v @param {number} t @param {number} s */
+  /** @param {FmVoice} v @param {number} t @param {number} s */
   function end(v, t, s) {
     if (v.endT !== null && v.endT <= t) return;
     v.endT = t;

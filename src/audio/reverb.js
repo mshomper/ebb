@@ -81,8 +81,8 @@ export function buildImpulse(shape, sampleRate, seed, lengthScale = 1) {
 export function createRoom(ctx, shape, seed, lengthScale = 1) {
   const [l, r] = buildImpulse(shape, ctx.sampleRate, seed, lengthScale);
   const buf = ctx.createBuffer(2, l.length, ctx.sampleRate);
-  buf.copyToChannel(l, 0);
-  buf.copyToChannel(r, 1);
+  buf.getChannelData(0).set(l);
+  buf.getChannelData(1).set(r);
   const conv = ctx.createConvolver();
   conv.normalize = false;
   conv.buffer = buf;

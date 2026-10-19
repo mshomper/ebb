@@ -3,6 +3,9 @@
 // into tools/unit-tests.html (docs/audio-future-work.md). Same look and runner as that page.
 
 import { addMusicTests } from './unit-tests-music.js';
+import { addChordExtraTests } from './unit-tests-chords-extra.js';
+import { addSamplerTests } from './unit-tests-sampler.js';
+import { addVoicingTests } from './unit-tests-voicing.js';
 
 /** @type {{group: string, name: string, fn: () => any}[]} */
 const tests = [];
@@ -18,6 +21,9 @@ function eq(a, b, msg = '') {
 }
 
 addMusicTests(test, assert, eq);
+addChordExtraTests(test, assert, eq);
+addSamplerTests(test, assert, eq);
+addVoicingTests(test, assert, eq);
 
 const CHECK = '<path d="M4.5 12.5l4.8 4.8L19.5 7"/>';
 const WARN = '<path d="M12 3.5L2.8 19.8h18.4z"/><path d="M12 9.5v4.8"/><path d="M12 17.2v.1"/>';
