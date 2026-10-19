@@ -1,0 +1,50 @@
+{
+  "type": "music",
+  "id": "roster",
+  "version": 1,
+  "note": "The sampled instruments the music can use, by the names pieces use in their palettes (doc 24, Instruments). sampled: one sampler each; recipe names recipes/music/instruments/<recipe>.json; articulation plays one of its sets (struck or bowed); settings names the entry of recipes/music/sampler.json byInstrument to use (default: the recipe id). sections: several samplers played as one instrument, low to high; a note goes to the first part whose 'below' (a MIDI note) is above it, or to the nearest part that has a recording within two semitones. The piano and the code-built voices (pad, bell, fm-piano) are made in instruments.js. A recipe that does not exist yet is skipped.",
+  "sampled": {
+    "harp": {
+      "recipe": "harp"
+    },
+    "flute": {
+      "recipe": "flute"
+    },
+    "cello": {
+      "recipe": "cello-solo"
+    },
+    "vibraphone": {
+      "recipe": "vibraphone",
+      "articulation": "struck"
+    },
+    "vibraphone-bowed": {
+      "recipe": "vibraphone",
+      "articulation": "bowed",
+      "settings": "vibraphone-bowed"
+    },
+    "glass": {
+      "recipe": "glass"
+    }
+  },
+  "sections": {
+    "strings": {
+      "parts": [
+        {
+          "recipe": "strings-basses",
+          "below": 43
+        },
+        {
+          "recipe": "strings-celli",
+          "below": 55
+        },
+        {
+          "recipe": "strings-violas",
+          "below": 67
+        },
+        {
+          "recipe": "strings-violins"
+        }
+      ]
+    }
+  }
+}

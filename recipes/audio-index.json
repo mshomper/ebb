@@ -11,6 +11,9 @@
     "music/instruments/piano-steinway-b": "music/instruments/piano-steinway-b.json",
     "music/synth": "music/synth.json",
     "music/voicing": "music/voicing.json",
-    "music/instruments/pedal-knight": "music/instruments/pedal-knight.json"
+    "music/instruments/pedal-knight": "music/instruments/pedal-knight.json",
+    "music/roster": "music/roster.json",
+    "music/instruments/vibraphone": "music/instruments/vibraphone.json",
+    "music/instruments/glass": "music/instruments/glass.json"
   }
 }

@@ -3,10 +3,13 @@
 // set with the Knight's pedal sound under it, 'pad' and 'bell' and 'fm-piano' are built in code.
 // prepare() unpacks only the notes a performance uses, a little ahead of time (doc 24, budget:
 // the piano downloads once, then each piece unpacks its own notes); afterwards the least recently
-// sounded notes are freed once the piano passes its memory budget. Instruments not built yet
-// (harp, flute, clarinet, kalimba) are simply absent, and the realizer skips them.
+// sounded notes are freed once the music passes its memory budget. The sampled support kit (harp,
+// flute, solo cello, vibraphone struck and bowed, glass, and the string section played as one
+// ensemble) comes from recipes/music/roster.json; an instrument whose recipe is missing is simply
+// absent, and the realizer falls back to the next one in a piece's list.
 
 import { createSampler } from './sampler.js';
+import { createEnsemble } from './ensemble.js';
 import * as synth from './synth.js';
 import { loadAudioRecipe, samplerSettingsFor } from '../recipes.js';
 
@@ -35,6 +38,25 @@ export async function createInstruments(ctx, output, opts = {}) {
   const s = /** @type {any} */ (synth);
   if (typeof s.createPad === 'function' && synthRecipe.pad) set.pad = s.createPad(ctx, output, synthRecipe, { tier });
   if (typeof s.createBell === 'function' && synthRecipe.bell) set.bell = s.createBell(ctx, output, synthRecipe, { tier });
+
+  // The sampled support kit, by roster name. A recipe that is not there yet is skipped.
+  const roster = await loadAudioRecipe('music/roster').catch(() => null);
+  const recipeOf = (/** @type {string} */ id) => loadAudioRecipe(`music/instruments/${id}`).catch(() => null);
+  if (roster) {
+    await Promise.all(Object.entries(roster.sampled ?? {}).map(async ([name, e]) => {
+      const rec = await recipeOf(/** @type {any} */ (e).recipe);
+      if (!rec) return;
+      const id = /** @type {any} */ (e).settings ?? rec.id;
+      set[name] = createSampler(ctx, output, rec, samplerSettingsFor(samplerRecipe, id), { tier, articulation: /** @type {any} */ (e).articulation });
+    }));
+    await Promise.all(Object.entries(roster.sections ?? {}).map(async ([name, e]) => {
+      const parts = (await Promise.all(/** @type {any} */ (e).parts.map(async (/** @type {any} */ p) => {
+        const rec = await recipeOf(p.recipe);
+        return rec ? { sampler: createSampler(ctx, output, rec, samplerSettingsFor(samplerRecipe, p.settings ?? rec.id), { tier }), below: p.below ?? 128 } : null;
+      }))).filter(Boolean);
+      if (parts.length) set[name] = createEnsemble(/** @type {any} */ (parts));
+    }));
+  }
 
   return {
     set,
@@ -65,7 +87,11 @@ export async function createInstruments(ctx, output, opts = {}) {
      * @param {Record<string, {low: number, high: number}>} [keep]
      */
     trim(keep = {}) {
-      for (const [name, inst] of Object.entries(set)) inst.trim?.(budgetMB, keep[name] ? [keep[name]] : []);
+      // One budget for all the music: each instrument may keep its share of it, by what it holds now.
+      const held = Object.fromEntries(Object.entries(set).map(([k, i]) => [k, i.stats().decodedMB ?? 0]));
+      const total = Object.values(held).reduce((a, b) => a + b, 0);
+      if (total <= budgetMB) return;
+      for (const [name, inst] of Object.entries(set)) inst.trim?.(budgetMB * (held[name] / total), keep[name] ? [keep[name]] : []);
     },
     stopAll(/** @type {number} */ fadeS = 0.3) { for (const i of Object.values(set)) i.stopAll(fadeS); },
     stats() {

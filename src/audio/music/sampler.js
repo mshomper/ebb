@@ -403,7 +403,8 @@ export function createSampler(ctx, output, instrument, settings, opts = {}) {
         looped = true;
       }
       const g = ctx.createGain();
-      g.gain.value = w.weight * dbToGain(fileGainDb(targetDb, L.attackRmsDb ?? -20, tiltDb));
+      // A held (looped) note is leveled by its steady level: a bow or a rub swells in, so its attack says little.
+      g.gain.value = w.weight * dbToGain(fileGainDb(targetDb, (L.loop ? L.loopRmsDb : undefined) ?? L.attackRmsDb ?? -20, tiltDb));
       src.connect(g).connect(lp);
       src.start(t);
       srcs.push(src);
