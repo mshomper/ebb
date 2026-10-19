@@ -33,6 +33,8 @@
   input[type=range] { width: 100%; min-width: 0; accent-color: #4a6a47; height: 32px; }
   #unlock { position: fixed; inset: 0; background: rgba(244, 238, 228, 0.94); display: flex; align-items: center; justify-content: center; z-index: 10; padding: 24px; text-align: center; }
   #unlock[hidden], [hidden] { display: none !important; }
+  #tabs { position: sticky; top: 0; z-index: 5; background: #F4EEE4; padding: 8px 0; }
+  #tabs button { font-size: 18px; }
   #unlock .card { max-width: 460px; }
   #unlock button { width: 100%; margin-top: 10px; }
   .ab { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
@@ -62,6 +64,38 @@
   .keymap kbd { font: 800 15px 'Nunito', sans-serif; background: #FFFDF8; border: 1px solid #CFC3AF; border-radius: 6px; padding: 1px 7px; }
   .note { background: #F6EBD9; border: 1px solid #E8D4B4; border-radius: 12px; padding: 10px 14px; font-size: 16px; }
   .list { margin: 6px 0; padding-left: 20px; } .list li { margin: 3px 0; }
+  /* Themes tab: candidates as rows, seasons as columns; one card per candidate on phones. */
+  #tab-themes { display: flex; flex-direction: column; gap: 16px; }
+  #tab-themes .tile span { font-size: 16px; }
+  #tab-themes .tile b { font-size: 19px; }
+  #th-roles { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+  .th-intro { font-size: 17px; }
+  .th-head, .th-cand { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 2.5fr); gap: 12px; align-items: center; }
+  .th-head { font-weight: 800; color: #4A5551; padding: 0 12px 4px; }
+  .th-head .th-cells span { text-align: center; }
+  .th-grid { display: flex; flex-direction: column; gap: 10px; }
+  .th-cand { background: #FFFDF8; border: 1px solid #E3D9C9; border-radius: 12px; padding: 10px 12px; }
+  .th-name { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; font-size: 19px; }
+  .th-n { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 16px; background: #EEF3EA; color: #4a6a47; font-size: 17px; flex: none; }
+  .th-line { margin: 4px 0 0; color: #4A5551; font-size: 16px; }
+  .th-cells { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+  .th-cell { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 6px; min-width: 0; }
+  .th-cell .icon { width: 26px; height: 26px; }
+  .th-len { font-weight: 600; font-size: 16px; }
+  .th-cell[aria-pressed="true"] { box-shadow: 0 0 0 3px #CFE0C6; }
+  .th-fav { display: inline-flex; align-items: center; gap: 6px; margin-left: auto; padding: 6px 12px; font-size: 16px; }
+  .th-fav .icon { width: 24px; height: 24px; flex: none; }
+  .th-fav[aria-pressed="true"] .star-fill { fill-opacity: 1; }
+  .th-picks { margin-top: 10px; }
+  @media (max-width: 900px) {
+    .th-head { display: none; }
+    .th-cand { grid-template-columns: minmax(0, 1fr); }
+  }
+  @media (max-width: 560px) {
+    .th-cells { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .th-cell { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 10px; align-items: center; text-align: left; padding: 8px 12px; }
+    .th-cell .icon { grid-row: 1 / 3; }
+  }
 </style>
 </head>
 <body>
@@ -74,9 +108,16 @@
 <main>
   <header>
     <h1>music lab</h1>
-    <p class="muted">Phase 1: the instrument bench. Play each piano, compare two side by side, and check loudness layers, pedal, release and tuning by ear. Later phases add the piece view, the day simulator and the engine here.</p>
+    <p class="muted">Instruments: play the piano and the voices built in code. Piece: hear a piece performed from its notation, seed by seed. Day: watch the director decide what plays through a game day. Themes: hear the island-theme candidates in each season.</p>
     <p class="muted">Also: <a href="audio-check.html">the island's sounds (audio check)</a> · <a href="freesound-shortlist.html">sound picks</a> · <a href="unit-tests-audio.html">audio tests</a> · <a href="./">all test pages</a></p>
   </header>
+  <nav class="seg" role="tablist" aria-label="Lab sections" id="tabs">
+    <button role="tab" data-tab="bench" aria-pressed="true">Instruments</button>
+    <button role="tab" data-tab="piece" aria-pressed="false">Piece</button>
+    <button role="tab" data-tab="day" aria-pressed="false">Day</button>
+    <button role="tab" data-tab="themes" aria-pressed="false">Themes</button>
+  </nav>
+  <div id="tab-bench">
 
   <section class="card">
     <h2>Instruments, A and B</h2>
@@ -204,6 +245,10 @@
     <h2>Notes from preparing the samples</h2>
     <ul class="list" id="problem-list"></ul>
   </section>
+  </div>
+  <section id="tab-piece" hidden></section>
+  <section id="tab-day" hidden></section>
+  <section id="tab-themes" hidden></section>
 </main>
 
 <script type="module" src="./music-lab/main.js"></script>

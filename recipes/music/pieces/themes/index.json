@@ -1,0 +1,55 @@
+{
+ "note": "The island-theme candidates (doc 24, Motifs; phase 3): four tides, each in four seasonal settings of at most 40 s. Each id names recipes/music/pieces/themes/<id>.json. Matt chooses one theme (or rewrites one).",
+ "seasons": [
+  "spring",
+  "summer",
+  "autumn",
+  "winter"
+ ],
+ "candidates": [
+  {
+   "n": 1,
+   "name": "First water",
+   "about": "A waltz-like tide in 3/4: up by step from the home note to the fifth, held across the bar, then down past the start to the leading note. Plain and singable; the held note is the high water.",
+   "settings": {
+    "spring": "theme-1-spring",
+    "summer": "theme-1-summer",
+    "autumn": "theme-1-autumn",
+    "winter": "theme-1-winter"
+   }
+  },
+  {
+   "n": 2,
+   "name": "Sandbar",
+   "about": "A lilting 6/8 tide that starts below the home note, on the sixth, climbs by step to the third and holds it a whole bar, then slips down past the start to the fifth below. A little wistful; it begins on the minor chord.",
+   "settings": {
+    "spring": "theme-2-spring",
+    "summer": "theme-2-summer",
+    "autumn": "theme-2-autumn",
+    "winter": "theme-2-winter"
+   }
+  },
+  {
+   "n": 3,
+   "name": "Breath",
+   "about": "The smallest tide: two bars in 4/4, a breath in (third, fourth, fifth, held) and a breath out (down by step to the home note). Hymn-like; it says the most when it is said slowly.",
+   "settings": {
+    "spring": "theme-3-spring",
+    "summer": "theme-3-summer",
+    "autumn": "theme-3-autumn",
+    "winter": "theme-3-winter"
+   }
+  },
+  {
+   "n": 4,
+   "name": "Moon pull",
+   "about": "A 3/4 tide that runs up the scale in one breath to the sixth and leans on it (the pull of something just out of reach), then falls in thirds and steps past the start to the fifth below.",
+   "settings": {
+    "spring": "theme-4-spring",
+    "summer": "theme-4-summer",
+    "autumn": "theme-4-autumn",
+    "winter": "theme-4-winter"
+   }
+  }
+ ]
+}

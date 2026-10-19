@@ -12,9 +12,10 @@ import { fillSavesPanel } from './saves-menu.js';
  * @param {{ status: string, startAgain: () => Promise<void>, pretend?: any } | null} [save]
  *   this island's save (src/save/autosave.js): the badge says whether it is kept, and its Saves
  *   menu can start the island again; `pretend` is src/sim/away.js's Pretend I was away
+ * @param {HTMLElement | null} [hudLayer] the HUD layer (src/ui/hud.js): the badge joins it, under the clock dial
  * @returns {Promise<string>} the badge text
  */
-export async function showBuildBadge(fallbackBuild, island = null, save = null) {
+export async function showBuildBadge(fallbackBuild, island = null, save = null, hudLayer = null) {
   let text = `build ${fallbackBuild}`;
   const info = await fetchJson('build.json');
   if (info?.local) text = `local · ${info.branch}`;
@@ -24,7 +25,8 @@ export async function showBuildBadge(fallbackBuild, island = null, save = null) 
   const badge = document.createElement('div');
   badge.id = 'ebb-build';
   Object.assign(badge.style, {
-    position: 'fixed', left: 'max(12px, env(safe-area-inset-left))', top: 'max(12px, env(safe-area-inset-top))',
+    position: 'fixed', left: 'max(12px, env(safe-area-inset-left))',
+    top: hudLayer ? 'calc(max(12px, env(safe-area-inset-top)) + var(--hud-dial) + 10px)' : 'max(12px, env(safe-area-inset-top))',
     padding: '6px 12px', borderRadius: '18px', fontSize: 'var(--text-small)', lineHeight: '1.3',
     maxWidth: 'min(230px, calc(100% - 140px))', overflowWrap: 'anywhere', pointerEvents: 'none',
     background: 'rgba(30, 38, 36, 0.55)', color: 'var(--ui-cream)', display: 'grid', gap: '4px', justifyItems: 'start',
@@ -71,18 +73,20 @@ export async function showBuildBadge(fallbackBuild, island = null, save = null) 
     const menu = button('Saves', 'Saving this island, backups, and time away');
     menu.setAttribute('aria-expanded', 'false');
     const panel = document.createElement('div');
-    Object.assign(panel.style, { display: 'grid', gap: '6px', justifyItems: 'start' });
+    // Shown and hidden through style.display: an inline display would outrank the hidden attribute.
+    Object.assign(panel.style, { display: 'none', gap: '6px', justifyItems: 'start' });
     panel.hidden = true;
     const testing = !!info?.local || (!!info?.branch && info.branch !== 'main') || !info;
     const saves = fillSavesPanel(panel, { save, islands: island?.list ?? [], testing, button });
     menu.addEventListener('click', () => {
       panel.hidden = !panel.hidden;
+      panel.style.display = panel.hidden ? 'none' : 'grid';
       menu.setAttribute('aria-expanded', String(!panel.hidden));
       if (!panel.hidden) saves.refresh();
     });
     badge.append(menu, panel);
   }
-  document.body.appendChild(badge);
+  (hudLayer ?? document.body).appendChild(badge);
   return text;
 }
 

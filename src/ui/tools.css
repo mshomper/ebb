@@ -1,7 +1,8 @@
 /* S1 tool bar and brush card (src/ui/tools.js). Bottom center, night panels, cream text.
    Panels animate only opacity and transform (docs/15). */
 
-.ebb-tools {
+.ebb-tools,
+.ebb-history {
   --tb-btn: 48px;
   --tb-icon: 28px;
   --tb-gap: 4px;
@@ -13,7 +14,9 @@
   --tb-focus: var(--wordmark-dark);
   --tb-thumb: 22px;
   --tb-range-h: 32px;
+}
 
+.ebb-tools {
   position: fixed;
   left: 0;
   right: 0;
@@ -32,10 +35,23 @@
 }
 
 @media (pointer: coarse) {
-  .ebb-tools { --tb-btn: 52px; --tb-icon: 26px; --tb-thumb: 28px; --tb-range-h: 40px; }
+  .ebb-tools, .ebb-history { --tb-btn: 52px; --tb-icon: 26px; --tb-thumb: 28px; --tb-range-h: 40px; }
 }
 
-.ebb-tools .icon {
+/* Undo and redo, bottom left under the island notes (docs/15 HUD). */
+.ebb-history {
+  --tb-edge: 12px;
+  position: fixed;
+  left: max(var(--tb-edge), env(safe-area-inset-left));
+  bottom: max(var(--tb-edge), env(safe-area-inset-bottom));
+  z-index: 10;
+  pointer-events: none;
+  color: var(--ui-cream);
+  transition: opacity 200ms ease, transform 220ms ease, visibility 0s;
+}
+
+.ebb-tools .icon,
+.ebb-history .icon {
   width: var(--tb-icon);
   height: var(--tb-icon);
   display: block;
@@ -67,14 +83,6 @@
   flex: none;
 }
 
-.ebb-tools__divider {
-  width: 1px;
-  align-self: stretch;
-  margin: 8px 4px;
-  background: var(--tb-line);
-  flex: none;
-}
-
 .ebb-tools__btn {
   appearance: none;
   -webkit-appearance: none;
@@ -98,7 +106,8 @@
 .ebb-tools__btn[aria-disabled='true'] { opacity: 0.38; cursor: default; }
 .ebb-tools__btn[aria-disabled='true']:hover { background: transparent; }
 
-.ebb-tools :focus-visible {
+.ebb-tools :focus-visible,
+.ebb-history :focus-visible {
   outline: 2px solid var(--tb-focus);
   outline-offset: 2px;
 }
@@ -298,18 +307,29 @@
   .ebb-tools__chips--water .ebb-tools__chip,
   .ebb-tools__chips--rate .ebb-tools__chip { flex-direction: column; gap: 2px; padding: 6px 4px; }
 }
-/* Seven buttons (two history, five tools) and a divider. With tight gaps the bar's own parts
-   take 29 px (2 x 4 padding, 7 x 2 gaps, divider 1 + 2 x 2, border 2) plus the 24 px page gutter,
-   so below 460 px the buttons share what is left: 52 px when it fits, 45 px on a 375 px phone,
-   38 px on a 320 px one, so the bar never runs past the screen. */
+/* Narrow portrait: no room beside the centered bar, so undo and redo sit just above it at the left
+   edge, mirroring the time-flow button on the right. The brush card opens full width over that
+   spot, so they step aside while a tool is on. */
+@media (max-width: 560px) {
+  .ebb-history { bottom: calc(max(var(--tb-edge), env(safe-area-inset-bottom)) + var(--tb-btn) + 2 * var(--tb-pad) + 2px + 10px); }
+  .ebb-history.has-tool {
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(8px);
+    transition: opacity 200ms ease, transform 220ms ease, visibility 0s linear 220ms;
+  }
+  .ebb-history.has-tool .ebb-tools__bar { pointer-events: none; }
+}
+/* Five tool buttons. With tight gaps the bar's own parts take 18 px (2 x 4 padding, 4 x 2 gaps,
+   border 2) plus the 24 px page gutter, so below 460 px the buttons share what is left: 52 px
+   down to a 302 px screen, so the bar never runs past the screen. */
 @media (max-width: 460px) {
   .ebb-tools {
     --tb-gap: 2px;
     --tb-pad: 4px;
-    --tb-btn: clamp(34px, calc((100vw - 56px) / 7), 52px);
+    --tb-btn: clamp(34px, calc((100vw - 42px) / 5), 52px);
     --tb-icon: clamp(22px, calc(var(--tb-btn) - 20px), 26px);
   }
-  .ebb-tools__divider { margin: 8px 2px; }
 }
 
 /* Short screens (phone landscape): the card stays compact, with each slider's label,
@@ -339,6 +359,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .ebb-history, .ebb-history.has-tool { transform: none; }
   .ebb-tools__card,
   .ebb-tools__card.is-open { transition: visibility 0s; transform: none; }
   .ebb-tools__message,

@@ -1,0 +1,94 @@
+{
+ "id": "theme-3-winter",
+ "title": "Theme 3, Breath: winter",
+ "version": 1,
+ "theme": {
+  "candidate": 3,
+  "name": "Breath",
+  "season": "winter"
+ },
+ "slots": [
+  "morning",
+  "interlude",
+  "nocturne"
+ ],
+ "seasons": [
+  "winter"
+ ],
+ "weather": [
+  "clear",
+  "cloud"
+ ],
+ "requires": {},
+ "avoidWhen": {},
+ "keys": [
+  "Dm"
+ ],
+ "mode": "aeolian",
+ "meter": "4/4",
+ "tempo": [
+  48,
+  54
+ ],
+ "palette": {
+  "melody": [
+   "piano"
+  ],
+  "accomp": [
+   "piano"
+  ],
+  "counter": [
+   "vibraphone-bowed",
+   "glass",
+   "pad"
+  ],
+  "bed": [
+   "strings",
+   "pad"
+  ],
+  "touch": [
+   "bell"
+  ]
+ },
+ "layers": {
+  "bed": {
+   "style": "open-fifths",
+   "sections": {
+    "A": "swell",
+    "B": "steady",
+    "coda": "thin"
+   }
+  },
+  "touch": {
+   "chance": 0.5
+  }
+ },
+ "form": {
+  "grammar": "A B coda",
+  "short": "A B coda",
+  "optional": {}
+ },
+ "sections": {
+  "A": {
+   "bars": 4,
+   "abc": "X:1\nM:4/4\nL:1/8\nK:Dm\nV:mel\n!p!\"Dm\"F4 G4 | \"Bbmaj7\"A8- | \"Gm\"A4 G2 F2 | \"Am\"E4 \"Dm\"D4 |\nV:counter\nz8 | c8 | d8 | z8 |\nV:acc\n[D,,A,,]8 | [B,,F,]8 | [G,,D,]8 | [A,,E,]4 [D,,A,,]4 |\n"
+  },
+  "B": {
+   "bars": 2,
+   "abc": "X:1\nM:4/4\nL:1/8\nK:Dm\nV:mel\n\"Bb\"F2 E2 D4- | \"Gm\"D2 E F \"A\"G2 A2 |\nV:acc\n[B,,F,]8 | [G,,D,]4 [A,,E,]4 |\n"
+  },
+  "coda": {
+   "bars": 1,
+   "abc": "X:1\nM:4/4\nL:1/8\nK:Dm\nV:mel\n!pp!\"Dm\"!fermata!D8 |\nV:acc\n[D,,A,,]8 |\n"
+  }
+ },
+ "variation": {
+  "octave": [
+   0
+  ],
+  "paraphrase": 0,
+  "ornament": 0.1
+ },
+ "motifs": [],
+ "notes": "The smallest tide: two bars in 4/4, a breath in (third, fourth, fifth, held) and a breath out (down by step to the home note). Hymn-like; it says the most when it is said slowly. Winter: D minor, the theme in augmentation over open fifths, a bowed high line, and an inverted fragment to close."
+}

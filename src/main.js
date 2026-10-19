@@ -17,6 +17,8 @@ import { showElsewhere } from './ui/elsewhere.js';
 import { mountAway } from './sim/away.js';
 import { mountReveal } from './ui/reveal.js';
 import { showDamaged, noticeRecovered } from './ui/damaged.js';
+import { mountHud } from './ui/hud.js';
+import { mountClockDial } from './ui/clock-dial.js';
 
 /** Shown in the corner badge when no build.json or local server info is available. */
 export const BUILD = 'm1-s3-palette';
@@ -39,6 +41,8 @@ let toolsMounted = false;
 let islandInfo = null;
 /** This island's save, for the badge (kept, or a test island; start again). @type {any} */
 let saveInfo = null;
+/** The HUD layer (src/ui/hud.js) that holds every corner button, the badge included. @type {HTMLElement | null} */
+let hudLayer = null;
 
 // The game keeps your island (src/save); tool pages that start the app do not.
 startApp(canvas, { onDeviceLost: (rebuilding) => showRebuildingNote(rebuilding), save: true, build: BUILD })
@@ -52,14 +56,18 @@ startApp(canvas, { onDeviceLost: (rebuilding) => showRebuildingNote(rebuilding),
     if (r.ok && saveInfo) on('save:moved-away', () => showElsewhere(saveInfo.takeOver, true));
     if (r.ok && !toolsMounted) {
       toolsMounted = true;
-      mountTools(document.body);
-      mountTimeFlow(document.body);
-      mountLook(document.body, r.palette.list());
+      // The HUD (docs/15): corners and the bottom edge, dimming when idle, H to hide.
+      const hud = await mountHud(document.body);
+      hudLayer = hud.layer;
+      await mountClockDial(hud.layer);
+      mountTools(hud.layer);
+      mountTimeFlow(hud.layer);
+      mountLook(hud.layer, r.palette.list());
       // The field journal (docs 13, 15): watches the world, writes notes, names what you tap.
       const [words, island, web, wash] = await Promise.all([loadRecipe('world/journal'), loadRecipe('world/journal-island'),
         loadRecipe('world/journal-web'), loadRecipe('world/journal-wash')]);
       const journal = createJournal({ world: r.world, words, island, web, wash, creatures: /** @type {any} */ (r).creatures ?? null });
-      mountJournal(document.body, journal);
+      mountJournal(document.body, journal, hud.layer);
       mountIslandNotes(document.body, words);
       // A save that came back from earlier copies says so, calmly (src/ui/damaged.js).
       noticeRecovered(saveInfo);
@@ -84,4 +92,4 @@ startApp(canvas, { onDeviceLost: (rebuilding) => showRebuildingNote(rebuilding),
     console.error(err);
     showNoWebGPU('device-failed');
   })
-  .finally(() => showBuildBadge(BUILD, islandInfo, saveInfo));
+  .finally(() => showBuildBadge(BUILD, islandInfo, saveInfo, hudLayer));

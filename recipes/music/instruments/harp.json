@@ -1,0 +1,909 @@
+{
+ "type": "instrument",
+ "id": "harp",
+ "name": "Concert harp",
+ "version": 1,
+ "note": "An instrument recipe for the sampler (doc 24). It describes exactly the files the prep step produced. Plucked, not looped: each file is trimmed to 3 ms before the onset (first point above -50 dB of the file's peak), resampled to 48 kHz, cut where its 50 ms RMS falls to -60 dB below peak or at 4 s, whichever comes first, and given a 250 ms equal-power fade to silence, as the piano game set. No gain change. Stereo as recorded. formats: <file>.ogg is Ogg Opus 80 kbps stereo (variable bitrate), <file>.m4a is AAC-LC 128 kbps at 48 kHz. Both decode with the onset in the same place (cross-correlation lag 0 samples, one file 1 sample); the .ogg decodes to exactly the WAV length and the .m4a about 0 to 21 ms longer (AAC end padding). Zone fields as in piano-steinway-b.json: measuredCents is the zone's pitch against 12-TET at A4 = 440 Hz, fitted from partials 1 to 6 of the louder layer (harp strings are close to harmonic; B is tiny); tuneConfidence 0 to 1. Layer fields: peakDb, attackRmsDb (first 300 ms), brightness (share of energy above max(1.5 f0, 1 kHz) in the first 300 ms), lenS, trimStartMs, measuredCents, endReason, src (original file name; the library is VCSL unless marked VSCO 2 CE). layers: v1 is mf (VCSL file suffix mf1), v2 is f (f1). The recordings are the same harp in both libraries: VSCO 2 CE's harp folder holds 23 files, 20 of them bit-identical to VCSL's mf1 files; VCSL adds an f layer for every zone, so VCSL is the source, with the two VSCO takes noted in problems.",
+ "source": {
+  "library": "VCSL (Versilian Community Sample Library), two takes from VSCO 2 Community Edition",
+  "url": "https://github.com/sgossner/VCSL/tree/master/Chordophones/Composite%20Chordophones/Concert%20Harp",
+  "alternateUrl": "https://github.com/sgossner/VSCO-2-CE/tree/master/Strings/Harp",
+  "license": "CC0 1.0 (both repositories, LICENSE file: CC0 1.0 Universal)",
+  "commit": {
+   "vcsl": "c1ea7bcc3c73",
+   "vsco": "440300901dfe"
+  },
+  "notes": "Folder 'Concert Harp' (files KSHarp_*), one round robin, layers mf and f (p or mp only at G1, D7 and F7). Not normalized: the levels are as played and recorded. Note names are scientific pitch (C4 = middle C), confirmed by measurement."
+ },
+ "channels": 2,
+ "formats": [
+  "ogg",
+  "m4a"
+ ],
+ "root": "assets/audio/instruments/harp/",
+ "layers": 2,
+ "sets": {
+  "sus": {
+   "source": "Concert Harp",
+   "zones": [
+    {
+     "note": "B1",
+     "midi": 35,
+     "measuredCents": -13.37,
+     "tuneConfidence": 0.41,
+     "tuneResidualCents": 0.99,
+     "tunePartials": [
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8
+     ],
+     "tuneLayer": 2,
+     "layerSpreadCents": 4.26,
+     "layers": [
+      {
+       "file": "sus/B1-v1",
+       "layer": 1,
+       "peakDb": -40.31,
+       "attackRmsDb": -51.29,
+       "brightness": 0.00327,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -17.63,
+       "endReason": "max length",
+       "src": "KSHarp_B1_mf1.wav",
+       "channels": 2
+      },
+      {
+       "file": "sus/B1-v2",
+       "layer": 2,
+       "peakDb": -27.01,
+       "attackRmsDb": -37.58,
+       "brightness": 0.00431,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -13.37,
+       "endReason": "max length",
+       "src": "KSHarp_B1_f1.wav",
+       "channels": 2
+      }
+     ]
+    },
+    {
+     "note": "D2",
+     "midi": 38,
+     "measuredCents": -6.57,
+     "tuneConfidence": 0.77,
+     "tuneResidualCents": 1.03,
+     "tunePartials": [
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8
+     ],
+     "tuneLayer": 2,
+     "layerSpreadCents": 1.3,
+     "layers": [
+      {
+       "file": "sus/D2-v1",
+       "layer": 1,
+       "peakDb": -32.98,
+       "attackRmsDb": -43.61,
+       "brightness": 0.00093,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -7.87,
+       "endReason": "max length",
+       "src": "KSHarp_D2_mf1.wav",
+       "channels": 2
+      },
+      {
+       "file": "sus/D2-v2",
+       "layer": 2,
+       "peakDb": -20.02,
+       "attackRmsDb": -29.95,
+       "brightness": 0.00058,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -6.57,
+       "endReason": "max length",
+       "src": "KSHarp_D2_f1.wav",
+       "channels": 2
+      }
+     ]
+    },
+    {
+     "note": "F2",
+     "midi": 41,
+     "measuredCents": -5.5,
+     "tuneConfidence": 0.54,
+     "tuneResidualCents": 1.13,
+     "tunePartials": [
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8
+     ],
+     "tuneLayer": 2,
+     "layerSpreadCents": 2.96,
+     "layers": [
+      {
+       "file": "sus/F2-v1",
+       "layer": 1,
+       "peakDb": -36.51,
+       "attackRmsDb": -47.84,
+       "brightness": 0.00247,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -8.46,
+       "endReason": "max length",
+       "src": "KSHarp_F2_mf1.wav",
+       "channels": 2
+      },
+      {
+       "file": "sus/F2-v2",
+       "layer": 2,
+       "peakDb": -24.03,
+       "attackRmsDb": -36.41,
+       "brightness": 0.00904,
+       "lenS": 4.0,
+       "trimStartMs": 6.9,
+       "measuredCents": -5.5,
+       "endReason": "max length",
+       "src": "KSHarp_F2_f1.wav",
+       "channels": 2
+      }
+     ]
+    },
+    {
+     "note": "A2",
+     "midi": 45,
+     "measuredCents": -6.5,
+     "tuneConfidence": 0.92,
+     "tuneResidualCents": 0.21,
+     "tunePartials": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+     ],
+     "tuneLayer": 2,
+     "layerSpreadCents": 1.1,
+     "layers": [
+      {
+       "file": "sus/A2-v1",
+       "layer": 1,
+       "peakDb": -28.47,
+       "attackRmsDb": -38.98,
+       "brightness": 0.00236,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -7.6,
+       "endReason": "max length",
+       "src": "KSHarp_A2_mf1.wav",
+       "channels": 2
+      },
+      {
+       "file": "sus/A2-v2",
+       "layer": 2,
+       "peakDb": -20.78,
+       "attackRmsDb": -29.35,
+       "brightness": 0.00132,
+       "lenS": 4.0,
+       "trimStartMs": 3.4,
+       "measuredCents": -6.5,
+       "endReason": "max length",
+       "src": "KSHarp_A2_f1.wav",
+       "channels": 2
+      }
+     ]
+    },
+    {
+     "note": "C3",
+     "midi": 48,
+     "measuredCents": -2.05,
+     "tuneConfidence": 0.63,
+     "tuneResidualCents": 1.55,
+     "tunePartials": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+     ],
+     "tuneLayer": 2,
+     "layerSpreadCents": 1.57,
+     "layers": [
+      {
+       "file": "sus/C3-v1",
+       "layer": 1,
+       "peakDb": -36.01,
+       "attackRmsDb": -44.2,
+       "brightness": 0.00087,
+       "lenS": 4.0,
+       "trimStartMs": 0.0,
+       "measuredCents": -3.62,
+       "endReason": "max length",
+       "src": "KSHarp_C3_mf.wav (VSCO 2 CE)",
+       "channels": 2
+      },
+      {
+       "file": "sus/C3-v2",
+       "layer": 2,
+       "peakDb": -21.97,
+       "attackRmsDb": -29.89,
+       "brightness": 0.00398,
+       "lenS": 4.0,
+       "trimStartMs": 31.1,
+       "measuredCents": -2.05,
+       "endReason": "max length",
+       "src": "KSHarp_C3_f2.wav",
+       "channels": 2
+      }
+     ]
+    },
+    {
+     "note": "E3",
+     "midi": 52,
+     "measuredCents": -4.17,
+     "tuneConfidence": 0.83,
+     "tuneResidualCents": 0.43,
+     "tunePartials": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+     ],
+     "tuneLayer": 2,
+     "layerSpreadCents": 1.66,
+     "layers": [
+      {
+       "file": "sus/E3-v1",
+       "layer": 1,
+       "peakDb": -27.24,
+       "attackRmsDb": -39.8,
+       "brightness": 0.01894,
+       "lenS": 4.0,
+       "trimStartMs": 3.6,
+       "measuredCents": -5.83,
+       "endReason": "max length",
+       "src": "KSHarp_E3_mf1.wav",
+       "channels": 2
+      },
+      {
+       "file": "sus/E3-v2",
+       "layer": 2,
+       "peakDb": -20.62,
+       "attackRmsDb": -32.7,
+       "brightness": 0.07891,
+       "lenS": 4.0,
+       "trimStartMs": 32.0,
+       "measuredCents": -4.17,
+       "endReason": "max length",
+       "src": "KSHarp_E3_f1.wav",
+       "channels": 2
+      }
+     ]
+    },
+    {
+     "note": "G3",
+     "midi": 55,
+     "measuredCents": -8.53,
+     "tuneConfidence": 0.84,
+     "tuneResidualCents": 0.82,
+     "tunePartials": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+     ],
+     "tuneLayer": 2,
+     "layerSpreadCents": 1.07,
+     "layers": [
+      {
+       "file": "sus/G3-v1",
+       "layer": 1,
+       "peakDb": -23.56,
+       "attackRmsDb": -34.12,
+       "brightness": 0.01335,
+       "lenS": 4.0,
+       "trimStartMs": 22.1,
+       "measuredCents": -9.6,
+       "endReason": "max length",
+       "src": "KSHarp_G3_mf1.wav",
+       "channels": 2
+      },
+      {
+       "file": "sus/G3-v2",
+       "layer": 2,
+       "peakDb": -14.72,
+       "attackRmsDb": -26.34,
+       "brightness": 0.00988,
+       "lenS": 4.0,
+       "trimStartMs": 55.1,
+       "measuredCents": -8.53,
+       "endReason": "max length",
+       "src": "KSHarp_G3_f1.wav",
+       "channels": 2
+      }
+     ]
+    },
+    {
+     "note": "B3",
+     "midi": 59,
+     "measuredCents": -12.76,
+     "tuneConfidence": 0.83,
+     "tuneResidualCents": 1.03,
+     "tunePartials": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+     ],
+     "tuneLayer": 2,
+     "layerSpreadCents": 0.69,
+     "layers": [
+      {
+       "file": "sus/B3-v1",
+       "layer": 1,
+       "peakDb": -24.39,
+       "attackRmsDb": -33.1,
+       "brightness": 0.00686,
+       "lenS": 4.0,
+       "trimStartMs": 1.0,
+       "measuredCents": -13.45,
+       "endReason": "max length",
+       "src": "KSHarp_B3_mf1.wav",
+       "channels": 2
+      },
+      {
+       "file": "sus/B3-v2",
+       "layer": 2,
+       "peakDb": -20.03,
+       "attackRmsDb": -29.41,
+       "brightness": 0.01754,
+       "lenS": 4.0,
+       "trimStartMs": 8.9,
+       "measuredCents": -12.76,
+       "endReason": "max length",
+       "src": "KSHarp_B3_f1.wav",
+       "channels": 2
+      }
+     ]
+    },
+    {
+     "note": "D4",
+     "midi": 62,
+     "measuredCents": -16.3,
+     "tuneConfidence": 0.49,
+     "tuneResidualCents": 1.09,
+     "tunePartials": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+     ],
+     "tuneLayer": 2,
+     "layerSpreadCents": 3.39,
+     "layers": [
+      {
+       "file": "sus/D4-v1",
+       "layer": 1,
+       "peakDb": -20.49,
+       "attackRmsDb": -32.54,
+       "brightness": 0.03759,
+       "lenS": 4.0,
+       "trimStartMs": 14.4,
+       "measuredCents": -12.91,
+       "endReason": "max length",
+       "src": "KSHarp_D4_mf1.wav",
+       "channels": 2
+      },
+      {
+       "file": "sus/D4-v2",
+       "layer": 2,
+       "peakDb": -12.24,
+       "attackRmsDb": -26.65,
+       "brightness": 0.09282,
+       "lenS": 4.0,
+       "trimStartMs": 21.3,
+       "measuredCents": -16.3,
+       "endReason": "max length",
+       "src": "KSHarp_D4_f1.wav",
+       "channels": 2
+      }
+     ]
+    },
+    {
+     "note": "F4",
+     "midi": 65,
+     "measuredCents": -1.05,
+     "tuneConfidence": 0.65,
+     "tuneResidualCents": 1.83,
+     "tunePartials": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+     ],
+     "tuneLayer": 2,
+     "layerSpreadCents": 0.27,
+     "layers": [
+      {
+       "file": "sus/F4-v1",
+       "layer": 1,
+       "peakDb": -20.33,
+       "attackRmsDb": -29.59,
+       "brightness": 0.03179,
+       "lenS": 4.0,
+       "trimStartMs": 2.4,
+       "measuredCents": -1.32,
+       "endReason": "max length",
+       "src": "KSHarp_F4_mf1.wav",
+       "channels": 2
+      },
+      {
+       "file": "sus/F4-v2",
+       "layer": 2,
+       "peakDb": -14.18,
+       "attackRmsDb": -25.21,
+       "brightness": 0.03276,
+       "lenS": 4.0,
+       "trimStartMs": 8.8,
+       "measuredCents": -1.05,
+       "endReason": "max length",
+       "src": "KSHarp_F4_f1.wav",
+       "channels": 2
+      }
+     ]
+    },
+    {
+     "note": "A4",
+     "midi": 69,
+     "measuredCents": -11.26,
+     "tuneConfidence": 0.68,
+     "tuneResidualCents": 1.72,
+     "tunePartials": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+     ],
+     "tuneLayer": 2,
+     "layerSpreadCents": 0.13,
+     "layers": [
+      {
+       "file": "sus/A4-v1",
+       "layer": 1,
+       "peakDb": -15.67,
+       "attackRmsDb": -32.21,
+       "brightness": 0.21626,
+       "lenS": 4.0,
+       "trimStartMs": 15.8,
+       "measuredCents": -11.13,
+       "endReason": "max length",
+       "src": "KSHarp_A4_mf1.wav",
+       "channels": 2
+      },
+      {
+       "file": "sus/A4-v2",
+       "layer": 2,
+       "peakDb": -9.07,
+       "attackRmsDb": -26.51,
+       "brightness": 0.3804,
+       "lenS": 3.27,
+       "trimStartMs": 4.8,
+       "measuredCents": -11.26,
+       "endReason": "-60 dB",
+       "src": "KSHarp_A4_f1.wav",
+       "channels": 2
+      }
+     ]
+    },
+    {
+     "note": "C5",
+     "midi": 72,
+     "measuredCents": -11.82,
+     "tuneConfidence": 0.71,
+     "tuneResidualCents": 1.55,
+     "tunePartials": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+     ],
+     "tuneLayer": 2,
+     "layerSpreadCents": 0.53,
+     "layers": [
+      {
+       "file": "sus/C5-v1",
+       "layer": 1,
+       "peakDb": -17.16,
+       "attackRmsDb": -30.05,
+       "brightness": 0.01419,
+       "lenS": 3.19,
+       "trimStartMs": 16.6,
+       "measuredCents": -11.29,
+       "endReason": "-60 dB",
+       "src": "KSHarp_C5_mf1.wav",
+       "channels": 2
+      },
+      {
+       "file": "sus/C5-v2",
+       "layer": 2,
+       "peakDb": -9.38,
+       "attackRmsDb": -25.02,
+       "brightness": 0.11788,
+       "lenS": 3.08,
+       "trimStartMs": 21.0,
+       "measuredCents": -11.82,
+       "endReason": "-60 dB",
+       "src": "KSHarp_C5_f1.wav",
+       "channels": 2
+      }
+     ]
+    },
+    {
+     "note": "E5",
+     "midi": 76,
+     "measuredCents": -13.07,
+     "tuneConfidence": 0.59,
+     "tuneResidualCents": 1.62,
+     "tunePartials": [
+      1,
+      2,
+      3,
+      4,
+      5
+     ],
+     "tuneLayer": 2,
+     "layerSpreadCents": 0.13,
+     "layers": [
+      {
+       "file": "sus/E5-v1",
+       "layer": 1,
+       "peakDb": -19.81,
+       "attackRmsDb": -29.48,
+       "brightness": 0.06326,
+       "lenS": 4.0,
+       "trimStartMs": 15.4,
+       "measuredCents": -12.94,
+       "endReason": "max length",
+       "src": "KSHarp_E5_mf1.wav",
+       "channels": 2
+      },
+      {
+       "file": "sus/E5-v2",
+       "layer": 2,
+       "peakDb": -12.19,
+       "attackRmsDb": -25.56,
+       "brightness": 0.18501,
+       "lenS": 4.0,
+       "trimStartMs": 32.9,
+       "measuredCents": -13.07,
+       "endReason": "max length",
+       "src": "KSHarp_E5_f1.wav",
+       "channels": 2
+      }
+     ]
+    },
+    {
+     "note": "G5",
+     "midi": 79,
+     "measuredCents": -7.1,
+     "tuneConfidence": 0.72,
+     "tuneResidualCents": 0.84,
+     "tunePartials": [
+      1,
+      2,
+      3,
+      4,
+      5
+     ],
+     "tuneLayer": 2,
+     "layerSpreadCents": 0.85,
+     "layers": [
+      {
+       "file": "sus/G5-v1",
+       "layer": 1,
+       "peakDb": -21.08,
+       "attackRmsDb": -35.56,
+       "brightness": 0.05265,
+       "lenS": 2.9,
+       "trimStartMs": 6.2,
+       "measuredCents": -6.25,
+       "endReason": "-60 dB",
+       "src": "KSHarp_G5_mf1.wav",
+       "channels": 2
+      },
+      {
+       "file": "sus/G5-v2",
+       "layer": 2,
+       "peakDb": -14.95,
+       "attackRmsDb": -31.94,
+       "brightness": 0.38993,
+       "lenS": 2.46,
+       "trimStartMs": 0.0,
+       "measuredCents": -7.1,
+       "endReason": "-60 dB",
+       "src": "KSHarp_G5_f1.wav",
+       "channels": 2
+      }
+     ]
+    },
+    {
+     "note": "B5",
+     "midi": 83,
+     "measuredCents": -15.31,
+     "tuneConfidence": 0.13,
+     "tuneResidualCents": 2.09,
+     "tunePartials": [
+      1,
+      2,
+      3,
+      4,
+      5
+     ],
+     "tuneLayer": 2,
+     "layerSpreadCents": 6.6,
+     "layers": [
+      {
+       "file": "sus/B5-v1",
+       "layer": 1,
+       "peakDb": -25.27,
+       "attackRmsDb": -36.3,
+       "brightness": 0.06399,
+       "lenS": 2.49,
+       "trimStartMs": 0.0,
+       "measuredCents": -8.71,
+       "endReason": "-60 dB",
+       "src": "KSHarp_B5_mf1.wav",
+       "channels": 2
+      },
+      {
+       "file": "sus/B5-v2",
+       "layer": 2,
+       "peakDb": -18.51,
+       "attackRmsDb": -35.67,
+       "brightness": 0.37884,
+       "lenS": 2.24,
+       "trimStartMs": 6.4,
+       "measuredCents": -15.31,
+       "endReason": "-60 dB",
+       "src": "KSHarp_B5_f1.wav",
+       "channels": 2
+      }
+     ]
+    },
+    {
+     "note": "D6",
+     "midi": 86,
+     "measuredCents": -12.67,
+     "tuneConfidence": 0.15,
+     "tuneResidualCents": 2.72,
+     "tunePartials": [
+      1,
+      2,
+      3,
+      4,
+      5
+     ],
+     "tuneLayer": 2,
+     "layerSpreadCents": 4.91,
+     "layers": [
+      {
+       "file": "sus/D6-v1",
+       "layer": 1,
+       "peakDb": -21.72,
+       "attackRmsDb": -35.81,
+       "brightness": 0.14636,
+       "lenS": 1.79,
+       "trimStartMs": 4.0,
+       "measuredCents": -7.76,
+       "endReason": "-60 dB",
+       "src": "KSHarp_D6_mf1.wav",
+       "channels": 2
+      },
+      {
+       "file": "sus/D6-v2",
+       "layer": 2,
+       "peakDb": -14.76,
+       "attackRmsDb": -29.37,
+       "brightness": 0.13548,
+       "lenS": 1.16,
+       "trimStartMs": 37.8,
+       "measuredCents": -12.67,
+       "endReason": "-60 dB",
+       "src": "KSHarp_D6_f1.wav",
+       "channels": 2
+      }
+     ]
+    },
+    {
+     "note": "F6",
+     "midi": 89,
+     "measuredCents": -12.91,
+     "tuneConfidence": 0.07,
+     "tuneResidualCents": 4.09,
+     "tunePartials": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+     ],
+     "tuneLayer": 2,
+     "layerSpreadCents": 6.87,
+     "layers": [
+      {
+       "file": "sus/F6-v1",
+       "layer": 1,
+       "peakDb": -25.78,
+       "attackRmsDb": -40.8,
+       "brightness": 0.07359,
+       "lenS": 1.5,
+       "trimStartMs": 5.6,
+       "measuredCents": -6.04,
+       "endReason": "-60 dB",
+       "src": "KSHarp_F6_mf1.wav",
+       "channels": 2
+      },
+      {
+       "file": "sus/F6-v2",
+       "layer": 2,
+       "peakDb": -14.85,
+       "attackRmsDb": -30.26,
+       "brightness": 0.14875,
+       "lenS": 1.27,
+       "trimStartMs": 19.0,
+       "measuredCents": -12.91,
+       "endReason": "-60 dB",
+       "src": "KSHarp_F6_f1.wav",
+       "channels": 2
+      }
+     ]
+    },
+    {
+     "note": "A6",
+     "midi": 93,
+     "measuredCents": -19.86,
+     "tuneConfidence": 0.7,
+     "tuneResidualCents": 1.51,
+     "tunePartials": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+     ],
+     "tuneLayer": 2,
+     "layerSpreadCents": 0.87,
+     "layers": [
+      {
+       "file": "sus/A6-v1",
+       "layer": 1,
+       "peakDb": -24.99,
+       "attackRmsDb": -41.32,
+       "brightness": 0.06469,
+       "lenS": 1.0,
+       "trimStartMs": 2.7,
+       "measuredCents": -18.99,
+       "endReason": "-60 dB",
+       "src": "KSHarp_A6_mf1.wav",
+       "channels": 2
+      },
+      {
+       "file": "sus/A6-v2",
+       "layer": 2,
+       "peakDb": -20.39,
+       "attackRmsDb": -36.15,
+       "brightness": 0.02906,
+       "lenS": 0.93,
+       "trimStartMs": 13.2,
+       "measuredCents": -19.86,
+       "endReason": "-60 dB",
+       "src": "KSHarp_A6_f1.wav",
+       "channels": 2
+      }
+     ]
+    },
+    {
+     "note": "D7",
+     "midi": 98,
+     "measuredCents": -8.71,
+     "tuneConfidence": 0.21,
+     "tuneResidualCents": 2.54,
+     "tunePartials": [
+      1,
+      2,
+      4,
+      5
+     ],
+     "tuneLayer": 2,
+     "layerSpreadCents": 2.91,
+     "layers": [
+      {
+       "file": "sus/D7-v1",
+       "layer": 1,
+       "peakDb": -22.07,
+       "attackRmsDb": -37.75,
+       "brightness": 0.02201,
+       "lenS": 0.79,
+       "trimStartMs": 12.1,
+       "measuredCents": -11.62,
+       "endReason": "-60 dB",
+       "src": "KSHarp_D7_f1.wav",
+       "channels": 2
+      },
+      {
+       "file": "sus/D7-v2",
+       "layer": 2,
+       "peakDb": -16.31,
+       "attackRmsDb": -34.82,
+       "brightness": 0.05068,
+       "lenS": 0.66,
+       "trimStartMs": 48.1,
+       "measuredCents": -8.71,
+       "endReason": "-60 dB",
+       "src": "KSHarp_D7_f.wav (VSCO 2 CE)",
+       "channels": 2
+      }
+     ]
+    }
+   ]
+  }
+ },
+ "levels": {
+  "normalized": false,
+  "note": "Recorded levels, not normalized: f is 3 to 14 dB louder than mf at the same note in attack RMS (B5 only 0.6 dB, where the f take is brighter instead). Play layers at their own level; level zones against each other by attackRmsDb."
+ },
+ "range": {
+  "low": "B1",
+  "high": "D7",
+  "playable": "A1 to E7 (each end zone stretches about 2 semitones)"
+ },
+ "size": {
+  "files": 38,
+  "oggBytes": 1300591,
+  "m4aBytes": 1978636,
+  "decodedBytes48kFloat": 46360320
+ },
+ "problems": [
+  "The harp is tuned flat and unevenly: zone pitches run from -19.9 to -1.1 cents (median -11.3), worst A6 at -19.9. Nothing was corrected; the sampler applies measuredCents at playback.",
+  "sus: layers of the same note disagree in pitch by more than 4 cents in 4 zones: B1 (v1 -17.6, v2 -13.4); B5 (v1 -8.7, v2 -15.3); D6 (v1 -7.8, v2 -12.7); F6 (v1 -6.0, v2 -12.9)",
+  "sus: brightness does not rise with layer in 5 of 19 zones: D2 (v1 0.001, v2 0.001); A2 (v1 0.002, v2 0.001); G3 (v1 0.013, v2 0.010); D6 (v1 0.146, v2 0.135); A6 (v1 0.065, v2 0.029)",
+  "C3 v1 is the VSCO 2 CE take (KSHarp_C3_mf.wav), not VCSL's KSHarp_C3_mf3.wav: VCSL's take swells back up by about 3 dB at 3 to 3.5 s (a sympathetic string or a touch) where the VSCO take decays smoothly; same pitch (-3.6 cents) and brightness.",
+  "D7 has no mf take in either library. v1 is VCSL's KSHarp_D7_f1.wav (warmer, peak -22 dBFS) and v2 is VSCO 2 CE's KSHarp_D7_f.wav, a different and brighter, about 6 dB louder f take; VCSL's D7 p take (1.1 s, peak -44 dBFS, cut off while still ringing) was left out.",
+  "Low and middle notes ring far longer than 4 s in the source (B1 f rings past 25 s), so 23 of 38 files (every zone from B1 to A4, plus E5) end at the 4 s maximum with the 250 ms fade from a still-ringing note, 8 to 44 dB below the attack. The other 15 die naturally to -60 dB before 4 s.",
+  "Levels are as recorded and vary a lot from zone to zone (peaks -40 dBFS at B1 mf to -9 dBFS at A4 f); the low strings were recorded much quieter. The sampler should level zones by attackRmsDb, not peakDb.",
+  "Zones are every minor or major third (3 or 4 semitones apart, 5 from A6 to D7), as the library recorded them, so most zones stretch up to 2 semitones; the VCSL zones E1, G1, B6 and F7 were left out (outside the C2 to C7 range, or denser than a minor third at the top)."
+ ]
+}

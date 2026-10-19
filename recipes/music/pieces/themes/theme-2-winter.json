@@ -1,0 +1,89 @@
+{
+ "id": "theme-2-winter",
+ "title": "Theme 2, Sandbar: winter",
+ "version": 1,
+ "theme": {
+  "candidate": 2,
+  "name": "Sandbar",
+  "season": "winter"
+ },
+ "slots": [
+  "morning",
+  "interlude",
+  "nocturne"
+ ],
+ "seasons": [
+  "winter"
+ ],
+ "weather": [
+  "clear",
+  "cloud"
+ ],
+ "requires": {},
+ "avoidWhen": {},
+ "keys": [
+  "Dm"
+ ],
+ "mode": "aeolian",
+ "meter": "6/8",
+ "tempo": [
+  42,
+  48
+ ],
+ "palette": {
+  "melody": [
+   "piano"
+  ],
+  "accomp": [
+   "piano"
+  ],
+  "counter": [
+   "vibraphone-bowed",
+   "glass",
+   "pad"
+  ],
+  "bed": [
+   "strings",
+   "pad"
+  ],
+  "touch": [
+   "bell"
+  ]
+ },
+ "layers": {
+  "bed": {
+   "style": "open-fifths",
+   "sections": {
+    "A": "swell",
+    "coda": "thin"
+   }
+  },
+  "touch": {
+   "chance": 0.5
+  }
+ },
+ "form": {
+  "grammar": "A coda",
+  "short": "A coda",
+  "optional": {}
+ },
+ "sections": {
+  "A": {
+   "bars": 8,
+   "abc": "X:1\nM:6/8\nL:1/8\nK:Dm\nV:mel\n!p!\"Gm\"B,4 C2 | \"Dm\"D4 E2 | \"Bb\"F6- | \"Dm/F\"F6- | \"C\"F4 E2 | \"Bb\"D2 C2 B,2 | \"Dm/A\"A,6- | \"A\"A,6 |\nV:counter\nz6 | z6 | d6- | d6 | c6- | c6 | z6 | ^c6 |\nV:acc\n[G,,D,]6 | [D,,A,,]6 | [B,,F,]6 | [B,,F,]6 | [C,G,]6 | [B,,F,]6 | [D,,A,,]6 | [A,,E,]6 |\n"
+  },
+  "coda": {
+   "bars": 2,
+   "abc": "X:1\nM:6/8\nL:1/8\nK:Dm\nV:mel\n!pp!\"Gm\"F2 E D2 C | \"Dm\"!fermata!D6 |\nV:acc\n[G,,D,]6 | [D,,A,,]6 |\n"
+  }
+ },
+ "variation": {
+  "octave": [
+   0
+  ],
+  "paraphrase": 0,
+  "ornament": 0.1
+ },
+ "motifs": [],
+ "notes": "A lilting 6/8 tide that starts below the home note, on the sixth, climbs by step to the third and holds it a whole bar, then slips down past the start to the fifth below. A little wistful; it begins on the minor chord. Winter: D minor, the theme in augmentation over open fifths, a bowed high line, and an inverted fragment to close."
+}

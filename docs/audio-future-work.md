@@ -4,7 +4,7 @@
 
 ## Must be reconciled with the specs
 
-These are Matt's decisions (October 19, 2026) that disagree with, or add to, the docs on main. Each must be written into the doc, and approved by Matt, before the work it affects is built.
+These are Matt's decisions (October 19, 2026) that disagree with, or add to, the docs on main. Each must be written into the doc, and approved by Matt, before the work it affects is built. The summer lift, the signature nights, the winter breadth and the shorter rests are written into doc 24 on the m2-music-engine branch and Matt approved them (October 19, 2026), including the four signature-night triggers. The rows below stay as a record until the branch merges.
 
 | Decision | Disagrees with | What changes | Before |
 |---|---|---|---|
@@ -14,6 +14,7 @@ These are Matt's decisions (October 19, 2026) that disagree with, or add to, the
 | Core piano: Steinway B, gentle stretch tuning, blend width 20 with curve 0.5 (mix), key-off -25 dB, the Knight's pedal mechanism sound under the pedal at -20 dB, tails of 4 s, mono below C3, middle five octaves, pedal and no-pedal recordings; the FM piano built in code for summer (the sampled TX81Z set aside). Music level 0.5 and room 0.30 as the headphone reference. | Doc 24's instrument table lists the Kawai and Yamaha as alternates and the summer FM piano as code-built (matches). | Doc 24's instrument table: the Steinway as the only piano, the Knight's pedal recordings added. Values are in recipes/music/sampler.json and recipes/audio/mixer.json. | Phase 2 |
 | Done (October 19, 2026): the piano keeps pedal and no-pedal recordings at a slightly lower bit rate, 10.2 MB (Opus 90 kbps stereo, 60 kbps mono); desktop memory about 128 MB with per-piece unpacking, mobile 20 MB with a lighter set. | Doc 24's performance budget (4 MB core, 48 MB decoded). | Doc 24's budget lines and instrument table updated on this branch; total music now about 20 MB. Still to build: per-piece unpacking (phase 2, with the director) and the mobile piano set. | Phase 2 |
 | One reed-bed recording that requires credit (Attribution) may be used, since Freesound has no CC0 reed bed. | Doc 25: CC0 first, then free or paid bundles; Attribution is not in the list. | Doc 25's "When CC0 does not land": an Attribution exception for the reed bed, credited in the game's credits and listed with the non-CC0 files. | The reed bed is added |
+| Shorter rests and a few more chances, so music plays a little more often: rests of 2 to 4 real minutes (was 3 to 7), slot chances raised 15 percent at "Now and then" and to 1.4 times at "Often". Measured over 12 seeds, 3 game days at 1x: "Now and then" 56 to 70 percent silence (middle 62), "Often" 54 to 63. | Doc 24: "a rest of at least 3 real minutes" after every piece; "Ambient distance: rests are drawn from 3 to 7 real minutes". | Doc 24's principles line, the day table's rest row and Anti-repetition item 6. Values are in recipes/music/director.json. | Phase 6 (game hooks) |
 | Music and island sounds start together. | The brief's phase table runs the soundscape "in parallel from phase 1", which matches. | None. | n/a |
 
 ## Merge-time steps (kept out of the branch so it never conflicts with main)
@@ -51,6 +52,19 @@ The ambience, voices and `tools/audio-check.html` run on a simulated island. To 
 
 - Nylon guitar: the instrument slot is built empty; another session is searching for a sample set.
 - Future species (songbirds, owls, herons and the rest): instruments, motifs and voices wait until each species is designed (doc 24, "The score grows with the island").
+
+## Hearted pieces (Matt, October 19, 2026; after the vertical slice)
+
+A player sees what is playing (its name, doc 24 "Naming") and can heart it. Hearted pieces play more often (a weight in the director's choice, still kept fresh by the history) and are saved in the island file, so they follow the island. Needs: a small now-playing line in the UI (drawn heart icon, no glyph), a `music.hearted` list in the save (ids of authored pieces; for grown pieces the seed, season and slot, which regenerate the same piece and name), and a director weight in recipes/music/director.json. Grown pieces must stay reproducible from their seed for this to work, which the engine already guarantees.
+
+## Support kit: still to do (October 19, 2026)
+
+The support kit (strings, harp, flute, vibraphone struck and bowed, glass) is built for the desktop, 8 MB in all. Still open:
+
+- **Solo cello.** Neither CC0 library has one (VSCO 2 CE has a cello section, VCSL no cello). The autumn cello line plays the cello section with solo settings for now. Options: a CC0 single-note set on Freesound, a free or paid library under doc 25's rules, or the viola section or VSCO's solo violin for a solo timbre. Matt decides by ear.
+- **Phone versions.** None yet, so phones would decode the desktop files. Suggested by the strings session: soft layer only, mono, core ranges (about 22 MB decoded for all strings); harp and vibraphone mono with shorter tails. Build before phase 6.
+- **Memory on the desktop.** A piece unpacks only the notes it uses, but a full piano piece (about 110 MB) plus a string bed (10 to 20 MB) can pass the 128 MB line while it plays; the shared budget frees the extra after it ends. If that is too much, decode string notes in mono or shorten the soft layers' settling time.
+- **Gaps in the recordings.** Bowed vibraphone has six notes only (a note may be 3.5 semitones from its recording); the harp is recorded 10 to 20 cents flat (the sampler corrects it); the four glasses are untuned household glasses placed at their nearest notes.
 
 ## Could not be finished here
 

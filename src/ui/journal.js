@@ -37,9 +37,10 @@ const PHONE = '(max-width: 699px)';
  * Mount the journal button and panel.
  * @param {HTMLElement} parent
  * @param {import('../world/journal/index.js').LiveJournal} live
+ * @param {HTMLElement} [buttonParent] where the book button goes (the HUD layer); the panel stays in `parent`
  * @returns {() => void} dispose
  */
-export function mountJournal(parent, live) {
+export function mountJournal(parent, live, buttonParent = parent) {
   ensureIconSprite();
   const { words, island } = live;
 
@@ -260,7 +261,7 @@ export function mountJournal(parent, live) {
   // The almanac follows the time shown; refresh it now and then while it is open.
   const timer = setInterval(() => { const u = get('journalUi'); if (u?.open && u.view === 'almanac') render(); }, 2000);
   const unsubs = [subscribe('journal', render), subscribe('journalUi', render)];
-  parent.appendChild(btnRoot);
+  buttonParent.appendChild(btnRoot);
   parent.appendChild(panel);
 
   return function dispose() {

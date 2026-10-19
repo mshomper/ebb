@@ -1,0 +1,18 @@
+{
+  "type": "music",
+  "id": "spring",
+  "version": 1,
+  "note": "Spring's sound world (doc 24, The four seasons): home key and nearby keys, the mode family, the tempo band (beats per minute, as recipes/music/realize.json counts beats), and the instrument palettes by slot and by weather. Each palette lists instruments for the melody and for the accompaniment, in order of preference; an instrument that is not built yet (harp, flute, kalimba) is skipped until it is. residents adds instruments when species have settled (doc 24, The score grows with the island).",
+  "home": "D",
+  "keys": ["D", "G", "A", "Bm"],
+  "modes": ["ionian", "lydian", "mixolydian"],
+  "tempo": [72, 86],
+  "palettes": {
+    "default": { "melody": ["piano", "flute", "harp"], "accomp": ["piano", "harp", "pad"] },
+    "morning": { "melody": ["piano", "flute"], "accomp": ["piano", "harp", "pad"] },
+    "nocturne": { "melody": ["piano"], "accomp": ["piano", "pad"] },
+    "rain": { "melody": ["piano", "harp"], "accomp": ["piano", "pad"] },
+    "mist": { "melody": ["flute", "piano"], "accomp": ["pad"] }
+  },
+  "residents": { "frog": { "add": ["clarinet"], "motif": "frog" } }
+}
