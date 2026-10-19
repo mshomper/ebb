@@ -8,6 +8,7 @@ import { hash32 } from '../../core/rng.js';
 import { HABITAT_ORIGIN } from '../growth/habitat.js';
 import { suitability } from '../growth/coarse.js';
 import { groundKind, onPage } from './ground.js';
+import { coverShare, COVER_FULL } from './observe.js';
 
 /**
  * @typedef {{ n: number, cell: number, origin: number, data: Uint8Array, circles: number[][] }} WashMap
@@ -19,7 +20,8 @@ import { groundKind, onPage } from './ground.js';
  * The wash for a journal page, or null when the page washes nothing.
  * @param {string} page a species or Ground page id
  * @param {{ state: any, hab: any, material: Uint8Array | null, island: any, flora: Record<string, any>,
- *   words: any, journal: import('./observe.js').Journal, wash: any }} ctx  wash: recipes/world/journal-wash.json
+ *   words: any, journal: import('./observe.js').Journal, wash: any }} ctx  wash: recipes/world/journal-wash.json;
+ *   flora: the plant recipes and the cover plants' (rushes) by id, for where each would do well
  * @returns {WashMap | null}
  */
 export function washMap(page, ctx) {
@@ -48,8 +50,7 @@ export function washMap(page, ctx) {
       circles = hintCircles(page, hab, suitAt, ctx.wash);
     } else {
       if (words.species[page].kind === 'cover') {
-        const g = ctx.state?.growth?.grass;
-        for (let k = 0; k < n * n; k++) if (g && hab.open[k] && !hab.sea[k] && hab.grass[k] * g[k] > 0.5 * 255 * 255) live[k] = 1;
+        for (let k = 0; k < n * n; k++) if (coverShare(page, ctx.state, hab, k) > COVER_FULL) live[k] = 1;
       } else {
         stamped = new Float32Array(N * N);
         for (const p of ctx.state?.growth?.plants ?? []) if (p.sp === page) stamp(stamped, N, p.x, p.z, ctx.wash.plantM * (0.6 + 0.4 * Math.min(1, p.size)));

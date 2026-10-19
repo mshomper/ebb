@@ -133,7 +133,9 @@ export async function startApp(canvas, hooks = {}) {
   const growthRecipe = await loadRecipe('world/growth');
   /** @type {Record<string, any>} */
   const flora = Object.fromEntries(await Promise.all(growthRecipe.species.map(async (/** @type {string} */ sp) => [sp, await loadRecipe(`flora/${sp}`)])));
-  const growth = createGrowth(gpu.device, { terrain, water, world, recipes: { growth: growthRecipe, flora } });
+  /** @type {Record<string, any>} the cover plants other than grass (rushes) */
+  const covers = Object.fromEntries(await Promise.all((growthRecipe.cover ?? []).map(async (/** @type {string} */ sp) => [sp, await loadRecipe(`flora/${sp}`)])));
+  const growth = createGrowth(gpu.device, { terrain, water, world, recipes: { growth: growthRecipe, flora, covers, land: landRecipe } });
   sim.addSystem(growth);
   updateStore('world', () => world.state);
   const unHour = on('clock:hour', (/** @type {{ hour: number }} */ p) => {
@@ -200,6 +202,12 @@ export async function startApp(canvas, hooks = {}) {
     terrain, recipe: await loadRecipe('flora/grass'), terrainRecipe, seed: subSeed(seed, 'grass'), tier: tierSettings,
     water: { depthTextures: water.sim.depthTextures, current: () => water.sim.current }, cover: growth.coverTex,
   });
+  // The marsh's rushes (docs 10): the same blades in tussocks, where the rush cover is, standing in
+  // shallow still water.
+  const rushPass = createGrassPass({
+    terrain, recipe: covers.rushes, terrainRecipe, seed: subSeed(seed, 'rushes'), tier: tierSettings, kind: 'rushes',
+    water: { depthTextures: water.sim.depthTextures, current: () => water.sim.current }, cover: growth.coverTex,
+  });
   // Plants (docs 10): every species from the growth step's instances, after the grass.
   const floraPass = createFloraPass({ growth, terrain, water: { depthTextures: water.sim.depthTextures, current: () => water.sim.current }, recipes: flora });
   // `?frogscale` (ahead of S6): real-size frogs from the species recipe around the pond, and a
@@ -243,6 +251,7 @@ export async function startApp(canvas, hooks = {}) {
     shadowPass,
     terrainPass,
     grassPass,
+    rushPass,
     floraPass,
     ...(frogScale ? [frogScale.pass] : []),
     waterPass,
@@ -291,6 +300,7 @@ export async function startApp(canvas, hooks = {}) {
     tierSettings = settingsFor(t);
     terrainPass.setTier(tierSettings);
     grassPass.setTier(tierSettings);
+    rushPass.setTier(tierSettings);
     waterPass.setDetailFade(tierSettings.waterDetailFadeM);
     waterPass.setSSR(tierSettings.waterSSR ?? null);
     if (lastEntry) sizeCanvas(lastEntry);
@@ -568,10 +578,12 @@ export async function startApp(canvas, hooks = {}) {
     const info = { dt: t.dt, realDt, worldT: t.worldT, animT: t.animT, displayT: display, tier };
     const windNow = weatherAt(world.state?.weather, display, seasonsRecipe).wind;
     ww.update({ rain: day.weather.rain, sunY: day.sm.sunDir[1], wind: windNow }, camera.target);
-    grassPass.update({
+    const bladeFrame = {
       focus: camera.target, time: t.animT, wind: windNow, windDir: world.state?.weather?.today?.windDir ?? 0,
       season: season.index + season.phase,
-    });
+    };
+    grassPass.update(bladeFrame);
+    rushPass.update(bladeFrame);
     floraPass.update({ time: t.animT, wind: windNow, windDir: world.state?.weather?.today?.windDir ?? 0, season: season.index + season.phase });
     // `?ripplerain=1` rains ripples in any weather, to judge rings in sunshine (tools, tuning).
     // Raindrops ring the water in the water shader; the ripple field keeps the pour and creatures.

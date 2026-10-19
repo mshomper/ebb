@@ -6,6 +6,8 @@
 // passing gusts, and shrinks away toward the far edge so the meadow meets the textured ground with
 // no line. Lit like the ground (sun and moon with shadows, sky fill, aerial perspective) with a
 // little wrap for light through the blades; no palette colors here (docs/05).
+// The marsh's rushes are drawn by the same shader (kind.z >= 0): stiff blades in tussocks where the
+// rush cover is, standing on the bed in shallow water with open water between the tussocks.
 
 // #include common
 // #include lib-hash
@@ -25,6 +27,8 @@ struct GrassDraw {
   look2: vec4f,                                // x wet darkening, y seed, z pixel width floor (pixels), w far-ring widening
   shape2: vec4f,                               // x tuft size (m), y how much tufts thicken and thin, z how much they raise and lower
   derived: vec4f,                              // the terrain's derived layers: x beach band top (m), y, z cos of the steep-rock slope range
+  kind: vec4f,                                 // x cover channel (0 grass, 1 rushes), y deepest water a blade stands in (m), z tussock threshold (< 0: grass tufts), w how much thin cover raises it
+  kind2: vec4f,                                // rushes: x tussock edge softness, y how much shorter a tussock's rim stands than its core, z stem widening on thinner tiers
 };
 
 @group(0) @binding(0) var<uniform> frame: FrameUniforms;
@@ -33,7 +37,7 @@ struct GrassDraw {
 @group(2) @binding(2) var materialTex: texture_2d<f32>;
 @group(2) @binding(3) var linearSampler: sampler;
 @group(2) @binding(4) var waterDepth: texture_2d<f32>;
-@group(2) @binding(5) var coverTex: texture_2d<f32>;   // grass cover 0..1, 1 m world grid from -80 m (world/growth)
+@group(2) @binding(5) var coverTex: texture_2d<f32>;   // cover 0..1 (r grass, g rushes), 1 m world grid from -80 m (world/growth)
 
 struct VsOut {
   @builtin(position) pos: vec4f,
@@ -98,6 +102,11 @@ fn vsBlade(@builtin(vertex_index) vi: u32, @builtin(instance_index) ring: u32) -
   if (max(fromTarget.x, fromTarget.y) < r.z) { return nothing(); }
   let dist = length(xz - gd.focus);
   if (dist > gd.look.y) { return nothing(); }
+  // The growth step's cover: grass, how well grass likes this ground (it drowns slowly in a new
+  // pond, thins on salt, greens again when the ground recovers); rushes, where the marsh is. Rushes
+  // grow on little of the island, so a blade with none here stops before reading the ground.
+  let covers = textureSampleLevel(coverTex, linearSampler, (xz + 80.0) / 192.0, 0.0).rg;
+  if (gd.kind.z >= 0.0 && covers.g < 0.02) { return nothing(); }
   // Where grass is painted, at the ring's density; never in water.
   // Painted grass, less what the terrain shader turns to sand (the beach band) and rock (steep
   // slopes), with the same rules, so blades never stand on the beach or a cliff.
@@ -112,25 +121,48 @@ fn vsBlade(@builtin(vertex_index) vi: u32, @builtin(instance_index) ring: u32) -
   w = mix(w, vec4f(0.0, 0.0, 1.0, 0.0), steepRock);
   w = mix(w, vec4f(0.0, 1.0 - w.z, w.z, 0.0), beachSand);
   let others = max(w.y, max(w.z, w.w));
-  // The growth step's grass cover: how well grass likes this ground (it drowns slowly in a new pond,
-  // thins on salt, greens again when the ground recovers).
-  let cover = textureSampleLevel(coverTex, linearSampler, (xz + 80.0) / 192.0, 0.0).r;
-  let grassW = w.x * smoothstep(-0.05, 0.15, w.x - others) * cover;
-  // Tufts: a meadow is clumpy, thicker and taller in patches of half a meter or so.
   let seedU = u32(gd.look2.y);
+  // Tufts: a meadow is clumpy, thicker and taller in patches of half a meter or so.
   let tuft = valueNoise2(xz / gd.shape2.x, seedU + 7u) * 0.65 + valueNoise2(xz / gd.shape2.x * 2.7 + 3.1, seedU + 8u) * 0.35;
-  let thick = mix(1.0 - gd.shape2.y, 1.0 + gd.shape2.y, tuft);
-  if (hashToFloat(h2) > grassW * r.w * thick || waterAt(xz) > 0.01) { return nothing(); }
+  let water = waterAt(xz);
+  var keep = 0.0;
+  var tall = 1.0;
+  var outward = vec2f(0.0);   // rushes: away from the tussock's core, so stems splay out
+  if (gd.kind.z < 0.0) {
+    // Grass, where it is painted and the top layer.
+    let grassW = w.x * smoothstep(-0.05, 0.15, w.x - others) * covers.r;
+    keep = grassW * r.w * mix(1.0 - gd.shape2.y, 1.0 + gd.shape2.y, tuft);
+    tall = mix(1.0 - gd.shape2.z, 1.0 + gd.shape2.z, tuft);
+  } else {
+    // Rushes: tussocks with open water between them, wherever the rush cover is (not on sand or
+    // stone). Thin cover leaves fewer, smaller tussocks; a slower noise opens lanes of water.
+    let rushW = covers.g * (1.0 - smoothstep(0.3, 0.6, max(w.y, w.z)));
+    let lanes = valueNoise2(xz / (gd.shape2.x * 6.0) + vec2f(9.7, 4.3), seedU + 9u);
+    let tus = tuft * 0.7 + lanes * 0.3;
+    let thr = gd.kind.z + (1.0 - rushW) * gd.kind.w;
+    keep = select(0.0, r.w * smoothstep(thr, thr + gd.kind2.x, tus), rushW > 0.02);
+    // A tussock's core stands taller than its rim; in deeper water stems grow longer, so they
+    // still rise well clear of it.
+    tall = mix(1.0 - gd.kind2.y, 1.0, smoothstep(thr, thr + 0.2, tus)) + water * 0.8 / max(gd.height, 0.05);
+    if (keep > 0.0) {
+      let e = gd.shape2.x * 0.15;
+      let tx = valueNoise2((xz + vec2f(e, 0.0)) / gd.shape2.x, seedU + 7u) * 0.65 + valueNoise2((xz + vec2f(e, 0.0)) / gd.shape2.x * 2.7 + 3.1, seedU + 8u) * 0.35;
+      let tz = valueNoise2((xz + vec2f(0.0, e)) / gd.shape2.x, seedU + 7u) * 0.65 + valueNoise2((xz + vec2f(0.0, e)) / gd.shape2.x * 2.7 + 3.1, seedU + 8u) * 0.35;
+      let g = vec2f(tx - tuft, tz - tuft);
+      outward = -g / max(length(g), 1e-4);
+    }
+  }
+  if (hashToFloat(h2) > keep || water > gd.kind.y) { return nothing(); }
 
   let groundY = groundH;
   let nG = nGround;
   let v3 = vec4f(hashToFloat(h3), hashToFloat(pcg(h3)), hashToFloat(pcg(h3 ^ 0x5bd1u)), hashToFloat(pcg(h3 ^ 0x2c9fu)));
   let fade = 1.0 - smoothstep(gd.look.x, gd.look.y, dist);
-  let height = gd.height * (1.0 - gd.shape.x * 0.5 + gd.shape.x * v3.x) * mix(1.0 - gd.shape2.z, 1.0 + gd.shape2.z, tuft) * fade;
+  let height = gd.height * (1.0 - gd.shape.x * 0.5 + gd.shape.x * v3.x) * tall * fade;
   if (height < 0.004) { return nothing(); }
   // Blades in a sparse ring cover more ground each; never thinner than a pixel or so.
   let pixelM = distance(vec3f(xz.x, groundY, xz.y), frame.cameraPos) * 2.0 / (frame.proj[1][1] * frame.renderSize.y);
-  let widen = select(1.0, gd.look2.w, ring == 1u);
+  let widen = select(1.0, gd.look2.w, ring == 1u) * max(gd.kind2.z, 1.0);
   let width = max(gd.width * (1.0 - gd.shape.y * 0.5 + gd.shape.y * v3.y) * widen, pixelM * gd.look2.z);
 
   // Facing: a random yaw, turned halfway toward the camera so blades rarely show edge-on.
@@ -139,7 +171,8 @@ fn vsBlade(@builtin(vertex_index) vi: u32, @builtin(instance_index) ring: u32) -
   let face = normalize(mix(vec2f(cos(yaw), sin(yaw)), toCam, 0.5) + vec2f(1e-4));
   let side = vec2f(-face.y, face.x);
   // Bend: a resting lean in the blade's own direction, plus wind sway with passing gusts.
-  let leanDir = vec2f(cos(yaw + 1.3), sin(yaw + 1.3));
+  let restDir = vec2f(cos(yaw + 1.3), sin(yaw + 1.3));
+  let leanDir = select(restDir, normalize(restDir + outward * 1.5 + vec2f(1e-4)), any(outward != vec2f(0.0)));
   let gustPhase = dot(xz, gd.windDir) * gd.look.z - gd.time * gd.look.w * gd.look.z;
   let gust = 0.6 + 0.4 * sin(gustPhase * 6.2831853) + 0.25 * sin(gd.time * 2.3 + v3.w * 6.2831853);
   let sway = gd.wind * gd.shape.w * gust;

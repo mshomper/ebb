@@ -12,6 +12,7 @@
 // from recipes/world/journal.json ("words") and recipes/world/journal-island.json ("island").
 
 import { STAGE } from '../growth/coarse.js';
+import { HABITAT_ORIGIN } from '../growth/habitat.js';
 import { seasonOf, SECONDS_PER_HOUR } from '../../core/clock.js';
 
 /** Season box bits. */
@@ -23,14 +24,14 @@ export const GROW = 1, FLOWER = 2, DORMANT = 4;
  * @property {boolean} ever       seen at least once
  * @property {string[]} learned   triggers that have happened (seen, spread, dormant, lost:drown, refused:dry, moment:rain, ...)
  * @property {number[]} seasons   per season (spring .. winter): GROW | FLOWER | DORMANT bits seen
- * @property {number[]} counts    plants (or grass share x 1000) at each observed hour, newest last
+ * @property {number[]} counts    plants (or grass share x 1000, or square meters of rushes) at each observed hour, newest last
  * @property {number} flowerYear  the year it last flowered, -1 before
  * @property {boolean} dormant    mostly dormant at the last look
  * @property {number} first       hour first seen, -1 before
  * @property {boolean} arrived    it was here when the journal started
  * @property {number} planted     seeds of it the player has planted
  * @property {number} plantedAt   hour of the first planting, -1 before
- * @property {number} peak        the most there have been (count, or grass share x 1000)
+ * @property {number} peak        the most there have been (as counts)
  * @property {number} peakAt      hour of that best showing
  * @property {Record<string, number>} moments  moment id to the hour it was caught
  */
@@ -79,22 +80,55 @@ export function dateText(seasons, words) {
 /** The date of a game hour, in words. @param {number} hour @param {any} words */
 export const dateOfHour = (hour, words) => dateText(seasonOf(hour * SECONDS_PER_HOUR), words);
 
+/** A square holds a cover plant once its share is above this (a tap names it, it counts toward the page). */
+export const COVER_HAS = 0.25;
+/** A square is full of a cover plant above this (the wash and Show me go there). */
+export const COVER_FULL = 0.5;
+
+/** Does the growth state hold this cover plant's map yet? @param {string} sp @param {any} state */
+export const hasCover = (sp, state) => !!(sp === 'grass' ? state?.growth?.grass : state?.growth?.cover?.[sp]);
+
+/**
+ * A cover plant's share of one habitat square, 0..1 (0 off the opened island and at sea). Grass is
+ * its painted share times its cover (state.growth.grass); the other cover plants (rushes) have
+ * their own cover per square (state.growth.cover), which follows the ground alone.
+ * @param {string} sp @param {any} state @param {any} hab @param {number} k
+ */
+export function coverShare(sp, state, hab, k) {
+  if (!hab.open[k] || hab.sea[k]) return 0;
+  if (sp === 'grass') {
+    const g = state?.growth?.grass;
+    return g ? (hab.grass[k] * g[k]) / (255 * 255) : 0;
+  }
+  const c = state?.growth?.cover?.[sp];
+  return c ? c[k] / 255 : 0;
+}
+
 /**
  * What one species looks like on the island now.
  * @param {string} sp @param {any} state @param {any} hab the habitat (or null) @param {any} rec words.species[sp]
+ * @returns {{ count: number, value: number, flowering: number, dormant: number, mature: number, plants: any[], spots?: { x: number, z: number }[] }}
+ *   for a cover plant measured by area, spots are the middles of the squares it covers
  */
 export function measure(sp, state, hab, rec) {
   if (rec.kind === 'cover') {
-    const g = state?.growth?.grass;
-    if (!hab || !g) return { count: 0, value: 0, flowering: 0, dormant: 0, mature: 0, plants: [] };
+    if (!hab || !hasCover(sp, state)) return { count: 0, value: 0, flowering: 0, dormant: 0, mature: 0, plants: [], spots: [] };
+    if (rec.amountBy === 'area') {
+      // Square meters covered (rushes stand in shallow water, so wet squares count too).
+      /** @type {{ x: number, z: number }[]} */ const spots = [];
+      for (let k = 0; k < hab.n * hab.n; k++) {
+        if (coverShare(sp, state, hab, k) > COVER_HAS) spots.push({ x: HABITAT_ORIGIN + (k % hab.n) + 0.5, z: HABITAT_ORIGIN + Math.floor(k / hab.n) + 0.5 });
+      }
+      return { count: spots.length, value: spots.length, flowering: 0, dormant: 0, mature: 0, plants: [], spots };
+    }
     let land = 0, covered = 0;
     for (let k = 0; k < hab.n * hab.n; k++) {
       if (!hab.open[k] || hab.sea[k] || hab.depthCm[k] > 0) continue;
       land++;
-      if (hab.grass[k] * g[k] > 0.25 * 255 * 255) covered++;
+      if (coverShare(sp, state, hab, k) > COVER_HAS) covered++;
     }
     const share = land ? covered / land : 0;
-    return { count: share, value: Math.round(share * 1000), flowering: 0, dormant: 0, mature: 0, plants: [] };
+    return { count: share, value: Math.round(share * 1000), flowering: 0, dormant: 0, mature: 0, plants: [], spots: [] };
   }
   const plants = (state?.growth?.plants ?? []).filter((/** @type {any} */ p) => p.sp === sp);
   let flowering = 0, dormant = 0, mature = 0;
@@ -200,7 +234,7 @@ export function observe(journal, ctx) {
     // Grass learns that it drowns once water comes to stand over growing grass (cover still high
     // where the water now is; a new island's cover starts at none under its ponds).
     const cover = state?.growth?.grass;
-    if (rec.kind === 'cover' && hab && cover && !k.learned.includes('grass:flooded')) {
+    if (sp === 'grass' && hab && cover && !k.learned.includes('grass:flooded')) {
       let flooded = 0;
       for (let c = 0; c < hab.n * hab.n && flooded < 4; c++) if (hab.depthCm[c] > 0 && hab.grass[c] > 128 && cover[c] > 128 && hab.open[c]) flooded++;
       if (flooded >= 4) { learnTrigger(k, 'grass:flooded'); note(out, rec, 'flooded', sp, hour, date); }

@@ -76,6 +76,12 @@
     "absorptionPond": [0.4, 0.32, 1.2],
     "scatterAlbedo": [0.04, 0.09, 0.1],
     "scatterAlbedoPond": [0.05, 0.055, 0.03],
+    "marshWater": {
+      "note": "Shallow, still fresh water among drowned plants (a marsh, a pond's shallow margin) holds much more dissolved peat than open pond water, so it reads darker and tea-brown and the sky's reflection shows on it. absorption: sigma_a per meter (Beer-Lambert), blue most; it gives way to absorptionPond over depthM and clears over stillMps of current.",
+      "absorption": [1.6, 2.4, 6.0],
+      "depthM": [0.3, 0.8],
+      "stillMps": [0.05, 0.2]
+    },
     "pondNote": "Pond water is peaty and a little cloudy: dissolved peat (tannins) absorbs blue strongly, water itself absorbs red, so the bed tints green-brown within a few tens of centimeters; fine silt scatters a soft olive glow (scatterAlbedoPond). The sea keeps absorptionSea and scatterAlbedo.",
     "refraction": 0.06,
     "edgeFadeM": 0.004,

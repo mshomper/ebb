@@ -9,7 +9,7 @@ import { LODS, MAX_CHUNKS, createIndexBuffers, packChunks } from '../terrain-mes
 
 /** @typedef {import('../frame-graph.js').PassContext} PassContext */
 
-const DRAW_BYTES = 640;   // 384 of look, then 16 marker rings (floats 96..159)
+const DRAW_BYTES = 672;   // 384 of look, 16 marker rings (floats 96..159), the drowned meadow (160..167)
 const GROUND_BYTES = 336;
 const DEG = Math.PI / 180;
 /** @type {Record<string, number>} GroundDetail.tiling.x in lib-ground.wgsl */
@@ -110,6 +110,12 @@ export function createTerrainPass(opts) {
     const uw = recipe.underwater;
     f.set(m.albedoSilt, 40); f[43] = uw.siltCover;
     f[44] = uw.bedDepthM[0]; f[45] = uw.bedDepthM[1]; f[46] = uw.siltDepthM[0]; f[47] = uw.siltDepthM[1];
+    // The drowned meadow (floats 160..167): olive weed over a grassy bed under shallow, still water.
+    const dm = uw.drownedMeadow;
+    if (dm) {
+      f.set(dm.albedo, 160); f[163] = dm.cover;
+      f[164] = dm.depthM[0]; f[165] = dm.depthM[1]; f[166] = dm.stillMps[0]; f[167] = dm.stillMps[1];
+    }
     // Caustics (lib-caustics.wgsl), floats 48..75: look, depthFade, wave0..2, motion, misc.
     const c = opts.water.caustics;
     f[49] = causticLayers(opts.causticLayers);

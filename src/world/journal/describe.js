@@ -5,7 +5,7 @@
 // Show me goes to. Pure; words from recipes/world/journal.json.
 
 import { HABITAT_ORIGIN, habitatCell } from '../growth/habitat.js';
-import { measure, present, knownLines, dateOfHour, sketchOf, FLOWER, DORMANT } from './observe.js';
+import { measure, present, knownLines, dateOfHour, sketchOf, coverShare, hasCover, COVER_HAS, COVER_FULL, FLOWER, DORMANT } from './observe.js';
 
 /** The island's middle and size from the habitat, cached per habitat. @type {WeakMap<object, { x: number, z: number, r: number }>} */
 const shapes = new WeakMap();
@@ -112,7 +112,10 @@ export function describe(journal, sp, state, hab, words, hour = journal.last) {
     else {
       const t = trendOf(k, words);
       const trend = t > 0 ? rec.spreading : t < 0 ? rec.receding : '';
-      if (rec.kind === 'cover') status = `${amountOf(rec.amount, m.count)}${trend ? `, ${trend}` : ''}.`;
+      if (rec.kind === 'cover') {
+        const where = rec.compass ? whereWords(m.spots ?? [], hab, words) : '';
+        status = `${amountOf(rec.amount, m.count)}${rec.place ? ` ${rec.place}` : ''}${where ? ` ${where}` : ''}${trend ? `, ${trend}` : ''}.`;
+      }
       else {
         const where = rec.compass ? whereWords(m.plants, hab, words) : '';
         const isDormant = m.dormant > 0 && m.dormant * 2 >= m.count;
@@ -147,7 +150,8 @@ export function describe(journal, sp, state, hab, words, hour = journal.last) {
 }
 
 /**
- * The plant nearest a tapped ground point, within words.identify.radiusM, or grass where it grows.
+ * The plant nearest a tapped ground point, within words.identify.radiusM, or the cover plant (grass,
+ * rushes) where it grows.
  * @param {any} state @param {any} hab @param {number} x @param {number} z @param {any} words
  * @returns {{ sp: string, name: string, icon: string, text: string, wx: number, wz: number, r: number, stage: number } | null}
  *   wx, wz, r: where to ring the selection on the ground (the plant's middle, or the tap on grass)
@@ -161,12 +165,18 @@ export function identify(state, hab, x, z, words) {
     if (d < bestD) { bestD = d; best = p; }
   }
   if (best) return plantCard(best, words);
-  const g = state?.growth?.grass, grass = words.species.grass;
+  // Else the cover plant (grass, rushes) that fills most of the tapped square, if any holds it.
   const c = habitatCell(x, z);
-  if (grass && g && hab && c >= 0 && hab.open[c] && hab.grass[c] * g[c] > 0.25 * 255 * 255) {
-    return { sp: 'grass', name: grass.name, icon: grass.icon, text: grass.stages[0], wx: x, wz: z, r: I.grassRingM, stage: -1 };
+  if (!hab || c < 0) return null;
+  let cover = null, most = COVER_HAS;
+  for (const sp of words.order) {
+    if (words.species[sp]?.kind !== 'cover') continue;
+    const s = coverShare(sp, state, hab, c);
+    if (s > most) { most = s; cover = sp; }
   }
-  return null;
+  if (!cover) return null;
+  const rec = words.species[cover];
+  return { sp: cover, name: rec.name, icon: rec.icon, text: rec.stages[0], wx: x, wz: z, r: I.grassRingM, stage: -1 };
 }
 
 /** The card for one plant. @param {any} p @param {any} words */
@@ -178,8 +188,9 @@ function plantCard(p, words) {
 
 /**
  * What a page's Show me rings: the plant of the species nearest `near` (the middle of your view;
- * ties go to the larger, then older, then first planted), or for grass the covered square nearest
- * it. Without `near`, the finest plant, or the grass nearest the island's middle. With its card.
+ * ties go to the larger, then older, then first planted), or for a cover plant (grass, rushes) the
+ * covered square nearest it. Without `near`, the finest plant, or the cover nearest the island's
+ * middle. With its card.
  * @param {string} sp @param {any} state @param {any} hab @param {any} words
  * @param {number[] | null} [near] a world point [x, z]
  */
@@ -187,12 +198,13 @@ export function showMeSpot(sp, state, hab, words, near = null) {
   const rec = words.species[sp];
   if (!rec) return null;
   if (rec.kind === 'cover') {
-    const g = state?.growth?.grass;
-    if (!g || !hab) return null;
+    if (!hab || !hasCover(sp, state)) return null;
     const isl = near ? { x: near[0], z: near[1] } : islandShape(hab);
+    // Grass is shown on dry ground; rushes stand in the shallows too.
+    const dryOnly = rec.amountBy !== 'area';
     let best = -1, bestD = Infinity;
     for (let k = 0; k < hab.n * hab.n; k++) {
-      if (!hab.open[k] || hab.depthCm[k] > 0 || hab.sea[k] || hab.grass[k] * g[k] <= 0.5 * 255 * 255) continue;
+      if ((dryOnly && hab.depthCm[k] > 0) || coverShare(sp, state, hab, k) <= COVER_FULL) continue;
       const x = HABITAT_ORIGIN + (k % hab.n) + 0.5, z = HABITAT_ORIGIN + Math.floor(k / hab.n) + 0.5;
       const d = (x - isl.x) ** 2 + (z - isl.z) ** 2;
       if (d < bestD) { bestD = d; best = k; }

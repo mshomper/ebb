@@ -37,6 +37,8 @@ struct TerrainDraw {
   puddle2: vec4f,                       // x puddle roughness, y puddle albedo factor, z most of the low spots a full level covers, w puddle F0
   rain: vec4f, rain2: vec4f,            // raindrop rings in puddles (lib-rain RainRings)
   marks: array<vec4f, 16>,              // UI rings (the Plant tool): x, z, radius (m), opacity; the first with opacity 0 ends the list
+  weed: vec4f,                          // the drowned meadow: rgb albedo of drowned grass and weed (linear), w most of the bed it covers
+  weed2: vec4f,                         // xy water depths (m) over which it gives way to bare silt, zw speeds (m/s) over which running water scours it
 };
 
 @group(0) @binding(0) var<uniform> frame: FrameUniforms;
@@ -147,6 +149,8 @@ fn fsLand(in: VsOut) -> FsOut {
   // soil, so from above the waterline reads as grass giving way to the bed (sand and stone stay).
   let wdep = waterDepthAt(xz);
   let sub = smoothstep(td.bedDepth.x, td.bedDepth.y, wdep);
+  // A grassy bed under any standing water (from the first few millimeters): the drowned meadow below.
+  let drownedGrass = w.x * smoothstep(0.002, 0.012, wdep) / max(w.x + w.y + w.z + w.w, 1e-4);
   w = vec4f(w.x * (1.0 - sub), w.y, w.z, w.w + w.x * sub);
 
   // Height-style blend: each layer gets its own noise "relief"; layers within blendSharpness
@@ -186,8 +190,15 @@ fn fsLand(in: VsOut) -> FsOut {
   // stone), in soft drifts, so a pond floor is a dark, even brown with the bed showing through.
   let soft = w.w / max(w.x + w.y + w.z + w.w, 1e-4);
   let drift = 0.75 + 0.5 * valueNoise2(xz * 0.45 + vec2f(17.3, 4.1), td.seed + 12u);
-  let silt = clamp(smoothstep(td.siltDepth.x, td.siltDepth.y, wdep) * td.siltCover * soft * drift, 0.0, 1.0);
+  // The drowned meadow: under shallow, still water a grassy bed keeps its drowned grass, weed and
+  // algae, a mottled olive rather than bare silt (a marsh floor, a pond's shallow margin). Deeper
+  // water and running water leave the bare bed.
+  let still = 1.0 - smoothstep(td.weed2.z, td.weed2.w, length(waterVelAt(xz)));
+  let mottle = valueNoise2(xz * 0.8 + vec2f(3.1, 8.7), td.seed + 13u) * 0.6 + valueNoise2(xz * 2.9 + vec2f(1.3, 6.1), td.seed + 14u) * 0.4;
+  let weed = drownedGrass * (1.0 - smoothstep(td.weed2.x, td.weed2.y, wdep)) * still * td.weed.w * smoothstep(0.2, 0.6, mottle);
+  let silt = clamp(smoothstep(td.siltDepth.x, td.siltDepth.y, wdep) * td.siltCover * soft * drift, 0.0, 1.0) * (1.0 - weed);
   albedo = mix(albedo, td.albedoSilt, silt);
+  albedo = mix(albedo, td.weed.rgb * (0.8 + 0.4 * mottle), weed);
   // Macro variation (docs/22): a slow tone drift near and far, so no repeat survives at a distance.
   albedo *= groundMacro(xz, td.seed);
   // Wet ground (docs/22 G3, after Lagarde 2013). The visual wetness map (world/terrain/wetness.js)

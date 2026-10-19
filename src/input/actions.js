@@ -8,7 +8,7 @@ import { emit } from '../core/events.js';
 /**
  * @typedef {'mouse'|'pen'|'touch'|'key'} Source
  * @typedef {'sculpt'|'smooth'|'paint'|'water'|'plant'} ToolId
- * @typedef {'reeds'|'lilies'|'iris'|'thrift'} PlantSpecies
+ * @typedef {'reeds'|'lilies'|'iris'|'rushes'|'thrift'} PlantSpecies
  */
 
 /**

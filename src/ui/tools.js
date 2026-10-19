@@ -14,7 +14,7 @@ import { dispatch } from '../input/actions.js';
 import { ensureIconSprite, iconSvg } from './icons/icons.js';
 
 /** @typedef {'sculpt'|'smooth'|'paint'|'water'|'plant'} ToolId */
-/** @typedef {'reeds'|'lilies'|'iris'|'thrift'} PlantSpecies */
+/** @typedef {'reeds'|'lilies'|'iris'|'rushes'|'thrift'} PlantSpecies */
 /** @typedef {'raise'|'lower'|'flatten'} SculptMode */
 /** @typedef {'grass'|'sand'|'soil'|'rock'} PaintLayer */
 /** @typedef {'pour'|'drain'|'spring'} WaterMode */
@@ -56,7 +56,7 @@ const TOOLS = [
   { id: 'plant', label: 'Plant' },
 ];
 /**
- * Species the Plant tool offers, in chip order (four chips form a 2 x 2 grid). Each `icon` is a
+ * Species the Plant tool offers, in chip order (two to a row; an odd last chip takes the whole row). Each `icon` is a
  * drawn icon of the same name in icons.js; `hint` says where the species grows.
  * @type {{id: PlantSpecies, label: string, icon: string, hint: string}[]}
  */
@@ -64,6 +64,7 @@ const PLANT_SPECIES = [
   { id: 'reeds', label: 'Reeds', icon: 'reeds', hint: 'Reeds like wet banks and shallow fresh water. Tap the ground to plant a seed.' },
   { id: 'lilies', label: 'Water lilies', icon: 'lilies', hint: 'Water lilies like still fresh water 0.3 to 1.5 m deep. Tap the water to plant one.' },
   { id: 'iris', label: 'Yellow iris', icon: 'iris', hint: 'Yellow flag iris likes the wet bank just above the water. Tap the ground to plant a seed.' },
+  { id: 'rushes', label: 'Rushes', icon: 'rushes', hint: 'Rushes like soaked ground and still, shallow fresh water. Tap to start a tussock; it spreads from there.' },
   { id: 'thrift', label: 'Sea thrift', icon: 'thrift', hint: 'Sea thrift likes the salty shore by the sea. Tap the ground to plant a seed.' },
 ];
 /** How long a Plant tap's result stays before it fades, ms. */

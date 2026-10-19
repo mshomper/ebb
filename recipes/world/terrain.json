@@ -113,7 +113,14 @@
     "note": "The ground under live water (ponds, streams, the sea). bedDepthM: water depths over which grass gives way to a bare soil bed (sand and stone stay), so the waterline reads from straight above. siltDepthM: depths over which fine mud (materials.albedoSilt) settles on the soft bed; siltCover: the most of the bed it covers.",
     "bedDepthM": [0.004, 0.03],
     "siltDepthM": [0.04, 0.3],
-    "siltCover": 0.8
+    "siltCover": 0.8,
+    "drownedMeadow": {
+      "note": "Under shallow, still water a grassy bed keeps its drowned grass, weed and algae (a marsh floor, a pond's shallow margin), so from above it reads olive rather than bare silt, right from the waterline. albedo: linear, physical (submerged plants; the wet look then darkens it like any soaked ground); cover: the most of the bed it covers, in mottled patches; depthM: water depths over which it gives way to bare silt; stillMps: water speeds over which running water scours it away.",
+      "albedo": [0.13, 0.16, 0.06],
+      "cover": 0.85,
+      "depthM": [0.3, 0.6],
+      "stillMps": [0.05, 0.15]
+    }
   },
   "steepRockDeg": 38,
   "steepRockSoftDeg": 5,
