@@ -1,0 +1,16 @@
+{
+  "type": "audio",
+  "id": "mixer",
+  "version": 1,
+  "note": "The sound graph (doc 17, with doc 24's music bus). buses: the default level of each bus (0..1) before the player's settings scale it; music defaults to 0.7 (doc 24). The game's settings slice does not have a music level yet, so the mixer uses musicDefault until it does (docs/audio-future-work.md). compressor: the gentle master limiter (dB, ratio, seconds). fades: seconds for the master fade in after the first touch, the fade out when the tab hides, and the fade in when it returns. island reverb: the shared outdoor air for ambience and creatures, about 1.2 s, made from filtered noise (no file); decayS is the time to fall 60 dB, hfDecayS how fast the highs fall (shorter is darker), sends per bus, preDelayMs. music reverb: the music's own room (doc 24), about 2.6 s and darker, with early reflections at the listed milliseconds (gain each, alternating left and right), and a wet level; it is never shared with the island. musicTone: the music bus's starting brightness (lowpass Hz), and the chorus EQ (a gentle dip near frog calls, doc 24) at hz with q and its dB when frogs are near (0 when not). duck: how far the music dips near a calling creature (dB) and the attack and release seconds. mobile: what changes on the mobile tier (reverbs at half length, doc 17). seed: the fixed seed for the reverb noise, so the room sounds the same every time.",
+  "buses": { "ambience": 1, "creatures": 1, "tools": 1, "ui": 1, "musicDefault": 0.7 },
+  "master": { "level": 1 },
+  "compressor": { "thresholdDb": -12, "kneeDb": 6, "ratio": 3, "attackS": 0.01, "releaseS": 0.25 },
+  "fades": { "unlockS": 2, "hideS": 0.3, "showS": 1.5 },
+  "islandReverb": { "decayS": 1.2, "hfDecayS": 0.5, "preDelayMs": 8, "hfStartHz": 9000, "sends": { "ambience": 0.18, "creatures": 0.25 } },
+  "musicReverb": { "decayS": 2.6, "hfDecayS": 0.9, "preDelayMs": 14, "hfStartHz": 7000, "early": { "ms": [11, 17, 23, 31], "gain": [0.32, 0.26, 0.2, 0.15] }, "wet": 0.25 },
+  "musicTone": { "lowpassHz": 12000, "chorusEq": { "hz": 900, "q": 0.7, "db": 0 } },
+  "duck": { "db": -3, "attackS": 0.2, "releaseS": 2 },
+  "mobile": { "reverbLength": 0.5 },
+  "seed": 4127
+}

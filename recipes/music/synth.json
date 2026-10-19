@@ -1,0 +1,14 @@
+{
+  "type": "music",
+  "id": "synth",
+  "version": 1,
+  "note": "Soft voices built in code (doc 24, synth.js). fmPiano: a two-operator FM electric piano, made of two stacks played together. body: a sine carrier at the note's pitch modulated by a sine at ratio times the pitch; the modulation index starts at index0 (at full velocity; velocityIndex sets how much softer playing lowers it) and falls to index1 over indexDecayS seconds, which is the warm bloom of the attack fading to a round tone; level in dB. tine: the bright bell-like click of the tine, a carrier at carrierRatio and modulator at ratio, a short burst decaying over decayS. amp: attackS, then the level falls by decayDbPerS (more in the treble, by trebleDecayExtra per octave above middle C) while the key is held; releaseS when the key is let go (pedal holds it). velocity: floorDb at velocity 1 to topDb at 127 with gamma. detuneCents spreads two copies of the body a touch for warmth (0 for none). maxVoices caps polyphony per tier.",
+  "fmPiano": {
+    "body": { "ratio": 1, "index0": 1.6, "index1": 0.35, "indexDecayS": 0.9, "velocityIndex": 0.75, "db": 0 },
+    "tine": { "carrierRatio": 1, "ratio": 14, "index0": 2.2, "decayS": 0.09, "velocityIndex": 0.9, "db": -9 },
+    "amp": { "attackS": 0.003, "decayDbPerS": 4.5, "trebleDecayExtra": 2.5, "releaseS": 0.18 },
+    "velocity": { "floorDb": -36, "topDb": -10, "gamma": 1.4 },
+    "detuneCents": 3,
+    "maxVoices": { "desktop": 16, "mobile": 8 }
+  }
+}

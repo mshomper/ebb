@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ebb music lab</title>
+<link rel="icon" href="../brand/ebb-favicon.svg" type="image/svg+xml">
+<style>
+  @font-face { font-family: 'Nunito'; src: url('../src/vendor/fonts/nunito-latin-600-normal.woff2') format('woff2'); font-weight: 600; }
+  @font-face { font-family: 'Nunito'; src: url('../src/vendor/fonts/nunito-latin-800-normal.woff2') format('woff2'); font-weight: 800; }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; max-width: 100%; overflow-x: hidden; }
+  body { background: #F4EEE4; color: #1E2624; font: 600 17px/1.45 'Nunito', system-ui, sans-serif; padding: 16px; overflow-wrap: anywhere; }
+  main { max-width: 1100px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+  h1 { font-size: 26px; font-weight: 800; margin: 0; color: #4a6a47; }
+  h2 { font-size: 20px; font-weight: 800; margin: 0 0 8px; }
+  h3 { font-size: 17px; font-weight: 800; margin: 12px 0 6px; }
+  p { margin: 4px 0 10px; }
+  .muted { color: #4A5551; font-size: 16px; }
+  a { color: #4a6a47; }
+  .card { background: #FBF7F0; border: 1px solid #E3D9C9; border-radius: 14px; padding: 14px 16px; min-width: 0; }
+  .row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  .grid2 { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
+  button, select { font: 800 17px/1.2 'Nunito', system-ui, sans-serif; color: #1E2624; background: #FFFDF8; border: 1px solid #CFC3AF; border-radius: 12px; padding: 10px 14px; cursor: pointer; min-height: 48px; }
+  select { padding-right: 8px; max-width: 100%; }
+  .seg { display: flex; flex-wrap: wrap; gap: 8px; }
+  .seg button { flex: 1 1 150px; }
+  button[aria-pressed="true"] { background: #4a6a47; color: #FBF7F0; border-color: #4a6a47; }
+  button:disabled { opacity: 0.45; cursor: default; }
+  button.big { font-size: 19px; min-height: 56px; }
+  label.slider { display: grid; grid-template-columns: minmax(110px, 160px) 1fr minmax(64px, auto); gap: 10px; align-items: center; margin: 6px 0; }
+  label.slider output { font-weight: 800; text-align: right; }
+  input[type=range] { width: 100%; min-width: 0; accent-color: #4a6a47; height: 32px; }
+  #unlock { position: fixed; inset: 0; background: rgba(244, 238, 228, 0.94); display: flex; align-items: center; justify-content: center; z-index: 10; padding: 24px; text-align: center; }
+  #unlock[hidden], [hidden] { display: none !important; }
+  #unlock .card { max-width: 460px; }
+  #unlock button { width: 100%; margin-top: 10px; }
+  .ab { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 560px) { .ab { grid-template-columns: 1fr; } label.slider { grid-template-columns: 1fr minmax(56px, auto); } label.slider span { grid-column: 1 / -1; } }
+  .slot { border: 2px solid #E3D9C9; border-radius: 12px; padding: 10px 12px; background: #FFFDF8; }
+  .slot.on { border-color: #4a6a47; background: #EEF3EA; }
+  .slot b { font-size: 19px; }
+  .slot select { width: 100%; margin-top: 6px; }
+  .progress { height: 8px; border-radius: 4px; background: #E3D9C9; overflow: hidden; margin-top: 8px; }
+  .progress i { display: block; height: 100%; width: 0; background: #8DAE80; transition: width 0.2s; }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
+  .tile { background: #FFFDF8; border: 1px solid #E3D9C9; border-radius: 12px; padding: 8px 12px; }
+  .tile b { display: block; font-size: 22px; font-weight: 800; }
+  .tile span { font-size: 15px; color: #4A5551; }
+  #keys { position: relative; width: 100%; height: 190px; touch-action: none; user-select: none; -webkit-user-select: none; margin-top: 8px; }
+  #keys .w, #keys .b { position: absolute; top: 0; border-radius: 0 0 8px 8px; }
+  #keys .w { height: 100%; background: #FFFDF8; border: 1px solid #B9AD99; }
+  #keys .b { height: 60%; background: #2B3532; z-index: 2; }
+  #keys .down.w { background: #CFE0C6; }
+  #keys .down.b { background: #5F7F5B; }
+  #keys .lab { position: absolute; bottom: 8px; left: 0; right: 0; text-align: center; font-size: 15px; color: #4A5551; pointer-events: none; }
+  .pedal { min-height: 64px; width: 100%; font-size: 19px; touch-action: none; }
+  .pedal.down { background: #4a6a47; color: #FBF7F0; }
+  svg.chart { width: 100%; height: auto; display: block; }
+  svg.chart text { font: 700 13px 'Nunito', sans-serif; fill: #4A5551; }
+  .keymap { font-size: 16px; color: #4A5551; }
+  .keymap kbd { font: 800 15px 'Nunito', sans-serif; background: #FFFDF8; border: 1px solid #CFC3AF; border-radius: 6px; padding: 1px 7px; }
+  .note { background: #F6EBD9; border: 1px solid #E8D4B4; border-radius: 12px; padding: 10px 14px; font-size: 16px; }
+  .list { margin: 6px 0; padding-left: 20px; } .list li { margin: 3px 0; }
+</style>
+</head>
+<body>
+<div id="unlock"><div class="card">
+  <h2>Put on your headphones</h2>
+  <p>The music lab starts quietly. Browsers only allow sound after a tap or a key press.</p>
+  <button class="big" id="unlock-btn">Start sound</button>
+</div></div>
+
+<main>
+  <header>
+    <h1>music lab</h1>
+    <p class="muted">Phase 1: the instrument bench. Play each piano, compare two side by side, and check loudness layers, pedal, release and tuning by ear. Later phases add the piece view, the day simulator and the engine here. <a href="./">All test pages</a></p>
+  </header>
+
+  <section class="card">
+    <h2>Instruments, A and B</h2>
+    <div class="ab">
+      <div class="slot on" id="slot-a"><b>A</b> <span class="muted" id="state-a">not loaded</span>
+        <select id="pick-a" aria-label="Instrument for A"></select><div class="progress"><i id="prog-a"></i></div></div>
+      <div class="slot" id="slot-b"><b>B</b> <span class="muted" id="state-b">not loaded</span>
+        <select id="pick-b" aria-label="Instrument for B"></select><div class="progress"><i id="prog-b"></i></div></div>
+    </div>
+    <div class="row" style="margin-top:10px">
+      <button class="big" id="swap" style="flex:1 1 220px">Switch to B</button>
+      <button id="phrase-a" style="flex:1 1 140px">Phrase on A</button>
+      <button id="phrase-b" style="flex:1 1 140px">Phrase on B</button>
+      <button id="phrase-ab" style="flex:1 1 160px">A, then B</button>
+      <button id="stop" style="flex:1 1 100px">Stop</button>
+    </div>
+    <p class="keymap" style="margin-top:8px">The keyboard and every test below play whichever slot is lit. The <kbd>Tab</kbd> key switches. The phrase is a short original cadence in D, the same notes on both.</p>
+  </section>
+
+  <section class="card">
+    <h2>Play</h2>
+    <div class="row">
+      <button id="oct-down" style="flex:0 1 auto">Octave lower</button>
+      <button id="oct-up" style="flex:0 1 auto">Octave higher</button>
+      <span class="muted" id="oct-label"></span>
+    </div>
+    <label class="slider"><span>Loudness</span><input type="range" id="vel" min="1" max="127" value="72"><output id="vel-out">72, mf</output></label>
+    <div class="seg" role="group" aria-label="How touch sets loudness">
+      <button id="touch-fixed" aria-pressed="true">Loudness from the slider</button>
+      <button id="touch-height" aria-pressed="false">Loudness from where you press</button>
+    </div>
+    <div id="keys" aria-label="Piano keys"></div>
+    <button class="pedal" id="pedal">Sustain pedal (hold, or hold the space bar)</button>
+    <p class="keymap">Computer keys: <kbd>A</kbd> to <kbd>'</kbd> play white notes and <kbd>W</kbd> <kbd>E</kbd> <kbd>T</kbd> <kbd>Y</kbd> <kbd>U</kbd> <kbd>O</kbd> <kbd>P</kbd> the black ones, <kbd>Z</kbd> and <kbd>X</kbd> change octave, <kbd>C</kbd> and <kbd>V</kbd> change loudness, <kbd>Space</kbd> is the pedal.</p>
+    <div class="tiles" style="margin-top:8px">
+      <div class="tile"><b id="t-voices">0</b><span>voices sounding</span></div>
+      <div class="tile"><b id="t-mem">0 MB</b><span>decoded in memory</span></div>
+      <div class="tile"><b id="t-down">0 MB</b><span>downloaded</span></div>
+      <div class="tile"><b id="t-fmt">-</b><span>file format</span></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Loudness layers</h2>
+    <p class="muted">Each piano was recorded at a few loudnesses. In between, two recordings are blended so a slow crescendo has no steps. The bands show which recordings sound at each loudness; the dot follows the test as it plays.</p>
+    <div id="layer-chart"></div>
+    <div class="row">
+      <label style="flex:1 1 160px">Test note <select id="sweep-note"></select></label>
+      <button id="sweep" style="flex:1 1 200px">Slow crescendo, soft to loud</button>
+      <button id="sweep-fine" style="flex:1 1 220px">Close-up on each blend</button>
+    </div>
+    <label class="slider"><span>Blend width</span><input type="range" id="fade" min="0" max="30" value="12"><output id="fade-out">12 steps</output></label>
+    <label class="slider"><span>Blend curve</span><input type="range" id="law" min="0" max="1" step="0.05" value="0.5"><output id="law-out">0.50</output></label>
+    <p class="muted">Blend curve: toward 0 suits recordings that are in phase, toward 1 suits unrelated ones. Two recordings of one key sit between. Play the close-up and move it until the blends don't swell or sag.</p>
+  </section>
+
+  <div class="grid2">
+    <section class="card">
+      <h2>Pedal, release and repeats</h2>
+      <div class="seg">
+        <button id="t-pedal">Legato pedaling, then dampers</button>
+        <button id="t-staccato">Short notes, no pedal</button>
+        <button id="t-repeat">Fast repeated note</button>
+        <button id="t-register">Every octave, low to high</button>
+        <button id="t-steal">Big cascade (voice limit)</button>
+      </div>
+      <h3>Pedal sound</h3>
+      <div class="seg" role="group" aria-label="Pedal mechanism sound">
+        <button id="pn-off" aria-pressed="true">No pedal sound</button>
+        <button id="pn-on" aria-pressed="false">Knight's recorded pedal</button>
+      </div>
+      <label class="slider"><span>Pedal sound level</span><input type="range" id="pn-db" min="-48" max="-12" value="-30"><output id="pn-db-out">-30 dB</output></label>
+      <h3>Dampers</h3>
+      <label class="slider"><span>Bass damper</span><input type="range" id="d-bass" min="0.05" max="0.8" step="0.01" value="0.35"><output id="d-bass-out">0.35 s</output></label>
+      <label class="slider"><span>Treble damper</span><input type="range" id="d-treble" min="0.02" max="0.3" step="0.01" value="0.06"><output id="d-treble-out">0.06 s</output></label>
+      <label class="slider"><span>Key-off sound</span><input type="range" id="rel-db" min="-30" max="0" value="-14"><output id="rel-db-out">-14 dB</output></label>
+    </section>
+
+    <section class="card">
+      <h2>Mix</h2>
+      <label class="slider"><span>Volume</span><input type="range" id="m-vol" min="0" max="1" step="0.01" value="0.7"><output id="m-vol-out">0.70</output></label>
+      <label class="slider"><span>Room</span><input type="range" id="m-wet" min="0" max="0.6" step="0.01" value="0.25"><output id="m-wet-out">0.25</output></label>
+      <label class="slider"><span>Brightness</span><input type="range" id="m-bright" min="3000" max="18000" step="100" value="12000"><output id="m-bright-out">12.0 kHz</output></label>
+      <h3>Dynamic range</h3>
+      <label class="slider"><span>Softest</span><input type="range" id="v-floor" min="-60" max="-20" value="-38"><output id="v-floor-out">-38 dB</output></label>
+      <label class="slider"><span>Loudest</span><input type="range" id="v-top" min="-20" max="0" value="-8"><output id="v-top-out">-8 dB</output></label>
+      <label class="slider"><span>Curve</span><input type="range" id="v-gamma" min="0.6" max="3" step="0.05" value="1.5"><output id="v-gamma-out">1.50</output></label>
+      <p class="muted">These start from the recipe. Note any values you like and I'll write them into the recipe.</p>
+    </section>
+  </div>
+
+  <section class="card">
+    <h2>Tuning</h2>
+    <p class="muted">Each dot is one recorded note, measured against equal temperament at A = 440 Hz, in cents (a hundredth of a semitone). The band is the 3-cent target. Pianos are tuned with a slight stretch on purpose: the bass a little flat, the treble a little sharp, so their octaves sound pure. Choose how the game should tune them, then listen. Tap a dot to hear that note against a pure reference tone.</p>
+    <div class="seg" role="group" aria-label="Tuning">
+      <button id="tu-recorded" aria-pressed="false">As recorded</button>
+      <button id="tu-equal" aria-pressed="true">Equal temperament</button>
+      <button id="tu-stretch" aria-pressed="false">Gentle stretch</button>
+    </div>
+    <div id="tune-chart" style="margin-top:8px"></div>
+    <div class="row">
+      <button id="tu-octaves" style="flex:1 1 200px">Octaves up the keyboard</button>
+      <button id="tu-chords" style="flex:1 1 200px">Wide chords, low to high</button>
+    </div>
+    <p id="tune-summary" class="muted"></p>
+  </section>
+
+  <section class="card">
+    <h2>Download and memory budget</h2>
+    <p class="muted">The game's budget is about 4 MB to download for the core piano and pad, and under 48 MB decoded on desktop (20 MB on phones). A full three-layer piano is far over that. Try these and keep what you can't hear the difference in.</p>
+    <div class="grid2">
+      <div>
+        <h3>Longest tail</h3>
+        <div class="seg" role="group" aria-label="Longest tail">
+          <button data-tail="0" aria-pressed="true">Keep all</button>
+          <button data-tail="6" aria-pressed="false">6 s</button>
+          <button data-tail="4" aria-pressed="false">4 s</button>
+          <button data-tail="3" aria-pressed="false">3 s</button>
+        </div>
+      </div>
+      <div>
+        <h3>Mono below</h3>
+        <div class="seg" role="group" aria-label="Mono below">
+          <button data-mono="0" aria-pressed="true">Stereo everywhere</button>
+          <button data-mono="48" aria-pressed="false">C3</button>
+          <button data-mono="60" aria-pressed="false">Middle C</button>
+        </div>
+      </div>
+      <div>
+        <h3>Range loaded</h3>
+        <div class="seg" role="group" aria-label="Range loaded">
+          <button data-range="mid" aria-pressed="true">Middle five octaves</button>
+          <button data-range="full" aria-pressed="false">Whole keyboard</button>
+        </div>
+      </div>
+      <div>
+        <h3>Recordings loaded</h3>
+        <div class="seg" role="group" aria-label="Recordings">
+          <button data-sets="all" aria-pressed="true">Pedal and no-pedal</button>
+          <button data-sets="nosus" aria-pressed="false">No-pedal only</button>
+        </div>
+      </div>
+    </div>
+    <div class="row" style="margin-top:10px"><button class="big" id="reload" style="flex:1 1 260px">Reload both slots with these</button></div>
+  </section>
+
+  <section class="card note" id="problems" hidden>
+    <h2>Notes from preparing the samples</h2>
+    <ul class="list" id="problem-list"></ul>
+  </section>
+</main>
+
+<script type="module" src="./music-lab/main.js"></script>
+</body>
+</html>
