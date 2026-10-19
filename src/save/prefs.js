@@ -8,10 +8,11 @@ import { subscribe } from '../core/store.js';
 import { openDb, putPref } from './idb.js';
 
 const KEY = 'ebb.prefs';
-const KEPT = ['palette', 'textSize', 'motion', 'audio'];
+const KEPT = ['palette', 'textSize', 'motion', 'audio', 'hudDim', 'reveal', 'qualityChoice'];
 
 /**
- * The saved device settings (empty on a new device). The palette alone was kept before S7.
+ * The saved device settings (empty on a new device). The palette alone was kept before S7; motion
+ * was 'full' or 'reduced' before S8b, and 'reduced' now reads as 'calm'.
  * @returns {Record<string, any>}
  */
 export function loadPrefs() {
@@ -22,7 +23,9 @@ export function loadPrefs() {
     const old = localStorage.getItem('ebb.palette');
     if (old && !p.palette) p.palette = old;
   } catch { /* storage blocked: defaults */ }
-  return p && typeof p === 'object' ? p : {};
+  if (!p || typeof p !== 'object') return {};
+  if (p.motion === 'reduced') p.motion = 'calm';
+  return p;
 }
 
 /** Keep the settings slice whenever it changes. Once per page. */

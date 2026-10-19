@@ -358,10 +358,18 @@
   }
 }
 
+/* Reduced motion: the system's (unless Settings says Full), or Settings' Calm (src/ui/motion.js). */
 @media (prefers-reduced-motion: reduce) {
-  .ebb-history, .ebb-history.has-tool { transform: none; }
-  .ebb-tools__card,
-  .ebb-tools__card.is-open { transition: visibility 0s; transform: none; }
-  .ebb-tools__message,
-  .ebb-tools__message.is-shown { transition: none; }
+  :root:not(.ebb-motion-full) .ebb-history,
+  :root:not(.ebb-motion-full) .ebb-history.has-tool { transform: none; }
+  :root:not(.ebb-motion-full) .ebb-tools__card,
+  :root:not(.ebb-motion-full) .ebb-tools__card.is-open { transition: visibility 0s; transform: none; }
+  :root:not(.ebb-motion-full) .ebb-tools__message,
+  :root:not(.ebb-motion-full) .ebb-tools__message.is-shown { transition: none; }
 }
+:root.ebb-motion-calm .ebb-history,
+:root.ebb-motion-calm .ebb-history.has-tool { transform: none; }
+:root.ebb-motion-calm .ebb-tools__card,
+:root.ebb-motion-calm .ebb-tools__card.is-open { transition: visibility 0s; transform: none; }
+:root.ebb-motion-calm .ebb-tools__message,
+:root.ebb-motion-calm .ebb-tools__message.is-shown { transition: none; }

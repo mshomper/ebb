@@ -17,6 +17,7 @@ import { ensureIconSprite, iconSvg } from './icons/icons.js';
 const DEFAULT_PALETTES = [
   { id: 'dusk', name: 'Dusk' },
   { id: 'meadow-morning', name: 'Meadow morning' },
+  { id: 'clear-sight', name: 'Clear sight' },
 ];
 
 /**

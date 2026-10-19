@@ -129,7 +129,12 @@ body.ebb-hud-hidden:not(.ebb-revealing) .ebb-notes { visibility: hidden; }
   }
 }
 
+/* Reduced motion: the system's (unless Settings says Full), or Settings' Calm (src/ui/motion.js). */
 @media (prefers-reduced-motion: reduce) {
-  #ebb-hud { transition: none; }
-  .ebb-dial__card, .ebb-dial.is-open .ebb-dial__card { transform: translateY(-50%); transition: visibility 0s; }
+  :root:not(.ebb-motion-full) #ebb-hud { transition: none; }
+  :root:not(.ebb-motion-full) .ebb-dial__card,
+  :root:not(.ebb-motion-full) .ebb-dial.is-open .ebb-dial__card { transform: translateY(-50%); transition: visibility 0s; }
 }
+:root.ebb-motion-calm #ebb-hud { transition: none; }
+:root.ebb-motion-calm .ebb-dial__card,
+:root.ebb-motion-calm .ebb-dial.is-open .ebb-dial__card { transform: translateY(-50%); transition: visibility 0s; }

@@ -11,6 +11,8 @@
 // Nothing here knows a species: notes rank by kind (reveal-plan.js), plants and covers grow in
 // from the growth state, and animals come back through the hooks each live animal system offers.
 // Emits `reveal:started`, `reveal:note-shown`, `reveal:ended` (for the island's sounds later).
+// Settings (S8b): reveal off skips it all, time-lapse and notes; calm motion (src/ui/motion.js)
+// makes the long time-lapse the short one with every plant together, and holds the rings still.
 // Timings: recipes/world/save.json `reveal`.
 
 import { on, emit, emitDeferred } from '../core/events.js';
@@ -18,6 +20,7 @@ import { get, update } from '../core/store.js';
 import { loadRecipe } from '../core/recipes.js';
 import { planReveal } from '../world/journal/reveal-plan.js';
 import { iconSvg } from './icons/icons.js';
+import { calm } from './motion.js';
 
 /**
  * @param {{ app: any, words: any }} opts  app: startApp's result (world, growth, animals); words:
@@ -32,13 +35,18 @@ export async function mountReveal(opts) {
   arrow.innerHTML = iconSvg('back');
   document.body.appendChild(arrow);
 
-  /** @type {null | { t0: number, timers: ReturnType<typeof setTimeout>[], places: { x: number, z: number }[], focus: number, shown: number, total: number, raf: number }} */
+  /** @type {null | { t0: number, timers: ReturnType<typeof setTimeout>[], places: { x: number, z: number }[], focus: number, shown: number, total: number, raf: number, still: boolean }} */
   let run = null;
 
   on('world:caught-up', (/** @type {any} */ p) => {
     if (run) finish(false);
     if (!p.before?.growth) return;
-    if (!p.reveal) { app.growth?.timeLapse(p.before.growth, R.shortGrowS, R.growSpread); return; }
+    // Settings' reveal off: no time-lapse and no notes. The island is simply as it is now, and the
+    // notes wait in the journal as "You may have missed" (away.js then sends reveal: false, so
+    // island-notes.js says how many).
+    if (get('settings')?.reveal === false) return;
+    // Calm motion (src/ui/motion.js): the plants grow in together, no ripple.
+    if (!p.reveal) { app.growth?.timeLapse(p.before.growth, R.shortGrowS, calm() ? R.calmSpread : R.growSpread); return; }
     start(p);
   });
 
@@ -48,10 +56,13 @@ export async function mountReveal(opts) {
     const plan = planReveal({ notes: p.notes ?? [], events: p.events ?? [], state: app.world.state, habitat: app.world.env.habitat?.() ?? null,
       words, count: R.notes, places: R.places, near: view?.center?.() ?? null });
     const t0 = performance.now();
-    run = { t0, timers: [], places: plan.places, focus: -1, shown: 0, total: (p.notes ?? []).length, raf: 0 };
+    // Calm motion: the long time-lapse becomes the short one, all plants together, and the rings hold still.
+    const still = calm();
+    const growS = still ? R.shortGrowS : R.growS;
+    run = { t0, timers: [], places: plan.places, focus: -1, shown: 0, total: (p.notes ?? []).length, raf: 0, still };
     document.body.classList.add('ebb-revealing');
     emitDeferred('reveal:started', { hours: p.hours, notes: plan.shown.length, places: plan.places.length });
-    app.growth?.timeLapse(p.before.growth, R.growS, R.growSpread);
+    app.growth?.timeLapse(p.before.growth, growS, still ? R.calmSpread : R.growSpread);
     for (const a of animals()) a.hide();
     update('reveal', () => ({ rings }));
     const later = (/** @type {number} */ s, /** @type {() => void} */ fn) => run?.timers.push(setTimeout(fn, s * 1000));
@@ -63,7 +74,7 @@ export async function mountReveal(opts) {
       emit('reveal:note', { note: s.note, showS: R.noteS });
       emitDeferred('reveal:note-shown', { index: i, sp: s.note.sp, kind: s.note.kind ?? null });
     }));
-    const endS = Math.max(R.growS, R.animalsAtS + R.animalsWindowS + 0.5, R.notesAtS + plan.shown.length * R.noteS);
+    const endS = Math.max(growS, R.animalsAtS + R.animalsWindowS + 0.5, R.notesAtS + plan.shown.length * R.noteS);
     later(endS, () => finish(false));
     // Any tap, key or wheel ends it, with everything where it ends up.
     addEventListener('pointerdown', interrupt, true);
@@ -102,7 +113,8 @@ export async function mountReveal(opts) {
     const k = Math.min(1, Math.max(0, (t - R.notesAtS + 0.6) / 0.6));
     return run.places.map((p, i) => {
       const focus = i === run?.focus;
-      const breath = focus ? 0.5 + 0.5 * Math.sin(t * Math.PI * 2 / 2.4) : 0;
+      // Calm motion: the shown note's ring holds still at its middle size.
+      const breath = !focus ? 0 : run?.still ? 0.5 : 0.5 + 0.5 * Math.sin(t * Math.PI * 2 / 2.4);
       return [p.x, p.z, R.ringM * (1 + 0.15 * breath), k * (focus ? 0.55 + 0.35 * breath : 0.4)];
     });
   }

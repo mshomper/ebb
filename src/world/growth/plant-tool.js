@@ -7,6 +7,7 @@
 import { emitDeferred } from '../../core/events.js';
 import { update as updateStore } from '../../core/store.js';
 import { STAGE } from './coarse.js';
+import { calm } from '../../ui/motion.js';
 
 /** Ring slots the terrain shader holds (terrain-draw.wgsl marks). */
 const SLOTS = 16;
@@ -112,7 +113,8 @@ export function createPlantTool(opts) {
       if (sel && Number.isFinite(sel.wx)) {
         const k = Math.min(1, (now - sel.at) / (recipe.selectBloomS * 1000));
         const bloom = 1 - (1 - k) * (1 - k);
-        const breath = 0.5 + 0.5 * Math.sin(((now - sel.at) / 1000) * Math.PI * 2 / recipe.selectPulseS);
+        // Calm motion (Settings, src/ui/motion.js): the ring holds still at its middle size.
+        const breath = calm() ? 0.5 : 0.5 + 0.5 * Math.sin(((now - sel.at) / 1000) * Math.PI * 2 / recipe.selectPulseS);
         const r = sel.r * (0.6 + 0.4 * bloom) * (1 + recipe.selectPulse * breath);
         marks.set([sel.wx, sel.wz, r, bloom * (recipe.selectOpacity[0] + (recipe.selectOpacity[1] - recipe.selectOpacity[0]) * breath)], n++ * 4);
       }

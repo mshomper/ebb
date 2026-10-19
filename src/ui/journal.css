@@ -18,11 +18,12 @@
   :root { --jr-btn: 52px; }
 }
 
-/* --- the book button, top right (the Look button sits to its left, look.css) --- */
+/* --- the book button, top right: Settings has the corner (settings.css), the Look button sits to
+   the book's left (look.css) --- */
 .ebb-jbtn {
   position: fixed;
   top: max(var(--jr-edge), env(safe-area-inset-top));
-  right: max(var(--jr-edge), env(safe-area-inset-right));
+  right: calc(max(var(--jr-edge), env(safe-area-inset-right)) + var(--jr-btn) + 8px);
   z-index: 11;
   pointer-events: none;
 }
@@ -101,7 +102,7 @@
 .ebb-journal__title {
   margin: 0 auto 0 0;
   min-width: 0;
-  font-size: 22px;
+  font-size: calc(22px * var(--text-scale, 1));
   font-weight: 800;
   line-height: 1.2;
 }
@@ -161,7 +162,7 @@
   font-style: italic;
   font-weight: 400;
 }
-.ebb-journal__empty { margin: 8px 0; font-size: 18px; color: var(--jr-soft); }
+.ebb-journal__empty { margin: 8px 0; font-size: calc(18px * var(--text-scale, 1)); color: var(--jr-soft); }
 
 /* living things list */
 .ebb-jlist, .ebb-jnotes, .ebb-jpage__list, .ebb-jpage__notes { list-style: none; margin: 0; padding: 0; }
@@ -187,18 +188,18 @@
 .ebb-jlist__icon .icon { width: 28px; height: 28px; }
 .ebb-jlist__text { display: grid; gap: 2px; min-width: 0; overflow-wrap: break-word; }
 .ebb-jlist__text b { font-weight: 800; }
-.ebb-jlist__text .ebb-journal__voice { font-size: 17px; color: var(--jr-soft); line-height: 1.35; }
+.ebb-jlist__text .ebb-journal__voice { font-size: calc(17px * var(--text-scale, 1)); color: var(--jr-soft); line-height: 1.35; }
 .ebb-jlist__row.is-pencil b, .ebb-jlist__row.is-pencil .ebb-journal__voice { color: var(--jr-pencil); }
 .ebb-jlist__row.is-pencil .ebb-jlist__icon { background: transparent; color: var(--jr-pencil); }
 
 /* a species page */
 .ebb-jpage { display: grid; gap: 14px; }
 .ebb-jpage__top { display: flex; align-items: center; gap: 14px; }
-.ebb-jpage__top h3 { margin: 0; font-size: 24px; font-weight: 800; line-height: 1.2; min-width: 0; }
+.ebb-jpage__top h3 { margin: 0; font-size: calc(24px * var(--text-scale, 1)); font-weight: 800; line-height: 1.2; min-width: 0; }
 .ebb-jpage__sketch { width: 72px; height: 72px; flex: none; display: grid; place-items: center; border-radius: 50%; background: rgba(95, 127, 91, 0.14); color: var(--jr-moss); }
 .ebb-jpage__sketch .icon { width: 48px; height: 48px; }
 .ebb-jpage__sketch.is-pencil { background: transparent; border: 1.5px dashed var(--jr-pencil); color: var(--jr-pencil); }
-.ebb-jpage__status { margin: 0; font-size: 19px; line-height: 1.45; }
+.ebb-jpage__status { margin: 0; font-size: calc(19px * var(--text-scale, 1)); line-height: 1.45; }
 .ebb-jpage__status.is-pencil { color: var(--jr-pencil); }
 .ebb-jpage section { display: grid; gap: 6px; }
 .ebb-jpage h4 { margin: 0; font-size: var(--text-small); font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--jr-moss); }
@@ -227,7 +228,8 @@
 .ebb-jpage__season.is-empty b .icon { opacity: 0.6; }
 .ebb-jpage__notes { display: grid; gap: 8px; }
 .ebb-jpage__notes li { overflow-wrap: break-word; }
-.ebb-jpage__notes small, .ebb-jnotes small { font-size: var(--text-small); color: var(--jr-soft); white-space: nowrap; }
+/* A date keeps together on its line, and wraps only when it is wider than the line (large text). */
+.ebb-jpage__notes small, .ebb-jnotes small { display: inline-block; max-width: 100%; font-size: var(--text-small); color: var(--jr-soft); }
 
 /* The field sketch across the top of a page (J1.6): drawn at the page's width. Its labels are 18
    drawing units, so it stays wide enough (about 340 px or more) for them to read at 16 px. */
@@ -252,18 +254,24 @@
 }
 .ebb-jpage__show:hover { background: rgba(95, 127, 91, 0.12); }
 .ebb-jpage__top { flex-wrap: wrap; }
-.ebb-jpage__field li, .ebb-jpage__story li { font-family: var(--font-voice); font-style: italic; font-weight: 400; font-size: 17px; line-height: 1.4; }
+.ebb-jpage__field li, .ebb-jpage__story li { font-family: var(--font-voice); font-style: italic; font-weight: 400; font-size: calc(17px * var(--text-scale, 1)); line-height: 1.4; }
 .ebb-jpage__field li.is-pencil { font-family: var(--font-ui); font-style: normal; font-weight: 600; font-size: var(--text-body); }
 
 /* Moments: four frames; an empty one shows only a pencil question mark. */
 .ebb-jpage__moments { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+/* Seasons and moments: four to a row at the usual text size; with larger text (Settings,
+   --text-scale above 1) two to a row, so the words still fit. The column floor is a quarter of
+   the row at scale 1 and half of it at any larger scale. */
+.ebb-jpage__seasons, .ebb-jpage__moments {
+  grid-template-columns: repeat(auto-fit, minmax(max(calc((100% - 19px) / 4), min(calc((100% - 7px) / 2), calc((var(--text-scale, 1) - 1) * 10000px))), 1fr));
+}
 .ebb-jpage__moment {
   min-width: 0; min-height: 108px; padding: 6px;
   display: grid; align-content: end; justify-items: start; gap: 1px;
   border: 1.5px solid #CF8C5F; border-radius: 10px; background: #F7E4D3; overflow-wrap: break-word;
 }
 .ebb-jpage__moment.is-empty { border: 1.5px dashed var(--jr-rule); background: transparent; align-content: center; justify-items: center; }
-.ebb-jpage__q { font-family: var(--font-voice); font-style: italic; font-size: 30px; line-height: 1; color: var(--jr-pencil); }
+.ebb-jpage__q { font-family: var(--font-voice); font-style: italic; font-size: calc(30px * var(--text-scale, 1)); line-height: 1; color: var(--jr-pencil); }
 .ebb-jpage__mart { position: relative; width: 44px; height: 40px; color: var(--jr-moss); }
 .ebb-jpage__mart .ebb-jpage__mmain { width: 34px; height: 34px; position: absolute; left: 0; top: 0; }
 .ebb-jpage__mart .ebb-jpage__mmark { width: 20px; height: 20px; position: absolute; right: 0; bottom: 0; color: #8A4524; }
@@ -274,7 +282,7 @@
 .ebb-jalm { margin: 0; display: grid; gap: 8px; }
 .ebb-jalm__row { display: grid; gap: 2px; padding: 8px 10px; border: 1.5px solid var(--jr-rule); border-radius: 10px; }
 .ebb-jalm dt { font-size: var(--text-small); font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--jr-moss); }
-.ebb-jalm dd { margin: 0; font-size: 18px; line-height: 1.4; overflow-wrap: break-word; }
+.ebb-jalm dd { margin: 0; font-size: calc(18px * var(--text-scale, 1)); line-height: 1.4; overflow-wrap: break-word; }
 
 /* web: what needs what. The drawing scales to the page width and never wider. */
 .ebb-jweb { display: grid; gap: 12px; }
@@ -282,10 +290,10 @@
 .ebb-jweb__node { cursor: pointer; outline: none; }
 .ebb-jweb__node:hover rect { stroke-width: 2.4; }
 .ebb-jweb__node:focus-visible rect { stroke: #CF8C5F; stroke-width: 3; }
-.ebb-jweb__cap { margin: 0; font-size: 18px; line-height: 1.4; }
+.ebb-jweb__cap { margin: 0; font-size: calc(18px * var(--text-scale, 1)); line-height: 1.4; }
 .ebb-jweb__focus { display: grid; gap: 8px; justify-items: start; }
-.ebb-jweb__focus p { margin: 0; font-size: 18px; line-height: 1.4; }
-.ebb-jweb__lines { margin: 0; padding: 0 0 0 18px; display: grid; gap: 4px; font-size: 18px; line-height: 1.4; }
+.ebb-jweb__focus p { margin: 0; font-size: calc(18px * var(--text-scale, 1)); line-height: 1.4; }
+.ebb-jweb__lines { margin: 0; padding: 0 0 0 18px; display: grid; gap: 4px; font-size: calc(18px * var(--text-scale, 1)); line-height: 1.4; }
 .ebb-jweb__open {
   appearance: none;
   -webkit-appearance: none;
@@ -319,7 +327,7 @@
 }
 button.ebb-jnotes__row { cursor: pointer; }
 button.ebb-jnotes__row:hover { background: rgba(30, 38, 36, 0.06); }
-.ebb-jnotes__row .ebb-journal__voice { font-size: 18px; }
+.ebb-jnotes__row .ebb-journal__voice { font-size: calc(18px * var(--text-scale, 1)); }
 
 /* Phone: a sheet from the bottom, half height or nearly full. */
 @media (max-width: 699px) {
@@ -343,7 +351,7 @@ button.ebb-jnotes__row:hover { background: rgba(30, 38, 36, 0.06); }
   .ebb-journal__size { display: grid; }
   .ebb-journal__size .icon { transition: transform 200ms ease; }
   .ebb-journal.is-full .ebb-journal__size .icon { transform: rotate(180deg); }
-  .ebb-journal__title { font-size: 20px; }
+  .ebb-journal__title { font-size: calc(20px * var(--text-scale, 1)); }
   /* The sheet covers the bottom controls, so the notes step aside. */
   .ebb-journal-open .ebb-notes { opacity: 0; visibility: hidden; }
 }
@@ -354,8 +362,12 @@ button.ebb-jnotes__row:hover { background: rgba(30, 38, 36, 0.06); }
    at the end takes the whole row. */
 @media (max-width: 480px) {
   .ebb-journal__nav { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .ebb-journal__tab { min-width: 0; }
+  .ebb-journal__tab { min-width: 0; text-align: left; }
+  /* With large text a label wraps inside its button rather than running past it. */
+  .ebb-journal__tab span { min-width: 0; overflow-wrap: anywhere; }
   .ebb-journal__tab:last-child:nth-child(odd) { grid-column: 1 / -1; }
+  /* From 130 percent text (src/ui/motion.js) the buttons take a row each, so no word breaks. */
+  :root.ebb-text-large .ebb-journal__nav { grid-template-columns: minmax(0, 1fr); }
 }
 
 /* --- notes on the island, bottom left above the tool bar --- */
@@ -386,7 +398,7 @@ button.ebb-jnotes__row:hover { background: rgba(30, 38, 36, 0.06); }
   font-family: var(--font-voice);
   font-style: italic;
   font-weight: 400;
-  font-size: 18px;
+  font-size: calc(18px * var(--text-scale, 1));
   line-height: 1.35;
   text-align: left;
   overflow-wrap: break-word;
@@ -413,8 +425,11 @@ button.ebb-jnotes__row:hover { background: rgba(30, 38, 36, 0.06); }
   color: var(--ui-cream);
   font-family: var(--font-ui, 'Nunito', system-ui, sans-serif);
   font-weight: 700;
-  font-size: 16px;
+  font-size: calc(16px * var(--text-scale, 1));
   line-height: 1.3;
+  max-width: 100%;
+  text-align: left;
+  overflow-wrap: break-word;
   cursor: pointer;
 }
 .ebb-notes__more.is-shown { display: block; }
@@ -518,16 +533,18 @@ button.ebb-jnotes__row:hover { background: rgba(30, 38, 36, 0.06); }
 }
 .ebb-mark::after { border-width: 2px; box-shadow: none; animation: ebb-mark-breathe 2.4s ease-out infinite; }
 @keyframes ebb-mark-breathe { from { transform: scale(1); opacity: 0.9; } to { transform: scale(1.9); opacity: 0; } }
-@media (prefers-reduced-motion: reduce) { .ebb-mark::after { animation: none; opacity: 0; } }
+/* Reduced motion: the system's (unless Settings says Full), or Settings' Calm (src/ui/motion.js). */
+@media (prefers-reduced-motion: reduce) { :root:not(.ebb-motion-full) .ebb-mark::after { animation: none; opacity: 0; } }
+:root.ebb-motion-calm .ebb-mark::after { animation: none; opacity: 0; }
 .ebb-pointer.is-on { opacity: 1; visibility: visible; transition: opacity 200ms ease, visibility 0s; }
 .ebb-pointer .icon { width: 26px; height: 26px; display: block; }
 .ebb-idcard button { font: inherit; color: inherit; -webkit-tap-highlight-color: transparent; }
 .ebb-idcard :focus-visible { outline: 2px solid var(--jr-moss); outline-offset: 2px; }
 .ebb-idcard__head { display: flex; align-items: center; gap: 10px; }
-.ebb-idcard__head b { font-weight: 800; font-size: 18px; margin-right: auto; min-width: 0; }
+.ebb-idcard__head b { font-weight: 800; font-size: calc(18px * var(--text-scale, 1)); margin-right: auto; min-width: 0; overflow-wrap: break-word; }
 .ebb-idcard__icon { width: 36px; height: 36px; flex: none; display: grid; place-items: center; border-radius: 50%; background: rgba(95, 127, 91, 0.14); color: var(--jr-moss); }
 .ebb-idcard__close { appearance: none; -webkit-appearance: none; width: 40px; height: 40px; margin: -6px -6px -6px 0; padding: 0; border: 0; border-radius: 10px; background: transparent; display: grid; place-items: center; cursor: pointer; }
-.ebb-idcard__text { margin: 0; font-family: var(--font-voice); font-style: italic; font-weight: 400; font-size: 18px; }
+.ebb-idcard__text { margin: 0; font-family: var(--font-voice); font-style: italic; font-weight: 400; font-size: calc(18px * var(--text-scale, 1)); }
 .ebb-idcard__suits { margin: 0; font-size: var(--text-small); color: var(--jr-soft); }
 .ebb-idcard__suits.is-pencil { color: var(--jr-pencil); }
 .ebb-idcard__open {
@@ -547,7 +564,12 @@ button.ebb-jnotes__row:hover { background: rgba(30, 38, 36, 0.06); }
 }
 .ebb-idcard__open:hover { background: rgba(95, 127, 91, 0.12); }
 
+/* Reduced motion: the system's (unless Settings says Full), or Settings' Calm (src/ui/motion.js). */
 @media (prefers-reduced-motion: reduce) {
-  .ebb-journal, .ebb-journal.is-open { transform: none; transition: opacity 120ms ease, visibility 0s; }
-  .ebb-notes__note { transform: none; transition: opacity 200ms ease; }
+  :root:not(.ebb-motion-full) .ebb-journal,
+  :root:not(.ebb-motion-full) .ebb-journal.is-open { transform: none; transition: opacity 120ms ease, visibility 0s; }
+  :root:not(.ebb-motion-full) .ebb-notes__note { transform: none; transition: opacity 200ms ease; }
 }
+:root.ebb-motion-calm .ebb-journal,
+:root.ebb-motion-calm .ebb-journal.is-open { transform: none; transition: opacity 120ms ease, visibility 0s; }
+:root.ebb-motion-calm .ebb-notes__note { transform: none; transition: opacity 200ms ease; }

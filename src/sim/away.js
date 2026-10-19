@@ -41,8 +41,9 @@ export async function mountAway(opts) {
     busy = true;
     save?.hold(true);
     clock.hold(true);
-    // Long enough away for the reveal (src/ui/reveal.js): it opens from cream, so the screen is up at once.
-    const revealing = hours >= reveal.thresholdHours;
+    // Long enough away for the reveal (src/ui/reveal.js): it opens from cream, so the screen is up at
+    // once. Settings can turn the reveal off; the notes then wait in the journal.
+    const revealing = hours >= reveal.thresholdHours && get('settings')?.reveal !== false;
     const screen = showCatchingUp({ afterS: revealing ? 0 : recipe.screenAfterS });
     const t0 = performance.now();
     try {

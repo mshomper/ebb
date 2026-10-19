@@ -17,8 +17,8 @@ export function showElsewhere(takeOver, moved) {
     #ebb-elsewhere .card { max-width: 460px; width: 100%; text-align: center; color: var(--ui-cream);
       display: grid; gap: 16px; justify-items: center; }
     #ebb-elsewhere img { width: 96px; height: 96px; border-radius: 22px; }
-    #ebb-elsewhere p { margin: 0; font-size: 19px; line-height: 1.5; overflow-wrap: anywhere; }
-    #ebb-elsewhere button { appearance: none; font: inherit; font-weight: 800; font-size: 18px; min-height: 48px;
+    #ebb-elsewhere p { margin: 0; font-size: calc(19px * var(--text-scale, 1)); line-height: 1.5; overflow-wrap: anywhere; }
+    #ebb-elsewhere button { appearance: none; font: inherit; font-weight: 800; font-size: calc(18px * var(--text-scale, 1)); min-height: 48px; max-width: 100%;
       padding: 10px 22px; border: 0; border-radius: 14px; background: var(--ui-cream); color: var(--ui-night); cursor: pointer; }
     #ebb-elsewhere button:focus-visible { outline: 3px solid var(--wordmark-dark, #BFD5A8); outline-offset: 3px; }
   `;

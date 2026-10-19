@@ -4,6 +4,8 @@
 // It shows only if catching up takes longer than `afterS`, so a short catch-up passes unseen. It
 // covers the toolbar, so nothing is edited while the hours run.
 
+import { calm } from './motion.js';
+
 /**
  * @param {{ afterS: number }} opts  afterS 0 shows it at once (the reveal opens from it)
  * @returns {{ progress: (f: number) => void, done: (fadeS?: number) => void }}
@@ -25,7 +27,7 @@ export function showCatchingUp(opts) {
     done(fadeS = 0.4) {
       clearTimeout(timer);
       if (!wrap.classList.contains('is-shown')) { wrap.remove(); return; }
-      if (matchMedia('(prefers-reduced-motion: reduce)').matches) fadeS = 0;
+      if (calm()) fadeS = 0;
       wrap.style.pointerEvents = 'none';
       wrap.style.transition = `opacity ${fadeS}s ease`;
       wrap.classList.remove('is-shown');
@@ -45,10 +47,12 @@ function ensureStyle() {
       opacity: 0; transition: opacity 0.4s ease; }
     .ebb-catchup.is-shown { opacity: 1; }
     .ebb-catchup__line { margin: 0; font-family: var(--font-voice, Georgia, serif); font-style: italic; font-weight: 400;
-      font-size: 24px; line-height: 1.4; max-width: 30ch; overflow-wrap: anywhere; }
+      font-size: calc(24px * var(--text-scale, 1)); line-height: 1.4; max-width: 30ch; overflow-wrap: anywhere; }
     .ebb-catchup__bar { width: min(280px, 80%); height: 6px; border-radius: 3px; background: rgba(30, 38, 36, 0.12); overflow: hidden; }
     .ebb-catchup__bar i { display: block; height: 100%; width: 0; border-radius: 3px; background: var(--wordmark, #5F7F5B); transition: width 0.2s linear; }
-    @media (prefers-reduced-motion: reduce) { .ebb-catchup, .ebb-catchup__bar i { transition: none; } }
+    @media (prefers-reduced-motion: reduce) {
+      :root:not(.ebb-motion-full) .ebb-catchup, :root:not(.ebb-motion-full) .ebb-catchup__bar i { transition: none; } }
+    :root.ebb-motion-calm .ebb-catchup, :root.ebb-motion-calm .ebb-catchup__bar i { transition: none; }
   `;
   document.head.appendChild(s);
 }

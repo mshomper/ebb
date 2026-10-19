@@ -61,7 +61,7 @@ import { fingerprint } from './save/backup.js';
  */
 
 /** Palettes available in the slice (docs/05): Moonlight and Clear sight join later. */
-const PALETTES = [{ id: 'dusk', name: 'Dusk' }, { id: 'meadow-morning', name: 'Meadow morning' }];
+const PALETTES = [{ id: 'dusk', name: 'Dusk' }, { id: 'meadow-morning', name: 'Meadow morning' }, { id: 'clear-sight', name: 'Clear sight' }];
 
 /**
  * @param {HTMLCanvasElement} canvas
@@ -120,7 +120,9 @@ export async function startApp(canvas, hooks = {}) {
   }
   // Device settings (src/save/prefs.js): kept on this device, never in the island.
   const prefs = loadPrefs();
-  updateStore('settings', (s) => { for (const k of ['textSize', 'motion', 'audio']) if (prefs[k] !== undefined) s[k] = prefs[k]; });
+  updateStore('settings', (s) => {
+    for (const k of ['textSize', 'motion', 'audio', 'hudDim', 'reveal', 'qualityChoice']) if (prefs[k] !== undefined) s[k] = prefs[k];
+  });
   keepPrefs();
 
   // Tool state for the tool bar (ui/tools.js reads it; actions below change it).
@@ -532,6 +534,14 @@ export async function startApp(canvas, hooks = {}) {
         baker.setPalette(palettes[a.id]);
         updateStore('settings', (s) => { s.palette = a.id; });
         emitDeferred('palette:changed', { id: a.id });
+        break;
+      // Settings (src/ui/settings.js): growing while away belongs to the island; the rest are
+      // this device's settings (src/save/prefs.js keeps them).
+      case 'time.keepGrowing':
+        updateStore('meta', (m) => { m.keepGrowing = a.on; });
+        break;
+      case 'settings.set':
+        updateStore('settings', (s) => { Object.assign(s, a.patch); });
         break;
     }
   });

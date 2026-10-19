@@ -83,6 +83,10 @@
   .ebb-time { bottom: calc(max(var(--tf-edge), env(safe-area-inset-bottom)) + var(--tf-bar) + 10px); }
 }
 
+/* Reduced motion: the system's (unless Settings says Full), or Settings' Calm (src/ui/motion.js). */
 @media (prefers-reduced-motion: reduce) {
-  .ebb-time, .ebb-time.has-tool { transform: none; }
+  :root:not(.ebb-motion-full) .ebb-time,
+  :root:not(.ebb-motion-full) .ebb-time.has-tool { transform: none; }
 }
+:root.ebb-motion-calm .ebb-time,
+:root.ebb-motion-calm .ebb-time.has-tool { transform: none; }

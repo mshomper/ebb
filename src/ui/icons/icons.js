@@ -391,6 +391,52 @@ const ICONS = {
     <circle cx="12" cy="12" r="3"/>
     <circle cx="12" cy="12" r="0.9" fill="currentColor" stroke="none"/>`,
 
+  // Settings: three horizontal sliders with their knobs.
+  settings: `
+    <path d="M3.5 6.5H20.5"/>
+    <path d="M3.5 12H20.5"/>
+    <path d="M3.5 17.5H20.5"/>
+    <circle cx="9" cy="6.5" r="2.2" fill="currentColor" fill-opacity="0.9"/>
+    <circle cx="15.5" cy="12" r="2.2" fill="currentColor" fill-opacity="0.9"/>
+    <circle cx="11" cy="17.5" r="2.2" fill="currentColor" fill-opacity="0.9"/>`,
+
+  // Sound: a small speaker with two sound arcs.
+  sound: `
+    <path ${ACCENT} d="M3.5 9.5H7.5L12 5.5V18.5L7.5 14.5H3.5Z"/>
+    <path d="M3.5 9.5H7.5L12 5.5V18.5L7.5 14.5H3.5Z"/>
+    <path d="M15.5 9.2C16.3 10 16.7 11 16.7 12S16.3 14 15.5 14.8"/>
+    <path d="M18 6.8C19.4 8.2 20.2 10 20.2 12S19.4 15.8 18 17.2"/>`,
+
+  // Controls: a fingertip touching, with two rings spreading from the touch.
+  controls: `
+    <circle ${ACCENT} cx="12" cy="9" r="2.4"/>
+    <circle cx="12" cy="9" r="2.4"/>
+    <path d="M12 11.4V20.5"/>
+    <path d="M7.6 9A4.4 4.4 0 0 1 16.4 9"/>
+    <path d="M4.6 9A7.4 7.4 0 0 1 19.4 9" opacity="0.6"/>`,
+
+  // Quality: two stacked layers, the top one a little raised.
+  quality: `
+    <path ${ACCENT} d="M12 3.5L20.5 8.2L12 12.9L3.5 8.2Z"/>
+    <path d="M12 3.5L20.5 8.2L12 12.9L3.5 8.2Z"/>
+    <path d="M3.5 12.6L12 17.3L20.5 12.6"/>
+    <path d="M3.5 16.6L12 21.3L20.5 16.6" opacity="0.6"/>`,
+
+  // Saves: a keepsake box with an arrow going in.
+  saves: `
+    <path ${ACCENT} d="M4 9H20V20H4Z"/>
+    <path d="M4 9H20V20H4Z"/>
+    <path d="M4 9L6 5H18L20 9"/>
+    <path d="M12 11.5V17"/>
+    <path d="M9.5 14.5L12 17L14.5 14.5"/>`,
+
+  // Tests: a small flask, a third full.
+  tests: `
+    <path ${ACCENT} d="M6.8 15H17.2L19.4 19.2C19.8 20 19.2 21 18.3 21H5.7C4.8 21 4.2 20 4.6 19.2Z"/>
+    <path d="M9 3H15"/>
+    <path d="M10 3V9.5L4.6 19.2C4.2 20 4.8 21 5.7 21H18.3C19.2 21 19.8 20 19.4 19.2L14 9.5V3"/>
+    <path d="M6.8 15H17.2"/>`,
+
   // Time-flow states, drawn beside the time icon: one, two or three lit pips (with the unlit
   // ones as faint rings) for 1x, 2x, 4x; two rest bars for pause.
   'flow-1': `
