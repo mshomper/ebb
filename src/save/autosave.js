@@ -40,13 +40,25 @@ export const TEST_PARAMS = ['seed', 'day', 'frogs'];
 /** @type {SaveSession | null} */ let session = null;
 
 /**
+ * The save slot for an island in this build. The live site and every branch preview share one web
+ * address (and so one database), so each page folder keeps its own islands: `/ebb/` and
+ * `/ebb/preview/<branch>/` never load or overwrite each other's. A page at the root (the local
+ * server) keeps the plain island id.
+ * @param {string} islandId @param {string} [path] the page's path, location.pathname by default
+ */
+export function slotFor(islandId, path = location.pathname) {
+  const dir = path.slice(0, path.lastIndexOf('/') + 1) || '/';
+  return dir === '/' ? islandId : `${dir}${islandId}`;
+}
+
+/**
  * Open this island's save, once per page (a GPU rebuild reuses the same session).
  * @param {{ enabled: boolean, islandId: string, test: boolean }} opts
  * @returns {Promise<SaveSession>}
  */
 export async function beginSave(opts) {
   if (session) return { ...session, restored: null };
-  const slot = opts.islandId;
+  const slot = slotFor(opts.islandId);
   /** @type {SaveStatus} */ let status = !opts.enabled ? 'off' : opts.test ? 'test' : 'fresh';
   /** @type {IDBDatabase | null} */ let db = null;
   /** @type {any} */ let slotRec = null;

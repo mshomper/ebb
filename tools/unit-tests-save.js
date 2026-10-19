@@ -9,6 +9,7 @@ import { snapshot, restore, copyChunk } from '../src/save/sections.js';
 import { hashWorldState, runHour } from '../src/sim/tick.js';
 import { createMirror } from '../src/world/terrain/heightfield.js';
 import { CHUNK_CELLS } from '../src/world/terrain/grid.js';
+import { slotFor } from '../src/save/autosave.js';
 import { loadEcologyRecipes, islandWorld } from './ecology-world.js';
 
 const SAVE = 'save';
@@ -30,6 +31,17 @@ function parts(world, mirror = null) {
  * @param {(cond: any, msg?: string) => void} assert @param {(a: any, b: any, msg?: string) => void} eq
  */
 export function addSaveTests(test, assert, eq) {
+  test(SAVE, 'the live site, each preview and the local server keep their own islands', () => {
+    const live = slotFor('starter-island', '/ebb/');
+    const preview = slotFor('starter-island', '/ebb/preview/m1-s7a-save/index.html');
+    const other = slotFor('starter-island', '/ebb/preview/m1-s7b-catchup/');
+    eq(slotFor('starter-island', '/'), 'starter-island', 'local server');
+    eq(slotFor('starter-island', '/index.html'), 'starter-island', 'local server, index.html');
+    eq(live, '/ebb/starter-island', 'live site');
+    assert(live !== preview && preview !== other, 'previews are apart from the live site and each other');
+    eq(slotFor('two-ponds', '/ebb/index.html'), '/ebb/two-ponds', 'another island on the live site');
+  });
+
   test(SAVE, 'crc32 matches the standard check value', () => {
     eq(crc32(new TextEncoder().encode('123456789')), 0xcbf43926, 'crc32("123456789")');
   });
