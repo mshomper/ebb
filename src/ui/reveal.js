@@ -7,7 +7,7 @@
 //   ripple); and the best notes show one at a time in the usual corner, each one's ring breathing,
 //   with an arrow at the edge when it is out of view. The camera never moves. Any tap, key or wheel
 //   ends it at once with everything in its final state; notes not shown stay in the journal under
-//   "You may have missed". The toolbar and badge step aside while it plays.
+//   "You may have missed". The HUD steps aside while it plays (body.ebb-revealing, hud.css).
 // Nothing here knows a species: notes rank by kind (reveal-plan.js), plants and covers grow in
 // from the growth state, and animals come back through the hooks each live animal system offers.
 // Emits `reveal:started`, `reveal:note-shown`, `reveal:ended` (for the island's sounds later).
@@ -26,7 +26,6 @@ import { iconSvg } from './icons/icons.js';
 export async function mountReveal(opts) {
   const { app, words } = opts;
   const R = (await loadRecipe('world/save')).reveal;
-  ensureStyle();
   const arrow = document.createElement('div');
   arrow.className = 'ebb-pointer ebb-reveal-pointer';
   arrow.setAttribute('aria-hidden', 'true');
@@ -143,18 +142,4 @@ export async function mountReveal(opts) {
     const missed = Math.max(0, r.total - r.shown);
     emit('reveal:ended', { missed, interrupted });
   }
-}
-
-function ensureStyle() {
-  if (document.getElementById('ebb-reveal-style')) return;
-  const s = document.createElement('style');
-  s.id = 'ebb-reveal-style';
-  // The toolbar, time, look and journal buttons and the badge step aside while the reveal plays.
-  s.textContent = `
-    .ebb-tools, .ebb-time, .ebb-look, .ebb-jbtn, #ebb-build { transition: opacity 0.6s ease; }
-    body.ebb-revealing .ebb-tools, body.ebb-revealing .ebb-time, body.ebb-revealing .ebb-look,
-    body.ebb-revealing .ebb-jbtn, body.ebb-revealing #ebb-build { opacity: 0; pointer-events: none; }
-    @media (prefers-reduced-motion: reduce) { .ebb-tools, .ebb-time, .ebb-look, .ebb-jbtn, #ebb-build { transition: none; } }
-  `;
-  document.head.appendChild(s);
 }

@@ -1,0 +1,25 @@
+{
+  "type": "hud",
+  "version": 1,
+  "note": "The HUD (docs/15, S8a). dimAfterS: seconds without input before the corner buttons dim; dimOpacity: how faint they get; fadeS: how long dimming and hiding take. dial: the clock dial's refresh rate (it never updates every frame) and its words. Time of day is told from the sun: each band starts this many hours after sunrise or sunset (negative is before). Tide words: within turnH of high or low water the dial says high or low tide.",
+  "dimAfterS": 6,
+  "dimOpacity": 0.4,
+  "fadeS": 0.6,
+  "dial": {
+    "hz": 4,
+    "seasons": ["Spring", "Summer", "Autumn", "Winter"],
+    "dayWords": [
+      { "from": "sunrise", "h": -1, "word": "dawn" },
+      { "from": "sunrise", "h": 0, "word": "early morning" },
+      { "from": "sunrise", "h": 3, "word": "morning" },
+      { "from": "noon", "h": -1, "word": "midday" },
+      { "from": "noon", "h": 1.5, "word": "afternoon" },
+      { "from": "sunset", "h": -2.5, "word": "early evening" },
+      { "from": "sunset", "h": 0, "word": "dusk" },
+      { "from": "sunset", "h": 1, "word": "night" }
+    ],
+    "nightWord": "night",
+    "tide": { "turnH": 0.5, "rising": "Tide coming in", "falling": "Tide going out", "high": "High tide", "low": "Low tide" },
+    "cardS": 5
+  }
+}

@@ -1,6 +1,6 @@
 // @ts-check
-// The S1 tool bar (docs/15, docs/20 step S1): [undo][redo] | [sculpt][smooth][paint][water][plant]
-// at the bottom center, and above it a brush card with mode or layer chips and size and
+// The tool bar (docs/15, docs/20 steps S1 and S8): [sculpt][smooth][paint][water][plant] at the
+// bottom center, [undo][redo] apart at the bottom left, and above the bar a brush card with mode or layer chips and size and
 // strength sliders while a tool is active (water's spring mode swaps the sliders for flow
 // chips, a spring count and Remove; the Plant tool shows species chips, a hint and the last
 // tap's result instead). S8 grows this into the full HUD palette.
@@ -155,10 +155,14 @@ export function mountTools(parent = document.body) {
       </div>
     </div>
     <div class="ebb-tools__bar" role="toolbar" aria-label="Tools">
+      ${TOOLS.map((t) => barButton(t.id, t.label, `data-tool="${t.id}" aria-pressed="false"`)).join('')}
+    </div>`;
+  // Undo and redo sit apart, at the bottom left under the island notes (docs/15 HUD, S8).
+  const historyRoot = el('div', 'ebb-history');
+  historyRoot.innerHTML = `
+    <div class="ebb-tools__bar" role="toolbar" aria-label="Undo and redo">
       ${barButton('undo', 'Undo', 'data-history="undo"')}
       ${barButton('redo', 'Redo', 'data-history="redo"')}
-      <div class="ebb-tools__divider" role="separator" aria-orientation="vertical"></div>
-      ${TOOLS.map((t) => barButton(t.id, t.label, `data-tool="${t.id}" aria-pressed="false"`)).join('')}
     </div>`;
 
   const card = /** @type {HTMLElement} */ (root.querySelector('.ebb-tools__card'));
@@ -175,8 +179,8 @@ export function mountTools(parent = document.body) {
   const strengthRange = /** @type {HTMLInputElement} */ (root.querySelector('[data-range="strength"]'));
   const sizeOut = /** @type {HTMLOutputElement} */ (root.querySelector('[data-out="size"]'));
   const strengthOut = /** @type {HTMLOutputElement} */ (root.querySelector('[data-out="strength"]'));
-  const undoBtn = /** @type {HTMLButtonElement} */ (root.querySelector('[data-history="undo"]'));
-  const redoBtn = /** @type {HTMLButtonElement} */ (root.querySelector('[data-history="redo"]'));
+  const undoBtn = /** @type {HTMLButtonElement} */ (historyRoot.querySelector('[data-history="undo"]'));
+  const redoBtn = /** @type {HTMLButtonElement} */ (historyRoot.querySelector('[data-history="redo"]'));
   const toolBtns = /** @type {HTMLButtonElement[]} */ ([...root.querySelectorAll('[data-tool]')]);
   const modeBtns = /** @type {HTMLButtonElement[]} */ ([...root.querySelectorAll('[data-mode]')]);
   const layerBtns = /** @type {HTMLButtonElement[]} */ ([...root.querySelectorAll('[data-layer]')]);
@@ -192,7 +196,7 @@ export function mountTools(parent = document.body) {
   /** @param {MouseEvent} e */
   function onClick(e) {
     const btn = /** @type {HTMLElement|null} */ (/** @type {HTMLElement} */ (e.target).closest('button'));
-    if (!btn || !root.contains(btn)) return;
+    if (!btn || !(root.contains(btn) || historyRoot.contains(btn))) return;
     const { tool, mode, layer, waterMode, rate, species, springRemove, history } = btn.dataset;
     if (tool) dispatch(/** @type {any} */ ({ type: 'tool.select', toolId: tool }));
     else if (species) dispatch(/** @type {any} */ ({ type: 'brush.set', patch: { plantSpecies: species } }));
@@ -222,9 +226,11 @@ export function mountTools(parent = document.body) {
   const stop = (e) => e.stopPropagation();
 
   root.addEventListener('click', onClick);
+  historyRoot.addEventListener('click', onClick);
   sizeRange.addEventListener('input', onSize);
   strengthRange.addEventListener('input', onStrength);
-  for (const panel of [card, /** @type {HTMLElement} */ (root.querySelector('.ebb-tools__bar'))]) {
+  for (const panel of [card, /** @type {HTMLElement} */ (root.querySelector('.ebb-tools__bar')),
+    /** @type {HTMLElement} */ (historyRoot.querySelector('.ebb-tools__bar'))]) {
     panel.addEventListener('pointerdown', stop);
     panel.addEventListener('pointermove', stop);
     panel.addEventListener('wheel', stop, { passive: true });
@@ -265,6 +271,7 @@ export function mountTools(parent = document.body) {
       if (tool === 'plant') clearPlantMessage();
       shownTool = tool;
       card.classList.toggle('is-open', open);
+      historyRoot.classList.toggle('has-tool', open);
       card.setAttribute('aria-hidden', String(!open));
       card.inert = !open;
     }
@@ -349,12 +356,15 @@ export function mountTools(parent = document.body) {
     subscribe('plantUi', renderPlantMessage),
   ];
   parent.appendChild(root);
+  parent.appendChild(historyRoot);
 
   return function dispose() {
     for (const u of unsubs) u();
     clearTimeout(plantTimer);
     root.removeEventListener('click', onClick);
+    historyRoot.removeEventListener('click', onClick);
     root.remove();
+    historyRoot.remove();
   };
 }
 
