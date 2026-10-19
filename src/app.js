@@ -107,7 +107,7 @@ export async function startApp(canvas, hooks = {}) {
   const back = save.restored;
   if (back) {
     seed = back.meta.seed >>> 0;
-    updateStore('meta', (m) => { m.seed = seed; });
+    updateStore('meta', (m) => { m.seed = seed; m.carryMinutes = back.meta.carryMinutes ?? 0; m.keepGrowing = back.meta.keepGrowing ?? true; });
     clock.reset(back.meta.worldT);
     clock.setFlow(clock.FLOWS.includes(back.meta.flow) ? back.meta.flow : 1);
     updateStore('world', () => back.world);
@@ -680,6 +680,7 @@ export async function startApp(canvas, hooks = {}) {
     recipe: await loadRecipe('world/save'),
     parts: () => ({
       build: hooks.build ?? 'dev', seed, island: island.id, worldT: clock.worldT(), flow: clock.flow(),
+      carryMinutes: getStore('meta')?.carryMinutes ?? 0, keepGrowing: getStore('meta')?.keepGrowing ?? true,
       world: world.state, journal: getStore('journal'), water: getStore('water'), unlocks: getStore('unlocks')?.earned ?? {},
       view: camera.pose(), looks: getStore('looks') ?? {}, chunks: getStore('chunks'), mirror: getStore('terrainLive')?.mirror ?? null,
     }),
@@ -737,7 +738,8 @@ export async function startApp(canvas, hooks = {}) {
     /** The island this world started from, and the islands there are (the badge's switch). */
     island: { current: island, list: islands },
     /** This island's save (the badge says whether it is kept, and can start it again). */
-    save: { status: save.status, startAgain: save.startAgain, takeOver: save.takeOver },
+    save: { status: save.status, startAgain: save.startAgain, takeOver: save.takeOver, lastSeen: save.lastSeen,
+      hold: save.hold, setHighWater: save.setHighWater, saveSoon: save.saveSoon },
     /** Palette access for the palette lab (tools/palette-lab.html). */
     palette: {
       list: () => PALETTES.slice(),

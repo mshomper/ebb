@@ -14,11 +14,12 @@ import { hourIndex, display, SECONDS_PER_HOUR, HOURS_PER_DAY } from '../../core/
 import { onAction } from '../../input/actions.js';
 import { weatherAt } from '../weather.js';
 import { tideParams } from '../tide.js';
-import { initialJournal, observe, learn, notePlanted, momentsNow, catchMoments, foundAnimal } from './observe.js';
+import { initialJournal, learn, notePlanted, momentsNow, catchMoments, foundAnimal } from './observe.js';
+import { journalLook } from './look.js';
 import { describe, identify, showMeSpot, momentKind, frogCard } from './describe.js';
 import { groundKind, groundCard, groundSurvey, describeGround, groundSpot } from './ground.js';
 import { almanac } from './almanac.js';
-import { inkWeb, describeWeb } from './web.js';
+import { describeWeb } from './web.js';
 import { washMap } from './wash.js';
 import { stampNotes, markShown, markNotesSeen, markPageSeen, readOf, pageSince, unread, noteState } from './read.js';
 
@@ -60,8 +61,12 @@ export function createJournal(opts) {
   /** @param {{ journal: import('./observe.js').Journal, notes: import('./observe.js').Note[] }} r */
   function commit(r) {
     // Each new note gets its number (read.js); with Notes or its page open, it is read as it comes.
-    let next = stampNotes(r.journal, r.notes);
-    if (r.notes.length) {
+    settle(stampNotes(r.journal, r.notes), r.notes);
+  }
+  /** Keep a journal whose new notes are numbered already, and post them. @param {any} stamped @param {any[]} notes */
+  function settle(stamped, notes) {
+    let next = stamped;
+    if (notes.length) {
       /** @type {JournalUiSlice | undefined} */ const u = get('journalUi');
       if (u?.open && u.view === 'notes') next = markNotesSeen(next);
       if (u?.open && u.page) next = markPageSeen(next, u.page);
@@ -70,7 +75,7 @@ export function createJournal(opts) {
       journal = next;
       update('journal', () => journal);
     }
-    for (const n of r.notes) emitDeferred('note:posted', n);
+    for (const n of notes) emitDeferred('note:posted', n);
   }
   /**
    * The show-where wash for the page open in the journal, if any (store slice `wash`, painted by
@@ -86,10 +91,13 @@ export function createJournal(opts) {
   }
   let washedPage = /** @type {string | null} */ (null);
 
-  /** Look at the island, then ink any link of the web that has now been seen. @param {any[]} events @param {number} hour @param {any} [state] */
+  /**
+   * Look at the island, then ink any link of the web that has now been seen: the same step catch-up
+   * runs for hours you were away (look.js). @param {any[]} events @param {number} hour @param {any} [state]
+   */
   const look = (events, hour, state = world.state) => {
-    commit(observe(journal, { state, events, hour, habitat: habitat(), words }));
-    if (habitat()) commit(inkWeb(journal, survey(), { web, words, state, hour }));
+    const r = journalLook(journal, { state, events, hour, habitat: habitat(), material: material(), words, island, web, paintVersion });
+    settle(r.journal, r.notes);
     if (washedPage) rewash();
   };
 
@@ -156,6 +164,13 @@ export function createJournal(opts) {
 
   const offs = [
     on('world:ticked', (/** @type {{ hour: number, events: any[], state: any }} */ p) => look(p.events ?? [], p.hour, p.state)),
+    // Catch-up wrote the hours you were away (src/sim/away.js): its journal is the journal now. Its
+    // notes are not posted, so they wait under "You may have missed".
+    on('journal:replaced', (/** @type {{ journal: any }} */ p) => {
+      journal = p.journal;
+      update('journal', () => journal);
+      if (washedPage) rewash();
+    }),
     // Edits move water and plants between hours: look again (the habitat is rebuilt first).
     on('water:summary-updated', () => look([], hourIndex())),
     on('terrain:stroke-ended', () => { paintVersion++; if (washedPage) rewash(); }),

@@ -211,6 +211,20 @@ export async function createWater(gpu, opts) {
       querySet?.destroy();
     },
 
+    /**
+     * Start the water over as a new island does: the sea at this time's tide, ponds full to the
+     * summary, streams still (doc 02's re-seed, after catch-up has moved the clock on by days).
+     * @param {number} displayHours
+     */
+    reseed(displayHours) {
+      tide = level(displayHours, tideP);
+      const bed = bedHeights((x, z) => terrain.sampleHeight(x, z), rect);
+      const depth = initialDepths(bed, rect, { tide, minDepth: Infinity, minArea: Infinity });
+      if (summary) for (let i = 0; i < depth.length; i++) depth[i] = Math.max(depth[i], summary.targetMm[i] * 0.001);
+      sim.seed(rect, depth);
+      acc = 0;
+    },
+
     /** Sea level now (m), at display time. */
     get tide() { return tide; },
     /** The simulated rect in water cells. */

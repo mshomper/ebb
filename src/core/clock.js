@@ -69,6 +69,10 @@ export function seasonOf(t) {
  * @property {() => number} dayFraction
  * @property {() => Season} season
  * @property {(worldT?: number) => void} reset  set world time (tests, save load); clears animT and override
+ * @property {(on: boolean) => void} hold  stop world time while catch-up runs (animation time goes on)
+ * @property {() => boolean} held
+ * @property {(seconds: number) => void} skip  move world time on by hours already run elsewhere
+ *   (catch-up): no hour events, animation time untouched
  * @property {() => ClockState} state  snapshot for saving
  */
 
@@ -85,6 +89,7 @@ export function createClock(opts = {}) {
   let animT = 0;
   /** @type {number|null} */
   let override = null;
+  let isHeld = false;
   const bus = opts.bus ?? null;
 
   /** @param {number} realDt */
@@ -92,7 +97,7 @@ export function createClock(opts = {}) {
     const dt = realDt > 0 ? Math.min(realDt, MAX_REAL_DT) : 0;
     const before = worldT;
     animT += dt;
-    worldT += dt * flow * GAME_SECONDS_PER_REAL_SECOND;
+    if (!isHeld) worldT += dt * flow * GAME_SECONDS_PER_REAL_SECOND;
     /** @type {number[]} */
     const hoursCrossed = [];
     for (let h = hourIndexOf(before) + 1; h <= hourIndexOf(worldT); h++) {
@@ -123,6 +128,9 @@ export function createClock(opts = {}) {
     dayFraction: () => dayFractionOf(worldT),
     season: () => seasonOf(worldT),
     reset: (t = 0) => { worldT = t; animT = 0; override = null; },
+    hold: (on) => { isHeld = on; },
+    held: () => isHeld,
+    skip: (seconds) => { if (seconds > 0) worldT += seconds; },
     state: () => ({ worldT, flow, animT }),
   };
 }
@@ -142,4 +150,7 @@ export const hourIndex = clock.hourIndex;
 export const dayFraction = clock.dayFraction;
 export const season = clock.season;
 export const reset = clock.reset;
+export const hold = clock.hold;
+export const held = clock.held;
+export const skip = clock.skip;
 export const state = clock.state;

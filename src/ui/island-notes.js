@@ -96,6 +96,12 @@ export function mountIslandNotes(parent, words) {
     }
     pump();
   });
+  // Notes written while the island caught up on time away (src/sim/away.js) are never shown here:
+  // the line says how many wait in the journal.
+  const offAway = on('world:caught-up', (/** @type {{ notes: any[] }} */ p) => {
+    const n = (p.notes ?? []).filter(unreadNote).length;
+    if (n) { more += n; renderMore(); }
+  });
   // Opening Notes reads them all: the line goes.
   const offUi = subscribe('journalUi', (/** @type {any} */ u) => { if (u?.open && u.view === 'notes' && more) { more = 0; renderMore(); } });
 
@@ -197,6 +203,7 @@ export function mountIslandNotes(parent, words) {
 
   return function dispose() {
     offNote();
+    offAway();
     offUi();
     for (const u of unsubs) u();
     clearTimeout(pumpTimer);

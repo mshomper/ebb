@@ -35,6 +35,12 @@ export const TEST_PARAMS = ['seed', 'day', 'frogs'];
  * @property {() => Promise<void>} startAgain  forget this island and reload fresh
  * @property {() => void} takeOver  (status 'elsewhere') ask the other tab to let go, then reload here
  * @property {(reason?: string) => void} saveSoon
+ * @property {{ savedAt: number, wallHighWater: number } | null} lastSeen  the loaded save's wall times,
+ *   for counting time away (src/sim/away.js)
+ * @property {(on: boolean) => void} hold  no saves while catch-up runs: a save then would stamp the old
+ *   island with the time now and lose the time away. A loaded island starts held until its
+ *   catch-up is done.
+ * @property {(ms: number) => void} setHighWater  the clock guard's mark after a catch-up (doc 18)
  */
 
 /** @type {SaveSession | null} */ let session = null;
@@ -65,6 +71,7 @@ export async function beginSave(opts) {
   /** @type {ReturnType<typeof restore> | null} */ let restored = null;
   let restoredGen = -1;
   let wallHighWater = 0;
+  /** @type {{ savedAt: number, wallHighWater: number } | null} */ let lastSeen = null;
   /** @type {(() => void) | null} */ let releaseLock = null;
 
   if (status === 'fresh') {
@@ -81,6 +88,7 @@ export async function beginSave(opts) {
             restored = got.parts;
             restoredGen = got.gen;
             wallHighWater = got.header.wallHighWater ?? 0;
+            lastSeen = { savedAt: got.header.savedAt ?? 0, wallHighWater };
             status = 'loaded';
             if (got.gen !== slotRec.gen) console.info(`save: the newest copy of ${slot} was damaged; loaded the one from before`);
             if (got.parts.bad.length) console.info(`save: regrew ${got.parts.bad.join(', ')} from the seed`);
@@ -95,6 +103,8 @@ export async function beginSave(opts) {
 
   const channel = typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel(`ebb-island-${slot}`) : null;
   let stopped = status !== 'fresh' && status !== 'loaded';
+  // A loaded island waits for its catch-up before saving again (see `hold`).
+  let held = status === 'loaded';
   /** @type {null | { parts: () => import('./sections.js').IslandParts, recipe: any }} */ let live = null;
   let seq = 0, writtenSeq = 0, inFlight = false, dirty = false, lastSave = 0;
   /** @type {ReturnType<typeof setTimeout> | undefined} */ let timer;
@@ -120,6 +130,7 @@ export async function beginSave(opts) {
 
   async function routineSave() {
     if (stopped || !live || !db) return;
+    if (held) { dirty = true; return; }
     if (inFlight) { dirty = true; return; }
     inFlight = true;
     dirty = false;
@@ -145,7 +156,7 @@ export async function beginSave(opts) {
 
   /** Save now, as the tab hides or closes: the snapshot goes into the database as it is. */
   function quickSave() {
-    if (stopped || !live || !db) return;
+    if (stopped || held || !live || !db) return;
     clearTimeout(timer);
     try {
       const p = partsNow();
@@ -215,6 +226,12 @@ export async function beginSave(opts) {
       navigator.locks?.request(`ebb-island-${slot}`, async () => { location.reload(); });
     },
     saveSoon,
+    lastSeen,
+    hold(on) {
+      held = on;
+      if (!on && dirty && !stopped) schedule(0);
+    },
+    setHighWater(ms) { wallHighWater = ms; },
   };
   return session;
 }

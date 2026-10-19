@@ -26,6 +26,8 @@ const KNOWN = ['meta', 'world', 'journal', 'water', 'unlocks', 'view', 'looks'];
  * @typedef {Object} IslandParts
  * @property {string} build
  * @property {number} seed @property {string} island @property {number} worldT @property {0|1|2|4} flow
+ * @property {number} [carryMinutes]  game hours carried toward the next catch-up (doc 18)
+ * @property {boolean} [keepGrowing]  grow while away (a setting from S8; on until then)
  * @property {any} world @property {any} journal @property {any} water @property {any} unlocks
  * @property {any} view   camera pose, or null
  * @property {any} looks
@@ -60,7 +62,7 @@ export function copyChunk(mirror, cx, cz) {
 export function snapshot(p) {
   /** @type {[string, any][]} */
   const sections = [
-    ['meta', { seed: p.seed, island: p.island, worldT: p.worldT, flow: p.flow, carryMinutes: 0, keepGrowing: true }],
+    ['meta', { seed: p.seed, island: p.island, worldT: p.worldT, flow: p.flow, carryMinutes: p.carryMinutes ?? 0, keepGrowing: p.keepGrowing ?? true }],
     ['world', structuredClone(p.world)],
     ['journal', structuredClone(p.journal ?? null)],
     ['water', structuredClone(p.water ?? { springs: [], version: 1 })],

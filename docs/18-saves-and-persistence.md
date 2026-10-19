@@ -22,6 +22,10 @@
   - Further sections: `view` (the camera, outside the checksum) and `looks` (empty until the creature studio).
   - Routine saves are packed into `.ebb` bytes in a worker. The save made as the tab hides is written to IndexedDB as it is (`codec: 'raw'`), at once, because the page may close before a worker answers; the next routine save replaces it.
   - The Saves menu on the build badge stands in for Settings > Saves until S8.
+- **As built in S7b:**
+  - `meta.carryMinutes` and `meta.keepGrowing` are kept.
+  - A loaded island does not save until its catch-up is done, and no save is made while one runs. A save then would stamp the old island with the time now and lose the time away; if the page closes mid catch-up, the next load counts the same time again.
+  - The badge's Saves menu adds Pretend I was away (1 hour, 10 hours, 2 days, 30 days), which runs the same clock rules.
 
 ## How it works
 
