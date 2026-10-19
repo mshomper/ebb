@@ -1,8 +1,10 @@
 // @ts-check
 // When a save was damaged (doc 18; S7d). Usually the island simply comes back, from a few minutes
 // earlier or with one part from an earlier copy, and a calm note says so in the notes corner. If no
-// copy reads at all, a calm card offers what can be done: open an island file, start a new island,
-// or save the damaged copy as a file to look into. It never deletes the damaged copies.
+// copy reads at all, a calm card offers what can be done: open an island file, or start a new
+// island. It never deletes the damaged copies. On previews and local builds only, the card also
+// keeps the broken save as a file, so it can be looked into and fixed (Matt: players have no use
+// for it).
 
 import { emit } from '../core/events.js';
 import { loadRecipe } from '../core/recipes.js';
@@ -26,7 +28,10 @@ export async function noticeRecovered(save) {
  * The card when no copy of the save reads.
  * @param {any} save the save session @param {{ id: string, name: string }[]} islands
  */
-export function showDamaged(save, islands) {
+export async function showDamaged(save, islands) {
+  // The live site answers build.json with branch main; previews name their branch, the local server says so.
+  const info = await fetch('build.json', { cache: 'no-store' }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+  const testing = !info || !!info.local || (!!info.branch && info.branch !== 'main');
   const style = document.createElement('style');
   style.textContent = `
     #ebb-damaged { position: fixed; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center;
@@ -50,12 +55,12 @@ export function showDamaged(save, islands) {
   wrap.setAttribute('role', 'alert');
   wrap.innerHTML = `<div class="card">
       <img src="brand/ebb-icon.svg" alt="">
-      <p>Your island's save could not be read on this device. Its copies are kept safe, untouched.</p>
+      <p>Your island's save could not be opened on this device. Nothing has been deleted.</p>
       <div class="row">
         <label class="main" for="ebb-damaged-file">Open an island file</label>
         <button type="button" class="quiet" data-act="new">Start a new island</button>
       </div>
-      <button type="button" class="quiet" data-act="copy">Save the damaged copy as a file</button>
+      ${testing ? '<button type="button" class="quiet" data-act="copy">Keep the broken save for fixing</button>' : ''}
       <p class="said" role="status"></p>
       <input id="ebb-damaged-file" type="file" accept=".ebb">
     </div>`;
@@ -76,7 +81,7 @@ export function showDamaged(save, islands) {
     if (!b) return;
     if (b.dataset.act === 'copy') {
       const how = await saveDamagedCopy(save);
-      said.textContent = how === 'none' ? 'There is no damaged copy to save.' : 'The damaged copy is saved as a file.';
+      said.textContent = how === 'none' ? 'There is no broken save to keep.' : 'The broken save is kept as a file.';
     } else if (b.dataset.act === 'new') {
       if (!armed) { armed = true; b.textContent = 'Tap again to start a new island'; return; }
       save.startAgain();
