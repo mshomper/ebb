@@ -1,7 +1,7 @@
 # Freesound CC0 shortlist (v1)
 
 Field-recording candidates for ebb's soundscape (doc 25 "Shopping list (v1)", doc 17 "Tool sounds"), picked from page metadata only. Nothing here has been listened to.
-Every entry below showed "Creative Commons 0" on its own Freesound page when checked on October 19, 2026. Attribution, Noncommercial and Sampling+ sounds were left out, however good they looked.
+Every entry below showed "Creative Commons 0" on its own Freesound page when checked on October 19, 2026, except the two reed beds marked as credit required (the one approved exception). Attribution, Noncommercial and Sampling+ sounds were left out, however good they looked.
 How to use: open the link, play the preview, tick the box if it passes the contamination rules, then download the original (needs your free Freesound login) and save it into `C:\Users\mshom\Music\Ebb\<group folder>\` under the suggested file name.
 
 Notes on the list:
@@ -49,6 +49,11 @@ Needs: wind through reeds, one bed per season (green, full, dry, bare), 45 s or 
 
 No CC0 reed-bed recording turned up (see Gaps). The two best reed beds found, YleArkisto 326445 and arnaud coutancier 528699, are Attribution and Noncommercial, so they are out. Until a reed take lands, the dry-grass and grass beds below are the nearest stand-ins ("a season may share a take with a different filter", doc 25):
 - [ ] **Dry grass rustling in the wind (Alto Patache, Chile)** by *felix.blume*, 3:00, WAV 48 kHz 24-bit stereo. https://freesound.org/people/felix.blume/sounds/146436/ . Why: stand-in for autumn dry reeds, crisp and stalky, MS Schoeps, nothing else named. Listen for: "strong" in tags, so check for gust buffeting. Save as: wind-reeds/standin-dry-chile.wav
+Credit required (Attribution 4.0), approved by Matt on October 19, 2026 as the one exception for the reed bed, since no CC0 reed bed exists; each gets a credit line in the game's credits:
+- [ ] **Reeds, bulrushes, common reeds, rustle and whiz in a mild wind (Vanjärvi, Finland)** by *YleArkisto*, 2:11, WAV 48 kHz stereo. https://freesound.org/people/YleArkisto/sounds/326445/ . Why: a real reed bed in a light October wind, the best fit for the full and dry reed beds; nothing else named in the description. Listen for: DAT recording from 1994, so check for hiss; credit required (CC BY 4.0). Save as: wind-reeds/reeds-yle-vanjarvi.wav
+- [ ] **Reed grass in wind 02** by *klankbeeld*, 0:08, WAV 96 kHz stereo. https://freesound.org/people/klankbeeld/sounds/323629/ . Why: close common reed (Phragmites) in wind, a texture source to layer over a longer bed, not a bed by itself. Listen for: only 8 seconds long; credit required (CC BY 4.0). Save as: wind-reeds/reeds-klankbeeld-close.wav
+
+Stand-ins, CC0:
 - [ ] **Wind through the grass (mic pointed into the ground)** by *strangy*, 2:27, WAV 48 kHz 24-bit stereo. https://freesound.org/people/strangy/sounds/176249/ . Why: stand-in for green or full reeds; wide MS stereo, nothing else named. Listen for: odd side-heavy image from the mic angle. Save as: wind-reeds/standin-green-strangy.wav
 
 ## Wind in grass (folder `wind-grass`)

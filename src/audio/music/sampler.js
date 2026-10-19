@@ -47,7 +47,9 @@ export function pickFormat() {
  * @param {AudioNode} output  where voices connect (the music bus input, or a bench gain)
  * @param {any} instrument    recipes/music/instruments/<id>.json
  * @param {any} settings      samplerSettingsFor(recipes/music/sampler.json, id)
- * @param {{tier?: 'desktop'|'mobile', format?: 'ogg'|'m4a'}} [opts]
+ * @param {{tier?: 'desktop'|'mobile', format?: 'ogg'|'m4a', pedalNoise?: any}} [opts]
+ *   pedalNoise: the recipe of the pedal mechanism recordings (music/instruments/pedal-knight),
+ *   played on each press and lift when the settings' pedalNoise is on
  */
 export function createSampler(ctx, output, instrument, settings, opts = {}) {
   const tier = opts.tier ?? 'desktop';
@@ -66,6 +68,9 @@ export function createSampler(ctx, output, instrument, settings, opts = {}) {
   let downloadedBytes = 0;
   /** @type {((name: string) => void) | null} */
   let onPedalNoise = null;
+  /** @type {{down: AudioBuffer[], up: AudioBuffer[]}} the pedal mechanism's recordings */
+  const pedalBufs = { down: [], up: [] };
+  let pedalTurn = 0;
 
   const sets = instrument.sets ?? {};
   /** @param {string} name */
@@ -184,6 +189,21 @@ export function createSampler(ctx, output, instrument, settings, opts = {}) {
       for (const i of needed) for (const L of zones[i].layers ?? [zones[i]]) if (L.file) jobs.push([L.file, zones[i].midi]);
     }
     if (sets.pedal?.files) for (const f of sets.pedal.files) jobs.push([f.file, 60]);
+    const pn = opts.pedalNoise;
+    if (pn?.sets?.pedal?.files && !pedalBufs.down.length && !pedalBufs.up.length) {
+      await Promise.all(pn.sets.pedal.files.map(async (/** @type {any} */ f) => {
+        if (f.kind !== 'down' && f.kind !== 'up') return;
+        try {
+          const r = await fetch(new URL(`${pn.root}${f.file}.${format}`, REPO_ROOT).href);
+          if (!r.ok) throw new Error(`${r.status}`);
+          const bytes = await r.arrayBuffer();
+          downloadedBytes += bytes.byteLength;
+          const buf = await ctx.decodeAudioData(bytes);
+          decodedBytes += buf.length * buf.numberOfChannels * 4;
+          pedalBufs[/** @type {'down'|'up'} */ (f.kind)].push(buf);
+        } catch (e) { console.warn(`[sampler] could not load pedal sound ${f.file}`, e); }
+      }));
+    }
     let done = 0;
     const limit = 8;
     let k = 0;
@@ -397,7 +417,21 @@ export function createSampler(ctx, output, instrument, settings, opts = {}) {
         }
       }
     }
+    playPedalNoise(down, t);
     onPedalNoise?.(down ? 'down' : 'up');
+  }
+
+  /** The pedal mechanism's own sound, quietly, on each press and lift. @param {boolean} down @param {number} t */
+  function playPedalNoise(down, t) {
+    if (!cfg.pedalNoise?.on) return;
+    const list = down ? pedalBufs.down : pedalBufs.up;
+    if (!list.length) return;
+    const src = ctx.createBufferSource();
+    src.buffer = list[pedalTurn++ % list.length];
+    const g = ctx.createGain();
+    g.gain.value = dbToGain(cfg.pedalNoise.db ?? -30);
+    src.connect(g).connect(output);
+    src.start(t);
   }
 
   /** Fade everything out (mute, tab hidden, piece stopped). @param {number} [fadeS] */

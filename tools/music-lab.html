@@ -74,11 +74,13 @@
 <main>
   <header>
     <h1>music lab</h1>
-    <p class="muted">Phase 1: the instrument bench. Play each piano, compare two side by side, and check loudness layers, pedal, release and tuning by ear. Later phases add the piece view, the day simulator and the engine here. <a href="./">All test pages</a></p>
+    <p class="muted">Phase 1: the instrument bench. Play each piano, compare two side by side, and check loudness layers, pedal, release and tuning by ear. Later phases add the piece view, the day simulator and the engine here.</p>
+    <p class="muted">Also: <a href="audio-check.html">the island's sounds (audio check)</a> · <a href="freesound-shortlist.html">sound picks</a> · <a href="unit-tests-audio.html">audio tests</a> · <a href="./">all test pages</a></p>
   </header>
 
   <section class="card">
     <h2>Instruments, A and B</h2>
+    <p class="muted">Chosen: the Steinway B for the core piano, and the FM piano built in code for summer. The other pianos were compared and set aside.</p>
     <div class="ab">
       <div class="slot on" id="slot-a"><b>A</b> <span class="muted" id="state-a">not loaded</span>
         <select id="pick-a" aria-label="Instrument for A"></select><div class="progress"><i id="prog-a"></i></div></div>
@@ -127,7 +129,7 @@
       <button id="sweep" style="flex:1 1 200px">Slow crescendo, soft to loud</button>
       <button id="sweep-fine" style="flex:1 1 220px">Close-up on each blend</button>
     </div>
-    <label class="slider"><span>Blend width</span><input type="range" id="fade" min="0" max="30" value="12"><output id="fade-out">12 steps</output></label>
+    <label class="slider"><span>Blend width</span><input type="range" id="fade" min="0" max="30" value="20"><output id="fade-out">20 steps</output></label>
     <label class="slider"><span>Blend curve</span><input type="range" id="law" min="0" max="1" step="0.05" value="0.5"><output id="law-out">0.50</output></label>
     <div class="seg" role="group" aria-label="How two recordings share a blend" style="margin:6px 0">
       <button id="bl-mix" aria-pressed="true">Mix the two recordings</button>
@@ -152,17 +154,17 @@
         <button id="pn-off" aria-pressed="true">No pedal sound</button>
         <button id="pn-on" aria-pressed="false">Knight's recorded pedal</button>
       </div>
-      <label class="slider"><span>Pedal sound level</span><input type="range" id="pn-db" min="-48" max="-12" value="-30"><output id="pn-db-out">-30 dB</output></label>
+      <label class="slider"><span>Pedal sound level</span><input type="range" id="pn-db" min="-48" max="-12" value="-20"><output id="pn-db-out">-20 dB</output></label>
       <h3>Dampers</h3>
       <label class="slider"><span>Bass damper</span><input type="range" id="d-bass" min="0.05" max="0.8" step="0.01" value="0.35"><output id="d-bass-out">0.35 s</output></label>
       <label class="slider"><span>Treble damper</span><input type="range" id="d-treble" min="0.02" max="0.3" step="0.01" value="0.06"><output id="d-treble-out">0.06 s</output></label>
-      <label class="slider"><span>Key-off sound</span><input type="range" id="rel-db" min="-30" max="0" value="-14"><output id="rel-db-out">-14 dB</output></label>
+      <label class="slider"><span>Key-off sound</span><input type="range" id="rel-db" min="-30" max="0" value="-25"><output id="rel-db-out">-25 dB</output></label>
     </section>
 
     <section class="card">
       <h2>Mix</h2>
-      <label class="slider"><span>Volume</span><input type="range" id="m-vol" min="0" max="1" step="0.01" value="0.7"><output id="m-vol-out">0.70</output></label>
-      <label class="slider"><span>Room</span><input type="range" id="m-wet" min="0" max="0.6" step="0.01" value="0.25"><output id="m-wet-out">0.25</output></label>
+      <label class="slider"><span>Volume</span><input type="range" id="m-vol" min="0" max="1" step="0.01" value="0.5"><output id="m-vol-out">0.50</output></label>
+      <label class="slider"><span>Room</span><input type="range" id="m-wet" min="0" max="0.6" step="0.01" value="0.3"><output id="m-wet-out">0.30</output></label>
       <label class="slider"><span>Brightness</span><input type="range" id="m-bright" min="3000" max="18000" step="100" value="12000"><output id="m-bright-out">12.0 kHz</output></label>
       <h3>Dynamic range</h3>
       <label class="slider"><span>Softest</span><input type="range" id="v-floor" min="-60" max="-20" value="-38"><output id="v-floor-out">-38 dB</output></label>
@@ -195,7 +197,7 @@
       <div>
         <h3>Longest tail</h3>
         <div class="seg" role="group" aria-label="Longest tail">
-          <button data-tail="0" aria-pressed="true">Keep all</button>
+          <button data-tail="0" aria-pressed="false">Keep all</button>
           <button data-tail="6" aria-pressed="false">6 s</button>
           <button data-tail="4" aria-pressed="false">4 s</button>
           <button data-tail="3" aria-pressed="false">3 s</button>
@@ -204,7 +206,7 @@
       <div>
         <h3>Mono below</h3>
         <div class="seg" role="group" aria-label="Mono below">
-          <button data-mono="0" aria-pressed="true">Stereo everywhere</button>
+          <button data-mono="0" aria-pressed="false">Stereo everywhere</button>
           <button data-mono="48" aria-pressed="false">C3</button>
           <button data-mono="60" aria-pressed="false">Middle C</button>
         </div>

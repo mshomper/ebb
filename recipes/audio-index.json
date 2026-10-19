@@ -9,11 +9,8 @@
     "audio/voices/midge": "audio/voices/midge.json",
     "music/sampler": "music/sampler.json",
     "music/instruments/piano-steinway-b": "music/instruments/piano-steinway-b.json",
-    "music/instruments/piano-kawai": "music/instruments/piano-kawai.json",
-    "music/instruments/piano-yamaha-upright": "music/instruments/piano-yamaha-upright.json",
-    "music/instruments/piano-knight-upright": "music/instruments/piano-knight-upright.json",
-    "music/instruments/fm-piano-tx81z": "music/instruments/fm-piano-tx81z.json",
     "music/synth": "music/synth.json",
-    "music/voicing": "music/voicing.json"
+    "music/voicing": "music/voicing.json",
+    "music/instruments/pedal-knight": "music/instruments/pedal-knight.json"
   }
 }

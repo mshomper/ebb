@@ -6,26 +6,23 @@
 import { createMixer } from '../../src/audio/mixer.js';
 import { createSampler, pickFormat } from '../../src/audio/music/sampler.js';
 import { createFmPiano } from '../../src/audio/music/synth.js';
-import { loadAudioRecipe, samplerSettingsFor, REPO_ROOT } from '../../src/audio/recipes.js';
-import { evenBounds, midiToHz, dbToGain } from '../../src/audio/music/sampler-math.js';
+import { loadAudioRecipe, samplerSettingsFor } from '../../src/audio/recipes.js';
+import { evenBounds, midiToHz } from '../../src/audio/music/sampler-math.js';
 import { createKeyboard, noteName } from './keyboard.js';
 import { createLayerChart, createTuningChart } from './charts.js';
 import * as T from './tests.js';
 
 const INSTRUMENTS = [
   { id: 'piano-steinway-b', label: 'Steinway B grand' },
-  { id: 'piano-kawai', label: 'Kawai grand' },
-  { id: 'piano-yamaha-upright', label: 'Yamaha upright' },
-  { id: 'piano-knight-upright', label: 'Knight upright' },
-  { id: 'fm-piano-tx81z', label: 'FM piano, sampled (TX81Z)' },
   { id: 'fm-piano-code', label: 'FM piano, built in code' },
 ];
 
 const $ = (/** @type {string} */ id) => /** @type {any} */ (document.getElementById(id));
 const tier = matchMedia('(pointer: coarse)').matches && Math.min(screen.width, screen.height) < 700 ? 'mobile' : 'desktop';
 
-const [mixerRecipe, samplerRecipe, synthRecipe] = await Promise.all([
+const [mixerRecipe, samplerRecipe, synthRecipe, pedalRecipe] = await Promise.all([
   loadAudioRecipe('audio/mixer'), loadAudioRecipe('music/sampler'), loadAudioRecipe('music/synth'),
+  loadAudioRecipe('music/instruments/pedal-knight').catch(() => null),
 ]);
 const mixer = createMixer(mixerRecipe, { tier });
 const ctx = mixer.ctx;
@@ -39,7 +36,8 @@ $('unlock-btn').addEventListener('click', async () => {
 // ---------------- budget options (applied when a slot loads) ----------------
 
 // Phones start light: a full piano decoded is hundreds of megabytes.
-const budget = tier === 'mobile' ? { tail: 4, mono: 48, range: 'mid', sets: 'nosus' } : { tail: 0, mono: 0, range: 'mid', sets: 'all' };
+// Start from the recipe (Matt's choices); phones also drop the no-pedal recordings to save memory.
+const budget = { tail: samplerRecipe.defaults.load.maxTailS, mono: samplerRecipe.defaults.load.monoBelowMidi, range: 'mid', sets: tier === 'mobile' ? 'nosus' : 'all' };
 for (const [attr, key] of /** @type {const} */ ([['data-tail', 'tail'], ['data-mono', 'mono'], ['data-range', 'range'], ['data-sets', 'sets']])) {
   const btns = [...document.querySelectorAll(`[${attr}]`)];
   for (const o of btns) o.setAttribute('aria-pressed', String(o.getAttribute(attr) === String(/** @type {any} */ (budget)[key])));
@@ -60,7 +58,7 @@ let active = /** @type {'a'|'b'} */ ('a');
 for (const s of ['a', 'b']) {
   const pick = $(`pick-${s}`);
   for (const i of INSTRUMENTS) pick.add(new Option(i.label, i.id));
-  pick.value = s === 'a' ? 'piano-steinway-b' : 'piano-kawai';
+  pick.value = s === 'a' ? 'piano-steinway-b' : 'fm-piano-code';
   pick.addEventListener('change', () => loadSlot(/** @type {'a'|'b'} */ (s), pick.value));
 }
 
@@ -77,7 +75,7 @@ async function build(id, progress) {
   settings.load.monoBelowMidi = budget.mono;
   if (budget.sets === 'nosus' && recipe.sets?.nosus) settings.load.sets = ['nosus', 'rel'];
   applyLive(settings);
-  const inst = createSampler(ctx, out, recipe, settings, { tier });
+  const inst = createSampler(ctx, out, recipe, settings, { tier, pedalNoise: pedalRecipe });
   const range = budget.range === 'full' ? { low: 21, high: 108 } : { low: 36, high: 96 };
   await inst.load({ ...range, onProgress: (d, n) => progress(d / n) });
   return { inst, recipe };
@@ -135,6 +133,7 @@ function applyLive(s) {
     s.dampers.trebleS = Number($('d-treble').value);
   }
   s.release.db = Number($('rel-db').value);
+  s.pedalNoise = { ...(s.pedalNoise ?? {}), on: pedalNoiseOn, db: Number($('pn-db').value) };
   s.tuning.policy = tuningPolicy;
 }
 function pushLive() {
@@ -169,7 +168,7 @@ slider('rel-db', (v) => `${v} dB`);
 slider('m-vol', (v) => v.toFixed(2), () => mixer.setBusLevel('music', Number($('m-vol').value)));
 slider('m-wet', (v) => v.toFixed(2), () => mixer.setMusicTone({ wet: Number($('m-wet').value) }, 0.2));
 slider('m-bright', (v) => `${(v / 1000).toFixed(1)} kHz`, () => mixer.setMusicTone({ lowpassHz: Number($('m-bright').value) }, 0.2));
-slider('pn-db', (v) => `${v} dB`, () => {});
+slider('pn-db', (v) => `${v} dB`);
 
 /** @param {string[]} ids @param {(id: string) => void} fn */
 function seg(ids, fn) {
@@ -186,46 +185,17 @@ seg(['tu-recorded', 'tu-equal', 'tu-stretch'], (id) => { tuningPolicy = /** @typ
 
 // ---------------- pedal mechanism sound (from the Knight upright's recordings) ----------------
 
-let pedalNoiseOn = false;
-/** @type {{down: AudioBuffer[], up: AudioBuffer[]} | null} */
-let pedalNoise = null;
-let pnTurn = 0;
-seg(['pn-off', 'pn-on'], async (id) => {
-  pedalNoiseOn = id === 'pn-on';
-  if (pedalNoiseOn && !pedalNoise) pedalNoise = await loadPedalNoise().catch((e) => { showProblem(`Pedal sounds: ${e.message}`); return null; });
-});
-async function loadPedalNoise() {
-  const r = await loadAudioRecipe('music/instruments/piano-knight-upright');
-  const files = r.sets?.pedal?.files ?? [];
-  const fmt = pickFormat();
-  /** @type {{down: AudioBuffer[], up: AudioBuffer[]}} */
-  const got = { down: [], up: [] };
-  for (const f of files) {
-    if (f.kind !== 'down' && f.kind !== 'up') continue;
-    const res = await fetch(new URL(`${r.root}${f.file}.${fmt}`, REPO_ROOT));
-    got[/** @type {'down'|'up'} */ (f.kind)].push(await ctx.decodeAudioData(await res.arrayBuffer()));
-  }
-  if (!got.down.length && !got.up.length) throw new Error('the Knight recipe lists no pedal-down or pedal-up recordings');
-  return got;
-}
-/** @param {boolean} down @param {number} [when] */
-function playPedalNoise(down, when = ctx.currentTime) {
-  if (!pedalNoiseOn || !pedalNoise) return;
-  const list = down ? pedalNoise.down : pedalNoise.up;
-  if (!list.length) return;
-  const src = ctx.createBufferSource();
-  src.buffer = list[pnTurn++ % list.length];
-  const g = ctx.createGain();
-  g.gain.value = dbToGain(Number($('pn-db').value));
-  src.connect(g).connect(out);
-  src.start(when);
-}
+// The pedal mechanism's sound lives in the sampler (recipe pedalNoise); these switch it live.
+let pedalNoiseOn = samplerRecipe.defaults.pedalNoise?.on ?? false;
+$('pn-off').setAttribute('aria-pressed', String(!pedalNoiseOn));
+$('pn-on').setAttribute('aria-pressed', String(pedalNoiseOn));
+seg(['pn-off', 'pn-on'], (id) => { pedalNoiseOn = id === 'pn-on'; pushLive(); });
 
 /** The lit instrument, with the pedal noise following its pedal. */
 const playable = {
   noteOn: (/** @type {number} */ m, /** @type {number} */ v, /** @type {number|undefined} */ w) => cur().noteOn(m, v, w),
   noteOff: (/** @type {number} */ m, /** @type {number|undefined} */ w) => cur().noteOff(m, w),
-  pedal: (/** @type {boolean} */ d, /** @type {number|undefined} */ w) => { cur().pedal(d, w); playPedalNoise(d, w); },
+  pedal: (/** @type {boolean} */ d, /** @type {number|undefined} */ w) => cur().pedal(d, w),
   stopAll: (/** @type {number|undefined} */ f) => cur().stopAll(f),
 };
 
@@ -350,7 +320,7 @@ function showProblems() {
   for (const s of [slots.a, slots.b]) for (const p of s?.recipe?.problems ?? []) showProblem(`${s?.recipe?.name}: ${p}`);
 }
 
-if (pickFormat() === 'm4a') showProblem('This browser cannot play the Opus files used for the piano comparison. The AAC copies are made only for the piano you choose, so please compare in Chrome, Edge or Firefox.');
+if (pickFormat() === 'm4a') showProblem('This browser cannot play Opus files. The Steinway\'s AAC copies arrive with its game set; until then, please listen in Chrome, Edge or Firefox.');
 refreshCharts();
 loadSlot('a', $('pick-a').value);
 loadSlot('b', $('pick-b').value);
