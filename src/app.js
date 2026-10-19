@@ -221,7 +221,9 @@ export async function startApp(canvas, hooks = {}) {
   // The frogs (src/world/creatures): posed bodies at their homes until S6b, the plop, finding one.
   // `?frogs=N` (testing): N frogs come at once instead of over days (1: a scout, the sign).
   const testFrogs = params.has('frogs') ? Math.max(1, Math.min(12, Number.parseInt(params.get('frogs') ?? '1', 10) || 1)) : 0;
-  const creatures = createCreatures({ world, recipe: frogRecipe, terrain, water, ripples, camera, testFrogs });
+  // floraFrame: the time and wind the plants were drawn with this frame (frogs on lily pads ride them).
+  /** @type {{ time: number, wind: number, windDir: number } | null} */ let floraFrame = null;
+  const creatures = createCreatures({ world, recipe: frogRecipe, terrain, water, ripples, camera, testFrogs, flora, floraFrame: () => floraFrame });
   sim.addSystem(creatures);
   // Midges you can see (src/world/ecology/midges-live.js): swarms from the midge field, after the water.
   const midges = createMidges({ world, recipe: midgeRecipe, budget: tierSettings.boids ?? 4096, ripples,
@@ -604,7 +606,8 @@ export async function startApp(canvas, hooks = {}) {
     };
     grassPass.update(bladeFrame);
     rushPass.update(bladeFrame);
-    floraPass.update({ time: t.animT, wind: windNow, windDir: world.state?.weather?.today?.windDir ?? 0, season: season.index + season.phase });
+    floraFrame = { time: t.animT, wind: windNow, windDir: world.state?.weather?.today?.windDir ?? 0 };
+    floraPass.update({ ...floraFrame, season: season.index + season.phase, pressed: creatures.pressedPads() });
     // `?ripplerain=1` rains ripples in any weather, to judge rings in sunshine (tools, tuning).
     // Raindrops ring the water in the water shader; the ripple field keeps the pour and creatures.
     const ringRain = params.has('ripplerain') ? 1 : day.weather.rain;

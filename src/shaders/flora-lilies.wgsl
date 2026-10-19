@@ -27,6 +27,9 @@ struct LilyDraw {
   petal: vec4f,     // xyz petal albedo (linear), w pad roughness
   heart: vec4f,     // xyz heart albedo (linear), w pad reflectance f0
   wind: vec4f,      // x bob (m), y turn in the wind (radians), z flowers per plant, w swing on the stem (m)
+  // Pads a frog sits on (S6b-3): x the plant's hash number, y the pad, z how far it dips (m, 0 none),
+  // w the bearing to the frog (radians, x = cos, z = sin). The pad tips a little toward the frog.
+  pressed: array<vec4f, 4>,
 };
 
 const PAD_VERTS: u32 = 36u;      // twelve fan triangles
@@ -169,7 +172,15 @@ fn vsLily(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> V
     // overlapping pads (of this plant or a neighbor) ride the same surface and never cross.
     let xz = center + local;
     let layer = f32((pad * 5u + plantU) % 16u);
-    let p = vec3f(xz.x, surfaceAt(xz) + ld.pad.z + bobAt(xz) + layer * LAYER_M, xz.y);
+    var p = vec3f(xz.x, surfaceAt(xz) + ld.pad.z + bobAt(xz) + layer * LAYER_M, xz.y);
+    // A frog's weight: the pad dips a few millimetres, a little more on the frog's side.
+    for (var k = 0u; k < 4u; k++) {
+      let q = ld.pressed[k];
+      if (q.z > 0.0 && u32(q.x) == plantU && u32(q.y) == pad) {
+        let lean = select(0.0, dot(local / max(radius, 1e-4), vec2f(cos(q.w), sin(q.w))), corner != 0u);
+        p.y -= q.z * (0.65 + 0.35 * lean);
+      }
+    }
     // Tilted with the bob, and slightly by hash so neighboring pads catch the sun differently.
     let g = bobSlope(center);
     let n = normalize(vec3f(-g.x + (v.z - 0.5) * 0.08, 1.0, -g.y + (v.w - 0.5) * 0.08));

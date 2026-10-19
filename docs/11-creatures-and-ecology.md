@@ -145,6 +145,16 @@ A body recipe lists SDF primitives (sphere, ellipsoid, capsule, round cone, roun
   - The tongue is a small separate mesh that rides the head bone.
 - **Frog lab.** `tools/frog-lab.html` shows the chorus call by call and checks the gap. It also counts hops and swims and times moving, posing and drawing.
 
+**As built in S6b-3** (`src/world/growth/lily-pads.js`, `src/world/creatures/perches.js`, `agents.js`; numbers in `recipes/species/frog.json` motion.pads and motion.clumps):
+- **One pad formula.** `lily-pads.js` is a line-for-line copy of where `flora-lilies.wgsl` puts each pad (spread, swing on the stem, turn, bob, layer). A unit test checks the shader still has the numbers the copy uses, and that one pad matches to the nanometre.
+- **Perches.** A pad at least `minRadiusM` across, not covered by a pad above it, holds one frog, a quarter of the way out from its middle, opposite the notch. The frog rides the pad as it swings, bobs and turns, and the pad dips a few millimetres under it (`dipM`; `LilyDraw.pressed`, up to four pads). If the pad dies back, the frog slips into the water.
+- **Getting on.** A frog hops onto a free pad within one hop. For one further out (up to `seekM`), it hops in, swims to just off the rim (`edgeM`) and climbs on. At most `maxOn` frogs sit on pads at once.
+- **Never through a pad.** A swimming frog ducks `submergeM` under any pad in its way and comes up past it; a pad that swings over a floating frog sends it under and off to open water. Frogs float, and hop into the water, only where it is open.
+- **Clumps.** A frog sits at the edge of a reed or iris clump, never in its stems.
+- **Swimming home.** A floating frog with no bank within a hop (out past the reeds, or out to a far pad) swims to the open water nearest its home and hops out there.
+- **Water height.** `water.sampleLive` now gives the surface the way the water and lily shaders draw it (each cell's lowest bed plus its depth, blended between cell centres). Before, it took the ground at the point plus the cell's depth, which stood several centimetres too high over a sloping pond bed, so frogs floated and sat above the water they were drawn on.
+- **Frog lab.** Adds a tile for frogs on pads, a frame-by-frame check that no frog leaves its leaf and no swimmer passes through a pad, a close look at a frog on a pad, and Pad outlines (where the frogs think each pad's rim is, drawn over the view).
+
 ### Motion
 
 - **Legs**: analytic two-bone IK; feet plant on the terrain heightfield and lift on a gait phase per leg. Body height and pitch follow the averaged foot plane. Longer chains (heron neck) use FABRIK.

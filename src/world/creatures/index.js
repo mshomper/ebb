@@ -20,6 +20,7 @@ import { bakeBody } from './body-bake.js';
 import { poseSkeleton, moveMatrix, mul } from './pose.js';
 import { frogMoves, legsOf } from './motion.js';
 import { createFrogAgents } from './agents.js';
+import { createPerches } from './perches.js';
 import { bringFrogs } from './coarse.js';
 
 const BAKE_JOB = { module: './world/creatures/bodies.js', fn: 'bakeVariant' };
@@ -31,12 +32,18 @@ const TONGUE_M = 0.01;
  *   terrain: { sampleHeight: (x: number, z: number) => number },
  *   water: { sim: { live: any }, sampleLive: (x: number, z: number) => { surface: number, depth: number } },
  *   ripples: { addImpulse: (x: number, z: number, strength?: number, radiusM?: number) => void } | null,
- *   camera: { target: ArrayLike<number>, eye: ArrayLike<number>, distance: number }, testFrogs?: number }} opts
+ *   camera: { target: ArrayLike<number>, eye: ArrayLike<number>, distance: number }, testFrogs?: number,
+ *   flora?: Record<string, any>, floraFrame?: () => { time: number, wind: number, windDir: number } | null }} opts
  *   recipe: recipes/species/frog.json; testFrogs: `?frogs=N`, for click-testing only: once the island
- *   and the journal are up, N frogs come at once (coarse.js bringFrogs) instead of over days
+ *   and the journal are up, N frogs come at once (coarse.js bringFrogs) instead of over days;
+ *   flora: the flora recipes (lily pads, reed and iris clumps); floraFrame: the time and wind the
+ *   flora pass drew this frame with, so frogs on lily pads move exactly with them
  */
 export function createCreatures(opts) {
   const { world, recipe, terrain, water, ripples, camera } = opts;
+  const perches = opts.flora?.lilies
+    ? createPerches({ lily: opts.flora.lilies, P: { ...recipe.motion.pads, clumps: recipe.motion.clumps }, water: (x, z) => water.sampleLive(x, z) })
+    : null;
   let testFrogs = opts.testFrogs ?? 0;
   const pass = createCreaturePass({ recipe });
   const body = recipe.body, M = recipe.motion;
@@ -85,6 +92,8 @@ export function createCreatures(opts) {
     plop(/** @type {number} */ x, /** @type {number} */ z) { ripples?.addImpulse(x, z, undefined, 0.1); },
     hourOfDay: 12,
     duskHour: 19,
+    /** Lily pads as perches, reed and iris clumps (perches.js), or null on a world with no lilies recipe. */
+    pads: perches,
   };
 
   /** Hour of the day (display time) and dusk, for the agents' moods. */
@@ -128,6 +137,9 @@ export function createCreatures(opts) {
     for (const a of agents.list()) {
       const o = ownOf(a.id);
       const v = agents.view(a);
+      // A frog on a lily pad is drawn where its pad is this very frame.
+      const seat = a.perch && !a.hop ? perches?.seatOf(a.perch) : null;
+      if (seat) { v.x = seat.x; v.y = seat.y; v.z = seat.z; v.yaw = seat.yaw; }
       const mesh = meshFor(o.variant, Math.hypot(v.x - eye[0], v.y - eye[1], v.z - eye[2]));
       if (!mesh) continue;
       const rig = rigs[o.variant] ?? rigs.find((r) => r) ?? null;
@@ -165,6 +177,10 @@ export function createCreatures(opts) {
     frogs: () => agents.list().filter((a) => a.mode !== 'leave'),
     /** The live frogs (the frog lab reads calls and stats from them). */
     agents,
+    /** The lily pads as perches (the frog lab draws their outlines). */
+    perches,
+    /** Pads frogs sit on, for the lily drawing to dip (flora pass, at most four). */
+    pressedPads: () => (perches ? perches.pressed(agents.list()) : []),
 
     /**
      * The frog a tap on the ground at (x, z) lands on, or null: within tapM of it, more when the
@@ -198,6 +214,8 @@ export function createCreatures(opts) {
       }
       if (!water.sim.live) return;   // the water's surface tells a frog where the bank ends
       setHours();
+      const fl = opts.floraFrame?.();
+      if (perches && fl) perches.update(fl, world.state?.growth?.plants ?? [], opts.flora ?? {});
       const F = world.state?.creatures?.frogs;
       if (F !== shown) { shown = F; agents.sync(F?.frogs ?? [], !!F?.dormant, env); }
       agents.advance(f.realDt, env);

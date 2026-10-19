@@ -28,11 +28,63 @@ if (!result.ok) {
 } else {
   const app = /** @type {any} */ (result);
   const creatures = app.creatures;
+  /** @type {any} */ (window).frogLab = app;   // for scripted checks from the console
   const gap = 0.4;
   // Time it takes to move and pose the frogs each frame (their system's tick), and the GPU pass.
   let cpuMs = 0, gpuMs = 0;
   const tick = creatures.tick.bind(creatures);
-  creatures.tick = (/** @type {any} */ f) => { const t0 = performance.now(); tick(f); cpuMs = cpuMs * 0.9 + (performance.now() - t0) * 0.1; };
+  creatures.tick = (/** @type {any} */ f) => { const t0 = performance.now(); tick(f); cpuMs = cpuMs * 0.9 + (performance.now() - t0) * 0.1; checkPads(); };
+
+  // Lily pads, every frame: a frog on a pad sits on its leaf; a swimmer under a pad is down under it.
+  const pads = { last: performance.now(), riding: 0, offLeaf: 0, through: 0 };
+  function checkPads() {
+    const P = creatures.perches;
+    const now = performance.now(), dt = Math.min(0.1, (now - pads.last) / 1000);
+    pads.last = now;
+    if (!P) return;
+    for (const a of creatures.agents.list()) {
+      if (a.hop) continue;
+      if (a.perch) { pads.riding += dt; if (!P.onLeaf(a.perch)) pads.offLeaf++; }
+      if ((a.mode === 'swim' || a.mode === 'float') && P.underPad(a.x, a.z) && a.under < 0.02) pads.through++;
+    }
+    if (outlines) drawOutlines(P);
+  }
+
+  // Pad outlines: where the frogs think each pad's rim is, drawn over the view.
+  let outlines = false;
+  $('outlines').addEventListener('click', () => {
+    outlines = !outlines;
+    $('outlines').setAttribute('aria-pressed', String(outlines));
+    $('outline-layer').style.display = outlines ? 'block' : 'none';
+  });
+  /** @param {any} P */
+  function drawOutlines(P) {
+    const c = /** @type {HTMLCanvasElement} */ ($('outline-layer'));
+    const w = c.clientWidth, h = c.clientHeight;
+    if (c.width !== w || c.height !== h) { c.width = w; c.height = h; }
+    const g = /** @type {CanvasRenderingContext2D} */ (c.getContext('2d'));
+    g.clearRect(0, 0, w, h);
+    const M = app.camera.viewProj;
+    /** @param {number} x @param {number} y @param {number} z */
+    const at = (x, y, z) => {
+      const W = M[3] * x + M[7] * y + M[11] * z + M[15];
+      return [((M[0] * x + M[4] * y + M[8] * z + M[12]) / W * 0.5 + 0.5) * w, (0.5 - (M[1] * x + M[5] * y + M[9] * z + M[13]) / W * 0.5) * h, W];
+    };
+    g.strokeStyle = '#F2D43A';
+    g.lineWidth = 2;
+    for (const pad of P.all()) {
+      g.beginPath();
+      let behind = false;
+      for (let k = 0; k <= 32; k++) {
+        const t = (k / 32) * Math.PI * 2;
+        const x = pad.x + Math.cos(t) * pad.radius, z = pad.z + Math.sin(t) * pad.radius;
+        const [u, v, W] = at(x, P.topAt(pad, x, z), z);
+        if (W <= 0) { behind = true; break; }
+        if (k) g.lineTo(u, v); else g.moveTo(u, v);
+      }
+      if (!behind) g.stroke();
+    }
+  }
   on('render:timings', (/** @type {{ passes: { name: string, ms: number }[] }} */ p) => {
     const c = p.passes.find((x) => x.name === 'creatures');
     if (c) gpuMs = gpuMs * 0.9 + c.ms * 0.1;
@@ -43,6 +95,8 @@ if (!result.ok) {
     const b = /** @type {HTMLElement} */ (e.target).closest('button');
     if (!b) return;
     if (b.id === 'look') { look(); return; }
+    if (b.id === 'look-pad') { lookPad(); return; }
+    if (!b.dataset.hour) return;
     for (const x of $('times').querySelectorAll('[data-hour]')) x.setAttribute('aria-pressed', String(x === b));
     const h = b.dataset.hour;
     if (h === 'live') { clock.setDisplayOverride(null); return; }
@@ -58,6 +112,15 @@ if (!result.ok) {
     if (!list.length) return;
     const x = list.reduce((s, /** @type {any} */ a) => s + a.x, 0) / list.length, z = list.reduce((s, /** @type {any} */ a) => s + a.z, 0) / list.length;
     dispatch({ type: 'camera.focus', x, z, distance: 4, pitchDeg: 30 });
+  }
+
+  /** Glide in close to a frog sitting on a lily pad, or to the nearest pad if none is. */
+  function lookPad() {
+    const sitter = creatures.agents.list().find((/** @type {any} */ a) => a.perch && !a.hop);
+    if (sitter) { dispatch({ type: 'camera.focus', x: sitter.x, z: sitter.z, distance: 0.6, pitchDeg: 25 }); return; }
+    const pad = creatures.perches?.all()[0];
+    if (pad) dispatch({ type: 'camera.focus', x: pad.x, z: pad.z, distance: 1.5, pitchDeg: 30 });
+    $('pad-status').innerHTML = `${DOT_WAIT}<span>No frog is on a pad just now; this is the nearest pad. Try Dusk and wait a minute.</span>`;
   }
 
   const started = performance.now();
@@ -82,6 +145,11 @@ if (!result.ok) {
     const minutes = Math.max(1 / 60, (performance.now() - started) / 60000);
     $('t-hops').textContent = `${(st.hops / minutes).toFixed(1)} · ${st.hops ? ((st.hopM / st.hops) * 100).toFixed(0) + ' cm' : '-'}`;
     $('t-cost').textContent = `${cpuMs.toFixed(2)} · ${gpuMs.toFixed(2)}`;
+    const onPads = list.filter((/** @type {any} */ a) => a.perch).length;
+    $('t-pads').textContent = `${onPads} · ${st.perches}`;
+    if (!creatures.perches) $('pad-status').innerHTML = `${DOT_WAIT}<span>This island has no lily pads.</span>`;
+    else if (pads.offLeaf || pads.through) $('pad-status').innerHTML = `${ICON_WARN}<span>${pads.offLeaf} frame checks with a frog off its pad, ${pads.through} with a swimmer at the surface under a pad.</span>`;
+    else $('pad-status').innerHTML = `${ICON_CHECK}<span>${creatures.perches.all().length} pads. ${pads.riding.toFixed(0)} frog-seconds on pads so far, always on the leaf; no swimmer through a pad.</span>`;
     const ok = !(tight < gap - 1e-6);
     status(ok ? ICON_CHECK : ICON_WARN, ok ? `${list.length} frogs. No two calls have started within ${gap} s of each other.` : `Two calls started ${tight.toFixed(3)} s apart.`);
     drawChorus(list, recent, now);
