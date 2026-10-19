@@ -13,7 +13,8 @@
     "staleFrames": 60,
     "frameSlack": 1.15,
     "stepDown": { "atMinSeconds": 10, "noteSeconds": 12 },
-    "thermal": { "tiers": ["low"], "bucketSeconds": 60, "windowMinutes": 5, "rise": 0.2, "holdMinutes": 5 }
+    "thermal": { "tiers": ["low"], "bucketSeconds": 60, "windowMinutes": 5, "rise": 0.2, "holdMinutes": 5 },
+    "worth": { "note": "Each step down must earn its blur (S8d-2): after a step, settleFrames are skipped, then the median GPU time over frames frames is compared with the frames before the step; a step that saved less than minGain (a fraction) is undone and no lower scale is tried for holdSeconds. On Matt's iPhone at 0.5 the cost barely followed the pixels.", "settleFrames": 10, "frames": 45, "minGain": 0.06, "holdSeconds": 120 }
   },
   "frameCap": {
     "note": "On the tiers listed, on a display faster than the tier's targetFps (a 120 Hz phone on low at 30), frames are skipped so the island renders at about targetFps. A frame is drawn once toleranceMs short of a whole frame period has passed since the last one. Tiers not listed draw every frame the display offers.",
@@ -82,10 +83,10 @@
       "ao": "off",
       "skyViewLut": "half", "aerialVolume": 16,
       "waterReach": 40, "waterStep": 0.016667,
-      "grassDensity": 0.35, "grassDistance": 20, "foliageLodScale": 0.5,
+      "grassDensity": 0.22, "grassDistance": 14, "foliageLodScale": 0.5,
       "liveCreatures": 50, "boids": 1024, "particlesMax": 4000,
-      "lights": 8, "bloomLevels": 4, "workerMax": 4,
-      "lodDistances": [45, 95], "waterDetailFadeM": 80, "waterSSR": null, "skyProbeSize": 32, "causticLayers": 1,
+      "lights": 8, "bloomLevels": 3, "workerMax": 4,
+      "lodDistances": [45, 95], "waterDetailFadeM": 50, "waterSSR": null, "skyProbeSize": 32, "causticLayers": 1,
       "ground": { "mapSize": 512, "hexTiling": false, "triplanar": false, "specular": "sun", "puddles": false, "anisotropy": 4, "detailFadeMeters": 35 }
     }
   }

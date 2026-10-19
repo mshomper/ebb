@@ -13,6 +13,7 @@
   body { background: #F4EEE4; color: #1E2624; font: 600 17px/1.45 'Nunito', system-ui, sans-serif; overflow-wrap: anywhere;
     padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left)); }
   main { max-width: 760px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+  #sheet { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
   h1 { font-size: 26px; font-weight: 800; margin: 0; }
   h2 { font-size: 20px; font-weight: 800; margin: 0 0 8px; }
   p { margin: 0; }
@@ -27,7 +28,9 @@
   .line .word { font-weight: 800; }
   .buttons { display: flex; flex-wrap: wrap; gap: 10px; }
   button { appearance: none; font: inherit; font-weight: 800; font-size: 17px; min-height: 48px; padding: 10px 18px;
-    border: 0; border-radius: 12px; background: #1E2624; color: #F4EEE4; cursor: pointer; }
+    border: 0; border-radius: 12px; background: #1E2624; color: #F4EEE4; cursor: pointer;
+    display: inline-flex; align-items: center; gap: 8px; }
+  button svg { width: 22px; height: 22px; flex: 0 0 auto; }
   button.quiet { background: transparent; color: #1E2624; box-shadow: inset 0 0 0 2px #1E2624; }
   button:disabled { opacity: 0.45; cursor: default; }
   button:focus-visible { outline: 3px solid #5F7F5B; outline-offset: 2px; }
@@ -37,74 +40,116 @@
   .bar .track { position: relative; height: 14px; border-radius: 7px; background: #E9E0D2; overflow: hidden; }
   .bar .fill { height: 100%; border-radius: 7px; background: #7C9D72; }
   .bar .fill.over { background: #B5654A; }
+  .bar .fill.blue { background: #5F8196; }
   .bar .passes { font-size: 16px; color: #4A5551; }
   #warm { width: 100%; height: 240px; display: block; }
   .legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 16px; }
   .legend i { display: inline-block; width: 22px; height: 4px; border-radius: 2px; vertical-align: middle; margin-right: 6px; }
+  .verdict { font-size: 18px; font-weight: 800; }
+  .verdict svg { width: 28px; height: 28px; }
+  #fullbar { display: none; }
   [hidden] { display: none !important; }
   a { color: #4a6a47; }
+
+  /* Full screen, like the game: the canvas fills the viewport as index.html's #view does, and the
+     results sit in a sheet over the bottom that the Results button opens and closes. */
+  html.full, html.full body { height: 100%; overflow: hidden; }
+  html.full body { padding: 0; }
+  html.full #view { position: fixed; inset: 0; width: 100%; height: 100%; max-height: none; aspect-ratio: auto; border-radius: 0; z-index: 0; }
+  html.full .intro, html.full #fullrow { display: none; }
+  html.full #fullbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; position: fixed; z-index: 3;
+    top: max(10px, env(safe-area-inset-top)); left: max(10px, env(safe-area-inset-left)); right: max(10px, env(safe-area-inset-right)); }
+  #fullbar button { min-height: 44px; padding: 8px 14px; }
+  #fullbar button.quiet { background: rgba(251, 247, 240, 0.94); }
+  #readout { flex: 1 1 220px; min-width: 0; background: rgba(251, 247, 240, 0.94); border-radius: 12px; padding: 6px 12px; font-size: 16px; line-height: 1.35; }
+  html.full #sheet { position: fixed; left: 0; right: 0; bottom: 0; z-index: 2; max-height: 72vh; max-height: 72dvh;
+    overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; -webkit-overflow-scrolling: touch;
+    background: #F4EEE4; border-radius: 18px 18px 0 0; box-shadow: 0 -6px 24px rgba(30, 38, 36, 0.28);
+    padding: 16px max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left)); }
+  html.full:not(.sheet-open) #sheet { display: none; }
 </style>
 </head>
 <body>
 <main>
-  <h1>ebb phone check</h1>
-  <p class="muted">The real island on this device, measured against the budgets in docs/19. Run the 60 second check, or the 15 minute warm run to see whether the phone slows as it warms. <a href="./">All tools</a></p>
+  <h1 class="intro">ebb phone check</h1>
+  <p class="muted intro">The real island on this device, measured against the budgets in docs/19. Run the 2 minute warm run, or check whether resolution matters. <a href="./">All tools</a></p>
   <canvas id="view" aria-label="The island"></canvas>
-
-  <div class="card">
-    <div class="line" id="status"><span>Starting</span></div>
-    <p class="muted" id="tier"></p>
-    <p class="muted" id="device"></p>
-    <p class="muted" id="measure"></p>
+  <div class="buttons" id="fullrow">
+    <button type="button" class="quiet" id="goFull"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9V4h5"/><path d="M20 9V4h-5"/><path d="M4 15v5h5"/><path d="M20 15v5h-5"/></svg>Full screen, like the game</button>
   </div>
 
-  <div class="tiles">
-    <div class="card tile"><b id="t-fps">-</b><span id="t-fps-sub">frames per second</span></div>
-    <div class="card tile"><b id="t-gpu">-</b><span id="t-gpu-sub">GPU ms, p95</span></div>
-    <div class="card tile"><b id="t-cpu">-</b><span id="t-cpu-sub">main thread ms, p95</span></div>
-    <div class="card tile"><b id="t-scale">-</b><span id="t-scale-sub">render scale</span></div>
-  </div>
-
-  <div class="card">
-    <h2>Last 300 frames</h2>
-    <div id="checks"><p class="muted">Waiting for frames.</p></div>
-  </div>
-
-  <div class="card">
-    <h2>Runs</h2>
-    <p class="muted">The 60 second run orbits the island slowly and keeps every frame. The warm run keeps orbiting for 15 minutes and plots GPU p95 for each minute; keep the screen on and this page in front.</p>
-    <div class="buttons">
-      <button type="button" id="run60">Start 60 s run</button>
-      <button type="button" id="runWarm">Start 15 min warm run</button>
-      <button type="button" class="quiet" id="stop" disabled>Stop</button>
-      <button type="button" class="quiet" id="save">Save result</button>
+  <div id="sheet">
+    <div class="card">
+      <div class="line" id="status"><span>Starting</span></div>
+      <p class="muted" id="tier"></p>
+      <p class="muted" id="device"></p>
+      <p class="muted" id="measure"></p>
     </div>
-    <div class="progress" aria-hidden="true"><i id="progress"></i></div>
-    <p id="run-status" class="muted">No run yet.</p>
-  </div>
 
-  <div class="card" id="run-card" hidden>
-    <h2>60 second run</h2>
-    <div id="run-result"></div>
-  </div>
-
-  <div class="card">
-    <h2 id="passes-title">Each pass, GPU ms (p95)</h2>
-    <div id="passes"><p class="muted">Waiting for GPU timestamps.</p></div>
-  </div>
-
-  <div class="card" id="warm-card" hidden>
-    <h2>Warm run: GPU p95 each minute</h2>
-    <canvas id="warm"></canvas>
-    <div class="legend">
-      <span><i style="background:#5F8196"></i>GPU p95 that minute</span>
-      <span><i style="background:#B5654A"></i>GPU budget for this tier</span>
+    <div class="tiles">
+      <div class="card tile"><b id="t-fps">-</b><span id="t-fps-sub">frames per second</span></div>
+      <div class="card tile"><b id="t-gpu">-</b><span id="t-gpu-sub">GPU ms, p95</span></div>
+      <div class="card tile"><b id="t-cpu">-</b><span id="t-cpu-sub">main thread ms, p95</span></div>
+      <div class="card tile"><b id="t-scale">-</b><span id="t-scale-sub">render scale</span></div>
     </div>
-    <div id="warm-result"></div>
-  </div>
 
-  <p class="muted">Chrome rounds GPU timestamps to 0.1 ms unless chrome://flags "WebGPU Developer Features" is turned on. Add ?tier=low, ?tier=medium, ?tier=high or ?tier=ultra to the address to try a tier; on a phone, ?tier=high should soften a little within seconds and, after about 10 seconds at the lowest scale, step down once with a note and an Undo button.</p>
+    <div class="card">
+      <h2>Runs</h2>
+      <p class="muted">Each run orbits the island slowly. The 2 minute warm run plots GPU p95 every 15 seconds; the 15 minute one every minute. Keep the screen on and this page in front. In full screen the results close while a run is on, so nothing covers the island, and open again when it ends.</p>
+      <div class="buttons">
+        <button type="button" id="runShort">Start 2 min run</button>
+        <button type="button" class="quiet" id="sweep" hidden>Does resolution matter? (40 s)</button>
+        <button type="button" class="quiet" id="run60">Start 60 s run</button>
+        <button type="button" class="quiet" id="runLong">Start 15 min run</button>
+        <button type="button" class="quiet" id="stop" disabled>Stop</button>
+        <button type="button" class="quiet" id="save">Save result</button>
+      </div>
+      <p class="muted" id="sweep-missing" hidden>The resolution check needs quality.pinScale in the app, which this build does not have yet.</p>
+      <div class="progress" aria-hidden="true"><i id="progress"></i></div>
+      <p id="run-status" class="muted">No run yet.</p>
+    </div>
+
+    <div class="card" id="sweep-card" hidden>
+      <h2>Does resolution matter?</h2>
+      <p class="muted">The render scale is held at the tier's top, middle and lowest scale for 12 seconds each, with the same slow orbit; the first second after each change is left out. The verdict uses the typical frame (p50), since a few spikes move p95 more than the pixels do.</p>
+      <div id="sweep-result"></div>
+    </div>
+
+    <div class="card" id="warm-card" hidden>
+      <h2 id="warm-title">Warm run: GPU p95 each 15 s</h2>
+      <canvas id="warm"></canvas>
+      <div class="legend">
+        <span><i style="background:#5F8196"></i><span id="warm-legend">GPU p95 each 15 s</span></span>
+        <span><i style="background:#B5654A"></i>GPU budget for this tier</span>
+      </div>
+      <div id="warm-result"></div>
+    </div>
+
+    <div class="card" id="run-card" hidden>
+      <h2>60 second run</h2>
+      <div id="run-result"></div>
+    </div>
+
+    <div class="card">
+      <h2>Last 300 frames</h2>
+      <div id="checks"><p class="muted">Waiting for frames.</p></div>
+    </div>
+
+    <div class="card">
+      <h2 id="passes-title">Each pass, GPU ms (p95)</h2>
+      <div id="passes"><p class="muted">Waiting for GPU timestamps.</p></div>
+    </div>
+
+    <p class="muted">Chrome rounds GPU timestamps to 0.1 ms unless chrome://flags "WebGPU Developer Features" is turned on. Add ?tier=low, ?tier=medium, ?tier=high or ?tier=ultra to the address to try a tier, and ?full=1 or ?full=0 to start in or out of full screen; on a phone, ?tier=high should soften a little within seconds and, after about 10 seconds at the lowest scale, step down once with a note and an Undo button.</p>
+  </div>
 </main>
+
+<div id="fullbar">
+  <button type="button" class="quiet" id="back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="M11 6l-6 6 6 6"/></svg>Back</button>
+  <button type="button" id="sheetToggle" aria-controls="sheet" aria-expanded="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2.5"/><path d="M8 9h8"/><path d="M8 12.5h8"/><path d="M8 16h5"/></svg><span id="sheetLabel">Hide results</span></button>
+  <div id="readout" role="status">Starting</div>
+</div>
+
 <script src="./boot-guard.js"></script>
 <script type="importmap">{ "imports": {
   "wgpu-matrix": "../src/vendor/wgpu-matrix/wgpu-matrix.module.js" } }</script>

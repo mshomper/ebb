@@ -26,9 +26,10 @@ export function addQualityTests(test, assert, eq) {
     d.setTier('high', high, false, 0);
     eq(d.scale, high.renderScale, 'starts at the tier scale');
     let t = 0, stuckAt = -1;
-    for (let i = 0; i < 1200; i++) {
+    // A GPU whose cost follows the pixels (scale squared), still over budget at the minimum.
+    for (let i = 0; i < 3000; i++) {
       t += 16.7;
-      d.sample(high.gpuBudgetMs * 1.5, 'timestamps', t);
+      d.sample(high.gpuBudgetMs * 2.5 * d.scale * d.scale, 'timestamps', t);
       if (d.takeStuck() && stuckAt < 0) stuckAt = t;
     }
     eq(d.scale, high.renderScaleMin, 'ends at the tier minimum');
@@ -36,6 +37,40 @@ export function addQualityTests(test, assert, eq) {
     for (let i = 0; i < 2000; i++) { t += 16.7; d.sample(high.gpuBudgetMs * 0.5, 'timestamps', t); }
     eq(d.scale, high.renderScale, 'climbs back to the tier scale');
     return `stuck reported ${(stuckAt / 1000).toFixed(1)} s in; ${d.changes().length} scale changes`;
+  });
+
+  test(QUALITY, 'a step down that saves nothing is undone, and the tier steps down instead', async () => {
+    const q = await recipe();
+    const d = createDynamicRes(q.dynamicRes);
+    const low = q.tiers.low;
+    d.setTier('low', low, false, 0);
+    let t = 0, stuckAt = -1;
+    // Matt's iPhone: the cost does not follow the pixels.
+    for (let i = 0; i < 30 * 30; i++) {
+      t += 1000 / 30;
+      d.sample(low.gpuBudgetMs * 1.5, 'timestamps', t);
+      if (d.takeStuck() && stuckAt < 0) stuckAt = t;
+    }
+    const undone = d.changes().filter((c) => c.why === 'no-gain');
+    assert(undone.length >= 1, 'the useless step was undone');
+    eq(d.scale, low.renderScale, 'the picture stays at the tier scale');
+    assert(stuckAt > 0, 'over budget at the lowest useful scale is reported, so the tier can step down');
+    return `undone ${(undone[0].at / 1000).toFixed(1)} s in; stuck reported ${(stuckAt / 1000).toFixed(1)} s in`;
+  });
+
+  test(QUALITY, 'a pinned scale holds still, and moves again once released', async () => {
+    const q = await recipe();
+    const d = createDynamicRes(q.dynamicRes);
+    const low = q.tiers.low;
+    d.setTier('low', low, false, 0);
+    d.pin(0.6, 0);
+    let t = 0;
+    for (let i = 0; i < 300; i++) { t += 1000 / 30; d.sample(low.gpuBudgetMs * 3 * d.scale * d.scale, 'timestamps', t); }
+    eq(d.scale, 0.6, 'held at 0.6 while over budget');
+    d.pin(null, t);
+    for (let i = 0; i < 300; i++) { t += 1000 / 30; d.sample(low.gpuBudgetMs * 3 * d.scale * d.scale, 'timestamps', t); }
+    assert(d.scale < 0.6, `released, it steps down: ${d.scale}`);
+    return `ended at ${d.scale}`;
   });
 
   test(QUALITY, 'dynamic resolution snaps its size below a scale of 1 and keeps the scale on a step down', async () => {
