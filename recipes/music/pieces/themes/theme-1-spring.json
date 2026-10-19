@@ -1,0 +1,94 @@
+{
+ "id": "theme-1-spring",
+ "title": "Theme 1, First water: spring",
+ "version": 1,
+ "theme": {
+  "candidate": 1,
+  "name": "First water",
+  "season": "spring"
+ },
+ "slots": [
+  "theme"
+ ],
+ "seasons": [
+  "spring"
+ ],
+ "weather": [],
+ "requires": {},
+ "avoidWhen": {},
+ "keys": [
+  "D"
+ ],
+ "mode": "ionian",
+ "meter": "3/4",
+ "tempo": [
+  80,
+  88
+ ],
+ "palette": {
+  "melody": [
+   "piano"
+  ],
+  "accomp": [
+   "piano"
+  ],
+  "counter": [
+   "flute",
+   "bell"
+  ],
+  "bed": [
+   "strings",
+   "pad"
+  ],
+  "touch": [
+   "harp",
+   "bell"
+  ]
+ },
+ "layers": {
+  "bed": {
+   "style": "warm",
+   "sections": {
+    "A": "out",
+    "B": "swell",
+    "A'": "steady",
+    "coda": "thin"
+   }
+  },
+  "touch": {
+   "chance": 0.8
+  }
+ },
+ "form": {
+  "grammar": "A B A' coda",
+  "short": "A B A' coda",
+  "optional": {}
+ },
+ "sections": {
+  "A": {
+   "bars": 4,
+   "abc": "X:1\nM:3/4\nL:1/8\nK:D\nV:mel\n!mp!\"D\"D3 E F2 | \"Gmaj7\"G2 A4- | \"A7\"A2 G F E2 | \"D\"D4 \"A/C#\"C2 |\n"
+  },
+  "B": {
+   "bars": 4,
+   "abc": "X:1\nM:3/4\nL:1/8\nK:D\nV:mel\n\"Bm7\"B,2 D2 F2 | \"Gmaj7\"B4 A2 | \"Em7\"G2 F E D2 | \"A\"E6 |\n"
+  },
+  "A'": {
+   "bars": 4,
+   "abc": "X:1\nM:3/4\nL:1/8\nK:D\nV:mel\n\"D\"D3 E F2 | \"Gmaj7\"G2 A4- | \"A7sus4\"A2 G F \"A7\"E2 | \"D\"D6 |\nV:counter\nz6 | z2 f2 e2 | d4 c2 | d6 |\n"
+  },
+  "coda": {
+   "bars": 2,
+   "abc": "X:1\nM:3/4\nL:1/8\nK:D\nV:mel\n!p!\"G/D\"B,2 D2 G2 | \"D\"!fermata!F6 |\n"
+  }
+ },
+ "variation": {
+  "octave": [
+   0
+  ],
+  "paraphrase": 0,
+  "ornament": 0.1
+ },
+ "motifs": [],
+ "notes": "A waltz-like tide in 3/4: up by step from the home note to the fifth, held across the bar, then down past the start to the leading note. Plain and singable; the held note is the high water. Spring: D major, bright piano; the bed comes in for the answer, a flute echoes the held note, harp touches the cadences."
+}

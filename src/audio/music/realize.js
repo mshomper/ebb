@@ -14,6 +14,7 @@ import { parseAbc, TICKS_PER_QUARTER } from './score.js';
 import { parseChord } from './chords.js';
 import { voiceProgression } from './voicing.js';
 import { planTextures, playTexture, describeTextures } from './texture.js';
+import { supportLayers } from './layers.js';
 import { stream, hash32 } from '../../core/rng.js';
 
 const Q = TICKS_PER_QUARTER;
@@ -195,7 +196,8 @@ export function realize(piece, ctx, recipes) {
   const choose = (list) => { const ok = list.filter((x) => avail.has(x)); return ok.length > 1 && r.next() < 0.3 ? ok[1] : ok[0]; };
   const melInst = choose(piece.palette.melody) ?? 'piano';
   const accList = piece.palette.accomp.filter((/** @type {string} */ x) => avail.has(x));
-  const usePad = accList.includes('pad') && r.next() < 0.5;
+  const wantsBed = !!(piece.layers?.bed && piece.palette?.bed);
+  const usePad = !wantsBed && accList.includes('pad') && r.next() < 0.5;
   const accInst = accList.find((/** @type {string} */ x) => x !== 'pad') ?? (usePad ? null : melInst);
 
   // Tempo; the day's note density ceiling decides how fast an arpeggio may move, or whether at all.
@@ -240,6 +242,12 @@ export function realize(piece, ctx, recipes) {
     });
     if (!accInst) used = [];
   }
+
+  // Support layers: a bed that moves with the phrases and touches on the cadences (layers.js).
+  const support = supportLayers({ piece, path, chords, shift, mel: raw.filter((n) => n.voice === 'mel'), choose, L: R.layers, r });
+  gen.push(...support.notes);
+  // The counter-line is a written part: the first instrument of its list that exists (no coin toss).
+  const counterInst = piece.palette?.counter?.find((/** @type {string} */ x) => avail.has(x));
 
   // Tempo map: per section a gentle arch and a ritardando into its end, fermatas held.
   const fermataSpans = mel.filter((n) => n.fermata).map((n) => [n.tick + 0, n.tick + n.dur, n.section]);
@@ -304,16 +312,17 @@ export function realize(piece, ctx, recipes) {
       ? base + archOf(n.tick) + (down ? 3 : 0) + jit(R.humanize.velJitter)
       : base - (n.voice === 'counter' ? R.dynamics.counterOffset : R.dynamics.accompanimentOffset) + archOf(n.tick) * 0.5 + jit(R.humanize.velJitter);
     const lead = n.voice === 'mel' && n.tick % beatTicks === 0 ? -R.humanize.melodyLeadMs / 1000 : 0;
-    const t0 = time(n.tick) + lead + handT(n.voice === 'mel' ? 'right' : 'left', n.tick);
-    const inst = n.voice === 'mel' ? melInst : accInst ?? melInst;
+    const t0 = time(n.tick) + lead + handT(n.voice === 'mel' ? 'right' : n.voice === 'counter' ? 'counter' : 'left', n.tick);
+    const inst = n.voice === 'mel' ? melInst : n.voice === 'counter' ? counterInst ?? accInst ?? melInst : accInst ?? melInst;
     if (n.voice !== 'mel') instruments[n.voice] = inst;
     notes.push({ t: Math.max(0, t0), dur: n.grace ? 0.07 : Math.max(0.05, time(n.tick + n.dur) - time(n.tick) - 0.02), midi: n.midi, vel: clampVel(vel), voice: n.voice, instrument: inst, tick: n.tick });
   }
   lastDyn = null;
   for (const g of gen) {
     const d = raw.filter((n) => n.voice === 'mel' && n.dyn && n.tick <= g.tick).pop()?.dyn ?? null;
-    const vel = dynVel(d) + g.velOffset + archOf(g.tick) * 0.5 + jit(R.humanize.velJitter);
-    const t0 = time(g.tick) + g.offsetMs / 1000 + handT(g.voice === 'pad' ? 'pad' : 'left', g.tick);
+    let vel = dynVel(d) + g.velOffset + archOf(g.tick) * 0.5 + jit(R.humanize.velJitter);
+    if (g.voice === 'bed') vel = Math.max(vel, R.layers.bed.minVel);
+    const t0 = time(g.tick) + g.offsetMs / 1000 + handT(g.voice === 'bass' || g.voice === 'acc' ? 'left' : g.voice, g.tick);
     instruments[g.voice] = g.instrument;
     notes.push({ t: Math.max(0, t0), dur: Math.max(0.05, time(g.tick + g.dur) - time(g.tick) - 0.02), midi: g.midi, vel: clampVel(vel), voice: g.voice, instrument: g.instrument, tick: g.tick });
   }

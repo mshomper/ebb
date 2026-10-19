@@ -1,0 +1,94 @@
+{
+ "id": "theme-3-spring",
+ "title": "Theme 3, Breath: spring",
+ "version": 1,
+ "theme": {
+  "candidate": 3,
+  "name": "Breath",
+  "season": "spring"
+ },
+ "slots": [
+  "theme"
+ ],
+ "seasons": [
+  "spring"
+ ],
+ "weather": [],
+ "requires": {},
+ "avoidWhen": {},
+ "keys": [
+  "D"
+ ],
+ "mode": "ionian",
+ "meter": "4/4",
+ "tempo": [
+  72,
+  80
+ ],
+ "palette": {
+  "melody": [
+   "piano"
+  ],
+  "accomp": [
+   "piano"
+  ],
+  "counter": [
+   "flute",
+   "bell"
+  ],
+  "bed": [
+   "strings",
+   "pad"
+  ],
+  "touch": [
+   "harp",
+   "bell"
+  ]
+ },
+ "layers": {
+  "bed": {
+   "style": "warm",
+   "sections": {
+    "A": "out",
+    "B": "swell",
+    "A'": "steady",
+    "coda": "thin"
+   }
+  },
+  "touch": {
+   "chance": 0.8
+  }
+ },
+ "form": {
+  "grammar": "A B A' coda",
+  "short": "A B A' coda",
+  "optional": {}
+ },
+ "sections": {
+  "A": {
+   "bars": 4,
+   "abc": "X:1\nM:4/4\nL:1/8\nK:D\nV:mel\n!mp!\"D\"F2 G2 A4- | \"Gmaj7\"A2 G F \"A7sus4\"E2 D2 | \"Bm7\"F2 G2 B4- | \"Em7\"B2 A G \"A7\"F2 E2 |\n"
+  },
+  "B": {
+   "bars": 2,
+   "abc": "X:1\nM:4/4\nL:1/8\nK:D\nV:mel\n\"Bm7\"d2 c B \"F#m7\"A2 F2 | \"Gmaj7\"G2 F E \"A7sus4\"E4 |\n"
+  },
+  "A'": {
+   "bars": 2,
+   "abc": "X:1\nM:4/4\nL:1/8\nK:D\nV:mel\n\"D\"F2 G2 A4- | \"G\"A2 G F \"A7\"E2 \"D\"D2 |\nV:counter\nz4 c4 | d8 |\n"
+  },
+  "coda": {
+   "bars": 2,
+   "abc": "X:1\nM:4/4\nL:1/8\nK:D\nV:mel\n!p!\"G/D\"B,2 D2 G4 | \"D\"!fermata!F8 |\n"
+  }
+ },
+ "variation": {
+  "octave": [
+   0
+  ],
+  "paraphrase": 0,
+  "ornament": 0.1
+ },
+ "motifs": [],
+ "notes": "The smallest tide: two bars in 4/4, a breath in (third, fourth, fifth, held) and a breath out (down by step to the home note). Hymn-like; it says the most when it is said slowly. Spring: D major, bright piano; the bed comes in for the answer, a flute echoes the held note, harp touches the cadences."
+}

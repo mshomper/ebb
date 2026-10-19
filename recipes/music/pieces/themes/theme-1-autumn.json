@@ -1,0 +1,94 @@
+{
+ "id": "theme-1-autumn",
+ "title": "Theme 1, First water: autumn",
+ "version": 1,
+ "theme": {
+  "candidate": 1,
+  "name": "First water",
+  "season": "autumn"
+ },
+ "slots": [
+  "theme"
+ ],
+ "seasons": [
+  "autumn"
+ ],
+ "weather": [],
+ "requires": {},
+ "avoidWhen": {},
+ "keys": [
+  "Edor"
+ ],
+ "mode": "dorian",
+ "meter": "3/4",
+ "tempo": [
+  66,
+  74
+ ],
+ "palette": {
+  "melody": [
+   "piano"
+  ],
+  "accomp": [
+   "piano"
+  ],
+  "counter": [
+   "cello",
+   "piano"
+  ],
+  "bed": [
+   "pad",
+   "strings"
+  ],
+  "touch": [
+   "harp",
+   "bell"
+  ]
+ },
+ "layers": {
+  "bed": {
+   "style": "warm",
+   "sections": {
+    "A": "in",
+    "B": "steady",
+    "A'": "swell",
+    "coda": "thin"
+   }
+  },
+  "touch": {
+   "chance": 0.7
+  }
+ },
+ "form": {
+  "grammar": "A B A' coda",
+  "short": "A B A' coda",
+  "optional": {}
+ },
+ "sections": {
+  "A": {
+   "bars": 4,
+   "abc": "X:1\nM:3/4\nL:1/8\nK:Edor\nV:mel\n!p!\"Em\"E3 F G2 | \"A\"A2 B4- | \"Bm7\"B2 A G F2 | \"Em\"E4 \"D\"D2 |\n"
+  },
+  "B": {
+   "bars": 4,
+   "abc": "X:1\nM:3/4\nL:1/8\nK:Edor\nV:mel\n\"Em\"B6 | \"A\"c6 | \"Bm7\"d6 | \"Em\"B4 \"D\"A2 |\nV:counter\nE,3 F, G,2 | A,2 B,4- | B,2 A, G, F,2 | E,4 D,2 |\n"
+  },
+  "A'": {
+   "bars": 4,
+   "abc": "X:1\nM:3/4\nL:1/8\nK:Edor\nV:mel\n\"Em\"E3 F G2 | \"A\"A2 B4- | \"Bm7\"B2 A G \"D\"F2 | \"Em\"E6 |\n"
+  },
+  "coda": {
+   "bars": 2,
+   "abc": "X:1\nM:3/4\nL:1/8\nK:Edor\nV:mel\n!pp!\"A/E\"E2 A2 c2 | \"Em\"!fermata!B6 |\n"
+  }
+ },
+ "variation": {
+  "octave": [
+   0
+  ],
+  "paraphrase": 0,
+  "ornament": 0.1
+ },
+ "motifs": [],
+ "notes": "A waltz-like tide in 3/4: up by step from the home note to the fifth, held across the bar, then down past the start to the leading note. Plain and singable; the held note is the high water. Autumn: E Dorian, lower and rounder; the answer puts the theme in the bass on the cello under a high held line."
+}

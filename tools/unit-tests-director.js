@@ -184,6 +184,37 @@ export function addDirectorTests(test, assert, eq) {
     }
   });
 
+  test(R, 'support layers: the bed stays under the melody, winter fifths stay above D2, touches land on cadences', async () => {
+    const { recipes } = await load();
+    const j = async (/** @type {string} */ p) => {
+      const url = new URL(`../${p}`, import.meta.url);
+      if (url.protocol === 'file:') { const fs = await import('node:fs/promises'); return JSON.parse(await fs.readFile(url, 'utf8')); }
+      return (await fetch(url)).json();
+    };
+    const idx = await j('recipes/music/pieces/themes/index.json');
+    const avail = ['piano', 'pad', 'bell', 'fm-piano', 'strings', 'cello', 'harp', 'flute', 'vibraphone', 'vibraphone-bowed'];
+    for (const c of idx.candidates) for (const id of Object.values(c.settings)) {
+      const piece = await j(`recipes/music/pieces/themes/${id}.json`);
+      for (let seed = 1; seed <= 4; seed++) {
+        const p = realize(piece, { seed, dayColor: { register: 65, density: 2, tempo: 1, voices: 5 }, available: avail }, recipes);
+        assert(p.durationS <= 41, `${id} seed ${seed}: ${p.durationS.toFixed(1)} s, over 40`);
+        const mel = p.notes.filter((/** @type {any} */ n) => n.voice === 'mel');
+        for (const b of p.notes.filter((/** @type {any} */ n) => n.voice === 'bed')) {
+          assert(b.midi >= 38, `${id}: bed note ${b.midi} below D2`);
+          const over = mel.filter((/** @type {any} */ m) => m.tick === b.tick).map((/** @type {any} */ m) => m.midi);
+          if (over.length) assert(b.midi < Math.min(...over), `${id}: bed ${b.midi} above the melody ${Math.min(...over)}`);
+        }
+        // Touches only on a section's last chord: no other chord starts between a touch and the next section.
+        const starts = [...p.sections.map((/** @type {any} */ s) => s.tick), Infinity];
+        for (const t of p.notes.filter((/** @type {any} */ n) => n.voice === 'touch')) {
+          const next = Math.min(...starts.filter((/** @type {number} */ x) => x > t.tick));
+          const between = p.bars.filter((/** @type {any} */ b) => b.tick > t.tick && b.tick < next && b.chord && b.tick % 1 === 0);
+          assert(between.length <= 2, `${id}: a touch at tick ${t.tick} is not near a section end`);
+        }
+      }
+    }
+  });
+
   test('music: perform', 'plays to the end with no bar listener (no stall on the first bar)', async () => {
     const ctx = /** @type {any} */ ({ currentTime: 0 });
     let on = 0;

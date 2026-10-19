@@ -1,0 +1,95 @@
+{
+ "id": "theme-4-summer",
+ "title": "Theme 4, Moon pull: summer",
+ "version": 1,
+ "theme": {
+  "candidate": 4,
+  "name": "Moon pull",
+  "season": "summer"
+ },
+ "slots": [
+  "theme"
+ ],
+ "seasons": [
+  "summer"
+ ],
+ "weather": [],
+ "requires": {},
+ "avoidWhen": {},
+ "keys": [
+  "F"
+ ],
+ "mode": "ionian",
+ "meter": "3/4",
+ "tempo": [
+  84,
+  92
+ ],
+ "palette": {
+  "melody": [
+   "fm-piano",
+   "piano"
+  ],
+  "accomp": [
+   "piano"
+  ],
+  "counter": [
+   "vibraphone",
+   "bell"
+  ],
+  "bed": [
+   "strings",
+   "pad"
+  ],
+  "touch": [
+   "vibraphone",
+   "bell"
+  ]
+ },
+ "layers": {
+  "bed": {
+   "style": "warm",
+   "sections": {
+    "A": "in",
+    "B": "swell",
+    "A'": "steady",
+    "coda": "thin"
+   }
+  },
+  "touch": {
+   "chance": 0.9
+  }
+ },
+ "form": {
+  "grammar": "A B A' coda",
+  "short": "A B A' coda",
+  "optional": {}
+ },
+ "sections": {
+  "A": {
+   "bars": 4,
+   "abc": "X:1\nM:3/4\nL:1/8\nK:F\nV:mel\n!mp!\"F\"F G A B c d- | \"Gm7\"d4 c2 | \"Am7\"A2 G2 E2 | \"C\"C6 |\n"
+  },
+  "B": {
+   "bars": 4,
+   "abc": "X:1\nM:3/4\nL:1/8\nK:F\nV:mel\n\"Bbmaj7\"B2 d2 f2 | \"Am7\"e4 c2 | \"Gm7\"d2 B2 G2 | \"Csus4\"F4 \"C\"E2 |\n"
+  },
+  "A'": {
+   "bars": 4,
+   "abc": "X:1\nM:3/4\nL:1/8\nK:F\nV:mel\n\"F\"F G A B c d- | \"Bbmaj7\"d4 c2 | \"Gm7\"A2 G2 \"C7\"E2 | \"F\"F6 |\nV:counter\nz6 | f4 e2 | c4 B2 | A6 |\n"
+  },
+  "coda": {
+   "bars": 2,
+   "abc": "X:1\nM:3/4\nL:1/8\nK:F\nV:mel\n!p!\"Bb/F\"B2 d2 f2 | \"F\"!fermata!f6 |\n"
+  }
+ },
+ "variation": {
+  "octave": [
+   0
+  ],
+  "paraphrase": 0,
+  "ornament": 0.1
+ },
+ "motifs": [],
+ "notes": "A 3/4 tide that runs up the scale in one breath to the sixth and leans on it (the pull of something just out of reach), then falls in thirds and steps past the start to the fifth below. Summer: F major with the morning lift (a busier answer); the code-built piano leads, a warm string bed, vibraphone touches."
+}

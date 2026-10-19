@@ -1,0 +1,94 @@
+{
+ "id": "theme-2-autumn",
+ "title": "Theme 2, Sandbar: autumn",
+ "version": 1,
+ "theme": {
+  "candidate": 2,
+  "name": "Sandbar",
+  "season": "autumn"
+ },
+ "slots": [
+  "theme"
+ ],
+ "seasons": [
+  "autumn"
+ ],
+ "weather": [],
+ "requires": {},
+ "avoidWhen": {},
+ "keys": [
+  "Edor"
+ ],
+ "mode": "dorian",
+ "meter": "6/8",
+ "tempo": [
+  60,
+  66
+ ],
+ "palette": {
+  "melody": [
+   "piano"
+  ],
+  "accomp": [
+   "piano"
+  ],
+  "counter": [
+   "cello",
+   "piano"
+  ],
+  "bed": [
+   "pad",
+   "strings"
+  ],
+  "touch": [
+   "harp",
+   "bell"
+  ]
+ },
+ "layers": {
+  "bed": {
+   "style": "warm",
+   "sections": {
+    "A": "in",
+    "B": "steady",
+    "A'": "swell",
+    "coda": "thin"
+   }
+  },
+  "touch": {
+   "chance": 0.7
+  }
+ },
+ "form": {
+  "grammar": "A B A' coda",
+  "short": "A B A' coda",
+  "optional": {}
+ },
+ "sections": {
+  "A": {
+   "bars": 4,
+   "abc": "X:1\nM:6/8\nL:1/8\nK:Edor\nV:mel\n!p!\"F#m7\"C2 D E2 F | \"G\"G6- | \"A7\"G2 F E D C | \"Em/B\"B,6 |\n"
+  },
+  "B": {
+   "bars": 4,
+   "abc": "X:1\nM:6/8\nL:1/8\nK:Edor\nV:mel\n\"F#m7\"e6 | \"G\"d6 | \"A7\"c6 | \"Em\"B6 |\nV:counter\nC,2 D, E,2 F, | G,6- | G,2 F, E, D, C, | B,,6 |\n"
+  },
+  "A'": {
+   "bars": 4,
+   "abc": "X:1\nM:6/8\nL:1/8\nK:Edor\nV:mel\n\"F#m7\"C2 D E2 F | \"G\"G3- G2 B | \"A7\"A2 G F E D | \"Em\"E6 |\n"
+  },
+  "coda": {
+   "bars": 2,
+   "abc": "X:1\nM:6/8\nL:1/8\nK:Edor\nV:mel\n!pp!\"A/E\"E2 A c2 e | \"Em\"!fermata!B6 |\n"
+  }
+ },
+ "variation": {
+  "octave": [
+   0
+  ],
+  "paraphrase": 0,
+  "ornament": 0.1
+ },
+ "motifs": [],
+ "notes": "A lilting 6/8 tide that starts below the home note, on the sixth, climbs by step to the third and holds it a whole bar, then slips down past the start to the fifth below. A little wistful; it begins on the minor chord. Autumn: E Dorian, lower and rounder; the answer puts the theme in the bass on the cello under a high held line."
+}

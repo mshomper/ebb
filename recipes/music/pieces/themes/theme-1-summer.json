@@ -1,0 +1,95 @@
+{
+ "id": "theme-1-summer",
+ "title": "Theme 1, First water: summer",
+ "version": 1,
+ "theme": {
+  "candidate": 1,
+  "name": "First water",
+  "season": "summer"
+ },
+ "slots": [
+  "theme"
+ ],
+ "seasons": [
+  "summer"
+ ],
+ "weather": [],
+ "requires": {},
+ "avoidWhen": {},
+ "keys": [
+  "F"
+ ],
+ "mode": "ionian",
+ "meter": "3/4",
+ "tempo": [
+  84,
+  92
+ ],
+ "palette": {
+  "melody": [
+   "fm-piano",
+   "piano"
+  ],
+  "accomp": [
+   "piano"
+  ],
+  "counter": [
+   "vibraphone",
+   "bell"
+  ],
+  "bed": [
+   "strings",
+   "pad"
+  ],
+  "touch": [
+   "vibraphone",
+   "bell"
+  ]
+ },
+ "layers": {
+  "bed": {
+   "style": "warm",
+   "sections": {
+    "A": "in",
+    "B": "swell",
+    "A'": "steady",
+    "coda": "thin"
+   }
+  },
+  "touch": {
+   "chance": 0.9
+  }
+ },
+ "form": {
+  "grammar": "A B A' coda",
+  "short": "A B A' coda",
+  "optional": {}
+ },
+ "sections": {
+  "A": {
+   "bars": 4,
+   "abc": "X:1\nM:3/4\nL:1/8\nK:F\nV:mel\n!mp!\"F\"F3 G A2 | \"Bbmaj7\"B2 c4- | \"C7\"c2 B A G2 | \"F\"F4 \"C/E\"E2 |\n"
+  },
+  "B": {
+   "bars": 4,
+   "abc": "X:1\nM:3/4\nL:1/8\nK:F\nV:mel\n\"Dm7\"D2 F A d2 | \"Bbmaj7\"d2 c B c2 | \"Gm7\"B A G F G2 | \"C\"G6 |\n"
+  },
+  "A'": {
+   "bars": 4,
+   "abc": "X:1\nM:3/4\nL:1/8\nK:F\nV:mel\n\"F\"F3 G A2 | \"Bbmaj7\"B2 c4- | \"Csus4\"c2 B A \"C7\"G2 | \"F\"F6 |\nV:counter\nz6 | z2 d2 e2 | f4 e2 | f6 |\n"
+  },
+  "coda": {
+   "bars": 2,
+   "abc": "X:1\nM:3/4\nL:1/8\nK:F\nV:mel\n!p!\"Bb/F\"D2 F2 B2 | \"F\"!fermata!A6 |\n"
+  }
+ },
+ "variation": {
+  "octave": [
+   0
+  ],
+  "paraphrase": 0,
+  "ornament": 0.1
+ },
+ "motifs": [],
+ "notes": "A waltz-like tide in 3/4: up by step from the home note to the fifth, held across the bar, then down past the start to the leading note. Plain and singable; the held note is the high water. Summer: F major with the morning lift (a busier answer); the code-built piano leads, a warm string bed, vibraphone touches."
+}

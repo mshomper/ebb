@@ -1,0 +1,94 @@
+{
+ "id": "theme-4-spring",
+ "title": "Theme 4, Moon pull: spring",
+ "version": 1,
+ "theme": {
+  "candidate": 4,
+  "name": "Moon pull",
+  "season": "spring"
+ },
+ "slots": [
+  "theme"
+ ],
+ "seasons": [
+  "spring"
+ ],
+ "weather": [],
+ "requires": {},
+ "avoidWhen": {},
+ "keys": [
+  "D"
+ ],
+ "mode": "ionian",
+ "meter": "3/4",
+ "tempo": [
+  76,
+  84
+ ],
+ "palette": {
+  "melody": [
+   "piano"
+  ],
+  "accomp": [
+   "piano"
+  ],
+  "counter": [
+   "flute",
+   "bell"
+  ],
+  "bed": [
+   "strings",
+   "pad"
+  ],
+  "touch": [
+   "harp",
+   "bell"
+  ]
+ },
+ "layers": {
+  "bed": {
+   "style": "warm",
+   "sections": {
+    "A": "out",
+    "B": "swell",
+    "A'": "steady",
+    "coda": "thin"
+   }
+  },
+  "touch": {
+   "chance": 0.8
+  }
+ },
+ "form": {
+  "grammar": "A B A' coda",
+  "short": "A B A' coda",
+  "optional": {}
+ },
+ "sections": {
+  "A": {
+   "bars": 4,
+   "abc": "X:1\nM:3/4\nL:1/8\nK:D\nV:mel\n!mp!\"D\"D E F G A B- | \"Em7\"B4 A2 | \"F#m7\"F2 E2 C2 | \"A\"A,6 |\n"
+  },
+  "B": {
+   "bars": 4,
+   "abc": "X:1\nM:3/4\nL:1/8\nK:D\nV:mel\n\"Gmaj7\"G2 B2 d2 | \"F#m7\"c4 A2 | \"Em7\"B2 G2 E2 | \"Asus4\"D4 \"A\"C2 |\n"
+  },
+  "A'": {
+   "bars": 4,
+   "abc": "X:1\nM:3/4\nL:1/8\nK:D\nV:mel\n\"D\"D E F G A B- | \"Gmaj7\"B4 A2 | \"Em7\"F2 E2 \"A7\"C2 | \"D\"D6 |\nV:counter\nz6 | d4 c2 | A4 G2 | F6 |\n"
+  },
+  "coda": {
+   "bars": 2,
+   "abc": "X:1\nM:3/4\nL:1/8\nK:D\nV:mel\n!p!\"G/D\"G2 B2 d2 | \"D\"!fermata!d6 |\n"
+  }
+ },
+ "variation": {
+  "octave": [
+   0
+  ],
+  "paraphrase": 0,
+  "ornament": 0.1
+ },
+ "motifs": [],
+ "notes": "A 3/4 tide that runs up the scale in one breath to the sixth and leans on it (the pull of something just out of reach), then falls in thirds and steps past the start to the fifth below. Spring: D major, bright piano; the bed comes in for the answer, a flute echoes the held note, harp touches the cadences."
+}

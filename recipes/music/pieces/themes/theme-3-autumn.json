@@ -1,0 +1,94 @@
+{
+ "id": "theme-3-autumn",
+ "title": "Theme 3, Breath: autumn",
+ "version": 1,
+ "theme": {
+  "candidate": 3,
+  "name": "Breath",
+  "season": "autumn"
+ },
+ "slots": [
+  "theme"
+ ],
+ "seasons": [
+  "autumn"
+ ],
+ "weather": [],
+ "requires": {},
+ "avoidWhen": {},
+ "keys": [
+  "Edor"
+ ],
+ "mode": "dorian",
+ "meter": "4/4",
+ "tempo": [
+  66,
+  72
+ ],
+ "palette": {
+  "melody": [
+   "piano"
+  ],
+  "accomp": [
+   "piano"
+  ],
+  "counter": [
+   "cello",
+   "piano"
+  ],
+  "bed": [
+   "pad",
+   "strings"
+  ],
+  "touch": [
+   "harp",
+   "bell"
+  ]
+ },
+ "layers": {
+  "bed": {
+   "style": "warm",
+   "sections": {
+    "A": "in",
+    "B": "steady",
+    "A'": "swell",
+    "coda": "thin"
+   }
+  },
+  "touch": {
+   "chance": 0.7
+  }
+ },
+ "form": {
+  "grammar": "A B A' coda",
+  "short": "A B A' coda",
+  "optional": {}
+ },
+ "sections": {
+  "A": {
+   "bars": 4,
+   "abc": "X:1\nM:4/4\nL:1/8\nK:Edor\nV:mel\n!p!\"Em\"G2 A2 B4- | \"A7\"B2 A G \"Em\"F2 E2 | \"G\"B2 c2 d4- | \"A7\"d2 c B \"Bm7\"A2 F2 |\n"
+  },
+  "B": {
+   "bars": 2,
+   "abc": "X:1\nM:4/4\nL:1/8\nK:Edor\nV:mel\n\"Em\"e8 | \"A7\"c8 |\nV:counter\nG,2 A,2 B,4- | B,2 A, G, F,2 E,2 |\n"
+  },
+  "A'": {
+   "bars": 2,
+   "abc": "X:1\nM:4/4\nL:1/8\nK:Edor\nV:mel\n\"Em\"G2 A2 B4- | \"A7\"B2 A G \"Em\"F2 E2 |\n"
+  },
+  "coda": {
+   "bars": 2,
+   "abc": "X:1\nM:4/4\nL:1/8\nK:Edor\nV:mel\n!pp!\"A/E\"E2 A2 c4 | \"Em\"!fermata!B8 |\n"
+  }
+ },
+ "variation": {
+  "octave": [
+   0
+  ],
+  "paraphrase": 0,
+  "ornament": 0.1
+ },
+ "motifs": [],
+ "notes": "The smallest tide: two bars in 4/4, a breath in (third, fourth, fifth, held) and a breath out (down by step to the home note). Hymn-like; it says the most when it is said slowly. Autumn: E Dorian, lower and rounder; the answer puts the theme in the bass on the cello under a high held line."
+}

@@ -1,0 +1,84 @@
+{
+ "id": "theme-4-winter",
+ "title": "Theme 4, Moon pull: winter",
+ "version": 1,
+ "theme": {
+  "candidate": 4,
+  "name": "Moon pull",
+  "season": "winter"
+ },
+ "slots": [
+  "theme"
+ ],
+ "seasons": [
+  "winter"
+ ],
+ "weather": [],
+ "requires": {},
+ "avoidWhen": {},
+ "keys": [
+  "Dm"
+ ],
+ "mode": "aeolian",
+ "meter": "3/4",
+ "tempo": [
+  48,
+  54
+ ],
+ "palette": {
+  "melody": [
+   "piano"
+  ],
+  "accomp": [
+   "piano"
+  ],
+  "counter": [
+   "vibraphone-bowed",
+   "glass",
+   "pad"
+  ],
+  "bed": [
+   "strings",
+   "pad"
+  ],
+  "touch": [
+   "bell"
+  ]
+ },
+ "layers": {
+  "bed": {
+   "style": "open-fifths",
+   "sections": {
+    "A": "swell",
+    "coda": "thin"
+   }
+  },
+  "touch": {
+   "chance": 0.5
+  }
+ },
+ "form": {
+  "grammar": "A coda",
+  "short": "A coda",
+  "optional": {}
+ },
+ "sections": {
+  "A": {
+   "bars": 8,
+   "abc": "X:1\nM:3/4\nL:1/8\nK:Dm\nV:mel\n!p!\"Dm\"D2 E2 F2 | \"Gm\"G2 A2 B2- | \"Bb\"B6- | \"Bbmaj7\"B2 A4 | \"Dm\"F4 E2- | \"C\"E2 C4 | \"Dm/A\"A,6- | \"A\"A,6 |\nV:counter\nz6 | z6 | f6- | f6 | a6- | a6 | z6 | z6 |\nV:acc\n[D,,A,,]6 | [G,,D,]6 | [B,,F,]6 | [B,,F,]6 | [D,,A,,]6 | [C,G,]6 | [D,,A,,]6 | [A,,E,]6 |\n"
+  },
+  "coda": {
+   "bars": 2,
+   "abc": "X:1\nM:3/4\nL:1/8\nK:Dm\nV:mel\n!pp!\"Bb\"F2 G2 A2 | \"Dm\"!fermata!D6 |\nV:acc\n[B,,F,]6 | [D,,A,,]6 |\n"
+  }
+ },
+ "variation": {
+  "octave": [
+   0
+  ],
+  "paraphrase": 0,
+  "ornament": 0.1
+ },
+ "motifs": [],
+ "notes": "A 3/4 tide that runs up the scale in one breath to the sixth and leans on it (the pull of something just out of reach), then falls in thirds and steps past the start to the fifth below. Winter: D minor, the theme in augmentation over open fifths, a bowed high line, and an inverted fragment to close."
+}

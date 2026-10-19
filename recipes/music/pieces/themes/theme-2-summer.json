@@ -1,0 +1,95 @@
+{
+ "id": "theme-2-summer",
+ "title": "Theme 2, Sandbar: summer",
+ "version": 1,
+ "theme": {
+  "candidate": 2,
+  "name": "Sandbar",
+  "season": "summer"
+ },
+ "slots": [
+  "theme"
+ ],
+ "seasons": [
+  "summer"
+ ],
+ "weather": [],
+ "requires": {},
+ "avoidWhen": {},
+ "keys": [
+  "F"
+ ],
+ "mode": "ionian",
+ "meter": "6/8",
+ "tempo": [
+  72,
+  80
+ ],
+ "palette": {
+  "melody": [
+   "fm-piano",
+   "piano"
+  ],
+  "accomp": [
+   "piano"
+  ],
+  "counter": [
+   "vibraphone",
+   "bell"
+  ],
+  "bed": [
+   "strings",
+   "pad"
+  ],
+  "touch": [
+   "vibraphone",
+   "bell"
+  ]
+ },
+ "layers": {
+  "bed": {
+   "style": "warm",
+   "sections": {
+    "A": "in",
+    "B": "swell",
+    "A'": "steady",
+    "coda": "thin"
+   }
+  },
+  "touch": {
+   "chance": 0.9
+  }
+ },
+ "form": {
+  "grammar": "A B A' coda",
+  "short": "A B A' coda",
+  "optional": {}
+ },
+ "sections": {
+  "A": {
+   "bars": 4,
+   "abc": "X:1\nM:6/8\nL:1/8\nK:F\nV:mel\n!mp!\"Dm7\"D2 E F2 G | \"Bbmaj7\"A6- | \"Gm7\"A2 G F \"C7\"E D | \"F/C\"C6 |\n"
+  },
+  "B": {
+   "bars": 4,
+   "abc": "X:1\nM:6/8\nL:1/8\nK:F\nV:mel\n\"Bbmaj7\"F2 G A2 c | \"C/Bb\"c3 B2 A | \"Am7\"G2 A B2 d | \"C7sus4\"c6 |\n"
+  },
+  "A'": {
+   "bars": 4,
+   "abc": "X:1\nM:6/8\nL:1/8\nK:F\nV:mel\n\"Dm7\"D2 E F2 G | \"Bbmaj7\"A3- A2 c | \"Gm7\"B2 A G \"C7\"F E | \"F\"F6 |\nV:counter\nz6 | z3 e3 | d3 c3 | A6 |\n"
+  },
+  "coda": {
+   "bars": 2,
+   "abc": "X:1\nM:6/8\nL:1/8\nK:F\nV:mel\n!p!\"Bb/F\"D2 F B2 d | \"F\"!fermata!c6 |\n"
+  }
+ },
+ "variation": {
+  "octave": [
+   0
+  ],
+  "paraphrase": 0,
+  "ornament": 0.1
+ },
+ "motifs": [],
+ "notes": "A lilting 6/8 tide that starts below the home note, on the sixth, climbs by step to the third and holds it a whole bar, then slips down past the start to the fifth below. A little wistful; it begins on the minor chord. Summer: F major with the morning lift (a busier answer); the code-built piano leads, a warm string bed, vibraphone touches."
+}
