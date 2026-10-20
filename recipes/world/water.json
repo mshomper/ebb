@@ -77,6 +77,9 @@
     "widthScale": 1.15,
     "thicknessNote": "The curtain is three layers through the water's body (back, middle, front, each with its own streaks; the outer ends round over). At the lip it is as thick as the water runs (flow / speed); over bulkM of drop it takes in air and bulks out to thicknessM, the first for a thread, the second for a full sheet.",
     "thicknessM": [0.03, 0.22],
+    "brinkNote": "Water leaves a brink at about the critical speed sqrt(g x depth) (a 2 cm film at 0.44 m/s, 20 cm at 1.4 m/s): brinkShare of it, never more than the sim's own speed. Each lip's arc is followed down until it meets the ground or water under it; the curtain reaches tuckM past that, into the ground or the plunge.",
+    "brinkShare": 1.0,
+    "tuckM": 0.15,
     "bulkM": 1.2,
     "qThreadsM2s": 0.0005,
     "qSheetM2s": 0.02,
@@ -88,7 +91,23 @@
     "sprayPuffs": 3,
     "sprayM": 0.5,
     "sprayOpacity": 0.5,
-    "hideWallDeg": 40
+    "hideWallDeg": 40,
+    "fluid": {
+      "note": "Volumetric falls near the eye (src/render/passes/falls-fluid.js): screen-space fluid rendering (van der Laan, Green and Sainz 2009; Green, GDC 2010). Each lip within the tier's fallsFluid.nearM sends droplets off its edge, ratePerLipS a second at a full sheet and threadShare of that at a trickle (kept to a few threads), each radiusM, growing by bulk as it falls; they leave at the lip's brink speed, or fast enough to follow a leaning face down but never above maxLeanMs; fall under gravity with drag per second and spread by turbulence (m/s2); slide down steep rock; and are gone on reaching flat ground or water, or after about their fall time (never more than lifeS). Drawn as spheres into depth and thickness images (density x each sphere's depth through it); the depth is smoothed over widthM (at most maxPx pixels either way, across then down, iterations times), neighbors further than depthSigmaM in depth counting less; then shaded as water: the scene behind bent by refraction (screen uv per m of thickness) and dimmed by pond water's absorption, white in meandering ropes where aerated water (whitened over aerateS of falling) adds up to whiteThicknessM, lit at whiteAlbedo; ripples rippleM across running down at rippleSpeedMs tilt the surface by rippleTilt; glassy water mirrors the sky at roughness, times sheen, with sun glints at glintRoughness; thin edges fade in over edgeThicknessM. Drawn at the tier's fallsFluid.scale of the render size. Curtains give way to it over fadeM.",
+      "ratePerLipS": 2400,
+      "threadShare": 0.06,
+      "radiusM": 0.055,
+      "bulk": 0.7,
+      "aerateS": 0.45,
+      "density": 1.0,
+      "lifeS": 3,
+      "maxLeanMs": 1.2,
+      "turbulence": 1.2,
+      "drag": 0.15,
+      "fadeM": 6,
+      "smooth": { "widthM": 0.22, "depthSigmaM": 0.25, "maxPx": 24, "iterations": 2 },
+      "shade": { "refraction": 0.15, "whiteAlbedo": 0.85, "whiteThicknessM": 0.2, "edgeThicknessM": 0.05, "roughness": 0.06, "rippleM": 0.09, "rippleSpeedMs": 3, "rippleTilt": 0.5, "sheen": 1.5, "glintRoughness": 0.05 }
+    }
   },
   "tools": {
     "note": "Pour and drain (water tool) add or remove water under the brush at up to rateLps at full strength. Springs: up to maxSprings placed by the player (sandbox now, the dragonflies' gift in normal play), each at one of the rates (L/s).",

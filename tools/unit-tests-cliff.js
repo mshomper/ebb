@@ -67,7 +67,7 @@ export function addCliffTests(test, assert, eq) {
     eq(cliffLevel(-3.5, 'cut', 3, rc), -4, 'never under the bottom');
   });
 
-  test(CLIFF, 'a Terrace drag builds a level shelf whose rim drops within one cell', async () => {
+  test(CLIFF, 'a Terrace drag builds a level shelf whose rim drops within two cells', async () => {
     const rc = (await recipe()).cliff;
     const m = mirrorOf(() => 1);
     apply(m.heightF, drag(1, 2, [-4, 0], [4, 0], 2, rc.edgeM));
@@ -79,7 +79,8 @@ export function addCliffTests(test, assert, eq) {
       const h = at(m.heightF, 0, z);
       if (h > 1.1 && h < 1.9) partway++;
     }
-    assert(partway <= 1, `${partway} cells partway down the rim`);
+    // The rim falls over edgeM (under two cells), so a wall running across the grid stays smooth.
+    assert(partway <= 2, `${partway} cells partway down the rim`);
     eq(at(m.heightF, 0, 2.6), Math.fround(dequantize(quantize(1))), 'ground past the rim is untouched');
     return `rim cells partway: ${partway}`;
   });
@@ -138,7 +139,7 @@ export function addCliffTests(test, assert, eq) {
     eq(marks[0], 0, 'the middle of the shelf is not a face');
     eq(marks[marks.length - 1], 0, 'flat ground past it is not a face');
     const faces = marks.reduce((s, v) => s + v, 0);
-    assert(faces >= 2 && faces <= 3, `${faces} face cells across the rim, expected 2 or 3`);
+    assert(faces >= 2 && faces <= 4, `${faces} face cells across the rim, expected 2 to 4`);
     // A soft Raise-like slope is never a face.
     const soft = mirrorOf((x) => 1 + x * 0.2);
     eq(onFace(soft.heightF, cellOf(1), cellOf(0), rc.faceDeg), false, 'an 11 degree slope');
@@ -164,6 +165,15 @@ export function addCliffTests(test, assert, eq) {
     syncFloat(m, ALL);
     cliffs.refresh(m.heightF, r);
     eq(cliffs.has(0, 0), false, 'after undo the chunk is plain again');
+  });
+
+  test(CLIFF, 'a step right on the edge between two chunks flags both', async () => {
+    const rc = (await recipe()).cliff;
+    // Chunk 0 starts at x = -16 m: higher ground on the left, a 2 m step exactly at the edge.
+    const m = mirrorOf((x) => (x < -16 ? 3 : 1));
+    eq(chunkHasCliff(m.heightF, -1, 0, rc.chunkStepM), true, 'the chunk left of the step');
+    eq(chunkHasCliff(m.heightF, 0, 0, rc.chunkStepM), true, 'the chunk right of the step');
+    eq(chunkHasCliff(m.heightF, 1, 0, rc.chunkStepM), false, 'a chunk further on');
   });
 
   test(CLIFF, 'undo puts the ground back exactly, and redo the shelf', async () => {

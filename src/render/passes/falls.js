@@ -3,26 +3,43 @@
 // a compute pass finds the lips where live water runs over a drop (water-falls.wgsl), then each lip
 // is drawn as a curtain along a gravity arc, with soft spray where strong falls land
 // (water-falls-draw.wgsl), blended into the HDR and depth tested. Draw counts come from the GPU
-// (indirect draws), capped per quality tier, so the CPU never waits on the count.
-// Recipe: water.json `falls`; tier: fallsMax, fallsRows. `?falls=0` turns it off.
+// (indirect draws), capped per quality tier, so the CPU never waits on the count. Near the eye the
+// falls are drawn as droplet water with real volume instead (falls-fluid.js), the curtains giving
+// way to it over a few meters.
+// Recipe: water.json `falls`; tier: fallsMax, fallsRows, fallsFluid. `?falls=0` turns it off;
+// `?fallsfluid=0` keeps the curtains everywhere.
 
 import { makeBuffer, makeShaderModule } from '../../core/gpu.js';
+import { createFallsFluid } from './falls-fluid.js';
 
 /** @typedef {import('../frame-graph.js').PassContext} PassContext */
 
-const FALLS_BYTES = 112;
+const FALLS_BYTES = 128;
 const LIP_BYTES = 48;
 /** Room for the largest tier's cap (ultra). */
 const MAX_LIPS = 4096;
 
 /**
  * @param {{ water: import('../../world/water/index.js').Water, terrain: import('../../world/terrain/index.js').Terrain,
- *   recipe: any, getTime: () => number, tier: { fallsMax?: number, fallsRows?: number } }} opts
- *   recipe: water.json `falls`; getTime: real seconds
+ *   recipe: any, getTime: () => number, tier: { fallsMax?: number, fallsRows?: number, fallsFluid?: { particles: number, nearM: number } },
+ *   absorption: number[], atmosphere: { probeView: GPUTextureView, probeSampler: GPUSampler },
+ *   getEye: () => ArrayLike<number>, getProjY: () => number, getOpaqueDepth?: () => GPUTexture | null }} opts
+ *   getOpaqueDepth: the scene depth before the water was drawn (passes/water.js); falls test against it,
+ *   so the water mesh's own film down a wall never hides them
+ *   recipe: water.json `falls`; getTime: real seconds; absorption: water.json look.absorptionPond
  */
 export function createFallsPass(opts) {
   const { water, recipe: R } = opts;
-  const off = new URLSearchParams(location.search).get('falls') === '0';
+  const search = new URLSearchParams(location.search);
+  const off = search.get('falls') === '0';
+  const fluidOff = search.get('fallsfluid') === '0';
+  /** @param {any} t */
+  const fluidTier = (t) => (fluidOff ? { ...t, fallsFluid: undefined } : t);
+  const fluid = createFallsFluid({ water, terrain: opts.terrain, falls: R, recipe: R.fluid, absorption: opts.absorption,
+    atmosphere: opts.atmosphere, getEye: opts.getEye, getProjY: opts.getProjY, tier: fluidTier(opts.tier), getOpaqueDepth: opts.getOpaqueDepth });
+  let lastTime = 0;
+  const dbg = search.has('fallsdbg');
+  let dbgFrame = 0, dbgBusy = false;
   const data = new ArrayBuffer(FALLS_BYTES);
   const f = new Float32Array(data);
   const u = new Uint32Array(data);
@@ -32,6 +49,7 @@ export function createFallsPass(opts) {
   f[16] = R.albedo; f[17] = R.opacity; f[18] = R.sprayFromM2s; f[19] = R.sprayM;
   f[20] = R.sprayOpacity; f[21] = R.lipStepM; f[22] = R.lipReachM; u[23] = R.sprayPuffs;
   f[24] = R.thicknessM[0]; f[25] = R.thicknessM[1]; f[26] = R.bulkM;
+  f[27] = R.brinkShare; f[28] = R.tuckM;
   /** @param {{ fallsMax?: number, fallsRows?: number }} t */
   const applyTier = (t) => { u[7] = Math.min(MAX_LIPS, t.fallsMax ?? 1024); u[8] = Math.max(2, t.fallsRows ?? 8); };
   applyTier(opts.tier);
@@ -46,7 +64,8 @@ export function createFallsPass(opts) {
   /** @type {GPURenderPipeline} */ let sprayPipe;
   /** @type {GPUBindGroup[]} */ let detectGroups = [];
   /** @type {GPUBindGroup} */ let argsGroup;
-  /** @type {GPUBindGroup} */ let drawGroup;
+  /** @type {GPUBindGroup | null} */ let drawGroup = null;
+  /** @type {GPUBindGroupLayout} */ let drawLayout;
   const zero = new Uint32Array(4);
 
   return {
@@ -56,14 +75,15 @@ export function createFallsPass(opts) {
     enabled: () => !off,
 
     /** Follow a new quality tier. @param {{ fallsMax?: number, fallsRows?: number }} t */
-    setTier(t) { applyTier(t); },
+    /** @returns {boolean} true when the droplet water's images change size (invalidate the graph) */
+    setTier(t) { applyTier(t); return fluid.setTier(fluidTier(t)); },
 
     /** @param {PassContext} ctx */
     async setup(ctx) {
       const { device } = ctx;
       ubuf = makeBuffer(device, { label: 'falls', size: FALLS_BYTES, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
-      lipBuf = makeBuffer(device, { label: 'falls-lips', size: MAX_LIPS * LIP_BYTES, usage: GPUBufferUsage.STORAGE });
-      counter = makeBuffer(device, { label: 'falls-count', size: 16, usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST });
+      lipBuf = makeBuffer(device, { label: 'falls-lips', size: MAX_LIPS * LIP_BYTES, usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC });
+      counter = makeBuffer(device, { label: 'falls-count', size: 16, usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC });
       argBuf = makeBuffer(device, { label: 'falls-args', size: 32, usage: GPUBufferUsage.STORAGE | GPUBufferUsage.INDIRECT });
       const [cModule, dModule] = await Promise.all([makeShaderModule(device, 'water-falls'), makeShaderModule(device, 'water-falls-draw')]);
       [detectPipe, argsPipe] = await Promise.all([
@@ -96,9 +116,10 @@ export function createFallsPass(opts) {
         entries: [
           { binding: 0, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: {} },
           { binding: 1, visibility: GPUShaderStage.VERTEX, buffer: { type: 'read-only-storage' } },
+          { binding: 2, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: 'depth' } },
         ],
       });
-      drawGroup = device.createBindGroup({ label: 'falls-draw', layout, entries: [{ binding: 0, resource: { buffer: ubuf } }, { binding: 1, resource: { buffer: lipBuf } }] });
+      drawLayout = layout;
       const pipeLayout = device.createPipelineLayout({ label: 'falls', bindGroupLayouts: [ctx.layouts.frame, ctx.layouts.lighting, layout] });
       /** @param {string} vs @param {string} fs */
       const make = (vs, fs) => device.createRenderPipelineAsync({
@@ -112,19 +133,32 @@ export function createFallsPass(opts) {
             alpha: { srcFactor: 'one', dstFactor: 'one-minus-src-alpha', operation: 'add' } } }],
         },
         primitive: { topology: 'triangle-list', cullMode: 'none' },
-        depthStencil: { format: 'depth32float', depthWriteEnabled: false, depthCompare: 'greater' },
+        // Tested against the land-only depth in the shader instead (behindLand).
+        depthStencil: { format: 'depth32float', depthWriteEnabled: false, depthCompare: 'always' },
       });
       [curtainPipe, sprayPipe] = await Promise.all([make('vsCurtain', 'fsCurtain'), make('vsSpray', 'fsSpray')]);
+      await fluid.setup(ctx, { lips: lipBuf, counter });
     },
 
-    resize() {},
+    /** @param {PassContext} ctx */
+    resize(ctx) {
+      const depth = opts.getOpaqueDepth?.() ?? ctx.targets.depth;
+      drawGroup = ctx.device.createBindGroup({ label: 'falls-draw', layout: drawLayout, entries: [
+        { binding: 0, resource: { buffer: ubuf } }, { binding: 1, resource: { buffer: lipBuf } }, { binding: 2, resource: depth.createView() }] });
+      fluid.resize(ctx);
+    },
 
     /** @param {GPUCommandEncoder} encoder @param {PassContext} ctx */
     record(encoder, ctx) {
       const r = water.rect;
-      if (!curtainPipe || r.w < 4 || r.h < 4) return;
+      if (!curtainPipe || !drawGroup || r.w < 4 || r.h < 4) return;
       u[0] = r.x; u[1] = r.y; u[2] = r.w; u[3] = r.h;
-      f[9] = opts.getTime() % 3600;
+      const now = opts.getTime();
+      const dt = lastTime ? Math.max(0, now - lastTime) : 0;
+      lastTime = now;
+      f[9] = now % 3600;
+      // Within nearM of the eye the droplet water takes over from the curtains (0: curtains only).
+      f[29] = fluid.nearM; f[30] = R.fluid.fadeM;
       ctx.device.queue.writeBuffer(ubuf, 0, data);
       ctx.device.queue.writeBuffer(counter, 0, zero);
       const cp = encoder.beginComputePass({ label: 'falls-detect' });
@@ -135,11 +169,14 @@ export function createFallsPass(opts) {
       cp.setBindGroup(0, argsGroup);
       cp.dispatchWorkgroups(1);
       cp.end();
+      fluid.encodeSim(encoder, ctx.device, dt, now % 3600, u[7]);
+      const ts = ctx.timestampWrites('falls');
       const pass = encoder.beginRenderPass({
         label: 'falls',
         colorAttachments: [{ view: ctx.targets.hdr.createView(), loadOp: 'load', storeOp: 'store' }],
         depthStencilAttachment: { view: ctx.targets.depth.createView(), depthReadOnly: true },
-        timestampWrites: ctx.timestampWrites('falls'),
+        // One timing for curtains and droplet water together: it ends with the water's shading.
+        timestampWrites: ts && fluid.on ? { querySet: ts.querySet, beginningOfPassWriteIndex: ts.beginningOfPassWriteIndex } : ts,
       });
       pass.setBindGroup(0, ctx.groups.frame);
       pass.setBindGroup(1, ctx.groups.lighting);
@@ -149,6 +186,21 @@ export function createFallsPass(opts) {
       pass.setPipeline(sprayPipe);
       pass.drawIndirect(argBuf, 16);
       pass.end();
+      fluid.encodeDraw(encoder, ctx, ts && { querySet: ts.querySet, endOfPassWriteIndex: ts.endOfPassWriteIndex });
+      // `?fallsdbg` (tools): every second, the lips found, on window.ebbLips for the console.
+      if (dbg && !dbgBusy && ++dbgFrame % 60 === 0) {
+        dbgBusy = true;
+        const n = 64 * LIP_BYTES;
+        const read = ctx.device.createBuffer({ size: n + 16, usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST });
+        encoder.copyBufferToBuffer(lipBuf, 0, read, 0, n);
+        encoder.copyBufferToBuffer(counter, 0, read, n, 16);
+        queueMicrotask(() => setTimeout(() => read.mapAsync(GPUMapMode.READ).then(() => {
+          const f32 = new Float32Array(read.getMappedRange().slice(0));
+          const count = new Uint32Array(f32.buffer, n, 1)[0];
+          /** @type {any} */ (window).ebbLips = { count, lips: Array.from({ length: Math.min(count, 64) }, (_, k) => Array.from(f32.subarray(k * 12, k * 12 + 12)).map((v) => Math.round(v * 1000) / 1000)) };
+          read.destroy(); dbgBusy = false;
+        }), 50));
+      }
     },
   };
 }

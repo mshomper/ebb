@@ -130,6 +130,8 @@ export function createWaterPass(opts) {
 
   return {
     name: 'water',
+    /** The scene's depth before the water was drawn (land and rocks only): waterfalls test against it. */
+    get opaqueDepth() { return depthCopy; },
 
     /** Apply a quality tier's ripple distance (the startup probe may step down). @param {number} m */
     setDetailFade(m) { f[65] = m; },

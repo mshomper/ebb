@@ -27,7 +27,9 @@ const index = (x, cell) => Math.floor((x - ORIGIN) / cell);
 /**
  * Run csDetect once over a terrace whose shelf (x < 0) stands `shelf` m above ground at 1 m, with
  * `depth` m of water on the shelf flowing at `vx` m/s.
- * @param {GPUDevice} dev @param {{ shelf: number, depth: number, vx: number }} s
+ * @param {GPUDevice} dev @param {{ shelf: number, depth: number, vx: number, ground?: (x: number) => number, profile?: (x: number) => number }} s
+ *   profile: the whole ground's height by x, in place of shelf and ground
+ *   ground: the ground's height past the edge (default level at 1 m)
  */
 async function detect(dev, s) {
   const recipe = (await (await fetch('../recipes/world/water.json')).json()).falls;
@@ -35,7 +37,11 @@ async function detect(dev, s) {
   const module = dev.createShaderModule({ code });
   const pipe = await dev.createComputePipelineAsync({ layout: 'auto', compute: { module, entryPoint: 'csDetect' } });
   const height = new Float32Array(T * T);
-  for (let j = 0; j < T; j++) for (let i = 0; i < T; i++) height[j * T + i] = ORIGIN + (i + 0.5) * 0.25 < 0 ? 1 + s.shelf : 1;
+  const below = s.ground ?? (() => 1);
+  for (let j = 0; j < T; j++) for (let i = 0; i < T; i++) {
+    const x = ORIGIN + (i + 0.5) * 0.25;
+    height[j * T + i] = s.profile ? s.profile(x) : x < 0 ? 1 + s.shelf : below(x);
+  }
   const depth = new Float32Array(W * W);
   const vel = new Float32Array(W * W * 2);
   for (let j = 0; j < W; j++) for (let i = 0; i < W; i++) {
@@ -49,11 +55,11 @@ async function detect(dev, s) {
   };
   const hT = tex('r32float', T, height, 4), dT = tex('r32float', W, depth, 4), vT = tex('rg32float', W, vel, 8);
   const rect = { x: index(-4, 0.5), y: index(-2, 0.5), w: 16, h: 8 };
-  const ub = new ArrayBuffer(112), f = new Float32Array(ub), u = new Uint32Array(ub);
+  const ub = new ArrayBuffer(128), f = new Float32Array(ub), u = new Uint32Array(ub);
   u[0] = rect.x; u[1] = rect.y; u[2] = rect.w; u[3] = rect.h;
   f[4] = recipe.minDropM; f[5] = recipe.minDepthM; f[6] = recipe.minSpeedMs; u[7] = 256;
-  f[21] = recipe.lipStepM; f[22] = recipe.lipReachM;
-  const uniform = dev.createBuffer({ size: 112, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
+  f[21] = recipe.lipStepM; f[22] = recipe.lipReachM; f[27] = recipe.brinkShare; f[10] = recipe.offsetM;
+  const uniform = dev.createBuffer({ size: 128, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
   dev.queue.writeBuffer(uniform, 0, ub);
   const lips = dev.createBuffer({ size: 256 * 48, usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC });
   const counter = dev.createBuffer({ size: 16, usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC });
@@ -79,7 +85,7 @@ async function detect(dev, s) {
   const out = [];
   for (let k = 0; k < Math.min(n, 256); k++) {
     const o = k * 12;
-    out.push({ x: all[o], top: all[o + 1], z: all[o + 2], foot: all[o + 3], dx: all[o + 4], dz: all[o + 5], speed: all[o + 6], q: all[o + 7], left: all[o + 8], right: all[o + 9] });
+    out.push({ x: all[o], top: all[o + 1], z: all[o + 2], foot: all[o + 3], dx: all[o + 4], dz: all[o + 5], speed: all[o + 6], q: all[o + 7], left: all[o + 8], right: all[o + 9], slide: all[o + 10] });
   }
   for (const b of [hT, dT, vT]) b.destroy();
   for (const b of [uniform, lips, counter, readLips, readCount]) b.destroy();
@@ -110,12 +116,46 @@ export function addFallsTests(test, assert, eq) {
       eq(l.dx, 1, 'falls toward +x');
       assert(Math.abs(l.x) < 0.15, `the edge is at ${l.x.toFixed(3)} m, not at the step (0 m)`);
       assert(Math.abs(l.top - 2.52) < 0.01, `top ${l.top.toFixed(3)} m, not the shelf water at 2.52`);
-      assert(Math.abs(l.foot - 1) < 0.01, `foot ${l.foot.toFixed(3)} m, not the ground at 1`);
+      // Lands on the ground at 1 m, or on the last of the wall's slope just above it (the drawn
+      // ground runs from the rim cell to the foot cell across a quarter meter).
+      assert(l.foot >= 0.999 && l.foot < 1.2, `foot ${l.foot.toFixed(3)} m, not the ground at 1`);
       assert(Math.abs(l.q - 0.006) < 1e-4, `flow ${l.q} m2/s, not depth x speed (0.006)`);
     }
     const inner = lips.filter((l) => l.left && l.right).length;
     eq(inner, 4, 'lips with a neighbor on both ends (the two end lips have one)');
     return `edge at ${lips[0].x.toFixed(3)} m`;
+  });
+
+  test(FALLS, 'a fall onto ground sloping away lands where the arc meets it, not at the cliff foot, and leaves a thin film slowly', async () => {
+    const dev = await device();
+    if (!dev) return NO_GPU;
+    // Ground past the edge drops away at 45 degrees from 1 m: the arc reaches it further down.
+    const lips = await detect(dev, { shelf: 1.5, depth: 0.02, vx: 3, ground: (x) => 1 - x });
+    assert(lips.length > 0, 'no lips found');
+    const l = lips[0];
+    const brink = Math.sqrt(9.81 * 0.02);
+    assert(l.speed <= brink + 1e-4, `thrown at ${l.speed.toFixed(2)} m/s, faster than the brink speed ${brink.toFixed(2)}`);
+    // Where the arc lands: y = top - g t^2 / 2 meets 1 - x, x = edge + offset + v t.
+    assert(l.foot < 0.97, `lands at ${l.foot.toFixed(3)} m: it stopped at the foot of the cliff`);
+    return `lands at ${l.foot.toFixed(2)} m, thrown at ${l.speed.toFixed(2)} m/s`;
+  });
+
+  test(FALLS, 'over a wall that leans out at its foot, the water comes down the face to the ground', async () => {
+    const dev = await device();
+    if (!dev) return NO_GPU;
+    // A Terrace wall as the tool makes it: 1.5 m, leaning out over 0.4 m, eased at top and foot.
+    const profile = (/** @type {number} */ x) => {
+      if (x < 0) return 2.5;
+      if (x > 0.4) return 1;
+      const u = x / 0.4;
+      return 2.5 - 1.5 * u * u * (3 - 2 * u);
+    };
+    const lips = await detect(dev, { shelf: 1.5, depth: 0.02, vx: 0.3, profile });
+    assert(lips.length > 0, 'no lips found');
+    const l = lips[0];
+    assert(l.foot < 1.1, `lands at ${l.foot.toFixed(3)} m, on the wall's face, not at its foot (1 m)`);
+    assert(l.slide > 0.1, `slides out ${l.slide.toFixed(2)} m: the water would fall inside the leaning rock`);
+    return `edge at ${l.x.toFixed(2)} m, slides out ${l.slide.toFixed(2)} m, lands at ${l.foot.toFixed(2)} m`;
   });
 
   test(FALLS, 'no lips when the water flows away from the edge, or over a small step', async () => {

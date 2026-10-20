@@ -16,13 +16,18 @@ struct Falls {
   qThreads: f32, qSheet: f32, streakM: f32, streakRate: f32,
   albedo: f32, opacity: f32, sprayFrom: f32, sprayM: f32,
   sprayOpacity: f32, lipStep: f32, lipReach: f32, sprayPuffs: u32,
-  thickMin: f32, thickMax: f32, bulkM: f32, _p0: f32,  // the water's thickness at a thread and at a sheet (m); the drop it bulks out over (m)
+  thickMin: f32, thickMax: f32, bulkM: f32,  // the water's thickness at a thread and at a sheet (m); the drop it bulks out over (m)
+  brink: f32,         // (water-falls.wgsl)
+  tuck: f32,          // m a curtain reaches below where it lands, so it meets the ground or the plunge
+  nearM: f32,         // within this distance (m) falls are drawn as droplet water, beyond as curtains (0: curtains only)
+  fadeM: f32,         // over this distance (m) one gives way to the other
+  _p0: f32,
 };
 
 struct Lip {
   a: vec4f,   // edge x, top height, edge z, foot height
   b: vec4f,   // direction x, z, speed off the lip (m/s), flow q (m2/s)
-  c: vec4f,   // x 1 if a lip falls beside it on its +side end, y the same on its other end
+  c: vec4f,   // x 1 if a lip falls beside it on its +side end, y the same on its other end, z m it slides out down a sloping wall foot
 };
 
 const G_FALL: f32 = 9.81;
@@ -31,6 +36,14 @@ const WATER_HALF: f32 = 0.25;   // half a water cell: each lip is 0.5 m wide
 @group(0) @binding(0) var<uniform> frame: FrameUniforms;
 @group(2) @binding(0) var<uniform> fl: Falls;
 @group(2) @binding(1) var<storage, read> lips: array<Lip>;
+// The scene's depth before the water was drawn: curtains and spray are hidden by land and rock only,
+// never by the water mesh's own film down a wall (the pass's depth attachment is not tested).
+@group(2) @binding(2) var opaqueDepth: texture_depth_2d;
+
+// Reverse-Z: true where land or rock stands in front of this fragment.
+fn behindLand(frag: vec4f) -> bool {
+  return frag.z < textureLoad(opaqueDepth, vec2i(frag.xy), 0);
+}
 
 struct CurtainOut {
   @builtin(position) pos: vec4f,
@@ -44,6 +57,7 @@ struct CurtainOut {
   @location(7) side: f32,         // 0..1 across this lip's strip
   @location(8) @interpolate(flat) ends: vec2f,  // 1 where another lip carries the fall on past this end (side 1, side 0)
   @location(9) @interpolate(flat) layer: f32,   // 0 back (against the rock), 1 middle, 2 front
+  @location(10) @interpolate(flat) far: f32,    // 1 where the curtain draws; 0 near the eye, where the droplet water does
 };
 
 // How full the curtain is for a flow: 0 at a thread, 1 at a full sheet.
@@ -68,12 +82,16 @@ fn vsCurtain(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -
   let u = row / f32(fl.rows);
   let dir = lip.b.xy;
   let perp = vec2f(-dir.y, dir.x);
-  let h = max(lip.a.y - lip.a.w, 0.05);
+  // Down to where the arc lands (found by water-falls.wgsl), and a little past, into the ground or
+  // the plunge, so no gap opens at the foot.
+  let h = max(lip.a.y - lip.a.w + fl.tuck, 0.05);
   // Time to fall the whole height from rest vertically; rows are spaced evenly in time, so they
   // crowd near the lip where the water is slow and the arc bends most.
   let tFall = sqrt(2.0 * h / G_FALL);
   let t = u * tFall;
-  let throwM = fl.offset + lip.b.z * t;
+  // lip.c.z: how far out the water must come to clear the wall's leaning foot; the face leans out
+  // about evenly with the drop (u^2 here), so the curtain follows it down, never inside the rock.
+  let throwM = fl.offset + lip.b.z * t + lip.c.z * u * u;
   let drop = 0.5 * G_FALL * t * t;
   // An end another lip carries on meets it exactly; a free end reaches a little past the cell so
   // its feathering falls outside it.
@@ -102,6 +120,10 @@ fn vsCurtain(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -
   let outSide = vec3f(perp.x, 0.0, perp.y) * select(-1.0, 1.0, side > 0.5) * (1.0 - round);
   out.normal = normalize(n + outSide * 1.5);
   out.layer = f32(layer);
+  // Near the eye the droplet water (falls-fluid-*.wgsl) draws this fall; the curtain gives way to it.
+  let dist = distance(frame.cameraPos, vec3f(lip.a.x, lip.a.y, lip.a.z));
+  out.far = select(1.0, smoothstep(fl.nearM - fl.fadeM, fl.nearM, dist), fl.nearM > 0.0);
+  if (out.far <= 0.0) { out.pos = vec4f(2.0, 2.0, 0.5, 1.0); }
   out.tau = t;
   out.fallen = drop;
   out.across = dot(xz, perp);
@@ -114,6 +136,7 @@ fn vsCurtain(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -
 
 @fragment
 fn fsCurtain(in: CurtainOut, @builtin(front_facing) front: bool) -> @location(0) vec4f {
+  if (behindLand(in.pos)) { discard; }
   let k = fullness(in.q);
   // Streaks fixed in the moment the water left the lip: they fall at the true, quickening speed.
   // Threads wander a little across as they fall, and stretch long along it.
@@ -139,7 +162,7 @@ fn fsCurtain(in: CurtainOut, @builtin(front_facing) front: bool) -> @location(0)
   let carried = select(in.ends.y, in.ends.x, in.side > 0.5);
   let foot = 1.0 - smoothstep(in.height - 0.12, in.height, in.fallen) * 0.7;
   let edges = smoothstep(0.0, 0.05, in.fallen + 0.02) * mix(smoothstep(0.0, 0.45, sideIn), 1.0, carried) * foot;
-  let flowing = smoothstep(0.0, fl.qThreads, in.q);
+  let flowing = smoothstep(0.0, fl.qThreads, in.q) * in.far;
   // Three layers share the cover: together they reach the recipe's opacity.
   let share = 1.0 - pow(1.0 - fl.opacity, 1.0 / 3.0);
   a = clamp(a * edges * flowing * share * 1.4, 0.0, 1.0);
@@ -192,15 +215,20 @@ fn vsSpray(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> 
   out.world = center + (right * corner.x + up * corner.y) * size;
   out.pos = frame.viewProj * vec4f(out.world, 1.0);
   out.uv = corner;
-  out.alpha = k * fl.sprayOpacity * (1.0 - phase) * min(phase * 6.0, 1.0);
+  // Near the eye the droplet water makes its own spray: these soft puffs are for the far view.
+  let dist = distance(frame.cameraPos, vec3f(lip.a.x, lip.a.y, lip.a.z));
+  let far = select(1.0, smoothstep(fl.nearM - fl.fadeM, fl.nearM, dist), fl.nearM > 0.0);
+  out.alpha = k * fl.sprayOpacity * (1.0 - phase) * min(phase * 6.0, 1.0) * far;
   return out;
 }
 
 @fragment
 fn fsSpray(in: SprayOut) -> @location(0) vec4f {
   let r2 = dot(in.uv, in.uv);
-  if (r2 > 1.0 || in.alpha < 0.002) { discard; }
-  let a = in.alpha * (1.0 - r2) * (1.0 - r2);
+  if (r2 > 1.0 || in.alpha < 0.002 || behindLand(in.pos)) { discard; }
+  // A soft cloud, not a disc: a Gaussian falloff, broken by a little noise that drifts.
+  let wisp = 0.6 + 0.4 * valueNoise2(in.uv * 2.0 + in.world.xz * 3.0 + vec2f(0.0, fl.time * 0.4), 53u);
+  let a = in.alpha * exp(-4.0 * r2) * (1.0 - r2) * wisp;
   // A cloud of droplets scatters light about evenly: lit as if facing up, mostly by the sky.
   let color = shadeSurface(vec3f(fl.albedo), in.world, vec3f(0.0, 1.0, 0.0), in.pos, 1.0);
   return vec4f(color * a, a);

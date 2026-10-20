@@ -18,8 +18,41 @@ struct Falls {
   qThreads: f32, qSheet: f32, streakM: f32, streakRate: f32,
   albedo: f32, opacity: f32, sprayFrom: f32, sprayM: f32,
   sprayOpacity: f32, lipStep: f32, lipReach: f32, sprayPuffs: u32,
-  thickMin: f32, thickMax: f32, bulkM: f32, _p0: f32,  // used by water-falls-draw.wgsl
+  thickMin: f32, thickMax: f32, bulkM: f32,  // used by water-falls-draw.wgsl
+  brink: f32,         // throw speed off the lip as a share of the brink speed sqrt(g d)
+  tuck: f32,          // m a curtain reaches below where it lands (water-falls-draw.wgsl)
+  nearM: f32,         // within this distance (m) falls are drawn as droplet water, beyond as curtains (0: curtains only)
+  fadeM: f32,         // over this distance (m) one gives way to the other
+  _p0: f32,
 };
+
+const G_FALL: f32 = 9.81;
+
+// Height a falling drop stops at: the ground, or the water's surface where there is water below
+// the lip (never the water it fell from, which still laps the edge in the lip's own cell).
+fn landingSurface(p: vec2f, top: f32) -> f32 {
+  let g = terrainHeight(heightTex, p);
+  let c = vec2i(floor(waterCellCoord(p) + 0.5));
+  if (!inRect(c)) { return g; }
+  let d = textureLoad(depthTex, c, 0).r;
+  let bed = waterBed(heightTex, c);
+  return select(g, max(g, levelAround(c, bed + d)), d > fl.minDepth && bed < top - fl.minDrop * 0.5);
+}
+
+// The water level a fall meets at cell c: the lowest of it and its wet neighbors. In a cell that
+// straddles a wall's foot (its bed is its lowest corner) the sim can hold a column of water against
+// the rock that is never drawn; a real pool has its neighbors at the same level, so it stands.
+fn levelAround(c: vec2i, here: f32) -> f32 {
+  var level = here;
+  let nb = array<vec2i, 4>(vec2i(1, 0), vec2i(-1, 0), vec2i(0, 1), vec2i(0, -1));
+  for (var i = 0; i < 4; i++) {
+    let q = c + nb[i];
+    if (!inRect(q)) { continue; }
+    let dq = textureLoad(depthTex, q, 0).r;
+    if (dq > fl.minDepth) { level = min(level, waterBed(heightTex, q) + dq); }
+  }
+  return level;
+}
 
 // One lip: a = (edge x, top height, edge z, foot height), b = (direction x, z, speed off the lip, flow q m2/s),
 // c = (1 if the cell to its left along the edge is a lip the same way, the same for its right, spare, spare).
@@ -83,13 +116,42 @@ fn csDetect(@builtin(global_invocation_id) gid: vec3u) {
       if (terrainHeight(heightTex, p) < top - fl.minDrop * 0.5) { edge = p - dir * fl.lipStep * 0.5; break; }
       s += fl.lipStep;
     }
+    // Water goes over a brink at about the critical speed sqrt(g d), whatever the sim's speed right
+    // at the drop (it races toward the hole there), so a thin film hugs the rock and a deep stream
+    // throws out.
+    let throwV = min(outward, fl.brink * sqrt(G_FALL * d));
+    // Where it lands: follow the arc down until it meets the ground or water under it, so a fall
+    // onto sloping or hollow ground reaches all the way down.
+    // Steep rock (the foot of a wall slopes over its last cells) does not stop it: the water slides
+    // down the face, moving out with it, until flatter ground or water takes it.
+    var land = footY;
+    var slide = 0.0;
+    var t = 0.02;
+    loop {
+      if (t > 2.0) { break; }
+      let y = top - 0.5 * G_FALL * t * t;
+      var p = edge + dir * (fl.offset + throwV * t + slide);
+      // Never inside the rock: out along a steep face until the ground there is below the water
+      // (on gentle ground it has simply landed).
+      loop {
+        if (slide > 0.8 || terrainHeight(heightTex, p) <= y + 0.02 || terrainNormal(heightTex, p).y > 0.6) { break; }
+        slide += 0.04;
+        p = edge + dir * (fl.offset + throwV * t + slide);
+      }
+      // It lands only on gentle ground or on water; on the steep face it keeps sliding down.
+      let s = landingSurface(p, top);
+      let onWater = s > terrainHeight(heightTex, p) + 0.005;
+      if (y <= s + 0.02 && (onWater || terrainNormal(heightTex, p).y > 0.6)) { land = s; break; }
+      land = min(s, y);
+      t += 0.02;
+    }
     let k = atomicAdd(&counter[0], 1u);
     if (k < fl.cap) {
-      lips[k].a = vec4f(edge.x, top, edge.y, footY);
-      lips[k].b = vec4f(dir, min(outward, 4.0), d * outward);
+      lips[k].a = vec4f(edge.x, top, edge.y, land);
+      lips[k].b = vec4f(dir, throwV, d * outward);
       // Neighbors along the edge falling the same way, so a fall's outer edges feather off.
       let side = vec2i(-nb[i].y, nb[i].x);
-      lips[k].c = vec4f(select(0.0, 1.0, isLip(c + side, nb[i])), select(0.0, 1.0, isLip(c - side, nb[i])), 0.0, 0.0);
+      lips[k].c = vec4f(select(0.0, 1.0, isLip(c + side, nb[i])), select(0.0, 1.0, isLip(c - side, nb[i])), slide, 0.0);
     }
   }
 }

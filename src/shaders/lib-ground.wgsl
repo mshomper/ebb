@@ -222,7 +222,12 @@ fn groundDetail(p: vec3f, nMesh: vec3f, w4: vec4f, moss: f32, mossTint: vec3f, v
   // it gets, and the triplanar weights.
   let slope = 1.0 - smoothstep(ground.steep.y, ground.steep.x, nMesh.y);
   let steep = slope * ground.triplanar;
-  var tw = pow(abs(nMesh), vec3f(6.0));
+  // On steep ground the projections follow the drawn triangle's own facing (from the screen
+  // derivatives), not the smoothed ground normal: where a cliff wall stair-steps across the grid
+  // the two differ, and a projection chosen by the smooth one lands edge-on and smears.
+  var nGeo = normalize(cross(dpx, dpy));
+  if (dot(nGeo, nMesh) < 0.0) { nGeo = -nGeo; }
+  var tw = pow(abs(normalize(mix(nMesh, nGeo, steep))), vec3f(6.0));
   tw /= max(tw.x + tw.y + tw.z, 1e-5);
 
   // Five weights: moss covers the painted layers in proportion to its cover.

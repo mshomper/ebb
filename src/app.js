@@ -347,7 +347,10 @@ export async function startApp(canvas, hooks = {}) {
     detailFadeM: tierSettings.waterDetailFadeM, ssr: tierSettings.waterSSR ?? null, foam, ripples,
   });
   // Waterfalls (M2 Cliff tool): curtains where live water runs over a drop, visual only.
-  const fallsPass = createFallsPass({ water, terrain, recipe: waterRecipe.falls, getTime: () => clock.animT(), tier: tierSettings });
+  // Near the eye they are droplet water with real volume (screen-space fluid, falls-fluid.js).
+  const fallsPass = createFallsPass({ water, terrain, recipe: waterRecipe.falls, getTime: () => clock.animT(), tier: tierSettings,
+    absorption: waterRecipe.look.absorptionPond, atmosphere, getEye: () => camera.eye, getProjY: () => camera.proj[5],
+    getOpaqueDepth: () => waterPass.opaqueDepth });
   const graph = createFrameGraph(gpu, [
     shadowPass,
     terrainPass,
@@ -418,7 +421,7 @@ export async function startApp(canvas, hooks = {}) {
     rushPass.setTier(tierSettings);
     waterPass.setDetailFade(tierSettings.waterDetailFadeM);
     waterPass.setSSR(tierSettings.waterSSR ?? null);
-    fallsPass.setTier(tierSettings);
+    if (fallsPass.setTier(tierSettings)) graph.invalidate();
     // Shadows, bloom and the midges follow too. A texture's size is fixed once made, so a new
     // shadow map size re-makes only that map and the lighting group that binds it; new bloom levels
     // re-make the bloom chain at the next resize, which invalidate() forces.

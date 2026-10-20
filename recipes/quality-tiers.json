@@ -1,7 +1,7 @@
 {
   "type": "quality-tiers",
   "version": 1,
-  "note": "Quality tiers (docs/19). ultra is for strong desktop GPUs: picked when a discrete GPU passes the startup probe (GPU p95 under probeMaxMs while the island fades in), else high. lodDistances: terrain mesh LOD switch distances (m); fallsMax, fallsRows: the most waterfall lips drawn and the rows down each curtain (M2, water.json falls); cliffDetailM: chunks holding a cliff face (M2 Cliff tool) draw and cast shadows at full mesh detail within this distance (m); waterDetailFadeM: ripples and glints calm down by this distance. waterSSR: screen-space reflection of the island in water (null: sky probe only); steps along the ray plus refine bisection steps. skyProbeSize: sky probe cube face size (px). causticLayers: caustic pattern layers on underwater ground (0 off).",
+  "note": "Quality tiers (docs/19). ultra is for strong desktop GPUs: picked when a discrete GPU passes the startup probe (GPU p95 under probeMaxMs while the island fades in), else high. lodDistances: terrain mesh LOD switch distances (m); fallsMax, fallsRows: the most waterfall lips drawn and the rows down each curtain (M2, water.json falls); fallsFluid: droplets for the volumetric falls near the eye, how near (m; 0 particles: curtains only), and the share of the render size its images are drawn at; cliffDetailM: chunks holding a cliff face (M2 Cliff tool) draw and cast shadows at full mesh detail within this distance (m); waterDetailFadeM: ripples and glints calm down by this distance. waterSSR: screen-space reflection of the island in water (null: sky probe only); steps along the ray plus refine bisection steps. skyProbeSize: sky probe cube face size (px). causticLayers: caustic pattern layers on underwater ground (0 off).",
   "probe": { "seconds": 2, "settleFrames": 30 },
   "dynamicRes": {
     "note": "Dynamic resolution (docs 04, 19): the render scale drops by step after overFrames frames in a row over the tier's gpuBudgetMs, and climbs back by step after recoverFrames frames in a row under recoverBelow times the budget, between the tier's renderScaleMin and renderScale. Below a scale of 1 the internal size snaps to snapPx pixels so textures are not re-made every frame. GPU time comes from timestamps, else from onSubmittedWorkDone round trips; if neither has reported for staleFrames frames, the frame time is judged against the tier's frame period times frameSlack. stepDown: after atMinSeconds at the minimum scale with the last overFrames frames mostly over budget, the tier steps down once a session, with a calm note shown noteSeconds. thermal (tiers listed): GPU p95 per bucketSeconds at a steady scale; if the newest is over (1 + rise) times the one windowMinutes before, the scale drops a step early, and does not climb back above that step for holdMinutes.",
@@ -44,7 +44,7 @@
       "grassDensity": 1.0, "grassDistance": 60, "foliageLodScale": 1.5,
       "liveCreatures": 120, "boids": 4096, "particlesMax": 20000,
       "lights": 64, "bloomLevels": 6, "workerMax": 14,
-      "lodDistances": [120, 240], "cliffDetailM": 90, "fallsMax": 4096, "fallsRows": 12, "waterDetailFadeM": 250, "waterSSR": { "steps": 24, "refine": 5 }, "skyProbeSize": 64, "causticLayers": 2,
+      "lodDistances": [120, 240], "cliffDetailM": 90, "fallsMax": 4096, "fallsRows": 12, "fallsFluid": { "particles": 49152, "nearM": 45, "scale": 1 }, "waterDetailFadeM": 250, "waterSSR": { "steps": 24, "refine": 5 }, "skyProbeSize": 64, "causticLayers": 2,
       "ground": { "mapSize": 1024, "hexTiling": true, "triplanar": true, "specular": "full", "puddles": true, "anisotropy": 16, "detailFadeMeters": 260 }
     },
     "high": {
@@ -58,7 +58,7 @@
       "grassDensity": 1.0, "grassDistance": 40, "foliageLodScale": 1.0,
       "liveCreatures": 120, "boids": 4096, "particlesMax": 20000,
       "lights": 64, "bloomLevels": 6, "workerMax": 14,
-      "lodDistances": [45, 95], "cliffDetailM": 60, "fallsMax": 2048, "fallsRows": 10, "waterDetailFadeM": 140, "waterSSR": { "steps": 16, "refine": 4 }, "skyProbeSize": 64, "causticLayers": 2,
+      "lodDistances": [45, 95], "cliffDetailM": 60, "fallsMax": 2048, "fallsRows": 10, "fallsFluid": { "particles": 32768, "nearM": 35, "scale": 0.75 }, "waterDetailFadeM": 140, "waterSSR": { "steps": 16, "refine": 4 }, "skyProbeSize": 64, "causticLayers": 2,
       "ground": { "mapSize": 1024, "hexTiling": true, "triplanar": true, "specular": "full", "puddles": true, "anisotropy": 16, "detailFadeMeters": 140 }
     },
     "medium": {
@@ -72,7 +72,7 @@
       "grassDensity": 0.6, "grassDistance": 30, "foliageLodScale": 0.75,
       "liveCreatures": 80, "boids": 2048, "particlesMax": 10000,
       "lights": 32, "bloomLevels": 5, "workerMax": 14,
-      "lodDistances": [45, 95], "cliffDetailM": 45, "fallsMax": 1024, "fallsRows": 8, "waterDetailFadeM": 120, "waterSSR": null, "skyProbeSize": 32, "causticLayers": 2,
+      "lodDistances": [45, 95], "cliffDetailM": 45, "fallsMax": 1024, "fallsRows": 8, "fallsFluid": { "particles": 16384, "nearM": 25, "scale": 0.5 }, "waterDetailFadeM": 120, "waterSSR": null, "skyProbeSize": 32, "causticLayers": 2,
       "ground": { "mapSize": 1024, "hexTiling": true, "triplanar": true, "specular": "full", "puddles": true, "anisotropy": 8, "detailFadeMeters": 60 }
     },
     "low": {
@@ -86,7 +86,7 @@
       "grassDensity": 0.22, "grassDistance": 14, "foliageLodScale": 0.5,
       "liveCreatures": 50, "boids": 1024, "particlesMax": 4000,
       "lights": 8, "bloomLevels": 3, "workerMax": 4,
-      "lodDistances": [45, 95], "cliffDetailM": 30, "fallsMax": 256, "fallsRows": 5, "waterDetailFadeM": 50, "waterSSR": null, "skyProbeSize": 32, "causticLayers": 1,
+      "lodDistances": [45, 95], "cliffDetailM": 30, "fallsMax": 256, "fallsRows": 5, "fallsFluid": { "particles": 0, "nearM": 0 }, "waterDetailFadeM": 50, "waterSSR": null, "skyProbeSize": 32, "causticLayers": 1,
       "ground": { "mapSize": 512, "hexTiling": false, "triplanar": false, "specular": "sun", "puddles": false, "anisotropy": 4, "detailFadeMeters": 35 }
     }
   }

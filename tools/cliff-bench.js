@@ -20,7 +20,8 @@ const FRAMES = Number(params0.get('frames')) || 240;
 const RUNS = TIERS.flatMap((tier) => [{ tier, detail: false, falls: false }, { tier, detail: true, falls: false }, { tier, detail: true, falls: true }]);
 /** The spring needs this long to fill the upper shelf and pour over its edge. */
 const FALLS_SETTLE_MS = 50000;
-const FALLS_BUDGET = 0.3;
+/** Aim (ms) for the waterfalls pass per tier: droplet water near the eye on high and medium, curtains only on low. */
+const FALLS_BUDGET = { high: 1.0, medium: 0.8, low: 0.3 };
 const ICON_OK = '<svg viewBox="0 0 24 24" fill="none" stroke="#5F7F5B" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M7.5 12.5l3 3 6-6.5"/></svg>';
 const ICON_WARN = '<svg viewBox="0 0 24 24" fill="none" stroke="#B5654A" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5l9.5 16.5h-19z"/><path d="M12 10v4.5M12 17.5v.2"/></svg>';
 const BUDGET = { high: 0.2, medium: 0.2, low: 0.4 };
@@ -62,8 +63,9 @@ function render() {
     const off = runs.find((r) => r.tier === tier && !r.detail);
     const on = runs.find((r) => r.tier === tier && r.detail && !r.falls);
     const wf = runs.find((r) => r.tier === tier && r.falls);
+    const aim = /** @type {any} */ (FALLS_BUDGET)[tier];
     const wfLine = wf
-      ? `<p class="muted">Waterfalls (spring running, its sheet pouring over both faces): falls pass p50 ${fmt(pct(wf.fallsMs ?? [], 0.5))} ms, p95 ${fmt(pct(wf.fallsMs ?? [], 0.95))} ms, ${pct(wf.fallsMs ?? [], 0.5) <= FALLS_BUDGET ? 'within' : 'over'} the ${FALLS_BUDGET} ms aim.</p>`
+      ? `<p class="muted">Waterfalls (spring running, its sheet pouring over both faces, seen close up): falls pass p50 ${fmt(pct(wf.fallsMs ?? [], 0.5))} ms, p95 ${fmt(pct(wf.fallsMs ?? [], 0.95))} ms, ${pct(wf.fallsMs ?? [], 0.5) <= aim ? 'within' : 'over'} the ${aim} ms aim.</p>`
       : '';
     if (!off && !on) return '';
     const total = (/** @type {Run | undefined} */ r, /** @type {number} */ q) => (r ? pct(r.opaque, q) + pct(r.shadow, q) : NaN);

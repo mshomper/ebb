@@ -124,6 +124,7 @@ Headroom to 16.6 ms: 4.6 ms. Photo-mode extras (depth of field 1.5 ms, long-expo
 | Bloom levels | 6 | 5 | 4 |
 | Ground detail (doc 22): map size, hex tiling (3 reads per projection), triplanar, puddles, anisotropy; macro variation on every tier | 1024, on, on, on, 16x | 1024, on, on, on, 8x | 512, two-scale mix (2 reads), off, damp only, 4x |
 | Ground detail fade (m), terrain LOD distances (m), water ripple fade (m); ultra: 260, 120/240, 250 | 140, 45/95, 140 | 60, 45/95, 120 | 35, 45/95, 80 |
+| Waterfalls (M2, doc 07): lips drawn (`fallsMax`), curtain rows (`fallsRows`), droplet water near the eye (`fallsFluid`: droplets, distance, share of the render size; ultra 49,152 within 45 m at full size) | 2,048 lips, 10 rows; 32,768 droplets within 35 m at 0.75 | 1,024 lips, 8 rows; 16,384 droplets within 25 m at 0.5 | 256 lips, 5 rows; curtains only |
 | Cliff chunks at full mesh detail, drawn and as shadow casters (M2, doc 08; `cliffDetailM` in quality-tiers.json, ultra 90 m), and the extra cost per cliff chunk (measured by tools/cliff-bench.html) | within 60 m, about 0.2 ms | within 45 m, about 0.2 ms | within 30 m, about 0.4 ms |
 | Painterly (off by default on every tier, doc 05) | full res | quarter res | quarter res |
 | Outline | separate pass | separate pass | fused into tonemap |

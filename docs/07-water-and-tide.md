@@ -178,7 +178,19 @@ u   ← (f_left_in − f_left_out + f_right_out − f_right_in) / (2 · l · d̄
 - **Foam**: lit Lambert, albedo 0.8, at most 85% of a pixel, broken into connected bubbly lace (three noise octaves, 8 cm cells) with dark holes. The lace boils (each octave is two copies drifting slowly apart) and rides the current through a 2.5 s two-phase flow map whose phase is offset per spot by a slow noise, so resets are scattered across the surface and nothing blinks together. Cover is sampled with smoothstepped weights between cells, so no square shapes show.
 - **Waterfalls** (M2, with the Cliff tool; `src/render/passes/falls.js`, `water-falls.wgsl`, `water-falls-draw.wgsl`, `water.json` `falls`). Visual only. The sim hands water from a lip cell straight to the foot cell, so on its own nothing shows on the face, and the heightfield water mesh cannot draw a vertical sheet. Each frame, after the sim:
   - **Lips.** A compute pass finds water deeper than 2 mm flowing toward a neighbor whose bed lies more than 0.5 m lower. It marches the ground to find the real edge, and appends one lip per edge cell (an atomic counter, then indirect draws capped per tier: `fallsMax`).
-  - **Curtain.** Each lip is drawn as a curtain from the edge along a gravity arc, thrown out at the water's own speed. It is three layers through the water's body, so it has depth, and its outer ends round over like a tongue of water.
+    - **Throw.** Water leaves a brink at about the critical speed √(g × depth): a 2 cm film at 0.44 m/s, so trickles hug the rock instead of shooting out like a hose.
+    - **Landing.** The arc is followed down to where it meets flat ground or water. On a wall's steep leaning foot it slides out along the face rather than stopping, so a fall always reaches the bottom.
+    - **Undrawn water.** Water counts only at the level of its wet neighbors: in a cell that straddles a wall's foot (its bed is its lowest corner) the sim holds a column against the rock that is never drawn, and falls must not stop on it.
+  - **Two ways to draw a fall, by distance.**
+    - **Near the eye: droplet water** (`falls-fluid.js`, `falls-particles.wgsl`, `falls-fluid-*.wgsl`, `falls.fluid`). This is screen-space fluid rendering (van der Laan, Green and Sainz, I3D 2009; Green, GDC 2010).
+      - Each lip within the tier's `fallsFluid.nearM` sends droplets off its edge, as many as its flow carries. A trickle keeps to a few threads; a stream fills the whole edge.
+      - Droplets fall under gravity with drag and fray as they fall. They slide down a leaning face, and are gone on reaching flat ground or water, or after about their fall time.
+      - Each droplet is drawn as a sphere into depth and thickness images, at the tier's share of the render size. The depth is smoothed with a bilateral filter into one surface.
+      - That surface is shaded as water. The scene behind is bent and dimmed by its thickness (pond water's absorption), so the body reads glassy and slightly green.
+      - White ropes of aerated water run down it, meandering and breaking into beads lower down.
+      - Rippled glassy water mirrors the sky probe sharply and throws GGX sun glints, brightest at its rounded sides.
+      - Falls are tested against land and rock only (the water pass's pre-water depth copy), so the water mesh's own film down a wall never hides them.
+    - **Further off: the curtain.** Each lip is drawn from the edge along a gravity arc, thrown out at the water's own speed and following a leaning face down. It is three layers through the water's body, so it has depth, and its outer ends round over like a tongue of water. Curtains give way to droplet water over `fluid.fadeM`.
   - **Thickness.** At the lip the curtain is as thick as the water runs (flow / speed). It bulks out with air as it falls, to 3 cm for a thread and 22 cm for a full sheet.
   - **Look.**
     - Flow per meter (depth times speed) sets the look: threads at a trickle, a ribbon, a white sheet at a stream.
@@ -186,9 +198,12 @@ u   ← (f_left_in − f_left_out + f_right_out − f_right_in) / (2 · l · d̄
     - The water leaves the lip glassy, reflecting the sky with Fresnel, and turns white as it aerates.
     - The back layer darkens the rock behind it as wet stone.
     - The curtain is lit like any rough surface, with shadows, and the palette is applied last.
-  - **Foot.** Where it lands, foam is made in proportion to the inflow (`foam.plungeGain`), and strong falls throw soft spray.
+  - **Foot.** Where it lands, foam is made in proportion to the inflow (`foam.plungeGain`). Distant strong falls throw soft spray puffs.
   - **Wall triangles.** The water mesh leaves out its steep triangles beside a lip, so no stretched film shows on the wall.
-  - **Test and cost.** `?falls=0` turns waterfalls off. tools/cliff-bench.html measures the pass; it costs about 0.07 ms on a desktop GPU with the `?cliffs` scene's sheet in view.
+  - **Test and cost.**
+    - `?falls=0` turns waterfalls off; `?fallsfluid=0` keeps curtains everywhere; `?fallsdbg` puts the lips found on `window.ebbLips` for the console.
+    - tools/cliff-bench.html measures the pass. With the `?cliffs` scene's sheet filling the view on a desktop GPU, the high tier takes about 0.33 ms (p50) and 0.46 ms (p95).
+    - Low draws curtains only.
 - **Shoreline wetness**: doc 08 owns the wetness field. Water provides `waterDepth` and `tide.level`. The terrain shader darkens wet albedo and lowers roughness (Lagarde, "Water drop 2", 2013).
 
 **What the coarse model keeps**: the summary (depth at mean tide, class, tide band, basin), the spring list, and the analytic tide. It drops velocities, foam, ripples, live depths and rain puddles, which are all rebuilt by `reseedFromCoarse()`: the live depth is set from the summary plus the current tide, followed by a silent 200-step settle behind the reveal fade (`02-core-loop-and-idle-model.md`).
@@ -204,7 +219,7 @@ u   ← (f_left_in − f_left_out + f_right_out − f_right_in) / (2 · l · d̄
 |---|---|---|
 | Simulation, worst case 36 tiles | 0.6 ms (2 steps per frame) | 0.9 ms (active radius 40 m, 1/60 s steps) |
 | Foam and ripples | 0.15 ms | 0.1 ms (ripples 128²) |
-| Waterfalls (M2): lips found, curtains and spray drawn | under 0.3 ms, 2,048 lips, 10 rows | under 0.3 ms, 256 lips, 5 rows |
+| Waterfalls (M2): lips found, droplet water near the eye, curtains and spray further off | under 1 ms: 2,048 lips, 32,768 droplets within 35 m at 0.75 of the render size (measured 0.33 ms p50 close up) | under 0.3 ms: 256 lips, curtains only, 5 rows |
 | Shading | 0.9 ms (SSR, mip refraction) | 0.6 ms (no SSR, single-mip refraction) |
 | Caustics (inside opaque) | 0.15 ms | 0.05 ms (one layer) |
 | Summary rebuild (worker) | 25 ms | 80 ms |

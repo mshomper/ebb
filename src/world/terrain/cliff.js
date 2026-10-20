@@ -72,14 +72,16 @@ export function onFace(hf, i, j, faceDeg) {
  * @param {Float32Array} hf @param {number} cx @param {number} cz @param {number} stepM
  */
 export function chunkHasCliff(hf, cx, cz, stepM) {
+  // From one cell before the chunk to its last cell: a step across the chunk's edge belongs to both
+  // chunks, or the one left coarse would open a crack there that its skirt fills with a smeared wall.
   const x0 = chunkFirstCell(cx);
   const z0 = chunkFirstCell(cz);
-  for (let j = z0; j < z0 + CHUNK_CELLS; j++) {
+  for (let j = Math.max(0, z0 - 1); j < z0 + CHUNK_CELLS; j++) {
     const row = j * N;
-    for (let i = x0; i < x0 + CHUNK_CELLS; i++) {
+    for (let i = Math.max(0, x0 - 1); i < x0 + CHUNK_CELLS; i++) {
       const h = hf[row + i];
-      if (i + 1 < N && Math.abs(h - hf[row + i + 1]) > stepM) return true;
-      if (j + 1 < N && Math.abs(h - hf[row + N + i]) > stepM) return true;
+      if (i + 1 < N && j >= z0 && Math.abs(h - hf[row + i + 1]) > stepM) return true;
+      if (j + 1 < N && i >= x0 && Math.abs(h - hf[row + N + i]) > stepM) return true;
     }
   }
   return false;
