@@ -33,7 +33,7 @@ export function seasonBlend(A, s) {
   k = k * k * (3 - 2 * k);
   const a = A[SEASONS[i0]];
   const b = A[SEASONS[i1]];
-  return [0, 1, 2].map((i) => a[i] + (b[i] - a[i]) * k);
+  return a.map((v, i) => v + (b[i] - v) * k);
 }
 
 /** The FloraCommon header, each frame. @param {any} r @param {Float32Array} f @param {{ time: number, wind: number, windDir: number, season: number }} u */
@@ -133,7 +133,7 @@ export const FLORA_KINDS = {
     frame: common,
   },
 
-  // Shrubs (grey willow; gorse later with other numbers): stems of 60 vertices (a stem of four
+  // Shrubs (grey willow, and gorse with other numbers and flowers among its needles): stems of 60 vertices (a stem of four
   // segments and two forks of three), then cards of 6 on each stem and fork. The contact shadow is
   // a few stacked, draped discs of 144 vertices, drawn first with a multiplying blend.
   shrub: {
@@ -159,7 +159,15 @@ export const FLORA_KINDS = {
       f.set([1 / L.gustM, D.strength ?? 0, D.radiusShare ?? 1, D.bareShare ?? 1], 64);
       f.set([D.sunShift ?? 0, D.liftM ?? 0.03, L.undersideShare ?? 0, 0], 68);
       f.set([Math.max(1, D.layers ?? 1), D.layerM ?? 0, 0, 0], 72);
+      // Flowers among the leaves (gorse; none on willow) and how far cards are drawn to the crown.
+      f.set(C.flower ?? [0, 0, 0], 76); f[79] = S.flowerM ?? 0;
+      f.set([0, L.crownPull ?? 0.3, 0, 0], 80);
     },
-    frame: common,
+    frame(r, f, u) {
+      common(r, f, u);
+      // This season's share of leaf cells in flower, blended through the year as the albedo is.
+      const F = r.season.flowerShare;
+      f[80] = F ? Math.max(0, seasonBlend(F, u.season)[0]) : 0;
+    },
   },
 };

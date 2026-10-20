@@ -1,5 +1,6 @@
-// Shrubs (docs 10, 14): grey willow first; gorse can follow on this shader with other recipe
-// numbers. A many-stemmed bush with no mesh, one instance per plant from the growth engine's
+// Shrubs (docs 10, 14): grey willow and gorse, the same shader with other recipe numbers (gorse is
+// evergreen, its cards drawn closer to the crown's surface into a dense mound of fine needles, with
+// yellow pea flowers among them by the season's share). A many-stemmed bush with no mesh, one instance per plant from the growth engine's
 // instance buffer: a light, shader-only stand-in for doc 10's L-system. Stems rise from a stool,
 // leaning out so the outer ones reach the crown's edge, arching and forking once or twice; every
 // stem, fork and card is placed from the plant's hash, so no two shrubs match. Stems are tapering
@@ -43,6 +44,8 @@ struct ShrubDraw {
   shadow: vec4f,   // x 1 / gust size (1/m), y contact shadow strength, z its radius (share of the crown's), w its strength when bare (share)
   shadow2: vec4f,  // x shift away from the sun (share of height), y lift above the ground (m), z share of leaves showing their pale undersides, w spare
   shadow3: vec4f,  // x contact shadow layers, y height between layers (m), zw spare
+  flower: vec4f,   // xyz flower albedo (linear), w flower size (m): gorse's pea flowers over its leafy crown
+  mound: vec4f,    // x share of leaf cells in flower now (0: none, as willow), y how far cards are drawn to the crown's surface, zw spare
 };
 
 const TRUNK_VERTS: u32 = 24u;    // four segments
@@ -320,7 +323,7 @@ fn vsShrub(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> 
   let radii = vec3f(sh.crownR * 1.05, sh.height * (1.0 - sd.forkAt.w) * 1.05, sh.crownR * 1.05);
   var mid = at + U * (hs * 0.85) + outN * (hs * 0.3);
   let e0 = (mid - cc) / radii;
-  if (length(e0) > 1e-3) { mid = mix(mid, cc + normalize(e0) * radii * 0.92, 0.3 * smoothstep(0.3, 0.8, sh.size)); }
+  if (length(e0) > 1e-3) { mid = mix(mid, cc + normalize(e0) * radii * 0.92, sd.mound.y * smoothstep(0.3, 0.8, sh.size)); }
   mid += sh.windV * (sd.pollen.w * 0.04 * sin(sd.c.wind.z * 3.0 + v.y * 6.2831853));
   let corner = CARD[slot];
   let p = mid + (R * corner.x + U * corner.y) * hs;
@@ -338,7 +341,9 @@ fn vsShrub(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> 
   if (sh.stage == FLORA_FLOWERING) {
     catkins = select(2u, 1u, hashToFloat(hash2(vec2u(sh.plantU, 0x3a1eu))) < sd.bloom.z);
   }
-  o.spray = vec4u(hc, catkins, u32(bloomProgress() * 1000.0), 0u);
+  // Flowers among the leaves (gorse; none on willow): this season's share, on bushes past young.
+  let flowers = u32(sd.mound.x * smoothstep(0.4, 0.8, sh.size) * 1000.0);
+  o.spray = vec4u(hc, catkins, u32(bloomProgress() * 1000.0), flowers);
   return o;
 }
 
@@ -384,6 +389,17 @@ fn sprayAt(in: VsOut, px: f32) -> vec4f {
         // The fallen (autumn) and not yet out (spring) ones are gone.
         let keep = cover * (1.0 - smoothstep(0.65, 1.05, length(base)));
         if (r0 >= keep) { continue; }
+        // Some cells hold a small pea flower in place of a leaf (gorse): rounded, brighter at its
+        // middle, a little out from the twig. Willow's share is 0, so it never gets here.
+        let bloom = f32(in.spray.w) / 1000.0;
+        if (bloom > 0.0 && hashToFloat(pcg(hl ^ 0xf10eu)) < bloom) {
+          let fr = max(0.5 * sd.flower.w / max(hs, 1e-3) * (0.8 + 0.4 * r2), px * 0.9);
+          let fd = normalize(vec2f(base.x, 1.0));
+          let fq = uv - (base + fd * fr);
+          let fe = (dot(fq, fq) + 0.3 * pow(dot(fq, vec2f(fd.y, -fd.x)), 2.0)) / (fr * fr);
+          if (fe < 1.0) { return vec4f(sd.flower.xyz * (1.05 - 0.3 * fe) * (0.9 + 0.2 * r3), 1.0); }
+          continue;
+        }
         let dir = normalize(vec2f(select(-1.0, 1.0, base.x >= 0.0) * (0.55 + 0.5 * r3), 0.75 + 0.4 * r1 - 0.3 * r2));
         let l = len * (0.8 + 0.4 * r2);
         let qv = uv - base;

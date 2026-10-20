@@ -77,6 +77,14 @@ const SAYS = {
     steep: 'Too steep for grey willow; try a gentler bank',
     crowded: 'Too close to another willow; give it room to spread',
   },
+  gorse: {
+    wet: 'Too wet for gorse; it wants dry ground that drains fast',
+    deep: 'Gorse will not stand in water; plant it on dry ground',
+    salt: 'Too salty for gorse; try a little further up from the tide',
+    ground: 'Gorse will not take on bare rock; try soil or sand',
+    steep: 'Too steep even for gorse',
+    crowded: 'Too close to another gorse bush; give it room',
+  },
   any: {
     ok: '{name} planted',
     dry: '{name}: the ground is too dry here',

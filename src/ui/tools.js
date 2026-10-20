@@ -16,7 +16,7 @@ import { dispatch } from '../input/actions.js';
 import { ensureIconSprite, iconSvg } from './icons/icons.js';
 
 /** @typedef {'sculpt'|'smooth'|'paint'|'water'|'plant'|'feed'} ToolId */
-/** @typedef {'reeds'|'lilies'|'iris'|'marigold'|'rushes'|'thrift'|'campion'|'willow'} PlantSpecies */
+/** @typedef {'reeds'|'lilies'|'iris'|'marigold'|'rushes'|'thrift'|'campion'|'willow'|'gorse'} PlantSpecies */
 /** @typedef {'raise'|'lower'|'flatten'|'stone'|'loosestone'|'terrace'|'cut'} SculptMode */
 /** @typedef {'grass'|'sand'|'soil'|'rock'} PaintLayer */
 /** @typedef {'pour'|'drain'|'spring'} WaterMode */
@@ -96,6 +96,7 @@ const PLANT_SPECIES = [
   { id: 'thrift', label: 'Sea thrift', icon: 'thrift', hint: 'Sea thrift likes the salty shore by the sea. Tap the ground to plant a seed.' },
   { id: 'campion', label: 'Sea campion', icon: 'campion', hint: 'Sea campion likes rock by the sea, just above the tide. Set some rock there first, then tap it to plant a seed.' },
   { id: 'willow', label: 'Grey willow', icon: 'willow', hint: 'Grey willow likes a damp, gentle bank of soil beside fresh water, never salt. It grows slowly into a bush taller than you. Tap the bank to plant a cutting.' },
+  { id: 'gorse', label: 'Gorse', icon: 'gorse', hint: 'Gorse likes dry, sunny ground, soil or sand, even a slope above the shore, never wet ground. It grows into a spiny mound about waist high. Tap dry ground to plant a seed.' },
 ];
 const PLANT_NONE = 'Nothing to plant yet. Watch the island: plants will come.';
 /** How long a Plant tap's result stays before it fades, ms. */
