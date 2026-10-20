@@ -124,7 +124,7 @@ Headroom to 16.6 ms: 4.6 ms. Photo-mode extras (depth of field 1.5 ms, long-expo
 | Bloom levels | 6 | 5 | 4 |
 | Ground detail (doc 22): map size, hex tiling (3 reads per projection), triplanar, puddles, anisotropy; macro variation on every tier | 1024, on, on, on, 16x | 1024, on, on, on, 8x | 512, two-scale mix (2 reads), off, damp only, 4x |
 | Ground detail fade (m), terrain LOD distances (m), water ripple fade (m); ultra: 260, 120/240, 250 | 140, 45/95, 140 | 60, 45/95, 120 | 35, 45/95, 80 |
-| Cliff chunks at full mesh detail (M2, doc 08), and the extra cost per cliff chunk | within 60 m, about 0.2 ms | within 45 m, about 0.2 ms | within 30 m, about 0.4 ms |
+| Cliff chunks at full mesh detail, drawn and as shadow casters (M2, doc 08; `cliffDetailM` in quality-tiers.json, ultra 90 m), and the extra cost per cliff chunk (measured by tools/cliff-bench.html) | within 60 m, about 0.2 ms | within 45 m, about 0.2 ms | within 30 m, about 0.4 ms |
 | Painterly (off by default on every tier, doc 05) | full res | quarter res | quarter res |
 | Outline | separate pass | separate pass | fused into tonemap |
 | HUD backdrop blur (doc 15) | on | on | off |

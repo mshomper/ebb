@@ -67,6 +67,7 @@ struct TerrainDraw {
   casts: array<vec4f, 16>,
   cast0: vec4f,                         // x coil radius (m), y tube radius (m), z turns, w inner rise (m)
   cast1: vec4f,                         // rgb cast albedo as a share of the sand's, w view distance (m) past which casts are not drawn
+  cliffLine: vec4f,                     // Terrace and Cut (docs/15): x shelf level (m), y 1 shown, z line width (m)
 };
 
 @group(0) @binding(0) var<uniform> frame: FrameUniforms;
@@ -148,6 +149,16 @@ fn ringAlpha(xz: vec2f) -> f32 {
   let outer = 1.0 - smoothstep(0.0, w, abs(d - td.ringRadius));
   let inner = 1.0 - smoothstep(0.0, w * 0.7, abs(d - td.ringRadius * td.ringHardness));
   return clamp(outer + 0.35 * inner, 0.0, 1.0) * td.ringOpacity;
+}
+
+// Terrace and Cut: a thin contour where the ground meets the shelf's level, inside and just around
+// the ring, so the player sees how far a shelf will reach before they drag. `pixM` keeps it a pixel
+// or two wide at any distance.
+fn cliffLineAlpha(xz: vec2f, y: f32, pixM: f32) -> f32 {
+  if (td.cliffLine.y < 0.5) { return 0.0; }
+  let near = 1.0 - smoothstep(td.ringRadius, td.ringRadius * 1.6 + 0.5, distance(xz, td.ringCenter));
+  let w = max(td.cliffLine.z, pixM * 1.5);
+  return (1.0 - smoothstep(0.0, w, abs(y - td.cliffLine.x))) * near * td.ringOpacity;
 }
 
 // Thin marker rings (a tap's bloom, young plantings), kept a couple of pixels wide at any distance.
@@ -413,7 +424,7 @@ fn fsLand(in: VsOut) -> FsOut {
   }
 
   var color = shadeGround(albedo, in.world, n, nShade, roughness, gd.cavity, in.pos, ground.terminator, mix(ground.f0, td.puddle2.w, standing), ground.specMode, caustic, skySpec);
-  color = mix(color, td.ringColor, max(ringAlpha(xz), marksAlpha(xz, max(fw.x, fw.y)) * td.ringOpacity));
+  color = mix(color, td.ringColor, max(max(ringAlpha(xz), marksAlpha(xz, max(fw.x, fw.y)) * td.ringOpacity), cliffLineAlpha(xz, y, max(fw.x, fw.y))));
   // normalId keeps the mesh normal, so pebbles and cracks never get outlines (docs/22).
   return FsOut(vec4f(color, 1.0), vec4f(octEncode(n), 0.0, 1.0 / 3.0));
 }

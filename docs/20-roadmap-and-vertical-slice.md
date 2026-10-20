@@ -75,7 +75,7 @@ Slice acceptance, all together:
 
 ### M2 — Pond tier complete and the meadow islet
 
-- **First step: the Cliff tool** (decided October 2026). Terrace and Cut modes that build or carve level shelves with sheer rock faces, painted rock that stays sheer (talus about 82 degrees), full mesh detail near cliffs, and a shadow offset for near-vertical faces. Available from the start of play, not a gift; built first so it lands as early as possible without interrupting the slice (docs 08, 15, 04, 19). Branch `m2-cliff-tool`.
+- **First step: the Cliff tool** (decided October 2026). Terrace and Cut modes that build or carve level shelves with sheer rock faces, painted rock that stays sheer (talus about 82 degrees), full mesh detail near cliffs, and a shadow offset for near-vertical faces. Available from the start of play, not a gift; built first so it lands as early as possible without interrupting the slice (docs 08, 15, 04, 19). Branch `m2-cliff-tool`: built October 20, 2026 as Sculpt chips (Terrace and Cut beside Raise, Lower, Flatten and Stone), in review. Water already runs over a shelf's edge in the live sim; drawing it as a visible falling sheet (a waterfall) is a proposed follow-up.
 - Minnows (schooling) and dragonflies (darting flight) join the frogs.
 - Gifts: the first gift card from a happy species; the dragonflies' stream tool.
 - The Tier 1 milestone: the meadow islet rises at low tide with a sandbar to the main island (doc 13).

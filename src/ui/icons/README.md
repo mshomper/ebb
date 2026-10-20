@@ -79,6 +79,8 @@ Size and color come from CSS: set `width`/`height` on `.icon` and `color` on the
 | `raise` | mound with an up stroke |
 | `lower` | hollow with a down stroke |
 | `flatten` | level shelf line over a mound, the cut-away top dotted |
+| `terrace` | a level shelf raised on a sheer face with rock bands on it, an up stroke above: Sculpt's Terrace mode |
+| `cut` | a notch carved into the ground with sheer walls, the cut-away top dotted, a down stroke: Sculpt's Cut mode |
 | `time` | half sun on a horizon with a flow arc |
 | `flow-1`, `flow-2`, `flow-4` | one, two or three pips: normal, 2x and 4x speed |
 | `flow-pause` | two rest bars: time paused |

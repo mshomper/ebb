@@ -5,7 +5,7 @@
 
 import { mat4, vec3 } from 'wgpu-matrix';
 import { makeBuffer, makeShaderModule, makeTexture, untrack } from '../../core/gpu.js';
-import { CHUNK_MIN } from '../../world/terrain/grid.js';
+import { CHUNK_MIN, CHUNK_SIZE } from '../../world/terrain/grid.js';
 import { LODS, MAX_CHUNKS, createIndexBuffers, packChunks } from '../terrain-mesh.js';
 
 /** @typedef {import('../frame-graph.js').PassContext} PassContext */
@@ -16,7 +16,8 @@ const TAPS = { pcss: 16, '9tap': 9, '4tap': 4 };
 
 /**
  * @param {{ terrain: import('../../world/terrain/index.js').Terrain, recipe: any, terrainRecipe: any,
- *   tierShadows: { cascades: number, size: number, filter: string }, worldRadius: number }} opts
+ *   tierShadows: { cascades: number, size: number, filter: string }, worldRadius: number,
+ *   getEye?: () => ArrayLike<number>, cliffDetailM?: number }} opts
  */
 export function createShadowPass(opts) {
   const { terrain, recipe } = opts;
@@ -32,6 +33,35 @@ export function createShadowPass(opts) {
   const chunkData = new Float32Array(MAX_CHUNKS * 4);
   /** @type {{ lod: number, first: number, count: number }[]} */ let draws = [];
   const lodIndex = Math.max(0, LODS.indexOf(recipe.shadowLod));
+  /** @type {GPUBuffer | null} */ let shadowChunks = null;
+  /** Cliff chunks closer than this (m) cast at full detail, matching the wall as drawn (docs/19). */
+  let cliffDetailM = new URLSearchParams(location.search).get('cliffdetail') === '0' ? 0 : opts.cliffDetailM ?? 45;
+  /** What the chunk records were last packed for, so they repack only when it changes. */
+  let packedKey = '';
+
+  /**
+   * Every open chunk at the shadow LOD, except cliff chunks near the eye at full detail, so the
+   * shadow a wall casts matches the wall as drawn and does not self-shadow in stripes.
+   * @param {GPUDevice} device
+   */
+  function packCasters(device) {
+    const eye = opts.getEye?.() ?? [0, 0, 0];
+    /** @type {number[][]} */ const byLod = [[], [], []];
+    let key = '';
+    for (let cz = CHUNK_MIN; cz < CHUNK_MIN + 6; cz++) {
+      for (let cx = CHUNK_MIN; cx < CHUNK_MIN + 6; cx++) {
+        if (terrain.chunkState(cx, cz) !== 'open') continue;
+        const d = Math.hypot(eye[0] - cx * CHUNK_SIZE, eye[1] - 2, eye[2] - cz * CHUNK_SIZE) - CHUNK_SIZE * 0.5;
+        const lod = d < cliffDetailM && terrain.cliffs.has(cx, cz) ? 0 : lodIndex;
+        byLod[lod].push(cx, cz);
+        key += lod;
+      }
+    }
+    if (key === packedKey || !shadowChunks) return;
+    packedKey = key;
+    draws = packChunks(chunkData, byLod);
+    device.queue.writeBuffer(shadowChunks, 0, chunkData);
+  }
 
   // Results of the last update(), read by the lighting uniforms.
   const state = {
@@ -42,6 +72,8 @@ export function createShadowPass(opts) {
     strength: 0,
     count: cascades,
     taps: TAPS[/** @type {'pcss'} */ (opts.tierShadows.filter)] ?? 9,
+    /** Extra normal offset (texels) on upright faces, so cliff walls never self-shadow in stripes. */
+    cliffOffset: recipe.cliffNormalOffsetTexels ?? 0,
   };
 
   /**
@@ -134,8 +166,10 @@ export function createShadowPass(opts) {
      * the caller must hand resources() to the lighting group again. Returns true when it did.
      * @param {{ cascades: number, size: number, filter: string }} tierShadows
      * @param {GPUDevice} device
+     * @param {number} [cliffM] the tier's cliffDetailM
      */
-    setTier(tierShadows, device) {
+    setTier(tierShadows, device, cliffM) {
+      if (cliffM !== undefined && new URLSearchParams(location.search).get('cliffdetail') !== '0') cliffDetailM = cliffM;
       cascades = Math.max(1, Math.min(MAX_CASCADES, tierShadows.cascades));
       state.count = cascades;
       state.taps = TAPS[/** @type {'pcss'} */ (tierShadows.filter)] ?? 9;
@@ -177,13 +211,7 @@ export function createShadowPass(opts) {
       const skirtBuffer = makeBuffer(device, { label: 'shadow-skirt', size: 16, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
       device.queue.writeBuffer(skirtBuffer, 0, new Float32Array([opts.terrainRecipe.render.skirtDepth, 0, 0, 0]));
       indexBuffers = createIndexBuffers(device);
-      // Every open chunk at one LOD; chunks only change when land opens (M2), so pack once.
-      /** @type {number[][]} */ const byLod = [[], [], []];
-      for (let cz = CHUNK_MIN; cz < CHUNK_MIN + 6; cz++) {
-        for (let cx = CHUNK_MIN; cx < CHUNK_MIN + 6; cx++) if (terrain.chunkState(cx, cz) === 'open') byLod[lodIndex].push(cx, cz);
-      }
-      draws = packChunks(chunkData, byLod);
-      device.queue.writeBuffer(chunkBuffer, 0, chunkData);
+      shadowChunks = chunkBuffer;
       group = device.createBindGroup({
         label: 'shadow',
         layout,
@@ -200,6 +228,7 @@ export function createShadowPass(opts) {
 
     /** @param {GPUCommandEncoder} encoder @param {PassContext} ctx */
     record(encoder, ctx) {
+      packCasters(ctx.device);
       const data = new Float32Array((CASCADE_STRIDE / 4) * MAX_CASCADES);
       for (let c = 0; c < cascades; c++) data.set(state.viewProj[c], (c * CASCADE_STRIDE) / 4);
       ctx.device.queue.writeBuffer(cascadeBuffer, 0, data);

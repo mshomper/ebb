@@ -166,10 +166,12 @@ export function createOrbitCamera(opts) {} // {update(dt), view, proj, eye, foll
 export const TOOL_GROUPS = { land:['sculpt','smooth','paint','cliff'], water:['water','stream','tide-stone'],
   life:['seed'], build:['path','wall','bridge','lantern','drift-log'], creatures:['call','feed'] };
 // a tool shows only when progression lists it as unlocked
-// 'cliff' (M2) is unlocked from the start of play; its brush card holds Terrace and Cut chips
+// The Cliff tool (M2) is available from the start of play. As built it is not a tool button of its
+// own: Terrace and Cut are Sculpt chips five and six (three to a row), so the bar stays at six
+// buttons, which a 375 px phone fits (a seven-button bar was cut off there before).
 ```
 
-**Cliff tool input** (M2, `08-terrain-and-sculpt.md`). Desktop: a click sets the shelf level, left drag builds (Terrace) or carves (Cut), and Shift snaps the level to sea level. Touch: a tap sets the level, a one-finger drag builds or carves, and two fingers still move the camera. While the tool is active, a faint level plane shows the shelf height under the ring.
+**Cliff input** (M2, `08-terrain-and-sculpt.md`). Desktop: left drag builds (Terrace) or carves (Cut) a shelf at the ground where the drag starts plus or minus the Height slider, and Shift at the start levels to sea level. Touch: a one-finger drag builds or carves, and two fingers still move the camera. In these modes the card swaps Strength for Height (0.25 to 3 m in 0.25 m steps) and shows a one-line hint. While hovering or dragging, a thin line under the ring marks where the ground meets the shelf's level.
 
 Events (past tense, per 03-tech-stack-and-module-map.md) emitted: `tool:selected`, `camera:follow-started`, `camera:follow-ended`, `ui:panel-opened`, `ui:panel-closed`, `note:posted`. Listened to: `land:joined`, `progress:gifted`, `creature:settled`, `creature:left`, `species:moved-on`, `journal:page-updated`, `reveal:started`, `reveal:note-shown`, `reveal:ended`, `clock:hour`.
 
@@ -182,7 +184,8 @@ One `<symbol id="i-NAME" viewBox="0 0 24 24">` per icon: 24 px grid, 2 px paddin
 | sculpt | trowel lifting a soft mound |
 | smooth | flat float over a wavy line that straightens |
 | paint | round brush with a leaf-shaped dab |
-| cliff | chisel edge over a stepped ground profile (M2) |
+| terrace | a level shelf raised on a sheer face with rock bands, an up stroke above (M2, Sculpt chip) |
+| cut | a notch carved into the ground with sheer walls, the cut-away top dotted, a down stroke (M2, Sculpt chip) |
 | water | droplet over one ripple line |
 | seed | split seed with two first leaves |
 | path | three stepping stones on a curve |

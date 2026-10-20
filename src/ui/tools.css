@@ -144,8 +144,10 @@
 .ebb-tools__chips--species .ebb-tools__chip--wide { grid-column: 1 / -1; }
 /* Chips, sliders and the spring parts set their own display; the hidden attribute still wins. */
 .ebb-tools [hidden] { display: none; }
-/* Paint and sculpt chips (four each) stack the swatch or icon above the label so four fit on every width. */
-.ebb-tools__chips--paint, .ebb-tools__chips--sculpt { --tb-cols: 4; }
+/* Paint chips (four) and sculpt chips (six, three to a row with Terrace and Cut, M2) stack the
+   swatch or icon above the label so they fit on every width. */
+.ebb-tools__chips--paint { --tb-cols: 4; }
+.ebb-tools__chips--sculpt { --tb-cols: 3; }
 .ebb-tools__chips--paint .ebb-tools__chip,
 .ebb-tools__chips--sculpt .ebb-tools__chip { flex-direction: column; gap: 3px; padding: 6px 4px; }
 

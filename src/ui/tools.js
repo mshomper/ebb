@@ -16,7 +16,7 @@ import { ensureIconSprite, iconSvg } from './icons/icons.js';
 
 /** @typedef {'sculpt'|'smooth'|'paint'|'water'|'plant'|'feed'} ToolId */
 /** @typedef {'reeds'|'lilies'|'iris'|'marigold'|'rushes'|'thrift'|'campion'} PlantSpecies */
-/** @typedef {'raise'|'lower'|'flatten'|'stone'} SculptMode */
+/** @typedef {'raise'|'lower'|'flatten'|'stone'|'terrace'|'cut'} SculptMode */
 /** @typedef {'grass'|'sand'|'soil'|'rock'} PaintLayer */
 /** @typedef {'pour'|'drain'|'spring'} WaterMode */
 /** @typedef {'trickle'|'brook'|'stream'} SpringRate */
@@ -32,6 +32,9 @@ import { ensureIconSprite, iconSvg } from './icons/icons.js';
  * @property {number} size        brush radius, meters
  * @property {number} strength    0..1
  * @property {[number, number]} sizeRange  [min, max] meters
+ * @property {number} [cliffHeight]  Terrace and Cut: shelf height above or below the start, meters
+ * @property {[number, number]} [cliffHeightRange]  [min, max] meters
+ * @property {number} [cliffHeightStep]  slider step, meters
  */
 
 /**
@@ -104,7 +107,15 @@ const MODES = [
   { id: 'flatten', label: 'Flatten' },
   // Stone (docs/future/10): a tap sets a seeded boulder rather than a stroke.
   { id: 'stone', label: 'Stone' },
+  // The Cliff modes (docs/08, M2): level shelves with sheer rock faces, built up or carved down.
+  { id: 'terrace', label: 'Terrace' },
+  { id: 'cut', label: 'Cut' },
 ];
+/** What Terrace and Cut do, under their chips. */
+const CLIFF_HINTS = {
+  terrace: 'Drag to build a level shelf, Height above where you start, with a sheer rock face at its edge.',
+  cut: 'Drag to carve a level floor, Height below where you start, with sheer rock walls around it.',
+};
 /** @type {{id: PaintLayer, label: string}[]} */
 const LAYERS = [
   { id: 'grass', label: 'Grass' },
@@ -155,6 +166,9 @@ export function mountTools(parent = document.body) {
       <div class="ebb-tools__stone" role="group" aria-label="Stone" hidden>
         <p class="ebb-tools__hint">Tap the ground to set a stone. Tap one again to pile another against it.</p>
       </div>
+      <div class="ebb-tools__stone ebb-tools__cliff" role="group" aria-label="Cliff" hidden>
+        <p class="ebb-tools__hint" data-out="cliff-hint"></p>
+      </div>
       <div class="ebb-tools__plant" role="group" aria-label="Plant" hidden>
         <div class="ebb-tools__chips ebb-tools__chips--species" role="group" aria-label="Species"
           style="--tb-cols: ${Math.min(2, PLANT_SPECIES.length)}">
@@ -181,6 +195,11 @@ export function mountTools(parent = document.body) {
         <label for="ebb-tools-strength">Strength</label>
         <output for="ebb-tools-strength" data-out="strength"></output>
         <input class="ebb-tools__range" id="ebb-tools-strength" type="range" min="0" max="100" step="1" data-range="strength">
+      </div>
+      <div class="ebb-tools__slider" data-slider="height" hidden>
+        <label for="ebb-tools-height">Height</label>
+        <output for="ebb-tools-height" data-out="height"></output>
+        <input class="ebb-tools__range" id="ebb-tools-height" type="range" data-range="height">
       </div>
     </div>
     <div class="ebb-tools__bar" role="toolbar" aria-label="Tools">
@@ -218,6 +237,10 @@ export function mountTools(parent = document.body) {
   const rateBtns = /** @type {HTMLButtonElement[]} */ ([...root.querySelectorAll('[data-rate]')]);
   const plantPanel = /** @type {HTMLElement} */ (root.querySelector('.ebb-tools__plant'));
   const stonePanel = /** @type {HTMLElement} */ (root.querySelector('.ebb-tools__stone'));
+  const cliffPanel = /** @type {HTMLElement} */ (root.querySelector('.ebb-tools__cliff'));
+  const cliffHint = /** @type {HTMLElement} */ (root.querySelector('[data-out="cliff-hint"]'));
+  const heightRange = /** @type {HTMLInputElement} */ (root.querySelector('[data-range="height"]'));
+  const heightOut = /** @type {HTMLOutputElement} */ (root.querySelector('[data-out="height"]'));
   const speciesBtns = /** @type {HTMLButtonElement[]} */ ([...root.querySelectorAll('[data-species]')]);
   const speciesChips = /** @type {HTMLElement} */ (root.querySelector('.ebb-tools__chips--species'));
   const plantHint = /** @type {HTMLElement} */ (root.querySelector('[data-out="plant-hint"]'));
@@ -259,6 +282,10 @@ export function mountTools(parent = document.body) {
     paintRange(strengthRange);
     dispatch(/** @type {any} */ ({ type: 'brush.set', patch: { strength: v } }));
   }
+  function onHeight() {
+    paintRange(heightRange);
+    dispatch(/** @type {any} */ ({ type: 'brush.set', patch: { cliffHeight: Number(heightRange.value) } }));
+  }
   /** Keep pointer and wheel input on the panels from reaching anything below. @param {Event} e */
   const stop = (e) => e.stopPropagation();
 
@@ -266,6 +293,7 @@ export function mountTools(parent = document.body) {
   historyRoot.addEventListener('click', onClick);
   sizeRange.addEventListener('input', onSize);
   strengthRange.addEventListener('input', onStrength);
+  heightRange.addEventListener('input', onHeight);
   for (const panel of [card, /** @type {HTMLElement} */ (root.querySelector('.ebb-tools__bar')),
     /** @type {HTMLElement} */ (historyRoot.querySelector('.ebb-tools__bar'))]) {
     panel.addEventListener('pointerdown', stop);
@@ -347,10 +375,25 @@ export function mountTools(parent = document.body) {
       plantPanel.hidden = !inPlant;
       feedPanel.hidden = tool !== 'feed';
       const inStone = tool === 'sculpt' && t.sculptMode === 'stone';
+      const cliffMode = tool === 'sculpt' && (t.sculptMode === 'terrace' || t.sculptMode === 'cut') ? t.sculptMode : null;
       stonePanel.hidden = !inStone;
-      // A stone has a size, not a strength.
-      for (const s of sliders) s.hidden = inSpring || inPlant || tool === 'feed' || (inStone && s.dataset.slider === 'strength');
+      cliffPanel.hidden = !cliffMode;
+      if (cliffMode && cliffHint.textContent !== CLIFF_HINTS[cliffMode]) cliffHint.textContent = CLIFF_HINTS[cliffMode];
+      // A stone has a size, not a strength; Terrace and Cut have a height in place of the strength.
+      for (const s of sliders) {
+        const which = s.dataset.slider;
+        s.hidden = inSpring || inPlant || tool === 'feed'
+          || (which === 'strength' && (inStone || !!cliffMode)) || (which === 'height' && !cliffMode);
+      }
     }
+
+    const [hMin, hMax] = validRange(t.cliffHeightRange);
+    setAttr(heightRange, 'min', String(hMin));
+    setAttr(heightRange, 'max', String(hMax));
+    setAttr(heightRange, 'step', String(t.cliffHeightStep ?? 0.25));
+    const height = clamp(Number.isFinite(t.cliffHeight) ? /** @type {number} */ (t.cliffHeight) : 1, hMin, hMax);
+    syncRange(heightRange, height);
+    heightOut.textContent = `${height.toFixed(2).replace(/0$/, '')} m`;
 
     const [min, max] = validRange(t.sizeRange);
     const step = max - min > 20 ? 0.5 : 0.1;

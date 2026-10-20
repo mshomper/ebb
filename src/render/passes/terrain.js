@@ -11,15 +11,17 @@ import { strandLines } from '../../world/water/strandline.js';
 
 /** @typedef {import('../frame-graph.js').PassContext} PassContext */
 
-const DRAW_BYTES = 1296;  // 384 of look, 16 marker rings (floats 96..159), the drowned meadow (160..167), wet-to-dry grass (168..175), the shore (176..195), the strandline and kelp (196..235), wrack fronds (236..251), lugworm casts (252..323)
+const DRAW_BYTES = 1312;  // 384 of look, 16 marker rings (floats 96..159), the drowned meadow (160..167), wet-to-dry grass (168..175), the shore (176..195), the strandline and kelp (196..235), wrack fronds (236..251), lugworm casts (252..323), the Cliff level line (324..327)
 const GROUND_BYTES = 336;
 const DEG = Math.PI / 180;
 /** @type {Record<string, number>} GroundDetail.tiling.x in lib-ground.wgsl */
 const TILING_MODES = { grid: 0, hex: 1, two: 2 };
+/** The tier's cliff full-detail distance (m); `?cliffdetail=0` turns it off for side-by-side checks. @param {number | undefined} m */
+const cliffDistance = (m) => (new URLSearchParams(location.search).get('cliffdetail') === '0' ? 0 : m ?? 45);
 
 /**
  * @param {{ terrain: import('../../world/terrain/index.js').Terrain, recipe: any, seed: number,
- *   getEye: () => ArrayLike<number>, tier: string, getTide?: () => number, getHours?: () => number, lodDistances?: number[],
+ *   getEye: () => ArrayLike<number>, tier: string, getTide?: () => number, getHours?: () => number, lodDistances?: number[], cliffDetailM?: number,
  *   water: { depthTextures: GPUTexture[], current: () => number, damp?: GPUTexture, dampWet?: number, vel: GPUTexture, caustics: any, tide?: any },
  *   moss: GPUTexture, causticLayers?: number, wetness: { textures: GPUTexture[], current: () => number },
  *   ground: { views: { a: GPUTextureView, b: GPUTextureView }, sampler: GPUSampler, version: number, fade: number },
@@ -48,6 +50,8 @@ export function createTerrainPass(opts) {
   const maxQuads = opts.tier === 'low' ? recipe.render.lowTierMaxQuads : LODS[0];
   /** Mesh LOD switch distances (m): the tier's, else the terrain recipe's. @type {number[]} */
   let lodDistances = opts.lodDistances ?? recipe.render.lodDistances;
+  /** Cliff chunks closer than this (m) draw at full detail: the tier's cliffDetailM. */
+  let cliffDetailM = cliffDistance(opts.cliffDetailM);
   // Caustic layers on underwater ground, per tier; `?caustics=0` turns them off for side-by-side checks.
   const causticsOff = new URLSearchParams(location.search).get('caustics') === '0' || !opts.water.caustics;
   /** @param {number | undefined} n */
@@ -178,7 +182,7 @@ export function createTerrainPass(opts) {
 
     /**
      * Apply a quality tier's distances without rebuilding (the startup probe may step down).
-     * @param {{ lodDistances?: number[], ground: { detailFadeMeters: number }, causticLayers?: number, name?: string }} t
+     * @param {{ lodDistances?: number[], cliffDetailM?: number, ground: { detailFadeMeters: number }, causticLayers?: number, name?: string }} t
      *   name: the tier's name (the shore's ripples are off on some)
      */
     /** Rain now, 0..1: how many raindrop rings fall in puddles. @param {number} r */
@@ -216,6 +220,7 @@ export function createTerrainPass(opts) {
 
     setTier(t) {
       lodDistances = t.lodDistances ?? recipe.render.lodDistances;
+      cliffDetailM = cliffDistance(t.cliffDetailM);
       if (t.name) {
         f[190] = (opts.shore.look.ripple.offTiers ?? []).includes(t.name) ? 0 : 1;
         f[214] = (opts.shore.look.strandline.offTiers ?? []).includes(t.name) ? 0 : 1;
@@ -322,6 +327,8 @@ export function createTerrainPass(opts) {
       const { device } = ctx;
       const ring = terrain.ring;
       f[24] = ring.x; f[25] = ring.z; f[26] = ring.radius; f[27] = ring.hardness; f[28] = ring.visible ? 1 : 0;
+      // Terrace and Cut: the line where the ground meets the shelf's level (floats 324..327).
+      f[324] = ring.level ?? 0; f[325] = ring.visible && ring.level !== null ? 1 : 0; f[326] = recipe.cliff.levelLineWidthM;
       f[38] = opts.getTide?.() ?? 0;
       // The strandline: the lines the last high tides left (floats 196..211), newest first.
       if (opts.getHours) {
@@ -342,6 +349,9 @@ export function createTerrainPass(opts) {
           const d = Math.hypot(eye[0] - cx * CHUNK_SIZE, eye[1] - 2, eye[2] - cz * CHUNK_SIZE) - CHUNK_SIZE * 0.5;
           let lod = d < lodDistances[0] ? 0 : d < lodDistances[1] ? 1 : 2;
           while (LODS[lod] > maxQuads && lod < 2) lod++;
+          // A chunk holding a cliff face keeps full detail near the camera, on every tier, so
+          // walls never go soft or jagged (docs/19).
+          if (d < cliffDetailM && terrain.cliffs.has(cx, cz)) lod = 0;
           byLod[lod].push(cx, cz);
         }
       }

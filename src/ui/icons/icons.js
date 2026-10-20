@@ -524,6 +524,20 @@ const ICONS = {
     <path d="M12 3V10"/>
     <path d="M9 7L12 10L15 7"/>`,
 
+  // A level shelf raised on a sheer face, rock bands on the face, an up stroke over the shelf.
+  terrace: `
+    <path ${ACCENT} d="M8.5 20V11.5H15.5C17.5 14.5 19 20 21.5 20Z"/>
+    <path d="M2.5 20H8.5V11.5H15.5C17.5 14.5 19 20 21.5 20"/>
+    <path d="M10.3 14.6H12.6M10.3 17.4H13.6"/>
+    <path d="M12 9V3.5M9.8 5.7L12 3.5L14.2 5.7"/>`,
+
+  // A notch carved down into the ground, sheer walls, the cut-away top dotted, a down stroke in it.
+  cut: `
+    <path ${ACCENT} d="M2.5 11H7V19H17V11H21.5V21.5H2.5Z"/>
+    <path d="M2.5 11H7V19H17V11H21.5"/>
+    <path d="M7 11H17" stroke-dasharray="0.01 2.9" opacity="0.7"/>
+    <path d="M12 3.5V9M9.8 6.8L12 9L14.2 6.8"/>`,
+
   // A level shelf line over a mound whose top it has cut away.
   flatten: `
     <path ${ACCENT} d="M2.5 20C5 20 6.6 15.5 7.8 12H16.2C17.4 15.5 19 20 21.5 20Z"/>
