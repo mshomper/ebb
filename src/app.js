@@ -32,6 +32,9 @@ import { createWaterWorld } from './world/water-world.js';
 import { createGrowth } from './world/growth/index.js';
 import { createPlantTool } from './world/growth/plant-tool.js';
 import { weatherAt } from './world/weather.js';
+import { state as tideState, tideParams } from './world/tide.js';
+import { soundNear, nothingNear } from './world/sound-near.js';
+import { loadAudioRecipe } from './audio/recipes.js';
 import { createWaterPass } from './render/passes/water.js';
 import { createGrassPass } from './render/passes/grass.js';
 import { createFloraPass } from './render/passes/flora.js';
@@ -648,6 +651,35 @@ export async function startApp(canvas, hooks = {}) {
     else terrain.setRing({ visible: false });
   }
 
+  // The island's sound (src/audio, docs 17 and 25) reads the store slice `sound`, written here
+  // about ten times a second: display time, season, weather, tide, the camera and what is near it.
+  // Only the game starts the sound (src/main.js); for tool pages the slice is simply unread.
+  const soundRecipe = await loadAudioRecipe('audio/game');
+  const tideP = tideParams(waterRecipe.tide);
+  let soundAcc = Infinity;
+  let nearAcc = Infinity;
+  let near = nothingNear();
+  /** @param {number} realDt @param {number} display @param {{ index: number, phase: number }} season @param {any} weather */
+  function publishSound(realDt, display, season, weather) {
+    soundAcc += realDt;
+    nearAcc += realDt;
+    if (soundAcc < 1 / soundRecipe.updateHz) return;
+    soundAcc = 0;
+    if (nearAcc >= soundRecipe.near.nearEveryS) {
+      nearAcc = 0;
+      near = soundNear({ summary: water.getSummary(), growth: world.state?.growth, rushId: growthRecipe.cover?.[0] ?? null,
+        x: camera.target[0], z: camera.target[2], recipe: soundRecipe.near });
+    }
+    const frogs = world.state?.creatures?.frogs?.frogs ?? [];
+    updateStore('sound', () => ({
+      displayT: display, season: season.index, seasonPhase: season.phase,
+      weather: { cloud: weather.cloud, rain: weather.rain, mist: weather.mist, wind: weatherAt(world.state?.weather, display, seasonsRecipe).wind },
+      tidePhase: tideState(display / clock.SECONDS_PER_HOUR, tideP).phase01,
+      eye: [...camera.eye], target: [...camera.target], near,
+      residents: frogs.length ? ['frog'] : [],
+    }));
+  }
+
   let running = true;
   let frameIndex = 0;
   let last = performance.now();
@@ -695,6 +727,7 @@ export async function startApp(canvas, hooks = {}) {
     const day = daylight.update(display, world.state, getStore('preview')?.weather ?? null, atmosphere.aerosolScale);
     atmosphere.setAtmosphere({ cloud: day.weather.cloud, mist: day.weather.mist, rain: day.weather.rain });
     for (const event of day.events) emitDeferred('sky:sun-crossed', { event });
+    publishSound(realDt, display, season, day.weather);
     // Palette keys follow the displayed sun, season and weather; positive exposureComp brightens.
     const look = baker.update(realDt, {
       sunAltDeg: (day.sm.sunAlt * 180) / Math.PI, seasonPhase: season.index + season.phase, weather: day.weather,

@@ -1,0 +1,33 @@
+{
+  "type": "audio",
+  "id": "game",
+  "version": 1,
+  "note": "How the game feeds its sound (src/audio/index.js, src/audio/game-state.js, src/world/sound-near.js; docs 17 and 25). updateHz: how often the sound state is built and the ambience updated (doc 17: 10 Hz). near: what is close to the camera target, sampled every nearEveryS seconds over a circle of radiusM (doc 17: within 12 m), cell by cell (the water summary's half-meter cells, the growth grid's one-meter cells), each cell weighted by closeness (1 at the center, falloff at the edge). Water kinds come from the water summary's classes: still is pond water, slow and running are streams. Ponds count by their share of the circle; streams are thin, so slow and running count by how close the nearest stream cell is: full within streamFullM, easing to none at radiusM. Cells beyond the summary are open sea; the sea counts toward nearWater for the rain on open water, but not toward the pond lap. fullAt is the share of weighted points that counts as fully near (so a pond filling a third of the circle already sounds like a pond). Pads and reeds count plants within plantReachM of each point, each species at its weight in pads and reeds (lilies make pads; reeds, and irises at half, make reeds); the rush cover counts as reeds at rushWeight. grass: the grass cover (0..255) that counts as full grass. gust: the wind's gusts, which the weather does not keep, made here on a seeded rhythm: a gust comes every everyS seconds (shorter as wind rises, divided by everyWindScale plus the wind), rises to a peak between peak[0] and peak[1] scaled up by the wind, lasts holdS, and the level follows its target at followPerS. frost (doc 25): winter mornings are frosty until the sun burns it off. frost = the winter weight, times a curve of hours from sunrise (byHourFromSunrise, flat past the ends), times 1 - cloudCut * cloud, and none while it rains. afterRainH: game hours of drips after rain stops (doc 25 asks for one to two). mobile: a phone is a coarse pointer with a short screen side under phoneMaxSidePx (the audio check page uses the same rule). seed: the sub-seed for this system's streams.",
+  "updateHz": 10,
+  "near": {
+    "nearEveryS": 0.5,
+    "radiusM": 12,
+    "streamFullM": 2,
+    "falloff": 0.35,
+    "fullAt": 0.35,
+    "plantReachM": 1.5,
+    "pads": { "lilies": 1 },
+    "reeds": { "reeds": 1, "iris": 0.5 },
+    "rushWeight": 0.8,
+    "grassFull": 160
+  },
+  "gust": {
+    "everyS": [6, 20],
+    "everyWindScale": 0.4,
+    "holdS": [2, 5],
+    "peak": [0.3, 1],
+    "followPerS": 1.2
+  },
+  "frost": {
+    "byHourFromSunrise": [[-10, 0], [-7, 0.7], [-1, 1], [1.5, 1], [3.5, 0]],
+    "cloudCut": 0.6
+  },
+  "afterRainH": 1.5,
+  "mobile": { "phoneMaxSidePx": 700 },
+  "seed": 2610
+}

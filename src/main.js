@@ -15,7 +15,8 @@ import { mountFrogScale } from './ui/frog-scale.js';
 import { createJournal } from './world/journal/index.js';
 import { loadRecipe } from './core/recipes.js';
 import { on } from './core/events.js';
-import { get as getStore } from './core/store.js';
+import { get as getStore, defaultStore } from './core/store.js';
+import { startAudio } from './audio/index.js';
 import { showElsewhere } from './ui/elsewhere.js';
 import { mountAway } from './sim/away.js';
 import { mountReveal } from './ui/reveal.js';
@@ -63,6 +64,10 @@ startApp(canvas, { onDeviceLost: (rebuilding) => showRebuildingNote(rebuilding),
     if (r.ok && saveInfo) on('save:moved-away', () => showElsewhere(saveInfo.takeOver, true));
     if (r.ok && !toolsMounted) {
       toolsMounted = true;
+      // The island's sound (src/audio, docs 17 and 25): silent until the first touch or key.
+      startAudio(defaultStore)
+        .then((a) => { if (new URLSearchParams(location.search).has('debug')) /** @type {any} */ (window).ebbAudio = a; })
+        .catch((err) => console.warn('ebb audio: the sound did not start', err));
       // The HUD (docs/15): corners and the bottom edge, dimming when idle, H to hide.
       const hud = await mountHud(document.body);
       hudLayer = hud.layer;

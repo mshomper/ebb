@@ -4,7 +4,7 @@
 // wide): a full-screen sheet with the sections stacked, each opening on a tap.
 //   Time      speed, keep growing while away (this island), show what changed on return
 //   Look      palette, text size, motion
-//   Sound     volume and quiet in the background, kept for when the island's sounds arrive
+//   Sound     volume and quiet in the background (src/audio/index.js applies them)
 //   Controls  dimming the buttons when idle
 //   Quality   Auto or a tier, switched with no reload (when the app offers it)
 //   Saves     back up, open a file, earlier saves, start again, the island switch (saves-menu.js)
@@ -188,7 +188,7 @@ export function mountSettings(o) {
     volRange.style.setProperty('--fill', `${v}%`);
   });
   section('sound', 'Sound', 'sound', [
-    hint('The island has no sounds yet. These settings wait for them.'),
+    hint('Sound starts after your first tap or key. On an iPhone, the silent switch also silences the island.'),
     volume,
     toggle('Quiet when this tab is in the background', () => settings().audio?.muteInBackground !== false,
       (on) => set({ audio: { ...settings().audio, muteInBackground: on } })),
