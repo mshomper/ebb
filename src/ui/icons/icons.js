@@ -90,6 +90,14 @@ const ICONS = {
     <path d="M15.5 15.5L20 20"/>
     <path d="M20 15.5L15.5 20"/>`,
 
+  // Remove a loose stone: the stone, smaller, with a small cross drawn as two strokes beside it.
+  'stone-remove': `
+    <path ${ACCENT} d="M3 15C3.3 10.9 6.2 7.8 10 7.6C13.4 7.4 15.8 9.6 16.2 12.7L9.5 15Z"/>
+    <path d="M3 15C3.3 10.9 6.2 7.8 10 7.6C13.4 7.4 15.8 9.6 16.2 12.7L9.5 15Z"/>
+    <path d="M2.5 17.5H12"/>
+    <path d="M15.5 15.5L20 20"/>
+    <path d="M20 15.5L15.5 20"/>`,
+
   // Plant tool: a seedling with two leaves rising from a small mound on the ground line.
   plant: `
     <path ${ACCENT} d="M7 20.5C8 18.6 16 18.6 17 20.5Z"/>
@@ -160,6 +168,27 @@ const ICONS = {
     <path d="M13.6 11.8C11.9 11.8 11.2 10.2 11.4 8.6C11.6 7.2 12.6 6.6 13.6 6.6S15.6 7.2 15.8 8.6C16 10.2 15.3 11.8 13.6 11.8Z"/>
     <path d="M13.6 6.6V11.8"/>
     <path d="M13.6 6.6C11.4 6.2 9.8 4.8 9.6 3.2C11.6 3 13 4.4 13.6 6.6ZM13.6 6.6C15.8 6.2 17.4 4.8 17.6 3.2C15.6 3 14.2 4.4 13.6 6.6ZM13.6 6.6C13 4.6 13.2 3 13.6 2.2C14 3 14.2 4.6 13.6 6.6Z"/>`,
+
+  // Grey willow (species chip): a rounded, lobed crown on several stems fanning up from one stool
+  // on the ground line, two narrow leaves drawn on the crown.
+  willow: `
+    <path ${ACCENT} d="M6 14.6C4.2 14.6 3.3 12.6 4.5 11.1C4.1 8.9 5.9 7.3 8 7.7C8.6 5.3 11.2 4.1 13.4 5.1C15.3 4 17.8 5.2 18 7.5C20 7.9 20.9 10.1 19.6 11.7C20.3 13.5 19 15 17.4 14.7C15 15.7 9 15.7 6 14.6Z"/>
+    <path d="M6 14.6C4.2 14.6 3.3 12.6 4.5 11.1C4.1 8.9 5.9 7.3 8 7.7C8.6 5.3 11.2 4.1 13.4 5.1C15.3 4 17.8 5.2 18 7.5C20 7.9 20.9 10.1 19.6 11.7C20.3 13.5 19 15 17.4 14.7C15 15.7 9 15.7 6 14.6Z"/>
+    <path d="M3.5 20.5H20.5"/>
+    <path d="M12 20.5V15.3M11.2 20.5C10.9 18.4 9.8 16.6 8.2 15.3M12.8 20.5C13.1 18.4 14.2 16.6 15.8 15.3"/>
+    <path d="M8.6 11.6C9.4 10.2 10.6 9.4 12 9.2M13.2 12C14.2 10.8 15.4 10.2 16.6 10.2"/>`,
+
+  // Gorse (species chip): a dense, rounded mound on the ground line, short spines standing off its
+  // rim, and three small pea flowers on it.
+  gorse: `
+    <path ${ACCENT} d="M4 20.5C4 13 7.4 8.6 12 8.6S20 13 20 20.5Z"/>
+    <path d="M4 20.5C4 13 7.4 8.6 12 8.6S20 13 20 20.5"/>
+    <path d="M2.5 20.5H21.5"/>
+    <path d="M4.9 14.6L3.2 14M6.6 11.2L5.3 9.9M9.2 9.3L8.6 7.6M12 8.6V6.8M14.8 9.3L15.4 7.6M17.4 11.2L18.7 9.9M19.1 14.6L20.8 14"/>
+    <path d="M8.6 17.6L10 16.4M14 17.8L15.4 16.6"/>
+    <circle cx="9.4" cy="13" r="1.2" fill="currentColor" stroke="none"/>
+    <circle cx="14.6" cy="12.4" r="1.2" fill="currentColor" stroke="none"/>
+    <circle cx="12.2" cy="15.8" r="1.2" fill="currentColor" stroke="none"/>`,
 
   // Sea thrift (species chip): a low rounded cushion on the ground line, three thin stalks each
   // topped by a round pompom.
@@ -429,6 +458,13 @@ const ICONS = {
     <path d="M9.6 14.4L8.4 10.6L9.8 10.2"/>
     <circle cx="16" cy="15.4" r="0.6"/>
     <path d="M2.5 21C4.2 20.2 5.8 20.2 7.5 21S10.8 21.8 12.5 21"/>`,
+  // Carry (the turtles' gift, src/world/pieces): a log lifted off the ground line, an arrow up above it.
+  carry: `
+    <rect ${ACCENT} x="3.5" y="12" width="17" height="5" rx="2.5"/>
+    <rect x="3.5" y="12" width="17" height="5" rx="2.5"/>
+    <circle cx="18" cy="14.5" r="1"/>
+    <path d="M12 3V9M9.4 5.6L12 3L14.6 5.6"/>
+    <path d="M2.5 20.5H21.5"/>`,
   // Stone, a Sculpt mode (docs/future/10): a rounded boulder resting on the ground, a smaller one against it, and a
   // short drop line above: set a stone here.
   stone: `
@@ -597,6 +633,13 @@ const ICONS = {
   heart: `
     <path ${ACCENT} d="M12 19.5C12 19.5 4.5 15 4.5 9.6A3.9 3.9 0 0 1 12 7.6A3.9 3.9 0 0 1 19.5 9.6C19.5 15 12 19.5 12 19.5Z"/>
     <path d="M12 19.5C12 19.5 4.5 15 4.5 9.6A3.9 3.9 0 0 1 12 7.6A3.9 3.9 0 0 1 19.5 9.6C19.5 15 12 19.5 12 19.5Z"/>`,
+
+  // Not for me: a thumb pointing down (the cuff on the left, the fist above, the thumb below), for a
+  // piece of music you would rather not hear.
+  pass: `
+    <path ${ACCENT} d="M3.5 4.5H7V13H3.5Z"/>
+    <path d="M3.5 4.5H7V13H3.5Z"/>
+    <path d="M7 12.5L10.6 19.2A1.6 1.6 0 0 0 13.6 18.4V14.5H18.4A2 2 0 0 0 20.4 12.2L19.3 6.3A2.2 2.2 0 0 0 17.1 4.5H7"/>`,
 
   // Heart, filled: a piece you have hearted.
   'heart-full': `

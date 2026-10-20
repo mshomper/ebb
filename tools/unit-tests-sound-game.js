@@ -6,7 +6,7 @@
 // (src/audio/creatures-game.js): each played once, none before the first touch, late ones let go.
 
 import { createCreatureSound } from '../src/audio/creatures-game.js';
-import { heartOf, isHearted, toggleHeart } from '../src/audio/music/hearts.js';
+import { heartOf, isHearted, toggleHeart, setVerdict, soundOf } from '../src/audio/music/hearts.js';
 import { snapshot, restore } from '../src/save/sections.js';
 import { soundNear } from '../src/world/sound-near.js';
 import { WATER_CLASS } from '../src/world/water/summary.js';
@@ -151,6 +151,18 @@ export function addSoundGameTests(test, assert, eq) {
     assert(isHearted(list, g.key) && isHearted(list, t.key), 'both hearted');
     list = toggleHeart(list, g);
     assert(!isHearted(list, g.key) && isHearted(list, t.key), 'second tap takes it back');
+  });
+
+  test(G, 'a thumbs-down and a heart exclude each other; the same verdict again takes it back', () => {
+    const h = heartOf({ id: 'g', title: 'Warm Pool', grown: true, grownSlot: 'morning', weather: 'clear', seed: 2, season: 'summer', template: 'song', sound: soundOf({ strum: ['guitar'] }) });
+    eq(h.sound, 'strum', 'the strum is its own sound');
+    let m = setVerdict(undefined, h, 'heart');
+    assert(isHearted(m.hearted, h.key) && !isHearted(m.passed, h.key), 'hearted');
+    m = setVerdict(m, h, 'pass');
+    assert(!isHearted(m.hearted, h.key) && isHearted(m.passed, h.key), 'passed takes the heart away');
+    eq(m.passed[0].template, 'song', 'the form is kept for the leaning');
+    m = setVerdict(m, h, 'pass');
+    assert(!isHearted(m.passed, h.key), 'a second thumbs-down takes it back');
   });
 
   test(G, 'hearts are kept in the island save and come back', () => {

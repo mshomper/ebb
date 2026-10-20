@@ -41,6 +41,7 @@ Size and color come from CSS: set `width`/`height` on `.icon` and `color` on the
 | `loosestone` | a stone tipped up on one side, a dark gap under it: the naturalist's loose stones reward |
 | `lens` | a round glass with a glint on a short handle: the naturalist's hand lens reward |
 | `driftwood` | a bending branch at the water's edge with a broken stub and a knot, a ripple beyond: the naturalist's driftwood reward |
+| `carry` | a log lifted off the ground line, an arrow up above it: Carry on a stone's or a log's card (the turtles' gift) |
 | `stone` | a rounded boulder on the ground with a smaller one against it, a drop line above: Sculpt's Stone mode |
 | `name-tag` | a luggage-style tag with its hole: naming a creature on its card |
 | `water` | droplet over one ripple line |
@@ -56,6 +57,8 @@ Size and color come from CSS: set `width`/`height` on `.icon` and `color` on the
 | `thrift` | low cushion on the ground line with three stalks topped by round pompoms: species chip |
 | `marigold` | two round, notched leaves at a wavy water line and a five-petalled cup flower above: species chip |
 | `campion` | a low mat on a rock's back and a flower with a swollen, veined calyx and spreading petals: species chip |
+| `willow` | a rounded, lobed crown on several stems fanning up from one stool on the ground line, two narrow leaves on the crown: species chip |
+| `gorse` | a dense, rounded mound on the ground line, short spines standing off its rim, three small filled pea flowers on it: species chip |
 | `grass` | five blades of different heights on the ground line: the grass journal page |
 | `rushes` | a tussock of stiff straight stems splaying from one base, a small flower tuft on the middle stem: the rushes journal page |
 | `journal` | bound book with a ribbon marker and a pressed leaf on the cover: the journal button |
@@ -81,6 +84,7 @@ Size and color come from CSS: set `width`/`height` on `.icon` and `color` on the
 | `close` | two crossing strokes: close a panel or card |
 | `note` | a single eighth note, its head lightly filled: music (the now-playing line, left) |
 | `notes2` | two beamed eighth notes: music (the now-playing line, right) |
+| `pass` | a thumb pointing down: a piece of music you would rather not hear (the now-playing line) |
 | `heart-full` | the same heart, filled: a piece you have hearted |
 | `heart` | a soft rounded heart, lightly filled: a piece of music you love (the now-playing line) |
 | `back` | a chevron pointing left: back to a list |

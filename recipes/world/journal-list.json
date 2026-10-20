@@ -13,7 +13,7 @@
   "labels": { "filter": "Show", "sort": "Sort", "open": "Open", "shut": "Fold away" },
   "places": { "pond": "Pond", "meadow": "Meadow", "shore": "Shore" },
   "placeOf": {
-    "grass": "meadow", "rushes": "pond", "reeds": "pond", "lilies": "pond", "iris": "pond", "marigold": "pond", "thrift": "shore", "campion": "shore", "pondweed": "pond",
+    "grass": "meadow", "rushes": "pond", "reeds": "pond", "lilies": "pond", "iris": "pond", "marigold": "pond", "willow": "pond", "gorse": "meadow", "thrift": "shore", "campion": "shore", "pondweed": "pond",
     "frogs": "pond", "midges": "pond", "minnows": "pond", "dragonflies": "pond", "pondskaters": "pond", "mussels": "shore", "sanddollars": "shore"
   },
   "empty": "Nothing here with these choices."

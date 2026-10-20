@@ -3,7 +3,8 @@
 // authored material by rules. Phase 4a grows the harmony: a form template, then a walk through the
 // season's chord grammar, judged across many candidates. The result is an ordinary piece file
 // (develop/piece.js) that the realizer plays like any anchor, and its name comes from the composer
-// (names.js). The same material, rules, season, slot, weather and seed always give the same piece
+// (names.js), and since phase 4b most pieces also sing a melody grown from the season's motifs
+// (song.js). The same material, rules, season, slot, weather and seed always give the same piece
 // and the same name, so a grown piece can be found again (and later hearted).
 //
 //   grow(seed) ─→ template (plan.js) ─→ 24 candidates: phrases + harmony walk (harmony.js)
@@ -15,6 +16,7 @@ import { fittingTemplates, planPhrases, pickWeighted } from './plan.js';
 import { walk, changes } from './harmony.js';
 import { judgeHarmony } from './judge.js';
 import { writePiece } from './piece.js';
+import { growSong } from './song.js';
 
 /** @param {string} s */
 function strHash(s) {
@@ -28,6 +30,7 @@ function strHash(s) {
  * @property {string} slot     'morning' | 'interlude' | 'evening' | 'nocturne'
  * @property {string} [weather]  'clear' | 'cloud' | 'rain' | 'mist'
  * @property {number} seed
+ * @property {boolean} [melody]  sing (true) or not (false) whatever the chance (the lab)
  */
 
 /**
@@ -46,7 +49,9 @@ export function grow(material, rules, where, names) {
   const template = pickWeighted(templates, r) ?? Object.keys(material.templates)[0];
   const meter = pickWeighted(material.meters, r) ?? '4/4';
   // Tempo from the season's band, scaled by the template (rain and mist go slower).
-  const [t0, t1] = material.tempo;
+  // A season may give each slot its own band (summer's mornings lift, its evenings settle).
+  const band = Array.isArray(material.tempo) ? material.tempo : (material.tempo[where.slot] ?? material.tempo.default);
+  const [t0, t1] = band;
   const ts = material.templates[template]?.tempoScale ?? 1;
   const lo = Math.round((t0 + (t1 - t0) * r.next() * 0.6) * ts);
   /** @type {[number, number]} */
@@ -78,6 +83,20 @@ export function grow(material, rules, where, names) {
   const endingId = pickWeighted(ew, r) ?? Object.keys(material.endings ?? {})[0];
   const ending = { id: endingId, ...material.endings[endingId] };
 
+  // The instruments: the material's palette for this weather or slot, one of its weighted choices
+  // (summer's electric piano takes some mornings); a material without palettes keeps the default.
+  const P = material.palettes;
+  const choices = P ? (P[weather !== 'clear' && weather !== 'cloud' ? weather : ''] ?? P[where.slot] ?? P.default) : null;
+  /** @type {any} */
+  let palette = undefined;
+  if (Array.isArray(choices) && choices.length) {
+    /** @type {Record<string, number>} */
+    const pw = {};
+    choices.forEach((c, i) => { pw[String(i)] = c.weight ?? 1; });
+    const { weight: _w, ...pick } = choices[Number(pickWeighted(pw, r) ?? 0)];
+    palette = pick;
+  }
+
   const title = names ? pieceName(seed, { season: material.season, slot: where.slot }, names) : `Grown ${where.slot} ${seed}`;
   const span = material.harmonicBars?.[meter] ?? 1;
   const report = {
@@ -89,8 +108,15 @@ export function grow(material, rules, where, names) {
     ending,
     rank: ranked.indexOf(chosen) + 1,
   };
+  // The melody (phase 4b), from its own streams, so everything above is the same with or without it.
+  const song = growSong(material, rules, {
+    walked: chosen.walked, plan: chosen.plan, meter, ending, slot: where.slot, weather, seed, palette,
+    salt: strHash(`melody:${material.season}:${where.slot}:${weather}`), force: where.melody,
+  });
+  if (song) /** @type {any} */ (report).melody = song.report;
   const piece = writePiece(material, chosen.walked, chosen.plan, {
     id: `grown-${material.season}-${where.slot}-${seed}`, title, slot: where.slot, weather, meter, tempo, template, seed, report, ending,
+    palette: song ? song.palette : palette, abc: song?.abc,
   });
   return {
     piece,

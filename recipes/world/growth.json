@@ -6,10 +6,10 @@
   "grass": { "ratePerH": 0.04, "saltFrom": 0.35, "saltFull": 0.75, "yieldToCover": 0.85,
              "habitat": { "soil": [0.5, 1, 0.35], "slopeDeg": [0, 35, 10] } },
   "maxPlants": 4000,
-  "species": ["reeds", "lilies", "iris", "thrift", "marigold", "campion", "pondweed"],
+  "species": ["reeds", "lilies", "iris", "thrift", "marigold", "campion", "willow", "gorse", "pondweed"],
   "cover": ["rushes"],
   "starters": ["reeds", "lilies"],
-  "volunteers": { "order": ["iris", "rushes", "thrift", "marigold", "campion"], "firstAfterH": 20, "gapH": 24, "chancePerH": 0.06, "minSuit": 0.8 },
+  "volunteers": { "order": ["iris", "rushes", "thrift", "marigold", "willow", "campion", "gorse"], "firstAfterH": 20, "gapH": 24, "chancePerH": 0.06, "minSuit": 0.8 },
   "marks": { "tapS": 1.4, "tapRadiusM": [0.15, 0.9], "youngRadiusM": 0.45, "youngOpacity": 0.55,
              "selectBloomS": 0.45, "selectPulseS": 2.2, "selectPulse": 0.12, "selectOpacity": [0.55, 0.9] }
 }

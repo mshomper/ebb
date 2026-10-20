@@ -14,6 +14,8 @@ const SEASONS = /** @type {const} */ (['spring', 'summer', 'autumn', 'winter']);
  * @property {string} vs          vertex entry point
  * @property {string} fs          fragment entry point
  * @property {(r: any) => number} vertices  vertices one plant may need
+ * @property {{ vs: string, fs: string, vertices: (r: any) => number }} [shadow]  a soft contact shadow under each
+ *   plant, drawn before the plants with a multiplying blend (shrubs)
  * @property {(r: any, f: Float32Array) => void} pack  the recipe's fixed values
  * @property {(r: any, f: Float32Array, u: { time: number, wind: number, windDir: number, season: number,
  *   pressed?: { u: number, pad: number, dipM: number, bearing: number }[] }) => void} frame  each frame (pressed: lily pads frogs sit on)
@@ -31,7 +33,7 @@ export function seasonBlend(A, s) {
   k = k * k * (3 - 2 * k);
   const a = A[SEASONS[i0]];
   const b = A[SEASONS[i1]];
-  return [0, 1, 2].map((i) => a[i] + (b[i] - a[i]) * k);
+  return a.map((v, i) => v + (b[i] - v) * k);
 }
 
 /** The FloraCommon header, each frame. @param {any} r @param {Float32Array} f @param {{ time: number, wind: number, windDir: number, season: number }} u */
@@ -146,5 +148,43 @@ export const FLORA_KINDS = {
       f.set(C.stalk, 32); f[35] = L.gustSpeed;
     },
     frame: common,
+  },
+
+  // Shrubs (grey willow, and gorse with other numbers and flowers among its needles): stems of 60 vertices (a stem of four
+  // segments and two forks of three), then cards of 6 on each stem and fork. The contact shadow is
+  // a few stacked, draped discs of 144 vertices, drawn first with a multiplying blend.
+  shrub: {
+    shader: 'flora-shrub', vs: 'vsShrub', fs: 'fsShrub',
+    vertices: (r) => 60 * r.shape.stemsPerShrub[1] + 18 * r.shape.stemsPerShrub[1] * r.shape.cardsPerBranch,
+    shadow: { vs: 'vsShrubShadow', fs: 'fsShrubShadow', vertices: (r) => 144 * Math.max(1, r.contactShadow?.layers ?? 1) },
+    pack(r, f) {
+      const S = r.shape, L = r.look, C = r.season, W = r.wind, P = r.phenology ?? {}, D = r.contactShadow ?? {};
+      const out = P.leafOut ?? [-1, -1], fall = P.leafFall ?? [-1, -1];
+      f.set([S.stemsPerShrub[0], S.stemsPerShrub[1], S.maxHeight, S.crownRadius], 12);
+      f.set([S.clumpRadius, S.stemWidth, S.twigWidth, S.leanShare], 16);
+      f.set([S.forks[0], S.forks[1], S.forkDeg * DEG, S.arch], 20);
+      f.set([S.forkAt[0], S.forkAt[1], L.heightVar, L.crownMiddle], 24);
+      f.set([S.cardsPerBranch, S.cardM, S.leafM, S.leafWidth], 28);
+      f.set([S.leafGrid, S.catkinsPerCard ?? 0, S.catkinM ?? 0.02, L.sproutM], 32);
+      f.set([out[0], out[1], fall[0], fall[1]], 36);
+      f.set([r.flowering?.[0] ?? 0, r.flowering?.[1] ?? 0, P.maleShare ?? 1, L.rootShade], 40);
+      f.set(C.bark, 44); f[47] = L.innerShade;
+      f.set(C.twig, 48); f[51] = W.stiffness;
+      f.set(C.catkin ?? C.twig, 52); f[55] = W.sway;
+      f.set(C.pollen ?? C.twig, 56); f[59] = W.flutter;
+      f.set(C.female ?? C.pollen ?? C.twig, 60); f[63] = L.gustSpeed;
+      f.set([1 / L.gustM, D.strength ?? 0, D.radiusShare ?? 1, D.bareShare ?? 1], 64);
+      f.set([D.sunShift ?? 0, D.liftM ?? 0.03, L.undersideShare ?? 0, 0], 68);
+      f.set([Math.max(1, D.layers ?? 1), D.layerM ?? 0, 0, 0], 72);
+      // Flowers among the leaves (gorse; none on willow) and how far cards are drawn to the crown.
+      f.set(C.flower ?? [0, 0, 0], 76); f[79] = S.flowerM ?? 0;
+      f.set([0, L.crownPull ?? 0.3, 0, 0], 80);
+    },
+    frame(r, f, u) {
+      common(r, f, u);
+      // This season's share of leaf cells in flower, blended through the year as the albedo is.
+      const F = r.season.flowerShare;
+      f[80] = F ? Math.max(0, seasonBlend(F, u.season)[0]) : 0;
+    },
   },
 };

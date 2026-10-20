@@ -69,6 +69,31 @@
   pointer-events: none;
 }
 .ebb-nowplaying.is-shown .ebb-nowplaying__heart { pointer-events: auto; }
+/* Not for me: the same tap target, in the bubble's quiet ink, just left of the heart. */
+.ebb-nowplaying__pass {
+  appearance: none;
+  -webkit-appearance: none;
+  flex: none;
+  width: 40px;
+  height: 40px;
+  margin: -8px -4px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--tagline-light);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  pointer-events: none;
+}
+.ebb-nowplaying.is-shown .ebb-nowplaying__pass { pointer-events: auto; }
+.ebb-nowplaying__pass:hover { background: rgba(30, 38, 36, 0.08); color: var(--ui-night); }
+.ebb-nowplaying__pass:focus-visible { outline: 2px solid var(--wordmark-light); outline-offset: 1px; }
+.ebb-nowplaying__pass .icon { width: 22px; height: 22px; }
+@media (pointer: coarse) {
+  .ebb-nowplaying__pass { width: 44px; height: 44px; }
+}
 .ebb-nowplaying__heart:hover { background: rgba(181, 101, 74, 0.12); }
 .ebb-nowplaying__heart:focus-visible { outline: 2px solid var(--wordmark-light); outline-offset: 1px; }
 .ebb-nowplaying__heart .icon { width: 24px; height: 24px; grid-area: 1 / 1; transition: opacity 0.25s ease, transform 0.25s ease; }

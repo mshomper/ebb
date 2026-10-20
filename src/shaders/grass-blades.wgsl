@@ -32,6 +32,8 @@ struct GrassDraw {
   lushDry: vec4f,                              // wet-to-dry (lush.js): rgb the dry rise's albedo this season, w the lushness that looks like today's meadow
   lushWet: vec4f,                              // rgb the albedo by the water, w 1 when the grass reads the lush field
   lushH: vec4f,                                // x height factor on the dry rise, y by the water
+  clearN: vec4f,                               // x how many clears are set
+  clears: array<vec4f, 32>,                    // ground no blade stands on: x, z, radius (m), under each placed piece (src/world/pieces)
 };
 
 @group(0) @binding(0) var<uniform> frame: FrameUniforms;
@@ -107,6 +109,11 @@ fn vsBlade(@builtin(vertex_index) vi: u32, @builtin(instance_index) ring: u32) -
   // ring's fill in, so from far above no box shows where the dense meadow ends.
   let dist = length(xz - gd.focus);
   if (dist > gd.look.y) { return nothing(); }
+  // Nothing grows through a stone: blades stand around it, not in it.
+  for (var c = 0u; c < u32(gd.clearN.x); c++) {
+    let cl = gd.clears[c];
+    if (distance(xz, cl.xy) < cl.z) { return nothing(); }
+  }
   let wob = (valueNoise2(xz / 9.0, u32(gd.look2.y) + 11u) - 0.5) * 2.0 * gd.derived.w;
   let band = smoothstep(gd.rings[0].z, gd.rings[1].z, dist * (1.0 + wob));
   let share = select(1.0 - band, band, ring == 1u);

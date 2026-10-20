@@ -4,10 +4,11 @@
 // strength sliders while a tool is active (water's spring mode swaps the sliders for flow
 // chips, a spring count and Remove; the Plant tool shows species chips, a hint and the last
 // tap's result instead; the Feed tool (S6c-2) shows a chip for each creature you have found that
-// takes food, its food, and the last tap's result). S8 grows this into the full HUD palette.
+// takes food, its food, and the last tap's result; Sculpt's Loose stone mode shows a stone count,
+// Remove for the selected stone, and a calm line at the cap). S8 grows this into the full HUD palette.
 //
-// Reads the store slices `tools`, `history`, `unlocks`, `waterUi`, `plantUi`, `feedUi` and
-// `journal` (what you have found); never writes the store. Every user choice goes out as an action through
+// Reads the store slices `tools`, `history`, `unlocks`, `waterUi`, `piecesUi`, `plantUi`, `feedUi`
+// and `journal` (what you have found); never writes the store. Every user choice goes out as an action through
 // src/input/actions.js. Styles: tools.css.
 
 import { get, subscribe } from '../core/store.js';
@@ -15,8 +16,8 @@ import { dispatch } from '../input/actions.js';
 import { ensureIconSprite, iconSvg } from './icons/icons.js';
 
 /** @typedef {'sculpt'|'smooth'|'paint'|'water'|'plant'|'feed'} ToolId */
-/** @typedef {'reeds'|'lilies'|'iris'|'marigold'|'rushes'|'thrift'|'campion'|'pondweed'} PlantSpecies */
-/** @typedef {'raise'|'lower'|'flatten'|'stone'|'terrace'|'cut'} SculptMode */
+/** @typedef {'reeds'|'lilies'|'iris'|'marigold'|'rushes'|'thrift'|'campion'|'willow'|'gorse'|'pondweed'} PlantSpecies */
+/** @typedef {'raise'|'lower'|'flatten'|'stone'|'loosestone'|'terrace'|'cut'} SculptMode */
 /** @typedef {'grass'|'sand'|'soil'|'rock'} PaintLayer */
 /** @typedef {'pour'|'drain'|'spring'} WaterMode */
 /** @typedef {'trickle'|'brook'|'stream'} SpringRate */
@@ -42,6 +43,16 @@ import { ensureIconSprite, iconSvg } from './icons/icons.js';
  * @property {number} springCount
  * @property {number} maxSprings
  * @property {string|null} selectedId  the selected spring, if any
+ */
+
+/**
+ * Sculpt's Loose stone mode, written by src/world/pieces.
+ * @typedef {Object} PiecesUiSlice
+ * @property {number} count  stones on the island
+ * @property {number} cap
+ * @property {string|null} selectedId  the selected stone, if any
+ * @property {string} [message]  a calm line after a tap that set nothing (the cap, water)
+ * @property {boolean} [refused]
  */
 
 /**
@@ -85,6 +96,8 @@ const PLANT_SPECIES = [
   { id: 'rushes', label: 'Rushes', icon: 'rushes', hint: 'Rushes like soaked ground and still, shallow fresh water. Tap to start a tussock; it spreads from there.' },
   { id: 'thrift', label: 'Sea thrift', icon: 'thrift', hint: 'Sea thrift likes the salty shore by the sea. Tap the ground to plant a seed.' },
   { id: 'campion', label: 'Sea campion', icon: 'campion', hint: 'Sea campion likes rock by the sea, just above the tide. Set some rock there first, then tap it to plant a seed.' },
+  { id: 'willow', label: 'Grey willow', icon: 'willow', hint: 'Grey willow likes a damp, gentle bank of soil beside fresh water, never salt. It grows slowly into a bush taller than you. Tap the bank to plant a cutting.' },
+  { id: 'gorse', label: 'Gorse', icon: 'gorse', hint: 'Gorse likes dry, sunny ground, soil or sand, even a slope above the shore, never wet ground. It grows into a spiny mound about waist high. Tap dry ground to plant a seed.' },
   { id: 'pondweed', label: 'Pondweed', icon: 'pondweed', hint: 'Pondweed grows under still fresh water, from knee deep to deeper than you are tall. Tap the water to plant some.' },
 ];
 const PLANT_NONE = 'Nothing to plant yet. Watch the island: plants will come.';
@@ -107,8 +120,10 @@ const MODES = [
   { id: 'raise', label: 'Raise' },
   { id: 'lower', label: 'Lower' },
   { id: 'flatten', label: 'Flatten' },
-  // Stone (docs/future/10): a tap sets a seeded boulder rather than a stroke.
-  { id: 'stone', label: 'Stone' },
+  // Boulder (docs/future/10): a tap sets a seeded boulder into the ground rather than a stroke.
+  { id: 'stone', label: 'Boulder' },
+  // Loose stone (docs/future/10, the naturalist's reward): a tap sets a stone that rests on the ground.
+  { id: 'loosestone', label: 'Loose stone' },
   // The Cliff modes (docs/08, M2): level shelves with sheer rock faces, built up or carved down.
   { id: 'terrace', label: 'Terrace' },
   { id: 'cut', label: 'Cut' },
@@ -166,7 +181,16 @@ export function mountTools(parent = document.body) {
         <p class="ebb-tools__hint">Tap to place a spring. Tap one to select it.</p>
       </div>
       <div class="ebb-tools__stone" role="group" aria-label="Stone" hidden>
-        <p class="ebb-tools__hint">Tap the ground to set a stone. Tap one again to pile another against it.</p>
+        <p class="ebb-tools__hint">Tap the ground to set a boulder. Tap one again to pile another against it.</p>
+      </div>
+      <div class="ebb-tools__pieces" role="group" aria-label="Loose stones" hidden>
+        <div class="ebb-tools__spring-row">
+          <span class="ebb-tools__count" data-out="pieces" aria-live="polite"></span>
+          <button type="button" class="ebb-tools__chip ebb-tools__remove" data-piece-remove="true"
+            title="Remove stone">${iconSvg('stone-remove')}<span>Remove</span></button>
+        </div>
+        <p class="ebb-tools__hint" data-out="pieces-hint">Tap the ground to set a loose stone. Tap one to select it.</p>
+        <p class="ebb-tools__message" data-out="pieces-message" role="status" aria-live="polite"></p>
       </div>
       <div class="ebb-tools__stone ebb-tools__cliff" role="group" aria-label="Cliff" hidden>
         <p class="ebb-tools__hint" data-out="cliff-hint"></p>
@@ -252,13 +276,18 @@ export function mountTools(parent = document.body) {
   const feedBtns = /** @type {HTMLButtonElement[]} */ ([...root.querySelectorAll('[data-feed]')]);
   const feedHint = /** @type {HTMLElement} */ (root.querySelector('[data-out="feed-hint"]'));
   const feedMessage = /** @type {HTMLElement} */ (root.querySelector('[data-out="feed-message"]'));
+  const piecesPanel = /** @type {HTMLElement} */ (root.querySelector('.ebb-tools__pieces'));
+  const piecesCount = /** @type {HTMLElement} */ (root.querySelector('[data-out="pieces"]'));
+  const piecesHint = /** @type {HTMLElement} */ (root.querySelector('[data-out="pieces-hint"]'));
+  const piecesMessage = /** @type {HTMLElement} */ (root.querySelector('[data-out="pieces-message"]'));
+  const pieceRemoveBtn = /** @type {HTMLButtonElement} */ (root.querySelector('[data-piece-remove]'));
 
   // --- user input -> actions ---
   /** @param {MouseEvent} e */
   function onClick(e) {
     const btn = /** @type {HTMLElement|null} */ (/** @type {HTMLElement} */ (e.target).closest('button'));
     if (!btn || !(root.contains(btn) || historyRoot.contains(btn))) return;
-    const { tool, mode, layer, waterMode, rate, species, springRemove, history, feed } = btn.dataset;
+    const { tool, mode, layer, waterMode, rate, species, springRemove, pieceRemove, history, feed } = btn.dataset;
     if (tool) dispatch(/** @type {any} */ ({ type: 'tool.select', toolId: tool }));
     else if (feed) dispatch(/** @type {any} */ ({ type: 'brush.set', patch: { feedSpecies: feed } }));
     else if (species) dispatch(/** @type {any} */ ({ type: 'brush.set', patch: { plantSpecies: species } }));
@@ -270,6 +299,10 @@ export function mountTools(parent = document.body) {
       /** @type {Partial<WaterUiSlice>} */
       const w = get('waterUi') ?? {};
       if (w.selectedId) dispatch(/** @type {any} */ ({ type: 'water.springRemove', id: w.selectedId }));
+    } else if (pieceRemove) {
+      /** @type {Partial<PiecesUiSlice>} */
+      const p = get('piecesUi') ?? {};
+      if (p.selectedId) dispatch(/** @type {any} */ ({ type: 'pieces.remove', id: p.selectedId }));
     } else if (history && btn.getAttribute('aria-disabled') !== 'true') {
       dispatch(/** @type {any} */ ({ type: history === 'undo' ? 'history.undo' : 'history.redo', source: 'mouse' }));
     }
@@ -313,16 +346,19 @@ export function mountTools(parent = document.body) {
     const t = get('tools') ?? {};
     const tool = t.tool ?? null;
     for (const b of toolBtns) b.setAttribute('aria-pressed', String(b.dataset.tool === tool));
-    // Sculpt: Terrace and Cut (the Cliff tool) show once the frogs have given it (`unlocks.cliffs`);
-    // until then four chips in one row, like Paint's. A stored cliff mode gives way to Raise.
-    const cliffsOn = !!get('unlocks')?.cliffs;
-    const sculptMode = !cliffsOn && (t.sculptMode === 'terrace' || t.sculptMode === 'cut') ? 'raise' : t.sculptMode;
+    // Sculpt: Terrace and Cut (the Cliff tool) show once the frogs have given it (`unlocks.cliffs`),
+    // Loose stone once the naturalist's notes have (`unlocks.stones`). A stored mode not offered
+    // gives way to Raise. Rows always fill the card (sculptRows): four chips in one row, five as
+    // three and two, six as three and three, seven as four and three.
+    const cliffsOn = !!get('unlocks')?.cliffs, stonesOn = !!get('unlocks')?.stones;
+    const offeredMode = (/** @type {string | undefined} */ m) => (m !== 'terrace' && m !== 'cut' || cliffsOn) && (m !== 'loosestone' || stonesOn);
+    const sculptMode = offeredMode(t.sculptMode) ? t.sculptMode : 'raise';
     if (sculptMode !== t.sculptMode) queueMicrotask(() => dispatch(/** @type {any} */ ({ type: 'brush.set', patch: { sculptMode } })));
-    sculptChips.style.setProperty('--tb-cols', cliffsOn ? '3' : '4');
     for (const b of modeBtns) {
-      b.hidden = !cliffsOn && (b.dataset.mode === 'terrace' || b.dataset.mode === 'cut');
+      b.hidden = !offeredMode(b.dataset.mode);
       b.setAttribute('aria-pressed', String(b.dataset.mode === sculptMode));
     }
+    layoutRows(sculptChips, modeBtns.filter((b) => !b.hidden));
     for (const b of layerBtns) b.setAttribute('aria-pressed', String(b.dataset.layer === t.paintLayer));
 
     // Water: the spring mode exists only once unlocked; a stored 'spring' reads as 'pour' until then.
@@ -388,14 +424,17 @@ export function mountTools(parent = document.body) {
       plantPanel.hidden = !inPlant;
       feedPanel.hidden = tool !== 'feed';
       const inStone = tool === 'sculpt' && sculptMode === 'stone';
+      const inLoose = tool === 'sculpt' && sculptMode === 'loosestone';
       const cliffMode = tool === 'sculpt' && (sculptMode === 'terrace' || sculptMode === 'cut') ? sculptMode : null;
       stonePanel.hidden = !inStone;
+      if (piecesPanel.hidden !== !inLoose) { piecesPanel.hidden = !inLoose; piecesLine.clear(); }
       cliffPanel.hidden = !cliffMode;
       if (cliffMode && cliffHint.textContent !== CLIFF_HINTS[cliffMode]) cliffHint.textContent = CLIFF_HINTS[cliffMode];
-      // A stone has a size, not a strength; Terrace and Cut have a height in place of the strength.
+      // A boulder has a size, not a strength; Terrace and Cut have a height in place of the strength;
+      // a loose stone's size comes from its seed, so it has no sliders.
       for (const s of sliders) {
         const which = s.dataset.slider;
-        s.hidden = inSpring || inPlant || tool === 'feed'
+        s.hidden = inSpring || inPlant || inLoose || tool === 'feed'
           || (which === 'strength' && (inStone || !!cliffMode)) || (which === 'height' && !cliffMode);
       }
     }
@@ -439,6 +478,21 @@ export function mountTools(parent = document.body) {
     springHint.hidden = selected;
   }
 
+  /** Stone count, and Remove when a stone is selected, else the placing hint; a calm line after a tap that set nothing. */
+  function renderPieces() {
+    /** @type {Partial<PiecesUiSlice>} */
+    const p = get('piecesUi') ?? {};
+    const hasCount = Number.isFinite(p.count) && Number.isFinite(p.cap);
+    if (hasCount) {
+      const text = `${p.count} of ${p.cap} stones`;
+      if (piecesCount.textContent !== text) piecesCount.textContent = text;
+    }
+    piecesCount.hidden = !hasCount;
+    pieceRemoveBtn.hidden = !p.selectedId;
+    piecesHint.hidden = !!p.selectedId;
+    if (p.message) piecesLine.show(p.message, !!p.refused);
+  }
+
   function renderHistory() {
     const h = get('history') ?? {};
     setDisabled(undoBtn, !h.canUndo);
@@ -447,7 +501,7 @@ export function mountTools(parent = document.body) {
 
   // The last Plant or Feed tap's result: shown at once, faded out after PLANT_MESSAGE_MS. The text
   // stays in place while it fades (and the line keeps its height), so the card does not jump.
-  const plantLine = messageLine(plantMessage), feedLine = messageLine(feedMessage);
+  const plantLine = messageLine(plantMessage), feedLine = messageLine(feedMessage), piecesLine = messageLine(piecesMessage);
   const clearPlantMessage = () => plantLine.clear();
   /** @param {string} slice @param {ReturnType<typeof messageLine>} line */
   const renderMessage = (slice, line) => {
@@ -458,10 +512,12 @@ export function mountTools(parent = document.body) {
 
   renderTools();
   renderHistory();
+  renderPieces();
   const unsubs = [
     subscribe('tools', renderTools),
     subscribe('unlocks', renderTools),
     subscribe('waterUi', renderSprings),
+    subscribe('piecesUi', renderPieces),
     subscribe('history', renderHistory),
     subscribe('plantUi', () => renderMessage('plantUi', plantLine)),
     subscribe('feedUi', () => renderMessage('feedUi', feedLine)),
@@ -475,6 +531,7 @@ export function mountTools(parent = document.body) {
     for (const u of unsubs) u();
     plantLine.clear();
     feedLine.clear();
+    piecesLine.clear();
     root.removeEventListener('click', onClick);
     historyRoot.removeEventListener('click', onClick);
     root.remove();
@@ -483,6 +540,32 @@ export function mountTools(parent = document.body) {
 }
 
 // --- helpers ---
+
+/**
+ * The rows a set of chips falls into so every row fills the card: up to four in one row, else two
+ * rows with the longer first (5: 3 + 2, 6: 3 + 3, 7: 4 + 3, 8: 4 + 4). Pure.
+ * @param {number} n @returns {number[]}
+ */
+export function chipRows(n) {
+  if (n <= 4) return n > 0 ? [n] : [];
+  const first = Math.ceil(n / 2);
+  return [first, n - first];
+}
+
+/**
+ * Lay chips out by chipRows on a 12-column grid: each chip spans its row's share, so a short last
+ * row widens its chips rather than leaving a gap. @param {HTMLElement} box @param {HTMLElement[]} shown
+ */
+function layoutRows(box, shown) {
+  box.style.setProperty('--tb-cols', '12');
+  let i = 0;
+  for (const per of chipRows(shown.length)) {
+    for (let k = 0; k < per; k++, i++) {
+      const span = `span ${12 / per}`;
+      if (shown[i].style.gridColumn !== span) shown[i].style.gridColumn = span;
+    }
+  }
+}
 
 /**
  * A result line that shows at once and fades after PLANT_MESSAGE_MS, restarting its fade-in even

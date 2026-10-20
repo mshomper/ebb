@@ -8,6 +8,8 @@ import { addVoicingTests } from './unit-tests-voicing.js';
 import { addDirectorTests } from './unit-tests-director.js';
 import { addDevelopTests } from './unit-tests-develop.js';
 import { addSoundGameTests } from './unit-tests-sound-game.js';
+import { addSummerTests } from './unit-tests-summer.js';
+import { addMelodyTests } from './unit-tests-melody.js';
 import { addFallsSoundTests } from './unit-tests-falls-sound.js';
 import { addPondSoundTests } from './unit-tests-pond-sound.js';
 
@@ -22,6 +24,8 @@ addVoicingTests(test, assert, eq);
 addDirectorTests(test, assert, eq);
 addDevelopTests(test, assert, eq);
 addSoundGameTests(test, assert, eq);
+addSummerTests(test, assert, eq);
+addMelodyTests(test, assert, eq);
 addFallsSoundTests(test, assert, eq);
 addPondSoundTests(test, assert, eq);
 

@@ -8,7 +8,7 @@ import { emit } from '../core/events.js';
 /**
  * @typedef {'mouse'|'pen'|'touch'|'key'} Source
  * @typedef {'sculpt'|'smooth'|'paint'|'water'|'plant'|'feed'} ToolId
- * @typedef {'reeds'|'lilies'|'iris'|'marigold'|'rushes'|'thrift'|'campion'|'pondweed'} PlantSpecies
+ * @typedef {'reeds'|'lilies'|'iris'|'marigold'|'rushes'|'thrift'|'campion'|'willow'|'gorse'|'pondweed'} PlantSpecies
  */
 
 /**
@@ -24,9 +24,12 @@ import { emit } from '../core/events.js';
  *   | { type: 'tool.end', source: Source }
  *   | { type: 'tool.cancel', source: Source }
  *   | { type: 'tool.hover', x: number, y: number, inside: boolean, source: Source }
- *   | { type: 'brush.set', patch: { sculptMode?: 'raise'|'lower'|'flatten'|'stone'|'terrace'|'cut', paintLayer?: 'grass'|'sand'|'soil'|'rock', size?: number, strength?: number, cliffHeight?: number,
+ *   | { type: 'brush.set', patch: { sculptMode?: 'raise'|'lower'|'flatten'|'stone'|'loosestone'|'terrace'|'cut', paintLayer?: 'grass'|'sand'|'soil'|'rock', size?: number, strength?: number, cliffHeight?: number,
  *       waterMode?: 'pour'|'drain'|'spring', springRate?: 'trickle'|'brook'|'stream', plantSpecies?: PlantSpecies } }
  *   | { type: 'water.springRemove', id: string }
+ *   | { type: 'pieces.remove', id: string }
+ *   | { type: 'pieces.carry', id: string }
+ *   | { type: 'pieces.carryCancel' }
  *   | { type: 'brush.resize', factor: number, source?: Source }
  *   | { type: 'history.undo', source?: Source }
  *   | { type: 'history.redo', source?: Source }
@@ -34,6 +37,7 @@ import { emit } from '../core/events.js';
  *   | { type: 'time.keepGrowing', on: boolean }
  *   | { type: 'settings.set', patch: Record<string, any> }
  *   | { type: 'music.heart', heart: import('../audio/music/hearts.js').Heart }
+ *   | { type: 'music.pass', heart: import('../audio/music/hearts.js').Heart }
  *   | { type: 'look.palette', id: string }
  *   | { type: 'look.tap', x: number, y: number, source: Source }
  *   | { type: 'ui.identify' }

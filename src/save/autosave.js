@@ -5,7 +5,7 @@
 // Routine saves are packed into .ebb bytes in a worker; a save as the tab hides is written as it
 // is, at once, since the page may be gone before a worker answers.
 //
-// Only the game saves (main.js asks for it). Tool pages, and test links (?seed, ?day, ?frogs),
+// Only the game saves (main.js asks for it). Tool pages, and test links (?seed, ?day, ?frogs, ?driftwood),
 // run unsaved test islands that never touch your own.
 
 import { on, emit, emitDeferred } from '../core/events.js';
@@ -18,7 +18,7 @@ import { loadIsland } from './recover.js';
 
 const ENCODE_JOB = { module: './save/world-file.js', fn: 'encodeJob' };
 /** URL parameters that start a throwaway test island. */
-export const TEST_PARAMS = ['seed', 'day', 'frogs', 'trust', 'plants', 'shells', 'cliffs', 'minnows', 'dragonflies'];
+export const TEST_PARAMS = ['seed', 'day', 'frogs', 'trust', 'plants', 'shells', 'cliffs', 'stones', 'driftwood', 'minnows', 'dragonflies'];
 
 /**
  * @typedef {'off'|'test'|'fresh'|'loaded'|'elsewhere'|'failed'|'damaged'} SaveStatus
@@ -220,6 +220,7 @@ export async function beginSave(opts) {
       on('growth:planted', soon);
       on('water:spring-added', soon);
       subscribe('water', () => saveSoon('edit'));
+      subscribe('pieces', () => saveSoon('edit'));
       subscribe('journal', () => saveSoon('edit'));
       on('clock:hour', () => saveSoon('hour'));
       on('creature:settled', () => saveSoon('event'));

@@ -1,7 +1,8 @@
 // @ts-check
 // Flora pass (docs 10, 14): the growth engine's plants as GPU geometry with no mesh, one draw per
 // species, each with its own shader (flora-kinds.js: reeds flora-draw.wgsl, then flora-lilies,
-// flora-iris and flora-thrift) over that species' range of the shared instance buffer. Drawn
+// flora-iris, flora-thrift and flora-shrub) over that species' range of the shared instance
+// buffer; shrubs first lay a soft contact shadow on the ground under each crown. Drawn
 // after the grass and before the water, into the same HDR, normal and depth targets, so the
 // water's scene copy shows the lower stems through the water; lily pads float a little above the
 // water simulation's surface, which they read from its depth texture. Shape, season and wind come
@@ -12,7 +13,8 @@ import { FLORA_KINDS } from './flora-kinds.js';
 
 /** @typedef {import('../frame-graph.js').PassContext} PassContext */
 
-const DRAW_BYTES = 256;
+// Room for the largest species' draw buffer (shrubs use 336 bytes, with space for more).
+const DRAW_BYTES = 384;
 
 /**
  * @param {{ growth: { instances: GPUBuffer, range: (index: number) => number[] },
@@ -29,7 +31,7 @@ export function createFloraPass(opts) {
    * One per species drawn: its recipe, kind, draw buffer contents, and (after setup) its pipeline,
    * uniform buffer and one bind group per water depth texture.
    * @type {{ recipe: any, kind: import('./flora-kinds.js').FloraKind, data: ArrayBuffer, f: Float32Array, vertices: number,
-   *   pipeline?: GPURenderPipeline, buffer?: GPUBuffer, groups: GPUBindGroup[] }[]}
+   *   pipeline?: GPURenderPipeline, shadowPipeline?: GPURenderPipeline, buffer?: GPUBuffer, groups: GPUBindGroup[] }[]}
    */
   // A recipe may draw with another species' shader (`draw`, e.g. marsh marigold with the iris), its
   // own values packed into its own uniform.
@@ -86,6 +88,24 @@ export function createFloraPass(opts) {
           primitive: { topology: 'triangle-list', cullMode: 'none' },
           depthStencil: { format: 'depth32float', depthWriteEnabled: true, depthCompare: 'greater' },
         });
+        // A kind with a contact shadow (shrubs): a draped disc that multiplies the scene behind it
+        // (dst x src), writes no depth and leaves the normals alone.
+        if (d.kind.shadow) {
+          d.shadowPipeline = await device.createRenderPipelineAsync({
+            label: `flora-${d.recipe.id}-shadow`,
+            layout: pipelineLayout,
+            vertex: { module, entryPoint: d.kind.shadow.vs },
+            fragment: {
+              module, entryPoint: d.kind.shadow.fs,
+              targets: [
+                { format: 'rgba16float', blend: { color: { operation: 'add', srcFactor: 'dst', dstFactor: 'zero' }, alpha: { operation: 'add', srcFactor: 'zero', dstFactor: 'one' } } },
+                { format: 'rgb10a2unorm', writeMask: 0 },
+              ],
+            },
+            primitive: { topology: 'triangle-list', cullMode: 'none' },
+            depthStencil: { format: 'depth32float', depthWriteEnabled: false, depthCompare: 'greater' },
+          });
+        }
         const buffer = makeBuffer(device, { label: `flora-${d.recipe.id}`, size: DRAW_BYTES, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
         d.buffer = buffer;
         d.groups = depthViews.map((depth) => device.createBindGroup({
@@ -116,10 +136,18 @@ export function createFloraPass(opts) {
       pass.setBindGroup(0, ctx.groups.frame);
       pass.setBindGroup(1, ctx.groups.lighting);
       const w = opts.water.current();
+      for (const d of draws) if (d.buffer) ctx.device.queue.writeBuffer(d.buffer, 0, d.data);
+      // Contact shadows first, so every plant stands on the darkened ground.
+      for (const d of draws) {
+        const [first, count] = growth.range(d.recipe.index);
+        if (count <= 0 || !d.shadowPipeline || !d.kind.shadow) continue;
+        pass.setPipeline(d.shadowPipeline);
+        pass.setBindGroup(2, d.groups[w]);
+        pass.draw(d.kind.shadow.vertices(d.recipe), count, 0, first);
+      }
       for (const d of draws) {
         const [first, count] = growth.range(d.recipe.index);
         if (count <= 0 || !d.pipeline || !d.buffer) continue;
-        ctx.device.queue.writeBuffer(d.buffer, 0, d.data);
         pass.setPipeline(d.pipeline);
         pass.setBindGroup(2, d.groups[w]);
         pass.draw(d.vertices, count, 0, first);

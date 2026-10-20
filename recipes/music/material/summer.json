@@ -1,0 +1,206 @@
+{
+  "type": "music",
+  "id": "material-summer",
+  "version": 1,
+  "note": "Summer's authored material for the development engine (doc 24, The four seasons and The development engine; src/audio/music/develop/). The same shape as spring.json (read its note for what each field means), moved to F major, summer's home (Moon pull, summer's home tide, is in F), with summer's colors: the Lydian glow over IV (Bbmaj7#11), the warmer C9sus4, and the Mixolydian sway of Eb over the home bass (Eb/F). Approved with Matt, October 20, 2026. Additions over spring: tempo is per slot (summer's lift: mornings and interludes 70 to 84, evenings and nocturnes 58 to 72; default for any other), and palettes are per slot or weather, each a list of weighted choices (melody, accomp, bed, and optional counter), so in mornings and interludes the electric piano (fm-piano) takes the harmony a fifth of the time and the nylon guitar strums it about a third of the time (strum; strumBass false leaves out the piano's light bass, so the guitar plays alone over the bed). The guitar's other roles, a clean melody and a counter-harmony, come with the melody step (4b) and in the tides. figures.lines are short written chord lines the walk may play from home (develop.json harmony.lineChance, lineWeights): walk, the bass stepping down under F (F/Eb to F/D, the harmony carrying on from Dm); walk-down, the same walk on to C7sus4 (the bass F Eb D C); sway, Eb over the home bass and back to F; sus-turn (4/4) and sus-slow (3/4), Fsus4 to Fsus2 to F. Each bar of a line is a list of [symbol, place] chords, sharing the bar evenly; meters limits a line to those meters. Summer's own forms: sway (mornings and middays, long phrases that rock between F2 and Bb2) and long-dusk (evenings and nocturnes, six-bar phrases, two returns, a very low curve). The ending warm-hold lands on Fmaj7.",
+  "season": "summer",
+  "home": "F",
+  "mode": "ionian",
+  "meters": { "3/4": 0.5, "4/4": 0.5 },
+  "harmonicBars": {},
+  "tempo": {
+    "morning": [70, 84],
+    "interlude": [70, 84],
+    "evening": [58, 72],
+    "nocturne": [58, 72],
+    "default": [64, 78]
+  },
+  "palettes": {
+    "morning": [
+      { "weight": 0.45, "melody": ["piano"], "accomp": ["piano"], "bed": ["strings", "pad"] },
+      { "weight": 0.2, "melody": ["fm-piano", "piano"], "accomp": ["fm-piano", "piano"], "counter": ["vibraphone"], "bed": ["pad", "strings"] },
+      { "weight": 0.18, "melody": ["piano"], "accomp": ["piano"], "strum": ["guitar"], "bed": ["pad", "strings"] },
+      { "weight": 0.17, "melody": ["piano"], "accomp": ["piano"], "strum": ["guitar"], "strumBass": false, "bed": ["pad", "strings"] }
+    ],
+    "interlude": [
+      { "weight": 0.45, "melody": ["piano"], "accomp": ["piano"], "bed": ["strings", "pad"] },
+      { "weight": 0.2, "melody": ["fm-piano", "piano"], "accomp": ["fm-piano", "piano"], "counter": ["vibraphone"], "bed": ["pad", "strings"] },
+      { "weight": 0.18, "melody": ["piano"], "accomp": ["piano"], "strum": ["guitar"], "bed": ["pad", "strings"] },
+      { "weight": 0.17, "melody": ["piano"], "accomp": ["piano"], "strum": ["guitar"], "strumBass": false, "bed": ["pad", "strings"] }
+    ],
+    "evening": [
+      { "weight": 1, "melody": ["piano"], "accomp": ["piano"], "bed": ["strings", "pad"] }
+    ],
+    "nocturne": [
+      { "weight": 1, "melody": ["piano"], "accomp": ["piano"], "bed": ["strings", "pad"] }
+    ],
+    "rain": [
+      { "weight": 1, "melody": ["fm-piano", "piano"], "accomp": ["fm-piano", "piano"], "counter": ["vibraphone"], "bed": ["pad"] }
+    ],
+    "mist": [
+      { "weight": 1, "melody": ["vibraphone-bowed", "piano"], "accomp": ["pad", "piano"], "bed": ["pad"] }
+    ],
+    "default": [
+      { "weight": 1, "melody": ["piano"], "accomp": ["piano"], "bed": ["strings", "pad"] }
+    ]
+  },
+  "chords": {
+    "I": { "symbol": "F", "tension": 0, "colors": { "Fadd9": 0.2, "Fsus2": 0.2, "Fmaj7": 0.12, "F6": 0.08 } },
+    "I/3": { "symbol": "F/A", "tension": 0.25, "colors": {} },
+    "ii7": { "symbol": "Gm7", "tension": 0.45, "colors": { "Gm9": 0.28, "Gm7/Bb": 0.12 } },
+    "iii7": { "symbol": "Am7", "tension": 0.5, "colors": {} },
+    "IV": { "symbol": "Bbmaj7", "tension": 0.3, "colors": { "Bb": 0.2, "Bbadd9": 0.1, "Bbsus2": 0.18, "Bb/D": 0.12, "Bbmaj7#11": 0.12, "Bbm": 0.03, "Bbm6": 0.02 } },
+    "IV/I": { "symbol": "Bb/F", "tension": 0.2, "colors": { "Bbsus2/F": 0.25 } },
+    "V7sus4": { "symbol": "C7sus4", "tension": 0.6, "colors": { "Csus4": 0.25, "C9sus4": 0.25 } },
+    "V": { "symbol": "C", "tension": 0.65, "colors": { "C/E": 0.3 } },
+    "vi7": { "symbol": "Dm7", "tension": 0.35, "colors": { "Dm": 0.25, "Dm9": 0.1, "Dm7/C": 0.1 } },
+    "bVII": { "symbol": "Eb", "tension": 0.5, "colors": { "Ebadd9": 0.25, "Eb/F": 0.25 } },
+    "bVI": { "symbol": "Dbmaj7", "tension": 0.55, "borrowed": true, "colors": { "Db": 0.3, "Dbadd9": 0.15 } }
+  },
+  "moves": {
+    "I": { "vi7": 0.25, "IV": 0.32, "iii7": 0.18, "bVII": 0.15, "ii7": 0.1, "I/3": 0.1, "bVI": 0.02 },
+    "I/3": { "IV": 0.6, "ii7": 0.4 },
+    "IV": { "I": 0.45, "V7sus4": 0.25, "ii7": 0.3, "IV/I": 0.12, "bVI": 0.03 },
+    "IV/I": { "I": 0.7, "ii7": 0.3 },
+    "vi7": { "ii7": 0.35, "IV": 0.4, "iii7": 0.25, "bVI": 0.02 },
+    "iii7": { "IV": 0.5, "vi7": 0.3, "ii7": 0.2 },
+    "ii7": { "V7sus4": 0.4, "I": 0.3, "IV/I": 0.3 },
+    "V7sus4": { "I": 0.5, "vi7": 0.3, "V": 0.2 },
+    "V": { "I": 0.6, "vi7": 0.4 },
+    "bVII": { "I": 0.6, "IV": 0.4 },
+    "bVI": { "bVII": 0.6, "I": 0.2, "IV": 0.2 }
+  },
+  "hold": 0.15,
+  "cadences": {
+    "plagal": { "from": ["IV", "IV/I"], "to": "I", "final": true },
+    "modal": { "from": ["bVII"], "to": "I", "final": true },
+    "ii-I": { "from": ["ii7"], "to": "I", "final": true },
+    "deceptive": { "from": ["V7sus4"], "to": "vi7", "final": false },
+    "half": { "from": ["ii7", "IV"], "to": "V7sus4", "final": false }
+  },
+  "templates": {
+    "song": {
+      "name": "Song",
+      "slots": { "interlude": 1, "morning": 0.6 },
+      "weather": ["clear", "cloud"],
+      "phrases": [
+        { "role": "statement", "bars": [4, 4], "cadence": { "half": 0.5, "deceptive": 0.2, "ii-I": 0.3 }, "tension": [0.1, 0.45] },
+        { "role": "answer", "bars": [4, 5], "cadence": { "plagal": 0.5, "modal": 0.3, "ii-I": 0.2 }, "tension": [0.3, 0.15] },
+        { "role": "statement again", "bars": [4, 4], "cadence": { "half": 0.6, "ii-I": 0.4 }, "tension": [0.1, 0.5], "from": 0, "keep": 2 },
+        { "role": "answer again", "bars": [4, 5], "cadence": { "plagal": 0.4, "modal": 0.4, "ii-I": 0.2 }, "tension": [0.3, 0.1], "from": 1, "keep": 2 },
+        { "role": "development", "bars": [4, 5], "cadence": { "deceptive": 0.5, "half": 0.5 }, "tension": [0.4, 0.65] },
+        { "role": "return", "bars": [4, 4], "cadence": { "half": 0.6, "ii-I": 0.4 }, "tension": [0.2, 0.5], "from": 0, "keep": 2 },
+        { "role": "cadence", "bars": [2, 3], "cadence": { "plagal": 0.45, "modal": 0.3, "ii-I": 0.25 }, "tension": [0.35, 0] }
+      ]
+    },
+    "sway": {
+      "name": "Sway",
+      "slots": { "morning": 1, "interlude": 0.9 },
+      "weather": ["clear", "cloud"],
+      "phrases": [
+        { "role": "statement", "bars": [4, 4], "cadence": { "plagal": 0.5, "modal": 0.3, "half": 0.2 }, "tension": [0.05, 0.3] },
+        { "role": "long answer", "bars": [6, 6], "cadence": { "half": 0.5, "deceptive": 0.3, "ii-I": 0.2 }, "tension": [0.2, 0.45] },
+        { "role": "statement again", "bars": [4, 4], "cadence": { "plagal": 0.5, "modal": 0.5 }, "tension": [0.05, 0.25], "from": 0, "keep": 2 },
+        { "role": "turn", "bars": [4, 4], "cadence": { "deceptive": 0.5, "half": 0.5 }, "tension": [0.3, 0.55] },
+        { "role": "long answer again", "bars": [6, 6], "cadence": { "plagal": 0.4, "modal": 0.35, "ii-I": 0.25 }, "tension": [0.35, 0.05], "from": 1, "keep": 2 }
+      ]
+    },
+    "arch": {
+      "name": "Arch",
+      "slots": { "evening": 1, "morning": 0.4 },
+      "weather": ["clear", "cloud"],
+      "phrases": [
+        { "role": "statement", "bars": [4, 4], "cadence": { "half": 0.5, "plagal": 0.5 }, "tension": [0.05, 0.3] },
+        { "role": "statement again", "bars": [4, 4], "cadence": { "plagal": 0.5, "ii-I": 0.5 }, "tension": [0.05, 0.2], "from": 0, "keep": 2 },
+        { "role": "climb", "bars": [4, 4], "cadence": { "half": 0.6, "deceptive": 0.4 }, "tension": [0.3, 0.55] },
+        { "role": "climb higher", "bars": [4, 4], "cadence": { "half": 0.5, "deceptive": 0.5 }, "tension": [0.4, 0.6], "from": 2, "keep": 2 },
+        { "role": "peak", "bars": [5, 5], "cadence": { "deceptive": 0.6, "half": 0.4 }, "tension": [0.55, 0.65] },
+        { "role": "return", "bars": [4, 4], "cadence": { "plagal": 0.5, "modal": 0.5 }, "tension": [0.3, 0.15], "from": 0, "keep": 2 },
+        { "role": "cadence", "bars": [3, 3], "cadence": { "plagal": 0.5, "ii-I": 0.5 }, "tension": [0.25, 0] }
+      ]
+    },
+    "long-dusk": {
+      "name": "Long dusk",
+      "slots": { "evening": 0.9, "nocturne": 1 },
+      "weather": ["clear", "cloud"],
+      "phrases": [
+        { "role": "statement", "bars": [6, 6], "cadence": { "plagal": 0.6, "half": 0.4 }, "tension": [0.05, 0.2] },
+        { "role": "answer", "bars": [6, 6], "cadence": { "modal": 0.4, "plagal": 0.3, "deceptive": 0.3 }, "tension": [0.15, 0.25] },
+        { "role": "statement again", "bars": [6, 6], "cadence": { "half": 0.5, "ii-I": 0.5 }, "tension": [0.05, 0.25], "from": 0, "keep": 3 },
+        { "role": "answer again", "bars": [6, 6], "cadence": { "plagal": 0.5, "modal": 0.5 }, "tension": [0.2, 0], "from": 1, "keep": 3 }
+      ]
+    },
+    "rain": {
+      "name": "Rain",
+      "slots": { "interlude": 1, "morning": 1, "evening": 1 },
+      "weather": ["rain"],
+      "phrases": [
+        { "role": "statement", "bars": [4, 4], "cadence": { "plagal": 0.5, "half": 0.5 }, "tension": [0.15, 0.25] },
+        { "role": "answer", "bars": [5, 5], "cadence": { "deceptive": 0.5, "modal": 0.5 }, "tension": [0.25, 0.3] },
+        { "role": "statement again", "bars": [4, 4], "cadence": { "half": 0.5, "ii-I": 0.5 }, "tension": [0.15, 0.3], "from": 0, "keep": 2 },
+        { "role": "answer again", "bars": [5, 5], "cadence": { "modal": 0.5, "plagal": 0.5 }, "tension": [0.25, 0.2], "from": 1, "keep": 2 },
+        { "role": "cadence", "bars": [5, 6], "cadence": { "plagal": 0.6, "ii-I": 0.4 }, "tension": [0.3, 0] }
+      ],
+      "tempoScale": 0.9
+    },
+    "mist": {
+      "name": "Mist",
+      "slots": { "interlude": 1, "morning": 1 },
+      "weather": ["mist"],
+      "phrases": [
+        { "role": "statement", "bars": [5, 5], "cadence": { "plagal": 0.6, "half": 0.4 }, "tension": [0.05, 0.2] },
+        { "role": "answer", "bars": [6, 6], "cadence": { "modal": 0.5, "deceptive": 0.5 }, "tension": [0.2, 0.25] },
+        { "role": "statement again", "bars": [5, 5], "cadence": { "half": 0.5, "ii-I": 0.5 }, "tension": [0.05, 0.25], "from": 0, "keep": 3 },
+        { "role": "cadence", "bars": [4, 4], "cadence": { "plagal": 1 }, "tension": [0.2, 0] }
+      ],
+      "tempoScale": 0.9
+    }
+  },
+  "endings": {
+    "amen": { "name": "Amen, IV over the home bass", "type": "plagal", "weight": 0.22, "bars": [["Bb/F", 0.2], ["F", 0]] },
+    "borrowed": { "name": "Borrowed minor iv", "type": "plagal", "weight": 0.18, "bars": [["Bbm/F", 0.35], ["F", 0]], "borrowed": true },
+    "mixolydian": { "name": "Flat seven, then home", "type": "modal", "weight": 0.15, "bars": [["Eb", 0.5], ["Bb/F", 0.2], ["F", 0]] },
+    "flat-six": { "name": "Flat six, flat seven, home", "type": "modal", "weight": 0.1, "borrowed": true, "bars": [["Dbmaj7", 0.55], ["Eb", 0.5], ["F", 0]] },
+    "soft-two": { "name": "ii to an open I", "type": "ii-I", "weight": 0.13, "bars": [["Gm9", 0.45], ["Fadd9", 0]] },
+    "turn-away": { "name": "Turn away, then home", "type": "deceptive", "weight": 0.1, "bars": [["C7sus4", 0.6], ["Dm7", 0.35], ["Bb/F", 0.2], ["F", 0]] },
+    "linger": { "name": "Hold the last chord", "type": "hold", "weight": 0.12, "hold": true },
+    "warm-hold": { "name": "Warm hold, Fmaj7", "type": "plagal", "weight": 0.15, "bars": [["Bbmaj7", 0.3], ["Fmaj7", 0]] }
+  },
+  "borrowed": ["Bbm", "Bbm6", "Bbm/F", "Dbmaj7", "Db", "Dbadd9"],
+  "colorPairs": [
+    ["Fsus2", "Bbsus2"],
+    ["Fsus2", "Bbsus2/F"],
+    ["Fadd9", "Bbadd9"]
+  ],
+  "figures": {
+    "rock": {
+      "pairs": [["Fsus2", "Bbsus2/F"], ["Fsus2", "Bbsus2"]],
+      "slots": [2, 4],
+      "splitIn": { "4/4": 0.5 }
+    },
+    "lines": {
+      "walk": { "weight": 1, "bars": [[["F/Eb", "I"]], [["F/D", "vi7"]]] },
+      "walk-down": { "weight": 0.7, "bars": [[["F/Eb", "I"]], [["F/D", "vi7"]], [["C7sus4", "V7sus4"]]] },
+      "sway": { "weight": 0.6, "bars": [[["Eb/F", "bVII"]], [["F", "I"]]] },
+      "sus-turn": { "weight": 2.2, "meters": ["4/4"], "bars": [[["Fsus4", "I"], ["Fsus2", "I"]], [["F", "I"]]] },
+      "sus-slow": { "weight": 2.2, "meters": ["3/4"], "bars": [[["Fsus4", "I"]], [["Fsus2", "I"]], [["F", "I"]]] }
+    }
+  },
+  "motifsNote": "The motif bank (phase 4b; approved with Matt, October 20, 2026): seven fragments cut from the summer tides and two summer motifs. As in spring.json, notes are [degree, eighths], degrees of F major counted from F4 (0; 7 is F5, -2 D4, -3 C4). glow sings the Lydian E over Bb; sus-turn sings Bb, G, A over Fsus4, Fsus2, F, and is sung where the walk plays that line (over; develop.json melody.overChance). melody: guitarLead is the chance, per slot, that the nylon guitar takes the melody of a singing piece (its bright ff layer) when the piece does not strum; counter is the counter-line's instrument when the palette names none (develop.json melody.counter.chance, about one singing piece in five).",
+  "motifs": {
+    "first-water-rise": { "name": "First water rise", "from": "Theme 1, bars 1 and 2", "role": "opening", "meter": "3/4", "notes": [[0, 3], [1, 1], [2, 2], [3, 2], [4, 4]] },
+    "first-water-fall": { "name": "First water fall", "from": "Theme 1, bar 3", "role": "answer", "meter": "3/4", "notes": [[4, 2], [3, 1], [2, 1], [1, 2]] },
+    "sandbar-lilt": { "name": "Sandbar lilt", "from": "Theme 2, bars 1 and 2", "role": "opening", "meter": "6/8", "notes": [[-2, 2], [-1, 1], [0, 2], [1, 1], [2, 6]] },
+    "sandbar-fall": { "name": "Sandbar fall", "from": "Theme 2, bars 3 and 4", "role": "cadential", "meter": "6/8", "notes": [[2, 2], [1, 1], [0, 1], [-1, 1], [-2, 1], [-3, 6]] },
+    "breath": { "name": "Breath", "from": "Theme 3, bar 1", "role": "opening", "meter": "4/4", "notes": [[2, 2], [3, 2], [4, 4]] },
+    "moon-pull-run": { "name": "Moon pull run", "from": "Theme 4, bar 1", "role": "climbing", "meter": "3/4", "notes": [[0, 1], [1, 1], [2, 1], [3, 1], [4, 1], [5, 1]] },
+    "moon-pull-lean": { "name": "Moon pull lean", "from": "Theme 4, bar 2", "role": "cadential", "meter": "3/4", "notes": [[5, 4], [4, 2]] },
+    "glow": { "name": "Glow", "from": "summer", "role": "climbing", "meter": "3/4", "notes": [[5, 1], [6, 1], [7, 4]] },
+    "sus-turn": { "name": "Sus turn", "from": "summer", "role": "cadential", "meter": "4/4", "over": ["sus-turn", "sus-slow"], "notes": [[3, 4], [1, 4], [2, 8]] }
+  },
+  "melody": {
+    "guitarLead": { "morning": 0.3, "interlude": 0.3, "evening": 0.2, "nocturne": 0.15 },
+    "leadInstrument": "guitar",
+    "counter": ["guitar"]
+  }
+}

@@ -28,7 +28,7 @@ import { pickWeighted } from './plan.js';
  * @property {boolean} held    the bar's first chord continues the bar before
  * @property {string|null} cadence  on a phrase's last bar, the cadence it lands
  * @property {boolean} [kept]  brought back unchanged from an earlier phrase (a return)
- * @property {string} [figure] part of a harmonic figure (material.figures), such as 'rock'
+ * @property {string} [figure] part of a harmonic figure (material.figures): 'rock', or a line's name
  */
 
 /**
@@ -179,10 +179,40 @@ export function walk(material, rules, plan, r, opts = {}) {
     // colors (D2 and G2): one a bar, or in 4/4 sometimes two beats each, never two hits running.
     const rock = material.figures?.rock;
     let rocked = false;
+    // Written lines (material.figures.lines): short chord lines a composer reaches for from home,
+    // such as a bass walking down under the tonic, or sus4 to sus2 to the plain chord. One a phrase.
+    const lines = material.figures?.lines ?? null;
+    let lined = false;
     for (let s = start; s < walkSlots; s++) {
       const bar = pb[s];
       // The figure keeps clear of a split bar (whose later half is the cadence's approach).
       const rockEnd = split ? walkSlots - 1 : walkSlots;
+      if (lines && !lined && prev === 'I' && r.next() < (H.lineChance ?? 0)) {
+        lined = true;
+        /** @type {Record<string, number>} */
+        const lw = {};
+        for (const [name, ln] of Object.entries(lines)) {
+          const L = /** @type {any} */ (ln);
+          if (L.meters && !L.meters.includes(opts.meter)) continue;
+          const n = L.bars.length;
+          const endPlace = L.bars[n - 1][L.bars[n - 1].length - 1][1];
+          if (rockEnd - s >= n && steps(material, dist, endPlace, approach) <= walkSlots - s - n + 1) lw[name] = (L.weight ?? 1) * (H.lineWeights?.[name] ?? 1);
+        }
+        const name = pickWeighted(lw, r);
+        if (name) {
+          const L = lines[name];
+          L.bars.forEach((/** @type {[string, string][]} */ cs, /** @type {number} */ j) => {
+            const b = pb[s + j];
+            b.figure = name;
+            cs.forEach(([symbol, place], k) => b.chords.push({ place, symbol, at: k / cs.length, color: symbol !== material.chords[place]?.symbol }));
+          });
+          const lastBar = L.bars[L.bars.length - 1], lastC = lastBar[lastBar.length - 1];
+          prev = lastC[1];
+          prevSym = { symbol: lastC[0], color: lastC[0] !== material.chords[lastC[1]]?.symbol };
+          s += L.bars.length - 1;
+          continue;
+        }
+      }
       if (rock && !rocked && prev === 'I' && rockEnd - s >= rock.slots[0] && r.next() < (H.rockChance ?? 0)) {
         const most = Math.min(rock.slots[1], rockEnd - s);
         let k = rock.slots[0] + r.int(most - rock.slots[0] + 1);

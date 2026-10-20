@@ -54,8 +54,11 @@ export function addNaturalistTests(test, assert, eq) {
     eq(d.map((g) => g.id).join(), 'shells', 'three finds: shells');
     const earned = grant({}, d[0]);
     assert(earned.shells === true && earned.naturalist.includes('shells'), 'shells earned');
-    eq(due({ ...p, found: 20, earned }).length, 0, 'given once; stones, lens and driftwood are not built yet');
-    assert(!ready(R.rewards.find((/** @type {any} */ r) => r.id === 'stones')), 'stones not built');
+    eq(due({ ...p, found: 5, earned }).length, 0, 'shells given once');
+    eq(due({ ...p, found: 20, earned }).map((g) => g.id).join(), 'stones,driftwood', 'stones and driftwood come next; the lens is not built yet');
+    assert(ready(R.rewards.find((/** @type {any} */ r) => r.id === 'stones')), 'stones built');
+    assert(ready(R.rewards.find((/** @type {any} */ r) => r.id === 'driftwood')), 'driftwood built');
+    assert(!ready(R.rewards.find((/** @type {any} */ r) => r.id === 'lens')), 'the lens not built');
   });
 
   test(G, 'a happy species gives its gift once, and a seed gift offers that plant', async () => {
@@ -135,7 +138,7 @@ export function addNaturalistTests(test, assert, eq) {
     eq(JSON.stringify(naturalist3(naturalist3(up))), JSON.stringify(naturalist3(up)), 'running it again changes nothing');
   });
 
-  test(G, `save format ${FORMAT}: frogs that gave their gift keep the Cliff tool, quietly`, () => {
+  test(G, 'save format 4: frogs that gave their gift keep the Cliff tool, quietly', () => {
     const gave = cliffs4({ journal: journalWith({}, ['frogs:happy']), unlocks: { gifts: { frogs: true }, seeds: { lilies: true }, springs: true } });
     assert(gave.unlocks.cliffs && gave.unlocks.gifts.frogs && gave.unlocks.springs, 'cliffs added, the rest kept');
     const not = cliffs4({ journal: journalWith({}), unlocks: {} });
@@ -145,7 +148,7 @@ export function addNaturalistTests(test, assert, eq) {
     const s = { unlocks: { gifts: { frogs: true } } };
     cliffs4(s);
     assert(!(/** @type {any} */ (s.unlocks)).cliffs, 'the input is not changed');
-    eq(FORMAT, 4, 'this build writes format 4');
+    assert(FORMAT >= 4, 'this build writes format 4 or later (5 since loose stones, tools/unit-tests-pieces.js)');
   });
 }
 

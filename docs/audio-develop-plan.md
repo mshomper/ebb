@@ -1,6 +1,6 @@
 # Phase 4 plan: the development engine
 
-> A proposal for Matt's approval (October 20, 2026). Nothing here is built yet. Doc 24's "The development engine" is the spec; this plan says how it gets built, what material it starts from, and how you tune it.
+> A proposal for Matt's approval (October 20, 2026). Steps 4a (harmony) and 4b (melody, with the critic's first terms and the counter-line) are built; 4b's choices with Matt: about three grown pieces in four sing, the guitar's counter-line is in about one singing summer piece in five, and a hearted piece keeps its chords and name with its melody (the melody grows from its own seeded streams). Files: develop/song.js, melody.js, motifs.js, fit.js, critic.js, counter.js, timeline.js, abc-write.js. Doc 24's "The development engine" is the spec; this plan says how it gets built, what material it starts from, and how you tune it.
 
 ## The one big choice
 

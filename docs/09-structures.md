@@ -2,6 +2,8 @@
 
 > The human touches on the island are deliberately few: winding paths and stepping stones, dry-stone walls, one small wooden bridge, and a lantern or two. They are drawn with a single stroke and the details are generated: the player draws a line and a wall of fitted stones rises along it. Then nature takes them back slowly. Moss creeps up from damp ground, lichen freckles the stone tops, the bridge silvers, grass leans in over path edges. Structures also matter to creatures: walls are shelter and basking spots, stepping stones are frog perches, bats roost under the bridge, and lantern light changes who feels at ease at night. They exist to frame the nature, never to compete with it.
 
+**Status:** The first placed piece, the loose stone, is built on branch m2-loose-stones (`src/world/pieces`, `recipes/world/pieces.json`): records `{ id, kind: 'stone', x, z, yaw, seed, size, placedHour }` in the save's `pieces` section (format 5, doc 18), a soft cap of 24 with a calm note, placement and removal through the undo history, meshes baked from the recipe on load. Paths, walls, the bridge, lanterns and stepping stones are not built yet.
+
 ## Locked decisions
 
 - Four kinds only: **path** (worn earth or stepping stones), **stone wall**, **bridge**, **lantern**. No buildings.

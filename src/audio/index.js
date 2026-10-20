@@ -146,7 +146,8 @@ export async function startAudio(store) {
         music = m;
         applySettings();
         m.setHearted(store.get('music')?.hearted ?? []);
-        unsubs.push(store.subscribe('music', (v) => m.setHearted(v?.hearted ?? [])));
+        m.setPassed(store.get('music')?.passed ?? []);
+        unsubs.push(store.subscribe('music', (v) => { m.setHearted(v?.hearted ?? []); m.setPassed(v?.passed ?? []); }));
         if (revealing) m.revealStarted({ full: revealFull });
       })
       .catch((e) => console.warn('ebb music: the music did not start', e));

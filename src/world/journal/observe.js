@@ -361,6 +361,24 @@ export function foundFind(journal, sp, ctx, item = null) {
 }
 
 /**
+ * You lifted a loose stone, or rolled a driftwood log (docs/future/10): the first time, the journal
+ * writes it down and keeps the flag stones:lifted (driftwood:lifted for a log). A no-op after that.
+ * @param {Journal} journal @param {{ state: any, hour: number, words: any }} ctx
+ * @param {string} [kind] the piece's kind ('stone' or 'log')
+ * @returns {{ journal: Journal, notes: Note[] }}
+ */
+export function liftedStone(journal, ctx, kind = 'stone') {
+  const text = ctx.words.pieces?.[kind]?.lifted;
+  const fl = kind === 'log' ? 'driftwood:lifted' : 'stones:lifted';
+  if (journal.flags.includes(fl) || !text) return { journal, notes: [] };
+  const j = copy(journal);
+  j.flags.push(fl);
+  /** @type {Note[]} */ const notes = [{ hour: ctx.hour, date: dateText(ctx.state?.seasons, ctx.words), text, sp: null, kind: 'lifted' }];
+  j.notes = [...notes, ...j.notes].slice(0, ctx.words.notesKept);
+  return { journal: j, notes };
+}
+
+/**
  * The island gave you something (world/expansion.js): a naturalist's reward or a species' gift.
  * Written once, as a note of kind 'gift' that carries its title and icon, so the island can show
  * it as a card.
