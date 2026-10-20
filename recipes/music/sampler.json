@@ -90,7 +90,7 @@
       },
       "envelope": {
         "attackS": 0.45,
-        "releaseS": 1.4
+        "releaseS": 0.8
       },
       "register": {
         "bassDb": 0,
@@ -145,7 +145,7 @@
       },
       "envelope": {
         "attackS": 0.45,
-        "releaseS": 1.4
+        "releaseS": 0.8
       },
       "register": {
         "bassDb": 0,
@@ -200,7 +200,7 @@
       },
       "envelope": {
         "attackS": 0.45,
-        "releaseS": 1.4
+        "releaseS": 0.8
       },
       "register": {
         "bassDb": 0,
@@ -255,7 +255,7 @@
       },
       "envelope": {
         "attackS": 0.45,
-        "releaseS": 1.4
+        "releaseS": 0.8
       },
       "register": {
         "bassDb": 0,

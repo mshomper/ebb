@@ -146,6 +146,14 @@ export function supportLayers(o) {
         notes.push(n);
         next.set(m, n);
       }
+      // A note this chord does not keep stops a little before the change, with no overlap, so a slow
+      // release (strings, the pad) never rings a step against the new chord (Matt, October 20, 2026:
+      // the bed sometimes clashed). Shared notes above carry straight through, so the bed never breathes.
+      const lift = L.bed.leaveLiftTicks?.[bedInst] ?? L.bed.leaveLiftTicks?.default ?? 0;
+      for (const [m, n] of tied) {
+        if (next.get(m) === n) continue;
+        n.dur = Math.max((c.tick - n.tick) * 0.5, c.tick - n.tick - lift);
+      }
       tied = next;
     });
   }
