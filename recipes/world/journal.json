@@ -802,7 +802,7 @@
       "riddle": "Something small and quick might come to still water, if it had a deep spot to winter in.",
       "hints": [
         { "when": "minnows:right", "text": "Something seems to want still water with a deep spot. The pool looks deep enough for it now." },
-        { "when": "minnows:sign", "text": "A ring rose on the still water where it is deepest, and there was no rain. Watch that water closely on a calm morning." }
+        { "when": "minnows:sign", "text": "A ring rose on the still water where it is deepest, but it wasn't the rain. Watch that water closely on a calm morning." }
       ],
       "field": [
         { "text": "Minnows keep together in a school, and the whole school turns at once.", "learn": ["seen"] },
@@ -837,7 +837,7 @@
       "foundLine": "You found the first minnows on {date}.",
       "notes": {
         "right": "The pool has a deep, still spot now.",
-        "sign": "A ring rose in the still, deep water, and there was no rain.",
+        "sign": "A ring rose in the still, deep water, but it wasn't the rain...",
         "signAgain": "Rings rose in the deep water again this morning.",
         "found": "You found a school of minnows in the deep water.",
         "settledUnseen": "Whatever rose in the deep water seems to have stayed.",
