@@ -68,6 +68,8 @@ Four species (turtles joined in October 2026). The meadow islet still rises when
 | Body | Capsule body tapered with a round-cone tail fin; impostor at distance | Thin capsule abdomen, sphere thorax and head, four flat wing ellipsoids | Flattened ellipsoid shell, sphere head on a short neck, flipper-shaped ellipsoids |
 | Motion | GPU boids under the live water surface | Boids with hover hold points; wing flap as spring-driven phase | Slow paddle; haul-out onto stones and logs |
 
+**As built (M2, branch m2-minnows-dragonflies, October 20, 2026).** One species list (`src/world/species.js`), one needs reader (`src/world/ecology/needs.js`, frogs byte-identical through it) and one tick model for schools and swarms (`src/world/creatures/swarms.js`: a group per pool, a sign, settling, growth toward what the pool holds, thinning, happy once, trust). Live, one system runs both behaviours (`schools.js`): minnows as seeded CPU boids under the live surface (`school.js`; CPU because there are at most about a hundred, the same on every device, and the game can find each one), dragonflies as patrol beats (`patrol.js`). Minnows need a spot at least 1 m deep (the starter pond is 96 cm). The dragonfly is the southern hawker (Matt's pick), flying from 0.4 into spring to mid-autumn. Pondweed is curled pondweed (`recipes/flora/pondweed.json`, `flora-pondweed.wgsl`), given only as the minnows' seed. Numbers in `recipes/species/minnow.json` and `dragonfly.json`.
+
 ## Tier 2 — meadow (the meadow islet)
 
 | | Bees | Butterflies | Songbirds |
