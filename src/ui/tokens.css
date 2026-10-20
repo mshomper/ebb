@@ -38,6 +38,8 @@
   --tagline-dark: #A9B6B0;
   --ui-cream: #F4EEE4;
   --ui-night: #1E2624;
+  /* A soft, muted red for a line that says something did not work (on the night panels). */
+  --ui-refused: #E8A196;
 
   --font-ui: 'Nunito', system-ui, sans-serif;
   --font-voice: 'Fraunces', Georgia, serif;

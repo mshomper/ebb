@@ -118,11 +118,11 @@ export function createPlantTool(opts) {
       const name = flora[sp]?.name ?? sp;
       // Only a plant the journal has seen on the island (volunteers.js), or any with ?sandbox.
       if (!getStore('unlocks')?.allPlants && !getStore('journal')?.species?.[sp]?.ever) {
-        updateStore('plantUi', () => ({ message: say(sp, name, 'unseen'), at: performance.now() }));
+        updateStore('plantUi', () => ({ message: say(sp, name, 'unseen'), refused: true, at: performance.now() }));
         return false;
       }
       const r = growth.plant(sp, p[0], p[2]);
-      updateStore('plantUi', () => ({ message: say(sp, name, r.ok ? 'ok' : r.reason ?? 'unknown'), at: performance.now() }));
+      updateStore('plantUi', () => ({ message: say(sp, name, r.ok ? 'ok' : r.reason ?? 'unknown'), refused: !r.ok, at: performance.now() }));
       if (!r.ok) {
         // The journal learns what the species needs from a refusal (src/world/journal).
         if (r.reason && r.reason !== 'unknown') emitDeferred('plant:refused', { species: sp, reason: r.reason });

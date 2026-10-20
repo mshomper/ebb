@@ -45,6 +45,7 @@ import { ensureIconSprite, iconSvg } from './icons/icons.js';
  * The result of the last Plant tap, written by app.js.
  * @typedef {Object} PlantUiSlice
  * @property {string} message  e.g. "Planted", "Reeds need wetter ground"
+ * @property {boolean} [refused] the tap did not take (the line shows in muted red)
  * @property {number} at       when it was written
  */
 
@@ -396,7 +397,7 @@ export function mountTools(parent = document.body) {
   const renderMessage = (slice, line) => {
     /** @type {Partial<PlantUiSlice>} */
     const p = get(slice) ?? {};
-    line.show(typeof p.message === 'string' ? p.message : '');
+    line.show(typeof p.message === 'string' ? p.message : '', p.refused === true);
   };
 
   renderTools();
@@ -434,11 +435,12 @@ export function mountTools(parent = document.body) {
 function messageLine(line) {
   /** @type {ReturnType<typeof setTimeout> | undefined} */ let timer;
   return {
-    /** @param {string} text */
-    show(text) {
+    /** @param {string} text @param {boolean} [refused] the tap did not take: the line shows in muted red */
+    show(text, refused = false) {
       clearTimeout(timer);
       if (!text) { line.classList.remove('is-shown'); return; }
       line.textContent = text;
+      line.classList.toggle('is-refused', refused);
       line.classList.remove('is-shown');
       void line.offsetWidth;
       line.classList.add('is-shown');
