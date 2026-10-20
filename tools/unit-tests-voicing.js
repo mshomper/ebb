@@ -11,7 +11,7 @@ const W = {
   wideGap: 2, wideGapSemis: 9, bassTenorMin: 7, bassTenorClose: 4, missingThird: 30, missingSeventh: 14, doubledThird: 6, doubledLeading: 20,
   semitone: 14, minorNinth: 12, missingColor: 10, bassCenter: 0.4, bassHome: 41,
 };
-const rules = { voices: 4, bassRange: /** @type {[number, number]} */ ([33, 50]), upperRange: /** @type {[number, number]} */ ([52, 72]), leadingPc: 1, w: W };
+const rules = { voices: 4, bassRange: /** @type {[number, number]} */ ([35, 50]), upperRange: /** @type {[number, number]} */ ([52, 72]), leadingPc: 1, w: W };
 const D = { root: 2, intervals: [0, 4, 7], bass: null };
 const GoverD = { root: 7, intervals: [0, 4, 7], bass: 2 };
 const Bm7 = { root: 11, intervals: [0, 3, 7, 10], bass: null };
