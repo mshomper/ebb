@@ -16,6 +16,10 @@ import { drawSketch, hasSketch } from './sketches/index.js';
 import { webView, tiesStrip } from './journal-web.js';
 import { nodeOfPage } from '../world/journal/web.js';
 import { livingList, cleanChoice } from '../world/journal/list.js';
+import { dateOfHour } from '../world/journal/observe.js';
+
+/** The page id of the naturalist's notes (src/world/expansion.js), a Living things page with no species. */
+const NATURALIST = 'naturalist';
 
 /** Sections, in order, with their drawn icons. */
 const VIEWS = [
@@ -168,7 +172,9 @@ export function mountJournal(parent, live, buttonParent = parent) {
     if (!ui.open) return;
     for (const t of tabs) t.setAttribute('aria-pressed', String(t.dataset.view === ui.view));
     const paged = (ui.view === 'living' || ui.view === 'ground') && !!ui.page && live.hasPage(ui.page);
-    backBtn.hidden = !paged;
+    // The naturalist's notes are a page of Living things with no species of their own.
+    const trail = ui.view === 'living' && ui.page === NATURALIST && !!(/** @type {any} */ (live).progress);
+    backBtn.hidden = !paged && !trail;
     // The Web opens on whatever the journal last showed.
     if (paged) lastShown = nodeOfPage(live.web, ui.page);
     if (ui.view === 'web' && lastShown) { toTrail(lastShown); lastShown = null; webShelf = null; }
@@ -177,7 +183,7 @@ export function mountJournal(parent, live, buttonParent = parent) {
     if (ui.view === 'web' && !webTrail.length) webTrail = [live.web.start];
     const html = ui.view === 'notes' ? notesView() : ui.view === 'almanac' ? almanacView()
       : ui.view === 'web' ? webView(live.describeWeb(), live.web, { trail: webTrail, shelf: webShelf })
-      : paged ? pageView(/** @type {string} */ (ui.page)) : ui.view === 'ground' ? listView(island.groundOrder) : livingView();
+      : trail ? naturalistView() : paged ? pageView(/** @type {string} */ (ui.page)) : ui.view === 'ground' ? listView(island.groundOrder) : livingView();
     // A new thing in the middle of the Web scrolls back up to its card.
     const key = `${ui.view}|${ui.page}|${ui.view === 'web' ? webTrail[webTrail.length - 1] : ''}`;
     if (html === body.dataset.html) return;
@@ -226,8 +232,51 @@ export function mountJournal(parent, live, buttonParent = parent) {
     const found = ids.filter((id) => live.describe(id).known);
     const head = `<h4 class="ebb-jlist__group">${esc(S.title)}</h4>`;
     if (!found.length) return `${head}<p class="ebb-journal__voice ebb-jlist__hint">${esc(S.none)}</p>`;
-    const marks = `<p class="ebb-jlist__marks"><span class="ebb-journal__voice">${esc(S.marks)}</span>${found.map((id) => `<span class="ebb-jlist__mark" aria-hidden="true">${iconSvg(live.describe(id).icon)}</span>`).join('')}</p>`;
-    return head + marks + listView(found);
+    return head + marksHtml(found) + listView(found);
+  }
+
+  /**
+   * The way into the naturalist's notes (src/world/expansion.js) at the top of Small lives: one row
+   * that opens its page, in words. Without the progress module, nothing.
+   * @param {string[]} _found
+   */
+  function marksHtml(_found) {
+    const R = /** @type {any} */ (live).naturalist;
+    if (!R || !(/** @type {any} */ (live).progress)) return '';
+    return `<button type="button" class="ebb-nat-entry" data-page="${NATURALIST}">
+      <span class="ebb-nat-entry__icon">${iconSvg('notes')}</span>
+      <span class="ebb-jlist__text"><b>${esc(R.line.title)}</b><span class="ebb-journal__voice">${esc(R.line.entry)}</span></span>
+      ${iconSvg('chevron', 'ebb-nat-entry__chev')}</button>`;
+  }
+
+  /**
+   * The naturalist's notes, a page of its own: a trail down the paper, one row for each stop. An
+   * inked stop for each kind of find, in the order you found them, with its name and when; a reward
+   * given is a larger inked stop with what it gave. Past the last find the trail goes on in pencil
+   * only as far as the next reward, that one in pencil with its hint. Never a number. A stop opens
+   * that find's page.
+   */
+  function naturalistView() {
+    const P = /** @type {any} */ (live).progress, R = /** @type {any} */ (live).naturalist;
+    const j = live.journal();
+    const rewards = Object.fromEntries((R.rewards ?? []).map((/** @type {any} */ r) => [r.id, r]));
+    const rows = P.line().map((/** @type {any} */ e, /** @type {number} */ i, /** @type {any[]} */ all) => {
+      const last = i === all.length - 1 ? ' is-last' : '';
+      if (e.type === 'mark') {
+        const d = live.describe(e.id), first = j.species[e.id]?.first ?? -1;
+        return `<li class="ebb-trail__stop${last}"><button type="button" class="ebb-trail__row" data-page="${esc(e.id)}">
+          <span class="ebb-trail__dot">${iconSvg(d.icon)}</span>
+          <span class="ebb-trail__text"><b>${esc(d.name)}</b>${first >= 0 ? `<span class="ebb-journal__voice">${esc(dateOfHour(first, words))}</span>` : ''}</span></button></li>`;
+      }
+      if (e.type === 'gap') return `<li class="ebb-trail__stop is-gap${last}"><span class="ebb-trail__dot"></span></li>`;
+      const r = rewards[e.id] ?? {};
+      const words2 = e.inked ? `<b>${esc(r.title ?? '')}</b><span class="ebb-journal__voice">${esc(r.line ?? '')}</span>`
+        : `<span class="ebb-journal__voice">${esc(e.hint)}</span><small>${esc(last ? R.line.next : R.line.later)}</small>`;
+      return `<li class="ebb-trail__stop is-station${e.inked ? '' : ' is-pencil'}${last}"><span class="ebb-trail__row"><span class="ebb-trail__dot">${iconSvg(e.icon)}</span>
+        <span class="ebb-trail__text">${words2}</span></span></li>`;
+    }).join('');
+    return `<div class="ebb-trail"><h3 class="ebb-trail__title">${esc(R.line.title)}</h3>
+      <p class="ebb-journal__voice ebb-trail__intro">${esc(R.line.intro)}</p><ol class="ebb-trail__list">${rows}</ol></div>`;
   }
 
   /**
@@ -243,7 +292,7 @@ export function mountJournal(parent, live, buttonParent = parent) {
     const groups = livingList(L, words, c, (id) => {
       const d = live.describe(id);
       return { id, known: d.known, name: d.known ? d.name : '' };
-    }, (id) => j.species[id]?.first ?? -1);
+    }, (id) => j.species[id]?.first ?? -1, get('unlocks') ?? null);
     /** @param {string} attr @param {string} value @param {string} label @param {boolean} on */
     const pill = (attr, value, label, on) => `<button type="button" class="ebb-jl-chip" data-list-${attr}="${esc(value)}" aria-pressed="${on}">${esc(label)}</button>`;
     const controls = `<div class="ebb-jl-controls">
@@ -260,8 +309,7 @@ export function mountJournal(parent, live, buttonParent = parent) {
         aria-label="${esc(`${g.label}: ${g.shut ? L.labels.open : L.labels.shut}`)}"><span class="ebb-jl-pill">${iconSvg(icon)}<span>${esc(g.label)}</span></span>${fresh}${iconSvg('chevron', 'ebb-jl-chev')}</button></h4>`;
       if (g.shut) return `<section class="ebb-jl-group is-${esc(g.tint)} is-shut">${head}</section>`;
       // Found small lives keep their row of marks (a one-page group such as Shells lists its items instead).
-      const marks = g.foundOnly && g.many && g.rows.length && words.smallLives?.marks
-        ? `<p class="ebb-jlist__marks"><span class="ebb-journal__voice">${esc(words.smallLives.marks)}</span>${g.rows.map((id) => `<span class="ebb-jlist__mark" aria-hidden="true">${iconSvg(live.describe(id).icon)}</span>`).join('')}</p>` : '';
+      const marks = g.foundOnly && g.many && g.rows.length && words.smallLives?.marks ? marksHtml(g.rows) : '';
       const inner = g.rows.length ? marks + listView(g.rows) + g.rows.map(itemsView).join('') : `<p class="ebb-journal__voice ebb-jlist__hint">${esc(g.hint ?? L.empty)}</p>`;
       return `<section class="ebb-jl-group is-${esc(g.tint)}">${head}${inner}</section>`;
     }).join('');

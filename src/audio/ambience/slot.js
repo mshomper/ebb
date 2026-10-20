@@ -7,7 +7,8 @@
 //              slowly between each other so their combination rarely repeats. Streamed through
 //              media elements, so a minute of stereo does not sit decoded in memory. Only takes
 //              listed in assets/audio/beds/takes.json are requested; a listed take that fails to
-//              load keeps the fallback and leaves one quiet note in the console.
+//              load keeps the fallback and leaves one quiet note in the console. A take written
+//              "@<layer>/<name>" is that file, so several seasons can share one recording.
 //   fallback   made by the caller's factory for one season (or once, for all-season beds).
 //
 // Seasonal beds keep one instance per season that has weight in seasonBlend (at most two near an
@@ -114,7 +115,10 @@ export function createSlot(ctx, dest, o) {
     if (!Array.isArray(list) || !list.length || !inst.has(key)) return;
     const ext = fileExt();
     const name = key === 'all' ? '' : `${key}-`;
-    const urls = list.map((/** @type {string} */ take) => new URL(`${o.layer}/${name}${take}.${ext}`, ASSET_ROOT).href);
+    // A take starting with @ is a path from the beds folder, so seasons can share one file
+    // ("@reeds/green-a" is reeds/green-a.ogg); a plain take is <layer>/<season>-<take>.
+    const urls = list.map((/** @type {string} */ take) => new URL(take.startsWith('@')
+      ? `${take.slice(1)}.${ext}` : `${o.layer}/${name}${take}.${ext}`, ASSET_ROOT).href);
     try {
       const rec = await playTakes(ctx, it.gain, urls, o);
       if (!inst.has(key) || inst.get(key) !== it) { rec.stop(); return; }

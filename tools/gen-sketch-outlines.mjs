@@ -11,6 +11,7 @@ import { readFileSync, writeFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { parseFindModel, joinParts } from '../src/world/finds/models.js';
 import { parseRig, posedMesh } from '../src/world/finds/rig.js';
+import { musselPair, musselBones } from '../src/world/finds/mussel.js';
 
 const ROOT = new URL('..', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1');
 const recipe = JSON.parse(readFileSync(join(ROOT, 'recipes/species/finds.json'), 'utf8'));
@@ -55,7 +56,24 @@ const SUBJECTS = {
   'shell-cockle': { mesh: meshOf(item('cockle')), yaw: 0, pitch: 70 },
   'shell-murex': { mesh: meshOf(item('murex')), yaw: 20, pitch: 25 },
   'shell-nautilus': { mesh: meshOf(item('nautilus')), yaw: 0, pitch: 85 },
+  mussel: { mesh: musselOpen(K.mussels.model), yaw: 15, pitch: 12 },
+  sanddollar: { mesh: meshOf(K.sanddollars.model), yaw: 0, pitch: 80 },
 };
+
+/** The mussel's pair, gaping as it does under water (src/world/finds/mussel.js). @param {any} M */
+function musselOpen(M) {
+  const pr = musselPair(meshOf(M));
+  const B = musselBones(pr.hinge, (M.gapeDeg * Math.PI) / 180);
+  const V = pr.mesh.vertices, half = pr.mesh.count / 2;
+  for (let i = half; i < pr.mesh.count; i++) {
+    const p = [V[i * 9], V[i * 9 + 1], V[i * 9 + 2]], n = [V[i * 9 + 3], V[i * 9 + 4], V[i * 9 + 5]];
+    for (let r = 0; r < 3; r++) {
+      V[i * 9 + r] = B[16 + r] * p[0] + B[20 + r] * p[1] + B[24 + r] * p[2] + B[28 + r];
+      V[i * 9 + 3 + r] = B[16 + r] * n[0] + B[20 + r] * n[1] + B[24 + r] * n[2];
+    }
+  }
+  return pr.mesh;
+}
 
 const N = 220;          // raster cells across the larger side
 const CREASE = 38;      // degrees between faces that make a visible crease

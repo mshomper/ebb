@@ -13,6 +13,7 @@ import { mountJournal } from './ui/journal.js';
 import { mountIslandNotes } from './ui/island-notes.js';
 import { mountFrogScale } from './ui/frog-scale.js';
 import { createJournal } from './world/journal/index.js';
+import { createProgress } from './world/expansion.js';
 import { loadRecipe } from './core/recipes.js';
 import { on } from './core/events.js';
 import { get as getStore } from './core/store.js';
@@ -71,12 +72,20 @@ startApp(canvas, { onDeviceLost: (rebuilding) => showRebuildingNote(rebuilding),
       mountTimeFlow(hud.layer);
       mountLook(hud.layer, r.palette.list());
       // The field journal (docs 13, 15): watches the world, writes notes, names what you tap.
-      const [words, island, web, wash, list] = await Promise.all([loadRecipe('world/journal'), loadRecipe('world/journal-island'),
-        loadRecipe('world/journal-web'), loadRecipe('world/journal-wash'), loadRecipe('world/journal-list')]);
+      const [words, island, web, wash, list, naturalist] = await Promise.all([loadRecipe('world/journal'), loadRecipe('world/journal-island'),
+        loadRecipe('world/journal-web'), loadRecipe('world/journal-wash'), loadRecipe('world/journal-list'), loadRecipe('world/naturalist')]);
       const journal = createJournal({ world: r.world, words, island, web, wash, list, creatures: /** @type {any} */ (r).creatures ?? null,
         finds: /** @type {any} */ (r).finds ?? null, shore: /** @type {any} */ (r).shorePresence ?? null });
-      mountJournal(document.body, journal, hud.layer);
-      mountIslandNotes(document.body, words);
+      mountIslandNotes(document.body, words, naturalist);
+      // Progress (src/world/expansion.js): the naturalist's rewards and species gifts, read from the
+      // journal. A species recipe's gift goes under its journal page (frog.json's under frogs).
+      /** @type {Record<string, any>} */ const gifts = {};
+      for (const [id, rec] of Object.entries(r.world.env.recipes?.species ?? {})) {
+        const g = /** @type {any} */ (rec)?.ecology?.gift;
+        if (g) gifts[words.species[`${id}s`] ? `${id}s` : id] = g;
+      }
+      const progress = createProgress({ words, recipe: naturalist, gifts });
+      mountJournal(document.body, { ...journal, naturalist, progress }, hud.layer);
       // A save that came back from earlier copies says so, calmly (src/ui/damaged.js).
       noticeRecovered(saveInfo);
       // Time away (src/sim/away.js): catch up now on the time since the last save, and later on a

@@ -52,12 +52,15 @@ export const placeOf = (list, group, id) => list.placeOf[id] ?? group.place ?? n
  * @param {any} list @param {any} words @param {ListChoice} choice
  * @param {(id: string) => ListEntry} entry what the page knows of each id
  * @param {(id: string) => number} first the hour each was first seen (-1 never)
+ * @param {Record<string, any> | null} [unlocks] what the island has given (world/expansion.js): a
+ *   group with `unlock` (Shells) stays out of the list until it is given, unless something in it is found
  */
-export function livingList(list, words, choice, entry, first) {
+export function livingList(list, words, choice, entry, first, unlocks = null) {
   const order = Object.keys(list.places);
-  return groupsOf(list, words).map(({ group, ids }) => {
+  return groupsOf(list, words).flatMap(({ group, ids }) => {
     let rows = ids.map(entry);
     const anyFound = rows.some((r) => r.known);
+    if (group.unlock && unlocks && !unlocks[group.unlock] && !anyFound) return [];
     // Small lives never list what is still to find.
     if (group.foundOnly) rows = rows.filter((r) => r.known);
     if (choice.status === 'found') rows = rows.filter((r) => r.known);
@@ -74,7 +77,7 @@ export function livingList(list, words, choice, entry, first) {
     };
     rows = rows.slice().sort(by[choice.sort] ?? by.recent);
     const hint = rows.length ? null : group.foundOnly && !anyFound ? (group.hint ?? words.smallLives?.none ?? list.empty) : list.empty;
-    return { id: group.id, label: group.label, tint: group.tint, icon: group.icon ?? null, shut: !!choice.shut[group.id], rows: rows.map((r) => r.id), hint,
-      foundOnly: !!group.foundOnly, many: !!group.from };
+    return [{ id: group.id, label: group.label, tint: group.tint, icon: group.icon ?? null, shut: !!choice.shut[group.id], rows: rows.map((r) => r.id), hint,
+      foundOnly: !!group.foundOnly, many: !!group.from }];
   });
 }

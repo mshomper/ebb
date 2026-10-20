@@ -34,6 +34,13 @@ Size and color come from CSS: set `width`/`height` on `.icon` and `color` on the
 | `shells` | a ribbed fan shell on the ground line and a small spiral one beside it: the shells collection |
 | `hermitcrab` | a spiral shell on the ground line, legs and one big claw reaching out of its mouth: the hermit crab find |
 | `ediblecrab` | a wide shell, two claws raised, legs splayed to the sides: the young edible crab find |
+| `barnacles` | three low cones of plates on the ground line, each with the notch of its closed opening: the acorn barnacles find |
+| `pondskaters` | a slim body from above, short front legs and four long legs splayed out, a ring under each long foot where it dimples the water: the pond skaters find |
+| `mussels` | a long wedge of shell from the side, hinged at the narrow end, the seam between its valves gaping a little: the common mussel find |
+| `sanddollars` | a round test from above with the five petals of its back: the sand dollar find |
+| `loosestone` | a stone tipped up on one side, a dark gap under it: the naturalist's loose stones reward |
+| `lens` | a round glass with a glint on a short handle: the naturalist's hand lens reward |
+| `driftwood` | a bending branch at the water's edge with a broken stub and a knot, a ripple beyond: the naturalist's driftwood reward |
 | `stone` | a rounded boulder on the ground with a smaller one against it, a drop line above: Sculpt's Stone mode |
 | `name-tag` | a luggage-style tag with its hole: naming a creature on its card |
 | `water` | droplet over one ripple line |

@@ -5,9 +5,13 @@
 // tide, rare ones only near spring, and a shells page that keeps each kind found.
 
 import { findCells, groupAt, shellAt } from '../src/world/finds/index.js';
+import { barnacleMesh, barnacleLayout, pondSkaterMesh, proceduralMeshes } from '../src/world/finds/procedural.js';
 import { WATER_CLASS } from '../src/world/water/summary.js';
 import { initialJournal, foundFind } from '../src/world/journal/observe.js';
 import { describe } from '../src/world/journal/describe.js';
+import { triggered } from '../src/world/journal/web.js';
+import { drawSketch, hasSketch } from '../src/ui/sketches/index.js';
+import { ICON_NAMES } from '../src/ui/icons/icons.js';
 
 const FINDS = 'finds';
 
@@ -46,6 +50,82 @@ export function addFindsTests(test, assert, eq) {
     eq(c.ediblecrab.join(','), '0,2,3', 'edible crabs in the wrack and the tidal pool');
     const bare = findCells(s, z, K, () => false);
     eq(bare.anemone.length, 0, 'a hollow dug in sand holds no anemones');
+    eq(c.barnacles.join(','), '0', 'barnacles on the rock of the wrack');
+    eq(c.pondskaters.join(','), '4,5', 'pond skaters on the high hollow, never in the tidal pool');
+  });
+
+  test(FINDS, 'pond skaters only on still fresh water: not the sea, the tide band, a rock pool or moving water', async () => {
+    const K = (await findsRecipe()).kinds;
+    const C = WATER_CLASS;
+    // 0 sea; 1 still in the band; 2 still pond off the band; 3 slow stream; 4 a rock pool's deep
+    // floor (its basin reaches the band at 5); 6 damp ground; 7 still in a channelled zone, off the band.
+    const cls = new Uint8Array([C.sea, C.still, C.still, C.slow, C.still, C.still, C.damp, C.still]);
+    const band = new Uint8Array([1, 1, 0, 0, 0, 1, 0, 0]);
+    const basin = new Uint16Array([0, 0, 4, 0, 6, 6, 0, 8]);
+    const zone = new Uint8Array([0, 0, 0, 0, 0, 0, 0, 1]);
+    const s = { rect: { x: 0, y: 0, w: 8, h: 1 }, cls, basin, band };
+    const c = findCells(s, { zone, ids: ['channelled'] }, K, () => true);
+    eq(c.pondskaters.join(','), '2,7', 'only the still water off the band and out of any tidal hollow');
+    eq(c.barnacles.join(','), '7', 'barnacles on channelled rock too');
+  });
+
+  test(FINDS, 'built meshes: barnacles and pond skaters are the same every load, stand on y = 0, and index truly', async () => {
+    const R = await findsRecipe();
+    const a = proceduralMeshes(R), b = proceduralMeshes(R);
+    eq(Object.keys(a).sort().join(','), 'barnacles-open,barnacles-shut,pondskaters', 'three meshes');
+    for (const key of Object.keys(a)) {
+      const m = a[key];
+      eq(m.vertices.length, m.count * 9, `${key}: 9 floats a vertex`);
+      assert(m.indices.length > 0 && m.indices.length % 3 === 0, `${key}: whole triangles`);
+      assert(m.indices.every((i) => i < m.count), `${key}: every index names a vertex`);
+      assert(m.vertices.every((v) => Number.isFinite(v)), `${key}: no NaN`);
+      let lo = Infinity, hi = -Infinity, n = 0;
+      for (let i = 0; i < m.count; i++) {
+        lo = Math.min(lo, m.vertices[i * 9 + 1]); hi = Math.max(hi, m.vertices[i * 9 + 1]);
+        n = Math.max(n, Math.abs(Math.hypot(m.vertices[i * 9 + 3], m.vertices[i * 9 + 4], m.vertices[i * 9 + 5]) - 1));
+      }
+      eq(lo, 0, `${key}: base on y = 0`);
+      assert(hi > 0.001 && hi < 0.02, `${key}: a few millimeters tall at real size (${(hi * 1000).toFixed(1)} mm)`);
+      assert(n < 1e-4, `${key}: unit normals`);
+      assert(m.vertices.every((v, i) => v === b[key].vertices[i]) && m.indices.every((v, i) => v === b[key].indices[i]), `${key}: the same on every load`);
+    }
+    const S = R.kinds.barnacles.shape;
+    const cones = barnacleLayout(S);
+    assert(cones.length >= S.count[0] && cones.length <= S.count[1], `${cones.length} cones in a patch`);
+    for (const c of cones) assert(Math.hypot(c.x, c.z) + c.r <= S.patchRadiusM * (1 + S.roughness) + 1e-9, 'every cone inside the patch');
+    assert(barnacleMesh(S, true).count > barnacleMesh(S, false).count, 'open, the cirri add to the shut patch');
+    const P = R.kinds.pondskaters.shape, sk = pondSkaterMesh(P);
+    let x0 = Infinity, x1 = -Infinity, pale = 0;
+    for (let i = 0; i < sk.count; i++) {
+      x0 = Math.min(x0, sk.vertices[i * 9]); x1 = Math.max(x1, sk.vertices[i * 9]);
+      if (sk.vertices[i * 9 + 6] === Math.fround(P.dimpleAlbedo[0]) && sk.vertices[i * 9 + 1] === 0) pale++;
+    }
+    assert(x1 - x0 > P.bodyLengthM, 'its legs splay wider than its body is long');
+    assert(Math.abs(x1 + x0) < 1e-6, 'and it is the same both sides');
+    assert(pale > 0, 'pale dimple rings lie flat on the water');
+    return `${cones.length} barnacles; ${a['barnacles-open'].indices.length / 3} and ${sk.indices.length / 3} triangles`;
+  });
+
+  test(FINDS, 'barnacles and pond skaters have pages, icons, sketches with their labels, and a joined trigger for the frogs', async () => {
+    const words = await (await fetch('../recipes/world/journal.json')).json();
+    for (const id of ['barnacles', 'pondskaters']) {
+      const rec = words.species[id];
+      assert(rec && rec.kind === 'find' && words.findOrder.includes(id), `${id} is a find in findOrder`);
+      assert(ICON_NAMES.includes(rec.icon), `${id}'s icon is drawn`);
+      assert(hasSketch(id), `${id} has a sketch`);
+      const labels = Object.fromEntries(Object.entries(rec.sketch.labels).map(([k, v]) => [k, /** @type {any} */ (v).text]));
+      for (const stage of /** @type {(0|1|2)[]} */ ([0, 1, 2])) {
+        const svg = drawSketch(id, { stage, labels, scale: rec.sketch.scale });
+        assert(svg.startsWith('<svg') && !/NaN|undefined/.test(svg), `${id} stage ${stage} draws cleanly`);
+        if (stage === 0) assert(!svg.includes('<text'), `${id} pencil has no labels`);
+        else for (const k of Object.keys(labels)) assert(svg.includes(labels[k][0]), `${id} labels ${k}`);
+      }
+    }
+    const j = (/** @type {string[]} */ flags, /** @type {boolean} */ seen) => /** @type {any} */ ({ species: seen ? { pondskaters: { ever: true } } : {}, flags });
+    const ink = 'seen:pondskaters&flag:frogs:seen';
+    assert(!triggered(ink, j([], true), null), 'pond skaters seen, but no frogs yet: pencil');
+    assert(!triggered(ink, j(['frogs:seen'], false), null), 'frogs, but no pond skaters seen: pencil');
+    assert(triggered(ink, j(['frogs:seen'], true), null), 'both: inked');
   });
 
   test(FINDS, 'the same seed gives the same groups; casts move with the tide, periwinkles only drift', async () => {

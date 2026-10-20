@@ -1,0 +1,97 @@
+{
+ "asset": {
+  "version": "2.0",
+  "generator": "ebb tools/bake-find-model.mjs",
+  "extras": {
+   "author": "scotdiver (https://sketchfab.com/scotdiver)",
+   "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+   "source": "https://sketchfab.com/3d-models/blue-mussel-shell-mytilus-edulis-9e5d8d32a838428e9e9cf35f25fa0ba4",
+   "title": "Blue Mussel Shell - Mytilus edulis"
+  }
+ },
+ "scene": 0,
+ "scenes": [
+  {
+   "nodes": [
+    0
+   ]
+  }
+ ],
+ "nodes": [
+  {
+   "mesh": 0,
+   "name": "mussel-valve"
+  }
+ ],
+ "meshes": [
+  {
+   "name": "mussel-valve",
+   "primitives": [
+    {
+     "attributes": {
+      "POSITION": 1,
+      "COLOR_0": 2
+     },
+     "indices": 0,
+     "mode": 4
+    }
+   ]
+  }
+ ],
+ "buffers": [
+  {
+   "byteLength": 32508,
+   "uri": "mussel-valve.bin"
+  }
+ ],
+ "bufferViews": [
+  {
+   "buffer": 0,
+   "byteOffset": 0,
+   "byteLength": 18420,
+   "target": 34963
+  },
+  {
+   "buffer": 0,
+   "byteOffset": 18420,
+   "byteLength": 7044,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteOffset": 25464,
+   "byteLength": 7044,
+   "target": 34962
+  }
+ ],
+ "accessors": [
+  {
+   "bufferView": 0,
+   "componentType": 5125,
+   "count": 4605,
+   "type": "SCALAR"
+  },
+  {
+   "bufferView": 1,
+   "componentType": 5126,
+   "count": 587,
+   "type": "VEC3",
+   "min": [
+    -0.48628097772598267,
+    -0.20995855331420898,
+    -0.32444480061531067
+   ],
+   "max": [
+    0.5137190222740173,
+    0.04699499532580376,
+    0.26754578948020935
+   ]
+  },
+  {
+   "bufferView": 2,
+   "componentType": 5126,
+   "count": 587,
+   "type": "VEC3"
+  }
+ ]
+}

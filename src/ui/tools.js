@@ -329,7 +329,9 @@ export function mountTools(parent = document.body) {
     // hour, the others once they have come by themselves; every one with `?sandbox`). The stored
     // species, or the first offered one if it is not (yet) in the list.
     const allPlants = !!get('unlocks')?.allPlants;
-    const offered = PLANT_SPECIES.filter((s) => allPlants || get('journal')?.species?.[s.id]?.ever);
+    // A species' gift of seeds offers that plant too (src/world/expansion.js).
+    const seeds = get('unlocks')?.seeds ?? {};
+    const offered = PLANT_SPECIES.filter((s) => allPlants || seeds[s.id] || get('journal')?.species?.[s.id]?.ever);
     const species = offered.find((s) => s.id === t.plantSpecies) ?? offered[0] ?? null;
     offered.forEach((s, i) => speciesBtns.find((b) => b.dataset.species === s.id)?.classList.toggle('ebb-tools__chip--wide', i === offered.length - 1 && offered.length % 2 === 1));
     for (const b of speciesBtns) {

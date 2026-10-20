@@ -359,6 +359,22 @@ export function foundFind(journal, sp, ctx, item = null) {
 }
 
 /**
+ * The island gave you something (world/expansion.js): a naturalist's reward or a species' gift.
+ * Written once, as a note of kind 'gift' that carries its title and icon, so the island can show
+ * it as a card.
+ * @param {Journal} journal @param {{ id: string, title: string, line: string, icon: string, page: string | null }} g
+ * @param {{ state: any, hour: number, words: any }} ctx
+ * @returns {{ journal: Journal, notes: Note[] }}
+ */
+export function noteGift(journal, g, ctx) {
+  const j = copy(journal);
+  /** @type {any} */ const note = { hour: ctx.hour, date: dateText(ctx.state?.seasons, ctx.words), text: `${g.title}. ${g.line}`, sp: g.page ?? undefined, kind: 'gift', title: g.title, line: g.line, icon: g.icon };
+  /** @type {Note[]} */ const notes = [note];
+  j.notes = [...notes, ...j.notes].slice(0, ctx.words.notesKept);
+  return { journal: j, notes };
+}
+
+/**
  * You named a frog (S6c-3): the journal writes the moment (creatures.js).
  * @param {Journal} journal @param {string} name @param {{ state: any, hour: number, words: any }} ctx
  * @returns {{ journal: Journal, notes: Note[] }}

@@ -23,11 +23,13 @@ const AT_ONCE = 2;
 /**
  * @param {HTMLElement} parent
  * @param {any} words recipes/world/journal.json
+ * @param {any} [naturalist] recipes/world/naturalist.json (how long a gift's card stays)
  * @returns {() => void} dispose
  */
-export function mountIslandNotes(parent, words) {
+export function mountIslandNotes(parent, words, naturalist = null) {
   ensureIconSprite();
   const N = words.islandNote;
+  const cardS = naturalist?.card?.showS;
 
   const root = document.createElement('div');
   root.className = 'ebb-notes';
@@ -88,6 +90,8 @@ export function mountIslandNotes(parent, words) {
   const unreadNote = (n) => !!n.n && n.n > (get('journal')?.read?.notes ?? 0);
   const offNote = on('note:posted', (/** @type {import('../world/journal/observe.js').Note} */ n) => {
     if (document.hidden) { if (unreadNote(n)) { more++; renderMore(); } return; }
+    // A gift (src/world/expansion.js) is its own quiet card, not a passing note.
+    if (/** @type {any} */ (n).kind === 'gift') { showGift(n); return; }
     waiting.push(n);
     if (waiting.length > N.queue) {
       const dropped = waiting.slice(0, waiting.length - N.queue);
@@ -110,6 +114,40 @@ export function mountIslandNotes(parent, words) {
   // A calm word from the island itself, not a journal note (a save that came back from earlier).
   const offNotice = on('island:notice', (/** @type {{ text: string, showS: number }} */ p) => showNow({ text: p.text, notice: true }, p.showS));
   const offRevealEnd = on('reveal:ended', (/** @type {{ missed: number }} */ p) => { if (p.missed > 0) { more += p.missed; renderMore(); } });
+  /**
+   * A gift's card (the naturalist's notes, a species' gift): its drawn icon, its title and line,
+   * low in the middle; it fades by itself after a while, or closes on a tap, which opens its page.
+   * One at a time: a second waits for the first to go. @param {any} n
+   */
+  const gifts = /** @type {any[]} */ ([]);
+  function showGift(n) {
+    gifts.push(n);
+    if (gifts.length === 1) nextGift();
+  }
+  function nextGift() {
+    const n = gifts[0];
+    if (!n) return;
+    if (n.n) dispatch(/** @type {any} */ ({ type: 'journal.noteShown', n: n.n }));
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'ebb-gift';
+    b.title = 'Open the journal';
+    b.innerHTML = `<span class="ebb-gift__icon">${iconSvg(n.icon ?? 'find')}</span><span class="ebb-gift__text"><b></b><span class="ebb-journal__voice"></span></span>`;
+    /** @type {HTMLElement} */ (b.querySelector('b')).textContent = n.title ?? '';
+    /** @type {HTMLElement} */ (b.querySelector('.ebb-journal__voice')).textContent = n.line ?? n.text;
+    let gone = false;
+    const leave = () => {
+      if (gone) return;
+      gone = true;
+      b.classList.remove('is-shown');
+      setTimeout(() => { b.remove(); gifts.shift(); nextGift(); }, 900);
+    };
+    b.addEventListener('click', () => { leave(); dispatch(n.sp ? { type: 'ui.journal', open: true, page: n.sp } : { type: 'ui.journal', open: true, view: 'notes' }); });
+    parent.appendChild(b);
+    requestAnimationFrame(() => requestAnimationFrame(() => b.classList.add('is-shown')));
+    setTimeout(leave, (cardS ?? 10) * 1000);
+  }
+
   /** A reveal note: shown at once for showS seconds, marked as shown. @param {any} n @param {number} showS */
   function showNow(n, showS) {
     if (n.n) dispatch(/** @type {any} */ ({ type: 'journal.noteShown', n: n.n }));

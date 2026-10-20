@@ -1,12 +1,12 @@
 {
   "type": "journal-list",
   "version": 1,
-  "note": "The journal's Living things list (src/world/journal/list.js, src/ui/journal.js): its groups, the filter and sort chips, and each thing's place. groups, in order: id, label, tint (a Web kind: journal.css --jw-<tint>-*), icon (its header's drawn icon), and which pages it holds: from (plants: words.order without animals; animals: the animals in words.order; finds: words.findOrder) and/or ids (named pages; a page named by a group is left out of a from group after it, and one that does not exist yet is skipped, so a group with nothing in it does not show). foundOnly: the group lists only what you have found, never what is still to find (finds), and hint is its pencil line before the first. filters: the status chips (all, found, notYet) and the place chips. sorts: recent (most recently found first, the not yet seen last), az (by name), place (by place in the places order, then name). places: the place chips in order. placeOf: each page's place; a page with none takes its group's place. empty: the line a group shows when the chosen filter leaves nothing in it. Choices are kept per device (settings journalList) and never in an island file.",
+  "note": "The journal's Living things list (src/world/journal/list.js, src/ui/journal.js): its groups, the filter and sort chips, and each thing's place. groups, in order: id, label, tint (a Web kind: journal.css --jw-<tint>-*), icon (its header's drawn icon), and which pages it holds: from (plants: words.order without animals; animals: the animals in words.order; finds: words.findOrder) and/or ids (named pages; a page named by a group is left out of a from group after it, and one that does not exist yet is skipped, so a group with nothing in it does not show). foundOnly: the group lists only what you have found, never what is still to find (finds), and hint is its pencil line before the first. unlock: the group stays out of the list until the island has given that (the saved unlocks, src/world/expansion.js; Shells come with the naturalist's first reward), unless something in it is already found. filters: the status chips (all, found, notYet) and the place chips. sorts: recent (most recently found first, the not yet seen last), az (by name), place (by place in the places order, then name). places: the place chips in order. placeOf: each page's place; a page with none takes its group's place. empty: the line a group shows when the chosen filter leaves nothing in it. Choices are kept per device (settings journalList) and never in an island file.",
   "groups": [
     { "id": "plants", "label": "Plants", "tint": "plants", "icon": "plant", "from": "plants" },
     { "id": "animals", "label": "Animals", "tint": "animals", "icon": "frog", "from": "animals" },
     { "id": "small", "label": "Small lives", "tint": "small", "icon": "periwinkle", "from": "finds", "foundOnly": true, "place": "shore" },
-    { "id": "shells", "label": "Shells", "tint": "small", "icon": "shells", "ids": ["shells"], "foundOnly": true, "place": "shore", "hint": "Walk the strandline after a high tide; shells wash up where it turned." }
+    { "id": "shells", "label": "Shells", "tint": "small", "icon": "shells", "ids": ["shells"], "foundOnly": true, "place": "shore", "unlock": "shells", "hint": "Walk the strandline after a high tide; shells wash up where it turned." }
   ],
   "filters": { "all": "All", "found": "Found", "notYet": "Not yet" },
   "sorts": { "recent": "Recently found", "az": "A to Z", "place": "By place" },
@@ -14,7 +14,7 @@
   "places": { "pond": "Pond", "meadow": "Meadow", "shore": "Shore" },
   "placeOf": {
     "grass": "meadow", "rushes": "pond", "reeds": "pond", "lilies": "pond", "iris": "pond", "marigold": "pond", "thrift": "shore", "campion": "shore",
-    "frogs": "pond", "midges": "pond"
+    "frogs": "pond", "midges": "pond", "pondskaters": "pond", "mussels": "shore", "sanddollars": "shore"
   },
   "empty": "Nothing here with these choices."
 }

@@ -8,6 +8,10 @@
 // cluster on the wrack and drift a little each tide; lugworm casts are laid fresh after each tide on
 // the sand the sea has left. Anemones and periwinkles are models (models.js) drawn by a creatures
 // pass of their own, with no rig; casts are drawn into the sand by the terrain shader (lib-casts).
+// Acorn barnacles crust the upper rock of the band and open and shut like the anemones; pond
+// skaters glide on still fresh water by day. Both are built in procedural.js, with no model file.
+// Common mussels clump on the low rock and gape under water, one valve mirrored into the hinged
+// pair (mussel.js); sand dollars lie half buried on the low sand.
 
 import { hash32 } from '../../core/rng.js';
 import { WATER_CLASS } from '../water/summary.js';
@@ -21,9 +25,11 @@ import { get as getStore } from '../../core/store.js';
 import { loadFindModel, joinParts } from './models.js';
 import { loadRig, bones } from './rig.js';
 import { legRig, legBones } from './leg-rig.js';
+import { proceduralMeshes } from './procedural.js';
+import { musselPair, musselBones } from './mussel.js';
 
 // New kinds go at the end: a kind's place here salts where its groups fall.
-const KINDS = /** @type {const} */ (['anemone', 'periwinkle', 'lugworm', 'hermitcrab', 'ediblecrab', 'shells']);
+const KINDS = /** @type {const} */ (['anemone', 'periwinkle', 'lugworm', 'hermitcrab', 'ediblecrab', 'shells', 'barnacles', 'pondskaters', 'mussels', 'sanddollars']);
 const ROCK_ZONES = ['kelp', 'wrack', 'channelled'];
 /** @param {number} h */
 const u01 = (h) => (h >>> 8) / 16777216;
@@ -40,15 +46,31 @@ export function findCells(s, z, kinds, rockAt = () => true) {
   /** @type {Record<string, number[]>} */ const out = {};
   for (const id of KINDS) out[id] = [];
   const pools = poolCells(s, z, rockAt);
+  const ponds = pondCells(s);
   for (let k = 0; k < z.zone.length; k++) {
     const v = z.zone[k];
     const zid = v ? z.ids[v - 1] : null;
-    const pool = pools[k] === 1;
-    if (!zid && !pool) continue;
+    const pool = pools[k] === 1, pond = ponds[k] === 1;
+    if (!zid && !pool && !pond) continue;
     for (const id of KINDS) {
-      const zones = kinds[id].zones;
-      if ((zid && zones.includes(zid)) || (pool && zones.includes('pool'))) out[id].push(k);
+      const zones = kinds[id]?.zones ?? [];
+      if ((zid && zones.includes(zid)) || (pool && zones.includes('pool')) || (pond && zones.includes('pond'))) out[id].push(k);
     }
+  }
+  return out;
+}
+
+/**
+ * The pond cells: 1 where a cell holds still fresh water, off the tide band and not in any hollow
+ * that reaches it (so never a rock pool, even its deep floor) and never the sea.
+ * @param {{ cls: Uint8Array, basin: Uint16Array, band: Uint8Array }} s the water summary
+ */
+export function pondCells(s) {
+  const tidal = new Set();
+  for (let k = 0; k < s.basin.length; k++) if (s.basin[k] && s.band[k]) tidal.add(s.basin[k]);
+  const out = new Uint8Array(s.cls.length);
+  for (let k = 0; k < s.cls.length; k++) {
+    if (s.cls[k] === WATER_CLASS.still && !s.band[k] && !(s.basin[k] && tidal.has(s.basin[k]))) out[k] = 1;
   }
   return out;
 }
@@ -118,9 +140,9 @@ export function shellAt(seed, k, tideId, spring, S) {
 }
 
 /**
- * @param {{ water: any, shore: any, terrain: any, camera: any, recipe: any, seed: number, tide?: any }} opts
+ * @param {{ water: any, shore: any, terrain: any, camera: any, recipe: any, seed: number, tide?: any, shellsOn?: () => boolean }} opts
  *   shore: world/water/shore-live.js; recipe: recipes/species/finds.json; tide: water.json `tide`
- *   (the strandline that shells wash up on follows it)
+ *   (the strandline that shells wash up on follows it); shellsOn: whether the sea leaves shells yet
  */
 export function createFinds(opts) {
   const { water, shore, terrain, camera, recipe } = opts;
@@ -172,9 +194,13 @@ export function createFinds(opts) {
     const t = camera.target, eye = camera.eye;
     const near2 = recipe.nearM * recipe.nearM;
     const tide = Math.floor((f.displayT / 3600) / 12);
+    const hour = (((f.displayT / 3600) % 24) + 24) % 24;
     /** @type {typeof list} */ const all = [];
     for (const kind of KINDS) {
       const R = K[kind];
+      if (!R) continue;
+      // Some come out only in their hours of the day (pond skaters by day).
+      if (R.hours && (hour < R.hours[0] || hour >= R.hours[1])) continue;
       for (const k of cells[kind]) {
         const i = k % rect.w, j = (k - i) / rect.w;
         const cx = waterCellCenter(rect.x + i), cz = waterCellCenter(rect.y + j);
@@ -185,19 +211,25 @@ export function createFinds(opts) {
           const depth = water.sampleLive(g.x, g.z)?.depth ?? 0;
           // Casts lie on sand the sea has left; under water there is nothing to see of them.
           if (kind === 'lugworm' && depth > 0.005) continue;
+          // Pond skaters stand on the water, so only where there is some.
+          if (kind === 'pondskaters' && depth <= R.minDepthM) continue;
           const y = terrain.sampleHeight(g.x, g.z);
           let mesh = kind, size = R.scale;
-          if (kind === 'anemone') {
+          /** @type {Float32Array | undefined} */ let pose;
+          if (kind === 'anemone' || kind === 'barnacles' || kind === 'mussels') {
             const near = Math.hypot(eye[0] - g.x, eye[1] - y, eye[2] - g.z) < R.closeM;
             const want = depth > 0.02 && !near ? 1 : 0;
             const was = open.get(g.key) ?? want;
             const now = was + (want - was) * Math.min(1, dt / R.easeS);
             open.set(g.key, now);
-            mesh = now > 0.5 ? 'anemone-open' : 'anemone-shut';
-            size *= 0.92 + 0.08 * now;
+            // A mussel's upper valve turns about the hinge (mussel.js); the others swap pose.
+            if (kind === 'mussels') pose = rigs.mussels ? musselBones(/** @type {any} */ (rigs.mussels).hinge, (now * R.model.gapeDeg * Math.PI) / 180) : undefined;
+            else mesh = now > 0.5 ? `${kind}-open` : `${kind}-shut`;
+            if (kind === 'anemone') size *= 0.92 + 0.08 * now;
           }
           size *= 0.85 + 0.3 * g.r;
-          all.push({ b: { x: g.x, y: y - 0.002 - (R.model?.buryM ?? 0) * size, z: g.z, yaw: g.yaw, size, mesh }, d: d2, sp: kind, g, R, depth });
+          const base = kind === 'pondskaters' ? y + depth + R.liftM : y - 0.002 - (R.model?.buryM ?? R.buryM ?? 0) * size;
+          all.push({ b: { x: g.x, y: base, z: g.z, yaw: g.yaw, size, mesh, ...(pose ? { bones: pose } : {}) }, d: d2, sp: kind, g, R, depth });
         }
       }
     }
@@ -225,7 +257,8 @@ export function createFinds(opts) {
   function shells(f, all) {
     const S = K.shells, L = shore.recipe?.look?.strandline;
     shellCount = { lines: 0, band: 0, placed: 0 };
-    if (!S || !L || !rect) return;
+    // Shells wash up once the naturalist's notes have given them (world/expansion.js).
+    if (!S || !L || !rect || (opts.shellsOn && !opts.shellsOn())) return;
     const nowH = f.displayT / 3600;
     const lines = strandLines(nowH, tideP, L);
     shellCount.lines = lines.levels.length;
@@ -265,6 +298,7 @@ export function createFinds(opts) {
   function stepCrabs(dt) {
     const eye = camera.eye;
     for (const e of list) {
+      if (e.sp === 'pondskaters') { glide(e, dt); continue; }
       if (e.sp !== 'hermitcrab' && e.sp !== 'ediblecrab') continue;
       const { g, R, b } = e;
       const m = moves.get(g.key) ?? { clock: 0, ox: 0, oz: 0, yaw: g.yaw, walking: false };
@@ -314,6 +348,54 @@ export function createFinds(opts) {
     shown = list.map((e) => ({ sp: e.sp, x: e.b.x, z: e.b.z, item: e.item ?? null }));
   }
 
+  /**
+   * Move a pond skater by dt seconds: a short dart in a seeded direction, a rest, another dart,
+   * turning back toward its spot once it strays; when you come close it darts away from you.
+   * @param {(typeof list)[number]} e @param {number} dt
+   */
+  function glide(e, dt) {
+    const { g, R, b } = e, G = R.glide, eye = camera.eye;
+    const seed = Math.floor(g.r * 16777216);
+    const m = moves.get(g.key) ?? { ox: 0, oz: 0, yaw: g.yaw, fx: 0, fz: 0, tx: 0, tz: 0, t: 0, len: 0, rest: u01(hash32(seed, 0)) * G.pauseS[1], n: 0, fleeing: false };
+    const x = g.x + m.ox, z = g.z + m.oz;
+    const near = Math.hypot(eye[0] - x, eye[2] - z) < G.nearM;
+    if (!near) m.fleeing = false;
+    m.t += dt;
+    const darting = m.t < m.len;
+    /** Set off toward an offset from the spot (back toward the spot if that is dry). @param {number} tx @param {number} tz @param {number} s */
+    const dart = (tx, tz, s) => {
+      const far = Math.hypot(tx, tz), most = G.rangeM + G.fleeM;
+      if (far > most) { tx *= most / far; tz *= most / far; }
+      if ((water.sampleLive(g.x + tx, g.z + tz)?.depth ?? 0) <= R.minDepthM) { tx = m.ox * 0.3; tz = m.oz * 0.3; }
+      Object.assign(m, { fx: m.ox, fz: m.oz, tx, tz, t: 0, len: s });
+      if (Math.hypot(tx - m.ox, tz - m.oz) > 1e-4) m.yaw = Math.atan2(tx - m.ox, tz - m.oz);
+    };
+    if (near && (!m.fleeing || !darting)) {
+      // Away from you, at once.
+      const ax = x - eye[0], az = z - eye[2], l = Math.hypot(ax, az) || 1;
+      dart(m.ox + (ax / l) * G.fleeM, m.oz + (az / l) * G.fleeM, G.fleeS);
+      m.fleeing = true;
+      m.rest = G.pauseS[0];
+    } else if (!darting && m.t >= m.len + m.rest) {
+      m.n++;
+      const h = hash32(seed, m.n);
+      let a = u01(h) * Math.PI * 2;
+      // Strayed far from its spot: head back that way, give or take.
+      if (Math.hypot(m.ox, m.oz) > G.rangeM * 0.6) a = Math.atan2(-m.oz, -m.ox) + (u01(hash32(h, 2)) - 0.5) * 1.2;
+      const d = G.dartM * (0.5 + u01(hash32(h, 1)));
+      dart(m.ox + Math.cos(a) * d, m.oz + Math.sin(a) * d, G.dartS);
+      m.rest = G.pauseS[0] + u01(hash32(h, 3)) * (G.pauseS[1] - G.pauseS[0]);
+    }
+    // A dart starts fast and slows to a glide.
+    const k = m.len > 0 ? Math.min(1, m.t / m.len) : 1, s = 1 - (1 - k) * (1 - k);
+    m.ox = m.fx + (m.tx - m.fx) * s;
+    m.oz = m.fz + (m.tz - m.fz) * s;
+    moves.set(g.key, m);
+    b.x = g.x + m.ox; b.z = g.z + m.oz;
+    b.y = terrain.sampleHeight(b.x, b.z) + (water.sampleLive(b.x, b.z)?.depth ?? 0) + R.liftM;
+    b.yaw = m.yaw;
+  }
+
   return {
     id: 'finds',
     pass,
@@ -359,6 +441,8 @@ export function createFinds(opts) {
  */
 async function loadModels(pass, recipe) {
   const put = (/** @type {string} */ key, /** @type {any} */ mesh) => pass.setMesh(key, { data: packMesh(mesh), indices: mesh.indices });
+  // Barnacles and pond skaters are built here, with no file to wait for.
+  for (const [key, mesh] of Object.entries(proceduralMeshes(recipe))) put(key, mesh);
   const A = recipe.kinds.anemone.model;
   // Every other kind with a model is one mesh under its own name; a rigged one keeps its skin.
   const others = KINDS.filter((k) => k !== 'anemone' && recipe.kinds[k].model && !recipe.kinds[k].model.rigged);
@@ -368,12 +452,17 @@ async function loadModels(pass, recipe) {
   others.forEach((k, i) => {
     const M = recipe.kinds[k].model;
     const mesh = joinParts(parts[i], M.heightM, M.rotDeg, (p) => p, M.tint);
+    // A mussel's model is one valve: mirrored into the pair, the upper valve on its own bone.
+    if (M.pair) {
+      const pr = musselPair(mesh);
+      pass.setMesh(k, { data: packMesh(pr.mesh, pr.joints, pr.weights), indices: pr.mesh.indices });
+      rigs[k] = { hinge: pr.hinge };
     // A model with no skeleton but legs (the edible crab) is given leg bones by where its legs are.
-    if (M.legs) {
+    } else if (M.legs) {
       const lr = legRig(mesh, M.legs);
       pass.setMesh(k, { data: packMesh(mesh, lr.joints, lr.weights), indices: mesh.indices });
       rigs[k] = { legs: lr };
-    } else put(k, mesh);
+    } else put(k, M.petals ? petalShade(mesh, M.petals) : mesh);
   });
   // Shells: one mesh per item, under shells-<id>.
   const items = recipe.kinds.shells?.items ?? [];
@@ -393,6 +482,33 @@ async function loadModels(pass, recipe) {
   const S = A.shut;
   put('anemone-shut', joinParts(anemone, A.heightM, A.rotDeg, (p, part) => shutAnemone(p, part, A.bodyPart, top, S), A.tint));
   return rigs;
+}
+
+/**
+ * The sand dollar's five petals, painted into its colors: the scan's relief is too fine to show
+ * them at this size, so the petal shapes on its back are made paler (by lift), as on the living one.
+ * Pure; returns the mesh with its colors changed.
+ * @param {{ vertices: Float32Array, count: number, indices: Uint32Array }} mesh
+ * @param {{ lift: number, from: number, to: number, width: number }} P from, to: where a petal starts and
+ *   ends, as a share of the radius; width: its widest half-width, as a share of the radius
+ */
+export function petalShade(mesh, P) {
+  const V = mesh.vertices;
+  let cx = 0, cz = 0, r = 0;
+  for (let i = 0; i < mesh.count; i++) { cx += V[i * 9] / mesh.count; cz += V[i * 9 + 2] / mesh.count; }
+  for (let i = 0; i < mesh.count; i++) r = Math.max(r, Math.hypot(V[i * 9] - cx, V[i * 9 + 2] - cz));
+  for (let i = 0; i < mesh.count; i++) {
+    const x = V[i * 9] - cx, z = V[i * 9 + 2] - cz, d = Math.hypot(x, z) / r;
+    // The angle from the nearest petal's middle line (five, 72 degrees apart).
+    const a = Math.atan2(z, x), step = (2 * Math.PI) / 5;
+    const off = a - Math.round(a / step) * step;
+    const t = (d - P.from) / (P.to - P.from);
+    if (t <= 0 || t >= 1) continue;
+    const half = P.width * Math.sin(Math.PI * t);
+    if (Math.abs(Math.sin(off) * d) > half) continue;
+    for (let k = 6; k < 9; k++) V[i * 9 + k] = Math.min(1, V[i * 9 + k] * P.lift);
+  }
+  return mesh;
 }
 
 /**
