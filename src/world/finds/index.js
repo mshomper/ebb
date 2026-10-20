@@ -20,6 +20,7 @@ import { groundOfCell } from '../water/shore.js';
 import { get as getStore } from '../../core/store.js';
 import { loadFindModel, joinParts } from './models.js';
 import { loadRig, bones } from './rig.js';
+import { legRig, legBones } from './leg-rig.js';
 
 // New kinds go at the end: a kind's place here salts where its groups fall.
 const KINDS = /** @type {const} */ (['anemone', 'periwinkle', 'lugworm', 'hermitcrab', 'ediblecrab', 'shells']);
@@ -274,11 +275,18 @@ export function createFinds(opts) {
         m.walking = Math.hypot(vx, vz) > 1e-4;
         if (m.walking) m.yaw = Math.atan2(vx, vz) + Math.PI / 2;
       }
-      // A rigged crab plays its walk while it moves and holds the last step while it waits.
+      // A rigged crab steps while it moves (the gait, rig.js) and holds its last step while it waits.
       const rig = rigs[e.sp];
-      if (rig) {
-        if (m.walking) m.anim = (m.anim ?? g.r * rig.duration) + dt * (R.model.playRate ?? 1);
-        b.bones = bones(rig, m.anim ?? g.r * rig.duration, m.pose);
+      if (rig?.legs) {
+        // Legs step fast while it runs, and now and then twitch while it sits.
+        const G = R.model.legs;
+        m.step = (m.step ?? g.r * 6.283) + dt * 2 * Math.PI * (m.walking ? G.stepHz : G.idleHz);
+        b.bones = legBones(rig.legs, m.step, m.walking ? G : { ...G, liftDeg: G.liftDeg * G.idleShare, sweepDeg: G.sweepDeg * G.idleShare }, m.pose);
+        m.pose = b.bones;
+      } else if (rig) {
+        rig.gaitScale = R.creep?.gaitScale ?? 1;
+        if (m.walking) m.step = (m.step ?? g.r * 6.283) + dt * 2 * Math.PI * (R.creep?.stepHz ?? 2);
+        b.bones = bones(rig, -1, m.pose, m.step ?? g.r * 6.283);
         m.pose = b.bones;
       }
       moves.set(g.key, m);
@@ -339,12 +347,21 @@ async function loadModels(pass, recipe) {
   const others = KINDS.filter((k) => k !== 'anemone' && recipe.kinds[k].model && !recipe.kinds[k].model.rigged);
   const rigged = KINDS.filter((k) => recipe.kinds[k].model?.rigged);
   const [anemone, ...parts] = await Promise.all([loadFindModel(A.url), ...others.map((k) => loadFindModel(recipe.kinds[k].model.url))]);
-  others.forEach((k, i) => { const M = recipe.kinds[k].model; put(k, joinParts(parts[i], M.heightM, M.rotDeg, (p) => p, M.tint)); });
+  /** @type {Record<string, any>} rig.js rigs, or leg-rig.js legs (as { legs }) */ const rigs = {};
+  others.forEach((k, i) => {
+    const M = recipe.kinds[k].model;
+    const mesh = joinParts(parts[i], M.heightM, M.rotDeg, (p) => p, M.tint);
+    // A model with no skeleton but legs (the edible crab) is given leg bones by where its legs are.
+    if (M.legs) {
+      const lr = legRig(mesh, M.legs);
+      pass.setMesh(k, { data: packMesh(mesh, lr.joints, lr.weights), indices: mesh.indices });
+      rigs[k] = { legs: lr };
+    } else put(k, mesh);
+  });
   // Shells: one mesh per item, under shells-<id>.
   const items = recipe.kinds.shells?.items ?? [];
   const shellParts = await Promise.all(items.map((/** @type {any} */ it) => loadFindModel(it.model.url)));
   items.forEach((/** @type {any} */ it, /** @type {number} */ i) => put(`shells-${it.id}`, joinParts(shellParts[i], it.model.heightM, it.model.rotDeg, (p) => p, it.model.tint)));
-  /** @type {Record<string, import('./rig.js').Rig>} */ const rigs = {};
   for (const k of rigged) {
     const M = recipe.kinds[k].model;
     const rig = await loadRig(M.url, M.heightM, M.rotDeg);

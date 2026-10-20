@@ -24,6 +24,7 @@
 import { loadFindModel, joinParts } from '../src/world/finds/models.js';
 import { shutAnemone } from '../src/world/finds/index.js';
 import { loadRig, posedMesh } from '../src/world/finds/rig.js';
+import { legRig, legBones } from '../src/world/finds/leg-rig.js';
 
 const recipe = await (await fetch('../recipes/species/finds.json')).json();
 const names = await (await fetch('../recipes/world/journal.json')).json();
@@ -40,12 +41,32 @@ for (const [id, K] of Object.entries(recipe.kinds)) {
   if (!M) continue;
   const name = names.species?.[id]?.name ?? id;
   if (M.rigged) {
-    // A rigged find plays its walk here on a loop.
+    // A rigged find walks here on a loop, with the game's gait (rig.js).
     const rig = await loadRig('../' + M.url, M.heightM, M.rotDeg);
-    views.push({ name: `${name}, walking`, mesh: posedMesh(rig, 0), h: M.heightM, rig, rate: M.playRate ?? 1 });
+    rig.gaitScale = K.creep?.gaitScale ?? 1;
+    views.push({ name: `${name}, walking`, mesh: posedMesh(rig, -1, 0), h: M.heightM, rig, rate: 2 * Math.PI * (K.creep?.stepHz ?? 2) });
     continue;
   }
   const parts = await loadFindModel('../' + M.url);
+  if (M.legs) {
+    // Leg bones by where the legs are (leg-rig.js), stepping as when it runs.
+    const base = joinParts(parts, M.heightM, M.rotDeg, (p) => p, M.tint);
+    const lr = legRig(base, M.legs);
+    const pose = (/** @type {number} */ ph) => {
+      const B = legBones(lr, ph, M.legs), v = new Float32Array(base.vertices);
+      for (let i = 0; i < base.count; i++) {
+        const p = [base.vertices[i * 9], base.vertices[i * 9 + 1], base.vertices[i * 9 + 2]], o = [0, 0, 0];
+        for (let k = 0; k < 2; k++) {
+          const w = lr.weights[i * 4 + k] / 255, m = B.subarray(lr.joints[i * 4 + k] * 16);
+          for (let r = 0; r < 3; r++) o[r] += w * (m[r] * p[0] + m[4 + r] * p[1] + m[8 + r] * p[2] + m[12 + r]);
+        }
+        v.set(o, i * 9);
+      }
+      return { ...base, vertices: v };
+    };
+    views.push({ name: `${name}, running`, mesh: pose(0), h: M.heightM, pose, rate: 2 * Math.PI * M.legs.stepHz });
+    continue;
+  }
   views.push({ name: id === 'anemone' ? `${name}, open` : name, mesh: joinParts(parts, M.heightM, M.rotDeg, (p) => p, M.tint), h: M.heightM, bury: M.buryM });
   if (id === 'anemone') {
     let top = 0;
@@ -103,10 +124,14 @@ for (const v of views) {
   cv.addEventListener('pointerup', () => { drag = null; });
   addEventListener('resize', draw);
   draw();
+  if (v.pose) {
+    const t0 = performance.now();
+    setInterval(() => { v.mesh = v.pose(((performance.now() - t0) / 1000) * v.rate * 0.3); draw(); }, 66);
+  }
   if (v.rig) {
     // Play the walk about 15 times a second (the painter's sort is slow for faster).
     const t0 = performance.now();
-    setInterval(() => { v.mesh = posedMesh(v.rig, ((performance.now() - t0) / 1000) * v.rate); draw(); }, 66);
+    setInterval(() => { v.mesh = posedMesh(v.rig, -1, ((performance.now() - t0) / 1000) * v.rate); draw(); }, 66);
   }
 }
 </script>

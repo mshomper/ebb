@@ -215,6 +215,8 @@
 .ebb-jpage__list li::before { content: ''; width: 9px; height: 9px; margin-top: 8px; border-radius: 50%; background: var(--jr-moss); }
 .ebb-jpage__list li.is-pencil { color: var(--jr-pencil); }
 .ebb-jpage__list li.is-pencil::before { background: transparent; border: 1.5px dashed var(--jr-pencil); width: 8px; height: 8px; }
+/* A collection's rarity beside its name (the Shells page). */
+.ebb-jpage__rarity { font-size: 15px; color: var(--jr-pencil); margin-left: 4px; }
 .ebb-jpage__seasons { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
 /* Each season box wears a soft wash of its season, with its drawn mark; an unseen season stays pencil. */
 .ebb-jpage__season {

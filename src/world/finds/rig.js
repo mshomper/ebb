@@ -10,7 +10,9 @@ import { smoothNormals, fetchGltf, readAccessor } from './models.js';
  * @typedef {{ parent: number, t: number[], r: number[], s: number[] }} Joint  rest pose, parent index (-1 root)
  * @typedef {{ joint: number, path: string, times: Float32Array, values: Float32Array, n: number, step: boolean }} Channel
  * @typedef {{ vertices: Float32Array, count: number, indices: Uint32Array, joints: Uint8Array, weights: Uint8Array,
- *   nodes: Joint[], skin: number[], ibm: Float32Array, channels: Channel[], duration: number, fit: Float32Array }} Rig
+ *   nodes: Joint[], skin: number[], ibm: Float32Array, channels: Channel[], duration: number, fit: Float32Array,
+ *   gait?: { joint: number, axis: number[], amp: number, phase: number }[], gaitScale?: number }} Rig
+ *   gaitScale: how far the legs swing, as a share of what the clip shows (each way)
  */
 
 /**
@@ -81,16 +83,81 @@ export function parseRig(gltf, buffers, heightM, rotDeg) {
   const sc = heightM / Math.max(hi[1] - lo[1], 1e-6);
   const T = translate(-(lo[0] + hi[0]) / 2, -lo[1], -(lo[2] + hi[2]) / 2);
   rig.fit = mul(scale(sc), mul(T, rotMatrix(rotDeg)));
+  rig.gait = gaitOf(rig);
   return rig;
 }
 
 /**
- * The bone matrices at time t seconds into the clip (t < 0: the rest pose), with the fit applied.
- * @param {Rig} rig @param {number} t @param {Float32Array} [out] @returns {Float32Array}
+ * A walking gait from the rig itself. The model's own clip is a slow sway, not a walk, but it shows
+ * how each leg joint bends: its hinge axis and how far it goes. Each leg (a chain of joints the clip
+ * moves) gets a swing about those axes, a step out of time with its neighbours along its side and
+ * with the leg across from it, so the legs move in turn.
+ * @param {Rig} rig @returns {{ joint: number, axis: number[], amp: number, phase: number }[]}
  */
-export function bones(rig, t, out = new Float32Array(rig.skin.length * 16)) {
+function gaitOf(rig) {
+  const inSkin = new Set(rig.skin);
+  /** @type {Map<number, { axis: number[], amp: number }>} */ const swing = new Map();
+  for (const c of rig.channels) {
+    if (c.path !== 'rotation' || !inSkin.has(c.joint)) continue;
+    const r0 = rig.nodes[c.joint].r;
+    let best = 0, axis = [0, 0, 1];
+    for (let i = 0; i < c.times.length; i++) {
+      const q = Array.from(c.values.subarray(i * 4, i * 4 + 4));
+      const d = qmul(qconj(r0), q);
+      const ang = 2 * Math.acos(Math.min(1, Math.abs(d[3])));
+      if (ang > best) { best = ang; const l = Math.hypot(d[0], d[1], d[2]) || 1, sg = d[3] < 0 ? -1 : 1; axis = [sg * d[0] / l, sg * d[1] / l, sg * d[2] / l]; }
+    }
+    if (best > (4 * Math.PI) / 180) swing.set(c.joint, { axis, amp: best / 2 });
+  }
+  // Each moving joint's leg: the topmost moving joint above it. Where legs sit: the rest pose.
+  const rootOf = (/** @type {number} */ j) => { let r = j; while (swing.has(rig.nodes[r].parent)) r = rig.nodes[r].parent; return r; };
+  const W = restWorld(rig);
+  const roots = [...new Set([...swing.keys()].map(rootOf))].map((j) => ({ j, x: W[j][12], z: W[j][14] }));
+  /** @type {Map<number, number>} */ const phaseOf = new Map();
+  for (const side of [1, -1]) {
+    const legs = roots.filter((r) => Math.sign(r.x || 1) === side).sort((a, b) => b.z - a.z);
+    legs.forEach((r, i) => phaseOf.set(r.j, (i % 2) * Math.PI + (side > 0 ? 0 : Math.PI)));
+  }
+  return [...swing.entries()].map(([joint, s]) => ({ joint, axis: s.axis, amp: s.amp, phase: phaseOf.get(rootOf(joint)) ?? 0 }));
+}
+
+/** Every node's world matrix at rest, with the fit applied. @param {Rig} rig @returns {Float32Array[]} */
+function restWorld(rig) {
+  /** @type {(Float32Array | null)[]} */ const world = rig.nodes.map(() => null);
+  /** @param {number} i @returns {Float32Array} */
+  const at = (i) => {
+    if (world[i]) return /** @type {Float32Array} */ (world[i]);
+    const n = rig.nodes[i];
+    const m = trs(n.t, n.r, n.s);
+    const w = n.parent < 0 ? mul(rig.fit ?? identity(), m) : mul(at(n.parent), m);
+    world[i] = w;
+    return w;
+  };
+  return rig.nodes.map((_, i) => at(i));
+}
+
+/** @param {number[]} a @param {number[]} b quaternions (x, y, z, w) */
+function qmul(a, b) {
+  return [a[3] * b[0] + a[0] * b[3] + a[1] * b[2] - a[2] * b[1], a[3] * b[1] - a[0] * b[2] + a[1] * b[3] + a[2] * b[0],
+    a[3] * b[2] + a[0] * b[1] - a[1] * b[0] + a[2] * b[3], a[3] * b[3] - a[0] * b[0] - a[1] * b[1] - a[2] * b[2]];
+}
+/** @param {number[]} q */
+const qconj = (q) => [-q[0], -q[1], -q[2], q[3]];
+
+/**
+ * The bone matrices with the fit applied: at time t seconds into the clip (t < 0: the rest pose),
+ * or, given a gait phase (radians, advancing about 2 pi per step while it walks), the rest pose
+ * with the legs swung by the gait instead.
+ * @param {Rig} rig @param {number} t @param {Float32Array} [out] @param {number | null} [gait] @returns {Float32Array}
+ */
+export function bones(rig, t, out = new Float32Array(rig.skin.length * 16), gait = null) {
   const local = rig.nodes.map((n) => ({ t: n.t, r: n.r, s: n.s }));
-  if (t >= 0 && rig.duration > 0) {
+  if (gait !== null) {
+    for (const g of rig.gait ?? []) {
+      const a = g.amp * Math.sin(gait + g.phase) * (rig.gaitScale ?? 1), s = Math.sin(a);
+      local[g.joint].r = qmul(rig.nodes[g.joint].r, [g.axis[0] * s, g.axis[1] * s, g.axis[2] * s, Math.cos(a)]);
+    }
+  } else if (t >= 0 && rig.duration > 0) {
     const tt = t % rig.duration;
     for (const c of rig.channels) {
       const v = sample(c, tt);
@@ -120,10 +187,11 @@ export function bones(rig, t, out = new Float32Array(rig.skin.length * 16)) {
 /**
  * The mesh posed at time t on the CPU, in models.js's part layout (tools/finds-models.html plays
  * the walk with it; the game skins on the GPU).
- * @param {Rig} rig @param {number} t @returns {{ vertices: Float32Array, count: number, indices: Uint32Array }}
+ * @param {Rig} rig @param {number} t @param {number | null} [gait] a gait phase (see bones)
+ * @returns {{ vertices: Float32Array, count: number, indices: Uint32Array }}
  */
-export function posedMesh(rig, t) {
-  const B = bones(rig, t);
+export function posedMesh(rig, t, gait = null) {
+  const B = bones(rig, t, undefined, gait);
   const v = new Float32Array(rig.vertices);
   for (let i = 0; i < rig.count; i++) {
     v.set(skinPoint(rig, B, i), i * 9);

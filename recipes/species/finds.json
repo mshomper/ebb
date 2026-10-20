@@ -1,7 +1,7 @@
 {
   "type": "finds",
   "version": 1,
-  "note": "Finds (docs/future/11): small shore lives with a body and one motion, and no needs, mood or trust. Where they are comes from the ground (src/world/finds/index.js): the shore zones (shore.json) and the water summary, never saved. Each kind: zones it lives in (shore.json zone ids; pool means a rock pool, a hollow of rock in the tide band that holds water), density (share of 0.5 m cells holding some), count per spot [min, max], spreadM (how far a spot's group spreads), scale (drawn size over real size; finds are small, so like the frogs they are drawn a little larger to be found), model: the find's mesh (assets/models/finds/, credited in CREDITS.md there): url, heightM (real height), rotDeg (turn about x, y, z so it stands right), tint (a linear albedo multiplier per part); for the anemone, bodyPart (which part is the column) buryM (how deep its stalk sits in the rock, in meters at real size) and shut (sink and widen the column, close its rim by close toward a dome, fold the tentacles in toward its top). cast (the lugworm's, drawn into the sand by the terrain shader, src/shaders/lib-casts.wgsl): radiusM coil radius, tubeM tube radius, turns, riseM how much higher the inner turns sit, albedo as a share of the sand's, drawM the view distance past which casts are not drawn. Anemones open under water and close at low tide or when you come close (closeM), easing over easeS; periwinkles (a rough periwinkle, from a CC0 scan) drift a little each tide; lugworm casts are laid fresh after each tide on sand the sea has left; a hermit crab creeps about its rock pool under water (creep: speedMps, rangeM how far it wanders from its spot, stillNearM it stops when you come this close) and stays put when the pool is low; an edible crab (a young one, red-brown) sits in the wrack or a pool and scuttles sideways away when you come close (scuttle: nearM, awayM how far, easeS how fast). Shells wash up on the strandline (shore.json strandline, from the tide): each high tide's line may leave a shell in a cell whose ground lies within lineToleranceM of where its waves reached; which shell is picked by weight, and the rare ones (springMin) only on lines left by tides at least that far from neap toward spring (0 mean, 1 the highest spring tide). Each item has its own model. nearM: finds are only worked out within this distance of the view's middle, at most max at once. tapM and tapPerM: how near a tap must be (plus this much per meter of camera distance).",
+  "note": "Finds (docs/future/11): small shore lives with a body and one motion, and no needs, mood or trust. Where they are comes from the ground (src/world/finds/index.js): the shore zones (shore.json) and the water summary, never saved. Each kind: zones it lives in (shore.json zone ids; pool means a rock pool, a hollow of rock in the tide band that holds water), density (share of 0.5 m cells holding some), count per spot [min, max], spreadM (how far a spot's group spreads), scale (drawn size over real size; finds are small, so like the frogs they are drawn a little larger to be found), model: the find's mesh (assets/models/finds/, credited in CREDITS.md there): url, heightM (real height), rotDeg (turn about x, y, z so it stands right), tint (a linear albedo multiplier per part); for the anemone, bodyPart (which part is the column) buryM (how deep its stalk sits in the rock, in meters at real size) and shut (sink and widen the column, close its rim by close toward a dome, fold the tentacles in toward its top). cast (the lugworm's, drawn into the sand by the terrain shader, src/shaders/lib-casts.wgsl): radiusM coil radius, tubeM tube radius, turns, riseM how much higher the inner turns sit, albedo as a share of the sand's, drawM the view distance past which casts are not drawn. Anemones open under water and close at low tide or when you come close (closeM), easing over easeS; periwinkles (a rough periwinkle, from a CC0 scan) drift a little each tide; lugworm casts are laid fresh after each tide on sand the sea has left; a hermit crab walks about its rock pool under water (creep: speedMps, rangeM how far it wanders from its spot, stillNearM it stops when you come this close, stepHz steps a second, gaitScale how far its legs swing as a share of what its model's own clip shows) and stays put when the pool is low; an edible crab (a young one, red-brown) sits in the wrack or a pool and scuttles sideways away when you come close (scuttle: nearM, awayM how far, easeS how fast); its model has no skeleton, so model.legs gives it one (src/world/finds/leg-rig.js): shellShare of the half width is shell, bands legs a side, stepHz steps a second while it runs, idleHz and idleShare a slow twitch while it sits, liftDeg and sweepDeg how far a leg lifts and swings, clawShare how much of that the claws do). Shells wash up on the strandline (shore.json strandline, from the tide): each high tide's line may leave a shell in a cell whose ground lies within lineToleranceM of where its waves reached; which shell is picked by weight, and the rare ones (springMin) only on lines left by tides at least that far from neap toward spring (0 mean, 1 the highest spring tide). Each item has its own model. nearM: finds are only worked out within this distance of the view's middle, at most max at once. tapM and tapPerM: how near a tap must be (plus this much per meter of camera distance).",
   "nearM": 14,
   "max": 120,
   "tapM": 0.06,
@@ -47,8 +47,8 @@
     },
     "periwinkle": {
       "zones": ["wrack", "channelled"],
-      "density": 0.02,
-      "count": [1, 4],
+      "density": 0.04,
+      "count": [2, 5],
       "spreadM": 0.18,
       "scale": 3,
       "driftM": 0.05,
@@ -63,8 +63,8 @@
     },
     "lugworm": {
       "zones": ["ripples", "wetSand", "mud"],
-      "density": 0.02,
-      "count": [1, 2],
+      "density": 0.05,
+      "count": [1, 3],
       "spreadM": 0.5,
       "scale": 2.1,
       "cast": {
@@ -78,19 +78,20 @@
     },
     "hermitcrab": {
       "zones": ["pool"],
-      "density": 0.15,
+      "density": 0.12,
       "count": [1, 1],
       "spreadM": 0.2,
       "scale": 2.25,
       "creep": {
         "speedMps": 0.006,
         "rangeM": 0.18,
-        "stillNearM": 0.5
+        "stillNearM": 0.22,
+        "stepHz": 2.4,
+        "gaitScale": 2.2
       },
       "model": {
         "url": "assets/models/finds/hermit-crab.gltf",
         "rigged": true,
-        "playRate": 1,
         "heightM": 0.016,
         "rotDeg": [0, -90, 0],
         "tint": [
@@ -100,14 +101,14 @@
     },
     "ediblecrab": {
       "zones": ["wrack", "pool"],
-      "density": 0.008,
+      "density": 0.02,
       "count": [1, 1],
       "spreadM": 0.2,
       "scale": 2.1,
       "scuttle": {
         "nearM": 0.8,
-        "awayM": 0.14,
-        "easeS": 0.6
+        "awayM": 0.3,
+        "easeS": 0.4
       },
       "model": {
         "url": "assets/models/finds/edible-crab.gltf",
@@ -115,12 +116,22 @@
         "rotDeg": [0, 0, 0],
         "tint": [
           [1, 1, 1]
-        ]
+        ],
+        "legs": {
+          "shellShare": 0.42,
+          "bands": 4,
+          "stepHz": 5,
+          "idleHz": 0.4,
+          "idleShare": 0.25,
+          "liftDeg": 18,
+          "sweepDeg": 14,
+          "clawShare": 0.35
+        }
       }
     },
     "shells": {
       "zones": ["strandline"],
-      "density": 0.015,
+      "density": 0.03,
       "count": [1, 1],
       "spreadM": 0.2,
       "scale": 2,
