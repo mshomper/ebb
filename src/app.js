@@ -336,7 +336,8 @@ export async function startApp(canvas, hooks = {}) {
     wind: () => ({ strength: weatherAt(world.state?.weather, clock.display(), seasonsRecipe).wind, dir: world.state?.weather?.today?.windDir ?? 0 }),
     rain: (hoursAgo) => weatherAt(world.state?.weather, clock.display() - hoursAgo * clock.SECONDS_PER_HOUR, seasonsRecipe).rain });
   sim.addSystem(midges);
-  // What the animals do that can be heard (src/audio reads it): frog calls and plops, midge swarms.
+  // What the animals do that can be heard (src/audio reads it): frog calls and plops, midge swarms,
+  // and the schools: each minnow and dragonfly with its speed, and the minnows' rises to the surface.
   updateStore('creatureSound', () => ({ frogs: (/** @type {number} */ since) => creatures.sounds(since), swarms: () => midges.heard(),
     schools: () => schools.flatMap((s) => s.heard()) }));
   // Finds (docs/future/11): anemones in rock pools, periwinkles on the wrack, lugworm casts on the

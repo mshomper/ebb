@@ -45,6 +45,8 @@
     "duckNearM": 8,
     "duckHoldS": 4
   },
+  "pondNote": "The pond tier's small sounds (src/audio/creatures-game.js; doc 25 'Creature voices'): the live schools (src/world/creatures/schools.js) of the species in sips are heard sipping at the surface each time one rises and rings it (their recipe's voice block, model surface-sip), read with the frogs every frogs.pollS seconds, started leadS ahead on the audio clock and let go if older than staleS; the species in wings are heard by their wings (model wing-rattle), each one at its own place, updated with the ambience.",
+  "pond": { "sips": ["minnows"], "wings": ["dragonflies"], "leadS": 0.03, "staleS": 0.4 },
   "music": { "updateHz": 2 },
   "nowPlaying": { "atShare": 0.5, "fadeInS": 2, "holdS": 8, "fadeOutS": 3 },
   "reveal": { "fullFromH": 6, "ambienceInS": 3, "creaturesAtS": 2.5, "creaturesInS": 6, "endInS": 1.5 },

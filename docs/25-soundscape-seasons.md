@@ -110,6 +110,10 @@ Frog body sounds (sampled one-shots, panned at the frog): **plop** into water (s
 
 **Midges** (procedural, `voices.js` model `midge-swarm`): one voice per live swarm, at the swarm's center, nearest two swarms only. A thin high hum built from 6 to 10 sine or triangle partials around 400 to 700 Hz, each slightly detuned and slowly wandering so they beat against each other, with amplitude following the swarm's live density (dusk peak, night near zero, damped by wind). Audible only within about 3 m of the camera (`refDistance` 0.5 m, steep rolloff) and never in the far field: a player bending close to the water at dusk hears them, nobody else does. Tune by ear in the lab against a real chironomid swarm recording if one is found as CC0.
 
+**Minnows** (procedural, model `surface-sip`, M2): each time a fish rises and rings the surface, a tiny soft plop at the ring: one small bubble near 1.2 kHz (lower and rounder than a raindrop) with a soft lip click, about 9 dB under a frog's plop. Heard within about 9 m, fading out from 5 m, so you hear a school only when you are near it. Rises come often while the school swirls up to food.
+
+**Southern hawker** (procedural, model `wing-rattle`, M2, `src/audio/voices/dragonfly.js`): a soft, dry, papery rattle, not a hum. Each wingbeat is two short noise grains (fore pair, then hind pair a little behind), each a different strength, with now and then a tiny crinkle; the beats loop at the drawn wingbeat rate (22 a second hovering, 27 darting). Louder and brighter darting than hovering, silent on a perch. One voice per dragonfly at its own place, nearest two only, heard only within about 2 m of the camera eye, so one passing close by is a small event.
+
 ### Distant visitors
 
 Soft calls from beyond the island, so it feels part of a larger world without anything arriving.
