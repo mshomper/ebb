@@ -437,7 +437,10 @@ export function addJournalTests(test, assert, eq) {
     eq(g(run({ status: 'notYet' }), 'small').rows.length, 0, 'even under Not yet');
     eq(g(run({ status: 'found' }), 'plants').rows.join(','), 'reeds,thrift,grass', 'Found keeps only the found');
     eq(g(run({ sort: 'az' }), 'plants').rows.slice(0, 3).join(','), 'Grass,Reeds,Sea thrift'.split(',').map((n) => words.order.find((/** @type {string} */ id) => words.species[id].name === n)).join(','), 'A to Z by name');
-    eq(g(run({ place: 'shore' }), 'plants').rows.join(','), 'thrift', 'Shore keeps only thrift among plants');
+    // The shore plants (thrift, and sea campion not yet seen), and nothing else.
+    const shorePlants = g(run({ place: 'shore' }), 'plants').rows;
+    eq([...shorePlants].sort().join(','), words.order.filter((/** @type {string} */ id) => list.placeOf[id] === 'shore').sort().join(','), 'Shore keeps only the shore plants');
+    assert(shorePlants.includes('thrift'), 'thrift is on the shore');
     eq(g(run({ sort: 'place', status: 'found' }), 'plants').rows.join(','), 'reeds,grass,thrift', 'by place: pond, meadow, shore');
     assert(g(run({ shut: { plants: true } }), 'plants').shut, 'a group folds shut');
     const none = g(livingList(list, words, DEFAULT_CHOICE, (id) => ({ id, known: false, name: '' }), () => -1), 'small');
