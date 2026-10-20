@@ -200,7 +200,7 @@ export function frogCard(f, state, words, presence) {
 }
 
 /**
- * The plant nearest a tapped ground point, within words.identify.radiusM, or the cover plant (grass,
+ * The plant nearest a tapped ground point, within words.identify.radiusM (or its species' own tapM), or the cover plant (grass,
  * rushes) where it grows.
  * @param {any} state @param {any} hab @param {number} x @param {number} z @param {any} words
  * @returns {{ sp: string, name: string, icon: string, text: string, wx: number, wz: number, r: number, stage: number } | null}
@@ -208,10 +208,13 @@ export function frogCard(f, state, words, presence) {
  */
 export function identify(state, hab, x, z, words) {
   const I = words.identify;
-  let best = null, bestD = I.radiusM * I.radiusM;
+  // Nearest by the share of each species' reach (a shrub's tapM is wider, for its crown).
+  let best = null, bestD = 1;
   for (const p of state?.growth?.plants ?? []) {
-    if (!words.species[p.sp]) continue;
-    const d = (p.x - x) * (p.x - x) + (p.z - z) * (p.z - z);
+    const rec = words.species[p.sp];
+    if (!rec) continue;
+    const r = rec.tapM ?? I.radiusM;
+    const d = ((p.x - x) * (p.x - x) + (p.z - z) * (p.z - z)) / (r * r);
     if (d < bestD) { bestD = d; best = p; }
   }
   if (best) return plantCard(best, words);
@@ -233,7 +236,7 @@ export function identify(state, hab, x, z, words) {
 function plantCard(p, words) {
   const rec = words.species[p.sp];
   return { sp: p.sp, name: rec.name, icon: rec.icon, text: rec.stages?.[p.stage] ?? rec.name,
-    wx: p.x, wz: p.z, r: words.identify.ringM * (0.6 + 0.4 * Math.max(0, Math.min(1, p.size))), stage: p.stage };
+    wx: p.x, wz: p.z, r: (rec.ringM ?? words.identify.ringM) * (0.6 + 0.4 * Math.max(0, Math.min(1, p.size))), stage: p.stage };
 }
 
 /**

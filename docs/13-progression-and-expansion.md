@@ -21,7 +21,7 @@ Agreed with Matt on October 20, 2026. New things reach the player in five ways, 
 | Way | What comes | Paced by |
 |---|---|---|
 | Starter kit | Sculpt (Raise, Lower, Flatten, Stone), Paint, Water (Pour, Drain), Plant with grass, reeds and water lilies; Feed once a creature is found | nothing: there from the start |
-| Plants that come by themselves | Iris, rushes, thrift, marigold, campion; plantable once seen | about one every 1.7 game days (`recipes/world/growth.json`) |
+| Plants that come by themselves | Iris, rushes, thrift, marigold, grey willow, campion; plantable once seen | about one every 1.7 game days (`recipes/world/growth.json`) |
 | The naturalist's notes | Shells at 3 finds; loose stones at 6, driftwood at 10, the hand lens at 15 (driftwood and the lens swapped places on October 20, 2026, so logs come in time for the turtles) | finds discovered (`recipes/world/naturalist.json`) |
 | Species gifts | One seed or tool per species, when it first settles happy (list in `12-creature-roadmap.md`) | creature happiness |
 | Tier milestones | New land, when the second species of a tier is happy | creature happiness |

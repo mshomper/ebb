@@ -25,7 +25,7 @@ const DOT_OK = '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" fill="#7C
 
 // One fixed color per known species; any other id gets the fallback so it still shows.
 /** @type {Record<string, string>} */
-const SPECIES_RGB = { reeds: '#3E6B3A', lilies: '#2E7D6B', iris: '#C9A227', thrift: '#C8628C', marigold: '#E0A800', campion: '#8E9AA6' };
+const SPECIES_RGB = { reeds: '#3E6B3A', lilies: '#2E7D6B', iris: '#C9A227', thrift: '#C8628C', marigold: '#E0A800', campion: '#8E9AA6', willow: '#6F8A6A' };
 const OTHER_RGB = '#6B6F80';
 // Map colors (r, g, b). Up here so they exist before the first map is drawn during startup.
 const SEA = [47, 110, 134];
