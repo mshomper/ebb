@@ -46,6 +46,16 @@ export function guitarVoicing(pcs, bassPc, prev, o = {}) {
         if (have.size < want.size) score -= 2 * (want.size - have.size);
         // a half step between neighbouring strings sounds harsh in a strum
         for (let k = 1; k < notes.length; k++) if (notes[k] - notes[k - 1] === 1) score -= 2.5;
+        // Low down, the two lowest strings stand a fifth or an octave apart (a third or a seventh
+        // there is muddy: Fmaj7 as F2 A2 E3 sounded odd to Matt, October 20, 2026).
+        if (notes.length > 1 && notes[0] < 52 && ![7, 12].includes(notes[1] - notes[0])) score -= 6;
+        // and no step (a second) between neighbouring strings below G3
+        for (let k = 1; k < notes.length; k++) if (notes[k - 1] < 55 && notes[k] - notes[k - 1] <= 2) score -= 4;
+        // Double the root or fifth, not the colour (a doubled third or seventh stands out).
+        const fifth = (bassPc + 7) % 12;
+        const count = new Map();
+        for (const m of notes) count.set(m % 12, (count.get(m % 12) ?? 0) + 1);
+        for (const [pc, k] of count) if (k > 1 && pc !== bassPc && pc !== fifth) score -= 2 * (k - 1);
         if (prev && prev.length) score -= 0.08 * Math.abs(notes[notes.length - 1] - prev[prev.length - 1]) + 0.05 * Math.abs(notes[0] - prev[0]);
         if (!best || score > best.score) best = { notes, score };
       }
