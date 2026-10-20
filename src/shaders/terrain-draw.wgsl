@@ -57,6 +57,11 @@ struct TerrainDraw {
   kelp0: vec4f,                         // rgb kelp albedo, w blade width (m)
   kelp1: vec4f,                         // x, y grid cell across and along (m), zw length range (m)
   kelp2: vec4f,                         // x midrib relief, y kelp pieces in the strandline (share)
+  // Wrack fronds (lib-shore wrackFronds): drawn close up over the wrack mat, which stays beneath.
+  frond0: vec4f,                        // rgb frond albedo (linear), w strap half-width (m)
+  frond1: vec4f,                        // x, y grid cell across and along (m), zw length range (m)
+  frond2: vec4f,                        // x bladder radius (m), y midrib relief, zw view distances (m) over which fronds fade to the mat
+  frond3: vec4f,                        // x 1 on (tier), y how much of the mat the fronds hide close up, z bladder lightening
 };
 
 @group(0) @binding(0) var<uniform> frame: FrameUniforms;
@@ -209,12 +214,16 @@ fn fsLand(in: VsOut) -> FsOut {
   // albedo (moss never grows in the band, so they never meet).
   let wclumps = valueNoise2(xz * td.shore0.w + vec2f(4.3, 9.1), td.seed + 31u) * 0.6
               + valueNoise2(xz * td.shore1.x + vec2f(1.7, 3.3), td.seed + 32u) * 0.4;
-  let wrack = shore.r * smoothstep(0.25, 0.65, wclumps + (shore.r - 0.5) * 0.4);
+  let wrackMat = shore.r * smoothstep(0.25, 0.65, wclumps + (shore.r - 0.5) * 0.4);
+  // Close up, drawn fronds lie over the mat and hide much of it; far off the mat is the look.
+  let viewDist = distance(in.world, frame.cameraPos);
+  let frondNear = td.frond3.x * (1.0 - smoothstep(td.frond2.z, td.frond2.w, viewDist));
+  let wrack = wrackMat * (1.0 - td.frond3.y * frondNear);
   let layer4 = min(moss + wrack, 1.0);
   let tint4 = mix(vec3f(1.0), td.shore0.rgb, wrack / max(moss + wrack, 1e-4));
   albedo = mix(albedo, ground.mossTile.yzw * tint4, layer4);
   // Scanned detail (docs/22) takes over once loaded and near enough; the flat look stays the fallback.
-  let gd = groundDetail(in.world, n, w, layer4, tint4, distance(in.world, frame.cameraPos));
+  let gd = groundDetail(in.world, n, w, layer4, tint4, viewDist);
   albedo = mix(albedo, gd.albedo, gd.amount);
   // Black lichen crusts the splash-zone rock in small patches; tidal mud is soil gone dark and soft.
   let rockShare = mix(wf.z, gd.weights.z, gd.amount);
@@ -234,6 +243,19 @@ fn fsLand(in: VsOut) -> FsOut {
   let alongDir = vec2f(-downDir.y, downDir.x);
   var shoreGrad = vec2f(0.0);
   var kelpCover = 0.0;
+  // Wrack fronds (lib-shore): bladderwrack draped downslope over the mat, close up.
+  var frondCover = 0.0;
+  // The painted rock, not the detail's rock weight: the mat itself (the moss layer) hides that.
+  let rockPaint = wf.z;
+  if (frondNear > 0.001 && rockPaint > 0.3 && shore.r > 0.01) {
+    var fr = wrackFronds(xz, downDir, td.frond1.xy, td.frond1.zw, td.frond0.w, td.frond2.x, td.frond2.y,
+      vec2f(td.shore0.w, td.shore1.x), td.seed, wrackMat, pixM);
+    fr.cover *= smoothstep(0.3, 0.6, rockPaint) * frondNear;
+    frondCover = fr.cover;
+    let bladder = select(0.8 + 0.4 * fr.tone, td.frond3.z, fr.tone > 1.0);
+    albedo = mix(albedo, td.frond0.rgb * bladder, fr.cover);
+    shoreGrad += fr.grad * frondNear;
+  }
   let kelpZone = shore.g * rockShare;
   // Near the kelp zone too (wrack borders it), so blades can lie across its edge.
   if (rockShare > 0.3 && (shore.g > 0.001 || shore.r > 0.01)) {
@@ -312,7 +334,7 @@ fn fsLand(in: VsOut) -> FsOut {
   let por = gd.porosity;
   // Wrack and kelp glisten and mud stays soaked, whatever the wetness map says; dried litter on the
   // strandline lies above the damp sand.
-  let damp = max(wet * (1.0 - 0.6 * moss) * (1.0 - 0.7 * strandCover), max(max(wrack * 0.9, kelpCover), mud * td.shore2.z));
+  let damp = max(wet * (1.0 - 0.6 * moss) * (1.0 - 0.7 * strandCover), max(max(max(wrack * 0.9, frondCover * 0.6), kelpCover), mud * td.shore2.z));
   albedo *= mix(1.0, mix(td.wetLook.z, td.wetLook.w, por), damp);
   // Grass blades stay rough when wet (they scatter the light), so the meadow never turns glossy.
   let grassy = gd.weights.x * (1.0 - moss);

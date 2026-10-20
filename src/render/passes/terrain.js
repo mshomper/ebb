@@ -11,7 +11,7 @@ import { strandLines } from '../../world/water/strandline.js';
 
 /** @typedef {import('../frame-graph.js').PassContext} PassContext */
 
-const DRAW_BYTES = 944;   // 384 of look, 16 marker rings (floats 96..159), the drowned meadow (160..167), wet-to-dry grass (168..175), the shore (176..195), the strandline and kelp (196..235)
+const DRAW_BYTES = 1008;  // 384 of look, 16 marker rings (floats 96..159), the drowned meadow (160..167), wet-to-dry grass (168..175), the shore (176..195), the strandline and kelp (196..235), wrack fronds (236..251)
 const GROUND_BYTES = 336;
 const DEG = Math.PI / 180;
 /** @type {Record<string, number>} GroundDetail.tiling.x in lib-ground.wgsl */
@@ -141,6 +141,12 @@ export function createTerrainPass(opts) {
     f.set(K.albedo, 224); f[227] = K.widthM;
     f[228] = K.cellM[0]; f[229] = K.cellM[1]; f[230] = K.lengthM[0]; f[231] = K.lengthM[1];
     f[232] = K.relief; f[233] = L.kelpShare;
+    // Wrack fronds (floats 236..251), drawn close up over the wrack mat; off on the tiers listed.
+    const FR = S.fronds;
+    f.set(FR.albedo, 236); f[239] = FR.widthM;
+    f[240] = FR.cellM[0]; f[241] = FR.cellM[1]; f[242] = FR.lengthM[0]; f[243] = FR.lengthM[1];
+    f[244] = FR.bladderM; f[245] = FR.relief; f[246] = FR.fadeM[0]; f[247] = FR.fadeM[1];
+    f[248] = (FR.offTiers ?? []).includes(opts.tier) ? 0 : 1; f[249] = FR.hideMat; f[250] = FR.bladderTone;
     // Caustics (lib-caustics.wgsl), floats 48..75: look, depthFade, wave0..2, motion, misc.
     const c = opts.water.caustics;
     f[49] = causticLayers(opts.causticLayers);
@@ -200,6 +206,7 @@ export function createTerrainPass(opts) {
       if (t.name) {
         f[190] = (opts.shore.look.ripple.offTiers ?? []).includes(t.name) ? 0 : 1;
         f[214] = (opts.shore.look.strandline.offTiers ?? []).includes(t.name) ? 0 : 1;
+        f[248] = (opts.shore.look.fronds.offTiers ?? []).includes(t.name) ? 0 : 1;
       }
       gf[23] = t.ground.detailFadeMeters;
       f[49] = causticLayers(t.causticLayers);
