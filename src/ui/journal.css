@@ -384,6 +384,37 @@ span.ebb-jw-crumb { display: inline-flex; align-items: center; font-weight: 800;
 .ebb-jw-tile.is-on { box-shadow: 0 0 0 2.5px var(--jr-paper), 0 0 0 4.5px var(--jw-ink, var(--jr-ink)); }
 .ebb-jw-tile.is-unknown { background: transparent; border: 1.5px dashed var(--jr-pencil); }
 
+/* Living things, tidied (journal.js livingView, list.js): filter and sort chips, then groups that
+   fold shut under a tinted header. Chips wrap, so nothing widens the page. */
+.ebb-jl-controls { display: grid; gap: 6px; margin: 0 0 10px; padding-bottom: 10px; border-bottom: 1px solid var(--jr-rule); }
+.ebb-jl-row { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; min-width: 0; }
+.ebb-jl-label { font-size: var(--text-small); font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--jr-soft); margin-right: 2px; }
+.ebb-jl-chip {
+  appearance: none; -webkit-appearance: none; margin: 0; cursor: pointer; touch-action: manipulation;
+  min-height: 38px; padding: 3px 10px; max-width: 100%; overflow-wrap: anywhere;
+  border: 1.5px solid var(--jr-rule); border-radius: 999px; background: transparent;
+  font-size: var(--text-small); font-weight: 700; color: var(--jr-soft);
+}
+.ebb-jl-chip:hover { border-color: var(--jr-soft); }
+.ebb-jl-chip[aria-pressed='true'] { background: var(--jr-moss); border-color: var(--jr-moss); color: var(--jr-paper); }
+.ebb-jl-group { display: grid; gap: 4px; margin-top: 8px; min-width: 0; }
+.ebb-jl-head { margin: 0; }
+.ebb-jl-fold {
+  appearance: none; -webkit-appearance: none; margin: 0; cursor: pointer; touch-action: manipulation;
+  width: 100%; min-height: 48px; padding: 4px 6px 4px 4px;
+  display: flex; align-items: center; gap: 8px;
+  border: 0; border-radius: 12px; background: transparent; text-align: left;
+}
+.ebb-jl-fold:hover { background: var(--jw-card); }
+.ebb-jl-pill { display: inline-flex; align-items: center; gap: 6px; min-width: 0; padding: 4px 14px 4px 10px; border-radius: 999px; background: var(--jw-wash); border: 1.5px solid var(--jw-line); color: var(--jw-ink); font-size: calc(17px * var(--text-scale, 1)); font-weight: 800; }
+.ebb-journal .ebb-jl-pill .icon { width: 22px; height: 22px; }
+.ebb-jl-fold .ebb-new { position: static; flex: none; }
+.ebb-journal .ebb-jl-fold .ebb-jl-chev { margin-left: auto; width: 22px; height: 22px; color: var(--jw-ink); transition: transform 160ms ease; }
+.ebb-jl-group.is-shut .ebb-jl-chev { transform: rotate(180deg); }
+.ebb-jl-group .ebb-jlist__row .ebb-jlist__icon { background: var(--jw-wash); color: var(--jw-ink); }
+.ebb-jl-group .ebb-jlist__row.is-pencil .ebb-jlist__icon { background: transparent; color: var(--jr-pencil); }
+@media (prefers-reduced-motion: reduce) { :root:not(.ebb-motion-full) .ebb-jl-chev { transition: none; } }
+
 /* the Ties strip on a journal page */
 .ebb-jw-ties { display: grid; gap: 8px; padding: 12px; border: 1.5px solid var(--jr-rule); border-radius: 12px; min-width: 0; }
 .ebb-jw-ties .ebb-jw-group { gap: 4px; }

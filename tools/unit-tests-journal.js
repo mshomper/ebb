@@ -14,6 +14,7 @@ import { almanac } from '../src/world/journal/almanac.js';
 import { inkWeb, describeWeb, tiesOf } from '../src/world/journal/web.js';
 import { webView, tiesStrip } from '../src/ui/journal-web.js';
 import { ICON_NAMES } from '../src/ui/icons/icons.js';
+import { livingList, groupsOf, cleanChoice, DEFAULT_CHOICE } from '../src/world/journal/list.js';
 import { washMap } from '../src/world/journal/wash.js';
 import { stampNotes, markShown, markNotesSeen, markPageSeen, readOf, noteState, unread } from '../src/world/journal/read.js';
 import { STAGE } from '../src/world/growth/coarse.js';
@@ -392,6 +393,41 @@ export function addJournalTests(test, assert, eq) {
     const strip = tiesStrip(d2, web, 'shore');
     assert(strip.includes('data-web-node="pool"') && strip.includes('data-web-node="shore"'), 'a page\'s Ties strip links into the Web');
     return `${d0.nodes.length} tiles across ${Object.keys(web.kinds).length} tabs`;
+  });
+
+  test(JOURNAL, 'living things list: groups fold, filter by found and place, sort, and never list a small life still to find', async () => {
+    const words = await loadWords();
+    const list = await fetch('../recipes/world/journal-list.json').then((r) => r.json());
+    const known = new Set(['grass', 'reeds', 'thrift', 'periwinkle']);
+    const first = /** @type {Record<string, number>} */ ({ grass: 0, reeds: 40, thrift: 10, periwinkle: 90 });
+    const entry = (/** @type {string} */ id) => ({ id, known: known.has(id), name: known.has(id) ? words.species[id].name : '' });
+    const at = (/** @type {string} */ id) => first[id] ?? -1;
+    const run = (/** @type {any} */ c) => livingList(list, words, { ...DEFAULT_CHOICE, ...c }, entry, at);
+    const all = run({});
+    eq(all.map((g) => g.id).join(','), 'plants,animals,small', 'groups in order; Shells hides until its page exists');
+    for (const id of [...words.order, ...words.findOrder]) assert(groupsOf(list, words).some((g) => g.ids.includes(id)), `${id} is in a group`);
+    const g = (/** @type {any[]} */ gs, /** @type {string} */ id) => gs.find((x) => x.id === id);
+    eq(g(all, 'plants').rows.slice(0, 3).join(','), 'reeds,thrift,grass', 'recently found first');
+    assert(g(all, 'plants').rows.length === words.order.filter((/** @type {string} */ id) => !isAnimal(words.species[id])).length, 'not yet seen plants still listed (in pencil)');
+    eq(g(all, 'small').rows.join(','), 'periwinkle', 'small lives list only what was found');
+    eq(g(run({ status: 'notYet' }), 'small').rows.length, 0, 'even under Not yet');
+    eq(g(run({ status: 'found' }), 'plants').rows.join(','), 'reeds,thrift,grass', 'Found keeps only the found');
+    eq(g(run({ sort: 'az' }), 'plants').rows.slice(0, 3).join(','), 'Grass,Reeds,Sea thrift'.split(',').map((n) => words.order.find((/** @type {string} */ id) => words.species[id].name === n)).join(','), 'A to Z by name');
+    eq(g(run({ place: 'shore' }), 'plants').rows.join(','), 'thrift', 'Shore keeps only thrift among plants');
+    eq(g(run({ sort: 'place', status: 'found' }), 'plants').rows.join(','), 'reeds,grass,thrift', 'by place: pond, meadow, shore');
+    assert(g(run({ shut: { plants: true } }), 'plants').shut, 'a group folds shut');
+    const none = g(livingList(list, words, DEFAULT_CHOICE, (id) => ({ id, known: false, name: '' }), () => -1), 'small');
+    eq(none.hint, words.smallLives.none, 'before the first find, the pencil line says where to look');
+    const c = cleanChoice({ status: 'nonsense', place: 'moon', sort: 'az', shut: { plants: true } }, list);
+    eq(`${c.status}|${c.place}|${c.sort}|${c.shut.plants}`, 'all|null|az|true', 'a kept choice is cleaned');
+    // A shells page, once the finds branch adds it, gets its own group.
+    const more = structuredClone(words);
+    more.species.shells = { name: 'Shells', kind: 'find', icon: 'periwinkle' };
+    more.findOrder = [...more.findOrder, 'shells'];
+    const withShells = groupsOf(list, more);
+    assert(withShells.some((x) => x.group.id === 'shells' && x.ids.join() === 'shells'), 'Shells is its own group');
+    assert(!withShells.find((x) => x.group.id === 'small')?.ids.includes('shells'), 'and not also a small life');
+    return `${all.length} groups`;
   });
 
   test(JOURNAL, 'the wash: where it lives, where it would do well, and pencil circles for the unseen', async () => {

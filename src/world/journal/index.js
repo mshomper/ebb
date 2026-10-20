@@ -38,7 +38,7 @@ import { stampNotes, markShown, markNotesSeen, markPageSeen, readOf, pageSince, 
 /**
  * @param {{ world: { state: any, env: any }, words: any, island: any, web: any, wash?: any,
  *   creatures?: { frogAt: (x: number, z: number) => { x: number, z: number, id?: number } | null } | null,
- *   finds?: any, shore?: (() => Record<string, number> | null) | null }} opts
+ *   finds?: any, shore?: (() => Record<string, number> | null) | null, list?: any }} opts
  *   world: the live world (state and env of the hourly tick); words: recipes/world/journal.json;
  *   island: recipes/world/journal-island.json; web: recipes/world/journal-web.json;
  *   wash: recipes/world/journal-wash.json; creatures: the live creatures (src/world/creatures),
@@ -282,6 +282,8 @@ export function createJournal(opts) {
       ? describe(journal, id, world.state, habitat(), words, hourIndex())
       : describeGround(journal, id, survey(), island, words)),
     web,
+    /** The Living things list's groups, filters and places (recipes/world/journal-list.json). */
+    list: opts.list ?? null,
     /** The web of what needs what: its bands of names and its links, inked or in pencil. */
     describeWeb: () => describeWeb(journal, habitat() ? { ...survey(), shore: shore() } : null, web),
     /** The almanac's rows for the time shown. */

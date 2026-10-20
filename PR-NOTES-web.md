@@ -45,6 +45,28 @@ Plants' habitats and starters are untouched (the plants rework is on another bra
 10. On your phone, open the journal tall and check the Web: no sideways scroll, chips wrap, six tiles to a row, text easy to read. Turn the text size up in Settings and check again.
 11. Open `tools/unit-tests.html`: every test passes (158 of 158).
 
+## Living things, tidied (second commit)
+
+As the island fills, the **Living things** list stays easy to move through:
+
+- **Folding groups**: Plants, Animals, Small lives, and Shells once the finds branch adds that page. Each header is a tinted pill in the Web's colors (green, orange, aqua) with a chevron; tap it to fold the group shut. A folded group still shows the small "new" dot if something inside it is new.
+- **Show** chips: All, Found or Not yet, plus one place at a time: Pond, Meadow or Shore (tap it again to let go).
+- **Sort** chips: Recently found (the default), A to Z, or By place (pond, meadow, shore).
+- Your folds and chips are kept on this device, like Settings, and never in an island file.
+- Small lives still list only what you have found, even under Not yet. Nothing shows a count.
+
+Groups, places and words are in `recipes/world/journal-list.json`. A shells page goes into its own Shells group the moment it exists, with no code change (a unit test checks this).
+
+### Click-test
+
+1. Open the journal on **Living things**. Above the list are the Show and Sort chips. Below are tinted headers: Plants (green), Animals (orange), Small lives (aqua).
+2. Tap the **Plants** header: the plants fold away and the chevron turns. Tap again: they come back.
+3. Tap **Found**: only what you have met shows; Animals says "Nothing here with these choices." until frogs come. Tap **Not yet**: the plants and animals still in pencil show. Small lives never list one you have not found.
+4. Tap **Shore**: only sea thrift (and found shore lives) remain. Tap **Shore** again to let go.
+5. Tap **A to Z**, then **By place**: the plants reorder (pond plants, then grass, then thrift).
+6. Fold Animals, reload the page, open Living things: Animals is still folded and your chips are as you left them.
+7. On your phone: no sideways scroll, the chips wrap, text easy to read.
+
 ## To publish
 
 In GitHub Desktop: choose the `m1-journal-web` branch (worktree `Ebb-web`) and click **Publish branch**. It is built on `m1-finds-shore`, so publish that branch first if it is not yet published, or open the pull request against `m1-finds-shore`.

@@ -126,7 +126,7 @@ export async function startApp(canvas, hooks = {}) {
   // Device settings (src/save/prefs.js): kept on this device, never in the island.
   const prefs = loadPrefs();
   updateStore('settings', (s) => {
-    for (const k of ['textSize', 'motion', 'audio', 'hudDim', 'reveal', 'qualityChoice', 'leftHanded']) if (prefs[k] !== undefined) s[k] = prefs[k];
+    for (const k of ['textSize', 'motion', 'audio', 'hudDim', 'reveal', 'qualityChoice', 'leftHanded', 'journalList']) if (prefs[k] !== undefined) s[k] = prefs[k];
   });
   keepPrefs();
 
