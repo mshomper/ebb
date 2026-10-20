@@ -2,8 +2,10 @@
 // The game's sound hook-up (docs 17, 25): what is near the camera (src/world/sound-near.js) and
 // the sound state built from the game's `sound` slice (src/audio/game-state.js): water kinds from
 // the summary's classes, plants and grass near the view, frost on winter mornings only, drips after
-// rain, gusts that stay in range and repeat for the same seed.
+// rain, gusts that stay in range and repeat for the same seed; and the frogs' calls and plops
+// (src/audio/creatures-game.js): each played once, none before the first touch, late ones let go.
 
+import { createCreatureSound } from '../src/audio/creatures-game.js';
 import { soundNear } from '../src/world/sound-near.js';
 import { WATER_CLASS } from '../src/world/water/summary.js';
 import { waterCellOf } from '../src/world/water/grid.js';
@@ -106,6 +108,34 @@ export function addSoundGameTests(test, assert, eq) {
     const st = createSoundState(GAME, 1, sun, 0.286).build(slice(12 * 3600), 0.1);
     assert(Math.abs(/** @type {number} */ (st.sunriseH) - 6) < 0.1, `sunrise ${st.sunriseH}`);
     assert(Math.abs(/** @type {number} */ (st.sunsetH) - 18) < 0.1, `sunset ${st.sunsetH}`);
+  });
+
+  test(G, 'frog calls and plops play once each, none before the first touch, late ones dropped', () => {
+    const FROGS = { pollS: 0.025, leadS: 0.03, staleS: 0.4, intensityFromMood: [0.4, 1], plop: { sizeCm: [2.5, 4.5], gainDb: [-8, -2] } };
+    const ctx = { state: 'suspended', currentTime: 10 };
+    /** @type {any[]} */ const played = [];
+    const voices = /** @type {any} */ ({
+      call: (/** @type {any} */ id, /** @type {any} */ _s, /** @type {any} */ _p, /** @type {number} */ k, /** @type {number} */ when) => played.push({ kind: 'call', id, k, when }),
+      plop: (/** @type {any} */ id) => played.push({ kind: 'plop', id }),
+    });
+    const feed = { now: 0, calls: /** @type {any[]} */ ([]), plops: /** @type {any[]} */ ([]) };
+    const store = { get: () => ({ frogs: (/** @type {number} */ since) => ({ now: feed.now, calls: feed.calls.filter((c) => c.t > since), plops: feed.plops.slice() }) }) };
+    const cs = createCreatureSound(/** @type {any} */ ({ ctx }), voices, store, FROGS);
+    feed.plops.push({ n: 0, t: 0, pos: [0, 0, 0] });
+    cs.poll();                                       // first look: nothing from before plays
+    feed.now = 1; feed.calls.push({ id: 1, t: 0.9, pos: [0, 0, 0], mood: 1 });
+    cs.poll();                                       // still locked: let go
+    eq(played.length, 0, 'nothing while locked');
+    ctx.state = 'running';
+    feed.now = 2; feed.calls.push({ id: 2, t: 1.99, pos: [0, 0, 0], mood: 0 }, { id: 3, t: 1.2, pos: [0, 0, 0], mood: 1 });
+    feed.plops.push({ n: 1, t: 2, pos: [1, 0, 0] });
+    cs.poll();
+    cs.poll();                                       // a second look plays nothing again
+    eq(played.filter((p) => p.kind === 'call').length, 1, 'one fresh call (the late one is dropped)');
+    eq(played[0].id, 2, 'the fresh call');
+    assert(Math.abs(played[0].k - 0.4) < 1e-9, 'an unsettled frog calls softly');
+    assert(played[0].when > 10 && played[0].when <= 10.03, `a moment ahead ${played[0].when}`);
+    eq(played.filter((p) => p.kind === 'plop').length, 1, 'one plop, the new one');
   });
 
   test(G, 'gusts stay between 0 and 1 and repeat for the same seed', () => {

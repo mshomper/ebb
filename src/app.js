@@ -287,6 +287,8 @@ export async function startApp(canvas, hooks = {}) {
     wind: () => ({ strength: weatherAt(world.state?.weather, clock.display(), seasonsRecipe).wind, dir: world.state?.weather?.today?.windDir ?? 0 }),
     rain: (hoursAgo) => weatherAt(world.state?.weather, clock.display() - hoursAgo * clock.SECONDS_PER_HOUR, seasonsRecipe).rain });
   sim.addSystem(midges);
+  // What the animals do that can be heard (src/audio reads it): frog calls and plops, midge swarms.
+  updateStore('creatureSound', () => ({ frogs: (/** @type {number} */ since) => creatures.sounds(since), swarms: () => midges.heard() }));
   // Finds (docs/future/11): anemones in rock pools, periwinkles on the wrack, lugworm casts on the
   // sand, where the shore zones say, near the view; a tap finds them for the journal.
   // `?shells=rare` or `?shells=<id>` (testing, unsaved): the strandline is thick with those shells,

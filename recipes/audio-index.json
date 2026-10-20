@@ -6,8 +6,6 @@
     "audio/procedural": "audio/procedural.json",
     "audio/ambience": "audio/ambience.json",
     "audio/game": "audio/game.json",
-    "audio/voices/frog": "audio/voices/frog.json",
-    "audio/voices/midge": "audio/voices/midge.json",
     "music/sampler": "music/sampler.json",
     "music/instruments/piano-steinway-b": "music/instruments/piano-steinway-b.json",
     "music/synth": "music/synth.json",

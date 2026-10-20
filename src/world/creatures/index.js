@@ -103,11 +103,23 @@ export function createCreatures(opts) {
   /** The tick's frogs (none while they sleep in winter). */
   const tickFrogs = () => world.state?.creatures?.frogs?.frogs ?? [];
 
+  /** Plops into the water, newest last, for the sound. @type {{ n: number, t: number, x: number, z: number }[]} */
+  const plops = [];
+  let plopCount = 0;
+  /** For the sound (src/audio): where and when a frog went into the water. @param {number} x @param {number} z */
+  const heardPlop = (x, z) => {
+    plops.push({ n: plopCount++, t: agents.now(), x, z });
+    if (plops.length > 40) plops.shift();
+  };
+
   /** What the agents ask of the island. */
   const env = {
     ground: (/** @type {number} */ x, /** @type {number} */ z) => terrain.sampleHeight(x, z),
     water: (/** @type {number} */ x, /** @type {number} */ z) => water.sampleLive(x, z),
-    plop(/** @type {number} */ x, /** @type {number} */ z) { ripples?.addImpulse(x, z, undefined, 0.1); },
+    plop(/** @type {number} */ x, /** @type {number} */ z) {
+      ripples?.addImpulse(x, z, undefined, 0.1);
+      heardPlop(x, z);
+    },
     hourOfDay: 12,
     duskHour: 19,
     /** Lily pads as perches, reed and iris clumps (perches.js), or null on a world with no lilies recipe. */
@@ -195,6 +207,7 @@ export function createCreatures(opts) {
     const x = p.x + Math.sin(yaw) * 0.5, z = p.z + Math.cos(yaw) * 0.5;
     ripples.addImpulse(x, z);
     ripples.addImpulse(x + 0.08, z - 0.05, undefined, 0.12);
+    heardPlop(x, z);
   }
 
   const offs = [on('creature:arrived', plop), on('creature:joined', plop)];
@@ -209,6 +222,27 @@ export function createCreatures(opts) {
     agents,
     /** The lily pads as perches (the frog lab draws their outlines). */
     perches,
+    /**
+     * What the frogs did that can be heard, after frog time `since` (src/audio reads it a few dozen
+     * times a second): each call where its frog sits now, with the frog's mood, and the recent plops.
+     * Times are frog time (agents.now()); `now` is frog time at this moment.
+     * @param {number} since
+     */
+    sounds(since) {
+      /** @type {{ id: number, t: number, pos: number[], mood: number }[]} */ const calls = [];
+      for (const c of agents.calls()) {
+        if (c.t <= since) continue;
+        const a = agents.list().find((g) => g.id === c.id);
+        if (!a) continue;
+        const v = agents.view(a);
+        const seat = a.perch && !a.hop ? perches?.seatOf(a.perch) : null;
+        calls.push({ id: c.id, t: c.t, pos: seat ? [seat.x, seat.y, seat.z] : [v.x, v.y, v.z], mood: a.mood ?? 0.7 });
+      }
+      // Plops are numbered (one can come before the frogs' clock starts, at an arrival): all the
+      // recent ones, for the reader to take those numbered past the last it played.
+      const heard = plops.map((p) => ({ n: p.n, t: p.t, pos: [p.x, env.water(p.x, p.z).surface, p.z] }));
+      return { now: agents.now(), calls, plops: heard };
+    },
     /** Pads frogs sit on, for the lily drawing to dip (flora pass, at most four). */
     pressedPads: () => (perches ? perches.pressed(agents.list()) : []),
 
