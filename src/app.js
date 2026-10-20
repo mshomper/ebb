@@ -295,7 +295,9 @@ export async function startApp(canvas, hooks = {}) {
     const keep = S.items.filter((/** @type {any} */ it) => (shellTest === 'rare' ? it.springMin !== undefined : it.id === shellTest));
     if (keep.length) findsRecipe.kinds.shells = { ...S, density: 0.3, items: keep.map((/** @type {any} */ it) => ({ ...it, springMin: undefined })) };
   }
-  const finds = createFinds({ water, shore: ww.shore, terrain, camera, recipe: findsRecipe, seed: subSeed(seed, 'finds'), tide: waterRecipe.tide });
+  // Shells wash up once the naturalist's notes give them (world/expansion.js); `?shells` shows them anyway.
+  const finds = createFinds({ water, shore: ww.shore, terrain, camera, recipe: findsRecipe, seed: subSeed(seed, 'finds'), tide: waterRecipe.tide,
+    shellsOn: () => !!shellTest || !!getStore('unlocks')?.shells });
   sim.addSystem(finds);
   terrainPass.setCasts(finds.casts(), finds.castShape);
   // `?frogscale` (ahead of S6): real-size frogs from the species recipe around the pond, and a

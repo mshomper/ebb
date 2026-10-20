@@ -33,6 +33,8 @@ export function presenceOf(survey) {
  * @param {Record<string, number>} [present] presenceOf(survey)
  */
 export function triggered(ink, journal, survey, present = presenceOf(survey)) {
+  // Several triggers joined by & happen once all of them have.
+  if (ink.includes('&')) return ink.split('&').every((part) => triggered(part, journal, survey, present));
   const [kind, x, y] = ink.split(':');
   if (kind === 'grows') return !!survey && (survey.by[x]?.plants?.[y] ?? 0) > 0 && !!journal.species[y]?.ever;
   if (kind === 'seen') return !!journal.species[x]?.ever;

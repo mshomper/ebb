@@ -14,7 +14,7 @@ import { hourIndex, display, SECONDS_PER_HOUR, HOURS_PER_DAY } from '../../core/
 import { onAction } from '../../input/actions.js';
 import { weatherAt } from '../weather.js';
 import { tideParams } from '../tide.js';
-import { initialJournal, learn, notePlanted, momentsNow, catchMoments, foundAnimal, foundFind, namedAnimal, flag } from './observe.js';
+import { initialJournal, learn, notePlanted, momentsNow, catchMoments, foundAnimal, foundFind, namedAnimal, flag, noteGift } from './observe.js';
 import { journalLook } from './look.js';
 import { describe, identify, showMeSpot, momentKind, frogCard } from './describe.js';
 import { groundKind, groundCard, groundSurvey, describeGround, groundSpot } from './ground.js';
@@ -218,6 +218,8 @@ export function createJournal(opts) {
       commit(learn(journal, p.species, `refused:${p.reason}`, { state: world.state, hour: hourIndex(), words }))),
     on('look:tapped', (/** @type {{ x: number, y: number, point: number[] | null }} */ p) =>
       select(p.point ? cardAt(p.point[0], p.point[2]) : null, p.x, p.y)),
+    // The island gave you something (src/world/expansion.js): written once, shown as a card.
+    on('progress:gifted', (/** @type {any} */ g) => commit(noteGift(journal, g, { state: world.state, hour: hourIndex(), words }))),
     // Watching a frog from close by finds it too (src/world/creatures/index.js).
     on('creature:found', (/** @type {{ species: string }} */ p) => { if (p.species === 'frogs') found(); }),
     // You named a frog (S6c-3, src/app.js): the moment is written, and its open card takes the name.
