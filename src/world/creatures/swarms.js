@@ -58,10 +58,17 @@ export function initialSwarm() {
     arrivals: 0, nextId: 1, groups: [] };
 }
 
-/** How many a pool holds. @param {any} pool @param {any} rec */
+/**
+ * How many a pool holds: one per m2PerOne of good depth, up to the biggest group (company n[2]);
+ * plants that make room (pondweed for minnows: pool.weed) add weedM2 square meters each and raise
+ * that cap by perWeed each, up to weedExtra more. @param {any} pool @param {any} rec
+ */
 export function roomOf(pool, rec) {
+  if (!pool) return 0;
   const A = rec.ecology.arrival, C = rec.ecology.needs.company;
-  return Math.min(C.n[2], Math.floor(pool.room / A.m2PerOne));
+  const weed = pool.weed ?? 0;
+  const cap = C.n[2] + Math.min(A.weedExtra ?? 0, Math.floor(weed * (A.perWeed ?? 0)));
+  return Math.min(cap, Math.floor((pool.room + weed * (A.weedM2 ?? 0)) / A.m2PerOne));
 }
 
 /**

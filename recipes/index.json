@@ -33,6 +33,7 @@
     "world/naturalist": "world/naturalist.json",
     "species/frog": "species/frog.json",
     "species/midge": "species/midge.json",
+    "flora/pondweed": "flora/pondweed.json",
     "species/minnow": "species/minnow.json",
     "species/dragonfly": "species/dragonfly.json",
     "species/finds": "species/finds.json",

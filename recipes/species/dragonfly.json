@@ -4,7 +4,7 @@
   "key": "dragonflies",
   "name": "Southern hawker",
   "version": 1,
-  "note": "Southern hawkers (docs 11, 12, 23; M2; Matt chose the species on 2026-10-20): large green and blue dragonflies that patrol and hover over ponds and come to look at people. A few at a time, not individuals with names. LIFE. ecology: kind swarm (src/world/creatures/swarms.js keeps them in the hourly tick); dormancy names the window in recipes/world/seasons.json (late spring to autumn they fly; the rest of the year they are nymphs in the pond). needs (src/world/ecology/needs.js): five, each 0..1, mood = their weighted geometric mean. water: still fresh water depthM deep in a body of at least body.minM2 square meters (a puddle is not a pond to breed in), full within okM, none beyond maxM. Sun: they want a sunny pond; nothing shades the island yet, so it is not scored. food: the midge field over a square of radiusM, against per times the ideal group (they share the midges lightly with the frogs). shelter: perches and stems to climb out on as nymphs, each plant weighted, the best within radiusM, from 'from' and full at 'full'. quiet: low sensitivity. company: n[0] to n[2], n[1] ideal. scored: any open ground or fresh water (where: near), for the beat over the pond and its banks.",
+  "note": "Southern hawkers (docs 11, 12, 23; M2; Matt chose the species on 2026-10-20): large green and blue dragonflies that patrol and hover over ponds and come to look at people. A few at a time, not individuals with names. LIFE. ecology: kind swarm (src/world/creatures/swarms.js keeps them in the hourly tick); dormancy names the window in recipes/world/seasons.json (late spring to autumn they fly; the rest of the year they are nymphs in the pond). needs (src/world/ecology/needs.js): five, each 0..1, mood = their weighted geometric mean. water: still fresh water depthM deep in a body of at least body.minM2 square meters (a puddle is not a pond to breed in), full within okM, none beyond maxM. Sun: they want a sunny pond; nothing shades the island yet, so it is not scored. food: the midge field over a square of radiusM, against per times the ideal group (they share the midges lightly with the frogs). shelter: perches and stems to climb out on as nymphs, each plant weighted, the best within radiusM, from 'from' and full at 'full'. quiet: low sensitivity. company: n[0] to n[2], n[1] ideal. scored: any open ground or fresh water (where: near), for the beat over the pond and its banks. arrival (src/world/creatures/swarms.js, as the minnows'): a pond is right once its best square scores rightScore and it has room for startCount, for rightHoldH hours; after scoutAfterH, on a late morning (comeAtH) while they fly, a pair may come (scoutChance a day, surely by maxWaitDays); one per m2PerOne square meters of good water, up to company n[2]; they settle after settleAfterH at settleMood, grow by growShare of the room left each day while content, and are happy after happyHoldH hours with happyMin at happyMood. In their dormancy window nothing changes. gift: springs, the Water tool's Spring mode (unlocks.springs; docs 12, 13).",
   "ecology": {
     "kind": "swarm",
     "dormancy": "dragonflies",
@@ -16,6 +16,12 @@
       "quiet": { "w": 0.1 },
       "company": { "n": [3, 5, 8], "alone": 0.6, "crowded": 0.5, "w": 0.15 }
     },
-    "scored": { "where": "near" }
+    "scored": { "where": "near" },
+    "arrival": { "rightScore": 0.5, "rightHoldH": 6, "scoutAfterH": 12, "comeAtH": 11, "scoutChance": 0.4, "maxWaitDays": 4,
+                 "startCount": 2, "m2PerOne": 25, "settleAfterH": 24, "settleMood": 0.5, "rescoutAfterH": 72,
+                 "growShare": 0.4, "growMood": 0.55, "growSeasons": [1, 1, 1, 0], "newPoolChance": 0.25,
+                 "moodEase": 0.15, "leaveMood": 0.3, "leaveAfterH": 48, "shrinkShare": 0.34,
+                 "happyMin": 3, "happyMood": 0.7, "happyHoldH": 24 },
+    "gift": { "kind": "tool", "id": "springs" }
   }
 }

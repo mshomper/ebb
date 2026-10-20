@@ -115,6 +115,23 @@ export const FLORA_KINDS = {
     frame: common,
   },
 
+  // Curled pondweed (M2, the minnows' gift): stems under the water, each a strip of 36 vertices and
+  // up to 18 leaves of 6 (flora-pondweed.wgsl BLOCK).
+  pondweed: {
+    shader: 'flora-pondweed', vs: 'vsWeed', fs: 'fsWeed',
+    vertices: (r) => Math.ceil(r.shape.stemsPerPlant[1]) * (36 + 6 * 18),
+    pack(r, f) {
+      const S = r.shape, L = r.look, C = r.season, W = r.wind;
+      f.set([S.stemsPerPlant[0], S.stemsPerPlant[1], S.spreadRadius, S.maxLengthM], 12);
+      f.set([S.topClearM, S.stemWidth, S.leafGapM, S.leafLength], 16);
+      f.set([S.leafWidth, S.leafTwistDeg * DEG, S.waves, 18], 20);
+      f.set([L.rootShade, L.sproutM, L.seedStems, L.dormantStems], 24);
+      f.set([L.dormantShare, L.radiusMin, W.swayM, W.swayHz], 28);
+      f.set([C.stemShade, C.tipLight, C.roughness, S.leanM ?? 0.15], 32);
+    },
+    frame: common,
+  },
+
   thrift: {
     shader: 'flora-thrift', vs: 'vsThrift', fs: 'fsThrift',
     // Blades of 3 vertices, then pompoms of 24.

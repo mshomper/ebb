@@ -11,8 +11,9 @@
 //            good water is still fresh water lo..hi deep (or a damp hollow, unless damp is false);
 //            with `body`, only in a connected body of standing water of at least minM2 that is
 //            somewhere at least deepM deep. Water scores 1 within okM of good water, 0 beyond maxM.
-//   food     { field: 'midges' } or { fields: { midges: 1, ... } }, radiusM, per (or perFrog), w
-//            the fields summed over the square of radiusM around, against per x the ideal group
+//   food     { field: 'midges' } or { fields: { midges: 1, ... } }, plants?: { pondweed: 0.5 }, radiusM, per (or perFrog), w
+//            the fields (and plants, weight x size) summed over the square of radiusM around, against
+//            per x the ideal group
 //   shelter  { cover: { plant: weight }, radiusM, from, full, w }  the best cover within radiusM
 //   quiet    { w }  nothing disturbs yet (no paths or lanterns), so full
 //   company  { n: [min, ideal, max], w }  scored at the ideal group here
@@ -129,6 +130,8 @@ export function needMaps(hab, growth, fields, rec) {
   const rf = Math.round(F.radiusM);
   const sums = foodFields(F).map(([name, w]) => ({ S: fields[name] ? sat(/** @type {Uint8Array} */ (fields[name]), n, 1 / 255) : null, w }))
     .filter((f) => f.S);
+  // Plants eaten where they grow (minnows graze pondweed): each plant's weight times its size.
+  if (F.plants) sums.push({ S: sat(plantField(hab, growth, F.plants, false), n), w: 1 });
   const ideal = N.company.n[1];
   const keep = label ? new Set(bodies.map((b) => b.id)) : null;
   const shallow = E.scored?.shallowCm ?? 0;

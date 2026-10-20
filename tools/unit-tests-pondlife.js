@@ -7,6 +7,9 @@ import { runHour, hashWorldState } from '../src/sim/tick.js';
 import { initialJournal, observe, foundAnimal } from '../src/world/journal/observe.js';
 import { due, grant } from '../src/world/expansion.js';
 import { createSchool } from '../src/world/creatures/school.js';
+import { roomOf } from '../src/world/creatures/swarms.js';
+import { suitability } from '../src/world/growth/coarse.js';
+import { HABITAT_ORIGIN } from '../src/world/growth/habitat.js';
 import { needMaps, waterBodies } from '../src/world/ecology/needs.js';
 import { openBox } from '../src/world/ecology/fields.js';
 import { seasonsAt } from '../src/world/seasons.js';
@@ -48,11 +51,19 @@ function dugWorld(R, island, seed) {
  * @param {any} state @param {any} env @param {number} from @param {number} hours
  */
 function runMinnows(state, env, from, hours) {
+  return runSpecies(state, env, from, hours, 'minnows');
+}
+
+/**
+ * Run a world for some hours, keeping one species' events.
+ * @param {any} state @param {any} env @param {number} from @param {number} hours @param {string} key
+ */
+function runSpecies(state, env, from, hours, key) {
   /** @type {{ hour: number, name: string, payload: any }[]} */ const events = [];
   for (let h = from; h < from + hours; h++) {
     const r = runHour(state, h, env);
     state = r.state;
-    for (const e of r.events) if (e.payload?.species === 'minnows') events.push({ hour: h, name: e.name, payload: e.payload });
+    for (const e of r.events) if (e.payload?.species === key) events.push({ hour: h, name: e.name, payload: e.payload });
   }
   return { state, events };
 }
@@ -77,7 +88,8 @@ export function addPondLifeTests(test, assert, eq) {
       for (let h = w.h0; h < w.h0 + 24 * 9; h++) {
         const r = runHour(s, h, w.env);
         s = r.state;
-        for (const e of r.events) if (e.name.startsWith('creature') || e.name.startsWith('species')) ev.push(h + e.name);
+        // The frogs' events (before minnows and dragonflies, every creature event was a frog's).
+        for (const e of r.events) if ((e.name.startsWith('creature') || e.name.startsWith('species')) && e.payload?.species === 'frogs') ev.push(h + e.name);
       }
       const F = s.ecology.frogs;
       eq(fnv(`${join(F.score)}|${join(F.water)}|${join(F.shelter)}|${F.edge.cells.join(',')}|${F.edge.faces.join(',')}`), want.eco, `${island}: frog habitat maps`);
@@ -264,6 +276,89 @@ export function addPondLifeTests(test, assert, eq) {
     assert(Math.hypot(c2.x + 0.9, c2.z) < 0.8, `the startled school is ${Math.hypot(c2.x + 0.9, c2.z).toFixed(2)} m from the deep spot`);
     assert(fast > 2 * M.cruiseMps, `darting at ${fast.toFixed(2)} m/s`);
     return `a minute of swimming, farthest fish ${worst.toFixed(2)} m from the middle, ${rings} rises`;
+  });
+
+  test(G, 'pondweed grows under still water, never on land, and never comes by itself', async () => {
+    const R = await loadEcologyRecipes();
+    const rec = R.flora.pondweed;
+    assert(rec, 'pondweed is a flora recipe the growth step loads');
+    assert(!R.growth.starters.includes('pondweed') && !R.growth.volunteers.order.includes('pondweed'), 'not a starter or a volunteer');
+    const w = islandWorld(R, 'starter-island', 1);
+    const hab = w.model.habitat, n = hab.n;
+    let deepBest = 0, landBest = 0;
+    for (let k = 0; k < n * n; k++) {
+      if (!hab.open[k] || hab.sea[k]) continue;
+      const x = HABITAT_ORIGIN + (k % n) + 0.5, z = HABITAT_ORIGIN + Math.floor(k / n) + 0.5;
+      const s = suitability(rec, hab, x, z).suit;
+      if (hab.depthCm[k] >= 50) deepBest = Math.max(deepBest, s);
+      if (hab.depthCm[k] === 0 && !hab.still[k]) landBest = Math.max(landBest, s);
+    }
+    assert(deepBest >= 0.9, `the best still water half a meter deep or more suits it ${deepBest.toFixed(2)}`);
+    assert(landBest < 0.05, `dry land suits it ${landBest.toFixed(2)}`);
+  });
+
+  test(G, 'pondweed in a pool feeds and shelters minnows and holds more of them', async () => {
+    const R = await loadEcologyRecipes();
+    const rec = R.species.minnow;
+    const pool = { room: 60, weed: 0 };
+    const bare = roomOf(pool, rec), weedy = roomOf({ ...pool, weed: 8 }, rec);
+    assert(weedy > bare, `a small pool holds ${bare}, with pondweed ${weedy}`);
+    const big = roomOf({ room: 400, weed: 0 }, rec), bigWeedy = roomOf({ room: 400, weed: 8 }, rec);
+    assert(bigWeedy > big && bigWeedy <= rec.ecology.needs.company.n[2] + rec.ecology.arrival.weedExtra, `a big pool holds ${big}, with pondweed ${bigWeedy}`);
+    // Its needs: food and shelter rise beside pondweed.
+    const w = dugWorld(R, 'starter-island', 1);
+    const hab = w.env.habitat(), n = hab.n;
+    const midges = new Uint8Array(n * n);
+    const before = needMaps(hab, w.state.growth, { midges }, rec);
+    const k = before.bodies[0].deepK;
+    const x = HABITAT_ORIGIN + (k % n) + 0.5, z = HABITAT_ORIGIN + Math.floor(k / n) + 0.5;
+    const growth = { ...w.state.growth, plants: [...w.state.growth.plants, { sp: 'pondweed', x, z, size: 1, stage: 3 }] };
+    const after = needMaps(hab, growth, { midges }, rec);
+    assert(after.food[k] > before.food[k], `food at the deep spot ${before.food[k].toFixed(2)} to ${after.food[k].toFixed(2)}`);
+    assert(after.shelter[k] >= before.shelter[k], 'shelter at the deep spot');
+    return `room ${bare} to ${weedy} (small pool), ${big} to ${bigWeedy} (big pool)`;
+  });
+
+  test(G, 'dragonflies come to a reedy pond once they fly: a pair in the late morning, then more, happy within two weeks', async () => {
+    const R = await loadEcologyRecipes();
+    const A = R.species.dragonfly.ecology.arrival;
+    const lines = [];
+    for (const seed of [1, 2, 3]) {
+      const w = islandWorld(R, 'starter-island', seed);
+      const r = runSpecies(w.state, w.env, w.h0 + 1, 24 * 14, 'dragonflies');
+      const at = (/** @type {string} */ name) => r.events.find((e) => e.name === name)?.hour ?? -1;
+      const sign = at('creature:arrived'), happy = at('species:happy');
+      // They fly from 0.4 into spring (day 6 of 14).
+      assert(sign >= 24 * 5 && sign % 24 === A.comeAtH, `seed ${seed}: the sign came at hour ${sign}`);
+      assert(happy > sign, `seed ${seed}: happy at hour ${happy}`);
+      lines.push(`seed ${seed}: sign day ${Math.floor(sign / 24) + 1}, happy day ${Math.floor(happy / 24) + 1}`);
+    }
+    return lines.join('; ');
+  });
+
+  test(G, 'in autumn the dragonflies go, and nothing comes or goes while they are nymphs', async () => {
+    const R = await loadEcologyRecipes();
+    const w = islandWorld(R, 'starter-island', 1);
+    // A run through the summer into winter (day 1 to day 46).
+    const r = runSpecies(w.state, w.env, w.h0 + 1, 24 * 45, 'dragonflies');
+    const dormant = r.events.find((e) => e.name === 'creature:dormant');
+    assert(dormant, 'they went dormant');
+    const after = r.events.filter((e) => e.hour > /** @type {any} */ (dormant).hour && e.name !== 'creature:dormant');
+    eq(after.length, 0, 'events while they are nymphs');
+    eq(r.state.creatures.dragonflies.dormant, true, 'dormant in winter');
+    return `dormant from day ${Math.floor(/** @type {any} */ (dormant).hour / 24) + 1}`;
+  });
+
+  test(G, 'happy dragonflies give springs, with their own card', async () => {
+    const naturalist = await (await fetch('../recipes/world/naturalist.json')).json();
+    const words = await (await fetch('../recipes/world/journal.json')).json();
+    const R = await loadEcologyRecipes();
+    const g = due({ found: 0, flags: ['dragonflies:happy'], earned: {}, rewards: [], gifts: { dragonflies: R.species.dragonfly.ecology.gift }, words, giftWords: naturalist.gifts });
+    eq(g.length, 1, 'gifts due');
+    eq(JSON.stringify(g[0].give), JSON.stringify({ springs: true }), 'what it gives');
+    eq(g[0].icon, 'wellspring', 'its icon');
+    eq(g[0].title, 'A gift from the dragonflies', 'its title');
+    assert(g[0].line.includes('Spring'), 'it says where to find it');
   });
 
   test(G, 'the species list knows every recipe by its world key', async () => {

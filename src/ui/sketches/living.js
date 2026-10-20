@@ -209,6 +209,42 @@ export function lilies(p, scale) {
   return p.svg(380, 330, 'Field sketch of water lilies');
 }
 
+/**
+ * Curled pondweed (M2, the minnows' gift): stems rising from creeping roots in the mud toward the
+ * surface, wholly under the water, narrow wavy-edged leaves alternating along them.
+ * @param {import('./pen.js').Pen} p @param {string} [scale]
+ */
+export function pondweed(p, scale) {
+  p.tint('M40 78H236V284H40Z', WASH.water, 0.32);
+  p.tint('M40 284C100 280 160 288 236 283V316H40Z', WASH.mud, 0.25);
+  p.line(wave(40, 236, 78, 1.5, 28), 1.4);
+  p.line('M40 284C100 280 160 288 236 283', 1.3);
+  // The creeping root along the mud, the stems rising from it.
+  p.shape('M74 292C108 286 168 288 204 292C168 298 108 298 74 292Z', WASH.brown, 0.5, 1.4);
+  /** @type {[number, number, number, number, number][]} */
+  const stems = [[96, 288, 78, 104, -14], [138, 288, 150, 92, 8], [180, 288, 206, 118, 12]];
+  for (const s of stems) p.line(stem(...s), 1.1);
+  // Leaves alternate up each stem, tilted up, with a crinkled edge.
+  for (const s of stems) {
+    for (let i = 0; i < 7; i++) {
+      const t = 0.12 + i * 0.12;
+      const [x, y] = along(...s, t);
+      const side = i % 2 ? 1 : -1;
+      const len = 30 - i * 2.2;
+      const tx = x + side * len * 0.9, ty = y - len * 0.45;
+      p.shape(petal(x, y, tx, ty, 3.6), WASH.leaf, 0.5, 1);
+      p.fine(`M${(x + tx) / 2 - 3} ${(y + ty) / 2 - 1}l2 2l2 -2l2 2`, 0.6, 0.5);
+    }
+  }
+  const [lx, ly] = along(...stems[2], 0.6);
+  p.label('leaf', 250, 120, lx + 18, ly - 8);
+  const [sx, sy] = along(...stems[1], 0.35);
+  p.label('stem', 250, 214, sx, sy);
+  p.label('root', 250, 300, 204, 292);
+  p.scale(30, 78, 284, scale);
+  return p.svg(380, 330, 'Field sketch of curled pondweed');
+}
+
 /** @param {import('./pen.js').Pen} p @param {string} [scale] */
 export function iris(p, scale) {
   p.tint('M40 284H236V330H40Z', WASH.mud, 0.22);

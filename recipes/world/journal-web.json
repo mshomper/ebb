@@ -35,6 +35,7 @@
     "rushes": { "label": "Rushes", "kind": "plants", "icon": "rushes", "page": "rushes" },
     "reeds": { "label": "Reeds", "kind": "plants", "icon": "reeds", "page": "reeds" },
     "lilies": { "label": "Water lilies", "kind": "plants", "icon": "lilies", "page": "lilies" },
+    "pondweed": { "label": "Pondweed", "kind": "plants", "icon": "pondweed", "page": "pondweed" },
     "iris": { "label": "Yellow flag iris", "kind": "plants", "icon": "iris", "page": "iris" },
     "marigold": { "label": "Marsh marigold", "kind": "plants", "icon": "marigold", "page": "marigold" },
     "thrift": { "label": "Sea thrift", "kind": "plants", "icon": "thrift", "page": "thrift" },
@@ -52,6 +53,7 @@
     "frogs": { "label": "Frogs", "kind": "animals", "icon": "frog", "page": "frogs", "flag": "frogs:seen" },
     "midges": { "label": "Midges", "kind": "animals", "icon": "midges", "page": "midges", "flag": "midges:seen" },
     "minnows": { "label": "Minnows", "kind": "animals", "icon": "minnow", "page": "minnows", "flag": "minnows:seen" },
+    "dragonflies": { "label": "Dragonflies", "kind": "animals", "icon": "dragonfly", "page": "dragonflies", "flag": "dragonflies:seen" },
     "you": { "label": "You", "kind": "animals", "icon": "you", "always": true }
   },
   "links": [
@@ -119,6 +121,12 @@
     { "a": "fresh", "b": "minnows", "ink": "flag:minnows:seen&flag:minnows:settled", "note": "Minnows need still water with a deep spot to winter in." },
     { "a": "midges", "b": "minnows", "ink": "flag:minnows:seen&flag:midges:seen", "note": "Minnows rise to the midges over the water." },
     { "a": "lilies", "b": "minnows", "ink": "flag:minnows:seen&seen:lilies", "note": "Minnows hide under the lily pads." },
-    { "a": "reeds", "b": "minnows", "ink": "flag:minnows:seen&seen:reeds", "note": "Minnows shelter among the reed stems." }
+    { "a": "reeds", "b": "minnows", "ink": "flag:minnows:seen&seen:reeds", "note": "Minnows shelter among the reed stems." },
+    { "a": "fresh", "b": "pondweed", "ink": "grows:fresh:pondweed", "note": "Pondweed grows under the fresh water." },
+    { "a": "pondweed", "b": "minnows", "ink": "flag:minnows:seen&seen:pondweed", "note": "Minnows hide and feed in the pondweed." },
+    { "a": "minnows", "b": "pondweed", "ink": "flag:minnows:happy", "note": "Happy minnows brought the pondweed's seed." },
+    { "a": "fresh", "b": "dragonflies", "ink": "flag:dragonflies:seen&flag:dragonflies:settled", "note": "Dragonflies lay their eggs in still fresh water, where their young grow." },
+    { "a": "reeds", "b": "dragonflies", "ink": "flag:dragonflies:seen&seen:reeds", "note": "Dragonflies rest on the reed tips, and their young climb out up the stems." },
+    { "a": "midges", "b": "dragonflies", "ink": "flag:dragonflies:seen&flag:midges:seen", "note": "Dragonflies catch midges in flight." }
   ]
 }
