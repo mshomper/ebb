@@ -311,7 +311,16 @@ export function mountTools(parent = document.body) {
     const t = get('tools') ?? {};
     const tool = t.tool ?? null;
     for (const b of toolBtns) b.setAttribute('aria-pressed', String(b.dataset.tool === tool));
-    for (const b of modeBtns) b.setAttribute('aria-pressed', String(b.dataset.mode === t.sculptMode));
+    // Sculpt: Terrace and Cut (the Cliff tool) show once the frogs have given it (`unlocks.cliffs`);
+    // until then four chips in one row, like Paint's. A stored cliff mode gives way to Raise.
+    const cliffsOn = !!get('unlocks')?.cliffs;
+    const sculptMode = !cliffsOn && (t.sculptMode === 'terrace' || t.sculptMode === 'cut') ? 'raise' : t.sculptMode;
+    if (sculptMode !== t.sculptMode) queueMicrotask(() => dispatch(/** @type {any} */ ({ type: 'brush.set', patch: { sculptMode } })));
+    sculptChips.style.setProperty('--tb-cols', cliffsOn ? '3' : '4');
+    for (const b of modeBtns) {
+      b.hidden = !cliffsOn && (b.dataset.mode === 'terrace' || b.dataset.mode === 'cut');
+      b.setAttribute('aria-pressed', String(b.dataset.mode === sculptMode));
+    }
     for (const b of layerBtns) b.setAttribute('aria-pressed', String(b.dataset.layer === t.paintLayer));
 
     // Water: the spring mode exists only once unlocked; a stored 'spring' reads as 'pour' until then.
@@ -376,8 +385,8 @@ export function mountTools(parent = document.body) {
       springPanel.hidden = !inSpring;
       plantPanel.hidden = !inPlant;
       feedPanel.hidden = tool !== 'feed';
-      const inStone = tool === 'sculpt' && t.sculptMode === 'stone';
-      const cliffMode = tool === 'sculpt' && (t.sculptMode === 'terrace' || t.sculptMode === 'cut') ? t.sculptMode : null;
+      const inStone = tool === 'sculpt' && sculptMode === 'stone';
+      const cliffMode = tool === 'sculpt' && (sculptMode === 'terrace' || sculptMode === 'cut') ? sculptMode : null;
       stonePanel.hidden = !inStone;
       cliffPanel.hidden = !cliffMode;
       if (cliffMode && cliffHint.textContent !== CLIFF_HINTS[cliffMode]) cliffHint.textContent = CLIFF_HINTS[cliffMode];

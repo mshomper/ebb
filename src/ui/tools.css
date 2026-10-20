@@ -144,8 +144,9 @@
 .ebb-tools__chips--species .ebb-tools__chip--wide { grid-column: 1 / -1; }
 /* Chips, sliders and the spring parts set their own display; the hidden attribute still wins. */
 .ebb-tools [hidden] { display: none; }
-/* Paint chips (four) and sculpt chips (six, three to a row with Terrace and Cut, M2) stack the
-   swatch or icon above the label so they fit on every width. */
+/* Paint chips (four) and sculpt chips (four in a row; six, three to a row, once the frogs give
+   Terrace and Cut; tools.js sets the columns) stack the swatch or icon above the label so they fit
+   on every width. */
 .ebb-tools__chips--paint { --tb-cols: 4; }
 .ebb-tools__chips--sculpt { --tb-cols: 3; }
 .ebb-tools__chips--paint .ebb-tools__chip,

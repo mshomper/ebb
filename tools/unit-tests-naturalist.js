@@ -4,6 +4,7 @@
 
 import { findsFound, naturalistLine, due, grant, ready } from '../src/world/expansion.js';
 import { naturalist3 } from '../src/save/migrate-naturalist.js';
+import { cliffs4 } from '../src/save/migrate-cliffs.js';
 import { migrate, FORMAT } from '../src/save/migrate.js';
 import { musselPair, musselBones } from '../src/world/finds/mussel.js';
 
@@ -69,6 +70,20 @@ export function addNaturalistTests(test, assert, eq) {
     eq(due({ ...p, flags: ['frogs:happy'], earned }).length, 0, 'given once');
   });
 
+  test(G, "the frogs' gift is the Cliff tool: its own words and drawn icon, given once", async () => {
+    const [R, words] = await loaded;
+    const frog = await fetch('../recipes/species/frog.json').then((r) => r.json());
+    eq(JSON.stringify(frog.ecology.gift), JSON.stringify({ kind: 'tool', id: 'cliffs' }), 'frog.json gift');
+    const p = { found: 0, rewards: R.rewards, gifts: { frogs: frog.ecology.gift }, words, giftWords: R.gifts };
+    const d = due({ ...p, flags: ['frogs:happy'], earned: {} });
+    eq(d.length, 1, 'happy: the gift');
+    eq(d[0].icon, 'terrace', 'the terrace icon');
+    assert(/frogs/i.test(d[0].title) && /terrace/i.test(d[0].line) && !/[{}]/.test(d[0].title + d[0].line), `card words: ${d[0].title}. ${d[0].line}`);
+    const earned = grant({ springs: true }, d[0]);
+    assert(earned.cliffs === true && earned.gifts.frogs && earned.springs && !earned.seeds, 'cliffs given, earlier unlocks kept, no seed');
+    eq(due({ ...p, flags: ['frogs:happy'], earned }).length, 0, 'given once');
+  });
+
   test(G, 'the same journal gives the same, every time (live, catch-up, a reload)', async () => {
     const [R, words] = await loaded;
     const j = journalWith({ anemone: 4, periwinkle: 9, lugworm: 22 }, ['frogs:happy']);
@@ -80,7 +95,7 @@ export function addNaturalistTests(test, assert, eq) {
     eq(run(), run(), 'deterministic');
   });
 
-  test(G, `save format ${FORMAT}: an island that found shells, or three finds, keeps shells`, () => {
+  test(G, 'save format 3: an island that found shells, or three finds, keeps shells', () => {
     const s = { meta: { worldT: 100 }, journal: journalWith({ shells: 40 }), unlocks: { springs: true } };
     const m = naturalist3(s);
     assert(m.unlocks.shells && m.unlocks.naturalist.includes('shells') && m.unlocks.springs, 'shells kept, springs kept');
@@ -118,6 +133,19 @@ export function addNaturalistTests(test, assert, eq) {
     const up = migrate({ meta: { worldT: 10 }, world: null, journal: journalWith({ shells: 2 }), unlocks: {} }, 2);
     assert(up.unlocks.shells, 'migrate(2) runs the naturalist step');
     eq(JSON.stringify(naturalist3(naturalist3(up))), JSON.stringify(naturalist3(up)), 'running it again changes nothing');
+  });
+
+  test(G, `save format ${FORMAT}: frogs that gave their gift keep the Cliff tool, quietly`, () => {
+    const gave = cliffs4({ journal: journalWith({}, ['frogs:happy']), unlocks: { gifts: { frogs: true }, seeds: { lilies: true }, springs: true } });
+    assert(gave.unlocks.cliffs && gave.unlocks.gifts.frogs && gave.unlocks.springs, 'cliffs added, the rest kept');
+    const not = cliffs4({ journal: journalWith({}), unlocks: {} });
+    assert(!not.unlocks.cliffs, 'frogs not happy yet: no cliffs; the card comes when they are');
+    const from2 = migrate({ meta: { worldT: 10 }, world: null, journal: journalWith({}, ['frogs:happy']), unlocks: {} }, 2);
+    assert(from2.unlocks.cliffs && from2.unlocks.gifts.frogs, 'a format 2 island with happy frogs ends with cliffs');
+    const s = { unlocks: { gifts: { frogs: true } } };
+    cliffs4(s);
+    assert(!(/** @type {any} */ (s.unlocks)).cliffs, 'the input is not changed');
+    eq(FORMAT, 4, 'this build writes format 4');
   });
 }
 
