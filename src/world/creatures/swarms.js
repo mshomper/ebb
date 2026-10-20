@@ -81,7 +81,9 @@ export function roomOf(pool, rec) {
  * @param {any} pool @param {number} count @param {any} N the recipe's needs
  */
 export function groupMood(pool, count, N) {
-  if (!pool || pool.bestScore <= 0) return 0;
+  // A pond that no longer suits them (dragonflies: fish have moved in) gives no mood: they thin
+  // and move on as from any unhappy pond.
+  if (!pool || pool.bestScore <= 0 || pool.fit === false) return 0;
   const C = N.company;
   const [lo, , hi] = C.n;
   let c = 1;
@@ -94,10 +96,11 @@ export function groupMood(pool, count, N) {
 const r4 = (v) => Math.round(v * 10000) / 10000;
 
 /**
- * Pools that are right: the best square scores rightScore and there is room for at least a few.
+ * Pools that are right: the best square scores rightScore, there is room for at least a few, and
+ * (a species with a pond rule) it is a pond of the kind it wants (fit, ecology/coarse.js pondFit).
  * @param {any[]} pools @param {any} rec
  */
-const rightPools = (pools, rec) => pools.filter((p) => p.bestScore >= rec.ecology.arrival.rightScore && roomOf(p, rec) >= rec.ecology.arrival.startCount);
+const rightPools = (pools, rec) => pools.filter((p) => p.fit !== false && p.bestScore >= rec.ecology.arrival.rightScore && roomOf(p, rec) >= rec.ecology.arrival.startCount);
 
 /**
  * One species' hour. @param {any} state @param {number} hourIndex @param {any} env @param {any} rec
@@ -236,13 +239,16 @@ export function swarmStep(state, hourIndex, env, rec) {
 }
 
 /**
- * A species recipe for a test link: its pools need no deep spot, so a new island can be tested
- * before anything is dug. @param {any} rec
+ * A species recipe for a test link: its pools need no deep spot and no pond of the player's
+ * making, so a new island can be tested before anything is dug. @param {any} rec
  */
 export function testRecipe(rec) {
   const W = rec.ecology.needs.water;
-  if (!W.body) return rec;
-  return { ...rec, ecology: { ...rec.ecology, needs: { ...rec.ecology.needs, water: { ...W, body: { ...W.body, deepM: 0 } } } } };
+  // No pond rule either (dragonflies: a fish-free pond the player shaped), so any pond will do.
+  const { pond, ...ecology } = rec.ecology;
+  void pond;
+  if (!W.body) return { ...rec, ecology };
+  return { ...rec, ecology: { ...ecology, needs: { ...ecology.needs, water: { ...W, body: { ...W.body, deepM: 0 } } } } };
 }
 
 /**

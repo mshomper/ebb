@@ -55,9 +55,38 @@ export function ecologyNow(state, env, advance) {
   for (const rec of swarmSpecies(sp)) {
     const m = needMaps(hab, state.growth, fields, rec);
     const key = keyOf(rec);
-    eco[key] = { score: bytes(m.score), pools: pools(m, state.creatures?.[key]?.groups ?? [], state.growth?.plants ?? [], rec.ecology.arrival?.roomPlants ?? null) };
+    const list = pools(m, state.creatures?.[key]?.groups ?? [], state.growth?.plants ?? [], rec.ecology.arrival?.roomPlants ?? null);
+    // A species that wants a pond of its own the player made, with no fish (dragonflies): each pool
+    // says whether it is one (fit), and why not.
+    if (rec.ecology.pond) for (const p of list) Object.assign(p, pondFit(hab, m, p.id, rec.ecology.pond, state.creatures?.[rec.ecology.pond.fishFree]?.groups ?? []));
+    eco[key] = { score: bytes(m.score), pools: list };
   }
   return eco;
+}
+
+/**
+ * Is a pool one the dragonflies would take (recipe ecology.pond): mostly shallow (shallowShare of
+ * its squares shallowM deep), with at least marginM2 square meters of margin marginM deep that the
+ * player shaped (the ground moved shapedCm or more from the island as generated) and that has cover
+ * grown in (shelter marginCover or more), and no fish (no group of fishFree living in it).
+ * @param {any} hab @param {ReturnType<typeof needMaps>} m @param {number} id the pool
+ * @param {any} R the recipe's ecology.pond @param {{ k: number }[]} fish the fish groups
+ * @returns {{ fit: boolean, shallow: number, margin: number, fish: boolean }}
+ *   shallow: share of the pool that is shallow; margin: square meters of shaped, covered margin
+ */
+export function pondFit(hab, m, id, R, fish) {
+  let area = 0, shallow = 0, margin = 0;
+  const [s0, s1] = R.shallowM, [m0, m1] = R.marginM;
+  for (let k = 0; k < m.score.length; k++) {
+    if (m.label?.[k] !== id) continue;
+    area++;
+    const d = hab.depthCm[k] / 100;
+    if (d >= s0 && d <= s1) shallow++;
+    if (d >= m0 && d <= m1 && (hab.shapedCm?.[k] ?? 0) >= R.shapedCm && m.shelter[k] >= R.marginCover) margin++;
+  }
+  const withFish = fish.some((g) => m.label?.[g.k] === id);
+  const share = area ? Math.round((shallow / area) * 1000) / 1000 : 0;
+  return { fit: share >= R.shallowShare && margin >= R.marginM2 && !withFish, shallow: share, margin, fish: withFish };
 }
 
 /**

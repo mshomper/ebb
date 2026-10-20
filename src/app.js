@@ -221,6 +221,8 @@ export async function startApp(canvas, hooks = {}) {
   // `?minnows=N` (testing, unsaved): a school comes at once, and the biggest still water will do
   // without its deep spot (src/world/creatures/swarms.js testRecipe), so a new island can be tested.
   if (params.has('minnows')) speciesRecipes.minnow = testRecipe(speciesRecipes.minnow);
+  // `?dragonflies=N` likewise: any pond will do, not only a fish-free one you shaped.
+  if (params.has('dragonflies')) speciesRecipes.dragonfly = testRecipe(speciesRecipes.dragonfly);
   world.env.recipes.species = speciesRecipes;
   updateStore('world', () => world.state);
   const unHour = on('clock:hour', (/** @type {{ hour: number }} */ p) => {

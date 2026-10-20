@@ -40,7 +40,8 @@ export function buildIslandModel(r) {
   const rect = rectForBounds({ openMin: [CHUNK_SIZE * S.chunkMin - half, CHUNK_SIZE * S.chunkMin - half], openMax: [CHUNK_SIZE * S.chunkMax + half, CHUNK_SIZE * S.chunkMax + half] });
   const springs = landmarks(r.land, tSeed).springs.map((s) => ({ cellX: waterCellOf(s.x), cellY: waterCellOf(s.z), rateLps: s.rateLps }));
   const summary = buildSummary({ heightQ, rect, springs, params: { ...r.water.summary, manningN: r.water.sim.manningN }, tide: r.water.tide });
+  // A new island: nothing shaped yet (baseQ is the same heights).
   const habitat = buildHabitat({ eco: summary.eco, material, materialCells: N, params: r.growth.habitat,
-    heightQ });
+    heightQ, baseQ: heightQ });
   return { habitat, summaryHash: summary.hash, summary, heightQ, material };
 }

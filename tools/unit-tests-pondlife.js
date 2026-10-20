@@ -16,7 +16,7 @@ import { openBox } from '../src/world/ecology/fields.js';
 import { seasonsAt } from '../src/world/seasons.js';
 import { SECONDS_PER_HOUR, HOURS_PER_DAY } from '../src/core/clock.js';
 import { keyOf, SPECIES, swarmSpecies } from '../src/world/species.js';
-import { loadEcologyRecipes, islandWorld } from './ecology-world.js';
+import { loadEcologyRecipes, islandWorld, digPond } from './ecology-world.js';
 
 const G = 'pond life';
 
@@ -320,12 +320,56 @@ export function addPondLifeTests(test, assert, eq) {
     return `room ${bare} to ${weedy} (small pool), ${big} to ${bigWeedy} (big pool)`;
   });
 
-  test(G, 'dragonflies come to a reedy pond once they fly: a pair in the late morning, then more, happy within two weeks', async () => {
+  test(G, 'no starting pond is one the dragonflies take: none come to either island as it starts', async () => {
+    const R = await loadEcologyRecipes();
+    const lines = [];
+    for (const island of ['starter-island', 'two-ponds']) {
+      const w = islandWorld(R, island, 1);
+      const r = runSpecies(w.state, w.env, w.h0 + 1, 24 * 16, 'dragonflies');
+      eq(r.events.filter((e) => e.name !== 'creature:dormant' && e.name !== 'creature:woke').length, 0, `${island}: dragonfly events in 16 days`);
+      const pools = r.state.ecology.dragonflies.pools;
+      assert(pools.length > 0 && pools.every((/** @type {any} */ p) => !p.fit && p.margin === 0), `${island}: ${pools.length} ponds, none of them shaped`);
+      lines.push(`${island}: ${pools.length} ponds, none fit`);
+    }
+    return lines.join('; ');
+  });
+
+  test(G, 'a pond the player dug, with no fish and reeds grown in, is one they take; minnows moving in send them away', async () => {
+    const R = await loadEcologyRecipes();
+    const w = islandWorld(R, 'starter-island', 1);
+    const p = digPond(w);
+    assert(p, 'room for a second pond');
+    const r = runSpecies(w.state, w.env, w.h0 + 1, 24 * 14, 'dragonflies');
+    const pool = r.state.ecology.dragonflies.pools.find((/** @type {any} */ q) => q.fit);
+    assert(pool, 'the dug pond fits');
+    assert(r.events.some((e) => e.name === 'creature:arrived'), 'a pair came');
+    const D = r.state.creatures.dragonflies;
+    assert(D.groups.length === 1, 'a group on the dug pond');
+    // Later the player digs one square of it on to 1.1 m (it stays mostly shallow), and a school of
+    // minnows settles there: the dragonflies thin out and move on.
+    const h0 = w.env.habitat();
+    const depthCm = h0.depthCm.slice();
+    depthCm[(p.j + 2) * h0.n + p.i + 3] = 110;
+    const deeper = { ...h0, depthCm };
+    const env2 = { ...w.env, habitat: () => deeper };
+    const g = D.groups[0];
+    const fish = { ...r.state, creatures: { ...r.state.creatures, minnows: { phase: 'settled', groups: [{ id: 1, k: g.k, x: g.x, z: g.z, count: 10, mood: 1, low: 0, since: 0 }] } } };
+    const after = runSpecies(fish, env2, w.h0 + 1 + 24 * 14, 24 * 6, 'dragonflies');
+    const fitNow = after.state.ecology.dragonflies.pools.find((/** @type {any} */ q) => q.id === pool.id || q.best === pool.best);
+    eq(fitNow?.fish, true, 'the pond has fish');
+    eq(after.state.creatures.dragonflies.groups.length, 0, 'dragonflies left on the pond');
+    assert(after.events.some((e) => e.name === 'creature:left'), 'they moved on');
+    const leftH = after.events.filter((e) => e.name === 'creature:left').pop()?.hour ?? 0;
+    return `the dug pond: ${pool.area} m², ${pool.margin} m² of shaped margin with reeds; gone ${((leftH - (w.h0 + 1 + 24 * 14)) / 24).toFixed(1)} days after the minnows came`;
+  });
+
+  test(G, 'dragonflies come to a pond you dug once they fly: a pair in the late morning, then more, happy within two weeks', async () => {
     const R = await loadEcologyRecipes();
     const A = R.species.dragonfly.ecology.arrival;
     const lines = [];
     for (const seed of [1, 2, 3]) {
       const w = islandWorld(R, 'starter-island', seed);
+      digPond(w);
       const r = runSpecies(w.state, w.env, w.h0 + 1, 24 * 14, 'dragonflies');
       const at = (/** @type {string} */ name) => r.events.find((e) => e.name === name)?.hour ?? -1;
       const sign = at('creature:arrived'), happy = at('species:happy');
@@ -340,6 +384,7 @@ export function addPondLifeTests(test, assert, eq) {
   test(G, 'in autumn the dragonflies go, and nothing comes or goes while they are nymphs', async () => {
     const R = await loadEcologyRecipes();
     const w = islandWorld(R, 'starter-island', 1);
+    digPond(w);
     // A run through the summer into winter (day 1 to day 46).
     const r = runSpecies(w.state, w.env, w.h0 + 1, 24 * 45, 'dragonflies');
     const dormant = r.events.find((e) => e.name === 'creature:dormant');

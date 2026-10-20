@@ -66,7 +66,9 @@ export async function createTerrain(gpu, opts) {
   } else {
     mirror = createMirror();
     await buildBases(mirror, chunks.list(), land, seed);
-    updateStore('terrainLive', () => ({ seed, mirror }));
+    // The heights as generated, before any edit or saved chunk is put back, kept so the habitat can
+    // tell which ground the player shaped (M2 dragonflies want a pond you made).
+    updateStore('terrainLive', () => ({ seed, mirror, baseQ: mirror.heightQ.slice() }));
   }
   updateStore('chunks', (prev) => {
     const out = prev ?? {};

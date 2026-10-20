@@ -30,6 +30,7 @@ export const HABITAT_ORIGIN = -80;
  * @property {Uint8Array} [sand] @property {Uint8Array} [rock] @property {Uint8Array} [soil]  painted shares 0..255
  * @property {Uint8Array} [slopeDeg]  ground slope in degrees (0 where no heights were given)
  * @property {Int16Array} [heightDm]  ground height above mean sea level, decimeters (only where heights were given)
+ * @property {Uint8Array} [shapedCm]  how far the player moved the ground there, cm, 0..255 (0 where no generated heights were given)
  * @property {number} hash        FNV-1a over the arrays (uint32), for the determinism page
  */
 
@@ -85,11 +86,11 @@ function falloff(d, reachM) {
 /**
  * @param {{ eco: { x: number, y: number, w: number, h: number, depthCm: Uint8Array, cls: Uint8Array, band: Uint8Array },
  *   material: Uint8Array, materialCells: number, params: { bankM: number, saltM: number, bandMoisture: number, bandSalt: number },
- *   heightQ?: Uint16Array | null }} args
+ *   heightQ?: Uint16Array | null, baseQ?: Uint16Array | null }} args
  *   eco: the water summary's 1 m aggregate; material: the terrain mirror's painted weights (rgba8 per
  *   0.25 m texel, grass first) over materialCells x materialCells; params: recipes/flora/habitat in
  *   the growth recipe; heightQ: the terrain heights (same grid as material), for the slope and
- *   height axes
+ *   height axes; baseQ: the heights as the island was generated, before any edit, for shapedCm
  * @returns {Habitat}
  */
 export function buildHabitat(args) {
@@ -176,6 +177,22 @@ export function buildHabitat(args) {
     }
   }
 
+  // How much the player has shaped each square (M2, dragonflies want a pond the player made): the
+  // largest change of the ground from the island as it was generated, in centimeters (0..255).
+  // Only when the generated heights are given (terrain/index.js keeps them).
+  const shapedCm = new Uint8Array(N * N);
+  if (args.heightQ && args.baseQ) {
+    const cmPerStep = (H_RANGE * 100) / 65535;
+    for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) {
+      let most = 0;
+      for (let v = 0; v < per; v++) {
+        const row = (j * per + v) * M;
+        for (let u = 0; u < per; u++) { const d = Math.abs(args.heightQ[row + i * per + u] - args.baseQ[row + i * per + u]); if (d > most) most = d; }
+      }
+      shapedCm[j * N + i] = Math.min(255, Math.round(most * cmPerStep));
+    }
+  }
+
   // FNV-1a over everything, so two machines can compare.
   let h = 0x811c9dc5;
   for (const arr of [depthCm, moisture, salt, still, sea, grass, open]) {
@@ -185,8 +202,9 @@ export function buildHabitat(args) {
   // and left out of the hash, which keeps its S5 meaning.
   // The ground-type, slope and height axes are left out of the hash too: they only matter to plants
   // that ask for them, and the S5 hash keeps its meaning.
+  // shapedCm is left out of the hash as well: it only says which squares the player shaped.
   return { n: N, depthCm, moisture, salt, still, sea, grass, open, band, sand, rock, soil, slopeDeg,
-    heightDm: args.heightQ ? heightDm : undefined, hash: h >>> 0 };
+    heightDm: args.heightQ ? heightDm : undefined, shapedCm, hash: h >>> 0 };
 }
 
 /**

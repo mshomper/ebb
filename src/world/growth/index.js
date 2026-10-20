@@ -59,10 +59,12 @@ export function createGrowth(device, opts) {
   /** Rebuild the habitat from the latest water summary and the painted ground. */
   function rebuildHabitat() {
     const s = water.getSummary();
-    const mirror = getStore('terrainLive')?.mirror;
+    const live = getStore('terrainLive');
+    const mirror = live?.mirror;
     if (!s || !mirror) return;
+    // baseQ: the island as generated, so the habitat knows which ground the player shaped (dragonflies).
     habitat = buildHabitat({ eco: s.eco, material: mirror.material, materialCells: WORLD_CELLS, params: recipes.growth.habitat,
-      heightQ: mirror.heightQ });
+      heightQ: mirror.heightQ, baseQ: live.baseQ ?? null });
     lush = recipes.grass?.lush ? lushField(habitat, recipes.grass.lush) : null;
     // A new island gets its starter plants and grass cover now rather than at the next hour.
     world.state = settleGrowth(world.state, world.env);

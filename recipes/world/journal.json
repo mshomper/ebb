@@ -856,9 +856,9 @@
     "dragonflies": {
       "name": "Southern hawkers", "icon": "dragonfly", "kind": "school", "plural": "dragonflies", "card": "A southern hawker",
       "_school": "A few at a time (M2, src/world/creatures/swarms.js), known only once you find one yourself, by tapping it or watching it closely. They fly from late spring into autumn; the rest of the year they are nymphs in the pond (dormant).",
-      "riddle": "Something might hunt over still water on sunny days, if there were tall stems to rest on.",
+      "riddle": "Something might hunt on sunny days over a second, quiet pond, one with no fish in it.",
       "hints": [
-        { "when": "dragonflies:right", "text": "Something seems to want still water with tall stems beside it. The pond looks right for it now." },
+        { "when": "dragonflies:right", "text": "Something seems to want a shallow pond with no fish, and tall stems along its edge. The pond you made looks right for it now." },
         { "when": "dragonflies:sign", "text": "Something flashed blue and green over the pond in the late morning, and was gone. Watch the air over the water on a sunny day." }
       ],
       "field": [
@@ -876,7 +876,8 @@
       "stages": ["Hunting over the pond", "Under the water as a nymph"],
       "seasons": { "grow": ["the first ones flying", "patrolling the pond", "the last ones flying", "nymphs under the water"], "dormant": "nymphs under the water" },
       "likes": [
-        { "text": "Still water with reeds or rushes beside it", "learn": ["seen"] },
+        { "text": "A shallow pond of their own, with reeds or rushes at its edge", "learn": ["seen"] },
+        { "text": "Never a pond with fish in it", "learn": ["left"] },
         { "text": "Small flying insects over the water", "learn": ["settled"] },
         { "text": "Sunny days, from late spring into autumn", "learn": ["joined"] },
         { "text": "Moves on when the pond is drained", "learn": ["left"] },
@@ -893,7 +894,7 @@
       ],
       "foundLine": "You found the first southern hawker on {date}.",
       "notes": {
-        "right": "Still water with tall stems beside it, warm in the sun.",
+        "right": "The pond you made lies still and shallow, with tall stems along its edge.",
         "sign": "Something flashed over the pond in the late morning, and was gone.",
         "signAgain": "A flash of blue and green over the pond again this morning.",
         "found": "You found a southern hawker hunting over the pond.",

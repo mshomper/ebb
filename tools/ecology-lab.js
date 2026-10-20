@@ -12,7 +12,7 @@ import { frogNeeds } from '../src/world/ecology/habitat.js';
 import { needMaps, waterBodies } from '../src/world/ecology/needs.js';
 import { midgeArea } from '../src/world/ecology/midges.js';
 import { openBox } from '../src/world/ecology/fields.js';
-import { loadEcologyRecipes, islandWorld } from './ecology-world.js';
+import { loadEcologyRecipes, islandWorld, digPond } from './ecology-world.js';
 
 const ISLANDS = [{ id: 'starter-island', name: 'Starter island' }, { id: 'two-ponds', name: 'Two ponds' }];
 const CHUNK_MS = 14;
@@ -59,6 +59,7 @@ const seedIn = /** @type {HTMLInputElement} */ ($('seed'));
 const daysIn = /** @type {HTMLSelectElement} */ ($('days'));
 const startIn = /** @type {HTMLSelectElement} */ ($('start'));
 const deepIn = /** @type {HTMLSelectElement} */ ($('deep'));
+const pond2In = /** @type {HTMLSelectElement} */ ($('pond2'));
 const runBtn = /** @type {HTMLButtonElement} */ ($('run'));
 const status = (/** @type {string} */ icon, /** @type {string} */ text) => { $('status').innerHTML = `${icon}<span>${text}</span>`; };
 
@@ -88,6 +89,7 @@ addEventListener('resize', () => { for (const isl of ISLANDS) drawAll(isl.id); }
 const restart = () => { for (const isl of ISLANDS) { panels[isl.id].run = null; panels[isl.id].start = worldFor(isl.id, seed()); drawAll(isl.id); } };
 seedIn.addEventListener('change', restart);
 deepIn.addEventListener('change', restart);
+pond2In.addEventListener('change', restart);
 
 /**
  * A new world on an island, with the big pond's deepest square dug deeper when asked (as the
@@ -96,6 +98,15 @@ deepIn.addEventListener('change', restart);
  */
 function worldFor(island, s, startDay = 0) {
   const w = islandWorld(R, island, s, startDay);
+  // A second, shallow pond dug on dry ground with reeds planted as seeds along its edge, as a
+  // player would make one (dragonflies come only to a fish-free pond the player shaped).
+  if (pond2In.value === '1') {
+    const p = digPond(w);
+    if (p) {
+      const inPond = (/** @type {any} */ q) => q.sp === 'reeds' && Math.abs(q.x - p.x) < p.w / 2 + 0.5 && Math.abs(q.z - p.z) < p.h / 2 + 0.5;
+      w.state = { ...w.state, growth: { ...w.state.growth, plants: w.state.growth.plants.map((/** @type {any} */ q) => (inPond(q) ? { ...q, age: 0, size: 0.02, best: 0.02, stage: 0 } : q)) } };
+    }
+  }
   const cm = Number(deepIn.value);
   if (!cm) return w;
   const hab = w.model.habitat;
