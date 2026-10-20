@@ -80,7 +80,7 @@
     { "a": "soil", "b": "marigold", "ink": "grows:soil:marigold", "note": "Marsh marigold grows in the soaked soil at the water's edge." },
     { "a": "fresh", "b": "marigold", "ink": "grows:fresh:marigold", "note": "Marsh marigold keeps its feet in the shallow fresh water." },
     { "a": "rock", "b": "campion", "ink": "grows:rock:campion", "note": "Sea campion roots in the cracks of the rock." },
-    { "a": "shore", "b": "campion", "ink": "grows:shore:campion", "note": "Sea campion grows above the tide, in the salt spray." },
+    { "a": "shore", "b": "campion", "ink": "seen:campion", "note": "Sea campion grows above the tide, in the salt spray." },
     { "a": "pool", "b": "anemone", "ink": "seen:anemone", "note": "Anemones hold on in the rock pools, open while the water covers them." },
     { "a": "shore", "b": "anemone", "ink": "seen:anemone", "note": "Anemones need the tide to fill their pool." },
     { "a": "wrack", "b": "periwinkle", "ink": "seen:periwinkle", "note": "Periwinkles graze on the wrack." },
