@@ -154,9 +154,10 @@ export async function startApp(canvas, hooks = {}) {
   history.setApplier('terrain', (cmd, dir) => terrain.applyTiles(dir === 'undo' ? cmd.before : cmd.after));
   if (back) terrain.restoreChunks(back.chunks);   // before the water reads the ground
   // The world clock and the shared hourly tick (weather, seasons). A new world starts mid-morning.
-  // `?day=N` starts a new world N game days in (7 per season: 8 is early summer), to see later seasons sooner.
-  // `?frogs=N` (testing) starts on spring day 4 unless a day is given, after the frogs' winter sleep.
-  const startDay = Math.max(0, Number.parseInt(params.get('day') ?? (params.has('frogs') ? '3' : '0'), 10) || 0);
+  // `?day=N` starts a new world N game days in (14 per season: 15 is early summer), to see later seasons sooner.
+  // `?frogs=N` (testing) starts on spring day 7 unless a day is given, after the frogs' winter sleep
+  // (they wake 0.3 into spring, day 5).
+  const startDay = Math.max(0, Number.parseInt(params.get('day') ?? (params.has('frogs') ? '6' : '0'), 10) || 0);
   if (clock.worldT() === 0) clock.reset(((skyRecipe.orbit.startHour ?? 10) + 24 * startDay) * clock.SECONDS_PER_HOUR);
   updateStore('meta', (m) => { m.flow = clock.flow(); });
   const env = makeEnv(seed, { seasons: seasonsRecipe, sky: skyRecipe.orbit, water: waterRecipe });

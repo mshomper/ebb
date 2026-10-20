@@ -7,10 +7,11 @@
 // World axes: +X east, -Z north, +Y up. Directions are unit vectors toward the body.
 // Altitude and azimuth are in radians; azimuth is measured from south, west positive.
 // yearFrac 0 = spring equinox; hour angle 0 at solar noon (dayFrac 0.5).
-// Moon: one synodic cycle per season (7 game days), new at the start of each season, full at day 3.5.
+// Moon: one synodic cycle every 7 game days (two per 14-day season), new at the start of each
+// season and on day 7, full on days 3.5 and 10.5.
 
 import { det } from '../../core/rng.js';
-import { dayFractionOf, yearFractionOf, seasonOf, SECONDS_PER_DAY } from '../../core/clock.js';
+import { dayFractionOf, yearFractionOf, moonPhaseOf, SECONDS_PER_DAY } from '../../core/clock.js';
 
 export const DEFAULT_LATITUDE_DEG = 40;
 export const DEFAULT_TILT_DEG = 18;
@@ -30,7 +31,7 @@ const DAWN_ALT = -6 * DEG;
  * @property {[number, number, number]} moonDir unit vector toward the moon
  * @property {number} moonAlt
  * @property {number} moonAz
- * @property {number} moonPhase  0 new, 0.5 full (= season phase)
+ * @property {number} moonPhase  0 new, 0.5 full (clock.moonPhaseOf)
  * @property {number} moonIllum  lit brightness relative to full, 0 at new, 1 at full (Lommel-Seeliger)
  * @property {number} dayLengthH hours the sun is above the horizon that day (declination at that day's noon)
  */
@@ -115,7 +116,7 @@ export function sunMoon(t, opts = {}) {
   const sun = equatorial(lambda, sinE, cosE);
   const sh = horizon(H, sun.sinDec, sun.cosDec, sinP, cosP);
 
-  const moonPhase = seasonOf(t).phase;
+  const moonPhase = moonPhaseOf(t);
   const moon = equatorial(lambda + TWO_PI * moonPhase, sinE, cosE);
   const mh = horizon(H - (moon.ra - sun.ra), moon.sinDec, moon.cosDec, sinP, cosP);
 

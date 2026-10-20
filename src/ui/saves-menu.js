@@ -209,7 +209,7 @@ function ago(t) {
 
 /**
  * "Pretend I was away" and its choices, with a line saying how much time passed.
- * @param {{ pretendHours: number[], pretend: (h: number) => Promise<{ hours: number, why: string }> }} away
+ * @param {{ pretendHours: number[], capHours?: number, pretend: (h: number) => Promise<{ hours: number, why: string }> }} away
  * @param {MakeButton} button
  */
 function pretendRow(away, button) {
@@ -219,6 +219,8 @@ function pretendRow(away, button) {
   const said = status();
   /** @param {number} h */
   const words = (h) => (h % 24 === 0 && h >= 24 ? `${h / 24} ${h === 24 ? 'day' : 'days'}` : `${h} ${h === 1 ? 'hour' : 'hours'}`);
+  /** "7-day" @param {number} h */
+  const limit = (h) => (h % 24 === 0 && h >= 24 ? `${h / 24}-day` : `${h}-hour`);
   for (const h of away.pretendHours) {
     const b = button(words(h), `Catch up as if you had been away for ${words(h)} of game time`);
     b.addEventListener('click', async () => {
@@ -226,7 +228,7 @@ function pretendRow(away, button) {
       said.textContent = 'Catching up';
       const a = await away.pretend(h);
       said.textContent = a.why === 'paused' ? 'Time is paused: nothing grew'
-        : `${words(a.hours)} passed${a.why === 'capped' ? ' (the 14-day limit)' : ''}`;
+        : `${words(a.hours)} passed${a.why === 'capped' ? ` (the ${limit(away.capHours ?? a.hours)} limit)` : ''}`;
       for (const x of r.querySelectorAll('button')) /** @type {HTMLButtonElement} */ (x).disabled = false;
     });
     r.appendChild(b);

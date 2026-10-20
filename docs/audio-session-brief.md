@@ -13,7 +13,7 @@ The feeling: peaceful, meditative, never annoying, never something a player turn
 1. `CLAUDE.md` in the repo: working rules (they apply to everything here).
 2. `docs/01-vision-and-pillars.md`, then `docs/17-audio.md`.
 3. `24-music.md` and `25-soundscape-seasons.md` (these specs; add them to `docs/` on your branch).
-4. For context as needed: `docs/02` (clock: 1 game day = 24 real minutes, 7 days a season), `docs/05` (day keys by sun elevation), `docs/06` (`sky:sun-crossed`), `docs/10` (seasons and weather odds, `recipes/world/seasons.json`), `docs/11` and `docs/12` (frogs and midges, events), `docs/23` (presence and the hush), `docs/16` (preview and photo mode), `docs/19` (budgets), `docs/20` (M2).
+4. For context as needed: `docs/02` (clock: 1 game day = 24 real minutes, 14 days a season), `docs/05` (day keys by sun elevation), `docs/06` (`sky:sun-crossed`), `docs/10` (seasons and weather odds, `recipes/world/seasons.json`), `docs/11` and `docs/12` (frogs and midges, events), `docs/23` (presence and the hush), `docs/16` (preview and photo mode), `docs/19` (budgets), `docs/20` (M2).
 5. `recipes/species/frog.json` (call window, chorus gap) and `recipes/species/midge.json` (dusk density).
 
 ## Who you are working with

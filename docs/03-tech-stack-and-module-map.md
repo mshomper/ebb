@@ -104,7 +104,7 @@ requestAnimationFrame
   audio mixer update (reads displayT)
 ```
 
-Time: 1 game day = 24 real minutes at 1x, so 1 real minute = 1 game hour. `clock.js` owns the time-flow setting (pause, 1x, 2x, 4x) and is the only source of time. `animT` keeps running while the world is paused, so leaves still sway.
+Time: 1 game day = 24 real minutes at 1x, so 1 real minute = 1 game hour while watched; time away earns a quarter of that (4 real minutes = 1 game hour, doc 02). A season is 14 game days. `clock.js` owns the time-flow setting (pause, 1x, 2x, 4x) and is the only source of time. `animT` keeps running while the world is paused, so leaves still sway.
 
 ## Data and interfaces
 
@@ -121,7 +121,7 @@ Time: 1 game day = 24 real minutes at 1x, so 1 real minute = 1 game hour. `clock
 | `core/workers.js` | worker pool and worker entry | `run(job, args, {transfer, lane, key})` |
 | `core/recipes.js` | recipe manifest, validation, generator registry | `loadRecipe(id)`, `registerGenerator(g)`, `validate(r)` (doc 14) |
 | `world/terrain/` | heightfield, materials, ground state, sculpt | doc 08 |
-| `world/water/`, `world/tide.js` | visual-only live water (0.5 m grid per 32 m chunk); deterministic 1 m water summary rebuilt in a worker; tide as a pure function of time (moon cycle 7 game days) | doc 07 |
+| `world/water/`, `world/tide.js` | visual-only live water (0.5 m grid per 32 m chunk); deterministic 1 m water summary rebuilt in a worker; tide as a pure function of time (moon cycle 7 game days, two per season) | doc 07 |
 | `world/water-world.js` | assembles the live water world for the app: water, foam, ripples, the wet-ground map and interim moss, in tick order, plus spring bookkeeping (undo comes in as an option, so it never imports `input/`) | docs 07, 08 |
 | `world/growth/`, `seasons.js`, `weather.js` | flora, moss and lichen, seasons, weather | doc 10 |
 | `world/structures/` | paths, walls, bridge, lanterns | doc 09 |
@@ -253,7 +253,7 @@ GitHub Pages serves `main` at `https://mshomper.github.io/ebb/`. The repo root h
 | `gpu-probe.html` | adapter, features, limits, chosen tier, force device loss |
 | `frame-timing.html` | live per-pass GPU timing graph |
 | `determinism.html` | catch-up twice from one save, and with 1 vs N workers; compares state hashes |
-| `catchup-bench.html` | 336-hour catch-up timing per system |
+| `catchup-bench.html` | 168-hour catch-up timing per system |
 | `unit-tests.html` | small assert tests for pure modules (rng, clock, recipe validation, coarse steps) |
 | `terrain-brush-bench.html`, `wall-gen-test.html` | docs 08, 09 |
 | `growth-lab.html`, `moss-rd-test.html` | doc 10: growth time-lapse, reaction-diffusion |

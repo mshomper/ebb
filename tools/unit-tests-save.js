@@ -119,6 +119,44 @@ export function addSaveTests(test, assert, eq) {
     assert(threw, 'newer format refused');
   });
 
+  test(SAVE, 'a 7-day-season save opens on the same season and hour, day d becoming 2d, with its stamps moved alike', () => {
+    const H = 3600, D = 24 * H;
+    // Old calendar: year 1 (28 days), summer (season 1, 7 days), day 3 (0-based 2), 19:30.
+    const oldT = (28 + 7 + 2) * D + 19.5 * H;
+    const oldHour = Math.floor(oldT / H);
+    const s = {
+      meta: { worldT: oldT, seed: 7 },
+      world: {
+        seasons: { index: 1, phase: (2 * D + 19.5 * H) / (7 * D), year: 1, day: 2, dayLengthH: 14, dormant: {} },
+        weather: { today: { day: 37 }, yesterday: { day: 36 } },
+        growth: { plants: [{ last: oldHour - 5, age: 40 }, { last: 0, age: 1 }] },
+        creatures: { frogs: { cooldownUntil: oldHour + 6, lastJoin: -1, lastLeft: oldHour - 30,
+          frogs: [{ since: oldHour - 12, fedAt: oldHour - 1, trust: 0.4 }], pending: [{ hour: oldHour + 2 }] } },
+      },
+      journal: { born: 10, last: oldHour, species: { reeds: { first: 34, plantedAt: -1, peakAt: oldHour - 3, moments: { rain: 100 } } },
+        notes: [{ hour: oldHour, date: 'Summer, day 3, year 2', text: 'x' }, { hour: 34, date: 'Spring, day 2', text: 'y' }] },
+    };
+    const m = migrate(structuredClone(s), 1);
+    // New calendar: year 1 (56 days), summer (14 days), day 5 (0-based 4), 19:30.
+    eq(m.meta.worldT, (56 + 14 + 4) * D + 19.5 * H, 'clock: same season and hour, day 2d');
+    eq(`${m.world.seasons.index} ${m.world.seasons.year} ${m.world.seasons.day}`, '1 1 4', 'seasons state');
+    eq(m.world.weather.today.day, 74, 'weather today, day index 37 to 74');
+    eq(m.world.growth.plants[1].last, 0, 'a stamp of 0 stays');
+    eq(m.world.growth.plants[0].age, 40, 'ages are not times');
+    eq(m.world.creatures.frogs.lastJoin, -1, 'never stays never');
+    assert(m.world.creatures.frogs.cooldownUntil > Math.floor(m.meta.worldT / H), 'a future cooldown stays in the future');
+    eq(m.world.creatures.frogs.frogs[0].trust, 0.4, 'trust kept');
+    eq(m.journal.notes[0].date, 'Summer, day 5, year 2', 'note date text');
+    eq(m.journal.notes[1].date, 'Spring, day 3', 'older note date text');
+    eq(m.journal.notes[1].hour, 58, 'old spring day 2, 10:00 (hour 34) is new spring day 3, 10:00');
+    eq(m.journal.species.reeds.first, 58, 'first seen moved alike');
+    eq(m.journal.species.reeds.plantedAt, -1, 'never planted stays');
+    // Every stamp keeps its order, and nothing moves back in time.
+    for (const [a, b] of [[s.journal.born, m.journal.born], [oldHour - 30, m.world.creatures.frogs.lastLeft], [100, m.journal.species.reeds.moments.rain]]) assert(b >= a, `${a} moved back to ${b}`);
+    eq(JSON.stringify(migrate(structuredClone(s), 1)), JSON.stringify(m), 'the same every time');
+    eq(s.meta.worldT, oldT, 'the input is not changed');
+  });
+
   test(SAVE, 'an edited chunk keeps its heights and paint; an untouched one keeps none', async () => {
     const m = createMirror();
     for (let k = 0; k < m.heightQ.length; k++) { m.heightQ[k] = (k * 7) & 0xffff; m.material[4 * k + 2] = k & 0xff; }
@@ -139,7 +177,7 @@ export function addSaveTests(test, assert, eq) {
 
   test(SAVE, 'a real island after two game days comes back from its save exactly', async () => {
     const R = await loadEcologyRecipes();
-    const w = islandWorld(R, 'starter-island', 1, 3);
+    const w = islandWorld(R, 'starter-island', 1, 6);
     let state = w.state;
     for (let h = w.h0 + 1; h <= w.h0 + 48; h++) state = runHour(state, h, w.env).state;
     const before = hashWorldState(state);

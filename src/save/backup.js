@@ -7,7 +7,7 @@
 // waiting does not count as time away.
 
 import { encode, decode, SaveError } from './world-file.js';
-import { migrate } from './migrate.js';
+import { migrate, FORMAT } from './migrate.js';
 import { restore } from './sections.js';
 import { getSlot, getSave, listSaves, writeGeneration, quarantined } from './idb.js';
 import { slotFor } from './autosave.js';
@@ -93,7 +93,9 @@ export async function openIslandFile(save, checked) {
   if (!db) throw new SaveError('This browser is not keeping islands, so the file cannot be opened here.');
   const slot = slotFor(checked.island.id);
   const now = Date.now();
-  const header = { ...checked.header, savedAt: now, wallHighWater: now };
+  // The sections are already brought up to this build's format, so the header says so (or the
+  // next load would upgrade them a second time).
+  const header = { ...checked.header, format: FORMAT, worldT: checked.sections.meta?.worldT ?? checked.header.worldT, savedAt: now, wallHighWater: now };
   const bytes = await encode(header, Object.entries(checked.sections));
   if (slot === save.slot) save.stop();
   const rec = slot === save.slot ? save.slotRecord() : await getSlot(db, slot);

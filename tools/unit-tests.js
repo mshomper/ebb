@@ -215,8 +215,8 @@ test('clock', 'pure time math: hour, day fraction, season', () => {
   eq(hourIndexOf(3599.99), 0, 'hourIndexOf');
   eq(hourIndexOf(3600), 1, 'hourIndexOf');
   eq(dayFractionOf(6 * 3600), 0.25, 'dayFractionOf');
-  const s = seasonOf((28 + 7 + 3.5) * 86400);
-  eq(`${s.year} ${s.index} ${s.day} ${s.phase}`, '1 1 3 0.5', 'seasonOf year index day phase');
+  const s = seasonOf((56 + 14 + 7) * 86400);
+  eq(`${s.year} ${s.index} ${s.day} ${s.phase}`, '1 1 7 0.5', 'seasonOf year index day phase');
 });
 
 test('clock', 'clock:hour and clock:day arrive on the bus after flush', () => {
@@ -538,24 +538,24 @@ test(SKY, 'noon altitude is 90 - latitude + declination; with tilt 0 the equinox
   const flat = sunMoon(0.5 * DAY_S, { latitudeDeg: 40, tiltDeg: 0 });
   assert(Math.abs(flat.sunAlt / RAD - 50) < 0.01, `tilt 0 noon altitude ${flat.sunAlt / RAD}`);
   let worst = 0;
-  for (let d = 0; d < 28; d++) {
+  for (let d = 0; d < 56; d++) {
     const t = (d + 0.5) * DAY_S;
-    const decl = Math.asin(Math.sin(18 * RAD) * Math.sin(2 * Math.PI * (t / (28 * DAY_S))));
+    const decl = Math.asin(Math.sin(18 * RAD) * Math.sin(2 * Math.PI * (t / (56 * DAY_S))));
     worst = Math.max(worst, Math.abs(sunMoon(t).sunAlt - (50 * RAD + decl)) / RAD);
   }
   assert(worst < 0.01, `noon altitude off by ${worst} deg`);
-  return `day 0 noon (1.98 deg past the equinox): ${(sunMoon(0.5 * DAY_S).sunAlt / RAD).toFixed(2)} deg`;
+  return `day 0 noon (0.99 deg past the equinox): ${(sunMoon(0.5 * DAY_S).sunAlt / RAD).toFixed(2)} deg`;
 });
 
 test(SKY, 'day length: solstice 14.1 h and 9.9 h at tilt 18 (doc 06 14.5 / 9.5 needs tilt 21), matching a sampled day', () => {
-  const summer = sunMoon(7 * DAY_S).dayLengthH, winter = sunMoon(21 * DAY_S).dayLengthH;
+  const summer = sunMoon(14 * DAY_S).dayLengthH, winter = sunMoon(42 * DAY_S).dayLengthH;
   assert(Math.abs(summer - 14.09) < 0.05 && Math.abs(winter - 9.91) < 0.05, `tilt 18: ${fmtH(summer)} / ${fmtH(winter)}`);
-  const s21 = sunMoon(7 * DAY_S, { tiltDeg: 21 }).dayLengthH, w21 = sunMoon(21 * DAY_S, { tiltDeg: 21 }).dayLengthH;
+  const s21 = sunMoon(14 * DAY_S, { tiltDeg: 21 }).dayLengthH, w21 = sunMoon(42 * DAY_S, { tiltDeg: 21 }).dayLengthH;
   assert(Math.abs(s21 - 14.5) < 0.3 && Math.abs(w21 - 9.5) < 0.3, `tilt 21: ${fmtH(s21)} / ${fmtH(w21)}`);
-  // count the minutes above the horizon on day 6 (the day before the solstice boundary)
+  // count the minutes above the horizon on day 13 (the day before the solstice boundary)
   let up = 0;
-  for (let m = 0; m < 1440; m++) if (sunMoon(6 * DAY_S + (m + 0.5) * 60).sunAlt > 0) up++;
-  const sampled = up / 60, analytic = sunMoon(6.5 * DAY_S).dayLengthH;
+  for (let m = 0; m < 1440; m++) if (sunMoon(13 * DAY_S + (m + 0.5) * 60).sunAlt > 0) up++;
+  const sampled = up / 60, analytic = sunMoon(13.5 * DAY_S).dayLengthH;
   assert(Math.abs(sampled - analytic) < 0.1, `sampled ${fmtH(sampled)} vs ${fmtH(analytic)}`);
   return `tilt 18: ${fmtH(summer)} / ${fmtH(winter)}; tilt 21: ${fmtH(s21)} / ${fmtH(w21)}`;
 });
@@ -571,13 +571,15 @@ test(SKY, 'solar noon is due south and the morning sun is in the east', () => {
   assert(Math.abs(len - 1) < 1e-12, `sunDir length ${len}`);
 });
 
-test(SKY, 'moon is new at each season start, full at day 3.5, and rises later each day', () => {
-  for (const s of [0, 1, 2, 5]) {
-    const m = sunMoon(s * 7 * DAY_S);
-    assert(m.moonPhase === 0 && m.moonIllum === 0, `season ${s}: phase ${m.moonPhase}, illum ${m.moonIllum}`);
+test(SKY, 'moon is new at each season start and day 7, full at days 3.5 and 10.5, and rises later each day', () => {
+  for (const d of [0, 7, 14, 21, 28, 70]) {
+    const m = sunMoon(d * DAY_S);
+    assert(m.moonPhase === 0 && m.moonIllum === 0, `day ${d}: phase ${m.moonPhase}, illum ${m.moonIllum}`);
   }
-  const full = sunMoon(3.5 * DAY_S);
-  assert(Math.abs(full.moonPhase - 0.5) < 1e-12 && Math.abs(full.moonIllum - 1) < 1e-9, `day 3.5 illum ${full.moonIllum}`);
+  for (const d of [3.5, 10.5, 17.5]) {
+    const full = sunMoon(d * DAY_S);
+    assert(Math.abs(full.moonPhase - 0.5) < 1e-12 && Math.abs(full.moonIllum - 1) < 1e-9, `day ${d} illum ${full.moonIllum}`);
+  }
   const quarter = sunMoon(1.75 * DAY_S).moonIllum;
   assert(quarter > 0.2 && quarter < 0.5, `first quarter illum ${quarter}`);
   /** @param {number} t0 */
@@ -713,19 +715,19 @@ test(SKY, '336 hourly ticks are identical twice and split runs match one run', a
   return `hash ${a.toString(16).toUpperCase().padStart(8, '0')}`;
 });
 
-test(SKY, 'season:changed fires at hours 168 and 336, and dormancy follows the recipe windows', async () => {
+test(SKY, 'season:changed fires at hours 336 and 672 (14-day seasons), and dormancy follows the recipe windows', async () => {
   const recipe = await loadSeasons();
   const env = makeEnv(1, { seasons: recipe });
   let st = initialWorldState(1);
   /** @type {string[]} */
   const got = [];
-  for (let h = 0; h <= 336; h++) {
+  for (let h = 0; h <= 672; h++) {
     const r = runHour(st, h, env);
     st = r.state;
     for (const e of r.events) if (e.name === 'season:changed') got.push(`${e.hour}:${e.payload.index}`);
   }
-  eq(got.join(' '), '168:1 336:2', 'season changes over hours 0..336');
-  const at = (/** @type {number} */ seasonPos) => seasonsAt(seasonPos * 7 * DAY_S, recipe).dormant;
+  eq(got.join(' '), '336:1 672:2', 'season changes over hours 0..672');
+  const at = (/** @type {number} */ seasonPos) => seasonsAt(seasonPos * 14 * DAY_S, recipe).dormant;
   assert(at(0.1).frogs && !at(0.1).reeds, 'early spring: frogs asleep, reeds awake');
   assert(!at(1.5).frogs && !at(1.5).reeds, 'midsummer: all awake');
   assert(at(2.8).frogs && !at(2.8).reeds, 'late autumn: frogs asleep');
@@ -770,7 +772,7 @@ test(TIDE, 'period is 12 h: level repeats every 12 h at a fixed moon, high at 0 
   return `level(0) ${tide.level(0).toFixed(4)} m, level(6) ${tide.level(6).toFixed(4)} m`;
 });
 
-test(TIDE, 'level stays within A0 (1 + springNeap) over two seasons', () => {
+test(TIDE, 'level stays within A0 (1 + springNeap) over two moons', () => {
   const p = tide.DEFAULT_TIDE, cap = p.amplitudeM * (1 + p.springNeap) + 1e-12;
   let lo = Infinity, hi = -Infinity;
   for (let i = 0; i <= 336 * 20; i++) {
@@ -787,6 +789,8 @@ test(TIDE, 'spring tides at new and full moon are larger than neaps at the quart
   assert(newA > q1 && newA > q3 && fullA > q1 && fullA > q3, `new ${newA}, full ${fullA}, quarters ${q1}, ${q3}`);
   assert(Math.abs(newA - 0.69) < 1e-12 && Math.abs(fullA - 0.69) < 1e-12, `spring ${newA}, ${fullA}`);
   assert(Math.abs(q1 - 0.51) < 1e-12 && Math.abs(q3 - 0.51) < 1e-12, `neap ${q1}, ${q3}`);
+  // Four spring tides a 14-day season: the second moon repeats the first.
+  for (const d of [7, 10.5]) assert(Math.abs(at(d) - 0.69) < 1e-12, `spring on day ${d}: ${at(d)}`);
   const sm = sunMoon(3.5 * DAY_S);
   assert(Math.abs(sm.moonPhase - tide.moonPhase(3.5 * 24)) < 1e-12, 'tide moon phase matches sun-moon.js');
   return `spring ${newA.toFixed(3)} m, neap ${q1.toFixed(3)} m`;

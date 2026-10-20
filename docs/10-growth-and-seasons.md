@@ -1,6 +1,6 @@
 # 10 — Growth and Seasons
 
-> Plants are how the island changes on its own. The player plants seeds; reeds creep along the wet edge of the pond, grass thickens, flowers open, shrubs fill in, and much later trees lift the skyline. Moss spreads in soft blotches over damp ground and stone. Seasons turn every seven game days: spring greens and blossoms, summer fullness, autumn color and falling leaves, then a gentle, snow-free winter of bare branches, frost mornings and mist. Weather (rain, mist, wind) waters the island and carries seeds. All of this advances one game hour at a time with seeded rules, so the island that greets the player after a night away is exactly the island that would have grown if they had watched.
+> Plants are how the island changes on its own. The player plants seeds; reeds creep along the wet edge of the pond, grass thickens, flowers open, shrubs fill in, and much later trees lift the skyline. Moss spreads in soft blotches over damp ground and stone. Seasons turn every fourteen game days: spring greens and blossoms, summer fullness, autumn color and falling leaves, then a gentle, snow-free winter of bare branches, frost mornings and mist. Weather (rain, mist, wind) waters the island and carries seeds. All of this advances one game hour at a time with seeded rules, so the island that greets the player after a night away is exactly the island that would have grown if they had watched.
 
 ## Locked decisions
 
@@ -138,7 +138,7 @@ Seeds that land on unsuitable or full cells are discarded. Per-chunk seed result
 
 ### Seasons
 
-`world/seasons.js` runs the seasons step: it turns world time into `{index, phase, year, day}` (7 game days per season, 4 per year) and per-species phenology: leaf-out, bloom window, fruiting, color turn and leaf drop, each as a phase window from the recipe plus per-plant jitter of up to ±0.6 game days (hash of plant id), so trees do not change in lockstep. Leaf drop adds leaf litter to the grid (food for hedgehog beetles, shelter for fireflies). Emits `season:changed`.
+`world/seasons.js` runs the seasons step: it turns world time into `{index, phase, year, day}` (14 game days per season, 4 per year; F01, was 7) and per-species phenology: leaf-out, bloom window, fruiting, color turn and leaf drop, each as a phase window from the recipe plus per-plant jitter of up to ±1.2 game days (hash of plant id; not built yet), so trees do not change in lockstep. Growth rates per hour stay as they were with 7-day seasons (Matt, October 19, 2026), so each season ends fuller. Leaf drop adds leaf litter to the grid (food for hedgehog beetles, shelter for fireflies). Emits `season:changed`.
 
 For drawing, the season shader uniforms (color ramp position, leaf cover, frost) come from **display time** through `clock.display()` (doc 04). In normal play the two agree; in preview only the look moves.
 
@@ -188,7 +188,7 @@ Per flora recipe (doc 14): growth rate, max size, habitat ranges and tolerances,
 | | Desktop | Mobile |
 |---|---|---|
 | Growth coarse step, starter island | under 0.8 ms per hour (worker) | under 2.5 ms |
-| 336-hour catch-up share | under 0.3 s | under 0.9 s |
+| 168-hour catch-up share | under 0.3 s | under 0.9 s |
 | Stage remesh (tree) | under 30 ms in a worker | under 90 ms |
 | Moss RD | 4 steps per frame, under 0.4 ms | 1 step every other frame |
 | Grass blades | up to 400k visible | up to 60k visible |
@@ -201,13 +201,14 @@ Per flora recipe (doc 14): growth rate, max size, habitat ranges and tolerances,
 - Setting weather leaning to wetter makes moss spread visibly faster over a few game days.
 - Dragging the season dial to autumn turns reeds gold and grass straw-toned; releasing returns to now with no plant changed.
 - Winter has no snow: bare stalks, frosted grass at dawn, mist on the water.
-- `tools/growth-lab.html` shows a time-lapse chart of reed clumps and grass cover over 14 game days for a seed.
+- `tools/growth-lab.html` shows a time-lapse chart of reed clumps and grass cover over 14 game days (one season) for a seed.
 
 ## Open questions
 
 - Should reeds ever need thinning, or should their spread simply stop at the edge of wet ground?
 - Should winter frost look silvery-white or stay pale blue-grey so it never reads as snow?
 - How much of the island should trees be allowed to shade before grass and flowers start to give way?
+- With 14-day seasons and unchanged growth rates, where does each plant cap out by the end of a season, and should anything recede (die back, thin) across seasons? (F01)
 
 ## Depends on / feeds into
 

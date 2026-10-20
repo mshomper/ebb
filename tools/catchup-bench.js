@@ -1,6 +1,6 @@
 // @ts-check
 // Catch-up bench (docs 02, 18): time away must give the same island as time watched, in pieces or
-// at once, in a worker or on the page, and through a save and load. Also times 14 game days hour by
+// at once, in a worker or on the page, and through a save and load. Also times 7 game days (the cap) hour by
 // hour against the phone budget. Runs on Matt's machine; nothing here touches the game's save.
 
 import { runHour, hashWorldState } from '../src/sim/tick.js';
@@ -14,8 +14,8 @@ import { snapshot, restore } from '../src/save/sections.js';
 import { encode, decode } from '../src/save/world-file.js';
 import { loadEcologyRecipes, islandWorld } from './ecology-world.js';
 
-/** Spring day 4: after the frogs' winter sleep. */
-const START_DAY = 3;
+/** Spring day 7: after the frogs' winter sleep (they wake 0.3 into spring, day 5 of 14). */
+const START_DAY = 6;
 const WATCHED_HOURS = 48, FIRST_PIECE = 100, LONG = CAP_HOURS;
 const BUDGET_MS = 8;
 const GREEN = '#5F7F5B', RUST = '#B5654A';
@@ -196,22 +196,22 @@ async function runChecks() {
     }
     const away48 = await catchUp({ ...base, hours: WATCHED_HOURS, worker: true, onProgress: onProgress('Away') });
 
-    // C: a worker against the page, 14 game days.
+    // C: a worker against the page, 7 game days.
     const t0 = performance.now();
     const inWorker = await catchUp({ ...base, hours: LONG, worker: true, onProgress: onProgress('In a worker') });
     const workerS = (performance.now() - t0) / 1000;
     const workerRan = !workerFailed;
     const onPage = await catchUp({ ...base, hours: LONG, worker: false, onProgress: onProgress('On the page') });
 
-    // B: 100 hours, a save and load, then the rest, against all 336 at once (the worker run above).
+    // B: 100 hours, a save and load, then the rest, against all 168 at once (the worker run above).
     const first = await catchUp({ ...base, hours: FIRST_PIECE, worker: true, onProgress: onProgress('First piece') });
     progress('Saving and loading between the pieces');
     const mid = await saveAndLoad(first.state, first.journal, from + FIRST_PIECE - 1, island, seed);
     const rest = await catchUp({ ...base, state: mid.world, journal: mid.journal, fromHour: from + FIRST_PIECE,
       hours: LONG - FIRST_PIECE, worker: true, onProgress: onProgress('Second piece') });
 
-    // D: the 14-day island through a save and load.
-    progress('Saving and loading the 14-day island');
+    // D: the 7-day island through a save and load.
+    progress('Saving and loading the 7-day island');
     const loaded = await saveAndLoad(inWorker.state, inWorker.journal, from + LONG - 1, island, seed);
 
     /** @type {Check[]} */
@@ -236,7 +236,7 @@ async function runChecks() {
     $('verdict').className = bad ? 'bad' : 'ok';
     $('verdict').innerHTML = `${icon(!bad)}<span>${bad ? `${bad} ${bad === 1 ? 'check does' : 'checks do'} not match` : 'Every check matches'}</span>`;
 
-    // Timing: 14 game days one hour at a time on the page, each hour timed.
+    // Timing: 7 game days one hour at a time on the page, each hour timed.
     const jc = { material, ...jr };
     let s = base.state, j = base.journal, notes = 0;
     hourMs = [];

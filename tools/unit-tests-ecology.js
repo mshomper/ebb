@@ -213,7 +213,7 @@ export function addEcologyTests(test, assert, eq) {
 
   test(ECOLOGY, 'the ?frogs test shortcut brings a scout, or a settled group, on the bank at once', async () => {
     const R = await loadEcologyRecipes();
-    const w = islandWorld(R, 'starter-island', 1, 3);
+    const w = islandWorld(R, 'starter-island', 1, 6);
     const one = bringFrogs(w.state, w.h0, w.env, 1);
     eq(one.state.creatures.frogs.frogs.length, 1, 'frogs after ?frogs=1');
     eq(one.state.creatures.frogs.phase, 'visiting', 'phase after ?frogs=1');

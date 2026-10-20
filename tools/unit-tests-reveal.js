@@ -39,7 +39,7 @@ export function addRevealTests(test, assert, eq) {
   test(REVEAL, 'rings come from a creature\'s news or the page\'s Show me spot, merged when close', async () => {
     const words = await get('world/journal');
     const R = await loadEcologyRecipes();
-    const w = islandWorld(R, 'starter-island', 1, 3);
+    const w = islandWorld(R, 'starter-island', 1, 6);
     const events = [
       { name: 'creature:arrived', hour: 20, payload: { species: 'frogs', x: 4, z: -6 } },
       { name: 'creature:joined', hour: 30, payload: { species: 'frogs', x: 5, z: -5 } },
