@@ -23,7 +23,7 @@ import { createVoices } from './voices.js';
 import { createCreatureSound } from './creatures-game.js';
 import { createMusic } from './music/index.js';
 import { hash32 } from '../core/rng.js';
-import { emit } from '../core/events.js';
+import { emit, on } from '../core/events.js';
 import { sunMoon } from '../world/sky/sun-moon.js';
 
 const DEG = 180 / Math.PI;
@@ -74,14 +74,19 @@ export async function startAudio(store) {
   let disposed = false;
   /** @type {(() => void)[]} */ const unsubs = [];
 
-  /** Volumes from the settings: each slider scales its bus's tuned level. */
-  function applySettings() {
+  /** While a full reveal plays, the island's buses follow it (revealSound) rather than the settings. */
+  let revealHold = false;
+
+  /** Volumes from the settings: each slider scales its bus's tuned level. @param {number} [rampS] */
+  function applySettings(rampS = 0.3) {
     if (!mixer) return;
     const a = store.get('settings')?.audio ?? {};
     const lv = (/** @type {number | undefined} */ v) => Math.max(0, Math.min(1, v ?? 1));
     mixer.setBusLevel('master', mixerRecipe.master.level * lv(a.master));
-    mixer.setBusLevel('ambience', mixerRecipe.buses.ambience * lv(a.ambience));
-    mixer.setBusLevel('creatures', mixerRecipe.buses.creatures * lv(a.creatures));
+    if (!revealHold) {
+      mixer.setBusLevel('ambience', mixerRecipe.buses.ambience * lv(a.ambience), rampS);
+      mixer.setBusLevel('creatures', mixerRecipe.buses.creatures * lv(a.creatures), rampS);
+    }
     mixer.setBusLevel('tools', mixerRecipe.buses.tools * lv(a.tools));
     mixer.setBusLevel('ui', mixerRecipe.buses.ui * lv(a.ui));
     mixer.setBusLevel('music', mixerRecipe.buses.musicDefault * lv(a.music));
@@ -122,7 +127,7 @@ export async function startAudio(store) {
     animals = createCreatureSound(mixer, voices, store, gameRecipe.frogs);
     soundState = createSoundState(gameRecipe, seed, (t) => sunMoon(t, skyRecipe.orbit).sunAlt * DEG, ambRecipe.seasonEdge);
     applySettings();
-    unsubs.push(store.subscribe('settings', applySettings));
+    unsubs.push(store.subscribe('settings', () => applySettings()));
     if (touched) mixer.unlock().catch(() => { /* the next touch unlocks it */ });
     tick();
     timer = setInterval(() => {
@@ -133,9 +138,41 @@ export async function startAudio(store) {
     }, gameRecipe.frogs.pollS * 1000);
     // The music: its own seed, from the world and this device's session count (doc 24, Algorithms).
     createMusic(mixer, { tier, emit, seed: hash32(seed >>> 0, sessionCount(), 0x6d75), sunAltDeg: (t) => sunMoon(t, skyRecipe.orbit).sunAlt * DEG })
-      .then((m) => { if (disposed) { m.dispose(); return; } music = m; applySettings(); })
+      .then((m) => {
+        if (disposed) { m.dispose(); return; }
+        music = m;
+        applySettings();
+        m.setHearted(store.get('music')?.hearted ?? []);
+        unsubs.push(store.subscribe('music', (v) => m.setHearted(v?.hearted ?? [])));
+        if (revealing) m.revealStarted({ full: revealFull });
+      })
       .catch((e) => console.warn('ebb music: the music did not start', e));
   }
+
+  // The return reveal (doc 17, doc 25 "The reveal"; recipes/audio/game.json reveal): for a full reveal
+  // the wind and the water lap rise first, the creatures as the animals come back, the rest as it
+  // ends; the music plays the home tide (src/audio/music/index.js). A short return just fades in.
+  let revealing = false, revealFull = false;
+  /** @type {ReturnType<typeof setTimeout>[]} */ let revealTimers = [];
+  unsubs.push(on('reveal:started', (/** @type {{ hours?: number }} */ p) => {
+    revealing = true;
+    revealFull = (p?.hours ?? 0) >= gameRecipe.reveal.fullFromH;
+    music?.revealStarted({ full: revealFull });
+    if (!revealFull || !mixer) return;
+    const R = gameRecipe.reveal, a = store.get('settings')?.audio ?? {};
+    revealHold = true;
+    mixer.setBusLevel('ambience', 0, 0.05);
+    mixer.setBusLevel('creatures', 0, 0.05);
+    mixer.setBusLevel('ambience', mixerRecipe.buses.ambience * (a.ambience ?? 1), R.ambienceInS);
+    revealTimers.push(setTimeout(() => mixer?.setBusLevel('creatures', mixerRecipe.buses.creatures * (a.creatures ?? 1), R.creaturesInS), R.creaturesAtS * 1000));
+  }));
+  unsubs.push(on('reveal:ended', () => {
+    revealing = false;
+    for (const tm of revealTimers) clearTimeout(tm);
+    revealTimers = [];
+    music?.revealEnded();
+    if (revealHold) { revealHold = false; applySettings(gameRecipe.reveal.endInS); }
+  }));
 
   if (store.get('sound')) begin();
   else {

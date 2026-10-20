@@ -57,3 +57,5 @@ flowchart TD
 | 21-brand-identity | Name, wordmark, icon, favicon, colors, type |
 | 22-ground-detail | Scanned ground textures, height blending, hex tiling, micro-normals, wet ground |
 | 23-presence | How creatures read the player: presence sources, comfort rings, trust and wariness, the seat, walker and camp |
+| 24-music | The music: the director's day, the four tides, the composer that grows new pieces, the piano and support kit, hearted pieces |
+| 25-soundscape-seasons | The island's sounds through the seasons: beds, small sounds, frogs and midges, weather, the reveal |

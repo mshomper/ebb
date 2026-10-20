@@ -6,6 +6,8 @@
 // (src/audio/creatures-game.js): each played once, none before the first touch, late ones let go.
 
 import { createCreatureSound } from '../src/audio/creatures-game.js';
+import { heartOf, isHearted, toggleHeart } from '../src/audio/music/hearts.js';
+import { snapshot, restore } from '../src/save/sections.js';
 import { soundNear } from '../src/world/sound-near.js';
 import { WATER_CLASS } from '../src/world/water/summary.js';
 import { waterCellOf } from '../src/world/water/grid.js';
@@ -136,6 +138,29 @@ export function addSoundGameTests(test, assert, eq) {
     assert(Math.abs(played[0].k - 0.4) < 1e-9, 'an unsettled frog calls softly');
     assert(played[0].when > 10 && played[0].when <= 10.03, `a moment ahead ${played[0].when}`);
     eq(played.filter((p) => p.kind === 'plop').length, 1, 'one plop, the new one');
+  });
+
+  test(G, 'hearts: a grown piece is kept by what grows it again, a tide by its id; a second tap takes it back', () => {
+    const g = heartOf({ id: 'grown-spring-morning-7', title: 'Song for a Stone', grown: true, grownSlot: 'morning', weather: 'rain', seed: 7 });
+    eq(g.key, 'grown:morning:rain:7', 'grown key');
+    eq(g.seed, 7, 'seed kept');
+    const t = heartOf({ id: 'theme-4-summer', title: 'Moon pull', seed: 3 });
+    eq(t.key, 'tide:theme-4-summer', 'tide key');
+    let list = toggleHeart([], g);
+    list = toggleHeart(list, t);
+    assert(isHearted(list, g.key) && isHearted(list, t.key), 'both hearted');
+    list = toggleHeart(list, g);
+    assert(!isHearted(list, g.key) && isHearted(list, t.key), 'second tap takes it back');
+  });
+
+  test(G, 'hearts are kept in the island save and come back', () => {
+    const heart = { key: 'tide:theme-1-spring', kind: 'tide', title: 'First water', id: 'theme-1-spring' };
+    const { sections } = snapshot(/** @type {any} */ ({ build: 't', seed: 1, island: 'x', worldT: 0, flow: 1, world: {}, journal: null, water: null,
+      unlocks: {}, view: null, looks: {}, music: { hearted: [heart] }, chunks: {}, mirror: null, savedAt: 0, wallHighWater: 0 }));
+    const back = restore(Object.fromEntries(sections));
+    eq(back.music?.hearted?.[0]?.key, heart.key, 'heart back');
+    eq(back.extra.length, 0, 'music is a known section');
+    eq(restore({ meta: {} }).music, null, 'an older save has none');
   });
 
   test(G, 'gusts stay between 0 and 1 and repeat for the same seed', () => {

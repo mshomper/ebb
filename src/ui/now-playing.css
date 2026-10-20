@@ -50,11 +50,33 @@
   height: 20px;
   background: rgba(30, 38, 36, 0.18);
 }
+/* The heart: the one part you can tap, a 40 px target (44 on a phone) round a 24 px drawing. */
 .ebb-nowplaying__heart {
+  appearance: none;
+  -webkit-appearance: none;
   flex: none;
-  width: 22px;
-  height: 22px;
+  width: 40px;
+  height: 40px;
+  margin: -8px -10px -8px -6px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
   color: #B5654A;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  pointer-events: none;
+}
+.ebb-nowplaying.is-shown .ebb-nowplaying__heart { pointer-events: auto; }
+.ebb-nowplaying__heart:hover { background: rgba(181, 101, 74, 0.12); }
+.ebb-nowplaying__heart:focus-visible { outline: 2px solid var(--wordmark-light); outline-offset: 1px; }
+.ebb-nowplaying__heart .icon { width: 24px; height: 24px; grid-area: 1 / 1; transition: opacity 0.25s ease, transform 0.25s ease; }
+.ebb-nowplaying__heart .is-on { opacity: 0; transform: scale(0.7); }
+.ebb-nowplaying__heart[aria-pressed='true'] .is-on { opacity: 1; transform: scale(1); }
+.ebb-nowplaying__heart[aria-pressed='true'] .is-off { opacity: 0; }
+@media (pointer: coarse) {
+  .ebb-nowplaying__heart { width: 44px; height: 44px; }
 }
 @media (pointer: coarse) {
   .ebb-nowplaying { bottom: calc(max(12px, env(safe-area-inset-bottom)) + 80px); font-size: calc(21px * var(--text-scale, 1)); }

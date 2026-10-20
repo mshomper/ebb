@@ -82,6 +82,17 @@ export async function createMusic(mixer, opts) {
   const O = director.opening;
   const openRng = stream(opts.seed >>> 0, 0x6f70);
   const opening = { stage: O ? 0 : 4, at: 0 };
+  // Hearted pieces (hearts.js; director.json hearts): a hearted tide weighs more in the choice, and a
+  // slot the composer fills sometimes plays a hearted grown piece of that slot again instead.
+  const HR = director.hearts ?? { weight: 1, replayChance: 0, minGapRealMin: 60 };
+  const heartRng = stream(opts.seed >>> 0, 0x6872);
+  /** @type {import('./hearts.js').Heart[]} */ let hearted = [];
+  /** Real seconds each hearted grown piece last played. @type {Map<string, number>} */ const replayedAt = new Map();
+  // The return reveal (director.json reveal): while it plays the director waits; the home tide plays
+  // under the drift, at most once every onceEveryRealH real hours (kept on this device).
+  const RV = director.reveal ?? { onceEveryRealH: 20, fadeS: 8 };
+  let revealing = false;
+  let revealTide = false;
   /** A test request (?music=now) waiting for the next update. @type {null | { slot: string, seed: number }} */
   let pendingNow = null;
   let disposed = false;
@@ -102,24 +113,37 @@ export async function createMusic(mixer, opts) {
   /** Start what the director chose. @param {any} d @param {MusicState} st */
   async function start(d, st) {
     const slot = d.slot === 'early-nocturne' ? 'nocturne' : d.slot;
-    const piece = d.piece.grownSlot ? grow(material, rules, { slot: d.piece.grownSlot, weather: st.weather, seed: d.seed }, names).piece : d.piece;
+    // A slot the composer fills may replay one of your hearted grown pieces for that slot.
+    let growSeed = d.seed, growWeather = st.weather;
+    if (d.piece.grownSlot) {
+      const ofSlot = hearted.filter((h) => h.kind === 'grown' && h.slot === d.piece.grownSlot
+        && st.realS - (replayedAt.get(h.key) ?? -Infinity) >= HR.minGapRealMin * 60);
+      if (ofSlot.length && heartRng.next() < HR.replayChance) {
+        const h = ofSlot[heartRng.int(ofSlot.length)];
+        growSeed = /** @type {number} */ (h.seed);
+        growWeather = /** @type {any} */ (h.weather ?? st.weather);
+        replayedAt.set(h.key, st.realS);
+      }
+    }
+    const piece = d.piece.grownSlot ? grow(material, rules, { slot: d.piece.grownSlot, weather: growWeather, seed: growSeed }, names).piece : d.piece;
     const key = d.key ?? piece.keys?.[0];
     // A tide shows its own name ("Moon pull"), a grown piece the composer's.
-    current = { id: piece.id, title: piece.theme?.name ?? piece.title ?? piece.id, seed: d.seed, slot, windowEndRealS: d.windowEndRealS, finishing: false, started: false };
+    current = { id: piece.id, title: piece.theme?.name ?? piece.title ?? piece.id, seed: growSeed, slot, windowEndRealS: d.windowEndRealS, finishing: false, started: false };
     dir.started(d, dirState(st), key);
     const mine = current;
     try {
       const i = await ensure();
       if (current !== mine || disposed) return;
       const dayColor = dayColorAt(st.sunAltDeg, director.dayColor);
-      const perf = realize(piece, { seed: d.seed, dayColor, available: i.available(), key: d.key }, recipes);
-      const coda = piece.sections?.coda ? realize(piece, { seed: d.seed, dayColor, available: i.available(), key: perf.key, path: ['coda'] }, recipes) : null;
+      const perf = realize(piece, { seed: growSeed, dayColor, available: i.available(), key: d.key }, recipes);
+      const coda = piece.sections?.coda ? realize(piece, { seed: growSeed, dayColor, available: i.available(), key: perf.key, path: ['coda'] }, recipes) : null;
       await i.prepare(perf);
       if (current !== mine || disposed || !performer) return;
       mixer.setMusicTone({ lowpassHz: dayColor.brightHz, wet: dayColor.wet }, 2);
       mine.started = true;
       performer.play(perf, { coda, onEnd: () => ended(mine) });
-      opts.emit?.('music:started', { id: piece.id, title: mine.title, seed: d.seed, slot, durationS: perf.durationS, grown: !!d.piece.grownSlot });
+      opts.emit?.('music:started', { id: piece.id, title: mine.title, seed: growSeed, slot, durationS: perf.durationS,
+        grown: !!d.piece.grownSlot, grownSlot: d.piece.grownSlot, weather: growWeather });
     } catch (e) {
       console.warn('ebb music: a piece could not start', e);
       ended(mine);
@@ -191,6 +215,13 @@ export async function createMusic(mixer, opts) {
         return;
       }
       if (current) return;   // unpacking
+      if (revealTide) {
+        revealTide = false;
+        const tide = dir.homeTide(st.gameT);
+        if (tide) start({ piece: tide, seed: heartRng.int(2 ** 31), slot: 'reveal', key: undefined, windowEndRealS: Infinity }, st);
+        return;
+      }
+      if (revealing) return;
       if (pendingNow) {
         const { slot, seed } = pendingNow;
         pendingNow = null;
@@ -212,6 +243,33 @@ export async function createMusic(mixer, opts) {
       pendingNow = { slot: o.slot ?? 'morning', seed: (o.seed ?? opts.seed) >>> 0 };
       return true;
     },
+    /**
+     * The pieces you hearted (store slice music): hearted tides weigh more in the director's choice.
+     * @param {import('./hearts.js').Heart[]} list
+     */
+    setHearted(list) {
+      hearted = Array.isArray(list) ? list : [];
+      const keys = new Set(hearted.map((h) => h.key));
+      for (const t of tides) t.weight = (director.tides?.weight ?? 1) * (keys.has(`tide:${t.id}`) ? HR.weight : 1);
+    },
+    /**
+     * The return reveal began (reveal:started). A full reveal plays the home tide, unless one did
+     * recently or the music is off; a piece already playing fades out first.
+     * @param {{ full: boolean }} o
+     */
+    revealStarted(o) {
+      revealing = true;
+      // Before the first touch the reveal runs silent, and the tide waits to play just after that touch.
+      if (!o.full || frequency === 'off') return;
+      let lastAt = 0;
+      try { lastAt = Number(localStorage.getItem('ebb.music.revealAt') ?? 0) || 0; } catch { /* no storage: allow it */ }
+      if (Date.now() - lastAt < RV.onceEveryRealH * 3600 * 1000) return;
+      try { localStorage.setItem('ebb.music.revealAt', String(Date.now())); } catch { /* fine */ }
+      if (current?.started) performer?.stop(Math.min(RV.fadeS, 3));
+      revealTide = true;
+    },
+    /** The reveal ended (reveal:ended): the director carries on. */
+    revealEnded() { revealing = false; },
     /** @param {'often'|'now-and-then'|'rarely'|'off'} level */
     setFrequency(level) { frequency = level; },
     /** Stop now with a fade (mute, photo export). @param {{fadeS?: number}} [o] */

@@ -35,6 +35,7 @@ import { weatherAt } from './world/weather.js';
 import { state as tideState, tideParams } from './world/tide.js';
 import { soundNear, nothingNear } from './world/sound-near.js';
 import { loadAudioRecipe } from './audio/recipes.js';
+import { toggleHeart } from './audio/music/hearts.js';
 import { createWaterPass } from './render/passes/water.js';
 import { createGrassPass } from './render/passes/grass.js';
 import { createFloraPass } from './render/passes/flora.js';
@@ -125,6 +126,8 @@ export async function startApp(canvas, hooks = {}) {
     updateStore('world', () => back.world);
     if (back.journal) updateStore('journal', () => back.journal);
     if (back.water) updateStore('water', () => back.water);
+    // The pieces of music you hearted (src/audio/music/hearts.js).
+    if (back.music) updateStore('music', () => back.music);
   }
   // Device settings (src/save/prefs.js): kept on this device, never in the island.
   const prefs = loadPrefs();
@@ -618,6 +621,10 @@ export async function startApp(canvas, hooks = {}) {
       case 'time.keepGrowing':
         updateStore('meta', (m) => { m.keepGrowing = a.on; });
         break;
+      // A heart on the piece playing (src/ui/now-playing.js): kept with the island, plays more often.
+      case 'music.heart':
+        updateStore('music', (m) => ({ ...(m ?? {}), hearted: toggleHeart(m?.hearted, a.heart) }));
+        break;
       case 'settings.set':
         updateStore('settings', (s) => { Object.assign(s, a.patch); });
         break;
@@ -826,7 +833,7 @@ export async function startApp(canvas, hooks = {}) {
       build: hooks.build ?? 'dev', seed, island: island.id, worldT: clock.worldT(), flow: clock.flow(),
       carryMinutes: getStore('meta')?.carryMinutes ?? 0, keepGrowing: getStore('meta')?.keepGrowing ?? true,
       world: world.state, journal: getStore('journal'), water: getStore('water'), unlocks: getStore('unlocks')?.earned ?? {},
-      view: camera.pose(), looks: getStore('looks') ?? {}, chunks: getStore('chunks'), mirror: getStore('terrainLive')?.mirror ?? null,
+      view: camera.pose(), looks: getStore('looks') ?? {}, music: getStore('music') ?? { hearted: [] }, chunks: getStore('chunks'), mirror: getStore('terrainLive')?.mirror ?? null,
     }),
   });
 
