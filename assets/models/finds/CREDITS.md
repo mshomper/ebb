@@ -11,6 +11,19 @@ This work is based on "Low-Poly Anemone" (https://sketchfab.com/3d-models/low-po
 - Changes: base color textures baked to vertex colors, skin and sway animation removed (posed at rest), unchanged triangle count (1,116), rescaled. The game also draws a shut pose by folding the tentacles into the column.
 - Files: `anemone.gltf`, `anemone.bin`
 
+## Young edible crab: Crab 3d Model Free
+
+"Crab 3d Model Free" (https://skfb.ly/pMCrp) by iRahulRajput is licensed under Creative Commons Attribution (http://creativecommons.org/licenses/by/4.0/).
+
+- Changes: base color texture baked to vertex colors, simplified from 19,179 to 1,500 triangles, rescaled. The game moves it as a whole (it runs sideways away from you).
+- Files: `edible-crab.gltf`, `edible-crab.bin`
+
+## Hermit crab
+
+- Source: "hermit crab" model, released as CC0 1.0.
+- Changes: posed at rest (skin and animation removed), textures baked to vertex colors, simplified from 5,436 to 1,487 triangles, rescaled. The game moves it as a whole (it creeps about its pool).
+- Files: `hermit-crab.gltf`, `hermit-crab.bin`
+
 ## Periwinkle: rough periwinkle scan (Littorina brevicula)
 
 - Source: photo scan QS980-W10-1, copyright field "ffish.asia", released as CC0 1.0.

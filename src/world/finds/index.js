@@ -18,7 +18,8 @@ import { groundOfCell } from '../water/shore.js';
 import { get as getStore } from '../../core/store.js';
 import { loadFindModel, joinParts } from './models.js';
 
-const KINDS = /** @type {const} */ (['anemone', 'periwinkle', 'lugworm']);
+// New kinds go at the end: a kind's place here salts where its groups fall.
+const KINDS = /** @type {const} */ (['anemone', 'periwinkle', 'lugworm', 'hermitcrab', 'ediblecrab']);
 const ROCK_ZONES = ['kelp', 'wrack', 'channelled'];
 /** @param {number} h */
 const u01 = (h) => (h >>> 8) / 16777216;
@@ -91,9 +92,11 @@ export function createFinds(opts) {
   const casts = new Float32Array(64);
   const castMax = 16;
   /** @type {any} */ let zonesSeen = null;
-  /** @type {Record<string, number[]>} */ let cells = { anemone: [], periwinkle: [], lugworm: [] };
+  /** @type {Record<string, number[]>} */ let cells = Object.fromEntries(KINDS.map((k) => [k, []]));
   /** @type {any} */ let rect = null;
   /** How open each anemone is, 0..1, eased. @type {Map<string, number>} */ const open = new Map();
+  /** The crabs' moves: a hermit crab's walking clock (s), an edible crab's eased offset (m). @type {Map<string, any>} */
+  const moves = new Map();
   /** @type {{ sp: string, x: number, z: number }[]} */ let shown = [];
   let clock = 0;
 
@@ -136,6 +139,37 @@ export function createFinds(opts) {
             const depth = live?.depth ?? 0;
             // Casts lie on sand the sea has left; under water there is nothing to see of them.
             if (kind === 'lugworm' && depth > 0.005) continue;
+            let yaw = g.yaw;
+            if (kind === 'hermitcrab' || kind === 'ediblecrab') {
+              const near = Math.hypot(eye[0] - g.x, eye[2] - g.z);
+              const m = moves.get(g.key) ?? { clock: 0, ox: 0, oz: 0 };
+              if (kind === 'hermitcrab') {
+                // It picks about its pool under water, a slow wander about its spot; out of the
+                // water, or with you close, it keeps still.
+                const C = R.creep;
+                if (depth > 0.02 && near > C.stillNearM) m.clock += dt;
+                const w = C.speedMps / C.rangeM, ph = g.r * 40;
+                m.ox = C.rangeM * Math.sin(w * m.clock + ph);
+                m.oz = C.rangeM * Math.sin(0.7 * w * m.clock + ph * 1.3);
+                const vx = Math.cos(w * m.clock + ph), vz = 0.7 * Math.cos(0.7 * w * m.clock + ph * 1.3);
+                yaw = Math.atan2(vx, vz);
+              } else {
+                // It scuttles sideways away from you, and back to its spot once you leave.
+                const S = R.scuttle;
+                let tx = 0, tz = 0;
+                if (near < S.nearM) {
+                  const ax = g.x - eye[0], az = g.z - eye[2], l = Math.hypot(ax, az) || 1;
+                  tx = (ax / l) * S.awayM; tz = (az / l) * S.awayM;
+                }
+                const k2 = Math.min(1, dt / (near < S.nearM ? S.easeS : S.easeS * 8));
+                m.ox += (tx - m.ox) * k2; m.oz += (tz - m.oz) * k2;
+                // Crabs walk sideways: face across the way it runs.
+                if (Math.hypot(m.ox, m.oz) > 0.005) yaw = Math.atan2(m.ox, m.oz) + Math.PI / 2;
+              }
+              moves.set(g.key, m);
+              g.x += m.ox; g.z += m.oz;
+              yaw += ((R.model?.yawDeg ?? 0) * Math.PI) / 180;
+            }
             const y = terrain.sampleHeight(g.x, g.z);
             let mesh = kind, size = R.scale;
             if (kind === 'anemone') {
@@ -147,7 +181,7 @@ export function createFinds(opts) {
               mesh = now > 0.5 ? 'anemone-open' : 'anemone-shut';
               size *= 0.92 + 0.08 * now;
             }
-            all.push({ b: { x: g.x, y: y - 0.002 - (R.model?.buryM ?? 0) * size, z: g.z, yaw: g.yaw, size: size * (0.85 + 0.3 * g.r), mesh }, d: d2, sp: kind });
+            all.push({ b: { x: g.x, y: y - 0.002 - (R.model?.buryM ?? 0) * size, z: g.z, yaw, size: size * (0.85 + 0.3 * g.r), mesh }, d: d2, sp: kind });
           }
         }
       }
@@ -164,6 +198,7 @@ export function createFinds(opts) {
       }
       pass.setBeings(ready ? list.filter((e) => e.sp !== 'lugworm').map((e) => e.b) : []);
       if (open.size > 4000) open.clear();
+      if (moves.size > 4000) moves.clear();
     },
     /**
      * The find nearest a tapped ground point, if one is close enough.
@@ -195,9 +230,12 @@ export function createFinds(opts) {
  * @param {any} pass @param {any} recipe
  */
 async function loadModels(pass, recipe) {
-  const A = recipe.kinds.anemone.model, P = recipe.kinds.periwinkle.model;
-  const [anemone, periwinkle] = await Promise.all([loadFindModel(A.url), loadFindModel(P.url)]);
   const put = (/** @type {string} */ key, /** @type {any} */ mesh) => pass.setMesh(key, { data: packMesh(mesh), indices: mesh.indices });
+  const A = recipe.kinds.anemone.model;
+  // Every other kind with a model is one mesh under its own name.
+  const others = KINDS.filter((k) => k !== 'anemone' && recipe.kinds[k].model);
+  const [anemone, ...parts] = await Promise.all([loadFindModel(A.url), ...others.map((k) => loadFindModel(recipe.kinds[k].model.url))]);
+  others.forEach((k, i) => { const M = recipe.kinds[k].model; put(k, joinParts(parts[i], M.heightM, M.rotDeg, (p) => p, M.tint)); });
   put('anemone-open', joinParts(anemone, A.heightM, A.rotDeg, (p) => p, A.tint));
   // Shut: the column sinks and widens a little; the tentacles fold in to a bud at its top.
   let top = 0;
@@ -205,7 +243,6 @@ async function loadModels(pass, recipe) {
   for (let i = 0; i < body.count; i++) top = Math.max(top, body.vertices[i * 9 + 1]);
   const S = A.shut;
   put('anemone-shut', joinParts(anemone, A.heightM, A.rotDeg, (p, part) => shutAnemone(p, part, A.bodyPart, top, S), A.tint));
-  put('periwinkle', joinParts(periwinkle, P.heightM, P.rotDeg, (p) => p, P.tint));
 }
 
 /**

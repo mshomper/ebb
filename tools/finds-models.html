@@ -18,23 +18,28 @@
 </head>
 <body>
 <h1>Find models</h1>
-<p>All three at one scale: the square is 3.5 cm across. The meshes the shore finds are drawn with, from <code>assets/models/finds/</code> and <code>recipes/species/finds.json</code>, shaded simply here (vertex colors and one light) so you can check the shape, the colors and the anemone's shut pose. Drag to turn one. Credits are in <code>assets/models/finds/CREDITS.md</code>.</p>
+<p>All at one scale: each square is 5 cm across. The meshes the shore finds are drawn with, from <code>assets/models/finds/</code> and <code>recipes/species/finds.json</code>, shaded simply here (vertex colors and one light) so you can check the shape, the colors and the anemone's shut pose. Drag to turn one. Credits are in <code>assets/models/finds/CREDITS.md</code>.</p>
 <div class="grid" id="grid"></div>
 <script type="module">
 import { loadFindModel, joinParts } from '../src/world/finds/models.js';
 import { shutAnemone } from '../src/world/finds/index.js';
 
 const recipe = await (await fetch('../recipes/species/finds.json')).json();
-const A = recipe.kinds.anemone.model, P = recipe.kinds.periwinkle.model;
-const [an, pe] = await Promise.all([loadFindModel('../' + A.url), loadFindModel('../' + P.url)]);
-let top = 0;
-for (let i = 0; i < an[A.bodyPart].count; i++) top = Math.max(top, an[A.bodyPart].vertices[i * 9 + 1]);
-const S = A.shut;
-const views = [
-  { name: 'Anemone, open', mesh: joinParts(an, A.heightM, A.rotDeg, (p) => p, A.tint), h: A.heightM, bury: A.buryM },
-  { name: 'Anemone, shut', mesh: joinParts(an, A.heightM, A.rotDeg, (p, k) => shutAnemone(p, k, A.bodyPart, top, S), A.tint), h: A.heightM, bury: A.buryM },
-  { name: 'Periwinkle', mesh: joinParts(pe, P.heightM, P.rotDeg, (p) => p, P.tint), h: P.heightM },
-];
+const names = await (await fetch('../recipes/world/journal.json')).json();
+// Every kind with a model, and the anemone's shut pose beside its open one.
+const views = [];
+for (const [id, K] of Object.entries(recipe.kinds)) {
+  const M = K.model;
+  if (!M) continue;
+  const parts = await loadFindModel('../' + M.url);
+  const name = names.species?.[id]?.name ?? id;
+  views.push({ name: id === 'anemone' ? `${name}, open` : name, mesh: joinParts(parts, M.heightM, M.rotDeg, (p) => p, M.tint), h: M.heightM, bury: M.buryM });
+  if (id === 'anemone') {
+    let top = 0;
+    for (let i = 0; i < parts[M.bodyPart].count; i++) top = Math.max(top, parts[M.bodyPart].vertices[i * 9 + 1]);
+    views.push({ name: `${name}, shut`, mesh: joinParts(parts, M.heightM, M.rotDeg, (p, k) => shutAnemone(p, k, M.bodyPart, top, M.shut), M.tint), h: M.heightM, bury: M.buryM });
+  }
+}
 const toSrgb = (c) => Math.round(255 * Math.min(1, c <= 0.0031308 ? c * 12.92 : 1.055 * c ** (1 / 2.4) - 0.055));
 for (const v of views) {
   const fig = document.createElement('figure');
@@ -50,8 +55,8 @@ for (const v of views) {
     const g = cv.getContext('2d');
     const m = v.mesh, V = m.vertices;
     const cy = Math.cos(yaw), sy = Math.sin(yaw), cp = Math.cos(pitch), sp = Math.sin(pitch);
-    // One scale for every view (a 3.5 cm field), so sizes compare truly.
-    const sc = W / 0.035;
+    // One scale for every view (a 5 cm field), so sizes compare truly.
+    const sc = W / 0.05;
     const proj = (i) => {
       const x = V[i * 9], y = V[i * 9 + 1] - 0.012, z = V[i * 9 + 2];
       const x1 = cy * x + sy * z, z1 = -sy * x + cy * z;

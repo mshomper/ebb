@@ -12,7 +12,7 @@ import { blade, stem, along, wave, cubicPoints, yAt, xAt, polyline } from './pen
 export const WASH = Object.freeze({
   green: '#7E9B5E', leaf: '#93AE6E', brown: '#7A5236', water: '#9DB9C8', mud: '#8A6F55', sand: '#D9C49A',
   pink: '#D98AA8', spent: '#C9B49E', yellow: '#E3BE3A', petal: '#F1E9E2', gold: '#E2C25A', grey: '#9A9C94',
-  red: '#B9483E', blue: '#6E8EC0',
+  red: '#B9483E', blue: '#6E8EC0', tip: '#3E3833',
 });
 
 /** A pointed petal from its base to its tip, widest in the middle. @param {number} x0 @param {number} y0 @param {number} x1 @param {number} y1 @param {number} w */
@@ -355,4 +355,55 @@ export function lugworm(p, scale) {
   p.label('dip', 250, 132, 118, 124);
   p.scale(30, 90, 120, scale);
   return p.svg(380, 240, 'Field sketch of a lugworm burrow and its cast');
+}
+
+/** Hermit crab (a find): in a borrowed whelk shell on a pool floor, legs and claws out front. @param {import('./pen.js').Pen} p @param {string} [scale] */
+export function hermitcrab(p, scale) {
+  p.tint('M40 110H236V214H40Z', WASH.water, 0.3);
+  p.line(wave(40, 236, 110, 1.4, 28), 1.3);
+  p.shape('M40 214C80 208 150 212 236 210V236H40Z', WASH.grey, 0.4, 1.5);
+  // The shell: a whelk's whorls, the crab's soft body tucked inside.
+  p.shape('M70 206C60 176 78 146 112 142C142 140 160 160 156 184C154 198 146 206 134 206Z', WASH.gold, 0.65, 1.4);
+  p.fine('M112 142C124 150 126 166 116 174C108 180 96 176 98 166C100 160 108 158 112 162', 1.1, 0.8);
+  p.fine('M84 196C82 182 88 170 100 166', 0.9, 0.6);
+  // Out of the shell's mouth: walking legs, a big right claw and a small left one, eyes on stalks.
+  for (const [x0, y0, x1, y1, x2, y2] of [[150, 194, 170, 200, 176, 212], [146, 198, 160, 206, 162, 214], [152, 188, 178, 190, 188, 210]]) p.line(`M${x0} ${y0}Q${x1} ${y1} ${x2} ${y2}`, 1.5);
+  p.shape('M156 180C170 170 192 170 200 182C204 190 196 196 188 192C182 190 178 186 170 188Z', WASH.red, 0.7, 1.3);
+  p.shape('M152 186C160 182 170 184 172 190C168 194 160 194 154 192Z', WASH.red, 0.6, 1.1);
+  p.line('M150 178L154 166M144 176L146 164', 1.2);
+  p.dot(154, 165, 1.8); p.dot(146, 163, 1.8);
+  p.label('shell', 250, 70, 130, 150);
+  p.label('claw', 250, 140, 198, 182);
+  p.label('legs', 250, 200, 178, 206);
+  p.scale(30, 150, 214, scale);
+  return p.svg(380, 250, 'Field sketch of a hermit crab in a borrowed shell');
+}
+
+/** Young edible crab (a find): seen from above on wrack, its crimped shell edge and black-tipped claws. @param {import('./pen.js').Pen} p @param {string} [scale] */
+export function ediblecrab(p, scale) {
+  // Seen from above, like the crab: a rock under it, strands of wrack across the rock.
+  p.shape('M52 104C92 80 196 82 228 108C246 146 238 204 202 222C152 236 84 232 58 206C40 176 40 132 52 104Z', WASH.grey, 0.35, 1.4);
+  for (const [x0, y0, x1, y1, b] of [[60, 200, 140, 214, 5], [150, 206, 226, 186, -4], [56, 120, 100, 96, 3]]) p.shape(blade(x0, y0, x1, y1, 3.4, b), WASH.brown, 0.5, 1.1);
+  // The shell from above: a wide oval, its front edge crimped like a pie crust.
+  p.shape('M88 150C88 124 112 112 138 112S188 124 188 150C188 172 166 184 138 184S88 172 88 150Z', WASH.red, 0.55, 1.5);
+  let crimp = '';
+  for (let i = 0; i <= 9; i++) {
+    const a = Math.PI * (1.08 + 0.84 * (i / 9));
+    crimp += `${i ? 'L' : 'M'}${p.f(138 + Math.cos(a) * 54)} ${p.f(150 + Math.sin(a) * 40 + (i % 2 ? 3 : 0))}`;
+  }
+  p.fine(crimp, 1.1, 0.8);
+  // Legs splayed to the sides, claws reaching forward with black tips.
+  for (const s of [-1, 1]) {
+    for (const [dy, len] of [[6, 30], [18, 34], [30, 30], [40, 24]]) {
+      const x0 = 138 + s * 46, y0 = 150 + dy - 10;
+      p.line(`M${x0} ${y0}Q${x0 + s * len * 0.6} ${y0 - 8} ${x0 + s * len} ${y0 + 12}`, 1.4);
+    }
+    p.shape(`M${138 + s * 30} 118C${138 + s * 40} 100 ${138 + s * 54} 92 ${138 + s * 62} 98C${138 + s * 66} 104 ${138 + s * 58} 112 ${138 + s * 46} 116Z`, WASH.red, 0.65, 1.3);
+    p.shape(`M${138 + s * 60} 97C${138 + s * 64} 92 ${138 + s * 70} 92 ${138 + s * 70} 98C${138 + s * 68} 102 ${138 + s * 64} 102 ${138 + s * 62} 100Z`, WASH.tip, 0.85, 1.1);
+  }
+  p.label('shell', 250, 150, 186, 140);
+  p.label('claws', 250, 80, 206, 96);
+  p.label('legs', 250, 196, 212, 176);
+  p.scale(30, 200, 212, scale);
+  return p.svg(380, 250, 'Field sketch of a young edible crab from above');
 }

@@ -31,6 +31,8 @@ Size and color come from CSS: set `width`/`height` on `.icon` and `color` on the
 | `anemone` | a squat column on the ground line with a crown of tentacles open above: the beadlet anemone find |
 | `periwinkle` | a round spiral shell on the ground line, its whorl drawn in: the periwinkle find |
 | `lugworm` | a coil of sand on the ground line and the dip of the burrow's other end: lugworm casts |
+| `hermitcrab` | a spiral shell on the ground line, legs and one big claw reaching out of its mouth: the hermit crab find |
+| `ediblecrab` | a wide shell, two claws raised, legs splayed to the sides: the young edible crab find |
 | `stone` | a rounded boulder on the ground with a smaller one against it, a drop line above: Sculpt's Stone mode |
 | `name-tag` | a luggage-style tag with its hole: naming a creature on its card |
 | `water` | droplet over one ripple line |

@@ -4,7 +4,7 @@
   "note": "The field journal (docs 13, 15): the words it writes and the numbers that shape them. order: the living things with pages, in page order. Each species: name and icon (src/ui/icons), riddle (shown before it has been seen), amount ([at least this many plants, words] steps; a cover plant (kind cover: grass, rushes) uses its share of the dry ground instead, or with amountBy area the square meters it covers), place and compass (where words: compass false skips the side of the island), none (after it has gone), clause words (flowering, dormant, spreading, receding), stages (what tapping one says, by growth stage: seed, sprout, young, mature, flowering, dormant), seasons (what each season box says: grow per season, flower, dormant), likes (lines learned when one of the learn triggers happens: seen, spread, flower, lost:drown, lost:seed, refused:<need>, grass:flooded), gives (a pencil line until the when trigger, then the ink line), notes (the lines the journal writes). trend: a species is spreading when it has gained at least max(upMin, upShare x then) plants over trend hours, receding when it has lost at least max(downMin, downShare x then). where: spreadOut is the mean distance from the plants' middle, as a share of the island's radius, past which they are all around the island; centerShare is how close to the island's middle counts as the middle. notesKept: notes the journal keeps; pageNotes: notes on a species page. islandNote: how long a note stays on the island (showS), the gap between two (gapS) and how many may wait (queue). identify: how near a tap must be to a plant (radiusM), how long the card stays (showS), and the size of the breathing ring around what was tapped (ringM for a full-grown plant, smaller for young ones; grassRingM on grass; its timing is in recipes/world/growth.json marks). arrivedHours: plants seen within this many hours of the journal starting were here when you arrived. J1.5: each species also has plural (for the story lines), field (field notes: natural history lines learned like likes, by triggers that include dormant, woke and moment:<id>) and fieldHint (the pencil line while some are still to learn). story: the lines of 'your island's story' ({Plural}, {plural} and {date} are filled in; peak shows when the count has fallen under peakShare of its best). moments: four frames per page by kind (plant, cover for grass and rushes, ground in journal-island.json), each filled the first time you tap that thing at that moment: flower (in flower), summer, winter, rain (rain at least rainAt), mist (at least mistAt), dawn and dusk (hours of the day, inclusive start, exclusive end), frost (a winter dawn); note is the line written. showMe: how long (showS) the ring and card stay after a page's Show me rings the example nearest the middle of your view (the camera does not move). S6a, animals: a creature (kind creature: frogs) is known only once you find one yourself (tap it, or watch it from close by; recipes/species/frog.json find), never just because it is on the island; until then its page shows the riddle, or the latest of its hints whose journal flag is set (frogs:right when the pond is right for them, frogs:sign after the first sign). Its notes come in two voices: the unseen ones speak of something (a sign, rings on the water), never naming it; the others once it is known. A swarm (kind swarm: midges) is known by itself, like a plant, at the first dusk (seenAt.hours) that at least seenAt.m2 square meters hold seenAt.share of a full cloud; its amount is in those square meters. seenAt.drawn: whether the island draws the swarm yet; until it does (S6b), midges stay a pencil ? and nothing names them, because the journal only tells what you could see. card: what a tap on one says. foundLine: its story's first line. The animals' moments are moments.creature.",
   "order": ["grass", "rushes", "reeds", "lilies", "iris", "thrift", "frogs", "midges"],
   "findsNote": "Finds (docs/future/11): small shore lives (kind find) found by tapping them, kept apart from order in findOrder. They show under Small lives at the end of Living things, once found and never before (the journal never lists what is missing), with smallLives.marks: one drawn mark for each you have found. card is what a tap names it, cardLine the line under it; place is its page's status once found.",
-  "findOrder": ["anemone", "periwinkle", "lugworm"],
+  "findOrder": ["anemone", "periwinkle", "lugworm", "hermitcrab", "ediblecrab"],
   "smallLives": { "title": "Small lives", "none": "Look closely along the shore, at low tide, in the rock pools and on the wet sand.", "marks": "Found so far" },
   "notesKept": 60,
   "pageNotes": 5,
@@ -374,6 +374,55 @@
         { "pencil": "Something with a long bill might probe these flats one day.", "ink": "Food for curlews and gulls.", "when": "curlews:seen" }
       ],
       "notes": { "found": "You found lugworm casts on the wet sand." }
+    },
+    "hermitcrab": {
+      "name": "Hermit crab", "icon": "hermitcrab", "kind": "find", "plural": "hermit crabs", "card": "Hermit crab",
+      "cardLine": "It carries a borrowed shell and picks its way about the pool floor.",
+      "place": "Lives in the rock pools, busy while the water covers it.",
+      "riddle": "Something might wander a rock pool carrying a house that is not its own.",
+      "foundLine": "You found the first hermit crab on {date}.",
+      "field": [
+        { "text": "Its soft tail curls into an empty snail shell, which it carries everywhere.", "learn": ["seen"] },
+        { "text": "When you come close it stops still and waits, ready to pull back inside.", "learn": ["seen"] },
+        { "text": "As it grows it looks for a bigger shell, and may try several before it moves in.", "learn": ["moment:dawn", "moment:dusk"] }
+      ],
+      "fieldHint": "Watch a pool quietly, at other times, to learn more.",
+      "sketch": { "scale": "about 3 cm", "labels": {
+        "shell": { "text": ["a borrowed", "snail shell"], "learn": ["seen"] },
+        "claw": { "text": ["one claw bigger,", "to close the door"], "learn": ["seen"] },
+        "legs": { "text": ["walking legs", "out front"], "learn": ["moment:dawn", "moment:dusk"] } } },
+      "likes": [
+        { "text": "A rock pool with empty shells about", "learn": ["seen"] }
+      ],
+      "gives": [
+        { "pencil": "Something that hunts the shallows might watch these pools one day.", "ink": "Pools worth a heron's patience.", "when": "herons:seen" }
+      ],
+      "notes": { "found": "You found a hermit crab picking about a rock pool." }
+    },
+    "ediblecrab": {
+      "name": "Edible crab", "icon": "ediblecrab", "kind": "find", "plural": "edible crabs", "card": "Young edible crab",
+      "cardLine": "A young one, hiding in the weed. It runs sideways when you come close.",
+      "place": "Hides in the wrack and the rock pools, under weed and in cracks.",
+      "riddle": "Something with claws might hide under the weed and run sideways when you come near.",
+      "foundLine": "You found the first young edible crab on {date}.",
+      "field": [
+        { "text": "Its shell is red-brown with a crimped edge, like the crust of a pie.", "learn": ["seen"] },
+        { "text": "It runs sideways, away from you, then settles again once you go.", "learn": ["seen"] },
+        { "text": "Its claws are tipped with black, as if dipped in ink.", "learn": ["moment:dawn", "moment:dusk"] },
+        { "text": "The young ones grow up in the shallows, then move to deeper water.", "learn": ["moment:winter"] }
+      ],
+      "fieldHint": "Look again under the weed at other tides to learn more.",
+      "sketch": { "scale": "about 4 cm", "labels": {
+        "shell": { "text": ["a crimped", "edge"], "learn": ["seen"] },
+        "claws": { "text": ["black-tipped", "claws"], "learn": ["moment:dawn", "moment:dusk"] },
+        "legs": { "text": ["runs", "sideways"], "learn": ["seen"] } } },
+      "likes": [
+        { "text": "Wrack to hide under, near a pool", "learn": ["seen"] }
+      ],
+      "gives": [
+        { "pencil": "Something that hunts the shallows might come for these one day.", "ink": "Food for gulls and herons.", "when": "herons:seen" }
+      ],
+      "notes": { "found": "You found a young edible crab hiding in the weed." }
     },
     "frogs": {
       "name": "Common frogs", "icon": "frog", "kind": "creature", "plural": "frogs", "card": "Common frog",

@@ -39,6 +39,8 @@ export function addFindsTests(test, assert, eq) {
     eq(c.periwinkle.join(','), '0', 'periwinkles on the wrack');
     eq(c.lugworm.join(','), '1', 'casts on the wet sand');
     eq(c.anemone.join(','), '2,3', 'anemones in the tidal pool, its deep floor too, not in the high hollow');
+    eq(c.hermitcrab.join(','), '2,3', 'hermit crabs in the tidal pool only');
+    eq(c.ediblecrab.join(','), '0,2,3', 'edible crabs in the wrack and the tidal pool');
     const bare = findCells(s, z, K, () => false);
     eq(bare.anemone.length, 0, 'a hollow dug in sand holds no anemones');
   });
