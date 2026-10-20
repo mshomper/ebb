@@ -1,5 +1,122 @@
 {
   "version": 1,
-  "note": "The recorded bed takes that exist (doc 25 'Data and interfaces'; read by src/audio/ambience/slot.js). None yet, so every bed plays its made-in-code stand-in. When a recording lands, put its files at assets/audio/beds/<layer>/<season>-a.ogg and <season>-b.ogg (and .m4a for older Safari), or a.ogg and b.ogg for an all-season bed, and list the takes here, for example \"reeds\": {\"autumn\": [\"a\", \"b\"]} or \"sea\": {\"all\": [\"a\", \"b\"]}. Layers: sea, air, lap, trickle, run, reeds, grass, wind, rain-water, rain-pads, rain-reeds, rain-grass, drizzle. Only listed takes are requested, so the page never asks for a file that is not there; a listed take that fails to load keeps the stand-in and leaves one quiet note in the console.",
-  "takes": {}
+  "note": "The recorded bed takes that exist (doc 25 'Data and interfaces'; read by src/audio/ambience/slot.js). Beds without a listed take play their made-in-code stand-in. When a recording lands, put its files at assets/audio/beds/<layer>/<season>-a.ogg and <season>-b.ogg (and .m4a for older Safari), or a.ogg and b.ogg for an all-season bed, and list the takes here, for example \"reeds\": {\"autumn\": [\"a\", \"b\"]} or \"sea\": {\"all\": [\"a\", \"b\"]}. Layers: sea, air, lap, trickle, run, reeds, grass, wind, rain-water, rain-pads, rain-reeds, rain-grass, drizzle. A take written \"@<layer>/<name>\" is that file, so seasons can share one recording (\"@reeds/green-a\" is reeds/green-a.ogg). Only listed takes are requested, so the page never asks for a file that is not there; a listed take that fails to load keeps the stand-in and leaves one quiet note in the console.",
+  "takes": {
+    "sea": {
+      "all": [
+        "a",
+        "b"
+      ]
+    },
+    "air": {
+      "winter": [
+        "a",
+        "b"
+      ]
+    },
+    "lap": {
+      "all": [
+        "a",
+        "b"
+      ]
+    },
+    "trickle": {
+      "all": [
+        "a",
+        "b"
+      ]
+    },
+    "run": {
+      "all": [
+        "a",
+        "b"
+      ]
+    },
+    "reeds": {
+      "spring": [
+        "@reeds/green-a",
+        "@reeds/green-b"
+      ],
+      "summer": [
+        "@reeds/green-a",
+        "@reeds/green-b"
+      ],
+      "autumn": [
+        "@reeds/dry-a",
+        "@reeds/dry-b"
+      ],
+      "winter": [
+        "@reeds/dry-a",
+        "@reeds/dry-b"
+      ]
+    },
+    "grass": {
+      "spring": [
+        "@grass/meadow-a",
+        "@grass/tall-b"
+      ],
+      "summer": [
+        "@grass/meadow-a",
+        "@grass/tall-b"
+      ],
+      "autumn": [
+        "@grass/meadow-b",
+        "@grass/tall-a"
+      ],
+      "winter": [
+        "@grass/meadow-a"
+      ]
+    },
+    "wind": {
+      "all": [
+        "a",
+        "b"
+      ]
+    },
+    "rain-water": {
+      "all": [
+        "a",
+        "b"
+      ]
+    },
+    "rain-pads": {
+      "all": [
+        "a",
+        "b"
+      ]
+    },
+    "rain-reeds": {
+      "spring": [
+        "@rain-grass/a",
+        "@rain-grass/b"
+      ],
+      "summer": [
+        "@rain-grass/a",
+        "@rain-grass/b"
+      ],
+      "autumn": [
+        "@rain-grass/a",
+        "@rain-grass/b"
+      ]
+    },
+    "rain-grass": {
+      "spring": [
+        "@rain-grass/a",
+        "@rain-grass/b"
+      ],
+      "summer": [
+        "@rain-grass/a",
+        "@rain-grass/b"
+      ],
+      "autumn": [
+        "@rain-grass/a",
+        "@rain-grass/b"
+      ]
+    },
+    "drizzle": {
+      "all": [
+        "a"
+      ]
+    }
+  }
 }
