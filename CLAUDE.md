@@ -62,4 +62,4 @@ Full ownership and exports are in `docs/03-tech-stack-and-module-map.md`.
 
 ## Current target
 
-The vertical slice in `docs/20-roadmap-and-vertical-slice.md`. Do not build features from later milestones until the slice is approved.
+M2, the pond tier, in `docs/20-roadmap-and-vertical-slice.md` (the M1 vertical slice was signed off on October 20, 2026). Its first step is the Cliff tool. Do not build features from milestones after M2 until M2 is approved.

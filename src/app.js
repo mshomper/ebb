@@ -286,7 +286,16 @@ export async function startApp(canvas, hooks = {}) {
   sim.addSystem(midges);
   // Finds (docs/future/11): anemones in rock pools, periwinkles on the wrack, lugworm casts on the
   // sand, where the shore zones say, near the view; a tap finds them for the journal.
-  const finds = createFinds({ water, shore: ww.shore, terrain, camera, recipe: await loadRecipe('species/finds'), seed: subSeed(seed, 'finds'), tide: waterRecipe.tide });
+  // `?shells=rare` or `?shells=<id>` (testing, unsaved): the strandline is thick with those shells,
+  // whatever the tide, so a rare one can be seen and its page checked.
+  const findsRecipe = await loadRecipe('species/finds');
+  const shellTest = params.get('shells');
+  if (shellTest && findsRecipe.kinds.shells) {
+    const S = findsRecipe.kinds.shells;
+    const keep = S.items.filter((/** @type {any} */ it) => (shellTest === 'rare' ? it.springMin !== undefined : it.id === shellTest));
+    if (keep.length) findsRecipe.kinds.shells = { ...S, density: 0.3, items: keep.map((/** @type {any} */ it) => ({ ...it, springMin: undefined })) };
+  }
+  const finds = createFinds({ water, shore: ww.shore, terrain, camera, recipe: findsRecipe, seed: subSeed(seed, 'finds'), tide: waterRecipe.tide });
   sim.addSystem(finds);
   terrainPass.setCasts(finds.casts(), finds.castShape);
   // `?frogscale` (ahead of S6): real-size frogs from the species recipe around the pond, and a

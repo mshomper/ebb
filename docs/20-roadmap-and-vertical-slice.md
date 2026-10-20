@@ -60,6 +60,8 @@ One island, everything in miniature. Built in seventeen steps, each its own clic
 | S7 | Autosave, reload, and offline catch-up with the "while you were away" reveal | 02, 18 |
 | S8 | Minimal HUD with drawn icons, touch layout on phone, low quality tier | 15, 19 |
 
+**Signed off October 20, 2026:** Matt passed all eight checks below together, on desktop and on an iPhone (tools/slice-review.html). M2 is the current target.
+
 Slice acceptance, all together:
 
 - Sculpt a dip near the spring. Water fills it and finds its way to the sea.

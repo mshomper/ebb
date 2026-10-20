@@ -13,23 +13,23 @@
     {
       "type": "SCALAR",
       "componentType": 5123,
-      "count": 2100,
+      "count": 2097,
       "bufferView": 0,
       "byteOffset": 0
     },
     {
       "type": "VEC3",
       "componentType": 5126,
-      "count": 352,
+      "count": 351,
       "max": [
-        0.5286502838134766,
+        0.5297908186912537,
         1,
-        0.2383718192577362
+        0.23901666700839996
       ],
       "min": [
-        -0.5286502838134766,
+        -0.5297908186912537,
         0,
-        -0.2383718192577362
+        -0.23901666700839996
       ],
       "bufferView": 1,
       "byteOffset": 0
@@ -37,7 +37,7 @@
     {
       "type": "VEC3",
       "componentType": 5126,
-      "count": 352,
+      "count": 351,
       "bufferView": 1,
       "byteOffset": 12
     }
@@ -46,13 +46,13 @@
     {
       "buffer": 0,
       "byteOffset": 0,
-      "byteLength": 4200,
+      "byteLength": 4196,
       "target": 34963
     },
     {
       "buffer": 0,
-      "byteOffset": 4200,
-      "byteLength": 8448,
+      "byteOffset": 4196,
+      "byteLength": 8424,
       "byteStride": 24,
       "target": 34962
     }
@@ -60,7 +60,7 @@
   "buffers": [
     {
       "uri": "shell-cockle.bin",
-      "byteLength": 12648
+      "byteLength": 12620
     }
   ],
   "materials": [
