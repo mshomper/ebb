@@ -6,7 +6,10 @@
 // load (meshes.js). Pure and deterministic; the live side is index.js.
 //
 // A record: { id, kind: 'stone', x, z, yaw, seed, size, placedHour }. size is the stone's length in
-// meters; seed picks its shape and size; placedHour is the game hour it was set or came.
+// meters; seed picks its shape and size; placedHour is the game hour it was set or came. A log
+// (driftwood carried off the strandline, the turtles' gift) is { id, kind: 'log', x, z, yaw, seed,
+// size, length, placedHour }: size is its thickness and length its length, in meters; seed picks its
+// shape (the strand log it was, so it is drawn the same and never washes up twice).
 
 import { hash32, det } from '../../core/rng.js';
 import { WATER_CLASS } from '../water/summary.js';
@@ -14,13 +17,17 @@ import { waterCellCenter } from '../water/grid.js';
 import { groundOfCell } from '../water/shore.js';
 
 /**
- * @typedef {{ id: string, kind: 'stone', x: number, z: number, yaw: number, seed: number, size: number, placedHour: number }} Piece
+ * @typedef {{ id: string, kind: 'stone' | 'log', x: number, z: number, yaw: number, seed: number, size: number, length?: number, placedHour: number }} Piece
+ *   length: a log's length (m); stones have none
  * @typedef {{ version: number, list: Piece[], nextId: number, arrived: boolean }} PiecesState
  *   nextId: the number the next piece's id takes; arrived: the reward's stones have come (once per island)
  */
 
-/** Kinds of piece this build knows. Driftwood and logs join later. */
-export const PIECE_KINDS = ['stone'];
+/** Kinds of piece this build knows. */
+export const PIECE_KINDS = ['stone', 'log'];
+
+/** How many pieces of a kind a list holds. @param {Piece[]} list @param {string} kind */
+export const countKind = (list, kind) => list.reduce((n, p) => n + (p.kind === kind ? 1 : 0), 0);
 /** Painted ground channels, as terrain/brushes.js LAYER_INDEX. */
 const GROUNDS = ['grass', 'sand', 'rock', 'soil'];
 const TAU = 2 * det.PI;
@@ -47,8 +54,11 @@ export function cleanPieces(v) {
   for (const r of v.list) {
     if (!r || !PIECE_KINDS.includes(r.kind) || typeof r.id !== 'string' || ids.has(r.id)) continue;
     if (!fin(r.x) || !fin(r.z) || !fin(r.yaw) || !fin(r.size) || !(r.size > 0) || !fin(r.seed)) continue;
+    if (r.kind === 'log' && !(fin(r.length) && r.length > 0)) continue;
     ids.add(r.id);
-    list.push({ id: r.id, kind: r.kind, x: r.x, z: r.z, yaw: r.yaw, seed: r.seed >>> 0, size: r.size, placedHour: fin(r.placedHour) ? r.placedHour : 0 });
+    // In the order makeStone and makeLog write them, so a record comes back exactly.
+    list.push({ id: r.id, kind: r.kind, x: r.x, z: r.z, yaw: r.yaw, seed: r.seed >>> 0, size: r.size,
+      ...(r.kind === 'log' ? { length: r.length } : {}), placedHour: fin(r.placedHour) ? r.placedHour : 0 });
   }
   const after = list.reduce((m, r) => Math.max(m, idNumber(r.id) + 1), 1);
   return { version: 1, list, nextId: Math.max(Number.isInteger(v.nextId) ? v.nextId : 1, after), arrived: !!v.arrived };
@@ -67,13 +77,32 @@ export function makeStone(piecesSeed, n, x, z, hour, recipe) {
 }
 
 /**
- * The pieces with one more, or null at the cap. Pure: a new state.
+ * A log carried off the strandline, now kept: its shape, size and turn are the strand log's.
+ * @param {number} n its number (the id is p<n>) @param {{ x: number, z: number, yaw: number, seed: number, size: number, length: number }} log
+ * @param {number} hour @returns {Piece}
+ */
+export function makeLog(n, log, hour) {
+  return { id: `p${n}`, kind: 'log', x: log.x, z: log.z, yaw: log.yaw, seed: log.seed >>> 0, size: log.size, length: log.length, placedHour: hour };
+}
+
+/**
+ * The pieces with one more, or null when that kind is at its cap (stones and logs are capped
+ * apart). Pure: a new state.
  * @param {PiecesState} s @param {Piece} p @param {number} cap
  * @returns {PiecesState | null}
  */
 export function addPiece(s, p, cap) {
-  if (s.list.length >= cap) return null;
+  if (countKind(s.list, p.kind) >= cap) return null;
   return { ...s, list: [...s.list, p], nextId: Math.max(s.nextId, idNumber(p.id) + 1) };
+}
+
+/**
+ * The pieces with one moved to a new spot (carried and set down). Pure.
+ * @param {PiecesState} s @param {string} id @param {number} x @param {number} z
+ * @returns {PiecesState}
+ */
+export function movePiece(s, id, x, z) {
+  return { ...s, list: s.list.map((p) => (p.id === id ? { ...p, x, z } : p)) };
 }
 
 /**
@@ -86,16 +115,33 @@ export function removePiece(s, id) {
 }
 
 /**
- * The piece nearest a ground point, if a tap there would pick it: within r, or within about half
- * its own length, whichever is more.
- * @param {Piece[]} list @param {number} x @param {number} z @param {number} r
- * @returns {Piece | null}
+ * How far a ground point is from a piece: from a stone's middle, or from the nearest point on a
+ * log's line, end to end. @param {{ x: number, z: number, yaw: number, kind: string, length?: number }} p
+ * @param {number} x @param {number} z
  */
-export function pieceAt(list, x, z, r) {
+export function pieceDistance(p, x, z) {
+  const dx = x - p.x, dz = z - p.z;
+  if (p.kind !== 'log') return Math.hypot(dx, dz);
+  // A log lies along its own z, which its yaw turns to (sin yaw, cos yaw) (piece-draw.wgsl turn).
+  const ax = Math.sin(p.yaw), az = Math.cos(p.yaw), half = (p.length ?? 0) / 2;
+  const t = Math.max(-half, Math.min(half, dx * ax + dz * az));
+  return Math.hypot(dx - ax * t, dz - az * t);
+}
+
+/**
+ * The piece nearest a ground point, if a tap there would pick it: within r, or within about half
+ * a stone's length (a log's half thickness and logReach: a tap on a low log's top lands on the
+ * ground behind it), whichever is more.
+ * @template {{ x: number, z: number, yaw: number, kind: string, size: number, length?: number }} T
+ * @param {T[]} list @param {number} x @param {number} z @param {number} r @param {number} [logReach]
+ * @returns {T | null}
+ */
+export function pieceAt(list, x, z, r, logReach = 0) {
   let best = null, bestD = Infinity;
   for (const p of list) {
-    const d = Math.hypot(p.x - x, p.z - z);
-    if (d <= Math.max(r, p.size * 0.55) && d < bestD) { bestD = d; best = p; }
+    const d = pieceDistance(p, x, z);
+    const reach = p.kind === 'log' ? p.size * 0.5 + logReach : p.size * 0.55;
+    if (d <= Math.max(r, reach) && d < bestD) { bestD = d; best = p; }
   }
   return best;
 }
@@ -156,7 +202,7 @@ export function arrivingStones(p) {
   cand.sort((a, b) => a.h - b.h || a.k - b.k);
   /** @type {Piece[]} */ const out = [];
   const taken = [...(p.existing ?? [])].map((q) => [q.x, q.z]);
-  const room = Math.min(A.count, recipe.cap - (p.existing?.length ?? 0));
+  const room = Math.min(A.count, recipe.cap - countKind(p.existing ?? [], 'stone'));
   // Squared distances: plain arithmetic is the same on every device (rng.js), Math.hypot may not be.
   const apart = A.spacingM * A.spacingM;
   for (const c of cand) {
@@ -226,6 +272,21 @@ export function leanBone(a, b, share) {
     -s * kz, c, s * kx, 0,
     (1 - c) * kx * kz, -s * kx, c + (1 - c) * kz * kz, 0,
     0, 0, 0, 1]);
+}
+
+/**
+ * The bone a log's mesh is drawn with (column-major 4 x 4). The mesh is 1 long along z and 1 thick
+ * (meshes.js logShapes): squeezed across to the log's thickness over its length (a), set sinkShare
+ * of its thickness into the ground, and rolled by angle about its own length toward side (+1 or -1,
+ * along its x), moving over as a log rolls so the ground under it shows.
+ * @param {number} angle radians @param {number} side @param {number} a thickness over length @param {number} sinkShare
+ * @returns {Float32Array}
+ */
+export function logBone(angle, side, a, sinkShare) {
+  const r = a / 2, phi = -side * angle, c = Math.cos(phi), s = Math.sin(phi);
+  // Squeeze, then turn about the axis through the middle (0, r) and roll over by side angle r.
+  const tx = r * s + side * angle * r, ty = r - r * c - a * sinkShare;
+  return new Float32Array([c * a, s * a, 0, 0, -s * a, c * a, 0, 0, 0, 0, 1, 0, tx, ty, 0, 1]);
 }
 
 /** Two column-major 4 x 4 matrices composed: a first, then b (b x a). @param {Float32Array} b @param {Float32Array} a */

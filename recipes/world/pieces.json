@@ -25,5 +25,24 @@
   "words": {
     "full": "The island holds all the loose stones it can for now. Remove one to set it somewhere else.",
     "water": "A loose stone sits on land. Tap the ground."
+  },
+  "driftwoodNote": "Driftwood (docs 13, docs/future/10; src/world/pieces/driftwood.js), the naturalist's reward at ten finds. Once given, each high tide may leave logs on its strandline (shore.json look.strandline): only the newest lines keep logs (lines), each tide perTide [min, max] logs, at most most on the island at once; a log lies on dry or damp ground within bandReachM of the sea's tide band (never a pond's bank), where the ground is within lineToleranceM of the line's reach and both its ends within endToleranceM, on ground no steeper than maxSlope, along the shore give or take yawJitterDeg, at least spacingM apart. Seeded from the world seed and the tide, so nothing is saved: a later tide that sweeps the line takes its logs. lengthM and thickM [min, max]: a log's size in meters. sink: the share of its thickness set into the sand; lean: how much of the slope it leans with. grassClear: blades stand no nearer than its half thickness plus grassClearM, in circles along its length. tapReachM: a tap picks a log within its half thickness and this much of its line (a tap on a low log's top lands on the sand behind it). ringHalf: the damp ring's half width and half length as shares of its footprint. roll: a tap rolls it rollDeg away from you over tipS, holds holdS, and rolls back over settleS, showing the damp sand where it lay (damp: that patch's albedos, linear). shape: count log shapes seeded from seed, each around vertices round and rings along; bow and taper [min, max] (shares of its thickness and its radius), swell a gentle unevenness, knots [min, max] of knotSize [min, max] (shares of its length) rising knotRise; jag how far the broken ends are torn back (share of its length). albedo: sea-weathered silver-grey (linear), endAlbedo the end grain, knotAlbedo round the knots, underside where it lies in the damp sand below stainLine (a share of its thickness); mottle: broad and fine tone along its length. look (piece-draw.wgsl): roughness, bumpM the grain and cracks' relief, grainAcross streaks across the log, crackDarkness 0..1. cap: how many logs an island keeps (apart from the stones' cap). carry: the turtles' gift (unlocks.carry, or ?sandbox, or ?driftwood): a carried piece hangs liftM above its spot until set down.",
+  "driftwood": {
+    "lines": 2, "perTide": [0, 2], "most": 3,
+    "lineToleranceM": 0.05, "endToleranceM": 0.16, "bandReachM": 3, "maxSlope": 0.6, "yawJitterDeg": 14, "spacingM": 2.5,
+    "lengthM": [0.6, 1.8], "thickM": [0.08, 0.2],
+    "sink": 0.18, "lean": 0.85, "grassClearM": 0.06, "tapReachM": 0.3, "ringHalf": [1.25, 0.82], "cap": 8,
+    "roll": { "tipDeg": 95, "tipS": 1.1, "holdS": 2.6, "settleS": 1.4 },
+    "damp": { "scale": 1.05, "albedo": [0.075, 0.066, 0.052], "edgeAlbedo": [0.13, 0.115, 0.09] },
+    "shape": {
+      "count": 5, "seed": 7310, "around": 18, "rings": 28,
+      "bow": [0.1, 0.9], "taper": [0.05, 0.35], "swell": 0.08,
+      "knots": [1, 3], "knotSize": [0.04, 0.09], "knotRise": 0.22, "jag": 0.018,
+      "albedo": [0.31, 0.3, 0.28], "endAlbedo": [0.26, 0.225, 0.18], "knotAlbedo": [0.15, 0.13, 0.11],
+      "underside": [0.16, 0.145, 0.12], "stainLine": 0.18,
+      "mottle": { "broad": 0.07, "broadPerUnit": 9, "fine": 0.04, "finePerUnit": 41 }
+    },
+    "look": { "roughness": 0.82, "bumpM": 0.0015, "grainAcross": 22, "crackDarkness": 0.55 },
+    "carry": { "liftM": 0.25 }
   }
 }

@@ -156,6 +156,124 @@ export function dampPatch(hx, hz, D) {
 }
 
 /**
+ * One driftwood log (docs/future/10): a round trunk 1 long along z and 1 thick, built ring by ring
+ * so it can bow, taper, swell and carry knots, with broken, splintered ends. Its base is on y = 0;
+ * the draw pass squeezes it across to the log's own thickness (model.js logBone). Vertex albedo is
+ * linear and physical (docs/05): sea-weathered silver-grey wood, a little warmer and darker on the
+ * end grain, darker round each knot, and sand-stained along its underside; the draw pass adds the
+ * grain and checking cracks (piece-draw.wgsl).
+ * @param {any} L pieces.json driftwood.shape @param {number} i which shape
+ * @returns {{ mesh: Mesh, hy: number }}
+ */
+export function bakeLog(L, i) {
+  const h = hash32(L.seed, i, 0x10c);
+  const r = (/** @type {number} */ k, /** @type {number[]} */ range) => range[0] + (range[1] - range[0]) * u01(hash32(h, k));
+  const A = L.around, N = L.rings;
+  const bow = r(1, L.bow) * (u01(hash32(h, 2)) < 0.5 ? -1 : 1), bowUp = r(3, L.bow) * 0.3;
+  const taper = r(4, L.taper), ph = u01(hash32(h, 5)) * 6.28;
+  const knots = Array.from({ length: L.knots[0] + Math.floor(u01(hash32(h, 6)) * (L.knots[1] - L.knots[0] + 1)) }, (_, k) => ({
+    z: -0.35 + 0.7 * u01(hash32(h, 20, k)), a: u01(hash32(h, 21, k)) * Math.PI * 2, size: r(22 + k * 3, L.knotSize) }));
+  // Broken ends: each end ring torn back by a seeded, splintered amount round the rim.
+  const torn = (/** @type {number} */ end, /** @type {number} */ j) => {
+    const a = (j / A) * Math.PI * 2;
+    const spike = u01(hash32(h, 40 + end, j)) ** 3;
+    return L.jag * (0.35 + 0.35 * Math.sin(a * 2 + ph * (end + 1)) + spike);
+  };
+  /** @type {number[]} */ const v = [];
+  /** @type {number[]} */ const idx = [];
+  /** @type {number[][]} */ const axis = [];
+  for (let n = 0; n < N; n++) {
+    const t = n / (N - 1), z0 = t - 0.5;
+    const cx = bow * Math.sin(Math.PI * t), cy = 0.5 + bowUp * Math.sin(Math.PI * t);
+    axis.push([cx, cy]);
+    for (let j = 0; j < A; j++) {
+      const a = (j / A) * Math.PI * 2;
+      // The ends: torn back, and a little narrower where the wood split.
+      const end = n === 0 ? torn(0, j) : n === N - 1 ? -torn(1, j) : 0;
+      const z = z0 + end;
+      let rad = 0.5 * (1 - taper * t) * (1 + L.swell * Math.sin(a * 3 + ph + z * 9) * Math.sin(z * 7 + ph));
+      if (n === 0 || n === N - 1) rad *= 0.92;
+      let knot = 0;
+      for (const kn of knots) {
+        const da = Math.atan2(Math.sin(a - kn.a), Math.cos(a - kn.a)), dz = z - kn.z;
+        knot = Math.max(knot, Math.exp(-((dz * dz) / (kn.size * kn.size * 0.25) + (da * da) / 0.18)));
+      }
+      rad *= 1 + L.knotRise * knot;
+      v.push(cx + Math.cos(a) * rad, cy + Math.sin(a) * rad, z, 0, 0, 0, knot, 0, 0);
+    }
+  }
+  for (let n = 0; n < N - 1; n++) for (let j = 0; j < A; j++) {
+    const a = n * A + j, b = n * A + ((j + 1) % A), c = a + A, d = b + A;
+    idx.push(a, c, b, b, c, d);
+  }
+  // End caps: a fan to a middle a little inside the torn rim.
+  for (const end of [0, 1]) {
+    const ring = end ? (N - 1) * A : 0;
+    let mz = 0;
+    for (let j = 0; j < A; j++) mz += v[(ring + j) * 9 + 2] / A;
+    const [cx, cy] = axis[end ? N - 1 : 0];
+    const mid = v.length / 9;
+    v.push(cx, cy, mz + (end ? -1 : 1) * L.jag * 0.4, 0, 0, 0, 0, 0, 1);
+    for (let j = 0; j < A; j++) idx.push(mid, ring + j, ring + ((j + 1) % A));
+  }
+  const count = v.length / 9;
+  const V = new Float32Array(v);
+  // Normals from the faces, each turned to face away from the log's axis.
+  const acc = new Float64Array(count * 3);
+  for (let t = 0; t < idx.length; t += 3) {
+    const [a, b, d] = [idx[t], idx[t + 1], idx[t + 2]];
+    const e1 = [0, 1, 2].map((k) => V[b * 9 + k] - V[a * 9 + k]), e2 = [0, 1, 2].map((k) => V[d * 9 + k] - V[a * 9 + k]);
+    let f = [e1[1] * e2[2] - e1[2] * e2[1], e1[2] * e2[0] - e1[0] * e2[2], e1[0] * e2[1] - e1[1] * e2[0]];
+    const m = [0, 1, 2].map((k) => (V[a * 9 + k] + V[b * 9 + k] + V[d * 9 + k]) / 3);
+    const n0 = Math.min(N - 1, Math.max(0, Math.round((m[2] + 0.5) * (N - 1))));
+    const out = [m[0] - axis[n0][0], m[1] - axis[n0][1], m[2]];
+    if (f[0] * out[0] + f[1] * out[1] + f[2] * out[2] < 0) f = f.map((x) => -x);
+    for (const q of [a, b, d]) for (let k = 0; k < 3; k++) acc[q * 3 + k] += f[k];
+  }
+  let ylo = Infinity, yhi = -Infinity, zlo = Infinity, zhi = -Infinity;
+  for (let q = 0; q < count; q++) {
+    const l = Math.hypot(acc[q * 3], acc[q * 3 + 1], acc[q * 3 + 2]) || 1;
+    for (let k = 0; k < 3; k++) V[q * 9 + 3 + k] = acc[q * 3 + k] / l;
+    ylo = Math.min(ylo, V[q * 9 + 1]); yhi = Math.max(yhi, V[q * 9 + 1]);
+    zlo = Math.min(zlo, V[q * 9 + 2]); zhi = Math.max(zhi, V[q * 9 + 2]);
+  }
+  // Exactly 1 long, its base on y = 0; then its tone.
+  const len = zhi - zlo, zc = (zlo + zhi) / 2;
+  const M = L.mottle;
+  const ph2 = u01(hash32(h, 9)) * 6.28;
+  for (let q = 0; q < count; q++) {
+    const o = q * 9;
+    V[o + 1] -= ylo; V[o + 2] = (V[o + 2] - zc) / len;
+    const knot = V[o + 6], cap = V[o + 8];
+    const z = V[o + 2];
+    // Long weathered streaks and broad patches along its length.
+    const tone = 1 + M.broad * Math.sin(z * M.broadPerUnit + ph2) * Math.sin(z * 2.3 + ph) + M.fine * Math.sin(z * M.finePerUnit + ph2 * 3);
+    // End grain: where the face looks along the length, or on the cap.
+    const endGrain = Math.max(cap, Math.max(0, Math.abs(V[o + 5]) - 0.55) / 0.45);
+    const under = Math.min(1, Math.max(0, (L.stainLine - V[o + 1]) / L.stainLine) + Math.max(0, -V[o + 4]) * 0.35);
+    for (let c = 0; c < 3; c++) {
+      let a = L.albedo[c] * tone;
+      a += (L.endAlbedo[c] - a) * Math.min(1, endGrain);
+      a += (L.knotAlbedo[c] - a) * Math.min(1, knot * 1.3);
+      a += (L.underside[c] - a) * under;
+      V[o + 6 + c] = a;
+    }
+  }
+  return { mesh: { vertices: V, count, indices: Uint32Array.from(idx) }, hy: yhi - ylo };
+}
+
+/**
+ * Every log shape, with the damp patch a log leaves (round here: the draw pass squeezes it across
+ * like the log). @param {any} recipe pieces.json
+ * @returns {{ mesh: Mesh, damp: Mesh, hy: number }[]}
+ */
+export function logShapes(recipe) {
+  const D = recipe.driftwood;
+  const damp = dampPatch(0.5, 0.5, { ...recipe.damp, ...D.damp });
+  return Array.from({ length: D.shape.count }, (_, i) => ({ ...bakeLog(D.shape, i), damp }));
+}
+
+/**
  * Every stone shape with its damp patch. @param {any} recipe pieces.json
  * @returns {StoneShape[]}
  */
