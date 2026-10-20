@@ -8,6 +8,8 @@ import { createStore, initialSlices } from '../src/core/store.js';
 import { initWorkers, run, poolSize, dispose } from '../src/core/workers.js';
 import { CHUNK_CELLS, CHUNK_SIZE, CELL, H_MIN, H_MAX, WORLD_CELLS, quantize, dequantize } from '../src/world/terrain/grid.js';
 import { buildSummary, hashSummary, WATER_CLASS } from '../src/world/water/summary.js';
+import { shoreZones, shoreHeightM } from '../src/world/water/shore.js';
+import { strandLines } from '../src/world/water/strandline.js';
 import { buildBase, hashBase } from '../src/world/terrain/landform.js';
 import { tilesOf, copyTiles, pasteTiles } from '../src/world/terrain/undo.js';
 import { createHistory } from '../src/input/actions.js';
@@ -951,6 +953,71 @@ test(WSUM, 'the outer ring below sea level is sea, and the shore is in the tide 
   eq(beach.band[at(4)], 0, 'beach cell at -0.8 m is below the band');
   eq(beach.band[at(40)], 0, 'beach cell at +1 m is above the band');
   eq(beach.cls[at(40)], WATER_CLASS.dry, 'beach cell at +1 m is dry');
+});
+
+/** The beach above: bed of water cell i is -1 + 0.05 (i + 0.25) m (the lower of its terrain cells). */
+const beachLand = (/** @type {number} */ x, /** @type {number} */ y) => ((y < 2 || y > 21 || x > 76) ? -1 : -1 + x * 0.05);
+const beachBed = (/** @type {number} */ i) => -1 + 0.05 * (i + 0.25);
+
+test(WSUM, 'shore height grades the band and the splash ground above it, and reads back as the bed', async () => {
+  const water = await loadWater();
+  const s = buildSummary({ heightQ: synthHeights(SLOPE_RECT, beachLand), rect: SLOPE_RECT, springs: [], params: water.summary, tide: water.tide });
+  const at = (/** @type {number} */ i) => 12 * SLOPE_RECT.w + i;
+  const A0 = water.tide.amplitudeM;
+  assert(Math.abs(s.shoreRange.loM + 1.15 * A0) < 1e-3 && Math.abs(s.shoreRange.hiM - 1.75 * A0) < 1e-3, `range ${s.shoreRange.loM} .. ${s.shoreRange.hiM}`);
+  eq(s.shore[at(4)], 0, 'below the band (-0.79 m)');
+  assert(s.shore[at(38)] > 0, 'splash ground (+0.91 m) is shore');
+  eq(s.shore[at(45)], 0, 'above the splash top (+1.26 m)');
+  let prev = 0;
+  for (let i = 6; i <= 40; i++) {
+    const v = s.shore[at(i)];
+    assert(v > prev, `shore height should rise along the beach: ${prev} then ${v} at cell ${i}`);
+    const m = shoreHeightM(v, s.shoreRange);
+    assert(Math.abs(m - beachBed(i)) < 0.01, `cell ${i}: reads ${m.toFixed(3)} m, bed ${beachBed(i).toFixed(3)} m`);
+    prev = v;
+  }
+  return `shore ${s.shore[at(6)]} at ${beachBed(6).toFixed(2)} m to ${s.shore[at(40)]} at ${beachBed(40).toFixed(2)} m`;
+});
+
+test(WSUM, 'strandlines: the newest high tide always lies, a higher later tide sweeps older lines up', async () => {
+  const water = await loadWater();
+  const R = (await (await fetch('../recipes/world/shore.json')).json()).look.strandline;
+  const p = tide.tideParams(water.tide);
+  // Day 0 is a spring tide (new moon): the first high water is the highest, nothing older shows.
+  eq(strandLines(10, p, R).levels.length, 1, 'one line just after a spring high');
+  // Falling toward the neap (day 1.75), every high is lower than the one before: they all lie.
+  const falling = strandLines(39, p, R);
+  assert(falling.levels.length >= 3, `lines while the tides fall: ${falling.levels.length}`);
+  for (let i = 1; i < falling.levels.length; i++) {
+    assert(falling.levels[i] > falling.levels[i - 1], `older lines lie higher: ${falling.levels.join(', ')}`);
+    assert(falling.strengths[i] < falling.strengths[i - 1], 'older lines are fainter');
+  }
+  assert(falling.levels.length <= R.maxLines, 'at most maxLines');
+  eq(JSON.stringify(strandLines(39, p, R)), JSON.stringify(falling), 'the same every time');
+  return `hour 39: ${falling.levels.map((v) => v.toFixed(2)).join(', ')} m`;
+});
+
+test(WSUM, 'shore zones follow height and paint: kelp, wrack and wet sand where they belong, the same every time', async () => {
+  const water = await loadWater();
+  const recipe = await (await fetch('../recipes/world/shore.json')).json();
+  const s = buildSummary({ heightQ: synthHeights(SLOPE_RECT, beachLand), rect: SLOPE_RECT, springs: [], params: water.summary, tide: water.tide });
+  // Rock painted on the lower beach (cells below 25), sand above.
+  const T = WORLD_CELLS, material = new Uint8Array(T * T * 4);
+  for (let ty = 0; ty < T; ty++) for (let tx = 0; tx < T; tx++) {
+    const i = Math.floor(tx / 2) - SLOPE_RECT.x;
+    material[(ty * T + tx) * 4 + (i < 25 ? 2 : 1)] = 255;
+  }
+  const z = shoreZones({ summary: s, material, recipe, amplitudeM: water.tide.amplitudeM });
+  const id = (/** @type {number} */ i) => { const v = z.zone[12 * SLOPE_RECT.w + i]; return v ? z.ids[v - 1] : 'none'; };
+  eq(id(8), 'kelp', 'rock at -0.59 m');
+  eq(id(16), 'wrack', 'rock at -0.19 m');
+  eq(id(22), 'wrack', 'rock at +0.11 m');
+  eq(id(28), 'wetSand', 'sand at +0.41 m');
+  eq(id(36), 'none', 'sand at +0.81 m, above the wet sand');
+  eq(id(45), 'none', 'above the shore');
+  const again = shoreZones({ summary: s, material, recipe, amplitudeM: water.tide.amplitudeM });
+  eq(again.zone.join(','), z.zone.join(','), 'second run');
+  return z.ids.map((n, i) => `${n} ${z.cells[i]}`).join(', ');
 });
 
 test(WSUM, '1 m cells follow their four 0.5 m cells: fastest wet class, mean wet depth, any band', async () => {

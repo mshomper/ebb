@@ -9,7 +9,10 @@
 //  1. Bed per 0.5 m water cell = the lowest of its 2 x 2 terrain cells.
 //  2. Sea: cells 8-connected to the rect's outer ring with bed below mean sea level. Tide band:
 //     bed within +-bandFactor A0 of sea level and reachable from the ring through ground no higher
-//     than the band top (so an inland pond at band height is not tidal).
+//     than the band top (so an inland pond at band height is not tidal). Shore height: for the
+//     band and the splash ground above it (up to splashFactor A0 over the band top, reached the
+//     same way), the bed's height from the band bottom as 1..255 (0 elsewhere), so shore zones
+//     (src/world/water/shore.js) and the journal read one answer.
 //  3. Priority-Flood (Barnes, Lehman and Mulla 2014) from the outer ring, seeded at
 //     max(bed, sea level), with a bucket queue over the 65536 height steps. Within one level the
 //     queue is first in, first out, and neighbors are visited in a fixed order, so every cell's
@@ -63,6 +66,8 @@ const qToMm = (q) => Math.floor((q * H_RANGE * 1000 + 32767) / 65535);
  * @property {Uint8Array} cls        WATER_CLASS per 0.5 m cell
  * @property {Uint16Array} basin     basin id (1..65535) for pond and damp cells, else 0
  * @property {Uint8Array} band       1 in the tide band
+ * @property {Uint8Array} shore      shore height: 1..255 from the band bottom to the splash top, 0 off the shore
+ * @property {{loM:number, hiM:number}} shoreRange  meters about mean sea level that shore 1 and 255 stand for
  * @property {SummaryEco} eco
  * @property {number} hash           FNV-1a over all output arrays (uint32)
  * @property {{ponds:number, streamCells:number, ms?:number}} stats
@@ -115,6 +120,16 @@ export function buildSummary(args) {
   const reach = new Uint8Array(n);
   floodFromRing(bed, w, h, bandHi, reach, queue);
   for (let k = 0; k < n; k++) if (reach[k] && bed[k] >= bandLo) band[k] = 1;
+  // Shore height over the band and the splash ground above it (integers: 1..255 across the span).
+  const splashQ = Math.round((params.splashFactor ?? 0.6) * (tide?.amplitudeM ?? 0.6) * 65535 / H_RANGE);
+  const shoreTop = bandHi + splashQ, span = shoreTop - bandLo;
+  const shore = new Uint8Array(n);
+  reach.fill(0);
+  floodFromRing(bed, w, h, shoreTop, reach, queue);
+  for (let k = 0; k < n; k++) {
+    if (reach[k] && bed[k] >= bandLo) shore[k] = 1 + Math.floor(((bed[k] - bandLo) * 254) / span);
+  }
+  const shoreRange = { loM: (-bandQ * H_RANGE) / 65535, hiM: ((bandQ + splashQ) * H_RANGE) / 65535 };
 
   // 3. Priority-Flood with a first-in, first-out bucket queue.
   const fill = new Uint16Array(n);
@@ -307,9 +322,9 @@ export function buildSummary(args) {
   }
 
   const out = {
-    rect, targetMm, cls, basin, band, eco, hash: 0,
+    rect, targetMm, cls, basin, band, shore, shoreRange, eco, hash: 0,
     stats: /** @type {{ponds:number, streamCells:number, ms?:number}} */ ({ ponds, streamCells }),
-    __transfer: [targetMm.buffer, cls.buffer, basin.buffer, band.buffer,
+    __transfer: [targetMm.buffer, cls.buffer, basin.buffer, band.buffer, shore.buffer,
       eco.depthCm.buffer, eco.cls.buffer, eco.band.buffer, eco.basin.buffer],
   };
   out.hash = hashSummary(out);
@@ -363,7 +378,7 @@ function commonId(ids, n) {
  * FNV-1a (32-bit) over the rect and every output array, element by element (little-endian bytes),
  * so the result is the same on any platform. Used by the determinism page and tests.
  * @param {{ rect: {x:number,y:number,w:number,h:number}, targetMm: Uint16Array, cls: Uint8Array,
- *   basin: Uint16Array, band: Uint8Array, eco: { x:number, y:number, w:number, h:number,
+ *   basin: Uint16Array, band: Uint8Array, shore?: Uint8Array, eco: { x:number, y:number, w:number, h:number,
  *   depthCm: Uint8Array, cls: Uint8Array, band: Uint8Array, basin: Uint16Array } }} s
  * @returns {number} uint32
  */
@@ -379,6 +394,7 @@ export function hashSummary(s) {
   const words = (a) => { for (let k = 0; k < a.length; k++) u16(a[k]); };
   for (const v of [s.rect.x, s.rect.y, s.rect.w, s.rect.h, s.eco.x, s.eco.y, s.eco.w, s.eco.h]) u16(v);
   words(s.targetMm); bytes(s.cls); words(s.basin); bytes(s.band);
+  if (s.shore) bytes(s.shore);
   bytes(s.eco.depthCm); bytes(s.eco.cls); bytes(s.eco.band); words(s.eco.basin);
   return hsh >>> 0;
 }

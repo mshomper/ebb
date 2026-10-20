@@ -124,7 +124,8 @@
   },
   "steepRockDeg": 38,
   "steepRockSoftDeg": 5,
-  "beachBand": [-0.6, 0.45],
+  "beachBandNote": "Ground below beachBand[1] (m, softened by 0.15 m either side) is drawn as sand, painted rock and tidal mud excepted, and grass blades stop there. 0.9 m keeps the beach sandy above the spring high tide (0.69 m) and its strandline (docs/future/10).",
+  "beachBand": [-0.6, 0.9],
   "render": {
     "lodDistances": [45, 95],
     "lowTierMaxQuads": 64,

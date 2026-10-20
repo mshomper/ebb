@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ebb shore lab</title>
+<link rel="icon" href="../brand/ebb-favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../src/ui/tools.css">
+<link rel="stylesheet" href="../src/ui/hud.css">
+<style>
+  @font-face { font-family: 'Nunito'; src: url('../src/vendor/fonts/nunito-latin-600-normal.woff2') format('woff2'); font-weight: 600; }
+  @font-face { font-family: 'Nunito'; src: url('../src/vendor/fonts/nunito-latin-800-normal.woff2') format('woff2'); font-weight: 800; }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; max-width: 100%; overflow-x: hidden; }
+  body { background: #F4EEE4; color: #1E2624; font: 600 17px/1.45 'Nunito', system-ui, sans-serif; padding: 16px; overflow-wrap: anywhere; }
+  main { max-width: 1400px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; padding-bottom: 140px; }
+  .split { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; }
+  @media (min-width: 900px) {
+    .split { grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); align-items: start; }
+    .split .stage { aspect-ratio: auto; height: calc(100vh - 200px); max-height: none; position: sticky; top: 16px; }
+  }
+  h1 { font-size: 24px; font-weight: 800; margin: 0; }
+  h2 { font-size: 19px; font-weight: 800; margin: 0 0 8px; }
+  .muted { color: #4A5551; font-size: 16px; margin: 0; }
+  .stage { position: relative; width: 100%; aspect-ratio: 16 / 10; max-height: 60vh; border-radius: 14px; overflow: hidden; background: #1E2624; }
+  #view { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+  .card { background: #FBF7F0; border: 1px solid #E3D9C9; border-radius: 14px; padding: 14px 16px; min-width: 0; }
+  .map { width: 100%; max-width: min(640px, 60vh); aspect-ratio: 1; display: block; margin: 8px auto; border-radius: 10px; image-rendering: pixelated; background: #2F6E86; }
+  .legend { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 8px 16px; font-size: 16px; margin: 6px 0 4px; }
+  .legend span { display: flex; align-items: center; gap: 8px; min-width: 0; }
+  .legend i { flex: 0 0 auto; width: 16px; height: 16px; border-radius: 4px; border: 1px solid #A9B3A6; }
+  .legend b { margin-left: auto; font-weight: 800; white-space: nowrap; }
+  .tide { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; margin: 10px 0 4px; }
+  .tide input[type=range] { flex: 1 1 260px; min-width: 0; accent-color: #4a6a47; height: 32px; }
+  .tide output { font-weight: 800; min-width: 7em; }
+  .buttons { display: flex; flex-wrap: wrap; gap: 10px; margin: 6px 0; }
+  button { font: 800 16px/1.2 'Nunito', system-ui, sans-serif; color: #FBF7F0; background: #4a6a47; border: 0; border-radius: 12px; padding: 10px 14px; cursor: pointer; flex: 1 1 140px; min-height: 44px; }
+  button[aria-pressed=true] { background: #2E4A2C; }
+  a { color: #4a6a47; }
+  @media (max-width: 600px) { body { font-size: 17px; } .muted, .legend { font-size: 16px; } }
+</style>
+</head>
+<body>
+<main>
+  <h1>ebb shore lab</h1>
+  <p class="muted">The shore zones the island works out from how high each bit of shore stands in the tide (docs/future/10, step Z1). Shape or paint the coast on the island below with the tools, as in the game: the map redraws a moment after the water settles. Nothing here is drawn in the game yet; this is the data the shore's look will use. The island is a throwaway test island and is never saved. <a href="./">All tools</a></p>
+  <div class="split">
+  <div class="stage" id="stage"><canvas id="view" aria-label="The island"></canvas></div>
+  <div class="card">
+    <h2>The shore from above</h2>
+    <p class="muted" id="status">Waiting for the island and its water.</p>
+    <canvas id="map" class="map" aria-label="Map of the shore zones, north up"></canvas>
+    <div class="tide">
+      <label for="level">Sea level</label>
+      <input id="level" type="range" min="-1.15" max="1.15" step="0.01" value="0">
+      <output id="level-out" for="level">0.00 m</output>
+    </div>
+    <div class="buttons" id="tides">
+      <button data-a0="-1.15">Spring low</button>
+      <button data-a0="-0.85">Neap low</button>
+      <button data-a0="0">Mid tide</button>
+      <button data-a0="0.85">Neap high</button>
+      <button data-a0="1.15">Spring high</button>
+    </div>
+    <p class="muted">The sea covers whatever lies below the level you pick; zones still show faintly under it. Kelp only comes out of the water at spring low tides.</p>
+    <div class="legend" id="legend"></div>
+  </div>
+  </div>
+  <p class="muted">Add ?island=two-ponds or ?seed=2 to the address to try another island.</p>
+</main>
+<script src="./boot-guard.js"></script>
+<script type="importmap">{ "imports": {
+  "wgpu-matrix": "../src/vendor/wgpu-matrix/wgpu-matrix.module.js" } }</script>
+<script type="module" src="./shore-lab.js"></script>
+</body>
+</html>

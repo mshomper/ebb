@@ -242,10 +242,12 @@ export async function startApp(canvas, hooks = {}) {
   const terrainPass = createTerrainPass({
     terrain, recipe: terrainRecipe, seed: subSeed(seed, 'terrain-look'), getEye: () => camera.eye, tier,
     ground: groundDetail, groundTier: tierSettings.ground, getTide: () => water.tide, lodDistances: tierSettings.lodDistances,
+    getHours: () => clock.display() / clock.SECONDS_PER_HOUR,
     water: { depthTextures: water.sim.depthTextures, current: () => water.sim.current, damp: water.sim.damp, dampWet: waterRecipe.look.dampHollowWet,
-      vel: water.sim.vel, caustics: waterRecipe.caustics },
+      vel: water.sim.vel, caustics: waterRecipe.caustics, tide: waterRecipe.tide },
     moss: moss.texture, causticLayers: tierSettings.causticLayers, wetness, cover: growth.coverTex,
     probe: { view: atmosphere.probeView, sampler: atmosphere.probeSampler }, rings: waterRecipe.ripples.rings,
+    shore: { texture: ww.shore.texture, look: ww.shore.recipe.look },
   });
   // The meadow (docs 10): GPU grass blades where grass is painted, after the terrain.
   const grassPass = createGrassPass({
@@ -374,7 +376,7 @@ export async function startApp(canvas, hooks = {}) {
     tier = t;
     tierSettings = settingsFor(t);
     setQualityTier(t);
-    terrainPass.setTier(tierSettings);
+    terrainPass.setTier({ ...tierSettings, name: t });
     grassPass.setTier(tierSettings);
     rushPass.setTier(tierSettings);
     waterPass.setDetailFade(tierSettings.waterDetailFadeM);
