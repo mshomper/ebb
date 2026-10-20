@@ -18,7 +18,7 @@ import { loadIsland } from './recover.js';
 
 const ENCODE_JOB = { module: './save/world-file.js', fn: 'encodeJob' };
 /** URL parameters that start a throwaway test island. */
-export const TEST_PARAMS = ['seed', 'day', 'frogs'];
+export const TEST_PARAMS = ['seed', 'day', 'frogs', 'trust'];
 
 /**
  * @typedef {'off'|'test'|'fresh'|'loaded'|'elsewhere'|'failed'|'damaged'} SaveStatus

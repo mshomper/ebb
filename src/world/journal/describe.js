@@ -6,6 +6,7 @@
 
 import { HABITAT_ORIGIN, habitatCell } from '../growth/habitat.js';
 import { measure, present, knownLines, dateOfHour, sketchOf, coverShare, hasCover, isAnimal, COVER_HAS, COVER_FULL, FLOWER, DORMANT } from './observe.js';
+import { trustWord } from '../creatures/trust.js';
 
 /** The island's middle and size from the habitat, cached per habitat. @type {WeakMap<object, { x: number, z: number, r: number }>} */
 const shapes = new WeakMap();
@@ -162,13 +163,19 @@ export function describe(journal, sp, state, hab, words, hour = journal.last) {
 export const momentKind = (rec) => (isAnimal(rec) ? 'creature' : rec.kind === 'cover' ? 'cover' : 'plant');
 
 /**
- * The card for one frog (a tap on it, or Show me).
- * @param {{ x: number, z: number }} f @param {any} state @param {any} words
+ * The card for one frog (a tap on it, or Show me): how well it knows you as a word (S6c), and a line
+ * that goes with the word.
+ * @param {{ x: number, z: number, id?: number }} f @param {any} state @param {any} words
+ * @param {any} [presence] recipes/species/frog.json presence (its trust bands)
  */
-export function frogCard(f, state, words) {
+export function frogCard(f, state, words, presence) {
   const rec = words.species.frogs;
   const asleep = !!state?.creatures?.frogs?.dormant;
-  return { sp: 'frogs', name: rec.card, icon: rec.icon, text: rec.stages[asleep ? 1 : 0], wx: f.x, wz: f.z, r: words.identify.grassRingM, stage: -1 };
+  const frog = state?.creatures?.frogs?.frogs?.find((/** @type {any} */ g) => g.id === f.id);
+  const T = rec.trust;
+  const w = frog && presence && T ? trustWord(frog.trust ?? 0, presence.bands) : null;
+  return { sp: 'frogs', name: rec.card, icon: rec.icon, text: w && !asleep ? T.lines[w] : rec.stages[asleep ? 1 : 0],
+    word: w ? T.words[w] : null, id: f.id ?? null, wx: f.x, wz: f.z, r: words.identify.grassRingM, stage: -1 };
 }
 
 /**

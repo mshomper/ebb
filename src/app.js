@@ -159,6 +159,8 @@ export async function startApp(canvas, hooks = {}) {
   if (clock.worldT() === 0) clock.reset(((skyRecipe.orbit.startHour ?? 10) + 24 * startDay) * clock.SECONDS_PER_HOUR);
   updateStore('meta', (m) => { m.flow = clock.flow(); });
   const env = makeEnv(seed, { seasons: seasonsRecipe, sky: skyRecipe.orbit, water: waterRecipe });
+  // `?trust=0.5` (testing): every frog knows you at least this well from the next hour (S6c, trust.js).
+  /** @type {any} */ (env).testTrust = Math.max(0, Math.min(1, Number.parseFloat(params.get('trust') ?? '0') || 0));
   /** @type {import('./sim/live-sim.js').LiveWorld} */
   const world = { state: getStore('world') ?? runHour(initialWorldState(seed), clock.hourIndex(), env).state, env };
   updateStore('world', () => world.state);

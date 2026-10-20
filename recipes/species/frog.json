@@ -95,8 +95,10 @@
     "ringM": 1.5, "ringTrustShrink": 0.8, "ringMinM": 0.3,
     "calmSpeed": 0.5, "calmTrustGain": 2,
     "editReachM": 2, "fleeM": 2, "fleeMps": 0.3, "wariS": [40, 70], "hushReachM": 4, "hushS": [14, 20],
-    "watch": { "reachM": 3, "minS": 20, "capS": 600, "trustPerMin": 0.012 },
-    "feedTrust": 0.06, "ceiling": "familiar", "namingTrust": 0.5
+    "watch": { "reachM": 3, "minS": 20, "capS": 600, "trustPerMin": 0.012, "stillMps": 0.05 },
+    "feedTrust": 0.06, "ceiling": "familiar", "namingTrust": 0.5,
+    "_trust": "Trust (S6c, doc 23): 0..1 per frog, saved, only ever grows. bands: where each word after Wary begins (Tolerant, Curious, Familiar, Bonded); the ceiling word caps it just under the next band. Quiet watching: the camera slower than watch.stillMps within watch.reachM of a frog for at least watch.minS, closed when it moves or at watch.capS, earns trustPerMin a minute. Both kinds are saved as events the hourly tick applies.",
+    "bands": [0.2, 0.45, 0.65, 0.85]
   },
   "find": { "tapM": 0.3, "tapPerM": 0.03, "lookM": 1.5, "lookDistM": 1.5, "holdS": 1.5 },
   "_reveal": "Coming back in the reveal on return (S7c, src/world/creatures/reveal-return.js): return is how (plop: a ring on the water, for the few nearest the camera); growS is how long one takes to come in.",

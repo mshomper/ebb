@@ -15,6 +15,8 @@
 //             one a day (`creature:left`); a big content group is happy once (`species:happy`)
 // In winter frogs sleep in the pond mud (`creature:dormant`, then `creature:woke`): mood is held and
 // nothing changes. Positions are each frog's home on the bank; S6b animates them from there.
+// Each hour also applies the trust live play recorded (trust.js; `creature:trusted` when a frog's
+// word moves up).
 //
 // State contract: coarseStep never mutates its input; it returns a shallow copy of `state` with a
 // fresh `state.creatures`.
@@ -23,6 +25,7 @@ import { stream, subSeed, hash32, det } from '../../core/rng.js';
 import { HOURS_PER_DAY } from '../../core/clock.js';
 import { moodOf, companyOf, foodAt, goodEdge, cellCenter } from '../ecology/habitat.js';
 import { ecologyNow } from '../ecology/coarse.js';
+import { applyTrust } from './trust.js';
 
 /**
  * @typedef {Object} Frog
@@ -34,6 +37,7 @@ import { ecologyNow } from '../ecology/coarse.js';
  * @property {number} mood   0..1, easing toward the habitat's answer
  * @property {number} low    hours in a row under leaveMood
  * @property {string[]} near the cover plants within its shelter reach (for the journal's web)
+ * @property {number} [trust] how well it knows you, 0..1, only ever growing (trust.js; absent is 0)
  */
 
 /**
@@ -51,6 +55,7 @@ import { ecologyNow } from '../ecology/coarse.js';
  * @property {number} nextId
  * @property {Frog[]} frogs
  * @property {{ metres: number, capacity: number, bestScore: number }} edge  the good edge now
+ * @property {import('./trust.js').TrustEvent[]} [pending]  trust earned in live play, for the next hour
  */
 
 /** @returns {{ frogs: FrogsState }} */
@@ -198,6 +203,7 @@ export function bringFrogs(state, hourIndex, env, count) {
     fr.lastJoin = hourIndex;
     events.push({ name: 'creature:settled', payload: { species: 'frogs', id: fr.frogs[0].id, x: fr.frogs[0].x, z: fr.frogs[0].z } });
   } else if (fr.frogs.length === 1) fr.phase = 'visiting';
+  events.push(...applyTrust(fr, rec.presence, env.testTrust ?? 0));
   return { state: { ...state, creatures: { ...(state.creatures ?? {}), frogs: fr } }, events };
 }
 
@@ -237,6 +243,9 @@ export function coarseStep(state, hourIndex, env) {
     const [x, z] = cellCenter(edge.best, hab.n);
     events.push({ name: 'creature:habitat-right', payload: pay({ x, z }) });
   }
+
+  // Trust earned since the last hour (watching, feeding), and `?trust=` when testing.
+  events.push(...applyTrust(fr, rec.presence, env.testTrust ?? 0));
 
   // Winter: asleep in the pond mud, mood held, nothing comes or goes.
   const dormant = !!state.seasons?.dormant?.[E.dormancy];

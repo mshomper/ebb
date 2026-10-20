@@ -7,7 +7,9 @@
 // then hints, and the notes speak of something: a sign, rings on the water. Once found, the notes
 // name them, the web's frog links ink from the cover around each frog's home (flags frogs:reeds,
 // frogs:rushes, frogs:iris, frogs:lilies, frogs:grass), and plant pages' gives lines ink
-// (frogs:settled). Midges (kind swarm) are known by themselves at the first dusk they gather.
+// (frogs:settled). When a frog comes to know you better (S6c, `creature:trusted`) the notes say so
+// and the page learns that frogs let you close if you come slowly. Midges (kind swarm) are known by
+// themselves at the first dusk they gather.
 // Words from recipes/world/journal.json.
 
 import { HABITAT_ORIGIN } from '../growth/habitat.js';
@@ -89,6 +91,12 @@ export function observeAnimals(j, out, ctx, at) {
       } else if (e.name === 'species:happy') {
         setFlag(j, 'frogs:happy');
         if (k.ever) note(rec, 'happy', 'frogs');
+      } else if (e.name === 'creature:trusted' && k.ever) {
+        // A frog's word moved up (S6c): a note, and what it teaches the page.
+        const t = rec.trust?.notes?.[e.payload.word];
+        if (t) out.push({ hour, date: at.date, text: t, sp: 'frogs', kind: 'trusted' });
+        learnOnce(k, `trust:${e.payload.word}`);
+        if (e.payload.word !== 'tolerant') learnOnce(k, 'trust:tolerant');
       }
     }
     if (k.ever) frogsKnown(j, k, F, at.season, hour);

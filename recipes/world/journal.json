@@ -324,8 +324,25 @@
         { "text": "Still water with reeds, rushes or iris at its edge", "learn": ["seen"] },
         { "text": "Small flying insects to catch, close to the water", "learn": ["settled"] },
         { "text": "Comes in ones and twos, at dusk", "learn": ["joined"] },
-        { "text": "Moves on when the edge grows bare or dry", "learn": ["left"] }
+        { "text": "Moves on when the edge grows bare or dry", "learn": ["left"] },
+        { "text": "Doesn't mind you close, if you come slowly", "learn": ["trust:tolerant"] }
       ],
+      "_trust": "How well one frog knows you (S6c, doc 23), as a word on its card, never a number; lines: what the card says at each word; notes: written once per frog when its word moves up to that one. Bands are in recipes/species/frog.json presence.",
+      "trust": {
+        "words": { "wary": "Wary", "tolerant": "Tolerant", "curious": "Curious", "familiar": "Familiar", "bonded": "Bonded" },
+        "lines": {
+          "wary": "Sits low at the water's edge, and keeps an eye on you.",
+          "tolerant": "Lets you come slowly, to about a meter.",
+          "curious": "Watches you back, and doesn't mind you close.",
+          "familiar": "Holds still while you look, and knows you well.",
+          "bonded": "Stays beside you, quite at ease."
+        },
+        "notes": {
+          "tolerant": "A frog lets you come a little closer now.",
+          "curious": "A frog watches you back now. It doesn't mind you close.",
+          "familiar": "A frog holds still while you look now. It knows you."
+        }
+      },
       "gives": [
         { "pencil": "Something might come of a happy pond one day.", "ink": "Happy frogs will bring water lily seed.", "when": "frogs:happy" }
       ],

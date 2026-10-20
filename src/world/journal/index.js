@@ -35,7 +35,7 @@ import { stampNotes, markShown, markNotesSeen, markPageSeen, readOf, pageSince, 
 
 /**
  * @param {{ world: { state: any, env: any }, words: any, island: any, web: any, wash?: any,
- *   creatures?: { frogAt: (x: number, z: number) => { x: number, z: number } | null } | null }} opts
+ *   creatures?: { frogAt: (x: number, z: number) => { x: number, z: number, id?: number } | null } | null }} opts
  *   world: the live world (state and env of the hourly tick); words: recipes/world/journal.json;
  *   island: recipes/world/journal-island.json; web: recipes/world/journal-web.json;
  *   wash: recipes/world/journal-wash.json; creatures: the live creatures (src/world/creatures),
@@ -113,7 +113,7 @@ export function createJournal(opts) {
   function cardAt(x, z) {
     // A frog first: they are small, and finding one is the point.
     const frog = creatures?.frogAt(x, z);
-    if (frog) return frogCard(frog, world.state, words);
+    if (frog) return frogCard(frog, world.state, words, world.env.recipes?.species?.frog?.presence);
     const hab = habitat();
     const living = identify(world.state, hab, x, z, words);
     if (living) return living;

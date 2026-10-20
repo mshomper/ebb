@@ -140,6 +140,7 @@ export function mountIslandNotes(parent, words) {
     if (!id) { card.classList.remove('is-open'); card.inert = true; follow(); return; }
     card.innerHTML = `
       <div class="ebb-idcard__head"><span class="ebb-idcard__icon">${iconSvg(id.icon)}</span><b>${esc(id.name)}</b>
+        ${id.word ? `<span class="ebb-idcard__word">${esc(id.word)}</span>` : ''}
         <button type="button" class="ebb-idcard__close" data-act="close" aria-label="Close" title="Close">${iconSvg('close')}</button></div>
       <p class="ebb-idcard__text">${esc(id.text)}</p>
       ${id.suits ? `<p class="ebb-idcard__suits">${esc(id.suits)}</p>` : ''}

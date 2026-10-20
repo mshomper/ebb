@@ -29,6 +29,7 @@ import { stream } from '../../core/rng.js';
  * @property {number} id
  * @property {{ x: number, z: number, yaw: number }} home
  * @property {number} mood     from the tick, 0..1
+ * @property {number} trust    from the tick, 0..1 (trust.js): shrinks its comfort ring
  * @property {number} x @property {number} z @property {number} y @property {number} yaw
  * @property {'rest'|'forage'|'call'|'swim'|'float'|'leave'} mode
  * @property {Hop | null} hop
@@ -89,6 +90,7 @@ export function createFrogAgents(recipe, seed) {
       }
       a.home = { x: f.x, z: f.z, yaw: f.yaw };
       a.mood = f.mood;
+      a.trust = f.trust ?? 0;
     }
     synced = true;
   }
@@ -96,7 +98,7 @@ export function createFrogAgents(recipe, seed) {
   /** @param {any} f @param {any} env @returns {Agent} */
   function make(f, env) {
     const r = stream(seed, 0xf20, f.id);
-    return { id: f.id, home: { x: f.x, z: f.z, yaw: f.yaw }, mood: f.mood, x: f.x, z: f.z, y: env.ground(f.x, f.z), yaw: f.yaw,
+    return { id: f.id, home: { x: f.x, z: f.z, yaw: f.yaw }, mood: f.mood, trust: f.trust ?? 0, x: f.x, z: f.z, y: env.ground(f.x, f.z), yaw: f.yaw,
       mode: 'rest', hop: null, swim: null, sq: 0, sqv: 0, sac: 0, sacv: 0, pulseUntil: -1, tongueT0: -1, flicks: 0, nextFlick: 0,
       nextAt: clock + 0.5 + 3 * r.next(), until: 0, sink: 0, gone: false, perch: null, under: 0, seek: null, flee: null, waryUntil: -1, hushUntil: -1, r };
   }
@@ -210,17 +212,16 @@ export function createFrogAgents(recipe, seed) {
 
   /**
    * Each frame: does any presence source startle a frog? Inside its comfort ring and faster than its
-   * calm pace, or an edit right beside it. Trust is 0 until S6c, so every ring is the shy one.
+   * calm pace, or an edit right beside it. Its own trust shrinks the ring and raises the pace (S6c).
    * @param {import('./presence.js').PresenceSource[]} sources @param {any} env
    * @returns {{ startled: number[], hushed: number[] }}
    */
   function sense(sources, env) {
-    const trust = 0;
-    const ring = Math.max(P.ringMinM, P.ringM * (1 - P.ringTrustShrink * trust));
-    const calm = P.calmSpeed * (1 + P.calmTrustGain * trust);
     /** @type {number[]} */ const startled = [], hushed = [];
     for (const a of agents.values()) {
       if (a.hop || a.flee || a.mode === 'leave' || clock < a.waryUntil) continue;
+      const ring = Math.max(P.ringMinM, P.ringM * (1 - P.ringTrustShrink * a.trust));
+      const calm = P.calmSpeed * (1 + P.calmTrustGain * a.trust);
       let from = null;
       for (const s of sources) {
         const d = Math.hypot(s.pos[0] - a.x, s.pos[1] - a.y, s.pos[2] - a.z);
