@@ -158,6 +158,27 @@ export function addFallsTests(test, assert, eq) {
     return `edge at ${l.x.toFixed(2)} m, slides out ${l.slide.toFixed(2)} m, lands at ${l.foot.toFixed(2)} m`;
   });
 
+  test(FALLS, 'over a rim that rounds over, the fall starts at the top of the rim, at the shelf water', async () => {
+    const dev = await device();
+    if (!dev) return NO_GPU;
+    // The rim begins to fall at -0.45 m and reaches the foot at +0.35 m: the lip cell (-0.5..0 m)
+    // sits on the slope, its bed (lowest corner) well under the shelf's water.
+    const profile = (/** @type {number} */ x) => {
+      if (x < -0.45) return 2.5;
+      if (x > 0.35) return 1;
+      const u = (x + 0.45) / 0.8;
+      return 2.5 - 1.5 * u * u * (3 - 2 * u);
+    };
+    const lips = await detect(dev, { shelf: 1.5, depth: 0.02, vx: 0.3, profile });
+    assert(lips.length > 0, 'no lips found');
+    const l = lips[0];
+    assert(l.top > 2.5, `the fall starts at ${l.top.toFixed(3)} m, under the shelf water (2.52 m): a gap opens at the rim`);
+    assert(l.x < -0.25, `the fall starts at x ${l.x.toFixed(2)} m, past where the rim begins to fall (-0.45 m)`);
+    // At the foot, or on the gentle last of the rim's curve just above it (the curtain tucks under).
+    assert(l.foot < 1.2, `lands at ${l.foot.toFixed(3)} m, not at the foot (1 m)`);
+    return `starts at ${l.top.toFixed(2)} m, x ${l.x.toFixed(2)} m, lands at ${l.foot.toFixed(2)} m, slides ${l.slide.toFixed(2)} m`;
+  });
+
   test(FALLS, 'no lips when the water flows away from the edge, or over a small step', async () => {
     const dev = await device();
     if (!dev) return NO_GPU;

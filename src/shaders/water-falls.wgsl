@@ -30,10 +30,11 @@ const G_FALL: f32 = 9.81;
 
 // Height a falling drop stops at: the ground, or the water's surface where there is water below
 // the lip (never the water it fell from, which still laps the edge in the lip's own cell).
-fn landingSurface(p: vec2f, top: f32) -> f32 {
+fn landingSurface(p: vec2f, top: f32, lipCell: vec2i) -> f32 {
   let g = terrainHeight(heightTex, p);
   let c = vec2i(floor(waterCellCoord(p) + 0.5));
-  if (!inRect(c)) { return g; }
+  // Never the lip's own cell: its water is the film running down the rim, not a pool to land in.
+  if (!inRect(c) || all(c == lipCell)) { return g; }
   let d = textureLoad(depthTex, c, 0).r;
   let bed = waterBed(heightTex, c);
   return select(g, max(g, levelAround(c, bed + d)), d > fl.minDepth && bed < top - fl.minDrop * 0.5);
@@ -95,7 +96,7 @@ fn csDetect(@builtin(global_invocation_id) gid: vec3u) {
   if (d < fl.minDepth) { return; }
   let v = textureLoad(velTex, c, 0).rg;
   let bed = waterBed(heightTex, c);
-  let top = bed + d;
+  let top0 = bed + d;
   let nb = array<vec2i, 4>(vec2i(1, 0), vec2i(-1, 0), vec2i(0, 1), vec2i(0, -1));
   for (var i = 0; i < 4; i++) {
     let q = c + nb[i];
@@ -105,15 +106,34 @@ fn csDetect(@builtin(global_invocation_id) gid: vec3u) {
     if (outward < fl.minSpeed) { continue; }
     let bedQ = waterBed(heightTex, q);
     let footY = bedQ + textureLoad(depthTex, q, 0).r;
-    if (bed - bedQ < fl.minDrop || top - footY < fl.minDrop) { continue; }
-    // The real edge: march the ground out from the cell's middle to where it falls away.
-    let start = waterCellCenter(c);
-    var edge = start + dir * fl.lipReach;
+    if (bed - bedQ < fl.minDrop || top0 - footY < fl.minDrop) { continue; }
+    // On a rim that rounds over two cells, both look like lips; the fall belongs to the lower one
+    // (which takes its top from this cell's water), or this one would land on that one's film.
+    if (isLip(q, nb[i])) { continue; }
+    // The water's real top: this cell's bed is its lowest corner, and the lip cell already sits on the
+    // rim's rounded slope, so its own surface is too low. The shelf water just upstream is the level
+    // the fall leaves from (when it is wet and not far above: a real step up is not this fall).
+    var top = top0;
+    var start = waterCellCenter(c);
+    var reach = fl.lipReach;
+    let up = c - nb[i];
+    if (inRect(up)) {
+      let dUp = textureLoad(depthTex, up, 0).r;
+      let upTop = waterBed(heightTex, up) + dUp;
+      if (dUp > fl.minDepth && upTop > top && upTop - top < fl.minDrop * 1.6) {
+        top = upTop;
+        start = waterCellCenter(up);
+        reach += WATER_CELL;
+      }
+    }
+    // The real edge: march the ground out from there to where it first begins to fall away, so the
+    // fall starts at the top of the rim and runs down its rounded slope.
+    var edge = start + dir * reach;
     var s = 0.0;
     loop {
-      if (s > fl.lipReach) { break; }
+      if (s > reach) { break; }
       let p = start + dir * s;
-      if (terrainHeight(heightTex, p) < top - fl.minDrop * 0.5) { edge = p - dir * fl.lipStep * 0.5; break; }
+      if (terrainHeight(heightTex, p) < top - 0.06) { edge = p - dir * fl.lipStep * 0.5; break; }
       s += fl.lipStep;
     }
     // Water goes over a brink at about the critical speed sqrt(g d), whatever the sim's speed right
@@ -132,16 +152,17 @@ fn csDetect(@builtin(global_invocation_id) gid: vec3u) {
       let y = top - 0.5 * G_FALL * t * t;
       var p = edge + dir * (fl.offset + throwV * t + slide);
       // Never inside the rock: out along a steep face until the ground there is below the water
-      // (on gentle ground it has simply landed).
+      // (on gentle ground it has simply landed; over the rim's rounded top it is still sliding).
+      let leaving = top - y < 0.2;
       loop {
-        if (slide > 0.8 || terrainHeight(heightTex, p) <= y + 0.02 || terrainNormal(heightTex, p).y > 0.6) { break; }
+        if (slide > 0.8 || terrainHeight(heightTex, p) <= y + 0.02 || (terrainNormal(heightTex, p).y > 0.6 && !leaving)) { break; }
         slide += 0.04;
         p = edge + dir * (fl.offset + throwV * t + slide);
       }
       // It lands only on gentle ground or on water; on the steep face it keeps sliding down.
-      let s = landingSurface(p, top);
+      let s = landingSurface(p, top, c);
       let onWater = s > terrainHeight(heightTex, p) + 0.005;
-      if (y <= s + 0.02 && (onWater || terrainNormal(heightTex, p).y > 0.6)) { land = s; break; }
+      if (!leaving && y <= s + 0.02 && (onWater || terrainNormal(heightTex, p).y > 0.6)) { land = s; break; }
       land = min(s, y);
       t += 0.02;
     }
