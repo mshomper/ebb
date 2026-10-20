@@ -51,12 +51,15 @@ export function judgeHarmony(material, rules, walked) {
   let stuck = 0;
   for (let i = 2; i < bars.length; i++) {
     const p = (/** @type {number} */ k) => bars[k].chords[bars[k].chords.length - 1].place;
+    // A written line (sus4, sus2, home) stays on one place on purpose.
+    if (bars[i].figure && bars[i].figure !== 'rock') continue;
     if (bars[i].chords.length === 1 && p(i) === p(i - 1) && p(i - 1) === p(i - 2)) stuck++;
   }
   terms.stuck = -(S.stuck ?? 0) * stuck;
 
   // Too many color chords.
-  const all = bars.flatMap((b) => b.chords);
+  // A written line's colors are the line itself, so they are not counted.
+  const all = bars.filter((b) => !b.figure || b.figure === 'rock').flatMap((b) => b.chords);
   const share = all.filter((c) => c.color).length / Math.max(1, all.length);
   terms.colorCrowd = -(S.colorCrowd ?? 0) * Math.max(0, share - (S.colorCrowdShare ?? 0.4)) * 10;
 

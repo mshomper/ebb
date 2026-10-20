@@ -19,6 +19,7 @@ import { createPerformer } from './perform.js';
 import { createInstruments } from './instruments.js';
 import { dayColorAt } from './daycolor.js';
 import { grow } from './develop/index.js';
+import { DAYS_PER_SEASON } from '../../core/clock.js';
 import { stream } from '../../core/rng.js';
 
 const SEASONS = ['spring', 'summer', 'autumn', 'winter'];
@@ -52,18 +53,26 @@ async function loadJson(p) {
  *   seed: the music's own seed (the world seed and this device's session count)
  */
 export async function createMusic(mixer, opts) {
-  const [director, rz, vo, rules, names, material, themes] = await Promise.all([
+  const [director, rz, vo, rules, names, spring, themes, summer] = await Promise.all([
     loadJson('recipes/music/director.json'),
     loadJson('recipes/music/realize.json'), loadJson('recipes/music/voicing.json'), loadJson('recipes/music/develop.json'),
     loadJson('recipes/music/names.json'), loadJson('recipes/music/material/spring.json'),
     loadJson('recipes/music/pieces/themes/index.json').catch(() => ({ candidates: [] })),
+    loadJson('recipes/music/material/summer.json').catch(() => null),
   ]);
+  // Each season's material (recipes/music/material/); a season without its own grows from spring's.
+  /** @type {Record<string, any>} */
+  const materials = { spring, ...(summer ? { summer } : {}) };
+  const material = spring;
+  /** The material for a season, or spring's. @param {string} season */
+  const materialFor = (season) => materials[season] ?? spring;
+  /** The season at a game time (14 game days each, src/core/clock.js). @param {number} gameT */
+  const seasonAt = (gameT) => SEASONS[Math.floor(gameT / (DAYS_PER_SEASON * 86400)) % 4];
   const recipes = { realize: rz, voicing: vo };
   // The four tides in their sixteen seasonal settings (doc 24, Motifs).
   const tides = await Promise.all(themes.candidates.flatMap((/** @type {any} */ c) => Object.values(c.settings))
     .map((/** @type {any} */ id) => loadJson(`recipes/music/pieces/themes/${id}.json`)));
-  // One stand-in per slot that the composer fills when chosen. Only spring has material so far, so
-  // every season grows from spring's until the other seasons' material is written (phase 7).
+  // One stand-in per slot that the composer fills when chosen, from the season's own material.
   const grownSlots = GROWN_SLOTS.map((slot) => ({
     id: `grown-${slot}`, grownSlot: slot, alwaysNew: true, slots: [slot], seasons: [...SEASONS], requires: {}, keys: [material.home],
   }));
@@ -115,8 +124,9 @@ export async function createMusic(mixer, opts) {
     const slot = d.slot === 'early-nocturne' ? 'nocturne' : d.slot;
     // A slot the composer fills may replay one of your hearted grown pieces for that slot.
     let growSeed = d.seed, growWeather = st.weather;
+    const growSeason = materials[seasonAt(st.gameT)] ? seasonAt(st.gameT) : 'spring';
     if (d.piece.grownSlot) {
-      const ofSlot = hearted.filter((h) => h.kind === 'grown' && h.slot === d.piece.grownSlot
+      const ofSlot = hearted.filter((h) => h.kind === 'grown' && h.slot === d.piece.grownSlot && (h.season ?? 'spring') === growSeason
         && st.realS - (replayedAt.get(h.key) ?? -Infinity) >= HR.minGapRealMin * 60);
       if (ofSlot.length && heartRng.next() < HR.replayChance) {
         const h = ofSlot[heartRng.int(ofSlot.length)];
@@ -125,7 +135,7 @@ export async function createMusic(mixer, opts) {
         replayedAt.set(h.key, st.realS);
       }
     }
-    const piece = d.piece.grownSlot ? grow(material, rules, { slot: d.piece.grownSlot, weather: growWeather, seed: growSeed }, names).piece : d.piece;
+    const piece = d.piece.grownSlot ? grow(materialFor(growSeason), rules, { slot: d.piece.grownSlot, weather: growWeather, seed: growSeed }, names).piece : d.piece;
     const key = d.key ?? piece.keys?.[0];
     // A tide shows its own name ("Moon pull"), a grown piece the composer's.
     current = { id: piece.id, title: piece.theme?.name ?? piece.title ?? piece.id, seed: growSeed, slot, windowEndRealS: d.windowEndRealS, finishing: false, started: false };
@@ -143,7 +153,7 @@ export async function createMusic(mixer, opts) {
       mine.started = true;
       performer.play(perf, { coda, onEnd: () => ended(mine) });
       opts.emit?.('music:started', { id: piece.id, title: mine.title, seed: growSeed, slot, durationS: perf.durationS,
-        grown: !!d.piece.grownSlot, grownSlot: d.piece.grownSlot, weather: growWeather });
+        grown: !!d.piece.grownSlot, grownSlot: d.piece.grownSlot, weather: growWeather, season: growSeason });
     } catch (e) {
       console.warn('ebb music: a piece could not start', e);
       ended(mine);

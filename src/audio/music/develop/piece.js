@@ -27,7 +27,8 @@ const abc = (meter, key, body) => `X:1\nM:${meter}\nL:1/8\nK:${key}\nV:mel\n${bo
  * @param {any} material
  * @param {{bars: import('./harmony.js').HBar[]}} walked
  * @param {import('./plan.js').PhrasePlan[]} plan
- * @param {{id: string, title: string, slot: string, weather: string, meter: string, tempo: [number, number], template: string, seed: number, report: any, ending: any}} o
+ * @param {{id: string, title: string, slot: string, weather: string, meter: string, tempo: [number, number], template: string, seed: number, report: any, ending: any, palette?: any}} o
+ *   palette: the instruments (melody, accomp, bed) from the material, or the piano with a strings bed
  * @returns {any} a piece, recipes/music/pieces/<id>.json shape, plus a 'grown' block for the lab
  */
 export function writePiece(material, walked, plan, o) {
@@ -67,7 +68,7 @@ export function writePiece(material, walked, plan, o) {
     mode: material.mode,
     meter: o.meter,
     tempo: o.tempo,
-    palette: { melody: ['piano'], accomp: ['piano'], bed: ['strings', 'pad'] },
+    palette: o.palette ?? { melody: ['piano'], accomp: ['piano'], bed: ['strings', 'pad'] },
     layers: { bed: { style: 'warm', sections: bed } },
     form: { grammar: `${names.join(' ')} coda`, short: `${names[0]} coda`, optional: {} },
     sections,

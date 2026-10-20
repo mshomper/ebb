@@ -13,17 +13,20 @@
  * @property {string} [slot]   a grown piece's slot
  * @property {string} [weather]
  * @property {number} [seed]
+ * @property {string} [season] a grown piece's season (its material); spring when absent
  */
 
 /**
  * The heart for a piece now playing (music:started's payload).
- * @param {{ id: string, title: string, grown?: boolean, slot?: string, weather?: string, seed: number, grownSlot?: string }} p
+ * @param {{ id: string, title: string, grown?: boolean, slot?: string, weather?: string, seed: number, grownSlot?: string, season?: string }} p
  * @returns {Heart}
  */
 export function heartOf(p) {
   if (p.grown) {
-    const slot = p.grownSlot ?? p.slot ?? 'morning', weather = p.weather ?? 'clear';
-    return { key: `grown:${slot}:${weather}:${p.seed >>> 0}`, kind: 'grown', title: p.title, slot, weather, seed: p.seed >>> 0 };
+    const slot = p.grownSlot ?? p.slot ?? 'morning', weather = p.weather ?? 'clear', season = p.season ?? 'spring';
+    // Spring's keys stay as they were first written; other seasons name theirs.
+    const key = season === 'spring' ? `grown:${slot}:${weather}:${p.seed >>> 0}` : `grown:${season}:${slot}:${weather}:${p.seed >>> 0}`;
+    return { key, kind: 'grown', title: p.title, slot, weather, seed: p.seed >>> 0, season };
   }
   return { key: `tide:${p.id}`, kind: 'tide', title: p.title, id: p.id };
 }
