@@ -20,6 +20,56 @@ Everything below is merged to main: phase 1 in PR #27, phases 2 and 3 in PR #32.
 
 Preview pages: `https://mshomper.github.io/ebb/tools/music-lab.html` (tabs Instruments, Piece, Day, Themes), `tools/audio-check.html` (island sounds), `tools/freesound-shortlist.html` (sound picks), `tools/unit-tests-audio.html` (106 tests). Branch previews live at `https://mshomper.github.io/ebb/preview/<branch>/...`.
 
+## Update: second session (October 20, 2026)
+
+Read this section first; the rest of the document is the October 19 state and still holds where this section doesn't change it.
+
+### Pull requests, in merge order
+
+All four merge cleanly with main and with each other. None touches shared files.
+
+| PR | Branch | What |
+|---|---|---|
+| #33 | `audio-handoff` | This document and `tools/audio-prep/` (the sample prep scripts) |
+| #52 | `m2-audio-fixes` | The bass floor raised to B1 (62 Hz, doc 24's 60 Hz floor); the future-work notes |
+| #51 | `m2-soundscape-beds` | Recorded beds from Matt's Freesound picks: 15 layers, 27 takes, 8.3 MB of Opus, credits, `@layer/name` takes in `takes.json`, the bed prep scripts in `tools/audio-prep/beds/` |
+| #49 | `m2-music-develop` | Development engine step 4a (harmony), the lab's Engine tab, `docs/audio-develop-plan.md` |
+
+### Where things stand now
+
+| Track | State |
+|---|---|
+| Phase 4, development engine | **4a done** (harmony), and Matt approved it by ear. **4b (melody) is next.** Then 4c (the full critic in a worker), 4d (the note-job overlay and Keep), and 4e (the material editor). The plan is `docs/audio-develop-plan.md`. |
+| Soundscape beds | Done and waiting for Matt's listen: every bed that had a pick plays a recording. Previews are in the audio check page. |
+| Phone sets for the support kit | **Tabled by Matt** ("not focused on the phone at the moment"). |
+| Solo cello | Two candidates found; Matt is happy with them, and no audition is built yet. Karoryfer x bigcat Cello (CC0, arco in 4 layers, every minor third, no vibrato) is the first choice. University of Iowa Cello 2012 (free to use without restrictions, every semitone, 3 dynamics) is the second. Check Karoryfer's own page once to confirm CC0 before shipping. |
+| Desktop memory | Matt accepts that a piano piece plus a string bed may briefly pass 128 MB. No change. |
+
+### Matt's decisions on October 20 (in the code and recipes; doc 24 to be updated when the engine merges)
+
+- **Length:** grown pieces about half again as long, not double. Templates bring phrases back: a return keeps its source's first bars, then goes its own way to a different cadence. Matt hears returns "like a coda" and likes it. Song averages about 86 s.
+- **Rain and mist** templates are 10 percent slower.
+- **Endings:** seven ways to close, all approved: amen, borrowed minor iv, flat seven then home, ii to an open I, turn away then home, hold the last chord, and flat six, flat seven, home. The ending seldom repeats the last cadence's kind.
+- **Colors Matt likes:**
+  - Inversions, and chords that leave the base progression: the borrowed minor iv (the Gm over D ending), the flat six (B-flat maj7 to C to D).
+  - The "seconds" chords D2 and G2 (written Dsus2, Gsus2 in the recipes; the lab shows D2).
+  - Slow arpeggios, now about a third of the left hand.
+- **D2 and G2 rock back and forth:** one chord a bar, or two beats each in 4/4, never two hits of one chord running. Held chords sound on through the bar rather than being struck again.
+- **Step 4b requirements from Matt:**
+  - **A melody is layered on top about half the time.** The rest stays harmony with the left hand and bed.
+  - Distinct melodies can layer back and forth over the D2 and G2 rocking.
+
+### Working notes
+
+- Branch previews are at `https://mshomper.github.io/ebb/preview/<branch>/`. The Engine tab is at `tools/music-lab.html#engine`.
+- **Offline WAV render of a grown piece:** a page that grows a seed in the browser, realizes it and renders it through the real instruments with an OfflineAudioContext, then saves 16-bit WAV through Playwright.
+  - It works like `tools/audio-prep/render/`, but calls `grow()` first.
+  - It isn't committed. Rebuild it from `render/index.html` by adding `grow(material, rules, {slot, weather, seed}, names)` before `realize`.
+- **Checks:**
+  - `node tools/run-audio-tests.mjs`: 112 tests on the engine branch.
+  - `npx -y tsc -p jsconfig.json --noEmit`.
+  - Playwright at 390 and 1280 px.
+
 ## Matt's decisions so far (all written into doc 24 and approved)
 
 - **Piano:** Steinway B, gentle stretch tuning, blend width 20 with curve 0.5 (mix), key-off -25 dB, the Knight pedal sound on at -20 dB, dampers 0.35 s (bass) to 0.06 s (treble). Game set: 4 s tails, mono below C3, middle five octaves, pedal and no-pedal sets, 10.2 MB.
