@@ -40,6 +40,47 @@ flowchart LR
 
 The gifts build on each other. The frogs' Cliff tool makes the deep, still pool minnows want; the dragonflies' springs then pour over the terraces the player has already built. A gift never brings a creature: the creature still decides to come.
 
+### The gift chain (proposed October 20, 2026, for Matt's review)
+
+Each gift lets the player make something new, and what they make is part of what draws a later creature. The chain runs forward through the tiers and sometimes loops back to feed an earlier one. Gifts are from doc 12; the two marked rows propose swapping the otters' and turtles' gifts, so no species gives the thing it needs itself.
+
+| Species | Gift | Lets you make | Which draws in |
+|---|---|---|---|
+| Frogs | Cliff tool | deep pools, terraces, sea walls | minnows; after v1, puffins and kittiwakes on cliffs |
+| Minnows | Pondweed | an underwater meadow | more fish for herons; food for turtles |
+| Dragonflies | Springs | streams, and waterfalls off terraces | otters (running water); damp ground for butterflies |
+| Bees | Hawthorn | hedges | songbirds nest in them; hedgehogs forage beneath |
+| Butterflies | Stone wall | sunny walls that gather moss | bees bask on them; hedgehogs walk the wall bases |
+| Songbirds | Oak | a tree that grows old | squirrels (nuts); owls (a hollow, once old) |
+| Hedgehogs | Bramble | thickets with berries | loops back: berries for songbirds, flowers for bees |
+| Squirrels | Beech | deep leaf litter | beetles for hedgehogs; firefly larvae |
+| Owls | Night photo | a way to see in the dark | helps the player find fireflies and bats |
+| Herons | Tide stone | bigger tides and wider flats | cranes; the rarest shells on the strandline |
+| Otters | **Drift log tool** (proposed; was alder) | logs along the bank | turtles bask on them; toads and slow worms live beneath (finds) |
+| Turtles | **Alder** (proposed; was the drift log tool) | wet alder wood with damp litter | firefly larvae; old alders hollow for bats |
+| Fireflies | Evening primrose | flowers that open at dusk | moths at dusk, food for bats |
+| Bats | Moonlight palette | a way to see the night | the end of the chain |
+| Cranes | Wild cherry | spring blossom and summer fruit | loops back to bees and songbirds; often the last step to the year page |
+
+```mermaid
+flowchart LR
+  FR[Frogs: cliffs] --> MI[Minnows]
+  MI -->|pondweed| HE[Herons]
+  MI -->|pondweed| TU[Turtles]
+  DR[Dragonflies: springs] --> OT[Otters]
+  BE[Bees: hawthorn] --> SO[Songbirds]
+  SO -->|oak| SQ[Squirrels]
+  SO -->|oak, grown old| OW[Owls]
+  SQ -->|beech litter| FI[Fireflies]
+  OW -->|night photo| FI
+  OT -->|drift logs| TU
+  TU -->|alder| BA[Bats]
+  FI -->|evening primrose| BA
+  HE -->|tide stone| CR[Cranes]
+```
+
+A gift only helps: every creature can still come without it (turtles bask on stones too; fireflies find litter under any tree), so no gift becomes a lock and order never matters.
+
 ### Milestones
 
 Plain language: watch for the second happy species in a tier. That is the moment the sea gives something back.
@@ -189,6 +230,7 @@ Tuning panel: milestone threshold (second or third happy species), rise duration
 
 ## Open questions
 
+- Swap the otters' and turtles' gifts (otters give the drift log tool, turtles give alder), so turtles do not give the logs they bask on and the alder leads on to fireflies and bats? See "The gift chain" above.
 - Should the player choose where a new islet rises (from two or three spots), or is a surprise placement nicer?
 - Is the second happy species the right trigger, or should land wait for all three in a tier?
 - Should the journal year page lead into a second year with new rare visitors, or simply rest?

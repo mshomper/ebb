@@ -24,7 +24,7 @@ flowchart LR
   T4 -->|2nd happy: outer skerry and long sandbar| T5[Tier 5 night and seasons<br/>fireflies, bats, cranes]
 ```
 
-Gifts are chosen so one species helps the next: frogs give the Cliff tool, whose Cut digs the deep pool minnows come to; the dragonflies' springs then turn the frogs' terraces into waterfalls; minnows give pondweed, which turtles eat; minnows feed herons; songbirds plant oaks, which squirrels and owls need; the bridge gives bats a roost.
+The whole chain, gift by gift, with what each lets you make and whom it draws, is in `13-progression-and-expansion.md` ("The gift chain"), including a proposed swap of the otters' and turtles' gifts. Gifts are chosen so one species helps the next: frogs give the Cliff tool, whose Cut digs the deep pool minnows come to; the dragonflies' springs then turn the frogs' terraces into waterfalls; minnows give pondweed, which turtles eat; minnows feed herons; songbirds plant oaks, which squirrels and owls need; the bridge gives bats a roost.
 
 ## Vertical slice: frogs (full detail)
 
