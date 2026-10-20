@@ -117,3 +117,93 @@ fn kelpBlades(xz: vec2f, down: vec2f, cover: f32, cell: vec2f, lenM: vec2f, widt
   o.grad *= 1.0 - k;
   return o;
 }
+
+// Wrack fronds (bladderwrack, Fucus): narrow straps draped downslope (`down`) over rock, each
+// forking once and often twice toward the tip, with paired air bladders either side of the midrib,
+// overlapping into a mat. One frond per grid cell (`cell.x` across by `cell.y` along). A frond is
+// present by the shore cover's wrack (r) at its own center, thinned by the same clump noise the
+// mat uses (`clump`: 1 / patch and clump sizes, `seed`), so fronds lie across clump edges whole.
+// `widthM` a strap's half-width, `bladderM` a bladder's radius. `tone` is 0..1 per frond, and
+// above 1 on a bladder (lighter, raised). Reads terrain-draw.wgsl's shoreTex and linearSampler.
+fn wrackFronds(xz: vec2f, down: vec2f, cell: vec2f, lenM: vec2f, widthM: f32, bladderM: f32, relief: f32,
+               clump: vec2f, seed: u32, cover: f32, pixM: f32) -> Litter {
+  var o: Litter;
+  o.cover = 0.0; o.grad = vec2f(0.0); o.tone = 0.5;
+  let across = vec2f(-down.y, down.x);
+  let q = vec2f(dot(xz, across), dot(xz, down));
+  let base = vec2i(floor(q / cell));
+  // A frond strays up to two cells either side: the search reaches two cells across, one along.
+  let room = max(2.0 * cell.x - widthM, 0.0) * 0.8;
+  var top = -1.0;
+  for (var dj = -1; dj <= 1; dj++) {
+    for (var di = -2; di <= 2; di++) {
+      let c = base + vec2i(di, dj);
+      var h = litterHash(c, 0x7c5u);
+      let r1 = hashToFloat(h);
+      // Only a frond drawn over the ones found so far can change the pixel.
+      if (r1 <= top) { continue; }
+      h = pcg(h); let r2 = hashToFloat(h);
+      h = pcg(h); let r3 = hashToFloat(h);
+      h = pcg(h); let r4 = hashToFloat(h);
+      let len = mix(lenM.x, lenM.y, r4);
+      let center = (vec2f(c) + vec2f(r2, r3)) * cell;
+      let t = (q.y - (center.y - 0.5 * len)) / len;
+      if (t < 0.0 || t > 1.0) { continue; }
+      h = pcg(h); let r5 = hashToFloat(h);
+      h = pcg(h); let r6 = hashToFloat(h);
+      h = pcg(h); let r7 = hashToFloat(h);
+      // The stem leans a little; past the fork (tf) the branches part, and again past tf2.
+      let tf = 0.35 + 0.2 * r5;
+      let tf2 = select(2.0, tf + (1.0 - tf) * (0.45 + 0.2 * r6), r6 > 0.35);
+      // A lean and a slow wave along the frond, as it lies where the water left it.
+      // Fronds lie at an angle of up to about 15 degrees off downslope, so the mat has no grain.
+      let lean = room * 0.45 * (r7 - 0.5) * (2.0 * t - 1.0) + widthM * 0.9 * sin(t * (5.0 + 4.0 * r6) + r7 * 6.2831853) * t;
+      let s1 = room * 0.3 * clamp((t - tf) / (1.0 - tf), 0.0, 1.0);
+      let s2 = room * 0.15 * clamp((t - tf2) / max(1.0 - tf2, 0.05), 0.0, 1.0);
+      let x0 = q.x - (center.x + lean);
+      // Distance across to the nearest strap: one stem, two branches, four tips.
+      var dx = x0;
+      var best = 1e9;
+      for (var b = 0; b < 4; b++) {
+        let side1 = select(-1.0, 1.0, (b & 1) == 1);
+        let side2 = select(-1.0, 1.0, (b & 2) == 2);
+        let d = x0 - side1 * s1 - side2 * s2;
+        if (abs(d) < best) { best = abs(d); dx = d; }
+      }
+      // Straps narrow a little toward the tip and round off there; the stem is thinnest.
+      let w = widthM * (0.55 + 0.45 * smoothstep(0.0, 0.25, t)) * (1.0 - 0.45 * smoothstep(0.85, 1.0, t)) * (0.8 + 0.4 * r2);
+      // Paired bladders either side of the midrib, at two spots on each strap.
+      let tb1 = tf * 0.75;
+      let tb2 = mix(tf, 1.0, 0.45);
+      let dtb = select(t - tb2, t - tb1, abs(t - tb1) < abs(t - tb2)) * len;   // along, signed
+      let bxs = (abs(dx) - w * 0.55) * select(-1.0, 1.0, dx > 0.0);           // across, signed
+      let bx = abs(bxs);
+      let bl = length(vec2f(bx, dtb)) / max(bladderM, 1e-4);
+      let onBladder = bl < 1.0 && r3 > 0.25;
+      if (abs(dx) >= w && !onBladder) { continue; }
+      // Present where the mat is: the wrack cover at the frond's middle, in clumps, read only for
+      // a frond that covers this pixel (the costly part, so it comes last). The same clumps as
+      // the mat, a little wider, so fronds lie on the mat and fringe its edges.
+      let mid = across * center.x + down * center.y;
+      let wr = textureSampleLevel(shoreTex, linearSampler, terrainUv(mid), 0.0).r;
+      let cl = valueNoise2(mid * clump.x + vec2f(4.3, 9.1), seed + 31u) * 0.6
+             + valueNoise2(mid * clump.y + vec2f(1.7, 3.3), seed + 32u) * 0.4;
+      let present = min(1.0, wr * 1.3) * smoothstep(0.27, 0.55, cl + (wr - 0.5) * 0.4);
+      if (r1 < present) {
+        top = r1;
+        o.cover = 1.0;
+        o.tone = select(r2, 1.4, onBladder);
+        // The midrib ridge, and a dome on a bladder.
+        let f = clamp(dx / w, -1.0, 1.0);
+        var g = across * (-2.0 * f / w * relief * 0.01);
+        if (onBladder) { g = -(across * bxs + down * dtb) / max(bladderM * bladderM, 1e-6) * relief * 0.02; }
+        o.grad = g;
+      }
+    }
+  }
+  // Fronds give way to their average once a strap is about two pixels wide, before lines form.
+  let k = smoothstep(widthM * 0.35, widthM * 1.0, pixM);
+  o.cover = mix(o.cover, min(cover, 1.0) * 0.8, k);
+  o.grad *= 1.0 - k;
+  return o;
+}
