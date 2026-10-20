@@ -5,7 +5,7 @@
 ## Locked decisions
 
 - **The only progression input is species happiness** (`species:happy` from `11-creatures-and-ecology.md`). No experience points, no currency, no crafting.
-- **Two kinds of reward.** Each species gives one gift (a seed, tool or palette) the first time it becomes happy. A **tier milestone** fires when the second species of a tier is happy, and that milestone brings new land. Gift list per species: `12-creature-roadmap.md`.
+- **Two kinds of reward from creatures.** Each species gives one gift (a seed, tool or palette, never a creature) the first time it becomes happy; trust is rewarded by names, calls and portraits, not items (`23-presence.md`). Finds have their own line, the naturalist's notes, which never counts toward milestones. A **tier milestone** fires when the second species of a tier is happy, and that milestone brings new land. Gift list per species: `12-creature-roadmap.md`.
 - **Five land pieces, one per tier milestone**, in fixed order, each placed by the world seed so every world differs a little.
 - **New land arrives at low tide, while the player is watching.** A milestone reached during catch-up is queued and plays during the reveal or the next low tide in play. Gifts reached offline appear as journal notes in the reveal.
 - **Happiness is not lost by progress.** Once a gift is given it stays. If a species later moves on, its journal page says so gently and it can come back; nothing is taken away.
@@ -13,6 +13,32 @@
 - **Hard world ceiling**: fully expanded, the world fits inside a 192 m by 192 m area, about 4.5 times the land of the starter island. Expansion never grows past the budgets in `19-performance-and-quality-tiers.md`.
 
 ## How it works
+
+### What reaches the player, and when
+
+Agreed with Matt on October 20, 2026. New things reach the player in five ways, and no single one dominates:
+
+| Way | What comes | Paced by |
+|---|---|---|
+| Starter kit | Sculpt (Raise, Lower, Flatten, Stone), Paint, Water (Pour, Drain), Plant with grass, reeds and water lilies; Feed once a creature is found | nothing: there from the start |
+| Plants that come by themselves | Iris, rushes, thrift, marigold, campion; plantable once seen | about one every 1.7 game days (`recipes/world/growth.json`) |
+| The naturalist's notes | Shells at 3 finds; loose stones at 6, the hand lens at 10, driftwood at 15 | finds discovered (`recipes/world/naturalist.json`) |
+| Species gifts | One seed or tool per species, when it first settles happy (list in `12-creature-roadmap.md`) | creature happiness |
+| Tier milestones | New land, when the second species of a tier is happy | creature happiness |
+
+The first ten game days on the pond tier:
+
+```mermaid
+flowchart LR
+  S[Start<br/>starter kit<br/>grass, reeds, lilies] --> F[Days 3 to 6<br/>frogs settle<br/>gift: the Cliff tool]
+  F -->|Cut digs a deep pool| M[Minnows come<br/>gift: pondweed]
+  F -->|terraces wait| D[Dragonflies<br/>gift: springs]
+  D -->|spring above a terrace| W[Waterfalls]
+  M --> L[2nd happy species<br/>meadow islet rises]
+  D --> L
+```
+
+The gifts build on each other. The frogs' Cliff tool makes the deep, still pool minnows want; the dragonflies' springs then pour over the terraces the player has already built. A gift never brings a creature: the creature still decides to come.
 
 ### Milestones
 
@@ -57,7 +83,7 @@ Target player: 20 to 40 minutes most evenings, with the game left closed overnig
 | Stage | Game days (approx.) | Real time for the target player | Gated by |
 |---|---|---|---|
 | First frog scout | 1 to 2 | first session | reeds filling in along the pond |
-| Frogs happy (first gift) | 3 to 6 | first or second evening | group of 4 and a thick reed margin |
+| Frogs happy (first gift, the Cliff tool) | 3 to 6 | first or second evening | group of 4 and a thick reed margin |
 | Tier 1 milestone, meadow islet | 6 to 10 | second or third evening | minnows or dragonflies happy |
 | Tier 2 milestone, woodland knoll and bridge | 15 to 25 | end of the first week | wildflowers and hawthorn maturing |
 | Tier 3 milestone, tide flats | 35 to 55 | second or third week | trees maturing for squirrels and owls |

@@ -5,10 +5,10 @@
 ## Locked decisions
 
 - Five tiers, three species each, in the order below. A tier's species become eligible to scout when its land exists (see `13-progression-and-expansion.md`). Tier 1 is eligible from the start.
-- Every species gives **one gift** (a seed or a tool) when it first becomes happy. Land comes from **tier milestones**: when the second species of a tier becomes happy, new land joins. Gifts never expire and do not depend on order.
+- Every species gives **one gift** (a seed or a tool) when it first settles happy, never a creature: creatures are attracted, never bought. Trust brings its own rewards instead of items: a name, a call answered, a portrait at arm's length (`23-presence.md`). Land comes from **tier milestones**: when the second species of a tier becomes happy, new land joins. Gifts never expire and do not depend on order. A gift is given when the species is happy, whether or not the player has found one yet.
 - Need models, mood, arrival and leaving follow `11-creatures-and-ecology.md`. Numbers below are starting values for the tuning panel, not final.
 - **Winter dormancy**: frogs, hedgehogs, turtles, bees, butterflies, fireflies and bats go quiet in winter (hidden, mood held, not counted as unhappy). Their journal pages say where they sleep.
-- **Starter kit** (before any gift): sculpt, water (pond and shallows, with the pour and drain tools), reeds and grass seeds. The slice has no structures; stepping stones and one lantern join the kit in M2, and paths in M3 (`20-roadmap-and-vertical-slice.md`). Every other seed and tool is a gift.
+- **Starter kit** (before any gift; revised October 20, 2026): Sculpt (Raise, Lower, Flatten, Stone), Paint, Water (pond and shallows, with Pour and Drain), Plant with grass, reeds and water lilies, and Feed once a creature is found. The slice has no structures; stepping stones and one lantern join the kit in M2, and paths in M3 (`20-roadmap-and-vertical-slice.md`). Other plants are not gifts: they arrive by themselves over the first days (iris, rushes, thrift, marigold, campion, about one every 1.7 game days, `recipes/world/growth.json`) and can be planted once seen. Every other tool, and every seed beyond those, is a gift.
 - **Colors**: species albedo regions are physical linear albedo (0 to 1), never palette hex. The palette maps them into its colors at tonemap (`05-look-and-palette.md`).
 - **Frogs are the vertical-slice species.** Reeds give them cover, the pond and shallows give them water, and midges (the insect field fed by reeds near still water) give them food.
 
@@ -24,7 +24,7 @@ flowchart LR
   T4 -->|2nd happy: outer skerry and long sandbar| T5[Tier 5 night and seasons<br/>fireflies, bats, cranes]
 ```
 
-Gifts are chosen so one species helps the next: frogs give water lilies, which give minnows shade; minnows feed herons; songbirds plant oaks, which squirrels and owls need; the bridge gives bats a roost.
+Gifts are chosen so one species helps the next: frogs give the Cliff tool, whose Cut digs the deep pool minnows come to; the dragonflies' springs then turn the frogs' terraces into waterfalls; minnows give pondweed, which turtles eat; minnows feed herons; songbirds plant oaks, which squirrels and owls need; the bridge gives bats a roost.
 
 ## Vertical slice: frogs (full detail)
 
@@ -38,7 +38,7 @@ Gifts are chosen so one species helps the next: frogs give water lilies, which g
 | Company (w 0.15) | Group 2 to 9, ideal 5; a lone frog is a little lonely, a crowd past 9 a little less content; happy needs 4 or more. Small bonus near dragonflies (M2). |
 | Numbers | **One frog per 3 m of good edge** (Matt, October 2026): a bank square beside still water whose habitat score is 0.5 or more is good edge, and the island holds one frog per 3 m of it, so the count follows the habitat and a bare stretch holds none. No fixed cap. The starter pond has about 85 m of good edge (about 28 frogs in time), Two ponds about 200 m. The shore fills slowly: a pair first, then about one more on most evenings while there is room. |
 | Arrival (S6a) | 1) The pond becomes right: the journal's Frogs "?" gains a hint and the page's pencil circles sit near the best edge. 2) A sign at dusk, never "a frog arrived": a plop and rings by the reeds, and a note that something slipped into the water. 3) First sighting, only when the player finds one (taps it, or watches it closely): the page inks, the moment is written, the web's frog links ink. 4) Settling after a day, a second frog the next dusk. 5) The shore fills; if the habitat fails, one frog a day moves on, quietly. Numbers and timings in `recipes/species/frog.json` (ecology); `tools/ecology-lab.html` shows the arc on both islands. |
-| Gift | Water lily seed. In the slice, happiness shows through behavior and the journal page only; the gift card and the lilies themselves arrive in M2, the first unlock in `20-roadmap-and-vertical-slice.md`. |
+| Gift | **The Cliff tool** (Terrace and Cut, `08-terrain-and-sculpt.md`; Matt, October 20, 2026). It replaces the water lily seed, which the player already starts with. Frogs live on the step between land and water, and this tool builds steps. It is the first gift most players see, on the first or second evening. Saves where the frogs are already happy receive it quietly on load. |
 | Signature behavior | **Dusk chorus**: content frogs call from the reed margin with the throat sac swelling; neighbors alternate rather than overlap (each frog delays its call if another started within 0.4 s), so the chorus ripples around the pond. In spring, nesting shows as frogspawn clumps in the shallows. |
 | Other behaviors | Tongue-flick at midges (forage); sit still on a stone or pad (rest, linger); plop into water and surface eyes-up 2 m away (startle); slow hop along the far edge (restless wander). |
 | Interaction hook | Call: a soft croak whistle, answered by frogs with trust above 0.3 (waits for M2 and the frog voice). Feed: a pinch of midges at the cursor, for trust only. Photograph moments: "dusk chorus", "frogspawn", "a frog that came when called". |
@@ -55,12 +55,12 @@ Every species also gets a presence block and a wildness ceiling, the closest it 
 | | Minnows | Dragonflies |
 |---|---|---|
 | Kind | Swarm, diurnal, active all year (deeper in winter) | Swarm of few (3 to 8 visible), diurnal, summer and late spring |
-| Water | Still or slow water, depth 0.2 to 1.5 m, at least 20 m² | Still water within 10 m, sunny |
+| Water | Still or slow fresh water, depth 0.2 to 1.5 m, at least 20 m², with a deep spot of about 1 m to winter in. They come by themselves once such a pool exists; the frogs' Cut digs one in a stroke, and Lower can too | Still water within 10 m, sunny |
 | Food | Midge field over water, pondweed when available | Midge field (competes lightly with frogs) |
 | Shelter | Water lily pads and reed stems at the water's edge | Reeds as perches and emergence stems |
 | Quiet | Low sensitivity (shade from structures is fine) | Low sensitivity |
 | Company | School of 8 to 30 | 3 to 8 |
-| Gift | Pondweed seed (underwater meadow, holds more fish) | Stream tool: unlocks the Water tool's Spring mode (`unlocks.springs`; up to 4 springs, trickle, brook or stream; built in S4b) |
+| Gift | Pondweed seed (underwater meadow, holds more fish; food for turtles later) | Stream tool: unlocks the Water tool's Spring mode (`unlocks.springs`; up to 4 springs, trickle, brook or stream; built in S4b). A spring above a terrace pours over its edge as a waterfall |
 | Signature | School turns as one, flashes silver when the sun hits | Hovering patrol over the pond; pairs in tandem flight |
 | Interaction | Feed: crumbs make the school swirl up to the surface | Follow camera rides along a patrol route |
 | Body | Capsule body tapered with a round-cone tail fin; impostor at distance | Thin capsule abdomen, sphere thorax and head, four flat wing ellipsoids |
@@ -177,7 +177,7 @@ A new chapter after the year page, so the fifteen species above stay the whole f
 
 - Should songbirds be one species with three looks, or three separate journal pages?
 - Should herons ever eat a frog, or only fish?
-- Is a gift every species too frequent late in the game, or about right?
+- Is a gift every species too frequent late in the game, or about right? (October 20, 2026: kept at one gift per species, on settling, with trust rewarded by names, calls and portraits rather than items.)
 - Matt's pin (October 2026), not scheduled: small burrows or caves, an exception to the heightfield's no-undercuts rule, that draw a landmark land creature such as a bear. Landmark creatures want landmark places the player can discover. Keep the door open: placed rock pieces (M7's arches and sea caves, doc 20) are the natural way to build them.
 
 ## Depends on / feeds into

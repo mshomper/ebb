@@ -92,7 +92,7 @@ Corners and the bottom edge only; the island stays centered. The HUD dims to 40 
 - **Clock dial** (top left): a drawn sun and moon on an arc, a four-segment season ring, a small wave showing tide rising or falling. Hover or tap shows a sentence: "Spring, day 3, early evening. Tide coming in."
 - **Top right:** journal, photo, settings. **Bottom left:** undo, redo, and above them gentle notes ("A frog has settled by the reeds.") in Fraunces italic that fade after 6 s and open the journal entry when clicked. **Bottom right:** time flow with drawn pips (one, two, three) or rest bars for pause.
 - **Brush size** shows as a soft ring on the terrain; phones add a short vertical size slider.
-- **Gift card:** on `progress:gifted`, a small cream card with a pressed-flower drawing and one Fraunces line ("The frogs left you a water lily seed") fades in above the palette for 8 s. Gifts earned while away appear only as reveal notes.
+- **Gift card:** on `progress:gifted`, a small cream card with a pressed-flower drawing and one Fraunces line ("A gift from the frogs: you can build terraces and cut cliffs now") fades in above the palette for 8 s. Gifts earned while away appear only as reveal notes.
 
 Desktop:
 
@@ -166,12 +166,13 @@ export function createOrbitCamera(opts) {} // {update(dt), view, proj, eye, foll
 export const TOOL_GROUPS = { land:['sculpt','smooth','paint','cliff'], water:['water','stream','tide-stone'],
   life:['seed'], build:['path','wall','bridge','lantern','drift-log'], creatures:['call','feed'] };
 // a tool shows only when progression lists it as unlocked
-// The Cliff tool (M2) is available from the start of play. As built it is not a tool button of its
-// own: Terrace and Cut are Sculpt chips five and six (three to a row), so the bar stays at six
-// buttons, which a 375 px phone fits (a seven-button bar was cut off there before).
+// The Cliff tool (M2) is the frogs' gift (doc 12): its chips show once `unlocks.cliffs` is true,
+// or with ?sandbox or ?cliffs. As built it is not a tool button of its own: Terrace and Cut are
+// Sculpt chips five and six (three to a row), so the bar stays at six buttons, which a 375 px
+// phone fits (a seven-button bar was cut off there before). Before the gift the card shows four.
 ```
 
-**Cliff input** (M2, `08-terrain-and-sculpt.md`). Desktop: left drag builds (Terrace) or carves (Cut) a shelf at the ground where the drag starts plus or minus the Height slider, and Shift at the start levels to sea level. Touch: a one-finger drag builds or carves, and two fingers still move the camera. In these modes the card swaps Strength for Height (0.25 to 3 m in 0.25 m steps) and shows a one-line hint. While hovering or dragging, a thin line under the ring marks where the ground meets the shelf's level.
+**Cliff input** (M2, `08-terrain-and-sculpt.md`; from the frogs' gift). Desktop: left drag builds (Terrace) or carves (Cut) a shelf at the ground where the drag starts plus or minus the Height slider, and Shift at the start levels to sea level. Touch: a one-finger drag builds or carves, and two fingers still move the camera. In these modes the card swaps Strength for Height (0.25 to 3 m in 0.25 m steps) and shows a one-line hint. While hovering or dragging, a thin line under the ring marks where the ground meets the shelf's level.
 
 Events (past tense, per 03-tech-stack-and-module-map.md) emitted: `tool:selected`, `camera:follow-started`, `camera:follow-ended`, `ui:panel-opened`, `ui:panel-closed`, `note:posted`. Listened to: `land:joined`, `progress:gifted`, `creature:settled`, `creature:left`, `species:moved-on`, `journal:page-updated`, `reveal:started`, `reveal:note-shown`, `reveal:ended`, `clock:hour`.
 
