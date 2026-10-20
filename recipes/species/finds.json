@@ -21,8 +21,8 @@
   "kinds": {
     "anemone": {
       "zones": ["pool"],
-      "density": 0.55,
-      "count": [1, 3],
+      "density": 0.2,
+      "count": [1, 2],
       "spreadM": 0.25,
       "scale": 3.2,
       "closeM": 0.9,
@@ -47,8 +47,8 @@
     },
     "periwinkle": {
       "zones": ["wrack", "channelled"],
-      "density": 0.06,
-      "count": [2, 6],
+      "density": 0.02,
+      "count": [1, 4],
       "spreadM": 0.18,
       "scale": 3,
       "driftM": 0.05,
@@ -63,8 +63,8 @@
     },
     "lugworm": {
       "zones": ["ripples", "wetSand", "mud"],
-      "density": 0.08,
-      "count": [1, 3],
+      "density": 0.02,
+      "count": [1, 2],
       "spreadM": 0.5,
       "scale": 2.1,
       "cast": {
@@ -78,7 +78,7 @@
     },
     "hermitcrab": {
       "zones": ["pool"],
-      "density": 0.3,
+      "density": 0.15,
       "count": [1, 1],
       "spreadM": 0.2,
       "scale": 2.25,
@@ -100,7 +100,7 @@
     },
     "ediblecrab": {
       "zones": ["wrack", "pool"],
-      "density": 0.02,
+      "density": 0.008,
       "count": [1, 1],
       "spreadM": 0.2,
       "scale": 2.1,
@@ -120,7 +120,7 @@
     },
     "shells": {
       "zones": ["strandline"],
-      "density": 0.05,
+      "density": 0.015,
       "count": [1, 1],
       "spreadM": 0.2,
       "scale": 2,
