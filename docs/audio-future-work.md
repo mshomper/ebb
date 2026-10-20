@@ -61,9 +61,10 @@ A player sees what is playing (its name, doc 24 "Naming") and can heart it. Hear
 
 The support kit (strings, harp, flute, vibraphone struck and bowed, glass) is built for the desktop, 8 MB in all. Still open:
 
-- **Solo cello.** Neither CC0 library has one (VSCO 2 CE has a cello section, VCSL no cello). The autumn cello line plays the cello section with solo settings for now. Options: a CC0 single-note set on Freesound, a free or paid library under doc 25's rules, or the viola section or VSCO's solo violin for a solo timbre. Matt decides by ear.
+- **Solo cello.** Neither CC0 library has one (VSCO 2 CE has a cello section, VCSL no cello). The autumn cello line plays the cello section with solo settings for now. Options: a CC0 single-note set on Freesound, a free or paid library under doc 25's rules, or the viola section or VSCO's solo violin for a solo timbre. Matt decides by ear. October 20, 2026: a helper is searching for solo cello sets; Matt chooses from what it finds.
 - **Phone versions.** None yet, so phones would decode the desktop files. Suggested by the strings session: soft layer only, mono, core ranges (about 22 MB decoded for all strings); harp and vibraphone mono with shorter tails. Build before phase 6.
-- **Memory on the desktop.** A piece unpacks only the notes it uses, but a full piano piece (about 110 MB) plus a string bed (10 to 20 MB) can pass the 128 MB line while it plays; the shared budget frees the extra after it ends. If that is too much, decode string notes in mono or shorten the soft layers' settling time.
+- **Memory on the desktop.** A piece unpacks only the notes it uses, but a full piano piece (about 110 MB) plus a string bed (10 to 20 MB) can pass the 128 MB line while it plays; the shared budget frees the extra after it ends. Decided (Matt, October 20, 2026): accepted as it is; no change.
+- **Low bass.** Done (October 20, 2026, Matt approved): no voicing style's bass goes below B1 (MIDI 35, about 62 Hz), so the music keeps doc 24's floor of 60 Hz. The low style's bass range reaches B-flat 2 so every bass note has a place.
 - **Gaps in the recordings.** Bowed vibraphone has six notes only (a note may be 3.5 semitones from its recording); the harp is recorded 10 to 20 cents flat (the sampler corrects it); the four glasses are untuned household glasses placed at their nearest notes.
 
 ## Could not be finished here
