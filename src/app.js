@@ -246,6 +246,7 @@ export async function startApp(canvas, hooks = {}) {
       vel: water.sim.vel, caustics: waterRecipe.caustics },
     moss: moss.texture, causticLayers: tierSettings.causticLayers, wetness, cover: growth.coverTex,
     probe: { view: atmosphere.probeView, sampler: atmosphere.probeSampler }, rings: waterRecipe.ripples.rings,
+    shore: { texture: ww.shore.texture, look: ww.shore.recipe.look },
   });
   // The meadow (docs 10): GPU grass blades where grass is painted, after the terrain.
   const grassPass = createGrassPass({
@@ -374,7 +375,7 @@ export async function startApp(canvas, hooks = {}) {
     tier = t;
     tierSettings = settingsFor(t);
     setQualityTier(t);
-    terrainPass.setTier(tierSettings);
+    terrainPass.setTier({ ...tierSettings, name: t });
     grassPass.setTier(tierSettings);
     rushPass.setTier(tierSettings);
     waterPass.setDetailFade(tierSettings.waterDetailFadeM);

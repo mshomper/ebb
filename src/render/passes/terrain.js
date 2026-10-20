@@ -9,7 +9,7 @@ import { LODS, MAX_CHUNKS, createIndexBuffers, packChunks } from '../terrain-mes
 
 /** @typedef {import('../frame-graph.js').PassContext} PassContext */
 
-const DRAW_BYTES = 704;   // 384 of look, 16 marker rings (floats 96..159), the drowned meadow (160..167), wet-to-dry grass (168..175)
+const DRAW_BYTES = 784;   // 384 of look, 16 marker rings (floats 96..159), the drowned meadow (160..167), wet-to-dry grass (168..175), the shore (176..195)
 const GROUND_BYTES = 336;
 const DEG = Math.PI / 180;
 /** @type {Record<string, number>} GroundDetail.tiling.x in lib-ground.wgsl */
@@ -21,13 +21,15 @@ const TILING_MODES = { grid: 0, hex: 1, two: 2 };
  *   water: { depthTextures: GPUTexture[], current: () => number, damp?: GPUTexture, dampWet?: number, vel: GPUTexture, caustics: any },
  *   moss: GPUTexture, causticLayers?: number, wetness: { textures: GPUTexture[], current: () => number },
  *   ground: { views: { a: GPUTextureView, b: GPUTextureView }, sampler: GPUSampler, version: number, fade: number },
- *   groundTier: any, probe: { view: GPUTextureView, sampler: GPUSampler }, rings?: any, cover: GPUTexture }} opts
+ *   groundTier: any, probe: { view: GPUTextureView, sampler: GPUSampler }, rings?: any, cover: GPUTexture,
+ *   shore: { texture: GPUTexture, look: any } }} opts
  *   ground: src/render/ground-detail.js; groundTier: the tier's `ground` block;
  *   water.caustics: water.json `caustics`; causticLayers: the tier's (0 off, default 2);
  *   wetness: src/world/terrain/wetness.js (water.damp and water.dampWet now feed it, not this pass);
  *   probe: the sky probe (atmosphere.probeView, probeSampler), reflected by wet ground and puddles;
  *   rings: water.json `ripples.rings`, the raindrop rings drawn in puddles; cover: the growth step's
- *   plant cover (world/growth coverTex), whose b channel tints the grass layer wet to dry
+ *   plant cover (world/growth coverTex), whose b channel tints the grass layer wet to dry; shore: the
+ *   shore cover (world/water/shore-live.js) and shore.json `look`
  */
 export function createTerrainPass(opts) {
   const { terrain, recipe } = opts;
@@ -117,6 +119,16 @@ export function createTerrainPass(opts) {
       f.set(dm.albedo, 160); f[163] = dm.cover;
       f[164] = dm.depthM[0]; f[165] = dm.depthM[1]; f[166] = dm.stillMps[0]; f[167] = dm.stillMps[1];
     }
+    // The shore (floats 176..195, shore.json `look`): wrack on the moss scan at its own albedo,
+    // lichen and mud as albedo factors, ripples drawn in the shader (off on the tiers listed).
+    const S = opts.shore.look;
+    for (let i = 0; i < 3; i++) f[176 + i] = S.wrackAlbedo[i] / m.albedoMoss[i];
+    f[179] = 1 / S.wrackClumpM[0]; f[180] = 1 / S.wrackClumpM[1];
+    f.set(S.lichenAlbedo, 181);
+    f[184] = 1 / S.lichenClumpM[0]; f[185] = 1 / S.lichenClumpM[1]; f[186] = S.mudWet;
+    const R = S.ripple;
+    f[188] = (2 * Math.PI) / R.wavelengthM; f[189] = R.slope; f[190] = (R.offTiers ?? []).includes(opts.tier) ? 0 : 1; f[191] = R.wavelengthM;
+    f.set(S.mudAlbedo, 192); f[195] = 1 / R.warpM;
     // Caustics (lib-caustics.wgsl), floats 48..75: look, depthFade, wave0..2, motion, misc.
     const c = opts.water.caustics;
     f[49] = causticLayers(opts.causticLayers);
@@ -148,7 +160,8 @@ export function createTerrainPass(opts) {
 
     /**
      * Apply a quality tier's distances without rebuilding (the startup probe may step down).
-     * @param {{ lodDistances?: number[], ground: { detailFadeMeters: number }, causticLayers?: number }} t
+     * @param {{ lodDistances?: number[], ground: { detailFadeMeters: number }, causticLayers?: number, name?: string }} t
+     *   name: the tier's name (the shore's ripples are off on some)
      */
     /** Rain now, 0..1: how many raindrop rings fall in puddles. @param {number} r */
     setRain(r) { f[88] = Math.min(1, Math.max(0, r)) * (opts.rings?.maxShare ?? 0); },
@@ -172,6 +185,7 @@ export function createTerrainPass(opts) {
 
     setTier(t) {
       lodDistances = t.lodDistances ?? recipe.render.lodDistances;
+      if (t.name) f[190] = (opts.shore.look.ripple.offTiers ?? []).includes(t.name) ? 0 : 1;
       gf[23] = t.ground.detailFadeMeters;
       f[49] = causticLayers(t.causticLayers);
     },
@@ -202,6 +216,7 @@ export function createTerrainPass(opts) {
           { binding: 13, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: 'float', viewDimension: 'cube' } },
           { binding: 14, visibility: GPUShaderStage.FRAGMENT, sampler: { type: 'filtering' } },
           { binding: 15, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: 'float' } }, // plant cover (b: lush)
+          { binding: 16, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: 'float' } }, // shore cover
         ],
       });
       const layout = device.createPipelineLayout({ label: 'opaque', bindGroupLayouts: [ctx.layouts.frame, ctx.layouts.lighting, layout2] });
@@ -230,6 +245,7 @@ export function createTerrainPass(opts) {
         const mossView = opts.moss.createView();
         const velView = opts.water.vel.createView();
         const coverView = opts.cover.createView();
+        const shoreView = opts.shore.texture.createView();
         const wetViews = opts.wetness.textures.map((t) => t.createView());
         groups = opts.water.depthTextures.map((/** @type {GPUTexture} */ wt) => {
           const depthView = wt.createView();
@@ -253,6 +269,7 @@ export function createTerrainPass(opts) {
               { binding: 13, resource: opts.probe.view },
               { binding: 14, resource: opts.probe.sampler },
               { binding: 15, resource: coverView },
+              { binding: 16, resource: shoreView },
             ],
           }));
         });

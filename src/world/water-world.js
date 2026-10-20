@@ -13,6 +13,8 @@ import { createFoam } from './water/foam.js';
 import { createRipples } from './water/ripples.js';
 import { createWetness } from './terrain/wetness.js';
 import { createMossLive } from './growth/moss-live.js';
+import { createShoreLive } from './water/shore-live.js';
+import { loadRecipe } from '../core/recipes.js';
 
 /**
  * @param {import('../core/gpu.js').Gpu} gpu
@@ -55,6 +57,9 @@ export async function createWaterWorld(gpu, opts) {
   // Moss creeps over ground that stays damp (interim live form; doc 10's growth takes over later).
   const moss = createMossLive(gpu.device, { water, recipe: terrainRecipe.moss });
   sim.addSystem(moss);
+  // The shore zones itself by the tide (docs/future/10): wrack, ripples, lichen and mud.
+  const shore = createShoreLive(gpu.device, { water, recipe: await loadRecipe('world/shore'), amplitudeM: waterRecipe.tide.amplitudeM });
+  sim.addSystem(shore);
 
   const tools = waterRecipe.tools;
   /** Flow (L/s) for a spring rate step. @param {string | undefined} rate */
@@ -81,7 +86,7 @@ export async function createWaterWorld(gpu, opts) {
   const unStroke = on('terrain:stroke-ended', () => water.requestSummary());
 
   return {
-    water, foam, ripples, wetness, moss,
+    water, foam, ripples, wetness, moss, shore,
     syncSprings,
 
     /**
@@ -139,7 +144,7 @@ export async function createWaterWorld(gpu, opts) {
       ripples.setCenter(target[0], target[2]);
     },
 
-    dispose() { unStroke(); },
+    dispose() { unStroke(); shore.dispose(); },
   };
 }
 

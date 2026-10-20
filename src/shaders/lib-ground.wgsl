@@ -210,10 +210,11 @@ fn groundMacro(xz: vec2f, seed: u32) -> vec3f {
 }
 
 // Detail at a world point. `w4` are the material weights after the derived layers (steep rock,
-// beach sand); `moss` the moss cover (0..1), which lies over them; `nMesh` the mesh normal. The
-// scanned albedos are calibrated to the recipe means (tools/texture-lab.html), so the caller
-// mixes `albedo` with its flat recipe blend by `amount`.
-fn groundDetail(p: vec3f, nMesh: vec3f, w4: vec4f, moss: f32, viewDist: f32) -> GroundSample {
+// beach sand); `moss` the cover of the moss layer (0..1), which lies over them; `mossTint` scales
+// that layer's albedo (1 for moss; the shore's wrack uses the same scan at its own albedo);
+// `nMesh` the mesh normal. The scanned albedos are calibrated to the recipe means
+// (tools/texture-lab.html), so the caller mixes `albedo` with its flat recipe blend by `amount`.
+fn groundDetail(p: vec3f, nMesh: vec3f, w4: vec4f, moss: f32, mossTint: vec3f, viewDist: f32) -> GroundSample {
   // Screen derivatives once, here, so sampling inside branches needs no uniform control flow.
   let dpx = dpdx(p);
   let dpy = dpdy(p);
@@ -258,6 +259,7 @@ fn groundDetail(p: vec3f, nMesh: vec3f, w4: vec4f, moss: f32, viewDist: f32) -> 
     rough[i] = s.rough;
     cav[i] = s.cavity;
   }
+  albedo[4] *= mossTint;
 
   // Height blend (docs/22): the taller surface wins, within blendDepth.
   var a = array<f32, 5>(-1.0, -1.0, -1.0, -1.0, -1.0);

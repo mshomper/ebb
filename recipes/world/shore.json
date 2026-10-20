@@ -1,14 +1,24 @@
 {
   "type": "shore",
-  "version": 1,
-  "note": "Shore zones (docs/future/10, src/world/water/shore.js): the shore banded by how long each height spends under the sea, as on real rocky and sandy shores. Each zone names the painted ground it shows on (the most painted of grass, sand, rock and soil in each 0.5 m cell) and its height range in A0, the base tide amplitude (water.json tide.amplitudeM): the tide band runs from -bandFactor to +bandFactor A0 (spring low to spring high), and the splash ground above it to +bandFactor + splashFactor A0 (water.json summary). Neap tides turn at +-(1 - springNeap) A0. A cell takes the first zone in the list that matches; ground with no zone (grass, or a height no zone covers) shows nothing new. Kelp sits below the neap low, so it only shows at spring low tides. The look of each zone comes later (Z2); these ids are what the shader, the journal and the shore lab read.",
+  "version": 2,
+  "note": "Shore zones (docs/future/10, src/world/water/shore.js): the shore banded by how long each height spends under the sea, as on real rocky and sandy shores. Each zone names the painted ground it shows on (the most painted of grass, sand, rock and soil in each 0.5 m cell) and its height range in A0, the base tide amplitude (water.json tide.amplitudeM): the tide band runs from -bandFactor to +bandFactor A0 (spring low to spring high), and the splash ground above it to +bandFactor + splashFactor A0 (water.json summary). Neap tides turn at +-(1 - springNeap) A0. A cell takes the first zone in the list that matches; ground with no zone (grass, or a height no zone covers) shows nothing new. Kelp sits below the neap low, so it only shows at spring low tides. cover: how much of each look the zone carries, 0..1 (wrack: seaweed over the rock; ripples: wave ripples in the sand; lichen: black crust on splash rock; mud: soft, wet, dark soil). These go to the shore texture (src/world/water/shore-live.js) the terrain reads.",
   "zones": [
-    { "id": "kelp",       "ground": "rock", "fromA0": -1.15, "toA0": -0.85, "name": "kelp, at the lowest tides" },
-    { "id": "wrack",      "ground": "rock", "fromA0": -0.85, "toA0": 0.4,   "name": "bladderwrack and barnacles" },
-    { "id": "channelled", "ground": "rock", "fromA0": 0.4,   "toA0": 1.0,   "name": "channelled wrack, high on the shore" },
-    { "id": "lichen",     "ground": "rock", "fromA0": 1.0,   "toA0": 1.75,  "name": "black lichen in the splash zone" },
-    { "id": "ripples",    "ground": "sand", "fromA0": -1.15, "toA0": 0.0,   "name": "rippled wet sand" },
-    { "id": "wetSand",    "ground": "sand", "fromA0": 0.0,   "toA0": 0.85,  "name": "firm wet sand" },
-    { "id": "mud",        "ground": "soil", "fromA0": -1.15, "toA0": 1.0,   "name": "tidal mud" }
-  ]
+    { "id": "kelp",       "ground": "rock", "fromA0": -1.15, "toA0": -0.85, "name": "kelp, at the lowest tides",           "cover": { "wrack": 1.0 } },
+    { "id": "wrack",      "ground": "rock", "fromA0": -0.85, "toA0": 0.4,   "name": "bladderwrack and barnacles",          "cover": { "wrack": 0.85 } },
+    { "id": "channelled", "ground": "rock", "fromA0": 0.4,   "toA0": 1.0,   "name": "channelled wrack, high on the shore", "cover": { "wrack": 0.45 } },
+    { "id": "lichen",     "ground": "rock", "fromA0": 1.0,   "toA0": 1.75,  "name": "black lichen in the splash zone",     "cover": { "lichen": 0.8 } },
+    { "id": "ripples",    "ground": "sand", "fromA0": -1.15, "toA0": 0.0,   "name": "rippled wet sand",                    "cover": { "ripples": 1.0 } },
+    { "id": "wetSand",    "ground": "sand", "fromA0": 0.0,   "toA0": 0.85,  "name": "firm wet sand",                       "cover": { "ripples": 0.25 } },
+    { "id": "mud",        "ground": "soil", "fromA0": -1.15, "toA0": 1.0,   "name": "tidal mud",                           "cover": { "mud": 1.0 } }
+  ],
+  "lookNote": "The look of the zones (Z2), physical and linear like every material: albedo values are linear reflectance. Wrack is drawn on the moss scan's layer (it never grows in the tide band, so the two never meet) with its own albedo: the scan is rescaled from terrain.json materials.albedoMoss to wrackAlbedo, until a wrack scan of its own is chosen. clumpM: sizes (m) of the clumps wrack and lichen grow in. Ripples are drawn, not scanned: crests run along the shore, wavelengthM apart, leaning by slope; they fade where a pixel grows past a third of a wavelength, and are off on the tiers listed in offTiers. Lichen multiplies the rock's albedo by lichenAlbedo where it grows. Mud darkens soil by mudAlbedo and holds it at mudWet wetness, so it shines.",
+  "look": {
+    "wrackAlbedo": [0.055, 0.048, 0.018],
+    "wrackClumpM": [2.5, 0.6],
+    "lichenAlbedo": [0.28, 0.27, 0.26],
+    "lichenClumpM": [1.2, 0.25],
+    "ripple": { "wavelengthM": 0.09, "slope": 1.2, "warpM": 0.7, "offTiers": ["low"] },
+    "mudAlbedo": [0.72, 0.7, 0.68],
+    "mudWet": 0.85
+  }
 }

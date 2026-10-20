@@ -41,6 +41,12 @@ struct TerrainDraw {
   weed2: vec4f,                         // xy water depths (m) over which it gives way to bare silt, zw speeds (m/s) over which running water scours it
   lushDry: vec4f,                       // wet-to-dry grass (lush.js): rgb the dry rise's grass as a share of the season's, w the lushness of today's meadow
   lushWet: vec4f,                       // rgb the grass by the water as a share of the season's, w 1 when on
+  // The shore (docs/future/10, shore.json `look`; cover from world/water/shore-live.js).
+  shore0: vec4f,                        // rgb wrack albedo as a share of the moss scan's, w 1 / wrack patch size (m)
+  shore1: vec4f,                        // x 1 / wrack clump size, yzw lichen albedo factor
+  shore2: vec4f,                        // xy 1 / lichen patch and clump sizes, z mud wetness
+  ripple: vec4f,                        // x 2 pi / wavelength, y crest slope, z 1 on, w wavelength (m)
+  mud: vec4f,                           // rgb mud albedo factor, w 1 / ripple warp size (m)
 };
 
 @group(0) @binding(0) var<uniform> frame: FrameUniforms;
@@ -60,6 +66,7 @@ struct TerrainDraw {
 @group(2) @binding(13) var probeTex: texture_cube<f32>;  // sky probe (lib-probe.wgsl): wet ground reflects it
 @group(2) @binding(14) var probeSampler: sampler;
 @group(2) @binding(15) var coverTex: texture_2d<f32>;    // plant cover (world/growth): b how lush the grass looks, 1 m grid from -80 m
+@group(2) @binding(16) var shoreTex: texture_2d<f32>;    // shore cover (rgba8unorm, 0.5 m): r wrack, g ripples, b lichen, a mud
 
 // Live water depth (m) here, bilinear between the 0.5 m cells.
 fn waterDepthAt(xz: vec2f) -> f32 {
@@ -185,10 +192,26 @@ fn fsLand(in: VsOut) -> FsOut {
   // height blend lets grass tufts and stone tops stand up through the moss.
   let cap = dot(w, ground.mossRules) / max(w.x + w.y + w.z + w.w, 1e-4);
   let moss = min(density, 1.0) * cap * (1.0 - sub);
-  albedo = mix(albedo, ground.mossTile.yzw, moss);
+  // The shore (world/water/shore-live.js): wrack grows in clumps over rock in the tide band, drawn
+  // with the moss scan at wrack's own albedo (moss never grows in the band, so they never meet).
+  let shore = textureSampleLevel(shoreTex, linearSampler, terrainUv(xz), 0.0);
+  let wclumps = valueNoise2(xz * td.shore0.w + vec2f(4.3, 9.1), td.seed + 31u) * 0.6
+              + valueNoise2(xz * td.shore1.x + vec2f(1.7, 3.3), td.seed + 32u) * 0.4;
+  let wrack = shore.r * smoothstep(0.25, 0.65, wclumps + (shore.r - 0.5) * 0.4);
+  let layer4 = min(moss + wrack, 1.0);
+  let tint4 = mix(vec3f(1.0), td.shore0.rgb, wrack / max(moss + wrack, 1e-4));
+  albedo = mix(albedo, ground.mossTile.yzw * tint4, layer4);
   // Scanned detail (docs/22) takes over once loaded and near enough; the flat look stays the fallback.
-  let gd = groundDetail(in.world, n, w, moss, distance(in.world, frame.cameraPos));
+  let gd = groundDetail(in.world, n, w, layer4, tint4, distance(in.world, frame.cameraPos));
   albedo = mix(albedo, gd.albedo, gd.amount);
+  // Black lichen crusts the splash-zone rock in small patches; tidal mud is soil gone dark and soft.
+  let rockShare = mix(wf.z, gd.weights.z, gd.amount);
+  let soilShare = mix(wf.w, gd.weights.w, gd.amount);
+  let lclumps = valueNoise2(xz * td.shore2.x + vec2f(7.1, 2.9), td.seed + 33u) * 0.55
+              + valueNoise2(xz * td.shore2.y + vec2f(3.9, 6.7), td.seed + 34u) * 0.45;
+  let lichen = shore.b * smoothstep(0.35, 0.6, lclumps) * rockShare;
+  let mud = shore.a * soilShare;
+  albedo *= mix(vec3f(1.0), td.shore1.yzw, lichen) * mix(vec3f(1.0), td.mud.rgb, mud);
   // Wet to dry (lush.js): the grass layer takes the blades' tint, deeper by the water, paler and
   // straw-cured on the dry rise, so the areas read past where blades end, with no ring there.
   if (td.lushWet.w > 0.5) {
@@ -221,7 +244,8 @@ fn fsLand(in: VsOut) -> FsOut {
   // Damp: porous ground (sand, soil) drinks the water and goes dark and satin; dense rock darkens
   // a little but turns shiny. Moss is already a damp surface and changes least.
   let por = gd.porosity;
-  let damp = wet * (1.0 - 0.6 * moss);
+  // Wrack glistens and mud stays soaked, whatever the wetness map says.
+  let damp = max(wet * (1.0 - 0.6 * moss), max(wrack * 0.9, mud * td.shore2.z));
   albedo *= mix(1.0, mix(td.wetLook.z, td.wetLook.w, por), damp);
   // Grass blades stay rough when wet (they scatter the light), so the meadow never turns glossy.
   let grassy = gd.weights.x * (1.0 - moss);
@@ -240,12 +264,25 @@ fn fsLand(in: VsOut) -> FsOut {
   // Puddle surface: flat water, rung by raindrops where a pixel can hold the rings.
   let viewDistG = distance(in.world, frame.cameraPos);
   let vG = (frame.cameraPos - in.world) / max(viewDistG, 1e-4);
-  var nShade = gd.normal;
+  var nG = gd.normal;
+  if (td.ripple.z > 0.5 && shore.g > 0.01) {
+    // Wave ripples in the sand: crests run along the shore (across the slope), a few centimeters
+    // apart and bent by slow noise, with a gentle stoss side and a steeper lee (two harmonics).
+    // They fade before a pixel grows too large to hold them.
+    let flat2 = length(n.xz);
+    let dir = select(vec2f(1.0, 0.0), n.xz / max(flat2, 1e-4), flat2 > 0.02);
+    let warp = valueNoise2(xz * td.mud.w, td.seed + 35u) * 6.2831853;
+    let ph = dot(xz, dir) * td.ripple.x + warp;
+    let fade = 1.0 - smoothstep(td.ripple.w * 0.15, td.ripple.w * 0.35, max(fw.x, fw.y));
+    let k = shore.g * mix(wf.y, gd.weights.y, gd.amount) * fade * td.ripple.y;
+    nG = normalize(nG - vec3f(dir.x, 0.0, dir.y) * (cos(ph) + 0.35 * cos(2.0 * ph)) * k);
+  }
+  var nShade = nG;
   if (standing > 0.001) {
     let rr = RainRings(td.rain, td.rain2);
     let pixM = viewDistG * 2.0 / (frame.proj[1][1] * frame.renderSize.y) / max(abs(vG.y), 0.15);
     let rs = rainRings(rr, xz, frame.animTime) * rainRingsVisible(rr, pixM);
-    nShade = normalize(mix(gd.normal, normalize(vec3f(-rs.x, 1.0, -rs.y)), standing));
+    nShade = normalize(mix(nG, normalize(vec3f(-rs.x, 1.0, -rs.y)), standing));
   }
   // Wet ground and puddles reflect the sky (the probe, blurred to their roughness); dry ground
   // stays matte. Schlick Fresnel with the roughness-limited rim (Karis 2014), times the cavity
