@@ -26,6 +26,7 @@
     "world/journal": "world/journal.json",
     "world/journal-island": "world/journal-island.json",
     "world/journal-web": "world/journal-web.json",
+    "world/journal-list": "world/journal-list.json",
     "world/journal-wash": "world/journal-wash.json",
     "species/frog": "species/frog.json",
     "species/midge": "species/midge.json",

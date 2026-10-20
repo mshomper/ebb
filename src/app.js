@@ -40,6 +40,7 @@ import { bakeBody } from './world/creatures/body-bake.js';
 import { previewSpots } from './world/creatures/preview-spots.js';
 import { createCreatures } from './world/creatures/index.js';
 import { createFinds } from './world/finds/index.js';
+import { shorePresence } from './world/journal/shore-presence.js';
 import { createPresence } from './world/creatures/presence.js';
 import { cleanName, nameFrog } from './world/creatures/trust.js';
 import { lushLook } from './world/growth/lush.js';
@@ -125,7 +126,7 @@ export async function startApp(canvas, hooks = {}) {
   // Device settings (src/save/prefs.js): kept on this device, never in the island.
   const prefs = loadPrefs();
   updateStore('settings', (s) => {
-    for (const k of ['textSize', 'motion', 'audio', 'hudDim', 'reveal', 'qualityChoice', 'leftHanded']) if (prefs[k] !== undefined) s[k] = prefs[k];
+    for (const k of ['textSize', 'motion', 'audio', 'hudDim', 'reveal', 'qualityChoice', 'leftHanded', 'journalList']) if (prefs[k] !== undefined) s[k] = prefs[k];
   });
   keepPrefs();
 
@@ -487,7 +488,7 @@ export async function startApp(canvas, hooks = {}) {
     presence.edit(p[0], p[2]);
     const [wMin, wMax] = terrainRecipe.stone.widthM;
     const cmd = terrain.stampStone(p, Math.min(wMax, Math.max(wMin, tools().size)) / 2);
-    if (cmd) history.push(cmd);
+    if (cmd) { history.push(cmd); emitDeferred('terrain:stone-set', { x: p[0], z: p[2] }); }
   }
 
   // The Plant tool (src/world/growth/plant-tool.js): plants a seed where the ground suits it, rings where.
@@ -818,6 +819,8 @@ export async function startApp(canvas, hooks = {}) {
     creatures,
     /** The finds near the view (the journal asks it what a tap landed on). */
     finds,
+    /** The shore zones and rock pools now (the journal's Web shows which are on the island). */
+    shorePresence: () => shorePresence(ww.shore.zones(), water.getSummary(), getStore('terrainLive')?.mirror?.material ?? null),
     /** Every live animal system's hooks for the reveal on return (src/ui/reveal.js). */
     animals: [creatures.reveal, midges.reveal],
     /** The live midge swarms (tools). */

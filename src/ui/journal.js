@@ -13,7 +13,9 @@ import { get, subscribe } from '../core/store.js';
 import { dispatch } from '../input/actions.js';
 import { ensureIconSprite, iconSvg } from './icons/icons.js';
 import { drawSketch, hasSketch } from './sketches/index.js';
-import { webView } from './journal-web.js';
+import { webView, tiesStrip } from './journal-web.js';
+import { nodeOfPage } from '../world/journal/web.js';
+import { livingList, cleanChoice } from '../world/journal/list.js';
 
 /** Sections, in order, with their drawn icons. */
 const VIEWS = [
@@ -70,19 +72,56 @@ export function mountJournal(parent, live, buttonParent = parent) {
   const sizeBtn = /** @type {HTMLButtonElement} */ (panel.querySelector('[data-act="size"]'));
   const tabs = /** @type {HTMLButtonElement[]} */ ([...panel.querySelectorAll('[data-view]')]);
 
-  /** The name tapped in the Web section, whose links stand out (null for the whole web). @type {string | null} */
-  let webFocus = null;
-  /** Tap a name in the web: bring its links forward, or let go if it was already chosen. @param {string} id */
+  // The Web section (journal-web.js): the trail of things tapped there (the last is the one in the
+  // middle), the shelf tab open (null follows the middle one's kind), and the thing the journal
+  // last showed, which the Web opens on.
+  /** @type {string[]} */ let webTrail = [];
+  /** @type {string | null} */ let webShelf = null;
+  /** @type {string | null} */ let lastShown = null;
+  /** The last journalUi.webAtN taken. @type {number | undefined} */ let webAtSeen;
+  /** The Living things list's folds, filter and sort (list.js), kept per device in settings. @type {import('../world/journal/list.js').ListChoice | null} */
+  let listChoice = null;
+  const choice = () => ({ ...(listChoice ??= cleanChoice(get('settings')?.journalList, live.list)) });
+  /** Put a thing in the middle of the Web: back along the trail if it is on it, else onto its end. @param {string} id */
+  function toTrail(id) {
+    const at = webTrail.indexOf(id);
+    webTrail = at >= 0 ? webTrail.slice(0, at + 1) : [...webTrail, id].slice(-(live.web.trailMax ?? 4));
+  }
+  /** Tap a thing in the Web, or a chip on a page: it moves to the middle of the Web. @param {string} id */
   function focusWeb(id) {
-    webFocus = webFocus === id ? null : id;
-    render();
+    if (lastShown && lastShown !== id) toTrail(lastShown);
+    toTrail(id);
+    webShelf = null;
+    lastShown = null;
+    const ui = get('journalUi');
+    if (ui?.view !== 'web') dispatch({ type: 'ui.journal', view: 'web', page: null });
+    else render();
   }
 
   /** @param {MouseEvent} e */
   function onClick(e) {
-    const node = /** @type {HTMLElement | null} */ (/** @type {HTMLElement} */ (e.target).closest('[data-web-node]'));
+    const t = /** @type {HTMLElement} */ (e.target);
+    const node = /** @type {HTMLElement | null} */ (t.closest('[data-web-node]'));
     if (node?.dataset.webNode) { focusWeb(node.dataset.webNode); return; }
-    const b = /** @type {HTMLElement | null} */ (/** @type {HTMLElement} */ (e.target).closest('button'));
+    const crumb = /** @type {HTMLElement | null} */ (t.closest('[data-web-trail]'));
+    if (crumb?.dataset.webTrail) { webTrail = webTrail.slice(0, Number(crumb.dataset.webTrail) + 1); webShelf = null; render(); return; }
+    const tab = /** @type {HTMLElement | null} */ (t.closest('[data-web-shelf]'));
+    if (tab?.dataset.webShelf) { webShelf = tab.dataset.webShelf; render(); return; }
+    // The Living things list's folds, filter and sort, kept on this device.
+    const lb = /** @type {HTMLElement | null} */ (t.closest('[data-list-fold],[data-list-status],[data-list-place],[data-list-sort]'));
+    if (lb && live.list) {
+      const c = choice();
+      const d = lb.dataset;
+      if (d.listFold) c.shut = { ...c.shut, [d.listFold]: !c.shut[d.listFold] };
+      else if (d.listStatus) c.status = /** @type {any} */ (d.listStatus);
+      else if (d.listPlace) c.place = c.place === d.listPlace ? null : d.listPlace;
+      else if (d.listSort) c.sort = /** @type {any} */ (d.listSort);
+      listChoice = c;
+      dispatch({ type: 'settings.set', patch: { journalList: c } });
+      render();
+      return;
+    }
+    const b = /** @type {HTMLElement | null} */ (t.closest('button'));
     if (!b) return;
     const ui = get('journalUi') ?? {};
     if (b === openBtn) dispatch({ type: 'ui.journal', toggle: true });
@@ -98,11 +137,6 @@ export function mountJournal(parent, live, buttonParent = parent) {
   }
   /** Keep pointer and wheel input on the journal from reaching the island. @param {Event} e */
   const stop = (e) => e.stopPropagation();
-  // Names in the web are focusable: Enter or Space chooses one.
-  panel.addEventListener('keydown', (e) => {
-    const node = /** @type {HTMLElement | null} */ (/** @type {HTMLElement} */ (e.target).closest?.('[data-web-node]'));
-    if (node?.dataset.webNode && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); focusWeb(node.dataset.webNode); }
-  });
   for (const r of [btnRoot, panel]) {
     r.addEventListener('click', onClick);
     r.addEventListener('pointerdown', stop);
@@ -135,10 +169,17 @@ export function mountJournal(parent, live, buttonParent = parent) {
     for (const t of tabs) t.setAttribute('aria-pressed', String(t.dataset.view === ui.view));
     const paged = (ui.view === 'living' || ui.view === 'ground') && !!ui.page && live.hasPage(ui.page);
     backBtn.hidden = !paged;
+    // The Web opens on whatever the journal last showed.
+    if (paged) lastShown = nodeOfPage(live.web, ui.page);
+    if (ui.view === 'web' && lastShown) { toTrail(lastShown); lastShown = null; webShelf = null; }
+    // A note about a thing with no page of its own opens the Web on it.
+    if (ui.view === 'web' && ui.webAt && ui.webAtN !== webAtSeen) { webAtSeen = ui.webAtN; toTrail(ui.webAt); webShelf = null; }
+    if (ui.view === 'web' && !webTrail.length) webTrail = [live.web.start];
     const html = ui.view === 'notes' ? notesView() : ui.view === 'almanac' ? almanacView()
-      : ui.view === 'web' ? webView(live.describeWeb(), live.web, webFocus)
-      : paged ? pageView(/** @type {string} */ (ui.page)) : ui.view === 'ground' ? listView(island.groundOrder) : listView(words.order) + smallLivesView();
-    const key = `${ui.view}|${ui.page}`;
+      : ui.view === 'web' ? webView(live.describeWeb(), live.web, { trail: webTrail, shelf: webShelf })
+      : paged ? pageView(/** @type {string} */ (ui.page)) : ui.view === 'ground' ? listView(island.groundOrder) : livingView();
+    // A new thing in the middle of the Web scrolls back up to its card.
+    const key = `${ui.view}|${ui.page}|${ui.view === 'web' ? webTrail[webTrail.length - 1] : ''}`;
     if (html === body.dataset.html) return;
     body.innerHTML = html;
     body.dataset.html = html;
@@ -189,6 +230,55 @@ export function mountJournal(parent, live, buttonParent = parent) {
     return head + marks + listView(found);
   }
 
+  /**
+   * Living things, tidied as the island fills (list.js): filter and sort chips, then each group under
+   * a header that folds it shut, tinted by kind as in the Web. No counts anywhere.
+   */
+  function livingView() {
+    const L = live.list;
+    if (!L) return listView(words.order) + smallLivesView();
+    const c = choice();
+    const j = live.journal();
+    const U = live.unread();
+    const groups = livingList(L, words, c, (id) => {
+      const d = live.describe(id);
+      return { id, known: d.known, name: d.known ? d.name : '' };
+    }, (id) => j.species[id]?.first ?? -1);
+    /** @param {string} attr @param {string} value @param {string} label @param {boolean} on */
+    const pill = (attr, value, label, on) => `<button type="button" class="ebb-jl-chip" data-list-${attr}="${esc(value)}" aria-pressed="${on}">${esc(label)}</button>`;
+    const controls = `<div class="ebb-jl-controls">
+      <div class="ebb-jl-row" role="group" aria-label="${esc(L.labels.filter)}"><span class="ebb-jl-label">${esc(L.labels.filter)}</span>
+        ${Object.entries(L.filters).map(([k, v]) => pill('status', k, /** @type {string} */ (v), c.status === k)).join('')}
+        ${Object.entries(L.places).map(([k, v]) => pill('place', k, /** @type {string} */ (v), c.place === k)).join('')}</div>
+      <div class="ebb-jl-row" role="group" aria-label="${esc(L.labels.sort)}"><span class="ebb-jl-label">${esc(L.labels.sort)}</span>
+        ${Object.entries(L.sorts).map(([k, v]) => pill('sort', k, /** @type {string} */ (v), c.sort === k)).join('')}</div></div>`;
+    const body = groups.map((g) => {
+      const icon = g.icon ?? live.web?.kinds?.[g.tint]?.icon ?? 'plant';
+      // A folded group still says when something in it is new.
+      const fresh = g.shut && g.rows.some((id) => U.pages.has(id)) ? NEW : '';
+      const head = `<h4 class="ebb-jl-head"><button type="button" class="ebb-jl-fold" data-list-fold="${esc(g.id)}" aria-expanded="${!g.shut}"
+        aria-label="${esc(`${g.label}: ${g.shut ? L.labels.open : L.labels.shut}`)}"><span class="ebb-jl-pill">${iconSvg(icon)}<span>${esc(g.label)}</span></span>${fresh}${iconSvg('chevron', 'ebb-jl-chev')}</button></h4>`;
+      if (g.shut) return `<section class="ebb-jl-group is-${esc(g.tint)} is-shut">${head}</section>`;
+      // Found small lives keep their row of marks (a one-page group such as Shells lists its items instead).
+      const marks = g.foundOnly && g.many && g.rows.length && words.smallLives?.marks
+        ? `<p class="ebb-jlist__marks"><span class="ebb-journal__voice">${esc(words.smallLives.marks)}</span>${g.rows.map((id) => `<span class="ebb-jlist__mark" aria-hidden="true">${iconSvg(live.describe(id).icon)}</span>`).join('')}</p>` : '';
+      const inner = g.rows.length ? marks + listView(g.rows) + g.rows.map(itemsView).join('') : `<p class="ebb-journal__voice ebb-jlist__hint">${esc(g.hint ?? L.empty)}</p>`;
+      return `<section class="ebb-jl-group is-${esc(g.tint)}">${head}${inner}</section>`;
+    }).join('');
+    return controls + body;
+  }
+
+  /**
+   * A collection's found items (the Shells page) under its row in the list: each item's name, rarity
+   * and line in one text block, so they wrap as words. Never the ones still to find. @param {string} id
+   */
+  function itemsView(id) {
+    const items = (/** @type {any} */ (live.describe(id)).collection ?? []).filter((/** @type {any} */ c) => c.found);
+    if (!items.length) return '';
+    return `<ul class="ebb-jl-items">${items.map((/** @type {any} */ c) => `<li><button type="button" class="ebb-jl-item" data-page="${esc(id)}"><span class="ebb-jl-item__text">` +
+      `<b>${esc(c.name)}</b> <small class="ebb-jpage__rarity">${esc(c.rarity)}</small> <span class="ebb-journal__voice">${esc(c.text)}</span></span></button></li>`).join('')}</ul>`;
+  }
+
   /** A list of lines, inked or in pencil. @param {{ text: string, known: boolean }[]} lines @param {string} [hint] pencil line when some are unknown */
   function lines(lines, hint) {
     const known = lines.filter((l) => l.known);
@@ -236,6 +326,7 @@ export function mountJournal(parent, live, buttonParent = parent) {
       <div class="ebb-jpage__top">${art ? '' : `<span class="ebb-jpage__sketch">${iconSvg(d.icon)}</span>`}<h3>${esc(d.name)}</h3>${show}</div>
       ${art}
       <p class="ebb-jpage__status ebb-journal__voice">${esc(d.status)}</p>
+      ${tiesStrip(live.describeWeb(), live.web, nodeOfPage(live.web, id))}
       ${d.named?.length ? section('Named', `<ul class="ebb-jpage__list">${d.named.map((/** @type {string} */ n) => `<li>${esc(n)}</li>`).join('')}</ul>`) : ''}
       ${d.collection?.length ? section('Found so far', `<ul class="ebb-jpage__list ebb-jpage__collection">${d.collection.map((/** @type {any} */ c) => c.found
         ? `<li><span><b>${esc(c.name)}</b> <small class="ebb-jpage__rarity">${esc(c.rarity)}</small><br><span class="ebb-journal__voice">${esc(c.text)}</span></span></li>`
@@ -264,9 +355,10 @@ export function mountJournal(parent, live, buttonParent = parent) {
     const R = words.readMarks;
     const item = (/** @type {any} */ n, /** @type {boolean} */ isNew) => {
       const inner = `<span class="ebb-journal__voice">${isNew ? NEW : ''}${esc(n.text)}</span><small>${esc(n.date)}</small>`;
-      return n.sp && live.hasPage(n.sp)
-        ? `<li><button type="button" class="ebb-jnotes__row" data-page="${esc(n.sp)}">${inner}</button></li>`
-        : `<li><div class="ebb-jnotes__row">${inner}</div></li>`;
+      if (n.sp && live.hasPage(n.sp)) return `<li><button type="button" class="ebb-jnotes__row" data-page="${esc(n.sp)}">${inner}</button></li>`;
+      // A note about a thing with no page of its own (a rock pool, the wrack) leads to it in the Web.
+      if (n.sp && live.web.nodes?.[n.sp]) return `<li><button type="button" class="ebb-jnotes__row" data-web-node="${esc(n.sp)}">${inner}</button></li>`;
+      return `<li><div class="ebb-jnotes__row">${inner}</div></li>`;
     };
     const missed = j.notes.filter((n) => live.noteState(n, since) === 'missed');
     const rest = j.notes.filter((n) => live.noteState(n, since) !== 'missed');

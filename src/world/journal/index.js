@@ -14,7 +14,7 @@ import { hourIndex, display, SECONDS_PER_HOUR, HOURS_PER_DAY } from '../../core/
 import { onAction } from '../../input/actions.js';
 import { weatherAt } from '../weather.js';
 import { tideParams } from '../tide.js';
-import { initialJournal, learn, notePlanted, momentsNow, catchMoments, foundAnimal, foundFind, namedAnimal } from './observe.js';
+import { initialJournal, learn, notePlanted, momentsNow, catchMoments, foundAnimal, foundFind, namedAnimal, flag } from './observe.js';
 import { journalLook } from './look.js';
 import { describe, identify, showMeSpot, momentKind, frogCard } from './describe.js';
 import { groundKind, groundCard, groundSurvey, describeGround, groundSpot } from './ground.js';
@@ -31,15 +31,19 @@ import { stampNotes, markShown, markNotesSeen, markPageSeen, readOf, pageSince, 
  * @property {'half'|'full'} size  the phone sheet's height
  * @property {number} [notesSince] the last note number seen before Notes was opened (read.js): newer ones show as new
  * @property {number} [pageSince]  the same for the page open
+ * @property {string} [webAt]      a Web node to bring to the middle (a note about a thing with no page)
+ * @property {number} [webAtN]     counts those asks, so the Web takes each once
  */
 
 /**
  * @param {{ world: { state: any, env: any }, words: any, island: any, web: any, wash?: any,
- *   creatures?: { frogAt: (x: number, z: number) => { x: number, z: number, id?: number } | null } | null }} opts
+ *   creatures?: { frogAt: (x: number, z: number) => { x: number, z: number, id?: number } | null } | null,
+ *   finds?: any, shore?: (() => Record<string, number> | null) | null, list?: any }} opts
  *   world: the live world (state and env of the hourly tick); words: recipes/world/journal.json;
  *   island: recipes/world/journal-island.json; web: recipes/world/journal-web.json;
  *   wash: recipes/world/journal-wash.json; creatures: the live creatures (src/world/creatures),
- *   which say whether a tap landed on a frog
+ *   which say whether a tap landed on a frog; shore: the shore zones and rock pools now
+ *   (shore-presence.js), which the Web shows
  */
 export function createJournal(opts) {
   const { world, words, island, web, wash, creatures } = opts;
@@ -59,6 +63,8 @@ export function createJournal(opts) {
   const material = () => get('terrainLive')?.mirror?.material ?? null;
   let paintVersion = 0;
   const survey = () => groundSurvey(habitat(), material(), world.state, island, paintVersion);
+  /** The shore zones and rock pools now, for the Web (shore-presence.js), or null. */
+  const shore = () => opts.shore?.() ?? null;
 
   /** @param {{ journal: import('./observe.js').Journal, notes: import('./observe.js').Note[] }} r */
   function commit(r) {
@@ -98,7 +104,7 @@ export function createJournal(opts) {
    * runs for hours you were away (look.js). @param {any[]} events @param {number} hour @param {any} [state]
    */
   const look = (events, hour, state = world.state) => {
-    const r = journalLook(journal, { state, events, hour, habitat: habitat(), material: material(), words, island, web, paintVersion });
+    const r = journalLook(journal, { state, events, hour, habitat: habitat(), material: material(), words, island, web, paintVersion, shore: shore() });
     settle(r.journal, r.notes);
     if (washedPage) rewash();
   };
@@ -190,6 +196,13 @@ export function createJournal(opts) {
     // Edits move water and plants between hours: look again (the habitat is rebuilt first).
     on('water:summary-updated', () => look([], hourIndex())),
     on('terrain:stroke-ended', () => { paintVersion++; if (washedPage) rewash(); }),
+    // Sculpt's Stone mode set a stone (src/app.js): the Web's Stones are on the island.
+    on('terrain:stone-set', () => {
+      const next = flag(journal, 'stones:set');
+      if (next !== journal) { journal = next; update('journal', () => journal); look([], hourIndex()); }
+    }),
+    // The shore rezones a moment after an edit: look again, so the Web sees new pools and zones.
+    on('shore:zoned', () => look([], hourIndex())),
     // A page opened or closed (or the journal itself): wash for the new page, or clear the wash.
     subscribe('journalUi', (/** @type {JournalUiSlice} */ u) => {
       const page = u.open && (u.view === 'living' || u.view === 'ground') ? u.page : null;
@@ -235,6 +248,10 @@ export function createJournal(opts) {
       if (a.page !== undefined) {
         patch.page = a.page;
         if (a.page) patch.view = words.species[a.page] ? 'living' : island.ground[a.page] ? 'ground' : u.view;
+        // A thing with no page of its own (a rock pool, the wrack): its note opens the Web on it.
+        if (a.page && !words.species[a.page] && !island.ground[a.page] && web.nodes?.[a.page]) {
+          Object.assign(patch, { view: 'web', page: null, webAt: a.page, webAtN: (u.webAtN ?? 0) + 1 });
+        }
       }
       if (a.size) patch.size = a.size;
       // Opening the journal, or a page in it, puts the tap card away (the page now says it all).
@@ -271,8 +288,10 @@ export function createJournal(opts) {
       ? describe(journal, id, world.state, habitat(), words, hourIndex())
       : describeGround(journal, id, survey(), island, words)),
     web,
+    /** The Living things list's groups, filters and places (recipes/world/journal-list.json). */
+    list: opts.list ?? null,
     /** The web of what needs what: its bands of names and its links, inked or in pencil. */
-    describeWeb: () => describeWeb(journal, habitat() ? survey() : null, web),
+    describeWeb: () => describeWeb(journal, habitat() ? { ...survey(), shore: shore() } : null, web),
     /** The almanac's rows for the time shown. */
     almanac: () => almanac({ state: world.state, tHours: display() / SECONDS_PER_HOUR,
       weatherNow: weatherAt(world.state?.weather, display(), world.env.recipes?.seasons),
