@@ -1,0 +1,83 @@
+// @ts-check
+// The development engine (doc 24, "The development engine"): grows a piece from a season's
+// authored material by rules. Phase 4a grows the harmony: a form template, then a walk through the
+// season's chord grammar, judged across many candidates. The result is an ordinary piece file
+// (develop/piece.js) that the realizer plays like any anchor, and its name comes from the composer
+// (names.js). The same material, rules, season, slot, weather and seed always give the same piece
+// and the same name, so a grown piece can be found again (and later hearted).
+//
+//   grow(seed) ─→ template (plan.js) ─→ 24 candidates: phrases + harmony walk (harmony.js)
+//              ─→ judge each (judge.js) ─→ best few, one chosen by the seed ─→ piece (piece.js)
+
+import { stream, hash32 } from '../../../core/rng.js';
+import { pieceName } from '../names.js';
+import { fittingTemplates, planPhrases, pickWeighted } from './plan.js';
+import { walk, changes } from './harmony.js';
+import { judgeHarmony } from './judge.js';
+import { writePiece } from './piece.js';
+
+/** @param {string} s */
+function strHash(s) {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = hash32(h, s.charCodeAt(i));
+  return h;
+}
+
+/**
+ * @typedef {Object} GrowWhere
+ * @property {string} slot     'morning' | 'interlude' | 'evening' | 'nocturne'
+ * @property {string} [weather]  'clear' | 'cloud' | 'rain' | 'mist'
+ * @property {number} seed
+ */
+
+/**
+ * Grow one piece.
+ * @param {any} material recipes/music/material/<season>.json
+ * @param {any} rules recipes/music/develop.json
+ * @param {GrowWhere} where
+ * @param {any} [names] recipes/music/names.json (for the title)
+ * @returns {{piece: any, candidates: {seed: number, total: number, banned: boolean, terms: Record<string, number>, chords: string[]}[], chosen: number}}
+ */
+export function grow(material, rules, where, names) {
+  const seed = where.seed >>> 0;
+  const weather = where.weather ?? 'clear';
+  const r = stream(seed, 0x6476, strHash(`${material.season}:${where.slot}:${weather}`));
+  const templates = fittingTemplates(material, { slot: where.slot, weather });
+  const template = pickWeighted(templates, r) ?? Object.keys(material.templates)[0];
+  const meter = pickWeighted(material.meters, r) ?? '4/4';
+  const [t0, t1] = material.tempo;
+  const lo = Math.round(t0 + (t1 - t0) * r.next() * 0.6);
+  /** @type {[number, number]} */
+  const tempo = [lo, Math.min(t1, lo + 6)];
+
+  const n = Math.max(1, rules.candidates ?? 24);
+  const cands = [];
+  for (let k = 0; k < n; k++) {
+    const cr = stream(seed, 0x6376, k, strHash(`${material.season}:${where.slot}:${weather}:${template}`));
+    const plan = planPhrases(material, rules, template, cr);
+    const walked = walk(material, rules, plan, cr);
+    const judged = judgeHarmony(material, rules, walked);
+    cands.push({ k, plan, walked, judged });
+  }
+  // Best first; ties keep candidate order, so the ranking is the same everywhere.
+  const ranked = [...cands].sort((a, b) => (b.judged.total - a.judged.total) || (a.k - b.k));
+  const pool = ranked.filter((c) => c.judged.total > -Infinity).slice(0, Math.max(1, rules.keepBest ?? 4));
+  const chosen = (pool.length ? pool : ranked)[r.int(Math.max(1, pool.length))];
+
+  const title = names ? pieceName(seed, { season: material.season, slot: where.slot }, names) : `Grown ${where.slot} ${seed}`;
+  const report = {
+    plan: chosen.plan,
+    bars: chosen.walked.bars.map((b) => ({ phrase: b.phrase, target: b.target, held: b.held, cadence: b.cadence,
+      chords: b.chords.map((c) => ({ place: c.place, symbol: c.symbol, at: c.at, color: c.color, tension: material.chords[c.place].tension })) })),
+    judged: chosen.judged,
+    rank: ranked.indexOf(chosen) + 1,
+  };
+  const piece = writePiece(material, chosen.walked, chosen.plan, {
+    id: `grown-${material.season}-${where.slot}-${seed}`, title, slot: where.slot, weather, meter, tempo, template, seed, report,
+  });
+  return {
+    piece,
+    candidates: ranked.map((c) => ({ seed: c.k, total: c.judged.total, banned: c.judged.banned, terms: c.judged.terms, chords: changes(c.walked.bars) })),
+    chosen: ranked.indexOf(chosen),
+  };
+}

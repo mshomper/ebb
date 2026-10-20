@@ -1,0 +1,101 @@
+{
+  "type": "music",
+  "id": "material-spring",
+  "version": 1,
+  "note": "Spring's authored material for the development engine (doc 24, The development engine; src/audio/music/develop/). Phase 4a uses the chord grammar and the form templates; the motif bank arrives in 4b. home: the key every symbol is written in (the realizer moves a piece to other keys). meters and tempo: drawn per piece, tempo in beats per minute as realize.json counts beats. chords: the grammar's places, each a name (a Roman numeral, for the lab), its symbol in the home key, how tense it feels from 0 (home) to 1, and its colors (other symbols for the same place, weighted; the plain symbol takes the rest). moves: from each place, where the harmony may go next and how often (weights are relative). hold: a chord may last another bar. cadences: how a phrase may end, as the last two places (any of 'from', then 'to'); 'final' marks the ones that may end a piece. templates: phrase plans; each phrase has a role, a length range in bars, the cadences it may end on (weighted) and a tension target from its start to its end (0 to 1). slots and weather say where a template fits; weight is how often it is chosen there. coda: the short closing bars every grown piece ends with, as places.",
+  "season": "spring",
+  "home": "D",
+  "mode": "ionian",
+  "meters": { "3/4": 0.4, "4/4": 0.35, "6/8": 0.25 },
+  "tempo": [72, 84],
+  "chords": {
+    "I": { "symbol": "D", "tension": 0, "colors": { "Dadd9": 0.25, "Dmaj7": 0.12 } },
+    "I/3": { "symbol": "D/F#", "tension": 0.25, "colors": {} },
+    "ii7": { "symbol": "Em7", "tension": 0.45, "colors": { "Em9": 0.3 } },
+    "iii7": { "symbol": "F#m7", "tension": 0.5, "colors": {} },
+    "IV": { "symbol": "Gmaj7", "tension": 0.3, "colors": { "G": 0.3, "Gadd9": 0.15 } },
+    "IV/I": { "symbol": "G/D", "tension": 0.2, "colors": {} },
+    "V7sus4": { "symbol": "A7sus4", "tension": 0.6, "colors": { "Asus4": 0.3 } },
+    "V": { "symbol": "A", "tension": 0.65, "colors": { "A/C#": 0.3 } },
+    "vi7": { "symbol": "Bm7", "tension": 0.35, "colors": { "Bm": 0.3, "Bm9": 0.1 } },
+    "bVII": { "symbol": "C", "tension": 0.5, "colors": { "Cadd9": 0.3 } }
+  },
+  "moves": {
+    "I": { "vi7": 0.3, "IV": 0.25, "iii7": 0.2, "bVII": 0.15, "ii7": 0.1, "I/3": 0.1 },
+    "I/3": { "IV": 0.6, "ii7": 0.4 },
+    "IV": { "I": 0.45, "V7sus4": 0.25, "ii7": 0.3, "IV/I": 0.1 },
+    "IV/I": { "I": 0.7, "ii7": 0.3 },
+    "vi7": { "ii7": 0.35, "IV": 0.4, "iii7": 0.25 },
+    "iii7": { "IV": 0.5, "vi7": 0.3, "ii7": 0.2 },
+    "ii7": { "V7sus4": 0.4, "I": 0.3, "IV/I": 0.3 },
+    "V7sus4": { "I": 0.5, "vi7": 0.3, "V": 0.2 },
+    "V": { "I": 0.6, "vi7": 0.4 },
+    "bVII": { "I": 0.6, "IV": 0.4 }
+  },
+  "hold": 0.15,
+  "cadences": {
+    "plagal": { "from": ["IV", "IV/I"], "to": "I", "final": true },
+    "modal": { "from": ["bVII"], "to": "I", "final": true },
+    "ii-I": { "from": ["ii7"], "to": "I", "final": true },
+    "deceptive": { "from": ["V7sus4"], "to": "vi7", "final": false },
+    "half": { "from": ["ii7", "IV"], "to": "V7sus4", "final": false }
+  },
+  "coda": ["IV/I", "I"],
+  "templates": {
+    "song": {
+      "name": "Song",
+      "slots": { "interlude": 1, "morning": 0.6 },
+      "weather": ["clear", "cloud"],
+      "phrases": [
+        { "role": "statement", "bars": [4, 4], "cadence": { "half": 0.5, "deceptive": 0.3, "ii-I": 0.2 }, "tension": [0.1, 0.45] },
+        { "role": "answer", "bars": [4, 5], "cadence": { "plagal": 0.5, "modal": 0.3, "ii-I": 0.2 }, "tension": [0.3, 0.15] },
+        { "role": "development", "bars": [4, 4], "cadence": { "deceptive": 0.5, "half": 0.5 }, "tension": [0.4, 0.65] },
+        { "role": "return", "bars": [3, 4], "cadence": { "half": 0.6, "deceptive": 0.4 }, "tension": [0.2, 0.5] },
+        { "role": "cadence", "bars": [2, 3], "cadence": { "plagal": 0.45, "modal": 0.3, "ii-I": 0.25 }, "tension": [0.35, 0] }
+      ]
+    },
+    "duet": {
+      "name": "Duet",
+      "slots": { "interlude": 0.8 },
+      "weather": ["clear", "cloud"],
+      "phrases": [
+        { "role": "call", "bars": [3, 3], "cadence": { "half": 0.6, "deceptive": 0.4 }, "tension": [0.1, 0.5] },
+        { "role": "answer", "bars": [3, 3], "cadence": { "plagal": 0.5, "modal": 0.5 }, "tension": [0.35, 0.1] },
+        { "role": "call", "bars": [3, 3], "cadence": { "deceptive": 0.6, "half": 0.4 }, "tension": [0.2, 0.55] },
+        { "role": "answer", "bars": [4, 5], "cadence": { "plagal": 0.4, "ii-I": 0.3, "modal": 0.3 }, "tension": [0.4, 0] }
+      ]
+    },
+    "arch": {
+      "name": "Arch",
+      "slots": { "evening": 1, "morning": 0.5 },
+      "weather": ["clear", "cloud"],
+      "phrases": [
+        { "role": "statement", "bars": [4, 4], "cadence": { "half": 0.5, "plagal": 0.5 }, "tension": [0.05, 0.3] },
+        { "role": "climb", "bars": [4, 4], "cadence": { "half": 0.6, "deceptive": 0.4 }, "tension": [0.3, 0.55] },
+        { "role": "peak", "bars": [5, 5], "cadence": { "deceptive": 0.6, "half": 0.4 }, "tension": [0.55, 0.65] },
+        { "role": "return", "bars": [4, 4], "cadence": { "plagal": 0.5, "modal": 0.5 }, "tension": [0.45, 0.2] },
+        { "role": "cadence", "bars": [3, 3], "cadence": { "plagal": 0.5, "ii-I": 0.5 }, "tension": [0.25, 0] }
+      ]
+    },
+    "rain": {
+      "name": "Rain",
+      "slots": { "interlude": 1, "morning": 1, "evening": 1 },
+      "weather": ["rain"],
+      "phrases": [
+        { "role": "statement", "bars": [4, 4], "cadence": { "plagal": 0.5, "half": 0.5 }, "tension": [0.15, 0.25] },
+        { "role": "answer", "bars": [5, 5], "cadence": { "deceptive": 0.5, "modal": 0.5 }, "tension": [0.25, 0.3] },
+        { "role": "cadence", "bars": [5, 6], "cadence": { "plagal": 0.6, "ii-I": 0.4 }, "tension": [0.3, 0] }
+      ]
+    },
+    "mist": {
+      "name": "Mist",
+      "slots": { "interlude": 1, "morning": 1 },
+      "weather": ["mist"],
+      "phrases": [
+        { "role": "statement", "bars": [5, 5], "cadence": { "plagal": 0.6, "half": 0.4 }, "tension": [0.05, 0.2] },
+        { "role": "answer", "bars": [6, 6], "cadence": { "modal": 0.5, "deceptive": 0.5 }, "tension": [0.2, 0.25] },
+        { "role": "cadence", "bars": [4, 4], "cadence": { "plagal": 1 }, "tension": [0.2, 0] }
+      ]
+    }
+  }
+}

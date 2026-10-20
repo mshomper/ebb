@@ -6,6 +6,7 @@ import { addChordExtraTests } from './unit-tests-chords-extra.js';
 import { addSamplerTests } from './unit-tests-sampler.js';
 import { addVoicingTests } from './unit-tests-voicing.js';
 import { addDirectorTests } from './unit-tests-director.js';
+import { addDevelopTests } from './unit-tests-develop.js';
 
 const tests = [];
 const test = (group, name, fn) => tests.push({ group, name, fn });
@@ -16,6 +17,7 @@ addChordExtraTests(test, assert, eq);
 addSamplerTests(test, assert, eq);
 addVoicingTests(test, assert, eq);
 addDirectorTests(test, assert, eq);
+addDevelopTests(test, assert, eq);
 
 let passed = 0;
 for (const t of tests) {

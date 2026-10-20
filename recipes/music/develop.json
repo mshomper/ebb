@@ -1,0 +1,24 @@
+{
+  "type": "music",
+  "id": "develop",
+  "version": 1,
+  "note": "The development engine's rules and weights (doc 24, The development engine; src/audio/music/develop/), tuned by ear in the music lab's Engine tab. candidates: how many pieces are grown per seed; keepBest: how many of the best the seed chooses among. harmony: tensionFollow, how strongly the walk prefers chords whose tension is near the phrase's target (0 ignores it); colorAmount, scales every chord's color chances (0 plain triads and sevenths only, 1 as written in the material); hold, scales the chance a chord lasts another bar; splitLast, the chance a phrase's last-but-one bar holds two chords (the cadence's approach arrives on the bar's later beat); cadenceWeights, multiplies each cadence type wherever a template offers it (1 keeps the material's weights; 0 removes it). score: how the candidates are judged. variety rewards using many different chords; tensionFit punishes distance from the template's curve; repeatWindow punishes a run of four chords that comes back (a loop); stuck punishes the same chord three bars running; colorCrowd punishes more than colorCrowdShare of bars on color chords; bannedLoops are sequences (by place) never allowed, such as I V vi IV.",
+  "candidates": 24,
+  "keepBest": 4,
+  "harmony": {
+    "tensionFollow": 3,
+    "colorAmount": 1,
+    "hold": 1,
+    "splitLast": 0.35,
+    "cadenceWeights": { "plagal": 1, "modal": 1, "ii-I": 1, "deceptive": 1, "half": 1 }
+  },
+  "score": {
+    "variety": 2,
+    "tensionFit": 6,
+    "repeatWindow": 4,
+    "stuck": 3,
+    "colorCrowd": 2,
+    "colorCrowdShare": 0.4,
+    "bannedLoops": [["I", "V", "vi7", "IV"], ["I", "V7sus4", "vi7", "IV"], ["vi7", "IV", "I", "V"]]
+  }
+}
