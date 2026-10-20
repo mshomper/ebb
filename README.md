@@ -40,7 +40,7 @@ There are two islands to start from: the **Starter island** (one large spring-fe
 You need a WebGPU-capable browser: Chrome, Edge, Firefox on Windows, or Safari 26 and later.
 
 - **Live:** https://mshomper.github.io/ebb/ (the `main` branch).
-- **Branch previews:** https://mshomper.github.io/ebb/preview/ lists every other branch, each at `/ebb/preview/<branch>/`.
+- **Branch previews:** https://mshomper.github.io/ebb/preview/ lists every other branch, each at `/ebb/preview/<branch>/`: newest first (or A to Z), with a search box, a "new" tag for the last day, and branches already merged into main folded away at the bottom.
 - **On this PC:**
   1. Choose the branch in GitHub Desktop.
   2. Double-click `play.cmd` in the repo folder. It starts a small local server (nothing to install), opens the game in your browser, and uses the first free port from 8080 to 8099.
