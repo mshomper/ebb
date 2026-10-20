@@ -19,6 +19,9 @@ export function createCreatureSound(mixer, voices, store, recipe) {
   let since = null;
   /** The last plop played, by its number. */
   let lastPlop = -1;
+  /** Where the ears are, and when (performance.now) a frog last called close to them. */
+  let eye = [0, 10, 0];
+  let nearCallAt = -Infinity;
   const lo = R.intensityFromMood[0], hi = R.intensityFromMood[1];
 
   /** Play what the frogs did since the last look. */
@@ -39,6 +42,7 @@ export function createCreatureSound(mixer, voices, store, recipe) {
       if (age > R.staleS) continue;
       const mood = Math.max(0, Math.min(1, c.mood));
       voices.call(c.id, 'frog', c.pos, lo + (hi - lo) * mood, t0 + Math.max(0, R.leadS - age));
+      if (Math.hypot(c.pos[0] - eye[0], c.pos[1] - eye[1], c.pos[2] - eye[2]) <= R.duckNearM) nearCallAt = performance.now();
     }
     for (const p of heard.plops) {
       if (p.n <= fromPlop) continue;
@@ -50,12 +54,15 @@ export function createCreatureSound(mixer, voices, store, recipe) {
 
   return {
     poll,
+    /** A frog called within duckNearM of the ears in the last duckHoldS: the music dips (doc 24). */
+    nearCall: () => performance.now() - nearCallAt < R.duckHoldS * 1000,
     /**
      * Ten times a second: the ears, the season, and the midge swarms.
-     * @param {number[]} eye @param {number[]} forward @param {number[]} seasonBlend
+     * @param {number[]} ears @param {number[]} forward @param {number[]} seasonBlend
      */
-    update(eye, forward, seasonBlend) {
-      voices.setListener(eye, forward);
+    update(ears, forward, seasonBlend) {
+      eye = ears;
+      voices.setListener(ears, forward);
       voices.setSeason(seasonBlend);
       const feed = store.get('creatureSound');
       voices.setSwarms(feed?.swarms ? feed.swarms() : []);

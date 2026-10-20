@@ -4,12 +4,14 @@
 // stays silent until the first touch or key, the island's ambience and the animals' voices. About
 // ten times a second it reads the `sound` slice the frame loop publishes, turns it into a sound
 // state (src/audio/game-state.js) and updates the ambience, the listener and the midges; a few
-// dozen times a second it plays the frogs' new calls and plops (src/audio/creatures-game.js).
+// dozen times a second it plays the frogs' new calls and plops (src/audio/creatures-game.js); twice
+// a second the music (src/audio/music/index.js) decides, and dips while a frog calls close by.
 // Volumes follow the player's settings, where full on each slider is the level tuned in
 // recipes/audio/mixer.json. Only the game calls this; the tool pages that start the app stay silent.
 //
 //   frame loop ── store 'sound' ──→ game-state ──→ ambience ──→ mixer ──→ speakers
-//   frog agents, midges ── store 'creatureSound' ──→ voices ──┘
+//   frog agents, midges ── store 'creatureSound' ──→ voices ──┤
+//   director ─→ composer or a tide ─→ performer ─→ music bus ─┘
 //   store 'settings'.audio ───────────────────────────────────→ mixer levels
 
 import { loadAudioRecipe } from './recipes.js';
@@ -19,9 +21,20 @@ import { createAmbience } from './ambience.js';
 import { createSoundState } from './game-state.js';
 import { createVoices } from './voices.js';
 import { createCreatureSound } from './creatures-game.js';
+import { createMusic } from './music/index.js';
+import { hash32 } from '../core/rng.js';
 import { sunMoon } from '../world/sky/sun-moon.js';
 
 const DEG = 180 / Math.PI;
+
+/** This device's music sessions so far, counted up once per load (so each visit plays differently). */
+function sessionCount() {
+  try {
+    const n = (Number.parseInt(localStorage.getItem('ebb.music.sessions') ?? '0', 10) || 0) + 1;
+    localStorage.setItem('ebb.music.sessions', String(n));
+    return n;
+  } catch { return 1; }
+}
 
 // A tap or key while the island is still loading counts as the first touch: the sound unlocks as
 // soon as it is built (the browser remembers the page was touched; iOS may still want one more).
@@ -34,7 +47,7 @@ if (typeof window !== 'undefined') {
 
 /**
  * @param {{ get: (slice: string) => any, subscribe: (slice: string, fn: (v: any) => void) => () => void }} store
- * @returns {Promise<{ mixer: () => import('./mixer.js').Mixer | null, ambience: () => any, voices: () => any, dispose: () => void }>}
+ * @returns {Promise<{ mixer: () => import('./mixer.js').Mixer | null, ambience: () => any, voices: () => any, music: () => any, dispose: () => void }>}
  */
 export async function startAudio(store) {
   const [mixerRecipe, ambRecipe, procRecipe, gameRecipe, skyRecipe, frogRecipe, midgeRecipe] = await Promise.all([
@@ -51,6 +64,11 @@ export async function startAudio(store) {
   /** @type {ReturnType<typeof createCreatureSound> | null} */ let animals = null;
   /** @type {ReturnType<typeof setInterval> | 0} */ let timer = 0;
   /** @type {ReturnType<typeof setInterval> | 0} */ let callTimer = 0;
+  /** @type {Awaited<ReturnType<typeof createMusic>> | null} */ let music = null;
+  const t0 = performance.now();
+  const asked = new URLSearchParams(location.search).get('music');
+  let testNow = asked === 'now' ? 'morning' : ['morning', 'interlude', 'evening', 'nocturne'].includes(asked ?? '') ? /** @type {string} */ (asked) : '';
+  let ticks = 0;
   let last = 0;
   let disposed = false;
   /** @type {(() => void)[]} */ const unsubs = [];
@@ -65,7 +83,9 @@ export async function startAudio(store) {
     mixer.setBusLevel('creatures', mixerRecipe.buses.creatures * lv(a.creatures));
     mixer.setBusLevel('tools', mixerRecipe.buses.tools * lv(a.tools));
     mixer.setBusLevel('ui', mixerRecipe.buses.ui * lv(a.ui));
+    mixer.setBusLevel('music', mixerRecipe.buses.musicDefault * lv(a.music));
     mixer.setBackgroundMute(a.muteInBackground !== false);
+    music?.setFrequency(a.musicOften ?? 'now-and-then');
   }
 
   function tick() {
@@ -77,6 +97,17 @@ export async function startAudio(store) {
     const state = soundState.build(s, dtS);
     ambience.update(state);
     animals.update(/** @type {number[]} */ (state.eye), /** @type {number[]} */ (state.forward), ambience.blend());
+    // The music decides twice a second (doc 24), and dips while a frog calls close by.
+    if (music && ticks++ % Math.max(1, Math.round(gameRecipe.updateHz / gameRecipe.music.updateHz)) === 0) {
+      mixer.duckMusic(animals.nearCall() ? mixerRecipe.duck.db : 0);
+      music.update({
+        realS: (now - t0) / 1000, gameT: s.displayT, sunAltDeg: s.sunAltDeg, weather: state.weather,
+        frogsAwake: !!s.frogsAwake, frogsCalling: !!s.frogsCalling, residents: s.residents ?? [],
+        previewing: Math.abs(s.displayT - s.worldT) > 60,
+      });
+      // `?music=now` (testing): the composer grows and plays a piece right after the first touch.
+      if (testNow && mixer.ctx.state === 'running' && music.playNow({ slot: testNow })) testNow = '';
+    }
   }
 
   /** Build the sound once the game has drawn and published its first sound slice. */
@@ -98,6 +129,10 @@ export async function startAudio(store) {
     callTimer = setInterval(() => {
       try { animals?.poll(); } catch (e) { console.error('ebb audio: the frog calls failed', e); }
     }, gameRecipe.frogs.pollS * 1000);
+    // The music: its own seed, from the world and this device's session count (doc 24, Algorithms).
+    createMusic(mixer, { tier, seed: hash32(seed >>> 0, sessionCount(), 0x6d75), sunAltDeg: (t) => sunMoon(t, skyRecipe.orbit).sunAlt * DEG })
+      .then((m) => { if (disposed) { m.dispose(); return; } music = m; applySettings(); })
+      .catch((e) => console.warn('ebb music: the music did not start', e));
   }
 
   if (store.get('sound')) begin();
@@ -110,11 +145,13 @@ export async function startAudio(store) {
     mixer: () => mixer,
     ambience: () => ambience,
     voices: () => voices,
+    music: () => music,
     dispose() {
       disposed = true;
       if (timer) clearInterval(timer);
       if (callTimer) clearInterval(callTimer);
       for (const u of unsubs) u();
+      music?.dispose();
       voices?.dispose();
       ambience?.dispose();
       mixer?.dispose();

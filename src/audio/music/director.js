@@ -17,6 +17,7 @@
 // world state: the caller passes the sun height as a function of game time and the rest as data.
 
 import { stream, hash32 } from '../../core/rng.js';
+import { DAYS_PER_SEASON } from '../../core/clock.js';
 
 const H = 3600;
 const DAY = 24 * H;
@@ -48,10 +49,10 @@ const SEASONS = ['spring', 'summer', 'autumn', 'winter'];
  * The sun's timeline for one game day: sunrise, sunset, dawn and dusk (sun at -6 degrees), and when
  * the falling sun crosses each listed height. Hours from the day's midnight; NaN if not reached.
  * @param {(t: number) => number} sunAltDeg @param {number} dayStart @param {number[]} falling
+ * @returns {{dawn: number, sunrise: number, sunset: number, dusk: number, nextDawn: number, falling: Record<number, number>}}
  */
 export function sunDay(sunAltDeg, dayStart, falling) {
   const step = 120;
-  /** @type {Record<string, number>} */
   const out = { dawn: NaN, sunrise: NaN, sunset: NaN, dusk: NaN, nextDawn: NaN };
   /** @type {Record<number, number>} */
   const fall = {};
@@ -151,9 +152,9 @@ export function createDirector(recipes, pieces, opts) {
    * @param {string} slot @param {number} gameT @param {DirectorState} st
    */
   /** The season at a game time. @param {number} gameT */
-  const seasonAt = (gameT) => SEASONS[Math.floor(gameT / (7 * DAY)) % 4];
+  const seasonAt = (gameT) => SEASONS[Math.floor(gameT / (DAYS_PER_SEASON * DAY)) % 4];
   /** Whether a game day is the first of its season. @param {number} day */
-  const firstDayOfSeason = (day) => day % 7 === 0;
+  const firstDayOfSeason = (day) => day % DAYS_PER_SEASON === 0;
 
   /**
    * The season's home tide, in that season's setting.

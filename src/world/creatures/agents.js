@@ -617,7 +617,8 @@ export function createFrogAgents(recipe, seed) {
       const dx = a.x - o.x, dz = a.z - o.z, d = Math.hypot(dx, dz);
       if (d > 1e-6 && d < near) { a.x += (dx / d) * M.spacing.driftMps * dt; a.z += (dz / d) * M.spacing.driftMps * dt; }
     }
-    if (a.mode === 'call' && clock >= a.pulseUntil + 0.15 && a.r.next() < M.call.perS * dt && clock - lastCall >= M.call.gapS) {
+    // Calls come more often in spring's breeding chorus and less in autumn (doc 25; env.callRate).
+    if (a.mode === 'call' && clock >= a.pulseUntil + 0.15 && a.r.next() < M.call.perS * (env.callRate ?? 1) * dt && clock - lastCall >= M.call.gapS) {
       a.pulseUntil = clock + M.call.pulseS;
       lastCall = clock;
       calls.push({ id: a.id, t: clock });

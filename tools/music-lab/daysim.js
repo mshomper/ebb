@@ -9,6 +9,7 @@
 import { sunMoon } from '../../src/world/sky/sun-moon.js';
 import { createDirector } from '../../src/audio/music/director.js';
 import { stream } from '../../src/core/rng.js';
+import { DAYS_PER_SEASON } from '../../src/core/clock.js';
 
 const DAY = 86400;
 const SEASONS = ['spring', 'summer', 'autumn', 'winter'];
@@ -38,7 +39,7 @@ export function simulate(o) {
   const step = 1; // real seconds
   for (let realS = 0; realS < endReal; realS += step) {
     const gameT = startT + realS * 60 * o.flow;
-    const pos = ((gameT / (7 * DAY)) % 4 + 4) % 4;
+    const pos = ((gameT / (DAYS_PER_SEASON * DAY)) % 4 + 4) % 4;
     const awake = o.frogsSettled && !(dorm[1] <= dorm[0] ? pos >= dorm[0] || pos < dorm[1] : pos >= dorm[0] && pos < dorm[1]);
     const di = dir.dayInfo(Math.floor(gameT / DAY));
     const h = (gameT % DAY) / 3600;

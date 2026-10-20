@@ -663,8 +663,9 @@ export async function startApp(canvas, hooks = {}) {
   let soundAcc = Infinity;
   let nearAcc = Infinity;
   let near = nothingNear();
-  /** @param {number} realDt @param {number} display @param {{ index: number, phase: number }} season @param {any} weather */
-  function publishSound(realDt, display, season, weather) {
+  /** @param {number} realDt @param {number} display @param {{ index: number, phase: number }} season @param {any} day daylight.update's result */
+  function publishSound(realDt, display, season, day) {
+    const weather = day.weather;
     soundAcc += realDt;
     nearAcc += realDt;
     if (soundAcc < 1 / soundRecipe.updateHz) return;
@@ -681,6 +682,10 @@ export async function startApp(canvas, hooks = {}) {
       tidePhase: tideState(display / clock.SECONDS_PER_HOUR, tideP).phase01,
       eye: [...camera.eye], target: [...camera.target], near,
       residents: frogs.length ? ['frog'] : [],
+      // For the music (doc 24): the frogs own dusk while they call; a time preview starts no piece.
+      worldT: clock.worldT(), sunAltDeg: (day.sm.sunAlt * 180) / Math.PI,
+      frogsAwake: frogs.length > 0 && !world.state?.creatures?.frogs?.dormant,
+      frogsCalling: creatures.frogs().some((a) => a.mode === 'call'),
     }));
   }
 
@@ -731,7 +736,7 @@ export async function startApp(canvas, hooks = {}) {
     const day = daylight.update(display, world.state, getStore('preview')?.weather ?? null, atmosphere.aerosolScale);
     atmosphere.setAtmosphere({ cloud: day.weather.cloud, mist: day.weather.mist, rain: day.weather.rain });
     for (const event of day.events) emitDeferred('sky:sun-crossed', { event });
-    publishSound(realDt, display, season, day.weather);
+    publishSound(realDt, display, season, day);
     // Palette keys follow the displayed sun, season and weather; positive exposureComp brightens.
     const look = baker.update(realDt, {
       sunAltDeg: (day.sm.sunAlt * 180) / Math.PI, seasonPhase: season.index + season.phase, weather: day.weather,

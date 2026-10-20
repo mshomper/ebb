@@ -45,7 +45,7 @@ export function createSoundState(recipe, seed, sunAltDeg, seasonEdge) {
   function sunOf(day) {
     let d = days.get(day);
     if (!d) {
-      const s = /** @type {Record<string, number>} */ (/** @type {unknown} */ (sunDay(sunAltDeg, day * DAY, [])));
+      const s = sunDay(sunAltDeg, day * DAY, []);
       d = { sunrise: Number.isFinite(s.sunrise) ? s.sunrise : 6, sunset: Number.isFinite(s.sunset) ? s.sunset : 18 };
       days.set(day, d);
       if (days.size > 4) days.delete(/** @type {number} */ (days.keys().next().value));

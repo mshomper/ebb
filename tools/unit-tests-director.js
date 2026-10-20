@@ -57,7 +57,8 @@ export function addDirectorTests(test, assert, eq) {
     const tides = ['spring', 'summer', 'autumn', 'winter'].flatMap((season) => [1, 2, 3, 4].map((n) => ({
       id: `tide-${n}-${season}`, theme: { candidate: n, season }, slots: ['morning', 'interlude'], seasons: [season], weather: ['clear'], keys: ['D'], requires: {},
     })));
-    for (const [season, day] of [['spring', 0], ['summer', 7], ['autumn', 14], ['winter', 21]]) {
+    // A season is 14 game days (src/core/clock.js DAYS_PER_SEASON).
+    for (const [season, day] of /** @type {[string, number][]} */ ([['spring', 0], ['summer', 14], ['autumn', 28], ['winter', 42]])) {
       for (const seed of [1, 2, 3]) {
         const { out } = run(director, [...pool, ...tides], { seed, startH: day * 24 + 4, realS: 60 * 20 });
         const morning = out.find((p) => p.slot === 'morning');

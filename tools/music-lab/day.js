@@ -9,6 +9,7 @@
 
 import { simulate } from './daysim.js';
 import { realize } from '../../src/audio/music/realize.js';
+import { DAYS_PER_SEASON } from '../../src/core/clock.js';
 
 const DAY = 86400;
 const SEASONS = ['spring', 'summer', 'autumn', 'winter'];
@@ -167,7 +168,7 @@ export async function initDay(host) {
   /** @type {any} */
   let last = null;
   function run() {
-    const startDay = opt.season * 7 + 2;
+    const startDay = opt.season * DAYS_PER_SEASON + 2;
     const pieces = opt.pool === 'stand-in' ? standIns : realPieces;
     const res = simulate({
       recipes: { director, seasons: {} }, pieces, orbit, days: opt.days, flow: opt.flow, seed: opt.seed,
@@ -197,7 +198,7 @@ export async function initDay(host) {
     const at = (/** @type {number} */ realS) => {
       const g = res.startT + realS * 60 * res.flow;
       const day = Math.floor(g / DAY);
-      return { day, label: `${SEASON_LABEL[Math.floor(day / 7) % 4]} day ${day % 7}, ${hhmm((g - day * DAY) / 3600)}` };
+      return { day, label: `${SEASON_LABEL[Math.floor(day / DAYS_PER_SEASON) % 4]} day ${day % DAYS_PER_SEASON}, ${hhmm((g - day * DAY) / 3600)}` };
     };
     $('dy-list').innerHTML = res.pieces.length
       ? res.pieces.map((/** @type {any} */ p) => `<li><b>${esc(at(p.startRealS).label)}</b> · ${esc(SLOT_NAME[p.slot] ?? p.slot)} · ${esc(p.id)} · seed ${p.seed} · ${((Math.min(p.endRealS, res.endRealS) - p.startRealS) / 60).toFixed(1)} real min${p.endRealS > res.endRealS ? ' (still playing when the run ends)' : ''}${p.note ? ` · ${esc(p.note)}` : ''}</li>`).join('')
@@ -219,7 +220,7 @@ export async function initDay(host) {
   /** Is any frog awake (settled and not dormant) at a game time? @param {number} gameT */
   const frogsAwakeAt = (gameT) => {
     if (!opt.frogs) return false;
-    const pos = ((gameT / (7 * DAY)) % 4 + 4) % 4;
+    const pos = ((gameT / (DAYS_PER_SEASON * DAY)) % 4 + 4) % 4;
     const [a, b] = dormancy;
     return !(b <= a ? pos >= a || pos < b : pos >= a && pos < b);
   };
@@ -316,7 +317,7 @@ export async function initDay(host) {
       }
       for (const h of [d.sunrise, d.sunset]) if (Number.isFinite(h)) parts.push(`<circle cx="${x(h).toFixed(1)}" cy="${axisY}" r="4.5" fill="#E6B84A" stroke="#B8801F" stroke-width="1.5"/>`);
 
-      const head = `${SEASON_LABEL[Math.floor(d.day / 7) % 4]} day ${d.day % 7}`;
+      const head = `${SEASON_LABEL[Math.floor(d.day / DAYS_PER_SEASON) % 4]} day ${d.day % DAYS_PER_SEASON}`;
       const sun = Number.isFinite(d.sunrise) ? `sunrise ${hhmm(d.sunrise)}, sunset ${hhmm(d.sunset)}` : '';
       const frogNote = opt.frogs ? (frogsAwakeAt(day0 + (d.dusk + 1) * 3600) ? 'frogs awake at dusk' : 'frogs asleep in the mud') : 'no frogs';
       return `<div style="margin:14px 0 6px"><b style="font-size:17px">${esc(head)}</b> <span class="muted">${esc(sun)} · ${frogNote}</span></div>

@@ -13,7 +13,7 @@
 
 import { on, emitDeferred } from '../../core/events.js';
 import { get as getStore, update as updateStore } from '../../core/store.js';
-import { hourIndex, display, animT, SECONDS_PER_HOUR, HOURS_PER_DAY } from '../../core/clock.js';
+import { hourIndex, display, animT, seasonOf, SECONDS_PER_HOUR, HOURS_PER_DAY } from '../../core/clock.js';
 import { createReturn } from './reveal-return.js';
 import { hash32 } from '../../core/rng.js';
 import { run } from '../../core/workers.js';
@@ -31,7 +31,8 @@ import { addTrustEvent } from './trust.js';
 import { findHide } from './day-hide.js';
 import { FROG_BONES } from './rigs/frog.js';
 
-const BAKE_JOB = { module: './world/creatures/bodies.js', fn: 'bakeVariant' };
+const SEASON_IDS = ['spring', 'summer', 'autumn', 'winter'];
+const BAKE_JOB ={ module: './world/creatures/bodies.js', fn: 'bakeVariant' };
 /** The tongue mesh is baked this long (m) along +z from the mouth, then stretched to its reach. */
 const TONGUE_M = 0.01;
 
@@ -122,6 +123,8 @@ export function createCreatures(opts) {
     },
     hourOfDay: 12,
     duskHour: 19,
+    /** How often a calling frog calls this season (the voice recipe's seasons, doc 25): 1 in summer. */
+    callRate: 1,
     /** Lily pads as perches, reed and iris clumps (perches.js), or null on a world with no lilies recipe. */
     pads: perches,
     /** Where a frog sits out the day, tucked into cover near home (day-hide.js), or null with none. */
@@ -135,6 +138,9 @@ export function createCreatures(opts) {
     const h = display() / SECONDS_PER_HOUR;
     env.hourOfDay = h - Math.floor(h / HOURS_PER_DAY) * HOURS_PER_DAY;
     env.duskHour = 12 + (world.state?.seasons?.dayLengthH ?? 12) / 2 + (recipe.ecology.arrival.duskOffsetH ?? 1);
+    // Spring's chorus calls more, autumn's less (recipe voice.seasons[...].rate; winter's frogs sleep).
+    const rates = recipe.voice?.seasons;
+    if (rates) env.callRate = rates[SEASON_IDS[seasonOf(display()).index]]?.rate ?? 1;
   }
 
   /** A frog's own numbers. @param {number} id */
