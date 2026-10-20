@@ -5,7 +5,7 @@
   "habitat": { "bankM": 3, "saltM": 4, "bandMoisture": 200, "bandSalt": 210 },
   "grass": { "ratePerH": 0.04, "saltFrom": 0.35, "saltFull": 0.75, "yieldToCover": 0.85 },
   "maxPlants": 4000,
-  "species": ["reeds", "lilies", "iris", "thrift"],
+  "species": ["reeds", "lilies", "iris", "thrift", "marigold", "campion"],
   "cover": ["rushes"],
   "marks": { "tapS": 1.4, "tapRadiusM": [0.15, 0.9], "youngRadiusM": 0.45, "youngOpacity": 0.55,
              "selectBloomS": 0.45, "selectPulseS": 2.2, "selectPulse": 0.12, "selectOpacity": [0.55, 0.9] }

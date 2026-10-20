@@ -13,6 +13,8 @@
 // Built from the water summary (rebuilt after every sculpt) and the terrain's painted materials.
 
 import { WATER_CLASS } from '../water/summary.js';
+import { H_RANGE } from '../terrain/grid.js';
+import { det } from '../../core/rng.js';
 
 /** Habitat cells per side and their size (m); cell (i, j) spans x = -80 + i .. -80 + i + 1. */
 export const HABITAT_CELLS = 192;
@@ -25,6 +27,10 @@ export const HABITAT_ORIGIN = -80;
  * @property {Uint8Array} still   @property {Uint8Array} sea      @property {Uint8Array} grass
  * @property {Uint8Array} open
  * @property {Uint8Array} [band]  1 in the tide band (wetted between low and high tide)
+ * @property {Uint8Array} [sand] @property {Uint8Array} [rock] @property {Uint8Array} [soil]  painted shares 0..255
+ * @property {Uint8Array} [slopeDeg]  ground slope in degrees (0 where no heights were given)
+ * @property {Uint8Array} [shore]  water summary shore height 1..255 over the band and splash ground, 0 off the shore
+ * @property {{loM:number,hiM:number} | null} [shoreRange]  meters that shore 1 and 255 stand for
  * @property {number} hash        FNV-1a over the arrays (uint32), for the determinism page
  */
 
@@ -79,10 +85,12 @@ function falloff(d, reachM) {
 
 /**
  * @param {{ eco: { x: number, y: number, w: number, h: number, depthCm: Uint8Array, cls: Uint8Array, band: Uint8Array },
- *   material: Uint8Array, materialCells: number, params: { bankM: number, saltM: number, bandMoisture: number, bandSalt: number } }} args
+ *   material: Uint8Array, materialCells: number, params: { bankM: number, saltM: number, bandMoisture: number, bandSalt: number },
+ *   heightQ?: Uint16Array | null, shore?: { data: Uint8Array, rect: {x:number,y:number,w:number,h:number}, range: {loM:number,hiM:number} } | null }} args
  *   eco: the water summary's 1 m aggregate; material: the terrain mirror's painted weights (rgba8 per
  *   0.25 m texel, grass first) over materialCells x materialCells; params: recipes/flora/habitat in
- *   the growth recipe
+ *   the growth recipe; heightQ: the terrain heights (same grid as material), for slope; shore: the
+ *   water summary's shore height (summary.shore, rect, shoreRange), for the shore-height axis
  * @returns {Habitat}
  */
 export function buildHabitat(args) {
@@ -128,17 +136,56 @@ export function buildHabitat(args) {
     salt[k] = s;
   }
 
-  // Painted grass: the mean of the cell's 4 x 4 terrain texels (0.25 m).
+  // Painted ground: the mean of the cell's 4 x 4 terrain texels (0.25 m) for each of grass, sand,
+  // rock and soil. Sand, rock and soil serve the ground-type axes (docs/future/10).
   const M = args.materialCells;
   const per = Math.floor(M / N);
+  const sand = new Uint8Array(N * N), rock = new Uint8Array(N * N), soil = new Uint8Array(N * N);
   for (let j = 0; j < N; j++) {
     for (let i = 0; i < N; i++) {
-      let sum = 0;
+      let g = 0, sa = 0, ro = 0, so = 0;
       for (let v = 0; v < per; v++) {
         const row = (j * per + v) * M;
-        for (let u = 0; u < per; u++) sum += args.material[(row + i * per + u) * 4];
+        for (let u = 0; u < per; u++) {
+          const t = (row + i * per + u) * 4;
+          g += args.material[t]; sa += args.material[t + 1]; ro += args.material[t + 2]; so += args.material[t + 3];
+        }
       }
-      grass[j * N + i] = Math.floor(sum / (per * per));
+      const k = j * N + i, n = per * per;
+      grass[k] = Math.floor(g / n); sand[k] = Math.floor(sa / n); rock[k] = Math.floor(ro / n); soil[k] = Math.floor(so / n);
+    }
+  }
+
+  // Slope (degrees, 0..90) from the terrain heights, over the cell's 1 m: the steeper of the two
+  // central differences of the cell means either side. Only when heights are given.
+  const slopeDeg = new Uint8Array(N * N);
+  if (args.heightQ) {
+    const mean = new Float32Array(N * N);
+    for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) {
+      let s = 0;
+      for (let v = 0; v < per; v++) { const row = (j * per + v) * M; for (let u = 0; u < per; u++) s += args.heightQ[row + i * per + u]; }
+      mean[j * N + i] = (s / (per * per)) * (H_RANGE / 65535);
+    }
+    for (let j = 1; j < N - 1; j++) for (let i = 1; i < N - 1; i++) {
+      const k = j * N + i;
+      const gx = (mean[k + 1] - mean[k - 1]) / 2, gz = (mean[k + N] - mean[k - N]) / 2;
+      // det.atan2 and sqrt only, so every device and worker gets the same slope.
+      slopeDeg[k] = Math.min(90, Math.round((det.atan2(Math.sqrt(gx * gx + gz * gz), 1) * 180) / det.PI));
+    }
+  }
+
+  // Height on the shore (docs/future/10): the water summary's shore height over the band and the
+  // splash ground above it, the highest of the cell's four 0.5 m cells (0 off the shore).
+  const shore = new Uint8Array(N * N);
+  if (args.shore) {
+    const { data, rect } = args.shore;
+    for (let j = 0; j < rect.h; j++) for (let i = 0; i < rect.w; i++) {
+      const v = data[j * rect.w + i];
+      if (!v) continue;
+      const a = Math.floor((rect.x + i) / 2), b = Math.floor((rect.y + j) / 2);
+      if (a < 0 || b < 0 || a >= N || b >= N) continue;
+      const k = b * N + a;
+      if (v > shore[k]) shore[k] = v;
     }
   }
 
@@ -149,7 +196,10 @@ export function buildHabitat(args) {
   }
   // band (the tide band, for the journal's ground words) is derived from the summary like the rest
   // and left out of the hash, which keeps its S5 meaning.
-  return { n: N, depthCm, moisture, salt, still, sea, grass, open, band, hash: h >>> 0 };
+  // The ground-type, slope and shore axes are left out of the hash too: they only matter to plants
+  // that ask for them, and the S5 hash keeps its meaning.
+  return { n: N, depthCm, moisture, salt, still, sea, grass, open, band, sand, rock, soil, slopeDeg, shore,
+    shoreRange: args.shore?.range ?? null, hash: h >>> 0 };
 }
 
 /**

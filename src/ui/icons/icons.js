@@ -135,6 +135,32 @@ const ICONS = {
     <path d="M16 7.5C17 9.1 17 11.4 16 13.2C15 11.4 15 9.1 16 7.5Z"/>
     <path d="M16 7.5C15.4 6 15.6 4.4 16.8 3"/>`,
 
+  // Marsh marigold (species chip): two round, notched leaves on short stalks at a wavy water line,
+  // and a five-petalled cup flower above them.
+  marigold: `
+    <path d="M3 20.5C4.5 19.5 6 19.5 7.5 20.5S10.5 21.5 12 20.5S15 19.5 16.5 20.5S19.5 21.5 21 20.5"/>
+    <path d="M8.5 16.4C5.3 18 3.4 14.7 4.6 12.7C5.6 11 7.6 11 8.5 12.4C9.4 11 11.4 11 12.4 12.7C13.6 14.7 11.7 18 8.5 16.4Z"/>
+    <path d="M8.5 16.4V20"/>
+    <path d="M16.5 17.6C14.2 18.8 12.8 16.4 13.7 15C14.4 13.8 15.9 13.8 16.5 14.8C17.1 13.8 18.6 13.8 19.3 15C20.2 16.4 18.8 18.8 16.5 17.6Z"/>
+    <path d="M16.5 17.6V20"/>
+    <path d="M13.5 12C13.6 10.2 14.2 8.8 15 7.8"/>
+    <path ${ACCENT} d="M15 7.8m-3.4 0a3.4 3.4 0 1 0 6.8 0a3.4 3.4 0 1 0 -6.8 0"/>
+    <path d="M15 4.4C16.2 4.4 17 5.2 17 6.2C18.2 6 19.2 7 18.6 8.2C19.4 9 18.8 10.6 17.6 10.4C17.2 11.6 15.6 11.8 15 10.8C14.4 11.8 12.8 11.6 12.4 10.4C11.2 10.6 10.6 9 11.4 8.2C10.8 7 11.8 6 13 6.2C13 5.2 13.8 4.4 15 4.4Z"/>
+    <circle cx="15" cy="7.8" r="1" fill="currentColor" stroke="none"/>`,
+
+  // Sea campion (species chip): a low mat on a rock's back, and a flower on a short stalk: a
+  // swollen, veined calyx with spreading petals on top.
+  campion: `
+    <path ${ACCENT} d="M3.5 20.5C4.2 17.5 7.5 16 11 16.4C14.5 16.8 17 18.3 17.6 20.5Z"/>
+    <path d="M3.5 20.5C4.2 17.5 7.5 16 11 16.4C14.5 16.8 17 18.3 17.6 20.5"/>
+    <path d="M2.5 20.5H21.5"/>
+    <path d="M6 17.6C7.5 16.2 9.4 15.4 11.2 15.4M15.8 18C14.6 16.6 12.9 15.8 11.2 15.4"/>
+    <path d="M11.2 15.4C11.6 13.8 12.4 12.6 13.4 11.8"/>
+    <path ${ACCENT} d="M13.6 11.8C11.9 11.8 11.2 10.2 11.4 8.6C11.6 7.2 12.6 6.6 13.6 6.6S15.6 7.2 15.8 8.6C16 10.2 15.3 11.8 13.6 11.8Z"/>
+    <path d="M13.6 11.8C11.9 11.8 11.2 10.2 11.4 8.6C11.6 7.2 12.6 6.6 13.6 6.6S15.6 7.2 15.8 8.6C16 10.2 15.3 11.8 13.6 11.8Z"/>
+    <path d="M13.6 6.6V11.8"/>
+    <path d="M13.6 6.6C11.4 6.2 9.8 4.8 9.6 3.2C11.6 3 13 4.4 13.6 6.6ZM13.6 6.6C15.8 6.2 17.4 4.8 17.6 3.2C15.6 3 14.2 4.4 13.6 6.6ZM13.6 6.6C13 4.6 13.2 3 13.6 2.2C14 3 14.2 4.6 13.6 6.6Z"/>`,
+
   // Sea thrift (species chip): a low rounded cushion on the ground line, three thin stalks each
   // topped by a round pompom.
   thrift: `

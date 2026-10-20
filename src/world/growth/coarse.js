@@ -78,21 +78,36 @@ function groundAtCell(hab, k) {
   // Water can only move where there is water: ground with none standing on it counts as still, so a
   // plant refused there hears that it is too dry, not that the water moves too much.
   const still = !hab.sea[k] && hab.depthCm[k] === 0 ? 1 : hab.still[k];
-  return { moisture: hab.moisture[k] / 255, salt: hab.salt[k] / 255, depth: hab.sea[k] ? 9 : hab.depthCm[k] / 100, still, k };
+  // The ground-type, slope and shore axes (docs/future/10); undefined where the habitat has none.
+  const sh = hab.shore?.[k] ?? 0;
+  const R = hab.shoreRange;
+  return { moisture: hab.moisture[k] / 255, salt: hab.salt[k] / 255, depth: hab.sea[k] ? 9 : hab.depthCm[k] / 100, still, k,
+    sand: hab.sand ? hab.sand[k] / 255 : undefined, rock: hab.rock ? hab.rock[k] / 255 : undefined,
+    soil: hab.soil ? hab.soil[k] / 255 : undefined, slope: hab.slopeDeg ? hab.slopeDeg[k] : undefined,
+    // Height on the shore, m about mean sea level, or far above it (99) off the shore.
+    shore: hab.shore && R ? (sh ? R.loM + ((sh - 1) * (R.hiM - R.loM)) / 254 : 99) : undefined };
 }
 
-/** @typedef {'dry'|'wet'|'shallow'|'deep'|'fresh'|'salt'|'flow'|'outside'} Need */
+/** @typedef {'dry'|'wet'|'shallow'|'deep'|'fresh'|'salt'|'flow'|'outside'|'ground'|'steep'|'flat'|'low'|'high'} Need */
 
 /**
  * The habitat axes a recipe may use, in the order a tie names the need: [recipe key, ground key,
- * need when too low, need when too high]. A recipe leaves out the axes it does not care about.
- * @type {[string, 'moisture'|'depth'|'salt'|'still', Need, Need][]}
+ * need when too low, need when too high]. A recipe leaves out the axes it does not care about, and
+ * an axis the habitat does not have (an older test habitat) counts as met. The last five
+ * (docs/future/10): the painted shares of sand, rock and soil (0..1), slope (degrees) and height on
+ * the shore (m about mean sea level, 99 off the shore).
+ * @type {[string, 'moisture'|'depth'|'salt'|'still'|'sand'|'rock'|'soil'|'slope'|'shore', Need, Need][]}
  */
 const AXES = [
   ['waterDepthM', 'depth', 'shallow', 'deep'],
   ['still', 'still', 'flow', 'flow'],
   ['moisture', 'moisture', 'dry', 'wet'],
   ['salt', 'salt', 'fresh', 'salt'],
+  ['sand', 'sand', 'ground', 'ground'],
+  ['rock', 'rock', 'ground', 'ground'],
+  ['soil', 'soil', 'ground', 'ground'],
+  ['slopeDeg', 'slope', 'flat', 'steep'],
+  ['shoreM', 'shore', 'low', 'high'],
 ];
 
 /**
@@ -117,6 +132,7 @@ function suitabilityOf(rec, g) {
     const r = H[key];
     if (!r) continue;
     const v = g[at];
+    if (v === undefined) continue;
     const b = bell(v, r);
     suit *= b;
     if (b < low) { low = b; worst = v < r[0] ? tooLow : tooHigh; }
@@ -277,6 +293,9 @@ function plantStarters(g, hab, env) {
       const x = HABITAT_ORIGIN + (c.k % hab.n) + 0.5, z = HABITAT_ORIGIN + Math.floor(c.k / hab.n) + 0.5;
       const sp2 = rec.starter.spacingM * rec.starter.spacingM;
       if (placed.some((p) => (p.x - x) * (p.x - x) + (p.z - z) * (p.z - z) < sp2)) continue;
+      // Not on a plant of a species placed before (marsh marigold and iris like the same bank);
+      // the species placed first are unchanged by this.
+      if (g.plants.some((p) => (p.x - x) * (p.x - x) + (p.z - z) * (p.z - z) < 0.36)) continue;
       const p = { id: g.nextId++, sp, x, z, age: 48, size: rec.growth.stages.matureSize + 0.1, best: 0, stage: STAGE.mature, low: 0, drown: 0, last: 0 };
       p.best = p.size;
       placed.push(p);

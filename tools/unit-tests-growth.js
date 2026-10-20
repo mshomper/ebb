@@ -82,6 +82,38 @@ const HOMES = {
  * @param {(cond: any, msg?: string) => void} assert @param {(a: any, b: any, msg?: string) => void} eq
  */
 export function addGrowthTests(test, assert, eq) {
+  test(GROWTH, 'ground axes: sea campion takes rock just above the tide, refuses sand and inland rock; older plants ignore the axes', async () => {
+    const [campion, thrift, marigold] = await Promise.all(['campion', 'thrift', 'marigold'].map((s) => fetch(`../recipes/flora/${s}.json`).then((r) => r.json())));
+    const N = HABITAT_CELLS;
+    const hab = /** @type {any} */ (shoreline());
+    hab.sand = new Uint8Array(N * N); hab.rock = new Uint8Array(N * N); hab.soil = new Uint8Array(N * N);
+    hab.slopeDeg = new Uint8Array(N * N); hab.shore = new Uint8Array(N * N); hab.shoreRange = { loM: -0.69, hiM: 1.05 };
+    const [sx] = at('shore');
+    // The shore zone at +0.8 m (shore byte for 0.8 m on a -0.69..1.05 range).
+    for (let j = 0; j < N; j++) hab.shore[j * N + Math.floor(sx - HABITAT_ORIGIN)] = 1 + Math.round(((0.8 + 0.69) * 254) / 1.74);
+    const suit = (/** @type {any} */ rec) => suitability(rec, hab, sx, 0);
+    hab.sand.fill(255);
+    eq(suit(campion).suit, 0, 'campion on sand');
+    eq(suit(campion).worst, 'ground', 'campion on sand says the ground is wrong');
+    hab.sand.fill(0); hab.rock.fill(255);
+    const onRock = suit(campion).suit;
+    assert(onRock > 0.5, `campion on rock by the sea: ${onRock}`);
+    hab.shore.fill(0);
+    eq(suit(campion).suit, 0, 'campion on rock off the shore');
+    eq(suit(campion).worst, 'high', 'off the shore, too far from the sea');
+    // Thrift asks for none of the new axes, so rock or sand makes no difference to it.
+    const t1 = suit(thrift).suit; hab.rock.fill(0); hab.sand.fill(255);
+    eq(suit(thrift).suit, t1, 'thrift ignores the ground type');
+    // Marigold shuns a steep bank.
+    const [bx] = at('bank');
+    hab.rock.fill(0); hab.slopeDeg.fill(0);
+    const flat = suitability(marigold, hab, bx, 0).suit;
+    hab.slopeDeg.fill(40);
+    const steep = suitability(marigold, hab, bx, 0);
+    assert(flat > 0.5 && steep.suit === 0 && steep.worst === 'steep', `marigold flat ${flat}, steep ${steep.suit} (${steep.worst})`);
+    return `campion on rock by the sea ${onRock.toFixed(2)}; marigold on a flat bank ${flat.toFixed(2)}`;
+  });
+
   test(GROWTH, 'wet-to-dry grass: lush by the water out to 6 m, a smaller ring by damp hollows, dried by salt; straw on the dry rise in late summer', async () => {
     const grass = await fetch('../recipes/flora/grass.json').then((r) => r.json());
     const L = grass.lush;

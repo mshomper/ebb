@@ -124,8 +124,9 @@ export function addJournalTests(test, assert, eq) {
   });
 
   test(JOURNAL, 'a new island: every plant on it is noted as already there', async () => {
-    const { words, first } = await setup();
-    for (const sp of plantsOf(words)) {
+    const { words, first, recipes } = await setup();
+    // Plants a new island starts with (some, like sea campion, only come where you make room).
+    for (const sp of plantsOf(words).filter((s) => (recipes.flora?.[s]?.starter?.count ?? 1) > 0)) {
       assert(first.journal.species[sp]?.ever, `${sp} is seen at the first look`);
       assert(first.notes.some((n) => n.sp === sp && n.text === words.species[sp].notes.arrived), `${sp} has its "arrived" note`);
     }
@@ -166,6 +167,8 @@ export function addJournalTests(test, assert, eq) {
     const lines = [];
     for (const sp of plantsOf(s.words)) {
       const d = describe(a.journal, sp, a.state, s.hab, s.words);
+      // A plant a new island does not start with (sea campion) is not known yet: its page is a riddle.
+      if ((s.recipes.flora?.[sp]?.starter?.count ?? 1) === 0) { assert(!d.known && d.riddle, `${sp} shows its riddle`); continue; }
       assert(d.known, `${sp} known`);
       assert(d.status.length > 0, `${sp} has a status`);
       assert(!/\d/.test(d.status), `${sp} status has a number: "${d.status}"`);

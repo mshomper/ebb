@@ -21,6 +21,8 @@
     "flora/lilies": "flora/lilies.json",
     "flora/iris": "flora/iris.json",
     "flora/thrift": "flora/thrift.json",
+    "flora/marigold": "flora/marigold.json",
+    "flora/campion": "flora/campion.json",
     "flora/rushes": "flora/rushes.json",
     "world/growth": "world/growth.json",
     "world/journal": "world/journal.json",

@@ -31,10 +31,12 @@ export function createFloraPass(opts) {
    * @type {{ recipe: any, kind: import('./flora-kinds.js').FloraKind, data: ArrayBuffer, f: Float32Array, vertices: number,
    *   pipeline?: GPURenderPipeline, buffer?: GPUBuffer, groups: GPUBindGroup[] }[]}
    */
+  // A recipe may draw with another species' shader (`draw`, e.g. marsh marigold with the iris), its
+  // own values packed into its own uniform.
   const draws = Object.entries(opts.recipes)
-    .filter(([sp]) => FLORA_KINDS[sp])
+    .filter(([sp, recipe]) => FLORA_KINDS[recipe.draw ?? sp])
     .map(([sp, recipe]) => {
-      const kind = FLORA_KINDS[sp];
+      const kind = FLORA_KINDS[recipe.draw ?? sp];
       const data = new ArrayBuffer(DRAW_BYTES);
       const f = new Float32Array(data);
       kind.pack(recipe, f);

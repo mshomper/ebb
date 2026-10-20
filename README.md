@@ -29,7 +29,7 @@ There are two islands to start from: the **Starter island** (one large spring-fe
 
 - **Sculpt, smooth and paint** the land; water always finds its way downhill.
 - **Pour and drain water.** Place springs once they are unlocked (`?sandbox` unlocks them now).
-- **Plant** reeds, water lilies, iris, rushes and sea thrift. The tool says why when the ground won't do.
+- **Plant** reeds, water lilies, iris, marsh marigold, rushes, sea thrift and sea campion (which needs rock by the sea). The tool says why when the ground won't do.
 - **Tap anything** (a plant, the ground, the water) to name it, then open its page in the **field journal**. Pages fill in from what happens on the island, in words, never numbers.
 - **Look:** switch palettes, and change how fast time flows.
 
