@@ -1,6 +1,6 @@
 # Future ideas
 
-> Design docs for things ebb might become after the vertical slice, drafted from Matt's theorycrafting session on October 19, 2026. None of this is scheduled. These docs propose; the numbered docs in `docs/` decide. Where an idea would change a numbered doc, it lists the change instead of making it, so Matt can apply it when the idea is accepted.
+> Design docs for things ebb might become after the vertical slice, drafted from Matt's theorycrafting sessions starting October 19, 2026. None of this is scheduled. These docs propose; the numbered docs in `docs/` decide. Where an idea would change a numbered doc, it lists the change instead of making it, so Matt can apply it when the idea is accepted.
 
 ## Status words
 
@@ -22,6 +22,8 @@
 | [F07 Growing as craft](07-growing-as-craft.md) | Seed | Pruning, coppicing, pleaching and training trees, and trees shaped by the wind |
 | [F08 Rare phenomena](08-rare-phenomena.md) | Seed | King tides, fog banks, glowing shallows and migration mornings, all recurring |
 | [F09 Traces](09-traces.md) | Seed | Desire lines worn by walking and creature runs, mossing over when unused |
+| [F10 Plants, surfaces and placed pieces](10-plants-surfaces-and-placed-pieces.md) | Leaning | Shore zonation, the driftline, new plants once growth reads ground type, and stones and logs to live under |
+| [F11 Creature roadmap and finds](11-creature-roadmap-and-finds.md) | Leaning | Creature weight classes, cheap finds shaped by the player, a naturalist's progression line, and what to generalize once |
 
 ## How they connect
 
@@ -36,6 +38,9 @@ flowchart TB
   F03 --> F02
   F06[F06 Succession] --> F07[F07 Craft]
   F06 --> F04
+  F10[F10 Plants and surfaces] --> F11[F11 Creatures and finds]
+  F10 --> F04
+  F11 --> F04
 ```
 
 ## Working rule
