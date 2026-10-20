@@ -54,6 +54,7 @@ export async function initEngine(host, env) {
     ['colorAmount', 'Color chords', 0, 2, 0.1, (/** @type {number} */ v) => `${Math.round(v * 100)}%`],
     ['borrowedAmount', 'Borrowed chords (flat six, minor iv)', 0, 3, 0.1, (/** @type {number} */ v) => `${Math.round(v * 100)}%`],
     ['pairPull', 'Seconds answer each other (D2 and G2)', 1, 6, 0.5, (/** @type {number} */ v) => `${v.toFixed(1)}x`],
+    ['rockChance', 'Rock between D2 and G2', 0, 1, 0.05, (/** @type {number} */ v) => `${Math.round(v * 100)}% of phrases`],
     ['hold', 'Hold a chord another bar', 0, 3, 0.1, (/** @type {number} */ v) => `${v.toFixed(1)}x`],
     ['splitLast', 'Two chords in the bar before a cadence', 0, 1, 0.05, (/** @type {number} */ v) => `${Math.round(v * 100)}%`],
   ];
@@ -173,7 +174,7 @@ export async function initEngine(host, env) {
         const main = b.chords[0];
         const two = b.chords.length > 1;
         const sym = b.chords.map((/** @type {any} */ c) => show(c.symbol)).join(' <span class="en-then">then</span> ');
-        const rom = b.held ? 'held' : b.chords.map((/** @type {any} */ c) => esc(c.place)).join(', ');
+        const rom = b.held ? 'held' : b.figure === 'rock' ? 'rocking' : b.chords.map((/** @type {any} */ c) => esc(c.place)).join(', ');
         const tens = b.chords.reduce((s, /** @type {any} */ c) => s + c.tension, 0) / b.chords.length;
         return `<div class="en-bar${b.cadence ? ' en-cad' : ''}" style="background:${tensionFill(two ? tens : main.tension)}">
           <span class="en-no">${label}</span><b>${sym}</b><span class="en-rom">${rom}</span>

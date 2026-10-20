@@ -2,7 +2,7 @@
   "type": "music",
   "id": "material-spring",
   "version": 1,
-  "note": "Spring's authored material for the development engine (doc 24, The development engine; src/audio/music/develop/). Phase 4a uses the chord grammar and the form templates; the motif bank arrives in 4b. home: the key every symbol is written in (the realizer moves a piece to other keys). meters and tempo: drawn per piece; harmonicBars: how many written bars each chord of the walk lasts in a meter (6/8 bars are short, so a chord lasts two); tempo in beats per minute as realize.json counts beats. chords: the grammar's places, each a name (a Roman numeral, for the lab), its symbol in the home key, how tense it feels from 0 (home) to 1, and its colors (other symbols for the same place, weighted; the plain symbol takes the rest). moves: from each place, where the harmony may go next and how often (weights are relative). A place marked borrowed (from the parallel minor, such as the flat six) and the symbols listed in borrowed are scaled by develop.json harmony.borrowedAmount, so they stay occasional. colorPairs: colors that answer each other (D2 and G2, the open 'seconds' chords); when one sounds, the next chord leans to its partner (harmony.pairPull), so the harmony can rock between them. hold: a chord may last another bar. cadences: how a phrase may end, as the last two places (any of 'from', then 'to'); 'final' marks the ones that may end a piece. templates: phrase plans; each phrase has a role, a length range in bars, the cadences it may end on (weighted) and a tension target from its start to its end (0 to 1). slots and weather say where a template fits; weight is how often it is chosen there. A phrase with 'from' is a return: it brings back that earlier phrase (counted from 0), keeping its first 'keep' bars as they were, then goes its own way to its own cadence, the way a composer restates a phrase and changes its ending. tempoScale slows (or quickens) a template's tempo. endings: the ways a grown piece can close after its last phrase (the coda), each a list of bars as chord symbols with how tense each is, a type, and a weight; 'hold' instead of bars means the piece's last chord is held one bar longer. An ending whose type matches the last phrase's cadence is less likely (develop.json endings.sameAsCadence), so a plagal cadence is seldom followed by a plagal close.",
+  "note": "Spring's authored material for the development engine (doc 24, The development engine; src/audio/music/develop/). Phase 4a uses the chord grammar and the form templates; the motif bank arrives in 4b. home: the key every symbol is written in (the realizer moves a piece to other keys). meters and tempo: drawn per piece; harmonicBars: how many written bars each chord of the walk lasts in a meter (6/8 bars are short, so a chord lasts two); tempo in beats per minute as realize.json counts beats. chords: the grammar's places, each a name (a Roman numeral, for the lab), its symbol in the home key, how tense it feels from 0 (home) to 1, and its colors (other symbols for the same place, weighted; the plain symbol takes the rest). moves: from each place, where the harmony may go next and how often (weights are relative). A place marked borrowed (from the parallel minor, such as the flat six) and the symbols listed in borrowed are scaled by develop.json harmony.borrowedAmount, so they stay occasional. colorPairs: colors that answer each other (D2 and G2, the open 'seconds' chords); when one sounds, the next chord leans to its partner (harmony.pairPull), so the harmony can rock between them. figures: harmonic figures the walk may use. rock: from home, the harmony rocks between D2 and G2 (one of pairs), one chord a bar, or two beats each in 4/4 (splitIn, the chance per meter), for slots bars, then the walk goes on; how often is develop.json harmony.rockChance. hold: a chord may last another bar (it sounds on rather than being struck again). cadences: how a phrase may end, as the last two places (any of 'from', then 'to'); 'final' marks the ones that may end a piece. templates: phrase plans; each phrase has a role, a length range in bars, the cadences it may end on (weighted) and a tension target from its start to its end (0 to 1). slots and weather say where a template fits; weight is how often it is chosen there. A phrase with 'from' is a return: it brings back that earlier phrase (counted from 0), keeping its first 'keep' bars as they were, then goes its own way to its own cadence, the way a composer restates a phrase and changes its ending. tempoScale slows (or quickens) a template's tempo. endings: the ways a grown piece can close after its last phrase (the coda), each a list of bars as chord symbols with how tense each is, a type, and a weight; 'hold' instead of bars means the piece's last chord is held one bar longer. An ending whose type matches the last phrase's cadence is less likely (develop.json endings.sameAsCadence), so a plagal cadence is seldom followed by a plagal close.",
   "season": "spring",
   "home": "D",
   "mode": "ionian",
@@ -870,5 +870,26 @@
       "Dadd9",
       "Gadd9"
     ]
-  ]
+  ],
+  "figures": {
+    "rock": {
+      "pairs": [
+        [
+          "Dsus2",
+          "Gsus2/D"
+        ],
+        [
+          "Dsus2",
+          "Gsus2"
+        ]
+      ],
+      "slots": [
+        2,
+        4
+      ],
+      "splitIn": {
+        "4/4": 0.5
+      }
+    }
+  }
 }

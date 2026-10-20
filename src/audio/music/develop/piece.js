@@ -40,7 +40,10 @@ export function writePiece(material, walked, plan, o) {
   const names = plan.map((_, i) => `p${i + 1}`);
   plan.forEach((ph, i) => {
     const bars = walked.bars.filter((b) => b.phrase === i);
-    sections[names[i]] = { abc: abc(o.meter, material.home, bars.map((b) => abcBar(b.chords, len, false, span)).join(' | ') + ' |'), bars: bars.length * span };
+    // A held chord sounds on through the next bar rather than being struck again (a phrase's first
+    // bar always names its chord).
+    const written = bars.map((b, k) => (b.held && k > 0 && b.chords.length === 1 ? Array.from({ length: span }, () => `z${len}`).join(' | ') : abcBar(b.chords, len, false, span)));
+    sections[names[i]] = { abc: abc(o.meter, material.home, written.join(' | ') + ' |'), bars: bars.length * span };
     const rise = ph.tension[1] - ph.tension[0];
     bed[names[i]] = i === 0 ? 'in' : rise > 0.15 ? 'swell' : 'steady';
   });

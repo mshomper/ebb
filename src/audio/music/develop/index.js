@@ -57,7 +57,7 @@ export function grow(material, rules, where, names) {
   for (let k = 0; k < n; k++) {
     const cr = stream(seed, 0x6376, k, strHash(`${material.season}:${where.slot}:${weather}:${template}`));
     const plan = planPhrases(material, rules, template, cr);
-    const walked = walk(material, rules, plan, cr);
+    const walked = walk(material, rules, plan, cr, { meter });
     const judged = judgeHarmony(material, rules, walked);
     cands.push({ k, plan, walked, judged });
   }
@@ -83,7 +83,7 @@ export function grow(material, rules, where, names) {
   const report = {
     span,
     plan: chosen.plan,
-    bars: chosen.walked.bars.map((b) => ({ phrase: b.phrase, target: b.target, held: b.held, cadence: b.cadence, kept: !!b.kept,
+    bars: chosen.walked.bars.map((b) => ({ phrase: b.phrase, target: b.target, held: b.held, cadence: b.cadence, kept: !!b.kept, figure: b.figure ?? null,
       chords: b.chords.map((c) => ({ place: c.place, symbol: c.symbol, at: c.at, color: c.color, tension: material.chords[c.place].tension })) })),
     judged: chosen.judged,
     ending,

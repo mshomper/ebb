@@ -28,6 +28,7 @@ import { pickWeighted } from './plan.js';
  * @property {boolean} held    the bar's first chord continues the bar before
  * @property {string|null} cadence  on a phrase's last bar, the cadence it lands
  * @property {boolean} [kept]  brought back unchanged from an earlier phrase (a return)
+ * @property {string} [figure] part of a harmonic figure (material.figures), such as 'rock'
  */
 
 /**
@@ -115,9 +116,10 @@ function step(material, H, dist, from, goal, left, target, mayHold, r) {
  * Walk the grammar through a plan.
  * @param {any} material @param {any} rules recipes/music/develop.json
  * @param {PhrasePlan[]} plan @param {Stream} r
+ * @param {{meter?: string}} [opts]
  * @returns {{bars: HBar[], forced: number}}
  */
-export function walk(material, rules, plan, r) {
+export function walk(material, rules, plan, r, opts = {}) {
   const H = rules.harmony ?? {};
   const dist = reach(material);
   /** @type {HBar[]} */
@@ -173,9 +175,44 @@ export function walk(material, rules, plan, r) {
     let approach = pickWeighted(fromChoices, r);
     if (!approach) { approach = cad.from[0]; forced++; }
 
-    // The walk.
+    // The walk. Now and then, from home, the harmony rocks between I and IV in their open 'seconds'
+    // colors (D2 and G2): one a bar, or in 4/4 sometimes two beats each, never two hits running.
+    const rock = material.figures?.rock;
+    let rocked = false;
     for (let s = start; s < walkSlots; s++) {
       const bar = pb[s];
+      // The figure keeps clear of a split bar (whose later half is the cadence's approach).
+      const rockEnd = split ? walkSlots - 1 : walkSlots;
+      if (rock && !rocked && prev === 'I' && rockEnd - s >= rock.slots[0] && r.next() < (H.rockChance ?? 0)) {
+        const most = Math.min(rock.slots[1], rockEnd - s);
+        let k = rock.slots[0] + r.int(most - rock.slots[0] + 1);
+        const halves = r.next() < (rock.splitIn?.[opts.meter ?? ''] ?? 0);
+        // Where the figure ends, the walk must still reach the cadence's approach in time.
+        const endsOn = (/** @type {number} */ n) => (halves || n % 2 === 0 ? 'I' : 'IV');
+        while (k >= rock.slots[0] && steps(material, dist, endsOn(k), approach) > walkSlots - s - k + 1) k--;
+        if (k >= rock.slots[0]) {
+          const [d2, g2] = rock.pairs[r.int(rock.pairs.length)];
+          // The chord before turns into D2, so the figure starts from it.
+          const before = s > 0 ? pb[s - 1] : null;
+          const last = before?.chords[before.chords.length - 1];
+          if (last && last.place === 'I' && !before?.kept) { last.symbol = d2; last.color = true; before.figure = 'rock'; }
+          for (let j = 0; j < k; j++) {
+            const b = pb[s + j];
+            b.figure = 'rock';
+            if (halves) {
+              b.chords.push({ place: 'IV', symbol: g2, at: 0, color: true }, { place: 'I', symbol: d2, at: 0.5, color: true });
+            } else {
+              const iv = j % 2 === 0;
+              b.chords.push({ place: iv ? 'IV' : 'I', symbol: iv ? g2 : d2, at: 0, color: true });
+            }
+          }
+          prev = endsOn(k);
+          prevSym = { symbol: prev === 'I' ? d2 : g2, color: true };
+          rocked = true;
+          s += k - 1;
+          continue;
+        }
+      }
       const lastHeld = s > 0 ? pb[s - 1].held : bars[bars.length - 1]?.held ?? false;
       const st = step(material, H, dist, /** @type {string} */ (prev), approach, walkSlots - s, tgt(s), !lastHeld, r);
       if (st.forced) forced++;

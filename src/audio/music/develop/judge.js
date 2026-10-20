@@ -36,8 +36,8 @@ export function judgeHarmony(material, rules, walked) {
   terms.tensionFit = -(S.tensionFit ?? 0) * err / Math.max(1, bars.length);
 
   // A run of four chord changes that comes back is a loop. Bars a return brings back on purpose
-  // don't count; what the walk writes freely does.
-  const free = changes(bars.filter((b) => !b.kept));
+  // and the rocking figure don't count; what the walk writes freely does.
+  const free = changes(bars.filter((b) => !b.kept && !b.figure));
   const seen = new Map();
   let repeats = 0;
   for (let i = 0; i + 4 <= free.length; i++) {
