@@ -2,7 +2,7 @@
 
 > Doc 12 plans fifteen species in five tiers, each one a full creature with needs, arrival, trust and a gift. That is the heart of the game, but it is also slow to build and slow to reach: the first frog takes days. This doc adds a lighter class of life, **finds**, that appears within a tide or two of the player shaping a place for it: a hermit crab picking across a rock pool, anemones opening as the pool fills, lugworm casts on the sand flats, a toad under a log. It sorts every creature into weight classes so each new one costs only what it needs. It proposes a progression line for finds that sits beside the species gifts, and a short list of one-time generalizations that let later species be added as recipes rather than new systems. It is grounded in a read of the code on October 19, 2026.
 
-**Status:** Leaning. Not scheduled. Nothing here is built until Matt schedules it.
+**Status:** First three finds built on branch m1-finds-shore (2026-10-20): beadlet anemone (rock pools: basins of rock that reach the tide band), periwinkle (wrack), lugworm casts (wet sand, re-laid each tide). Code in `src/world/finds/index.js`, numbers in `recipes/species/finds.json`, journal list "Small lives". The rest of this doc is still leaning.
 
 ## Decided so far
 

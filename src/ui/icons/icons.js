@@ -303,6 +303,28 @@ const ICONS = {
     <circle cx="8.5" cy="8.5" r="1.5"/>
     <path d="M12 12.5L15 15.5"/>`,
 
+  // Finds (docs/future/11). Beadlet anemone: a squat column on the ground line with a crown of
+  // tentacles open above it.
+  anemone: `
+    <path d="M2.5 20.5H21.5"/>
+    <path ${ACCENT} d="M8 20.5C7.6 17 8.4 14.5 12 14.5S16.4 17 16 20.5Z"/>
+    <path d="M8 20.5C7.6 17 8.4 14.5 12 14.5S16.4 17 16 20.5"/>
+    <path d="M8.6 14.8C7 13 5.6 12.4 4.4 12.6M9.6 14.2C8.8 11.6 7.8 10 6.6 9.4M11 14C10.8 11 10.4 8.8 9.6 7.6M13 14C13.2 11 13.6 8.8 14.4 7.6M14.4 14.2C15.2 11.6 16.2 10 17.4 9.4M15.4 14.8C17 13 18.4 12.4 19.6 12.6"/>`,
+  // Periwinkle: a round spiral shell resting on the ground line, its whorl drawn in.
+  periwinkle: `
+    <path d="M2.5 20.5H21.5"/>
+    <path ${ACCENT} d="M5 20.5C4.4 15.8 7.6 12 12 12C15.8 12 18.6 14.6 19 20.5Z"/>
+    <path d="M5 20.5C4.4 15.8 7.6 12 12 12C15.8 12 18.6 14.6 19 20.5"/>
+    <path d="M12 12C13.8 9.6 16.4 9.2 17.6 10.6C18.4 11.6 18 13.2 16.4 13.6C15 14 13.8 13 14.2 12"/>
+    <path d="M8 20.5C8 17.6 9.8 15.6 12.2 15.6C14 15.6 15.2 16.8 15.4 18.4"/>`,
+  // Lugworm cast: a coil of sand on the ground line, and the small dip of the burrow's other end.
+  lugworm: `
+    <path d="M2.5 20.5H21.5"/>
+    <path ${ACCENT} d="M5 20.5C5 17.4 7.4 16 10 16S15 17.4 15 20.5Z"/>
+    <path d="M5 20.5C5 18 7 16.6 9.6 16.6C12.2 16.6 13.8 18 13.8 19.6C13.8 18.4 12.4 17.6 10.6 17.6C8.6 17.6 7.6 18.6 7.6 19.6C7.6 18.8 8.8 18.4 9.8 18.6C11.2 18.8 11.8 19.6 11.6 20.5"/>
+    <path d="M10 16.6C9.8 15.4 10.2 14.4 11 13.8"/>
+    <path d="M17 20.5C17.6 19.6 18.8 19.4 19.6 20.5"/>`,
+
   // Feed (S6c-2): a small scoop tipped over, a pinch of food falling from it.
   feed: `
     <path ${ACCENT} d="M3.5 8.5H15L13.4 14.6C13.1 15.6 12.2 16.2 11.2 16.2H7.3C6.3 16.2 5.4 15.6 5.1 14.6Z"/>

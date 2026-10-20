@@ -81,7 +81,7 @@ function storyOf(k, rec, m, hour, journal, words) {
   const fill = (/** @type {string} */ t, /** @type {number} */ h = -1) =>
     t.replace('{Plural}', upper(rec.plural ?? rec.name)).replace('{plural}', rec.plural ?? rec.name).replace('{date}', h >= 0 ? date(h) : '');
   /** @type {string[]} */ const lines = [];
-  if (isAnimal(rec)) {
+  if (isAnimal(rec) || rec.kind === 'find') {
     if (k.first >= 0) lines.push(fill(rec.foundLine ?? S.firstSeen, k.first));
   } else if (rec.kind === 'cover') {
     lines.push(k.arrived ? rec.notes.arrived : fill(S.firstSeen, k.first));
@@ -110,7 +110,9 @@ export function describe(journal, sp, state, hab, words, hour = journal.last) {
   const known = !!k?.ever;
   const m = measure(sp, state, hab, rec);
   let status = '';
-  if (known) {
+  // A find (docs/future/11) has no count: once found, its page says where it lives.
+  if (known && rec.kind === 'find') status = rec.place;
+  else if (known) {
     if (!present(rec, m)) status = rec.none;
     else {
       const t = trendOf(k, words);
@@ -165,7 +167,7 @@ export function describe(journal, sp, state, hab, words, hour = journal.last) {
 }
 
 /** Which moments list a page uses. @param {any} rec words.species[sp] */
-export const momentKind = (rec) => (isAnimal(rec) ? 'creature' : rec.kind === 'cover' ? 'cover' : 'plant');
+export const momentKind = (rec) => (isAnimal(rec) || rec.kind === 'find' ? 'creature' : rec.kind === 'cover' ? 'cover' : 'plant');
 
 /**
  * The card for one frog (a tap on it, or Show me): how well it knows you as a word (S6c), and a line

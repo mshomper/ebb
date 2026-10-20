@@ -329,6 +329,25 @@ export function foundAnimal(journal, ctx) {
 }
 
 /**
+ * You found a find (docs/future/11), a small shore life, by tapping it: its page inks once, and the
+ * moment is written down. A no-op once it is known.
+ * @param {Journal} journal @param {string} sp @param {{ state: any, hour: number, words: any }} ctx
+ * @returns {{ journal: Journal, notes: Note[] }}
+ */
+export function foundFind(journal, sp, ctx) {
+  const rec = ctx.words.species[sp];
+  if (!rec || rec.kind !== 'find' || journal.species[sp]?.ever) return { journal, notes: [] };
+  const j = copy(journal);
+  const k = know(j, sp);
+  k.ever = true; k.first = ctx.hour;
+  if (!k.learned.includes('seen')) k.learned.push('seen');
+  if (!j.flags.includes(`${sp}:seen`)) j.flags.push(`${sp}:seen`);
+  /** @type {Note[]} */ const notes = [{ hour: ctx.hour, date: dateText(ctx.state?.seasons, ctx.words), text: rec.notes.found, sp, kind: 'found' }];
+  j.notes = [...notes, ...j.notes].slice(0, ctx.words.notesKept);
+  return { journal: j, notes };
+}
+
+/**
  * You named a frog (S6c-3): the journal writes the moment (creatures.js).
  * @param {Journal} journal @param {string} name @param {{ state: any, hour: number, words: any }} ctx
  * @returns {{ journal: Journal, notes: Note[] }}

@@ -12,6 +12,7 @@ import { blade, stem, along, wave, cubicPoints, yAt, xAt, polyline } from './pen
 export const WASH = Object.freeze({
   green: '#7E9B5E', leaf: '#93AE6E', brown: '#7A5236', water: '#9DB9C8', mud: '#8A6F55', sand: '#D9C49A',
   pink: '#D98AA8', spent: '#C9B49E', yellow: '#E3BE3A', petal: '#F1E9E2', gold: '#E2C25A', grey: '#9A9C94',
+  red: '#B9483E', blue: '#6E8EC0',
 });
 
 /** A pointed petal from its base to its tip, widest in the middle. @param {number} x0 @param {number} y0 @param {number} x1 @param {number} y1 @param {number} w */
@@ -283,4 +284,75 @@ export function thrift(p, scale) {
   p.label('cushion', 250, 176, 215, 184);
   p.scale(30, 40, 208, scale);
   return p.svg(380, 260, 'Field sketch of sea thrift');
+}
+
+/** Beadlet anemone (a find): open under the pool's water on the left, shut out of it on the right. @param {import('./pen.js').Pen} p @param {string} [scale] */
+export function anemone(p, scale) {
+  // A rock pool's edge: water over the left anemone, bare wet rock under the right.
+  p.tint('M40 120H136V214H40Z', WASH.water, 0.32);
+  p.line(wave(40, 136, 120, 1.4, 16), 1.3);
+  p.shape('M40 214C70 206 110 210 136 214C160 206 210 206 236 214V236H40Z', WASH.grey, 0.4, 1.5);
+  // Open: a squat red column, a disc, and a crown of tentacles leaning out.
+  p.shape('M64 212C62 186 66 172 88 172S114 186 112 212Z', WASH.red, 0.75, 1.4);
+  p.oval(88, 172, 26, 6, WASH.red, 0.85, 1.2);
+  for (let i = 0; i < 13; i++) {
+    const a = Math.PI * (0.08 + 0.84 * (i / 12));
+    const x0 = 88 - Math.cos(a) * 20, y0 = 170;
+    p.line(stem(x0, y0, 88 - Math.cos(a) * 36, 150 - Math.sin(a) * 22, (i - 6) * 0.8), 1.6);
+  }
+  // Shut: a shiny red blob with blue beads round its rim.
+  p.shape('M164 212C162 192 172 182 190 182S218 192 216 212Z', WASH.red, 0.8, 1.4);
+  p.fine('M176 192C180 188 186 186 192 186', 1.1, 0.8);
+  for (const [x, y] of [[170, 198], [180, 190], [200, 189], [210, 197]]) p.oval(x, y, 3.2, 3, WASH.blue, 0.9, 1);
+  p.label('tentacles', 250, 70, 120, 146);
+  p.label('beads', 250, 150, 211, 196);
+  p.label('shut', 250, 188, 216, 204);
+  p.scale(30, 150, 212, scale);
+  return p.svg(380, 250, 'Field sketch of beadlet anemones, open and shut');
+}
+
+/** Periwinkle (a find): two shells grazing a weed-covered rock, one turned to show its door. @param {import('./pen.js').Pen} p @param {string} [scale] */
+export function periwinkle(p, scale) {
+  p.shape('M40 214C60 186 120 176 170 182C206 186 228 200 236 214Z', WASH.grey, 0.4, 1.5);
+  // Wrack strands over the rock.
+  for (const [x0, y0, x1, y1, b] of [[60, 200, 120, 206, 4], [96, 190, 170, 196, -5], [150, 186, 222, 204, 6]]) p.shape(blade(x0, y0, x1, y1, 3.4, b), WASH.brown, 0.5, 1.1);
+  // A shell from the side: a round body whorl and a low spire, its growth lines drawn in.
+  const shell = (/** @type {number} */ cx, /** @type {number} */ cy, /** @type {number} */ s) => {
+    p.shape(`M${cx - 26 * s} ${cy}C${cx - 28 * s} ${cy - 30 * s} ${cx + 14 * s} ${cy - 38 * s} ${cx + 26 * s} ${cy - 10 * s}C${cx + 30 * s} ${cy} ${cx + 20 * s} ${cy + 6 * s} ${cx} ${cy + 6 * s}C${cx - 14 * s} ${cy + 6 * s} ${cx - 24 * s} ${cy + 4 * s} ${cx - 26 * s} ${cy}Z`, WASH.mud, 0.7, 1.4);
+    p.shape(`M${cx + 4 * s} ${cy - 26 * s}C${cx + 10 * s} ${cy - 38 * s} ${cx + 22 * s} ${cy - 38 * s} ${cx + 26 * s} ${cy - 28 * s}C${cx + 22 * s} ${cy - 24 * s} ${cx + 12 * s} ${cy - 22 * s} ${cx + 4 * s} ${cy - 26 * s}Z`, WASH.brown, 0.7, 1.2);
+    for (const t of [0.3, 0.55, 0.8]) p.fine(`M${p.f(cx - 22 * s + 40 * s * t)} ${p.f(cy - 30 * s * Math.sin(Math.PI * t))}l${p.f(4 * s)} ${p.f(30 * s * Math.sin(Math.PI * t) * 0.8)}`, 0.7, 0.55);
+  };
+  shell(92, 196, 1);
+  shell(176, 190, 0.8);
+  // The second is tilted to show its door, a horny plate that seals it shut.
+  p.oval(170, 194, 10, 6, WASH.gold, 0.6, 1.1);
+  p.label('shell', 250, 70, 104, 168);
+  p.label('door', 250, 130, 180, 194);
+  p.label('weed', 250, 196, 218, 202);
+  p.scale(30, 150, 214, scale);
+  return p.svg(380, 240, 'Field sketch of periwinkles on a weedy rock');
+}
+
+/** Lugworm casts (a find): the sand cut away to show the U of the burrow, a coil of spent sand at one end and a dip at the other. @param {import('./pen.js').Pen} p @param {string} [scale] */
+export function lugworm(p, scale) {
+  p.tint('M40 120H236V230H40Z', WASH.sand, 0.4);
+  p.line('M40 120H96C102 120 106 126 112 126S122 120 128 120H236', 1.6);
+  for (const [x, y] of [[60, 150], [90, 196], [150, 210], [210, 160], [226, 206]]) p.dot(x, y, 1.1);
+  // The cast: a coil of spent sand piled at the tail end of the burrow.
+  let d = '';
+  for (let s = 0; s <= 40; s++) {
+    const t = s / 40, a = t * Math.PI * 4.2, r = 22 * (1 - 0.6 * t);
+    const x = 184 + Math.cos(a) * r, y = 112 - t * 22 + Math.sin(a) * r * 0.3;
+    d += `${s ? 'L' : 'M'}${p.f(x)} ${p.f(y)}`;
+  }
+  p.shape('M160 120C160 104 172 92 184 92S208 104 208 120Z', WASH.mud, 0.45, 1.3);
+  p.line(d, 1.5);
+  // The U-shaped burrow under the sand, the worm lying in it.
+  p.line('M112 126C112 176 130 206 150 206S184 176 184 120', 4.5);
+  p.shape(blade(126, 186, 168, 196, 4, 4), WASH.pink, 0.75, 1.1);
+  p.label('cast', 250, 80, 206, 104);
+  p.label('burrow', 250, 176, 182, 170);
+  p.label('dip', 250, 132, 118, 124);
+  p.scale(30, 90, 120, scale);
+  return p.svg(380, 240, 'Field sketch of a lugworm burrow and its cast');
 }
