@@ -6,6 +6,7 @@
 
 import { HABITAT_ORIGIN, habitatCell } from '../growth/habitat.js';
 import { measure, present, knownLines, dateOfHour, sketchOf, coverShare, hasCover, isAnimal, COVER_HAS, COVER_FULL, FLOWER, DORMANT } from './observe.js';
+import { trustWord } from '../creatures/trust.js';
 
 /** The island's middle and size from the habitat, cached per habitat. @type {WeakMap<object, { x: number, z: number, r: number }>} */
 const shapes = new WeakMap();
@@ -154,7 +155,12 @@ export function describe(journal, sp, state, hab, words, hour = journal.last) {
   // An animal not yet found: the latest hint the island has given, else its riddle.
   let riddle = rec.riddle;
   for (const h of rec.hints ?? []) if (journal.flags.includes(h.when)) riddle = h.text;
-  return { sp, kind: 'living', name: rec.name, icon: rec.icon, known, riddle, status, likes, field,
+  // The ones you have named (S6c-3), oldest first: "Pip, here since Spring, day 4".
+  const named = known && rec.trust?.namedLine
+    ? (state?.creatures?.[sp]?.frogs ?? []).filter((/** @type {any} */ f) => f.name)
+      .map((/** @type {any} */ f) => rec.trust.namedLine.replace('{name}', f.name).replace('{date}', dateOfHour(f.since, words)))
+    : [];
+  return { sp, kind: 'living', name: rec.name, icon: rec.icon, known, riddle, status, likes, field, named,
     fieldHint: rec.fieldHint, story, seasons, moments, gives, notes, canShow: known && present(rec, m), sketch: sketchOf(k, known, rec.sketch) };
 }
 
@@ -162,13 +168,28 @@ export function describe(journal, sp, state, hab, words, hour = journal.last) {
 export const momentKind = (rec) => (isAnimal(rec) ? 'creature' : rec.kind === 'cover' ? 'cover' : 'plant');
 
 /**
- * The card for one frog (a tap on it, or Show me).
- * @param {{ x: number, z: number }} f @param {any} state @param {any} words
+ * The card for one frog (a tap on it, or Show me): how well it knows you as a word (S6c), and a line
+ * that goes with the word.
+ * @param {{ x: number, z: number, id?: number }} f @param {any} state @param {any} words
+ * @param {any} [presence] recipes/species/frog.json presence (its trust bands)
  */
-export function frogCard(f, state, words) {
+export function frogCard(f, state, words, presence) {
   const rec = words.species.frogs;
   const asleep = !!state?.creatures?.frogs?.dormant;
-  return { sp: 'frogs', name: rec.card, icon: rec.icon, text: rec.stages[asleep ? 1 : 0], wx: f.x, wz: f.z, r: words.identify.grassRingM, stage: -1 };
+  const all = state?.creatures?.frogs?.frogs ?? [];
+  const frog = all.find((/** @type {any} */ g) => g.id === f.id);
+  const T = rec.trust;
+  const w = frog && presence && T ? trustWord(frog.trust ?? 0, presence.bands) : null;
+  // Names (S6c-3): a named frog goes by its name, with what it is and since when; a frog that
+  // knows you well enough can be named, with a few names to suggest that no other frog has.
+  const sub = frog?.name ? T?.since?.replace('{card}', rec.card).replace('{date}', dateOfHour(frog.since, words)) ?? rec.card : null;
+  const canName = !!frog && !frog.name && !asleep && !!presence && (frog.trust ?? 0) >= presence.namingTrust;
+  const taken = new Set(all.map((/** @type {any} */ g) => g.name).filter(Boolean));
+  const pool = (T?.names ?? []).filter((/** @type {string} */ n) => !taken.has(n));
+  const start = pool.length ? (frog?.id ?? 0) % pool.length : 0;
+  return { sp: 'frogs', name: frog?.name ?? rec.card, sub, icon: rec.icon, text: w && !asleep ? T.lines[w] : rec.stages[asleep ? 1 : 0],
+    word: w ? T.words[w] : null, id: f.id ?? null, canName, suggest: canName ? [...pool.slice(start), ...pool.slice(0, start)] : [],
+    wx: f.x, wz: f.z, r: words.identify.grassRingM, stage: -1 };
 }
 
 /**

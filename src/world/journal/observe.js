@@ -14,7 +14,7 @@
 import { STAGE } from '../growth/coarse.js';
 import { HABITAT_ORIGIN } from '../growth/habitat.js';
 import { seasonOf, SECONDS_PER_HOUR } from '../../core/clock.js';
-import { observeAnimals, measureAnimal, foundFrog } from './creatures.js';
+import { observeAnimals, measureAnimal, foundFrog, namedFrog } from './creatures.js';
 
 /** Season box bits. */
 export const GROW = 1, FLOWER = 2, DORMANT = 4;
@@ -326,6 +326,15 @@ export function learn(journal, sp, trigger, ctx) {
  */
 export function foundAnimal(journal, ctx) {
   return foundFrog(journal, { ...ctx, date: dateText(ctx.state?.seasons, ctx.words), know, copy });
+}
+
+/**
+ * You named a frog (S6c-3): the journal writes the moment (creatures.js).
+ * @param {Journal} journal @param {string} name @param {{ state: any, hour: number, words: any }} ctx
+ * @returns {{ journal: Journal, notes: Note[] }}
+ */
+export function namedAnimal(journal, name, ctx) {
+  return namedFrog(journal, name, { ...ctx, date: dateText(ctx.state?.seasons, ctx.words), copy });
 }
 
 /**

@@ -15,6 +15,7 @@ import { on } from '../core/events.js';
 import { get, subscribe } from '../core/store.js';
 import { dispatch } from '../input/actions.js';
 import { ensureIconSprite, iconSvg } from './icons/icons.js';
+import { cleanName } from '../world/creatures/trust.js';
 
 /** Notes on screen at once. */
 const AT_ONCE = 2;
@@ -140,10 +141,22 @@ export function mountIslandNotes(parent, words) {
     if (!id) { card.classList.remove('is-open'); card.inert = true; follow(); return; }
     card.innerHTML = `
       <div class="ebb-idcard__head"><span class="ebb-idcard__icon">${iconSvg(id.icon)}</span><b>${esc(id.name)}</b>
+        ${id.word ? `<span class="ebb-idcard__word">${esc(id.word)}</span>` : ''}
         <button type="button" class="ebb-idcard__close" data-act="close" aria-label="Close" title="Close">${iconSvg('close')}</button></div>
+      ${id.sub ? `<p class="ebb-idcard__sub">${esc(id.sub)}</p>` : ''}
       <p class="ebb-idcard__text">${esc(id.text)}</p>
       ${id.suits ? `<p class="ebb-idcard__suits">${esc(id.suits)}</p>` : ''}
       ${id.suitsPencil ? `<p class="ebb-idcard__suits is-pencil">${esc(id.suitsPencil)}</p>` : ''}
+      ${id.canName ? `<button type="button" class="ebb-idcard__open" data-act="name">${iconSvg('name-tag')}<span>Give it a name</span></button>
+      <form class="ebb-idcard__name" hidden>
+        <label class="ebb-idcard__label" for="ebb-idcard-name">A name for this frog</label>
+        <div class="ebb-idcard__row">
+          <input class="ebb-idcard__input" id="ebb-idcard-name" maxlength="24" autocomplete="off" spellcheck="false">
+          <button type="button" class="ebb-idcard__chip" data-act="suggest">Suggest one</button>
+        </div>
+        <p class="ebb-idcard__error" role="alert"></p>
+        <button type="submit" class="ebb-idcard__give">${iconSvg('name-tag')}<span>Give it this name</span></button>
+      </form>` : ''}
       <button type="button" class="ebb-idcard__open" data-act="open">${iconSvg('journal')}<span>Open its page</span></button>`;
     card.inert = false;
     card.classList.add('is-open');
@@ -202,13 +215,41 @@ export function mountIslandNotes(parent, words) {
     }
     following = requestAnimationFrame(follow);
   }
+  // Naming a frog (S6c-3): the field opens on the card itself, which then stays until you close it;
+  // Suggest one steps through names no other frog has; an empty name says so instead of going on.
+  let suggestAt = 0;
   card.addEventListener('click', (e) => {
     const b = /** @type {HTMLElement | null} */ (/** @type {HTMLElement} */ (e.target).closest('button'));
     if (!b) return;
     const id = get('identify');
+    const form = /** @type {HTMLFormElement | null} */ (card.querySelector('.ebb-idcard__name'));
+    const input = /** @type {HTMLInputElement | null} */ (card.querySelector('.ebb-idcard__input'));
     if (b.dataset.act === 'open' && id) dispatch({ type: 'ui.journal', open: true, page: id.sp });
     else if (b.dataset.act === 'close') dispatch({ type: 'ui.identify' });
+    else if (b.dataset.act === 'name' && form && input) {
+      clearTimeout(cardTimer);
+      b.hidden = true;
+      form.hidden = false;
+      suggestAt = 0;
+      input.focus();
+      if (id?.pinned) follow(); else place(id?.x ?? 0, id?.y ?? 0);
+    } else if (b.dataset.act === 'suggest' && input && id?.suggest?.length) {
+      input.value = id.suggest[suggestAt++ % id.suggest.length];
+      nameError('');
+    }
   });
+  /** @param {string} text */
+  const nameError = (text) => { const p = card.querySelector('.ebb-idcard__error'); if (p) p.textContent = text; };
+  card.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const id = get('identify');
+    const input = /** @type {HTMLInputElement | null} */ (card.querySelector('.ebb-idcard__input'));
+    const name = (input?.value ?? '').trim();
+    if (!name) { nameError('Type a name first, or tap Suggest one.'); input?.focus(); return; }
+    if (!cleanName(name)) { nameError('A name needs letters.'); input?.focus(); return; }
+    if (id?.id != null) dispatch({ type: 'creature.name', id: id.id, name });
+  });
+  card.addEventListener('input', () => nameError(''));
   /** @param {Event} e */
   const stop = (e) => e.stopPropagation();
   for (const r of [root, card]) {

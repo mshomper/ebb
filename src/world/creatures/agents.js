@@ -29,6 +29,7 @@ import { stream } from '../../core/rng.js';
  * @property {number} id
  * @property {{ x: number, z: number, yaw: number }} home
  * @property {number} mood     from the tick, 0..1
+ * @property {number} trust    from the tick, 0..1 (trust.js): shrinks its comfort ring
  * @property {number} x @property {number} z @property {number} y @property {number} yaw
  * @property {'rest'|'forage'|'call'|'swim'|'float'|'leave'} mode
  * @property {Hop | null} hop
@@ -50,6 +51,8 @@ import { stream } from '../../core/rng.js';
  * @property {number} hushUntil    quiet after a neighbor's startle until then
  * @property {{ x: number, z: number } | null} [hide]  where it sits out the day, in cover (day-hide.js)
  * @property {number} [hideAt]     when the hide was last worked out
+ * @property {{ id: number, x: number, z: number } | null} [food]  food you offered that it is going for (S6c-2)
+ * @property {number} [stillUntil]  a familiar frog holds still while you look close, until then (S6c-3)
  * @property {ReturnType<typeof stream>} r
  */
 
@@ -65,6 +68,8 @@ export function createFrogAgents(recipe, seed) {
   /** Every call started (for the chorus timeline): frog id and time. @type {{ id: number, t: number }[]} */
   const calls = [];
   const stats = { hops: 0, hopM: 0, swims: 0, flicks: 0, perches: 0, startles: 0, hushes: 0 };
+  /** Food eaten since last asked (S6c-2): which frog, which food. @type {{ id: number, food: number }[]} */
+  let meals = [];
   const P = recipe.presence;
   let lastCall = -Infinity, clock = 0, owed = 0, synced = false;
 
@@ -89,6 +94,7 @@ export function createFrogAgents(recipe, seed) {
       }
       a.home = { x: f.x, z: f.z, yaw: f.yaw };
       a.mood = f.mood;
+      a.trust = f.trust ?? 0;
     }
     synced = true;
   }
@@ -96,7 +102,7 @@ export function createFrogAgents(recipe, seed) {
   /** @param {any} f @param {any} env @returns {Agent} */
   function make(f, env) {
     const r = stream(seed, 0xf20, f.id);
-    return { id: f.id, home: { x: f.x, z: f.z, yaw: f.yaw }, mood: f.mood, x: f.x, z: f.z, y: env.ground(f.x, f.z), yaw: f.yaw,
+    return { id: f.id, home: { x: f.x, z: f.z, yaw: f.yaw }, mood: f.mood, trust: f.trust ?? 0, x: f.x, z: f.z, y: env.ground(f.x, f.z), yaw: f.yaw,
       mode: 'rest', hop: null, swim: null, sq: 0, sqv: 0, sac: 0, sacv: 0, pulseUntil: -1, tongueT0: -1, flicks: 0, nextFlick: 0,
       nextAt: clock + 0.5 + 3 * r.next(), until: 0, sink: 0, gone: false, perch: null, under: 0, seek: null, flee: null, waryUntil: -1, hushUntil: -1, r };
   }
@@ -210,17 +216,19 @@ export function createFrogAgents(recipe, seed) {
 
   /**
    * Each frame: does any presence source startle a frog? Inside its comfort ring and faster than its
-   * calm pace, or an edit right beside it. Trust is 0 until S6c, so every ring is the shy one.
+   * calm pace, or an edit right beside it. Its own trust shrinks the ring and raises the pace (S6c).
    * @param {import('./presence.js').PresenceSource[]} sources @param {any} env
    * @returns {{ startled: number[], hushed: number[] }}
    */
   function sense(sources, env) {
-    const trust = 0;
-    const ring = Math.max(P.ringMinM, P.ringM * (1 - P.ringTrustShrink * trust));
-    const calm = P.calmSpeed * (1 + P.calmTrustGain * trust);
     /** @type {number[]} */ const startled = [], hushed = [];
     for (const a of agents.values()) {
       if (a.hop || a.flee || a.mode === 'leave' || clock < a.waryUntil) continue;
+      const ring = Math.max(P.ringMinM, P.ringM * (1 - P.ringTrustShrink * a.trust));
+      const calm = P.calmSpeed * (1 + P.calmTrustGain * a.trust);
+      // A frog that knows you well (Familiar) holds still while a calm source is close (S6c-3).
+      if (a.trust >= P.bands[2] && sources.some((s) => s.speed < calm
+        && Math.hypot(s.pos[0] - a.x, s.pos[1] - a.y, s.pos[2] - a.z) < P.portraitM)) a.stillUntil = clock + P.portraitHoldS;
       let from = null;
       for (const s of sources) {
         const d = Math.hypot(s.pos[0] - a.x, s.pos[1] - a.y, s.pos[2] - a.z);
@@ -421,8 +429,47 @@ export function createFrogAgents(recipe, seed) {
     return true;
   }
 
+  /**
+   * Food you offered (S6c-2): hop toward it, stopping a tongue's reach short, then flick it up.
+   * Returns false if there is no way there (the food is given up).
+   * @param {Agent} a @param {any} env
+   */
+  function eat(a, env) {
+    const f = /** @type {{ id: number, x: number, z: number }} */ (a.food);
+    const reach = M.tongue.reachM * M.tongue.readability;
+    const dx = f.x - a.x, dz = f.z - a.z, d = Math.hypot(dx, dz);
+    a.mode = 'forage';
+    a.flicks = 0;
+    if (d <= reach * 1.3) {
+      a.yaw = Math.atan2(dx, dz);
+      a.tongueT0 = clock;
+      stats.flicks++;
+      meals.push({ id: a.id, food: f.id });
+      a.food = null;
+      a.mode = 'rest';
+      a.nextAt = clock + 1.5 + a.r.next();
+      return true;
+    }
+    const stop = Math.max(0, d - reach * 0.8);
+    const len = Math.min(stop, M.hop.distM[1] * scale);
+    const x = a.x + (dx / d) * len, z = a.z + (dz / d) * len;
+    if (len > 0.01 && env.water(x, z).depth <= M.dayHide.maxDepthM && Math.abs(env.ground(x, z) - a.y) <= 0.2 * scale && clear(a, x, z)) {
+      startHop(a, { x, z, y: env.ground(x, z) }, env, false);
+      a.nextAt = clock + 0.3;
+      return true;
+    }
+    const s = findSpot(a, env, false, Math.atan2(dx, dz));
+    if (s && Math.hypot(f.x - s.x, f.z - s.z) < d) { startHop(a, s, env, false); a.nextAt = clock + 0.3; return true; }
+    a.food = null;
+    return false;
+  }
+
   /** What to do next. @param {Agent} a @param {any} env */
   function choose(a, env) {
+    // Food you offered comes first, whatever the hour (S6c-2).
+    if (a.food && !a.perch && eat(a, env)) return;
+    // Familiar, with you close by: it sits still for you (S6c-3).
+    if (clock < (a.stillUntil ?? -1)) { a.mode = 'rest'; a.nextAt = /** @type {number} */ (a.stillUntil); return; }
     const hour = env.hourOfDay;
     const active = inHours(hour, recipe.ecology.activity.hours);
     const sinceDusk = ((hour - env.duskHour) % 24 + 36) % 24 - 12;
@@ -602,6 +649,22 @@ export function createFrogAgents(recipe, seed) {
         for (const [id, a] of agents) if (a.gone) agents.delete(id);
       }
     },
+    /**
+     * Send a frog for food you offered (S6c-2), after `waitS` seconds of frog time. False if it
+     * cannot go (leaving, or not out now).
+     * @param {number} id @param {{ id: number, x: number, z: number }} food @param {number} waitS
+     */
+    goFor(id, food, waitS) {
+      const a = agents.get(id);
+      if (!a || a.mode === 'leave') return false;
+      a.food = { ...food };
+      if (!a.hop) a.nextAt = Math.min(a.nextAt, clock + waitS);
+      return true;
+    },
+    /** Is this frog wary from a startle just now? @param {number} id */
+    wary: (id) => { const a = agents.get(id); return !!a && clock < a.waryUntil; },
+    /** Food eaten since the last call (S6c-2). */
+    takeMeals() { const m = meals; meals = []; return m; },
     /** The agents now. */
     list: () => [...agents.values()],
     /** Seconds of frog time so far. */

@@ -35,6 +35,7 @@ import { addSaveTests } from './unit-tests-save.js';
 import { addAwayTests } from './unit-tests-away.js';
 import { addRevealTests } from './unit-tests-reveal.js';
 import { addQualityTests } from './unit-tests-quality.js';
+import { addTrustTests } from './unit-tests-trust.js';
 
 /** @type {{group: string, name: string, fn: () => any}[]} */
 const tests = [];
@@ -1374,6 +1375,7 @@ addRevealTests(test, assert, eq);
 // ---- quality: dynamic resolution and the frame cap (tools/unit-tests-quality.js) ----
 
 addQualityTests(test, assert, eq);
+addTrustTests(test, assert, eq);
 
 // ---- runner and rendering ----
 

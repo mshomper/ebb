@@ -220,6 +220,7 @@ export function mountJournal(parent, live, buttonParent = parent) {
       <div class="ebb-jpage__top">${art ? '' : `<span class="ebb-jpage__sketch">${iconSvg(d.icon)}</span>`}<h3>${esc(d.name)}</h3>${show}</div>
       ${art}
       <p class="ebb-jpage__status ebb-journal__voice">${esc(d.status)}</p>
+      ${d.named?.length ? section('Named', `<ul class="ebb-jpage__list">${d.named.map((/** @type {string} */ n) => `<li>${esc(n)}</li>`).join('')}</ul>`) : ''}
       ${middle}
       ${section('Field notes', `<ul class="ebb-jpage__list ebb-jpage__field">${lines(d.field, d.fieldHint)}</ul>`)}
       ${story}

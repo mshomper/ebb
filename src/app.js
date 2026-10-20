@@ -40,6 +40,7 @@ import { bakeBody } from './world/creatures/body-bake.js';
 import { previewSpots } from './world/creatures/preview-spots.js';
 import { createCreatures } from './world/creatures/index.js';
 import { createPresence } from './world/creatures/presence.js';
+import { cleanName, nameFrog } from './world/creatures/trust.js';
 import { lushLook } from './world/growth/lush.js';
 import { createMidges } from './world/ecology/midges-live.js';
 import { onAction, history } from './input/actions.js';
@@ -159,6 +160,8 @@ export async function startApp(canvas, hooks = {}) {
   if (clock.worldT() === 0) clock.reset(((skyRecipe.orbit.startHour ?? 10) + 24 * startDay) * clock.SECONDS_PER_HOUR);
   updateStore('meta', (m) => { m.flow = clock.flow(); });
   const env = makeEnv(seed, { seasons: seasonsRecipe, sky: skyRecipe.orbit, water: waterRecipe });
+  // `?trust=0.5` (testing): every frog knows you at least this well from the next hour (S6c, trust.js).
+  /** @type {any} */ (env).testTrust = Math.max(0, Math.min(1, Number.parseFloat(params.get('trust') ?? '0') || 0));
   /** @type {import('./sim/live-sim.js').LiveWorld} */
   const world = { state: getStore('world') ?? runHour(initialWorldState(seed), clock.hourIndex(), env).state, env };
   updateStore('world', () => world.state);
@@ -473,6 +476,16 @@ export async function startApp(canvas, hooks = {}) {
     if (p && plantTool.tap(tools().plantSpecies ?? 'reeds', p)) updateStore('world', () => world.state);
   }
 
+  // The Feed tool (S6c-2, src/world/creatures/feeding.js): food lands where you tap and a frog may
+  // come for it. Not an edit: a gentle toss never startles. Its line goes to the tool card (`feedUi`).
+  /** @param {number} x @param {number} y */
+  function feedTap(x, y) {
+    const p = groundAt(x, y);
+    if (!p) return;
+    const message = creatures.feed(p[0], p[2]);
+    updateStore('feedUi', () => ({ message, at: performance.now() }));
+  }
+
   /** @param {'undo'|'redo'} dir */
   function runHistory(dir) {
     const ok = dir === 'undo' ? history.undo() : history.redo();
@@ -520,6 +533,7 @@ export async function startApp(canvas, hooks = {}) {
       case 'tool.move': {
         if (!tools().tool) break;
         if (tools().tool === 'plant') { if (a.type === 'tool.begin') plantTap(a.x, a.y); break; }
+        if (tools().tool === 'feed') { if (a.type === 'tool.begin') feedTap(a.x, a.y); break; }
         if (tools().tool === 'water') {
           if (tools().waterMode === 'spring') { if (a.type === 'tool.begin') springTap(a.x, a.y); }
           else if (a.type === 'tool.begin' || pouring) pouring = { x: a.x, y: a.y };
@@ -561,6 +575,16 @@ export async function startApp(canvas, hooks = {}) {
       case 'settings.set':
         updateStore('settings', (s) => { Object.assign(s, a.patch); });
         break;
+      // A name for a frog that knows you well enough (S6c-3, the tap card): kept with the island.
+      case 'creature.name': {
+        const name = cleanName(a.name);
+        const f = world.state?.creatures?.frogs?.frogs?.find((/** @type {any} */ g) => g.id === a.id);
+        if (!name || !f || f.name || (f.trust ?? 0) < frogRecipe.presence.namingTrust) break;
+        world.state = nameFrog(world.state, a.id, name, clock.hourIndex());
+        updateStore('world', () => world.state);
+        emitDeferred('creature:named', { species: 'frogs', id: a.id, name });
+        break;
+      }
     }
   });
   const detachDesktop = attachDesktopInput(canvas, camRecipe, rb);
@@ -580,8 +604,8 @@ export async function startApp(canvas, hooks = {}) {
       return;
     }
     const p = t.tool && pointer.inside ? groundAt(pointer.x, pointer.y) : null;
-    // The Plant tool marks just the spot a seed would go.
-    if (p) terrain.setRing({ x: p[0], z: p[2], radius: t.tool === 'plant' ? 0.4 : t.size, visible: true });
+    // The Plant tool marks just the spot a seed would go; Feed, where the food would land.
+    if (p) terrain.setRing({ x: p[0], z: p[2], radius: t.tool === 'plant' ? 0.4 : t.tool === 'feed' ? 0.2 : t.size, visible: true });
     else terrain.setRing({ visible: false });
   }
 
@@ -614,7 +638,7 @@ export async function startApp(canvas, hooks = {}) {
     presence.update(realDt);
     updateRing();
     // Plant tool rings, and a breathing ring round whatever the journal's tap card names.
-    terrainPass.setMarks(plantTool.marks(now, tools().tool === 'plant', getStore('identify'), getStore('reveal')?.rings?.(now) ?? []));
+    terrainPass.setMarks(plantTool.marks(now, tools().tool === 'plant', getStore('identify'), [...(getStore('reveal')?.rings?.(now) ?? []), ...creatures.foodRings()]));
     updatePour();
     if (queuedHistory && !terrain.isBusy()) runHistory(queuedHistory);
     // Ground detail waits for a few calm frames so the first picture is as quick as before (docs/22).
