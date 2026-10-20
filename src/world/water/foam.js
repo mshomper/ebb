@@ -67,6 +67,7 @@ export async function createFoam(device, opts) {
       f[10] = recipe.churnDepthM; f[11] = recipe.churnSpeed[0];
       f[12] = 0.001; f[13] = recipe.maxCover; f[14] = recipe.churnSpeed[1]; f[15] = recipe.fadeStillS;
       f[16] = recipe.spreadPerS; f[17] = recipe.stillBelowMs;
+      f[18] = recipe.plungeGain ?? 0; f[19] = recipe.plungeFromM ?? 0.5;
       device.queue.writeBuffer(uniforms, 0, data);
       const pass = encoder.beginComputePass({ label: 'water-foam' });
       pass.setPipeline(pipeline);

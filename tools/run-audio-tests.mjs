@@ -9,6 +9,7 @@ import { addDirectorTests } from './unit-tests-director.js';
 import { addDevelopTests } from './unit-tests-develop.js';
 import { addSoundGameTests } from './unit-tests-sound-game.js';
 import { addSummerTests } from './unit-tests-summer.js';
+import { addFallsSoundTests } from './unit-tests-falls-sound.js';
 
 const tests = [];
 const test = (group, name, fn) => tests.push({ group, name, fn });
@@ -22,6 +23,7 @@ addDirectorTests(test, assert, eq);
 addDevelopTests(test, assert, eq);
 addSoundGameTests(test, assert, eq);
 addSummerTests(test, assert, eq);
+addFallsSoundTests(test, assert, eq);
 
 let passed = 0;
 for (const t of tests) {

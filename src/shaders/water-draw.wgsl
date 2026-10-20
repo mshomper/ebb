@@ -53,7 +53,7 @@ struct WaterDraw {
   foam: vec4f,                // x lace size (m), y foam albedo, z most of a pixel foam covers, w boil speed (cells/s)
   marsh: vec4f,               // rgb sigma_a per meter of shallow, still marsh water (peat-stained)
   marsh2: vec4f,              // xy depths (m) over which it gives way to pond water, zw speeds (m/s) over which moving water clears it
-  calm: vec4f,                // x share of the ripple layers on still fresh water now (follows the wind), yzw spare
+  calm: vec4f,                // x share of the ripple layers on still fresh water now (follows the wind); waterfalls (M2): y cos of the steepest wall face kept (0: off), z surface drop (m) that makes a lip, w spare
 };
 
 @group(0) @binding(0) var<uniform> frame: FrameUniforms;
@@ -84,6 +84,7 @@ struct VsOut {
   @location(3) slope: vec2f,      // d(surface)/dx, d(surface)/dz from the simulation
   @location(4) bed: f32,
   @location(5) cover: f32,        // 1 at wet vertices, 0 at the dry bank: fades the last cell out
+  @location(6) wall: f32,         // 1 at a vertex beside a surface drop a waterfall curtain covers
 };
 
 struct FsOut {
@@ -152,6 +153,10 @@ fn vsSim(@builtin(vertex_index) vi: u32) -> VsOut {
   out.slope = select(vec2f(0.0), clamp(slope, vec2f(-0.5), vec2f(0.5)), s.y > wd.dry);
   out.bed = waterBed(heightTex, c);
   out.cover = select(0.0, 1.0, s.y > wd.dry);
+  // Beside a drop a waterfall curtain falls over (src/render/passes/falls.js): the stretched
+  // triangle down the rock face is left out in the fragment shader.
+  let jump = max(max(abs(s.x - sx0), abs(s.x - sx1)), max(abs(s.x - sz0), abs(s.x - sz1)));
+  out.wall = select(0.0, 1.0, wd.calm.y > 0.0 && jump > wd.calm.z);
   return out;
 }
 
@@ -182,6 +187,7 @@ fn vsSea(@builtin(vertex_index) vi: u32) -> VsOut {
   out.slope = vec2f(0.0);
   out.bed = -50.0;
   out.cover = 1.0;
+  out.wall = 0.0;
   return out;
 }
 
@@ -345,6 +351,9 @@ fn fsWater(in: VsOut) -> FsOut {
   let lo = waterCellCenter(vec2i(wd.rectOrigin) + 1) + 0.25;
   let hi = waterCellCenter(vec2i(wd.rectOrigin + wd.rectSize) - 2) - 0.25;
   if (in.bed < -40.0 && all(P.xz > lo) && all(P.xz < hi)) { discard; }
+  // A steep triangle down a cliff face beside a waterfall lip: the curtain draws the water there.
+  let faceN = normalize(cross(dpdx(P), dpdy(P)));
+  if (in.wall > 0.01 && abs(faceN.y) < wd.calm.y) { discard; }
 
   let pixel = vec2i(in.pos.xy);
   let screenUv = in.pos.xy * frame.invRenderSize;

@@ -49,7 +49,8 @@ export function attachDesktopInput(canvas, opts, brush) {
       tap: e.button === 0 && mode === 'pan' && !toolActive() };
     if (mode === 'tool') {
       const p = local(e);
-      dispatch({ type: 'tool.begin', x: p.x, y: p.y, pressure: pressure(e), source: source(e) });
+      // Shift levels a Terrace or Cut to mean sea level (docs/15).
+      dispatch({ type: 'tool.begin', x: p.x, y: p.y, pressure: pressure(e), source: source(e), shift: e.shiftKey });
     }
   };
 

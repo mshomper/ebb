@@ -80,11 +80,14 @@ export function due(p) {
   }
   for (const [sp, g] of Object.entries(p.gifts ?? {})) {
     if (!g || !p.flags.includes(`${sp}:happy`) || p.earned?.gifts?.[sp]) continue;
-    const W = p.giftWords?.[g.kind];
+    // Seeds share one set of words; a tool has its own, and its own icon (naturalist.json gifts).
+    const seed = g.kind === 'seed';
+    const W = seed ? p.giftWords?.seed : p.giftWords?.[g.kind]?.[g.id];
     const fill = (/** @type {string} */ s) => (s ?? '').replace('{species}', lower(p.words?.species?.[sp]?.plural ?? p.words?.species?.[sp]?.name ?? sp))
       .replace('{plant}', lower(p.words?.species?.[g.id]?.name ?? g.id));
-    const give = g.kind === 'seed' ? { seeds: { [g.id]: true } } : { [g.id]: true };
-    out.push({ id: sp, kind: 'gift', give, title: fill(W?.title), line: fill(W?.line), icon: p.words?.species?.[g.id]?.icon ?? 'find', page: sp });
+    const give = seed ? { seeds: { [g.id]: true } } : { [g.id]: true };
+    const icon = (seed ? p.words?.species?.[g.id]?.icon : W?.icon) ?? 'find';
+    out.push({ id: sp, kind: 'gift', give, title: fill(W?.title), line: fill(W?.line), icon, page: sp });
   }
   return out;
 }
@@ -124,8 +127,9 @@ export function createProgress(opts) {
     if (!grants.length) return;
     let earned = u.earned ?? {};
     for (const g of grants) earned = grant(earned, g);
-    // What is earned shows at once; test switches (?sandbox) stay as they were.
-    update('unlocks', (/** @type {any} */ v) => ({ ...v, ...earned, springs: !!earned.springs || !!v?.springs, earned }));
+    // What is earned shows at once; test switches (?sandbox, ?cliffs) stay as they were.
+    update('unlocks', (/** @type {any} */ v) => ({ ...v, ...earned, springs: !!earned.springs || !!v?.springs,
+      cliffs: !!earned.cliffs || !!v?.cliffs, earned }));
     for (const g of grants) emitDeferred('progress:gifted', g);
   }
   const off = subscribe('journal', check);

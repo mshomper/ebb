@@ -6,11 +6,12 @@
 import { makeBuffer, makeShaderModule } from '../../core/gpu.js';
 import { CELL, WORLD_CELLS as N, WORLD_ORIGIN } from './grid.js';
 import { toCell } from './heightfield.js';
+import { cliffMask, cliffHeight } from './cliff.js';
 
 const STAMP_STRIDE = 256;
 const STAMP_BYTES = 80;
 
-/** @typedef {'raise'|'lower'|'flatten'|'smooth'|'paint'} BrushKind */
+/** @typedef {'raise'|'lower'|'flatten'|'smooth'|'paint'|'terrace'|'cut'} BrushKind */
 /** @typedef {'grass'|'sand'|'rock'|'soil'} PaintLayer */
 
 /**
@@ -19,6 +20,8 @@ const STAMP_BYTES = 80;
  * @property {number} radius     meters
  * @property {number} strength   0..1 (slider value; the recipe curve shapes it)
  * @property {PaintLayer} [layer]
+ * @property {number} [height]   Terrace and Cut: the Height slider (m)
+ * @property {boolean} [sea]     Terrace and Cut: level at mean sea level (Shift)
  */
 
 /**
@@ -32,7 +35,10 @@ const STAMP_BYTES = 80;
  */
 
 export const LAYER_INDEX = { grass: 0, sand: 1, rock: 2, soil: 3 };
-const MODE = { raise: 0, lower: 0, smooth: 1, flatten: 2, paint: 3 };
+// Mode 4 is the Cliff shelf (Terrace and Cut, by the sign of amount); 5 paints its faces rock.
+const MODE = { raise: 0, lower: 0, smooth: 1, flatten: 2, paint: 3, terrace: 4, cut: 4 };
+export const CLIFF_MODE = 4;
+export const CLIFF_ROCK_MODE = 5;
 
 /**
  * Cell rect covered by a circle, clamped to a bounding cell rect.
@@ -53,6 +59,10 @@ export function circleRect(x, z, r, clampTo) {
  * @param {Brush} brush @param {number} pressure @param {number} dt @param {any} rb recipe.brush
  */
 export function frameAmount(brush, pressure, dt, rb) {
+  // The Cliff shelf sets the ground to its level, so its amount is not a rate: its sign is the side
+  // (up or down) and its size how far the rim falls, the stroke's Height (cliff.js cliffHeight).
+  if (brush.kind === 'terrace') return brush.height ?? 1;
+  if (brush.kind === 'cut') return -(brush.height ?? 1);
   const s = Math.pow(Math.max(0, Math.min(1, brush.strength)), rb.strengthCurve) * pressure;
   if (brush.kind === 'raise' || brush.kind === 'lower') {
     // Steepest slope of the falloff is 1.5 / ((1 - hardness) r) per meter.
@@ -69,6 +79,7 @@ export function frameAmount(brush, pressure, dt, rb) {
  * @param {Float32Array} hf @param {Stamp} st @param {{openMin: number[], openMax: number[], edgeFade: number}} edge
  */
 export function applyStampCpu(hf, st, edge) {
+  if (st.mode === CLIFF_MODE) { applyCliffCpu(hf, st, edge); return; }
   if (st.mode !== 0 && st.mode !== 2) return;
   const r = st.rect;
   const inner = st.hardness * st.radius;
@@ -84,6 +95,28 @@ export function applyStampCpu(hf, st, edge) {
       const k = j * N + i;
       if (st.mode === 0) hf[k] = Math.min(12, Math.max(-4, hf[k] + st.amount * f));
       else hf[k] += (st.target - hf[k]) * (1 - Math.pow(2, -st.amount * f));
+    }
+  }
+}
+
+/**
+ * The CPU twin of the Cliff shelf (exact: the stamp sets heights, it does not integrate them).
+ * For mode 4 the stamp's `hardness` holds the rim's width in meters and `span` how far the shelf
+ * falls across the fade before unopened land (m).
+ * @param {Float32Array} hf @param {Stamp} st @param {{openMin: number[], openMax: number[], edgeFade: number}} edge
+ */
+function applyCliffCpu(hf, st, edge) {
+  const r = st.rect;
+  for (let j = r.y; j < r.y + r.h; j++) {
+    const z = WORLD_ORIGIN + (j + 0.5) * CELL;
+    for (let i = r.x; i < r.x + r.w; i++) {
+      const x = WORLD_ORIGIN + (i + 0.5) * CELL;
+      const d = Math.hypot(x - st.x, z - st.z);
+      if (d >= st.radius) continue;
+      const inside = Math.min(x - edge.openMin[0], edge.openMax[0] - x, z - edge.openMin[1], edge.openMax[1] - z);
+      const fade = Math.min(1, Math.max(0, inside / edge.edgeFade));
+      const k = j * N + i;
+      hf[k] = Math.min(12, Math.max(-4, cliffHeight(hf[k], st.target, cliffMask(d, st.radius, st.hardness), st.amount, fade, st.span)));
     }
   }
 }
@@ -107,9 +140,10 @@ export async function createBrushGpu(device, tex, maxStamps) {
     ],
   });
   const pipeLayout = device.createPipelineLayout({ label: 'terrain-brush', bindGroupLayouts: [layout] });
-  const [heightPipe, paintPipe] = await Promise.all([
+  const [heightPipe, paintPipe, rockPipe] = await Promise.all([
     device.createComputePipelineAsync({ label: 'terrain-brush-height', layout: pipeLayout, compute: { module, entryPoint: 'csHeight' } }),
     device.createComputePipelineAsync({ label: 'terrain-brush-paint', layout: pipeLayout, compute: { module, entryPoint: 'csPaint' } }),
+    device.createComputePipelineAsync({ label: 'terrain-cliff-rock', layout: pipeLayout, compute: { module, entryPoint: 'csCliffRock' } }),
   ]);
   const uniforms = makeBuffer(device, {
     label: 'terrain-stamps', size: STAMP_STRIDE * maxStamps, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
@@ -128,6 +162,42 @@ export async function createBrushGpu(device, tex, maxStamps) {
   const data = new ArrayBuffer(STAMP_STRIDE * maxStamps);
   const f32 = new Float32Array(data);
   const u32 = new Uint32Array(data);
+  // The rock pass has its own uniform, since queued writes all land before the frame's commands run.
+  const rockUniform = makeBuffer(device, { label: 'terrain-cliff-rock', size: STAMP_BYTES, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
+  const rockGroup = device.createBindGroup({
+    label: 'terrain-cliff-rock',
+    layout,
+    entries: [
+      { binding: 0, resource: { buffer: rockUniform, size: STAMP_BYTES } },
+      { binding: 1, resource: tex.height.createView() },
+      { binding: 2, resource: tex.heightScratch.createView() },
+      { binding: 3, resource: tex.material.createView() },
+      { binding: 4, resource: tex.materialScratch.createView() },
+    ],
+  });
+
+  /**
+   * After a Cliff stroke, before erosion: paint every cell on a sheer face rock (docs/08), so it
+   * draws as stone and erosion holds it at the rock talus. `share` is how far toward rock it goes.
+   * @param {GPUCommandEncoder} encoder @param {import('./heightfield.js').CellRect} rect
+   * @param {{ faceDeg: number, rockShare: number }} rc recipe.cliff
+   */
+  function encodeCliffRock(encoder, rect, rc) {
+    if (rect.w <= 0 || rect.h <= 0) return;
+    const b = new ArrayBuffer(STAMP_BYTES);
+    const f = new Float32Array(b);
+    const u = new Uint32Array(b);
+    f[4] = Math.tan((rc.faceDeg * Math.PI) / 180) * CELL; f[5] = rc.rockShare; u[6] = CLIFF_ROCK_MODE;
+    u[8] = rect.x; u[9] = rect.y; u[10] = rect.w; u[11] = rect.h;
+    f[17] = WORLD_ORIGIN; f[18] = CELL;
+    device.queue.writeBuffer(rockUniform, 0, b);
+    const pass = encoder.beginComputePass({ label: 'terrain-cliff-rock' });
+    pass.setPipeline(rockPipe);
+    pass.setBindGroup(0, rockGroup, [0]);
+    pass.dispatchWorkgroups(Math.ceil(rect.w / 8), Math.ceil(rect.h / 8));
+    pass.end();
+    encoder.copyTextureToTexture({ texture: tex.materialScratch, origin: [rect.x, rect.y] }, { texture: tex.material, origin: [rect.x, rect.y] }, [rect.w, rect.h]);
+  }
 
   /**
    * Record stamps in order; each reads the result of the one before.
@@ -161,5 +231,5 @@ export async function createBrushGpu(device, tex, maxStamps) {
     });
   }
 
-  return { encode, modeOf: (/** @type {BrushKind} */ k) => MODE[k] };
+  return { encode, encodeCliffRock, modeOf:(/** @type {BrushKind} */ k) => MODE[k] };
 }

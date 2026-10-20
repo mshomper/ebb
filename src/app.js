@@ -34,9 +34,11 @@ import { createPlantTool } from './world/growth/plant-tool.js';
 import { weatherAt } from './world/weather.js';
 import { state as tideState, tideParams } from './world/tide.js';
 import { soundNear, nothingNear } from './world/sound-near.js';
+import { groupFalls, fallsNear } from './world/falls-near.js';
 import { loadAudioRecipe } from './audio/recipes.js';
 import { setVerdict } from './audio/music/hearts.js';
 import { createWaterPass } from './render/passes/water.js';
+import { createFallsPass } from './render/passes/falls.js';
 import { createGrassPass } from './render/passes/grass.js';
 import { createFloraPass } from './render/passes/flora.js';
 import { createCreaturePass } from './render/passes/creatures.js';
@@ -53,6 +55,7 @@ import { onAction, history } from './input/actions.js';
 import { attachDesktopInput } from './input/desktop.js';
 import { attachTouchInput } from './input/touch.js';
 import { beginSave, TEST_PARAMS } from './save/autosave.js';
+import { buildCliffDemo } from './world/terrain/cliff-demo.js';
 import { loadPrefs, keepPrefs } from './save/prefs.js';
 import { fingerprint } from './save/backup.js';
 
@@ -141,13 +144,22 @@ export async function startApp(canvas, hooks = {}) {
     tool: null, sculptMode: 'raise', paintLayer: 'grass', waterMode: 'pour', springRate: 'brook', plantSpecies: 'reeds',
     size: rb.radiusDefault, strength: rb.strengthDefault, sizeRange: rb.radiusRange,
   });
-  // Unlocks (docs 12, 13): placing springs is the dragonflies' gift; `?sandbox` opens it early for
-  // this visit only (`earned` holds what was given, and is what the save keeps). `?sandbox` and
-  // `?plants=all` also offer every plant in the Plant tool before it has come to the island
-  // (volunteers.js); sea campion, for one, grows nowhere until there is rock by the sea.
+  // Terrace and Cut's Height slider (docs/08), and its range for the card.
+  updateStore('tools', (t) => {
+    t.cliffHeight ??= terrainRecipe.cliff.heightDefault;
+    t.cliffHeightRange = terrainRecipe.cliff.heightM;
+    t.cliffHeightStep = terrainRecipe.cliff.snapM;
+  });
+  // Unlocks (docs 12, 13): placing springs is the dragonflies' gift and the Cliff tool (Terrace and
+  // Cut) the frogs'; `?sandbox` opens both early for this visit only, and `?cliffs` the Cliff tool
+  // (`earned` holds what was given, and is what the save keeps). `?sandbox` and `?plants=all` also
+  // offer every plant in the Plant tool before it has come to the island (volunteers.js); sea
+  // campion, for one, grows nowhere until there is rock by the sea.
   updateStore('unlocks', (u) => {
     const earned = u?.earned ?? back?.unlocks ?? {};
-    return { earned, ...earned, springs: !!earned.springs || params.has('sandbox'), allPlants: params.has('sandbox') || params.get('plants') === 'all' };
+    return { earned, ...earned, springs: !!earned.springs || params.has('sandbox'),
+      cliffs: !!earned.cliffs || params.has('sandbox') || params.has('cliffs'),
+      allPlants: params.has('sandbox') || params.get('plants') === 'all' };
   });
   // `?weather=clear|cloud|rain|mist` previews a weather look (as the sky lab does); the world's
   // own weather record is untouched.
@@ -231,7 +243,8 @@ export async function startApp(canvas, hooks = {}) {
 
   // Light: the physical sky, sun or moon shadows, the shared lighting group, slow eye adaptation.
   const atmosphere = await createAtmosphere(gpu.device, skyRecipe, tierSettings);
-  const shadowPass = createShadowPass({ terrain, recipe: shadowRecipe, terrainRecipe, tierShadows: tierSettings.shadows, worldRadius: camRecipe.worldRadius });
+  const shadowPass = createShadowPass({ terrain, recipe: shadowRecipe, terrainRecipe, tierShadows: tierSettings.shadows, worldRadius: camRecipe.worldRadius,
+    getEye: () => camera.eye, cliffDetailM: tierSettings.cliffDetailM });
   const lighting = createLighting(gpu.device, atmosphere, shadowPass.resources(gpu.device));
   const exposure = createExposurePass(exposureRecipe);
   const daylight = createDaylight({ sky: skyRecipe, seasons: seasonsRecipe, shadows: shadowRecipe });
@@ -254,7 +267,7 @@ export async function startApp(canvas, hooks = {}) {
 
   const terrainPass = createTerrainPass({
     terrain, recipe: terrainRecipe, seed: subSeed(seed, 'terrain-look'), getEye: () => camera.eye, tier,
-    ground: groundDetail, groundTier: tierSettings.ground, getTide: () => water.tide, lodDistances: tierSettings.lodDistances,
+    ground: groundDetail, groundTier: tierSettings.ground, getTide: () => water.tide, lodDistances: tierSettings.lodDistances, cliffDetailM: tierSettings.cliffDetailM,
     getHours: () => clock.display() / clock.SECONDS_PER_HOUR,
     water: { depthTextures: water.sim.depthTextures, current: () => water.sim.current, damp: water.sim.damp, dampWet: waterRecipe.look.dampHollowWet,
       vel: water.sim.vel, caustics: waterRecipe.caustics, tide: waterRecipe.tide },
@@ -345,6 +358,11 @@ export async function startApp(canvas, hooks = {}) {
       wetDarkening: terrainRecipe.materials.wetDarkening },
     detailFadeM: tierSettings.waterDetailFadeM, ssr: tierSettings.waterSSR ?? null, foam, ripples,
   });
+  // Waterfalls (M2 Cliff tool): curtains where live water runs over a drop, visual only.
+  // Near the eye they are droplet water with real volume (screen-space fluid, falls-fluid.js).
+  const fallsPass = createFallsPass({ water, terrain, recipe: waterRecipe.falls, getTime: () => clock.animT(), tier: tierSettings,
+    absorption: waterRecipe.look.absorptionPond, atmosphere, getEye: () => camera.eye, getProjY: () => camera.proj[5],
+    getOpaqueDepth: () => waterPass.opaqueDepth });
   const graph = createFrameGraph(gpu, [
     shadowPass,
     terrainPass,
@@ -357,6 +375,8 @@ export async function startApp(canvas, hooks = {}) {
     waterPass,
     midges.pass,
     createSkyPass(atmosphere, skyRecipe),
+    // Waterfalls after the sky, so a curtain seen against the sky is not drawn over (src/render/passes/falls.js).
+    fallsPass,
     exposure,
     bloom,
     tonemap,
@@ -413,10 +433,11 @@ export async function startApp(canvas, hooks = {}) {
     rushPass.setTier(tierSettings);
     waterPass.setDetailFade(tierSettings.waterDetailFadeM);
     waterPass.setSSR(tierSettings.waterSSR ?? null);
+    if (fallsPass.setTier(tierSettings)) graph.invalidate();
     // Shadows, bloom and the midges follow too. A texture's size is fixed once made, so a new
     // shadow map size re-makes only that map and the lighting group that binds it; new bloom levels
     // re-make the bloom chain at the next resize, which invalidate() forces.
-    if (shadowPass.setTier(tierSettings.shadows, gpu.device)) lighting.setShadow(shadowPass.resources(gpu.device));
+    if (shadowPass.setTier(tierSettings.shadows, gpu.device, tierSettings.cliffDetailM)) lighting.setShadow(shadowPass.resources(gpu.device));
     if (bloom.setLevels(tierSettings.bloomLevels)) graph.invalidate();
     midges.setBudget(tierSettings.boids ?? 4096);
     live.setTier(t, tierSettings, keepScale);
@@ -461,8 +482,11 @@ export async function startApp(canvas, hooks = {}) {
   function currentBrush() {
     const t = tools();
     const kind = t.tool === 'sculpt' ? t.sculptMode : t.tool === 'smooth' ? 'smooth' : 'paint';
-    return { kind, radius: t.size, strength: t.strength, layer: t.paintLayer };
+    return { kind, radius: t.size, strength: t.strength, layer: t.paintLayer, height: t.cliffHeight ?? terrainRecipe.cliff.heightDefault, sea: shiftHeld };
   }
+  /** Shift held at the start of the stroke (desktop): Terrace and Cut level to mean sea level. */
+  let shiftHeld = false;
+  const isCliffMode = () => tools().tool === 'sculpt' && (tools().sculptMode === 'terrace' || tools().sculptMode === 'cut');
   /** @param {number} x @param {number} y */
   function groundAt(x, y) {
     const r = camera.ray(x, y);
@@ -560,6 +584,8 @@ export async function startApp(canvas, hooks = {}) {
           Object.assign(t, a.patch);
           t.size = clampSize(t.size);
           t.strength = Math.min(1, Math.max(0, t.strength));
+          const [hMin, hMax] = terrainRecipe.cliff.heightM;
+          t.cliffHeight = Math.min(hMax, Math.max(hMin, t.cliffHeight ?? terrainRecipe.cliff.heightDefault));
         });
         // A new flow step applies to the selected spring too (undoable).
         if (a.patch.springRate) ww.rateSelected(a.patch.springRate);
@@ -588,7 +614,7 @@ export async function startApp(canvas, hooks = {}) {
           else if (a.type === 'tool.begin' || pouring) pouring = { x: a.x, y: a.y };
           break;
         }
-        if (a.type === 'tool.begin') wantStroke = true;
+        if (a.type === 'tool.begin') { wantStroke = true; shiftHeld = !!a.shift; }
         if (!wantStroke) break;
         const p = groundAt(a.x, a.y);
         if (!p) break;
@@ -662,8 +688,10 @@ export async function startApp(canvas, hooks = {}) {
     }
     const p = t.tool && pointer.inside ? groundAt(pointer.x, pointer.y) : null;
     // The Plant tool marks just the spot a seed would go; Feed, where the food would land.
-    if (p) terrain.setRing({ x: p[0], z: p[2], radius: t.tool === 'plant' ? 0.4 : t.tool === 'feed' ? 0.2 : t.size, visible: true });
-    else terrain.setRing({ visible: false });
+    // Terrace and Cut also draw a thin line where the ground meets the shelf's level (docs/15).
+    const level = !p || !isCliffMode() ? null : terrain.strokeLevel() ?? terrain.cliffLevelAt(currentBrush(), p);
+    if (p) terrain.setRing({ x: p[0], z: p[2], radius: t.tool === 'plant' ? 0.4 : t.tool === 'feed' ? 0.2 : t.size, visible: true, level });
+    else terrain.setRing({ visible: false, level: null });
   }
 
   // The island's sound (src/audio, docs 17 and 25) reads the store slice `sound`, written here
@@ -674,6 +702,10 @@ export async function startApp(canvas, hooks = {}) {
   let soundAcc = Infinity;
   let nearAcc = Infinity;
   let near = nothingNear();
+  // The waterfalls, from the lips the falls pass reads back a couple of times a second.
+  /** @type {import('./world/falls-near.js').Fall[]} */
+  let falls = [];
+  on('falls:lips', (/** @type {{ lips: Float32Array, count: number }} */ p) => { falls = groupFalls(p.lips, p.count, soundRecipe.falls); });
   /** @param {number} realDt @param {number} display @param {{ index: number, phase: number }} season @param {any} day daylight.update's result */
   function publishSound(realDt, display, season, day) {
     const weather = day.weather;
@@ -685,6 +717,7 @@ export async function startApp(canvas, hooks = {}) {
       nearAcc = 0;
       near = soundNear({ summary: water.getSummary(), growth: world.state?.growth, rushId: growthRecipe.cover?.[0] ?? null,
         x: camera.target[0], z: camera.target[2], recipe: soundRecipe.near });
+      near.falls = fallsNear(falls, camera.target[0], camera.target[1], camera.target[2], soundRecipe.falls);
     }
     const frogs = world.state?.creatures?.frogs?.frogs ?? [];
     updateStore('sound', () => ({
@@ -829,6 +862,17 @@ export async function startApp(canvas, hooks = {}) {
     frameIndex++;
   }
   raf = requestAnimationFrame(frame);
+
+  // `?cliffs` (testing, unsaved): a small cliff scene built with real Terrace and Cut strokes, a
+  // spring on the upper shelf so its water falls over the faces (src/world/terrain/cliff-demo.js).
+  if (params.has('cliffs')) {
+    buildCliffDemo({
+      terrain, history, spring: params.get('cliffs') !== 'nospring',
+      tapSpring: (p, rate) => ww.tapSpring(p, rate),
+      focus: (x, z, distance, pitchDeg) => camera.focus(x, z, distance, pitchDeg),
+    }).then(() => emitDeferred('terrain:cliff-demo-built', { cliffChunks: terrain.cliffs.size }))
+      .catch((err) => console.error('cliff demo failed', err));
+  }
 
   // Autosave from here on (src/save/autosave.js): what the island is now, whenever it asks.
   save.start({

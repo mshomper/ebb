@@ -7,7 +7,7 @@ const NAMES = {
   sea: 'Sea', air: 'Air', lap: 'Pond lap', trickle: 'Trickle', run: 'Stream run',
   reeds: 'Wind in reeds', grass: 'Wind in grass', wind: 'Open wind',
   rainWater: 'Rain on water', rainPads: 'Rain on lily pads', rainReeds: 'Rain on reeds', rainGrass: 'Rain on grass',
-  drizzle: 'Drizzle', oneShots: 'Small sounds', creatures: 'Frogs and midges',
+  drizzle: 'Drizzle', oneShots: 'Small sounds', falls: 'Waterfalls', creatures: 'Frogs and midges',
 };
 
 /**

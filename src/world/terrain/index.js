@@ -11,7 +11,8 @@ import {
   sampleHeight, sampleNormal, sampleMaterial, raycast,
 } from './heightfield.js';
 import { createChunkTable, buildBases, pasteChunk } from './chunks.js';
-import { createBrushGpu, circleRect, frameAmount, applyStampCpu, LAYER_INDEX } from './brushes.js';
+import { createBrushGpu, circleRect, frameAmount, applyStampCpu, LAYER_INDEX, CLIFF_MODE } from './brushes.js';
+import { cliffLevel, createCliffChunks } from './cliff.js';
 import { createErosionGpu, encodeReadback } from './erosion.js';
 import { tilesOf, copyTiles, pasteTiles, TILE_BYTES } from './undo.js';
 import { makeBoulder, applyBoulder } from './boulder.js';
@@ -78,6 +79,9 @@ export async function createTerrain(gpu, opts) {
 
   const tex = createTextures(device);
   uploadRect(device, tex, mirror, { x: 0, y: 0, w: N, h: N });
+  // Chunks with a sheer step keep full mesh detail near the camera (docs/19).
+  const cliffs = createCliffChunks(recipe.cliff.chunkStepM);
+  cliffs.refresh(mirror.heightF, { x: 0, y: 0, w: N, h: N });
   const [brushGpu, erosionGpu] = await Promise.all([
     createBrushGpu(device, tex, rb.maxStampsPerFrame),
     createErosionGpu(device, tex, recipe.erosion),
@@ -86,7 +90,8 @@ export async function createTerrain(gpu, opts) {
   /** @type {Stroke | null} */ let stroke = null;
   /** @type {{ st: Stroke, rect: CellRect, readback: { read: () => Promise<any> } } | null} */ let pending = null;
   /** @type {Promise<void> | null} */ let finalizing = null;
-  const ring = { x: 0, z: 0, radius: 1, hardness: rb.hardness, visible: false };
+  /** @type {{ x: number, z: number, radius: number, hardness: number, visible: boolean, level: number | null }} */
+  const ring = { x: 0, z: 0, radius: 1, hardness: rb.hardness, visible: false, level: null };
 
   /**
    * Grow a rect by m cells and clamp it to the open land.
@@ -126,7 +131,8 @@ export async function createTerrain(gpu, opts) {
     const from = st.last ?? st.cursor;
     const d = Math.hypot(st.cursor[0] - from[0], st.cursor[1] - from[1]);
     const n = Math.min(rb.maxStampsPerFrame, Math.max(1, Math.ceil(d / spacing)));
-    const amount = frameAmount(st.brush, st.pressure, dt, rb) / n;
+    // A Cliff stamp sets rather than adds, so its amount is not split across the frame's stamps.
+    const amount = frameAmount(st.brush, st.pressure, dt, rb) / (st.mode === CLIFF_MODE ? 1 : n);
     const stamps = [];
     for (let i = 1; i <= n; i++) {
       const t = st.last ? i / n : 1;
@@ -137,8 +143,11 @@ export async function createTerrain(gpu, opts) {
       const fresh = tilesOf(grow(rect, marginCells)).filter((id) => !st.tileIds.has(id));
       for (const id of fresh) st.tileIds.add(id);
       if (fresh.length) st.before.push(...copyTiles(mirror, fresh));
-      const span = Math.max(1, Math.round((r * rb.smoothSpanFraction) / CELL));
-      const stamp = { x, z, radius: r, hardness: rb.hardness, amount, target: st.target, mode: st.mode, layer: st.layer, span, rect };
+      // Smooth: tap spacing in cells. Cliff: how far the shelf falls across the world-edge fade (m).
+      const span = st.mode === CLIFF_MODE ? recipe.cliff.worldEdgeDropM : Math.max(1, Math.round((r * rb.smoothSpanFraction) / CELL));
+      // A cliff stamp's hardness slot carries the rim width in meters (terrain-brush.wgsl).
+      const hardness = st.mode === CLIFF_MODE ? recipe.cliff.edgeM : rb.hardness;
+      const stamp = { x, z, radius: r, hardness, amount, target: st.target, mode: st.mode, layer: st.layer, span, rect };
       applyStampCpu(mirror.heightF, stamp, edge);
       st.rect = union(st.rect, rect);
       stamps.push(stamp);
@@ -175,6 +184,7 @@ export async function createTerrain(gpu, opts) {
 
   /** @param {CellRect} r */
   function markEdited(r) {
+    cliffs.refresh(mirror.heightF, r);
     updateStore('chunks', (all) => {
       for (const c of chunks.list()) {
         const x0 = chunkFirstCell(c.cx);
@@ -214,12 +224,14 @@ export async function createTerrain(gpu, opts) {
       let resolve = () => {};
       /** @type {Promise<TerrainCommand | null>} */
       const done = new Promise((r) => { resolve = r; });
+      const cliff = brush.kind === 'terrace' || brush.kind === 'cut';
       stroke = {
         done,
         brush: { ...brush },
         mode: brushGpu.modeOf(brush.kind),
         layer: LAYER_INDEX[brush.layer ?? 'grass'],
-        target: sampleHeight(mirror.heightF, point[0], point[2]),
+        // Flatten levels to the ground first touched; Terrace and Cut to that plus or minus Height.
+        target: cliff ? terrain.cliffLevelAt(brush, point) : sampleHeight(mirror.heightF, point[0], point[2]),
         pressure,
         cursor: [point[0], point[2]],
         last: null,
@@ -305,10 +317,26 @@ export async function createTerrain(gpu, opts) {
         pasteChunk(mirror, c.cx, c.cz, c.heightQ, c.material);
         uploadRect(device, tex, mirror, { x: chunkFirstCell(c.cx), y: chunkFirstCell(c.cz), w: CHUNK_CELLS, h: CHUNK_CELLS });
         updateStore('chunks', (all) => { all[chunkKey(c.cx, c.cz)].edited = true; });
+        cliffs.refresh(mirror.heightF, { x: chunkFirstCell(c.cx), y: chunkFirstCell(c.cz), w: CHUNK_CELLS, h: CHUNK_CELLS });
       }
     },
 
-    /** Brush ring drawn by the terrain shader. @param {{ x?: number, z?: number, radius?: number, visible: boolean }} r */
+    /** Chunks holding a cliff face: `has(cx, cz)`, and `version` that moves when the set changes. */
+    cliffs,
+
+    /**
+     * The shelf a Terrace or Cut stroke started here would make (for the level line under the ring).
+     * @param {Brush} brush @param {ArrayLike<number>} point world xyz
+     */
+    cliffLevelAt(brush, point) {
+      const kind = brush.kind === 'cut' ? 'cut' : 'terrace';
+      return cliffLevel(sampleHeight(mirror.heightF, point[0], point[2]), kind, brush.height ?? recipe.cliff.heightDefault, recipe.cliff, !!brush.sea);
+    },
+
+    /** The level of the live Terrace or Cut stroke, or null. */
+    strokeLevel: () => (stroke && stroke.mode === CLIFF_MODE ? stroke.target : null),
+
+    /** Brush ring drawn by the terrain shader; `level` adds the shelf's level line. @param {{ x?: number, z?: number, radius?: number, visible: boolean, level?: number | null }} r */
     setRing(r) {
       Object.assign(ring, r);
     },
@@ -324,6 +352,8 @@ export async function createTerrain(gpu, opts) {
       stroke = null;
       if (!st.rect) { st.resolve(null); return; }
       const r = grow(st.rect, st.mode === 3 ? 0 : marginCells);
+      // Faces a Cliff stroke made turn to rock first, so erosion keeps them sheer (docs/08).
+      if (st.mode === CLIFF_MODE) brushGpu.encodeCliffRock(encoder, grow(st.rect, 1), recipe.cliff);
       if (st.mode !== 3) erosionGpu.encode(encoder, r, opts.passTimer?.('terrain-erosion'));
       pending = { st, rect: r, readback: encodeReadback(device, encoder, tex, r) };
     },

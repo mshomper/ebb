@@ -32,14 +32,14 @@
     },
     "trickle": {
       "layer": "trickle", "seasonal": false, "fallback": "trickle",
-      "gainDb": [{ "bySeason": [2, -3, 0, 0] }, { "in": "height", "pts": [[1, 0], [8, -8], [40, -20]] }],
+      "gainDb": [{ "bySeason": [2, -3, 0, 0] }, { "in": "height", "pts": [[1, 0], [8, -8], [40, -20]] }, { "in": "fallLoud", "pts": [[0, 0], [0.5, -4]] }],
       "amount": [{ "in": "slow", "pts": [[0, 0], [0.2, 0.5], [1, 1]] }],
       "params": { "amount": { "sum": [0.3, { "in": "slow", "pts": [[0, 0], [1, 0.6]] }] } },
       "lowpassHz": { "in": "height", "pts": [[1, 18000], [10, 5000], [40, 2000]], "log": true }
     },
     "run": {
       "layer": "run", "seasonal": false, "fallback": "run",
-      "gainDb": [{ "bySeason": [2, -3, 0, 0] }, { "in": "height", "pts": [[1, 0], [10, -6], [50, -14]] }],
+      "gainDb": [{ "bySeason": [2, -3, 0, 0] }, { "in": "height", "pts": [[1, 0], [10, -6], [50, -14]] }, { "in": "fallLoud", "pts": [[0, 0], [0.5, -4]] }],
       "amount": [{ "in": "running", "pts": [[0, 0], [0.15, 0.5], [1, 1]] }],
       "params": { "amount": { "sum": [{ "bySeason": [0.9, 0.5, 0.65, 0.65] }, { "in": "rain", "pts": [[0, 0], [1, 0.1]] }] } },
       "lowpassHz": { "in": "height", "pts": [[1, 16000], [12, 4000], [50, 1800]], "log": true }
@@ -119,6 +119,23 @@
       "drizzle": { "rampS": 4, "fadeInS": 3, "noise": { "highpassHz": 2500, "peak": { "hz": 6000, "q": 0.7, "db": 3 }, "lowpassHz": 12000, "db": -12, "rate": 1.43, "wanderPeriodS": 30, "wanderLevel": 0.15 }, "drops": { "ratePerS": [0, 1.5], "sizeMm": [0.8, 1.5], "jitterDb": [-16, -4], "db": -6, "lowpassHz": 9000 } }
     },
     "run": { "band": { "hz": 900, "q": 0.6, "lowpassHz": 6000, "db": -6, "rate": 1.07, "wanderPeriodS": 18, "wanderCents": 300 }, "bubbles": [0.4, 1] }
+  },
+  "falls": {
+    "note": "Waterfalls (src/audio/ambience/falls.js; M2 Cliff tool, docs/07). The game passes the falls nearest the camera target (audio/game.json falls); each of up to `voices` gets a voice placed where it falls, made in code. Loudness: a fall's power is flow (m3/s) x height (m); at refPowerM4s it plays at dbAtRef, 10 dB per tenfold, held within dbRange. Distance from the camera target: full within distance.refM, then refM / d, fading to silence from fadeFromM to reachM; heightDb dims it as the camera rises, like the beds. air: the dulling with the eye's distance (spatial.js). Layers: hiss, pink noise above highpassHz through a band of quality q that rises from hz[0] for a drop of heightM[0] to hz[1] for heightM[1], at db; roar, slower pink noise (rate) under lowpassHz, its tone wandering wanderCents over wanderPeriodS, at db times a share that grows with power from fromPowerM4s[0] to [1], so only big falls rumble; splash, the procedural trickle's bubbles at amount[0] for a small fall to amount[1] for a big one. surge: the whole fall swells by depth over periodS. A voice keeps to its fall while the fall stays within matchM of where it was; changes glide over rampS; a voice with no fall for idleStopS stops. The stream beds (trickle and run) dip under a loud fall (gainDb `fallLoud`, the loudest fall's level at the target, 1 = dbAtRef).",
+    "voices": 3,
+    "refPowerM4s": 0.05,
+    "dbAtRef": 0,
+    "dbRange": [-24, 3],
+    "distance": { "refM": 3, "fadeFromM": 25, "reachM": 40 },
+    "heightDb": { "in": "height", "pts": [[1, 0], [12, -5], [60, -14]] },
+    "air": { "nearM": 2, "nearHz": 18000, "farM": 60, "farHz": 3000 },
+    "hiss": { "rate": 1.0, "highpassHz": 300, "hz": [1300, 3400], "heightM": [0.8, 6], "q": 0.55, "db": -4 },
+    "roar": { "rate": 0.55, "lowpassHz": 380, "wanderCents": 350, "wanderPeriodS": 7, "db": -2, "fromPowerM4s": [0.004, 0.12] },
+    "splash": { "amount": [0.9, 0.4] },
+    "surge": { "periodS": 3.5, "depth": 0.12 },
+    "matchM": 3,
+    "rampS": 0.8,
+    "idleStopS": 8
   },
   "oneShots": {
     "lookAheadS": 0.15,

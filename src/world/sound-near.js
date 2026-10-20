@@ -17,11 +17,12 @@ import { HABITAT_CELLS, HABITAT_ORIGIN } from './growth/habitat.js';
  * @typedef {Object} SoundNear
  * @property {{still: number, slow: number, running: number}} waterNear  0..1 pond, slow stream, running stream
  * @property {{water: number, pads: number, reeds: number, grass: number}} surfaceNear  0..1 (water includes the sea)
+ * @property {import('./falls-near.js').FallNear[]} falls  waterfalls near, nearest first (src/world/falls-near.js; the game fills it)
  */
 
 /** Nothing near: before the first water summary. @returns {SoundNear} */
 export function nothingNear() {
-  return { waterNear: { still: 0, slow: 0, running: 0 }, surfaceNear: { water: 0, pads: 0, reeds: 0, grass: 0 } };
+  return { waterNear: { still: 0, slow: 0, running: 0 }, surfaceNear: { water: 0, pads: 0, reeds: 0, grass: 0 }, falls: [] };
 }
 
 /**

@@ -5,9 +5,10 @@
 import { SaveError } from './world-file.js';
 import { calendar14 } from './migrate-calendar.js';
 import { naturalist3 } from './migrate-naturalist.js';
+import { cliffs4 } from './migrate-cliffs.js';
 
 /** The data schema this build writes. */
-export const FORMAT = 3;
+export const FORMAT = 4;
 
 /**
  * Ordered steps, each from one format to the next.
@@ -16,6 +17,7 @@ export const FORMAT = 3;
 export const MIGRATIONS = [
   { from: 1, to: 2, note: '14-day seasons: same year, season and time of day; day d becomes 2d (src/save/migrate-calendar.js)', up: calendar14 },
   { from: 2, to: 3, note: "the naturalist's notes: shells become the first reward; an island that found them, or three kinds of finds, keeps them (src/save/migrate-naturalist.js)", up: naturalist3 },
+  { from: 3, to: 4, note: "the frogs' gift is the Cliff tool: an island whose frogs gave their gift (lilies, then) keeps Terrace and Cut (src/save/migrate-cliffs.js)", up: cliffs4 },
 ];
 
 /**

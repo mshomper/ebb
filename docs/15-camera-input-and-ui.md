@@ -92,7 +92,7 @@ Corners and the bottom edge only; the island stays centered. The HUD dims to 40 
 - **Clock dial** (top left): a drawn sun and moon on an arc, a four-segment season ring, a small wave showing tide rising or falling. Hover or tap shows a sentence: "Spring, day 3, early evening. Tide coming in."
 - **Top right:** journal, photo, settings. **Bottom left:** undo, redo, and above them gentle notes ("A frog has settled by the reeds.") in Fraunces italic that fade after 6 s and open the journal entry when clicked. **Bottom right:** time flow with drawn pips (one, two, three) or rest bars for pause.
 - **Brush size** shows as a soft ring on the terrain; phones add a short vertical size slider.
-- **Gift card:** on `progress:gifted`, a small cream card with a pressed-flower drawing and one Fraunces line ("The frogs left you a water lily seed") fades in above the palette for 8 s. Gifts earned while away appear only as reveal notes.
+- **Gift card:** on `progress:gifted`, a small cream card with a pressed-flower drawing and one Fraunces line ("A gift from the frogs: you can build terraces and cut cliffs now") fades in above the palette for 8 s. Gifts earned while away appear only as reveal notes.
 
 Desktop:
 
@@ -166,10 +166,13 @@ export function createOrbitCamera(opts) {} // {update(dt), view, proj, eye, foll
 export const TOOL_GROUPS = { land:['sculpt','smooth','paint','cliff'], water:['water','stream','tide-stone'],
   life:['seed'], build:['path','wall','bridge','lantern','drift-log'], creatures:['call','feed'] };
 // a tool shows only when progression lists it as unlocked
-// 'cliff' (M2) is unlocked from the start of play; its brush card holds Terrace and Cut chips
+// The Cliff tool (M2) is the frogs' gift (doc 12): its chips show once `unlocks.cliffs` is true,
+// or with ?sandbox or ?cliffs. As built it is not a tool button of its own: Terrace and Cut are
+// Sculpt chips five and six (three to a row), so the bar stays at six buttons, which a 375 px
+// phone fits (a seven-button bar was cut off there before). Before the gift the card shows four.
 ```
 
-**Cliff tool input** (M2, `08-terrain-and-sculpt.md`). Desktop: a click sets the shelf level, left drag builds (Terrace) or carves (Cut), and Shift snaps the level to sea level. Touch: a tap sets the level, a one-finger drag builds or carves, and two fingers still move the camera. While the tool is active, a faint level plane shows the shelf height under the ring.
+**Cliff input** (M2, `08-terrain-and-sculpt.md`; from the frogs' gift). Desktop: left drag builds (Terrace) or carves (Cut) a shelf at the ground where the drag starts plus or minus the Height slider, and Shift at the start levels to sea level. Touch: a one-finger drag builds or carves, and two fingers still move the camera. In these modes the card swaps Strength for Height (0.25 to 3 m in 0.25 m steps) and shows a one-line hint. While hovering or dragging, a thin line under the ring marks where the ground meets the shelf's level.
 
 Events (past tense, per 03-tech-stack-and-module-map.md) emitted: `tool:selected`, `camera:follow-started`, `camera:follow-ended`, `ui:panel-opened`, `ui:panel-closed`, `note:posted`. Listened to: `land:joined`, `progress:gifted`, `creature:settled`, `creature:left`, `species:moved-on`, `journal:page-updated`, `reveal:started`, `reveal:note-shown`, `reveal:ended`, `clock:hour`.
 
@@ -182,7 +185,8 @@ One `<symbol id="i-NAME" viewBox="0 0 24 24">` per icon: 24 px grid, 2 px paddin
 | sculpt | trowel lifting a soft mound |
 | smooth | flat float over a wavy line that straightens |
 | paint | round brush with a leaf-shaped dab |
-| cliff | chisel edge over a stepped ground profile (M2) |
+| terrace | a level shelf raised on a sheer face with rock bands, an up stroke above (M2, Sculpt chip) |
+| cut | a notch carved into the ground with sheer walls, the cut-away top dotted, a down stroke (M2, Sculpt chip) |
 | water | droplet over one ripple line |
 | seed | split seed with two first leaves |
 | path | three stepping stones on a curve |
@@ -197,7 +201,7 @@ One `<symbol id="i-NAME" viewBox="0 0 24 24">` per icon: 24 px grid, 2 px paddin
 | settings | three horizontal sliders with knobs |
 | undo / redo | curved arrow left; mirrored |
 
-Support icons in the same style: close, back, check, follow, name tag, hide HUD, the five group icons, the five journal section icons (species, moments, away notes, map, year), and the gifted tools (stream, tide stone, drift log, night photo).
+Support icons in the same style: close, back, check, follow, name tag, hide HUD, the five group icons, the five journal section icons (species, moments, away notes, map, year), and the gifted tools (cliffs, stream, carry a log, tide stone, night photo).
 
 ## Algorithms and shaders
 
