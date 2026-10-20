@@ -51,7 +51,8 @@ import { createPresence } from './world/creatures/presence.js';
 import { cleanName, nameFrog } from './world/creatures/trust.js';
 import { lushLook } from './world/growth/lush.js';
 import { createMidges } from './world/ecology/midges-live.js';
-import { SPECIES, keyOf } from './world/species.js';
+import { SPECIES, keyOf, swarmSpecies } from './world/species.js';
+import { createSchools } from './world/creatures/schools.js';
 import { bringSwarm, testRecipe } from './world/creatures/swarms.js';
 import { onAction, history } from './input/actions.js';
 import { attachDesktopInput } from './input/desktop.js';
@@ -306,6 +307,11 @@ export async function startApp(canvas, hooks = {}) {
   const presence = createPresence({ camera });
   const creatures = createCreatures({ world, recipe: frogRecipe, terrain, water, ripples, camera, testFrogs, flora, floraFrame: () => floraFrame, presence });
   sim.addSystem(creatures);
+  // Schools you can see (src/world/creatures/schools.js): minnows under the live water surface, one
+  // system and one pass per species that has a body and a school's motion.
+  const schools = swarmSpecies(speciesRecipes).filter((rec) => rec.body && rec.motion)
+    .map((rec) => createSchools({ world, recipe: rec, water, ripples, camera, presence, budget: tierSettings.liveCreatures ?? 120 }));
+  for (const s of schools) sim.addSystem(s);
   // `?minnows=N`, `?dragonflies=N` (testing, unsaved): a group of N comes at once and is settled,
   // once the island, its water and the journal are up (as `?frogs` does).
   const testSwarms = ['minnow', 'dragonfly'].filter((id) => params.has(keyOf(speciesRecipes[id])))
@@ -330,7 +336,8 @@ export async function startApp(canvas, hooks = {}) {
     rain: (hoursAgo) => weatherAt(world.state?.weather, clock.display() - hoursAgo * clock.SECONDS_PER_HOUR, seasonsRecipe).rain });
   sim.addSystem(midges);
   // What the animals do that can be heard (src/audio reads it): frog calls and plops, midge swarms.
-  updateStore('creatureSound', () => ({ frogs: (/** @type {number} */ since) => creatures.sounds(since), swarms: () => midges.heard() }));
+  updateStore('creatureSound', () => ({ frogs: (/** @type {number} */ since) => creatures.sounds(since), swarms: () => midges.heard(),
+    schools: () => schools.flatMap((s) => s.heard()) }));
   // Finds (docs/future/11): anemones in rock pools, periwinkles on the wrack, lugworm casts on the
   // sand, where the shore zones say, near the view; a tap finds them for the journal.
   // `?shells=rare` or `?shells=<id>` (testing, unsaved): the strandline is thick with those shells,
@@ -396,6 +403,7 @@ export async function startApp(canvas, hooks = {}) {
     rushPass,
     floraPass,
     creatures.pass,
+    ...schools.map((s) => s.pass),
     finds.pass,
     ...(frogScale ? [frogScale.pass] : []),
     waterPass,
@@ -466,6 +474,7 @@ export async function startApp(canvas, hooks = {}) {
     if (shadowPass.setTier(tierSettings.shadows, gpu.device, tierSettings.cliffDetailM)) lighting.setShadow(shadowPass.resources(gpu.device));
     if (bloom.setLevels(tierSettings.bloomLevels)) graph.invalidate();
     midges.setBudget(tierSettings.boids ?? 4096);
+    for (const s of schools) s.setBudget(tierSettings.liveCreatures ?? 120);
     live.setTier(t, tierSettings, keepScale);
     if (lastEntry) sizeCanvas(lastEntry);
     updateStore('settings', (s) => { s.quality = t; });
@@ -957,7 +966,9 @@ export async function startApp(canvas, hooks = {}) {
     /** The shore zones and rock pools now (the journal's Web shows which are on the island). */
     shorePresence: () => shorePresence(ww.shore.zones(), water.getSummary(), getStore('terrainLive')?.mirror?.material ?? null),
     /** Every live animal system's hooks for the reveal on return (src/ui/reveal.js). */
-    animals: [creatures.reveal, midges.reveal],
+    animals: [creatures.reveal, midges.reveal, ...schools.map((s) => s.reveal)],
+    /** The live schools (minnows), the journal asks them what a tap landed on. */
+    schools,
     /** The live midge swarms (tools). */
     midges,
     presence,

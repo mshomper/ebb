@@ -38,7 +38,10 @@ import { stampNotes, markShown, markNotesSeen, markPageSeen, readOf, pageSince, 
 /**
  * @param {{ world: { state: any, env: any }, words: any, island: any, web: any, wash?: any,
  *   creatures?: { frogAt: (x: number, z: number) => { x: number, z: number, id?: number } | null } | null,
- *   finds?: any, shore?: (() => Record<string, number> | null) | null, list?: any }} opts
+ *   finds?: any, shore?: (() => Record<string, number> | null) | null, list?: any,
+ *   schools?: { at: (x: number, z: number) => { sp: string, id: number, x: number, z: number } | null }[] }} opts
+ *   schools: the live schools (minnows; src/world/creatures/schools.js), which say whether a tap
+ *   landed on one
  *   world: the live world (state and env of the hourly tick); words: recipes/world/journal.json;
  *   island: recipes/world/journal-island.json; web: recipes/world/journal-web.json;
  *   wash: recipes/world/journal-wash.json; creatures: the live creatures (src/world/creatures),
@@ -122,6 +125,12 @@ export function createJournal(opts) {
     // A frog first: they are small, and finding one is the point.
     const frog = creatures?.frogAt(x, z);
     if (frog) return frogCard(frog, world.state, words, world.env.recipes?.species?.frog?.presence);
+    // Then a school (minnows): small and quick, and found by looking closely too.
+    for (const s of opts.schools ?? []) {
+      const hit = s.at(x, z);
+      const rec = hit && words.species[hit.sp];
+      if (rec) return { sp: hit.sp, name: rec.card ?? rec.name, sub: null, icon: rec.icon, text: rec.stages?.[0] ?? '', wx: hit.x, wz: hit.z, r: 0.6, stage: -1 };
+    }
     // Then a find (docs/future/11): smaller still, and found by looking closely.
     const fd = finds?.findAt(x, z);
     const fr = fd && words.species[fd.sp];

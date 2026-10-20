@@ -6,6 +6,7 @@
 import { runHour, hashWorldState } from '../src/sim/tick.js';
 import { initialJournal, observe, foundAnimal } from '../src/world/journal/observe.js';
 import { due, grant } from '../src/world/expansion.js';
+import { createSchool } from '../src/world/creatures/school.js';
 import { needMaps, waterBodies } from '../src/world/ecology/needs.js';
 import { openBox } from '../src/world/ecology/fields.js';
 import { seasonsAt } from '../src/world/seasons.js';
@@ -231,6 +232,38 @@ export function addPondLifeTests(test, assert, eq) {
     eq(g.length, 1, 'gifts due');
     eq(JSON.stringify(g[0].give), JSON.stringify({ seeds: { pondweed: true } }), 'what it gives');
     eq(due({ found: 0, flags: ['minnows:happy'], earned: grant({}, g[0]), rewards: [], gifts, words, giftWords: naturalist.gifts }).length, 0, 'gifts due after it was given');
+  });
+
+  test(G, 'a live school stays in the water, between the bed and the surface, and moves the same way twice', async () => {
+    const M = (await (await fetch('../recipes/species/minnow.json')).json()).motion;
+    // A round pond 4 m across, 1 m deep in the middle, its surface at 0.
+    const water = (/** @type {number} */ x, /** @type {number} */ z) => { const r2 = (x * x + z * z) / 4; return { surface: 0, depth: Math.max(0, 1 - r2) }; };
+    const make = () => createSchool({ id: 1, seed: 7, count: 20, home: { x: 0.5, z: 0 }, deep: { x: 0, z: 0 }, size: 1.5, M, env: { water } });
+    const a = make(), b = make();
+    let worst = 0, rings = 0;
+    const c = createSchool({ id: 1, seed: 7, count: 20, home: { x: 0.5, z: 0 }, deep: { x: 0, z: 0 }, size: 1.5, M, env: { water, ring: () => { rings++; } } });
+    for (let i = 0; i < 30 * 60; i++) {
+      a.step(1 / 30); b.step(1 / 30); c.step(1 / 30);
+      for (const f of a.fish) {
+        const w = water(f.x, f.z);
+        assert(w.depth >= M.minDepthM * 0.5 - 1e-9, `a fish at depth ${w.depth.toFixed(3)} m`);
+        assert(f.y <= w.surface && f.y >= w.surface - w.depth, `a fish out of the water (y ${f.y.toFixed(3)})`);
+        worst = Math.max(worst, Math.hypot(f.x, f.z));
+      }
+    }
+    eq(a.fish.map((f) => f.x.toFixed(6)).join(), b.fish.map((f) => f.x.toFixed(6)).join(), 'the same seed, the same school');
+    assert(rings >= 2, `rises that rang the water in a minute: ${rings}`);
+    // A startle sends them to the deep spot, faster than they cruise.
+    const d = createSchool({ id: 2, seed: 7, count: 12, home: { x: 1.2, z: 0 }, deep: { x: -0.9, z: 0 }, size: 1.5, M, env: { water } });
+    for (let i = 0; i < 30 * 5; i++) d.step(1 / 30);
+    d.startle();
+    let fast = 0;
+    for (let i = 0; i < 30 * 4; i++) { d.step(1 / 30); fast += d.fish.reduce((s, f) => s + Math.hypot(f.vx, f.vz), 0) / d.fish.length; }
+    fast /= 30 * 4;
+    const c2 = d.centre();
+    assert(Math.hypot(c2.x + 0.9, c2.z) < 0.8, `the startled school is ${Math.hypot(c2.x + 0.9, c2.z).toFixed(2)} m from the deep spot`);
+    assert(fast > 2 * M.cruiseMps, `darting at ${fast.toFixed(2)} m/s`);
+    return `a minute of swimming, farthest fish ${worst.toFixed(2)} m from the middle, ${rings} rises`;
   });
 
   test(G, 'the species list knows every recipe by its world key', async () => {
