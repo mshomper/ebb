@@ -749,3 +749,100 @@ button.ebb-jnotes__row:hover { background: rgba(30, 38, 36, 0.06); }
 :root.ebb-motion-calm .ebb-journal,
 :root.ebb-motion-calm .ebb-journal.is-open { transform: none; transition: opacity 120ms ease, visibility 0s; }
 :root.ebb-motion-calm .ebb-notes__note { transform: none; transition: opacity 200ms ease; }
+
+/* The naturalist's notes (src/ui/journal.js, src/world/expansion.js). In Small lives, one row that
+   opens its page; the page is a trail down the paper: a line on the left with a stop per row and
+   the words beside it, so nothing crosses and nothing wraps sideways at any width. Ink for what is
+   found and given; past the last find, pencil, as far as the next reward. */
+.ebb-nat-entry {
+  appearance: none; -webkit-appearance: none;
+  display: flex; align-items: center; gap: 12px; width: 100%; margin: 4px 0 12px; padding: 10px 12px;
+  border: 1px solid var(--jr-rule); border-radius: 12px; background: var(--jw-small-card); color: var(--jr-ink);
+  text-align: left; cursor: pointer; font: inherit;
+}
+.ebb-nat-entry:hover { border-color: var(--jw-small-line); }
+.ebb-nat-entry__icon { flex: 0 0 auto; display: inline-flex; width: 36px; height: 36px; padding: 6px; box-sizing: border-box; border-radius: 8px; background: var(--jw-small-wash); color: var(--jw-small-ink); }
+.ebb-nat-entry__icon .icon { width: 100%; height: 100%; }
+.ebb-nat-entry .ebb-jlist__text { flex: 1 1 auto; min-width: 0; }
+.ebb-nat-entry__chev { flex: 0 0 auto; width: 20px; height: 20px; transform: rotate(-90deg); color: var(--jr-soft); }
+
+.ebb-trail__title { margin: 4px 0 2px; font-family: var(--font-voice); font-style: italic; font-weight: 400; font-size: calc(24px * var(--text-scale, 1)); color: var(--jr-ink); }
+.ebb-trail__intro { margin: 0 0 14px; color: var(--jr-soft); }
+.ebb-trail__list { list-style: none; margin: 0; padding: 0; }
+.ebb-trail__stop { position: relative; }
+/* The trail: a line down the stops' column, from the middle of this stop to the middle of the next. */
+.ebb-trail__stop::before {
+  content: ''; position: absolute; left: 25px; top: 28px; height: 100%; width: 0;
+  border-left: 1.75px solid var(--jr-ink);
+}
+.ebb-trail__stop.is-last::before { display: none; }
+.ebb-trail__stop:has(+ .is-gap)::before, .ebb-trail__stop:has(+ .is-pencil)::before, .ebb-trail__stop.is-gap::before { border-left-style: dashed; border-left-color: var(--jr-pencil); }
+.ebb-trail__row {
+  appearance: none; -webkit-appearance: none; position: relative; z-index: 1;
+  display: flex; align-items: center; gap: 14px; width: 100%; min-height: 56px; margin: 0; padding: 4px 0;
+  border: 0; background: none; color: var(--jr-ink); text-align: left; font: inherit;
+}
+button.ebb-trail__row { cursor: pointer; }
+button.ebb-trail__row:hover b { text-decoration: underline; text-decoration-color: var(--jr-rule); }
+.ebb-trail__dot {
+  flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center;
+  width: 38px; height: 38px; margin: 0 7px; box-sizing: border-box; border-radius: 50%;
+  border: 1.75px solid var(--jr-ink); background: var(--jr-paper); color: var(--jr-ink);
+}
+.ebb-trail__dot .icon { width: 24px; height: 24px; }
+.ebb-trail__text { display: flex; flex-direction: column; gap: 2px; min-width: 0; overflow-wrap: break-word; }
+.ebb-trail__text b { font-weight: 800; font-size: calc(16px * var(--text-scale, 1)); }
+.ebb-trail__text small { font-size: calc(15px * var(--text-scale, 1)); color: var(--jr-pencil); }
+/* A gap: a small pencil ring on the trail, nothing beside it. */
+.ebb-trail__stop.is-gap { height: 36px; }
+.ebb-trail__stop.is-gap::before { top: 18px; }
+.ebb-trail__stop.is-gap .ebb-trail__dot { position: absolute; left: 15px; top: 7px; width: 22px; height: 22px; margin: 0; border: 1.5px dashed var(--jr-pencil); }
+/* A reward: a larger square stop, with a soft wash once given. */
+.ebb-trail__stop.is-station::before { top: 36px; }
+.ebb-trail__stop.is-station .ebb-trail__row { min-height: 72px; }
+.ebb-trail__stop.is-station .ebb-trail__dot { width: 52px; height: 52px; margin: 0; border-radius: 12px; background: var(--jw-small-wash); }
+.ebb-trail__stop.is-station .ebb-trail__dot .icon { width: 32px; height: 32px; }
+.ebb-trail__stop.is-pencil .ebb-trail__dot { border-style: dashed; border-color: var(--jr-pencil); color: var(--jr-pencil); background: var(--jr-paper); }
+.ebb-trail__stop.is-pencil .ebb-trail__text .ebb-journal__voice { color: var(--jr-pencil); }
+@media (max-width: 699px) {
+  .ebb-trail__text small { font-size: calc(16px * var(--text-scale, 1)); }
+}
+
+/* A gift's card (src/ui/island-notes.js): cream paper, low in the middle, fading in and out. */
+.ebb-gift {
+  appearance: none;
+  -webkit-appearance: none;
+  position: fixed;
+  z-index: 11;
+  left: 50%;
+  bottom: calc(max(var(--jr-edge), env(safe-area-inset-bottom)) + var(--jr-btn) + 96px);
+  width: min(420px, calc(100vw - 2 * var(--jr-edge) - 8px));
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 18px;
+  margin: 0;
+  border: 1px solid var(--jr-rule);
+  border-radius: 14px;
+  background: var(--jr-paper);
+  color: var(--jr-ink);
+  text-align: left;
+  cursor: pointer;
+  opacity: 0;
+  transform: translate(-50%, 8px);
+  transition: opacity 800ms ease, transform 800ms ease;
+  box-shadow: 0 6px 24px rgba(30, 38, 36, 0.18);
+}
+.ebb-gift.is-shown { opacity: 1; transform: translate(-50%, 0); }
+/* Desktop with the journal open: the card keeps to the island's side of the panel. */
+@media (min-width: 700px) {
+  :root.ebb-journal-open .ebb-gift { left: calc((100vw - 440px - var(--jr-edge)) / 2); width: min(420px, calc(100vw - 440px - 3 * var(--jr-edge))); }
+}
+.ebb-gift__icon { flex: 0 0 auto; display: inline-flex; width: 44px; height: 44px; color: var(--jr-ink); }
+.ebb-gift__icon .icon { width: 100%; height: 100%; }
+.ebb-gift__text { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.ebb-gift__text b { font-family: var(--font-ui); font-weight: 800; font-size: calc(17px * var(--text-scale, 1)); line-height: 1.25; }
+.ebb-gift__text .ebb-journal__voice { font-size: calc(16px * var(--text-scale, 1)); line-height: 1.35; color: var(--jr-soft); overflow-wrap: break-word; }
+.ebb-gift:focus-visible { outline: 2px solid var(--wordmark-dark); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { :root:not(.ebb-motion-full) .ebb-gift { transition: opacity 300ms ease; transform: translate(-50%, 0); } }
+:root.ebb-motion-calm .ebb-gift { transition: opacity 300ms ease; transform: translate(-50%, 0); }

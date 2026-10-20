@@ -25,6 +25,8 @@ import { loadFindModel, joinParts } from '../src/world/finds/models.js';
 import { shutAnemone } from '../src/world/finds/index.js';
 import { loadRig, posedMesh } from '../src/world/finds/rig.js';
 import { legRig, legBones } from '../src/world/finds/leg-rig.js';
+import { proceduralMeshes } from '../src/world/finds/procedural.js';
+import { musselPair, musselBones } from '../src/world/finds/mussel.js';
 
 const recipe = await (await fetch('../recipes/species/finds.json')).json();
 const names = await (await fetch('../recipes/world/journal.json')).json();
@@ -67,12 +69,35 @@ for (const [id, K] of Object.entries(recipe.kinds)) {
     views.push({ name: `${name}, running`, mesh: pose(0), h: M.heightM, pose, rate: 2 * Math.PI * M.legs.stepHz });
     continue;
   }
+  if (M.pair) {
+    // The mussel: its one valve mirrored into the pair (mussel.js), gaping slowly open and shut.
+    const pr = musselPair(joinParts(parts, M.heightM, M.rotDeg, (p) => p, M.tint));
+    const half = pr.mesh.count / 2, base = pr.mesh;
+    const pose = (/** @type {number} */ ph) => {
+      const B = musselBones(pr.hinge, ((0.5 - 0.5 * Math.cos(ph)) * M.gapeDeg * Math.PI) / 180), v = new Float32Array(base.vertices);
+      for (let i = half; i < base.count; i++) {
+        const p = [base.vertices[i * 9], base.vertices[i * 9 + 1], base.vertices[i * 9 + 2]];
+        for (let r = 0; r < 3; r++) v[i * 9 + r] = B[16 + r] * p[0] + B[20 + r] * p[1] + B[24 + r] * p[2] + B[28 + r];
+      }
+      return { ...base, vertices: v };
+    };
+    views.push({ name: `${name}, the pair gaping`, mesh: pose(0), h: M.heightM, pose, rate: 1.2 });
+    continue;
+  }
   views.push({ name: id === 'anemone' ? `${name}, open` : name, mesh: joinParts(parts, M.heightM, M.rotDeg, (p) => p, M.tint), h: M.heightM, bury: M.buryM });
   if (id === 'anemone') {
     let top = 0;
     for (let i = 0; i < parts[M.bodyPart].count; i++) top = Math.max(top, parts[M.bodyPart].vertices[i * 9 + 1]);
     views.push({ name: `${name}, shut`, mesh: joinParts(parts, M.heightM, M.rotDeg, (p, k) => shutAnemone(p, k, M.bodyPart, top, M.shut), M.tint), h: M.heightM, bury: M.buryM });
   }
+}
+// The finds built from numbers, with no model file (procedural.js).
+const built = proceduralMeshes(recipe);
+const tall = (m) => { let h = 0; for (let i = 0; i < m.count; i++) h = Math.max(h, m.vertices[i * 9 + 1]); return h; };
+for (const [key, mesh] of Object.entries(built)) {
+  const [id, pose] = key.split('-');
+  const name = (names.species?.[id]?.name ?? id) + (pose ? `, ${pose}` : '');
+  views.push({ name: `${name} <span class="muted">(built)</span>`, mesh, h: tall(mesh), bury: recipe.kinds[id].buryM });
 }
 const toSrgb = (c) => Math.round(255 * Math.min(1, c <= 0.0031308 ? c * 12.92 : 1.055 * c ** (1 / 2.4) - 0.055));
 for (const v of views) {

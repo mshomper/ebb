@@ -364,13 +364,14 @@ export function addJournalTests(test, assert, eq) {
     const kinds = /^(grows|seen|seenOn|here|mossOnRock|flag)$/;
     for (const l of web.links) {
       assert(web.nodes[l.a] && web.nodes[l.b], `${l.a} > ${l.b} joins two nodes`);
-      assert(kinds.test(l.ink.split(':')[0]), `${l.a} > ${l.b} has a known trigger`);
+      assert(l.ink.split('&').every((/** @type {string} */ part) => kinds.test(part.split(':')[0])), `${l.a} > ${l.b} has a known trigger`);
       assert(l.note, `${l.a} > ${l.b} has a note`);
     }
     // Ties true to the game (recipes/species/finds.json zones).
     const finds = await fetch('../recipes/species/finds.json').then((r) => r.json());
     const needs = (/** @type {string} */ b) => web.links.filter((/** @type {any} */ l) => l.b === b).map((/** @type {any} */ l) => l.a);
-    const zoneNode = (/** @type {string} */ z) => (z === 'channelled' ? 'wrack' : z);
+    // Channelled wrack shares the wrack node; a pond (still fresh water) is the fresh water node.
+    const zoneNode = (/** @type {string} */ z) => (z === 'channelled' ? 'wrack' : z === 'pond' ? 'fresh' : z);
     for (const [sp, k] of Object.entries(finds.kinds)) {
       for (const z of /** @type {any} */ (k).zones) assert(needs(sp).includes(zoneNode(z)), `${sp} needs ${zoneNode(z)}, where the game puts it`);
     }
