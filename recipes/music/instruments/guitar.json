@@ -3,7 +3,7 @@
  "id": "guitar",
  "name": "Nylon-string guitar",
  "version": 1,
- "note": "An instrument recipe for the sampler (doc 24). A classical (nylon-string) guitar, plucked, not looped. Each file is one pluck cut from the Iowa MIS chromatic runs: trimmed to 3 ms before the onset, resampled from 96 kHz to 48 kHz, cut at the next pluck less 20 ms or at 4 s, whichever comes first, with a 250 ms equal-power fade to silence, as the harp. No gain change. Mono. formats: <file>.ogg is Ogg Opus 56 kbps mono (variable bitrate), <file>.m4a is AAC-LC 80 kbps mono. Zone fields as in harp.json: measuredCents is the zone's pitch against 12-TET at A4 = 440 Hz, fitted from partials 1 to 6 of the louder layer; tuneConfidence 0 to 1; string and fret say where it was played. layers: v1 is pp, v2 is mf (the library's ff is not used: the game plays the guitar softly). Tools: tools/audio-prep/guitar/ (prep.py, build.py).",
+ "note": "An instrument recipe for the sampler (doc 24). A classical (nylon-string) guitar, plucked, not looped. Each file is one pluck cut from the Iowa MIS chromatic runs: trimmed to 3 ms before the onset, resampled from 96 kHz to 48 kHz, cut at the next pluck less 20 ms or at 4 s, whichever comes first, with a 250 ms equal-power fade to silence, as the harp. No gain change. Mono. formats: <file>.ogg is Ogg Opus 56 kbps mono (variable bitrate), <file>.m4a is AAC-LC 80 kbps mono. Zone fields as in harp.json: measuredCents is the zone's pitch against 12-TET at A4 = 440 Hz, fitted from partials 1 to 6 of the louder layer; tuneConfidence 0 to 1; string and fret say where it was played. layers: v1 is pp, v2 is mf, v3 is ff (brighter and cleaner, for a melody's accented notes; Matt, October 20, 2026). Tools: tools/audio-prep/guitar/ (prep.py, build.py).",
  "source": {
   "library": "University of Iowa Electronic Music Studios, Musical Instrument Samples (MIS): Guitar",
   "url": "https://theremin.music.uiowa.edu/MISguitar.html",
@@ -16,27 +16,28 @@
   "m4a"
  ],
  "root": "assets/audio/instruments/guitar/",
- "layers": 2,
+ "layers": 3,
  "sets": {
   "pluck": {
-   "source": "Guitar.mono.2496 chromatic runs, pp and mf",
+   "source": "Guitar.mono.2496 chromatic runs, pp, mf and ff",
    "zones": [
     {
      "note": "E2",
      "midi": 40,
-     "measuredCents": -42.66,
-     "tuneConfidence": 0.55,
-     "tuneResidualCents": 1.97,
+     "measuredCents": -40.26,
+     "tuneConfidence": 0.31,
+     "tuneResidualCents": 2.09,
      "tunePartials": [
       2,
+      3,
       4,
       5,
       6,
       7,
       8
      ],
-     "tuneLayer": 2,
-     "layerSpreadCents": 1.35,
+     "tuneLayer": 3,
+     "layerSpreadCents": 3.75,
      "string": "low E",
      "fret": 0,
      "layers": [
@@ -63,23 +64,37 @@
        "endReason": "max length",
        "src": "Guitar.mf.sulE.E2B2.aif (pluck at 0.09 s)",
        "channels": 1
+      },
+      {
+       "file": "pluck/E2-v3",
+       "layer": 3,
+       "peakDb": -13.56,
+       "attackRmsDb": -23.87,
+       "lenS": 4.0,
+       "trimStartMs": 112.0,
+       "measuredCents": -40.26,
+       "endReason": "max length",
+       "src": "Guitar.ff.sulE.E2B2.aif (pluck at 0.12 s)",
+       "channels": 1
       }
      ]
     },
     {
      "note": "G2",
      "midi": 43,
-     "measuredCents": -44.16,
-     "tuneConfidence": 0.26,
-     "tuneResidualCents": 2.32,
+     "measuredCents": -40.6,
+     "tuneConfidence": 0.17,
+     "tuneResidualCents": 3.85,
      "tunePartials": [
       2,
       3,
       4,
-      5
+      5,
+      6,
+      7
      ],
-     "tuneLayer": 2,
-     "layerSpreadCents": 2.49,
+     "tuneLayer": 3,
+     "layerSpreadCents": 3.56,
      "string": "low E",
      "fret": 3,
      "layers": [
@@ -106,24 +121,37 @@
        "endReason": "max length",
        "src": "Guitar.mf.sulE.E2B2.aif (pluck at 34.03 s)",
        "channels": 1
+      },
+      {
+       "file": "pluck/G2-v3",
+       "layer": 3,
+       "peakDb": -8.68,
+       "attackRmsDb": -20.43,
+       "lenS": 4.0,
+       "trimStartMs": 45570.8,
+       "measuredCents": -40.6,
+       "endReason": "max length",
+       "src": "Guitar.ff.sulE.E2B2.aif (pluck at 45.57 s)",
+       "channels": 1
       }
      ]
     },
     {
      "note": "As2",
      "midi": 46,
-     "measuredCents": -24.43,
-     "tuneConfidence": 0.67,
-     "tuneResidualCents": 1.23,
+     "measuredCents": -21.68,
+     "tuneConfidence": 0.57,
+     "tuneResidualCents": 1.09,
      "tunePartials": [
       1,
+      2,
       3,
       4,
       5,
       6
      ],
-     "tuneLayer": 2,
-     "layerSpreadCents": 0.05,
+     "tuneLayer": 3,
+     "layerSpreadCents": 2.75,
      "string": "A",
      "fret": 1,
      "layers": [
@@ -150,20 +178,37 @@
        "endReason": "max length",
        "src": "Guitar.mf.sulA.A2B2.aif (pluck at 18.23 s)",
        "channels": 1
+      },
+      {
+       "file": "pluck/As2-v3",
+       "layer": 3,
+       "peakDb": -10.83,
+       "attackRmsDb": -21.45,
+       "lenS": 4.0,
+       "trimStartMs": 16225.1,
+       "measuredCents": -21.68,
+       "endReason": "max length",
+       "src": "Guitar.ff.sulA.A2B2.aif (pluck at 16.23 s)",
+       "channels": 1
       }
      ]
     },
     {
      "note": "Cs3",
      "midi": 49,
-     "measuredCents": -22.69,
-     "tuneConfidence": 0.06,
-     "tuneResidualCents": null,
+     "measuredCents": -15.89,
+     "tuneConfidence": 0.14,
+     "tuneResidualCents": 1.2,
      "tunePartials": [
-      1
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
      ],
-     "tuneLayer": 2,
-     "layerSpreadCents": 1.91,
+     "tuneLayer": 3,
+     "layerSpreadCents": 8.71,
      "string": "A",
      "fret": 4,
      "layers": [
@@ -190,23 +235,37 @@
        "endReason": "max length",
        "src": "Guitar.mf.sulA.C3B3.aif (pluck at 20.79 s)",
        "channels": 1
+      },
+      {
+       "file": "pluck/Cs3-v3",
+       "layer": 3,
+       "peakDb": -23.07,
+       "attackRmsDb": -32.87,
+       "lenS": 4.0,
+       "trimStartMs": 14182.8,
+       "measuredCents": -15.89,
+       "endReason": "max length",
+       "src": "Guitar.ff.sulA.C3B3.aif (pluck at 14.19 s)",
+       "channels": 1
       }
      ]
     },
     {
      "note": "E3",
      "midi": 52,
-     "measuredCents": -22.63,
-     "tuneConfidence": 0.47,
-     "tuneResidualCents": 1.62,
+     "measuredCents": -20.09,
+     "tuneConfidence": 0.53,
+     "tuneResidualCents": 1.47,
      "tunePartials": [
       1,
       2,
       3,
-      5
+      4,
+      5,
+      6
      ],
-     "tuneLayer": 2,
-     "layerSpreadCents": 0.22,
+     "tuneLayer": 3,
+     "layerSpreadCents": 2.54,
      "string": "D",
      "fret": 2,
      "layers": [
@@ -233,24 +292,36 @@
        "endReason": "max length",
        "src": "Guitar.mf.sulD.D3B3.aif (pluck at 35.09 s)",
        "channels": 1
+      },
+      {
+       "file": "pluck/E3-v3",
+       "layer": 3,
+       "peakDb": -17.65,
+       "attackRmsDb": -28.05,
+       "lenS": 4.0,
+       "trimStartMs": 35843.2,
+       "measuredCents": -20.09,
+       "endReason": "max length",
+       "src": "Guitar.ff.sulD.D3B3.aif (pluck at 35.85 s)",
+       "channels": 1
       }
      ]
     },
     {
      "note": "G3",
      "midi": 55,
-     "measuredCents": -27.65,
-     "tuneConfidence": 0.27,
-     "tuneResidualCents": 3.59,
+     "measuredCents": -25.06,
+     "tuneConfidence": 0.22,
+     "tuneResidualCents": 3.12,
      "tunePartials": [
       1,
-      2,
       3,
       4,
-      5
+      5,
+      6
      ],
-     "tuneLayer": 2,
-     "layerSpreadCents": 0.14,
+     "tuneLayer": 3,
+     "layerSpreadCents": 2.73,
      "string": "D",
      "fret": 5,
      "layers": [
@@ -277,25 +348,36 @@
        "endReason": "max length",
        "src": "Guitar.mf.sulD.D3B3.aif (pluck at 65.21 s)",
        "channels": 1
+      },
+      {
+       "file": "pluck/G3-v3",
+       "layer": 3,
+       "peakDb": -12.12,
+       "attackRmsDb": -22.4,
+       "lenS": 4.0,
+       "trimStartMs": 67757.6,
+       "measuredCents": -25.06,
+       "endReason": "max length",
+       "src": "Guitar.ff.sulD.D3B3.aif (pluck at 67.76 s)",
+       "channels": 1
       }
      ]
     },
     {
      "note": "As3",
      "midi": 58,
-     "measuredCents": -12.35,
-     "tuneConfidence": 0.41,
-     "tuneResidualCents": 1.7,
+     "measuredCents": -12.33,
+     "tuneConfidence": 0.49,
+     "tuneResidualCents": 0.26,
      "tunePartials": [
-      1,
       2,
       3,
       4,
       5,
       6
      ],
-     "tuneLayer": 2,
-     "layerSpreadCents": 3.27,
+     "tuneLayer": 3,
+     "layerSpreadCents": 3.29,
      "string": "G",
      "fret": 3,
      "layers": [
@@ -322,15 +404,27 @@
        "endReason": "max length",
        "src": "Guitar.mf.sulG.G3B3.aif (pluck at 27.67 s)",
        "channels": 1
+      },
+      {
+       "file": "pluck/As3-v3",
+       "layer": 3,
+       "peakDb": -10.37,
+       "attackRmsDb": -19.23,
+       "lenS": 4.0,
+       "trimStartMs": 24761.6,
+       "measuredCents": -12.33,
+       "endReason": "max length",
+       "src": "Guitar.ff.sulG.G3B3.aif (pluck at 24.76 s)",
+       "channels": 1
       }
      ]
     },
     {
      "note": "Cs4",
      "midi": 61,
-     "measuredCents": -14.18,
-     "tuneConfidence": 0.82,
-     "tuneResidualCents": 1.09,
+     "measuredCents": -13.09,
+     "tuneConfidence": 0.81,
+     "tuneResidualCents": 0.58,
      "tunePartials": [
       1,
       2,
@@ -339,8 +433,8 @@
       5,
       6
      ],
-     "tuneLayer": 2,
-     "layerSpreadCents": 0.58,
+     "tuneLayer": 3,
+     "layerSpreadCents": 1.67,
      "string": "B",
      "fret": 2,
      "layers": [
@@ -367,15 +461,27 @@
        "endReason": "max length",
        "src": "Guitar.mf.sulB.C4B4.aif (pluck at 8.20 s)",
        "channels": 1
+      },
+      {
+       "file": "pluck/Cs4-v3",
+       "layer": 3,
+       "peakDb": -11.08,
+       "attackRmsDb": -25.1,
+       "lenS": 4.0,
+       "trimStartMs": 7681.7,
+       "measuredCents": -13.09,
+       "endReason": "max length",
+       "src": "Guitar.ff.sulB.C4B4.aif (pluck at 7.68 s)",
+       "channels": 1
       }
      ]
     },
     {
      "note": "E4",
      "midi": 64,
-     "measuredCents": -18.03,
-     "tuneConfidence": 0.48,
-     "tuneResidualCents": 0.68,
+     "measuredCents": -13.75,
+     "tuneConfidence": 0.42,
+     "tuneResidualCents": 0.81,
      "tunePartials": [
       1,
       2,
@@ -384,8 +490,8 @@
       5,
       6
      ],
-     "tuneLayer": 2,
-     "layerSpreadCents": 3.87,
+     "tuneLayer": 3,
+     "layerSpreadCents": 4.28,
      "string": "B",
      "fret": 5,
      "layers": [
@@ -412,15 +518,27 @@
        "endReason": "max length",
        "src": "Guitar.mf.sulB.C4B4.aif (pluck at 31.07 s)",
        "channels": 1
+      },
+      {
+       "file": "pluck/E4-v3",
+       "layer": 3,
+       "peakDb": -14.0,
+       "attackRmsDb": -29.28,
+       "lenS": 4.0,
+       "trimStartMs": 29183.5,
+       "measuredCents": -13.75,
+       "endReason": "max length",
+       "src": "Guitar.ff.sulB.C4B4.aif (pluck at 29.19 s)",
+       "channels": 1
       }
      ]
     },
     {
      "note": "G4",
      "midi": 67,
-     "measuredCents": -20.12,
+     "measuredCents": -19.05,
      "tuneConfidence": 0.81,
-     "tuneResidualCents": 1.09,
+     "tuneResidualCents": 0.3,
      "tunePartials": [
       1,
       2,
@@ -429,8 +547,8 @@
       5,
       6
      ],
-     "tuneLayer": 2,
-     "layerSpreadCents": 0.79,
+     "tuneLayer": 3,
+     "layerSpreadCents": 1.86,
      "string": "high E",
      "fret": 3,
      "layers": [
@@ -457,15 +575,27 @@
        "endReason": "max length",
        "src": "Guitar.mf.sul_E.E4B4.aif (pluck at 22.88 s)",
        "channels": 1
+      },
+      {
+       "file": "pluck/G4-v3",
+       "layer": 3,
+       "peakDb": -11.6,
+       "attackRmsDb": -26.85,
+       "lenS": 4.0,
+       "trimStartMs": 21004.0,
+       "measuredCents": -19.05,
+       "endReason": "max length",
+       "src": "Guitar.ff.sul_E.E4B4.aif (pluck at 21.01 s)",
+       "channels": 1
       }
      ]
     },
     {
      "note": "As4",
      "midi": 70,
-     "measuredCents": -19.56,
-     "tuneConfidence": 0.77,
-     "tuneResidualCents": 0.21,
+     "measuredCents": -13.82,
+     "tuneConfidence": 0.2,
+     "tuneResidualCents": 0.2,
      "tunePartials": [
       1,
       2,
@@ -474,8 +604,8 @@
       5,
       6
      ],
-     "tuneLayer": 2,
-     "layerSpreadCents": 2.14,
+     "tuneLayer": 3,
+     "layerSpreadCents": 7.88,
      "string": "high E",
      "fret": 6,
      "layers": [
@@ -502,15 +632,27 @@
        "endReason": "max length",
        "src": "Guitar.mf.sul_E.E4B4.aif (pluck at 45.40 s)",
        "channels": 1
+      },
+      {
+       "file": "pluck/As4-v3",
+       "layer": 3,
+       "peakDb": -10.07,
+       "attackRmsDb": -30.14,
+       "lenS": 4.0,
+       "trimStartMs": 43360.0,
+       "measuredCents": -13.82,
+       "endReason": "max length",
+       "src": "Guitar.ff.sul_E.E4B4.aif (pluck at 43.36 s)",
+       "channels": 1
       }
      ]
     },
     {
      "note": "Cs5",
      "midi": 73,
-     "measuredCents": -23.72,
+     "measuredCents": -23.76,
      "tuneConfidence": 0.27,
-     "tuneResidualCents": 0.18,
+     "tuneResidualCents": 0.25,
      "tunePartials": [
       1,
       2,
@@ -519,8 +661,8 @@
       5,
       6
      ],
-     "tuneLayer": 2,
-     "layerSpreadCents": 6.51,
+     "tuneLayer": 3,
+     "layerSpreadCents": 6.55,
      "string": "high E",
      "fret": 9,
      "layers": [
@@ -547,15 +689,27 @@
        "endReason": "max length",
        "src": "Guitar.mf.sul_E.C5B5.aif (pluck at 5.64 s)",
        "channels": 1
+      },
+      {
+       "file": "pluck/Cs5-v3",
+       "layer": 3,
+       "peakDb": -8.07,
+       "attackRmsDb": -26.15,
+       "lenS": 4.0,
+       "trimStartMs": 6492.8,
+       "measuredCents": -23.76,
+       "endReason": "max length",
+       "src": "Guitar.ff.sul_E.C5Bb5.aif (pluck at 6.50 s)",
+       "channels": 1
       }
      ]
     },
     {
      "note": "E5",
      "midi": 76,
-     "measuredCents": -21.35,
+     "measuredCents": -19.72,
      "tuneConfidence": 0.33,
-     "tuneResidualCents": 0.09,
+     "tuneResidualCents": 0.2,
      "tunePartials": [
       1,
       2,
@@ -564,7 +718,7 @@
       5,
       6
      ],
-     "tuneLayer": 2,
+     "tuneLayer": 3,
      "layerSpreadCents": 5.71,
      "string": "high E",
      "fret": 12,
@@ -592,15 +746,27 @@
        "endReason": "max length",
        "src": "Guitar.mf.sul_E.C5B5.aif (pluck at 24.08 s)",
        "channels": 1
+      },
+      {
+       "file": "pluck/E5-v3",
+       "layer": 3,
+       "peakDb": -10.43,
+       "attackRmsDb": -24.3,
+       "lenS": 4.0,
+       "trimStartMs": 25258.8,
+       "measuredCents": -19.72,
+       "endReason": "max length",
+       "src": "Guitar.ff.sul_E.C5Bb5.aif (pluck at 25.26 s)",
+       "channels": 1
       }
      ]
     },
     {
      "note": "G5",
      "midi": 79,
-     "measuredCents": -18.88,
-     "tuneConfidence": 0.21,
-     "tuneResidualCents": 0.2,
+     "measuredCents": -26.56,
+     "tuneConfidence": 0.05,
+     "tuneResidualCents": 1.48,
      "tunePartials": [
       1,
       2,
@@ -609,8 +775,8 @@
       5,
       6
      ],
-     "tuneLayer": 2,
-     "layerSpreadCents": 7.78,
+     "tuneLayer": 3,
+     "layerSpreadCents": 15.46,
      "string": "high E",
      "fret": 15,
      "layers": [
@@ -637,22 +803,36 @@
        "endReason": "max length",
        "src": "Guitar.mf.sul_E.C5B5.aif (pluck at 43.37 s)",
        "channels": 1
+      },
+      {
+       "file": "pluck/G5-v3",
+       "layer": 3,
+       "peakDb": -9.87,
+       "attackRmsDb": -26.32,
+       "lenS": 4.0,
+       "trimStartMs": 44896.6,
+       "measuredCents": -26.56,
+       "endReason": "max length",
+       "src": "Guitar.ff.sul_E.C5Bb5.aif (pluck at 44.90 s)",
+       "channels": 1
       }
      ]
     },
     {
      "note": "As5",
      "midi": 82,
-     "measuredCents": -23.87,
-     "tuneConfidence": 0.4,
-     "tuneResidualCents": 0.08,
+     "measuredCents": -28.41,
+     "tuneConfidence": 0.36,
+     "tuneResidualCents": 0.23,
      "tunePartials": [
       1,
       2,
-      3
+      3,
+      4,
+      5
      ],
-     "tuneLayer": 2,
-     "layerSpreadCents": 2.0,
+     "tuneLayer": 3,
+     "layerSpreadCents": 4.54,
      "string": "high E",
      "fret": 18,
      "layers": [
@@ -679,6 +859,18 @@
        "endReason": "max length",
        "src": "Guitar.mf.sul_E.C5B5.aif (pluck at 59.41 s)",
        "channels": 1
+      },
+      {
+       "file": "pluck/As5-v3",
+       "layer": 3,
+       "peakDb": -10.09,
+       "attackRmsDb": -22.44,
+       "lenS": 4.0,
+       "trimStartMs": 63693.7,
+       "measuredCents": -28.41,
+       "endReason": "max length",
+       "src": "Guitar.ff.sul_E.C5Bb5.aif (pluck at 63.70 s)",
+       "channels": 1
       }
      ]
     }
@@ -687,7 +879,7 @@
  },
  "levels": {
   "normalized": false,
-  "note": "Recorded levels, not normalized: mf is louder than pp at the same note. Play layers at their own level; level zones against each other by attackRmsDb."
+  "note": "Recorded levels, not normalized: mf is louder than pp, and ff than mf, at the same note. Play layers at their own level; level zones against each other by attackRmsDb."
  },
  "range": {
   "low": "E2",
@@ -695,13 +887,13 @@
   "playable": "D#2 to B5 (each zone stretches a semitone)"
  },
  "size": {
-  "files": 30,
-  "oggBytes": 706034,
-  "m4aBytes": 1236540,
-  "decodedBytes48kFloat": 22748544
+  "files": 45,
+  "oggBytes": 1084232,
+  "m4aBytes": 1865898,
+  "decodedBytes48kFloat": 34268544
  },
  "problems": [
-  "The guitar is tuned flat, as recorded: zone pitches run from -44.2 to -12.3 cents (the low E string about 43 flat, the treble strings 11 to 26 flat). Nothing was corrected in the files; the sampler applies measuredCents at playback (tuning policy equal).",
+  "The guitar is tuned flat, as recorded: zone pitches run from -40.6 to -12.3 cents (the low E string about 43 flat, the treble strings 11 to 26 flat). Nothing was corrected in the files; the sampler applies measuredCents at playback (tuning policy equal).",
   "Each source file is a chromatic run on one string; plucks were found by their attack (a 15 dB rise in 50 ms) and named by measured pitch, not by their place in the run, then checked by a partials fit. Of 354 notes in the 46 runs, every one was found.",
   "Zones are every minor third from E2 to A#5 (15 zones), each the take nearest the third fret on the string that plays it there; E2 is the open low E (nothing lower exists). Each zone stretches a semitone either way, so the playable range is D#2 to B5.",
   "Notes ring much longer than 4 s in the source (the median gap to the next pluck is 7.5 s), so all but 1 files end at the 4 s maximum with a 250 ms fade from a still-ringing note. pluck/E5-v1 end at the next pluck (the run went on sooner).",

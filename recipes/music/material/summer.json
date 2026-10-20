@@ -2,7 +2,7 @@
   "type": "music",
   "id": "material-summer",
   "version": 1,
-  "note": "Summer's authored material for the development engine (doc 24, The four seasons and The development engine; src/audio/music/develop/). The same shape as spring.json (read its note for what each field means), moved to F major, summer's home (Moon pull, summer's home tide, is in F), with summer's colors: the Lydian glow over IV (Bbmaj7#11), the warmer C9sus4, and the Mixolydian sway of Eb over the home bass (Eb/F). Approved with Matt, October 20, 2026. Additions over spring: tempo is per slot (summer's lift: mornings and interludes 70 to 84, evenings and nocturnes 58 to 72; default for any other), and palettes are per slot or weather, each a list of weighted choices (melody, accomp, bed, and optional counter), so in mornings and interludes the electric piano (fm-piano) takes the harmony about a quarter of the time and the nylon guitar (guitar, the University of Iowa set) another quarter. figures.lines are short written chord lines the walk may play from home (develop.json harmony.lineChance, lineWeights): walk, the bass stepping down under F (F/Eb to F/D, the harmony carrying on from Dm); walk-down, the same walk on to C7sus4 (the bass F Eb D C); sway, Eb over the home bass and back to F; sus-turn (4/4) and sus-slow (3/4), Fsus4 to Fsus2 to F. Each bar of a line is a list of [symbol, place] chords, sharing the bar evenly; meters limits a line to those meters. Summer's own forms: sway (mornings and middays, long phrases that rock between F2 and Bb2) and long-dusk (evenings and nocturnes, six-bar phrases, two returns, a very low curve). The ending warm-hold lands on Fmaj7.",
+  "note": "Summer's authored material for the development engine (doc 24, The four seasons and The development engine; src/audio/music/develop/). The same shape as spring.json (read its note for what each field means), moved to F major, summer's home (Moon pull, summer's home tide, is in F), with summer's colors: the Lydian glow over IV (Bbmaj7#11), the warmer C9sus4, and the Mixolydian sway of Eb over the home bass (Eb/F). Approved with Matt, October 20, 2026. Additions over spring: tempo is per slot (summer's lift: mornings and interludes 70 to 84, evenings and nocturnes 58 to 72; default for any other), and palettes are per slot or weather, each a list of weighted choices (melody, accomp, bed, and optional counter), so in mornings and interludes the electric piano (fm-piano) takes the harmony a fifth of the time and the nylon guitar strums it about a third of the time (strum; strumBass false leaves out the piano's light bass, so the guitar plays alone over the bed). The guitar's other roles, a clean melody and a counter-harmony, come with the melody step (4b) and in the tides. figures.lines are short written chord lines the walk may play from home (develop.json harmony.lineChance, lineWeights): walk, the bass stepping down under F (F/Eb to F/D, the harmony carrying on from Dm); walk-down, the same walk on to C7sus4 (the bass F Eb D C); sway, Eb over the home bass and back to F; sus-turn (4/4) and sus-slow (3/4), Fsus4 to Fsus2 to F. Each bar of a line is a list of [symbol, place] chords, sharing the bar evenly; meters limits a line to those meters. Summer's own forms: sway (mornings and middays, long phrases that rock between F2 and Bb2) and long-dusk (evenings and nocturnes, six-bar phrases, two returns, a very low curve). The ending warm-hold lands on Fmaj7.",
   "season": "summer",
   "home": "F",
   "mode": "ionian",
@@ -17,14 +17,16 @@
   },
   "palettes": {
     "morning": [
-      { "weight": 0.5, "melody": ["piano"], "accomp": ["piano"], "bed": ["strings", "pad"] },
-      { "weight": 0.25, "melody": ["fm-piano", "piano"], "accomp": ["fm-piano", "piano"], "counter": ["vibraphone"], "bed": ["pad", "strings"] },
-      { "weight": 0.25, "melody": ["guitar", "piano"], "accomp": ["guitar", "piano"], "counter": ["vibraphone"], "bed": ["strings", "pad"] }
+      { "weight": 0.45, "melody": ["piano"], "accomp": ["piano"], "bed": ["strings", "pad"] },
+      { "weight": 0.2, "melody": ["fm-piano", "piano"], "accomp": ["fm-piano", "piano"], "counter": ["vibraphone"], "bed": ["pad", "strings"] },
+      { "weight": 0.18, "melody": ["piano"], "accomp": ["piano"], "strum": ["guitar"], "bed": ["pad", "strings"] },
+      { "weight": 0.17, "melody": ["piano"], "accomp": ["piano"], "strum": ["guitar"], "strumBass": false, "bed": ["pad", "strings"] }
     ],
     "interlude": [
-      { "weight": 0.5, "melody": ["piano"], "accomp": ["piano"], "bed": ["strings", "pad"] },
-      { "weight": 0.25, "melody": ["fm-piano", "piano"], "accomp": ["fm-piano", "piano"], "counter": ["vibraphone"], "bed": ["pad", "strings"] },
-      { "weight": 0.25, "melody": ["guitar", "piano"], "accomp": ["guitar", "piano"], "counter": ["vibraphone"], "bed": ["strings", "pad"] }
+      { "weight": 0.45, "melody": ["piano"], "accomp": ["piano"], "bed": ["strings", "pad"] },
+      { "weight": 0.2, "melody": ["fm-piano", "piano"], "accomp": ["fm-piano", "piano"], "counter": ["vibraphone"], "bed": ["pad", "strings"] },
+      { "weight": 0.18, "melody": ["piano"], "accomp": ["piano"], "strum": ["guitar"], "bed": ["pad", "strings"] },
+      { "weight": 0.17, "melody": ["piano"], "accomp": ["piano"], "strum": ["guitar"], "strumBass": false, "bed": ["pad", "strings"] }
     ],
     "evening": [
       { "weight": 1, "melody": ["piano"], "accomp": ["piano"], "bed": ["strings", "pad"] }

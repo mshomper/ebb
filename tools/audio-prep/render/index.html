@@ -16,7 +16,9 @@ const loadPiece = async () => {
   const [mat, rules, names] = await Promise.all([j(`recipes/music/material/${growSeason}.json`), j('recipes/music/develop.json'), j('recipes/music/names.json')]);
   return grow(mat, rules, { slot: q.get('slot') ?? 'interlude', weather: q.get('weather') ?? 'clear', seed }, names).piece;
 };
-const [rz, vo, dir, mix, piece] = await Promise.all([j('recipes/music/realize.json'), j('recipes/music/voicing.json'), j('recipes/music/director.json'), j('recipes/audio/mixer.json'), loadPiece()]);
+// ?melody=<instrument> plays the melody on that instrument (to audition one, e.g. the guitar on a tide).
+const [rz, vo, dir, mix, piece0] = await Promise.all([j('recipes/music/realize.json'), j('recipes/music/voicing.json'), j('recipes/music/director.json'), j('recipes/audio/mixer.json'), loadPiece()]);
+const piece = q.get('melody') ? { ...piece0, palette: { ...piece0.palette, melody: [q.get('melody')] } } : piece0;
 const SR = 48000;
 const probe = new OfflineAudioContext(2, SR, SR);
 const avail = (await createInstruments(probe, probe.destination)).available();

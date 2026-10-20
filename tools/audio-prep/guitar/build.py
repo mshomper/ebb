@@ -51,13 +51,13 @@ recipe = dict(
           "resampled from 96 kHz to 48 kHz, cut at the next pluck less 20 ms or at 4 s, whichever comes first, with a 250 ms equal-power fade to silence, as the harp. No gain change. Mono. "
           "formats: <file>.ogg is Ogg Opus 56 kbps mono (variable bitrate), <file>.m4a is AAC-LC 80 kbps mono. "
           "Zone fields as in harp.json: measuredCents is the zone's pitch against 12-TET at A4 = 440 Hz, fitted from partials 1 to 6 of the louder layer; tuneConfidence 0 to 1; string and fret say where it was played. "
-          "layers: v1 is pp, v2 is mf (the library's ff is not used: the game plays the guitar softly). Tools: tools/audio-prep/guitar/ (prep.py, build.py)."),
+          "layers: v1 is pp, v2 is mf, v3 is ff (brighter and cleaner, for a melody's accented notes; Matt, October 20, 2026). Tools: tools/audio-prep/guitar/ (prep.py, build.py)."),
     source=dict(library='University of Iowa Electronic Music Studios, Musical Instrument Samples (MIS): Guitar', url=URL,
                 license='Free to use: the studio says the recordings "may be downloaded and used for any projects, without restrictions". Not formally CC0, so listed in assets/audio/LICENSES-NONCC0.md (doc 25).',
                 notes='Raimundo 118 classical guitar, played by Brian Penkrot (2011); Earthworks QTC40 microphone at 5 ft, anechoic chamber; mono 24-bit 96 kHz AIFF (Guitar.mono.2496.zip). One file per string per dynamic (pp, mf, ff), each a chromatic run.'),
-    channels=1, formats=['ogg', 'm4a'], root='assets/audio/instruments/guitar/', layers=2,
-    sets=dict(pluck=dict(source='Guitar.mono.2496 chromatic runs, pp and mf', zones=zones)),
-    levels=dict(normalized=False, note='Recorded levels, not normalized: mf is louder than pp at the same note. Play layers at their own level; level zones against each other by attackRmsDb.'),
+    channels=1, formats=['ogg', 'm4a'], root='assets/audio/instruments/guitar/', layers=3,
+    sets=dict(pluck=dict(source='Guitar.mono.2496 chromatic runs, pp, mf and ff', zones=zones)),
+    levels=dict(normalized=False, note='Recorded levels, not normalized: mf is louder than pp, and ff than mf, at the same note. Play layers at their own level; level zones against each other by attackRmsDb.'),
     range=dict(low='E2', high='A#5', playable='D#2 to B5 (each zone stretches a semitone)'),
     size=size, problems=problems)
 os.makedirs(os.path.join(REPO, 'recipes', 'music', 'instruments'), exist_ok=True)

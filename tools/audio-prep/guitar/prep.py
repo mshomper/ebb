@@ -4,7 +4,8 @@ Each source file is one string at one dynamic, playing a chromatic run (the name
 Guitar.mf.sulA.C3B3.aif is C3 to B3 on the A string; sul_E is the high E string). This script:
   1. finds every pluck in every run (energy onsets), names it by its place in the run, and checks the
      name against the measured pitch (partials fit, plib.measure_pitch);
-  2. for each game zone (every minor third, E2 to Bb5) and layer (v1 = pp, v2 = mf), picks the take
+  2. for each game zone (every minor third, E2 to Bb5) and layer (v1 = pp, v2 = mf, v3 = ff: the clean,
+     bright melody sound), picks the take
      on the string that plays it nearest the third fret (warm, not an open string ringing on);
   3. trims it to 3 ms before the onset, cuts it at the next pluck or 4 s (whichever first) with a
      250 ms equal-power fade, resamples to 48 kHz, keeps the recorded level, and encodes Ogg Opus
@@ -29,7 +30,7 @@ SR = 48000
 OPEN = {'sulE': 40, 'sulA': 45, 'sulD': 50, 'sulG': 55, 'sulB': 59, 'sul_E': 64}
 STRING_NAME = {'sulE': 'low E', 'sulA': 'A', 'sulD': 'D', 'sulG': 'G', 'sulB': 'B', 'sul_E': 'high E'}
 ZONES = list(range(40, 83, 3))            # E2, G2, Bb2, C#3 ... G5, Bb5 (every minor third)
-LAYERS = {1: 'pp', 2: 'mf'}
+LAYERS = {1: 'pp', 2: 'mf', 3: 'ff'}
 FFMPEG = os.environ.get('FFMPEG', 'ffmpeg')
 
 
