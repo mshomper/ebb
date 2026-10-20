@@ -84,6 +84,8 @@ export function makePen(stage, labels) {
       const my = (y0 + y1) / 2;
       out += `<text x="${f(x - 8)}" y="${f(my)}" font-family="Fraunces, Georgia, serif" font-style="italic" font-size="${TEXT}" fill="${NOTE}" text-anchor="middle" transform="rotate(-90 ${f(x - 8)} ${f(my)})">${esc(text)}</text>`;
     },
+    /** Has the page learned this label (a sketch may draw parts only once known)? @param {string} key */
+    knows: (key) => !!labels[key],
     /** Add finished markup as it is (a part drawn by a sub pen, inside a transform). @param {string} s */
     raw(s) { out += s; },
     /** A pen of the same stage for a part drawn inside a transform; take() hands back its markup. */

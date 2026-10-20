@@ -280,7 +280,7 @@ export async function startApp(canvas, hooks = {}) {
   sim.addSystem(midges);
   // Finds (docs/future/11): anemones in rock pools, periwinkles on the wrack, lugworm casts on the
   // sand, where the shore zones say, near the view; a tap finds them for the journal.
-  const finds = createFinds({ water, shore: ww.shore, terrain, camera, recipe: await loadRecipe('species/finds'), seed: subSeed(seed, 'finds') });
+  const finds = createFinds({ water, shore: ww.shore, terrain, camera, recipe: await loadRecipe('species/finds'), seed: subSeed(seed, 'finds'), tide: waterRecipe.tide });
   sim.addSystem(finds);
   terrainPass.setCasts(finds.casts(), finds.castShape);
   // `?frogscale` (ahead of S6): real-size frogs from the species recipe around the pond, and a

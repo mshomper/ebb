@@ -162,7 +162,12 @@ export function describe(journal, sp, state, hab, words, hour = journal.last) {
     ? (state?.creatures?.[sp]?.frogs ?? []).filter((/** @type {any} */ f) => f.name)
       .map((/** @type {any} */ f) => rec.trust.namedLine.replace('{name}', f.name).replace('{date}', dateOfHour(f.since, words)))
     : [];
-  return { sp, kind: 'living', name: rec.name, icon: rec.icon, known, riddle, status, likes, field, named,
+  // A collection (shells): the ones found, in the recipe's order, and pencil hints for the rest.
+  const collection = (rec.collection ?? []).map((/** @type {any} */ c) => {
+    const got = !!k?.learned.includes(`item:${c.id}`);
+    return { id: c.id, found: got, name: got ? c.name : null, rarity: c.rarity, text: got ? c.line : c.hint };
+  });
+  return { sp, kind: 'living', name: rec.name, icon: rec.icon, known, riddle, status, likes, field, named, collection,
     fieldHint: rec.fieldHint, story, seasons, moments, gives, notes, canShow: known && present(rec, m), sketch: sketchOf(k, known, rec.sketch) };
 }
 

@@ -23,16 +23,29 @@
 <script type="module">
 import { loadFindModel, joinParts } from '../src/world/finds/models.js';
 import { shutAnemone } from '../src/world/finds/index.js';
+import { loadRig, posedMesh } from '../src/world/finds/rig.js';
 
 const recipe = await (await fetch('../recipes/species/finds.json')).json();
 const names = await (await fetch('../recipes/world/journal.json')).json();
 // Every kind with a model, and the anemone's shut pose beside its open one.
 const views = [];
 for (const [id, K] of Object.entries(recipe.kinds)) {
+  // A collection (shells): each item has its own model.
+  for (const it of K.items ?? []) {
+    const parts = await loadFindModel('../' + it.model.url);
+    const nm = names.species?.[id]?.collection?.find((c) => c.id === it.id);
+    views.push({ name: `${nm?.name ?? it.id} <span class="muted">(${nm?.rarity ?? ''})</span>`, mesh: joinParts(parts, it.model.heightM, it.model.rotDeg, (p) => p, it.model.tint), h: it.model.heightM });
+  }
   const M = K.model;
   if (!M) continue;
-  const parts = await loadFindModel('../' + M.url);
   const name = names.species?.[id]?.name ?? id;
+  if (M.rigged) {
+    // A rigged find plays its walk here on a loop.
+    const rig = await loadRig('../' + M.url, M.heightM, M.rotDeg);
+    views.push({ name: `${name}, walking`, mesh: posedMesh(rig, 0), h: M.heightM, rig, rate: M.playRate ?? 1 });
+    continue;
+  }
+  const parts = await loadFindModel('../' + M.url);
   views.push({ name: id === 'anemone' ? `${name}, open` : name, mesh: joinParts(parts, M.heightM, M.rotDeg, (p) => p, M.tint), h: M.heightM, bury: M.buryM });
   if (id === 'anemone') {
     let top = 0;
@@ -90,6 +103,11 @@ for (const v of views) {
   cv.addEventListener('pointerup', () => { drag = null; });
   addEventListener('resize', draw);
   draw();
+  if (v.rig) {
+    // Play the walk about 15 times a second (the painter's sort is slow for faster).
+    const t0 = performance.now();
+    setInterval(() => { v.mesh = posedMesh(v.rig, ((performance.now() - t0) / 1000) * v.rate); draw(); }, 66);
+  }
 }
 </script>
 </body>
