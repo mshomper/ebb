@@ -821,8 +821,16 @@
         { "text": "Still water with a spot about a meter deep", "learn": ["seen"] },
         { "text": "Lily pads and reed stems to hide among", "learn": ["settled"] },
         { "text": "Small insects over the water", "learn": ["joined"] },
-        { "text": "Moves on when the pool grows shallow or is drained", "learn": ["left"] }
+        { "text": "Moves on when the pool grows shallow or is drained", "learn": ["left"] },
+        { "text": "Doesn't mind you close, if you come slowly", "learn": ["trust:tolerant"] },
+        { "text": "Swirls up to crumbs you scatter on the water", "learn": ["fed"] }
       ],
+      "_trust": "How well the minnows know you (doc 23): one for the whole school, as notes when it moves up; the ceiling is Familiar (recipes/species/minnow.json presence).",
+      "trust": { "notes": {
+        "tolerant": "The minnows let you come a little closer now.",
+        "curious": "The school comes up to look when you are near the water.",
+        "familiar": "The minnows know you. They rise to meet you at the water's edge."
+      } },
       "gives": [
         { "pencil": "Something might come of a happy pool one day.", "ink": "Happy minnows bring pondweed seed.", "when": "minnows:happy" }
       ],
@@ -837,6 +845,7 @@
         "back": "Minnows have come back to the pool.",
         "joinedUnseen": "More rings rose on the deep water this morning.",
         "joined": "The school of minnows is growing.",
+        "fed": "The minnows swirled up to the crumbs you scattered.",
         "scoutLeftUnseen": "The deep water has been still for a while.",
         "thinned": "The school of minnows is smaller than it was.",
         "left": "Some of the minnows have moved on.",
@@ -870,8 +879,15 @@
         { "text": "Still water with reeds or rushes beside it", "learn": ["seen"] },
         { "text": "Small flying insects over the water", "learn": ["settled"] },
         { "text": "Sunny days, from late spring into autumn", "learn": ["joined"] },
-        { "text": "Moves on when the pond is drained", "learn": ["left"] }
+        { "text": "Moves on when the pond is drained", "learn": ["left"] },
+        { "text": "Doesn't mind you close, if you keep still", "learn": ["trust:tolerant"] },
+        { "text": "Comes to hover and look at you", "learn": ["trust:curious"] }
       ],
+      "_trust": "How well the dragonflies know you (doc 23), from quiet watching only (they take no food); the ceiling is Curious: a curious one now and then comes to hover near where you look.",
+      "trust": { "notes": {
+        "tolerant": "The dragonflies let you come a little closer now.",
+        "curious": "A dragonfly came to hover and look at you."
+      } },
       "gives": [
         { "pencil": "Something might come of a sunny, reedy pond one day.", "ink": "Happy dragonflies bring springs.", "when": "dragonflies:happy" }
       ],

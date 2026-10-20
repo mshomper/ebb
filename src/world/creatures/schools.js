@@ -8,8 +8,10 @@
 // it, finds it for the journal (`creature:found`). Nothing here changes the world.
 
 import { emitDeferred } from '../../core/events.js';
-import { get as getStore } from '../../core/store.js';
-import { display, animT, seasonOf, SECONDS_PER_HOUR, HOURS_PER_DAY } from '../../core/clock.js';
+import { get as getStore, update as updateStore } from '../../core/store.js';
+import { display, animT, seasonOf, hourIndex, SECONDS_PER_HOUR, HOURS_PER_DAY } from '../../core/clock.js';
+import { createWatching } from './watching.js';
+import { addSwarmEvent } from './swarms.js';
 import { hash32 } from '../../core/rng.js';
 import { run } from '../../core/workers.js';
 import { createCreaturePass } from '../../render/passes/creatures.js';
@@ -17,6 +19,7 @@ import { MAX_BONES } from './bodies.js';
 import { poseSkeleton } from './pose.js';
 import { createReturn } from './reveal-return.js';
 import { createSchool } from './school.js';
+import { createPatrol, posePatrol } from './patrol.js';
 import { cellCenter } from '../ecology/habitat.js';
 import { keyOf } from '../species.js';
 
@@ -43,8 +46,9 @@ export function qmul(p, q) {
  *   water: { sim: { live: any }, sampleLive: (x: number, z: number) => { surface: number, depth: number } },
  *   ripples: { addImpulse: (x: number, z: number, strength?: number, radiusM?: number) => void } | null,
  *   camera: { target: ArrayLike<number>, eye: ArrayLike<number>, distance: number },
- *   presence?: import('./presence.js').Presence, budget?: number }} opts
- *   recipe: recipes/species/<id>.json (minnow); budget: the most drawn at once (the quality tier)
+ *   presence?: import('./presence.js').Presence, budget?: number, ground?: (x: number, z: number) => number }} opts
+ *   recipe: recipes/species/<id>.json (minnow: motion.kind school; dragonfly: patrol); budget: the
+ *   most drawn at once (the quality tier); ground: terrain height
  */
 export function createSchools(opts) {
   const { world, recipe, water, ripples, camera } = opts;
@@ -68,10 +72,17 @@ export function createSchools(opts) {
   const schools = new Map();
   /** @type {any} */ let shown = null;
   let acc = 0, watched = 0;
+  const watching = P.watch ? createWatching(P.watch) : null;
+  /** Crumbs a school is swimming up to, by school id. @type {{ id: number, x: number, z: number }[]} */
+  let foods = [];
   const stepS = 1 / (M.stepHz ?? 30);
   const env = {
     water: (/** @type {number} */ x, /** @type {number} */ z) => water.sampleLive(x, z),
+    ground: (/** @type {number} */ x, /** @type {number} */ z) => opts.ground?.(x, z) ?? water.sampleLive(x, z).surface - water.sampleLive(x, z).depth,
     ring: (/** @type {number} */ x, /** @type {number} */ z) => ripples?.addImpulse(x, z, M.ringStrength, M.ringM),
+    // Reed and rush clumps to rest on (dragonflies): where each stands and how tall it has grown.
+    perches: () => (world.state?.growth?.plants ?? []).filter((/** @type {any} */ p) => M.perchOn?.[p.sp] && p.stage >= 2)
+      .map((/** @type {any} */ p) => ({ x: p.x, z: p.z, h: M.perchOn[p.sp] * Math.min(1, p.size) })),
   };
   const comeBack = createReturn(recipe.reveal?.growS ?? 0.6);
   const bones = new Float32Array(MAX_BONES * 16);
@@ -97,7 +108,8 @@ export function createSchools(opts) {
       const n = Math.max(1, Math.floor(g.count * share));
       const s = schools.get(g.id);
       if (s) { s.rehome({ x: g.x, z: g.z }, deepOf(g)); if (s.fish.length !== n) s.resize(n); continue; }
-      schools.set(g.id, createSchool({ id: g.id, seed: world.env.seed ^ hash32(key.length, 0x5c), count: n, home: { x: g.x, z: g.z },
+      const make = M.kind === 'patrol' ? createPatrol : createSchool;
+      schools.set(g.id, /** @type {any} */ (make)({ id: g.id, seed: world.env.seed ^ hash32(key.length, 0x5c), count: n, home: { x: g.x, z: g.z },
         deep: deepOf(g), size: body.displayScale ?? 1, M, env }));
     }
   }
@@ -131,15 +143,21 @@ export function createSchools(opts) {
         if (!pass.hasMesh(mesh)) { const any = [...Array(lods.length).keys()].map((l) => `${v}:${l}`).find((k) => pass.hasMesh(k)); if (!any) return; mesh = any; }
         /** @type {Float32Array | null} */ let b = null;
         if (rig) {
-          // The body banks and pitches about its middle; the tail beats behind it.
-          const beat = Math.sin(f.phase) * M.tailSwing;
+          // The body banks and pitches about its middle; a fish's tail beats behind it, a
+          // dragonfly's wings beat (patrol.js).
           const q = qmul(axisAngle([1, 0, 0], -f.pitch), axisAngle([0, 0, 1], f.roll));
-          const moves = rig.map((bn) => (bn.parent < 0 ? { q } : bn.name === 'tail' ? { q: axisAngle([0, 1, 0], beat) } : bn.name === 'mid' ? { q: axisAngle([0, 1, 0], beat * 0.45) } : null));
+          let moves;
+          if (M.kind === 'patrol') moves = posePatrol(rig, /** @type {any} */ (f), M, q, axisAngle);
+          else {
+            const beat = Math.sin(f.phase) * M.tailSwing;
+            moves = rig.map((bn) => (bn.parent < 0 ? { q } : bn.name === 'tail' ? { q: axisAngle([0, 1, 0], beat) } : bn.name === 'mid' ? { q: axisAngle([0, 1, 0], beat * 0.45) } : null));
+          }
           b = new Float32Array(MAX_BONES * 16);
           poseSkeleton(rig, moves, b, 0);
         }
         const jitter = ((hash32(id, 0x51e) >>> 8) / 16777216) * 2 - 1;
-        beings.push({ x: f.x, y: f.y, z: f.z, yaw: Math.atan2(f.vx, f.vz), size: size * (1 + (body.sizeJitter ?? 0) * jitter) * back.k, mesh, bones: b ?? bones });
+        const yaw = /** @type {any} */ (f).yaw ?? Math.atan2(f.vx, f.vz);
+        beings.push({ x: f.x, y: f.y, z: f.z, yaw, size: size * (1 + (body.sizeJitter ?? 0) * jitter) * back.k, mesh, bones: b ?? bones });
       });
     }
     pass.setBeings(beings);
@@ -152,7 +170,11 @@ export function createSchools(opts) {
     /** The live schools (tools and tests). */
     schools: () => [...schools.values()],
     /** Where each school is now and how many it has (the sound, tools). */
-    heard: () => [...schools.values()].map((s) => { const c = s.centre(); return { species: key, id: s.id, pos: [c.x, c.y, c.z], count: s.fish.length }; }),
+    heard: () => [...schools.values()].map((s) => {
+      const c = s.centre();
+      // Each one's place too: a dragonfly's wings are heard from it, not from the middle of its beat.
+      return { species: key, id: s.id, pos: [c.x, c.y, c.z], count: s.fish.length, each: s.fish.map((f) => [f.x, f.y, f.z, f.mode === 'perch' ? 0 : 1]) };
+    }),
     /** A new quality tier's cap on how many are drawn. @param {number} n */
     setBudget(n) { budget = Math.max(0, Math.min(128, n)); shown = null; },
     /** @type {import('./reveal-return.js').RevealHooks} the reveal on return (src/ui/reveal.js) */
@@ -181,6 +203,27 @@ export function createSchools(opts) {
       return best;
     },
 
+    /**
+     * The Feed tool tapped (x, z) for this species: crumbs land on the water and the nearest school
+     * within feed.reachM swirls up to them. Returns which message the tool card shows.
+     * @param {number} x @param {number} z
+     */
+    feed(x, z) {
+      const F = recipe.feed;
+      const msg = (/** @type {string} */ k) => F?.messages?.[k] ?? '';
+      if (!F) return '';
+      if (!getStore('journal')?.species?.[key]?.ever) return msg('unknown');
+      if (water.sampleLive(x, z).depth < 0.1) return msg('land');
+      let best = null, bestD = F.reachM;
+      for (const s of schools.values()) { const c = s.centre(); const d = Math.hypot(c.x - x, c.z - z); if (d < bestD) { bestD = d; best = s; } }
+      // A few rings where the crumbs land.
+      ripples?.addImpulse(x, z, 0.4, 0.04); ripples?.addImpulse(x + 0.06, z - 0.04, 0.3, 0.03);
+      if (!best) return msg('none');
+      best.feed({ x, z });
+      foods = [...foods.filter((g) => g.id !== best.id), { id: best.id, x, z }];
+      return msg('coming');
+    },
+
     /** @param {import('../../sim/live-sim.js').FrameInfo} f */
     tick(f) {
       if (!water.sim.live) return;
@@ -190,17 +233,42 @@ export function createSchools(opts) {
       for (const s of schools.values()) s.setMood(/** @type {any} */ (mood));
       // Presence (doc 23): a fast swoop low over a school sends it darting for the deep spot.
       const src = opts.presence?.sources() ?? [];
+      // Trust shrinks the comfort ring (and lets you closer at a faster pace), as the frogs'.
+      const trust = S?.trust ?? 0;
+      const ring = Math.max(P.ringMinM ?? 0, P.ringM * (1 - (P.ringTrustShrink ?? 0) * trust));
       // An edit right beside one (a sculpt or pour stroke) does it too.
       for (const p of src) {
-        const fast = p.speed >= P.calmSpeed;
+        const fast = p.speed >= P.calmSpeed * (1 + 2 * trust);
         if (!fast && !p.editing) continue;
         for (const s of schools.values()) {
           if (s.darting) continue;
-          const c = s.centre();
-          const near = fast && Math.hypot(p.pos[0] - c.x, p.pos[1] - c.y, p.pos[2] - c.z) <= P.ringM;
-          const edited = p.edits.some((e) => Math.hypot(e.x - c.x, e.z - c.z) <= P.editReachM);
+          // The nearest of them (a dragonfly's beat spreads over a few meters).
+          const near = fast && s.fish.some((f) => Math.hypot(p.pos[0] - f.x, p.pos[1] - f.y, p.pos[2] - f.z) <= ring);
+          const edited = p.edits.some((e) => s.fish.some((f) => Math.hypot(e.x - f.x, e.z - f.z) <= P.editReachM));
           if (near || edited) { s.startle(); emitDeferred('creature:startled', { species: key, id: s.id }); }
         }
+      }
+      // Quiet watching close by earns trust (doc 23), recorded now for the next hourly tick.
+      if (watching && S && !S.dormant) {
+        const looked = watching.step([...schools.values()].map((s) => { const c = s.centre(); return { id: s.id, x: c.x, y: c.y, z: c.z, mode: 'here' }; }), src, f.realDt);
+        if (looked.length) {
+          for (const w of looked) world.state = addSwarmEvent(world.state, key, { kind: 'watched', minutes: w.minutes, hour: hourIndex() });
+          updateStore('world', () => world.state);
+        }
+      }
+      // A curious one (dragonflies) now and then comes to hover near where you look.
+      const curious = P.curiousAt !== undefined && trust >= P.curiousAt;
+      for (const s of schools.values()) /** @type {any} */ (s).setVisit?.(curious ? { x: camera.target[0], y: camera.target[1] + (M.visitM ?? 0.7), z: camera.target[2] } : null);
+      // Crumbs on the water: when the school reaches them it has eaten (once per offer).
+      for (const fd of foods.slice()) {
+        const s = schools.get(fd.id);
+        if (!s) { foods = foods.filter((g) => g !== fd); continue; }
+        const c = s.centre();
+        if (Math.hypot(c.x - fd.x, c.z - fd.z) < 0.5) {
+          foods = foods.filter((g) => g !== fd);
+          world.state = addSwarmEvent(world.state, key, { kind: 'fed', hour: hourIndex() });
+          updateStore('world', () => world.state);
+        } else if (!s.feeding) foods = foods.filter((g) => g !== fd);
       }
       acc = Math.min(acc + f.realDt, stepS * 6);
       while (acc >= stepS) { for (const s of schools.values()) s.step(stepS); acc -= stepS; }

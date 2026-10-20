@@ -26,6 +26,7 @@ import { stream, subSeed, det } from '../../core/rng.js';
 import { HOURS_PER_DAY } from '../../core/clock.js';
 import { cellCenter } from '../ecology/habitat.js';
 import { ecologyNow } from '../ecology/coarse.js';
+import { trustWord, maxTrust } from './trust.js';
 import { swarmSpecies, keyOf } from '../species.js';
 
 /**
@@ -50,6 +51,9 @@ import { swarmSpecies, keyOf } from '../species.js';
  * @property {number} arrivals  groups that have ever come
  * @property {number} nextId
  * @property {Group[]} groups
+ * @property {number} [trust]  how well the species here knows you, 0..1, only ever growing (doc 23; absent is 0)
+ * @property {number} [fedAt] the hour they last ate food you offered
+ * @property {{ kind: 'watched'|'fed', minutes?: number, hour: number }[]} [pending]  trust earned in live play, for the next hour
  */
 
 /** @returns {SwarmState} */
@@ -124,6 +128,10 @@ export function swarmStep(state, hourIndex, env, rec) {
     const [x, z] = cellCenter(best.best, n);
     events.push({ name: 'creature:habitat-right', payload: pay({ x, z }) });
   }
+
+  // Trust earned in live play since the last hour (watching quietly, feeding): one for the species
+  // here, never lower (doc 23), up to its ceiling.
+  events.push(...applySwarmTrust(S, rec.presence, key));
 
   const dormant = !!(E.dormancy && state.seasons?.dormant?.[E.dormancy]);
   if (dormant !== S.dormant) {
@@ -235,6 +243,45 @@ export function testRecipe(rec) {
   const W = rec.ecology.needs.water;
   if (!W.body) return rec;
   return { ...rec, ecology: { ...rec.ecology, needs: { ...rec.ecology.needs, water: { ...W, body: { ...W.body, deepM: 0 } } } } };
+}
+
+/**
+ * Trust live play recorded for a school species (watching it quietly, feeding it), for the next
+ * hourly tick to apply (doc 23). Pure: a new state.
+ * @param {any} state @param {string} key @param {{ kind: 'watched'|'fed', minutes?: number, hour: number }} ev
+ */
+export function addSwarmEvent(state, key, ev) {
+  const S = state?.creatures?.[key];
+  if (!S || !S.groups.length) return state;
+  return { ...state, creatures: { ...state.creatures, [key]: { ...S, pending: [...(S.pending ?? []), ev] } } };
+}
+
+/**
+ * Apply the recorded trust (changes S in place): watching earns trustPerMin a minute, a meal
+ * feedTrust (less if they ate within feed fullH hours), never past the ceiling; `creature:trusted`
+ * when the word moves up. @param {any} S @param {any} P the recipe's presence @param {string} key
+ */
+export function applySwarmTrust(S, P, key) {
+  /** @type {{ name: string, payload: any }[]} */ const events = [];
+  const list = S.pending ?? [];
+  if (!list.length || !P?.bands) { if (S.pending) delete S.pending; return events; }
+  const before = S.trust ?? 0;
+  let t = before;
+  for (const ev of list) {
+    if (ev.kind === 'watched') t += (P.watch?.trustPerMin ?? 0) * (ev.minutes ?? 0);
+    else if (ev.kind === 'fed') {
+      const full = P.fullH ?? 6;
+      const hungry = S.fedAt === undefined ? 1 : Math.max(0, Math.min(1, (ev.hour - S.fedAt) / full));
+      t += (P.feedTrust ?? 0) * (0.25 + 0.75 * hungry);
+      S.fedAt = ev.hour;
+      events.push({ name: 'creature:ate', payload: { species: key } });
+    }
+  }
+  delete S.pending;
+  S.trust = r4(Math.min(maxTrust(P), Math.max(before, t)));
+  const w0 = trustWord(before, P.bands), w1 = trustWord(S.trust, P.bands);
+  if (w1 !== w0) events.push({ name: 'creature:trusted', payload: { species: key, word: w1 } });
+  return events;
 }
 
 /** How many in all. @param {SwarmState} S */

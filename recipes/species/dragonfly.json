@@ -5,10 +5,57 @@
   "name": "Southern hawker",
   "version": 1,
   "note": "Southern hawkers (docs 11, 12, 23; M2; Matt chose the species on 2026-10-20): large green and blue dragonflies that patrol and hover over ponds and come to look at people. A few at a time, not individuals with names. LIFE. ecology: kind swarm (src/world/creatures/swarms.js keeps them in the hourly tick); dormancy names the window in recipes/world/seasons.json (late spring to autumn they fly; the rest of the year they are nymphs in the pond). needs (src/world/ecology/needs.js): five, each 0..1, mood = their weighted geometric mean. water: still fresh water depthM deep in a body of at least body.minM2 square meters (a puddle is not a pond to breed in), full within okM, none beyond maxM. Sun: they want a sunny pond; nothing shades the island yet, so it is not scored. food: the midge field over a square of radiusM, against per times the ideal group (they share the midges lightly with the frogs). shelter: perches and stems to climb out on as nymphs, each plant weighted, the best within radiusM, from 'from' and full at 'full'. quiet: low sensitivity. company: n[0] to n[2], n[1] ideal. scored: any open ground or fresh water (where: near), for the beat over the pond and its banks. arrival (src/world/creatures/swarms.js, as the minnows'): a pond is right once its best square scores rightScore and it has room for startCount, for rightHoldH hours; after scoutAfterH, on a late morning (comeAtH) while they fly, a pair may come (scoutChance a day, surely by maxWaitDays); one per m2PerOne square meters of good water, up to company n[2]; they settle after settleAfterH at settleMood, grow by growShare of the room left each day while content, and are happy after happyHoldH hours with happyMin at happyMood. In their dormancy window nothing changes. gift: springs, the Water tool's Spring mode (unlocks.springs; docs 12, 13).",
+  "_look": "LOOK (M2 piece F). body: a blended-SDF southern hawker in real meters, body-local +z forward, origin at the middle of the thorax (it flies, so nothing stands on the ground): a small head with two large eyes, an ellipsoid thorax, a long thin abdomen, four flat wings, each on its own bone (wing.fl, wing.fr fore, wing.hl, wing.hr hind) pivoting at the thorax; bones listed here (no rig code). Wings are thicker than life (about 2 mm) so the mesh keeps them at its coarser levels of detail. displayScale 1.5 as the frogs and minnows; contactShadow 0. albedo (physical, linear): a dark body with blue-green spots (blotch), large blue-green eyes, smoky clear wings; wetSpecular: the glossy shell. motion (src/world/creatures/patrol.js; live only): kind patrol; each keeps a beat of beatPoints hold points within beatM of its group's home, over the water where there is any, hoverHeightM over the water or ground; it hovers hoverS seconds (bobbing bobM at bobHz), then darts to another point at up to dartMps (easing dartEase m/s per meter left, turning with agility); with perchChance after a hover, and at night, it rests on a reed or rush tip within perchReachM (perchOn: how tall each plant's tip stands at full size, perched at perchShare of it) for perchS seconds; never lower than clearM over the water or ground; banks rollPerAccel per m/s² of turning, at most maxRoll; wings beat wingHz (hovering, darting) times a second, swinging wingSwing radians, the hind pair hindLag radians behind the fore, drooping restDroop on a perch. A startle (presence) sends it fleeing up to fleeHeightM for fleeS seconds. presence (doc 23; real meters): ringM, calmSpeed, editReachM as the minnows'. find: tap within tapM (plus tapPerM per meter away), or keep one within lookM of the middle of the view, zoomed in to lookDistM, for holdS seconds.",
+  "body": {
+    "scaleReal": [0.065, 0.075],
+    "displayScale": 1.5,
+    "sizeJitter": 0.08,
+    "contactShadow": 0,
+    "variants": 3,
+    "variation": 0,
+    "prims": [
+      { "type": "ellipsoid", "bone": "body", "c": [0, 0, 0], "r": [0.0042, 0.005, 0.0068], "k": 0, "region": "back" },
+      { "type": "sphere", "bone": "body", "c": [0, 0.0004, 0.0088], "r": 0.0033, "k": 0.001, "region": "back" },
+      { "type": "sphere", "bone": "body", "c": [0.0027, 0.0016, 0.0108], "r": 0.0032, "k": 0.0008, "region": "eye" },
+      { "type": "sphere", "bone": "body", "c": [-0.0027, 0.0016, 0.0108], "r": 0.0032, "k": 0.0008, "region": "eye" },
+      { "type": "capsule", "bone": "body", "a": [0, -0.0004, -0.005], "b": [0, -0.0016, -0.056], "r": [0.0024, 0.0016], "k": 0.002, "region": "back" },
+      { "type": "ellipsoid", "bone": "wing.fl", "c": [0.0245, 0.0042, 0.0028], "r": [0.0225, 0.0011, 0.0058], "rot": [0, -6, 0], "k": 0.0006, "region": "wing" },
+      { "type": "ellipsoid", "bone": "wing.fr", "c": [-0.0245, 0.0042, 0.0028], "r": [0.0225, 0.0011, 0.0058], "rot": [0, 6, 0], "k": 0.0006, "region": "wing" },
+      { "type": "ellipsoid", "bone": "wing.hl", "c": [0.0235, 0.0042, -0.0062], "r": [0.0215, 0.0011, 0.0068], "rot": [0, 4, 0], "k": 0.0006, "region": "wing" },
+      { "type": "ellipsoid", "bone": "wing.hr", "c": [-0.0235, 0.0042, -0.0062], "r": [0.0215, 0.0011, 0.0068], "rot": [0, -4, 0], "k": 0.0006, "region": "wing" }
+    ],
+    "bones": [
+      { "name": "body", "parent": -1, "pivot": [0, 0, 0] },
+      { "name": "wing.fl", "parent": 0, "pivot": [0.0025, 0.0042, 0.0028] },
+      { "name": "wing.fr", "parent": 0, "pivot": [-0.0025, 0.0042, 0.0028] },
+      { "name": "wing.hl", "parent": 0, "pivot": [0.0025, 0.0042, -0.0062] },
+      { "name": "wing.hr", "parent": 0, "pivot": [-0.0025, 0.0042, -0.0062] }
+    ],
+    "albedo": { "back": [0.03, 0.032, 0.026], "belly": [0.05, 0.05, 0.035], "blotch": [0.09, 0.24, 0.2], "wing": [0.16, 0.17, 0.16],
+                "eye": [0.06, 0.16, 0.17], "eyeRing": [0.08, 0.2, 0.17] },
+    "blotch": { "scale": 520, "amount": 0.4 },
+    "bellyBelowNormalY": -0.6,
+    "wetSpecular": { "roughness": 0.22, "strength": 0.7 },
+    "skin": { "blendM": 0.0008 }
+  },
+  "bake": { "cellM": 0.0008, "lods": [{ "cellM": 0.0008, "toM": 1.5 }, { "cellM": 0.0014, "toM": 5 }, { "cellM": 0.0022 }] },
+  "motion": {
+    "kind": "patrol", "stepHz": 30,
+    "beatPoints": [3, 5], "beatM": 2.6, "hoverHeightM": [0.45, 1.3], "hoverS": [1, 3], "bobM": 0.03, "bobHz": 0.8,
+    "dartMps": 2.6, "dartEase": 3, "agility": 7, "clearM": 0.25,
+    "perchChance": 0.12, "perchReachM": 4, "perchS": [6, 18], "perchShare": [0.7, 0.95], "perchOn": { "reeds": 1.5, "rushes": 0.7, "iris": 0.8 },
+    "rollPerAccel": 0.12, "maxRoll": 0.7, "wingHz": [22, 27], "wingSwing": 0.55, "hindLag": 1.4, "restDroop": 0.12,
+    "fleeHeightM": 2.5, "fleeS": 12, "visitChance": 0.25, "visitM": 0.7
+  },
+  "presence": { "ringM": 1.2, "ringTrustShrink": 0.7, "ringMinM": 0.4, "calmSpeed": 0.9, "editReachM": 2,
+    "watch": { "reachM": 4, "minS": 20, "capS": 600, "trustPerMin": 0.015, "stillMps": 0.05 },
+    "feedTrust": 0, "ceiling": "curious", "bands": [0.2, 0.45, 0.65, 0.85], "curiousAt": 0.45 },
+  "find": { "tapM": 0.4, "tapPerM": 0.04, "lookM": 1.5, "lookDistM": 5, "holdS": 2.5 },
+  "reveal": { "return": "thicken", "growS": 0.6 },
   "ecology": {
     "kind": "swarm",
     "dormancy": "dragonflies",
-    "activity": { "pattern": "diurnal" },
+    "activity": { "pattern": "diurnal", "hours": [8, 19] },
     "needs": {
       "water": { "depthM": [0.1, 2.5], "damp": false, "body": { "minM2": 12 }, "okM": 3, "maxM": 10, "w": 0.3 },
       "food": { "fields": { "midges": 1 }, "radiusM": 6, "per": 1.5, "w": 0.25 },

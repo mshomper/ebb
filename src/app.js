@@ -310,7 +310,8 @@ export async function startApp(canvas, hooks = {}) {
   // Schools you can see (src/world/creatures/schools.js): minnows under the live water surface, one
   // system and one pass per species that has a body and a school's motion.
   const schools = swarmSpecies(speciesRecipes).filter((rec) => rec.body && rec.motion)
-    .map((rec) => createSchools({ world, recipe: rec, water, ripples, camera, presence, budget: tierSettings.liveCreatures ?? 120 }));
+    .map((rec) => createSchools({ world, recipe: rec, water, ripples, camera, presence, budget: tierSettings.liveCreatures ?? 120,
+      ground: (x, z) => terrain.sampleHeight(x, z) }));
   for (const s of schools) sim.addSystem(s);
   // `?minnows=N`, `?dragonflies=N` (testing, unsaved): a group of N comes at once and is settled,
   // once the island, its water and the journal are up (as `?frogs` does).
@@ -589,7 +590,12 @@ export async function startApp(canvas, hooks = {}) {
   function feedTap(x, y) {
     const p = groundAt(x, y);
     if (!p) return;
-    const message = creatures.feed(p[0], p[2]);
+    // Who you are feeding: the chosen chip, else the first found (as the tool shows it, src/ui/tools.js).
+    const known = ['frogs', ...schools.map((s) => s.id)].filter((id) => getStore('journal')?.species?.[id]?.ever);
+    const chosen = tools().feedSpecies;
+    const sp = chosen && known.includes(chosen) ? chosen : known[0] ?? 'frogs';
+    const school = schools.find((s) => s.id === sp);
+    const message = school ? school.feed(p[0], p[2]) : creatures.feed(p[0], p[2]);
     updateStore('feedUi', () => ({ message, at: performance.now() }));
   }
 

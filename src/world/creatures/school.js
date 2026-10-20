@@ -33,6 +33,9 @@ export function createSchool(o) {
   /** @type {Fish[]} */ const fish = [];
   let home = { ...o.home }, deep = { ...o.deep };
   let target = { x: home.x, z: home.z }, nextTurn = 0, nextRise = 0, dartUntil = -1, t = 0;
+  /** Crumbs you scattered on the water, and until when the school swirls up to them. @type {{ x: number, z: number } | null} */
+  let food = null;
+  let feedUntil = -1;
   /** @type {'day'|'night'|'winter'} */ let mood = 'day';
 
   /** Water at a point, with the bed. @param {number} x @param {number} z */
@@ -53,7 +56,7 @@ export function createSchool(o) {
     const w = at(x, z);
     const clear = M.clearM;
     let y;
-    if (f.rise > 0) y = w.surface - clear * 0.5;
+    if (f.rise > 0 || feedUntil > t) y = w.surface - clear * 0.5;
     else if (mood === 'day' && dartUntil < t) y = w.surface - M.dayDepthM;
     else y = w.bed + clear * 2;   // night, winter, darting: low
     return Math.min(w.surface - clear, Math.max(w.bed + clear, y));
@@ -91,8 +94,12 @@ export function createSchool(o) {
     /** Day, night or winter rest. @param {'day'|'night'|'winter'} m */
     setMood(m) { mood = m; },
     /** A fast swoop overhead: dart for the deep spot. */
-    startle() { dartUntil = t + M.dartS; target = { ...deep }; nextTurn = t + M.dartS; },
+    startle() { dartUntil = t + M.dartS; feedUntil = -1; target = { ...deep }; nextTurn = t + M.dartS; },
     get darting() { return dartUntil > t; },
+    /** Crumbs on the water here: the school swirls up to them for a while. @param {{ x: number, z: number }} p */
+    feed(p) { food = { ...p }; feedUntil = t + M.feedS; nextTurn = feedUntil; },
+    /** Swirling up to food now. */
+    get feeding() { return feedUntil > t; },
     /**
      * One fixed step of dt seconds.
      * @param {number} dt
@@ -101,16 +108,19 @@ export function createSchool(o) {
       t += dt;
       const darting = dartUntil > t;
       const winter = mood === 'winter';
+      // At food, the target circles the crumbs, so the school swirls around them near the surface.
+      if (food && feedUntil > t) target = { x: food.x + Math.cos(t * M.swirlHz * 6.283) * M.swirlM, z: food.z + Math.sin(t * M.swirlHz * 6.283) * M.swirlM };
       // A new heading for the whole school now and then: it turns as one.
       if (t >= nextTurn) {
         target = winter ? pick(deep.x, deep.z, 0.4, M.minDepthM) : pick(home.x, home.z, M.leashM, M.minDepthM);
         const [a, b] = mood === 'day' ? M.turnEveryS : M.nightTurnEveryS;
         nextTurn = t + a + (b - a) * rng.next();
       }
-      // Now and then one rises to sip at the surface (by day only), and rings it.
+      // Now and then one rises to sip at the surface (by day only), and rings it; at food, often.
       if (mood === 'day' && !darting && t >= nextRise && fish.length) {
         fish[rng.int(fish.length)].rise = M.riseS;
-        nextRise = t + M.riseEveryS[0] + (M.riseEveryS[1] - M.riseEveryS[0]) * rng.next();
+        const k = feedUntil > t ? M.feedRiseShare : 1;
+        nextRise = t + k * (M.riseEveryS[0] + (M.riseEveryS[1] - M.riseEveryS[0]) * rng.next());
       }
       const cruise = darting ? M.dartMps : winter ? M.restMps : mood === 'night' ? M.nightMps : M.cruiseMps;
       const maxV = cruise * 1.6;

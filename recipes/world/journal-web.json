@@ -127,6 +127,7 @@
     { "a": "minnows", "b": "pondweed", "ink": "flag:minnows:happy", "note": "Happy minnows brought the pondweed's seed." },
     { "a": "fresh", "b": "dragonflies", "ink": "flag:dragonflies:seen&flag:dragonflies:settled", "note": "Dragonflies lay their eggs in still fresh water, where their young grow." },
     { "a": "reeds", "b": "dragonflies", "ink": "flag:dragonflies:seen&seen:reeds", "note": "Dragonflies rest on the reed tips, and their young climb out up the stems." },
-    { "a": "midges", "b": "dragonflies", "ink": "flag:dragonflies:seen&flag:midges:seen", "note": "Dragonflies catch midges in flight." }
+    { "a": "midges", "b": "dragonflies", "ink": "flag:dragonflies:seen&flag:midges:seen", "note": "Dragonflies catch midges in flight." },
+    { "a": "you", "b": "minnows", "ink": "flag:you:fed:minnows", "note": "The minnows ate the crumbs you scattered." }
   ]
 }

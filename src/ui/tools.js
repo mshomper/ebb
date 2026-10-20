@@ -63,11 +63,12 @@ const TOOLS = [
 ];
 /**
  * Creatures the Feed tool offers food to (S6c-2), each shown once you have found it (the journal):
- * its own food, in its words. Minnows and others join in M2.
+ * its own food, in its words (minnows in M2; dragonflies take no food).
  * @type {{id: string, label: string, icon: string, hint: string}[]}
  */
 const FEED_SPECIES = [
   { id: 'frogs', label: 'Frogs', icon: 'frog', hint: 'A pinch of insects. Tap the bank near a frog, then give it room.' },
+  { id: 'minnows', label: 'Minnows', icon: 'minnow', hint: 'A scatter of crumbs. Tap the water near the school.' },
 ];
 const FEED_NONE = 'Nothing here takes food from you yet. Find a creature first.';
 /**

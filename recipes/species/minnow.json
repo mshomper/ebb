@@ -44,9 +44,17 @@
     "sepBodies": 1.1, "viewBodies": 5,
     "weights": { "separate": 2.2, "align": 1.4, "cohere": 0.9, "seek": 0.45, "shore": 2.5, "depth": 2 },
     "rollPerAccel": 0.9, "maxRoll": 0.9, "tailHz": [2.5, 18], "tailSwing": 0.35,
-    "riseEveryS": [5, 14], "riseS": 2.5, "riseMps": 0.18, "ringStrength": 0.6, "ringM": 0.05
+    "riseEveryS": [5, 14], "riseS": 2.5, "riseMps": 0.18,
+    "feedS": 14, "swirlM": 0.18, "swirlHz": 0.35, "feedRiseShare": 0.08, "ringStrength": 0.6, "ringM": 0.05
   },
-  "presence": { "ringM": 1.8, "calmSpeed": 0.9, "editReachM": 2.5 },
+  "presence": { "ringM": 1.8, "ringTrustShrink": 0.8, "ringMinM": 0.4, "calmSpeed": 0.9, "editReachM": 2.5,
+    "watch": { "reachM": 3, "minS": 20, "capS": 600, "trustPerMin": 0.012, "stillMps": 0.05 },
+    "feedTrust": 0.06, "fullH": 6, "ceiling": "familiar", "bands": [0.2, 0.45, 0.65, 0.85] },
+  "feed": { "reachM": 4, "messages": {
+    "coming": "The minnows have seen it. Watch them swirl up.",
+    "none": "No school is near enough to see it. Try the deep water, near the minnows.",
+    "land": "Minnows feed in the water. Scatter the crumbs on the pond.",
+    "unknown": "Nothing in the pond knows to look for food yet." } },
   "find": { "tapM": 0.35, "tapPerM": 0.03, "lookM": 1.2, "lookDistM": 4, "holdS": 2.5 },
   "reveal": { "return": "thicken", "growS": 0.6 },
   "ecology": {

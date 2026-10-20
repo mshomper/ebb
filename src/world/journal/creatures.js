@@ -182,6 +182,15 @@ function observeSchool(j, out, ctx, at, sp, rec, note) {
     } else if (e.name === 'species:happy') {
       setFlag(j, `${sp}:happy`);
       if (k.ever) note(rec, 'happy', sp);
+    } else if (e.name === 'creature:ate') {
+      // They ate what you offered: noted the first time, and the web's "you" link inks.
+      if (learnOnce(k, 'fed') && k.ever) note(rec, 'fed', sp);
+      setFlag(j, `you:fed:${sp}`);
+    } else if (e.name === 'creature:trusted' && k.ever) {
+      const t = rec.trust?.notes?.[e.payload.word];
+      if (t) out.push({ hour, date: at.date, text: t, sp, kind: 'trusted' });
+      learnOnce(k, `trust:${e.payload.word}`);
+      if (e.payload.word !== 'tolerant') learnOnce(k, 'trust:tolerant');
     }
   }
   if (k.ever) {

@@ -7,7 +7,8 @@ import { runHour, hashWorldState } from '../src/sim/tick.js';
 import { initialJournal, observe, foundAnimal } from '../src/world/journal/observe.js';
 import { due, grant } from '../src/world/expansion.js';
 import { createSchool } from '../src/world/creatures/school.js';
-import { roomOf } from '../src/world/creatures/swarms.js';
+import { createPatrol } from '../src/world/creatures/patrol.js';
+import { roomOf, applySwarmTrust, addSwarmEvent } from '../src/world/creatures/swarms.js';
 import { suitability } from '../src/world/growth/coarse.js';
 import { HABITAT_ORIGIN } from '../src/world/growth/habitat.js';
 import { needMaps, waterBodies } from '../src/world/ecology/needs.js';
@@ -359,6 +360,74 @@ export function addPondLifeTests(test, assert, eq) {
     eq(g[0].icon, 'wellspring', 'its icon');
     eq(g[0].title, 'A gift from the dragonflies', 'its title');
     assert(g[0].line.includes('Spring'), 'it says where to find it');
+  });
+
+  test(G, 'dragonflies patrol a beat: they hover, dart and rest on reeds, roost at night, and rise when startled', async () => {
+    const M = (await (await fetch('../recipes/species/dragonfly.json')).json()).motion;
+    // A round pond 6 m across with its surface at 0, flat ground at 0.1 around it, and two reed clumps.
+    const water = (/** @type {number} */ x, /** @type {number} */ z) => { const r2 = (x * x + z * z) / 9; return { surface: 0, depth: Math.max(0, 0.8 * (1 - r2)) }; };
+    const ground = (/** @type {number} */ x, /** @type {number} */ z) => (x * x + z * z < 9 ? -water(x, z).depth : 0.1);
+    const perches = () => [{ x: 3.2, z: 0, h: 1.4 }, { x: 0, z: -3.3, h: 1.2 }];
+    const make = () => createPatrol({ id: 1, seed: 3, count: 4, home: { x: 0, z: 0 }, deep: { x: 0, z: 0 }, size: 1.5, M, env: { water, ground, perches } });
+    const a = make(), b = make();
+    /** @type {Record<string, number>} */ const seen = { hover: 0, dart: 0, perch: 0, flee: 0 };
+    let low = 0;
+    for (let i = 0; i < 30 * 120; i++) {
+      a.step(1 / 30); b.step(1 / 30);
+      for (const f of a.fish) {
+        seen[f.mode]++;
+        const floorY = water(f.x, f.z).depth > 0.01 ? 0 : ground(f.x, f.z);
+        if (f.mode !== 'perch' && f.y < floorY + M.clearM - 1e-6) low++;
+      }
+    }
+    eq(low, 0, 'steps a flying dragonfly was below its clearance');
+    assert(seen.hover > 0 && seen.dart > 0, `hover ${seen.hover}, dart ${seen.dart} steps`);
+    assert(seen.perch > 0, `perched ${seen.perch} steps in two minutes`);
+    eq(a.fish.map((f) => f.x.toFixed(5)).join(), b.fish.map((f) => f.x.toFixed(5)).join(), 'the same seed, the same beat');
+    // At night every one heads for a reed and rests there.
+    a.setMood('night');
+    for (let i = 0; i < 30 * 40; i++) a.step(1 / 30);
+    assert(a.fish.every((f) => f.mode === 'perch'), `at night: ${a.fish.map((f) => f.mode).join(', ')}`);
+    // A startle by day sends them up.
+    b.startle();
+    const y0 = b.centre().y;
+    for (let i = 0; i < 30 * 2; i++) b.step(1 / 30);
+    assert(b.centre().y > y0, `startled: up from ${y0.toFixed(2)} to ${b.centre().y.toFixed(2)} m`);
+    return `two minutes: hover ${seen.hover}, dart ${seen.dart}, perch ${seen.perch} fly-steps`;
+  });
+
+  test(G, 'trust for a school: quiet watching and meals earn it in the tick, never past the ceiling', async () => {
+    const R = await loadEcologyRecipes();
+    const P = R.species.minnow.presence, D = R.species.dragonfly.presence;
+    const S = { groups: [{ id: 1, count: 10 }], pending: [{ kind: 'watched', minutes: 10, hour: 5 }, { kind: 'fed', hour: 5 }, { kind: 'fed', hour: 6 }] };
+    const ev = applySwarmTrust(S, P, 'minnows');
+    assert(/** @type {any} */ (S).trust > 0.2, `trust after ten minutes and two meals: ${/** @type {any} */ (S).trust}`);
+    eq(ev.filter((e) => e.name === 'creature:ate').length, 2, 'meals told');
+    eq(ev.find((e) => e.name === 'creature:trusted')?.payload.word, 'tolerant', 'the word it moved up to');
+    eq(/** @type {any} */ (S).pending, undefined, 'pending cleared');
+    // Dragonflies stop at Curious, however long you watch.
+    const F = { groups: [{ id: 1, count: 4 }], pending: [{ kind: 'watched', minutes: 600, hour: 5 }] };
+    applySwarmTrust(F, D, 'dragonflies');
+    assert(/** @type {any} */ (F).trust < D.bands[2] && /** @type {any} */ (F).trust >= D.bands[1], `dragonflies' trust ${/** @type {any} */ (F).trust} stays Curious`);
+    // Recorded in live play on the world, not on the previous hour's state.
+    const state = { creatures: { minnows: { groups: [{ id: 1, count: 3 }] } } };
+    const next = addSwarmEvent(state, 'minnows', { kind: 'fed', hour: 3 });
+    eq(/** @type {any} */ (state.creatures.minnows).pending, undefined, 'the old state is untouched');
+    eq(next.creatures.minnows.pending.length, 1, 'the event is on the new state');
+  });
+
+  test(G, 'crumbs on the water bring the school swirling up to them', async () => {
+    const M = (await (await fetch('../recipes/species/minnow.json')).json()).motion;
+    const water = (/** @type {number} */ x, /** @type {number} */ z) => ({ surface: 0, depth: Math.max(0, 1 - (x * x + z * z) / 4) });
+    const s = createSchool({ id: 1, seed: 9, count: 15, home: { x: -0.8, z: 0 }, deep: { x: 0, z: 0 }, size: 1.5, M, env: { water } });
+    for (let i = 0; i < 30 * 3; i++) s.step(1 / 30);
+    const food = { x: 0.9, z: 0.4 };
+    s.feed(food);
+    for (let i = 0; i < 30 * 6; i++) s.step(1 / 30);
+    const c = s.centre();
+    assert(Math.hypot(c.x - food.x, c.z - food.z) < 0.6, `the school is ${Math.hypot(c.x - food.x, c.z - food.z).toFixed(2)} m from the crumbs`);
+    assert(c.y > -0.1, `and up near the surface (${c.y.toFixed(2)} m)`);
+    assert(s.feeding, 'still swirling');
   });
 
   test(G, 'the species list knows every recipe by its world key', async () => {
