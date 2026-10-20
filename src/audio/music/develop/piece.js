@@ -27,8 +27,9 @@ const abc = (meter, key, body) => `X:1\nM:${meter}\nL:1/8\nK:${key}\nV:mel\n${bo
  * @param {any} material
  * @param {{bars: import('./harmony.js').HBar[]}} walked
  * @param {import('./plan.js').PhrasePlan[]} plan
- * @param {{id: string, title: string, slot: string, weather: string, meter: string, tempo: [number, number], template: string, seed: number, report: any, ending: any, palette?: any}} o
- *   palette: the instruments (melody, accomp, bed) from the material, or the piano with a strings bed
+ * @param {{id: string, title: string, slot: string, weather: string, meter: string, tempo: [number, number], template: string, seed: number, report: any, ending: any, palette?: any, abc?: Record<string, string>}} o
+ *   palette: the instruments (melody, accomp, bed) from the material, or the piano with a strings bed;
+ *   abc: each section's written ABC (a melody), by section name, in place of the chords over rests
  * @returns {any} a piece, recipes/music/pieces/<id>.json shape, plus a 'grown' block for the lab
  */
 export function writePiece(material, walked, plan, o) {
@@ -44,7 +45,7 @@ export function writePiece(material, walked, plan, o) {
     // A held chord sounds on through the next bar rather than being struck again (a phrase's first
     // bar always names its chord).
     const written = bars.map((b, k) => (b.held && k > 0 && b.chords.length === 1 ? Array.from({ length: span }, () => `z${len}`).join(' | ') : abcBar(b.chords, len, false, span)));
-    sections[names[i]] = { abc: abc(o.meter, material.home, written.join(' | ') + ' |'), bars: bars.length * span };
+    sections[names[i]] = { abc: o.abc?.[names[i]] ?? abc(o.meter, material.home, written.join(' | ') + ' |'), bars: bars.length * span };
     const rise = ph.tension[1] - ph.tension[0];
     bed[names[i]] = i === 0 ? 'in' : rise > 0.15 ? 'swell' : 'steady';
   });
@@ -52,7 +53,7 @@ export function writePiece(material, walked, plan, o) {
   const lastBar = walked.bars[walked.bars.length - 1];
   const endBars = o.ending?.hold ? [[lastBar.chords[lastBar.chords.length - 1].symbol, 0]] : (o.ending?.bars ?? [['G/D', 0.2], ['D', 0]]);
   const coda = endBars.map((/** @type {[string, number]} */ [sym], /** @type {number} */ k) => (k === endBars.length - 1 ? `"${sym}"!fermata!z${len}` : abcBar([{ symbol: sym, place: '', at: 0, color: false }], len, false, span)));
-  sections.coda = { abc: abc(o.meter, material.home, coda.join(' | ') + ' |'), bars: (endBars.length - 1) * span + 1 };
+  sections.coda = { abc: o.abc?.coda ?? abc(o.meter, material.home, coda.join(' | ') + ' |'), bars: (endBars.length - 1) * span + 1 };
   bed.coda = 'thin';
 
   return {
@@ -73,7 +74,7 @@ export function writePiece(material, walked, plan, o) {
     form: { grammar: `${names.join(' ')} coda`, short: `${names[0]} coda`, optional: {} },
     sections,
     variation: { octave: [0], paraphrase: 0, ornament: 0, textures: { struck: 0.55, arpeggio: 0.35, roll: 0.1 } },
-    notes: `Grown by the development engine (phase 4a, harmony only): the ${o.template} template, seed ${o.seed}.`,
+    notes: o.abc ? `Grown by the development engine (phase 4b, with a melody): the ${o.template} template, seed ${o.seed}.` : `Grown by the development engine (phase 4a, harmony only): the ${o.template} template, seed ${o.seed}.`,
     grown: { season: material.season, slot: o.slot, weather: o.weather, seed: o.seed, template: o.template, report: o.report },
   };
 }

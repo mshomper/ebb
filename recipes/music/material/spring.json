@@ -891,5 +891,19 @@
         "4/4": 0.5
       }
     }
+  },
+  "motifsNote": "The motif bank (phase 4b, docs/audio-develop-plan.md): eight fragments cut from the spring tides and three spring motifs. notes are [degree, eighths]: degrees of D major counted from D4 (0; 7 is D5, -1 C#4, -2 B3), eighths the rhythm; meter is the meter it was written in (it is re-fitted to others). role: what it does in a phrase (opening, answer, falling, climbing, cadential; develop.json melody.pools).",
+  "motifs": {
+    "first-water-rise": { "name": "First water rise", "from": "Tide 1, bars 1 and 2", "role": "opening", "meter": "3/4", "notes": [[0, 3], [1, 1], [2, 2], [3, 2], [4, 4]] },
+    "first-water-fall": { "name": "First water fall", "from": "Tide 1, bar 3", "role": "falling", "meter": "3/4", "notes": [[4, 2], [3, 1], [2, 1], [1, 2]] },
+    "moon-pull-run": { "name": "Moon pull run", "from": "Tide 4, bar 1", "role": "climbing", "meter": "3/4", "notes": [[0, 1], [1, 1], [2, 1], [3, 1], [4, 1], [5, 1]] },
+    "moon-pull-lean": { "name": "Moon pull lean", "from": "Tide 4, bar 2", "role": "cadential", "meter": "3/4", "notes": [[5, 4], [4, 2]] },
+    "sandbar-lilt": { "name": "Sandbar lilt", "from": "Tide 2, bars 1 and 2", "role": "opening", "meter": "6/8", "notes": [[-2, 2], [-1, 1], [0, 2], [1, 1], [2, 6]] },
+    "sandbar-turn": { "name": "Sandbar turn", "from": "Tide 2, bar 3", "role": "falling", "meter": "6/8", "notes": [[2, 2], [1, 1], [0, 1], [-1, 1], [-2, 1]] },
+    "breath": { "name": "Breath", "from": "Tide 3, bar 1", "role": "opening", "meter": "4/4", "notes": [[2, 2], [3, 2], [4, 4]] },
+    "breath-sigh": { "name": "Breath sigh", "from": "Tide 3, bar 2", "role": "cadential", "meter": "4/4", "notes": [[4, 2], [3, 1], [2, 1], [1, 2], [0, 2]] },
+    "green-shoot": { "name": "Green shoot", "from": "spring", "role": "climbing", "meter": "3/4", "notes": [[5, 2], [6, 1], [7, 3]] },
+    "puddle": { "name": "Puddle", "from": "spring", "role": "answer", "meter": "3/4", "notes": [[4, 2], [2, 2], [3, 1], [4, 1], [5, 6]] },
+    "open-window": { "name": "Open window", "from": "spring", "role": "cadential", "meter": "3/4", "notes": [[3, 3], [2, 1], [1, 2], [2, 6]] }
   }
 }

@@ -409,7 +409,7 @@
         "on": false
       }
     },
-    "guitar": {"tuning":{"policy":"equal","minConfidence":0.3,"stretch":{"bassCents":0,"trebleCents":0,"pivotMidi":64}},"dampers":{"bassS":0.8,"trebleS":0.4,"undampedFromMidi":0},"register":{"bassDb":0,"trebleDb":-1.5,"pivotMidi":60},"release":{"db":-60,"shortNoteBoostDb":0,"shortNoteS":0},"pedalNoise":{"from":"pedal-knight","db":-20,"on":false},"load":{"maxTailS":0,"monoBelowMidi":0,"sets":["pluck"]},"stealing":{"maxVoices":{"desktop":16,"mobile":8},"fadeS":0.05,"decay":{"bassDbPerS":4,"trebleDbPerS":10}}},
+    "guitar": {"layers":{"bounds":[43,56],"fadeWidth":20,"law":0.5,"blend":"mix","seed":1},"tuning":{"policy":"equal","minConfidence":0.3,"stretch":{"bassCents":0,"trebleCents":0,"pivotMidi":64}},"dampers":{"bassS":0.8,"trebleS":0.4,"undampedFromMidi":0},"register":{"bassDb":0,"trebleDb":-1.5,"pivotMidi":60},"release":{"db":-60,"shortNoteBoostDb":0,"shortNoteS":0},"pedalNoise":{"from":"pedal-knight","db":-20,"on":false},"load":{"maxTailS":0,"monoBelowMidi":0,"sets":["pluck"]},"stealing":{"maxVoices":{"desktop":16,"mobile":8},"fadeS":0.05,"decay":{"bassDbPerS":4,"trebleDbPerS":10}}},
     "harp": {
       "tuning": {
         "policy": "equal",
