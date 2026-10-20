@@ -13,7 +13,8 @@ import { get, subscribe } from '../core/store.js';
 import { dispatch } from '../input/actions.js';
 import { ensureIconSprite, iconSvg } from './icons/icons.js';
 import { drawSketch, hasSketch } from './sketches/index.js';
-import { webView } from './journal-web.js';
+import { webView, tiesStrip } from './journal-web.js';
+import { nodeOfPage } from '../world/journal/web.js';
 
 /** Sections, in order, with their drawn icons. */
 const VIEWS = [
@@ -70,19 +71,39 @@ export function mountJournal(parent, live, buttonParent = parent) {
   const sizeBtn = /** @type {HTMLButtonElement} */ (panel.querySelector('[data-act="size"]'));
   const tabs = /** @type {HTMLButtonElement[]} */ ([...panel.querySelectorAll('[data-view]')]);
 
-  /** The name tapped in the Web section, whose links stand out (null for the whole web). @type {string | null} */
-  let webFocus = null;
-  /** Tap a name in the web: bring its links forward, or let go if it was already chosen. @param {string} id */
+  // The Web section (journal-web.js): the trail of things tapped there (the last is the one in the
+  // middle), the shelf tab open (null follows the middle one's kind), and the thing the journal
+  // last showed, which the Web opens on.
+  /** @type {string[]} */ let webTrail = [];
+  /** @type {string | null} */ let webShelf = null;
+  /** @type {string | null} */ let lastShown = null;
+  /** The last journalUi.webAtN taken. @type {number | undefined} */ let webAtSeen;
+  /** Put a thing in the middle of the Web: back along the trail if it is on it, else onto its end. @param {string} id */
+  function toTrail(id) {
+    const at = webTrail.indexOf(id);
+    webTrail = at >= 0 ? webTrail.slice(0, at + 1) : [...webTrail, id].slice(-(live.web.trailMax ?? 4));
+  }
+  /** Tap a thing in the Web, or a chip on a page: it moves to the middle of the Web. @param {string} id */
   function focusWeb(id) {
-    webFocus = webFocus === id ? null : id;
-    render();
+    if (lastShown && lastShown !== id) toTrail(lastShown);
+    toTrail(id);
+    webShelf = null;
+    lastShown = null;
+    const ui = get('journalUi');
+    if (ui?.view !== 'web') dispatch({ type: 'ui.journal', view: 'web', page: null });
+    else render();
   }
 
   /** @param {MouseEvent} e */
   function onClick(e) {
-    const node = /** @type {HTMLElement | null} */ (/** @type {HTMLElement} */ (e.target).closest('[data-web-node]'));
+    const t = /** @type {HTMLElement} */ (e.target);
+    const node = /** @type {HTMLElement | null} */ (t.closest('[data-web-node]'));
     if (node?.dataset.webNode) { focusWeb(node.dataset.webNode); return; }
-    const b = /** @type {HTMLElement | null} */ (/** @type {HTMLElement} */ (e.target).closest('button'));
+    const crumb = /** @type {HTMLElement | null} */ (t.closest('[data-web-trail]'));
+    if (crumb?.dataset.webTrail) { webTrail = webTrail.slice(0, Number(crumb.dataset.webTrail) + 1); webShelf = null; render(); return; }
+    const tab = /** @type {HTMLElement | null} */ (t.closest('[data-web-shelf]'));
+    if (tab?.dataset.webShelf) { webShelf = tab.dataset.webShelf; render(); return; }
+    const b = /** @type {HTMLElement | null} */ (t.closest('button'));
     if (!b) return;
     const ui = get('journalUi') ?? {};
     if (b === openBtn) dispatch({ type: 'ui.journal', toggle: true });
@@ -98,11 +119,6 @@ export function mountJournal(parent, live, buttonParent = parent) {
   }
   /** Keep pointer and wheel input on the journal from reaching the island. @param {Event} e */
   const stop = (e) => e.stopPropagation();
-  // Names in the web are focusable: Enter or Space chooses one.
-  panel.addEventListener('keydown', (e) => {
-    const node = /** @type {HTMLElement | null} */ (/** @type {HTMLElement} */ (e.target).closest?.('[data-web-node]'));
-    if (node?.dataset.webNode && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); focusWeb(node.dataset.webNode); }
-  });
   for (const r of [btnRoot, panel]) {
     r.addEventListener('click', onClick);
     r.addEventListener('pointerdown', stop);
@@ -135,10 +151,17 @@ export function mountJournal(parent, live, buttonParent = parent) {
     for (const t of tabs) t.setAttribute('aria-pressed', String(t.dataset.view === ui.view));
     const paged = (ui.view === 'living' || ui.view === 'ground') && !!ui.page && live.hasPage(ui.page);
     backBtn.hidden = !paged;
+    // The Web opens on whatever the journal last showed.
+    if (paged) lastShown = nodeOfPage(live.web, ui.page);
+    if (ui.view === 'web' && lastShown) { toTrail(lastShown); lastShown = null; webShelf = null; }
+    // A note about a thing with no page of its own opens the Web on it.
+    if (ui.view === 'web' && ui.webAt && ui.webAtN !== webAtSeen) { webAtSeen = ui.webAtN; toTrail(ui.webAt); webShelf = null; }
+    if (ui.view === 'web' && !webTrail.length) webTrail = [live.web.start];
     const html = ui.view === 'notes' ? notesView() : ui.view === 'almanac' ? almanacView()
-      : ui.view === 'web' ? webView(live.describeWeb(), live.web, webFocus)
+      : ui.view === 'web' ? webView(live.describeWeb(), live.web, { trail: webTrail, shelf: webShelf })
       : paged ? pageView(/** @type {string} */ (ui.page)) : ui.view === 'ground' ? listView(island.groundOrder) : listView(words.order) + smallLivesView();
-    const key = `${ui.view}|${ui.page}`;
+    // A new thing in the middle of the Web scrolls back up to its card.
+    const key = `${ui.view}|${ui.page}|${ui.view === 'web' ? webTrail[webTrail.length - 1] : ''}`;
     if (html === body.dataset.html) return;
     body.innerHTML = html;
     body.dataset.html = html;
@@ -236,6 +259,7 @@ export function mountJournal(parent, live, buttonParent = parent) {
       <div class="ebb-jpage__top">${art ? '' : `<span class="ebb-jpage__sketch">${iconSvg(d.icon)}</span>`}<h3>${esc(d.name)}</h3>${show}</div>
       ${art}
       <p class="ebb-jpage__status ebb-journal__voice">${esc(d.status)}</p>
+      ${tiesStrip(live.describeWeb(), live.web, nodeOfPage(live.web, id))}
       ${d.named?.length ? section('Named', `<ul class="ebb-jpage__list">${d.named.map((/** @type {string} */ n) => `<li>${esc(n)}</li>`).join('')}</ul>`) : ''}
       ${middle}
       ${section('Field notes', `<ul class="ebb-jpage__list ebb-jpage__field">${lines(d.field, d.fieldHint)}</ul>`)}
@@ -261,9 +285,10 @@ export function mountJournal(parent, live, buttonParent = parent) {
     const R = words.readMarks;
     const item = (/** @type {any} */ n, /** @type {boolean} */ isNew) => {
       const inner = `<span class="ebb-journal__voice">${isNew ? NEW : ''}${esc(n.text)}</span><small>${esc(n.date)}</small>`;
-      return n.sp && live.hasPage(n.sp)
-        ? `<li><button type="button" class="ebb-jnotes__row" data-page="${esc(n.sp)}">${inner}</button></li>`
-        : `<li><div class="ebb-jnotes__row">${inner}</div></li>`;
+      if (n.sp && live.hasPage(n.sp)) return `<li><button type="button" class="ebb-jnotes__row" data-page="${esc(n.sp)}">${inner}</button></li>`;
+      // A note about a thing with no page of its own (a rock pool, the wrack) leads to it in the Web.
+      if (n.sp && live.web.nodes?.[n.sp]) return `<li><button type="button" class="ebb-jnotes__row" data-web-node="${esc(n.sp)}">${inner}</button></li>`;
+      return `<li><div class="ebb-jnotes__row">${inner}</div></li>`;
     };
     const missed = j.notes.filter((n) => live.noteState(n, since) === 'missed');
     const rest = j.notes.filter((n) => live.noteState(n, since) !== 'missed');

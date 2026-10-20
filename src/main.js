@@ -74,7 +74,7 @@ startApp(canvas, { onDeviceLost: (rebuilding) => showRebuildingNote(rebuilding),
       const [words, island, web, wash] = await Promise.all([loadRecipe('world/journal'), loadRecipe('world/journal-island'),
         loadRecipe('world/journal-web'), loadRecipe('world/journal-wash')]);
       const journal = createJournal({ world: r.world, words, island, web, wash, creatures: /** @type {any} */ (r).creatures ?? null,
-        finds: /** @type {any} */ (r).finds ?? null });
+        finds: /** @type {any} */ (r).finds ?? null, shore: /** @type {any} */ (r).shorePresence ?? null });
       mountJournal(document.body, journal, hud.layer);
       mountIslandNotes(document.body, words);
       // A save that came back from earlier copies says so, calmly (src/ui/damaged.js).

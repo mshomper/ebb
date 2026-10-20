@@ -11,8 +11,9 @@ import { drawSketch, hasSketch } from '../src/ui/sketches/index.js';
 import { describe, identify, showMeSpot } from '../src/world/journal/describe.js';
 import { groundKind, groundCard, groundSurvey, describeGround } from '../src/world/journal/ground.js';
 import { almanac } from '../src/world/journal/almanac.js';
-import { inkWeb, describeWeb } from '../src/world/journal/web.js';
-import { webView } from '../src/ui/journal-web.js';
+import { inkWeb, describeWeb, tiesOf } from '../src/world/journal/web.js';
+import { webView, tiesStrip } from '../src/ui/journal-web.js';
+import { ICON_NAMES } from '../src/ui/icons/icons.js';
 import { washMap } from '../src/world/journal/wash.js';
 import { stampNotes, markShown, markNotesSeen, markPageSeen, readOf, noteState, unread } from '../src/world/journal/read.js';
 import { STAGE } from '../src/world/growth/coarse.js';
@@ -303,14 +304,14 @@ export function addJournalTests(test, assert, eq) {
     eq(c.notes.length, 0, 'notes a second time');
     eq(c.journal, b.journal, 'the journal is unchanged by a repeat');
     const d = describeWeb(b.journal, survey, web);
-    const node = (/** @type {string} */ id) => d.rows.flatMap((r) => r.nodes).find((n) => n.id === id);
+    const node = (/** @type {string} */ id) => d.byId[id];
     assert(node('soil')?.known && node('grass')?.known, 'soil and grass are known');
     assert(node('frogs')?.known, 'frogs are known once seen eating');
     assert(node('you')?.known, 'you are always known');
     assert(node('midges')?.known, 'midges are known once frogs are seen eating them');
     const before = describeWeb(a.journal, survey, web);
-    assert(!before.rows.flatMap((r) => r.nodes).find((n) => n.id === 'midges')?.known, 'midges are not known before');
-    const page = webView(before, web, 'midges');
+    assert(!before.byId.midges.known, 'midges are not known before');
+    const page = webView(before, web, { trail: ['midges'], shelf: null });
     assert(!page.includes('Midges'), 'an unknown name is never written, even when tapped');
     assert(page.includes(web.unknown.hint.replace('{list}', 'reeds')), 'tapping it hints at what it needs');
     assert(d.links.find((l) => l.a === 'midges' && l.b === 'frogs')?.inked, 'the midges link is inked');
@@ -318,35 +319,79 @@ export function addJournalTests(test, assert, eq) {
     return `${b.journal.flags.filter((f) => f.startsWith('web:')).length} of ${web.links.length} links inked`;
   });
 
-  test(JOURNAL, 'the web drawing: links join neighbours without crossing, names read at 16 px on a phone', async () => {
-    const web = await loadWeb();
-    const rowOf = /** @type {Record<string, [number, number]>} */ ({});
-    web.rows.forEach((/** @type {any} */ r, /** @type {number} */ i) => r.ids.forEach((/** @type {string} */ id, /** @type {number} */ j) => { rowOf[id] = [i, j]; }));
-    for (const id of Object.keys(web.nodes)) assert(rowOf[id], `${id} is in a row`);
+  test(JOURNAL, 'the web recipe: every ground feature, plant, find and animal is a node, with true ties and drawn icons', async () => {
+    const [web, words, island] = await Promise.all([loadWeb(), loadWords(), loadIsland()]);
+    const shore = await fetch('../recipes/world/shore.json').then((r) => r.json());
+    const ids = Object.keys(web.nodes);
+    const needed = ['soil', 'sand', 'rock', 'moss', 'fresh', 'shore', 'pool', 'stones', 'strandline', 'wrack', 'kelp', 'lichen', 'ripples', 'wetSand', 'mud',
+      ...island.groundOrder, ...words.order, ...words.findOrder];
+    for (const id of needed) assert(ids.includes(id) || ids.some((n) => web.nodes[n].page === id), `${id} has a node`);
+    const zoneIds = shore.zones.map((/** @type {any} */ z) => z.id);
+    for (const id of ids) {
+      const n = web.nodes[id];
+      assert(web.kinds[n.kind], `${id} has a kind with a shelf tab`);
+      assert(ICON_NAMES.includes(n.icon), `${id}'s icon ${n.icon} is drawn`);
+      if (n.page) assert(words.species[n.page] || island.ground[n.page], `${id}'s page ${n.page} exists`);
+      for (const k of [n.on ?? []].flat()) assert([...zoneIds, 'pool', 'strandline', ...island.groundOrder].includes(k), `${id} is on ${k}, a thing the island can hold`);
+      assert(n.always || n.page || n.on || n.flag, `${id} can become known`);
+    }
+    for (const k of Object.values(web.kinds)) assert(ICON_NAMES.includes(/** @type {any} */ (k).icon), `tab icon ${/** @type {any} */ (k).icon} is drawn`);
+    const kinds = /^(grows|seen|seenOn|here|mossOnRock|flag)$/;
     for (const l of web.links) {
-      const [ra, ja] = rowOf[l.a] ?? [-9, 0], [rb, jb] = rowOf[l.b] ?? [-9, 0];
-      assert(Math.abs(ra - rb) === 1 || (ra === rb && Math.abs(ja - jb) === 1), `${l.a} to ${l.b} joins neighbouring rows, or neighbours in a row`);
+      assert(web.nodes[l.a] && web.nodes[l.b], `${l.a} > ${l.b} joins two nodes`);
+      assert(kinds.test(l.ink.split(':')[0]), `${l.a} > ${l.b} has a known trigger`);
+      assert(l.note, `${l.a} > ${l.b} has a note`);
     }
-    // Two links between the same pair of rows cross when their ends are in opposite order.
-    const down = web.links.filter((/** @type {any} */ l) => rowOf[l.a][0] !== rowOf[l.b][0]).map((/** @type {any} */ l) => {
-      const [p, q] = rowOf[l.a][0] < rowOf[l.b][0] ? [rowOf[l.a], rowOf[l.b]] : [rowOf[l.b], rowOf[l.a]];
-      return { row: p[0], top: p[1], bot: q[1], name: `${l.a}-${l.b}` };
-    });
-    for (const s of down) for (const t of down) {
-      if (s.row === t.row) assert((s.top - t.top) * (s.bot - t.bot) >= 0, `${s.name} crosses ${t.name}`);
+    // Ties true to the game (recipes/species/finds.json zones).
+    const finds = await fetch('../recipes/species/finds.json').then((r) => r.json());
+    const needs = (/** @type {string} */ b) => web.links.filter((/** @type {any} */ l) => l.b === b).map((/** @type {any} */ l) => l.a);
+    const zoneNode = (/** @type {string} */ z) => (z === 'channelled' ? 'wrack' : z);
+    for (const [sp, k] of Object.entries(finds.kinds)) {
+      for (const z of /** @type {any} */ (k).zones) assert(needs(sp).includes(zoneNode(z)), `${sp} needs ${zoneNode(z)}, where the game puts it`);
     }
+    assert(needs('anemone').includes('shore'), 'the anemone needs the tide band too');
+    return `${ids.length} nodes, ${web.links.length} ties`;
+  });
+
+  test(JOURNAL, 'the web page: chips wrap, the shelf is a fixed grid, the unseen stay pencil, and a new node needs no layout', async () => {
+    const web = await loadWeb();
     const blank = { flags: [], species: {} };
-    const svg = webView(describeWeb(/** @type {any} */ (blank), null, web), web, null);
-    assert(!/NaN|undefined/.test(svg), 'the drawing is clean');
-    for (const id of ['frogs', 'midges']) assert(!svg.includes(`>${web.nodes[id].label}<`), `${id} is a ? on a new island`);
-    // The widest case: every name known, so every chip carries its full name.
-    const species = Object.fromEntries(Object.values(web.nodes).filter((/** @type {any} */ n) => n.page).map((/** @type {any} */ n) => [n.page, { ever: true }]));
-    const flags = Object.values(web.nodes).filter((/** @type {any} */ n) => n.flag).map((/** @type {any} */ n) => n.flag);
-    const full = webView(describeWeb(/** @type {any} */ ({ flags, species }), null, web), web, null);
-    const W = Number(/viewBox="0 0 ([\d.]+)/.exec(full)?.[1]);
-    const phonePx = web.textPx * (375 - 32) / W;
-    assert(phonePx >= 16, `with every name known, names are ${phonePx.toFixed(1)} px on a 375 px phone`);
-    return `widest row, every name known: ${W.toFixed(0)} units; names at ${phonePx.toFixed(1)} px on a phone`;
+    const d0 = describeWeb(/** @type {any} */ (blank), null, web);
+    const html = webView(d0, web, { trail: [], shelf: null });
+    assert(!/NaN|undefined/.test(html), 'the page is clean');
+    assert(!/width="|style="width|<svg class="ebb-jweb/.test(html), 'no fixed widths: nothing can widen the page');
+    assert(html.includes(`--jw-cols: ${web.shelfCols}`), 'the shelf has its recipe column count');
+    for (const id of ['frogs', 'midges', 'anemone']) assert(!html.includes(`aria-label="${web.nodes[id].label}"`), `${id} is a pencil ? on a new island`);
+    // A shore with zones and pools: they are on the island, so known, and their ties ink.
+    const survey = { by: { shore: { cells: 40, plants: {} }, rock: { cells: 30, plants: {} }, sand: { cells: 30, plants: {} } }, mossOnRock: 0, shore: { wrack: 12, pool: 3, kelp: 0, ripples: 5 } };
+    const d1 = describeWeb(/** @type {any} */ (blank), survey, web);
+    for (const id of ['wrack', 'pool', 'ripples', 'strandline']) assert(d1.byId[id].known && d1.byId[id].here, `${id} is on the island`);
+    assert(!d1.byId.kelp.known && !d1.byId.mud.known, 'kelp and mud are not, yet');
+    const inked = inkWeb(/** @type {any} */ ({ ...blank, born: 0, notes: [] }), survey, { web, words: await loadWords(), state: null, hour: 0 }).journal;
+    assert(inked.flags.includes('web:rock>pool') && inked.flags.includes('web:rock>wrack'), 'ties to what is on the island ink');
+    assert(!inked.flags.includes('web:pool>anemone'), 'a find\'s tie waits until it is found');
+    // Focus the rock pool: needs rock and shore, needed by the pool lives, and the anemone is a pencil ?.
+    const d2 = describeWeb(inked, survey, web);
+    const t = tiesOf(d2, web, 'pool');
+    eq(t.needs.map((x) => x.id).join(','), 'rock,shore', 'the rock pool needs rock and the shore');
+    eq(t.neededBy.map((x) => x.id).join(','), 'anemone,hermitcrab,ediblecrab', 'the pool lives need the pool');
+    assert(t.shares.some((x) => x.id === 'wrack'), 'the pool shares a home with the wrack');
+    const card = webView(d2, web, { trail: ['shore', 'pool'], shelf: null });
+    assert(card.includes('data-web-trail="0"'), 'the trail leads back to the shore');
+    assert(!card.includes('Beadlet anemone'), 'an unfound anemone is not named');
+    assert(card.includes('class="ebb-jw-chip is-unknown"'), 'it is a pencil chip');
+    assert(card.includes('class="ebb-jw-chip is-ground" data-web-node="rock"'), 'rock is an inked ground chip');
+    // A new species is one node and its ties.
+    const more = structuredClone(web);
+    more.nodes.limpet = { label: 'Limpet', kind: 'small', icon: 'periwinkle', on: 'wrack' };
+    more.links.push({ a: 'rock', b: 'limpet', ink: 'here:wrack', note: 'Limpets clamp to the rock.' });
+    const d3 = describeWeb(inked, survey, more);
+    const shelf = webView(d3, more, { trail: ['limpet'], shelf: null });
+    assert(shelf.includes('data-web-node="limpet"') && shelf.includes('<h3>Limpet</h3>'), 'the new species has a tile and a card');
+    assert(tiesOf(d3, more, 'rock').neededBy.some((x) => x.id === 'limpet'), 'and rock lists it');
+    const strip = tiesStrip(d2, web, 'shore');
+    assert(strip.includes('data-web-node="pool"') && strip.includes('data-web-node="shore"'), 'a page\'s Ties strip links into the Web');
+    return `${d0.nodes.length} tiles across ${Object.keys(web.kinds).length} tabs`;
   });
 
   test(JOURNAL, 'the wash: where it lives, where it would do well, and pencil circles for the unseen', async () => {

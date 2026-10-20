@@ -379,6 +379,77 @@ const ICONS = {
     <circle cx="8.5" cy="10.5" r="0.85" fill="currentColor" stroke="none"/>
     <path d="M4.5 11.5C5.5 10.5 6.5 12.5 7.5 11.5M15.5 3C16.5 2 17.5 4 18.5 3" opacity="0.7"/>`,
 
+  // The Web's shore features (journal-web.json). Rock pool: water held between two rocks.
+  pool: `
+    <path d="M2.5 19.5H21.5"/>
+    <path ${ACCENT} d="M3 19.5L4.5 13L8 11.5L9.8 15.5L8.8 19.5Z"/>
+    <path d="M3 19.5L4.5 13L8 11.5L9.8 15.5L8.8 19.5"/>
+    <path ${ACCENT} d="M21 19.5L19.5 12.5L16 11.5L14.2 15.5L15.2 19.5Z"/>
+    <path d="M21 19.5L19.5 12.5L16 11.5L14.2 15.5L15.2 19.5"/>
+    <path ${ACCENT} d="M9.8 15.5C11.2 16.2 12.8 16.2 14.2 15.5L15.2 19.5H8.8Z"/>
+    <path d="M9.8 15.5C11.2 16.2 12.8 16.2 14.2 15.5"/>
+    <path d="M11 17.8H13"/>`,
+  // Strandline: a line of torn litter along the shore, the sea below it.
+  strandline: `
+    <path d="M3 15.5C6 14 9 14 12 15S18 16 21 14.5"/>
+    <path d="M3 20C5 18.8 7 18.8 9 20S13 21.2 15 20S19 18.8 21 20"/>
+    <path d="M4 11.5L6.2 10.6M8 11.2L10.6 11.4M12.4 10.2L13.8 11.8M15.8 11.2L18.4 10.6M19.6 12L21 11.2"/>
+    <circle cx="11" cy="9" r="0.8" fill="currentColor" stroke="none"/>
+    <circle cx="17" cy="13" r="0.8" fill="currentColor" stroke="none"/>`,
+  // Wrack: a bladderwrack frond forking twice, paired bladders on its straps.
+  wrack: `
+    <path d="M2.5 20.5H21.5"/>
+    <path d="M12 20.5V14.5C12 11.5 9.5 10 8 7M12 14.5C12 11.5 14.5 10 16 7M8 7L6.6 3.8M8 7L9.8 4M16 7L14.2 4M16 7L17.4 3.8"/>
+    <circle ${ACCENT} cx="9.6" cy="10.4" r="1.2"/>
+    <circle cx="9.6" cy="10.4" r="1.2"/>
+    <circle ${ACCENT} cx="14.4" cy="10.4" r="1.2"/>
+    <circle cx="14.4" cy="10.4" r="1.2"/>
+    <circle cx="12" cy="17.2" r="1.1"/>`,
+  // Kelp: two broad blades with a midrib, lying downslope from a holdfast.
+  kelp: `
+    <path d="M2.5 20.5H21.5"/>
+    <path ${ACCENT} d="M5 19C9 14 15 12 21 12.5C16 15 10 17.5 5 19Z"/>
+    <path d="M5 19C9 14 15 12 21 12.5C16 15 10 17.5 5 19Z"/>
+    <path d="M5 19C11 15.6 16 13.6 21 12.5"/>
+    <path d="M5 19C7.5 11 11.5 6.5 17 4.5C14 9 10 14 5 19Z"/>
+    <path d="M3.5 20.5C3.8 19.4 4.4 19 5 19C5.6 19 6.2 19.4 6.5 20.5"/>`,
+  // Black lichen: crust patches on a splash rock, a little spray above.
+  lichen: `
+    <path ${ACCENT} d="M3.5 19.5L6 12.5L12 10L18 12L20.5 19.5Z"/>
+    <path d="M3.5 19.5L6 12.5L12 10L18 12L20.5 19.5Z"/>
+    <circle cx="8.2" cy="14.4" r="1.2" fill="currentColor" stroke="none"/>
+    <circle cx="11.6" cy="12.8" r="1" fill="currentColor" stroke="none"/>
+    <circle cx="15" cy="13.4" r="1.3" fill="currentColor" stroke="none"/>
+    <circle cx="10.4" cy="16.8" r="0.9" fill="currentColor" stroke="none"/>
+    <circle cx="16.8" cy="16.4" r="0.9" fill="currentColor" stroke="none"/>
+    <path d="M8 6.5L8.6 5.2M12 5.5V4M16 6.5L15.4 5.2"/>`,
+  // Rippled sand: short wave ripples left in the sand, the sea's edge above.
+  ripples: `
+    <path d="M3 6.5C5 5.3 7 5.3 9 6.5S13 7.7 15 6.5S19 5.3 21 6.5"/>
+    <path d="M3 12.5C4.8 11 6.4 11 8 12.5M10 12.5C11.8 11 13.4 11 15 12.5M17 12.5C18.4 11.3 19.6 11.3 21 12.5"/>
+    <path d="M4.5 18C6.3 16.5 7.9 16.5 9.5 18M11.5 18C13.3 16.5 14.9 16.5 16.5 18"/>`,
+  // Wet sand: firm sand with a sheen, a drop above it.
+  wetsand: `
+    <path ${ACCENT} d="M2.5 20.5V15.5C8 13.5 16 13.5 21.5 15.5V20.5Z"/>
+    <path d="M2.5 15.5C8 13.5 16 13.5 21.5 15.5"/>
+    <path d="M2.5 20.5H21.5"/>
+    <path d="M6 17.8H9.5M12.5 18.2H17"/>
+    <path d="M12 3.5C11 5 10 6.2 10 7.3A2 2 0 0 0 14 7.3C14 6.2 13 5 12 3.5Z"/>`,
+  // Tidal mud: soft wavy ground that shines, two bubbles rising from it.
+  mud: `
+    <path ${ACCENT} d="M2.5 20.5V15C5 13.8 7 15.6 9.5 14.6S14 13.6 16.5 14.8S20 15.2 21.5 14.4V20.5Z"/>
+    <path d="M2.5 15C5 13.8 7 15.6 9.5 14.6S14 13.6 16.5 14.8S20 15.2 21.5 14.4"/>
+    <path d="M2.5 20.5H21.5"/>
+    <path d="M5 17.6H8M13 18H16.5"/>
+    <circle cx="8.5" cy="10.5" r="1.3"/>
+    <circle cx="14.5" cy="9" r="0.9"/>`,
+  // You: a simple figure, head and shoulders: you, in the Web.
+  you: `
+    <circle ${ACCENT} cx="12" cy="7.5" r="3.5"/>
+    <circle cx="12" cy="7.5" r="3.5"/>
+    <path ${ACCENT} d="M4.5 20.5C4.5 15.8 7.8 13.5 12 13.5S19.5 15.8 19.5 20.5Z"/>
+    <path d="M4.5 20.5C4.5 15.8 7.8 13.5 12 13.5S19.5 15.8 19.5 20.5"/>`,
+
   // A living thing not seen yet: a pencil circle, drawn in short dashes.
   unknown: `
     <circle cx="12" cy="12" r="8" stroke-dasharray="2.4 3"/>`,

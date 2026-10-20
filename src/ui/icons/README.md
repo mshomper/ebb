@@ -58,6 +58,15 @@ Size and color come from CSS: set `width`/`height` on `.icon` and `color` on the
 | `notes` | page with a folded corner and three written lines: the journal's Notes section |
 | `frog` | a frog sitting at the water's edge in profile, eye up, hind leg folded: the frogs journal page |
 | `midges` | a loose cloud of dots over a reed tip: the midges journal page |
+| `pool` | water held in a hollow between two rocks: a rock pool, in the journal's Web |
+| `strandline` | a line of torn litter along the shore with the sea below: the strandline, in the Web |
+| `wrack` | a bladderwrack frond forking twice, with paired bladders: wrack, in the Web |
+| `kelp` | two broad blades with a midrib lying downslope from a holdfast: kelp, in the Web |
+| `lichen` | dark crust patches on a splash rock, a little spray above: black lichen, in the Web |
+| `ripples` | short wave ripples in the sand with the sea's edge above: rippled sand, in the Web |
+| `wetsand` | firm sand with a sheen and a drop above it: wet sand, in the Web |
+| `mud` | soft wavy ground that shines, two bubbles rising: tidal mud, in the Web |
+| `you` | a simple figure, head and shoulders: you, in the Web |
 | `unknown` | a circle drawn in short pencil dashes: a living thing not seen yet |
 | `close` | two crossing strokes: close a panel or card |
 | `back` | a chevron pointing left: back to a list |
