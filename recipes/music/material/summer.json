@@ -185,5 +185,22 @@
       "sus-turn": { "weight": 2.2, "meters": ["4/4"], "bars": [[["Fsus4", "I"], ["Fsus2", "I"]], [["F", "I"]]] },
       "sus-slow": { "weight": 2.2, "meters": ["3/4"], "bars": [[["Fsus4", "I"]], [["Fsus2", "I"]], [["F", "I"]]] }
     }
+  },
+  "motifsNote": "The motif bank (phase 4b; approved with Matt, October 20, 2026): seven fragments cut from the summer tides and two summer motifs. As in spring.json, notes are [degree, eighths], degrees of F major counted from F4 (0; 7 is F5, -2 D4, -3 C4). glow sings the Lydian E over Bb; sus-turn sings Bb, G, A over Fsus4, Fsus2, F, and is sung where the walk plays that line (over; develop.json melody.overChance). melody: guitarLead is the chance, per slot, that the nylon guitar takes the melody of a singing piece (its bright ff layer) when the piece does not strum; counter is the counter-line's instrument when the palette names none (develop.json melody.counter.chance, about one singing piece in five).",
+  "motifs": {
+    "first-water-rise": { "name": "First water rise", "from": "Theme 1, bars 1 and 2", "role": "opening", "meter": "3/4", "notes": [[0, 3], [1, 1], [2, 2], [3, 2], [4, 4]] },
+    "first-water-fall": { "name": "First water fall", "from": "Theme 1, bar 3", "role": "answer", "meter": "3/4", "notes": [[4, 2], [3, 1], [2, 1], [1, 2]] },
+    "sandbar-lilt": { "name": "Sandbar lilt", "from": "Theme 2, bars 1 and 2", "role": "opening", "meter": "6/8", "notes": [[-2, 2], [-1, 1], [0, 2], [1, 1], [2, 6]] },
+    "sandbar-fall": { "name": "Sandbar fall", "from": "Theme 2, bars 3 and 4", "role": "cadential", "meter": "6/8", "notes": [[2, 2], [1, 1], [0, 1], [-1, 1], [-2, 1], [-3, 6]] },
+    "breath": { "name": "Breath", "from": "Theme 3, bar 1", "role": "opening", "meter": "4/4", "notes": [[2, 2], [3, 2], [4, 4]] },
+    "moon-pull-run": { "name": "Moon pull run", "from": "Theme 4, bar 1", "role": "climbing", "meter": "3/4", "notes": [[0, 1], [1, 1], [2, 1], [3, 1], [4, 1], [5, 1]] },
+    "moon-pull-lean": { "name": "Moon pull lean", "from": "Theme 4, bar 2", "role": "cadential", "meter": "3/4", "notes": [[5, 4], [4, 2]] },
+    "glow": { "name": "Glow", "from": "summer", "role": "climbing", "meter": "3/4", "notes": [[5, 1], [6, 1], [7, 4]] },
+    "sus-turn": { "name": "Sus turn", "from": "summer", "role": "cadential", "meter": "4/4", "over": ["sus-turn", "sus-slow"], "notes": [[3, 4], [1, 4], [2, 8]] }
+  },
+  "melody": {
+    "guitarLead": { "morning": 0.3, "interlude": 0.3, "evening": 0.2, "nocturne": 0.15 },
+    "leadInstrument": "guitar",
+    "counter": ["guitar"]
   }
 }

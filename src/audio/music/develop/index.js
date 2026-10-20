@@ -3,7 +3,8 @@
 // authored material by rules. Phase 4a grows the harmony: a form template, then a walk through the
 // season's chord grammar, judged across many candidates. The result is an ordinary piece file
 // (develop/piece.js) that the realizer plays like any anchor, and its name comes from the composer
-// (names.js). The same material, rules, season, slot, weather and seed always give the same piece
+// (names.js), and since phase 4b most pieces also sing a melody grown from the season's motifs
+// (song.js). The same material, rules, season, slot, weather and seed always give the same piece
 // and the same name, so a grown piece can be found again (and later hearted).
 //
 //   grow(seed) ─→ template (plan.js) ─→ 24 candidates: phrases + harmony walk (harmony.js)
@@ -15,6 +16,7 @@ import { fittingTemplates, planPhrases, pickWeighted } from './plan.js';
 import { walk, changes } from './harmony.js';
 import { judgeHarmony } from './judge.js';
 import { writePiece } from './piece.js';
+import { growSong } from './song.js';
 
 /** @param {string} s */
 function strHash(s) {
@@ -28,6 +30,7 @@ function strHash(s) {
  * @property {string} slot     'morning' | 'interlude' | 'evening' | 'nocturne'
  * @property {string} [weather]  'clear' | 'cloud' | 'rain' | 'mist'
  * @property {number} seed
+ * @property {boolean} [melody]  sing (true) or not (false) whatever the chance (the lab)
  */
 
 /**
@@ -105,8 +108,15 @@ export function grow(material, rules, where, names) {
     ending,
     rank: ranked.indexOf(chosen) + 1,
   };
+  // The melody (phase 4b), from its own streams, so everything above is the same with or without it.
+  const song = growSong(material, rules, {
+    walked: chosen.walked, plan: chosen.plan, meter, ending, slot: where.slot, weather, seed, palette,
+    salt: strHash(`melody:${material.season}:${where.slot}:${weather}`), force: where.melody,
+  });
+  if (song) /** @type {any} */ (report).melody = song.report;
   const piece = writePiece(material, chosen.walked, chosen.plan, {
-    id: `grown-${material.season}-${where.slot}-${seed}`, title, slot: where.slot, weather, meter, tempo, template, seed, report, ending, palette,
+    id: `grown-${material.season}-${where.slot}-${seed}`, title, slot: where.slot, weather, meter, tempo, template, seed, report, ending,
+    palette: song ? song.palette : palette, abc: song?.abc,
   });
   return {
     piece,

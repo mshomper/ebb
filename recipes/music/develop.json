@@ -70,5 +70,56 @@
         "V"
       ]
     ]
+  },
+  "melody": {
+    "note": "Phase 4b, the melody (src/audio/music/develop/song.js, melody.js, fit.js, critic.js, counter.js). chance: how often a grown piece sings, by weather or slot (default for the rest); the others stay chords and bed. candidates: melodies grown per piece; keepBest: how many of the best the seed chooses among. techniques: how often each development technique follows a phrase's motif (doc 24); lean multiplies them by slot or weather (evenings and mist slower, diminution mornings only). pools: which motif roles each kind of phrase opens with, best first (a phrase's kind comes from its role: statement and call open, answer answers, climb, peak, development and turn climb, cadence closes). headDevelop: the chance a climbing phrase develops the piece's first motif rather than taking a new one. overChance: the chance a motif written over a chord line (summer's sus turn over Fsus4, Fsus2, F) is sung where that line plays. register: lowest and highest MIDI note, by weather or slot (evenings stay under the frogs). breath: eighths of rest after each phrase's goal note, per meter. dynamics: the opening dynamic. counter: the counter-line under the melody in answer phrases (summer's guitar, or the vibraphone with the electric piano); chance per singing piece, register, enterLate (the chance it waits out the phrase's first bar), breath. score: the critic's weights (critic.js): leaps (a leap of a fourth or more not stepped back from), repeats (a note three times running), steps (distance of the share of steps from stepShare), rhythm (a few note lengths), range (semitones over a tenth in a phrase), highPoints (a phrase's top note struck twice), motifShare (distance of the motif's share from motifTarget), tension (phrases peak higher where the template is tenser), frogBandWeight (evening and night notes inside frogBand, MIDI), parallels (fifths or octaves with the bass at two chord changes running).",
+    "chance": { "default": 0.75, "rain": 0.65, "mist": 0.5 },
+    "candidates": 12,
+    "keepBest": 3,
+    "techniques": {
+      "return": 0.2,
+      "sequence": 0.2,
+      "fragment": 0.15,
+      "extension": 0.12,
+      "augmentation": 0.1,
+      "inversion": 0.08,
+      "displacement": 0.08,
+      "diminution": 0.07
+    },
+    "lean": {
+      "morning": { "diminution": 1.5 },
+      "interlude": { "diminution": 0.5 },
+      "evening": { "augmentation": 2, "diminution": 0 },
+      "nocturne": { "augmentation": 2.5, "diminution": 0, "displacement": 0.5 },
+      "rain": { "augmentation": 1.5, "diminution": 0 },
+      "mist": { "augmentation": 3, "diminution": 0, "displacement": 0.5 }
+    },
+    "pools": {
+      "opening": ["opening", "answer"],
+      "answer": ["answer", "falling"],
+      "climbing": ["climbing", "opening"],
+      "cadential": ["cadential", "falling"]
+    },
+    "headDevelop": 0.5,
+    "overChance": 0.7,
+    "register": { "default": [60, 77], "evening": [57, 72], "nocturne": [57, 72], "mist": [57, 74] },
+    "breath": { "3/4": 1, "4/4": 2, "6/8": 1 },
+    "dynamics": { "default": "mp", "evening": "p", "nocturne": "p", "rain": "p", "mist": "p" },
+    "counter": { "chance": 0.2, "register": [53, 69], "enterLate": 0.5, "breath": 1 },
+    "score": {
+      "leaps": 3,
+      "repeats": 1.5,
+      "steps": 1,
+      "stepShare": 0.7,
+      "rhythm": 1,
+      "range": 0.5,
+      "highPoints": 1.5,
+      "motifShare": 1,
+      "motifTarget": 0.5,
+      "tension": 2,
+      "frogBand": [74, 90],
+      "frogBandWeight": 0.5,
+      "parallels": 2
+    }
   }
 }
