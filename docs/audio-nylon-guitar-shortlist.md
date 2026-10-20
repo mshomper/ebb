@@ -2,6 +2,10 @@
 
 Research for the "Nylon guitar" row in doc 24 (Instruments) and the fallback order in doc 25 ("When CC0 does not land"). Nothing has been downloaded, prepared or committed. Every license below was read on its own page on October 20, 2026.
 
+## Decision
+
+October 20, 2026: Matt auditioned the Iowa pp G-string run and picked the Iowa MIS Guitar. Source to prepare from: `Guitar.mono.2496.zip` (598 MB; 24-bit keeps the quiet tails clean when each note is normalized). It is non-CC0, so doc 25's rules apply.
+
 ## The short answer
 
 - **Audition first: University of Iowa MIS Guitar.** A real classical guitar (Raimundo 118), every semitone from E2 to B5, three dynamics (pp, mf, ff), recorded with a measurement-grade mic in an anechoic room, long natural decays. Free, no account, and the studio says it "may be downloaded and used for any projects, without restrictions". It is not formally CC0, so it follows doc 25's non-CC0 rules.
@@ -78,7 +82,7 @@ The prep follows doc 24's sample steps (trim, fade, tune to A440 within 3 cents,
 **Iowa (no account):**
 
 1. Open https://theremin.music.uiowa.edu/MISguitar.html
-2. For a quick listen, click three files on the G string, middle register: `Guitar.pp.sulG.C4B4.stereo.aif`, `Guitar.mf.sulG.C4B4.stereo.aif`, `Guitar.ff.sulG.C4B4.stereo.aif` (roughly 40 to 60 MB each; the low E file below measured 46 MB). They play in VLC or the Windows Media Player. Each is a slow climb of single notes.
+2. For a quick listen, click three files on the G string, middle register: `Guitar.pp.sulG.C4B4.stereo.aif`, `Guitar.mf.sulG.C4B4.stereo.aif`, `Guitar.ff.sulG.C4B4.stereo.aif` (roughly 40 to 60 MB each; the low E file below measured 46 MB). Each is a slow climb of single notes. The single files are 24-bit, 96 kHz AIFF (the page says 16/44.1, but the pp G file measured 24/96), which Windows Media Player cannot play: open them in Audacity (installed on Matt's machine) by dragging the file in, or ask the session to make WAV copies with ffmpeg. The recordings are raw and quiet (the pp G file peaks at -19.5 dB and averages -40 dB), so listening copies get about 18 dB of gain; prep normalizes each note anyway.
 3. Also try one low file, `Guitar.mf.sulE.E2B2.stereo.aif`, to hear the bass notes and how long they ring.
 4. If it passes, download `Guitar.stereo.1644.1.zip` (232 MB) and drop it in a folder this session can reach. The prep session takes it from there.
 

@@ -4,7 +4,7 @@
   "version": 1,
   "note": "The sampled instruments the music can use, by the names pieces use in their palettes (doc 24, Instruments). sampled: one sampler each; recipe names recipes/music/instruments/<recipe>.json; articulation plays one of its sets (struck or bowed); settings names the entry of recipes/music/sampler.json byInstrument to use (default: the recipe id). sections: several samplers played as one instrument, low to high; a note goes to the first part whose 'below' (a MIDI note) is above it, or to the nearest part that has a recording within two semitones. The piano and the code-built voices (pad, bell, fm-piano) are made in instruments.js. A recipe that does not exist yet is skipped. cello: neither CC0 library has a solo cello (October 19, 2026), so the cello line plays the cello section with the solo settings until one is found (docs/audio-future-work.md).",
   "sampled": {
-    "harp": {
+    "guitar": { "recipe": "guitar" }, "harp": {
       "recipe": "harp"
     },
     "flute": {
