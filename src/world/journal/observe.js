@@ -213,6 +213,11 @@ export function observe(journal, ctx) {
     if (here && !k.seen) {
       const arrived = !k.ever && hour - j.born <= words.arrivedHours;
       note(out, rec, arrived ? 'arrived' : 'seen', sp, hour, date);
+      // A plant that came by itself (src/world/growth/volunteers.js): the Plant tool offers it now.
+      const came = state?.growth?.arrived?.[sp];
+      if (!arrived && !k.ever && words.plantable && came !== undefined && came > (state.growth.since ?? came)) {
+        out.push({ hour, date, text: words.plantable.replace('{name}', rec.name), sp, kind: 'plantable' });
+      }
       if (!k.ever) { k.first = hour; k.arrived = arrived; }
       k.seen = true;
       k.ever = true;

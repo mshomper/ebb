@@ -135,10 +135,11 @@ export async function startApp(canvas, hooks = {}) {
     size: rb.radiusDefault, strength: rb.strengthDefault, sizeRange: rb.radiusRange,
   });
   // Unlocks (docs 12, 13): placing springs is the dragonflies' gift; `?sandbox` opens it early for
-  // this visit only (`earned` holds what was given, and is what the save keeps).
+  // this visit only (`earned` holds what was given, and is what the save keeps). `?sandbox` also
+  // offers every plant in the Plant tool before it has come to the island (volunteers.js).
   updateStore('unlocks', (u) => {
     const earned = u?.earned ?? back?.unlocks ?? {};
-    return { earned, ...earned, springs: !!earned.springs || params.has('sandbox') };
+    return { earned, ...earned, springs: !!earned.springs || params.has('sandbox'), allPlants: params.has('sandbox') };
   });
   // `?weather=clear|cloud|rain|mist` previews a weather look (as the sky lab does); the world's
   // own weather record is untouched.

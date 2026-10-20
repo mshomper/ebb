@@ -139,8 +139,9 @@
   gap: 6px;
 }
 .ebb-tools__chips[hidden] { display: none; }
-/* Species chips sit two to a row; an odd one out at the end takes the whole row. */
-.ebb-tools__chips--species .ebb-tools__chip:last-child:nth-child(odd) { grid-column: 1 / -1; }
+/* Species chips sit two to a row; an odd one out at the end takes the whole row (tools.js marks it,
+   since chips for plants not yet found are hidden). */
+.ebb-tools__chips--species .ebb-tools__chip--wide { grid-column: 1 / -1; }
 /* Chips, sliders and the spring parts set their own display; the hidden attribute still wins. */
 .ebb-tools [hidden] { display: none; }
 /* Paint and sculpt chips (four each) stack the swatch or icon above the label so four fit on every width. */

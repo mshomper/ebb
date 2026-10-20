@@ -17,7 +17,7 @@ import { washMap } from '../src/world/journal/wash.js';
 import { stampNotes, markShown, markNotesSeen, markPageSeen, readOf, noteState, unread } from '../src/world/journal/read.js';
 import { STAGE } from '../src/world/growth/coarse.js';
 import { WORLD_CELLS } from '../src/world/terrain/grid.js';
-import { shoreline, at, loadRecipes } from './unit-tests-growth.js';
+import { shoreline, at, loadRecipes, startersWith } from './unit-tests-growth.js';
 
 /** @type {Promise<any> | null} */ let islandPromise = null;
 function loadIsland() {
@@ -65,9 +65,13 @@ function grassyShoreline() {
   return hab;
 }
 
-/** A fresh island on the shoreline, its journal after the first look, and what is needed to go on. */
-async function setup(seed = 9) {
-  const recipes = await loadRecipes();
+/**
+ * A fresh island on the shoreline, its journal after the first look, and what is needed to go on.
+ * @param {number} [seed] @param {string[]} [extra] species to start with too (the islands start with
+ * grass, reeds and lilies only; the others come later by themselves)
+ */
+async function setup(seed = 9, extra = []) {
+  const recipes = extra.reduce((r, sp) => startersWith(r, sp), await loadRecipes());
   const words = await loadWords();
   const hab = grassyShoreline();
   const env = { ...makeEnv(seed, recipes), habitat: () => hab };
@@ -125,12 +129,29 @@ export function addJournalTests(test, assert, eq) {
 
   test(JOURNAL, 'a new island: every plant on it is noted as already there', async () => {
     const { words, first, recipes } = await setup();
-    // Plants a new island starts with (some, like sea campion, only come where you make room).
-    for (const sp of plantsOf(words).filter((s) => (recipes.flora?.[s]?.starter?.count ?? 1) > 0)) {
+    // The plants a new island starts with (growth.json starters, and grass); the others come later.
+    const starters = ['grass', ...recipes.growth.starters];
+    for (const sp of plantsOf(words)) {
+      if (!starters.includes(sp)) { assert(!first.journal.species[sp]?.ever, `${sp} is not on a new island`); continue; }
       assert(first.journal.species[sp]?.ever, `${sp} is seen at the first look`);
       assert(first.notes.some((n) => n.sp === sp && n.text === words.species[sp].notes.arrived), `${sp} has its "arrived" note`);
     }
-    return `${first.notes.length} notes at the first look`;
+    return `${first.notes.length} notes at the first look, for ${starters.join(', ')}`;
+  });
+
+  test(JOURNAL, 'a plant that comes by itself: the journal notes its first sighting and that you can plant it now', async () => {
+    const s = await setup();
+    const a = live(s, 120);
+    const first = Object.keys(a.state.growth.arrived).find((sp) => a.state.growth.arrived[sp] > a.state.growth.since);
+    assert(first, `nothing came by itself in 120 hours: ${JSON.stringify(a.state.growth.arrived)}`);
+    const rec = s.words.species[first];
+    assert(a.journal.species[first]?.ever && !a.journal.species[first].arrived, `${first} is seen, not "already here"`);
+    const plantable = s.words.plantable.replace('{name}', rec.name);
+    eq(a.texts.filter((t) => t === plantable).length, 1, `${first} plantable note`);
+    assert(a.texts.indexOf(rec.notes.seen) >= 0 && a.texts.indexOf(rec.notes.seen) < a.texts.indexOf(plantable), 'the seen note comes first');
+    // The starters never get one.
+    for (const sp of ['reeds', 'lilies']) assert(!a.texts.includes(s.words.plantable.replace('{name}', s.words.species[sp].name)), `${sp} plantable note`);
+    return `${rec.notes.seen} ${plantable}`;
   });
 
   test(JOURNAL, '96 hours twice give the same journal, and spreading is learned and noted once', async () => {
@@ -167,8 +188,8 @@ export function addJournalTests(test, assert, eq) {
     const lines = [];
     for (const sp of plantsOf(s.words)) {
       const d = describe(a.journal, sp, a.state, s.hab, s.words);
-      // A plant a new island does not start with (sea campion) is not known yet: its page is a riddle.
-      if ((s.recipes.flora?.[sp]?.starter?.count ?? 1) === 0) { assert(!d.known && d.riddle, `${sp} shows its riddle`); continue; }
+      // A plant that has not come by itself yet is not known: its page is a riddle.
+      if (!a.journal.species[sp]?.ever) { assert(!d.known && d.riddle, `${sp} shows its riddle`); continue; }
       assert(d.known, `${sp} known`);
       assert(d.status.length > 0, `${sp} has a status`);
       assert(!/\d/.test(d.status), `${sp} status has a number: "${d.status}"`);
@@ -212,7 +233,7 @@ export function addJournalTests(test, assert, eq) {
   });
 
   test(JOURNAL, "your island's story: here when you arrived, then what you planted", async () => {
-    const { words, env, state, first, hab } = await setup();
+    const { words, env, state, first, hab } = await setup(9, ['iris']);
     let j = first.journal;
     let s = state;
     for (const dz of [50, 52, 54]) {
@@ -234,7 +255,7 @@ export function addJournalTests(test, assert, eq) {
   });
 
   test(JOURNAL, 'the ground: taps name water, shore and soil, with the plants that would suit', async () => {
-    const { words, state, first, hab, recipes } = await setup();
+    const { words, state, first, hab, recipes } = await setup(9, ['iris']);
     const island = await loadIsland();
     hab.band = new Uint8Array(hab.n * hab.n);
     for (let k = 0; k < hab.n * hab.n; k++) if ((k % hab.n) >= 20 && (k % hab.n) <= 22) hab.band[k] = 1;
@@ -393,7 +414,8 @@ export function addJournalTests(test, assert, eq) {
   });
 
   test(JOURNAL, 'rushes: a marsh on a new island has its page, a tap names them, the wash finds them', async () => {
-    const { words, state, first, hab, recipes } = await setup();
+    // Rushes come by themselves on the islands; started here, to test their page from the first look.
+    const { words, state, first, hab, recipes } = await setup(9, ['rushes']);
     const island = await loadIsland();
     const wash = await fetch('../recipes/world/journal-wash.json').then((r) => r.json());
     const k = first.journal.species.rushes;

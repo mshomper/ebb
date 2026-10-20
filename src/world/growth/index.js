@@ -62,7 +62,7 @@ export function createGrowth(device, opts) {
     const mirror = getStore('terrainLive')?.mirror;
     if (!s || !mirror) return;
     habitat = buildHabitat({ eco: s.eco, material: mirror.material, materialCells: WORLD_CELLS, params: recipes.growth.habitat,
-      heightQ: mirror.heightQ, shore: s.shore ? { data: s.shore, rect: s.rect, range: s.shoreRange } : null });
+      heightQ: mirror.heightQ });
     lush = recipes.grass?.lush ? lushField(habitat, recipes.grass.lush) : null;
     // A new island gets its starter plants and grass cover now rather than at the next hour.
     world.state = settleGrowth(world.state, world.env);

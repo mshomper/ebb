@@ -9,12 +9,14 @@
   "notesKept": 60,
   "pageNotes": 5,
   "arrivedHours": 2,
+  "plantableNote": "plantable: the line written under the first sighting of a plant that came by itself (src/world/growth/volunteers.js), since the Plant tool offers it from then on; {name} is its name.",
+  "plantable": "{name} came to the island by itself. You can plant it now.",
   "islandNote": { "showS": 6, "gapS": 1.2, "queue": 3, "more": "{n} more in the journal", "moreOne": "1 more in the journal" },
   "readMarks": { "missed": "You may have missed", "rest": "All notes" },
   "reveal": {
     "_doc": "The reveal on return (docs/02, src/world/journal/reveal-plan.js) shows its notes best first: by the first class whose kinds hold the note's kind (doc 02's order), then newer first; kinds not listed come last. Kinds are shared by every species, so a new plant or animal ranks by the kinds of its notes.",
     "rank": [
-      { "class": "arrival", "kinds": ["arrived", "seen", "sign", "signAgain", "back", "settled", "settledUnseen", "joined", "joinedUnseen"] },
+      { "class": "arrival", "kinds": ["arrived", "seen", "plantable", "sign", "signAgain", "back", "settled", "settledUnseen", "joined", "joinedUnseen"] },
       { "class": "named", "kinds": ["named"] },
       { "class": "content", "kinds": ["happy"] },
       { "class": "season", "kinds": ["season"] },

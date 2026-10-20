@@ -41,6 +41,6 @@ export function buildIslandModel(r) {
   const springs = landmarks(r.land, tSeed).springs.map((s) => ({ cellX: waterCellOf(s.x), cellY: waterCellOf(s.z), rateLps: s.rateLps }));
   const summary = buildSummary({ heightQ, rect, springs, params: { ...r.water.summary, manningN: r.water.sim.manningN }, tide: r.water.tide });
   const habitat = buildHabitat({ eco: summary.eco, material, materialCells: N, params: r.growth.habitat,
-    heightQ, shore: { data: summary.shore, rect: summary.rect, range: summary.shoreRange } });
+    heightQ });
   return { habitat, summaryHash: summary.hash, summary, heightQ, material };
 }

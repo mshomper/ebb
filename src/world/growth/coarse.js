@@ -18,6 +18,7 @@
 
 import { stream, subSeed, hash32, det } from '../../core/rng.js';
 import { HABITAT_CELLS, HABITAT_ORIGIN, habitatCell } from './habitat.js';
+import { arrivedOf, volunteerAt } from './volunteers.js';
 
 /** Stages, in order. */
 export const STAGE = Object.freeze({ seed: 0, sprout: 1, young: 2, mature: 3, flowering: 4, dormant: 5 });
@@ -37,9 +38,12 @@ export const STAGE = Object.freeze({ seed: 0, sprout: 1, young: 2, mature: 3, fl
 
 /**
  * cover: the cover plants other than grass (recipes/world/growth.json `cover`), each a share per
- * habitat cell 0..255, like `grass`.
+ * habitat cell 0..255, like `grass`. arrived: the species on the island, by the hour each came
+ * (the starters at the first hour, the rest as volunteers, volunteers.js); since: the island's first
+ * growth hour. Both are set at the first hour, and are missing from a save made before them.
  * @typedef {{ nextId: number, starterDone: boolean, plants: Plant[], grass: Uint8Array | null,
- *   cover: Record<string, Uint8Array> | null, habitatHash: number }} GrowthState
+ *   cover: Record<string, Uint8Array> | null, habitatHash: number,
+ *   arrived?: Record<string, number>, since?: number }} GrowthState
  */
 
 /** @returns {GrowthState} */
@@ -78,14 +82,14 @@ function groundAtCell(hab, k) {
   // Water can only move where there is water: ground with none standing on it counts as still, so a
   // plant refused there hears that it is too dry, not that the water moves too much.
   const still = !hab.sea[k] && hab.depthCm[k] === 0 ? 1 : hab.still[k];
-  // The ground-type, slope and shore axes (docs/future/10); undefined where the habitat has none.
-  const sh = hab.shore?.[k] ?? 0;
-  const R = hab.shoreRange;
+  // The ground-type, slope and height axes (docs/future/10); undefined where the habitat has none.
+  // Soil is earth, bare or turfed: the painted soil and grass shares together, since grass is
+  // painted over soil (a pond floor is grass paint with a little soil).
   return { moisture: hab.moisture[k] / 255, salt: hab.salt[k] / 255, depth: hab.sea[k] ? 9 : hab.depthCm[k] / 100, still, k,
     sand: hab.sand ? hab.sand[k] / 255 : undefined, rock: hab.rock ? hab.rock[k] / 255 : undefined,
-    soil: hab.soil ? hab.soil[k] / 255 : undefined, slope: hab.slopeDeg ? hab.slopeDeg[k] : undefined,
-    // Height on the shore, m about mean sea level, or far above it (99) off the shore.
-    shore: hab.shore && R ? (sh ? R.loM + ((sh - 1) * (R.hiM - R.loM)) / 254 : 99) : undefined };
+    soil: hab.soil ? Math.min(255, hab.soil[k] + hab.grass[k]) / 255 : undefined, slope: hab.slopeDeg ? hab.slopeDeg[k] : undefined,
+    // Height above mean sea level, m.
+    shore: hab.heightDm ? hab.heightDm[k] / 10 : undefined };
 }
 
 /** @typedef {'dry'|'wet'|'shallow'|'deep'|'fresh'|'salt'|'flow'|'outside'|'ground'|'steep'|'flat'|'low'|'high'} Need */
@@ -94,8 +98,8 @@ function groundAtCell(hab, k) {
  * The habitat axes a recipe may use, in the order a tie names the need: [recipe key, ground key,
  * need when too low, need when too high]. A recipe leaves out the axes it does not care about, and
  * an axis the habitat does not have (an older test habitat) counts as met. The last five
- * (docs/future/10): the painted shares of sand, rock and soil (0..1), slope (degrees) and height on
- * the shore (m about mean sea level, 99 off the shore).
+ * (docs/future/10): the painted shares of sand, rock and soil (0..1; soil counts grass too), slope
+ * (degrees) and height above mean sea level (m).
  * @type {[string, 'moisture'|'depth'|'salt'|'still'|'sand'|'rock'|'soil'|'slope'|'shore', Need, Need][]}
  */
 const AXES = [
@@ -207,7 +211,10 @@ const BEARINGS = [[1, 0], [0.7071067811865476, 0.7071067811865476], [0, 1], [-0.
 function grassTarget(hab, G, k) {
   if (hab.depthCm[k] > 0 || hab.sea[k]) return 0;
   const s = hab.salt[k] / 255;
-  return Math.floor(255 * (1 - smooth01((s - G.saltFrom) / (G.saltFull - G.saltFrom))));
+  // The ground axes (docs/future/10): earth rather than sand or rock, and not too steep.
+  const at = G.habitat ? groundAtCell(hab, k) : null;
+  const ground = at ? suitabilityOf(G, at).suit : 1;
+  return Math.floor(255 * ground * (1 - smooth01((s - G.saltFrom) / (G.saltFull - G.saltFrom))));
 }
 
 /**
@@ -258,8 +265,9 @@ export function settleGrowth(state, env) {
     g.cover = { ...(prev.cover ?? {}) };
     for (const [sp, rec] of covers) {
       if (g.cover[sp]) continue;
+      // A cover plant that is not a starter starts with none: it comes later, as a volunteer.
       const c = new Uint8Array(hab.n * hab.n);
-      for (let k = 0; k < c.length; k++) c[k] = coverTarget(rec, hab, k);
+      if (isStarter(env, sp)) for (let k = 0; k < c.length; k++) c[k] = coverTarget(rec, hab, k);
       g.cover[sp] = c;
     }
   }
@@ -273,14 +281,20 @@ export function settleGrowth(state, env) {
 }
 
 /**
- * New island: a few mature clumps of each species with a starter, on its most suitable cells.
+ * Does a species start on a new island? Those in growth.json `starters` (every species when the
+ * recipe has no such list). @param {any} env @param {string} sp
+ */
+const isStarter = (env, sp) => !env.recipes.growth.starters || env.recipes.growth.starters.includes(sp);
+
+/**
+ * New island: a few mature clumps of each starter species, on its most suitable cells.
  * @param {GrowthState} g @param {import('./habitat.js').Habitat} hab @param {any} env
  */
 function plantStarters(g, hab, env) {
   const seed = subSeed(env.seed, 'growth-starter');
   for (const sp of env.recipes.growth.species) {
     const rec = env.recipes.flora[sp];
-    if (!rec?.starter) continue;
+    if (!rec?.starter || !isStarter(env, sp)) continue;
     /** @type {{ k: number, h: number }[]} */ const cand = [];
     for (let k = 0; k < hab.n * hab.n; k++) {
       const x = HABITAT_ORIGIN + (k % hab.n) + 0.5, z = HABITAT_ORIGIN + Math.floor(k / hab.n) + 0.5;
@@ -322,7 +336,7 @@ function basinStarters(g, hab, env) {
     const reach = b.outerRadius + (b.jitter ?? 0);
     for (const sp of Object.keys(b.starters).sort()) {
       const rec = env.recipes.flora[sp];
-      if (!rec?.starter) continue;
+      if (!rec?.starter || !isStarter(env, sp)) continue;
       /** @type {{ k: number, h: number }[]} */ const cand = [];
       const i0 = Math.max(0, Math.floor(b.x - reach - HABITAT_ORIGIN)), i1 = Math.min(hab.n - 1, Math.floor(b.x + reach - HABITAT_ORIGIN));
       const j0 = Math.max(0, Math.floor(b.z - reach - HABITAT_ORIGIN)), j1 = Math.min(hab.n - 1, Math.floor(b.z + reach - HABITAT_ORIGIN));
@@ -407,7 +421,9 @@ export function coarseStep(state, hourIndex, env) {
     plantStarters(g, hab, env);
     g.starterDone = true;
   }
-  const pos = (state.seasons?.index ?? 0) + (state.seasons?.phase ?? 0);
+  g.since ??= hourIndex;
+  g.arrived = { ...arrivedOf(g, env, hourIndex) };
+  const pos =(state.seasons?.index ?? 0) + (state.seasons?.phase ?? 0);
   const season = Math.min(3, Math.max(0, state.seasons?.index ?? 0));
   const seed = subSeed(env.seed, 'growth');
 
@@ -517,6 +533,24 @@ export function coarseStep(state, hourIndex, env) {
     }
     g.cover = cover;
     if (Object.keys(took).length) events.push({ name: 'growth:spread', payload: { count: Object.values(took).reduce((a, b) => a + b, 0), bySpecies: took } });
+  }
+
+  // A volunteer (volunteers.js): a species not yet on the island lands on a square that suits it,
+  // as a fresh sprout (a plant) or a new tussock (a cover plant).
+  if (g.plants.length < GR.maxPlants) {
+    const held = cellIndex(g.plants);
+    const v = volunteerAt(g, hab, env, hourIndex, (rec, k) => suitabilityOf(rec, groundAtCell(hab, k)).suit, (k) => held.has(k));
+    if (v) {
+      const x = HABITAT_ORIGIN + (v.k % hab.n) + 0.5, z = HABITAT_ORIGIN + Math.floor(v.k / hab.n) + 0.5;
+      const cov = g.cover?.[v.sp];
+      const rec = env.recipes.flora[v.sp];
+      if (cov) cov[v.k] = Math.max(cov[v.k], env.recipes.covers[v.sp].spread?.plantStart ?? 60);
+      else if (rec) {
+        g.plants = [...g.plants, { id: g.nextId++, sp: v.sp, x, z, age: rec.growth.stages.sproutH, size: 0.05, best: 0.05, stage: STAGE.sprout, low: 0, drown: 0, last: hourIndex }];
+      }
+      g.arrived[v.sp] = hourIndex;
+      events.push({ name: 'growth:arrived', payload: { species: v.sp, x, z } });
+    }
   }
 
   return { state: { ...state, growth: g }, events };

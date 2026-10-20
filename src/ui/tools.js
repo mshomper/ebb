@@ -67,7 +67,8 @@ const FEED_SPECIES = [
 ];
 const FEED_NONE = 'Nothing here takes food from you yet. Find a creature first.';
 /**
- * Species the Plant tool offers, in chip order (two to a row; an odd last chip takes the whole row). Each `icon` is a
+ * Species the Plant tool offers, in chip order (two to a row; an odd last chip takes the whole row),
+ * each once the journal has seen it on the island. Each `icon` is a
  * drawn icon of the same name in icons.js; `hint` says where the species grows.
  * @type {{id: PlantSpecies, label: string, icon: string, hint: string}[]}
  */
@@ -80,6 +81,7 @@ const PLANT_SPECIES = [
   { id: 'thrift', label: 'Sea thrift', icon: 'thrift', hint: 'Sea thrift likes the salty shore by the sea. Tap the ground to plant a seed.' },
   { id: 'campion', label: 'Sea campion', icon: 'campion', hint: 'Sea campion likes rock by the sea, just above the tide. Set some rock there first, then tap it to plant a seed.' },
 ];
+const PLANT_NONE = 'Nothing to plant yet. Watch the island: plants will come.';
 /** How long a Plant tap's result stays before it fades, ms. */
 const PLANT_MESSAGE_MS = 2500;
 /** Water modes; 'spring' shows only once `unlocks.springs` is true. @type {{id: WaterMode, label: string, icon: string}[]} */
@@ -216,6 +218,7 @@ export function mountTools(parent = document.body) {
   const plantPanel = /** @type {HTMLElement} */ (root.querySelector('.ebb-tools__plant'));
   const stonePanel = /** @type {HTMLElement} */ (root.querySelector('.ebb-tools__stone'));
   const speciesBtns = /** @type {HTMLButtonElement[]} */ ([...root.querySelectorAll('[data-species]')]);
+  const speciesChips = /** @type {HTMLElement} */ (root.querySelector('.ebb-tools__chips--species'));
   const plantHint = /** @type {HTMLElement} */ (root.querySelector('[data-out="plant-hint"]'));
   const plantMessage = /** @type {HTMLElement} */ (root.querySelector('[data-out="plant-message"]'));
   const feedPanel = /** @type {HTMLElement} */ (root.querySelector('.ebb-tools__feed'));
@@ -293,10 +296,22 @@ export function mountTools(parent = document.body) {
     for (const b of rateBtns) b.setAttribute('aria-pressed', String(b.dataset.rate === springRate));
     renderSprings();
 
-    // Plant: the stored species, or the first offered one if it is not (yet) in the list.
-    const species = PLANT_SPECIES.find((s) => s.id === t.plantSpecies) ?? PLANT_SPECIES[0];
-    for (const b of speciesBtns) b.setAttribute('aria-pressed', String(b.dataset.species === species.id));
-    if (plantHint.textContent !== species.hint) plantHint.textContent = species.hint;
+    // Plant: a chip for each plant the journal has seen on the island (the starters from the first
+    // hour, the others once they have come by themselves; every one with `?sandbox`). The stored
+    // species, or the first offered one if it is not (yet) in the list.
+    const allPlants = !!get('unlocks')?.allPlants;
+    const offered = PLANT_SPECIES.filter((s) => allPlants || get('journal')?.species?.[s.id]?.ever);
+    const species = offered.find((s) => s.id === t.plantSpecies) ?? offered[0] ?? null;
+    offered.forEach((s, i) => speciesBtns.find((b) => b.dataset.species === s.id)?.classList.toggle('ebb-tools__chip--wide', i === offered.length - 1 && offered.length % 2 === 1));
+    for (const b of speciesBtns) {
+      b.hidden = !offered.some((s) => s.id === b.dataset.species);
+      b.setAttribute('aria-pressed', String(b.dataset.species === species?.id));
+    }
+    speciesChips.hidden = !offered.length;
+    // The tool plants what the card shows: a stored species not offered yet gives way to the first.
+    if (species && t.plantSpecies !== species.id) queueMicrotask(() => dispatch(/** @type {any} */ ({ type: 'brush.set', patch: { plantSpecies: species.id } })));
+    const plantText = species ? species.hint : PLANT_NONE;
+    if (plantHint.textContent !== plantText) plantHint.textContent = plantText;
 
     // Feed: a chip for each creature found so far; the chosen one, else the first found.
     const known = FEED_SPECIES.filter((s) => get('journal')?.species?.[s.id]?.ever);

@@ -5,7 +5,7 @@
 // are UI only: not saved and not part of the simulation (recipes/world/growth.json marks).
 
 import { emitDeferred } from '../../core/events.js';
-import { update as updateStore } from '../../core/store.js';
+import { get as getStore, update as updateStore } from '../../core/store.js';
 import { STAGE } from './coarse.js';
 import { calm } from '../../ui/motion.js';
 
@@ -21,29 +21,39 @@ const SAYS = {
     dry: 'Reeds need wetter ground',
     deep: 'Too deep for reeds',
     salt: 'Too salty for reeds',
+    ground: 'Reeds need soil or mud, not sand or rock',
+    steep: 'Too steep for reeds; they like flat, wet ground',
   },
   lilies: {
     shallow: 'Water lilies need a pond 0.3 to 1.5 m deep',
     deep: 'Too deep for water lilies',
     flow: 'Water lilies need still water, not a stream',
     salt: 'Too salty for water lilies',
+    ground: 'Water lilies need a soft soil floor, not sand or rock',
   },
   iris: {
     dry: 'Iris needs wetter ground, close to the water',
     deep: 'Too deep for iris; plant it on the bank',
     salt: 'Too salty for iris',
+    ground: 'Iris needs soil, not sand or rock',
+    steep: 'Too steep for iris; try a gentler bank',
   },
   rushes: {
     dry: 'Rushes need soaked ground or shallow water',
     deep: 'Too deep for rushes; plant them in the shallows',
     flow: 'Rushes need still water, not a stream',
     salt: 'Too salty for rushes',
+    ground: 'Rushes need soil or mud, not sand or rock',
+    steep: 'Too steep for rushes; they like flat, soaked ground',
     crowded: 'Rushes grow here already',
   },
   thrift: {
     fresh: 'Sea thrift needs salty ground near the sea',
     wet: 'Too wet for sea thrift',
     deep: 'Too wet for sea thrift',
+    ground: 'Sea thrift likes sand or rock, not soil',
+    low: 'Too low for sea thrift; the tide covers it here',
+    high: 'Too high for sea thrift; plant it nearer the sea',
   },
   marigold: {
     dry: "Marsh marigold needs soaked ground, right at the water's edge",
@@ -55,7 +65,7 @@ const SAYS = {
   campion: {
     ground: 'Sea campion needs rock to grow on',
     high: 'Sea campion needs rock close by the sea',
-    low: 'Too low for sea campion; the tide covers it here',
+    low: 'Too low for sea campion; it grows higher up the shore than thrift',
     fresh: 'Sea campion needs salty ground near the sea',
     wet: 'Too wet for sea campion',
   },
@@ -77,6 +87,7 @@ const SAYS = {
     full: 'The island is full of plants',
     outside: 'Plant on the island',
     unknown: 'Wait a moment for the island to settle',
+    unseen: '{name} has not come to the island yet',
   },
 };
 
@@ -104,8 +115,13 @@ export function createPlantTool(opts) {
      * @returns {boolean} whether a seed went in (the world state changed)
      */
     tap(sp, p) {
-      const r = growth.plant(sp, p[0], p[2]);
       const name = flora[sp]?.name ?? sp;
+      // Only a plant the journal has seen on the island (volunteers.js), or any with ?sandbox.
+      if (!getStore('unlocks')?.allPlants && !getStore('journal')?.species?.[sp]?.ever) {
+        updateStore('plantUi', () => ({ message: say(sp, name, 'unseen'), at: performance.now() }));
+        return false;
+      }
+      const r = growth.plant(sp, p[0], p[2]);
       updateStore('plantUi', () => ({ message: say(sp, name, r.ok ? 'ok' : r.reason ?? 'unknown'), at: performance.now() }));
       if (!r.ok) {
         // The journal learns what the species needs from a refusal (src/world/journal).
