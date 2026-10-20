@@ -35,6 +35,7 @@ import { addEcologyTests } from './unit-tests-ecology.js';
 import { addFrogTests } from './unit-tests-frogs.js';
 import { addSaveTests } from './unit-tests-save.js';
 import { addAwayTests } from './unit-tests-away.js';
+import { addStoneTests } from './unit-tests-stone.js';
 import { addRevealTests } from './unit-tests-reveal.js';
 import { addQualityTests } from './unit-tests-quality.js';
 import { addTrustTests } from './unit-tests-trust.js';
@@ -1435,6 +1436,7 @@ addSaveTests(test, assert, eq);
 // ---- time away (tools/unit-tests-away.js) ----
 
 addAwayTests(test, assert, eq);
+addStoneTests(test, assert, eq);
 
 // ---- the reveal (tools/unit-tests-reveal.js) ----
 

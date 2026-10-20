@@ -10,6 +10,8 @@
       { "id": "two-ponds", "name": "Two ponds" }
     ]
   },
+  "stoneNote": "Sculpt's Stone mode (docs/future/10, src/world/terrain/boulder.js): a tap sets a seeded boulder, a main stone and sometimes companions against it, made like the spring outcrop's stones: a rounded dome heightShare of its radius tall, stretched by up to elongate, lumped by lump (noise lumpScale per radius), set sinkShare of its radius into the ground, painted rock. widthM: the boulder widths the size slider can ask for (m). companions: up to this many smaller stones, companionShare of the main stone's radius.",
+  "stone": { "widthM": [0.4, 3.0], "heightShare": [0.65, 0.95], "elongate": 0.5, "lump": 0.18, "lumpScale": 1.6, "sinkShare": 0.12, "companions": 2, "companionShare": [0.35, 0.6] },
   "brush": {
     "radiusRange": [0.5, 8],
     "radiusDefault": 2.5,
