@@ -22,7 +22,7 @@ These are Matt's decisions (October 19, 2026) that disagree with, or add to, the
 The audio branches only add new files. These shared files are edited only when an audio branch merges, with Matt's approval:
 
 - `recipes/index.json`: add the audio recipe ids, currently listed in `recipes/audio-index.json`, then retire that file.
-- `recipes/species/frog.json` and `recipes/species/midge.json`: doc 25 puts their voice settings in the species recipes. Until the frog work (S6) settles, they live in `recipes/audio/voices/frog.json` and `recipes/audio/voices/midge.json`; move them in at merge.
+- Done (October 20, 2026, piece B): the frog and midge voice settings now live in `recipes/species/frog.json` and `recipes/species/midge.json` as their `voice` field; `recipes/audio/voices/` is gone.
 - `tools/index.html`: link the music lab and the audio check page.
 - `tools/unit-tests.html`: fold in the audio tests, which run on their own page (`tools/unit-tests-audio.html`) until then.
 - `docs/README.md`: list docs 24 and 25.
@@ -44,8 +44,8 @@ Built and heard in the lab now; wired into the game when the system lands.
 The ambience, voices and `tools/audio-check.html` run on a simulated island. To run in the game:
 
 - The game passes the sound state each tenth of a second: `surfaceNear` (water, pads, reeds, grass near the camera, for the rain mix), `listener`, `eye` and `forward` (camera), `afterRain` (from the weather; the page uses a 120 s timer), wetness and frost under the brush.
-- Frog voices follow the frog agents' call timeline (`calls()` in `src/world/creatures/agents.js`), so each call sounds as its throat swells.
-- Still to build: distant visitors (the hook is in place, waiting on recordings), mist's extra reverb send (needs a small mixer hook), the few slow first calls after the frogs wake in spring, and the startle hush near the player (doc 23).
+- Done (piece B): frog voices follow the frog agents' call timeline (`calls()` in `src/world/creatures/agents.js`), so each call sounds as its throat swells; plops sound where a frog goes into the water; midges hum from the live swarms.
+- Still to build: distant visitors (the hook is in place, waiting on recordings), mist's extra reverb send (needs a small mixer hook), the few slow first calls after the frogs wake in spring, and the seasonal call rate (spring 1.3, autumn 0.5) in the frog agents themselves. The startle hush is the agents' own (doc 23), so it is heard already.
 - `tools/index.html` gets links to the music lab, the audio check page and the sound picks page at merge.
 
 ## Waiting on other work

@@ -8,6 +8,7 @@ import { addSamplerTests } from './unit-tests-sampler.js';
 import { addVoicingTests } from './unit-tests-voicing.js';
 import { addDirectorTests } from './unit-tests-director.js';
 import { addDevelopTests } from './unit-tests-develop.js';
+import { addSoundGameTests } from './unit-tests-sound-game.js';
 
 /** @type {{group: string, name: string, fn: () => any}[]} */
 const tests = [];
@@ -28,6 +29,7 @@ addSamplerTests(test, assert, eq);
 addVoicingTests(test, assert, eq);
 addDirectorTests(test, assert, eq);
 addDevelopTests(test, assert, eq);
+addSoundGameTests(test, assert, eq);
 
 const CHECK = '<path d="M4.5 12.5l4.8 4.8L19.5 7"/>';
 const WARN = '<path d="M12 3.5L2.8 19.8h18.4z"/><path d="M12 9.5v4.8"/><path d="M12 17.2v.1"/>';

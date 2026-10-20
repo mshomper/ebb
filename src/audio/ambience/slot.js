@@ -233,7 +233,15 @@ function playTakes(ctx, dest, urls, o) {
       tg.gain.value = 1 / Math.sqrt(els.length);
       src.connect(tg).connect(g);
       if (isFinite(el.duration) && el.duration > 1) el.currentTime = o.rng.range(0, el.duration);
-      el.play().catch(() => { /* resumes on the next gesture */ });
+      // Before the first touch the browser refuses to play; start once the sound is unlocked.
+      el.play().catch(() => {
+        const retry = () => {
+          if (stopped || ctx.state !== 'running') return;
+          ctx.removeEventListener('statechange', retry);
+          el.play().catch(() => { /* still blocked: the next unlock tries again */ ctx.addEventListener('statechange', retry); });
+        };
+        ctx.addEventListener('statechange', retry);
+      });
       takes.push({ el, gain: tg });
     }
     // Every so often, lean one take forward and the other back (never below floor).

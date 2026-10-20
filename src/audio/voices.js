@@ -17,11 +17,14 @@ import { placedChain } from './spatial.js';
 import { individualOf, seasonVoice, planCall, renderCall, createPurr, idHash } from './voices/frog.js';
 import { createSwarmVoice } from './voices/midge.js';
 import { normBlend } from './ambience/curves.js';
+import { plop as plopSound } from './procedural/one-shots.js';
 
 /**
  * @typedef {Object} VoiceRecipes
- * @property {any} frog   recipes/audio/voices/frog.json
- * @property {any} [midge] recipes/audio/voices/midge.json
+ * @property {any} frog   recipes/species/frog.json `voice`
+ * @property {any} [midge] recipes/species/midge.json `voice`
+ * @property {any} [proc]  recipes/audio/procedural.json, for the frog's plop into water
+ * @property {{sizeCm: number[], gainDb: number[]}} [plop]  the plop's size and level ranges
  */
 
 /**
@@ -51,7 +54,7 @@ export function createVoices(mixer, voiceRecipes, seed, opts = {}) {
   const individuals = new Map();
   /** @type {{id: string|number, end: number, dist: number, stop(): void, chain: ReturnType<typeof placedChain>}[]} */
   let live = [];
-  const stats = { calls: 0, dropped: 0, stolen: 0 };
+  const stats = { calls: 0, dropped: 0, stolen: 0, plops: 0 };
   const purr = createPurr(ctx, out, F);
 
   /** @param {string|number} id */
@@ -111,6 +114,25 @@ export function createVoices(mixer, voiceRecipes, seed, opts = {}) {
     return true;
   }
 
+  /**
+   * A frog going into the water (doc 25 "Frog body sounds"): a plop placed where it went in.
+   * @param {string|number} creatureId @param {number[]} pos [x, y, z] @param {number} [when] audio time
+   * @returns {boolean} whether it sounds (false without the procedural recipe)
+   */
+  function plop(creatureId, pos, when) {
+    const P = voiceRecipes.plop, proc = voiceRecipes.proc;
+    if (!P || !proc) return false;
+    const ind = individual(creatureId);
+    const rng = stream(ind.key, 200, ind.calls++);
+    const chain = placedChain(ctx, out, spatial);
+    const t = Math.max(when ?? ctx.currentTime, ctx.currentTime);
+    chain.place(pos, ear, t);
+    plopSound(ctx, chain.input, proc, rng, { when: t, sizeCm: rng.range(P.sizeCm[0], P.sizeCm[1]), gainDb: rng.range(P.gainDb[0], P.gainDb[1]) });
+    setTimeout(() => chain.dispose(), (t - ctx.currentTime + 2) * 1000);
+    stats.plops++;
+    return true;
+  }
+
   // ---- Midges ---------------------------------------------------------------------------------
   /** @type {Map<string|number, ReturnType<typeof createSwarmVoice>>} */
   const swarmVoices = new Map();
@@ -145,6 +167,7 @@ export function createVoices(mixer, voiceRecipes, seed, opts = {}) {
 
   return {
     call,
+    plop,
     setSwarms,
     /** @param {number[]} seasonBlend four weights: spring, summer, autumn, winter */
     setSeason(seasonBlend) {

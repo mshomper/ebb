@@ -32,6 +32,10 @@ import { createWaterWorld } from './world/water-world.js';
 import { createGrowth } from './world/growth/index.js';
 import { createPlantTool } from './world/growth/plant-tool.js';
 import { weatherAt } from './world/weather.js';
+import { state as tideState, tideParams } from './world/tide.js';
+import { soundNear, nothingNear } from './world/sound-near.js';
+import { loadAudioRecipe } from './audio/recipes.js';
+import { toggleHeart } from './audio/music/hearts.js';
 import { createWaterPass } from './render/passes/water.js';
 import { createGrassPass } from './render/passes/grass.js';
 import { createFloraPass } from './render/passes/flora.js';
@@ -122,6 +126,8 @@ export async function startApp(canvas, hooks = {}) {
     updateStore('world', () => back.world);
     if (back.journal) updateStore('journal', () => back.journal);
     if (back.water) updateStore('water', () => back.water);
+    // The pieces of music you hearted (src/audio/music/hearts.js).
+    if (back.music) updateStore('music', () => back.music);
   }
   // Device settings (src/save/prefs.js): kept on this device, never in the island.
   const prefs = loadPrefs();
@@ -284,6 +290,8 @@ export async function startApp(canvas, hooks = {}) {
     wind: () => ({ strength: weatherAt(world.state?.weather, clock.display(), seasonsRecipe).wind, dir: world.state?.weather?.today?.windDir ?? 0 }),
     rain: (hoursAgo) => weatherAt(world.state?.weather, clock.display() - hoursAgo * clock.SECONDS_PER_HOUR, seasonsRecipe).rain });
   sim.addSystem(midges);
+  // What the animals do that can be heard (src/audio reads it): frog calls and plops, midge swarms.
+  updateStore('creatureSound', () => ({ frogs: (/** @type {number} */ since) => creatures.sounds(since), swarms: () => midges.heard() }));
   // Finds (docs/future/11): anemones in rock pools, periwinkles on the wrack, lugworm casts on the
   // sand, where the shore zones say, near the view; a tap finds them for the journal.
   // `?shells=rare` or `?shells=<id>` (testing, unsaved): the strandline is thick with those shells,
@@ -613,6 +621,10 @@ export async function startApp(canvas, hooks = {}) {
       case 'time.keepGrowing':
         updateStore('meta', (m) => { m.keepGrowing = a.on; });
         break;
+      // A heart on the piece playing (src/ui/now-playing.js): kept with the island, plays more often.
+      case 'music.heart':
+        updateStore('music', (m) => ({ ...(m ?? {}), hearted: toggleHeart(m?.hearted, a.heart) }));
+        break;
       case 'settings.set':
         updateStore('settings', (s) => { Object.assign(s, a.patch); });
         break;
@@ -648,6 +660,42 @@ export async function startApp(canvas, hooks = {}) {
     // The Plant tool marks just the spot a seed would go; Feed, where the food would land.
     if (p) terrain.setRing({ x: p[0], z: p[2], radius: t.tool === 'plant' ? 0.4 : t.tool === 'feed' ? 0.2 : t.size, visible: true });
     else terrain.setRing({ visible: false });
+  }
+
+  // The island's sound (src/audio, docs 17 and 25) reads the store slice `sound`, written here
+  // about ten times a second: display time, season, weather, tide, the camera and what is near it.
+  // Only the game starts the sound (src/main.js); for tool pages the slice is simply unread.
+  const soundRecipe = await loadAudioRecipe('audio/game');
+  const tideP = tideParams(waterRecipe.tide);
+  let soundAcc = Infinity;
+  let nearAcc = Infinity;
+  let near = nothingNear();
+  /** @param {number} realDt @param {number} display @param {{ index: number, phase: number }} season @param {any} day daylight.update's result */
+  function publishSound(realDt, display, season, day) {
+    const weather = day.weather;
+    soundAcc += realDt;
+    nearAcc += realDt;
+    if (soundAcc < 1 / soundRecipe.updateHz) return;
+    soundAcc = 0;
+    if (nearAcc >= soundRecipe.near.nearEveryS) {
+      nearAcc = 0;
+      near = soundNear({ summary: water.getSummary(), growth: world.state?.growth, rushId: growthRecipe.cover?.[0] ?? null,
+        x: camera.target[0], z: camera.target[2], recipe: soundRecipe.near });
+    }
+    const frogs = world.state?.creatures?.frogs?.frogs ?? [];
+    updateStore('sound', () => ({
+      displayT: display, season: season.index, seasonPhase: season.phase,
+      weather: { cloud: weather.cloud, rain: weather.rain, mist: weather.mist, wind: weatherAt(world.state?.weather, display, seasonsRecipe).wind },
+      tidePhase: tideState(display / clock.SECONDS_PER_HOUR, tideP).phase01,
+      eye: [...camera.eye], target: [...camera.target], near,
+      residents: frogs.length ? ['frog'] : [],
+      // For the music (doc 24): the frogs own dusk while they call; a time preview starts no piece.
+      worldT: clock.worldT(), sunAltDeg: (day.sm.sunAlt * 180) / Math.PI,
+      frogsAwake: frogs.length > 0 && !world.state?.creatures?.frogs?.dormant,
+      frogsCalling: creatures.frogs().some((a) => a.mode === 'call'),
+      // A brand-new island (no save came back) opens with music soon after the first touch.
+      freshIsland: !back,
+    }));
   }
 
   let running = true;
@@ -697,6 +745,7 @@ export async function startApp(canvas, hooks = {}) {
     const day = daylight.update(display, world.state, getStore('preview')?.weather ?? null, atmosphere.aerosolScale);
     atmosphere.setAtmosphere({ cloud: day.weather.cloud, mist: day.weather.mist, rain: day.weather.rain });
     for (const event of day.events) emitDeferred('sky:sun-crossed', { event });
+    publishSound(realDt, display, season, day);
     // Palette keys follow the displayed sun, season and weather; positive exposureComp brightens.
     const look = baker.update(realDt, {
       sunAltDeg: (day.sm.sunAlt * 180) / Math.PI, seasonPhase: season.index + season.phase, weather: day.weather,
@@ -784,7 +833,7 @@ export async function startApp(canvas, hooks = {}) {
       build: hooks.build ?? 'dev', seed, island: island.id, worldT: clock.worldT(), flow: clock.flow(),
       carryMinutes: getStore('meta')?.carryMinutes ?? 0, keepGrowing: getStore('meta')?.keepGrowing ?? true,
       world: world.state, journal: getStore('journal'), water: getStore('water'), unlocks: getStore('unlocks')?.earned ?? {},
-      view: camera.pose(), looks: getStore('looks') ?? {}, chunks: getStore('chunks'), mirror: getStore('terrainLive')?.mirror ?? null,
+      view: camera.pose(), looks: getStore('looks') ?? {}, music: getStore('music') ?? { hearted: [] }, chunks: getStore('chunks'), mirror: getStore('terrainLive')?.mirror ?? null,
     }),
   });
 

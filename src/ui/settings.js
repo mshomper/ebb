@@ -4,7 +4,8 @@
 // wide): a full-screen sheet with the sections stacked, each opening on a tap.
 //   Time      speed, keep growing while away (this island), show what changed on return
 //   Look      palette, text size, motion
-//   Sound     volume and quiet in the background, kept for when the island's sounds arrive
+//   Sound     volume, island sounds, creatures, music and how often it plays, quiet in the
+//             background (src/audio/index.js applies them)
 //   Controls  dimming the buttons when idle
 //   Quality   Auto or a tier, switched with no reload (when the app offers it)
 //   Saves     back up, open a file, earlier saves, start again, the island switch (saves-menu.js)
@@ -24,6 +25,7 @@ const PHONE = '(max-width: 699px)';
 const FLOWS = [{ id: 0, label: 'Pause' }, { id: 1, label: 'Normal' }, { id: 2, label: '2 times' }, { id: 4, label: '4 times' }];
 const TEXT_SIZES = [100, 115, 130, 160].map((v) => ({ id: v, label: `${v}%` }));
 const MOTIONS = [{ id: 'device', label: 'Like my device' }, { id: 'full', label: 'Full' }, { id: 'calm', label: 'Calm' }];
+const MUSIC_OFTEN = [{ id: 'often', label: 'Often' }, { id: 'now-and-then', label: 'Sometimes' }, { id: 'rarely', label: 'Rarely' }, { id: 'off', label: 'Off' }];
 const TIERS = [{ id: 'auto', label: 'Auto' }, { id: 'low', label: 'Low' }, { id: 'medium', label: 'Medium' }, { id: 'high', label: 'High' }, { id: 'ultra', label: 'Ultra' }];
 
 /**
@@ -177,19 +179,31 @@ export function mountSettings(o) {
     choices('Motion', MOTIONS, () => motionOf(settings().motion), (motion) => set({ motion })),
     hint('Calm keeps rings and fades still, and the return to the island is a short fade.'),
   ]);
-  const volume = el('div', 'ebb-set__field');
-  volume.innerHTML = `<label class="ebb-set__label" for="ebb-set-volume">Volume</label>
-    <input class="ebb-set__range" id="ebb-set-volume" type="range" min="0" max="100" step="1">`;
-  const volRange = /** @type {HTMLInputElement} */ (volume.querySelector('input'));
-  volRange.addEventListener('input', () => set({ audio: { ...settings().audio, master: Number(volRange.value) / 100 } }));
-  renders.push(() => {
-    const v = String(Math.round((settings().audio?.master ?? 1) * 100));
-    if (volRange.value !== v) volRange.value = v;
-    volRange.style.setProperty('--fill', `${v}%`);
-  });
+  /** A volume slider for one of settings.audio's levels (full is the level tuned for it). @param {string} label @param {string} key */
+  function volumeSlider(label, key) {
+    const box = el('div', 'ebb-set__field');
+    box.innerHTML = `<label class="ebb-set__label" for="ebb-set-vol-${key}"></label>
+      <input class="ebb-set__range" id="ebb-set-vol-${key}" type="range" min="0" max="100" step="1">`;
+    /** @type {HTMLElement} */ (box.querySelector('label')).textContent = label;
+    const range = /** @type {HTMLInputElement} */ (box.querySelector('input'));
+    range.addEventListener('input', () => set({ audio: { ...settings().audio, [key]: Number(range.value) / 100 } }));
+    renders.push(() => {
+      const v = String(Math.round((settings().audio?.[key] ?? 1) * 100));
+      if (range.value !== v) range.value = v;
+      range.style.setProperty('--fill', `${v}%`);
+    });
+    return box;
+  }
+  const musicOften = choices('Music plays', MUSIC_OFTEN, () => settings().audio?.musicOften ?? 'now-and-then',
+    (often) => set({ audio: { ...settings().audio, musicOften: often } }));
+  /** @type {HTMLElement} */ (musicOften.querySelector('.ebb-set__choices')).classList.add('is-even');
   section('sound', 'Sound', 'sound', [
-    hint('The island has no sounds yet. These settings wait for them.'),
-    volume,
+    hint('Sound starts after your first tap or key. On an iPhone, the silent switch also silences the island.'),
+    volumeSlider('Volume', 'master'),
+    volumeSlider('Island sounds', 'ambience'),
+    volumeSlider('Creatures', 'creatures'),
+    volumeSlider('Music', 'music'),
+    musicOften,
     toggle('Quiet when this tab is in the background', () => settings().audio?.muteInBackground !== false,
       (on) => set({ audio: { ...settings().audio, muteInBackground: on } })),
   ]);

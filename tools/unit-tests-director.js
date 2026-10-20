@@ -57,7 +57,8 @@ export function addDirectorTests(test, assert, eq) {
     const tides = ['spring', 'summer', 'autumn', 'winter'].flatMap((season) => [1, 2, 3, 4].map((n) => ({
       id: `tide-${n}-${season}`, theme: { candidate: n, season }, slots: ['morning', 'interlude'], seasons: [season], weather: ['clear'], keys: ['D'], requires: {},
     })));
-    for (const [season, day] of [['spring', 0], ['summer', 7], ['autumn', 14], ['winter', 21]]) {
+    // A season is 14 game days (src/core/clock.js DAYS_PER_SEASON).
+    for (const [season, day] of /** @type {[string, number][]} */ ([['spring', 0], ['summer', 14], ['autumn', 28], ['winter', 42]])) {
       for (const seed of [1, 2, 3]) {
         const { out } = run(director, [...pool, ...tides], { seed, startH: day * 24 + 4, realS: 60 * 20 });
         const morning = out.find((p) => p.slot === 'morning');
@@ -81,12 +82,14 @@ export function addDirectorTests(test, assert, eq) {
     }
   });
 
-  test(G, 'every piece is followed by a rest of at least the shortest rest (2 real minutes)', async () => {
+  test(G, 'every piece is followed by a rest of at least the shortest rest (the recipe, at the default setting)', async () => {
     const { director, pool } = await load();
     const { out } = run(director, pool, { seed: 9 });
+    // The default setting ("now and then", shown as Sometimes) scales the recipe's shortest rest.
+    const least = director.restRealMin[0] * 60 * (director.frequency['now-and-then'].restScale ?? 1) - 1e-6;
     assert(out.length >= 2, `pieces: ${out.length}`);
-    for (const p of out) assert(p.rest >= 120, `rest ${p.rest}`);
-    for (let i = 1; i < out.length; i++) assert(out[i].start - out[i - 1].end >= 120, 'gap between pieces');
+    for (const p of out) assert(p.rest >= least, `rest ${p.rest} (shortest ${least})`);
+    for (let i = 1; i < out.length; i++) assert(out[i].start - out[i - 1].end >= least, 'gap between pieces');
   });
 
   test(G, 'nothing starts during a preview', async () => {
