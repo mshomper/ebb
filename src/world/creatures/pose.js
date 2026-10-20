@@ -57,6 +57,12 @@ export function poseSkeleton(skeleton, moves, out, offset) {
 
 const IDENTITY = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
 
+/** A unit quaternion turning `angle` radians about a unit axis. @param {number[]} a @param {number} angle */
+export function axisAngle(a, angle) {
+  const s = Math.sin(angle / 2);
+  return [a[0] * s, a[1] * s, a[2] * s, Math.cos(angle / 2)];
+}
+
 /** A small hash to 0..1 for a frog's own timing. @param {number} id @param {number} k */
 function h01(id, k) {
   let x = Math.imul(id ^ Math.imul(k, 0x9e3779b1), 0x85ebca6b);

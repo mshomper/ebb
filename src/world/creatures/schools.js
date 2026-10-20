@@ -16,20 +16,16 @@ import { hash32 } from '../../core/rng.js';
 import { run } from '../../core/workers.js';
 import { createCreaturePass } from '../../render/passes/creatures.js';
 import { MAX_BONES } from './bodies.js';
-import { poseSkeleton } from './pose.js';
+import { poseSkeleton, axisAngle } from './pose.js';
 import { createReturn } from './reveal-return.js';
-import { createSchool } from './school.js';
+import { createSchool, poseSchool } from './school.js';
 import { createPatrol, posePatrol } from './patrol.js';
 import { cellCenter } from '../ecology/habitat.js';
 import { keyOf } from '../species.js';
 
 const BAKE_JOB = { module: './world/creatures/bodies.js', fn: 'bakeVariant' };
 
-/** A unit quaternion turning `angle` radians about a unit axis. @param {number[]} a @param {number} angle */
-export function axisAngle(a, angle) {
-  const s = Math.sin(angle / 2);
-  return [a[0] * s, a[1] * s, a[2] * s, Math.cos(angle / 2)];
-}
+export { axisAngle };
 
 /** Quaternion product p * q (q first, then p). @param {number[]} p @param {number[]} q */
 export function qmul(p, q) {
@@ -148,10 +144,7 @@ export function createSchools(opts) {
           const q = qmul(axisAngle([1, 0, 0], -f.pitch), axisAngle([0, 0, 1], f.roll));
           let moves;
           if (M.kind === 'patrol') moves = posePatrol(rig, /** @type {any} */ (f), M, q, axisAngle);
-          else {
-            const beat = Math.sin(f.phase) * M.tailSwing;
-            moves = rig.map((bn) => (bn.parent < 0 ? { q } : bn.name === 'tail' ? { q: axisAngle([0, 1, 0], beat) } : bn.name === 'mid' ? { q: axisAngle([0, 1, 0], beat * 0.45) } : null));
-          }
+          else moves = poseSchool(rig, f, M, q, axisAngle);
           b = new Float32Array(MAX_BONES * 16);
           poseSkeleton(rig, moves, b, 0);
         }
