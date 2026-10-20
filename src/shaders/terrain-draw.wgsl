@@ -153,7 +153,10 @@ fn fsLand(in: VsOut) -> FsOut {
   // Derived layers: steep slopes show rock, the shore band shows sand (painted rock stays rock).
   let steep = 1.0 - smoothstep(td.steepCosHigh, td.steepCosLow, n.y);
   w = mix(w, vec4f(0.0, 0.0, 1.0, 0.0), steep);
-  let beach = 1.0 - smoothstep(td.beachHigh - 0.15, td.beachHigh + 0.15, y);
+  // The shore cover (world/water/shore-live.js): r wrack, g ripples, b lichen, a mud. Tidal mud
+  // keeps its soil, so the beach band does not turn it to sand.
+  let shore = textureSampleLevel(shoreTex, linearSampler, terrainUv(xz), 0.0);
+  let beach = (1.0 - smoothstep(td.beachHigh - 0.15, td.beachHigh + 0.15, y)) * (1.0 - shore.a);
   w = mix(w, vec4f(0.0, 1.0 - w.z, w.z, 0.0), beach);
   // Grass does not grow under water: past the first few centimeters of depth a grassy bed is bare
   // soil, so from above the waterline reads as grass giving way to the bed (sand and stone stay).
@@ -192,9 +195,8 @@ fn fsLand(in: VsOut) -> FsOut {
   // height blend lets grass tufts and stone tops stand up through the moss.
   let cap = dot(w, ground.mossRules) / max(w.x + w.y + w.z + w.w, 1e-4);
   let moss = min(density, 1.0) * cap * (1.0 - sub);
-  // The shore (world/water/shore-live.js): wrack grows in clumps over rock in the tide band, drawn
-  // with the moss scan at wrack's own albedo (moss never grows in the band, so they never meet).
-  let shore = textureSampleLevel(shoreTex, linearSampler, terrainUv(xz), 0.0);
+  // Wrack grows in clumps over rock in the tide band, drawn with the moss scan at wrack's own
+  // albedo (moss never grows in the band, so they never meet).
   let wclumps = valueNoise2(xz * td.shore0.w + vec2f(4.3, 9.1), td.seed + 31u) * 0.6
               + valueNoise2(xz * td.shore1.x + vec2f(1.7, 3.3), td.seed + 32u) * 0.4;
   let wrack = shore.r * smoothstep(0.25, 0.65, wclumps + (shore.r - 0.5) * 0.4);
@@ -209,7 +211,8 @@ fn fsLand(in: VsOut) -> FsOut {
   let soilShare = mix(wf.w, gd.weights.w, gd.amount);
   let lclumps = valueNoise2(xz * td.shore2.x + vec2f(7.1, 2.9), td.seed + 33u) * 0.55
               + valueNoise2(xz * td.shore2.y + vec2f(3.9, 6.7), td.seed + 34u) * 0.45;
-  let lichen = shore.b * smoothstep(0.35, 0.6, lclumps) * rockShare;
+  // Lichen is a crust with crisp edges, thickest low in the splash zone, not a soft stain.
+  let lichen = smoothstep(0.42, 0.5, lclumps + (shore.b - 0.5) * 0.5) * shore.b * rockShare;
   let mud = shore.a * soilShare;
   albedo *= mix(vec3f(1.0), td.shore1.yzw, lichen) * mix(vec3f(1.0), td.mud.rgb, mud);
   // Wet to dry (lush.js): the grass layer takes the blades' tint, deeper by the water, paler and
@@ -273,7 +276,7 @@ fn fsLand(in: VsOut) -> FsOut {
     let dir = select(vec2f(1.0, 0.0), n.xz / max(flat2, 1e-4), flat2 > 0.02);
     let warp = valueNoise2(xz * td.mud.w, td.seed + 35u) * 6.2831853;
     let ph = dot(xz, dir) * td.ripple.x + warp;
-    let fade = 1.0 - smoothstep(td.ripple.w * 0.15, td.ripple.w * 0.35, max(fw.x, fw.y));
+    let fade = 1.0 - smoothstep(td.ripple.w * 0.07, td.ripple.w * 0.18, max(fw.x, fw.y));
     let k = shore.g * mix(wf.y, gd.weights.y, gd.amount) * fade * td.ripple.y;
     nG = normalize(nG - vec3f(dir.x, 0.0, dir.y) * (cos(ph) + 0.35 * cos(2.0 * ph)) * k);
   }
