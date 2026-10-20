@@ -104,6 +104,7 @@ Starting values for the tuning panel. The ceiling itself says something about th
 | Midges | (a swarm) | Ignore you; they matter to the frogs, not to you |
 | Minnows | Familiar (as a school) | Swirls to the surface at your hand |
 | Dragonflies | Curious | Patrols past you; lands on a reed by your knee |
+| Turtles | Familiar | Keeps basking when you sit on the same log |
 | Bees | Tolerant | Ignore you while you sit in the flowers |
 | Butterflies | Curious | Land on your sleeve or hat if you are very still |
 | Songbirds (robin) | Bonded | Follows you while you dig; perches on the tent or your pack |
@@ -111,8 +112,8 @@ Starting values for the tuning panel. The ceiling itself says something about th
 | Squirrels | Familiar | Takes a nut from the ground near you; caches near camp |
 | Owls | Tolerant | Stays on its branch and watches you back; answers your hoot |
 | Herons | Tolerant | Keeps fishing if you stay about 15 m away and look elsewhere |
+| Oystercatchers | Wary (as a flock) | Keep feeding on the bar if you stay on the sand above them; lift off piping if you come closer |
 | Otters | Bonded | Pops up to watch; leaves a pebble or shell on your stone |
-| Turtles | Familiar | Keeps basking when you sit on the same log |
 | Fireflies | Tolerant (as a swarm) | Their flashing drifts around you when you sit without light |
 | Bats | Tolerant | Hunt the moths drawn to your fire |
 | Cranes | Wary | Rare visitors; you watch from far, and that is the point |

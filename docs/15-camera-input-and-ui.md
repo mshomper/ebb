@@ -201,7 +201,7 @@ One `<symbol id="i-NAME" viewBox="0 0 24 24">` per icon: 24 px grid, 2 px paddin
 | settings | three horizontal sliders with knobs |
 | undo / redo | curved arrow left; mirrored |
 
-Support icons in the same style: close, back, check, follow, name tag, hide HUD, the five group icons, the five journal section icons (species, moments, away notes, map, year), and the gifted tools (stream, tide stone, drift log, night photo).
+Support icons in the same style: close, back, check, follow, name tag, hide HUD, the five group icons, the five journal section icons (species, moments, away notes, map, year), and the gifted tools (cliffs, stream, carry a log, tide stone, night photo).
 
 ## Algorithms and shaders
 

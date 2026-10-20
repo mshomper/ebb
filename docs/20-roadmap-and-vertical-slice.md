@@ -76,9 +76,9 @@ Slice acceptance, all together:
 ### M2 — Pond tier complete and the meadow islet
 
 - **First step: the Cliff tool** (decided October 2026). Terrace and Cut modes that build or carve level shelves with sheer rock faces, painted rock that stays sheer (talus about 82 degrees), full mesh detail near cliffs, and a shadow offset for near-vertical faces. Built first so it lands as early as possible without interrupting the slice (docs 08, 15, 04, 19). First planned as available from the start; since October 20, 2026 it is **the frogs' gift** (doc 12), replacing their water lily seed, with `?sandbox` and `?cliffs` opening it for testing. Branch `m2-cliff-tool`: built October 20, 2026 as Sculpt chips (Terrace and Cut beside Raise, Lower, Flatten and Stone), in review, together with **waterfalls**: water running over a shelf's edge is drawn as volumetric droplet water near the eye (screen-space fluid) and as a curtain further off, with foam where it lands (doc 07). Their sound is a later step, once the audio's flowing-water input is wired to the sim.
-- Minnows (schooling) and dragonflies (darting flight) join the frogs. Minnows come by themselves to a still pool with a deep spot of about 1 m (doc 12).
-- Gifts (progression agreed October 20, 2026, doc 13): the frogs' Cliff tool, the minnows' pondweed, the dragonflies' stream tool. The gift card and the progress module are built (`src/world/expansion.js`); the frogs' gift moves from lilies to the Cliff tool.
-- The Tier 1 milestone: the meadow islet rises at low tide with a sandbar to the main island (doc 13).
+- Minnows (schooling), dragonflies (darting flight) and turtles (basking) join the frogs. Minnows come by themselves to a still pool with a deep spot of about 1 m; turtles to a warm pond with a sunny stone, and better with a log (doc 12; turtles moved here from the shore tier on October 20, 2026).
+- Gifts (progression agreed October 20, 2026, doc 13): the frogs' Cliff tool, the minnows' pondweed, the dragonflies' stream tool, the turtles' carry-a-log. Driftwood washes up from the naturalist's notes at 10 finds, and toads and slow worms (finds) live under logs. The gift card and the progress module are built (`src/world/expansion.js`); the frogs' gift moves from lilies to the Cliff tool.
+- The Tier 1 milestone: the meadow islet rises at low tide with a sandbar to the main island, dry only at low tide (doc 13, "The meadow islet in play").
 - Field journal with photo mode; photographs fill species pages.
 - Tuning panel v1: live sliders for species and flora recipes, saving recipe files.
 - First audio pass: water bed, wind bed, frog voice with chorus (doc 17).
@@ -91,7 +91,7 @@ Slice acceptance, all together:
 - Full seasonal look: color shifts, blooming, leaf drop, frosty winter mornings (no snow).
 - Full weather: rain, mist, wind, and the drier or wetter leaning.
 - Paths and stone walls, with moss growing over them in time.
-- Presence rung 3, the walker (doc 23), may start here and finish in M4: a small traveler you step into and walk along paths and over the bridge. It is large enough to be scheduled as its own step when M3 is planned.
+- Presence rung 3, the walker (doc 23), may start here and finish in M4: a small traveler you step into and walk along paths and over the bridge, and across the sandbar to the meadow islet at low tide. It is large enough to be scheduled as its own step when M3 is planned.
 - The Tier 2 milestone: the woodland knoll rises beyond a channel, and the bridge gift arrives with it.
 
 ### M4 — Woodland and the tide flats
@@ -103,7 +103,7 @@ Slice acceptance, all together:
 
 ### M5 — Wetland shore and the outer skerry
 
-- Herons, otters and turtles; tide flats become a feeding ground.
+- Herons, oystercatchers and otters; tide flats become a feeding ground, and oystercatchers feed on the shore finds.
 - More lanterns.
 - The Tier 4 milestone: an outer skerry and a long sandbar exposed at low tide.
 
@@ -112,12 +112,12 @@ Slice acceptance, all together:
 - Fireflies, bats, and migrating cranes as rare seasonal visitors.
 - Night lighting polish, lantern glow, firefly light; the Moonlight palette as the bats' gift.
 - Presence rung 4, the camp (doc 23), here or with the M7 chapter: a bedroll, a fire and a home point that keeps a gentle presence while you are away.
-- The journal year page (all fifteen species photographed and all four seasons passed).
+- The journal year page (all sixteen species photographed and all four seasons passed).
 - Mobile tier tuning, accessibility pass, store page and promo capture.
 
 ### M7 — Headland expansion (after v1)
 
-- A new chapter after the year page, so the fifteen-species year and the five land pieces stay as designed (docs 12, 13).
+- A new chapter after the year page, so the sixteen-species year and the five land pieces stay as designed (docs 12, 13).
 - A Headland land piece with sea cliffs of about 6 to 10 m, cliff-top turf and a sea stack.
 - Puffins (burrows in cliff-top turf, sand eels offshore) and kittiwakes (ledge colonies on sheer faces above water) first; feral goats later on the headland's heights.
 - Placed rock pieces for arches and sea caves, which the heightfield cannot hold.

@@ -22,7 +22,7 @@ Agreed with Matt on October 20, 2026. New things reach the player in five ways, 
 |---|---|---|
 | Starter kit | Sculpt (Raise, Lower, Flatten, Stone), Paint, Water (Pour, Drain), Plant with grass, reeds and water lilies; Feed once a creature is found | nothing: there from the start |
 | Plants that come by themselves | Iris, rushes, thrift, marigold, campion; plantable once seen | about one every 1.7 game days (`recipes/world/growth.json`) |
-| The naturalist's notes | Shells at 3 finds; loose stones at 6, the hand lens at 10, driftwood at 15 | finds discovered (`recipes/world/naturalist.json`) |
+| The naturalist's notes | Shells at 3 finds; loose stones at 6, driftwood at 10, the hand lens at 15 (driftwood and the lens swapped places on October 20, 2026, so logs come in time for the turtles) | finds discovered (`recipes/world/naturalist.json`) |
 | Species gifts | One seed or tool per species, when it first settles happy (list in `12-creature-roadmap.md`) | creature happiness |
 | Tier milestones | New land, when the second species of a tier is happy | creature happiness |
 
@@ -34,30 +34,34 @@ flowchart LR
   F -->|Cut digs a deep pool| M[Minnows come<br/>gift: pondweed]
   F -->|terraces wait| D[Dragonflies<br/>gift: springs]
   D -->|spring above a terrace| W[Waterfalls]
+  S -->|a sunny stone by the pond| T[Turtles<br/>gift: carry a log]
+  N[10 finds<br/>driftwood on the strandline] --> T
   M --> L[2nd happy species<br/>meadow islet rises]
   D --> L
+  T --> L
 ```
 
 The gifts build on each other. The frogs' Cliff tool makes the deep, still pool minnows want; the dragonflies' springs then pour over the terraces the player has already built. A gift never brings a creature: the creature still decides to come.
 
-### The gift chain (proposed October 20, 2026, for Matt's review)
+### The gift chain (agreed with Matt, October 20, 2026)
 
-Each gift lets the player make something new, and what they make is part of what draws a later creature. The chain runs forward through the tiers and sometimes loops back to feed an earlier one. Gifts are from doc 12; the two marked rows propose swapping the otters' and turtles' gifts, so no species gives the thing it needs itself.
+Each gift lets the player make something new, and what they make is part of what draws a later creature. The chain runs forward through the tiers and sometimes loops back to feed an earlier one, or to the naturalist's notes. Gifts are as in doc 12.
 
 | Species | Gift | Lets you make | Which draws in |
 |---|---|---|---|
 | Frogs | Cliff tool | deep pools, terraces, sea walls | minnows; after v1, puffins and kittiwakes on cliffs |
 | Minnows | Pondweed | an underwater meadow | more fish for herons; food for turtles |
-| Dragonflies | Springs | streams, and waterfalls off terraces | otters (running water); damp ground for butterflies |
+| Dragonflies | Springs | streams, and waterfalls off terraces | otters (running water); damp ground for butterflies; running water on the meadow islet, which has no spring |
+| Turtles | Carry a log | driftwood from the strandline, set down anywhere | a better basking log for turtles; toads and slow worms under it (finds, so the naturalist's line moves on) |
 | Bees | Hawthorn | hedges | songbirds nest in them; hedgehogs forage beneath |
 | Butterflies | Stone wall | sunny walls that gather moss | bees bask on them; hedgehogs walk the wall bases |
 | Songbirds | Oak | a tree that grows old | squirrels (nuts); owls (a hollow, once old) |
 | Hedgehogs | Bramble | thickets with berries | loops back: berries for songbirds, flowers for bees |
 | Squirrels | Beech | deep leaf litter | beetles for hedgehogs; firefly larvae |
 | Owls | Night photo | a way to see in the dark | helps the player find fireflies and bats |
-| Herons | Tide stone | bigger tides and wider flats | cranes; the rarest shells on the strandline |
-| Otters | **Drift log tool** (proposed; was alder) | logs along the bank | turtles bask on them; toads and slow worms live beneath (finds) |
-| Turtles | **Alder** (proposed; was the drift log tool) | wet alder wood with damp litter | firefly larvae; old alders hollow for bats |
+| Herons | Tide stone | bigger tides and wider flats | cranes and oystercatchers; the rarest shells on the strandline |
+| Oystercatchers | Sea kale | big-leaved flowers on bare shingle above the tide | loops back: nectar for bees |
+| Otters | Alder | wet alder wood with damp litter | firefly larvae; old alders hollow for bats |
 | Fireflies | Evening primrose | flowers that open at dusk | moths at dusk, food for bats |
 | Bats | Moonlight palette | a way to see the night | the end of the chain |
 | Cranes | Wild cherry | spring blossom and summer fruit | loops back to bees and songbirds; often the last step to the year page |
@@ -67,19 +71,21 @@ flowchart LR
   FR[Frogs: cliffs] --> MI[Minnows]
   MI -->|pondweed| HE[Herons]
   MI -->|pondweed| TU[Turtles]
+  NA[Naturalist: driftwood] --> TU
+  TU -->|carry a log| FN[Toads and slow worms<br/>under logs]
+  SF[Shore finds<br/>mussels and winkles] --> OY[Oystercatchers]
   DR[Dragonflies: springs] --> OT[Otters]
   BE[Bees: hawthorn] --> SO[Songbirds]
   SO -->|oak| SQ[Squirrels]
   SO -->|oak, grown old| OW[Owls]
   SQ -->|beech litter| FI[Fireflies]
   OW -->|night photo| FI
-  OT -->|drift logs| TU
-  TU -->|alder| BA[Bats]
+  OT -->|alder| BA[Bats]
   FI -->|evening primrose| BA
   HE -->|tide stone| CR[Cranes]
 ```
 
-A gift only helps: every creature can still come without it (turtles bask on stones too; fireflies find litter under any tree), so no gift becomes a lock and order never matters.
+A gift only helps: every creature can still come without it (turtles bask on a stone before any log; fireflies find litter under any tree), so no gift becomes a lock and order never matters.
 
 ### Milestones
 
@@ -100,7 +106,7 @@ flowchart TB
   RV --> E
 ```
 
-The third species of each tier is optional for land but still gives its gift and fills its page. The fifth tier milestone has no land after it; it is usually the last step toward the year page (see below).
+The species after the second in each tier (the third and fourth in the pond tier) are optional for land but still give their gifts and fill their pages. The fifth tier milestone has no land after it; it is usually the last step toward the year page (see below).
 
 ### How new land joins
 
@@ -112,8 +118,19 @@ All new land is a **pre-shaped heightfield chunk set** generated from a land rec
 | Tier 2 (meadow) | **Woodland knoll**, about 48 m, beyond a narrow channel | Rises the same way. The **bridge** gift arrives with it: the player draws one small bridge across the channel (`09-structures.md`). | Tier 3 |
 | Tier 3 (woodland) | **Tide flats and marsh spit**, about 70 m by 30 m | The shore around the main island lowers a little and widens, so the low tide exposes wide flats; a curved spit of marsh grows out from one end. | Tier 4 |
 | Tier 4 (shore) | **Outer skerry and long sandbar**, skerry about 30 m, bar about 80 m | A rocky skerry rises at the edge; the long bar is exposed at low tide and covered at high tide. | Tier 5 |
-| Tier 5 (night) | none | No new land. The year page completes when all fifteen species pages hold a photograph and all four seasons have passed; see "The year page" below. | — |
+| Tier 5 (night) | none | No new land. The year page completes when all sixteen species pages hold a photograph and all four seasons have passed; see "The year page" below. | — |
 | After v1 (M7) | **Headland**, about 50 m, with sea cliffs of 6 to 10 m, cliff-top turf and a sea stack, inside the existing 192 m window | Rises like the others, after the year page completes. Its cliffs are painted rock, so they stay sheer (doc 08). | Puffins, kittiwakes, later feral goats (doc 12) |
+
+### The meadow islet in play (agreed October 20, 2026)
+
+What a new islet means to the player, using the first one as the pattern for the rest:
+
+- **New ground.** Sculpt, Paint and Plant work on it as soon as it is above water. It is dry, sunny meadow soil: where the meadow tier's flowers want to be, and different from the pond island.
+- **No spring of its own.** Rain fills its hollows; for running water the player places a spring there (the dragonflies' gift), which gives that gift a second purpose.
+- **The sandbar is a place of its own.** It is dry twice a game day at low tide, with lugworm casts and shells on it, and later oystercatchers feeding along it. At high tide it is under water and the islet is on its own again.
+- **Crossing.** The camera goes anywhere, at any tide. Creatures that walk (hedgehogs, later) cross only while the bar is dry; fliers and swimmers cross any time.
+- **Walking over yourself.** When the walker arrives (M3, doc 23) the player can walk across the bar at low tide. If the tide comes in while they are on the islet, they wait for the next low tide (about 6 game hours) or step out of the walker; nobody is ever stuck. The tide decides when you can cross, which is the "ebb" in the name.
+- **The woodland knoll** (Tier 2) lies beyond deeper water. It has no bar; the player draws the bridge to it.
 
 Rising technique: the chunk's target heightfield `H` blends from a submerged copy `H − 3 m` using an eased factor over the tide cycle, with sand material first and the recipe's soil, rock and starter flora (a few clumps of the tier's base plants) blending in as it clears the water. The water summary, distance transforms and ecology fields are rebuilt for the affected chunks only, once at the end. The player can sculpt the new land like any other land as soon as it is above water; the rise never overwrites player edits on existing land, and placement avoids any cell the player has edited.
 
@@ -125,10 +142,11 @@ Target player: 20 to 40 minutes most evenings, with the game left closed overnig
 |---|---|---|---|
 | First frog scout | 1 to 2 | first session | reeds filling in along the pond |
 | Frogs happy (first gift, the Cliff tool) | 3 to 6 | first or second evening | group of 4 and a thick reed margin |
-| Tier 1 milestone, meadow islet | 6 to 10 | second or third evening | minnows or dragonflies happy |
+| Turtles come | 5 to 12 | first week | a sunny stone at a warm pond with lilies; driftwood at 10 finds makes them happier |
+| Tier 1 milestone, meadow islet | 6 to 10 | second or third evening | minnows, dragonflies or turtles happy |
 | Tier 2 milestone, woodland knoll and bridge | 15 to 25 | end of the first week | wildflowers and hawthorn maturing |
 | Tier 3 milestone, tide flats | 35 to 55 | second or third week | trees maturing for squirrels and owls |
-| Tier 4 milestone, outer skerry | 55 to 80 | about a month | fish populations and alder growth |
+| Tier 4 milestone, outer skerry | 55 to 80 | about a month | fish populations, the shore finds for oystercatchers, alder growth |
 | Journal year complete | 80 to 120 | one to two months | fireflies in summer, cranes at a season turn |
 
 Seasons are 14 game days (F01), so the year page can complete no sooner than one 56-day year, and anything that waits for a season waits twice as long in game days as it did. The frog timings were reviewed in F01b: their hour-based steps (scout, settle, leave, a join about once a day) are kept, so frogs still arrive within the first evenings; their winter sleep is set by season position, so it keeps its share of the year (about 10 of 56 days).
@@ -173,7 +191,7 @@ The camera stays where it is; you look around the island to find the wash. A spe
   - **Missed:** a note that never showed on the island (more at once than the queue holds, or written while the tab was out of sight, and later the reveal's catch-up) goes at the top of Notes under "You may have missed". The island says "3 more in the journal" instead of dropping them silently.
   - **Seen:** everything else is plain. On a new island, the notes about what was already there count as read.
 - **The island map**: a hand-drawn style map that adds each land piece as it rises, with player-named places.
-- **The year page**: four season boxes that fill as each season is seen with a happy species in it. When all fifteen species pages hold a photograph and all four seasons are filled, the year page completes with a short closing note. Play continues; nothing ends.
+- **The year page**: four season boxes that fill as each season is seen with a happy species in it. When all sixteen species pages hold a photograph and all four seasons are filled, the year page completes with a short closing note. Play continues; nothing ends.
 
 Hints live only in the journal and are always phrased as observation ("the frogs keep to the far bank since the lantern went up"), never as instructions or checklists.
 
@@ -229,8 +247,6 @@ Tuning panel: milestone threshold (second or third happy species), rise duration
 - With everything unlocked on desktop the frame rate stays at 60 fps while orbiting the whole world; the mobile tier stays at 30 fps.
 
 ## Open questions
-
-- Swap the otters' and turtles' gifts (otters give the drift log tool, turtles give alder), so turtles do not give the logs they bask on and the alder leads on to fireflies and bats? See "The gift chain" above.
 - Should the player choose where a new islet rises (from two or three spots), or is a surprise placement nicer?
 - Is the second happy species the right trigger, or should land wait for all three in a tier?
 - Should the journal year page lead into a second year with new rare visitors, or simply rest?

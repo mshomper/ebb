@@ -1,10 +1,10 @@
 # 12 — Creature roadmap
 
-> Fifteen species in five tiers, each tier tied to a kind of place: the pond, the meadow, the woodland, the wetland shore, and the night and the turning seasons. Every species wants a slightly different mix of water, food, shelter, quiet and company, so each one asks the player to build something new. Each has one behavior that makes it worth watching, one way the player connects with it, and one gift it gives back when it is happy. Frogs come first and are built in full for the vertical slice; everything else reuses what frogs prove out.
+> Sixteen species in five tiers, each tier tied to a kind of place: the pond, the meadow, the woodland, the wetland shore, and the night and the turning seasons. Every species wants a slightly different mix of water, food, shelter, quiet and company, so each one asks the player to build something new. Each has one behavior that makes it worth watching, one way the player connects with it, and one gift it gives back when it is happy. Frogs come first and are built in full for the vertical slice; everything else reuses what frogs prove out.
 
 ## Locked decisions
 
-- Five tiers, three species each, in the order below. A tier's species become eligible to scout when its land exists (see `13-progression-and-expansion.md`). Tier 1 is eligible from the start.
+- Five tiers in the order below: four species in the pond tier and three in each of the others, sixteen in all (October 20, 2026: turtles moved from the shore tier to the pond, where European pond turtles live, and oystercatchers took their place on the shore). A tier's species become eligible to scout when its land exists (see `13-progression-and-expansion.md`). Tier 1 is eligible from the start.
 - Every species gives **one gift** (a seed or a tool) when it first settles happy, never a creature: creatures are attracted, never bought. Trust brings its own rewards instead of items: a name, a call answered, a portrait at arm's length (`23-presence.md`). Land comes from **tier milestones**: when the second species of a tier becomes happy, new land joins. Gifts never expire and do not depend on order. A gift is given when the species is happy, whether or not the player has found one yet.
 - Need models, mood, arrival and leaving follow `11-creatures-and-ecology.md`. Numbers below are starting values for the tuning panel, not final.
 - **Winter dormancy**: frogs, hedgehogs, turtles, bees, butterflies, fireflies and bats go quiet in winter (hidden, mood held, not counted as unhappy). Their journal pages say where they sleep.
@@ -18,13 +18,13 @@ Plain language: each tier teaches one new kind of habitat-building and one new k
 
 ```mermaid
 flowchart LR
-  T1[Tier 1 pond<br/>frogs, minnows, dragonflies] -->|2nd happy: meadow islet rises| T2[Tier 2 meadow<br/>bees, butterflies, songbirds]
+  T1[Tier 1 pond<br/>frogs, minnows, dragonflies, turtles] -->|2nd happy: meadow islet rises| T2[Tier 2 meadow<br/>bees, butterflies, songbirds]
   T2 -->|2nd happy: woodland knoll + bridge| T3[Tier 3 woodland<br/>hedgehogs, squirrels, owls]
-  T3 -->|2nd happy: tide flats and marsh spit| T4[Tier 4 wetland shore<br/>herons, otters, turtles]
+  T3 -->|2nd happy: tide flats and marsh spit| T4[Tier 4 wetland shore<br/>herons, oystercatchers, otters]
   T4 -->|2nd happy: outer skerry and long sandbar| T5[Tier 5 night and seasons<br/>fireflies, bats, cranes]
 ```
 
-The whole chain, gift by gift, with what each lets you make and whom it draws, is in `13-progression-and-expansion.md` ("The gift chain"), including a proposed swap of the otters' and turtles' gifts. Gifts are chosen so one species helps the next: frogs give the Cliff tool, whose Cut digs the deep pool minnows come to; the dragonflies' springs then turn the frogs' terraces into waterfalls; minnows give pondweed, which turtles eat; minnows feed herons; songbirds plant oaks, which squirrels and owls need; the bridge gives bats a roost.
+The whole chain, gift by gift, with what each lets you make and whom it draws, is in `13-progression-and-expansion.md` ("The gift chain"). Gifts are chosen so one species helps the next: frogs give the Cliff tool, whose Cut digs the deep pool minnows come to; the dragonflies' springs then turn the frogs' terraces into waterfalls; minnows give pondweed, which turtles eat; turtles let you carry driftwood to the pond, and toads and slow worms (finds) live under the logs; minnows feed herons; oystercatchers eat the shore finds you have already met; songbirds plant oaks, which squirrels and owls need; the bridge gives bats a roost.
 
 ## Vertical slice: frogs (full detail)
 
@@ -48,23 +48,25 @@ The whole chain, gift by gift, with what each lets you make and whom it draws, i
 | Motion | Hop: ballistic arc 0.3 to 0.6 m, legs extend via IK then fold, squash-and-stretch spring on landing. Swim: frog-kick cycle at the surface, floats with eyes above water. Breathing spring on throat at rest. Faces the camera slowly when lingering. |
 | Audio | Call voice and chorus layering in `17-audio.md`. |
 
-Every species also gets a presence block and a wildness ceiling, the closest it will ever let you come; starting ceilings for all fifteen are in `23-presence.md`.
+Every species also gets a presence block and a wildness ceiling, the closest it will ever let you come; starting ceilings for all sixteen are in `23-presence.md`.
 
 ## Tier 1 — pond island (starter, about 64 m)
 
-| | Minnows | Dragonflies |
-|---|---|---|
-| Kind | Swarm, diurnal, active all year (deeper in winter) | Swarm of few (3 to 8 visible), diurnal, summer and late spring |
-| Water | Still or slow fresh water, depth 0.2 to 1.5 m, at least 20 m², with a deep spot of about 1 m to winter in. They come by themselves once such a pool exists; the frogs' Cut digs one in a stroke, and Lower can too | Still water within 10 m, sunny |
-| Food | Midge field over water, pondweed when available | Midge field (competes lightly with frogs) |
-| Shelter | Water lily pads and reed stems at the water's edge | Reeds as perches and emergence stems |
-| Quiet | Low sensitivity (shade from structures is fine) | Low sensitivity |
-| Company | School of 8 to 30 | 3 to 8 |
-| Gift | Pondweed seed (underwater meadow, holds more fish; food for turtles later) | Stream tool: unlocks the Water tool's Spring mode (`unlocks.springs`; up to 4 springs, trickle, brook or stream; built in S4b). A spring above a terrace pours over its edge as a waterfall |
-| Signature | School turns as one, flashes silver when the sun hits | Hovering patrol over the pond; pairs in tandem flight |
-| Interaction | Feed: crumbs make the school swirl up to the surface | Follow camera rides along a patrol route |
-| Body | Capsule body tapered with a round-cone tail fin; impostor at distance | Thin capsule abdomen, sphere thorax and head, four flat wing ellipsoids |
-| Motion | GPU boids under the live water surface | Boids with hover hold points; wing flap as spring-driven phase |
+Four species (turtles joined in October 2026). The meadow islet still rises when the second of them is happy.
+
+| | Minnows | Dragonflies | Turtles (European pond turtle) |
+|---|---|---|---|
+| Kind | Swarm, diurnal, active all year (deeper in winter) | Swarm of few (3 to 8 visible), diurnal, summer and late spring | Individual, diurnal, dormant in winter (in the pond mud) |
+| Water | Still or slow fresh water, depth 0.2 to 1.5 m, at least 20 m², with a deep spot of about 1 m to winter in. They come by themselves once such a pool exists; the frogs' Cut digs one in a stroke, and Lower can too | Still water within 10 m, sunny | Still, warm fresh water 0.3 to 1.2 m deep, in sun most of the day |
+| Food | Midge field over water, pondweed when available | Midge field (competes lightly with frogs) | Pondweed and water lilies |
+| Shelter | Water lily pads and reed stems at the water's edge | Reeds as perches and emergence stems | A sunny basking spot at the water's edge: a stone (the Stone chip) is enough at first; a log is better |
+| Quiet | Low sensitivity (shade from structures is fine) | Low sensitivity | Moderate |
+| Company | School of 8 to 30 | 3 to 8 | 2 to 6 |
+| Gift | Pondweed seed (underwater meadow, holds more fish; food for turtles) | Stream tool: unlocks the Water tool's Spring mode (`unlocks.springs`; up to 4 springs, trickle, brook or stream; built in S4b). A spring above a terrace pours over its edge as a waterfall | **Carry a log**: lift a piece of driftwood off the strandline (the naturalist's notes bring it at 10 finds) and set it down anywhere. A log by the pond is a better basking spot, and toads and slow worms (finds) live under it. It replaces the shore tier's old drift log tool |
+| Signature | School turns as one, flashes silver when the sun hits | Hovering patrol over the pond; pairs in tandem flight | Stacks of turtles basking on one log or stone |
+| Interaction | Feed: crumbs make the school swirl up to the surface | Follow camera rides along a patrol route | Feed lily leaves; a named turtle ages visibly |
+| Body | Capsule body tapered with a round-cone tail fin; impostor at distance | Thin capsule abdomen, sphere thorax and head, four flat wing ellipsoids | Flattened ellipsoid shell, sphere head on a short neck, flipper-shaped ellipsoids |
+| Motion | GPU boids under the live water surface | Boids with hover hold points; wing flap as spring-driven phase | Slow paddle; haul-out onto stones and logs |
 
 ## Tier 2 — meadow (the meadow islet)
 
@@ -100,19 +102,21 @@ Every species also gets a presence block and a wildness ceiling, the closest it 
 
 ## Tier 4 — wetland shore (tide flats and the marsh spit)
 
-| | Herons | Otters | Turtles |
+Oystercatchers took the turtles' place here in October 2026. They feed on the shore finds the player has already met, so finds become food for a creature.
+
+| | Herons | Oystercatchers | Otters |
 |---|---|---|---|
-| Kind | Individual, diurnal, all year | Individual, crepuscular, all year | Individual, diurnal, dormant in winter |
-| Water | Tide band and shallows 0.1 to 0.5 m | Running or slow water, depth over 0.5 m | Still warm water, depth 0.3 to 1.2 m |
-| Food | Fish field (minnows) in shallows | Fish field | Pondweed and water lilies |
-| Shelter | Tall reeds or trees to roost | Bank holt under roots or stones | Basking logs or stones in sun |
-| Quiet | High: paths within 12 m by day | Moderate | Moderate |
-| Company | 1 to 2 | 2 to 4 | 2 to 6 |
-| Gift | Tide stone tool (choose gentle or strong tides) | Alder seed (bankside tree) | Drift log tool (place fallen logs) |
-| Signature | Stands still for minutes, then strikes | Slides down a bank, rolls and plays in pairs | Stacks of turtles basking on one log |
-| Interaction | Photograph the strike | Call: pops up and watches the camera | Feed lily leaves; named turtle ages visibly |
-| Body | Slim ellipsoid body, long neck of chained capsules, long cone beak, stilt legs | Long capsule body, flat round-cone tail, small sphere head | Flattened ellipsoid shell, sphere head on a short neck, flipper-shaped ellipsoids |
-| Motion | FABRIK neck, slow wading IK, slow flap | Swim along a spline, quadruped bound on land, play loops | Slow paddle, haul-out onto logs |
+| Kind | Individual, diurnal, all year | Flock of few, diurnal, all year | Individual, crepuscular, all year |
+| Water | Tide band and shallows 0.1 to 0.5 m | The tide band: wet sand, sandbars and mussel beds exposed at low tide | Running or slow water, depth over 0.5 m |
+| Food | Fish field (minnows) in shallows | The shore finds as a food field: mussels, periwinkles, lugworms | Fish field |
+| Shelter | Tall reeds or trees to roost | Open sand or shingle above high tide to roost, with clear sight lines | Bank holt under roots or stones |
+| Quiet | High: paths within 12 m by day | Moderate: paths within 8 m | Moderate |
+| Company | 1 to 2 | 2 to 12 | 2 to 4 |
+| Gift | Tide stone tool (choose gentle or strong tides) | Sea kale seed (big blue leaves and white flowers on bare shingle above the tide; nectar for bees) | Alder seed (bankside tree; wet alder wood keeps leaf litter damp for firefly larvae, and old alders hollow for bats) |
+| Signature | Stands still for minutes, then strikes | Piping display: pairs run side by side calling; the flock lifts off the bar as the tide covers it | Slides down a bank, rolls and plays in pairs |
+| Interaction | Photograph the strike | Photograph the piping; watch the flock follow the tide edge | Call: pops up and watches the camera |
+| Body | Slim ellipsoid body, long neck of chained capsules, long cone beak, stilt legs | Sphere body, black back and white belly, long orange-red cone bill, short pink legs | Long capsule body, flat round-cone tail, small sphere head |
+| Motion | FABRIK neck, slow wading IK, slow flap | Run and probe at the water's edge; low fast flock flight | Swim along a spline, quadruped bound on land, play loops |
 
 ## Tier 5 — night and seasons (the outer skerry and long sandbar)
 
@@ -136,11 +140,11 @@ One recipe per species in `recipes/species/<id>.json`, schema in `11-creatures-a
 
 ## Algorithms and shaders
 
-Reuse from doc 11 throughout. New per tier: frog call alternation (call inhibition window, a simple form of anuran chorus timing); boids with targets (bees, dragonflies); quadruped gait phase tables (hedgehogs, squirrels, otters); FABRIK neck (herons, cranes); firefly sync as a Kuramoto coupled-oscillator model, with coupling strength rising with mood so a happier swarm flashes in tighter unison.
+Reuse from doc 11 throughout. New per tier: frog call alternation (call inhibition window, a simple form of anuran chorus timing); boids with targets (bees, dragonflies); quadruped gait phase tables (hedgehogs, squirrels, otters); FABRIK neck (herons, cranes); a run-and-probe flock that follows the tide edge (oystercatchers); firefly sync as a Kuramoto coupled-oscillator model, with coupling strength rising with mood so a happier swarm flashes in tighter unison.
 
 ## Tuning knobs
 
-Each species exposes its needs, gift, group sizes, body primitives and motion constants in the tuning panel. A "roadmap" view lists all fifteen with unlocked, eligible, present and happy status as drawn icons.
+Each species exposes its needs, gift, group sizes, body primitives and motion constants in the tuning panel. A "roadmap" view lists all sixteen with unlocked, eligible, present and happy status as drawn icons.
 
 ## Performance budget
 
@@ -156,14 +160,15 @@ Per-species additions must stay inside doc 11 totals. Rule of thumb: swarm speci
 1. Frogs (slice, S6 in `20-roadmap-and-vertical-slice.md`)
 2. Minnows (first boids, first fish field)
 3. Dragonflies (flying boids, wing springs)
-4. Bees, 5. Butterflies, 6. Songbirds (first birds and perching)
-7. Hedgehogs (first quadruped), 8. Squirrels (tree climbing), 9. Owls
-10. Herons (FABRIK neck), 11. Turtles, 12. Otters (swim plus land gait)
-13. Fireflies (oscillator sync), 14. Bats, 15. Cranes (visitor system)
+4. Turtles (basking on placed pieces; with the piece system that loose stones, driftwood and stepping stones share in M2)
+5. Bees, 6. Butterflies, 7. Songbirds (first birds and perching)
+8. Hedgehogs (first quadruped), 9. Squirrels (tree climbing), 10. Owls
+11. Herons (FABRIK neck), 12. Oystercatchers (a flock feeding on the finds field), 13. Otters (swim plus land gait)
+14. Fireflies (oscillator sync), 15. Bats, 16. Cranes (visitor system)
 
 ## After v1: the Headland expansion (M7)
 
-A new chapter after the year page, so the fifteen species above stay the whole first year. Cliffs come from the Cliff tool (M2, `08-terrain-and-sculpt.md`) and from the Headland land piece (`13-progression-and-expansion.md`). Needs use the cliff field in `11-creatures-and-ecology.md`.
+A new chapter after the year page, so the sixteen species above stay the whole first year. Cliffs come from the Cliff tool (M2, `08-terrain-and-sculpt.md`) and from the Headland land piece (`13-progression-and-expansion.md`). Needs use the cliff field in `11-creatures-and-ecology.md`.
 
 | | Puffin (first) | Kittiwake (first) | Feral goat (later) |
 |---|---|---|---|

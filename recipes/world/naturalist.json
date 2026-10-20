@@ -11,8 +11,8 @@
       "line": "Walk the strandline after a high tide. The rarest come with the biggest tides."
     },
     { "id": "stones", "at": 6, "icon": "loosestone", "hint": "something to look under" },
-    { "id": "lens", "at": 10, "icon": "lens", "hint": "a way to look closer" },
-    { "id": "driftwood", "at": 15, "icon": "driftwood", "hint": "something the sea carries" }
+    { "id": "driftwood", "at": 10, "icon": "driftwood", "hint": "something the sea carries" },
+    { "id": "lens", "at": 15, "icon": "lens", "hint": "a way to look closer" }
   ],
   "line": {
     "title": "The naturalist's notes",

@@ -85,7 +85,7 @@ Each structure publishes **affordances**. The growth step folds them into the 1 
 | Stepping stones | cover type `stone` (small), sunny | sit and bask points | frogs, dragonflies (1) |
 | Wall, sunny face and crest | cover type `wall`, `bask` flag | perch and bask spans | bees, butterflies (2), songbirds perch (2) |
 | Wall base, shaded side, with litter | cover type `wall` plus leaf litter trap | hide points | hedgehogs (3) |
-| Stones at a bank | cover type `stone` at water edge | holt entrance | otters (4), turtles bask (4) |
+| Stones at a bank | cover type `stone` at water edge | holt entrance | otters (4), turtles bask (1) |
 | Bridge underside | cover type `roost` | roost points | bats (5); shade over water for minnows (1) |
 | Bridge rail | none | perch span | herons, owls (live only) |
 | Path | disturbance by day | creatures avoid the line | herons, frogs |
