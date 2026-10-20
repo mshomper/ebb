@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ebb slice sign-off</title>
+<style>
+  @font-face { font-family: Nunito; src: url(../src/vendor/fonts/nunito-latin-600-normal.woff2) format('woff2'); font-weight: 600; }
+  @font-face { font-family: Nunito; src: url(../src/vendor/fonts/nunito-latin-800-normal.woff2) format('woff2'); font-weight: 800; }
+  @font-face { font-family: Fraunces; src: url(../src/vendor/fonts/fraunces-latin-full-italic.woff2) format('woff2'); font-style: italic; }
+  :root { --paper: #F4EEE4; --card: #FBF7F0; --ink: #2F3A35; --muted: #5E6660; --line: #DCD2C0; --moss: #5F7F5B; --clay: #A8613F; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 600 17px/1.55 Nunito, system-ui, sans-serif; background: var(--paper); color: var(--ink);
+    padding: 24px max(16px, env(safe-area-inset-left)) 48px max(16px, env(safe-area-inset-right)); }
+  main { max-width: 760px; margin: 0 auto; display: grid; gap: 16px; }
+  h1 { font-size: 28px; font-weight: 800; margin: 0; }
+  .lede { font: italic 19px/1.5 Fraunces, Georgia, serif; color: var(--muted); margin: 4px 0 0; }
+  .check { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; display: grid; gap: 10px; min-width: 0; }
+  .check.is-pass { border-color: var(--moss); }
+  .check.is-not { border-color: var(--clay); }
+  .check h2 { font-size: 20px; font-weight: 800; margin: 0; display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+  .num { color: var(--muted); font-size: 16px; }
+  ol, ul { margin: 0; padding-left: 22px; display: grid; gap: 4px; }
+  .see { border-left: 3px solid var(--moss); padding-left: 12px; }
+  .see b { display: block; font-size: 15px; letter-spacing: .04em; text-transform: uppercase; color: var(--moss); }
+  .links { display: flex; flex-wrap: wrap; gap: 8px; }
+  a.btn, button { font: 700 16px Nunito, system-ui, sans-serif; color: var(--ink); background: var(--paper); border: 1px solid var(--line);
+    border-radius: 8px; padding: 9px 14px; text-decoration: none; cursor: pointer; min-height: 44px; display: inline-flex; align-items: center; }
+  a.btn:hover, button:hover { border-color: var(--ink); }
+  .verdict { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .verdict button[aria-pressed="true"].pass { background: var(--moss); color: #fff; border-color: var(--moss); }
+  .verdict button[aria-pressed="true"].not { background: var(--clay); color: #fff; border-color: var(--clay); }
+  textarea { width: 100%; min-height: 64px; font: 600 16px/1.4 Nunito, system-ui, sans-serif; color: var(--ink); background: #fff;
+    border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; resize: vertical; }
+  .summary { position: sticky; bottom: 0; background: var(--paper); padding: 12px 0 calc(12px + env(safe-area-inset-bottom)); display: flex; gap: 12px; align-items: center; flex-wrap: wrap; border-top: 1px solid var(--line); }
+  .summary output { font-size: 17px; }
+  code { font: 15px ui-monospace, Consolas, monospace; background: #EDE5D7; padding: 1px 5px; border-radius: 4px; overflow-wrap: anywhere; }
+  :focus-visible { outline: 3px solid var(--moss); outline-offset: 2px; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Slice sign-off</h1>
+    <p class="lede">The eight checks the vertical slice has to pass together (doc 20, M1). Walk each one, mark it, and copy the results to Claude. Test links open throwaway islands that are never saved.</p>
+  </header>
+  <div id="checks"></div>
+  <div class="summary">
+    <output id="count">0 of 8 passed</output>
+    <button type="button" id="copy">Copy results</button>
+    <span id="copied" aria-live="polite"></span>
+  </div>
+</main>
+<script type="module">
+const CHECKS = [
+  { id: 'water', title: 'Water finds its way',
+    steps: ['Open a test island.', 'With Sculpt, Lower, dig a dip next to the spring on the hill.'],
+    see: 'Water fills the dip, spills over its low side and runs downhill to the sea.',
+    links: [['Open a test island', '../?seed=1']] },
+  { id: 'tide', title: 'The tide and the reeds',
+    steps: ['On the same kind of island, set time to 4x (the time button, bottom right).', 'Watch for a few game hours.'],
+    see: 'The tide visibly goes out and comes back. Reeds creep along the wet edge of the pond.',
+    links: [['Open a test island', '../?seed=1']] },
+  { id: 'frog', title: 'A frog visits, settles, is fed and named',
+    steps: ['Open the frog test link (frogs arrive at once instead of over days).', 'Wait for one to settle, use Feed near it, then tap it and give it a name.'],
+    see: 'A frog arrives and settles; it comes to the food; its card lets you name it, and its journal page shows the name.',
+    links: [['Frogs now', '../?frogs=2'], ['Frogs that already trust you', '../?frogs=2&trust=0.7']] },
+  { id: 'journal', title: 'The journal reads the island',
+    steps: ['On your own island, open the journal (the book, top right).', 'Read a few plant pages and the notes.'],
+    see: 'Every plant on the island has a page that says in words where it grows and what it likes; the notes tell what changed.',
+    links: [['Your island', '../']] },
+  { id: 'palette', title: 'Palettes change the mood, not the light',
+    steps: ['Open Look (the palette button) and switch between palettes.'],
+    see: 'The whole scene changes mood at once; shadows, the sun and the water behave the same.',
+    links: [['Your island', '../']] },
+  { id: 'ground', title: 'Real ground, in low sun and rain',
+    steps: ['Orbit in close to sand, rock and soil when the sun is low.', 'Then open the rain link and look at the same kinds of ground.'],
+    see: 'Sand, rock and soil read as real material with no visible tiling, and turn dark and glossy with puddles in the rain.',
+    links: [['Your island', '../'], ['A test island in rain', '../?seed=1&weather=rain']] },
+  { id: 'away', title: 'Coming back',
+    steps: ['On your own island, close the tab and come back later (or the next day).', 'Or: Settings, Tests, pretend you were away.'],
+    see: 'The island has moved on, and a short, calm reveal shows what changed.',
+    links: [['Your island', '../']] },
+  { id: 'phone', title: 'The same on a phone',
+    steps: ['On your iPhone, open the game from GitHub Pages.', 'Repeat a few of the checks above with touch: dig, open the journal, switch a palette.'],
+    see: 'It all works with touch at lower detail, text is readable, nothing is cut off or scrolls sideways. (This is also the iPhone low-tier recheck left from S8.)',
+    links: [['Live game', 'https://mshomper.github.io/ebb/']] },
+];
+
+const KEY = 'ebb-slice-review';
+let state = {};
+try { state = JSON.parse(localStorage.getItem(KEY) ?? '{}'); } catch { state = {}; }
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch { /* not kept */ } };
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+
+const root = document.getElementById('checks');
+root.style.display = 'grid'; root.style.gap = '16px';
+CHECKS.forEach((c, i) => {
+  const s = state[c.id] ?? {};
+  const el = document.createElement('section');
+  el.className = 'check';
+  el.innerHTML = `<h2><span class="num">${i + 1}</span>${esc(c.title)}</h2>
+    <ol>${c.steps.map((t) => `<li>${esc(t)}</li>`).join('')}</ol>
+    <p class="see"><b>You should see</b>${esc(c.see)}</p>
+    <div class="links">${c.links.map(([t, u]) => `<a class="btn" href="${esc(u)}" target="_blank" rel="noopener">${esc(t)}</a>`).join('')}</div>
+    <div class="verdict">
+      <button type="button" class="pass" aria-pressed="false">Pass</button>
+      <button type="button" class="not" aria-pressed="false">Not yet</button>
+    </div>
+    <label for="note-${c.id}" class="num">Notes</label>
+    <textarea id="note-${c.id}" placeholder="What you saw, if anything was off"></textarea>`;
+  const [pass, not] = el.querySelectorAll('.verdict button');
+  const note = el.querySelector('textarea');
+  note.value = s.note ?? '';
+  const paint = () => {
+    const v = state[c.id]?.v;
+    pass.setAttribute('aria-pressed', String(v === 'pass'));
+    not.setAttribute('aria-pressed', String(v === 'not'));
+    el.classList.toggle('is-pass', v === 'pass');
+    el.classList.toggle('is-not', v === 'not');
+    count();
+  };
+  const set = (v) => { state[c.id] = { ...(state[c.id] ?? {}), v: state[c.id]?.v === v ? null : v }; save(); paint(); };
+  pass.addEventListener('click', () => set('pass'));
+  not.addEventListener('click', () => set('not'));
+  note.addEventListener('input', () => { state[c.id] = { ...(state[c.id] ?? {}), note: note.value }; save(); });
+  root.append(el);
+  paint();
+});
+
+function count() {
+  const n = CHECKS.filter((c) => state[c.id]?.v === 'pass').length;
+  document.getElementById('count').textContent = `${n} of ${CHECKS.length} passed`;
+}
+
+document.getElementById('copy').addEventListener('click', async () => {
+  const lines = CHECKS.map((c, i) => {
+    const s = state[c.id] ?? {};
+    const v = s.v === 'pass' ? 'PASS' : s.v === 'not' ? 'NOT YET' : 'not checked';
+    return `${i + 1}. ${c.title}: ${v}${s.note ? ` (${s.note.trim()})` : ''}`;
+  });
+  const text = `Slice sign-off\n${lines.join('\n')}`;
+  const said = document.getElementById('copied');
+  try { await navigator.clipboard.writeText(text); said.textContent = 'Copied. Paste it to Claude.'; }
+  catch { said.textContent = 'Copy failed: select the text below and copy it.'; const pre = document.createElement('pre'); pre.textContent = text; pre.style.whiteSpace = 'pre-wrap'; document.querySelector('main').append(pre); }
+});
+</script>
+</body>
+</html>

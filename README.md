@@ -62,6 +62,7 @@ Add these to the address (for example `â€¦/?island=two-ponds&day=8`) to test
 | `weather=clear`, `cloud`, `rain` or `mist` | Preview one kind of weather |
 | `sandbox` | Unlock the spring tool now (normally a later gift), and offer every plant in the Plant tool before it has come |
 | `plants=all` | Start a new island with every plant, not only grass, reeds and water lilies |
+| `shells=rare`, or a shell's id (`nautilus`, `murex`, `cockle`, `turret`, `periwinkle`) | A test island whose strandline is thick with those shells, whatever the tide, so a rare one can be seen and found |
 | `frogscale` | Frogs at true size around the pond, with a panel to compare sizes and close-up views |
 | `tier=low`, `medium`, `high` or `ultra` | Force a quality tier |
 | `debug` | Keep console errors and expose the game to the browser console, for tools and checks |
@@ -73,6 +74,7 @@ Open these at `/tools/` while running locally. They are for checks that run on y
 
 | Page | What it checks |
 |---|---|
+| `slice-review.html` | The vertical slice's eight sign-off checks, each with steps, what you should see, a test link and Pass or Not yet; copies the results to paste to Claude |
 | `unit-tests.html` | Every unit test in one run: the core, terrain, water, growth, the journal, creatures and islands |
 | `determinism.html` | The same seed builds the same island on every thread (`?island=` for another island) |
 | `frame-timing.html` | The island live, with a graph of how long each drawing step takes on the graphics card |

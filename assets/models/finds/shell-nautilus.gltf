@@ -13,23 +13,23 @@
     {
       "type": "SCALAR",
       "componentType": 5123,
-      "count": 2994,
+      "count": 10494,
       "bufferView": 0,
       "byteOffset": 0
     },
     {
       "type": "VEC3",
       "componentType": 5126,
-      "count": 501,
+      "count": 1731,
       "max": [
-        0.23122885823249817,
+        0.22963382303714752,
         1,
-        0.38284316658973694
+        0.38190698623657227
       ],
       "min": [
-        -0.23122885823249817,
+        -0.22963382303714752,
         0,
-        -0.38284316658973694
+        -0.38190698623657227
       ],
       "bufferView": 1,
       "byteOffset": 0
@@ -37,7 +37,7 @@
     {
       "type": "VEC3",
       "componentType": 5126,
-      "count": 501,
+      "count": 1731,
       "bufferView": 1,
       "byteOffset": 12
     }
@@ -46,13 +46,13 @@
     {
       "buffer": 0,
       "byteOffset": 0,
-      "byteLength": 5988,
+      "byteLength": 20988,
       "target": 34963
     },
     {
       "buffer": 0,
-      "byteOffset": 5988,
-      "byteLength": 12024,
+      "byteOffset": 20988,
+      "byteLength": 41544,
       "byteStride": 24,
       "target": 34962
     }
@@ -60,7 +60,7 @@
   "buffers": [
     {
       "uri": "shell-nautilus.bin",
-      "byteLength": 18012
+      "byteLength": 62532
     }
   ],
   "materials": [
