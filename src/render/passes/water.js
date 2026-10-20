@@ -83,6 +83,11 @@ export function createWaterPass(opts) {
     else { f.set(L.absorptionPond, 96); f[100] = 0; f[101] = 1; f[102] = 0; f[103] = 1; }
     setSSR(opts.ssr ?? null);
     f[104] = L.freshRipples.calm;
+    // Waterfalls (water.json falls): the water mesh leaves out its steep triangles down a cliff face
+    // beside a lip, where the falls pass draws the curtain. Off with `?falls=0`.
+    const F = recipe.falls;
+    const fallsOn = F && new URLSearchParams(location.search).get('falls') !== '0';
+    f[105] = fallsOn ? Math.cos(F.hideWallDeg * DEG) : 0; f[106] = F?.minDropM ?? 0.5;
   }
 
   /**

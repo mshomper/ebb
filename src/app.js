@@ -33,6 +33,7 @@ import { createGrowth } from './world/growth/index.js';
 import { createPlantTool } from './world/growth/plant-tool.js';
 import { weatherAt } from './world/weather.js';
 import { createWaterPass } from './render/passes/water.js';
+import { createFallsPass } from './render/passes/falls.js';
 import { createGrassPass } from './render/passes/grass.js';
 import { createFloraPass } from './render/passes/flora.js';
 import { createCreaturePass } from './render/passes/creatures.js';
@@ -343,6 +344,8 @@ export async function startApp(canvas, hooks = {}) {
       wetDarkening: terrainRecipe.materials.wetDarkening },
     detailFadeM: tierSettings.waterDetailFadeM, ssr: tierSettings.waterSSR ?? null, foam, ripples,
   });
+  // Waterfalls (M2 Cliff tool): curtains where live water runs over a drop, visual only.
+  const fallsPass = createFallsPass({ water, terrain, recipe: waterRecipe.falls, getTime: () => clock.animT(), tier: tierSettings });
   const graph = createFrameGraph(gpu, [
     shadowPass,
     terrainPass,
@@ -355,6 +358,8 @@ export async function startApp(canvas, hooks = {}) {
     waterPass,
     midges.pass,
     createSkyPass(atmosphere, skyRecipe),
+    // Waterfalls after the sky, so a curtain seen against the sky is not drawn over (src/render/passes/falls.js).
+    fallsPass,
     exposure,
     bloom,
     tonemap,
@@ -411,6 +416,7 @@ export async function startApp(canvas, hooks = {}) {
     rushPass.setTier(tierSettings);
     waterPass.setDetailFade(tierSettings.waterDetailFadeM);
     waterPass.setSSR(tierSettings.waterSSR ?? null);
+    fallsPass.setTier(tierSettings);
     // Shadows, bloom and the midges follow too. A texture's size is fixed once made, so a new
     // shadow map size re-makes only that map and the lighting group that binds it; new bloom levels
     // re-make the bloom chain at the next resize, which invalidate() forces.

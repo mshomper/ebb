@@ -18,7 +18,7 @@ struct Foam {
   dry: f32, maxFoam: f32,
   swashSpeedHi: f32, fadeStill: f32, // ... to full churn at this speed (m/s); fade time (s) on still water
   spread: f32, stillBelow: f32,     // spreading rate on still water (per s); water slower than this (m/s) counts as still
-  _p0: f32, _p1: f32,
+  plungeGain: f32, plungeFrom: f32, // waterfall foot: foam per s per m2/s falling in; bed drop (m) that counts as a fall
 };
 
 @group(0) @binding(0) var<uniform> fm: Foam;
@@ -86,6 +86,16 @@ fn csFoam(@builtin(global_invocation_id) gid: vec3u) {
     drop = max(drop, s - (waterBed(heightTex, q) + dq));
   }
   var make = fm.fallGain * max(drop - fm.fallFrom, 0.0) * min(speed / 0.3, 1.0);
+
+  // Plunge (M2 waterfalls): water falling in from a neighbor whose bed stands well above this one
+  // churns white where it lands.
+  let bedC = waterBed(heightTex, c);
+  for (var i = 0; i < 4; i++) {
+    let q = c + nb[i];
+    if (!inRect(q) || waterBed(heightTex, q) - bedC < fm.plungeFrom) { continue; }
+    let inflow = textureLoad(depthTex, q, 0).r * max(dot(velAt(q), -vec2f(nb[i])), 0.0);
+    make += fm.plungeGain * inflow;
+  }
 
   // Convergence: flows meeting (negative divergence).
   let div = (velAt(c + vec2i(1, 0)).x - velAt(c - vec2i(1, 0)).x + velAt(c + vec2i(0, 1)).y - velAt(c - vec2i(0, 1)).y)

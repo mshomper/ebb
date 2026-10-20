@@ -40,9 +40,12 @@ export async function buildCliffDemo(o) {
   await stroke('terrace', 3.5, 1.5, [[-17, -11], [-7, -11]]);
   await stroke('terrace', 2, 1.5, [[-15, -12.5], [-9, -12.5]]);
   await stroke('cut', 1.4, 1, [[5, -16], [12, -9]]);
+  // A shallow notch from the spring out through the upper shelf's front rim, so its water gathers
+  // into one stream and pours over as a sheet rather than spilling thinly all along the edge.
+  await stroke('cut', 0.5, 0.25, [[-12, -12.6], [-12, -10.2]]);
   while (terrain.isBusy()) await frame();
-  // A spring on the upper shelf, a little back from its front edge: the water runs to the edge
-  // and falls over the upper face, crosses the lower shelf, and falls again.
-  if (o.spring) o.tapSpring(ground(-12, -12.2), 'stream');
+  // A spring at the head of the notch: the water runs to the edge and falls over the upper face,
+  // crosses the lower shelf, and falls again.
+  if (o.spring) o.tapSpring(ground(-12, -12.6), 'stream');
   o.focus(-12, -10, 22, 28);
 }
