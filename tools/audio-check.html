@@ -161,9 +161,31 @@
   </section>
 
   <section class="card">
+    <h2>Pond life: minnows and dragonflies</h2>
+    <p class="muted">A minnow sips when it rises and rings the surface: a tiny soft plop, heard only near the school. A southern hawker's wings are a dry papery rattle, heard only when one flies within about 2 m of you: louder darting than hovering, silent on a perch. Both are made in code.</p>
+    <div class="buttons" role="group" aria-label="Minnows">
+      <button type="button" id="sip-one">One minnow sip</button>
+      <button type="button" id="sip-auto" aria-pressed="false">Minnows rising now and then</button>
+    </div>
+    <label class="slider"><span>Minnows away</span><input type="range" id="sip-dist" min="0.5" max="10" step="0.1" value="2"><output id="sip-dist-out"></output></label>
+    <h3>A dragonfly</h3>
+    <div class="buttons" id="df-mode" role="group" aria-label="What the dragonfly is doing">
+      <button type="button" data-m="none" aria-pressed="true">None</button>
+      <button type="button" data-m="hover" aria-pressed="false">Hovering</button>
+      <button type="button" data-m="dart" aria-pressed="false">Darting past</button>
+      <button type="button" data-m="perch" aria-pressed="false">On a perch</button>
+    </div>
+    <label class="slider"><span>Dragonfly away</span><input type="range" id="df-dist" min="0.3" max="4" step="0.05" value="1"><output id="df-dist-out"></output></label>
+    <div class="tiles">
+      <div class="tile"><b id="t-wings">-</b><span>wings heard now</span></div>
+      <div class="tile"><b id="t-sips">0</b><span>minnow sips so far</span></div>
+    </div>
+  </section>
+
+  <section class="card">
     <h2>Made in code, and waiting for recordings</h2>
     <div class="note">
-      <p style="margin-top:0">The sea, pond, streams, reeds, grass, open wind, winter air and every rain bed now play recordings from your Freesound picks (in <b>assets/audio/beds</b>, credited in <b>assets/audio/CREDITS.md</b>); a rain bed only starts when the rain slider is up. Each row says whether it plays a recording or the made-in-code stand-in. The small sounds, frogs and midges stay made in code for now.</p>
+      <p style="margin-top:0">The sea, pond, streams, reeds, grass, open wind, winter air and every rain bed now play recordings from your Freesound picks (in <b>assets/audio/beds</b>, credited in <b>assets/audio/CREDITS.md</b>); a rain bed only starts when the rain slider is up. Each row says whether it plays a recording or the made-in-code stand-in. The small sounds, frogs, midges, minnows and dragonflies stay made in code for now.</p>
       <ul class="list">
         <li>The sea is shaped noise with slow waves until a distant surf recording lands.</li>
         <li>Wind in reeds and grass is the open wind through a different color for each season, with a rustle on top.</li>

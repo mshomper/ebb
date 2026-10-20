@@ -72,10 +72,19 @@ export function createSchools(opts) {
   /** Crumbs a school is swimming up to, by school id. @type {{ id: number, x: number, z: number }[]} */
   let foods = [];
   const stepS = 1 / (M.stepHz ?? 30);
+  /** Seconds of real time these schools have run, the clock their rises are stamped with. */
+  let clockS = 0;
+  /** Rises to the surface, newest last, for the sound (as the frogs' plops). @type {{ n: number, t: number, x: number, y: number, z: number }[]} */
+  const rises = [];
+  let riseCount = 0;
   const env = {
     water: (/** @type {number} */ x, /** @type {number} */ z) => water.sampleLive(x, z),
     ground: (/** @type {number} */ x, /** @type {number} */ z) => opts.ground?.(x, z) ?? water.sampleLive(x, z).surface - water.sampleLive(x, z).depth,
-    ring: (/** @type {number} */ x, /** @type {number} */ z) => ripples?.addImpulse(x, z, M.ringStrength, M.ringM),
+    ring: (/** @type {number} */ x, /** @type {number} */ z) => {
+      ripples?.addImpulse(x, z, M.ringStrength, M.ringM);
+      rises.push({ n: riseCount++, t: clockS, x, y: water.sampleLive(x, z).surface, z });
+      if (rises.length > 40) rises.shift();
+    },
     // Reed and rush clumps to rest on (dragonflies): where each stands and how tall it has grown.
     perches: () => (world.state?.growth?.plants ?? []).filter((/** @type {any} */ p) => M.perchOn?.[p.sp] && p.stage >= 2)
       .map((/** @type {any} */ p) => ({ x: p.x, z: p.z, h: M.perchOn[p.sp] * Math.min(1, p.size) })),
@@ -162,11 +171,16 @@ export function createSchools(opts) {
     pass,
     /** The live schools (tools and tests). */
     schools: () => [...schools.values()],
-    /** Where each school is now and how many it has (the sound, tools). */
-    heard: () => [...schools.values()].map((s) => {
+    /**
+     * Where each school is now and how many it has (the sound, tools). Each one's place too, with
+     * whether it flies and how fast (a dragonfly's wings are heard from it, louder darting). The
+     * recent rises to the surface (numbered, stamped in `now`'s seconds) ride on the first entry.
+     */
+    heard: () => [...schools.values()].map((s, i) => {
       const c = s.centre();
-      // Each one's place too: a dragonfly's wings are heard from it, not from the middle of its beat.
-      return { species: key, id: s.id, pos: [c.x, c.y, c.z], count: s.fish.length, each: s.fish.map((f) => [f.x, f.y, f.z, f.mode === 'perch' ? 0 : 1]) };
+      return { species: key, id: s.id, pos: [c.x, c.y, c.z], count: s.fish.length,
+        each: s.fish.map((f) => [f.x, f.y, f.z, /** @type {any} */ (f).mode === 'perch' ? 0 : 1, Math.hypot(f.vx, f.vy, f.vz)]),
+        now: clockS, rises: i === 0 ? rises.map((r) => ({ n: r.n, t: r.t, pos: [r.x, r.y, r.z] })) : [] };
     }),
     /** A new quality tier's cap on how many are drawn. @param {number} n */
     setBudget(n) { budget = Math.max(0, Math.min(128, n)); shown = null; },
@@ -264,7 +278,7 @@ export function createSchools(opts) {
         } else if (!s.feeding) foods = foods.filter((g) => g !== fd);
       }
       acc = Math.min(acc + f.realDt, stepS * 6);
-      while (acc >= stepS) { for (const s of schools.values()) s.step(stepS); acc -= stepS; }
+      while (acc >= stepS) { clockS += stepS; for (const s of schools.values()) s.step(stepS); acc -= stepS; }
       draw(f.animT);
       // Watching one closely finds it: in the middle of the view, zoomed in, for a moment.
       if (getStore('journal')?.species?.[key]?.ever) return;

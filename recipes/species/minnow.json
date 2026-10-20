@@ -57,6 +57,21 @@
     "unknown": "Nothing in the pond knows to look for food yet." } },
   "find": { "tapM": 0.35, "tapPerM": 0.03, "lookM": 1.2, "lookDistM": 4, "holdS": 2.5 },
   "reveal": { "return": "thicken", "growS": 0.6 },
+  "voice": {
+    "note": "A minnow's sip (doc 25 'Creature voices', model surface-sip; src/audio/voices.js sip): a tiny soft plop where a fish rises and rings the surface (motion riseEveryS; often while feeding), placed at the ring. SOUND: one small bubble by its resonance (src/audio/procedural/one-shots.js dropWith): radius sizeMm (about 1.2 kHz, lower and rounder than a raindrop), up to sizeJitter bigger or smaller, peaking at peakDb after attackMs, gliding up by rise over glideMs, damped dampingScale times a free bubble's (more is shorter); a soft lip click (hz, q, attackMs, decayMs, db) and, with chance, a second smaller bubble. LEVEL: gainDb picked per sip. REACH: inverse distance from refDistance with rolloff, then a fade from fadeFromM to silence at reachM, so sips are heard only when you are near the school. Distances are from the camera eye.",
+    "model": "surface-sip",
+    "sip": {
+      "sizeMm": 2.7, "sizeJitter": 0.25, "peakDb": -18, "attackMs": 1.5,
+      "rise": [0.05, 0.2], "glideMs": [10, 30], "dampingScale": 1.4, "decayJitter": 0.2,
+      "click": { "hz": 2400, "q": 0.8, "attackMs": 0.8, "decayMs": 9, "db": -22 },
+      "second": { "chance": 0.2, "delayMs": [25, 70], "size": [0.6, 0.85], "db": [-14, -8] }
+    },
+    "gainDb": [-10, -4],
+    "refDistance": 1,
+    "rolloff": 1.2,
+    "fadeFromM": 5,
+    "reachM": 9
+  },
   "ecology": {
     "kind": "swarm",
     "activity": { "pattern": "diurnal", "hours": [6, 20] },

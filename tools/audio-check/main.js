@@ -12,6 +12,8 @@ import { loadRecipe } from '../../src/core/recipes.js';
 import { createChorus } from './chorus.js';
 import { createMap } from './map.js';
 import { createBedList } from './beds.js';
+import { createPondLife } from './pond-life.js';
+import { wingRecipe } from '../../src/audio/voices/dragonfly.js';
 
 const $ = (/** @type {string} */ id) => /** @type {HTMLElement} */ (document.getElementById(id));
 const ICON_CHECK = '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="#7C9D72" stroke="#5F7F5B" stroke-width="2"/><path d="M8 12.5l2.8 2.8 5.2-5.6" fill="none" stroke="#FBF7F0" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
@@ -67,9 +69,9 @@ ticks('season-ticks', [[0.5, 'spring'], [1.5, 'summer'], [2.5, 'autumn'], [3.5, 
 
 // ---- Load ----------------------------------------------------------------------------------------
 let seasonsRecipe = /** @type {any} */ (null);
-const [mixerRecipe, ambRecipe, procRecipe, frogSpecies, midgeSpecies] = await Promise.all([
+const [mixerRecipe, ambRecipe, procRecipe, frogSpecies, midgeSpecies, dragonflySpecies, minnowSpecies] = await Promise.all([
   loadAudioRecipe('audio/mixer'), loadAudioRecipe('audio/ambience'), loadAudioRecipe('audio/procedural'),
-  loadRecipe('species/frog'), loadRecipe('species/midge'),
+  loadRecipe('species/frog'), loadRecipe('species/midge'), loadRecipe('species/dragonfly'), loadRecipe('species/minnow'),
 ]);
 try { seasonsRecipe = await loadRecipe('world/seasons'); } catch { /* optional */ }
 const frogVoice = frogSpecies.voice;
@@ -82,7 +84,9 @@ const midgeWarmth = midgeSpecies.field.warmth;
 
 const mixer = createMixer(mixerRecipe, { tier });
 const ambience = createAmbience(mixer, ambRecipe, procRecipe, SEED, { tier });
-const voices = createVoices(mixer, { frog: frogVoice, midge: midgeVoice }, SEED, { tier });
+const wings = wingRecipe(dragonflySpecies);
+const voices = createVoices(mixer, { frog: frogVoice, midge: midgeVoice, dragonfly: wings, minnow: minnowSpecies.voice, proc: procRecipe }, SEED, { tier });
+const pondLife = createPondLife(voices, wings);
 const chorus = createChorus(frogCall, frogMoods, SEED);
 chorus.place(num('frog-count'), POND_R);
 
@@ -265,6 +269,7 @@ function tick() {
   $('t-voices').textContent = `${voices.liveCount()} of ${frogVoice.maxVoices[tier]}`;
   map.setListener(listener.x, listener.z, listener.heading);
   map.setMidge(dens, !!heard);
+  pondLife.tick(ear, dt, started);
   bedList.refresh(started);
   const pc = ambience.poolCounts();
   $('pools').innerHTML = Object.entries(pc).map(([k, v]) => `<div class="tile"><b>${v}</b><span>${POOL_NAMES[k] ?? k}</span></div>`).join('');

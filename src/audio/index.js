@@ -10,7 +10,7 @@
 // recipes/audio/mixer.json. Only the game calls this; the tool pages that start the app stay silent.
 //
 //   frame loop ── store 'sound' ──→ game-state ──→ ambience ──→ mixer ──→ speakers
-//   frog agents, midges ── store 'creatureSound' ──→ voices ──┤
+//   frog agents, midges, minnows, dragonflies ── store 'creatureSound' ──→ voices ──┤
 //   director ─→ composer or a tide ─→ performer ─→ music bus ─┘
 //   store 'settings'.audio ───────────────────────────────────→ mixer levels
 
@@ -21,6 +21,7 @@ import { createAmbience } from './ambience.js';
 import { createSoundState } from './game-state.js';
 import { createVoices } from './voices.js';
 import { createCreatureSound } from './creatures-game.js';
+import { wingRecipe } from './voices/dragonfly.js';
 import { createMusic } from './music/index.js';
 import { hash32 } from '../core/rng.js';
 import { emit, on } from '../core/events.js';
@@ -51,9 +52,10 @@ if (typeof window !== 'undefined') {
  * @returns {Promise<{ mixer: () => import('./mixer.js').Mixer | null, ambience: () => any, voices: () => any, music: () => any, dispose: () => void }>}
  */
 export async function startAudio(store) {
-  const [mixerRecipe, ambRecipe, procRecipe, gameRecipe, skyRecipe, frogRecipe, midgeRecipe] = await Promise.all([
+  const [mixerRecipe, ambRecipe, procRecipe, gameRecipe, skyRecipe, frogRecipe, midgeRecipe, dragonflyRecipe, minnowRecipe] = await Promise.all([
     loadAudioRecipe('audio/mixer'), loadAudioRecipe('audio/ambience'), loadAudioRecipe('audio/procedural'),
     loadAudioRecipe('audio/game'), loadRecipe('world/sky'), loadRecipe('species/frog'), loadRecipe('species/midge'),
+    loadRecipe('species/dragonfly'), loadRecipe('species/minnow'),
   ]);
   const phone = matchMedia('(pointer: coarse)').matches && Math.min(screen.width, screen.height) < gameRecipe.mobile.phoneMaxSidePx;
   const tier = phone ? 'mobile' : 'desktop';
@@ -123,8 +125,9 @@ export async function startAudio(store) {
     const seed = store.get('meta')?.seed ?? 1;
     mixer = createMixer(mixerRecipe, { tier });
     ambience = createAmbience(mixer, ambRecipe, procRecipe, seed, { tier });
-    voices = createVoices(mixer, { frog: frogRecipe.voice, midge: midgeRecipe.voice, proc: procRecipe, plop: gameRecipe.frogs.plop }, seed, { tier });
-    animals = createCreatureSound(mixer, voices, store, gameRecipe.frogs);
+    voices = createVoices(mixer, { frog: frogRecipe.voice, midge: midgeRecipe.voice, proc: procRecipe, plop: gameRecipe.frogs.plop,
+      dragonfly: wingRecipe(dragonflyRecipe), minnow: minnowRecipe.voice }, seed, { tier });
+    animals = createCreatureSound(mixer, voices, store, gameRecipe.frogs, gameRecipe.pond);
     soundState = createSoundState(gameRecipe, seed, (t) => sunMoon(t, skyRecipe.orbit).sunAlt * DEG, ambRecipe.seasonEdge);
     applySettings();
     unsubs.push(store.subscribe('settings', () => applySettings()));
