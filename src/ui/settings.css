@@ -223,6 +223,9 @@
 @media (pointer: coarse) {
   .ebb-set__choice, .ebb-set__btn { min-height: 48px; }
 }
+/* A row of four that must stay one row on a phone (Music plays): the buttons share the width. */
+.ebb-set__choices.is-even { flex-wrap: nowrap; gap: 6px; }
+.ebb-set__choices.is-even .ebb-set__choice { flex: 1 1 auto; min-width: 0; padding-left: 8px; padding-right: 8px; }
 .ebb-set__choice:hover, .ebb-set__btn:hover { background: rgba(244, 238, 228, 0.08); }
 .ebb-set__choice[aria-pressed='true'] { background: var(--wordmark-light); border-color: var(--wordmark-light); }
 .ebb-set__btn:disabled { opacity: 0.5; cursor: default; }

@@ -1,0 +1,101 @@
+/* The now-playing line (src/ui/now-playing.js): the piece's name in a small cream bubble at the
+   bottom middle, just above the tool bar, between two drawn notes, with a heart at its end.
+   Fraunces italic like the journal; never takes a tap. Only opacity changes (docs/15). */
+
+.ebb-nowplaying {
+  position: fixed;
+  left: 50%;
+  bottom: calc(max(12px, env(safe-area-inset-bottom)) + 74px);
+  transform: translateX(-50%);
+  max-width: calc(100vw - 32px);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 16px 8px 14px;
+  border-radius: 999px;
+  background: rgba(244, 238, 228, 0.92);
+  box-shadow: 0 2px 10px rgba(20, 28, 26, 0.22);
+  color: var(--ui-night);
+  z-index: 9;
+  pointer-events: none;
+  font-family: var(--font-voice);
+  font-style: italic;
+  font-weight: 400;
+  font-size: calc(20px * var(--text-scale, 1));
+  line-height: 1.2;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity var(--np-out, 3s) ease, visibility 0s linear var(--np-out, 3s);
+}
+.ebb-nowplaying.is-shown {
+  opacity: 1;
+  visibility: visible;
+  transition: opacity var(--np-in, 2s) ease, visibility 0s;
+}
+.ebb-nowplaying__title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ebb-nowplaying__note {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  color: var(--wordmark-light);
+}
+.ebb-nowplaying__rule {
+  flex: none;
+  width: 1px;
+  height: 20px;
+  background: rgba(30, 38, 36, 0.18);
+}
+/* The heart: the one part you can tap, a 40 px target (44 on a phone) round a 24 px drawing. */
+.ebb-nowplaying__heart {
+  appearance: none;
+  -webkit-appearance: none;
+  flex: none;
+  width: 40px;
+  height: 40px;
+  margin: -8px -10px -8px -6px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: #B5654A;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  pointer-events: none;
+}
+.ebb-nowplaying.is-shown .ebb-nowplaying__heart { pointer-events: auto; }
+.ebb-nowplaying__heart:hover { background: rgba(181, 101, 74, 0.12); }
+.ebb-nowplaying__heart:focus-visible { outline: 2px solid var(--wordmark-light); outline-offset: 1px; }
+.ebb-nowplaying__heart .icon { width: 24px; height: 24px; grid-area: 1 / 1; transition: opacity 0.25s ease, transform 0.25s ease; }
+.ebb-nowplaying__heart .is-on { opacity: 0; transform: scale(0.7); }
+.ebb-nowplaying__heart[aria-pressed='true'] .is-on { opacity: 1; transform: scale(1); }
+.ebb-nowplaying__heart[aria-pressed='true'] .is-off { opacity: 0; }
+@media (pointer: coarse) {
+  .ebb-nowplaying__heart { width: 44px; height: 44px; }
+}
+@media (pointer: coarse) {
+  .ebb-nowplaying { bottom: calc(max(12px, env(safe-area-inset-bottom)) + 80px); font-size: calc(21px * var(--text-scale, 1)); }
+}
+/* A narrow screen held upright: undo, redo and the time button stand just above the tool bar, so
+   the bubble sits above them. */
+@media (max-width: 699px) and (orientation: portrait) {
+  .ebb-nowplaying { bottom: calc(max(12px, env(safe-area-inset-bottom)) + 154px); }
+}
+/* Held sideways on a phone the tools are a column on the right: the bubble can sit lower. */
+@media (pointer: coarse) and (orientation: landscape) and (max-height: 500px) {
+  .ebb-nowplaying { bottom: max(14px, env(safe-area-inset-bottom)); }
+}
+body.ebb-hud-hidden .ebb-nowplaying,
+body.ebb-revealing .ebb-nowplaying { opacity: 0; visibility: hidden; }
+
+@media (prefers-reduced-motion: reduce) {
+  :root:not(.ebb-motion-full) .ebb-nowplaying { transition: opacity 0.4s ease, visibility 0s linear 0.4s; }
+  :root:not(.ebb-motion-full) .ebb-nowplaying.is-shown { transition: opacity 0.4s ease, visibility 0s; }
+}
+:root.ebb-motion-calm .ebb-nowplaying { transition: opacity 0.4s ease, visibility 0s linear 0.4s; }
+:root.ebb-motion-calm .ebb-nowplaying.is-shown { transition: opacity 0.4s ease, visibility 0s; }

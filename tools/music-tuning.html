@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Music tuning guide</title>
+<style>
+  @font-face { font-family: 'Nunito'; src: url('../src/vendor/fonts/nunito-latin-600-normal.woff2') format('woff2'); font-weight: 600; }
+  @font-face { font-family: 'Nunito'; src: url('../src/vendor/fonts/nunito-latin-800-normal.woff2') format('woff2'); font-weight: 800; }
+  @font-face { font-family: 'Fraunces'; src: url('../src/vendor/fonts/fraunces-latin-full-italic.woff2') format('woff2'); font-style: italic; font-weight: 100 900; }
+  :root {
+    --paper: #FBF7F0; --card: #FFFDF8; --line: #E3D9C9; --ink: #1E2624; --muted: #5C6B66;
+    --moss: #5F7F5B; --moss-soft: #E7EEDF; --clay: #B5654A; --clay-soft: #F6E5DD; --code: #F1EADF;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body { margin: 0; background: var(--paper); color: var(--ink); font: 600 17px/1.6 Nunito, system-ui, sans-serif; overflow-x: hidden; }
+  main { max-width: 860px; margin: 0 auto; padding: 24px 16px 64px; }
+  h1 { font: 800 30px/1.2 Nunito, sans-serif; margin: 8px 0 4px; }
+  .tag { font: italic 400 20px/1.4 Fraunces, Georgia, serif; color: var(--muted); margin: 0 0 24px; }
+  h2 { font: 800 22px/1.3 Nunito, sans-serif; margin: 36px 0 10px; display: flex; align-items: center; gap: 10px; }
+  h2 .n { flex: none; width: 34px; height: 34px; border-radius: 50%; background: var(--moss); color: var(--card); font-size: 18px; display: grid; place-items: center; }
+  h3 { font: 800 18px/1.3 Nunito, sans-serif; margin: 20px 0 6px; }
+  p, li { max-width: 72ch; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; margin: 12px 0; }
+  .note { background: var(--moss-soft); border-color: #CFDCC2; }
+  .warn { background: var(--clay-soft); border-color: #EBCBBE; }
+  code, .path { font: 600 16px/1.5 ui-monospace, Consolas, monospace; background: var(--code); border-radius: 6px; padding: 1px 6px; overflow-wrap: anywhere; }
+  pre { font: 600 16px/1.55 ui-monospace, Consolas, monospace; background: var(--code); border-radius: 10px; padding: 12px 14px; margin: 8px 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+  pre .hl { background: #DCE8CF; border-radius: 4px; }
+  pre .was { background: #F3D9CF; border-radius: 4px; text-decoration: line-through; }
+  ol.steps { padding-left: 22px; }
+  ol.steps li { margin: 8px 0; }
+  .knob { display: grid; grid-template-columns: minmax(0, 1fr); gap: 4px; padding: 12px 0; border-top: 1px solid var(--line); }
+  .knob:first-of-type { border-top: 0; }
+  .knob b { font-weight: 800; }
+  .knob .what { color: var(--muted); }
+  .knob .now { font: 600 16px/1.5 ui-monospace, Consolas, monospace; color: var(--moss); overflow-wrap: anywhere; }
+  .row { display: flex; flex-wrap: wrap; gap: 10px; align-items: baseline; }
+  .pill { display: inline-block; font: 800 15px/1 Nunito, sans-serif; padding: 6px 10px; border-radius: 999px; background: var(--moss-soft); color: var(--moss); }
+  .settings { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+  .settings .card { margin: 0; }
+  .big { font: 800 26px/1.2 Nunito, sans-serif; color: var(--moss); }
+  .small { font-size: 16px; color: var(--muted); }
+  a { color: var(--moss); font-weight: 800; }
+  .ico { width: 22px; height: 22px; vertical-align: -5px; color: var(--moss); }
+  @media (max-width: 600px) { body { font-size: 17px; } h1 { font-size: 26px; } }
+</style>
+</head>
+<body>
+<main>
+  <h1>Tuning the music</h1>
+  <p class="tag">How often the island plays, and how to keep your changes</p>
+
+  <div class="card note">
+    <p style="margin:0">Everything about <b>when</b> music plays is in one file, <span class="path">recipes/music/director.json</span>. You change numbers in it, check them in the music lab's <b>Day</b> tab and in the game, then save them to the repo with GitHub Desktop. No code changes are needed. This page reads the file as it is now, so the numbers below are always current.</p>
+  </div>
+
+  <h2><span class="n">1</span>The short version</h2>
+  <ol class="steps">
+    <li>In GitHub Desktop, check the <b>Current branch</b> at the top. It must not be <code>main</code>. If it is, choose <b>Branch &gt; New branch</b>, name it, for example <code>music-tuning</code>, and create it.</li>
+    <li>Open <span class="path">C:\Users\mshom\Documents\GitHub\Ebb\recipes\music\director.json</span> in a text editor (Notepad works; VS Code is nicer).</li>
+    <li>Change a number in the <code>"frequency"</code> block (section 3 says what each one does). Save the file.</li>
+    <li>Double-click <span class="path">play.cmd</span>, then open the music lab's Day tab: <a href="music-lab.html#day">music-lab.html#day</a>. Choose <b>Pool: The game</b>, your setting, <b>3 days</b>, and read the <b>Silence</b> tile.</li>
+    <li>Listen in the game: <a href="../index.html?music=now">index.html?music=now</a> plays a grown piece right after your first tap, then the director carries on with your numbers.</li>
+    <li>Happy with it? In GitHub Desktop, write a short summary, click <b>Commit</b>, then <b>Push origin</b> (section 6).</li>
+  </ol>
+
+  <h2><span class="n">2</span>The three settings, as they are now</h2>
+  <p>The "Music plays" choice in Settings picks one of these. The share of time with music comes from the Day tab's simulation (3 game days, 6 seeds, the game's own pool).</p>
+  <div class="settings" id="settings">
+    <div class="card"><b>Loading the recipe</b><p class="small">Open this page through play.cmd so it can read the file.</p></div>
+  </div>
+
+  <h2><span class="n">3</span>What each number does</h2>
+  <div class="card" id="knobs">
+    <div class="knob"><b>Loading</b></div>
+  </div>
+
+  <h2><span class="n">4</span>Changing a number safely</h2>
+  <p>The file is JSON: names in double quotes, a colon, then the value, with commas between entries. Change only the number and leave the punctuation as it is. Here is "Often" with shorter rests:</p>
+  <pre>"often": { "chanceScale": 1.8, "restScale": <span class="was">0.28</span> <span class="hl">0.2</span>, "max": { "interlude": 12, "nocturne": 5 } },</pre>
+  <h3>Rules of thumb</h3>
+  <ul>
+    <li><b>More music:</b> make <code>restScale</code> smaller first (shorter silences), then raise <code>max.interlude</code> (more pieces through the day).</li>
+    <li><b>Less music:</b> make <code>restScale</code> larger, or <code>chanceScale</code> smaller (more slots pass by with nothing).</li>
+    <li><code>chanceScale</code> above about 1.8 changes little, since most slot chances are already nearly certain.</li>
+    <li>Change one thing at a time, and read the Day tab after each change.</li>
+    <li>Use a dot for decimals (<code>0.3</code>, not <code>0,3</code>), and never leave a comma after the last entry in a block.</li>
+  </ul>
+  <div class="card warn">
+    <p style="margin:0"><b>If the game or the lab goes quiet after an edit,</b> the file probably has a typo (a missing comma or quote). The lab's Day tab shows the error at the top. Fix it, or start again from the saved version: in GitHub Desktop, right-click <span class="path">director.json</span> in the Changes list and choose <b>Discard changes</b>.</p>
+  </div>
+
+  <h2><span class="n">5</span>Checking a change</h2>
+  <h3>In the music lab (quick)</h3>
+  <ol class="steps">
+    <li>Open <a href="music-lab.html#day">music-lab.html#day</a> and refresh it after every save (the lab reads the file fresh each time).</li>
+    <li>Choose <b>Pool: The game</b>. That is exactly what the island plays: the four tides, plus a new grown piece from the composer for any other slot.</li>
+    <li>Choose <b>Piece lengths: Real piece lengths</b>, your <b>Music setting</b>, and <b>3 days</b>.</li>
+    <li>Read <b>Silence</b>: the share of real time with no music. Today's targets are about 45 percent at Often, 55 at Sometimes and 85 at Rarely. The rows show when each piece would play.</li>
+    <li>Try a few seeds with <b>New seed</b>; one day alone is a small sample.</li>
+  </ol>
+  <h3>In the game (by ear)</h3>
+  <ul>
+    <li><a href="../index.html?music=now">index.html?music=now</a>: a grown piece right after your first tap, then the director with your numbers.</li>
+    <li><a href="../index.html?day=14">index.html?day=14</a>: a new island on summer's first day. The opening plays summer's home tide 20 to 40 seconds after your tap, then a grown piece.</li>
+    <li>For the real feel, leave the game alone at 1x for half an hour and listen (doc 24's hands-off hour).</li>
+    <li>Test links never touch your saved island.</li>
+  </ul>
+
+  <h2><span class="n">6</span>Saving it to the repo with GitHub Desktop</h2>
+  <ol class="steps">
+    <li>Open GitHub Desktop. The <b>Current repository</b> should be <b>Ebb</b>.</li>
+    <li>Check <b>Current branch</b>. If it says <code>main</code>, choose <b>Branch &gt; New branch</b> first and give it a name. Your edit comes along to the new branch.</li>
+    <li>The <b>Changes</b> list on the left shows <span class="path">recipes/music/director.json</span>. Click it to see your change: red lines are what was there, green lines are what you wrote.</li>
+    <li>Make sure only the files you meant to change are ticked.</li>
+    <li>At the bottom left, write a summary, for example <code>Music: shorter rests at Often</code>, and click <b>Commit to</b> your branch.</li>
+    <li>Click <b>Push origin</b> at the top (or <b>Publish branch</b> the first time).</li>
+    <li>Click <b>Create Pull Request</b>, then merge it on GitHub when you're happy, the same way as the other branches.</li>
+  </ol>
+  <div class="card note">
+    <p style="margin:0">Tuning can also ride along with the audio branch while it is open: with <code>m2-audio-ingame</code> chosen, your edit goes into the same pull request.</p>
+  </div>
+
+  <h2><span class="n">7</span>Other music numbers you may want</h2>
+  <div class="card">
+    <div class="knob"><b>Music loudness</b><span class="what"><span class="path">recipes/audio/mixer.json</span>, <code>buses.musicDefault</code>: the music level when the Music slider in Settings is full. 1.0 now (it was 0.5, which sat about 5 dB under the island).</span></div>
+    <div class="knob"><b>The opening on a new island</b><span class="what"><span class="path">recipes/music/director.json</span>, <code>opening</code>: <code>afterTouchS</code> is how many seconds after the first tap the home tide starts; <code>restS</code> the pause before the grown piece that follows; <code>then</code> which slot that piece is grown for.</span></div>
+    <div class="knob"><b>The song's name on screen</b><span class="what"><span class="path">recipes/audio/game.json</span>, <code>nowPlaying</code>: <code>atShare</code> how far into the piece the name is fully shown (0.5 is halfway), then <code>fadeInS</code>, <code>holdS</code> and <code>fadeOutS</code> in seconds.</span></div>
+    <div class="knob"><b>The dip near a calling frog</b><span class="what"><span class="path">recipes/audio/game.json</span>, <code>frogs.duckNearM</code> and <code>duckHoldS</code>; how deep in <span class="path">recipes/audio/mixer.json</span>, <code>duck.db</code>.</span></div>
+  </div>
+</main>
+
+<script type="module">
+  const NAMES = { often: 'Often', 'now-and-then': 'Sometimes', rarely: 'Rarely' };
+  const SHARE = { often: 'about 57 percent', 'now-and-then': 'about 44 percent', rarely: 'about 15 percent' };
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+  const mins = (m) => `${Math.round(m * 60)} s`;
+  try {
+    const d = await (await fetch('../recipes/music/director.json', { cache: 'no-cache' })).json();
+    const [r0, r1] = d.restRealMin;
+    document.getElementById('settings').innerHTML = Object.entries(NAMES).map(([id, label]) => {
+      const f = d.frequency[id] ?? {};
+      const inter = f.max?.interlude ?? d.slots.interlude.max;
+      const noct = f.max?.nocturne ?? d.slots.nocturne?.max ?? 1;
+      return `<div class="card"><div class="row"><span class="pill">${label}</span></div>
+        <p class="big" style="margin:8px 0 2px">${SHARE[id]}</p><p class="small" style="margin:0 0 8px">of the time with music</p>
+        <p style="margin:0">Rests ${mins(r0 * f.restScale)} to ${mins(r1 * f.restScale)}<br>Up to ${inter} interludes and ${noct} nocturne${noct === 1 ? '' : 's'} a day<br>Slot chances times ${f.chanceScale}</p></div>`;
+    }).join('');
+    const knob = (name, path, what, now) => `<div class="knob"><b>${esc(name)}</b><span class="what">${what}</span><span class="now">${esc(path)}: ${esc(now)}</span></div>`;
+    const S = d.slots;
+    document.getElementById('knobs').innerHTML = [
+      knob('Rest between pieces', 'restRealMin', 'The silence after every piece, in real minutes, drawn between these two numbers. Each setting then multiplies it by its <code>restScale</code>.', JSON.stringify(d.restRealMin)),
+      knob('restScale', 'frequency.often.restScale (and the others)', 'Multiplies the rest. Smaller means shorter silences and more music. The biggest single lever.', Object.entries(NAMES).map(([id, l]) => `${l} ${d.frequency[id].restScale}`).join(', ')),
+      knob('chanceScale', 'frequency.often.chanceScale', 'Multiplies each slot\'s chance of playing (below). Larger means fewer slots pass in silence.', Object.entries(NAMES).map(([id, l]) => `${l} ${d.frequency[id].chanceScale}`).join(', ')),
+      knob('max', 'frequency.often.max.interlude, .nocturne', 'How many interludes through the day, and nocturnes at night, that setting allows. Interludes fill most of the daytime, so this decides how full the day feels.', Object.entries(NAMES).map(([id, l]) => `${l} ${d.frequency[id].max?.interlude ?? S.interlude.max} and ${d.frequency[id].max?.nocturne ?? 1}`).join(', ')),
+      knob('Slot chances', 'slots.<slot>.chance', 'The base chance each slot plays when it opens: morning after sunrise, interludes through the day, evening as the light goes gold, the nocturne late at night. Multiplied by chanceScale, at most 1.', `morning ${S.morning.chance}, interlude ${S.interlude.chance}, evening ${S.evening.chance}, nocturne ${S.nocturne?.chance ?? '-'}`),
+      knob('Frog window', 'slots.frogWindow', 'From half an hour before dusk to three hours after, no piece starts while frogs call: dusk belongs to them. With no frogs awake, an early nocturne may play instead.', `${S.frogWindow.fromDuskH} to ${S.frogWindow.toDuskH} hours around dusk`),
+      knob('Repeats', 'history.minGapDays, minGapRealMin', 'A written piece or tide waits at least this long before it plays again. Grown pieces are new every time, so this never holds them back.', `${d.history.minGapDays} game days and ${d.history.minGapRealMin} real minutes`),
+    ].join('');
+  } catch (e) {
+    document.getElementById('settings').innerHTML = `<div class="card warn"><b>The recipe could not be read</b><p class="small" style="margin:4px 0 0">Open this page through play.cmd (http://localhost), not from the file itself. If it is already open that way, director.json may have a typo: ${esc(e.message)}</p></div>`;
+    document.getElementById('knobs').innerHTML = '<div class="knob"><span class="what">Waiting for the recipe (see above).</span></div>';
+  }
+</script>
+</body>
+</html>

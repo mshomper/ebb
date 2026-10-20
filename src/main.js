@@ -16,7 +16,9 @@ import { createJournal } from './world/journal/index.js';
 import { createProgress } from './world/expansion.js';
 import { loadRecipe } from './core/recipes.js';
 import { on } from './core/events.js';
-import { get as getStore } from './core/store.js';
+import { get as getStore, defaultStore } from './core/store.js';
+import { startAudio } from './audio/index.js';
+import { mountNowPlaying } from './ui/now-playing.js';
 import { showElsewhere } from './ui/elsewhere.js';
 import { mountAway } from './sim/away.js';
 import { mountReveal } from './ui/reveal.js';
@@ -64,11 +66,17 @@ startApp(canvas, { onDeviceLost: (rebuilding) => showRebuildingNote(rebuilding),
     if (r.ok && saveInfo) on('save:moved-away', () => showElsewhere(saveInfo.takeOver, true));
     if (r.ok && !toolsMounted) {
       toolsMounted = true;
+      // The island's sound (src/audio, docs 17 and 25): silent until the first touch or key.
+      startAudio(defaultStore)
+        .then((a) => { if (new URLSearchParams(location.search).has('debug')) /** @type {any} */ (window).ebbAudio = a; })
+        .catch((err) => console.warn('ebb audio: the sound did not start', err));
       // The HUD (docs/15): corners and the bottom edge, dimming when idle, H to hide.
       const hud = await mountHud(document.body);
       hudLayer = hud.layer;
       await mountClockDial(hud.layer);
       mountTools(hud.layer);
+      // The piece playing, its name softly near the bottom, halfway through (src/ui/now-playing.js).
+      mountNowPlaying().catch((err) => console.warn('ebb: the now-playing line did not mount', err));
       mountTimeFlow(hud.layer);
       mountLook(hud.layer, r.palette.list());
       // The field journal (docs 13, 15): watches the world, writes notes, names what you tap.

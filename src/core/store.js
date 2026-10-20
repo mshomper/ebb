@@ -14,6 +14,8 @@
  * @typedef {Object} AudioSettings
  * @property {number} master @property {number} ambience @property {number} creatures
  * @property {number} tools @property {number} ui  volumes 0..1
+ * @property {number} music  volume 0..1 (full is recipes/audio/mixer.json's musicDefault)
+ * @property {'often'|'now-and-then'|'rarely'|'off'} musicOften  how often music plays (doc 24)
  * @property {boolean} muteInBackground
  */
 
@@ -50,7 +52,7 @@ export function initialSlices() {
       textSize: 100,
       motion: 'device',
       quality: 'auto',
-      audio: { master: 1, ambience: 1, creatures: 1, tools: 1, ui: 1, muteInBackground: true },
+      audio: { master: 1, ambience: 1, creatures: 1, tools: 1, ui: 1, music: 1, musicOften: 'now-and-then', muteInBackground: true },
     },
   };
 }

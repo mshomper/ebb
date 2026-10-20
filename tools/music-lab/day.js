@@ -9,6 +9,8 @@
 
 import { simulate } from './daysim.js';
 import { realize } from '../../src/audio/music/realize.js';
+import { grow } from '../../src/audio/music/develop/index.js';
+import { DAYS_PER_SEASON } from '../../src/core/clock.js';
 
 const DAY = 86400;
 const SEASONS = ['spring', 'summer', 'autumn', 'winter'];
@@ -52,9 +54,10 @@ export async function initDay(host) {
     return res.json();
   };
   host.innerHTML = '<div class="card"><h2>Day</h2><p class="muted">Loading the director and the pieces.</p></div>';
-  const [director, sky, seasons, frog, index, rz, vo] = await Promise.all([
+  const [director, sky, seasons, frog, index, rz, vo, material, rules, names] = await Promise.all([
     j('recipes/music/director.json'), j('recipes/world/sky.json'), j('recipes/world/seasons.json'), j('recipes/species/frog.json'),
     j('recipes/music/pieces/index.json'), j('recipes/music/realize.json'), j('recipes/music/voicing.json'),
+    j('recipes/music/material/spring.json'), j('recipes/music/develop.json'), j('recipes/music/names.json'),
   ]);
   /** @type {any[]} */
   const written = await Promise.all(index.pieces.map((/** @type {string} */ id) => j(`recipes/music/pieces/${id}.json`)));
@@ -65,6 +68,9 @@ export async function initDay(host) {
   const realPieces = [...written, ...tides];
   /** Every written piece copied once into every slot, for every season and weather, plus the tides as they are. */
   const standIns = [...written.flatMap((p) => STAND_IN_SLOTS.map((slot) => ({ ...p, id: `${p.id}-as-${slot}`, slots: [slot], seasons: [...SEASONS], weather: undefined, requires: {} }))), ...tides];
+  // The game's own pool (src/audio/music/index.js): the tides, plus one stand-in per slot that the
+  // composer fills with a new grown piece each time it is chosen.
+  const gamePool = [...tides, ...STAND_IN_SLOTS.map((slot) => ({ id: `grown-${slot}`, grownSlot: slot, alwaysNew: true, slots: [slot], seasons: [...SEASONS], requires: {}, keys: [material.home] }))];
   const orbit = sky.orbit;
   const dormancy = seasons.dormancy?.frogs ?? [2.6, 0.3];
   const callAfterDuskH = frog.motion?.moods?.callAfterDuskH ?? [-0.5, 3];
@@ -76,7 +82,10 @@ export async function initDay(host) {
     const k = `${piece.id}:${seed}`;
     let s = lenCache.get(k);
     if (s === undefined) {
-      try { s = realize(piece, { seed, dayColor: midday, available: ['piano', 'pad'] }, rzRecipes).durationS; } catch { s = 120; }
+      try {
+        const real = piece.grownSlot ? grow(material, rules, { slot: piece.grownSlot, weather: opt.weather, seed }, names).piece : piece;
+        s = realize(real, { seed, dayColor: midday, available: ['piano', 'pad'] }, rzRecipes).durationS;
+      } catch { s = 120; }
       lenCache.set(k, s);
     }
     return s;
@@ -84,7 +93,7 @@ export async function initDay(host) {
 
   const opt = {
     season: 0, days: 3, weather: /** @type {'clear'|'cloud'|'rain'|'mist'} */ ('clear'), frogs: true,
-    frequency: 'now-and-then', flow: 1, lengths: /** @type {'planned'|'real'} */ ('planned'), pool: 'stand-in', seed: 1,
+    frequency: 'now-and-then', flow: 1, lengths: /** @type {'planned'|'real'} */ ('real'), pool: 'game', seed: 1,
   };
 
   /** A row of text buttons, one pressed. @param {string} key @param {[any, string][]} choices @param {string} label */
@@ -110,7 +119,7 @@ export async function initDay(host) {
         </div>
         <div>
           <h3>Music setting</h3>
-          ${seg('frequency', [['often', 'Often'], ['now-and-then', 'Now and then'], ['rarely', 'Rarely'], ['off', 'Off']], 'Music setting')}
+          ${seg('frequency', [['often', 'Often'], ['now-and-then', 'Sometimes'], ['rarely', 'Rarely'], ['off', 'Off']], 'Music setting')}
           <h3>Time flow</h3>
           ${seg('flow', [[1, '1x'], [4, '4x'], [16, '16x']], 'Time flow')}
           <p class="muted">A game day is 24 real minutes at 1x, 6 at 4x and 90 seconds at 16x. Rests are in real time, so faster time fits fewer pieces into a day.</p>
@@ -118,8 +127,8 @@ export async function initDay(host) {
           ${seg('lengths', [['planned', 'Planned slot lengths'], ['real', 'Real piece lengths']], 'Piece lengths')}
           <p class="muted">Only a short test piece exists yet, so planned lengths show the pacing the finished score will have.</p>
           <h3>Pool</h3>
-          ${seg('pool', [['stand-in', 'Stand-in pool'], ['real', 'Real pieces only']], 'Pool')}
-          <p class="muted">The stand-in pool copies each piece into every slot, season and weather so every slot has something to play; real pieces only shows what the score can fill today.</p>
+          ${seg('pool', [['game', 'The game'], ['stand-in', 'Stand-in pool'], ['real', 'Written pieces only']], 'Pool')}
+          <p class="muted">The game is exactly what the island plays: the four tides, and a new grown piece from the composer for any slot they do not fill. The stand-in pool copies each written piece into every slot; written pieces only shows what the written score can fill.</p>
         </div>
       </div>
       <h3>Seed</h3>
@@ -167,8 +176,8 @@ export async function initDay(host) {
   /** @type {any} */
   let last = null;
   function run() {
-    const startDay = opt.season * 7 + 2;
-    const pieces = opt.pool === 'stand-in' ? standIns : realPieces;
+    const startDay = opt.season * DAYS_PER_SEASON + 2;
+    const pieces = opt.pool === 'game' ? gamePool : opt.pool === 'stand-in' ? standIns : realPieces;
     const res = simulate({
       recipes: { director, seasons: {} }, pieces, orbit, days: opt.days, flow: opt.flow, seed: opt.seed,
       startDay, startHour: 4, weather: opt.weather, frogsSettled: opt.frogs, frequency: opt.frequency,
@@ -186,7 +195,7 @@ export async function initDay(host) {
     const perDay = res.pieces.length / opt.days;
     $('dy-tiles').innerHTML = `
       <div class="tile" style="grid-column:1 / -1;min-width:0"><span>Silence</span><b>${Math.round(res.silenceShare * 100)} percent</b>
-        <span>of real time. Doc 24's target is 55 to 65 percent. Over 12 seeds, 3 days at 1x, "Now and then" (the default) measures 56 to 70 percent (middle 62) and "Often" 54 to 63. One day is a small sample; 3 days steadies it.</span></div>
+        <span>of real time. Matt's targets (October 20, 2026): about 45 percent silence at Often, 55 at Sometimes (the default), 85 at Rarely. Tune them in recipes/music/director.json (frequency). One day is a small sample; 3 days steadies it.</span></div>
       <div class="tile"><span>Pieces per game day</span><b>${perDay.toFixed(perDay % 1 ? 1 : 0)}</b><span>${res.pieces.length} in all</span></div>
       <div class="tile"><span>Real time simulated</span><b>${(res.endRealS / 60).toFixed(res.endRealS % 60 ? 1 : 0)} min</b><span>${opt.days} game ${opt.days === 1 ? 'day' : 'days'} at ${opt.flow}x</span></div>
       <div class="tile"><span>Slots that rolled no</span><b>${no}</b><span>chances that came up empty</span></div>`;
@@ -197,7 +206,7 @@ export async function initDay(host) {
     const at = (/** @type {number} */ realS) => {
       const g = res.startT + realS * 60 * res.flow;
       const day = Math.floor(g / DAY);
-      return { day, label: `${SEASON_LABEL[Math.floor(day / 7) % 4]} day ${day % 7}, ${hhmm((g - day * DAY) / 3600)}` };
+      return { day, label: `${SEASON_LABEL[Math.floor(day / DAYS_PER_SEASON) % 4]} day ${day % DAYS_PER_SEASON}, ${hhmm((g - day * DAY) / 3600)}` };
     };
     $('dy-list').innerHTML = res.pieces.length
       ? res.pieces.map((/** @type {any} */ p) => `<li><b>${esc(at(p.startRealS).label)}</b> · ${esc(SLOT_NAME[p.slot] ?? p.slot)} · ${esc(p.id)} · seed ${p.seed} · ${((Math.min(p.endRealS, res.endRealS) - p.startRealS) / 60).toFixed(1)} real min${p.endRealS > res.endRealS ? ' (still playing when the run ends)' : ''}${p.note ? ` · ${esc(p.note)}` : ''}</li>`).join('')
@@ -219,7 +228,7 @@ export async function initDay(host) {
   /** Is any frog awake (settled and not dormant) at a game time? @param {number} gameT */
   const frogsAwakeAt = (gameT) => {
     if (!opt.frogs) return false;
-    const pos = ((gameT / (7 * DAY)) % 4 + 4) % 4;
+    const pos = ((gameT / (DAYS_PER_SEASON * DAY)) % 4 + 4) % 4;
     const [a, b] = dormancy;
     return !(b <= a ? pos >= a || pos < b : pos >= a && pos < b);
   };
@@ -316,7 +325,7 @@ export async function initDay(host) {
       }
       for (const h of [d.sunrise, d.sunset]) if (Number.isFinite(h)) parts.push(`<circle cx="${x(h).toFixed(1)}" cy="${axisY}" r="4.5" fill="#E6B84A" stroke="#B8801F" stroke-width="1.5"/>`);
 
-      const head = `${SEASON_LABEL[Math.floor(d.day / 7) % 4]} day ${d.day % 7}`;
+      const head = `${SEASON_LABEL[Math.floor(d.day / DAYS_PER_SEASON) % 4]} day ${d.day % DAYS_PER_SEASON}`;
       const sun = Number.isFinite(d.sunrise) ? `sunrise ${hhmm(d.sunrise)}, sunset ${hhmm(d.sunset)}` : '';
       const frogNote = opt.frogs ? (frogsAwakeAt(day0 + (d.dusk + 1) * 3600) ? 'frogs awake at dusk' : 'frogs asleep in the mud') : 'no frogs';
       return `<div style="margin:14px 0 6px"><b style="font-size:17px">${esc(head)}</b> <span class="muted">${esc(sun)} · ${frogNote}</span></div>

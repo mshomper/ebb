@@ -27,6 +27,8 @@ export function createMidges(opts) {
   /** @type {any} */ let field = null;
   let total = 0;
   /** @type {{ x: number, z: number, share: number, seed: number, y: number, lastDip: number }[]} */ let swarms = [];
+  /** @type {{ id: number, pos: number[], density: number }[]} */ let heard = [];
+  const midHeight = ((S.heightM?.[0] ?? 0.3) + (S.heightM?.[1] ?? 1.2)) / 2;
 
   /** The swarms for the field as it stands (it changes each game hour). */
   function choose() {
@@ -57,11 +59,16 @@ export function createMidges(opts) {
     setBudget(n) { budget = Math.max(0, n); },
     /** The swarms now, with their centres (the frog lab, S6c's tongue catches). */
     swarms: () => swarms.slice(),
+    /**
+     * The swarms as the sound hears them (src/audio): centre, in the middle of their height band,
+     * and how thick each is now (0..1 of a full swarm).
+     */
+    heard: () => heard.slice(),
 
     /** @param {import('../../sim/live-sim.js').FrameInfo} f */
     tick(f) {
       if ((world.state?.ecology?.midges ?? null) !== field) choose();
-      if (!swarms.length) { total = 0; pass.set([], f.animT); return; }
+      if (!swarms.length) { total = 0; heard = []; pass.set([], f.animT); return; }
       const h = display() / SECONDS_PER_HOUR;
       const hour = h - Math.floor(h / HOURS_PER_DAY) * HOURS_PER_DAY;
       const dayLength = world.state?.seasons?.dayLengthH ?? 12;
@@ -91,6 +98,7 @@ export function createMidges(opts) {
         return { x, y: s.y, z, bob, dip: dip.phase, dipIndex: dip.index, seed: s.seed, count: counts[i] };
       });
       pass.set(list, t);
+      heard = list.map((s) => ({ id: s.seed, pos: [s.x, s.y + midHeight + s.bob, s.z], density: Math.min(1, s.count / Math.max(1, S.perSwarm)) }));
     },
   };
 }

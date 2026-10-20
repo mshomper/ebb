@@ -26,6 +26,7 @@ import { createRoom } from './reverb.js';
  * @property {(eye: number[], forward: number[], up: number[]) => void} setListener
  * @property {(db: number) => void} duckMusic       dip the music (0 = none), e.g. near a calling frog
  * @property {(o: {lowpassHz?: number, wet?: number, chorusDb?: number}, rampS?: number) => void} setMusicTone
+ * @property {(on: boolean) => void} setBackgroundMute  false keeps sound on while the tab is hidden (Settings)
  * @property {() => 'locked'|'running'|'suspended'|'closed'} state
  * @property {() => void} dispose
  */
@@ -130,8 +131,9 @@ export function createMixer(recipe, opts = {}) {
 
   /** @type {ReturnType<typeof setTimeout> | null} */
   let hideTimer = null;
+  let backgroundMute = true;
   const onVisibility = () => {
-    if (!unlocked) return;
+    if (!unlocked || (document.hidden && !backgroundMute)) return;
     if (document.hidden) {
       glide(master.gain, 0, recipe.fades.hideS);
       hideTimer = setTimeout(() => { if (document.hidden) ctx.suspend(); }, recipe.fades.hideS * 1000 + 50);
@@ -183,6 +185,7 @@ export function createMixer(recipe, opts = {}) {
       if (o.wet !== undefined) glide(wet.gain, o.wet, rampS);
       if (o.chorusDb !== undefined) glide(chorusEq.gain, o.chorusDb, rampS);
     },
+    setBackgroundMute(on) { backgroundMute = on; },
     state: () => (unlocked ? /** @type {any} */ (ctx.state) : 'locked'),
     dispose() {
       window.removeEventListener('pointerdown', onGesture, { capture: true });

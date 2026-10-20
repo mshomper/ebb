@@ -3,7 +3,8 @@
 //
 // Saved: meta (seed, island, time, time flow), world (the hourly tick's state exactly as the tick
 // and the Plant tool left it), journal (with its read marks), water (placed springs), unlocks
-// (earned ones only), view (where the camera was), looks (empty until the creature studio), and
+// (earned ones only), view (where the camera was), looks (empty until the creature studio), music
+// (the pieces you hearted, doc 24), and
 // one record per open 32 m chunk; only edited chunks carry heights and paint, stored as they are
 // (not as a difference from the regrown land) so retuning a land recipe never scrambles them.
 // Not saved, rebuilt on load: untouched land, the water summary, habitat, moving water, moss,
@@ -13,7 +14,7 @@ import { CHUNK_CELLS as C, WORLD_CELLS as N, chunkFirstCell, chunkKey } from '..
 import { FORMAT } from './migrate.js';
 
 /** Section ids this build writes; others found in a save are kept and written back unchanged. */
-const KNOWN = ['meta', 'world', 'journal', 'water', 'unlocks', 'view', 'looks'];
+const KNOWN = ['meta', 'world', 'journal', 'water', 'unlocks', 'view', 'looks', 'music'];
 
 /**
  * @typedef {Object} SavedChunk
@@ -31,6 +32,7 @@ const KNOWN = ['meta', 'world', 'journal', 'water', 'unlocks', 'view', 'looks'];
  * @property {any} world @property {any} journal @property {any} water @property {any} unlocks
  * @property {any} view   camera pose, or null
  * @property {any} looks
+ * @property {any} [music]  { hearted: [...] }, the pieces you hearted (src/audio/music/hearts.js)
  * @property {Record<string, { state: string, land: string, edited: boolean }>} chunks  the store's `chunks` slice
  * @property {import('../world/terrain/heightfield.js').Mirror | null} mirror
  * @property {number} savedAt  UTC ms
@@ -69,6 +71,7 @@ export function snapshot(p) {
     ['unlocks', structuredClone(p.unlocks ?? {})],
     ['view', p.view ? structuredClone(p.view) : null],
     ['looks', structuredClone(p.looks ?? {})],
+    ['music', structuredClone(p.music ?? { hearted: [] })],
   ];
   for (const [key, c] of Object.entries(p.chunks ?? {})) {
     if (c.state !== 'open') continue;
@@ -89,7 +92,7 @@ export function snapshot(p) {
  * Sort decoded sections back into island parts. A chunk whose arrays are the wrong size is left
  * out (it regrows from the seed) and named in `bad`.
  * @param {Record<string, any>} sections
- * @returns {{ meta: any, world: any, journal: any, water: any, unlocks: any, view: any, looks: any,
+ * @returns {{ meta: any, world: any, journal: any, water: any, unlocks: any, view: any, looks: any, music: any,
  *   chunks: SavedChunk[], extra: [string, any][], bad: string[] }}
  */
 export function restore(sections) {
@@ -107,6 +110,6 @@ export function restore(sections) {
   return {
     meta: sections.meta ?? null, world: sections.world ?? null, journal: sections.journal ?? null,
     water: sections.water ?? null, unlocks: sections.unlocks ?? {}, view: sections.view ?? null,
-    looks: sections.looks ?? {}, chunks, extra, bad,
+    looks: sections.looks ?? {}, music: sections.music ?? null, chunks, extra, bad,
   };
 }

@@ -64,12 +64,13 @@ ticks('season-ticks', [[0.5, 'spring'], [1.5, 'summer'], [2.5, 'autumn'], [3.5, 
 
 // ---- Load ----------------------------------------------------------------------------------------
 let seasonsRecipe = /** @type {any} */ (null);
-const [mixerRecipe, ambRecipe, procRecipe, frogVoice, midgeVoice, frogSpecies, midgeSpecies] = await Promise.all([
+const [mixerRecipe, ambRecipe, procRecipe, frogSpecies, midgeSpecies] = await Promise.all([
   loadAudioRecipe('audio/mixer'), loadAudioRecipe('audio/ambience'), loadAudioRecipe('audio/procedural'),
-  loadAudioRecipe('audio/voices/frog'), loadAudioRecipe('audio/voices/midge'),
   loadRecipe('species/frog'), loadRecipe('species/midge'),
 ]);
 try { seasonsRecipe = await loadRecipe('world/seasons'); } catch { /* optional */ }
+const frogVoice = frogSpecies.voice;
+const midgeVoice = midgeSpecies.voice;
 const frogCall = frogSpecies.motion.call;
 const frogMoods = frogSpecies.motion.moods;
 const dormancy = seasonsRecipe?.dormancy?.frogs ?? [2.6, 0.3];
