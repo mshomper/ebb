@@ -22,6 +22,7 @@ The M1 vertical slice, one small island with every pillar working in miniature, 
 | Done | S7 | Saving, and the island moving on while you are away. Your island, its plants, frogs, springs, journal and view are kept on the device and come back on every load (S7a). Four real minutes away are one game hour (a quarter of watched time), up to 7 game days, reached after about 11 hours away, and what the journal wrote meanwhile waits under "You may have missed" (S7b). After 6 game hours or more away the island opens from cream, grows into what it became, rings the places that changed, brings its animals back, and shows the best five notes (S7c). An island backs up to a small file to carry to another device, earlier saves can be opened, and a damaged save comes back part by part from earlier copies with a calm note (S7d) |
 | Done | S8 | The HUD, phones and the low tier. The buttons keep to the corners and the bottom edge: a clock dial at the top left draws the sun or moon on its arc, the season and the tide, and says it in a line when tapped; undo and redo sit at the bottom left; the buttons dim after 6 s untouched, H hides them, and on a phone a faint eye brings them back (S8a). Settings, from the sliders button in the top right corner: time speed, growing while away and the reveal on return; palette (now three, with Clear sight, a color-safe palette), text size up to 160 percent and calm motion; sound, kept for when it arrives; dimming; quality, switched with no reload; and saves (S8b). Phones run smoothly on the low tier (S8d-1): the picture softens a little instead of stuttering when the graphics card is busy and sharpens again when it calms (dynamic resolution), the game draws at 30 fps on a 120 Hz phone to stay cool, a phone that warms up eases off a step early, and if the lowest resolution is still too much the island steps down one quality tier once, with a calm note and Undo. Tuned on an iPhone 17 Pro Max (S8d-2): a smaller picture is kept only when it saves graphics time, so the phone stays sharp, and the low tier draws less grass, rushes, bloom and distant ripples. The phone check page runs full screen like the game, tests whether resolution matters, and offers a 2 minute run. On a phone held upright the tool card has a short upright size slider so more island shows; held sideways the tools become a column on the right edge with the card to its left, and undo and redo stand on the left edge; a left-handed setting mirrors both; tools/layout-check.html checks every phone size (S8c) |
 | In progress | Shore | The shore zones itself by the tide as you shape it (docs/future/10): seaweed and kelp on rock in the tide band, black lichen in the splash zone above it, wave ripples in the wet sand and dark tidal mud on soil. Kelp blades come out at spring low tides. Each high tide leaves a strandline of dried litter and broken kelp at its reach, and a higher tide sweeps the older lines up. tools/shore-lab.html maps the zones as you shape and paint |
+| In progress | Finds | Small shore lives to find by tapping (docs/future/11): beadlet anemones in rock pools (a credited low-poly model) that open under water and close to a dome at low tide or when you come close, periwinkles on the wrack (from a CC0 shell scan), lugworm casts drawn into the wet sand itself, laid fresh after each tide, a hermit crab that walks about its rock pool under water, young edible crabs in the wrack that run sideways when you come close, and shells washed up along each high tide's strandline, from common periwinkle shells to a very rare nautilus on the biggest tides, all kept on one Shells page. Where they live comes from how you shape the coast. Found ones gather in the journal's **Small lives** |
 
 There are two islands to start from: the **Starter island** (one large spring-fed pond under a hill) and **Two ponds** (a low island with two spring-fed ponds and three rain-fed marshes). The **Island** button in **Settings > Saves** switches between them, and each keeps its own save. **Saves** also backs an island up to a file, opens one, steps back to an earlier save, or starts the island again. On previews and local builds, **Settings > Tests** pretends you were away and checks recovery. Test links (`?seed`, `?day`, `?frogs`) open throwaway islands that are never saved.
 
@@ -31,6 +32,7 @@ There are two islands to start from: the **Starter island** (one large spring-fe
 - **Pour and drain water.** Place springs once they are unlocked (`?sandbox` unlocks them now).
 - **Plant** reeds, water lilies, iris, rushes and sea thrift. The tool says why when the ground won't do.
 - **Tap anything** (a plant, the ground, the water) to name it, then open its page in the **field journal**. Pages fill in from what happens on the island, in words, never numbers.
+- **Look closely along the shore** at low tide for finds: anemones in rock pools, periwinkles on the weed, lugworm casts on the sand. Each one you tap is kept in the journal.
 - **Look:** switch palettes, and change how fast time flows.
 
 ## Running it
@@ -74,6 +76,8 @@ Open these at `/tools/` while running locally. They are for checks that run on y
 | `phone-check.html` | The island on this device against its tier's budgets, with a 60 second run, a 15 minute warm run and Save result; open it on the phone from the preview link |
 | `growth-lab.html` | 14 game days (one season) of growth on a copy of the island, with charts and a check that two runs end the same |
 | `water-lab.html` | The live water's volume, wet area, flow and cost, with buttons that sculpt near the spring and pond |
+| `finds-models.html` | The finds' models at true scale, side by side: the anemone open and shut, the crabs (the hermit crab walking), the shells; drag to turn them |
+| `finds-sketches.html` | Every find's journal sketch in pencil, ink and wash, beside plant sketches to compare; the shapes are traced from the models by `tools/gen-sketch-outlines.mjs` |
 | `shore-lab.html` | Shape and paint the coast and see the shore zones it makes (kelp, wrack, lichen, wet sand, mud), with a sea-level slider for each tide |
 | `sky-lab.html` | The island at any hour and season, without moving the world clock |
 | `palette-lab.html` | Tune a palette with a before and after divider, an eyedropper and sliders |
@@ -92,7 +96,16 @@ Open these at `/tools/` while running locally. They are for checks that run on y
 | `recipes/` | Every tunable number: land shapes, flora, species, palettes, world settings and quality tiers |
 | `tools/` | The local test pages above |
 | `docs/` | 23 architecture docs, starting with [01 Vision and pillars](docs/01-vision-and-pillars.md); see the [docs index](docs/README.md) |
-| `brand/`, `assets/` | The icon, favicons and identity review page; the ground's photo scans (CC0, credited in `assets/textures/CREDITS.md`) |
+| `brand/`, `assets/` | The icon, favicons and identity review page; the ground's photo scans (CC0, credited in `assets/textures/CREDITS.md`); the finds' small models (credited in `assets/models/finds/CREDITS.md`) |
+
+## Credits
+
+- "Low-Poly Anemone" (https://skfb.ly/6X9T8) by Ben Lebreux, licensed under Creative Commons Attribution 4.0 (http://creativecommons.org/licenses/by/4.0/). Changed for ebb: textures baked to vertex colors, posed at rest, rescaled, and given a shut pose.
+- "Crab 3d Model Free" (https://skfb.ly/pMCrp) by iRahulRajput, licensed under Creative Commons Attribution 4.0 (http://creativecommons.org/licenses/by/4.0/). Changed for ebb: texture baked to vertex colors, simplified, rescaled; drawn as a young edible crab.
+- The hermit crab is a CC0 model, simplified, with its own walk.
+- Shells, each licensed under Creative Commons Attribution 4.0 (http://creativecommons.org/licenses/by/4.0/) and simplified for ebb: "Turret Shell || Free Model" by CyberFox 3D Studio; "shell fossil 3D Scan" by Formwerk3D; "Murex Shell" by Loïc Norgeot; "Nautilus Shell" by RISD Nature Lab. Links in `assets/models/finds/CREDITS.md`.
+- The periwinkle is a CC0 photo scan of a rough periwinkle (Littorina brevicula, ffish.asia), simplified to 900 triangles.
+- Ground scans from Poly Haven and ambientCG (CC0); see `assets/textures/CREDITS.md`.
 | `CLAUDE.md` | Working rules for Claude Code sessions on this repo |
 
 ## Pillars

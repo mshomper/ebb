@@ -5,10 +5,11 @@
 
 import { makePen } from './pen.js';
 import { grass, rushes, reeds, lilies, iris, thrift } from './living.js';
+import { anemone, periwinkle, lugworm, hermitcrab, ediblecrab, shells } from './finds.js';
 import { soil, sand, rock, moss, fresh, shore } from './ground.js';
 
 /** @type {Record<string, (p: import('./pen.js').Pen, scale?: string) => string>} */
-const DRAW = { grass, rushes, reeds, lilies, iris, thrift, soil, sand, rock, moss, fresh, shore };
+const DRAW = { grass, rushes, reeds, lilies, iris, thrift, anemone, periwinkle, lugworm, hermitcrab, ediblecrab, shells, soil, sand, rock, moss, fresh, shore };
 
 /** Is there a drawing for this page? @param {string} id */
 export const hasSketch = (id) => id in DRAW;

@@ -12,6 +12,7 @@ import { blade, stem, along, wave, cubicPoints, yAt, xAt, polyline } from './pen
 export const WASH = Object.freeze({
   green: '#7E9B5E', leaf: '#93AE6E', brown: '#7A5236', water: '#9DB9C8', mud: '#8A6F55', sand: '#D9C49A',
   pink: '#D98AA8', spent: '#C9B49E', yellow: '#E3BE3A', petal: '#F1E9E2', gold: '#E2C25A', grey: '#9A9C94',
+  red: '#B9483E', blue: '#6E8EC0', tip: '#3E3833',
 });
 
 /** A pointed petal from its base to its tip, widest in the middle. @param {number} x0 @param {number} y0 @param {number} x1 @param {number} y1 @param {number} w */

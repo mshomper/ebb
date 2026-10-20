@@ -303,6 +303,49 @@ const ICONS = {
     <circle cx="8.5" cy="8.5" r="1.5"/>
     <path d="M12 12.5L15 15.5"/>`,
 
+  // Finds (docs/future/11). Beadlet anemone: a squat column on the ground line with a crown of
+  // tentacles open above it.
+  anemone: `
+    <path d="M2.5 20.5H21.5"/>
+    <path ${ACCENT} d="M8 20.5C7.6 17 8.4 14.5 12 14.5S16.4 17 16 20.5Z"/>
+    <path d="M8 20.5C7.6 17 8.4 14.5 12 14.5S16.4 17 16 20.5"/>
+    <path d="M8.6 14.8C7 13 5.6 12.4 4.4 12.6M9.6 14.2C8.8 11.6 7.8 10 6.6 9.4M11 14C10.8 11 10.4 8.8 9.6 7.6M13 14C13.2 11 13.6 8.8 14.4 7.6M14.4 14.2C15.2 11.6 16.2 10 17.4 9.4M15.4 14.8C17 13 18.4 12.4 19.6 12.6"/>`,
+  // Periwinkle: a round spiral shell resting on the ground line, its whorl drawn in.
+  periwinkle: `
+    <path d="M2.5 20.5H21.5"/>
+    <path ${ACCENT} d="M5 20.5C4.4 15.8 7.6 12 12 12C15.8 12 18.6 14.6 19 20.5Z"/>
+    <path d="M5 20.5C4.4 15.8 7.6 12 12 12C15.8 12 18.6 14.6 19 20.5"/>
+    <path d="M12 12C13.8 9.6 16.4 9.2 17.6 10.6C18.4 11.6 18 13.2 16.4 13.6C15 14 13.8 13 14.2 12"/>
+    <path d="M8 20.5C8 17.6 9.8 15.6 12.2 15.6C14 15.6 15.2 16.8 15.4 18.4"/>`,
+  // Shells: a ribbed fan shell on the ground line and a small spiral one beside it.
+  shells: `
+    <path d="M2.5 20.5H21.5"/>
+    <path ${ACCENT} d="M4 20.5C3.6 15 6.6 11.5 10 11.5S16.4 15 16 20.5Z"/>
+    <path d="M4 20.5C3.6 15 6.6 11.5 10 11.5S16.4 15 16 20.5"/>
+    <path d="M10 20.5V12M7 20.5L7.6 13.2M13 20.5L12.4 13.2"/>
+    <path d="M17 20.5C16.6 18.4 17.6 16.6 19.2 16.6C20.6 16.6 21.4 17.8 21 19C20.6 20 19.4 20 19.2 19.2C19 18.6 19.6 18.2 20 18.6"/>`,
+  // Hermit crab: a spiral shell on the ground line, legs and one big claw reaching out of its mouth.
+  hermitcrab: `
+    <path d="M2.5 20.5H21.5"/>
+    <path ${ACCENT} d="M4 18C3.6 13.6 6.4 10 10.4 10C13.8 10 15.6 12.4 15.4 15.2C15.2 17.4 13.6 18.6 11.8 18.4Z"/>
+    <path d="M4 18C3.6 13.6 6.4 10 10.4 10C13.8 10 15.6 12.4 15.4 15.2C15.2 17.4 13.6 18.6 11.8 18.4L4 18"/>
+    <path d="M10.4 10C11.6 11.2 11.8 13 10.6 14C9.6 14.8 8.2 14.2 8.4 13"/>
+    <path d="M14.6 17.4L16.6 20.5M13.4 18.2L14.4 20.5"/>
+    <path d="M15.2 15.4C17 14.6 18.8 14.8 20 15.8C20.6 16.4 20.2 17.4 19.2 17.2C18.4 17 17.8 16.6 17.2 16.8"/>`,
+  // Edible crab: a wide shell, two claws raised, legs splayed to the sides.
+  ediblecrab: `
+    <path ${ACCENT} d="M6 14.5C6 11.8 8.8 10.5 12 10.5S18 11.8 18 14.5C18 16.6 15.4 17.8 12 17.8S6 16.6 6 14.5Z"/>
+    <path d="M6 14.5C6 11.8 8.8 10.5 12 10.5S18 11.8 18 14.5C18 16.6 15.4 17.8 12 17.8S6 16.6 6 14.5Z"/>
+    <path d="M8.6 11.2L8 9.2C7.2 7.6 5.6 6.8 4.4 7.6C4 8.8 5 10 6.4 9.8M15.4 11.2L16 9.2C16.8 7.6 18.4 6.8 19.6 7.6C20 8.8 19 10 17.6 9.8"/>
+    <path d="M6.4 15.4L3 16.4L2.4 18.6M6.8 16.6L4.2 19M17.6 15.4L21 16.4L21.6 18.6M17.2 16.6L19.8 19"/>
+    <path d="M10.4 13.4V13.6M13.6 13.4V13.6"/>`,
+  // Lugworm cast: a coil of sand on the ground line, and the small dip of the burrow's other end.
+  lugworm: `
+    <path d="M2.5 20.5H21.5"/>
+    <path ${ACCENT} d="M5 20.5C5 17.4 7.4 16 10 16S15 17.4 15 20.5Z"/>
+    <path d="M5 20.5C5 18 7 16.6 9.6 16.6C12.2 16.6 13.8 18 13.8 19.6C13.8 18.4 12.4 17.6 10.6 17.6C8.6 17.6 7.6 18.6 7.6 19.6C7.6 18.8 8.8 18.4 9.8 18.6C11.2 18.8 11.8 19.6 11.6 20.5"/>
+    <path d="M10 16.6C9.8 15.4 10.2 14.4 11 13.8"/>
+    <path d="M17 20.5C17.6 19.6 18.8 19.4 19.6 20.5"/>`,
   // Stone, a Sculpt mode (docs/future/10): a rounded boulder resting on the ground, a smaller one against it, and a
   // short drop line above: set a stone here.
   stone: `

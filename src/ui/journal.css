@@ -190,6 +190,13 @@
 .ebb-jlist__text b { font-weight: 800; }
 .ebb-jlist__text .ebb-journal__voice { font-size: calc(17px * var(--text-scale, 1)); color: var(--jr-soft); line-height: 1.35; }
 .ebb-jlist__row.is-pencil b, .ebb-jlist__row.is-pencil .ebb-journal__voice { color: var(--jr-pencil); }
+/* Small lives (docs/future/11): a heading after the living things, a row of marks, then the finds found. */
+.ebb-jlist__group { margin: 18px 0 6px; font-size: calc(17px * var(--text-scale, 1)); font-weight: 800; }
+.ebb-jlist__hint { margin: 0 0 8px; font-size: calc(17px * var(--text-scale, 1)); color: var(--jr-pencil); }
+.ebb-jlist__marks { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 0 0 8px; }
+.ebb-jlist__marks .ebb-journal__voice { font-size: calc(16px * var(--text-scale, 1)); color: var(--jr-soft); margin-right: 4px; }
+.ebb-jlist__mark { display: inline-flex; width: 26px; height: 26px; }
+.ebb-jlist__mark .icon { width: 100%; height: 100%; }
 .ebb-jlist__row.is-pencil .ebb-jlist__icon { background: transparent; color: var(--jr-pencil); }
 
 /* a species page */
@@ -208,6 +215,8 @@
 .ebb-jpage__list li::before { content: ''; width: 9px; height: 9px; margin-top: 8px; border-radius: 50%; background: var(--jr-moss); }
 .ebb-jpage__list li.is-pencil { color: var(--jr-pencil); }
 .ebb-jpage__list li.is-pencil::before { background: transparent; border: 1.5px dashed var(--jr-pencil); width: 8px; height: 8px; }
+/* A collection's rarity beside its name (the Shells page). */
+.ebb-jpage__rarity { font-size: 15px; color: var(--jr-pencil); margin-left: 4px; }
 .ebb-jpage__seasons { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
 /* Each season box wears a soft wash of its season, with its drawn mark; an unseen season stays pencil. */
 .ebb-jpage__season {

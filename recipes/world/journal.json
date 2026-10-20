@@ -3,6 +3,9 @@
   "version": 1,
   "note": "The field journal (docs 13, 15): the words it writes and the numbers that shape them. order: the living things with pages, in page order. Each species: name and icon (src/ui/icons), riddle (shown before it has been seen), amount ([at least this many plants, words] steps; a cover plant (kind cover: grass, rushes) uses its share of the dry ground instead, or with amountBy area the square meters it covers), place and compass (where words: compass false skips the side of the island), none (after it has gone), clause words (flowering, dormant, spreading, receding), stages (what tapping one says, by growth stage: seed, sprout, young, mature, flowering, dormant), seasons (what each season box says: grow per season, flower, dormant), likes (lines learned when one of the learn triggers happens: seen, spread, flower, lost:drown, lost:seed, refused:<need>, grass:flooded), gives (a pencil line until the when trigger, then the ink line), notes (the lines the journal writes). trend: a species is spreading when it has gained at least max(upMin, upShare x then) plants over trend hours, receding when it has lost at least max(downMin, downShare x then). where: spreadOut is the mean distance from the plants' middle, as a share of the island's radius, past which they are all around the island; centerShare is how close to the island's middle counts as the middle. notesKept: notes the journal keeps; pageNotes: notes on a species page. islandNote: how long a note stays on the island (showS), the gap between two (gapS) and how many may wait (queue). identify: how near a tap must be to a plant (radiusM), how long the card stays (showS), and the size of the breathing ring around what was tapped (ringM for a full-grown plant, smaller for young ones; grassRingM on grass; its timing is in recipes/world/growth.json marks). arrivedHours: plants seen within this many hours of the journal starting were here when you arrived. J1.5: each species also has plural (for the story lines), field (field notes: natural history lines learned like likes, by triggers that include dormant, woke and moment:<id>) and fieldHint (the pencil line while some are still to learn). story: the lines of 'your island's story' ({Plural}, {plural} and {date} are filled in; peak shows when the count has fallen under peakShare of its best). moments: four frames per page by kind (plant, cover for grass and rushes, ground in journal-island.json), each filled the first time you tap that thing at that moment: flower (in flower), summer, winter, rain (rain at least rainAt), mist (at least mistAt), dawn and dusk (hours of the day, inclusive start, exclusive end), frost (a winter dawn); note is the line written. showMe: how long (showS) the ring and card stay after a page's Show me rings the example nearest the middle of your view (the camera does not move). S6a, animals: a creature (kind creature: frogs) is known only once you find one yourself (tap it, or watch it from close by; recipes/species/frog.json find), never just because it is on the island; until then its page shows the riddle, or the latest of its hints whose journal flag is set (frogs:right when the pond is right for them, frogs:sign after the first sign). Its notes come in two voices: the unseen ones speak of something (a sign, rings on the water), never naming it; the others once it is known. A swarm (kind swarm: midges) is known by itself, like a plant, at the first dusk (seenAt.hours) that at least seenAt.m2 square meters hold seenAt.share of a full cloud; its amount is in those square meters. seenAt.drawn: whether the island draws the swarm yet; until it does (S6b), midges stay a pencil ? and nothing names them, because the journal only tells what you could see. card: what a tap on one says. foundLine: its story's first line. The animals' moments are moments.creature.",
   "order": ["grass", "rushes", "reeds", "lilies", "iris", "thrift", "frogs", "midges"],
+  "findsNote": "Finds (docs/future/11): small shore lives (kind find) found by tapping them, kept apart from order in findOrder. They show under Small lives at the end of Living things, once found and never before (the journal never lists what is missing), with smallLives.marks: one drawn mark for each you have found. card is what a tap names it, cardLine the line under it; place is its page's status once found.",
+  "findOrder": ["anemone", "periwinkle", "lugworm", "hermitcrab", "ediblecrab", "shells"],
+  "smallLives": { "title": "Small lives", "none": "Look closely along the shore, at low tide, in the rock pools and on the wet sand.", "marks": "Found so far" },
   "notesKept": 60,
   "pageNotes": 5,
   "arrivedHours": 2,
@@ -298,6 +301,163 @@
         "seed": "A thrift seed gave up away from the salt.",
         "gone": "The last of the sea thrift is gone."
       }
+    },
+    "anemone": {
+      "name": "Beadlet anemone", "icon": "anemone", "kind": "find", "plural": "beadlet anemones", "card": "Beadlet anemone",
+      "cardLine": "It folds its tentacles away when the water leaves, or when you lean close.",
+      "place": "Lives in the rock pools, open while the water covers it.",
+      "riddle": "Something small and red might live in a pool the sea leaves behind.",
+      "foundLine": "You found the first beadlet anemone on {date}.",
+      "field": [
+        { "text": "Under water it opens a ring of soft red tentacles to catch what drifts by.", "learn": ["seen"] },
+        { "text": "Out of the water it pulls them in and becomes a shiny red blob, like a wine gum.", "learn": ["seen"] },
+        { "text": "Blue beads ring its rim; it uses them to push away a neighbour that comes too close.", "learn": ["moment:dusk", "moment:dawn"] },
+        { "text": "It can hold on for weeks in a pool, waiting for the tide to bring food.", "learn": ["moment:winter"] }
+      ],
+      "fieldHint": "Watch the pools at other tides and times to learn more.",
+      "sketch": { "scale": "about 3 cm", "labels": {
+        "tentacles": { "text": ["tentacles open", "under water"], "learn": ["seen"] },
+        "beads": { "text": ["blue beads", "round the rim"], "learn": ["moment:dusk", "moment:dawn"] },
+        "shut": { "text": ["shut at", "low tide"], "learn": ["seen"] } } },
+      "likes": [
+        { "text": "A rock pool that keeps its water at low tide", "learn": ["seen"] }
+      ],
+      "gives": [
+        { "pencil": "Something that hunts the shallows might watch these pools one day.", "ink": "Pools worth a heron's patience.", "when": "herons:seen" }
+      ],
+      "notes": { "found": "You found a beadlet anemone in a rock pool." }
+    },
+    "periwinkle": {
+      "name": "Periwinkle", "icon": "periwinkle", "kind": "find", "plural": "periwinkles", "card": "Periwinkle",
+      "cardLine": "It grazes the weed so slowly you only see it move from one tide to the next.",
+      "place": "Lives in small groups on the weed-covered rocks of the tide band.",
+      "riddle": "Something small might graze the weed on the rocks the tide covers.",
+      "foundLine": "You found the first periwinkles on {date}.",
+      "field": [
+        { "text": "It scrapes the thin film of algae from the rock with a tongue like a file.", "learn": ["seen"] },
+        { "text": "It seals its shell with a little door when the tide leaves, to keep from drying out.", "learn": ["seen"] },
+        { "text": "Groups shift a little each tide, never far from where they were.", "learn": ["moment:rain", "moment:mist"] }
+      ],
+      "fieldHint": "Come back after a few tides to learn more.",
+      "sketch": { "scale": "about 2 cm", "labels": {
+        "shell": { "text": ["spiral shell"], "learn": ["seen"] },
+        "door": { "text": ["a door to", "seal it shut"], "learn": ["seen"] },
+        "weed": { "text": ["grazing", "the weed"], "learn": ["moment:rain", "moment:mist"] } } },
+      "likes": [
+        { "text": "Rocks with wrack on them, between the tides", "learn": ["seen"] }
+      ],
+      "gives": [
+        { "pencil": "Something with a long bill might come for these one day.", "ink": "Food for shorebirds.", "when": "oystercatchers:seen" }
+      ],
+      "notes": { "found": "You found periwinkles grazing the wrack." }
+    },
+    "lugworm": {
+      "name": "Lugworm casts", "icon": "lugworm", "kind": "find", "plural": "lugworm casts", "card": "Lugworm cast",
+      "cardLine": "A coil of sand the lugworm left as the tide went out. The worm itself stays below.",
+      "place": "Coils of sand on the wet flats, laid fresh after each tide.",
+      "riddle": "Something might leave its mark on wet sand each time the tide goes out.",
+      "foundLine": "You found the first lugworm casts on {date}.",
+      "field": [
+        { "text": "The worm lives in a U-shaped burrow and swallows sand, keeping what it can eat.", "learn": ["seen"] },
+        { "text": "Each cast is the sand it has finished with, pushed up in a neat coil.", "learn": ["seen"] },
+        { "text": "Beside each cast there is often a little dip, where the burrow's other end draws sand down.", "learn": ["moment:dawn", "moment:dusk"] }
+      ],
+      "fieldHint": "Look at the flats after another tide to learn more.",
+      "sketch": { "scale": "about 5 cm", "labels": {
+        "cast": { "text": ["coil of", "spent sand"], "learn": ["seen"] },
+        "burrow": { "text": ["U-shaped", "burrow"], "learn": ["seen"] },
+        "dip": { "text": ["a little dip", "at the other end"], "learn": ["moment:dawn", "moment:dusk"] } } },
+      "likes": [
+        { "text": "Wet sand or mud the tide covers and leaves", "learn": ["seen"] }
+      ],
+      "gives": [
+        { "pencil": "Something with a long bill might probe these flats one day.", "ink": "Food for curlews and gulls.", "when": "curlews:seen" }
+      ],
+      "notes": { "found": "You found lugworm casts on the wet sand." }
+    },
+    "hermitcrab": {
+      "name": "Hermit crab", "icon": "hermitcrab", "kind": "find", "plural": "hermit crabs", "card": "Hermit crab",
+      "cardLine": "It carries a borrowed shell and picks its way about the pool floor.",
+      "place": "Lives in the rock pools, busy while the water covers it.",
+      "riddle": "Something might wander a rock pool carrying a house that is not its own.",
+      "foundLine": "You found the first hermit crab on {date}.",
+      "field": [
+        { "text": "Its soft tail curls into an empty snail shell, which it carries everywhere.", "learn": ["seen"] },
+        { "text": "When you come close it stops still and waits, ready to pull back inside.", "learn": ["seen"] },
+        { "text": "As it grows it looks for a bigger shell, and may try several before it moves in.", "learn": ["moment:dawn", "moment:dusk"] }
+      ],
+      "fieldHint": "Watch a pool quietly, at other times, to learn more.",
+      "sketch": { "scale": "about 3 cm", "labels": {
+        "shell": { "text": ["a borrowed", "snail shell"], "learn": ["seen"] },
+        "claw": { "text": ["one claw bigger,", "to close the door"], "learn": ["seen"] },
+        "legs": { "text": ["walking legs", "out front"], "learn": ["moment:dawn", "moment:dusk"] } } },
+      "likes": [
+        { "text": "A rock pool with empty shells about", "learn": ["seen"] }
+      ],
+      "gives": [
+        { "pencil": "Something that hunts the shallows might watch these pools one day.", "ink": "Pools worth a heron's patience.", "when": "herons:seen" }
+      ],
+      "notes": { "found": "You found a hermit crab picking about a rock pool." }
+    },
+    "ediblecrab": {
+      "name": "Edible crab", "icon": "ediblecrab", "kind": "find", "plural": "edible crabs", "card": "Young edible crab",
+      "cardLine": "A young one, hiding in the weed. It runs sideways when you come close.",
+      "place": "Hides in the wrack and the rock pools, under weed and in cracks.",
+      "riddle": "Something with claws might hide under the weed and run sideways when you come near.",
+      "foundLine": "You found the first young edible crab on {date}.",
+      "field": [
+        { "text": "Its shell is red-brown with a crimped edge, like the crust of a pie.", "learn": ["seen"] },
+        { "text": "It runs sideways, away from you, then settles again once you go.", "learn": ["seen"] },
+        { "text": "Its claws are tipped with black, as if dipped in ink.", "learn": ["moment:dawn", "moment:dusk"] },
+        { "text": "The young ones grow up in the shallows, then move to deeper water.", "learn": ["moment:winter"] }
+      ],
+      "fieldHint": "Look again under the weed at other tides to learn more.",
+      "sketch": { "scale": "about 4 cm", "labels": {
+        "shell": { "text": ["a crimped", "edge"], "learn": ["seen"] },
+        "claws": { "text": ["black-tipped", "claws"], "learn": ["moment:dawn", "moment:dusk"] },
+        "legs": { "text": ["runs", "sideways"], "learn": ["seen"] } } },
+      "likes": [
+        { "text": "Wrack to hide under, near a pool", "learn": ["seen"] }
+      ],
+      "gives": [
+        { "pencil": "Something that hunts the shallows might come for these one day.", "ink": "Food for gulls and herons.", "when": "herons:seen" }
+      ],
+      "notes": { "found": "You found a young edible crab hiding in the weed." }
+    },
+    "shells": {
+      "name": "Shells", "icon": "shells", "kind": "find", "plural": "shells", "card": "A shell",
+      "cardLine": "Washed up where the last high tide reached.",
+      "place": "Washed up along the strandline, where each high tide leaves them.",
+      "riddle": "Something might wash up along the line the high tide leaves.",
+      "foundLine": "You found the first shell on {date}.",
+      "collection": [
+        { "id": "periwinkle", "name": "Periwinkle shell", "rarity": "common", "cardLine": "An empty periwinkle shell, rolled pale by the sea.", "line": "Empty and rolled pale. Common after any tide.", "hint": "Something small and common, along any strandline.", "found": "You found an empty periwinkle shell on the strandline." },
+        { "id": "turret", "name": "Turret shell", "rarity": "common", "cardLine": "A long, tight spiral, like a tiny tower.", "line": "A long, tight spiral, like a tiny tower.", "hint": "Something long and spiralled, along any strandline.", "found": "You found a turret shell on the strandline." },
+        { "id": "cockle", "name": "Cockle fossil", "rarity": "uncommon", "cardLine": "Ribbed and heavy: a cockle turned to stone long ago.", "line": "Ribbed and heavy, turned to stone long ago and worn out of a cliff.", "hint": "Something ribbed and heavy turns up now and then.", "found": "You found a fossil cockle on the strandline." },
+        { "id": "murex", "name": "Murex shell", "rarity": "rare", "cardLine": "Spiny and frilled. Only the biggest tides bring these in.", "line": "Spiny and frilled. Only the biggest tides, near new and full moon, bring these in.", "hint": "Something spiny comes in with the biggest tides.", "found": "You found a murex shell. The spring tide brought it in." },
+        { "id": "nautilus", "name": "Nautilus shell", "rarity": "very rare", "cardLine": "Chambered and striped, a long way from home.", "line": "Chambered and striped. It floats, and can drift a very long way before a big tide sets it down.", "hint": "Something chambered might drift in, once in a long while, on the highest tides.", "found": "You found a nautilus shell. It has come a very long way." }
+      ],
+      "field": [
+        { "text": "Each high tide leaves its own line, and the next higher tide sweeps it up.", "learn": ["seen"] },
+        { "text": "The rarer shells come in with the biggest tides, near new and full moon.", "learn": ["item:murex", "item:nautilus"] }
+      ],
+      "fieldHint": "Walk the strandline after other tides to learn more.",
+      "sketch": { "scale": "about 4 cm", "labels": {
+        "spiral": { "text": ["a tight", "spiral"], "learn": ["item:turret"] },
+        "ribs": { "text": ["ribs, turned", "to stone"], "learn": ["item:cockle"] },
+        "spines": { "text": ["frilled", "spines"], "learn": ["item:murex"] },
+        "show-periwinkle": { "text": [], "learn": ["item:periwinkle"] },
+        "show-turret": { "text": [], "learn": ["item:turret"] },
+        "show-cockle": { "text": [], "learn": ["item:cockle"] },
+        "show-murex": { "text": [], "learn": ["item:murex"] },
+        "show-nautilus": { "text": [], "learn": ["item:nautilus"] } } },
+      "likes": [
+        { "text": "A beach the high tide reaches", "learn": ["seen"] }
+      ],
+      "gives": [
+        { "pencil": "A hermit crab might move into one one day.", "ink": "A bigger house for a growing hermit crab.", "when": "hermitcrab:seen" }
+      ],
+      "notes": { "found": "You found a shell on the strandline." }
     },
     "frogs": {
       "name": "Common frogs", "icon": "frog", "kind": "creature", "plural": "frogs", "card": "Common frog",

@@ -137,7 +137,7 @@ export function mountJournal(parent, live, buttonParent = parent) {
     backBtn.hidden = !paged;
     const html = ui.view === 'notes' ? notesView() : ui.view === 'almanac' ? almanacView()
       : ui.view === 'web' ? webView(live.describeWeb(), live.web, webFocus)
-      : paged ? pageView(/** @type {string} */ (ui.page)) : ui.view === 'ground' ? listView(island.groundOrder) : listView(words.order);
+      : paged ? pageView(/** @type {string} */ (ui.page)) : ui.view === 'ground' ? listView(island.groundOrder) : listView(words.order) + smallLivesView();
     const key = `${ui.view}|${ui.page}`;
     if (html === body.dataset.html) return;
     body.innerHTML = html;
@@ -171,6 +171,22 @@ export function mountJournal(parent, live, buttonParent = parent) {
       </button></li>`;
     });
     return `<ul class="ebb-jlist">${rows.join('')}</ul>`;
+  }
+
+  /**
+   * Small lives (docs/future/11): the finds you have found, after the living things, with a mark
+   * for each. Never the ones still to find: the journal does not list what is missing, so until the
+   * first a single pencil line says where to look.
+   */
+  function smallLivesView() {
+    const S = words.smallLives;
+    const ids = words.findOrder ?? [];
+    if (!S || !ids.length) return '';
+    const found = ids.filter((id) => live.describe(id).known);
+    const head = `<h4 class="ebb-jlist__group">${esc(S.title)}</h4>`;
+    if (!found.length) return `${head}<p class="ebb-journal__voice ebb-jlist__hint">${esc(S.none)}</p>`;
+    const marks = `<p class="ebb-jlist__marks"><span class="ebb-journal__voice">${esc(S.marks)}</span>${found.map((id) => `<span class="ebb-jlist__mark" aria-hidden="true">${iconSvg(live.describe(id).icon)}</span>`).join('')}</p>`;
+    return head + marks + listView(found);
   }
 
   /** A list of lines, inked or in pencil. @param {{ text: string, known: boolean }[]} lines @param {string} [hint] pencil line when some are unknown */
@@ -221,6 +237,9 @@ export function mountJournal(parent, live, buttonParent = parent) {
       ${art}
       <p class="ebb-jpage__status ebb-journal__voice">${esc(d.status)}</p>
       ${d.named?.length ? section('Named', `<ul class="ebb-jpage__list">${d.named.map((/** @type {string} */ n) => `<li>${esc(n)}</li>`).join('')}</ul>`) : ''}
+      ${d.collection?.length ? section('Found so far', `<ul class="ebb-jpage__list ebb-jpage__collection">${d.collection.map((/** @type {any} */ c) => c.found
+        ? `<li><span><b>${esc(c.name)}</b> <small class="ebb-jpage__rarity">${esc(c.rarity)}</small><br><span class="ebb-journal__voice">${esc(c.text)}</span></span></li>`
+        : `<li class="is-pencil"><span class="ebb-journal__voice">${esc(c.text)}</span></li>`).join('')}</ul>`) : ''}
       ${middle}
       ${section('Field notes', `<ul class="ebb-jpage__list ebb-jpage__field">${lines(d.field, d.fieldHint)}</ul>`)}
       ${story}

@@ -39,6 +39,7 @@ import { addStoneTests } from './unit-tests-stone.js';
 import { addRevealTests } from './unit-tests-reveal.js';
 import { addQualityTests } from './unit-tests-quality.js';
 import { addTrustTests } from './unit-tests-trust.js';
+import { addFindsTests } from './unit-tests-finds.js';
 
 /** @type {{group: string, name: string, fn: () => any}[]} */
 const tests = [];
@@ -1445,6 +1446,7 @@ addRevealTests(test, assert, eq);
 
 addQualityTests(test, assert, eq);
 addTrustTests(test, assert, eq);
+addFindsTests(test, assert, eq);
 
 // ---- runner and rendering ----
 

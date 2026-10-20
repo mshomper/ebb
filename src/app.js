@@ -39,6 +39,7 @@ import { createCreaturePass } from './render/passes/creatures.js';
 import { bakeBody } from './world/creatures/body-bake.js';
 import { previewSpots } from './world/creatures/preview-spots.js';
 import { createCreatures } from './world/creatures/index.js';
+import { createFinds } from './world/finds/index.js';
 import { createPresence } from './world/creatures/presence.js';
 import { cleanName, nameFrog } from './world/creatures/trust.js';
 import { lushLook } from './world/growth/lush.js';
@@ -277,6 +278,11 @@ export async function startApp(canvas, hooks = {}) {
     wind: () => ({ strength: weatherAt(world.state?.weather, clock.display(), seasonsRecipe).wind, dir: world.state?.weather?.today?.windDir ?? 0 }),
     rain: (hoursAgo) => weatherAt(world.state?.weather, clock.display() - hoursAgo * clock.SECONDS_PER_HOUR, seasonsRecipe).rain });
   sim.addSystem(midges);
+  // Finds (docs/future/11): anemones in rock pools, periwinkles on the wrack, lugworm casts on the
+  // sand, where the shore zones say, near the view; a tap finds them for the journal.
+  const finds = createFinds({ water, shore: ww.shore, terrain, camera, recipe: await loadRecipe('species/finds'), seed: subSeed(seed, 'finds'), tide: waterRecipe.tide });
+  sim.addSystem(finds);
+  terrainPass.setCasts(finds.casts(), finds.castShape);
   // `?frogscale` (ahead of S6): real-size frogs from the species recipe around the pond, and a
   // camera that may come close, to judge creature size on the island (src/ui/frog-scale.js).
   const frogScale = params.has('frogscale') ? await createFrogScale() : null;
@@ -321,6 +327,7 @@ export async function startApp(canvas, hooks = {}) {
     rushPass,
     floraPass,
     creatures.pass,
+    finds.pass,
     ...(frogScale ? [frogScale.pass] : []),
     waterPass,
     midges.pass,
@@ -656,6 +663,8 @@ export async function startApp(canvas, hooks = {}) {
     updateRing();
     // Plant tool rings, and a breathing ring round whatever the journal's tap card names.
     terrainPass.setMarks(plantTool.marks(now, tools().tool === 'plant', getStore('identify'), [...(getStore('reveal')?.rings?.(now) ?? []), ...creatures.foodRings()]));
+    // Lugworm casts are drawn into the sand by the terrain pass.
+    terrainPass.setCasts(finds.casts());
     updatePour();
     if (queuedHistory && !terrain.isBusy()) runHistory(queuedHistory);
     // Ground detail waits for a few calm frames so the first picture is as quick as before (docs/22).
@@ -807,6 +816,8 @@ export async function startApp(canvas, hooks = {}) {
     frogScale,
     /** The live frogs (the journal asks it what a tap landed on). */
     creatures,
+    /** The finds near the view (the journal asks it what a tap landed on). */
+    finds,
     /** Every live animal system's hooks for the reveal on return (src/ui/reveal.js). */
     animals: [creatures.reveal, midges.reveal],
     /** The live midge swarms (tools). */

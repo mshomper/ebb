@@ -11,7 +11,7 @@ import { strandLines } from '../../world/water/strandline.js';
 
 /** @typedef {import('../frame-graph.js').PassContext} PassContext */
 
-const DRAW_BYTES = 1008;  // 384 of look, 16 marker rings (floats 96..159), the drowned meadow (160..167), wet-to-dry grass (168..175), the shore (176..195), the strandline and kelp (196..235), wrack fronds (236..251)
+const DRAW_BYTES = 1296;  // 384 of look, 16 marker rings (floats 96..159), the drowned meadow (160..167), wet-to-dry grass (168..175), the shore (176..195), the strandline and kelp (196..235), wrack fronds (236..251), lugworm casts (252..323)
 const GROUND_BYTES = 336;
 const DEG = Math.PI / 180;
 /** @type {Record<string, number>} GroundDetail.tiling.x in lib-ground.wgsl */
@@ -200,6 +200,19 @@ export function createTerrainPass(opts) {
      * the list ending at the first opacity of 0. @param {Float32Array} marks 64 floats
      */
     setMarks(marks) { f.set(marks.subarray(0, 64), 96); },
+
+    /**
+     * Lugworm casts near the view (world/finds/index.js): up to 16 of (x, z, size, yaw), the list
+     * ending at the first size of 0, and their shape (finds.json lugworm.cast) once.
+     * @param {Float32Array} casts 64 floats @param {any} [shape]
+     */
+    setCasts(casts, shape) {
+      f.set(casts.subarray(0, 64), 252);
+      if (shape) {
+        f[316] = shape.radiusM; f[317] = shape.tubeM; f[318] = shape.turns; f[319] = shape.riseM;
+        f.set(shape.albedo, 320); f[323] = shape.drawM;
+      }
+    },
 
     setTier(t) {
       lodDistances = t.lodDistances ?? recipe.render.lodDistances;
