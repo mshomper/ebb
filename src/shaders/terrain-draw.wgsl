@@ -211,8 +211,9 @@ fn fsLand(in: VsOut) -> FsOut {
   let soilShare = mix(wf.w, gd.weights.w, gd.amount);
   let lclumps = valueNoise2(xz * td.shore2.x + vec2f(7.1, 2.9), td.seed + 33u) * 0.55
               + valueNoise2(xz * td.shore2.y + vec2f(3.9, 6.7), td.seed + 34u) * 0.45;
-  // Lichen is a crust with crisp edges, thickest low in the splash zone, not a soft stain.
-  let lichen = smoothstep(0.42, 0.5, lclumps + (shore.b - 0.5) * 0.5) * shore.b * rockShare;
+  // Lichen is a crust in patches with crisp edges, thick low in the splash zone and breaking up into
+  // fewer, smaller patches as its cover tapers upward (shore-live.js), not a band or a soft stain.
+  let lichen = smoothstep(0.5, 0.57, lclumps + (shore.b - 0.7) * 0.6) * min(1.0, shore.b * 1.5) * rockShare;
   let mud = shore.a * soilShare;
   albedo *= mix(vec3f(1.0), td.shore1.yzw, lichen) * mix(vec3f(1.0), td.mud.rgb, mud);
   // Wet to dry (lush.js): the grass layer takes the blades' tint, deeper by the water, paler and

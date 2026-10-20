@@ -9,7 +9,7 @@ import { makeTexture } from '../../core/gpu.js';
 import { on } from '../../core/events.js';
 import { get as getStore } from '../../core/store.js';
 import { WATER_CELLS } from './grid.js';
-import { shoreZones } from './shore.js';
+import { shoreZones, shoreHeightM } from './shore.js';
 
 const CHANNELS = /** @type {const} */ (['wrack', 'ripples', 'lichen', 'mud']);
 
@@ -26,6 +26,8 @@ export function createShoreLive(device, opts) {
   });
   // Each zone's cover as four bytes, by zone value (0 is no zone).
   const covers = [[0, 0, 0, 0], ...recipe.zones.map((/** @type {any} */ z) => CHANNELS.map((c) => Math.round(255 * Math.min(1, Math.max(0, z.cover?.[c] ?? 0)))))];
+  /** How much each zone's cover thins from its bottom to its top (0 none), by zone value. */
+  const tapers = [0, ...recipe.zones.map((/** @type {any} */ z) => z.taper ?? 0)];
   /** @type {any} */ let summary = null;
   let dirty = false;
   /** @type {ReturnType<typeof shoreZones> | null} */ let last = null;
@@ -37,7 +39,18 @@ export function createShoreLive(device, opts) {
     last = shoreZones({ summary, material, recipe, amplitudeM });
     const { rect, zone } = last;
     const bytes = new Uint8Array(rect.w * rect.h * 4);
-    for (let k = 0; k < zone.length; k++) if (zone[k]) bytes.set(covers[zone[k]], k * 4);
+    for (let k = 0; k < zone.length; k++) {
+      const z = zone[k];
+      if (!z) continue;
+      bytes.set(covers[z], k * 4);
+      // A tapering zone thins out toward its top, so it has no hard upper edge.
+      const taper = tapers[z];
+      if (!taper) continue;
+      const Z = recipe.zones[z - 1];
+      const t = (shoreHeightM(summary.shore[k], summary.shoreRange) - Z.fromA0 * amplitudeM) / ((Z.toA0 - Z.fromA0) * amplitudeM);
+      const f = 1 - taper * Math.min(1, Math.max(0, t));
+      for (let c = 0; c < 4; c++) bytes[k * 4 + c] = Math.round(bytes[k * 4 + c] * f);
+    }
     device.queue.writeTexture({ texture, origin: [rect.x, rect.y] }, bytes, { bytesPerRow: rect.w * 4, rowsPerImage: rect.h }, [rect.w, rect.h]);
   }
 
