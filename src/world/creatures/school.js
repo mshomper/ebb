@@ -188,4 +188,15 @@ export function createSchool(o) {
   };
 }
 
+/**
+ * The tail's bone moves for one fish: the tail swings side to side on its beat, the middle of the
+ * body a little with it. @param {{ name: string, parent: number }[]} rig @param {{ phase: number }} f
+ * @param {any} M @param {number[]} q the root's turn (bank and pitch)
+ * @param {(a: number[], angle: number) => number[]} axisAngle
+ */
+export function poseSchool(rig, f, M, q, axisAngle) {
+  const beat = Math.sin(f.phase) * M.tailSwing;
+  return rig.map((b) => (b.parent < 0 ? { q } : b.name === 'tail' ? { q: axisAngle([0, 1, 0], beat) } : b.name === 'mid' ? { q: axisAngle([0, 1, 0], beat * 0.45) } : null));
+}
+
 /** @typedef {ReturnType<typeof createSchool>} School */
