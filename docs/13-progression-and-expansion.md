@@ -64,7 +64,7 @@ Target player: 20 to 40 minutes most evenings, with the game left closed overnig
 | Tier 4 milestone, outer skerry | 55 to 80 | about a month | fish populations and alder growth |
 | Journal year complete | 80 to 120 | one to two months | fireflies in summer, cranes at a season turn |
 
-Seasons are 14 game days (F01), so the year page can complete no sooner than one 56-day year, and anything that waits for a season waits twice as long in game days as it did. The frog rows' game-day timings are reviewed in F01b.
+Seasons are 14 game days (F01), so the year page can complete no sooner than one 56-day year, and anything that waits for a season waits twice as long in game days as it did. The frog timings were reviewed in F01b: their hour-based steps (scout, settle, leave, a join about once a day) are kept, so frogs still arrive within the first evenings; their winter sleep is set by season position, so it keeps its share of the year (about 10 of 56 days).
 
 ```
 gifts

@@ -2,7 +2,7 @@
 
 > ebb's authored arc (fifteen species, five land pieces and the year page) runs out much sooner than the game wants a player to stay. Matt imagines people living with one island for many years, and the first several days alone go to sculpting the island and getting ready for frogs. This doc records the clock changes Matt decided on October 19, 2026 to slow the island down: longer seasons, a shorter catch-up cap and slower growth while away, with the length of a game day unchanged. It lists every repo doc and file those changes reach.
 
-**Status:** Decided. F01a (clock, catch-up cap, away rate, moon) is built on branch `m1-f01a-clock`, and docs 02, 03, 06, 07, 10, 13, 18, 19, 24 and the README are updated to match. F01b (the save calendar migration for old saves, and frog timings in game days, doc 12) follows after the frog feeding work merges.
+**Status:** Decided. F01a (clock, catch-up cap, away rate, moon) is built on branch `m1-f01a-clock`, and docs 02, 03, 06, 07, 10, 13, 18, 19, 24 and the README are updated to match. F01b, on the same branch: old saves move to the new calendar (save format 2: same year, season and hour, day d becomes 2d; doc 18), and the frog timings were reviewed (hour-based steps kept; winter sleep keeps its share of the year; the `?frogs` test link now starts on spring day 7, after the frogs wake).
 
 ## Decided so far
 
@@ -61,7 +61,7 @@ The first keeps more variety in each session; the second keeps the "full moon in
 
 ## What it would change
 
-Applied in F01a, except the doc 12 frog timings and the doc 18 save calendar migration, which follow in F01b.
+Applied in F01a; the doc 18 save calendar migration and the frog timing review (doc 13) followed in F01b.
 
 - **Doc 02 (core loop and idle model):** the season and year lines in Locked decisions; the cap (14 days, 336 ticks) in Locked decisions, the flowchart, the catch-up section, the code sketch (`capHours`), the performance lines and the acceptance check "close for a night, two seasons turned"; the away rate (`awayRate: 1`) becomes the slower value; the open question about overnight absences is answered.
 - **Doc 03 (tech stack):** the module map line "moon cycle 7 game days" if the moon stretches; `catchup-bench.html` described as 336 hours.
