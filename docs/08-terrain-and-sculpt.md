@@ -182,7 +182,7 @@ Events: `terrain:edited {rect}` (each frame of a stroke, deferred), `terrain:str
 ## Open questions
 
 - Should there be a "carve channel" brush that cuts a narrow streambed along a stroke, or is Lower enough? (The Cliff tool's Cut mode covers straight-sided channels from M2.)
-- Should painted rock bring boulders with it automatically, or should boulders be placed on purpose?
+- ~~Should painted rock bring boulders with it automatically, or should boulders be placed on purpose?~~ Placed on purpose (docs/future/10): Sculpt's Stone mode sets a seeded boulder where you tap (`src/world/terrain/boulder.js`, `terrain.stampStone`), a main stone and sometimes one or two smaller ones against it, lifted into the heightfield and painted rock, so it saves with the edited chunk, undoes like a stroke, and is rock at once for moss, lichen and wrack. The size slider sets its width (terrain.json `stone`).
 - When land is raised out of the water, should it start as bare soil or keep the material it had underwater?
 
 ## Depends on / feeds into
