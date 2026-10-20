@@ -6,16 +6,17 @@
 // out only near the view's middle. Anemones live in rock pools, a hollow of rock in the tide band
 // that holds water, and open under water and close at low tide or when you come close; periwinkles
 // cluster on the wrack and drift a little each tide; lugworm casts are laid fresh after each tide on
-// the sand the sea has left. Drawn by a creatures pass of their own, with no rig.
+// the sand the sea has left. Anemones and periwinkles are models (models.js) drawn by a creatures
+// pass of their own, with no rig; casts are drawn into the sand by the terrain shader (lib-casts).
 
 import { hash32 } from '../../core/rng.js';
 import { WATER_CLASS } from '../water/summary.js';
 import { WATER_CELL, waterCellCenter } from '../water/grid.js';
-import { bakeBody } from '../creatures/body-bake.js';
 import { packMesh } from '../creatures/bodies.js';
 import { createCreaturePass } from '../../render/passes/creatures.js';
 import { groundOfCell } from '../water/shore.js';
 import { get as getStore } from '../../core/store.js';
+import { loadFindModel, joinParts } from './models.js';
 
 const KINDS = /** @type {const} */ (['anemone', 'periwinkle', 'lugworm']);
 const ROCK_ZONES = ['kelp', 'wrack', 'channelled'];
@@ -83,7 +84,12 @@ export function createFinds(opts) {
   const { water, shore, terrain, camera, recipe } = opts;
   const pass = createCreaturePass({ recipe });
   const K = recipe.kinds;
-  bakeMeshes(pass, recipe);
+  // The meshes arrive a moment after boot; until then nothing is drawn (casts need none).
+  let ready = false;
+  loadModels(pass, recipe).then(() => { ready = true; }).catch((e) => console.warn('finds: models did not load', e));
+  /** The casts near the view for the terrain pass: (x, z, size, yaw), ending at size 0. */
+  const casts = new Float32Array(64);
+  const castMax = 16;
   /** @type {any} */ let zonesSeen = null;
   /** @type {Record<string, number[]>} */ let cells = { anemone: [], periwinkle: [], lugworm: [] };
   /** @type {any} */ let rect = null;
@@ -141,14 +147,22 @@ export function createFinds(opts) {
               mesh = now > 0.5 ? 'anemone-open' : 'anemone-shut';
               size *= 0.92 + 0.08 * now;
             }
-            all.push({ b: { x: g.x, y: y - 0.002, z: g.z, yaw: g.yaw, size: size * (0.85 + 0.3 * g.r), mesh }, d: d2, sp: kind });
+            all.push({ b: { x: g.x, y: y - 0.002 - (R.model?.buryM ?? 0) * size, z: g.z, yaw: g.yaw, size: size * (0.85 + 0.3 * g.r), mesh }, d: d2, sp: kind });
           }
         }
       }
       all.sort((a, b) => a.d - b.d);
       const list = all.slice(0, recipe.max);
       shown = list.map((e) => ({ sp: e.sp, x: e.b.x, z: e.b.z }));
-      pass.setBeings(list.map((e) => e.b));
+      // Casts are drawn into the sand by the terrain pass; the rest are meshes.
+      casts.fill(0);
+      let c = 0;
+      for (const e of list) {
+        if (e.sp !== 'lugworm' || c >= castMax) continue;
+        casts.set([e.b.x, e.b.z, e.b.size, e.b.yaw], c * 4);
+        c++;
+      }
+      pass.setBeings(ready ? list.filter((e) => e.sp !== 'lugworm').map((e) => e.b) : []);
       if (open.size > 4000) open.clear();
     },
     /**
@@ -166,42 +180,46 @@ export function createFinds(opts) {
     },
     /** What is drawn now (tools and tests). */
     shown: () => shown,
+    /** The casts near the view for the terrain pass (render/passes/terrain.js setCasts). */
+    casts: () => casts,
+    /** The casts' shape for the terrain pass (finds.json lugworm.cast). */
+    castShape: recipe.kinds.lugworm.cast,
     /** The reveal on return has nothing to hide: finds simply are where the ground says. */
     cellSize: WATER_CELL,
   };
 }
 
-/** Bake each kind's meshes once and hand them to the pass. @param {any} pass @param {any} recipe */
-function bakeMeshes(pass, recipe) {
-  const base = recipe.body;
-  /** @param {string} key @param {any[]} prims @param {any} albedo @param {number} cellM */
-  const add = (key, prims, albedo, cellM) => {
-    const mesh = bakeBody({ ...base, prims, albedo: { back: albedo[Object.keys(albedo)[0]], ...albedo } }, cellM);
-    pass.setMesh(key, { data: packMesh(mesh), indices: mesh.indices });
-  };
-  const A = recipe.kinds.anemone;
-  // The open anemone: its column and disc, and a ring of tentacles leaning out from the disc's rim.
-  const T = A.tentacles, rim = A.open[1].r[0] * 0.8, top = A.open[1].c[1];
-  const tentacles = [];
-  for (let i = 0; i < T.count; i++) {
-    const a = (i / T.count) * Math.PI * 2;
-    const ca = Math.cos(a), sa = Math.sin(a);
-    tentacles.push({ type: 'capsule', a: [ca * rim, top, sa * rim], b: [ca * (rim + T.lengthM * T.lean), top + T.lengthM * (1 - T.lean * 0.5), sa * (rim + T.lengthM * T.lean)],
-      r: [T.radiusM, T.radiusM * 0.6], k: 0.0015, region: 'crown' });
+/**
+ * Bring in the modeled anemone and periwinkle once their files arrive (assets/models/finds/). The
+ * anemone's shut pose is the same model with its tentacles drawn down into the column.
+ * @param {any} pass @param {any} recipe
+ */
+async function loadModels(pass, recipe) {
+  const A = recipe.kinds.anemone.model, P = recipe.kinds.periwinkle.model;
+  const [anemone, periwinkle] = await Promise.all([loadFindModel(A.url), loadFindModel(P.url)]);
+  const put = (/** @type {string} */ key, /** @type {any} */ mesh) => pass.setMesh(key, { data: packMesh(mesh), indices: mesh.indices });
+  put('anemone-open', joinParts(anemone, A.heightM, A.rotDeg, (p) => p, A.tint));
+  // Shut: the column sinks and widens a little; the tentacles fold in to a bud at its top.
+  let top = 0;
+  const body = anemone[A.bodyPart];
+  for (let i = 0; i < body.count; i++) top = Math.max(top, body.vertices[i * 9 + 1]);
+  const S = A.shut;
+  put('anemone-shut', joinParts(anemone, A.heightM, A.rotDeg, (p, part) => shutAnemone(p, part, A.bodyPart, top, S), A.tint));
+  put('periwinkle', joinParts(periwinkle, P.heightM, P.rotDeg, (p) => p, P.tint));
+}
+
+/**
+ * The anemone shut: the column sinks and its rim draws in to a dome; the tentacles fold down to a
+ * bud at its top. Pure (tools/finds-models.html shows it too).
+ * @param {number[]} p a vertex, in model units @param {number} part @param {number} bodyPart
+ * @param {number} top the column's top @param {{ sink: number, widen: number, fold: number, close: number }} S
+ */
+export function shutAnemone(p, part, bodyPart, top, S) {
+  if (part === bodyPart) {
+    const t = Math.max(0, Math.min(1, p[1] / top));
+    const r = S.widen * (1 - S.close * t * t);
+    return [p[0] * r, p[1] * S.sink, p[2] * r];
   }
-  add('anemone-open', [...A.open, ...tentacles], A.albedo, 0.0009);
-  add('anemone-shut', A.shut, A.albedo, 0.0009);
-  const P = recipe.kinds.periwinkle;
-  add('periwinkle', P.prims, P.albedo, 0.0007);
-  // A lugworm cast: a coil of sand, a tube winding up on itself.
-  const C = recipe.kinds.lugworm.coil, coil = [];
-  for (let s = 0; s < C.steps; s++) {
-    const t0 = s / C.steps, t1 = (s + 1) / C.steps;
-    const at = (/** @type {number} */ t) => {
-      const a = t * C.turns * Math.PI * 2, r = C.radiusM * (1 - 0.55 * t);
-      return [Math.cos(a) * r, C.tubeM * 0.6 + C.riseM * t, Math.sin(a) * r];
-    };
-    coil.push({ type: 'capsule', a: at(t0), b: at(t1), r: [C.tubeM, C.tubeM * 0.95], k: 0.0006, region: 'cast' });
-  }
-  add('lugworm', coil, recipe.kinds.lugworm.albedo, 0.0008);
+  const r = S.fold * (1 - S.close);
+  return [p[0] * r, top * S.sink + (p[1] - top) * S.fold, p[2] * r];
 }

@@ -1,40 +1,82 @@
 {
   "type": "finds",
   "version": 1,
-  "note": "Finds (docs/future/11): small shore lives with a body and one motion, and no needs, mood or trust. Where they are comes from the ground (src/world/finds/index.js): the shore zones (shore.json) and the water summary, never saved. Each kind: zones it lives in (shore.json zone ids; pool means a rock pool, a hollow of rock in the tide band that holds water), density (share of 0.5 m cells holding some), count per spot [min, max], spreadM (how far a spot's group spreads), scale (drawn size over real size; finds are small, so like the frogs they are drawn a little larger to be found), prims (blended primitives in meters, baked by body-bake.js; region names pick albedo), albedo (linear). Anemones open under water and close at low tide or when you come close (closeM), easing over easeS; periwinkles (the flat periwinkle, yellow-olive, that lives on the wrack) drift a little each tide; lugworm casts are laid fresh after each tide on sand the sea has left. nearM: finds are only worked out within this distance of the view's middle, at most max at once. tapM and tapPerM: how near a tap must be (plus this much per meter of camera distance).",
+  "note": "Finds (docs/future/11): small shore lives with a body and one motion, and no needs, mood or trust. Where they are comes from the ground (src/world/finds/index.js): the shore zones (shore.json) and the water summary, never saved. Each kind: zones it lives in (shore.json zone ids; pool means a rock pool, a hollow of rock in the tide band that holds water), density (share of 0.5 m cells holding some), count per spot [min, max], spreadM (how far a spot's group spreads), scale (drawn size over real size; finds are small, so like the frogs they are drawn a little larger to be found), model: the find's mesh (assets/models/finds/, credited in CREDITS.md there): url, heightM (real height), rotDeg (turn about x, y, z so it stands right), tint (a linear albedo multiplier per part); for the anemone, bodyPart (which part is the column) buryM (how deep its stalk sits in the rock, in meters at real size) and shut (sink and widen the column, close its rim by close toward a dome, fold the tentacles in toward its top). cast (the lugworm's, drawn into the sand by the terrain shader, src/shaders/lib-casts.wgsl): radiusM coil radius, tubeM tube radius, turns, riseM how much higher the inner turns sit, albedo as a share of the sand's, drawM the view distance past which casts are not drawn. Anemones open under water and close at low tide or when you come close (closeM), easing over easeS; periwinkles (a rough periwinkle, from a CC0 scan) drift a little each tide; lugworm casts are laid fresh after each tide on sand the sea has left. nearM: finds are only worked out within this distance of the view's middle, at most max at once. tapM and tapPerM: how near a tap must be (plus this much per meter of camera distance).",
   "nearM": 14,
   "max": 120,
   "tapM": 0.06,
   "tapPerM": 0.012,
-  "body": { "wetSpecular": { "roughness": 0.3, "strength": 0.45 }, "scaleReal": [0.02, 0.05], "blotch": { "scale": 1, "amount": 0 }, "bellyBelowNormalY": -2 },
+  "body": {
+    "wetSpecular": {
+      "roughness": 0.3,
+      "strength": 0.45
+    },
+    "scaleReal": [0.02, 0.05],
+    "blotch": {
+      "scale": 1,
+      "amount": 0
+    },
+    "bellyBelowNormalY": -2
+  },
   "kinds": {
     "anemone": {
-      "zones": ["pool"], "density": 0.55, "count": [1, 3], "spreadM": 0.25, "scale": 1.6, "closeM": 0.7, "easeS": 2.5,
-      "albedo": { "body": [0.32, 0.03, 0.03], "crown": [0.42, 0.06, 0.05], "beads": [0.25, 0.32, 0.6] },
-      "open": [
-        { "type": "ellipsoid", "c": [0, 0.011, 0], "r": [0.013, 0.012, 0.013], "k": 0, "region": "body" },
-        { "type": "ellipsoid", "c": [0, 0.022, 0], "r": [0.017, 0.004, 0.017], "k": 0.004, "region": "crown" }
+      "zones": [
+        "pool"
       ],
-      "tentacles": { "count": 14, "lengthM": 0.012, "radiusM": 0.0016, "lean": 0.7 },
-      "shut": [
-        { "type": "ellipsoid", "c": [0, 0.009, 0], "r": [0.014, 0.009, 0.014], "k": 0, "region": "body" },
-        { "type": "sphere", "c": [0.011, 0.012, 0.004], "r": 0.0018, "k": 0.001, "region": "beads" },
-        { "type": "sphere", "c": [-0.006, 0.013, 0.01], "r": 0.0018, "k": 0.001, "region": "beads" },
-        { "type": "sphere", "c": [-0.008, 0.012, -0.009], "r": 0.0018, "k": 0.001, "region": "beads" }
-      ]
+      "density": 0.55,
+      "count": [1, 3],
+      "spreadM": 0.25,
+      "scale": 1.6,
+      "closeM": 0.7,
+      "easeS": 2.5,
+      "model": {
+        "url": "assets/models/finds/anemone.gltf",
+        "heightM": 0.03,
+        "rotDeg": [0, 0, 0],
+        "bodyPart": 0,
+        "buryM": 0.005,
+        "tint": [
+          [1, 1, 1],
+          [1, 1, 1]
+        ],
+        "shut": {
+          "sink": 0.75,
+          "widen": 1.05,
+          "fold": 0.2,
+          "close": 0.55
+        }
+      }
     },
     "periwinkle": {
-      "zones": ["wrack", "channelled"], "density": 0.06, "count": [2, 6], "spreadM": 0.18, "scale": 1.5, "driftM": 0.05,
-      "albedo": { "shell": [0.3, 0.23, 0.05], "whorl": [0.22, 0.16, 0.05] },
-      "prims": [
-        { "type": "ellipsoid", "c": [0, 0.006, 0], "r": [0.008, 0.0065, 0.0075], "rot": [0, 0, 0], "k": 0, "region": "shell" },
-        { "type": "roundCone", "a": [0.003, 0.008, 0.001], "b": [0.007, 0.013, 0.002], "ra": 0.0045, "rb": 0.0012, "k": 0.002, "region": "whorl" }
-      ]
+      "zones": [
+        "wrack",
+        "channelled"
+      ],
+      "density": 0.06,
+      "count": [2, 6],
+      "spreadM": 0.18,
+      "scale": 1.5,
+      "driftM": 0.05,
+      "model": {
+        "url": "assets/models/finds/periwinkle.gltf",
+        "heightM": 0.012,
+        "rotDeg": [0, 0, 0],
+        "tint": [
+          [1, 1, 1]
+        ]
+      }
     },
     "lugworm": {
-      "zones": ["ripples", "wetSand", "mud"], "density": 0.08, "count": [1, 3], "spreadM": 0.5, "scale": 1.4,
-      "albedo": { "cast": [0.34, 0.28, 0.19] },
-      "coil": { "turns": 2.4, "radiusM": 0.02, "tubeM": 0.0036, "riseM": 0.01, "steps": 22 }
+      "zones": [
+        "ripples",
+        "wetSand",
+        "mud"
+      ],
+      "density": 0.08,
+      "count": [1, 3],
+      "spreadM": 0.5,
+      "scale": 1.4,
+      "cast": { "radiusM": 0.015, "tubeM": 0.0042, "turns": 3, "riseM": 0.007, "albedo": [0.8, 0.77, 0.74], "drawM": 8 }
     }
   }
 }

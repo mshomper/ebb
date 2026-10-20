@@ -282,6 +282,7 @@ export async function startApp(canvas, hooks = {}) {
   // sand, where the shore zones say, near the view; a tap finds them for the journal.
   const finds = createFinds({ water, shore: ww.shore, terrain, camera, recipe: await loadRecipe('species/finds'), seed: subSeed(seed, 'finds') });
   sim.addSystem(finds);
+  terrainPass.setCasts(finds.casts(), finds.castShape);
   // `?frogscale` (ahead of S6): real-size frogs from the species recipe around the pond, and a
   // camera that may come close, to judge creature size on the island (src/ui/frog-scale.js).
   const frogScale = params.has('frogscale') ? await createFrogScale() : null;
@@ -662,6 +663,8 @@ export async function startApp(canvas, hooks = {}) {
     updateRing();
     // Plant tool rings, and a breathing ring round whatever the journal's tap card names.
     terrainPass.setMarks(plantTool.marks(now, tools().tool === 'plant', getStore('identify'), [...(getStore('reveal')?.rings?.(now) ?? []), ...creatures.foodRings()]));
+    // Lugworm casts are drawn into the sand by the terrain pass.
+    terrainPass.setCasts(finds.casts());
     updatePour();
     if (queuedHistory && !terrain.isBusy()) runHistory(queuedHistory);
     // Ground detail waits for a few calm frames so the first picture is as quick as before (docs/22).

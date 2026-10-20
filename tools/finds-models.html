@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ebb find models</title>
+<link rel="stylesheet" href="../src/ui/tokens.css">
+<style>
+  body { margin: 0; font: 17px/1.5 Nunito, system-ui, sans-serif; background: #F4EEE4; color: #2F3A35; padding: 20px max(16px, env(safe-area-inset-left)); }
+  h1 { font-size: 24px; margin: 0 0 4px; }
+  p { margin: 0 0 16px; max-width: 60ch; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+  figure { margin: 0; background: #FBF7F0; border: 1px solid #DCD2C0; border-radius: 10px; padding: 10px; display: grid; gap: 6px; }
+  canvas { width: 100%; aspect-ratio: 1; touch-action: none; cursor: grab; border-radius: 6px; background: #E9DFCE; }
+  figcaption { font-size: 16px; }
+  .muted { color: #6B6A5E; font-size: 15px; }
+</style>
+</head>
+<body>
+<h1>Find models</h1>
+<p>All three at one scale: the square is 3.5 cm across. The meshes the shore finds are drawn with, from <code>assets/models/finds/</code> and <code>recipes/species/finds.json</code>, shaded simply here (vertex colors and one light) so you can check the shape, the colors and the anemone's shut pose. Drag to turn one. Credits are in <code>assets/models/finds/CREDITS.md</code>.</p>
+<div class="grid" id="grid"></div>
+<script type="module">
+import { loadFindModel, joinParts } from '../src/world/finds/models.js';
+import { shutAnemone } from '../src/world/finds/index.js';
+
+const recipe = await (await fetch('../recipes/species/finds.json')).json();
+const A = recipe.kinds.anemone.model, P = recipe.kinds.periwinkle.model;
+const [an, pe] = await Promise.all([loadFindModel('../' + A.url), loadFindModel('../' + P.url)]);
+let top = 0;
+for (let i = 0; i < an[A.bodyPart].count; i++) top = Math.max(top, an[A.bodyPart].vertices[i * 9 + 1]);
+const S = A.shut;
+const views = [
+  { name: 'Anemone, open', mesh: joinParts(an, A.heightM, A.rotDeg, (p) => p, A.tint), h: A.heightM, bury: A.buryM },
+  { name: 'Anemone, shut', mesh: joinParts(an, A.heightM, A.rotDeg, (p, k) => shutAnemone(p, k, A.bodyPart, top, S), A.tint), h: A.heightM, bury: A.buryM },
+  { name: 'Periwinkle', mesh: joinParts(pe, P.heightM, P.rotDeg, (p) => p, P.tint), h: P.heightM },
+];
+const toSrgb = (c) => Math.round(255 * Math.min(1, c <= 0.0031308 ? c * 12.92 : 1.055 * c ** (1 / 2.4) - 0.055));
+for (const v of views) {
+  const fig = document.createElement('figure');
+  const cv = document.createElement('canvas');
+  const cap = document.createElement('figcaption');
+  const tris = v.mesh.indices.length / 3;
+  cap.innerHTML = `${v.name} <span class="muted">${tris} triangles, ${(v.h * 100).toFixed(1)} cm tall</span>`;
+  fig.append(cv, cap);
+  document.getElementById('grid').append(fig);
+  let yaw = 0.6, pitch = 0.35;
+  const draw = () => {
+    const W = cv.width = cv.clientWidth * devicePixelRatio, H = cv.height = W;
+    const g = cv.getContext('2d');
+    const m = v.mesh, V = m.vertices;
+    const cy = Math.cos(yaw), sy = Math.sin(yaw), cp = Math.cos(pitch), sp = Math.sin(pitch);
+    // One scale for every view (a 3.5 cm field), so sizes compare truly.
+    const sc = W / 0.035;
+    const proj = (i) => {
+      const x = V[i * 9], y = V[i * 9 + 1] - 0.012, z = V[i * 9 + 2];
+      const x1 = cy * x + sy * z, z1 = -sy * x + cy * z;
+      const y2 = cp * y - sp * z1, z2 = sp * y + cp * z1;
+      return [W / 2 + x1 * sc, H / 2 - y2 * sc, z2];
+    };
+    const P2 = Array.from({ length: m.count }, (_, i) => proj(i));
+    const order = [];
+    for (let t = 0; t < m.indices.length; t += 3) order.push(t);
+    order.sort((a, b) => (P2[m.indices[a]][2] + P2[m.indices[a + 1]][2] + P2[m.indices[a + 2]][2]) - (P2[m.indices[b]][2] + P2[m.indices[b + 1]][2] + P2[m.indices[b + 2]][2]));
+    const L = [0.4, 0.8, 0.45];
+    // The ground line: where the model's base meets the rock in the game (buried by buryM).
+    const bury = v.bury ?? 0;
+    const gy = H / 2 - (bury - 0.012) * cp * sc;
+    for (const t of order) {
+      const [a, b, c] = [m.indices[t], m.indices[t + 1], m.indices[t + 2]];
+      let n = [0, 1, 2].map((k) => (V[a * 9 + 3 + k] + V[b * 9 + 3 + k] + V[c * 9 + 3 + k]) / 3);
+      const lit = 0.35 + 0.65 * Math.max(0, n[0] * L[0] + n[1] * L[1] + n[2] * L[2]);
+      const col = [0, 1, 2].map((k) => toSrgb(((V[a * 9 + 6 + k] + V[b * 9 + 6 + k] + V[c * 9 + 6 + k]) / 3) * lit * 1.6));
+      g.fillStyle = g.strokeStyle = `rgb(${col.join(',')})`;
+      g.beginPath(); g.moveTo(P2[a][0], P2[a][1]); g.lineTo(P2[b][0], P2[b][1]); g.lineTo(P2[c][0], P2[c][1]); g.closePath(); g.fill(); g.stroke();
+    }
+    g.globalAlpha = 0.85;
+    g.fillStyle = '#C9BDA6';
+    g.fillRect(0, gy, W, H - gy);
+    g.globalAlpha = 1;
+  };
+  let drag = null;
+  cv.addEventListener('pointerdown', (e) => { drag = [e.clientX, e.clientY]; cv.setPointerCapture(e.pointerId); });
+  cv.addEventListener('pointermove', (e) => { if (!drag) return; yaw += (e.clientX - drag[0]) * 0.01; pitch = Math.max(-1.4, Math.min(1.4, pitch + (e.clientY - drag[1]) * 0.01)); drag = [e.clientX, e.clientY]; draw(); });
+  cv.addEventListener('pointerup', () => { drag = null; });
+  addEventListener('resize', draw);
+  draw();
+}
+</script>
+</body>
+</html>

@@ -18,6 +18,7 @@
 // #include lib-probe
 // #include lib-rain
 // #include lib-shore
+// #include lib-casts
 
 struct TerrainDraw {
   albedoGrass: vec3f, variation: f32,
@@ -62,6 +63,10 @@ struct TerrainDraw {
   frond1: vec4f,                        // x, y grid cell across and along (m), zw length range (m)
   frond2: vec4f,                        // x bladder radius (m), y midrib relief, zw view distances (m) over which fronds fade to the mat
   frond3: vec4f,                        // x 1 on (tier), y how much of the mat the fronds hide close up, z bladder lightening
+  // Lugworm casts (lib-casts, world/finds/index.js): up to 16 near the view, x, z, size (0 ends), yaw.
+  casts: array<vec4f, 16>,
+  cast0: vec4f,                         // x coil radius (m), y tube radius (m), z turns, w inner rise (m)
+  cast1: vec4f,                         // rgb cast albedo as a share of the sand's, w view distance (m) past which casts are not drawn
 };
 
 @group(0) @binding(0) var<uniform> frame: FrameUniforms;
@@ -299,6 +304,13 @@ fn fsLand(in: VsOut) -> FsOut {
       shoreGrad += kp.grad * kp.cover;
       kelpCover = max(kelpCover, kp.cover);
     }
+  }
+  // Lugworm casts: coils of worked sand on the wet flats, close up only.
+  if (td.casts[0].z > 0.0 && viewDist < td.cast1.w) {
+    let lug = lugCasts(xz, td.casts, CastShape(td.cast0.x, td.cast0.y, td.cast0.z, td.cast0.w), td.seed + 50u, pixM);
+    let fade = 1.0 - smoothstep(td.cast1.w * 0.6, td.cast1.w, viewDist);
+    albedo = mix(albedo, albedo * td.cast1.rgb * (0.6 + 0.45 * lug.tone), lug.cover * fade);
+    shoreGrad += lug.grad * fade;
   }
   // Wet to dry (lush.js): the grass layer takes the blades' tint, deeper by the water, paler and
   // straw-cured on the dry rise, so the areas read past where blades end, with no ring there.

@@ -1,0 +1,333 @@
+﻿{
+  "asset": {
+    "generator": "glTF-Transform v4.1.1",
+    "version": "2.0",
+    "extras": {
+      "author": "Ben Lebreux (https://sketchfab.com/ben.lebreux)",
+      "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+      "source": "https://sketchfab.com/3d-models/low-poly-anemone-ef8834fa2ed84432bf87b33c08e0ab6d",
+      "title": "Low-Poly Anemone"
+    }
+  },
+  "accessors": [
+    {
+      "type": "SCALAR",
+      "componentType": 5126,
+      "count": 483,
+      "max": [
+        16.625
+      ],
+      "min": [
+        0
+      ],
+      "bufferView": 0,
+      "byteOffset": 0
+    },
+    {
+      "type": "VEC3",
+      "componentType": 5126,
+      "count": 483,
+      "bufferView": 0,
+      "byteOffset": 1932
+    },
+    {
+      "type": "SCALAR",
+      "componentType": 5126,
+      "count": 499,
+      "max": [
+        16.625
+      ],
+      "min": [
+        0
+      ],
+      "bufferView": 0,
+      "byteOffset": 7728
+    },
+    {
+      "type": "VEC4",
+      "componentType": 5126,
+      "count": 499,
+      "bufferView": 0,
+      "byteOffset": 9724
+    },
+    {
+      "type": "SCALAR",
+      "componentType": 5126,
+      "count": 793,
+      "max": [
+        16.625
+      ],
+      "min": [
+        0
+      ],
+      "bufferView": 0,
+      "byteOffset": 17708
+    },
+    {
+      "type": "VEC4",
+      "componentType": 5126,
+      "count": 793,
+      "bufferView": 0,
+      "byteOffset": 20880
+    },
+    {
+      "type": "SCALAR",
+      "componentType": 5126,
+      "count": 735,
+      "max": [
+        16.625
+      ],
+      "min": [
+        0
+      ],
+      "bufferView": 0,
+      "byteOffset": 33568
+    },
+    {
+      "type": "VEC4",
+      "componentType": 5126,
+      "count": 735,
+      "bufferView": 0,
+      "byteOffset": 36508
+    },
+    {
+      "type": "SCALAR",
+      "componentType": 5126,
+      "count": 664,
+      "max": [
+        16.625
+      ],
+      "min": [
+        0
+      ],
+      "bufferView": 0,
+      "byteOffset": 48268
+    },
+    {
+      "type": "VEC3",
+      "componentType": 5126,
+      "count": 664,
+      "bufferView": 0,
+      "byteOffset": 50924
+    },
+    {
+      "type": "SCALAR",
+      "componentType": 5126,
+      "count": 766,
+      "max": [
+        16.625
+      ],
+      "min": [
+        0
+      ],
+      "bufferView": 0,
+      "byteOffset": 58892
+    },
+    {
+      "type": "VEC4",
+      "componentType": 5126,
+      "count": 766,
+      "bufferView": 0,
+      "byteOffset": 61956
+    },
+    {
+      "type": "SCALAR",
+      "componentType": 5126,
+      "count": 798,
+      "max": [
+        16.625
+      ],
+      "min": [
+        0
+      ],
+      "bufferView": 0,
+      "byteOffset": 74212
+    },
+    {
+      "type": "VEC4",
+      "componentType": 5126,
+      "count": 798,
+      "bufferView": 0,
+      "byteOffset": 77404
+    },
+    {
+      "type": "SCALAR",
+      "componentType": 5123,
+      "count": 402,
+      "bufferView": 1,
+      "byteOffset": 0
+    },
+    {
+      "type": "SCALAR",
+      "componentType": 5123,
+      "count": 2946,
+      "bufferView": 1,
+      "byteOffset": 804
+    },
+    {
+      "type": "VEC3",
+      "componentType": 5126,
+      "count": 290,
+      "bufferView": 2,
+      "byteOffset": 0
+    },
+    {
+      "type": "VEC3",
+      "componentType": 5126,
+      "count": 290,
+      "max": [
+        0.2656290829181671,
+        0.4940594732761383,
+        0.24995186924934387
+      ],
+      "min": [
+        -0.23495358228683472,
+        0,
+        -0.24995186924934387
+      ],
+      "bufferView": 2,
+      "byteOffset": 12
+    },
+    {
+      "type": "VEC3",
+      "componentType": 5126,
+      "count": 290,
+      "bufferView": 2,
+      "byteOffset": 24
+    },
+    {
+      "type": "VEC3",
+      "componentType": 5126,
+      "count": 2902,
+      "bufferView": 3,
+      "byteOffset": 0
+    },
+    {
+      "type": "VEC3",
+      "componentType": 5126,
+      "count": 2902,
+      "max": [
+        0.22875289618968964,
+        1,
+        0.21965403854846954
+      ],
+      "min": [
+        -0.2656290829181671,
+        0.4229620397090912,
+        -0.21312569081783295
+      ],
+      "bufferView": 3,
+      "byteOffset": 12
+    },
+    {
+      "type": "VEC3",
+      "componentType": 5126,
+      "count": 2902,
+      "bufferView": 3,
+      "byteOffset": 24
+    }
+  ],
+  "bufferViews": [
+    {
+      "buffer": 0,
+      "byteOffset": 0,
+      "byteLength": 90172
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 90172,
+      "byteLength": 6696,
+      "target": 34963
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 96868,
+      "byteLength": 10440,
+      "byteStride": 36,
+      "target": 34962
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 107308,
+      "byteLength": 104472,
+      "byteStride": 36,
+      "target": 34962
+    }
+  ],
+  "buffers": [
+    {
+      "uri": "anemone.bin",
+      "byteLength": 211780
+    }
+  ],
+  "materials": [
+    {
+      "name": "Material.001",
+      "doubleSided": true,
+      "pbrMetallicRoughness": {
+        "roughnessFactor": 0.8211145618,
+        "metallicFactor": 0
+      }
+    },
+    {
+      "name": "Material.002",
+      "doubleSided": true,
+      "pbrMetallicRoughness": {
+        "roughnessFactor": 0.8211145618000169,
+        "metallicFactor": 0
+      }
+    }
+  ],
+  "meshes": [
+    {
+      "name": "Cylinder_Material.001_0",
+      "primitives": [
+        {
+          "attributes": {
+            "NORMAL": 16,
+            "POSITION": 17,
+            "COLOR_0": 18
+          },
+          "mode": 4,
+          "material": 0,
+          "indices": 14
+        }
+      ]
+    },
+    {
+      "name": "Cylinder.001_Material.002_0",
+      "primitives": [
+        {
+          "attributes": {
+            "NORMAL": 19,
+            "POSITION": 20,
+            "COLOR_0": 21
+          },
+          "mode": 4,
+          "material": 1,
+          "indices": 15
+        }
+      ]
+    }
+  ],
+  "nodes": [
+    {
+      "name": "Cylinder_Material.001_0",
+      "mesh": 0
+    },
+    {
+      "name": "Object_17",
+      "mesh": 1
+    }
+  ],
+  "scenes": [
+    {
+      "name": "Sketchfab_Scene",
+      "nodes": [
+        0,
+        1
+      ]
+    }
+  ],
+  "scene": 0
+}
