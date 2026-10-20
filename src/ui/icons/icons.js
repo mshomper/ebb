@@ -570,6 +570,13 @@ const ICONS = {
     <path ${ACCENT} d="M12 19.5C12 19.5 4.5 15 4.5 9.6A3.9 3.9 0 0 1 12 7.6A3.9 3.9 0 0 1 19.5 9.6C19.5 15 12 19.5 12 19.5Z"/>
     <path d="M12 19.5C12 19.5 4.5 15 4.5 9.6A3.9 3.9 0 0 1 12 7.6A3.9 3.9 0 0 1 19.5 9.6C19.5 15 12 19.5 12 19.5Z"/>`,
 
+  // Not for me: a thumb pointing down (the cuff on the left, the fist above, the thumb below), for a
+  // piece of music you would rather not hear.
+  pass: `
+    <path ${ACCENT} d="M3.5 4.5H7V13H3.5Z"/>
+    <path d="M3.5 4.5H7V13H3.5Z"/>
+    <path d="M7 12.5L10.6 19.2A1.6 1.6 0 0 0 13.6 18.4V14.5H18.4A2 2 0 0 0 20.4 12.2L19.3 6.3A2.2 2.2 0 0 0 17.1 4.5H7"/>`,
+
   // Heart, filled: a piece you have hearted.
   'heart-full': `
     <path fill="currentColor" stroke="none" d="M12 19.5C12 19.5 4.5 15 4.5 9.6A3.9 3.9 0 0 1 12 7.6A3.9 3.9 0 0 1 19.5 9.6C19.5 15 12 19.5 12 19.5Z"/>

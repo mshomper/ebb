@@ -14,6 +14,7 @@ import { parseAbc, TICKS_PER_QUARTER } from './score.js';
 import { parseChord } from './chords.js';
 import { voiceProgression } from './voicing.js';
 import { planTextures, playTexture, describeTextures } from './texture.js';
+import { guitarVoicing, strumNotes } from './guitar.js';
 import { supportLayers } from './layers.js';
 import { stream, hash32 } from '../../core/rng.js';
 
@@ -199,6 +200,11 @@ export function realize(piece, ctx, recipes) {
   const wantsBed = !!(piece.layers?.bed && piece.palette?.bed);
   const usePad = !wantsBed && accList.includes('pad') && r.next() < 0.5;
   const accInst = accList.find((/** @type {string} */ x) => x !== 'pad') ?? (usePad ? null : melInst);
+  // A strumming instrument (palette.strum, the guitar): it takes the chords in the meter's pattern
+  // (realize.json textures.strum.patterns); a meter without a pattern is not strummed.
+  const strumInst = piece.palette?.strum?.find((/** @type {string} */ x) => avail.has(x));
+  const strumPattern = strumInst ? R.textures.strum?.patterns?.[`${meter.num}/${meter.den}`] ?? null : null;
+  const strumming = !!(strumInst && strumPattern);
 
   // Tempo; the day's note density ceiling decides how fast an arpeggio may move, or whether at all.
   const bpm = (piece.tempo[0] + r.next() * (piece.tempo[1] - piece.tempo[0])) * (ctx.dayColor.tempo ?? 1);
@@ -238,9 +244,29 @@ export function realize(piece, ctx, recipes) {
       if (!accInst) return;
       const push = (/** @type {number} */ tick, /** @type {number} */ dur, /** @type {number} */ midi, /** @type {string} */ voice, offsetMs = 0, vo = 0) =>
         gen.push({ tick, dur, midi, voice, offsetMs, velOffset: vo - R.dynamics.accompanimentOffset, instrument: accInst });
+      // A strummed guitar takes the chords: the piano keeps only a light held bass (or none).
+      if (strumming) {
+        if (piece.palette.strumBass !== false) push(c.tick, c.end - c.tick, bass, 'bass', 0, -(T.strum?.bassOffset ?? 4));
+        used[i] = 'strum';
+        return;
+      }
       playTexture(used[i], { tick: c.tick, end: c.end, bass, upper, Q, beatTicks, barTicks, compound, arpStep }, push, T, r);
     });
     if (!accInst) used = [];
+    // The strum (guitar.js): each chord in a guitarist's shape, strummed by the meter's pattern.
+    if (strumming) {
+      /** @type {number[] | null} */
+      let shape = null;
+      needs.forEach((c) => {
+        const sh = { root: (c.chord.root + shift + 120) % 12, intervals: c.chord.intervals, bass: c.chord.bass };
+        const pcs = [...new Set(sh.intervals.map((iv) => (sh.root + iv) % 12))];
+        const bassPc = c.chord.bass === null || c.chord.bass === undefined ? sh.root : (c.chord.bass + shift + 120) % 12;
+        if (!pcs.includes(bassPc)) pcs.push(bassPc);
+        shape = guitarVoicing(pcs, bassPc, shape);
+        strumNotes({ tick: c.tick, end: c.end, shape, barTicks, eighth: Q / 2, pattern: strumPattern }, T.strum,
+          (tick, dur, midi, offsetMs, vo) => gen.push({ tick, dur, midi, voice: 'strum', offsetMs, velOffset: vo - (T.strum.offset ?? 6), instrument: /** @type {string} */ (strumInst) }));
+      });
+    }
   }
 
   // Support layers: a bed that moves with the phrases and touches on the cadences (layers.js).

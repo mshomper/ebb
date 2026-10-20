@@ -187,7 +187,8 @@ export function createDirector(recipes, pieces, opts) {
     }
     const slotName = slot === 'early-nocturne' ? 'nocturne' : slot;
     const wet = st.weather === 'rain' || st.weather === 'mist';
-    const fits = (/** @type {any} */ p) => p.seasons.includes(season)
+    // A piece the player turned down (p.passed, src/audio/music/hearts.js) is never chosen.
+    const fits = (/** @type {any} */ p) => !p.passed && p.seasons.includes(season)
       && (p.slots.includes(slotName) || (wet && p.slots.includes(st.weather)))
       && (!p.requires?.settled || p.requires.settled.every((/** @type {string} */ s) => st.residents.includes(s)));
     let pool = pieces.filter(fits);

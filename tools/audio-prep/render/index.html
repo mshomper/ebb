@@ -5,10 +5,20 @@ import { createPerformer } from '/src/audio/music/perform.js';
 import { realize } from '/src/audio/music/realize.js';
 import { dayColorAt } from '/src/audio/music/daycolor.js';
 import { createRoom } from '/src/audio/reverb.js';
+import { grow } from '/src/audio/music/develop/index.js';
 const q = new URLSearchParams(location.search);
 const id = q.get('id'), seed = +(q.get('seed') ?? 4127), sun = +(q.get('sun') ?? 20), only = q.get('only'), drop = q.get('drop');
 const j = async (p) => (await fetch('/' + p)).json();
-const [rz, vo, dir, mix, piece] = await Promise.all([j('recipes/music/realize.json'), j('recipes/music/voicing.json'), j('recipes/music/director.json'), j('recipes/audio/mixer.json'), j(`recipes/music/pieces/themes/${id}.json`)]);
+// ?grow=<season>&slot=<slot>[&weather=] grows a piece with the composer first (the game's grown pieces).
+const growSeason = q.get('grow');
+const loadPiece = async () => {
+  if (!growSeason) return j(`recipes/music/pieces/themes/${id}.json`);
+  const [mat, rules, names] = await Promise.all([j(`recipes/music/material/${growSeason}.json`), j('recipes/music/develop.json'), j('recipes/music/names.json')]);
+  return grow(mat, rules, { slot: q.get('slot') ?? 'interlude', weather: q.get('weather') ?? 'clear', seed }, names).piece;
+};
+// ?melody=<instrument> plays the melody on that instrument (to audition one, e.g. the guitar on a tide).
+const [rz, vo, dir, mix, piece0] = await Promise.all([j('recipes/music/realize.json'), j('recipes/music/voicing.json'), j('recipes/music/director.json'), j('recipes/audio/mixer.json'), loadPiece()]);
+const piece = q.get('melody') ? { ...piece0, palette: { ...piece0.palette, melody: [q.get('melody')] } } : piece0;
 const SR = 48000;
 const probe = new OfflineAudioContext(2, SR, SR);
 const avail = (await createInstruments(probe, probe.destination)).available();
@@ -31,5 +41,8 @@ const L = buf.getChannelData(0), R = buf.getChannelData(1);
 let peak = 0, ss = 0; for (let k = 0; k < L.length; k++) { peak = Math.max(peak, Math.abs(L[k]), Math.abs(R[k])); ss += (L[k] * L[k] + R[k] * R[k]) / 2; }
 const pcm = new Int16Array(L.length * 2); for (let k = 0; k < L.length; k++) { pcm[2 * k] = Math.max(-1, Math.min(1, L[k])) * 32767; pcm[2 * k + 1] = Math.max(-1, Math.min(1, R[k])) * 32767; }
 window.__pcm = pcm;
-document.getElementById('out').textContent = `${id} seed ${seed} ${only ? 'only ' + only : ''}${drop ? 'without ' + drop : ''}: ${perf.durationS.toFixed(1)} s, peak ${(20 * Math.log10(peak)).toFixed(1)} dBFS, rms ${(10 * Math.log10(ss / L.length)).toFixed(1)} dBFS, instruments ${JSON.stringify(perf.instruments)}`;
+const chords = piece.grown ? ' chords ' + piece.grown.report.bars.map((b) => b.chords.map((c) => c.symbol).join(' ')).join(' | ') : '';
+document.getElementById('out').textContent = `${piece.title ?? id} seed ${seed}${piece.grown ? ' (' + piece.grown.template + ', ' + piece.meter + ', ' + piece.tempo.join('-') + ' bpm, accomp ' + piece.palette.accomp[0] + ')' : ''}${chords}`
+  + ` ${id ?? ''}`;
+document.getElementById('out').textContent += ` seed ${seed} ${only ? 'only ' + only : ''}${drop ? 'without ' + drop : ''}: ${perf.durationS.toFixed(1)} s, peak ${(20 * Math.log10(peak)).toFixed(1)} dBFS, rms ${(10 * Math.log10(ss / L.length)).toFixed(1)} dBFS, instruments ${JSON.stringify(perf.instruments)}`;
 </script>

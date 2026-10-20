@@ -15,6 +15,7 @@
     "music/instruments/vibraphone": "music/instruments/vibraphone.json",
     "music/instruments/glass": "music/instruments/glass.json",
     "music/instruments/harp": "music/instruments/harp.json",
+    "music/instruments/guitar": "music/instruments/guitar.json",
     "music/instruments/flute": "music/instruments/flute.json",
     "music/instruments/strings-violins": "music/instruments/strings-violins.json",
     "music/instruments/strings-violas": "music/instruments/strings-violas.json",

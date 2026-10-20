@@ -81,6 +81,7 @@ Size and color come from CSS: set `width`/`height` on `.icon` and `color` on the
 | `close` | two crossing strokes: close a panel or card |
 | `note` | a single eighth note, its head lightly filled: music (the now-playing line, left) |
 | `notes2` | two beamed eighth notes: music (the now-playing line, right) |
+| `pass` | a thumb pointing down: a piece of music you would rather not hear (the now-playing line) |
 | `heart-full` | the same heart, filled: a piece you have hearted |
 | `heart` | a soft rounded heart, lightly filled: a piece of music you love (the now-playing line) |
 | `back` | a chevron pointing left: back to a list |

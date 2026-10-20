@@ -46,7 +46,9 @@ export function grow(material, rules, where, names) {
   const template = pickWeighted(templates, r) ?? Object.keys(material.templates)[0];
   const meter = pickWeighted(material.meters, r) ?? '4/4';
   // Tempo from the season's band, scaled by the template (rain and mist go slower).
-  const [t0, t1] = material.tempo;
+  // A season may give each slot its own band (summer's mornings lift, its evenings settle).
+  const band = Array.isArray(material.tempo) ? material.tempo : (material.tempo[where.slot] ?? material.tempo.default);
+  const [t0, t1] = band;
   const ts = material.templates[template]?.tempoScale ?? 1;
   const lo = Math.round((t0 + (t1 - t0) * r.next() * 0.6) * ts);
   /** @type {[number, number]} */
@@ -78,6 +80,20 @@ export function grow(material, rules, where, names) {
   const endingId = pickWeighted(ew, r) ?? Object.keys(material.endings ?? {})[0];
   const ending = { id: endingId, ...material.endings[endingId] };
 
+  // The instruments: the material's palette for this weather or slot, one of its weighted choices
+  // (summer's electric piano takes some mornings); a material without palettes keeps the default.
+  const P = material.palettes;
+  const choices = P ? (P[weather !== 'clear' && weather !== 'cloud' ? weather : ''] ?? P[where.slot] ?? P.default) : null;
+  /** @type {any} */
+  let palette = undefined;
+  if (Array.isArray(choices) && choices.length) {
+    /** @type {Record<string, number>} */
+    const pw = {};
+    choices.forEach((c, i) => { pw[String(i)] = c.weight ?? 1; });
+    const { weight: _w, ...pick } = choices[Number(pickWeighted(pw, r) ?? 0)];
+    palette = pick;
+  }
+
   const title = names ? pieceName(seed, { season: material.season, slot: where.slot }, names) : `Grown ${where.slot} ${seed}`;
   const span = material.harmonicBars?.[meter] ?? 1;
   const report = {
@@ -90,7 +106,7 @@ export function grow(material, rules, where, names) {
     rank: ranked.indexOf(chosen) + 1,
   };
   const piece = writePiece(material, chosen.walked, chosen.plan, {
-    id: `grown-${material.season}-${where.slot}-${seed}`, title, slot: where.slot, weather, meter, tempo, template, seed, report, ending,
+    id: `grown-${material.season}-${where.slot}-${seed}`, title, slot: where.slot, weather, meter, tempo, template, seed, report, ending, palette,
   });
   return {
     piece,

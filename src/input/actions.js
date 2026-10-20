@@ -34,6 +34,7 @@ import { emit } from '../core/events.js';
  *   | { type: 'time.keepGrowing', on: boolean }
  *   | { type: 'settings.set', patch: Record<string, any> }
  *   | { type: 'music.heart', heart: import('../audio/music/hearts.js').Heart }
+ *   | { type: 'music.pass', heart: import('../audio/music/hearts.js').Heart }
  *   | { type: 'look.palette', id: string }
  *   | { type: 'look.tap', x: number, y: number, source: Source }
  *   | { type: 'ui.identify' }

@@ -23,7 +23,7 @@ SEASON = {
 # section: out, in, swell, steady, thin.
 PALETTE = {
     'spring': {'melody': ['piano'], 'accomp': ['piano'], 'counter': ['flute', 'bell'], 'bed': ['strings', 'pad'], 'touch': ['harp', 'bell']},
-    'summer': {'melody': ['fm-piano', 'piano'], 'accomp': ['piano'], 'counter': ['vibraphone', 'bell'], 'bed': ['strings', 'pad'], 'touch': ['vibraphone', 'bell']},
+    'summer': {'melody': ['fm-piano', 'guitar', 'piano'], 'accomp': ['piano'], 'counter': ['vibraphone', 'bell'], 'bed': ['strings', 'pad'], 'touch': ['vibraphone', 'bell']},
     'autumn': {'melody': ['piano'], 'accomp': ['piano'], 'counter': ['cello', 'piano'], 'bed': ['pad', 'strings'], 'touch': ['harp', 'bell']},
     'winter': {'melody': ['piano'], 'accomp': ['piano'], 'counter': ['vibraphone-bowed', 'glass', 'pad'], 'bed': ['strings', 'pad'], 'touch': ['bell']},
 }

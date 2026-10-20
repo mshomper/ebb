@@ -36,7 +36,7 @@ import { state as tideState, tideParams } from './world/tide.js';
 import { soundNear, nothingNear } from './world/sound-near.js';
 import { groupFalls, fallsNear } from './world/falls-near.js';
 import { loadAudioRecipe } from './audio/recipes.js';
-import { toggleHeart } from './audio/music/hearts.js';
+import { setVerdict } from './audio/music/hearts.js';
 import { createWaterPass } from './render/passes/water.js';
 import { createFallsPass } from './render/passes/falls.js';
 import { createGrassPass } from './render/passes/grass.js';
@@ -647,9 +647,13 @@ export async function startApp(canvas, hooks = {}) {
       case 'time.keepGrowing':
         updateStore('meta', (m) => { m.keepGrowing = a.on; });
         break;
-      // A heart on the piece playing (src/ui/now-playing.js): kept with the island, plays more often.
+      // A heart or a thumbs-down on the piece playing (src/ui/now-playing.js), kept with the island:
+      // a heart plays it more often; a thumbs-down fades it out and it never comes back.
       case 'music.heart':
-        updateStore('music', (m) => ({ ...(m ?? {}), hearted: toggleHeart(m?.hearted, a.heart) }));
+        updateStore('music', (m) => setVerdict(m, a.heart, 'heart'));
+        break;
+      case 'music.pass':
+        updateStore('music', (m) => setVerdict(m, a.heart, 'pass'));
         break;
       case 'settings.set':
         updateStore('settings', (s) => { Object.assign(s, a.patch); });

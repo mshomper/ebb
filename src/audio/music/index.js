@@ -19,6 +19,9 @@ import { createPerformer } from './perform.js';
 import { createInstruments } from './instruments.js';
 import { dayColorAt } from './daycolor.js';
 import { grow } from './develop/index.js';
+import { heartOf, soundOf } from './hearts.js';
+import { hash32 } from '../../core/rng.js';
+import { DAYS_PER_SEASON } from '../../core/clock.js';
 import { stream } from '../../core/rng.js';
 
 const SEASONS = ['spring', 'summer', 'autumn', 'winter'];
@@ -52,18 +55,26 @@ async function loadJson(p) {
  *   seed: the music's own seed (the world seed and this device's session count)
  */
 export async function createMusic(mixer, opts) {
-  const [director, rz, vo, rules, names, material, themes] = await Promise.all([
+  const [director, rz, vo, rules, names, spring, themes, summer] = await Promise.all([
     loadJson('recipes/music/director.json'),
     loadJson('recipes/music/realize.json'), loadJson('recipes/music/voicing.json'), loadJson('recipes/music/develop.json'),
     loadJson('recipes/music/names.json'), loadJson('recipes/music/material/spring.json'),
     loadJson('recipes/music/pieces/themes/index.json').catch(() => ({ candidates: [] })),
+    loadJson('recipes/music/material/summer.json').catch(() => null),
   ]);
+  // Each season's material (recipes/music/material/); a season without its own grows from spring's.
+  /** @type {Record<string, any>} */
+  const materials = { spring, ...(summer ? { summer } : {}) };
+  const material = spring;
+  /** The material for a season, or spring's. @param {string} season */
+  const materialFor = (season) => materials[season] ?? spring;
+  /** The season at a game time (14 game days each, src/core/clock.js). @param {number} gameT */
+  const seasonAt = (gameT) => SEASONS[Math.floor(gameT / (DAYS_PER_SEASON * 86400)) % 4];
   const recipes = { realize: rz, voicing: vo };
   // The four tides in their sixteen seasonal settings (doc 24, Motifs).
   const tides = await Promise.all(themes.candidates.flatMap((/** @type {any} */ c) => Object.values(c.settings))
     .map((/** @type {any} */ id) => loadJson(`recipes/music/pieces/themes/${id}.json`)));
-  // One stand-in per slot that the composer fills when chosen. Only spring has material so far, so
-  // every season grows from spring's until the other seasons' material is written (phase 7).
+  // One stand-in per slot that the composer fills when chosen, from the season's own material.
   const grownSlots = GROWN_SLOTS.map((slot) => ({
     id: `grown-${slot}`, grownSlot: slot, alwaysNew: true, slots: [slot], seasons: [...SEASONS], requires: {}, keys: [material.home],
   }));
@@ -72,7 +83,7 @@ export async function createMusic(mixer, opts) {
   /** @type {Awaited<ReturnType<typeof createInstruments>> | null} */ let inst = null;
   /** @type {Promise<any> | null} */ let instPromise = null;
   /** @type {ReturnType<typeof createPerformer> | null} */ let performer = null;
-  /** The piece playing (or being unpacked), or null. @type {null | { id: string, title: string, seed: number, slot: string, windowEndRealS: number, finishing: boolean, started: boolean }} */
+  /** The piece playing (or being unpacked), or null. @type {null | { id: string, title: string, seed: number, slot: string, windowEndRealS: number, finishing: boolean, started: boolean, key: string }} */
   let current = null;
   /** @type {'often'|'now-and-then'|'rarely'|'off'} */ let frequency = 'now-and-then';
   /** @type {MusicState | null} */ let last = null;
@@ -87,6 +98,7 @@ export async function createMusic(mixer, opts) {
   const HR = director.hearts ?? { weight: 1, replayChance: 0, minGapRealMin: 60 };
   const heartRng = stream(opts.seed >>> 0, 0x6872);
   /** @type {import('./hearts.js').Heart[]} */ let hearted = [];
+  /** @type {import('./hearts.js').Heart[]} */ let passed = [];
   /** Real seconds each hearted grown piece last played. @type {Map<string, number>} */ const replayedAt = new Map();
   // The return reveal (director.json reveal): while it plays the director waits; the home tide plays
   // under the drift, at most once every onceEveryRealH real hours (kept on this device).
@@ -115,20 +127,41 @@ export async function createMusic(mixer, opts) {
     const slot = d.slot === 'early-nocturne' ? 'nocturne' : d.slot;
     // A slot the composer fills may replay one of your hearted grown pieces for that slot.
     let growSeed = d.seed, growWeather = st.weather;
+    const growSeason = materials[seasonAt(st.gameT)] ? seasonAt(st.gameT) : 'spring';
+    let replay = false;
     if (d.piece.grownSlot) {
-      const ofSlot = hearted.filter((h) => h.kind === 'grown' && h.slot === d.piece.grownSlot
+      const ofSlot = hearted.filter((h) => h.kind === 'grown' && h.slot === d.piece.grownSlot && (h.season ?? 'spring') === growSeason
         && st.realS - (replayedAt.get(h.key) ?? -Infinity) >= HR.minGapRealMin * 60);
       if (ofSlot.length && heartRng.next() < HR.replayChance) {
         const h = ofSlot[heartRng.int(ofSlot.length)];
         growSeed = /** @type {number} */ (h.seed);
         growWeather = /** @type {any} */ (h.weather ?? st.weather);
         replayedAt.set(h.key, st.realS);
+        replay = true;
       }
     }
-    const piece = d.piece.grownSlot ? grow(material, rules, { slot: d.piece.grownSlot, weather: growWeather, seed: growSeed }, names).piece : d.piece;
+    /** @param {number} s */
+    const growFrom = (s) => grow(materialFor(growSeason), rules, { slot: d.piece.grownSlot, weather: growWeather, seed: s }, names).piece;
+    let piece = d.piece.grownSlot ? growFrom(growSeed) : d.piece;
+    // A new grown piece leans away from what you turned down (director.json hearts.passLean): a piece
+    // you passed never comes back, and one whose form or sound you keep passing is often grown again
+    // from another seed. The seed itself always grows the same piece, so hearts still come back exactly.
+    if (d.piece.grownSlot && !replay) {
+      for (let k = 0; k < (HR.passTries ?? 3); k++) {
+        const h = heartOf({ id: piece.id, title: piece.title, grown: true, grownSlot: d.piece.grownSlot, weather: growWeather, seed: growSeed, season: growSeason });
+        const formN = passed.filter((p) => p.template && p.template === piece.grown?.template).length;
+        const soundN = passed.filter((p) => p.sound && p.sound === soundOf(piece.palette)).length;
+        const keep = Math.max(HR.passFloor ?? 0.35, (HR.passLean ?? 0.75) ** (formN + soundN));
+        const gone = passed.some((p) => p.key === h.key);
+        if (!gone && heartRng.next() < keep) break;
+        growSeed = hash32(growSeed, 0x7061, k + 1);
+        piece = growFrom(growSeed);
+      }
+    }
     const key = d.key ?? piece.keys?.[0];
     // A tide shows its own name ("Moon pull"), a grown piece the composer's.
-    current = { id: piece.id, title: piece.theme?.name ?? piece.title ?? piece.id, seed: growSeed, slot, windowEndRealS: d.windowEndRealS, finishing: false, started: false };
+    current = { id: piece.id, title: piece.theme?.name ?? piece.title ?? piece.id, seed: growSeed, slot, windowEndRealS: d.windowEndRealS, finishing: false, started: false,
+      key: heartOf({ id: piece.id, title: '', grown: !!d.piece.grownSlot, grownSlot: d.piece.grownSlot, weather: growWeather, seed: growSeed, season: growSeason }).key };
     dir.started(d, dirState(st), key);
     const mine = current;
     try {
@@ -143,7 +176,8 @@ export async function createMusic(mixer, opts) {
       mine.started = true;
       performer.play(perf, { coda, onEnd: () => ended(mine) });
       opts.emit?.('music:started', { id: piece.id, title: mine.title, seed: growSeed, slot, durationS: perf.durationS,
-        grown: !!d.piece.grownSlot, grownSlot: d.piece.grownSlot, weather: growWeather });
+        grown: !!d.piece.grownSlot, grownSlot: d.piece.grownSlot, weather: growWeather, season: growSeason,
+        template: piece.grown?.template, sound: soundOf(piece.palette) });
     } catch (e) {
       console.warn('ebb music: a piece could not start', e);
       ended(mine);
@@ -251,6 +285,20 @@ export async function createMusic(mixer, opts) {
       hearted = Array.isArray(list) ? list : [];
       const keys = new Set(hearted.map((h) => h.key));
       for (const t of tides) t.weight = (director.tides?.weight ?? 1) * (keys.has(`tide:${t.id}`) ? HR.weight : 1);
+    },
+    /**
+     * The pieces you turned down (store slice music, passed): a passed tide leaves the pool, and a
+     * piece playing now that you turn down fades out over hearts.passFadeS.
+     * @param {import('./hearts.js').Heart[]} list
+     */
+    setPassed(list) {
+      passed = Array.isArray(list) ? list : [];
+      const keys = new Set(passed.map((h) => h.key));
+      for (const t of tides) t.passed = keys.has(`tide:${t.id}`);
+      if (current?.started && !current.finishing && keys.has(current.key)) {
+        current.finishing = true;
+        performer?.stop(HR.passFadeS ?? 4);
+      }
     },
     /**
      * The return reveal began (reveal:started). A full reveal plays the home tide, unless one did

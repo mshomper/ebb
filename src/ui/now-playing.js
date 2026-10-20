@@ -2,9 +2,10 @@
 // The now-playing line (doc 24, "Naming"; Matt, October 20, 2026): about halfway through each
 // piece its name fades in softly at the bottom middle of the screen, in a small cream bubble, in the
 // journal's Fraunces italic between two drawn notes, rests a few seconds and fades away. The heart
-// at its end is the one thing in it you can tap: it hearts the piece (kept with the island; a
-// hearted piece plays more often, src/audio/music/hearts.js) or takes the heart back. The rest of
-// the bubble never takes a tap from the island. It stays away while the buttons are hidden (H),
+// at its end hearts the piece (kept with the island; a hearted piece plays more often,
+// src/audio/music/hearts.js) or takes the heart back; the thumbs-down beside it turns the piece down
+// (it fades out, never comes back, and the composer leans away from its form and sound). Those two are
+// the only things in it you can tap; the rest of the bubble never takes a tap from the island. It stays away while the buttons are hidden (H),
 // during the reveal, and while a tool is in hand (the tool card sits there); on a phone it waits for
 // an island note in its place to go. Listens for music:started and music:ended
 // (src/audio/music/index.js). Timing: recipes/audio/game.json `nowPlaying`. Styles: now-playing.css.
@@ -27,12 +28,14 @@ export async function mountNowPlaying() {
   root.className = 'ebb-nowplaying';
   root.innerHTML = `${iconSvg('note', 'ebb-nowplaying__note')}<span class="ebb-nowplaying__title" role="status" aria-live="polite"></span>${iconSvg('notes2', 'ebb-nowplaying__note')}`
     + '<span class="ebb-nowplaying__rule" aria-hidden="true"></span>'
+    + `<button type="button" class="ebb-nowplaying__pass" aria-label="Not for me: fade this piece out" title="Not for me">${iconSvg('pass')}</button>`
     + `<button type="button" class="ebb-nowplaying__heart" aria-pressed="false" aria-label="Heart this piece" title="Heart this piece">${iconSvg('heart', 'is-off')}${iconSvg('heart-full', 'is-on')}</button>`;
   root.style.setProperty('--np-in', `${N.fadeInS}s`);
   root.style.setProperty('--np-out', `${N.fadeOutS}s`);
   document.body.appendChild(root);
   const title = /** @type {HTMLElement} */ (root.querySelector('.ebb-nowplaying__title'));
   const heartBtn = /** @type {HTMLButtonElement} */ (root.querySelector('.ebb-nowplaying__heart'));
+  const passBtn = /** @type {HTMLButtonElement} */ (root.querySelector('.ebb-nowplaying__pass'));
 
   /** @type {ReturnType<typeof setTimeout>[]} */ let timers = [];
   /** @type {ReturnType<typeof setTimeout> | 0} */ let hideTimer = 0;
@@ -59,6 +62,14 @@ export async function mountNowPlaying() {
     if (!heart) return;
     dispatch({ type: 'music.heart', heart });
     hideIn(N.holdS);
+  });
+  // Not for me: the piece fades out (src/audio/music/index.js), never comes back, and the bubble goes.
+  passBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (!heart) return;
+    dispatch({ type: 'music.pass', heart });
+    clear();
+    hide();
   });
   heartBtn.addEventListener('pointerenter', () => { if (root.classList.contains('is-shown')) hideIn(N.holdS); });
 
