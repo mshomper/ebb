@@ -330,7 +330,7 @@ export async function startApp(canvas, hooks = {}) {
   terrainPass.setCasts(finds.casts(), finds.castShape);
   // Placed pieces (doc 09, docs/future/10): loose stones, set with Sculpt's Loose stone mode and
   // lifted with a tap; a handful comes by itself with the naturalist's reward (src/world/pieces).
-  const pieces = createPieces({ terrain, water, camera, history, seed, recipe: await loadRecipe('world/pieces') });
+  const pieces = createPieces({ terrain, water, camera, history, seed, recipe: await loadRecipe('world/pieces'), ground: groundDetail, terrainRecipe });
   sim.addSystem(pieces);
   // `?frogscale` (ahead of S6): real-size frogs from the species recipe around the pond, and a
   // camera that may come close, to judge creature size on the island (src/ui/frog-scale.js).
@@ -856,6 +856,10 @@ export async function startApp(canvas, hooks = {}) {
       season: season.index + season.phase,
     };
     grassPass.update(bladeFrame);
+    // No blade grows through a loose stone (src/world/pieces).
+    const clears = pieces.clears(camera.target);
+    grassPass.setClears(clears);
+    rushPass.setClears(clears);
     // Wet-to-dry grass (lush.js): the ground's grass layer takes the blades' tint this season.
     terrainPass.setLush(grassRecipe.lush ? lushLook(grassRecipe, bladeFrame.season) : null);
     rushPass.update(bladeFrame);

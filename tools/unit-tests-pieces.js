@@ -3,7 +3,7 @@
 // the save upgrade that brought them in (src/save/migrate-pieces.js), the handful that comes with the
 // naturalist's reward, the cap, a lifted stone's tip, and the Sculpt card's chip rows.
 
-import { cleanPieces, emptyPieces, makeStone, addPiece, removePiece, pieceAt, arrivingStones, tipAngle, tipDone, stoneBone } from '../src/world/pieces/model.js';
+import { cleanPieces, emptyPieces, makeStone, addPiece, removePiece, pieceAt, arrivingStones, tipAngle, tipDone, stoneBone, leanBone, mul4 } from '../src/world/pieces/model.js';
 import { stoneShapes } from '../src/world/pieces/meshes.js';
 import { pieces5 } from '../src/save/migrate-pieces.js';
 import { migrate, FORMAT } from '../src/save/migrate.js';
@@ -147,6 +147,11 @@ export function addPiecesTests(test, assert, eq) {
     const pivot = apply([-dir[0] * reach, sink, -dir[1] * reach]);
     assert(Math.abs(pivot[0] + dir[0] * reach) < 1e-6 && Math.abs(pivot[1]) < 1e-6 && Math.abs(pivot[2] + dir[1] * reach) < 1e-6, 'the far edge stays on the ground line');
     assert(apply([dir[0] * reach, sink, dir[1] * reach])[1] > 0.5, 'the near edge rises toward you');
+    // Leaning with the ground: up turns all the way to the slope's normal at share 1.
+    const Lb = leanBone(0.5, 0, 1);
+    const n = [-0.5, 1, 0].map((v) => v / Math.hypot(0.5, 1));
+    assert(Math.abs(Lb[4] - n[0]) < 1e-6 && Math.abs(Lb[5] - n[1]) < 1e-6 && Math.abs(Lb[6]) < 1e-6, 'fully leaned, up is the ground normal');
+    eq([...mul4(leanBone(0, 0, 1), M)].join(), [...M].join(), 'level ground: no lean');
     const flat = stoneBone(0, sink, dir, reach);
     eq([...flat].map((v) => Math.round(v * 1e6) / 1e6).join(), `1,0,0,0,0,1,0,0,0,0,1,0,0,${-sink},0,1`, 'flat: only set into the ground');
   });
@@ -166,7 +171,11 @@ export function addPiecesTests(test, assert, eq) {
       }
       assert(Math.abs(lo) < 1e-6 && Math.abs(zhi - zlo - 1) < 1e-6, `shape ${i} on y = 0 and 1 long`);
       eq(bad, 0, `shape ${i} albedos outside physical rock (0..0.6)`);
-      assert(a[i].hy > 0.2 && a[i].hy < 0.7 && a[i].damp.count > 20, `shape ${i} height ${a[i].hy.toFixed(2)}, damp patch`);
+      assert(a[i].hy > 0.12 && a[i].hy < 0.7 && a[i].damp.count > 20, `shape ${i} height ${a[i].hy.toFixed(2)}, damp patch`);
+      // The top is cut flat: a good number of vertices lie close under the highest.
+      let top = 0;
+      for (let v = 0; v < a[i].mesh.count; v++) if (V[v * 9 + 1] > a[i].hy - 0.01) top++;
+      assert(top > 10, `shape ${i} has a flat top (${top} vertices near it)`);
     }
     return a.map((s) => `${(s.mesh.indices.length / 3).toFixed(0)} tris`).join(', ');
   });

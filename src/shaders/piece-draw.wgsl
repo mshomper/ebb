@@ -1,0 +1,166 @@
+// Placed pieces (doc 09, docs/future/10): loose stones, drawn with the island's own scanned rock
+// (the ground detail arrays, lib-ground's layers: boulder top from above, rock face from the sides),
+// projected triplanar in the stone's own frame so the grain rides with it when it tips. Each stone's
+// baked vertex albedo (weathered grey, mottled, soil-stained below the ground line) is scaled by the
+// scan's variation around the rock's recipe mean, so stones read darker than fresh rock but of the
+// same stone. Lit like the ground (shadeGround: sun and moon with shadows, sky fill with cavity, GGX
+// sheen) and given a soft dark damp ring where they meet the ground. Physical albedo only; the
+// palette paints at tonemap (docs/05).
+
+// #include common
+// #include lib-hash
+// #include lighting-bindings
+// #include lib-sky
+// #include lib-lighting
+
+struct PieceDraw {
+  look: vec4f,      // x contact darkness 0..1, y contact radius (footprint shares), z f0, w scan fade 0..1 (0 before the maps load)
+  rockMean: vec4f,  // rgb the rock scan's mean albedo (terrain.json albedoRock), w normal strength
+  rough: vec4f,     // x, y top scan roughness range; z, w side scan roughness range
+  tile: vec4f,      // x 1 / top tile (m), y 1 / side tile (m), z, w terminator range
+};
+
+struct Piece {
+  at: vec4f,        // x, y, z (ground under its middle), yaw (radians)
+  more: vec4f,      // x size (length, m), y, z ground slope along its own x and z, w seed for the scan offset
+  extra: vec4f,     // x, y footprint half width and half length (mesh units); z 1 for plain earth (the damp patch: no rock scan)
+  bone: mat4x4f,    // mesh units: set into the ground, leaned with the slope, tipped when lifted
+};
+
+@group(0) @binding(0) var<uniform> frame: FrameUniforms;
+@group(2) @binding(0) var<uniform> pd: PieceDraw;
+@group(2) @binding(1) var<storage, read> pieces: array<Piece>;
+@group(2) @binding(2) var groundA: texture_2d_array<f32>;
+@group(2) @binding(3) var groundB: texture_2d_array<f32>;
+@group(2) @binding(4) var groundSampler: sampler;
+
+const ROCK_LAYER: i32 = 2;
+const CLIFF_LAYER: i32 = 5;
+
+struct VsOut {
+  @builtin(position) pos: vec4f,
+  @location(0) world: vec3f,
+  @location(1) normal: vec3f,
+  @location(2) albedo: vec3f,
+  @location(3) local: vec3f,      // position in the stone's own frame, meters, offset by its seed
+  @location(4) localN: vec3f,
+  @location(5) ax: vec3f,         // the stone's own x, y, z axes in the world (posed and turned)
+  @location(6) ay: vec3f,
+  @location(7) az: vec3f,
+  @location(8) @interpolate(flat) scanned: f32,   // 1 for stone, 0 for plain earth
+};
+
+struct FsOut {
+  @location(0) color: vec4f,
+  @location(1) normalId: vec4f,
+};
+
+fn octEncode(n: vec3f) -> vec2f {
+  var p = n.xz / (abs(n.x) + abs(n.y) + abs(n.z));
+  if (n.y < 0.0) { p = (1.0 - abs(p.yx)) * select(vec2f(-1.0), vec2f(1.0), p >= vec2f(0.0)); }
+  return p * 0.5 + 0.5;
+}
+
+/** A direction in the stone's frame turned by its yaw into the world (creature-draw.wgsl place). */
+fn turn(d: vec3f, yaw: f32) -> vec3f {
+  let c = cos(yaw);
+  let s = sin(yaw);
+  return vec3f(c * d.x + s * d.z, d.y, -s * d.x + c * d.z);
+}
+
+@vertex
+fn vsPiece(@location(0) position: vec3f, @location(1) normal: vec3f, @location(2) albedo: vec3f,
+           @builtin(instance_index) ii: u32) -> VsOut {
+  let pc = pieces[ii];
+  let size = pc.more.x;
+  let posed = (pc.bone * vec4f(position, 1.0)).xyz;
+  var o: VsOut;
+  o.world = turn(posed * size, pc.at.w) + pc.at.xyz;
+  o.pos = frame.viewProj * vec4f(o.world, 1.0);
+  o.normal = turn(normalize((pc.bone * vec4f(normal, 0.0)).xyz), pc.at.w);
+  o.albedo = albedo;
+  o.local = position * size + vec3f(pc.more.w * 7.31, pc.more.w * 3.17, pc.more.w * 5.53);
+  o.localN = normal;
+  o.ax = turn((pc.bone * vec4f(1.0, 0.0, 0.0, 0.0)).xyz, pc.at.w);
+  o.ay = turn((pc.bone * vec4f(0.0, 1.0, 0.0, 0.0)).xyz, pc.at.w);
+  o.az = turn((pc.bone * vec4f(0.0, 0.0, 1.0, 0.0)).xyz, pc.at.w);
+  o.scanned = 1.0 - pc.extra.z;
+  return o;
+}
+
+struct Scan { albedo: vec3f, grad: vec3f, rough: f32, cavity: f32 };
+
+/** One planar read of a layer: its albedo, its height gradient along u and v (stone frame), roughness and cavity. */
+fn scanRead(layer: i32, uv: vec2f, u: vec3f, v: vec3f, r: vec2f) -> Scan {
+  let a = textureSample(groundA, groundSampler, uv, layer);
+  let b = textureSample(groundB, groundSampler, uv, layer);
+  let t = vec2f(b.r, b.g) * 2.0 - 1.0;
+  let tz = sqrt(max(1.0 - dot(t, t), 1e-4));
+  var s: Scan;
+  s.albedo = a.rgb;
+  s.grad = (u * (-t.x / tz) + v * (t.y / tz)) * pd.rockMean.w;
+  s.rough = mix(r.x, r.y, b.b);
+  s.cavity = b.a;
+  return s;
+}
+
+@fragment
+fn fsPiece(in: VsOut) -> FsOut {
+  let nL = normalize(in.localN);
+  // Triplanar in the stone's frame: boulder top from above, rock face on the sides.
+  var w = pow(abs(nL), vec3f(4.0));
+  w /= max(w.x + w.y + w.z, 1e-5);
+  let p = in.local;
+  let sx = scanRead(CLIFF_LAYER, vec2f(p.z, -p.y) * pd.tile.y, vec3f(0.0, 0.0, 1.0), vec3f(0.0, -1.0, 0.0), pd.rough.zw);
+  let sy = scanRead(ROCK_LAYER, vec2f(p.x, p.z) * pd.tile.x, vec3f(1.0, 0.0, 0.0), vec3f(0.0, 0.0, 1.0), pd.rough.xy);
+  let sz = scanRead(CLIFF_LAYER, vec2f(p.x, -p.y) * pd.tile.y, vec3f(1.0, 0.0, 0.0), vec3f(0.0, -1.0, 0.0), pd.rough.zw);
+  let fade = pd.look.w * in.scanned;
+  let scan = sx.albedo * w.x + sy.albedo * w.y + sz.albedo * w.z;
+  // The scan's variation about its own mean, on the stone's weathered albedo.
+  let albedo = in.albedo * mix(vec3f(1.0), scan / max(pd.rockMean.rgb, vec3f(0.01)), fade);
+  let rough = mix(0.75, sx.rough * w.x + sy.rough * w.y + sz.rough * w.z, fade);
+  let cavity = mix(1.0, sx.cavity * w.x + sy.cavity * w.y + sz.cavity * w.z, fade);
+  // Surface gradient (Mikkelsen 2020), in the stone's frame, then to the world.
+  let g = (sx.grad * w.x + sy.grad * w.y + sz.grad * w.z) * fade;
+  let nDL = normalize(nL - (g - dot(g, nL) * nL));
+  let nMesh = normalize(in.normal);
+  let nDetail = normalize(in.ax * nDL.x + in.ay * nDL.y + in.az * nDL.z);
+  let color = shadeGround(albedo, in.world, nMesh, nDetail, rough, cavity, in.pos, pd.tile.zw, pd.look.z, 1.0, 1.0, vec3f(0.0));
+  let safe = select(vec3f(0.0), color, color == color);
+  // Outline group 2: a soft line where it stands against the ground, not a creature's.
+  return FsOut(vec4f(max(safe, vec3f(0.0)), 1.0), vec4f(octEncode(nMesh), 0.0, 2.0 / 3.0));
+}
+
+// ---- the damp ring: a soft darkening of the ground where the stone meets it ----
+
+struct RingOut {
+  @builtin(position) pos: vec4f,
+  @location(0) uv: vec2f,
+};
+
+var<private> QUAD: array<vec2f, 6> = array<vec2f, 6>(
+  vec2f(-1.0, -1.0), vec2f(1.0, -1.0), vec2f(-1.0, 1.0),
+  vec2f(1.0, -1.0), vec2f(1.0, 1.0), vec2f(-1.0, 1.0));
+
+@vertex
+fn vsRing(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> RingOut {
+  let pc = pieces[ii];
+  let q = QUAD[vi];
+  // An oval a little larger than the footprint, lying along the ground's slope.
+  let r = pd.look.y;
+  var local = vec3f(q.x * pc.extra.x * r, 0.0, q.y * pc.extra.y * r);
+  local.y = pc.more.y * local.x + pc.more.z * local.z + 0.004 / pc.more.x;
+  var o: RingOut;
+  o.pos = frame.viewProj * vec4f(turn(local * pc.more.x, pc.at.w) + pc.at.xyz, 1.0);
+  o.uv = q;
+  return o;
+}
+
+@fragment
+fn fsRing(in: RingOut) -> @location(0) vec4f {
+  let r = length(in.uv);
+  // Darkest in a band just outside the stone's edge, fading out and in toward the middle (hidden
+  // under the stone anyway).
+  let dark = pd.look.x * (1.0 - smoothstep(0.55, 1.0, r));
+  return vec4f(vec3f(1.0 - dark), 1.0);
+}

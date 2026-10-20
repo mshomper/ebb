@@ -12,7 +12,9 @@ import { lushLook } from '../../world/growth/lush.js';
 
 /** @typedef {import('../frame-graph.js').PassContext} PassContext */
 
-const DRAW_BYTES = 240;
+const DRAW_BYTES = 768;
+/** Clears (ground with no blades, under placed pieces) the uniform holds. */
+const MAX_CLEARS = 32;
 const SEASONS = /** @type {const} */ (['spring', 'summer', 'autumn', 'winter']);
 
 /**
@@ -111,6 +113,17 @@ export function createGrassPass(opts) {
     writes: ['hdr', 'depth', 'normalId'],
     enabled: () => !off,
     setTier,
+
+    /**
+     * Ground where no blade stands: a circle under each placed piece (src/world/pieces), so a stone
+     * sits in the grass rather than the grass growing through it. Nearest the view first if more.
+     * @param {{ x: number, z: number, r: number }[]} list
+     */
+    setClears(list) {
+      const n = Math.min(MAX_CLEARS, list.length);
+      f[60] = n;
+      for (let i = 0; i < n; i++) f.set([list[i].x, list[i].z, list[i].r, 0], 64 + i * 4);
+    },
 
     /**
      * Each frame: where the view looks, the time, the wind and the season.

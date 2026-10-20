@@ -208,3 +208,33 @@ export function stoneBone(angle, sinkH, dir, reach) {
   const tz = pz - (r20 * px + r21 * py + r22 * pz);
   return new Float32Array([r00, r10, r20, 0, r01, r11, r21, 0, r02, r12, r22, 0, tx, ty, tz, 1]);
 }
+
+/**
+ * A turn that leans a stone with the ground (column-major 4 x 4, about its middle on the ground
+ * line): from upright toward the ground's normal by share of the way. a, b: the ground's rise along
+ * the stone's own x and z. @param {number} a @param {number} b @param {number} share 0 level .. 1 flat on the slope
+ * @returns {Float32Array}
+ */
+export function leanBone(a, b, share) {
+  const l = Math.hypot(a, 1, b), nx = -a / l, ny = 1 / l, nz = -b / l;
+  const kl = Math.hypot(nz, nx);
+  if (kl < 1e-9 || share <= 0) return new Float32Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
+  // Axis up x n; the angle a share of the way from up to n.
+  const kx = nz / kl, kz = -nx / kl, t = Math.acos(Math.min(1, ny)) * share, c = Math.cos(t), s = Math.sin(t);
+  return new Float32Array([
+    c + (1 - c) * kx * kx, s * kz, (1 - c) * kx * kz, 0,
+    -s * kz, c, s * kx, 0,
+    (1 - c) * kx * kz, -s * kx, c + (1 - c) * kz * kz, 0,
+    0, 0, 0, 1]);
+}
+
+/** Two column-major 4 x 4 matrices composed: a first, then b (b x a). @param {Float32Array} b @param {Float32Array} a */
+export function mul4(b, a) {
+  const o = new Float32Array(16);
+  for (let col = 0; col < 4; col++) for (let row = 0; row < 4; row++) {
+    let s = 0;
+    for (let k = 0; k < 4; k++) s += b[k * 4 + row] * a[col * 4 + k];
+    o[col * 4 + row] = s;
+  }
+  return o;
+}
