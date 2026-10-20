@@ -51,7 +51,8 @@ import { createPresence } from './world/creatures/presence.js';
 import { cleanName, nameFrog } from './world/creatures/trust.js';
 import { lushLook } from './world/growth/lush.js';
 import { createMidges } from './world/ecology/midges-live.js';
-import { SPECIES } from './world/species.js';
+import { SPECIES, keyOf } from './world/species.js';
+import { bringSwarm, testRecipe } from './world/creatures/swarms.js';
 import { onAction, history } from './input/actions.js';
 import { attachDesktopInput } from './input/desktop.js';
 import { attachTouchInput } from './input/touch.js';
@@ -180,7 +181,8 @@ export async function startApp(canvas, hooks = {}) {
   // `?day=N` starts a new world N game days in (14 per season: 15 is early summer), to see later seasons sooner.
   // `?frogs=N` (testing) starts on spring day 7 unless a day is given, after the frogs' winter sleep
   // (they wake 0.3 into spring, day 5).
-  const startDay = Math.max(0, Number.parseInt(params.get('day') ?? (params.has('frogs') ? '6' : '0'), 10) || 0);
+  // `?dragonflies=N` likewise: they fly from 0.4 into spring (recipes/world/seasons.json).
+  const startDay = Math.max(0, Number.parseInt(params.get('day') ?? (params.has('frogs') || params.has('dragonflies') ? '6' : '0'), 10) || 0);
   if (clock.worldT() === 0) clock.reset(((skyRecipe.orbit.startHour ?? 10) + 24 * startDay) * clock.SECONDS_PER_HOUR);
   updateStore('meta', (m) => { m.flow = clock.flow(); });
   const env = makeEnv(seed, { seasons: seasonsRecipe, sky: skyRecipe.orbit, water: waterRecipe });
@@ -215,6 +217,9 @@ export async function startApp(canvas, hooks = {}) {
   /** @type {Record<string, any>} */
   const speciesRecipes = Object.fromEntries(await Promise.all(SPECIES.map(async (id) => [id, await loadRecipe(`species/${id}`)])));
   const frogRecipe = speciesRecipes.frog, midgeRecipe = speciesRecipes.midge;
+  // `?minnows=N` (testing, unsaved): a school comes at once, and the biggest still water will do
+  // without its deep spot (src/world/creatures/swarms.js testRecipe), so a new island can be tested.
+  if (params.has('minnows')) speciesRecipes.minnow = testRecipe(speciesRecipes.minnow);
   world.env.recipes.species = speciesRecipes;
   updateStore('world', () => world.state);
   const unHour = on('clock:hour', (/** @type {{ hour: number }} */ p) => {
@@ -301,6 +306,23 @@ export async function startApp(canvas, hooks = {}) {
   const presence = createPresence({ camera });
   const creatures = createCreatures({ world, recipe: frogRecipe, terrain, water, ripples, camera, testFrogs, flora, floraFrame: () => floraFrame, presence });
   sim.addSystem(creatures);
+  // `?minnows=N`, `?dragonflies=N` (testing, unsaved): a group of N comes at once and is settled,
+  // once the island, its water and the journal are up (as `?frogs` does).
+  const testSwarms = ['minnow', 'dragonfly'].filter((id) => params.has(keyOf(speciesRecipes[id])))
+    .map((id) => ({ rec: speciesRecipes[id], count: Math.max(1, Math.min(30, Number.parseInt(params.get(keyOf(speciesRecipes[id])) ?? '12', 10) || 12)) }));
+  let swarmWait = 0;
+  if (testSwarms.length) sim.addSystem({ id: 'swarm-tests', tick(/** @type {any} */ f) {
+    if (!testSwarms.length || !world.env.habitat?.() || !water.sim.live) return;
+    swarmWait += f.realDt;
+    if (!getStore('journal') && swarmWait < 3) return;
+    for (const t of testSwarms.splice(0)) {
+      const r = bringSwarm(world.state, clock.hourIndex(), world.env, t.rec, t.count);
+      world.state = r.state;
+      updateStore('world', () => world.state);
+      for (const e of r.events) emitDeferred(e.name, e.payload);
+      emitDeferred('world:ticked', { hour: clock.hourIndex(), events: r.events, state: world.state });
+    }
+  } });
   // Midges you can see (src/world/ecology/midges-live.js): swarms from the midge field, after the water.
   const midges = createMidges({ world, recipe: midgeRecipe, budget: tierSettings.boids ?? 4096, ripples,
     ground: (x, z) => terrain.sampleHeight(x, z), water: (x, z) => water.sampleLive(x, z),

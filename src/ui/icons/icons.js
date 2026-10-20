@@ -468,6 +468,14 @@ const ICONS = {
     <circle cx="19" cy="9.5" r="0.85" fill="currentColor" stroke="none"/>
     <circle cx="8.5" cy="10.5" r="0.85" fill="currentColor" stroke="none"/>
     <path d="M4.5 11.5C5.5 10.5 6.5 12.5 7.5 11.5M15.5 3C16.5 2 17.5 4 18.5 3" opacity="0.7"/>`,
+  // Minnows (M2): a small fish under the water line, a ring above where one rose.
+  minnow: `
+    <path d="M2.5 7.5C4 6.5 5.5 8.5 7 7.5S10 6.5 11.5 7.5M15 7.5H21.5"/>
+    <path d="M10.6 5.6C11.6 4.9 14.4 4.9 15.4 5.6"/>
+    <path ${ACCENT} d="M3.5 15C6 11.8 11 11.4 15 14.2L19.8 11.6V18.4L15 15.8C11 18.6 6 18.2 3.5 15Z"/>
+    <path d="M3.5 15C6 11.8 11 11.4 15 14.2L19.8 11.6V18.4L15 15.8C11 18.6 6 18.2 3.5 15Z"/>
+    <circle cx="6.9" cy="14.3" r="0.9" fill="currentColor" stroke="none"/>
+    <path d="M10.5 13.4C11.2 14.4 11.2 15.6 10.5 16.6"/>`,
 
   // The Web's shore features (journal-web.json). Rock pool: water held between two rocks.
   pool: `

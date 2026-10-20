@@ -4,7 +4,7 @@
   "key": "minnows",
   "name": "Common minnow",
   "version": 1,
-  "note": "Common minnows (docs 11, 12, 23; M2). A school, not individuals: the island keeps one school per pool that suits them, never single fish with names. LIFE. ecology: kind swarm (src/world/creatures/swarms.js keeps the schools in the hourly tick); no dormancy (all year; in winter they sit still in the deep spot). needs (src/world/ecology/needs.js): five, each 0..1, mood = their weighted geometric mean (weights w sum to 1). water: good water is still fresh water depthM deep (no damp hollows) in a body of standing water of at least body.minM2 square meters that is somewhere at least body.deepM deep, the spot they winter in (the starter pond is 96 cm at its deepest, so the frogs' Cut, or Lower, digs the last of it); full within okM of good water, none beyond maxM. Slow streams join when the habitat grid keeps the flow class. food: the fields summed over a square of radiusM (midges over the water, later pondweed), against per times the ideal school (shares of a full square meter a fish needs). shelter: the best cover within radiusM, each plant weighted (lily pads and reed stems at the edge), counting from 'from' and full at 'full'. quiet: low sensitivity, nothing disturbs them yet. company: a school of n[0] to n[2], n[1] ideal. scored: only squares of a pool that suits them (where: water).",
+  "note": "Common minnows (docs 11, 12, 23; M2). A school, not individuals: the island keeps one school per pool that suits them, never single fish with names. LIFE. ecology: kind swarm (src/world/creatures/swarms.js keeps the schools in the hourly tick); no dormancy (all year; in winter they sit still in the deep spot). needs (src/world/ecology/needs.js): five, each 0..1, mood = their weighted geometric mean (weights w sum to 1). water: good water is still fresh water depthM deep (no damp hollows) in a body of standing water of at least body.minM2 square meters that is somewhere at least body.deepM deep, the spot they winter in (the starter pond is 96 cm at its deepest, so the frogs' Cut, or Lower, digs the last of it); full within okM of good water, none beyond maxM. Slow streams join when the habitat grid keeps the flow class. food: the fields summed over a square of radiusM (midges over the water, later pondweed), against per times the ideal school (shares of a full square meter a fish needs). shelter: the best cover within radiusM, each plant weighted (lily pads and reed stems at the edge), counting from 'from' and full at 'full'. quiet: low sensitivity, nothing disturbs them yet. company: a school of n[0] to n[2], n[1] ideal. scored: only squares of a pool that suits them (where: water). arrival (game hours; src/world/creatures/swarms.js): a pool is right once its best square scores rightScore and it holds startCount, for rightHoldH hours in a row; after scoutAfterH, at comeAtH o'clock a few (startCount) may come, with scoutChance a day and surely by the maxWaitDays-th; after settleAfterH they stay if their mood is settleMood or more, else they move on and none try again for rescoutAfterH. A pool holds one fish per m2PerOne square meters of good depth, up to company n[2]. Each day at comeAtH a content school (growMood) grows by growShare of the room left, in the seasons growSeasons allows (spring, summer, autumn, winter); another right pool may get a school of its own with newPoolChance a day. Mood eases moodEase of the way to its target each hour; a school under leaveMood for leaveAfterH hours thins by shrinkShare a day, and one whose pool is drained moves on at once. They are happy after happyHoldH hours with happyMin or more fish at happyMood. gift: pondweed seed (docs 12, 13).",
   "ecology": {
     "kind": "swarm",
     "activity": { "pattern": "diurnal" },
@@ -15,6 +15,12 @@
       "quiet": { "w": 0.1 },
       "company": { "n": [8, 16, 30], "alone": 0.5, "crowded": 0.5, "w": 0.15 }
     },
-    "scored": { "where": "water" }
+    "scored": { "where": "water" },
+    "arrival": { "rightScore": 0.5, "rightHoldH": 6, "scoutAfterH": 12, "comeAtH": 9, "scoutChance": 0.5, "maxWaitDays": 3,
+                 "startCount": 3, "m2PerOne": 4, "settleAfterH": 24, "settleMood": 0.5, "rescoutAfterH": 48,
+                 "growShare": 0.35, "growMood": 0.5, "growSeasons": [1, 1, 1, 0], "newPoolChance": 0.3,
+                 "moodEase": 0.15, "leaveMood": 0.3, "leaveAfterH": 48, "shrinkShare": 0.3,
+                 "happyMin": 8, "happyMood": 0.7, "happyHoldH": 24 },
+    "gift": { "kind": "seed", "id": "pondweed" }
   }
 }

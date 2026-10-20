@@ -3,7 +3,9 @@
 // needs reader gives the frogs exactly what they had before it, minnows want a pool with a deep spot,
 // dragonflies want still water with perches near, and the species list and dormancy cover them.
 
-import { runHour } from '../src/sim/tick.js';
+import { runHour, hashWorldState } from '../src/sim/tick.js';
+import { initialJournal, observe, foundAnimal } from '../src/world/journal/observe.js';
+import { due, grant } from '../src/world/expansion.js';
 import { needMaps, waterBodies } from '../src/world/ecology/needs.js';
 import { openBox } from '../src/world/ecology/fields.js';
 import { seasonsAt } from '../src/world/seasons.js';
@@ -27,6 +29,31 @@ function dug(hab, cm) {
   const depthCm = hab.depthCm.slice();
   depthCm[pond.deepK] = cm;
   return { hab: { ...hab, depthCm }, pond };
+}
+
+/**
+ * A new world whose big pond has one square dug to 1.1 m, as the frogs' Cut would.
+ * @param {any} R @param {string} island @param {number} seed
+ */
+function dugWorld(R, island, seed) {
+  const w = islandWorld(R, island, seed);
+  const { hab } = dug(w.model.habitat, 110);
+  w.env.habitat = () => hab;
+  return w;
+}
+
+/**
+ * Run a world for some hours, keeping the minnows' events.
+ * @param {any} state @param {any} env @param {number} from @param {number} hours
+ */
+function runMinnows(state, env, from, hours) {
+  /** @type {{ hour: number, name: string, payload: any }[]} */ const events = [];
+  for (let h = from; h < from + hours; h++) {
+    const r = runHour(state, h, env);
+    state = r.state;
+    for (const e of r.events) if (e.payload?.species === 'minnows') events.push({ hour: h, name: e.name, payload: e.payload });
+  }
+  return { state, events };
 }
 
 /**
@@ -112,6 +139,98 @@ export function addPondLifeTests(test, assert, eq) {
     eq(at(2, 4), false, 'early autumn');
     eq(at(2, 12), true, 'late autumn');
     eq(at(3, 7), true, 'winter');
+  });
+
+  test(G, 'minnows come to a dug pool: a sign in the morning, settled a day later, a growing school, happy within a week', async () => {
+    const R = await loadEcologyRecipes();
+    const lines = [];
+    for (const seed of [1, 2, 3]) {
+      const w = dugWorld(R, 'starter-island', seed);
+      const r = runMinnows(w.state, w.env, w.h0 + 1, 24 * 7);
+      const at = (/** @type {string} */ name) => r.events.find((e) => e.name === name)?.hour ?? -1;
+      const right = at('creature:habitat-right'), sign = at('creature:arrived'), settled = at('creature:settled'), happy = at('species:happy');
+      assert(right >= 0 && right < 24, `seed ${seed}: the pool was right at hour ${right}`);
+      assert(sign > right && sign % 24 === R.species.minnow.ecology.arrival.comeAtH, `seed ${seed}: the sign came at hour ${sign}`);
+      assert(settled > sign, `seed ${seed}: settled at ${settled}`);
+      assert(happy > settled && happy < w.h0 + 24 * 7, `seed ${seed}: happy at ${happy}`);
+      const M = r.state.creatures.minnows;
+      const n = M.groups.reduce((/** @type {number} */ s, /** @type {any} */ g) => s + g.count, 0);
+      assert(n >= 8 && n <= R.species.minnow.ecology.needs.company.n[2], `seed ${seed}: ${n} minnows`);
+      eq(r.state.creatures.frogs.frogs.length > 0, true, `seed ${seed}: frogs still come too`);
+      lines.push(`seed ${seed}: sign day ${Math.floor(sign / 24) + 1}, happy day ${Math.floor(happy / 24) + 1}, ${n} minnows`);
+    }
+    return lines.join('; ');
+  });
+
+  test(G, 'the same seed gives the same minnows twice, and a run stopped and resumed lands in the same place', async () => {
+    const R = await loadEcologyRecipes();
+    const a = dugWorld(R, 'starter-island', 4), b = dugWorld(R, 'starter-island', 4);
+    const hours = 24 * 6;
+    const ra = runMinnows(a.state, a.env, a.h0 + 1, hours), rb = runMinnows(b.state, b.env, b.h0 + 1, hours);
+    eq(hashWorldState(ra.state), hashWorldState(rb.state), 'world hash of the two runs');
+    const half = runMinnows(a.state, a.env, a.h0 + 1, hours / 2);
+    const resumed = runMinnows(structuredClone(half.state), a.env, a.h0 + 1 + hours / 2, hours / 2);
+    eq(hashWorldState(resumed.state), hashWorldState(ra.state), 'world hash after stopping and resuming');
+  });
+
+  test(G, 'a drained pool sends its school away at once, quietly', async () => {
+    const R = await loadEcologyRecipes();
+    const w = dugWorld(R, 'starter-island', 1);
+    const r = runMinnows(w.state, w.env, w.h0 + 1, 24 * 4);
+    assert(r.state.creatures.minnows.groups.length === 1, 'a school before draining');
+    // Drain: the pond's water is gone from the habitat.
+    const hab = w.env.habitat();
+    const dry = { ...hab, depthCm: new Uint8Array(hab.depthCm.length), still: new Uint8Array(hab.still.length) };
+    const env2 = { ...w.env, habitat: () => dry };
+    const after = runMinnows(r.state, env2, w.h0 + 1 + 24 * 4, 2);
+    const left = after.events.filter((e) => e.name === 'creature:left');
+    eq(left.length, 1, 'schools that moved on');
+    eq(left[0].payload.count, 0, 'minnows left on the island');
+    eq(after.state.creatures.minnows.phase, 'waiting', 'phase after they moved on');
+  });
+
+  test(G, 'the minnows page: a sign while unseen, inked when found, growth noted only as its word changes, the gift inks', async () => {
+    const R = await loadEcologyRecipes();
+    const words = await (await fetch('../recipes/world/journal.json')).json();
+    const w = dugWorld(R, 'starter-island', 1);
+    let j = initialJournal(w.h0);
+    let s = w.state;
+    /** @type {string[]} */ const texts = [];
+    let foundAt = -1;
+    for (let h = w.h0 + 1; h < w.h0 + 1 + 24 * 7; h++) {
+      const r = runHour(s, h, w.env);
+      s = r.state;
+      const o = observe(j, { state: s, events: r.events, hour: h, words, habitat: w.env.habitat() });
+      j = o.journal;
+      for (const n of o.notes) if (n.sp === 'minnows') texts.push(n.text);
+      // Found the morning after they settled.
+      if (foundAt < 0 && s.creatures.minnows?.phase === 'settled' && h % 24 === 10) {
+        foundAt = h;
+        const f = foundAnimal(j, { state: s, hour: h, words }, 'minnows');
+        j = f.journal;
+        for (const n of f.notes) texts.push(n.text);
+      }
+    }
+    const M = words.species.minnows;
+    assert(texts.includes(M.notes.sign), 'the sign was written');
+    assert(texts.indexOf(M.notes.sign) < texts.indexOf(M.notes.found), 'the sign came before finding them');
+    assert(!texts.slice(0, texts.indexOf(M.notes.found)).some((t) => t.includes('minnow')), 'nothing named minnows before they were found');
+    eq(j.species.minnows.ever, true, 'the page is inked');
+    const grew = texts.filter((t) => t === M.notes.joined).length;
+    assert(grew >= 1 && grew <= M.amount.length, `growth written ${grew} times`);
+    assert(j.flags.includes('minnows:happy'), 'happy flag for the gives line and the gift');
+    return `${texts.length} notes; growth written ${grew} times`;
+  });
+
+  test(G, 'happy minnows give pondweed seed, once', async () => {
+    const naturalist = await (await fetch('../recipes/world/naturalist.json')).json();
+    const words = await (await fetch('../recipes/world/journal.json')).json();
+    const R = await loadEcologyRecipes();
+    const gifts = { minnows: R.species.minnow.ecology.gift };
+    const g = due({ found: 0, flags: ['minnows:happy'], earned: {}, rewards: [], gifts, words, giftWords: naturalist.gifts });
+    eq(g.length, 1, 'gifts due');
+    eq(JSON.stringify(g[0].give), JSON.stringify({ seeds: { pondweed: true } }), 'what it gives');
+    eq(due({ found: 0, flags: ['minnows:happy'], earned: grant({}, g[0]), rewards: [], gifts, words, giftWords: naturalist.gifts }).length, 0, 'gifts due after it was given');
   });
 
   test(G, 'the species list knows every recipe by its world key', async () => {

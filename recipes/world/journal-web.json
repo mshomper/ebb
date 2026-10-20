@@ -51,6 +51,7 @@
     "sanddollars": { "label": "Sand dollars", "kind": "small", "icon": "sanddollars", "page": "sanddollars" },
     "frogs": { "label": "Frogs", "kind": "animals", "icon": "frog", "page": "frogs", "flag": "frogs:seen" },
     "midges": { "label": "Midges", "kind": "animals", "icon": "midges", "page": "midges", "flag": "midges:seen" },
+    "minnows": { "label": "Minnows", "kind": "animals", "icon": "minnow", "page": "minnows", "flag": "minnows:seen" },
     "you": { "label": "You", "kind": "animals", "icon": "you", "always": true }
   },
   "links": [
@@ -114,6 +115,10 @@
     { "a": "fresh", "b": "frogs", "ink": "flag:frogs:settled", "note": "Frogs need fresh water to live by and to spawn in." },
     { "a": "reeds", "b": "midges", "ink": "flag:midges:seen", "note": "Midges gather over the reeds." },
     { "a": "midges", "b": "frogs", "ink": "flag:frogs:ate", "note": "Frogs feed on the midges." },
-    { "a": "you", "b": "frogs", "ink": "flag:you:fed", "note": "A frog ate from your offering." }
+    { "a": "you", "b": "frogs", "ink": "flag:you:fed", "note": "A frog ate from your offering." },
+    { "a": "fresh", "b": "minnows", "ink": "flag:minnows:seen&flag:minnows:settled", "note": "Minnows need still water with a deep spot to winter in." },
+    { "a": "midges", "b": "minnows", "ink": "flag:minnows:seen&flag:midges:seen", "note": "Minnows rise to the midges over the water." },
+    { "a": "lilies", "b": "minnows", "ink": "flag:minnows:seen&seen:lilies", "note": "Minnows hide under the lily pads." },
+    { "a": "reeds", "b": "minnows", "ink": "flag:minnows:seen&seen:reeds", "note": "Minnows shelter among the reed stems." }
   ]
 }

@@ -26,6 +26,8 @@ const INK = [184, 101, 58];
 const PAPER = [233, 226, 205];
 const SEA = [47, 110, 134], POND = [59, 127, 168];
 const FROG = '#2F4A2C', EDGE = '#1E2624', CAPACITY = '#8C8F86', MIDGE = '#9C7B60';
+/** The schools charted hour by hour, with their line colors (minnows river blue, dragonflies teal). */
+const SCHOOLS = [{ key: 'minnows', label: 'minnows', color: '#2F6E86' }, { key: 'dragonflies', label: 'dragonflies', color: '#3E8C7A' }];
 
 /** The fields a map can show: id, button label, legend words. */
 const FIELDS = [
@@ -64,7 +66,9 @@ const status = (/** @type {string} */ icon, /** @type {string} */ text) => { $('
 /** @type {string} */ let who = 'frog';
 /**
  * @typedef {{ hours: number, h0: number, frogs: number[], room: number[], midges: number[], dormant: boolean[],
- *   events: { hour: number, name: string, payload: any }[], end: any, hash: number, env: any, model: any }} Run
+ *   events: { hour: number, name: string, payload: any }[], others: { hour: number, name: string, payload: any }[],
+ *   schools: Record<string, number[]>, end: any, hash: number, env: any, model: any }} Run
+ *   events: the frogs' arc; others: the schools' (minnows, dragonflies)
  */
 /** Per island: its panel's elements and its latest run. @type {Record<string, { el: Record<string, HTMLElement>, run: Run | null, start: any }>} */
 const panels = {};
@@ -158,6 +162,9 @@ function buildPanel(isl) {
     <h3>Frogs, hour by hour</h3>
     <canvas class="chart" data-el="frogs" aria-label="${isl.name}: frogs and room for them"></canvas>
     <div class="legend"><span><i class="line" style="background:${FROG}"></i>frogs</span><span><i class="dash"></i>room for frogs (one per 3 m of good edge)</span></div>
+    <h3>Minnows and dragonflies, hour by hour</h3>
+    <canvas class="chart small" data-el="schools" aria-label="${isl.name}: minnows and dragonflies"></canvas>
+    <div class="legend">${SCHOOLS.map((s) => `<span><i class="line" style="background:${s.color}"></i>${s.label}</span>`).join('')}<span>${markSvg('star')}happy</span></div>
     <h3>Midges</h3>
     <canvas class="chart small" data-el="midges" aria-label="${isl.name}: midges"></canvas>
     <div class="legend"><span><i class="line" style="background:${MIDGE}"></i>square meters with a good cloud of midges</span></div>
@@ -208,7 +215,7 @@ async function runAll() {
 /** @param {number} h */
 const hex = (h) => (h >>> 0).toString(16).toUpperCase().padStart(8, '0');
 /** @param {Run} r */
-const eventsText = (r) => r.events.map((e) => `${e.hour}:${e.name}:${e.payload?.id ?? ''}`).join(' ');
+const eventsText = (r) => [...r.events, ...r.others].map((e) => `${e.hour}:${e.name}:${e.payload?.species}:${e.payload?.id ?? ''}`).join(' ');
 
 /**
  * Run one island for `days` game days from a new world, a few hours per frame.
@@ -219,7 +226,8 @@ async function runIsland(isl, s, days, startDay, which) {
   const w = worldFor(isl.id, s, startDay);
   let state = w.state;
   const hours = days * 24;
-  /** @type {Run} */ const run = { hours, h0: w.h0, frogs: [], room: [], midges: [], dormant: [], events: [], end: null, hash: 0, env: w.env, model: w.model };
+  /** @type {Run} */ const run = { hours, h0: w.h0, frogs: [], room: [], midges: [], dormant: [], events: [], others: [], end: null, hash: 0, env: w.env, model: w.model,
+    schools: Object.fromEntries(SCHOOLS.map((s) => [s.key, /** @type {number[]} */ ([])])) };
   let h = 0;
   while (h < hours) {
     const t = performance.now();
@@ -227,7 +235,15 @@ async function runIsland(isl, s, days, startDay, which) {
       const hour = w.h0 + 1 + h;
       const r = runHour(state, hour, w.env);
       state = r.state;
-      for (const e of r.events) if (MARKS[/** @type {keyof typeof MARKS} */ (e.name)]) run.events.push({ hour, name: e.name, payload: e.payload });
+      for (const e of r.events) {
+        if (!MARKS[/** @type {keyof typeof MARKS} */ (e.name)]) continue;
+        if (e.payload?.species === 'frogs') run.events.push({ hour, name: e.name, payload: e.payload });
+        else run.others.push({ hour, name: e.name, payload: e.payload });
+      }
+      for (const s of SCHOOLS) {
+        const G = state.creatures?.[s.key];
+        run.schools[s.key].push(G?.groups?.reduce((/** @type {number} */ a, /** @type {any} */ g) => a + g.count, 0) ?? 0);
+      }
       const F = state.creatures?.frogs;
       run.frogs.push(F?.frogs.length ?? 0);
       run.room.push(F?.edge.capacity ?? 0);
@@ -248,6 +264,7 @@ function drawAll(id) {
   drawFacts(id);
   drawTimeline(id);
   drawChart(id, 'frogs');
+  drawChart(id, 'schools');
   drawChart(id, 'midges');
   drawMap(id);
 }
@@ -264,6 +281,13 @@ function drawFacts(id) {
     ['Settled', first('creature:settled') ? when(first('creature:settled').hour) : 'not yet'],
     ['At the end', `${F?.frogs.length ?? 0} frogs, room for ${F?.edge.capacity ?? 0} along ${F?.edge.metres ?? 0} m of good edge`],
     ['Came, left', `${r.events.filter((e) => e.name === 'creature:arrived' || e.name === 'creature:joined').length} came, ${r.events.filter((e) => e.name === 'creature:left').length} moved on`],
+    ...SCHOOLS.map((s) => {
+      const of = (/** @type {string} */ name) => r.others.find((e) => e.name === name && e.payload?.species === s.key);
+      const sign = of('creature:arrived'), happy = of('species:happy');
+      const now = r.schools[s.key][r.schools[s.key].length - 1] ?? 0;
+      const label = s.label.charAt(0).toUpperCase() + s.label.slice(1);
+      return [label, sign ? `sign ${when(sign.hour)}${happy ? `, happy ${when(happy.hour)}` : ''}, ${now} at the end` : 'none came'];
+    }),
   ];
   p.el.facts.innerHTML = rows.map(([a, b]) => `<li><span>${a}</span><span>${b}</span></li>`).join('');
 }
@@ -331,13 +355,13 @@ function drawMark(g, shape, x, y) {
   g.fill();
 }
 
-/** @param {string} id @param {'frogs'|'midges'} which */
+/** @param {string} id @param {'frogs'|'midges'|'schools'} which */
 function drawChart(id, which) {
   const p = panels[id], r = p.run;
   const { g, w, h } = canvasOf(p.el[which]);
   if (!r) return;
   const x0 = 44, x1 = w - 10, y0 = 10, y1 = h - 30;
-  const series = which === 'frogs' ? [r.frogs, r.room] : [r.midges];
+  const series = which === 'frogs' ? [r.frogs, r.room] : which === 'schools' ? SCHOOLS.map((s) => r.schools[s.key]) : [r.midges];
   let top = 1;
   for (const s of series) for (const v of s) top = Math.max(top, v);
   top = niceTop(top);
@@ -357,7 +381,17 @@ function drawChart(id, which) {
     });
     g.stroke(); g.setLineDash([]);
   };
-  if (which === 'frogs') { line(r.room, CAPACITY, true); line(r.frogs, FROG, false); } else line(r.midges, MIDGE, false);
+  if (which === 'frogs') { line(r.room, CAPACITY, true); line(r.frogs, FROG, false); }
+  else if (which === 'schools') {
+    for (const s of SCHOOLS) line(r.schools[s.key], s.color, false);
+    // A star where each became happy.
+    for (const e of r.others) {
+      if (e.name !== 'species:happy') continue;
+      const s = r.schools[e.payload.species];
+      const i = e.hour - r.h0 - 1;
+      if (s) drawMark(g, 'star', x0 + ((i + 0.5) / s.length) * (x1 - x0), Math.max(y0 + 8, y1 - (s[i] / top) * (y1 - y0) - 12));
+    }
+  } else line(r.midges, MIDGE, false);
 }
 
 /** A round number at or above v for an axis top. @param {number} v */

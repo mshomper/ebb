@@ -14,7 +14,7 @@
   "places": { "pond": "Pond", "meadow": "Meadow", "shore": "Shore" },
   "placeOf": {
     "grass": "meadow", "rushes": "pond", "reeds": "pond", "lilies": "pond", "iris": "pond", "marigold": "pond", "thrift": "shore", "campion": "shore",
-    "frogs": "pond", "midges": "pond", "pondskaters": "pond", "mussels": "shore", "sanddollars": "shore"
+    "frogs": "pond", "midges": "pond", "minnows": "pond", "pondskaters": "pond", "mussels": "shore", "sanddollars": "shore"
   },
   "empty": "Nothing here with these choices."
 }

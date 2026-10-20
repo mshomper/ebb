@@ -53,17 +53,19 @@ export function ecologyNow(state, env, advance) {
   const fields = { midges };
   for (const rec of swarmSpecies(sp)) {
     const m = needMaps(hab, state.growth, fields, rec);
-    eco[keyOf(rec)] = { score: bytes(m.score), pools: pools(m) };
+    const key = keyOf(rec);
+    eco[key] = { score: bytes(m.score), pools: pools(m, state.creatures?.[key]?.groups ?? []) };
   }
   return eco;
 }
 
 /**
  * The pools of a species' water and how good each is: area, room (good square meters), deepest
- * spot, and its best square and score (ties to the lower square).
- * @param {ReturnType<typeof needMaps>} m
+ * spot, its best square and score (ties to the lower square), and the groups whose home lies in it
+ * (src/world/creatures/swarms.js finds each group's pool by this).
+ * @param {ReturnType<typeof needMaps>} m @param {{ id: number, k: number }[]} groups
  */
-function pools(m) {
+function pools(m, groups) {
   return m.bodies.map((b) => {
     let best = -1, bestScore = 0;
     if (m.label) {
@@ -73,7 +75,8 @@ function pools(m) {
         if (s > bestScore || best < 0) { best = k; bestScore = s; }
       }
     }
-    return { id: b.id, area: b.area, room: b.good, deepCm: b.deepCm, deepK: b.deepK, best, bestScore: bestScore / 255 };
+    const here = groups.filter((g) => m.label?.[g.k] === b.id).map((g) => g.id);
+    return { id: b.id, area: b.area, room: b.good, deepCm: b.deepCm, deepK: b.deepK, best, bestScore: bestScore / 255, groups: here };
   });
 }
 

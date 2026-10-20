@@ -45,18 +45,20 @@ export function washMap(page, ctx) {
   } else if (isAnimal(words.species[page])) {
     // Frogs: their homes, and where the habitat score says they would do well; before you have
     // found one, pencil circles near the best edge. Midges: where their cloud is now.
+    // Schools (minnows, dragonflies): their own habitat score, and their groups once found.
     const kind = words.species[page].kind;
     const eco = ctx.state?.ecology;
-    const field = kind === 'creature' ? eco?.frogs?.score : eco?.midges;
+    const field = kind === 'creature' ? eco?.frogs?.score : kind === 'school' ? eco?.[page]?.score : eco?.midges;
     const at = (/** @type {number} */ k) => (field ? field[k] / 255 : 0);
     if (!journal.species[page]?.ever) {
       // Frogs' circles go near the best stretch of the pond's edge, where one would come.
       const bank = kind === 'creature' ? new Set(eco?.frogs?.edge?.cells ?? []) : null;
       circles = hintCircles(page, hab, (k) => (!bank || bank.has(k) ? at(k) : 0), ctx.wash);
     }
-    else if (kind === 'creature') {
+    else if (kind === 'creature' || kind === 'school') {
       stamped = new Float32Array(N * N);
-      for (const f of ctx.state?.creatures?.frogs?.frogs ?? []) stamp(stamped, N, f.x, f.z, ctx.wash.plantM * 0.6);
+      const homes = kind === 'creature' ? ctx.state?.creatures?.frogs?.frogs ?? [] : ctx.state?.creatures?.[page]?.groups ?? [];
+      for (const f of homes) stamp(stamped, N, f.x, f.z, ctx.wash.plantM * (kind === 'creature' ? 0.6 : 1.2));
       for (let k = 0; k < n * n; k++) if (at(k) >= island.suitAt) well[k] = 1;
     } else {
       const share = words.species[page].seenAt.share;

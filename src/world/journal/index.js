@@ -143,8 +143,8 @@ export function createJournal(opts) {
   function select(card, x, y) {
     update('identify', () => (card ? { ...card, x, y, at: performance.now() } : null));
     if (!card) return;
-    // Tapping a frog is finding it: its page inks (once).
-    if (card.sp === 'frogs') found();
+    // Tapping a frog, or a school of minnows, is finding it: its page inks (once).
+    if (card.sp === 'frogs' || words.species[card.sp]?.kind === 'school') found(card.sp);
     // Tapping a find is finding it, the same way.
     // A shell is found one kind at a time, each written down once.
     const item = /** @type {any} */ (card).item ?? null;
@@ -158,10 +158,10 @@ export function createJournal(opts) {
     commit(catchMoments(journal, card.sp, ids, { state: world.state, hour: hourIndex(), words, name, list }));
   }
 
-  /** You found a frog: the page inks, the moment is written, and the web follows. */
-  function found() {
-    if (journal.species.frogs?.ever) return;
-    commit(foundAnimal(journal, { state: world.state, hour: hourIndex(), words }));
+  /** You found a frog (or a school): the page inks, the moment is written, and the web follows. */
+  function found(sp = 'frogs') {
+    if (journal.species[sp]?.ever) return;
+    commit(foundAnimal(journal, { state: world.state, hour: hourIndex(), words }, sp));
     look([], hourIndex());
   }
 
@@ -220,8 +220,10 @@ export function createJournal(opts) {
       select(p.point ? cardAt(p.point[0], p.point[2]) : null, p.x, p.y)),
     // The island gave you something (src/world/expansion.js): written once, shown as a card.
     on('progress:gifted', (/** @type {any} */ g) => commit(noteGift(journal, g, { state: world.state, hour: hourIndex(), words }))),
-    // Watching a frog from close by finds it too (src/world/creatures/index.js).
-    on('creature:found', (/** @type {{ species: string }} */ p) => { if (p.species === 'frogs') found(); }),
+    // Watching a frog (or a school) from close by finds it too (src/world/creatures/index.js, schools.js).
+    on('creature:found', (/** @type {{ species: string }} */ p) => {
+      if (p.species === 'frogs' || words.species[p.species]?.kind === 'school') found(p.species);
+    }),
     // You named a frog (S6c-3, src/app.js): the moment is written, and its open card takes the name.
     on('creature:named', (/** @type {{ species: string, id: number, name: string }} */ p) => {
       if (p.species !== 'frogs') return;
