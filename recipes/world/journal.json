@@ -54,6 +54,14 @@
     "hours": { "dawn": [5, 8], "dusk": [18, 21] }
   },
   "showMe": { "showS": 20 },
+  "piecesNote": "Placed pieces (docs/future/10, src/world/pieces): what a tap on one says. name and icon head its card, cardLine is the line under them (no page of its own: the card has no Open its page), and lifted is the note written the first time you lift one (the flag stones:lifted).",
+  "pieces": {
+    "stone": {
+      "name": "Loose stone", "icon": "loosestone",
+      "cardLine": "Damp earth underneath. Something may come to live here in time.",
+      "lifted": "You lifted a loose stone. The earth under it was dark and damp."
+    }
+  },
   "species": {
     "grass": {
       "name": "Grass", "icon": "grass", "kind": "cover", "plural": "grass",

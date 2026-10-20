@@ -144,9 +144,9 @@
 .ebb-tools__chips--species .ebb-tools__chip--wide { grid-column: 1 / -1; }
 /* Chips, sliders and the spring parts set their own display; the hidden attribute still wins. */
 .ebb-tools [hidden] { display: none; }
-/* Paint chips (four) and sculpt chips (four in a row; six, three to a row, once the frogs give
-   Terrace and Cut; tools.js sets the columns) stack the swatch or icon above the label so they fit
-   on every width. */
+/* Paint chips (four) and sculpt chips (four to seven, as the frogs give Terrace and Cut and the
+   naturalist's notes Loose stone; tools.js lays them in rows that fill the card) stack the swatch
+   or icon above the label so they fit on every width. */
 .ebb-tools__chips--paint { --tb-cols: 4; }
 .ebb-tools__chips--sculpt { --tb-cols: 3; }
 .ebb-tools__chips--paint .ebb-tools__chip,
@@ -186,8 +186,10 @@
   display: block;
 }
 
-/* water: spring flow chips, the spring count with Remove, and the placing hint */
-.ebb-tools__spring {
+/* water: spring flow chips, the spring count with Remove, and the placing hint; Sculpt's Loose
+   stone mode the same way (a stone count with Remove, the hint, and a calm line at the cap) */
+.ebb-tools__spring,
+.ebb-tools__pieces {
   display: flex;
   flex-direction: column;
   gap: 10px;

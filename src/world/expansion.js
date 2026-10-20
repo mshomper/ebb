@@ -127,9 +127,9 @@ export function createProgress(opts) {
     if (!grants.length) return;
     let earned = u.earned ?? {};
     for (const g of grants) earned = grant(earned, g);
-    // What is earned shows at once; test switches (?sandbox, ?cliffs) stay as they were.
+    // What is earned shows at once; test switches (?sandbox, ?cliffs, ?stones) stay as they were.
     update('unlocks', (/** @type {any} */ v) => ({ ...v, ...earned, springs: !!earned.springs || !!v?.springs,
-      cliffs: !!earned.cliffs || !!v?.cliffs, earned }));
+      cliffs: !!earned.cliffs || !!v?.cliffs, stones: !!earned.stones || !!v?.stones, earned }));
     for (const g of grants) emitDeferred('progress:gifted', g);
   }
   const off = subscribe('journal', check);

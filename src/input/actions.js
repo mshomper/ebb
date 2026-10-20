@@ -24,9 +24,10 @@ import { emit } from '../core/events.js';
  *   | { type: 'tool.end', source: Source }
  *   | { type: 'tool.cancel', source: Source }
  *   | { type: 'tool.hover', x: number, y: number, inside: boolean, source: Source }
- *   | { type: 'brush.set', patch: { sculptMode?: 'raise'|'lower'|'flatten'|'stone'|'terrace'|'cut', paintLayer?: 'grass'|'sand'|'soil'|'rock', size?: number, strength?: number, cliffHeight?: number,
+ *   | { type: 'brush.set', patch: { sculptMode?: 'raise'|'lower'|'flatten'|'stone'|'loosestone'|'terrace'|'cut',paintLayer?: 'grass'|'sand'|'soil'|'rock', size?: number, strength?: number, cliffHeight?: number,
  *       waterMode?: 'pour'|'drain'|'spring', springRate?: 'trickle'|'brook'|'stream', plantSpecies?: PlantSpecies } }
  *   | { type: 'water.springRemove', id: string }
+ *   | { type: 'pieces.remove', id: string }
  *   | { type: 'brush.resize', factor: number, source?: Source }
  *   | { type: 'history.undo', source?: Source }
  *   | { type: 'history.redo', source?: Source }
