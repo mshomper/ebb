@@ -1,0 +1,35 @@
+<!doctype html><meta charset="utf-8"><pre id="out">running</pre>
+<script type="module">
+import { createInstruments } from '/src/audio/music/instruments.js';
+import { createPerformer } from '/src/audio/music/perform.js';
+import { realize } from '/src/audio/music/realize.js';
+import { dayColorAt } from '/src/audio/music/daycolor.js';
+import { createRoom } from '/src/audio/reverb.js';
+const q = new URLSearchParams(location.search);
+const id = q.get('id'), seed = +(q.get('seed') ?? 4127), sun = +(q.get('sun') ?? 20), only = q.get('only'), drop = q.get('drop');
+const j = async (p) => (await fetch('/' + p)).json();
+const [rz, vo, dir, mix, piece] = await Promise.all([j('recipes/music/realize.json'), j('recipes/music/voicing.json'), j('recipes/music/director.json'), j('recipes/audio/mixer.json'), j(`recipes/music/pieces/themes/${id}.json`)]);
+const SR = 48000;
+const probe = new OfflineAudioContext(2, SR, SR);
+const avail = (await createInstruments(probe, probe.destination)).available();
+let perf = realize(piece, { seed, dayColor: dayColorAt(sun, dir.dayColor), available: avail }, { realize: rz, voicing: vo });
+if (only) perf = { ...perf, notes: perf.notes.filter((n) => only.split(',').includes(n.voice)) };
+if (drop) perf = { ...perf, notes: perf.notes.filter((n) => !drop.split(',').includes(n.voice)) };
+const len = Math.ceil(perf.durationS + 3);
+const ctx = new OfflineAudioContext(2, SR * len, SR);
+const bus = ctx.createGain(); bus.gain.value = 0.5;
+const room = createRoom(ctx, mix.musicReverb, mix.seed ?? 1);
+const wet = ctx.createGain(); wet.gain.value = mix.musicReverb.wet;
+bus.connect(ctx.destination); bus.connect(room).connect(wet).connect(ctx.destination);
+const inst = await createInstruments(ctx, bus);
+await inst.prepare(perf);
+// Schedule every event directly (offline: no timer).
+for (const n of perf.notes) { const i = inst.set[n.instrument]; if (!i) continue; i.noteOn(n.midi, n.vel, 0.2 + n.t); i.noteOff(n.midi, 0.2 + n.t + n.dur); }
+for (const e of perf.pedal) inst.set[e.instrument]?.pedal(e.down, 0.2 + e.t);
+const buf = await ctx.startRendering();
+const L = buf.getChannelData(0), R = buf.getChannelData(1);
+let peak = 0, ss = 0; for (let k = 0; k < L.length; k++) { peak = Math.max(peak, Math.abs(L[k]), Math.abs(R[k])); ss += (L[k] * L[k] + R[k] * R[k]) / 2; }
+const pcm = new Int16Array(L.length * 2); for (let k = 0; k < L.length; k++) { pcm[2 * k] = Math.max(-1, Math.min(1, L[k])) * 32767; pcm[2 * k + 1] = Math.max(-1, Math.min(1, R[k])) * 32767; }
+window.__pcm = pcm;
+document.getElementById('out').textContent = `${id} seed ${seed} ${only ? 'only ' + only : ''}${drop ? 'without ' + drop : ''}: ${perf.durationS.toFixed(1)} s, peak ${(20 * Math.log10(peak)).toFixed(1)} dBFS, rms ${(10 * Math.log10(ss / L.length)).toFixed(1)} dBFS, instruments ${JSON.stringify(perf.instruments)}`;
+</script>
