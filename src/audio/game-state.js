@@ -96,6 +96,7 @@ export function createSoundState(recipe, seed, sunAltDeg, seasonEdge) {
       return {
         waterNear: s.near.waterNear,
         surfaceNear: s.near.surfaceNear,
+        falls: s.near.falls ?? [],
         tidePhase: s.tidePhase,
         wind: w.wind,
         gust: gustAt(w.wind, dtS),

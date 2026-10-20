@@ -34,6 +34,7 @@ import { createPlantTool } from './world/growth/plant-tool.js';
 import { weatherAt } from './world/weather.js';
 import { state as tideState, tideParams } from './world/tide.js';
 import { soundNear, nothingNear } from './world/sound-near.js';
+import { groupFalls, fallsNear } from './world/falls-near.js';
 import { loadAudioRecipe } from './audio/recipes.js';
 import { toggleHeart } from './audio/music/hearts.js';
 import { createWaterPass } from './render/passes/water.js';
@@ -694,6 +695,10 @@ export async function startApp(canvas, hooks = {}) {
   let soundAcc = Infinity;
   let nearAcc = Infinity;
   let near = nothingNear();
+  // The waterfalls, from the lips the falls pass reads back a couple of times a second.
+  /** @type {import('./world/falls-near.js').Fall[]} */
+  let falls = [];
+  on('falls:lips', (/** @type {{ lips: Float32Array, count: number }} */ p) => { falls = groupFalls(p.lips, p.count, soundRecipe.falls); });
   /** @param {number} realDt @param {number} display @param {{ index: number, phase: number }} season @param {any} day daylight.update's result */
   function publishSound(realDt, display, season, day) {
     const weather = day.weather;
@@ -705,6 +710,7 @@ export async function startApp(canvas, hooks = {}) {
       nearAcc = 0;
       near = soundNear({ summary: water.getSummary(), growth: world.state?.growth, rushId: growthRecipe.cover?.[0] ?? null,
         x: camera.target[0], z: camera.target[2], recipe: soundRecipe.near });
+      near.falls = fallsNear(falls, camera.target[0], camera.target[1], camera.target[2], soundRecipe.falls);
     }
     const frogs = world.state?.creatures?.frogs?.frogs ?? [];
     updateStore('sound', () => ({

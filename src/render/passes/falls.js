@@ -11,6 +11,7 @@
 
 import { makeBuffer, makeShaderModule } from '../../core/gpu.js';
 import { createFallsFluid } from './falls-fluid.js';
+import { emit } from '../../core/events.js';
 
 /** @typedef {import('../frame-graph.js').PassContext} PassContext */
 
@@ -39,7 +40,9 @@ export function createFallsPass(opts) {
     atmosphere: opts.atmosphere, getEye: opts.getEye, getProjY: opts.getProjY, tier: fluidTier(opts.tier), getOpaqueDepth: opts.getOpaqueDepth });
   let lastTime = 0;
   const dbg = search.has('fallsdbg');
-  let dbgFrame = 0, dbgBusy = false;
+  const soundLips = Math.min(MAX_LIPS, R.soundLips);
+  let lastRead = -Infinity, readBusy = false;
+  /** @type {GPUBuffer | undefined} */ let readBuf;
   const data = new ArrayBuffer(FALLS_BYTES);
   const f = new Float32Array(data);
   const u = new Uint32Array(data);
@@ -187,19 +190,27 @@ export function createFallsPass(opts) {
       pass.drawIndirect(argBuf, 16);
       pass.end();
       fluid.encodeDraw(encoder, ctx, ts && { querySet: ts.querySet, endOfPassWriteIndex: ts.endOfPassWriteIndex });
-      // `?fallsdbg` (tools): every second, the lips found, on window.ebbLips for the console.
-      if (dbg && !dbgBusy && ++dbgFrame % 60 === 0) {
-        dbgBusy = true;
-        const n = 64 * LIP_BYTES;
-        const read = ctx.device.createBuffer({ size: n + 16, usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST });
+      // For the sound (src/world/falls-near.js): every soundReadS, the first soundLips lips found,
+      // as event 'falls:lips'. A few kilobytes, mapped once the GPU is done, so nothing waits on it.
+      // `?fallsdbg` (tools): the first 64 also go on window.ebbLips for the console.
+      const wall = performance.now() / 1000;
+      if (!readBusy && wall - lastRead >= R.soundReadS) {
+        readBusy = true;
+        lastRead = wall;
+        const n = soundLips * LIP_BYTES;
+        readBuf ??= ctx.device.createBuffer({ label: 'falls-read', size: n + 16, usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST });
+        const read = readBuf;
         encoder.copyBufferToBuffer(lipBuf, 0, read, 0, n);
         encoder.copyBufferToBuffer(counter, 0, read, n, 16);
+        // Mapped after this frame's commands are submitted.
         queueMicrotask(() => setTimeout(() => read.mapAsync(GPUMapMode.READ).then(() => {
-          const f32 = new Float32Array(read.getMappedRange().slice(0));
-          const count = new Uint32Array(f32.buffer, n, 1)[0];
-          /** @type {any} */ (window).ebbLips = { count, lips: Array.from({ length: Math.min(count, 64) }, (_, k) => Array.from(f32.subarray(k * 12, k * 12 + 12)).map((v) => Math.round(v * 1000) / 1000)) };
-          read.destroy(); dbgBusy = false;
-        }), 50));
+          const raw = read.getMappedRange();
+          const count = Math.min(new Uint32Array(raw, n, 1)[0], u[7], soundLips);
+          const lips = new Float32Array(raw.slice(0, count * LIP_BYTES));
+          read.unmap(); readBusy = false;
+          emit('falls:lips', { lips, count });
+          if (dbg) /** @type {any} */ (window).ebbLips = { count, lips: Array.from({ length: Math.min(count, 64) }, (_, k) => Array.from(lips.subarray(k * 12, k * 12 + 12)).map((v) => Math.round(v * 1000) / 1000)) };
+        }).catch(() => { readBusy = false; }), 50));
       }
     },
   };

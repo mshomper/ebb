@@ -5,7 +5,8 @@
 // recipes/audio/ambience.json; the made-in-code sounds from recipes/audio/procedural.json.
 //
 //   beds (stereo slots) ─→ width (mid/side) ─┐
-//   one-shots (each panned, PannerNode) ─────┴→ mist lowpass ─→ frost high shelf ─→ level ─→ 'ambience' bus
+//   one-shots (each panned, PannerNode) ─────┤
+//   waterfalls (each panned, ambience/falls.js) ┴→ mist lowpass ─→ frost high shelf ─→ level ─→ 'ambience' bus
 //
 // Beds play recordings once they exist (src/audio/ambience/slot.js) and the procedural stand-ins
 // until then. Randomness is seeded through src/core/rng.js, never Math.random.
@@ -15,6 +16,7 @@ import * as proc from './procedural.js';
 import { surf, windEq, rainOn, run } from './ambience/fallbacks.js';
 import { createSlot } from './ambience/slot.js';
 import { placedChain } from './spatial.js';
+import { createFallVoices, fallsLoudness } from './ambience/falls.js';
 import {
   SEASONS, value, sumDb, product, dbToGain, clamp01, lerp, normBlend, blendFromPosition, standardHour,
 } from './ambience/curves.js';
@@ -47,6 +49,7 @@ import {
  * @property {{water?: number, pads?: number, reeds?: number, grass?: number}} [surfaceNear]  0..1
  * @property {number[]} [eye]      camera eye [x, y, z] (default: above the target by camHeight)
  * @property {number[]} [forward]  view direction (default: looking down and north)
+ * @property {import('../world/falls-near.js').FallNear[]} [falls]  waterfalls near the camera target, nearest first
  */
 
 /** @typedef {ReturnType<typeof createSlot>} Slot */
@@ -100,6 +103,14 @@ export function createAmbience(mixer, recipe, procRecipe, seed, opts = {}) {
   shotsUser.connect(shotsMeter);
   const shotsBuf = new Float32Array(shotsMeter.fftSize);
   let lastShotAt = -1;
+
+  // Waterfalls: their own sum (with a meter and the lab's solo and mute) into the mist filter.
+  const fallsUser = ctx.createGain();
+  fallsUser.connect(mistLp);
+  const fallsMeter = ctx.createAnalyser();
+  fallsMeter.fftSize = 1024;
+  fallsUser.connect(fallsMeter);
+  const fallVoices = createFallVoices(ctx, fallsUser, S.falls, procRecipe, (i) => stream(sysSeed, 400, i), tier);
 
   // ---- Beds -----------------------------------------------------------------------------------
   let made = 0;
@@ -173,6 +184,8 @@ export function createAmbience(mixer, recipe, procRecipe, seed, opts = {}) {
     for (const b of beds) b.slot.setUser((solo ? solo === b.name : true) && !muted.has(b.name) ? 1 : 0);
     const shotsOn = (solo ? solo === 'oneShots' : true) && !muted.has('oneShots');
     shotsUser.gain.setTargetAtTime(shotsOn ? 1 : 0, ctx.currentTime, 0.05);
+    const fallsOn = (solo ? solo === 'falls' : true) && !muted.has('falls');
+    fallsUser.gain.setTargetAtTime(fallsOn ? 1 : 0, ctx.currentTime, 0.05);
   };
 
   // ---- Inputs ---------------------------------------------------------------------------------
@@ -223,6 +236,8 @@ export function createAmbience(mixer, recipe, procRecipe, seed, opts = {}) {
       mist: clamp01(s.mist ?? (s.weather === 'mist' ? 1 : 0)),
       frost: clamp01(s.frost ?? 0),
       life: clamp01(s.life ?? 0),
+      // The loudest waterfall at the camera target (0..1), which dips the stream beds under it.
+      fallLoud: clamp01(fallsLoudness(s.falls ?? [], S.falls)),
       ...near,
       spring: blend[0], summer: blend[1], autumn: blend[2], winter: blend[3],
     };
@@ -349,6 +364,7 @@ export function createAmbience(mixer, recipe, procRecipe, seed, opts = {}) {
     frostShelf.gain.setTargetAtTime(value(S.frost.db, inp, blend), t, k);
     setWidth(clamp01(value(S.width, inp, blend) * (1 - S.mist.widthCut * inp.mist)), rampS);
 
+    fallVoices.update(state.falls ?? [], ear, inp.height);
     if (ctx.state === 'running') scheduleOneShots(dtS);
     distantVisitorsHook(state);
   }
@@ -359,8 +375,8 @@ export function createAmbience(mixer, recipe, procRecipe, seed, opts = {}) {
     inputs: () => ({ ...inputs }),
     /** The season weights as last read. */
     blend: () => blend.slice(),
-    /** Bed names, plus 'oneShots'. */
-    names: () => [...beds.map((b) => b.name), 'oneShots'],
+    /** Bed names, plus 'oneShots' and 'falls'. */
+    names: () => [...beds.map((b) => b.name), 'oneShots', 'falls'],
     /** What each bed is doing now: RMS dBFS, and whether it plays a recording or the stand-in. */
     levels() {
       /** @type {{name: string, db: number, source: string, live: string[]}[]} */
@@ -370,13 +386,18 @@ export function createAmbience(mixer, recipe, procRecipe, seed, opts = {}) {
       for (let i = 0; i < shotsBuf.length; i++) s += shotsBuf[i] * shotsBuf[i];
       const rms = Math.sqrt(s / shotsBuf.length);
       out.push({ name: 'oneShots', db: rms > 1e-7 ? 20 * Math.log10(rms) : -120, source: 'made in code', live: [] });
+      fallsMeter.getFloatTimeDomainData(shotsBuf);
+      s = 0;
+      for (let i = 0; i < shotsBuf.length; i++) s += shotsBuf[i] * shotsBuf[i];
+      const frms = Math.sqrt(s / shotsBuf.length);
+      out.push({ name: 'falls', db: frms > 1e-7 ? 20 * Math.log10(frms) : -120, source: 'made in code', live: [`${fallVoices.live()} voices`] });
       return out;
     },
     /** How many each pool has fired. */
     poolCounts: () => Object.fromEntries(pools.map((p) => [p.name, p.fired])),
     /** Last one-shot start time (audio clock). */
     lastShotAt: () => lastShotAt,
-    /** @param {string | null} name a bed name, 'oneShots', or null for none */
+    /** @param {string | null} name a bed name, 'oneShots', 'falls', or null for none */
     setSolo(name) { solo = name; applyUser(); },
     /** @param {string} name @param {boolean} on */
     setMute(name, on) { if (on) muted.add(name); else muted.delete(name); applyUser(); },
@@ -392,6 +413,7 @@ export function createAmbience(mixer, recipe, procRecipe, seed, opts = {}) {
     /** Fade everything and free it. */
     dispose() {
       for (const b of beds) b.slot.stop();
+      fallVoices.dispose();
       setTimeout(() => levelG.disconnect(), 2000);
     },
   };

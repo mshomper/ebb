@@ -92,6 +92,9 @@
     "sprayM": 0.5,
     "sprayOpacity": 0.5,
     "hideWallDeg": 40,
+    "soundNote": "For the sound of the falls (src/world/falls-near.js, audio/game.json falls): every soundReadS seconds the first soundLips lips found are read back from the GPU, a few kilobytes, mapped once the GPU is done so nothing waits on it.",
+    "soundReadS": 0.5,
+    "soundLips": 512,
     "fluid": {
       "note": "Volumetric falls near the eye (src/render/passes/falls-fluid.js): screen-space fluid rendering (van der Laan, Green and Sainz 2009; Green, GDC 2010). Each lip within the tier's fallsFluid.nearM sends droplets off its edge, ratePerLipS a second at a full sheet and threadShare of that at a trickle (kept to a few threads), each radiusM, growing by bulk as it falls; they leave at the lip's brink speed, or fast enough to follow a leaning face down but never above maxLeanMs; fall under gravity with drag per second and spread by turbulence (m/s2); slide down steep rock; and are gone on reaching flat ground or water, or after about their fall time (never more than lifeS). Drawn as spheres into depth and thickness images (density x each sphere's depth through it); the depth is smoothed over widthM (at most maxPx pixels either way, across then down, iterations times), neighbors further than depthSigmaM in depth counting less; then shaded as water: the scene behind bent by refraction (screen uv per m of thickness) and dimmed by pond water's absorption, white in meandering ropes where aerated water (whitened over aerateS of falling) adds up to whiteThicknessM, lit at whiteAlbedo; ripples rippleM across running down at rippleSpeedMs tilt the surface by rippleTilt; glassy water mirrors the sky at roughness, times sheen, with sun glints at glintRoughness; thin edges fade in over edgeThicknessM. Drawn at the tier's fallsFluid.scale of the render size. Curtains give way to it over fadeM.",
       "ratePerLipS": 2400,
