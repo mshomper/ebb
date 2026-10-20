@@ -9,6 +9,7 @@ import { initWorkers, run, poolSize, dispose } from '../src/core/workers.js';
 import { CHUNK_CELLS, CHUNK_SIZE, CELL, H_MIN, H_MAX, WORLD_CELLS, quantize, dequantize } from '../src/world/terrain/grid.js';
 import { buildSummary, hashSummary, WATER_CLASS } from '../src/world/water/summary.js';
 import { shoreZones, shoreHeightM } from '../src/world/water/shore.js';
+import { strandLines } from '../src/world/water/strandline.js';
 import { buildBase, hashBase } from '../src/world/terrain/landform.js';
 import { tilesOf, copyTiles, pasteTiles } from '../src/world/terrain/undo.js';
 import { createHistory } from '../src/input/actions.js';
@@ -976,6 +977,24 @@ test(WSUM, 'shore height grades the band and the splash ground above it, and rea
     prev = v;
   }
   return `shore ${s.shore[at(6)]} at ${beachBed(6).toFixed(2)} m to ${s.shore[at(40)]} at ${beachBed(40).toFixed(2)} m`;
+});
+
+test(WSUM, 'strandlines: the newest high tide always lies, a higher later tide sweeps older lines up', async () => {
+  const water = await loadWater();
+  const R = (await (await fetch('../recipes/world/shore.json')).json()).look.strandline;
+  const p = tide.tideParams(water.tide);
+  // Day 0 is a spring tide (new moon): the first high water is the highest, nothing older shows.
+  eq(strandLines(10, p, R).levels.length, 1, 'one line just after a spring high');
+  // Falling toward the neap (day 1.75), every high is lower than the one before: they all lie.
+  const falling = strandLines(39, p, R);
+  assert(falling.levels.length >= 3, `lines while the tides fall: ${falling.levels.length}`);
+  for (let i = 1; i < falling.levels.length; i++) {
+    assert(falling.levels[i] > falling.levels[i - 1], `older lines lie higher: ${falling.levels.join(', ')}`);
+    assert(falling.strengths[i] < falling.strengths[i - 1], 'older lines are fainter');
+  }
+  assert(falling.levels.length <= R.maxLines, 'at most maxLines');
+  eq(JSON.stringify(strandLines(39, p, R)), JSON.stringify(falling), 'the same every time');
+  return `hour 39: ${falling.levels.map((v) => v.toFixed(2)).join(', ')} m`;
 });
 
 test(WSUM, 'shore zones follow height and paint: kelp, wrack and wet sand where they belong, the same every time', async () => {

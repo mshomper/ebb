@@ -17,6 +17,7 @@
 // #include lib-caustics
 // #include lib-probe
 // #include lib-rain
+// #include lib-shore
 
 struct TerrainDraw {
   albedoGrass: vec3f, variation: f32,
@@ -47,6 +48,15 @@ struct TerrainDraw {
   shore2: vec4f,                        // xy 1 / lichen patch and clump sizes, z mud wetness
   ripple: vec4f,                        // x 2 pi / wavelength, y crest slope, z 1 on, w wavelength (m)
   mud: vec4f,                           // rgb mud albedo factor, w 1 / ripple warp size (m)
+  // The strandline (world/water/strandline.js): up to eight lines, newest first, and their litter.
+  strandL0: vec4f, strandL1: vec4f,     // line levels (m about mean sea level)
+  strandS0: vec4f, strandS1: vec4f,     // line strengths 0..1 (0 no line)
+  strand0: vec4f,                       // x wave run-up above the level (m), y line half-width (m), z 1 strands drawn (else a tint), w most strands
+  strand1: vec4f,                       // x strand grid cell (m), yz length range (m), w width (m)
+  strandAlb: vec4f,                     // rgb dried litter albedo, w share of strands lying crossways
+  kelp0: vec4f,                         // rgb kelp albedo, w blade width (m)
+  kelp1: vec4f,                         // x, y grid cell across and along (m), zw length range (m)
+  kelp2: vec4f,                         // x midrib relief, y kelp pieces in the strandline (share)
 };
 
 @group(0) @binding(0) var<uniform> frame: FrameUniforms;
@@ -216,6 +226,58 @@ fn fsLand(in: VsOut) -> FsOut {
   let lichen = smoothstep(0.5, 0.57, lclumps + (shore.b - 0.7) * 0.6) * min(1.0, shore.b * 1.5) * rockShare;
   let mud = shore.a * soilShare;
   albedo *= mix(vec3f(1.0), td.shore1.yzw, lichen) * mix(vec3f(1.0), td.mud.rgb, mud);
+  // Kelp (lib-shore): broad blades lying downslope over rock at the lowest tides. It is the shore
+  // cover's g channel on rock (on sand, g is the ripples).
+  let pixM = max(fw.x, fw.y);
+  let slopeLen = length(n.xz);
+  let downDir = select(vec2f(0.0, 1.0), n.xz / max(slopeLen, 1e-4), slopeLen > 0.02);
+  let alongDir = vec2f(-downDir.y, downDir.x);
+  var shoreGrad = vec2f(0.0);
+  var kelpCover = 0.0;
+  let kelpZone = shore.g * rockShare;
+  // Near the kelp zone too (wrack borders it), so blades can lie across its edge.
+  if (rockShare > 0.3 && (shore.g > 0.001 || shore.r > 0.01)) {
+    var kb = kelpBlades(xz, downDir, kelpZone, td.kelp1.xy, td.kelp1.zw, td.kelp0.w, td.kelp2.x, pixM, true);
+    kb.cover *= smoothstep(0.3, 0.6, rockShare);
+    kelpCover = kb.cover;
+    albedo = mix(albedo, td.kelp0.rgb * (0.8 + 0.4 * kb.tone), kb.cover);
+    shoreGrad += kb.grad;
+  }
+  // The strandline (world/water/strandline.js): litter where each recent high tide reached, a
+  // little above the water's level (the waves run up), widest on gentle slopes, broken into
+  // clumps and gaps. Litter lies on sand, rock and soil, hardly on grass.
+  let slopeTan = slopeLen / max(n.y, 0.05);
+  let lv = array<f32, 8>(td.strandL0.x, td.strandL0.y, td.strandL0.z, td.strandL0.w, td.strandL1.x, td.strandL1.y, td.strandL1.z, td.strandL1.w);
+  let ls = array<f32, 8>(td.strandS0.x, td.strandS0.y, td.strandS0.z, td.strandS0.w, td.strandS1.x, td.strandS1.y, td.strandS1.z, td.strandS1.w);
+  var strand = 0.0;
+  for (var i = 0; i < 8; i++) {
+    if (ls[i] <= 0.001) { continue; }
+    let fi = f32(i);
+    let dist = abs(y - lv[i] - td.strand0.x) / max(slopeTan, 0.03);
+    let halfW = td.strand0.y * (0.5 + valueNoise2(xz * 0.35 + vec2f(fi * 7.1, 2.3), td.seed + 40u));
+    let breakup = smoothstep(0.3, 0.55, valueNoise2(xz * 0.7 + vec2f(1.7, fi * 3.3), td.seed + 41u));
+    strand = max(strand, ls[i] * exp(-(dist / halfW) * (dist / halfW)) * breakup);
+  }
+  strand *= 1.0 - 0.8 * mix(wf.x, gd.weights.x, gd.amount);
+  var strandCover = 0.0;
+  if (strand > 0.01) {
+    var st: Litter;
+    if (td.strand0.z > 0.5) {
+      st = strandLitter(xz, alongDir, strand * td.strand0.w, td.strand1.x, td.strand1.yz, td.strand1.w, td.strandAlb.w, pixM);
+    } else {
+      st.cover = strand * 0.5; st.grad = vec2f(0.0); st.tone = 0.5;   // low tier: the line as a tint
+    }
+    albedo = mix(albedo, td.strandAlb.rgb * (0.7 + 0.6 * st.tone), st.cover);
+    strandCover = st.cover;
+    shoreGrad += st.grad;
+    // A few broken kelp blades lie along the line.
+    if (td.kelp2.y > 0.0 && td.strand0.z > 0.5) {
+      let kp = kelpBlades(xz + vec2f(31.7, 13.1), alongDir, strand * td.kelp2.y, td.kelp1.xy * vec2f(2.5, 1.5), td.kelp1.zw * 0.6, td.kelp0.w, td.kelp2.x, pixM, false);
+      albedo = mix(albedo, td.kelp0.rgb * (0.9 + 0.3 * kp.tone), kp.cover);
+      shoreGrad += kp.grad * kp.cover;
+      kelpCover = max(kelpCover, kp.cover);
+    }
+  }
   // Wet to dry (lush.js): the grass layer takes the blades' tint, deeper by the water, paler and
   // straw-cured on the dry rise, so the areas read past where blades end, with no ring there.
   if (td.lushWet.w > 0.5) {
@@ -248,8 +310,9 @@ fn fsLand(in: VsOut) -> FsOut {
   // Damp: porous ground (sand, soil) drinks the water and goes dark and satin; dense rock darkens
   // a little but turns shiny. Moss is already a damp surface and changes least.
   let por = gd.porosity;
-  // Wrack glistens and mud stays soaked, whatever the wetness map says.
-  let damp = max(wet * (1.0 - 0.6 * moss), max(wrack * 0.9, mud * td.shore2.z));
+  // Wrack and kelp glisten and mud stays soaked, whatever the wetness map says; dried litter on the
+  // strandline lies above the damp sand.
+  let damp = max(wet * (1.0 - 0.6 * moss) * (1.0 - 0.7 * strandCover), max(max(wrack * 0.9, kelpCover), mud * td.shore2.z));
   albedo *= mix(1.0, mix(td.wetLook.z, td.wetLook.w, por), damp);
   // Grass blades stay rough when wet (they scatter the light), so the meadow never turns glossy.
   let grassy = gd.weights.x * (1.0 - moss);
@@ -268,8 +331,8 @@ fn fsLand(in: VsOut) -> FsOut {
   // Puddle surface: flat water, rung by raindrops where a pixel can hold the rings.
   let viewDistG = distance(in.world, frame.cameraPos);
   let vG = (frame.cameraPos - in.world) / max(viewDistG, 1e-4);
-  var nG = gd.normal;
-  if (td.ripple.z > 0.5 && shore.g > 0.01) {
+  var nG = normalize(gd.normal - vec3f(shoreGrad.x, 0.0, shoreGrad.y));
+  if (td.ripple.z > 0.5 && shore.g > 0.01 && kelpZone < 0.01) {
     // Wave ripples in the sand: crests run along the shore (across the slope), a few centimeters
     // apart and bent by slow noise, with a gentle stoss side and a steeper lee (two harmonics).
     // They fade before a pixel grows too large to hold them.

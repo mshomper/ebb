@@ -1,7 +1,7 @@
 // @ts-check
 // The shore's look on the ground (docs/future/10, Z2): the shore zones (shore.js) as an rgba8 cover
 // texture at the water cells' 0.5 m, which the terrain reads. r wrack (seaweed on rock), g ripples
-// (in the sand), b lichen (black crust on splash rock), a mud (soft wet soil). Rebuilt when the water
+// (in the sand) or kelp (on rock), b lichen (black crust on splash rock), a mud (soft wet soil). Rebuilt when the water
 // summary is rebuilt and after a paint stroke, so shaping or painting the coast rezones it. Visual
 // only and never saved.
 
@@ -11,7 +11,8 @@ import { get as getStore } from '../../core/store.js';
 import { WATER_CELLS } from './grid.js';
 import { shoreZones, shoreHeightM } from './shore.js';
 
-const CHANNELS = /** @type {const} */ (['wrack', 'ripples', 'lichen', 'mud']);
+/** Cover names by texture channel. Kelp shares g with the ripples: ripples lie on sand, kelp on rock. */
+const CHANNELS = /** @type {const} */ ([['wrack'], ['ripples', 'kelp'], ['lichen'], ['mud']]);
 
 /**
  * @param {GPUDevice} device
@@ -25,7 +26,8 @@ export function createShoreLive(device, opts) {
     usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST,
   });
   // Each zone's cover as four bytes, by zone value (0 is no zone).
-  const covers = [[0, 0, 0, 0], ...recipe.zones.map((/** @type {any} */ z) => CHANNELS.map((c) => Math.round(255 * Math.min(1, Math.max(0, z.cover?.[c] ?? 0)))))];
+  const covers = [[0, 0, 0, 0], ...recipe.zones.map((/** @type {any} */ z) =>
+    CHANNELS.map((names) => Math.round(255 * Math.min(1, Math.max(0, ...names.map((c) => z.cover?.[c] ?? 0))))))];
   /** How much each zone's cover thins from its bottom to its top (0 none), by zone value. */
   const tapers = [0, ...recipe.zones.map((/** @type {any} */ z) => z.taper ?? 0)];
   /** @type {any} */ let summary = null;
