@@ -1,0 +1,14 @@
+{
+  "type": "shore",
+  "version": 1,
+  "note": "Shore zones (docs/future/10, src/world/water/shore.js): the shore banded by how long each height spends under the sea, as on real rocky and sandy shores. Each zone names the painted ground it shows on (the most painted of grass, sand, rock and soil in each 0.5 m cell) and its height range in A0, the base tide amplitude (water.json tide.amplitudeM): the tide band runs from -bandFactor to +bandFactor A0 (spring low to spring high), and the splash ground above it to +bandFactor + splashFactor A0 (water.json summary). Neap tides turn at +-(1 - springNeap) A0. A cell takes the first zone in the list that matches; ground with no zone (grass, or a height no zone covers) shows nothing new. Kelp sits below the neap low, so it only shows at spring low tides. The look of each zone comes later (Z2); these ids are what the shader, the journal and the shore lab read.",
+  "zones": [
+    { "id": "kelp",       "ground": "rock", "fromA0": -1.15, "toA0": -0.85, "name": "kelp, at the lowest tides" },
+    { "id": "wrack",      "ground": "rock", "fromA0": -0.85, "toA0": 0.4,   "name": "bladderwrack and barnacles" },
+    { "id": "channelled", "ground": "rock", "fromA0": 0.4,   "toA0": 1.0,   "name": "channelled wrack, high on the shore" },
+    { "id": "lichen",     "ground": "rock", "fromA0": 1.0,   "toA0": 1.75,  "name": "black lichen in the splash zone" },
+    { "id": "ripples",    "ground": "sand", "fromA0": -1.15, "toA0": 0.0,   "name": "rippled wet sand" },
+    { "id": "wetSand",    "ground": "sand", "fromA0": 0.0,   "toA0": 0.85,  "name": "firm wet sand" },
+    { "id": "mud",        "ground": "soil", "fromA0": -1.15, "toA0": 1.0,   "name": "tidal mud" }
+  ]
+}

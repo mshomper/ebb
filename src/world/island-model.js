@@ -15,7 +15,8 @@ import { buildHabitat } from './growth/habitat.js';
 /**
  * @param {{ seed: number, terrain: any, land: any, water: any, growth: any }} r
  *   seed: the world seed (as ?seed=); terrain, water, growth: recipes/world/*.json; land: the island's land recipe
- * @returns {{ habitat: import('./growth/habitat.js').Habitat, summaryHash: number, heightQ: Uint16Array, material: Uint8Array }}
+ * @returns {{ habitat: import('./growth/habitat.js').Habitat, summaryHash: number, summary: import('./water/summary.js').Summary,
+ *   heightQ: Uint16Array, material: Uint8Array }}
  */
 export function buildIslandModel(r) {
   const tSeed = subSeed(r.seed >>> 0, 'terrain');
@@ -40,5 +41,5 @@ export function buildIslandModel(r) {
   const springs = landmarks(r.land, tSeed).springs.map((s) => ({ cellX: waterCellOf(s.x), cellY: waterCellOf(s.z), rateLps: s.rateLps }));
   const summary = buildSummary({ heightQ, rect, springs, params: { ...r.water.summary, manningN: r.water.sim.manningN }, tide: r.water.tide });
   const habitat = buildHabitat({ eco: summary.eco, material, materialCells: N, params: r.growth.habitat });
-  return { habitat, summaryHash: summary.hash, heightQ, material };
+  return { habitat, summaryHash: summary.hash, summary, heightQ, material };
 }

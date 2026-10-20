@@ -24,7 +24,7 @@
     "prefillMinAreaM2": 30
   },
   "summary": {
-    "note": "The deterministic water summary (docs/07): integers only, rebuilt after terrain edits and spring changes, read by ecology and used as the live refill target. pondMinCatchmentM2 and pondMinDepthM: a dry hollow becomes a rain-fed pond when at least this much ground drains into it and it is at least this deep at its deepest; other hollows stay damp. Spring-fed hollows always fill. Stream depth d = clamp(streamK Q^streamExp, streamMinM, streamMaxM) with Q in L/s, capped by Manning depth for the local slope (manningN) over width w = streamW0 + streamW1 sqrt(Q). Classes by speed: still under slowSpeed, slow under runningSpeed, running above. debounceS after a stroke before rebuilding.",
+    "note": "The deterministic water summary (docs/07): integers only, rebuilt after terrain edits and spring changes, read by ecology and used as the live refill target. pondMinCatchmentM2 and pondMinDepthM: a dry hollow becomes a rain-fed pond when at least this much ground drains into it and it is at least this deep at its deepest; other hollows stay damp. Spring-fed hollows always fill. Stream depth d = clamp(streamK Q^streamExp, streamMinM, streamMaxM) with Q in L/s, capped by Manning depth for the local slope (manningN) over width w = streamW0 + streamW1 sqrt(Q). Classes by speed: still under slowSpeed, slow under runningSpeed, running above. bandFactor: the tide band is +-bandFactor A0 about mean sea level (the full spring range); splashFactor: the shore (graded shore height, docs/future/10) reaches this many A0 above the band top, for the splash zone. debounceS after a stroke before rebuilding.",
     "pondMinCatchmentM2": 120,
     "pondMinDepthM": 0.15,
     "streamK": 0.08,
@@ -36,6 +36,7 @@
     "slowSpeed": 0.05,
     "runningSpeed": 0.3,
     "bandFactor": 1.15,
+    "splashFactor": 0.6,
     "debounceS": 0.3
   },
   "nudge": {

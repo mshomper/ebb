@@ -2,7 +2,7 @@
 
 > The starter island already has six plants, four painted grounds, a computed moss layer, water that knows ponds from hollows from the tide band, and a moss-on-rock link in the journal. This doc looks at how to add more variety to the island early and cheaply, using the systems that exist rather than inventing new ones: a shore that zones itself by the tide, a driftline the sea rewrites, a handful of plants that fit the current growth code once it can read ground type, and placed pieces (stones and logs) that give creatures new places to live. Each section says what exists in the code today, what would change, and what it costs. It pairs with F11, which covers the creatures these places would hold.
 
-**Status:** Leaning. Not scheduled. Nothing here is built until Matt schedules it.
+**Status:** Scheduled before M2 (Matt, October 19, 2026). Z1, the shore data (graded shore height in the water summary, shore zones from `recipes/world/shore.json`, `tools/shore-lab.html`), is built on branch m1-z1-shore-data. Next: Z2 the shore's look, Z3 the driftline; the Stone brush and the rest follow.
 
 ## Decided so far
 

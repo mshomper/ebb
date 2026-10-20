@@ -10,6 +10,7 @@
     "world/post": "world/post.json",
     "world/terrain": "world/terrain.json",
     "world/water": "world/water.json",
+    "world/shore": "world/shore.json",
     "world/save": "world/save.json",
     "world/hud": "world/hud.json",
     "world/ground-sources": "world/ground-sources.json",

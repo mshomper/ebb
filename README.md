@@ -73,6 +73,7 @@ Open these at `/tools/` while running locally. They are for checks that run on y
 | `phone-check.html` | The island on this device against its tier's budgets, with a 60 second run, a 15 minute warm run and Save result; open it on the phone from the preview link |
 | `growth-lab.html` | 14 game days (one season) of growth on a copy of the island, with charts and a check that two runs end the same |
 | `water-lab.html` | The live water's volume, wet area, flow and cost, with buttons that sculpt near the spring and pond |
+| `shore-lab.html` | Shape and paint the coast and see the shore zones it makes (kelp, wrack, lichen, wet sand, mud), with a sea-level slider for each tide |
 | `sky-lab.html` | The island at any hour and season, without moving the world clock |
 | `palette-lab.html` | Tune a palette with a before and after divider, an eyedropper and sliders |
 | `texture-lab.html`, `rock-lab.html` | Prepare the ground photo scans; compare rock tilings and scans |
