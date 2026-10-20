@@ -1,6 +1,6 @@
 // @ts-check
-// Field sketches of the living things (J1.6): grass, rushes, reeds, water lilies, yellow flag iris
-// and sea thrift, each drawn with the journal pen (pen.js) so pencil, ink and wash come from one drawing.
+// Field sketches of the living things (J1.6): grass, rushes, reeds, water lilies, yellow flag iris,
+// sea thrift, marsh marigold, sea campion and grey willow, each drawn with the journal pen (pen.js) so pencil, ink and wash come from one drawing.
 //
 // Layout for every sheet (380 wide): the drawing sits in x 40..236 on a ground line, a scale bar
 // (when there is one) at x 30 on the left, and labels in the right column from x 250, each with a
@@ -385,4 +385,58 @@ export function campion(p, scale) {
   p.label('mat', 250, 200, 220, 210);
   p.scale(30, 80, 244, scale);
   return p.svg(380, 260, 'Field sketch of sea campion');
+}
+
+/** Grey willow: a many-stemmed bush on a damp bank, catkins on a bare twig, seeds drifting off on fluff. @param {import('./pen.js').Pen} p @param {string} [scale] */
+export function willow(p, scale) {
+  const f = p.f;
+  // The damp bank, the pond's edge on the left.
+  p.tint('M40 300H92V330H40Z', WASH.water, 0.35);
+  p.tint('M92 300H236V330H92Z', WASH.mud, 0.25);
+  p.line(wave(40, 92, 300, 1.3, 18), 1.4);
+  p.line(wave(92, 236, 300, 1.2, 24), 1.6);
+  // Stems fanning up from one stool (drawn first: the crown hides their tops and forks).
+  /** @type {[number, number, number, number, number][]} */
+  const stems = [[146, 298, 82, 160, -10], [148, 298, 110, 120, -6], [151, 298, 148, 100, 2], [154, 298, 188, 118, 6], [156, 298, 212, 160, 10]];
+  for (const s of stems) p.line(stem(...s), 1.8);
+  // The crown: one soft, lobed mass of leaves, low and rounded.
+  /** @type {[number, number][]} */ const rim = [];
+  for (let k = 0; k <= 72; k++) {
+    const a = (k / 72) * Math.PI * 2;
+    const r = 1 + 0.07 * Math.sin(a * 7 + 0.6) + 0.04 * Math.sin(a * 11);
+    rim.push([143 + Math.cos(a) * 88 * r, 150 + Math.sin(a) * 70 * r]);
+  }
+  p.shape(`${polyline(rim)}Z`, WASH.leaf, 0.45, 1.4);
+  // Narrow leaves along the upper rim, and a little shading in the mass.
+  for (let k = 0; k < 13; k++) {
+    const a = Math.PI * 1.08 + (k / 12) * Math.PI * 0.84;
+    const [x, y] = rim[Math.round((a / (Math.PI * 2)) * 72) % 72];
+    p.shape(petal(x, y, x + Math.cos(a) * 15, y + Math.sin(a) * 13, 4.2), WASH.leaf, 0.6, 1);
+  }
+  p.fine('M92 170l10-6M118 190l12-5M150 180l10-7M176 196l12-4M104 138l9-6M196 160l10-6M130 116l9-5', 0.8, 0.5);
+  // A bare twig in early spring, its catkins open.
+  const tw = /** @type {[number, number, number, number, number]} */ ([206, 112, 232, 52, -3]);
+  p.line(stem(...tw), 1.2);
+  for (const [t, side] of [[0.38, -1], [0.58, 1], [0.78, -1], [0.95, 1]]) {
+    const [x, y] = along(...tw, t);
+    p.oval(x + side * 5, y - 3, 3.6, 6.5, WASH.yellow, 0.75, 1);
+  }
+  // Seeds drifting off on their fluff.
+  for (const [x, y, s] of [[226, 240, 1], [212, 266, 0.8]]) {
+    for (let k = 0; k < 7; k++) {
+      const a = -Math.PI / 2 + (k - 3) * 0.3;
+      p.fine(`M${f(x)} ${f(y)}Q${f(x + Math.cos(a) * 6 * s + 2)} ${f(y + Math.sin(a) * 6 * s)} ${f(x + Math.cos(a) * 11 * s)} ${f(y + Math.sin(a) * 11 * s)}`, 0.6, 0.6);
+    }
+    p.dot(x, y, 1.3, WASH.brown);
+  }
+  // The stool the stems rise from, roots down into the wet soil.
+  p.shape('M128 302C134 291 166 291 172 302Z', WASH.brown, 0.5, 1.4);
+  for (const [x, dx] of [[136, -6], [150, 0], [164, 6]]) p.line(stem(x, 302, x + dx, 322, dx * 0.4), 0.9);
+  const [cx, cy] = along(...tw, 0.95);
+  p.label('catkins', 250, 40, cx + 8, cy - 4);
+  p.label('leaves', 250, 124, 226, 128);
+  p.label('seeds', 250, 216, 232, 230);
+  p.label('stool', 250, 288, 172, 300);
+  p.scale(30, 62, 300, scale);
+  return p.svg(380, 340, 'Field sketch of grey willow');
 }

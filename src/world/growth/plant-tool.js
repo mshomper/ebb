@@ -69,6 +69,14 @@ const SAYS = {
     fresh: 'Sea campion needs salty ground near the sea',
     wet: 'Too wet for sea campion',
   },
+  willow: {
+    dry: 'Grey willow needs a damp bank, close to fresh water',
+    deep: 'Too deep for grey willow; plant it on the bank, not in the water',
+    salt: 'Too salty for grey willow; it keeps to fresh water',
+    ground: 'Grey willow needs soil, not sand or rock',
+    steep: 'Too steep for grey willow; try a gentler bank',
+    crowded: 'Too close to another willow; give it room to spread',
+  },
   any: {
     ok: '{name} planted',
     dry: '{name}: the ground is too dry here',

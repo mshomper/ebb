@@ -56,6 +56,7 @@ Size and color come from CSS: set `width`/`height` on `.icon` and `color` on the
 | `thrift` | low cushion on the ground line with three stalks topped by round pompoms: species chip |
 | `marigold` | two round, notched leaves at a wavy water line and a five-petalled cup flower above: species chip |
 | `campion` | a low mat on a rock's back and a flower with a swollen, veined calyx and spreading petals: species chip |
+| `willow` | a rounded, lobed crown on several stems fanning up from one stool on the ground line, two narrow leaves on the crown: species chip |
 | `grass` | five blades of different heights on the ground line: the grass journal page |
 | `rushes` | a tussock of stiff straight stems splaying from one base, a small flower tuft on the middle stem: the rushes journal page |
 | `journal` | bound book with a ribbon marker and a pressed leaf on the cover: the journal button |

@@ -7,7 +7,7 @@
 import { initialWorldState, makeEnv, runHour, hashWorldState } from '../src/sim/tick.js';
 import { HABITAT_CELLS, HABITAT_ORIGIN } from '../src/world/growth/habitat.js';
 import { lushField, lushLook, lushAt } from '../src/world/growth/lush.js';
-import { suitability, plantSeed, plantCover, settleGrowth } from '../src/world/growth/coarse.js';
+import { suitability, plantSeed, plantCover, settleGrowth, coarseStep, STAGE } from '../src/world/growth/coarse.js';
 
 const GROWTH = 'growth';
 
@@ -81,6 +81,7 @@ const HOMES = {
   lilies: { home: ['pond'], never: ['dry', 'bank', 'edge', 'stream', 'sea', 'band'] },
   iris: { home: ['bank'], never: ['dry', 'pond', 'stream', 'sea', 'band'] },
   thrift: { home: ['band', 'shore'], never: ['dry', 'bank', 'edge', 'pond', 'sea'] },
+  willow: { home: ['bank'], never: ['dry', 'edge', 'pond', 'stream', 'sea', 'band', 'shore'] },
 };
 
 /**
@@ -299,10 +300,113 @@ export function addGrowthTests(test, assert, eq) {
       const r = plantSeed(state, sp, at(H.home[0])[0], at(H.home[0])[1], env);
       assert(r.ok, `${sp} takes on ${H.home[0]} (${r.reason})`);
     }
-    return `${cases.length} refusals and 4 plantings as expected`;
+    return `${cases.length} refusals and ${Object.keys(HOMES).length} plantings as expected`;
   });
 
-  test(GROWTH, 'four species over 96 hours: two runs match, and every plant stays on its own ground', async () => {
+  test(GROWTH, 'grey willow takes a damp, fresh bank of soil, and refuses salt, sand, rock, deep water, dry ground and steep banks', async () => {
+    const recipes = await loadRecipes();
+    const W = recipes.flora.willow;
+    assert(W && recipes.growth.species.includes('willow'), 'willow is in growth.json species');
+    assert(!recipes.growth.starters.includes('willow'), 'willow is no starter');
+    const N = HABITAT_CELLS;
+    const hab = /** @type {any} */ (shoreline());
+    hab.sand = new Uint8Array(N * N); hab.rock = new Uint8Array(N * N); hab.soil = new Uint8Array(N * N).fill(255);
+    hab.slopeDeg = new Uint8Array(N * N).fill(5); hab.heightDm = new Int16Array(N * N).fill(10);
+    const env = { ...makeEnv(5, recipes), habitat: () => hab };
+    const state = initialWorldState(5);
+    const onBank = suitability(W, hab, at('bank')[0], 0).suit;
+    assert(onBank >= 0.9, `willow on a damp bank of soil: ${onBank.toFixed(2)}`);
+    /** @type {[string, string][]} */
+    const refusals = [['dry', 'dry'], ['edge', 'deep'], ['pond', 'deep'], ['shore', 'salt'], ['band', 'salt']];
+    for (const [zone, need] of refusals) {
+      const r = plantSeed(state, 'willow', at(zone)[0], 0, env);
+      assert(!r.ok, `willow should not take on ${zone}`);
+      eq(r.reason, need, `willow on ${zone}:`);
+    }
+    hab.soil.fill(0); hab.sand.fill(255);
+    eq(plantSeed(state, 'willow', at('bank')[0], 0, env).reason, 'ground', 'willow on a sandy bank');
+    hab.sand.fill(0); hab.rock.fill(255);
+    eq(plantSeed(state, 'willow', at('bank')[0], 0, env).reason, 'ground', 'willow on a rocky bank');
+    hab.rock.fill(0); hab.soil.fill(255); hab.slopeDeg.fill(32);
+    eq(plantSeed(state, 'willow', at('bank')[0], 0, env).reason, 'steep', 'willow on a 32 degree bank');
+    hab.slopeDeg.fill(5);
+    const first = plantSeed(state, 'willow', at('bank')[0], 0, env);
+    assert(first.ok, `willow takes on the bank (${first.reason})`);
+    eq(plantSeed(first.state, 'willow', at('bank')[0], 1, env).reason, 'crowded', 'a second willow a meter away');
+    return `bank ${onBank.toFixed(2)}; refused ${refusals.map(([z, n]) => `${z} (${n})`).join(', ')}, sand, rock and a steep bank`;
+  });
+
+  test(GROWTH, 'grey willow grows slowly to a shrub over a season, seeds only in early summer, and stops at its cap', async () => {
+    const recipes = await loadRecipes();
+    const W = recipes.flora.willow;
+    const hab = shoreline();
+    // A wide damp bank, so seeds have room to land.
+    for (let j = 0; j < hab.n; j++) for (let i = 28; i <= ZONES.bank[1]; i++) hab.moisture[j * hab.n + i] = 120;
+    const env = { ...makeEnv(9, recipes), habitat: () => hab };
+    const base = settleGrowth(initialWorldState(9), env);
+    const season = (/** @type {number} */ pos) => ({ ...base.seasons, index: Math.floor(pos), phase: pos - Math.floor(pos) });
+    // Pace: a seed beside a reed seed, in spring. Reeds stand within two days; willow is still young.
+    let s = { ...base, seasons: season(0.5), growth: { ...base.growth, plants: [] } };
+    s = plantSeed(s, 'willow', HABITAT_ORIGIN + 35.5, HABITAT_ORIGIN + 60.5, env).state;
+    s = plantSeed(s, 'reeds', at('edge')[0], HABITAT_ORIGIN + 60.5, env).state;
+    const size = (/** @type {any} */ st, /** @type {string} */ sp) => st.growth.plants.find((/** @type {any} */ p) => p.sp === sp)?.size ?? 0;
+    /** @type {number[]} */ const willowAt = [];
+    for (let h = 0; h < 14 * 24; h++) {
+      s = coarseStep(s, h, env).state;
+      if (h === 47) willowAt.push(size(s, 'willow'), size(s, 'reeds'));
+    }
+    const grown = s.growth.plants.find((/** @type {any} */ p) => p.sp === 'willow');
+    assert(willowAt[1] >= recipes.flora.reeds.growth.stages.matureSize && willowAt[0] < 0.4, `after two days: reeds ${willowAt[1].toFixed(2)}, willow ${willowAt[0].toFixed(2)}`);
+    assert(grown.size >= W.growth.stages.matureSize && grown.stage >= STAGE.mature, `after a season the willow is ${grown.size.toFixed(2)} (stage ${grown.stage})`);
+    // Seeding: four grown willows on the bank, seed in their window only.
+    /** @param {number} n @param {number} pos */
+    const seeding = (n, pos) => {
+      const plants = Array.from({ length: n }, (_, i) => ({ id: i + 1, sp: 'willow', x: HABITAT_ORIGIN + 34.5, z: HABITAT_ORIGIN + 10.5 + i * 3,
+        age: 900, size: 0.95, best: 0.95, stage: STAGE.mature, low: 0, drown: 0, last: -1000 }));
+      let t = { ...base, seasons: season(pos), growth: { ...base.growth, plants, nextId: 100 } };
+      for (let h = 1000; h < 1000 + 240; h++) t = coarseStep(t, h, env).state;
+      return t.growth.plants.filter((/** @type {any} */ p) => p.sp === 'willow');
+    };
+    const summer = seeding(4, 1.2);
+    eq(seeding(4, 2.0).length, 4, 'willows seeding outside early summer');
+    assert(summer.length > 4, `four willows dropped no seed that took in early summer (${summer.length})`);
+    for (const p of summer) assert(suitability(W, hab, p.x, p.z).suit >= 0.5, `a seedling on poor ground at x ${p.x.toFixed(1)}`);
+    for (let a = 0; a < summer.length; a++) for (let b = a + 1; b < summer.length; b++) {
+      assert(Math.hypot(summer[a].x - summer[b].x, summer[a].z - summer[b].z) >= W.spread.minSpacingM - 1e-9, 'two willows closer than their spacing');
+    }
+    eq(seeding(W.spread.maxCount, 1.2).length, W.spread.maxCount, 'willows seeding past their cap');
+    return `willow ${willowAt[0].toFixed(2)} at two days (reeds ${willowAt[1].toFixed(2)}), ${grown.size.toFixed(2)} after 14 days; 4 grew to ${summer.length} in ten early-summer days, none outside it or at the cap of ${W.spread.maxCount}`;
+  });
+
+  test(GROWTH, 'grey willow arrives by itself after marsh marigold, on a bank that suits it, the same way twice', async () => {
+    const recipes = await loadRecipes();
+    const V = recipes.growth.volunteers;
+    eq(V.order.indexOf('willow'), V.order.indexOf('marigold') + 1, 'willow follows marigold in volunteers.order');
+    const hab = shoreline();
+    const env = { ...makeEnv(9, recipes), habitat: () => hab };
+    const start = settleGrowth(initialWorldState(9), env);
+    const run = () => {
+      let s = structuredClone(start);
+      /** @type {{ sp: string, h: number, x: number }[]} */ const came = [];
+      for (let h = 10; h < 10 + 700 && !came.some((c) => c.sp === 'willow'); h++) {
+        const o = runHour(s, h, env);
+        s = o.state;
+        for (const e of o.events) if (e.name === 'growth:arrived') came.push({ sp: e.payload.species, h, x: e.payload.x });
+      }
+      return { s, came };
+    };
+    const a = run(), b = run();
+    eq(JSON.stringify(a.came), JSON.stringify(b.came), 'arrivals of two runs');
+    eq(hashWorldState(a.s), hashWorldState(b.s), 'world hash of two runs');
+    const w = a.came.find((c) => c.sp === 'willow');
+    assert(w, `no willow in 700 hours: ${a.came.map((c) => c.sp).join(', ')}`);
+    eq(zoneOf(w.x), 'bank', 'the willow landed on');
+    const plant = a.s.growth.plants.find((/** @type {any} */ p) => p.sp === 'willow');
+    assert(plant && plant.stage >= 1, 'it is a sprout on the island');
+    return `willow came at ${w.h - 10} h, after ${a.came.slice(0, -1).map((c) => c.sp).join(', ')}`;
+  });
+
+  test(GROWTH, 'every species over 96 hours: two runs match, and every plant stays on its own ground', async () => {
     const recipes = await loadRecipes();
     const hab = shoreline();
     const env = { ...makeEnv(9, recipes), habitat: () => hab };

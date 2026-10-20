@@ -161,6 +161,15 @@ const ICONS = {
     <path d="M13.6 6.6V11.8"/>
     <path d="M13.6 6.6C11.4 6.2 9.8 4.8 9.6 3.2C11.6 3 13 4.4 13.6 6.6ZM13.6 6.6C15.8 6.2 17.4 4.8 17.6 3.2C15.6 3 14.2 4.4 13.6 6.6ZM13.6 6.6C13 4.6 13.2 3 13.6 2.2C14 3 14.2 4.6 13.6 6.6Z"/>`,
 
+  // Grey willow (species chip): a rounded, lobed crown on several stems fanning up from one stool
+  // on the ground line, two narrow leaves drawn on the crown.
+  willow: `
+    <path ${ACCENT} d="M6 14.6C4.2 14.6 3.3 12.6 4.5 11.1C4.1 8.9 5.9 7.3 8 7.7C8.6 5.3 11.2 4.1 13.4 5.1C15.3 4 17.8 5.2 18 7.5C20 7.9 20.9 10.1 19.6 11.7C20.3 13.5 19 15 17.4 14.7C15 15.7 9 15.7 6 14.6Z"/>
+    <path d="M6 14.6C4.2 14.6 3.3 12.6 4.5 11.1C4.1 8.9 5.9 7.3 8 7.7C8.6 5.3 11.2 4.1 13.4 5.1C15.3 4 17.8 5.2 18 7.5C20 7.9 20.9 10.1 19.6 11.7C20.3 13.5 19 15 17.4 14.7C15 15.7 9 15.7 6 14.6Z"/>
+    <path d="M3.5 20.5H20.5"/>
+    <path d="M12 20.5V15.3M11.2 20.5C10.9 18.4 9.8 16.6 8.2 15.3M12.8 20.5C13.1 18.4 14.2 16.6 15.8 15.3"/>
+    <path d="M8.6 11.6C9.4 10.2 10.6 9.4 12 9.2M13.2 12C14.2 10.8 15.4 10.2 16.6 10.2"/>`,
+
   // Sea thrift (species chip): a low rounded cushion on the ground line, three thin stalks each
   // topped by a round pompom.
   thrift: `

@@ -468,13 +468,18 @@ export function coarseStep(state, hourIndex, env) {
   }
 
   // Spread: a rhizome creeps along the best of eight bearings; a dropped seed lands on the one
-  // bearing it rolled, and takes only if the ground there is good.
+  // bearing it rolled, and takes only if the ground there is good. A species may drop seed only in
+  // its season (spread.window, e.g. willow's early summer) and stops at spread.maxCount plants.
   const index = cellIndex(g.plants);
   const born = [];
+  /** @type {Map<string, number>} */ const held = new Map();
+  for (const p of g.plants) held.set(p.sp, (held.get(p.sp) ?? 0) + 1);
   for (const p of g.plants) {
     const rec = env.recipes.flora[p.sp];
     const R = rec.spread;
     if (!R || (R.kind !== 'rhizome' && R.kind !== 'seed') || p.stage < STAGE.mature || p.stage === STAGE.dormant) continue;
+    if (R.window && !inWindow(pos, R.window)) continue;
+    if (R.maxCount && (held.get(p.sp) ?? 0) >= R.maxCount) continue;
     if (hourIndex - p.last < R.everyH) continue;
     if (g.plants.length + born.length >= GR.maxPlants) break;
     p.last = hourIndex;
@@ -493,6 +498,7 @@ export function coarseStep(state, hourIndex, env) {
     if (crowded(index, g.plants, p.sp, bx, bz, R.minSpacingM)) continue;
     if (born.some((q) => q.sp === p.sp && (q.x - bx) * (q.x - bx) + (q.z - bz) * (q.z - bz) < R.minSpacingM * R.minSpacingM)) continue;
     born.push({ id: g.nextId++, sp: p.sp, x: bx, z: bz, age: 0, size: 0.05, best: 0.05, stage: STAGE.sprout, low: 0, drown: 0, last: hourIndex });
+    held.set(p.sp, (held.get(p.sp) ?? 0) + 1);
   }
   if (born.length) {
     g.plants = [...g.plants, ...born];
