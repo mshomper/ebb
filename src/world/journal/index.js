@@ -14,7 +14,7 @@ import { hourIndex, display, SECONDS_PER_HOUR, HOURS_PER_DAY } from '../../core/
 import { onAction } from '../../input/actions.js';
 import { weatherAt } from '../weather.js';
 import { tideParams } from '../tide.js';
-import { initialJournal, learn, notePlanted, momentsNow, catchMoments, foundAnimal } from './observe.js';
+import { initialJournal, learn, notePlanted, momentsNow, catchMoments, foundAnimal, namedAnimal } from './observe.js';
 import { journalLook } from './look.js';
 import { describe, identify, showMeSpot, momentKind, frogCard } from './describe.js';
 import { groundKind, groundCard, groundSurvey, describeGround, groundSpot } from './ground.js';
@@ -35,7 +35,7 @@ import { stampNotes, markShown, markNotesSeen, markPageSeen, readOf, pageSince, 
 
 /**
  * @param {{ world: { state: any, env: any }, words: any, island: any, web: any, wash?: any,
- *   creatures?: { frogAt: (x: number, z: number) => { x: number, z: number } | null } | null }} opts
+ *   creatures?: { frogAt: (x: number, z: number) => { x: number, z: number, id?: number } | null } | null }} opts
  *   world: the live world (state and env of the hourly tick); words: recipes/world/journal.json;
  *   island: recipes/world/journal-island.json; web: recipes/world/journal-web.json;
  *   wash: recipes/world/journal-wash.json; creatures: the live creatures (src/world/creatures),
@@ -113,7 +113,7 @@ export function createJournal(opts) {
   function cardAt(x, z) {
     // A frog first: they are small, and finding one is the point.
     const frog = creatures?.frogAt(x, z);
-    if (frog) return frogCard(frog, world.state, words);
+    if (frog) return frogCard(frog, world.state, words, world.env.recipes?.species?.frog?.presence);
     const hab = habitat();
     const living = identify(world.state, hab, x, z, words);
     if (living) return living;
@@ -191,6 +191,16 @@ export function createJournal(opts) {
       select(p.point ? cardAt(p.point[0], p.point[2]) : null, p.x, p.y)),
     // Watching a frog from close by finds it too (src/world/creatures/index.js).
     on('creature:found', (/** @type {{ species: string }} */ p) => { if (p.species === 'frogs') found(); }),
+    // You named a frog (S6c-3, src/app.js): the moment is written, and its open card takes the name.
+    on('creature:named', (/** @type {{ species: string, id: number, name: string }} */ p) => {
+      if (p.species !== 'frogs') return;
+      commit(namedAnimal(journal, p.name, { state: world.state, hour: hourIndex(), words }));
+      const c = get('identify');
+      if (c?.sp === 'frogs' && c.id === p.id) {
+        const card = frogCard({ x: c.wx, z: c.wz, id: c.id }, world.state, words, world.env.recipes?.species?.frog?.presence);
+        update('identify', () => ({ ...c, ...card }));
+      }
+    }),
     onAction((a) => {
       // Choosing a tool or closing the card puts the tap card away.
       if (a.type === 'tool.select' || a.type === 'ui.identify') { if (get('identify')) update('identify', () => null); return; }

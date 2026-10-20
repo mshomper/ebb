@@ -7,7 +7,9 @@
 // then hints, and the notes speak of something: a sign, rings on the water. Once found, the notes
 // name them, the web's frog links ink from the cover around each frog's home (flags frogs:reeds,
 // frogs:rushes, frogs:iris, frogs:lilies, frogs:grass), and plant pages' gives lines ink
-// (frogs:settled). Midges (kind swarm) are known by themselves at the first dusk they gather.
+// (frogs:settled). When a frog comes to know you better (S6c, `creature:trusted`) the notes say so
+// and the page learns that frogs let you close if you come slowly. Midges (kind swarm) are known by
+// themselves at the first dusk they gather.
 // Words from recipes/world/journal.json.
 
 import { HABITAT_ORIGIN } from '../growth/habitat.js';
@@ -82,13 +84,26 @@ export function observeAnimals(j, out, ctx, at) {
         else if (learnOnce(k, 'joined:unseen')) note(rec, 'joinedUnseen', 'frogs');
         learnOnce(k, 'joined');
       } else if (e.name === 'creature:left') {
-        if (k.ever) { note(rec, e.payload.count ? 'left' : 'gone', 'frogs'); learnOnce(k, 'left'); }
+        // A frog you named leaves by its name (S6c-3).
+        const named = e.payload.frogName && rec.notes?.leftNamed;
+        if (k.ever && named) { out.push({ hour, date: at.date, text: rec.notes.leftNamed.replace('{name}', e.payload.frogName), sp: 'frogs', kind: 'left' }); learnOnce(k, 'left'); }
+        else if (k.ever) { note(rec, e.payload.count ? 'left' : 'gone', 'frogs'); learnOnce(k, 'left'); }
         else if (e.payload.why === 'scout') note(rec, 'scoutLeftUnseen', 'frogs');
       } else if (e.name === 'creature:dormant' || e.name === 'creature:woke') {
         if (k.ever) { note(rec, e.name === 'creature:dormant' ? 'dormant' : 'woke', 'frogs'); learnOnce(k, e.name === 'creature:dormant' ? 'dormant' : 'woke'); }
       } else if (e.name === 'species:happy') {
         setFlag(j, 'frogs:happy');
         if (k.ever) note(rec, 'happy', 'frogs');
+      } else if (e.name === 'creature:ate') {
+        // A frog ate what you offered (S6c-2): noted the first time, and the web's "you" link inks.
+        if (setFlag(j, 'you:fed') && k.ever) note(rec, 'fed', 'frogs');
+        learnOnce(k, 'fed');
+      } else if (e.name === 'creature:trusted' && k.ever) {
+        // A frog's word moved up (S6c): a note, and what it teaches the page.
+        const t = rec.trust?.notes?.[e.payload.word];
+        if (t) out.push({ hour, date: at.date, text: t, sp: 'frogs', kind: 'trusted' });
+        learnOnce(k, `trust:${e.payload.word}`);
+        if (e.payload.word !== 'tolerant') learnOnce(k, 'trust:tolerant');
       }
     }
     if (k.ever) frogsKnown(j, k, F, at.season, hour);
@@ -143,6 +158,22 @@ function track(k, value, hour, newHour, words) {
   if (!newHour) return;
   k.counts.push(value);
   if (k.counts.length > words.trend.hours + 1) k.counts.splice(0, k.counts.length - words.trend.hours - 1);
+}
+
+/**
+ * You named a frog (S6c-3): the moment is written down.
+ * @param {Journal} journal @param {string} name
+ * @param {{ hour: number, words: any, date: string, copy: (j: Journal) => Journal }} ctx
+ * @returns {{ journal: Journal, notes: Note[] }}
+ */
+export function namedFrog(journal, name, ctx) {
+  const rec = ctx.words.species.frogs;
+  const t = rec?.notes?.named;
+  if (!t || !name) return { journal, notes: [] };
+  const j = ctx.copy(journal);
+  /** @type {Note[]} */ const notes = [{ hour: ctx.hour, date: ctx.date, text: t.replace('{name}', name), sp: 'frogs', kind: 'named' }];
+  j.notes = [...notes, ...j.notes].slice(0, ctx.words.notesKept);
+  return { journal: j, notes };
 }
 
 /**

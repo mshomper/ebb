@@ -358,14 +358,14 @@
   .ebb-tools__slider[data-slider='size'] .ebb-tools__range::-moz-range-track { width: 6px; height: 100%; }
   .ebb-tools__slider[data-slider='size'] .ebb-tools__range::-moz-range-progress { width: 6px; }
 }
-/* Five tool buttons. With tight gaps the bar's own parts take 18 px (2 x 4 padding, 4 x 2 gaps,
+/* Six tool buttons. With tight gaps the bar's own parts take 20 px (2 x 4 padding, 5 x 2 gaps,
    border 2) plus the 24 px page gutter, so below 460 px the buttons share what is left: 52 px
-   down to a 302 px screen, so the bar never runs past the screen. */
+   down to a 356 px screen, 46 px on a 320 px one, so the bar never runs past the screen. */
 @media (max-width: 460px) {
   .ebb-tools {
     --tb-gap: 2px;
     --tb-pad: 4px;
-    --tb-btn: clamp(34px, calc((100vw - 42px) / 5), 52px);
+    --tb-btn: clamp(34px, calc((100vw - 44px) / 6), 52px);
     --tb-icon: clamp(22px, calc(var(--tb-btn) - 20px), 26px);
   }
 }
@@ -383,14 +383,14 @@
 }
 /* Phone landscape (docs/15): the tools become a column on the right edge, under the top right
    buttons, with the brush card opening to its left; undo and redo stack on the left edge, half way
-   up. The buttons shrink only if the screen is too short for five, never below 44 px. */
+   up. The buttons shrink only if the screen is too short for six, never below 44 px. */
 @media (max-height: 500px) and (min-width: 600px) {
   .ebb-tools,
   .ebb-history {
     --tb-top: calc(max(12px, env(safe-area-inset-top)) + 62px);
     --tb-gap: 2px;
     --tb-pad: 4px;
-    --tb-btn: clamp(44px, calc((100dvh - var(--tb-top) - max(12px, env(safe-area-inset-bottom)) - 18px) / 5), 52px);
+    --tb-btn: clamp(44px, calc((100dvh - var(--tb-top) - max(12px, env(safe-area-inset-bottom)) - 20px) / 6), 52px);
     --tb-icon: clamp(22px, calc(var(--tb-btn) - 22px), 26px);
   }
   .ebb-tools {
@@ -427,8 +427,9 @@
   }
 }
 @media (max-height: 500px) and (min-width: 600px) {
-  /* Under the clock dial and the build tag on test builds, rather than under the top right buttons. */
-  :root.ebb-left-handed .ebb-tools { --tb-top: calc(max(12px, env(safe-area-inset-top)) + var(--hud-dial, 64px) + 40px); }
+  /* Under the clock dial, rather than under the top right buttons; with six tools there is just room
+     for the build tag on test builds too. */
+  :root.ebb-left-handed .ebb-tools { --tb-top: calc(max(12px, env(safe-area-inset-top)) + var(--hud-dial, 64px) + 28px); }
   :root.ebb-left-handed .ebb-tools {
     right: auto;
     left: max(12px, env(safe-area-inset-left));

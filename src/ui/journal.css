@@ -555,6 +555,8 @@ button.ebb-jnotes__row:hover { background: rgba(30, 38, 36, 0.06); }
 .ebb-idcard :focus-visible { outline: 2px solid var(--jr-moss); outline-offset: 2px; }
 .ebb-idcard__head { display: flex; align-items: center; gap: 10px; }
 .ebb-idcard__head b { font-weight: 800; font-size: calc(18px * var(--text-scale, 1)); margin-right: auto; min-width: 0; overflow-wrap: break-word; }
+/* How well a creature knows you (S6c): one word, never a number. */
+.ebb-idcard__word { flex: none; padding: 2px 10px; border-radius: 999px; background: rgba(95, 127, 91, 0.14); color: #3F5C3B; font-size: var(--text-small); font-weight: 800; white-space: nowrap; }
 .ebb-idcard__icon { width: 36px; height: 36px; flex: none; display: grid; place-items: center; border-radius: 50%; background: rgba(95, 127, 91, 0.14); color: var(--jr-moss); }
 .ebb-idcard__close { appearance: none; -webkit-appearance: none; width: 40px; height: 40px; margin: -6px -6px -6px 0; padding: 0; border: 0; border-radius: 10px; background: transparent; display: grid; place-items: center; cursor: pointer; }
 .ebb-idcard__text { margin: 0; font-family: var(--font-voice); font-style: italic; font-weight: 400; font-size: calc(18px * var(--text-scale, 1)); }
@@ -576,6 +578,41 @@ button.ebb-jnotes__row:hover { background: rgba(30, 38, 36, 0.06); }
   cursor: pointer;
 }
 .ebb-idcard__open:hover { background: rgba(95, 127, 91, 0.12); }
+.ebb-idcard__open[hidden], .ebb-idcard__name[hidden] { display: none; }
+/* A named frog (S6c-3): what it is and since when, under its name; the name field on the card. */
+.ebb-idcard__sub { margin: -4px 0 0 46px; font-size: var(--text-small); color: var(--jr-soft); }
+.ebb-idcard__name { display: grid; gap: 8px; margin: 0; }
+.ebb-idcard__label { font-weight: 800; }
+.ebb-idcard__row { display: flex; flex-wrap: wrap; gap: 8px; }
+.ebb-idcard__input {
+  flex: 1 1 140px;
+  min-width: 0;
+  min-height: 44px;
+  padding: 6px 12px;
+  border: 1.5px solid var(--jr-moss);
+  border-radius: 10px;
+  background: #FBF7F0;
+  color: var(--jr-ink);
+  font: inherit;
+  font-size: max(16px, var(--text-body));
+}
+.ebb-idcard__chip,
+.ebb-idcard__give {
+  appearance: none;
+  -webkit-appearance: none;
+  min-height: 44px;
+  padding: 6px 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1.5px solid var(--jr-binding);
+  border-radius: 12px;
+  background: transparent;
+  cursor: pointer;
+}
+.ebb-idcard .ebb-idcard__give { justify-self: start; background: var(--jr-moss); border-color: var(--jr-moss); color: var(--jr-paper); }
+.ebb-idcard__error { margin: 0; min-height: 0; font-size: var(--text-small); color: #8A4524; }
+.ebb-idcard__error:empty { display: none; }
 
 /* Reduced motion: the system's (unless Settings says Full), or Settings' Calm (src/ui/motion.js). */
 @media (prefers-reduced-motion: reduce) {
