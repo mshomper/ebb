@@ -1,6 +1,6 @@
 // @ts-check
 // Field sketches of the living things (J1.6): grass, rushes, reeds, water lilies, yellow flag iris,
-// sea thrift, marsh marigold, sea campion and grey willow, each drawn with the journal pen (pen.js) so pencil, ink and wash come from one drawing.
+// sea thrift, marsh marigold, sea campion, grey willow and gorse, each drawn with the journal pen (pen.js) so pencil, ink and wash come from one drawing.
 //
 // Layout for every sheet (380 wide): the drawing sits in x 40..236 on a ground line, a scale bar
 // (when there is one) at x 30 on the left, and labels in the right column from x 250, each with a
@@ -439,4 +439,47 @@ export function willow(p, scale) {
   p.label('stool', 250, 288, 172, 300);
   p.scale(30, 62, 300, scale);
   return p.svg(380, 340, 'Field sketch of grey willow');
+}
+
+/** Gorse: a dense, rounded mound of spines on dry ground, pea flowers over it, a pod cracked open. @param {import('./pen.js').Pen} p @param {string} [scale] */
+export function gorse(p, scale) {
+  const f = p.f;
+  // Dry, sandy ground.
+  p.tint('M40 270H236V296H40Z', WASH.sand, 0.35);
+  p.line(wave(40, 236, 270, 1, 30), 1.6);
+  // A few short stems at the foot, the rest hidden in the mound.
+  for (const [x, dx] of [[128, -14], [140, -4], [150, 6], [160, 16]]) p.line(stem(x, 270, x + dx, 238, dx * 0.3), 1.6);
+  // The mound: one dense, low dome, its rim bristling.
+  /** @type {[number, number][]} */ const rim = [];
+  for (let k = 0; k <= 60; k++) {
+    const a = Math.PI + (k / 60) * Math.PI;
+    const r = 1 + 0.04 * Math.sin(a * 9 + 0.4) + 0.025 * Math.sin(a * 17);
+    rim.push([142 + Math.cos(a) * 92 * r, 262 + Math.sin(a) * 134 * r]);
+  }
+  p.shape(`${polyline(rim)}Z`, WASH.green, 0.55, 1.4);
+  // Spines standing off the rim, and a fine texture of them over the mass.
+  let spines = '';
+  for (let k = 2; k < 59; k += 2) {
+    const [x, y] = rim[k];
+    const a = Math.PI + (k / 60) * Math.PI + (k % 4 ? 0.25 : -0.25);
+    spines += `M${f(x)} ${f(y)}l${f(Math.cos(a) * 7)} ${f(Math.sin(a) * 7)}`;
+  }
+  p.fine(spines, 0.9, 0.7);
+  p.fine('M92 210l6-8M110 186l5-9M130 168l4-9M160 172l5-8M182 196l6-7M100 240l6-7M196 230l5-8M150 214l4-8M122 222l5-8M170 240l5-7', 0.8, 0.5);
+  // Pea flowers over the mound.
+  for (const [x, y] of [[96, 196], [118, 160], [146, 146], [176, 168], [198, 204], [130, 200], [164, 210], [108, 232], [188, 236], [152, 180]]) {
+    p.oval(x, y, 4.2, 3.4, WASH.yellow, 0.85, 1);
+  }
+  // A ripe pod on a twig at the rim, cracked open, its seeds thrown off.
+  p.line(stem(214, 176, 232, 150, -2), 1.1);
+  p.shape('M228 152C234 144 242 140 246 138C242 144 236 150 228 152Z', WASH.tip, 0.8, 1.1);
+  p.shape('M228 152C230 144 236 136 242 132C240 140 234 148 228 152Z', WASH.tip, 0.8, 1.1);
+  for (const [x, y] of [[236, 118], [222, 112], [244, 106]]) p.dot(x, y, 1.6, WASH.brown);
+  p.fine('M238 128l-1-6M232 126l-6-9M242 126l2-14', 0.6, 0.5);
+  p.label('flowers', 250, 40, 146, 142);
+  p.label('pods', 250, 104, 242, 134);
+  p.label('spines', 250, 168, 222, 186);
+  p.label('mound', 250, 232, 212, 246);
+  p.scale(30, 128, 270, scale);
+  return p.svg(380, 300, 'Field sketch of gorse');
 }

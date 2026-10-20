@@ -178,6 +178,18 @@ const ICONS = {
     <path d="M12 20.5V15.3M11.2 20.5C10.9 18.4 9.8 16.6 8.2 15.3M12.8 20.5C13.1 18.4 14.2 16.6 15.8 15.3"/>
     <path d="M8.6 11.6C9.4 10.2 10.6 9.4 12 9.2M13.2 12C14.2 10.8 15.4 10.2 16.6 10.2"/>`,
 
+  // Gorse (species chip): a dense, rounded mound on the ground line, short spines standing off its
+  // rim, and three small pea flowers on it.
+  gorse: `
+    <path ${ACCENT} d="M4 20.5C4 13 7.4 8.6 12 8.6S20 13 20 20.5Z"/>
+    <path d="M4 20.5C4 13 7.4 8.6 12 8.6S20 13 20 20.5"/>
+    <path d="M2.5 20.5H21.5"/>
+    <path d="M4.9 14.6L3.2 14M6.6 11.2L5.3 9.9M9.2 9.3L8.6 7.6M12 8.6V6.8M14.8 9.3L15.4 7.6M17.4 11.2L18.7 9.9M19.1 14.6L20.8 14"/>
+    <path d="M8.6 17.6L10 16.4M14 17.8L15.4 16.6"/>
+    <circle cx="9.4" cy="13" r="1.2" fill="currentColor" stroke="none"/>
+    <circle cx="14.6" cy="12.4" r="1.2" fill="currentColor" stroke="none"/>
+    <circle cx="12.2" cy="15.8" r="1.2" fill="currentColor" stroke="none"/>`,
+
   // Sea thrift (species chip): a low rounded cushion on the ground line, three thin stalks each
   // topped by a round pompom.
   thrift: `

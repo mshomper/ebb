@@ -13,7 +13,7 @@ import { FLORA_KINDS } from './flora-kinds.js';
 
 /** @typedef {import('../frame-graph.js').PassContext} PassContext */
 
-// Room for the largest species' draw buffer (shrubs use 288 bytes, with space for more).
+// Room for the largest species' draw buffer (shrubs use 336 bytes, with space for more).
 const DRAW_BYTES = 384;
 
 /**
