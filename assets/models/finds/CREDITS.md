@@ -1,6 +1,6 @@
 # Find model credits
 
-Small models for the shore finds (docs/future/11), baked for ebb by a one-off script: textures
+Small models for the shore finds (docs/future/11), baked for ebb (from the mussel on, by `tools/bake-find-model.mjs`): textures
 sampled into linear vertex colors, skins, animation and UVs dropped, simplified, and set base down
 at a height of 1 (the game scales them in `recipes/species/finds.json`).
 
@@ -33,6 +33,20 @@ Each is changed for ebb the same way: textures baked to vertex colors, parts joi
 - "Murex Shell" (https://sketchfab.com/3d-models/murex-shell-fc5a13eb995044d6bfb7eb2a628cede7) by Loïc Norgeot (https://sketchfab.com/norgeotloic), licensed under CC-BY-4.0. 25,000 to 999 triangles. Files: `shell-murex.gltf`, `shell-murex.bin`.
 - "Nautilus Shell" (https://sketchfab.com/3d-models/nautilus-shell-9b4acc4a177c41e984a0199c6fdcf90e) by RISD Nature Lab (https://sketchfab.com/RISDNaturelab), licensed under CC-BY-4.0. 397,722 to 998 triangles. Files: `shell-nautilus.gltf`, `shell-nautilus.bin`.
 - The empty periwinkle shell reuses the periwinkle scan below, paler.
+
+## Common mussel: Blue Mussel Shell - Mytilus edulis
+
+This work is based on "Blue Mussel Shell - Mytilus edulis" (https://sketchfab.com/3d-models/blue-mussel-shell-mytilus-edulis-9e5d8d32a838428e9e9cf35f25fa0ba4) by scotdiver (https://sketchfab.com/scotdiver), licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/).
+
+- Changes: base color texture baked to vertex colors, simplified from 53,924 to 895 triangles, turned to lie rim down along its length and rescaled (`tools/bake-find-model.mjs --align valve`). The scan is one valve; the game mirrors it into the other and opens the pair about the hinge.
+- Files: `mussel-valve.gltf`, `mussel-valve.bin`
+
+## Sand dollar: Sand Dollar
+
+This work is based on "Sand Dollar" (https://sketchfab.com/3d-models/sand-dollar-ecb3b89356874d73ba449f6c0bf59cf7) by semmert179 (https://sketchfab.com/semmert179), licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/).
+
+- Changes: its four parts joined, simplified from 374,542 to 869 triangles, rescaled (`tools/bake-find-model.mjs`). It has no colors of its own; the game tints it in `recipes/species/finds.json`.
+- Files: `sand-dollar.gltf`, `sand-dollar.bin`
 
 ## Periwinkle: rough periwinkle scan (Littorina brevicula)
 

@@ -116,8 +116,10 @@ export function createPlantTool(opts) {
      */
     tap(sp, p) {
       const name = flora[sp]?.name ?? sp;
-      // Only a plant the journal has seen on the island (volunteers.js), or any with ?sandbox.
-      if (!getStore('unlocks')?.allPlants && !getStore('journal')?.species?.[sp]?.ever) {
+      // Only a plant the journal has seen on the island (volunteers.js), one given as a gift's seed
+      // (world/expansion.js), or any with ?sandbox.
+      const u = getStore('unlocks');
+      if (!u?.allPlants && !u?.seeds?.[sp] && !getStore('journal')?.species?.[sp]?.ever) {
         updateStore('plantUi', () => ({ message: say(sp, name, 'unseen'), refused: true, at: performance.now() }));
         return false;
       }

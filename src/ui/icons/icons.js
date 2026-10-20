@@ -372,6 +372,63 @@ const ICONS = {
     <path d="M5 20.5C5 18 7 16.6 9.6 16.6C12.2 16.6 13.8 18 13.8 19.6C13.8 18.4 12.4 17.6 10.6 17.6C8.6 17.6 7.6 18.6 7.6 19.6C7.6 18.8 8.8 18.4 9.8 18.6C11.2 18.8 11.8 19.6 11.6 20.5"/>
     <path d="M10 16.6C9.8 15.4 10.2 14.4 11 13.8"/>
     <path d="M17 20.5C17.6 19.6 18.8 19.4 19.6 20.5"/>`,
+  // Acorn barnacles: three low cones of plates on the ground line, each with the notch of its
+  // closed opening at the top.
+  barnacles: `
+    <path d="M2.5 20.5H21.5"/>
+    <path ${ACCENT} d="M3 20.5L4.4 17.4C4.5 17.1 4.7 17 5 17H5.4C5.7 17 5.9 17.1 6 17.4L7.4 20.5ZM7.6 20.5L10.2 13.2C10.3 12.8 10.6 12.6 11 12.6H13C13.4 12.6 13.7 12.8 13.8 13.2L16.4 20.5ZM16.8 20.5L18.2 17C18.3 16.7 18.5 16.6 18.8 16.6H19.4C19.7 16.6 19.9 16.7 20 17L21.2 20.5Z"/>
+    <path d="M3 20.5L4.4 17.4C4.5 17.1 4.7 17 5 17H5.4C5.7 17 5.9 17.1 6 17.4L7.4 20.5"/>
+    <path d="M7.6 20.5L10.2 13.2C10.3 12.8 10.6 12.6 11 12.6H13C13.4 12.6 13.7 12.8 13.8 13.2L16.4 20.5"/>
+    <path d="M16.8 20.5L18.2 17C18.3 16.7 18.5 16.6 18.8 16.6H19.4C19.7 16.6 19.9 16.7 20 17L21.2 20.5"/>
+    <path d="M11 12.6L12 13.8L13 12.6M11.2 15.4L10.4 20.5M12.8 15.4L13.6 20.5"/>`,
+  // Pond skater: from above, a slim body, short front legs, four long legs splayed out, and the
+  // ring each long foot dimples into the water.
+  pondskaters: `
+    <path ${ACCENT} d="M12 6.5C12.9 6.5 13.2 8 13.2 10.5V15C13.2 17 12.7 18.5 12 18.5S10.8 17 10.8 15V10.5C10.8 8 11.1 6.5 12 6.5Z"/>
+    <path d="M12 6.5C12.9 6.5 13.2 8 13.2 10.5V15C13.2 17 12.7 18.5 12 18.5S10.8 17 10.8 15V10.5C10.8 8 11.1 6.5 12 6.5Z"/>
+    <path d="M11.2 8L9.4 5.6M12.8 8L14.6 5.6"/>
+    <path d="M10.9 10.6L6 8.2L3.8 6M13.1 10.6L18 8.2L20.2 6M10.9 13L6.4 17L4.6 19.6M13.1 13L17.6 17L19.4 19.6"/>
+    <circle cx="3.4" cy="5.4" r="1.4"/>
+    <circle cx="20.6" cy="5.4" r="1.4"/>
+    <circle cx="4.2" cy="20.2" r="1.4"/>
+    <circle cx="19.8" cy="20.2" r="1.4"/>`,
+  // Common mussel: a long wedge of shell from the side, hinged at the narrow left end, the seam
+  // between its two valves gaping a little at the wide end; growth lines on the upper valve.
+  mussels: `
+    <path ${ACCENT} d="M3 14.2C4.6 11.2 9.2 8.6 14.4 8.3C18.4 8.1 21 9.6 21 12C21 14.6 18 16.2 13.8 16.6C8.8 17.1 4.6 16.4 3 14.2Z"/>
+    <path d="M3 14.2C4.6 11.2 9.2 8.6 14.4 8.3C18.4 8.1 21 9.6 21 12C21 14.6 18 16.2 13.8 16.6C8.8 17.1 4.6 16.4 3 14.2Z"/>
+    <path d="M3 14.2C7.4 13.6 13.4 13.2 21 11.6"/>
+    <path d="M9 10.8C9.6 11.8 10 12.7 10.2 13.4M13.6 9.6C14.3 10.6 14.8 11.6 15 12.8"/>
+    <path d="M2.5 20.5H21.5"/>`,
+  // Sand dollar: a round test from above, the five petals of its back around the middle.
+  sanddollars: `
+    <circle ${ACCENT} cx="12" cy="12" r="9"/>
+    <circle cx="12" cy="12" r="9"/>
+    <path d="M12 10.4Q15 8.1 12 5.8Q9 8.1 12 10.4ZM13.5 11.5Q16.6 13.6 17.9 10.1Q14.8 7.9 13.5 11.5ZM12.9 13.3Q11.9 16.9 15.6 17Q16.7 13.4 12.9 13.3ZM11.1 13.3Q7.3 13.4 8.4 17Q12.1 16.9 11.1 13.3ZM10.5 11.5Q9.2 7.9 6.1 10.1Q7.4 13.6 10.5 11.5Z"/>`,
+  // Loose stone (a naturalist's reward, src/world/expansion.js): a stone tipped up on one side,
+  // the dark gap under it where something might live.
+  loosestone: `
+    <path ${ACCENT} d="M4 18.5C4.4 13.4 8 9.6 12.6 9.4C16.8 9.2 19.8 11.8 20.2 15.6L12 18.5Z"/>
+    <path d="M4 18.5C4.4 13.4 8 9.6 12.6 9.4C16.8 9.2 19.8 11.8 20.2 15.6"/>
+    <path d="M4 18.5L20.2 15.6"/>
+    <path fill="currentColor" stroke="none" opacity="0.55" d="M12.5 18.6L19.6 16.6C19.9 17.6 20 18.5 20 20.5H12.6Z"/>
+    <path d="M2.5 20.5H21.5"/>
+    <path d="M9.4 13.2C10.2 12.4 11.2 12 12.2 12"/>`,
+  // Hand lens (a naturalist's reward): a round glass with a glint, on a short handle.
+  lens: `
+    <circle ${ACCENT} cx="10" cy="10" r="6.5"/>
+    <circle cx="10" cy="10" r="6.5"/>
+    <path d="M7 8.4C7.6 7.2 8.6 6.5 9.8 6.3"/>
+    <path d="M14.8 14.8L16.2 16.2"/>
+    <path d="M16.2 16.2L20.2 20.2A1.1 1.1 0 0 1 18.6 21.8L14.6 17.8A1.1 1.1 0 0 1 16.2 16.2Z"/>`,
+  // Driftwood (a naturalist's reward): a bleached, bending branch lying at the water's edge, a
+  // broken stub and a knot on it, a ripple beyond.
+  driftwood: `
+    <path ${ACCENT} d="M2.8 16.2C6.6 14.2 11.4 13.6 15.2 14.2C17.6 14.6 19.6 14.2 21.2 13.2L21.6 15.4C19.6 16.6 17.4 17 15 16.6C11.2 16 6.8 16.6 3.4 18.4Z"/>
+    <path d="M2.8 16.2C6.6 14.2 11.4 13.6 15.2 14.2C17.6 14.6 19.6 14.2 21.2 13.2L21.6 15.4C19.6 16.6 17.4 17 15 16.6C11.2 16 6.8 16.6 3.4 18.4Z"/>
+    <path d="M9.6 14.4L8.4 10.6L9.8 10.2"/>
+    <circle cx="16" cy="15.4" r="0.6"/>
+    <path d="M2.5 21C4.2 20.2 5.8 20.2 7.5 21S10.8 21.8 12.5 21"/>`,
   // Stone, a Sculpt mode (docs/future/10): a rounded boulder resting on the ground, a smaller one against it, and a
   // short drop line above: set a stone here.
   stone: `
