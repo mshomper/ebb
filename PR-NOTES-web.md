@@ -43,7 +43,7 @@ Plants' habitats and starters are untouched (the plants rework is on another bra
 8. Find an anemone in that pool (tap it). In the Web, the Rock pool's Needed by now shows **Beadlet anemone** in soft aqua, and Small lives shows its tile.
 9. Use Sculpt's **Stone** mode to set a stone. The Ground shelf's **Stones** tile turns from a question mark to the stone icon.
 10. On your phone, open the journal tall and check the Web: no sideways scroll, chips wrap, six tiles to a row, text easy to read. Turn the text size up in Settings and check again.
-11. Open `tools/unit-tests.html`: every test passes (158 of 158).
+11. Open `tools/unit-tests.html`: every test passes (159 of 159 with both commits).
 
 ## Living things, tidied (second commit)
 
