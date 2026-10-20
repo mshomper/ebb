@@ -2,12 +2,14 @@
   "type": "music",
   "id": "develop",
   "version": 1,
-  "note": "The development engine's rules and weights (doc 24, The development engine; src/audio/music/develop/), tuned by ear in the music lab's Engine tab. candidates: how many pieces are grown per seed; keepBest: how many of the best the seed chooses among. harmony: tensionFollow, how strongly the walk prefers chords whose tension is near the phrase's target (0 ignores it); colorAmount, scales every chord's color chances (0 plain triads and sevenths only, 1 as written in the material); hold, scales the chance a chord lasts another bar; splitLast, the chance a phrase's last-but-one bar holds two chords (the cadence's approach arrives on the bar's later beat); returnSameCadence, multiplies the chance a returning phrase ends on the same cadence as the phrase it brings back (low, so a return changes its ending); cadenceWeights, multiplies each cadence type wherever a template offers it (1 keeps the material's weights; 0 removes it). endings: weights multiplies each ending's weight (1 keeps the material's; 0 removes it); sameAsCadence multiplies an ending whose type matches the last phrase's cadence. score: how the candidates are judged. variety rewards using many different chords; tensionFit punishes distance from the template's curve; repeatWindow punishes a run of four chords that comes back (a loop); stuck punishes the same chord three bars running; colorCrowd punishes more than colorCrowdShare of bars on color chords; roughReturn punishes a return that starts on a chord the grammar cannot reach from the one before it (a phrase may always start again at home, on I); bars a return keeps on purpose are not counted as loops; bannedLoops are sequences (by place) never allowed, such as I V vi IV.",
+  "note": "The development engine's rules and weights (doc 24, The development engine; src/audio/music/develop/), tuned by ear in the music lab's Engine tab. candidates: how many pieces are grown per seed; keepBest: how many of the best the seed chooses among. harmony: tensionFollow, how strongly the walk prefers chords whose tension is near the phrase's target (0 ignores it); colorAmount, scales every chord's color chances (0 plain triads and sevenths only, 1 as written in the material); borrowedAmount, scales the borrowed chords and colors (the flat six, the minor iv; 0 none, 1 as written); pairPull, how strongly a color leans to its partner in material colorPairs (1 no lean); hold, scales the chance a chord lasts another bar; splitLast, the chance a phrase's last-but-one bar holds two chords (the cadence's approach arrives on the bar's later beat); returnSameCadence, multiplies the chance a returning phrase ends on the same cadence as the phrase it brings back (low, so a return changes its ending); cadenceWeights, multiplies each cadence type wherever a template offers it (1 keeps the material's weights; 0 removes it). endings: weights multiplies each ending's weight (1 keeps the material's; 0 removes it); sameAsCadence multiplies an ending whose type matches the last phrase's cadence. score: how the candidates are judged. variety rewards using many different chords; tensionFit punishes distance from the template's curve; repeatWindow punishes a run of four chords that comes back (a loop); stuck punishes the same chord three bars running; colorCrowd punishes more than colorCrowdShare of bars on color chords; roughReturn punishes a return that starts on a chord the grammar cannot reach from the one before it (a phrase may always start again at home, on I); bars a return keeps on purpose are not counted as loops; bannedLoops are sequences (by place) never allowed, such as I V vi IV.",
   "candidates": 24,
   "keepBest": 4,
   "harmony": {
     "tensionFollow": 3,
     "colorAmount": 1,
+    "borrowedAmount": 1,
+    "pairPull": 3,
     "hold": 1,
     "splitLast": 0.35,
     "returnSameCadence": 0.3,
@@ -26,7 +28,8 @@
       "mixolydian": 1,
       "soft-two": 1,
       "turn-away": 1,
-      "linger": 1
+      "linger": 1,
+      "flat-six": 1
     },
     "sameAsCadence": 0.25
   },
@@ -36,7 +39,7 @@
     "repeatWindow": 4,
     "stuck": 3,
     "colorCrowd": 2,
-    "colorCrowdShare": 0.4,
+    "colorCrowdShare": 0.5,
     "roughReturn": 5,
     "bannedLoops": [
       [

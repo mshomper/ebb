@@ -32,6 +32,8 @@ function tensionFill(t) {
 
 /** @param {string} s */
 const esc = (s) => s.replace(/[&<>"]/g, (c) => `&#${c.charCodeAt(0)};`);
+/** A chord symbol as a player reads it: "Dsus2" is written D2. @param {string} s */
+const show = (s) => esc(s.replace(/sus2/g, '2'));
 
 /**
  * @param {HTMLElement} host the Engine tab's section
@@ -50,6 +52,8 @@ export async function initEngine(host, env) {
   const sliders = [
     ['tensionFollow', 'Follow the tension curve', 0, 6, 0.5, (/** @type {number} */ v) => v.toFixed(1)],
     ['colorAmount', 'Color chords', 0, 2, 0.1, (/** @type {number} */ v) => `${Math.round(v * 100)}%`],
+    ['borrowedAmount', 'Borrowed chords (flat six, minor iv)', 0, 3, 0.1, (/** @type {number} */ v) => `${Math.round(v * 100)}%`],
+    ['pairPull', 'Seconds answer each other (D2 and G2)', 1, 6, 0.5, (/** @type {number} */ v) => `${v.toFixed(1)}x`],
     ['hold', 'Hold a chord another bar', 0, 3, 0.1, (/** @type {number} */ v) => `${v.toFixed(1)}x`],
     ['splitLast', 'Two chords in the bar before a cadence', 0, 1, 0.05, (/** @type {number} */ v) => `${Math.round(v * 100)}%`],
   ];
@@ -168,7 +172,7 @@ export async function initEngine(host, env) {
         barNo += span;
         const main = b.chords[0];
         const two = b.chords.length > 1;
-        const sym = b.chords.map((/** @type {any} */ c) => esc(c.symbol)).join(' <span class="en-then">then</span> ');
+        const sym = b.chords.map((/** @type {any} */ c) => show(c.symbol)).join(' <span class="en-then">then</span> ');
         const rom = b.held ? 'held' : b.chords.map((/** @type {any} */ c) => esc(c.place)).join(', ');
         const tens = b.chords.reduce((s, /** @type {any} */ c) => s + c.tension, 0) / b.chords.length;
         return `<div class="en-bar${b.cadence ? ' en-cad' : ''}" style="background:${tensionFill(two ? tens : main.tension)}">
@@ -181,7 +185,7 @@ export async function initEngine(host, env) {
       const e = rep.ending;
       const lastBar = rep.bars[rep.bars.length - 1];
       const endBars = e.hold ? [[lastBar.chords[lastBar.chords.length - 1].symbol, 0]] : e.bars;
-      return `<div class="en-phrase"><div class="en-ph-head"><b>Ending</b><span>${esc(e.name)}, ${endBars.length} bar${endBars.length > 1 ? 's' : ''}</span></div><div class="en-bars">${endBars.map((/** @type {[string, number]} */ [s, tn], /** @type {number} */ k) => { const sp = k === endBars.length - 1 ? 1 : (rep.span ?? 1); const lab = sp > 1 ? `${barNo + 1} to ${barNo + sp}` : `${barNo + 1}`; barNo += sp; return `<div class="en-bar${k === endBars.length - 1 ? ' en-cad' : ''}" style="background:${tensionFill(tn)}"><span class="en-no">${lab}</span><b>${esc(s)}</b><span class="en-rom">${k === endBars.length - 1 ? 'held' : '&nbsp;'}</span></div>`; }).join('')}</div></div>`;
+      return `<div class="en-phrase"><div class="en-ph-head"><b>Ending</b><span>${esc(e.name)}, ${endBars.length} bar${endBars.length > 1 ? 's' : ''}</span></div><div class="en-bars">${endBars.map((/** @type {[string, number]} */ [s, tn], /** @type {number} */ k) => { const sp = k === endBars.length - 1 ? 1 : (rep.span ?? 1); const lab = sp > 1 ? `${barNo + 1} to ${barNo + sp}` : `${barNo + 1}`; barNo += sp; return `<div class="en-bar${k === endBars.length - 1 ? ' en-cad' : ''}" style="background:${tensionFill(tn)}"><span class="en-no">${lab}</span><b>${show(s)}</b><span class="en-rom">${k === endBars.length - 1 ? 'held' : '&nbsp;'}</span></div>`; }).join('')}</div></div>`;
     })();
   }
 

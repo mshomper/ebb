@@ -72,7 +72,8 @@ export function grow(material, rules, where, names) {
   /** @type {Record<string, number>} */
   const ew = {};
   for (const [id, e] of Object.entries(material.endings ?? {})) {
-    ew[id] = /** @type {any} */ (e).weight * (E.weights?.[id] ?? 1) * (/** @type {any} */ (e).type === lastCad ? (E.sameAsCadence ?? 0.25) : 1);
+    ew[id] = /** @type {any} */ (e).weight * (E.weights?.[id] ?? 1) * (/** @type {any} */ (e).type === lastCad ? (E.sameAsCadence ?? 0.25) : 1)
+      * (/** @type {any} */ (e).borrowed ? (rules.harmony?.borrowedAmount ?? 1) : 1);
   }
   const endingId = pickWeighted(ew, r) ?? Object.keys(material.endings ?? {})[0];
   const ending = { id: endingId, ...material.endings[endingId] };

@@ -68,7 +68,7 @@ export function writePiece(material, walked, plan, o) {
     layers: { bed: { style: 'warm', sections: bed } },
     form: { grammar: `${names.join(' ')} coda`, short: `${names[0]} coda`, optional: {} },
     sections,
-    variation: { octave: [0], paraphrase: 0, ornament: 0, textures: { struck: 0.7, arpeggio: 0.2, roll: 0.1 } },
+    variation: { octave: [0], paraphrase: 0, ornament: 0, textures: { struck: 0.55, arpeggio: 0.35, roll: 0.1 } },
     notes: `Grown by the development engine (phase 4a, harmony only): the ${o.template} template, seed ${o.seed}.`,
     grown: { season: material.season, slot: o.slot, weather: o.weather, seed: o.seed, template: o.template, report: o.report },
   };

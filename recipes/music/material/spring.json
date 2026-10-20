@@ -2,7 +2,7 @@
   "type": "music",
   "id": "material-spring",
   "version": 1,
-  "note": "Spring's authored material for the development engine (doc 24, The development engine; src/audio/music/develop/). Phase 4a uses the chord grammar and the form templates; the motif bank arrives in 4b. home: the key every symbol is written in (the realizer moves a piece to other keys). meters and tempo: drawn per piece; harmonicBars: how many written bars each chord of the walk lasts in a meter (6/8 bars are short, so a chord lasts two); tempo in beats per minute as realize.json counts beats. chords: the grammar's places, each a name (a Roman numeral, for the lab), its symbol in the home key, how tense it feels from 0 (home) to 1, and its colors (other symbols for the same place, weighted; the plain symbol takes the rest). moves: from each place, where the harmony may go next and how often (weights are relative). hold: a chord may last another bar. cadences: how a phrase may end, as the last two places (any of 'from', then 'to'); 'final' marks the ones that may end a piece. templates: phrase plans; each phrase has a role, a length range in bars, the cadences it may end on (weighted) and a tension target from its start to its end (0 to 1). slots and weather say where a template fits; weight is how often it is chosen there. A phrase with 'from' is a return: it brings back that earlier phrase (counted from 0), keeping its first 'keep' bars as they were, then goes its own way to its own cadence, the way a composer restates a phrase and changes its ending. tempoScale slows (or quickens) a template's tempo. endings: the ways a grown piece can close after its last phrase (the coda), each a list of bars as chord symbols with how tense each is, a type, and a weight; 'hold' instead of bars means the piece's last chord is held one bar longer. An ending whose type matches the last phrase's cadence is less likely (develop.json endings.sameAsCadence), so a plagal cadence is seldom followed by a plagal close.",
+  "note": "Spring's authored material for the development engine (doc 24, The development engine; src/audio/music/develop/). Phase 4a uses the chord grammar and the form templates; the motif bank arrives in 4b. home: the key every symbol is written in (the realizer moves a piece to other keys). meters and tempo: drawn per piece; harmonicBars: how many written bars each chord of the walk lasts in a meter (6/8 bars are short, so a chord lasts two); tempo in beats per minute as realize.json counts beats. chords: the grammar's places, each a name (a Roman numeral, for the lab), its symbol in the home key, how tense it feels from 0 (home) to 1, and its colors (other symbols for the same place, weighted; the plain symbol takes the rest). moves: from each place, where the harmony may go next and how often (weights are relative). A place marked borrowed (from the parallel minor, such as the flat six) and the symbols listed in borrowed are scaled by develop.json harmony.borrowedAmount, so they stay occasional. colorPairs: colors that answer each other (D2 and G2, the open 'seconds' chords); when one sounds, the next chord leans to its partner (harmony.pairPull), so the harmony can rock between them. hold: a chord may last another bar. cadences: how a phrase may end, as the last two places (any of 'from', then 'to'); 'final' marks the ones that may end a piece. templates: phrase plans; each phrase has a role, a length range in bars, the cadences it may end on (weighted) and a tension target from its start to its end (0 to 1). slots and weather say where a template fits; weight is how often it is chosen there. A phrase with 'from' is a return: it brings back that earlier phrase (counted from 0), keeping its first 'keep' bars as they were, then goes its own way to its own cadence, the way a composer restates a phrase and changes its ending. tempoScale slows (or quickens) a template's tempo. endings: the ways a grown piece can close after its last phrase (the coda), each a list of bars as chord symbols with how tense each is, a type, and a weight; 'hold' instead of bars means the piece's last chord is held one bar longer. An ending whose type matches the last phrase's cadence is less likely (develop.json endings.sameAsCadence), so a plagal cadence is seldom followed by a plagal close.",
   "season": "spring",
   "home": "D",
   "mode": "ionian",
@@ -23,8 +23,9 @@
       "symbol": "D",
       "tension": 0,
       "colors": {
-        "Dadd9": 0.25,
-        "Dmaj7": 0.12
+        "Dadd9": 0.2,
+        "Dsus2": 0.2,
+        "Dmaj7": 0.1
       }
     },
     "I/3": {
@@ -36,7 +37,8 @@
       "symbol": "Em7",
       "tension": 0.45,
       "colors": {
-        "Em9": 0.3
+        "Em9": 0.28,
+        "Em7/G": 0.12
       }
     },
     "iii7": {
@@ -48,14 +50,20 @@
       "symbol": "Gmaj7",
       "tension": 0.3,
       "colors": {
-        "G": 0.3,
-        "Gadd9": 0.15
+        "G": 0.25,
+        "Gadd9": 0.12,
+        "Gsus2": 0.18,
+        "G/B": 0.12,
+        "Gm": 0.035,
+        "Gm6": 0.02
       }
     },
     "IV/I": {
       "symbol": "G/D",
       "tension": 0.2,
-      "colors": {}
+      "colors": {
+        "Gsus2/D": 0.25
+      }
     },
     "V7sus4": {
       "symbol": "A7sus4",
@@ -75,8 +83,9 @@
       "symbol": "Bm7",
       "tension": 0.35,
       "colors": {
-        "Bm": 0.3,
-        "Bm9": 0.1
+        "Bm": 0.28,
+        "Bm9": 0.1,
+        "Bm7/A": 0.1
       }
     },
     "bVII": {
@@ -84,6 +93,15 @@
       "tension": 0.5,
       "colors": {
         "Cadd9": 0.3
+      }
+    },
+    "bVI": {
+      "symbol": "Bbmaj7",
+      "tension": 0.55,
+      "borrowed": true,
+      "colors": {
+        "Bb": 0.3,
+        "Bbadd9": 0.15
       }
     }
   },
@@ -94,7 +112,8 @@
       "iii7": 0.2,
       "bVII": 0.15,
       "ii7": 0.1,
-      "I/3": 0.1
+      "I/3": 0.1,
+      "bVI": 0.04
     },
     "I/3": {
       "IV": 0.6,
@@ -104,7 +123,8 @@
       "I": 0.45,
       "V7sus4": 0.25,
       "ii7": 0.3,
-      "IV/I": 0.1
+      "IV/I": 0.1,
+      "bVI": 0.06
     },
     "IV/I": {
       "I": 0.7,
@@ -113,7 +133,8 @@
     "vi7": {
       "ii7": 0.35,
       "IV": 0.4,
-      "iii7": 0.25
+      "iii7": 0.25,
+      "bVI": 0.04
     },
     "iii7": {
       "IV": 0.5,
@@ -137,6 +158,11 @@
     "bVII": {
       "I": 0.6,
       "IV": 0.4
+    },
+    "bVI": {
+      "bVII": 0.6,
+      "I": 0.2,
+      "IV": 0.2
     }
   },
   "hold": 0.15,
@@ -736,7 +762,8 @@
           "D",
           0
         ]
-      ]
+      ],
+      "borrowed": true
     },
     "mixolydian": {
       "name": "Flat seven, then home",
@@ -750,6 +777,26 @@
         [
           "G/D",
           0.2
+        ],
+        [
+          "D",
+          0
+        ]
+      ]
+    },
+    "flat-six": {
+      "name": "Flat six, flat seven, home",
+      "type": "modal",
+      "weight": 0.12,
+      "borrowed": true,
+      "bars": [
+        [
+          "Bbmaj7",
+          0.55
+        ],
+        [
+          "C",
+          0.5
         ],
         [
           "D",
@@ -801,5 +848,27 @@
       "weight": 0.15,
       "hold": true
     }
-  }
+  },
+  "borrowed": [
+    "Gm",
+    "Gm6",
+    "Gm/D",
+    "Bbmaj7",
+    "Bb",
+    "Bbadd9"
+  ],
+  "colorPairs": [
+    [
+      "Dsus2",
+      "Gsus2"
+    ],
+    [
+      "Dsus2",
+      "Gsus2/D"
+    ],
+    [
+      "Dadd9",
+      "Gadd9"
+    ]
+  ]
 }

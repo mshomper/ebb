@@ -55,16 +55,31 @@ export function reach(material) {
 const steps = (material, dist, a, b) => dist[a]?.[b] ?? Infinity;
 
 /**
- * Choose a symbol for a place: the plain one, or a color, scaled by colorAmount.
- * @param {any} material @param {string} place @param {number} colorAmount @param {Stream} r
+ * Choose a symbol for a place: the plain one, or a color. Colors scale by colorAmount, borrowed ones
+ * (material.borrowed) by borrowedAmount instead, and a color whose partner just sounded
+ * (material.colorPairs, such as D2 and G2) is pairPull times likelier.
+ * @param {any} material @param {string} place @param {any} H rules.harmony
+ * @param {string|null} prevSymbol @param {Stream} r
  * @returns {{symbol: string, color: boolean}}
  */
-export function voiceSymbol(material, place, colorAmount, r) {
+export function voiceSymbol(material, place, H, prevSymbol, r) {
   const c = material.chords[place];
-  const colors = Object.entries(c.colors ?? {});
+  const borrowed = new Set(material.borrowed ?? []);
+  const partners = new Set();
+  for (const [a, b] of material.colorPairs ?? []) {
+    if (a === prevSymbol) partners.add(b);
+    if (b === prevSymbol) partners.add(a);
+  }
+  /** @type {[string, number][]} */
+  const colors = Object.entries(c.colors ?? {}).map(([sym, w]) => [sym, /** @type {number} */ (w)
+    * (borrowed.has(sym) ? (H.borrowedAmount ?? 1) : (H.colorAmount ?? 1))
+    * (partners.has(sym) ? (H.pairPull ?? 1) : 1)]);
+  // Colors share at most 90 percent, so the plain chord always keeps a voice.
+  const sum = colors.reduce((s, [, w]) => s + w, 0);
+  const scale = sum > 0.9 ? 0.9 / sum : 1;
   let x = r.next();
   for (const [sym, w] of colors) {
-    x -= /** @type {number} */ (w) * colorAmount;
+    x -= w * scale;
     if (x < 0) return { symbol: sym, color: true };
   }
   return { symbol: c.symbol, color: false };
@@ -83,7 +98,8 @@ function step(material, H, dist, from, goal, left, target, mayHold, r) {
   const k = H.tensionFollow ?? 3;
   for (const [to, mw] of Object.entries(material.moves[from] ?? {})) {
     if (steps(material, dist, to, goal) > left) continue;
-    w[to] = /** @type {number} */ (mw) * Math.exp(-k * Math.abs(material.chords[to].tension - target));
+    const borrowed = material.chords[to].borrowed ? (H.borrowedAmount ?? 1) : 1;
+    w[to] = /** @type {number} */ (mw) * borrowed * Math.exp(-k * Math.abs(material.chords[to].tension - target));
   }
   if (mayHold && steps(material, dist, from, goal) <= left) {
     w[`=${from}`] = (material.hold ?? 0) * (H.hold ?? 1) * Math.exp(-k * Math.abs(material.chords[from].tension - target));
@@ -103,7 +119,6 @@ function step(material, H, dist, from, goal, left, target, mayHold, r) {
  */
 export function walk(material, rules, plan, r) {
   const H = rules.harmony ?? {};
-  const colorAmount = H.colorAmount ?? 1;
   const dist = reach(material);
   /** @type {HBar[]} */
   const bars = [];
@@ -114,7 +129,7 @@ export function walk(material, rules, plan, r) {
   let prevSym = null;
 
   /** @param {string} place @param {boolean} held */
-  const sym = (place, held) => (held && prevSym ? prevSym : voiceSymbol(material, place, colorAmount, r));
+  const sym = (place, held) => (held && prevSym ? prevSym : voiceSymbol(material, place, H, prevSym?.symbol ?? null, r));
 
   plan.forEach((ph, pi) => {
     const cad = material.cadences[ph.cadence];
