@@ -177,12 +177,19 @@ export function mountIslandNotes(parent, words, naturalist = null) {
     const id = get('identify');
     clearTimeout(cardTimer);
     if (!id) { card.classList.remove('is-open'); card.inert = true; follow(); return; }
+    // A stone's or a log's card, with the turtles' gift: Carry; while carried, a calm hint and Put it
+    // back (a tap anywhere on the card puts it back too).
+    const C = words.pieces?.carry;
+    const text = id.carrying ? C?.[id.carryNote ?? 'hint'] ?? '' : id.carryNote ? C?.[id.carryNote] ?? id.text : id.text;
+    const carryBtn = !C || !id.canCarry ? ''
+      : id.carrying ? `<button type="button" class="ebb-idcard__open" data-act="uncarry">${iconSvg('close')}<span>${esc(C.cancel)}</span></button>`
+      : `<button type="button" class="ebb-idcard__open" data-act="carry">${iconSvg('carry')}<span>${esc(C.button)}</span></button>`;
     card.innerHTML = `
       <div class="ebb-idcard__head"><span class="ebb-idcard__icon">${iconSvg(id.icon)}</span><b>${esc(id.name)}</b>
         ${id.word ? `<span class="ebb-idcard__word">${esc(id.word)}</span>` : ''}
         <button type="button" class="ebb-idcard__close" data-act="close" aria-label="Close" title="Close">${iconSvg('close')}</button></div>
       ${id.sub ? `<p class="ebb-idcard__sub">${esc(id.sub)}</p>` : ''}
-      <p class="ebb-idcard__text">${esc(id.text)}</p>
+      <p class="ebb-idcard__text">${esc(text)}</p>
       ${id.suits ? `<p class="ebb-idcard__suits">${esc(id.suits)}</p>` : ''}
       ${id.suitsPencil ? `<p class="ebb-idcard__suits is-pencil">${esc(id.suitsPencil)}</p>` : ''}
       ${id.canName ? `<button type="button" class="ebb-idcard__open" data-act="name">${iconSvg('name-tag')}<span>Give it a name</span></button>
@@ -195,11 +202,13 @@ export function mountIslandNotes(parent, words, naturalist = null) {
         <p class="ebb-idcard__error" role="alert"></p>
         <button type="submit" class="ebb-idcard__give">${iconSvg('name-tag')}<span>Give it this name</span></button>
       </form>` : ''}
+      ${carryBtn}
       ${id.noPage ? '' : `<button type="button" class="ebb-idcard__open" data-act="open">${iconSvg('journal')}<span>Open its page</span></button>`}`;
     card.inert = false;
     card.classList.add('is-open');
     place(id.x, id.y);
-    cardTimer = setTimeout(() => dispatch({ type: 'ui.identify' }), (id.pinned ? words.showMe.showS : words.identify.showS) * 1000);
+    // While a piece is carried the card stays, holding the hint, until it is set down or put back.
+    if (!id.carrying) cardTimer = setTimeout(() => dispatch({ type: 'ui.identify' }), (id.pinned ? words.showMe.showS : words.identify.showS) * 1000);
     if (id.pinned) follow();
   }
   /** Put the card beside a screen point, kept on screen. @param {number} px @param {number} py */
@@ -257,9 +266,12 @@ export function mountIslandNotes(parent, words, naturalist = null) {
   // Suggest one steps through names no other frog has; an empty name says so instead of going on.
   let suggestAt = 0;
   card.addEventListener('click', (e) => {
+    const id = get('identify');
+    // Carrying: a tap anywhere on the card puts the piece back.
+    if (id?.carrying) { dispatch({ type: 'pieces.carryCancel' }); return; }
     const b = /** @type {HTMLElement | null} */ (/** @type {HTMLElement} */ (e.target).closest('button'));
     if (!b) return;
-    const id = get('identify');
+    if (b.dataset.act === 'carry' && id?.piece) { dispatch({ type: 'pieces.carry', id: id.piece }); return; }
     const form = /** @type {HTMLFormElement | null} */ (card.querySelector('.ebb-idcard__name'));
     const input = /** @type {HTMLInputElement | null} */ (card.querySelector('.ebb-idcard__input'));
     if (b.dataset.act === 'open' && id) dispatch({ type: 'ui.journal', open: true, page: id.sp });

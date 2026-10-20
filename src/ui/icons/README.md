@@ -41,6 +41,7 @@ Size and color come from CSS: set `width`/`height` on `.icon` and `color` on the
 | `loosestone` | a stone tipped up on one side, a dark gap under it: the naturalist's loose stones reward |
 | `lens` | a round glass with a glint on a short handle: the naturalist's hand lens reward |
 | `driftwood` | a bending branch at the water's edge with a broken stub and a knot, a ripple beyond: the naturalist's driftwood reward |
+| `carry` | a log lifted off the ground line, an arrow up above it: Carry on a stone's or a log's card (the turtles' gift) |
 | `stone` | a rounded boulder on the ground with a smaller one against it, a drop line above: Sculpt's Stone mode |
 | `name-tag` | a luggage-style tag with its hole: naming a creature on its card |
 | `water` | droplet over one ripple line |

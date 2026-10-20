@@ -458,6 +458,13 @@ const ICONS = {
     <path d="M9.6 14.4L8.4 10.6L9.8 10.2"/>
     <circle cx="16" cy="15.4" r="0.6"/>
     <path d="M2.5 21C4.2 20.2 5.8 20.2 7.5 21S10.8 21.8 12.5 21"/>`,
+  // Carry (the turtles' gift, src/world/pieces): a log lifted off the ground line, an arrow up above it.
+  carry: `
+    <rect ${ACCENT} x="3.5" y="12" width="17" height="5" rx="2.5"/>
+    <rect x="3.5" y="12" width="17" height="5" rx="2.5"/>
+    <circle cx="18" cy="14.5" r="1"/>
+    <path d="M12 3V9M9.4 5.6L12 3L14.6 5.6"/>
+    <path d="M2.5 20.5H21.5"/>`,
   // Stone, a Sculpt mode (docs/future/10): a rounded boulder resting on the ground, a smaller one against it, and a
   // short drop line above: set a stone here.
   stone: `

@@ -130,10 +130,14 @@ export function createJournal(opts) {
     const it = fd?.item ? fr?.collection?.find((/** @type {any} */ c) => c.id === fd.item) : null;
     if (fr && it) return { sp: fd.sp, item: it.id, name: it.name, sub: it.rarity, icon: fr.icon, text: it.cardLine, wx: fd.x, wz: fd.z, r: 0.12, stage: -1 };
     if (fr) return { sp: fd.sp, name: fr.card ?? fr.name, sub: null, icon: fr.icon, text: fr.cardLine ?? '', wx: fd.x, wz: fd.z, r: 0.12, stage: -1 };
-    // Then a loose stone (docs/future/10): the tap lifts it to look underneath. It has no page.
+    // Then a loose stone or a driftwood log (docs/future/10): the tap lifts or rolls it to look
+    // underneath. It has no page. With the turtles' gift (unlocks.carry) its card offers Carry.
     const pc = opts.pieces?.pieceAt(x, z);
     const pw = pc && words.pieces?.[pc.kind];
-    if (pw) return { sp: `piece:${pc.kind}`, piece: pc.id, name: pw.name, sub: null, icon: pw.icon, text: pw.cardLine, wx: pc.x, wz: pc.z, r: pc.size * 0.7, stage: -1, noPage: true };
+    if (pw) {
+      return { sp: `piece:${pc.kind}`, piece: pc.id, kind: pc.kind, name: pw.name, sub: null, icon: pw.icon, text: pw.cardLine, wx: pc.x, wz: pc.z,
+        r: pc.kind === 'log' ? (pc.length ?? 1) * 0.55 : pc.size * 0.7, stage: -1, noPage: true, canCarry: !!get('unlocks')?.carry };
+    }
     const hab = habitat();
     const living = identify(world.state, hab, x, z, words);
     if (living) return living;
@@ -148,10 +152,11 @@ export function createJournal(opts) {
   function select(card, x, y) {
     update('identify', () => (card ? { ...card, x, y, at: performance.now() } : null));
     if (!card) return;
-    // A loose stone tips up to show underneath (src/world/pieces); the first lift is written down.
+    // A loose stone tips up to show underneath, a log rolls over (src/world/pieces); the first of
+    // each is written down.
     if (card.piece) {
       emitDeferred('piece:lifted', { id: card.piece });
-      commit(liftedStone(journal, { state: world.state, hour: hourIndex(), words }));
+      commit(liftedStone(journal, { state: world.state, hour: hourIndex(), words }, card.kind));
       return;
     }
     // Tapping a frog is finding it: its page inks (once).

@@ -55,8 +55,9 @@ export function addNaturalistTests(test, assert, eq) {
     const earned = grant({}, d[0]);
     assert(earned.shells === true && earned.naturalist.includes('shells'), 'shells earned');
     eq(due({ ...p, found: 5, earned }).length, 0, 'shells given once');
-    eq(due({ ...p, found: 20, earned }).map((g) => g.id).join(), 'stones', 'stones come next; lens and driftwood are not built yet');
+    eq(due({ ...p, found: 20, earned }).map((g) => g.id).join(), 'stones,driftwood', 'stones and driftwood come next; the lens is not built yet');
     assert(ready(R.rewards.find((/** @type {any} */ r) => r.id === 'stones')), 'stones built');
+    assert(ready(R.rewards.find((/** @type {any} */ r) => r.id === 'driftwood')), 'driftwood built');
     assert(!ready(R.rewards.find((/** @type {any} */ r) => r.id === 'lens')), 'the lens not built');
   });
 

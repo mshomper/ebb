@@ -1,5 +1,5 @@
 // @ts-check
-// Pieces pass (doc 09, docs/future/10): loose stones, after the creatures and before the water, so
+// Pieces pass (doc 09, docs/future/10): loose stones and driftwood logs, after the creatures and before the water, so
 // the water's scene copy shows a stone at a pond's edge. Each stone is a baked mesh (meshes.js) drawn
 // with the island's own scanned rock, triplanar in its own frame (piece-draw.wgsl), posed by one
 // bone; a soft damp ring is multiplied into the ground under each stone first. The damp patch a
@@ -10,16 +10,17 @@ import { VERTEX_BYTES } from '../../world/creatures/bodies.js';
 
 /** @typedef {import('../frame-graph.js').PassContext} PassContext */
 
-const DRAW_BYTES = 64;
+const DRAW_BYTES = 80;
 /** Floats per piece: at, more, extra (4 each), then its bone (16). */
 const PIECE_FLOATS = 28;
 const MAX = 64;
 
 /**
  * @typedef {{ x: number, y: number, z: number, yaw: number, size: number, mesh: string, bone: Float32Array,
- *   slope: number[], seed: number, half: number[], plain?: boolean }} PieceBeing
+ *   slope: number[], seed: number, half: number[], plain?: boolean, aspect?: number }} PieceBeing
  *   slope: the ground's rise along the piece's own x and z; half: footprint half width and length
- *   (mesh units); plain: earth, not stone (no rock scan)
+ *   (mesh units); plain: earth, not stone (no rock scan); aspect: a driftwood log's thickness over
+ *   its length (its mesh is 1 thick, squeezed by its bone; drawn as wood, not stone)
  */
 
 /**
@@ -36,6 +37,8 @@ export function createPiecesPass(opts) {
   data.set([...opts.terrainRecipe.materials.albedoRock, recipe.look.normalStrength], 4);
   data.set([L.rock.roughness[0], L.rock.roughness[1], L.cliff.roughness[0], L.cliff.roughness[1]], 8);
   data.set([1 / L.rock.tileMeters, 1 / L.cliff.tileMeters, D.sunTerminator[0], D.sunTerminator[1]], 12);
+  const W = recipe.driftwood.look;
+  data.set([W.roughness, W.bumpM, W.grainAcross, W.crackDarkness], 16);
   const list = new Float32Array(MAX * PIECE_FLOATS);
   /** @type {Map<string, { data: ArrayBuffer, indices: Uint32Array, vbuf?: GPUBuffer, ibuf?: GPUBuffer }>} */
   const meshes = new Map();
@@ -92,7 +95,7 @@ export function createPiecesPass(opts) {
       stones = rows.filter((b) => !b.plain).length;
       groups = [];
       rows.forEach((b, i) => {
-        list.set([b.x, b.y, b.z, b.yaw, b.size, b.slope[0], b.slope[1], b.seed, b.half[0], b.half[1], b.plain ? 1 : 0, 0], i * PIECE_FLOATS);
+        list.set([b.x, b.y, b.z, b.yaw, b.size, b.slope[0], b.slope[1], b.seed, b.half[0], b.half[1], b.plain ? 1 : 0, b.aspect ?? 0], i * PIECE_FLOATS);
         list.set(b.bone, i * PIECE_FLOATS + 12);
         const last = groups[groups.length - 1];
         if (last && last.key === b.mesh) last.count++;

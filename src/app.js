@@ -157,7 +157,9 @@ export async function startApp(canvas, hooks = {}) {
   // Cut) the frogs'; `?sandbox` opens both early for this visit only, and `?cliffs` the Cliff tool
   // (`earned` holds what was given, and is what the save keeps). Loose stones are the naturalist's
   // reward at six finds; `?sandbox` opens the Loose stone mode early, and `?stones` (a test link,
-  // unsaved) that and the handful that comes with the reward (src/world/pieces).
+  // unsaved) that and the handful that comes with the reward (src/world/pieces). Driftwood is the
+  // reward at ten finds, and carrying a stone or a log the turtles' gift (not given by anything
+  // yet); `?sandbox` opens carrying, and `?driftwood` (unsaved) both.
   // `?sandbox` and `?plants=all` also
   // offer every plant in the Plant tool before it has come to the island (volunteers.js); sea
   // campion, for one, grows nowhere until there is rock by the sea.
@@ -166,6 +168,8 @@ export async function startApp(canvas, hooks = {}) {
     return { earned, ...earned, springs: !!earned.springs || params.has('sandbox'),
       cliffs: !!earned.cliffs || params.has('sandbox') || params.has('cliffs'),
       stones: !!earned.stones || params.has('sandbox') || params.has('stones'), stonesTest: params.has('stones'),
+      driftwood: !!earned.driftwood || params.has('driftwood'),
+      carry: !!earned.carry || params.has('sandbox') || params.has('driftwood'),
       allPlants: params.has('sandbox') || params.get('plants') === 'all' };
   });
   // `?weather=clear|cloud|rain|mist` previews a weather look (as the sky lab does); the world's
@@ -330,7 +334,10 @@ export async function startApp(canvas, hooks = {}) {
   terrainPass.setCasts(finds.casts(), finds.castShape);
   // Placed pieces (doc 09, docs/future/10): loose stones, set with Sculpt's Loose stone mode and
   // lifted with a tap; a handful comes by itself with the naturalist's reward (src/world/pieces).
-  const pieces = createPieces({ terrain, water, camera, history, seed, recipe: await loadRecipe('world/pieces'), ground: groundDetail, terrainRecipe });
+  // Driftwood washes up on the strandline after high tides (the reward at ten finds), and the
+  // turtles' gift carries a stone or a log to where you tap next.
+  const pieces = createPieces({ terrain, water, camera, history, seed, recipe: await loadRecipe('world/pieces'), ground: groundDetail, terrainRecipe,
+    shore: ww.shore, tide: waterRecipe.tide });
   sim.addSystem(pieces);
   // `?frogscale` (ahead of S6): real-size frogs from the species recipe around the pond, and a
   // camera that may come close, to judge creature size on the island (src/ui/frog-scale.js).
@@ -579,6 +586,20 @@ export async function startApp(canvas, hooks = {}) {
     updateStore('feedUi', () => ({ message, at: performance.now() }));
   }
 
+  /**
+   * Set a carried stone or log down where the tap lands (src/world/pieces, undoable). In water it
+   * stays carried and the card says so; at the logs' cap it goes back and the card says that.
+   * @param {number} x @param {number} y
+   */
+  function carryTap(x, y) {
+    const p = groundAt(x, y);
+    if (!p) return;
+    presence.edit(p[0], p[2]);
+    const r = pieces.setDown(p);
+    if (r.ok) updateStore('identify', () => null);
+    else updateStore('identify', (c) => (c ? { ...c, carrying: r.reason === 'water', carryNote: r.reason === 'gone' ? null : r.reason, canCarry: r.reason === 'water' } : c));
+  }
+
   /** @param {'undo'|'redo'} dir */
   function runHistory(dir) {
     const ok = dir === 'undo' ? history.undo() : history.redo();
@@ -596,6 +617,8 @@ export async function startApp(canvas, hooks = {}) {
         const next = a.toolId && a.toolId !== tools().tool ? a.toolId : null;
         if (!next) finishStroke();
         pouring = null;
+        // Choosing a tool, or Escape, puts a carried piece back.
+        pieces.cancelCarry();
         updateStore('tools', (t) => { t.tool = next; });
         emitDeferred('tool:selected', { toolId: next });
         break;
@@ -619,6 +642,18 @@ export async function startApp(canvas, hooks = {}) {
         break;
       case 'pieces.remove':
         pieces.remove(a.id);
+        break;
+      // Carry (the turtles' gift): the card's Carry lifts the piece; the next tap on land sets it
+      // down (look.tap below); a tap on the card, its close, a tool or Escape puts it back.
+      case 'pieces.carry':
+        if (getStore('unlocks')?.carry && pieces.carry(a.id)) updateStore('identify', (c) => (c ? { ...c, carrying: true, carryNote: null, pinned: false } : c));
+        break;
+      case 'pieces.carryCancel':
+        pieces.cancelCarry();
+        updateStore('identify', () => null);
+        break;
+      case 'ui.identify':
+        pieces.cancelCarry();
         break;
       case 'brush.resize':
         updateStore('tools', (t) => { t.size = clampSize(t.size * a.factor); });
@@ -655,7 +690,11 @@ export async function startApp(canvas, hooks = {}) {
         finishStroke();
         break;
       // A tap with no tool: the journal names what grows there (src/world/journal).
-      case 'look.tap': emitDeferred('look:tapped', { x: a.x, y: a.y, point: groundAt(a.x, a.y) }); break;
+      // Carrying, the tap sets the piece down instead.
+      case 'look.tap':
+        if (pieces.carrying()) carryTap(a.x, a.y);
+        else emitDeferred('look:tapped', { x: a.x, y: a.y, point: groundAt(a.x, a.y) });
+        break;
       case 'history.undo': if (!stroking) runHistory('undo'); break;
       case 'history.redo': if (!stroking) runHistory('redo'); break;
       case 'time.flow':
@@ -710,6 +749,13 @@ export async function startApp(canvas, hooks = {}) {
       if (s) terrain.setRing({ x: s.x, z: s.z, radius: 0.8, visible: true });
       else if (p) terrain.setRing({ x: p[0], z: p[2], radius: 0.6, visible: true });
       else terrain.setRing({ visible: false });
+      return;
+    }
+    // Carrying a stone or a log: a ring where a tap would set it down.
+    const held = !t.tool ? pieces.carrying() : null;
+    if (held) {
+      const p = pointer.inside ? groundAt(pointer.x, pointer.y) : null;
+      terrain.setRing(p ? { x: p[0], z: p[2], radius: held.radius, visible: true, level: null } : { visible: false, level: null });
       return;
     }
     // Loose stone mode marks the selected stone, else a small ring where a tap would set one.
