@@ -69,9 +69,15 @@ export function addDevelopTests(test, assert, eq) {
         if (before) assert(material.cadences[ph.cadence].from.includes(before[before.length - 1].place), `${at} phrase ${i + 1}: the cadence's approach is missing`);
       });
       assert(material.cadences[rep.plan[rep.plan.length - 1].cadence].final, `${at}: the last cadence cannot close a piece`);
-      // Every move is one the grammar allows (or a hold).
-      const seq = rep.bars.flatMap((/** @type {any} */ b) => b.chords.map((/** @type {any} */ c) => c.place));
-      for (let i = 1; i < seq.length; i++) assert(seq[i] === seq[i - 1] || material.moves[seq[i - 1]]?.[seq[i]] !== undefined, `${at}: ${seq[i - 1]} to ${seq[i]} is not a move`);
+      // Every move is one the grammar allows (or a hold); a phrase may always start again at home,
+      // and a return that starts roughly is the judge's to punish, so phrase starts are checked by it.
+      rep.bars.forEach((/** @type {any} */ b, /** @type {number} */ i) => b.chords.forEach((/** @type {any} */ c, /** @type {number} */ k) => {
+        const before = k > 0 ? b.chords[k - 1] : rep.bars[i - 1]?.chords.at(-1);
+        if (!before || before.place === c.place) return;
+        const phraseStart = k === 0 && rep.bars[i - 1].phrase !== b.phrase;
+        if (phraseStart && (c.place === 'I' || b.kept)) return;
+        assert(material.moves[before.place]?.[c.place] !== undefined, `${at}: ${before.place} to ${c.place} is not a move`);
+      }));
     }
   });
 

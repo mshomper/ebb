@@ -35,11 +35,13 @@ export function judgeHarmony(material, rules, walked) {
   for (const b of bars) err += Math.abs(material.chords[b.chords[0].place].tension - b.target);
   terms.tensionFit = -(S.tensionFit ?? 0) * err / Math.max(1, bars.length);
 
-  // A run of four chord changes that comes back is a loop.
+  // A run of four chord changes that comes back is a loop. Bars a return brings back on purpose
+  // don't count; what the walk writes freely does.
+  const free = changes(bars.filter((b) => !b.kept));
   const seen = new Map();
   let repeats = 0;
-  for (let i = 0; i + 4 <= seq.length; i++) {
-    const key = seq.slice(i, i + 4).join(' ');
+  for (let i = 0; i + 4 <= free.length; i++) {
+    const key = free.slice(i, i + 4).join(' ');
     if (seen.has(key) && i - seen.get(key) >= 4) repeats++;
     if (!seen.has(key)) seen.set(key, i);
   }
@@ -57,6 +59,15 @@ export function judgeHarmony(material, rules, walked) {
   const all = bars.flatMap((b) => b.chords);
   const share = all.filter((c) => c.color).length / Math.max(1, all.length);
   terms.colorCrowd = -(S.colorCrowd ?? 0) * Math.max(0, share - (S.colorCrowdShare ?? 0.4)) * 10;
+
+  // A return that starts where the grammar has no move from the chord before it.
+  let rough = 0;
+  for (let i = 1; i < bars.length; i++) {
+    if (!bars[i].kept || bars[i - 1].phrase === bars[i].phrase) continue;
+    const a = bars[i - 1].chords[bars[i - 1].chords.length - 1].place, b = bars[i].chords[0].place;
+    if (a !== b && b !== 'I' && !material.moves[a]?.[b]) rough++;
+  }
+  terms.roughReturn = -(S.roughReturn ?? 0) * rough;
 
   // A cadence the walk could not reach properly.
   terms.forced = -10 * walked.forced;

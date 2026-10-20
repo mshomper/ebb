@@ -45,10 +45,12 @@ export function grow(material, rules, where, names) {
   const templates = fittingTemplates(material, { slot: where.slot, weather });
   const template = pickWeighted(templates, r) ?? Object.keys(material.templates)[0];
   const meter = pickWeighted(material.meters, r) ?? '4/4';
+  // Tempo from the season's band, scaled by the template (rain and mist go slower).
   const [t0, t1] = material.tempo;
-  const lo = Math.round(t0 + (t1 - t0) * r.next() * 0.6);
+  const ts = material.templates[template]?.tempoScale ?? 1;
+  const lo = Math.round((t0 + (t1 - t0) * r.next() * 0.6) * ts);
   /** @type {[number, number]} */
-  const tempo = [lo, Math.min(t1, lo + 6)];
+  const tempo = [lo, Math.round(Math.min(t1 * ts, lo + 6))];
 
   const n = Math.max(1, rules.candidates ?? 24);
   const cands = [];
@@ -64,16 +66,30 @@ export function grow(material, rules, where, names) {
   const pool = ranked.filter((c) => c.judged.total > -Infinity).slice(0, Math.max(1, rules.keepBest ?? 4));
   const chosen = (pool.length ? pool : ranked)[r.int(Math.max(1, pool.length))];
 
+  // The ending: weighted, and unlikely to repeat the last phrase's cadence type.
+  const lastCad = chosen.plan[chosen.plan.length - 1].cadence;
+  const E = rules.endings ?? {};
+  /** @type {Record<string, number>} */
+  const ew = {};
+  for (const [id, e] of Object.entries(material.endings ?? {})) {
+    ew[id] = /** @type {any} */ (e).weight * (E.weights?.[id] ?? 1) * (/** @type {any} */ (e).type === lastCad ? (E.sameAsCadence ?? 0.25) : 1);
+  }
+  const endingId = pickWeighted(ew, r) ?? Object.keys(material.endings ?? {})[0];
+  const ending = { id: endingId, ...material.endings[endingId] };
+
   const title = names ? pieceName(seed, { season: material.season, slot: where.slot }, names) : `Grown ${where.slot} ${seed}`;
+  const span = material.harmonicBars?.[meter] ?? 1;
   const report = {
+    span,
     plan: chosen.plan,
-    bars: chosen.walked.bars.map((b) => ({ phrase: b.phrase, target: b.target, held: b.held, cadence: b.cadence,
+    bars: chosen.walked.bars.map((b) => ({ phrase: b.phrase, target: b.target, held: b.held, cadence: b.cadence, kept: !!b.kept,
       chords: b.chords.map((c) => ({ place: c.place, symbol: c.symbol, at: c.at, color: c.color, tension: material.chords[c.place].tension })) })),
     judged: chosen.judged,
+    ending,
     rank: ranked.indexOf(chosen) + 1,
   };
   const piece = writePiece(material, chosen.walked, chosen.plan, {
-    id: `grown-${material.season}-${where.slot}-${seed}`, title, slot: where.slot, weather, meter, tempo, template, seed, report,
+    id: `grown-${material.season}-${where.slot}-${seed}`, title, slot: where.slot, weather, meter, tempo, template, seed, report, ending,
   });
   return {
     piece,

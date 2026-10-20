@@ -11,8 +11,11 @@ const BAR_EIGHTHS = /** @type {Record<string, number>} */ ({ '3/4': 6, '4/4': 8,
  * One bar of ABC: chord symbols over rests (the melody line comes in 4b).
  * @param {import('./harmony.js').HChord[]} chords @param {number} len eighths @param {boolean} fermata
  */
-function abcBar(chords, len, fermata) {
-  if (chords.length === 1) return `"${chords[0].symbol}"${fermata ? '!fermata!' : ''}z${len}`;
+function abcBar(chords, len, fermata, span = 1) {
+  // A harmonic bar may span several written bars (6/8 changes chord every two bars).
+  const rest = span > 1 ? ' | ' + Array.from({ length: span - 1 }, () => `z${len}`).join(' | ') : '';
+  if (chords.length === 1) return span > 1 ? `"${chords[0].symbol}"z${len}${rest}` : `"${chords[0].symbol}"${fermata ? '!fermata!' : ''}z${len}`;
+  if (span > 1) return `"${chords[0].symbol}"z${len}${span > 2 ? ' | ' + Array.from({ length: span - 2 }, () => `z${len}`).join(' | ') : ''} | "${chords[1].symbol}"z${len}`;
   const first = Math.round(len * chords[1].at);
   return `"${chords[0].symbol}"z${first} "${chords[1].symbol}"z${len - first}`;
 }
@@ -24,11 +27,12 @@ const abc = (meter, key, body) => `X:1\nM:${meter}\nL:1/8\nK:${key}\nV:mel\n${bo
  * @param {any} material
  * @param {{bars: import('./harmony.js').HBar[]}} walked
  * @param {import('./plan.js').PhrasePlan[]} plan
- * @param {{id: string, title: string, slot: string, weather: string, meter: string, tempo: [number, number], template: string, seed: number, report: any}} o
+ * @param {{id: string, title: string, slot: string, weather: string, meter: string, tempo: [number, number], template: string, seed: number, report: any, ending: any}} o
  * @returns {any} a piece, recipes/music/pieces/<id>.json shape, plus a 'grown' block for the lab
  */
 export function writePiece(material, walked, plan, o) {
   const len = BAR_EIGHTHS[o.meter] ?? 8;
+  const span = material.harmonicBars?.[o.meter] ?? 1;
   /** @type {Record<string, any>} */
   const sections = {};
   /** @type {Record<string, string>} */
@@ -36,15 +40,15 @@ export function writePiece(material, walked, plan, o) {
   const names = plan.map((_, i) => `p${i + 1}`);
   plan.forEach((ph, i) => {
     const bars = walked.bars.filter((b) => b.phrase === i);
-    sections[names[i]] = { abc: abc(o.meter, material.home, bars.map((b) => abcBar(b.chords, len, false)).join(' | ') + ' |'), bars: bars.length };
+    sections[names[i]] = { abc: abc(o.meter, material.home, bars.map((b) => abcBar(b.chords, len, false, span)).join(' | ') + ' |'), bars: bars.length * span };
     const rise = ph.tension[1] - ph.tension[0];
     bed[names[i]] = i === 0 ? 'in' : rise > 0.15 ? 'swell' : 'steady';
   });
-  const coda = material.coda.map((/** @type {string} */ p, /** @type {number} */ k) => {
-    const sym = material.chords[p].symbol;
-    return k === material.coda.length - 1 ? `"${sym}"!fermata!z${len}` : `"${sym}"z${len}`;
-  });
-  sections.coda = { abc: abc(o.meter, material.home, coda.join(' | ') + ' |'), bars: material.coda.length };
+  // The coda is the chosen ending: its bars, the last held; or, for 'hold', the piece's last chord again.
+  const lastBar = walked.bars[walked.bars.length - 1];
+  const endBars = o.ending?.hold ? [[lastBar.chords[lastBar.chords.length - 1].symbol, 0]] : (o.ending?.bars ?? [['G/D', 0.2], ['D', 0]]);
+  const coda = endBars.map((/** @type {[string, number]} */ [sym], /** @type {number} */ k) => (k === endBars.length - 1 ? `"${sym}"!fermata!z${len}` : abcBar([{ symbol: sym, place: '', at: 0, color: false }], len, false, span)));
+  sections.coda = { abc: abc(o.meter, material.home, coda.join(' | ') + ' |'), bars: (endBars.length - 1) * span + 1 };
   bed.coda = 'thin';
 
   return {

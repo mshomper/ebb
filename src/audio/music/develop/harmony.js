@@ -27,6 +27,7 @@ import { pickWeighted } from './plan.js';
  * @property {number} target   the tension the plan asked for at this bar
  * @property {boolean} held    the bar's first chord continues the bar before
  * @property {string|null} cadence  on a phrase's last bar, the cadence it lands
+ * @property {boolean} [kept]  brought back unchanged from an earlier phrase (a return)
  */
 
 /**
@@ -124,29 +125,42 @@ export function walk(material, rules, plan, r) {
     const split = n >= 3 && r.next() < (H.splitLast ?? 0);
     const walkSlots = split ? n - 1 : n - 2;
     const opening = prev === null;
+    /** @type {HBar[]} */
+    const pb = [];
+    for (let i = 0; i < n; i++) pb.push({ chords: [], phrase: pi, target: tgt(i), held: false, cadence: null });
+    // Bars that are already decided: a piece opens at home; a return keeps its source's first bars.
+    let start = 0;
+    if (ph.from !== undefined) {
+      const src = bars.filter((b) => b.phrase === ph.from);
+      const keep = Math.min(ph.keep ?? 2, walkSlots, src.length);
+      for (let s = 0; s < keep; s++) {
+        pb[s].chords = src[s].chords.map((c) => ({ ...c }));
+        pb[s].held = s > 0 && src[s].held;
+        pb[s].kept = true;
+        const lastC = pb[s].chords[pb[s].chords.length - 1];
+        prev = lastC.place; prevSym = { symbol: lastC.symbol, color: lastC.color };
+      }
+      start = keep;
+    } else if (opening && walkSlots > 0) {
+      const v = sym('I', false);
+      pb[0].chords.push({ place: 'I', symbol: v.symbol, at: 0, color: v.color });
+      prev = 'I'; prevSym = v;
+      start = 1;
+    }
     // The cadence's approach: one of its 'from' places that the walk can still reach.
     /** @type {Record<string, number>} */
     const fromChoices = {};
     for (const f of cad.from) {
-      const need = opening ? steps(material, dist, 'I', f) : steps(material, dist, /** @type {string} */ (prev), f);
-      const room = opening ? walkSlots : walkSlots + 1;
-      if (need <= room && (walkSlots > 0 || !opening || f === 'I')) fromChoices[f] = 1 / (1 + need * 0.25);
+      const need = prev === null ? (f === 'I' ? 0 : Infinity) : steps(material, dist, /** @type {string} */ (prev), f);
+      const room = walkSlots - start + 1;
+      if (need <= room) fromChoices[f] = 1 / (1 + need * 0.25);
     }
     let approach = pickWeighted(fromChoices, r);
     if (!approach) { approach = cad.from[0]; forced++; }
 
-    /** @type {HBar[]} */
-    const pb = [];
-    for (let i = 0; i < n; i++) pb.push({ chords: [], phrase: pi, target: tgt(i), held: false, cadence: null });
     // The walk.
-    for (let s = 0; s < walkSlots; s++) {
+    for (let s = start; s < walkSlots; s++) {
       const bar = pb[s];
-      if (opening && s === 0) {
-        const v = sym('I', false);
-        bar.chords.push({ place: 'I', symbol: v.symbol, at: 0, color: v.color });
-        prev = 'I'; prevSym = v;
-        continue;
-      }
       const lastHeld = s > 0 ? pb[s - 1].held : bars[bars.length - 1]?.held ?? false;
       const st = step(material, H, dist, /** @type {string} */ (prev), approach, walkSlots - s, tgt(s), !lastHeld, r);
       if (st.forced) forced++;

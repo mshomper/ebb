@@ -20,7 +20,7 @@ const CADENCE_NAMES = /** @type {Record<string, string>} */ ({
 });
 const SHORT_CAD = /** @type {Record<string, string>} */ ({ plagal: 'plagal', modal: 'modal', 'ii-I': 'ii to I', deceptive: 'deceptive', half: 'half' });
 const TERM_NAMES = /** @type {Record<string, string>} */ ({
-  variety: 'variety', tensionFit: 'follows the curve', repeatWindow: 'loops', stuck: 'stuck on a chord', colorCrowd: 'too many colors', forced: 'forced cadence',
+  variety: 'variety', tensionFit: 'follows the curve', repeatWindow: 'loops', stuck: 'stuck on a chord', colorCrowd: 'too many colors', roughReturn: 'rough return', forced: 'forced cadence',
 });
 
 /** A tension 0..1 as a fill, cool to warm. @param {number} t */
@@ -83,7 +83,7 @@ export async function initEngine(host, env) {
       <h2 id="en-title"></h2>
       <div class="tiles" id="en-facts"></div>
       <h3>Chords, phrase by phrase</h3>
-      <p class="muted">Each box is a bar. Its color is how tense the chord feels, cool to warm. In the strip along the bottom, the filled part is the chord's tension and the dark mark is what the template asked for there.</p>
+      <p class="muted">Each box is a bar (two bars in 6/8, where a chord lasts two short bars). Its color is how tense the chord feels, cool to warm. In the strip along the bottom, the filled part is the chord's tension and the dark mark is what the template asked for there.</p>
       <div id="en-chart" class="en-chart"></div>
       <div class="row" style="margin-top:10px"><button id="en-copy" style="flex:0 1 auto">Copy a note about this seed</button><span class="muted" id="en-copied" role="status"></span></div>
     </div>
@@ -163,19 +163,26 @@ export async function initEngine(host, env) {
     $('en-chart').innerHTML = rep.plan.map((/** @type {any} */ ph, /** @type {number} */ i) => {
       const bars = rep.bars.filter((/** @type {any} */ b) => b.phrase === i);
       const cells = bars.map((/** @type {any} */ b) => {
-        barNo++;
+        const span = rep.span ?? 1;
+        const label = span > 1 ? `${barNo + 1} to ${barNo + span}` : `${barNo + 1}`;
+        barNo += span;
         const main = b.chords[0];
         const two = b.chords.length > 1;
         const sym = b.chords.map((/** @type {any} */ c) => esc(c.symbol)).join(' <span class="en-then">then</span> ');
         const rom = b.held ? 'held' : b.chords.map((/** @type {any} */ c) => esc(c.place)).join(', ');
         const tens = b.chords.reduce((s, /** @type {any} */ c) => s + c.tension, 0) / b.chords.length;
         return `<div class="en-bar${b.cadence ? ' en-cad' : ''}" style="background:${tensionFill(two ? tens : main.tension)}">
-          <span class="en-no">${barNo}</span><b>${sym}</b><span class="en-rom">${rom}</span>
+          <span class="en-no">${label}</span><b>${sym}</b><span class="en-rom">${rom}</span>
           <span class="en-meter" aria-label="tension ${tens.toFixed(2)}, aim ${b.target.toFixed(2)}"><i style="width:${Math.round(tens * 100)}%"></i><em style="left:${Math.round(b.target * 100)}%"></em></span>
         </div>`;
       }).join('');
       return `<div class="en-phrase"><div class="en-ph-head"><b>${i + 1}. ${esc(ph.role)}</b><span>${ph.bars} bars, ends ${esc(SHORT_CAD[ph.cadence] ?? ph.cadence)}</span></div><div class="en-bars">${cells}</div></div>`;
-    }).join('') + `<div class="en-phrase"><div class="en-ph-head"><b>Coda</b><span>${material.coda.length} bars, the short close</span></div><div class="en-bars">${material.coda.map((/** @type {string} */ p) => `<div class="en-bar" style="background:${tensionFill(material.chords[p].tension)}"><span class="en-no">${++barNo}</span><b>${esc(material.chords[p].symbol)}</b><span class="en-rom">${esc(p)}</span></div>`).join('')}</div></div>`;
+    }).join('') + (() => {
+      const e = rep.ending;
+      const lastBar = rep.bars[rep.bars.length - 1];
+      const endBars = e.hold ? [[lastBar.chords[lastBar.chords.length - 1].symbol, 0]] : e.bars;
+      return `<div class="en-phrase"><div class="en-ph-head"><b>Ending</b><span>${esc(e.name)}, ${endBars.length} bar${endBars.length > 1 ? 's' : ''}</span></div><div class="en-bars">${endBars.map((/** @type {[string, number]} */ [s, tn], /** @type {number} */ k) => { const sp = k === endBars.length - 1 ? 1 : (rep.span ?? 1); const lab = sp > 1 ? `${barNo + 1} to ${barNo + sp}` : `${barNo + 1}`; barNo += sp; return `<div class="en-bar${k === endBars.length - 1 ? ' en-cad' : ''}" style="background:${tensionFill(tn)}"><span class="en-no">${lab}</span><b>${esc(s)}</b><span class="en-rom">${k === endBars.length - 1 ? 'held' : '&nbsp;'}</span></div>`; }).join('')}</div></div>`;
+    })();
   }
 
   function candidates() {

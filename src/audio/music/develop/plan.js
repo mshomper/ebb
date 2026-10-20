@@ -13,6 +13,8 @@
  * @property {number} bars
  * @property {string} cadence       a key of material.cadences
  * @property {[number, number]} tension  target at the phrase's start and end, 0..1
+ * @property {number} [from]      a return: the earlier phrase it brings back (its length is that phrase's)
+ * @property {number} [keep]      bars of that phrase kept as they were before it goes its own way
  */
 
 /**
@@ -56,20 +58,30 @@ export function fittingTemplates(material, where) {
 export function planPhrases(material, rules, templateId, r) {
   const t = material.templates[templateId];
   const mult = rules.harmony?.cadenceWeights ?? {};
-  return t.phrases.map((/** @type {any} */ ph, /** @type {number} */ i) => {
+  /** @type {PhrasePlan[]} */
+  const out = [];
+  t.phrases.forEach((/** @type {any} */ ph, /** @type {number} */ i) => {
     const last = i === t.phrases.length - 1;
     const [lo, hi] = ph.bars;
-    const bars = lo + r.int(hi - lo + 1);
+    // A return is as long as the phrase it brings back.
+    const ret = Number.isInteger(ph.from) && ph.from >= 0 && ph.from < i ? ph.from : undefined;
+    const bars = ret !== undefined ? out[ret].bars : lo + r.int(hi - lo + 1);
     /** @type {Record<string, number>} */
     const w = {};
     for (const [c, v] of Object.entries(ph.cadence)) {
       if (!material.cadences[c]) continue;
       if (last && !material.cadences[c].final) continue;
       w[c] = /** @type {number} */ (v) * (mult[c] ?? 1);
+      // A return changes its ending: its source's cadence is less likely.
+      if (ret !== undefined && out[ret].cadence === c) w[c] *= rules.harmony?.returnSameCadence ?? 0.3;
     }
     // A last phrase whose offered cadences were all tuned away still has to close.
     const cadence = pickWeighted(w, r)
       ?? (last ? Object.keys(material.cadences).find((c) => material.cadences[c].final) : Object.keys(ph.cadence)[0]);
-    return { role: ph.role, bars, cadence: /** @type {string} */ (cadence), tension: /** @type {[number, number]} */ ([...ph.tension]) };
+    /** @type {PhrasePlan} */
+    const plan = { role: ph.role, bars, cadence: /** @type {string} */ (cadence), tension: /** @type {[number, number]} */ ([...ph.tension]) };
+    if (ret !== undefined) { plan.from = ret; plan.keep = Math.max(1, Math.min(ph.keep ?? 2, bars - 2)); }
+    out.push(plan);
   });
+  return out;
 }
