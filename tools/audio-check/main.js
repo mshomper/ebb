@@ -42,6 +42,9 @@ const fmt = {
   wx: pct, wind: pct, gust: pct, frost: pct, near: pct, stream: pct, mood: (v) => v.toFixed(2),
   tide: (v) => (v > 0.8 ? 'high' : v < 0.2 ? 'low' : v > 0.5 ? 'rising high' : 'half'),
   height: (v) => `${v.toFixed(1)} m`,
+  'fall-flow': (v) => (v > 0 ? `${(v * 1000).toFixed(1)} L/s` : 'none'),
+  'fall-height': (v) => `${v.toFixed(1)} m`,
+  'fall-dist': (v) => `${v.toFixed(1)} m`,
   'frog-count': (v) => String(v),
 };
 for (const id of Object.keys(fmt)) {
@@ -220,6 +223,10 @@ function tick() {
     surfaceNear: { water: near, pads: near * 0.5, reeds: Math.min(1, 0.3 + near * 0.6), grass: Math.max(0.2, 1 - near * 0.5) },
     listener: { x: listener.x, y: 0, z: listener.z },
     eye: ear.eye, forward: ear.forward,
+    // One waterfall to the right of the camera target, at the slider's distance.
+    falls: num('fall-flow') > 0 && num('fall-dist') < ambRecipe.falls.distance.reachM
+      ? [{ pos: [listener.x + num('fall-dist'), num('fall-height') / 2, listener.z], heightM: num('fall-height'), flowM3s: num('fall-flow'), distM: Math.hypot(num('fall-dist'), num('fall-height') / 2) }]
+      : [],
   });
 
   // The frogs: settled, awake (not dormant), content, and in the dusk window (or "call now").

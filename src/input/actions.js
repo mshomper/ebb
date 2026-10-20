@@ -19,12 +19,12 @@ import { emit } from '../core/events.js';
  *   | { type: 'camera.focus', x: number, z: number, distance: number, pitchDeg: number, y?: number }
  *   | { type: 'journal.showMe', sp: string }
  *   | { type: 'tool.select', toolId: ToolId | null, source?: Source }
- *   | { type: 'tool.begin', x: number, y: number, pressure: number, source: Source }
+ *   | { type: 'tool.begin', x: number, y: number, pressure: number, source: Source, shift?: boolean }
  *   | { type: 'tool.move', x: number, y: number, pressure: number, source: Source }
  *   | { type: 'tool.end', source: Source }
  *   | { type: 'tool.cancel', source: Source }
  *   | { type: 'tool.hover', x: number, y: number, inside: boolean, source: Source }
- *   | { type: 'brush.set', patch: { sculptMode?: 'raise'|'lower'|'flatten'|'stone', paintLayer?: 'grass'|'sand'|'soil'|'rock', size?: number, strength?: number,
+ *   | { type: 'brush.set', patch: { sculptMode?: 'raise'|'lower'|'flatten'|'stone'|'terrace'|'cut', paintLayer?: 'grass'|'sand'|'soil'|'rock', size?: number, strength?: number, cliffHeight?: number,
  *       waterMode?: 'pour'|'drain'|'spring', springRate?: 'trickle'|'brook'|'stream', plantSpecies?: PlantSpecies } }
  *   | { type: 'water.springRemove', id: string }
  *   | { type: 'brush.resize', factor: number, source?: Source }

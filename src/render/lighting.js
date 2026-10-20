@@ -62,7 +62,7 @@ export function createLighting(device, atmosphere, shadow) {
     data[52] = v.shadow.dir[0]; data[53] = v.shadow.dir[1]; data[54] = v.shadow.dir[2]; data[55] = v.shadow.strength;
     data[56] = v.shadow.texel[0]; data[57] = v.shadow.texel[1]; data[58] = v.shadow.texel[2]; data[59] = v.shadow.taps;
     data[60] = v.weather.cloud; data[61] = v.weather.rain; data[62] = v.weather.mist; data[63] = v.weather.wet;
-    data[64] = v.aerial.maxDistance; data[65] = v.aerial.slices; data[66] = 0; data[67] = 0;
+    data[64] = v.aerial.maxDistance; data[65] = v.aerial.slices; data[66] = v.shadow.cliffOffset ?? 0; data[67] = 0;
     device.queue.writeBuffer(buffer, 0, data);
   }
 

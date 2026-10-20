@@ -26,8 +26,11 @@ fn shadowVisibility(worldPos: vec3f, n: vec3f, viewDist: f32, pixel: vec2f) -> f
   let c = shadowCascade(viewDist);
   let texel = light.shadowTexel[c];
   // Normal offset grows as the surface turns away from the light; a small constant bias covers the rest.
+  // Upright faces (Cliff tool walls, docs/06) get a little more, so a wall grazed by low sun never
+  // self-shadows in stripes; it is along the normal and about a texel, so the wall's foot stays put.
   let nl = clamp(dot(n, light.shadowDir), 0.0, 1.0);
-  let p = worldPos + n * texel * (1.5 + 2.0 * (1.0 - nl));
+  let upright = 1.0 - abs(n.y);
+  let p = worldPos + n * texel * (1.5 + 2.0 * (1.0 - nl) + light.aerial.z * upright * upright);
   let lp = light.cascadeViewProj[c] * vec4f(p, 1.0);
   let uv = vec2f(lp.x * 0.5 + 0.5, 0.5 - lp.y * 0.5);
   if (any(uv < vec2f(0.0)) || any(uv > vec2f(1.0)) || lp.z > 1.0) { return 1.0; }

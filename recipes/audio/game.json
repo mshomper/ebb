@@ -16,6 +16,14 @@
     "rushWeight": 0.8,
     "grassFull": 160
   },
+  "fallsNote": "Waterfalls near the camera (src/world/falls-near.js): the lips the falls pass reads back (water.json falls soundReadS) are joined into falls, lips within joinM of each other across and topM in height being one fall; then, with the near sample, the falls within reachM of the camera target carrying at least minFlowM3s, nearest first, at most voices of them, go to the sound (ambience.json falls).",
+  "falls": {
+    "joinM": 1.0,
+    "topM": 0.6,
+    "reachM": 40,
+    "voices": 3,
+    "minFlowM3s": 0.0001
+  },
   "gust": {
     "everyS": [6, 20],
     "everyWindScale": 0.4,

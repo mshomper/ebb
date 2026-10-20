@@ -9,6 +9,8 @@
   "depthBias": 2,
   "depthBiasSlopeScale": 2.5,
   "shadowLod": 64,
+  "cliffNote": "Cliff walls (M2): chunks holding a cliff face cast at full mesh detail within the tier's cliffDetailM (quality-tiers.json), so the shadow matches the wall as drawn. cliffNormalOffsetTexels: extra normal offset on upright faces, scaled by (1 - |n.y|) squared, so a wall grazed by low sun never self-shadows in stripes.",
+  "cliffNormalOffsetTexels": 1.0,
   "sunFadeDeg": [-4, 0],
   "moonFadeDeg": [0, 6],
   "moonFullForShadow": 0.5,

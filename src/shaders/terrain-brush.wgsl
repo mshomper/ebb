@@ -8,7 +8,7 @@ struct Stamp {
   hardness: f32,      // falloff starts at hardness * radius
   amount: f32,        // raise/lower: signed meters at the center; others: blend amount (log2 units)
   level: f32,         // flatten target height
-  mode: u32,          // 0 raise/lower, 1 smooth, 2 flatten, 3 paint
+  mode: u32,          // 0 raise/lower, 1 smooth, 2 flatten, 3 paint, 4 cliff shelf, 5 cliff rock
   layer: u32,         // paint layer: 0 grass, 1 sand, 2 rock, 3 soil
   rectOrigin: vec2u,  // first cell of the rect
   rectSize: vec2u,
@@ -70,6 +70,19 @@ fn csHeight(@builtin(global_invocation_id) gid: vec3u) {
       let k = 1.0 - exp2(-s.amount * f);
       outH = mix(h, s.level, k);
     }
+    case 4u: {
+      // Cliff shelf (src/world/terrain/cliff.js cliffHeight): the goal is the level inside, falling
+      // away by |amount| (the stroke's Height) across the rim and by `span` meters across the fade
+      // before unopened land (hardness holds the rim width in meters here). Terrace only lifts to
+      // it and Cut only lowers, so going over a stroke again changes nothing.
+      let d = distance(p, s.center);
+      if (d < s.radius) {
+        let w = max(s.hardness, s.cell * 0.5);
+        let fc = 1.0 - smoothstep(s.radius - w, s.radius, d);
+        let fall = (1.0 - fc) * max(abs(s.amount), s.cell) + (1.0 - edgeFade(p)) * s.span;
+        outH = select(min(h, s.level + fall), max(h, s.level - fall), s.amount > 0.0);
+      }
+    }
     default: {}
   }
   textureStore(heightOut, c, vec4f(clamp(outH, -4.0, 12.0), 0.0, 0.0, 0.0));
@@ -85,5 +98,22 @@ fn csPaint(@builtin(global_invocation_id) gid: vec3u) {
   let goal = vec4f(f32(s.layer == 0u), f32(s.layer == 1u), f32(s.layer == 2u), f32(s.layer == 3u));
   let k = 1.0 - exp2(-s.amount * f);
   let w = mix(m, goal, k);
+  textureStore(materialOut, c, w / max(w.x + w.y + w.z + w.w, 1e-4));
+}
+
+// After a Cliff stroke: cells on a sheer face (a drop to a neighbor, either way, past amount meters)
+// move toward rock by `level` (the rock share), so faces draw as stone and erosion keeps them sheer.
+// Mirrors onFace() in src/world/terrain/cliff.js.
+@compute @workgroup_size(8, 8)
+fn csCliffRock(@builtin(global_invocation_id) gid: vec3u) {
+  if (any(gid.xy >= s.rectSize)) { return; }
+  let c = gid.xy + s.rectOrigin;
+  let ci = vec2i(c);
+  let h = loadH(ci);
+  let drop = max(max(abs(h - loadH(ci + vec2i(1, 0))), abs(h - loadH(ci - vec2i(1, 0)))),
+                 max(abs(h - loadH(ci + vec2i(0, 1))), abs(h - loadH(ci - vec2i(0, 1)))));
+  let m = textureLoad(materialIn, c, 0);
+  let k = select(0.0, s.level, drop > s.amount);
+  let w = mix(m, vec4f(0.0, 0.0, 1.0, 0.0), k);
   textureStore(materialOut, c, w / max(w.x + w.y + w.z + w.w, 1e-4));
 }
