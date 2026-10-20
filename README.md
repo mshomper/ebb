@@ -24,6 +24,7 @@ The M1 vertical slice, one small island with every pillar working in miniature, 
 | In progress | Shore | The shore zones itself by the tide as you shape it (docs/future/10): seaweed and kelp on rock in the tide band, black lichen in the splash zone above it, wave ripples in the wet sand and dark tidal mud on soil. Kelp blades come out at spring low tides. Each high tide leaves a strandline of dried litter and broken kelp at its reach, and a higher tide sweeps the older lines up. tools/shore-lab.html maps the zones as you shape and paint |
 | In progress | Finds | Small shore lives to find by tapping (docs/future/11): beadlet anemones in rock pools (a credited low-poly model) that open under water and close to a dome at low tide or when you come close, periwinkles on the wrack (from a CC0 shell scan), lugworm casts drawn into the wet sand itself, laid fresh after each tide, a hermit crab that walks about its rock pool under water, young edible crabs in the wrack that run sideways when you come close, and shells washed up along each high tide's strandline, from common periwinkle shells to a very rare nautilus on the biggest tides, all kept on one Shells page. Where they live comes from how you shape the coast. Found ones gather in the journal's **Small lives** |
 | In progress | Plants | Plants that read the ground (docs/future/10): each asks for its kind of ground (sand, rock or soil, and grass counts as soil), how steep, and how high above the sea, so reeds, lilies, iris, rushes and grass keep to earth and gentle banks, sea thrift to sand and rock low on the shore, and sea campion to rock above the thrift. A new island starts with grass, reeds and water lilies only; iris, rushes, sea thrift, marsh marigold and sea campion come by themselves over the first days, one seed landing where the ground suits it, and the journal notes each one and that you can plant it now. Marsh marigold has round, glossy leaves and golden cup flowers in early spring. tools/journal-review.html lays every plant's journal page side by side |
+| In progress | Web | The journal's Web of what needs what, redrawn so it grows with the island: a trail of the last things you tapped, a card for one thing at a time with its ties as chips (Needs, Needed by, Shares a home with), and a shelf with a tab per kind (Ground, Plants, Small lives, Animals) holding a square tile for each. Every ground feature is in it, rock pools, stones, the strandline, wrack, kelp, lichen, rippled and wet sand and tidal mud among them, and every plant, find and animal; each kind wears a soft tint. Ties ink when you see them on the island; what you have not met is a pencil question mark that hints. Each journal page has a Ties strip that leads into the Web, and the Web opens on whatever the journal last showed. A new species or ground feature is one recipe entry. The **Living things** list stays tidy as it grows: each group (Plants, Animals, Small lives and Shells) folds shut, chips show all, found or not yet, or one place (Pond, Meadow, Shore), and it sorts by recently found, A to Z or place; your choices are kept on the device |
 
 There are two islands to start from: the **Starter island** (one large spring-fed pond under a hill) and **Two ponds** (a low island with two spring-fed ponds and three rain-fed marshes). The **Island** button in **Settings > Saves** switches between them, and each keeps its own save. **Saves** also backs an island up to a file, opens one, steps back to an earlier save, or starts the island again. On previews and local builds, **Settings > Tests** pretends you were away and checks recovery. Test links (`?seed`, `?day`, `?frogs`, `?plants`) open throwaway islands that are never saved.
 
@@ -32,7 +33,7 @@ There are two islands to start from: the **Starter island** (one large spring-fe
 - **Sculpt, smooth and paint** the land; water always finds its way downhill. Sculpt's **Stone** mode sets a boulder where you tap.
 - **Pour and drain water.** Place springs once they are unlocked (`?sandbox` unlocks them now).
 - **Plant** reeds and water lilies from the start. Iris, rushes, sea thrift, marsh marigold and sea campion (which needs rock by the sea) come to the island by themselves, and once the journal has noted one you can plant it too. The tool says why when the ground won't do.
-- **Tap anything** (a plant, the ground, the water) to name it, then open its page in the **field journal**. Pages fill in from what happens on the island, in words, never numbers.
+- **Tap anything** (a plant, the ground, the water) to name it, then open its page in the **field journal**. Pages fill in from what happens on the island, in words, never numbers. The journal's **Web** shows what needs what, one thing at a time.
 - **Look closely along the shore** at low tide for finds: anemones in rock pools, periwinkles on the weed, lugworm casts on the sand. Each one you tap is kept in the journal.
 - **Look:** switch palettes, and change how fast time flows.
 
@@ -47,11 +48,11 @@ You need a WebGPU-capable browser: Chrome, Edge, Firefox on Windows, or Safari 2
   2. Double-click `play.cmd` in the repo folder. It starts a small local server (nothing to install), opens the game in your browser, and uses the first free port from 8080 to 8099.
   3. Close its window to stop.
 
-A small tag under the clock dial shows which build you are looking at, `local · <branch>` or `preview · <branch> · <commit>`; on the live site it is at the foot of Settings as `build <commit>`.
+A small tag under the clock dial shows which build you are looking at, `local Â· <branch>` or `preview Â· <branch> Â· <commit>`; on the live site it is at the foot of Settings as `build <commit>`.
 
 ### Address switches
 
-Add these to the address (for example `…/?island=two-ponds&day=8`) to test things quickly.
+Add these to the address (for example `â€¦/?island=two-ponds&day=8`) to test things quickly.
 
 | Switch | What it does |
 |---|---|
@@ -106,7 +107,7 @@ Open these at `/tools/` while running locally. They are for checks that run on y
 - "Low-Poly Anemone" (https://skfb.ly/6X9T8) by Ben Lebreux, licensed under Creative Commons Attribution 4.0 (http://creativecommons.org/licenses/by/4.0/). Changed for ebb: textures baked to vertex colors, posed at rest, rescaled, and given a shut pose.
 - "Crab 3d Model Free" (https://skfb.ly/pMCrp) by iRahulRajput, licensed under Creative Commons Attribution 4.0 (http://creativecommons.org/licenses/by/4.0/). Changed for ebb: texture baked to vertex colors, simplified, rescaled; drawn as a young edible crab.
 - The hermit crab is a CC0 model, simplified, with its own walk.
-- Shells, each licensed under Creative Commons Attribution 4.0 (http://creativecommons.org/licenses/by/4.0/) and simplified for ebb: "Turret Shell || Free Model" by CyberFox 3D Studio; "shell fossil 3D Scan" by Formwerk3D; "Murex Shell" by Loïc Norgeot; "Nautilus Shell" by RISD Nature Lab. Links in `assets/models/finds/CREDITS.md`.
+- Shells, each licensed under Creative Commons Attribution 4.0 (http://creativecommons.org/licenses/by/4.0/) and simplified for ebb: "Turret Shell || Free Model" by CyberFox 3D Studio; "shell fossil 3D Scan" by Formwerk3D; "Murex Shell" by LoÃ¯c Norgeot; "Nautilus Shell" by RISD Nature Lab. Links in `assets/models/finds/CREDITS.md`.
 - The periwinkle is a CC0 photo scan of a rough periwinkle (Littorina brevicula, ffish.asia), simplified to 900 triangles.
 - Ground scans from Poly Haven and ambientCG (CC0); see `assets/textures/CREDITS.md`.
 | `CLAUDE.md` | Working rules for Claude Code sessions on this repo |

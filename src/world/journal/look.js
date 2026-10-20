@@ -20,6 +20,8 @@ import { stampNotes } from './read.js';
  * @property {any} island     recipes/world/journal-island.json
  * @property {any} web        recipes/world/journal-web.json
  * @property {number} [paintVersion]  bumps when paint changes (a cache key only)
+ * @property {Record<string, number> | null} [shore]  the shore zones and rock pools now (shore-presence.js);
+ *   catch-up has none, so links that need them ink on the next live look
  */
 
 /**
@@ -32,7 +34,8 @@ export function journalLook(journal, ctx) {
   let j = stampNotes(seen.journal, seen.notes);
   const notes = seen.notes.slice();
   if (habitat) {
-    const survey = groundSurvey(habitat, ctx.material, state, ctx.island, ctx.paintVersion ?? 0);
+    const ground = groundSurvey(habitat, ctx.material, state, ctx.island, ctx.paintVersion ?? 0);
+    const survey = ctx.shore ? { ...ground, shore: ctx.shore } : ground;
     const inked = inkWeb(j, survey, { web: ctx.web, words, state, hour });
     j = stampNotes(inked.journal, inked.notes);
     notes.push(...inked.notes);

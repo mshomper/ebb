@@ -1,105 +1,117 @@
 // @ts-check
-// The journal's Web section (J2a): ground at the top, plants in the middle, animals below, and you.
-// Each band is one row of names in the recipe's order, packed and centered; links run in the clear
-// space between rows (or side to side within a row), so none passes behind a name, and the recipe's
-// order keeps them from crossing. Inked links are ones seen on the island; the rest are pencil.
-// Tapping a name brings its links forward. Returns markup; journal.js owns the clicks.
+// The journal's Web section (J2a, redesigned 2026-10-20): what needs what, one thing at a time.
+// A trail at the top keeps the last few things tapped; the focus card shows the chosen thing and its
+// ties as chips in three short groups (Needs, Needed by, Shares a home with); a shelf at the bottom
+// has a tab per kind (Ground, Plants, Small lives, Animals) with a square tile for each thing. The
+// layout is all wrapping rows and a fixed-column grid, so a new node in the recipe needs no layout
+// change and nothing ever widens the page. Inked ties are ones seen on the island; the rest are
+// pencil. A thing not yet seen is a pencil question mark that hints without telling. Each kind
+// wears a soft tint (journal.css, --jw-<kind>-*). Also the Ties strip on each journal page.
+// Returns markup; journal.js owns the clicks (data-web-node, data-web-trail, data-web-shelf).
 
-const INK = '#2F3A35', PENCIL = '#A7A196', MOSS = '#5F7F5B', PAPER = '#F4EEE4', BAND = '#E9DFCE';
-const CHIP_H = 32;
-
-/** @type {CanvasRenderingContext2D | null} */ let measureCtx = null;
-/** Label width in drawing units, measured in the journal's own type. @param {string} t @param {number} px */
-function textWidth(t, px) {
-  try {
-    measureCtx ??= document.createElement('canvas').getContext('2d');
-    if (measureCtx) {
-      measureCtx.font = `600 ${px}px Nunito, system-ui, sans-serif`;
-      return measureCtx.measureText(t).width;
-    }
-  } catch { /* no canvas: estimate */ }
-  return t.length * px * 0.55;
-}
+import { iconSvg } from './icons/icons.js';
+import { tiesOf } from '../world/journal/web.js';
 
 /** @param {string} s */
-const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c] ?? c);
+const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c] ?? c);
+
+/** Join names in words: "a", "a and b", "a, b and c". @param {string[]} xs */
+const list = (xs) => (xs.length > 1 ? `${xs.slice(0, -1).join(', ')} and ${xs[xs.length - 1]}` : xs[0] ?? '');
+
+/**
+ * A tie as a chip: the thing's icon and name, tinted by its kind; a pencil outline while the tie is
+ * not yet seen; a pencil question mark while the thing itself is not.
+ * @param {import('../world/journal/web.js').WebNode} n @param {boolean} inked @param {any} web
+ */
+function chip(n, inked, web) {
+  if (!n.known) {
+    return `<button type="button" class="ebb-jw-chip is-unknown" data-web-node="${esc(n.id)}" aria-label="${esc(web.unknown.line)}">` +
+      `<span class="ebb-jw-q" aria-hidden="true">${esc(web.unknown.label)}</span></button>`;
+  }
+  return `<button type="button" class="ebb-jw-chip is-${esc(n.kind)}${inked ? '' : ' is-pencil'}" data-web-node="${esc(n.id)}">` +
+    `${iconSvg(n.icon)}<span>${esc(n.label)}</span></button>`;
+}
+
+/**
+ * The three groups of ties as chip rows (empty groups left out).
+ * @param {import('../world/journal/web.js').WebView} d @param {any} web @param {string} id
+ */
+function groups(d, web, id) {
+  const t = tiesOf(d, web, id);
+  const row = (/** @type {string} */ key, /** @type {{ id: string, inked: boolean }[]} */ ties) => {
+    // Known things first, then the pencil question marks.
+    const shown = ties.filter((x) => d.byId[x.id]);
+    const chips = [...shown.filter((x) => d.byId[x.id].known), ...shown.filter((x) => !d.byId[x.id].known)].map((x) => chip(d.byId[x.id], x.inked, web));
+    return chips.length ? `<section class="ebb-jw-group"><h4>${esc(web.groups[key])}</h4><div class="ebb-jw-chips">${chips.join('')}</div></section>` : '';
+  };
+  return row('needs', t.needs) + row('neededBy', t.neededBy) + row('shares', t.shares);
+}
 
 /**
  * The Web section's markup.
- * @param {{ rows: { band: string, nodes: { id: string, label: string, page: string | null, known: boolean }[] }[], links: { a: string, b: string, inked: boolean }[] }} d
- *   describeWeb() @param {any} web recipes/world/journal-web.json @param {string | null} focus the tapped name
+ * @param {import('../world/journal/web.js').WebView} d describeWeb()
+ * @param {any} web recipes/world/journal-web.json
+ * @param {{ trail: string[], shelf: string | null }} view the trail of taps (the last is the focus)
+ *   and the shelf tab open (null: the focus's kind)
  */
-export function webView(d, web, focus) {
-  const px = web.textPx, gap = web.gapPx, pad = web.bandPad;
-  // Tight chips keep the widest row near 350 units, so on a 343 px phone page the labels still
-  // render above 16 px.
-  // A name not yet seen is a pencil "?", so the web hints without telling.
-  const shown = (/** @type {{ label: string, known: boolean }} */ n) => (n.known ? n.label : web.unknown.label);
-  const chipW = (/** @type {{ label: string, known: boolean }} */ n) => Math.ceil(Math.max(textWidth(shown(n), px) + (web.chipPadPx ?? 18), CHIP_H + 8));
-  // Neighbours linked to each other sit further apart, so the link between them reads as a line.
-  const tied = (/** @type {string} */ a, /** @type {string} */ b) => d.links.some((l) => (l.a === a && l.b === b) || (l.a === b && l.b === a));
-  const gaps = d.rows.map((r) => r.nodes.slice(1).map((n, i) => (tied(r.nodes[i].id, n.id) ? web.linkGapPx : gap)));
-  const rowW = d.rows.map((r, i) => r.nodes.reduce((s, n) => s + chipW(n), 0) + gaps[i].reduce((s, g) => s + g, 0));
-  const W = Math.max(300, ...rowW) + pad * 2;
-  /** @type {Record<string, { x: number, y: number, w: number }>} */ const at = {};
-  let y = pad * 2 + CHIP_H / 2;
-  /** @type {{ band: string, y0: number, y1: number }[]} */ const bands = [];
-  d.rows.forEach((r, i) => {
-    if (i && d.rows[i - 1].band !== r.band) y += pad;           // a little more room between bands
-    let x = (W - rowW[i]) / 2;
-    r.nodes.forEach((n, j) => { const w = chipW(n); at[n.id] = { x: x + w / 2, y, w }; x += w + (gaps[i][j] ?? 0); });
-    const last = bands[bands.length - 1];
-    if (last && last.band === r.band) last.y1 = y + CHIP_H / 2 + pad;
-    else bands.push({ band: r.band, y0: y - CHIP_H / 2 - pad, y1: y + CHIP_H / 2 + pad });
-    y += CHIP_H + web.rowGap;
-  });
-  const H = y - web.rowGap - CHIP_H / 2 + pad * 2;
-  const linked = (/** @type {string} */ id) => !focus || id === focus || d.links.some((l) => (l.a === focus && l.b === id) || (l.b === focus && l.a === id));
-  let svg = '';
-  for (const b of bands) if (b.band !== 'you') svg += `<rect x="${pad / 2}" y="${b.y0}" width="${W - pad}" height="${b.y1 - b.y0}" rx="12" fill="${BAND}" opacity="0.7"/>`;
-  for (const l of d.links) {
-    const A = at[l.a], B = at[l.b];
-    if (!A || !B) continue;
-    const on = !focus || l.a === focus || l.b === focus;
-    let path;
-    if (A.y === B.y) {
-      const dir = B.x > A.x ? 1 : -1;
-      path = `M${A.x + dir * A.w / 2} ${A.y}L${B.x - dir * B.w / 2} ${B.y}`;
-    } else {
-      const [top, bot] = A.y < B.y ? [A, B] : [B, A];
-      const y0 = top.y + CHIP_H / 2, y1 = bot.y - CHIP_H / 2, m = (y0 + y1) / 2;
-      path = `M${top.x} ${y0}C${top.x} ${m} ${bot.x} ${m} ${bot.x} ${y1}`;
-    }
-    svg += `<path d="${path}" fill="none" stroke="${l.inked ? INK : PENCIL}" stroke-width="${l.inked ? 2 : 1.5}"${l.inked ? '' : ' stroke-dasharray="5 4"'} opacity="${on ? 1 : 0.15}"/>`;
+export function webView(d, web, view) {
+  const trail = view.trail.filter((id) => d.byId[id]);
+  const focusId = trail[trail.length - 1] ?? web.start;
+  const node = d.byId[focusId];
+  const shelf = view.shelf && web.kinds[view.shelf] ? view.shelf : node.kind;
+  const name = (/** @type {import('../world/journal/web.js').WebNode} */ n) => (n.known ? n.label : web.unknown.line);
+
+  // The trail: the last few things tapped, oldest first; tapping one goes back to it.
+  const crumbs = trail.length > 1 ? `<nav class="ebb-jw-trail" aria-label="${esc(web.status.trail)}"><ol>${trail.map((id, i) => {
+    const n = d.byId[id];
+    const k = n.known ? ` is-${esc(n.kind)}` : ' is-unknown';
+    return i === trail.length - 1
+      ? `<li><span class="ebb-jw-crumb${k}" aria-current="true">${esc(name(n))}</span></li>`
+      : `<li><button type="button" class="ebb-jw-crumb${k}" data-web-trail="${i}">${esc(name(n))}</button></li>`;
+  }).join('')}</ol></nav>` : '';
+
+  // The focus card.
+  const kind = web.kinds[node.kind];
+  let body;
+  if (node.known) {
+    const status = node.id === 'you' || web.nodes[node.id]?.always ? '' : node.found ? web.status.found : node.here ? web.status.seen : web.status.known;
+    const ties = groups(d, web, node.id);
+    const open = node.page ? `<button type="button" class="ebb-jw-open" data-page="${esc(node.page)}">${esc(web.status.page)}</button>` : '';
+    body = `<div class="ebb-jw-card__head"><span class="ebb-jw-card__icon">${iconSvg(node.icon)}</span>
+      <div class="ebb-jw-card__name"><h3>${esc(node.label)}</h3><p><span class="ebb-jw-kind">${esc(kind.label)}</span>${status ? `<span class="ebb-jw-status">${esc(status)}</span>` : ''}</p></div></div>
+      ${ties || `<p class="ebb-jw-hint ebb-journal__voice">${esc(web.status.none)}</p>`}${open}`;
+  } else {
+    // Not yet seen: no name and no icon, only what known things it needs, and its pencil ties.
+    const needs = tiesOf(d, web, node.id).needs.map((t) => d.byId[t.id]).filter((n) => n?.known && !web.nodes[n.id]?.always).map((n) => n.label.toLowerCase());
+    const hint = needs.length ? web.unknown.hint.replace('{list}', list(needs)) : '';
+    body = `<div class="ebb-jw-card__head"><span class="ebb-jw-card__icon is-unknown"><span class="ebb-jw-q" aria-hidden="true">${esc(web.unknown.label)}</span></span>
+      <div class="ebb-jw-card__name"><h3>${esc(web.unknown.line)}</h3><p><span class="ebb-jw-kind">${esc(kind.label)}</span></p></div></div>
+      ${hint ? `<p class="ebb-jw-hint ebb-journal__voice">${esc(hint)}</p>` : ''}${groups(d, web, node.id)}`;
   }
-  for (const r of d.rows) {
-    for (const n of r.nodes) {
-      const p = at[n.id], sel = n.id === focus;
-      const font = n.known ? `font-family="Nunito, system-ui, sans-serif" font-weight="600" font-size="${px}"`
-        : `font-family="Fraunces, Georgia, serif" font-style="italic" font-size="${Math.round(px * 1.2)}"`;
-      svg += `<g class="ebb-jweb__node" data-web-node="${esc(n.id)}" opacity="${linked(n.id) ? 1 : 0.35}" role="button" tabindex="0" aria-label="${esc(n.known ? n.label : web.unknown.line)}">` +
-        `<rect x="${p.x - p.w / 2}" y="${p.y - CHIP_H / 2}" width="${p.w}" height="${CHIP_H}" rx="${CHIP_H / 2}" fill="${sel ? MOSS : PAPER}" stroke="${n.known ? MOSS : PENCIL}" stroke-width="1.6"${n.known ? '' : ' stroke-dasharray="4 3"'}/>` +
-        `<text x="${p.x}" y="${p.y + px * 0.35}" text-anchor="middle" ${font} fill="${sel ? PAPER : n.known ? INK : '#8A8478'}">${esc(shown(n))}</text></g>`;
-    }
-  }
-  // Below the web: what the tapped name links to, and a way to its page.
-  const node = focus ? d.rows.flatMap((r) => r.nodes).find((n) => n.id === focus) : null;
-  let cap = `<p class="ebb-jweb__cap ebb-journal__voice">${esc(web.intro)}</p>`;
-  if (node) {
-    // The links seen, in the journal's own words, then how many are still in pencil (in words).
-    const mine = d.links.filter((l) => l.a === node.id || l.b === node.id);
-    const seen = mine.filter((l) => l.inked).map((l) => web.links.find((/** @type {any} */ w) => w.a === l.a && w.b === l.b)?.note).filter(Boolean);
-    const left = mine.length - seen.length;
-    const rest = !node.known ? 'Not yet known.' : !left ? 'Every link seen.' : seen.length ? (left === 1 ? 'One link still in pencil.' : 'More links still in pencil.') : 'No links seen yet.';
-    // Not yet seen: no name, only what known things lead into it (you aside).
-    const all = d.rows.flatMap((r) => r.nodes.map((n) => ({ ...n, band: r.band })));
-    const needs = mine.filter((l) => l.b === node.id).map((l) => all.find((n) => n.id === l.a))
-      .filter((n) => n && n.known && n.band !== 'you').map((n) => /** @type {any} */ (n).label.toLowerCase());
-    const list = needs.length > 1 ? `${needs.slice(0, -1).join(', ')} and ${needs[needs.length - 1]}` : needs[0];
-    const texts = node.known ? [...seen, rest] : list ? [web.unknown.hint.replace('{list}', list)] : [];
-    const lines = texts.map((t) => `<li class="ebb-journal__voice">${esc(t)}</li>`).join('');
-    const open = node.known && node.page ? `<button type="button" class="ebb-jweb__open" data-page="${esc(node.page)}">Open its page</button>` : '';
-    cap = `<div class="ebb-jweb__focus"><p><b>${esc(node.known ? node.label : web.unknown.line)}</b></p>${lines ? `<ul class="ebb-jweb__lines">${lines}</ul>` : ''}${open}</div>`;
-  }
-  return `<div class="ebb-jweb"><svg class="ebb-jweb__svg" viewBox="0 0 ${W} ${H}" role="group" aria-label="What needs what">${svg}</svg>${cap}</div>`;
+  const card = `<section class="ebb-jw-card ${node.known ? `is-${esc(node.kind)}` : 'is-unknown'}" aria-live="polite">${body}</section>`;
+
+  // The shelf: a tab per kind, and a tile for each thing of the open kind.
+  const tabs = Object.entries(web.kinds).map(([k, v]) => `<button type="button" class="ebb-jw-tab is-${esc(k)}" data-web-shelf="${esc(k)}" aria-pressed="${k === shelf}">` +
+    `${iconSvg(/** @type {any} */ (v).icon)}<span>${esc(/** @type {any} */ (v).label)}</span></button>`).join('');
+  const tiles = d.nodes.filter((n) => n.kind === shelf).map((n) => {
+    const sel = n.id === node.id ? ' is-on' : '';
+    return n.known
+      ? `<button type="button" class="ebb-jw-tile is-${esc(n.kind)}${sel}" data-web-node="${esc(n.id)}" aria-label="${esc(n.label)}" title="${esc(n.label)}" aria-pressed="${!!sel}">${iconSvg(n.icon)}</button>`
+      : `<button type="button" class="ebb-jw-tile is-unknown${sel}" data-web-node="${esc(n.id)}" aria-label="${esc(web.unknown.line)}" aria-pressed="${!!sel}"><span class="ebb-jw-q" aria-hidden="true">${esc(web.unknown.label)}</span></button>`;
+  }).join('');
+  const shelfHtml = `<div class="ebb-jw-shelf"><div class="ebb-jw-tabs" role="group" aria-label="Kinds">${tabs}</div>
+    <div class="ebb-jw-tiles" style="--jw-cols: ${Number(web.shelfCols) || 6}">${tiles}</div></div>`;
+
+  return `<div class="ebb-jw">${crumbs}${card}${shelfHtml}</div>`;
+}
+
+/**
+ * The small Ties strip on a journal page: the same chips, which lead into the Web.
+ * @param {import('../world/journal/web.js').WebView} d @param {any} web @param {string | null} id the page's Web node
+ */
+export function tiesStrip(d, web, id) {
+  if (!id || !d.byId[id]) return '';
+  const inner = groups(d, web, id);
+  return `<section class="ebb-jw-ties"><h4>${esc(web.ties.title)}</h4>${inner || `<p class="ebb-jw-hint ebb-journal__voice">${esc(web.status.none)}</p>`}` +
+    `<button type="button" class="ebb-jw-open" data-web-node="${esc(id)}">${iconSvg('web')}<span>${esc(web.ties.open)}</span></button></section>`;
 }

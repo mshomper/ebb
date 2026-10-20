@@ -6,7 +6,7 @@
 // only and never saved.
 
 import { makeTexture } from '../../core/gpu.js';
-import { on } from '../../core/events.js';
+import { on, emitDeferred } from '../../core/events.js';
 import { get as getStore } from '../../core/store.js';
 import { WATER_CELLS } from './grid.js';
 import { shoreZones, shoreHeightM } from './shore.js';
@@ -54,6 +54,8 @@ export function createShoreLive(device, opts) {
       for (let c = 0; c < 4; c++) bytes[k * 4 + c] = Math.round(bytes[k * 4 + c] * f);
     }
     device.queue.writeTexture({ texture, origin: [rect.x, rect.y] }, bytes, { bytesPerRow: rect.w * 4, rowsPerImage: rect.h }, [rect.w, rect.h]);
+    // The journal's Web looks again at what the shore holds (src/world/journal).
+    emitDeferred('shore:zoned', {});
   }
 
   return {

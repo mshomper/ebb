@@ -11,6 +11,14 @@
   --jr-rule: #DCCFBB;
   --jr-binding: #C8B89A;
   --jr-moss: #5F7F5B;
+  /* The Web's soft tint per kind (journal-web.js): wash (chip fill), line, ink (text on the wash,
+     at least 6:1 on it) and card (the focus card's paper). Part of the journal's paper palette: the
+     journal is cream paper in every Look palette and in dark mode, so these sit beside --jr-paper
+     and change with it if a night paper is ever added. */
+  --jw-ground-wash: #F3E6C1; --jw-ground-line: #CDAE5C; --jw-ground-ink: #66500F; --jw-ground-card: #F8F0DC;
+  --jw-plants-wash: #E1ECD3; --jw-plants-line: #98B87E; --jw-plants-ink: #42613A; --jw-plants-card: #EEF2E3;
+  --jw-small-wash: #D8ECE8; --jw-small-line: #82B9B0; --jw-small-ink: #2B5D57; --jw-small-card: #E9F1EC;
+  --jw-animals-wash: #F6DFCC; --jw-animals-line: #D69868; --jw-animals-ink: #87431F; --jw-animals-card: #F8EBDF;
   --jr-btn: 48px;
   --jr-edge: 12px;
 }
@@ -216,7 +224,7 @@
 .ebb-jpage__list li.is-pencil { color: var(--jr-pencil); }
 .ebb-jpage__list li.is-pencil::before { background: transparent; border: 1.5px dashed var(--jr-pencil); width: 8px; height: 8px; }
 /* A collection's rarity beside its name (the Shells page). */
-.ebb-jpage__rarity { font-size: 15px; color: var(--jr-pencil); margin-left: 4px; }
+.ebb-jpage__rarity { font-size: var(--text-small); color: var(--jr-pencil); margin-left: 4px; }
 .ebb-jpage__seasons { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
 /* Each season box wears a soft wash of its season, with its drawn mark; an unseen season stays pencil. */
 .ebb-jpage__season {
@@ -293,30 +301,139 @@
 .ebb-jalm dt { font-size: var(--text-small); font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--jr-moss); }
 .ebb-jalm dd { margin: 0; font-size: calc(18px * var(--text-scale, 1)); line-height: 1.4; overflow-wrap: break-word; }
 
-/* web: what needs what. The drawing scales to the page width and never wider. */
-.ebb-jweb { display: grid; gap: 12px; }
-.ebb-jweb__svg { display: block; width: 100%; max-width: 560px; height: auto; margin: 0 auto; }
-.ebb-jweb__node { cursor: pointer; outline: none; }
-.ebb-jweb__node:hover rect { stroke-width: 2.4; }
-.ebb-jweb__node:focus-visible rect { stroke: #CF8C5F; stroke-width: 3; }
-.ebb-jweb__cap { margin: 0; font-size: calc(18px * var(--text-scale, 1)); line-height: 1.4; }
-.ebb-jweb__focus { display: grid; gap: 8px; justify-items: start; }
-.ebb-jweb__focus p { margin: 0; font-size: calc(18px * var(--text-scale, 1)); line-height: 1.4; }
-.ebb-jweb__lines { margin: 0; padding: 0 0 0 18px; display: grid; gap: 4px; font-size: calc(18px * var(--text-scale, 1)); line-height: 1.4; }
-.ebb-jweb__open {
-  appearance: none;
-  -webkit-appearance: none;
-  min-height: 44px;
-  padding: 6px 16px;
-  border: 1.5px solid var(--jr-moss);
-  border-radius: 12px;
-  background: transparent;
-  color: var(--jr-moss);
-  font: inherit;
-  font-weight: 700;
-  cursor: pointer;
+/* web: what needs what (journal-web.js). A trail of recent taps, the focus card with its ties as
+   chips, and a shelf of kind tabs and icon tiles. Everything wraps or sits in a fixed-column grid,
+   so it never widens the page, however many things the recipe holds. */
+.is-ground { --jw-wash: var(--jw-ground-wash); --jw-line: var(--jw-ground-line); --jw-ink: var(--jw-ground-ink); --jw-card: var(--jw-ground-card); }
+.is-plants { --jw-wash: var(--jw-plants-wash); --jw-line: var(--jw-plants-line); --jw-ink: var(--jw-plants-ink); --jw-card: var(--jw-plants-card); }
+.is-small { --jw-wash: var(--jw-small-wash); --jw-line: var(--jw-small-line); --jw-ink: var(--jw-small-ink); --jw-card: var(--jw-small-card); }
+.is-animals { --jw-wash: var(--jw-animals-wash); --jw-line: var(--jw-animals-line); --jw-ink: var(--jw-animals-ink); --jw-card: var(--jw-animals-card); }
+.ebb-jw { display: grid; gap: 14px; min-width: 0; }
+.ebb-jw button { appearance: none; -webkit-appearance: none; margin: 0; cursor: pointer; touch-action: manipulation; }
+.ebb-jw-q { font-family: var(--font-voice); font-style: italic; font-weight: 400; font-size: calc(22px * var(--text-scale, 1)); line-height: 1; color: var(--jr-pencil); }
+
+/* the trail */
+.ebb-jw-trail ol { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 2px 0; }
+.ebb-jw-trail li { display: flex; align-items: center; min-width: 0; }
+.ebb-jw-trail li + li::before { content: ''; width: 14px; margin: 0 4px; border-top: 1.5px solid var(--jr-rule); flex: none; }
+.ebb-jw-crumb {
+  min-height: 40px; padding: 4px 6px; border: 0; border-radius: 8px; background: transparent;
+  font-size: var(--text-small); color: var(--jw-ink, var(--jr-soft)); overflow-wrap: anywhere; text-align: left;
 }
-.ebb-jweb__open:hover { background: rgba(95, 127, 91, 0.1); }
+button.ebb-jw-crumb { text-decoration: underline; text-decoration-color: var(--jw-line, var(--jr-rule)); text-underline-offset: 4px; }
+button.ebb-jw-crumb:hover { background: var(--jw-wash, rgba(30, 38, 36, 0.06)); }
+span.ebb-jw-crumb { display: inline-flex; align-items: center; font-weight: 800; }
+.ebb-jw-crumb.is-unknown { color: var(--jr-pencil); }
+
+/* the focus card */
+.ebb-jw-card { display: grid; gap: 12px; padding: 14px; min-width: 0; border: 1.5px solid var(--jw-line, var(--jr-rule)); border-radius: 14px; background: var(--jw-card, transparent); }
+.ebb-jw-card.is-unknown { border-style: dashed; border-color: var(--jr-pencil); }
+.ebb-jw-card__head { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.ebb-jw-card__icon { width: 64px; height: 64px; flex: none; display: grid; place-items: center; border-radius: 50%; background: var(--jw-wash); color: var(--jw-ink); }
+.ebb-jw-card__icon .icon { width: 42px; height: 42px; }
+.ebb-jw-card__icon.is-unknown { background: transparent; border: 1.5px dashed var(--jr-pencil); }
+.ebb-jw-card__icon.is-unknown .ebb-jw-q { font-size: calc(32px * var(--text-scale, 1)); }
+.ebb-jw-card__name { display: grid; gap: 4px; min-width: 0; }
+.ebb-jw-card__name h3 { margin: 0; font-size: calc(22px * var(--text-scale, 1)); font-weight: 800; line-height: 1.2; overflow-wrap: break-word; }
+.ebb-jw-card.is-unknown h3 { color: var(--jr-pencil); }
+.ebb-jw-card__name p { margin: 0; display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: center; font-size: var(--text-small); }
+.ebb-jw-kind { padding: 1px 10px; border-radius: 999px; background: var(--jw-wash, transparent); color: var(--jw-ink, var(--jr-pencil)); font-weight: 800; }
+.ebb-jw-card.is-unknown .ebb-jw-kind { border: 1.5px dashed var(--jr-rule); }
+.ebb-jw-status { color: var(--jr-soft); }
+.ebb-jw-hint { margin: 0; font-size: calc(17px * var(--text-scale, 1)); line-height: 1.4; color: var(--jr-soft); }
+.ebb-jw-group { display: grid; gap: 6px; min-width: 0; }
+.ebb-jw .ebb-jw-group h4, .ebb-jw-ties h4 { margin: 0; font-size: var(--text-small); font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--jr-soft); }
+.ebb-jw-chips { display: flex; flex-wrap: wrap; gap: 6px; min-width: 0; }
+.ebb-jw-chip {
+  max-width: 100%; min-height: 40px; padding: 4px 12px 4px 8px;
+  display: inline-flex; align-items: center; gap: 6px;
+  border: 1.5px solid var(--jw-line); border-radius: 999px; background: var(--jw-wash);
+  color: var(--jw-ink); font-size: var(--text-body); font-weight: 700; line-height: 1.2; text-align: left;
+}
+.ebb-jw-chip span { min-width: 0; overflow-wrap: anywhere; }
+.ebb-journal .ebb-jw-chip .icon { width: 22px; height: 22px; }
+.ebb-jw-chip:hover { border-color: var(--jw-ink); }
+/* A tie not yet seen: the same tint in pencil, no fill. */
+.ebb-jw-chip.is-pencil { background: transparent; border-style: dashed; }
+/* A thing not yet seen: a pencil question mark. */
+.ebb-jw-chip.is-unknown { min-width: 48px; justify-content: center; padding: 4px 14px; background: transparent; border: 1.5px dashed var(--jr-pencil); }
+.ebb-jw-open {
+  justify-self: start; min-height: 44px; padding: 6px 16px 6px 12px;
+  display: inline-flex; align-items: center; gap: 8px;
+  border: 1.5px solid var(--jr-moss); border-radius: 12px; background: transparent; color: var(--jr-moss); font-weight: 700;
+}
+.ebb-jw-open:hover { background: rgba(95, 127, 91, 0.1); }
+
+/* the shelf */
+.ebb-jw-shelf { display: grid; gap: 10px; padding-top: 12px; border-top: 1px solid var(--jr-rule); min-width: 0; }
+.ebb-jw-tabs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; }
+.ebb-jw-tab {
+  min-width: 0; min-height: 56px; padding: 6px 2px;
+  display: grid; justify-items: center; align-content: center; gap: 2px;
+  border: 1.5px solid transparent; border-radius: 12px; background: transparent;
+  color: var(--jw-ink); font-size: var(--text-small); line-height: 1.15; text-align: center; overflow-wrap: anywhere;
+}
+.ebb-jw-tab:hover { background: var(--jw-card); }
+.ebb-jw-tab[aria-pressed='true'] { background: var(--jw-wash); border-color: var(--jw-line); font-weight: 800; }
+.ebb-jw-tiles { display: grid; grid-template-columns: repeat(var(--jw-cols, 6), minmax(0, 1fr)); gap: 6px; }
+.ebb-jw-tile {
+  min-width: 0; aspect-ratio: 1; max-height: 64px; padding: 0;
+  display: grid; place-items: center;
+  border: 1.5px solid var(--jw-line); border-radius: 12px; background: var(--jw-wash); color: var(--jw-ink);
+}
+.ebb-journal .ebb-jw-tile .icon { width: 62%; height: 62%; max-width: 34px; max-height: 34px; }
+.ebb-jw-tile:hover { border-color: var(--jw-ink); }
+.ebb-jw-tile.is-on { box-shadow: 0 0 0 2.5px var(--jr-paper), 0 0 0 4.5px var(--jw-ink, var(--jr-ink)); }
+.ebb-jw-tile.is-unknown { background: transparent; border: 1.5px dashed var(--jr-pencil); }
+
+/* Living things, tidied (journal.js livingView, list.js): filter and sort chips, then groups that
+   fold shut under a tinted header. Chips wrap, so nothing widens the page. */
+.ebb-jl-controls { display: grid; gap: 6px; margin: 0 0 10px; padding-bottom: 10px; border-bottom: 1px solid var(--jr-rule); }
+.ebb-jl-row { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; min-width: 0; }
+.ebb-jl-label { font-size: var(--text-small); font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--jr-soft); margin-right: 2px; }
+.ebb-jl-chip {
+  appearance: none; -webkit-appearance: none; margin: 0; cursor: pointer; touch-action: manipulation;
+  min-height: 38px; padding: 3px 10px; max-width: 100%; overflow-wrap: anywhere;
+  border: 1.5px solid var(--jr-rule); border-radius: 999px; background: transparent;
+  font-size: var(--text-small); font-weight: 700; color: var(--jr-soft);
+}
+.ebb-jl-chip:hover { border-color: var(--jr-soft); }
+.ebb-jl-chip[aria-pressed='true'] { background: var(--jr-moss); border-color: var(--jr-moss); color: var(--jr-paper); }
+.ebb-jl-group { display: grid; gap: 4px; margin-top: 8px; min-width: 0; }
+.ebb-jl-head { margin: 0; }
+.ebb-jl-fold {
+  appearance: none; -webkit-appearance: none; margin: 0; cursor: pointer; touch-action: manipulation;
+  width: 100%; min-height: 48px; padding: 4px 6px 4px 4px;
+  display: flex; align-items: center; gap: 8px;
+  border: 0; border-radius: 12px; background: transparent; text-align: left;
+}
+.ebb-jl-fold:hover { background: var(--jw-card); }
+.ebb-jl-pill { display: inline-flex; align-items: center; gap: 6px; min-width: 0; padding: 4px 14px 4px 10px; border-radius: 999px; background: var(--jw-wash); border: 1.5px solid var(--jw-line); color: var(--jw-ink); font-size: calc(17px * var(--text-scale, 1)); font-weight: 800; }
+.ebb-journal .ebb-jl-pill .icon { width: 22px; height: 22px; }
+.ebb-jl-fold .ebb-new { position: static; flex: none; }
+.ebb-journal .ebb-jl-fold .ebb-jl-chev { margin-left: auto; width: 22px; height: 22px; color: var(--jw-ink); transition: transform 160ms ease; }
+.ebb-jl-group.is-shut .ebb-jl-chev { transform: rotate(180deg); }
+.ebb-jl-group .ebb-jlist__row .ebb-jlist__icon { background: var(--jw-wash); color: var(--jw-ink); }
+.ebb-jl-group .ebb-jlist__row.is-pencil .ebb-jlist__icon { background: transparent; color: var(--jr-pencil); }
+@media (prefers-reduced-motion: reduce) { :root:not(.ebb-motion-full) .ebb-jl-chev { transition: none; } }
+/* A collection's found items under its row (Shells): one text block each, so they wrap as words. */
+.ebb-jl-items { list-style: none; margin: 0 0 4px 62px; padding: 0; display: grid; gap: 2px; min-width: 0; }
+.ebb-jl-item {
+  appearance: none; -webkit-appearance: none; margin: 0; cursor: pointer; width: 100%;
+  padding: 6px 8px; border: 0; border-left: 2px solid var(--jw-line); border-radius: 0 10px 10px 0; background: transparent; text-align: left;
+}
+.ebb-jl-item:hover { background: var(--jw-card); }
+.ebb-jl-item__text { display: block; min-width: 0; overflow-wrap: break-word; line-height: 1.35; }
+.ebb-jl-item__text b { font-weight: 800; }
+.ebb-jl-item__text .ebb-jpage__rarity { margin-left: 2px; }
+.ebb-jl-item__text .ebb-journal__voice { display: block; font-size: calc(17px * var(--text-scale, 1)); color: var(--jr-soft); }
+
+/* the Ties strip on a journal page */
+.ebb-jw-ties { display: grid; gap: 8px; padding: 12px; border: 1.5px solid var(--jr-rule); border-radius: 12px; min-width: 0; }
+.ebb-jw-ties .ebb-jw-group { gap: 4px; }
+.ebb-jpage .ebb-jw-ties h4 { color: var(--jr-moss); }
+.ebb-jpage .ebb-jw-ties .ebb-jw-group h4 { color: var(--jr-soft); letter-spacing: 0.04em; }
+.ebb-jw-ties button { appearance: none; -webkit-appearance: none; margin: 0; cursor: pointer; touch-action: manipulation; }
 
 /* notes view */
 .ebb-jnotes { display: grid; gap: 2px; }

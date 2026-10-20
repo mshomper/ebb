@@ -39,20 +39,37 @@ const u01 = (h) => (h >>> 8) / 16777216;
 export function findCells(s, z, kinds, rockAt = () => true) {
   /** @type {Record<string, number[]>} */ const out = {};
   for (const id of KINDS) out[id] = [];
-  // A rock pool is a hollow (a basin) that reaches into the tide band, so the sea fills it at high
-  // water and leaves it full at low; its floor may lie deeper than the band.
-  const tidal = new Set();
-  for (let k = 0; k < s.basin.length; k++) if (s.basin[k] && s.band[k]) tidal.add(s.basin[k]);
+  const pools = poolCells(s, z, rockAt);
   for (let k = 0; k < z.zone.length; k++) {
     const v = z.zone[k];
     const zid = v ? z.ids[v - 1] : null;
-    const pool = !!s.basin[k] && tidal.has(s.basin[k]) && (s.cls[k] === WATER_CLASS.still || s.cls[k] === WATER_CLASS.damp) &&
-      (zid ? ROCK_ZONES.includes(zid) : rockAt(k));
+    const pool = pools[k] === 1;
     if (!zid && !pool) continue;
     for (const id of KINDS) {
       const zones = kinds[id].zones;
       if ((zid && zones.includes(zid)) || (pool && zones.includes('pool'))) out[id].push(k);
     }
+  }
+  return out;
+}
+
+/**
+ * The rock pool cells: 1 where a cell is the floor of a rock pool, a hollow (a basin) of rock that
+ * reaches into the tide band, so the sea fills it at high water and leaves it full at low; its floor
+ * may lie deeper than the band. The journal's Web reads these too (journal/shore-presence.js).
+ * @param {{ cls: Uint8Array, basin: Uint16Array, band: Uint8Array }} s the water summary
+ * @param {{ zone: Uint8Array, ids: string[] }} z the shore zones
+ * @param {(k: number) => boolean} [rockAt] is the cell painted rock
+ */
+export function poolCells(s, z, rockAt = () => true) {
+  const tidal = new Set();
+  for (let k = 0; k < s.basin.length; k++) if (s.basin[k] && s.band[k]) tidal.add(s.basin[k]);
+  const out = new Uint8Array(z.zone.length);
+  for (let k = 0; k < z.zone.length; k++) {
+    if (!s.basin[k] || !tidal.has(s.basin[k]) || (s.cls[k] !== WATER_CLASS.still && s.cls[k] !== WATER_CLASS.damp)) continue;
+    const v = z.zone[k];
+    const zid = v ? z.ids[v - 1] : null;
+    if (zid ? ROCK_ZONES.includes(zid) : rockAt(k)) out[k] = 1;
   }
   return out;
 }
