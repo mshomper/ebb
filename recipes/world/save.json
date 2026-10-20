@@ -3,8 +3,8 @@
   "debounceS": 5,
   "minIntervalS": 10,
   "generationsKept": 3,
-  "_catchUp": "Time away (docs/02, src/sim/away.js). blockHours: game hours per worker job (progress steps); screenAfterS: the catching-up screen shows only if catch-up takes longer than this; pretendHours: the badge's Pretend I was away choices.",
-  "catchUp": { "blockHours": 24, "screenAfterS": 0.5, "pretendHours": [1, 10, 48, 720] },
+  "_catchUp": "Time away (docs/02, docs/future/01, src/sim/away.js). awayRate: game hours earned per real minute away (watched time at 1x is 1), also for a hidden tab; capHours: the most game hours one return brings (168 is 7 game days); blockHours: game hours per worker job (progress steps); screenAfterS: the catching-up screen shows only if catch-up takes longer than this; pretendHours: the badge's Pretend I was away choices, in game hours earned.",
+  "catchUp": { "awayRate": 0.25, "capHours": 168, "blockHours": 24, "screenAfterS": 0.5, "pretendHours": [1, 10, 48, 720] },
   "_recovered": "The calm note when an island came back from a damaged save (S7d, src/save/recover.js), shown in the island's notes corner for showS seconds: earlier when the newest copy was damaged and the one before opened; parts when only some parts came from earlier copies; landRegrew and journalFresh are added when no copy had a damaged chunk or the journal.",
   "recovered": {
     "showS": 9,

@@ -10,10 +10,14 @@ export const GAME_SECONDS_PER_REAL_SECOND = 60;
 export const SECONDS_PER_HOUR = 3600;
 export const HOURS_PER_DAY = 24;
 export const SECONDS_PER_DAY = SECONDS_PER_HOUR * HOURS_PER_DAY;
-export const DAYS_PER_SEASON = 7;
+/** 14 game days per season, a 56-day year (docs/future/01). */
+export const DAYS_PER_SEASON = 14;
 export const SEASONS_PER_YEAR = 4;
 export const SECONDS_PER_SEASON = SECONDS_PER_DAY * DAYS_PER_SEASON;
 export const SECONDS_PER_YEAR = SECONDS_PER_SEASON * SEASONS_PER_YEAR;
+/** One synodic month: 7 game days, so two full moons per season, new at each season's start. */
+export const DAYS_PER_MOON = 7;
+export const SECONDS_PER_MOON = SECONDS_PER_DAY * DAYS_PER_MOON;
 /** Largest real step per frame, so a tab switch never jumps the world. */
 export const MAX_REAL_DT = 0.25;
 /** Allowed time-flow values: pause, 1x, 2x, 4x. */
@@ -23,7 +27,7 @@ export const FLOWS = Object.freeze([0, 1, 2, 4]);
 /** @typedef {{worldT:number, flow:Flow, animT:number}} ClockState */
 /** @typedef {{index:number, phase:number, year:number, day:number}} Season
  *  index 0 spring, 1 summer, 2 autumn, 3 winter; phase 0..1 through the season;
- *  day 0..6 within the season; year counts from 0. */
+ *  day 0..13 within the season; year counts from 0. */
 /** @typedef {{dt:number, worldT:number, animT:number, displayT:number, hoursCrossed:number[]}} Tick */
 
 // ---- pure time math (t in game seconds) ----
@@ -44,7 +48,12 @@ export function yearFractionOf(t) {
   return (t - Math.floor(t / SECONDS_PER_YEAR) * SECONDS_PER_YEAR) / SECONDS_PER_YEAR;
 }
 
-/** Season state for a time (7 game days per season, 4 per year). @param {number} t @returns {Season} */
+/** Moon phase, 0..1 through the 7-day synodic month (0 new, 0.5 full). @param {number} t */
+export function moonPhaseOf(t) {
+  return (t - Math.floor(t / SECONDS_PER_MOON) * SECONDS_PER_MOON) / SECONDS_PER_MOON;
+}
+
+/** Season state for a time (14 game days per season, 4 per year). @param {number} t @returns {Season} */
 export function seasonOf(t) {
   const s = Math.floor(t / SECONDS_PER_SEASON);
   const year = Math.floor(s / SEASONS_PER_YEAR);

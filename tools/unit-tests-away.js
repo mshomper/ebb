@@ -24,18 +24,20 @@ async function get(path) {
  * @param {(cond: any, msg?: string) => void} assert @param {(a: any, b: any, msg?: string) => void} eq
  */
 export function addAwayTests(test, assert, eq) {
-  test(AWAY, 'one real minute away is one game hour, and minutes carry over', () => {
-    const a = awayHours({ now: T + 10 * MIN, savedAt: T, wallHighWater: T, flow: 1 });
-    eq(a.hours, 10, '10 minutes');
-    eq(a.wallHighWater, T + 10 * MIN, 'high-water mark moves on');
-    const b = awayHours({ now: T + 90 * 1000, savedAt: T, wallHighWater: T, carryMinutes: 0.75, flow: 1 });
-    eq(b.hours, 2, '90 s plus 0.75 carried');
+  test(AWAY, 'four real minutes away are one game hour, and part hours carry over', () => {
+    const a = awayHours({ now: T + 40 * MIN, savedAt: T, wallHighWater: T, flow: 1 });
+    eq(a.hours, 10, '40 minutes');
+    eq(a.wallHighWater, T + 40 * MIN, 'high-water mark moves on');
+    const b = awayHours({ now: T + 6 * MIN, savedAt: T, wallHighWater: T, carryMinutes: 0.75, flow: 1 });
+    eq(b.hours, 2, '6 minutes (1.5 hours) plus 0.75 carried');
     assert(Math.abs(b.carryMinutes - 0.25) < 1e-9, `carry ${b.carryMinutes}`);
-    const c = awayHours({ now: T + 30 * 1000, savedAt: T, wallHighWater: T, flow: 4 });
-    eq(c.hours, 0, 'away is 1x whatever the time flow');
+    const c = awayHours({ now: T + 2 * MIN, savedAt: T, wallHighWater: T, flow: 4 });
+    eq(c.hours, 0, 'the away rate holds whatever the time flow');
+    eq(awayHours({ now: T + 10 * MIN, savedAt: T, wallHighWater: T, flow: 1, rate: 1 }).hours, 10, 'the rate can be set');
   });
 
-  test(AWAY, 'at most 14 game days, and nothing for a paused island', () => {
+  test(AWAY, 'at most 7 game days, and nothing for a paused island', () => {
+    eq(CAP_HOURS, 168, 'the cap is 7 game days');
     const a = awayHours({ now: T + 30 * DAY, savedAt: T, wallHighWater: T, flow: 1 });
     eq(a.hours, CAP_HOURS, 'a month away');
     eq(a.why, 'capped', 'capped');
@@ -54,14 +56,14 @@ export function addAwayTests(test, assert, eq) {
     eq(reset.hours, 0, 'three days back');
     eq(reset.wallHighWater, T - 3 * DAY, 'the mark resets to now');
     // After a small step back the clock earns again only past the mark (less the 5 minute grace).
-    const later = awayHours({ now: T + 20 * MIN, savedAt: T - 60 * MIN, wallHighWater: T, flow: 1 });
-    eq(later.hours, 25, 'from the mark less the grace');
+    const later = awayHours({ now: T + 95 * MIN, savedAt: T - 60 * MIN, wallHighWater: T, flow: 1 });
+    eq(later.hours, 25, 'from the mark less the grace (100 minutes)');
   });
 
   test(AWAY, '48 hours away give the same island and journal as 48 hours watched', async () => {
     const R = await loadEcologyRecipes();
     const [words, island, web] = await Promise.all([get('world/journal'), get('world/journal-island'), get('world/journal-web')]);
-    const w = islandWorld(R, 'starter-island', 1, 3);
+    const w = islandWorld(R, 'starter-island', 1, 6);
     const hab = w.model.habitat, material = w.model.material;
     // Watched: the tick, then the journal's look, hour by hour, as live play does.
     let state = w.state, journal = initialJournal(w.h0);

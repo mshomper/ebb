@@ -1,8 +1,8 @@
 # F01 — Pacing and seasons
 
-> ebb's authored arc (fifteen species, five land pieces and the year page) runs out much sooner than the game wants a player to stay. Matt imagines people living with one island for many years, and the first several days alone go to sculpting the island and getting ready for frogs. This doc records the clock changes Matt decided on October 19, 2026 to slow the island down: longer seasons, a shorter catch-up cap and slower growth while away, with the length of a game day unchanged. It lists every repo doc and file those changes reach. Nothing in the repo is edited by this doc; Matt applies the changes later.
+> ebb's authored arc (fifteen species, five land pieces and the year page) runs out much sooner than the game wants a player to stay. Matt imagines people living with one island for many years, and the first several days alone go to sculpting the island and getting ready for frogs. This doc records the clock changes Matt decided on October 19, 2026 to slow the island down: longer seasons, a shorter catch-up cap and slower growth while away, with the length of a game day unchanged. It lists every repo doc and file those changes reach.
 
-**Status:** Decided in direction, values partly open. Not scheduled. Nothing here is built until Matt schedules it.
+**Status:** Decided. F01a (clock, catch-up cap, away rate, moon) is built on branch `m1-f01a-clock`, and docs 02, 03, 06, 07, 10, 13, 18, 19, 24 and the README are updated to match. F01b (the save calendar migration for old saves, and frog timings in game days, doc 12) follows after the frog feeding work merges.
 
 ## Decided so far
 
@@ -11,7 +11,9 @@ Matt, October 19, 2026:
 - **Seasons are 14 game days**, up from 7. A year becomes 56 game days.
 - **The day keeps its cadence.** A game day stays 24 real minutes at 1x, and the tide keeps its 12 game hour period. The sessions Matt has tuned (dusk chorus, tide turns, music slots) keep their feel.
 - **The catch-up cap drops to 7 game days** (168 hourly ticks), down from 14.
-- **Growth while away runs slower than watched time.** The exact rate is open (see below).
+- **Growth while away runs at a quarter of watched time:** 4 real minutes away earn 1 game hour (`recipes/world/save.json` `catchUp.awayRate = 0.25`). The 7-day cap is reached after about 11.2 real hours away.
+- **The moon keeps its 7-day cycle:** two full moons and four spring tides per season.
+- **Plant growth rates stay as they are,** so each season ends fuller.
 - **Speeding time up stays the player's choice.** 2x and 4x remain in Settings. Matt expects some players will use them; nothing is balanced against it, and nothing is lost by it except the island's rhythm.
 
 ## Why
@@ -59,7 +61,7 @@ The first keeps more variety in each session; the second keeps the "full moon in
 
 ## What it would change
 
-Listed only; Matt applies these later.
+Applied in F01a, except the doc 12 frog timings and the doc 18 save calendar migration, which follow in F01b.
 
 - **Doc 02 (core loop and idle model):** the season and year lines in Locked decisions; the cap (14 days, 336 ticks) in Locked decisions, the flowchart, the catch-up section, the code sketch (`capHours`), the performance lines and the acceptance check "close for a night, two seasons turned"; the away rate (`awayRate: 1`) becomes the slower value; the open question about overnight absences is answered.
 - **Doc 03 (tech stack):** the module map line "moon cycle 7 game days" if the moon stretches; `catchup-bench.html` described as 336 hours.
@@ -83,9 +85,9 @@ Listed only; Matt applies these later.
 
 ## Open questions
 
-- Should time away run at a quarter of watched time, or would a half or an eighth feel better?
-- Should the moon keep its 7-day cycle (two full moons a season) or stretch to one full moon per season?
-- With twice as long in each season, should plants grow more slowly per hour, or is a fuller season welcome?
+- ~~Should time away run at a quarter of watched time, or would a half or an eighth feel better?~~ Answered (Matt, October 19, 2026): a quarter.
+- ~~Should the moon keep its 7-day cycle (two full moons a season) or stretch to one full moon per season?~~ Answered: keep the 7-day moon. Which of summer's two full moons the signature night takes (doc 24) stays open.
+- ~~With twice as long in each season, should plants grow more slowly per hour, or is a fuller season welcome?~~ Answered: keep the growth rates; a fuller season is welcome. Next, look at where each plant caps out by a season's end and whether anything should recede across seasons (doc 10).
 - Should speeding time up to 2x or 4x affect anything else, such as the music resting while time runs fast, or stay purely the player's choice?
 
 ## Depends on / feeds into

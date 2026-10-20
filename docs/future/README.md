@@ -13,7 +13,7 @@
 
 | Doc | Status | In one line |
 |---|---|---|
-| [F01 Pacing and seasons](01-pacing-and-seasons.md) | Decided in direction | 14-day seasons, a 7-day catch-up cap and slower growth while away; every doc it touches |
+| [F01 Pacing and seasons](01-pacing-and-seasons.md) | F01a built (`m1-f01a-clock`); F01b follows | 14-day seasons, a 7-day catch-up cap and growth while away at a quarter of watched time; every doc it touches |
 | [F02 Farewell and sister islands](02-farewell-and-sister-islands.md) | Leaning | Let an island ebb on a low tide of your choosing, sail to a sister island, and sail back any time |
 | [F03 Presence, in depth](03-presence.md) | Leaning | The seat, the walker and the camp in detail: body language, routine, group familiarity, leanings on doc 23's open questions |
 | [F04 The deep clock](04-deep-clock.md) | Leaning | Old growth, the yearly chronicle and anniversary notes: change that keeps coming over many years |

@@ -6,8 +6,9 @@
 //   level(t) = A(t) cos(2 pi (t - phaseH) / periodH)          t in game hours, meters about Y = 0
 //   A(t)     = amplitudeM (1 + springNeap cos(4 pi moonPhase(t)))
 //
-// moonPhase is the season phase (sky/sun-moon.js: one synodic cycle per season, new at the
-// start, full at day 3.5), so spring tides land at new and full moon and neaps at the quarters.
+// moonPhase is the 7-day synodic month (clock.moonPhaseOf, shared with sky/sun-moon.js: new at
+// each season's start and on day 7), so spring tides land at new and full moon, four a season,
+// and neaps at the quarters.
 // With phaseH 0, high water falls on hours 0, 12, 24, ... and low water on 6, 18, ...
 //
 // Rendering calls level(displayT / 3600); the hourly coarseStep reads the tide at world time.
@@ -16,7 +17,7 @@
 // with `state.tide` replaced by a fresh object.
 
 import { det } from '../core/rng.js';
-import { seasonOf, SECONDS_PER_HOUR } from '../core/clock.js';
+import { moonPhaseOf, SECONDS_PER_HOUR } from '../core/clock.js';
 
 export const TIDE_PERIOD_H = 12;
 /** The full spring tide band is [-BAND_FACTOR A0, +BAND_FACTOR A0] (doc 07, water summary). */
@@ -45,11 +46,11 @@ export function tideParams(tide) {
 }
 
 /**
- * Moon phase at a game time: 0 new, 0.5 full, toward 1 (= season phase, as in sun-moon.js).
+ * Moon phase at a game time: 0 new, 0.5 full, toward 1 (the same moon as sun-moon.js).
  * @param {number} tHours game hours
  */
 export function moonPhase(tHours) {
-  return seasonOf(tHours * SECONDS_PER_HOUR).phase;
+  return moonPhaseOf(tHours * SECONDS_PER_HOUR);
 }
 
 /**

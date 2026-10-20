@@ -8,10 +8,12 @@ import { run } from '../core/workers.js';
 import { makeEnv } from './tick.js';
 import { hourStep } from './hour.js';
 
-/** At most 14 game days per return (doc 02). */
-export const CAP_HOURS = 336;
-/** One real minute away is one game hour (the 1x away rate). */
-const MS_PER_HOUR = 60000;
+/** At most 7 game days per return (docs 02, future/01), so a return never skips half a season. */
+export const CAP_HOURS = 168;
+/** Game hours per real minute away: a quarter of watched time, so time away is gentle (future/01).
+ *  recipes/world/save.json catchUp.awayRate overrides it. */
+export const AWAY_RATE = 0.25;
+const MS_PER_MINUTE = 60000;
 /** A clock moved back further than this resets the guard rather than waiting for real time. */
 const RESET_MS = 2 * 24 * 3600 * 1000;
 /** Small backward steps (network time corrections) are forgiven up to this. */
@@ -21,8 +23,9 @@ const JOB = { module: './sim/catchup.js', fn: 'catchUpJob' };
 /**
  * Game hours earned since the last record of time, by doc 18's clock rules.
  * @param {{ now: number, savedAt: number, wallHighWater: number, carryMinutes?: number, flow: number,
- *   keepGrowing?: boolean, cap?: number }} p  all times UTC ms; carryMinutes: game hours carried over
- *   (fractional), named as doc 18 does since one real minute is one game hour
+ *   keepGrowing?: boolean, cap?: number, rate?: number }} p  all times UTC ms; carryMinutes: game hours
+ *   carried over (fractional; the name is doc 18's, from when one real minute was one game hour);
+ *   rate: game hours per real minute away (AWAY_RATE)
  * @returns {{ hours: number, carryMinutes: number, wallHighWater: number, why: 'away'|'paused'|'clock-back'|'clock-reset'|'capped' }}
  */
 export function awayHours(p) {
@@ -34,7 +37,7 @@ export function awayHours(p) {
   else if (p.now < hw) why = 'clock-back';
   else { elapsed = p.now - Math.max(p.savedAt || 0, hw - GRACE_MS); highWater = p.now; }
   if (!p.flow || p.keepGrowing === false) { elapsed = 0; if (why === 'away') why = 'paused'; }
-  const total = Math.max(0, elapsed) / MS_PER_HOUR + Math.max(0, p.carryMinutes ?? 0);
+  const total = (Math.max(0, elapsed) / MS_PER_MINUTE) * (p.rate ?? AWAY_RATE) + Math.max(0, p.carryMinutes ?? 0);
   const hours = Math.min(Math.floor(total), cap);
   if (hours === cap && total > cap) why = 'capped';
   return { hours, carryMinutes: hours === cap ? 0 : total - hours, wallHighWater: highWater, why };

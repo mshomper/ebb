@@ -1,7 +1,8 @@
 // @ts-check
 // Time away in the game (docs 02, 18; S7b): when the island catches up, and the swap afterwards.
 //   On opening the game: the time since the last save.
-//   Back to a hidden tab: the time it was out of sight, at 1x whatever the time flow (doc 02).
+//   Back to a hidden tab: the time it was out of sight, at the away rate whatever the time flow
+//   (doc 02; a hidden tab is the player being away).
 //   Pretend I was away (the badge's Saves menu): that many hours now, for testing.
 // While it runs, world time and saving both wait (a save then would stamp the old island with the
 // time now), and the catching-up screen covers the island if it takes a while. Then the new island
@@ -12,7 +13,7 @@ import * as clock from '../core/clock.js';
 import { get, update } from '../core/store.js';
 import { emit, emitDeferred } from '../core/events.js';
 import { loadRecipe } from '../core/recipes.js';
-import { awayHours, catchUp } from './catchup.js';
+import { awayHours, catchUp, AWAY_RATE, CAP_HOURS } from './catchup.js';
 import { showCatchingUp } from '../ui/catching-up.js';
 
 /**
@@ -30,7 +31,7 @@ export async function mountAway(opts) {
   function earned(since, highWater = since) {
     const meta = get('meta') ?? {};
     const a = awayHours({ now: Date.now(), savedAt: since, wallHighWater: highWater, carryMinutes: meta.carryMinutes ?? 0,
-      flow: clock.flow(), keepGrowing: meta.keepGrowing ?? true });
+      flow: clock.flow(), keepGrowing: meta.keepGrowing ?? true, rate: recipe.awayRate, cap: recipe.capHours });
     update('meta', (m) => { m.carryMinutes = a.carryMinutes; });
     return a;
   }
@@ -95,14 +96,16 @@ export async function mountAway(opts) {
   return {
     /** Hours to offer in the badge's Pretend I was away. */
     pretendHours: /** @type {number[]} */ (recipe.pretendHours),
+    /** The most game hours one return can bring. */
+    capHours: /** @type {number} */ (recipe.capHours ?? CAP_HOURS),
     /**
-     * Pretend you were away this many game hours (one real minute each): the same rules as a real
-     * absence, so 30 days gives 14, and a paused island gets nothing.
+     * Pretend you were away long enough to earn this many game hours (at the away rate): the same
+     * rules as a real absence, so 30 days gives the 7-day cap, and a paused island gets nothing.
      * @param {number} hours
      * @returns {Promise<ReturnType<typeof awayHours>>}
      */
     async pretend(hours) {
-      const since = Date.now() - hours * 60000;
+      const since = Date.now() - (hours * 60000) / (recipe.awayRate ?? AWAY_RATE);
       const a = earned(since);
       await run(a.hours, 'pretend');
       return a;

@@ -155,7 +155,7 @@ Pool and lanes are defined in `03-tech-stack-and-module-map.md`. CPU work that m
 
 | Job | Lane | Desktop / phone target |
 |---|---|---|
-| Catch-up, 336 ticks, full world (doc 02) | catchup | under 3 s / under 8 s |
+| Catch-up, 168 ticks (the 7-day cap, F01; was 336), full world (doc 02) | catchup | under 3 s / under 8 s |
 | Hourly coarseStep, one tick live or in catch-up, full world (docs 02, 13) | catchup | about 3 ms / under 8 ms |
 | Water summary rebuild (doc 07) | background | 25 ms / 80 ms |
 | Ecology distance transforms (doc 11) | background | under 10 ms / 30 ms |
@@ -197,7 +197,7 @@ A page Matt opens locally (or from the GitHub Pages URL on a phone) next to the 
 2. Vertical slice island, dusk, light rain, frogs calling (no lanterns: the slice has no structures).
 3. Worst case: synthetic fully expanded 192 m world with every land piece joined, mature flora at maximum density, maximum live creatures and boids.
 4. Water stress: every chunk active, 8 springs, the pour brush running, spring low tide.
-5. CPU only: 336-tick catch-up on the worst-case world, plus one water summary rebuild and one save encode.
+5. CPU only: 168-tick catch-up on the worst-case world, plus one water summary rebuild and one save encode.
 
 **Controls**: tier (one or all three), resolution (window size or forced 2560×1440), scenes to run, run count. A run takes under 4 minutes for all scenes at one tier.
 

@@ -8,7 +8,7 @@
 - Units: sun illuminance at the top of the atmosphere **120,000 lux**. Ground illuminance comes out of the transmittance LUT (about 100,000 to 110,000 lux at noon). Full moon about 0.27 lux at the ground. Lanterns in candela.
 - World orientation: +X east, −Z north, Y up. Fictional latitude **40° N**, axial tilt **21°** (S2: 18° gave only 9.9 to 14.1 hours), so day length runs from about 9.5 game hours (midwinter) to 14.5 (midsummer). Both are tuning values.
 - Year: `yearFrac` 0 is the spring equinox (start of season 0 in `src/core/clock.js`).
-- Moon: **synodic cycle of 7 game days**, one full lunar cycle per season. New moon at the start of each season, full moon at day 3.5. `src/world/tide.js` reads moon phase for spring and neap tides (see `07-water-and-tide.md`).
+- Moon: **synodic cycle of 7 game days**, two full lunar cycles per 14-day season (Matt, October 19, 2026, F01: the moon keeps 7 days while seasons double). New moon at days 0 and 7 of each season, full moon at days 3.5 and 10.5. `clock.js` holds `DAYS_PER_MOON = 7` and `moonPhaseOf(t)`. `src/world/tide.js` reads moon phase for spring and neap tides (see `07-water-and-tide.md`).
 - One directional shadow caster: the sun, or the moon when the sun is below −4° elevation. Crossfade between them through twilight.
 - Cascaded shadow maps, `depth32float` 2D array, stable (texel-snapped) cascades.
 - Ambient: the sky-view LUT projected to **order-2 spherical harmonics (9 coefficients)** for diffuse, plus a **sky probe** (small cube rendered from the same LUT) with GGX-prefiltered mips for specular.
@@ -162,7 +162,7 @@ Desktop high tier at 1440p: sky LUTs and probe 0.25 ms, shadows 1.5 ms, GTAO 0.7
 - Watch a full day at 4x: the sky goes from deep blue to pale dawn, through clean noon light, to peach sunset and a lilac blue hour, then stars appear gradually.
 - The shadows of trees lengthen and turn with the sun and never shimmer while orbiting.
 - In midwinter the day is visibly shorter and the noon sun lower than in midsummer.
-- Over a season, the moon goes from new, to a crescent, to full and back. Its lit side always faces where the sun is.
+- Over a season, the moon goes from new, to a crescent, to full and back, twice. Its lit side always faces where the sun is.
 - At night the moon casts soft shadows. A lantern makes a warm pool of light that falls off naturally, with a slight flicker.
 - A frog on moss shows a soft dark contact under it. Creases between stones are slightly darker; open meadow is not.
 - On an overcast day shadows fade and the light turns soft and even. In rain, stones and paths look wet and darker.
@@ -172,7 +172,7 @@ Desktop high tier at 1440p: sky LUTs and probe 0.25 ms, shadows 1.5 ms, GTAO 0.7
 
 - Is a 40° latitude with fairly balanced day and night right, or would you like longer, golden evenings (a higher latitude) for the cozy feel?
 - Should a lantern cast its own soft shadow on the desktop high tier, or is the glow enough?
-- Is a moon cycle of one per season (so the full moon falls in the middle of each season) good, or should it run independently of seasons?
+- ~~Is a moon cycle of one per season (so the full moon falls in the middle of each season) good, or should it run independently of seasons?~~ Answered (F01): the moon keeps its 7-day cycle, two per season.
 
 ## Depends on / feeds into
 

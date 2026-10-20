@@ -400,6 +400,8 @@ Mixer change (doc 17): add a `music` bus. Music goes bus → peaking EQ (chorus)
 
 - If no nylon guitar set passes, is a paid guitar library worth its license terms (doc 25), or do harp and psaltery carry it?
 - Should a seat (M2) ever cue its own short piece, or stay with the normal director?
+- With 14-day seasons (F01) and the moon kept at 7 days, summer has two full moons. Should the summer signature night take the first, or wait for the second? Open.
+- Each season's pool of 5 anchors now covers 14 game days instead of 7. Is that enough with the 3-day history gap, or does each season need more anchors? (F01)
 
 ## Depends on / feeds into
 

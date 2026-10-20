@@ -9,9 +9,10 @@
 - **Saved per 32 m chunk.** Terrain, flora and ecology are stored chunk by chunk (08, 13); the world tops out at a 6 × 6 chunk area (192 m by 192 m), about 26 open chunks. An unedited chunk saves no heights (it regrows from its land recipe and seed). Only dirty chunks are re-encoded.
 - **No save button.** Autosave on a cadence plus on leaving. Settings > Saves offers export, import, and "earlier versions".
 - **One format for saves, backups and shared islands:** the `.ebb` container, versioned and gzip-compressed with the browser's built-in `CompressionStream` (no library).
-- **Atomic writes with generations:** every save writes a new generation, then flips the slot's pointer in the same transaction. The last 3 generations and one per game season (up to 8) are kept.
+- **Atomic writes with generations:** every save writes a new generation, then flips the slot's pointer in the same transaction. The last 3 generations and one per game season (up to 8, reaching back 112 game days with 14-day seasons, was 56) are kept.
 - **Migrations only go forward** and the pre-migration blob is kept until the migrated save has loaded successfully once.
-- **Time away comes from the wall clock with guards:** negative elapsed counts as zero, a high-water mark blocks repeat credit after a clock rollback, and the cap from 02 applies: at most 336 game hours (14 game days) per return, at the 1x away rate. An island left paused stays paused while away.
+- **Time away comes from the wall clock with guards:** negative elapsed counts as zero, a high-water mark blocks repeat credit after a clock rollback, and the cap from 02 applies: at most 168 game hours (7 game days) per return, at the away rate of a quarter (4 real minutes = 1 game hour, `recipes/world/save.json` `catchUp`; F01). An island left paused stays paused while away.
+- **Old saves and the longer seasons:** saves made under 7-day seasons need a calendar step in the migration so the island's date and season stay sensible. That step follows in F01b.
 - **World state is saved as of the last whole hourly tick** (`coarseStep`: tide, weather, seasons, water summary, growth, ecology, creatures, expansion, shared by live play and catch-up), plus `worldT` and the minutes carried toward the next tick.
 - **One writer per island:** the Web Locks API ensures only one tab tends a given island.
 - **Device settings stay on the device** (store slice `settings`, written to the IndexedDB `prefs` store), never in world files.
@@ -34,7 +35,7 @@
 - **As built in S7b:**
   - `meta.carryMinutes` and `meta.keepGrowing` are kept.
   - A loaded island does not save until its catch-up is done, and no save is made while one runs. A save then would stamp the old island with the time now and lose the time away; if the page closes mid catch-up, the next load counts the same time again.
-  - The badge's Saves menu adds Pretend I was away (1 hour, 10 hours, 2 days, 30 days), which runs the same clock rules.
+  - The badge's Saves menu adds Pretend I was away (1 hour, 10 hours, 2 days, 30 days, in game hours earned at the away rate, so 30 days is cut to the 7-day cap), which runs the same clock rules.
 
 ## How it works
 
@@ -146,17 +147,17 @@ else:
     elapsed = now - max(last, highWater - grace)   // grace = 5 min for small NTP corrections
     highWater = now
 if timeFlow == 0 or not keepGrowing: elapsed = 0                  // paused stays paused
-totalMinutes = elapsed / 60000 + carryMinutes                     // 1 real min = 1 game hour at the 1x away rate
-ticks        = min(floor(totalMinutes), 336)
-carryMinutes = (ticks == 336) ? 0 : totalMinutes - ticks          // time beyond the cap is dropped
+totalMinutes = elapsed / 60000 * awayRate + carryMinutes          // awayRate 0.25: 4 real min = 1 game hour
+ticks        = min(floor(totalMinutes), 168)
+carryMinutes = (ticks == 168) ? 0 : totalMinutes - ticks          // time beyond the cap is dropped
 ```
 
 Catch-up runs exactly `ticks` hourly `coarseStep`s and advances `worldT` by that many game hours only. Milestones reached during those ticks queue their land rise for the reveal or the next low tide (13); a piece saved as `rising` resumes from its start hour, since the rise follows the analytic tide.
 
 - A clock set backward never rewinds or freezes the island; it simply earns no away time until real time catches up. A large backward jump resets the guard so an island is never stuck waiting on a mistaken future date.
-- A clock set forward earns at most the 14-game-day cap, the same as a real long absence, so there is nothing to gain by cheating and nothing to lose by accident.
+- A clock set forward earns at most the 7-game-day cap (reached after about 11.2 real hours), the same as a real long absence, so there is nothing to gain by cheating and nothing to lose by accident.
 - All stored times are UTC milliseconds, so time zones do not matter.
-- In a session, time comes from `performance.now()`. A tab hidden over 60 s runs catch-up for the hidden span on return (hidden tabs are throttled).
+- In a session, time comes from `performance.now()`. A tab hidden over 60 s runs catch-up for the hidden span on return, at the away rate (hidden tabs are throttled).
 - Fractional hours carry over in `carryMinutes`, so many short absences add up correctly.
 
 ### One island, one tab
@@ -229,7 +230,7 @@ Settings: export (with or without photos), import, earlier versions list, backup
 ## Acceptance checks
 
 - Sculpt a hill, close the tab within 10 s, reopen: the hill is there.
-- Set the device clock back a day, reopen: nothing rewinds, no reveal; set it forward a month: the reveal shows 14 game days, no more.
+- Set the device clock back a day, reopen: nothing rewinds, no reveal; set it forward a month: the reveal shows 7 game days, no more.
 - Pause time, close the tab for an hour, reopen: nothing has grown.
 - Corrupt one chunk with the tuning panel: only that chunk comes back from an earlier copy; the rest of the island is current.
 - Corrupt the current save with the tuning panel button, reload: the island comes back from a minute earlier with a calm note.

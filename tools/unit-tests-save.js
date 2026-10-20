@@ -139,7 +139,7 @@ export function addSaveTests(test, assert, eq) {
 
   test(SAVE, 'a real island after two game days comes back from its save exactly', async () => {
     const R = await loadEcologyRecipes();
-    const w = islandWorld(R, 'starter-island', 1, 3);
+    const w = islandWorld(R, 'starter-island', 1, 6);
     let state = w.state;
     for (let h = w.h0 + 1; h <= w.h0 + 48; h++) state = runHour(state, h, w.env).state;
     const before = hashWorldState(state);
