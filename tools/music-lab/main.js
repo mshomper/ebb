@@ -324,14 +324,15 @@ refreshCharts();
 loadSlot('a', $('pick-a').value);
 loadSlot('b', $('pick-b').value);
 
-// ---------------- tabs: Instruments, Piece, Day, Themes ----------------
+// ---------------- tabs: Instruments, Piece, Day, Themes, Engine ----------------
 
 /** @type {Record<string, Promise<void> | null>} */
-const started = { piece: null, day: null, themes: null };
+const started = { piece: null, day: null, themes: null, engine: null };
 /** @param {string} name */
 function showTab(name) {
-  if (!['bench', 'piece', 'day', 'themes'].includes(name)) name = 'bench';
-  for (const t of ['bench', 'piece', 'day', 'themes']) {
+  const TABS = ['bench', 'piece', 'day', 'themes', 'engine'];
+  if (!TABS.includes(name)) name = 'bench';
+  for (const t of TABS) {
     $(`tab-${t}`).hidden = t !== name;
     document.querySelector(`[data-tab="${t}"]`)?.setAttribute('aria-pressed', String(t === name));
   }
@@ -341,6 +342,7 @@ function showTab(name) {
   }
   if (name === 'piece' && !started.piece) started.piece = import('./piece.js').then((m) => m.initPiece($('tab-piece'), { mixer })).catch((e) => showProblem(`Piece tab: ${e.message}`));
   if (name === 'themes' && !started.themes) started.themes = import('./themes.js').then((m) => m.initThemes($('tab-themes'), { mixer })).catch((e) => showProblem(`Themes tab: ${e.message}`));
+  if (name === 'engine' && !started.engine) started.engine = import('./engine.js').then((m) => m.initEngine($('tab-engine'), { mixer })).catch((e) => showProblem(`Engine tab: ${e.message}`));
   if (name === 'day' && !started.day) started.day = import('./day.js').then((m) => m.initDay($('tab-day'))).catch((e) => showProblem(`Day tab: ${e.message}`));
   if (location.hash.slice(1) !== name) history.replaceState(null, '', `${location.pathname}${location.search}#${name}`);
 }
