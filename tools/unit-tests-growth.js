@@ -69,6 +69,12 @@ export function loadRecipes() {
   return recipesPromise;
 }
 
+/**
+ * The recipes with one more starter species (growth.json starters), for tests of a starting cover
+ * or a basin's own starters. @param {any} recipes @param {string} sp
+ */
+export const startersWith = (recipes, sp) => ({ ...recipes, growth: { ...recipes.growth, starters: [...recipes.growth.starters, sp] } });
+
 /** Where each species belongs (suitability at least 0.9) and where it must not grow (under 0.2). */
 const HOMES = {
   reeds: { home: ['edge'], never: ['dry', 'pond', 'sea'] },
@@ -82,6 +88,140 @@ const HOMES = {
  * @param {(cond: any, msg?: string) => void} assert @param {(a: any, b: any, msg?: string) => void} eq
  */
 export function addGrowthTests(test, assert, eq) {
+  test(GROWTH, 'ground axes: sea campion takes rock above the thrift, refuses sand; thrift wants sand or rock low on the shore', async () => {
+    const [campion, thrift, marigold] = await Promise.all(['campion', 'thrift', 'marigold'].map((s) => fetch(`../recipes/flora/${s}.json`).then((r) => r.json())));
+    const N = HABITAT_CELLS;
+    const hab = /** @type {any} */ (shoreline());
+    hab.sand = new Uint8Array(N * N); hab.rock = new Uint8Array(N * N); hab.soil = new Uint8Array(N * N);
+    hab.slopeDeg = new Uint8Array(N * N); hab.heightDm = new Int16Array(N * N);
+    const [sx] = at('shore');
+    const height = (/** @type {number} */ m) => hab.heightDm.fill(Math.round(m * 10));
+    const suit = (/** @type {any} */ rec) => suitability(rec, hab, sx, 0);
+    height(1.4);
+    hab.sand.fill(255);
+    eq(suit(campion).suit, 0, 'campion on sand');
+    eq(suit(campion).worst, 'ground', 'campion on sand says the ground is wrong');
+    hab.sand.fill(0); hab.rock.fill(255);
+    const onRock = suit(campion).suit;
+    assert(onRock > 0.5, `campion on rock 1.4 m above the sea: ${onRock}`);
+    height(0.5);
+    eq(suit(campion).suit, 0, 'campion on rock 0.5 m above the sea');
+    eq(suit(campion).worst, 'low', 'low on the shore, where thrift grows');
+    // Thrift: sand or rock 0.3 to 3 m above the sea, never soil; too low where the tide covers it.
+    const thriftRock = suit(thrift).suit;
+    hab.rock.fill(0); hab.sand.fill(255);
+    const thriftSand = suit(thrift).suit;
+    hab.sand.fill(0); hab.soil.fill(255);
+    const thriftSoil = suit(thrift);
+    assert(thriftRock > 0.9 && thriftSand > 0.9, `thrift on rock ${thriftRock.toFixed(2)}, sand ${thriftSand.toFixed(2)}`);
+    assert(thriftSoil.suit === 0 && thriftSoil.worst === 'ground', `thrift on soil ${thriftSoil.suit} (${thriftSoil.worst})`);
+    hab.soil.fill(0); hab.sand.fill(255); height(0);
+    eq(suit(thrift).worst, 'low', 'thrift at mean sea level is too low');
+    // Grass painted over the ground counts as soil (turf): marigold, which asks for no soil, is
+    // unchanged, and the bank grows it flat but not steep.
+    const [bx] = at('bank');
+    hab.sand.fill(0); hab.grass.fill(255); hab.slopeDeg.fill(0);
+    const flat = suitability(marigold, hab, bx, 0).suit;
+    hab.slopeDeg.fill(40);
+    const steep = suitability(marigold, hab, bx, 0);
+    assert(flat > 0.5 && steep.suit === 0 && steep.worst === 'steep', `marigold flat ${flat}, steep ${steep.suit} (${steep.worst})`);
+    return `campion on rock 1.4 m up ${onRock.toFixed(2)}; thrift on rock ${thriftRock.toFixed(2)}, sand ${thriftSand.toFixed(2)}, soil 0; marigold on a flat bank ${flat.toFixed(2)}`;
+  });
+
+  test(GROWTH, 'the older plants keep to earth and gentle ground: reeds, lilies, iris, rushes and grass refuse sand, rock and steep banks', async () => {
+    const recipes = await loadRecipes();
+    const N = HABITAT_CELLS;
+    const hab = /** @type {any} */ (shoreline());
+    hab.sand = new Uint8Array(N * N); hab.rock = new Uint8Array(N * N); hab.soil = new Uint8Array(N * N).fill(255);
+    hab.slopeDeg = new Uint8Array(N * N); hab.heightDm = new Int16Array(N * N).fill(10);
+    const homes = { reeds: 'edge', lilies: 'pond', iris: 'bank' };
+    const lines = [];
+    for (const [sp, zone] of Object.entries(homes)) {
+      const s = () => suitability(recipes.flora[sp], hab, at(zone)[0], 0);
+      const onSoil = s().suit;
+      hab.soil.fill(0); hab.sand.fill(255);
+      const onSand = s();
+      hab.sand.fill(0); hab.rock.fill(255);
+      const onRock = s();
+      hab.rock.fill(0); hab.soil.fill(255);
+      assert(onSoil >= 0.9, `${sp} on soil: ${onSoil.toFixed(2)}`);
+      assert(onSand.suit < 0.2 && onSand.worst === 'ground', `${sp} on sand: ${onSand.suit.toFixed(2)} (${onSand.worst})`);
+      assert(onRock.suit < 0.2 && onRock.worst === 'ground', `${sp} on rock: ${onRock.suit.toFixed(2)} (${onRock.worst})`);
+      lines.push(`${sp} ${onSoil.toFixed(2)} on soil`);
+    }
+    hab.slopeDeg.fill(30);
+    for (const sp of ['reeds', 'iris']) {
+      const r = suitability(recipes.flora[sp], hab, at(homes[/** @type {'reeds'|'iris'} */ (sp)])[0], 0);
+      assert(r.suit < 0.2 && r.worst === 'steep', `${sp} on a 30 degree bank: ${r.suit.toFixed(2)} (${r.worst})`);
+    }
+    const rush = suitability(recipes.covers.rushes, hab, at('edge')[0], 0);
+    assert(rush.suit < 0.2 && rush.worst === 'steep', `rushes on a 30 degree bank: ${rush.suit.toFixed(2)}`);
+    // Grass: full on gentle earth, gone on sand and past about 45 degrees.
+    const env = { ...makeEnv(9, recipes), habitat: () => hab };
+    const grassAt = (/** @type {any} */ h) => settleGrowth(initialWorldState(9), { ...env, habitat: () => h }).growth.grass[20 * N + ZONES.dry[0] + 5];
+    hab.slopeDeg.fill(10);
+    const gentle = grassAt(hab);
+    hab.slopeDeg.fill(50);
+    const cliff = grassAt(hab);
+    hab.slopeDeg.fill(10); hab.soil.fill(0); hab.sand.fill(255);
+    const beach = grassAt(hab);
+    assert(gentle >= 250 && cliff === 0 && beach === 0, `grass on gentle earth ${gentle}, a 50 degree bank ${cliff}, sand ${beach}`);
+    return `${lines.join(', ')}; grass ${gentle} on gentle earth, none on a cliff or sand`;
+  });
+
+  test(GROWTH, 'a new island starts with grass, reeds and lilies only; the rest arrive by themselves, the same way twice', async () => {
+    const recipes = await loadRecipes();
+    eq(JSON.stringify(recipes.growth.starters), JSON.stringify(['reeds', 'lilies']), 'growth.json starters');
+    const hab = shoreline();
+    const env = { ...makeEnv(9, recipes), habitat: () => hab };
+    const start = settleGrowth(initialWorldState(9), env);
+    const kinds = [...new Set(start.growth.plants.map((/** @type {any} */ p) => p.sp))].sort();
+    eq(JSON.stringify(kinds), JSON.stringify(['lilies', 'reeds']), 'species on a new island');
+    eq(start.growth.cover.rushes.reduce((/** @type {number} */ a, /** @type {number} */ b) => a + b, 0), 0, 'rushes on a new island');
+    const V = recipes.growth.volunteers;
+    const run = () => {
+      let s = structuredClone(start);
+      /** @type {string[]} */ const came = [];
+      for (let h = 10; h < 10 + 400; h++) {
+        const o = runHour(s, h, env);
+        s = o.state;
+        for (const e of o.events) if (e.name === 'growth:arrived') came.push(`${e.payload.species}@${h}`);
+      }
+      return { s, came };
+    };
+    const a = run(), b = run();
+    eq(a.came.join(), b.came.join(), 'arrivals of two runs');
+    eq(hashWorldState(a.s), hashWorldState(b.s), 'world hash of two runs');
+    assert(a.came.length >= 3, `only ${a.came.length} arrivals in 400 hours: ${a.came.join(', ')}`);
+    const hours = a.came.map((c) => Number(c.split('@')[1]));
+    assert(hours[0] - 10 >= V.firstAfterH, `the first came at hour ${hours[0] - 10}`);
+    for (let i = 1; i < hours.length; i++) assert(hours[i] - hours[i - 1] >= V.gapH, `two came ${hours[i] - hours[i - 1]} hours apart`);
+    // In the recipe's order (this made-up shore has ground for every one of them).
+    const order = a.came.map((c) => c.split('@')[0]);
+    eq(order.join(), V.order.slice(0, order.length).join(), 'arrival order');
+    for (const sp of order) assert(sp in a.s.growth.arrived, `${sp} recorded as arrived`);
+    return `arrivals ${a.came.map((c) => c.replace(/@(\d+)/, (_, h) => ` at ${Number(h) - 10} h`)).join(', ')}`;
+  });
+
+  test(GROWTH, 'an older save keeps its plants: what is there counts as arrived, and only the missing ones come later', async () => {
+    const recipes = await loadRecipes();
+    const hab = shoreline();
+    const env = { ...makeEnv(9, recipes), habitat: () => hab };
+    let s = settleGrowth(initialWorldState(9), env);
+    // An older save: iris planted, no arrived record and no first hour.
+    s = plantSeed(s, 'iris', at('bank')[0], 0, env).state;
+    const old = { ...s, growth: { ...s.growth } };
+    delete old.growth.arrived; delete old.growth.since;
+    const o = runHour(old, 500, env);
+    const ar = o.state.growth.arrived;
+    assert(ar.iris === 500 && ar.reeds === 500 && ar.lilies === 500, `arrived after the first hour: ${JSON.stringify(ar)}`);
+    eq(o.state.growth.since, 500, 'the first hour of an older save');
+    let t = o.state; /** @type {string[]} */ const came = [];
+    for (let h = 501; h < 800; h++) { const r = runHour(t, h, env); t = r.state; for (const e of r.events) if (e.name === 'growth:arrived') came.push(e.payload.species); }
+    assert(!came.includes('iris') && came.length > 0, `came later: ${came.join(', ')}`);
+    return `iris, reeds and lilies count as arrived; later came ${came.join(', ')}`;
+  });
+
   test(GROWTH, 'wet-to-dry grass: lush by the water out to 6 m, a smaller ring by damp hollows, dried by salt; straw on the dry rise in late summer', async () => {
     const grass = await fetch('../recipes/flora/grass.json').then((r) => r.json());
     const L = grass.lush;
@@ -196,7 +336,7 @@ export function addGrowthTests(test, assert, eq) {
   });
 
   test(GROWTH, 'rushes cover the shallow still water and soaked ground, and fill in hour by hour', async () => {
-    const recipes = await loadRecipes();
+    const recipes = startersWith(await loadRecipes(), 'rushes');
     assert(recipes.covers.rushes, 'recipes/flora/rushes.json is listed in growth.json cover');
     const hab = shoreline();
     const env = { ...makeEnv(9, recipes), habitat: () => hab };
@@ -245,7 +385,7 @@ export function addGrowthTests(test, assert, eq) {
   });
 
   test(GROWTH, 'grass gives way to rushes on soaked ground; the Plant tool names what rushes need', async () => {
-    const recipes = await loadRecipes();
+    const recipes = startersWith(await loadRecipes(), 'rushes');
     const hab = shoreline();
     // Make the bank soaked ground (no standing water): both grass and rushes like it.
     for (let j = 0; j < hab.n; j++) for (let i = ZONES.bank[0]; i <= ZONES.bank[1]; i++) { hab.moisture[j * hab.n + i] = 255; hab.still[j * hab.n + i] = 1; }
@@ -265,7 +405,8 @@ export function addGrowthTests(test, assert, eq) {
   });
 
   test(GROWTH, 'a basin with starters of its own starts with them, on their own ground', async () => {
-    const recipes = await loadRecipes();
+    // Iris is a volunteer on the islands; here it is a starter too, to test a basin's starters.
+    const recipes = startersWith(await loadRecipes(), 'iris');
     const hab = shoreline();
     const bx = at('edge')[0];
     const basin = { x: bx, z: 0, jitter: 0, outerRadius: 6, starters: { reeds: 3, iris: 2 } };
@@ -277,6 +418,9 @@ export function addGrowthTests(test, assert, eq) {
     const iris = near(marsh, 'iris').length - near(plain, 'iris').length;
     eq(reeds, 3, 'reeds added in the basin');
     eq(iris, 2, 'iris added in the basin');
+    // On the islands iris is no starter, so a basin's iris waits to come by itself.
+    const real = settleGrowth(initialWorldState(9), { ...makeEnv(9, { ...(await loadRecipes()), land: { basins: [basin] } }), habitat: () => hab });
+    eq(near(real, 'iris').length, 0, 'iris starters in the basin when iris is no starter');
     for (const p of near(marsh, 'reeds')) eq(zoneOf(p.x), 'edge', 'a starter reed');
     for (const p of near(marsh, 'iris')) eq(zoneOf(p.x), 'bank', 'a starter iris');
     // The island-wide starters are the same either way.

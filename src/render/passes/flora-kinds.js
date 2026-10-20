@@ -94,8 +94,8 @@ export const FLORA_KINDS = {
 
   iris: {
     shader: 'flora-iris', vs: 'vsIris', fs: 'fsIris',
-    // Leaves of 21 vertices, then flowers of 42.
-    vertices: (r) => 21 * r.shape.fansPerClump[1] * r.shape.leavesPerFan[1] + 42 * r.shape.flowersPerClump[1],
+    // Leaves of 21 vertices, then flowers of 42 (flag) or 81 (cup).
+    vertices: (r) => 21 * r.shape.fansPerClump[1] * r.shape.leavesPerFan[1] + (r.shape.flower === 'cup' ? 81 : 42) * r.shape.flowersPerClump[1],
     pack(r, f) {
       const S = r.shape, L = r.look, C = r.season;
       f.set([S.fansPerClump[0], S.fansPerClump[1], S.clumpRadius, S.maxHeight], 12);
@@ -106,7 +106,11 @@ export const FLORA_KINDS = {
       f.set(C.tipBrown, 32); f[35] = r.wind.stiffness;
       f.set(C.flower, 36); f[39] = r.wind.sway;
       f.set(C.stalk, 40); f[43] = 1 / L.gustM;
-      f[44] = L.gustSpeed;
+      // The flower and leaf shapes (marsh marigold: a glossy cup and kidney leaves; iris: flag, sword).
+      const G = r.gloss ?? {}, U = S.cup ?? {};
+      f.set([L.gustSpeed, S.flower === 'cup' ? 1 : 0, S.leaf === 'kidney' ? 1 : 0, 0], 44);
+      f.set([G.petalRoughness ?? 0, G.leafRoughness ?? 0, G.f0 ?? 0.04, 0], 48);
+      f.set([(U.riseDeg ?? 45) * DEG, U.curl ?? 0, U.widthShare ?? 0.9, U.lengthShare ?? 0.5], 52);
     },
     frame: common,
   },

@@ -47,6 +47,8 @@ Size and color come from CSS: set `width`/`height` on `.icon` and `color` on the
 | `lilies` | notched lily pad seen low on a wavy water line, a cup flower of pointed petals on it: species chip |
 | `iris` | fan of three sword leaves and a flower on a stalk with three drooping falls: species chip |
 | `thrift` | low cushion on the ground line with three stalks topped by round pompoms: species chip |
+| `marigold` | two round, notched leaves at a wavy water line and a five-petalled cup flower above: species chip |
+| `campion` | a low mat on a rock's back and a flower with a swollen, veined calyx and spreading petals: species chip |
 | `grass` | five blades of different heights on the ground line: the grass journal page |
 | `rushes` | a tussock of stiff straight stems splaying from one base, a small flower tuft on the middle stem: the rushes journal page |
 | `journal` | bound book with a ribbon marker and a pressed leaf on the cover: the journal button |

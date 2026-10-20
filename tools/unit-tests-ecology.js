@@ -17,6 +17,9 @@ import { inkWeb } from '../src/world/journal/web.js';
 import { shoreline } from './unit-tests-growth.js';
 
 const ECOLOGY = 'ecology';
+
+/** The recipes with rushes as a starter (on the islands they come by themselves). @param {any} R */
+const withRushes = (R) => ({ ...R, growth: { ...R.growth, starters: [...R.growth.starters, 'rushes'] } });
 const ARC = ['creature:habitat-right', 'creature:arrived', 'creature:settled', 'creature:joined', 'creature:left', 'creature:dormant', 'creature:woke', 'species:happy'];
 
 /**
@@ -117,7 +120,9 @@ export function addEcologyTests(test, assert, eq) {
   });
 
   test(ECOLOGY, 'midges gather by the reeds over still water in summer, and hardly any in winter', async () => {
-    const R = await loadEcologyRecipes();
+    // Rushes feed midges too; they come by themselves within a few days (growth.json volunteers),
+    // so the island here has them from the start.
+    const R = withRushes(await loadEcologyRecipes());
     const w = islandWorld(R, 'starter-island', 1);
     const F = R.species.midge.field;
     const summer = midgeTarget(w.model.habitat, w.state.growth, F, 1), winter = midgeTarget(w.model.habitat, w.state.growth, F, 3);
@@ -172,7 +177,8 @@ export function addEcologyTests(test, assert, eq) {
   });
 
   test(ECOLOGY, 'midge swarms sit over the densest midges; many at dusk, few by day, almost none at night', async () => {
-    const R = await loadEcologyRecipes();
+    // With rushes, which come by themselves within a few days (see the test above).
+    const R = withRushes(await loadEcologyRecipes());
     const w = islandWorld(R, 'starter-island', 1);
     let st = w.state;
     for (let h = w.h0 + 1; h < w.h0 + 30; h++) st = runHour(st, h, w.env).state;

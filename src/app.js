@@ -136,10 +136,12 @@ export async function startApp(canvas, hooks = {}) {
     size: rb.radiusDefault, strength: rb.strengthDefault, sizeRange: rb.radiusRange,
   });
   // Unlocks (docs 12, 13): placing springs is the dragonflies' gift; `?sandbox` opens it early for
-  // this visit only (`earned` holds what was given, and is what the save keeps).
+  // this visit only (`earned` holds what was given, and is what the save keeps). `?sandbox` and
+  // `?plants=all` also offer every plant in the Plant tool before it has come to the island
+  // (volunteers.js); sea campion, for one, grows nowhere until there is rock by the sea.
   updateStore('unlocks', (u) => {
     const earned = u?.earned ?? back?.unlocks ?? {};
-    return { earned, ...earned, springs: !!earned.springs || params.has('sandbox') };
+    return { earned, ...earned, springs: !!earned.springs || params.has('sandbox'), allPlants: params.has('sandbox') || params.get('plants') === 'all' };
   });
   // `?weather=clear|cloud|rain|mist` previews a weather look (as the sky lab does); the world's
   // own weather record is untouched.
@@ -177,7 +179,10 @@ export async function startApp(canvas, hooks = {}) {
   const { water, foam, ripples, wetness, moss } = ww;
   // Growth (docs 10, 11): the habitat grid from the water summary, plants and grass cover grown in
   // the hourly tick; this keeps the habitat current and uploads what the drawing needs.
-  const growthRecipe = await loadRecipe('world/growth');
+  // `?plants=all` (testing, unsaved): a new island starts with every plant, not only the starters
+  // (growth.json starters; the rest otherwise come by themselves, volunteers.js).
+  const growthRecipe = { ...(await loadRecipe('world/growth')) };
+  if (params.get('plants') === 'all') growthRecipe.starters = [...growthRecipe.species, ...(growthRecipe.cover ?? [])];
   /** @type {Record<string, any>} */
   const flora = Object.fromEntries(await Promise.all(growthRecipe.species.map(async (/** @type {string} */ sp) => [sp, await loadRecipe(`flora/${sp}`)])));
   /** @type {Record<string, any>} the cover plants other than grass (rushes) */

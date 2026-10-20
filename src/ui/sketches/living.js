@@ -285,3 +285,104 @@ export function thrift(p, scale) {
   p.scale(30, 40, 208, scale);
   return p.svg(380, 260, 'Field sketch of sea thrift');
 }
+
+/**
+ * A kidney-shaped leaf, notched where its stalk meets it, as marsh marigold's.
+ * @param {number} cx @param {number} cy @param {number} w half width @param {number} h height
+ */
+function kidney(cx, cy, w, h) {
+  const r = (/** @type {number} */ n) => Math.round(n * 10) / 10;
+  return `M${r(cx)} ${r(cy + 0.22 * h)}C${r(cx - 1.05 * w)} ${r(cy + 0.55 * h)} ${r(cx - 1.05 * w)} ${r(cy - 0.75 * h)} ${r(cx)} ${r(cy - 0.5 * h)}` +
+    `C${r(cx + 1.05 * w)} ${r(cy - 0.75 * h)} ${r(cx + 1.05 * w)} ${r(cy + 0.55 * h)} ${r(cx)} ${r(cy + 0.22 * h)}Z`;
+}
+
+/**
+ * A rounded petal seen from the side, from its base (bx, by) up to its round top (tx, ty), w half
+ * wide at its widest: a buttercup's or a marigold's cup petal.
+ * @param {number} bx @param {number} by @param {number} tx @param {number} ty @param {number} w
+ */
+function lobe(bx, by, tx, ty, w) {
+  const r = (/** @type {number} */ n) => Math.round(n * 10) / 10;
+  const my = by - (by - ty) * 0.45;
+  return `M${r(bx)} ${r(by)}C${r(bx - w * 0.6)} ${r(my)} ${r(tx - w * 1.15)} ${r(ty + w * 0.2)} ${r(tx)} ${r(ty)}` +
+    `C${r(tx + w * 1.15)} ${r(ty + w * 0.2)} ${r(bx + w * 0.6)} ${r(my)} ${r(bx)} ${r(by)}Z`;
+}
+
+/** Marsh marigold: round glossy leaves on stalks at the water's soaked edge, golden cups above. @param {import('./pen.js').Pen} p @param {string} [scale] */
+export function marigold(p, scale) {
+  // Soaked mud at the water's edge, the water itself on the left.
+  p.tint('M40 262H96V300H40Z', WASH.water, 0.35);
+  p.tint('M96 262H236V300H96Z', WASH.mud, 0.3);
+  p.line(wave(40, 96, 262, 1.4, 18), 1.4);
+  p.line(wave(96, 236, 262, 1.2, 26), 1.6);
+  p.fine('M108 274h16M150 280h22M198 276h18', 0.9, 0.5);
+  // Flower stalks first, so the leaves hide their feet.
+  /** @type {[number, number, number, number][]} */
+  const flowers = [[128, 262, 104, 104], [150, 262, 158, 78], [170, 262, 204, 112]];
+  for (const [bx, by, tx, ty] of flowers) p.line(stem(bx, by, tx, ty, (tx - bx) * 0.2), 1.3);
+  // Leaves on their own stalks, back ones first; each is notched where its stalk joins.
+  /** @type {[number, number, number, number, number][]} */
+  const leaves = [[124, 262, 92, 196, 26], [178, 262, 206, 190, 26], [140, 262, 126, 176, 30], [160, 262, 172, 168, 30], [150, 262, 150, 214, 34]];
+  for (const [bx, by, cx, cy, w] of leaves) {
+    p.line(stem(bx, by, cx, cy + 0.2 * w * 0.9, (cx - bx) * 0.1), 1.2);
+    p.shape(kidney(cx, cy, w, w * 0.9), WASH.leaf, 0.5, 1.3);
+    // Veins fan out from the notch, and a glint where the leaf is glossy.
+    for (const a of [-0.9, -0.45, 0, 0.45, 0.9]) p.fine(`M${cx} ${p.f(cy + 0.16 * w)}L${p.f(cx + Math.sin(a) * w * 0.75)} ${p.f(cy + 0.16 * w - Math.cos(a) * w * 0.6)}`, 0.6, 0.45);
+  }
+  // Golden cups, seen from the side as a buttercup's: two back petals, the boss of stamens showing
+  // over the rim, then three rounded front petals curving up from the stalk's top.
+  const cup = (/** @type {number} */ fx, /** @type {number} */ fy, /** @type {number} */ s) => {
+    const base = fy + s * 0.5;
+    for (const dx of [-0.5, 0.5]) p.shape(lobe(fx + dx * s * 0.3, base, fx + dx * s, fy - s * 0.35, s * 0.42), WASH.yellow, 0.6, 1);
+    for (let k = 0; k < 7; k++) p.dot(fx + (k - 3) * s * 0.12, fy - s * 0.12 - (k % 2) * s * 0.1, 0.9);
+    for (const dx of [-0.9, 0.9, 0]) p.shape(lobe(fx + dx * s * 0.3, base, fx + dx * s, fy - (dx ? 0 : s * 0.2), s * 0.48), WASH.yellow, 0.9, 1.1);
+  };
+  cup(104, 104, 20); cup(158, 78, 22);
+  // The third has gone over: a star of seed pods where the flower was.
+  for (let k = 0; k < 7; k++) {
+    const a = -Math.PI / 2 + (k / 7) * Math.PI * 2;
+    p.shape(petal(204, 112, 204 + Math.cos(a) * 13, 112 + Math.sin(a) * 11, 3.6), WASH.green, 0.55, 1);
+  }
+  p.label('flower', 250, 60, 172, 70);
+  p.label('seeds', 250, 112, 216, 110);
+  p.label('leaves', 250, 192, 226, 192);
+  p.scale(30, 70, 262, scale);
+  return p.svg(380, 310, 'Field sketch of marsh marigold');
+}
+
+/** Sea campion: a low grey mat on rock above the tide, white flowers over swollen calyces. @param {import('./pen.js').Pen} p @param {string} [scale] */
+export function campion(p, scale) {
+  // Rock above the tide: two stones' backs, and a crack the mat grows from.
+  p.shape('M40 236C52 214 92 206 128 212C150 216 160 230 164 244H40Z', WASH.grey, 0.4, 1.5);
+  p.shape('M160 244C164 222 196 210 222 216C232 220 236 230 236 244Z', WASH.grey, 0.35, 1.5);
+  p.line('M40 244H236', 1.4);
+  p.fine('M70 226l14 6M104 220l10 10M196 226l12 4', 0.8, 0.5);
+  p.line('M150 222C154 232 158 238 162 244', 1.1);
+  // The loose mat of narrow, waxy leaves, spilling over the rock.
+  /** @type {[number, number, number, number, number][]} */
+  const leaves = [[156, 226, 96, 206, -4], [156, 226, 118, 196, -3], [158, 224, 140, 190, -2], [160, 224, 180, 190, 2],
+    [160, 226, 204, 198, 3], [162, 228, 222, 210, 4], [154, 228, 84, 218, -3]];
+  for (const [bx, by, tx, ty, bend] of leaves) p.shape(blade(bx, by, tx, ty, 4.2, bend), WASH.grey, 0.5, 1.1);
+  for (const [bx, by, tx, ty, bend] of [[158, 224, 128, 202, -2], [160, 224, 192, 202, 2]]) p.shape(blade(bx, by, tx, ty, 3.6, bend), WASH.leaf, 0.45, 1.1);
+  // Flowers on short stalks: the calyx swells like a papery balloon, the petals spread above it.
+  /** @type {[number, number, number][]} */
+  const fl = [[112, 120, 1], [156, 96, 1.1], [200, 124, 0.95]];
+  for (const [fx, fy, s] of fl) {
+    p.line(stem(158, 222, fx, fy + 30 * s, (fx - 158) * 0.2), 1.1);
+    const cy = fy + 17 * s;
+    p.oval(fx, cy, 9 * s, 14 * s, WASH.petal, 0.6, 1.2);
+    for (const dx of [-5, -2, 2, 5]) p.fine(`M${p.f(fx + dx * s)} ${p.f(cy - 12 * s)}Q${p.f(fx + dx * 1.6 * s)} ${p.f(cy)} ${p.f(fx + dx * s)} ${p.f(cy + 12 * s)}`, 0.6, 0.55);
+    for (let k = 0; k < 5; k++) {
+      const a = -Math.PI / 2 + ((k - 2) / 4) * Math.PI * 0.95;
+      const tx = fx + Math.cos(a) * 17 * s, ty = fy + Math.sin(a) * 12 * s;
+      p.shape(petal(fx, fy, tx, ty, 6 * s), WASH.petal, 0.95, 1.1);
+      // Each petal is notched at its tip.
+      p.fine(`M${p.f(tx)} ${p.f(ty)}L${p.f(fx + Math.cos(a) * 13 * s)} ${p.f(fy + Math.sin(a) * 9 * s)}`, 0.7, 0.7);
+    }
+  }
+  p.label('flower', 250, 66, 166, 84);
+  p.label('calyx', 250, 132, 209, 140);
+  p.label('mat', 250, 200, 220, 210);
+  p.scale(30, 80, 244, scale);
+  return p.svg(380, 260, 'Field sketch of sea campion');
+}
