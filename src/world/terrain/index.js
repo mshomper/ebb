@@ -14,6 +14,7 @@ import { createChunkTable, buildBases, pasteChunk } from './chunks.js';
 import { createBrushGpu, circleRect, frameAmount, applyStampCpu, LAYER_INDEX } from './brushes.js';
 import { createErosionGpu, encodeReadback } from './erosion.js';
 import { tilesOf, copyTiles, pasteTiles, TILE_BYTES } from './undo.js';
+import { makeBoulder, applyBoulder } from './boulder.js';
 
 /** @typedef {import('./brushes.js').Brush} Brush */
 /** @typedef {import('./heightfield.js').CellRect} CellRect */
@@ -247,6 +248,35 @@ export async function createTerrain(gpu, opts) {
       if (!stroke) return Promise.resolve(null);
       stroke.ending = true;
       return stroke.done;
+    },
+
+    /**
+     * The Stone brush (docs/future/10): drop a seeded boulder at a ground point, lifted into the
+     * heightfield and painted rock, and return its undo command (null if busy or nothing changed).
+     * The same point gives the same boulder; tapping again on one piles another onto it.
+     * @param {ArrayLike<number>} point world xyz @param {number} sizeM the main stone's radius (m)
+     * @returns {TerrainCommand | null}
+     */
+    stampStone(point, sizeM) {
+      if (terrain.isBusy()) return null;
+      const b = makeBoulder(seed, point[0], point[2], sizeM, recipe.stone);
+      const area = circleRect(point[0], point[2], b.reach + CELL, bounds.cells);
+      if (area.w === 0 || area.h === 0) return null;
+      const ids = tilesOf(area);
+      const before = copyTiles(mirror, ids);
+      // Fade out over the open land's edge, as brush strokes do.
+      const fadeAt = (/** @type {number} */ i, /** @type {number} */ j) => {
+        const x = WORLD_ORIGIN + (i + 0.5) * CELL, z = WORLD_ORIGIN + (j + 0.5) * CELL;
+        const d = Math.min(x - edge.openMin[0], edge.openMax[0] - x, z - edge.openMin[1], edge.openMax[1] - z);
+        return Math.min(1, Math.max(0, d / edge.edgeFade));
+      };
+      const r = applyBoulder(mirror, b, point[0], point[2], area, fadeAt);
+      if (r.w === 0 || r.h === 0) return null;
+      uploadRect(device, tex, mirror, r);
+      markEdited(r);
+      emitDeferred('terrain:stroke-ended', { rect: worldRect(r) });
+      const after = copyTiles(mirror, ids);
+      return { kind: 'terrain', before, after, bytes: (before.length + after.length) * TILE_BYTES };
     },
 
     /**

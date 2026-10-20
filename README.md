@@ -27,7 +27,7 @@ There are two islands to start from: the **Starter island** (one large spring-fe
 
 ## What you can do in it
 
-- **Sculpt, smooth and paint** the land; water always finds its way downhill.
+- **Sculpt, smooth and paint** the land; water always finds its way downhill. Sculpt's **Stone** mode sets a boulder where you tap.
 - **Pour and drain water.** Place springs once they are unlocked (`?sandbox` unlocks them now).
 - **Plant** reeds, water lilies, iris, rushes and sea thrift. The tool says why when the ground won't do.
 - **Tap anything** (a plant, the ground, the water) to name it, then open its page in the **field journal**. Pages fill in from what happens on the island, in words, never numbers.

@@ -303,6 +303,16 @@ const ICONS = {
     <circle cx="8.5" cy="8.5" r="1.5"/>
     <path d="M12 12.5L15 15.5"/>`,
 
+  // Stone, a Sculpt mode (docs/future/10): a rounded boulder resting on the ground, a smaller one against it, and a
+  // short drop line above: set a stone here.
+  stone: `
+    <path ${ACCENT} d="M4.5 19.5C4.5 14.6 7.2 11.5 11 11.5C14.8 11.5 17 14.4 17 19.5Z"/>
+    <path d="M4.5 19.5C4.5 14.6 7.2 11.5 11 11.5C14.8 11.5 17 14.4 17 19.5"/>
+    <path d="M15.8 19.5C16 17.3 17.4 15.8 19 15.8C20.4 15.8 21.3 17.2 21.3 19.5"/>
+    <path d="M8 15C8.8 13.9 9.9 13.4 11 13.4"/>
+    <path d="M2.5 19.5H21.5"/>
+    <path d="M11 3.5V8M8.8 6L11 8.2L13.2 6"/>`,
+
   // Feed (S6c-2): a small scoop tipped over, a pinch of food falling from it.
   feed: `
     <path ${ACCENT} d="M3.5 8.5H15L13.4 14.6C13.1 15.6 12.2 16.2 11.2 16.2H7.3C6.3 16.2 5.4 15.6 5.1 14.6Z"/>

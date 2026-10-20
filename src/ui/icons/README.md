@@ -28,6 +28,7 @@ Size and color come from CSS: set `width`/`height` on `.icon` and `color` on the
 | `smooth` | flat float over a wavy line that straightens |
 | `paint` | round brush with a leaf-shaped dab |
 | `feed` | a small scoop tipped over, a pinch of food falling from it: the Feed tool |
+| `stone` | a rounded boulder on the ground with a smaller one against it, a drop line above: Sculpt's Stone mode |
 | `name-tag` | a luggage-style tag with its hole: naming a creature on its card |
 | `water` | droplet over one ripple line |
 | `pour` | spout bending down, a falling drop, a small pool on the ground line |

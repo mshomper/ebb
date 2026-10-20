@@ -470,6 +470,19 @@ export async function startApp(canvas, hooks = {}) {
     if (p) ww.tapSpring(p, tools().springRate);
   }
 
+  /**
+   * Sculpt's Stone mode (docs/future/10): set a seeded boulder where you tap, undoable. The size slider
+   * is the boulder's width, within terrain.json stone.widthM. @param {number} x @param {number} y
+   */
+  function stoneTap(x, y) {
+    const p = groundAt(x, y);
+    if (!p) return;
+    presence.edit(p[0], p[2]);
+    const [wMin, wMax] = terrainRecipe.stone.widthM;
+    const cmd = terrain.stampStone(p, Math.min(wMax, Math.max(wMin, tools().size)) / 2);
+    if (cmd) history.push(cmd);
+  }
+
   // The Plant tool (src/world/growth/plant-tool.js): plants a seed where the ground suits it, rings where.
   const plantTool = createPlantTool({ growth, world, flora, recipe: growthRecipe.marks });
   /** @param {number} x @param {number} y */
@@ -537,6 +550,7 @@ export async function startApp(canvas, hooks = {}) {
         if (!tools().tool) break;
         if (tools().tool === 'plant') { if (a.type === 'tool.begin') plantTap(a.x, a.y); break; }
         if (tools().tool === 'feed') { if (a.type === 'tool.begin') feedTap(a.x, a.y); break; }
+        if (tools().tool === 'sculpt' && tools().sculptMode === 'stone') { if (a.type === 'tool.begin') stoneTap(a.x, a.y); break; }
         if (tools().tool === 'water') {
           if (tools().waterMode === 'spring') { if (a.type === 'tool.begin') springTap(a.x, a.y); }
           else if (a.type === 'tool.begin' || pouring) pouring = { x: a.x, y: a.y };
