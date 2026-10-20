@@ -359,6 +359,22 @@ export function foundFind(journal, sp, ctx, item = null) {
 }
 
 /**
+ * You lifted a loose stone (docs/future/10): the first time, the journal writes it down and keeps
+ * the flag stones:lifted. A no-op after that.
+ * @param {Journal} journal @param {{ state: any, hour: number, words: any }} ctx
+ * @returns {{ journal: Journal, notes: Note[] }}
+ */
+export function liftedStone(journal, ctx) {
+  const text = ctx.words.pieces?.stone?.lifted;
+  if (journal.flags.includes('stones:lifted') || !text) return { journal, notes: [] };
+  const j = copy(journal);
+  j.flags.push('stones:lifted');
+  /** @type {Note[]} */ const notes = [{ hour: ctx.hour, date: dateText(ctx.state?.seasons, ctx.words), text, sp: null, kind: 'lifted' }];
+  j.notes = [...notes, ...j.notes].slice(0, ctx.words.notesKept);
+  return { journal: j, notes };
+}
+
+/**
  * The island gave you something (world/expansion.js): a naturalist's reward or a species' gift.
  * Written once, as a note of kind 'gift' that carries its title and icon, so the island can show
  * it as a card.

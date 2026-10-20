@@ -43,6 +43,7 @@ import { addQualityTests } from './unit-tests-quality.js';
 import { addTrustTests } from './unit-tests-trust.js';
 import { addFindsTests } from './unit-tests-finds.js';
 import { addNaturalistTests } from './unit-tests-naturalist.js';
+import { addPiecesTests } from './unit-tests-pieces.js';
 
 /** @type {{group: string, name: string, fn: () => any}[]} */
 const tests = [];
@@ -1453,6 +1454,10 @@ addQualityTests(test, assert, eq);
 addTrustTests(test, assert, eq);
 addFindsTests(test, assert, eq);
 addNaturalistTests(test, assert, eq);
+
+// ---- placed pieces: loose stones (tools/unit-tests-pieces.js) ----
+
+addPiecesTests(test, assert, eq);
 
 // ---- runner and rendering ----
 

@@ -1,0 +1,24 @@
+{
+  "type": "pieces",
+  "version": 1,
+  "note": "Placed pieces (docs 09, docs/future/10; src/world/pieces): objects that rest on the ground rather than being part of it. The first is the loose stone, the naturalist's reward at six finds (naturalist.json). cap: how many loose stones an island may hold; at the cap the Loose stone mode says so calmly and sets no more. sizeM: a stone's length in meters [min, max], picked by its seed. sink: the share of a stone's height set into the ground, so it sits rather than rests. tapM and tapPerM: how near a tap must be to pick a stone (plus this much per meter of camera distance; never less than about half the stone's length). arrive: when the reward is given, count stones come by themselves on grounds (painted grass or soil) between nearM [min, max] meters from fresh water (a pond or stream, never the sea or a damp hollow), never in water, on ground no steeper than maxSlope (rise over run across a meter), at least spacingM apart; placed from the world seed, so live play and catch-up give the same stones. tip: a tap on a stone lifts its near edge by tipDeg over tipS seconds (pivoting on the far edge, so you see underneath), holds for holdS, then settles back over settleS. shape: the stones are baked from blended ellipsoids (src/world/creatures/body-bake.js): count shapes, seeded from seed; widthShare and heightShare [min, max] of the length; lobes extra lumps blended in by blendM; cellM the bake grid; albedo the dry rock and underside the damp, soil-stained underneath (both linear and physical: the palette paints at tonemap, docs/05); speckle how much the rock's tone wanders over its face. damp: the dark patch the stone leaves on the ground, as a share of its footprint (scale), with its albedo at the middle and edge (linear). look: the creature pass's sheen (wetSpecular) and the body length its contact shadow is sized from (scaleReal, in mesh units: a stone's mesh is 1 long). words: the Loose stone mode's calm lines (full at the cap, water when a tap lands in water).",
+  "cap": 24,
+  "sizeM": [0.25, 0.5],
+  "sink": 0.3,
+  "tapM": 0.12,
+  "tapPerM": 0.012,
+  "arrive": { "count": 5, "nearM": [0.8, 3.5], "grounds": ["grass", "soil"], "maxSlope": 0.45, "spacingM": 1.4 },
+  "tip": { "tipDeg": 62, "tipS": 1.0, "holdS": 2.6, "settleS": 1.3 },
+  "shape": {
+    "count": 4, "seed": 5021,
+    "widthShare": [0.6, 0.82], "heightShare": [0.3, 0.46],
+    "lobes": 3, "blendM": 0.1, "cellM": 0.04,
+    "albedo": [0.27, 0.25, 0.215], "underside": [0.11, 0.095, 0.075], "speckle": 0.16
+  },
+  "damp": { "scale": 1.12, "albedo": [0.045, 0.036, 0.028], "edgeAlbedo": [0.085, 0.07, 0.055] },
+  "look": { "wetSpecular": { "roughness": 0.55, "strength": 0.08 }, "scaleReal": [1, 1] },
+  "words": {
+    "full": "The island holds all the loose stones it can for now. Remove one to set it somewhere else.",
+    "water": "A loose stone sits on land. Tap the ground."
+  }
+}

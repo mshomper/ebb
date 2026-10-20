@@ -90,6 +90,14 @@ const ICONS = {
     <path d="M15.5 15.5L20 20"/>
     <path d="M20 15.5L15.5 20"/>`,
 
+  // Remove a loose stone: the stone, smaller, with a small cross drawn as two strokes beside it.
+  'stone-remove': `
+    <path ${ACCENT} d="M3 15C3.3 10.9 6.2 7.8 10 7.6C13.4 7.4 15.8 9.6 16.2 12.7L9.5 15Z"/>
+    <path d="M3 15C3.3 10.9 6.2 7.8 10 7.6C13.4 7.4 15.8 9.6 16.2 12.7L9.5 15Z"/>
+    <path d="M2.5 17.5H12"/>
+    <path d="M15.5 15.5L20 20"/>
+    <path d="M20 15.5L15.5 20"/>`,
+
   // Plant tool: a seedling with two leaves rising from a small mound on the ground line.
   plant: `
     <path ${ACCENT} d="M7 20.5C8 18.6 16 18.6 17 20.5Z"/>

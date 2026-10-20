@@ -195,7 +195,7 @@ export function mountIslandNotes(parent, words, naturalist = null) {
         <p class="ebb-idcard__error" role="alert"></p>
         <button type="submit" class="ebb-idcard__give">${iconSvg('name-tag')}<span>Give it this name</span></button>
       </form>` : ''}
-      <button type="button" class="ebb-idcard__open" data-act="open">${iconSvg('journal')}<span>Open its page</span></button>`;
+      ${id.noPage ? '' : `<button type="button" class="ebb-idcard__open" data-act="open">${iconSvg('journal')}<span>Open its page</span></button>`}`;
     card.inert = false;
     card.classList.add('is-open');
     place(id.x, id.y);

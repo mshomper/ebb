@@ -31,6 +31,7 @@
     "world/journal-list": "world/journal-list.json",
     "world/journal-wash": "world/journal-wash.json",
     "world/naturalist": "world/naturalist.json",
+    "world/pieces": "world/pieces.json",
     "species/frog": "species/frog.json",
     "species/midge": "species/midge.json",
     "species/finds": "species/finds.json",

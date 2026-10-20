@@ -46,6 +46,7 @@ import { bakeBody } from './world/creatures/body-bake.js';
 import { previewSpots } from './world/creatures/preview-spots.js';
 import { createCreatures } from './world/creatures/index.js';
 import { createFinds } from './world/finds/index.js';
+import { createPieces } from './world/pieces/index.js';
 import { shorePresence } from './world/journal/shore-presence.js';
 import { createPresence } from './world/creatures/presence.js';
 import { cleanName, nameFrog } from './world/creatures/trust.js';
@@ -131,6 +132,8 @@ export async function startApp(canvas, hooks = {}) {
     if (back.water) updateStore('water', () => back.water);
     // The pieces of music you hearted (src/audio/music/hearts.js).
     if (back.music) updateStore('music', () => back.music);
+    // Placed loose stones (src/world/pieces).
+    updateStore('pieces', () => back.pieces);
   }
   // Device settings (src/save/prefs.js): kept on this device, never in the island.
   const prefs = loadPrefs();
@@ -152,13 +155,17 @@ export async function startApp(canvas, hooks = {}) {
   });
   // Unlocks (docs 12, 13): placing springs is the dragonflies' gift and the Cliff tool (Terrace and
   // Cut) the frogs'; `?sandbox` opens both early for this visit only, and `?cliffs` the Cliff tool
-  // (`earned` holds what was given, and is what the save keeps). `?sandbox` and `?plants=all` also
+  // (`earned` holds what was given, and is what the save keeps). Loose stones are the naturalist's
+  // reward at six finds; `?sandbox` opens the Loose stone mode early, and `?stones` (a test link,
+  // unsaved) that and the handful that comes with the reward (src/world/pieces).
+  // `?sandbox` and `?plants=all` also
   // offer every plant in the Plant tool before it has come to the island (volunteers.js); sea
   // campion, for one, grows nowhere until there is rock by the sea.
   updateStore('unlocks', (u) => {
     const earned = u?.earned ?? back?.unlocks ?? {};
     return { earned, ...earned, springs: !!earned.springs || params.has('sandbox'),
       cliffs: !!earned.cliffs || params.has('sandbox') || params.has('cliffs'),
+      stones: !!earned.stones || params.has('sandbox') || params.has('stones'), stonesTest: params.has('stones'),
       allPlants: params.has('sandbox') || params.get('plants') === 'all' };
   });
   // `?weather=clear|cloud|rain|mist` previews a weather look (as the sky lab does); the world's
@@ -321,6 +328,10 @@ export async function startApp(canvas, hooks = {}) {
     shellsOn: () => !!shellTest || !!getStore('unlocks')?.shells });
   sim.addSystem(finds);
   terrainPass.setCasts(finds.casts(), finds.castShape);
+  // Placed pieces (doc 09, docs/future/10): loose stones, set with Sculpt's Loose stone mode and
+  // lifted with a tap; a handful comes by itself with the naturalist's reward (src/world/pieces).
+  const pieces = createPieces({ terrain, water, camera, history, seed, recipe: await loadRecipe('world/pieces') });
+  sim.addSystem(pieces);
   // `?frogscale` (ahead of S6): real-size frogs from the species recipe around the pond, and a
   // camera that may come close, to judge creature size on the island (src/ui/frog-scale.js).
   const frogScale = params.has('frogscale') ? await createFrogScale() : null;
@@ -371,6 +382,7 @@ export async function startApp(canvas, hooks = {}) {
     floraPass,
     creatures.pass,
     finds.pass,
+    pieces.pass,
     ...(frogScale ? [frogScale.pass] : []),
     waterPass,
     midges.pass,
@@ -539,6 +551,15 @@ export async function startApp(canvas, hooks = {}) {
     if (cmd) { history.push(cmd); emitDeferred('terrain:stone-set', { x: p[0], z: p[2] }); }
   }
 
+  /** Sculpt's Loose stone mode: select a placed stone, or set one under the cap (src/world/pieces). @param {number} x @param {number} y */
+  function looseStoneTap(x, y) {
+    if (!getStore('unlocks')?.stones) return;
+    const p = groundAt(x, y);
+    if (!p) return;
+    presence.edit(p[0], p[2]);
+    pieces.tap(p);
+  }
+
   // The Plant tool (src/world/growth/plant-tool.js): plants a seed where the ground suits it, rings where.
   const plantTool = createPlantTool({ growth, world, flora, recipe: growthRecipe.marks });
   /** @param {number} x @param {number} y */
@@ -590,10 +611,14 @@ export async function startApp(canvas, hooks = {}) {
         // A new flow step applies to the selected spring too (undoable).
         if (a.patch.springRate) ww.rateSelected(a.patch.springRate);
         if (a.patch.waterMode && a.patch.waterMode !== 'spring') ww.syncSprings(null);
+        if (a.patch.sculptMode && a.patch.sculptMode !== 'loosestone') pieces.deselect();
         break;
       }
       case 'water.springRemove':
         ww.removeSpring(a.id);
+        break;
+      case 'pieces.remove':
+        pieces.remove(a.id);
         break;
       case 'brush.resize':
         updateStore('tools', (t) => { t.size = clampSize(t.size * a.factor); });
@@ -609,6 +634,7 @@ export async function startApp(canvas, hooks = {}) {
         if (tools().tool === 'plant') { if (a.type === 'tool.begin') plantTap(a.x, a.y); break; }
         if (tools().tool === 'feed') { if (a.type === 'tool.begin') feedTap(a.x, a.y); break; }
         if (tools().tool === 'sculpt' && tools().sculptMode === 'stone') { if (a.type === 'tool.begin') stoneTap(a.x, a.y); break; }
+        if (tools().tool === 'sculpt' && tools().sculptMode === 'loosestone') { if (a.type === 'tool.begin') looseStoneTap(a.x, a.y); break; }
         if (tools().tool === 'water') {
           if (tools().waterMode === 'spring') { if (a.type === 'tool.begin') springTap(a.x, a.y); }
           else if (a.type === 'tool.begin' || pouring) pouring = { x: a.x, y: a.y };
@@ -680,6 +706,11 @@ export async function startApp(canvas, hooks = {}) {
       if (s) terrain.setRing({ x: s.x, z: s.z, radius: 0.8, visible: true });
       else if (p) terrain.setRing({ x: p[0], z: p[2], radius: 0.6, visible: true });
       else terrain.setRing({ visible: false });
+      return;
+    }
+    // Loose stone mode marks the selected stone, else a small ring where a tap would set one.
+    if (t.tool === 'sculpt' && t.sculptMode === 'loosestone') {
+      terrain.setRing({ ...pieces.ring(pointer.inside ? groundAt(pointer.x, pointer.y) : null), level: null });
       return;
     }
     const p = t.tool && pointer.inside ? groundAt(pointer.x, pointer.y) : null;
@@ -877,7 +908,7 @@ export async function startApp(canvas, hooks = {}) {
       build: hooks.build ?? 'dev', seed, island: island.id, worldT: clock.worldT(), flow: clock.flow(),
       carryMinutes: getStore('meta')?.carryMinutes ?? 0, keepGrowing: getStore('meta')?.keepGrowing ?? true,
       world: world.state, journal: getStore('journal'), water: getStore('water'), unlocks: getStore('unlocks')?.earned ?? {},
-      view: camera.pose(), looks: getStore('looks') ?? {}, music: getStore('music') ?? { hearted: [] }, chunks: getStore('chunks'), mirror: getStore('terrainLive')?.mirror ?? null,
+      view: camera.pose(), looks: getStore('looks') ?? {}, music: getStore('music') ?? { hearted: [] }, pieces: getStore('pieces'), chunks: getStore('chunks'), mirror: getStore('terrainLive')?.mirror ?? null,
     }),
   });
 
@@ -928,6 +959,8 @@ export async function startApp(canvas, hooks = {}) {
     creatures,
     /** The finds near the view (the journal asks it what a tap landed on). */
     finds,
+    /** The placed loose stones (the journal asks which one a tap landed on). */
+    pieces,
     /** The shore zones and rock pools now (the journal's Web shows which are on the island). */
     shorePresence: () => shorePresence(ww.shore.zones(), water.getSummary(), getStore('terrainLive')?.mirror?.material ?? null),
     /** Every live animal system's hooks for the reveal on return (src/ui/reveal.js). */
