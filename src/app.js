@@ -177,7 +177,10 @@ export async function startApp(canvas, hooks = {}) {
   const { water, foam, ripples, wetness, moss } = ww;
   // Growth (docs 10, 11): the habitat grid from the water summary, plants and grass cover grown in
   // the hourly tick; this keeps the habitat current and uploads what the drawing needs.
-  const growthRecipe = await loadRecipe('world/growth');
+  // `?plants=all` (testing, unsaved): a new island starts with every plant, not only the starters
+  // (growth.json starters; the rest otherwise come by themselves, volunteers.js).
+  const growthRecipe = { ...(await loadRecipe('world/growth')) };
+  if (params.get('plants') === 'all') growthRecipe.starters = [...growthRecipe.species, ...(growthRecipe.cover ?? [])];
   /** @type {Record<string, any>} */
   const flora = Object.fromEntries(await Promise.all(growthRecipe.species.map(async (/** @type {string} */ sp) => [sp, await loadRecipe(`flora/${sp}`)])));
   /** @type {Record<string, any>} the cover plants other than grass (rushes) */

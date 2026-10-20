@@ -259,7 +259,7 @@ export function settleGrowth(state, env) {
   const coverDone = covers.every(([sp]) => prev.cover?.[sp]);
   if (prev.starterDone && prev.grass && coverDone) return state;
   const g = { ...prev, plants: prev.plants.map((/** @type {Plant} */ p) => ({ ...p })) };
-  if (!g.starterDone) { plantStarters(g, hab, env); g.starterDone = true; }
+  if (!g.starterDone) { plantStarters(g, hab, env, (state.seasons?.index ?? 0) + (state.seasons?.phase ?? 0)); g.starterDone = true; }
   // The cover plants first (the rushes were here when you arrived), then grass, which gives way to them.
   if (!coverDone) {
     g.cover = { ...(prev.cover ?? {}) };
@@ -289,8 +289,9 @@ const isStarter = (env, sp) => !env.recipes.growth.starters || env.recipes.growt
 /**
  * New island: a few mature clumps of each starter species, on its most suitable cells.
  * @param {GrowthState} g @param {import('./habitat.js').Habitat} hab @param {any} env
+ * @param {number} [pos] season position (0 spring .. 4), for the starters' stage
  */
-function plantStarters(g, hab, env) {
+function plantStarters(g, hab, env, pos = 0) {
   const seed = subSeed(env.seed, 'growth-starter');
   for (const sp of env.recipes.growth.species) {
     const rec = env.recipes.flora[sp];
@@ -312,11 +313,13 @@ function plantStarters(g, hab, env) {
       if (g.plants.some((p) => (p.x - x) * (p.x - x) + (p.z - z) * (p.z - z) < 0.36)) continue;
       const p = { id: g.nextId++, sp, x, z, age: 48, size: rec.growth.stages.matureSize + 0.1, best: 0, stage: STAGE.mature, low: 0, drown: 0, last: 0 };
       p.best = p.size;
+      // In the season's stage at once (in flower in its window), not only from the next hour.
+      p.stage = stageOf(rec, p, pos);
       placed.push(p);
     }
     g.plants.push(...placed);
   }
-  basinStarters(g, hab, env);
+  basinStarters(g, hab, env, pos);
 }
 
 /**
@@ -326,8 +329,9 @@ function plantStarters(g, hab, env) {
  * the species' starter spacing apart (from every plant of that species). Islands without them are
  * unchanged.
  * @param {GrowthState} g @param {import('./habitat.js').Habitat} hab @param {any} env
+ * @param {number} [pos] season position, for the starters' stage
  */
-function basinStarters(g, hab, env) {
+function basinStarters(g, hab, env, pos = 0) {
   const basins = env.recipes.land?.basins;
   if (!basins) return;
   const seed = subSeed(env.seed, 'growth-basin-starter');
@@ -356,7 +360,9 @@ function basinStarters(g, hab, env) {
         const x = HABITAT_ORIGIN + (c.k % hab.n) + 0.5, z = HABITAT_ORIGIN + Math.floor(c.k / hab.n) + 0.5;
         if (g.plants.some((p) => p.sp === sp && (p.x - x) * (p.x - x) + (p.z - z) * (p.z - z) < sp2)) continue;
         const size = rec.growth.stages.matureSize + 0.1;
-        g.plants.push({ id: g.nextId++, sp, x, z, age: 48, size, best: size, stage: STAGE.mature, low: 0, drown: 0, last: 0 });
+        const p = { id: g.nextId++, sp, x, z, age: 48, size, best: size, stage: STAGE.mature, low: 0, drown: 0, last: 0 };
+        p.stage = stageOf(rec, p, pos);
+        g.plants.push(p);
         placed++;
       }
     }

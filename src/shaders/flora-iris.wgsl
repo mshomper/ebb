@@ -24,11 +24,19 @@ struct IrisDraw {
   tip: vec4f,       // xyz autumn tip albedo (linear), w stiffness 0..1
   flower: vec4f,    // xyz flower albedo (linear), w sway per unit wind
   stalk: vec4f,     // xyz stalk albedo (linear), w 1 / gust size (1/m)
-  gust: vec4f,      // x gust speed (m/s), yzw spare
+  gust: vec4f,      // x gust speed (m/s), y flower shape (0 flag, 1 cup), z leaf shape (0 sword, 1 kidney), w spare
+  gloss: vec4f,     // x petal roughness, y leaf roughness, z reflectance f0, w spare (0 roughness: matte, as the iris)
+  cup: vec4f,       // x cup petals' rise above level (radians), y how far a petal's sides curl in, z petal width share, w petal length share of flower size
 };
 
-const LEAF_VERTS: u32 = 21u;     // three segments and a tip
-const FLOWER_VERTS: u32 = 42u;   // a stalk quad, then six petals of two triangles
+const LEAF_VERTS: u32 = 21u;     // three segments and a tip; or a stalk quad and a five-triangle blade
+const FLAG_VERTS: u32 = 42u;     // a stalk quad, then six petals of two triangles
+const CUP_VERTS: u32 = 81u;      // a stalk quad, then five rounded petals of five triangles
+const CUP_PETALS: u32 = 5u;
+
+// The outline of a rounded cup petal (across -1..1, along 0..1), fanned from its base.
+var<private> PETAL: array<vec2f, 6> = array<vec2f, 6>(
+  vec2f(-0.62, 0.32), vec2f(-0.78, 0.7), vec2f(-0.34, 1.0), vec2f(0.34, 1.0), vec2f(0.78, 0.7), vec2f(0.62, 0.32));
 
 @group(0) @binding(0) var<uniform> frame: FrameUniforms;
 @group(2) @binding(0) var<uniform> ird: IrisDraw;
@@ -39,6 +47,7 @@ struct VsOut {
   @location(1) normal: vec3f,
   @location(2) albedo: vec3f,
   @location(3) ao: f32,
+  @location(4) gloss: vec2f,   // roughness, f0
 };
 
 struct FsOut {
@@ -62,7 +71,7 @@ var<private> QUAD: array<vec2f, 6> = array<vec2f, 6>(
 fn nothing() -> VsOut {
   var o: VsOut;
   o.pos = vec4f(0.0, 0.0, -2.0, 1.0);   // outside the clip volume: the triangle is dropped
-  o.world = vec3f(0.0); o.normal = vec3f(0.0, 1.0, 0.0); o.albedo = vec3f(0.0); o.ao = 1.0;
+  o.world = vec3f(0.0); o.normal = vec3f(0.0, 1.0, 0.0); o.albedo = vec3f(0.0); o.ao = 1.0; o.gloss = vec2f(1.0, 0.0);
   return o;
 }
 
@@ -73,7 +82,48 @@ fn emit(p: vec3f, n: vec3f, albedo: vec3f, ao: f32) -> VsOut {
   o.normal = n;
   o.albedo = albedo;
   o.ao = ao;
+  o.gloss = vec2f(1.0, 0.0);
   return o;
+}
+
+// A glossy part (the marigold's waxy petals and leaves): roughness r, reflectance f0. r = 0 means matte.
+fn glossy(o: VsOut, r: f32, f0: f32) -> VsOut {
+  var g = o;
+  if (r > 0.0) { g.gloss = vec2f(r, f0); }
+  return g;
+}
+
+// A kidney leaf (marsh marigold): a round blade on a stalk, notched where the stalk meets it. The
+// stalk is slots 0..5 (a camera-facing strip), the blade slots 6..20: five triangles fanned from
+// the notch over 300 degrees of rim, wider than long, its edge dipping a little.
+fn kidneyLeaf(slot: u32, base: vec3f, axis: vec3f, bend: vec3f, height: f32, k: f32, d: vec3f, radius: f32,
+              albedo: vec3f, ao0: f32) -> VsOut {
+  let up = vec3f(0.0, 1.0, 0.0);
+  if (slot < 6u) {
+    let corner = QUAD[slot];
+    let p0 = floraCurve(base, axis, bend, height, k, corner.y);
+    let tangent = floraTangent(axis, bend, k, corner.y);
+    var side = cross(tangent, frame.cameraPos - p0);
+    side = select(vec3f(1.0, 0.0, 0.0), normalize(side), length(side) > 1e-5);
+    let width = max(radius * 0.08, floraPixelM(p0) * ird.c.misc.z);
+    return emit(p0 + side * corner.x * width * 0.5, normalize(cross(side, tangent)), albedo, mix(ao0, 1.0, corner.y));
+  }
+  let top = floraCurve(base, axis, bend, height, k, 1.0);
+  // The blade lies nearly level, tilted a little out from the clump; its notch faces the stalk.
+  let tilt = 0.2;
+  let n = normalize(up * cos(tilt) + d * sin(tilt));
+  let fwd = normalize(d - n * dot(d, n));
+  let across = cross(n, fwd);
+  let s = slot - 6u;
+  let tri = s / 3u;
+  let c = s % 3u;
+  var p = top;
+  if (c != 0u) {
+    let a = radians(-150.0) + f32(tri + c - 1u) * radians(60.0);
+    let rim = fwd * (cos(a) * 0.9) + across * (sin(a) * 1.15);
+    p = top + rim * radius - n * (radius * 0.18);
+  }
+  return emit(p, n, albedo, 1.0);
 }
 
 // Leaf width along its length: a little narrower at the base, full in the middle, to a point.
@@ -132,6 +182,22 @@ fn vsIris(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> V
     let tilt = ird.leaf.w * (s + (v.x - 0.5) * 0.3);
     var height = full * (1.0 - ird.look.w * 0.5 + ird.look.w * v.y) * (1.0 - 0.35 * abs(s));
     if (dormant) { height *= ird.look2.x; }
+    let autumnK = smoothstep(2.1, 2.9, pos) * (1.0 - smoothstep(3.9, 4.0, pos));
+    if (ird.gust.z > 0.5) {
+      // A kidney leaf on its stalk, leaning out on its own bearing around the clump.
+      let bearingK = bearing + f32(j) * (6.2831853 / f32(max(leaves, 1u))) + (v.x - 0.5) * 0.6;
+      let dk = vec3f(cos(bearingK), 0.0, sin(bearingK));
+      let leanK = ird.leaf.w * (0.4 + 0.6 * v.y);
+      let axisK = normalize(dk * sin(leanK) + up * cos(leanK));
+      let gustK = floraGust(ird.c, fb.xz, ird.stalk.w, ird.gust.x, v.z);
+      let bendK = dk * ird.bloom.x + vec3f(ird.c.wind.x, 0.0, ird.c.wind.y) * (ird.c.wind.w * ird.flower.w * gustK);
+      let baseK = vec3f(fb.x, b.w - ird.look2.y, fb.z);
+      let radiusK = ird.leaf.z * (0.8 + 0.4 * v.x) * mix(0.55, 1.0, size);
+      let brownK = select(0.6 * step(0.001, ird.look2.w * autumnK) * autumnK, 0.85, dormant);
+      let tintK = 0.88 + 0.24 * hashToFloat(pcg(h2));
+      let albedoK = mix(ird.c.albedo.xyz, ird.tip.xyz, brownK) * tintK;
+      return glossy(kidneyLeaf(slot, baseK, axisK, bendK, height, k, dk, radiusK, albedoK, ird.look2.z), ird.gloss.y, ird.gloss.z);
+    }
     let axis = d * sin(tilt) + up * cos(tilt);
     // Arch outward on the leaf's own side, plus the wind (gusts, a little flutter per leaf).
     let gust = floraGust(ird.c, fb.xz, ird.stalk.w, ird.gust.x, v.z);
@@ -160,9 +226,11 @@ fn vsIris(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> V
   }
 
   // ---- a flower: flowering clumps only, one per fan at most ----
+  let cupped = ird.gust.y > 0.5;
+  let flowerVerts = select(FLAG_VERTS, CUP_VERTS, cupped);
   let kf = vi - fansMax * leavesMax * LEAF_VERTS;
-  let fi = kf / FLOWER_VERTS;
-  let slot = kf % FLOWER_VERTS;
+  let fi = kf / flowerVerts;
+  let slot = kf % flowerVerts;
   let flowers = u32(round(mix(ird.bloom.y, ird.bloom.z, size)));
   if (stage != FLORA_FLOWERING || fi >= min(flowers, fans)) { return nothing(); }
   let fb = fanBase(plantU, fi, salt, a.xy, radius);
@@ -183,9 +251,36 @@ fn vsIris(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> V
     let tangent = floraTangent(axis, bend, k, corner.y);
     var side = cross(tangent, frame.cameraPos - p0);
     side = select(vec3f(1.0, 0.0, 0.0), normalize(side), length(side) > 1e-5);
-    let width = max(ird.leaf.z * 0.25, floraPixelM(p0) * ird.c.misc.z);
+    // Thin stalks under a cup (marigold, whose leaf width is a blade's radius), stouter under a flag.
+    let width = max(ird.leaf.z * select(0.25, 0.08, cupped), floraPixelM(p0) * ird.c.misc.z);
     let n = normalize(cross(side, tangent));
     return emit(p0 + side * corner.x * width * 0.5, n, ird.stalk.xyz, mix(ird.look2.z, 1.0, corner.y));
+  }
+  if (cupped) {
+    // A cup of five rounded petals rising from the stalk's top, as a buttercup's: each petal fanned
+    // from its base in five triangles, its sides curling in, so the cup holds the light.
+    let pk = slot - 6u;
+    let pi = pk / 15u;
+    let s = pk % 15u;
+    let tri = s / 3u;
+    let c = s % 3u;
+    let theta = fb.y + f32(pi) * (6.2831853 / f32(CUP_PETALS)) + (hv.x - 0.5) * 0.3;
+    let rise = ird.cup.x;
+    let dirH = vec3f(cos(theta), 0.0, sin(theta));
+    let dir = dirH * cos(rise) + up * sin(rise);
+    let across = vec3f(-dirH.z, 0.0, dirH.x);
+    let inward = normalize(cross(across, dir));     // the petal's inner face, toward the cup's middle
+    let l = ird.look.x * ird.cup.w;
+    let w = l * ird.cup.z;
+    var q = vec2f(0.0);
+    if (c != 0u) { q = PETAL[tri + c - 1u]; }
+    // Curl: the petal's sides lift toward the inside of the cup, more toward its rounded end.
+    let curl = ird.cup.y * q.x * q.x * q.y;
+    let p = top + dir * (q.y * l) + across * (q.x * w * 0.5) + inward * (curl * w);
+    let n = normalize(inward - across * (2.0 * ird.cup.y * q.x * q.y));
+    // A little paler at the base, where buttercup petals carry their nectar scale.
+    let albedo = ird.flower.xyz * mix(0.85, 1.0, q.y);
+    return glossy(emit(p, n, albedo, 1.0), ird.gloss.x, ird.gloss.z);
   }
   // Six petals: three falls drooping outward, three small standards between them, upright.
   let pk = slot - 6u;
@@ -216,7 +311,11 @@ fn fsIris(in: VsOut) -> FsOut {
   // sky above it rather than only the horizon's.
   var n = normalize(in.normal);
   if (dot(n, frame.cameraPos - in.world) < 0.0) { n = -n; }
-  n = normalize(n + vec3f(0.0, 0.7, 0.0));
-  let color = floraShade(ird.c, in.world, n, in.albedo, in.ao, in.pos.xy, 0.45, 1.0, 0.0);
+  // A glossy part's thin blade or petal seen from beneath takes the light of its upper face, as
+  // light comes through a thin leaf, rather than going dark.
+  if (in.gloss.y > 0.0 && n.y < 0.0) { n = -n; }
+  // Glossy parts (in.gloss.y > 0) keep their own normal, so their highlight sits where it should.
+  n = normalize(n + vec3f(0.0, select(0.7, 0.25, in.gloss.y > 0.0), 0.0));
+  let color = floraShade(ird.c, in.world, n, in.albedo, in.ao, in.pos.xy, 0.45, in.gloss.x, in.gloss.y);
   return FsOut(vec4f(color, 1.0), floraNormalId());
 }
