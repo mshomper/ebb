@@ -96,7 +96,8 @@
         { "text": "Rushes and sedges are grass-like plants of wet ground. They grow in tight tussocks.", "learn": ["seen"] },
         { "text": "In summer small brown flower tufts sprout near the top of the stems.", "learn": ["moment:summer"] },
         { "text": "Their stems are full of soft pith, which carries air down to roots in the soaked mud.", "learn": ["moment:rain"] },
-        { "text": "The stems stay standing through winter, brown at the tips, and frost silvers them at dawn.", "learn": ["moment:frost"] }
+        { "text": "The stems stay standing through winter, brown at the tips, and frost silvers them at dawn.", "learn": ["moment:frost"] },
+        { "text": "In the low light of dusk the sedges show their edges: a sedge's stem is three-sided, a rush's is round.", "learn": ["moment:dusk"] }
       ],
       "fieldHint": "Watch the marsh in other weather to learn more.",
       "sketch": { "scale": "about 75 cm", "labels": {
@@ -148,7 +149,7 @@
       "none": "No reeds grow on the island now.",
       "flowering": "carrying brown seed heads", "dormant": "standing pale for winter",
       "spreading": "creeping along the bank", "receding": "pulling back",
-      "stages": ["A reed seed, waiting for good ground", "A new reed shoot", "A young clump of reeds", "A full clump of reeds", "Reeds with brown seed heads", "Reeds standing pale for winter"],
+      "stages": ["A reed seed, waiting for good ground", "A new reed shoot", "A young clump of reeds", "A full clump of reeds", "A reed clump with brown seed heads", "A reed clump standing pale for winter"],
       "seasons": { "grow": ["fresh green shoots", "tall and green", "turning gold", "pale standing stalks"], "flower": "brown velvet seed heads", "dormant": "pale standing stalks" },
       "likes": [
         { "text": "Wet ground at the water's edge", "learn": ["seen"] },
@@ -277,7 +278,7 @@
         "seeds": { "text": ["seeds that", "float"], "learn": ["spread"] } } },
       "riddle": "Something golden would open early, on soaked ground at the water's edge.",
       "amount": [[1, "A single marsh marigold"], [2, "A few marsh marigolds"], [6, "Marsh marigolds along the edge"], [16, "Marsh marigolds all round the water"]],
-      "place": "on the soaked edge of the water", "compass": true,
+      "place": "at the water's soaked edge", "compass": true,
       "none": "No marsh marigold grows on the island now.",
       "flowering": "in golden flower", "dormant": "sunk back for winter",
       "spreading": "seeding along the edge", "receding": "thinning out",
@@ -325,7 +326,7 @@
       "none": "No sea thrift grows on the island now.",
       "flowering": "in pink flower", "dormant": "low and grey for winter",
       "spreading": "seeding along the shore", "receding": "thinning out",
-      "stages": ["A thrift seed, waiting for salty ground", "A new thrift tuft", "A young thrift cushion", "A full thrift cushion", "Thrift in pink flower", "Thrift low and grey for winter"],
+      "stages": ["A thrift seed, waiting for salty ground", "A new thrift tuft", "A young thrift cushion", "A full thrift cushion", "A thrift cushion in pink flower", "A thrift cushion low and grey for winter"],
       "seasons": { "grow": ["green cushions", "full cushions", "seed heads", "low and grey"], "flower": "pink pompoms", "dormant": "low and grey" },
       "likes": [
         { "text": "Salty ground in the sea spray", "learn": ["seen"] },
@@ -368,7 +369,7 @@
       "none": "No sea campion grows on the island now.",
       "flowering": "in white flower", "dormant": "low for winter",
       "spreading": "seeding into the rocks", "receding": "thinning out",
-      "stages": ["A campion seed, waiting in a crack", "A new campion shoot", "A young campion mat", "A full campion mat", "Sea campion in white flower", "Sea campion low for winter"],
+      "stages": ["A campion seed, waiting in a crack", "A new campion shoot", "A young campion mat", "A full campion mat", "A campion mat in white flower", "A campion mat low for winter"],
       "seasons": { "grow": ["grey-green shoots", "loose grey mats", "seed pods", "low and grey"], "flower": "white flowers", "dormant": "low and grey" },
       "likes": [
         { "text": "Rock by the sea, above the tide", "learn": ["seen"] },

@@ -296,6 +296,18 @@ function kidney(cx, cy, w, h) {
     `C${r(cx + 1.05 * w)} ${r(cy - 0.75 * h)} ${r(cx + 1.05 * w)} ${r(cy + 0.55 * h)} ${r(cx)} ${r(cy + 0.22 * h)}Z`;
 }
 
+/**
+ * A rounded petal seen from the side, from its base (bx, by) up to its round top (tx, ty), w half
+ * wide at its widest: a buttercup's or a marigold's cup petal.
+ * @param {number} bx @param {number} by @param {number} tx @param {number} ty @param {number} w
+ */
+function lobe(bx, by, tx, ty, w) {
+  const r = (/** @type {number} */ n) => Math.round(n * 10) / 10;
+  const my = by - (by - ty) * 0.45;
+  return `M${r(bx)} ${r(by)}C${r(bx - w * 0.6)} ${r(my)} ${r(tx - w * 1.15)} ${r(ty + w * 0.2)} ${r(tx)} ${r(ty)}` +
+    `C${r(tx + w * 1.15)} ${r(ty + w * 0.2)} ${r(bx + w * 0.6)} ${r(my)} ${r(bx)} ${r(by)}Z`;
+}
+
 /** Marsh marigold: round glossy leaves on stalks at the water's soaked edge, golden cups above. @param {import('./pen.js').Pen} p @param {string} [scale] */
 export function marigold(p, scale) {
   // Soaked mud at the water's edge, the water itself on the left.
@@ -317,16 +329,15 @@ export function marigold(p, scale) {
     // Veins fan out from the notch, and a glint where the leaf is glossy.
     for (const a of [-0.9, -0.45, 0, 0.45, 0.9]) p.fine(`M${cx} ${p.f(cy + 0.16 * w)}L${p.f(cx + Math.sin(a) * w * 0.75)} ${p.f(cy + 0.16 * w - Math.cos(a) * w * 0.6)}`, 0.6, 0.45);
   }
-  // Golden cups: five broad petals round a boss of stamens.
+  // Golden cups, seen from the side as a buttercup's: two back petals, the boss of stamens showing
+  // over the rim, then three rounded front petals curving up from the stalk's top.
   const cup = (/** @type {number} */ fx, /** @type {number} */ fy, /** @type {number} */ s) => {
-    for (let k = 0; k < 5; k++) {
-      const a = -Math.PI / 2 + (k / 5) * Math.PI * 2;
-      p.shape(petal(fx, fy, fx + Math.cos(a) * s, fy + Math.sin(a) * s * 0.8, s * 0.45), WASH.yellow, 0.9, 1.1);
-    }
-    p.oval(fx, fy, s * 0.28, s * 0.24, WASH.gold, 0.9, 0.9);
-    for (let k = 0; k < 7; k++) { const a = (k / 7) * Math.PI * 2; p.dot(fx + Math.cos(a) * s * 0.18, fy + Math.sin(a) * s * 0.15, 0.9); }
+    const base = fy + s * 0.5;
+    for (const dx of [-0.5, 0.5]) p.shape(lobe(fx + dx * s * 0.3, base, fx + dx * s, fy - s * 0.35, s * 0.42), WASH.yellow, 0.6, 1);
+    for (let k = 0; k < 7; k++) p.dot(fx + (k - 3) * s * 0.12, fy - s * 0.12 - (k % 2) * s * 0.1, 0.9);
+    for (const dx of [-0.9, 0.9, 0]) p.shape(lobe(fx + dx * s * 0.3, base, fx + dx * s, fy - (dx ? 0 : s * 0.2), s * 0.48), WASH.yellow, 0.9, 1.1);
   };
-  cup(104, 104, 17); cup(158, 78, 19);
+  cup(104, 104, 20); cup(158, 78, 22);
   // The third has gone over: a star of seed pods where the flower was.
   for (let k = 0; k < 7; k++) {
     const a = -Math.PI / 2 + (k / 7) * Math.PI * 2;

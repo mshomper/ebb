@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ebb journal review</title>
+<style>
+  body { margin: 0; font: 17px/1.5 Nunito, system-ui, sans-serif; background: #F4EEE4; color: #2F3A35; padding: 20px max(16px, env(safe-area-inset-left)); }
+  h1 { font-size: 24px; margin: 0 0 4px; }
+  h2 { font-size: 19px; margin: 26px 0 8px; }
+  p { margin: 0 0 12px; max-width: 70ch; }
+  code { font-size: 16px; }
+  .controls { display: flex; flex-wrap: wrap; gap: 8px 20px; margin: 0 0 8px; }
+  label { font-size: 16px; display: inline-flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  select { font: inherit; max-width: 100%; }
+  .row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
+  .card { margin: 0; background: #FBF7F0; border: 1px solid #DCD2C0; border-radius: 10px; padding: 8px 10px; display: grid; gap: 4px; align-content: start; min-width: 0; overflow-wrap: anywhere; }
+  .card h3 { font-size: 16px; margin: 0; color: #6B6A5E; font-weight: 700; }
+  .card svg.sketch { width: 100%; height: auto; display: block; }
+  .card ul { margin: 0; padding-left: 18px; }
+  .card li { margin: 2px 0; }
+  .icon { width: 48px; height: 48px; color: #2F3A35; }
+  .icons { display: flex; gap: 12px; align-items: center; }
+  .icons .icon:last-child { width: 24px; height: 24px; }
+  .meta { font-size: 16px; color: #6B6A5E; }
+  .missing { background: #F6E1D6; border-color: #C98B6B; }
+  .missing .value { color: #8A4A2E; font-style: italic; }
+  .long { color: #8A4A2E; }
+  .short { color: #2F5E7A; }
+  .flag { font-size: 16px; font-weight: 700; }
+  .summary { background: #FBF7F0; border: 1px solid #DCD2C0; border-radius: 10px; padding: 10px 14px; max-width: 70ch; }
+  .summary li { margin: 3px 0; }
+</style>
+</head>
+<body>
+<h1>Journal review: plants</h1>
+<p>Every plant's journal page laid side by side: its field sketch and icon first, then each part of the page lined up across all the plants, so a page with an empty part, much longer or shorter wording, or a different sketch style stands out. Words come from <code>recipes/world/journal.json</code>; sketches from <code>src/ui/sketches/living.js</code>; icons from <code>src/ui/icons/icons.js</code>.</p>
+<div class="controls">
+  <label><input type="checkbox" id="labels" checked> Show all sketch labels</label>
+  <label>Sketch stage
+    <select id="stage"><option value="0">Pencil, not yet seen</option><option value="1" selected>Ink, seen</option><option value="2">Washed, caught at a moment</option></select>
+  </label>
+</div>
+<div id="summary"></div>
+<div id="out"></div>
+<script type="module">
+import { drawSketch } from '../src/ui/sketches/index.js';
+import { ensureIconSprite, iconSvg } from '../src/ui/icons/icons.js';
+
+ensureIconSprite();
+const words = await (await fetch('../recipes/world/journal.json')).json();
+const growth = await (await fetch('../recipes/world/growth.json')).json();
+const isAnimal = (rec) => rec?.kind === 'creature' || rec?.kind === 'swarm' || rec?.kind === 'find';
+const ids = words.order.filter((id) => !isAnimal(words.species[id]));
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+const wordCount = (s) => String(s).trim().split(/\s+/).filter(Boolean).length;
+
+// The parts of a page, in page order: [label, how to read it from a species record, and when it
+// is not used]. Cover plants (grass, rushes) are a share of the ground, not plants one by one: they
+// have one tap line, no flowering or dormant stage and lose no seeds; grass has no place words
+// (its amount says where) and no spread note (painting decides where it grows).
+const lines = (a, f = (x) => x) => (Array.isArray(a) ? a.map(f) : undefined);
+const cover = (r) => r.kind === 'cover';
+const PARTS = [
+  ['Name', (r) => r.name],
+  ['Plural', (r) => r.plural],
+  ['Riddle (before it is seen)', (r) => r.riddle],
+  ['Place', (r) => r.place, (r, id) => id === 'grass'],
+  ['Amount words', (r) => lines(r.amount, (a) => `${a[0]}: ${a[1]}`)],
+  ['None (after it has gone)', (r) => r.none],
+  ['Clause: flowering', (r) => r.flowering, cover],
+  ['Clause: dormant', (r) => r.dormant, cover],
+  ['Clause: spreading', (r) => r.spreading, cover],
+  ['Clause: receding', (r) => r.receding, cover],
+  ['Stages (seed, sprout, young, mature, flowering, dormant)', (r) => r.stages, cover],
+  ['Season boxes: grow (spring, summer, autumn, winter)', (r) => r.seasons?.grow],
+  ['Season box: flower', (r) => r.seasons?.flower, cover],
+  ['Season box: dormant', (r) => r.seasons?.dormant, cover],
+  ['Likes', (r) => lines(r.likes, (l) => l.text)],
+  ['Gives (pencil, then ink)', (r) => lines(r.gives, (g) => `${g.pencil} / ${g.ink}`)],
+  ['Field notes', (r) => lines(r.field, (f) => f.text)],
+  ['Field hint', (r) => r.fieldHint],
+  ['Sketch scale', (r) => r.sketch?.scale],
+  ['Sketch labels', (r) => (r.sketch?.labels ? Object.values(r.sketch.labels).map((l) => l.text.join(' ')) : undefined)],
+  ...['arrived', 'seen', 'spread', 'flower', 'dormant', 'woke', 'drown', 'seed', 'gone'].map((k) => [`Note: ${k}`, (r) => r.notes?.[k],
+    k === 'spread' ? (r, id) => id === 'grass' : ['flower', 'dormant', 'woke', 'drown', 'seed'].includes(k) ? cover : null]),
+];
+
+/** How long a part's wording is: words in a line, or words per line of a list. */
+const sizeOf = (v) => (Array.isArray(v) ? Math.round((v.reduce((a, s) => a + wordCount(s), 0) / Math.max(1, v.length)) * 10) / 10 : wordCount(v));
+const median = (xs) => { const s = xs.slice().sort((a, b) => a - b); const m = s.length >> 1; return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; };
+
+function render() {
+  const all = document.getElementById('labels').checked;
+  const stage = Number(document.getElementById('stage').value);
+  const out = document.getElementById('out');
+  const issues = [];
+  let html = '';
+
+  // Sketches and icons, one card per plant.
+  html += '<h2>Field sketch and icon</h2><div class="row">';
+  for (const id of ids) {
+    const rec = words.species[id];
+    const labels = {};
+    if (all) for (const [k, l] of Object.entries(rec?.sketch?.labels ?? {})) labels[k] = l.text;
+    const svg = drawSketch(id, { stage, labels, scale: rec?.sketch?.scale }).replace('<svg', '<svg class="sketch"');
+    const start = id === 'grass' || (growth.starters ?? []).includes(id) ? 'starts on the island' : 'comes by itself';
+    html += `<figure class="card"><h3>${esc(rec?.name ?? id)}</h3>${svg}
+      <div class="icons">${iconSvg(rec?.icon ?? id)}${iconSvg(rec?.icon ?? id)}</div>
+      <div class="meta">icon "${esc(rec?.icon)}" at 48 and 24 px; ${start}</div></figure>`;
+  }
+  html += '</div>';
+
+  // Each part, lined up.
+  for (const [label, read, notUsed] of PARTS) {
+    const used = (id) => !notUsed?.(words.species[id] ?? {}, id);
+    const vals = ids.map((id) => read(words.species[id] ?? {}));
+    const filled = (v) => v !== undefined && v !== '' && !(Array.isArray(v) && !v.length);
+    const sizes = vals.filter((v, i) => filled(v) && used(ids[i])).map(sizeOf);
+    const counts = vals.filter((v, i) => Array.isArray(v) && used(ids[i])).map((v) => v.length);
+    const mid = sizes.length ? median(sizes) : 0;
+    const midCount = counts.length ? median(counts) : 0;
+    html += `<h2>${esc(label)}</h2><div class="row">`;
+    ids.forEach((id, i) => {
+      const v = vals[i];
+      const name = words.species[id]?.name ?? id;
+      if (!used(id)) {
+        html += `<div class="card"><h3>${esc(name)}</h3><div class="meta">${filled(v) ? esc(Array.isArray(v) ? v.join(' / ') : v) : 'not used by a cover plant'}</div></div>`;
+        return;
+      }
+      if (!filled(v)) {
+        issues.push(`${name}: ${label} is empty`);
+        html += `<div class="card missing"><h3>${esc(name)}</h3><div class="value">empty</div></div>`;
+        return;
+      }
+      const n = sizeOf(v);
+      const cls = mid >= 4 && n > mid * 1.7 ? 'long' : mid >= 4 && n < mid * 0.5 ? 'short' : '';
+      const unit = Array.isArray(v) ? 'words a line' : 'words';
+      if (cls) issues.push(`${name}: ${label} is ${cls === 'long' ? 'much longer' : 'much shorter'} than the others (${n} ${unit}, middle ${mid})`);
+      if (Array.isArray(v) && midCount >= 3 && v.length < Math.floor(midCount) - 1) issues.push(`${name}: ${label} has ${v.length} lines where most have ${midCount}`);
+      const body = Array.isArray(v) ? `<ul>${v.map((s) => `<li>${esc(s)}</li>`).join('')}</ul>` : `<div>${esc(v)}</div>`;
+      const count = Array.isArray(v) ? `${v.length} lines, ${n} words a line` : `${n} words`;
+      html += `<div class="card"><h3>${esc(name)}</h3>${body}<div class="meta ${cls}">${count}${cls ? `<span class="flag">, ${cls === 'long' ? 'long' : 'short'}</span>` : ''}</div></div>`;
+    });
+    html += '</div>';
+  }
+  out.innerHTML = html;
+  document.getElementById('summary').innerHTML = `<div class="summary"><strong>${issues.length ? `${issues.length} things to look at` : 'Nothing stands out'}</strong>${issues.length ? `<ul>${issues.map((s) => `<li>${esc(s)}</li>`).join('')}</ul>` : ''}</div>`;
+}
+document.getElementById('labels').addEventListener('change', render);
+document.getElementById('stage').addEventListener('change', render);
+render();
+</script>
+</body>
+</html>
