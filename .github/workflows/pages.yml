@@ -1,7 +1,8 @@
 # Publishes the site to GitHub Pages:
 #   main            -> https://mshomper.github.io/ebb/
 #   other branches  -> https://mshomper.github.io/ebb/preview/<branch>/
-#   preview list    -> https://mshomper.github.io/ebb/preview/
+#   preview list    -> https://mshomper.github.io/ebb/preview/  (.github/pages/preview-index.html,
+#                      reading preview/branches.json written below)
 # Needs repo Settings > Pages > Source set to "GitHub Actions".
 
 name: Pages
@@ -48,7 +49,12 @@ jobs:
           git archive origin/main | tar -x -C "$site"
           write_build "$site" main
 
-          items=""
+          # The list page reads preview/branches.json: each branch's name, folder, last commit time
+          # (ISO, with its zone, so the page shows it in the viewer's own time) and whether it is
+          # already merged into main (its tip is in main's history and is not main's tip itself, so a
+          # branch just cut from main still counts as in progress).
+          main_sha=$(git rev-parse origin/main)
+          rows=""
           for ref in $(git for-each-ref --format='%(refname:strip=3)' refs/remotes/origin); do
             [ "$ref" = "main" ] || [ "$ref" = "HEAD" ] && continue
             slug=$(echo "$ref" | tr '/' '-' | tr -cd 'A-Za-z0-9._-')
@@ -56,24 +62,14 @@ jobs:
             mkdir -p "$dir"
             git archive "origin/$ref" | tar -x -C "$dir"
             write_build "$dir" "$ref"
-            when=$(git log -1 --format=%cd --date=format:'%d %b %Y, %H:%M' "origin/$ref")
-            items="$items<li><a href=\"$slug/\">$ref</a><span>updated $when UTC</span></li>"
+            date=$(git log -1 --format=%cI "origin/$ref")
+            merged=false
+            if [ "$(git rev-parse "origin/$ref")" != "$main_sha" ] && git merge-base --is-ancestor "origin/$ref" origin/main; then merged=true; fi
+            name=$(echo "$ref" | tr -d '"\\')
+            rows="$rows${rows:+,}{\"branch\":\"$name\",\"slug\":\"$slug\",\"date\":\"$date\",\"merged\":$merged}"
           done
-          [ -n "$items" ] || items="<li><span>No branch previews right now.</span></li>"
-
-          cat > "$site/preview/index.html" <<EOF
-          <!doctype html><html lang="en"><head><meta charset="utf-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1">
-          <title>ebb previews</title><link rel="icon" href="../brand/ebb-favicon.svg" type="image/svg+xml">
-          <style>
-          body{margin:0;padding:24px 16px;background:#F4EEE4;color:#1E2624;font:600 18px/1.5 system-ui,sans-serif}
-          main{max-width:640px;margin:0 auto}h1{font-size:28px;margin:0 0 4px}p{margin:0 0 20px;color:#5c6b65}
-          ul{list-style:none;margin:0;padding:0}li{padding:14px 0;border-bottom:1px solid #ddd3c4;overflow-wrap:anywhere}
-          a{color:#4a6a47;font-size:20px;display:block}span{font-size:16px;color:#5c6b65}
-          </style></head><body><main><h1>ebb branch previews</h1>
-          <p>Each branch on GitHub, published for click-testing. The live game is <a style="display:inline;font-size:18px" href="../">here</a>.</p>
-          <ul>$items</ul></main></body></html>
-          EOF
+          printf '[%s]\n' "$rows" > "$site/preview/branches.json"
+          cp .github/pages/preview-index.html "$site/preview/index.html"
 
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
