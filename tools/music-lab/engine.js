@@ -76,7 +76,7 @@ export async function initEngine(host, env) {
           <h3>Season</h3>
           <div class="seg" role="group" aria-label="Season" id="en-seasons">${SEASONS.map(([id, label]) => `<button data-season="${id}">${label}</button>`).join('')}</div>
           <h3>Slot</h3>
-          <div class="seg" role="group" aria-label="Slot" id="en-slots">${SLOTS.map(([id, label]) => `<button data-slot="${id}">${label}</button>`).join('')}</div>
+          <div class="seg even" role="group" aria-label="Slot" id="en-slots">${SLOTS.map(([id, label]) => `<button data-slot="${id}">${label}</button>`).join('')}</div>
           <h3>Weather</h3>
           <div class="seg" role="group" aria-label="Weather" id="en-weather">${WEATHER.map(([id, label]) => `<button data-weather="${id}">${label}</button>`).join('')}</div>
         </div>
