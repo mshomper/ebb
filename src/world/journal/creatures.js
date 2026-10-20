@@ -91,6 +91,10 @@ export function observeAnimals(j, out, ctx, at) {
       } else if (e.name === 'species:happy') {
         setFlag(j, 'frogs:happy');
         if (k.ever) note(rec, 'happy', 'frogs');
+      } else if (e.name === 'creature:ate') {
+        // A frog ate what you offered (S6c-2): noted the first time, and the web's "you" link inks.
+        if (setFlag(j, 'you:fed') && k.ever) note(rec, 'fed', 'frogs');
+        learnOnce(k, 'fed');
       } else if (e.name === 'creature:trusted' && k.ever) {
         // A frog's word moved up (S6c): a note, and what it teaches the page.
         const t = rec.trust?.notes?.[e.payload.word];

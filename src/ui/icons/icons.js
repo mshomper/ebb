@@ -296,6 +296,15 @@ const ICONS = {
     <path d="M14.5 3.5V7.5H18.5"/>
     <path d="M9 11.5H15.5M9 14.5H15.5M9 17.5H13"/>`,
 
+  // Feed (S6c-2): a small scoop tipped over, a pinch of food falling from it.
+  feed: `
+    <path ${ACCENT} d="M3.5 8.5H15L13.4 14.6C13.1 15.6 12.2 16.2 11.2 16.2H7.3C6.3 16.2 5.4 15.6 5.1 14.6Z"/>
+    <path d="M3.5 8.5H15L13.4 14.6C13.1 15.6 12.2 16.2 11.2 16.2H7.3C6.3 16.2 5.4 15.6 5.1 14.6Z"/>
+    <path d="M15 9.6L19.5 7.2"/>
+    <circle cx="16.6" cy="15.2" r="0.95" fill="currentColor" stroke="none"/>
+    <circle cx="19" cy="17.8" r="0.95" fill="currentColor" stroke="none"/>
+    <circle cx="16" cy="20.2" r="0.95" fill="currentColor" stroke="none"/>`,
+
   // Animals (S6a): a frog sitting at the water's edge, in profile, hind leg folded; midges, a loose
   // cloud of dots over a reed tip.
   frog: `

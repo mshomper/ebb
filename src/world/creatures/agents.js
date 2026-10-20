@@ -51,6 +51,7 @@ import { stream } from '../../core/rng.js';
  * @property {number} hushUntil    quiet after a neighbor's startle until then
  * @property {{ x: number, z: number } | null} [hide]  where it sits out the day, in cover (day-hide.js)
  * @property {number} [hideAt]     when the hide was last worked out
+ * @property {{ id: number, x: number, z: number } | null} [food]  food you offered that it is going for (S6c-2)
  * @property {ReturnType<typeof stream>} r
  */
 
@@ -66,6 +67,8 @@ export function createFrogAgents(recipe, seed) {
   /** Every call started (for the chorus timeline): frog id and time. @type {{ id: number, t: number }[]} */
   const calls = [];
   const stats = { hops: 0, hopM: 0, swims: 0, flicks: 0, perches: 0, startles: 0, hushes: 0 };
+  /** Food eaten since last asked (S6c-2): which frog, which food. @type {{ id: number, food: number }[]} */
+  let meals = [];
   const P = recipe.presence;
   let lastCall = -Infinity, clock = 0, owed = 0, synced = false;
 
@@ -422,8 +425,45 @@ export function createFrogAgents(recipe, seed) {
     return true;
   }
 
+  /**
+   * Food you offered (S6c-2): hop toward it, stopping a tongue's reach short, then flick it up.
+   * Returns false if there is no way there (the food is given up).
+   * @param {Agent} a @param {any} env
+   */
+  function eat(a, env) {
+    const f = /** @type {{ id: number, x: number, z: number }} */ (a.food);
+    const reach = M.tongue.reachM * M.tongue.readability;
+    const dx = f.x - a.x, dz = f.z - a.z, d = Math.hypot(dx, dz);
+    a.mode = 'forage';
+    a.flicks = 0;
+    if (d <= reach * 1.3) {
+      a.yaw = Math.atan2(dx, dz);
+      a.tongueT0 = clock;
+      stats.flicks++;
+      meals.push({ id: a.id, food: f.id });
+      a.food = null;
+      a.mode = 'rest';
+      a.nextAt = clock + 1.5 + a.r.next();
+      return true;
+    }
+    const stop = Math.max(0, d - reach * 0.8);
+    const len = Math.min(stop, M.hop.distM[1] * scale);
+    const x = a.x + (dx / d) * len, z = a.z + (dz / d) * len;
+    if (len > 0.01 && env.water(x, z).depth <= M.dayHide.maxDepthM && Math.abs(env.ground(x, z) - a.y) <= 0.2 * scale && clear(a, x, z)) {
+      startHop(a, { x, z, y: env.ground(x, z) }, env, false);
+      a.nextAt = clock + 0.3;
+      return true;
+    }
+    const s = findSpot(a, env, false, Math.atan2(dx, dz));
+    if (s && Math.hypot(f.x - s.x, f.z - s.z) < d) { startHop(a, s, env, false); a.nextAt = clock + 0.3; return true; }
+    a.food = null;
+    return false;
+  }
+
   /** What to do next. @param {Agent} a @param {any} env */
   function choose(a, env) {
+    // Food you offered comes first, whatever the hour (S6c-2).
+    if (a.food && !a.perch && eat(a, env)) return;
     const hour = env.hourOfDay;
     const active = inHours(hour, recipe.ecology.activity.hours);
     const sinceDusk = ((hour - env.duskHour) % 24 + 36) % 24 - 12;
@@ -603,6 +643,22 @@ export function createFrogAgents(recipe, seed) {
         for (const [id, a] of agents) if (a.gone) agents.delete(id);
       }
     },
+    /**
+     * Send a frog for food you offered (S6c-2), after `waitS` seconds of frog time. False if it
+     * cannot go (leaving, or not out now).
+     * @param {number} id @param {{ id: number, x: number, z: number }} food @param {number} waitS
+     */
+    goFor(id, food, waitS) {
+      const a = agents.get(id);
+      if (!a || a.mode === 'leave') return false;
+      a.food = { ...food };
+      if (!a.hop) a.nextAt = Math.min(a.nextAt, clock + waitS);
+      return true;
+    },
+    /** Is this frog wary from a startle just now? @param {number} id */
+    wary: (id) => { const a = agents.get(id); return !!a && clock < a.waryUntil; },
+    /** Food eaten since the last call (S6c-2). */
+    takeMeals() { const m = meals; meals = []; return m; },
     /** The agents now. */
     list: () => [...agents.values()],
     /** Seconds of frog time so far. */

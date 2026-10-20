@@ -49,21 +49,38 @@ export function addTrustEvent(state, ev) {
 }
 
 /**
+ * How hungry a frog is for food you offer, 0..1: full just after a meal, hungry again after fullH
+ * game hours. @param {{ fedAt?: number }} f @param {number} hour @param {number} fullH
+ */
+export function appetite(f, hour, fullH) {
+  if (f.fedAt === undefined) return 1;
+  return Math.max(0, Math.min(1, (hour - f.fedAt) / Math.max(1e-6, fullH)));
+}
+
+/**
  * Apply the recorded events to the frogs (on a copy the tick already made), raise every frog to the
- * test link's trust (`?trust=`, testing only), and say when a frog's word moves up.
+ * test link's trust (`?trust=`, testing only), and say when a frog's word moves up. A meal earns
+ * less if the frog ate within `fullH` game hours (`creature:ate` for each).
  * @param {{ frogs: any[], pending?: TrustEvent[] }} fr the frogs' state, copied (changed in place)
  * @param {any} P recipes/species/frog.json presence
  * @param {number} testTrust 0 unless `?trust=` asks for more
- * @returns {{ name: string, payload: any }[]} `creature:trusted` events
+ * @param {number} [fullH] recipes/species/frog.json feed.fullH
+ * @returns {{ name: string, payload: any }[]} `creature:ate` and `creature:trusted` events
  */
-export function applyTrust(fr, P, testTrust = 0) {
+export function applyTrust(fr, P, testTrust = 0, fullH = 6) {
   /** @type {{ name: string, payload: any }[]} */ const events = [];
   const top = maxTrust(P);
   const before = new Map(fr.frogs.map((f) => [f.id, f.trust ?? 0]));
   for (const ev of fr.pending ?? []) {
     const f = fr.frogs.find((g) => g.id === ev.id);
     if (!f) continue;
-    const gain = ev.kind === 'watched' ? Math.min(ev.minutes, P.watch.capS / 60) * P.watch.trustPerMin : P.feedTrust;
+    let gain;
+    if (ev.kind === 'watched') gain = Math.min(ev.minutes, P.watch.capS / 60) * P.watch.trustPerMin;
+    else {
+      gain = P.feedTrust * appetite(f, ev.hour, fullH);
+      f.fedAt = ev.hour;
+      events.push({ name: 'creature:ate', payload: { species: 'frogs', id: f.id, x: f.x, z: f.z } });
+    }
     f.trust = r4(Math.min(top, (f.trust ?? 0) + gain));
   }
   fr.pending = [];

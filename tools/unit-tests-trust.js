@@ -53,13 +53,14 @@ export function addTrustTests(test, assert, eq) {
     const a = hour(s, P);
     const t2 = a.state.creatures.frogs.frogs[1].trust;
     eq(t2, Math.round((0.4 + 5 * P.watch.trustPerMin + P.feedTrust) * 10000) / 10000, 'watching and feeding add up');
-    eq(a.events.length, 1, 'one word moved');
-    eq(a.events[0].payload.word, 'curious', 'tolerant to curious');
+    const words = a.events.filter((e) => e.name === 'creature:trusted');
+    eq(words.length, 1, 'one word moved');
+    eq(words[0].payload.word, 'curious', 'tolerant to curious');
     const b = hour(a.state, P);
     eq(b.state.creatures.frogs.frogs[1].trust, t2, 'applied once: the next hour changes nothing');
-    eq(b.events.length, 0, 'no word moves twice');
-    let c = addTrustEvent(b.state, { kind: 'watched', id: 2, minutes: 999, hour: 11 });
-    for (let i = 0; i < 20; i++) c = addTrustEvent(c, { kind: 'fed', id: 2, hour: 11 });
+    eq(b.events.length, 0, 'nothing is told twice');
+    let c = b.state;
+    for (let i = 0; i < 20; i++) c = addTrustEvent(c, { kind: 'watched', id: 2, minutes: 999, hour: 11 });
     const d = hour(c, P);
     eq(d.state.creatures.frogs.frogs[1].trust, maxTrust(P), 'stops at the ceiling');
     return `trust ${t2}, then ${d.state.creatures.frogs.frogs[1].trust}`;
@@ -76,6 +77,31 @@ export function addTrustTests(test, assert, eq) {
     const a = one.creatures.frogs.frogs[0].trust, b = spread.creatures.frogs.frogs[0].trust;
     assert(Math.abs(a - b) < 0.0002, `one hour ${a}, spread ${b}`);
     return `${a} and ${b}`;
+  });
+
+  test(TRUST, 'a meal earns trust and says so; another soon after earns less', async () => {
+    const rec = await frogRecipe();
+    const P = rec.presence, fullH = rec.feed.fullH;
+    let s = addTrustEvent(twoFrogs(), { kind: 'fed', id: 1, hour: 100 });
+    const tickOf = (/** @type {any} */ st) => {
+      const F = st.creatures.frogs;
+      const fr = { ...F, frogs: F.frogs.map((/** @type {any} */ f) => ({ ...f })) };
+      const events = applyTrust(fr, P, 0, fullH);
+      return { state: { ...st, creatures: { ...st.creatures, frogs: fr } }, events };
+    };
+    const a = tickOf(s);
+    const first = a.state.creatures.frogs.frogs[0].trust;
+    eq(first, P.feedTrust, 'a first meal earns feedTrust');
+    assert(a.events.some((e) => e.name === 'creature:ate' && e.payload.id === 1), 'creature:ate is told');
+    s = addTrustEvent(a.state, { kind: 'fed', id: 1, hour: 101 });
+    const b = tickOf(s);
+    const second = Math.round((b.state.creatures.frogs.frogs[0].trust - first) * 10000) / 10000;
+    assert(second < P.feedTrust / 2, `an hour later it earns less: ${second}`);
+    s = addTrustEvent(b.state, { kind: 'fed', id: 1, hour: 101 + fullH });
+    const c = tickOf(s);
+    const third = Math.round((c.state.creatures.frogs.frogs[0].trust - b.state.creatures.frogs.frogs[0].trust) * 10000) / 10000;
+    eq(third, P.feedTrust, `${fullH} hours later it is hungry again`);
+    return `${first}, then ${second}, then ${third}`;
   });
 
   test(TRUST, 'quiet watching counts a still camera close by, not a moving or far one', async () => {

@@ -38,6 +38,7 @@ import { applyTrust } from './trust.js';
  * @property {number} low    hours in a row under leaveMood
  * @property {string[]} near the cover plants within its shelter reach (for the journal's web)
  * @property {number} [trust] how well it knows you, 0..1, only ever growing (trust.js; absent is 0)
+ * @property {number} [fedAt] the hour it last ate food you offered (S6c-2; absent: never)
  */
 
 /**
@@ -203,7 +204,7 @@ export function bringFrogs(state, hourIndex, env, count) {
     fr.lastJoin = hourIndex;
     events.push({ name: 'creature:settled', payload: { species: 'frogs', id: fr.frogs[0].id, x: fr.frogs[0].x, z: fr.frogs[0].z } });
   } else if (fr.frogs.length === 1) fr.phase = 'visiting';
-  events.push(...applyTrust(fr, rec.presence, env.testTrust ?? 0));
+  events.push(...applyTrust(fr, rec.presence, env.testTrust ?? 0, rec.feed?.fullH));
   return { state: { ...state, creatures: { ...(state.creatures ?? {}), frogs: fr } }, events };
 }
 
@@ -245,7 +246,7 @@ export function coarseStep(state, hourIndex, env) {
   }
 
   // Trust earned since the last hour (watching, feeding), and `?trust=` when testing.
-  events.push(...applyTrust(fr, rec.presence, env.testTrust ?? 0));
+  events.push(...applyTrust(fr, rec.presence, env.testTrust ?? 0, rec.feed?.fullH));
 
   // Winter: asleep in the pond mud, mood held, nothing comes or goes.
   const dormant = !!state.seasons?.dormant?.[E.dormancy];

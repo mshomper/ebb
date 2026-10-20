@@ -27,6 +27,7 @@ Size and color come from CSS: set `width`/`height` on `.icon` and `color` on the
 | `sculpt` | trowel lifting a soft mound |
 | `smooth` | flat float over a wavy line that straightens |
 | `paint` | round brush with a leaf-shaped dab |
+| `feed` | a small scoop tipped over, a pinch of food falling from it: the Feed tool |
 | `water` | droplet over one ripple line |
 | `pour` | spout bending down, a falling drop, a small pool on the ground line |
 | `drain` | a shallow pool over a gap in the ground line, an arrow leaving downward |

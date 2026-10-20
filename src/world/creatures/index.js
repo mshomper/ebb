@@ -26,6 +26,7 @@ import { createFrogAgents } from './agents.js';
 import { createPerches } from './perches.js';
 import { bringFrogs } from './coarse.js';
 import { createWatching } from './watching.js';
+import { createFeeding } from './feeding.js';
 import { addTrustEvent } from './trust.js';
 import { findHide } from './day-hide.js';
 import { FROG_BONES } from './rigs/frog.js';
@@ -91,6 +92,13 @@ export function createCreatures(opts) {
       albedo: { back: T.albedo, tongue: T.albedo }, blotch: { scale: 1, amount: 0 }, bellyBelowNormalY: -2 }, T.radiusM / 3);
     pass.setMesh('tongue', { data: packMesh(mesh), indices: mesh.indices });
   }
+  // Food you offer (S6c-2): one small dark speck, drawn a few times where the food lies.
+  if (recipe.feed) {
+    const Fd = recipe.feed, r = Fd.speckM * 0.3;
+    const mesh = bakeBody({ prims: [{ type: 'capsule', bone: 'tongue', a: [0, 0, -Fd.speckM / 2], b: [0, 0, Fd.speckM / 2], r: [r, r * 0.8], k: 0, region: 'tongue' }],
+      albedo: { back: Fd.speckAlbedo, tongue: Fd.speckAlbedo }, blotch: { scale: 1, amount: 0 }, bellyBelowNormalY: -2 }, r / 2);
+    pass.setMesh('speck', { data: packMesh(mesh), indices: mesh.indices });
+  }
 
   /** The tick's frogs (none while they sleep in winter). */
   const tickFrogs = () => world.state?.creatures?.frogs?.frogs ?? [];
@@ -108,6 +116,7 @@ export function createCreatures(opts) {
     hide: (/** @type {{ x: number, z: number }} */ home, /** @type {number} */ id) =>
       findHide({ growth: world.state?.growth, flora: opts.flora ?? {}, water: env.water }, home, id, M.dayHide),
   };
+  const feeding = recipe.feed ? createFeeding({ recipe, agents, ground: env.ground, water: env.water }) : null;
 
   /** Hour of the day (display time) and dusk, for the agents' moods. */
   function setHours() {
@@ -174,6 +183,7 @@ export function createCreatures(opts) {
         beings.push({ x: v.x, y: v.y, z: v.z, yaw: v.yaw, size: o.size * back.k, mesh: 'tongue', bones: o.tongue });
       }
     }
+    if (feeding && pass.hasMesh('speck')) for (const s of feeding.specks()) beings.push({ ...s, size: 1, mesh: 'speck', bones: null });
     pass.setBeings(beings);
   }
 
@@ -229,6 +239,19 @@ export function createCreatures(opts) {
       return best;
     },
 
+    /**
+     * The Feed tool tapped the ground at (x, z) (S6c-2): food lands there and a frog may come.
+     * Returns the line the tool card shows.
+     * @param {number} x @param {number} z
+     */
+    feed(x, z) {
+      if (!feeding) return '';
+      const key = feeding.offer(x, z, { known: !!getStore('journal')?.species?.frogs?.ever, dormant: !!world.state?.creatures?.frogs?.dormant, eye: camera.eye });
+      return recipe.feed.messages[key] ?? '';
+    },
+    /** Soft rings where food lies, for the terrain marks: [x, z, radius, opacity]. */
+    foodRings: () => (feeding ? feeding.rings() : []),
+
     /** @param {import('../../sim/live-sim.js').FrameInfo} f */
     tick(f) {
       // `?frogs=N`: bring the frogs now, once the island, its water and the journal are up (a tools
@@ -258,6 +281,14 @@ export function createCreatures(opts) {
         const watched = watching.step(agents.list(), sources, f.realDt);
         if (watched.length) {
           for (const w of watched) world.state = addTrustEvent(world.state, { kind: 'watched', id: w.id, minutes: w.minutes, hour: hourIndex() });
+          updateStore('world', () => world.state);
+        }
+      }
+      // Food you offered (S6c-2): frogs come for it; each meal is recorded for the next hour.
+      if (feeding) {
+        const ate = feeding.step(f.realDt, camera.eye, (id) => tickFrogs().find((/** @type {any} */ g) => g.id === id), hourIndex());
+        if (ate.length) {
+          for (const m of ate) world.state = addTrustEvent(world.state, { kind: 'fed', id: m.id, hour: hourIndex() });
           updateStore('world', () => world.state);
         }
       }

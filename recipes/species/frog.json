@@ -100,6 +100,19 @@
     "_trust": "Trust (S6c, doc 23): 0..1 per frog, saved, only ever grows. bands: where each word after Wary begins (Tolerant, Curious, Familiar, Bonded); the ceiling word caps it just under the next band. Quiet watching: the camera slower than watch.stillMps within watch.reachM of a frog for at least watch.minS, closed when it moves or at watch.capS, earns trustPerMin a minute. Both kinds are saved as events the hourly tick applies.",
     "bands": [0.2, 0.45, 0.65, 0.85]
   },
+  "_feed": "Feeding (S6c-2): the Feed tool's food for this species (the tool card's words are in src/ui/tools.js FEED_SPECIES). A frog within reachM of where the food lands (not one leaving) comes for it, once the camera is outside its comfort ring, after waitS, more (up to fullWaitS) if it ate within fullH game hours; food nobody takes is gone after lingerS (real seconds). A meal earns presence.feedTrust, scaled down if it ate within fullH. specks: how many little dark bits, each speckM long, within spreadM; ringM: the soft ring on the ground where food lies. messages: what the card says after a tap.",
+  "feed": {
+    "reachM": 2, "waitS": 1, "fullH": 6, "fullWaitS": 10, "lingerS": 60,
+    "specks": 5, "speckM": 0.008, "spreadM": 0.04, "speckAlbedo": [0.09, 0.07, 0.05], "ringM": 0.2, "ringOpacity": 0.55,
+    "messages": {
+      "coming": "A frog has seen it.",
+      "waiting": "A frog has seen it, but waits for you to back off.",
+      "none": "No frog is near enough to see it. Try closer to one.",
+      "water": "Frogs take their food on the bank. Try the edge, by a frog.",
+      "asleep": "The frogs are asleep in the pond mud for winter.",
+      "unknown": "Nothing here takes food from you yet."
+    }
+  },
   "find": { "tapM": 0.3, "tapPerM": 0.03, "lookM": 1.5, "lookDistM": 1.5, "holdS": 1.5 },
   "_reveal": "Coming back in the reveal on return (S7c, src/world/creatures/reveal-return.js): return is how (plop: a ring on the water, for the few nearest the camera); growS is how long one takes to come in.",
   "reveal": { "return": "plop", "growS": 0.3 }

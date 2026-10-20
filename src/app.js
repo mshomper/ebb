@@ -475,6 +475,16 @@ export async function startApp(canvas, hooks = {}) {
     if (p && plantTool.tap(tools().plantSpecies ?? 'reeds', p)) updateStore('world', () => world.state);
   }
 
+  // The Feed tool (S6c-2, src/world/creatures/feeding.js): food lands where you tap and a frog may
+  // come for it. Not an edit: a gentle toss never startles. Its line goes to the tool card (`feedUi`).
+  /** @param {number} x @param {number} y */
+  function feedTap(x, y) {
+    const p = groundAt(x, y);
+    if (!p) return;
+    const message = creatures.feed(p[0], p[2]);
+    updateStore('feedUi', () => ({ message, at: performance.now() }));
+  }
+
   /** @param {'undo'|'redo'} dir */
   function runHistory(dir) {
     const ok = dir === 'undo' ? history.undo() : history.redo();
@@ -522,6 +532,7 @@ export async function startApp(canvas, hooks = {}) {
       case 'tool.move': {
         if (!tools().tool) break;
         if (tools().tool === 'plant') { if (a.type === 'tool.begin') plantTap(a.x, a.y); break; }
+        if (tools().tool === 'feed') { if (a.type === 'tool.begin') feedTap(a.x, a.y); break; }
         if (tools().tool === 'water') {
           if (tools().waterMode === 'spring') { if (a.type === 'tool.begin') springTap(a.x, a.y); }
           else if (a.type === 'tool.begin' || pouring) pouring = { x: a.x, y: a.y };
@@ -582,8 +593,8 @@ export async function startApp(canvas, hooks = {}) {
       return;
     }
     const p = t.tool && pointer.inside ? groundAt(pointer.x, pointer.y) : null;
-    // The Plant tool marks just the spot a seed would go.
-    if (p) terrain.setRing({ x: p[0], z: p[2], radius: t.tool === 'plant' ? 0.4 : t.size, visible: true });
+    // The Plant tool marks just the spot a seed would go; Feed, where the food would land.
+    if (p) terrain.setRing({ x: p[0], z: p[2], radius: t.tool === 'plant' ? 0.4 : t.tool === 'feed' ? 0.2 : t.size, visible: true });
     else terrain.setRing({ visible: false });
   }
 
@@ -616,7 +627,7 @@ export async function startApp(canvas, hooks = {}) {
     presence.update(realDt);
     updateRing();
     // Plant tool rings, and a breathing ring round whatever the journal's tap card names.
-    terrainPass.setMarks(plantTool.marks(now, tools().tool === 'plant', getStore('identify'), getStore('reveal')?.rings?.(now) ?? []));
+    terrainPass.setMarks(plantTool.marks(now, tools().tool === 'plant', getStore('identify'), [...(getStore('reveal')?.rings?.(now) ?? []), ...creatures.foodRings()]));
     updatePour();
     if (queuedHistory && !terrain.isBusy()) runHistory(queuedHistory);
     // Ground detail waits for a few calm frames so the first picture is as quick as before (docs/22).

@@ -325,7 +325,8 @@
         { "text": "Small flying insects to catch, close to the water", "learn": ["settled"] },
         { "text": "Comes in ones and twos, at dusk", "learn": ["joined"] },
         { "text": "Moves on when the edge grows bare or dry", "learn": ["left"] },
-        { "text": "Doesn't mind you close, if you come slowly", "learn": ["trust:tolerant"] }
+        { "text": "Doesn't mind you close, if you come slowly", "learn": ["trust:tolerant"] },
+        { "text": "Takes the insects you offer, if you give it room", "learn": ["fed"] }
       ],
       "_trust": "How well one frog knows you (S6c, doc 23), as a word on its card, never a number; lines: what the card says at each word; notes: written once per frog when its word moves up to that one. Bands are in recipes/species/frog.json presence.",
       "trust": {
@@ -360,6 +361,7 @@
         "back": "A frog has come back to the pond.",
         "scoutLeftUnseen": "The reeds were quiet tonight.",
         "left": "A frog has moved on from the pond.",
+        "fed": "A frog came for the insects you offered.",
         "gone": "The last of the frogs has moved on.",
         "dormant": "The frogs have gone down into the pond mud for winter.",
         "woke": "The frogs are back at the water's edge.",

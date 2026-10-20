@@ -3,17 +3,18 @@
 // bottom center, [undo][redo] apart at the bottom left, and above the bar a brush card with mode or layer chips and size and
 // strength sliders while a tool is active (water's spring mode swaps the sliders for flow
 // chips, a spring count and Remove; the Plant tool shows species chips, a hint and the last
-// tap's result instead). S8 grows this into the full HUD palette.
+// tap's result instead; the Feed tool (S6c-2) shows a chip for each creature you have found that
+// takes food, its food, and the last tap's result). S8 grows this into the full HUD palette.
 //
-// Reads the store slices `tools`, `history`, `unlocks`, `waterUi` and `plantUi` (created by
-// app.js); never writes the store. Every user choice goes out as an action through
+// Reads the store slices `tools`, `history`, `unlocks`, `waterUi`, `plantUi`, `feedUi` and
+// `journal` (what you have found); never writes the store. Every user choice goes out as an action through
 // src/input/actions.js. Styles: tools.css.
 
 import { get, subscribe } from '../core/store.js';
 import { dispatch } from '../input/actions.js';
 import { ensureIconSprite, iconSvg } from './icons/icons.js';
 
-/** @typedef {'sculpt'|'smooth'|'paint'|'water'|'plant'} ToolId */
+/** @typedef {'sculpt'|'smooth'|'paint'|'water'|'plant'|'feed'} ToolId */
 /** @typedef {'reeds'|'lilies'|'iris'|'rushes'|'thrift'} PlantSpecies */
 /** @typedef {'raise'|'lower'|'flatten'} SculptMode */
 /** @typedef {'grass'|'sand'|'soil'|'rock'} PaintLayer */
@@ -54,7 +55,17 @@ const TOOLS = [
   { id: 'paint', label: 'Paint' },
   { id: 'water', label: 'Water' },
   { id: 'plant', label: 'Plant' },
+  { id: 'feed', label: 'Feed' },
 ];
+/**
+ * Creatures the Feed tool offers food to (S6c-2), each shown once you have found it (the journal):
+ * its own food, in its words. Minnows and others join in M2.
+ * @type {{id: string, label: string, icon: string, hint: string}[]}
+ */
+const FEED_SPECIES = [
+  { id: 'frogs', label: 'Frogs', icon: 'frog', hint: 'A pinch of insects. Tap the bank near a frog, then give it room.' },
+];
+const FEED_NONE = 'Nothing here takes food from you yet. Find a creature first.';
 /**
  * Species the Plant tool offers, in chip order (two to a row; an odd last chip takes the whole row). Each `icon` is a
  * drawn icon of the same name in icons.js; `hint` says where the species grows.
@@ -143,6 +154,14 @@ export function mountTools(parent = document.body) {
         <p class="ebb-tools__hint" data-out="plant-hint"></p>
         <p class="ebb-tools__message" data-out="plant-message" role="status" aria-live="polite"></p>
       </div>
+      <div class="ebb-tools__plant ebb-tools__feed" role="group" aria-label="Feed" hidden>
+        <div class="ebb-tools__chips ebb-tools__chips--feed" role="group" aria-label="Who to feed" style="--tb-cols: 2">
+          ${FEED_SPECIES.map((s) => `<button type="button" class="ebb-tools__chip" data-feed="${s.id}"
+            aria-pressed="false" title="${s.label}">${iconSvg(s.icon)}<span>${s.label}</span></button>`).join('')}
+        </div>
+        <p class="ebb-tools__hint" data-out="feed-hint"></p>
+        <p class="ebb-tools__message" data-out="feed-message" role="status" aria-live="polite"></p>
+      </div>
       <div class="ebb-tools__slider" data-slider="size">
         <label for="ebb-tools-size">Size</label>
         <output for="ebb-tools-size" data-out="size"></output>
@@ -191,14 +210,20 @@ export function mountTools(parent = document.body) {
   const speciesBtns = /** @type {HTMLButtonElement[]} */ ([...root.querySelectorAll('[data-species]')]);
   const plantHint = /** @type {HTMLElement} */ (root.querySelector('[data-out="plant-hint"]'));
   const plantMessage = /** @type {HTMLElement} */ (root.querySelector('[data-out="plant-message"]'));
+  const feedPanel = /** @type {HTMLElement} */ (root.querySelector('.ebb-tools__feed'));
+  const feedChips = /** @type {HTMLElement} */ (root.querySelector('.ebb-tools__chips--feed'));
+  const feedBtns = /** @type {HTMLButtonElement[]} */ ([...root.querySelectorAll('[data-feed]')]);
+  const feedHint = /** @type {HTMLElement} */ (root.querySelector('[data-out="feed-hint"]'));
+  const feedMessage = /** @type {HTMLElement} */ (root.querySelector('[data-out="feed-message"]'));
 
   // --- user input -> actions ---
   /** @param {MouseEvent} e */
   function onClick(e) {
     const btn = /** @type {HTMLElement|null} */ (/** @type {HTMLElement} */ (e.target).closest('button'));
     if (!btn || !(root.contains(btn) || historyRoot.contains(btn))) return;
-    const { tool, mode, layer, waterMode, rate, species, springRemove, history } = btn.dataset;
+    const { tool, mode, layer, waterMode, rate, species, springRemove, history, feed } = btn.dataset;
     if (tool) dispatch(/** @type {any} */ ({ type: 'tool.select', toolId: tool }));
+    else if (feed) dispatch(/** @type {any} */ ({ type: 'brush.set', patch: { feedSpecies: feed } }));
     else if (species) dispatch(/** @type {any} */ ({ type: 'brush.set', patch: { plantSpecies: species } }));
     else if (mode) dispatch(/** @type {any} */ ({ type: 'brush.set', patch: { sculptMode: mode } }));
     else if (layer) dispatch(/** @type {any} */ ({ type: 'brush.set', patch: { paintLayer: layer } }));
@@ -265,10 +290,22 @@ export function mountTools(parent = document.body) {
     for (const b of speciesBtns) b.setAttribute('aria-pressed', String(b.dataset.species === species.id));
     if (plantHint.textContent !== species.hint) plantHint.textContent = species.hint;
 
-    const open = tool === 'sculpt' || tool === 'smooth' || tool === 'paint' || tool === 'water' || tool === 'plant';
+    // Feed: a chip for each creature found so far; the chosen one, else the first found.
+    const known = FEED_SPECIES.filter((s) => get('journal')?.species?.[s.id]?.ever);
+    const fed = known.find((s) => s.id === t.feedSpecies) ?? known[0] ?? null;
+    for (const b of feedBtns) {
+      b.hidden = !known.some((s) => s.id === b.dataset.feed);
+      b.setAttribute('aria-pressed', String(b.dataset.feed === fed?.id));
+    }
+    feedChips.hidden = !known.length;
+    const feedText = fed ? fed.hint : FEED_NONE;
+    if (feedHint.textContent !== feedText) feedHint.textContent = feedText;
+
+    const open = tool === 'sculpt' || tool === 'smooth' || tool === 'paint' || tool === 'water' || tool === 'plant' || tool === 'feed';
     if (tool !== shownTool) {
-      // A result from an earlier visit to the Plant tool does not linger.
+      // A result from an earlier visit to the Plant or Feed tool does not linger.
       if (tool === 'plant') clearPlantMessage();
+      if (tool === 'feed') feedLine.clear();
       shownTool = tool;
       card.classList.toggle('is-open', open);
       historyRoot.classList.toggle('has-tool', open);
@@ -284,7 +321,8 @@ export function mountTools(parent = document.body) {
       waterChips.hidden = tool !== 'water';
       springPanel.hidden = !inSpring;
       plantPanel.hidden = !inPlant;
-      for (const s of sliders) s.hidden = inSpring || inPlant;
+      feedPanel.hidden = tool !== 'feed';
+      for (const s of sliders) s.hidden = inSpring || inPlant || tool === 'feed';
     }
 
     const [min, max] = validRange(t.sizeRange);
@@ -324,27 +362,16 @@ export function mountTools(parent = document.body) {
     setDisabled(redoBtn, !h.canRedo);
   }
 
-  // The last Plant tap's result: shown at once, faded out after PLANT_MESSAGE_MS. The text stays
-  // in place while it fades (and the line keeps its height), so the card does not jump.
-  /** @type {ReturnType<typeof setTimeout> | undefined} */
-  let plantTimer;
-  function clearPlantMessage() {
-    clearTimeout(plantTimer);
-    plantMessage.classList.remove('is-shown');
-  }
-  function renderPlantMessage() {
+  // The last Plant or Feed tap's result: shown at once, faded out after PLANT_MESSAGE_MS. The text
+  // stays in place while it fades (and the line keeps its height), so the card does not jump.
+  const plantLine = messageLine(plantMessage), feedLine = messageLine(feedMessage);
+  const clearPlantMessage = () => plantLine.clear();
+  /** @param {string} slice @param {ReturnType<typeof messageLine>} line */
+  const renderMessage = (slice, line) => {
     /** @type {Partial<PlantUiSlice>} */
-    const p = get('plantUi') ?? {};
-    const text = typeof p.message === 'string' ? p.message : '';
-    clearTimeout(plantTimer);
-    if (!text) { plantMessage.classList.remove('is-shown'); return; }
-    plantMessage.textContent = text;
-    // Restart the fade-in even when the same message comes twice in a row.
-    plantMessage.classList.remove('is-shown');
-    void plantMessage.offsetWidth;
-    plantMessage.classList.add('is-shown');
-    plantTimer = setTimeout(() => plantMessage.classList.remove('is-shown'), PLANT_MESSAGE_MS);
-  }
+    const p = get(slice) ?? {};
+    line.show(typeof p.message === 'string' ? p.message : '');
+  };
 
   renderTools();
   renderHistory();
@@ -353,14 +380,18 @@ export function mountTools(parent = document.body) {
     subscribe('unlocks', renderTools),
     subscribe('waterUi', renderSprings),
     subscribe('history', renderHistory),
-    subscribe('plantUi', renderPlantMessage),
+    subscribe('plantUi', () => renderMessage('plantUi', plantLine)),
+    subscribe('feedUi', () => renderMessage('feedUi', feedLine)),
+    // What you have found decides who the Feed tool offers food to.
+    subscribe('journal', renderTools),
   ];
   parent.appendChild(root);
   parent.appendChild(historyRoot);
 
   return function dispose() {
     for (const u of unsubs) u();
-    clearTimeout(plantTimer);
+    plantLine.clear();
+    feedLine.clear();
     root.removeEventListener('click', onClick);
     historyRoot.removeEventListener('click', onClick);
     root.remove();
@@ -369,6 +400,27 @@ export function mountTools(parent = document.body) {
 }
 
 // --- helpers ---
+
+/**
+ * A result line that shows at once and fades after PLANT_MESSAGE_MS, restarting its fade-in even
+ * when the same words come twice in a row. @param {HTMLElement} line
+ */
+function messageLine(line) {
+  /** @type {ReturnType<typeof setTimeout> | undefined} */ let timer;
+  return {
+    /** @param {string} text */
+    show(text) {
+      clearTimeout(timer);
+      if (!text) { line.classList.remove('is-shown'); return; }
+      line.textContent = text;
+      line.classList.remove('is-shown');
+      void line.offsetWidth;
+      line.classList.add('is-shown');
+      timer = setTimeout(() => line.classList.remove('is-shown'), PLANT_MESSAGE_MS);
+    },
+    clear() { clearTimeout(timer); line.classList.remove('is-shown'); },
+  };
+}
 
 /** @param {string} tag @param {string} cls */
 function el(tag, cls) {
