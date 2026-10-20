@@ -14,7 +14,7 @@ import { hourIndex, display, SECONDS_PER_HOUR, HOURS_PER_DAY } from '../../core/
 import { onAction } from '../../input/actions.js';
 import { weatherAt } from '../weather.js';
 import { tideParams } from '../tide.js';
-import { initialJournal, learn, notePlanted, momentsNow, catchMoments, foundAnimal, namedAnimal } from './observe.js';
+import { initialJournal, learn, notePlanted, momentsNow, catchMoments, foundAnimal, foundFind, namedAnimal } from './observe.js';
 import { journalLook } from './look.js';
 import { describe, identify, showMeSpot, momentKind, frogCard } from './describe.js';
 import { groundKind, groundCard, groundSurvey, describeGround, groundSpot } from './ground.js';
@@ -43,6 +43,8 @@ import { stampNotes, markShown, markNotesSeen, markPageSeen, readOf, pageSince, 
  */
 export function createJournal(opts) {
   const { world, words, island, web, wash, creatures } = opts;
+  /** The finds near the view (world/finds/index.js), or none. */
+  const finds = opts.finds ?? null;
   const fresh = !get('journal');
   /** @type {import('./observe.js').Journal} */
   let journal = get('journal') ?? initialJournal(hourIndex());
@@ -114,6 +116,13 @@ export function createJournal(opts) {
     // A frog first: they are small, and finding one is the point.
     const frog = creatures?.frogAt(x, z);
     if (frog) return frogCard(frog, world.state, words, world.env.recipes?.species?.frog?.presence);
+    // Then a find (docs/future/11): smaller still, and found by looking closely.
+    const fd = finds?.findAt(x, z);
+    const fr = fd && words.species[fd.sp];
+    // A shell names which one it is; its page holds them all.
+    const it = fd?.item ? fr?.collection?.find((/** @type {any} */ c) => c.id === fd.item) : null;
+    if (fr && it) return { sp: fd.sp, item: it.id, name: it.name, sub: it.rarity, icon: fr.icon, text: it.cardLine, wx: fd.x, wz: fd.z, r: 0.12, stage: -1 };
+    if (fr) return { sp: fd.sp, name: fr.card ?? fr.name, sub: null, icon: fr.icon, text: fr.cardLine ?? '', wx: fd.x, wz: fd.z, r: 0.12, stage: -1 };
     const hab = habitat();
     const living = identify(world.state, hab, x, z, words);
     if (living) return living;
@@ -130,6 +139,13 @@ export function createJournal(opts) {
     if (!card) return;
     // Tapping a frog is finding it: its page inks (once).
     if (card.sp === 'frogs') found();
+    // Tapping a find is finding it, the same way.
+    // A shell is found one kind at a time, each written down once.
+    const item = /** @type {any} */ (card).item ?? null;
+    const fresh = item ? !journal.species[card.sp]?.learned.includes(`item:${item}`) : !journal.species[card.sp]?.ever;
+    if (words.species[card.sp]?.kind === 'find' && fresh) {
+      commit(foundFind(journal, card.sp, { state: world.state, hour: hourIndex(), words }, item));
+    }
     const list = card.ground ? words.moments.ground : words.moments[momentKind(words.species[card.sp])];
     const ids = momentsNow(list, now(card.stage), words.moments);
     const name = card.name.charAt(0).toLowerCase() + card.name.slice(1);

@@ -104,7 +104,7 @@ function noise(x, z, seed, cache, at) {
  */
 
 /** @param {number} seed @param {number} layer @param {FbmRecipe} r @returns {Fbm} */
-function makeFbm(seed, layer, r) {
+export function makeFbm(seed, layer, r) {
   const n = Math.max(1, Math.floor(r.octaves));
   const seeds = new Uint32Array(n);
   const cache = new Float64Array(n * SLOT).fill(NaN);
@@ -119,7 +119,7 @@ function makeFbm(seed, layer, r) {
  * Normalized so the result is roughly in [-1, 1].
  * @param {Fbm} f @param {number} x @param {number} z
  */
-function fbm(f, x, z) {
+export function fbm(f, x, z) {
   let px = x * f.scale, pz = z * f.scale, amp = 1, sum = 0;
   for (let o = 0; o < f.seeds.length; o++) {
     sum += amp * noise(px, pz, f.seeds[o], f.cache, o * SLOT);

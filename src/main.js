@@ -73,7 +73,8 @@ startApp(canvas, { onDeviceLost: (rebuilding) => showRebuildingNote(rebuilding),
       // The field journal (docs 13, 15): watches the world, writes notes, names what you tap.
       const [words, island, web, wash] = await Promise.all([loadRecipe('world/journal'), loadRecipe('world/journal-island'),
         loadRecipe('world/journal-web'), loadRecipe('world/journal-wash')]);
-      const journal = createJournal({ world: r.world, words, island, web, wash, creatures: /** @type {any} */ (r).creatures ?? null });
+      const journal = createJournal({ world: r.world, words, island, web, wash, creatures: /** @type {any} */ (r).creatures ?? null,
+        finds: /** @type {any} */ (r).finds ?? null });
       mountJournal(document.body, journal, hud.layer);
       mountIslandNotes(document.body, words);
       // A save that came back from earlier copies says so, calmly (src/ui/damaged.js).

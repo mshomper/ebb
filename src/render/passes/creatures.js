@@ -21,7 +21,7 @@ const IDENTITY = new Float32Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 
  */
 
 /**
- * @param {{ recipe: any, mesh?: { vertices: Float32Array, indices: Uint32Array, count: number }, eyeBones?: number[] }} opts
+ * @param {{ recipe: any, mesh?: { vertices: Float32Array, indices: Uint32Array, count: number }, eyeBones?: number[], maxBones?: number }} opts
  *   recipe: the species recipe (recipes/species/<id>.json); mesh: one unskinned mesh to start with (the size preview);
  *   eyeBones: the two bones the eyes follow, for their wet glint (body.eyeGlint)
  */
@@ -35,7 +35,9 @@ export function createCreaturePass(opts) {
   data.set([W.roughness, W.strength, 0.55, 0.62, bodyLength, 0, 0, 0,
     eyes[0], eyes[1], G?.roughness ?? 0.1, G ? G.strength : 0]);
   const beings = new Float32Array(MAX * 8);
-  const bones = new Float32Array(MAX * MAX_BONES * 16);
+  // Bones per individual: the frogs' rig by default; a pass may ask for more (the hermit crab's).
+  const boneCap = opts.maxBones ?? MAX_BONES;
+  const bones = new Float32Array(MAX * boneCap * 16);
   /** Meshes by key, on the CPU until the GPU has them. @type {Map<string, { data: ArrayBuffer, indices: Uint32Array, vbuf?: GPUBuffer, ibuf?: GPUBuffer }>} */
   const meshes = new Map();
   /** Draw groups this frame: a mesh and the run of individuals that wear it. @type {{ key: string, first: number, count: number }[]} */
@@ -95,9 +97,9 @@ export function createCreaturePass(opts) {
       beings.fill(0);
       rows.forEach((r, i) => {
         const b = r.b;
-        beings.set([b.x, b.y, b.z, b.yaw, b.size, i * MAX_BONES, 0, 0], i * 8);
-        if (b.bones) bones.set(b.bones.subarray(0, MAX_BONES * 16), i * MAX_BONES * 16);
-        else for (let k = 0; k < MAX_BONES; k++) bones.set(IDENTITY, (i * MAX_BONES + k) * 16);
+        beings.set([b.x, b.y, b.z, b.yaw, b.size, i * boneCap, 0, 0], i * 8);
+        if (b.bones) bones.set(b.bones.subarray(0, boneCap * 16), i * boneCap * 16);
+        else for (let k = 0; k < boneCap; k++) bones.set(IDENTITY, (i * boneCap + k) * 16);
         const last = groups[groups.length - 1];
         if (last && last.key === r.key) last.count++;
         else groups.push({ key: /** @type {string} */ (r.key), first: i, count: 1 });
@@ -166,7 +168,7 @@ export function createCreaturePass(opts) {
       if (!bodyPipe || !count) return;
       if (dirty) {
         ctx.device.queue.writeBuffer(sbuf, 0, beings, 0, count * 8);
-        ctx.device.queue.writeBuffer(bbuf, 0, bones, 0, count * MAX_BONES * 16);
+        ctx.device.queue.writeBuffer(bbuf, 0, bones, 0, count * boneCap * 16);
         dirty = false;
       }
       const pass = encoder.beginRenderPass({

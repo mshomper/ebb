@@ -16,7 +16,7 @@ import { ensureIconSprite, iconSvg } from './icons/icons.js';
 
 /** @typedef {'sculpt'|'smooth'|'paint'|'water'|'plant'|'feed'} ToolId */
 /** @typedef {'reeds'|'lilies'|'iris'|'marigold'|'rushes'|'thrift'|'campion'} PlantSpecies */
-/** @typedef {'raise'|'lower'|'flatten'} SculptMode */
+/** @typedef {'raise'|'lower'|'flatten'|'stone'} SculptMode */
 /** @typedef {'grass'|'sand'|'soil'|'rock'} PaintLayer */
 /** @typedef {'pour'|'drain'|'spring'} WaterMode */
 /** @typedef {'trickle'|'brook'|'stream'} SpringRate */
@@ -99,6 +99,8 @@ const MODES = [
   { id: 'raise', label: 'Raise' },
   { id: 'lower', label: 'Lower' },
   { id: 'flatten', label: 'Flatten' },
+  // Stone (docs/future/10): a tap sets a seeded boulder rather than a stroke.
+  { id: 'stone', label: 'Stone' },
 ];
 /** @type {{id: PaintLayer, label: string}[]} */
 const LAYERS = [
@@ -146,6 +148,9 @@ export function mountTools(parent = document.body) {
             title="Remove spring">${iconSvg('spring-remove')}<span>Remove</span></button>
         </div>
         <p class="ebb-tools__hint">Tap to place a spring. Tap one to select it.</p>
+      </div>
+      <div class="ebb-tools__stone" role="group" aria-label="Stone" hidden>
+        <p class="ebb-tools__hint">Tap the ground to set a stone. Tap one again to pile another against it.</p>
       </div>
       <div class="ebb-tools__plant" role="group" aria-label="Plant" hidden>
         <div class="ebb-tools__chips ebb-tools__chips--species" role="group" aria-label="Species"
@@ -209,6 +214,7 @@ export function mountTools(parent = document.body) {
   const springModeBtn = /** @type {HTMLButtonElement} */ (root.querySelector('[data-water-mode="spring"]'));
   const rateBtns = /** @type {HTMLButtonElement[]} */ ([...root.querySelectorAll('[data-rate]')]);
   const plantPanel = /** @type {HTMLElement} */ (root.querySelector('.ebb-tools__plant'));
+  const stonePanel = /** @type {HTMLElement} */ (root.querySelector('.ebb-tools__stone'));
   const speciesBtns = /** @type {HTMLButtonElement[]} */ ([...root.querySelectorAll('[data-species]')]);
   const plantHint = /** @type {HTMLElement} */ (root.querySelector('[data-out="plant-hint"]'));
   const plantMessage = /** @type {HTMLElement} */ (root.querySelector('[data-out="plant-message"]'));
@@ -324,7 +330,10 @@ export function mountTools(parent = document.body) {
       springPanel.hidden = !inSpring;
       plantPanel.hidden = !inPlant;
       feedPanel.hidden = tool !== 'feed';
-      for (const s of sliders) s.hidden = inSpring || inPlant || tool === 'feed';
+      const inStone = tool === 'sculpt' && t.sculptMode === 'stone';
+      stonePanel.hidden = !inStone;
+      // A stone has a size, not a strength.
+      for (const s of sliders) s.hidden = inSpring || inPlant || tool === 'feed' || (inStone && s.dataset.slider === 'strength');
     }
 
     const [min, max] = validRange(t.sizeRange);
