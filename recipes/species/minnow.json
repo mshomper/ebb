@@ -1,0 +1,20 @@
+{
+  "type": "species",
+  "id": "minnow",
+  "key": "minnows",
+  "name": "Common minnow",
+  "version": 1,
+  "note": "Common minnows (docs 11, 12, 23; M2). A school, not individuals: the island keeps one school per pool that suits them, never single fish with names. LIFE. ecology: kind swarm (src/world/creatures/swarms.js keeps the schools in the hourly tick); no dormancy (all year; in winter they sit still in the deep spot). needs (src/world/ecology/needs.js): five, each 0..1, mood = their weighted geometric mean (weights w sum to 1). water: good water is still fresh water depthM deep (no damp hollows) in a body of standing water of at least body.minM2 square meters that is somewhere at least body.deepM deep, the spot they winter in (the starter pond is 96 cm at its deepest, so the frogs' Cut, or Lower, digs the last of it); full within okM of good water, none beyond maxM. Slow streams join when the habitat grid keeps the flow class. food: the fields summed over a square of radiusM (midges over the water, later pondweed), against per times the ideal school (shares of a full square meter a fish needs). shelter: the best cover within radiusM, each plant weighted (lily pads and reed stems at the edge), counting from 'from' and full at 'full'. quiet: low sensitivity, nothing disturbs them yet. company: a school of n[0] to n[2], n[1] ideal. scored: only squares of a pool that suits them (where: water).",
+  "ecology": {
+    "kind": "swarm",
+    "activity": { "pattern": "diurnal" },
+    "needs": {
+      "water": { "depthM": [0.2, 1.5], "damp": false, "body": { "minM2": 20, "deepM": 1.0 }, "okM": 0, "maxM": 1, "w": 0.3 },
+      "food": { "fields": { "midges": 1 }, "radiusM": 6, "per": 0.4, "w": 0.25 },
+      "shelter": { "cover": { "lilies": 1, "reeds": 0.7, "rushes": 0.5, "iris": 0.4 }, "radiusM": 3, "from": 0.15, "full": 0.5, "w": 0.2 },
+      "quiet": { "w": 0.1 },
+      "company": { "n": [8, 16, 30], "alone": 0.5, "crowded": 0.5, "w": 0.15 }
+    },
+    "scored": { "where": "water" }
+  }
+}

@@ -33,6 +33,8 @@
     "world/naturalist": "world/naturalist.json",
     "species/frog": "species/frog.json",
     "species/midge": "species/midge.json",
+    "species/minnow": "species/minnow.json",
+    "species/dragonfly": "species/dragonfly.json",
     "species/finds": "species/finds.json",
     "palettes/dusk": "palettes/dusk.json",
     "palettes/meadow-morning": "palettes/meadow-morning.json",

@@ -6,8 +6,8 @@
 // meters of shore each square has. Pure and worker-safe; det math for log and exp.
 
 import { det } from '../../core/rng.js';
-import { chamfer, HABITAT_ORIGIN } from '../growth/habitat.js';
-import { openBox, sat, boxSum, boxMax, plantField, smooth } from './fields.js';
+import { HABITAT_ORIGIN } from '../growth/habitat.js';
+import { needMaps } from './needs.js';
 
 /** The needs, in the order they are weighed. */
 export const NEEDS = Object.freeze(['water', 'food', 'shelter', 'quiet', 'company']);
@@ -60,46 +60,27 @@ export function foodAt(midges, n, i, j, food, group) {
  *   edge: { cells: number[], faces: number[] } }}  edge: bank squares and how many of their sides face the water
  */
 export function frogNeeds(hab, growth, midges, rec) {
-  const E = rec.ecology, N = E.needs;
+  const E = rec.ecology;
   const n = hab.n;
-  const box = openBox(hab, 1);
-  // The pond (still fresh water standing at mean tide; a damp hollow is wet ground, not a shore),
-  // and good water: still water of the right depth, or a damp hollow.
-  const pond = new Uint8Array(n * n), good = new Uint8Array(n * n);
-  const lo = N.water.depthM[0] * 100, hi = N.water.depthM[1] * 100;
+  // The five needs, as for any species (needs.js): frogs score the ground and the shallows.
+  const { score, water, food, shelter, box } = needMaps(hab, growth, { midges }, rec);
+  // The pond: still fresh water standing at mean tide (a damp hollow is wet ground, not a shore).
+  const pond = new Uint8Array(n * n);
   for (let j = box.j0; j <= box.j1; j++) {
     for (let i = box.i0; i <= box.i1; i++) {
       const k = j * n + i;
-      if (!hab.open[k] || hab.sea[k] || !hab.still[k]) continue;
-      const d = hab.depthCm[k];
-      if (d > 0) pond[k] = 1;
-      if (d === 0 || (d >= lo && d <= hi)) good[k] = 1;
+      if (hab.open[k] && !hab.sea[k] && hab.still[k] && hab.depthCm[k] > 0) pond[k] = 1;
     }
   }
   // A shore is the edge of a pond of some size: a spring's little pool or a puddle is water to
   // drink and hunt by, but not a shore frogs settle along.
   dropSmallBodies(pond, n, box, E.edge.minPondM2);
-  const dGood = chamfer(good, n, 3 * 64);
-  const cover = boxMax(plantField(hab, growth, N.shelter.cover, true), n, Math.round(N.shelter.radiusM), box);
-  const M = midges ? sat(midges, n, 1 / 255) : null;
-  const rf = Math.round(N.food.radiusM);
-  const ideal = N.company.n[1];
-
-  const score = new Float32Array(n * n), water = new Float32Array(n * n);
-  const food = new Float32Array(n * n), shelter = new Float32Array(n * n);
   /** @type {number[]} */ const cells = [];
   /** @type {number[]} */ const faces = [];
-  const shallow = E.scored.shallowCm;
   for (let j = box.j0; j <= box.j1; j++) {
     for (let i = box.i0; i <= box.i1; i++) {
       const k = j * n + i;
-      if (!hab.open[k] || hab.sea[k] || hab.depthCm[k] > shallow) continue;
-      const w = 1 - smooth(dGood[k] / 3, N.water.okM, N.water.maxM);
-      if (w <= 0) continue;
-      const f = M ? Math.min(1, boxSum(M, n, i, j, rf) / (N.food.perFrog * ideal)) : 0;
-      const s = smooth(cover[k], N.shelter.from, N.shelter.full);
-      water[k] = w; food[k] = f; shelter[k] = s;
-      score[k] = moodOf({ water: w, food: f, shelter: s, quiet: 1, company: 1 }, N);
+      if (water[k] <= 0) continue;
       // A bank square: ground with no standing water (damp counts) with the pond on one of its sides.
       if (hab.depthCm[k] > 0) continue;
       let sides = 0;

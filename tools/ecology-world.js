@@ -6,6 +6,7 @@
 import { buildIslandModel } from '../src/world/island-model.js';
 import { initialWorldState, makeEnv, runHour } from '../src/sim/tick.js';
 import { settleGrowth } from '../src/world/growth/coarse.js';
+import { SPECIES } from '../src/world/species.js';
 
 /** @param {string} path */
 async function get(path) {
@@ -18,13 +19,13 @@ async function get(path) {
 /** Every recipe the tick reads, loaded once. */
 export function loadEcologyRecipes() {
   shared ??= (async () => {
-    const [terrain, water, growth, seasons, sky, frog, midge] = await Promise.all(
-      ['world/terrain', 'world/water', 'world/growth', 'world/seasons', 'world/sky', 'species/frog', 'species/midge'].map(get));
+    const [terrain, water, growth, seasons, sky, frog, midge, minnow, dragonfly] = await Promise.all(
+      ['world/terrain', 'world/water', 'world/growth', 'world/seasons', 'world/sky', ...SPECIES.map((id) => `species/${id}`)].map(get));
     const flora = Object.fromEntries(await Promise.all(growth.species.map(async (/** @type {string} */ sp) => [sp, await get(`flora/${sp}`)])));
     const covers = Object.fromEntries(await Promise.all((growth.cover ?? []).map(async (/** @type {string} */ sp) => [sp, await get(`flora/${sp}`)])));
     /** @type {Record<string, any>} */ const lands = {};
     for (const isl of terrain.islands.list) lands[isl.id] = await get(`land/${isl.id}`);
-    return { terrain, water, growth, seasons, sky, flora, covers, lands, species: { frog, midge } };
+    return { terrain, water, growth, seasons, sky, flora, covers, lands, species: { frog, midge, minnow, dragonfly } };
   })();
   return shared;
 }

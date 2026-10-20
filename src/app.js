@@ -51,6 +51,7 @@ import { createPresence } from './world/creatures/presence.js';
 import { cleanName, nameFrog } from './world/creatures/trust.js';
 import { lushLook } from './world/growth/lush.js';
 import { createMidges } from './world/ecology/midges-live.js';
+import { SPECIES } from './world/species.js';
 import { onAction, history } from './input/actions.js';
 import { attachDesktopInput } from './input/desktop.js';
 import { attachTouchInput } from './input/touch.js';
@@ -210,8 +211,11 @@ export async function startApp(canvas, hooks = {}) {
   sim.addSystem(growth);
   // Ecology and creatures (S6a, docs 11, 12): the midge field, frog habitat and the frogs' arrival
   // run in the hourly tick from these recipes.
-  const [frogRecipe, midgeRecipe] = await Promise.all([loadRecipe('species/frog'), loadRecipe('species/midge')]);
-  world.env.recipes.species = { frog: frogRecipe, midge: midgeRecipe };
+  // Every species in the list (src/world/species.js): frogs and midges, then minnows and dragonflies.
+  /** @type {Record<string, any>} */
+  const speciesRecipes = Object.fromEntries(await Promise.all(SPECIES.map(async (id) => [id, await loadRecipe(`species/${id}`)])));
+  const frogRecipe = speciesRecipes.frog, midgeRecipe = speciesRecipes.midge;
+  world.env.recipes.species = speciesRecipes;
   updateStore('world', () => world.state);
   const unHour = on('clock:hour', (/** @type {{ hour: number }} */ p) => {
     const events = sim.hourlyTick(p.hour);

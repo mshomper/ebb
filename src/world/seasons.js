@@ -17,7 +17,7 @@ import { sunMoon, DEFAULT_LATITUDE_DEG, DEFAULT_TILT_DEG } from './sky/sun-moon.
  * @property {number} year
  * @property {number} day     0..6 within the season
  * @property {number} dayLengthH
- * @property {{reeds: boolean, frogs: boolean}} dormant
+ * @property {Record<string, boolean>} dormant  each window in the recipe's dormancy (reeds, frogs, dragonflies, ...)
  */
 
 /** @typedef {{name: string, payload: any, hour?: number}} CoarseEvent */
@@ -63,7 +63,9 @@ export function seasonsAt(t, recipe, sunOpts) {
     year: s.year,
     day: s.day,
     dayLengthH: sunMoon(t, sunOpts).dayLengthH,
-    dormant: { reeds: inWindow(pos, dorm.reeds), frogs: inWindow(pos, dorm.frogs) },
+    // Every window the recipe names (reeds, frogs, dragonflies, ...), reeds and frogs always.
+    dormant: { reeds: inWindow(pos, dorm.reeds), frogs: inWindow(pos, dorm.frogs),
+      ...Object.fromEntries(Object.keys(dorm).filter((k) => k !== 'reeds' && k !== 'frogs').map((k) => [k, inWindow(pos, dorm[k])])) },
   };
 }
 

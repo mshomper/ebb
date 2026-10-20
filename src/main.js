@@ -14,6 +14,7 @@ import { mountIslandNotes } from './ui/island-notes.js';
 import { mountFrogScale } from './ui/frog-scale.js';
 import { createJournal } from './world/journal/index.js';
 import { createProgress } from './world/expansion.js';
+import { keyOf } from './world/species.js';
 import { loadRecipe } from './core/recipes.js';
 import { on } from './core/events.js';
 import { get as getStore, defaultStore } from './core/store.js';
@@ -88,9 +89,9 @@ startApp(canvas, { onDeviceLost: (rebuilding) => showRebuildingNote(rebuilding),
       // Progress (src/world/expansion.js): the naturalist's rewards and species gifts, read from the
       // journal. A species recipe's gift goes under its journal page (frog.json's under frogs).
       /** @type {Record<string, any>} */ const gifts = {};
-      for (const [id, rec] of Object.entries(r.world.env.recipes?.species ?? {})) {
+      for (const rec of Object.values(r.world.env.recipes?.species ?? {})) {
         const g = /** @type {any} */ (rec)?.ecology?.gift;
-        if (g) gifts[words.species[`${id}s`] ? `${id}s` : id] = g;
+        if (g) gifts[keyOf(/** @type {any} */ (rec))] = g;
       }
       const progress = createProgress({ words, recipe: naturalist, gifts });
       mountJournal(document.body, { ...journal, naturalist, progress }, hud.layer);

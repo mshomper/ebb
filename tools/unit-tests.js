@@ -32,6 +32,7 @@ import { addSpringTests } from './unit-tests-spring.js';
 import { addCreatureTests } from './unit-tests-creatures.js';
 import { addIslandTests } from './unit-tests-islands.js';
 import { addEcologyTests } from './unit-tests-ecology.js';
+import { addPondLifeTests } from './unit-tests-pondlife.js';
 import { addFrogTests } from './unit-tests-frogs.js';
 import { addSaveTests } from './unit-tests-save.js';
 import { addAwayTests } from './unit-tests-away.js';
@@ -1453,6 +1454,7 @@ addQualityTests(test, assert, eq);
 addTrustTests(test, assert, eq);
 addFindsTests(test, assert, eq);
 addNaturalistTests(test, assert, eq);
+addPondLifeTests(test, assert, eq);
 
 // ---- runner and rendering ----
 
