@@ -253,19 +253,30 @@ export function mountJournal(parent, live, buttonParent = parent) {
       <div class="ebb-jl-row" role="group" aria-label="${esc(L.labels.sort)}"><span class="ebb-jl-label">${esc(L.labels.sort)}</span>
         ${Object.entries(L.sorts).map(([k, v]) => pill('sort', k, /** @type {string} */ (v), c.sort === k)).join('')}</div></div>`;
     const body = groups.map((g) => {
-      const icon = live.web?.kinds?.[g.tint]?.icon ?? 'plant';
+      const icon = g.icon ?? live.web?.kinds?.[g.tint]?.icon ?? 'plant';
       // A folded group still says when something in it is new.
       const fresh = g.shut && g.rows.some((id) => U.pages.has(id)) ? NEW : '';
       const head = `<h4 class="ebb-jl-head"><button type="button" class="ebb-jl-fold" data-list-fold="${esc(g.id)}" aria-expanded="${!g.shut}"
         aria-label="${esc(`${g.label}: ${g.shut ? L.labels.open : L.labels.shut}`)}"><span class="ebb-jl-pill">${iconSvg(icon)}<span>${esc(g.label)}</span></span>${fresh}${iconSvg('chevron', 'ebb-jl-chev')}</button></h4>`;
       if (g.shut) return `<section class="ebb-jl-group is-${esc(g.tint)} is-shut">${head}</section>`;
-      // Found small lives keep their row of marks.
-      const marks = g.foundOnly && g.rows.length && words.smallLives?.marks
+      // Found small lives keep their row of marks (a one-page group such as Shells lists its items instead).
+      const marks = g.foundOnly && g.many && g.rows.length && words.smallLives?.marks
         ? `<p class="ebb-jlist__marks"><span class="ebb-journal__voice">${esc(words.smallLives.marks)}</span>${g.rows.map((id) => `<span class="ebb-jlist__mark" aria-hidden="true">${iconSvg(live.describe(id).icon)}</span>`).join('')}</p>` : '';
-      const inner = g.rows.length ? marks + listView(g.rows) : `<p class="ebb-journal__voice ebb-jlist__hint">${esc(g.hint ?? L.empty)}</p>`;
+      const inner = g.rows.length ? marks + listView(g.rows) + g.rows.map(itemsView).join('') : `<p class="ebb-journal__voice ebb-jlist__hint">${esc(g.hint ?? L.empty)}</p>`;
       return `<section class="ebb-jl-group is-${esc(g.tint)}">${head}${inner}</section>`;
     }).join('');
     return controls + body;
+  }
+
+  /**
+   * A collection's found items (the Shells page) under its row in the list: each item's name, rarity
+   * and line in one text block, so they wrap as words. Never the ones still to find. @param {string} id
+   */
+  function itemsView(id) {
+    const items = (/** @type {any} */ (live.describe(id)).collection ?? []).filter((/** @type {any} */ c) => c.found);
+    if (!items.length) return '';
+    return `<ul class="ebb-jl-items">${items.map((/** @type {any} */ c) => `<li><button type="button" class="ebb-jl-item" data-page="${esc(id)}"><span class="ebb-jl-item__text">` +
+      `<b>${esc(c.name)}</b> <small class="ebb-jpage__rarity">${esc(c.rarity)}</small> <span class="ebb-journal__voice">${esc(c.text)}</span></span></button></li>`).join('')}</ul>`;
   }
 
   /** A list of lines, inked or in pencil. @param {{ text: string, known: boolean }[]} lines @param {string} [hint] pencil line when some are unknown */
@@ -317,6 +328,9 @@ export function mountJournal(parent, live, buttonParent = parent) {
       <p class="ebb-jpage__status ebb-journal__voice">${esc(d.status)}</p>
       ${tiesStrip(live.describeWeb(), live.web, nodeOfPage(live.web, id))}
       ${d.named?.length ? section('Named', `<ul class="ebb-jpage__list">${d.named.map((/** @type {string} */ n) => `<li>${esc(n)}</li>`).join('')}</ul>`) : ''}
+      ${d.collection?.length ? section('Found so far', `<ul class="ebb-jpage__list ebb-jpage__collection">${d.collection.map((/** @type {any} */ c) => c.found
+        ? `<li><span><b>${esc(c.name)}</b> <small class="ebb-jpage__rarity">${esc(c.rarity)}</small><br><span class="ebb-journal__voice">${esc(c.text)}</span></span></li>`
+        : `<li class="is-pencil"><span class="ebb-journal__voice">${esc(c.text)}</span></li>`).join('')}</ul>`) : ''}
       ${middle}
       ${section('Field notes', `<ul class="ebb-jpage__list ebb-jpage__field">${lines(d.field, d.fieldHint)}</ul>`)}
       ${story}

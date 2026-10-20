@@ -317,6 +317,13 @@ const ICONS = {
     <path d="M5 20.5C4.4 15.8 7.6 12 12 12C15.8 12 18.6 14.6 19 20.5"/>
     <path d="M12 12C13.8 9.6 16.4 9.2 17.6 10.6C18.4 11.6 18 13.2 16.4 13.6C15 14 13.8 13 14.2 12"/>
     <path d="M8 20.5C8 17.6 9.8 15.6 12.2 15.6C14 15.6 15.2 16.8 15.4 18.4"/>`,
+  // Shells: a ribbed fan shell on the ground line and a small spiral one beside it.
+  shells: `
+    <path d="M2.5 20.5H21.5"/>
+    <path ${ACCENT} d="M4 20.5C3.6 15 6.6 11.5 10 11.5S16.4 15 16 20.5Z"/>
+    <path d="M4 20.5C3.6 15 6.6 11.5 10 11.5S16.4 15 16 20.5"/>
+    <path d="M10 20.5V12M7 20.5L7.6 13.2M13 20.5L12.4 13.2"/>
+    <path d="M17 20.5C16.6 18.4 17.6 16.6 19.2 16.6C20.6 16.6 21.4 17.8 21 19C20.6 20 19.4 20 19.2 19.2C19 18.6 19.6 18.2 20 18.6"/>`,
   // Hermit crab: a spiral shell on the ground line, legs and one big claw reaching out of its mouth.
   hermitcrab: `
     <path d="M2.5 20.5H21.5"/>

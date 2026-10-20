@@ -404,7 +404,7 @@ export function addJournalTests(test, assert, eq) {
     const at = (/** @type {string} */ id) => first[id] ?? -1;
     const run = (/** @type {any} */ c) => livingList(list, words, { ...DEFAULT_CHOICE, ...c }, entry, at);
     const all = run({});
-    eq(all.map((g) => g.id).join(','), 'plants,animals,small', 'groups in order; Shells hides until its page exists');
+    eq(all.map((g) => g.id).join(','), words.species.shells ? 'plants,animals,small,shells' : 'plants,animals,small', 'groups in order (Shells once its page exists)');
     for (const id of [...words.order, ...words.findOrder]) assert(groupsOf(list, words).some((g) => g.ids.includes(id)), `${id} is in a group`);
     const g = (/** @type {any[]} */ gs, /** @type {string} */ id) => gs.find((x) => x.id === id);
     eq(g(all, 'plants').rows.slice(0, 3).join(','), 'reeds,thrift,grass', 'recently found first');
@@ -418,12 +418,14 @@ export function addJournalTests(test, assert, eq) {
     assert(g(run({ shut: { plants: true } }), 'plants').shut, 'a group folds shut');
     const none = g(livingList(list, words, DEFAULT_CHOICE, (id) => ({ id, known: false, name: '' }), () => -1), 'small');
     eq(none.hint, words.smallLives.none, 'before the first find, the pencil line says where to look');
+    const noShells = g(livingList(list, words, DEFAULT_CHOICE, (id) => ({ id, known: false, name: '' }), () => -1), 'shells');
+    if (noShells) assert(noShells.rows.length === 0 && noShells.hint && noShells.hint !== none.hint, 'Shells has its own pencil line, and lists none unfound');
     const c = cleanChoice({ status: 'nonsense', place: 'moon', sort: 'az', shut: { plants: true } }, list);
     eq(`${c.status}|${c.place}|${c.sort}|${c.shut.plants}`, 'all|null|az|true', 'a kept choice is cleaned');
     // A shells page, once the finds branch adds it, gets its own group.
     const more = structuredClone(words);
-    more.species.shells = { name: 'Shells', kind: 'find', icon: 'periwinkle' };
-    more.findOrder = [...more.findOrder, 'shells'];
+    more.species.shells ??= { name: 'Shells', kind: 'find', icon: 'periwinkle' };
+    if (!more.findOrder.includes('shells')) more.findOrder = [...more.findOrder, 'shells'];
     const withShells = groupsOf(list, more);
     assert(withShells.some((x) => x.group.id === 'shells' && x.ids.join() === 'shells'), 'Shells is its own group');
     assert(!withShells.find((x) => x.group.id === 'small')?.ids.includes('shells'), 'and not also a small life');

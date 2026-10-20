@@ -223,6 +223,8 @@
 .ebb-jpage__list li::before { content: ''; width: 9px; height: 9px; margin-top: 8px; border-radius: 50%; background: var(--jr-moss); }
 .ebb-jpage__list li.is-pencil { color: var(--jr-pencil); }
 .ebb-jpage__list li.is-pencil::before { background: transparent; border: 1.5px dashed var(--jr-pencil); width: 8px; height: 8px; }
+/* A collection's rarity beside its name (the Shells page). */
+.ebb-jpage__rarity { font-size: var(--text-small); color: var(--jr-pencil); margin-left: 4px; }
 .ebb-jpage__seasons { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
 /* Each season box wears a soft wash of its season, with its drawn mark; an unseen season stays pencil. */
 .ebb-jpage__season {
@@ -414,6 +416,17 @@ span.ebb-jw-crumb { display: inline-flex; align-items: center; font-weight: 800;
 .ebb-jl-group .ebb-jlist__row .ebb-jlist__icon { background: var(--jw-wash); color: var(--jw-ink); }
 .ebb-jl-group .ebb-jlist__row.is-pencil .ebb-jlist__icon { background: transparent; color: var(--jr-pencil); }
 @media (prefers-reduced-motion: reduce) { :root:not(.ebb-motion-full) .ebb-jl-chev { transition: none; } }
+/* A collection's found items under its row (Shells): one text block each, so they wrap as words. */
+.ebb-jl-items { list-style: none; margin: 0 0 4px 62px; padding: 0; display: grid; gap: 2px; min-width: 0; }
+.ebb-jl-item {
+  appearance: none; -webkit-appearance: none; margin: 0; cursor: pointer; width: 100%;
+  padding: 6px 8px; border: 0; border-left: 2px solid var(--jw-line); border-radius: 0 10px 10px 0; background: transparent; text-align: left;
+}
+.ebb-jl-item:hover { background: var(--jw-card); }
+.ebb-jl-item__text { display: block; min-width: 0; overflow-wrap: break-word; line-height: 1.35; }
+.ebb-jl-item__text b { font-weight: 800; }
+.ebb-jl-item__text .ebb-jpage__rarity { margin-left: 2px; }
+.ebb-jl-item__text .ebb-journal__voice { display: block; font-size: calc(17px * var(--text-scale, 1)); color: var(--jr-soft); }
 
 /* the Ties strip on a journal page */
 .ebb-jw-ties { display: grid; gap: 8px; padding: 12px; border: 1.5px solid var(--jr-rule); border-radius: 12px; min-width: 0; }

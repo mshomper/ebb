@@ -286,6 +286,9 @@ fn fsLand(in: VsOut) -> FsOut {
     strand = max(strand, ls[i] * exp(-(dist / halfW) * (dist / halfW)) * breakup);
   }
   strand *= 1.0 - 0.8 * mix(wf.x, gd.weights.x, gd.amount);
+  // Litter floats off once water stands over it: none on the floor or walls of a filled pool, where
+  // the lines would ring the bowl at every tide level and the water would bend them into streaks.
+  strand *= 1.0 - smoothstep(0.004, 0.025, wdep);
   var strandCover = 0.0;
   if (strand > 0.01) {
     var st: Litter;

@@ -24,6 +24,16 @@ This work is based on "Low-Poly Anemone" (https://sketchfab.com/3d-models/low-po
 - Changes: posed at rest (skin and animation removed), textures baked to vertex colors, simplified from 5,436 to 1,487 triangles, rescaled. The game moves it as a whole (it creeps about its pool).
 - Files: `hermit-crab.gltf`, `hermit-crab.bin`
 
+## Shells
+
+Each is changed for ebb the same way: textures baked to vertex colors, parts joined, simplified, rescaled and set to lie as a shell lies on sand.
+
+- "Turret Shell || Free Model" (https://sketchfab.com/3d-models/turret-shell-free-model-6f430977b6f44313b29a2a526d23200c) by CyberFox 3D Studio (https://sketchfab.com/cyberfox3d), licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/). 3,066 to 700 triangles. Files: `shell-turret.gltf`, `shell-turret.bin`.
+- "shell fossil 3D Scan" (https://sketchfab.com/3d-models/shell-fossil-3d-scan-32cfd19452dd4080aea0157586e110f3) by Formwerk3D (https://sketchfab.com/Formwerk3D), licensed under CC-BY-4.0. Drawn as a fossil cockle; 700 triangles. Files: `shell-cockle.gltf`, `shell-cockle.bin`.
+- "Murex Shell" (https://sketchfab.com/3d-models/murex-shell-fc5a13eb995044d6bfb7eb2a628cede7) by Loïc Norgeot (https://sketchfab.com/norgeotloic), licensed under CC-BY-4.0. 25,000 to 999 triangles. Files: `shell-murex.gltf`, `shell-murex.bin`.
+- "Nautilus Shell" (https://sketchfab.com/3d-models/nautilus-shell-9b4acc4a177c41e984a0199c6fdcf90e) by RISD Nature Lab (https://sketchfab.com/RISDNaturelab), licensed under CC-BY-4.0. 397,722 to 998 triangles. Files: `shell-nautilus.gltf`, `shell-nautilus.bin`.
+- The empty periwinkle shell reuses the periwinkle scan below, paler.
+
 ## Periwinkle: rough periwinkle scan (Littorina brevicula)
 
 - Source: photo scan QS980-W10-1, copyright field "ffish.asia", released as CC0 1.0.

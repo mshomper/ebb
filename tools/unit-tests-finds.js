@@ -1,10 +1,13 @@
 // @ts-check
 // Finds tests for tools/unit-tests.html (docs/future/11): which cells each kind may live in (a rock
 // pool is a hollow that reaches the tide band), and groups that are the same for the same seed,
-// with lugworm casts laid fresh each tide and periwinkles only drifting.
+// with lugworm casts laid fresh each tide and periwinkles only drifting; shells the same for the same
+// tide, rare ones only near spring, and a shells page that keeps each kind found.
 
-import { findCells, groupAt } from '../src/world/finds/index.js';
+import { findCells, groupAt, shellAt } from '../src/world/finds/index.js';
 import { WATER_CLASS } from '../src/world/water/summary.js';
+import { initialJournal, foundFind } from '../src/world/journal/observe.js';
+import { describe } from '../src/world/journal/describe.js';
 
 const FINDS = 'finds';
 
@@ -63,5 +66,40 @@ export function addFindsTests(test, assert, eq) {
     let n = 0;
     for (let k = 0; k < 2000; k++) n += groupAt(5, 'anemone', k, K.anemone, 0, 0, 0).length > 0 ? 1 : 0;
     assert(Math.abs(n / 2000 - K.anemone.density) < 0.05, `about density of cells hold anemones (${(n / 2000).toFixed(2)})`);
+  });
+
+  test(FINDS, 'shells: the same tide leaves the same shell; rare ones only come near spring tides', async () => {
+    const S = (await findsRecipe()).kinds.shells;
+    eq(JSON.stringify(shellAt(7, 123, 40, 0.2, S)), JSON.stringify(shellAt(7, 123, 40, 0.2, S)), 'same seed, cell and tide, same shell');
+    const rare = S.items.filter((/** @type {any} */ i) => i.springMin !== undefined).map((/** @type {any} */ i) => i.id);
+    /** @type {Record<string, number>} */ const neap = {}, spring = {};
+    for (let k = 0; k < 20000; k++) {
+      const a = shellAt(7, k, 40, -0.5, S), b = shellAt(7, k, 40, 1, S);
+      if (a) neap[a.item] = (neap[a.item] ?? 0) + 1;
+      if (b) spring[b.item] = (spring[b.item] ?? 0) + 1;
+    }
+    for (const id of rare) assert(!neap[id], `no ${id} on a neap tide's line`);
+    for (const id of rare) assert((spring[id] ?? 0) > 0, `a ${id} now and then on the highest tide's line`);
+    assert((spring.periwinkle ?? 0) > (spring.murex ?? 0) * 5, 'common shells far outnumber rare ones');
+    let moved = 0;
+    for (let k = 0; k < 400; k++) if (JSON.stringify(shellAt(7, k, 40, 0.2, S)) !== JSON.stringify(shellAt(7, k, 41, 0.2, S))) moved++;
+    assert(moved > 0, 'the next tide leaves different shells');
+  });
+
+  test(FINDS, 'shells share one page that keeps each kind found, and hints at the rest', async () => {
+    const words = await (await fetch('../recipes/world/journal.json')).json();
+    const ctx = { state: null, hour: 10, words };
+    let j = initialJournal(0);
+    j = foundFind(j, 'shells', ctx, 'turret').journal;
+    eq(j.species.shells.ever, true, 'the page inks with the first shell');
+    const again = foundFind(j, 'shells', ctx, 'turret');
+    eq(again.notes.length, 0, 'the same shell again writes nothing');
+    const next = foundFind(j, 'shells', ctx, 'cockle');
+    eq(next.notes.length, 1, 'a new kind of shell gets its own note');
+    j = next.journal;
+    const d = /** @type {any} */ (describe(j, 'shells', null, null, words, 10));
+    const found = d.collection.filter((/** @type {any} */ c) => c.found).map((/** @type {any} */ c) => c.id).join(',');
+    eq(found, 'turret,cockle', 'the page lists the two found');
+    assert(d.collection.filter((/** @type {any} */ c) => !c.found).every((/** @type {any} */ c) => c.name === null && c.text), 'the rest are hints, unnamed');
   });
 }

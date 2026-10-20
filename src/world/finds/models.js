@@ -17,6 +17,15 @@ const ARRAYS = { 5120: Int8Array, 5121: Uint8Array, 5122: Int16Array, 5123: Uint
  * @param {string} url the .gltf file (its buffer sits beside it) @returns {Promise<Part[]>}
  */
 export async function loadFindModel(url) {
+  const { gltf, buffers } = await fetchGltf(url);
+  return parseFindModel(gltf, buffers);
+}
+
+/**
+ * A .gltf file and its buffers, fetched. @param {string} url
+ * @returns {Promise<{ gltf: any, buffers: ArrayBuffer[] }>}
+ */
+export async function fetchGltf(url) {
   const r = await fetch(url);
   if (!r.ok) throw new Error(`${url}: HTTP ${r.status}`);
   const gltf = await r.json();
@@ -26,21 +35,36 @@ export async function loadFindModel(url) {
     if (!br.ok) throw new Error(`${b.uri}: HTTP ${br.status}`);
     return br.arrayBuffer();
   }));
+  return { gltf, buffers };
+}
+
+/**
+ * Read an accessor of a glTF as a typed array and its component count. Pure.
+ * @param {any} gltf @param {ArrayBuffer[]} buffers @param {number} i
+ * @returns {{ data: any, n: number }}
+ */
+export function readAccessor(gltf, buffers, i) {
+  const a = gltf.accessors[i], v = gltf.bufferViews[a.bufferView];
+  const n = /** @type {Record<string, number>} */ ({ ...COMPONENTS, MAT4: 16 })[a.type];
+  const T = /** @type {any} */ (ARRAYS)[a.componentType];
+  const stride = v.byteStride ?? 0;
+  const off = (v.byteOffset ?? 0) + (a.byteOffset ?? 0);
+  if (!stride || stride === n * T.BYTES_PER_ELEMENT) return { data: new T(buffers[v.buffer].slice(off, off + a.count * n * T.BYTES_PER_ELEMENT)), n };
+  const out = new T(a.count * n), src = new DataView(buffers[v.buffer]);
+  for (let k = 0; k < a.count; k++) for (let c = 0; c < n; c++) {
+    const at = off + k * stride + c * T.BYTES_PER_ELEMENT;
+    out[k * n + c] = T === Float32Array ? src.getFloat32(at, true) : T === Uint16Array ? src.getUint16(at, true) : T === Uint32Array ? src.getUint32(at, true) : src.getUint8(at);
+  }
+  return { data: out, n };
+}
+
+/**
+ * A find model's parts from a parsed glTF and its buffers. Pure (tools/ scripts use it in Node).
+ * @param {any} gltf @param {ArrayBuffer[]} buffers @returns {Part[]}
+ */
+export function parseFindModel(gltf, buffers) {
   /** @param {number} i */
-  const read = (i) => {
-    const a = gltf.accessors[i], v = gltf.bufferViews[a.bufferView];
-    const n = /** @type {Record<string, number>} */ (COMPONENTS)[a.type];
-    const T = /** @type {any} */ (ARRAYS)[a.componentType];
-    const stride = v.byteStride ?? 0;
-    const off = (v.byteOffset ?? 0) + (a.byteOffset ?? 0);
-    if (!stride || stride === n * T.BYTES_PER_ELEMENT) return { data: new T(buffers[v.buffer], off, a.count * n), n };
-    const out = new T(a.count * n), src = new DataView(buffers[v.buffer]);
-    for (let k = 0; k < a.count; k++) for (let c = 0; c < n; c++) {
-      const at = off + k * stride + c * T.BYTES_PER_ELEMENT;
-      out[k * n + c] = T === Float32Array ? src.getFloat32(at, true) : T === Uint16Array ? src.getUint16(at, true) : T === Uint32Array ? src.getUint32(at, true) : src.getUint8(at);
-    }
-    return { data: out, n };
-  };
+  const read = (i) => readAccessor(gltf, buffers, i);
   return gltf.meshes.map((/** @type {any} */ m) => {
     const p = m.primitives[0];
     const pos = read(p.attributes.POSITION).data;

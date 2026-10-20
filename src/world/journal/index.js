@@ -125,6 +125,9 @@ export function createJournal(opts) {
     // Then a find (docs/future/11): smaller still, and found by looking closely.
     const fd = finds?.findAt(x, z);
     const fr = fd && words.species[fd.sp];
+    // A shell names which one it is; its page holds them all.
+    const it = fd?.item ? fr?.collection?.find((/** @type {any} */ c) => c.id === fd.item) : null;
+    if (fr && it) return { sp: fd.sp, item: it.id, name: it.name, sub: it.rarity, icon: fr.icon, text: it.cardLine, wx: fd.x, wz: fd.z, r: 0.12, stage: -1 };
     if (fr) return { sp: fd.sp, name: fr.card ?? fr.name, sub: null, icon: fr.icon, text: fr.cardLine ?? '', wx: fd.x, wz: fd.z, r: 0.12, stage: -1 };
     const hab = habitat();
     const living = identify(world.state, hab, x, z, words);
@@ -143,8 +146,11 @@ export function createJournal(opts) {
     // Tapping a frog is finding it: its page inks (once).
     if (card.sp === 'frogs') found();
     // Tapping a find is finding it, the same way.
-    if (words.species[card.sp]?.kind === 'find' && !journal.species[card.sp]?.ever) {
-      commit(foundFind(journal, card.sp, { state: world.state, hour: hourIndex(), words }));
+    // A shell is found one kind at a time, each written down once.
+    const item = /** @type {any} */ (card).item ?? null;
+    const fresh = item ? !journal.species[card.sp]?.learned.includes(`item:${item}`) : !journal.species[card.sp]?.ever;
+    if (words.species[card.sp]?.kind === 'find' && fresh) {
+      commit(foundFind(journal, card.sp, { state: world.state, hour: hourIndex(), words }, item));
     }
     const list = card.ground ? words.moments.ground : words.moments[momentKind(words.species[card.sp])];
     const ids = momentsNow(list, now(card.stage), words.moments);

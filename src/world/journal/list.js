@@ -74,6 +74,7 @@ export function livingList(list, words, choice, entry, first) {
     };
     rows = rows.slice().sort(by[choice.sort] ?? by.recent);
     const hint = rows.length ? null : group.foundOnly && !anyFound ? (group.hint ?? words.smallLives?.none ?? list.empty) : list.empty;
-    return { id: group.id, label: group.label, tint: group.tint, shut: !!choice.shut[group.id], rows: rows.map((r) => r.id), hint, foundOnly: !!group.foundOnly };
+    return { id: group.id, label: group.label, tint: group.tint, icon: group.icon ?? null, shut: !!choice.shut[group.id], rows: rows.map((r) => r.id), hint,
+      foundOnly: !!group.foundOnly, many: !!group.from };
   });
 }

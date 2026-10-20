@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ebb find sketches</title>
+<style>
+  body { margin: 0; font: 17px/1.5 Nunito, system-ui, sans-serif; background: #F4EEE4; color: #2F3A35; padding: 20px max(16px, env(safe-area-inset-left)); }
+  h1 { font-size: 24px; margin: 0 0 4px; }
+  h2 { font-size: 19px; margin: 22px 0 8px; }
+  p { margin: 0 0 12px; max-width: 64ch; }
+  .row { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
+  figure { margin: 0; background: #FBF7F0; border: 1px solid #DCD2C0; border-radius: 10px; padding: 8px; display: grid; gap: 4px; min-width: 0; }
+  figure svg { width: 100%; height: auto; display: block; }
+  figcaption { font-size: 15px; color: #6B6A5E; }
+  label { font-size: 16px; display: inline-flex; gap: 8px; align-items: center; }
+</style>
+</head>
+<body>
+<h1>Find sketches</h1>
+<p>Every find's field sketch as the journal draws it: in pencil before it is found, in ink once found, and washed once it has been caught at a moment. The plant sketches are in the last row to compare against. Shapes are traced from the models (<code>tools/gen-sketch-outlines.mjs</code>).</p>
+<label><input type="checkbox" id="labels" checked> Show all labels</label>
+<div id="out"></div>
+<script type="module">
+import { drawSketch } from '../src/ui/sketches/index.js';
+const words = await (await fetch('../recipes/world/journal.json')).json();
+const ids = [...words.findOrder, 'reeds', 'iris', 'thrift'];
+const render = () => {
+  const all = document.getElementById('labels').checked;
+  const out = document.getElementById('out');
+  out.innerHTML = '';
+  for (const id of ids) {
+    const rec = words.species[id];
+    const labels = {};
+    if (all) for (const [k, l] of Object.entries(rec?.sketch?.labels ?? {})) labels[k] = l.text;
+    const h = document.createElement('h2');
+    h.textContent = rec?.name ?? id;
+    const row = document.createElement('div');
+    row.className = 'row';
+    [['Pencil, not yet found', 0], ['Ink, found', 1], ['Washed, caught at a moment', 2]].forEach(([cap, stage]) => {
+      const fig = document.createElement('figure');
+      fig.innerHTML = drawSketch(id, { stage, labels, scale: rec?.sketch?.scale }) + `<figcaption>${cap}</figcaption>`;
+      row.append(fig);
+    });
+    out.append(h, row);
+  }
+};
+document.getElementById('labels').addEventListener('change', render);
+render();
+</script>
+</body>
+</html>

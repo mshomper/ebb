@@ -42,6 +42,7 @@
     "lugworm": { "label": "Lugworm casts", "kind": "small", "icon": "lugworm", "page": "lugworm" },
     "hermitcrab": { "label": "Hermit crab", "kind": "small", "icon": "hermitcrab", "page": "hermitcrab" },
     "ediblecrab": { "label": "Edible crab", "kind": "small", "icon": "ediblecrab", "page": "ediblecrab" },
+    "shells": { "label": "Shells", "kind": "small", "icon": "shells", "page": "shells" },
     "frogs": { "label": "Frogs", "kind": "animals", "icon": "frog", "page": "frogs", "flag": "frogs:seen" },
     "midges": { "label": "Midges", "kind": "animals", "icon": "midges", "page": "midges", "flag": "midges:seen" },
     "you": { "label": "You", "kind": "animals", "icon": "you", "always": true }
@@ -82,6 +83,8 @@
     { "a": "pool", "b": "hermitcrab", "ink": "seen:hermitcrab", "note": "Hermit crabs pick about the floor of the rock pools." },
     { "a": "wrack", "b": "ediblecrab", "ink": "seenOn:ediblecrab:wrack", "note": "Young edible crabs hide in the wrack." },
     { "a": "pool", "b": "ediblecrab", "ink": "seenOn:ediblecrab:pool", "note": "Young edible crabs wait in the rock pools for the tide." },
+    { "a": "strandline", "b": "shells", "ink": "seen:shells", "note": "Shells wash up along the strandline, where the high water left them." },
+    { "a": "shore", "b": "shells", "ink": "seen:shells", "note": "The biggest tides bring the rarest shells in." },
     { "a": "grass", "b": "frogs", "ink": "flag:frogs:grass", "note": "Frogs shelter in the long grass." },
     { "a": "iris", "b": "frogs", "ink": "flag:frogs:iris", "note": "Frogs shelter under the iris." },
     { "a": "lilies", "b": "frogs", "ink": "flag:frogs:lilies", "note": "Frogs sit on the lily pads." },
