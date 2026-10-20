@@ -36,6 +36,7 @@ import { emit } from '../core/events.js';
  *   | { type: 'look.palette', id: string }
  *   | { type: 'look.tap', x: number, y: number, source: Source }
  *   | { type: 'ui.identify' }
+ *   | { type: 'creature.name', id: number, name: string }
  *   | { type: 'ui.hideHud', hidden?: boolean, source?: Source }
  *   | { type: 'ui.journal', open?: boolean, toggle?: boolean, view?: 'living'|'ground'|'web'|'almanac'|'notes', page?: string|null, size?: 'half'|'full' }} Action
  */

@@ -38,6 +38,28 @@ export function maxTrust(P) {
   return i < 0 || i >= P.bands.length ? 1 : r4(P.bands[i] - 0.0001);
 }
 
+/** The longest name a frog can have. */
+export const NAME_MAX = 24;
+
+/**
+ * A typed name made tidy: letters, spaces, apostrophes and hyphens only, single-spaced, at most
+ * NAME_MAX long. Empty if nothing usable is left. @param {string} raw
+ */
+export function cleanName(raw) {
+  return String(raw ?? '').replace(/[^\p{L}\p{M}' -]/gu, '').replace(/\s+/g, ' ').trim().slice(0, NAME_MAX).trim();
+}
+
+/**
+ * Give a frog a name (S6c-3). Pure: returns a new state, or the same one if the frog is not there.
+ * @param {any} state @param {number} id @param {string} name already clean @param {number} hour
+ */
+export function nameFrog(state, id, name, hour) {
+  const F = state?.creatures?.frogs;
+  if (!F || !name || !F.frogs.some((/** @type {any} */ f) => f.id === id)) return state;
+  const frogs = F.frogs.map((/** @type {any} */ f) => (f.id === id ? { ...f, name, namedAt: hour } : f));
+  return { ...state, creatures: { ...state.creatures, frogs: { ...F, frogs } } };
+}
+
 /**
  * Record something that earns trust, for the next hourly tick to apply. Pure: returns a new state.
  * @param {any} state the world state @param {TrustEvent} ev

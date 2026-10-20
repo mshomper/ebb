@@ -52,6 +52,7 @@ import { stream } from '../../core/rng.js';
  * @property {{ x: number, z: number } | null} [hide]  where it sits out the day, in cover (day-hide.js)
  * @property {number} [hideAt]     when the hide was last worked out
  * @property {{ id: number, x: number, z: number } | null} [food]  food you offered that it is going for (S6c-2)
+ * @property {number} [stillUntil]  a familiar frog holds still while you look close, until then (S6c-3)
  * @property {ReturnType<typeof stream>} r
  */
 
@@ -225,6 +226,9 @@ export function createFrogAgents(recipe, seed) {
       if (a.hop || a.flee || a.mode === 'leave' || clock < a.waryUntil) continue;
       const ring = Math.max(P.ringMinM, P.ringM * (1 - P.ringTrustShrink * a.trust));
       const calm = P.calmSpeed * (1 + P.calmTrustGain * a.trust);
+      // A frog that knows you well (Familiar) holds still while a calm source is close (S6c-3).
+      if (a.trust >= P.bands[2] && sources.some((s) => s.speed < calm
+        && Math.hypot(s.pos[0] - a.x, s.pos[1] - a.y, s.pos[2] - a.z) < P.portraitM)) a.stillUntil = clock + P.portraitHoldS;
       let from = null;
       for (const s of sources) {
         const d = Math.hypot(s.pos[0] - a.x, s.pos[1] - a.y, s.pos[2] - a.z);
@@ -464,6 +468,8 @@ export function createFrogAgents(recipe, seed) {
   function choose(a, env) {
     // Food you offered comes first, whatever the hour (S6c-2).
     if (a.food && !a.perch && eat(a, env)) return;
+    // Familiar, with you close by: it sits still for you (S6c-3).
+    if (clock < (a.stillUntil ?? -1)) { a.mode = 'rest'; a.nextAt = /** @type {number} */ (a.stillUntil); return; }
     const hour = env.hourOfDay;
     const active = inHours(hour, recipe.ecology.activity.hours);
     const sinceDusk = ((hour - env.duskHour) % 24 + 36) % 24 - 12;

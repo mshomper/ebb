@@ -296,6 +296,13 @@ const ICONS = {
     <path d="M14.5 3.5V7.5H18.5"/>
     <path d="M9 11.5H15.5M9 14.5H15.5M9 17.5H13"/>`,
 
+  // A name tag (S6c-3): a luggage-style tag on a short loop of string.
+  'name-tag': `
+    <path ${ACCENT} d="M4 12.5V5.5C4 4.7 4.7 4 5.5 4H12.5L20.5 12L12 20.5Z"/>
+    <path d="M4 12.5V5.5C4 4.7 4.7 4 5.5 4H12.5L20.5 12L12 20.5Z"/>
+    <circle cx="8.5" cy="8.5" r="1.5"/>
+    <path d="M12 12.5L15 15.5"/>`,
+
   // Feed (S6c-2): a small scoop tipped over, a pinch of food falling from it.
   feed: `
     <path ${ACCENT} d="M3.5 8.5H15L13.4 14.6C13.1 15.6 12.2 16.2 11.2 16.2H7.3C6.3 16.2 5.4 15.6 5.1 14.6Z"/>

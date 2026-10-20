@@ -98,7 +98,9 @@
     "watch": { "reachM": 3, "minS": 20, "capS": 600, "trustPerMin": 0.012, "stillMps": 0.05 },
     "feedTrust": 0.06, "ceiling": "familiar", "namingTrust": 0.5,
     "_trust": "Trust (S6c, doc 23): 0..1 per frog, saved, only ever grows. bands: where each word after Wary begins (Tolerant, Curious, Familiar, Bonded); the ceiling word caps it just under the next band. Quiet watching: the camera slower than watch.stillMps within watch.reachM of a frog for at least watch.minS, closed when it moves or at watch.capS, earns trustPerMin a minute. Both kinds are saved as events the hourly tick applies.",
-    "bands": [0.2, 0.45, 0.65, 0.85]
+    "bands": [0.2, 0.45, 0.65, 0.85],
+    "_portrait": "A Familiar frog (S6c-3) holds still, resting, while a calm source is within portraitM, for portraitHoldS after the last such look: ready for photo mode in M2.",
+    "portraitM": 0.6, "portraitHoldS": 2
   },
   "_feed": "Feeding (S6c-2): the Feed tool's food for this species (the tool card's words are in src/ui/tools.js FEED_SPECIES). A frog within reachM of where the food lands (not one leaving) comes for it, once the camera is outside its comfort ring, after waitS, more (up to fullWaitS) if it ate within fullH game hours; food nobody takes is gone after lingerS (real seconds). A meal earns presence.feedTrust, scaled down if it ate within fullH. specks: how many little dark bits, each speckM long, within spreadM; ringM: the soft ring on the ground where food lies. messages: what the card says after a tap.",
   "feed": {

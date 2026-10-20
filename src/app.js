@@ -40,6 +40,7 @@ import { bakeBody } from './world/creatures/body-bake.js';
 import { previewSpots } from './world/creatures/preview-spots.js';
 import { createCreatures } from './world/creatures/index.js';
 import { createPresence } from './world/creatures/presence.js';
+import { cleanName, nameFrog } from './world/creatures/trust.js';
 import { lushLook } from './world/growth/lush.js';
 import { createMidges } from './world/ecology/midges-live.js';
 import { onAction, history } from './input/actions.js';
@@ -574,6 +575,16 @@ export async function startApp(canvas, hooks = {}) {
       case 'settings.set':
         updateStore('settings', (s) => { Object.assign(s, a.patch); });
         break;
+      // A name for a frog that knows you well enough (S6c-3, the tap card): kept with the island.
+      case 'creature.name': {
+        const name = cleanName(a.name);
+        const f = world.state?.creatures?.frogs?.frogs?.find((/** @type {any} */ g) => g.id === a.id);
+        if (!name || !f || f.name || (f.trust ?? 0) < frogRecipe.presence.namingTrust) break;
+        world.state = nameFrog(world.state, a.id, name, clock.hourIndex());
+        updateStore('world', () => world.state);
+        emitDeferred('creature:named', { species: 'frogs', id: a.id, name });
+        break;
+      }
     }
   });
   const detachDesktop = attachDesktopInput(canvas, camRecipe, rb);

@@ -84,7 +84,10 @@ export function observeAnimals(j, out, ctx, at) {
         else if (learnOnce(k, 'joined:unseen')) note(rec, 'joinedUnseen', 'frogs');
         learnOnce(k, 'joined');
       } else if (e.name === 'creature:left') {
-        if (k.ever) { note(rec, e.payload.count ? 'left' : 'gone', 'frogs'); learnOnce(k, 'left'); }
+        // A frog you named leaves by its name (S6c-3).
+        const named = e.payload.frogName && rec.notes?.leftNamed;
+        if (k.ever && named) { out.push({ hour, date: at.date, text: rec.notes.leftNamed.replace('{name}', e.payload.frogName), sp: 'frogs', kind: 'left' }); learnOnce(k, 'left'); }
+        else if (k.ever) { note(rec, e.payload.count ? 'left' : 'gone', 'frogs'); learnOnce(k, 'left'); }
         else if (e.payload.why === 'scout') note(rec, 'scoutLeftUnseen', 'frogs');
       } else if (e.name === 'creature:dormant' || e.name === 'creature:woke') {
         if (k.ever) { note(rec, e.name === 'creature:dormant' ? 'dormant' : 'woke', 'frogs'); learnOnce(k, e.name === 'creature:dormant' ? 'dormant' : 'woke'); }
@@ -155,6 +158,22 @@ function track(k, value, hour, newHour, words) {
   if (!newHour) return;
   k.counts.push(value);
   if (k.counts.length > words.trend.hours + 1) k.counts.splice(0, k.counts.length - words.trend.hours - 1);
+}
+
+/**
+ * You named a frog (S6c-3): the moment is written down.
+ * @param {Journal} journal @param {string} name
+ * @param {{ hour: number, words: any, date: string, copy: (j: Journal) => Journal }} ctx
+ * @returns {{ journal: Journal, notes: Note[] }}
+ */
+export function namedFrog(journal, name, ctx) {
+  const rec = ctx.words.species.frogs;
+  const t = rec?.notes?.named;
+  if (!t || !name) return { journal, notes: [] };
+  const j = ctx.copy(journal);
+  /** @type {Note[]} */ const notes = [{ hour: ctx.hour, date: ctx.date, text: t.replace('{name}', name), sp: 'frogs', kind: 'named' }];
+  j.notes = [...notes, ...j.notes].slice(0, ctx.words.notesKept);
+  return { journal: j, notes };
 }
 
 /**

@@ -39,6 +39,8 @@ import { applyTrust } from './trust.js';
  * @property {string[]} near the cover plants within its shelter reach (for the journal's web)
  * @property {number} [trust] how well it knows you, 0..1, only ever growing (trust.js; absent is 0)
  * @property {number} [fedAt] the hour it last ate food you offered (S6c-2; absent: never)
+ * @property {string} [name] the name you gave it (S6c-3); named frogs are the last to leave
+ * @property {number} [namedAt] the hour you named it
  */
 
 /**
@@ -289,7 +291,7 @@ export function coarseStep(state, hourIndex, env) {
   const leave = (f, why) => {
     fr.frogs = fr.frogs.filter((g) => g !== f);
     fr.lastLeft = hourIndex;
-    events.push({ name: 'creature:left', payload: pay({ id: f.id, x: f.x, z: f.z, why, count: fr.frogs.length }) });
+    events.push({ name: 'creature:left', payload: pay({ id: f.id, x: f.x, z: f.z, why, count: fr.frogs.length, ...(f.name ? { frogName: f.name } : {}) }) });
     if (!fr.frogs.length) { fr.phase = 'waiting'; fr.cooldownUntil = hourIndex + A.rescoutAfterH; fr.happyFor = 0; }
   };
 
@@ -341,14 +343,17 @@ export function coarseStep(state, hourIndex, env) {
       }
       if (!fr.joinDue) fr.lastJoin = hourIndex;
     }
-    // One moves on at most once a day: a frog unhappy too long, or one too many for the edge.
+    // One moves on at most once a day: a frog unhappy too long, or one too many for the edge. Frogs
+    // you have named are the last to go (S6c-3): an unnamed one goes first while there is one.
     if (fr.frogs.length && (fr.lastLeft < 0 || hourIndex - fr.lastLeft >= A.leaveEveryH)) {
       const crowded = fr.frogs.length > edge.capacity;
       const unhappy = fr.frogs.filter((f) => f.low >= A.leaveAfterH);
       const pool = unhappy.length ? unhappy : crowded ? fr.frogs : [];
       if (pool.length) {
-        let worst = pool[0];
-        for (const f of pool) if (f.mood < worst.mood || (f.mood === worst.mood && f.id > worst.id)) worst = f;
+        const unnamed = pool.filter((f) => !f.name);
+        const from = unnamed.length ? unnamed : pool;
+        let worst = from[0];
+        for (const f of from) if (f.mood < worst.mood || (f.mood === worst.mood && f.id > worst.id)) worst = f;
         leave(worst, unhappy.length ? 'habitat' : 'crowded');
       }
     }

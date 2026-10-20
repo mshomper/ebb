@@ -3,7 +3,7 @@
 // once by the hourly step and never lowering trust, the same events giving the same trust however
 // the hours are cut, and quiet watching counting only a still camera close by.
 
-import { trustWord, maxTrust, addTrustEvent, applyTrust } from '../src/world/creatures/trust.js';
+import { trustWord, maxTrust, addTrustEvent, applyTrust, cleanName, nameFrog, NAME_MAX } from '../src/world/creatures/trust.js';
 import { createWatching } from '../src/world/creatures/watching.js';
 
 const TRUST = 'trust';
@@ -102,6 +102,23 @@ export function addTrustTests(test, assert, eq) {
     const third = Math.round((c.state.creatures.frogs.frogs[0].trust - b.state.creatures.frogs.frogs[0].trust) * 10000) / 10000;
     eq(third, P.feedTrust, `${fullH} hours later it is hungry again`);
     return `${first}, then ${second}, then ${third}`;
+  });
+
+  test(TRUST, 'names are tidied, kept with the frog, and never land on a frog that is not there', () => {
+    eq(cleanName('  Pip  '), 'Pip', 'trimmed');
+    eq(cleanName('Old   Bramble'), 'Old Bramble', 'single spaces');
+    eq(cleanName("O'Fen-Moss"), "O'Fen-Moss", 'apostrophes and hyphens stay');
+    eq(cleanName('Zoë'), 'Zoë', 'letters of any language stay');
+    eq(cleanName('Pip <3 99'), 'Pip', 'symbols and digits go');
+    eq(cleanName('1234'), '', 'no letters, no name');
+    assert(cleanName('x'.repeat(40)).length === NAME_MAX, `at most ${NAME_MAX} long`);
+    const s = nameFrog(twoFrogs(), 2, 'Pip', 50);
+    eq(s.creatures.frogs.frogs[1].name, 'Pip', 'named');
+    eq(s.creatures.frogs.frogs[1].namedAt, 50, 'when');
+    eq(s.creatures.frogs.frogs[0].name, undefined, 'the other frog is untouched');
+    const t = nameFrog(s, 9, 'Moss', 50);
+    eq(t, s, 'no frog 9: nothing changes');
+    return 'ok';
   });
 
   test(TRUST, 'quiet watching counts a still camera close by, not a moving or far one', async () => {

@@ -14,7 +14,7 @@ import { hourIndex, display, SECONDS_PER_HOUR, HOURS_PER_DAY } from '../../core/
 import { onAction } from '../../input/actions.js';
 import { weatherAt } from '../weather.js';
 import { tideParams } from '../tide.js';
-import { initialJournal, learn, notePlanted, momentsNow, catchMoments, foundAnimal } from './observe.js';
+import { initialJournal, learn, notePlanted, momentsNow, catchMoments, foundAnimal, namedAnimal } from './observe.js';
 import { journalLook } from './look.js';
 import { describe, identify, showMeSpot, momentKind, frogCard } from './describe.js';
 import { groundKind, groundCard, groundSurvey, describeGround, groundSpot } from './ground.js';
@@ -191,6 +191,16 @@ export function createJournal(opts) {
       select(p.point ? cardAt(p.point[0], p.point[2]) : null, p.x, p.y)),
     // Watching a frog from close by finds it too (src/world/creatures/index.js).
     on('creature:found', (/** @type {{ species: string }} */ p) => { if (p.species === 'frogs') found(); }),
+    // You named a frog (S6c-3, src/app.js): the moment is written, and its open card takes the name.
+    on('creature:named', (/** @type {{ species: string, id: number, name: string }} */ p) => {
+      if (p.species !== 'frogs') return;
+      commit(namedAnimal(journal, p.name, { state: world.state, hour: hourIndex(), words }));
+      const c = get('identify');
+      if (c?.sp === 'frogs' && c.id === p.id) {
+        const card = frogCard({ x: c.wx, z: c.wz, id: c.id }, world.state, words, world.env.recipes?.species?.frog?.presence);
+        update('identify', () => ({ ...c, ...card }));
+      }
+    }),
     onAction((a) => {
       // Choosing a tool or closing the card puts the tap card away.
       if (a.type === 'tool.select' || a.type === 'ui.identify') { if (get('identify')) update('identify', () => null); return; }

@@ -328,7 +328,7 @@
         { "text": "Doesn't mind you close, if you come slowly", "learn": ["trust:tolerant"] },
         { "text": "Takes the insects you offer, if you give it room", "learn": ["fed"] }
       ],
-      "_trust": "How well one frog knows you (S6c, doc 23), as a word on its card, never a number; lines: what the card says at each word; notes: written once per frog when its word moves up to that one. Bands are in recipes/species/frog.json presence.",
+      "_trust": "How well one frog knows you (S6c, doc 23), as a word on its card, never a number; lines: what the card says at each word; notes: written once per frog when its word moves up to that one. Bands are in recipes/species/frog.json presence. since: the line under a named frog's name; names: what Suggest one offers (S6c-3), names no other frog has, starting at a different one per frog.",
       "trust": {
         "words": { "wary": "Wary", "tolerant": "Tolerant", "curious": "Curious", "familiar": "Familiar", "bonded": "Bonded" },
         "lines": {
@@ -338,6 +338,9 @@
           "familiar": "Holds still while you look, and knows you well.",
           "bonded": "Stays beside you, quite at ease."
         },
+        "since": "{card}, here since {date}",
+        "namedLine": "{name}, here since {date}",
+        "names": ["Pip", "Moss", "Fen", "Bramble", "Clover", "Hazel", "Sorrel", "Wren", "Pebble", "Tansy", "Juniper", "Puddle", "Rush", "Marigold", "Burdock", "Willow"],
         "notes": {
           "tolerant": "A frog lets you come a little closer now.",
           "curious": "A frog watches you back now. It doesn't mind you close.",
@@ -362,6 +365,8 @@
         "scoutLeftUnseen": "The reeds were quiet tonight.",
         "left": "A frog has moved on from the pond.",
         "fed": "A frog came for the insects you offered.",
+        "named": "You named a frog {name}.",
+        "leftNamed": "{name} has moved on from the pond.",
         "gone": "The last of the frogs has moved on.",
         "dormant": "The frogs have gone down into the pond mud for winter.",
         "woke": "The frogs are back at the water's edge.",
