@@ -10,6 +10,7 @@ import { addDirectorTests } from './unit-tests-director.js';
 import { addDevelopTests } from './unit-tests-develop.js';
 import { addSoundGameTests } from './unit-tests-sound-game.js';
 import { addSummerTests } from './unit-tests-summer.js';
+import { addMelodyTests } from './unit-tests-melody.js';
 import { addFallsSoundTests } from './unit-tests-falls-sound.js';
 
 /** @type {{group: string, name: string, fn: () => any}[]} */
@@ -33,6 +34,7 @@ addDirectorTests(test, assert, eq);
 addDevelopTests(test, assert, eq);
 addSoundGameTests(test, assert, eq);
 addSummerTests(test, assert, eq);
+addMelodyTests(test, assert, eq);
 addFallsSoundTests(test, assert, eq);
 
 const CHECK = '<path d="M4.5 12.5l4.8 4.8L19.5 7"/>';
