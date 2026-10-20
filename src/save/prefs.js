@@ -8,7 +8,7 @@ import { subscribe } from '../core/store.js';
 import { openDb, putPref } from './idb.js';
 
 const KEY = 'ebb.prefs';
-const KEPT = ['palette', 'textSize', 'motion', 'audio', 'hudDim', 'reveal', 'qualityChoice'];
+const KEPT = ['palette', 'textSize', 'motion', 'audio', 'hudDim', 'reveal', 'qualityChoice', 'leftHanded'];
 
 /**
  * The saved device settings (empty on a new device). The palette alone was kept before S7; motion

@@ -304,6 +304,11 @@
   border: 2px solid var(--wordmark-light);
 }
 
+/* --- phone landscape: the panel uses the full height (the bottom row is only time flow there) --- */
+@media (max-height: 500px) and (min-width: 700px) {
+  .ebb-settings { bottom: max(var(--st-edge), env(safe-area-inset-bottom)); }
+}
+
 /* --- phone: a full-screen sheet, the sections stacked and opened one by one --- */
 @media (max-width: 699px) {
   .ebb-settings {

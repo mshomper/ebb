@@ -69,4 +69,7 @@
 @media (max-width: 420px) {
   .ebb-look__name { display: none; }
   .ebb-look__btn { width: var(--lk-btn); padding: 0; justify-content: center; }
+  /* A square icon button needs no width cap; on a 320 px screen the cap was narrower than the button,
+     which then spilled over the journal button (tools/layout-check.html). */
+  .ebb-look { max-width: none; }
 }

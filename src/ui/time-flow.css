@@ -77,10 +77,20 @@
   .ebb-time.has-tool .ebb-time__btn { pointer-events: none; }
 }
 
-/* Phone landscape: the bar sits at the bottom of the right edge with the brush card to its left,
-   so the space above the bar is free. */
+/* Phone landscape: the tools are a column on the right edge (tools.css), so time sits at the bottom
+   just left of it. Left-handed, everything mirrors. */
 @media (max-height: 500px) and (min-width: 600px) {
-  .ebb-time { bottom: calc(max(var(--tf-edge), env(safe-area-inset-bottom)) + var(--tf-bar) + 10px); }
+  .ebb-time { right: calc(max(var(--tf-edge), env(safe-area-inset-right)) + var(--tf-bar) + 10px); }
+  :root.ebb-left-handed .ebb-time {
+    right: auto;
+    left: calc(max(var(--tf-edge), env(safe-area-inset-left)) + var(--tf-bar) + 10px);
+  }
+}
+@media (max-width: 560px) {
+  :root.ebb-left-handed .ebb-time {
+    right: auto;
+    left: max(var(--tf-edge), env(safe-area-inset-left));
+  }
 }
 
 /* Reduced motion: the system's (unless Settings says Full), or Settings' Calm (src/ui/motion.js). */

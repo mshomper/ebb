@@ -55,7 +55,7 @@ import { fingerprint } from './save/backup.js';
  *   water: import('./world/water/index.js').Water,
  *   growth: import('./world/growth/index.js').Growth, world: { state: any, env: any },
  *   palette: { list: () => { id: string, name: string }[], current: () => any, apply: (json: any, fadeS?: number) => void },
- *   quality: { set: (tier: string) => boolean, tier: () => string, renderScale: () => number, info: () => any },
+ *   quality: { set: (tier: string) => boolean, tier: () => string, renderScale: () => number, pinScale: (s: number | null) => void, info: () => any },
  *   pickColor: (cssX: number, cssY: number) => Promise<string> }
  *   | { ok: false, reason: 'missing'|'no-adapter'|'device-failed' }
  *   | { ok: false, reason: 'elsewhere', takeOver: () => void }
@@ -123,7 +123,7 @@ export async function startApp(canvas, hooks = {}) {
   // Device settings (src/save/prefs.js): kept on this device, never in the island.
   const prefs = loadPrefs();
   updateStore('settings', (s) => {
-    for (const k of ['textSize', 'motion', 'audio', 'hudDim', 'reveal', 'qualityChoice']) if (prefs[k] !== undefined) s[k] = prefs[k];
+    for (const k of ['textSize', 'motion', 'audio', 'hudDim', 'reveal', 'qualityChoice', 'leftHanded']) if (prefs[k] !== undefined) s[k] = prefs[k];
   });
   keepPrefs();
 
@@ -796,6 +796,8 @@ export async function startApp(canvas, hooks = {}) {
       },
       tier: () => tier,
       renderScale: () => live.scale,
+      /** Hold the render scale, or release it with null (tools/phone-check.html's sweep). @param {number | null} s */
+      pinScale: (s) => live.pinScale(s),
       /** Scale range, GPU time measure, scale changes, the automatic step (tools). */
       info: () => live.info(),
     },
