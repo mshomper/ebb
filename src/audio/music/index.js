@@ -19,6 +19,7 @@ import { createPerformer } from './perform.js';
 import { createInstruments } from './instruments.js';
 import { dayColorAt } from './daycolor.js';
 import { grow } from './develop/index.js';
+import { stream } from '../../core/rng.js';
 
 const SEASONS = ['spring', 'summer', 'autumn', 'winter'];
 /** Slots a grown piece can fill (the composer's slot names). */
@@ -35,6 +36,7 @@ const GROWN_SLOTS = ['morning', 'interlude', 'evening', 'nocturne'];
  * @property {boolean} frogsCalling a frog is calling now
  * @property {string[]} residents  settled species ids
  * @property {boolean} previewing  display time is away from world time (the time dial)
+ * @property {boolean} [freshIsland] this island is brand new (no save came back): the opening plays
  */
 
 /** @param {string} p */
@@ -63,7 +65,7 @@ export async function createMusic(mixer, opts) {
   // One stand-in per slot that the composer fills when chosen. Only spring has material so far, so
   // every season grows from spring's until the other seasons' material is written (phase 7).
   const grownSlots = GROWN_SLOTS.map((slot) => ({
-    id: `grown-${slot}`, grownSlot: slot, slots: [slot], seasons: [...SEASONS], requires: {}, keys: [material.home],
+    id: `grown-${slot}`, grownSlot: slot, alwaysNew: true, slots: [slot], seasons: [...SEASONS], requires: {}, keys: [material.home],
   }));
   const dir = createDirector({ director, seasons: {} }, [...tides, ...grownSlots], { seed: opts.seed, sunAltDeg: opts.sunAltDeg });
 
@@ -74,6 +76,14 @@ export async function createMusic(mixer, opts) {
   let current = null;
   /** @type {'often'|'now-and-then'|'rarely'|'off'} */ let frequency = 'now-and-then';
   /** @type {MusicState | null} */ let last = null;
+  // The opening (director.json opening): on a brand-new island, soon after the first touch, the home
+  // tide, a short rest, then a grown piece; the director takes over after that. Stages: 0 not yet
+  // touched, 1 waiting to start the tide, 2 tide playing, 3 resting, 4 done (or not a new island).
+  const O = director.opening;
+  const openRng = stream(opts.seed >>> 0, 0x6f70);
+  const opening = { stage: O ? 0 : 4, at: 0 };
+  /** A test request (?music=now) waiting for the next update. @type {null | { slot: string, seed: number }} */
+  let pendingNow = null;
   let disposed = false;
 
   /** The instruments, made once, after the first touch (the piano loads after the island's sounds). */
@@ -94,7 +104,8 @@ export async function createMusic(mixer, opts) {
     const slot = d.slot === 'early-nocturne' ? 'nocturne' : d.slot;
     const piece = d.piece.grownSlot ? grow(material, rules, { slot: d.piece.grownSlot, weather: st.weather, seed: d.seed }, names).piece : d.piece;
     const key = d.key ?? piece.keys?.[0];
-    current = { id: piece.id, title: piece.title ?? piece.id, seed: d.seed, slot, windowEndRealS: d.windowEndRealS, finishing: false, started: false };
+    // A tide shows its own name ("Moon pull"), a grown piece the composer's.
+    current = { id: piece.id, title: piece.theme?.name ?? piece.title ?? piece.id, seed: d.seed, slot, windowEndRealS: d.windowEndRealS, finishing: false, started: false };
     dir.started(d, dirState(st), key);
     const mine = current;
     try {
@@ -108,11 +119,43 @@ export async function createMusic(mixer, opts) {
       mixer.setMusicTone({ lowpassHz: dayColor.brightHz, wet: dayColor.wet }, 2);
       mine.started = true;
       performer.play(perf, { coda, onEnd: () => ended(mine) });
-      opts.emit?.('music:started', { id: piece.id, title: mine.title, seed: d.seed, slot });
+      opts.emit?.('music:started', { id: piece.id, title: mine.title, seed: d.seed, slot, durationS: perf.durationS, grown: !!d.piece.grownSlot });
     } catch (e) {
       console.warn('ebb music: a piece could not start', e);
       ended(mine);
     }
+  }
+
+  /**
+   * One step of the opening, when nothing is playing. True while the opening holds the director back.
+   * @param {MusicState} st
+   */
+  function openingStep(st) {
+    if (opening.stage === 0) {
+      if (!st.freshIsland) { opening.stage = 4; return false; }
+      opening.stage = 1;
+      opening.at = st.realS + openRng.range(O.afterTouchS[0], O.afterTouchS[1]);
+    }
+    if (st.frogsCalling || st.previewing || frequency === 'off') return true;
+    if (opening.stage === 1 && st.realS >= opening.at) {
+      opening.stage = 2;
+      const tide = dir.homeTide(st.gameT);
+      const piece = tide ?? grownSlots.find((g) => g.grownSlot === O.then) ?? grownSlots[0];
+      start({ piece, seed: openRng.int(2 ** 31), slot: O.then, key: undefined, windowEndRealS: Infinity }, st);
+      return true;
+    }
+    if (opening.stage === 2) {
+      opening.stage = 3;
+      opening.at = st.realS + openRng.range(O.restS[0], O.restS[1]);
+      return true;
+    }
+    if (opening.stage === 3 && st.realS >= opening.at) {
+      opening.stage = 4;
+      const stand = grownSlots.find((g) => g.grownSlot === O.then) ?? grownSlots[0];
+      start({ piece: stand, seed: openRng.int(2 ** 31), slot: O.then, key: undefined, windowEndRealS: Infinity }, st);
+      return true;
+    }
+    return opening.stage < 4;
   }
 
   /** A piece is over (finished, stopped or failed): rest. @param {any} which */
@@ -148,6 +191,14 @@ export async function createMusic(mixer, opts) {
         return;
       }
       if (current) return;   // unpacking
+      if (pendingNow) {
+        const { slot, seed } = pendingNow;
+        pendingNow = null;
+        const stand = grownSlots.find((g) => g.grownSlot === slot) ?? grownSlots[0];
+        start({ piece: stand, seed, slot, key: undefined, windowEndRealS: Infinity }, st);
+        return;
+      }
+      if (opening.stage < 4 && openingStep(st)) return;
       const d = dir.update(dirState(st));
       if (d) start(d, st);
     },
@@ -157,10 +208,8 @@ export async function createMusic(mixer, opts) {
      * @param {{slot?: string, seed?: number}} [o]
      */
     playNow(o = {}) {
-      if (!last || current) return false;
-      const slot = o.slot ?? 'morning';
-      const stand = grownSlots.find((g) => g.grownSlot === slot) ?? grownSlots[0];
-      start({ piece: stand, seed: (o.seed ?? opts.seed) >>> 0, slot, key: undefined, windowEndRealS: Infinity }, last);
+      if (pendingNow) return false;
+      pendingNow = { slot: o.slot ?? 'morning', seed: (o.seed ?? opts.seed) >>> 0 };
       return true;
     },
     /** @param {'often'|'now-and-then'|'rarely'|'off'} level */

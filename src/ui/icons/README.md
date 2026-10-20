@@ -79,6 +79,9 @@ Size and color come from CSS: set `width`/`height` on `.icon` and `color` on the
 | `you` | a simple figure, head and shoulders: you, in the Web |
 | `unknown` | a circle drawn in short pencil dashes: a living thing not seen yet |
 | `close` | two crossing strokes: close a panel or card |
+| `note` | a single eighth note, its head lightly filled: music (the now-playing line, left) |
+| `notes2` | two beamed eighth notes: music (the now-playing line, right) |
+| `heart` | a soft rounded heart, lightly filled: a piece of music you love (the now-playing line) |
 | `back` | a chevron pointing left: back to a list |
 | `chevron` | a chevron pointing up (turned over by CSS to point down): the phone sheet's taller or shorter |
 | `undo` | curved arrow to the left |

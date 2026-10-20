@@ -23,6 +23,7 @@ import { createVoices } from './voices.js';
 import { createCreatureSound } from './creatures-game.js';
 import { createMusic } from './music/index.js';
 import { hash32 } from '../core/rng.js';
+import { emit } from '../core/events.js';
 import { sunMoon } from '../world/sky/sun-moon.js';
 
 const DEG = 180 / Math.PI;
@@ -100,13 +101,14 @@ export async function startAudio(store) {
     // The music decides twice a second (doc 24), and dips while a frog calls close by.
     if (music && ticks++ % Math.max(1, Math.round(gameRecipe.updateHz / gameRecipe.music.updateHz)) === 0) {
       mixer.duckMusic(animals.nearCall() ? mixerRecipe.duck.db : 0);
+      // `?music=now` (testing): the composer grows and plays a piece right after the first touch.
+      if (testNow && mixer.ctx.state === 'running' && music.playNow({ slot: testNow })) testNow = '';
       music.update({
         realS: (now - t0) / 1000, gameT: s.displayT, sunAltDeg: s.sunAltDeg, weather: state.weather,
         frogsAwake: !!s.frogsAwake, frogsCalling: !!s.frogsCalling, residents: s.residents ?? [],
         previewing: Math.abs(s.displayT - s.worldT) > 60,
+        freshIsland: !!s.freshIsland,
       });
-      // `?music=now` (testing): the composer grows and plays a piece right after the first touch.
-      if (testNow && mixer.ctx.state === 'running' && music.playNow({ slot: testNow })) testNow = '';
     }
   }
 
@@ -130,7 +132,7 @@ export async function startAudio(store) {
       try { animals?.poll(); } catch (e) { console.error('ebb audio: the frog calls failed', e); }
     }, gameRecipe.frogs.pollS * 1000);
     // The music: its own seed, from the world and this device's session count (doc 24, Algorithms).
-    createMusic(mixer, { tier, seed: hash32(seed >>> 0, sessionCount(), 0x6d75), sunAltDeg: (t) => sunMoon(t, skyRecipe.orbit).sunAlt * DEG })
+    createMusic(mixer, { tier, emit, seed: hash32(seed >>> 0, sessionCount(), 0x6d75), sunAltDeg: (t) => sunMoon(t, skyRecipe.orbit).sunAlt * DEG })
       .then((m) => { if (disposed) { m.dispose(); return; } music = m; applySettings(); })
       .catch((e) => console.warn('ebb music: the music did not start', e));
   }

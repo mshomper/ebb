@@ -549,6 +549,27 @@ const ICONS = {
     <path d="M6.5 6.5L17.5 17.5"/>
     <path d="M17.5 6.5L6.5 17.5"/>`,
 
+  // Note: a single eighth note, its head lightly filled (the now-playing line, a piece of music).
+  note: `
+    <ellipse ${ACCENT} cx="9" cy="17" rx="3.2" ry="2.5" transform="rotate(-20 9 17)"/>
+    <ellipse cx="9" cy="17" rx="3.2" ry="2.5" transform="rotate(-20 9 17)"/>
+    <path d="M12 16.2V4.5"/>
+    <path d="M12 4.5C13.5 6.8 17 7.4 17 11"/>`,
+
+  // Notes: two eighth notes beamed together (the other side of the now-playing line).
+  notes2: `
+    <ellipse ${ACCENT} cx="7" cy="17.5" rx="2.8" ry="2.2" transform="rotate(-20 7 17.5)"/>
+    <ellipse ${ACCENT} cx="16" cy="15.5" rx="2.8" ry="2.2" transform="rotate(-20 16 15.5)"/>
+    <ellipse cx="7" cy="17.5" rx="2.8" ry="2.2" transform="rotate(-20 7 17.5)"/>
+    <ellipse cx="16" cy="15.5" rx="2.8" ry="2.2" transform="rotate(-20 16 15.5)"/>
+    <path d="M9.6 16.8V6.5L18.6 4.5V14.8"/>
+    <path d="M9.6 9.2L18.6 7.2"/>`,
+
+  // Heart: a soft rounded heart, for the pieces of music you love (doc 24, hearted pieces).
+  heart: `
+    <path ${ACCENT} d="M12 19.5C12 19.5 4.5 15 4.5 9.6A3.9 3.9 0 0 1 12 7.6A3.9 3.9 0 0 1 19.5 9.6C19.5 15 12 19.5 12 19.5Z"/>
+    <path d="M12 19.5C12 19.5 4.5 15 4.5 9.6A3.9 3.9 0 0 1 12 7.6A3.9 3.9 0 0 1 19.5 9.6C19.5 15 12 19.5 12 19.5Z"/>`,
+
   // Back: a chevron pointing left.
   back: `
     <path d="M14.5 5.5L8 12L14.5 18.5"/>`,

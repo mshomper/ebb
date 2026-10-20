@@ -686,6 +686,8 @@ export async function startApp(canvas, hooks = {}) {
       worldT: clock.worldT(), sunAltDeg: (day.sm.sunAlt * 180) / Math.PI,
       frogsAwake: frogs.length > 0 && !world.state?.creatures?.frogs?.dormant,
       frogsCalling: creatures.frogs().some((a) => a.mode === 'call'),
+      // A brand-new island (no save came back) opens with music soon after the first touch.
+      freshIsland: !back,
     }));
   }
 

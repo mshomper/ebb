@@ -82,12 +82,14 @@ export function addDirectorTests(test, assert, eq) {
     }
   });
 
-  test(G, 'every piece is followed by a rest of at least the shortest rest (2 real minutes)', async () => {
+  test(G, 'every piece is followed by a rest of at least the shortest rest (the recipe, at the default setting)', async () => {
     const { director, pool } = await load();
     const { out } = run(director, pool, { seed: 9 });
+    // The default setting ("now and then", shown as Sometimes) scales the recipe's shortest rest.
+    const least = director.restRealMin[0] * 60 * (director.frequency['now-and-then'].restScale ?? 1) - 1e-6;
     assert(out.length >= 2, `pieces: ${out.length}`);
-    for (const p of out) assert(p.rest >= 120, `rest ${p.rest}`);
-    for (let i = 1; i < out.length; i++) assert(out[i].start - out[i - 1].end >= 120, 'gap between pieces');
+    for (const p of out) assert(p.rest >= least, `rest ${p.rest} (shortest ${least})`);
+    for (let i = 1; i < out.length; i++) assert(out[i].start - out[i - 1].end >= least, 'gap between pieces');
   });
 
   test(G, 'nothing starts during a preview', async () => {

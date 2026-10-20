@@ -80,6 +80,8 @@ export function sunDay(sunAltDeg, dayStart, falling) {
  */
 export function createDirector(recipes, pieces, opts) {
   const D = recipes.director;
+  /** Ids of pieces that are new each time they play (the composer's stand-ins). */
+  const alwaysNew = new Set(pieces.filter((p) => p.alwaysNew).map((p) => p.id));
   const r = stream(opts.seed >>> 0, 0x6d75, 0xd1);
   /** @type {{id: string, day: number, realS: number, key?: string}[]} */
   const history = opts.history ? [...opts.history] : [];
@@ -140,6 +142,16 @@ export function createDirector(recipes, pieces, opts) {
     return null;
   }
 
+  /**
+   * How many chances a slot has a day: the Music plays setting may give interludes and nocturnes
+   * more (director.json frequency.<level>.max), otherwise the slot's own max.
+   * @param {string} slot @param {any} rules @param {DirectorState} st
+   */
+  function slotMax(slot, rules, st) {
+    const name = slot === 'early-nocturne' ? 'nocturne' : slot;
+    return D.frequency[st.frequency]?.max?.[name] ?? rules.max ?? 1;
+  }
+
   /** @param {string} slot */
   function slotRules(slot) {
     if (slot === 'early-nocturne') return { ...D.slots.nocturne, chance: D.slots.frogWindow.elseNocturneChance, max: 1 };
@@ -185,7 +197,9 @@ export function createDirector(recipes, pieces, opts) {
     if (!pool.length) return null;
     const day = Math.floor(gameT / DAY);
     const H_ = D.history;
-    const lastOf = (/** @type {string} */ id) => history.filter((x) => x.id === id).pop();
+    // A stand-in the composer fills (alwaysNew) is a new piece every time, so it is never held back
+    // as a repeat.
+    const lastOf = (/** @type {string} */ id) => (alwaysNew.has(id) ? undefined : history.filter((x) => x.id === id).pop());
     const ok = pool.filter((p) => { const l = lastOf(p.id); return !l || (day - l.day >= H_.minGapDays && st.realS - l.realS >= H_.minGapRealMin * 60); });
     let exhausted = false;
     if (!ok.length) { exhausted = true; ok.push(pool.slice().sort((a, b) => (lastOf(a.id)?.realS ?? -1) - (lastOf(b.id)?.realS ?? -1))[0]); }
@@ -218,7 +232,7 @@ export function createDirector(recipes, pieces, opts) {
           const rules = slotRules(open.slot);
           const key = `${open.day}:${open.slot}`;
           const tries = counts.get(key) ?? 0;
-          if (tries < (rules.max ?? 1) && !rolls.has(`${key}:${tries}`) && (rules.graceH ?? 0) > 0) {
+          if (tries < slotMax(open.slot, rules, st) && !rolls.has(`${key}:${tries}`) && (rules.graceH ?? 0) > 0) {
             const yes = first || r.next() < Math.min(1, rules.chance * (D.frequency[st.frequency]?.chanceScale ?? 1));
             rolls.set(`${key}:${tries}`, yes);
             log.push({ realS: st.realS, slot: open.slot, decision: yes ? 'rolled yes while resting: waits' : 'rolled no' });
@@ -244,7 +258,7 @@ export function createDirector(recipes, pieces, opts) {
       // Each slot gets up to `max` chances a day (doc 24: interludes "up to 2, each 0.6"). A chance
       // that rolls no is spent, and the next one waits a rest's length before it is rolled.
       const tries = counts.get(key) ?? 0;
-      if (tries >= (rules.max ?? 1)) return null;
+      if (tries >= slotMax(s.slot, rules, st)) return null;
       if (st.realS < (retryAt.get(key) ?? 0)) return null;
       const rollKey = `${key}:${tries}`;
       if (!rolls.has(rollKey)) {
