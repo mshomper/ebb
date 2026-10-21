@@ -7,13 +7,16 @@ import { rollShell, shellMesh, shellWords } from '../src/world/keepsakes/familie
 import { pickIndex, rarityWeights } from '../src/world/keepsakes/rarity.js';
 import { keepsakeSvg, traceKeepsake } from '../src/ui/sketches/keepsake.js';
 import { FAMILIES, keepsakeMesh, keepsakeWords, rollKeepsake } from '../src/world/keepsakes/families/index.js';
+import { loadArtifactBases } from '../src/world/keepsakes/families/artifact.js';
 
 const KEEPSAKES = 'keepsakes';
 
 async function recipe() {
   const r = await fetch('../recipes/world/keepsakes.json');
   if (!r.ok) throw new Error(`recipes/world/keepsakes.json: HTTP ${r.status}`);
-  return r.json();
+  const K = await r.json();
+  await loadArtifactBases(K);
+  return K;
 }
 
 /** @param {any} test @param {any} assert @param {any} eq */

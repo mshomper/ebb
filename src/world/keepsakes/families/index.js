@@ -13,6 +13,7 @@ import { fossilNumbers, fossilMesh, fossilWords } from './fossil.js';
 import { driftwoodNumbers, driftwoodMesh, driftwoodWords } from './driftwood.js';
 import { featherNumbers, featherMesh, featherWords } from './feather.js';
 import { bottleNumbers, bottleMesh, bottleWords } from './bottle.js';
+import { artifactNumbers, artifactMesh, artifactWords } from './artifact.js';
 
 /**
  * @typedef {{ salt: number, numbers: (h0: number, rarity: any, K: any) => any,
@@ -28,6 +29,7 @@ export const FAMILIES = /** @type {Record<string, Family>} */ ({
   driftwood: { salt: 0xd1f7, numbers: driftwoodNumbers, mesh: driftwoodMesh, words: driftwoodWords, view: () => [-15, 35] },
   feather: { salt: 0xfea7, numbers: featherNumbers, mesh: featherMesh, words: featherWords, view: () => [135, 80] },
   bottle: { salt: 0xb071, numbers: bottleNumbers, mesh: bottleMesh, words: bottleWords, view: () => [-20, 25] },
+  artifact: { salt: 0xa271, numbers: artifactNumbers, mesh: artifactMesh, words: artifactWords, view: (n) => n.view },
 });
 
 /**
