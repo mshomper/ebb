@@ -789,6 +789,7 @@ export async function startApp(canvas, hooks = {}) {
       case 'keepsakes.leave':
         keepsakes.leave(a.id);
         updateStore('identify', () => null);
+        emitDeferred('keepsake:sound', { name: 'leave' });
         break;
       // Keep it: onto the shelf (src/world/keepsakes/shelf.js), and off the shore. A full shelf
       // opens in the journal and asks which one to let go; nothing is kept until you choose.
@@ -802,6 +803,7 @@ export async function startApp(canvas, hooks = {}) {
           updateStore('keepsakes', () => r.state);
           keepsakes.leave(a.id);
           updateStore('identify', () => null);
+          emitDeferred('keepsake:sound', { name: k.n.family === 'bottle' ? 'keep-glass' : 'keep' });
         } else {
           updateStore('shelfPending', () => ({ shoreId: a.id, ...k }));
           updateStore('identify', () => null);
@@ -815,10 +817,12 @@ export async function startApp(canvas, hooks = {}) {
         updateStore('keepsakes', (s) => swapShelf(cleanShelf(s), a.out, p));
         keepsakes.leave(p.shoreId);
         updateStore('shelfPending', () => null);
+        emitDeferred('keepsake:sound', { name: p.n?.family === 'bottle' ? 'keep-glass' : 'keep' });
         break;
       }
       case 'keepsakes.letGo':
         updateStore('keepsakes', (s) => letGoShelf(cleanShelf(s), a.id));
+        emitDeferred('keepsake:sound', { name: 'leave' });
         break;
       case 'keepsakes.cancelKeep':
         updateStore('shelfPending', () => null);
@@ -847,6 +851,7 @@ export async function startApp(canvas, hooks = {}) {
         updateStore('identify', () => null);
         updateStore('shelfUi', () => ({ letter }));
         updateStore('journalUi', (u) => ({ ...(u ?? {}), open: true, view: 'shelf', page: null }));
+        emitDeferred('keepsake:sound', { name: 'letter' });
         break;
       }
       case 'ui.identify':
