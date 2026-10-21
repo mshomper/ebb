@@ -1,7 +1,7 @@
 {
   "type": "finds",
   "version": 1,
-  "note": "Finds (docs/future/11): small shore lives with a body and one motion, and no needs, mood or trust. Where they are comes from the ground (src/world/finds/index.js): the shore zones (shore.json) and the water summary, never saved. Each kind: zones it lives in (shore.json zone ids; pool means a rock pool, a hollow of rock in the tide band that holds water), density (share of 0.5 m cells holding some), count per spot [min, max], spreadM (how far a spot's group spreads), scale (drawn size over real size; finds are small, so like the frogs they are drawn a little larger to be found), model: the find's mesh (assets/models/finds/, credited in CREDITS.md there): url, heightM (real height), rotDeg (turn about x, y, z so it stands right), tint (a linear albedo multiplier per part); for the anemone, bodyPart (which part is the column) buryM (how deep its stalk sits in the rock, in meters at real size) and shut (sink and widen the column, close its rim by close toward a dome, fold the tentacles in toward its top). cast (the lugworm's, drawn into the sand by the terrain shader, src/shaders/lib-casts.wgsl): radiusM coil radius, tubeM tube radius, turns, riseM how much higher the inner turns sit, albedo as a share of the sand's, drawM the view distance past which casts are not drawn. Anemones open under water and close at low tide or when you come close (closeM), easing over easeS; periwinkles (a rough periwinkle, from a CC0 scan) drift a little each tide; lugworm casts are laid fresh after each tide on sand the sea has left; a hermit crab walks about its rock pool under water (creep: speedMps, rangeM how far it wanders from its spot, stillNearM it stops when you come this close, stepHz steps a second, gaitScale how far its legs swing as a share of what its model's own clip shows) and stays put when the pool is low; an edible crab (a young one, red-brown) sits in the wrack or a pool and scuttles sideways away when you come close (scuttle: nearM, awayM how far, easeS how fast); its model has no skeleton, so model.legs gives it one (src/world/finds/leg-rig.js): shellShare of the half width is shell, bands legs a side, stepHz steps a second while it runs, idleHz and idleShare a slow twitch while it sits, liftDeg and sweepDeg how far a leg lifts and swings, clawShare how much of that the claws do). Shells wash up on the strandline (shore.json strandline, from the tide): each high tide's line may leave a shell in a cell whose ground lies within lineToleranceM of where its waves reached; which shell is picked by weight, and the rare ones (springMin) only on lines left by tides at least that far from neap toward spring (0 mean, 1 the highest spring tide). Each item has its own model. Barnacles and pond skaters have no model file: their meshes are built from shape (src/world/finds/procedural.js), seeded from shape.seed so they are the same on every load. Acorn barnacles crust the upper rock of the tide band; like the anemone they open under water and shut at low tide or when you come close (closeM, easeS), and buryM sinks a patch a little into the rock (meters at real size). Their shape: seed, count of cones in a patch [min, max], patchRadiusM and roughness (how much the patch's edge wobbles, a share), coneRadiusM [min, max] the base of each cone, spacing (how close cones may sit, as a share of their radii added), heightShare (height over base radius), openingShare (the opening's radius over the base's), plateBulge (how much the wall bulges between plate seams), albedo (the shell, linear), plateAlbedo (the plates that close it shut), openingAlbedo (the dark opening), and cirri (the feeding legs out of each opening while open: count, fanDeg how wide they fan, lengthM, radiusM, hairM the side hairs, albedo). Pond skaters live on still fresh water (zone pond: still water off the tide band, never a rock pool or the sea), only where it is deeper than minDepthM and only between hours [from, to] of the day; they ride liftM above the surface. glide: they dart dartM (give or take) over dartS seconds, rest for pauseS [min, max] seconds, keep within rangeM of their spot, and when you come within nearM dart fleeM away from you over fleeS seconds. Their shape: bodyLengthM, bodyRadiusM, rideM (how high the body is held), legRadiusM, frontLegM, midLegM, hindLegM, midAngleDeg and hindAngleDeg (the long legs' angle from straight out to the side, forward positive), kneeM (how high the knees rise above the body), footM (the feet's height on the water), dimpleRadiusM (the pale ring where each long foot dimples the surface), and bodyAlbedo, legAlbedo, dimpleAlbedo. Common mussels sit in clumps on the low rock of the band (kelp and wrack); their model is one valve (model.pair: src/world/finds/mussel.js mirrors it into the other and hinges them), heightM is then the shell's length, and the pair gapes gapeDeg under water and shuts at low tide or when you come close (closeM, easeS). Sand dollars lie half buried (model.buryM) on the low sand the tide leaves (ripples, wet sand); heightM is the test's thickness, tint gives the living one its dusky violet, and petals paints the five petals of its back paler (lift, a color multiplier; from and to, where each starts and ends as a share of the radius; width, its widest half-width as a share of the radius). nearM: finds are only worked out within this distance of the view's middle, at most max at once. tapM and tapPerM: how near a tap must be (plus this much per meter of camera distance).",
+  "note": "Finds (docs/future/11): small shore lives with a body and one motion, and no needs, mood or trust. Where they are comes from the ground (src/world/finds/index.js): the shore zones (shore.json) and the water summary, never saved. Each kind: zones it lives in (shore.json zone ids; pool means a rock pool, a hollow of rock in the tide band that holds water), density (share of 0.5 m cells holding some), count per spot [min, max], spreadM (how far a spot's group spreads), scale (drawn size over real size; finds are small, so like the frogs they are drawn a little larger to be found), model: the find's mesh (assets/models/finds/, credited in CREDITS.md there): url, heightM (real height), rotDeg (turn about x, y, z so it stands right), tint (a linear albedo multiplier per part); for the anemone, bodyPart (which part is the column) buryM (how deep its stalk sits in the rock, in meters at real size) and shut (sink and widen the column, close its rim by close toward a dome, fold the tentacles in toward its top). cast (the lugworm's, drawn into the sand by the terrain shader, src/shaders/lib-casts.wgsl): radiusM coil radius, tubeM tube radius, turns, riseM how much higher the inner turns sit, albedo as a share of the sand's, drawM the view distance past which casts are not drawn. Anemones open under water and close at low tide or when you come close (closeM), easing over easeS; periwinkles (a rough periwinkle, from a CC0 scan) drift a little each tide; lugworm casts are laid fresh after each tide on sand the sea has left; a hermit crab walks about its rock pool under water (creep: speedMps, rangeM how far it wanders from its spot, stillNearM it stops when you come this close, stepHz steps a second, gaitScale how far its legs swing as a share of what its model's own clip shows) and stays put when the pool is low; an edible crab (a young one, red-brown) sits in the wrack or a pool and scuttles sideways away when you come close (scuttle: nearM, awayM how far, easeS how fast); its model has no skeleton, so model.legs gives it one (src/world/finds/leg-rig.js): shellShare of the half width is shell, bands legs a side, stepHz steps a second while it runs, idleHz and idleShare a slow twitch while it sits, liftDeg and sweepDeg how far a leg lifts and swings, clawShare how much of that the claws do). Shells wash up on the strandline (shore.json strandline, from the tide): each high tide's line may leave a shell in a cell whose ground lies within lineToleranceM of where its waves reached; which shell is picked by weight, and the rare ones (springMin) only on lines left by tides at least that far from neap toward spring (0 mean, 1 the highest spring tide). Each item has its own model. Barnacles and pond skaters have no model file: their meshes are built from shape (src/world/finds/procedural.js), seeded from shape.seed so they are the same on every load. Acorn barnacles crust the upper rock of the tide band; like the anemone they open under water and shut at low tide or when you come close (closeM, easeS), and buryM sinks a patch a little into the rock (meters at real size). Their shape: seed, count of cones in a patch [min, max], patchRadiusM and roughness (how much the patch's edge wobbles, a share), coneRadiusM [min, max] the base of each cone, spacing (how close cones may sit, as a share of their radii added), heightShare (height over base radius), openingShare (the opening's radius over the base's), plateBulge (how much the wall bulges between plate seams), albedo (the shell, linear), plateAlbedo (the plates that close it shut), openingAlbedo (the dark opening), and cirri (the feeding legs out of each opening while open: count, fanDeg how wide they fan, lengthM, radiusM, hairM the side hairs, albedo). Pond skaters live on still fresh water (zone pond: still water off the tide band, never a rock pool or the sea), only where it is deeper than minDepthM and only between hours [from, to] of the day; they ride liftM above the surface. glide: they dart dartM (give or take) over dartS seconds, rest for pauseS [min, max] seconds, keep within rangeM of their spot, and when you come within nearM dart fleeM away from you over fleeS seconds. Their shape: bodyLengthM, bodyRadiusM, rideM (how high the body is held), legRadiusM, frontLegM, midLegM, hindLegM, midAngleDeg and hindAngleDeg (the long legs' angle from straight out to the side, forward positive), kneeM (how high the knees rise above the body), footM (the feet's height on the water), dimpleRadiusM (the pale ring where each long foot dimples the surface), and bodyAlbedo, legAlbedo, dimpleAlbedo. Common mussels sit in clumps on the low rock of the band (kelp and wrack); their model is one valve (model.pair: src/world/finds/mussel.js mirrors it into the other and hinges them), heightM is then the shell's length, and the pair gapes gapeDeg under water and shuts at low tide or when you come close (closeM, easeS). Sand dollars lie half buried (model.buryM) on the low sand the tide leaves (ripples, wet sand); heightM is the test's thickness, tint gives the living one its dusky violet, and petals paints the five petals of its back paler (lift, a color multiplier; from and to, where each starts and ends as a share of the radius; width, its widest half-width as a share of the radius). nearM: finds are only worked out within this distance of the view's middle, at most max at once. tapM and tapPerM: how near a tap must be (plus this much per meter of camera distance). Storm tides (doc 13, winter; src/world/finds/strand.js): shells.storm makes a high water a storm tide when it falls in winter on a rain day whose wind is at least galeWind (0..1, seasons.json moods) and the tide is at least springMin toward spring; its line then holds densityBoost times the shells, and the rare ones (those with a springMin) weigh rareBoost times as much. Moon jellyfish (moonjelly, doc 13, summer) strand on the strandline after summer high tides at least springMin toward spring, in a cell that holds no shell, density of the line's cells; they lie until the line is maxAgeH old (then they have dried away) or a higher tide sweeps it. widthM [min, max] is the bell's real width (drawn at real size, scale 1); variants seeded meshes. They are clear, so they have their own translucent pass (src/render/passes/jelly.js, jelly-draw.wgsl): look.roughness and specular the wet top's sun glint, wetSand how dark the wet patch under one is (a multiplier) and wetRadius its size in widths, wrap how far the light scattered in the jelly reaches round its side, minNv the shortest view path's floor. shape (src/world/finds/jelly.js): seed, rings and segments of the bell's grid, heightShare (height over width, slumped flat), profile (the dome's curve), lobe (the eight marginal lobes, a share), slump (a seeded spread to one side), tau (optical depth through the middle per meter of width: how much of the light through the bell the jelly scatters), albedo (what it scatters, linear), rimShare, rimTau and rimAlbedo (the fringe of short tentacles at the margin), and gonads (the four violet horseshoes: atShare where their middles sit as a share of the width, radiusShare and bandShare their size and band width, sweepDeg how far round each goes, open toward the middle, depthShare how far under the top, jitter, steps, tau and albedo).",
   "nearM": 14,
   "max": 120,
   "tapM": 0.06,
@@ -136,6 +136,12 @@
       "spreadM": 0.2,
       "scale": 2,
       "lineToleranceM": 0.05,
+      "storm": {
+        "galeWind": 0.7,
+        "springMin": 0.5,
+        "densityBoost": 1.6,
+        "rareBoost": 8
+      },
       "items": [
         {
           "id": "periwinkle",
@@ -303,6 +309,50 @@
         "tint": [
           [0.34, 0.26, 0.31]
         ]
+      }
+    },
+    "moonjelly": {
+      "zones": ["strandline"],
+      "density": 0.025,
+      "count": [1, 1],
+      "spreadM": 0,
+      "scale": 1,
+      "springMin": -1,
+      "maxAgeH": 30,
+      "widthM": [0.15, 0.25],
+      "variants": 3,
+      "look": {
+        "roughness": 0.07,
+        "specular": 1,
+        "wetSand": 0.8,
+        "wetRadius": 0.62,
+        "wrap": 0.6,
+        "minNv": 0.25
+      },
+      "shape": {
+        "seed": 9127,
+        "rings": 14,
+        "segments": 64,
+        "heightShare": 0.11,
+        "profile": 1,
+        "lobe": 0.018,
+        "slump": 0.05,
+        "tau": 1.1,
+        "albedo": [0.86, 0.89, 0.93],
+        "rimShare": 0.08,
+        "rimTau": 2.5,
+        "rimAlbedo": [0.8, 0.79, 0.82],
+        "gonads": {
+          "atShare": 0.36,
+          "radiusShare": 0.15,
+          "bandShare": 0.045,
+          "sweepDeg": 290,
+          "depthShare": 0.3,
+          "jitter": 0.15,
+          "steps": 24,
+          "tau": 12,
+          "albedo": [0.42, 0.27, 0.6]
+        }
       }
     }
   }

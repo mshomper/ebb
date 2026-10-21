@@ -366,7 +366,9 @@ export async function startApp(canvas, hooks = {}) {
   }
   // Shells wash up once the naturalist's notes give them (world/expansion.js); `?shells` shows them anyway.
   const finds = createFinds({ water, shore: ww.shore, terrain, camera, recipe: findsRecipe, seed: subSeed(seed, 'finds'), tide: waterRecipe.tide,
-    shellsOn: () => !!shellTest || !!getStore('unlocks')?.shells });
+    shellsOn: () => !!shellTest || !!getStore('unlocks')?.shells,
+    // Winter storm tides read the weather of the day each high water came (world/finds/strand.js).
+    weather: () => ({ weatherSeed: world.env.weatherSeed, weather: seasonsRecipe.weather, state: world.state?.weather }) });
   sim.addSystem(finds);
   terrainPass.setCasts(finds.casts(), finds.castShape);
   // Placed pieces (doc 09, docs/future/10): loose stones, set with Sculpt's Loose stone mode and
@@ -428,6 +430,8 @@ export async function startApp(canvas, hooks = {}) {
     ...schools.map((s) => s.pass),
     finds.pass,
     pieces.pass,
+    // Moon jellyfish on the summer strandline: clear, so drawn over the opaque things behind them.
+    ...(finds.jellyPass ? [finds.jellyPass] : []),
     ...(frogScale ? [frogScale.pass] : []),
     waterPass,
     midges.pass,

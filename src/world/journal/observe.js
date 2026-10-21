@@ -361,6 +361,25 @@ export function foundFind(journal, sp, ctx, item = null) {
 }
 
 /**
+ * You found a shell that a winter storm tide left (world/finds/strand.js): the first time, the
+ * journal writes it down, keeps the flag shells:storm, and the shells page learns `storm`. A no-op
+ * after that.
+ * @param {Journal} journal @param {{ state: any, hour: number, words: any }} ctx
+ * @returns {{ journal: Journal, notes: Note[] }}
+ */
+export function stormShells(journal, ctx) {
+  const rec = ctx.words.species.shells;
+  const text = rec?.notes?.storm;
+  if (!text || journal.flags.includes('shells:storm')) return { journal, notes: [] };
+  const j = copy(journal);
+  j.flags.push('shells:storm');
+  learnTrigger(know(j, 'shells'), 'storm');
+  /** @type {Note[]} */ const notes = [{ hour: ctx.hour, date: dateText(ctx.state?.seasons, ctx.words), text, sp: 'shells', kind: 'storm' }];
+  j.notes = [...notes, ...j.notes].slice(0, ctx.words.notesKept);
+  return { journal: j, notes };
+}
+
+/**
  * You lifted a loose stone, or rolled a driftwood log (docs/future/10): the first time, the journal
  * writes it down and keeps the flag stones:lifted (driftwood:lifted for a log). A no-op after that.
  * @param {Journal} journal @param {{ state: any, hour: number, words: any }} ctx

@@ -5,7 +5,8 @@
 // the weed, the hermit crab in its borrowed shell, the young edible crab from above, the shells
 // found so far. The lugworm has no model (its cast is drawn into the sand), so its coil is drawn
 // here from the same wandering spiral the sand shader uses. Barnacles and pond skaters are built
-// from numbers in the game (world/finds/procedural.js), with nothing to trace, so they are drawn by hand.
+// from numbers in the game (world/finds/procedural.js), with nothing to trace, so they are drawn by hand;
+// so is the moon jelly stranded on the summer strandline.
 //
 // Same layout as living.js: the drawing in x 40..236, a scale bar at x 30, labels from x 250.
 
@@ -265,4 +266,66 @@ export function sanddollars(p, scale) {
   p.label('sand', 250, 204, x0 + w * 0.8, y0 + h * 0.9);
   p.scale(30, y0, y0 + h, scale);
   return p.svg(380, 250, 'Field sketch of a sand dollar from above, half buried in the sand');
+}
+
+/** The pale violet of a moon jelly's four rings, a paper-and-ink wash like WASH. */
+const VIOLET = '#B7A2CF';
+
+/**
+ * Moon jelly (no model; drawn by hand): stranded on the summer strandline, seen a little from above.
+ * A low, flattened glassy bell with a scalloped margin of eight shallow notches fringed with short
+ * tentacles, faint canals running out to the edge, and the four pale violet horseshoes seen through it.
+ * @param {import('./pen.js').Pen} p @param {string} [scale]
+ */
+export function moonjelly(p, scale) {
+  const f = p.f, cx = 138, cy = 168, rx = 82, ry = 50, k = ry / rx;
+  p.tint('M40 104H236V236H40Z', WASH.sand, 0.4);
+  // The strandline: a few strands of dried litter and grains in the sand.
+  p.fine('M46 112l28 -3M120 116l20 2M196 110l30 -4M52 226l22 2M184 228l34 -3', 0.9, 0.55);
+  for (const [x, y] of [[60, 140], [222, 150], [70, 206], [214, 214], [112, 124]]) p.dot(x, y, 1.1);
+  // The wet stain the bell leaves on the sand, a little below and behind it.
+  p.tint(`M${cx - rx - 6} ${cy + 6}A${rx + 6} ${ry + 4} 0 1 0 ${cx + rx + 6} ${cy + 6}A${rx + 6} ${ry + 4} 0 1 0 ${cx - rx - 6} ${cy + 6}Z`, WASH.mud, 0.18);
+  /** A point on the bell at angle a (radians) and share d of its radius. @param {number} a @param {number} d */
+  const at = (a, d) => `${f(cx + Math.cos(a) * rx * d)} ${f(cy + Math.sin(a) * ry * d)}`;
+  // The margin: eight shallow lobes between eight notches.
+  let edge = '';
+  for (let i = 0; i < 8; i++) {
+    const a0 = ((i + 0.5) / 8) * Math.PI * 2, a1 = ((i + 1.5) / 8) * Math.PI * 2, am = (a0 + a1) / 2;
+    edge += `${i ? '' : `M${at(a0, 0.94)}`}Q${at(am, 1.09)} ${at(a1, 0.94)}`;
+  }
+  p.shape(edge + 'Z', WASH.water, 0.22, 1.4);
+  // The fringe of short tentacles all round the edge.
+  let fringe = '';
+  for (let i = 0; i < 64; i++) {
+    const a = (i / 64) * Math.PI * 2, c = Math.cos(a), s = Math.sin(a);
+    fringe += `M${at(a, 1.0)}l${f(c * 4)} ${f(s * 4 * k)}`;
+  }
+  p.fine(fringe, 0.6, 0.4);
+  // The low rise of the dome, and the faint canals running out to the margin.
+  p.fine(`M${f(cx - rx * 0.8)} ${f(cy - 2)}C${f(cx - rx * 0.6)} ${f(cy - ry * 0.95)} ${f(cx + rx * 0.6)} ${f(cy - ry * 0.95)} ${f(cx + rx * 0.8)} ${f(cy - 2)}`, 0.8, 0.35);
+  let canals = '';
+  for (let i = 0; i < 16; i++) { const a = (i / 16) * Math.PI * 2; canals += `M${at(a, 0.5)}L${at(a, 0.93)}`; }
+  p.fine(canals, 0.6, 0.3);
+  // The four horseshoes, each a band bent round with its gap facing the middle.
+  /** @param {number} hx @param {number} hy middle @param {number} face angle of the gap */
+  const shoe = (hx, hy, face) => {
+    const R = 13, r = 7, gap = 0.8, pt = (/** @type {number} */ a, /** @type {number} */ q) => `${f(hx + Math.cos(a) * q)} ${f(hy + Math.sin(a) * q * k)}`;
+    const a0 = face + gap, a1 = face + Math.PI * 2 - gap;
+    return `M${pt(a0, R)}A${R} ${f(R * k)} 0 1 1 ${pt(a1, R)}A${f((R - r) / 2)} ${f(((R - r) / 2) * k)} 0 0 1 ${pt(a1, r)}A${r} ${f(r * k)} 0 1 0 ${pt(a0, r)}A${f((R - r) / 2)} ${f(((R - r) / 2) * k)} 0 0 1 ${pt(a0, R)}Z`;
+  };
+  /** @type {[number, number][]} */ const rings = [];
+  for (let i = 0; i < 4; i++) {
+    const a = Math.PI / 4 + (i * Math.PI) / 2;
+    const hx = cx + Math.cos(a) * rx * 0.4, hy = cy + Math.sin(a) * ry * 0.4;
+    rings.push([hx, hy]);
+    p.shape(shoe(hx, hy, a + Math.PI), VIOLET, 0.6, 1.2);
+  }
+  // The glassy glint on the top of the bell.
+  p.fine(`M${f(cx - rx * 0.5)} ${f(cy - ry * 0.55)}Q${f(cx - rx * 0.25)} ${f(cy - ry * 0.78)} ${f(cx + rx * 0.05)} ${f(cy - ry * 0.74)}`, 1.4, 0.5);
+  const [ux, uy] = rings[3];
+  p.label('rings', 250, 76, ux + 12, uy - 6);
+  p.label('bell', 250, 140, cx + rx * 0.62, cy + ry * 0.05);
+  p.label('margin', 250, 204, cx + rx * 0.72, cy + ry * 0.72);
+  p.scale(30, cy - ry, cy + ry, scale);
+  return p.svg(380, 245, 'Field sketch of a moon jelly stranded on the sand, its four violet rings seen through the bell');
 }
