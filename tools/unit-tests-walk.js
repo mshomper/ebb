@@ -10,6 +10,8 @@ import { findPath, isOpen } from '../src/world/walk/path.js';
 import { createWalker } from '../src/world/walk/walker.js';
 import { crossingNote, hoursToLow, depthAtLow } from '../src/world/walk/crossing.js';
 import { mainland, nearestJoined } from '../src/world/walk/reach.js';
+import { createPresence, ringScale } from '../src/world/creatures/presence.js';
+import { createWatching } from '../src/world/creatures/watching.js';
 
 const WALK = 'walker';
 
@@ -163,6 +165,59 @@ export function addWalkTests(test, assert, eq) {
     // The main island's shore reaches x 20 at high water; the bar runs from 21 to 29.
     assert(x < 20.5, `I'm stuck at high water lands at x ${x.toFixed(1)}, not on the main island`);
     return `back on the main island at x ${x.toFixed(1)}`;
+  });
+
+  test(WALK, 'presence below: the camera above is felt only for its edits, and you on foot are felt low and slow', async () => {
+    const R = await (await fetch('../recipes/world/walker.json')).json();
+    const eye = new Float32Array([0, 10, 0]);
+    /** @type {import('../src/world/creatures/presence.js').WalkerNow | null} */
+    let me = null;
+    const presence = createPresence({ camera: { eye, driven: () => false }, cameraBody: false, walker: () => me, heightM: R.presence.heightM });
+    presence.update(1 / 60);
+    eq(presence.sources().length, 1, 'above, only the camera');
+    assert(!presence.sources()[0].body, 'the camera above has a body');
+    me = { x: 2, y: 1, z: 3, speed: 0.3, posture: 'sit', gaze: [0, 1] };
+    presence.update(1 / 60);
+    const you = presence.sources().find((s) => s.kind === 'walker');
+    assert(you && you.body && you.posture === 'sit', 'on foot, no walker source');
+    if (!you) return;
+    assert(Math.abs(you.pos[1] - (1 + R.presence.heightM.sit)) < 1e-6, `sitting, you are felt at ${you.pos[1]} m`);
+    const M = (await (await fetch('../recipes/species/frog.json')).json()).presence.multipliers;
+    // Sitting and looking straight at it, or looking away.
+    const ahead = ringScale(you, 2, 6, M), aside = ringScale(you, 5, 3, M);
+    assert(Math.abs(ahead - M.posture.sit * M.gaze.watch) < 1e-6, `sitting and watching scales the ring by ${ahead}`);
+    assert(Math.abs(aside - M.posture.sit * M.gaze.away) < 1e-6, `sitting and looking away scales the ring by ${aside}`);
+    return `ring x ${ahead.toFixed(2)} watching, x ${aside.toFixed(2)} looking away, sitting`;
+  });
+
+  test(WALK, 'sitting quietly by a frog earns trust faster than standing', async () => {
+    const W = (await (await fetch('../recipes/species/frog.json')).json()).presence.watch;
+    const frog = { id: 1, x: 0, y: 0, z: 0, mode: 'rest' };
+    const src = (/** @type {'stand'|'sit'} */ posture) => [{ id: 'walker', kind: /** @type {const} */ ('walker'), pos: /** @type {[number, number, number]} */ ([1, 0.4, 0]),
+      speed: 0, editing: false, edits: [], stillS: 0, body: true, posture }];
+    const minutes = (/** @type {'stand'|'sit'} */ p) => {
+      const w = createWatching(W);
+      let got = 0;
+      for (let t = 0; t < 60; t += 0.1) for (const d of w.step([frog], src(p), 0.1)) got += d.minutes;
+      for (const d of w.step([frog], [], 0.1)) got += d.minutes;
+      return got;
+    };
+    const stand = minutes('stand'), sit = minutes('sit');
+    assert(Math.abs(sit - stand * W.sitBoost) < 0.05, `a minute sitting counts ${sit}, standing ${stand}`);
+    return `a minute standing counts ${stand}, sitting ${sit}`;
+  });
+
+  test(WALK, 'kneeling or sitting stops a walk, and walking stands you up', async () => {
+    const { R, grid } = await world(() => 1);
+    const w = createWalker(R, { grid, depth: () => 0, ground: () => 1 });
+    w.place(5, 10);
+    w.walkTo(15, 10);
+    w.update(0.5);
+    w.setPosture('sit');
+    eq(w.posture, 'sit');
+    assert(!w.moving && w.speed === 0, 'sitting down did not stop the walk');
+    w.walkTo(8, 10);
+    eq(w.posture, 'stand', 'walking on');
   });
 
   test(WALK, 'the figure wades back to dry ground when the tide comes in over the bar', async () => {

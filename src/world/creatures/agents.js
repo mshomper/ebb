@@ -14,6 +14,7 @@
 // sitting too close drift apart. Nothing is saved: each frog's day starts from its home.
 
 import { stream } from '../../core/rng.js';
+import { ringScale } from './presence.js';
 
 /**
  * @typedef {Object} Hop
@@ -227,12 +228,13 @@ export function createFrogAgents(recipe, seed) {
       const ring = Math.max(P.ringMinM, P.ringM * (1 - P.ringTrustShrink * a.trust));
       const calm = P.calmSpeed * (1 + P.calmTrustGain * a.trust);
       // A frog that knows you well (Familiar) holds still while a calm source is close (S6c-3).
-      if (a.trust >= P.bands[2] && sources.some((s) => s.speed < calm
+      if (a.trust >= P.bands[2] && sources.some((s) => s.body && s.speed < calm
         && Math.hypot(s.pos[0] - a.x, s.pos[1] - a.y, s.pos[2] - a.z) < P.portraitM)) a.stillUntil = clock + P.portraitHoldS;
       let from = null;
       for (const s of sources) {
+        // Only a source with a body is felt coming close; lower and looking away is closer (doc 23).
         const d = Math.hypot(s.pos[0] - a.x, s.pos[1] - a.y, s.pos[2] - a.z);
-        if (d < ring && s.speed > calm) { from = { x: s.pos[0], z: s.pos[2] }; break; }
+        if (s.body && d < ring * (P.multipliers ? ringScale(s, a.x, a.z, P.multipliers) : 1) && s.speed > calm) { from = { x: s.pos[0], z: s.pos[2] }; break; }
         const e = s.edits.find((p) => Math.hypot(p.x - a.x, p.z - a.z) < P.editReachM);
         if (e) { from = e; break; }
       }

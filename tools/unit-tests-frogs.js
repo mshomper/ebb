@@ -206,7 +206,7 @@ export function addFrogTests(test, assert, eq) {
     const P = r.presence;
     const env = { ...bank, hourOfDay: 21 };
     // A source: the camera's eye, its speed and edits, moved by hand.
-    const src = { id: 'camera', kind: 'camera', pos: [0, 0, 0], speed: 0, editing: false, edits: /** @type {{ x: number, z: number }[]} */ ([]), stillS: 0 };
+    const src = { id: 'camera', kind: 'camera', pos: [0, 0, 0], speed: 0, editing: false, edits: /** @type {{ x: number, z: number }[]} */ ([]), stillS: 0, body: true };
     /** @param {any} agents @param {number} s @param {(t: number) => void} [move] */
     const run = (agents, s, move) => {
       /** @type {number[]} */ const startled = [], hushed = [];

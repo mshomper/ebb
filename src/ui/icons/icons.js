@@ -802,6 +802,25 @@ const ICONS = {
     <path d="M12 13V3.5"/>
     <path d="M9.6 5.9L12 3.5L14.4 5.9"/>`,
 
+  // Sit (the walker): a small figure sitting on a low stone, knees bent.
+  sit: `
+    <rect ${ACCENT} x="5" y="14" width="7.5" height="6.5" rx="2"/>
+    <rect x="5" y="14" width="7.5" height="6.5" rx="2"/>
+    <circle cx="9" cy="5" r="2"/>
+    <path d="M9 8V13.5H15.5V20.5"/>
+    <path d="M9 9.5L12.5 11.5"/>
+    <path d="M2.5 20.5H21.5"/>`,
+
+  // Kneel (the walker): a small figure down on one knee, the other foot planted.
+  kneel: `
+    <circle ${ACCENT} cx="11" cy="4.8" r="2"/>
+    <circle cx="11" cy="4.8" r="2"/>
+    <path d="M11 7.8V13.5"/>
+    <path d="M11 13.5L8.6 20H5"/>
+    <path d="M11 13.5L15.5 14.5V20.5"/>
+    <path d="M11 9.5L14.5 11.5"/>
+    <path d="M2.5 20.5H21.5"/>`,
+
   // I'm stuck (the walker): a ring of ground with a gap in it, and a way out through the gap.
   stuck: `
     <path ${ACCENT} d="M12 7.5A4.5 4.5 0 1 1 7.5 12A4.5 4.5 0 0 1 12 7.5Z"/>

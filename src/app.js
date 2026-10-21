@@ -91,8 +91,9 @@ const PALETTES = [{ id: 'dusk', name: 'Dusk' }, { id: 'meadow-morning', name: 'M
 
 /**
  * @param {HTMLCanvasElement} canvas
- * @param {{ onDeviceLost?: (rebuilding: boolean) => void, save?: boolean, build?: string }} [hooks]
- *   save: keep this island in the device's save (only the game asks; tool pages run unsaved)
+ * @param {{ onDeviceLost?: (rebuilding: boolean) => void, save?: boolean, build?: string, labCamera?: boolean }} [hooks]
+ *   save: keep this island in the device's save (only the game asks; tool pages run unsaved);
+ *   labCamera: the camera may come close and its own eye startles creatures (the frog lab)
  * @returns {Promise<StartResult>}
  */
 export async function startApp(canvas, hooks = {}) {
@@ -343,15 +344,22 @@ export async function startApp(canvas, hooks = {}) {
   const testFrogs = params.has('frogs') ? Math.max(1, Math.min(12, Number.parseInt(params.get('frogs') ?? '1', 10) || 1)) : 0;
   // floraFrame: the time and wind the plants were drawn with this frame (frogs on lily pads ride them).
   /** @type {{ time: number, wind: number, windDir: number } | null} */ let floraFrame = null;
-  // Presence (doc 23): the camera as the one source creatures react to; edits are reported below.
-  const presence = createPresence({ camera });
-  const creatures = createCreatures({ world, recipe: frogRecipe, terrain, water, ripples, camera, testFrogs, flora, floraFrame: () => floraFrame, presence });
+  // Presence (doc 23): what creatures react to. Two views (W3): the camera above counts only for
+  // its edits (reported below); you on foot are felt with your pace, posture and gaze.
+  const walkerRecipe = await loadRecipe('world/walker');
+  /** @type {import('./world/walk/index.js').Walk | null} */ let walkRef = null;
+  // `hooks.labCamera` (tools/frog-lab.html): the old close camera, whose own eye startles frogs.
+  if (hooks.labCamera) camera.setClose(camRecipe.labClose);
+  const presence = createPresence({ camera, cameraBody: !!hooks.labCamera, walker: () => walkRef?.presenceNow() ?? null, heightM: walkerRecipe.presence.heightM });
+  /** Where you are felt on foot (finds, food, finding by watching); null while you are above. */
+  const you = () => walkRef?.you() ?? null;
+  const creatures = createCreatures({ world, recipe: frogRecipe, terrain, water, ripples, camera, testFrogs, flora, floraFrame: () => floraFrame, presence, you });
   sim.addSystem(creatures);
   // Schools you can see (src/world/creatures/schools.js): minnows under the live water surface, one
   // system and one pass per species that has a body and a school's motion.
   const schools = swarmSpecies(speciesRecipes).filter((rec) => rec.body && rec.motion)
     .map((rec) => createSchools({ world, recipe: rec, water, ripples, camera, presence, budget: tierSettings.liveCreatures ?? 120,
-      ground: (x, z) => terrain.sampleHeight(x, z) }));
+      ground: (x, z) => terrain.sampleHeight(x, z), you }));
   for (const s of schools) sim.addSystem(s);
   // `?minnows=N`, `?dragonflies=N`, `?damselflies=N` (testing, unsaved): a group of N comes at once
   // and is settled, once the island, its water and the journal are up (as `?frogs` does). Under
@@ -396,7 +404,7 @@ export async function startApp(canvas, hooks = {}) {
   const finds = createFinds({ water, shore: ww.shore, terrain, camera, recipe: findsRecipe, seed: subSeed(seed, 'finds'), tide: waterRecipe.tide,
     shellsOn: () => !!shellTest || !!getStore('unlocks')?.shells,
     // Winter storm tides read the weather of the day each high water came (world/finds/strand.js).
-    weather: () => ({ weatherSeed: world.env.weatherSeed, weather: seasonsRecipe.weather, state: world.state?.weather }) });
+    weather: () => ({ weatherSeed: world.env.weatherSeed, weather: seasonsRecipe.weather, state: world.state?.weather }), you });
   sim.addSystem(finds);
   terrainPass.setCasts(finds.casts(), finds.castShape);
   // Keepsakes (docs/future/12): one-of-a-kind trinkets each high tide leaves on its strandline, a
@@ -423,8 +431,9 @@ export async function startApp(canvas, hooks = {}) {
   sim.addSystem(pieces);
   // The walker (doc 23, presence below; W2): Go down puts you on foot where you are looking, and
   // the camera glides down behind you; a tap walks you there. Go up glides back over you.
-  const walk = createWalk({ recipe: await loadRecipe('world/walker'), terrain, water, camera, tide: waterRecipe.tide,
+  const walk = createWalk({ recipe: walkerRecipe, terrain, water, camera, tide: waterRecipe.tide,
     hours: () => clock.display() / clock.SECONDS_PER_HOUR, creatures: () => creatures.frogs() });
+  walkRef = walk;
   // Autumn's season markers (doc 13; src/world/finds/autumn-live.js): fungi on the kept logs, and
   // dewy webs in the tall grass on misty mornings. Tapping either is a find.
   const autumn = createAutumn({ world, terrain, water, camera, pieces, growth, recipe: autumnRecipe, seasons: seasonsRecipe, seed });
@@ -730,6 +739,21 @@ export async function startApp(canvas, hooks = {}) {
   }
 
   /**
+   * Feed from the hand (W4, only on foot): you kneel and the food goes down just in front of you.
+   * Food in the water is for a school you have found (the minnows), on land for the frogs. Its line
+   * goes on the island.
+   */
+  function feedHere() {
+    const p = walk.feedPoint();
+    if (!p) return;
+    const known = schools.filter((s) => getStore('journal')?.species?.[s.id]?.ever);
+    const wet = (water.sampleLive(p[0], p[2])?.depth ?? 0) > 0.03;
+    const message = wet && known.length ? known[0].feed(p[0], p[2])
+      : getStore('journal')?.species?.frogs?.ever || !known.length ? creatures.feed(p[0], p[2]) : walkerRecipe.words.feedNone;
+    if (message) emitDeferred('island:notice', { text: message, showS: walkerRecipe.words.noticeS });
+  }
+
+  /**
    * Set a carried stone or log down where the tap lands (src/world/pieces, undoable). In water it
    * stays carried and the card says so; at the logs' cap it goes back and the card says that.
    * @param {number} x @param {number} y
@@ -755,9 +779,17 @@ export async function startApp(canvas, hooks = {}) {
     if (walk.below) {
       if (a.type === 'camera.pan') { camera.orbit(a.dx, a.dy); return; }
       if (a.type === 'camera.zoom') { camera.zoom(a.factor); return; }
-      if (a.type === 'look.tap') { walk.tap(a.x, a.y, groundAt(a.x, a.y)); return; }
+      if (a.type === 'look.tap') {
+        // With Look on, a tap names what it lands on (the journal), as a tap above does.
+        const point = groundAt(a.x, a.y);
+        if (walk.tap(a.x, a.y, point) === 'look') emitDeferred('look:tapped', { x: a.x, y: a.y, point });
+        return;
+      }
       if (a.type === 'walk.up') { walk.up(); return; }
       if (a.type === 'walk.stuck') { walk.stuck(); return; }
+      if (a.type === 'walk.posture') { walk.posture(a.posture); return; }
+      if (a.type === 'walk.look') { walk.toggleLook(); return; }
+      if (a.type === 'walk.feed') { feedHere(); return; }
       if (a.type === 'tool.select' || a.type.startsWith('tool.') || a.type === 'brush.resize') return;
     }
     switch (a.type) {

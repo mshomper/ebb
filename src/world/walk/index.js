@@ -49,15 +49,25 @@ export function createWalk(o) {
   const pass = createCreaturePass({ recipe: { body: R.body }, mesh, name: 'walker' });
 
   let below = false;
+  /** Look (W4): while on, a tap names what it lands on instead of walking there. */
+  let look = false;
   /** The last tap, for a double tap. @type {{ t: number, x: number, y: number, to: [number, number] } | null} */
   let lastTap = null;
-  const publish = () => updateStore('walk', () => ({ below, placed: walker.placed }));
+  /** What the buttons last showed, so the store changes only when something does. */
+  let shown = '';
+  const publish = () => {
+    const now = { below, placed: walker.placed, posture: walker.posture, look };
+    const key = JSON.stringify(now);
+    if (key !== shown) { shown = key; updateStore('walk', () => now); }
+  };
   publish();
 
   /** @param {string} text */
   const say = (text) => emitDeferred('island:notice', { text, showS: R.words.noticeS });
-  /** Where the view aims at you: about chest height over your feet. */
-  const head = () => [walker.x, walker.y + R.camera.lookHeightM, walker.z];
+  /** How far your body sits over your feet, by posture (doc 23: lower is gentler). */
+  const H = R.presence.heightM;
+  /** Where the view aims at you: about chest height over your feet, lower when you kneel or sit. */
+  const head = () => [walker.x, walker.y + R.camera.lookHeightM - (H.stand - (H[walker.posture] ?? H.stand)), walker.z];
 
   /** The walk rules with the water as it will be at the next low water. */
   const lowRules = () => {
@@ -143,10 +153,59 @@ export function createWalk(o) {
       else say(R.words.noGround);
     },
 
+    /**
+     * Kneel or sit where you are (W4), or stand again if you already are. Sitting is the old seat:
+     * low and still, so trust grows fastest there. @param {'kneel'|'sit'} p
+     */
+    posture(p) {
+      if (!below || !walker.placed) return;
+      walker.setPosture(walker.posture === p ? 'stand' : p);
+      camera.follow(head());
+      publish();
+    },
+
+    /** Look on or off (W4). */
+    toggleLook() {
+      if (!below) return;
+      look = !look;
+      publish();
+    },
+
+    /**
+     * Feed from the hand (W4): you kneel, and the food goes down just in front of you.
+     * @returns {number[] | null} the ground point for the food
+     */
+    feedPoint() {
+      if (!below || !walker.placed) return null;
+      walker.setPosture('kneel');
+      camera.follow(head());
+      publish();
+      const x = walker.x + Math.sin(walker.yaw) * R.ground.feedAheadM, z = walker.z + Math.cos(walker.yaw) * R.ground.feedAheadM;
+      return [x, ground(x, z), z];
+    },
+
+    /**
+     * You on foot, for presence (doc 23, W3): where you stand, how fast, your posture and where you
+     * look (along the ground, the way the camera faces). Null while you are above.
+     * @returns {import('../creatures/presence.js').WalkerNow | null}
+     */
+    presenceNow() {
+      if (!below || !walker.placed) return null;
+      const e = camera.eye, t = camera.target;
+      const gx = t[0] - e[0], gz = t[2] - e[2], l = Math.hypot(gx, gz);
+      return { x: walker.x, y: walker.y, z: walker.z, speed: walker.speed, posture: walker.posture, gaze: l > 1e-6 ? [gx / l, gz / l] : null };
+    },
+
+    /** Where you are felt on foot (finds, food, finding by watching), or null while you are above. */
+    you() {
+      return below && walker.placed ? [walker.x, walker.y + (H[walker.posture] ?? H.stand), walker.z] : null;
+    },
+
     /** Go back up over where you stand; the figure stays. */
     up() {
       if (!below) return;
       below = false;
+      look = false;
       walker.stop();
       camera.setGround(null, [walker.x, walker.y, walker.z]);
       publish();
@@ -154,11 +213,19 @@ export function createWalk(o) {
     },
 
     /**
-     * A tap below: walk there (a second tap close by, soon after, hurries).
+     * A tap below: walk there (a second tap close by, soon after, hurries). With Look on, it names
+     * what it lands on instead, if that is near enough to see well: returns 'look' for the app to
+     * pass to the journal.
      * @param {number} sx @param {number} sy CSS pixels @param {number[] | null} point the ground the tap landed on
+     * @returns {'look' | void}
      */
     tap(sx, sy, point) {
       if (!below || !point) return;
+      if (look) {
+        if (Math.hypot(point[0] - walker.x, point[2] - walker.z) <= R.ground.lookReachM) return 'look';
+        say(R.words.lookFar);
+        return;
+      }
       const now = performance.now();
       const double = !!lastTap && now - lastTap.t < R.pace.doubleTapMs && Math.hypot(sx - lastTap.x, sy - lastTap.y) < 40;
       const to = /** @type {[number, number]} */ (double && lastTap ? lastTap.to : [point[0], point[2]]);
@@ -174,7 +241,11 @@ export function createWalk(o) {
     update(realDt) {
       walker.update(realDt);
       if (below) camera.follow(head());
-      pass.setBeings(walker.placed ? [{ x: walker.x, y: walker.y, z: walker.z, yaw: walker.yaw, size: R.body.displayScale ?? 1 }] : []);
+      publish();
+      // The stand-in has no poses yet (the figure's F9 brings them): kneeling or sitting, it sinks a
+      // little, so you can see you are low.
+      const low = H.stand - (H[walker.posture] ?? H.stand);
+      pass.setBeings(walker.placed ? [{ x: walker.x, y: walker.y - low, z: walker.z, yaw: walker.yaw, size: R.body.displayScale ?? 1 }] : []);
     },
 
     dispose() { offStroke(); },

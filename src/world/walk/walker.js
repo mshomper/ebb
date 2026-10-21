@@ -30,10 +30,13 @@ export function createWalker(R, env) {
     brisk: false,
     /** Wading back to dry ground on its own, as the tide comes in. */
     retreating: false,
+    /** Standing, kneeling or sitting (W4); walking always stands you up. @type {'stand'|'kneel'|'sit'} */
+    posture: /** @type {'stand'|'kneel'|'sit'} */ ('stand'),
   };
 
   /** Back to the nearest ground to stand on, by the shortest way there is. */
   function retreat() {
+    s.posture = 'stand';
     const k = nearestOpen(env.grid, rules, s.x, s.z, 12);
     if (k < 0) { s.path = []; return; }
     const r = findPath(env.grid, rules, [s.x, s.z], env.grid.center(k));
@@ -57,6 +60,16 @@ export function createWalker(R, env) {
     get moving() { return s.path.length > 0; },
     get brisk() { return s.brisk; },
     get retreating() { return s.retreating; },
+    /** Standing, kneeling or sitting. */
+    get posture() { return s.posture; },
+    /**
+     * Kneel or sit where you are (stops a walk), or stand up again.
+     * @param {'stand'|'kneel'|'sit'} p
+     */
+    setPosture(p) {
+      if (p !== 'stand') { s.path = []; s.brisk = false; s.speed = 0; }
+      s.posture = p;
+    },
     /** Where the walk is going (a copy), for drawing the way. */
     path: () => s.path.map((p) => /** @type {[number, number]} */ ([p[0], p[1]])),
 
@@ -68,7 +81,7 @@ export function createWalker(R, env) {
       const k = nearestOpen(env.grid, rules, x, z, reachM);
       if (k < 0) return false;
       const [cx, cz] = env.grid.cellAt(x, z) === k ? [x, z] : env.grid.center(k);
-      Object.assign(s, { placed: true, x: cx, z: cz, y: env.ground(cx, cz), yaw, speed: 0, path: [], brisk: false, retreating: false });
+      Object.assign(s, { placed: true, x: cx, z: cz, y: env.ground(cx, cz), yaw, speed: 0, path: [], brisk: false, retreating: false, posture: 'stand' });
       return true;
     },
 
@@ -83,6 +96,7 @@ export function createWalker(R, env) {
         s.path = r.points;
         s.brisk = brisk;
         s.retreating = false;
+        s.posture = 'stand';
       }
       return r;
     },
