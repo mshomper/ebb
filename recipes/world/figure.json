@@ -77,6 +77,10 @@
     "expressionS": 0.2,
     "holdS": { "happy": 2.5, "curious": 3, "surprised": 0.9 }
   },
+  "footprints": {
+    "note": "Prints (W6): each step that lands on sand, or on bare earth and mud, leaves a soft print the shape of the boot's sole, darkening the ground by darkness; it fades over fadeH game hours, and is gone once the tide covers it. Not on grass or rock (minWeight: how much of the ground must be sand or soil), not under water deeper than dryM. Never saved: the island forgets you between visits. max: how many at once (the oldest go first).",
+    "max": 160, "fadeH": 24, "soleM": [0.1, 0.24], "darkness": { "sand": 0.42, "soil": 0.5 }, "minWeight": 0.4, "dryM": 0.03
+  },
   "poses": {
     "sit": { "pelvisY": 0.15, "leanDeg": 16, "feetZ": 0.3, "feetX": 0.12, "headDeg": -6, "skirtDeg": 26 },
     "kneel": { "pelvisY": 0.4, "leanDeg": 12, "front": [-0.11, 0.22], "backAnkle": [0.11, 0.12, -0.3], "headDeg": 12 },

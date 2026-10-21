@@ -539,6 +539,7 @@ export async function startApp(canvas, hooks = {}) {
     grassPass,
     rushPass,
     floraPass,
+    walk.printsPass,
     creatures.pass,
     walk.pass,
     ...schools.map((s) => s.pass),

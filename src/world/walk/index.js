@@ -16,6 +16,8 @@ import { isOpen } from './path.js';
 import { mainland, nearestJoined } from './reach.js';
 import { crossingNote, depthAtLow, hoursToLow } from './crossing.js';
 import { createFigurePass, createFigure, loadFigureModel } from '../figure/index.js';
+import { createFootprints } from '../figure/footprints.js';
+import { createFootprintsPass } from '../../render/passes/footprints.js';
 import { level as tideLevel, tideParams } from '../tide.js';
 
 /**
@@ -53,6 +55,18 @@ export function createWalk(o) {
     .catch((err) => console.error('The walker figure did not load:', err));
   /** Water over a world spot now (the cell it falls in). @param {number} x @param {number} z */
   const depthAt = (x, z) => { const k = grid.cellAt(x, z); return k >= 0 ? depth(k) : 0; };
+  // Footprints (W6): each step on sand or mud leaves one, fading over a day, gone under the tide.
+  const FP = o.figure.footprints;
+  const prints = createFootprints(FP, { ground, material: (x, z) => terrain.sampleMaterial(x, z), depth: depthAt });
+  const printsPass = createFootprintsPass({ max: FP.max });
+  /** The ground under a print's four corners, as footprints.wgsl lays the quad. @param {{ x: number, z: number, yaw: number }} p */
+  const corners = (p) => {
+    const [w, l] = FP.soleM, f = [Math.sin(p.yaw), Math.cos(p.yaw)], r = [f[1], -f[0]];
+    const cx = p.x + f[0] * l * 0.28, cz = p.z + f[1] * l * 0.28;
+    return [[-1, -1], [1, -1], [-1, 1], [1, 1]].map(([a, b]) =>
+      ground(cx + r[0] * a * w * 0.65 + f[0] * b * l * 0.6, cz + r[1] * a * w * 0.65 + f[1] * b * l * 0.6));
+  };
+  /** @type {WeakMap<object, number[]>} */ const printCorners = new WeakMap();
 
   let below = false;
   /** Look (W4): while on, a tap names what it lands on instead of walking there. */
@@ -121,6 +135,7 @@ export function createWalk(o) {
   return {
     id: 'walk',
     pass,
+    printsPass,
     walker,
     get below() { return below; },
     /** The walk grid now (tools). */
@@ -254,16 +269,24 @@ export function createWalk(o) {
       // The figure: posed from the walker (where, how fast, posture), the ground and water under
       // each foot, and where you look below. Each step that lands is a footfall (for footsteps by
       // ground, doc 17).
+      // Prints age with game time; the tide takes the ones it covers.
+      const hours = o.hours();
+      const live = prints.update(hours, water.tide);
+      printsPass.setPrints(live.map((p) => ({ x: p.x, z: p.z, yaw: p.yaw, side: p.side, strength: prints.strength(p, hours), corners: printCorners.get(p) ?? [p.y, p.y, p.y, p.y] })), FP.soleM);
       if (!figure) return;
       const e = camera.eye, t = camera.target;
-      const hour = ((o.hours() % 24) + 24) % 24;
+      const hour = ((hours % 24) + 24) % 24;
       const falls = figure.update(realDt, {
         placed: walker.placed, x: walker.x, z: walker.z, y: walker.y, yaw: walker.yaw, speed: walker.speed,
         moving: walker.moving, retreating: walker.retreating, ground, depth: depthAt,
         look: below ? { yaw: Math.atan2(t[0] - e[0], t[2] - e[2]) } : null,
         posture: walker.posture, below, sleepy: hour < 6 || hour > 21,
       });
-      for (const f of falls) emitDeferred('walk:footfall', f);
+      for (const f of falls) {
+        const p = prints.step(f, hours);
+        if (p) printCorners.set(p, corners(p));
+        emitDeferred('walk:footfall', f);
+      }
     },
 
     dispose() { offStroke(); },

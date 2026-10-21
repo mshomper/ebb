@@ -10,6 +10,7 @@ import { createFigureMotion } from '../src/world/figure/motion.js';
 import { twoBone, len, sub, qrot } from '../src/world/figure/kinematics.js';
 import { blinkAt } from '../src/world/figure/eyes.js';
 import { matPoint } from '../src/world/figure/kinematics.js';
+import { createFootprints } from '../src/world/figure/footprints.js';
 
 const FIG = 'walker figure';
 
@@ -150,6 +151,31 @@ export function addFigureTests(test, assert, eq) {
     assert(Math.max(...off.map(Math.abs)) < 0.02, `ankles off the ground by ${off.map((o) => (o * 100).toFixed(1)).join(' and ')} cm`);
     assert(r && Math.abs(r.yaw) < 1e-9, 'facing kept');
     return off.map((o) => `${(o * 100).toFixed(1)} cm`).join(', ');
+  });
+
+  test(FIG, 'footprints stay in sand and mud, not on grass, rock or under water; they fade in a day and the tide takes them', async () => {
+    const { R } = await load();
+    const F = R.footprints;
+    // Sand for x < 0, grass for 0..5, rock past 5, soil (mud) for z > 10; water deep past x = -10.
+    const material = (/** @type {number} */ x, /** @type {number} */ z) => z > 10 ? { grass: 0, sand: 0, rock: 0, soil: 1 }
+      : x < 0 ? { grass: 0, sand: 1, rock: 0, soil: 0 } : x < 5 ? { grass: 1, sand: 0, rock: 0, soil: 0 } : { grass: 0, sand: 0, rock: 1, soil: 0 };
+    const prints = createFootprints(F, { ground: (x) => (x < 0 ? 0.2 + x * 0.01 : 0.5), material, depth: (x) => (x < -10 ? 0.2 : 0) });
+    const step = (/** @type {number} */ x, /** @type {number} */ z) => prints.step({ x, z, yaw: 0, side: 1 }, 100);
+    assert(step(-2, 0), 'a print in sand');
+    assert(step(2, 12), 'a print in mud');
+    assert(!step(2, 0), 'no print on grass');
+    assert(!step(7, 0), 'no print on rock');
+    assert(!step(-12, 0), 'no print under water');
+    const p = prints.prints[0];
+    assert(prints.strength(p, 100) > prints.strength(p, 110) && prints.strength(p, 110) > 0, 'fades with the hours');
+    eq(prints.update(100 + F.fadeH + 1, -9).length, 0, 'gone after a day');
+    step(-2, 0); step(-8, 0);
+    // The tide rises to 0.15 m: the print at x = -8 (ground 0.12 m) is covered, the one at -2 (0.18 m) is not.
+    const left = prints.update(101, 0.15);
+    eq(left.length, 1, 'the tide took the covered print');
+    for (let i = 0; i < F.max + 20; i++) step(-1, 0);
+    eq(prints.prints.length, F.max, 'no more than max at once');
+    return `${F.max} at most, ${F.fadeH} h to fade`;
   });
 
   test(FIG, 'the same walk poses the same twice, and the walker\'s state is only read', async () => {

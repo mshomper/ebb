@@ -105,7 +105,8 @@ export function createFigureMotion(R, skeleton) {
 
     /**
      * Step and pose. Returns the facing to draw with (it eases after the walker's), the eye state
-     * for the shader, and any footfalls (a foot that landed this frame, world x and z).
+     * for the shader, and any footfalls (a foot that landed this frame: world x and z, its facing and
+     * which foot, 1 left and -1 right).
      * @param {number} dtIn seconds @param {FigureInput} s
      */
     update(dtIn, s) {
@@ -156,12 +157,12 @@ export function createFigureMotion(R, skeleton) {
       else if (mode === 'gait' && (speed < 0.03 || standW < 0.5)) { mode = 'plant'; planted.pin(footWorld, visYaw); }
       phase = (phase + (speed * dt) / (2 * Math.max(P.stepM, 0.05))) % 1;
 
-      /** @type {{ x: number, z: number }[]} */ const footfalls = [];
+      /** @type {{ x: number, z: number, yaw: number, side: number }[]} */ const footfalls = [];
       // Each foot's target: ankle (body m), toe pitch and its turn about y relative to the body.
       let plantRes = null;
       if (mode === 'plant') {
         plantRes = planted.update(dt, rest.map((p) => toWorld(p[0], p[2])), visYaw);
-        plantRes.landed.forEach((l, i) => { if (l) footfalls.push({ x: plantRes.feet[i].x, z: plantRes.feet[i].z }); });
+        plantRes.landed.forEach((l, i) => { if (l) footfalls.push({ x: plantRes.feet[i].x, z: plantRes.feet[i].z, yaw: plantRes.feet[i].yaw, side: SIDE[i] }); });
       }
       const cyc = [0, 1].map((i) => footInCycle((phase + i * 0.5) % 1, G.stance, P.stepM, P.liftM));
       const feet = [0, 1].map((i) => {
@@ -175,7 +176,7 @@ export function createFigureMotion(R, skeleton) {
           bx = rest[i][0] * 0.95; bz = rest[i][2] + cy.fz; lift = cy.lift; pitch = cy.pitch; yawRel = 0;
           // The first steps ease out of where the feet stood.
           if (m < 1) { const p = toBody(startPins[i][0], startPins[i][1]); bx = lerp(p[0], bx, m); bz = lerp(p[1], bz, m); lift *= m; }
-          if (cy.down && !wasDown[i]) { const w = toWorld(bx, bz); footfalls.push({ x: w[0], z: w[1] }); }
+          if (cy.down && !wasDown[i]) { const w = toWorld(bx, bz); footfalls.push({ x: w[0], z: w[1], yaw: /** @type {number} */ (visYaw), side: SIDE[i] }); }
           wasDown[i] = cy.down;
         }
         // The ground under the foot, and a look ahead so a swing clears a step up.
