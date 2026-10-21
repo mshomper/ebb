@@ -2,7 +2,7 @@
 
 > ebb's slow systems (growth, seasons, creatures settling) need a companion that gives every visit something to look for while the island takes its time. This doc proposes that hook: **keepsakes**, one-of-a-kind objects the sea leaves on the strandline and that nets snag out in the waves. Every keepsake is generated from a seed, so no two are alike, and each carries a rarity the player can read. A **memento shelf** of about 16 spaces holds the ones the player chooses to keep, so the point is choosing what is special rather than gathering everything. Three **nets**, each a different build, reach water the strandline never sees, and **signs in the water** (a sparkle, diving birds) reward paying attention. Nothing here hurries the player or pays for repetition: what turns up depends on the tide, the moon, the weather and the shape of the shore, never on how often you walk the beach. It is grounded in a read of the code on October 20, 2026.
 
-**Status:** Leaning. Not scheduled. Nothing here is built until Matt schedules it. Shells on the strandline (F11, branch m1-finds-shore) are the seed this grows from.
+**Status:** Scheduled for M2 (October 21, 2026). Keepsakes, the shelf and the general net are built first, in small branches starting with `tools/keepsake-lab.html`. The light and sinker nets wait for the meadow and shore tier milestones; weathering waits for F04; king tides and storms wait for F08. Shells on the strandline (F11) are the seed this grows from.
 
 ## Decided so far
 
@@ -20,6 +20,20 @@ Matt, October 20, 2026:
 - **The player crafts their own net.** Nets can be damaged and must be repaired.
 - **Up to three nets, each a different kind:** a general net first, then a lightweight specialty net, then a sinker net for deeper water. Progression unlocks the second and third, so a few are out at a time at most.
 - **Signs in the water,** such as a sparkle where setting a net gives better odds of something rarer, to encourage awareness of the environment. A limited number of signs accumulate while you are away.
+
+Matt, October 21, 2026 (answers to the planning questions):
+
+- **Keepsakes and the shelf join M2.** Doc 01's "no crafting or inventory" line was changed to make room for this system, and says so.
+- **Version 1 gates rarity on spring tides, the season and the shape of the shore.** King tides and storms wait for F08. The winter storm-tide shells (doc 13) become the first rare-keepsake rule.
+- **Keepsakes are unnamed trinkets.** The shelf is about discovering pretty things of different rarities, not identifying them. The Shells page and the small finds stay as they are, and the five scanned shells stay beside the procedural ones.
+- **The shelf is its own journal section, with its own icon.** Each slot is an ink sketch traced from the keepsake's mesh (the same tracing as `tools/gen-sketch-outlines.mjs`), so the meshes themselves are throwaway. The rarity word is on the card when it is found; the slot's paper ground shows the rarity, so players want to photograph their shelves.
+- **The shelf is the only record.** Keeping something writes no journal note.
+- **Letting go returns things to the sea** in version 1. Setting out on the island comes with weathering.
+- **The general net is on the naturalist's line after driftwood** (proposed at 12), so there must be enough small finds to get there.
+- **A worn net keeps fishing,** with lower odds of the higher rarities.
+- **Living catches get a short page** (an ink drawing, a name, one note) and count on the naturalist's line.
+- **Bottles hold messages,** perhaps written by a writer friend of Matt's.
+- **At most 2 signs** wait on return.
 
 ## The loop
 
@@ -53,8 +67,8 @@ The Shells recipe already gates its rare items by the tide (`springMin` in `reci
 | Condition | What it opens (proposals) |
 |---|---|
 | Spring tides (new and full moon) | Rare keepsakes on the highest strandline |
-| King tides (F08) | Very rare keepsakes, and floaters (bottles, pumice, drift seeds) on the outermost line |
-| A storm the night before | More keepsakes, heavier ones high on the shore, and more wear on nets |
+| King tides (F08, after version 1) | Very rare keepsakes, and floaters (bottles, pumice, drift seeds) on the outermost line |
+| A storm the night before (F08, after version 1; until then, winter spring tides stand in, as doc 13's storm-tide shells) | More keepsakes, heavier ones high on the shore, and more wear on nets |
 | Season | Which families lean in: feathers in the autumn moult, driftwood after winter storms, glowing life in summer nets |
 | The shape of the shore | Coves catch floaters; rock in the tide band holds stones and fossils; sand holds shells and feathers |
 
@@ -77,15 +91,17 @@ Each family is one small generator with one or two rarity knobs. Starting points
 | Feathers | Above the strandline, in wind | A flat card with a parametric vane: rachis curve, barb angle, notch, pattern | Size, barring; mark: a large flight feather from a landmark bird that lives on the island (a heron's, once herons come) | The flora card path |
 | Bottles | Outermost strandline, king tides only | A lathe profile with tint and frosting | Tint, a stopper; very rare by design | `lathe` |
 
-The five scanned shells (periwinkle, turret, cockle fossil, murex, nautilus) can stay as they are. Procedural shells would sit beside them as one-of-a-kind keepsakes, and could borrow a scanned kind's name when they fall near it ("a murex, unusually long-spined").
+The five scanned shells (periwinkle, turret, cockle fossil, murex, nautilus) stay as they are, as finds. Procedural shells sit beside them as one-of-a-kind keepsakes with no species name: a card describes one plainly ("a shell, coiled to the left, long-spined").
+
+Bottles hold a message, picked by seed from `recipes/world/bottle-messages.json`: short (about 40 words, readable on a phone card), mysterious and disconnected, written by a guest writer and credited.
 
 **Readability.** Keepsakes are hand-sized, so they follow F11's rule: drawn at a modest enlargement like the strandline shells (`scale` 2 in finds.json), found in places the player made or knows (the strandline, the cove), and few at a time.
 
 ## The memento shelf
 
-- **About 16 spaces,** a page in the Journal area. Each kept keepsake sits in a slot as its own mesh, with a small card: its name, its rarity and mark, and one line of where and when ("On the cove's strandline, after the spring tide of summer day 9").
-- **Only kept things are recorded.** The shelf is the record; there is no list of everything ever found and no count of what is missing (doc 13's rule).
-- **A full shelf asks for a choice.** To keep something new, the player lets something go: back to the sea, or set out on the island. Curating the shelf is the decision that matters.
+- **16 spaces, in a journal section of their own** with a drawn icon (a sixth section; on phones the sections sit two to a row, so six make three even rows). Each slot shows the keepsake as an ink sketch traced from its mesh, on a paper ground that shows its rarity: plain paper (common), a pale wash (uncommon), a deeper wash with an inked border (rare), a gilt edge (very rare). A shelf of different grounds is meant to be photographed, and the section has a button that saves it as a picture. Tapping a slot opens its card: a plain description, its rarity and mark, and one line of where and when ("On the cove's strandline, after the spring tide of summer day 9"), with a 3D view to turn it.
+- **Only kept things are recorded.** The shelf is the record; keeping writes no journal note, and there is no list of everything ever found and no count of what is missing (doc 13's rule).
+- **A full shelf asks for a choice.** To keep something new, the player lets something go, back to the sea. Setting it out on the island comes later, with weathering. Curating the shelf is the decision that matters.
 - **Setting out.** A keepsake set on the island becomes a placed piece (the piece system in `src/world/pieces`), capped like loose stones are, so the island does not fill with clutter. What happens to it over time is the weathering question below.
 
 ## The nets
@@ -94,7 +110,7 @@ The five scanned shells (periwinkle, turret, cockle fossil, murex, nautilus) can
 
 | Net | Comes from (proposals) | Where it is set | What it favors |
 |---|---|---|---|
-| **General net** | Woven by the player once rushes grow on the island; offered as a mark on the naturalist's line (proposed at 8, between loose stones and driftwood) | Staked in the shallows of the tide band at low tide, so the next high tide fills it | Small living things, drift seeds, ordinary oddities |
+| **General net** | A mark on the naturalist's line after driftwood (proposed at 12; the season markers bring the kinds needed to reach it), woven from rushes growing on the island | Staked in the shallows of the tide band at low tide, so the next high tide fills it | Small living things, drift seeds, ordinary oddities |
 | **Light net** | A later progression milestone (proposed: the meadow tier's milestone) | On floats along the current line, beyond the tide band | Floating curiosities, glowing life at night, things carried a long way |
 | **Sinker net** | A later milestone (proposed: the shore tier's, when herons and otters come) | Weighted down in open water | The rarest and heaviest drifters, and most of the artifacts |
 
@@ -120,13 +136,13 @@ Cutting rushes for cord would thin that patch's cover share for a few days, then
 
 ### Living catches
 
-Always released. Each gets a moment on the tray and a journal page, then swims off: a sand eel, a pipefish, a shrimp, a small flatfish, a moon jelly; at night in the light net, a comb jelly glowing; very rarely a young cuttlefish. Being handled gently could feed presence (doc 23), so the sea's creatures come to know you over time.
+Always released. Each gets a moment on the tray and a short journal page (an ink drawing, a name, one note), counts as a find on the naturalist's line, then swims off: a sand eel, a pipefish, a shrimp, a small flatfish, a moon jelly; at night in the light net, a comb jelly glowing; very rarely a young cuttlefish. Being handled gently could feed presence (doc 23), so the sea's creatures come to know you over time.
 
 ### Wear and mending
 
 - **Wear builds with use.** Every haul adds a little; storms, rock in the shallows and heavy hauls add more. Nothing wears while a net is stored.
-- **Holes change the catch before they stop it.** A worn net loses small things through its holes, so it fishes like a coarser net. That is a gradual, visible change, not a broken state.
-- **A torn net must be mended** before it is set again. Mending takes the net out of the water for one tide, with rushes growing on the island. It is never lost.
+- **Holes change the catch, never stop it.** A worn net loses small things through its holes and its odds of rare and very rare things fall. That is a gradual, visible change, not a broken state.
+- **Mending restores the odds.** Mending takes the net out of the water for one tide, with rushes growing on the island. A net is never lost.
 
 ### Artifacts
 
@@ -154,7 +170,7 @@ A small family of signs teaches players to read the sea. Each favors a pool and 
 
 - **Unhurried.** A sign lasts until the next tide turns. A net set within some distance of it before then (starting point 15 m) gets the better odds.
 - **Never required.** Anything a sign makes likelier can also come without one, only less often, so a missed sign closes no door (doc 13: nothing is lost by being away, no reward is time-limited).
-- **While away.** A limited number wait for your return (starting point 2), laid out on the water by the reveal (`reveal-return.js`) and lasting until the next tide after you are back.
+- **While away.** At most 2 wait for your return, laid out on the water by the reveal (`reveal-return.js`) and lasting until the next tide after you are back.
 - **Rolled like weather.** Signs come from the seed and the game hour, the same way F08's weather-borne phenomena do, leaning toward the conditions that would cause them in life (diving birds at dawn and dusk, glows on dark calm nights).
 
 ## Weathering (seed, pending Matt's review)
@@ -176,7 +192,7 @@ From the code read on October 20, 2026:
 - **Generators (new, one module per family).** `src/world/keepsakes/`, each taking its numbers and returning a mesh. Reuse `lathe` (export it from `procedural.js`), `bakeBody`, the loose-stone bake and `barnacleMesh`. Meshes are made on demand near the camera and cached by keepsake id, since unlike the scanned shells each one is unique.
 - **A keepsake lab (new tool).** `tools/keepsake-lab.html`, a local page that lays many seeds of a family side by side with their rarity, for tuning the generators and the odds on Matt's own machine, in the style of `tools/finds-models.html`.
 - **Tapping (small change).** `cardAt` in `journal/index.js` gains a keepsake lookup beside the finds lookup; the card offers keep or leave. A left keepsake stays until a higher tide sweeps its line.
-- **The shelf (new page).** A page in the Journal area. The journal's tabs are hardcoded (`VIEWS` in `src/ui/journal.js`), so the shelf would sit as a page inside an existing view rather than a sixth tab, keeping the phone layout as it is.
+- **The shelf (new section).** A sixth entry in `VIEWS` in `src/ui/journal.js`, with a new icon in `src/ui/icons/`. Slot sketches come from a browser port of the tracer in `tools/gen-sketch-outlines.mjs`, run in a worker once per kept keepsake; the mesh is then dropped and only the numbers and the traced lines stay.
 - **Nets (new piece kind).** Nets are pieces that sit on water. Setting, lifting and mending would live with the piece system (`src/world/pieces`), with a Net mode beside Loose stone.
 - **Unlocks (exists).** The general net as a naturalist reward in `recipes/world/naturalist.json`, granted by `src/world/expansion.js`; the light and sinker nets through the same module at milestones.
 - **Signs (new, small).** Rolled hourly from the seed; drawn as surface effects in the water pass (the sparkle and the glow use the water's own light, like pond skaters).
@@ -211,13 +227,11 @@ Listed only; Matt applies these later.
 
 ## Open questions
 
-- Should the Shells page keep listing every kind of shell you have found, or change so the journal only shows shells you kept?
-- Should a torn net be unusable until it is mended, or keep fishing with holes and only catch larger things?
-- Should the first net come as a mark on the naturalist's line, or as soon as enough rushes grow?
-- Should living net catches get their own pages among the small lives, and count on the naturalist's line?
-- Should bottles ever hold anything inside?
-- How many signs should be waiting when you come back: one, two or three?
-- Should procedural shells sit beside the five scanned shells, or eventually replace them?
+Those asked first were answered on October 21, 2026 (see "Decided so far"). Still open:
+
+- The four rarity grounds for shelf slots: confirm them once the shelf is drawn.
+- Bottle messages: length, tone and credit, to agree with the writer.
+- Whether a weathered, set-out keepsake can come back to the shelf (with F04).
 
 ## Depends on / feeds into
 

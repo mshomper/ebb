@@ -4,7 +4,7 @@
 
 ## Locked decisions
 
-- **The only progression input is species happiness** (`species:happy` from `11-creatures-and-ecology.md`). No experience points, no currency, no crafting.
+- **The only input to tier milestones is species happiness** (`species:happy` from `11-creatures-and-ecology.md`). No experience points, no currency, no crafting trees. Finds, living net catches and keepsakes have their own line, the naturalist's notes, and never count toward milestones. *(October 21, 2026: nets are made from what the island grows, F12; nothing is spent.)*
 - **Two kinds of reward from creatures.** Each species gives one gift (a seed, tool or palette, never a creature) the first time it becomes happy; trust is rewarded by names, calls and portraits, not items (`23-presence.md`). Finds have their own line, the naturalist's notes, which never counts toward milestones. A **tier milestone** fires when the second species of a tier is happy, and that milestone brings new land. Gift list per species: `12-creature-roadmap.md`.
 - **Five land pieces, one per tier milestone**, in fixed order, each placed by the world seed so every world differs a little.
 - **New land arrives at low tide, while the player is watching.** A milestone reached during catch-up is queued and plays during the reveal or the next low tide in play. Gifts reached offline appear as journal notes in the reveal.
@@ -22,7 +22,7 @@ Agreed with Matt on October 20, 2026. New things reach the player in five ways, 
 |---|---|---|
 | Starter kit | Sculpt (Raise, Lower, Flatten, Stone), Paint, Water (Pour, Drain), Plant with grass, reeds and water lilies; Feed once a creature is found | nothing: there from the start |
 | Plants that come by themselves | Iris, rushes, thrift, marigold, grey willow, campion; plantable once seen | about one every 1.7 game days (`recipes/world/growth.json`) |
-| The naturalist's notes | Shells at 3 finds; loose stones at 6, driftwood at 10, the hand lens at 15 (driftwood and the lens swapped places on October 20, 2026, so logs come in time for the turtles) | finds discovered (`recipes/world/naturalist.json`) |
+| The naturalist's notes | Shells at 3 finds; loose stones at 6, driftwood at 10, the general net at 12, the hand lens at 15 (driftwood and the lens swapped places on October 20, 2026, so logs come in time for the turtles; the net was added October 21, 2026, F12). Living net catches count as finds | finds discovered (`recipes/world/naturalist.json`) |
 | Species gifts | One seed or tool per species, when it first settles happy (list in `12-creature-roadmap.md`) | creature happiness |
 | Tier milestones | New land, when the second species of a tier is happy | creature happiness |
 
@@ -243,6 +243,7 @@ The camera stays where it is; you look around the island to find the wash. A spe
   - **New:** a note written since you last opened Notes, or its page, has a small ink dot. So does the book button, and the section and page it belongs to, until you open them.
   - **Missed:** a note that never showed on the island (more at once than the queue holds, or written while the tab was out of sight, and later the reveal's catch-up) goes at the top of Notes under "You may have missed". The island says "3 more in the journal" instead of dropping them silently.
   - **Seen:** everything else is plain. On a new island, the notes about what was already there count as read.
+- **The shelf** (F12, agreed October 21, 2026): its own journal section with a drawn icon, and 16 slots. It records only what the player kept, never a count of what was found or is missing. Keepsakes are unnamed trinkets: each slot is a sketch traced from the keepsake's own shape, on a paper ground that shows its rarity (plain, a pale wash, a deeper wash with an inked border, a gilt edge), so a shelf is worth a photograph. Keeping something writes no note; the shelf is the record.
 - **The island map**: a hand-drawn style map that adds each land piece as it rises, with player-named places.
 - **The year page**: four season boxes that fill as each season is seen with a happy species in it, and each season's own small lives and moment (see "The year, season by season"). When all sixteen species pages hold a photograph and all four seasons are filled, the year page completes with a short closing note. Play continues; nothing ends.
 
