@@ -26,7 +26,7 @@ import { stampNotes, markShown, markNotesSeen, markPageSeen, readOf, pageSince, 
 /**
  * @typedef {Object} JournalUiSlice
  * @property {boolean} open
- * @property {'living'|'ground'|'web'|'almanac'|'notes'} view
+ * @property {'living'|'ground'|'web'|'almanac'|'notes'|'shelf'} view
  * @property {string|null} page   the page shown in the living or ground view, or null for the list
  * @property {'half'|'full'} size  the phone sheet's height
  * @property {number} [notesSince] the last note number seen before Notes was opened (read.js): newer ones show as new

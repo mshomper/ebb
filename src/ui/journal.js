@@ -17,6 +17,7 @@ import { webView, tiesStrip } from './journal-web.js';
 import { nodeOfPage } from '../world/journal/web.js';
 import { livingList, cleanChoice } from '../world/journal/list.js';
 import { dateOfHour } from '../world/journal/observe.js';
+import { createShelfView } from './journal-shelf.js';
 
 /** The page id of the naturalist's notes (src/world/expansion.js), a Living things page with no species. */
 const NATURALIST = 'naturalist';
@@ -28,6 +29,7 @@ const VIEWS = [
   { id: 'web', label: 'Web', icon: 'web' },
   { id: 'almanac', label: 'Almanac', icon: 'almanac' },
   { id: 'notes', label: 'Notes', icon: 'notes' },
+  { id: 'shelf', label: 'Shelf', icon: 'shelf' },
 ];
 /** Season box keys, spring first: each box takes its color and drawn mark from these (journal.css, icons.js). */
 const SEASON_KEYS = ['spring', 'summer', 'autumn', 'winter'];
@@ -49,6 +51,9 @@ const PHONE = '(max-width: 699px)';
 export function mountJournal(parent, live, buttonParent = parent) {
   ensureIconSprite();
   const { words, island } = live;
+  // The Shelf section (journal-shelf.js): the keepsakes kept, when the app has handed in their recipes.
+  const shelfLive = /** @type {any} */ (live).shelf;
+  const shelf = shelfLive ? createShelfView({ ...shelfLive, words }) : null;
 
   const btnRoot = document.createElement('div');
   btnRoot.className = 'ebb-jbtn';
@@ -105,6 +110,7 @@ export function mountJournal(parent, live, buttonParent = parent) {
   /** @param {MouseEvent} e */
   function onClick(e) {
     const t = /** @type {HTMLElement} */ (e.target);
+    if (shelf?.click(t, render)) return;
     const node = /** @type {HTMLElement | null} */ (t.closest('[data-web-node]'));
     if (node?.dataset.webNode) { focusWeb(node.dataset.webNode); return; }
     const crumb = /** @type {HTMLElement | null} */ (t.closest('[data-web-trail]'));
@@ -181,7 +187,7 @@ export function mountJournal(parent, live, buttonParent = parent) {
     // A note about a thing with no page of its own opens the Web on it.
     if (ui.view === 'web' && ui.webAt && ui.webAtN !== webAtSeen) { webAtSeen = ui.webAtN; toTrail(ui.webAt); webShelf = null; }
     if (ui.view === 'web' && !webTrail.length) webTrail = [live.web.start];
-    const html = ui.view === 'notes' ? notesView() : ui.view === 'almanac' ? almanacView()
+    const html = ui.view === 'shelf' && shelf ? shelf.html() : ui.view === 'notes' ? notesView() : ui.view === 'almanac' ? almanacView()
       : ui.view === 'web' ? webView(live.describeWeb(), live.web, { trail: webTrail, shelf: webShelf })
       : trail ? naturalistView() : paged ? pageView(/** @type {string} */ (ui.page)) : ui.view === 'ground' ? listView(island.groundOrder) : livingView();
     // A new thing in the middle of the Web scrolls back up to its card.
@@ -189,6 +195,7 @@ export function mountJournal(parent, live, buttonParent = parent) {
     if (html === body.dataset.html) return;
     body.innerHTML = html;
     body.dataset.html = html;
+    if (ui.view === 'shelf') shelf?.after(body);
     if (key !== shownKey) { body.scrollTop = 0; shownKey = key; }
   }
 
@@ -420,7 +427,7 @@ export function mountJournal(parent, live, buttonParent = parent) {
   render();
   // The almanac follows the time shown; refresh it now and then while it is open.
   const timer = setInterval(() => { const u = get('journalUi'); if (u?.open && u.view === 'almanac') render(); }, 2000);
-  const unsubs = [subscribe('journal', render), subscribe('journalUi', render)];
+  const unsubs = [subscribe('journal', render), subscribe('journalUi', render), subscribe('keepsakes', render), subscribe('shelfPending', render)];
   buttonParent.appendChild(btnRoot);
   parent.appendChild(panel);
 

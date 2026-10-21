@@ -8,6 +8,9 @@ import { pickIndex, rarityWeights } from '../src/world/keepsakes/rarity.js';
 import { keepsakeSvg, traceKeepsake } from '../src/ui/sketches/keepsake.js';
 import { FAMILIES, keepsakeMesh, keepsakeWords, rollKeepsake } from '../src/world/keepsakes/families/index.js';
 import { onShore, tideKeepsakes } from '../src/world/keepsakes/shore.js';
+import { cleanShelf, emptyShelf, keep, letGo, swap, SHELF_CAP } from '../src/world/keepsakes/shelf.js';
+import { snapshot, restore } from '../src/save/sections.js';
+import { migrate, FORMAT } from '../src/save/migrate.js';
 
 const KEEPSAKES = 'keepsakes';
 
@@ -174,6 +177,41 @@ export function addKeepsakeTests(test, assert, eq) {
     const K = await recipe();
     const plain = rarityWeights(K.rarity, { spring: 0.9 }), net = rarityWeights(K.rarity, { spring: 0.9, lean: { rare: 3, veryRare: 5 } });
     assert(net[2] === plain[2] * 3 && net[3] === plain[3] * 5 && net[0] === plain[0], 'rare times three, very rare times five, common the same');
+  });
+
+  test(KEEPSAKES, 'the shelf keeps sixteen, then asks; letting go and swapping keep the rest in place', async () => {
+    const K = await recipe();
+    let s = emptyShelf();
+    for (let i = 0; i < SHELF_CAP; i++) {
+      const r = keep(s, { n: rollKeepsake('shell', 1, i, K, { spring: 0 }), hour: i * 12, spring: false });
+      assert(r.kept && !r.full, `space for number ${i + 1}`);
+      s = r.state;
+    }
+    const full = keep(s, { n: rollKeepsake('stone', 1, 99, K, { spring: 0 }), hour: 500, spring: true });
+    assert(!full.kept && full.full && full.state === s, 'a full shelf keeps nothing and asks');
+    const out = s.shelf[5].id;
+    const swapped = swap(s, out, { n: rollKeepsake('stone', 1, 99, K, { spring: 0 }), hour: 500, spring: true });
+    eq(swapped.shelf.length, SHELF_CAP, 'still sixteen');
+    eq(swapped.shelf[5].n.family, 'stone', 'the new one takes the old one\'s place');
+    assert(!swapped.shelf.some((e) => e.id === out), 'the old one is gone');
+    const less = letGo(swapped, swapped.shelf[0].id);
+    eq(less.shelf.length, SHELF_CAP - 1, 'one let go');
+    eq(new Set(less.shelf.map((e) => e.id)).size, less.shelf.length, 'ids stay unique');
+    eq(cleanShelf(null).shelf.length, 0, 'nothing readable is an empty shelf');
+    eq(cleanShelf({ shelf: [{ id: 1, n: { family: 'shell' }, hour: 3 }, { bad: true }] }).shelf.length, 1, 'unreadable entries are dropped');
+  });
+
+  test(KEEPSAKES, 'the shelf goes into the save and comes back, and an older save gets an empty one', async () => {
+    const K = await recipe();
+    const s = keep(emptyShelf(), { n: rollKeepsake('bottle', 3, 1, K, { spring: 1 }, 'rare'), hour: 36, spring: true }).state;
+    const { header, sections } = snapshot(/** @type {any} */ ({ build: 't', seed: 1, island: 'x', worldT: 0, flow: 1, world: {}, journal: null, water: null,
+      unlocks: {}, view: null, looks: {}, chunks: {}, mirror: null, savedAt: 0, wallHighWater: 0, keepsakes: s }));
+    eq(header.format, FORMAT, 'written at this build\'s format');
+    eq(FORMAT, 6, 'format 6');
+    const back = restore(Object.fromEntries(sections));
+    eq(JSON.stringify(back.keepsakes), JSON.stringify(s), 'the shelf comes back exactly');
+    const old = migrate({ meta: {}, pieces: { version: 1, list: [], nextId: 1, arrived: false } }, 5);
+    eq(JSON.stringify(old.keepsakes), JSON.stringify(emptyShelf()), 'a format 5 island gets an empty shelf');
   });
 
   test(KEEPSAKES, 'every form and tier in the recipe can be made', async () => {

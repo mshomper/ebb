@@ -465,6 +465,25 @@ const ICONS = {
     <circle cx="18" cy="14.5" r="1"/>
     <path d="M12 3V9M9.4 5.6L12 3L14.6 5.6"/>
     <path d="M2.5 20.5H21.5"/>`,
+  // The shelf (keepsakes, docs/future/12): a plank on two brackets holding a coiled shell, a pebble
+  // and a feather leaning up.
+  shelf: `
+    <path d="M2.5 15.5H21.5"/>
+    <path d="M5 15.5V18.5M19 15.5V18.5"/>
+    <path ${ACCENT} d="M4.5 15.5C4.5 12.4 6.2 10.5 8.2 10.5C10.2 10.5 11.4 12.2 11.4 13.8C11.4 15 10.6 15.5 9.6 15.5Z"/>
+    <path d="M4.5 15.5C4.5 12.4 6.2 10.5 8.2 10.5C10.2 10.5 11.4 12.2 11.4 13.8C11.4 15 10.6 15.5 9.6 15.5Z"/>
+    <path d="M8.2 13.2C8.9 13.2 9.3 13.7 9.2 14.3"/>
+    <path d="M12.8 15.5C12.8 14.2 13.8 13.4 15 13.4S17 14.2 17 15.5"/>
+    <path d="M17.5 15.5C17.9 11.5 19 7.6 20.6 4.5"/>
+    <path d="M18.4 11.2C19.6 10.4 20.4 9 20.6 7.4"/>`,
+  // A picture saved (the shelf's picture, docs/future/12): a framed print with a hill and a sun,
+  // and a short arrow down into a tray.
+  picture: `
+    <rect ${ACCENT} x="3.5" y="3.5" width="17" height="12" rx="1.5"/>
+    <rect x="3.5" y="3.5" width="17" height="12" rx="1.5"/>
+    <path d="M3.5 13L8.5 8.5L12 11.5L14.5 9.5L20.5 14"/>
+    <circle cx="16.5" cy="7" r="1.3"/>
+    <path d="M12 17.5V21M10 19.4L12 21.2L14 19.4"/>`,
   // Stone, a Sculpt mode (docs/future/10): a rounded boulder resting on the ground, a smaller one against it, and a
   // short drop line above: set a stone here.
   stone: `

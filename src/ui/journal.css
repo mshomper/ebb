@@ -132,9 +132,10 @@
 .ebb-journal__icon-btn:hover { background: rgba(30, 38, 36, 0.07); }
 .ebb-journal__size { display: none; }
 
+/* Six sections: three to a row in two even rows (two to a row on phones, below). */
 .ebb-journal__nav {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 6px;
   padding: 4px 16px 10px;
   border-bottom: 1px solid var(--jr-rule);
@@ -846,3 +847,39 @@ button.ebb-trail__row:hover b { text-decoration: underline; text-decoration-colo
 .ebb-gift:focus-visible { outline: 2px solid var(--wordmark-dark); outline-offset: 2px; }
 @media (prefers-reduced-motion: reduce) { :root:not(.ebb-motion-full) .ebb-gift { transition: opacity 300ms ease; transform: translate(-50%, 0); } }
 :root.ebb-motion-calm .ebb-gift { transition: opacity 300ms ease; transform: translate(-50%, 0); }
+
+/* The Shelf (src/ui/journal-shelf.js, docs/future/12): sixteen spaces, four to a row at every width,
+   each a keepsake's ink sketch on its rarity's paper; the empty ones a dashed outline. */
+.ebb-shelf { display: grid; gap: 12px; }
+.ebb-shelf__title { margin: 4px 0 0; font-family: var(--font-voice); font-style: italic; font-weight: 400; font-size: calc(24px * var(--text-scale, 1)); color: var(--jr-ink); }
+.ebb-shelf__text { margin: 0; color: var(--jr-soft); }
+.ebb-shelf__grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; padding: 10px; border-radius: 12px; background: #E9DFCE; }
+.ebb-shelf__cell { display: grid; gap: 6px; align-content: start; }
+.ebb-shelf__slot {
+  appearance: none; -webkit-appearance: none; display: block; width: 100%; aspect-ratio: 1; min-width: 0;
+  margin: 0; padding: 2px; box-sizing: border-box; border-radius: 10px; color: inherit; cursor: pointer;
+}
+.ebb-shelf__slot svg { display: block; width: 100%; height: 100%; }
+.ebb-shelf__slot.is-empty { border: 1.5px dashed #C9BDA6; background: transparent; cursor: default; }
+.ebb-shelf__slot:focus-visible { outline: 2px solid var(--jr-moss); outline-offset: 2px; }
+.ebb-shelf__new { display: flex; gap: 14px; align-items: center; }
+.ebb-shelf__new .ebb-shelf__slot { flex: 0 0 96px; width: 96px; cursor: default; }
+.ebb-shelf__new p { margin: 0; min-width: 0; overflow-wrap: break-word; }
+.ebb-shelf__hand { width: min(100%, 300px); aspect-ratio: 1; justify-self: center; border-radius: 12px; overflow: hidden; }
+.ebb-shelf__turn { display: block; width: 100%; height: 100%; touch-action: none; cursor: grab; }
+.ebb-shelf__name { margin: 0; font-family: var(--font-voice); font-style: italic; font-size: calc(19px * var(--text-scale, 1)); color: var(--jr-ink); }
+.ebb-shelf__rarity { margin: 0; font-weight: 800; color: var(--jr-moss); }
+.ebb-shelf__message { margin: 0; padding: 10px 14px; border-left: 3px solid var(--jr-rule); font-family: var(--font-voice); font-style: italic; color: var(--jr-ink); }
+.ebb-shelf__row { display: flex; flex-wrap: wrap; gap: 8px; }
+.ebb-shelf__btn {
+  appearance: none; -webkit-appearance: none; justify-self: start; min-height: 44px; margin: 0; padding: 6px 12px;
+  display: inline-flex; align-items: center; gap: 8px; border: 1.5px solid var(--jr-moss); border-radius: 12px;
+  background: transparent; color: var(--jr-ink); font: inherit; font-size: var(--text-small); text-align: left; cursor: pointer;
+}
+.ebb-shelf__btn:hover { background: rgba(95, 127, 91, 0.12); }
+.ebb-shelf__btn.is-wide { justify-self: stretch; justify-content: center; }
+.ebb-shelf__cell .ebb-shelf__btn { justify-self: stretch; padding: 4px 6px; justify-content: center; }
+@media (max-width: 699px) {
+  .ebb-shelf__grid { gap: 6px; padding: 6px; }
+  .ebb-shelf__btn { font-size: calc(16px * var(--text-scale, 1)); }
+}

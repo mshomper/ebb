@@ -48,6 +48,7 @@ import { createCreatures } from './world/creatures/index.js';
 import { createFinds } from './world/finds/index.js';
 import { createKeepsakes } from './world/keepsakes/index.js';
 import { keepsakeWords } from './world/keepsakes/families/index.js';
+import { cleanShelf, keep as keepShelf, letGo as letGoShelf, swap as swapShelf } from './world/keepsakes/shelf.js';
 import { createPieces } from './world/pieces/index.js';
 import { shorePresence } from './world/journal/shore-presence.js';
 import { createPresence } from './world/creatures/presence.js';
@@ -139,6 +140,8 @@ export async function startApp(canvas, hooks = {}) {
     if (back.music) updateStore('music', () => back.music);
     // Placed loose stones (src/world/pieces).
     updateStore('pieces', () => back.pieces);
+    // The shelf of keepsakes (src/world/keepsakes/shelf.js).
+    updateStore('keepsakes', () => back.keepsakes);
   }
   // Device settings (src/save/prefs.js): kept on this device, never in the island.
   const prefs = loadPrefs();
@@ -714,6 +717,37 @@ export async function startApp(canvas, hooks = {}) {
         keepsakes.leave(a.id);
         updateStore('identify', () => null);
         break;
+      // Keep it: onto the shelf (src/world/keepsakes/shelf.js), and off the shore. A full shelf
+      // opens in the journal and asks which one to let go; nothing is kept until you choose.
+      case 'keepsakes.keep': {
+        const k = keepsakes.toKeep(a.id);
+        if (!k) break;
+        const r = keepShelf(cleanShelf(getStore('keepsakes')), k);
+        if (r.kept) {
+          updateStore('keepsakes', () => r.state);
+          keepsakes.leave(a.id);
+          updateStore('identify', () => null);
+        } else {
+          updateStore('shelfPending', () => ({ shoreId: a.id, ...k }));
+          updateStore('identify', () => null);
+          updateStore('journalUi', (u) => ({ ...(u ?? {}), open: true, view: 'shelf', page: null }));
+        }
+        break;
+      }
+      case 'keepsakes.swap': {
+        const p = getStore('shelfPending');
+        if (!p) break;
+        updateStore('keepsakes', (s) => swapShelf(cleanShelf(s), a.out, p));
+        keepsakes.leave(p.shoreId);
+        updateStore('shelfPending', () => null);
+        break;
+      }
+      case 'keepsakes.letGo':
+        updateStore('keepsakes', (s) => letGoShelf(cleanShelf(s), a.id));
+        break;
+      case 'keepsakes.cancelKeep':
+        updateStore('shelfPending', () => null);
+        break;
       case 'ui.identify':
         pieces.cancelCarry();
         break;
@@ -1024,7 +1058,7 @@ export async function startApp(canvas, hooks = {}) {
       build: hooks.build ?? 'dev', seed, island: island.id, worldT: clock.worldT(), flow: clock.flow(),
       carryMinutes: getStore('meta')?.carryMinutes ?? 0, keepGrowing: getStore('meta')?.keepGrowing ?? true,
       world: world.state, journal: getStore('journal'), water: getStore('water'), unlocks: getStore('unlocks')?.earned ?? {},
-      view: camera.pose(), looks: getStore('looks') ?? {}, music: getStore('music') ?? { hearted: [] }, pieces: getStore('pieces'), chunks: getStore('chunks'), mirror: getStore('terrainLive')?.mirror ?? null,
+      view: camera.pose(), looks: getStore('looks') ?? {}, music: getStore('music') ?? { hearted: [] }, pieces: getStore('pieces'), keepsakes: getStore('keepsakes'), chunks: getStore('chunks'), mirror: getStore('terrainLive')?.mirror ?? null,
     }),
   });
 

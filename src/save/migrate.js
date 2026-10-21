@@ -7,9 +7,10 @@ import { calendar14 } from './migrate-calendar.js';
 import { naturalist3 } from './migrate-naturalist.js';
 import { cliffs4 } from './migrate-cliffs.js';
 import { pieces5 } from './migrate-pieces.js';
+import { keepsakes6 } from './migrate-keepsakes.js';
 
 /** The data schema this build writes. */
-export const FORMAT = 5;
+export const FORMAT = 6;
 
 /**
  * Ordered steps, each from one format to the next.
@@ -20,6 +21,7 @@ export const MIGRATIONS = [
   { from: 2, to: 3, note: "the naturalist's notes: shells become the first reward; an island that found them, or three kinds of finds, keeps them (src/save/migrate-naturalist.js)", up: naturalist3 },
   { from: 3, to: 4, note: "the frogs' gift is the Cliff tool: an island whose frogs gave their gift (lilies, then) keeps Terrace and Cut (src/save/migrate-cliffs.js)", up: cliffs4 },
   { from: 4, to: 5, note: 'placed pieces: a `pieces` section for loose stones, empty on an older island (src/save/migrate-pieces.js)', up: pieces5 },
+  { from: 5, to: 6, note: 'the shelf: a `keepsakes` section for the keepsakes you keep, empty on an older island (src/save/migrate-keepsakes.js)', up: keepsakes6 },
 ];
 
 /**

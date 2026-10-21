@@ -221,6 +221,7 @@ export async function beginSave(opts) {
       on('water:spring-added', soon);
       subscribe('water', () => saveSoon('edit'));
       subscribe('pieces', () => saveSoon('edit'));
+      subscribe('keepsakes', () => saveSoon('edit'));
       subscribe('journal', () => saveSoon('edit'));
       on('clock:hour', () => saveSoon('hour'));
       on('creature:settled', () => saveSoon('event'));

@@ -124,6 +124,16 @@ export function createKeepsakes(opts) {
     },
     /** Leave one where it lies: it goes back to the sea and does not come again. @param {string} id */
     leave(id) { gone.add(id); now = now.filter((s) => s.id !== id); shown = shown.filter((s) => s.id !== id); },
+    /**
+     * What the shelf keeps of one on the shore: its numbers, the hour of the tide that left it, and
+     * whether that was a spring tide. @param {string} id
+     * @returns {{ n: any, hour: number, spring: boolean } | null}
+     */
+    toKeep(id) {
+      const s = now.find((e) => e.id === id);
+      if (!s) return null;
+      return { n: structuredClone(s.n), hour: s.tideId * tideP.periodH + tideP.phaseH, spring: !!s.spring };
+    },
     /** On the shore now, and drawn now (tools and tests). */
     onShore: () => now,
     shown: () => shown,

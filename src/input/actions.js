@@ -31,6 +31,10 @@ import { emit } from '../core/events.js';
  *   | { type: 'pieces.carry', id: string }
  *   | { type: 'pieces.carryCancel' }
  *   | { type: 'keepsakes.leave', id: string }
+ *   | { type: 'keepsakes.keep', id: string }
+ *   | { type: 'keepsakes.swap', out: number }
+ *   | { type: 'keepsakes.letGo', id: number }
+ *   | { type: 'keepsakes.cancelKeep' }
  *   | { type: 'brush.resize', factor: number, source?: Source }
  *   | { type: 'history.undo', source?: Source }
  *   | { type: 'history.redo', source?: Source }

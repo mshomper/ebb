@@ -95,7 +95,9 @@ startApp(canvas, { onDeviceLost: (rebuilding) => showRebuildingNote(rebuilding),
         if (g) gifts[keyOf(/** @type {any} */ (rec))] = g;
       }
       const progress = createProgress({ words, recipe: naturalist, gifts });
-      mountJournal(document.body, { ...journal, naturalist, progress }, hud.layer);
+      // The Shelf section draws kept keepsakes from their numbers (docs/future/12).
+      const [keepsakesRecipe, bottleMessages] = await Promise.all([loadRecipe('world/keepsakes'), loadRecipe('world/bottle-messages')]);
+      mountJournal(document.body, { ...journal, naturalist, progress, shelf: { K: keepsakesRecipe, messages: bottleMessages } }, hud.layer);
       // A save that came back from earlier copies says so, calmly (src/ui/damaged.js).
       noticeRecovered(saveInfo);
       // Time away (src/sim/away.js): catch up now on the time since the last save, and later on a

@@ -16,7 +16,7 @@ const SALT = 0x5703;
 /**
  * @typedef {{ k: number, x: number, z: number, weight?: number }} StrandCell a cell on a tide's
  *   strandline: its index, its centre (m), and how sheltered it is (cove field, 1 when unknown)
- * @typedef {{ id: string, tideId: number, k: number, x: number, z: number, yaw: number, n: any }} ShoreKeepsake
+ * @typedef {{ id: string, tideId: number, k: number, x: number, z: number, yaw: number, n: any, spring: boolean }} ShoreKeepsake
  */
 
 /**
@@ -48,7 +48,7 @@ export function tideKeepsakes(seed, tideId, cells, cond, K, o = {}) {
     const family = fams[pickIndex(u01(hash32(h, 1)), fw)];
     const rarity = pickRarity(u01(hash32(h, 2)), K.rarity, cond);
     const n = FAMILIES[family].numbers(hash32(h, 3, FAMILIES[family].salt), rarity, K);
-    return { id: `${tideId}:${c.k}`, tideId, k: c.k, x: c.x, z: c.z, yaw: u01(hash32(h, 4)) * Math.PI * 2, n };
+    return { id: `${tideId}:${c.k}`, tideId, k: c.k, x: c.x, z: c.z, yaw: u01(hash32(h, 4)) * Math.PI * 2, n, spring: cond.spring >= S.springMin };
   });
 }
 
