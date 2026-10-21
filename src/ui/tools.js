@@ -14,6 +14,7 @@
 import { get, subscribe } from '../core/store.js';
 import { dispatch } from '../input/actions.js';
 import { ensureIconSprite, iconSvg } from './icons/icons.js';
+import { mountNetPanel } from './net-panel.js';
 
 /** @typedef {'sculpt'|'smooth'|'paint'|'water'|'plant'|'feed'} ToolId */
 /** @typedef {'reeds'|'lilies'|'iris'|'marigold'|'rushes'|'thrift'|'campion'|'willow'|'gorse'|'pondweed'} PlantSpecies */
@@ -108,6 +109,8 @@ const WATER_MODES = [
   { id: 'pour', label: 'Pour', icon: 'pour' },
   { id: 'drain', label: 'Drain', icon: 'drain' },
   { id: 'spring', label: 'Spring', icon: 'wellspring' },
+  // The general net (docs/future/12): shows once the beachcomber's trail gives it (unlocks.nets.general).
+  { id: 'net', label: 'Net', icon: 'net' },
 ];
 /** @type {{id: SpringRate, label: string}[]} */
 const SPRING_RATES = [
@@ -281,6 +284,8 @@ export function mountTools(parent = document.body) {
   const piecesHint = /** @type {HTMLElement} */ (root.querySelector('[data-out="pieces-hint"]'));
   const piecesMessage = /** @type {HTMLElement} */ (root.querySelector('[data-out="pieces-message"]'));
   const pieceRemoveBtn = /** @type {HTMLButtonElement} */ (root.querySelector('[data-piece-remove]'));
+  const netModeBtn = /** @type {HTMLButtonElement} */ (root.querySelector('[data-water-mode="net"]'));
+  const netPanel = mountNetPanel(card);
 
   // --- user input -> actions ---
   /** @param {MouseEvent} e */
@@ -362,12 +367,13 @@ export function mountTools(parent = document.body) {
     for (const b of layerBtns) b.setAttribute('aria-pressed', String(b.dataset.layer === t.paintLayer));
 
     // Water: the spring mode exists only once unlocked; a stored 'spring' reads as 'pour' until then.
-    const springsOn = !!get('unlocks')?.springs;
+    const springsOn = !!get('unlocks')?.springs, netsOn = !!get('unlocks')?.nets?.general;
     const storedMode = t.waterMode ?? 'pour';
-    const waterMode = storedMode === 'spring' && !springsOn ? 'pour' : storedMode;
+    const waterMode = (storedMode === 'spring' && !springsOn) || (storedMode === 'net' && !netsOn) ? 'pour' : storedMode;
     const springRate = t.springRate ?? 'brook';
     springModeBtn.hidden = !springsOn;
-    waterChips.style.setProperty('--tb-cols', springsOn ? '3' : '2');
+    netModeBtn.hidden = !netsOn;
+    waterChips.style.setProperty('--tb-cols', String(2 + Number(springsOn) + Number(netsOn)));
     for (const b of waterModeBtns) b.setAttribute('aria-pressed', String(b.dataset.waterMode === waterMode));
     for (const b of rateBtns) b.setAttribute('aria-pressed', String(b.dataset.rate === springRate));
     renderSprings();
@@ -416,7 +422,9 @@ export function mountTools(parent = document.body) {
     // Keep the last chips while the card fades out, so it does not jump.
     if (open) {
       const inSpring = tool === 'water' && waterMode === 'spring';
+      const inNet = tool === 'water' && waterMode === 'net';
       const inPlant = tool === 'plant';
+      netPanel.el.hidden = !inNet;
       sculptChips.hidden = tool !== 'sculpt';
       paintChips.hidden = tool !== 'paint';
       waterChips.hidden = tool !== 'water';
@@ -434,7 +442,7 @@ export function mountTools(parent = document.body) {
       // a loose stone's size comes from its seed, so it has no sliders.
       for (const s of sliders) {
         const which = s.dataset.slider;
-        s.hidden = inSpring || inPlant || inLoose || tool === 'feed'
+        s.hidden = inSpring || inNet || inPlant || inLoose || tool === 'feed'
           || (which === 'strength' && (inStone || !!cliffMode)) || (which === 'height' && !cliffMode);
       }
     }
@@ -529,6 +537,7 @@ export function mountTools(parent = document.body) {
 
   return function dispose() {
     for (const u of unsubs) u();
+    netPanel.dispose();
     plantLine.clear();
     feedLine.clear();
     piecesLine.clear();

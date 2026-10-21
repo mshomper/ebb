@@ -18,6 +18,12 @@ const DRAW = { grass, rushes, reeds, lilies, iris, thrift, marigold, campion, wi
 export const hasSketch = (id) => id in DRAW;
 
 /**
+ * Add a drawing for a page made at run time (a living catch from the nets, traced from the animal
+ * itself: catch.js). @param {string} id @param {(p: import('./pen.js').Pen, scale?: string) => string} draw
+ */
+export function registerSketch(id, draw) { DRAW[id] = draw; }
+
+/**
  * The drawing for a page, as SVG markup.
  * @param {string} id @param {{ stage: 0|1|2, labels: Record<string, string[]>, scale?: string }} sketch
  */

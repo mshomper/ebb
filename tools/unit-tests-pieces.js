@@ -80,8 +80,8 @@ export function addPiecesTests(test, assert, eq) {
     const from2 = migrate({ meta: { worldT: 10 }, world: null, journal: { species: {}, flags: ['frogs:happy'], notes: [] }, unlocks: {} }, 2);
     assert(from2.pieces && Array.isArray(from2.pieces.list) && from2.pieces.list.length === 0, 'format 2 ends with an empty pieces list');
     assert(from2.unlocks.cliffs, 'and the steps before ran too');
-    // Format 6 (the shelf of keepsakes, src/save/migrate-keepsakes.js) came after the pieces.
-    eq(FORMAT, 6, 'this build writes format 6');
+    // Format 6 (the shelf of keepsakes, src/save/migrate-keepsakes.js) and 7 (the nets) came after the pieces.
+    assert(FORMAT >= 6, 'this build writes format 6 or later');
   });
 
   test(G, 'the reward has a give: stones at six finds, once', async () => {

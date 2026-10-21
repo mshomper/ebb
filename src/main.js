@@ -11,6 +11,8 @@ import { mountTimeFlow } from './ui/time-flow.js';
 import { mountLook } from './ui/look.js';
 import { mountJournal } from './ui/journal.js';
 import { mountIslandNotes } from './ui/island-notes.js';
+import { mountHaulTray } from './ui/haul-tray.js';
+import { registerCatchSketches } from './ui/sketches/catch.js';
 import { mountFrogScale } from './ui/frog-scale.js';
 import { createJournal } from './world/journal/index.js';
 import { createProgress } from './world/expansion.js';
@@ -84,9 +86,16 @@ startApp(canvas, { onDeviceLost: (rebuilding) => showRebuildingNote(rebuilding),
       const [words, island, web, wash, list, naturalist] = await Promise.all([loadRecipe('world/journal'), loadRecipe('world/journal-island'),
         loadRecipe('world/journal-web'), loadRecipe('world/journal-wash'), loadRecipe('world/journal-list'), loadRecipe('world/naturalist')]);
       const journal = createJournal({ world: r.world, words, island, web, wash, list, creatures: /** @type {any} */ (r).creatures ?? null,
-        finds: /** @type {any} */ (r).finds ?? null, keepsakes: /** @type {any} */ (r).keepsakes ?? null, pieces: /** @type {any} */ (r).pieces ?? null, shore: /** @type {any} */ (r).shorePresence ?? null,
+        finds: /** @type {any} */ (r).finds ?? null, keepsakes: /** @type {any} */ (r).keepsakes ?? null, pieces: /** @type {any} */ (r).pieces ?? null, nets: /** @type {any} */ (r).nets ?? null, shore: /** @type {any} */ (r).shorePresence ?? null,
         schools: /** @type {any} */ (r).schools ?? [] });
       mountIslandNotes(document.body, words, naturalist);
+      // The haul tray (docs/future/12): what a lifted net brought up; living things go back from it.
+      const netsApp = /** @type {any} */ (r).nets;
+      if (netsApp) {
+        mountHaulTray(document.body, { NR: netsApp.recipe, K: netsApp.keepsakesRecipe, words });
+        // Each living kind's page is traced from the first one you let go (src/ui/sketches/catch.js).
+        registerCatchSketches(netsApp.recipe, () => getStore('nets')?.released ?? []);
+      }
       // Progress (src/world/expansion.js): the naturalist's rewards and species gifts, read from the
       // journal. A species recipe's gift goes under its journal page (frog.json's under frogs).
       /** @type {Record<string, any>} */ const gifts = {};
@@ -94,7 +103,8 @@ startApp(canvas, { onDeviceLost: (rebuilding) => showRebuildingNote(rebuilding),
         const g = /** @type {any} */ (rec)?.ecology?.gift;
         if (g) gifts[keyOf(/** @type {any} */ (rec))] = g;
       }
-      const progress = createProgress({ words, recipe: naturalist, gifts });
+      // The beachcomber's trail (recipes/world/beachcomber.json): the general net at four families kept.
+      const progress = createProgress({ words, recipe: naturalist, gifts, beachcomber: await loadRecipe('world/beachcomber') });
       // The Shelf section draws kept keepsakes from their numbers (docs/future/12).
       const [keepsakesRecipe, bottleMessages] = await Promise.all([loadRecipe('world/keepsakes'), loadRecipe('world/bottle-messages')]);
       mountJournal(document.body, { ...journal, naturalist, progress, shelf: { K: keepsakesRecipe, messages: bottleMessages } }, hud.layer);

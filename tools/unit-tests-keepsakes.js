@@ -257,7 +257,7 @@ export function addKeepsakeTests(test, assert, eq) {
     const { header, sections } = snapshot(/** @type {any} */ ({ build: 't', seed: 1, island: 'x', worldT: 0, flow: 1, world: {}, journal: null, water: null,
       unlocks: {}, view: null, looks: {}, chunks: {}, mirror: null, savedAt: 0, wallHighWater: 0, keepsakes: s }));
     eq(header.format, FORMAT, 'written at this build\'s format');
-    eq(FORMAT, 6, 'format 6');
+    assert(FORMAT >= 6, 'format 6 or later');
     const back = restore(Object.fromEntries(sections));
     eq(JSON.stringify(back.keepsakes), JSON.stringify(s), 'the shelf comes back exactly');
     const old = migrate({ meta: {}, pieces: { version: 1, list: [], nextId: 1, arrived: false } }, 5);

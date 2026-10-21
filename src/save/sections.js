@@ -5,8 +5,8 @@
 // and the Plant tool left it), journal (with its read marks), water (placed springs), unlocks
 // (earned ones only), view (where the camera was), looks (empty until the creature studio), music
 // (the pieces you hearted, doc 24), pieces (placed loose stones, doc 09; src/world/pieces),
-// keepsakes (the shelf, docs/future/12; src/world/keepsakes/shelf.js), and
-// one record per open 32 m chunk; only edited chunks carry heights and paint, stored as they are
+// keepsakes (the shelf, docs/future/12; src/world/keepsakes/shelf.js), nets (where each net is
+// and the tide it was cast for, and catches released; src/world/nets/model.js), and one record per open 32 m chunk; only edited chunks carry heights and paint, stored as they are
 // (not as a difference from the regrown land) so retuning a land recipe never scrambles them.
 // Not saved, rebuilt on load: untouched land, the water summary, habitat, moving water, moss,
 // plant and grass drawing, live frogs and midges, undo history.
@@ -15,9 +15,10 @@ import { CHUNK_CELLS as C, WORLD_CELLS as N, chunkFirstCell, chunkKey } from '..
 import { FORMAT } from './migrate.js';
 import { cleanPieces } from '../world/pieces/model.js';
 import { cleanShelf } from '../world/keepsakes/shelf.js';
+import { cleanNets } from '../world/nets/model.js';
 
 /** Section ids this build writes; others found in a save are kept and written back unchanged. */
-const KNOWN = ['meta', 'world', 'journal', 'water', 'unlocks', 'view', 'looks', 'music', 'pieces', 'keepsakes'];
+const KNOWN = ['meta', 'world', 'journal', 'water', 'unlocks', 'view', 'looks', 'music', 'pieces', 'keepsakes', 'nets'];
 
 /**
  * @typedef {Object} SavedChunk
@@ -38,6 +39,7 @@ const KNOWN = ['meta', 'world', 'journal', 'water', 'unlocks', 'view', 'looks', 
  * @property {any} [music]  { hearted: [...] }, the pieces you hearted (src/audio/music/hearts.js)
  * @property {any} [pieces]  placed pieces (src/world/pieces/model.js PiecesState)
  * @property {any} [keepsakes]  the shelf (src/world/keepsakes/shelf.js ShelfState)
+ * @property {any} [nets]  the nets (src/world/nets/model.js NetsState)
  * @property {Record<string, { state: string, land: string, edited: boolean }>} chunks  the store's `chunks` slice
  * @property {import('../world/terrain/heightfield.js').Mirror | null} mirror
  * @property {number} savedAt  UTC ms
@@ -79,6 +81,7 @@ export function snapshot(p) {
     ['music', structuredClone(p.music ?? { hearted: [] })],
     ['pieces', cleanPieces(p.pieces)],
     ['keepsakes', cleanShelf(p.keepsakes)],
+    ['nets', cleanNets(p.nets)],
   ];
   for (const [key, c] of Object.entries(p.chunks ?? {})) {
     if (c.state !== 'open') continue;
@@ -102,7 +105,7 @@ export function snapshot(p) {
  * Placed pieces that are missing or unreadable come back as none.
  * @returns {{ meta: any, world: any, journal: any, water: any, unlocks: any, view: any, looks: any, music: any,
  *   pieces: import('../world/pieces/model.js').PiecesState, keepsakes: import('../world/keepsakes/shelf.js').ShelfState,
- *   chunks: SavedChunk[], extra: [string, any][], bad: string[] }}
+ *   nets: import('../world/nets/model.js').NetsState, chunks: SavedChunk[], extra: [string, any][], bad: string[] }}
  */
 export function restore(sections) {
   /** @type {SavedChunk[]} */ const chunks = [];
@@ -119,6 +122,6 @@ export function restore(sections) {
   return {
     meta: sections.meta ?? null, world: sections.world ?? null, journal: sections.journal ?? null,
     water: sections.water ?? null, unlocks: sections.unlocks ?? {}, view: sections.view ?? null,
-    looks: sections.looks ?? {}, music: sections.music ?? null, pieces: cleanPieces(sections.pieces), keepsakes: cleanShelf(sections.keepsakes), chunks, extra, bad,
+    looks: sections.looks ?? {}, music: sections.music ?? null, pieces: cleanPieces(sections.pieces), keepsakes: cleanShelf(sections.keepsakes), nets: cleanNets(sections.nets), chunks, extra, bad,
   };
 }
