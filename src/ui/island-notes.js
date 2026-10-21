@@ -222,6 +222,8 @@ export function mountIslandNotes(parent, words, naturalist = null) {
       ${id.keepsake && id.letter && words.keepsakes?.read ? `<button type="button" class="ebb-idcard__open" data-act="read">${iconSvg('notes')}<span>${esc(words.keepsakes.read)}</span></button>` : ''}
       ${id.keepsake && words.keepsakes ? `<button type="button" class="ebb-idcard__open" data-act="keep">${iconSvg('shelf')}<span>${esc(words.keepsakes.keep)}</span></button>
       <button type="button" class="ebb-idcard__open" data-act="leave">${iconSvg('close')}<span>${esc(words.keepsakes.leave)}</span></button>` : ''}
+      ${id.net !== undefined ? (id.canLift ? `<button type="button" class="ebb-idcard__open" data-act="lift">${iconSvg('net')}<span>${esc(id.liftLabel)}</span></button>`
+        : `<button type="button" class="ebb-idcard__open" data-act="netin">${iconSvg('net')}<span>${esc(id.inLabel)}</span></button>`) : ''}
       ${id.noPage ? '' : `<button type="button" class="ebb-idcard__open" data-act="open">${iconSvg('journal')}<span>Open its page</span></button>`}`;
     card.inert = false;
     card.classList.add('is-open');
@@ -294,6 +296,8 @@ export function mountIslandNotes(parent, words, naturalist = null) {
     if (b.dataset.act === 'leave' && id?.keepsake) { dispatch({ type: 'keepsakes.leave', id: id.keepsake }); return; }
     if (b.dataset.act === 'keep' && id?.keepsake) { dispatch({ type: 'keepsakes.keep', id: id.keepsake }); return; }
     if (b.dataset.act === 'read' && id?.keepsake) { dispatch({ type: 'keepsakes.read', shoreId: id.keepsake }); return; }
+    if (b.dataset.act === 'lift' && id?.net !== undefined) { dispatch({ type: 'nets.lift', id: id.net }); return; }
+    if (b.dataset.act === 'netin' && id?.net !== undefined) { dispatch({ type: 'nets.bringIn', id: id.net }); return; }
     const form = /** @type {HTMLFormElement | null} */ (card.querySelector('.ebb-idcard__name'));
     const input = /** @type {HTMLInputElement | null} */ (card.querySelector('.ebb-idcard__input'));
     if (b.dataset.act === 'open' && id) dispatch({ type: 'ui.journal', open: true, page: id.sp });

@@ -504,6 +504,35 @@ const ICONS = {
     <path d="M12.8 15.5C12.8 14.2 13.8 13.4 15 13.4S17 14.2 17 15.5"/>
     <path d="M17.5 15.5C17.9 11.5 19 7.6 20.6 4.5"/>
     <path d="M18.4 11.2C19.6 10.4 20.4 9 20.6 7.4"/>`,
+  // The general net (docs/future/12, K6): two stakes, a sagging top cord and a mesh hanging from it,
+  // a float in the middle, over one ripple line.
+  net: `
+    <path d="M5 4V18.5M19 4V18.5"/>
+    <path d="M5 6.5C9.5 8.5 14.5 8.5 19 6.5"/>
+    <path d="M5 11C9.5 12.6 14.5 12.6 19 11M5 15C9.5 16.2 14.5 16.2 19 15"/>
+    <path d="M9.6 8V16.4M14.4 8V16.4"/>
+    <circle ${ACCENT} cx="12" cy="7.6" r="1.6"/>
+    <circle cx="12" cy="7.6" r="1.6"/>
+    <path d="M2.5 20.5C4 19.4 5.5 19.4 7 20.5S10 21.6 11.5 20.5S14.5 19.4 16 20.5S19 21.6 21.5 20.3"/>`,
+  // A fish let go from the net (docs/future/12, K6): a slim fish side on, its tail forked.
+  fish: `
+    <path ${ACCENT} d="M3 12C5.5 8.6 10 7.6 14 9.2C15.4 9.8 16.6 10.6 17.6 11.4L21 8.5V15.5L17.6 12.6C16.6 13.4 15.4 14.2 14 14.8C10 16.4 5.5 15.4 3 12Z"/>
+    <path d="M3 12C5.5 8.6 10 7.6 14 9.2C15.4 9.8 16.6 10.6 17.6 11.4L21 8.5V15.5L17.6 12.6C16.6 13.4 15.4 14.2 14 14.8C10 16.4 5.5 15.4 3 12Z"/>
+    <path d="M9.5 8.6C10.2 7.2 11.6 6.4 13 6.6"/>
+    <circle cx="6.6" cy="11.4" r="0.6"/>`,
+  // A brown shrimp (docs/future/12, K6): an arched body ringed in segments, its tail fan tucked under, long feelers.
+  shrimp: `
+    <path ${ACCENT} d="M5.5 10.5C8.5 7.5 14 7.5 17 10.5C18.8 12.4 18.6 15.4 16.6 16.8L15.2 15.2C16.2 14.2 16.2 12.8 15.2 11.8C13 9.8 9.4 10 7 11.8Z"/>
+    <path d="M5.5 10.5C8.5 7.5 14 7.5 17 10.5C18.8 12.4 18.6 15.4 16.6 16.8L15.2 15.2C16.2 14.2 16.2 12.8 15.2 11.8C13 9.8 9.4 10 7 11.8Z"/>
+    <path d="M10 8.6L10.4 10.6M13 8.5L12.8 10.4M15.6 9.6L14.6 11.2"/>
+    <path d="M16.6 16.8L18.4 18.6M16.6 16.8L15.4 19"/>
+    <path d="M5.5 10.5C4 9 3 7 2.5 4.5M6 11C4.4 10.4 3.2 10.6 2.5 11.6"/>
+    <path d="M8 12V14M10.5 11V13.4M13 11V13.2"/>`,
+  // Let it go (a living catch from the net, docs/future/12): an arrow down into two ripple lines.
+  release: `
+    <path d="M12 3V11.5M8.8 8.5L12 11.7L15.2 8.5"/>
+    <path d="M2.5 15.5C4 14.4 5.5 14.4 7 15.5S10 16.6 11.5 15.5S14.5 14.4 16 15.5S19 16.6 21.5 15.3"/>
+    <path d="M2.5 19.5C4 18.4 5.5 18.4 7 19.5S10 20.6 11.5 19.5S14.5 18.4 16 19.5S19 20.6 21.5 19.3"/>`,
   // A picture saved (the shelf's picture, docs/future/12): a framed print with a hill and a sun,
   // and a short arrow down into a tray.
   picture: `

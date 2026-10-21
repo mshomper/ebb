@@ -25,7 +25,7 @@ import { emit } from '../core/events.js';
  *   | { type: 'tool.cancel', source: Source }
  *   | { type: 'tool.hover', x: number, y: number, inside: boolean, source: Source }
  *   | { type: 'brush.set', patch: { sculptMode?: 'raise'|'lower'|'flatten'|'stone'|'loosestone'|'terrace'|'cut', paintLayer?: 'grass'|'sand'|'soil'|'rock', size?: number, strength?: number, cliffHeight?: number,
- *       waterMode?: 'pour'|'drain'|'spring', springRate?: 'trickle'|'brook'|'stream', plantSpecies?: PlantSpecies } }
+ *       waterMode?: 'pour'|'drain'|'spring'|'net', springRate?: 'trickle'|'brook'|'stream', plantSpecies?: PlantSpecies } }
  *   | { type: 'water.springRemove', id: string }
  *   | { type: 'pieces.remove', id: string }
  *   | { type: 'pieces.carry', id: string }
@@ -36,6 +36,12 @@ import { emit } from '../core/events.js';
  *   | { type: 'keepsakes.letGo', id: number }
  *   | { type: 'keepsakes.cancelKeep' }
  *   | { type: 'keepsakes.read', shoreId?: string, entryId?: number }
+ *   | { type: 'nets.lift', id: number }
+ *   | { type: 'nets.bringIn', id?: number }
+ *   | { type: 'nets.release', id: string }
+ *   | { type: 'nets.keep' }
+ *   | { type: 'nets.leave' }
+ *   | { type: 'nets.close' }
  *   | { type: 'brush.resize', factor: number, source?: Source }
  *   | { type: 'history.undo', source?: Source }
  *   | { type: 'history.redo', source?: Source }

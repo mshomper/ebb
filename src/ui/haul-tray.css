@@ -1,0 +1,118 @@
+/* The haul tray (docs/future/12, K6; src/ui/haul-tray.js): a card over the island on desktop, a
+   sheet from the bottom on phones. One catch to a row: its picture, its name and one line, its
+   buttons. Body text never under 16 px; nothing ever scrolls sideways. */
+
+.ebb-haul {
+  --haul-paper: var(--jr-paper, #F4EEE4);
+  --haul-ink: var(--jr-ink, #1E2624);
+  --haul-soft: var(--jr-soft, #4A5551);
+  --haul-rule: var(--jr-rule, #DCCFBB);
+  --haul-moss: var(--jr-moss, #5F7F5B);
+  --haul-kelp: #6E6A33;
+  --haul-wrack: #8A6A2E;
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: grid;
+  place-items: center;
+  padding: 16px max(16px, env(safe-area-inset-right)) 16px max(16px, env(safe-area-inset-left));
+  background: rgba(10, 14, 13, 0.28);
+  opacity: 0;
+  transition: opacity 200ms ease;
+  font-family: var(--font-ui);
+  color: var(--haul-ink);
+}
+.ebb-haul[hidden] { display: none; }
+.ebb-haul.is-open { opacity: 1; }
+.ebb-haul__card {
+  width: min(540px, 100%);
+  max-height: calc(100vh - 32px);
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
+  overflow-x: hidden;
+  background: var(--haul-paper);
+  border-radius: 16px;
+  box-shadow: 0 10px 32px rgba(10, 14, 13, 0.4);
+  display: grid;
+  min-width: 0;
+}
+.ebb-haul__head { padding: 16px 18px 4px; display: grid; gap: 2px; }
+.ebb-haul__head h2 { margin: 0; font: italic 600 24px/1.2 var(--font-voice); }
+.ebb-haul__head p { margin: 0; font-size: var(--text-body); color: var(--haul-soft); font-weight: 600; }
+.ebb-haul__weed { display: block; width: 100%; height: 34px; }
+.ebb-haul__rows { display: grid; min-width: 0; }
+.ebb-haul__row {
+  display: grid;
+  grid-template-columns: 112px minmax(0, 1fr);
+  grid-template-areas: "pic txt" "pic btns";
+  column-gap: 14px;
+  row-gap: 8px;
+  padding: 12px 18px;
+  border-top: 1px solid var(--haul-rule);
+  align-items: start;
+  transition: transform 700ms ease, opacity 700ms ease;
+}
+/* Let go: it slips off to the side, and the water closes behind it. */
+.ebb-haul__row.is-going { transform: translateX(40%); opacity: 0; pointer-events: none; }
+.ebb-haul__pic {
+  grid-area: pic;
+  aspect-ratio: 1;
+  width: 100%;
+  border-radius: 10px;
+  background: radial-gradient(circle at 50% 60%, rgba(143, 182, 198, 0.35), rgba(143, 182, 198, 0.08) 70%);
+  overflow: hidden;
+}
+.ebb-haul__pic canvas { width: 100%; height: 100%; display: block; }
+.ebb-haul__txt { grid-area: txt; display: grid; gap: 4px; min-width: 0; }
+.ebb-haul__name { font-size: 18px; font-weight: 800; }
+.ebb-haul__rarity { font-size: var(--text-small); font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--haul-soft); }
+.ebb-haul__note { margin: 0; font-size: var(--text-body); font-weight: 600; line-height: 1.4; overflow-wrap: break-word; }
+.ebb-haul__btns { grid-area: btns; display: flex; flex-wrap: wrap; gap: 8px; min-width: 0; }
+.ebb-haul__btn {
+  appearance: none;
+  -webkit-appearance: none;
+  min-height: 44px;
+  margin: 0;
+  padding: 6px 16px 6px 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1.5px solid var(--haul-moss);
+  border-radius: 12px;
+  background: transparent;
+  color: inherit;
+  font: 700 var(--text-body)/1.2 var(--font-ui);
+  cursor: pointer;
+  text-align: left;
+}
+.ebb-haul__btn:hover { background: rgba(95, 127, 91, 0.12); }
+.ebb-haul__btn:focus-visible { outline: 3px solid var(--haul-moss); outline-offset: 2px; }
+.ebb-haul__btn.is-main { background: var(--haul-moss); color: var(--haul-paper); }
+.ebb-haul__btn svg { width: 22px; height: 22px; flex: none; }
+.ebb-haul__done { grid-area: btns; margin: 0; font-size: var(--text-body); font-weight: 800; color: var(--haul-moss); }
+.ebb-haul__empty { margin: 0; padding: 16px 18px; border-top: 1px solid var(--haul-rule); font-size: var(--text-body); font-weight: 600; color: var(--haul-soft); }
+.ebb-haul__foot { padding: 14px 18px 18px; border-top: 1px solid var(--haul-rule); display: grid; justify-items: center; }
+
+/* Phones: a sheet from the bottom, full width; the picture smaller, the buttons full width under it. */
+@media (max-width: 600px) {
+  .ebb-haul { place-items: end stretch; padding: 0; }
+  .ebb-haul__card {
+    width: 100%;
+    max-height: 88vh;
+    max-height: 88dvh;
+    border-radius: 18px 18px 0 0;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .ebb-haul__head, .ebb-haul__row, .ebb-haul__foot, .ebb-haul__empty {
+    padding-left: max(16px, env(safe-area-inset-left));
+    padding-right: max(16px, env(safe-area-inset-right));
+  }
+  .ebb-haul__row { grid-template-columns: 96px minmax(0, 1fr); grid-template-areas: "pic txt" "btns btns"; }
+  .ebb-haul__btns { flex-direction: column; }
+  .ebb-haul__btn, .ebb-haul__foot .ebb-haul__btn { width: 100%; }
+  .ebb-haul__foot { justify-items: stretch; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ebb-haul, .ebb-haul__row { transition: none; }
+}

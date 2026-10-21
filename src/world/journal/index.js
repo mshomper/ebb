@@ -38,7 +38,7 @@ import { stampNotes, markShown, markNotesSeen, markPageSeen, readOf, pageSince, 
 /**
  * @param {{ world: { state: any, env: any }, words: any, island: any, web: any, wash?: any,
  *   creatures?: { frogAt: (x: number, z: number) => { x: number, z: number, id?: number } | null } | null,
- *   finds?: any, keepsakes?: any, pieces?: any, shore?: (() => Record<string, number> | null) | null, list?: any,
+ *   finds?: any, keepsakes?: any, pieces?: any, nets?: any, shore?: (() => Record<string, number> | null) | null, list?: any,
  *   schools?: { at: (x: number, z: number, y?: number) => { sp: string, id: number, x: number, z: number } | null }[] }} opts
  *   schools: the live schools (minnows; src/world/creatures/schools.js), which say whether a tap
  *   landed on one
@@ -47,7 +47,8 @@ import { stampNotes, markShown, markNotesSeen, markPageSeen, readOf, pageSince, 
  *   wash: recipes/world/journal-wash.json; creatures: the live creatures (src/world/creatures),
  *   which say whether a tap landed on a frog; shore: the shore zones and rock pools now
  *   (shore-presence.js), which the Web shows; pieces: the placed loose stones (src/world/pieces),
- *   which say whether a tap landed on one
+ *   which say whether a tap landed on one; nets: the nets (src/world/nets), the same, and a living
+ *   catch let go from the haul tray is found (`net:released`, its kind's first written as a find)
  */
 export function createJournal(opts) {
   const { world, words, island, web, wash, creatures } = opts;
@@ -153,6 +154,12 @@ export function createJournal(opts) {
         text: opts.keepsakes.words(ks.n), wx: ks.x, wz: ks.z, r: 0.15, stage: -1, noPage: true,
         family: ks.n.family, letter: ks.n.family === 'bottle' && !!ks.n.message };
     }
+    // Then a net (docs/future/12): how long it has left, and Lift once it is full. It has no page.
+    const nt = opts.nets?.netAt(x, z);
+    if (nt) {
+      return { sp: 'net', net: nt.id, name: nt.name, sub: null, icon: 'net', text: nt.text, wx: nt.x, wz: nt.z, r: 0.5, stage: -1,
+        noPage: true, canLift: nt.canLift, liftLabel: nt.liftLabel, inLabel: nt.inLabel };
+    }
     // Then a loose stone or a driftwood log (docs/future/10): the tap lifts or rolls it to look
     // underneath. It has no page. With the turtles' gift (unlocks.carry) its card offers Carry.
     const pc = opts.pieces?.pieceAt(x, z);
@@ -176,7 +183,7 @@ export function createJournal(opts) {
     update('identify', () => (card ? { ...card, x, y, at: performance.now() } : null));
     if (!card) return;
     // A keepsake is not a find: tapping it writes nothing (the shelf is its only record).
-    if (card.keepsake) return;
+    if (card.keepsake || card.net) return;
     // A loose stone tips up to show underneath, a log rolls over (src/world/pieces); the first of
     // each is written down.
     if (card.piece) {
@@ -273,6 +280,12 @@ export function createJournal(opts) {
       commit(learn(journal, p.species, `refused:${p.reason}`, { state: world.state, hour: hourIndex(), words }))),
     on('look:tapped', (/** @type {{ x: number, y: number, point: number[] | null }} */ p) =>
       select(p.point ? cardAt(p.point[0], p.point[2], p.point[1]) : null, p.x, p.y)),
+    // A living catch let go from a net's haul (src/world/nets): the first of each kind is a find.
+    on('net:released', (/** @type {{ page: string }} */ p) => {
+      if (words.species[p.page]?.kind === 'find' && !journal.species[p.page]?.ever) {
+        commit(foundFind(journal, p.page, { state: world.state, hour: hourIndex(), words }));
+      }
+    }),
     // The island gave you something (src/world/expansion.js): written once, shown as a card.
     on('progress:gifted', (/** @type {any} */ g) => commit(noteGift(journal, g, { state: world.state, hour: hourIndex(), words }))),
     // Watching a frog (or a school) from close by finds it too (src/world/creatures/index.js, schools.js).
