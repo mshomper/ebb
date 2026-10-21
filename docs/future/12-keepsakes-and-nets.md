@@ -35,6 +35,18 @@ Matt, October 21, 2026 (answers to the planning questions):
 - **Bottles hold messages,** perhaps written by a writer friend of Matt's.
 - **At most 2 signs** wait on return.
 
+Matt, later on October 21, 2026:
+
+- **Five rarity tiers.** A fifth, **once in a lifetime**, sits above very rare. It opens only at the very top of a spring tide, and winter leans toward it. It has its own pearl paper on the shelf. (Built.)
+- **Counters of kinds and firsts are allowed, totals never.** "7 of 13 families kept" is a record; "keep 50 shells" would be grinding. This replaces the earlier "no counters" rule.
+- **Three trails on one shared Trails page.** The naturalist's trail (what you notice) is joined by a **beachcomber's trail** (what you keep) and a **shaper's trail** (what you make).
+  - The nets move to the beachcomber's trail, where they naturally sit.
+  - The naturalist's rewards and how creature gifts sit beside the trails are to be looked at next.
+  - Proposal: trails-design.md in the session notes.
+- **Living catches,** caught in the nets and never kept, are made from seeds like the keepsakes (fish from the creature body bake, jellies, shrimp). Releasing one is what counts: a nod to the conservation side of the game.
+- **Artifacts** are nine baked bases, each morphed, recoloured and named from its seed into endless variants. They come from the nets, the sinker net most of all; the strandline leaves only bottles of the made things.
+- **Coves** carved by the player catch far more keepsakes, through the cove field. (Built.)
+
 ## The loop
 
 ```mermaid
