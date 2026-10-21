@@ -71,7 +71,8 @@ const TOOLS = [
   { id: 'paint', label: 'Paint' },
   { id: 'water', label: 'Water' },
   { id: 'plant', label: 'Plant' },
-  { id: 'feed', label: 'Feed' },
+  // Feed is on foot only now (doc 23, W4: the ground bar's Feed, from the hand); its card stays
+  // below for tools that still select it.
 ];
 /**
  * Creatures the Feed tool offers food to (S6c-2), each shown once you have found it (the journal):

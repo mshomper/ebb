@@ -1,0 +1,95 @@
+{
+  "type": "figure",
+  "version": 1,
+  "note": "The walker's figure (doc 23, W5; approved October 21, 2026): Matt's Meshy model, split into a body and two arms in nTop and coloured per vertex by tools/figure-prep/prep.py (assets/figures/walker.glb). The rest pose is the A-pose: the arms hang down by the rig. Metres, y up, body +z forward, feet on y = 0. bones: name, parent, pivot (the arms' pivots come from the model's extras, so a new prep moves them). skin: where each part blends between bones, as anchors along a height (y) or along the arm (t, m out from the shoulder). hang: the arms' resting direction. gait: per pace, step length, foot lift, arm swing, lean and the rise and fall of the hips; wade blends in by the water's depth. springs: the hat tip, coat skirt and pack follow a beat late (stiffness per second squared, damping 0..1 of critical). eyes: the two ovals the shader draws on the head (rest pose), their colour, a faint glow after dark (cd per m2), blinks and expressions. poses: sit, kneel, feed, and the arrivals. All motion is drawing only: it reads the walker and never changes it.",
+  "model": "assets/figures/walker.glb",
+  "body": {
+    "note": "What the creature pass reads: the soft contact shadow (scaleReal sizes it), the cloth's sheen (none) and the eye bones for a wet glint (none: the eyes are drawn).",
+    "scaleReal": [0.62, 0.62],
+    "displayScale": 1,
+    "contactShadow": 0.5,
+    "wetSpecular": { "roughness": 0.65, "strength": 0.06 }
+  },
+  "bones": [
+    { "name": "pelvis", "parent": "", "pivot": [0, 0.6, 0.02] },
+    { "name": "spine", "parent": "pelvis", "pivot": [0, 0.8, 0.0] },
+    { "name": "chest", "parent": "spine", "pivot": [0, 1.0, -0.01] },
+    { "name": "head", "parent": "chest", "pivot": [0, 1.26, 0.03] },
+    { "name": "hat", "parent": "head", "pivot": [0, 1.52, -0.02] },
+    { "name": "hatTip", "parent": "hat", "pivot": [-0.04, 1.7, -0.11] },
+    { "name": "upperArm.l", "parent": "chest", "arm": "arm.l", "t": 0 },
+    { "name": "foreArm.l", "parent": "upperArm.l", "arm": "arm.l", "t": 0.25 },
+    { "name": "hand.l", "parent": "foreArm.l", "arm": "arm.l", "t": 0.475 },
+    { "name": "upperArm.r", "parent": "chest", "arm": "arm.r", "t": 0 },
+    { "name": "foreArm.r", "parent": "upperArm.r", "arm": "arm.r", "t": 0.25 },
+    { "name": "hand.r", "parent": "foreArm.r", "arm": "arm.r", "t": 0.475 },
+    { "name": "thigh.l", "parent": "pelvis", "pivot": [0.098, 0.56, 0.02] },
+    { "name": "shin.l", "parent": "thigh.l", "pivot": [0.098, 0.34, 0.035] },
+    { "name": "foot.l", "parent": "shin.l", "pivot": [0.106, 0.1, 0.022] },
+    { "name": "thigh.r", "parent": "pelvis", "pivot": [-0.098, 0.56, 0.02] },
+    { "name": "shin.r", "parent": "thigh.r", "pivot": [-0.098, 0.34, 0.035] },
+    { "name": "foot.r", "parent": "shin.r", "pivot": [-0.106, 0.1, 0.022] },
+    { "name": "skirt", "parent": "pelvis", "pivot": [0, 0.8, 0.02] },
+    { "name": "pack", "parent": "chest", "pivot": [0, 1.08, -0.17] }
+  ],
+  "skin": {
+    "torso": { "along": "y", "anchors": [[0.62, "pelvis"], [0.8, "spine"], [1.0, "chest"]] },
+    "head": { "along": "y", "anchors": [[1.24, "chest"], [1.31, "head"]] },
+    "hat": { "along": "y", "anchors": [[1.64, "hat"], [1.8, "hatTip"]] },
+    "pack": { "along": "y", "anchors": [[0, "pack"]] },
+    "skirt": { "along": "y", "anchors": [[0.7, "skirt"], [0.86, "pelvis"]] },
+    "leg.l": { "along": "y", "anchors": [[0.1, "foot.l"], [0.15, "shin.l"], [0.31, "shin.l"], [0.37, "thigh.l"], [0.5, "thigh.l"], [0.62, "pelvis"]] },
+    "leg.r": { "along": "y", "anchors": [[0.1, "foot.r"], [0.15, "shin.r"], [0.31, "shin.r"], [0.37, "thigh.r"], [0.5, "thigh.r"], [0.62, "pelvis"]] },
+    "arm.l": { "along": "t", "anchors": [[0.22, "upperArm.l"], [0.28, "foreArm.l"], [0.46, "foreArm.l"], [0.49, "hand.l"]] },
+    "arm.r": { "along": "t", "anchors": [[0.22, "upperArm.r"], [0.28, "foreArm.r"], [0.46, "foreArm.r"], [0.49, "hand.r"]] }
+  },
+  "hang": { "dir": [0.139, -0.977, 0.15], "elbowDeg": 8 },
+  "legs": { "ankleM": 0.1, "hipDrop": 0.012, "footPitchMaxDeg": 22 },
+  "gait": {
+    "note": "Paces by speed (m/s); the figure blends between them by the speed it is given. stance: share of a stride a foot is down.",
+    "stance": 0.6,
+    "paces": [
+      { "speed": 0.3, "stepM": 0.2, "liftM": 0.04, "armDeg": 3, "elbowDeg": 40, "leanDeg": 8, "bobM": 0.004, "crouchM": 0.035, "headDeg": 10, "twistDeg": 2 },
+      { "speed": 0.9, "stepM": 0.4, "liftM": 0.065, "armDeg": 14, "elbowDeg": 14, "leanDeg": 3.5, "bobM": 0.01, "crouchM": 0, "headDeg": 3, "twistDeg": 5 },
+      { "speed": 1.5, "stepM": 0.52, "liftM": 0.09, "armDeg": 24, "elbowDeg": 26, "leanDeg": 7, "bobM": 0.016, "crouchM": 0.01, "headDeg": 2, "twistDeg": 7 }
+    ],
+    "wade": { "depthM": [0.12, 0.3], "stepScale": 0.8, "liftM": 0.17, "armOutDeg": 14, "elbowDeg": 30, "leanDeg": 6 },
+    "turnDegPerS": 200,
+    "plantStepM": 0.07,
+    "plantStepDeg": 28,
+    "plantStepS": 0.32
+  },
+  "springs": {
+    "hatTip": { "stiffness": 60, "damping": 0.35, "gain": 1 },
+    "skirt": { "stiffness": 90, "damping": 0.5, "gain": 1 },
+    "pack": { "stiffness": 140, "damping": 0.45, "gain": 1 }
+  },
+  "idle": { "breathS": 4.2, "breathDeg": 0.8, "shiftS": 9, "shiftM": 0.012, "glanceEveryS": [7, 14], "glanceDeg": 14 },
+  "look": { "maxYawDeg": 55, "maxPitchDeg": 25, "degPerS": 120 },
+  "ease": { "settleS": 0.3, "postureS": 1.2 },
+  "eyes": {
+    "centre": [0.002, 1.414, 0],
+    "halfSpacing": 0.093,
+    "radii": [0.0297, 0.0717],
+    "albedo": [0.93, 0.83, 0.59],
+    "glowNits": 1.2,
+    "blink": { "everyS": [3, 7], "s": 0.2 },
+    "expressionS": 0.2,
+    "holdS": { "happy": 2.5, "curious": 3, "surprised": 0.9 }
+  },
+  "footprints": {
+    "note": "Prints (W6): each step that lands on sand, or on bare earth and mud, leaves a soft print the shape of the boot's sole, darkening the ground by darkness; it fades over fadeH game hours, and is gone once the tide covers it. Not on grass or rock (minWeight: how much of the ground must be sand or soil), not under water deeper than dryM. Never saved: the island forgets you between visits. max: how many at once (the oldest go first).",
+    "max": 160, "fadeH": 24, "soleM": [0.1, 0.24], "darkness": { "sand": 0.42, "soil": 0.5 }, "minWeight": 0.4, "dryM": 0.03
+  },
+  "grass": {
+    "note": "Grass underfoot (W6): blades lean away from the walker and press a little flatter: under the body within bodyM (sitM when sitting), and where each of the last steps landed within footM, springing back over springS seconds.",
+    "bodyM": 0.42, "sitM": 0.62, "footM": 0.22, "springS": 3
+  },
+  "poses": {
+    "sit": { "pelvisY": 0.15, "leanDeg": 16, "feetZ": 0.3, "feetX": 0.12, "headDeg": -6, "skirtDeg": 26 },
+    "kneel": { "pelvisY": 0.4, "leanDeg": 12, "front": [-0.11, 0.22], "backAnkle": [0.11, 0.12, -0.3], "headDeg": 12 },
+    "feed": { "hand": [-0.12, 0.3, 0.38], "reachS": 1.4, "holdS": 2.2, "headDeg": 22 },
+    "arrive": { "lookS": 2.4, "lookDeg": 40, "tugS": 1.6, "tugHand": [0.1, 1.48, 0.22] },
+    "leave": { "lookUpS": 2.2, "lookUpDeg": -28, "sitAfterS": 60 }
+  }
+}

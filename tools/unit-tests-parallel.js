@@ -29,6 +29,8 @@ export const PARALLEL = {
   keepsakes: () => import('./unit-tests-keepsakes.js').then((m) => m.addKeepsakeTests),
   cove: () => import('./unit-tests-cove.js').then((m) => m.addCoveTests),
   keepsakeArtifacts: () => import('./unit-tests-keepsake-artifacts.js').then((m) => m.addKeepsakeArtifactTests),
+  walk: () => import('./unit-tests-walk.js').then((m) => m.addWalkTests),
+  figure: () => import('./unit-tests-figure.js').then((m) => m.addFigureTests),
   nets: () => import('./unit-tests-nets.js').then((m) => m.addNetsTests),
   trails: () => import('./unit-tests-trails.js').then((m) => m.addTrailsTests),
 };

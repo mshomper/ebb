@@ -83,7 +83,7 @@ Slice acceptance, all together:
 - Tuning panel v1: live sliders for species and flora recipes, saving recipe files.
 - First audio pass: water bed, wind bed, frog voice with chorus (doc 17).
 - First human touches: stepping stones and one lantern, so the icon's dusk scene can be recreated in game.
-- Presence rung 2, the seat (doc 23): "sit here" at eye height, where trust grows fastest; it brings the ground-level view up to standard before the walker.
+- **The walker** (doc 23; pulled forward from M3 on October 21, 2026), after the season markers already in flight. Two views: above shapes, below lives there. The seat folds into the walker's Sit. W0 (docs), W1 (the walk grid, `tools/walk-lab.html` and a `?sandbar` test island) and W2 (a stand-in figure, Go down and Go up, tap to walk, the low camera) come first as a feel test. W3 to W7 (presence below, the ground bar, the figure, the ground-level look, Steps and crossings) are scoped after Matt tries W2.
 - Seasons as chapters (agreed October 20, 2026, doc 13 "The year, season by season"), in this order:
   1. The cheap season markers: moon jellyfish, damselflies, fungi on logs and dewy webs, storm-tide shells.
   2. The toad and the lizard on the piece system.
@@ -99,7 +99,7 @@ Slice acceptance, all together:
 - Full seasonal look: color shifts, blooming, leaf drop, frosty winter mornings (no snow).
 - Full weather: rain, mist, wind, and the drier or wetter leaning.
 - Paths and stone walls, with moss growing over them in time.
-- Presence rung 3, the walker (doc 23), may start here and finish in M4: a small traveler you step into and walk along paths and over the bridge, and across the sandbar to the meadow islet at low tide. It is large enough to be scheduled as its own step when M3 is planned.
+- The walker moved to M2 (October 21, 2026, doc 23). Paths and the bridge become routes it walks when they arrive here.
 - The Tier 2 milestone: the woodland knoll rises beyond a channel, and the bridge gift arrives with it.
 
 ### M4 — Woodland and the tide flats

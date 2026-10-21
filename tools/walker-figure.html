@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ebb walker figure</title>
+<link rel="icon" href="../brand/ebb-favicon.svg" type="image/svg+xml">
+<style>
+  @font-face { font-family: 'Nunito'; src: url('../src/vendor/fonts/nunito-latin-600-normal.woff2') format('woff2'); font-weight: 600; }
+  @font-face { font-family: 'Nunito'; src: url('../src/vendor/fonts/nunito-latin-800-normal.woff2') format('woff2'); font-weight: 800; }
+  @font-face { font-family: 'Fraunces'; src: url('../src/vendor/fonts/fraunces-latin-full-italic.woff2') format('woff2'); font-style: italic; }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; max-width: 100%; overflow-x: hidden; }
+  body { background: #F4EEE4; color: #1E2624; font: 600 17px/1.45 'Nunito', system-ui, sans-serif; padding: 16px; overflow-wrap: anywhere; }
+  main { max-width: 1280px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; padding-bottom: 60px; }
+  .split { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; }
+  @media (min-width: 960px) { .split { grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); align-items: start; } }
+  h1 { font-size: 24px; font-weight: 800; margin: 0; }
+  h2 { font-size: 18px; font-weight: 800; margin: 0; }
+  .muted { color: #4A5551; font-size: 16px; margin: 0; }
+  .card { background: #FBF7F0; border: 1px solid #E3D9C9; border-radius: 14px; padding: 14px 16px; min-width: 0; display: flex; flex-direction: column; gap: 12px; }
+  #view { width: 100%; aspect-ratio: 4 / 5; display: block; border-radius: 10px; background: #EDE6DA; touch-action: none; }
+  @media (min-width: 960px) { #view { aspect-ratio: 5 / 4; } }
+  .group { display: flex; flex-direction: column; gap: 8px; }
+  .grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  button { font: 800 16px/1.2 'Nunito', system-ui, sans-serif; color: #FBF7F0; background: #4a6a47; border: 0; border-radius: 12px; padding: 10px 8px; cursor: pointer; min-height: 44px; }
+  button[aria-pressed=true] { background: #23361F; box-shadow: inset 0 0 0 3px #A9C39B; }
+  .row { display: flex; align-items: center; gap: 12px; }
+  .row input[type=range] { flex: 1 1 auto; min-width: 0; accent-color: #4a6a47; height: 32px; }
+  .row output { font-weight: 800; min-width: 5.5em; text-align: right; }
+  dl { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 14px; margin: 0; font-size: 16px; }
+  dt { color: #4A5551; } dd { margin: 0; font-weight: 800; }
+  .note { font-family: 'Fraunces', Georgia, serif; font-style: italic; font-size: 18px; margin: 0; color: #2E4A2C; min-height: 1.5em; }
+  a { color: #4a6a47; }
+</style>
+</head>
+<body>
+<main>
+  <h1>ebb walker figure</h1>
+  <p class="muted">The walker you are on foot (doc 23, W5): Matt's model, rigged and moved by code. Drag to turn the view, pinch or scroll to come closer. A stand-in walker paces back and forth so you can watch every gait. <a href="./">All tools</a></p>
+  <div class="split">
+    <div class="card">
+      <canvas id="view" aria-label="The walker figure on a test ground"></canvas>
+      <p class="note" id="note" role="status" aria-live="polite"></p>
+    </div>
+    <div class="card">
+      <div class="group">
+        <h2>Pace</h2>
+        <div class="grid" data-group="pace">
+          <button data-pace="0">Stand</button>
+          <button data-pace="0.3">Creep</button>
+          <button data-pace="0.9" aria-pressed="true">Stroll</button>
+          <button data-pace="1.5">Brisk</button>
+          <!-- The game's paces: recipes/world/walker.json (creep 0.3, stroll 0.9, brisk 1.5, wading 0.6 m/s). -->
+          <button id="turn">Turn round</button>
+          <button id="slow" aria-pressed="false">Slow motion</button>
+        </div>
+      </div>
+      <div class="group">
+        <h2>Ground</h2>
+        <div class="grid" data-group="ground">
+          <button data-ground="flat" aria-pressed="true">Flat</button>
+          <button data-ground="slope">Slope</button>
+          <button data-ground="shelf">Shelf</button>
+        </div>
+        <div class="row">
+          <label for="water">Water</label>
+          <input id="water" type="range" min="0" max="0.4" step="0.01" value="0">
+          <output id="water-out" for="water">none</output>
+        </div>
+      </div>
+      <div class="group">
+        <h2>Postures and moments</h2>
+        <div class="grid">
+          <button id="sit" aria-pressed="false">Sit</button>
+          <button id="kneel" aria-pressed="false">Kneel</button>
+          <button id="feed">Feed</button>
+          <button id="down">Go down</button>
+          <button id="up">Go up</button>
+          <button id="wait" aria-pressed="false">Wait above</button>
+        </div>
+      </div>
+      <div class="group">
+        <h2>Eyes</h2>
+        <div class="grid">
+          <button data-face="happy">Happy</button>
+          <button data-face="curious">Curious</button>
+          <button data-face="sleepy">Sleepy</button>
+          <button data-face="surprised">Surprised</button>
+          <button data-face="open">Open</button>
+          <button id="night" aria-pressed="false">Night</button>
+        </div>
+      </div>
+      <div class="group">
+        <h2>View</h2>
+        <div class="grid">
+          <button data-view="front">Front</button>
+          <button data-view="side">Side</button>
+          <button data-view="three-quarter">Three quarter</button>
+          <button data-view="back">Back</button>
+          <button data-view="face">Face</button>
+          <button data-view="top">From above</button>
+          <button id="spin" aria-pressed="false">Turntable</button>
+          <button id="weights" aria-pressed="false">Bones</button>
+          <button id="look" aria-pressed="false">Look round</button>
+        </div>
+      </div>
+      <dl id="stats"></dl>
+    </div>
+  </div>
+</main>
+<script src="./boot-guard.js"></script>
+<script type="importmap">{ "imports": {
+  "wgpu-matrix": "../src/vendor/wgpu-matrix/wgpu-matrix.module.js" } }</script>
+<script type="module" src="./walker-figure.js"></script>
+</body>
+</html>

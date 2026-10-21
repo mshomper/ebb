@@ -818,6 +818,59 @@ const ICONS = {
     <circle cx="12" cy="12" r="3"/>
     <circle cx="12" cy="12" r="0.9" fill="currentColor" stroke="none"/>`,
 
+  // Go down (the walker): a small standing figure on the ground, a down stroke beside it.
+  'go-down': `
+    <path ${ACCENT} d="M13.5 10.6L11.4 17.6H18.6L16.5 10.6Z"/>
+    <path d="M13.5 10.6L11.4 17.6H18.6L16.5 10.6"/>
+    <path d="M17.6 7.3C16.6 4.8 14.6 2.8 11.8 2.2C12.6 3.8 12.8 5.6 12.6 7.3"/>
+    <path d="M9.4 7.7C11.6 6.5 18.4 6.5 20.6 7.7"/>
+    <path d="M12.9 7.6A2.1 2.1 0 0 0 17.1 7.6Z" fill="currentColor"/>
+    <path d="M13.8 17.6V20.2H12.6M16.2 17.6V20.2H17.4"/>
+    <path d="M5 3.5V12.5"/>
+    <path d="M2.6 10.1L5 12.5L7.4 10.1"/>`,
+
+  // Go up (back to the view above): the island seen from high, an up stroke rising off it.
+  'go-up': `
+    <ellipse ${ACCENT} cx="12" cy="17.5" rx="8.5" ry="3.5"/>
+    <ellipse cx="12" cy="17.5" rx="8.5" ry="3.5"/>
+    <path d="M9 17.6C10 16.6 14 16.6 15 17.6"/>
+    <path d="M12 13V3.5"/>
+    <path d="M9.6 5.9L12 3.5L14.4 5.9"/>`,
+
+  // Sit (the walker): a small figure sitting on a low stone, knees bent.
+  sit: `
+    <rect ${ACCENT} x="2.8" y="15.4" width="7.4" height="5.1" rx="1.8"/>
+    <rect x="2.8" y="15.4" width="7.4" height="5.1" rx="1.8"/>
+    <circle ${ACCENT} cx="5.4" cy="12.9" r="1.3"/>
+    <circle cx="5.4" cy="12.9" r="1.3"/>
+    <path ${ACCENT} d="M7.8 10.4L6.8 15.4H13.6L10 10.4Z"/>
+    <path d="M7.8 10.4L6.8 15.4H13.6L10 10.4"/>
+    <path d="M13 15.4V20.2H14.9"/>
+    <path d="M7 7.9A2 2 0 0 0 11 7.9Z" fill="currentColor"/>
+    <path d="M4.6 7.7C6.6 6.6 11.4 6.6 13.4 7.7"/>
+    <path d="M7 7.2C7 4.9 6.2 3.1 4.6 2.1C7.6 2.3 9.8 4.3 11 7.2"/>`,
+
+  // Kneel (the walker): a small figure down on one knee, the other foot planted.
+  kneel: `
+    <circle ${ACCENT} cx="6.1" cy="11.6" r="1.3"/>
+    <circle cx="6.1" cy="11.6" r="1.3"/>
+    <path ${ACCENT} d="M8.6 9L7.4 14.6H12.4L10.8 9Z"/>
+    <path d="M8.6 9L7.4 14.6H12.4L10.8 9"/>
+    <path d="M8.8 14.6L9.6 20.4H5.2"/>
+    <path d="M11.4 14.6L14.2 15.2V20.3H16"/>
+    <path d="M10.6 11L14.4 12.6"/>
+    <path d="M8.2 6.7A2 2 0 0 0 12.2 6.7Z" fill="currentColor"/>
+    <path d="M5.8 6.5C7.8 5.4 12.6 5.4 14.6 6.5"/>
+    <path d="M8.2 6C8 4.3 7.4 3.1 6 2.3C8.8 2.7 11 4.1 12.2 6"/>`,
+
+  // I'm stuck (the walker): a ring of ground with a gap in it, and a way out through the gap.
+  stuck: `
+    <path ${ACCENT} d="M12 7.5A4.5 4.5 0 1 1 7.5 12A4.5 4.5 0 0 1 12 7.5Z"/>
+    <path d="M17.7 15.5A7 7 0 1 1 18.6 9.6"/>
+    <circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/>
+    <path d="M14 10L20.5 4"/>
+    <path d="M16.5 4H20.5V8"/>`,
+
   // Settings: three horizontal sliders with their knobs.
   settings: `
     <path d="M3.5 6.5H20.5"/>

@@ -12,7 +12,9 @@ import { lushLook } from '../../world/growth/lush.js';
 
 /** @typedef {import('../frame-graph.js').PassContext} PassContext */
 
-const DRAW_BYTES = 768;
+const DRAW_BYTES = 832;
+/** Where the walker presses the grass (W6): the uniform holds this many. */
+const MAX_PUSHES = 4;
 /** Clears (ground with no blades, under placed pieces) the uniform holds. */
 const MAX_CLEARS = 32;
 const SEASONS = /** @type {const} */ (['spring', 'summer', 'autumn', 'winter']);
@@ -123,6 +125,18 @@ export function createGrassPass(opts) {
       const n = Math.min(MAX_CLEARS, list.length);
       f[60] = n;
       for (let i = 0; i < n; i++) f.set([list[i].x, list[i].z, list[i].r, 0], 64 + i * 4);
+    },
+
+    /**
+     * Where the walker presses the grass now (W6): its feet and body, each with a reach and a
+     * strength that eases off as the blades spring back. At most MAX_PUSHES; the rest are unused.
+     * @param {{ x: number, z: number, r: number, k: number }[]} list
+     */
+    setPushes(list) {
+      for (let i = 0; i < MAX_PUSHES; i++) {
+        const p = list[i];
+        f.set(p ? [p.x, p.z, p.r, p.k] : [0, 0, 0, 0], 192 + i * 4);
+      }
     },
 
     /**

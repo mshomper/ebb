@@ -28,6 +28,7 @@ import { mountReveal } from './ui/reveal.js';
 import { showDamaged, noticeRecovered } from './ui/damaged.js';
 import { mountHud } from './ui/hud.js';
 import { mountClockDial } from './ui/clock-dial.js';
+import { mountWalk } from './ui/walk.js';
 
 /** Shown in the corner badge when no build.json or local server info is available. */
 export const BUILD = 'm1-s3-palette';
@@ -82,6 +83,8 @@ startApp(canvas, { onDeviceLost: (rebuilding) => showRebuildingNote(rebuilding),
       mountNowPlaying().catch((err) => console.warn('ebb: the now-playing line did not mount', err));
       mountTimeFlow(hud.layer);
       mountLook(hud.layer, r.palette.list());
+      // Go down and Go up (doc 23, the walker): the edge button between the view above and you on foot.
+      mountWalk(hud.layer, (await loadRecipe('world/walker')).words);
       // The field journal (docs 13, 15): watches the world, writes notes, names what you tap.
       const [words, island, web, wash, list, naturalist] = await Promise.all([loadRecipe('world/journal'), loadRecipe('world/journal-island'),
         loadRecipe('world/journal-web'), loadRecipe('world/journal-wash'), loadRecipe('world/journal-list'), loadRecipe('world/naturalist')]);

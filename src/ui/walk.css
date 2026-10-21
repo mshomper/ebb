@@ -1,0 +1,155 @@
+/* Go down and Go up (src/ui/walk.js). At the right edge, half way up, the same night glass as the
+   tool bar; nothing else sits there at any width. Phone landscape puts the tools in a column on the
+   right edge (tools.css), so there it moves to the left edge; left-handed mirrors it. While you are
+   below (body.ebb-below) the shaping tools and undo are put away. */
+
+.ebb-walk {
+  --wk-btn: 48px;
+  --wk-icon: 28px;
+  --wk-edge: 12px;
+
+  position: fixed;
+  right: max(var(--wk-edge), env(safe-area-inset-right));
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 10;
+  pointer-events: none;
+  /* Go down or Go up, and below it I'm stuck. */
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+.ebb-walk__btn[hidden] { display: none; }
+:root.ebb-left-handed .ebb-walk { align-items: flex-start; }
+
+@media (pointer: coarse) {
+  .ebb-walk { --wk-btn: 52px; --wk-icon: 26px; }
+}
+
+.ebb-walk__btn {
+  appearance: none;
+  -webkit-appearance: none;
+  pointer-events: auto;
+  height: var(--wk-btn);
+  min-width: var(--wk-btn);
+  margin: 0;
+  padding: 0 16px 0 11px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(30, 38, 36, 0.72);
+  border: 1px solid rgba(244, 238, 228, 0.12);
+  border-radius: 16px;
+  box-shadow: 0 6px 24px rgba(10, 14, 13, 0.28);
+  color: var(--ui-cream);
+  font-family: var(--font-ui);
+  font-weight: 600;
+  font-size: var(--text-body);
+  line-height: 1.2;
+  white-space: nowrap;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color 160ms ease;
+}
+@media (pointer: fine) {
+  .ebb-walk__btn { -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
+}
+.ebb-walk__btn:hover { background: rgba(48, 58, 55, 0.8); }
+.ebb-walk__btn:focus-visible {
+  outline: 2px solid var(--wordmark-dark);
+  outline-offset: 2px;
+}
+.ebb-walk__icon { display: block; flex: none; width: var(--wk-icon); height: var(--wk-icon); }
+.ebb-walk .icon { display: block; width: var(--wk-icon); height: var(--wk-icon); }
+
+:root.ebb-left-handed .ebb-walk { right: auto; left: max(var(--wk-edge), env(safe-area-inset-left)); }
+/* Phone landscape: the tools are a column on the right, undo sits half way up the left and the
+   island's notes along the bottom left (tools.css, journal.css), so the buttons sit half way up,
+   just inside the tools column. Left-handed, all of it mirrors. */
+@media (max-height: 500px) and (min-width: 600px) {
+  .ebb-walk { right: calc(max(var(--wk-edge), env(safe-area-inset-right)) + 62px + 10px); }
+  :root.ebb-left-handed .ebb-walk { right: auto; left: calc(max(var(--wk-edge), env(safe-area-inset-left)) + 62px + 10px); }
+  /* Below, the ground bar's column (78 px) takes the tools' place. */
+  body.ebb-below .ebb-walk { right: calc(max(var(--wk-edge), env(safe-area-inset-right)) + 78px + 10px); }
+  :root.ebb-left-handed body.ebb-below .ebb-walk { right: auto; left: calc(max(var(--wk-edge), env(safe-area-inset-left)) + 78px + 10px); }
+}
+
+/* The ground bar (W4): along the bottom in the tool bar's place while you are below; each button
+   an icon over its word, so four fit a 320 px phone. Phone landscape: a column at the right edge,
+   where the tools were. */
+.ebb-ground {
+  --wk-icon: 26px;
+  position: fixed;
+  left: 50%;
+  bottom: max(12px, env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  z-index: 10;
+  display: flex;
+  gap: 4px;
+  padding: 6px;
+  background: rgba(30, 38, 36, 0.72);
+  border: 1px solid rgba(244, 238, 228, 0.12);
+  border-radius: 18px;
+  box-shadow: 0 6px 24px rgba(10, 14, 13, 0.28);
+  max-width: calc(100vw - 24px);
+}
+.ebb-ground[hidden] { display: none; }
+@media (pointer: fine) {
+  .ebb-ground { -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
+}
+.ebb-ground .ebb-walk__btn {
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  height: auto;
+  min-height: 56px;
+  min-width: 64px;
+  padding: 6px 8px;
+  background: transparent;
+  border: 0;
+  border-radius: 12px;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+.ebb-ground .icon { display: block; width: var(--wk-icon); height: var(--wk-icon); }
+.ebb-ground .ebb-walk__btn:hover { background: rgba(244, 238, 228, 0.1); }
+.ebb-ground .ebb-walk__btn[aria-pressed='true'] { background: var(--wordmark-light); }
+.ebb-ground .ebb-walk__name { font-size: var(--text-body); }
+@media (max-height: 500px) and (min-width: 600px) {
+  .ebb-ground {
+    left: auto;
+    right: max(12px, env(safe-area-inset-right));
+    top: calc(max(12px, env(safe-area-inset-top)) + 62px);
+    bottom: auto;
+    transform: none;
+    flex-direction: column;
+  }
+  :root.ebb-left-handed .ebb-ground { right: auto; left: max(12px, env(safe-area-inset-left)); }
+  /* Five buttons (with Net) in a column: a little shorter, so the column fits a phone on its side
+     and stays as narrow as before, clear of Go up. */
+  .ebb-ground { --wk-icon: 22px; }
+  .ebb-ground .ebb-walk__btn { min-height: 50px; padding: 4px 8px; gap: 1px; }
+  .ebb-ground .ebb-walk__name { line-height: 1.1; }
+}
+
+/* Narrow portrait: the time button stacks above the bottom bar (time-flow.css); the ground bar is a
+   little taller than the tool bar, so it steps up a little more. */
+@media (max-width: 560px) {
+  body.ebb-below .ebb-time { bottom: calc(max(12px, env(safe-area-inset-bottom)) + 84px); }
+}
+
+/* Sitting (the old seat): the buttons fade back, so the island is what you see. */
+body.ebb-sitting #ebb-hud { opacity: 0.4; transition: opacity 600ms ease; }
+
+/* Below: the shaping tools, undo and the brush card step away until you go up. */
+body.ebb-below .ebb-tools,
+body.ebb-below .ebb-history {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+body.ebb-below .ebb-tools *,
+body.ebb-below .ebb-history * { pointer-events: none; }

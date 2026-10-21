@@ -150,13 +150,17 @@ export function shellAt(seed, k, tideId, spring, S, storm = false) {
 
 /**
  * @param {{ water: any, shore: any, terrain: any, camera: any, recipe: any, seed: number, tide?: any, shellsOn?: () => boolean,
- *   weather?: () => { weatherSeed: number, weather: any, state?: any } }} opts
+ *   weather?: () => { weatherSeed: number, weather: any, state?: any }, you?: () => number[] | null }} opts
+ *   you: where you stand on foot (W3), or null while you are above: anemones close and crabs
+ *   scuttle off when you come near, not when the camera does
  *   shore: world/water/shore-live.js; recipe: recipes/species/finds.json; tide: water.json `tide`
  *   (the strandline that shells wash up on follows it); shellsOn: whether the sea leaves shells yet;
  *   weather: the weather seed, seasons.json `weather` and the world's weather state (storm tides)
  */
 export function createFinds(opts) {
   const { water, shore, terrain, camera, recipe } = opts;
+  /** Where creatures on the shore feel you: on foot, your figure; above, the camera's eye. */
+  const feltAt = () => opts.you?.() ?? camera.eye;
   // Room for the hermit crab's rig (28 bones).
   const pass = createCreaturePass({ recipe, maxBones: 32 });
   const K = recipe.kinds;
@@ -214,7 +218,7 @@ export function createFinds(opts) {
   function scan(f, dt) {
     refresh();
     if (!rect) return;
-    const t = camera.target, eye = camera.eye;
+    const t = camera.target, eye = feltAt();
     const near2 = recipe.nearM * recipe.nearM;
     const tide = Math.floor((f.displayT / 3600) / 12);
     const hour = (((f.displayT / 3600) % 24) + 24) % 24;
@@ -344,7 +348,7 @@ export function createFinds(opts) {
    * @param {number} dt
    */
   function stepCrabs(dt) {
-    const eye = camera.eye;
+    const eye = feltAt();
     for (const e of list) {
       if (e.sp === 'pondskaters') { glide(e, dt); continue; }
       if (e.sp !== 'hermitcrab' && e.sp !== 'ediblecrab') continue;
@@ -402,7 +406,7 @@ export function createFinds(opts) {
    * @param {(typeof list)[number]} e @param {number} dt
    */
   function glide(e, dt) {
-    const { g, R, b } = e, G = R.glide, eye = camera.eye;
+    const { g, R, b } = e, G = R.glide, eye = feltAt();
     const seed = Math.floor(g.r * 16777216);
     const m = moves.get(g.key) ?? { ox: 0, oz: 0, yaw: g.yaw, fx: 0, fz: 0, tx: 0, tz: 0, t: 0, len: 0, rest: u01(hash32(seed, 0)) * G.pauseS[1], n: 0, fleeing: false };
     const x = g.x + m.ox, z = g.z + m.oz;

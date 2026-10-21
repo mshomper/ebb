@@ -33,6 +33,8 @@ const SEASONS = ['spring', 'summer', 'autumn', 'winter'];
  * @property {string[]} residents  settled species ids
  * @property {'often'|'now-and-then'|'rarely'|'off'} frequency
  * @property {boolean} [previewing] the time or season preview is open: no new piece starts
+ * @property {number} [flow]       the time speed now (0 paused, 1, 2 or 4; default 1): a slot's
+ *   close comes sooner in real seconds the faster time runs
  */
 
 /**
@@ -279,15 +281,17 @@ export function createDirector(recipes, pieces, opts) {
       const c = choose(s.slot, st.gameT, st);
       if (!c) { log.push({ realS: st.realS, slot: s.slot, decision: 'no piece fits' }); rolls.set(rollKey, false); return null; }
       counts.set(key, tries + 1);
-      // The slot's close, in real seconds at the current flow, for the short-form choice.
+      // The slot's close, in real seconds at the current flow (60 game seconds a real second at
+      // normal speed, faster at 2x and 4x; paused, it never closes), for the short-form choice.
       const gameLeftS = (s.closeH - (st.gameT - s.day * DAY) / H) * H;
+      const flow = st.flow ?? 1;
       return {
         piece: c.piece,
         seed: hash32(opts.seed >>> 0, Math.floor(st.realS), history.length),
         slot: s.slot,
         shortForm: false,
         key: c.key,
-        windowEndRealS: st.realS + gameLeftS / 60,
+        windowEndRealS: flow > 0 ? st.realS + gameLeftS / (60 * flow) : Infinity,
         ...(c.exhausted ? { note: 'pool spent: least recently played' } : {}),
       };
     },

@@ -65,6 +65,7 @@ export function createFallVoices(ctx, dest, F, proc, rngFor, tier) {
    * @typedef {Object} Voice
    * @property {number[] | null} pos  the fall it follows (null: free)
    * @property {number} idleSince
+   * @property {number} heardFrom  when the fall it follows has run long enough to be heard
    * @property {any} chain
    * @property {GainNode} level
    * @property {GainNode} hissG @property {BiquadFilterNode} hissBp
@@ -126,7 +127,7 @@ export function createFallVoices(ctx, dest, F, proc, rngFor, tier) {
     surge.connect(surgeG).connect(body.gain);
     // Splash: the trickle's bubbles.
     const splash = trickle(ctx, body, proc, r, { amount: 0.5 });
-    return { pos: null, idleSince: ctx.currentTime, chain, level, hissG, hissBp, roarG, splash, sources: [hiss, roar, wand, surge] };
+    return { pos: null, idleSince: ctx.currentTime, heardFrom: Infinity, chain, level, hissG, hissBp, roarG, splash, sources: [hiss, roar, wand, surge] };
   }
 
   /** @param {Voice} v */
@@ -177,11 +178,15 @@ export function createFallVoices(ctx, dest, F, proc, rngFor, tier) {
         if (!v) return;
         const moved = !v.pos;
         v.pos = f.pos.slice();
+        if (moved) v.heardFrom = t + (F.confirmS ?? 0);
         v.idleSince = t;
         const lv = fallLevel(f, F);
-        loud = Math.max(loud, lv.gain);
+        // A spill that comes and goes (a wave over a step, rain brimming a terrace) is never heard:
+        // a fall plays only once it has run confirmS, and then fades in over fadeInS.
+        const heard = t >= v.heardFrom;
+        if (heard) loud = Math.max(loud, lv.gain);
         v.chain.place(f.pos, ear, t, moved ? 0 : F.rampS);
-        v.level.gain.setTargetAtTime(lv.gain * heightGain, t, k);
+        v.level.gain.setTargetAtTime(heard ? lv.gain * heightGain : 0, t, heard && v.level.gain.value < lv.gain * heightGain ? (F.fadeInS ?? F.rampS) / 3 : k);
         v.roarG.gain.setTargetAtTime(dbToGain(F.roar.db) * lv.roar, t, k);
         const hz = F.hiss.hz[0] * Math.pow(F.hiss.hz[1] / F.hiss.hz[0], smooth(F.hiss.heightM[0], F.hiss.heightM[1], f.heightM));
         v.hissBp.frequency.setTargetAtTime(hz, t, k);

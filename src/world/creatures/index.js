@@ -43,12 +43,13 @@ const TONGUE_M = 0.01;
  *   ripples: { addImpulse: (x: number, z: number, strength?: number, radiusM?: number) => void } | null,
  *   camera: { target: ArrayLike<number>, eye: ArrayLike<number>, distance: number }, testFrogs?: number,
  *   flora?: Record<string, any>, floraFrame?: () => { time: number, wind: number, windDir: number } | null,
- *   presence?: import('./presence.js').Presence }} opts
+ *   presence?: import('./presence.js').Presence, you?: () => number[] | null }} opts
  *   recipe: recipes/species/frog.json; testFrogs: `?frogs=N`, for click-testing only: once the island
  *   and the journal are up, N frogs come at once (coarse.js bringFrogs) instead of over days;
  *   flora: the flora recipes (lily pads, reed and iris clumps); floraFrame: the time and wind the
  *   flora pass drew this frame with, so frogs on lily pads move exactly with them; presence: the
- *   sources frogs react to (presence.js), updated by the app each frame
+ *   sources frogs react to (presence.js), updated by the app each frame; you: where you stand on
+ *   foot (W3), or null while you are above: food waits on it, and standing near a frog finds it
  */
 export function createCreatures(opts) {
   const { world, recipe, terrain, water, ripples, camera } = opts;
@@ -286,7 +287,7 @@ export function createCreatures(opts) {
      */
     feed(x, z) {
       if (!feeding) return '';
-      const key = feeding.offer(x, z, { known: !!getStore('journal')?.species?.frogs?.ever, dormant: !!world.state?.creatures?.frogs?.dormant, eye: camera.eye });
+      const key = feeding.offer(x, z, { known: !!getStore('journal')?.species?.frogs?.ever, dormant: !!world.state?.creatures?.frogs?.dormant, eye: opts.you?.() ?? camera.eye });
       return recipe.feed.messages[key] ?? '';
     },
     /** Soft rings where food lies, for the terrain marks: [x, z, radius, opacity]. */
@@ -326,7 +327,7 @@ export function createCreatures(opts) {
       }
       // Food you offered (S6c-2): frogs come for it; each meal is recorded for the next hour.
       if (feeding) {
-        const ate = feeding.step(f.realDt, camera.eye, (id) => tickFrogs().find((/** @type {any} */ g) => g.id === id), hourIndex());
+        const ate = feeding.step(f.realDt, opts.you?.() ?? camera.eye, (id) => tickFrogs().find((/** @type {any} */ g) => g.id === id), hourIndex());
         if (ate.length) {
           for (const m of ate) world.state = addTrustEvent(world.state, { kind: 'fed', id: m.id, hour: hourIndex() });
           updateStore('world', () => world.state);
@@ -334,10 +335,13 @@ export function createCreatures(opts) {
       }
       agents.advance(f.realDt, env);
       draw(f.animT);
-      // Watching one closely finds it: in the middle of the view, zoomed in, for a moment.
+      // Watching one closely finds it: in the middle of the view, zoomed in, for a moment; or, on
+      // foot, standing within reach of it (W3).
       if (getStore('journal')?.species?.frogs?.ever) return;
-      const near = camera.distance <= find.lookDistM && agents.list().some((a) =>
-        a.mode !== 'leave' && (a.x - camera.target[0]) ** 2 + (a.z - camera.target[2]) ** 2 <= find.lookM * find.lookM);
+      const me = opts.you?.() ?? null;
+      const near = me ? agents.list().some((a) => a.mode !== 'leave' && Math.hypot(a.x - me[0], a.z - me[2]) <= find.lookDistM + find.lookM)
+        : camera.distance <= find.lookDistM && agents.list().some((a) =>
+          a.mode !== 'leave' && (a.x - camera.target[0]) ** 2 + (a.z - camera.target[2]) ** 2 <= find.lookM * find.lookM);
       watched = near ? watched + f.realDt : 0;
       if (watched >= find.holdS) {
         watched = 0;

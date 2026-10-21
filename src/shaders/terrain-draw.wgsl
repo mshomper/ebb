@@ -263,10 +263,13 @@ fn fsLand(in: VsOut) -> FsOut {
   var frondCover = 0.0;
   // The painted rock, not the detail's rock weight: the mat itself (the moss layer) hides that.
   let rockPaint = wf.z;
-  if (frondNear > 0.001 && rockPaint > 0.3 && shore.r > 0.01) {
+  // Fronds, kelp and litter are laid out on the ground from above, so on a steep face they smear
+  // into long streaks down it: they fade out as the ground steepens past about 45 degrees.
+  let flatEnough = smoothstep(0.55, 0.8, n.y);
+  if (frondNear > 0.001 && rockPaint > 0.3 && shore.r > 0.01 && flatEnough > 0.0) {
     var fr = wrackFronds(xz, downDir, td.frond1.xy, td.frond1.zw, td.frond0.w, td.frond2.x, td.frond2.y,
       vec2f(td.shore0.w, td.shore1.x), td.seed, wrackMat, pixM);
-    fr.cover *= smoothstep(0.3, 0.6, rockPaint) * frondNear;
+    fr.cover *= smoothstep(0.3, 0.6, rockPaint) * frondNear * flatEnough;
     frondCover = fr.cover;
     let bladder = select(0.8 + 0.4 * fr.tone, td.frond3.z, fr.tone > 1.0);
     albedo = mix(albedo, td.frond0.rgb * bladder, fr.cover);
@@ -274,16 +277,17 @@ fn fsLand(in: VsOut) -> FsOut {
   }
   let kelpZone = shore.g * rockShare;
   // Near the kelp zone too (wrack borders it), so blades can lie across its edge.
-  if (rockShare > 0.3 && (shore.g > 0.001 || shore.r > 0.01)) {
+  if (rockShare > 0.3 && (shore.g > 0.001 || shore.r > 0.01) && flatEnough > 0.0) {
     var kb = kelpBlades(xz, downDir, kelpZone, td.kelp1.xy, td.kelp1.zw, td.kelp0.w, td.kelp2.x, pixM, true);
-    kb.cover *= smoothstep(0.3, 0.6, rockShare);
+    kb.cover *= smoothstep(0.3, 0.6, rockShare) * flatEnough;
     kelpCover = kb.cover;
     albedo = mix(albedo, td.kelp0.rgb * (0.8 + 0.4 * kb.tone), kb.cover);
     shoreGrad += kb.grad;
   }
   // The strandline (world/water/strandline.js): litter where each recent high tide reached, a
   // little above the water's level (the waves run up), widest on gentle slopes, broken into
-  // clumps and gaps. Litter lies on sand, rock and soil, hardly on grass.
+  // clumps and gaps. Litter lies on sand and soil, hardly on grass, and never on rock or steep
+  // ground (October 21, 2026), where it streaked and read as a fault.
   let slopeTan = slopeLen / max(n.y, 0.05);
   let lv = array<f32, 8>(td.strandL0.x, td.strandL0.y, td.strandL0.z, td.strandL0.w, td.strandL1.x, td.strandL1.y, td.strandL1.z, td.strandL1.w);
   let ls = array<f32, 8>(td.strandS0.x, td.strandS0.y, td.strandS0.z, td.strandS0.w, td.strandS1.x, td.strandS1.y, td.strandS1.z, td.strandS1.w);
@@ -297,6 +301,7 @@ fn fsLand(in: VsOut) -> FsOut {
     strand = max(strand, ls[i] * exp(-(dist / halfW) * (dist / halfW)) * breakup);
   }
   strand *= 1.0 - 0.8 * mix(wf.x, gd.weights.x, gd.amount);
+  strand *= (1.0 - smoothstep(0.1, 0.35, rockShare)) * flatEnough;
   // Litter floats off once water stands over it: none on the floor or walls of a filled pool, where
   // the lines would ring the bowl at every tide level and the water would bend them into streaks.
   strand *= 1.0 - smoothstep(0.004, 0.025, wdep);

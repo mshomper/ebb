@@ -45,6 +45,17 @@ Technical detail (`src/render/camera.js`):
 
 Selecting a creature (tap in the look state, long-press with any tool) opens a card: name, species, Follow, Name, Feed, Photo. Follow tracks `position + velocity × 0.3 s` at a size-class distance (frog about 3 m, heron about 10 m); yaw drifts behind travel only after 3 s without player orbit. Panning or using a tool ends follow, as does the creature leaving the island (1 s glide back). Picking is a CPU ray test against bounding spheres from 11-creatures-and-ecology.md.
 
+### Two views: above and below (M2, Matt, October 21, 2026)
+
+Above is the orbit camera described here: the diorama, where you shape. Below is you on foot, the walker (doc 23). Above shapes; below lives there.
+
+- **Go down and Go up:** one drawn-icon button at the right edge, mid-height. Go down glides to a figure standing where you are looking (the middle of the view, the nearest walkable spot). Go up glides back to the orbit, and the figure stays standing on the island, visible from above. Both glides are game moves and never startle.
+- **Below, the camera** sits low behind the figure, about 3 m back. No panning: you move by walking.
+- **Below, the input:** tap or click a spot to walk there; double tap to hurry; one-finger or left drag looks around; pinch or wheel zooms between 2 m and 6 m.
+- **Below, the tool bar and undo are hidden.** Sculpt, Paint, Water, Plant and Cliff work only above.
+- **From W3,** the closest above view stops at about 4 m, so getting close always means going down.
+- Numbers live in `recipes/world/walker.json`.
+
 ### The action layer
 
 ```mermaid

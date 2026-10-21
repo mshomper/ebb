@@ -104,6 +104,19 @@ export function canCast(at, rule) {
 }
 
 /**
+ * What the walker's Net button does (W4): your net out within reachM of where you stand is lifted
+ * when it is full ('lift') or says how long it has to fish ('say'); in, or out further away, it is
+ * set in front of you ('set', moved if it was out).
+ * @param {{ x: number, z: number } | null} at where the net is out, or null when it is in
+ * @param {boolean} ready it is full @param {{ x: number, z: number }} me where you stand @param {number} reachM
+ * @returns {'lift' | 'say' | 'set'}
+ */
+export function footChoice(at, ready, me, reachM) {
+  if (!at || Math.hypot(at.x - me.x, at.z - me.z) > reachM) return 'set';
+  return ready ? 'lift' : 'say';
+}
+
+/**
  * Cast a net (or move one already out): it fishes the next high water from now.
  * @param {NetsState} s @param {number} id @param {number} x @param {number} z @param {number} nowH
  * @param {{ periodH: number, phaseH: number }} tide @param {{ readyNow?: boolean }} [o] readyNow:

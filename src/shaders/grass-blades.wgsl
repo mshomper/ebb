@@ -34,6 +34,7 @@ struct GrassDraw {
   lushH: vec4f,                                // x height factor on the dry rise, y by the water
   clearN: vec4f,                               // x how many clears are set
   clears: array<vec4f, 32>,                    // ground no blade stands on: x, z, radius (m), under each placed piece (src/world/pieces)
+  pushes: array<vec4f, 4>,                     // where the walker presses the grass (W6): x, z, radius (m), strength 0..1 (0 unused)
 };
 
 @group(0) @binding(0) var<uniform> frame: FrameUniforms;
@@ -203,11 +204,25 @@ fn vsBlade(@builtin(vertex_index) vi: u32, @builtin(instance_index) ring: u32) -
   let gustPhase = dot(xz, gd.windDir) * gd.look.z - gd.time * gd.look.w * gd.look.z;
   let gust = 0.6 + 0.4 * sin(gustPhase * 6.2831853) + 0.25 * sin(gd.time * 2.3 + v3.w * 6.2831853);
   let sway = gd.wind * gd.shape.w * gust;
-  let bend = leanDir * gd.shape.z + gd.windDir * sway;
+  var bend = leanDir * gd.shape.z + gd.windDir * sway;
+  // Underfoot (W6): blades near the walker's feet and body lean away and press a little flatter,
+  // springing back as the pressure eases (the strength fades on the CPU).
+  var press = 0.0;
+  for (var i = 0; i < 4; i++) {
+    let pu = gd.pushes[i];
+    if (pu.w <= 0.0) { continue; }
+    let off = xz - pu.xy;
+    let d = length(off);
+    if (d >= pu.z) { continue; }
+    let k = pu.w * (1.0 - d / pu.z) * (1.0 - d / pu.z);
+    bend += off / max(d, 1e-3) * k * 2.2;
+    press = max(press, k);
+  }
+  let pressed = height * (1.0 - 0.55 * press);
   let t = corner.y;
-  let along = vec3f(bend.x, 0.0, bend.y) * height * t * t;
+  let along = vec3f(bend.x, 0.0, bend.y) * pressed * t * t;
   let taper = 1.0 - t * 0.85;
-  let p = vec3f(xz.x, groundY, xz.y) + nG * height * t + along + vec3f(side.x, 0.0, side.y) * corner.x * width * 0.5 * taper;
+  let p = vec3f(xz.x, groundY, xz.y) + nG * pressed * t + along + vec3f(side.x, 0.0, side.y) * corner.x * width * 0.5 * taper;
 
   var o: VsOut;
   o.world = p;

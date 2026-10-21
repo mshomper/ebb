@@ -117,6 +117,7 @@ export async function startAudio(store) {
         realS: (now - t0) / 1000, gameT: s.displayT, sunAltDeg: s.sunAltDeg, weather: state.weather,
         frogsAwake: !!s.frogsAwake, frogsCalling: !!s.frogsCalling, residents: s.residents ?? [],
         previewing: Math.abs(s.displayT - s.worldT) > 60,
+        flow: store.get('meta')?.flow ?? 1,
         freshIsland: !!s.freshIsland,
       });
     }

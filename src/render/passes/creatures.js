@@ -21,15 +21,19 @@ const IDENTITY = new Float32Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 
  */
 
 /**
- * @param {{ recipe: any, mesh?: { vertices: Float32Array, indices: Uint32Array, count: number }, eyeBones?: number[], maxBones?: number }} opts
+ * @param {{ recipe: any, mesh?: { vertices: Float32Array, indices: Uint32Array, count: number }, eyeBones?: number[], maxBones?: number,
+ *   name?: string, shader?: string, extraFloats?: number }} opts
  *   recipe: the species recipe (recipes/species/<id>.json); mesh: one unskinned mesh to start with (the size preview);
- *   eyeBones: the two bones the eyes follow, for their wet glint (body.eyeGlint)
+ *   eyeBones: the two bones the eyes follow, for their wet glint (body.eyeGlint); shader: another draw shader with the
+ *   same bindings (the walker's figure-draw); extraFloats: more uniform floats after the usual 12, set by setExtra
  */
 export function createCreaturePass(opts) {
   const { recipe } = opts;
   const W = recipe.body.wetSpecular;
   const bodyLength = recipe.body.scaleReal[0] + (recipe.body.scaleReal[1] - recipe.body.scaleReal[0]) / 2;
-  const data = new Float32Array(DRAW_BYTES / 4);
+  const drawBytes = Math.ceil((DRAW_BYTES + (opts.extraFloats ?? 0) * 4) / 16) * 16;
+  const data = new Float32Array(drawBytes / 4);
+  let uniformDirty = false;
   // Wet eyes: the skin that follows these two bones (none for the unskinned size preview).
   const G = recipe.body.eyeGlint, eyes = opts.eyeBones ?? [-1, -1];
   // A body that swims or flies casts no contact shadow (body.contactShadow 0: minnows, dragonflies).
@@ -84,6 +88,12 @@ export function createCreaturePass(opts) {
     /** Is this mesh ready to draw? @param {string} key */
     hasMesh: (key) => meshes.has(key),
 
+    /** The extra uniform floats (after the usual 12), written before the next draw. @param {ArrayLike<number>} values */
+    setExtra(values) {
+      data.set(values, DRAW_BYTES / 4);
+      uniformDirty = true;
+    },
+
     /**
      * Where the individuals are and how they are posed this frame.
      * @param {Being[]} list
@@ -112,7 +122,7 @@ export function createCreaturePass(opts) {
     /** @param {PassContext} ctx */
     async setup(ctx) {
       device = ctx.device;
-      const module = await makeShaderModule(device, 'creature-draw');
+      const module = await makeShaderModule(device, opts.shader ?? 'creature-draw');
       const layout = device.createBindGroupLayout({
         label: 'group2-creatures',
         entries: [
@@ -154,7 +164,7 @@ export function createCreaturePass(opts) {
         primitive: { topology: 'triangle-list', cullMode: 'none' },
         depthStencil: { ...depthStencil, depthWriteEnabled: false },
       });
-      ubuf = makeBuffer(device, { label: 'creature-draw', size: DRAW_BYTES, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
+      ubuf = makeBuffer(device, { label: opts.shader ? `${pass.name}-draw` : 'creature-draw', size: drawBytes, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
       device.queue.writeBuffer(ubuf, 0, data);
       sbuf = makeBuffer(device, { label: 'creature-beings', size: beings.byteLength, usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST });
       bbuf = makeBuffer(device, { label: 'creature-bones', size: bones.byteLength, usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST });
@@ -172,6 +182,10 @@ export function createCreaturePass(opts) {
         ctx.device.queue.writeBuffer(sbuf, 0, beings, 0, count * 8);
         ctx.device.queue.writeBuffer(bbuf, 0, bones, 0, count * boneCap * 16);
         dirty = false;
+      }
+      if (uniformDirty) {
+        ctx.device.queue.writeBuffer(ubuf, 0, data);
+        uniformDirty = false;
       }
       const pass = encoder.beginRenderPass({
         label: 'creatures',

@@ -22,7 +22,8 @@ if (!params.has('frogs')) {
 const $ = (/** @type {string} */ id) => /** @type {HTMLElement} */ (document.getElementById(id));
 const status = (/** @type {string} */ icon, /** @type {string} */ text) => { $('status').innerHTML = `${icon}<span>${text}</span>`; };
 
-const result = await startApp(/** @type {HTMLCanvasElement} */ ($('view')));
+// The lab tests presence with the camera itself: the old close camera, whose eye startles frogs.
+const result = await startApp(/** @type {HTMLCanvasElement} */ ($('view')), { labCamera: true });
 if (!result.ok) {
   status(ICON_WARN, `WebGPU is not available here (${result.reason}). Open this page in current Chrome or Edge.`);
 } else {

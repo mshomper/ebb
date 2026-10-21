@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ebb walk lab</title>
+<link rel="icon" href="../brand/ebb-favicon.svg" type="image/svg+xml">
+<style>
+  @font-face { font-family: 'Nunito'; src: url('../src/vendor/fonts/nunito-latin-600-normal.woff2') format('woff2'); font-weight: 600; }
+  @font-face { font-family: 'Nunito'; src: url('../src/vendor/fonts/nunito-latin-800-normal.woff2') format('woff2'); font-weight: 800; }
+  @font-face { font-family: 'Fraunces'; src: url('../src/vendor/fonts/fraunces-latin-full-italic.woff2') format('woff2'); font-style: italic; }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; max-width: 100%; overflow-x: hidden; }
+  body { background: #F4EEE4; color: #1E2624; font: 600 17px/1.45 'Nunito', system-ui, sans-serif; padding: 16px; overflow-wrap: anywhere; }
+  main { max-width: 1200px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; padding-bottom: 60px; }
+  .split { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; }
+  @media (min-width: 900px) { .split { grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); align-items: start; } }
+  h1 { font-size: 24px; font-weight: 800; margin: 0; }
+  h2 { font-size: 19px; font-weight: 800; margin: 0 0 8px; }
+  .muted { color: #4A5551; font-size: 16px; margin: 0; }
+  .card { background: #FBF7F0; border: 1px solid #E3D9C9; border-radius: 14px; padding: 14px 16px; min-width: 0; display: flex; flex-direction: column; gap: 10px; }
+  #map { width: 100%; aspect-ratio: 1; display: block; border-radius: 10px; background: #2F6E86; touch-action: manipulation; cursor: crosshair; image-rendering: pixelated; }
+  .tide { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; }
+  .tide input[type=range] { flex: 1 1 220px; min-width: 0; accent-color: #4a6a47; height: 32px; }
+  .tide output { font-weight: 800; min-width: 6.5em; }
+  .buttons { display: flex; flex-wrap: wrap; gap: 10px; }
+  button { font: 800 16px/1.2 'Nunito', system-ui, sans-serif; color: #FBF7F0; background: #4a6a47; border: 0; border-radius: 12px; padding: 10px 14px; cursor: pointer; flex: 1 1 120px; min-height: 44px; }
+  button[aria-pressed=true] { background: #2E4A2C; }
+  .legend { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 6px 16px; font-size: 16px; }
+  .legend span { display: flex; align-items: center; gap: 8px; min-width: 0; }
+  .legend i { flex: 0 0 auto; width: 16px; height: 16px; border-radius: 4px; border: 1px solid #A9B3A6; }
+  .note { font-family: 'Fraunces', Georgia, serif; font-style: italic; font-size: 18px; min-height: 1.5em; margin: 0; color: #2E4A2C; }
+  dl { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 14px; margin: 0; font-size: 16px; }
+  dt { color: #4A5551; } dd { margin: 0; font-weight: 800; }
+  a { color: #4a6a47; }
+</style>
+</head>
+<body>
+<main>
+  <h1>ebb walk lab</h1>
+  <p class="muted">Where the walker can go (doc 23, W1). Tap the map once to stand there, then tap anywhere to walk; double tap to hurry. Move the tide to watch the sandbar open and close. The test sandbar and islet are the ones the game's ?sandbar link builds. <a href="./">All tools</a></p>
+  <div class="split">
+    <div class="card">
+      <canvas id="map" aria-label="Map of the island from above, the walk grid coloured by where you can stand"></canvas>
+      <p class="note" id="note" role="status" aria-live="polite"></p>
+    </div>
+    <div class="card">
+      <h2>The tide</h2>
+      <div class="tide">
+        <label for="level">Sea level</label>
+        <input id="level" type="range" min="-0.7" max="0.7" step="0.01" value="-0.6">
+        <output id="level-out" for="level">-0.60 m</output>
+      </div>
+      <div class="buttons" id="tides">
+        <button data-level="0.65">High water</button>
+        <button data-level="0">Half tide</button>
+        <button data-level="-0.65">Low water</button>
+      </div>
+      <div class="buttons">
+        <button id="bar" aria-pressed="true">Test sandbar on</button>
+        <button id="frog" aria-pressed="false">A frog by the bar</button>
+      </div>
+      <h2>The walker</h2>
+      <dl id="stats"></dl>
+      <div class="legend" id="legend"></div>
+      <p class="muted">Add ?island=two-ponds or ?seed=2 to the address to try another island. Nothing here is saved.</p>
+    </div>
+  </div>
+</main>
+<script src="./boot-guard.js"></script>
+<script type="module" src="./walk-lab.js"></script>
+</body>
+</html>

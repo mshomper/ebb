@@ -22,7 +22,7 @@
     "topM": 0.6,
     "reachM": 40,
     "voices": 3,
-    "minFlowM3s": 0.0001
+    "minFlowM3s": 0.002
   },
   "gust": {
     "everyS": [6, 20],
