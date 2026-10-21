@@ -12,6 +12,10 @@ import { describe } from '../src/world/journal/describe.js';
 import { triggered } from '../src/world/journal/web.js';
 import { drawSketch, hasSketch } from '../src/ui/sketches/index.js';
 import { ICON_NAMES } from '../src/ui/icons/icons.js';
+import { jellyAt, isStormTide, seasonOfTide, weatherOfTide } from '../src/world/finds/strand.js';
+import { jellyMesh, JELLY_FLOATS } from '../src/world/finds/jelly.js';
+import { dayRecord } from '../src/world/weather.js';
+import { stormShells } from '../src/world/journal/observe.js';
 
 const FINDS = 'finds';
 
@@ -181,5 +185,122 @@ export function addFindsTests(test, assert, eq) {
     const found = d.collection.filter((/** @type {any} */ c) => c.found).map((/** @type {any} */ c) => c.id).join(',');
     eq(found, 'turret,cockle', 'the page lists the two found');
     assert(d.collection.filter((/** @type {any} */ c) => !c.found).every((/** @type {any} */ c) => c.name === null && c.text), 'the rest are hints, unnamed');
+  });
+
+  test(FINDS, 'moon jellyfish: only on summer lines, the same for the same tide, dried away after maxAgeH', async () => {
+    const J = (await findsRecipe()).kinds.moonjelly;
+    const line = (/** @type {number} */ season, /** @type {number} */ ageH = 2, /** @type {number} */ spring = 0.5) => ({ season, spring, ageH });
+    eq(JSON.stringify(jellyAt(3, 77, 90, line(1), J)), JSON.stringify(jellyAt(3, 77, 90, line(1), J)), 'same seed, cell and tide, same jellyfish');
+    /** @type {number[]} */ const n = [0, 0, 0, 0];
+    let old = 0, neap = 0, small = Infinity, big = 0;
+    for (let k = 0; k < 20000; k++) {
+      for (let s = 0; s < 4; s++) if (jellyAt(3, k, 90, line(s), J)) n[s]++;
+      if (jellyAt(3, k, 90, line(1, J.maxAgeH + 1), J)) old++;
+      if (jellyAt(3, k, 90, line(1, 2, J.springMin - 0.5), J)) neap++;
+      const j = jellyAt(3, k, 90, line(1), J);
+      if (j) { small = Math.min(small, j.size); big = Math.max(big, j.size); }
+    }
+    eq(`${n[0]},${n[2]},${n[3]}`, '0,0,0', 'none on spring, autumn or winter lines');
+    assert(Math.abs(n[1] / 20000 - J.density) < 0.01, `about density of a summer line's cells (${(n[1] / 20000).toFixed(3)})`);
+    eq(old, 0, 'none once the line has lain past maxAgeH');
+    eq(neap, 0, 'none from a tide below springMin');
+    assert(small >= 0.15 && big <= 0.25 && big - small > 0.05, `15 to 25 cm across (${(small * 100).toFixed(0)} to ${(big * 100).toFixed(0)} cm)`);
+    let moved = 0;
+    for (let k = 0; k < 2000; k++) if (!!jellyAt(3, k, 90, line(1), J) !== !!jellyAt(3, k, 91, line(1), J)) moved++;
+    assert(moved > 0, 'the next tide strands others');
+    eq(seasonOfTide(14 * 24 + 1), 1, 'day 15 is summer');
+  });
+
+  test(FINDS, 'moon jellyfish mesh: a low clear bell on y = 0 with four horseshoes under its top, the same every load', async () => {
+    const J = (await findsRecipe()).kinds.moonjelly;
+    const m = jellyMesh(J.shape, 1), again = jellyMesh(J.shape, 1), other = jellyMesh(J.shape, 2);
+    eq(m.vertices.length, m.count * JELLY_FLOATS, `${JELLY_FLOATS} floats a vertex`);
+    assert(m.indices.length % 3 === 0 && m.indices.every((i) => i < m.count), 'whole triangles, every index names a vertex');
+    assert(m.vertices.every((v) => Number.isFinite(v)), 'no NaN');
+    assert(m.vertices.every((v, i) => v === again.vertices[i]), 'the same on every load');
+    assert(m.vertices.some((v, i) => v !== other.vertices[i]), 'variants differ');
+    let lo = Infinity, hi = -Infinity, wide = 0, violet = 0, unit = 0;
+    const G = J.shape.gonads;
+    for (let i = 0; i < m.count; i++) {
+      const o = i * JELLY_FLOATS;
+      lo = Math.min(lo, m.vertices[o + 1]); hi = Math.max(hi, m.vertices[o + 1]);
+      wide = Math.max(wide, Math.hypot(m.vertices[o], m.vertices[o + 2]));
+      if (m.vertices[o + 9] === Math.fround(G.tau)) violet++;
+      unit = Math.max(unit, Math.abs(Math.hypot(m.vertices[o + 3], m.vertices[o + 4], m.vertices[o + 5]) - 1));
+    }
+    assert(lo > -1e-9 && lo < 1e-6, 'its margin lies on y = 0');
+    assert(Math.abs(hi - J.shape.heightShare) < 1e-6, 'slumped low: its height is heightShare of its width');
+    assert(wide > 0.45 && wide < 0.6, `a meter wide (${wide.toFixed(2)} from the middle)`);
+    assert(unit < 1e-4, 'unit normals');
+    eq(violet, 4 * (G.steps + 1) * 2, 'four violet horseshoes');
+    // The horseshoes come first, so the clear bell is drawn over them.
+    assert(m.indices.slice(0, 4 * G.steps * 6).every((i) => m.vertices[i * JELLY_FLOATS + 9] === Math.fround(G.tau)), 'the horseshoes are drawn first');
+    return `${m.count} vertices, ${m.indices.length / 3} triangles`;
+  });
+
+  test(FINDS, 'storm tides: a winter gale on a big tide leaves far more rare shells, from the weather alone', async () => {
+    const S = (await findsRecipe()).kinds.shells;
+    const seasons = await (await fetch('../recipes/world/seasons.json')).json();
+    const St = S.storm;
+    const gale = { season: 3, mood: 'rain', windStrength: St.galeWind + 0.05 };
+    assert(isStormTide(0, St.springMin, gale, St), 'winter, a gale, a big tide: a storm tide');
+    assert(!isStormTide(0, St.springMin, { ...gale, season: 2 }, St), 'not in autumn');
+    assert(!isStormTide(0, St.springMin, { ...gale, mood: 'cloud' }, St), 'not on a dry day');
+    assert(!isStormTide(0, St.springMin, { ...gale, windStrength: St.galeWind - 0.05 }, St), 'not in a breeze');
+    assert(!isStormTide(0, St.springMin - 0.1, gale, St), 'not on a smaller tide');
+    const rare = S.items.filter((/** @type {any} */ i) => i.springMin !== undefined).map((/** @type {any} */ i) => i.id);
+    let calm = 0, storm = 0, calmAll = 0, stormAll = 0;
+    for (let k = 0; k < 40000; k++) {
+      const a = shellAt(7, k, 40, 1, S, false), b = shellAt(7, k, 40, 1, S, true);
+      if (a) { calmAll++; if (rare.includes(a.item)) calm++; }
+      if (b) { stormAll++; if (rare.includes(b.item)) storm++; }
+      if (b) assert(b.storm, 'a storm line\'s shell says so');
+    }
+    assert(stormAll > calmAll * 1.3, `more shells after a storm (${calmAll} to ${stormAll})`);
+    assert(storm / stormAll > (calm / calmAll) * 4, `rare shells far commoner (${((calm / calmAll) * 100).toFixed(1)}% to ${((storm / stormAll) * 100).toFixed(1)}%)`);
+    eq(JSON.stringify(shellAt(7, 5, 40, 1, S, true)), JSON.stringify(shellAt(7, 5, 40, 1, S, true)), 'the same storm tide leaves the same shells');
+    const neapStorm = shellAt(7, 5, 40, -0.5, S, true);
+    assert(!neapStorm || !rare.includes(neapStorm.item), 'rare shells still need a big tide');
+    // The weather of a tide: the live record when it is today's, else the same roll again.
+    const W = { weatherSeed: 99, weather: seasons.weather, state: { lean: 0, today: null, yesterday: null } };
+    const h = (3 * 14 + 4) * 24 + 12;
+    eq(JSON.stringify(weatherOfTide(h, W)), JSON.stringify(dayRecord(99, Math.floor(h / 24), 0, seasons.weather)), 'a past day is rolled again the same');
+    const today = { ...dayRecord(99, Math.floor(h / 24), 0, seasons.weather), mood: 'rain', windStrength: 0.9 };
+    eq(weatherOfTide(h, { ...W, state: { lean: 0, today, yesterday: null } }).windStrength, 0.9, 'today uses the live record');
+    // Over a few winters some tides are storm tides, but not most.
+    let tides = 0, storms = 0;
+    for (let t = 3 * 14 * 24; t < 4 * 14 * 24; t += 12) {
+      for (let y = 0; y < 4; y++) {
+        const tideH = t + y * 56 * 24;
+        const d = weatherOfTide(tideH, W);
+        tides++;
+        if (isStormTide(tideH, 1, { season: seasonOfTide(tideH), mood: d.mood, windStrength: d.windStrength }, St)) storms++;
+      }
+    }
+    assert(storms > 0 && storms < tides / 4, `${storms} of ${tides} winter high waters were storms on a full spring tide`);
+    return `rare share ${((calm / calmAll) * 100).toFixed(1)}% calm, ${((storm / stormAll) * 100).toFixed(1)}% storm`;
+  });
+
+  test(FINDS, 'moon jellyfish has a page, icon, sketch and ties; a storm tide is noted once', async () => {
+    const words = await (await fetch('../recipes/world/journal.json')).json();
+    const rec = words.species.moonjelly;
+    assert(rec && rec.kind === 'find' && words.findOrder.includes('moonjelly'), 'moon jellyfish is a find in findOrder');
+    assert(ICON_NAMES.includes(rec.icon), 'its icon is drawn');
+    assert(hasSketch('moonjelly'), 'it has a sketch');
+    const labels = Object.fromEntries(Object.entries(rec.sketch.labels).map(([k, v]) => [k, /** @type {any} */ (v).text]));
+    for (const stage of /** @type {(0|1|2)[]} */ ([0, 1, 2])) {
+      const svg = drawSketch('moonjelly', { stage, labels, scale: rec.sketch.scale });
+      assert(svg.startsWith('<svg') && !/NaN|undefined/.test(svg), `stage ${stage} draws cleanly`);
+      if (stage > 0) for (const k of Object.keys(labels)) assert(svg.includes(labels[k][0]), `labels ${k}`);
+    }
+    const ctx = { state: null, hour: 10, words };
+    const found = foundFind(initialJournal(0), 'moonjelly', ctx);
+    eq(found.notes[0]?.text, rec.notes.found, 'finding one writes its note');
+    const a = stormShells(initialJournal(0), ctx);
+    eq(a.notes.length, 1, 'the first storm shell writes a note');
+    eq(a.notes[0].text, words.species.shells.notes.storm, 'in the journal\'s words');
+    assert(a.journal.flags.includes('shells:storm') && a.journal.species.shells.learned.includes('storm'), 'and the shells page learns it');
+    eq(stormShells(a.journal, ctx).notes.length, 0, 'once only');
+    assert(words.species.shells.field.some((/** @type {any} */ f) => f.learn.includes('storm')), 'the shells page has a field line for it');
   });
 }

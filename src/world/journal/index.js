@@ -14,7 +14,7 @@ import { hourIndex, display, SECONDS_PER_HOUR, HOURS_PER_DAY } from '../../core/
 import { onAction } from '../../input/actions.js';
 import { weatherAt } from '../weather.js';
 import { tideParams } from '../tide.js';
-import { initialJournal, learn, notePlanted, momentsNow, catchMoments, foundAnimal, foundFind, namedAnimal, flag, noteGift, liftedStone } from './observe.js';
+import { initialJournal, learn, notePlanted, momentsNow, catchMoments, foundAnimal, foundFind, namedAnimal, flag, noteGift, liftedStone, stormShells } from './observe.js';
 import { journalLook } from './look.js';
 import { describe, identify, showMeSpot, momentKind, frogCard } from './describe.js';
 import { groundKind, groundCard, groundSurvey, describeGround, groundSpot } from './ground.js';
@@ -141,8 +141,9 @@ export function createJournal(opts) {
     const fr = fd && words.species[fd.sp];
     // A shell names which one it is; its page holds them all.
     const it = fd?.item ? fr?.collection?.find((/** @type {any} */ c) => c.id === fd.item) : null;
-    if (fr && it) return { sp: fd.sp, item: it.id, name: it.name, sub: it.rarity, icon: fr.icon, text: it.cardLine, wx: fd.x, wz: fd.z, r: 0.12, stage: -1 };
-    if (fr) return { sp: fd.sp, name: fr.card ?? fr.name, sub: null, icon: fr.icon, text: fr.cardLine ?? '', wx: fd.x, wz: fd.z, r: 0.12, stage: -1 };
+    if (fr && it) return { sp: fd.sp, item: it.id, storm: !!fd.storm, name: it.name, sub: it.rarity, icon: fr.icon, text: it.cardLine, wx: fd.x, wz: fd.z, r: 0.12, stage: -1 };
+    // A stranded jellyfish is much bigger than the other finds: its ring is too.
+    if (fr) return { sp: fd.sp, name: fr.card ?? fr.name, sub: null, icon: fr.icon, text: fr.cardLine ?? '', wx: fd.x, wz: fd.z, r: fr.ringM ?? 0.12, stage: -1 };
     // Then a loose stone or a driftwood log (docs/future/10): the tap lifts or rolls it to look
     // underneath. It has no page. With the turtles' gift (unlocks.carry) its card offers Carry.
     const pc = opts.pieces?.pieceAt(x, z);
@@ -181,6 +182,8 @@ export function createJournal(opts) {
     if (words.species[card.sp]?.kind === 'find' && fresh) {
       commit(foundFind(journal, card.sp, { state: world.state, hour: hourIndex(), words }, item));
     }
+    // A shell a winter storm tide left: the journal notes the storm tide, once.
+    if (/** @type {any} */ (card).storm) commit(stormShells(journal, { state: world.state, hour: hourIndex(), words }));
     const list = card.ground ? words.moments.ground : words.moments[momentKind(words.species[card.sp])];
     const ids = momentsNow(list, now(card.stage), words.moments);
     const name = card.name.charAt(0).toLowerCase() + card.name.slice(1);
