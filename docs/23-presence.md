@@ -1,11 +1,12 @@
 # 23 — Presence
 
-> Presence is how the player is *on* the island, not just above it. Creatures read the player the way real animals read a person: how fast you come, how low you sit, where you look, how long you stay still. Trust grows from patience, not from clicking. Presence is built as a **list of sources** that creatures react to. In the slice the only source is the camera. Later rungs add a seat, a small walking figure and a camp, each as one more source, so frog behavior never needs reworking. Followed far enough, presence ends with a small traveler who can walk the island and camp beside its plants and animals. Matt scoped this in October 2026; the first rung lands with the frogs in S6.
+> Presence is how the player is *on* the island, not just above it. Creatures read the player the way real animals read a person: how fast you come, how low you sit, where you look, how long you stay still. Trust grows from patience, not from clicking. Presence is built as a **list of sources** that creatures react to. In the slice the only source is the camera. Later rungs add a small walking figure and a camp, each as one more source, so frog behavior never needs reworking. Followed far enough, presence ends with a small traveler who can walk the island and camp beside its plants and animals. Matt scoped this in October 2026; the first rung lands with the frogs in S6. On October 21, 2026 he approved the walker plan: two views, above shapes and below lives there; the seat folds into the walker's Sit, and the walker lands in M2.
 
 ## Locked decisions
 
 - **Presence is a list of sources.** Each source reports a few signals (position, speed, editing, stillness, and later posture, gaze, light and predictability). Creatures react to the nearest or strongest source. S6b builds the list with the camera as its only entry; the code never asks "where is the camera", only "what sources are there".
-- **Rung 1, the hand, is the slice** (M1 S6b and S6c). The seat (M2), the walker (M3–M4) and the camp (M6, or with the M7 chapter) are planned, not built, until their milestones.
+- **Rung 1, the hand, is the slice** (M1 S6b and S6c). The walker (M2, which now holds the seat as Sit) and the camp (M6, or with the M7 chapter) are planned, not built, until their milestones.
+- **Two views (October 21, 2026).** Above is the orbit camera, the diorama where you shape. Below is you on foot. From W3, above stops counting for trust and for fast-swoop startles; sculpting or pouring right beside a creature still startles it. The closest above view stops at about 4 m, so getting close always means going down.
 - **The camera source** is the camera's eye (where you look from), so it is close to a creature only when you have zoomed in near it. Its speed is how fast the eye moves; editing is a sculpt, pour or plant stroke within a short reach of the creature.
 - **Moves the game makes never startle.** A camera glide that the game drives (Follow, and any later one) is not a movement of the camera source: its speed is reported as zero while the glide runs, and any input ends the glide and hands speed back. This came from Matt's creature tests. Being taken to a creature must never scare it. The journal no longer moves the camera at all: Show me rings the nearest example in place, and J2b's wash leaves the camera where it is.
 - **Each creature has a comfort ring**: about 1.5 m for a shy frog, shrinking to about 0.3 m for a trusting one. Coming close slowly is welcome. A creature startles only when a source is inside its ring and moving faster than its calm speed, or when an edit happens right beside it.
@@ -23,16 +24,16 @@ Each rung is a new way to be on the island and keeps the rungs below it. The gam
 
 ```mermaid
 flowchart LR
-    H["1 The hand<br/>your attention<br/>(the camera)"] --> S["2 The seat<br/>sit at one spot<br/>at eye height"]
-    S --> W["3 The walker<br/>a small figure<br/>you walk around"]
+    H["1 The hand<br/>your attention<br/>(the camera)"] --> S["2 The seat<br/>now Sit, a posture<br/>of the walker"]
+    S --> W["3 The walker<br/>below: you on foot<br/>(the second view)"]
     W --> C["4 The camp<br/>a bedroll and fire<br/>you live beside"]
 ```
 
 | Rung | You are | Creatures feel | Lands around |
 |---|---|---|---|
-| 1 The hand | The camera | Fast swoops through their ring; sculpting or pouring beside them; quiet watching | M1 S6b and S6c |
-| 2 The seat | Sitting quietly at a spot you chose | A still, low, patient presence | M2, with photo mode and the journal |
-| 3 The walker | A small traveler on foot | Approach speed, posture, gaze, footsteps, lantern | M3–M4, with paths and the bridge |
+| 1 The hand | The camera (above) | Fast swoops through their ring; sculpting or pouring beside them; quiet watching. From W3, only edits right beside them | M1 S6b and S6c |
+| 2 The seat | Sitting where you stand, as the walker | A still, low, patient presence | M2, folded into the walker's Sit |
+| 3 The walker | You on foot, below | Approach speed, posture, gaze, footsteps, lantern | M2 (October 21, 2026); paths and the bridge join as routes in M3 |
 | 4 The camp | Someone who lives here | A home point; trust keeps growing slowly while you are away | M6, or with the M7 chapter |
 
 ### What the repo already gives presence
@@ -57,7 +58,7 @@ flowchart LR
 | Editing | Sculpting, pouring or planting right beside a creature | Yes | Yes (digging, splashing while wading) |
 | Stillness | Time since the presence last moved | Camera at rest | Figure at rest |
 | Offering | Food put down | The Feed tool | Kneel and offer from the hand |
-| Posture | How low and small you are | No; zooming in is fine | Always sitting (seat); stand, kneel, sit, lie (walker) |
+| Posture | How low and small you are | No; zooming in is fine | Stand, kneel, sit (the walker; sit is the old seat) |
 | Gaze | Whether you are looking at it | No | The figure's head |
 | Light | A carried or placed light at night | No | Hand lantern, campfire |
 | Predictability | Doing the expected thing | No | On a path versus off it |
@@ -151,19 +152,25 @@ Live only, recorded when it matters:
   - Checked with the frog lab's Swoop, Creep and Glide buttons. On the real camera code at 60 steps a second: a swoop puts the eye 55 cm from the frog at 6.4 m/s, a 25 s creep stays at 0.14 m/s, and a glide reads 0.03 m/s as it settles.
 - **S6c (feed, trust and name):** Feed is for trust only. Feeding and quiet watching earn trust as small saved events; trust shrinks the ring. A curious frog can be named; a familiar frog sits still for a portrait.
 
-### Rung 2, the seat (M2)
+### Rung 2, the seat (folded into the walker, October 21, 2026)
 
-"Sit here" lets you choose a spot. The camera glides down to seated eye height (about 1 m), looking out; you can look around slowly but not move, and the HUD fades. In the source list the seat is always low, still and never fast, so it never startles and always counts as quiet watching: the place trust grows fastest. Seats become places the journal remembers. It pairs with photo mode (M2), and it forces the ground-level view (grass at eye height, the water's edge up close, the horizon, fog) to look good before the walker needs it.
+There is no bench or seat to build. Sit is a posture the walker takes anywhere, and sitting is the old seat: low, still and never fast, so it never startles and always counts as quiet watching, the place trust grows fastest. Sitting earns quiet-watching trust at the seat's higher rate, and the HUD fades while you sit. The shaper's trail reward that was the bench ("a terrace with water falling from it") is now Steps (rung 3).
 
-### Rung 3, the walker (M3–M4)
+### Rung 3, the walker (M2, approved October 21, 2026)
 
-- **Moving:** tap or click a spot and the figure walks there along the creature walkability grid; the same on a phone and a desktop, no virtual joystick (WASD optional on desktop). Pace: creep, stroll, brisk; creep stays under a shy frog's calm speed. Postures: stand, kneel, sit, lie.
-- **Where:** anywhere walkable above water, wading to the knee, no swimming. Stepping stones and the bridge become crossings; paths become routes.
+Two views: above shapes, below lives there. Above is the diorama with every shaping tool (Sculpt, Paint, Water, Plant, Cliff). Below is you on foot, with no shaping tools. All numbers live in `recipes/world/walker.json`.
+
+- **Going down and up:** Go down lands you where you are looking (the middle of the view, the nearest walkable spot). Go up returns to the orbit; your figure stays standing on the island and is visible from above. Both glides are game moves and never startle.
+- **Moving:** tap or click a spot and the figure walks there; the same on a phone and a desktop, no virtual joystick. One calm pace, a stroll, that eases to a creep by itself near creatures. A double tap hurries (brisk), and only hurrying can startle. Postures: stand, kneel, sit.
+- **The walk grid:** 0.5 m cells. A cell is walkable if its slope is under about 35 degrees, it is not a cliff step, and the water over it right now is shallower than knee deep (0.4 m). No swimming.
+- **The tide is read live.** The sandbar opens at low tide and closes at high tide. Tapping the islet while the bar is under water shows "The bar is under water. Low tide in about N hours." If the water rises while you cross, the figure wades back to dry ground by itself (a game move, never a startle). You can always go up, so nobody is stuck.
+- **The camera below:** low third-person, about 3 m behind you. Drag to look around; pinch or wheel between 2 m and 6 m; no panning.
+- **Presence below (W3):** the walker joins the source list with posture and gaze. Feeding, finds and quiet watching read where you stand, not the camera. Feed is only below. Above stops counting for trust and for fast swoops; edits right beside a creature still startle.
+- **Crossings and routes:** stepping stones become the way across a pond, and Steps cut into a cliff face (the shaper's terrace reward, in place of the bench) let you walk up your terraces. Paths and the bridge become routes when they arrive in M3.
 - **Creatures learn your routes:** on a path you always use, the ring multiplier is slightly smaller. Repeated footfall wears a faint desire line into the grass that grows back if you stop using it.
-- **Interactions gain a body:** kneel to offer food, whistle while sitting, carry a lantern, crouch to photograph.
-- **The figure:** a small stylized traveler, about 1.7 m, in a coat, hat and pack, with no face. Recommended build: procedural, from the same blended-SDF body pipeline as the creatures, with leg IK; a hand-made glTF figure is the alternative.
-- **The camera:** "step in" glides from the diorama orbit to a low third-person view; "step out" glides back. The orbit stays the default way to play.
-- **Cost:** the biggest rung. Near-field rendering and draw distance at ground level, grass that bends underfoot, footprints, footsteps by ground (doc 17), collision with walls, bridge and stones, an animation set, and new save data.
+- **The figure:** a small stylized traveler, about 1.7 m, in a coat, hat and pack, with no face, made from the same blended-SDF body pipeline as the creatures. W2 uses a plain stand-in.
+- **Build pieces** on `m2-walker`: W0 docs; W1 the walk grid, `tools/walk-lab.html` and a `?sandbar` test island; W2 the stand-in figure, Go down and Go up, tap to walk and the low camera, as a feel test. W3 presence below, W4 the ground bar (Sit, kneel, Feed, Look, Photo), W5 the figure, W6 the ground-level look and W7 Steps and crossings are scoped after Matt tries W2.
+- **Cost:** the biggest rung. Near-field rendering and draw distance at ground level, grass that bends underfoot, footprints, footsteps by ground (doc 17), an animation set, and new save data.
 
 ### Rung 4, the camp (M6, or with M7)
 
@@ -226,7 +233,7 @@ Rung 1 is a few distance checks per creature per frame against one source: negli
 
 ## Open questions
 
-- Should the walker stay something you choose to step into, with the diorama view the main way to play, or eventually become the main way?
+- Answered October 21, 2026: the main way to play is two views. Above shapes; below lives there.
 - Should the figure be customizable from the start, or found and gifted over time?
 - Should a whole group slowly get used to you (familiarity), or should closeness stay one creature at a time?
 - Should the camp kit be a creature's gift, or the reward for your first bonded creature?
