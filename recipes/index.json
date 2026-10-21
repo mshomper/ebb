@@ -40,6 +40,7 @@
     "species/minnow": "species/minnow.json",
     "species/dragonfly": "species/dragonfly.json",
     "species/finds": "species/finds.json",
+    "species/autumn-finds": "species/autumn-finds.json",
     "palettes/dusk": "palettes/dusk.json",
     "palettes/meadow-morning": "palettes/meadow-morning.json",
     "palettes/clear-sight": "palettes/clear-sight.json"
