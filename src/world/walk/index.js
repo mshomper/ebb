@@ -239,6 +239,27 @@ export function createWalk(o) {
       return [body, ...steps.map((s) => ({ x: s.x, z: s.z, r: GR.footM, k: Math.max(0, 1 - (walkT - s.t) / GR.springS) }))];
     },
 
+    /**
+     * Where your figure stands, for the save (kept with the view, doc 18): null if it has never
+     * been put down. A save always opens above, so being below is not kept.
+     * @returns {{ x: number, z: number, yaw: number, posture: 'stand' | 'kneel' | 'sit' } | null}
+     */
+    spot() {
+      return walker.placed ? { x: walker.x, z: walker.z, yaw: walker.yaw, posture: walker.posture } : null;
+    },
+
+    /**
+     * Put your figure back where the save left it (above, so it is seen from the diorama). Ignores a
+     * spot that is no longer ground you can stand on nearby.
+     * @param {any} s spot() from the save
+     */
+    restoreSpot(s) {
+      if (!s || ![s.x, s.z, s.yaw].every(Number.isFinite)) return;
+      if (!walker.place(s.x, s.z, s.yaw, R.grid.snapM)) return;
+      if (s.posture === 'kneel' || s.posture === 'sit') walker.setPosture(s.posture);
+      publish();
+    },
+
     /** Go back up over where you stand; the figure stays. */
     up() {
       if (!below) return;

@@ -447,6 +447,8 @@ export async function startApp(canvas, hooks = {}) {
   const walk = createWalk({ recipe: walkerRecipe, figure: await loadRecipe('world/figure'), terrain, water, camera, tide: waterRecipe.tide,
     hours: () => clock.display() / clock.SECONDS_PER_HOUR, creatures: () => creatures.frogs() });
   walkRef = walk;
+  // Your figure stays where you left it (kept with the view; the save still opens above).
+  walk.restoreSpot(back?.view?.walker);
   // Autumn's season markers (doc 13; src/world/finds/autumn-live.js): fungi on the kept logs, and
   // dewy webs in the tall grass on misty mornings. Tapping either is a find.
   const autumn = createAutumn({ world, terrain, water, camera, pieces, growth, recipe: autumnRecipe, seasons: seasonsRecipe, seed });
@@ -1316,7 +1318,7 @@ export async function startApp(canvas, hooks = {}) {
       build: hooks.build ?? 'dev', seed, island: island.id, worldT: clock.worldT(), flow: clock.flow(),
       carryMinutes: getStore('meta')?.carryMinutes ?? 0, keepGrowing: getStore('meta')?.keepGrowing ?? true,
       world: world.state, journal: getStore('journal'), water: getStore('water'), unlocks: getStore('unlocks')?.earned ?? {},
-      view: camera.pose(), looks: getStore('looks') ?? {}, music: getStore('music') ?? { hearted: [] }, pieces: getStore('pieces'), keepsakes: getStore('keepsakes'), nets: getStore('nets'), chunks: getStore('chunks'), mirror: getStore('terrainLive')?.mirror ?? null,
+      view: { ...camera.pose(), walker: walk.spot() }, looks: getStore('looks') ?? {}, music: getStore('music') ?? { hearted: [] }, pieces: getStore('pieces'), keepsakes: getStore('keepsakes'), nets: getStore('nets'), chunks: getStore('chunks'), mirror: getStore('terrainLive')?.mirror ?? null,
     }),
   });
 
