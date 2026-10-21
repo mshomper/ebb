@@ -66,7 +66,7 @@ export function createNets(opts) {
   /** Mirror the nets into the Net card's slice. @param {{ message?: string, refused?: boolean }} [say] */
   function sync(say) {
     const net = state().nets[0];
-    update('netsUi', (u) => ({ has: !!net, out: !!net?.at, hint: W.hint, ready: !!net && netState(net, opts.nowH(), tideP).state === 'ready',
+    update('netsUi', (u) => ({ has: !!net, id: net?.id ?? null, out: !!net?.at, hint: W.hint, liftLabel: W.lift, inLabel: W.bringIn, ready: !!net && netState(net, opts.nowH(), tideP).state === 'ready',
       status: net ? words(net) : '', message: say?.message ?? '', refused: !!say?.refused, at: say ? performance.now() : u?.at ?? 0 }));
   }
   sync();
@@ -115,14 +115,21 @@ export function createNets(opts) {
       const net = state().nets[0];
       if (!net) return;
       const nowH = opts.nowH();
+      // A tap on the net itself never moves it: a full one is lifted, one still fishing says so.
+      if (api.netAt(p[0], p[2])?.id === net.id) {
+        if (netState(net, nowH, tideP).state === 'ready') api.lift(net.id);
+        else sync({ message: words(net) });
+        return;
+      }
       const live = water.sampleLive?.(p[0], p[2]);
       const at = { band: inBand(p[0], p[2]), depth: live?.depth ?? 0, ground: terrain.sampleHeight(p[0], p[2]),
         nextHighLevel: level(highHour(nextHighTide(nowH, tideP), tideP), tideP) };
       const r = canCast(at, NR.set);
       if (!r.ok) { sync({ message: W.refused[r.reason], refused: true }); return; }
-      update('nets', () => cast(state(), net.id, p[0], p[2], nowH, tideP, { readyNow: !!opts.test && !!NR.test?.readyNow }));
+      const readyNow = !!opts.test && !!NR.test?.readyNow;
+      update('nets', () => cast(state(), net.id, p[0], p[2], nowH, tideP, { readyNow }));
       emitDeferred('keepsake:sound', { name: 'net-set' });
-      sync({ message: W.cast });
+      sync({ message: readyNow ? W.castTest : W.cast });
     },
 
     /** Bring the net in without lifting a haul. @param {number} id */

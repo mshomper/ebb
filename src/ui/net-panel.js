@@ -26,8 +26,8 @@ export function mountNetPanel(card) {
     <p class="ebb-tools__hint" data-out="net-hint"></p>
     <p class="ebb-tools__status" data-out="net-status" aria-live="polite"></p>
     <div class="ebb-tools__spring-row" data-out="net-row">
-      <span></span>
-      <button type="button" class="ebb-tools__chip ebb-tools__remove" data-net-in="true" title="Bring it in">${iconSvg('net')}<span>Bring it in</span></button>
+      <button type="button" class="ebb-tools__chip" data-net-lift="true">${iconSvg('net')}<span data-out="net-lift"></span></button>
+      <button type="button" class="ebb-tools__chip ebb-tools__remove" data-net-in="true">${iconSvg('close')}<span data-out="net-in"></span></button>
     </div>
     <p class="ebb-tools__message" data-out="net-message" role="status" aria-live="polite"></p>`;
   card.insertBefore(el, card.querySelector('[data-slider]'));
@@ -35,6 +35,9 @@ export function mountNetPanel(card) {
   const status = /** @type {HTMLElement} */ (el.querySelector('[data-out="net-status"]'));
   const row = /** @type {HTMLElement} */ (el.querySelector('[data-out="net-row"]'));
   const message = /** @type {HTMLElement} */ (el.querySelector('[data-out="net-message"]'));
+  const liftBtn = /** @type {HTMLButtonElement} */ (el.querySelector('[data-net-lift]'));
+  const liftText = /** @type {HTMLElement} */ (el.querySelector('[data-out="net-lift"]'));
+  const inText = /** @type {HTMLElement} */ (el.querySelector('[data-out="net-in"]'));
   /** @type {ReturnType<typeof setTimeout> | undefined} */ let timer;
   let shownAt = 0;
 
@@ -43,6 +46,9 @@ export function mountNetPanel(card) {
     if (hintEl.textContent !== (u.hint ?? '')) hintEl.textContent = u.hint ?? '';
     if (status.textContent !== (u.status ?? '')) status.textContent = u.status ?? '';
     row.hidden = !u.out;
+    liftBtn.hidden = !u.ready;
+    liftText.textContent = u.liftLabel ?? '';
+    inText.textContent = u.inLabel ?? '';
     if (u.message && u.at && u.at !== shownAt) {
       shownAt = u.at;
       clearTimeout(timer);
@@ -57,6 +63,7 @@ export function mountNetPanel(card) {
   el.addEventListener('click', (e) => {
     const b = /** @type {HTMLElement | null} */ (/** @type {HTMLElement} */ (e.target).closest('button'));
     if (b?.dataset.netIn) dispatch(/** @type {any} */ ({ type: 'nets.bringIn' }));
+    else if (b?.dataset.netLift) { const id = get('netsUi')?.id; if (id !== null && id !== undefined) dispatch(/** @type {any} */ ({ type: 'nets.lift', id })); }
   });
   render();
   const off = subscribe('netsUi', render);

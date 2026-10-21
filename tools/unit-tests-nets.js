@@ -12,6 +12,11 @@ import { haulOf } from '../src/world/nets/haul.js';
 import { catchMesh, catchNumbers, catchWords, distinctive } from '../src/world/nets/living/index.js';
 import { pickRarity } from '../src/world/keepsakes/rarity.js';
 import { hash32 } from '../src/core/rng.js';
+import { foundFind } from '../src/world/journal/observe.js';
+import { findsFound } from '../src/world/expansion.js';
+import { registerCatchSketches } from '../src/ui/sketches/catch.js';
+import { drawSketch, hasSketch } from '../src/ui/sketches/index.js';
+import { haulsJob } from '../src/world/nets/haul.js';
 
 const G = 'nets';
 const H = 'nets: hauls';
@@ -182,5 +187,37 @@ export function addNetsTests(test, assert, eq) {
       }
     }
     assert(distinctive(/** @type {any} */ ({ rarity: 'rare', morph: false })) && !distinctive(/** @type {any} */ ({ rarity: 'common', morph: false })), 'rare ones are distinctive');
+  });
+
+  test(H, 'the same hauls on the page and in the determinism job', async () => {
+    const [NR, K] = await recipes();
+    const a = haulsJob({ seed: 7, tides: 40, NR, K }), b = haulsJob({ seed: 7, tides: 40, NR: structuredClone(NR), K: structuredClone(K) });
+    eq(a.hash, b.hash, 'one hash for the same seed');
+    assert(haulsJob({ seed: 8, tides: 40, NR, K }).hash !== a.hash, 'another seed, other hauls');
+  });
+
+  test(H, 'every living kind has a journal page, a place on the naturalist line and on the Web, and a sketch', async () => {
+    const [NR] = await recipes();
+    const [words, web] = await Promise.all([fetch('../recipes/world/journal.json').then((r) => r.json()), fetch('../recipes/world/journal-web.json').then((r) => r.json())]);
+    registerCatchSketches(NR, () => [{ kind: 'goby', seed: 1234, hour: 3 }]);
+    for (const [kind, k] of Object.entries(NR.catches.kinds)) {
+      const page = /** @type {any} */ (k).journal;
+      eq(words.species[page]?.kind, 'find', `${kind}: its page is a find`);
+      assert(words.findOrder.includes(page), `${kind}: on the naturalist's line`);
+      assert(web.nodes[page] && web.links.some((/** @type {any} */ l) => l.b === page), `${kind}: on the Web, with a tie`);
+      assert(hasSketch(page) && drawSketch(page, { stage: 1, labels: {} }).includes('<svg'), `${kind}: a sketch`);
+    }
+  });
+
+  test(H, 'a first release of a kind is a find, once; a second writes nothing', async () => {
+    const words = await fetch('../recipes/world/journal.json').then((r) => r.json());
+    const ctx = { state: null, hour: 30, words };
+    let j = { species: {}, flags: [], notes: [] };
+    const before = findsFound(j, words).length;
+    const r1 = foundFind(/** @type {any} */ (j), 'wrasse', ctx);
+    eq(r1.notes.length, 1, 'one note the first time');
+    j = /** @type {any} */ (r1.journal);
+    eq(findsFound(j, words).length, before + 1, 'one more mark on the naturalist line');
+    eq(foundFind(/** @type {any} */ (j), 'wrasse', ctx).notes.length, 0, 'nothing the second time');
   });
 }

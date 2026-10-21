@@ -48,6 +48,13 @@ Matt, later on October 21, 2026:
 - **Artifacts** are nine baked bases, each morphed, recoloured and named from its seed into endless variants. They come from the nets, the sinker net most of all; the strandline leaves only bottles of the made things.
 - **Coves** carved by the player catch far more keepsakes, through the cove field. (Built.)
 
+Matt, October 21, 2026 (the general net, piece K6; built on `m2-nets`):
+
+- **Lifting brings the net in.** Casting it is always something the player chooses; a net never re-sets itself.
+- **Closing the haul tray lets the rest go,** living things and an unanswered keepsake alike.
+- **The young cuttlefish waits** for the sinker net.
+- **Built:** the net at four families kept, through the progress module (`recipes/world/beachcomber.json`); the Water tool's Net mode; hauls rolled on lifting (`src/world/nets/haul.js`); eight living catches (sand eel, sand goby, pipefish, young plaice, ballan wrasse, brown shrimp, shore crab, moon jelly), each first release a find with its own traced page; save format 7.
+
 ## The loop
 
 ```mermaid

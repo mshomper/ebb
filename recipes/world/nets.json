@@ -96,7 +96,7 @@
     "keepsake": "Something the sea left",
     "kept": "On your shelf now.",
     "card": "Your net",
-    "in": "Your net is in. Tap the shallows at low tide to cast it.",
+    "in": "Your net is in.",
     "fishing": "Your net is fishing. Ready at the next low tide, in about {h}.",
     "fishingSoon": "Your net is fishing. Ready at the next low tide, very soon.",
     "ready": "Your net is full. Lift it to see what the tide left.",
@@ -104,6 +104,7 @@
     "lift": "Lift the net",
     "bringIn": "Bring it in",
     "cast": "Your net is out. The next high tide will fish it.",
+    "castTest": "Your net is out. On this test island it is full at once.",
     "refused": {
       "fresh": "Nets are for the sea. Try the shallows of the tide band.",
       "dry": "Too high for the tide. Try lower on the shore, where the high tide will cover it.",

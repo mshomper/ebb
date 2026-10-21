@@ -41,6 +41,10 @@ Size and color come from CSS: set `width`/`height` on `.icon` and `color` on the
 | `fungi` | a log on the ground line with its end ring, two bracket shelves on its near end and a small capped mushroom on top: autumn's fungi on logs find |
 | `orbweb` | spokes from a hub, two rounds of spiral, beads of dew on the outer round, two grass stems below: autumn's dewy orb webs find |
 | `moonjelly` | a low glassy bell from above, its margin scalloped in eight shallow lobes, four horseshoe rings showing through: the moon jelly find |
+| `fish` | a slim fish side on, its tail forked, a fin on its back: the fish the nets bring up (sand eel, goby, pipefish, plaice, wrasse) |
+| `shrimp` | an arched body ringed in segments, its tail fan tucked under, long feelers: the brown shrimp from the nets |
+| `net` | two stakes, a sagging top cord and a mesh hanging from it, a float in the middle, over a ripple line: the general net (Water's Net mode, a net's card) |
+| `release` | an arrow down into two ripple lines: Let it go, for a living catch on the haul tray |
 | `loosestone` | a stone tipped up on one side, a dark gap under it: the naturalist's loose stones reward |
 | `lens` | a round glass with a glint on a short handle: the naturalist's hand lens reward |
 | `driftwood` | a bending branch at the water's edge with a broken stub and a knot, a ripple beyond: the naturalist's driftwood reward |

@@ -41,6 +41,24 @@ export function pickKind(u, NR, depthM, season) {
 }
 
 /**
+ * Many hauls of one net over a run of tides, as one hash (tools/determinism.html: the page and a
+ * worker must agree). Worker job. @param {{ seed: number, tides: number, NR: any, K: any }} a
+ * @returns {{ hash: number, living: number, keepsakes: number }}
+ */
+export function haulsJob(a) {
+  let hash = 0x811c9dc5, living = 0, keepsakes = 0;
+  for (let t = 0; t < a.tides; t++) {
+    const hl = haulOf({ seed: a.seed, net: { id: 1, kind: 'general' }, tideId: t, cell: [t % 7, 3], depthM: (t % 5) * 0.15,
+      spring: ((t % 9) - 4) / 4, season: ['spring', 'summer', 'autumn', 'winter'][t % 4] }, a.NR, a.K);
+    living += hl.living.length;
+    if (hl.keepsake) keepsakes++;
+    const s = JSON.stringify(hl);
+    for (let i = 0; i < s.length; i++) hash = Math.imul(hash ^ s.charCodeAt(i), 16777619) >>> 0;
+  }
+  return { hash, living, keepsakes };
+}
+
+/**
  * The haul. @param {HaulInput} p @param {any} NR recipes/world/nets.json @param {any} K keepsakes.json
  * @returns {Haul}
  */
