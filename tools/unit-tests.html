@@ -40,7 +40,11 @@
   .ok .word { color: #5F7F5B; }
   .bad .word { color: #B5654A; }
   .detail { display: block; font-size: 16px; color: #4A5551; }
+  .ms { display: block; font-size: 15px; color: #6B7570; }
   .note { font-size: 16px; color: #4A5551; }
+  #slowest h2 { font-size: 20px; font-weight: 800; margin: 20px 0 6px; }
+  #slowest ol { margin: 0; padding-left: 28px; }
+  #slowest li { padding: 3px 0; }
 </style>
 </head>
 <body>
@@ -48,7 +52,9 @@
   <h1>ebb unit tests</h1>
   <p id="summary">Running tests</p>
   <ul id="results"></ul>
+  <div id="slowest"></div>
   <p class="note">Open this page through the local server (double-click play.cmd, then go to tools/unit-tests.html). Modules and workers do not load from a file on disk.</p>
+  <p class="note">The long island runs share all the computer's cores. Add ?only=pond to the address to run just the tests whose names hold "pond", or ?serial to run everything one after another on the page, as it used to.</p>
 </main>
 <script type="module" src="./unit-tests.js"></script>
 </body>

@@ -26,44 +26,15 @@ import {
 } from '../src/render/color/oklab.js';
 import { keyWeights, blendPalette, paramsDistance, TIME_KEYS, SEASON_KEYS } from '../src/render/passes/post/palette-keys.js';
 import { createPaletteBaker, bakeColor, IDENTITY_PALETTE, LUT_SIZE } from '../src/render/passes/post/lut-bake.js';
-import { addGrowthTests } from './unit-tests-growth.js';
-import { addJournalTests } from './unit-tests-journal.js';
-import { addSpringTests } from './unit-tests-spring.js';
-import { addCreatureTests } from './unit-tests-creatures.js';
-import { addIslandTests } from './unit-tests-islands.js';
-import { addEcologyTests } from './unit-tests-ecology.js';
-import { addPondLifeTests } from './unit-tests-pondlife.js';
-import { addDamselflyTests } from './unit-tests-damselflies.js';
-import { addFrogTests } from './unit-tests-frogs.js';
-import { addSaveTests } from './unit-tests-save.js';
-import { addAwayTests } from './unit-tests-away.js';
-import { addStoneTests } from './unit-tests-stone.js';
-import { addCliffTests } from './unit-tests-cliff.js';
 import { addFallsTests } from './unit-tests-falls.js';
-import { addRevealTests } from './unit-tests-reveal.js';
 import { addQualityTests } from './unit-tests-quality.js';
-import { addTrustTests } from './unit-tests-trust.js';
-import { addFindsTests } from './unit-tests-finds.js';
-import { addNaturalistTests } from './unit-tests-naturalist.js';
-import { addKeepsakeTests } from './unit-tests-keepsakes.js';
-import { addPiecesTests } from './unit-tests-pieces.js';
-import { addCoveTests } from './unit-tests-cove.js';
-import { addKeepsakeArtifactTests } from './unit-tests-keepsake-artifacts.js';
-import { addAutumnTests } from './unit-tests-autumn.js';
+// The other test files are listed in unit-tests-parallel.js and run in workers.
+import { PARALLEL, assert, eq, runOne } from './unit-tests-parallel.js';
 
 /** @type {{group: string, name: string, fn: () => any}[]} */
 const tests = [];
 /** @param {string} group @param {string} name @param {() => any} fn */
 const test = (group, name, fn) => tests.push({ group, name, fn });
-
-/** @param {any} cond @param {string} [msg] */
-function assert(cond, msg = 'assertion failed') {
-  if (!cond) throw new Error(msg);
-}
-/** @param {any} a @param {any} b @param {string} [msg] */
-function eq(a, b, msg = '') {
-  if (a !== b) throw new Error(`${msg} expected ${String(b)}, got ${String(a)}`.trim());
-}
 /** @template T @param {Promise<T>} p @param {number} ms @returns {Promise<T>} */
 function timeout(p, ms = 10000) {
   return Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error(`timed out after ${ms} ms`)), ms))]);
@@ -1411,71 +1382,12 @@ test(PAL, 'setPalette crossfades over fadeS, and fadeS 0 swaps at once', async (
   return `${bakeFrames.length} rebakes (frames ${bakeFrames.join(', ')}) in one second while the sun fell from 25 to -19 deg`;
 });
 
-// ---- growth (tools/unit-tests-growth.js) ----
+// ---- waterfalls (WebGPU) and quality (frame timers): these stay on the page ----
 
-addGrowthTests(test, assert, eq);
-
-// ---- journal (tools/unit-tests-journal.js) ----
-
-addJournalTests(test, assert, eq);
-
-// ---- spring (tools/unit-tests-spring.js) ----
-
-addSpringTests(test, assert, eq);
-
-// ---- creatures (tools/unit-tests-creatures.js) ----
-
-addCreatureTests(test, assert, eq);
-
-// ---- islands (tools/unit-tests-islands.js) ----
-
-addIslandTests(test, assert, eq);
-
-// ---- ecology (tools/unit-tests-ecology.js) ----
-
-addEcologyTests(test, assert, eq);
-
-// ---- live frogs (tools/unit-tests-frogs.js) ----
-
-addFrogTests(test, assert, eq);
-
-// ---- saving (tools/unit-tests-save.js) ----
-
-addSaveTests(test, assert, eq);
-
-// ---- time away (tools/unit-tests-away.js) ----
-
-addAwayTests(test, assert, eq);
-addStoneTests(test, assert, eq);
-addCliffTests(test, assert, eq);
 addFallsTests(test, assert, eq);
-
-// ---- the reveal (tools/unit-tests-reveal.js) ----
-
-addRevealTests(test, assert, eq);
-
-// ---- quality: dynamic resolution and the frame cap (tools/unit-tests-quality.js) ----
-
 addQualityTests(test, assert, eq);
-addTrustTests(test, assert, eq);
-addFindsTests(test, assert, eq);
-addNaturalistTests(test, assert, eq);
-addKeepsakeTests(test, assert, eq);
-addPondLifeTests(test, assert, eq);
-addDamselflyTests(test, assert, eq);
 
-// ---- placed pieces: loose stones (tools/unit-tests-pieces.js) ----
-
-addPiecesTests(test, assert, eq);
-addCoveTests(test, assert, eq);
-
-// ---- keepsake artifact models (tools/unit-tests-keepsake-artifacts.js) ----
-
-addKeepsakeArtifactTests(test, assert, eq);
-
-// ---- autumn's season markers: fungi on logs, dewy webs (tools/unit-tests-autumn.js) ----
-
-addAutumnTests(test, assert, eq);
+// Every other test file is listed in tools/unit-tests-parallel.js and runs in workers.
 
 // ---- runner and rendering ----
 
@@ -1489,29 +1401,126 @@ function icon(ok) {
 /** @param {string} s */
 const esc = (s) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c] ?? c);
 
+/** @param {number} ms */
+const timeText = (ms) => (ms < 1000 ? `${Math.round(ms)} ms` : `${(ms / 1000).toFixed(1)} s`);
+
+// ?only=pond runs just the tests whose group or name holds "pond"; ?serial runs every
+// test on the page one after another, as the page did before the workers.
+const params = new URLSearchParams(location.search);
+const only = (params.get('only') ?? '').trim().toLowerCase();
+const serial = params.has('serial');
+// ?workers=4 sets how many workers share the long runs.
+const WORKERS_MAX = 8;
+/** @param {string} group @param {string} name */
+const picked = (group, name) => !only || `${group}: ${name}`.toLowerCase().includes(only);
+
+// Each test's last time, so the longest start first and the cores finish together.
+const MS_KEY = 'ebb-unit-test-ms';
+/** @returns {Record<string, number>} */
+function lastTimes() {
+  try { return JSON.parse(localStorage.getItem(MS_KEY) ?? '{}') ?? {}; } catch { return {}; }
+}
+/** @param {Record<string, number>} times */
+function saveTimes(times) {
+  try { localStorage.setItem(MS_KEY, JSON.stringify(times)); } catch { /* private window */ }
+}
+
+/** @typedef {{group: string, name: string, ok: boolean, detail: string, ms: number}} Result */
+
+/**
+ * Runs the worker-safe test files over several workers, longest tests first.
+ * @param {Record<string, number>} last @param {(r: Result) => void} show
+ */
+async function runInWorkers(last, show) {
+  const keys = Object.keys(PARALLEL);
+  const asked = Number(params.get('workers'));
+  const n = asked >= 1 ? Math.min(16, Math.floor(asked)) : Math.max(2, Math.min(WORKERS_MAX, (navigator.hardwareConcurrency || 4) - 1));
+  /** @type {Map<number, (data: any) => void>} */
+  const waiting = new Map();
+  let nextId = 0;
+  const workers = Array.from({ length: n }, () => {
+    const w = new Worker(new URL('./unit-tests-worker.js', import.meta.url), { type: 'module' });
+    /** @type {number | null} */
+    let current = null;
+    w.onmessage = (ev) => { const done = waiting.get(ev.data.id); waiting.delete(ev.data.id); current = null; done?.(ev.data); };
+    // An error no test caught (a stray timer, a module that will not load) fails the test in hand.
+    w.onerror = (ev) => {
+      ev.preventDefault();
+      if (current === null) return;
+      const done = waiting.get(current); waiting.delete(current); current = null;
+      done?.({ error: `worker error: ${ev.message}` });
+    };
+    /** @param {{key: string, index: number}} msg @returns {Promise<any>} */
+    const ask = (msg) => new Promise((resolve) => { const id = nextId++; current = id; waiting.set(id, resolve); w.postMessage({ id, ...msg }); });
+    return { w, ask };
+  });
+  /** @type {{key: string, index: number, group: string, name: string}[]} */
+  const jobs = [];
+  let k = 0;
+  await Promise.all(workers.map(async ({ ask }) => {
+    while (k < keys.length) {
+      const key = keys[k++];
+      const r = await ask({ key, index: -1 });
+      if (r.error) { show({ group: key, name: 'the test file loads in a worker', ok: false, detail: r.error, ms: 0 }); continue; }
+      r.names.forEach((/** @type {[string, string]} */ [group, name], /** @type {number} */ index) => {
+        if (picked(group, name)) jobs.push({ key, index, group, name });
+      });
+    }
+  }));
+  jobs.sort((a, b) => (last[`${b.group}: ${b.name}`] ?? 0) - (last[`${a.group}: ${a.name}`] ?? 0));
+  let next = 0;
+  await Promise.all(workers.map(async ({ ask }) => {
+    while (next < jobs.length) {
+      const j = jobs[next++];
+      const r = await ask({ key: j.key, index: j.index });
+      show({ group: j.group, name: j.name, ok: !r.error && r.ok === true, detail: String(r.error ?? r.detail ?? ''), ms: r.ms ?? 0 });
+    }
+  }));
+  for (const { w } of workers) w.terminate();
+  return n;
+}
+
 async function main() {
+  const t0 = performance.now();
   const list = /** @type {HTMLElement} */ (document.getElementById('results'));
   const summary = /** @type {HTMLElement} */ (document.getElementById('summary'));
+  const slowest = /** @type {HTMLElement} */ (document.getElementById('slowest'));
+  const last = lastTimes();
+  /** @type {Result[]} */
+  const results = [];
   let passed = 0;
-  for (let i = 0; i < tests.length; i++) {
-    const t = tests[i];
-    let ok = true, detail = '';
-    try {
-      const r = await t.fn();
-      if (typeof r === 'string') detail = r;
-    } catch (e) {
-      ok = false;
-      detail = e instanceof Error ? `${e.name}: ${e.message}` : String(e);
-      console.error(`[unit-tests] ${t.group}: ${t.name}`, e);
-    }
-    if (ok) passed++;
+  /** @param {Result} r */
+  const show = (r) => {
+    results.push(r);
+    if (r.ok) passed++;
+    else console.error(`[unit-tests] ${r.group}: ${r.name}`, r.detail);
     const li = document.createElement('li');
-    li.className = ok ? 'ok' : 'bad';
-    li.innerHTML = `${icon(ok)}<span class="text"><span class="word">${ok ? 'passed' : 'failed'}</span> ${esc(t.group)}: ${esc(t.name)}${detail ? `<span class="detail">${esc(detail)}</span>` : ''}</span>`;
-    list.appendChild(li);
-    summary.textContent = `Running tests: ${passed} of ${i + 1} passed so far`;
-  }
-  summary.textContent = `${passed} of ${tests.length} passed`;
+    li.className = r.ok ? 'ok' : 'bad';
+    li.innerHTML = `${icon(r.ok)}<span class="text"><span class="word">${r.ok ? 'passed' : 'failed'}</span> ${esc(r.group)}: ${esc(r.name)}`
+      + `${r.detail ? `<span class="detail">${esc(r.detail)}</span>` : ''}<span class="ms">${timeText(r.ms)}</span></span>`;
+    // Failures go to the top, so they are seen without scrolling.
+    if (r.ok) list.appendChild(li); else list.prepend(li);
+    summary.textContent = `Running tests: ${passed} of ${results.length} passed so far`;
+  };
+
+  if (serial) for (const key of Object.keys(PARALLEL)) (await PARALLEL[key]())(test, assert, eq);
+  const onPage = (async () => {
+    for (const t of tests) {
+      if (!picked(t.group, t.name)) continue;
+      show({ group: t.group, name: t.name, ...(await runOne(t.fn)) });
+    }
+  })();
+  const workerCount = serial ? 0 : await runInWorkers(last, show);
+  await onPage;
+
+  for (const r of results) last[`${r.group}: ${r.name}`] = r.ms;
+  saveTimes(last);
+  const failed = results.length - passed;
+  const how = serial ? 'one after another on the page' : `on the page and ${workerCount} workers`;
+  summary.textContent = `${passed} of ${results.length} passed${failed ? ` (${failed} failed, shown first)` : ''} in ${timeText(performance.now() - t0)}, ${how}`
+    + (only ? `, only tests matching "${only}"` : '');
+  const top = [...results].sort((a, b) => b.ms - a.ms).slice(0, 8);
+  slowest.innerHTML = `<h2>Slowest tests</h2><ol>${top.map((r) => `<li>${timeText(r.ms)}: ${esc(r.group)}: ${esc(r.name)}</li>`).join('')}</ol>`;
 }
 
 main();
