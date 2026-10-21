@@ -49,6 +49,8 @@ import { createFinds } from './world/finds/index.js';
 import { createKeepsakes } from './world/keepsakes/index.js';
 import { keepsakeWords } from './world/keepsakes/families/index.js';
 import { keptFamily } from './world/expansion.js';
+import { addFirst, keptFirsts, seenMark, firstsOf, sampleTrails } from './world/trails.js';
+import { createShaperWatch } from './world/shaper.js';
 import { createNets } from './world/nets/index.js';
 import { cleanShelf, keep as keepShelf, letGo as letGoShelf, readLetter, swap as swapShelf } from './world/keepsakes/shelf.js';
 import { chooseLetter } from './world/keepsakes/letters.js';
@@ -184,7 +186,8 @@ export async function startApp(canvas, hooks = {}) {
   // offer every plant in the Plant tool before it has come to the island (volunteers.js); sea
   // campion, for one, grows nowhere until there is rock by the sea.
   updateStore('unlocks', (u) => {
-    const earned = u?.earned ?? back?.unlocks ?? {};
+    // `?trails` (testing, unsaved): stops on the beachcomber's and shaper's trails already reached.
+    const earned = params.has('trails') ? sampleTrails(u?.earned ?? back?.unlocks ?? {}) : u?.earned ?? back?.unlocks ?? {};
     return { earned, ...earned, springs: !!earned.springs || params.has('sandbox'),
       cliffs: !!earned.cliffs || params.has('sandbox') || params.has('cliffs'),
       stones: !!earned.stones || params.has('sandbox') || params.has('stones'), stonesTest: params.has('stones'),
@@ -419,8 +422,11 @@ export async function startApp(canvas, hooks = {}) {
   const keepsakesRecipe = await loadRecipe('world/keepsakes');
   const keepsakeTest = params.has('keepsakes');
   // Sheltered coves catch more of them (the cove field, src/world/water/cove.js).
+  const coveRecipe = await loadRecipe('world/cove');
+  // The shaper's trail notices the kinds of place you make (src/world/shaper.js, wired below).
+  const shaperRecipe = await loadRecipe('world/shaper');
   const keepsakes = createKeepsakes({ water, shore: ww.shore, terrain, camera, recipe: keepsakesRecipe, passRecipe: findsRecipe,
-    seed: subSeed(seed, 'keepsakes'), tide: waterRecipe.tide, test: keepsakeTest, coveRecipe: await loadRecipe('world/cove'),
+    seed: subSeed(seed, 'keepsakes'), tide: waterRecipe.tide, test: keepsakeTest, coveRecipe,
     on: () => keepsakeTest || !!getStore('unlocks')?.shells });
   const keepsakesApi = { ...keepsakes, words: (/** @type {any} */ n) => keepsakeWords(n, keepsakesRecipe) };
   // Bottle letters (recipes/world/bottle-messages.json): which letter a bottle on the beach turned
@@ -792,12 +798,24 @@ export async function startApp(canvas, hooks = {}) {
   }
 
   /**
-   * A keepsake family kept, noted for good in the saved unlocks (the beachcomber's trail counts
-   * families ever kept; src/world/expansion.js gives the general net at four). @param {string} family
+   * A keepsake kept, noted for good in the saved unlocks: its family (src/world/expansion.js gives the
+   * general net at four), and the beachcomber's firsts it brings (src/world/trails.js: its family,
+   * its rarity, its mark). @param {any} n its numbers
    */
-  function noteKept(family) {
-    updateStore('unlocks', (u) => ({ ...u, earned: keptFamily(u?.earned, family) }));
+  function noteKept(n) {
+    if (!n?.family) return;
+    updateStore('unlocks', (u) => {
+      let earned = keptFamily(u?.earned, n.family);
+      for (const f of keptFirsts(n, clock.hourIndex())) earned = addFirst(earned, f);
+      return { ...u, earned };
+    });
   }
+  /** Firsts for the trails (a mark seen, a place made): written once, for good. @param {import('./world/trails.js').First | null} f */
+  function noteFirst(f) {
+    if (f) updateStore('unlocks', (u) => { const earned = addFirst(u?.earned, f); return earned === u?.earned ? u : { ...u, earned }; });
+  }
+  // A keepsake with a mark seen, on the beach or on the haul tray: noticing is enough.
+  on('keepsake:seen', (/** @type {{ n: any }} */ p) => noteFirst(seenMark(p.n, clock.hourIndex())));
 
   /** @param {'undo'|'redo'} dir */
   function runHistory(dir) {
@@ -893,7 +911,7 @@ export async function startApp(canvas, hooks = {}) {
         const r = keepShelf(cleanShelf(getStore('keepsakes')), k);
         if (r.kept) {
           updateStore('keepsakes', () => r.state);
-          noteKept(k.n.family);
+          noteKept(k.n);
           keepsakes.leave(a.id);
           updateStore('identify', () => null);
           emitDeferred('keepsake:sound', { name: k.n.family === 'bottle' ? 'keep-glass' : 'keep' });
@@ -908,7 +926,7 @@ export async function startApp(canvas, hooks = {}) {
         const p = getStore('shelfPending');
         if (!p) break;
         updateStore('keepsakes', (s) => swapShelf(cleanShelf(s), a.out, p));
-        noteKept(p.n?.family);
+        noteKept(p.n);
         // One from a net's haul: the tray's keepsake is answered.
         if (String(p.shoreId).startsWith('net:')) nets.answered();
         keepsakes.leave(p.shoreId);
@@ -978,7 +996,7 @@ export async function startApp(canvas, hooks = {}) {
         const r = keepShelf(cleanShelf(getStore('keepsakes')), k);
         if (r.kept) {
           updateStore('keepsakes', () => r.state);
-          noteKept(k.n.family);
+          noteKept(k.n);
           nets.answered();
           emitDeferred('keepsake:sound', { name: 'keep' });
         } else {
@@ -1126,6 +1144,15 @@ export async function startApp(canvas, hooks = {}) {
   /** @type {import('./world/falls-near.js').Fall[]} */
   let falls = [];
   on('falls:lips', (/** @type {{ lips: Float32Array, count: number }} */ p) => { falls = groupFalls(p.lips, p.count, soundRecipe.falls); });
+  // The shaper's trail (doc 13 "Trails"; src/world/shaper.js): the kinds of place you have made,
+  // each noticed once, looked for when the water settles, every game hour and after time away.
+  const shaperWatch = createShaperWatch({ world, water, recipe: shaperRecipe, coveRecipe, falls: () => falls,
+    has: () => new Set(firstsOf(getStore('unlocks')?.earned ?? {}, 'shape').map((f) => f.id)),
+    note: (id) => noteFirst({ trail: 'shape', kind: 'place', id, hour: clock.hourIndex() }) });
+  // A first look a moment after the island is up (a loaded island notices what it already has).
+  let shaperS = 3;
+  for (const ev of ['world:ticked', 'water:summary-updated', 'journal:replaced']) on(ev, () => { shaperS = 0.5; });
+  sim.addSystem({ id: 'shaper-watch', tick(/** @type {any} */ f) { if (shaperS > 0 && (shaperS -= f.realDt) <= 0) shaperWatch.look(); } });
   /** @param {number} realDt @param {number} display @param {{ index: number, phase: number }} season @param {any} day daylight.update's result */
   function publishSound(realDt, display, season, day) {
     const weather = day.weather;

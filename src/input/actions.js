@@ -55,7 +55,7 @@ import { emit } from '../core/events.js';
  *   | { type: 'ui.identify' }
  *   | { type: 'creature.name', id: number, name: string }
  *   | { type: 'ui.hideHud', hidden?: boolean, source?: Source }
- *   | { type: 'ui.journal', open?: boolean, toggle?: boolean, view?: 'living'|'ground'|'web'|'almanac'|'notes', page?: string|null, size?: 'half'|'full' }} Action
+ *   | { type: 'ui.journal', open?: boolean, toggle?: boolean, view?: 'trails'|'living'|'ground'|'web'|'almanac'|'notes'|'shelf', page?: string|null, size?: 'half'|'full', trail?: 'naturalist'|'beach'|'shape' }} Action
  */
 
 /** @type {((a: Action) => void)[]} */
