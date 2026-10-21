@@ -11,8 +11,11 @@ import { dayRecord } from '../weather.js';
 /** @param {number} h */
 const u01 = (h) => (h >>> 8) / 16777216;
 
-/** The salt for jellyfish hashes: past the end of finds/index.js KINDS, so it never shares one. */
-const JELLY_SALT = 11;
+/**
+ * The salt for jellyfish hashes: their own, far past any finds/index.js KINDS salt (its index + 1,
+ * which grows as kinds are appended), so no later kind or keepsake shares their cells' rolls.
+ */
+const JELLY_SALT = 1009;
 
 /**
  * The season (0 spring .. 3 winter) of the high water that left a line.
