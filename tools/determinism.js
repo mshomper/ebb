@@ -8,6 +8,7 @@ import { CHUNK_CELLS, CHUNK_MIN, WORLD_CELLS, quantize, dequantize } from '../sr
 import { buildBase, hashBase, landmarks } from '../src/world/terrain/landform.js';
 import { waterCellOf } from '../src/world/water/grid.js';
 import { buildSummary, hashSummary, WATER_CLASS } from '../src/world/water/summary.js';
+import { haulsJob } from '../src/world/nets/haul.js';
 
 const JOB = { module: './world/terrain/landform.js', fn: 'buildBase' };
 /** The 3 x 3 starter chunks, row by row. */
@@ -241,6 +242,41 @@ function showWater(w) {
   ctx.putImageData(img, 0, 0);
 }
 
+const HAULS_JOB = { module: './world/nets/haul.js', fn: 'haulsJob' };
+
+/**
+ * The nets (docs/future/12): 200 hauls of one net, rolled on the page and in a worker. A haul is
+ * rolled only when a net is lifted, so these must agree for time away to give the same catch.
+ * @param {number} worldSeed
+ */
+async function runHauls(worldSeed) {
+  const [NR, K] = await Promise.all([fetch('../recipes/world/nets.json').then((r) => r.json()), fetch('../recipes/world/keepsakes.json').then((r) => r.json())]);
+  const args = { seed: subSeed(worldSeed, 'nets'), tides: 200, NR, K };
+  const main = haulsJob(args);
+  initWorkers({ size: 1 });
+  let worker;
+  try { worker = await run(HAULS_JOB, args); } finally { dispose(); }
+  return { main, worker };
+}
+
+/** @param {Awaited<ReturnType<typeof runHauls>>} h */
+function showHauls(h) {
+  let card = document.getElementById('haulCard');
+  if (!card) {
+    card = document.createElement('div');
+    card.className = 'card';
+    card.id = 'haulCard';
+    /** @type {HTMLElement} */ (document.getElementById('waterCard') ?? $('chunks').closest('.card')).after(card);
+  }
+  const ok = h.main.hash === h.worker.hash;
+  card.innerHTML = '<h2>Net hauls</h2>' +
+    `<div class="row total"><span class="label">200 tides</span>` +
+    `<span class="hash">${hex(h.main.hash)}<small>Main thread</small></span>` +
+    `<span class="hash">${hex(h.worker.hash)}<small>1 worker</small></span>` +
+    `<span class="v ${ok ? 'ok' : 'bad'}">${icon(ok)}${ok ? 'match' : 'differ'}</span></div>` +
+    `<p class="muted">${h.main.living} living catches and ${h.main.keepsakes} keepsakes over 200 hauls of one net, at every depth, tide and season.</p>`;
+}
+
 async function build() {
   const button = /** @type {HTMLButtonElement} */ ($('go'));
   const input = /** @type {HTMLInputElement} */ ($('seed'));
@@ -268,6 +304,12 @@ async function build() {
     } catch (e) {
       console.error('[determinism] water summary', e);
       $('detail').textContent += ` The water summary failed: ${e instanceof Error ? e.message : String(e)}`;
+    }
+    try {
+      showHauls(await runHauls(worldSeed));
+    } catch (e) {
+      console.error('[determinism] net hauls', e);
+      $('detail').textContent += ` The net hauls failed: ${e instanceof Error ? e.message : String(e)}`;
     }
   } catch (e) {
     console.error('[determinism]', e);

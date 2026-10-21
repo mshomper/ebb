@@ -31,6 +31,7 @@ export const PARALLEL = {
   keepsakeArtifacts: () => import('./unit-tests-keepsake-artifacts.js').then((m) => m.addKeepsakeArtifactTests),
   walk: () => import('./unit-tests-walk.js').then((m) => m.addWalkTests),
   figure: () => import('./unit-tests-figure.js').then((m) => m.addFigureTests),
+  nets: () => import('./unit-tests-nets.js').then((m) => m.addNetsTests),
 };
 
 /** @param {any} cond @param {string} [msg] */

@@ -1,8 +1,10 @@
 // @ts-check
-// Progress (doc 13, docs/future/11): what the island has given you, and when. Two lines feed it:
+// Progress (doc 13, docs/future/11): what the island has given you, and when. Three lines feed it:
 // the naturalist's notes, a mark for each kind of find you discover, with a reward at some marks
-// (recipes/world/naturalist.json); and species gifts, given the first time a species is happy (its
-// recipe's `gift`). Both are read from the journal alone, so live play, catch-up and an old save
+// (recipes/world/naturalist.json); species gifts, given the first time a species is happy (its
+// recipe's `gift`); and the beachcomber's trail (recipes/world/beachcomber.json), a stop at so many
+// keepsake families ever kept (the saved unlocks' `kept`, written as each is kept: keptFamily).
+// The first two are read from the journal alone, so live play, catch-up and an old save
 // give the same: nothing here is counted twice and nothing is ever taken back. What is given is
 // merged into the saved unlocks (store slice `unlocks`, `earned`); each gift is written once as a
 // journal note of kind 'gift', which the island shows as a quiet card (src/ui/island-notes.js).
@@ -15,7 +17,7 @@ import { get, update, subscribe } from '../core/store.js';
 
 /**
  * @typedef {{ id: string, at: number, icon: string, hint: string, page?: string, give?: Record<string, any>, title?: string, line?: string }} Reward
- * @typedef {{ id: string, kind: 'reward'|'gift', give: Record<string, any>, title: string, line: string, icon: string, page: string | null }} Grant
+ * @typedef {{ id: string, kind: 'reward'|'gift'|'stop', give: Record<string, any>, title: string, line: string, icon: string, page: string | null }} Grant
  */
 
 /**
@@ -67,8 +69,9 @@ export function naturalistLine(found, rewards, earned) {
  * What is due now and not given yet: rewards whose mark is reached, and the gift of every species
  * the journal knows is happy.
  * @param {{ found: number, flags: string[], earned: Record<string, any>, rewards: Reward[],
- *   gifts: Record<string, { kind: string, id: string }>, words: any, giftWords: any }} p
- *   gifts: each species' gift (its recipe's `gift`); words: journal.json (names); giftWords: naturalist.json gifts
+ *   gifts: Record<string, { kind: string, id: string }>, words: any, giftWords: any, stops?: Reward[] }} p
+ *   gifts: each species' gift (its recipe's `gift`); words: journal.json (names); giftWords: naturalist.json gifts;
+ *   stops: the beachcomber's (beachcomber.json), reached at so many families kept (earned.kept)
  * @returns {Grant[]}
  */
 export function due(p) {
@@ -77,6 +80,11 @@ export function due(p) {
   for (const r of p.rewards) {
     if (p.found < r.at || given.includes(r.id) || !ready(r)) continue;
     out.push({ id: r.id, kind: 'reward', give: /** @type {any} */ (r.give), title: r.title ?? '', line: r.line ?? '', icon: r.icon, page: r.page ?? null });
+  }
+  const kept = p.earned?.kept?.length ?? 0, stopped = p.earned?.beachcomber ?? [];
+  for (const r of p.stops ?? []) {
+    if (kept < r.at || stopped.includes(r.id) || !ready(r)) continue;
+    out.push({ id: r.id, kind: 'stop', give: /** @type {any} */ (r.give), title: r.title ?? '', line: r.line ?? '', icon: r.icon, page: r.page ?? null });
   }
   for (const [sp, g] of Object.entries(p.gifts ?? {})) {
     if (!g || !p.flags.includes(`${sp}:happy`) || p.earned?.gifts?.[sp]) continue;
@@ -105,15 +113,28 @@ export function grant(earned, g) {
     e[k] = v && typeof v === 'object' && !Array.isArray(v) ? { ...(e[k] ?? {}), ...v } : v;
   }
   if (g.kind === 'reward') e.naturalist = [...(e.naturalist ?? []), g.id];
+  else if (g.kind === 'stop') e.beachcomber = [...(e.beachcomber ?? []), g.id];
   else e.gifts = { ...(e.gifts ?? {}), [g.id]: true };
   return e;
 }
 
 /**
+ * The saved unlocks with a keepsake family noted as kept, for good (the beachcomber's trail counts
+ * families ever kept, so letting one go takes nothing back). Pure: the same object if already noted.
+ * @param {Record<string, any>} earned @param {string} family
+ */
+export function keptFamily(earned, family) {
+  const kept = earned?.kept ?? [];
+  if (!family || kept.includes(family)) return earned ?? {};
+  return { ...(earned ?? {}), kept: [...kept, family] };
+}
+
+/**
  * Live: watches the journal, and when something is due, gives it (store slice `unlocks`) and says
  * so (`progress:gifted`, which the journal writes as a note and the island shows as a card).
- * @param {{ words: any, recipe: any, gifts: Record<string, { kind: string, id: string }> }} opts
- *   words: journal.json; recipe: naturalist.json; gifts: each species' gift, by journal id
+ * @param {{ words: any, recipe: any, gifts: Record<string, { kind: string, id: string }>, beachcomber?: any }} opts
+ *   words: journal.json; recipe: naturalist.json; gifts: each species' gift, by journal id;
+ *   beachcomber: beachcomber.json (its stops)
  * @returns {{ line: () => ReturnType<typeof naturalistLine>, dispose: () => void }}
  */
 export function createProgress(opts) {
@@ -123,19 +144,21 @@ export function createProgress(opts) {
     if (!journal) return;
     const u = get('unlocks') ?? {};
     const grants = due({ found: findsFound(journal, words).length, flags: journal.flags ?? [], earned: u.earned ?? {},
-      rewards: recipe.rewards, gifts: opts.gifts, words, giftWords: recipe.gifts });
+      rewards: recipe.rewards, gifts: opts.gifts, words, giftWords: recipe.gifts, stops: opts.beachcomber?.stops });
     if (!grants.length) return;
     let earned = u.earned ?? {};
     for (const g of grants) earned = grant(earned, g);
     // What is earned shows at once; test switches (?sandbox, ?cliffs, ?stones) stay as they were.
     update('unlocks', (/** @type {any} */ v) => ({ ...v, ...earned, springs: !!earned.springs || !!v?.springs,
-      cliffs: !!earned.cliffs || !!v?.cliffs, stones: !!earned.stones || !!v?.stones, earned }));
+      cliffs: !!earned.cliffs || !!v?.cliffs, stones: !!earned.stones || !!v?.stones,
+      nets: { ...(v?.nets ?? {}), ...(earned.nets ?? {}) }, earned }));
     for (const g of grants) emitDeferred('progress:gifted', g);
   }
-  const off = subscribe('journal', check);
+  // A keepsake kept (its family noted in the unlocks) can reach a beachcomber's stop.
+  const offs = [subscribe('journal', check), subscribe('unlocks', check)];
   check();
   return {
     line: () => naturalistLine(findsFound(get('journal'), words), recipe.rewards, get('unlocks')?.earned ?? {}),
-    dispose: off,
+    dispose: () => { for (const off of offs) off(); },
   };
 }

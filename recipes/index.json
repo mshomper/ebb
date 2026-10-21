@@ -36,6 +36,8 @@
     "world/keepsakes": "world/keepsakes.json",
     "world/bottle-messages": "world/bottle-messages.json",
     "world/naturalist": "world/naturalist.json",
+    "world/beachcomber": "world/beachcomber.json",
+    "world/nets": "world/nets.json",
     "world/pieces": "world/pieces.json",
     "world/walker": "world/walker.json",
     "world/figure": "world/figure.json",

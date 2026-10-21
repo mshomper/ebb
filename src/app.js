@@ -48,6 +48,8 @@ import { createCreatures } from './world/creatures/index.js';
 import { createFinds } from './world/finds/index.js';
 import { createKeepsakes } from './world/keepsakes/index.js';
 import { keepsakeWords } from './world/keepsakes/families/index.js';
+import { keptFamily } from './world/expansion.js';
+import { createNets } from './world/nets/index.js';
 import { cleanShelf, keep as keepShelf, letGo as letGoShelf, readLetter, swap as swapShelf } from './world/keepsakes/shelf.js';
 import { chooseLetter } from './world/keepsakes/letters.js';
 import { createPieces } from './world/pieces/index.js';
@@ -150,6 +152,8 @@ export async function startApp(canvas, hooks = {}) {
     updateStore('pieces', () => back.pieces);
     // The shelf of keepsakes (src/world/keepsakes/shelf.js).
     updateStore('keepsakes', () => back.keepsakes);
+    // The nets (src/world/nets/model.js).
+    updateStore('nets', () => back.nets);
   }
   // Device settings (src/save/prefs.js): kept on this device, never in the island.
   const prefs = loadPrefs();
@@ -186,6 +190,8 @@ export async function startApp(canvas, hooks = {}) {
       stones: !!earned.stones || params.has('sandbox') || params.has('stones'), stonesTest: params.has('stones'),
       driftwood: !!earned.driftwood || params.has('driftwood'),
       carry: !!earned.carry || params.has('sandbox') || params.has('driftwood'),
+      // The general net (the beachcomber's trail, at four families kept); `?nets` (unsaved) gives it at once.
+      nets: { ...(earned.nets ?? {}), ...(params.has('nets') ? { general: true } : {}) },
       allPlants: params.has('sandbox') || params.get('plants') === 'all' };
   });
   // `?weather=clear|cloud|rain|mist` previews a weather look (as the sky lab does); the world's
@@ -422,6 +428,13 @@ export async function startApp(canvas, hooks = {}) {
   const bottleMessages = await loadRecipe('world/bottle-messages');
   /** @type {Map<string, string>} */ const shoreLetters = new Map();
   sim.addSystem(keepsakes);
+  // The nets (docs/future/12, K6; src/world/nets): cast with the Water tool's Net mode once the
+  // beachcomber's trail gives the general net; `?nets` (testing, unsaved) gives it at once, and a
+  // net cast there is ready to lift straight away.
+  const netsRecipe = await loadRecipe('world/nets');
+  const nets = createNets({ water, terrain, camera, seed: subSeed(seed, 'nets'), recipe: netsRecipe, keepsakes: keepsakesRecipe,
+    passRecipe: findsRecipe, tide: waterRecipe.tide, nowH: () => clock.worldT() / clock.SECONDS_PER_HOUR, test: params.has('nets') });
+  sim.addSystem(nets);
   // Placed pieces (doc 09, docs/future/10): loose stones, set with Sculpt's Loose stone mode and
   // lifted with a tap; a handful comes by itself with the naturalist's reward (src/world/pieces).
   // Driftwood washes up on the strandline after high tides (the reward at ten finds), and the
@@ -531,6 +544,7 @@ export async function startApp(canvas, hooks = {}) {
     ...schools.map((s) => s.pass),
     finds.pass,
     keepsakes.pass,
+    nets.pass,
     pieces.pass,
     // Autumn's fungi (a creature pass) and dewy webs, after the logs and the grass they are on.
     ...autumn.passes,
@@ -692,6 +706,13 @@ export async function startApp(canvas, hooks = {}) {
     if (p) ww.tapSpring(p, tools().springRate);
   }
 
+  /** Tap with the Water tool's Net mode: cast the net there, or say why not (src/world/nets). @param {number} x @param {number} y */
+  function netTap(x, y) {
+    if (!getStore('unlocks')?.nets?.general) return;
+    const p = groundAt(x, y);
+    if (p) nets.tap(p);
+  }
+
   /**
    * Sculpt's Stone mode (docs/future/10): set a seeded boulder where you tap, undoable. The size slider
    * is the boulder's width, within terrain.json stone.widthM. @param {number} x @param {number} y
@@ -765,6 +786,14 @@ export async function startApp(canvas, hooks = {}) {
     const r = pieces.setDown(p);
     if (r.ok) updateStore('identify', () => null);
     else updateStore('identify', (c) => (c ? { ...c, carrying: r.reason === 'water', carryNote: r.reason === 'gone' ? null : r.reason, canCarry: r.reason === 'water' } : c));
+  }
+
+  /**
+   * A keepsake family kept, noted for good in the saved unlocks (the beachcomber's trail counts
+   * families ever kept; src/world/expansion.js gives the general net at four). @param {string} family
+   */
+  function noteKept(family) {
+    updateStore('unlocks', (u) => ({ ...u, earned: keptFamily(u?.earned, family) }));
   }
 
   /** @param {'undo'|'redo'} dir */
@@ -861,6 +890,7 @@ export async function startApp(canvas, hooks = {}) {
         const r = keepShelf(cleanShelf(getStore('keepsakes')), k);
         if (r.kept) {
           updateStore('keepsakes', () => r.state);
+          noteKept(k.n.family);
           keepsakes.leave(a.id);
           updateStore('identify', () => null);
           emitDeferred('keepsake:sound', { name: k.n.family === 'bottle' ? 'keep-glass' : 'keep' });
@@ -875,6 +905,9 @@ export async function startApp(canvas, hooks = {}) {
         const p = getStore('shelfPending');
         if (!p) break;
         updateStore('keepsakes', (s) => swapShelf(cleanShelf(s), a.out, p));
+        noteKept(p.n?.family);
+        // One from a net's haul: the tray's keepsake is answered.
+        if (String(p.shoreId).startsWith('net:')) nets.answered();
         keepsakes.leave(p.shoreId);
         updateStore('shelfPending', () => null);
         emitDeferred('keepsake:sound', { name: p.n?.family === 'bottle' ? 'keep-glass' : 'keep' });
@@ -914,6 +947,44 @@ export async function startApp(canvas, hooks = {}) {
         emitDeferred('keepsake:sound', { name: 'letter' });
         break;
       }
+      // The nets (src/world/nets): the net's card lifts it (the haul goes on the tray) or brings it in;
+      // the tray lets living catches go, keeps or returns its keepsake, and closes.
+      case 'nets.lift':
+        if (nets.lift(a.id)) updateStore('identify', () => null);
+        break;
+      case 'nets.bringIn': {
+        const id = a.id ?? nets.nets().find((/** @type {any} */ n) => n.at)?.id;
+        if (id !== undefined) nets.bringIn(id);
+        updateStore('identify', () => null);
+        break;
+      }
+      case 'nets.release':
+        nets.release(a.id);
+        break;
+      case 'nets.close':
+        nets.closeTray();
+        break;
+      case 'nets.leave':
+        nets.answered(true);
+        emitDeferred('keepsake:sound', { name: 'leave' });
+        break;
+      case 'nets.keep': {
+        const h = getStore('haul');
+        if (!h?.haul.keepsake || h.kept) break;
+        const k = { n: structuredClone(h.haul.keepsake.n), hour: h.hour, spring: h.springTide };
+        const r = keepShelf(cleanShelf(getStore('keepsakes')), k);
+        if (r.kept) {
+          updateStore('keepsakes', () => r.state);
+          noteKept(k.n.family);
+          nets.answered();
+          emitDeferred('keepsake:sound', { name: 'keep' });
+        } else {
+          // A full shelf asks which to let go, in the journal; the tray waits underneath.
+          updateStore('shelfPending', () => ({ shoreId: h.haul.keepsake.id, ...k }));
+          updateStore('journalUi', (u) => ({ ...(u ?? {}), open: true, view: 'shelf', page: null }));
+        }
+        break;
+      }
       case 'ui.identify':
         pieces.cancelCarry();
         break;
@@ -934,6 +1005,7 @@ export async function startApp(canvas, hooks = {}) {
         if (tools().tool === 'sculpt' && tools().sculptMode === 'loosestone') { if (a.type === 'tool.begin') looseStoneTap(a.x, a.y); break; }
         if (tools().tool === 'water') {
           if (tools().waterMode === 'spring') { if (a.type === 'tool.begin') springTap(a.x, a.y); }
+          else if (tools().waterMode === 'net') { if (a.type === 'tool.begin') netTap(a.x, a.y); }
           else if (a.type === 'tool.begin' || pouring) pouring = { x: a.x, y: a.y };
           break;
         }
@@ -1011,6 +1083,12 @@ export async function startApp(canvas, hooks = {}) {
       if (s) terrain.setRing({ x: s.x, z: s.z, radius: 0.8, visible: true });
       else if (p) terrain.setRing({ x: p[0], z: p[2], radius: 0.6, visible: true });
       else terrain.setRing({ visible: false });
+      return;
+    }
+    // Net mode: a ring where a tap would cast the net.
+    if (t.tool === 'water' && t.waterMode === 'net') {
+      const p = pointer.inside ? groundAt(pointer.x, pointer.y) : null;
+      terrain.setRing(p ? { x: p[0], z: p[2], radius: netsRecipe.look.netWidthM / 2, visible: true, level: null } : { visible: false, level: null });
       return;
     }
     // Carrying a stone or a log: a ring where a tap would set it down.
@@ -1233,7 +1311,7 @@ export async function startApp(canvas, hooks = {}) {
       build: hooks.build ?? 'dev', seed, island: island.id, worldT: clock.worldT(), flow: clock.flow(),
       carryMinutes: getStore('meta')?.carryMinutes ?? 0, keepGrowing: getStore('meta')?.keepGrowing ?? true,
       world: world.state, journal: getStore('journal'), water: getStore('water'), unlocks: getStore('unlocks')?.earned ?? {},
-      view: camera.pose(), looks: getStore('looks') ?? {}, music: getStore('music') ?? { hearted: [] }, pieces: getStore('pieces'), keepsakes: getStore('keepsakes'), chunks: getStore('chunks'), mirror: getStore('terrainLive')?.mirror ?? null,
+      view: camera.pose(), looks: getStore('looks') ?? {}, music: getStore('music') ?? { hearted: [] }, pieces: getStore('pieces'), keepsakes: getStore('keepsakes'), nets: getStore('nets'), chunks: getStore('chunks'), mirror: getStore('terrainLive')?.mirror ?? null,
     }),
   });
 
@@ -1287,6 +1365,8 @@ export async function startApp(canvas, hooks = {}) {
     finds,
     /** The keepsakes on the strandline (the journal asks it what a tap landed on). */
     keepsakes: keepsakesApi,
+    /** The nets (the journal asks which one a tap landed on; the haul tray reads the recipe). */
+    nets: { ...nets, recipe: netsRecipe, keepsakesRecipe },
     /** The placed loose stones (the journal asks which one a tap landed on). */
     pieces,
     /** Autumn's fungi and webs (counts() for tools). */

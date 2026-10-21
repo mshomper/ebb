@@ -9,16 +9,21 @@ const toSrgb = (/** @type {number} */ c) => Math.round(255 * Math.min(1, c <= 0.
  * Paint a mesh into a canvas, fitted to it. @param {HTMLCanvasElement} cv
  * @param {{ vertices: Float32Array, count: number, indices: Uint32Array }} m @param {number} yaw @param {number} pitch
  * @param {number} [bright] how much the lit colour is lifted
+ * @param {{ c: number[], ext: number, alpha?: number }} [fit] a fixed middle and size to fit by (a moving
+ *   catch on the haul tray keeps its frame), else the mesh's own; alpha: how solid it is drawn (a jelly)
  */
-export function drawMesh(cv, m, yaw, pitch, bright = 1.15) {
-  const W = (cv.width = Math.round(cv.clientWidth * devicePixelRatio)), H = (cv.height = W);
+export function drawMesh(cv, m, yaw, pitch, bright = 1.15, fit) {
+  const W = Math.round(cv.clientWidth * devicePixelRatio), H = W;
+  if (cv.width !== W) cv.width = W;
+  if (cv.height !== H) cv.height = H;
   const g = /** @type {CanvasRenderingContext2D} */ (cv.getContext('2d'));
   g.clearRect(0, 0, W, H);
+  g.globalAlpha = fit?.alpha ?? 1;
   const V = m.vertices;
   const lo = [Infinity, Infinity, Infinity], hi = [-Infinity, -Infinity, -Infinity];
-  for (let i = 0; i < m.count; i++) for (let r = 0; r < 3; r++) { lo[r] = Math.min(lo[r], V[i * 9 + r]); hi[r] = Math.max(hi[r], V[i * 9 + r]); }
-  const c = [(lo[0] + hi[0]) / 2, (lo[1] + hi[1]) / 2, (lo[2] + hi[2]) / 2];
-  const ext = Math.max(hi[0] - lo[0], hi[1] - lo[1], hi[2] - lo[2]) || 1;
+  if (!fit) for (let i = 0; i < m.count; i++) for (let r = 0; r < 3; r++) { lo[r] = Math.min(lo[r], V[i * 9 + r]); hi[r] = Math.max(hi[r], V[i * 9 + r]); }
+  const c = fit?.c ?? [(lo[0] + hi[0]) / 2, (lo[1] + hi[1]) / 2, (lo[2] + hi[2]) / 2];
+  const ext = fit?.ext ?? (Math.max(hi[0] - lo[0], hi[1] - lo[1], hi[2] - lo[2]) || 1);
   const sc = (W * 0.62) / ext;
   const cy = Math.cos(yaw), sy = Math.sin(yaw), cp = Math.cos(pitch), sp = Math.sin(pitch);
   const P = new Float32Array(m.count * 3);

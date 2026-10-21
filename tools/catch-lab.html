@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ebb catch lab</title>
+<link rel="stylesheet" href="../src/ui/tokens.css">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 17px/1.5 Nunito, system-ui, sans-serif; background: #F4EEE4; color: #2F3A35; padding: 20px max(16px, env(safe-area-inset-left)); overflow-x: hidden; }
+  h1 { font-size: 26px; margin: 0 0 4px; }
+  h2 { font-size: 20px; margin: 28px 0 8px; }
+  p { margin: 0 0 14px; max-width: 64ch; }
+  .muted { color: #6B6A5E; font-size: 16px; }
+  .controls { display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: end; margin: 14px 0; }
+  .controls label { display: grid; gap: 4px; font-size: 16px; }
+  input[type=number], select { font: inherit; font-size: 17px; padding: 8px 10px; border: 1px solid #C9BDA6; border-radius: 8px; background: #FBF7F0; color: inherit; min-height: 44px; }
+  input[type=number] { width: 9ch; }
+  button { font: inherit; font-size: 17px; min-height: 44px; padding: 8px 14px; border: 1px solid #C9BDA6; border-radius: 8px; background: #FBF7F0; color: inherit; cursor: pointer; }
+  button[aria-pressed=true] { background: #5F7F5B; border-color: #5F7F5B; color: #FBF7F0; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 14px; }
+  .slot { margin: 0; border-radius: 10px; padding: 8px; display: grid; gap: 6px; background: #FBF7F0; border: 1px solid #E2D8C6; min-width: 0; }
+  .slot canvas, .slot .art { width: 100%; aspect-ratio: 1; display: block; }
+  .slot .art svg { width: 100%; height: 100%; display: block; }
+  .slot figcaption { font-size: 15px; line-height: 1.35; }
+  .slot figcaption b { font-size: 16px; }
+  table { border-collapse: collapse; font-size: 16px; }
+  td, th { padding: 4px 12px 4px 0; text-align: left; }
+  td.n { text-align: right; font-variant-numeric: tabular-nums; }
+  .scroll { overflow-x: auto; }
+  @media (max-width: 700px) {
+    .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+    .slot figcaption { font-size: 16px; }
+  }
+</style>
+</head>
+<body>
+<h1>Catch lab</h1>
+<p>The living things a net brings up (<code>src/world/nets/living/</code>), each made from its seed, with their numbers in <code>recipes/world/nets.json</code>. Fish, the shrimp and the crab come from the creature body bake, the moon jelly from the jellyfish generator. On the tray they move like this, and their journal page is traced from the one you let go.</p>
+
+<div class="controls">
+  <label>Kind <select id="kind"></select></label>
+  <label>Seeds from <input type="number" id="from" value="1" min="0" step="24"></label>
+  <button id="next">Next 24</button>
+</div>
+<div class="chips" id="chips" role="group" aria-label="Rarity"></div>
+<div class="chips" id="views" role="group" aria-label="Show" style="margin-top:10px">
+  <button data-view="model" aria-pressed="true">Models, moving</button>
+  <button data-view="sketch" aria-pressed="false">Ink sketches</button>
+</div>
+
+<h2>24 of them</h2>
+<div class="grid" id="grid"></div>
+
+<h2>Hauls</h2>
+<p class="muted">10,000 hauls rolled with the tide, season and depth below: what is in them, and how rare their keepsakes are against the beach's.</p>
+<div class="controls">
+  <label>Tide <select id="tide">
+    <option value="-1">Neap</option>
+    <option value="0">Middling</option>
+    <option value="0.6">Spring</option>
+    <option value="1" selected>Top of the spring</option>
+  </select></label>
+  <label>Season <select id="season">
+    <option>spring</option><option selected>summer</option><option>autumn</option><option>winter</option>
+  </select></label>
+  <label>Depth at high water <select id="depth">
+    <option value="0.2">Shallow (20 cm)</option>
+    <option value="0.6" selected>Deeper (60 cm)</option>
+  </select></label>
+</div>
+<div class="scroll" id="odds"></div>
+
+<script type="module" src="catch-lab.js"></script>
+</body>
+</html>
