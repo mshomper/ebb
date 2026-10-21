@@ -42,7 +42,17 @@ export function washOf(hex, lift = 0.25) {
  * @returns {{ h: number, at: (u: number, v: number) => [number, number] }}
  */
 export function drawTraced(p, id, x, y, w, o = {}) {
-  const T = OUTLINES[/** @type {keyof typeof OUTLINES} */ (id)];
+  return drawTracedData(p, OUTLINES[/** @type {keyof typeof OUTLINES} */ (id)], x, y, w, o);
+}
+
+/**
+ * Draw a tracing (src/ui/sketches/trace.js) with its top left at (x, y), w wide: the same as
+ * drawTraced, for a shape traced at run time (a keepsake) rather than one in outlines.js.
+ * @param {import('./pen.js').Pen} p @param {import('./trace.js').Traced} T @param {number} x @param {number} y @param {number} w
+ * @param {{ wash?: string, opacity?: number, mirror?: boolean, hatch?: number, creases?: number }} [o]
+ * @returns {{ h: number, at: (u: number, v: number) => [number, number] }}
+ */
+export function drawTracedData(p, T, x, y, w, o = {}) {
   const h = T.aspect * w;
   /** @param {number[]} q @returns {[number, number]} */
   const at = (q) => [x + (o.mirror ? 1 - q[0] : q[0]) * w, y + q[1] * w];

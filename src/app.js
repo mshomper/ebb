@@ -46,6 +46,9 @@ import { bakeBody } from './world/creatures/body-bake.js';
 import { previewSpots } from './world/creatures/preview-spots.js';
 import { createCreatures } from './world/creatures/index.js';
 import { createFinds } from './world/finds/index.js';
+import { createKeepsakes } from './world/keepsakes/index.js';
+import { keepsakeWords } from './world/keepsakes/families/index.js';
+import { cleanShelf, keep as keepShelf, letGo as letGoShelf, swap as swapShelf } from './world/keepsakes/shelf.js';
 import { createPieces } from './world/pieces/index.js';
 import { shorePresence } from './world/journal/shore-presence.js';
 import { createPresence } from './world/creatures/presence.js';
@@ -137,6 +140,8 @@ export async function startApp(canvas, hooks = {}) {
     if (back.music) updateStore('music', () => back.music);
     // Placed loose stones (src/world/pieces).
     updateStore('pieces', () => back.pieces);
+    // The shelf of keepsakes (src/world/keepsakes/shelf.js).
+    updateStore('keepsakes', () => back.keepsakes);
   }
   // Device settings (src/save/prefs.js): kept on this device, never in the island.
   const prefs = loadPrefs();
@@ -376,6 +381,16 @@ export async function startApp(canvas, hooks = {}) {
     weather: () => ({ weatherSeed: world.env.weatherSeed, weather: seasonsRecipe.weather, state: world.state?.weather }) });
   sim.addSystem(finds);
   terrainPass.setCasts(finds.casts(), finds.castShape);
+  // Keepsakes (docs/future/12): one-of-a-kind trinkets each high tide leaves on its strandline, a
+  // few for the whole island. They come with the shells (the naturalist's reward at three finds);
+  // `?keepsakes` (testing, unsaved) shows them at once, several to a tide.
+  const keepsakesRecipe = await loadRecipe('world/keepsakes');
+  const keepsakeTest = params.has('keepsakes');
+  const keepsakes = createKeepsakes({ water, shore: ww.shore, terrain, camera, recipe: keepsakesRecipe, passRecipe: findsRecipe,
+    seed: subSeed(seed, 'keepsakes'), tide: waterRecipe.tide, test: keepsakeTest,
+    on: () => keepsakeTest || !!getStore('unlocks')?.shells });
+  const keepsakesApi = { ...keepsakes, words: (/** @type {any} */ n) => keepsakeWords(n, keepsakesRecipe) };
+  sim.addSystem(keepsakes);
   // Placed pieces (doc 09, docs/future/10): loose stones, set with Sculpt's Loose stone mode and
   // lifted with a tap; a handful comes by itself with the naturalist's reward (src/world/pieces).
   // Driftwood washes up on the strandline after high tides (the reward at ten finds), and the
@@ -434,6 +449,7 @@ export async function startApp(canvas, hooks = {}) {
     creatures.pass,
     ...schools.map((s) => s.pass),
     finds.pass,
+    keepsakes.pass,
     pieces.pass,
     // Moon jellyfish on the summer strandline: clear, so drawn over the opaque things behind them.
     ...(finds.jellyPass ? [finds.jellyPass] : []),
@@ -704,6 +720,42 @@ export async function startApp(canvas, hooks = {}) {
       case 'pieces.carryCancel':
         pieces.cancelCarry();
         updateStore('identify', () => null);
+        break;
+      // A keepsake's card: Leave it to the sea (docs/future/12). It goes, and the next tide takes it.
+      case 'keepsakes.leave':
+        keepsakes.leave(a.id);
+        updateStore('identify', () => null);
+        break;
+      // Keep it: onto the shelf (src/world/keepsakes/shelf.js), and off the shore. A full shelf
+      // opens in the journal and asks which one to let go; nothing is kept until you choose.
+      case 'keepsakes.keep': {
+        const k = keepsakes.toKeep(a.id);
+        if (!k) break;
+        const r = keepShelf(cleanShelf(getStore('keepsakes')), k);
+        if (r.kept) {
+          updateStore('keepsakes', () => r.state);
+          keepsakes.leave(a.id);
+          updateStore('identify', () => null);
+        } else {
+          updateStore('shelfPending', () => ({ shoreId: a.id, ...k }));
+          updateStore('identify', () => null);
+          updateStore('journalUi', (u) => ({ ...(u ?? {}), open: true, view: 'shelf', page: null }));
+        }
+        break;
+      }
+      case 'keepsakes.swap': {
+        const p = getStore('shelfPending');
+        if (!p) break;
+        updateStore('keepsakes', (s) => swapShelf(cleanShelf(s), a.out, p));
+        keepsakes.leave(p.shoreId);
+        updateStore('shelfPending', () => null);
+        break;
+      }
+      case 'keepsakes.letGo':
+        updateStore('keepsakes', (s) => letGoShelf(cleanShelf(s), a.id));
+        break;
+      case 'keepsakes.cancelKeep':
+        updateStore('shelfPending', () => null);
         break;
       case 'ui.identify':
         pieces.cancelCarry();
@@ -1015,7 +1067,7 @@ export async function startApp(canvas, hooks = {}) {
       build: hooks.build ?? 'dev', seed, island: island.id, worldT: clock.worldT(), flow: clock.flow(),
       carryMinutes: getStore('meta')?.carryMinutes ?? 0, keepGrowing: getStore('meta')?.keepGrowing ?? true,
       world: world.state, journal: getStore('journal'), water: getStore('water'), unlocks: getStore('unlocks')?.earned ?? {},
-      view: camera.pose(), looks: getStore('looks') ?? {}, music: getStore('music') ?? { hearted: [] }, pieces: getStore('pieces'), chunks: getStore('chunks'), mirror: getStore('terrainLive')?.mirror ?? null,
+      view: camera.pose(), looks: getStore('looks') ?? {}, music: getStore('music') ?? { hearted: [] }, pieces: getStore('pieces'), keepsakes: getStore('keepsakes'), chunks: getStore('chunks'), mirror: getStore('terrainLive')?.mirror ?? null,
     }),
   });
 
@@ -1066,6 +1118,8 @@ export async function startApp(canvas, hooks = {}) {
     creatures,
     /** The finds near the view (the journal asks it what a tap landed on). */
     finds,
+    /** The keepsakes on the strandline (the journal asks it what a tap landed on). */
+    keepsakes: keepsakesApi,
     /** The placed loose stones (the journal asks which one a tap landed on). */
     pieces,
     /** The shore zones and rock pools now (the journal's Web shows which are on the island). */

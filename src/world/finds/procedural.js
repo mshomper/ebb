@@ -16,8 +16,8 @@ import { hash32 } from '../../core/rng.js';
 /** @param {number} h */
 const u01 = (h) => (h >>> 8) / 16777216;
 
-/** A mesh under construction: vertices go in as 9 floats each, triangles by index. */
-function builder() {
+/** A mesh under construction: vertices go in as 9 floats each, triangles by index. Keepsakes use it too. */
+export function builder() {
   /** @type {number[]} */ const v = [];
   /** @type {number[]} */ const idx = [];
   return {
