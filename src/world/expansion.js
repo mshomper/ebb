@@ -2,8 +2,8 @@
 // Progress (doc 13, docs/future/11): what the island has given you, and when. Three lines feed it:
 // the naturalist's notes, a mark for each kind of find you discover, with a reward at some marks
 // (recipes/world/naturalist.json); species gifts, given the first time a species is happy (its
-// recipe's `gift`); and the beachcomber's trail (recipes/world/beachcomber.json), a stop at so many
-// keepsake families ever kept (the saved unlocks' `kept`, written as each is kept: keptFamily).
+// recipe's `gift`); and the beachcomber's trail (recipes/world/beachcomber.json), its stops reached
+// by the firsts in the saved unlocks (src/world/trails.js: families and rarities kept, marks seen).
 // The first two are read from the journal alone, so live play, catch-up and an old save
 // give the same: nothing here is counted twice and nothing is ever taken back. What is given is
 // merged into the saved unlocks (store slice `unlocks`, `earned`); each gift is written once as a
@@ -14,6 +14,7 @@
 
 import { emitDeferred } from '../core/events.js';
 import { get, update, subscribe } from '../core/store.js';
+import { counts, reached, trailLine, firstsOf } from './trails.js';
 
 /**
  * @typedef {{ id: string, at: number, icon: string, hint: string, page?: string, give?: Record<string, any>, title?: string, line?: string }} Reward
@@ -71,7 +72,8 @@ export function naturalistLine(found, rewards, earned) {
  * @param {{ found: number, flags: string[], earned: Record<string, any>, rewards: Reward[],
  *   gifts: Record<string, { kind: string, id: string }>, words: any, giftWords: any, stops?: Reward[] }} p
  *   gifts: each species' gift (its recipe's `gift`); words: journal.json (names); giftWords: naturalist.json gifts;
- *   stops: the beachcomber's (beachcomber.json), reached at so many families kept (earned.kept)
+ *   stops: the beachcomber's (beachcomber.json), each reached when its need is met by the firsts
+ *   (src/world/trails.js; families kept before the firsts were written count too)
  * @returns {Grant[]}
  */
 export function due(p) {
@@ -81,9 +83,9 @@ export function due(p) {
     if (p.found < r.at || given.includes(r.id) || !ready(r)) continue;
     out.push({ id: r.id, kind: 'reward', give: /** @type {any} */ (r.give), title: r.title ?? '', line: r.line ?? '', icon: r.icon, page: r.page ?? null });
   }
-  const kept = p.earned?.kept?.length ?? 0, stopped = p.earned?.beachcomber ?? [];
-  for (const r of p.stops ?? []) {
-    if (kept < r.at || stopped.includes(r.id) || !ready(r)) continue;
+  const c = counts(p.earned?.firsts ?? [], p.earned?.kept ?? []), stopped = p.earned?.beachcomber ?? [];
+  for (const r of /** @type {any[]} */ (p.stops ?? [])) {
+    if (!reached(r.need ?? {}, c) || stopped.includes(r.id) || !ready(r)) continue;
     out.push({ id: r.id, kind: 'stop', give: /** @type {any} */ (r.give), title: r.title ?? '', line: r.line ?? '', icon: r.icon, page: r.page ?? null });
   }
   for (const [sp, g] of Object.entries(p.gifts ?? {})) {
@@ -132,10 +134,11 @@ export function keptFamily(earned, family) {
 /**
  * Live: watches the journal, and when something is due, gives it (store slice `unlocks`) and says
  * so (`progress:gifted`, which the journal writes as a note and the island shows as a card).
- * @param {{ words: any, recipe: any, gifts: Record<string, { kind: string, id: string }>, beachcomber?: any }} opts
+ * @param {{ words: any, recipe: any, gifts: Record<string, { kind: string, id: string }>, beachcomber?: any, shaper?: any }} opts
  *   words: journal.json; recipe: naturalist.json; gifts: each species' gift, by journal id;
- *   beachcomber: beachcomber.json (its stops)
- * @returns {{ line: () => ReturnType<typeof naturalistLine>, dispose: () => void }}
+ *   beachcomber: beachcomber.json (its stops); shaper: shaper.json (its stops)
+ * @returns {{ line: () => ReturnType<typeof naturalistLine>, beachLine: () => import('./trails.js').TrailEntry[],
+ *   shapeLine: () => import('./trails.js').TrailEntry[], dispose: () => void }}
  */
 export function createProgress(opts) {
   const { words, recipe } = opts;
@@ -159,6 +162,8 @@ export function createProgress(opts) {
   check();
   return {
     line: () => naturalistLine(findsFound(get('journal'), words), recipe.rewards, get('unlocks')?.earned ?? {}),
+    beachLine: () => { const e = get('unlocks')?.earned ?? {}; return trailLine(firstsOf(e, 'beach'), opts.beachcomber?.stops ?? [], e.beachcomber ?? [], e.kept ?? []); },
+    shapeLine: () => { const e = get('unlocks')?.earned ?? {}; return trailLine(firstsOf(e, 'shape'), opts.shaper?.stops ?? [], []); },
     dispose: () => { for (const off of offs) off(); },
   };
 }

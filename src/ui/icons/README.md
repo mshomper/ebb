@@ -45,6 +45,7 @@ Size and color come from CSS: set `width`/`height` on `.icon` and `color` on the
 | `shrimp` | an arched body ringed in segments, its tail fan tucked under, long feelers: the brown shrimp from the nets |
 | `net` | two stakes, a sagging top cord and a mesh hanging from it, a float in the middle, over a ripple line: the general net (Water's Net mode, a net's card) |
 | `release` | an arrow down into two ripple lines: Let it go, for a living catch on the haul tray |
+| `trails` | a winding dotted line climbing the page with three stops, two inked and the next ahead open: the journal's Trails section |
 | `loosestone` | a stone tipped up on one side, a dark gap under it: the naturalist's loose stones reward |
 | `lens` | a round glass with a glint on a short handle: the naturalist's hand lens reward |
 | `driftwood` | a bending branch at the water's edge with a broken stub and a knot, a ripple beyond: the naturalist's driftwood reward |

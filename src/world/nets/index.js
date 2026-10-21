@@ -173,6 +173,8 @@ export function createNets(opts) {
       update('nets', () => bringIn(state(), id));
       update('haul', () => /** @type {HaulSlice} */ ({ haul, hour: hH, springTide: spring >= opts.keepsakes.shore.springMin, released: [], kept: !haul.keepsake, at: performance.now() }));
       emitDeferred('keepsake:sound', { name: 'net-lift' });
+      // A keepsake on the tray with a mark is seen, and counts on the beachcomber's trail.
+      if (haul.keepsake?.n.mark) emitDeferred('keepsake:seen', { n: haul.keepsake.n });
       for (let i = 0; i < haul.living.length; i++) setTimeout(() => emitDeferred('keepsake:sound', { name: 'flop', seed: haul.living[i].n.seed }), 700 + i * 450);
       sync();
       return haul;
