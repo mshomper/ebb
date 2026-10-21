@@ -84,6 +84,13 @@ Slice acceptance, all together:
 - First audio pass: water bed, wind bed, frog voice with chorus (doc 17).
 - First human touches: stepping stones and one lantern, so the icon's dusk scene can be recreated in game.
 - Presence rung 2, the seat (doc 23): "sit here" at eye height, where trust grows fastest; it brings the ground-level view up to standard before the walker.
+- Seasons as chapters (agreed October 20, 2026, doc 13 "The year, season by season"), in this order:
+  1. The cheap season markers: moon jellyfish, damselflies, fungi on logs and dewy webs, storm-tide shells.
+  2. The toad and the lizard on the piece system.
+  3. Frogspawn to froglets.
+  4. Turtles arriving in summer.
+  5. The shore birds (sand martins, turnstones, purple sandpipers), which may run into M3.
+  6. Grey seals last, with the meadow islet's sandbar.
 
 ### M3 — Meadow, seasons and the woodland knoll
 

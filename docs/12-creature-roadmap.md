@@ -56,8 +56,8 @@ Four species (turtles joined in October 2026). The meadow islet still rises when
 
 | | Minnows | Dragonflies | Turtles (European pond turtle) |
 |---|---|---|---|
-| Kind | Swarm, diurnal, active all year (deeper in winter) | Swarm of few (3 to 8 visible), diurnal, from the start of summer to mid-autumn (they wait for warm water) | Individual, diurnal, dormant in winter (in the pond mud) |
-| Water | Still or slow fresh water, depth 0.2 to 1.5 m, at least 20 m², with a deep spot of about 1 m to winter in. They come by themselves once such a pool exists; the frogs' Cut digs one in a stroke, and Lower can too | Still water within 10 m, sunny | Still, warm fresh water 0.3 to 1.2 m deep, in sun most of the day |
+| Kind | Swarm, diurnal, active all year (deeper in winter) | Swarm of few (3 to 8 visible), diurnal, from the start of summer to mid-autumn (they wait for warm water) | Individual, diurnal, dormant in winter (in the pond mud). Arrives only in summer, once the water is warm (agreed October 20, 2026: seasons as chapters, doc 13), and returns each summer |
+| Water | Still or slow fresh water, depth 0.2 to 1.5 m, at least 20 m², with a deep spot of about 1 m to winter in. They come by themselves once such a pool exists; the frogs' Cut digs one in a stroke, and Lower can too | A pond of their own that the player made, with no fish in it (Matt, October 20, 2026): still fresh water of at least 12 m², mostly shallow (10 to 60 cm), with at least 4 m² of margin 5 to 30 cm deep that was dug or terraced; no starting pond qualifies. If minnows settle in it, they thin out and move on. Still water within 10 m, sunny | Still, warm fresh water 0.3 to 1.2 m deep, in sun most of the day |
 | Food | Midge field over water, pondweed when available | Midge field (competes lightly with frogs) | Pondweed and water lilies |
 | Shelter | Water lily pads and reed stems at the water's edge | Reeds as perches and emergence stems | A sunny basking spot at the water's edge: a stone (the Stone chip) is enough at first; a log is better |
 | Quiet | Low sensitivity (shade from structures is fine) | Low sensitivity | Moderate |
@@ -68,7 +68,7 @@ Four species (turtles joined in October 2026). The meadow islet still rises when
 | Body | Capsule body tapered with a round-cone tail fin; impostor at distance | Thin capsule abdomen, sphere thorax and head, four flat wing ellipsoids | Flattened ellipsoid shell, sphere head on a short neck, flipper-shaped ellipsoids |
 | Motion | GPU boids under the live water surface | Boids with hover hold points; wing flap as spring-driven phase | Slow paddle; haul-out onto stones and logs |
 
-**As built (M2, branch m2-minnows-dragonflies, October 20, 2026).** One species list (`src/world/species.js`), one needs reader (`src/world/ecology/needs.js`, frogs byte-identical through it) and one tick model for schools and swarms (`src/world/creatures/swarms.js`: a group per pool, a sign, settling, growth toward what the pool holds, thinning, happy once, trust). Live, one system runs both behaviours (`schools.js`): minnows as seeded CPU boids under the live surface (`school.js`; CPU because there are at most about a hundred, the same on every device, and the game can find each one), dragonflies as patrol beats (`patrol.js`). Minnows need a spot at least 1 m deep (the starter pond is 96 cm). The dragonfly is the southern hawker (Matt's pick), flying from the start of summer to mid-autumn. Pondweed is curled pondweed (`recipes/flora/pondweed.json`, `flora-pondweed.wgsl`), given only as the minnows' seed. Numbers in `recipes/species/minnow.json` and `dragonfly.json`.
+**As built (M2, branch m2-minnows-dragonflies, October 20, 2026).** One species list (`src/world/species.js`), one needs reader (`src/world/ecology/needs.js`, frogs byte-identical through it) and one tick model for schools and swarms (`src/world/creatures/swarms.js`: a group per pool, a sign, settling, growth toward what the pool holds, thinning, happy once, trust). Live, one system runs both behaviours (`schools.js`): minnows as seeded CPU boids under the live surface (`school.js`; CPU because there are at most about a hundred, the same on every device, and the game can find each one), dragonflies as patrol beats (`patrol.js`). Minnows need a spot at least 1 m deep (the starter pond is 96 cm). The dragonfly is the southern hawker (Matt's pick), flying from the start of summer to mid-autumn, and only over a fish-free pond the player made, with reeds, rushes or iris grown in along its shaped margin (`ecology.pond` in `dragonfly.json`; the terrain keeps the island's generated heights so the habitat knows which ground was shaped). Pondweed is curled pondweed (`recipes/flora/pondweed.json`, `flora-pondweed.wgsl`), given only as the minnows' seed. Numbers in `recipes/species/minnow.json` and `dragonfly.json`.
 
 ## Tier 2 — meadow (the meadow islet)
 
@@ -135,6 +135,15 @@ Oystercatchers took the turtles' place here in October 2026. They feed on the sh
 | Interaction | Photograph the sync | Follow the dusk stream | Photograph the dance; "happy" here means they danced before leaving |
 | Body | Tiny impostor with an emissive tail (physical emission, palette last) | Small ellipsoid body, membrane wings as thin SDF fans | Tall ellipsoid body, long capsule neck and legs, wing ellipsoids |
 | Motion | Boids plus coupled-oscillator flash phase | Boids with sharp turns | Flock V formation in flight, slow wading IK |
+
+## Seasonal lives beside the species (agreed October 20, 2026)
+
+Each season is a chapter with its own small lives and visitors. These sit beside the sixteen species, fill the journal and the year page's seasons, and never count toward tier milestones. Needs, weights and build order are in `13-progression-and-expansion.md`, "The year, season by season".
+
+- **Spring:** frogspawn, tadpoles and froglets (a field on the frogs); the common toad's night walk (a find).
+- **Summer:** damselflies (a swarm reusing the dragonfly flight); sand martins nesting in a sandy face cut with the Cliff tool (a swarm); common lizards on stones among the gorse (a find); moon jellyfish on the strandline (a find).
+- **Autumn:** silver eels leaving the pond for the sea on rainy nights (a find with a moment); fungi on carried logs and dewy webs (finds).
+- **Winter:** turnstones on the strandline wrack and purple sandpipers on a rocky sea wall (winter flocks); storm-tide shells (a moment); grey seals and a pup on a quiet sandbar (a landmark, built last).
 
 ## Data and interfaces
 

@@ -87,6 +87,58 @@ flowchart LR
 
 A gift only helps: every creature can still come without it (turtles bask on a stone before any log; fireflies find litter under any tree), so no gift becomes a lock and order never matters.
 
+### The year, season by season (agreed with Matt, October 20, 2026)
+
+Before this, almost everything a new island offered landed in its first spring, and summer, autumn and winter brought little new. Now **each season is a chapter**:
+
+- **Season gates, not speed gates.** Some lives come only in their season, as real ones do. A quick player can't hurry summer, and a slow one loses nothing, because each returns every year.
+- **Every season has its own small lives and its own moment**, so the year page has something to fill in each season.
+- **When the pond sleeps, the shore wakes.** Autumn and winter belong to the sea.
+
+A new island starts in early spring, so it always opens with the pond waking.
+
+| Season (game days) | In the game now | Comes with this plan |
+|---|---|---|
+| Spring (0 to 14), the pond wakes | frogs and their Cliff tool, minnows, most plants, shells and loose stones | frogspawn hatching into tadpoles; the common toad's night walk back to the pond; the first damselflies at the very end |
+| Summer (14 to 28), warm water and wings | dragonflies (late spring to autumn), gorse, driftwood at about here on the finds line | **turtles arrive only once the water is warm**; froglets leaving the pond; damselflies; sand martins nesting in a sandy face the player cut; common lizards basking on stones and logs among the gorse; moon jellyfish stranded on the strandline |
+| Autumn (28 to 42), leaving and gathering | willow turning yellow, leaf fall | silver eels slipping from the pond to the sea on rainy nights; fungi on carried logs; dewy spiders' webs on misty mornings; the first wintering waders; grey seals hauling out on the sandbar |
+| Winter (42 to 56), the shore's season | frogs asleep, gorse still flowering | turnstones flipping wrack on the strandline; purple sandpipers on rock at the waterline; storm tides leaving the rarest shells; a seal pup on the bar; frost on the logs |
+
+What the player does to bring each one, and its weight (the classes in `docs/future/11`):
+
+| Life | Needs | The player | Weight | Work |
+|---|---|---|---|---|
+| Moon jellyfish strandings | the strandline after a summer high tide | nothing; something to find | find, like shells | small |
+| Damselflies (azure) | still water with reeds; fish are fine | the reedy pond | swarm, reusing the dragonfly flight | small |
+| Fungi on logs; dewy webs | carried logs (fungi); tall grass and mist (webs) | carries logs; lets grass grow | find | small each |
+| Storm-tide shells | winter weather on spring tides | nothing; the rarest shells come | moment (`docs/future/08`) | small |
+| Common toad | a loose stone or log within 20 m of a pond; walks back to it on a spring night | sets stones or carries a log near the pond | find | medium |
+| Common lizard | stones or logs on dry, sunny ground near gorse | sets stones among the gorse | find | small to medium |
+| Frogspawn, tadpoles, froglets | happy frogs and a warm, sunny shallow margin under 0.3 m | shapes a shallow edge | field plus moments, on the frogs | small to medium |
+| Turtles in summer | warm, still, shallow water, lilies, a basking stone or log | a sunny shallow pond and a basking spot | resident (doc 12) | large, planned anyway |
+| Sand martins | a sheer sandy face 1.5 m or more, near water | cuts a sand cliff with the Cliff tool | swarm, a summer colony | medium |
+| Silver eels | an established pond within 30 m of the sea, wet grass between | keeps a pond for a year | find plus a moment | medium |
+| Turnstones and purple sandpipers | wrack on the strandline; rock at the waterline | builds a rocky sea wall with Terrace and Shift | swarm, a winter flock | medium |
+| Grey seals and a pup | a quiet sandbar or skerry at low tide, nothing walking near | leaves the meadow islet's bar quiet | landmark | large |
+
+**Build order (agreed):**
+1. The cheap season markers: moon jellyfish, damselflies, fungi and webs, storm-tide shells.
+2. The toad and the lizard, on the piece system.
+3. Frogspawn to froglets.
+4. Turtles, arriving in summer.
+5. The shore birds: sand martins, turnstones and purple sandpipers.
+6. Grey seals last, with the meadow islet's sandbar.
+
+How they feed into each other:
+- Tadpoles feed minnows, dragonfly larvae and herons.
+- Damselflies feed dragonflies and sand martins.
+- Lizards feed herons and owls.
+- Eels feed herons and otters.
+- The waders eat what the finds show: periwinkles, sand hoppers and lugworms.
+- Seals need nothing from the player but quiet.
+
+These finds, fields and visitors sit beside the sixteen species. They fill the journal and the year page's seasons but never count toward tier milestones. Seals are a landmark; whether they also get a species page with a gift is still open.
+
 ### Milestones
 
 Plain language: watch for the second happy species in a tier. That is the moment the sea gives something back.
@@ -142,7 +194,7 @@ Target player: 20 to 40 minutes most evenings, with the game left closed overnig
 |---|---|---|---|
 | First frog scout | 1 to 2 | first session | reeds filling in along the pond |
 | Frogs happy (first gift, the Cliff tool) | 3 to 6 | first or second evening | group of 4 and a thick reed margin |
-| Turtles come | 5 to 12 | first week | a sunny stone at a warm pond with lilies; driftwood at 10 finds makes them happier |
+| Turtles come | 14 to 20 (summer) | second week of play | only once the water is warm in summer; a sunny stone at a shallow pond with lilies; a carried log makes them happier |
 | Tier 1 milestone, meadow islet | 6 to 10 | second or third evening | minnows, dragonflies or turtles happy |
 | Tier 2 milestone, woodland knoll and bridge | 15 to 25 | end of the first week | wildflowers and hawthorn maturing |
 | Tier 3 milestone, tide flats | 35 to 55 | second or third week | trees maturing for squirrels and owls |
@@ -191,7 +243,7 @@ The camera stays where it is; you look around the island to find the wash. A spe
   - **Missed:** a note that never showed on the island (more at once than the queue holds, or written while the tab was out of sight, and later the reveal's catch-up) goes at the top of Notes under "You may have missed". The island says "3 more in the journal" instead of dropping them silently.
   - **Seen:** everything else is plain. On a new island, the notes about what was already there count as read.
 - **The island map**: a hand-drawn style map that adds each land piece as it rises, with player-named places.
-- **The year page**: four season boxes that fill as each season is seen with a happy species in it. When all sixteen species pages hold a photograph and all four seasons are filled, the year page completes with a short closing note. Play continues; nothing ends.
+- **The year page**: four season boxes that fill as each season is seen with a happy species in it, and each season's own small lives and moment (see "The year, season by season"). When all sixteen species pages hold a photograph and all four seasons are filled, the year page completes with a short closing note. Play continues; nothing ends.
 
 Hints live only in the journal and are always phrased as observation ("the frogs keep to the far bank since the lantern went up"), never as instructions or checklists.
 

@@ -59,6 +59,11 @@ Chosen for readability and for using places the island already has or that F10 a
 | Slow worm | Under stones and logs, warm grass | A loose stone or log on dry, sunny ground | A bronze legless lizard, 30 to 40 cm; basks in the morning | A chain of spheres; crawl along a curve. No legs. |
 | Pond skaters | Still, shallow fresh water in summer | A pond or still margin | Dimples on the surface catching the light | A field, like midges; the water's light shows them |
 
+Seasonal finds added on October 20, 2026 (seasons as chapters, doc 13):
+- **Summer:** moon jellyfish stranded on the strandline (like shells); the common lizard basking on stones and logs among the gorse.
+- **Autumn:** fungi on carried logs; dewy spiders' webs in tall grass on misty mornings; silver eels crossing wet grass from pond to sea on rainy nights.
+- **Spring:** the common toad's night walk back to the pond.
+
 Matt's sand ideas map onto these. A large enough patch of sand in the tide band brings lugworm casts. Sand beside a rock pool brings hermit crabs. A sand mound above the high tide grows marram (F10), and a dune is where sand hoppers would live once they can be shown.
 
 The island's wildlife is northern European (robins, hedgehogs, common frogs), so a fallen log brings a toad, a slow worm or, once quadrupeds exist, a wood mouse, rather than a chipmunk.
