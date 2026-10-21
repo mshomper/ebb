@@ -71,6 +71,8 @@ export function createWalk(o) {
   const GR = o.figure.grass;
   /** @type {{ x: number, z: number, t: number }[]} */ let steps = [];
   let walkT = 0;
+  /** When a reach (setting a net) stands you up again, in walkT seconds; 0 for none. */
+  let standAt = 0;
 
   let below = false;
   /** Look (W4): while on, a tap names what it lands on instead of walking there. */
@@ -185,9 +187,30 @@ export function createWalk(o) {
      */
     posture(p) {
       if (!below || !walker.placed) return;
+      standAt = 0;
       walker.setPosture(walker.posture === p ? 'stand' : p);
       camera.follow(head());
       publish();
+    },
+
+    /**
+     * The ground point aheadM in front of you, or null while you are above.
+     * @param {number} aheadM @returns {number[] | null}
+     */
+    aheadPoint(aheadM) {
+      if (!below || !walker.placed) return null;
+      const x = walker.x + Math.sin(walker.yaw) * aheadM, z = walker.z + Math.cos(walker.yaw) * aheadM;
+      return [x, ground(x, z), z];
+    },
+
+    /** Kneel and reach down in front of you (setting a net), then stand again after standS seconds. @param {number} standS */
+    reach(standS) {
+      if (!below || !walker.placed) return;
+      walker.setPosture('kneel');
+      camera.follow(head());
+      publish();
+      figure?.motion.feed();
+      standAt = walkT + standS;
     },
 
     /** Look on or off (W4). */
@@ -306,6 +329,10 @@ export function createWalk(o) {
       // each foot, and where you look below. Each step that lands is a footfall (for footsteps by
       // ground, doc 17).
       walkT += realDt;
+      if (standAt && walkT >= standAt) {
+        standAt = 0;
+        if (below && walker.posture === 'kneel') { walker.setPosture('stand'); camera.follow(head()); publish(); }
+      }
       // Prints age with game time; the tide takes the ones it covers.
       const hours = o.hours();
       const live = prints.update(hours, water.tide);

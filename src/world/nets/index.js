@@ -17,7 +17,7 @@ import { waterCellOf } from '../water/grid.js';
 import { WATER_CLASS } from '../water/summary.js';
 import { packMesh } from '../creatures/bodies.js';
 import { createCreaturePass } from '../../render/passes/creatures.js';
-import { cleanNets, ensureNets, canCast, cast, bringIn, netState, nextHighTide, highHour, noteReleased } from './model.js';
+import { cleanNets, ensureNets, canCast, cast, bringIn, netState, nextHighTide, highHour, noteReleased, footChoice } from './model.js';
 import { haulOf } from './haul.js';
 import { netMesh } from './net-mesh.js';
 import { catchPage, distinctive } from './living/index.js';
@@ -113,29 +113,48 @@ export function createNets(opts) {
 
     /**
      * A tap with the Water tool's Net mode at a ground point: cast the net there (or move it), if the
-     * shallows are right; else the card says why, calmly. @param {ArrayLike<number>} p
+     * shallows are right; else the card says why, calmly. Returns what it did and the line it said
+     * (the walker's Net button shows the line on the island). @param {ArrayLike<number>} p
+     * @returns {{ did: 'cast' | 'lifted' | 'said' | 'refused', message: string } | null}
      */
     tap(p) {
       const net = state().nets[0];
-      if (!net) return;
+      if (!net) return null;
       const nowH = opts.nowH();
       // A tap on the net itself never moves it: a full one is lifted, one still fishing says so.
       if (api.netAt(p[0], p[2])?.id === net.id) {
-        if (netState(net, nowH, tideP).state === 'ready') api.lift(net.id);
-        else sync({ message: words(net) });
-        return;
+        if (netState(net, nowH, tideP).state === 'ready') { api.lift(net.id); return { did: 'lifted', message: '' }; }
+        sync({ message: words(net) });
+        return { did: 'said', message: words(net) };
       }
       const live = water.sampleLive?.(p[0], p[2]);
       // A full net stays where it is until it is lifted: moving it would lose its haul.
-      if (netState(net, nowH, tideP).state === 'ready') { sync({ message: W.fullStays, refused: true }); return; }
+      if (netState(net, nowH, tideP).state === 'ready') { sync({ message: W.fullStays, refused: true }); return { did: 'refused', message: W.fullStays }; }
       const at = { ...placeOf(p[0], p[2]), depth: live?.depth ?? 0, ground: terrain.sampleHeight(p[0], p[2]),
         nextHighLevel: level(highHour(nextHighTide(nowH, tideP), tideP), tideP) };
       const r = canCast(at, NR.set);
-      if (!r.ok) { sync({ message: W.refused[r.reason], refused: true }); return; }
+      if (!r.ok) { sync({ message: W.refused[r.reason], refused: true }); return { did: 'refused', message: W.refused[r.reason] }; }
       const readyNow = !!opts.test && !!NR.test?.readyNow;
       update('nets', () => cast(state(), net.id, p[0], p[2], nowH, tideP, { readyNow }));
       emitDeferred('keepsake:sound', { name: 'net-set' });
-      sync({ message: readyNow ? W.castTest : W.cast });
+      const message = readyNow ? W.castTest : W.cast;
+      sync({ message });
+      return { did: 'cast', message };
+    },
+
+    /**
+     * The walker's Net button (W4): your net within reachM of where you stand is lifted when full,
+     * or says how long it has to fish; otherwise it is set at the point in front of you (moved there
+     * if it was out further away). @param {{ x: number, z: number }} me @param {ArrayLike<number>} ahead
+     * @param {number} reachM @returns {{ did: 'cast' | 'lifted' | 'said' | 'refused', message: string } | null}
+     */
+    fromFoot(me, ahead, reachM) {
+      const net = state().nets[0];
+      if (!net) return null;
+      const choice = footChoice(net.at, netState(net, opts.nowH(), tideP).state === 'ready', me, reachM);
+      if (choice === 'lift') { api.lift(net.id); return { did: 'lifted', message: '' }; }
+      if (choice === 'say') { sync({ message: words(net) }); return { did: 'said', message: words(net) }; }
+      return api.tap(ahead);
     },
 
     /** Bring the net in without lifting a haul. @param {number} id */

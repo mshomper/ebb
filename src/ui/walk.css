@@ -71,6 +71,9 @@
 @media (max-height: 500px) and (min-width: 600px) {
   .ebb-walk { right: calc(max(var(--wk-edge), env(safe-area-inset-right)) + 62px + 10px); }
   :root.ebb-left-handed .ebb-walk { right: auto; left: calc(max(var(--wk-edge), env(safe-area-inset-left)) + 62px + 10px); }
+  /* Below, the ground bar's column (78 px) takes the tools' place. */
+  body.ebb-below .ebb-walk { right: calc(max(var(--wk-edge), env(safe-area-inset-right)) + 78px + 10px); }
+  :root.ebb-left-handed body.ebb-below .ebb-walk { right: auto; left: calc(max(var(--wk-edge), env(safe-area-inset-left)) + 78px + 10px); }
 }
 
 /* The ground bar (W4): along the bottom in the tool bar's place while you are below; each button
@@ -125,6 +128,11 @@
     flex-direction: column;
   }
   :root.ebb-left-handed .ebb-ground { right: auto; left: max(12px, env(safe-area-inset-left)); }
+  /* Five buttons (with Net) in a column: a little shorter, so the column fits a phone on its side
+     and stays as narrow as before, clear of Go up. */
+  .ebb-ground { --wk-icon: 22px; }
+  .ebb-ground .ebb-walk__btn { min-height: 50px; padding: 4px 8px; gap: 1px; }
+  .ebb-ground .ebb-walk__name { line-height: 1.1; }
 }
 
 /* Narrow portrait: the time button stacks above the bottom bar (time-flow.css); the ground bar is a

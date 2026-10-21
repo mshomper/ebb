@@ -7,12 +7,14 @@
 //   The ground bar (W4): along the bottom while you are below, in the tool bar's place. Sit and
 //     Kneel lower you where you stand (a second press stands you up); Feed kneels and puts food
 //     down in front of you; Look, while on, makes a tap name what it lands on instead of walking
-//     there. Photo joins when photo mode exists.
+//     there; Net (once the beachcomber's trail gives it) sets your net in front of you, or lifts it
+//     when you stand by it full. Photo joins when photo mode exists.
 // While you are below, the body has the class ebb-below (walk.css puts the shaping tools away);
 // while you sit, ebb-sitting (the buttons fade).
 //
 // Reads the store slice `walk` { below, posture, look }; a press goes out as the action walk.down,
-// walk.up, walk.stuck, walk.posture, walk.feed or walk.look. Styles: walk.css.
+// walk.up, walk.stuck, walk.posture, walk.feed, walk.net or walk.look (and `unlocks` for the net).
+// Styles: walk.css.
 
 import { get, subscribe } from '../core/store.js';
 import { dispatch } from '../input/actions.js';
@@ -20,7 +22,7 @@ import { ensureIconSprite, iconSvg } from './icons/icons.js';
 
 /**
  * @param {HTMLElement} parent the HUD layer
- * @param {{ down: string, up: string, stuck: string, sit: string, kneel: string, feed: string, look: string }} words
+ * @param {{ down: string, up: string, stuck: string, sit: string, kneel: string, feed: string, net: string, look: string }} words
  *   recipes/world/walker.json words
  * @returns {() => void} dispose
  */
@@ -38,7 +40,7 @@ export function mountWalk(parent, words) {
   bar.setAttribute('role', 'toolbar');
   bar.setAttribute('aria-label', 'On foot');
   bar.innerHTML = btn('', 'sit', words.sit, ' data-posture="sit" aria-pressed="false"') + btn('', 'kneel', words.kneel, ' data-posture="kneel" aria-pressed="false"')
-    + btn('', 'feed', words.feed, ' data-feed') + btn('', 'lens', words.look, ' data-look aria-pressed="false"');
+    + btn('', 'feed', words.feed, ' data-feed') + btn('', 'net', words.net, ' data-net hidden') + btn('', 'lens', words.look, ' data-look aria-pressed="false"');
 
   const go = /** @type {HTMLButtonElement} */ (root.querySelector('.ebb-walk__go'));
   const stuckBtn = /** @type {HTMLButtonElement} */ (root.querySelector('.ebb-walk__stuck'));
@@ -47,14 +49,17 @@ export function mountWalk(parent, words) {
   const sitBtn = /** @type {HTMLButtonElement} */ (bar.querySelector('[data-posture="sit"]'));
   const kneelBtn = /** @type {HTMLButtonElement} */ (bar.querySelector('[data-posture="kneel"]'));
   const lookBtn = /** @type {HTMLButtonElement} */ (bar.querySelector('[data-look]'));
+  const netBtn = /** @type {HTMLButtonElement} */ (bar.querySelector('[data-net]'));
 
   let shown = '';
   function render() {
     const w = get('walk') ?? {};
     const below = !!w.below;
-    const key = `${below}|${w.posture}|${w.look}`;
+    const hasNet = !!get('unlocks')?.nets?.general;
+    const key = `${below}|${w.posture}|${w.look}|${hasNet}`;
     if (key === shown) return;
     shown = key;
+    netBtn.hidden = !hasNet;
     goIcon.innerHTML = iconSvg(below ? 'go-up' : 'go-down');
     goName.textContent = below ? words.up : words.down;
     go.setAttribute('aria-label', below ? words.up : words.down);
@@ -75,6 +80,7 @@ export function mountWalk(parent, words) {
     else if (b === stuckBtn) dispatch({ type: 'walk.stuck', source: 'button' });
     else if (b.dataset.posture) dispatch({ type: 'walk.posture', posture: b.dataset.posture, source: 'button' });
     else if (b.dataset.feed !== undefined) dispatch({ type: 'walk.feed', source: 'button' });
+    else if (b.dataset.net !== undefined) dispatch({ type: 'walk.net', source: 'button' });
     else if (b.dataset.look !== undefined) dispatch({ type: 'walk.look', source: 'button' });
   }
   /** Keep pointer and wheel input on the buttons from reaching the island below. @param {Event} e */
@@ -89,10 +95,12 @@ export function mountWalk(parent, words) {
 
   render();
   const unsub = subscribe('walk', render);
+  const unsubUnlocks = subscribe('unlocks', render);
   parent.appendChild(root);
   parent.appendChild(bar);
   return () => {
     unsub();
+    unsubUnlocks();
     document.body.classList.remove('ebb-below', 'ebb-sitting');
     root.remove();
     bar.remove();

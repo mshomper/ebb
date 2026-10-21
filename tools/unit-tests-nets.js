@@ -3,7 +3,7 @@
 // ready, the beachcomber's stop that gives it, and save format 7. The haul and the living catches
 // have their own groups below.
 
-import { cleanNets, emptyNets, ensureNets, canCast, cast, bringIn, netState, nextHighTide, readyHour, noteReleased, RELEASED_CAP } from '../src/world/nets/model.js';
+import { cleanNets, emptyNets, ensureNets, canCast, cast, bringIn, netState, nextHighTide, readyHour, noteReleased, RELEASED_CAP, footChoice } from '../src/world/nets/model.js';
 import { due, grant, keptFamily } from '../src/world/expansion.js';
 import { nets7 } from '../src/save/migrate-nets.js';
 import { migrate, FORMAT } from '../src/save/migrate.js';
@@ -40,6 +40,17 @@ export function addNetsTests(test, assert, eq) {
     eq(/** @type {any} */ (canCast({ ...at, band: false, depth: 0 }, RULE)).reason, 'dry', 'dry land');
     eq(/** @type {any} */ (canCast({ ...at, ground: 0.55 }, RULE)).reason, 'dry', 'too high for the coming tide');
     eq(/** @type {any} */ (canCast({ ...at, depth: 0.4 }, RULE)).reason, 'deep', 'too deep to wade');
+  });
+
+  test(G, 'on foot, Net sets your net in front of you, lifts it full when you stand by it, and moves it from afar', async () => {
+    const W = await fetch('../recipes/world/walker.json').then((r) => r.json());
+    const reach = W.ground.netReachM, me = { x: 10, z: 20 };
+    assert(W.ground.netAheadM > 0 && W.ground.netAheadM < reach, 'it goes down in front of you, within reach');
+    eq(footChoice(null, false, me, reach), 'set', 'in: set it in front of you');
+    eq(footChoice({ x: 11, z: 21 }, true, me, reach), 'lift', 'full and close by: lift it');
+    eq(footChoice({ x: 11, z: 21 }, false, me, reach), 'say', 'still fishing close by: say how long, never bring it in by accident');
+    eq(footChoice({ x: 10, z: 20 + reach + 0.5 }, true, me, reach), 'set', 'out further away: move it here (a full one refuses, as from above)');
+    eq(footChoice({ x: 10, z: 20 + reach }, false, me, reach), 'say', 'at the edge of reach counts as close');
   });
 
   test(G, 'cast at low water, it fishes the next high water and is ready at the low after it, and waits', () => {

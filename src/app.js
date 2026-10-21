@@ -784,6 +784,26 @@ export async function startApp(canvas, hooks = {}) {
   }
 
   /**
+   * The Net on the ground bar (on foot, once the beachcomber's trail gives the net): your net is set
+   * just in front of you by the same rules as casting from above, or lifted when you stand by it
+   * full. You kneel to set or lift it, then stand again. Its line goes on the island.
+   */
+  function netHere() {
+    if (!getStore('unlocks')?.nets?.general) return;
+    const G = walkerRecipe.ground;
+    const me = walk.spot();
+    const ahead = walk.aheadPoint(G.netAheadM);
+    if (!me || !ahead) return;
+    const r = nets.fromFoot(me, ahead, G.netReachM);
+    if (!r) return;
+    if (r.did === 'cast' || r.did === 'lifted') {
+      walk.reach(G.netStandS);
+      if (r.did === 'lifted') updateStore('identify', () => null);
+    }
+    if (r.message) emitDeferred('island:notice', { text: r.message, showS: walkerRecipe.words.noticeS });
+  }
+
+  /**
    * Set a carried stone or log down where the tap lands (src/world/pieces, undoable). In water it
    * stays carried and the card says so; at the logs' cap it goes back and the card says that.
    * @param {number} x @param {number} y
@@ -840,6 +860,7 @@ export async function startApp(canvas, hooks = {}) {
       if (a.type === 'walk.posture') { walk.posture(a.posture); return; }
       if (a.type === 'walk.look') { walk.toggleLook(); return; }
       if (a.type === 'walk.feed') { feedHere(); return; }
+      if (a.type === 'walk.net') { netHere(); return; }
       if (a.type === 'tool.select' || a.type.startsWith('tool.') || a.type === 'brush.resize') return;
     }
     switch (a.type) {
