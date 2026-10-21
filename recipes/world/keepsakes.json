@@ -17,7 +17,7 @@
     "lineToleranceM": 0.06,
     "spacingM": 3,
     "maxOnIsland": 3,
-    "families": { "shell": 34, "stone": 18, "driftwood": 11, "feather": 10, "urchin": 7, "starfish": 6, "seed": 5, "purse": 5, "cuttlebone": 4, "coral": 3, "fossil": 6, "bottle": 3 },
+    "families": { "shell": 30, "bivalve": 14, "stone": 18, "driftwood": 11, "feather": 10, "urchin": 7, "starfish": 6, "seed": 5, "purse": 5, "cuttlebone": 4, "coral": 3, "fossil": 6, "bottle": 3 },
     "scale": 2,
     "nearM": 22,
     "testBudget": [0, 0, 0, 1],
@@ -131,6 +131,30 @@
       "jitter": 0.05
     },
     "marks": { "fan": { "chance": 0.04, "word": "spread flat like a fan" } }
+  },
+  "bivalves": {
+    "gen": 1,
+    "note": "Bivalve half-shells, cupped side up: scallops (ribbed fan with ears), cockles (round, ribbed), clams (smooth, growth rings) and razors (long). cup is how deep the dome is; rays fan from the hinge in a second colour. The rare mark is a pair still joined.",
+    "mesh": { "rows": 18, "cols": 64 },
+    "forms": [
+      { "id": "scallop", "word": "scallop", "sizeM": [0.04, 0.07], "cup": [0.12, 0.2], "ribs": [14, 22], "ribAmp": [0.04, 0.08] },
+      { "id": "cockle", "word": "cockle", "sizeM": [0.025, 0.04], "cup": [0.28, 0.38], "ribs": [18, 26], "ribAmp": [0.03, 0.06] },
+      { "id": "clam", "word": "clam shell", "sizeM": [0.03, 0.05], "cup": [0.16, 0.24], "ribs": [0, 0], "ribAmp": [0, 0] },
+      { "id": "razor", "word": "razor shell", "sizeM": [0.08, 0.13], "cup": [0.1, 0.14], "ribs": [0, 0], "ribAmp": [0, 0] }
+    ],
+    "tiers": {
+      "common": { "forms": [1, 1, 2, 3], "raysChance": 0.25, "base": [0, 1, 2], "mark": [0] },
+      "uncommon": { "forms": [0, 1, 2, 3], "raysChance": 0.45, "base": [0, 1, 2, 3, 4], "mark": [0, 1], "markLean": 2 },
+      "rare": { "forms": [0, 0, 1, 2], "raysChance": 0.65, "base": [3, 4, 5, 6], "mark": [1, 2], "markLean": 4 },
+      "veryRare": { "forms": [0, 0, 0, 2], "raysChance": 0.85, "base": [4, 5, 6, 7], "mark": [2, 3], "markLean": 8 }
+    },
+    "colors": {
+      "base": [[0.82, 0.78, 0.7], [0.62, 0.56, 0.48], [0.4, 0.38, 0.4], [0.84, 0.62, 0.52], [0.86, 0.66, 0.24], [0.74, 0.32, 0.22], [0.58, 0.38, 0.62], [0.86, 0.5, 0.56]],
+      "baseNames": ["white", "fawn", "slate", "peach", "yellow", "orange-red", "violet", "pink"],
+      "mark": [[0.42, 0.32, 0.26], [0.92, 0.88, 0.82], [0.5, 0.14, 0.12], [0.3, 0.16, 0.36]],
+      "jitter": 0.06
+    },
+    "marks": { "pair": { "chance": 0.03, "word": "both halves still joined" } }
   },
   "shelfNote": "The paper ground of a shelf slot by rarity (doc 13, 'The shelf'). Previewed in the lab; drawn by the shelf in K3.",
   "shelf": {

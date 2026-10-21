@@ -19,6 +19,7 @@ import { seedNumbers, seedMesh, seedWords } from './seedpod.js';
 import { purseNumbers, purseMesh, purseWords } from './purse.js';
 import { cuttleNumbers, cuttleMesh, cuttleWords } from './cuttlebone.js';
 import { coralNumbers, coralMesh, coralWords } from './coral.js';
+import { bivalveNumbers, bivalveMesh, bivalveWords } from './bivalve.js';
 
 /**
  * @typedef {{ salt: number, numbers: (h0: number, rarity: any, K: any) => any,
@@ -40,6 +41,7 @@ export const FAMILIES = /** @type {Record<string, Family>} */ ({
   purse: { salt: 0x9a75, numbers: purseNumbers, mesh: purseMesh, words: purseWords, view: () => [20, 70] },
   cuttlebone: { salt: 0xc077, numbers: cuttleNumbers, mesh: cuttleMesh, words: cuttleWords, view: () => [35, 62] },
   coral: { salt: 0xc0a1, numbers: coralNumbers, mesh: coralMesh, words: coralWords, view: () => [0, 82] },
+  bivalve: { salt: 0xb1a1, numbers: bivalveNumbers, mesh: bivalveMesh, words: bivalveWords, view: (n) => (n.pair ? [30, 30] : [0, 72]) },
 });
 
 /**
