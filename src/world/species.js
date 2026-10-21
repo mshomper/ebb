@@ -5,13 +5,13 @@
 // the journal page frogs, the flag frogs:happy), the recipe's `key`, else its id with an s.
 
 /** Recipe ids under recipes/species, in the order the hourly tick takes them. */
-export const SPECIES = Object.freeze(['frog', 'midge', 'minnow', 'dragonfly']);
+export const SPECIES = Object.freeze(['frog', 'midge', 'minnow', 'dragonfly', 'damselfly']);
 
 /** The world's key for a species recipe. @param {{ id: string, key?: string }} rec */
 export const keyOf = (rec) => rec.key ?? `${rec.id}s`;
 
 /**
- * The recipes that live as schools and swarms with needs (minnows, dragonflies): ecology.kind 'swarm'.
+ * The recipes that live as schools and swarms with needs (minnows, dragonflies, damselflies): ecology.kind 'swarm'.
  * @param {Record<string, any> | undefined} species env.recipes.species
  * @returns {any[]}
  */

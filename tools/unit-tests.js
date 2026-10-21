@@ -33,6 +33,7 @@ import { addCreatureTests } from './unit-tests-creatures.js';
 import { addIslandTests } from './unit-tests-islands.js';
 import { addEcologyTests } from './unit-tests-ecology.js';
 import { addPondLifeTests } from './unit-tests-pondlife.js';
+import { addDamselflyTests } from './unit-tests-damselflies.js';
 import { addFrogTests } from './unit-tests-frogs.js';
 import { addSaveTests } from './unit-tests-save.js';
 import { addAwayTests } from './unit-tests-away.js';
@@ -1456,6 +1457,7 @@ addTrustTests(test, assert, eq);
 addFindsTests(test, assert, eq);
 addNaturalistTests(test, assert, eq);
 addPondLifeTests(test, assert, eq);
+addDamselflyTests(test, assert, eq);
 
 // ---- placed pieces: loose stones (tools/unit-tests-pieces.js) ----
 

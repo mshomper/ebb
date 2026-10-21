@@ -7,9 +7,11 @@ import { makePen } from './pen.js';
 import { grass, rushes, reeds, lilies, iris, thrift, marigold, campion, willow, gorse, pondweed } from './living.js';
 import { anemone, periwinkle, lugworm, hermitcrab, ediblecrab, shells, barnacles, pondskaters, mussels, sanddollars, moonjelly } from './finds.js';
 import { soil, sand, rock, moss, fresh, shore } from './ground.js';
+import { damselfly } from './animals.js';
 
 /** @type {Record<string, (p: import('./pen.js').Pen, scale?: string) => string>} */
-const DRAW = { grass, rushes, reeds, lilies, iris, thrift, marigold, campion, willow, gorse, pondweed, anemone, periwinkle, lugworm, hermitcrab, ediblecrab, shells, barnacles, pondskaters, mussels, sanddollars, moonjelly, soil, sand, rock, moss, fresh, shore };
+const DRAW = { grass, rushes, reeds, lilies, iris, thrift, marigold, campion, willow, gorse, pondweed, anemone, periwinkle, lugworm, hermitcrab, ediblecrab, shells, barnacles, pondskaters, mussels, sanddollars, moonjelly, soil, sand, rock, moss, fresh, shore,
+  damselflies: damselfly };
 
 /** Is there a drawing for this page? @param {string} id */
 export const hasSketch = (id) => id in DRAW;

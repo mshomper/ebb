@@ -57,6 +57,7 @@
     "midges": { "label": "Midges", "kind": "animals", "icon": "midges", "page": "midges", "flag": "midges:seen" },
     "minnows": { "label": "Minnows", "kind": "animals", "icon": "minnow", "page": "minnows", "flag": "minnows:seen" },
     "dragonflies": { "label": "Dragonflies", "kind": "animals", "icon": "dragonfly", "page": "dragonflies", "flag": "dragonflies:seen" },
+    "damselflies": { "label": "Damselflies", "kind": "animals", "icon": "damselfly", "page": "damselflies", "flag": "damselflies:seen" },
     "you": { "label": "You", "kind": "animals", "icon": "you", "always": true }
   },
   "links": [
@@ -138,6 +139,11 @@
     { "a": "fresh", "b": "dragonflies", "ink": "flag:dragonflies:seen&flag:dragonflies:settled", "note": "Dragonflies lay their eggs in still fresh water, where their young grow." },
     { "a": "reeds", "b": "dragonflies", "ink": "flag:dragonflies:seen&seen:reeds", "note": "Dragonflies rest on the reed tips, and their young climb out up the stems." },
     { "a": "midges", "b": "dragonflies", "ink": "flag:dragonflies:seen&flag:midges:seen", "note": "Dragonflies catch midges in flight." },
+    { "a": "fresh", "b": "damselflies", "ink": "flag:damselflies:seen&flag:damselflies:settled", "note": "Damselflies lay their eggs in stems under still fresh water, where their young grow." },
+    { "a": "reeds", "b": "damselflies", "ink": "flag:damselflies:seen&seen:reeds", "note": "Damselflies rest on the reed stems, and their young climb out up them." },
+    { "a": "rushes", "b": "damselflies", "ink": "flag:damselflies:seen&seen:rushes", "note": "Damselflies perch low on the rushes too." },
+    { "a": "midges", "b": "damselflies", "ink": "flag:damselflies:seen&flag:midges:seen", "note": "Damselflies pick midges out of the air among the stems." },
+    { "a": "damselflies", "b": "dragonflies", "ink": "flag:damselflies:seen&flag:dragonflies:seen", "note": "Dragonflies catch damselflies on the wing." },
     { "a": "you", "b": "minnows", "ink": "flag:you:fed:minnows", "note": "The minnows ate the crumbs you scattered." }
   ]
 }

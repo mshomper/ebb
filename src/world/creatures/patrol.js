@@ -187,9 +187,26 @@ export function posePatrol(rig, f, M, q, axisAngle) {
   return rig.map((b) => {
     if (b.parent < 0) return { q };
     const left = b.name.endsWith('l') ? 1 : -1;
+    // A damselfly at rest (restFold): each wing turned on edge (restRoll), raised a little
+    // (restLift), then swept back so the four lie pressed together over the abdomen, never held open
+    // as a dragonfly's are.
+    if (resting && M.restFold) {
+      const edge = qmul(axisAngle([0, 0, 1], left * (M.restLift ?? 0)), axisAngle([1, 0, 0], M.restRoll ?? 0));
+      return { q: qmul(axisAngle([0, 1, 0], left * M.restFold), edge) };
+    }
     const hind = b.name.startsWith('wing.h');
     const s = Math.sin(f.phase + (hind ? M.hindLag : 0));
     // About the body's long axis (+z): up and down.
-    return { q: axisAngle([0, 0, 1], left * (beat * s + (resting ? -M.restDroop : 0))) };
+    return { q: axisAngle([0, 0, 1], left * (beat * s + (resting ? -(M.restDroop ?? 0) : 0))) };
   });
+}
+
+/** Quaternion product p * q (q first, then p), as schools.js's. @param {number[]} p @param {number[]} q */
+function qmul(p, q) {
+  return [
+    p[3] * q[0] + p[0] * q[3] + p[1] * q[2] - p[2] * q[1],
+    p[3] * q[1] - p[0] * q[2] + p[1] * q[3] + p[2] * q[0],
+    p[3] * q[2] + p[0] * q[1] - p[1] * q[0] + p[2] * q[3],
+    p[3] * q[3] - p[0] * q[0] - p[1] * q[1] - p[2] * q[2],
+  ];
 }
