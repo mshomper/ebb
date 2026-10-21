@@ -1,0 +1,97 @@
+{
+ "asset": {
+  "version": "2.0",
+  "generator": "ebb tools/bake-find-model.mjs",
+  "extras": {
+   "author": "KOREA HERITAGE SERVICE [KHS] (https://sketchfab.com/KHS_Asset)",
+   "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+   "source": "https://sketchfab.com/3d-models/gold-circular-artifact-91b0f8ef12dd4a5a99d17d802b3bf41f",
+   "title": "Gold Circular Artifact"
+  }
+ },
+ "scene": 0,
+ "scenes": [
+  {
+   "nodes": [
+    0
+   ]
+  }
+ ],
+ "nodes": [
+  {
+   "mesh": 0,
+   "name": "gold-disc"
+  }
+ ],
+ "meshes": [
+  {
+   "name": "gold-disc",
+   "primitives": [
+    {
+     "attributes": {
+      "POSITION": 1,
+      "COLOR_0": 2
+     },
+     "indices": 0,
+     "mode": 4
+    }
+   ]
+  }
+ ],
+ "buffers": [
+  {
+   "byteLength": 47376,
+   "uri": "gold-disc.bin"
+  }
+ ],
+ "bufferViews": [
+  {
+   "buffer": 0,
+   "byteOffset": 0,
+   "byteLength": 23664,
+   "target": 34963
+  },
+  {
+   "buffer": 0,
+   "byteOffset": 23664,
+   "byteLength": 11856,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteOffset": 35520,
+   "byteLength": 11856,
+   "target": 34962
+  }
+ ],
+ "accessors": [
+  {
+   "bufferView": 0,
+   "componentType": 5125,
+   "count": 5916,
+   "type": "SCALAR"
+  },
+  {
+   "bufferView": 1,
+   "componentType": 5126,
+   "count": 988,
+   "type": "VEC3",
+   "min": [
+    -0.029999999329447746,
+    0,
+    -0.029976055026054382
+   ],
+   "max": [
+    0.029999999329447746,
+    0.016854027286171913,
+    0.029976055026054382
+   ]
+  },
+  {
+   "bufferView": 2,
+   "componentType": 5126,
+   "count": 988,
+   "type": "VEC3"
+  }
+ ]
+}

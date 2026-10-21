@@ -1,0 +1,97 @@
+{
+ "asset": {
+  "version": "2.0",
+  "generator": "ebb tools/bake-find-model.mjs",
+  "extras": {
+   "author": "fergalicia (https://sketchfab.com/fergalicia)",
+   "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+   "source": "https://sketchfab.com/3d-models/chinese-artifact-01-5U5lDJ3JT0gVC1JRIknc7uJ9uB9",
+   "title": "Chinese Artifact 01"
+  }
+ },
+ "scene": 0,
+ "scenes": [
+  {
+   "nodes": [
+    0
+   ]
+  }
+ ],
+ "nodes": [
+  {
+   "mesh": 0,
+   "name": "chinese-artifact"
+  }
+ ],
+ "meshes": [
+  {
+   "name": "chinese-artifact",
+   "primitives": [
+    {
+     "attributes": {
+      "POSITION": 1,
+      "COLOR_0": 2
+     },
+     "indices": 0,
+     "mode": 4
+    }
+   ]
+  }
+ ],
+ "buffers": [
+  {
+   "byteLength": 49248,
+   "uri": "chinese-artifact.bin"
+  }
+ ],
+ "bufferViews": [
+  {
+   "buffer": 0,
+   "byteOffset": 0,
+   "byteLength": 24648,
+   "target": 34963
+  },
+  {
+   "buffer": 0,
+   "byteOffset": 24648,
+   "byteLength": 12300,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteOffset": 36948,
+   "byteLength": 12300,
+   "target": 34962
+  }
+ ],
+ "accessors": [
+  {
+   "bufferView": 0,
+   "componentType": 5125,
+   "count": 6162,
+   "type": "SCALAR"
+  },
+  {
+   "bufferView": 1,
+   "componentType": 5126,
+   "count": 1025,
+   "type": "VEC3",
+   "min": [
+    -0.024361535906791687,
+    0,
+    -0.022974783554673195
+   ],
+   "max": [
+    0.024361535906791687,
+    0.07999999821186066,
+    0.022974783554673195
+   ]
+  },
+  {
+   "bufferView": 2,
+   "componentType": 5126,
+   "count": 1025,
+   "type": "VEC3"
+  }
+ ]
+}

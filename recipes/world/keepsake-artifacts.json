@@ -1,0 +1,14 @@
+{
+  "_note": "Keepsake artifacts (docs/future/12): one-of-a-kind, mysterious trinkets that nets snag later. Models are baked by tools/bake-find-model.mjs into assets/models/keepsakes/ at real size (sizeM is the largest extent in meters, base on y = 0). rotDeg is the turn about x, y, z the game adds when it places one (all zero as baked). observation is the one plain line the journal and the Shelf show; no lore.",
+  "artifacts": [
+    { "id": "old-bullet", "name": "Old bullet", "url": "assets/models/keepsakes/old-bullet.gltf", "sizeM": 0.035, "rotDeg": [0, 0, 0], "observation": "A small bullet, green and brown with age. It is smooth where a thumb has held it." },
+    { "id": "chinese-artifact", "name": "Carved piece", "url": "assets/models/keepsakes/chinese-artifact.gltf", "sizeM": 0.08, "rotDeg": [0, 0, 0], "observation": "A worn stone post on a wide foot. It leans, just slightly, toward the water." },
+    { "id": "colonial-artifact", "name": "Flat relic", "url": "assets/models/keepsakes/colonial-artifact.gltf", "sizeM": 0.09, "rotDeg": [0, 0, 0], "observation": "A flat orange-brown piece, thick at one end. It looks broken off something larger." },
+    { "id": "cyan-artifact", "name": "Blue crystal piece", "url": "assets/models/keepsakes/cyan-artifact.gltf", "sizeM": 0.06, "rotDeg": [0, 0, 0], "observation": "A grey stone ball with a pale blue glow in its cracks. It stays cool even in the sun." },
+    { "id": "gilt-shoes", "name": "Bronze shoe", "url": "assets/models/keepsakes/gilt-shoes.gltf", "sizeM": 0.1, "rotDeg": [0, 0, 0], "observation": "One small shoe cast in metal, dull and brown. There is no pair." },
+    { "id": "gold-disc", "name": "Gold disc", "url": "assets/models/keepsakes/gold-disc.gltf", "sizeM": 0.06, "rotDeg": [0, 0, 0], "observation": "A round gold piece with a raised rim. It has a pattern on it you cannot quite read." },
+    { "id": "minoan-vase", "name": "Painted jar", "url": "assets/models/keepsakes/minoan-vase.gltf", "sizeM": 0.09, "rotDeg": [0, 0, 0], "observation": "A small painted jar, empty. The painted animals face away from you." },
+    { "id": "stone-trinket", "name": "Stone trinket", "url": "assets/models/keepsakes/stone-trinket.gltf", "sizeM": 0.06, "rotDeg": [0, 0, 0], "observation": "A stone shaped by hand, not by water. It fits the palm exactly." },
+    { "id": "rice-bowl", "name": "Little bowl", "url": "assets/models/keepsakes/rice-bowl.gltf", "sizeM": 0.1, "rotDeg": [0, 0, 0], "observation": "A pale bowl with a clean edge. It was washed by someone a long time ago." }
+  ]
+}

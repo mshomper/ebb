@@ -1,0 +1,97 @@
+{
+ "asset": {
+  "version": "2.0",
+  "generator": "ebb tools/bake-find-model.mjs",
+  "extras": {
+   "author": "National Heritage Administration (https://sketchfab.com/NHA_Asset)",
+   "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+   "source": "https://sketchfab.com/3d-models/unhyun--rice-bowl-19ed86f82cba4c9a95b632c79591bb9d",
+   "title": "Unhyun_ Rice Bowl"
+  }
+ },
+ "scene": 0,
+ "scenes": [
+  {
+   "nodes": [
+    0
+   ]
+  }
+ ],
+ "nodes": [
+  {
+   "mesh": 0,
+   "name": "rice-bowl"
+  }
+ ],
+ "meshes": [
+  {
+   "name": "rice-bowl",
+   "primitives": [
+    {
+     "attributes": {
+      "POSITION": 1,
+      "COLOR_0": 2
+     },
+     "indices": 0,
+     "mode": 4
+    }
+   ]
+  }
+ ],
+ "buffers": [
+  {
+   "byteLength": 34692,
+   "uri": "rice-bowl.bin"
+  }
+ ],
+ "bufferViews": [
+  {
+   "buffer": 0,
+   "byteOffset": 0,
+   "byteLength": 21420,
+   "target": 34963
+  },
+  {
+   "buffer": 0,
+   "byteOffset": 21420,
+   "byteLength": 6636,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteOffset": 28056,
+   "byteLength": 6636,
+   "target": 34962
+  }
+ ],
+ "accessors": [
+  {
+   "bufferView": 0,
+   "componentType": 5125,
+   "count": 5355,
+   "type": "SCALAR"
+  },
+  {
+   "bufferView": 1,
+   "componentType": 5126,
+   "count": 553,
+   "type": "VEC3",
+   "min": [
+    -0.04973866790533066,
+    0,
+    -0.05000000074505806
+   ],
+   "max": [
+    0.04973866790533066,
+    0.06407575309276581,
+    0.05000000074505806
+   ]
+  },
+  {
+   "bufferView": 2,
+   "componentType": 5126,
+   "count": 553,
+   "type": "VEC3"
+  }
+ ]
+}
