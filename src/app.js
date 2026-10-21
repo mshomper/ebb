@@ -51,6 +51,10 @@ import { keepsakeWords } from './world/keepsakes/families/index.js';
 import { cleanShelf, keep as keepShelf, letGo as letGoShelf, readLetter, swap as swapShelf } from './world/keepsakes/shelf.js';
 import { chooseLetter } from './world/keepsakes/letters.js';
 import { createPieces } from './world/pieces/index.js';
+import { createAutumn } from './world/finds/autumn-live.js';
+import { moodsOf, mistyAutumnMorning, autumnStartOf } from './world/finds/autumn.js';
+import { HABITAT_CELLS, HABITAT_ORIGIN } from './world/growth/habitat.js';
+import { waterCellOf } from './world/water/grid.js';
 import { shorePresence } from './world/journal/shore-presence.js';
 import { createPresence } from './world/creatures/presence.js';
 import { cleanName, nameFrog } from './world/creatures/trust.js';
@@ -203,6 +207,12 @@ export async function startApp(canvas, hooks = {}) {
   // `?damselflies=N` starts on the last day of spring (day 13): the first ones climb out at 0.9.
   const testDay = params.has('dragonflies') ? '15' : params.has('damselflies') ? '13' : params.has('frogs') ? '6' : '0';
   const startDay = Math.max(0, Number.parseInt(params.get('day') ?? testDay, 10) || 0);
+  // `?autumn` (testing, unsaved): a new world starts on its first misty autumn morning with fungi
+  // grown (src/world/finds/autumn.js), and a kept log is laid near the view once the island is up.
+  const autumnRecipe = await loadRecipe('species/autumn-finds');
+  const autumnMoods = (/** @type {number} */ lean) => moodsOf(subSeed(seed, 'weather'), lean, seasonsRecipe.weather);
+  const autumnDay = params.has('autumn') ? mistyAutumnMorning({ fromDay: 0, moodOf: autumnMoods(0), F: autumnRecipe.fungi }) : null;
+  if (clock.worldT() === 0 && autumnDay !== null) clock.reset((autumnRecipe.webs.testHour + 24 * autumnDay) * clock.SECONDS_PER_HOUR);
   if (clock.worldT() === 0) clock.reset(((skyRecipe.orbit.startHour ?? 10) + 24 * startDay) * clock.SECONDS_PER_HOUR);
   updateStore('meta', (m) => { m.flow = clock.flow(); });
   const env = makeEnv(seed, { seasons: seasonsRecipe, sky: skyRecipe.orbit, water: waterRecipe });
@@ -246,13 +256,15 @@ export async function startApp(canvas, hooks = {}) {
   if (params.has('damselflies')) speciesRecipes.damselfly = testRecipe(speciesRecipes.damselfly);
   world.env.recipes.species = speciesRecipes;
   updateStore('world', () => world.state);
-  const unHour = on('clock:hour', (/** @type {{ hour: number }} */ p) => {
-    const events = sim.hourlyTick(p.hour);
+  /** One game hour of the shared tick, live. @param {number} hour */
+  function tickHour(hour) {
+    const events = sim.hourlyTick(hour);
     for (const e of events) emitDeferred(e.name, e.payload);
     updateStore('world', () => world.state);
     // The hour as a whole, for watchers of the world such as the journal (src/world/journal).
-    emitDeferred('world:ticked', { hour: p.hour, events, state: world.state });
-  });
+    emitDeferred('world:ticked', { hour, events, state: world.state });
+  }
+  const unHour = on('clock:hour', (/** @type {{ hour: number }} */ p) => tickHour(p.hour));
 
   const camera = createOrbitCamera(camRecipe);
   if (back?.view) camera.setPose(back.view);   // the view you left
@@ -404,6 +416,50 @@ export async function startApp(canvas, hooks = {}) {
   const pieces = createPieces({ terrain, water, camera, history, seed, recipe: await loadRecipe('world/pieces'), ground: groundDetail, terrainRecipe,
     shore: ww.shore, tide: waterRecipe.tide });
   sim.addSystem(pieces);
+  // Autumn's season markers (doc 13; src/world/finds/autumn-live.js): fungi on the kept logs, and
+  // dewy webs in the tall grass on misty mornings. Tapping either is a find.
+  const autumn = createAutumn({ world, terrain, water, camera, pieces, growth, recipe: autumnRecipe, seasons: seasonsRecipe, seed });
+  sim.addSystem(autumn);
+  finds.addSource(autumn.shown);
+
+  /**
+   * A dry, grassy ground point near the view's middle, out of the tide, for a test log: on a widening
+   * spiral, the first where no water stands and the grass is thick. @returns {number[] | null}
+   */
+  function testLogSpot() {
+    const t = camera.target, grass = world.state?.growth?.grass;
+    for (let k = 0; k < 400; k++) {
+      const r = 0.6 + k * 0.03, a = k * 2.399;
+      const x = t[0] + Math.cos(a) * r, z = t[2] + Math.sin(a) * r;
+      if ((water.sampleLive?.(x, z)?.depth ?? 0) > 0 || (water.sampleLive?.(x + 1, z)?.depth ?? 0) > 0 || (water.sampleLive?.(x - 1, z)?.depth ?? 0) > 0) continue;
+      const i = Math.floor(x - HABITAT_ORIGIN), j = Math.floor(z - HABITAT_ORIGIN);
+      if (grass && !(grass[j * HABITAT_CELLS + i] > 120)) continue;
+      const s = water.getSummary?.();
+      const wi = waterCellOf(x) - (s?.rect.x ?? 0), wj = waterCellOf(z) - (s?.rect.y ?? 0);
+      if (s && wi >= 0 && wj >= 0 && wi < s.rect.w && wj < s.rect.h && s.band[wj * s.rect.w + wi]) continue;
+      return [x, z];
+    }
+    return null;
+  }
+  /** Keep a log near the view as if carried there before this autumn (the fungi's test). @param {number} [x] @param {number} [z] */
+  function keepTestLog(x, z) {
+    const at = x === undefined || z === undefined ? testLogSpot() : [x, z];
+    if (!at) return null;
+    const day = Math.floor(clock.hourIndex() / 24), a0 = autumnStartOf(day);
+    const F = autumnRecipe.fungi;
+    return pieces.debugKeepLog(at[0], at[1], a0 === null ? F.restDays + 1 : day - a0 + F.restDays + 1);
+  }
+  // `?autumn`: once the water and the grass are up, a kept log near the view, and the camera looks at it.
+  if (autumnDay !== null) {
+    let laid = false, wait = 0;
+    sim.addSystem({ id: 'autumn-test', tick(/** @type {any} */ f) {
+      if (laid || !water.sim.live || !world.state?.growth?.grass || (wait += f.realDt) < 2) return;
+      laid = true;
+      const id = keepTestLog();
+      const log = pieces.keptLogs().find((/** @type {any} */ l) => l.id === id);
+      if (log) camera.focus(log.x, log.z, 2.6, 28);
+    } });
+  }
   // `?frogscale` (ahead of S6): real-size frogs from the species recipe around the pond, and a
   // camera that may come close, to judge creature size on the island (src/ui/frog-scale.js).
   const frogScale = params.has('frogscale') ? await createFrogScale() : null;
@@ -457,6 +513,8 @@ export async function startApp(canvas, hooks = {}) {
     finds.pass,
     keepsakes.pass,
     pieces.pass,
+    // Autumn's fungi (a creature pass) and dewy webs, after the logs and the grass they are on.
+    ...autumn.passes,
     // Moon jellyfish on the summer strandline: clear, so drawn over the opaque things behind them.
     ...(finds.jellyPass ? [finds.jellyPass] : []),
     ...(frogScale ? [frogScale.pass] : []),
@@ -1156,22 +1214,37 @@ export async function startApp(canvas, hooks = {}) {
     keepsakes: keepsakesApi,
     /** The placed loose stones (the journal asks which one a tap landed on). */
     pieces,
-    /** The shore zones and rock pools now (the journal's Web shows which are on the island). */
-    shorePresence: () => shorePresence(ww.shore.zones(), water.getSummary(), getStore('terrainLive')?.mirror?.material ?? null),
-    /** Every live animal system's hooks for the reveal on return (src/ui/reveal.js). */
-    animals: [creatures.reveal, midges.reveal, ...schools.map((s) => s.reveal)],
-    /** The live schools (minnows), the journal asks them what a tap landed on. */
-    schools,
-    /** The live midge swarms (tools). */
-    midges,
+    /** Autumn's fungi and webs (counts() for tools). */
+    autumn,
     /**
-     * Testing under `?debug` (window.ebb.debug): skip ahead to a time of year, every hour between
-     * run by the hourly tick as usual (it may take a few seconds), and bring a settled group of a
-     * school or swarm species at once, as its test link does.
+     * Testing helpers, on window.ebb with `?debug`: autumn's misty morning and kept logs, skipping to
+     * a time of year, and bringing a settled school or swarm. They change this island's time and
+     * pieces, so use them on a test link (such as `?debug&autumn`, unsaved) to leave your own island alone.
      */
     debug: {
       /**
-       * Skip to the next day `day` of the year (0..55; 13 is the last day of spring) at `hour`.
+       * Jump to the next misty autumn morning on which fungi have grown in (autumn.js
+       * mistyAutumnMorning), at the webs' test hour, and run that hour so its weather is the day's.
+       * @returns {number | null} the game day, or null if none was found
+       */
+      autumnMorning() {
+        const lean = world.state?.weather?.lean ?? 0;
+        const day = mistyAutumnMorning({ fromDay: Math.floor(clock.hourIndex() / 24) + 1, moodOf: autumnMoods(lean), F: autumnRecipe.fungi });
+        if (day === null) return null;
+        clock.skip((autumnRecipe.webs.testHour + 24 * day) * clock.SECONDS_PER_HOUR - clock.worldT());
+        tickHour(clock.hourIndex());
+        return day;
+      },
+      /**
+       * Keep a log at a ground point (or near the view's middle) as if carried there before this
+       * autumn, so it fruits in autumn. @param {number} [x] @param {number} [z] @returns {string | null} its id
+       */
+      keptLog: (x, z) => keepTestLog(x, z),
+      /** How many fungi and webs are drawn now, and the webs' dew. */
+      autumn: () => autumn.counts(),
+      /**
+       * Skip to the next day `day` of the year (0..55; 13 is the last day of spring) at `hour`,
+       * every hour between run by the hourly tick as usual (it may take a few seconds).
        * @param {number} day @param {number} [hour]
        */
       skipTo(day, hour = 10) {
@@ -1180,7 +1253,7 @@ export async function startApp(canvas, hooks = {}) {
         clock.skip(want > at ? want - at : want + year - at);
         return clock.season();
       },
-      /** A settled group of `count` comes now (species id: minnow, dragonfly, damselfly). @param {string} id @param {number} [count] */
+      /** A settled group of `count` comes now (species id: minnow, dragonfly, damselfly), as its test link does. @param {string} id @param {number} [count] */
       summon(id, count = 8) {
         const rec = speciesRecipes[id];
         if (rec?.ecology?.kind !== 'swarm') return false;
@@ -1193,6 +1266,14 @@ export async function startApp(canvas, hooks = {}) {
         return this.summon('damselfly', count);
       },
     },
+    /** The shore zones and rock pools now (the journal's Web shows which are on the island). */
+    shorePresence: () => shorePresence(ww.shore.zones(), water.getSummary(), getStore('terrainLive')?.mirror?.material ?? null),
+    /** Every live animal system's hooks for the reveal on return (src/ui/reveal.js). */
+    animals: [creatures.reveal, midges.reveal, ...schools.map((s) => s.reveal)],
+    /** The live schools (minnows), the journal asks them what a tap landed on. */
+    schools,
+    /** The live midge swarms (tools). */
+    midges,
     presence,
     /** The orbit camera, for tools and checks (eye, target, distance). */
     camera,

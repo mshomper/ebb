@@ -16,8 +16,13 @@ import { hash32 } from '../../core/rng.js';
 /** @param {number} h */
 const u01 = (h) => (h >>> 8) / 16777216;
 
-/** A mesh under construction: vertices go in as 9 floats each, triangles by index. Keepsakes use it too. */
-export function builder() {
+/**
+ * A mesh under construction: vertices go in as 9 floats each, triangles by index. done() sets its
+ * base on y = 0, unless keepY (a fungus keeps its root where it meets the wood, autumn-meshes.js).
+ * Keepsakes build with it too (src/world/keepsakes/families).
+ * @param {{ keepY?: boolean }} [o]
+ */
+export function builder(o = {}) {
   /** @type {number[]} */ const v = [];
   /** @type {number[]} */ const idx = [];
   return {
@@ -32,6 +37,7 @@ export function builder() {
     /** @returns {Mesh} */
     done() {
       const vertices = new Float32Array(v);
+      if (o.keepY) return { vertices, count: v.length / 9, indices: Uint32Array.from(idx) };
       let lo = Infinity;
       for (let i = 1; i < vertices.length; i += 9) lo = Math.min(lo, vertices[i]);
       for (let i = 1; i < vertices.length; i += 9) vertices[i] -= lo;
@@ -46,7 +52,7 @@ export function builder() {
  * @param {ReturnType<typeof builder>} m @param {[number, number, number][]} prof @param {number[][]} colors
  * @param {number} cx @param {number} cz @param {number} seg @param {(a: number) => number} [ridge] radius multiplier by angle
  */
-function lathe(m, prof, colors, cx, cz, seg, ridge = () => 1) {
+export function lathe(m, prof, colors, cx, cz, seg, ridge = () => 1) {
   const rings = prof.map(([r, y, ci], i) => {
     const a = prof[Math.max(0, i - 1)], b = prof[Math.min(prof.length - 1, i + 1)];
     // Outward normal in the (r, y) plane: the profile's direction turned a quarter.
@@ -73,7 +79,7 @@ function lathe(m, prof, colors, cx, cz, seg, ridge = () => 1) {
  * the path. @param {ReturnType<typeof builder>} m @param {number[][]} pts @param {number[]} radii
  * @param {number[]} color @param {number} [sides]
  */
-function tube(m, pts, radii, color, sides = 5) {
+export function tube(m, pts, radii, color, sides = 5) {
   /** @type {number[][]} */ const rings = [];
   for (let i = 0; i < pts.length; i++) {
     const a = pts[Math.max(0, i - 1)], b = pts[Math.min(pts.length - 1, i + 1)];

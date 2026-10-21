@@ -49,6 +49,7 @@ import { addKeepsakeTests } from './unit-tests-keepsakes.js';
 import { addPiecesTests } from './unit-tests-pieces.js';
 import { addCoveTests } from './unit-tests-cove.js';
 import { addKeepsakeArtifactTests } from './unit-tests-keepsake-artifacts.js';
+import { addAutumnTests } from './unit-tests-autumn.js';
 
 /** @type {{group: string, name: string, fn: () => any}[]} */
 const tests = [];
@@ -1471,6 +1472,10 @@ addCoveTests(test, assert, eq);
 // ---- keepsake artifact models (tools/unit-tests-keepsake-artifacts.js) ----
 
 addKeepsakeArtifactTests(test, assert, eq);
+
+// ---- autumn's season markers: fungi on logs, dewy webs (tools/unit-tests-autumn.js) ----
+
+addAutumnTests(test, assert, eq);
 
 // ---- runner and rendering ----
 
