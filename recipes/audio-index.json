@@ -6,6 +6,7 @@
     "audio/procedural": "audio/procedural.json",
     "audio/ambience": "audio/ambience.json",
     "audio/game": "audio/game.json",
+    "audio/keepsakes": "audio/keepsakes.json",
     "music/sampler": "music/sampler.json",
     "music/instruments/piano-steinway-b": "music/instruments/piano-steinway-b.json",
     "music/synth": "music/synth.json",

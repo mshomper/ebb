@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "note": "The keepsake and net one-shots (docs/future/12): recorded CC0 takes in assets/audio/one-shots/keepsakes/, each peaked at -3 dBFS, played on the tools bus. db sets each one's level; pitchCents is a small seeded spread so a sound heard often is never quite the same twice. wakeWaitMs is how long a sound waits for the page's first tap to wake the sound before it gives up. Sources are in assets/audio/CREDITS.md.",
+  "root": "assets/audio/one-shots/keepsakes/",
+  "pitchCents": 60,
+  "wakeWaitMs": 400,
+  "sounds": {
+    "pickup": { "file": "pickup", "db": -8 },
+    "bottle": { "file": "bottle", "db": -9 },
+    "keep": { "file": "keep", "db": -6 },
+    "keep-glass": { "file": "keep-glass", "db": -9 },
+    "leave": { "files": ["leave-a", "leave-b"], "db": -10 },
+    "letter": { "file": "letter", "db": -7 },
+    "net-set": { "file": "net-set", "db": -9 },
+    "net-lift": { "file": "net-lift", "db": -8 },
+    "flop": { "file": "flop", "db": -10 }
+  },
+  "preload": ["pickup", "bottle", "keep", "keep-glass", "leave", "letter"]
+}

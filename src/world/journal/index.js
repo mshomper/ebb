@@ -151,7 +151,7 @@ export function createJournal(opts) {
     if (ks && KW) {
       return { sp: 'keepsake', keepsake: ks.id, name: KW.card, sub: KW.rarity[ks.n.rarity] ?? ks.n.rarity, icon: KW.icon,
         text: opts.keepsakes.words(ks.n), wx: ks.x, wz: ks.z, r: 0.15, stage: -1, noPage: true,
-        letter: ks.n.family === 'bottle' && !!ks.n.message };
+        family: ks.n.family, letter: ks.n.family === 'bottle' && !!ks.n.message };
     }
     // Then a loose stone or a driftwood log (docs/future/10): the tap lifts or rolls it to look
     // underneath. It has no page. With the turtles' gift (unlocks.carry) its card offers Carry.

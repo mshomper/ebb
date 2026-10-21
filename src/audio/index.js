@@ -11,7 +11,8 @@
 //
 //   frame loop ── store 'sound' ──→ game-state ──→ ambience ──→ mixer ──→ speakers
 //   frog agents, midges, minnows, dragonflies ── store 'creatureSound' ──→ voices ──┤
-//   director ─→ composer or a tide ─→ performer ─→ music bus ─┘
+//   director ─→ composer or a tide ─→ performer ─→ music bus ─┤
+//   keepsake taps, keepsake:sound ─→ keepsake sounds ─→ tools bus ─┘
 //   store 'settings'.audio ───────────────────────────────────→ mixer levels
 
 import { loadAudioRecipe } from './recipes.js';
@@ -23,6 +24,7 @@ import { createVoices } from './voices.js';
 import { createCreatureSound } from './creatures-game.js';
 import { wingRecipe } from './voices/dragonfly.js';
 import { createMusic } from './music/index.js';
+import { createKeepsakeSounds } from './keepsake-sounds.js';
 import { hash32 } from '../core/rng.js';
 import { emit, on } from '../core/events.js';
 import { sunMoon } from '../world/sky/sun-moon.js';
@@ -52,10 +54,10 @@ if (typeof window !== 'undefined') {
  * @returns {Promise<{ mixer: () => import('./mixer.js').Mixer | null, ambience: () => any, voices: () => any, music: () => any, dispose: () => void }>}
  */
 export async function startAudio(store) {
-  const [mixerRecipe, ambRecipe, procRecipe, gameRecipe, skyRecipe, frogRecipe, midgeRecipe, dragonflyRecipe, minnowRecipe] = await Promise.all([
+  const [mixerRecipe, ambRecipe, procRecipe, gameRecipe, skyRecipe, frogRecipe, midgeRecipe, dragonflyRecipe, minnowRecipe, keepsakeRecipe] = await Promise.all([
     loadAudioRecipe('audio/mixer'), loadAudioRecipe('audio/ambience'), loadAudioRecipe('audio/procedural'),
     loadAudioRecipe('audio/game'), loadRecipe('world/sky'), loadRecipe('species/frog'), loadRecipe('species/midge'),
-    loadRecipe('species/dragonfly'), loadRecipe('species/minnow'),
+    loadRecipe('species/dragonfly'), loadRecipe('species/minnow'), loadAudioRecipe('audio/keepsakes'),
   ]);
   const phone = matchMedia('(pointer: coarse)').matches && Math.min(screen.width, screen.height) < gameRecipe.mobile.phoneMaxSidePx;
   const tier = phone ? 'mobile' : 'desktop';
@@ -68,6 +70,7 @@ export async function startAudio(store) {
   /** @type {ReturnType<typeof setInterval> | 0} */ let timer = 0;
   /** @type {ReturnType<typeof setInterval> | 0} */ let callTimer = 0;
   /** @type {Awaited<ReturnType<typeof createMusic>> | null} */ let music = null;
+  /** @type {ReturnType<typeof createKeepsakeSounds> | null} */ let keepsakeSounds = null;
   const t0 = performance.now();
   const asked = new URLSearchParams(location.search).get('music');
   let testNow = asked === 'now' ? 'morning' : ['morning', 'interlude', 'evening', 'nocturne'].includes(asked ?? '') ? /** @type {string} */ (asked) : '';
@@ -129,6 +132,7 @@ export async function startAudio(store) {
       dragonfly: wingRecipe(dragonflyRecipe), minnow: minnowRecipe.voice }, seed, { tier });
     animals = createCreatureSound(mixer, voices, store, gameRecipe.frogs, gameRecipe.pond);
     soundState = createSoundState(gameRecipe, seed, (t) => sunMoon(t, skyRecipe.orbit).sunAlt * DEG, ambRecipe.seasonEdge);
+    keepsakeSounds = createKeepsakeSounds(mixer, keepsakeRecipe);
     applySettings();
     unsubs.push(store.subscribe('settings', () => applySettings()));
     if (touched) mixer.unlock().catch(() => { /* the next touch unlocks it */ });
@@ -177,6 +181,17 @@ export async function startAudio(store) {
     music?.revealEnded();
     if (revealHold) { revealHold = false; applySettings(gameRecipe.reveal.endInS); }
   }));
+
+  // Keepsakes (docs/future/12; recipes/audio/keepsakes.json): tapping one picks it up off the sand
+  // (a bottle rolls on the stones); keeping, leaving and reading say so through keepsake:sound,
+  // as the nets will.
+  let heldKeepsake = '';
+  unsubs.push(store.subscribe('identify', (/** @type {any} */ c) => {
+    const id = c?.keepsake ?? '';
+    if (id && id !== heldKeepsake) keepsakeSounds?.play(c.family === 'bottle' ? 'bottle' : 'pickup');
+    heldKeepsake = id;
+  }));
+  unsubs.push(on('keepsake:sound', (/** @type {{ name: string, seed?: number }} */ p) => keepsakeSounds?.play(p.name, p.seed)));
 
   if (store.get('sound')) begin();
   else {
