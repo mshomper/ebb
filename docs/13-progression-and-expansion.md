@@ -69,6 +69,7 @@ ways to look          ways to reach and keep   human touches, places to be
 - **Species gifts stay the only source of new shaping power,** so creatures stay the heart. The gifts are the means; the shaper's trail notices what you make with them. For example, the frogs' Cliff tool lets you build a terrace with a fall, and that stop on the shaper's trail brings the bench.
 - **No trail locks another, or a creature.**
 - **Details:** the beachcomber's stops and the nets are in `docs/future/12-keepsakes-and-nets.md`. The bench and the walker (presence rungs 2 and 3) are to be discussed further.
+- **Built (October 21, 2026, branch `m2-trails`):** the Trails page, a full-width tab above the journal's six sections; side by side from a 1100 px window, tabs below. The firsts live in the saved unlocks (`src/world/trails.js`, save format 8). The shaper's places are noticed only where the player made them (a stream or a cove on shaped ground; a pond by the dragonflies' own test), and the terrace stop gives Steps, not the bench (the walker plan). Stops in `recipes/world/beachcomber.json` and `shaper.json`.
 
 ### The gift chain (agreed with Matt, October 20, 2026)
 
