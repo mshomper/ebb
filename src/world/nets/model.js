@@ -87,15 +87,17 @@ export function netState(net, nowH, tide) {
 
 /**
  * Can a net be cast at a point? In the tide band, under the coming high water by at least coverM,
- * and no deeper than wadeM now. Water off the tide band is fresh (a pond or a stream).
- * @param {{ band: boolean, depth: number, ground: number, nextHighLevel: number }} at
- *   band: the point's water cell is in the tide band; depth: live water depth (m); ground: its
- *   height (m); nextHighLevel: sea level at the next high water (m)
+ * and no deeper than wadeM now. Open sea below the tide band is too deep; other water off the band
+ * is fresh (a pond or a stream).
+ * @param {{ band: boolean, sea?: boolean, depth: number, ground: number, nextHighLevel: number }} at
+ *   band: the point's water cell is in the tide band; sea: it is open sea (the water summary's sea
+ *   class); depth: live water depth (m); ground: its height (m); nextHighLevel: sea level at the next
+ *   high water (m)
  * @param {{ wadeM: number, coverM: number }} rule recipes/world/nets.json `set`
  * @returns {{ ok: true } | { ok: false, reason: 'fresh' | 'dry' | 'deep' }}
  */
 export function canCast(at, rule) {
-  if (!at.band) return { ok: false, reason: at.depth > 0.005 ? 'fresh' : 'dry' };
+  if (!at.band) return { ok: false, reason: at.sea ? 'deep' : at.depth > 0.005 ? 'fresh' : 'dry' };
   if (at.ground > at.nextHighLevel - rule.coverM) return { ok: false, reason: 'dry' };
   if (at.depth > rule.wadeM) return { ok: false, reason: 'deep' };
   return { ok: true };

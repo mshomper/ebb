@@ -14,6 +14,7 @@ import { emitDeferred } from '../../core/events.js';
 import { seasonOf } from '../../core/clock.js';
 import { tideParams, level, amplitude } from '../tide.js';
 import { waterCellOf } from '../water/grid.js';
+import { WATER_CLASS } from '../water/summary.js';
 import { packMesh } from '../creatures/bodies.js';
 import { createCreaturePass } from '../../render/passes/creatures.js';
 import { cleanNets, ensureNets, canCast, cast, bringIn, netState, nextHighTide, highHour, noteReleased } from './model.js';
@@ -79,12 +80,15 @@ export function createNets(opts) {
     return Math.atan2(-gx, -gz);
   }
 
-  /** Is this water cell in the tide band? @param {number} x @param {number} z */
-  function inBand(x, z) {
+  /** Is this water cell in the tide band, and is it open sea? @param {number} x @param {number} z */
+  function placeOf(x, z) {
     const s = water.getSummary?.();
-    if (!s) return false;
+    if (!s) return { band: false, sea: false };
     const i = waterCellOf(x) - s.rect.x, j = waterCellOf(z) - s.rect.y;
-    return i >= 0 && j >= 0 && i < s.rect.w && j < s.rect.h && !!s.band[j * s.rect.w + i];
+    // Off the summary's rect is all open sea.
+    if (i < 0 || j < 0 || i >= s.rect.w || j >= s.rect.h) return { band: false, sea: true };
+    const k = j * s.rect.w + i;
+    return { band: !!s.band[k], sea: s.cls[k] === WATER_CLASS.sea };
   }
 
   let clock = 0;
@@ -122,7 +126,9 @@ export function createNets(opts) {
         return;
       }
       const live = water.sampleLive?.(p[0], p[2]);
-      const at = { band: inBand(p[0], p[2]), depth: live?.depth ?? 0, ground: terrain.sampleHeight(p[0], p[2]),
+      // A full net stays where it is until it is lifted: moving it would lose its haul.
+      if (netState(net, nowH, tideP).state === 'ready') { sync({ message: W.fullStays, refused: true }); return; }
+      const at = { ...placeOf(p[0], p[2]), depth: live?.depth ?? 0, ground: terrain.sampleHeight(p[0], p[2]),
         nextHighLevel: level(highHour(nextHighTide(nowH, tideP), tideP), tideP) };
       const r = canCast(at, NR.set);
       if (!r.ok) { sync({ message: W.refused[r.reason], refused: true }); return; }

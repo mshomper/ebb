@@ -36,6 +36,7 @@ export function addNetsTests(test, assert, eq) {
     assert(canCast(at, RULE).ok, 'ankle deep in the band');
     assert(canCast({ ...at, depth: 0 }, RULE).ok, 'bare wet sand the tide will cover');
     eq(/** @type {any} */ (canCast({ ...at, band: false, depth: 0.3 }, RULE)).reason, 'fresh', 'a pond');
+    eq(/** @type {any} */ (canCast({ ...at, band: false, sea: true, depth: 2 }, RULE)).reason, 'deep', 'open sea past the tide band is too deep, not fresh');
     eq(/** @type {any} */ (canCast({ ...at, band: false, depth: 0 }, RULE)).reason, 'dry', 'dry land');
     eq(/** @type {any} */ (canCast({ ...at, ground: 0.55 }, RULE)).reason, 'dry', 'too high for the coming tide');
     eq(/** @type {any} */ (canCast({ ...at, depth: 0.4 }, RULE)).reason, 'deep', 'too deep to wade');

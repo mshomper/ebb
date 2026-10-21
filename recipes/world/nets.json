@@ -107,6 +107,7 @@
     "bringIn": "Bring it in",
     "cast": "Your net is out. The next high tide will fish it.",
     "castTest": "Your net is out. On this test island it is full at once.",
+    "fullStays": "Your net is full. Lift it before you move it, so the catch is not lost.",
     "refused": {
       "fresh": "Nets are for the sea. Try the shallows of the tide band.",
       "dry": "Too high for the tide. Try lower on the shore, where the high tide will cover it.",
