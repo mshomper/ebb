@@ -31,6 +31,12 @@
   .slot canvas { width: 100%; aspect-ratio: 1; display: block; }
   .slot figcaption { font-size: 15px; line-height: 1.35; }
   .slot figcaption b { font-size: 16px; }
+  .slot .art { width: 100%; aspect-ratio: 1; display: block; }
+  .slot .art svg, .shelf svg { width: 100%; height: 100%; display: block; }
+  .bigsketch { width: min(100%, 220px); aspect-ratio: 1; float: right; margin: 0 0 8px 12px; }
+  .bigsketch svg { width: 100%; height: 100%; }
+  .shelf { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; max-width: 720px; padding: 16px; border-radius: 12px; background: #E9DFCE; }
+  .shelf > div { aspect-ratio: 1; border-radius: 8px; padding: 4px; }
   table { border-collapse: collapse; font-size: 16px; }
   td, th { padding: 4px 12px 4px 0; text-align: left; }
   td.n { text-align: right; font-variant-numeric: tabular-nums; }
@@ -41,14 +47,17 @@
     .sliders { grid-template-columns: minmax(0, 1fr); }
     .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
     .slot figcaption { font-size: 16px; }
+    .bigsketch { float: none; margin: 0 auto 8px; }
+    .shelf { gap: 6px; padding: 8px; }
   }
 </style>
 </head>
 <body>
 <h1>Keepsake lab</h1>
-<p>Shells the sea could leave, each one made from its seed by Raup's coiling model (<code>src/world/keepsakes/families/shell.js</code>), with the numbers in <code>recipes/world/keepsakes.json</code>. Each square sits on the paper its rarity would get on the shelf. Tap one to look at it closely, turn it, and move its numbers by hand.</p>
+<p>Keepsakes the sea could leave, each one made from its seed: shells by Raup's coiling model, stones, fossils, driftwood, feathers and bottles (<code>src/world/keepsakes/families/</code>), with the numbers in <code>recipes/world/keepsakes.json</code>. Each square sits on the paper its rarity would get on the shelf. Tap one to look at it closely and turn it; a shell's numbers can be moved by hand.</p>
 
 <div class="controls">
+  <label>Family <select id="family"></select></label>
   <label>Seeds from <input type="number" id="from" value="1" min="0" step="48"></label>
   <button id="next">Next 48</button>
   <label>Tide <select id="tide">
@@ -62,27 +71,39 @@
   </select></label>
 </div>
 <div class="chips" id="chips" role="group" aria-label="Rarity"></div>
+<div class="chips" id="views" role="group" aria-label="Show" style="margin-top:10px">
+  <button data-view="sketch" aria-pressed="true">Ink sketches</button>
+  <button data-view="model" aria-pressed="false">Models</button>
+</div>
 
-<h2>One shell</h2>
+<h2>One up close</h2>
 <div class="one">
   <div class="bigwrap" id="bigwrap"><canvas class="big" id="big"></canvas></div>
   <div>
+    <div class="bigsketch" id="bigSketch"></div>
     <div class="words" id="words"></div>
     <div class="muted" id="facts"></div>
-    <div class="sliders" id="sliders" style="margin-top:12px"></div>
-    <div class="chips" style="margin-top:12px">
-      <button id="leftBtn" aria-pressed="false">Coiled to the left</button>
-      <button id="reset">Back to its seed</button>
+    <p class="words" id="message" style="font-size:17px"></p>
+    <div id="shellTools">
+      <div class="sliders" id="sliders" style="margin-top:12px"></div>
+      <div class="chips" style="margin-top:12px">
+        <button id="leftBtn" aria-pressed="false">Coiled to the left</button>
+        <button id="reset">Back to its seed</button>
+      </div>
     </div>
   </div>
 </div>
 
-<h2>48 shells</h2>
+<h2>48 of them</h2>
 <p class="muted" id="gridNote"></p>
 <div class="grid" id="grid"></div>
 
+<h2>A shelf of 16</h2>
+<p class="muted">How a shelf could look: the first 16 above, each as its ink sketch on its rarity's paper.</p>
+<div class="shelf" id="shelf"></div>
+
 <h2>How often</h2>
-<p class="muted">20,000 shells rolled with the tide and season above, as the sea would leave them.</p>
+<p class="muted">20,000 of this family rolled with the tide and season above, as the sea would leave them.</p>
 <div class="odds" id="odds"></div>
 
 <script type="module" src="keepsake-lab.js"></script>

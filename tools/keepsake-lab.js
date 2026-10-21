@@ -1,18 +1,24 @@
 // @ts-check
-// The keepsake lab (docs/future/12, piece K1a): 48 seeds of the shell family side by side on their
-// shelf grounds, one shell up close with sliders for its numbers, and how often each rarity, form and
-// mark turns up under a chosen tide and season. Drawn with a small painter's renderer on 2D canvases,
-// like tools/finds-models.html, so it runs anywhere.
+// The keepsake lab (docs/future/12, pieces K1 and K4): 48 seeds of a family side by side on their
+// shelf grounds as ink sketches or models, a mock shelf of 16, one keepsake up close (with sliders
+// for a shell's numbers), and how often each rarity, kind and mark turns up under a chosen tide and
+// season. Drawn with a small painter's renderer on 2D canvases, like tools/finds-models.html.
 
-import { rollShell, shellMesh, shellWords } from '../src/world/keepsakes/families/shell.js';
+import { FAMILIES, keepsakeMesh, keepsakeView, keepsakeWords, rollKeepsake } from '../src/world/keepsakes/families/index.js';
+import { bottleMessage } from '../src/world/keepsakes/families/bottle.js';
 import { rarityWeights } from '../src/world/keepsakes/rarity.js';
+import { keepsakeSvg, traceKeepsake } from '../src/ui/sketches/keepsake.js';
 
 const K = await (await fetch('../recipes/world/keepsakes.json')).json();
+const MESSAGES = await (await fetch('../recipes/world/bottle-messages.json')).json();
 const SEED = 20261021;
 const $ = (/** @type {string} */ id) => /** @type {any} */ (document.getElementById(id));
+/** Each family's block in keepsakes.json. */
+const RECIPE_KEY = /** @type {Record<string, string>} */ ({ shell: 'shells', stone: 'stones', fossil: 'fossils', driftwood: 'driftwood', feather: 'feathers', bottle: 'bottles' });
 
-/** @type {{ force: string | null, sel: any, base: any }} */
-const state = { force: null, sel: null, base: null };
+/** @type {{ force: string | null, sel: any, base: any, view: string, family: string }} */
+const state = { force: null, sel: null, base: null, view: 'sketch', family: 'shell' };
+const sketchOf = (/** @type {any} */ n, /** @type {any} */ mesh) => keepsakeSvg(traceKeepsake(mesh, n, keepsakeView(n)), keepsakeWords(n, K));
 const cond = () => ({ spring: Number($('tide').value), season: $('season').value });
 
 // ---- Drawing -----------------------------------------------------------------------------------
@@ -63,7 +69,7 @@ function drawMesh(cv, m, yaw, pitch) {
 }
 
 /** Flat coils and ear shells read best from above, where their spiral shows. @param {any} n */
-const viewPitch = (n) => (n.form === 'coil' || n.form === 'ear' ? 1.15 : 0.3);
+const viewPitch = (n) => Math.min(1.35, (keepsakeView(n)[1] * Math.PI) / 180);
 
 /** The shelf ground for a rarity, as CSS (recipe shelf.grounds). @param {string} rarity */
 function groundCss(rarity) {
@@ -109,10 +115,16 @@ function renderOne() {
   const n = state.sel;
   if (!n) return;
   $('bigwrap').style.cssText = groundCss(n.rarity);
-  const mesh = shellMesh(n, K.shells.mesh);
+  const mesh = keepsakeMesh(n, K);
   drawMesh(big, mesh, yaw, pitch);
-  $('words').textContent = shellWords(n, K);
+  $('words').textContent = keepsakeWords(n, K);
+  $('bigSketch').style.cssText = groundCss(n.rarity) + ' border-radius: 10px;';
+  $('bigSketch').innerHTML = sketchOf(n, mesh);
   $('facts').textContent = `${K.rarity.words[n.rarity]} · ${n.form} · ${(n.sizeM * 100).toFixed(1)} cm · ${mesh.indices.length / 3} triangles`;
+  const msg = n.family === 'bottle' ? bottleMessage(n, MESSAGES) : null;
+  $('message').textContent = msg ? `The message: ${msg}` : '';
+  $('shellTools').hidden = n.family !== 'shell';
+  if (n.family !== 'shell') return;
   $('leftBtn').setAttribute('aria-pressed', String(!!n.left));
   $('s-pattern').value = n.pattern;
   for (const s of SLIDERS) {
@@ -170,7 +182,7 @@ big.addEventListener('pointermove', (/** @type {PointerEvent} */ e) => {
   yaw += (e.clientX - drag[0]) * 0.01;
   pitch = Math.max(-1.4, Math.min(1.4, pitch + (e.clientY - drag[1]) * 0.01));
   drag = [e.clientX, e.clientY];
-  drawMesh(big, shellMesh(state.sel, K.shells.mesh), yaw, pitch);
+  drawMesh(big, keepsakeMesh(state.sel, K), yaw, pitch);
 });
 big.addEventListener('pointerup', () => { drag = null; });
 
@@ -182,22 +194,30 @@ function renderGrid() {
   const grid = $('grid');
   grid.textContent = '';
   const token = ++gridToken;
-  /** @type {{ n: any, cv: HTMLCanvasElement }[]} */ const items = [];
+  /** @type {{ n: any, art: HTMLElement }[]} */ const items = [];
+  const shelf = $('shelf');
+  shelf.textContent = '';
   for (let i = 0; i < 48; i++) {
-    const n = rollShell(SEED, from + i, K, cond(), /** @type {any} */ (state.force ?? undefined));
+    const n = rollKeepsake(state.family, SEED, from + i, K, cond(), /** @type {any} */ (state.force ?? undefined));
     const fig = document.createElement('figure');
     fig.className = 'slot';
     fig.style.cssText = groundCss(n.rarity);
     fig.tabIndex = 0;
-    const cv = document.createElement('canvas');
+    const art = document.createElement(state.view === 'model' ? 'canvas' : 'div');
+    art.className = 'art';
     const cap = document.createElement('figcaption');
-    cap.innerHTML = `<b>${K.rarity.words[n.rarity]}</b>${n.left ? ' · left' : ''}<br>${shellWords(n, K)}`;
-    fig.append(cv, cap);
+    cap.innerHTML = `<b>${K.rarity.words[n.rarity]}</b>${n.mark ? ' · marked' : ''}<br>${keepsakeWords(n, K)}`;
+    fig.append(art, cap);
     const choose = () => { state.sel = { ...n }; state.base = { ...n }; yaw = 0.6; pitch = viewPitch(n); renderOne(); $('bigwrap').scrollIntoView({ behavior: 'smooth', block: 'center' }); };
     fig.addEventListener('click', choose);
     fig.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); choose(); } });
     grid.append(fig);
-    items.push({ n, cv });
+    items.push({ n, art });
+    if (i < 16) {
+      const s = document.createElement('div');
+      s.style.cssText = groundCss(n.rarity);
+      shelf.append(s);
+    }
   }
   const c = cond();
   $('gridNote').textContent = state.force
@@ -209,7 +229,14 @@ function renderGrid() {
   const step = () => {
     if (token !== gridToken) return;
     const end = Math.min(items.length, k + 3);
-    for (; k < end; k++) drawMesh(items[k].cv, shellMesh(items[k].n, K.shells.mesh), 0.6, viewPitch(items[k].n));
+    for (; k < end; k++) {
+      const { n, art } = items[k];
+      const mesh = keepsakeMesh(n, K);
+      const svg = state.view === 'sketch' || k < 16 ? sketchOf(n, mesh) : '';
+      if (state.view === 'model') drawMesh(/** @type {HTMLCanvasElement} */ (art), mesh, 0.6, viewPitch(n));
+      else art.innerHTML = svg;
+      if (k < 16) shelf.children[k].innerHTML = svg;
+    }
     if (k < items.length) requestAnimationFrame(step);
   };
   requestAnimationFrame(step);
@@ -220,25 +247,40 @@ function renderGrid() {
 
 function renderOdds() {
   const c = cond(), N = 20000;
-  /** @type {Record<string, number>} */ const tiers = {}, forms = {};
-  let left = 0;
+  /** @type {Record<string, number>} */ const tiers = {}, forms = {}, marks = {};
   for (let i = 0; i < N; i++) {
-    const n = rollShell(SEED + 7, i, K, c);
+    const n = rollKeepsake(state.family, SEED + 7, i, K, c);
     tiers[n.rarity] = (tiers[n.rarity] ?? 0) + 1;
     forms[n.form] = (forms[n.form] ?? 0) + 1;
-    left += n.left;
+    if (n.mark) marks[n.mark] = (marks[n.mark] ?? 0) + 1;
   }
+  const R = K[RECIPE_KEY[state.family]];
   const w = rarityWeights(K.rarity, c);
   const tot = w.reduce((a, b) => a + b, 0);
   const pct = (/** @type {number} */ x) => `${((100 * x) / N).toFixed(1)}%`;
   const rows1 = K.rarity.order.map((/** @type {string} */ r, /** @type {number} */ i) => `<tr><td>${K.rarity.words[r]}</td><td class="n">${pct(tiers[r] ?? 0)}</td><td class="n muted">${w[i] ? ((100 * w[i]) / tot).toFixed(1) + '% expected' : 'not at this tide'}</td></tr>`).join('');
-  const rows2 = K.shells.forms.map((/** @type {any} */ f) => `<tr><td>${f.word}</td><td class="n">${pct(forms[f.id] ?? 0)}</td></tr>`).join('');
+  const rows2 = Object.keys(forms).sort().map((f) => `<tr><td>${f}</td><td class="n">${pct(forms[f])}</td></tr>`).join('');
+  const rows3 = Object.entries(R.marks).map(([id, m]) => `<tr><td>${/** @type {any} */ (m).word}</td><td class="n">${marks[id] ?? 0} in ${N.toLocaleString()}</td></tr>`).join('');
   $('odds').innerHTML = `<table><tr><th>Rarity</th><th></th><th></th></tr>${rows1}</table>
-    <table><tr><th>Form</th><th></th></tr>${rows2}</table>
-    <table><tr><th>Mark</th><th></th></tr><tr><td>${K.shells.marks.leftCoiled.word}</td><td class="n">${left} in ${N.toLocaleString()}</td></tr></table>`;
+    <table><tr><th>Kind</th><th></th></tr>${rows2}</table>
+    <table><tr><th>Mark</th><th></th></tr>${rows3}</table>`;
 }
 
+for (const b of $('views').children) {
+  b.addEventListener('click', () => {
+    state.view = b.dataset.view;
+    for (const x of $('views').children) x.setAttribute('aria-pressed', String(x === b));
+    renderGrid();
+  });
+}
 for (const id of ['tide', 'season', 'from']) $(id).addEventListener('change', renderGrid);
+const FAMILY_LABEL = /** @type {Record<string, string>} */ ({ shell: 'Shells', stone: 'Stones', fossil: 'Fossils', driftwood: 'Driftwood', feather: 'Feathers', bottle: 'Bottles' });
+for (const f of Object.keys(FAMILIES)) $('family').append(new Option(FAMILY_LABEL[f] ?? f, f));
+$('family').addEventListener('change', () => {
+  state.family = $('family').value;
+  state.sel = null;
+  renderGrid();
+});
 $('next').addEventListener('click', () => { $('from').value = String(Math.max(0, Number($('from').value) || 0) + 48); renderGrid(); });
 addEventListener('resize', () => renderOne());
 renderGrid();

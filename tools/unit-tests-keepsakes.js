@@ -5,6 +5,8 @@
 
 import { rollShell, shellMesh, shellWords } from '../src/world/keepsakes/families/shell.js';
 import { pickIndex, rarityWeights } from '../src/world/keepsakes/rarity.js';
+import { keepsakeSvg, traceKeepsake } from '../src/ui/sketches/keepsake.js';
+import { FAMILIES, keepsakeMesh, keepsakeWords, rollKeepsake } from '../src/world/keepsakes/families/index.js';
 
 const KEEPSAKES = 'keepsakes';
 
@@ -83,6 +85,56 @@ export function addKeepsakeTests(test, assert, eq) {
     let found = 0;
     for (let i = 0; i < 5000; i++) found += rollShell(9, i, K, { spring: 0, season: 'spring' }).left;
     assert(found > 10 && found < 90, `left-coiled shells are uncommon but turn up (${found} in 5000)`);
+  });
+
+  test(KEEPSAKES, 'a shell\'s sketch traces the same every time, with an outline and a colour wash', async () => {
+    const K = await recipe();
+    const n = rollShell(21, 2, K, { spring: 0.9, season: 'winter' }, 'rare');
+    const a = traceKeepsake(shellMesh(n, K.shells.mesh), n), b = traceKeepsake(shellMesh(n, K.shells.mesh), n);
+    eq(JSON.stringify(a), JSON.stringify(b), 'same tracing');
+    assert(a.outline.length > 8, 'an outline');
+    assert((a.wash ?? []).flat().some((c) => c), 'a colour wash');
+    const svg = keepsakeSvg(a, 'test');
+    assert(svg.startsWith('<svg') && svg.includes('clip-path'), 'an SVG with its wash clipped to the outline');
+  });
+
+  test(KEEPSAKES, 'every family makes the same keepsake from the same seed, sized, on the ground and finite', async () => {
+    const K = await recipe();
+    for (const family of Object.keys(FAMILIES)) {
+      for (const r of K.rarity.order) {
+        for (let i = 0; i < 6; i++) {
+          const n = rollKeepsake(family, 9, i, K, { spring: 1, season: 'winter' }, r);
+          eq(JSON.stringify(n), JSON.stringify(rollKeepsake(family, 9, i, K, { spring: 1, season: 'winter' }, r)), `${family}: same numbers`);
+          const m = keepsakeMesh(JSON.parse(JSON.stringify(n)), K);
+          let lo = Infinity, finite = true;
+          const mn = [Infinity, Infinity, Infinity], mx = [-Infinity, -Infinity, -Infinity];
+          for (let v = 0; v < m.count; v++) {
+            lo = Math.min(lo, m.vertices[v * 9 + 1]);
+            for (let c = 0; c < 9; c++) if (!Number.isFinite(m.vertices[v * 9 + c])) finite = false;
+            for (let c = 0; c < 3; c++) { mn[c] = Math.min(mn[c], m.vertices[v * 9 + c]); mx[c] = Math.max(mx[c], m.vertices[v * 9 + c]); }
+          }
+          const ext = Math.max(mx[0] - mn[0], mx[1] - mn[1], mx[2] - mn[2]);
+          assert(finite, `${family} ${r} ${i}: finite`);
+          assert(Math.abs(lo) < 1e-6, `${family} ${r} ${i}: base on y = 0`);
+          assert(ext > n.sizeM * 0.5 && ext < n.sizeM * 1.05, `${family} ${r} ${i}: about its size (${ext.toFixed(3)} for ${n.sizeM})`);
+          assert(m.indices.length / 3 < 24000, `${family} ${r} ${i}: under 24k triangles`);
+          assert(keepsakeWords(n, K).length > 8, `${family}: a card line`);
+        }
+      }
+    }
+  });
+
+  test(KEEPSAKES, 'every family\'s rare mark turns up, and more often at the rarer tiers', async () => {
+    const K = await recipe();
+    for (const family of Object.keys(FAMILIES)) {
+      let common = 0, rare = 0;
+      for (let i = 0; i < 3000; i++) {
+        if (rollKeepsake(family, 4, i, K, { spring: 1 }, 'common').mark) common++;
+        if (rollKeepsake(family, 4, i, K, { spring: 1 }, 'veryRare').mark) rare++;
+      }
+      assert(rare > 0, `${family}: the mark turns up`);
+      assert(rare >= common, `${family}: at least as often when very rare (${rare} against ${common})`);
+    }
   });
 
   test(KEEPSAKES, 'every form and tier in the recipe can be made', async () => {
