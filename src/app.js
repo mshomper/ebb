@@ -48,6 +48,7 @@ import { createCreatures } from './world/creatures/index.js';
 import { createFinds } from './world/finds/index.js';
 import { createKeepsakes } from './world/keepsakes/index.js';
 import { keepsakeWords } from './world/keepsakes/families/index.js';
+import { keptFamily } from './world/expansion.js';
 import { cleanShelf, keep as keepShelf, letGo as letGoShelf, readLetter, swap as swapShelf } from './world/keepsakes/shelf.js';
 import { chooseLetter } from './world/keepsakes/letters.js';
 import { createPieces } from './world/pieces/index.js';
@@ -147,6 +148,8 @@ export async function startApp(canvas, hooks = {}) {
     updateStore('pieces', () => back.pieces);
     // The shelf of keepsakes (src/world/keepsakes/shelf.js).
     updateStore('keepsakes', () => back.keepsakes);
+    // The nets (src/world/nets/model.js).
+    updateStore('nets', () => back.nets);
   }
   // Device settings (src/save/prefs.js): kept on this device, never in the island.
   const prefs = loadPrefs();
@@ -183,6 +186,8 @@ export async function startApp(canvas, hooks = {}) {
       stones: !!earned.stones || params.has('sandbox') || params.has('stones'), stonesTest: params.has('stones'),
       driftwood: !!earned.driftwood || params.has('driftwood'),
       carry: !!earned.carry || params.has('sandbox') || params.has('driftwood'),
+      // The general net (the beachcomber's trail, at four families kept); `?nets` (unsaved) gives it at once.
+      nets: { ...(earned.nets ?? {}), ...(params.has('nets') ? { general: true } : {}) },
       allPlants: params.has('sandbox') || params.get('plants') === 'all' };
   });
   // `?weather=clear|cloud|rain|mist` previews a weather look (as the sky lab does); the world's
@@ -733,6 +738,14 @@ export async function startApp(canvas, hooks = {}) {
     else updateStore('identify', (c) => (c ? { ...c, carrying: r.reason === 'water', carryNote: r.reason === 'gone' ? null : r.reason, canCarry: r.reason === 'water' } : c));
   }
 
+  /**
+   * A keepsake family kept, noted for good in the saved unlocks (the beachcomber's trail counts
+   * families ever kept; src/world/expansion.js gives the general net at four). @param {string} family
+   */
+  function noteKept(family) {
+    updateStore('unlocks', (u) => ({ ...u, earned: keptFamily(u?.earned, family) }));
+  }
+
   /** @param {'undo'|'redo'} dir */
   function runHistory(dir) {
     const ok = dir === 'undo' ? history.undo() : history.redo();
@@ -801,6 +814,7 @@ export async function startApp(canvas, hooks = {}) {
         const r = keepShelf(cleanShelf(getStore('keepsakes')), k);
         if (r.kept) {
           updateStore('keepsakes', () => r.state);
+          noteKept(k.n.family);
           keepsakes.leave(a.id);
           updateStore('identify', () => null);
           emitDeferred('keepsake:sound', { name: k.n.family === 'bottle' ? 'keep-glass' : 'keep' });
@@ -815,6 +829,7 @@ export async function startApp(canvas, hooks = {}) {
         const p = getStore('shelfPending');
         if (!p) break;
         updateStore('keepsakes', (s) => swapShelf(cleanShelf(s), a.out, p));
+        noteKept(p.n?.family);
         keepsakes.leave(p.shoreId);
         updateStore('shelfPending', () => null);
         emitDeferred('keepsake:sound', { name: p.n?.family === 'bottle' ? 'keep-glass' : 'keep' });
@@ -1164,7 +1179,7 @@ export async function startApp(canvas, hooks = {}) {
       build: hooks.build ?? 'dev', seed, island: island.id, worldT: clock.worldT(), flow: clock.flow(),
       carryMinutes: getStore('meta')?.carryMinutes ?? 0, keepGrowing: getStore('meta')?.keepGrowing ?? true,
       world: world.state, journal: getStore('journal'), water: getStore('water'), unlocks: getStore('unlocks')?.earned ?? {},
-      view: camera.pose(), looks: getStore('looks') ?? {}, music: getStore('music') ?? { hearted: [] }, pieces: getStore('pieces'), keepsakes: getStore('keepsakes'), chunks: getStore('chunks'), mirror: getStore('terrainLive')?.mirror ?? null,
+      view: camera.pose(), looks: getStore('looks') ?? {}, music: getStore('music') ?? { hearted: [] }, pieces: getStore('pieces'), keepsakes: getStore('keepsakes'), nets: getStore('nets'), chunks: getStore('chunks'), mirror: getStore('terrainLive')?.mirror ?? null,
     }),
   });
 

@@ -94,7 +94,8 @@ startApp(canvas, { onDeviceLost: (rebuilding) => showRebuildingNote(rebuilding),
         const g = /** @type {any} */ (rec)?.ecology?.gift;
         if (g) gifts[keyOf(/** @type {any} */ (rec))] = g;
       }
-      const progress = createProgress({ words, recipe: naturalist, gifts });
+      // The beachcomber's trail (recipes/world/beachcomber.json): the general net at four families kept.
+      const progress = createProgress({ words, recipe: naturalist, gifts, beachcomber: await loadRecipe('world/beachcomber') });
       // The Shelf section draws kept keepsakes from their numbers (docs/future/12).
       const [keepsakesRecipe, bottleMessages] = await Promise.all([loadRecipe('world/keepsakes'), loadRecipe('world/bottle-messages')]);
       mountJournal(document.body, { ...journal, naturalist, progress, shelf: { K: keepsakesRecipe, messages: bottleMessages } }, hud.layer);
