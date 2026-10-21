@@ -68,6 +68,24 @@ export function addDirectorTests(test, assert, eq) {
     }
   });
 
+  test(G, 'a slot closes sooner in real time at 2x and 4x, and never while paused', async () => {
+    const { director, pool } = await load();
+    /** The first decision's window, in real seconds from its start, with the time speed `flow`. @param {number} flow */
+    const firstWindow = (flow) => {
+      const d = createDirector({ director, seasons: {} }, pool, { seed: 5, sunAltDeg: sun });
+      for (let realS = 0; realS < 24 * 60; realS++) {
+        const st = { realS, gameT: 4 * 3600 + realS * 60, weather: /** @type {const} */ ('clear'), frogsAwake: false, frogsCalling: false, residents: [], frequency: /** @type {const} */ ('now-and-then'), previewing: false, flow };
+        const dec = d.update(st);
+        if (dec) return dec.windowEndRealS - realS;
+      }
+      return NaN;
+    };
+    const w1 = firstWindow(1), w4 = firstWindow(4), w2 = firstWindow(2);
+    assert(w1 > 0 && Number.isFinite(w1), `normal speed: ${w1}`);
+    assert(Math.abs(w4 - w1 / 4) < 1e-6 && Math.abs(w2 - w1 / 2) < 1e-6, `1x ${w1}, 2x ${w2}, 4x ${w4}`);
+    eq(firstWindow(0), Infinity, 'paused: the slot never closes');
+  });
+
   test(G, 'the sun timeline of a test day', () => {
     const s = sunDay(sun, 0, [10, 2]);
     assert(Math.abs(s.sunrise - 6) < 0.1 && Math.abs(s.sunset - 18) < 0.1, JSON.stringify(s));

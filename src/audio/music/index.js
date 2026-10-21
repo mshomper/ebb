@@ -39,6 +39,7 @@ const GROWN_SLOTS = ['morning', 'interlude', 'evening', 'nocturne'];
  * @property {boolean} frogsCalling a frog is calling now
  * @property {string[]} residents  settled species ids
  * @property {boolean} previewing  display time is away from world time (the time dial)
+ * @property {number} [flow]       the time speed now (0 paused, 1, 2 or 4; default 1)
  * @property {boolean} [freshIsland] this island is brand new (no save came back): the opening plays
  */
 
