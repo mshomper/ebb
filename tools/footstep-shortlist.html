@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ebb footstep picks</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;800&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; max-width: 100%; overflow-x: clip; }
+  body { background: #F4EEE4; color: #1E2624; font: 600 17px/1.5 'Nunito', system-ui, sans-serif; padding: 16px; overflow-wrap: anywhere; }
+  main { max-width: 900px; margin: 0 auto; }
+  h1 { font-size: 27px; font-weight: 800; color: #4a6a47; margin: 0 0 4px; }
+  h2 { font-size: 22px; font-weight: 800; margin: 0 0 4px; }
+  h3 { font-size: 17px; font-weight: 800; margin: 14px 0 6px; color: #4A5551; }
+  p { margin: 6px 0; }
+  .muted { color: #4A5551; font-size: 16px; }
+  code { font: 700 15px ui-monospace, Menlo, Consolas, monospace; background: #EFE7DA; padding: 1px 5px; border-radius: 5px; overflow-wrap: anywhere; }
+  .card { background: #FBF7F0; border: 1px solid #E3D9C9; border-radius: 14px; padding: 14px 16px; margin: 12px 0; }
+  .bar { position: sticky; top: 0; z-index: 3; background: #F4EEE4; padding: 8px 0; border-bottom: 1px solid #E3D9C9; }
+  .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  button, a.btn { font: 800 16px/1.2 'Nunito', system-ui, sans-serif; color: #1E2624; background: #FFFDF8; border: 1px solid #CFC3AF; border-radius: 12px; padding: 10px 14px; cursor: pointer; min-height: 46px; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; }
+  button[aria-pressed="true"] { background: #4a6a47; color: #FBF7F0; border-color: #4a6a47; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .chips a { font-size: 15px; font-weight: 800; color: #1E2624; background: #FFFDF8; border: 1px solid #E3D9C9; border-radius: 999px; padding: 6px 12px; text-decoration: none; }
+  .chips a span { color: #4A5551; font-weight: 600; }
+  .tally { font-weight: 800; font-size: 17px; }
+  .tally .k { color: #4a6a47; } .tally .r { color: #9C5B44; }
+  section { scroll-margin-top: 150px; }
+  .item { background: #FFFDF8; border: 2px solid #E3D9C9; border-radius: 14px; padding: 12px 14px; margin: 10px 0; }
+  .item.keep { border-color: #4a6a47; background: #F1F6EE; }
+  .item.reject { border-color: #D8C0B4; background: #F7F0EC; opacity: 0.8; }
+  .item .t { font-weight: 800; font-size: 18px; }
+  .item .by { font-size: 16px; color: #4A5551; }
+  .item .state { display: inline-block; font-size: 14px; font-weight: 800; border-radius: 999px; padding: 2px 10px; margin-left: 6px; vertical-align: 2px; }
+  .item.keep .state { background: #4a6a47; color: #FBF7F0; }
+  .item.reject .state { background: #D8C0B4; color: #1E2624; }
+  .item dl { margin: 8px 0; display: grid; grid-template-columns: minmax(80px, 110px) 1fr; gap: 4px 10px; font-size: 16px; }
+  .item dt { font-weight: 800; color: #4A5551; }
+  .item dd { margin: 0; min-width: 0; }
+  @media (max-width: 520px) { .item dl { grid-template-columns: 1fr; } .item dt { margin-top: 4px; } }
+  .player { margin: 8px 0; }
+  .player iframe { width: 100%; height: 92px; border: 0; border-radius: 10px; background: #EFE7DA; display: block; }
+  .acts { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; margin-top: 8px; }
+  .acts .keepb[aria-pressed="true"] { background: #4a6a47; color: #FBF7F0; border-color: #4a6a47; }
+  .acts .rejb[aria-pressed="true"] { background: #9C5B44; color: #FBF7F0; border-color: #9C5B44; }
+  textarea { width: 100%; font: 600 16px/1.4 'Nunito', sans-serif; border: 1px solid #CFC3AF; border-radius: 10px; padding: 8px 10px; margin-top: 8px; min-height: 46px; background: #FFFDF8; resize: vertical; }
+  .hide { display: none !important; }
+  .note { background: #F6EBD9; border: 1px solid #E8D4B4; border-radius: 12px; padding: 10px 14px; font-size: 16px; }
+  ul.gaps li { margin: 6px 0; }
+  .toast { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); background: #1E2624; color: #FBF7F0; padding: 10px 16px; border-radius: 12px; font-weight: 800; opacity: 0; transition: opacity .2s; pointer-events: none; z-index: 5; max-width: calc(100% - 32px); text-align: center; }
+  .toast.on { opacity: 1; }
+</style>
+</head>
+<body>
+<main>
+  <h1>ebb footstep picks</h1>
+  <p class="muted">34 footstep recordings from Freesound for the walker (doc 17), one group per ground: grass, dry sand, wet sand and mud, rock, shallow water and pebbles. Each was checked as CC0 on its own page on October 21, 2026. Nothing has been listened to yet: your ears decide. The walker is light and unhurried in soft boots, so favour quiet, soft steps over heavy boots; the game spaces and varies the steps itself, so a few clean steps per ground are enough.</p>
+  <div class="card">
+    <b>For each sound</b>
+    <ol style="margin:6px 0 0;padding-left:22px">
+      <li>Press <b>Preview here</b> and listen through. Reject anything heavy or clicky, or with voices, traffic, planes or wind thumping on the microphone (the "listen for" line says what to watch out for).</li>
+      <li>Press <b>Keep</b> or <b>Not this one</b>. Add a note if you like ("good from 0:30", "gull at 1:12").</li>
+      <li>For a keeper, press <b>Open on Freesound</b>, sign in, and download the original. Press <b>Copy file name</b> and save it into <code>C:\Users\mshom\Music\Ebb\</code> under that name (the folder part makes the subfolder).</li>
+    </ol>
+    <p class="muted" style="margin-top:8px">Your marks stay in this browser on this device. When you're done, press <b>Save my picks</b> and send me the file, or just tell me you're done and I'll read the folder.</p>
+  </div>
+
+  <div class="bar">
+    <div class="row">
+      <span class="tally" id="tally"></span>
+    </div>
+    <div class="row" style="margin-top:6px">
+      <button data-f="all" aria-pressed="true">All</button>
+      <button data-f="todo" aria-pressed="false">Not marked yet</button>
+      <button data-f="keep" aria-pressed="false">Kept</button>
+      <button data-f="reject" aria-pressed="false">Not these</button>
+      <button id="save">Save my picks</button>
+    </div>
+  </div>
+  <div class="chips" id="nav" aria-label="Jump to a group"></div>
+
+  <div id="list"></div>
+
+  <section class="card note" id="gaps">
+    <h2>Gaps</h2>
+    <p>Every ground has at least five takes. Two are weaker than the rest:</p>
+    <ul class="gaps"><li><b>Rock and stone:</b> no clean outdoor take on bare rock in soft shoes. Most are boots, a concrete slab or a patio. Softening a boot take, or a sand step layered with a soft tap, may serve.</li>
+<li><b>Shallow water:</b> mostly river or creek takes with flowing water under the steps. The game's own water sounds play around you, so the steps only need the splash; pick the ones whose flow is quietest.</li></ul>
+  </section>
+  <p class="muted"><button id="clear">Clear all my marks</button></p>
+</main>
+<div class="toast" id="toast"></div>
+
+<script>
+const DATA = [{"title": "Grass", "folder": "steps-grass", "needs": "Soft, short steps on meadow grass for a light figure strolling or creeping.", "intro": [], "items": [{"title": "Footsteps_Grass_Single_03.wav", "author": "BenDrain", "meta": "0.9 s, WAV 48 kHz 24-bit stereo", "url": "https://freesound.org/people/BenDrain/sounds/488074/", "id": "488074", "why": "field-recorded single grass steps, already short one-shots.", "listen": "very little to cut; check the swish level and any wind.", "save": "steps-grass/bendrain-single-03.wav", "sub": null}, {"title": "snd_footsteps_grass_JE-01.wav", "author": "jevans27", "meta": "0.8 s, WAV 48 kHz 24-bit stereo", "url": "https://freesound.org/people/jevans27/sounds/563529/", "id": "563529", "why": "short and soft, close to the gentle feel we want.", "listen": "only one or two steps, so it needs other takes for variety.", "save": "steps-grass/jevans-01.wav", "sub": null}, {"title": "Footsteps Grass.wav", "author": "HenKonen", "meta": "5.0 s, WAV 48 kHz 16-bit stereo", "url": "https://freesound.org/people/HenKonen/sounds/682128/", "id": "682128", "why": "outdoor grass walk, short enough to cut into several steps.", "listen": "shoe type unknown; check the pace and background.", "save": "steps-grass/henkonen-grass.wav", "sub": null}, {"title": "Footsteps grass.wav", "author": "emilgasi", "meta": "59.6 s, WAV 96 kHz 24-bit stereo", "url": "https://freesound.org/people/emilgasi/sounds/685286/", "id": "685286", "why": "long, very isolated take at high resolution; many steps to cut.", "listen": "described as crunchy, so it may be drier than soft meadow grass.", "save": "steps-grass/emilgasi-grass.wav", "sub": null}, {"title": "Hiking boot footsteps on grass", "author": "Fission9", "meta": "4.4 s, WAV 48 kHz 24-bit mono", "url": "https://freesound.org/people/Fission9/sounds/521587/", "id": "521587", "why": "six clean, separated steps, easy to split.", "listen": "hiking boots with a thud under the rustle; may be heavier than the walker's soft boots.", "save": "steps-grass/fission9-boot-grass.wav", "sub": null}, {"title": "walk grass night 1", "author": "FOSSarts", "meta": "3.6 s, WAV 96 kHz 32-bit stereo", "url": "https://freesound.org/people/FOSSarts/sounds/740145/", "id": "740145", "why": "outdoor night grass walk, quiet setting.", "listen": "a heavy walker; night insects possible; would need softening.", "save": "steps-grass/fossarts-night.wav", "sub": null}]}, {"title": "Dry sand", "folder": "steps-sand", "needs": "Soft, slightly crunchy steps on dry beach sand at a calm pace.", "intro": [], "items": [{"title": "Foot steps on sand FF661", "author": "martinimeniscus", "meta": "28.7 s, AIFF 48 kHz 16-bit stereo", "url": "https://freesound.org/people/martinimeniscus/sounds/164459/", "id": "164459", "why": "steady, unhurried pace with grain crunch and slide.", "listen": "deep low tones; may need a low cut to feel light.", "save": "steps-sand/martinimeniscus-sand.aif", "sub": null}, {"title": "walking in beach sand.wav", "author": "21100495", "meta": "10.4 s, WAV 48 kHz 24-bit stereo", "url": "https://freesound.org/people/21100495/sounds/655366/", "id": "655366", "why": "close-miked beach sand with varied steps.", "listen": "wet or dry not stated; check for surf behind.", "save": "steps-sand/beach-sand-21100495.wav", "sub": null}, {"title": "walking on sand.wav", "author": "wniebelski", "meta": "29.8 s, WAV 44.1 kHz 16-bit stereo", "url": "https://freesound.org/people/wniebelski/sounds/695981/", "id": "695981", "why": "field recording of sand steps, plenty to cut.", "listen": "recorded in a forest; listen for birds and wind.", "save": "steps-sand/wniebelski-sand.wav", "sub": null}, {"title": "sand_fs.wav", "author": "jerry.berumen", "meta": "26.9 s, WAV 44.1 kHz 16-bit stereo", "url": "https://freesound.org/people/jerry.berumen/sounds/511781/", "id": "511781", "why": "plain sand footsteps recorded XY, many steps.", "listen": "no details on shoes or place; check the pace and noise floor.", "save": "steps-sand/berumen-sand.wav", "sub": null}, {"title": "Footsteps in sneakers on dry desert sand", "author": "felix.blume", "meta": "4:58, WAV 48 kHz 24-bit stereo", "url": "https://freesound.org/people/felix.blume/sounds/705743/", "id": "705743", "why": "pro field recordist, a long dry-sand walk in soft sneakers.", "listen": "jeans rustle and a distant plane; pick clean steps.", "save": "steps-sand/felixblume-dry-sand.wav", "sub": null}]}, {"title": "Wet sand and mud", "folder": "steps-mud", "needs": "Gentle squelchy steps for the shoreline and pond margins.", "intro": [], "items": [{"title": "Footsteps_Mud_01.wav", "author": "BenDrain", "meta": "5.5 s, WAV 48 kHz 24-bit stereo", "url": "https://freesound.org/people/BenDrain/sounds/488068/", "id": "488068", "why": "field-recorded mud steps; part of a series (Mud 02 to 05) for variety.", "listen": "how heavy the squelch is.", "save": "steps-mud/bendrain-mud-01.wav", "sub": null}, {"title": "Footsteps in mud beside a creek", "author": "DangerLaef", "meta": "5.3 s, WAV 48 kHz 16-bit stereo", "url": "https://freesound.org/people/DangerLaef/sounds/692537/", "id": "692537", "why": "mud by a small creek, a close match for pond margins.", "listen": "creek trickle under the steps.", "save": "steps-mud/dangerlaef-creek-mud.wav", "sub": null}, {"title": "Mountain boots on wet sand, sequence", "author": "Nox_Sound", "meta": "1:04, WAV 48 kHz 24-bit mono", "url": "https://freesound.org/people/Nox_Sound/sounds/564893/", "id": "564893", "why": "24 walking steps on wet sand plus scuffs, made for cutting.", "listen": "mountain boots; skip the run, jump and scrape parts.", "save": "steps-mud/nox-wet-sand.wav", "sub": null}, {"title": "Mountain boots in mud", "author": "Nox_Sound", "meta": "14.6 s, WAV 48 kHz 16-bit mono", "url": "https://freesound.org/people/Nox_Sound/sounds/548384/", "id": "548384", "why": "five clean walking steps in mud.", "listen": "heavier boots than ours; skip the run and landings.", "save": "steps-mud/nox-mud.wav", "sub": null}, {"title": "Footsteps in wet coarse sand", "author": "bruno.auzet", "meta": "52.9 s, WAV 48 kHz 16-bit mono", "url": "https://freesound.org/people/bruno.auzet/sounds/539175/", "id": "539175", "why": "close pro-mic recording on wet sand, some steps in water.", "listen": "a low rumble the uploader says to filter out.", "save": "steps-mud/auzet-wet-coarse-sand.wav", "sub": null}, {"title": "Footsteps on sand", "author": "Daphne_in_Wonderland", "meta": "1:15, WAV 48 kHz 24-bit stereo", "url": "https://freesound.org/people/Daphne_in_Wonderland/sounds/383490/", "id": "383490", "why": "wet beach sand at several speeds; the slow part fits.", "listen": "faster sections; possible surf.", "save": "steps-mud/daphne-wet-sand.wav", "sub": null}]}, {"title": "Rock and stone", "folder": "steps-rock", "needs": "Soft taps on bare rock and stone, with no gravel crunch.", "intro": [], "items": [{"title": "Hiking boot footsteps on stone", "author": "Fission9", "meta": "3.5 s, WAV 48 kHz 24-bit mono", "url": "https://freesound.org/people/Fission9/sounds/521590/", "id": "521590", "why": "six clean, spaced steps, the same series as the grass take.", "listen": "hiking boots; may need softening.", "save": "steps-rock/fission9-boot-stone.wav", "sub": null}, {"title": "Footsteps on rock, wet boots, walk and run", "author": "Vrymaa", "meta": "30.7 s, WAV 48 kHz 16-bit mono", "url": "https://freesound.org/people/Vrymaa/sounds/770085/", "id": "770085", "why": "outdoor rocky ground, close and dry with no reverb or noise.", "listen": "wet shoes add a slap; use only the walking part.", "save": "steps-rock/vrymaa-rock-walk.wav", "sub": null}, {"title": "Footsteps on stone and concrete", "author": "SecureSubset", "meta": "6.7 s, WAV 48 kHz 24-bit mono", "url": "https://freesound.org/people/SecureSubset/sounds/813622/", "id": "813622", "why": "clean foley-pit steps on a slab, easy to cut.", "listen": "a concrete slab, so it may sound more town than rock.", "save": "steps-rock/securesubset-stone.wav", "sub": null}, {"title": "Shoes on a stone patio", "author": "kyles", "meta": "7.1 s, FLAC 48 kHz 24-bit mono", "url": "https://freesound.org/people/kyles/sounds/637555/", "id": "637555", "why": "outdoor stone patio steps, clean.", "listen": "hard shoes; may be clicky.", "save": "steps-rock/kyles-stone-patio.flac", "sub": null}, {"title": "Walking on a rock path, slow", "author": "deadrobotmusic", "meta": "1:14, WAV 44.1 kHz 32-bit stereo", "url": "https://freesound.org/people/deadrobotmusic/sounds/591732/", "id": "591732", "why": "slow outdoor walk on a rock path, a long take.", "listen": "tagged gravel, so loose grit may crunch.", "save": "steps-rock/deadrobot-rock-path.wav", "sub": null}, {"title": "Footsteps, stone and sneaker", "author": "xkeril", "meta": "17.3 s, WAV 48 kHz 16-bit mono", "url": "https://freesound.org/people/xkeril/sounds/677069/", "id": "677069", "why": "sneakers on stone, a softer sole than boots.", "listen": "large-room echo and a heel clack; the weakest fit.", "save": "steps-rock/xkeril-stone-sneaker.wav", "sub": null}]}, {"title": "Shallow water", "folder": "steps-water", "needs": "Slow wading steps in ankle- to knee-deep water.", "intro": [], "items": [{"title": "Wading in shallow water", "author": "ryansitz", "meta": "26.4 s, WAV 48 kHz 32-bit stereo", "url": "https://freesound.org/people/ryansitz/sounds/342932/", "id": "342932", "why": "feet lifted out and placed back in shallow water, exactly the walker's wade.", "listen": "beach or wetland ambience.", "save": "steps-water/ryansitz-wading.wav", "sub": null}, {"title": "Slow water footsteps", "author": "Adielees9", "meta": "12.8 s, WAV 96 kHz 24-bit stereo", "url": "https://freesound.org/people/Adielees9/sounds/369580/", "id": "369580", "why": "slow steps through a still stream, a calm pace.", "listen": "splash size against a small figure.", "save": "steps-water/adielees9-slow-water.wav", "sub": null}, {"title": "Shallow river footsteps", "author": "Webb-n-Flow", "meta": "46.9 s, WAV 48 kHz 32-bit stereo", "url": "https://freesound.org/people/Webb-n-Flow/sounds/810481/", "id": "810481", "why": "long riverbed walk over rocks and wet mud, many steps.", "listen": "flowing river under the steps; rock knocks.", "save": "steps-water/webbnflow-shallow-river.wav", "sub": null}, {"title": "Walking through water", "author": "rosenberg3", "meta": "8.1 s, WAV 44.1 kHz 16-bit stereo", "url": "https://freesound.org/people/rosenberg3/sounds/627004/", "id": "627004", "why": "short creek wade, a few clean steps.", "listen": "stream flow behind.", "save": "steps-water/rosenberg3-creek.wav", "sub": null}, {"title": "Footsteps on a beach, sand and water", "author": "YannSauvin", "meta": "1:54, WAV 48 kHz 24-bit mono", "url": "https://freesound.org/people/YannSauvin/sounds/777609/", "id": "777609", "why": "a long beach walk moving between sand and water.", "listen": "only some steps are in water; surf likely.", "save": "steps-water/yannsauvin-beach-water.wav", "sub": null}, {"title": "Wading in a shallow river", "author": "macdaddyno1", "meta": "20.2 s, MP3 44.1 kHz stereo", "url": "https://freesound.org/people/macdaddyno1/sounds/321594/", "id": "321594", "why": "field recording of river wading.", "listen": "MP3 only; tags mention a pump and running water.", "save": "steps-water/macdaddy-river.mp3", "sub": null}]}, {"title": "Gravel and pebbles", "folder": "steps-gravel", "needs": "Light steps on a small shingle or pebble beach.", "intro": [], "items": [{"title": "Walking on pebbles (Ushant)", "author": "Anilan", "meta": "28.0 s, WAV 96 kHz 24-bit stereo", "url": "https://freesound.org/people/Anilan/sounds/840916/", "id": "840916", "why": "pebble steps recorded on an island, high resolution.", "listen": "sea and wind ambience.", "save": "steps-gravel/anilan-pebbles.wav", "sub": null}, {"title": "footsteps_pebble_each_01", "author": "Pixanaut", "meta": "18.2 s, WAV 48 kHz 24-bit stereo", "url": "https://freesound.org/people/Pixanaut/sounds/238983/", "id": "238983", "why": "pebble beach walk, likely separable steps.", "listen": "surf and wind.", "save": "steps-gravel/pixanaut-pebble.wav", "sub": null}, {"title": "One person walking over a pebbly beach", "author": "Anya_Media", "meta": "41.6 s, WAV 48 kHz 16-bit stereo", "url": "https://freesound.org/people/Anya_Media/sounds/523388/", "id": "523388", "why": "a single walker on a lake pebble beach, good mic.", "listen": "lake waves behind.", "save": "steps-gravel/anya-pebbly-beach.wav", "sub": null}, {"title": "Footsteps on gravel stones, walk", "author": "Vrymaa", "meta": "38.2 s, WAV 48 kHz 16-bit mono", "url": "https://freesound.org/people/Vrymaa/sounds/825854/", "id": "825854", "why": "close, clean pebble walk with no ambience or reverb.", "listen": "steady, repetitive rhythm; check the pace.", "save": "steps-gravel/vrymaa-gravel-walk.wav", "sub": null}, {"title": "Hiking boot footsteps on gravel", "author": "Fission9", "meta": "2.7 s, WAV 48 kHz 24-bit mono", "url": "https://freesound.org/people/Fission9/sounds/521588/", "id": "521588", "why": "four clean, spaced steps, ready to split.", "listen": "loose gravel under hiking boots; a heavier crunch.", "save": "steps-gravel/fission9-boot-gravel.wav", "sub": null}]}];
+const KEY = 'ebb-footstep-picks-v1';
+let marks = {};
+try { marks = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (e) { marks = {}; }
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(marks)); } catch (e) { /* private mode: marks last this visit */ } };
+const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+const inl = (s) => esc(s).replace(/`(.+?)`/g, '<code>$1</code>').replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
+let filter = 'all';
+
+function toast(t) { const el = document.getElementById('toast'); el.textContent = t; el.classList.add('on'); clearTimeout(toast.h); toast.h = setTimeout(() => el.classList.remove('on'), 1800); }
+
+function render() {
+  const list = document.getElementById('list');
+  const nav = document.getElementById('nav');
+  list.innerHTML = '';
+  nav.innerHTML = '';
+  DATA.forEach((sec, si) => {
+    const id = `s${si}`;
+    const kept = sec.items.filter((it) => marks[it.id]?.state === 'keep').length;
+    const a = document.createElement('a');
+    a.href = `#${id}`;
+    a.innerHTML = `${esc(sec.title)} <span>${kept}/${sec.items.length}</span>`;
+    nav.appendChild(a);
+    const s = document.createElement('section');
+    s.className = 'card';
+    s.id = id;
+    s.innerHTML = `<h2>${esc(sec.title)}</h2>${sec.folder ? `<p class="muted">Folder: <code>Music\\Ebb\\${esc(sec.folder)}</code></p>` : ''}${sec.needs ? `<p><b>The game needs:</b> ${inl(sec.needs)}</p>` : ''}${sec.intro.map((p) => `<p class="muted">${inl(p)}</p>`).join('')}`;
+    let lastSub = null;
+    for (const it of sec.items) {
+      if (it.sub && it.sub !== lastSub) { const h = document.createElement('h3'); h.textContent = it.sub; s.appendChild(h); lastSub = it.sub; }
+      s.appendChild(card(it));
+    }
+    list.appendChild(s);
+  });
+  applyFilter();
+  tally();
+}
+
+function card(it) {
+  const m = marks[it.id] || {};
+  const d = document.createElement('div');
+  d.className = `item ${m.state || ''}`;
+  d.dataset.id = it.id;
+  d.innerHTML = `
+    <div class="t">${esc(it.title)}<span class="state">${m.state === 'keep' ? 'Kept' : m.state === 'reject' ? 'Not this one' : ''}</span></div>
+    <div class="by">by ${esc(it.author)} · ${esc(it.meta)}</div>
+    <dl>
+      <dt>Why</dt><dd>${inl(it.why)}</dd>
+      ${it.listen ? `<dt>Listen for</dt><dd>${inl(it.listen)}</dd>` : ''}
+      <dt>Save as</dt><dd><code>${esc(it.save.replace(/\//g, '\\'))}</code></dd>
+    </dl>
+    <div class="player"></div>
+    <div class="acts">
+      <button class="prev">Preview here</button>
+      <a class="btn" href="${esc(it.url)}" target="_blank" rel="noopener">Open on Freesound</a>
+      <button class="copy">Copy file name</button>
+      <button class="keepb" aria-pressed="${m.state === 'keep'}">Keep</button>
+      <button class="rejb" aria-pressed="${m.state === 'reject'}">Not this one</button>
+    </div>
+    <textarea placeholder="Note (optional)" aria-label="Note">${esc(m.note || '')}</textarea>`;
+  if (!m.state) d.querySelector('.state').classList.add('hide');
+  d.querySelector('.prev').addEventListener('click', (e) => {
+    const p = d.querySelector('.player');
+    if (p.firstChild) { p.innerHTML = ''; e.target.textContent = 'Preview here'; return; }
+    p.innerHTML = `<iframe loading="lazy" title="Preview of ${esc(it.title)}" src="https://freesound.org/embed/sound/iframe/${it.id}/simple/medium/"></iframe>`;
+    e.target.textContent = 'Hide preview';
+  });
+  d.querySelector('.copy').addEventListener('click', async () => {
+    const name = it.save.replace(/\//g, '\\');
+    try { await navigator.clipboard.writeText(name); toast(`Copied ${name}`); } catch (e) { toast(name); }
+  });
+  const set = (state) => {
+    marks[it.id] = { ...(marks[it.id] || {}), state: marks[it.id]?.state === state ? null : state };
+    if (!marks[it.id].state && !marks[it.id].note) delete marks[it.id];
+    save();
+    const st = marks[it.id]?.state;
+    d.className = `item ${st || ''}`;
+    d.querySelector('.keepb').setAttribute('aria-pressed', String(st === 'keep'));
+    d.querySelector('.rejb').setAttribute('aria-pressed', String(st === 'reject'));
+    const lab = d.querySelector('.state');
+    lab.textContent = st === 'keep' ? 'Kept' : st === 'reject' ? 'Not this one' : '';
+    lab.classList.toggle('hide', !st);
+    tally();
+    applyFilter();
+  };
+  d.querySelector('.keepb').addEventListener('click', () => set('keep'));
+  d.querySelector('.rejb').addEventListener('click', () => set('reject'));
+  d.querySelector('textarea').addEventListener('input', (e) => {
+    marks[it.id] = { ...(marks[it.id] || {}), note: e.target.value };
+    save();
+  });
+  return d;
+}
+
+function tally() {
+  const all = DATA.flatMap((s) => s.items);
+  const k = all.filter((it) => marks[it.id]?.state === 'keep').length;
+  const r = all.filter((it) => marks[it.id]?.state === 'reject').length;
+  document.getElementById('tally').innerHTML = `<span class="k">${k} kept</span> · <span class="r">${r} not these</span> · ${all.length - k - r} still to hear`;
+  document.querySelectorAll('#nav a').forEach((a, i) => {
+    const sec = DATA[i];
+    const kk = sec.items.filter((it) => marks[it.id]?.state === 'keep').length;
+    a.innerHTML = `${esc(sec.title)} <span>${kk}/${sec.items.length}</span>`;
+  });
+}
+
+function applyFilter() {
+  document.querySelectorAll('.item').forEach((d) => {
+    const st = marks[d.dataset.id]?.state || null;
+    const show = filter === 'all' || (filter === 'todo' && !st) || filter === st;
+    d.classList.toggle('hide', !show);
+  });
+}
+
+document.querySelectorAll('[data-f]').forEach((b) => b.addEventListener('click', () => {
+  filter = b.dataset.f;
+  document.querySelectorAll('[data-f]').forEach((o) => o.setAttribute('aria-pressed', String(o === b)));
+  applyFilter();
+}));
+
+document.getElementById('save').addEventListener('click', () => {
+  const lines = ['# ebb footstep picks', '', `Saved ${new Date().toLocaleString()}.`, ''];
+  for (const sec of DATA) {
+    const k = sec.items.filter((it) => marks[it.id]?.state === 'keep');
+    const r = sec.items.filter((it) => marks[it.id]?.state === 'reject');
+    if (!k.length && !r.length) continue;
+    lines.push(`## ${sec.title}`, '');
+    for (const it of k) lines.push(`- Keep: ${it.title} (${it.url}), save as ${it.save}${marks[it.id].note ? `. Note: ${marks[it.id].note}` : ''}`);
+    for (const it of r) lines.push(`- Not this one: ${it.title} (${it.url})${marks[it.id].note ? `. Note: ${marks[it.id].note}` : ''}`);
+    lines.push('');
+  }
+  const blob = new Blob([lines.join('\n')], { type: 'text/markdown' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'ebb-footstep-picks.md';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  toast('Saved ebb-footstep-picks.md');
+});
+
+document.getElementById('clear').addEventListener('click', () => {
+  if (!confirm('Clear every Keep, Not this one and note on this device?')) return;
+  marks = {};
+  save();
+  render();
+});
+
+render();
+</script>
+</body>
+</html>
