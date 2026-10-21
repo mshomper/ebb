@@ -4,6 +4,16 @@
 // of 1, and written as a small .gltf with its .bin. No textures, skins, UVs or animation.
 //
 //   node tools/bake-find-model.mjs <in.gltf> <out-name> [--tris 1000] [--align valve] [--top]
+//       [--out assets/models/keepsakes] [--size 0.08] [--rot 90,0,0] [--patina 0.9] [--emissive 0.5]
+//
+// Keepsakes (docs/future/12) use the extra options: --out names the output folder (relative to the
+// repo root; default assets/models/finds); --size bakes at real size, the largest extent in meters,
+// centred on x and z with the base on y = 0, instead of height 1; --rot turns the model first, in
+// degrees about x, then y, then z, to stand a model up that was exported lying down; --patina
+// darkens and weathers the colours toward a worn green-brown (0 to 1), by a seeded noise on the
+// position, so the same model always bakes the same way; --emissive adds a material's glow color
+// (times this weight) to its vertex colors, since vertex colors have no emission. JPEG textures are read with the vendored
+// jpeg-js decoder, and the KHR_materials_pbrSpecularGlossiness diffuse colour is understood.
 //
 // The two finds baked with it so far:
 //   node tools/bake-find-model.mjs <mussel>/scene.gltf mussel-valve --tris 1600 --align valve
@@ -17,17 +27,24 @@
 // error (Lindstrom 2000), which keeps edges and ridges. Run on Matt's machine or here; it is a
 // one-off per model, and the output goes under assets/models/finds/ with a line in CREDITS.md.
 
-import { readFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
+import { createRequire } from 'node:module';
 import { inflateSync } from 'node:zlib';
 
 const args = process.argv.slice(2);
 const opt = (/** @type {string} */ k, /** @type {string} */ d) => { const i = args.indexOf(k); return i >= 0 ? args[i + 1] : d; };
 const [inPath, outName] = args;
-if (!inPath || !outName) { console.error('usage: node tools/bake-find-model.mjs <in.gltf> <out-name> [--tris 1000] [--align valve]'); process.exit(1); }
+if (!inPath || !outName) { console.error('usage: node tools/bake-find-model.mjs <in.gltf> <out-name> [--tris 1000] [--align valve] [--out dir] [--size m] [--rot x,y,z] [--patina 0..1]'); process.exit(1); }
 const target = Number(opt('--tris', '1000'));
 const align = opt('--align', '');
-const outDir = resolve(dirname(new URL(import.meta.url).pathname.replace(/^\/(\w:)/, '$1')), '../assets/models/finds');
+const realSize = Number(opt('--size', '0'));
+const patina = Number(opt('--patina', '0'));
+const emissive = Number(opt('--emissive', '0'));
+const rot = opt('--rot', '0,0,0').split(',').map(Number);
+const repoRoot = resolve(dirname(new URL(import.meta.url).pathname.replace(/^\/(\w:)/, '$1')), '..');
+const outDir = resolve(repoRoot, opt('--out', 'assets/models/finds'));
+const decodeJpeg = createRequire(import.meta.url)('../src/vendor/jpeg-js/decoder.cjs');
 
 // ---- read ----
 const gltf = JSON.parse(readFileSync(inPath, 'utf8'));
@@ -75,6 +92,12 @@ function decodePng(png) {
   }
   return { w, h, rgb: (/** @type {number} */ i) => (type === 3 ? [pal[img[i] * 3], pal[img[i] * 3 + 1], pal[img[i] * 3 + 2]] : ch < 3 ? [img[i * ch], img[i * ch], img[i * ch]] : [img[i * ch], img[i * ch + 1], img[i * ch + 2]]) };
 }
+/** @param {Buffer} file a PNG or a JPEG, told apart by its first bytes */
+function decodeImage(file) {
+  if (file[0] !== 0xff) return decodePng(file);
+  const j = decodeJpeg(file, { useTArray: true, formatAsRGBA: false, maxMemoryUsageInMB: 4096, maxResolutionInMP: 200 });
+  return { w: j.width, h: j.height, rgb: (/** @type {number} */ i) => [j.data[i * 3], j.data[i * 3 + 1], j.data[i * 3 + 2]] };
+}
 const lin = (/** @type {number} */ c) => { c /= 255; return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; };
 
 // ---- gather every mesh under the scene, transformed ----
@@ -99,12 +122,13 @@ function walk(ni, M) {
     const uv = pr.attributes.TEXCOORD_0 !== undefined ? accessor(pr.attributes.TEXCOORD_0) : null;
     const col = pr.attributes.COLOR_0 !== undefined ? accessor(pr.attributes.COLOR_0) : null;
     const colN = col ? COMP[gltf.accessors[pr.attributes.COLOR_0].type] : 0;
-    const mat = gltf.materials?.[pr.material]?.pbrMetallicRoughness ?? {};
+    const gm = gltf.materials?.[pr.material], sg = gm?.extensions?.KHR_materials_pbrSpecularGlossiness;
+    const mat = sg ? { baseColorFactor: sg.diffuseFactor, baseColorTexture: sg.diffuseTexture } : gm?.pbrMetallicRoughness ?? {};
     const factor = mat.baseColorFactor ?? [1, 1, 1, 1];
     let tex = null;
     if (mat.baseColorTexture && uv) {
       const src = gltf.textures[mat.baseColorTexture.index].source;
-      if (!textures.has(src)) textures.set(src, decodePng(readFileSync(join(base, gltf.images[src].uri))));
+      if (!textures.has(src)) textures.set(src, decodeImage(readFileSync(join(base, decodeURIComponent(gltf.images[src].uri)))));
       tex = textures.get(src);
     }
     for (let i = 0; i < pos.length / 3; i++) {
@@ -116,7 +140,8 @@ function walk(ni, M) {
         const px = Math.min(tex.w - 1, Math.floor(u * tex.w)), py = Math.min(tex.h - 1, Math.floor(v * tex.h));
         c = tex.rgb(py * tex.w + px).map(lin);
       } else if (col) c = [col[i * colN], col[i * colN + 1], col[i * colN + 2]];
-      C.push(c[0] * factor[0], c[1] * factor[1], c[2] * factor[2]);
+      const em = gm?.emissiveFactor ?? [0, 0, 0];
+      C.push(c[0] * factor[0] + em[0] * emissive, c[1] * factor[1] + em[1] * emissive, c[2] * factor[2] + em[2] * emissive);
     }
     const idx = pr.indices !== undefined ? accessor(pr.indices) : Array.from({ length: pos.length / 3 }, (_, i) => i);
     for (const k of idx) T.push(k + v0);
@@ -125,6 +150,41 @@ function walk(ni, M) {
 }
 for (const r of gltf.scenes[gltf.scene ?? 0].nodes) walk(r, I);
 console.log(`read ${P.length / 3} vertices, ${T.length / 3} triangles`);
+
+// ---- --rot: stand the model up (degrees about x, then y, then z) ----
+if (rot.some((r) => r)) {
+  const [rx, ry, rz] = rot.map((r) => (r * Math.PI) / 180);
+  for (let i = 0; i < P.length; i += 3) {
+    let [x, y, z] = [P[i], P[i + 1], P[i + 2]];
+    [y, z] = [y * Math.cos(rx) - z * Math.sin(rx), y * Math.sin(rx) + z * Math.cos(rx)];
+    [x, z] = [x * Math.cos(ry) + z * Math.sin(ry), -x * Math.sin(ry) + z * Math.cos(ry)];
+    [x, y] = [x * Math.cos(rz) - y * Math.sin(rz), x * Math.sin(rz) + y * Math.cos(rz)];
+    P[i] = x; P[i + 1] = y; P[i + 2] = z;
+  }
+}
+
+// ---- --patina: worn green-brown, weathered by seeded value noise on the position ----
+if (patina > 0) {
+  let lo = [Infinity, Infinity, Infinity], hi = [-Infinity, -Infinity, -Infinity];
+  for (let i = 0; i < P.length; i += 3) for (let k = 0; k < 3; k++) { lo[k] = Math.min(lo[k], P[i + k]); hi[k] = Math.max(hi[k], P[i + k]); }
+  const ext = Math.max(hi[0] - lo[0], hi[1] - lo[1], hi[2] - lo[2]);
+  const hash = (/** @type {number} */ x, /** @type {number} */ y, /** @type {number} */ z) => { let h = (x * 374761393 + y * 668265263 + z * 2147483647) | 0; h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h ^ (h >>> 16)) >>> 0) / 4294967295; };
+  const noise = (/** @type {number} */ x, /** @type {number} */ y, /** @type {number} */ z) => {
+    const [ix, iy, iz] = [Math.floor(x), Math.floor(y), Math.floor(z)], [fx, fy, fz] = [x - ix, y - iy, z - iz];
+    const s = (/** @type {number} */ t) => t * t * (3 - 2 * t), l = (/** @type {number} */ a, /** @type {number} */ b, /** @type {number} */ t) => a + (b - a) * t;
+    const c = (/** @type {number} */ dx, /** @type {number} */ dy, /** @type {number} */ dz) => hash(ix + dx, iy + dy, iz + dz);
+    return l(l(l(c(0, 0, 0), c(1, 0, 0), s(fx)), l(c(0, 1, 0), c(1, 1, 0), s(fx)), s(fy)), l(l(c(0, 0, 1), c(1, 0, 1), s(fx)), l(c(0, 1, 1), c(1, 1, 1), s(fx)), s(fy)), s(fz));
+  };
+  const brown = [0.075, 0.05, 0.025], green = [0.045, 0.1, 0.06];
+  for (let i = 0; i < P.length / 3; i++) {
+    const [x, y, z] = [0, 1, 2].map((k) => (P[i * 3 + k] - lo[k]) / ext);
+    const n = 0.6 * noise(x * 7, y * 7, z * 7) + 0.4 * noise(x * 19 + 5, y * 19, z * 19);
+    const lum = 0.2126 * C[i * 3] + 0.7152 * C[i * 3 + 1] + 0.0722 * C[i * 3 + 2];
+    const w = Math.min(1, Math.max(0, (n - 0.3) * 2.6)), shade = 0.55 + 1.6 * Math.sqrt(lum) * 0.5 + 0.35 * n;
+    for (let k = 0; k < 3; k++) C[i * 3 + k] = C[i * 3 + k] * (1 - patina) + patina * (brown[k] * (1 - w) + green[k] * w) * shade;
+  }
+  console.log(`patina ${patina}`);
+}
 
 // ---- align ----
 if (align === 'valve') alignValve();
@@ -249,10 +309,12 @@ for (let c = 0; c < K; c++) {
 // ---- base on y = 0, height 1 (a valve: its depth below the rim is kept as it is, scaled with it) ----
 let y0 = Infinity, y1 = -Infinity;
 for (let i = 0; i < K; i++) { y0 = Math.min(y0, outP[i * 3 + 1]); y1 = Math.max(y1, outP[i * 3 + 1]); }
-const scale = 1 / (align === 'valve' ? Math.max(...[0, 2].map((k) => { let a = Infinity, b = -Infinity; for (let i = 0; i < K; i++) { a = Math.min(a, outP[i * 3 + k]); b = Math.max(b, outP[i * 3 + k]); } return b - a; })) : y1 - y0);
+const bx = [0, 1, 2].map((k) => { let a = Infinity, b = -Infinity; for (let i = 0; i < K; i++) { a = Math.min(a, outP[i * 3 + k]); b = Math.max(b, outP[i * 3 + k]); } return [a, b]; });
+const scale = realSize ? realSize / Math.max(...bx.map(([a, b]) => b - a)) : 1 / (align === 'valve' ? Math.max(...[0, 2].map((k) => { let a = Infinity, b = -Infinity; for (let i = 0; i < K; i++) { a = Math.min(a, outP[i * 3 + k]); b = Math.max(b, outP[i * 3 + k]); } return b - a; })) : y1 - y0);
 const lift = align === 'valve' ? 0 : -y0;
 let cx = 0, cz = 0;
-for (let i = 0; i < K; i++) { cx += outP[i * 3] / K; cz += outP[i * 3 + 2] / K; }
+if (realSize) { cx = (bx[0][0] + bx[0][1]) / 2; cz = (bx[2][0] + bx[2][1]) / 2; }
+else for (let i = 0; i < K; i++) { cx += outP[i * 3] / K; cz += outP[i * 3 + 2] / K; }
 for (let i = 0; i < K; i++) {
   outP[i * 3] = align === 'valve' ? outP[i * 3] * scale : (outP[i * 3] - cx) * scale;
   outP[i * 3 + 1] = (outP[i * 3 + 1] + lift) * scale;
@@ -280,6 +342,7 @@ const out = {
     { bufferView: 2, componentType: 5126, count: K, type: 'VEC3' },
   ],
 };
+mkdirSync(outDir, { recursive: true });
 writeFileSync(join(outDir, `${outName}.gltf`), JSON.stringify(out, null, 1));
 writeFileSync(join(outDir, `${outName}.bin`), bin);
 console.log(`wrote ${outName}: ${K} vertices, ${idx.length / 3} triangles, size ${pmax.map((v, k) => (v - pmin[k]).toFixed(3)).join(' x ')}`);

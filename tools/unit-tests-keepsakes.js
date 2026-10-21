@@ -11,13 +11,16 @@ import { onShore, tideKeepsakes } from '../src/world/keepsakes/shore.js';
 import { cleanShelf, emptyShelf, keep, letGo, swap, SHELF_CAP } from '../src/world/keepsakes/shelf.js';
 import { snapshot, restore } from '../src/save/sections.js';
 import { migrate, FORMAT } from '../src/save/migrate.js';
+import { loadArtifactBases } from '../src/world/keepsakes/families/artifact.js';
 
 const KEEPSAKES = 'keepsakes';
 
 async function recipe() {
   const r = await fetch('../recipes/world/keepsakes.json');
   if (!r.ok) throw new Error(`recipes/world/keepsakes.json: HTTP ${r.status}`);
-  return r.json();
+  const K = await r.json();
+  await loadArtifactBases(K);
+  return K;
 }
 
 /** @param {any} test @param {any} assert @param {any} eq */

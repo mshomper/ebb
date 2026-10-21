@@ -8,14 +8,16 @@ import { FAMILIES, keepsakeMesh, keepsakeView, keepsakeWords, rollKeepsake } fro
 import { bottleMessage } from '../src/world/keepsakes/families/bottle.js';
 import { rarityWeights } from '../src/world/keepsakes/rarity.js';
 import { keepsakeSvg, traceKeepsake } from '../src/ui/sketches/keepsake.js';
+import { loadArtifactBases } from '../src/world/keepsakes/families/artifact.js';
 
 const K = await (await fetch('../recipes/world/keepsakes.json')).json();
 const MESSAGES = await (await fetch('../recipes/world/bottle-messages.json')).json();
+await loadArtifactBases(K);
 const SEED = 20261021;
 const $ = (/** @type {string} */ id) => /** @type {any} */ (document.getElementById(id));
 /** Each family's block in keepsakes.json. */
 const RECIPE_KEY = /** @type {Record<string, string>} */ ({ shell: 'shells', stone: 'stones', fossil: 'fossils', driftwood: 'driftwood', feather: 'feathers', bottle: 'bottles',
-  urchin: 'urchins', starfish: 'starfish', seed: 'seeds', purse: 'purses', cuttlebone: 'cuttlebones', coral: 'corals', bivalve: 'bivalves' });
+  urchin: 'urchins', starfish: 'starfish', seed: 'seeds', purse: 'purses', cuttlebone: 'cuttlebones', coral: 'corals', bivalve: 'bivalves', artifact: 'artifacts' });
 
 /** @type {{ force: string | null, sel: any, base: any, view: string, family: string }} */
 const state = { force: null, sel: null, base: null, view: 'sketch', family: 'shell' };
@@ -118,7 +120,7 @@ function renderOne() {
   $('bigwrap').style.cssText = groundCss(n.rarity);
   const mesh = keepsakeMesh(n, K);
   drawMesh(big, mesh, yaw, pitch);
-  $('words').textContent = keepsakeWords(n, K);
+  $('words').textContent = (n.name ? n.name + '. ' : '') + keepsakeWords(n, K);
   $('bigSketch').style.cssText = groundCss(n.rarity) + ' border-radius: 10px;';
   $('bigSketch').innerHTML = sketchOf(n, mesh);
   $('facts').textContent = `${K.rarity.words[n.rarity]} · ${n.form} · ${(n.sizeM * 100).toFixed(1)} cm · ${mesh.indices.length / 3} triangles`;
@@ -207,7 +209,7 @@ function renderGrid() {
     const art = document.createElement(state.view === 'model' ? 'canvas' : 'div');
     art.className = 'art';
     const cap = document.createElement('figcaption');
-    cap.innerHTML = `<b>${K.rarity.words[n.rarity]}</b>${n.mark ? ' · marked' : ''}<br>${keepsakeWords(n, K)}`;
+    cap.innerHTML = `<b>${K.rarity.words[n.rarity]}</b>${n.mark ? ' · marked' : ''}<br>${n.name ? `<i>${n.name}</i><br>` : ''}${keepsakeWords(n, K)}`;
     fig.append(art, cap);
     const choose = () => { state.sel = { ...n }; state.base = { ...n }; yaw = 0.6; pitch = viewPitch(n); renderOne(); $('bigwrap').scrollIntoView({ behavior: 'smooth', block: 'center' }); };
     fig.addEventListener('click', choose);
@@ -276,7 +278,7 @@ for (const b of $('views').children) {
 }
 for (const id of ['tide', 'season', 'from']) $(id).addEventListener('change', renderGrid);
 const FAMILY_LABEL = /** @type {Record<string, string>} */ ({ shell: 'Shells', stone: 'Stones', fossil: 'Fossils', driftwood: 'Driftwood', feather: 'Feathers', bottle: 'Bottles',
-  urchin: 'Sea urchins', starfish: 'Starfish', seed: 'Drift seeds', purse: "Mermaid's purses", cuttlebone: 'Cuttlebones', coral: 'Coral sprigs', bivalve: 'Half-shells' });
+  urchin: 'Sea urchins', starfish: 'Starfish', seed: 'Drift seeds', purse: "Mermaid's purses", cuttlebone: 'Cuttlebones', coral: 'Coral sprigs', bivalve: 'Half-shells', artifact: 'Artifacts' });
 for (const f of Object.keys(FAMILIES)) $('family').append(new Option(FAMILY_LABEL[f] ?? f, f));
 $('family').addEventListener('change', () => {
   state.family = $('family').value;

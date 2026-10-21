@@ -48,6 +48,7 @@ import { addNaturalistTests } from './unit-tests-naturalist.js';
 import { addKeepsakeTests } from './unit-tests-keepsakes.js';
 import { addPiecesTests } from './unit-tests-pieces.js';
 import { addCoveTests } from './unit-tests-cove.js';
+import { addKeepsakeArtifactTests } from './unit-tests-keepsake-artifacts.js';
 
 /** @type {{group: string, name: string, fn: () => any}[]} */
 const tests = [];
@@ -1466,6 +1467,10 @@ addDamselflyTests(test, assert, eq);
 
 addPiecesTests(test, assert, eq);
 addCoveTests(test, assert, eq);
+
+// ---- keepsake artifact models (tools/unit-tests-keepsake-artifacts.js) ----
+
+addKeepsakeArtifactTests(test, assert, eq);
 
 // ---- runner and rendering ----
 
