@@ -434,6 +434,12 @@ const ICONS = {
     <circle ${ACCENT} cx="12" cy="12" r="9"/>
     <circle cx="12" cy="12" r="9"/>
     <path d="M12 10.4Q15 8.1 12 5.8Q9 8.1 12 10.4ZM13.5 11.5Q16.6 13.6 17.9 10.1Q14.8 7.9 13.5 11.5ZM12.9 13.3Q11.9 16.9 15.6 17Q16.7 13.4 12.9 13.3ZM11.1 13.3Q7.3 13.4 8.4 17Q12.1 16.9 11.1 13.3ZM10.5 11.5Q9.2 7.9 6.1 10.1Q7.4 13.6 10.5 11.5Z"/>`,
+  // Moon jelly: a low glassy bell from above, lying flat on the sand like the sand dollar, its
+  // margin scalloped in eight shallow lobes and the four horseshoe rings showing through it.
+  moonjelly: `
+    <path ${ACCENT} d="M20.3 15.1Q19.3 18.6 15.4 19.5Q12 21.3 8.6 19.5Q4.7 18.6 3.7 15.1Q1.7 12 3.7 8.9Q4.7 5.4 8.6 4.5Q12 2.7 15.4 4.5Q19.3 5.4 20.3 8.9Q22.3 12 20.3 15.1Z"/>
+    <path d="M20.3 15.1Q19.3 18.6 15.4 19.5Q12 21.3 8.6 19.5Q4.7 18.6 3.7 15.1Q1.7 12 3.7 8.9Q4.7 5.4 8.6 4.5Q12 2.7 15.4 4.5Q19.3 5.4 20.3 8.9Q22.3 12 20.3 15.1Z"/>
+    <path d="M8.4 10.6A2 1.85 0 1 1 10.5 8.7M13.5 8.7A2 1.85 0 1 1 15.6 10.6M10.5 15.3A2 1.85 0 1 1 8.4 13.4M15.6 13.4A2 1.85 0 1 1 13.5 15.3"/>`,
   // Loose stone (a naturalist's reward, src/world/expansion.js): a stone tipped up on one side,
   // the dark gap under it where something might live.
   loosestone: `
