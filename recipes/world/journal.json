@@ -971,7 +971,7 @@
     },
     "dragonflies": {
       "name": "Southern hawkers", "icon": "dragonfly", "kind": "school", "plural": "dragonflies", "card": "A southern hawker",
-      "_school": "A few at a time (M2, src/world/creatures/swarms.js), known only once you find one yourself, by tapping it or watching it closely. They fly from late spring into autumn; the rest of the year they are nymphs in the pond (dormant).",
+      "_school": "A few at a time (M2, src/world/creatures/swarms.js), known only once you find one yourself, by tapping it or watching it closely. They fly from the start of summer, once the water is warm, into autumn; the rest of the year they are nymphs in the pond (dormant).",
       "riddle": "Something might hunt on sunny days over a second, quiet pond, one with no fish in it.",
       "hints": [
         { "when": "dragonflies:right", "text": "Something seems to want a shallow pond with no fish, and tall stems along its edge. The pond you made looks right for it now." },
@@ -990,12 +990,12 @@
       "dormant": "under the water as nymphs until spring",
       "spreading": "growing in number", "receding": "fewer than before",
       "stages": ["Hunting over the pond", "Under the water as a nymph"],
-      "seasons": { "grow": ["the first ones flying", "patrolling the pond", "the last ones flying", "nymphs under the water"], "dormant": "nymphs under the water" },
+      "seasons": { "grow": ["nymphs waiting for warm water", "patrolling the pond", "the last ones flying", "nymphs under the water"], "dormant": "nymphs under the water" },
       "likes": [
         { "text": "A shallow pond of their own, with reeds or rushes at its edge", "learn": ["seen"] },
         { "text": "Never a pond with fish in it", "learn": ["left"] },
         { "text": "Small flying insects over the water", "learn": ["settled"] },
-        { "text": "Sunny days, from late spring into autumn", "learn": ["joined"] },
+        { "text": "Sunny days, from the start of summer into autumn", "learn": ["joined"] },
         { "text": "Moves on when the pond is drained", "learn": ["left"] },
         { "text": "Doesn't mind you close, if you keep still", "learn": ["trust:tolerant"] },
         { "text": "Comes to hover and look at you", "learn": ["trust:curious"] }
@@ -1024,7 +1024,7 @@
         "left": "A dragonfly has moved on from the pond.",
         "gone": "The dragonflies have gone from the pond.",
         "dormant": "The last dragonflies have gone. Their young wait under the water.",
-        "woke": "The first dragonfly of the year has climbed out of the pond.",
+        "woke": "The water has warmed. The first dragonfly of the year has climbed out of the pond.",
         "happy": "The dragonflies patrol the whole pond now, each on its own beat."
       }
     }
