@@ -186,6 +186,8 @@ export function createFinds(opts) {
   /** The crabs' moves: a hermit crab's walking clock (s), an edible crab's eased offset (m). @type {Map<string, any>} */
   const moves = new Map();
   /** @type {{ sp: string, x: number, z: number, item: string | null, storm: boolean }[]} */ let shown = [];
+  /** Finds drawn elsewhere that a tap may land on (addSource). @type {(() => { sp: string, x: number, z: number, item: string | null, reach?: number }[])[]} */
+  const sources = [];
   let clock = 0;
 
   function refresh() {
@@ -470,13 +472,21 @@ export function createFinds(opts) {
      */
     findAt(x, z) {
       const r = recipe.tapM + recipe.tapPerM * (camera.distance ?? 10);
-      let best = null, bestD = r * r;
-      for (const f of shown) {
+      let best = null, bestD = Infinity;
+      // The finds shown here, then any from elsewhere (autumn's fungi and webs, autumn-live.js), each
+      // within the tap's reach or its own, whichever is more.
+      for (const f of [...shown, ...sources.flatMap((s) => s())]) {
         const d = (f.x - x) * (f.x - x) + (f.z - z) * (f.z - z);
-        if (d < bestD) { bestD = d; best = f; }
+        const reach = Math.max(r, /** @type {any} */ (f).reach ?? 0);
+        if (d < reach * reach && d < bestD) { bestD = d; best = { sp: f.sp, x: f.x, z: f.z, item: f.item ?? null, storm: !!(/** @type {any} */ (f).storm) }; }
       }
       return best;
     },
+    /**
+     * Finds drawn elsewhere that a tap may land on too (autumn-live.js shown).
+     * @param {() => { sp: string, x: number, z: number, item: string | null, reach?: number }[]} s
+     */
+    addSource(s) { sources.push(s); },
     /** What is drawn now (tools and tests). */
     shown: () => shown,
     /** Strandline lines, cells on them, and shells placed at the last look (tools). */

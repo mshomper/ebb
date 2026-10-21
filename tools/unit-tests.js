@@ -46,6 +46,7 @@ import { addTrustTests } from './unit-tests-trust.js';
 import { addFindsTests } from './unit-tests-finds.js';
 import { addNaturalistTests } from './unit-tests-naturalist.js';
 import { addPiecesTests } from './unit-tests-pieces.js';
+import { addAutumnTests } from './unit-tests-autumn.js';
 
 /** @type {{group: string, name: string, fn: () => any}[]} */
 const tests = [];
@@ -1462,6 +1463,10 @@ addDamselflyTests(test, assert, eq);
 // ---- placed pieces: loose stones (tools/unit-tests-pieces.js) ----
 
 addPiecesTests(test, assert, eq);
+
+// ---- autumn's season markers: fungi on logs, dewy webs (tools/unit-tests-autumn.js) ----
+
+addAutumnTests(test, assert, eq);
 
 // ---- runner and rendering ----
 

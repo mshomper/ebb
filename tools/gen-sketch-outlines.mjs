@@ -12,6 +12,7 @@ import { join, dirname } from 'path';
 import { parseFindModel, joinParts } from '../src/world/finds/models.js';
 import { parseRig, posedMesh } from '../src/world/finds/rig.js';
 import { musselPair, musselBones } from '../src/world/finds/mussel.js';
+import { fungusMeshes } from '../src/world/finds/autumn-meshes.js';
 import { bakeBody } from '../src/world/creatures/body-bake.js';
 import { skeletonOf, skinWeights } from '../src/world/creatures/bodies.js';
 import { poseSkeleton, axisAngle } from '../src/world/creatures/pose.js';
@@ -20,6 +21,8 @@ import { posePatrol } from '../src/world/creatures/patrol.js';
 const ROOT = new URL('..', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1');
 const recipe = JSON.parse(readFileSync(join(ROOT, 'recipes/species/finds.json'), 'utf8'));
 const K = recipe.kinds;
+// Autumn's fungi are built in code (src/world/finds/autumn-meshes.js): traced from those meshes.
+const fungi = fungusMeshes(JSON.parse(readFileSync(join(ROOT, 'recipes/species/autumn-finds.json'), 'utf8')).fungi);
 
 /** @param {string} url */
 function gltfAt(url) {
@@ -62,6 +65,9 @@ const SUBJECTS = {
   'shell-nautilus': { mesh: meshOf(item('nautilus')), yaw: 0, pitch: 85 },
   mussel: { mesh: musselOpen(K.mussels.model), yaw: 15, pitch: 12 },
   sanddollar: { mesh: meshOf(K.sanddollars.model), yaw: 0, pitch: 80 },
+  'fungus-bracket': { mesh: fungi['bracket-0'], yaw: 0, pitch: 32 },
+  'fungus-cap': { mesh: fungi['cap-0'], yaw: 0, pitch: 10 },
+  'fungus-cap-lean': { mesh: fungi['cap-2'], yaw: 90, pitch: 10 },
   // Animals with a blended-SDF body (recipes/species), posed as the game poses them at rest.
   damselfly: { mesh: perchedBody('damselfly'), yaw: 90, pitch: 8 },
 };

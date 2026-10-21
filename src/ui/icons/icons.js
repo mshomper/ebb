@@ -434,6 +434,28 @@ const ICONS = {
     <circle ${ACCENT} cx="12" cy="12" r="9"/>
     <circle cx="12" cy="12" r="9"/>
     <path d="M12 10.4Q15 8.1 12 5.8Q9 8.1 12 10.4ZM13.5 11.5Q16.6 13.6 17.9 10.1Q14.8 7.9 13.5 11.5ZM12.9 13.3Q11.9 16.9 15.6 17Q16.7 13.4 12.9 13.3ZM11.1 13.3Q7.3 13.4 8.4 17Q12.1 16.9 11.1 13.3ZM10.5 11.5Q9.2 7.9 6.1 10.1Q7.4 13.6 10.5 11.5Z"/>`,
+  // Fungi on logs (autumn): a log lying on the ground line, its end ring showing, two bracket
+  // shelves stacked on its near end and a small capped mushroom standing on its top.
+  fungi: `
+    <rect ${ACCENT} x="2.5" y="15" width="19" height="5.5" rx="2.75"/>
+    <rect x="2.5" y="15" width="19" height="5.5" rx="2.75"/>
+    <circle cx="18.8" cy="17.75" r="1.1"/>
+    <path d="M4.2 15C4.6 12.9 6.6 11.9 10.4 12.4C10 13.8 8.2 14.7 4.2 15Z"/>
+    <path d="M4.8 11.8C5.1 10.2 6.8 9.4 9.4 9.8C9 10.9 7.8 11.6 4.8 11.8Z"/>
+    <path ${ACCENT} d="M12.8 11.6C13 9.2 14.2 8.2 15.6 8.2S18.2 9.2 18.4 11.6Z"/>
+    <path d="M12.8 11.6C13 9.2 14.2 8.2 15.6 8.2S18.2 9.2 18.4 11.6Z"/>
+    <path d="M15.2 11.6L15 15M16.2 11.6L16.4 15"/>`,
+  // Dewy orb web (autumn): spokes from a hub, two rounds of spiral between them, beads of dew on
+  // the outer round.
+  orbweb: `
+    <path d="M12 11L20.5 11M12 11L18 5M12 11L12 2.5M12 11L6 5M12 11L3.5 11M12 11L6 17M12 11L12 19.5M12 11L18 17"/>
+    <path d="M15.4 11L14.5 8.5L12 7.5L9.5 8.5L8.6 11L9.5 13.5L12 14.5L14.5 13.5Z"/>
+    <path d="M18.2 11L16.4 6.6L12 4.8L7.6 6.6L5.8 11L7.6 15.4L12 17.2L16.4 15.4Z"/>
+    <circle fill="currentColor" stroke="none" cx="14.2" cy="5.7" r="0.9"/>
+    <circle fill="currentColor" stroke="none" cx="6.7" cy="8.8" r="0.9"/>
+    <circle fill="currentColor" stroke="none" cx="17.3" cy="13.2" r="0.9"/>
+    <circle fill="currentColor" stroke="none" cx="9.8" cy="16.3" r="0.9"/>
+    <path d="M3 21.5C4 20 4.6 19 4.8 17.4M21 21.5C20 20 19.4 19 19.2 17.4"/>`,
   // Moon jelly: a low glassy bell from above, lying flat on the sand like the sand dollar, its
   // margin scalloped in eight shallow lobes and the four horseshoe rings showing through it.
   moonjelly: `
