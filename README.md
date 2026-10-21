@@ -102,7 +102,7 @@ Open these at `/tools/` while running locally. They are for checks that run on y
 | Page | What it checks |
 |---|---|
 | `slice-review.html` | The vertical slice's eight sign-off checks, each with steps, what you should see, a test link and Pass or Not yet; copies the results to paste to Claude |
-| `unit-tests.html` | Every unit test in one run: the core, terrain, water, growth, the journal, creatures and islands |
+| `unit-tests.html` | Every unit test in one run: the core, terrain, water, growth, the journal, creatures and islands. The long runs share all the cores (about half a minute); `?only=pond` runs one area, `?serial` runs them one after another |
 | `determinism.html` | The same seed builds the same island on every thread (`?island=` for another island) |
 | `frame-timing.html` | The island live, with a graph of how long each drawing step takes on the graphics card |
 | `cliff-bench.html` | What full mesh detail near cliffs and the waterfalls cost on high, medium and low: the cliff scene measured with detail on and off, then with its spring pouring over the edges, against the budgets |
