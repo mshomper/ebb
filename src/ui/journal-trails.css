@@ -12,13 +12,17 @@
 .ebb-journal.is-wide { width: min(800px, calc(100vw - 2 * var(--jr-edge))); }
 
 .ebb-trails { display: grid; gap: 14px; min-width: 0; }
-.ebb-trails.is-wide { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; align-items: start; }
+.ebb-trails.is-wide { grid-template-columns: repeat(3, minmax(0, 1fr)); column-gap: 20px; row-gap: 0; align-items: start; }
+/* Side by side, the trails share their rows (title, what it is about, the count, the intro, the
+   line of stops), so each row starts level across all three whatever its words' length. */
+.ebb-trails.is-wide .ebb-trails__col { display: grid; grid-row: span 5; grid-template-rows: subgrid; align-content: start; }
 .ebb-trails__col { --tr: var(--jr-moss); --tr-wash: rgba(95, 127, 91, 0.16); min-width: 0; padding-top: 8px; border-top: 4px solid var(--tr); }
+[data-tint='naturalist'] { --tr: var(--jr-moss); --tr-wash: rgba(95, 127, 91, 0.16); }
 [data-tint='beach'] { --tr: #4F7B92; --tr-wash: rgba(79, 123, 146, 0.16); }
 [data-tint='shape'] { --tr: #8A6A4E; --tr-wash: rgba(138, 106, 78, 0.16); }
 .ebb-trails__col .ebb-trail__title { margin-top: 2px; }
-.ebb-trails__sub { margin: 0 0 6px; display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; }
-.ebb-trails__sub b { font-weight: 800; font-size: calc(16px * var(--text-scale, 1)); color: var(--tr); }
+.ebb-trails__sub { margin: 0; }
+.ebb-trails__count { margin: 2px 0 6px; font-weight: 800; font-size: calc(16px * var(--text-scale, 1)); color: var(--tr); }
 .ebb-trails__col .ebb-trail__stop.is-station .ebb-trail__dot { background: var(--tr-wash); color: var(--tr); }
 .ebb-trails__col .ebb-trail__stop.is-pencil .ebb-trail__dot { background: var(--jr-paper); color: var(--jr-pencil); }
 

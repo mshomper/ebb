@@ -42,10 +42,15 @@ export function trailsView(o) {
 /** "The beachcomber" on a tab is "Beachcomber". @param {string} t */
 const short = (t) => { const s = t.replace(/^The /, ''); return s.charAt(0).toUpperCase() + s.slice(1); };
 
-/** A trail's head: its name, what it is about, and its count of kinds. @param {string} title @param {string} sub @param {string} count @param {string} intro */
+/**
+ * A trail's head: its name, what it is about, its count of kinds (always on a line of its own, so
+ * the three trails' heads match), and its intro. Side by side, journal-trails.css lines these rows
+ * up across the trails. @param {string} title @param {string} sub @param {string} count @param {string} intro
+ */
 function head(title, sub, count, intro) {
   return `<h3 class="ebb-trail__title">${esc(title)}</h3>
-    <p class="ebb-trails__sub"><span class="ebb-journal__voice">${esc(sub)}</span>${count ? `<b>${esc(count)}</b>` : ''}</p>
+    <p class="ebb-trails__sub ebb-journal__voice">${esc(sub)}</p>
+    <p class="ebb-trails__count">${esc(count)}</p>
     <p class="ebb-journal__voice ebb-trail__intro">${esc(intro)}</p>`;
 }
 
