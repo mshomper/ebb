@@ -6,11 +6,14 @@
 //
 // Pace (growth.json `volunteers`): none before firstAfterH hours of the island, then at least gapH
 // hours between two arrivals, and in any hour after that a chance of chancePerH. The species come
-// in `order`, skipping any the island has no ground for yet (each waits until it has). Seeded by
+// in `order`, skipping any the island has no ground for yet (each waits until it has), and any
+// whose recipe names the seasons it comes in (volunteer.seasons, 0 spring .. 3 winter) when it is
+// another season, so the year has something new in each (doc 13, "The year"). Seeded by
 // the hour (core/rng.js), so a watched hour and an hour run while away bring the same plant to the
 // same square. Pure and worker-safe.
 
 import { stream, subSeed, hash32 } from '../../core/rng.js';
+import { seasonOf, SECONDS_PER_HOUR } from '../../core/clock.js';
 
 /**
  * The species on the island by now, by the hour each came. A growth state from before volunteers
@@ -45,9 +48,12 @@ export function volunteerAt(g, hab, env, hourIndex, suitCell, taken) {
   if (hourIndex - last < V.gapH) return null;
   const seed = subSeed(env.seed, 'growth-volunteer');
   if (stream(seed, hourIndex).next() >= V.chancePerH) return null;
+  const season = seasonOf(hourIndex * SECONDS_PER_HOUR).index;
   for (const sp of waiting) {
     const rec = env.recipes.flora?.[sp] ?? env.recipes.covers?.[sp];
     if (!rec) continue;
+    // A plant may come only in some seasons (its recipe's volunteer.seasons; gorse in summer).
+    if (rec.volunteer?.seasons && !rec.volunteer.seasons.includes(season)) continue;
     // The square it lands on: the suitable one first in this hour's hash order.
     let best = -1, bestH = 0;
     for (let k = 0; k < hab.n * hab.n; k++) {

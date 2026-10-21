@@ -1,31 +1,125 @@
 {
-  "type": "flora", "id": "gorse", "name": "Gorse", "schema": 1, "version": 1, "seed": 8123,
+  "type": "flora",
+  "id": "gorse",
+  "name": "Gorse",
+  "schema": 1,
+  "version": 1,
+  "seed": 8123,
   "tags": ["tier2", "heath", "shrub"],
   "generator": "shrub",
   "layer": "individual",
   "draw": "shrub",
-  "note": "Gorse, Ulex europaeus (docs 10, 14): the island's second shrub, a dense, rounded, spiny evergreen mound of dry, sunny ground. Drawn with the shrub shader (draw: shrub; src/shaders/flora-shrub.wgsl) with other numbers than grey willow; every key works as in willow.json. habitat: dry ground that drains (moisture falls to nothing within 3 m of fresh water, so the moisture axis keeps it 2 m or more from a pond), soil or sand (no soil or sand axis, so either does), never bare rock, never standing water; it shrugs off some salt spray a couple of meters up from the tide band, but not the band itself; slopes suit it, short of a cliff. Nothing in the habitat measures shade yet, so 'sunny' is every open square. growth: a little faster than willow, mature (matureSize) in about 10 game days in spring and up to two weeks later in the year; evergreen, so it grows a little in winter too. Not a starter (recipes/world/growth.json): it arrives by itself after sea campion. flowering: the spring peak, for the journal (the flowers on the bush come from flowerShare). No dormant window and no phenology: it never drops its leaves. spread: seed, only in high summer (the black pods crack open in the heat and throw the seeds a few meters), capped at maxCount so a hill never fills. Shape: many short stems (stemsPerShrub), hidden inside a low, dense mound; many small cards (cardsPerBranch) of fine needles (leafM long, leafWidth of that wide, on a leafGrid x leafGrid grid) are drawn crownPull of the way to the crown's surface (willow uses 0.3), so the bush reads as one rounded mass. Flowers (new, gorse only): flowerShare is the share of needle cells holding a yellow pea flower of flowerM across, per season (blended through the year as the albedo is, densest in spring, a few all winter), on bushes past youngSize; season.flower is their albedo (linear). catkinsPerCard 0: no catkins. contactShadow sized to the mound and never bare.",
+  "note": "Gorse, Ulex europaeus (docs 10, 14): the island's second shrub, a dense, rounded, spiny evergreen mound of dry, sunny ground. Drawn with the shrub shader (draw: shrub; src/shaders/flora-shrub.wgsl) with other numbers than grey willow; every key works as in willow.json. habitat: dry ground that drains (moisture falls to nothing within 3 m of fresh water, so the moisture axis keeps it 2 m or more from a pond), soil or sand (no soil or sand axis, so either does), never bare rock, never standing water; it shrugs off some salt spray a couple of meters up from the tide band, but not the band itself; slopes suit it, short of a cliff. Nothing in the habitat measures shade yet, so 'sunny' is every open square. growth: a little faster than willow, mature (matureSize) in about 10 game days in spring and up to two weeks later in the year; evergreen, so it grows a little in winter too. Not a starter (recipes/world/growth.json): it arrives by itself after sea campion, and only in summer (volunteer.seasons, 0 spring .. 3 winter), when its pods crack open in the heat; the year plan (doc 13) gives summer its own new plant. flowering: winter into early spring (the window wraps past the year's end), as real gorse flowers through the cold months, for the journal (the flowers on the bush come from flowerShare). No dormant window and no phenology: it never drops its leaves. spread: seed, only in high summer (the black pods crack open in the heat and throw the seeds a few meters), capped at maxCount so a hill never fills. Shape: many short stems (stemsPerShrub), hidden inside a low, dense mound; many small cards (cardsPerBranch) of fine needles (leafM long, leafWidth of that wide, on a leafGrid x leafGrid grid) are drawn crownPull of the way to the crown's surface (willow uses 0.3), so the bush reads as one rounded mass. Flowers (new, gorse only): flowerShare is the share of needle cells holding a yellow pea flower of flowerM across, per season (blended through the year as the albedo is, densest in winter, still many in spring, a few all summer and autumn), on bushes past youngSize; season.flower is their albedo (linear). catkinsPerCard 0: no catkins. contactShadow sized to the mound and never bare.",
   "index": 7,
-  "shape": { "stemsPerShrub": [10, 16], "clumpRadius": 0.2, "maxHeight": 1.2, "crownRadius": 0.8, "leanShare": 0.6,
-             "stemWidth": 0.03, "twigWidth": 0.006, "arch": 0.12, "forks": [1, 2], "forkDeg": 38, "forkAt": [0.3, 0.6],
-             "cardsPerBranch": 10, "cardM": 0.5, "leafM": 0.06, "leafWidth": 0.22, "leafGrid": 10, "catkinsPerCard": 0, "catkinM": 0.02,
-             "flowerM": 0.018 },
-  "habitat": { "moisture": [0, 0.3, 0.15], "waterDepthM": [0, 0, 0.02], "salt": [0, 0.45, 0.2],
-               "rock": [0, 0.3, 0.25], "slopeDeg": [0, 35, 10] },
-  "growth": { "ratePerH": 0.007, "seasonRate": [1, 0.9, 0.5, 0.2], "floor": 0.6,
-              "stages": { "sproutH": 6, "youngSize": 0.2, "matureSize": 0.82 },
-              "lowSuit": 0.15, "lowHours": 72, "shrinkPerH": 0.002, "seedDieHours": 36,
-              "drownDepthM": 0.05, "drownHours": 48 },
-  "flowering": [0.05, 1.1],
-  "spread": { "kind": "seed", "everyH": 48, "window": [1.3, 1.9], "distanceM": [1.5, 4], "minSuit": 0.75, "minSpacingM": 1.8, "maxCount": 12 },
-  "starter": { "count": 3, "minSuit": 0.85, "spacingM": 3 },
-  "season": { "albedo": { "spring": [0.065, 0.09, 0.04], "summer": [0.055, 0.08, 0.035], "autumn": [0.05, 0.075, 0.035], "winter": [0.048, 0.07, 0.035] },
-              "bark": [0.075, 0.06, 0.04], "twig": [0.06, 0.08, 0.035],
-              "flower": [0.8, 0.56, 0.035],
-              "flowerShare": { "spring": [0.2], "summer": [0.06], "autumn": [0.03], "winter": [0.05] } },
-  "outputs": { "cover": { "gorse": 1 } },
-  "wind": { "stiffness": 0.95, "sway": 0.02, "flutter": 0.12 },
-  "look": { "sproutM": 0.1, "heightVar": 0.2, "crownMiddle": 0.45, "rootShade": 0.45, "innerShade": 0.45, "undersideShare": 0,
-            "crownPull": 0.7, "gustM": 6, "gustSpeed": 2.5, "wetDarken": 0.8, "pixelWidth": 1.0 },
-  "contactShadow": { "strength": 0.6, "radiusShare": 1.1, "bareShare": 1, "sunShift": 0.3, "liftM": 0.03, "layers": 3, "layerM": 0.08 }
+  "shape": {
+    "stemsPerShrub": [10, 16],
+    "clumpRadius": 0.2,
+    "maxHeight": 1.2,
+    "crownRadius": 0.8,
+    "leanShare": 0.6,
+    "stemWidth": 0.03,
+    "twigWidth": 0.006,
+    "arch": 0.12,
+    "forks": [1, 2],
+    "forkDeg": 38,
+    "forkAt": [0.3, 0.6],
+    "cardsPerBranch": 10,
+    "cardM": 0.5,
+    "leafM": 0.06,
+    "leafWidth": 0.22,
+    "leafGrid": 10,
+    "catkinsPerCard": 0,
+    "catkinM": 0.02,
+    "flowerM": 0.018
+  },
+  "habitat": {
+    "moisture": [0, 0.3, 0.15],
+    "waterDepthM": [0, 0, 0.02],
+    "salt": [0, 0.45, 0.2],
+    "rock": [0, 0.3, 0.25],
+    "slopeDeg": [0, 35, 10]
+  },
+  "growth": {
+    "ratePerH": 0.007,
+    "seasonRate": [1, 0.9, 0.5, 0.2],
+    "floor": 0.6,
+    "stages": {
+      "sproutH": 6,
+      "youngSize": 0.2,
+      "matureSize": 0.82
+    },
+    "lowSuit": 0.15,
+    "lowHours": 72,
+    "shrinkPerH": 0.002,
+    "seedDieHours": 36,
+    "drownDepthM": 0.05,
+    "drownHours": 48
+  },
+  "flowering": [3, 0.6],
+  "spread": {
+    "kind": "seed",
+    "everyH": 48,
+    "window": [1.3, 1.9],
+    "distanceM": [1.5, 4],
+    "minSuit": 0.75,
+    "minSpacingM": 1.8,
+    "maxCount": 12
+  },
+  "starter": {
+    "count": 3,
+    "minSuit": 0.85,
+    "spacingM": 3
+  },
+  "season": {
+    "albedo": {
+      "spring": [0.065, 0.09, 0.04],
+      "summer": [0.055, 0.08, 0.035],
+      "autumn": [0.05, 0.075, 0.035],
+      "winter": [0.048, 0.07, 0.035]
+    },
+    "bark": [0.075, 0.06, 0.04],
+    "twig": [0.06, 0.08, 0.035],
+    "flower": [0.8, 0.56, 0.035],
+    "flowerShare": {
+      "spring": [0.12],
+      "summer": [0.03],
+      "autumn": [0.05],
+      "winter": [0.22]
+    }
+  },
+  "outputs": {
+    "cover": {
+      "gorse": 1
+    }
+  },
+  "wind": {
+    "stiffness": 0.95,
+    "sway": 0.02,
+    "flutter": 0.12
+  },
+  "look": {
+    "sproutM": 0.1,
+    "heightVar": 0.2,
+    "crownMiddle": 0.45,
+    "rootShade": 0.45,
+    "innerShade": 0.45,
+    "undersideShare": 0,
+    "crownPull": 0.7,
+    "gustM": 6,
+    "gustSpeed": 2.5,
+    "wetDarken": 0.8,
+    "pixelWidth": 1
+  },
+  "contactShadow": {
+    "strength": 0.6,
+    "radiusShare": 1.1,
+    "bareShare": 1,
+    "sunShift": 0.3,
+    "liftM": 0.03,
+    "layers": 3,
+    "layerM": 0.08
+  },
+  "volunteer": {
+    "seasons": [1]
+  }
 }

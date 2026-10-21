@@ -521,7 +521,9 @@ export function addGrowthTests(test, assert, eq) {
     assert(g, `no gorse in 1200 hours: ${a.came.map((c) => c.sp).join(', ')}`);
     eq(a.came.map((c) => c.sp).join(), V.order.join(), 'arrival order');
     eq(zoneOf(g.x), 'dry', 'the gorse landed on');
-    return `gorse came at ${g.h - 10} h, after ${a.came.slice(0, -1).map((c) => c.sp).join(', ')}`;
+    // It comes only in summer (gorse.json volunteer.seasons), so the year has a new plant then.
+    eq(Math.floor(g.h / (14 * 24)) % 4, 1, 'the season gorse came in (0 spring, 1 summer)');
+    return `gorse came at ${g.h - 10} h (day ${Math.floor(g.h / 24)}, summer), after ${a.came.slice(0, -1).map((c) => c.sp).join(', ')}`;
   });
 
   test(GROWTH, 'every species over 96 hours: two runs match, and every plant stays on its own ground', async () => {
