@@ -34,15 +34,23 @@ export function eyeUniforms(E, headBone, state, out = new Float32Array(EXTRA)) {
 }
 
 /**
- * @param {{ recipe: any, glb: import('../../render/gltf.js').Glb, name?: string }} o
- *   recipe: recipes/world/figure.json; glb: the model, read (loadFigureModel)
+ * The figure's draw pass, ready before the model has loaded (the frame graph takes it at boot).
+ * @param {any} R recipes/world/figure.json @param {string} [name]
+ */
+export function createFigurePass(R, name = 'figure') {
+  return createCreaturePass({ recipe: R, name, shader: 'figure-draw', maxBones: R.bones.length, extraFloats: EXTRA });
+}
+
+/**
+ * @param {{ recipe: any, glb: import('../../render/gltf.js').Glb, pass?: ReturnType<typeof createFigurePass> }} o
+ *   recipe: recipes/world/figure.json; glb: the model, read (loadFigureModel); pass: one made earlier by createFigurePass
  */
 export function createFigure(o) {
   const R = o.recipe;
   const built = buildFigure(o.glb, R);
   const motion = createFigureMotion(R, built.skeleton);
   const headBone = built.skeleton.findIndex((b) => b.name === 'head');
-  const pass = createCreaturePass({ recipe: R, name: o.name ?? 'figure', shader: 'figure-draw', maxBones: built.skeleton.length, extraFloats: EXTRA });
+  const pass = o.pass ?? createFigurePass(R);
   pass.setMesh('figure', { data: built.data, indices: built.indices });
   const uniforms = new Float32Array(EXTRA);
   let visible = false;

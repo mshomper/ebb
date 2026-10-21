@@ -431,7 +431,7 @@ export async function startApp(canvas, hooks = {}) {
   sim.addSystem(pieces);
   // The walker (doc 23, presence below; W2): Go down puts you on foot where you are looking, and
   // the camera glides down behind you; a tap walks you there. Go up glides back over you.
-  const walk = createWalk({ recipe: walkerRecipe, terrain, water, camera, tide: waterRecipe.tide,
+  const walk = createWalk({ recipe: walkerRecipe, figure: await loadRecipe('world/figure'), terrain, water, camera, tide: waterRecipe.tide,
     hours: () => clock.display() / clock.SECONDS_PER_HOUR, creatures: () => creatures.frogs() });
   walkRef = walk;
   // Autumn's season markers (doc 13; src/world/finds/autumn-live.js): fungi on the kept logs, and

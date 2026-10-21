@@ -15,14 +15,14 @@ import { createWalker } from './walker.js';
 import { isOpen } from './path.js';
 import { mainland, nearestJoined } from './reach.js';
 import { crossingNote, depthAtLow, hoursToLow } from './crossing.js';
-import { bakeBody } from '../creatures/body-bake.js';
-import { createCreaturePass } from '../../render/passes/creatures.js';
+import { createFigurePass, createFigure, loadFigureModel } from '../figure/index.js';
 import { level as tideLevel, tideParams } from '../tide.js';
 
 /**
- * @param {{ recipe: any, terrain: import('../terrain/index.js').Terrain, water: any, camera: import('../../render/camera.js').OrbitCamera,
+ * @param {{ recipe: any, figure: any, terrain: import('../terrain/index.js').Terrain, water: any, camera: import('../../render/camera.js').OrbitCamera,
  *   tide: any, hours: () => number, creatures: () => { x: number, z: number }[] }} o
- *   recipe: recipes/world/walker.json; tide: recipes/world/water.json tide; hours: display time in game hours;
+ *   recipe: recipes/world/walker.json; figure: recipes/world/figure.json (W5, the figure you are on foot);
+ *   tide: recipes/world/water.json tide; hours: display time in game hours;
  *   creatures: where the animals near you are (the walk eases to a creep within pace.creepNearM)
  */
 export function createWalk(o) {
@@ -44,9 +44,15 @@ export function createWalk(o) {
   };
   const walker = createWalker(R, { get grid() { return grid; }, depth, ground, nearest });
 
-  // The stand-in figure, drawn with the creatures' pass.
-  const mesh = bakeBody(R.body, R.body.cellM);
-  const pass = createCreaturePass({ recipe: { body: R.body }, mesh, name: 'walker' });
+  // The figure (W5): its pass is ready at once; the model loads alongside and appears when it has.
+  // Drawing only: it reads the walker and never changes it.
+  const pass = createFigurePass(o.figure, 'walker');
+  /** @type {import('../figure/index.js').Figure | null} */ let figure = null;
+  loadFigureModel(o.figure)
+    .then((glb) => { figure = createFigure({ recipe: o.figure, glb, pass }); })
+    .catch((err) => console.error('The walker figure did not load:', err));
+  /** Water over a world spot now (the cell it falls in). @param {number} x @param {number} z */
+  const depthAt = (x, z) => { const k = grid.cellAt(x, z); return k >= 0 ? depth(k) : 0; };
 
   let below = false;
   /** Look (W4): while on, a tap names what it lands on instead of walking there. */
@@ -135,6 +141,7 @@ export function createWalk(o) {
       below = true;
       camera.setGround(R.camera, head());
       publish();
+      figure?.motion.arrive();
       emitDeferred('walk:went-down', { x: walker.x, z: walker.z });
       return true;
     },
@@ -180,6 +187,7 @@ export function createWalk(o) {
       walker.setPosture('kneel');
       camera.follow(head());
       publish();
+      figure?.motion.feed();
       const x = walker.x + Math.sin(walker.yaw) * R.ground.feedAheadM, z = walker.z + Math.cos(walker.yaw) * R.ground.feedAheadM;
       return [x, ground(x, z), z];
     },
@@ -209,6 +217,7 @@ export function createWalk(o) {
       walker.stop();
       camera.setGround(null, [walker.x, walker.y, walker.z]);
       publish();
+      figure?.motion.leave();
       emitDeferred('walk:went-up', { x: walker.x, z: walker.z });
     },
 
@@ -242,10 +251,19 @@ export function createWalk(o) {
       walker.update(realDt);
       if (below) camera.follow(head());
       publish();
-      // The stand-in has no poses yet (the figure's F9 brings them): kneeling or sitting, it sinks a
-      // little, so you can see you are low.
-      const low = H.stand - (H[walker.posture] ?? H.stand);
-      pass.setBeings(walker.placed ? [{ x: walker.x, y: walker.y - low, z: walker.z, yaw: walker.yaw, size: R.body.displayScale ?? 1 }] : []);
+      // The figure: posed from the walker (where, how fast, posture), the ground and water under
+      // each foot, and where you look below. Each step that lands is a footfall (for footsteps by
+      // ground, doc 17).
+      if (!figure) return;
+      const e = camera.eye, t = camera.target;
+      const hour = ((o.hours() % 24) + 24) % 24;
+      const falls = figure.update(realDt, {
+        placed: walker.placed, x: walker.x, z: walker.z, y: walker.y, yaw: walker.yaw, speed: walker.speed,
+        moving: walker.moving, retreating: walker.retreating, ground, depth: depthAt,
+        look: below ? { yaw: Math.atan2(t[0] - e[0], t[2] - e[2]) } : null,
+        posture: walker.posture, below, sleepy: hour < 6 || hour > 21,
+      });
+      for (const f of falls) emitDeferred('walk:footfall', f);
     },
 
     dispose() { offStroke(); },

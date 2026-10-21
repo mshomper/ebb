@@ -57,7 +57,7 @@ function stepWalker(/** @type {number} */ dt) {
   if (moving) {
     const left = Math.abs(w.goal - w.x);
     const depth = Math.max(0, water - ground(w.x, w.z));
-    const base = depth > (W.grid.wadeAnkleM ?? 0.12) && W.pace.wadeMps ? Math.min(pace, W.pace.wadeMps) : pace;
+    const base = depth > P.wadeAnkleM ? Math.min(pace, P.wadeMps) : pace;
     want = Math.min(base, Math.sqrt(2 * P.accelMps2 * left) + 0.05);
     const face = Math.sign(w.goal - w.x) > 0 ? Math.PI / 2 : -Math.PI / 2;
     let turn = Math.atan2(Math.sin(face - w.yaw), Math.cos(face - w.yaw));

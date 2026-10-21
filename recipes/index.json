@@ -38,6 +38,7 @@
     "world/naturalist": "world/naturalist.json",
     "world/pieces": "world/pieces.json",
     "world/walker": "world/walker.json",
+    "world/figure": "world/figure.json",
     "species/frog": "species/frog.json",
     "species/midge": "species/midge.json",
     "flora/pondweed": "flora/pondweed.json",
