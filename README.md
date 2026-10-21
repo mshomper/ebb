@@ -109,7 +109,7 @@ Open these at `/tools/` while running locally. They are for checks that run on y
 | `water-lab.html` | The live water's volume, wet area, flow and cost, with buttons that sculpt near the spring and pond |
 | `finds-models.html` | The finds' models at true scale, side by side: the anemone open and shut, the crabs (the hermit crab walking), the shells, the mussel pair gaping, the sand dollar, and the built barnacles and pond skaters; drag to turn them. New models are baked by `node tools/bake-find-model.mjs` (texture to vertex colors, simplified, set base down) |
 | `finds-sketches.html` | Every find's journal sketch in pencil, ink and wash, beside plant sketches to compare; the shapes are traced from the models by `tools/gen-sketch-outlines.mjs` |
-| `shore-lab.html` | Shape and paint the coast and see the shore zones it makes (kelp, wrack, lichen, wet sand, mud), with a sea-level slider for each tide |
+| `shore-lab.html` | Shape and paint the coast and see the shore zones it makes (kelp, wrack, lichen, wet sand, mud), with a sea-level slider for each tide, and a **Show sheltered shore** overlay that warms the coves you carve (the cove field, not used in the game yet) and shows how long it takes |
 | `sky-lab.html` | The island at any hour and season, without moving the world clock |
 | `palette-lab.html` | Tune a palette with a before and after divider, an eyedropper and sliders |
 | `texture-lab.html`, `rock-lab.html` | Prepare the ground photo scans; compare rock tilings and scans |

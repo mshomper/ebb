@@ -46,6 +46,7 @@ import { addTrustTests } from './unit-tests-trust.js';
 import { addFindsTests } from './unit-tests-finds.js';
 import { addNaturalistTests } from './unit-tests-naturalist.js';
 import { addPiecesTests } from './unit-tests-pieces.js';
+import { addCoveTests } from './unit-tests-cove.js';
 
 /** @type {{group: string, name: string, fn: () => any}[]} */
 const tests = [];
@@ -1462,6 +1463,7 @@ addDamselflyTests(test, assert, eq);
 // ---- placed pieces: loose stones (tools/unit-tests-pieces.js) ----
 
 addPiecesTests(test, assert, eq);
+addCoveTests(test, assert, eq);
 
 // ---- runner and rendering ----
 

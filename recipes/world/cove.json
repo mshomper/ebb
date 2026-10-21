@@ -1,0 +1,21 @@
+{
+  "type": "cove",
+  "version": 1,
+  "note": "The cove field (src/world/water/cove.js): how sheltered each cell of the shore is, 0 on an open coast to 255 deep in a bay or cove. From every cell of the tide band and the splash ground above it, rays fan out across the sea; each ray that meets land within reach counts, the nearer the more. The keepsakes the sea leaves on the strandline (docs/future/12) favour the sheltered cells, so carving a cove pays off. Nothing here is saved; it follows the land.",
+  "rays": 16,
+  "raysNote": "Rays cast from each shore cell, evenly round the compass. More rays give a steadier score and cost time in proportion. 8 to 32 is sensible.",
+  "reachM": 24,
+  "reachNote": "How far (m) across the water a ray looks for land. A bay wider than about twice this reads as open sea.",
+  "entryM": 6,
+  "entryNote": "How far (m) a ray may travel over dry shore before it must meet the sea. A ray that finds no sea by then points inland and is not counted, so only the rays facing the water vote. The reach is measured from where the ray meets the sea.",
+  "minSeawardRays": 3,
+  "minSeawardNote": "A cell needs at least this many rays reaching the sea to be scored at all; fewer (a cell tucked well inland) stays 0.",
+  "farWeight": 0.5,
+  "farWeightNote": "How much a hit at the very edge of the reach counts, against 1 for land right at the water's edge. The weight falls in a straight line between the two with distance, so near shelter counts for more than far.",
+  "seaFillM": 6,
+  "seaFillNote": "The lower part of the tide band lies under the mean sea, where every ray toward the coast would count as a hit. Those cells take the score of the nearest shore cell above the water within this distance (m); beyond it they stay 0.",
+  "gain": 1.3,
+  "gainNote": "Scales the share of sheltered rays before it becomes 0..255, so a good cove reaches full strength without needing walls on every side. The result is capped at 255.",
+  "smoothRadius": 2,
+  "smoothNote": "Radius (in 0.5 m cells) of the one box smoothing pass over neighbouring shore cells, so the score changes gently from cell to cell. 0 turns it off."
+}
