@@ -39,7 +39,7 @@ import { stampNotes, markShown, markNotesSeen, markPageSeen, readOf, pageSince, 
  * @param {{ world: { state: any, env: any }, words: any, island: any, web: any, wash?: any,
  *   creatures?: { frogAt: (x: number, z: number) => { x: number, z: number, id?: number } | null } | null,
  *   finds?: any, pieces?: any, shore?: (() => Record<string, number> | null) | null, list?: any,
- *   schools?: { at: (x: number, z: number) => { sp: string, id: number, x: number, z: number } | null }[] }} opts
+ *   schools?: { at: (x: number, z: number, y?: number) => { sp: string, id: number, x: number, z: number } | null }[] }} opts
  *   schools: the live schools (minnows; src/world/creatures/schools.js), which say whether a tap
  *   landed on one
  *   world: the live world (state and env of the hourly tick); words: recipes/world/journal.json;
@@ -121,14 +121,18 @@ export function createJournal(opts) {
     return { stage, season: world.state?.seasons?.index ?? 0, hourOfDay: hours - Math.floor(hours / HOURS_PER_DAY) * HOURS_PER_DAY, rain: w.rain, mist: w.mist };
   }
 
-  /** What a ground point holds: a plant, a cover plant (grass, rushes), or the ground itself. @param {number} x @param {number} z */
-  function cardAt(x, z) {
+  /**
+   * What a ground point holds: a plant, a cover plant (grass, rushes), or the ground itself.
+   * @param {number} x @param {number} z @param {number} [y] the tapped point's height: a school or a
+   *   dragonfly is found along the line from the eye through it, since it is not on the ground
+   */
+  function cardAt(x, z, y) {
     // A frog first: they are small, and finding one is the point.
     const frog = creatures?.frogAt(x, z);
     if (frog) return frogCard(frog, world.state, words, world.env.recipes?.species?.frog?.presence);
-    // Then a school (minnows): small and quick, and found by looking closely too.
+    // Then a school of minnows under the water, or a dragonfly in the air above it.
     for (const s of opts.schools ?? []) {
-      const hit = s.at(x, z);
+      const hit = s.at(x, z, y);
       const rec = hit && words.species[hit.sp];
       if (rec) return { sp: hit.sp, name: rec.card ?? rec.name, sub: null, icon: rec.icon, text: rec.stages?.[0] ?? '', wx: hit.x, wz: hit.z, r: 0.6, stage: -1 };
     }
@@ -242,7 +246,7 @@ export function createJournal(opts) {
     on('plant:refused', (/** @type {{ species: string, reason: string }} */ p) =>
       commit(learn(journal, p.species, `refused:${p.reason}`, { state: world.state, hour: hourIndex(), words }))),
     on('look:tapped', (/** @type {{ x: number, y: number, point: number[] | null }} */ p) =>
-      select(p.point ? cardAt(p.point[0], p.point[2]) : null, p.x, p.y)),
+      select(p.point ? cardAt(p.point[0], p.point[2], p.point[1]) : null, p.x, p.y)),
     // The island gave you something (src/world/expansion.js): written once, shown as a card.
     on('progress:gifted', (/** @type {any} */ g) => commit(noteGift(journal, g, { state: world.state, hour: hourIndex(), words }))),
     // Watching a frog (or a school) from close by finds it too (src/world/creatures/index.js, schools.js).

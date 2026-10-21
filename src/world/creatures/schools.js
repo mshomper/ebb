@@ -27,6 +27,22 @@ const BAKE_JOB = { module: './world/creatures/bodies.js', fn: 'bakeVariant' };
 
 export { axisAngle };
 
+/**
+ * The line a tap makes, from the eye through the tapped point (a little past it): for a body, how
+ * far it is from that line and how far from the eye along it. Pure.
+ * @param {ArrayLike<number>} eye @param {number[]} p the tapped point
+ * @returns {(b: { x: number, y: number, z: number }) => { d: number, far: number }}
+ */
+export function tapRay(eye, p) {
+  const dx = p[0] - eye[0], dy = p[1] - eye[1], dz = p[2] - eye[2];
+  const l2 = Math.max(dx * dx + dy * dy + dz * dz, 1e-9);
+  return (b) => {
+    const t = Math.min(1.1, Math.max(0, ((b.x - eye[0]) * dx + (b.y - eye[1]) * dy + (b.z - eye[2]) * dz) / l2));
+    const cx = eye[0] + dx * t, cy = eye[1] + dy * t, cz = eye[2] + dz * t;
+    return { d: Math.hypot(b.x - cx, b.y - cy, b.z - cz), far: Math.sqrt(l2) * t };
+  };
+}
+
 /** Quaternion product p * q (q first, then p). @param {number[]} p @param {number[]} q */
 export function qmul(p, q) {
   return [
@@ -194,17 +210,28 @@ export function createSchools(opts) {
       end: () => comeBack.end(),
     },
     /**
-     * The school a tap on the ground at (x, z) lands on, or null: within tapM of one of its fish,
-     * more when the camera is far.
-     * @param {number} x @param {number} z
+     * What a tap lands on, or null. The tap hit the ground or water at (x, y, z); a dragonfly flies a
+     * meter up and a fish swims under the surface, so the test is along the line from the camera's
+     * eye through that point: the one nearest the line, within tapM of it plus tapPerM per meter
+     * from the eye (a far one is small on screen). Without y, the ground point alone, as before.
+     * The ring goes round a school's middle, or round the very dragonfly tapped.
+     * @param {number} x @param {number} z @param {number} [y]
      */
-    at(x, z) {
-      const r = find.tapM + find.tapPerM * camera.distance;
-      let best = null, bestD = r * r;
+    at(x, z, y) {
+      const eye = camera.eye;
+      const ray = y === undefined ? null : tapRay(eye, [x, y, z]);
+      let best = null, bestK = 1;
       for (const s of schools.values()) {
         for (const f of s.fish) {
-          const d = (f.x - x) * (f.x - x) + (f.z - z) * (f.z - z);
-          if (d < bestD) { bestD = d; const c = s.centre(); best = { sp: key, id: s.id, x: c.x, z: c.z }; }
+          let d, far;
+          if (ray) ({ d, far } = ray(f));
+          else { d = Math.hypot(f.x - x, f.z - z); far = camera.distance; }
+          const k = d / (find.tapM + find.tapPerM * far);
+          if (k < bestK) {
+            bestK = k;
+            const c = M.kind === 'patrol' ? f : s.centre();
+            best = { sp: key, id: s.id, x: c.x, z: c.z };
+          }
         }
       }
       return best;

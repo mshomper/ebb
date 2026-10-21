@@ -8,6 +8,7 @@ import { initialJournal, observe, foundAnimal } from '../src/world/journal/obser
 import { due, grant } from '../src/world/expansion.js';
 import { createSchool } from '../src/world/creatures/school.js';
 import { createPatrol } from '../src/world/creatures/patrol.js';
+import { tapRay } from '../src/world/creatures/schools.js';
 import { roomOf, applySwarmTrust, addSwarmEvent } from '../src/world/creatures/swarms.js';
 import { suitability } from '../src/world/growth/coarse.js';
 import { HABITAT_ORIGIN } from '../src/world/growth/habitat.js';
@@ -473,6 +474,20 @@ export function addPondLifeTests(test, assert, eq) {
     assert(Math.hypot(c.x - food.x, c.z - food.z) < 0.6, `the school is ${Math.hypot(c.x - food.x, c.z - food.z).toFixed(2)} m from the crumbs`);
     assert(c.y > -0.1, `and up near the surface (${c.y.toFixed(2)} m)`);
     assert(s.feeding, 'still swirling');
+  });
+
+  test(G, 'a tap finds a dragonfly a meter up along the line from the eye, not by the ground under it', async () => {
+    const F = (await (await fetch('../recipes/species/dragonfly.json')).json()).find;
+    // The eye 3 m up, 4 m back; a dragonfly 1 m over the water at the origin; the tap's line runs
+    // through it and on to the ground 2 m behind it.
+    const eye = [0, 3, -4], fly = { x: 0, y: 1, z: 0 };
+    const ray = tapRay(eye, [0, 0, 2]);
+    const { d, far } = ray(fly);
+    assert(d < F.tapM + F.tapPerM * far, `the dragonfly is ${d.toFixed(2)} m from the tap's line`);
+    // The ground point under the old test was 2 m from it: missed.
+    assert(Math.hypot(fly.x - 0, fly.z - 2) > F.tapM + F.tapPerM * 5, 'the ground point alone misses it');
+    // A tap a meter to the side still misses.
+    assert(tapRay(eye, [1.2, 0, 2])(fly).d > F.tapM + F.tapPerM * far, 'a tap well to the side misses');
   });
 
   test(G, 'the species list knows every recipe by its world key', async () => {
