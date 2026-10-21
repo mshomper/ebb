@@ -24,6 +24,9 @@ GLOVE_Y = 0.645 - 0.951      # the old gloves are below this height (the texture
 REST = {1: np.array([0.065, -0.46, 0.07]), -1: np.array([-0.065, -0.46, 0.07])}   # the old hanging arms
 EYES = dict(cx=0.093, mid=0.002, cy=0.464, rx=0.0297, ry=0.0717)                  # the approved ovals (old frame)
 OBJ_SCALE = 0.1              # nTop exports tenths of a metre
+# The hat's felt, dyed madder rust (approved October 21, 2026): seen from above it stands clear of
+# grass, sand and water. Linear albedo; the felt's own light and dark (wear, folds) are kept.
+HAT_RUST = np.array([0.254, 0.069, 0.034])
 
 
 def read_obj(path):
@@ -168,8 +171,24 @@ def main(meshy, body_obj, left_obj, right_obj, out):
     lab[legs & (P[:, 0] < 0)] = PARTS['leg.r']
     lab[(P[:, 2] < -0.17) & (P[:, 1] > 0.72) & (P[:, 1] < 1.32) & (np.abs(P[:, 0]) < 0.28)] = PARTS['pack']
     lab[(P[:, 1] > 1.24) & (dh < 0.3)] = PARTS['head']
-    lab[((P[:, 1] > 1.5) & (dh > 0.215)) | (P[:, 1] > 1.62)] = PARTS['hat']
+    # The hat: everything high, and the brim all round (out past the head, and lighter than the dark
+    # hair and face beside it).
+    Y = C @ np.array([0.2126, 0.7152, 0.0722])
+    rxz = np.hypot(P[:, 0], P[:, 2])
+    lab[(P[:, 1] > 1.62) | ((P[:, 1] > 1.38) & (rxz > 0.2) & (Y > 0.08))] = PARTS['hat']
     body['L'] = lab
+
+    # Dye the hat's felt rust: each vertex keeps its brightness against the felt's middle, so the
+    # wear and folds stay; the dark band and the green leaf stay as they were.
+    hat = lab == PARTS['hat']
+    mid = np.median(Y[hat])
+    # The leaf in the band (the walker's left side of the crown): greener than the felt around it.
+    in_box = (P[:, 0] > 0.13) & (P[:, 0] < 0.28) & (P[:, 1] > 1.56) & (P[:, 1] < 1.78) & (P[:, 2] > -0.1) & (P[:, 2] < 0.04)
+    leaf = in_box & (C[:, 1] > C[:, 0] * 0.68)
+    band = np.clip((Y / mid - 0.25) / 0.15, 0, 1)
+    w = (hat & ~leaf) * band
+    dyed = HAT_RUST[None, :] * (Y / mid)[:, None]
+    C[:] = C * (1 - w[:, None]) + np.clip(dyed, 0, 1) * w[:, None]
     for p in parts[1:]:
         p['L'] = np.full(len(p['P']), PARTS['arm'], np.uint8)
     counts = {k: int((lab == v).sum()) for k, v in PARTS.items()}
