@@ -24,6 +24,7 @@
 | [F09 Traces](09-traces.md) | Seed | Desire lines worn by walking and creature runs, mossing over when unused |
 | [F10 Plants, surfaces and placed pieces](10-plants-surfaces-and-placed-pieces.md) | Leaning | Shore zonation, the driftline, new plants once growth reads ground type, and stones and logs to live under |
 | [F11 Creature roadmap and finds](11-creature-roadmap-and-finds.md) | Leaning | Creature weight classes, cheap finds shaped by the player, a naturalist's progression line, and what to generalize once |
+| [F12 Keepsakes and nets](12-keepsakes-and-nets.md) | Leaning | One-of-a-kind seeded keepsakes on the strandline and in three nets, labeled rarity, a 16-space shelf, and signs in the water |
 
 ## How they connect
 
@@ -41,6 +42,10 @@ flowchart TB
   F10[F10 Plants and surfaces] --> F11[F11 Creatures and finds]
   F10 --> F04
   F11 --> F04
+  F10 --> F12[F12 Keepsakes and nets]
+  F11 --> F12
+  F08 --> F12
+  F12 --> F04
 ```
 
 ## Working rule
