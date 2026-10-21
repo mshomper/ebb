@@ -203,6 +203,7 @@ export function mountIslandNotes(parent, words, naturalist = null) {
         <button type="submit" class="ebb-idcard__give">${iconSvg('name-tag')}<span>Give it this name</span></button>
       </form>` : ''}
       ${carryBtn}
+      ${id.keepsake && words.keepsakes ? `<button type="button" class="ebb-idcard__open" data-act="leave">${iconSvg('close')}<span>${esc(words.keepsakes.leave)}</span></button>` : ''}
       ${id.noPage ? '' : `<button type="button" class="ebb-idcard__open" data-act="open">${iconSvg('journal')}<span>Open its page</span></button>`}`;
     card.inert = false;
     card.classList.add('is-open');
@@ -272,6 +273,7 @@ export function mountIslandNotes(parent, words, naturalist = null) {
     const b = /** @type {HTMLElement | null} */ (/** @type {HTMLElement} */ (e.target).closest('button'));
     if (!b) return;
     if (b.dataset.act === 'carry' && id?.piece) { dispatch({ type: 'pieces.carry', id: id.piece }); return; }
+    if (b.dataset.act === 'leave' && id?.keepsake) { dispatch({ type: 'keepsakes.leave', id: id.keepsake }); return; }
     const form = /** @type {HTMLFormElement | null} */ (card.querySelector('.ebb-idcard__name'));
     const input = /** @type {HTMLInputElement | null} */ (card.querySelector('.ebb-idcard__input'));
     if (b.dataset.act === 'open' && id) dispatch({ type: 'ui.journal', open: true, page: id.sp });

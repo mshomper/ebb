@@ -30,6 +30,7 @@ import { emit } from '../core/events.js';
  *   | { type: 'pieces.remove', id: string }
  *   | { type: 'pieces.carry', id: string }
  *   | { type: 'pieces.carryCancel' }
+ *   | { type: 'keepsakes.leave', id: string }
  *   | { type: 'brush.resize', factor: number, source?: Source }
  *   | { type: 'history.undo', source?: Source }
  *   | { type: 'history.redo', source?: Source }

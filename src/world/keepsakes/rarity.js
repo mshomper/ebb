@@ -4,7 +4,11 @@
 // season leans the weights (winter's spring tides stand in for storm tides until F08). Pure.
 
 /** @typedef {'common'|'uncommon'|'rare'|'veryRare'} Rarity */
-/** @typedef {{ spring: number, season?: string }} Conditions */
+/**
+ * @typedef {{ spring: number, season?: string, lean?: Record<string, number> }} Conditions
+ *   lean: extra weight per tier on top of the season's, for what reaches further than the
+ *   strandline (a net's haul, a sign in the water; Matt: the nets are the way to the rarer things)
+ */
 
 /**
  * The weight of each tier under these conditions, in R.order; a gated tier weighs 0.
@@ -15,7 +19,7 @@ export function rarityWeights(R, cond) {
   return R.order.map((/** @type {string} */ id, /** @type {number} */ i) => {
     const gate = R.gates?.[id];
     if (gate && cond.spring < (gate.springMin ?? -Infinity)) return 0;
-    return R.weights[i] * (lean[id] ?? 1);
+    return R.weights[i] * (lean[id] ?? 1) * (cond.lean?.[id] ?? 1);
   });
 }
 

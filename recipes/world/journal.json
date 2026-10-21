@@ -54,6 +54,14 @@
     "hours": { "dawn": [5, 8], "dusk": [18, 21] }
   },
   "showMe": { "showS": 20 },
+  "keepsakesNote": "Keepsakes on the strandline (docs/future/12): what a tap on one says. card heads its card, rarity is the word under it, and its line is drawn from what it looks like (src/world/keepsakes/families). leave is the button that leaves it where it lies, and left the calm line after.",
+  "keepsakes": {
+    "card": "Something the sea left",
+    "icon": "shells",
+    "rarity": { "common": "Common", "uncommon": "Uncommon", "rare": "Rare", "veryRare": "Very rare" },
+    "leave": "Leave it to the sea",
+    "left": "The next tide will take it back."
+  },
   "piecesNote": "Placed pieces (docs/future/10, src/world/pieces): what a tap on one says. name and icon head its card, cardLine is the line under them (no page of its own: the card has no Open its page), and lifted is the note written the first time you lift one (the flag stones:lifted; driftwood:lifted for a log, which rolls over). carry: the card's Carry button with the turtles' gift (button), the line while a piece is carried (hint), the button that puts it back (cancel), and the calm lines when a tap lands in water or the island holds all the logs it can (water, full).",
   "pieces": {
     "stone": {

@@ -46,6 +46,8 @@ import { bakeBody } from './world/creatures/body-bake.js';
 import { previewSpots } from './world/creatures/preview-spots.js';
 import { createCreatures } from './world/creatures/index.js';
 import { createFinds } from './world/finds/index.js';
+import { createKeepsakes } from './world/keepsakes/index.js';
+import { keepsakeWords } from './world/keepsakes/families/index.js';
 import { createPieces } from './world/pieces/index.js';
 import { shorePresence } from './world/journal/shore-presence.js';
 import { createPresence } from './world/creatures/presence.js';
@@ -369,6 +371,16 @@ export async function startApp(canvas, hooks = {}) {
     shellsOn: () => !!shellTest || !!getStore('unlocks')?.shells });
   sim.addSystem(finds);
   terrainPass.setCasts(finds.casts(), finds.castShape);
+  // Keepsakes (docs/future/12): one-of-a-kind trinkets each high tide leaves on its strandline, a
+  // few for the whole island. They come with the shells (the naturalist's reward at three finds);
+  // `?keepsakes` (testing, unsaved) shows them at once, several to a tide.
+  const keepsakesRecipe = await loadRecipe('world/keepsakes');
+  const keepsakeTest = params.has('keepsakes');
+  const keepsakes = createKeepsakes({ water, shore: ww.shore, terrain, camera, recipe: keepsakesRecipe, passRecipe: findsRecipe,
+    seed: subSeed(seed, 'keepsakes'), tide: waterRecipe.tide, test: keepsakeTest,
+    on: () => keepsakeTest || !!getStore('unlocks')?.shells });
+  const keepsakesApi = { ...keepsakes, words: (/** @type {any} */ n) => keepsakeWords(n, keepsakesRecipe) };
+  sim.addSystem(keepsakes);
   // Placed pieces (doc 09, docs/future/10): loose stones, set with Sculpt's Loose stone mode and
   // lifted with a tap; a handful comes by itself with the naturalist's reward (src/world/pieces).
   // Driftwood washes up on the strandline after high tides (the reward at ten finds), and the
@@ -427,6 +439,7 @@ export async function startApp(canvas, hooks = {}) {
     creatures.pass,
     ...schools.map((s) => s.pass),
     finds.pass,
+    keepsakes.pass,
     pieces.pass,
     ...(frogScale ? [frogScale.pass] : []),
     waterPass,
@@ -694,6 +707,11 @@ export async function startApp(canvas, hooks = {}) {
         break;
       case 'pieces.carryCancel':
         pieces.cancelCarry();
+        updateStore('identify', () => null);
+        break;
+      // A keepsake's card: Leave it to the sea (docs/future/12). It goes, and the next tide takes it.
+      case 'keepsakes.leave':
+        keepsakes.leave(a.id);
         updateStore('identify', () => null);
         break;
       case 'ui.identify':
@@ -1057,6 +1075,8 @@ export async function startApp(canvas, hooks = {}) {
     creatures,
     /** The finds near the view (the journal asks it what a tap landed on). */
     finds,
+    /** The keepsakes on the strandline (the journal asks it what a tap landed on). */
+    keepsakes: keepsakesApi,
     /** The placed loose stones (the journal asks which one a tap landed on). */
     pieces,
     /** The shore zones and rock pools now (the journal's Web shows which are on the island). */

@@ -38,7 +38,7 @@ import { stampNotes, markShown, markNotesSeen, markPageSeen, readOf, pageSince, 
 /**
  * @param {{ world: { state: any, env: any }, words: any, island: any, web: any, wash?: any,
  *   creatures?: { frogAt: (x: number, z: number) => { x: number, z: number, id?: number } | null } | null,
- *   finds?: any, pieces?: any, shore?: (() => Record<string, number> | null) | null, list?: any,
+ *   finds?: any, keepsakes?: any, pieces?: any, shore?: (() => Record<string, number> | null) | null, list?: any,
  *   schools?: { at: (x: number, z: number, y?: number) => { sp: string, id: number, x: number, z: number } | null }[] }} opts
  *   schools: the live schools (minnows; src/world/creatures/schools.js), which say whether a tap
  *   landed on one
@@ -143,6 +143,14 @@ export function createJournal(opts) {
     const it = fd?.item ? fr?.collection?.find((/** @type {any} */ c) => c.id === fd.item) : null;
     if (fr && it) return { sp: fd.sp, item: it.id, name: it.name, sub: it.rarity, icon: fr.icon, text: it.cardLine, wx: fd.x, wz: fd.z, r: 0.12, stage: -1 };
     if (fr) return { sp: fd.sp, name: fr.card ?? fr.name, sub: null, icon: fr.icon, text: fr.cardLine ?? '', wx: fd.x, wz: fd.z, r: 0.12, stage: -1 };
+    // Then a keepsake on the strandline (docs/future/12): no name to learn, only what it looks like
+    // and how rare it is. It has no page; its card offers to leave it (and, with the shelf, to keep it).
+    const ks = opts.keepsakes?.keepsakeAt(x, z);
+    const KW = words.keepsakes;
+    if (ks && KW) {
+      return { sp: 'keepsake', keepsake: ks.id, name: KW.card, sub: KW.rarity[ks.n.rarity] ?? ks.n.rarity, icon: KW.icon,
+        text: opts.keepsakes.words(ks.n), wx: ks.x, wz: ks.z, r: 0.15, stage: -1, noPage: true };
+    }
     // Then a loose stone or a driftwood log (docs/future/10): the tap lifts or rolls it to look
     // underneath. It has no page. With the turtles' gift (unlocks.carry) its card offers Carry.
     const pc = opts.pieces?.pieceAt(x, z);
@@ -165,6 +173,8 @@ export function createJournal(opts) {
   function select(card, x, y) {
     update('identify', () => (card ? { ...card, x, y, at: performance.now() } : null));
     if (!card) return;
+    // A keepsake is not a find: tapping it writes nothing (the shelf is its only record).
+    if (card.keepsake) return;
     // A loose stone tips up to show underneath, a log rolls over (src/world/pieces); the first of
     // each is written down.
     if (card.piece) {

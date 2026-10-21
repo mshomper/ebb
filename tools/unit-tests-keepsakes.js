@@ -7,6 +7,7 @@ import { rollShell, shellMesh, shellWords } from '../src/world/keepsakes/familie
 import { pickIndex, rarityWeights } from '../src/world/keepsakes/rarity.js';
 import { keepsakeSvg, traceKeepsake } from '../src/ui/sketches/keepsake.js';
 import { FAMILIES, keepsakeMesh, keepsakeWords, rollKeepsake } from '../src/world/keepsakes/families/index.js';
+import { onShore, tideKeepsakes } from '../src/world/keepsakes/shore.js';
 
 const KEEPSAKES = 'keepsakes';
 
@@ -135,6 +136,44 @@ export function addKeepsakeTests(test, assert, eq) {
       assert(rare > 0, `${family}: the mark turns up`);
       assert(rare >= common, `${family}: at least as often when very rare (${rare} against ${common})`);
     }
+  });
+
+  test(KEEPSAKES, 'a tide leaves the same keepsakes every time, within its budget, kept apart', async () => {
+    const K = await recipe();
+    const cells = Array.from({ length: 400 }, (_, k) => ({ k, x: (k % 40) * 0.5, z: Math.floor(k / 40) * 0.5 }));
+    let total = 0, tides = 0;
+    for (let t = 0; t < 200; t++) {
+      const a = tideKeepsakes(17, t, cells, { spring: 0 }, K), b = tideKeepsakes(17, t, cells, { spring: 0 }, K);
+      eq(JSON.stringify(a), JSON.stringify(b), 'same for the same tide');
+      assert(a.length <= K.shore.budget.length - 1, `tide ${t}: within the budget (${a.length})`);
+      for (const p of a) for (const q of a) if (p !== q) assert(Math.hypot(p.x - q.x, p.z - q.z) >= K.shore.spacingM, 'kept apart');
+      total += a.length; tides++;
+    }
+    const mean = total / tides;
+    assert(mean > 0.6 && mean < 1.3, `about one a tide on average (${mean.toFixed(2)})`);
+    let spring = 0;
+    for (let t = 0; t < 200; t++) spring += tideKeepsakes(17, t, cells, { spring: 0.9 }, K).length;
+    assert(spring / 200 > mean, 'more at spring tides');
+    eq(tideKeepsakes(17, 3, [], { spring: 1 }, K).length, 0, 'no strandline, nothing');
+  });
+
+  test(KEEPSAKES, 'sheltered cells are chosen more often, and the island shows only its cap', async () => {
+    const K = await recipe();
+    // Two far-apart cells: one sheltered (weight 4), one open (weight 0.25).
+    const cells = [{ k: 1, x: 0, z: 0, weight: 4 }, { k: 2, x: 50, z: 0, weight: 0.25 }];
+    let cove = 0, open = 0;
+    for (let t = 0; t < 600; t++) for (const s of tideKeepsakes(5, t, cells, { spring: 0 }, K, { budget: [0, 1] })) (s.k === 1 ? cove++ : open++);
+    assert(cove > open * 4, `the cove wins far more often (${cove} against ${open})`);
+    const lists = [tideKeepsakes(5, 9, cells, { spring: 0 }, K, { budget: [0, 0, 1] }), tideKeepsakes(5, 8, cells, { spring: 0 }, K, { budget: [0, 0, 1] })];
+    eq(onShore(lists, 3).length, 3, 'capped at three');
+    eq(onShore(lists, 3)[0].tideId, 9, 'the newest tide first');
+    eq(onShore(lists, 3, new Set([lists[0][0].id])).some((s) => s.id === lists[0][0].id), false, 'one let go stays gone');
+  });
+
+  test(KEEPSAKES, 'a lean (a net\'s haul) raises the rarer tiers', async () => {
+    const K = await recipe();
+    const plain = rarityWeights(K.rarity, { spring: 0.9 }), net = rarityWeights(K.rarity, { spring: 0.9, lean: { rare: 3, veryRare: 5 } });
+    assert(net[2] === plain[2] * 3 && net[3] === plain[3] * 5 && net[0] === plain[0], 'rare times three, very rare times five, common the same');
   });
 
   test(KEEPSAKES, 'every form and tier in the recipe can be made', async () => {

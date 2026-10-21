@@ -9,6 +9,20 @@
     "gates": { "rare": { "springMin": 0.5 }, "veryRare": { "springMin": 0.8 } },
     "seasonLean": { "winter": { "rare": 1.5, "veryRare": 2.5 } }
   },
+  "shoreNote": "Keepsakes on the strandline (piece K2). Each high tide leaves a few on the whole island, never more for walking the beach: budget is how many a tide leaves (weights for 0, 1, 2, 3), springBudget the same at a spring tide (spring at least springMin). Cells on a tide's strandline (within lineToleranceM of where its waves reached) are drawn by seed, weighted by how sheltered they are (the cove field, once it is in) and kept spacingM apart. At most maxOnIsland show at once, the newest tides first. families weighs which family a keepsake is. scale is how much larger than life they are drawn, like the strandline shells; nearM how close to the view they are drawn. testBudget and testMax are for the ?keepsakes test link.",
+  "shore": {
+    "budget": [30, 50, 20, 0],
+    "springBudget": [10, 40, 35, 15],
+    "springMin": 0.5,
+    "lineToleranceM": 0.06,
+    "spacingM": 3,
+    "maxOnIsland": 3,
+    "families": { "shell": 40, "stone": 22, "driftwood": 14, "feather": 12, "fossil": 8, "bottle": 4 },
+    "scale": 2,
+    "nearM": 22,
+    "testBudget": [0, 0, 0, 1],
+    "testMax": 12
+  },
   "shelfNote": "The paper ground of a shelf slot by rarity (doc 13, 'The shelf'). Previewed in the lab; drawn by the shelf in K3.",
   "shelf": {
     "grounds": {

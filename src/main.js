@@ -84,7 +84,7 @@ startApp(canvas, { onDeviceLost: (rebuilding) => showRebuildingNote(rebuilding),
       const [words, island, web, wash, list, naturalist] = await Promise.all([loadRecipe('world/journal'), loadRecipe('world/journal-island'),
         loadRecipe('world/journal-web'), loadRecipe('world/journal-wash'), loadRecipe('world/journal-list'), loadRecipe('world/naturalist')]);
       const journal = createJournal({ world: r.world, words, island, web, wash, list, creatures: /** @type {any} */ (r).creatures ?? null,
-        finds: /** @type {any} */ (r).finds ?? null, pieces: /** @type {any} */ (r).pieces ?? null, shore: /** @type {any} */ (r).shorePresence ?? null,
+        finds: /** @type {any} */ (r).finds ?? null, keepsakes: /** @type {any} */ (r).keepsakes ?? null, pieces: /** @type {any} */ (r).pieces ?? null, shore: /** @type {any} */ (r).shorePresence ?? null,
         schools: /** @type {any} */ (r).schools ?? [] });
       mountIslandNotes(document.body, words, naturalist);
       // Progress (src/world/expansion.js): the naturalist's rewards and species gifts, read from the
