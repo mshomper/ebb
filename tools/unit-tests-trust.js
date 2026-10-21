@@ -124,7 +124,7 @@ export function addTrustTests(test, assert, eq) {
   test(TRUST, 'quiet watching counts a still camera close by, not a moving or far one', async () => {
     const W = (await frogRecipe()).presence.watch;
     const frog = { id: 1, x: 0, y: 0, z: 0, mode: 'rest' };
-    const near = (/** @type {number} */ speed) => [{ id: 'camera', kind: /** @type {const} */ ('camera'), pos: /** @type {[number, number, number]} */ ([1, 0.5, 0]), speed, editing: false, edits: [], stillS: 0 }];
+    const near = (/** @type {number} */ speed) => [{ id: 'camera', kind: /** @type {const} */ ('camera'), pos: /** @type {[number, number, number]} */ ([1, 0.5, 0]), speed, editing: false, edits: [], stillS: 0, body: true }];
     const far = [{ ...near(0)[0], pos: /** @type {[number, number, number]} */ ([10, 0.5, 0]) }];
     const w = createWatching(W);
     /** @type {{ id: number, minutes: number }[]} */ let got = [];

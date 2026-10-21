@@ -48,7 +48,8 @@
     "fleeHeightM": 2.5, "fleeS": 12, "visitChance": 0.25, "visitM": 0.7
   },
   "presence": { "ringM": 1.2, "ringTrustShrink": 0.7, "ringMinM": 0.4, "calmSpeed": 0.9, "editReachM": 2,
-    "watch": { "reachM": 4, "minS": 20, "capS": 600, "trustPerMin": 0.015, "stillMps": 0.05 },
+    "watch": { "reachM": 4, "minS": 20, "capS": 600, "trustPerMin": 0.015, "stillMps": 0.05, "sitBoost": 2 },
+    "multipliers": { "posture": { "stand": 1, "kneel": 0.8, "sit": 0.65 }, "gaze": { "watch": 1.15, "away": 0.9 }, "gazeConeDeg": 30, "light": 1.3 },
     "feedTrust": 0, "ceiling": "curious", "bands": [0.2, 0.45, 0.65, 0.85], "curiousAt": 0.45 },
   "find": { "tapM": 0.4, "tapPerM": 0.04, "lookM": 1.5, "lookDistM": 5, "holdS": 2.5 },
   "reveal": { "return": "thicken", "growS": 0.6 },

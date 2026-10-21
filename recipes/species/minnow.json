@@ -48,7 +48,8 @@
     "feedS": 14, "swirlM": 0.18, "swirlHz": 0.35, "feedRiseShare": 0.08, "ringStrength": 0.6, "ringM": 0.05
   },
   "presence": { "ringM": 1.8, "ringTrustShrink": 0.8, "ringMinM": 0.4, "calmSpeed": 0.9, "editReachM": 2.5,
-    "watch": { "reachM": 3, "minS": 20, "capS": 600, "trustPerMin": 0.012, "stillMps": 0.05 },
+    "watch": { "reachM": 3, "minS": 20, "capS": 600, "trustPerMin": 0.012, "stillMps": 0.05, "sitBoost": 2 },
+    "multipliers": { "posture": { "stand": 1, "kneel": 0.8, "sit": 0.65 }, "gaze": { "watch": 1.15, "away": 0.9 }, "gazeConeDeg": 30, "light": 1.3 },
     "feedTrust": 0.06, "fullH": 6, "ceiling": "familiar", "bands": [0.2, 0.45, 0.65, 0.85] },
   "feed": { "reachM": 4, "messages": {
     "coming": "The minnows have seen it. Watch them swirl up.",

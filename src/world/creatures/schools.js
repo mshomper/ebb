@@ -11,6 +11,7 @@ import { emitDeferred } from '../../core/events.js';
 import { get as getStore, update as updateStore } from '../../core/store.js';
 import { display, animT, seasonOf, hourIndex, SECONDS_PER_HOUR, HOURS_PER_DAY } from '../../core/clock.js';
 import { createWatching } from './watching.js';
+import { ringScale } from './presence.js';
 import { addSwarmEvent } from './swarms.js';
 import { hash32 } from '../../core/rng.js';
 import { run } from '../../core/workers.js';
@@ -58,9 +59,11 @@ export function qmul(p, q) {
  *   water: { sim: { live: any }, sampleLive: (x: number, z: number) => { surface: number, depth: number } },
  *   ripples: { addImpulse: (x: number, z: number, strength?: number, radiusM?: number) => void } | null,
  *   camera: { target: ArrayLike<number>, eye: ArrayLike<number>, distance: number },
- *   presence?: import('./presence.js').Presence, budget?: number, ground?: (x: number, z: number) => number }} opts
+ *   presence?: import('./presence.js').Presence, budget?: number, ground?: (x: number, z: number) => number,
+ *   you?: () => number[] | null }} opts
  *   recipe: recipes/species/<id>.json (minnow: motion.kind school; dragonfly: patrol); budget: the
- *   most drawn at once (the quality tier); ground: terrain height
+ *   most drawn at once (the quality tier); ground: terrain height; you: where you stand on foot (W3),
+ *   or null while you are above
  */
 export function createSchools(opts) {
   const { world, recipe, water, ripples, camera } = opts;
@@ -272,12 +275,14 @@ export function createSchools(opts) {
       const ring = Math.max(P.ringMinM ?? 0, P.ringM * (1 - (P.ringTrustShrink ?? 0) * trust));
       // An edit right beside one (a sculpt or pour stroke) does it too.
       for (const p of src) {
-        const fast = p.speed >= P.calmSpeed * (1 + 2 * trust);
+        // Only a source with a body is felt coming fast (doc 23, W3); an edit is felt from any.
+        const fast = p.body && p.speed >= P.calmSpeed * (1 + 2 * trust);
         if (!fast && !p.editing) continue;
         for (const s of schools.values()) {
           if (s.darting) continue;
-          // The nearest of them (a dragonfly's beat spreads over a few meters).
-          const near = fast && s.fish.some((f) => Math.hypot(p.pos[0] - f.x, p.pos[1] - f.y, p.pos[2] - f.z) <= ring);
+          // The nearest of them (a dragonfly's beat spreads over a few meters); lower and looking away is closer.
+          const near = fast && s.fish.some((f) => Math.hypot(p.pos[0] - f.x, p.pos[1] - f.y, p.pos[2] - f.z)
+            <= ring * (P.multipliers ? ringScale(p, f.x, f.z, P.multipliers) : 1));
           const edited = p.edits.some((e) => s.fish.some((f) => Math.hypot(e.x - f.x, e.z - f.z) <= P.editReachM));
           if (near || edited) { s.startle(); emitDeferred('creature:startled', { species: key, id: s.id }); }
         }
@@ -307,12 +312,15 @@ export function createSchools(opts) {
       acc = Math.min(acc + f.realDt, stepS * 6);
       while (acc >= stepS) { clockS += stepS; for (const s of schools.values()) s.step(stepS); acc -= stepS; }
       draw(f.animT);
-      // Watching one closely finds it: in the middle of the view, zoomed in, for a moment.
+      // Watching one closely finds it: in the middle of the view, zoomed in, for a moment; or, on
+      // foot, standing within reach of it (W3).
       if (getStore('journal')?.species?.[key]?.ever) return;
-      const near = camera.distance <= find.lookDistM && [...schools.values()].some((s) => {
-        const c = s.centre();
-        return (c.x - camera.target[0]) ** 2 + (c.z - camera.target[2]) ** 2 <= find.lookM * find.lookM;
-      });
+      const me = opts.you?.() ?? null;
+      const near = me ? [...schools.values()].some((s) => { const c = s.centre(); return Math.hypot(c.x - me[0], c.z - me[2]) <= find.lookDistM + find.lookM; })
+        : camera.distance <= find.lookDistM && [...schools.values()].some((s) => {
+          const c = s.centre();
+          return (c.x - camera.target[0]) ** 2 + (c.z - camera.target[2]) ** 2 <= find.lookM * find.lookM;
+        });
       watched = near ? watched + f.realDt : 0;
       if (watched >= find.holdS) { watched = 0; emitDeferred('creature:found', { species: key, how: 'watched' }); }
     },

@@ -1,9 +1,11 @@
 {
   "type": "walker",
   "version": 1,
-  "note": "The walker (doc 23, presence below; approved October 21, 2026). You, on foot: tap a spot and the figure walks there along the walk grid. grid: cells of cellM meters over the open land; a cell is walkable if its slope is under maxSlopeDeg; a step between neighbours may climb at most maxStepM (a cliff face is more); water over a cell right now must be shallower than wadeM (knee deep). wadeCost makes wading slower to choose than dry ground. snapM: a tap on a spot you can't stand on walks to the nearest one within this reach. pace: one calm stroll that eases to a creep within creepNearM of a creature, a double tap within doubleTapMs hurries (brisk); accelMps2 eases speed changes, turnDegPerS how fast the figure turns. camera: the low view behind you, distanceM its zoom range, startM where a glide down lands, pitchDeg the look up and down range (negative looks up), startPitchDeg the glide's pitch, lookHeightM where it aims on you, minEyeHeightM how low the eye may come over ground or water. tide: retreat to dry ground when the water ahead passes wadeM. words: the lines the island says.",
+  "note": "The walker (doc 23, presence below; approved October 21, 2026). You, on foot: tap a spot and the figure walks there along the walk grid. grid: cells of cellM meters over the open land; a cell is walkable if its slope is under maxSlopeDeg; a step between neighbours may climb at most maxStepM (a cliff face is more); water over a cell right now must be shallower than wadeM (knee deep). wadeCost makes wading slower to choose than dry ground. snapM: a tap on a spot you can't stand on walks to the nearest one within this reach. pace: one calm stroll that eases to a creep within creepNearM of a creature, a double tap within doubleTapMs hurries (brisk); in water deeper than wadeAnkleM the walk slows to wadeMps, hurrying or not (October 21, 2026: slower paces for the short-legged figure); accelMps2 eases speed changes, turnDegPerS how fast the figure turns. camera: the low view behind you, distanceM its zoom range, startM where a glide down lands, pitchDeg the look up and down range (negative looks up), startPitchDeg the glide's pitch, lookHeightM where it aims on you, minEyeHeightM how low the eye may come over ground or water. tide: retreat to dry ground when the water ahead passes wadeM. words: the lines the island says.",
   "grid": { "cellM": 0.5, "maxSlopeDeg": 35, "maxStepM": 0.45, "wadeM": 0.4, "wadeCost": 2, "snapM": 3 },
-  "pace": { "strollMps": 1.1, "creepMps": 0.3, "briskMps": 1.9, "creepNearM": 2.5, "doubleTapMs": 350, "accelMps2": 2.5, "turnDegPerS": 360, "arriveM": 0.15 },
+  "pace": { "strollMps": 0.9, "creepMps": 0.3, "briskMps": 1.5, "wadeMps": 0.6, "wadeAnkleM": 0.12, "creepNearM": 2.5, "doubleTapMs": 350, "accelMps2": 2.5, "turnDegPerS": 360, "arriveM": 0.15 },
+  "presence": { "note": "You on foot as creatures feel you (W3): heightM is how far your body is over your feet in each posture (where the ring is measured from, and where the view aims). Posture and gaze stretch or shrink each species' comfort ring by its presence.multipliers.", "heightM": { "stand": 0.9, "kneel": 0.5, "sit": 0.4 } },
+  "ground": { "note": "The ground bar (W4): Feed kneels and puts food down feedAheadM in front of you; Look names what you tap within lookReachM.", "feedAheadM": 0.7, "lookReachM": 8 },
   "camera": { "distanceM": [2, 6], "startM": 3.2, "pitchDeg": [-8, 45], "startPitchDeg": 14, "lookHeightM": 1.3, "minEyeHeightM": 0.35 },
   "words": {
     "down": "Go down",
@@ -14,6 +16,14 @@
     "lowTideSoon": "Low tide is close.",
     "cantReach": "You can't get there on foot.",
     "noGround": "There's nowhere to stand here.",
+    "stuck": "I'm stuck",
+    "stuckFine": "You can walk on from here.",
+    "sit": "Sit",
+    "kneel": "Kneel",
+    "feed": "Feed",
+    "look": "Look",
+    "lookFar": "Too far to see well from here. Walk closer.",
+    "feedNone": "Nothing here knows to come for food yet.",
     "noticeS": 5
   },
   "body": {
