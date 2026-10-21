@@ -11,7 +11,9 @@
 // Acorn barnacles crust the upper rock of the band and open and shut like the anemones; pond
 // skaters glide on still fresh water by day. Both are built in procedural.js, with no model file.
 // Common mussels clump on the low rock and gape under water, one valve mirrored into the hinged
-// pair (mussel.js); sand dollars lie half buried on the low sand.
+// pair (mussel.js); sand dollars lie half buried on the low sand. The strandline follows the year
+// (strand.js): summer tides strand moon jellyfish, clear and drawn by a pass of their own
+// (jelly.js), and a winter storm tide leaves the rarer shells along its line.
 
 import { hash32 } from '../../core/rng.js';
 import { WATER_CLASS } from '../water/summary.js';
@@ -27,6 +29,9 @@ import { loadRig, bones } from './rig.js';
 import { legRig, legBones } from './leg-rig.js';
 import { proceduralMeshes } from './procedural.js';
 import { musselPair, musselBones } from './mussel.js';
+import { jellyMesh } from './jelly.js';
+import { jellyAt, isStormTide, seasonOfTide, weatherOfTide } from './strand.js';
+import { createJellyPass } from '../../render/passes/jelly.js';
 
 // New kinds go at the end: a kind's place here salts where its groups fall.
 const KINDS = /** @type {const} */ (['anemone', 'periwinkle', 'lugworm', 'hermitcrab', 'ediblecrab', 'shells', 'barnacles', 'pondskaters', 'mussels', 'sanddollars']);
@@ -122,27 +127,33 @@ export function groupAt(seed, kind, k, K, cx, cz, tide) {
 
 /**
  * The shell (if any) one high tide's strandline left in one cell, and where in the cell. Pure: the
- * same seed, cell and tide give the same shell. Rare shells come only with tides near spring.
+ * same seed, cell and tide give the same shell. Rare shells come only with tides near spring; a
+ * winter storm tide (strand.js isStormTide) throws up more shells, and far more of the rare ones.
  * @param {number} seed @param {number} k cell @param {number} tideId which high water left the line
  * @param {number} spring how far that tide was toward spring, -1 neap .. 1 the highest spring
  * @param {any} S finds.json kinds.shells
- * @returns {{ item: string, ox: number, oz: number, yaw: number, r: number } | null} offsets in cells (-0.5..0.5)
+ * @param {boolean} [storm] was that tide a storm tide
+ * @returns {{ item: string, ox: number, oz: number, yaw: number, r: number, storm: boolean } | null} offsets in cells (-0.5..0.5)
  */
-export function shellAt(seed, k, tideId, spring, S) {
+export function shellAt(seed, k, tideId, spring, S, storm = false) {
+  const St = storm ? S.storm : null;
   const h0 = hash32(seed, k, (KINDS.indexOf('shells') + 1) * 7919 + tideId * 131);
-  if (u01(h0) >= S.density) return null;
+  if (u01(h0) >= S.density * (St?.densityBoost ?? 1)) return null;
   const pool = S.items.filter((/** @type {any} */ it) => spring >= (it.springMin ?? -Infinity));
-  const total = pool.reduce((/** @type {number} */ s, /** @type {any} */ it) => s + it.weight, 0);
+  const weight = (/** @type {any} */ it) => it.weight * (St && it.springMin !== undefined ? St.rareBoost : 1);
+  const total = pool.reduce((/** @type {number} */ s, /** @type {any} */ it) => s + weight(it), 0);
   let pick = u01(hash32(h0, 9)) * total;
   let item = pool[pool.length - 1];
-  for (const it of pool) { pick -= it.weight; if (pick < 0) { item = it; break; } }
-  return { item: item.id, ox: u01(hash32(h0, 2)) - 0.5, oz: u01(hash32(h0, 3)) - 0.5, yaw: u01(hash32(h0, 4)) * Math.PI * 2, r: u01(hash32(h0, 6)) };
+  for (const it of pool) { pick -= weight(it); if (pick < 0) { item = it; break; } }
+  return { item: item.id, ox: u01(hash32(h0, 2)) - 0.5, oz: u01(hash32(h0, 3)) - 0.5, yaw: u01(hash32(h0, 4)) * Math.PI * 2, r: u01(hash32(h0, 6)), storm: !!St };
 }
 
 /**
- * @param {{ water: any, shore: any, terrain: any, camera: any, recipe: any, seed: number, tide?: any, shellsOn?: () => boolean }} opts
+ * @param {{ water: any, shore: any, terrain: any, camera: any, recipe: any, seed: number, tide?: any, shellsOn?: () => boolean,
+ *   weather?: () => { weatherSeed: number, weather: any, state?: any } }} opts
  *   shore: world/water/shore-live.js; recipe: recipes/species/finds.json; tide: water.json `tide`
- *   (the strandline that shells wash up on follows it); shellsOn: whether the sea leaves shells yet
+ *   (the strandline that shells wash up on follows it); shellsOn: whether the sea leaves shells yet;
+ *   weather: the weather seed, seasons.json `weather` and the world's weather state (storm tides)
  */
 export function createFinds(opts) {
   const { water, shore, terrain, camera, recipe } = opts;
@@ -150,6 +161,16 @@ export function createFinds(opts) {
   const pass = createCreaturePass({ recipe, maxBones: 32 });
   const K = recipe.kinds;
   const tideP = tideParams(opts.tide);
+  // Moon jellyfish are clear, so they have a translucent pass of their own, built from shape.
+  const J = K.moonjelly;
+  const jellyPass = J ? createJellyPass({ look: J.look }) : null;
+  if (J && jellyPass) for (let v = 0; v < J.variants; v++) jellyPass.setMesh(`moonjelly-${v}`, jellyMesh(J.shape, v));
+  /**
+   * Testing (`?debug`, window.ebb.finds.force): a season for every line, a storm on every tide,
+   * and lines thick with what they leave. null keeps the world's own.
+   * @type {{ season: number | null, storm: boolean | null, dense: boolean }}
+   */
+  const force = { season: null, storm: null, dense: false };
   // The meshes arrive a moment after boot; until then nothing is drawn (casts need none).
   let ready = false;
   /** Rigged finds by kind (rig.js), posed each frame while they walk. @type {Record<string, import('./rig.js').Rig>} */
@@ -164,7 +185,7 @@ export function createFinds(opts) {
   /** How open each anemone is, 0..1, eased. @type {Map<string, number>} */ const open = new Map();
   /** The crabs' moves: a hermit crab's walking clock (s), an edible crab's eased offset (m). @type {Map<string, any>} */
   const moves = new Map();
-  /** @type {{ sp: string, x: number, z: number, item: string | null }[]} */ let shown = [];
+  /** @type {{ sp: string, x: number, z: number, item: string | null, storm: boolean }[]} */ let shown = [];
   /** Finds drawn elsewhere that a tap may land on (addSource). @type {(() => { sp: string, x: number, z: number, item: string | null, reach?: number }[])[]} */
   const sources = [];
   let clock = 0;
@@ -187,7 +208,7 @@ export function createFinds(opts) {
    */
   let list = [];
   /** What the last scan saw of the strandline (tools). */
-  let shellCount = { lines: 0, band: 0, placed: 0 };
+  let shellCount = { lines: 0, band: 0, placed: 0, jellies: 0, storms: 0 };
 
   /** Work out the finds near the view. @param {import('../../sim/live-sim.js').FrameInfo} f @param {number} dt */
   function scan(f, dt) {
@@ -258,13 +279,29 @@ export function createFinds(opts) {
    */
   function shells(f, all) {
     const S = K.shells, L = shore.recipe?.look?.strandline;
-    shellCount = { lines: 0, band: 0, placed: 0 };
-    // Shells wash up once the naturalist's notes have given them (world/expansion.js).
-    if (!S || !L || !rect || (opts.shellsOn && !opts.shellsOn())) return;
+    shellCount = { lines: 0, band: 0, placed: 0, jellies: 0, storms: 0 };
+    // Shells wash up once the naturalist's notes have given them (world/expansion.js); moon
+    // jellyfish strand in summer whatever the notes say, as the sea brings them.
+    const shellsOn = !!S && (!opts.shellsOn || opts.shellsOn());
+    if (!L || !rect || (!shellsOn && !J)) return;
     const nowH = f.displayT / 3600;
     const lines = strandLines(nowH, tideP, L);
     shellCount.lines = lines.levels.length;
     if (!lines.levels.length) return;
+    // Each line's tide: which high water, how near spring, its season, and whether it was a storm.
+    const W = opts.weather?.();
+    const info = lines.levels.map((lvl, n) => {
+      const tideId = Math.round((nowH - lines.ages[n] - tideP.phaseH) / tideP.periodH);
+      const tideH = tideP.phaseH + tideId * tideP.periodH;
+      const spring = (lvl / tideP.amplitudeM - 1) / tideP.springNeap;
+      const season = force.season ?? seasonOfTide(tideH);
+      const day = W ? weatherOfTide(tideH, W) : null;
+      const storm = force.storm ?? (!!S?.storm && !!day && isStormTide(tideH, spring, { season, mood: day.mood, windStrength: day.windStrength }, S.storm));
+      if (storm) shellCount.storms++;
+      return { tideId, spring, season, storm, ageH: lines.ages[n] };
+    });
+    const Sd = S && force.dense ? { ...S, density: 0.3 } : S;
+    const Jd = J && force.dense ? { ...J, density: 0.25 } : J;
     const t = camera.target, near = recipe.nearM;
     const i0 = Math.max(0, waterCellOf(t[0] - near) - rect.x), i1 = Math.min(rect.w - 1, waterCellOf(t[0] + near) - rect.x);
     const j0 = Math.max(0, waterCellOf(t[2] - near) - rect.y), j1 = Math.min(rect.h - 1, waterCellOf(t[2] + near) - rect.y);
@@ -276,16 +313,25 @@ export function createFinds(opts) {
       for (let n = 0; n < lines.levels.length; n++) {
         if (Math.abs(y - lines.levels[n] - L.runupM) > S.lineToleranceM) continue;
         shellCount.band++;
-        const tideId = Math.round((nowH - lines.ages[n] - tideP.phaseH) / tideP.periodH);
-        const spring = (lines.levels[n] / tideP.amplitudeM - 1) / tideP.springNeap;
+        const { tideId, spring, storm } = info[n];
         const k = j * rect.w + i;
-        const s = shellAt(opts.seed, k, tideId, spring, S);
-        if (!s) break;
-        const x = cx + s.ox * WATER_CELL, z = cz + s.oz * WATER_CELL;
+        const s = shellsOn ? shellAt(opts.seed, k, tideId, spring, Sd, storm) : null;
+        if (s) {
+          const x = cx + s.ox * WATER_CELL, z = cz + s.oz * WATER_CELL;
+          if ((water.sampleLive(x, z)?.depth ?? 0) > 0.005) break;
+          shellCount.placed++;
+          const size = S.scale * (0.85 + 0.3 * s.r);
+          all.push({ b: { x, y: terrain.sampleHeight(x, z) - 0.001, z, yaw: s.yaw, size, mesh: `shells-${s.item}` }, d: d2, sp: 'shells', g: { key: `shells:${k}:${tideId}` }, R: S, depth: 0, item: s.item, storm: s.storm });
+          break;
+        }
+        // No shell here: a summer tide may have left a moon jellyfish instead.
+        const jl = Jd ? jellyAt(opts.seed, k, tideId, info[n], Jd) : null;
+        if (!jl) break;
+        const x = cx + jl.ox * WATER_CELL, z = cz + jl.oz * WATER_CELL;
         if ((water.sampleLive(x, z)?.depth ?? 0) > 0.005) break;
-        shellCount.placed++;
-        const size = S.scale * (0.85 + 0.3 * s.r);
-        all.push({ b: { x, y: terrain.sampleHeight(x, z) - 0.001, z, yaw: s.yaw, size, mesh: `shells-${s.item}` }, d: d2, sp: 'shells', g: { key: `shells:${k}:${tideId}` }, R: S, depth: 0, item: s.item });
+        shellCount.jellies++;
+        const v = Math.floor(jl.r * J.variants) % J.variants;
+        all.push({ b: { x, y: terrain.sampleHeight(x, z) - 0.001, z, yaw: jl.yaw, size: jl.size, mesh: `moonjelly-${v}` }, d: d2, sp: 'moonjelly', g: { key: `moonjelly:${k}:${tideId}` }, R: J, depth: 0 });
         break;
       }
     }
@@ -347,7 +393,7 @@ export function createFinds(opts) {
       b.y = terrain.sampleHeight(b.x, b.z) - 0.002;
       b.yaw = m.yaw + ((R.model?.yawDeg ?? 0) * Math.PI) / 180;
     }
-    shown = list.map((e) => ({ sp: e.sp, x: e.b.x, z: e.b.z, item: e.item ?? null }));
+    shown = list.map((e) => ({ sp: e.sp, x: e.b.x, z: e.b.z, item: e.item ?? null, storm: !!e.storm }));
   }
 
   /**
@@ -408,11 +454,21 @@ export function createFinds(opts) {
       if (clock >= 0.2) { scan(f, clock); clock = 0; }
       if (!rect) return;
       stepCrabs(f.realDt);
-      pass.setBeings(ready ? list.filter((e) => e.sp !== 'lugworm').map((e) => e.b) : []);
+      pass.setBeings(ready ? list.filter((e) => e.sp !== 'lugworm' && e.sp !== 'moonjelly').map((e) => e.b) : []);
+      jellyPass?.setBeings(list.filter((e) => e.sp === 'moonjelly').map((e) => e.b));
     },
+    /** The moon jellyfish's translucent pass, for the frame graph (after the opaque finds). */
+    jellyPass,
+    /**
+     * Testing (`?debug`): force every strandline's season (0 spring .. 3 winter), a storm on every
+     * tide, and lines thick with shells and jellyfish; null keeps the world's own.
+     * @param {{ season?: number | null, storm?: boolean | null, dense?: boolean }} o
+     */
+    force(o) { Object.assign(force, o); return { ...force }; },
     /**
      * The find nearest a tapped ground point, if one is close enough.
-     * @param {number} x @param {number} z @returns {{ sp: string, x: number, z: number, item: string | null } | null} item: which shell, for shells
+     * @param {number} x @param {number} z @returns {{ sp: string, x: number, z: number, item: string | null, storm: boolean } | null}
+     *   item: which shell, for shells; storm: a shell a winter storm tide left
      */
     findAt(x, z) {
       const r = recipe.tapM + recipe.tapPerM * (camera.distance ?? 10);
@@ -422,7 +478,7 @@ export function createFinds(opts) {
       for (const f of [...shown, ...sources.flatMap((s) => s())]) {
         const d = (f.x - x) * (f.x - x) + (f.z - z) * (f.z - z);
         const reach = Math.max(r, /** @type {any} */ (f).reach ?? 0);
-        if (d < reach * reach && d < bestD) { bestD = d; best = { sp: f.sp, x: f.x, z: f.z, item: f.item ?? null }; }
+        if (d < reach * reach && d < bestD) { bestD = d; best = { sp: f.sp, x: f.x, z: f.z, item: f.item ?? null, storm: !!(/** @type {any} */ (f).storm) }; }
       }
       return best;
     },

@@ -14,7 +14,7 @@ import { hourIndex, display, SECONDS_PER_HOUR, HOURS_PER_DAY } from '../../core/
 import { onAction } from '../../input/actions.js';
 import { weatherAt } from '../weather.js';
 import { tideParams } from '../tide.js';
-import { initialJournal, learn, notePlanted, momentsNow, catchMoments, foundAnimal, foundFind, namedAnimal, flag, noteGift, liftedStone } from './observe.js';
+import { initialJournal, learn, notePlanted, momentsNow, catchMoments, foundAnimal, foundFind, namedAnimal, flag, noteGift, liftedStone, stormShells } from './observe.js';
 import { journalLook } from './look.js';
 import { describe, identify, showMeSpot, momentKind, frogCard } from './describe.js';
 import { groundKind, groundCard, groundSurvey, describeGround, groundSpot } from './ground.js';
@@ -141,8 +141,9 @@ export function createJournal(opts) {
     const fr = fd && words.species[fd.sp];
     // A shell names which one it is; its page holds them all.
     const it = fd?.item ? fr?.collection?.find((/** @type {any} */ c) => c.id === fd.item) : null;
-    if (fr && it) return { sp: fd.sp, item: it.id, name: it.name, sub: it.rarity, icon: fr.icon, text: it.cardLine, wx: fd.x, wz: fd.z, r: 0.12, stage: -1 };
-    if (fr) return { sp: fd.sp, name: fr.card ?? fr.name, sub: null, icon: fr.icon, text: fr.cardLine ?? '', wx: fd.x, wz: fd.z, r: 0.12, stage: -1 };
+    if (fr && it) return { sp: fd.sp, item: it.id, storm: !!fd.storm, name: it.name, sub: it.rarity, icon: fr.icon, text: it.cardLine, wx: fd.x, wz: fd.z, r: 0.12, stage: -1 };
+    // A stranded jellyfish is much bigger than the other finds: its ring is too.
+    if (fr) return { sp: fd.sp, name: fr.card ?? fr.name, sub: null, icon: fr.icon, text: fr.cardLine ?? '', wx: fd.x, wz: fd.z, r: fr.ringM ?? 0.12, stage: -1 };
     // Then a loose stone or a driftwood log (docs/future/10): the tap lifts or rolls it to look
     // underneath. It has no page. With the turtles' gift (unlocks.carry) its card offers Carry.
     const pc = opts.pieces?.pieceAt(x, z);
@@ -181,6 +182,8 @@ export function createJournal(opts) {
     if (words.species[card.sp]?.kind === 'find' && fresh) {
       commit(foundFind(journal, card.sp, { state: world.state, hour: hourIndex(), words }, item));
     }
+    // A shell a winter storm tide left: the journal notes the storm tide, once.
+    if (/** @type {any} */ (card).storm) commit(stormShells(journal, { state: world.state, hour: hourIndex(), words }));
     const list = card.ground ? words.moments.ground : words.moments[momentKind(words.species[card.sp])];
     const ids = momentsNow(list, now(card.stage), words.moments);
     const name = card.name.charAt(0).toLowerCase() + card.name.slice(1);
@@ -192,12 +195,17 @@ export function createJournal(opts) {
     if (journal.species[sp]?.ever) return;
     commit(foundAnimal(journal, { state: world.state, hour: hourIndex(), words }, sp));
     look([], hourIndex());
+    // Show me's ring was on something not yet met: now it is, so the card says what it is.
+    const c = get('identify');
+    if (c?.pinned && c.sp === sp && c.noPage) showMe(sp);
   }
 
   /**
    * Ring the example nearest the middle of your view. The camera stays where it is (a game-driven
    * move is distracting); the card follows the ring on screen, and an arrow at the edge points to
-   * it while it is out of view (src/ui/island-notes.js). @param {string} sp
+   * it while it is out of view (src/ui/island-notes.js). An island note's Show me (an animal came or
+   * stayed) can ring one you have not met yet: its card then keeps the riddle (`showMe.unseen`), so
+   * finding it is still yours. If none is about just now, a calm line says so. @param {string} sp
    */
   function showMe(sp) {
     const view = get('view');
@@ -208,7 +216,14 @@ export function createJournal(opts) {
       const spot = groundSpot(sp, habitat(), material(), survey(), island, near);
       if (spot) card = groundCard(spot.kind, habitat(), spot.x, spot.z, { island, flora: flora(), journal, words });
     }
-    if (!card) return;
+    const S = words.showMe;
+    if (!card) {
+      if (S?.none) emitDeferred('island:notice', { text: S.none, showS: S.noneS ?? 5 });
+      return;
+    }
+    if (words.species[sp] && !journal.species[sp]?.ever && S?.unseen) {
+      card = { ...card, name: S.unseen.name, text: S.unseen.text, icon: 'find', sub: null, word: null, canName: false, suggest: [], noPage: true };
+    }
     const at = view?.project(card.wx, card.wz);
     select({ ...card, pinned: true }, at?.x ?? 0, at?.y ?? 0);
   }

@@ -27,7 +27,7 @@
       { "group": "Shadows, 1 x 1024", "ms": 0.7, "passes": ["shadow"] },
       { "group": "Opaque", "ms": 3.0, "passes": ["opaque"] },
       { "group": "Foliage", "ms": 3.5, "passes": ["grass", "rushes", "flora"] },
-      { "group": "Creatures", "ms": 1.5, "passes": ["creatures", "minnows", "dragonflies", "midges"] },
+      { "group": "Creatures", "ms": 1.5, "passes": ["creatures", "minnows", "dragonflies", "damselflies", "midges"] },
       { "group": "Copies, water shading, sky draw, particles", "ms": 1.7, "passes": ["water", "sky"] },
       { "group": "Post", "ms": 1.5, "passes": ["exposure", "bloom", "tonemap"] }
     ]

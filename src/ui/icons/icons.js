@@ -456,6 +456,12 @@ const ICONS = {
     <circle fill="currentColor" stroke="none" cx="17.3" cy="13.2" r="0.9"/>
     <circle fill="currentColor" stroke="none" cx="9.8" cy="16.3" r="0.9"/>
     <path d="M3 21.5C4 20 4.6 19 4.8 17.4M21 21.5C20 20 19.4 19 19.2 17.4"/>`,
+  // Moon jelly: a low glassy bell from above, lying flat on the sand like the sand dollar, its
+  // margin scalloped in eight shallow lobes and the four horseshoe rings showing through it.
+  moonjelly: `
+    <path ${ACCENT} d="M20.3 15.1Q19.3 18.6 15.4 19.5Q12 21.3 8.6 19.5Q4.7 18.6 3.7 15.1Q1.7 12 3.7 8.9Q4.7 5.4 8.6 4.5Q12 2.7 15.4 4.5Q19.3 5.4 20.3 8.9Q22.3 12 20.3 15.1Z"/>
+    <path d="M20.3 15.1Q19.3 18.6 15.4 19.5Q12 21.3 8.6 19.5Q4.7 18.6 3.7 15.1Q1.7 12 3.7 8.9Q4.7 5.4 8.6 4.5Q12 2.7 15.4 4.5Q19.3 5.4 20.3 8.9Q22.3 12 20.3 15.1Z"/>
+    <path d="M8.4 10.6A2 1.85 0 1 1 10.5 8.7M13.5 8.7A2 1.85 0 1 1 15.6 10.6M10.5 15.3A2 1.85 0 1 1 8.4 13.4M15.6 13.4A2 1.85 0 1 1 13.5 15.3"/>`,
   // Loose stone (a naturalist's reward, src/world/expansion.js): a stone tipped up on one side,
   // the dark gap under it where something might live.
   loosestone: `
@@ -546,6 +552,17 @@ const ICONS = {
     <circle cx="12" cy="5.6" r="1.4"/>
     <path d="M12 7V21.5"/>
     <path d="M11 8.2C11 7.4 13 7.4 13 8.2V11.6C13 12.4 11 12.4 11 11.6Z"/>`,
+  // Azure damselfly (M2 season marker): from the side, resting on a reed stem, its slim banded body
+  // level and its wings folded back together over it.
+  damselfly: `
+    <path d="M19.8 21.5C19.4 15 19.6 8.5 20.4 2.5"/>
+    <path ${ACCENT} d="M14.4 10.4C11.6 8.2 7.4 7.6 5.4 8.4C7 9.6 11 10.4 14.4 10.4Z"/>
+    <path d="M14.4 10.4C11.6 8.2 7.4 7.6 5.4 8.4C7 9.6 11 10.4 14.4 10.4"/>
+    <circle cx="17.2" cy="11.6" r="1.3"/>
+    <path d="M13 11.4C13 10.6 15.6 10.6 15.6 11.6C15.6 12.6 13 12.8 13 12Z"/>
+    <path d="M13 11.9H2.5"/>
+    <path d="M5 11V12.8M7.6 11V12.8M10.2 11V12.8"/>
+    <path d="M14 12.6L16 15.2L19.5 15.6"/>`,
   // Minnows (M2): a small fish under the water line, a ring above where one rose.
   minnow: `
     <path d="M2.5 7.5C4 6.5 5.5 8.5 7 7.5S10 6.5 11.5 7.5M15 7.5H21.5"/>

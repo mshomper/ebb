@@ -198,7 +198,9 @@ export async function startApp(canvas, hooks = {}) {
   // `?frogs=N` (testing) starts on spring day 7 unless a day is given, after the frogs' winter sleep
   // (they wake 0.3 into spring, day 5).
   // `?dragonflies=N` starts on summer day 2: they fly from the start of summer (recipes/world/seasons.json).
-  const startDay = Math.max(0, Number.parseInt(params.get('day') ?? (params.has('dragonflies') ? '15' : params.has('frogs') ? '6' : '0'), 10) || 0);
+  // `?damselflies=N` starts on the last day of spring (day 13): the first ones climb out at 0.9.
+  const testDay = params.has('dragonflies') ? '15' : params.has('damselflies') ? '13' : params.has('frogs') ? '6' : '0';
+  const startDay = Math.max(0, Number.parseInt(params.get('day') ?? testDay, 10) || 0);
   // `?autumn` (testing, unsaved): a new world starts on its first misty autumn morning with fungi
   // grown (src/world/finds/autumn.js), and a kept log is laid near the view once the island is up.
   const autumnRecipe = await loadRecipe('species/autumn-finds');
@@ -244,6 +246,8 @@ export async function startApp(canvas, hooks = {}) {
   if (params.has('minnows')) speciesRecipes.minnow = testRecipe(speciesRecipes.minnow);
   // `?dragonflies=N` likewise: any pond will do, not only a fish-free one you shaped.
   if (params.has('dragonflies')) speciesRecipes.dragonfly = testRecipe(speciesRecipes.dragonfly);
+  // `?damselflies=N` likewise (any still pond suits them anyway).
+  if (params.has('damselflies')) speciesRecipes.damselfly = testRecipe(speciesRecipes.damselfly);
   world.env.recipes.species = speciesRecipes;
   updateStore('world', () => world.state);
   /** One game hour of the shared tick, live. @param {number} hour */
@@ -338,12 +342,13 @@ export async function startApp(canvas, hooks = {}) {
     .map((rec) => createSchools({ world, recipe: rec, water, ripples, camera, presence, budget: tierSettings.liveCreatures ?? 120,
       ground: (x, z) => terrain.sampleHeight(x, z) }));
   for (const s of schools) sim.addSystem(s);
-  // `?minnows=N`, `?dragonflies=N` (testing, unsaved): a group of N comes at once and is settled,
-  // once the island, its water and the journal are up (as `?frogs` does).
-  const testSwarms = ['minnow', 'dragonfly'].filter((id) => params.has(keyOf(speciesRecipes[id])))
+  // `?minnows=N`, `?dragonflies=N`, `?damselflies=N` (testing, unsaved): a group of N comes at once
+  // and is settled, once the island, its water and the journal are up (as `?frogs` does). Under
+  // `?debug`, window.ebb.summon() asks for one the same way (below).
+  const testSwarms = ['minnow', 'dragonfly', 'damselfly'].filter((id) => params.has(keyOf(speciesRecipes[id])))
     .map((id) => ({ rec: speciesRecipes[id], count: Math.max(1, Math.min(30, Number.parseInt(params.get(keyOf(speciesRecipes[id])) ?? '12', 10) || 12)) }));
   let swarmWait = 0;
-  if (testSwarms.length) sim.addSystem({ id: 'swarm-tests', tick(/** @type {any} */ f) {
+  if (testSwarms.length || params.has('debug')) sim.addSystem({ id: 'swarm-tests', tick(/** @type {any} */ f) {
     if (!testSwarms.length || !world.env.habitat?.() || !water.sim.live) return;
     swarmWait += f.realDt;
     if (!getStore('journal') && swarmWait < 3) return;
@@ -378,7 +383,9 @@ export async function startApp(canvas, hooks = {}) {
   }
   // Shells wash up once the naturalist's notes give them (world/expansion.js); `?shells` shows them anyway.
   const finds = createFinds({ water, shore: ww.shore, terrain, camera, recipe: findsRecipe, seed: subSeed(seed, 'finds'), tide: waterRecipe.tide,
-    shellsOn: () => !!shellTest || !!getStore('unlocks')?.shells });
+    shellsOn: () => !!shellTest || !!getStore('unlocks')?.shells,
+    // Winter storm tides read the weather of the day each high water came (world/finds/strand.js).
+    weather: () => ({ weatherSeed: world.env.weatherSeed, weather: seasonsRecipe.weather, state: world.state?.weather }) });
   sim.addSystem(finds);
   terrainPass.setCasts(finds.casts(), finds.castShape);
   // Placed pieces (doc 09, docs/future/10): loose stones, set with Sculpt's Loose stone mode and
@@ -486,6 +493,8 @@ export async function startApp(canvas, hooks = {}) {
     pieces.pass,
     // Autumn's fungi (a creature pass) and dewy webs, after the logs and the grass they are on.
     ...autumn.passes,
+    // Moon jellyfish on the summer strandline: clear, so drawn over the opaque things behind them.
+    ...(finds.jellyPass ? [finds.jellyPass] : []),
     ...(frogScale ? [frogScale.pass] : []),
     waterPass,
     midges.pass,
@@ -1120,8 +1129,9 @@ export async function startApp(canvas, hooks = {}) {
     /** Autumn's fungi and webs (counts() for tools). */
     autumn,
     /**
-     * Testing helpers, on window.ebb with `?debug`. They change this island's time and pieces, so use
-     * them on a test link (such as `?debug&autumn`, unsaved) to leave your own island alone.
+     * Testing helpers, on window.ebb with `?debug`: autumn's misty morning and kept logs, skipping to
+     * a time of year, and bringing a settled school or swarm. They change this island's time and
+     * pieces, so use them on a test link (such as `?debug&autumn`, unsaved) to leave your own island alone.
      */
     debug: {
       /**
@@ -1144,6 +1154,29 @@ export async function startApp(canvas, hooks = {}) {
       keptLog: (x, z) => keepTestLog(x, z),
       /** How many fungi and webs are drawn now, and the webs' dew. */
       autumn: () => autumn.counts(),
+      /**
+       * Skip to the next day `day` of the year (0..55; 13 is the last day of spring) at `hour`,
+       * every hour between run by the hourly tick as usual (it may take a few seconds).
+       * @param {number} day @param {number} [hour]
+       */
+      skipTo(day, hour = 10) {
+        const year = clock.SECONDS_PER_YEAR, at = clock.worldT() % year;
+        const want = (day * clock.HOURS_PER_DAY + hour) * clock.SECONDS_PER_HOUR;
+        clock.skip(want > at ? want - at : want + year - at);
+        return clock.season();
+      },
+      /** A settled group of `count` comes now (species id: minnow, dragonfly, damselfly), as its test link does. @param {string} id @param {number} [count] */
+      summon(id, count = 8) {
+        const rec = speciesRecipes[id];
+        if (rec?.ecology?.kind !== 'swarm') return false;
+        testSwarms.push({ rec, count: Math.max(1, Math.min(30, count)) });
+        return true;
+      },
+      /** Late spring, if they are not flying now, and a few damselflies at the pond. @param {number} [count] */
+      damselflies(count = 8) {
+        if (world.state?.seasons?.dormant?.damselflies) this.skipTo(13, 10);
+        return this.summon('damselfly', count);
+      },
     },
     /** The shore zones and rock pools now (the journal's Web shows which are on the island). */
     shorePresence: () => shorePresence(ww.shore.zones(), water.getSummary(), getStore('terrainLive')?.mirror?.material ?? null),

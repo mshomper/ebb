@@ -5,7 +5,8 @@
 // out of sight) wait in the journal under "You may have missed", and a quiet line here says so. The same file shows the card a tap opens on a living thing: its name, what it is doing
 // and a way into its journal page. After a page's Show me (`identify.pinned`), the card rides with
 // the ring as the camera moves, and while the ring is out of view a drawn arrow at the screen edge
-// points to it.
+// points to it. A note that an animal came, stayed or joined (`showMeKinds`) offers Show me too,
+// so a player who cannot find what arrived is helped to look; the camera never moves.
 //
 // Listens for `note:posted`; reads the store slices `identify`, `tools` and `view`; every choice goes out
 // as a `ui.journal` or `ui.identify` action. Timings come from recipes/world/journal.json.
@@ -55,12 +56,7 @@ export function mountIslandNotes(parent, words, naturalist = null) {
     lastShown = now;
     // Shown: it is no longer one you may have missed (src/world/journal/read.js).
     if (n.n) dispatch(/** @type {any} */ ({ type: 'journal.noteShown', n: n.n }));
-    const b = document.createElement('button');
-    b.type = 'button';
-    b.className = 'ebb-notes__note';
-    b.textContent = n.text;
-    b.title = 'Open the journal';
-    b.addEventListener('click', () => dispatch(n.sp ? { type: 'ui.journal', open: true, page: n.sp } : { type: 'ui.journal', open: true, view: 'notes' }));
+    const b = noteEl(n);
     root.insertBefore(b, moreBtn.isConnected ? moreBtn : null);
     requestAnimationFrame(() => b.classList.add('is-shown'));
     setTimeout(() => {
@@ -68,7 +64,7 @@ export function mountIslandNotes(parent, words, naturalist = null) {
       b.classList.remove('is-shown');
       setTimeout(() => b.remove(), 700);
       pump();
-    }, N.showS * 1000);
+    }, (canShow(n) ? N.showMeS ?? N.showS : N.showS) * 1000);
     if (waiting.length) pumpTimer = setTimeout(pump, N.gapS * 1000);
   }
 
@@ -151,22 +147,42 @@ export function mountIslandNotes(parent, words, naturalist = null) {
   /** A reveal note: shown at once for showS seconds, marked as shown. @param {any} n @param {number} showS */
   function showNow(n, showS) {
     if (n.n) dispatch(/** @type {any} */ ({ type: 'journal.noteShown', n: n.n }));
-    const b = document.createElement('button');
-    b.type = 'button';
-    b.className = 'ebb-notes__note';
-    b.textContent = n.text;
-    if (n.notice) b.tabIndex = -1;
-    else {
-      b.title = 'Open the journal';
-      b.addEventListener('click', () => dispatch(n.sp ? { type: 'ui.journal', open: true, page: n.sp } : { type: 'ui.journal', open: true, view: 'notes' }));
-    }
+    const b = noteEl(n);
     root.insertBefore(b, moreBtn.isConnected ? moreBtn : null);
     requestAnimationFrame(() => b.classList.add('is-shown'));
     setTimeout(() => {
       b.classList.add('is-leaving');
       b.classList.remove('is-shown');
       setTimeout(() => b.remove(), 700);
-    }, showS * 1000);
+    }, Math.max(showS, canShow(n) ? N.showMeS ?? 0 : 0) * 1000);
+  }
+
+  /**
+   * Does this note say an animal came, stayed or joined? Then it offers Show me, which rings the
+   * nearest one without moving the camera (src/world/journal/index.js showMe), so a player who
+   * cannot find what arrived is helped to look.
+   * @param {any} n
+   */
+  const canShow = (n) => !n.notice && !!n.sp && (N.showMeKinds ?? []).includes(n.kind);
+  /** A note on the island: a button that opens the journal, with Show me beside it when it offers one. @param {any} n */
+  function noteEl(n) {
+    const open = () => dispatch(n.sp ? { type: 'ui.journal', open: true, page: n.sp } : { type: 'ui.journal', open: true, view: 'notes' });
+    const text = document.createElement('button');
+    text.type = 'button';
+    text.textContent = n.text;
+    if (n.notice) text.tabIndex = -1;
+    else { text.title = 'Open the journal'; text.addEventListener('click', open); }
+    if (!canShow(n)) { text.className = 'ebb-notes__note'; return text; }
+    const row = document.createElement('div');
+    row.className = 'ebb-notes__note has-show';
+    text.className = 'ebb-notes__text';
+    const show = document.createElement('button');
+    show.type = 'button';
+    show.className = 'ebb-notes__show';
+    show.innerHTML = `${iconSvg('find')}<span>${esc(words.showMe?.button ?? 'Show me')}</span>`;
+    show.addEventListener('click', () => dispatch({ type: 'journal.showMe', sp: n.sp }));
+    row.append(text, show);
+    return row;
   }
   // Opening Notes reads them all: the line goes.
   const offUi = subscribe('journalUi', (/** @type {any} */ u) => { if (u?.open && u.view === 'notes' && more) { more = 0; renderMore(); } });

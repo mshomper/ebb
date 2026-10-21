@@ -40,6 +40,7 @@ Size and color come from CSS: set `width`/`height` on `.icon` and `color` on the
 | `sanddollars` | a round test from above with the five petals of its back: the sand dollar find |
 | `fungi` | a log on the ground line with its end ring, two bracket shelves on its near end and a small capped mushroom on top: autumn's fungi on logs find |
 | `orbweb` | spokes from a hub, two rounds of spiral, beads of dew on the outer round, two grass stems below: autumn's dewy orb webs find |
+| `moonjelly` | a low glassy bell from above, its margin scalloped in eight shallow lobes, four horseshoe rings showing through: the moon jelly find |
 | `loosestone` | a stone tipped up on one side, a dark gap under it: the naturalist's loose stones reward |
 | `lens` | a round glass with a glint on a short handle: the naturalist's hand lens reward |
 | `driftwood` | a bending branch at the water's edge with a broken stub and a knot, a ripple beyond: the naturalist's driftwood reward |

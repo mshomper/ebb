@@ -13,6 +13,10 @@ import { parseFindModel, joinParts } from '../src/world/finds/models.js';
 import { parseRig, posedMesh } from '../src/world/finds/rig.js';
 import { musselPair, musselBones } from '../src/world/finds/mussel.js';
 import { fungusMeshes } from '../src/world/finds/autumn-meshes.js';
+import { bakeBody } from '../src/world/creatures/body-bake.js';
+import { skeletonOf, skinWeights } from '../src/world/creatures/bodies.js';
+import { poseSkeleton, axisAngle } from '../src/world/creatures/pose.js';
+import { posePatrol } from '../src/world/creatures/patrol.js';
 
 const ROOT = new URL('..', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1');
 const recipe = JSON.parse(readFileSync(join(ROOT, 'recipes/species/finds.json'), 'utf8'));
@@ -64,7 +68,41 @@ const SUBJECTS = {
   'fungus-bracket': { mesh: fungi['bracket-0'], yaw: 0, pitch: 32 },
   'fungus-cap': { mesh: fungi['cap-0'], yaw: 0, pitch: 10 },
   'fungus-cap-lean': { mesh: fungi['cap-2'], yaw: 90, pitch: 10 },
+  // Animals with a blended-SDF body (recipes/species), posed as the game poses them at rest.
+  damselfly: { mesh: perchedBody('damselfly'), yaw: 90, pitch: 8 },
 };
+
+/**
+ * A flying species' body as it rests on a perch (patrol.js posePatrol: a damselfly's wings folded
+ * back along its abdomen), baked from its recipe and skinned to that pose.
+ * @param {string} id recipes/species/<id>.json
+ */
+function perchedBody(id) {
+  const rec = JSON.parse(readFileSync(join(ROOT, `recipes/species/${id}.json`), 'utf8'));
+  const body = rec.body;
+  const mesh = bakeBody(body, rec.bake.cellM);
+  const bones = skeletonOf(id, body.prims, body.bones ?? null);
+  const skin = skinWeights(body.prims, bones, mesh.vertices, mesh.count, body.skin?.blendM ?? 0.0025);
+  const moves = posePatrol(bones, /** @type {any} */ ({ mode: 'perch', phase: 0 }), rec.motion, [0, 0, 0, 1], axisAngle);
+  const B = new Float32Array(bones.length * 16);
+  poseSkeleton(bones, moves, B, 0);
+  const V = mesh.vertices;
+  for (let i = 0; i < mesh.count; i++) {
+    const p = [V[i * 9], V[i * 9 + 1], V[i * 9 + 2]], n = [V[i * 9 + 3], V[i * 9 + 4], V[i * 9 + 5]];
+    const P = [0, 0, 0], N = [0, 0, 0];
+    for (let j = 0; j < 4; j++) {
+      const w = skin.weights[i * 4 + j] / 255, o = skin.joints[i * 4 + j] * 16;
+      if (!w) continue;
+      for (let r = 0; r < 3; r++) {
+        P[r] += w * (B[o + r] * p[0] + B[o + 4 + r] * p[1] + B[o + 8 + r] * p[2] + B[o + 12 + r]);
+        N[r] += w * (B[o + r] * n[0] + B[o + 4 + r] * n[1] + B[o + 8 + r] * n[2]);
+      }
+    }
+    const l = Math.hypot(...N) || 1;
+    V.set([...P, N[0] / l, N[1] / l, N[2] / l], i * 9);
+  }
+  return mesh;
+}
 
 /** The mussel's pair, gaping as it does under water (src/world/finds/mussel.js). @param {any} M */
 function musselOpen(M) {
