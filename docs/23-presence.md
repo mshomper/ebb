@@ -188,12 +188,12 @@ A spot above high tide: a bedroll or small tent, a firepit, a kettle, a lantern 
 /**
  * @typedef {Object} PresenceSource
  * @property {string} id
- * @property {'camera'|'seat'|'walker'|'camp'} kind   only 'camera' in the slice
+ * @property {'camera'|'walker'|'camp'} kind          only 'camera' in the slice
  * @property {[number, number, number]} pos           world meters
  * @property {number} speed                           m/s
  * @property {boolean} editing                        a sculpt, pour or plant stroke near pos
  * @property {number} stillS                          seconds since it last moved
- * @property {'stand'|'kneel'|'sit'|'lie'} [posture]  walker and seat
+ * @property {'stand'|'kneel'|'sit'} [posture]        walker
  * @property {[number, number] | null} [gazeAt]       walker
  * @property {boolean} [light]                        lantern or fire, at night
  * @property {boolean} [onPath]                       walker
