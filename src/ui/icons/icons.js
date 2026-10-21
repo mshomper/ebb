@@ -524,6 +524,17 @@ const ICONS = {
     <circle cx="12" cy="5.6" r="1.4"/>
     <path d="M12 7V21.5"/>
     <path d="M11 8.2C11 7.4 13 7.4 13 8.2V11.6C13 12.4 11 12.4 11 11.6Z"/>`,
+  // Azure damselfly (M2 season marker): from the side, resting on a reed stem, its slim banded body
+  // level and its wings folded back together over it.
+  damselfly: `
+    <path d="M19.8 21.5C19.4 15 19.6 8.5 20.4 2.5"/>
+    <path ${ACCENT} d="M14.4 10.4C11.6 8.2 7.4 7.6 5.4 8.4C7 9.6 11 10.4 14.4 10.4Z"/>
+    <path d="M14.4 10.4C11.6 8.2 7.4 7.6 5.4 8.4C7 9.6 11 10.4 14.4 10.4"/>
+    <circle cx="17.2" cy="11.6" r="1.3"/>
+    <path d="M13 11.4C13 10.6 15.6 10.6 15.6 11.6C15.6 12.6 13 12.8 13 12Z"/>
+    <path d="M13 11.9H2.5"/>
+    <path d="M5 11V12.8M7.6 11V12.8M10.2 11V12.8"/>
+    <path d="M14 12.6L16 15.2L19.5 15.6"/>`,
   // Minnows (M2): a small fish under the water line, a ring above where one rose.
   minnow: `
     <path d="M2.5 7.5C4 6.5 5.5 8.5 7 7.5S10 6.5 11.5 7.5M15 7.5H21.5"/>
