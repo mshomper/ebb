@@ -1252,6 +1252,10 @@ export async function startApp(canvas, hooks = {}) {
     const clears = pieces.clears(camera.target);
     grassPass.setClears(clears);
     rushPass.setClears(clears);
+    // Grass and rushes bend away from the walker's feet and body (W6).
+    const pushes = walk.pushes();
+    grassPass.setPushes(pushes);
+    rushPass.setPushes(pushes);
     // Wet-to-dry grass (lush.js): the ground's grass layer takes the blades' tint this season.
     terrainPass.setLush(grassRecipe.lush ? lushLook(grassRecipe, bladeFrame.season) : null);
     rushPass.update(bladeFrame);

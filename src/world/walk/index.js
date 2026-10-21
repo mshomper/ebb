@@ -67,6 +67,10 @@ export function createWalk(o) {
       ground(cx + r[0] * a * w * 0.65 + f[0] * b * l * 0.6, cz + r[1] * a * w * 0.65 + f[1] * b * l * 0.6));
   };
   /** @type {WeakMap<object, number[]>} */ const printCorners = new WeakMap();
+  // Grass underfoot (W6): the last few steps, with when they landed (seconds of walking time).
+  const GR = o.figure.grass;
+  /** @type {{ x: number, z: number, t: number }[]} */ let steps = [];
+  let walkT = 0;
 
   let below = false;
   /** Look (W4): while on, a tap names what it lands on instead of walking there. */
@@ -224,6 +228,17 @@ export function createWalk(o) {
       return below && walker.placed ? [walker.x, walker.y + (H[walker.posture] ?? H.stand), walker.z] : null;
     },
 
+    /**
+     * Where your figure presses the grass now (W6): under the body, and where the last steps
+     * landed, each easing off as the blades spring back. For the grass and rush passes.
+     * @returns {{ x: number, z: number, r: number, k: number }[]}
+     */
+    pushes() {
+      if (!walker.placed || !figure) return [];
+      const body = { x: walker.x, z: walker.z, r: walker.posture === 'sit' ? GR.sitM : GR.bodyM, k: 0.9 };
+      return [body, ...steps.map((s) => ({ x: s.x, z: s.z, r: GR.footM, k: Math.max(0, 1 - (walkT - s.t) / GR.springS) }))];
+    },
+
     /** Go back up over where you stand; the figure stays. */
     up() {
       if (!below) return;
@@ -269,6 +284,7 @@ export function createWalk(o) {
       // The figure: posed from the walker (where, how fast, posture), the ground and water under
       // each foot, and where you look below. Each step that lands is a footfall (for footsteps by
       // ground, doc 17).
+      walkT += realDt;
       // Prints age with game time; the tide takes the ones it covers.
       const hours = o.hours();
       const live = prints.update(hours, water.tide);
@@ -285,8 +301,10 @@ export function createWalk(o) {
       for (const f of falls) {
         const p = prints.step(f, hours);
         if (p) printCorners.set(p, corners(p));
+        steps.push({ x: f.x, z: f.z, t: walkT });
         emitDeferred('walk:footfall', f);
       }
+      if (steps.length > 3) steps = steps.slice(-3);
     },
 
     dispose() { offStroke(); },
