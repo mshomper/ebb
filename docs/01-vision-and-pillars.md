@@ -47,7 +47,7 @@ flowchart LR
 ### Non-goals
 
 - No combat, predators hunting the player's creatures, disasters or anything that destroys progress.
-- No crafting trees, resource counters or inventory management.
+- No crafting trees, resource counters or inventory management. *(Changed October 21, 2026, to make room for keepsakes, `docs/future/12-keepsakes-and-nets.md`.)* Two things come close to this line on purpose. Nets are made and mended from what the island **grows** (rushes, driftwood, loose stones), and nothing is spent or counted. A **shelf of 16** holds the keepsakes the player chooses: it is a choice of what is special, not storage, and there is nothing beyond it.
 - No multiplayer in v1. Sharing happens by exporting a world file or a photo.
 - No large human settlements. A lantern is a highlight, not a city.
 - No monetization design. ebb is a personal project.

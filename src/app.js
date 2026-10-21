@@ -46,7 +46,15 @@ import { bakeBody } from './world/creatures/body-bake.js';
 import { previewSpots } from './world/creatures/preview-spots.js';
 import { createCreatures } from './world/creatures/index.js';
 import { createFinds } from './world/finds/index.js';
+import { createKeepsakes } from './world/keepsakes/index.js';
+import { keepsakeWords } from './world/keepsakes/families/index.js';
+import { cleanShelf, keep as keepShelf, letGo as letGoShelf, readLetter, swap as swapShelf } from './world/keepsakes/shelf.js';
+import { chooseLetter } from './world/keepsakes/letters.js';
 import { createPieces } from './world/pieces/index.js';
+import { createAutumn } from './world/finds/autumn-live.js';
+import { moodsOf, mistyAutumnMorning, autumnStartOf } from './world/finds/autumn.js';
+import { HABITAT_CELLS, HABITAT_ORIGIN } from './world/growth/habitat.js';
+import { waterCellOf } from './world/water/grid.js';
 import { shorePresence } from './world/journal/shore-presence.js';
 import { createPresence } from './world/creatures/presence.js';
 import { cleanName, nameFrog } from './world/creatures/trust.js';
@@ -139,6 +147,8 @@ export async function startApp(canvas, hooks = {}) {
     if (back.music) updateStore('music', () => back.music);
     // Placed loose stones (src/world/pieces).
     updateStore('pieces', () => back.pieces);
+    // The shelf of keepsakes (src/world/keepsakes/shelf.js).
+    updateStore('keepsakes', () => back.keepsakes);
   }
   // Device settings (src/save/prefs.js): kept on this device, never in the island.
   const prefs = loadPrefs();
@@ -199,6 +209,12 @@ export async function startApp(canvas, hooks = {}) {
   // `?damselflies=N` starts on the last day of spring (day 13): the first ones climb out at 0.9.
   const testDay = params.has('dragonflies') ? '15' : params.has('damselflies') ? '13' : params.has('frogs') ? '6' : '0';
   const startDay = Math.max(0, Number.parseInt(params.get('day') ?? testDay, 10) || 0);
+  // `?autumn` (testing, unsaved): a new world starts on its first misty autumn morning with fungi
+  // grown (src/world/finds/autumn.js), and a kept log is laid near the view once the island is up.
+  const autumnRecipe = await loadRecipe('species/autumn-finds');
+  const autumnMoods = (/** @type {number} */ lean) => moodsOf(subSeed(seed, 'weather'), lean, seasonsRecipe.weather);
+  const autumnDay = params.has('autumn') ? mistyAutumnMorning({ fromDay: 0, moodOf: autumnMoods(0), F: autumnRecipe.fungi }) : null;
+  if (clock.worldT() === 0 && autumnDay !== null) clock.reset((autumnRecipe.webs.testHour + 24 * autumnDay) * clock.SECONDS_PER_HOUR);
   // `?hour=H` (testing, unsaved) starts a new world at that hour of the day: low water falls at 6
   // and 18, so `?sandbar&hour=7` opens in early light with the bar dry and the tide rising.
   const startHour = Math.min(23.9, Math.max(0, Number.parseFloat(params.get('hour') ?? '') || (skyRecipe.orbit.startHour ?? 10)));
@@ -245,13 +261,15 @@ export async function startApp(canvas, hooks = {}) {
   if (params.has('damselflies')) speciesRecipes.damselfly = testRecipe(speciesRecipes.damselfly);
   world.env.recipes.species = speciesRecipes;
   updateStore('world', () => world.state);
-  const unHour = on('clock:hour', (/** @type {{ hour: number }} */ p) => {
-    const events = sim.hourlyTick(p.hour);
+  /** One game hour of the shared tick, live. @param {number} hour */
+  function tickHour(hour) {
+    const events = sim.hourlyTick(hour);
     for (const e of events) emitDeferred(e.name, e.payload);
     updateStore('world', () => world.state);
     // The hour as a whole, for watchers of the world such as the journal (src/world/journal).
-    emitDeferred('world:ticked', { hour: p.hour, events, state: world.state });
-  });
+    emitDeferred('world:ticked', { hour, events, state: world.state });
+  }
+  const unHour = on('clock:hour', (/** @type {{ hour: number }} */ p) => tickHour(p.hour));
 
   const camera = createOrbitCamera(camRecipe);
   if (back?.view) camera.setPose(back.view);   // the view you left
@@ -381,6 +399,21 @@ export async function startApp(canvas, hooks = {}) {
     weather: () => ({ weatherSeed: world.env.weatherSeed, weather: seasonsRecipe.weather, state: world.state?.weather }) });
   sim.addSystem(finds);
   terrainPass.setCasts(finds.casts(), finds.castShape);
+  // Keepsakes (docs/future/12): one-of-a-kind trinkets each high tide leaves on its strandline, a
+  // few for the whole island. They come with the shells (the naturalist's reward at three finds);
+  // `?keepsakes` (testing, unsaved) shows them at once, several to a tide.
+  const keepsakesRecipe = await loadRecipe('world/keepsakes');
+  const keepsakeTest = params.has('keepsakes');
+  // Sheltered coves catch more of them (the cove field, src/world/water/cove.js).
+  const keepsakes = createKeepsakes({ water, shore: ww.shore, terrain, camera, recipe: keepsakesRecipe, passRecipe: findsRecipe,
+    seed: subSeed(seed, 'keepsakes'), tide: waterRecipe.tide, test: keepsakeTest, coveRecipe: await loadRecipe('world/cove'),
+    on: () => keepsakeTest || !!getStore('unlocks')?.shells });
+  const keepsakesApi = { ...keepsakes, words: (/** @type {any} */ n) => keepsakeWords(n, keepsakesRecipe) };
+  // Bottle letters (recipes/world/bottle-messages.json): which letter a bottle on the beach turned
+  // out to hold, once read, so reading it again (or keeping it) gives the same one.
+  const bottleMessages = await loadRecipe('world/bottle-messages');
+  /** @type {Map<string, string>} */ const shoreLetters = new Map();
+  sim.addSystem(keepsakes);
   // Placed pieces (doc 09, docs/future/10): loose stones, set with Sculpt's Loose stone mode and
   // lifted with a tap; a handful comes by itself with the naturalist's reward (src/world/pieces).
   // Driftwood washes up on the strandline after high tides (the reward at ten finds), and the
@@ -392,6 +425,50 @@ export async function startApp(canvas, hooks = {}) {
   // the camera glides down behind you; a tap walks you there. Go up glides back over you.
   const walk = createWalk({ recipe: await loadRecipe('world/walker'), terrain, water, camera, tide: waterRecipe.tide,
     hours: () => clock.display() / clock.SECONDS_PER_HOUR, creatures: () => creatures.frogs() });
+  // Autumn's season markers (doc 13; src/world/finds/autumn-live.js): fungi on the kept logs, and
+  // dewy webs in the tall grass on misty mornings. Tapping either is a find.
+  const autumn = createAutumn({ world, terrain, water, camera, pieces, growth, recipe: autumnRecipe, seasons: seasonsRecipe, seed });
+  sim.addSystem(autumn);
+  finds.addSource(autumn.shown);
+
+  /**
+   * A dry, grassy ground point near the view's middle, out of the tide, for a test log: on a widening
+   * spiral, the first where no water stands and the grass is thick. @returns {number[] | null}
+   */
+  function testLogSpot() {
+    const t = camera.target, grass = world.state?.growth?.grass;
+    for (let k = 0; k < 400; k++) {
+      const r = 0.6 + k * 0.03, a = k * 2.399;
+      const x = t[0] + Math.cos(a) * r, z = t[2] + Math.sin(a) * r;
+      if ((water.sampleLive?.(x, z)?.depth ?? 0) > 0 || (water.sampleLive?.(x + 1, z)?.depth ?? 0) > 0 || (water.sampleLive?.(x - 1, z)?.depth ?? 0) > 0) continue;
+      const i = Math.floor(x - HABITAT_ORIGIN), j = Math.floor(z - HABITAT_ORIGIN);
+      if (grass && !(grass[j * HABITAT_CELLS + i] > 120)) continue;
+      const s = water.getSummary?.();
+      const wi = waterCellOf(x) - (s?.rect.x ?? 0), wj = waterCellOf(z) - (s?.rect.y ?? 0);
+      if (s && wi >= 0 && wj >= 0 && wi < s.rect.w && wj < s.rect.h && s.band[wj * s.rect.w + wi]) continue;
+      return [x, z];
+    }
+    return null;
+  }
+  /** Keep a log near the view as if carried there before this autumn (the fungi's test). @param {number} [x] @param {number} [z] */
+  function keepTestLog(x, z) {
+    const at = x === undefined || z === undefined ? testLogSpot() : [x, z];
+    if (!at) return null;
+    const day = Math.floor(clock.hourIndex() / 24), a0 = autumnStartOf(day);
+    const F = autumnRecipe.fungi;
+    return pieces.debugKeepLog(at[0], at[1], a0 === null ? F.restDays + 1 : day - a0 + F.restDays + 1);
+  }
+  // `?autumn`: once the water and the grass are up, a kept log near the view, and the camera looks at it.
+  if (autumnDay !== null) {
+    let laid = false, wait = 0;
+    sim.addSystem({ id: 'autumn-test', tick(/** @type {any} */ f) {
+      if (laid || !water.sim.live || !world.state?.growth?.grass || (wait += f.realDt) < 2) return;
+      laid = true;
+      const id = keepTestLog();
+      const log = pieces.keptLogs().find((/** @type {any} */ l) => l.id === id);
+      if (log) camera.focus(log.x, log.z, 2.6, 28);
+    } });
+  }
   // `?frogscale` (ahead of S6): real-size frogs from the species recipe around the pond, and a
   // camera that may come close, to judge creature size on the island (src/ui/frog-scale.js).
   const frogScale = params.has('frogscale') ? await createFrogScale() : null;
@@ -444,7 +521,10 @@ export async function startApp(canvas, hooks = {}) {
     walk.pass,
     ...schools.map((s) => s.pass),
     finds.pass,
+    keepsakes.pass,
     pieces.pass,
+    // Autumn's fungi (a creature pass) and dewy webs, after the logs and the grass they are on.
+    ...autumn.passes,
     // Moon jellyfish on the summer strandline: clear, so drawn over the opaque things behind them.
     ...(finds.jellyPass ? [finds.jellyPass] : []),
     ...(frogScale ? [frogScale.pass] : []),
@@ -732,6 +812,75 @@ export async function startApp(canvas, hooks = {}) {
         pieces.cancelCarry();
         updateStore('identify', () => null);
         break;
+      // A keepsake's card: Leave it to the sea (docs/future/12). It goes, and the next tide takes it.
+      case 'keepsakes.leave':
+        keepsakes.leave(a.id);
+        updateStore('identify', () => null);
+        emitDeferred('keepsake:sound', { name: 'leave' });
+        break;
+      // Keep it: onto the shelf (src/world/keepsakes/shelf.js), and off the shore. A full shelf
+      // opens in the journal and asks which one to let go; nothing is kept until you choose.
+      case 'keepsakes.keep': {
+        const k0 = keepsakes.toKeep(a.id);
+        if (!k0) break;
+        // A bottle whose letter was read on the beach keeps that letter.
+        const k = shoreLetters.has(a.id) ? { ...k0, letter: shoreLetters.get(a.id) } : k0;
+        const r = keepShelf(cleanShelf(getStore('keepsakes')), k);
+        if (r.kept) {
+          updateStore('keepsakes', () => r.state);
+          keepsakes.leave(a.id);
+          updateStore('identify', () => null);
+          emitDeferred('keepsake:sound', { name: k.n.family === 'bottle' ? 'keep-glass' : 'keep' });
+        } else {
+          updateStore('shelfPending', () => ({ shoreId: a.id, ...k }));
+          updateStore('identify', () => null);
+          updateStore('journalUi', (u) => ({ ...(u ?? {}), open: true, view: 'shelf', page: null }));
+        }
+        break;
+      }
+      case 'keepsakes.swap': {
+        const p = getStore('shelfPending');
+        if (!p) break;
+        updateStore('keepsakes', (s) => swapShelf(cleanShelf(s), a.out, p));
+        keepsakes.leave(p.shoreId);
+        updateStore('shelfPending', () => null);
+        emitDeferred('keepsake:sound', { name: p.n?.family === 'bottle' ? 'keep-glass' : 'keep' });
+        break;
+      }
+      case 'keepsakes.letGo':
+        updateStore('keepsakes', (s) => letGoShelf(cleanShelf(s), a.id));
+        emitDeferred('keepsake:sound', { name: 'leave' });
+        break;
+      case 'keepsakes.cancelKeep':
+        updateStore('shelfPending', () => null);
+        break;
+      // Read a bottle's letter (src/world/keepsakes/letters.js), on the beach (shoreId) or on the
+      // shelf (entryId). Its letter is chosen the first time it is read, then kept with it; every
+      // letter read is kept with the shelf to read again, and the journal opens on it.
+      case 'keepsakes.read': {
+        const s0 = cleanShelf(getStore('keepsakes'));
+        const entry = a.entryId !== undefined ? s0.shelf.find((e) => e.id === a.entryId) : null;
+        const k = entry ?? (a.shoreId ? keepsakes.toKeep(a.shoreId) : null);
+        if (!k || k.n.family !== 'bottle' || !k.n.message) break;
+        let id = entry?.letter ?? (a.shoreId ? shoreLetters.get(a.shoreId) : undefined);
+        if (!id) {
+          const season = ['spring', 'summer', 'autumn', 'winter'][clock.seasonOf(k.hour * 3600).index];
+          id = chooseLetter(k.n.messageIndex, { rarity: k.n.rarity, season, hour: clock.worldT() / 3600, read: s0.letters },
+            bottleMessages, keepsakesRecipe.rarity.order)?.id;
+        }
+        if (!id) break;
+        const letter = id;
+        if (a.shoreId) shoreLetters.set(a.shoreId, letter);
+        updateStore('keepsakes', (s) => {
+          const c = readLetter(cleanShelf(s), letter);
+          return entry ? { ...c, shelf: c.shelf.map((e) => (e.id === entry.id ? { ...e, letter } : e)) } : c;
+        });
+        updateStore('identify', () => null);
+        updateStore('shelfUi', () => ({ letter }));
+        updateStore('journalUi', (u) => ({ ...(u ?? {}), open: true, view: 'shelf', page: null }));
+        emitDeferred('keepsake:sound', { name: 'letter' });
+        break;
+      }
       case 'ui.identify':
         pieces.cancelCarry();
         break;
@@ -1051,7 +1200,7 @@ export async function startApp(canvas, hooks = {}) {
       build: hooks.build ?? 'dev', seed, island: island.id, worldT: clock.worldT(), flow: clock.flow(),
       carryMinutes: getStore('meta')?.carryMinutes ?? 0, keepGrowing: getStore('meta')?.keepGrowing ?? true,
       world: world.state, journal: getStore('journal'), water: getStore('water'), unlocks: getStore('unlocks')?.earned ?? {},
-      view: camera.pose(), looks: getStore('looks') ?? {}, music: getStore('music') ?? { hearted: [] }, pieces: getStore('pieces'), chunks: getStore('chunks'), mirror: getStore('terrainLive')?.mirror ?? null,
+      view: camera.pose(), looks: getStore('looks') ?? {}, music: getStore('music') ?? { hearted: [] }, pieces: getStore('pieces'), keepsakes: getStore('keepsakes'), chunks: getStore('chunks'), mirror: getStore('terrainLive')?.mirror ?? null,
     }),
   });
 
@@ -1103,26 +1252,43 @@ export async function startApp(canvas, hooks = {}) {
     creatures,
     /** The finds near the view (the journal asks it what a tap landed on). */
     finds,
+    /** The keepsakes on the strandline (the journal asks it what a tap landed on). */
+    keepsakes: keepsakesApi,
     /** The placed loose stones (the journal asks which one a tap landed on). */
     pieces,
-    /** The shore zones and rock pools now (the journal's Web shows which are on the island). */
-    shorePresence: () => shorePresence(ww.shore.zones(), water.getSummary(), getStore('terrainLive')?.mirror?.material ?? null),
-    /** Every live animal system's hooks for the reveal on return (src/ui/reveal.js). */
-    animals: [creatures.reveal, midges.reveal, ...schools.map((s) => s.reveal)],
-    /** The live schools (minnows), the journal asks them what a tap landed on. */
-    schools,
-    /** The live midge swarms (tools). */
-    midges,
+    /** Autumn's fungi and webs (counts() for tools). */
+    autumn,
     /** The walker: the walk grid, your feet, Go down and Go up (tools and testing). */
     walk,
     /**
-     * Testing under `?debug` (window.ebb.debug): skip ahead to a time of year, every hour between
-     * run by the hourly tick as usual (it may take a few seconds), and bring a settled group of a
-     * school or swarm species at once, as its test link does.
+     * Testing helpers, on window.ebb with `?debug`: autumn's misty morning and kept logs, skipping to
+     * a time of year, and bringing a settled school or swarm. They change this island's time and
+     * pieces, so use them on a test link (such as `?debug&autumn`, unsaved) to leave your own island alone.
      */
     debug: {
       /**
-       * Skip to the next day `day` of the year (0..55; 13 is the last day of spring) at `hour`.
+       * Jump to the next misty autumn morning on which fungi have grown in (autumn.js
+       * mistyAutumnMorning), at the webs' test hour, and run that hour so its weather is the day's.
+       * @returns {number | null} the game day, or null if none was found
+       */
+      autumnMorning() {
+        const lean = world.state?.weather?.lean ?? 0;
+        const day = mistyAutumnMorning({ fromDay: Math.floor(clock.hourIndex() / 24) + 1, moodOf: autumnMoods(lean), F: autumnRecipe.fungi });
+        if (day === null) return null;
+        clock.skip((autumnRecipe.webs.testHour + 24 * day) * clock.SECONDS_PER_HOUR - clock.worldT());
+        tickHour(clock.hourIndex());
+        return day;
+      },
+      /**
+       * Keep a log at a ground point (or near the view's middle) as if carried there before this
+       * autumn, so it fruits in autumn. @param {number} [x] @param {number} [z] @returns {string | null} its id
+       */
+      keptLog: (x, z) => keepTestLog(x, z),
+      /** How many fungi and webs are drawn now, and the webs' dew. */
+      autumn: () => autumn.counts(),
+      /**
+       * Skip to the next day `day` of the year (0..55; 13 is the last day of spring) at `hour`,
+       * every hour between run by the hourly tick as usual (it may take a few seconds).
        * @param {number} day @param {number} [hour]
        */
       skipTo(day, hour = 10) {
@@ -1131,7 +1297,7 @@ export async function startApp(canvas, hooks = {}) {
         clock.skip(want > at ? want - at : want + year - at);
         return clock.season();
       },
-      /** A settled group of `count` comes now (species id: minnow, dragonfly, damselfly). @param {string} id @param {number} [count] */
+      /** A settled group of `count` comes now (species id: minnow, dragonfly, damselfly), as its test link does. @param {string} id @param {number} [count] */
       summon(id, count = 8) {
         const rec = speciesRecipes[id];
         if (rec?.ecology?.kind !== 'swarm') return false;
@@ -1144,6 +1310,14 @@ export async function startApp(canvas, hooks = {}) {
         return this.summon('damselfly', count);
       },
     },
+    /** The shore zones and rock pools now (the journal's Web shows which are on the island). */
+    shorePresence: () => shorePresence(ww.shore.zones(), water.getSummary(), getStore('terrainLive')?.mirror?.material ?? null),
+    /** Every live animal system's hooks for the reveal on return (src/ui/reveal.js). */
+    animals: [creatures.reveal, midges.reveal, ...schools.map((s) => s.reveal)],
+    /** The live schools (minnows), the journal asks them what a tap landed on. */
+    schools,
+    /** The live midge swarms (tools). */
+    midges,
     presence,
     /** The orbit camera, for tools and checks (eye, target, distance). */
     camera,

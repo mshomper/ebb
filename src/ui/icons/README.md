@@ -38,6 +38,8 @@ Size and color come from CSS: set `width`/`height` on `.icon` and `color` on the
 | `pondskaters` | a slim body from above, short front legs and four long legs splayed out, a ring under each long foot where it dimples the water: the pond skaters find |
 | `mussels` | a long wedge of shell from the side, hinged at the narrow end, the seam between its valves gaping a little: the common mussel find |
 | `sanddollars` | a round test from above with the five petals of its back: the sand dollar find |
+| `fungi` | a log on the ground line with its end ring, two bracket shelves on its near end and a small capped mushroom on top: autumn's fungi on logs find |
+| `orbweb` | spokes from a hub, two rounds of spiral, beads of dew on the outer round, two grass stems below: autumn's dewy orb webs find |
 | `moonjelly` | a low glassy bell from above, its margin scalloped in eight shallow lobes, four horseshoe rings showing through: the moon jelly find |
 | `loosestone` | a stone tipped up on one side, a dark gap under it: the naturalist's loose stones reward |
 | `lens` | a round glass with a glint on a short handle: the naturalist's hand lens reward |

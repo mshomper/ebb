@@ -31,6 +31,7 @@
     "ripples": { "label": "Rippled sand", "kind": "ground", "icon": "ripples", "on": "ripples" },
     "wetSand": { "label": "Wet sand", "kind": "ground", "icon": "wetsand", "on": "wetSand" },
     "mud": { "label": "Tidal mud", "kind": "ground", "icon": "mud", "on": "mud" },
+    "logs": { "label": "Driftwood", "kind": "ground", "icon": "driftwood", "flag": "driftwood:lifted" },
     "grass": { "label": "Grass", "kind": "plants", "icon": "grass", "page": "grass" },
     "rushes": { "label": "Rushes", "kind": "plants", "icon": "rushes", "page": "rushes" },
     "reeds": { "label": "Reeds", "kind": "plants", "icon": "reeds", "page": "reeds" },
@@ -52,6 +53,8 @@
     "pondskaters": { "label": "Pond skaters", "kind": "small", "icon": "pondskaters", "page": "pondskaters" },
     "mussels": { "label": "Common mussels", "kind": "small", "icon": "mussels", "page": "mussels" },
     "sanddollars": { "label": "Sand dollars", "kind": "small", "icon": "sanddollars", "page": "sanddollars" },
+    "fungi": { "label": "Fungi on logs", "kind": "small", "icon": "fungi", "page": "fungi" },
+    "webs": { "label": "Dewy orb webs", "kind": "small", "icon": "orbweb", "page": "webs" },
     "moonjelly": { "label": "Moon jellyfish", "kind": "small", "icon": "moonjelly", "page": "moonjelly" },
     "frogs": { "label": "Frogs", "kind": "animals", "icon": "frog", "page": "frogs", "flag": "frogs:seen" },
     "midges": { "label": "Midges", "kind": "animals", "icon": "midges", "page": "midges", "flag": "midges:seen" },
@@ -144,6 +147,11 @@
     { "a": "rushes", "b": "damselflies", "ink": "flag:damselflies:seen&seen:rushes", "note": "Damselflies perch low on the rushes too." },
     { "a": "midges", "b": "damselflies", "ink": "flag:damselflies:seen&flag:midges:seen", "note": "Damselflies pick midges out of the air among the stems." },
     { "a": "damselflies", "b": "dragonflies", "ink": "flag:damselflies:seen&flag:dragonflies:seen", "note": "Dragonflies catch damselflies on the wing." },
-    { "a": "you", "b": "minnows", "ink": "flag:you:fed:minnows", "note": "The minnows ate the crumbs you scattered." }
+    { "a": "you", "b": "minnows", "ink": "flag:you:fed:minnows", "note": "The minnows ate the crumbs you scattered." },
+    { "a": "strandline", "b": "logs", "ink": "flag:driftwood:lifted", "note": "Driftwood comes ashore on the strandline." },
+    { "a": "logs", "b": "fungi", "ink": "seen:fungi", "note": "Fungi fruit on a log that lies still, out of the tide." },
+    { "a": "you", "b": "fungi", "ink": "seen:fungi", "note": "Fungi came to a log you carried up from the shore." },
+    { "a": "grass", "b": "webs", "ink": "seen:webs", "note": "Orb webs hang in the tall grass." },
+    { "a": "midges", "b": "webs", "ink": "seen:webs&flag:midges:seen", "note": "Midges and small flies are caught in the webs." }
   ]
 }

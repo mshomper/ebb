@@ -1,0 +1,97 @@
+{
+ "asset": {
+  "version": "2.0",
+  "generator": "ebb tools/bake-find-model.mjs",
+  "extras": {
+   "author": "SomeGuyUsingBlender (https://sketchfab.com/SomeGuyUsingBlender)",
+   "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+   "source": "https://sketchfab.com/3d-models/artillery-shell-ea28a6a5dc554a6a92653a80b9acca34",
+   "title": "Artillery Shell"
+  }
+ },
+ "scene": 0,
+ "scenes": [
+  {
+   "nodes": [
+    0
+   ]
+  }
+ ],
+ "nodes": [
+  {
+   "mesh": 0,
+   "name": "old-bullet"
+  }
+ ],
+ "meshes": [
+  {
+   "name": "old-bullet",
+   "primitives": [
+    {
+     "attributes": {
+      "POSITION": 1,
+      "COLOR_0": 2
+     },
+     "indices": 0,
+     "mode": 4
+    }
+   ]
+  }
+ ],
+ "buffers": [
+  {
+   "byteLength": 32976,
+   "uri": "old-bullet.bin"
+  }
+ ],
+ "bufferViews": [
+  {
+   "buffer": 0,
+   "byteOffset": 0,
+   "byteLength": 16464,
+   "target": 34963
+  },
+  {
+   "buffer": 0,
+   "byteOffset": 16464,
+   "byteLength": 8256,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteOffset": 24720,
+   "byteLength": 8256,
+   "target": 34962
+  }
+ ],
+ "accessors": [
+  {
+   "bufferView": 0,
+   "componentType": 5125,
+   "count": 4116,
+   "type": "SCALAR"
+  },
+  {
+   "bufferView": 1,
+   "componentType": 5126,
+   "count": 688,
+   "type": "VEC3",
+   "min": [
+    -0.017500000074505806,
+    0,
+    -0.004132321570068598
+   ],
+   "max": [
+    0.017500000074505806,
+    0.008332539349794388,
+    0.004132321570068598
+   ]
+  },
+  {
+   "bufferView": 2,
+   "componentType": 5126,
+   "count": 688,
+   "type": "VEC3"
+  }
+ ]
+}

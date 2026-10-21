@@ -91,6 +91,7 @@ Slice acceptance, all together:
   4. Turtles arriving in summer.
   5. The shore birds (sand martins, turnstones, purple sandpipers), which may run into M3.
   6. Grey seals last, with the meadow islet's sandbar.
+- **Keepsakes and the shelf** (F12, agreed October 21, 2026): unnamed, procedurally generated trinkets on the strandline, rarer at spring tides and in coves the player carved, kept on a 16-slot shelf that is its own journal section. Then the general net at the naturalist's mark 12, with living catches released and given short pages. Built as small branches beside the season markers, starting with `tools/keepsake-lab.html` (branch `m2-keepsake-lab`). The light and sinker nets wait for the meadow and shore tier milestones.
 
 ### M3 — Meadow, seasons and the woodland knoll
 

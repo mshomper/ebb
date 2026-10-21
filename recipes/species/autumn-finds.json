@@ -1,0 +1,53 @@
+{
+  "type": "autumn-finds",
+  "version": 1,
+  "note": "Autumn's season markers (doc 13, The year, season by season; docs/future/11): two finds drawn in code, never saved, worked out from the world (src/world/finds/autumn.js, autumn-live.js). Both are tapped like any find and count on the naturalist's line (journal.json findOrder). nearM: they are only worked out within this distance of the view's middle; tapM and tapPerM: how near a tap must be (plus this much per meter of camera distance).\n\nfungi: small fungi fruit on kept logs (driftwood carried off the strandline and set down; src/world/pieces). A log may fruit once it has lain restDays out of the tide (never on a cell in the tide band) and the weather has been damp: on some autumn day from startDay (days into autumn), at least damp.days of the damp.lookDays days up to it were rain or mist (the days' weather records, worked out again from the weather seed, src/world/weather.js dayRecord). From that day each fungus grows in over growDays, starting up to spreadDays apart; in winter each fades over winter.fadeDays, up to winter.spreadDays apart, and none are left by spring. Which kind, how many clusters and where on the log is a seeded hash of the log's own seed, so a log fruits the same way on every device and in catch-up. turkeyShare: the share of logs that grow turkey tail brackets (the rest grow sulphur tuft). clustersPerM [min, max] clusters per meter of log (turkey tail clusters take the log's two flanks in turn), at least 1 and at most clustersMax; alongShare: how far along the log [from, to] a cluster may sit. turkeytail: count [min, max] brackets in a cluster, stacked up the log's flank in tiers tierDeg apart (each smaller than the one below by tierShrink), the cluster's lowest set flankDeg give or take jitterDeg above the side, spreadM how far apart along the log, embedM how far a bracket's back sits into the wood, yawDeg the most a bracket turns from square to the log, size [min, max] (a multiplier of the shape). sulphurtuft: count [min, max] caps in a tuft on the log's top half, the tuft's middle within topDeg of the top, caps spread spreadM along the log and spreadDeg round it, sinkM into the wood, size [min, max], the outer caps leaning out more (the meshes cap-0, cap-1, cap-2). scale: drawn size over real size (finds are drawn a little larger to be found). max: most fungi drawn at once. shape: the meshes (src/world/finds/autumn-meshes.js), at real size in meters, albedos linear and physical (the palette paints at tonemap): a turkey tail bracket is a thin shelf radiusM wide reaching depthShare of that out from the wood, thickM at its root thinning to its rim, drooping droopM and lifting at the lip by lipM, its rim waved by wave (count, share), with concentric zones of zoneAlbedos from the root out and pale pores beneath (poreAlbedo); a sulphur tuft is a cap capRadiusM wide and capHeightM high, sulphur yellow (capAlbedo) with a tawny middle (centerAlbedo), olive gills beneath (gillAlbedo) on a pale stem stemM long and stemRadiusM thick (stemAlbedo), leaning by leanDeg for the three meshes. look: the pass's sheen (roughness, strength): fungi are matte and a little damp.\n\nwebs: dewy orb webs in tall grass on misty autumn mornings. On a day whose weather is mist, in autumn, each square meter of the growth's grass cover at least minGrass (0..1) where the grass looks at least minLush lush (the taller grass by water, src/world/growth/lush.js) may hold a web with chance density, seeded by its cell and the day: a new set each misty morning. At most max are drawn, nearest the view first. A web is radiusM [min, max] across its hub to rim, its hub hubM [min, max] above its rim's foot, turned any way. dew 0..1 follows the mist: from dewMist[0] to dewMist[1] of mist it beads in, and as the mist lifts it fades; with no dew a web is not drawn and cannot be tapped. testHour: the hour of the day the `?autumn` test link and the ?debug jump (window.ebb.debug.autumnMorning) start at. shape: spokes radial threads, rounds of capture spiral from hubShare of the radius out, beads per spiral thread between two spokes, anchors threads out to the grass. look (src/shaders/web-draw.wgsl): threadM the silk's width (dew fuzz included), beadM a dew bead's radius at full dew, minPx the least a thread or bead is drawn across (fainter instead of thinner), silkAlbedo (linear) and glint (strength, exponent: the bright arc a sunlit thread throws round the sun's direction); bead: reflect (share of the sun a bead mirrors to every side), forward and forwardG (the bright forward scatter of a bead with the sun behind it), sky (a bead is a tiny lens that shows the bright sky: its brightness against the sky's, about 1), twinkle (how much each bead flickers as the web stirs); swayM how far the web billows in the air; spiderM and spiderAlbedo the garden spider at the hub.",
+  "nearM": 14,
+  "tapM": 0.08,
+  "tapPerM": 0.012,
+  "fungi": {
+    "restDays": 3,
+    "startDay": 2,
+    "damp": { "lookDays": 4, "days": 2, "moods": ["rain", "mist"] },
+    "growDays": 1.5,
+    "spreadDays": 1.5,
+    "winter": { "fadeDays": 3, "spreadDays": 4 },
+    "turkeyShare": 0.55,
+    "clustersPerM": [1.2, 2.6],
+    "clustersMax": 4,
+    "alongShare": [0.14, 0.86],
+    "scale": 1.4,
+    "max": 96,
+    "turkeytail": { "count": [3, 6], "tierDeg": 16, "tierShrink": 0.12, "flankDeg": 6, "jitterDeg": 12, "spreadM": 0.035, "embedM": 0.003, "yawDeg": 22, "size": [0.75, 1.15] },
+    "sulphurtuft": { "count": [3, 7], "topDeg": 50, "spreadM": 0.028, "spreadDeg": 22, "sinkM": 0.002, "size": [0.65, 1.2] },
+    "shape": {
+      "seed": 6113,
+      "bracket": {
+        "variants": 2, "radiusM": 0.03, "depthShare": 0.78, "thickM": 0.0042, "droopM": 0.0035, "lipM": 0.0012, "wave": [5, 0.08],
+        "zoneAlbedos": [[0.05, 0.035, 0.025], [0.2, 0.13, 0.07], [0.11, 0.115, 0.12], [0.28, 0.2, 0.12], [0.08, 0.075, 0.07], [0.5, 0.46, 0.38]],
+        "poreAlbedo": [0.52, 0.48, 0.38]
+      },
+      "cap": {
+        "capRadiusM": 0.014, "capHeightM": 0.009, "stemM": 0.03, "stemRadiusM": 0.0026, "leanDeg": [0, 14, 28],
+        "capAlbedo": [0.6, 0.46, 0.07], "centerAlbedo": [0.34, 0.14, 0.035], "gillAlbedo": [0.22, 0.22, 0.07], "stemAlbedo": [0.5, 0.42, 0.16]
+      }
+    },
+    "look": { "roughness": 0.55, "strength": 0.12 }
+  },
+  "webs": {
+    "minGrass": 0.5,
+    "minLush": 0.3,
+    "density": 0.035,
+    "max": 10,
+    "radiusM": [0.07, 0.12],
+    "hubM": [0.03, 0.07],
+    "dewMist": [0.05, 0.45],
+    "testHour": 7,
+    "shape": { "spokes": 18, "rounds": 13, "hubShare": 0.16, "beads": 3, "anchors": 3 },
+    "look": { "threadM": 0.00012, "beadM": 0.0006, "minPx": 1.1, "silkAlbedo": [0.8, 0.8, 0.78], "glint": [0.6, 40] },
+    "bead": { "reflect": 0.05, "forward": 0.35, "forwardG": 0.8, "sky": 1.0, "twinkle": 0.45 },
+    "swayM": 0.004,
+    "spiderM": 0.006,
+    "spiderAlbedo": [0.12, 0.08, 0.05]
+  }
+}

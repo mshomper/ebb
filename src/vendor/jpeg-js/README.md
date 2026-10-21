@@ -1,0 +1,1 @@
+jpeg-js 0.4.4 decoder (https://github.com/eugeneware/jpeg-js), BSD-3-Clause (LICENSE here); lib/decoder.js is derived from pdf.js / notmasteryet and keeps its Apache-2.0 header. Used only by tools/bake-find-model.mjs to read JPEG textures when baking models; the game never loads it.

@@ -8,11 +8,12 @@
 // carried off the strand is kept from then on, as a piece of kind 'log' (undoable, its own cap).
 // Keeps the saved store slice `pieces` (model.js PiecesState), the tool card's `piecesUi` slice and
 // `carry` (what is being carried, or null); listens for `piece:lifted` (src/world/journal) and the
-// unlocks. app.js routes taps here with ground points; this module never reads the pointer.
+// unlocks. app.js routes taps here with ground points; this module never reads the pointer. The kept
+// logs and their surfaces (keptLogs) are what autumn's fungi grow on (src/world/finds/autumn-live.js).
 
 import { get, update, subscribe } from '../../core/store.js';
 import { on } from '../../core/events.js';
-import { subSeed } from '../../core/rng.js';
+import { subSeed, hash32 } from '../../core/rng.js';
 import { hourIndex } from '../../core/clock.js';
 import { tideParams } from '../tide.js';
 import { packMesh } from '../creatures/bodies.js';
@@ -21,6 +22,7 @@ import { cleanPieces, makeStone, makeLog, addPiece, removePiece, movePiece, coun
   tipAngle, tipDone, stoneBone, leanBone, logBone, mul4 } from './model.js';
 import { stoneShapes, logShapes } from './meshes.js';
 import { strandLogs, cellHeights, strandMask } from './driftwood.js';
+import { logSurface } from './log-surface.js';
 
 /**
  * @param {{ terrain: any, water: any, camera: any, history: any, seed: number, recipe: any, ground: any, terrainRecipe: any,
@@ -360,6 +362,46 @@ export function createPieces(opts) {
 
     /** The strand logs lying now (tools and tests). */
     strandLogs: () => strandShown,
+
+    /**
+     * The kept logs (carried off the strand and set down), for what grows on them (autumn's fungi,
+     * src/world/finds/autumn-live.js): each with whether it lies still (not rolled by a tap, not
+     * being carried) and its surface (log-surface.js) as it lies at rest.
+     * @returns {{ id: string, seed: number, x: number, z: number, length: number, size: number, placedHour: number, still: boolean,
+     *   surface: (t: number, a: number) => { p: number[], n: number[] } }[]}
+     */
+    keptLogs() {
+      return state().list.filter((p) => p.kind === 'log').map((p) => {
+        const len = p.length ?? 1, a = p.size / len;
+        const bone = mul4(leanBone(...(/** @type {[number, number]} */ (slopeOf(p, Math.min(0.4, len * 0.3)))), D.lean), logBone(0, 1, a, D.sink));
+        const pose = { bone, size: len, yaw: p.yaw, at: [p.x, ground(p.x, p.z), p.z] };
+        const mesh = logs[p.seed % logs.length].mesh;
+        return { id: p.id, seed: p.seed, x: p.x, z: p.z, length: len, size: p.size, placedHour: p.placedHour,
+          still: !lifts.has(p.id) && carrying?.id !== p.id,
+          surface: (/** @type {number} */ t, /** @type {number} */ ang) => logSurface(mesh, D.shape.rings, D.shape.around, pose, t, ang) };
+      });
+    },
+
+    /**
+     * `?debug` (window.ebb.debug.keptLog): keep a log at a ground point as if carried there long ago
+     * (placedHour daysAgo game days back), its shape seeded from the point. Undoable like any set-down.
+     * @param {number} x @param {number} z @param {number} daysAgo @returns {string | null} its id, or null at the cap or in water
+     */
+    debugKeepLog(x, z, daysAgo) {
+      if ((water.sampleLive?.(x, z)?.depth ?? 0) > 0.02) return null;
+      const s = state();
+      const seed = hash32(driftSeed, Math.round(x * 100), Math.round(z * 100), 0xdeb) >>> 0;
+      const u = (/** @type {number} */ k) => (hash32(seed, k) >>> 8) / 16777216;
+      const log = { x, z, yaw: u(1) * 2 * Math.PI, seed, size: D.thickM[0] + (D.thickM[1] - D.thickM[0]) * (0.5 + 0.5 * u(2)),
+        length: D.lengthM[0] + (D.lengthM[1] - D.lengthM[0]) * (0.4 + 0.6 * u(3)) };
+      const piece = makeLog(s.nextId, log, hourIndex() - Math.round(daysAgo * 24));
+      const next = addPiece(s, piece, D.cap);
+      if (!next) return null;
+      update('pieces', () => next);
+      history.push({ kind: 'piece', bytes: 96, op: 'add', piece });
+      sync();
+      return piece.id;
+    },
 
     dispose() { offLift(); offSummary(); for (const off of offs) off(); },
   };

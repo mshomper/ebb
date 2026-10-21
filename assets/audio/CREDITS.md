@@ -100,3 +100,18 @@ Each bed is a looping take made from the stretch named, encoded as Ogg Opus 56 k
 - Source file as downloaded: `winter-snowfall-kinoton.wav`
 - `beds/air/winter-a.ogg` (and `.m4a`): stretch 0:50-1:37, high-pass 40 Hz, high-pass 3.5 kHz 6th order (removes city wash, 190 Hz hum, traffic swells), tick softener (peaks held to 12 dB over local level), looped (2 s equal-power), -30 LUFS, Opus 56 kbps
 - `beds/air/winter-b.ogg` (and `.m4a`): stretch 1:39-2:34, high-pass 40 Hz, high-pass 3.5 kHz 6th order (removes city wash, 190 Hz hum, traffic swells), tick softener (peaks held to 12 dB over local level), looped (2 s equal-power), -30 LUFS, Opus 56 kbps
+
+## Keepsake and net one-shots (`one-shots/keepsakes/`)
+
+Short takes cut from Freesound's high-quality MP3 previews (downloaded October 21, 2026, with Matt's OK), made mono, 5 ms fade in and a short fade out, peak-normalised to -3 dBFS, encoded as Ogg Opus 64 kbps with an AAC 96 kbps (.m4a) copy. Levels in play are in `recipes/audio/keepsakes.json`. All CC0 1.0.
+
+- **Digging in wet coarse sand (1)** by **f3bbbo**: https://freesound.org/people/f3bbbo/sounds/651292/ (0:00-0:00.37), layered under **Small Shell Hit** by **bassronin**: https://freesound.org/people/bassronin/sounds/771155/ (from 0:01.44, 0.32 s, 90 ms later, -2 dB) as `pickup`
+- **wood on wood light hit** by **matt_beer**: https://freesound.org/people/matt_beer/sounds/515314/ (from 0:00.12, 0.34 s) as `keep`
+- **Glass on wood table, clink** by **ValentinPetiteau**: https://freesound.org/people/ValentinPetiteau/sounds/610391/ (from 0:00.34, 0.46 s) as `keep-glass`
+- **Rock In Water Splash-Plop 3** by **jc144940**: https://freesound.org/people/jc144940/sounds/178732/ (from 0:00.85, 0.75 s) as `leave-a`
+- **Rock In Water Splash-Plop 1** by **jc144940**: https://freesound.org/people/jc144940/sounds/178735/ (from 0:00.15, 1.0 s) as `leave-b`
+- **old whiskey jar cork** by **getwecked**: https://freesound.org/people/getwecked/sounds/764683/ (from 0:00.70, 0.45 s), followed 380 ms later by **Paper drawn with rustle** by **Mafon2**: https://freesound.org/people/Mafon2/sounds/360646/ (from 0:00.2, 1.4 s, -1 dB) as `letter`
+- **Glass pill bottle rolling** by **Play_Pause_Record**: https://freesound.org/people/Play_Pause_Record/sounds/554887/ (from 0:08.0, 0.7 s) as `bottle`
+- **Fish Being Netted on River** by **paulprit**: https://freesound.org/people/paulprit/sounds/581580/ (from 0:00.5, 1.8 s) as `net-lift`
+- **Water, shallow splash** by **Vrymaa**: https://freesound.org/people/Vrymaa/sounds/770033/ (from 0:00.33, 1.4 s), with **shovel in wet sand** by **f3bbbo**: https://freesound.org/people/f3bbbo/sounds/651293/ (0:00-0:00.72, 450 ms later, -1 dB) as `net-set`
+- **Fish flopping over on sand** by **adviseme333**: https://freesound.org/people/adviseme333/sounds/679389/ (from 0:00.5, 1.4 s) as `flop`

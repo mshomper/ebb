@@ -80,7 +80,8 @@ export function addPiecesTests(test, assert, eq) {
     const from2 = migrate({ meta: { worldT: 10 }, world: null, journal: { species: {}, flags: ['frogs:happy'], notes: [] }, unlocks: {} }, 2);
     assert(from2.pieces && Array.isArray(from2.pieces.list) && from2.pieces.list.length === 0, 'format 2 ends with an empty pieces list');
     assert(from2.unlocks.cliffs, 'and the steps before ran too');
-    eq(FORMAT, 5, 'this build writes format 5');
+    // Format 6 (the shelf of keepsakes, src/save/migrate-keepsakes.js) came after the pieces.
+    eq(FORMAT, 6, 'this build writes format 6');
   });
 
   test(G, 'the reward has a give: stones at six finds, once', async () => {
@@ -261,7 +262,7 @@ export function addPiecesTests(test, assert, eq) {
     const { header, sections } = snapshot(parts(s));
     const back = restore((await decode(await encode(header, sections))).sections);
     eq(JSON.stringify(back.pieces), JSON.stringify(s), 'the log and the stone come back exactly');
-    eq(header.format, 5, 'the save format stays 5');
+    eq(header.format, FORMAT, 'written at the build\'s format (carrying a log needed no new one)');
     eq(cleanPieces({ list: [{ ...piece, length: undefined }] }).list.length, 0, 'a log without a length is left out');
     eq(pieceAt(back.pieces.list, 8.5 + Math.sin(0.7) * 0.6, -2.25 + Math.cos(0.7) * 0.6, 0.05)?.id, 'p2', 'a tap near its end picks the log');
   });

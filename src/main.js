@@ -87,7 +87,7 @@ startApp(canvas, { onDeviceLost: (rebuilding) => showRebuildingNote(rebuilding),
       const [words, island, web, wash, list, naturalist] = await Promise.all([loadRecipe('world/journal'), loadRecipe('world/journal-island'),
         loadRecipe('world/journal-web'), loadRecipe('world/journal-wash'), loadRecipe('world/journal-list'), loadRecipe('world/naturalist')]);
       const journal = createJournal({ world: r.world, words, island, web, wash, list, creatures: /** @type {any} */ (r).creatures ?? null,
-        finds: /** @type {any} */ (r).finds ?? null, pieces: /** @type {any} */ (r).pieces ?? null, shore: /** @type {any} */ (r).shorePresence ?? null,
+        finds: /** @type {any} */ (r).finds ?? null, keepsakes: /** @type {any} */ (r).keepsakes ?? null, pieces: /** @type {any} */ (r).pieces ?? null, shore: /** @type {any} */ (r).shorePresence ?? null,
         schools: /** @type {any} */ (r).schools ?? [] });
       mountIslandNotes(document.body, words, naturalist);
       // Progress (src/world/expansion.js): the naturalist's rewards and species gifts, read from the
@@ -98,7 +98,9 @@ startApp(canvas, { onDeviceLost: (rebuilding) => showRebuildingNote(rebuilding),
         if (g) gifts[keyOf(/** @type {any} */ (rec))] = g;
       }
       const progress = createProgress({ words, recipe: naturalist, gifts });
-      mountJournal(document.body, { ...journal, naturalist, progress }, hud.layer);
+      // The Shelf section draws kept keepsakes from their numbers (docs/future/12).
+      const [keepsakesRecipe, bottleMessages] = await Promise.all([loadRecipe('world/keepsakes'), loadRecipe('world/bottle-messages')]);
+      mountJournal(document.body, { ...journal, naturalist, progress, shelf: { K: keepsakesRecipe, messages: bottleMessages } }, hud.layer);
       // A save that came back from earlier copies says so, calmly (src/ui/damaged.js).
       noticeRecovered(saveInfo);
       // Time away (src/sim/away.js): catch up now on the time since the last save, and later on a
