@@ -41,8 +41,9 @@ Matt, later on October 21, 2026:
 - **Counters of kinds and firsts are allowed, totals never.** "7 of 13 families kept" is a record; "keep 50 shells" would be grinding. This replaces the earlier "no counters" rule.
 - **Three trails on one shared Trails page.** The naturalist's trail (what you notice) is joined by a **beachcomber's trail** (what you keep) and a **shaper's trail** (what you make).
   - The nets move to the beachcomber's trail, where they naturally sit.
-  - The naturalist's rewards and how creature gifts sit beside the trails are to be looked at next.
-  - Proposal: trails-design.md in the session notes.
+  - Agreed in full the same night: doc 13, "Trails", and "The beachcomber's trail" below.
+  - The naturalist's rewards are now ways to look: the tide table at 12, the hand lens at 15, field glasses at 20, a night lamp at 25.
+  - Species gifts stay the only source of shaping tools.
 - **Living catches,** caught in the nets and never kept, are made from seeds like the keepsakes (fish from the creature body bake, jellies, shrimp). Releasing one is what counts: a nod to the conservation side of the game.
 - **Artifacts** are nine baked bases, each morphed, recoloured and named from its seed into endless variants. They come from the nets, the sinker net most of all; the strandline leaves only bottles of the made things.
 - **Coves** carved by the player catch far more keepsakes, through the cove field. (Built.)
@@ -122,9 +123,22 @@ Bottles hold a message, picked by seed from `recipes/world/bottle-messages.json`
 
 | Net | Comes from (proposals) | Where it is set | What it favors |
 |---|---|---|---|
-| **General net** | A mark on the naturalist's line after driftwood (proposed at 12; the season markers bring the kinds needed to reach it), woven from rushes growing on the island | Staked in the shallows of the tide band at low tide, so the next high tide fills it | Small living things, drift seeds, ordinary oddities |
-| **Light net** | A later progression milestone (proposed: the meadow tier's milestone) | On floats along the current line, beyond the tide band | Floating curiosities, glowing life at night, things carried a long way |
-| **Sinker net** | A later milestone (proposed: the shore tier's, when herons and otters come) | Weighted down in open water | The rarest and heaviest drifters, and most of the artifacts |
+| **General net** | The beachcomber's trail, at 4 families kept; woven from rushes growing on the island | Staked in the shallows of the tide band at low tide, so the next high tide fills it | Small living things, drift seeds, ordinary oddities |
+| **Light net** | The beachcomber's trail, at 8 families kept; its floats are driftwood | On floats along the current line, beyond the tide band | Floating curiosities, glowing life at night, things carried a long way |
+| **Sinker net** | The beachcomber's trail, at the first very rare kept; weighted with loose stones | Weighted down in open water | The rarest and heaviest drifters, and most of the artifacts |
+
+**The beachcomber's trail** (agreed October 21, 2026; doc 13, "Trails"). A stop is the first keepsake of each family kept, the first kept at each rarity, or the first of each rare mark seen. Marks seen count even when the keepsake is left to the sea.
+
+| Stop | Gives |
+|---|---|
+| First keepsake kept | The shelf |
+| 4 families kept | The general net |
+| First rare kept | A glass case: one shelf space under glass |
+| 8 families kept | The light net |
+| First very rare kept | The sinker net |
+| 3 marks seen | A second shelf |
+| First once in a lifetime kept | A pressed-gold border for its space, and a quiet note |
+| All 13 families kept | The cabinet: the shelf's picture gets a frame |
 
 Each net's mesh is part of its kind (the general net is medium, the light net fine, the sinker coarse), so there is no separate mesh setting to manage. Three kinds, three places, three temperaments: depth without extra controls.
 
@@ -148,7 +162,7 @@ Cutting rushes for cord would thin that patch's cover share for a few days, then
 
 ### Living catches
 
-Always released. Each gets a moment on the tray and a short journal page (an ink drawing, a name, one note), counts as a find on the naturalist's line, then swims off: a sand eel, a pipefish, a shrimp, a small flatfish, a moon jelly; at night in the light net, a comb jelly glowing; very rarely a young cuttlefish. Being handled gently could feed presence (doc 23), so the sea's creatures come to know you over time.
+Always released: a nod to the conservation side of the game. Each is made from a seed like the keepsakes. Fish come from the creature body bake, shrimp and small crabs from the shell sweep and the finds' leg rig, and jellies from the stranded-jellyfish generator. Each gets a moment alive on the tray and a short journal page (an ink sketch traced from that very animal, a name, one note), then swims off. A first release of each kind counts as a find on the naturalist's line only (Matt, October 21, 2026). A distinctive one may be caught again and recognised ("The same wrasse as in spring"), but only while the code stays simple: the save keeps a short list of released seeds, and a later haul that rolls the same seed is the same animal. Kinds: a sand eel, a pipefish, a shrimp, a small flatfish, a moon jelly; at night in the light net, a comb jelly glowing; very rarely a young cuttlefish. Being handled gently could feed presence (doc 23), so the sea's creatures come to know you over time.
 
 ### Wear and mending
 
