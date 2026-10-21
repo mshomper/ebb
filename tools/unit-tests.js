@@ -44,6 +44,7 @@ import { addQualityTests } from './unit-tests-quality.js';
 import { addTrustTests } from './unit-tests-trust.js';
 import { addFindsTests } from './unit-tests-finds.js';
 import { addNaturalistTests } from './unit-tests-naturalist.js';
+import { addKeepsakeTests } from './unit-tests-keepsakes.js';
 import { addPiecesTests } from './unit-tests-pieces.js';
 
 /** @type {{group: string, name: string, fn: () => any}[]} */
@@ -1455,6 +1456,7 @@ addQualityTests(test, assert, eq);
 addTrustTests(test, assert, eq);
 addFindsTests(test, assert, eq);
 addNaturalistTests(test, assert, eq);
+addKeepsakeTests(test, assert, eq);
 addPondLifeTests(test, assert, eq);
 
 // ---- placed pieces: loose stones (tools/unit-tests-pieces.js) ----

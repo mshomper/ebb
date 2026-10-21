@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ebb keepsake lab</title>
+<link rel="stylesheet" href="../src/ui/tokens.css">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 17px/1.5 Nunito, system-ui, sans-serif; background: #F4EEE4; color: #2F3A35; padding: 20px max(16px, env(safe-area-inset-left)); overflow-x: hidden; }
+  h1 { font-size: 26px; margin: 0 0 4px; }
+  h2 { font-size: 20px; margin: 28px 0 8px; }
+  p { margin: 0 0 14px; max-width: 64ch; }
+  .muted { color: #6B6A5E; font-size: 16px; }
+  .controls { display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: end; margin: 14px 0; }
+  .controls label { display: grid; gap: 4px; font-size: 16px; }
+  input[type=number], select { font: inherit; font-size: 17px; padding: 8px 10px; border: 1px solid #C9BDA6; border-radius: 8px; background: #FBF7F0; color: inherit; min-height: 44px; }
+  input[type=number] { width: 9ch; }
+  button { font: inherit; font-size: 17px; min-height: 44px; padding: 8px 14px; border: 1px solid #C9BDA6; border-radius: 8px; background: #FBF7F0; color: inherit; cursor: pointer; }
+  button[aria-pressed=true] { background: #5F7F5B; border-color: #5F7F5B; color: #FBF7F0; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .one { display: grid; grid-template-columns: minmax(0, 340px) minmax(0, 1fr); gap: 20px; align-items: start; }
+  .big { width: 100%; aspect-ratio: 1; border-radius: 10px; touch-action: none; cursor: grab; display: block; }
+  .bigwrap { border-radius: 12px; padding: 0; }
+  .sliders { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 18px; }
+  .sliders label { display: grid; gap: 2px; font-size: 16px; }
+  .sliders input[type=range] { width: 100%; min-height: 32px; }
+  .words { font-family: Fraunces, Georgia, serif; font-style: italic; font-size: 19px; margin: 6px 0; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 14px; }
+  .slot { margin: 0; border-radius: 10px; padding: 8px; display: grid; gap: 6px; cursor: pointer; text-align: left; font: inherit; color: inherit; min-height: 0; }
+  .slot canvas { width: 100%; aspect-ratio: 1; display: block; }
+  .slot figcaption { font-size: 15px; line-height: 1.35; }
+  .slot figcaption b { font-size: 16px; }
+  table { border-collapse: collapse; font-size: 16px; }
+  td, th { padding: 4px 12px 4px 0; text-align: left; }
+  td.n { text-align: right; font-variant-numeric: tabular-nums; }
+  .odds { display: flex; flex-wrap: wrap; gap: 12px 40px; }
+  @media (max-width: 700px) {
+    body { font-size: 17px; }
+    .one { grid-template-columns: minmax(0, 1fr); }
+    .sliders { grid-template-columns: minmax(0, 1fr); }
+    .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+    .slot figcaption { font-size: 16px; }
+  }
+</style>
+</head>
+<body>
+<h1>Keepsake lab</h1>
+<p>Shells the sea could leave, each one made from its seed by Raup's coiling model (<code>src/world/keepsakes/families/shell.js</code>), with the numbers in <code>recipes/world/keepsakes.json</code>. Each square sits on the paper its rarity would get on the shelf. Tap one to look at it closely, turn it, and move its numbers by hand.</p>
+
+<div class="controls">
+  <label>Seeds from <input type="number" id="from" value="1" min="0" step="48"></label>
+  <button id="next">Next 48</button>
+  <label>Tide <select id="tide">
+    <option value="-1">Neap</option>
+    <option value="0" selected>Middling</option>
+    <option value="0.6">Spring</option>
+    <option value="0.9">Top of the spring</option>
+  </select></label>
+  <label>Season <select id="season">
+    <option>spring</option><option>summer</option><option>autumn</option><option>winter</option>
+  </select></label>
+</div>
+<div class="chips" id="chips" role="group" aria-label="Rarity"></div>
+
+<h2>One shell</h2>
+<div class="one">
+  <div class="bigwrap" id="bigwrap"><canvas class="big" id="big"></canvas></div>
+  <div>
+    <div class="words" id="words"></div>
+    <div class="muted" id="facts"></div>
+    <div class="sliders" id="sliders" style="margin-top:12px"></div>
+    <div class="chips" style="margin-top:12px">
+      <button id="leftBtn" aria-pressed="false">Coiled to the left</button>
+      <button id="reset">Back to its seed</button>
+    </div>
+  </div>
+</div>
+
+<h2>48 shells</h2>
+<p class="muted" id="gridNote"></p>
+<div class="grid" id="grid"></div>
+
+<h2>How often</h2>
+<p class="muted">20,000 shells rolled with the tide and season above, as the sea would leave them.</p>
+<div class="odds" id="odds"></div>
+
+<script type="module" src="keepsake-lab.js"></script>
+</body>
+</html>
