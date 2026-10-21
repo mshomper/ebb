@@ -30,6 +30,7 @@ export const PARALLEL = {
   cove: () => import('./unit-tests-cove.js').then((m) => m.addCoveTests),
   keepsakeArtifacts: () => import('./unit-tests-keepsake-artifacts.js').then((m) => m.addKeepsakeArtifactTests),
   walk: () => import('./unit-tests-walk.js').then((m) => m.addWalkTests),
+  figure: () => import('./unit-tests-figure.js').then((m) => m.addFigureTests),
 };
 
 /** @param {any} cond @param {string} [msg] */
