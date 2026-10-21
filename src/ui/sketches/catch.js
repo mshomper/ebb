@@ -14,7 +14,7 @@ const TRACED = new Map();
 
 /**
  * Register a sketch for each living kind's journal page (the moon jelly keeps its own drawing).
- * @param {any} NR recipes/world/nets.json @param {() => { kind: string, seed: number }[]} released the
+ * @param {any} NR recipes/world/nets.json @param {() => { kind: string, seed: number, rarity?: string }[]} released the
  *   nets' released list, first of each kind first
  */
 export function registerCatchSketches(NR, released) {
@@ -22,7 +22,7 @@ export function registerCatchSketches(NR, released) {
     if (k.plan === 'jelly') continue;
     registerSketch(k.journal ?? kind, (p, scale) => {
       const r = released().find((e) => e.kind === kind);
-      const n = catchNumbers(r?.seed ?? 1, kind, 'common', NR);
+      const n = catchNumbers(r?.seed ?? 1, kind, r?.rarity ?? 'common', NR);
       const key = `${kind}:${n.seed}`;
       let T = TRACED.get(key);
       if (!T) { T = traceKeepsake(catchMesh(n, NR), {}, catchLook(n).view); TRACED.set(key, T); }

@@ -13,8 +13,9 @@
  *   water (its index: hour = setTide * periodH + phaseH) it fishes through
  * @typedef {{ id: number, kind: string, wear: number, at: NetCast | null }} Net wear: K7, unused
  *   yet (0); at: null while the net is in
- * @typedef {{ kind: string, seed: number, hour: number }} Released a living catch let go: the
- *   first of each kind (its journal page is traced from it) and distinctive ones
+ * @typedef {{ kind: string, seed: number, hour: number, rarity?: string }} Released a living catch
+ *   let go: the first of each kind (its journal page is traced from it) and distinctive ones, which
+ *   a later haul may bring back (haul.js); its rarity rebuilds it exactly
  * @typedef {{ version: 1, nets: Net[], released: Released[], nextId: number }} NetsState
  */
 
@@ -38,7 +39,7 @@ export function cleanNets(s) {
   const released = (Array.isArray(s.released) ? s.released : [])
     .filter((/** @type {any} */ r) => r && typeof r.kind === 'string' && Number.isInteger(r.seed) && Number.isFinite(r.hour))
     .slice(-RELEASED_CAP)
-    .map((/** @type {any} */ r) => ({ kind: r.kind, seed: r.seed, hour: r.hour }));
+    .map((/** @type {any} */ r) => (typeof r.rarity === 'string' ? { kind: r.kind, seed: r.seed, hour: r.hour, rarity: r.rarity } : { kind: r.kind, seed: r.seed, hour: r.hour }));
   const top = nets.reduce((/** @type {number} */ m, /** @type {Net} */ n) => Math.max(m, n.id), 0);
   return { version: 1, nets, released, nextId: Math.max(Number.isInteger(s.nextId) ? s.nextId : 1, top + 1) };
 }
@@ -126,7 +127,7 @@ export function noteReleased(s, r, distinctive) {
   const first = !s.released.some((e) => e.kind === r.kind);
   if (!first && !distinctive) return s;
   if (s.released.some((e) => e.kind === r.kind && e.seed === r.seed)) return s;
-  let released = [...s.released, { kind: r.kind, seed: r.seed, hour: r.hour }];
+  let released = [...s.released, r.rarity ? { kind: r.kind, seed: r.seed, hour: r.hour, rarity: r.rarity } : { kind: r.kind, seed: r.seed, hour: r.hour }];
   while (released.length > RELEASED_CAP) {
     const firsts = new Set();
     const drop = released.findIndex((e) => { const f = !firsts.has(e.kind); firsts.add(e.kind); return !f; });

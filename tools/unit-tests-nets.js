@@ -16,7 +16,7 @@ import { foundFind } from '../src/world/journal/observe.js';
 import { findsFound } from '../src/world/expansion.js';
 import { registerCatchSketches } from '../src/ui/sketches/catch.js';
 import { drawSketch, hasSketch } from '../src/ui/sketches/index.js';
-import { haulsJob } from '../src/world/nets/haul.js';
+import { haulsJob, comeBack } from '../src/world/nets/haul.js';
 
 const G = 'nets';
 const H = 'nets: hauls';
@@ -187,6 +187,32 @@ export function addNetsTests(test, assert, eq) {
       }
     }
     assert(distinctive(/** @type {any} */ ({ rarity: 'rare', morph: false })) && !distinctive(/** @type {any} */ ({ rarity: 'common', morph: false })), 'rare ones are distinctive');
+  });
+
+  test(H, 'a distinctive animal let go comes back now and then, the same one; a plain one never does', async () => {
+    const [NR, K] = await recipes();
+    // A rare wrasse and a plain common one, both let go before.
+    let rare = null, plain = null;
+    for (let s = 1; !rare || !plain; s++) {
+      const r = catchNumbers(s, 'wrasse', 'rare', NR), c = catchNumbers(s + 5000, 'wrasse', 'common', NR);
+      if (!rare && distinctive(r)) rare = { kind: 'wrasse', seed: r.seed, hour: 100, rarity: 'rare' };
+      if (!plain && !distinctive(c)) plain = { kind: 'wrasse', seed: c.seed, hour: 90, rarity: 'common' };
+    }
+    const released = [plain, rare];
+    eq(comeBack(released, NR, 0.7, 'summer').length, 1, 'only the distinctive one can come back');
+    eq(comeBack([{ kind: 'moonjelly', seed: 3, hour: 1, rarity: 'veryRare' }], NR, 0.7, 'winter').length, 0, 'never out of its season');
+    let again = 0, other = 0;
+    for (let t = 0; t < 3000; t++) {
+      for (const c of haulOf(input({ tideId: t, released }), NR, K).living) {
+        if (c.again) { again++; eq(c.n.seed, rare.seed, 'the same animal'); eq(c.again.hour, 100, 'when it was let go'); eq(c.n.rarity, 'rare', 'as rare as it was'); }
+        else if (c.n.seed === plain.seed) other++;
+      }
+    }
+    assert(again > 100 && again < 900, `now and then (${again} in 3,000 hauls)`);
+    eq(other, 0, 'the plain one never comes back');
+    eq(JSON.stringify(haulOf(input({ released }), NR, K)), JSON.stringify(haulOf(input({ released }), NR, K)), 'still pure');
+    const n = noteReleased(emptyNets(), /** @type {any} */ (rare), true);
+    eq(cleanNets(n).released[0].rarity, 'rare', 'its rarity is kept in the save');
   });
 
   test(H, 'the same hauls on the page and in the determinism job', async () => {

@@ -66,6 +66,8 @@
 .ebb-haul__txt { grid-area: txt; display: grid; gap: 4px; min-width: 0; }
 .ebb-haul__name { font-size: 18px; font-weight: 800; }
 .ebb-haul__rarity { font-size: var(--text-small); font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--haul-soft); }
+/* One caught again (N7): said in the journal's voice, before its note. */
+.ebb-haul__again { margin: 0; font: italic 600 var(--text-body)/1.35 var(--font-voice); color: var(--haul-moss); }
 .ebb-haul__note { margin: 0; font-size: var(--text-body); font-weight: 600; line-height: 1.4; overflow-wrap: break-word; }
 .ebb-haul__btns { grid-area: btns; display: flex; flex-wrap: wrap; gap: 8px; min-width: 0; }
 .ebb-haul__btn {

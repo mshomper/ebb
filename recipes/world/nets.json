@@ -1,7 +1,7 @@
 {
   "type": "nets",
   "version": 1,
-  "note": "The nets (docs/future/12, piece K6; src/world/nets). A net is cast in the shallows of the tide band at low tide, fishes through the next high water, and is ready from the low water after it; a full net waits and never spoils, and lifting brings it in. set: where a net may go: in the tide band, at least coverM under the coming high water, and no deeper than wadeM now. kinds: one per kind of net, with its words (general now; light and sinker later). haul (haul.js, rolled when a net is lifted, pure): living is the weights for 0, 1, 2 living catches (winterLiving in winter); keepsakeChance how often a haul holds a keepsake (winterKeepsake in winter); lean multiplies keepsake rarity weights on top of the season's, so nets reach rarer tiers than the beach (the tide's gates still apply); families weighs the keepsake families a net snags (artifact 0: they wait for the sinker net; bottles stay on the strandline); shallowM: a net under less than this at its high water fishes the shallows. catches: the living catches, always released (living/). Each kind: journal, the journal page its first release inks; weight in the shallows and in deeper water; season multiplies the weight; then how it is built (fish.js plans, shrimp.js, crab.js, jelly.js), sizes in meters, linear albedo, and a morph: a rarer colour form, more likely the rarer the tier (tierMorph), with its own words. tierSize scales a catch up by tier. sizeWord: the card says its length, about. words: what the tray, the cards and the Net card say. test: the ?nets link.",
+  "note": "The nets (docs/future/12, piece K6; src/world/nets). A net is cast in the shallows of the tide band at low tide, fishes through the next high water, and is ready from the low water after it; a full net waits and never spoils, and lifting brings it in. set: where a net may go: in the tide band, at least coverM under the coming high water, and no deeper than wadeM now. kinds: one per kind of net, with its words (general now; light and sinker later). haul (haul.js, rolled when a net is lifted, pure): living is the weights for 0, 1, 2 living catches (winterLiving in winter); keepsakeChance how often a haul holds a keepsake (winterKeepsake in winter); lean multiplies keepsake rarity weights on top of the season's, so nets reach rarer tiers than the beach (the tide's gates still apply); families weighs the keepsake families a net snags (artifact 0: they wait for the sinker net; bottles stay on the strandline); shallowM: a net under less than this at its high water fishes the shallows; againChance: for each living catch, the chance it is a distinctive one you let go before (rare and up, or its rarer colour form, whose kind lives at that depth in that season), the same animal again, which the tray says (words.again). catches: the living catches, always released (living/). Each kind: journal, the journal page its first release inks; weight in the shallows and in deeper water; season multiplies the weight; then how it is built (fish.js plans, shrimp.js, crab.js, jelly.js), sizes in meters, linear albedo, and a morph: a rarer colour form, more likely the rarer the tier (tierMorph), with its own words. tierSize scales a catch up by tier. sizeWord: the card says its length, about. words: what the tray, the cards and the Net card say. test: the ?nets link.",
   "set": { "wadeM": 0.15, "coverM": 0.08 },
   "kinds": { "general": { "name": "your net" } },
   "haul": {
@@ -11,7 +11,8 @@
     "winterKeepsake": 0.32,
     "lean": { "uncommon": 1.5, "rare": 2.5, "veryRare": 3, "lifetime": 3 },
     "families": { "shell": 20, "bivalve": 14, "stone": 6, "driftwood": 6, "feather": 2, "urchin": 12, "starfish": 12, "seed": 6, "purse": 9, "cuttlebone": 6, "coral": 7, "fossil": 2, "artifact": 0 },
-    "shallowM": 0.3
+    "shallowM": 0.3,
+    "againChance": 0.12
   },
   "catches": {
     "tierSize": { "common": 1, "uncommon": 1.08, "rare": 1.16, "veryRare": 1.26, "lifetime": 1.36 },
@@ -95,6 +96,7 @@
     "empty": "Only weed this time.",
     "keepsake": "Something the sea left",
     "kept": "On your shelf now.",
+    "again": "The same {name} you let go on {season} day {day}.",
     "card": "Your net",
     "in": "Your net is in.",
     "fishing": "Your net is fishing. Ready at the next low tide, in about {h}.",

@@ -55,6 +55,12 @@ export function mountHaulTray(parent, o) {
   /** @type {any} */ let shown = null;
   let raf = 0;
 
+  /** One caught again: "The same sand eel you let go on spring day 4." @param {any} c a living catch with `again` */
+  function againLine(c) {
+    const s = seasonOf(c.again.hour * 3600), name = catchName(c.n, NR);
+    return W.again.replace('{name}', name.charAt(0).toLowerCase() + name.slice(1)).replace('{season}', SEASONS[s.index]).replace('{day}', String(s.day + 1));
+  }
+
   /** Build the tray for a new haul. @param {any} h the store slice `haul` */
   function build(h) {
     shown = h.haul;
@@ -65,6 +71,7 @@ export function mountHaulTray(parent, o) {
         <div class="ebb-haul__pic"><canvas data-pic="${esc(c.id)}"></canvas></div>
         <div class="ebb-haul__txt">
           <b class="ebb-haul__name">${esc(catchName(c.n, NR))}</b>
+          ${c.again ? `<p class="ebb-haul__again">${esc(againLine(c))}</p>` : ''}
           <p class="ebb-haul__note">${esc(catchWords(c.n, NR))}</p>
         </div>
         <div class="ebb-haul__btns"><button type="button" class="ebb-haul__btn" data-go="${esc(c.id)}">${iconSvg('release')}<span>${esc(W.letGo)}</span></button></div>

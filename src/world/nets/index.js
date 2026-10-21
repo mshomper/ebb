@@ -163,7 +163,7 @@ export function createNets(opts) {
       const spring = (amplitude(hH, tideP) / tideP.amplitudeM - 1) / tideP.springNeap;
       const haul = haulOf({ seed: opts.seed, net, tideId: setTide, cell: [waterCellOf(x), waterCellOf(z)],
         depthM: Math.max(0, level(hH, tideP) - terrain.sampleHeight(x, z)), spring,
-        season: SEASON_NAMES[seasonOf(hH * 3600).index], sign: null }, NR, opts.keepsakes);
+        season: SEASON_NAMES[seasonOf(hH * 3600).index], sign: null, released: state().released }, NR, opts.keepsakes);
       update('nets', () => bringIn(state(), id));
       update('haul', () => /** @type {HaulSlice} */ ({ haul, hour: hH, springTide: spring >= opts.keepsakes.shore.springMin, released: [], kept: !haul.keepsake, at: performance.now() }));
       emitDeferred('keepsake:sound', { name: 'net-lift' });
@@ -177,7 +177,7 @@ export function createNets(opts) {
       /** @type {HaulSlice | null} */ const h = get('haul');
       const c = h?.haul.living.find((l) => l.id === itemId);
       if (!h || !c || h.released.includes(itemId)) return;
-      update('nets', () => noteReleased(state(), { kind: c.n.kind, seed: c.n.seed, hour: h.hour }, distinctive(c.n)));
+      update('nets', () => noteReleased(state(), { kind: c.n.kind, seed: c.n.seed, hour: h.hour, rarity: c.n.rarity }, distinctive(c.n)));
       update('haul', () => ({ ...h, released: [...h.released, itemId] }));
       emitDeferred('net:released', { kind: c.n.kind, page: catchPage(c.n.kind, NR), seed: c.n.seed });
       emitDeferred('keepsake:sound', { name: 'leave', seed: c.n.seed });
