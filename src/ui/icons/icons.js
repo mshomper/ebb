@@ -802,6 +802,14 @@ const ICONS = {
     <path d="M12 13V3.5"/>
     <path d="M9.6 5.9L12 3.5L14.4 5.9"/>`,
 
+  // I'm stuck (the walker): a ring of ground with a gap in it, and a way out through the gap.
+  stuck: `
+    <path ${ACCENT} d="M12 7.5A4.5 4.5 0 1 1 7.5 12A4.5 4.5 0 0 1 12 7.5Z"/>
+    <path d="M17.7 15.5A7 7 0 1 1 18.6 9.6"/>
+    <circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/>
+    <path d="M14 10L20.5 4"/>
+    <path d="M16.5 4H20.5V8"/>`,
+
   // Settings: three horizontal sliders with their knobs.
   settings: `
     <path d="M3.5 6.5H20.5"/>

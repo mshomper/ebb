@@ -105,6 +105,9 @@ export function createWalker(R, env) {
       if (s.path.length) {
         const near = env.nearest ? env.nearest(s.x, s.z) : Infinity;
         want = s.brisk ? P.briskMps : near < P.creepNearM ? P.creepMps : P.strollMps;
+        // Wading past the ankle is slower, hurrying or not.
+        const here = env.grid.cellAt(s.x, s.z);
+        if (here >= 0 && env.depth(here) > P.wadeAnkleM) want = Math.min(want, P.wadeMps);
         // Slow down into the last stop, so arriving is gentle.
         const [gx, gz] = s.path[s.path.length - 1];
         const left = s.path.length === 1 ? Math.hypot(gx - s.x, gz - s.z) : Infinity;

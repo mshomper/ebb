@@ -12,6 +12,8 @@ import { on, emitDeferred } from '../../core/events.js';
 import { update as updateStore } from '../../core/store.js';
 import { createWalkGrid } from './grid.js';
 import { createWalker } from './walker.js';
+import { isOpen } from './path.js';
+import { mainland, nearestJoined } from './reach.js';
 import { crossingNote, depthAtLow, hoursToLow } from './crossing.js';
 import { bakeBody } from '../creatures/body-bake.js';
 import { createCreaturePass } from '../../render/passes/creatures.js';
@@ -57,10 +59,48 @@ export function createWalk(o) {
   /** Where the view aims at you: about chest height over your feet. */
   const head = () => [walker.x, walker.y + R.camera.lookHeightM, walker.z];
 
-  // Every stroke (and undo) changes the ground: re-read that part of the grid.
+  /** The walk rules with the water as it will be at the next low water. */
+  const lowRules = () => {
+    const hours = o.hours();
+    const low = tideLevel(hours + hoursToLow(hours, o.tide), tideP);
+    return { ...walker.rules, depth: depthAtLow(depth, (k) => grid.height[k], water.tide, low) };
+  };
+  /** Stand on a mainland cell; below, the view glides after you (a move the game makes). @param {number} k */
+  function moveTo(k) {
+    const [x, z] = grid.center(k);
+    walker.place(x, z, walker.yaw, R.grid.snapM);
+    if (below) camera.setGround(R.camera, head());
+    emitDeferred('walk:moved-out', { x, z });
+  }
+  /**
+   * Never trapped: after a stroke, a figure whose spot no longer joins the mainland, even at low
+   * water (walled in by terraces, or left on a new cliff face), steps out to the nearest that does.
+   */
+  function keepFree() {
+    if (!walker.placed) return;
+    const land = mainland(grid, lowRules());
+    if (land.joined(grid.cellAt(walker.x, walker.z))) return;
+    const k = nearestJoined(grid, land, walker.x, walker.z, (c) => isOpen(grid, walker.rules, c));
+    const any = k >= 0 ? k : nearestJoined(grid, land, walker.x, walker.z);
+    if (any >= 0) moveTo(any);
+  }
+
+  // Every stroke (and undo) changes the ground: re-read that part of the grid, and make sure the
+  // figure isn't walled in.
   const offStroke = on('terrain:stroke-ended', (/** @type {{ rect: { x0: number, z0: number, x1: number, z1: number } }} */ p) => {
     grid.refresh(p.rect.x0, p.rect.z0, p.rect.x1, p.rect.z1);
+    keepFree();
   });
+
+  /** Is the figure in view? (Go down then lands on it.) */
+  function figureOnScreen() {
+    if (!walker.placed) return false;
+    const m = camera.viewProj, x = walker.x, y = walker.y + 0.9, z = walker.z;
+    const w = m[3] * x + m[7] * y + m[11] * z + m[15];
+    if (w <= 1e-4) return false;
+    const cx = (m[0] * x + m[4] * y + m[8] * z + m[12]) / w, cy = (m[1] * x + m[5] * y + m[9] * z + m[13]) / w;
+    return Math.abs(cx) < 0.95 && Math.abs(cy) < 0.95;
+  }
 
   return {
     id: 'walk',
@@ -70,12 +110,15 @@ export function createWalk(o) {
     /** The walk grid now (tools). */
     get grid() { return grid; },
 
-    /** Go down where you are looking. False (and a line on the island) if there is nowhere to stand. */
+    /**
+     * Go down: back to your figure when it is in view, else where you are looking. False (and a
+     * line on the island) if there is nowhere to stand.
+     */
     down() {
       if (below) return true;
       const t = camera.target, e = camera.eye;
       // You land facing the way you were looking.
-      if (!walker.place(t[0], t[2], Math.atan2(t[0] - e[0], t[2] - e[2]), R.grid.snapM * 3)) {
+      if (!figureOnScreen() && !walker.place(t[0], t[2], Math.atan2(t[0] - e[0], t[2] - e[2]), R.grid.snapM * 3)) {
         say(R.words.noGround);
         return false;
       }
@@ -84,6 +127,20 @@ export function createWalk(o) {
       publish();
       emitDeferred('walk:went-down', { x: walker.x, z: walker.z });
       return true;
+    },
+
+    /**
+     * I'm stuck: to the nearest spot that joins the mainland with the water as it is now (off the
+     * islet at high tide too), or a line saying you can walk on from here.
+     */
+    stuck() {
+      if (!below || !walker.placed) return;
+      walker.stop();
+      const land = mainland(grid, walker.rules);
+      if (land.joined(grid.cellAt(walker.x, walker.z))) { say(R.words.stuckFine); return; }
+      const k = nearestJoined(grid, land, walker.x, walker.z);
+      if (k >= 0) moveTo(k);
+      else say(R.words.noGround);
     },
 
     /** Go back up over where you stand; the figure stays. */

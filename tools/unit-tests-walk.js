@@ -9,6 +9,7 @@ import { createWalkGrid } from '../src/world/walk/grid.js';
 import { findPath, isOpen } from '../src/world/walk/path.js';
 import { createWalker } from '../src/world/walk/walker.js';
 import { crossingNote, hoursToLow, depthAtLow } from '../src/world/walk/crossing.js';
+import { mainland, nearestJoined } from '../src/world/walk/reach.js';
 
 const WALK = 'walker';
 
@@ -123,6 +124,45 @@ export function addWalkTests(test, assert, eq) {
     assert(creep <= R.pace.creepMps + 0.06, `near a creature it went ${creep.toFixed(2)} m/s`);
     assert(brisk > R.pace.strollMps + 0.3, `a double tap only reached ${brisk.toFixed(2)} m/s`);
     return `stroll ${stroll.toFixed(2)}, creep ${creep.toFixed(2)}, brisk ${brisk.toFixed(2)} m/s`;
+  });
+
+  test(WALK, 'wading past the ankle slows the walk, even hurrying', async () => {
+    const { R, grid } = await world(() => 1);
+    const w = createWalker(R, { grid, depth: () => 0.25, ground: () => 1 });
+    w.place(5, 10);
+    assert(w.walkTo(15, 10, true).ok, 'no way through shallow water');
+    let top = 0;
+    for (let i = 0; i < 60 * 60 && w.moving; i++) { w.update(1 / 60); top = Math.max(top, w.speed); }
+    assert(top <= R.pace.wadeMps + 0.06, `wading it went ${top.toFixed(2)} m/s`);
+    return `wading at ${top.toFixed(2)} m/s`;
+  });
+
+  test(WALK, 'a ring of terraces round the figure cuts it off, and the nearest way out is past the ring', async () => {
+    const { R, grid } = await world((x, z) => { const d = Math.hypot(x - 20, z - 10); return d > 4 && d < 5 ? 2.5 : 0.5; });
+    const land = mainland(grid, rulesOf(R, () => 0));
+    assert(!land.joined(grid.cellAt(20, 10)), 'the middle of the ring still joins the island');
+    assert(land.joined(grid.cellAt(2, 2)), 'the open ground is not the mainland');
+    const k = nearestJoined(grid, land, 20, 10);
+    const [x, z] = grid.center(k);
+    const d = Math.hypot(x - 20, z - 10);
+    assert(d >= 4.5 && d <= 6, `the way out lands ${d.toFixed(2)} m from the middle`);
+    return `out at ${d.toFixed(2)} m from the middle`;
+  });
+
+  test(WALK, 'the islet joins the island at low water but not at high, so I\'m stuck brings you back to the main island', async () => {
+    // The strip mirrored, so the bigger ground is the main island (x under 18 m) and the islet is small.
+    const mirrored = (/** @type {number} */ x, /** @type {number} */ z) => sandbar(40 - x, z);
+    const { R, grid } = await world(mirrored);
+    const low = mainland(grid, rulesOf(R, seaDepth(grid, { level: -0.6 })));
+    const high = mainland(grid, rulesOf(R, seaDepth(grid, { level: 0.6 })));
+    const islet = grid.cellAt(36, 10);
+    assert(low.joined(islet), 'the islet is cut off even at low water');
+    assert(!high.joined(islet), 'the islet joins the island at high water');
+    const k = nearestJoined(grid, high, 36, 10);
+    const [x] = grid.center(k);
+    // The main island's shore reaches x 20 at high water; the bar runs from 21 to 29.
+    assert(x < 20.5, `I'm stuck at high water lands at x ${x.toFixed(1)}, not on the main island`);
+    return `back on the main island at x ${x.toFixed(1)}`;
   });
 
   test(WALK, 'the figure wades back to dry ground when the tide comes in over the bar', async () => {

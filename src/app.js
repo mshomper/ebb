@@ -757,6 +757,7 @@ export async function startApp(canvas, hooks = {}) {
       if (a.type === 'camera.zoom') { camera.zoom(a.factor); return; }
       if (a.type === 'look.tap') { walk.tap(a.x, a.y, groundAt(a.x, a.y)); return; }
       if (a.type === 'walk.up') { walk.up(); return; }
+      if (a.type === 'walk.stuck') { walk.stuck(); return; }
       if (a.type === 'tool.select' || a.type.startsWith('tool.') || a.type === 'brush.resize') return;
     }
     switch (a.type) {
