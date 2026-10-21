@@ -1,0 +1,185 @@
+{
+  "note": "Keepsakes (docs/future/12): one-of-a-kind trinkets the sea leaves on the strandline, each a family plus numbers drawn from a seed. Rarity is picked first, gated by the tide (springMin, as recipes/species/finds.json shells) and leaned by season; the family's tier then shapes the numbers. Colors are linear albedo. Tune with tools/keepsake-lab.html.",
+  "version": 1,
+  "rarity": {
+    "order": ["common", "uncommon", "rare", "veryRare"],
+    "words": { "common": "common", "uncommon": "uncommon", "rare": "rare", "veryRare": "very rare" },
+    "weights": [72, 21, 6, 1],
+    "gatesNote": "A tier can come only when the tide is at least springMin (-1 neap to 1 top spring). Storm tides (F08) do not exist yet, so winter spring tides stand in for them through seasonLean.",
+    "gates": { "rare": { "springMin": 0.5 }, "veryRare": { "springMin": 0.8 } },
+    "seasonLean": { "winter": { "rare": 1.5, "veryRare": 2.5 } }
+  },
+  "shelfNote": "The paper ground of a shelf slot by rarity (doc 13, 'The shelf'). Previewed in the lab; drawn by the shelf in K3.",
+  "shelf": {
+    "grounds": {
+      "common": { "top": "#FBF7F0", "bottom": "#F4EEE4", "border": "#DCD2C0", "borderPx": 1 },
+      "uncommon": { "top": "#EEF3F1", "bottom": "#DCE7E6", "border": "#B9CBCC", "borderPx": 1 },
+      "rare": { "top": "#F0DDD4", "bottom": "#DFC1B5", "border": "#4F5049", "borderPx": 2 },
+      "veryRare": { "top": "#F8EDD3", "bottom": "#EBD7A8", "border": "#B8913F", "borderPx": 3, "gilt": "#E9D08C" }
+    }
+  },
+  "shells": {
+    "gen": 1,
+    "note": "Raup's coiling model: an aperture (an ellipse S times as tall as wide) swept along a logarithmic spiral. W is how much the whorl grows each turn, D how far its inner edge stands from the axis (0 touching, toward 1 far out), T how far it climbs per turn relative to its size, whorls how many turns. Each form is a region of that space; weights are per rarity tier in rarity.order.",
+    "meshNote": "spineSharpness narrows a spine around the whorl (higher is thinner); samplesPerSpine is how many rings each spine spans along it.",
+    "mesh": { "stepsPerWhorl": 32, "ringSides": 22, "samplesPerSpine": 6, "spineSharpness": 10, "spineWidth": 0.45, "maxRows": 480 },
+    "formsNote": "canal draws the lower half of the aperture down along the axis (a siphonal canal, as on whelks and augers); 0 is none. smooth forms never grow spines.",
+    "forms": [
+      { "id": "winkle", "word": "a round shell", "weights": [40, 25, 12, 6], "W": [2.6, 3.6], "D": [0.0, 0.1], "T": [1.2, 2.0], "S": [1.0, 1.25], "whorls": [3.5, 4.5] },
+      { "id": "whelk", "word": "a spindle shell", "weights": [25, 30, 30, 25], "W": [1.9, 2.5], "D": [0.02, 0.15], "T": [2.2, 3.4], "S": [1.3, 1.8], "whorls": [5, 6.5], "canal": [0.4, 1.0] },
+      { "id": "top", "word": "a top-shaped shell", "weights": [20, 18, 12, 8], "W": [1.7, 2.1], "D": [0.0, 0.06], "T": [1.6, 2.4], "S": [0.6, 0.85], "whorls": [5, 7] },
+      { "id": "turret", "word": "a tall spire", "weights": [10, 15, 16, 14], "W": [1.2, 1.4], "D": [0.0, 0.12], "T": [3.5, 6.0], "S": [0.9, 1.1], "whorls": [9, 13], "canal": [0.0, 0.2] },
+      { "id": "coil", "word": "a flat coil", "weights": [3, 8, 18, 25], "W": [1.8, 2.6], "D": [0.15, 0.45], "T": [0.0, 0.05], "S": [0.9, 1.3], "whorls": [3.5, 5] },
+      { "id": "ear", "word": "an ear-shaped shell", "weights": [2, 4, 12, 22], "W": [14, 30], "D": [0.0, 0.05], "T": [0.15, 0.4], "S": [0.3, 0.5], "whorls": [1.2, 1.5], "smooth": true },
+      { "id": "cone", "word": "a cone shell", "weights": [3, 8, 14, 18], "W": [3.5, 6], "D": [0.0, 0.03], "T": [0.4, 0.9], "S": [1.5, 2.1], "whorls": [5, 7], "canal": [0.6, 1.2], "smooth": true },
+      { "id": "auger", "word": "a needle-thin spire", "weights": [2, 6, 10, 12], "W": [1.12, 1.22], "D": [0.0, 0.05], "T": [7, 10], "S": [1.0, 1.3], "whorls": [14, 18], "canal": [0.1, 0.4], "smooth": true }
+    ],
+    "tiersNote": "Per rarity: overall size (largest extent, meters), and the chance and range of each ornament. Ribs run across the whorl, cords along it, spines stand on the shoulder. Bands come in patterns (weights in patternOrder): spiral stripes, flames across, zigzags, spots, and the tents of cone shells. apexChance is how often the colour shifts from a second colour at the apex to the base colour at the lip. base and band index colors.base and colors.band; a colour listed twice is twice as likely.",
+    "patternOrder": ["spiral", "flames", "zigzag", "spots", "tents"],
+    "tiers": {
+      "common": {
+        "sizeM": [0.018, 0.035],
+        "ribs": { "chance": 0.35, "count": [6, 14], "amp": [0.02, 0.06] },
+        "cords": { "chance": 0.4, "count": [8, 20], "amp": [0.01, 0.03] },
+        "spines": { "chance": 0.0, "perWhorl": [5, 8], "length": [0.1, 0.2] },
+        "bands": { "chance": 0.5, "count": [2, 5], "width": [0.15, 0.35], "freq": [3, 6], "patterns": [5, 3, 1, 1, 0] },
+        "apexChance": 0.25,
+        "base": [0, 0, 1, 1, 2, 2, 3, 7, 8, 9], "band": [0, 1, 5, 11]
+      },
+      "uncommon": {
+        "sizeM": [0.025, 0.045],
+        "ribs": { "chance": 0.55, "count": [7, 16], "amp": [0.04, 0.09] },
+        "cords": { "chance": 0.5, "count": [10, 24], "amp": [0.015, 0.04] },
+        "spines": { "chance": 0.1, "perWhorl": [5, 8], "length": [0.3, 0.5] },
+        "bands": { "chance": 0.7, "count": [2, 6], "width": [0.15, 0.4], "freq": [3, 7], "patterns": [4, 3, 2, 2, 1] },
+        "apexChance": 0.45,
+        "base": [0, 1, 2, 4, 5, 7, 11, 12, 16], "band": [0, 1, 2, 3, 5, 6, 11]
+      },
+      "rare": {
+        "sizeM": [0.035, 0.06],
+        "ribs": { "chance": 0.7, "count": [6, 12], "amp": [0.06, 0.12] },
+        "cords": { "chance": 0.6, "count": [12, 28], "amp": [0.02, 0.05] },
+        "spines": { "chance": 0.45, "perWhorl": [4, 8], "length": [0.5, 0.9] },
+        "bands": { "chance": 0.85, "count": [3, 7], "width": [0.2, 0.45], "freq": [3, 8], "patterns": [3, 3, 3, 3, 2] },
+        "apexChance": 0.65,
+        "base": [4, 5, 6, 9, 10, 11, 12, 13, 15, 16], "band": [2, 3, 4, 5, 6, 7, 8, 9, 10]
+      },
+      "veryRare": {
+        "sizeM": [0.045, 0.08],
+        "ribs": { "chance": 0.8, "count": [5, 10], "amp": [0.08, 0.15] },
+        "cords": { "chance": 0.6, "count": [14, 30], "amp": [0.02, 0.05] },
+        "spines": { "chance": 0.7, "perWhorl": [3, 7], "length": [0.8, 1.3] },
+        "bands": { "chance": 0.95, "count": [3, 8], "width": [0.2, 0.5], "freq": [4, 9], "patterns": [2, 3, 3, 3, 4] },
+        "apexChance": 0.8,
+        "base": [1, 6, 10, 11, 12, 13, 14, 15, 16], "band": [4, 5, 6, 7, 8, 9, 10]
+      }
+    },
+    "colors": {
+      "base": [[0.72, 0.64, 0.5], [0.8, 0.77, 0.7], [0.5, 0.39, 0.27], [0.33, 0.34, 0.36], [0.7, 0.46, 0.42], [0.66, 0.47, 0.2], [0.78, 0.42, 0.3], [0.88, 0.6, 0.45], [0.4, 0.4, 0.2], [0.26, 0.14, 0.08], [0.86, 0.36, 0.08], [0.86, 0.74, 0.22], [0.58, 0.44, 0.7], [0.24, 0.52, 0.42], [0.62, 0.08, 0.1], [0.36, 0.52, 0.78], [0.85, 0.55, 0.6]],
+      "baseNames": ["cream", "white", "fawn", "slate", "rose", "ochre", "coral", "peach", "olive", "chocolate", "tangerine", "lemon", "lilac", "jade", "crimson", "sky", "blush"],
+      "band": [[0.2, 0.12, 0.07], [0.33, 0.2, 0.11], [0.24, 0.12, 0.2], [0.48, 0.17, 0.08], [0.08, 0.08, 0.1], [0.88, 0.85, 0.78], [0.82, 0.56, 0.12], [0.55, 0.06, 0.08], [0.32, 0.15, 0.48], [0.08, 0.36, 0.38], [0.86, 0.4, 0.1], [0.18, 0.09, 0.05]],
+      "bandNames": ["brown", "umber", "plum", "rust", "ink", "white", "gold", "crimson", "violet", "teal", "orange", "chocolate"],
+      "jitter": 0.08,
+      "minContrast": 0.12
+    },
+    "marks": {
+      "leftCoiled": { "chance": 0.008, "word": "coiled to the left" }
+    },
+    "words": { "ribbed": "ribbed", "corded": "finely corded", "spined": "spined", "longSpined": "long-spined", "patterns": { "spiral": "banded", "flames": "flamed", "zigzag": "zigzagged", "spots": "spotted", "tents": "tented" } }
+  },
+  "stones": {
+    "gen": 1,
+    "note": "Hand-sized beach stones: a sphere pushed in and out by seeded waves (lump), squashed (flat, 1 round to 0.3 a flat pebble) and stretched (long), with veins or bands of a second colour at a tilt and a fine grain. holedLean multiplies the chance of a hole worn through (a hag stone).",
+    "mesh": { "rings": 16, "sides": 24 },
+    "tiers": {
+      "common": { "sizeM": [0.03, 0.055], "flat": [0.3, 0.6], "long": [0.6, 0.95], "lump": [0.03, 0.08], "pebbleShare": 0.6, "grain": [0.06, 0.14], "veins": { "chance": 0.3, "count": [1, 2], "width": [0.15, 0.3] }, "base": [0, 0, 1, 2, 3], "vein": [0, 1] },
+      "uncommon": { "sizeM": [0.035, 0.06], "flat": [0.3, 0.6], "long": [0.65, 1.0], "lump": [0.03, 0.07], "pebbleShare": 0.7, "grain": [0.06, 0.16], "veins": { "chance": 0.5, "count": [1, 3], "width": [0.15, 0.32] }, "base": [0, 1, 2, 3, 4, 5], "vein": [0, 1, 2, 3], "holedLean": 2 },
+      "rare": { "sizeM": [0.04, 0.065], "flat": [0.28, 0.55], "long": [0.6, 0.95], "lump": [0.02, 0.06], "pebbleShare": 0.8, "grain": [0.04, 0.12], "veins": { "chance": 0.75, "count": [2, 5], "width": [0.2, 0.38] }, "base": [4, 5, 6, 7, 8], "vein": [0, 2, 3, 4], "holedLean": 5 },
+      "veryRare": { "sizeM": [0.045, 0.07], "flat": [0.25, 0.5], "long": [0.6, 0.9], "lump": [0.02, 0.05], "pebbleShare": 0.85, "grain": [0.03, 0.1], "veins": { "chance": 0.9, "count": [3, 7], "width": [0.22, 0.42] }, "base": [6, 7, 8, 9], "vein": [0, 3, 4], "holedLean": 10 }
+    },
+    "colors": {
+      "base": [[0.42, 0.42, 0.4], [0.3, 0.34, 0.4], [0.62, 0.5, 0.36], [0.12, 0.12, 0.13], [0.55, 0.3, 0.24], [0.8, 0.78, 0.74], [0.25, 0.4, 0.3], [0.62, 0.16, 0.1], [0.72, 0.44, 0.15], [0.42, 0.3, 0.55]],
+      "baseNames": ["grey", "blue-grey", "sandstone", "black", "red granite", "white quartz", "green serpentine", "red jasper", "amber agate", "purple"],
+      "vein": [[0.88, 0.86, 0.8], [0.14, 0.13, 0.12], [0.55, 0.24, 0.1], [0.92, 0.8, 0.55], [0.6, 0.75, 0.82]],
+      "jitter": 0.08
+    },
+    "marks": { "holed": { "chance": 0.02, "word": "with a hole worn right through", "holeShare": [0.3, 0.45] } }
+  },
+  "fossils": {
+    "gen": 1,
+    "note": "An ammonite set into a flat slab. Most are broken and show part of the coil; complete ones carry the mark. fossil is the ammonite's own colour (stone, or pyrite at the rarest).",
+    "tiers": {
+      "common": { "sizeM": [0.04, 0.06], "ribAmp": [0.05, 0.09], "rock": [0, 1], "fossil": [0] },
+      "uncommon": { "sizeM": [0.045, 0.07], "ribAmp": [0.06, 0.11], "rock": [0, 1, 2], "fossil": [0, 1], "markLean": 2 },
+      "rare": { "sizeM": [0.05, 0.08], "ribAmp": [0.08, 0.13], "rock": [1, 2, 3], "fossil": [1, 2], "markLean": 4 },
+      "veryRare": { "sizeM": [0.06, 0.09], "ribAmp": [0.09, 0.14], "rock": [2, 3], "fossil": [2, 3], "markLean": 8 }
+    },
+    "colors": {
+      "rock": [[0.5, 0.48, 0.44], [0.32, 0.32, 0.33], [0.66, 0.56, 0.42], [0.2, 0.2, 0.22]],
+      "rockNames": ["grey", "dark", "pale", "black"],
+      "fossil": [[0.56, 0.52, 0.46], [0.7, 0.62, 0.5], [0.62, 0.42, 0.28], [0.78, 0.62, 0.2]],
+      "fossilNames": ["stone", "pale stone", "rust", "pyrite"]
+    },
+    "marks": { "complete": { "chance": 0.06, "word": "whole, every turn of it" } }
+  },
+  "driftwood": {
+    "gen": 1,
+    "note": "A hand-sized piece of sea-worn wood: bent (bend), tapering, knotted, its grain twisting along it (twist), silvered by the sea (silver, 0 its own wood to 1 silver), sometimes with a broken side stub. The rare mark is a root knot.",
+    "mesh": { "rows": 26, "sides": 10 },
+    "tiers": {
+      "common": { "sizeM": [0.06, 0.11], "thick": [0.05, 0.09], "bend": [0.02, 0.08], "twist": [0.1, 0.5], "knots": [0, 2], "stubChance": 0.3, "silver": [0.3, 0.7], "wood": [0, 1] },
+      "uncommon": { "sizeM": [0.07, 0.13], "thick": [0.05, 0.1], "bend": [0.04, 0.12], "twist": [0.3, 0.9], "knots": [1, 3], "stubChance": 0.4, "silver": [0.5, 0.85], "wood": [0, 1, 2], "markLean": 2 },
+      "rare": { "sizeM": [0.08, 0.15], "thick": [0.06, 0.11], "bend": [0.06, 0.16], "twist": [0.6, 1.4], "knots": [2, 4], "stubChance": 0.5, "silver": [0.7, 1.0], "wood": [1, 2, 3], "markLean": 4 },
+      "veryRare": { "sizeM": [0.1, 0.16], "thick": [0.07, 0.12], "bend": [0.08, 0.18], "twist": [1.0, 2.0], "knots": [2, 5], "stubChance": 0.6, "silver": [0.85, 1.0], "wood": [2, 3], "markLean": 8 }
+    },
+    "colors": {
+      "wood": [[0.4, 0.29, 0.19], [0.5, 0.38, 0.26], [0.3, 0.2, 0.13], [0.58, 0.44, 0.34]],
+      "woodNames": ["brown", "honey", "dark", "pale"],
+      "silver": [0.66, 0.65, 0.61]
+    },
+    "marks": { "rootKnot": { "chance": 0.05, "word": "ending in a knot of roots" } }
+  },
+  "feathers": {
+    "gen": 1,
+    "note": "A feather lying flat: a curved shaft with a vane either side (flight feathers have a narrower outer vane, asym), splits where the barbs have parted, a downy base, and a pattern in a second colour (mark). The rare mark is a twinned feather, two vanes from one quill.",
+    "mesh": { "rows": 40, "cols": 9 },
+    "patternOrder": ["plain", "barred", "tipped", "spotted", "edged"],
+    "tiers": {
+      "common": { "sizeM": [0.06, 0.12], "width": [0.18, 0.3], "flightShare": 0.3, "splits": [1, 4], "bars": [3, 7], "patterns": [6, 2, 2, 0, 1], "base": [0, 1, 2], "mark": [0, 1] },
+      "uncommon": { "sizeM": [0.08, 0.15], "width": [0.16, 0.28], "flightShare": 0.5, "splits": [0, 3], "bars": [4, 9], "patterns": [3, 3, 2, 1, 1], "base": [0, 1, 2, 3, 4], "mark": [0, 1, 2], "markLean": 2 },
+      "rare": { "sizeM": [0.1, 0.18], "width": [0.14, 0.26], "flightShare": 0.7, "splits": [0, 2], "bars": [5, 11], "patterns": [1, 3, 2, 2, 2], "base": [3, 4, 5, 6], "mark": [1, 2, 3], "markLean": 4 },
+      "veryRare": { "sizeM": [0.12, 0.2], "width": [0.14, 0.24], "flightShare": 0.8, "splits": [0, 1], "bars": [6, 12], "patterns": [0, 4, 1, 2, 2], "base": [5, 6, 7], "mark": [2, 3, 4], "markLean": 8 }
+    },
+    "colors": {
+      "base": [[0.82, 0.82, 0.8], [0.55, 0.57, 0.6], [0.42, 0.32, 0.22], [0.72, 0.6, 0.42], [0.08, 0.08, 0.09], [0.6, 0.3, 0.12], [0.3, 0.45, 0.75], [0.15, 0.4, 0.35]],
+      "baseNames": ["white", "grey", "brown", "tawny", "black", "rufous", "blue", "green"],
+      "mark": [[0.25, 0.2, 0.16], [0.08, 0.08, 0.09], [0.9, 0.88, 0.82], [0.05, 0.08, 0.2], [0.8, 0.5, 0.1]],
+      "jitter": 0.06
+    },
+    "words": { "patterns": { "plain": "", "barred": "barred", "tipped": "dark-tipped", "spotted": "spotted", "edged": "edged in a second colour" } },
+    "marks": { "twinned": { "chance": 0.02, "word": "two vanes from one quill" } }
+  },
+  "bottles": {
+    "gen": 1,
+    "note": "The only made thing the sea brings to the shore: a turned glass profile lying on its side, in a tint, frosted by sand (frost), sometimes still stoppered. body is its radius over its height; neck the neck's radius over the body's. The rare mark is a message inside.",
+    "mesh": { "sides": 18 },
+    "shapes": [
+      { "id": "flask", "word": "flask", "body": [0.28, 0.36], "shoulder": [0.45, 0.6], "neck": [0.3, 0.42], "neckLen": [0.2, 0.3] },
+      { "id": "tall", "word": "bottle", "body": [0.16, 0.22], "shoulder": [0.55, 0.68], "neck": [0.4, 0.55], "neckLen": [0.22, 0.32] },
+      { "id": "squat", "word": "jar", "body": [0.38, 0.5], "shoulder": [0.6, 0.75], "neck": [0.55, 0.75], "neckLen": [0.08, 0.15] },
+      { "id": "vial", "word": "vial", "body": [0.14, 0.2], "shoulder": [0.7, 0.82], "neck": [0.6, 0.8], "neckLen": [0.1, 0.16] }
+    ],
+    "tiers": {
+      "common": { "sizeM": [0.08, 0.14], "frost": [0.3, 0.7], "stopperChance": 0.05, "glass": [0, 1, 3], "shapes": [0, 1, 1, 2] },
+      "uncommon": { "sizeM": [0.08, 0.15], "frost": [0.25, 0.6], "stopperChance": 0.15, "glass": [0, 1, 2, 3, 4], "shapes": [0, 1, 2, 3], "markLean": 2 },
+      "rare": { "sizeM": [0.07, 0.15], "frost": [0.15, 0.5], "stopperChance": 0.3, "glass": [2, 4, 5], "shapes": [0, 2, 3, 3], "markLean": 5 },
+      "veryRare": { "sizeM": [0.06, 0.14], "frost": [0.05, 0.35], "stopperChance": 0.6, "glass": [2, 5, 6], "shapes": [0, 3, 3], "markLean": 10 }
+    },
+    "colors": {
+      "glass": [[0.32, 0.55, 0.42], [0.55, 0.32, 0.08], [0.1, 0.18, 0.55], [0.74, 0.8, 0.78], [0.82, 0.83, 0.8], [0.46, 0.3, 0.58], [0.62, 0.12, 0.16]],
+      "glassNames": ["green", "amber", "cobalt", "clear", "milk-white", "violet", "ruby"],
+      "cork": [0.5, 0.36, 0.22]
+    },
+    "marks": { "message": { "chance": 0.08, "word": "with a rolled message inside" } }
+  }
+}
