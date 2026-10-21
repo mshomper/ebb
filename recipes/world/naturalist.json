@@ -24,11 +24,17 @@
       "title": "Driftwood has started washing up",
       "line": "Look along the strandline after a high tide. Tap a log to look at it."
     },
-    { "id": "lens", "at": 15, "icon": "lens", "hint": "a way to look closer" }
+    { "id": "tidetable", "at": 12, "icon": "almanac", "hint": "a way to read the tides" },
+    { "id": "lens", "at": 15, "icon": "lens", "hint": "a way to look closer" },
+    { "id": "glasses", "at": 20, "icon": "eye", "hint": "a way to look far out" },
+    { "id": "lamp", "at": 25, "icon": "moment-dusk", "hint": "a way to see by night" }
   ],
   "line": {
     "title": "The naturalist's notes",
-    "entry": "Your trail of small finds, and what they have brought.",
+    "trail": "The naturalist",
+    "sub": "what you notice",
+    "count": "{n} kinds found",
+    "entry": "Your trails: what you notice, what you keep and what you make.",
     "intro": "What you have found along the shore and the water, in the order you found it.",
     "next": "A little further on",
     "later": "One day"

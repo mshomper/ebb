@@ -504,6 +504,12 @@ const ICONS = {
     <path d="M12.8 15.5C12.8 14.2 13.8 13.4 15 13.4S17 14.2 17 15.5"/>
     <path d="M17.5 15.5C17.9 11.5 19 7.6 20.6 4.5"/>
     <path d="M18.4 11.2C19.6 10.4 20.4 9 20.6 7.4"/>`,
+  // Trails (doc 13): a winding line of stops climbing the page, two inked, the next ahead open.
+  trails: `
+    <path d="M5 20.5C7.5 19 9.5 17.5 9.5 15S6.5 11.5 8 9.5S13 8.5 15.5 7S18 4.5 19 3.5" stroke-dasharray="0.1 3.2"/>
+    <circle ${ACCENT} cx="5" cy="20.5" r="2"/><circle cx="5" cy="20.5" r="2"/>
+    <circle ${ACCENT} cx="9.4" cy="14.5" r="2"/><circle cx="9.4" cy="14.5" r="2"/>
+    <circle cx="17.6" cy="5" r="2.4"/>`,
   // The general net (docs/future/12, K6): two stakes, a sagging top cord and a mesh hanging from it,
   // a float in the middle, over one ripple line.
   net: `

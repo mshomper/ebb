@@ -1,16 +1,47 @@
 {
   "type": "beachcomber",
-  "version": 1,
-  "note": "The beachcomber's trail (doc 13 'Trails', docs/future/12), read by src/world/expansion.js. A stop is a first, never a total; for now the stops count keepsake families ever kept (the saved unlocks' kept list: letting one go never takes a family back). At a stop's mark (at: families kept) the island gives it once, for good: give is merged into the saved unlocks (nets.general: the general net, and the Net chip under the Water tool). A stop with no give is not built yet and gives nothing (the shelf comes with the shells today; the glass case, the light and sinker nets, the second shelf and the rest wait for their pieces). title and line are the card and its journal note; icon is drawn from src/ui/icons. The Trails page that draws this line is a later piece.",
+  "version": 2,
+  "note": "The beachcomber's trail (doc 13 'Trails', docs/future/12), read by src/world/trails.js and src/world/expansion.js, drawn on the journal's Trails page (src/ui/journal-trails.js). A stop is a first, never a total: the first keepsake of each family kept, the first kept at each rarity (uncommon and up), and the first of each mark seen (a mark counts even when the keepsake is left to the sea); they are written in the saved unlocks' firsts, in order, and never taken back. Each stop has a need: families (so many families kept), rarity (one kept at that rarity), marks (so many marks seen). When it is met, a stop with a give is given once, for good (merged into the saved unlocks: nets.general is the general net), with its title and line as a card and a journal note; built: a stop that has nothing to give but already exists (the shelf) inks when reached; any other stop is not built yet and shows in pencil, 'one day', where it falls. Only the next stop ahead shows, in pencil with its hint. icon: drawn from src/ui/icons. words: the page's words; families, rarities and marks name each first on the trail (a mark's key is family:mark).",
   "stops": [
-    { "id": "shelf", "at": 1, "icon": "shelf", "hint": "a place for what you keep" },
+    { "id": "shelf", "need": { "families": 1 }, "icon": "shelf", "built": true, "hint": "a place for what you keep", "title": "The shelf", "line": "Sixteen spaces for the things that are special to you." },
     {
-      "id": "net", "at": 4, "icon": "net",
+      "id": "net", "need": { "families": 4 }, "icon": "net",
       "give": { "nets": { "general": true } },
       "hint": "a way to reach the sea",
       "title": "You can weave a net",
       "line": "Rushes and patience. Look for Net under Water, and cast it in the shallows at low tide."
     },
-    { "id": "lightnet", "at": 8, "icon": "net", "hint": "a lighter net" }
-  ]
+    { "id": "case", "need": { "rarity": "rare" }, "icon": "shelf", "hint": "something to keep under glass", "title": "A glass case", "line": "One space under glass, for your favourite." },
+    { "id": "lightnet", "need": { "families": 8 }, "icon": "net", "hint": "a lighter net, for deeper water", "title": "The light net", "line": "A fine net on driftwood floats." },
+    { "id": "sinker", "need": { "rarity": "veryRare" }, "icon": "net", "hint": "a net that reaches the bottom", "title": "The sinker net", "line": "Weighted with stones, for the deepest water." },
+    { "id": "shelf2", "need": { "marks": 3 }, "icon": "shelf", "hint": "more room to keep things", "title": "A second shelf", "line": "Sixteen more spaces." },
+    { "id": "gold", "need": { "rarity": "lifetime" }, "icon": "shelf", "hint": "something golden", "title": "A pressed-gold border", "line": "For the space that holds it." },
+    { "id": "cabinet", "need": { "families": 13 }, "icon": "picture", "hint": "a frame for it all", "title": "The cabinet", "line": "A frame for the shelf's picture." }
+  ],
+  "words": {
+    "title": "The beachcomber",
+    "sub": "what you keep",
+    "intro": "What the sea has given you that you kept, and the marks you have noticed, in the order they came.",
+    "count": "{n} of {total} families kept",
+    "familyTotal": 13,
+    "icons": { "family": "shells", "rarity": "shelf", "mark": "eye" },
+    "family": "Kept: {name}",
+    "rarity": "Kept: your first {name} one",
+    "mark": "Noticed: {name}",
+    "next": "A little further on",
+    "later": "One day",
+    "families": {
+      "shell": "a coiled shell", "bivalve": "a half-shell", "stone": "a stone", "driftwood": "driftwood", "feather": "a feather",
+      "urchin": "an urchin", "starfish": "a starfish", "seed": "a drift seed", "purse": "a mermaid's purse", "cuttlebone": "a cuttlebone",
+      "coral": "a coral sprig", "fossil": "a fossil", "bottle": "a bottle", "artifact": "something made"
+    },
+    "rarities": { "uncommon": "uncommon", "rare": "rare", "veryRare": "very rare", "lifetime": "once in a lifetime" },
+    "marks": {
+      "shell:leftCoiled": "a shell coiled to the left", "stone:holed": "a holed stone", "fossil:complete": "a whole ammonite",
+      "driftwood:rootKnot": "driftwood with a root knot", "feather:twinned": "two vanes from one quill", "bottle:message": "a message in a bottle",
+      "urchin:sixRayed": "a six-rayed urchin", "starfish:oddArms": "a starfish with odd arms", "seed:seaHeart": "a sea heart",
+      "purse:curly": "a catshark's purse", "cuttlebone:whole": "a whole cuttlebone", "coral:fan": "a coral fan", "bivalve:pair": "a shell with both halves",
+      "artifact:broken": "something made, snapped across", "artifact:pair": "something made, grown with its twin", "artifact:gilded": "something made, gilded"
+    }
+  }
 }

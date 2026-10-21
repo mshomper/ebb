@@ -9,9 +9,10 @@ import { cliffs4 } from './migrate-cliffs.js';
 import { pieces5 } from './migrate-pieces.js';
 import { keepsakes6 } from './migrate-keepsakes.js';
 import { nets7 } from './migrate-nets.js';
+import { trails8 } from './migrate-trails.js';
 
 /** The data schema this build writes. */
-export const FORMAT = 7;
+export const FORMAT = 8;
 
 /**
  * Ordered steps, each from one format to the next.
@@ -24,6 +25,7 @@ export const MIGRATIONS = [
   { from: 4, to: 5, note: 'placed pieces: a `pieces` section for loose stones, empty on an older island (src/save/migrate-pieces.js)', up: pieces5 },
   { from: 5, to: 6, note: 'the shelf: a `keepsakes` section for the keepsakes you keep, empty on an older island (src/save/migrate-keepsakes.js)', up: keepsakes6 },
   { from: 6, to: 7, note: 'the nets: a `nets` section, empty on an older island, and the keepsake families it has kept, from its shelf (src/save/migrate-nets.js)', up: nets7 },
+  { from: 7, to: 8, note: "the trails' firsts: the families, rarities and marks an older island has kept, rebuilt from its kept families and its shelf (src/save/migrate-trails.js)", up: trails8 },
 ];
 
 /**

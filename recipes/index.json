@@ -37,6 +37,7 @@
     "world/bottle-messages": "world/bottle-messages.json",
     "world/naturalist": "world/naturalist.json",
     "world/beachcomber": "world/beachcomber.json",
+    "world/shaper": "world/shaper.json",
     "world/nets": "world/nets.json",
     "world/pieces": "world/pieces.json",
     "species/frog": "species/frog.json",

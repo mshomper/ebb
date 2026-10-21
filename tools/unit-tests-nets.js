@@ -105,7 +105,7 @@ export function addNetsTests(test, assert, eq) {
   });
 
   test(G, 'save format 7: the nets come back exactly, and an older island gets none and its kept families', () => {
-    eq(FORMAT, 7, 'this build writes format 7');
+    assert(FORMAT >= 7, 'this build writes format 7 or later');
     let n = ensureNets(emptyNets(), { general: true });
     n = cast(n, 1, 2.5, -3, 30, TIDE);
     n = noteReleased(n, { kind: 'goby', seed: 77, hour: 41 }, false);

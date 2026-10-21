@@ -26,7 +26,8 @@ import { stampNotes, markShown, markNotesSeen, markPageSeen, readOf, pageSince, 
 /**
  * @typedef {Object} JournalUiSlice
  * @property {boolean} open
- * @property {'living'|'ground'|'web'|'almanac'|'notes'|'shelf'} view
+ * @property {'trails'|'living'|'ground'|'web'|'almanac'|'notes'|'shelf'} view
+ * @property {'naturalist'|'beach'|'shape'} [trail] the trail the Trails page shows when it is not wide enough for all three
  * @property {string|null} page   the page shown in the living or ground view, or null for the list
  * @property {'half'|'full'} size  the phone sheet's height
  * @property {number} [notesSince] the last note number seen before Notes was opened (read.js): newer ones show as new
@@ -152,7 +153,7 @@ export function createJournal(opts) {
     if (ks && KW) {
       return { sp: 'keepsake', keepsake: ks.id, name: KW.card, sub: KW.rarity[ks.n.rarity] ?? ks.n.rarity, icon: KW.icon,
         text: opts.keepsakes.words(ks.n), wx: ks.x, wz: ks.z, r: 0.15, stage: -1, noPage: true,
-        family: ks.n.family, letter: ks.n.family === 'bottle' && !!ks.n.message };
+        family: ks.n.family, letter: ks.n.family === 'bottle' && !!ks.n.message, mark: ks.n.mark ? { family: ks.n.family, mark: ks.n.mark } : null };
     }
     // Then a net (docs/future/12): how long it has left, and Lift once it is full. It has no page.
     const nt = opts.nets?.netAt(x, z);
@@ -182,7 +183,9 @@ export function createJournal(opts) {
   function select(card, x, y) {
     update('identify', () => (card ? { ...card, x, y, at: performance.now() } : null));
     if (!card) return;
-    // A keepsake is not a find: tapping it writes nothing (the shelf is its only record).
+    // A keepsake is not a find: tapping it writes nothing in the journal (the shelf is its only
+    // record), but a mark seen is a first on the beachcomber's trail, kept or not (src/world/trails.js).
+    if (card.keepsake && card.mark) emitDeferred('keepsake:seen', { n: card.mark });
     if (card.keepsake || card.net) return;
     // A loose stone tips up to show underneath, a log rolls over (src/world/pieces); the first of
     // each is written down.
@@ -326,6 +329,7 @@ export function createJournal(opts) {
         }
       }
       if (a.size) patch.size = a.size;
+      if (a.trail) patch.trail = a.trail;
       // Opening the journal, or a page in it, puts the tap card away (the page now says it all).
       if (open && (!u.open || a.page) && get('identify')) update('identify', () => null);
       // Opening Notes, or a page: what was unread stays marked new while you look (since), and
