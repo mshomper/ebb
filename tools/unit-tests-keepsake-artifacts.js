@@ -65,7 +65,8 @@ export function addKeepsakeArtifactTests(test, assert, eq) {
       assert(a.observations.length >= 3, `${a.id}: three or more observations`);
       for (const o of a.observations) assert(o.length > 10 && o.endsWith('.') && !/genuine/i.test(o), `${a.id}: a plain observation (${o})`);
       assert(a.nouns.length === 3 && a.nouns.every((/** @type {any} */ x) => x[1].length >= 2), `${a.id}: nouns by shape, with synonyms`);
-      assert(a.weights.length === 4 && a.stats?.dims?.length === 3 && a.stats?.mean?.length === 3, `${a.id}: tier weights and measured stats`);
+      // One weight per rarity tier: five since "once in a lifetime" (October 21, 2026).
+      assert(a.weights.length === 5 && a.stats?.dims?.length === 3 && a.stats?.mean?.length === 3, `${a.id}: tier weights and measured stats`);
     }
   });
 

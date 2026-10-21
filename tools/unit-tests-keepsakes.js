@@ -45,6 +45,20 @@ export function addKeepsakeTests(test, assert, eq) {
     eq(rarityWeights(K.rarity, { spring: 0.6 })[3], 0, 'very rare is shut below its gate');
   });
 
+  test(KEEPSAKES, 'once in a lifetime: the fifth tier, only at the very top of a spring tide, rarest of all', async () => {
+    const K = await recipe();
+    eq(K.rarity.order.join(','), 'common,uncommon,rare,veryRare,lifetime', 'five tiers in order');
+    eq(K.rarity.words.lifetime, 'once in a lifetime', 'its word');
+    eq(rarityWeights(K.rarity, { spring: 0.85 })[4], 0, 'shut below its gate, even where very rare is open');
+    const top = rarityWeights(K.rarity, { spring: 1 });
+    assert(top[4] > 0 && top[4] < top[3], 'open at the very top, and rarer than very rare');
+    let seen = 0;
+    for (let i = 0; i < 20000; i++) if (rollKeepsake('shell', 31, i, K, { spring: 1, season: 'winter' }).rarity === 'lifetime') seen++;
+    assert(seen > 0 && seen < 200, `turns up, but seldom, on the best winter tides (${seen} in 20,000)`);
+    assert(K.shelf.grounds.lifetime, 'its own paper on the shelf');
+    for (const [key, fam] of Object.entries(K)) if (/** @type {any} */ (fam)?.tiers?.veryRare) assert(/** @type {any} */ (fam).tiers.lifetime, `${key} has a lifetime tier`);
+  });
+
   test(KEEPSAKES, 'winter leans toward the rarer tiers', async () => {
     const K = await recipe();
     const w = rarityWeights(K.rarity, { spring: 0.9, season: 'winter' }), s = rarityWeights(K.rarity, { spring: 0.9, season: 'summer' });

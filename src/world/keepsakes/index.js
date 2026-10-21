@@ -13,15 +13,16 @@ import { packMesh } from '../creatures/bodies.js';
 import { createCreaturePass } from '../../render/passes/creatures.js';
 import { keepsakeMesh } from './families/index.js';
 import { onShore, tideKeepsakes } from './shore.js';
+import { coveField } from '../water/cove.js';
 
 const SEASON_NAMES = ['spring', 'summer', 'autumn', 'winter'];
 
 /**
  * @param {{ water: any, shore: any, terrain: any, camera: any, recipe: any, passRecipe: any, seed: number,
- *   tide?: any, on: () => boolean, test?: boolean, cove?: (k: number) => number }} opts
+ *   tide?: any, on: () => boolean, test?: boolean, coveRecipe?: any }} opts
  *   recipe: keepsakes.json; passRecipe: the finds recipe, for the creature pass's look; on: whether
- *   the sea leaves keepsakes yet; test: ?keepsakes, a thick strandline; cove: how sheltered a cell
- *   is, 0..1 (the cove field, once it is in)
+ *   the sea leaves keepsakes yet; test: ?keepsakes, a thick strandline; coveRecipe: recipes/world/
+ *   cove.json, so sheltered coves are favoured (src/world/water/cove.js)
  */
 export function createKeepsakes(opts) {
   const { water, shore, terrain, camera, recipe: K } = opts;
@@ -38,6 +39,8 @@ export function createKeepsakes(opts) {
   /** @type {import('./shore.js').ShoreKeepsake[]} */ let now = [];
   /** @type {{ id: string, x: number, z: number, n: any }[]} */ let shown = [];
   let clock = 0;
+  /** How sheltered each shore cell is (src/world/water/cove.js), for the shore as it is now. @type {Uint8Array | null} */
+  let shelter = null;
   /** What the last look saw (tools). */
   let stats = { lines: 0, cells: 0, rolled: 0, ready: false, on: false };
 
@@ -49,7 +52,8 @@ export function createKeepsakes(opts) {
       const x = waterCellCenter(rect.x + i), z = waterCellCenter(rect.y + j);
       if (Math.abs(terrain.sampleHeight(x, z) - level - L.runupM) > S.lineToleranceM) continue;
       const k = j * rect.w + i;
-      cells.push({ k, x, z, weight: opts.cove ? 0.25 + opts.cove(k) : 1 });
+      // Sheltered cells (the cove field, 0 open to 255 deep in a cove) are chosen far more often.
+      cells.push({ k, x, z, weight: shelter ? S.coveFloor + (1 - S.coveFloor) * S.coveGain * (shelter[k] / 255) : 1 });
     }
     stats.cells += cells.length;
     const hour = tideId * tideP.periodH + tideP.phaseH;
@@ -63,8 +67,13 @@ export function createKeepsakes(opts) {
     const z = shore.zones?.();
     stats = { lines: 0, cells: 0, rolled: 0, ready: !!(L && z), on: opts.on() };
     if (!L || !z || !opts.on()) { now = []; shown = []; return; }
-    // A reshaped shore moves the lines: work them out again.
-    if (z !== zonesSeen) { zonesSeen = z; byTide.clear(); }
+    // A reshaped shore moves the lines and its coves: work them out again.
+    if (z !== zonesSeen) {
+      zonesSeen = z;
+      byTide.clear();
+      const s = water.getSummary?.();
+      shelter = opts.coveRecipe && s && s.rect.w === z.rect.w && s.rect.h === z.rect.h ? coveField(s, opts.coveRecipe) : null;
+    }
     const nowH = f.displayT / 3600;
     const lines = strandLines(nowH, tideP, L);
     /** @type {import('./shore.js').ShoreKeepsake[][]} */ const lists = [];

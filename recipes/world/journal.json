@@ -58,7 +58,7 @@
   "keepsakes": {
     "card": "Something the sea left",
     "icon": "shells",
-    "rarity": { "common": "Common", "uncommon": "Uncommon", "rare": "Rare", "veryRare": "Very rare" },
+    "rarity": { "common": "Common", "uncommon": "Uncommon", "rare": "Rare", "veryRare": "Very rare", "lifetime": "Once in a lifetime" },
     "leave": "Leave it to the sea",
     "left": "The next tide will take it back.",
     "keep": "Keep it on the shelf",

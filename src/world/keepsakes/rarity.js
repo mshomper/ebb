@@ -3,7 +3,7 @@
 // A tier can come only when the tide reaches its gate (springMin, -1 neap to 1 top spring), and the
 // season leans the weights (winter's spring tides stand in for storm tides until F08). Pure.
 
-/** @typedef {'common'|'uncommon'|'rare'|'veryRare'} Rarity */
+/** @typedef {'common'|'uncommon'|'rare'|'veryRare'|'lifetime'} Rarity lifetime is "once in a lifetime" */
 /**
  * @typedef {{ spring: number, season?: string, lean?: Record<string, number> }} Conditions
  *   lean: extra weight per tier on top of the season's, for what reaches further than the

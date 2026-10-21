@@ -386,8 +386,9 @@ export async function startApp(canvas, hooks = {}) {
   // `?keepsakes` (testing, unsaved) shows them at once, several to a tide.
   const keepsakesRecipe = await loadRecipe('world/keepsakes');
   const keepsakeTest = params.has('keepsakes');
+  // Sheltered coves catch more of them (the cove field, src/world/water/cove.js).
   const keepsakes = createKeepsakes({ water, shore: ww.shore, terrain, camera, recipe: keepsakesRecipe, passRecipe: findsRecipe,
-    seed: subSeed(seed, 'keepsakes'), tide: waterRecipe.tide, test: keepsakeTest,
+    seed: subSeed(seed, 'keepsakes'), tide: waterRecipe.tide, test: keepsakeTest, coveRecipe: await loadRecipe('world/cove'),
     on: () => keepsakeTest || !!getStore('unlocks')?.shells });
   const keepsakesApi = { ...keepsakes, words: (/** @type {any} */ n) => keepsakeWords(n, keepsakesRecipe) };
   sim.addSystem(keepsakes);
