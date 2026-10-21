@@ -465,7 +465,7 @@
       "tapM": 1.1, "ringM": 0.9,
       "field": [
         { "text": "Also called furze or whin. Its leaves are stiff green spines, so the whole bush is a mound of needles that nothing grazes.", "learn": ["seen"] },
-        { "text": "Its yellow pea flowers smell of coconut on a warm day, thickest in spring.", "learn": ["flower"] },
+        { "text": "Its yellow pea flowers smell of coconut on a warm day, thickest from midwinter into spring.", "learn": ["flower"] },
         { "text": "In hot summer weather its black pods crack open with a snap you can hear, and throw the seeds a few meters.", "learn": ["spread"] },
         { "text": "It flowers in every month of the year. An old saying goes: when gorse is out of blossom, kissing is out of fashion.", "learn": ["moment:winter"] },
         { "text": "Frost browns the tips of its spines, but the mound stays green underneath.", "learn": ["moment:frost"] }
@@ -483,7 +483,7 @@
       "flowering": "thick with yellow flowers", "dormant": "dark green for winter",
       "spreading": "seeding across the dry ground", "receding": "thinning out",
       "stages": ["A gorse seed, waiting for dry ground", "A new gorse shoot", "A young gorse bush", "A gorse bush, dark green and spiny", "A gorse bush thick with yellow flowers", "A gorse bush, dark green for winter"],
-      "seasons": { "grow": ["yellow flowers all over", "black pods cracking in the heat", "a few late flowers", "dark green, a flower here and there"], "flower": "yellow flowers", "dormant": "dark green" },
+      "seasons": { "grow": ["the last of the winter flowers", "black pods cracking in the heat", "a flower here and there", "yellow flowers in the cold"], "flower": "yellow flowers", "dormant": "dark green" },
       "likes": [
         { "text": "Dry, sunny ground that drains fast, soil or sand", "learn": ["seen"] },
         { "text": "Never wet ground or standing water", "learn": ["refused:wet", "refused:deep", "lost:drown", "lost:seed"] },
@@ -498,7 +498,7 @@
       ],
       "notes": {
         "arrived": "Gorse was already growing on the dry ground when you arrived.",
-        "seen": "A gorse seedling has come up on the dry ground. It will grow into a spiny mound.",
+        "seen": "A gorse seed came in on the summer heat, and a seedling is up on the dry ground. It will grow into a spiny mound.",
         "spread": "A gorse pod cracked in the heat, and a new seedling has come up nearby.",
         "flower": "The gorse is thick with yellow flowers, and smells of coconut in the sun.",
         "dormant": "The gorse is dark green for winter, with a flower here and there.",
