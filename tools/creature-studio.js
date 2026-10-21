@@ -1,66 +1,32 @@
 // @ts-check
-// ebb creature studio (the S6 creature studio plan, Matt's tool): the frog on a paused stage, built
-// by the game's own bake (src/world/creatures/bodies.js, on the worker pool) and posed by its own
-// bones, with sliders for the look half of recipes/species/frog.json: proportions, colors and pattern,
-// eyes, variety and the idle motion. Edits show at once (a coarse bake while you drag, the full one
-// when you let go) and are kept in this browser until you save. Save to repo writes
-// recipes/species/frog.json in your ebb folder, changing only the numbers you moved
+// ebb creature studio (the S6 creature studio plan, Matt's tool; any species since M2, doc 11
+// "Tools that take any species"): one creature on a stage, built by the game's own bake
+// (src/world/creatures/bodies.js, on the worker pool) and posed by its own bones and its own motion
+// (the frog's idle moves, a minnow's tail beat, a dragonfly's wing beat), with sliders for the look
+// half of its recipe. The species, their sliders and their motions are a table
+// (creature-studio-species.js). Edits show at once (a coarse bake while you drag, the full one when
+// you let go) and are kept in this browser, per species, until you save. Save to repo writes
+// recipes/species/<id>.json in your ebb folder, changing only the numbers you moved
 // (tools/recipe-text.js); Download saves the same file to your downloads. The life half (needs,
 // arrival, presence, trust) is not here: it changes how the game plays, so it stays in the file.
 
 import { run } from '../src/core/workers.js';
-import { poseSkeleton, idleMoves } from '../src/world/creatures/pose.js';
+import { poseSkeleton } from '../src/world/creatures/pose.js';
 import { MAX_BONES } from '../src/world/creatures/bodies.js';
 import { createStage, VIEWS } from './creature-studio-stage.js';
 import { changedPaths, patchText, at } from './recipe-text.js';
+import { SPECIES, rowsOf, sizeOf, setSize } from './creature-studio-species.js';
+
+/** @typedef {import('./creature-studio-species.js').Row} Row @typedef {import('./creature-studio-species.js').Species} Species */
 
 const BAKE = { module: './world/creatures/bodies.js', fn: 'bakeVariant' };
-const STORE = 'ebb.creatureStudio.frog';
-const FILE = '../recipes/species/frog.json';
 const $ = (/** @type {string} */ id) => /** @type {HTMLElement} */ (document.getElementById(id));
-
-/** @typedef {{ path: string, label: string, min?: number, max?: number, step?: number, unit?: (v: number) => string, color?: boolean, rebake?: boolean }} Row */
-
-const x = (/** @type {number} */ v) => `${v.toFixed(2)}x`;
-/** The sliders, by group. Paths into the recipe; body paths rebake, motion paths only animate. @type {{ title: string, note: string, rows: Row[] }[]} */
-const GROUPS = [
-  { title: 'Shape', note: 'Proportions of the body. 1 is the recipe body; each frog then varies a little around it.', rows: [
-    { path: 'body.shape.torsoLen', label: 'Torso length', min: 0.65, max: 1.4, step: 0.01, unit: x },
-    { path: 'body.shape.torsoWid', label: 'Torso width', min: 0.55, max: 1.5, step: 0.01, unit: x },
-    { path: 'body.shape.torsoHgt', label: 'Torso height', min: 0.55, max: 1.7, step: 0.01, unit: x },
-    { path: 'body.shape.headSize', label: 'Head size', min: 0.7, max: 1.4, step: 0.01, unit: x },
-    { path: 'body.shape.eyeSize', label: 'Eye size', min: 0.6, max: 1.45, step: 0.01, unit: x },
-    { path: 'body.shape.sacSize', label: 'Throat sac size', min: 0.6, max: 1.6, step: 0.01, unit: x },
-    { path: 'body.shape.hindThick', label: 'Hind leg thickness', min: 0.6, max: 1.6, step: 0.01, unit: x },
-  ] },
-  { title: 'Color and pattern', note: 'Physical colors (albedo). In the game the palette still paints last, so the island may look warmer or cooler than here.', rows: [
-    { path: 'body.albedo.back', label: 'Back', color: true },
-    { path: 'body.albedo.belly', label: 'Belly', color: true },
-    { path: 'body.albedo.blotch', label: 'Blotches', color: true },
-    { path: 'body.blotch.amount', label: 'Blotch cover', min: 0, max: 1, step: 0.01, unit: (v) => v.toFixed(2) },
-    { path: 'body.blotch.scale', label: 'Blotch fineness', min: 60, max: 320, step: 5, unit: (v) => `${v} per m` },
-  ] },
-  { title: 'Eyes', note: 'A dark pupil in a flecked gold iris, hooded by the lids.', rows: [
-    { path: 'body.albedo.eyeRing', label: 'Iris', color: true },
-    { path: 'body.albedo.fleck', label: 'Iris flecks', color: true },
-    { path: 'body.eyeLook.pupil.0', label: 'Pupil width', min: 0.3, max: 0.95, step: 0.01, unit: (v) => v.toFixed(2) },
-    { path: 'body.eyeLook.pupil.1', label: 'Pupil height', min: 0.2, max: 0.8, step: 0.01, unit: (v) => v.toFixed(2) },
-    { path: 'body.eyeLook.fleckShare', label: 'Fewer flecks', min: 0, max: 0.9, step: 0.01, unit: (v) => v.toFixed(2) },
-    { path: 'body.eyeGlint.strength', label: 'Wet glint (game only)', min: 0, max: 2, step: 0.05, unit: (v) => v.toFixed(2), rebake: false },
-  ] },
-  { title: 'Variety and size', note: 'How much frogs differ from each other, and how large they are drawn in the game.', rows: [
-    { path: 'body.variation', label: 'Variation between frogs', min: 0, max: 0.12, step: 0.005, unit: (v) => `${Math.round(v * 100)}%` },
-    { path: 'body.sizeJitter', label: 'Size difference', min: 0, max: 0.2, step: 0.01, unit: (v) => `${Math.round(v * 100)}%`, rebake: false },
-    { path: 'body.displayScale', label: 'Drawn size in the game', min: 1, max: 4, step: 0.1, unit: x, rebake: false },
-  ] },
-  { title: 'Idle motion', note: 'Breathing, blinking and the call, as the frogs do them.', rows: [
-    { path: 'motion.breath.hz', label: 'Breaths a second', min: 0.3, max: 3, step: 0.05, unit: (v) => v.toFixed(2) },
-    { path: 'motion.breath.sac', label: 'Throat swell when breathing', min: 0, max: 0.3, step: 0.01, unit: (v) => v.toFixed(2) },
-    { path: 'motion.blink.retractM', label: 'How far the eyes sink in a blink', min: 0, max: 0.007, step: 0.0005, unit: (v) => `${(v * 1000).toFixed(1)} mm` },
-    { path: 'motion.call.inflate', label: 'Sac size when calling', min: 0.5, max: 3, step: 0.05, unit: x },
-  ] },
-];
-const rowOf = new Map(GROUPS.flatMap((g) => g.rows.map((r) => [r.path, r])));
+const store = {
+  get: (/** @type {string} */ k) => { try { return localStorage.getItem(k); } catch { return null; } },
+  set: (/** @type {string} */ k, /** @type {string} */ v) => { try { localStorage.setItem(k, v); } catch { /* blocked: edits last this visit */ } },
+  drop: (/** @type {string} */ k) => { try { localStorage.removeItem(k); } catch { /* blocked */ } },
+};
+const keyFor = (/** @type {string} */ id) => `ebb.creatureStudio.${id}`;
 
 /** @param {any} obj @param {string} path @param {any} v */
 function setAt(obj, path, v) {
@@ -72,17 +38,6 @@ const clone = (/** @type {any} */ o) => JSON.parse(JSON.stringify(o));
 const toHex = (/** @type {number[]} */ lin) => `#${lin.map((c) => Math.round(255 * (c <= 0.0031308 ? c * 12.92 : 1.055 * c ** (1 / 2.4) - 0.055)).toString(16).padStart(2, '0')).join('')}`;
 const fromHex = (/** @type {string} */ h) => [1, 3, 5].map((i) => { const s = parseInt(h.slice(i, i + 2), 16) / 255; return Math.round((s <= 0.04045 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4) * 1e4) / 1e4; });
 
-// --- the recipe: as the file is, and as edited here ---
-const fileText = await fetch(FILE).then((r) => r.text());
-let base = JSON.parse(fileText), baseText = fileText;
-let work = clone(base);
-try {
-  const kept = localStorage.getItem(STORE);
-  if (kept) work = JSON.parse(kept);
-} catch { /* storage blocked: edits last this visit */ }
-const keep = () => { try { localStorage.setItem(STORE, JSON.stringify(work)); } catch { /* blocked */ } };
-const forget = () => { try { localStorage.removeItem(STORE); } catch { /* blocked */ } };
-
 // --- the stage ---
 const made = await createStage(/** @type {HTMLCanvasElement} */ ($('stage')));
 if (!made.ok) {
@@ -90,70 +45,128 @@ if (!made.ok) {
   throw new Error('no WebGPU');
 }
 const stage = made.stage;
-let variant = -1, gameSize = false, idle = true, calling = false;
+
+// --- the species on the stage, its recipe as the file is (base) and as edited here (work) ---
+/** @type {Species} */ let S = SPECIES.frog;
+/** @type {Map<string, Row>} */ let rows = new Map();
+/** @type {any} */ let base = null, work = null;
+let baseText = '';
+let variant = -1, gameSize = false, playing = true, speed = 1, mode = 'idle';
+let animT = 0;
+const clock = { phase: 0 };
 /** @type {{ name: string, parent: number, pivot: number[] }[]} */ let bones = [];
 const mats = new Float32Array(MAX_BONES * 16);
+const file = () => `${S.id}.json`;
+const keep = () => store.set(keyFor(S.id), JSON.stringify(work));
+const say = (/** @type {string} */ t) => { $('saved').textContent = t; };
+
+/** A slider's value in a recipe (a size row: its stretch from the file). @param {Row} r @param {any} obj */
+const valueOf = (r, obj) => (r.size ? sizeOf(r.size, base, obj) : at(obj, /** @type {string} */ (r.path)));
+/** Whether a slider has moved from the file. @param {Row} r @param {any} v */
+const movedFrom = (r, v) => (r.size ? Math.abs(v - 1) > 1e-4 : JSON.stringify(v) !== JSON.stringify(at(base, /** @type {string} */ (r.path))));
 
 // --- baking: a coarse body at once, the full one when the sliders settle; a newer edit wins ---
 let version = 0, fineTimer = 0;
 /** @param {number} cellM @param {number} v */
 async function bake(cellM, v) {
   const t0 = performance.now();
-  const r = await run(BAKE, { id: 'frog', body: work.body, variant, cellM });
+  const r = await run(BAKE, { id: S.id, body: work.body, variant, cellM });
   if (v !== version) return;
   stage.setMesh(r);
   bones = r.bones;
   const f = new Float32Array(r.data);
   let min = [1, 1, 1], max = [-1, -1, -1];
   for (let i = 0; i < r.count; i++) for (let a = 0; a < 3; a++) { const p = f[i * 11 + a]; min[a] = Math.min(min[a], p); max[a] = Math.max(max[a], p); }
+  const cm = (/** @type {number} */ a) => ((max[a] - min[a]) * 100).toFixed(1);
   $('info').textContent = `${(r.indices.length / 3).toLocaleString()} triangles at ${(cellM * 1000).toFixed(1)} mm, baked in ${Math.round(performance.now() - t0)} ms. `
-    + `Real size ${((max[2] - min[2]) * 100).toFixed(1)} cm long, ${((max[1] - min[1]) * 100).toFixed(1)} cm tall; drawn ${work.body.displayScale}x in the game.`;
+    + `Real size ${cm(2)} cm long, ${cm(0)} cm wide, ${cm(1)} cm tall; drawn ${work.body.displayScale}x in the game.`;
 }
 function rebake() {
   const v = ++version;
-  bake(0.0033, v).catch((e) => { $('status').textContent = `The bake failed: ${e.message}`; });
+  // The species' own bake: its nearest level of detail when you let go, its middle one while you
+  // drag (thin wings and fins hold at that, as they do in the game).
+  const lods = base.bake?.lods ?? [];
+  const fine = lods[0]?.cellM ?? base.bake?.cellM ?? 0.0011, coarse = lods[1]?.cellM ?? fine * 3;
+  bake(coarse, v).catch((e) => { $('status').textContent = `The bake failed: ${e.message}`; });
   clearTimeout(fineTimer);
-  fineTimer = window.setTimeout(() => { if (v === version) bake(0.0011, v).catch(() => {}); }, 450);
+  fineTimer = window.setTimeout(() => { if (v === version) bake(fine, v).catch(() => {}); }, 450);
+}
+
+/** Put a species on the stage: its file, any edits kept for it, its sliders and motions. @param {string} id */
+async function choose(id) {
+  S = SPECIES[/** @type {keyof typeof SPECIES} */ (id)] ?? SPECIES.frog;
+  rows = rowsOf(S);
+  store.set('ebb.creatureStudio.species', S.id);
+  for (const b of $('species').querySelectorAll('button')) b.setAttribute('aria-pressed', String(/** @type {HTMLElement} */ (b).dataset.species === S.id));
+  $('stage').setAttribute('aria-label', `The ${S.name.toLowerCase()} on the stage`);
+  version++;
+  bones = [];
+  stage.clear();
+  $('info').textContent = 'Baking.';
+  baseText = await fetch(`../recipes/species/${file()}`, { cache: 'no-store' }).then((r) => r.text());
+  base = JSON.parse(baseText);
+  work = clone(base);
+  const kept = store.get(keyFor(S.id));
+  if (kept) { try { work = JSON.parse(kept); } catch { /* a broken copy: start from the file */ } }
+  // The specimens: the plain recipe body, then each seeded variant the game bakes.
+  const n = base.body.variants ?? 8;
+  $('specimen').innerHTML = `<option value="-1">The recipe body</option>${Array.from({ length: n }, (_, i) => `<option value="${i}">Variant ${i + 1}</option>`).join('')}`;
+  variant = -1;
+  mode = S.defaultMode;
+  $('modes').innerHTML = S.modes.map((m) => `<button type="button" data-mode="${m.id}" aria-pressed="${m.id === mode}">${m.label}</button>`).join('');
+  stage.setFraming(S.frame);
+  stage.setScale(gameSize ? work.body.displayScale : 1);
+  $('save-note').textContent = `Save to repo asks once for your ebb folder (the one with recipes in it), then writes recipes/species/${file()}. Download saves the same file to your downloads.`;
+  say('');
+  render();
+  rebake();
 }
 
 // --- the sliders ---
 function render() {
-  $('groups').innerHTML = GROUPS.map((g) => `<section class="card"><h2>${g.title}</h2><p class="muted">${g.note}</p>${g.rows.map((r) => {
-    const v = at(work, r.path), was = at(base, r.path);
-    const moved = JSON.stringify(v) !== JSON.stringify(was);
+  $('groups').innerHTML = S.groups.map((g, gi) => `<section class="card"><h2>${g.title}</h2><p class="muted">${g.note}</p>${g.rows.map((r, ri) => {
+    const key = r.path ?? `size:${gi}.${ri}`;
+    const v = valueOf(r, work);
+    const moved = movedFrom(r, v) ? ' moved' : '';
     if (r.color) {
-      return `<label class="row${moved ? ' moved' : ''}"><span class="lbl"><span>${r.label}</span><span class="val">${toHex(v)}</span></span>
-        <input type="color" data-path="${r.path}" value="${toHex(v)}"></label>`;
+      return `<label class="row${moved}"><span class="lbl"><span>${r.label}</span><span class="val">${toHex(v)}</span></span>
+        <input type="color" data-key="${key}" value="${toHex(v)}"></label>`;
     }
-    return `<label class="row${moved ? ' moved' : ''}"><span class="lbl"><span>${r.label}</span><span class="val">${r.unit ? r.unit(v) : v}</span></span>
-      <input type="range" data-path="${r.path}" min="${r.min}" max="${r.max}" step="${r.step}" value="${v}"></label>`;
+    return `<label class="row${moved}"><span class="lbl"><span>${r.label}</span><span class="val">${r.unit ? r.unit(v) : v}</span></span>
+      <input type="range" data-key="${key}" min="${r.min}" max="${r.max}" step="${r.step}" value="${v}"></label>`;
   }).join('')}</section>`).join('');
   status();
 }
 function status() {
   const n = changedPaths(base, work).length;
+  const who = S.name.toLowerCase();
   $('status').innerHTML = n
-    ? `<span class="dot" aria-hidden="true"></span><span>${n} change${n === 1 ? '' : 's'} not yet saved to the recipe file. They are kept in this browser until you save or undo them.</span>`
-    : '<span>The frog as the recipe file has it.</span>';
+    ? `<span class="dot" aria-hidden="true"></span><span>${n} change${n === 1 ? '' : 's'} to the ${who} not yet saved to ${file()}. They are kept in this browser until you save or undo them.</span>`
+    : `<span>The ${who} as ${file()} has it.</span>`;
 }
 $('groups').addEventListener('input', (e) => {
   const el = /** @type {HTMLInputElement} */ (e.target);
-  const path = el.dataset.path;
-  if (!path) return;
-  const r = /** @type {Row} */ (rowOf.get(path));
+  const key = el.dataset.key;
+  const r = key ? rows.get(key) : null;
+  if (!r) return;
   const v = r.color ? fromHex(el.value) : Number(el.value);
-  setAt(work, path, v);
+  if (r.size) setSize(r.size, /** @type {number} */ (v), base, work);
+  else setAt(work, /** @type {string} */ (r.path), v);
   const label = el.closest('.row');
   const val = label?.querySelector('.val');
   if (val) val.textContent = r.color ? el.value : r.unit ? r.unit(/** @type {number} */ (v)) : String(v);
-  label?.classList.toggle('moved', JSON.stringify(v) !== JSON.stringify(at(base, path)));
+  label?.classList.toggle('moved', movedFrom(r, v));
   keep();
   status();
-  if (path.startsWith('body.') && r.rebake !== false) rebake();
-  if (path === 'body.displayScale') stage.setScale(gameSize ? work.body.displayScale : 1);
+  if ((r.size || r.path?.startsWith('body.')) && r.rebake !== false) rebake();
+  if (r.path === 'body.displayScale') stage.setScale(gameSize ? work.body.displayScale : 1);
 });
 
-// --- views, specimen, motion ---
+// --- species, views, specimen, motion ---
+$('species').addEventListener('click', (e) => {
+  const id = /** @type {HTMLElement} */ (e.target).closest('button')?.dataset.species;
+  if (id && id !== S.id) choose(id).catch((err) => { $('status').textContent = `Could not load ${id}.json: ${err.message}`; });
+});
 $('views').addEventListener('click', (e) => {
   const b = /** @type {HTMLElement} */ (e.target).closest('button');
   if (!b?.dataset.view) return;
@@ -166,27 +179,36 @@ $('game-size').addEventListener('click', () => {
   $('game-size').setAttribute('aria-pressed', String(gameSize));
   stage.setScale(gameSize ? work.body.displayScale : 1);
 });
-$('idle').addEventListener('click', () => { idle = !idle; $('idle').setAttribute('aria-pressed', String(idle)); });
-$('call').addEventListener('click', () => { calling = !calling; $('call').setAttribute('aria-pressed', String(calling)); });
+$('modes').addEventListener('click', (e) => {
+  const b = /** @type {HTMLElement} */ (e.target).closest('button');
+  if (!b?.dataset.mode) return;
+  mode = b.dataset.mode;
+  for (const o of $('modes').querySelectorAll('button')) o.setAttribute('aria-pressed', String(o === b));
+});
+$('play').addEventListener('click', () => {
+  playing = !playing;
+  $('play').textContent = playing ? 'Pause' : 'Play';
+  $('play').setAttribute('aria-pressed', String(!playing));
+});
+$('speed').addEventListener('change', () => { speed = Number(/** @type {HTMLSelectElement} */ ($('speed')).value); });
 
 // --- saving ---
-const say = (/** @type {string} */ t) => { $('saved').textContent = t; };
 $('undo').addEventListener('click', () => {
   work = clone(base);
-  forget();
+  store.drop(keyFor(S.id));
   render();
   rebake();
-  say('Back to the recipe file.');
+  say(`Back to ${file()}.`);
 });
 $('download').addEventListener('click', () => {
   const paths = changedPaths(base, work);
   const text = patchText(baseText, work, paths);
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
-  a.download = 'frog.json';
+  a.download = file();
   a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-  say(`Downloaded frog.json with ${paths.length} change${paths.length === 1 ? '' : 's'}. Put it in recipes/species to use it.`);
+  say(`Downloaded ${file()} with ${paths.length} change${paths.length === 1 ? '' : 's'}. Put it in recipes/species to use it.`);
 });
 /** @type {any} */ let repo = null;
 if (!('showDirectoryPicker' in window)) $('save').hidden = true;
@@ -194,18 +216,18 @@ $('save').addEventListener('click', async () => {
   try {
     repo ??= await /** @type {any} */ (window).showDirectoryPicker({ id: 'ebb-repo', mode: 'readwrite' });
     const species = await (await repo.getDirectoryHandle('recipes')).getDirectoryHandle('species');
-    const fh = await species.getFileHandle('frog.json');
+    const fh = await species.getFileHandle(file());
     const text = await (await fh.getFile()).text();
     const paths = changedPaths(JSON.parse(text), work);
-    if (!paths.length) { say('The recipe file already has these numbers.'); return; }
+    if (!paths.length) { say(`${file()} already has these numbers.`); return; }
     const out = patchText(text, work, paths);
     const w = await fh.createWritable();
     await w.write(out);
     await w.close();
     base = JSON.parse(out); baseText = out;
-    forget();
+    store.drop(keyFor(S.id));
     render();
-    say(`Saved ${paths.length} change${paths.length === 1 ? '' : 's'} to recipes/species/frog.json. Commit it in GitHub Desktop.`);
+    say(`Saved ${paths.length} change${paths.length === 1 ? '' : 's'} to recipes/species/${file()}. Commit it in GitHub Desktop.`);
   } catch (e) {
     const err = /** @type {Error} */ (e);
     repo = null;
@@ -213,25 +235,24 @@ $('save').addEventListener('click', async () => {
   }
 });
 
-// --- the frame: pose and draw ---
-const t0 = performance.now();
+// --- the frame: pose by the species' own motion, and draw ---
+let last = performance.now();
 function frame() {
-  const t = (performance.now() - t0) / 1000;
-  if (bones.length) {
-    const moves = idle ? idleMoves(bones, t, 1, work.motion) : bones.map(() => null);
-    if (calling) {
-      // A call every three seconds: the sac swells over pulseS and settles.
-      const C = work.motion.call, p = (t % 3) / C.pulseS;
-      const k = p < 1 ? Math.sin(Math.PI * p) * C.inflate : 0;
-      const i = bones.findIndex((b) => b.name === 'throat');
-      if (i >= 0 && k > 0) moves[i] = { s: [1 + 0.4 * k, 1 + k, 1 + 0.7 * k] };
-    }
+  const now = performance.now();
+  // Slow motion and pause stretch the creature's own time; a long gap (a hidden tab) is not caught up.
+  const dt = playing ? Math.min(0.1, (now - last) / 1000) * speed : 0;
+  last = now;
+  animT += dt;
+  if (bones.length && work) {
+    const moves = mode === 'rest' ? bones.map(() => null) : S.pose(bones, mode, animT, dt, work, clock);
     poseSkeleton(bones, moves, mats, 0);
     stage.setBones(mats);
   }
   stage.draw();
   requestAnimationFrame(frame);
 }
-render();
-rebake();
+
+// A link may name the species (creature-studio.html?species=minnow); else the last one you had.
+const asked = new URLSearchParams(location.search).get('species') ?? store.get('ebb.creatureStudio.species') ?? 'frog';
+await choose(asked);
 requestAnimationFrame(frame);

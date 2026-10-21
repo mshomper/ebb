@@ -38,6 +38,13 @@ function learnOnce(k, t) {
  * @param {string} sp @param {any} state @param {any} rec words.species[sp]
  */
 export function measureAnimal(sp, state, rec) {
+  if (rec.kind === 'school') {
+    // A school or swarm with needs (minnows, dragonflies): counted in all, each group a spot.
+    const S = state?.creatures?.[sp];
+    const groups = S?.groups ?? [];
+    const count = groups.reduce((/** @type {number} */ s, /** @type {any} */ g) => s + g.count, 0);
+    return { count, value: count, flowering: 0, dormant: S?.dormant ? count : 0, mature: count, plants: groups, spots: [] };
+  }
   if (rec.kind === 'swarm') {
     const m = state?.ecology?.midges;
     /** @type {{ x: number, z: number }[]} */ const spots = [];
@@ -110,6 +117,9 @@ export function observeAnimals(j, out, ctx, at) {
     if (k.ever) track(k, F?.frogs?.length ?? 0, hour, at.newHour, words);
   }
 
+  // Schools and swarms with needs (minnows, dragonflies): the same arc in their own words.
+  for (const [sp, srec] of Object.entries(words.species)) if (/** @type {any} */ (srec).kind === 'school') observeSchool(j, out, ctx, at, sp, srec, note);
+
   // Midges: known by themselves at the first dusk they gather, once the island draws them (S6b).
   const mrec = words.species.midges;
   if (mrec && mrec.seenAt.drawn) {
@@ -133,6 +143,96 @@ export function observeAnimals(j, out, ctx, at) {
       track(k, m.value, hour, at.newHour, words);
     }
   }
+}
+
+/**
+ * One school species' hour (minnows, dragonflies; kind school). Like the frogs: unseen, the notes
+ * speak of a sign; found, they name them. Their count grows by the day, so a growing school is
+ * written down only when its amount word changes.
+ * @param {Journal} j @param {Note[]} out @param {{ state: any, events?: { name: string, payload: any }[], hour: number, words: any }} ctx
+ * @param {{ date: string, newHour: boolean, season: number, know: (j: Journal, sp: string) => SpeciesKnowledge }} at
+ * @param {string} sp @param {any} rec words.species[sp] @param {(rec: any, kind: string, sp: string) => void} note
+ */
+function observeSchool(j, out, ctx, at, sp, rec, note) {
+  const { state, hour, words } = ctx;
+  const k = at.know(j, sp);
+  const S = state?.creatures?.[sp];
+  if (S?.right && setFlag(j, `${sp}:right`) && !k.ever) note(rec, 'right', sp);
+  const word = (/** @type {number} */ n) => { let w = ''; for (const [at0, t] of rec.amount ?? []) if (n >= at0) w = t; return w; };
+  for (const e of ctx.events ?? []) {
+    if (e.payload?.species !== sp) continue;
+    if (e.name === 'creature:arrived') {
+      if (setFlag(j, `${sp}:sign`)) note(rec, 'sign', sp);
+      else note(rec, k.ever ? 'back' : 'signAgain', sp);
+    } else if (e.name === 'creature:settled') {
+      learnOnce(k, 'settled');
+      note(rec, k.ever ? 'settled' : 'settledUnseen', sp);
+    } else if (e.name === 'creature:joined') {
+      const now = e.payload.total ?? e.payload.count;
+      if (k.ever) { if (word(now) !== word(now - (e.payload.added ?? 1))) note(rec, 'joined', sp); }
+      else if (learnOnce(k, 'joined:unseen')) note(rec, 'joinedUnseen', sp);
+      learnOnce(k, 'joined');
+    } else if (e.name === 'creature:thinned') {
+      if (k.ever) note(rec, 'thinned', sp);
+    } else if (e.name === 'creature:left') {
+      if (k.ever) { note(rec, e.payload.count ? 'left' : 'gone', sp); learnOnce(k, 'left'); }
+      else if (e.payload.why === 'scout') note(rec, 'scoutLeftUnseen', sp);
+    } else if (e.name === 'creature:dormant' || e.name === 'creature:woke') {
+      if (k.ever) { note(rec, e.name === 'creature:dormant' ? 'dormant' : 'woke', sp); learnOnce(k, e.name === 'creature:dormant' ? 'dormant' : 'woke'); }
+    } else if (e.name === 'species:happy') {
+      setFlag(j, `${sp}:happy`);
+      if (k.ever) note(rec, 'happy', sp);
+    } else if (e.name === 'creature:ate') {
+      // They ate what you offered: noted the first time, and the web's "you" link inks.
+      if (learnOnce(k, 'fed') && k.ever) note(rec, 'fed', sp);
+      setFlag(j, `you:fed:${sp}`);
+    } else if (e.name === 'creature:trusted' && k.ever) {
+      const t = rec.trust?.notes?.[e.payload.word];
+      if (t) out.push({ hour, date: at.date, text: t, sp, kind: 'trusted' });
+      learnOnce(k, `trust:${e.payload.word}`);
+      if (e.payload.word !== 'tolerant') learnOnce(k, 'trust:tolerant');
+    }
+  }
+  if (k.ever) {
+    schoolKnown(j, k, sp, S, at.season, hour);
+    track(k, measureAnimal(sp, state, rec).count, hour, at.newHour, words);
+  }
+}
+
+/**
+ * Keep a known school's page current: present or not, its seasons, settled, and winter learned.
+ * @param {Journal} j @param {SpeciesKnowledge} k @param {string} sp @param {any} S state.creatures[sp] @param {number} season @param {number} hour
+ */
+function schoolKnown(j, k, sp, S, season, hour) {
+  const n = (S?.groups ?? []).reduce((/** @type {number} */ s, /** @type {any} */ g) => s + g.count, 0);
+  k.seen = n > 0;
+  k.dormant = !!S?.dormant;
+  if (n) k.seasons[season] |= S.dormant ? DORMANT | GROW : GROW;
+  if (n && season === 3) learnOnce(k, 'winter');
+  if (S?.phase === 'settled' && n) setFlag(j, `${sp}:settled`);
+  if (n > k.peak) { k.peak = n; k.peakAt = hour; }
+}
+
+/**
+ * You found a school (tapped it, or watched it closely): its page inks, the moment is written down.
+ * A no-op once it is known.
+ * @param {Journal} journal @param {string} sp
+ * @param {{ state: any, hour: number, words: any, date: string, know: (j: Journal, sp: string) => SpeciesKnowledge, copy: (j: Journal) => Journal }} ctx
+ * @returns {{ journal: Journal, notes: Note[] }}
+ */
+export function foundSchool(journal, sp, ctx) {
+  const rec = ctx.words.species[sp];
+  if (!rec || journal.species[sp]?.ever) return { journal, notes: [] };
+  const j = ctx.copy(journal);
+  const k = ctx.know(j, sp);
+  k.ever = true; k.first = ctx.hour;
+  learnOnce(k, 'seen');
+  setFlag(j, `${sp}:seen`);
+  const season = Math.min(3, Math.max(0, ctx.state?.seasons?.index ?? 0));
+  schoolKnown(j, k, sp, ctx.state?.creatures?.[sp], season, ctx.hour);
+  /** @type {Note[]} */ const notes = [{ hour: ctx.hour, date: ctx.date, text: rec.notes.found, sp }];
+  j.notes = [...notes, ...j.notes].slice(0, ctx.words.notesKept);
+  return { journal: j, notes };
 }
 
 /**

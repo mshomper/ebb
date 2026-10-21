@@ -32,7 +32,9 @@ export function createCreaturePass(opts) {
   const data = new Float32Array(DRAW_BYTES / 4);
   // Wet eyes: the skin that follows these two bones (none for the unskinned size preview).
   const G = recipe.body.eyeGlint, eyes = opts.eyeBones ?? [-1, -1];
-  data.set([W.roughness, W.strength, 0.55, 0.62, bodyLength, 0, 0, 0,
+  // A body that swims or flies casts no contact shadow (body.contactShadow 0: minnows, dragonflies).
+  const contact = recipe.body.contactShadow ?? 0.55;
+  data.set([W.roughness, W.strength, contact, 0.62, bodyLength, 0, 0, 0,
     eyes[0], eyes[1], G?.roughness ?? 0.1, G ? G.strength : 0]);
   const beings = new Float32Array(MAX * 8);
   // Bones per individual: the frogs' rig by default; a pass may ask for more (the hermit crab's).
@@ -62,7 +64,7 @@ export function createCreaturePass(opts) {
   }
 
   const pass = {
-    name: 'creatures',
+    name: opts.name ?? 'creatures',
     reads: ['hdr', 'depth'],
     writes: ['hdr', 'depth', 'normalId'],
     enabled: () => count > 0,
@@ -183,8 +185,10 @@ export function createCreaturePass(opts) {
       pass.setBindGroup(0, ctx.groups.frame);
       pass.setBindGroup(1, ctx.groups.lighting);
       pass.setBindGroup(2, group);
-      pass.setPipeline(shadowPipe);
-      pass.draw(6, count);
+      if (contact > 0) {
+        pass.setPipeline(shadowPipe);
+        pass.draw(6, count);
+      }
       pass.setPipeline(bodyPipe);
       for (const g of groups) {
         const m = meshes.get(g.key);

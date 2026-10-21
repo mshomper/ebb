@@ -16,7 +16,7 @@ import { dispatch } from '../input/actions.js';
 import { ensureIconSprite, iconSvg } from './icons/icons.js';
 
 /** @typedef {'sculpt'|'smooth'|'paint'|'water'|'plant'|'feed'} ToolId */
-/** @typedef {'reeds'|'lilies'|'iris'|'marigold'|'rushes'|'thrift'|'campion'|'willow'|'gorse'} PlantSpecies */
+/** @typedef {'reeds'|'lilies'|'iris'|'marigold'|'rushes'|'thrift'|'campion'|'willow'|'gorse'|'pondweed'} PlantSpecies */
 /** @typedef {'raise'|'lower'|'flatten'|'stone'|'loosestone'|'terrace'|'cut'} SculptMode */
 /** @typedef {'grass'|'sand'|'soil'|'rock'} PaintLayer */
 /** @typedef {'pour'|'drain'|'spring'} WaterMode */
@@ -74,11 +74,12 @@ const TOOLS = [
 ];
 /**
  * Creatures the Feed tool offers food to (S6c-2), each shown once you have found it (the journal):
- * its own food, in its words. Minnows and others join in M2.
+ * its own food, in its words (minnows in M2; dragonflies take no food).
  * @type {{id: string, label: string, icon: string, hint: string}[]}
  */
 const FEED_SPECIES = [
   { id: 'frogs', label: 'Frogs', icon: 'frog', hint: 'A pinch of insects. Tap the bank near a frog, then give it room.' },
+  { id: 'minnows', label: 'Minnows', icon: 'minnow', hint: 'A scatter of crumbs. Tap the water near the school.' },
 ];
 const FEED_NONE = 'Nothing here takes food from you yet. Find a creature first.';
 /**
@@ -97,6 +98,7 @@ const PLANT_SPECIES = [
   { id: 'campion', label: 'Sea campion', icon: 'campion', hint: 'Sea campion likes rock by the sea, just above the tide. Set some rock there first, then tap it to plant a seed.' },
   { id: 'willow', label: 'Grey willow', icon: 'willow', hint: 'Grey willow likes a damp, gentle bank of soil beside fresh water, never salt. It grows slowly into a bush taller than you. Tap the bank to plant a cutting.' },
   { id: 'gorse', label: 'Gorse', icon: 'gorse', hint: 'Gorse likes dry, sunny ground, soil or sand, even a slope above the shore, never wet ground. It grows into a spiny mound about waist high. Tap dry ground to plant a seed.' },
+  { id: 'pondweed', label: 'Pondweed', icon: 'pondweed', hint: 'Pondweed grows under still fresh water, from knee deep to deeper than you are tall. Tap the water to plant some.' },
 ];
 const PLANT_NONE = 'Nothing to plant yet. Watch the island: plants will come.';
 /** How long a Plant tap's result stays before it fades, ms. */

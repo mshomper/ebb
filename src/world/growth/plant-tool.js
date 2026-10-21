@@ -24,6 +24,13 @@ const SAYS = {
     ground: 'Reeds need soil or mud, not sand or rock',
     steep: 'Too steep for reeds; they like flat, wet ground',
   },
+  pondweed: {
+    shallow: 'Pondweed needs water deeper than your knee',
+    deep: 'Too deep for pondweed',
+    flow: 'Pondweed needs still water, not a stream',
+    salt: 'Too salty for pondweed',
+    ground: 'Pondweed needs a soft floor, not sand or rock',
+  },
   lilies: {
     shallow: 'Water lilies need a pond 0.3 to 1.5 m deep',
     deep: 'Too deep for water lilies',

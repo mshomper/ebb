@@ -25,6 +25,8 @@
   .buttons { display: flex; flex-wrap: wrap; gap: 8px; }
   button, select { font: 800 16px/1.2 'Nunito', system-ui, sans-serif; color: #1E2624; background: #FFFDF8; border: 1px solid #CFC3AF; border-radius: 12px; padding: 10px 14px; cursor: pointer; min-height: 46px; }
   .buttons button { flex: 1 1 110px; }
+  #species { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  #modes { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); }
   button[aria-pressed="true"] { background: #4a6a47; color: #FBF7F0; border-color: #4a6a47; }
   button.primary { background: #4a6a47; color: #FBF7F0; border-color: #4a6a47; }
   .specimen { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
@@ -40,16 +42,24 @@
   input[type="color"] { width: 100%; height: 40px; border: 1px solid #CFC3AF; border-radius: 10px; background: #FFFDF8; padding: 2px; }
   #status { display: flex; gap: 8px; align-items: flex-start; font-size: 16px; }
   #status .dot { flex: none; width: 10px; height: 10px; border-radius: 50%; background: #B9832F; margin-top: 7px; }
-  #info, #saved { font-size: 16px; color: #4A5551; margin: 0; }
+  #info, #saved, #save-note { font-size: 16px; color: #4A5551; margin: 0; }
+  #saved:empty { display: none; }
 </style>
 </head>
 <body>
 <main>
   <h1>ebb creature studio</h1>
-  <p class="muted">The common frog on a paused stage, baked and posed exactly as the game does it. Move a slider and the frog changes at once. A changed slider gets an orange dot. Your changes stay in this browser until you save them to the recipe file (only the numbers you moved change) or undo them. Drag the frog to turn it, scroll to come closer. The grid is 1 cm, darker every 5 cm, at real size. <a href="./">All tools</a></p>
+  <p class="muted">One creature on a stage, baked and posed exactly as the game does it, moving as it does in the game. Pick a species, then move a slider and it changes at once. A changed slider gets an orange dot. Your changes stay in this browser, for each species, until you save them to its recipe file (only the numbers you moved change) or undo them. Drag the creature to turn it, scroll or pinch to come closer. The grid is 1 cm, darker every 5 cm, at real size. <a href="./">All tools</a></p>
   <div class="layout">
     <div class="stagecol">
-      <canvas id="stage" aria-label="The frog on the stage"></canvas>
+      <div class="card">
+        <div class="buttons" id="species" role="group" aria-label="Species">
+          <button type="button" data-species="frog" aria-pressed="true">Frog</button>
+          <button type="button" data-species="minnow" aria-pressed="false">Minnow</button>
+          <button type="button" data-species="dragonfly" aria-pressed="false">Southern hawker</button>
+        </div>
+      </div>
+      <canvas id="stage" aria-label="The creature on the stage"></canvas>
       <div class="card">
         <div class="buttons" id="views" role="group" aria-label="Views">
           <button type="button" data-view="three-quarter" aria-pressed="true">Three-quarter</button>
@@ -62,15 +72,21 @@
       <div class="card" style="display:flex;flex-direction:column;gap:10px">
         <div class="specimen">
           <label for="specimen">Specimen</label>
-          <select id="specimen">
-            <option value="-1">The recipe body</option>
-            <option value="0">Variant 1</option><option value="1">Variant 2</option><option value="2">Variant 3</option><option value="3">Variant 4</option>
-            <option value="4">Variant 5</option><option value="5">Variant 6</option><option value="6">Variant 7</option><option value="7">Variant 8</option>
+          <select id="specimen"><option value="-1">The recipe body</option></select>
+        </div>
+        <div class="buttons" id="modes" role="group" aria-label="Motion"></div>
+        <div class="specimen">
+          <label for="speed">Speed</label>
+          <select id="speed">
+            <option value="1">Real speed</option>
+            <option value="0.5">Half speed</option>
+            <option value="0.25">Quarter speed</option>
+            <option value="0.1">One tenth</option>
+            <option value="0.025">One fortieth</option>
           </select>
         </div>
         <div class="buttons">
-          <button type="button" id="idle" aria-pressed="true">Idle motion</button>
-          <button type="button" id="call" aria-pressed="false">Call every 3 s</button>
+          <button type="button" id="play" aria-pressed="false">Pause</button>
           <button type="button" id="game-size" aria-pressed="false">Game size</button>
         </div>
         <p id="info">Baking.</p>
@@ -82,7 +98,8 @@
           <button type="button" id="download">Download</button>
           <button type="button" id="undo">Undo changes</button>
         </div>
-        <p id="saved">Save to repo asks once for your ebb folder (the one with recipes in it), then writes recipes/species/frog.json. Download saves the same file to your downloads.</p>
+        <p id="save-note">Save to repo asks once for your ebb folder (the one with recipes in it), then writes the species' recipe file. Download saves the same file to your downloads.</p>
+        <p id="saved" aria-live="polite"></p>
       </div>
     </div>
     <div id="groups"></div>

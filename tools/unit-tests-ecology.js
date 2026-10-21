@@ -31,7 +31,8 @@ function run(state, env, from, hours) {
   for (let h = from; h < from + hours; h++) {
     const r = runHour(state, h, env);
     state = r.state;
-    for (const e of r.events) if (ARC.includes(e.name)) events.push({ hour: h, name: e.name, payload: e.payload });
+    // The frogs' arc only (minnows and dragonflies tell theirs in the same events, M2).
+    for (const e of r.events) if (ARC.includes(e.name) && e.payload?.species === 'frogs') events.push({ hour: h, name: e.name, payload: e.payload });
   }
   return { state, events };
 }

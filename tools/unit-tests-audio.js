@@ -12,6 +12,7 @@ import { addSoundGameTests } from './unit-tests-sound-game.js';
 import { addSummerTests } from './unit-tests-summer.js';
 import { addMelodyTests } from './unit-tests-melody.js';
 import { addFallsSoundTests } from './unit-tests-falls-sound.js';
+import { addPondSoundTests } from './unit-tests-pond-sound.js';
 
 /** @type {{group: string, name: string, fn: () => any}[]} */
 const tests = [];
@@ -36,6 +37,7 @@ addSoundGameTests(test, assert, eq);
 addSummerTests(test, assert, eq);
 addMelodyTests(test, assert, eq);
 addFallsSoundTests(test, assert, eq);
+addPondSoundTests(test, assert, eq);
 
 const CHECK = '<path d="M4.5 12.5l4.8 4.8L19.5 7"/>';
 const WARN = '<path d="M12 3.5L2.8 19.8h18.4z"/><path d="M12 9.5v4.8"/><path d="M12 17.2v.1"/>';

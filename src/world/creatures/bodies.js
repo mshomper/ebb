@@ -62,13 +62,15 @@ export function bodyFor(id, body, variant, look = null) {
 }
 
 /**
- * The skeleton of a body: each bone's parent and pivot (body meters), read from its pieces.
- * @param {string} id @param {any[]} prims
+ * The skeleton of a body: each bone's parent and pivot (body meters), read from its pieces. A
+ * species with no rig code may list its bones in its recipe (body.bones: name, parent, pivot: a
+ * minnow's body, mid and tail, a dragonfly's wings); with neither it has one root bone.
+ * @param {string} id @param {any[]} prims @param {{ name: string, parent: number, pivot: number[] }[] | null} [listed] body.bones
  * @returns {{ name: string, parent: number, pivot: number[] }[]}
  */
-export function skeletonOf(id, prims) {
+export function skeletonOf(id, prims, listed = null) {
   const rig = RIGS[/** @type {keyof typeof RIGS} */ (id)];
-  if (!rig) return [{ name: 'root', parent: -1, pivot: [0, 0, 0] }];
+  if (!rig) return listed?.length ? listed.map((b) => ({ name: b.name, parent: b.parent, pivot: b.pivot.slice() })) : [{ name: 'root', parent: -1, pivot: [0, 0, 0] }];
   /** @type {Record<string, any>} */ const P = {};
   // A piece is known by its part name if it has one (a lid rides the head bone but is not the head).
   for (const q of prims) P[q.part ?? q.bone] = q;
@@ -147,7 +149,7 @@ export function packMesh(mesh, joints = null, weights = null) {
 export function bakeVariant(args) {
   const body = bodyFor(args.id, args.body, args.variant, args.look ?? null);
   const mesh = bakeBody(body, args.cellM);
-  const bones = skeletonOf(args.id, body.prims);
+  const bones = skeletonOf(args.id, body.prims, body.bones ?? null);
   const skin = skinWeights(body.prims, bones, mesh.vertices, mesh.count, body.skin?.blendM ?? 0.0025);
   const data = packMesh(mesh, skin.joints, skin.weights);
   return { data, indices: mesh.indices, count: mesh.count, bones, __transfer: [data, /** @type {ArrayBuffer} */ (mesh.indices.buffer)] };

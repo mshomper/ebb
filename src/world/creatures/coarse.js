@@ -178,7 +178,7 @@ export function bringFrogs(state, hourIndex, env, count) {
   if (!state.ecology?.frogs) state = { ...state, ecology: ecologyNow(state, env, true) };
   const eco = state.ecology;
   const E = rec.ecology, A = E.arrival, N = E.needs;
-  const prev = (state.creatures ?? initialCreatures()).frogs;
+  const prev = state.creatures?.frogs ?? initialCreatures().frogs;
   /** @type {FrogsState} */
   const fr = { ...prev, frogs: prev.frogs.map((f) => ({ ...f })) };
   /** @type {{ name: string, payload: any }[]} */ const events = [];
@@ -227,7 +227,8 @@ export function coarseStep(state, hourIndex, env) {
   const eco = state.ecology;
   if (!hab || !rec || !eco?.frogs || !eco.midges) return { state, events: [] };
   const E = rec.ecology, A = E.arrival, N = E.needs;
-  const prev = (state.creatures ?? initialCreatures()).frogs;
+  // Other species may be in state.creatures before the frogs are (minnows, dragonflies).
+  const prev = state.creatures?.frogs ?? initialCreatures().frogs;
   /** @type {FrogsState} */
   const fr = { ...prev, frogs: prev.frogs.map((f) => ({ ...f })) };
   /** @type {{ name: string, payload: any }[]} */ const events = [];

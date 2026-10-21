@@ -9,9 +9,10 @@
 import { runHour, hashWorldState } from '../src/sim/tick.js';
 import { HABITAT_ORIGIN } from '../src/world/growth/habitat.js';
 import { frogNeeds } from '../src/world/ecology/habitat.js';
+import { needMaps, waterBodies } from '../src/world/ecology/needs.js';
 import { midgeArea } from '../src/world/ecology/midges.js';
 import { openBox } from '../src/world/ecology/fields.js';
-import { loadEcologyRecipes, islandWorld } from './ecology-world.js';
+import { loadEcologyRecipes, islandWorld, digPond } from './ecology-world.js';
 
 const ISLANDS = [{ id: 'starter-island', name: 'Starter island' }, { id: 'two-ponds', name: 'Two ponds' }];
 const CHUNK_MS = 14;
@@ -25,14 +26,22 @@ const INK = [184, 101, 58];
 const PAPER = [233, 226, 205];
 const SEA = [47, 110, 134], POND = [59, 127, 168];
 const FROG = '#2F4A2C', EDGE = '#1E2624', CAPACITY = '#8C8F86', MIDGE = '#9C7B60';
+/** The schools charted hour by hour, with their line colors (minnows river blue, dragonflies teal). */
+const SCHOOLS = [{ key: 'minnows', label: 'minnows', color: '#2F6E86' }, { key: 'dragonflies', label: 'dragonflies', color: '#3E8C7A' }];
 
 /** The fields a map can show: id, button label, legend words. */
 const FIELDS = [
-  { id: 'score', label: 'Habitat', words: 'how well frogs would do there (all five needs)' },
+  { id: 'score', label: 'Habitat', words: 'how well {who} would do there (all five needs)' },
   { id: 'water', label: 'Water', words: 'near still water of the right depth' },
   { id: 'food', label: 'Food', words: 'midges within reach, for a group' },
   { id: 'shelter', label: 'Shelter', words: 'reeds, rushes, iris or lilies close by' },
   { id: 'midges', label: 'Midges', words: 'how many midges gather there' },
+];
+/** Whose eyes the maps look through (src/world/species.js ids), and their own words for a need. */
+const WHO = [
+  { id: 'frog', label: 'Frogs', plural: 'frogs', words: {} },
+  { id: 'minnow', label: 'Minnows', plural: 'minnows', words: { water: 'in a pool of 20 m² or more with a spot 1 m deep', shelter: 'lily pads or reed stems close by' } },
+  { id: 'dragonfly', label: 'Dragonflies', plural: 'dragonflies', words: { water: 'still water within 10 m', shelter: 'reeds, rushes or iris to perch on' } },
 ];
 
 /** Timeline marks: event name, words, how it is drawn. */
@@ -49,13 +58,18 @@ const $ = (/** @type {string} */ id) => /** @type {HTMLElement} */ (document.get
 const seedIn = /** @type {HTMLInputElement} */ ($('seed'));
 const daysIn = /** @type {HTMLSelectElement} */ ($('days'));
 const startIn = /** @type {HTMLSelectElement} */ ($('start'));
+const deepIn = /** @type {HTMLSelectElement} */ ($('deep'));
+const pond2In = /** @type {HTMLSelectElement} */ ($('pond2'));
 const runBtn = /** @type {HTMLButtonElement} */ ($('run'));
 const status = (/** @type {string} */ icon, /** @type {string} */ text) => { $('status').innerHTML = `${icon}<span>${text}</span>`; };
 
 /** @type {string} */ let field = 'score';
+/** @type {string} */ let who = 'frog';
 /**
  * @typedef {{ hours: number, h0: number, frogs: number[], room: number[], midges: number[], dormant: boolean[],
- *   events: { hour: number, name: string, payload: any }[], end: any, hash: number, env: any, model: any }} Run
+ *   events: { hour: number, name: string, payload: any }[], others: { hour: number, name: string, payload: any }[],
+ *   schools: Record<string, number[]>, end: any, hash: number, env: any, model: any }} Run
+ *   events: the frogs' arc; others: the schools' (minnows, dragonflies)
  */
 /** Per island: its panel's elements and its latest run. @type {Record<string, { el: Record<string, HTMLElement>, run: Run | null, start: any }>} */
 const panels = {};
@@ -66,15 +80,44 @@ for (const isl of ISLANDS) buildPanel(isl);
 status(DOT_WAIT, 'Building the islands');
 await frame();
 for (const isl of ISLANDS) {
-  const w = islandWorld(R, isl.id, seed());
+  const w = worldFor(isl.id, seed());
   panels[isl.id].start = w;
   drawMap(isl.id);
 }
 status(DOT_WAIT, 'Ready. Press Run both islands.');
 addEventListener('resize', () => { for (const isl of ISLANDS) drawAll(isl.id); });
-seedIn.addEventListener('change', async () => {
-  for (const isl of ISLANDS) { panels[isl.id].run = null; panels[isl.id].start = islandWorld(R, isl.id, seed()); drawAll(isl.id); }
-});
+const restart = () => { for (const isl of ISLANDS) { panels[isl.id].run = null; panels[isl.id].start = worldFor(isl.id, seed()); drawAll(isl.id); } };
+seedIn.addEventListener('change', restart);
+deepIn.addEventListener('change', restart);
+pond2In.addEventListener('change', restart);
+
+/**
+ * A new world on an island, with the big pond's deepest square dug deeper when asked (as the
+ * frogs' Cut would), so minnows have the deep spot they winter in.
+ * @param {string} island @param {number} s @param {number} [startDay]
+ */
+function worldFor(island, s, startDay = 0) {
+  const w = islandWorld(R, island, s, startDay);
+  // A second, shallow pond dug on dry ground with reeds planted as seeds along its edge, as a
+  // player would make one (dragonflies come only to a fish-free pond the player shaped).
+  if (pond2In.value === '1') {
+    const p = digPond(w);
+    if (p) {
+      const inPond = (/** @type {any} */ q) => q.sp === 'reeds' && Math.abs(q.x - p.x) < p.w / 2 + 0.5 && Math.abs(q.z - p.z) < p.h / 2 + 0.5;
+      w.state = { ...w.state, growth: { ...w.state.growth, plants: w.state.growth.plants.map((/** @type {any} */ q) => (inPond(q) ? { ...q, age: 0, size: 0.02, best: 0.02, stage: 0 } : q)) } };
+    }
+  }
+  const cm = Number(deepIn.value);
+  if (!cm) return w;
+  const hab = w.model.habitat;
+  const big = waterBodies(hab, openBox(hab, 1)).bodies.sort((a, b) => b.area - a.area)[0];
+  if (!big) return w;
+  const depthCm = hab.depthCm.slice();
+  depthCm[big.deepK] = Math.max(depthCm[big.deepK], cm);
+  const dug = { ...hab, depthCm };
+  w.env.habitat = () => dug;
+  return { ...w, model: { ...w.model, habitat: dug } };
+}
 runBtn.addEventListener('click', runAll);
 
 function seed() { return Math.max(0, Math.floor(Number(seedIn.value) || 0)) >>> 0; }
@@ -85,6 +128,16 @@ function frame() { return new Promise((r) => setTimeout(r, 0)); }
 const when = (h) => `day ${Math.floor(h / 24) + 1}, ${String(h % 24).padStart(2, '0')}:00`;
 
 function buildFieldButtons() {
+  const sp = $('species');
+  sp.innerHTML = WHO.map((s) => `<button type="button" data-who="${s.id}" aria-pressed="${s.id === who}">${s.label}</button>`).join('');
+  sp.addEventListener('click', (e) => {
+    const b = /** @type {HTMLElement} */ (e.target).closest('button');
+    if (!b?.dataset.who) return;
+    who = b.dataset.who;
+    for (const x of sp.querySelectorAll('button')) x.setAttribute('aria-pressed', String(x === b));
+    legendMap();
+    for (const isl of ISLANDS) drawMap(isl.id);
+  });
   const box = $('fields');
   box.innerHTML = FIELDS.map((f) => `<button type="button" data-field="${f.id}" aria-pressed="${f.id === field}">${f.label}</button>`).join('');
   box.addEventListener('click', (e) => {
@@ -100,9 +153,11 @@ function buildFieldButtons() {
 
 function legendMap() {
   const f = FIELDS.find((x) => x.id === field);
-  $('map-legend').innerHTML = `<span><i style="background:rgb(${INK})"></i>${f?.words}, strong to faint</span>
+  const W = WHO.find((x) => x.id === who) ?? WHO[0];
+  const words = (/** @type {Record<string, string>} */ (W.words))[field] ?? f?.words ?? '';
+  $('map-legend').innerHTML = `<span><i style="background:rgb(${INK})"></i>${words.replace('{who}', W.plural)}, strong to faint</span>
     <span><i style="background:rgb(${POND})"></i>pond and streams</span><span><i style="background:rgb(${SEA})"></i>sea</span>
-    <span><i style="background:${EDGE}"></i>good edge (room for frogs)</span><span><i class="round" style="background:${FROG};border:2px solid #FBF7F0"></i>a frog</span>`;
+    ${who === 'frog' ? `<span><i style="background:${EDGE}"></i>good edge (room for frogs)</span><span><i class="round" style="background:${FROG};border:2px solid #FBF7F0"></i>a frog</span>` : ''}`;
 }
 
 /** @param {{ id: string, name: string }} isl */
@@ -118,6 +173,9 @@ function buildPanel(isl) {
     <h3>Frogs, hour by hour</h3>
     <canvas class="chart" data-el="frogs" aria-label="${isl.name}: frogs and room for them"></canvas>
     <div class="legend"><span><i class="line" style="background:${FROG}"></i>frogs</span><span><i class="dash"></i>room for frogs (one per 3 m of good edge)</span></div>
+    <h3>Minnows and dragonflies, hour by hour</h3>
+    <canvas class="chart small" data-el="schools" aria-label="${isl.name}: minnows and dragonflies"></canvas>
+    <div class="legend">${SCHOOLS.map((s) => `<span><i class="line" style="background:${s.color}"></i>${s.label}</span>`).join('')}<span>${markSvg('star')}happy</span></div>
     <h3>Midges</h3>
     <canvas class="chart small" data-el="midges" aria-label="${isl.name}: midges"></canvas>
     <div class="legend"><span><i class="line" style="background:${MIDGE}"></i>square meters with a good cloud of midges</span></div>
@@ -168,7 +226,7 @@ async function runAll() {
 /** @param {number} h */
 const hex = (h) => (h >>> 0).toString(16).toUpperCase().padStart(8, '0');
 /** @param {Run} r */
-const eventsText = (r) => r.events.map((e) => `${e.hour}:${e.name}:${e.payload?.id ?? ''}`).join(' ');
+const eventsText = (r) => [...r.events, ...r.others].map((e) => `${e.hour}:${e.name}:${e.payload?.species}:${e.payload?.id ?? ''}`).join(' ');
 
 /**
  * Run one island for `days` game days from a new world, a few hours per frame.
@@ -176,10 +234,11 @@ const eventsText = (r) => r.events.map((e) => `${e.hour}:${e.name}:${e.payload?.
  * @returns {Promise<Run>}
  */
 async function runIsland(isl, s, days, startDay, which) {
-  const w = islandWorld(R, isl.id, s, startDay);
+  const w = worldFor(isl.id, s, startDay);
   let state = w.state;
   const hours = days * 24;
-  /** @type {Run} */ const run = { hours, h0: w.h0, frogs: [], room: [], midges: [], dormant: [], events: [], end: null, hash: 0, env: w.env, model: w.model };
+  /** @type {Run} */ const run = { hours, h0: w.h0, frogs: [], room: [], midges: [], dormant: [], events: [], others: [], end: null, hash: 0, env: w.env, model: w.model,
+    schools: Object.fromEntries(SCHOOLS.map((s) => [s.key, /** @type {number[]} */ ([])])) };
   let h = 0;
   while (h < hours) {
     const t = performance.now();
@@ -187,7 +246,15 @@ async function runIsland(isl, s, days, startDay, which) {
       const hour = w.h0 + 1 + h;
       const r = runHour(state, hour, w.env);
       state = r.state;
-      for (const e of r.events) if (MARKS[/** @type {keyof typeof MARKS} */ (e.name)]) run.events.push({ hour, name: e.name, payload: e.payload });
+      for (const e of r.events) {
+        if (!MARKS[/** @type {keyof typeof MARKS} */ (e.name)]) continue;
+        if (e.payload?.species === 'frogs') run.events.push({ hour, name: e.name, payload: e.payload });
+        else run.others.push({ hour, name: e.name, payload: e.payload });
+      }
+      for (const s of SCHOOLS) {
+        const G = state.creatures?.[s.key];
+        run.schools[s.key].push(G?.groups?.reduce((/** @type {number} */ a, /** @type {any} */ g) => a + g.count, 0) ?? 0);
+      }
       const F = state.creatures?.frogs;
       run.frogs.push(F?.frogs.length ?? 0);
       run.room.push(F?.edge.capacity ?? 0);
@@ -208,6 +275,7 @@ function drawAll(id) {
   drawFacts(id);
   drawTimeline(id);
   drawChart(id, 'frogs');
+  drawChart(id, 'schools');
   drawChart(id, 'midges');
   drawMap(id);
 }
@@ -224,6 +292,13 @@ function drawFacts(id) {
     ['Settled', first('creature:settled') ? when(first('creature:settled').hour) : 'not yet'],
     ['At the end', `${F?.frogs.length ?? 0} frogs, room for ${F?.edge.capacity ?? 0} along ${F?.edge.metres ?? 0} m of good edge`],
     ['Came, left', `${r.events.filter((e) => e.name === 'creature:arrived' || e.name === 'creature:joined').length} came, ${r.events.filter((e) => e.name === 'creature:left').length} moved on`],
+    ...SCHOOLS.map((s) => {
+      const of = (/** @type {string} */ name) => r.others.find((e) => e.name === name && e.payload?.species === s.key);
+      const sign = of('creature:arrived'), happy = of('species:happy');
+      const now = r.schools[s.key][r.schools[s.key].length - 1] ?? 0;
+      const label = s.label.charAt(0).toUpperCase() + s.label.slice(1);
+      return [label, sign ? `sign ${when(sign.hour)}${happy ? `, happy ${when(happy.hour)}` : ''}, ${now} at the end` : 'none came'];
+    }),
   ];
   p.el.facts.innerHTML = rows.map(([a, b]) => `<li><span>${a}</span><span>${b}</span></li>`).join('');
 }
@@ -291,13 +366,13 @@ function drawMark(g, shape, x, y) {
   g.fill();
 }
 
-/** @param {string} id @param {'frogs'|'midges'} which */
+/** @param {string} id @param {'frogs'|'midges'|'schools'} which */
 function drawChart(id, which) {
   const p = panels[id], r = p.run;
   const { g, w, h } = canvasOf(p.el[which]);
   if (!r) return;
   const x0 = 44, x1 = w - 10, y0 = 10, y1 = h - 30;
-  const series = which === 'frogs' ? [r.frogs, r.room] : [r.midges];
+  const series = which === 'frogs' ? [r.frogs, r.room] : which === 'schools' ? SCHOOLS.map((s) => r.schools[s.key]) : [r.midges];
   let top = 1;
   for (const s of series) for (const v of s) top = Math.max(top, v);
   top = niceTop(top);
@@ -317,7 +392,17 @@ function drawChart(id, which) {
     });
     g.stroke(); g.setLineDash([]);
   };
-  if (which === 'frogs') { line(r.room, CAPACITY, true); line(r.frogs, FROG, false); } else line(r.midges, MIDGE, false);
+  if (which === 'frogs') { line(r.room, CAPACITY, true); line(r.frogs, FROG, false); }
+  else if (which === 'schools') {
+    for (const s of SCHOOLS) line(r.schools[s.key], s.color, false);
+    // A star where each became happy.
+    for (const e of r.others) {
+      if (e.name !== 'species:happy') continue;
+      const s = r.schools[e.payload.species];
+      const i = e.hour - r.h0 - 1;
+      if (s) drawMark(g, 'star', x0 + ((i + 0.5) / s.length) * (x1 - x0), Math.max(y0 + 8, y1 - (s[i] / top) * (y1 - y0) - 12));
+    }
+  } else line(r.midges, MIDGE, false);
 }
 
 /** A round number at or above v for an axis top. @param {number} v */
@@ -342,7 +427,9 @@ function drawMap(id) {
   const g = /** @type {CanvasRenderingContext2D} */ (c.getContext('2d'));
   const img = g.createImageData(W * S, H * S);
   // Before a run there are no midges yet, so food and the habitat score read empty.
-  const needs = field === 'midges' ? null : frogNeeds(hab, state.growth, state.ecology?.midges ?? null, R.species.frog);
+  const midges = state.ecology?.midges ?? null;
+  const needs = field === 'midges' ? null : who === 'frog' ? frogNeeds(hab, state.growth, midges, R.species.frog)
+    : needMaps(hab, state.growth, { midges }, R.species[who]);
   const values = field === 'midges' ? state.ecology?.midges : needs?.[/** @type {'score'} */ (field)];
   const scale = field === 'midges' ? 1 / 255 : 1;
   for (let j = 0; j < H; j++) {
@@ -361,6 +448,7 @@ function drawMap(id) {
   }
   g.putImageData(img, 0, 0);
   // The good edge, and the frogs.
+  if (who !== 'frog') return;
   const eco = state.ecology?.frogs;
   if (eco) {
     g.fillStyle = EDGE;

@@ -10,6 +10,7 @@ import * as seasons from '../world/seasons.js';
 import * as growth from '../world/growth/coarse.js';
 import * as ecology from '../world/ecology/coarse.js';
 import * as creatures from '../world/creatures/coarse.js';
+import * as swarms from '../world/creatures/swarms.js';
 
 /** @typedef {{name: string, payload: any, hour?: number}} CoarseEvent */
 /** @typedef {(state: any, hourIndex: number, env: Env) => {state: any, events: CoarseEvent[]}} CoarseStep */
@@ -46,6 +47,8 @@ export const COARSE_ORDER = Object.freeze([
   // and leaving. Both skip until the habitat and env.recipes.species exist.
   { id: 'ecology', coarseStep: ecology.coarseStep },
   { id: 'creatures', coarseStep: creatures.coarseStep },
+  // Schools and swarms (M2): minnows, dragonflies, one model (src/world/creatures/swarms.js).
+  { id: 'swarms', coarseStep: swarms.coarseStep },
 ]);
 
 /**

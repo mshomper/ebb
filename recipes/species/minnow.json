@@ -1,0 +1,94 @@
+{
+  "type": "species",
+  "id": "minnow",
+  "key": "minnows",
+  "name": "Common minnow",
+  "version": 1,
+  "note": "Common minnows (docs 11, 12, 23; M2). A school, not individuals: the island keeps one school per pool that suits them, never single fish with names. LIFE. ecology: kind swarm (src/world/creatures/swarms.js keeps the schools in the hourly tick); no dormancy (all year; in winter they sit still in the deep spot). needs (src/world/ecology/needs.js): five, each 0..1, mood = their weighted geometric mean (weights w sum to 1). water: good water is still fresh water depthM deep (no damp hollows) in a body of standing water of at least body.minM2 square meters that is somewhere at least body.deepM deep, the spot they winter in (the starter pond is 96 cm at its deepest, so the frogs' Cut, or Lower, digs the last of it); full within okM of good water, none beyond maxM. Slow streams join when the habitat grid keeps the flow class. food: the fields summed over a square of radiusM (midges over the water, later pondweed), against per times the ideal school (shares of a full square meter a fish needs). shelter: the best cover within radiusM, each plant weighted (lily pads and reed stems at the edge), counting from 'from' and full at 'full'. quiet: low sensitivity, nothing disturbs them yet. company: a school of n[0] to n[2], n[1] ideal. scored: only squares of a pool that suits them (where: water). arrival (game hours; src/world/creatures/swarms.js): a pool is right once its best square scores rightScore and it holds startCount, for rightHoldH hours in a row; after scoutAfterH, at comeAtH o'clock a few (startCount) may come, with scoutChance a day and surely by the maxWaitDays-th; after settleAfterH they stay if their mood is settleMood or more, else they move on and none try again for rescoutAfterH. A pool holds one fish per m2PerOne square meters of good depth, up to company n[2]. Each day at comeAtH a content school (growMood) grows by growShare of the room left, in the seasons growSeasons allows (spring, summer, autumn, winter); another right pool may get a school of its own with newPoolChance a day. Mood eases moodEase of the way to its target each hour; a school under leaveMood for leaveAfterH hours thins by shrinkShare a day, and one whose pool is drained moves on at once. They are happy after happyHoldH hours with happyMin or more fish at happyMood. Pondweed (their gift) holds more fish: each grown plant in the pool (roomPlants, weight x size) counts as weedM2 more square meters and lets the school grow perWeed past company n[2], up to weedExtra more; they also graze it (food plants) and hide in it (shelter cover). gift: pondweed seed (docs 12, 13).",
+  "_look": "LOOK (M2 piece C). body: a blended-SDF minnow in real meters, body-local +z forward, origin at the middle of the body (it swims, so nothing stands on the ground): a front ellipsoid (body bone), a tapering capsule to the tail (mid), a forked tail fin of two thin ellipsoids (tail), a dorsal and an anal fin, two eyes. bones: listed here (no rig code): body at the origin, mid and tail pivot where they begin. displayScale 2.5 (Matt, 2026-10-20: at 1.5, as the frogs, they were too small to see under the water); contactShadow 0 (it swims). albedo (physical, linear): an olive back with dark bars (blotch), a pale silvery lower flank (belly below bellyBelowNormalY), fins, eyes. wetSpecular: the scales' sheen (roughness, strength), so a school banking in a turn flashes in the sun, physically lit. bake: cellM and lods as the frogs'. motion (src/world/creatures/school.js; live only): stepHz fixed steps a second of real time; bodyM one body length (times displayScale for spacing); cruiseMps by day, nightMps at night, restMps in winter, dartMps when startled for dartS seconds (slowing to dartEase m/s per meter left as they reach the deep spot); the whole school heads for a new point within leashM of home every turnEveryS (nightTurnEveryS at night) seconds, in water at least minDepthM deep, looking lookM ahead for shallows; by day dayDepthM under the surface, at night and in winter low over the bed, never closer than clearM to either; boids weights (separate within sepBodies body lengths, align and cohere within viewBodies, seek the target, shore: turn back from shallows, depth: hold the depth); a fish banks by rollPerAccel per m/s² of turning, at most maxRoll radians; its tail beats tailHz[0] + tailHz[1] x speed times a second, swinging tailSwing radians; one rises to the surface every riseEveryS seconds by day, at riseMps, for at most riseS, and rings it (ringStrength, ringM). presence (doc 23; real meters): a source within ringM faster than calmSpeed, or an edit within editReachM, sends the school darting. find: tap within tapM of a fish (plus tapPerM per meter the camera is away), or keep the school within lookM of the middle of your view, zoomed in to lookDistM, for holdS seconds. reveal: the school thickens back in after time away.",
+  "body": {
+    "scaleReal": [0.055, 0.075],
+    "displayScale": 2.5,
+    "sizeJitter": 0.12,
+    "contactShadow": 0,
+    "variants": 4,
+    "variation": 0,
+    "prims": [
+      { "type": "ellipsoid", "bone": "body", "c": [0, 0.0005, 0.006], "r": [0.0052, 0.0075, 0.019], "k": 0, "region": "back" },
+      { "type": "capsule", "bone": "mid", "a": [0, 0.0005, -0.006], "b": [0, 0.0006, -0.025], "r": [0.0046, 0.0017], "k": 0.006, "region": "back" },
+      { "type": "ellipsoid", "bone": "tail", "c": [0, 0.0032, -0.031], "r": [0.0007, 0.0036, 0.0068], "rot": [-32, 0, 0], "k": 0.002, "region": "fin" },
+      { "type": "ellipsoid", "bone": "tail", "c": [0, -0.0022, -0.031], "r": [0.0007, 0.0036, 0.0068], "rot": [32, 0, 0], "k": 0.002, "region": "fin" },
+      { "type": "ellipsoid", "bone": "body", "c": [0, 0.0074, -0.004], "r": [0.0006, 0.0036, 0.0042], "rot": [22, 0, 0], "k": 0.002, "region": "fin" },
+      { "type": "ellipsoid", "bone": "mid", "c": [0, -0.0062, -0.012], "r": [0.0006, 0.0026, 0.0036], "rot": [-22, 0, 0], "k": 0.002, "region": "fin" },
+      { "type": "sphere", "bone": "body", "c": [0.0041, 0.0019, 0.0185], "r": 0.0016, "k": 0.0005, "region": "eye" },
+      { "type": "sphere", "bone": "body", "c": [-0.0041, 0.0019, 0.0185], "r": 0.0016, "k": 0.0005, "region": "eye" }
+    ],
+    "bones": [
+      { "name": "body", "parent": -1, "pivot": [0, 0, 0] },
+      { "name": "mid", "parent": 0, "pivot": [0, 0.0005, -0.006] },
+      { "name": "tail", "parent": 1, "pivot": [0, 0.0006, -0.025] }
+    ],
+    "albedo": { "back": [0.075, 0.08, 0.05], "belly": [0.46, 0.46, 0.42], "blotch": [0.03, 0.032, 0.024], "fin": [0.14, 0.12, 0.08],
+                "eye": [0.02, 0.02, 0.02], "eyeRing": [0.42, 0.36, 0.2] },
+    "blotch": { "scale": 210, "amount": 0.55 },
+    "bellyBelowNormalY": -0.15,
+    "wetSpecular": { "roughness": 0.28, "strength": 0.9 },
+    "skin": { "blendM": 0.002 }
+  },
+  "bake": { "cellM": 0.0012, "lods": [{ "cellM": 0.0011, "toM": 1.2 }, { "cellM": 0.0022, "toM": 4 }, { "cellM": 0.0045 }] },
+  "motion": {
+    "stepHz": 30, "bodyM": 0.065,
+    "cruiseMps": 0.14, "nightMps": 0.05, "restMps": 0.02, "dartMps": 0.7, "dartS": 6, "dartEase": 1.5,
+    "leashM": 3.5, "turnEveryS": [3, 8], "nightTurnEveryS": [10, 20], "minDepthM": 0.22, "lookM": 0.35,
+    "dayDepthM": 0.16, "clearM": 0.04,
+    "sepBodies": 1.1, "viewBodies": 5,
+    "weights": { "separate": 2.2, "align": 1.4, "cohere": 0.9, "seek": 0.45, "shore": 2.5, "depth": 2 },
+    "rollPerAccel": 0.9, "maxRoll": 0.9, "tailHz": [2.5, 18], "tailSwing": 0.35,
+    "riseEveryS": [5, 14], "riseS": 2.5, "riseMps": 0.18,
+    "feedS": 14, "swirlM": 0.18, "swirlHz": 0.35, "feedRiseShare": 0.08, "ringStrength": 0.6, "ringM": 0.05
+  },
+  "presence": { "ringM": 1.8, "ringTrustShrink": 0.8, "ringMinM": 0.4, "calmSpeed": 0.9, "editReachM": 2.5,
+    "watch": { "reachM": 3, "minS": 20, "capS": 600, "trustPerMin": 0.012, "stillMps": 0.05 },
+    "feedTrust": 0.06, "fullH": 6, "ceiling": "familiar", "bands": [0.2, 0.45, 0.65, 0.85] },
+  "feed": { "reachM": 4, "messages": {
+    "coming": "The minnows have seen it. Watch them swirl up.",
+    "none": "No school is near enough to see it. Try the deep water, near the minnows.",
+    "land": "Minnows feed in the water. Scatter the crumbs on the pond.",
+    "unknown": "Nothing in the pond knows to look for food yet." } },
+  "find": { "tapM": 0.35, "tapPerM": 0.03, "lookM": 1.2, "lookDistM": 4, "holdS": 2.5 },
+  "reveal": { "return": "thicken", "growS": 0.6 },
+  "voice": {
+    "note": "A minnow's sip (doc 25 'Creature voices', model surface-sip; src/audio/voices.js sip): a tiny soft plop where a fish rises and rings the surface (motion riseEveryS; often while feeding), placed at the ring. SOUND: one small bubble by its resonance (src/audio/procedural/one-shots.js dropWith): radius sizeMm (about 1.2 kHz, lower and rounder than a raindrop), up to sizeJitter bigger or smaller, peaking at peakDb after attackMs, gliding up by rise over glideMs, damped dampingScale times a free bubble's (more is shorter); a soft lip click (hz, q, attackMs, decayMs, db) and, with chance, a second smaller bubble. LEVEL: gainDb picked per sip. REACH: inverse distance from refDistance with rolloff, then a fade from fadeFromM to silence at reachM, so sips are heard only when you are near the school. Distances are from the camera eye.",
+    "model": "surface-sip",
+    "sip": {
+      "sizeMm": 2.7, "sizeJitter": 0.25, "peakDb": -18, "attackMs": 1.5,
+      "rise": [0.05, 0.2], "glideMs": [10, 30], "dampingScale": 1.4, "decayJitter": 0.2,
+      "click": { "hz": 2400, "q": 0.8, "attackMs": 0.8, "decayMs": 9, "db": -22 },
+      "second": { "chance": 0.2, "delayMs": [25, 70], "size": [0.6, 0.85], "db": [-14, -8] }
+    },
+    "gainDb": [-10, -4],
+    "refDistance": 1,
+    "rolloff": 1.2,
+    "fadeFromM": 5,
+    "reachM": 9
+  },
+  "ecology": {
+    "kind": "swarm",
+    "activity": { "pattern": "diurnal", "hours": [6, 20] },
+    "needs": {
+      "water": { "depthM": [0.2, 1.5], "damp": false, "body": { "minM2": 20, "deepM": 1.0 }, "okM": 0, "maxM": 1, "w": 0.3 },
+      "food": { "fields": { "midges": 1 }, "plants": { "pondweed": 0.6 }, "radiusM": 6, "per": 0.4, "w": 0.25 },
+      "shelter": { "cover": { "lilies": 1, "pondweed": 1, "reeds": 0.7, "rushes": 0.5, "iris": 0.4 }, "radiusM": 3, "from": 0.15, "full": 0.5, "w": 0.2 },
+      "quiet": { "w": 0.1 },
+      "company": { "n": [8, 16, 30], "alone": 0.5, "crowded": 0.5, "w": 0.15 }
+    },
+    "scored": { "where": "water" },
+    "arrival": { "rightScore": 0.5, "rightHoldH": 6, "scoutAfterH": 12, "comeAtH": 9, "scoutChance": 0.5, "maxWaitDays": 3,
+                 "startCount": 3, "m2PerOne": 4, "settleAfterH": 24, "settleMood": 0.5, "rescoutAfterH": 48,
+                 "growShare": 0.35, "growMood": 0.5, "growSeasons": [1, 1, 1, 0], "newPoolChance": 0.3,
+                 "moodEase": 0.15, "leaveMood": 0.3, "leaveAfterH": 48, "shrinkShare": 0.3,
+                 "happyMin": 8, "happyMood": 0.7, "happyHoldH": 24,
+                 "roomPlants": { "pondweed": 1 }, "weedM2": 3, "perWeed": 1.5, "weedExtra": 15 },
+    "gift": { "kind": "seed", "id": "pondweed" }
+  }
+}

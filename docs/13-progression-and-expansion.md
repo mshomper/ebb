@@ -32,7 +32,7 @@ The first ten game days on the pond tier:
 flowchart LR
   S[Start<br/>starter kit<br/>grass, reeds, lilies] --> F[Days 3 to 6<br/>frogs settle<br/>gift: the Cliff tool]
   F -->|Cut digs a deep pool| M[Minnows come<br/>gift: pondweed]
-  F -->|terraces wait| D[Dragonflies<br/>gift: springs]
+  S -->|a second, fish-free pond you dig, in summer| D[Dragonflies<br/>gift: springs]
   D -->|spring above a terrace| W[Waterfalls]
   S -->|a sunny stone by the pond| T[Turtles<br/>gift: carry a log]
   N[10 finds<br/>driftwood on the strandline] --> T
@@ -100,7 +100,7 @@ A new island starts in early spring, so it always opens with the pond waking.
 | Season (game days) | In the game now | Comes with this plan |
 |---|---|---|
 | Spring (0 to 14), the pond wakes | frogs and their Cliff tool, minnows, most plants, shells and loose stones | frogspawn hatching into tadpoles; the common toad's night walk back to the pond; the first damselflies at the very end |
-| Summer (14 to 28), warm water and wings | dragonflies (late spring to autumn), gorse, driftwood at about here on the finds line | **turtles arrive only once the water is warm**; froglets leaving the pond; damselflies; sand martins nesting in a sandy face the player cut; common lizards basking on stones and logs among the gorse; moon jellyfish stranded on the strandline |
+| Summer (14 to 28), warm water and wings | dragonflies (from the first day of summer into mid-autumn, and only over a second, fish-free pond the player made with reeds along its edge), gorse, driftwood at about here on the finds line | **turtles arrive only once the water is warm**; froglets leaving the pond; damselflies; sand martins nesting in a sandy face the player cut; common lizards basking on stones and logs among the gorse; moon jellyfish stranded on the strandline |
 | Autumn (28 to 42), leaving and gathering | willow turning yellow, leaf fall | silver eels slipping from the pond to the sea on rainy nights; fungi on carried logs; dewy spiders' webs on misty mornings; the first wintering waders; grey seals hauling out on the sandbar |
 | Winter (42 to 56), the shore's season | frogs asleep, gorse still flowering | turnstones flipping wrack on the strandline; purple sandpipers on rock at the waterline; storm tides leaving the rarest shells; a seal pup on the bar; frost on the logs |
 
@@ -195,7 +195,8 @@ Target player: 20 to 40 minutes most evenings, with the game left closed overnig
 | First frog scout | 1 to 2 | first session | reeds filling in along the pond |
 | Frogs happy (first gift, the Cliff tool) | 3 to 6 | first or second evening | group of 4 and a thick reed margin |
 | Turtles come | 14 to 20 (summer) | second week of play | only once the water is warm in summer; a sunny stone at a shallow pond with lilies; a carried log makes them happier |
-| Tier 1 milestone, meadow islet | 6 to 10 | second or third evening | minnows, dragonflies or turtles happy |
+| Dragonflies come | 15 to 18 (summer) | second week of play | only from the first day of summer, and only over a second, fish-free pond the player dug with reeds along its edge (happy about 3 days later) |
+| Tier 1 milestone, meadow islet | 6 to 10 | second or third evening | minnows happy (about 4 days after their 1 m deep spot is dug); dragonflies and turtles come only from summer |
 | Tier 2 milestone, woodland knoll and bridge | 15 to 25 | end of the first week | wildflowers and hawthorn maturing |
 | Tier 3 milestone, tide flats | 35 to 55 | second or third week | trees maturing for squirrels and owls |
 | Tier 4 milestone, outer skerry | 55 to 80 | about a month | fish populations, the shore finds for oystercatchers, alder growth |

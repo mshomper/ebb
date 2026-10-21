@@ -1,7 +1,7 @@
 {
   "type": "naturalist",
   "version": 1,
-  "note": "The naturalist's notes (docs/future/11, doc 13), read by src/world/expansion.js. Each kind of find you discover (journal.json findOrder, a page known) adds a mark to the line at the top of Small lives. At a reward's mark (at: kinds found) the island gives it once, for good: give is merged into the saved unlocks (shells: the sea starts leaving shells on the strandline; stones: a handful of loose stones comes by itself near fresh water, and Sculpt offers Loose stone, recipes/world/pieces.json; driftwood: logs wash up on the strandline after high tides, pieces.json driftwood). A reward with no give is not built yet: it shows on the line in pencil, with its hint, and is given later. title and line are the reward card and its journal note; icon is drawn from src/ui/icons; page is the journal page the note opens. hint is the pencil word beside the next reward on the trail. line: the words of its page (src/ui/journal.js naturalistView), a trail down the paper with one row per stop: title, entry (the row in Small lives that opens it), intro (under the title), next (under the next reward's hint) and later (under a reward reached but not built yet). Species gifts (doc 13) come through the same module: a species' gift (its recipe's gift, e.g. frog.json) is given the first time the journal knows it is happy (the flag <species>:happy); gifts holds the card words per kind of gift, with {species} and {plant} filled in: one set for every seed, and for tools one set per tool id (gifts.tool.cliffs, the frogs' Cliff tool), each with its own drawn icon. card.showS: how long the card stays before it fades (a tap closes it sooner).",
+  "note": "The naturalist's notes (docs/future/11, doc 13), read by src/world/expansion.js. Each kind of find you discover (journal.json findOrder, a page known) adds a mark to the line at the top of Small lives. At a reward's mark (at: kinds found) the island gives it once, for good: give is merged into the saved unlocks (shells: the sea starts leaving shells on the strandline; stones: a handful of loose stones comes by itself near fresh water, and Sculpt offers Loose stone, recipes/world/pieces.json; driftwood: logs wash up on the strandline after high tides, pieces.json driftwood). A reward with no give is not built yet: it shows on the line in pencil, with its hint, and is given later. title and line are the reward card and its journal note; icon is drawn from src/ui/icons; page is the journal page the note opens. hint is the pencil word beside the next reward on the trail. line: the words of its page (src/ui/journal.js naturalistView), a trail down the paper with one row per stop: title, entry (the row in Small lives that opens it), intro (under the title), next (under the next reward's hint) and later (under a reward reached but not built yet). Species gifts (doc 13) come through the same module: a species' gift (its recipe's gift, e.g. frog.json) is given the first time the journal knows it is happy (the flag <species>:happy); gifts holds the card words per kind of gift, with {species} and {plant} filled in: one set for every seed, and for tools one set per tool id (gifts.tool.cliffs, the frogs' Cliff tool; gifts.tool.springs, the dragonflies' springs), each with its own drawn icon. card.showS: how long the card stays before it fades (a tap closes it sooner).",
   "rewards": [
     {
       "id": "shells", "at": 3, "icon": "shells", "page": "shells",
@@ -43,6 +43,11 @@
         "icon": "terrace",
         "title": "A gift from the {species}",
         "line": "You can build terraces and cut cliffs now. Look for Terrace and Cut under Sculpt."
+      },
+      "springs": {
+        "icon": "wellspring",
+        "title": "A gift from the {species}",
+        "line": "You can make springs now. Look for Spring under Water. A spring above a terrace pours over its edge."
       }
     }
   },

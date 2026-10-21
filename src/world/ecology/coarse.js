@@ -8,11 +8,16 @@
 //   midges   0..255 per square (midges.js)
 //   frogs    score, water and shelter 0..255 per square (habitat.js), and the bank squares (edge
 //            cells and how many sides face the water)
+//   minnows, dragonflies (each school or swarm species, by its key)
+//            score 0..255 per square (needs.js) and the pools that suit it
 //
-// env.recipes.species is { frog: recipes/species/frog.json, midge: recipes/species/midge.json }.
+// env.recipes.species is { frog, midge, minnow?, dragonfly? }: recipes/species/<id>.json (src/world/species.js).
 
 import { stepMidges } from './midges.js';
 import { frogNeeds } from './habitat.js';
+import { needMaps } from './needs.js';
+import { swarmSpecies, keyOf } from '../species.js';
+import { HABITAT_ORIGIN } from '../growth/habitat.js';
 
 /** @returns {{ midges: Uint8Array | null, frogs: any, habitatHash: number }} */
 export function initialEcology() {
@@ -39,11 +44,85 @@ export function ecologyNow(state, env, advance) {
   const season = Math.min(3, Math.max(0, state.seasons?.index ?? 0));
   const midges = advance || !prev.midges ? stepMidges(hab, state.growth, prev.midges, sp.midge.field, season) : prev.midges;
   const f = frogNeeds(hab, state.growth, midges, sp.frog);
-  return {
+  /** @type {any} */ const eco = {
     midges,
     frogs: { score: bytes(f.score), water: bytes(f.water), shelter: bytes(f.shelter), edge: f.edge },
     habitatHash: hab.hash,
   };
+  // Schools and swarms (minnows, dragonflies): the habitat score per square from the same needs
+  // reader, and the pools that suit them (water bodies big and deep enough), for their tick.
+  const fields = { midges };
+  for (const rec of swarmSpecies(sp)) {
+    const m = needMaps(hab, state.growth, fields, rec);
+    const key = keyOf(rec);
+    const list = pools(m, state.creatures?.[key]?.groups ?? [], state.growth?.plants ?? [], rec.ecology.arrival?.roomPlants ?? null);
+    // A species that wants a pond of its own the player made, with no fish (dragonflies): each pool
+    // says whether it is one (fit), and why not.
+    if (rec.ecology.pond) for (const p of list) Object.assign(p, pondFit(hab, m, p.id, rec.ecology.pond, state.creatures?.[rec.ecology.pond.fishFree]?.groups ?? []));
+    eco[key] = { score: bytes(m.score), pools: list };
+  }
+  return eco;
+}
+
+/**
+ * Is a pool one the dragonflies would take (recipe ecology.pond): mostly shallow (shallowShare of
+ * its squares shallowM deep), with at least marginM2 square meters of margin marginM deep that the
+ * player shaped (the ground moved shapedCm or more from the island as generated) and that has cover
+ * grown in (shelter marginCover or more), and no fish (no group of fishFree living in it).
+ * @param {any} hab @param {ReturnType<typeof needMaps>} m @param {number} id the pool
+ * @param {any} R the recipe's ecology.pond @param {{ k: number }[]} fish the fish groups
+ * @returns {{ fit: boolean, shallow: number, margin: number, fish: boolean }}
+ *   shallow: share of the pool that is shallow; margin: square meters of shaped, covered margin
+ */
+export function pondFit(hab, m, id, R, fish) {
+  let area = 0, shallow = 0, margin = 0;
+  const [s0, s1] = R.shallowM, [m0, m1] = R.marginM;
+  for (let k = 0; k < m.score.length; k++) {
+    if (m.label?.[k] !== id) continue;
+    area++;
+    const d = hab.depthCm[k] / 100;
+    if (d >= s0 && d <= s1) shallow++;
+    if (d >= m0 && d <= m1 && (hab.shapedCm?.[k] ?? 0) >= R.shapedCm && m.shelter[k] >= R.marginCover) margin++;
+  }
+  const withFish = fish.some((g) => m.label?.[g.k] === id);
+  const share = area ? Math.round((shallow / area) * 1000) / 1000 : 0;
+  return { fit: share >= R.shallowShare && margin >= R.marginM2 && !withFish, shallow: share, margin, fish: withFish };
+}
+
+/**
+ * The pools of a species' water and how good each is: area, room (good square meters), deepest
+ * spot, its best square and score (ties to the lower square), and the groups whose home lies in it
+ * (src/world/creatures/swarms.js finds each group's pool by this), and the plants in it that make
+ * room for more (weed: weight x size summed, pondweed for minnows).
+ * @param {ReturnType<typeof needMaps>} m @param {{ id: number, k: number }[]} groups
+ * @param {{ sp: string, x: number, z: number, size: number }[]} plants @param {Record<string, number> | null} roomPlants
+ */
+function pools(m, groups, plants, roomPlants) {
+  const n = Math.round(Math.sqrt(m.score.length));
+  /** @type {Map<number, number>} */ const weed = new Map();
+  if (roomPlants && m.label) {
+    for (const p of plants) {
+      const w = roomPlants[p.sp];
+      if (!w) continue;
+      const i = Math.floor(p.x - HABITAT_ORIGIN), j = Math.floor(p.z - HABITAT_ORIGIN);
+      if (i < 0 || j < 0 || i >= n || j >= n) continue;
+      const id = m.label[j * n + i];
+      if (id) weed.set(id, (weed.get(id) ?? 0) + w * Math.min(1, p.size));
+    }
+  }
+  return m.bodies.map((b) => {
+    let best = -1, bestScore = 0;
+    if (m.label) {
+      for (let k = 0; k < m.score.length; k++) {
+        if (m.label[k] !== b.id) continue;
+        const s = Math.floor(255 * m.score[k] + 0.5);
+        if (s > bestScore || best < 0) { best = k; bestScore = s; }
+      }
+    }
+    const here = groups.filter((g) => m.label?.[g.k] === b.id).map((g) => g.id);
+    const wd = Math.round((weed.get(b.id) ?? 0) * 100) / 100;
+    return { id: b.id, area: b.area, room: b.good, deepCm: b.deepCm, deepK: b.deepK, best, bestScore: bestScore / 255, groups: here, weed: wd };
+  });
 }
 
 /**

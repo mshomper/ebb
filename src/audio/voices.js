@@ -3,11 +3,14 @@
 // system decides who calls and when; this module only renders the sound. Every call is its own
 // voice placed at the creature (doc 17 "Finding creatures by ear"), with distance air absorption
 // and, on mobile, a muffle behind the view. A voice cap keeps the nearest calls (12 desktop,
-// 6 mobile). Midge swarms hum only within about 3 m, nearest two only.
+// 6 mobile). Midge swarms hum only within about 3 m, nearest two only; a dragonfly's wings rattle
+// only within about 2 m, nearest two only; a minnow's sip is heard near the school.
 //
 //   call() ─→ frog pulse-croak ─→ placed chain (air lowpass, behind, panner) ─┐
+//   plop(), sip() ─→ bubbles ─→ placed chain ─────────────────────────────────┤
 //   spring purr (distant callers) ────────────────────────────────────────────┤→ 'creatures' bus
-//   setSwarms() ─→ midge hum per swarm (panner, reach) ───────────────────────┘
+//   setSwarms() ─→ midge hum per swarm (panner, reach) ───────────────────────┤
+//   setFlyers() ─→ wing rattle per dragonfly (panner, reach) ─────────────────┘
 //
 // Calls are scheduled on the audio clock: pass `when` (audio time) for look-ahead scheduling, or
 // leave it out for "now". A call's start is when the game starts swelling the throat sac.
@@ -16,13 +19,16 @@ import { stream, hash32 } from '../core/rng.js';
 import { placedChain } from './spatial.js';
 import { individualOf, seasonVoice, planCall, renderCall, createPurr, idHash } from './voices/frog.js';
 import { createSwarmVoice } from './voices/midge.js';
+import { createWingVoice } from './voices/dragonfly.js';
 import { normBlend } from './ambience/curves.js';
-import { plop as plopSound } from './procedural/one-shots.js';
+import { plop as plopSound, dropWith } from './procedural/one-shots.js';
 
 /**
  * @typedef {Object} VoiceRecipes
  * @property {any} frog   recipes/species/frog.json `voice`
  * @property {any} [midge] recipes/species/midge.json `voice`
+ * @property {any} [dragonfly] recipes/species/dragonfly.json `voice`, with its motion's wingHz and dartMps
+ * @property {any} [minnow] recipes/species/minnow.json `voice` (the sip needs `proc` too)
  * @property {any} [proc]  recipes/audio/procedural.json, for the frog's plop into water
  * @property {{sizeCm: number[], gainDb: number[]}} [plop]  the plop's size and level ranges
  */
@@ -54,7 +60,7 @@ export function createVoices(mixer, voiceRecipes, seed, opts = {}) {
   const individuals = new Map();
   /** @type {{id: string|number, end: number, dist: number, stop(): void, chain: ReturnType<typeof placedChain>}[]} */
   let live = [];
-  const stats = { calls: 0, dropped: 0, stolen: 0, plops: 0 };
+  const stats = { calls: 0, dropped: 0, stolen: 0, plops: 0, sips: 0 };
   const purr = createPurr(ctx, out, F);
 
   /** @param {string|number} id */
@@ -133,6 +139,79 @@ export function createVoices(mixer, voiceRecipes, seed, opts = {}) {
     return true;
   }
 
+  // ---- Minnows ---------------------------------------------------------------------------------
+  const W = voiceRecipes.minnow;
+  const sipSpatial = W ? { ...spatial, refDistance: W.refDistance, rolloff: W.rolloff } : spatial;
+  let sipCount = 0;
+
+  /**
+   * A minnow rising to sip at the surface: a tiny soft plop at the ring, heard near the school.
+   * @param {number[]} pos [x, y, z] the ring @param {number} [when] audio time
+   * @returns {boolean} whether it sounds (false without the recipe, or too far to hear)
+   */
+  function sip(pos, when) {
+    const proc = voiceRecipes.proc;
+    if (!W || !proc) return false;
+    const d = Math.hypot(pos[0] - ear.eye[0], pos[1] - ear.eye[1], pos[2] - ear.eye[2]);
+    if (d >= W.reachM) return false;
+    const fade = d <= W.fadeFromM ? 1 : 0.5 + 0.5 * Math.cos(Math.PI * (d - W.fadeFromM) / (W.reachM - W.fadeFromM));
+    const rng = stream(hash32(seed >>> 0, 0x5197), sipCount++);
+    const chain = placedChain(ctx, out, sipSpatial);
+    const t = Math.max(when ?? ctx.currentTime, ctx.currentTime);
+    chain.place(pos, ear, t);
+    const fadeDb = 20 * Math.log10(Math.max(1e-4, fade));
+    dropWith(ctx, chain.input, proc, W.sip, rng, { when: t, gainDb: rng.range(W.gainDb[0], W.gainDb[1]) + fadeDb });
+    setTimeout(() => chain.dispose(), (t - ctx.currentTime + 1) * 1000);
+    stats.sips++;
+    return true;
+  }
+
+  // ---- Dragonflies -----------------------------------------------------------------------------
+  const D = voiceRecipes.dragonfly;
+  /** @type {Map<string|number, ReturnType<typeof createWingVoice>>} */
+  const wingVoices = new Map();
+  /** @type {{id: string|number, dist: number, speed: number}[]} */
+  let wingInfo = [];
+  /** When (audio time) each voiced one landed. @type {Map<string|number, number>} */
+  const landedAt = new Map();
+
+  /**
+   * The dragonflies on the wing (call at the ambience rate). Perched ones are silent; only the
+   * nearest within reach get a voice.
+   * @param {{id: string|number, pos: number[], speed: number, flying: boolean}[]} flyers
+   */
+  function setFlyers(flyers) {
+    if (!D) return;
+    const reach = D.reachM + 0.3;
+    const ranked = flyers
+      .filter((f) => f.flying)
+      .map((f) => ({ f, d: Math.hypot(f.pos[0] - ear.eye[0], f.pos[1] - ear.eye[1], f.pos[2] - ear.eye[2]) }))
+      .filter((x) => x.d < reach)
+      .sort((a, b) => a.d - b.d)
+      .slice(0, D.nearest);
+    const keep = new Set(ranked.map((x) => x.f.id));
+    // One that has just landed keeps its voice a moment so the wings fade rather than cut.
+    const now = ctx.currentTime;
+    for (const f of flyers) {
+      if (f.flying) { landedAt.delete(f.id); continue; }
+      const v = wingVoices.get(f.id);
+      if (!v) continue;
+      if (!landedAt.has(f.id)) landedAt.set(f.id, now);
+      if (now - /** @type {number} */ (landedAt.get(f.id)) < D.perchRampS * 4) { keep.add(f.id); v.set(f.pos, ear.eye, 0, false); }
+    }
+    for (const [id, v] of wingVoices) if (!keep.has(id)) { v.stop(); wingVoices.delete(id); landedAt.delete(id); }
+    wingInfo = [];
+    for (const { f } of ranked) {
+      let v = wingVoices.get(f.id);
+      if (!v) {
+        v = createWingVoice(ctx, out, D, hash32(seed >>> 0, idHash(f.id), 0x44524146), tier);
+        wingVoices.set(f.id, v);
+      }
+      const dist = v.set(f.pos, ear.eye, f.speed, true);
+      wingInfo.push({ id: f.id, dist, speed: f.speed });
+    }
+  }
+
   // ---- Midges ---------------------------------------------------------------------------------
   /** @type {Map<string|number, ReturnType<typeof createSwarmVoice>>} */
   const swarmVoices = new Map();
@@ -169,6 +248,8 @@ export function createVoices(mixer, voiceRecipes, seed, opts = {}) {
     call,
     plop,
     setSwarms,
+    sip,
+    setFlyers,
     /** @param {number[]} seasonBlend four weights: spring, summer, autumn, winter */
     setSeason(seasonBlend) {
       blend = normBlend(seasonBlend);
@@ -192,6 +273,8 @@ export function createVoices(mixer, voiceRecipes, seed, opts = {}) {
     liveCount: () => { prune(); return live.length; },
     /** Midge swarms heard now: id, distance from the eye, density. */
     swarmsHeard: () => swarmInfo.slice(),
+    /** Dragonflies whose wings are heard now: id, distance from the eye, speed. */
+    flyersHeard: () => wingInfo.slice(),
     stats: () => ({ ...stats }),
     /** RMS of the creature voices now, dBFS. */
     levelDb() {
@@ -206,6 +289,7 @@ export function createVoices(mixer, voiceRecipes, seed, opts = {}) {
     dispose() {
       for (const v of live) v.stop();
       for (const v of swarmVoices.values()) v.stop();
+      for (const v of wingVoices.values()) v.stop();
       purr.stop();
       setTimeout(() => out.disconnect(), 500);
     },

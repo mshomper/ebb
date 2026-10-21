@@ -14,6 +14,7 @@ import { mountIslandNotes } from './ui/island-notes.js';
 import { mountFrogScale } from './ui/frog-scale.js';
 import { createJournal } from './world/journal/index.js';
 import { createProgress } from './world/expansion.js';
+import { keyOf } from './world/species.js';
 import { loadRecipe } from './core/recipes.js';
 import { on } from './core/events.js';
 import { get as getStore, defaultStore } from './core/store.js';
@@ -83,14 +84,15 @@ startApp(canvas, { onDeviceLost: (rebuilding) => showRebuildingNote(rebuilding),
       const [words, island, web, wash, list, naturalist] = await Promise.all([loadRecipe('world/journal'), loadRecipe('world/journal-island'),
         loadRecipe('world/journal-web'), loadRecipe('world/journal-wash'), loadRecipe('world/journal-list'), loadRecipe('world/naturalist')]);
       const journal = createJournal({ world: r.world, words, island, web, wash, list, creatures: /** @type {any} */ (r).creatures ?? null,
-        finds: /** @type {any} */ (r).finds ?? null, pieces: /** @type {any} */ (r).pieces ?? null, shore: /** @type {any} */ (r).shorePresence ?? null });
+        finds: /** @type {any} */ (r).finds ?? null, pieces: /** @type {any} */ (r).pieces ?? null, shore: /** @type {any} */ (r).shorePresence ?? null,
+        schools: /** @type {any} */ (r).schools ?? [] });
       mountIslandNotes(document.body, words, naturalist);
       // Progress (src/world/expansion.js): the naturalist's rewards and species gifts, read from the
       // journal. A species recipe's gift goes under its journal page (frog.json's under frogs).
       /** @type {Record<string, any>} */ const gifts = {};
-      for (const [id, rec] of Object.entries(r.world.env.recipes?.species ?? {})) {
+      for (const rec of Object.values(r.world.env.recipes?.species ?? {})) {
         const g = /** @type {any} */ (rec)?.ecology?.gift;
-        if (g) gifts[words.species[`${id}s`] ? `${id}s` : id] = g;
+        if (g) gifts[keyOf(/** @type {any} */ (rec))] = g;
       }
       const progress = createProgress({ words, recipe: naturalist, gifts });
       mountJournal(document.body, { ...journal, naturalist, progress }, hud.layer);

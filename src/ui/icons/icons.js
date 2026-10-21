@@ -504,6 +504,34 @@ const ICONS = {
     <circle cx="19" cy="9.5" r="0.85" fill="currentColor" stroke="none"/>
     <circle cx="8.5" cy="10.5" r="0.85" fill="currentColor" stroke="none"/>
     <path d="M4.5 11.5C5.5 10.5 6.5 12.5 7.5 11.5M15.5 3C16.5 2 17.5 4 18.5 3" opacity="0.7"/>`,
+  // Curled pondweed (M2, the minnows' gift): two stems rising under the water line, narrow wavy
+  // leaves along them.
+  pondweed: `
+    <path d="M2.5 5.5C4 4.5 5.5 6.5 7 5.5S10 4.5 11.5 5.5S14.5 6.5 16 5.5S19 4.5 21.5 5.5"/>
+    <path d="M9 21.5C8.4 17 10.2 12.5 9.4 8.5M15 21.5C15.8 17.5 14.2 13 15.4 9.5"/>
+    <path ${ACCENT} d="M9.3 17.5C7.2 16.9 5.6 15.6 5 14C7 14.3 8.6 15.4 9.3 17.5Z"/>
+    <path d="M9.3 17.5C7.2 16.9 5.6 15.6 5 14C7 14.3 8.6 15.4 9.3 17.5Z"/>
+    <path d="M9.6 12.5C11.4 11.6 12.4 10.2 12.6 8.6C11 9.4 10 10.8 9.6 12.5Z"/>
+    <path ${ACCENT} d="M15.2 16C17.3 15.6 18.9 14.4 19.6 12.8C17.6 13 16 14 15.2 16Z"/>
+    <path d="M15.2 16C17.3 15.6 18.9 14.4 19.6 12.8C17.6 13 16 14 15.2 16Z"/>
+    <path d="M14.8 12C13 11.2 12 9.9 11.8 8.4"/>`,
+  // Southern hawker (M2): a dragonfly from above, its long body down the middle, four wings out.
+  dragonfly: `
+    <path ${ACCENT} d="M11.4 8.6C8.4 6.2 4.6 5.6 2.8 6.6C3.4 8.6 7.6 9.6 11.4 9.4Z"/>
+    <path ${ACCENT} d="M12.6 8.6C15.6 6.2 19.4 5.6 21.2 6.6C20.6 8.6 16.4 9.6 12.6 9.4Z"/>
+    <path d="M11.4 8.6C8.4 6.2 4.6 5.6 2.8 6.6C3.4 8.6 7.6 9.6 11.4 9.4M12.6 8.6C15.6 6.2 19.4 5.6 21.2 6.6C20.6 8.6 16.4 9.6 12.6 9.4"/>
+    <path d="M11.4 10.4C8.6 10.8 5 12.2 3.6 13.6C5.2 14.6 9 13 11.4 11.4M12.6 10.4C15.4 10.8 19 12.2 20.4 13.6C18.8 14.6 15 13 12.6 11.4"/>
+    <circle cx="12" cy="5.6" r="1.4"/>
+    <path d="M12 7V21.5"/>
+    <path d="M11 8.2C11 7.4 13 7.4 13 8.2V11.6C13 12.4 11 12.4 11 11.6Z"/>`,
+  // Minnows (M2): a small fish under the water line, a ring above where one rose.
+  minnow: `
+    <path d="M2.5 7.5C4 6.5 5.5 8.5 7 7.5S10 6.5 11.5 7.5M15 7.5H21.5"/>
+    <path d="M10.6 5.6C11.6 4.9 14.4 4.9 15.4 5.6"/>
+    <path ${ACCENT} d="M3.5 15C6 11.8 11 11.4 15 14.2L19.8 11.6V18.4L15 15.8C11 18.6 6 18.2 3.5 15Z"/>
+    <path d="M3.5 15C6 11.8 11 11.4 15 14.2L19.8 11.6V18.4L15 15.8C11 18.6 6 18.2 3.5 15Z"/>
+    <circle cx="6.9" cy="14.3" r="0.9" fill="currentColor" stroke="none"/>
+    <path d="M10.5 13.4C11.2 14.4 11.2 15.6 10.5 16.6"/>`,
 
   // The Web's shore features (journal-web.json). Rock pool: water held between two rocks.
   pool: `
