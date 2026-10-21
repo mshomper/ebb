@@ -13,6 +13,10 @@ import { fossilNumbers, fossilMesh, fossilWords } from './fossil.js';
 import { driftwoodNumbers, driftwoodMesh, driftwoodWords } from './driftwood.js';
 import { featherNumbers, featherMesh, featherWords } from './feather.js';
 import { bottleNumbers, bottleMesh, bottleWords } from './bottle.js';
+import { urchinNumbers, urchinMesh, urchinWords } from './urchin.js';
+import { starfishNumbers, starfishMesh, starfishWords } from './starfish.js';
+import { seedNumbers, seedMesh, seedWords } from './seedpod.js';
+import { purseNumbers, purseMesh, purseWords } from './purse.js';
 
 /**
  * @typedef {{ salt: number, numbers: (h0: number, rarity: any, K: any) => any,
@@ -28,6 +32,10 @@ export const FAMILIES = /** @type {Record<string, Family>} */ ({
   driftwood: { salt: 0xd1f7, numbers: driftwoodNumbers, mesh: driftwoodMesh, words: driftwoodWords, view: () => [-15, 35] },
   feather: { salt: 0xfea7, numbers: featherNumbers, mesh: featherMesh, words: featherWords, view: () => [135, 80] },
   bottle: { salt: 0xb071, numbers: bottleNumbers, mesh: bottleMesh, words: bottleWords, view: () => [-20, 25] },
+  urchin: { salt: 0x0c41, numbers: urchinNumbers, mesh: urchinMesh, words: urchinWords, view: () => [15, 40] },
+  starfish: { salt: 0x57a7, numbers: starfishNumbers, mesh: starfishMesh, words: starfishWords, view: () => [0, 78] },
+  seed: { salt: 0x5eed, numbers: seedNumbers, mesh: seedMesh, words: seedWords, view: (n) => (n.form === 'heart' ? [0, 72] : [20, 32]) },
+  purse: { salt: 0x9a75, numbers: purseNumbers, mesh: purseMesh, words: purseWords, view: () => [20, 70] },
 });
 
 /**

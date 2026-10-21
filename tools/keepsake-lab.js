@@ -14,7 +14,8 @@ const MESSAGES = await (await fetch('../recipes/world/bottle-messages.json')).js
 const SEED = 20261021;
 const $ = (/** @type {string} */ id) => /** @type {any} */ (document.getElementById(id));
 /** Each family's block in keepsakes.json. */
-const RECIPE_KEY = /** @type {Record<string, string>} */ ({ shell: 'shells', stone: 'stones', fossil: 'fossils', driftwood: 'driftwood', feather: 'feathers', bottle: 'bottles' });
+const RECIPE_KEY = /** @type {Record<string, string>} */ ({ shell: 'shells', stone: 'stones', fossil: 'fossils', driftwood: 'driftwood', feather: 'feathers', bottle: 'bottles',
+  urchin: 'urchins', starfish: 'starfish', seed: 'seeds', purse: 'purses' });
 
 /** @type {{ force: string | null, sel: any, base: any, view: string, family: string }} */
 const state = { force: null, sel: null, base: null, view: 'sketch', family: 'shell' };
@@ -274,7 +275,8 @@ for (const b of $('views').children) {
   });
 }
 for (const id of ['tide', 'season', 'from']) $(id).addEventListener('change', renderGrid);
-const FAMILY_LABEL = /** @type {Record<string, string>} */ ({ shell: 'Shells', stone: 'Stones', fossil: 'Fossils', driftwood: 'Driftwood', feather: 'Feathers', bottle: 'Bottles' });
+const FAMILY_LABEL = /** @type {Record<string, string>} */ ({ shell: 'Shells', stone: 'Stones', fossil: 'Fossils', driftwood: 'Driftwood', feather: 'Feathers', bottle: 'Bottles',
+  urchin: 'Sea urchins', starfish: 'Starfish', seed: 'Drift seeds', purse: "Mermaid's purses" });
 for (const f of Object.keys(FAMILIES)) $('family').append(new Option(FAMILY_LABEL[f] ?? f, f));
 $('family').addEventListener('change', () => {
   state.family = $('family').value;

@@ -74,6 +74,47 @@ export function gridMesh(b, P, C, rows, cols, centres, o = {}) {
   };
   if (o.capStart) cap(0, true);
   if (o.capEnd) cap(rows - 1, false);
+  return base;
+}
+
+/**
+ * A closed body like a pebble or a starfish: a sphere's rings from top to bottom, each point placed
+ * and coloured by `at`, fitted to size and capped at both ends. at(dir, th, ph) gets the sphere
+ * direction and its angles (th from the top) and returns the point and its colour.
+ * @param {ReturnType<typeof import('../../finds/procedural.js').builder>} b
+ * @param {number} rows @param {number} cols @param {number} size largest extent (m)
+ * @param {(dir: number[], th: number, ph: number) => { p: number[], c: number[] }} at
+ */
+export function closedBody(b, rows, cols, size, at) {
+  const P = new Float32Array((rows + 1) * cols * 3), C = new Float32Array(P.length), cen = new Float32Array((rows + 1) * 3);
+  for (let i = 0; i <= rows; i++) {
+    // Rings stop short of the poles, which are capped, so no ring shrinks to a point.
+    const th = ((i + 0.5) / (rows + 1)) * Math.PI;
+    let sx = 0, sy = 0, sz = 0;
+    for (let j = 0; j < cols; j++) {
+      const ph = (j / cols) * Math.PI * 2;
+      const r = at([Math.sin(th) * Math.cos(ph), Math.cos(th), Math.sin(th) * Math.sin(ph)], th, ph);
+      const k = (i * cols + j) * 3;
+      P.set(r.p, k); C.set(r.c, k);
+      sx += r.p[0]; sy += r.p[1]; sz += r.p[2];
+    }
+    cen.set([sx / cols, sy / cols, sz / cols], i * 3);
+  }
+  fitTo(P, cen, size);
+  // Outward from the body's middle height, so normals face out on flat and armed bodies alike.
+  let my = 0;
+  for (let i = 0; i <= rows; i++) my += cen[i * 3 + 1];
+  my /= rows + 1;
+  const mid = new Float32Array(cen.length);
+  for (let i = 0; i <= rows; i++) mid.set([cen[i * 3], my, cen[i * 3 + 2]], i * 3);
+  const first = gridMesh(b, P, C, rows + 1, cols, mid);
+  for (const [i, up] of [[0, 1], [rows, -1]]) {
+    const t = b.vert([cen[i * 3], cen[i * 3 + 1], cen[i * 3 + 2]], [0, up, 0], [C[i * cols * 3], C[i * cols * 3 + 1], C[i * cols * 3 + 2]]);
+    for (let j = 0; j < cols; j++) {
+      const a = first + i * cols + j, c = first + i * cols + ((j + 1) % cols);
+      if (up > 0) b.tri(t, c, a); else b.tri(t, a, c);
+    }
+  }
 }
 
 /**
