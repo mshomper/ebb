@@ -45,7 +45,10 @@ import { addQualityTests } from './unit-tests-quality.js';
 import { addTrustTests } from './unit-tests-trust.js';
 import { addFindsTests } from './unit-tests-finds.js';
 import { addNaturalistTests } from './unit-tests-naturalist.js';
+import { addKeepsakeTests } from './unit-tests-keepsakes.js';
 import { addPiecesTests } from './unit-tests-pieces.js';
+import { addCoveTests } from './unit-tests-cove.js';
+import { addKeepsakeArtifactTests } from './unit-tests-keepsake-artifacts.js';
 import { addAutumnTests } from './unit-tests-autumn.js';
 
 /** @type {{group: string, name: string, fn: () => any}[]} */
@@ -1457,12 +1460,18 @@ addQualityTests(test, assert, eq);
 addTrustTests(test, assert, eq);
 addFindsTests(test, assert, eq);
 addNaturalistTests(test, assert, eq);
+addKeepsakeTests(test, assert, eq);
 addPondLifeTests(test, assert, eq);
 addDamselflyTests(test, assert, eq);
 
 // ---- placed pieces: loose stones (tools/unit-tests-pieces.js) ----
 
 addPiecesTests(test, assert, eq);
+addCoveTests(test, assert, eq);
+
+// ---- keepsake artifact models (tools/unit-tests-keepsake-artifacts.js) ----
+
+addKeepsakeArtifactTests(test, assert, eq);
 
 // ---- autumn's season markers: fungi on logs, dewy webs (tools/unit-tests-autumn.js) ----
 

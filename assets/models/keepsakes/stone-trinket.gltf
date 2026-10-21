@@ -1,0 +1,97 @@
+{
+ "asset": {
+  "version": "2.0",
+  "generator": "ebb tools/bake-find-model.mjs",
+  "extras": {
+   "author": "Ellis Rogers-Byrne (https://sketchfab.com/ellisrb)",
+   "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+   "source": "https://sketchfab.com/3d-models/stone-trinket-b23b227a4f66400a84d15eb709c61179",
+   "title": "Stone Trinket"
+  }
+ },
+ "scene": 0,
+ "scenes": [
+  {
+   "nodes": [
+    0
+   ]
+  }
+ ],
+ "nodes": [
+  {
+   "mesh": 0,
+   "name": "stone-trinket"
+  }
+ ],
+ "meshes": [
+  {
+   "name": "stone-trinket",
+   "primitives": [
+    {
+     "attributes": {
+      "POSITION": 1,
+      "COLOR_0": 2
+     },
+     "indices": 0,
+     "mode": 4
+    }
+   ]
+  }
+ ],
+ "buffers": [
+  {
+   "byteLength": 46452,
+   "uri": "stone-trinket.bin"
+  }
+ ],
+ "bufferViews": [
+  {
+   "buffer": 0,
+   "byteOffset": 0,
+   "byteLength": 23388,
+   "target": 34963
+  },
+  {
+   "buffer": 0,
+   "byteOffset": 23388,
+   "byteLength": 11532,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteOffset": 34920,
+   "byteLength": 11532,
+   "target": 34962
+  }
+ ],
+ "accessors": [
+  {
+   "bufferView": 0,
+   "componentType": 5125,
+   "count": 5847,
+   "type": "SCALAR"
+  },
+  {
+   "bufferView": 1,
+   "componentType": 5126,
+   "count": 961,
+   "type": "VEC3",
+   "min": [
+    -0.026165300980210304,
+    0,
+    -0.026194710284471512
+   ],
+   "max": [
+    0.026165300980210304,
+    0.05999999865889549,
+    0.026194710284471512
+   ]
+  },
+  {
+   "bufferView": 2,
+   "componentType": 5126,
+   "count": 961,
+   "type": "VEC3"
+  }
+ ]
+}

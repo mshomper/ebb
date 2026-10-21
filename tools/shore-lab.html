@@ -64,6 +64,10 @@
     </div>
     <p class="muted">The sea covers whatever lies below the level you pick; zones still show faintly under it. Kelp only comes out of the water at spring low tides.</p>
     <div class="legend" id="legend"></div>
+    <h2>Sheltered coves</h2>
+    <p class="muted">How enclosed each bit of shore is (src/world/water/cove.js, tuned in recipes/world/cove.json): rays fan out over the sea from every shore cell and count the land they meet. Carve a bay into the coast with the shaping tools and its shore turns red-orange; a straight coast stays plain. Nothing in the game uses it yet; the keepsakes the sea leaves will favour sheltered coves.</p>
+    <div class="buttons"><button id="cove-toggle" aria-pressed="false">Show sheltered shore</button></div>
+    <p class="muted" id="cove-out">Waiting for the island.</p>
   </div>
   </div>
   <p class="muted">Add ?island=two-ponds or ?seed=2 to the address to try another island.</p>

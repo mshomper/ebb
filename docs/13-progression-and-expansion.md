@@ -4,7 +4,7 @@
 
 ## Locked decisions
 
-- **The only progression input is species happiness** (`species:happy` from `11-creatures-and-ecology.md`). No experience points, no currency, no crafting.
+- **The only input to tier milestones is species happiness** (`species:happy` from `11-creatures-and-ecology.md`). No experience points, no currency, no crafting trees. Finds, living net catches and keepsakes have their own line, the naturalist's notes, and never count toward milestones. *(October 21, 2026: nets are made from what the island grows, F12; nothing is spent.)*
 - **Two kinds of reward from creatures.** Each species gives one gift (a seed, tool or palette, never a creature) the first time it becomes happy; trust is rewarded by names, calls and portraits, not items (`23-presence.md`). Finds have their own line, the naturalist's notes, which never counts toward milestones. A **tier milestone** fires when the second species of a tier is happy, and that milestone brings new land. Gift list per species: `12-creature-roadmap.md`.
 - **Five land pieces, one per tier milestone**, in fixed order, each placed by the world seed so every world differs a little.
 - **New land arrives at low tide, while the player is watching.** A milestone reached during catch-up is queued and plays during the reveal or the next low tide in play. Gifts reached offline appear as journal notes in the reveal.
@@ -22,7 +22,9 @@ Agreed with Matt on October 20, 2026. New things reach the player in five ways, 
 |---|---|---|
 | Starter kit | Sculpt (Raise, Lower, Flatten, Stone), Paint, Water (Pour, Drain), Plant with grass, reeds and water lilies; Feed once a creature is found | nothing: there from the start |
 | Plants that come by themselves | Iris, rushes, thrift, marigold, grey willow, campion; plantable once seen | about one every 1.7 game days (`recipes/world/growth.json`) |
-| The naturalist's notes | Shells at 3 finds; loose stones at 6, driftwood at 10, the hand lens at 15 (driftwood and the lens swapped places on October 20, 2026, so logs come in time for the turtles) | finds discovered (`recipes/world/naturalist.json`) |
+| The naturalist's trail | Shells (and keepsakes start washing up) at 3 finds; loose stones at 6, driftwood at 10, the tide table at 12, the hand lens at 15, field glasses at 20, a night lamp at 25. Ways to look. Released living catches count as finds | new kinds of finds discovered (`recipes/world/naturalist.json`) |
+| The beachcomber's trail | The shelf, then the general net, a glass case, the light net, the sinker net, a second shelf, a gold border for a first once-in-a-lifetime, the cabinet frame. Ways to reach the sea and to keep | each family's first keepsake kept, each rarity's first kept, each rare mark first seen (F12) |
+| The shaper's trail | Stepping stones, a lantern, paths, a bench (presence rung 2), photo frames, the island map, a wind chime. Human touches and places to be | the first time the island has each kind of place: a metre-deep pool, a fish-free pond, a cove, a terrace with a fall, a stream, a meadow in bloom, a reed-ringed pond |
 | Species gifts | One seed or tool per species, when it first settles happy (list in `12-creature-roadmap.md`) | creature happiness |
 | Tier milestones | New land, when the second species of a tier is happy | creature happiness |
 
@@ -42,6 +44,31 @@ flowchart LR
 ```
 
 The gifts build on each other. The frogs' Cliff tool makes the deep, still pool minnows want; the dragonflies' springs then pour over the terraces the player has already built. A gift never brings a creature: the creature still decides to come.
+
+### Trails (agreed with Matt, October 21, 2026)
+
+Three trails share one journal page, **Trails**. On desktop they sit side by side, each a line of ink stops down the paper like the naturalist's trail today; on phones they are three tabs.
+
+```
+NATURALIST            BEACHCOMBER              SHAPER
+what you notice       what you keep            what you make
+ways to look          ways to reach and keep   human touches, places to be
+```
+
+- **A stop is a first or a new kind, never a total.** "7 of 13 families kept" may show; "keep 50 shells" never exists. Nothing is missable or time-limited.
+- **The next reward on each trail shows in pencil;** the rest stay unseen.
+- **Each source of new things has its own currency:**
+
+| Source | Gives | Never gives |
+|---|---|---|
+| Species gifts | Tools that change land, water and plants | Cosmetics; ways to look |
+| The naturalist's trail | Ways to look and understand | Tools that shape |
+| The beachcomber's trail | Ways to reach the sea, keep and display | Tools that shape |
+| The shaper's trail | Human touches, places to be, ways to show the island | New creatures; tools that shape |
+
+- **Species gifts stay the only source of new shaping power,** so creatures stay the heart. The gifts are the means; the shaper's trail notices what you make with them. For example, the frogs' Cliff tool lets you build a terrace with a fall, and that stop on the shaper's trail brings the bench.
+- **No trail locks another, or a creature.**
+- **Details:** the beachcomber's stops and the nets are in `docs/future/12-keepsakes-and-nets.md`. The bench and the walker (presence rungs 2 and 3) are to be discussed further.
 
 ### The gift chain (agreed with Matt, October 20, 2026)
 
@@ -243,6 +270,7 @@ The camera stays where it is; you look around the island to find the wash. A spe
   - **New:** a note written since you last opened Notes, or its page, has a small ink dot. So does the book button, and the section and page it belongs to, until you open them.
   - **Missed:** a note that never showed on the island (more at once than the queue holds, or written while the tab was out of sight, and later the reveal's catch-up) goes at the top of Notes under "You may have missed". The island says "3 more in the journal" instead of dropping them silently.
   - **Seen:** everything else is plain. On a new island, the notes about what was already there count as read.
+- **The shelf** (F12, agreed October 21, 2026): its own journal section with a drawn icon, and 16 slots. It records only what the player kept, never a count of what was found or is missing. Keepsakes are unnamed trinkets: each slot is a sketch traced from the keepsake's own shape, on a paper ground that shows its rarity (plain, a pale wash, a deeper wash with an inked border, a gilt edge), so a shelf is worth a photograph. Keeping something writes no note; the shelf is the record.
 - **The island map**: a hand-drawn style map that adds each land piece as it rises, with player-named places.
 - **The year page**: four season boxes that fill as each season is seen with a happy species in it, and each season's own small lives and moment (see "The year, season by season"). When all sixteen species pages hold a photograph and all four seasons are filled, the year page completes with a short closing note. Play continues; nothing ends.
 

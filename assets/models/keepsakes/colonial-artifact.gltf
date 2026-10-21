@@ -1,0 +1,97 @@
+{
+ "asset": {
+  "version": "2.0",
+  "generator": "ebb tools/bake-find-model.mjs",
+  "extras": {
+   "author": "Frank McMains (https://sketchfab.com/frankmcmains)",
+   "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+   "source": "https://sketchfab.com/3d-models/colonial-artifact-f19e101c42274293bc1042631e92c3d2",
+   "title": "Colonial Artifact"
+  }
+ },
+ "scene": 0,
+ "scenes": [
+  {
+   "nodes": [
+    0
+   ]
+  }
+ ],
+ "nodes": [
+  {
+   "mesh": 0,
+   "name": "colonial-artifact"
+  }
+ ],
+ "meshes": [
+  {
+   "name": "colonial-artifact",
+   "primitives": [
+    {
+     "attributes": {
+      "POSITION": 1,
+      "COLOR_0": 2
+     },
+     "indices": 0,
+     "mode": 4
+    }
+   ]
+  }
+ ],
+ "buffers": [
+  {
+   "byteLength": 58512,
+   "uri": "colonial-artifact.bin"
+  }
+ ],
+ "bufferViews": [
+  {
+   "buffer": 0,
+   "byteOffset": 0,
+   "byteLength": 29496,
+   "target": 34963
+  },
+  {
+   "buffer": 0,
+   "byteOffset": 29496,
+   "byteLength": 14508,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteOffset": 44004,
+   "byteLength": 14508,
+   "target": 34962
+  }
+ ],
+ "accessors": [
+  {
+   "bufferView": 0,
+   "componentType": 5125,
+   "count": 7374,
+   "type": "SCALAR"
+  },
+  {
+   "bufferView": 1,
+   "componentType": 5126,
+   "count": 1209,
+   "type": "VEC3",
+   "min": [
+    -0.03669893369078636,
+    0,
+    -0.04500000178813934
+   ],
+   "max": [
+    0.03669893369078636,
+    0.018783580511808395,
+    0.04500000178813934
+   ]
+  },
+  {
+   "bufferView": 2,
+   "componentType": 5126,
+   "count": 1209,
+   "type": "VEC3"
+  }
+ ]
+}

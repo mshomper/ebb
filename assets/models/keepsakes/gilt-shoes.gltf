@@ -1,0 +1,97 @@
+{
+ "asset": {
+  "version": "2.0",
+  "generator": "ebb tools/bake-find-model.mjs",
+  "extras": {
+   "author": "KOREA HERITAGE SERVICE [KHS] (https://sketchfab.com/KHS_Asset)",
+   "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+   "source": "https://sketchfab.com/3d-models/gilt-bronze-shoes-of-the-sikrichong-tomb-b1f6f2cad60a4f14bb9c3ff019f4f248",
+   "title": "Gilt-Bronze Shoes of the Sikrichong Tomb"
+  }
+ },
+ "scene": 0,
+ "scenes": [
+  {
+   "nodes": [
+    0
+   ]
+  }
+ ],
+ "nodes": [
+  {
+   "mesh": 0,
+   "name": "gilt-shoes"
+  }
+ ],
+ "meshes": [
+  {
+   "name": "gilt-shoes",
+   "primitives": [
+    {
+     "attributes": {
+      "POSITION": 1,
+      "COLOR_0": 2
+     },
+     "indices": 0,
+     "mode": 4
+    }
+   ]
+  }
+ ],
+ "buffers": [
+  {
+   "byteLength": 48384,
+   "uri": "gilt-shoes.bin"
+  }
+ ],
+ "bufferViews": [
+  {
+   "buffer": 0,
+   "byteOffset": 0,
+   "byteLength": 27816,
+   "target": 34963
+  },
+  {
+   "buffer": 0,
+   "byteOffset": 27816,
+   "byteLength": 10284,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteOffset": 38100,
+   "byteLength": 10284,
+   "target": 34962
+  }
+ ],
+ "accessors": [
+  {
+   "bufferView": 0,
+   "componentType": 5125,
+   "count": 6954,
+   "type": "SCALAR"
+  },
+  {
+   "bufferView": 1,
+   "componentType": 5126,
+   "count": 857,
+   "type": "VEC3",
+   "min": [
+    -0.016822343692183495,
+    0,
+    -0.05000000074505806
+   ],
+   "max": [
+    0.016822343692183495,
+    0.034708622843027115,
+    0.05000000074505806
+   ]
+  },
+  {
+   "bufferView": 2,
+   "componentType": 5126,
+   "count": 857,
+   "type": "VEC3"
+  }
+ ]
+}
