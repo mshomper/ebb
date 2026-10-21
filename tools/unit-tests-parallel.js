@@ -26,6 +26,9 @@ export const PARALLEL = {
   pieces: () => import('./unit-tests-pieces.js').then((m) => m.addPiecesTests),
   damselflies: () => import('./unit-tests-damselflies.js').then((m) => m.addDamselflyTests),
   autumn: () => import('./unit-tests-autumn.js').then((m) => m.addAutumnTests),
+  keepsakes: () => import('./unit-tests-keepsakes.js').then((m) => m.addKeepsakeTests),
+  cove: () => import('./unit-tests-cove.js').then((m) => m.addCoveTests),
+  keepsakeArtifacts: () => import('./unit-tests-keepsake-artifacts.js').then((m) => m.addKeepsakeArtifactTests),
 };
 
 /** @param {any} cond @param {string} [msg] */

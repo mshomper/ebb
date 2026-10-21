@@ -11,6 +11,7 @@ import { mountTools } from '../src/ui/tools.js';
 import { mountHud } from '../src/ui/hud.js';
 import { shoreZones, groundOfCell } from '../src/world/water/shore.js';
 import { WORLD_CELLS } from '../src/world/terrain/grid.js';
+import { coveField } from '../src/world/water/cove.js';
 
 /** Zone colors for the map (a tool page; the game's look comes from the palette, later). */
 /** @type {Record<string, number[]>} */
@@ -26,7 +27,10 @@ const $ = (/** @type {string} */ id) => /** @type {HTMLElement} */ (document.get
 const map = /** @type {HTMLCanvasElement} */ ($('map'));
 const level = /** @type {HTMLInputElement} */ ($('level'));
 
-const [shoreRecipe, waterRecipe] = await Promise.all([loadRecipe('world/shore'), loadRecipe('world/water')]);
+const COVE_RGB = [255, 60, 20];
+const coveBtn = /** @type {HTMLButtonElement} */ ($('cove-toggle'));
+
+const [shoreRecipe, waterRecipe, coveRecipe] = await Promise.all([loadRecipe('world/shore'), loadRecipe('world/water'), loadRecipe('world/cove')]);
 const A0 = waterRecipe.tide.amplitudeM;
 const names = Object.fromEntries(shoreRecipe.zones.map((/** @type {any} */ z) => [z.id, z.name]));
 
@@ -42,6 +46,19 @@ if (!r.ok) {
   /** @type {ReturnType<typeof shoreZones> | null} */ let zones = null;
   /** @type {Float32Array | null} */ let bed = null;
   /** @type {Uint8Array | null} */ let ground = null;
+  /** The cove field for the current summary, and how long it took to work out. @type {Uint8Array | null} */ let cove = null;
+  let coveMs = 0;
+
+  /** Work out the cove field for a summary, timed (best of three runs, to leave out warm-up). @param {any} s */
+  const computeCove = (s) => {
+    let best = Infinity;
+    for (let q = 0; q < 3; q++) {
+      const t0 = performance.now();
+      cove = coveField(s, coveRecipe);
+      best = Math.min(best, performance.now() - t0);
+    }
+    coveMs = best;
+  };
 
   /** Recompute when the summary or the paint changed; cheap enough to check twice a second. */
   const refresh = () => {
@@ -53,6 +70,7 @@ if (!r.ok) {
     lastSummary = s; lastMaterialSum = sum;
     zones = shoreZones({ summary: s, material: mirror.material, recipe: shoreRecipe, amplitudeM: A0 });
     ({ bed, ground } = cells(s.rect, mirror));
+    computeCove(s);
     draw();
   };
 
@@ -65,6 +83,8 @@ if (!r.ok) {
     const g = /** @type {CanvasRenderingContext2D} */ (map.getContext('2d'));
     const img = g.createImageData(rect.w, rect.h);
     const under = new Array(ids.length).fill(0);
+    const showCove = coveBtn.getAttribute('aria-pressed') === 'true' && cove;
+    let scored = 0, sheltered = 0;
     for (let k = 0; k < rect.w * rect.h; k++) {
       const z = zone[k];
       let c = z ? (ZONE_RGB[ids[z - 1]] ?? OTHER_RGB) : GROUND_RGB[ground[k]];
@@ -74,9 +94,22 @@ if (!r.ok) {
         c = [0, 1, 2].map((q) => c[q] * (1 - t) + WATER_RGB[q] * t);
         if (z) under[z - 1]++;
       }
+      if (showCove) {
+        // Sheltered shore glows warm: the more enclosed, the stronger. Open shore keeps its zone color.
+        const v = /** @type {Uint8Array} */ (cove)[k];
+        if (v >= 16) {
+          scored++;
+          if (v >= 128) sheltered++;
+          const t = Math.min(1, 0.1 + 0.9 * (v / 200));
+          c = [0, 1, 2].map((q) => c[q] * (1 - t) + COVE_RGB[q] * t);
+        }
+      }
       img.data.set([c[0], c[1], c[2], 255], k * 4);
     }
     g.putImageData(img, 0, 0);
+    $('cove-out').textContent = showCove
+      ? `Sheltered shore glows red-orange, the more enclosed the stronger: ${scored} cells are sheltered a little or more, ${sheltered} of them strongly. The field took ${coveMs.toFixed(1)} ms to work out.`
+      : `Cove field: ${coveMs.toFixed(1)} ms to work out. Switch it on to see which shore is sheltered.`;
     $('legend').innerHTML = ids.map((id, i) => {
       const c = ZONE_RGB[id] ?? OTHER_RGB;
       const m2 = counts[i] * 0.25;
@@ -88,6 +121,10 @@ if (!r.ok) {
   };
 
   level.addEventListener('input', draw);
+  coveBtn.addEventListener('click', () => {
+    coveBtn.setAttribute('aria-pressed', coveBtn.getAttribute('aria-pressed') === 'true' ? 'false' : 'true');
+    draw();
+  });
   for (const b of $('tides').querySelectorAll('button')) {
     b.addEventListener('click', () => { level.value = /** @type {HTMLElement} */ (b).dataset.a0 ?? '0'; draw(); });
   }

@@ -19,6 +19,7 @@ const u01 = (h) => (h >>> 8) / 16777216;
 /**
  * A mesh under construction: vertices go in as 9 floats each, triangles by index. done() sets its
  * base on y = 0, unless keepY (a fungus keeps its root where it meets the wood, autumn-meshes.js).
+ * Keepsakes build with it too (src/world/keepsakes/families).
  * @param {{ keepY?: boolean }} [o]
  */
 export function builder(o = {}) {

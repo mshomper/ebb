@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ebb artifact variants</title>
+<link rel="stylesheet" href="../src/ui/tokens.css">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 17px/1.5 Nunito, system-ui, sans-serif; background: #F4EEE4; color: #2F3A35; padding: 20px max(16px, env(safe-area-inset-left)); overflow-x: hidden; }
+  h1 { font-size: 26px; margin: 0 0 4px; }
+  h2 { font-size: 20px; margin: 28px 0 8px; }
+  p { margin: 0 0 14px; max-width: 64ch; }
+  code { overflow-wrap: anywhere; }
+  .muted { color: #5F5E52; font-size: 16px; }
+  .controls { display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: end; margin: 14px 0; }
+  .controls label { display: grid; gap: 4px; font-size: 16px; }
+  input[type=number], select { font: inherit; font-size: 17px; padding: 8px 10px; border: 1px solid #C9BDA6; border-radius: 8px; background: #FBF7F0; color: inherit; min-height: 44px; }
+  input[type=number] { width: 9ch; }
+  button { font: inherit; font-size: 17px; min-height: 44px; padding: 8px 14px; border: 1px solid #C9BDA6; border-radius: 8px; background: #FBF7F0; color: inherit; cursor: pointer; }
+  button[aria-pressed=true] { background: #5F7F5B; border-color: #5F7F5B; color: #FBF7F0; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .one { display: grid; grid-template-columns: minmax(0, 340px) minmax(0, 1fr); gap: 20px; align-items: start; }
+  .big { width: 100%; aspect-ratio: 1; border-radius: 10px; touch-action: none; cursor: grab; display: block; }
+  .sliders { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 18px; margin-top: 12px; }
+  .sliders label { display: grid; gap: 2px; font-size: 16px; }
+  .sliders input[type=range] { width: 100%; min-height: 32px; }
+  .name { font-size: 22px; font-weight: 800; margin: 0; overflow-wrap: anywhere; }
+  .words { font-family: Fraunces, Georgia, serif; font-style: italic; font-size: 19px; margin: 6px 0; overflow-wrap: anywhere; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 14px; }
+  .slot { margin: 0; border-radius: 10px; padding: 8px; display: grid; gap: 6px; cursor: pointer; align-content: start; min-width: 0; }
+  .slot .art { width: 100%; aspect-ratio: 1; display: block; }
+  .slot .art svg { width: 100%; height: 100%; display: block; }
+  .slot canvas.art { border-radius: 6px; }
+  .slot figcaption { font-size: 16px; line-height: 1.35; overflow-wrap: anywhere; }
+  .slot figcaption b { display: block; font-size: 17px; }
+  .bigsketch { width: min(100%, 220px); aspect-ratio: 1; float: right; margin: 0 0 8px 12px; border-radius: 10px; }
+  .bigsketch svg { width: 100%; height: 100%; }
+  .shelf { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; max-width: 720px; padding: 16px; border-radius: 12px; background: #E9DFCE; }
+  .shelf > div { aspect-ratio: 1; border-radius: 8px; padding: 4px; }
+  .shelf svg { width: 100%; height: 100%; display: block; }
+  table { border-collapse: collapse; font-size: 16px; }
+  td, th { padding: 4px 12px 4px 0; text-align: left; overflow-wrap: anywhere; }
+  td.n { text-align: right; font-variant-numeric: tabular-nums; }
+  .odds { display: flex; flex-wrap: wrap; gap: 12px 40px; }
+  @media (max-width: 700px) {
+    .one { grid-template-columns: minmax(0, 1fr); }
+    .sliders { grid-template-columns: minmax(0, 1fr); }
+    .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+    .bigsketch { float: none; margin: 0 auto 8px; }
+    .shelf { gap: 6px; padding: 8px; }
+  }
+</style>
+</head>
+<body>
+<h1>Artifact variants</h1>
+<p>Every keepsake artifact is one of nine baked models (<code>assets/models/keepsakes/</code>) pushed and pulled by seeded numbers: stretched, tapered, twisted, bent, dented, worn smooth, chipped or broken, recoloured, banded, stained, crusted and sometimes gilded or paired with a twin. The numbers are continuous, so the variety does not run out, and each variant names and describes itself from them. Rarer ones may go further and carry marks. Each square is drawn as the shelf would draw it (an ink sketch traced from its mesh, washed in its own colours) on the paper its rarity gets. Tap one to see it close, turn it and move its numbers by hand. The numbers live in <code>recipes/world/keepsake-artifacts.json</code>.</p>
+
+<div class="controls">
+  <label>Base <select id="base"></select></label>
+  <label>Seeds from <input type="number" id="from" value="1" min="0" step="48"></label>
+  <button id="next">Next 48</button>
+  <label>Tide <select id="tide">
+    <option value="-1">Neap</option>
+    <option value="0" selected>Middling</option>
+    <option value="0.6">Spring</option>
+    <option value="0.9">Top of the spring</option>
+  </select></label>
+</div>
+<div class="chips" id="chips" role="group" aria-label="Rarity"></div>
+<div class="chips" id="views" role="group" aria-label="Show" style="margin-top:10px">
+  <button data-view="sketch" aria-pressed="true">Ink sketches</button>
+  <button data-view="model" aria-pressed="false">Models</button>
+</div>
+
+<h2>One up close</h2>
+<div class="one">
+  <div><canvas class="big" id="big"></canvas></div>
+  <div>
+    <div class="bigsketch" id="bigSketch"></div>
+    <p class="name" id="name"></p>
+    <div class="words" id="words"></div>
+    <div class="muted" id="facts"></div>
+    <div class="chips" style="margin-top:12px" id="marks" role="group" aria-label="Mark"></div>
+    <div class="sliders" id="sliders"></div>
+    <div class="chips" style="margin-top:12px"><button id="reset">Back to its seed</button></div>
+  </div>
+</div>
+
+<h2>48 of them</h2>
+<p class="muted" id="gridNote"></p>
+<div class="grid" id="grid"></div>
+
+<h2>A shelf of 16</h2>
+<p class="muted">The first 16 above as the shelf would hold them: sketch only, on the rarity's paper.</p>
+<div class="shelf" id="shelf"></div>
+
+<h2>How much variety</h2>
+<p class="muted" id="varietyNote"></p>
+<div class="odds" id="odds"></div>
+
+<script type="module" src="artifact-variants.js"></script>
+</body>
+</html>

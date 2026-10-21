@@ -46,6 +46,10 @@ import { bakeBody } from './world/creatures/body-bake.js';
 import { previewSpots } from './world/creatures/preview-spots.js';
 import { createCreatures } from './world/creatures/index.js';
 import { createFinds } from './world/finds/index.js';
+import { createKeepsakes } from './world/keepsakes/index.js';
+import { keepsakeWords } from './world/keepsakes/families/index.js';
+import { cleanShelf, keep as keepShelf, letGo as letGoShelf, readLetter, swap as swapShelf } from './world/keepsakes/shelf.js';
+import { chooseLetter } from './world/keepsakes/letters.js';
 import { createPieces } from './world/pieces/index.js';
 import { createAutumn } from './world/finds/autumn-live.js';
 import { moodsOf, mistyAutumnMorning, autumnStartOf } from './world/finds/autumn.js';
@@ -141,6 +145,8 @@ export async function startApp(canvas, hooks = {}) {
     if (back.music) updateStore('music', () => back.music);
     // Placed loose stones (src/world/pieces).
     updateStore('pieces', () => back.pieces);
+    // The shelf of keepsakes (src/world/keepsakes/shelf.js).
+    updateStore('keepsakes', () => back.keepsakes);
   }
   // Device settings (src/save/prefs.js): kept on this device, never in the island.
   const prefs = loadPrefs();
@@ -388,6 +394,21 @@ export async function startApp(canvas, hooks = {}) {
     weather: () => ({ weatherSeed: world.env.weatherSeed, weather: seasonsRecipe.weather, state: world.state?.weather }) });
   sim.addSystem(finds);
   terrainPass.setCasts(finds.casts(), finds.castShape);
+  // Keepsakes (docs/future/12): one-of-a-kind trinkets each high tide leaves on its strandline, a
+  // few for the whole island. They come with the shells (the naturalist's reward at three finds);
+  // `?keepsakes` (testing, unsaved) shows them at once, several to a tide.
+  const keepsakesRecipe = await loadRecipe('world/keepsakes');
+  const keepsakeTest = params.has('keepsakes');
+  // Sheltered coves catch more of them (the cove field, src/world/water/cove.js).
+  const keepsakes = createKeepsakes({ water, shore: ww.shore, terrain, camera, recipe: keepsakesRecipe, passRecipe: findsRecipe,
+    seed: subSeed(seed, 'keepsakes'), tide: waterRecipe.tide, test: keepsakeTest, coveRecipe: await loadRecipe('world/cove'),
+    on: () => keepsakeTest || !!getStore('unlocks')?.shells });
+  const keepsakesApi = { ...keepsakes, words: (/** @type {any} */ n) => keepsakeWords(n, keepsakesRecipe) };
+  // Bottle letters (recipes/world/bottle-messages.json): which letter a bottle on the beach turned
+  // out to hold, once read, so reading it again (or keeping it) gives the same one.
+  const bottleMessages = await loadRecipe('world/bottle-messages');
+  /** @type {Map<string, string>} */ const shoreLetters = new Map();
+  sim.addSystem(keepsakes);
   // Placed pieces (doc 09, docs/future/10): loose stones, set with Sculpt's Loose stone mode and
   // lifted with a tap; a handful comes by itself with the naturalist's reward (src/world/pieces).
   // Driftwood washes up on the strandline after high tides (the reward at ten finds), and the
@@ -490,6 +511,7 @@ export async function startApp(canvas, hooks = {}) {
     creatures.pass,
     ...schools.map((s) => s.pass),
     finds.pass,
+    keepsakes.pass,
     pieces.pass,
     // Autumn's fungi (a creature pass) and dewy webs, after the logs and the grass they are on.
     ...autumn.passes,
@@ -763,6 +785,70 @@ export async function startApp(canvas, hooks = {}) {
         pieces.cancelCarry();
         updateStore('identify', () => null);
         break;
+      // A keepsake's card: Leave it to the sea (docs/future/12). It goes, and the next tide takes it.
+      case 'keepsakes.leave':
+        keepsakes.leave(a.id);
+        updateStore('identify', () => null);
+        break;
+      // Keep it: onto the shelf (src/world/keepsakes/shelf.js), and off the shore. A full shelf
+      // opens in the journal and asks which one to let go; nothing is kept until you choose.
+      case 'keepsakes.keep': {
+        const k0 = keepsakes.toKeep(a.id);
+        if (!k0) break;
+        // A bottle whose letter was read on the beach keeps that letter.
+        const k = shoreLetters.has(a.id) ? { ...k0, letter: shoreLetters.get(a.id) } : k0;
+        const r = keepShelf(cleanShelf(getStore('keepsakes')), k);
+        if (r.kept) {
+          updateStore('keepsakes', () => r.state);
+          keepsakes.leave(a.id);
+          updateStore('identify', () => null);
+        } else {
+          updateStore('shelfPending', () => ({ shoreId: a.id, ...k }));
+          updateStore('identify', () => null);
+          updateStore('journalUi', (u) => ({ ...(u ?? {}), open: true, view: 'shelf', page: null }));
+        }
+        break;
+      }
+      case 'keepsakes.swap': {
+        const p = getStore('shelfPending');
+        if (!p) break;
+        updateStore('keepsakes', (s) => swapShelf(cleanShelf(s), a.out, p));
+        keepsakes.leave(p.shoreId);
+        updateStore('shelfPending', () => null);
+        break;
+      }
+      case 'keepsakes.letGo':
+        updateStore('keepsakes', (s) => letGoShelf(cleanShelf(s), a.id));
+        break;
+      case 'keepsakes.cancelKeep':
+        updateStore('shelfPending', () => null);
+        break;
+      // Read a bottle's letter (src/world/keepsakes/letters.js), on the beach (shoreId) or on the
+      // shelf (entryId). Its letter is chosen the first time it is read, then kept with it; every
+      // letter read is kept with the shelf to read again, and the journal opens on it.
+      case 'keepsakes.read': {
+        const s0 = cleanShelf(getStore('keepsakes'));
+        const entry = a.entryId !== undefined ? s0.shelf.find((e) => e.id === a.entryId) : null;
+        const k = entry ?? (a.shoreId ? keepsakes.toKeep(a.shoreId) : null);
+        if (!k || k.n.family !== 'bottle' || !k.n.message) break;
+        let id = entry?.letter ?? (a.shoreId ? shoreLetters.get(a.shoreId) : undefined);
+        if (!id) {
+          const season = ['spring', 'summer', 'autumn', 'winter'][clock.seasonOf(k.hour * 3600).index];
+          id = chooseLetter(k.n.messageIndex, { rarity: k.n.rarity, season, hour: clock.worldT() / 3600, read: s0.letters },
+            bottleMessages, keepsakesRecipe.rarity.order)?.id;
+        }
+        if (!id) break;
+        const letter = id;
+        if (a.shoreId) shoreLetters.set(a.shoreId, letter);
+        updateStore('keepsakes', (s) => {
+          const c = readLetter(cleanShelf(s), letter);
+          return entry ? { ...c, shelf: c.shelf.map((e) => (e.id === entry.id ? { ...e, letter } : e)) } : c;
+        });
+        updateStore('identify', () => null);
+        updateStore('shelfUi', () => ({ letter }));
+        updateStore('journalUi', (u) => ({ ...(u ?? {}), open: true, view: 'shelf', page: null }));
+        break;
+      }
       case 'ui.identify':
         pieces.cancelCarry();
         break;
@@ -1073,7 +1159,7 @@ export async function startApp(canvas, hooks = {}) {
       build: hooks.build ?? 'dev', seed, island: island.id, worldT: clock.worldT(), flow: clock.flow(),
       carryMinutes: getStore('meta')?.carryMinutes ?? 0, keepGrowing: getStore('meta')?.keepGrowing ?? true,
       world: world.state, journal: getStore('journal'), water: getStore('water'), unlocks: getStore('unlocks')?.earned ?? {},
-      view: camera.pose(), looks: getStore('looks') ?? {}, music: getStore('music') ?? { hearted: [] }, pieces: getStore('pieces'), chunks: getStore('chunks'), mirror: getStore('terrainLive')?.mirror ?? null,
+      view: camera.pose(), looks: getStore('looks') ?? {}, music: getStore('music') ?? { hearted: [] }, pieces: getStore('pieces'), keepsakes: getStore('keepsakes'), chunks: getStore('chunks'), mirror: getStore('terrainLive')?.mirror ?? null,
     }),
   });
 
@@ -1124,6 +1210,8 @@ export async function startApp(canvas, hooks = {}) {
     creatures,
     /** The finds near the view (the journal asks it what a tap landed on). */
     finds,
+    /** The keepsakes on the strandline (the journal asks it what a tap landed on). */
+    keepsakes: keepsakesApi,
     /** The placed loose stones (the journal asks which one a tap landed on). */
     pieces,
     /** Autumn's fungi and webs (counts() for tools). */
