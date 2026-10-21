@@ -60,6 +60,8 @@ import { attachDesktopInput } from './input/desktop.js';
 import { attachTouchInput } from './input/touch.js';
 import { beginSave, TEST_PARAMS } from './save/autosave.js';
 import { buildCliffDemo } from './world/terrain/cliff-demo.js';
+import { createWalk } from './world/walk/index.js';
+import { buildSandbarDemo } from './world/walk/sandbar.js';
 import { loadPrefs, keepPrefs } from './save/prefs.js';
 import { fingerprint } from './save/backup.js';
 
@@ -197,7 +199,10 @@ export async function startApp(canvas, hooks = {}) {
   // `?damselflies=N` starts on the last day of spring (day 13): the first ones climb out at 0.9.
   const testDay = params.has('dragonflies') ? '15' : params.has('damselflies') ? '13' : params.has('frogs') ? '6' : '0';
   const startDay = Math.max(0, Number.parseInt(params.get('day') ?? testDay, 10) || 0);
-  if (clock.worldT() === 0) clock.reset(((skyRecipe.orbit.startHour ?? 10) + 24 * startDay) * clock.SECONDS_PER_HOUR);
+  // `?hour=H` (testing, unsaved) starts a new world at that hour of the day: low water falls at 6
+  // and 18, so `?sandbar&hour=7` opens in early light with the bar dry and the tide rising.
+  const startHour = Math.min(23.9, Math.max(0, Number.parseFloat(params.get('hour') ?? '') || (skyRecipe.orbit.startHour ?? 10)));
+  if (clock.worldT() === 0) clock.reset((startHour + 24 * startDay) * clock.SECONDS_PER_HOUR);
   updateStore('meta', (m) => { m.flow = clock.flow(); });
   const env = makeEnv(seed, { seasons: seasonsRecipe, sky: skyRecipe.orbit, water: waterRecipe });
   // `?trust=0.5` (testing): every frog knows you at least this well from the next hour (S6c, trust.js).
@@ -383,6 +388,10 @@ export async function startApp(canvas, hooks = {}) {
   const pieces = createPieces({ terrain, water, camera, history, seed, recipe: await loadRecipe('world/pieces'), ground: groundDetail, terrainRecipe,
     shore: ww.shore, tide: waterRecipe.tide });
   sim.addSystem(pieces);
+  // The walker (doc 23, presence below; W2): Go down puts you on foot where you are looking, and
+  // the camera glides down behind you; a tap walks you there. Go up glides back over you.
+  const walk = createWalk({ recipe: await loadRecipe('world/walker'), terrain, water, camera, tide: waterRecipe.tide,
+    hours: () => clock.display() / clock.SECONDS_PER_HOUR, creatures: () => creatures.frogs() });
   // `?frogscale` (ahead of S6): real-size frogs from the species recipe around the pond, and a
   // camera that may come close, to judge creature size on the island (src/ui/frog-scale.js).
   const frogScale = params.has('frogscale') ? await createFrogScale() : null;
@@ -432,6 +441,7 @@ export async function startApp(canvas, hooks = {}) {
     rushPass,
     floraPass,
     creatures.pass,
+    walk.pass,
     ...schools.map((s) => s.pass),
     finds.pass,
     pieces.pass,
@@ -660,7 +670,24 @@ export async function startApp(canvas, hooks = {}) {
   }
 
   const unAction = onAction((a) => {
+    // Below (the walker): a drag looks around you, a zoom stays on you, a tap walks there, and the
+    // shaping tools are put away until you go up.
+    if (walk.below) {
+      if (a.type === 'camera.pan') { camera.orbit(a.dx, a.dy); return; }
+      if (a.type === 'camera.zoom') { camera.zoom(a.factor); return; }
+      if (a.type === 'look.tap') { walk.tap(a.x, a.y, groundAt(a.x, a.y)); return; }
+      if (a.type === 'walk.up') { walk.up(); return; }
+      if (a.type === 'tool.select' || a.type.startsWith('tool.') || a.type === 'brush.resize') return;
+    }
     switch (a.type) {
+      case 'walk.down':
+        finishStroke();
+        pouring = null;
+        pieces.cancelCarry();
+        updateStore('tools', (t) => { t.tool = null; });
+        terrain.setRing({ visible: false, level: null });
+        walk.down();
+        break;
       case 'camera.orbit': camera.orbit(a.dx, a.dy); break;
       case 'camera.pan': camera.pan(a.dx, a.dy); break;
       case 'camera.zoom': camera.zoom(a.factor, a.x, a.y); break;
@@ -890,6 +917,7 @@ export async function startApp(canvas, hooks = {}) {
 
     const t = clock.advance(realDt);
     camera.setViewport(cssW, cssH);
+    walk.update(realDt);
     camera.update(realDt);
     presence.update(realDt);
     updateRing();
@@ -1008,6 +1036,14 @@ export async function startApp(canvas, hooks = {}) {
       .catch((err) => console.error('cliff demo failed', err));
   }
 
+  // `?sandbar` (testing, unsaved; W1): a sandbar and a small islet off the shore, built with real
+  // strokes, so the walker's low-tide crossing can be tried before the meadow islet exists.
+  if (params.has('sandbar')) {
+    buildSandbarDemo({ terrain, history, focus: (x, z, distance, pitchDeg) => camera.focus(x, z, distance, pitchDeg) })
+      .then((L) => emitDeferred('walk:sandbar-built', { ok: !!L }))
+      .catch((err) => console.error('sandbar demo failed', err));
+  }
+
   // Autosave from here on (src/save/autosave.js): what the island is now, whenever it asks.
   save.start({
     recipe: await loadRecipe('world/save'),
@@ -1027,6 +1063,7 @@ export async function startApp(canvas, hooks = {}) {
     cancelAnimationFrame(raf);
     observer.disconnect();
     unAction();
+    walk.dispose();
     unHistory();
     unHour();
     unWash();
@@ -1076,6 +1113,8 @@ export async function startApp(canvas, hooks = {}) {
     schools,
     /** The live midge swarms (tools). */
     midges,
+    /** The walker: the walk grid, your feet, Go down and Go up (tools and testing). */
+    walk,
     /**
      * Testing under `?debug` (window.ebb.debug): skip ahead to a time of year, every hour between
      * run by the hourly tick as usual (it may take a few seconds), and bring a settled group of a

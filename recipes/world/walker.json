@@ -17,8 +17,8 @@
     "noticeS": 5
   },
   "body": {
-    "note": "The stand-in figure for the feel test (W2): you, about 1.7 m, in a coat, hat and pack, with no face. Baked from blended SDF primitives like the creatures (src/world/creatures/body-bake.js); body +z is forward. Albedo is linear.",
-    "scaleReal": [1.7, 1.7],
+    "note": "The stand-in figure for the feel test (W2): you, about 1.7 m, in a coat, hat and pack, with no face. Baked from blended SDF primitives like the creatures (src/world/creatures/body-bake.js); body +z is forward. Albedo is linear. scaleReal sets the soft contact shadow's size under the feet.",
+    "scaleReal": [0.7, 0.7],
     "displayScale": 1,
     "contactShadow": 0.5,
     "cellM": 0.03,

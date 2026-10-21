@@ -129,10 +129,13 @@ export function attachDesktopInput(canvas, opts, brush) {
       dispatch({ type: 'tool.select', toolId: get('tools')?.tool === id ? null : id, source: 'key' });
     } else if (e.code === 'KeyJ') {
       dispatch({ type: 'ui.journal', toggle: true });
+    } else if (e.code === 'KeyG') {
+      dispatch({ type: get('walk')?.below ? 'walk.up' : 'walk.down', source: 'key' });
     } else if (e.code === 'KeyH') {
       dispatch({ type: 'ui.hideHud', source: 'key' });
     } else if (e.key === 'Escape') {
       if (get('journalUi')?.open) dispatch({ type: 'ui.journal', open: false });
+      else if (get('walk')?.below) dispatch({ type: 'walk.up', source: 'key' });
       else dispatch({ type: 'tool.select', toolId: null, source: 'key' });
     } else if (e.key === '[' || e.key === ']') {
       dispatch({ type: 'brush.resize', factor: e.key === ']' ? brush.resizeStep : 1 / brush.resizeStep, source: 'key' });

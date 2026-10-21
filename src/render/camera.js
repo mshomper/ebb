@@ -75,8 +75,22 @@ export function createOrbitCamera(r) {
   let close = null;
   /** A focus's exact target height (m), kept until the next pan. @type {number | null} */
   let targetY = null;
-  const minSoft = () => close?.minDistance ?? r.distanceSoft[0];
-  const minHard = () => close?.minDistance ?? r.distanceHard[0];
+  /**
+   * The low view below (doc 23, the walker): while set, the camera follows you from behind and
+   * close (`follow` each frame), with its own zoom and look limits and no panning; null above.
+   * @type {{ minDistance: number, maxDistance: number, pitchMin: number, pitchMax: number, minEyeHeight: number } | null}
+   */
+  let ground = null;
+  /** The view above you left when you went down, so Go up rises to the same height and angle. */
+  let above = { distance: r.start.distance, pitch: r.start.pitchDeg * DEG };
+  const minSoft = () => ground?.minDistance ?? close?.minDistance ?? r.distanceSoft[0];
+  const minHard = () => ground?.minDistance ?? close?.minDistance ?? r.distanceHard[0];
+  const maxSoft = () => ground?.maxDistance ?? softMaxDistance();
+  const maxHard = () => ground?.maxDistance ?? hardMaxDistance();
+  /** @returns {[number, number]} radians */
+  const pitchSoft = () => (ground ? [ground.pitchMin, ground.pitchMax] : [r.pitchSoftDeg[0] * DEG, r.pitchSoftDeg[1] * DEG]);
+  /** @returns {[number, number]} radians */
+  const pitchHard = () => (ground ? [ground.pitchMin, ground.pitchMax] : [r.pitchHardDeg[0] * DEG, r.pitchHardDeg[1] * DEG]);
 
   /** 0 at or beyond close.fromM, 1 at or inside close.toM, smooth between. @param {number} d */
   function nearness(d) {
@@ -101,15 +115,15 @@ export function createOrbitCamera(r) {
     goal.target[2] = z;
     targetY = y ?? null;
     clampTarget();
-    goal.distance = clamp(distance, minSoft(), softMaxDistance());
-    goal.pitch = clamp(pitchDeg * DEG, r.pitchSoftDeg[0] * DEG, r.pitchSoftDeg[1] * DEG);
+    goal.distance = clamp(distance, minSoft(), maxSoft());
+    goal.pitch = clamp(pitchDeg * DEG, ...pitchSoft());
     focusing = true;
   }
 
   /** Orbit by a pointer delta in CSS pixels. @param {number} dx @param {number} dy */
   function orbit(dx, dy) {
     goal.yaw -= dx * r.orbitDegPerPx * DEG;
-    goal.pitch = clamp(goal.pitch + dy * r.orbitDegPerPx * DEG, r.pitchHardDeg[0] * DEG, r.pitchHardDeg[1] * DEG);
+    goal.pitch = clamp(goal.pitch + dy * r.orbitDegPerPx * DEG, ...pitchHard());
     touched();
   }
 
@@ -121,6 +135,7 @@ export function createOrbitCamera(r) {
 
   /** Slide the target across the ground by a pointer delta in CSS pixels. @param {number} dx @param {number} dy */
   function pan(dx, dy) {
+    if (ground) return;   // below, you move by walking
     const metersPerPx = (2 * goal.distance * Math.tan(fovY / 2)) / viewH * r.panScale;
     const sy = Math.sin(goal.yaw);
     const cy = Math.cos(goal.yaw);
@@ -138,8 +153,8 @@ export function createOrbitCamera(r) {
    */
   function zoom(factor, x, y) {
     const old = goal.distance;
-    const next = clamp(old * factor, minHard(), hardMaxDistance());
-    if (x !== undefined && y !== undefined) {
+    const next = clamp(old * factor, minHard(), maxHard());
+    if (x !== undefined && y !== undefined && !ground) {
       const hit = groundHit(x, y);
       if (hit) {
         const k = (1 - next / old) * r.zoomToCursor;
@@ -179,8 +194,8 @@ export function createOrbitCamera(r) {
     sinceInput += dt;
     const returning = sinceInput > r.softReturnDelay;
     if (returning) {
-      goal.pitch = clamp(goal.pitch, r.pitchSoftDeg[0] * DEG, r.pitchSoftDeg[1] * DEG);
-      goal.distance = clamp(goal.distance, minSoft(), softMaxDistance());
+      goal.pitch = clamp(goal.pitch, ...pitchSoft());
+      goal.distance = clamp(goal.distance, minSoft(), maxSoft());
     }
     const halfLife = returning ? r.halfLifeGlide : r.halfLifeDirect;
     let k = 1 - 2 ** (-dt / halfLife);
@@ -196,15 +211,15 @@ export function createOrbitCamera(r) {
     cur.distance += (goal.distance - cur.distance) * k;
     // Close-ups aim at the ground itself (or the height a focus asked for); otherwise the target
     // sits half way down, as it always has.
-    if (close) goal.target[1] = targetY ?? Math.max(groundProbe(goal.target[0], goal.target[2]), 0);
+    if (close && !ground) goal.target[1] = targetY ?? Math.max(groundProbe(goal.target[0], goal.target[2]), 0);
     vec3.lerp(cur.target, goal.target, kd, cur.target);
 
-    const ground = groundProbe(cur.target[0], cur.target[2]);
+    const h = groundProbe(cur.target[0], cur.target[2]);
     // Zoomed in (recipe `close`), the view eases from aiming half way down the slope to aiming at
-    // the ground itself, and the eye may come down near it.
+    // the ground itself, and the eye may come down near it. Below, it aims at you.
     const near = nearness(cur.distance);
-    if (!close) cur.target[1] = ground * 0.5 + (Math.max(ground, 0) - ground * 0.5) * near;
-    const eyeMin = close?.minEyeHeight ?? r.minEyeHeight + ((r.close?.minEyeHeight ?? r.minEyeHeight) - r.minEyeHeight) * near;
+    if (!close && !ground) cur.target[1] = h * 0.5 + (Math.max(h, 0) - h * 0.5) * near;
+    const eyeMin = ground?.minEyeHeight ?? close?.minEyeHeight ?? r.minEyeHeight + ((r.close?.minEyeHeight ?? r.minEyeHeight) - r.minEyeHeight) * near;
 
     let pitch = cur.pitch;
     for (let i = 0; i < 2; i++) {
@@ -258,8 +273,44 @@ export function createOrbitCamera(r) {
         cur.distance *= k;
       }
     },
-    /** Where the camera is headed, for saving the view (doc 18). */
-    pose: () => ({ target: [goal.target[0], goal.target[1], goal.target[2]], yaw: goal.yaw, pitch: goal.pitch, distance: goal.distance }),
+    /**
+     * Where the camera is headed, for saving the view (doc 18). Below, the view above where you
+     * stand: a save always opens above.
+     */
+    pose: () => ({ target: [goal.target[0], goal.target[1], goal.target[2]], yaw: goal.yaw,
+      pitch: ground ? above.pitch : goal.pitch, distance: ground ? above.distance : goal.distance }),
+    /**
+     * Go down to the low view behind you, or (null) back up above where you stand. Both are glides
+     * the game makes (`driven`), so they never startle anything; any input ends the glide.
+     * @param {{ distanceM: number[], startM: number, pitchDeg: number[], startPitchDeg: number, minEyeHeightM: number } | null} g
+     *   recipes/world/walker.json camera
+     * @param {ArrayLike<number>} at where you are (the point the view aims at), world meters
+     */
+    setGround(g, at) {
+      if (g) {
+        if (!ground) above = { distance: goal.distance, pitch: goal.pitch };
+        ground = { minDistance: g.distanceM[0], maxDistance: g.distanceM[1], pitchMin: g.pitchDeg[0] * DEG, pitchMax: g.pitchDeg[1] * DEG, minEyeHeight: g.minEyeHeightM };
+        goal.distance = g.startM;
+        goal.pitch = g.startPitchDeg * DEG;
+      } else {
+        ground = null;
+        // At least a little way up, even if you went down from a close-up.
+        goal.distance = Math.max(above.distance, 12);
+        goal.pitch = above.pitch;
+      }
+      vec3.set(at[0], at[1], at[2], goal.target);
+      targetY = g ? at[1] : null;
+      clampTarget();
+      focusing = true;
+    },
+    /** Below: keep aiming at you as you walk (each frame). @param {ArrayLike<number>} at world meters */
+    follow(at) {
+      if (!ground) return;
+      vec3.set(at[0], at[1], at[2], goal.target);
+      targetY = at[1];
+    },
+    /** Is the camera down with you? */
+    get below() { return !!ground; },
     /**
      * Come back to a saved view at once (no glide, and no portrait widening on top of it).
      * @param {{ target: number[], yaw: number, pitch: number, distance: number }} p

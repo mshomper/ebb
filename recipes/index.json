@@ -34,6 +34,7 @@
     "world/journal-wash": "world/journal-wash.json",
     "world/naturalist": "world/naturalist.json",
     "world/pieces": "world/pieces.json",
+    "world/walker": "world/walker.json",
     "species/frog": "species/frog.json",
     "species/midge": "species/midge.json",
     "flora/pondweed": "flora/pondweed.json",

@@ -742,6 +742,25 @@ const ICONS = {
     <circle cx="12" cy="12" r="3"/>
     <circle cx="12" cy="12" r="0.9" fill="currentColor" stroke="none"/>`,
 
+  // Go down (the walker): a small standing figure on the ground, a down stroke beside it.
+  'go-down': `
+    <circle ${ACCENT} cx="15.5" cy="5.6" r="2"/>
+    <circle cx="15.5" cy="5.6" r="2"/>
+    <path d="M15.5 8.6V14.3"/>
+    <path d="M13 11.2L15.5 9.6L18 11.2"/>
+    <path d="M15.5 14.3L13.6 20M15.5 14.3L17.4 20"/>
+    <path d="M6 3.5V12.5"/>
+    <path d="M3.6 10.1L6 12.5L8.4 10.1"/>
+    <path d="M2.5 20.5H21.5"/>`,
+
+  // Go up (back to the view above): the island seen from high, an up stroke rising off it.
+  'go-up': `
+    <ellipse ${ACCENT} cx="12" cy="17.5" rx="8.5" ry="3.5"/>
+    <ellipse cx="12" cy="17.5" rx="8.5" ry="3.5"/>
+    <path d="M9 17.6C10 16.6 14 16.6 15 17.6"/>
+    <path d="M12 13V3.5"/>
+    <path d="M9.6 5.9L12 3.5L14.4 5.9"/>`,
+
   // Settings: three horizontal sliders with their knobs.
   settings: `
     <path d="M3.5 6.5H20.5"/>
