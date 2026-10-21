@@ -1,10 +1,861 @@
 {
-  "note": "Messages found in bottles (docs/future/12). PLACEHOLDERS until Matt's writer friend sends the real ones: short (about 40 words at most, readable on a phone card), mysterious and disconnected, no names and no story arc. A bottle picks one by seed; add lines freely, but keep the order of the ones already found stable.",
-  "credit": "",
-  "lines": [
-    "Placeholder: If the tide brings this back to me, I will know the sea is round.",
-    "Placeholder: The light on the far hill was on again tonight. Nobody lives there.",
-    "Placeholder: Three gulls, one boat, no wind. Writing it down so it happened.",
-    "Placeholder: Whoever finds this, the blue door sticks in summer. Lift as you push."
+  "note": "Messages in bottles (docs/future/12): bottles are the only made things the sea brings to the shore, and some hold a letter. Set 1 is Matt's own 40 (October 21, 2026), standing in until his writer friend's arrive; add new sets to letters with new ids. A letter comes in a bottle of its rarity or rarer, in its season (or any), only after the letter it answers (after) has been read, and lateGame ones only once the island is lateGameDays old. Unread letters come first. The body uses light markup: **bold**, ~~struck~~, *italic*, and lines starting # or ## as headings; an empty line is a paragraph break. Voice: warm first, wistful second; the outside world distant and unnamed; no plot.",
+  "version": 2,
+  "credit": "Set 1 by Matt.",
+  "lateGameDays": 56,
+  "letters": [
+    {
+      "id": "01",
+      "title": "The Counting Heron",
+      "form": "Haiku",
+      "rarity": "common",
+      "season": "any",
+      "after": null,
+      "lateGame": false,
+      "preface": [],
+      "body": [
+        "low tide, no one home",
+        "the heron counts the minnows",
+        "and loses its place"
+      ],
+      "afterword": []
+    },
+    {
+      "id": "02",
+      "title": "The Worst Poem",
+      "form": "Short note",
+      "rarity": "common",
+      "season": "any",
+      "after": null,
+      "lateGame": false,
+      "preface": [],
+      "body": [
+        "If you found this, the sea kept its end of the bargain. I promised I'd let it decide who reads my worst poem.",
+        "",
+        "Here it is:",
+        "",
+        "~~Oh moon, you big round—~~",
+        "",
+        "No. I can't. Keep the bottle. It's a nice bottle."
+      ],
+      "afterword": []
+    },
+    {
+      "id": "03",
+      "title": "Frogs, Again",
+      "form": "Haiku",
+      "rarity": "common",
+      "season": "spring",
+      "after": null,
+      "lateGame": false,
+      "preface": [],
+      "body": [
+        "the frogs start again",
+        "as if no one had told them",
+        "winter was the end"
+      ],
+      "afterword": []
+    },
+    {
+      "id": "04",
+      "title": "Lantern Float Postponed",
+      "form": "Newspaper clipping",
+      "rarity": "uncommon",
+      "season": "autumn",
+      "after": null,
+      "lateGame": false,
+      "preface": [],
+      "body": [
+        "**THE LOWMARSH COURIER**",
+        "",
+        "### LANTERN FLOAT POSTPONED FOR FOG",
+        "#### Organizers say the weather \"simply didn't ask\"",
+        "",
+        "The forty-first Lowmarsh Lantern Float, planned for Saturday evening, has been postponed after a fog bank settled over the harbor shortly before dusk and showed no sign of leaving.",
+        "",
+        "\"We had two hundred lanterns ready,\" said committee chair Odette Brill. \"You couldn't see your own hand. Sending lanterns into that would have been like mailing letters into a pillow.\"",
+        "",
+        "Some residents went ahead anyway. Witnesses report at least a dozen small lights drifting out past the breakwater around nine o'clock, though no one will admit to launching them.",
+        "",
+        "The float has been moved to the next clear night. The committee asks residents to keep their lanterns dry and their expectations modest.",
+        "",
+        "*Also in this issue: The bakery on Tern Street reopens after its oven \"took a long rest.\" A reader writes in about an unusually polite heron. Tide tables, page 6.*"
+      ],
+      "afterword": []
+    },
+    {
+      "id": "05",
+      "title": "Pip",
+      "form": "Child's note, pencil, large letters",
+      "rarity": "common",
+      "season": "summer",
+      "after": null,
+      "lateGame": false,
+      "preface": [],
+      "body": [
+        "hello",
+        "",
+        "my name is Pip i am 7 and three quarters",
+        "",
+        "if you are a whale please write back",
+        "if you are a person that is ok too",
+        "",
+        "I have a dog named Biscut and a tooth that is wiggly",
+        "",
+        "what is the ocean like in the middle",
+        "",
+        "— Pip",
+        "",
+        "P.S. dont tell my mum I used her good bottle"
+      ],
+      "afterword": []
+    },
+    {
+      "id": "06",
+      "title": "Nan's Kelp Bread",
+      "form": "Recipe card, flour-dusted",
+      "rarity": "uncommon",
+      "season": "any",
+      "after": null,
+      "lateGame": false,
+      "preface": [],
+      "body": [
+        "**Nan's Kelp Bread**",
+        "*Makes one loaf, or two small arguments.*",
+        "",
+        "- 3 cups flour, whatever kind is in the tin",
+        "- 1 handful dried kelp, crumbled fine (the brown kind, not the slippery kind)",
+        "- 1 spoon honey",
+        "- salt, but less than you think, the kelp is already salty",
+        "- warm water, until the dough feels like an earlobe",
+        "",
+        "Knead until your mind wanders off and comes back. Let it rise somewhere it can see the window. Bake until the kitchen smells like the shore at low tide, but in a good way.",
+        "",
+        "Eat warm with butter. Do not share with gulls, no matter what they tell you."
+      ],
+      "afterword": []
+    },
+    {
+      "id": "07",
+      "title": "Mostly Rain",
+      "form": "Postcard",
+      "rarity": "common",
+      "season": "spring",
+      "after": null,
+      "lateGame": false,
+      "preface": [
+        "The picture side has faded to a pale blue rectangle that might once have been a harbor."
+      ],
+      "body": [
+        "Wish you were here.",
+        "",
+        "Actually, wish I were there. Here is mostly rain, and a man who plays the accordion badly under my window every evening. I've started to look forward to it, which worries me.",
+        "",
+        "Love, T."
+      ],
+      "afterword": []
+    },
+    {
+      "id": "08",
+      "title": "Warm Stone",
+      "form": "Haiku",
+      "rarity": "common",
+      "season": "summer",
+      "after": null,
+      "lateGame": false,
+      "preface": [],
+      "body": [
+        "warm stone, sleeping crab",
+        "the whole afternoon decides",
+        "to wait until dusk"
+      ],
+      "afterword": []
+    },
+    {
+      "id": "09",
+      "title": "Dear Wren",
+      "form": "Letter, two pages, careful handwriting",
+      "rarity": "uncommon",
+      "season": "spring",
+      "after": null,
+      "lateGame": false,
+      "preface": [],
+      "body": [
+        "Dear Wren,",
+        "",
+        "The ferry doesn't stop here anymore, so I'm trying the old way.",
+        "",
+        "I planted the quince you gave me on the south side, where you said. It sulked for two years, and then all at once it decided to be a tree. There are blossoms on it now. I keep meaning to count them and keep losing track, which I think is the right amount of blossoms.",
+        "",
+        "The house is quiet but not empty, if you understand the difference. I think you do. That was always the thing about you.",
+        "",
+        "Come in spring if the boats run. If they don't, write. If you can't write, I'll assume the sea has the letter and is taking the long way round.",
+        "",
+        "Your sister,",
+        "Ada"
+      ],
+      "afterword": []
+    },
+    {
+      "id": "10",
+      "title": "Keeper's Log",
+      "form": "A page torn from a larger book",
+      "rarity": "uncommon",
+      "season": "winter",
+      "after": null,
+      "lateGame": false,
+      "preface": [],
+      "body": [
+        "**Keeper's Log — Saltbarrow Light**",
+        "",
+        "**3rd.** Wind NW, moderate. Lamp lit 5:40. Seal on the lower rocks again. Have named him Councillor.",
+        "",
+        "**4th.** Fog. Horn sounded through the night. Councillor unbothered.",
+        "",
+        "**5th.** Clear. Painted the north rail. Ran out of white halfway, so the north rail is now two colors. Will call it a design choice.",
+        "",
+        "**6th.** Nothing passed. Lit the lamp anyway. That's the job.",
+        "",
+        "**7th.** Councillor brought a friend."
+      ],
+      "afterword": []
+    },
+    {
+      "id": "11",
+      "title": "Before the Boat Left",
+      "form": "List on the back of a receipt",
+      "rarity": "common",
+      "season": "summer",
+      "after": null,
+      "lateGame": false,
+      "preface": [],
+      "body": [
+        "Things I meant to say before the boat left:",
+        "",
+        "1. Thank you for the scarf.",
+        "2. I did know it was you who fixed the gate.",
+        "3. The song you hum while you wash the dishes — I hum it now too. I don't know the words. I don't think you do either.",
+        "4. I'll be back when the plums are ripe.",
+        "5. Water the plums."
+      ],
+      "afterword": []
+    },
+    {
+      "id": "12",
+      "title": "To the Gull",
+      "form": "Short letter",
+      "rarity": "common",
+      "season": "summer",
+      "after": null,
+      "lateGame": false,
+      "preface": [],
+      "body": [
+        "To the gull who took my sandwich on the pier last Tuesday,",
+        "",
+        "I shouted some things I'm not proud of. You were hungry and I wasn't paying attention, and that isn't a crime, it's a Tuesday.",
+        "",
+        "I hope it was good. It had cucumber in it.",
+        "",
+        "No hard feelings,",
+        "The man in the yellow hat",
+        "",
+        "P.S. If this reaches a different gull, please pass it along."
+      ],
+      "afterword": []
+    },
+    {
+      "id": "13",
+      "title": "The Last Leaf",
+      "form": "Haiku",
+      "rarity": "common",
+      "season": "autumn",
+      "after": null,
+      "lateGame": false,
+      "preface": [],
+      "body": [
+        "the last leaf lets go",
+        "it was not brave, it was time",
+        "the river agrees"
+      ],
+      "afterword": []
+    },
+    {
+      "id": "14",
+      "title": "Sixty Years of Birds",
+      "form": "Newspaper clipping, folded small",
+      "rarity": "rare",
+      "season": "any",
+      "after": null,
+      "lateGame": false,
+      "preface": [],
+      "body": [
+        "**THE GERROW POINT GAZETTE**",
+        "",
+        "### LOCAL WOMAN, 91, FINISHES SIXTY-YEAR COUNT OF HEADLAND BIRDS",
+        "#### \"I'm sure I missed a few,\" she says",
+        "",
+        "For sixty years, Marguerite Ostby has walked the same path along Gerrow Headland every morning with a notebook and a pencil, writing down every bird she saw.",
+        "",
+        "On Tuesday she wrote her last entry, closed the final notebook (the one hundred and twelfth) and declared the count complete.",
+        "",
+        "\"It isn't that I'm tired of birds,\" she said from her kitchen, where the notebooks fill two shelves and part of a third. \"It's that I've seen enough of them to know they'll carry on without me writing it down.\"",
+        "",
+        "Her records, which note weather, tide and, on one occasion, \"a gull with a grudge,\" have been offered to the town library. The librarian called them extraordinary, and in places very funny.",
+        "",
+        "Asked what she would do with her mornings now, Mrs. Ostby said she planned to walk the same path, without the notebook.",
+        "",
+        "\"I'd like to see what I notice when I'm not counting.\""
+      ],
+      "afterword": []
+    },
+    {
+      "id": "15",
+      "title": "Keeping a Garden While Away",
+      "form": "Instructions, numbered in a looping hand",
+      "rarity": "uncommon",
+      "season": "any",
+      "after": null,
+      "lateGame": false,
+      "preface": [],
+      "body": [
+        "**How to keep a garden while you're away**",
+        "",
+        "1. Plant things that don't need you. They're out there, and they're kinder than the needy ones.",
+        "2. Mulch thickly. Think of it as tucking them in.",
+        "3. Leave one corner wild. Something will move in, and it will be glad.",
+        "4. Tell the garden you're leaving. It won't understand, but you'll feel better.",
+        "5. When you come back, don't fix everything at once. Walk around first. See what it did without you. It's usually more than you'd expect."
+      ],
+      "afterword": []
+    },
+    {
+      "id": "16",
+      "title": "The Blue Box",
+      "form": "Waterlogged letter",
+      "rarity": "rare",
+      "season": "any",
+      "after": null,
+      "lateGame": false,
+      "preface": [
+        "Most of the ink has run. What's still legible:"
+      ],
+      "body": [
+        "...and the tide came in so high that spring that we *[ink run]* the whole lower field, and your father said *[smudge]* which I've never forgotten...",
+        "",
+        "...the blue one, the one with the *[smudge]* on the lid. It's under the *[gone]*...",
+        "",
+        "...sorry it took me so long to...",
+        "",
+        "...always, always, *[the rest is a soft gray cloud]*"
+      ],
+      "afterword": []
+    },
+    {
+      "id": "17",
+      "title": "For a Week of Rain",
+      "form": "Music scrap",
+      "rarity": "rare",
+      "season": "winter",
+      "after": null,
+      "lateGame": false,
+      "preface": [
+        "Five hand-ruled staff lines, a few bars of notes in pencil, no title. Along the bottom margin:"
+      ],
+      "body": [
+        "Play this slowly. It was written for a week of rain and it doesn't know how to hurry.",
+        "",
+        "Start on the D. Stay there longer than feels polite."
+      ],
+      "afterword": [],
+      "hook": "Optional hook: finding this could trigger a one-time melodic motif in the winter score, which already sits in D minor."
+    },
+    {
+      "id": "18",
+      "title": "First Frost",
+      "form": "Haiku",
+      "rarity": "common",
+      "season": "winter",
+      "after": null,
+      "lateGame": false,
+      "preface": [],
+      "body": [
+        "first frost on the dock",
+        "my breath goes out to the sea",
+        "and does not come back"
+      ],
+      "afterword": []
+    },
+    {
+      "id": "19",
+      "title": "Out Here Too",
+      "form": "One line on a scrap of sailcloth",
+      "rarity": "uncommon",
+      "season": "any",
+      "after": null,
+      "lateGame": false,
+      "preface": [],
+      "body": [
+        "Nothing to report. I just wanted you to know someone else was out here too."
+      ],
+      "afterword": []
+    },
+    {
+      "id": "20",
+      "title": "To Whoever Tends the Next Island",
+      "form": "Letter, unsigned, on heavy paper",
+      "rarity": "veryRare",
+      "season": "any",
+      "after": null,
+      "lateGame": true,
+      "preface": [],
+      "body": [
+        "To whoever tends the next island,",
+        "",
+        "I've been here a long time. Long enough that the herons stopped leaving when I walk past, and the frogs sing whether I'm listening or not. That took years. It was worth every one of them.",
+        "",
+        "I'm going soon. Not far. There's a smaller island past the reef with nothing on it but sand and a stubborn little pine. I'd like to start again. I'd like to be bad at it again.",
+        "",
+        "A few things I learned:",
+        "",
+        "The crabs like their sand piled, not flat.",
+        "Turn over the stones, but put them back the way you found them.",
+        "Don't try to keep everything. Keep the things that made you stop.",
+        "",
+        "And when the island doesn't need you as much anymore — one day it won't — that isn't a sign you did something wrong. It's the whole point.",
+        "",
+        "Look after it.",
+        "Or rather, let it look after itself, and keep it company."
+      ],
+      "afterword": [],
+      "hook": "Suggested placement: only after the player has tended the island for a long stretch, as a quiet nod toward the farewell-and-sister-island ending."
+    },
+    {
+      "id": "21",
+      "title": "My Name in Sand",
+      "form": "Haiku",
+      "rarity": "common",
+      "season": "any",
+      "after": null,
+      "lateGame": false,
+      "preface": [],
+      "body": [
+        "tide comes in slowly",
+        "erasing my name in sand",
+        "I write it again"
+      ],
+      "afterword": []
+    },
+    {
+      "id": "22",
+      "title": "Dear Ada",
+      "form": "Letter, a reply to 09",
+      "rarity": "uncommon",
+      "season": "summer",
+      "after": "09",
+      "lateGame": false,
+      "preface": [],
+      "body": [
+        "Dear Ada,",
+        "",
+        "Your letter reached me in the end, which I'm told is unusual, so I'm choosing to take it as a sign.",
+        "",
+        "I can't come in spring. The boats only run when they feel like it, and lately they don't feel like it. But I'll come in summer if I have to row, and you know I'm terrible at rowing, so plan for me to arrive late and blistered.",
+        "",
+        "I'm glad the quince decided. I knew it would. Things usually do, if you leave them alone long enough and don't stare.",
+        "",
+        "Quiet but not empty. Yes. I understand exactly.",
+        "",
+        "Save me a blossom, or a quince if I'm very late.",
+        "",
+        "Wren"
+      ],
+      "afterword": []
+    },
+    {
+      "id": "23",
+      "title": "The Last Crossing",
+      "form": "Newspaper clipping",
+      "rarity": "uncommon",
+      "season": "any",
+      "after": null,
+      "lateGame": false,
+      "preface": [],
+      "body": [
+        "**THE SALTBARROW TIDINGS**",
+        "",
+        "### OUTER ISLES FERRY MAKES FINAL CROSSING",
+        "#### Captain rings the bell \"for everyone who ever missed it\"",
+        "",
+        "After eighty-one years, the ferry *Patience* made her final crossing to the outer isles on Sunday, carrying four passengers, eleven crates of post and a goat whose ownership remains unclear.",
+        "",
+        "Service ends as fewer families stay on the islands year-round. The harbor board says a smaller boat will make deliveries \"when the weather and the tide agree.\"",
+        "",
+        "Captain Ilse Varn, who has worked the route for thirty years, rang the ship's bell three times as she left the outer quay. Asked why, she said it was for everyone who had ever run down the pier just too late.",
+        "",
+        "\"There were a lot of them,\" she said. \"I always waited a little.\"",
+        "",
+        "The *Patience* will be retired to the boatyard, where volunteers hope to repaint her by spring. The goat has been offered a home at the lighthouse."
+      ],
+      "afterword": []
+    },
+    {
+      "id": "24",
+      "title": "Classifieds",
+      "form": "Newspaper clipping, a narrow column",
+      "rarity": "common",
+      "season": "any",
+      "after": null,
+      "lateGame": false,
+      "preface": [],
+      "body": [
+        "**THE LOWMARSH COURIER — CLASSIFIEDS**",
+        "",
+        "**LOST:** One left boot, brown, near the breakwater. Right boot very lonely. Inquire at the chandlery.",
+        "",
+        "**FOUND:** Small wooden boat, painted green, name rubbed off. Floats well. Seems to have been loved.",
+        "",
+        "**FOR SALE:** Accordion, lightly used. Seller's neighbors say heavily used. Offers welcome.",
+        "",
+        "**WANTED:** Someone to teach a stubborn old man to swim. Patience required. Biscuits provided.",
+        "",
+        "**FREE:** Kittens, four. Three are sensible. One will climb your curtains. You will love that one most.",
+        "",
+        "**NOTICE:** To whoever keeps leaving fresh bread on the chapel step: thank you. We don't know who you are. Please don't stop."
+      ],
+      "afterword": []
+    },
+    {
+      "id": "25",
+      "title": "Margins of a Tide Table",
+      "form": "A printed tide table, the numbers mostly faded, with notes in the margins",
+      "rarity": "uncommon",
+      "season": "any",
+      "after": null,
+      "lateGame": false,
+      "preface": [],
+      "body": [
+        "**4th.** Lowest tide of the year. Walked out to the far sandbar. Found a starfish the size of a dinner plate. Put it back.",
+        "",
+        "**11th.** High tide reached the third step. Mother says it used to reach the fifth.",
+        "",
+        "**17th.** Missed low tide. Slept in. Worth it.",
+        "",
+        "**23rd.** Spring tide. Moon enormous. Didn't need the lamp.",
+        "",
+        "**30th.** The numbers on this page are guesses the sea has agreed to, mostly."
+      ],
+      "afterword": []
+    },
+    {
+      "id": "26",
+      "title": "Together with the Tide",
+      "form": "Wedding invitation, card stock gone soft at the corners",
+      "rarity": "uncommon",
+      "season": "summer",
+      "after": null,
+      "lateGame": false,
+      "preface": [],
+      "body": [
+        "Together with the tide,",
+        "**Hollis Fenn & Mara Quill**",
+        "request the pleasure of your company",
+        "at their wedding",
+        "on the flat rocks below the point,",
+        "at the lowest tide of midsummer.",
+        "",
+        "Bring boots. The rocks are slippery, and so is Uncle Teodor after supper.",
+        "",
+        "Supper after, at the boathouse, weather permitting.",
+        "If it does not permit, supper anyway."
+      ],
+      "afterword": []
+    },
+    {
+      "id": "27",
+      "title": "Errands",
+      "form": "Shopping list, pencil",
+      "rarity": "common",
+      "season": "any",
+      "after": null,
+      "lateGame": false,
+      "preface": [],
+      "body": [
+        "eggs",
+        "thread (blue, not the other blue)",
+        "something for Mum's knee",
+        "ask Petra about the boat",
+        "lamp oil",
+        "a nice pencil, for once",
+        "more eggs (Henrik)"
+      ],
+      "afterword": []
+    },
+    {
+      "id": "28",
+      "title": "Rain on the Pond",
+      "form": "Haiku",
+      "rarity": "common",
+      "season": "spring",
+      "after": null,
+      "lateGame": false,
+      "preface": [],
+      "body": [
+        "rain on the pond's skin",
+        "each drop asks the same question",
+        "the pond answers yes"
+      ],
+      "afterword": []
+    },
+    {
+      "id": "29",
+      "title": "When I Grow Up",
+      "form": "School assignment, lined paper",
+      "rarity": "uncommon",
+      "season": "any",
+      "after": null,
+      "lateGame": false,
+      "preface": [],
+      "body": [
+        "**What I Want to Be When I Grow Up**",
+        "by Ottilie, Class 3",
+        "",
+        "When I grow up I want to be a lighthouse. Not the keeper. The lighthouse.",
+        "",
+        "I would stand on the rocks and be very tall and never get tired. Ships would see me and think, there is Ottilie, we are nearly home. At night I would be very bright, and in the day I would just be a nice building for birds.",
+        "",
+        "The only bad thing is I could not go to the beach, because I would be at the beach already, all the time, so actually that is fine.",
+        "",
+        "The end.",
+        "",
+        "*In red pencil, at the bottom:*",
+        "",
+        "A lovely ambition. Please see me about the difference between \"be\" and \"become.\" Also, I think you would make a very good lighthouse."
+      ],
+      "afterword": []
+    },
+    {
+      "id": "30",
+      "title": "Hush Now",
+      "form": "Lullaby, written out by hand",
+      "rarity": "rare",
+      "season": "any",
+      "after": null,
+      "lateGame": false,
+      "preface": [],
+      "body": [
+        "Hush now, the boats are all home in the bay,",
+        "the gulls have stopped arguing over the day,",
+        "the moon's on the water, the water's asleep,",
+        "and nothing is out there too far or too deep.",
+        "",
+        "Hush now, the lamp in the window is low,",
+        "the tide's going out, but it's slow, it's so slow,",
+        "and whatever it carries away in the night,",
+        "it brings something back with the first of the light."
+      ],
+      "afterword": [],
+      "hook": "Optional hook: like 17, this could seed a short melody in the night score."
+    },
+    {
+      "id": "31",
+      "title": "Dear Pip",
+      "form": "Letter, a reply to 05",
+      "rarity": "uncommon",
+      "season": "summer",
+      "after": "05",
+      "lateGame": false,
+      "preface": [],
+      "body": [
+        "Dear Pip,",
+        "",
+        "I am not a whale. I'm sorry. I'm a retired net-mender with a bad knee, which is nearly as good.",
+        "",
+        "I have been to the middle of the ocean, once, a long time ago. It is very wide and very blue and very quiet, and at night there are more stars than you'd think there was room for. Mostly it is the same as the edges, only more so.",
+        "",
+        "I did see a whale. It looked at me for a long time and then went on with its day. I think that's what whales do.",
+        "",
+        "I hope your tooth came out and you got something for it.",
+        "",
+        "Abel, across the water",
+        "",
+        "P.S. I won't tell your mum about the bottle. But you should probably tell her yourself. Mums like that."
+      ],
+      "afterword": []
+    },
+    {
+      "id": "32",
+      "title": "Log of the *Little Margin*",
+      "form": "A page from a small sailboat's log",
+      "rarity": "common",
+      "season": "summer",
+      "after": null,
+      "lateGame": false,
+      "preface": [],
+      "body": [
+        "**Day 1.** Left harbor. Wind fair. Feeling brave.",
+        "",
+        "**Day 3.** Wind gone. Feeling less brave.",
+        "",
+        "**Day 4.** Still no wind. Read the only book on board for the second time. The ending is different when you're becalmed.",
+        "",
+        "**Day 6.** Wind back. Dolphins for an hour. Forgave the sea for everything.",
+        "",
+        "**Day 9.** Land in sight. Not the land I was aiming for. Going anyway. Seems nice."
+      ],
+      "afterword": []
+    },
+    {
+      "id": "33",
+      "title": "Becalmed",
+      "form": "Haiku",
+      "rarity": "common",
+      "season": "summer",
+      "after": null,
+      "lateGame": false,
+      "preface": [],
+      "body": [
+        "midsummer, no wind",
+        "the sail hangs like a bedsheet",
+        "we both take a nap"
+      ],
+      "afterword": []
+    },
+    {
+      "id": "34",
+      "title": "X Is Not Treasure",
+      "form": "A corner torn from a hand-drawn map: a coastline, trees drawn as little scribbled clouds, and three marks",
+      "rarity": "rare",
+      "season": "any",
+      "after": null,
+      "lateGame": false,
+      "preface": [],
+      "body": [
+        "**X** — not treasure. This is where I saw the otters.",
+        "",
+        "**O** — good flat stone for sitting. Warm by noon.",
+        "",
+        "**?** — something sang here at dusk. Never found out what. Don't go looking. It's better as a question."
+      ],
+      "afterword": []
+    },
+    {
+      "id": "35",
+      "title": "Sea Pinks",
+      "form": "An empty paper seed packet, with a note pencilled on the back",
+      "rarity": "common",
+      "season": "spring",
+      "after": null,
+      "lateGame": false,
+      "preface": [],
+      "body": [
+        "Sea pinks.",
+        "",
+        "Plant them where nothing else will grow. They like it there. Some things are only happy at the edges."
+      ],
+      "afterword": []
+    },
+    {
+      "id": "36",
+      "title": "To Me, in Ten Years",
+      "form": "Letter to oneself",
+      "rarity": "uncommon",
+      "season": "any",
+      "after": null,
+      "lateGame": false,
+      "preface": [],
+      "body": [
+        "To me, in ten years,",
+        "",
+        "I hope you still walk before breakfast.",
+        "",
+        "I hope you fixed the roof, or made peace with the bucket.",
+        "",
+        "I hope you stopped saying \"one day\" about the things you really meant.",
+        "",
+        "If you didn't, that's all right. Here's a reminder, delivered very slowly.",
+        "",
+        "— You, younger and a little worried"
+      ],
+      "afterword": []
+    },
+    {
+      "id": "37",
+      "title": "Moving Day",
+      "form": "Haiku",
+      "rarity": "common",
+      "season": "autumn",
+      "after": null,
+      "lateGame": false,
+      "preface": [],
+      "body": [
+        "a crab trades its shell",
+        "for one with a little room",
+        "autumn, moving day"
+      ],
+      "afterword": []
+    },
+    {
+      "id": "38",
+      "title": "A Polite Heron",
+      "form": "Newspaper clipping, letters page",
+      "rarity": "rare",
+      "season": "any",
+      "after": "04",
+      "lateGame": false,
+      "preface": [],
+      "body": [
+        "**THE LOWMARSH COURIER — LETTERS**",
+        "",
+        "### A Polite Heron",
+        "",
+        "Sir,",
+        "",
+        "I write to report that the heron at the bottom of Mill Lane has, for three mornings running, stepped aside on the path to let me pass. On the third morning it inclined its head. I inclined mine back. I don't know what we agreed to, but I intend to honor it.",
+        "",
+        "I mention this only because so few people on Mill Lane do the same.",
+        "",
+        "Yours, etc.,",
+        "R. Dunmore, Mill Lane",
+        "",
+        "*Editor's note: We have since received two further letters about this heron, both confirming it is very polite.*"
+      ],
+      "afterword": []
+    },
+    {
+      "id": "39",
+      "title": "Snow on the Dark Sea",
+      "form": "Haiku",
+      "rarity": "common",
+      "season": "winter",
+      "after": null,
+      "lateGame": false,
+      "preface": [],
+      "body": [
+        "snow on the dark sea",
+        "falling all night, and the sea",
+        "keeping none of it"
+      ],
+      "afterword": []
+    },
+    {
+      "id": "40",
+      "title": "About the Fog",
+      "form": "Short confession, folded very small",
+      "rarity": "uncommon",
+      "season": "autumn",
+      "after": "04",
+      "lateGame": false,
+      "preface": [],
+      "body": [
+        "About the fog, and the Lantern Float.",
+        "",
+        "It was me. Well, me and eleven others, it turns out. None of us planned it. We each went down to the water with one lantern, thinking we'd be the only one.",
+        "",
+        "You couldn't see anything. But you could see the lights. Twelve of them, going out together.",
+        "",
+        "I've never told anyone. Now I've told the sea. That feels about right."
+      ],
+      "afterword": []
+    }
   ]
 }

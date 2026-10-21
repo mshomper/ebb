@@ -427,7 +427,7 @@ export function mountJournal(parent, live, buttonParent = parent) {
   render();
   // The almanac follows the time shown; refresh it now and then while it is open.
   const timer = setInterval(() => { const u = get('journalUi'); if (u?.open && u.view === 'almanac') render(); }, 2000);
-  const unsubs = [subscribe('journal', render), subscribe('journalUi', render), subscribe('keepsakes', render), subscribe('shelfPending', render)];
+  const unsubs = [subscribe('journal', render), subscribe('journalUi', render), subscribe('keepsakes', render), subscribe('shelfPending', render), subscribe('shelfUi', render)];
   buttonParent.appendChild(btnRoot);
   parent.appendChild(panel);
 

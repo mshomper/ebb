@@ -62,6 +62,8 @@
     "leave": "Leave it to the sea",
     "left": "The next tide will take it back.",
     "keep": "Keep it on the shelf",
+    "read": "Read the message",
+    "letters": { "title": "Letters", "intro": "Messages the sea carried here in bottles. Each one came from somewhere far away; none of the writers knows this island is here.", "count": "{n} of {total} letters", "none": "No letters yet. Now and then a bottle holds a rolled message: tap it on the shore to read it.", "open": "Letters", "back": "Back to the letters", "toShelf": "Back to the shelf", "readAgain": "Read the letter", "came": "Came in a bottle on {season} day {day}, year {year}." },
     "shelf": {
       "title": "The shelf",
       "empty": "Nothing here yet. Things the sea leaves on the strandline can be kept here, sixteen at most: the ones that are special to you.",

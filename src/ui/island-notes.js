@@ -219,6 +219,7 @@ export function mountIslandNotes(parent, words, naturalist = null) {
         <button type="submit" class="ebb-idcard__give">${iconSvg('name-tag')}<span>Give it this name</span></button>
       </form>` : ''}
       ${carryBtn}
+      ${id.keepsake && id.letter && words.keepsakes?.read ? `<button type="button" class="ebb-idcard__open" data-act="read">${iconSvg('notes')}<span>${esc(words.keepsakes.read)}</span></button>` : ''}
       ${id.keepsake && words.keepsakes ? `<button type="button" class="ebb-idcard__open" data-act="keep">${iconSvg('shelf')}<span>${esc(words.keepsakes.keep)}</span></button>
       <button type="button" class="ebb-idcard__open" data-act="leave">${iconSvg('close')}<span>${esc(words.keepsakes.leave)}</span></button>` : ''}
       ${id.noPage ? '' : `<button type="button" class="ebb-idcard__open" data-act="open">${iconSvg('journal')}<span>Open its page</span></button>`}`;
@@ -292,6 +293,7 @@ export function mountIslandNotes(parent, words, naturalist = null) {
     if (b.dataset.act === 'carry' && id?.piece) { dispatch({ type: 'pieces.carry', id: id.piece }); return; }
     if (b.dataset.act === 'leave' && id?.keepsake) { dispatch({ type: 'keepsakes.leave', id: id.keepsake }); return; }
     if (b.dataset.act === 'keep' && id?.keepsake) { dispatch({ type: 'keepsakes.keep', id: id.keepsake }); return; }
+    if (b.dataset.act === 'read' && id?.keepsake) { dispatch({ type: 'keepsakes.read', shoreId: id.keepsake }); return; }
     const form = /** @type {HTMLFormElement | null} */ (card.querySelector('.ebb-idcard__name'));
     const input = /** @type {HTMLInputElement | null} */ (card.querySelector('.ebb-idcard__input'));
     if (b.dataset.act === 'open' && id) dispatch({ type: 'ui.journal', open: true, page: id.sp });

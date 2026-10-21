@@ -902,3 +902,28 @@ button.ebb-trail__row:hover b { text-decoration: underline; text-decoration-colo
   .ebb-shelf__grid { gap: 6px; padding: 6px; }
   .ebb-shelf__btn { font-size: calc(16px * var(--text-scale, 1)); }
 }
+
+/* Bottle letters (src/ui/journal-letters.js): the Letters list and a letter on its paper. */
+.ebb-letters { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.ebb-letters__row {
+  appearance: none; -webkit-appearance: none; width: 100%; min-height: 48px; margin: 0; padding: 8px 12px;
+  display: grid; gap: 2px; text-align: left; border: 1px solid var(--jr-rule); border-radius: 10px;
+  background: #FBF7F0; color: var(--jr-ink); font: inherit; cursor: pointer;
+}
+.ebb-letters__row:hover { border-color: var(--jr-binding); }
+.ebb-letters__row span { font-size: var(--text-small); color: var(--jr-soft); }
+.ebb-letter {
+  padding: 18px 18px 22px; border-radius: 6px; background: linear-gradient(175deg, #FCF8EF, #F1E8D6);
+  box-shadow: 0 1px 0 rgba(30, 38, 36, 0.08), 0 6px 18px rgba(30, 38, 36, 0.10); color: var(--jr-ink);
+  overflow-wrap: break-word;
+}
+.ebb-letter p { margin: 0 0 12px; }
+.ebb-letter__form { font-size: var(--text-small); color: var(--jr-pencil); }
+.ebb-letter__preface { font-family: var(--font-voice); font-weight: 400; font-style: italic; color: var(--jr-soft); }
+.ebb-letter__body { font-family: var(--font-voice); font-weight: 400; font-size: calc(18px * var(--text-scale, 1)); line-height: 1.55; }
+.ebb-letter.is-haiku .ebb-letter__body { text-align: center; font-style: italic; padding: 12px 0; }
+.ebb-letter.is-paper .ebb-letter__body { font-family: Georgia, serif; font-size: calc(17px * var(--text-scale, 1)); }
+.ebb-letter__h1, .ebb-letter__h2, .ebb-letter__h3 { font-weight: 800; font-size: calc(19px * var(--text-scale, 1)); line-height: 1.25; }
+.ebb-letter.is-paper .ebb-letter__h3 { text-transform: uppercase; letter-spacing: 0.04em; border-top: 2px solid var(--jr-ink); border-bottom: 1px solid var(--jr-ink); padding: 6px 0; }
+.ebb-letter__h4 { font-style: italic; color: var(--jr-soft); }
+.ebb-letter.is-paper .ebb-letter__body > p:first-child b { display: block; text-align: center; font-size: calc(20px * var(--text-scale, 1)); letter-spacing: 0.08em; }

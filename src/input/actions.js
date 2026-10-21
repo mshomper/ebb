@@ -35,6 +35,7 @@ import { emit } from '../core/events.js';
  *   | { type: 'keepsakes.swap', out: number }
  *   | { type: 'keepsakes.letGo', id: number }
  *   | { type: 'keepsakes.cancelKeep' }
+ *   | { type: 'keepsakes.read', shoreId?: string, entryId?: number }
  *   | { type: 'brush.resize', factor: number, source?: Source }
  *   | { type: 'history.undo', source?: Source }
  *   | { type: 'history.redo', source?: Source }

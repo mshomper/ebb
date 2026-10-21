@@ -10,7 +10,7 @@
 export function keepsakes6(sections) {
   const s = structuredClone(sections);
   if (!s.keepsakes || typeof s.keepsakes !== 'object' || !Array.isArray(s.keepsakes.shelf)) {
-    s.keepsakes = { version: 1, shelf: [], nextId: 1 };
+    s.keepsakes = { version: 1, shelf: [], nextId: 1, letters: [] };
   }
   return s;
 }

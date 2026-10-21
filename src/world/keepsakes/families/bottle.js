@@ -34,10 +34,16 @@ export function bottleWords(n, K) {
   return line[0].toUpperCase() + line.slice(1) + '.';
 }
 
-/** The message in a bottle, if it has one. @param {any} n @param {any} messages bottle-messages.json */
+/**
+ * A preview of a bottle's message for tools (the lab): a letter by its number alone. In the game
+ * the letter is chosen when first read, with season, threads and island age (letters.js).
+ * @param {any} n @param {any} messages bottle-messages.json @returns {string | null}
+ */
 export function bottleMessage(n, messages) {
-  if (!n.message || !messages?.lines?.length) return null;
-  return messages.lines[n.messageIndex % messages.lines.length];
+  const L = messages?.letters;
+  if (!n.message || !L?.length) return null;
+  const l = L[n.messageIndex % L.length];
+  return `${l.title}: ${l.body.filter((/** @type {string} */ x) => x.trim()).slice(0, 2).join(' ').replace(/[*#~]/g, '')}`;
 }
 
 /** @param {any} n @param {any} K @returns {import('../../finds/procedural.js').Mesh} */

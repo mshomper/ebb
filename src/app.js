@@ -48,7 +48,8 @@ import { createCreatures } from './world/creatures/index.js';
 import { createFinds } from './world/finds/index.js';
 import { createKeepsakes } from './world/keepsakes/index.js';
 import { keepsakeWords } from './world/keepsakes/families/index.js';
-import { cleanShelf, keep as keepShelf, letGo as letGoShelf, swap as swapShelf } from './world/keepsakes/shelf.js';
+import { cleanShelf, keep as keepShelf, letGo as letGoShelf, readLetter, swap as swapShelf } from './world/keepsakes/shelf.js';
+import { chooseLetter } from './world/keepsakes/letters.js';
 import { createPieces } from './world/pieces/index.js';
 import { shorePresence } from './world/journal/shore-presence.js';
 import { createPresence } from './world/creatures/presence.js';
@@ -391,6 +392,10 @@ export async function startApp(canvas, hooks = {}) {
     seed: subSeed(seed, 'keepsakes'), tide: waterRecipe.tide, test: keepsakeTest, coveRecipe: await loadRecipe('world/cove'),
     on: () => keepsakeTest || !!getStore('unlocks')?.shells });
   const keepsakesApi = { ...keepsakes, words: (/** @type {any} */ n) => keepsakeWords(n, keepsakesRecipe) };
+  // Bottle letters (recipes/world/bottle-messages.json): which letter a bottle on the beach turned
+  // out to hold, once read, so reading it again (or keeping it) gives the same one.
+  const bottleMessages = await loadRecipe('world/bottle-messages');
+  /** @type {Map<string, string>} */ const shoreLetters = new Map();
   sim.addSystem(keepsakes);
   // Placed pieces (doc 09, docs/future/10): loose stones, set with Sculpt's Loose stone mode and
   // lifted with a tap; a handful comes by itself with the naturalist's reward (src/world/pieces).
@@ -730,8 +735,10 @@ export async function startApp(canvas, hooks = {}) {
       // Keep it: onto the shelf (src/world/keepsakes/shelf.js), and off the shore. A full shelf
       // opens in the journal and asks which one to let go; nothing is kept until you choose.
       case 'keepsakes.keep': {
-        const k = keepsakes.toKeep(a.id);
-        if (!k) break;
+        const k0 = keepsakes.toKeep(a.id);
+        if (!k0) break;
+        // A bottle whose letter was read on the beach keeps that letter.
+        const k = shoreLetters.has(a.id) ? { ...k0, letter: shoreLetters.get(a.id) } : k0;
         const r = keepShelf(cleanShelf(getStore('keepsakes')), k);
         if (r.kept) {
           updateStore('keepsakes', () => r.state);
@@ -758,6 +765,32 @@ export async function startApp(canvas, hooks = {}) {
       case 'keepsakes.cancelKeep':
         updateStore('shelfPending', () => null);
         break;
+      // Read a bottle's letter (src/world/keepsakes/letters.js), on the beach (shoreId) or on the
+      // shelf (entryId). Its letter is chosen the first time it is read, then kept with it; every
+      // letter read is kept with the shelf to read again, and the journal opens on it.
+      case 'keepsakes.read': {
+        const s0 = cleanShelf(getStore('keepsakes'));
+        const entry = a.entryId !== undefined ? s0.shelf.find((e) => e.id === a.entryId) : null;
+        const k = entry ?? (a.shoreId ? keepsakes.toKeep(a.shoreId) : null);
+        if (!k || k.n.family !== 'bottle' || !k.n.message) break;
+        let id = entry?.letter ?? (a.shoreId ? shoreLetters.get(a.shoreId) : undefined);
+        if (!id) {
+          const season = ['spring', 'summer', 'autumn', 'winter'][clock.seasonOf(k.hour * 3600).index];
+          id = chooseLetter(k.n.messageIndex, { rarity: k.n.rarity, season, hour: clock.worldT() / 3600, read: s0.letters },
+            bottleMessages, keepsakesRecipe.rarity.order)?.id;
+        }
+        if (!id) break;
+        const letter = id;
+        if (a.shoreId) shoreLetters.set(a.shoreId, letter);
+        updateStore('keepsakes', (s) => {
+          const c = readLetter(cleanShelf(s), letter);
+          return entry ? { ...c, shelf: c.shelf.map((e) => (e.id === entry.id ? { ...e, letter } : e)) } : c;
+        });
+        updateStore('identify', () => null);
+        updateStore('shelfUi', () => ({ letter }));
+        updateStore('journalUi', (u) => ({ ...(u ?? {}), open: true, view: 'shelf', page: null }));
+        break;
+      }
       case 'ui.identify':
         pieces.cancelCarry();
         break;

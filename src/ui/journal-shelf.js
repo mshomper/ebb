@@ -6,13 +6,14 @@
 // go. No counts: the empty spaces say how much room there is. A picture of the shelf can be saved.
 // The meshes are rebuilt from the saved numbers and dropped once traced.
 
-import { get } from '../core/store.js';
+import { get, update } from '../core/store.js';
 import { dispatch } from '../input/actions.js';
 import { iconSvg } from './icons/icons.js';
 import { keepsakeSvg, traceKeepsake } from './sketches/keepsake.js';
 import { drawMesh, groundCss } from './keepsake-view.js';
 import { keepsakeMesh, keepsakeView, keepsakeWords } from '../world/keepsakes/families/index.js';
-import { bottleMessage } from '../world/keepsakes/families/bottle.js';
+import { letterById } from '../world/keepsakes/letters.js';
+import { letterHtml } from './journal-letters.js';
 import { cleanShelf, SHELF_CAP } from '../world/keepsakes/shelf.js';
 import { seasonOf } from '../core/clock.js';
 
@@ -63,6 +64,30 @@ export function createShelfView(o) {
   function html() {
     const s = cleanShelf(get('keepsakes'));
     const pending = get('shelfPending');
+    const ui = get('shelfUi') ?? {};
+    const LW = W.letters;
+    // A letter open on its paper.
+    const L = ui.letter ? letterById(ui.letter, messages) : null;
+    if (L && !pending) {
+      return `<section class="ebb-shelf">
+        <button type="button" class="ebb-shelf__btn" data-shelf-letters>${iconSvg('back')}<span>${esc(LW.back)}</span></button>
+        <h3 class="ebb-shelf__title">${esc(L.title)}</h3>
+        ${letterHtml(L)}
+      </section>`;
+    }
+    // Every letter read, in the order found.
+    if (ui.letters && !pending) {
+      const total = (messages.letters ?? []).length;
+      const read = s.letters.map((id) => letterById(id, messages)).filter(Boolean);
+      return `<section class="ebb-shelf">
+        <button type="button" class="ebb-shelf__btn" data-shelf-home>${iconSvg('back')}<span>${esc(LW.toShelf)}</span></button>
+        <h3 class="ebb-shelf__title">${esc(LW.title)}</h3>
+        <p class="ebb-shelf__text">${esc(LW.intro)}</p>
+        <p class="ebb-shelf__rarity">${esc(LW.count.replace('{n}', String(read.length)).replace('{total}', String(total)))}</p>
+        ${read.length ? `<ul class="ebb-letters">${read.map((x) => `<li><button type="button" class="ebb-letters__row" data-shelf-letter="${esc(x.id)}">
+          <b>${esc(x.title)}</b><span>${esc(x.form)}</span></button></li>`).join('')}</ul>` : `<p class="ebb-shelf__text">${esc(LW.none)}</p>`}
+      </section>`;
+    }
     if (pending) {
       return `<section class="ebb-shelf">
         <h3 class="ebb-shelf__title">${esc(T.title)}</h3>
@@ -76,14 +101,14 @@ export function createShelfView(o) {
     }
     const e = open !== null ? s.shelf.find((x) => x.id === open) : null;
     if (e) {
-      const msg = e.n.family === 'bottle' ? bottleMessage(e.n, messages) : null;
+      const hasLetter = e.n.family === 'bottle' && !!e.n.message;
       return `<section class="ebb-shelf">
         <button type="button" class="ebb-shelf__btn" data-shelf-back>${iconSvg('back')}<span>${esc(T.back)}</span></button>
         <div class="ebb-shelf__hand" style="${groundCss(K, e.n.rarity)}"><canvas class="ebb-shelf__turn" data-shelf-turn aria-label="${esc(T.turn)}"></canvas></div>
         <p class="ebb-shelf__name">${esc(keepsakeWords(e.n, K))}</p>
         <p class="ebb-shelf__rarity">${esc(W.rarity[e.n.rarity] ?? '')}</p>
         <p class="ebb-shelf__text">${esc(where(e))}</p>
-        ${msg ? `<p class="ebb-shelf__text">${esc(T.message)}</p><p class="ebb-shelf__message">${esc(msg)}</p>` : ''}
+        ${hasLetter ? `<button type="button" class="ebb-shelf__btn" data-shelf-read="${e.id}">${iconSvg('notes')}<span>${esc(e.letter ? LW.readAgain : W.read)}</span></button>` : ''}
         ${asking
           ? `<p class="ebb-shelf__text">${esc(T.letGoSure)}</p><div class="ebb-shelf__row">
               <button type="button" class="ebb-shelf__btn" data-shelf-letgo-yes>${esc(T.yes)}</button>
@@ -98,6 +123,7 @@ export function createShelfView(o) {
       ${s.shelf.length ? '' : `<p class="ebb-shelf__text">${esc(T.empty)}</p>`}
       <div class="ebb-shelf__grid">${cells.map((e) => slot(e, e ? `data-shelf-open="${e.id}"` : '')).join('')}</div>
       ${s.shelf.length ? `<button type="button" class="ebb-shelf__btn is-wide" data-shelf-photo>${iconSvg('picture')}<span>${esc(T.photo)}</span></button>` : ''}
+      <button type="button" class="ebb-shelf__btn is-wide" data-shelf-letters>${iconSvg('notes')}<span>${esc(LW.open)}: ${esc(LW.count.replace('{n}', String(s.letters.length)).replace('{total}', String((messages.letters ?? []).length)))}</span></button>
     </section>`;
   }
 
@@ -127,10 +153,14 @@ export function createShelfView(o) {
    * @param {() => void} rerender @returns {boolean}
    */
   function click(t, rerender) {
-    const b = /** @type {HTMLElement | null} */ (t.closest('[data-shelf-open],[data-shelf-back],[data-shelf-letgo],[data-shelf-letgo-yes],[data-shelf-letgo-no],[data-shelf-swap],[data-shelf-cancel],[data-shelf-photo]'));
+    const b = /** @type {HTMLElement | null} */ (t.closest('[data-shelf-open],[data-shelf-back],[data-shelf-letgo],[data-shelf-letgo-yes],[data-shelf-letgo-no],[data-shelf-swap],[data-shelf-cancel],[data-shelf-photo],[data-shelf-letters],[data-shelf-letter],[data-shelf-home],[data-shelf-read]'));
     if (!b) return false;
     const d = b.dataset;
-    if (d.shelfOpen) { open = Number(d.shelfOpen); asking = false; yaw = 0.6; pitch = 0.45; }
+    if (d.shelfLetters !== undefined) update('shelfUi', () => ({ letters: true }));
+    else if (d.shelfLetter) update('shelfUi', () => ({ letters: true, letter: d.shelfLetter }));
+    else if (d.shelfHome !== undefined) update('shelfUi', () => null);
+    else if (d.shelfRead) dispatch({ type: 'keepsakes.read', entryId: Number(d.shelfRead) });
+    else if (d.shelfOpen) { open = Number(d.shelfOpen); asking = false; yaw = 0.6; pitch = 0.45; }
     else if (d.shelfBack !== undefined) { open = null; asking = false; }
     else if (d.shelfLetgo !== undefined) asking = true;
     else if (d.shelfLetgoNo !== undefined) asking = false;
