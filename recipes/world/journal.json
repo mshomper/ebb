@@ -11,7 +11,7 @@
   "arrivedHours": 2,
   "plantableNote": "plantable: the line written under the first sighting of a plant that came by itself (src/world/growth/volunteers.js), since the Plant tool offers it from then on; {name} is its name.",
   "plantable": "{name} came to the island by itself. You can plant it now.",
-  "islandNote": { "showS": 6, "gapS": 1.2, "queue": 3, "more": "{n} more in the journal", "moreOne": "1 more in the journal" },
+  "islandNote": { "showS": 6, "showMeS": 14, "showMeKinds": ["sign", "signAgain", "back", "settled", "settledUnseen", "joined", "joinedUnseen"], "gapS": 1.2, "queue": 3, "more": "{n} more in the journal", "moreOne": "1 more in the journal" },
   "readMarks": { "missed": "You may have missed", "rest": "All notes" },
   "reveal": {
     "_doc": "The reveal on return (docs/02, src/world/journal/reveal-plan.js) shows its notes best first: by the first class whose kinds hold the note's kind (doc 02's order), then newer first; kinds not listed come last. Kinds are shared by every species, so a new plant or animal ranks by the kinds of its notes.",
@@ -53,7 +53,7 @@
     "mistAt": 0.3,
     "hours": { "dawn": [5, 8], "dusk": [18, 21] }
   },
-  "showMe": { "showS": 20 },
+  "showMe": { "showS": 20, "button": "Show me", "unseen": { "name": "Something here", "text": "Keep still and watch this spot for a while." }, "none": "Nothing shows just now. It may have slipped away for a while.", "noneS": 5 },
   "piecesNote": "Placed pieces (docs/future/10, src/world/pieces): what a tap on one says. name and icon head its card, cardLine is the line under them (no page of its own: the card has no Open its page), and lifted is the note written the first time you lift one (the flag stones:lifted; driftwood:lifted for a log, which rolls over). carry: the card's Carry button with the turtles' gift (button), the line while a piece is carried (hint), the button that puts it back (cancel), and the calm lines when a tap lands in water or the island holds all the logs it can (water, full).",
   "pieces": {
     "stone": {

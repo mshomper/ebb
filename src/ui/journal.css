@@ -537,6 +537,25 @@ button.ebb-jnotes__row:hover { background: rgba(30, 38, 36, 0.06); }
   .ebb-notes__note { -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
 }
 .ebb-notes__note.is-shown { opacity: 1; transform: none; }
+/* A note that an animal came or stayed: its words open the journal, and Show me sits under them. */
+.ebb-notes__note.has-show { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; cursor: default; }
+.ebb-notes__text {
+  appearance: none; -webkit-appearance: none;
+  margin: 0; padding: 0; border: 0; background: none; color: inherit;
+  font: inherit; text-align: left; overflow-wrap: break-word; cursor: pointer;
+}
+.ebb-notes__show {
+  appearance: none; -webkit-appearance: none;
+  display: inline-flex; align-items: center; gap: 8px;
+  margin: 0; padding: 6px 14px 6px 10px; min-height: 40px;
+  border: 1px solid rgba(244, 238, 228, 0.28); border-radius: 12px;
+  background: rgba(244, 238, 228, 0.1); color: var(--ui-cream);
+  font-family: var(--font-ui, 'Nunito', system-ui, sans-serif); font-style: normal; font-weight: 700;
+  font-size: calc(16px * var(--text-scale, 1)); line-height: 1.2; cursor: pointer;
+}
+.ebb-notes__show svg { width: 20px; height: 20px; flex: none; }
+.ebb-notes__show:hover { background: rgba(244, 238, 228, 0.18); }
+.ebb-notes__text:focus-visible, .ebb-notes__show:focus-visible { outline: 2px solid var(--wordmark-dark); outline-offset: 2px; }
 /* "3 more in the journal": the notes that never got their turn on the island. */
 .ebb-notes__more {
   appearance: none;

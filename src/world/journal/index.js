@@ -192,12 +192,17 @@ export function createJournal(opts) {
     if (journal.species[sp]?.ever) return;
     commit(foundAnimal(journal, { state: world.state, hour: hourIndex(), words }, sp));
     look([], hourIndex());
+    // Show me's ring was on something not yet met: now it is, so the card says what it is.
+    const c = get('identify');
+    if (c?.pinned && c.sp === sp && c.noPage) showMe(sp);
   }
 
   /**
    * Ring the example nearest the middle of your view. The camera stays where it is (a game-driven
    * move is distracting); the card follows the ring on screen, and an arrow at the edge points to
-   * it while it is out of view (src/ui/island-notes.js). @param {string} sp
+   * it while it is out of view (src/ui/island-notes.js). An island note's Show me (an animal came or
+   * stayed) can ring one you have not met yet: its card then keeps the riddle (`showMe.unseen`), so
+   * finding it is still yours. If none is about just now, a calm line says so. @param {string} sp
    */
   function showMe(sp) {
     const view = get('view');
@@ -208,7 +213,14 @@ export function createJournal(opts) {
       const spot = groundSpot(sp, habitat(), material(), survey(), island, near);
       if (spot) card = groundCard(spot.kind, habitat(), spot.x, spot.z, { island, flora: flora(), journal, words });
     }
-    if (!card) return;
+    const S = words.showMe;
+    if (!card) {
+      if (S?.none) emitDeferred('island:notice', { text: S.none, showS: S.noneS ?? 5 });
+      return;
+    }
+    if (words.species[sp] && !journal.species[sp]?.ever && S?.unseen) {
+      card = { ...card, name: S.unseen.name, text: S.unseen.text, icon: 'find', sub: null, word: null, canName: false, suggest: [], noPage: true };
+    }
     const at = view?.project(card.wx, card.wz);
     select({ ...card, pinned: true }, at?.x ?? 0, at?.y ?? 0);
   }
