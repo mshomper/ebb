@@ -17,6 +17,8 @@ import { urchinNumbers, urchinMesh, urchinWords } from './urchin.js';
 import { starfishNumbers, starfishMesh, starfishWords } from './starfish.js';
 import { seedNumbers, seedMesh, seedWords } from './seedpod.js';
 import { purseNumbers, purseMesh, purseWords } from './purse.js';
+import { cuttleNumbers, cuttleMesh, cuttleWords } from './cuttlebone.js';
+import { coralNumbers, coralMesh, coralWords } from './coral.js';
 
 /**
  * @typedef {{ salt: number, numbers: (h0: number, rarity: any, K: any) => any,
@@ -36,6 +38,8 @@ export const FAMILIES = /** @type {Record<string, Family>} */ ({
   starfish: { salt: 0x57a7, numbers: starfishNumbers, mesh: starfishMesh, words: starfishWords, view: () => [0, 78] },
   seed: { salt: 0x5eed, numbers: seedNumbers, mesh: seedMesh, words: seedWords, view: (n) => (n.form === 'heart' ? [0, 72] : [20, 32]) },
   purse: { salt: 0x9a75, numbers: purseNumbers, mesh: purseMesh, words: purseWords, view: () => [20, 70] },
+  cuttlebone: { salt: 0xc077, numbers: cuttleNumbers, mesh: cuttleMesh, words: cuttleWords, view: () => [35, 62] },
+  coral: { salt: 0xc0a1, numbers: coralNumbers, mesh: coralMesh, words: coralWords, view: () => [0, 82] },
 });
 
 /**

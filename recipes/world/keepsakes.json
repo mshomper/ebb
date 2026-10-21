@@ -17,7 +17,7 @@
     "lineToleranceM": 0.06,
     "spacingM": 3,
     "maxOnIsland": 3,
-    "families": { "shell": 34, "stone": 18, "driftwood": 11, "feather": 10, "urchin": 7, "starfish": 6, "seed": 5, "purse": 5, "fossil": 6, "bottle": 3 },
+    "families": { "shell": 34, "stone": 18, "driftwood": 11, "feather": 10, "urchin": 7, "starfish": 6, "seed": 5, "purse": 5, "cuttlebone": 4, "coral": 3, "fossil": 6, "bottle": 3 },
     "scale": 2,
     "nearM": 22,
     "testBudget": [0, 0, 0, 1],
@@ -101,6 +101,36 @@
       "jitter": 0.06
     },
     "marks": { "curly": { "chance": 0.03, "word": "a catshark's, with long curling tendrils" } }
+  },
+  "cuttlebones": {
+    "gen": 1,
+    "note": "Cuttlebones: a flat oval, round at the head and narrowing to a point at the tail, domed on its back with fine growth lines and a pink blush toward the head. Most are chipped at the tail; a whole one is the mark.",
+    "mesh": { "rows": 16, "cols": 44 },
+    "tiers": {
+      "common": { "sizeM": [0.07, 0.11], "blush": [0.0, 0.2] },
+      "uncommon": { "sizeM": [0.08, 0.13], "blush": [0.1, 0.35], "markLean": 2 },
+      "rare": { "sizeM": [0.1, 0.15], "blush": [0.25, 0.5], "markLean": 4 },
+      "veryRare": { "sizeM": [0.12, 0.17], "blush": [0.35, 0.6], "markLean": 8 }
+    },
+    "colors": { "base": [0.86, 0.84, 0.78], "blush": [0.86, 0.62, 0.6] },
+    "marks": { "whole": { "chance": 0.05, "word": "whole, its little spine still at the tail" } }
+  },
+  "corals": {
+    "gen": 1,
+    "note": "Coral sprigs: a stem that forks (depth, how many times), each branch thinner, turning a little; spread is how wide each fork opens. The rare mark is a fan: every branch spread in one plane.",
+    "mesh": { "segs": 6, "sides": 6 },
+    "tiers": {
+      "common": { "sizeM": [0.05, 0.08], "depth": [2, 3], "base": [0, 0, 1] },
+      "uncommon": { "sizeM": [0.06, 0.09], "depth": [2, 4], "base": [0, 1, 2], "markLean": 2 },
+      "rare": { "sizeM": [0.07, 0.1], "depth": [3, 4], "base": [1, 2, 3], "markLean": 4 },
+      "veryRare": { "sizeM": [0.08, 0.12], "depth": [3, 5], "base": [3, 4], "markLean": 8 }
+    },
+    "colors": {
+      "base": [[0.86, 0.84, 0.8], [0.88, 0.66, 0.62], [0.82, 0.48, 0.38], [0.6, 0.1, 0.1], [0.5, 0.3, 0.55]],
+      "baseNames": ["white", "pink", "salmon", "red", "violet"],
+      "jitter": 0.05
+    },
+    "marks": { "fan": { "chance": 0.04, "word": "spread flat like a fan" } }
   },
   "shelfNote": "The paper ground of a shelf slot by rarity (doc 13, 'The shelf'). Previewed in the lab; drawn by the shelf in K3.",
   "shelf": {
