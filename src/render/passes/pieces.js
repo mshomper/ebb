@@ -91,6 +91,13 @@ export function createPiecesPass(opts) {
       upload(key);
     },
 
+    /** Let a mesh go (a log no longer on the island). @param {string} key */
+    dropMesh(key) {
+      const old = meshes.get(key);
+      old?.vbuf?.destroy(); old?.ibuf?.destroy();
+      meshes.delete(key);
+    },
+
     /** The pieces this frame: stones first (each gets a damp ring), then any damp patches. @param {PieceBeing[]} all */
     setPieces(all) {
       const rows = all.filter((b) => meshes.has(b.mesh)).slice(0, MAX);

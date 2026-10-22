@@ -8,7 +8,7 @@
 import { moodsOf, autumnStartOf, dampBy, fungiBloom, fungusSize, fungiLayout, websNear, webDew, mistyAutumnMorning } from '../src/world/finds/autumn.js';
 import { fungusMeshes } from '../src/world/finds/autumn-meshes.js';
 import { logSurface } from '../src/world/pieces/log-surface.js';
-import { bakeLog } from '../src/world/pieces/meshes.js';
+import { bakeLogSeed, logLook } from '../src/world/pieces/log-bake.js';
 import { logBone, makeLog, addPiece, movePiece } from '../src/world/pieces/model.js';
 import { seasonOf, SECONDS_PER_DAY } from '../src/core/clock.js';
 import { subSeed } from '../src/core/rng.js';
@@ -117,21 +117,27 @@ export function addAutumnTests(test, assert, eq) {
 
   test(AUTUMN, 'a point on a log\'s surface is on the wood, its normal facing out', async () => {
     const D = (await json('world/pieces')).driftwood;
-    const { mesh } = bakeLog(D.shape, 0);
     const len = 1.2, thick = 0.15, a = thick / len;
+    // Every form carries its fungi on the trunk: one log of each.
+    const seeds = [];
+    for (let s = 1; seeds.length < 4 && s < 400; s++) if (!seeds.some((q) => logLook(q, D).form === logLook(s, D).form)) seeds.push(s);
+    eq(seeds.length, 4, 'a log of each form');
+    for (const seed of seeds) {
+    const { mesh, form } = bakeLogSeed(D, seed, a);
     const pose = { bone: logBone(0, 1, a, D.sink), size: len, yaw: 0.6, at: [3, 1, -2] };
     const top = logSurface(mesh, D.shape.rings, D.shape.around, pose, 0.5, Math.PI / 2);
     const side = logSurface(mesh, D.shape.rings, D.shape.around, pose, 0.5, 0);
     const y = top.p[1] - 1;
-    assert(y > thick * 0.45 && y < thick * 1.6, `the top is about a thickness up: ${y.toFixed(3)} m`);
-    assert(top.n[1] > 0.7, `the top faces up: ${top.n[1].toFixed(2)}`);
-    assert(Math.abs(side.n[1]) < 0.5, `the flank faces sideways: ${side.n[1].toFixed(2)}`);
+    assert(y > thick * 0.45 && y < thick * 1.6, `${form}: the top is about a thickness up: ${y.toFixed(3)} m`);
+    assert(top.n[1] > 0.7, `${form}: the top faces up: ${top.n[1].toFixed(2)}`);
+    assert(Math.abs(side.n[1]) < 0.5, `${form}: the flank faces sideways: ${side.n[1].toFixed(2)}`);
     // The log lies along its yaw: two points far apart along it lie along (sin yaw, cos yaw).
     const p0 = logSurface(mesh, D.shape.rings, D.shape.around, pose, 0.1, Math.PI / 2).p, p1 = logSurface(mesh, D.shape.rings, D.shape.around, pose, 0.9, Math.PI / 2).p;
     const dx = p1[0] - p0[0], dz = p1[2] - p0[2], l = Math.hypot(dx, dz);
-    assert(l > len * 0.6, `points along it are ${l.toFixed(2)} m apart`);
-    assert(Math.abs(dx / l - Math.sin(0.6)) < 0.15 && Math.abs(dz / l - Math.cos(0.6)) < 0.15, 'along the yaw');
-    return `top ${y.toFixed(3)} m up`;
+    assert(l > len * 0.6, `${form}: points along it are ${l.toFixed(2)} m apart`);
+    assert(Math.abs(dx / l - Math.sin(0.6)) < 0.25 && Math.abs(dz / l - Math.cos(0.6)) < 0.25, `${form}: along the yaw`);
+    }
+    return seeds.map((s) => logLook(s, D).form).join(', ');
   });
 
   test(AUTUMN, 'dewy webs: in thick lush grass, seeded by cell and day, only on misty autumn mornings', async () => {

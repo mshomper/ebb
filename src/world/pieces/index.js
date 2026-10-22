@@ -20,7 +20,8 @@ import { packMesh } from '../creatures/bodies.js';
 import { createPiecesPass } from '../../render/passes/pieces.js';
 import { cleanPieces, makeStone, makeLog, addPiece, removePiece, movePiece, countKind, pieceAt, arrivingStones,
   tipAngle, tipDone, stoneBone, leanBone, logBone, mul4 } from './model.js';
-import { stoneShapes, logShapes } from './meshes.js';
+import { stoneShapes, logDamp } from './meshes.js';
+import { createLogCache } from './log-cache.js';
 import { strandLogs, cellHeights, strandMask } from './driftwood.js';
 import { logSurface } from './log-surface.js';
 import { slabShapes } from './slabs.js';
@@ -47,13 +48,13 @@ export function createPieces(opts) {
   const driftSeed = subSeed(opts.seed, 'driftwood');
   const tideP = tideParams(opts.tide);
   const shapes = stoneShapes(recipe);
-  const logs = logShapes(recipe);
   const pass = createPiecesPass({ ground: opts.ground, recipe, terrainRecipe: opts.terrainRecipe });
   shapes.forEach((s, i) => {
     pass.setMesh(`stone-${i}`, { data: packMesh(s.mesh), indices: s.mesh.indices });
     pass.setMesh(`damp-${i}`, { data: packMesh(s.damp), indices: s.damp.indices });
   });
-  logs.forEach((s, i) => pass.setMesh(`log-${i}`, { data: packMesh(s.mesh), indices: s.mesh.indices }));
+  // Every log is baked from its own seed (log-bake.js), the first time it is drawn.
+  const logs = createLogCache(pass, D);
   // Pond stones and the slabs on Steps' treads (slabs.js): rounded slabs with a long skirt that
   // stands on a pond bed, or sinks out of sight into the ground.
   const S = recipe.stepping, ST = recipe.steps;
@@ -67,7 +68,8 @@ export function createPieces(opts) {
   const rafts = raftShapes(recipe);
   rafts.forEach((s, i) => pass.setMesh(`raft-${i}`, { data: packMesh(s.mesh), indices: s.mesh.indices }));
   const IDENTITY = new Float32Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
-  pass.setMesh('logdamp', { data: packMesh(logs[0].damp), indices: logs[0].damp.indices });
+  const logDampMesh = logDamp(recipe);
+  pass.setMesh('logdamp', { data: packMesh(logDampMesh), indices: logDampMesh.indices });
   const shapeOf = (/** @type {{ seed: number }} */ p) => shapes[p.seed % shapes.length];
   const ground = (/** @type {number} */ x, /** @type {number} */ z) => terrain.sampleHeight(x, z);
   /**
@@ -444,7 +446,7 @@ export function createPieces(opts) {
    */
   function logBeing(p, id, out) {
     const len = p.length ?? 1, a = p.size / len;
-    const i = p.seed % logs.length;
+    const log = logs.of(p);
     const y = ground(p.x, p.z);
     const slope = slopeOf(p, Math.min(0.4, len * 0.3));
     const lift = lifts.get(id);
@@ -454,7 +456,7 @@ export function createPieces(opts) {
     let bone = mul4(leanBone(slope[0], slope[1], D.lean), logBone(angle, (lift?.dir[0] ?? -1) < 0 ? 1 : -1, a, D.sink));
     if (held) bone = mul4(raise(D.carry.liftM / len), bone);
     const common = { x: p.x, z: p.z, yaw: p.yaw, size: len, slope, seed: (p.seed >>> 8) / 16777216 * 10, half: [(a / 2) * D.ringHalf[0], 0.5 * D.ringHalf[1]] };
-    out.push({ ...common, y, mesh: `log-${i}`, bone, aspect: a });
+    out.push({ ...common, y, mesh: log.key, bone, aspect: a });
     if (angle > 0.01 || held) out.push({ ...common, y: y + 0.004, mesh: 'logdamp', bone: mul4(shear(slope), new Float32Array([a, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1])), plain: true });
   }
 
@@ -476,6 +478,7 @@ export function createPieces(opts) {
       if ((strandS += f.realDt) > 0.5) { strandS = 0; refreshStrand(f.displayT / 3600); }
       frameDt = f.realDt;
       raftClock += f.realDt;
+      logs.tick(f.realDt);
       pass.setPieces(beings());
     },
 
@@ -493,6 +496,11 @@ export function createPieces(opts) {
         const n = Math.min(6, Math.max(2, Math.ceil(len / (r * 1.6))));
         const ax = Math.sin(p.yaw), az = Math.cos(p.yaw);
         for (let k = 0; k < n; k++) { const t = (k / (n - 1) - 0.5) * (len - r); put(p.x + ax * t, p.z + az * t, r); }
+        // A bowed log's middle, a snapped arm's tip, a root's: its own shape (log-bake.js footprint).
+        for (const [fx, fz] of logs.of(p).footprint) {
+          const dx = fx * p.size, dz = fz * (len - r);
+          put(p.x + az * dx + ax * dz, p.z - ax * dx + az * dz, r * 0.8);
+        }
       }
       return out.sort((a, b) => a.d - b.d);
     },
@@ -610,7 +618,7 @@ export function createPieces(opts) {
         const len = p.length ?? 1, a = p.size / len;
         const bone = mul4(leanBone(...(/** @type {[number, number]} */ (slopeOf(p, Math.min(0.4, len * 0.3)))), D.lean), logBone(0, 1, a, D.sink));
         const pose = { bone, size: len, yaw: p.yaw, at: [p.x, ground(p.x, p.z), p.z] };
-        const mesh = logs[p.seed % logs.length].mesh;
+        const mesh = logs.of(p).mesh;
         return { id: p.id, seed: p.seed, x: p.x, z: p.z, length: len, size: p.size, placedHour: p.placedHour,
           still: !lifts.has(p.id) && carrying?.id !== p.id,
           surface: (/** @type {number} */ t, /** @type {number} */ ang) => logSurface(mesh, D.shape.rings, D.shape.around, pose, t, ang) };

@@ -7,7 +7,9 @@
 // footing a line of stones gives the walker, and the slab shapes.
 
 import { cleanPieces, emptyPieces, makeStone, makeLog, addPiece, removePiece, movePiece, countKind, pieceAt, arrivingStones, tipAngle, tipDone, stoneBone, leanBone, logBone, mul4 } from '../src/world/pieces/model.js';
-import { stoneShapes, logShapes } from '../src/world/pieces/meshes.js';
+import { stoneShapes } from '../src/world/pieces/meshes.js';
+import { bakeLogSeed, logLook, LOG_FORMS } from '../src/world/pieces/log-bake.js';
+import { hash32 } from '../src/core/rng.js';
 import { strandLogs, cellHeights, strandMask } from '../src/world/pieces/driftwood.js';
 import { strandLines } from '../src/world/water/strandline.js';
 import { tideParams } from '../src/world/tide.js';
@@ -295,25 +297,34 @@ export function addPiecesTests(test, assert, eq) {
     eq(arrivingStones({ seed: 1, summary: pondSummary(), material: null, recipe: R, hour: 1, nextId: 50, existing: s.list }).length, R.arrive.count, 'logs do not take the stones\' room');
   });
 
-  test(G, 'log shapes bake the same every load, 1 long and 1 thick, weathered silver-grey; a roll shows the ground', async () => {
-    const R = await recipe;
-    const a = logShapes(R), b = logShapes(R);
-    eq(a.length, R.driftwood.shape.count, 'shapes');
+  test(G, 'each log bakes from its own seed the same every load, its trunk 1 long and 1 thick, weathered silver-grey; a roll shows the ground', async () => {
+    const R = await recipe, D = R.driftwood, T = D.shape.rings * D.shape.around;
     const means = [];
-    for (let i = 0; i < a.length; i++) {
-      assert(a[i].mesh.vertices.every((v, k) => v === b[i].mesh.vertices[k]), `shape ${i} the same`);
-      const V = a[i].mesh.vertices;
+    for (let i = 0; i < 24; i++) {
+      const seed = hash32(4242, i) >>> 0, aspect = 0.06 + 0.01 * i;
+      const a = bakeLogSeed(D, seed, aspect), b = bakeLogSeed(D, seed, aspect);
+      assert(a.mesh.vertices.every((v, k) => v === b.mesh.vertices[k]), `log ${i} the same`);
+      const V = a.mesh.vertices;
       let ylo = Infinity, zlo = Infinity, zhi = -Infinity, sum = 0, n = 0, bad = 0;
-      for (let v = 0; v < a[i].mesh.count; v++) {
-        ylo = Math.min(ylo, V[v * 9 + 1]); zlo = Math.min(zlo, V[v * 9 + 2]); zhi = Math.max(zhi, V[v * 9 + 2]);
+      for (let v = 0; v < a.mesh.count; v++) {
+        if (v < T) { ylo = Math.min(ylo, V[v * 9 + 1]); zlo = Math.min(zlo, V[v * 9 + 2]); zhi = Math.max(zhi, V[v * 9 + 2]); }
+        for (let c = 0; c < 9; c++) if (!Number.isFinite(V[v * 9 + c])) bad++;
         for (let c = 6; c < 9; c++) if (!(V[v * 9 + c] > 0 && V[v * 9 + c] < 0.5)) bad++;
         if (V[v * 9 + 4] > 0.3) { sum += V[v * 9 + 7]; n++; }
       }
-      assert(Math.abs(ylo) < 1e-6 && Math.abs(zhi - zlo - 1) < 1e-6, `shape ${i} on y = 0 and 1 long`);
-      assert(a[i].hy > 0.8 && a[i].hy < 2.2, `shape ${i} about 1 thick (${a[i].hy.toFixed(2)}, with its bow)`);
-      eq(bad, 0, `shape ${i} albedos outside physical wood`);
+      assert(Math.max(...a.mesh.indices) < a.mesh.count, `log ${i} indices in range`);
+      assert(Math.abs(ylo) < 1e-6 && Math.abs(zhi - zlo - 1) < 0.02, `log ${i} (${a.form}) on y = 0 and 1 long: ${(zhi - zlo).toFixed(3)}`);
+      assert(a.hy > 0.8 && a.hy < 2.2, `log ${i} (${a.form}) about 1 thick (${a.hy.toFixed(2)}, with its bow)`);
+      eq(bad, 0, `log ${i} albedos outside physical wood`);
       means.push(sum / n);
     }
+    // The four forms in about the recipe's mix, and time at sea from 0 to 1.
+    /** @type {Record<string, number>} */ const forms = {};
+    let seaLo = 1, seaHi = 0;
+    for (let s = 0; s < 1000; s++) { const l = logLook(hash32(77, s), D); forms[l.form] = (forms[l.form] ?? 0) + 1; seaLo = Math.min(seaLo, l.sea); seaHi = Math.max(seaHi, l.sea); }
+    eq(LOG_FORMS.filter((f) => forms[f] > 50).length, 4, `all four forms come: ${JSON.stringify(forms)}`);
+    assert(forms.straight > forms.rootend * 2, 'the root end is the rare one');
+    assert(seaLo < 0.05 && seaHi > 0.95, 'fresh and old logs both wash up');
     assert(means.every((m) => m > 0.22 && m < 0.36), `the tops are silver-grey (${means.map((m) => m.toFixed(2)).join(', ')})`);
     // Flat: squeezed across and set into the ground. Rolled: its middle moves over to the side.
     const A = 0.1, flat = logBone(0, 1, A, 0.2);
