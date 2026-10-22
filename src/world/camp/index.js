@@ -421,26 +421,47 @@ export function createCamp(o) {
       lantern: lanternGlass, sparks, moths: sunAlt() < R.moths.atSunDeg * DEG, time,
     } : null);
   }
-  let wasRainy = false, strikeAt = 0;
+  let wasRainy = false, strikeAt = 0, hidden = false;
 
   return {
     id: 'camp',
     /** The draw passes: the models (with their shadow caster), then the fire's effects after the sky. */
     props, fx,
     /** A sim system: each frame. @param {{ realDt: number }} f */
-    tick(f) { updateFrame(f.realDt, o.clock.animT()); },
+    tick(f) {
+      if (!hidden) { updateFrame(f.realDt, o.clock.animT()); return; }
+      props.setProps([]); fx.set(null); o.lighting.setPoints([]);
+    },
     rings,
     cardAt,
     /** For the evening director: the fire is burning. */
     fireLit: () => fireAt(camp().fire, hourNow(), F).word === 'lit',
+    /** Where the smoke keeps midges clear while the fire burns or smoulders (C-29), or null. */
+    smokeClear() {
+      const r = slotAt('ring'), w = fireAt(camp().fire, hourNow(), F).word;
+      return r && (w === 'lit' || w === 'embers') ? { x: r.x, z: r.z, r: R.smoke.midgeClearM } : null;
+    },
     /** The fire now (tools, tests). */
     fire: () => fireAt(camp().fire, hourNow(), F),
     /** The lantern: on its pole or carried (live only). */
     lantern: () => lantern,
     /** Where you kneel at the flap. */
     flap: flapAt,
-    /** For the test page and the bench: act on the camp now (as a card press would). */
-    debug: { pitch, lay, light, feed, rest },
+    /**
+     * For the test pages and tools/camp-bench.html: act on the camp now (as a card press would);
+     * lightNow lights a laid ring at once, with no act; hide draws no camp at all (the bench's
+     * "camp off" half).
+     */
+    debug: {
+      pitch, lay, light, feed, rest,
+      lightNow() {
+        const lit = lightFire(camp().fire, hourNow(), F);
+        if (lit) change((c) => ({ ...c, fire: lit }));
+        return !!lit;
+      },
+      /** @param {boolean} on */
+      hide(on) { hidden = on; },
+    },
     dispose() { for (const off of offs) off(); },
   };
 }

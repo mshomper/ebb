@@ -131,6 +131,8 @@ Medium spends the same groups inside 13 ms at its 0.85 render scale; low inside 
 | Smoke pass, seeded soft billboard puffs leaning with the wind, fading near the eye to cap overdraw | 0.15 | 0.20 | 40 puffs |
 | Moths at the fire and lantern after dark | 0.02 | 0.02 | 6 |
 | **Camp total** (only while the camp is in view; the lights only at night) | **0.50** | **0.67** | |
+
+Measured October 22, 2026 on Matt's desktop (NVIDIA Lovelace, `tools/camp-bench.html`, fire lit, lantern lit, view by the fire): the camp adds less than the timestamps' 0.1 ms resolution on high, medium and low (whole frame p50 1.77, 1.64 and 0.52 ms with and without it; the fire's effects pass 0.07 ms at most). The medium-tier laptop run is still to do on Matt's laptop; if it reads over, the first cut is the smoke (40 puffs to 24, as on low).
 | Hole pieces (Phase 2, digging) | TBD | TBD | open-hole cap from docs/future/13, section 10.8.3 |
 | Gather pickups drawn near the walker | TBD | TBD | TBD |
 
