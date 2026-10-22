@@ -210,7 +210,8 @@ export function observe(journal, ctx) {
     const k = know(j, sp);
     const m = measure(sp, state, hab, rec);
     const here = present(rec, m);
-    if (here && !k.seen) {
+    const appeared = here && !k.seen;
+    if (appeared) {
       const arrived = !k.ever && hour - j.born <= words.arrivedHours;
       note(out, rec, arrived ? 'arrived' : 'seen', sp, hour, date);
       // A plant that came by itself (src/world/growth/volunteers.js): the Plant tool offers it now.
@@ -236,7 +237,8 @@ export function observe(journal, ctx) {
         k.flowerYear = year;
         learnTrigger(k, 'flower');
       }
-      if (isDormant && !k.dormant) { note(out, rec, 'dormant', sp, hour, date); learnTrigger(k, 'dormant'); }
+      // Resting already when first seen (a new island on spring day 0): no note that it sank for winter.
+      if (isDormant && !k.dormant) { if (!appeared) note(out, rec, 'dormant', sp, hour, date); learnTrigger(k, 'dormant'); }
       else if (!isDormant && k.dormant) { note(out, rec, 'woke', sp, hour, date); learnTrigger(k, 'woke'); }
       k.dormant = isDormant;
       if (m.value > k.peak) { k.peak = m.value; k.peakAt = hour; }

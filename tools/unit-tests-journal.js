@@ -202,6 +202,19 @@ export function addJournalTests(test, assert, eq) {
     return lines.join(' / ');
   });
 
+  test(JOURNAL, 'spring day 0: a plant resting when first seen gets no "sank for winter" note, and no page says "for winter"', async () => {
+    const s = await setup();
+    for (const sp of plantsOf(s.words)) {
+      const rec = s.words.species[sp];
+      assert(!s.first.notes.some((n) => n.sp === sp && n.text === rec.notes?.dormant), `${sp}: no dormant note at the first look`);
+      if (!s.first.journal.species[sp]?.ever) continue;
+      const d = describe(s.first.journal, sp, s.state, s.hab, s.words);
+      assert(!/for winter/.test(d.status), `${sp} status in spring: "${d.status}"`);
+    }
+    const resting = plantsOf(s.words).filter((sp) => s.first.journal.species[sp]?.dormant);
+    return resting.length ? `resting at the start: ${resting.join(', ')}` : 'nothing resting at the start';
+  });
+
   test(JOURNAL, 'grass learns it drowns only when water comes over growing grass', async () => {
     const { words, env, hab } = await setup();
     for (let k = 0; k < hab.n * hab.n; k++) if (hab.depthCm[k] > 0) hab.grass[k] = 255;   // painted under the pond

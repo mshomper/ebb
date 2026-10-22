@@ -118,9 +118,11 @@ export function describe(journal, sp, state, hab, words, hour = journal.last) {
     else {
       const t = trendOf(k, words);
       const trend = t > 0 ? rec.spreading : t < 0 ? rec.receding : '';
+      // Still resting in spring: the season's plain words, not "for winter".
+      const resting = (state?.seasons?.index ?? 0) === 0 ? rec.seasons?.dormant ?? rec.dormant : rec.dormant;
       if (isAnimal(rec)) {
         const where = rec.compass ? whereWords(rec.kind === 'swarm' ? m.spots ?? [] : m.plants, hab, words) : '';
-        const clause = m.dormant > 0 && rec.dormant ? rec.dormant : trend;
+        const clause = m.dormant > 0 && rec.dormant ? resting : trend;
         status = `${amountOf(rec.amount, m.count)} ${rec.place}${where ? ` ${where}` : ''}${clause ? `, ${clause}` : ''}.`;
       } else if (rec.kind === 'cover') {
         const where = rec.compass ? whereWords(m.spots ?? [], hab, words) : '';
@@ -129,7 +131,7 @@ export function describe(journal, sp, state, hab, words, hour = journal.last) {
       else {
         const where = rec.compass ? whereWords(m.plants, hab, words) : '';
         const isDormant = m.dormant > 0 && m.dormant * 2 >= m.count;
-        const clause = isDormant ? rec.dormant : m.flowering > 0 && m.flowering * 2 >= m.mature ? rec.flowering : trend;
+        const clause = isDormant ? resting : m.flowering > 0 && m.flowering * 2 >= m.mature ? rec.flowering : trend;
         status = `${amountOf(rec.amount, m.count)} ${rec.place}${where ? ` ${where}` : ''}${clause ? `, ${clause}` : ''}.`;
       }
     }
