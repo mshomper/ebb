@@ -10,6 +10,7 @@ import { cleanPieces, emptyPieces, makeStone, makeLog, addPiece, removePiece, mo
 import { stoneShapes } from '../src/world/pieces/meshes.js';
 import { bakeLogSeed, logLook, LOG_FORMS } from '../src/world/pieces/log-bake.js';
 import { hash32 } from '../src/core/rng.js';
+import { logAge, dampShade, logMoss } from '../src/world/pieces/log-age.js';
 import { strandLogs, cellHeights, strandMask } from '../src/world/pieces/driftwood.js';
 import { strandLines } from '../src/world/water/strandline.js';
 import { tideParams } from '../src/world/tide.js';
@@ -333,6 +334,27 @@ export function addPiecesTests(test, assert, eq) {
     const mid = [0, 1, 2].map((r) => roll[4 + r] * 0.5 + roll[12 + r]);
     assert(Math.abs(mid[0] - (Math.PI / 2) * A / 2) < 1e-6 && Math.abs(mid[1] - A / 2) < 1e-6, 'rolled a quarter turn: over by a quarter of its round, its middle the same height');
     return means.map((m) => m.toFixed(2)).join(', ');
+  });
+
+  test(G, 'a kept log ages where it lies: darker with weeks, mossy only in damp shade', async () => {
+    const A = (await recipe).driftwood.age;
+    eq(logAge(0, 0, A), 0, 'just set down');
+    eq(logAge(0, (A.fullDays + 1) * 24, A), 1, 'fully aged after fullDays');
+    assert(logAge(0, A.fullDays * 12, A) > 0.2 && logAge(0, A.fullDays * 12, A) < 0.8, 'half way');
+    const s = pondSummary(), mid = waterCellCenter(190), flat = () => 0;
+    const willow = [{ sp: 'willow', x: mid + 3.5, z: mid + 0.6, size: 1 }];
+    const near = dampShade({ x: mid + 3.2, z: mid, summary: s, plants: willow, ground: flat, A });
+    const far = dampShade({ x: mid + 12, z: mid, summary: s, plants: willow, ground: flat, A });
+    assert(near.damp > 0.5 && near.shade > 0.4, `by the pond under a willow: damp ${near.damp.toFixed(2)}, shade ${near.shade.toFixed(2)}`);
+    eq(`${far.damp} ${far.shade}`, '0 0', 'out on open dry ground');
+    // A bank rising over it on most sides shades it too.
+    const hollow = (/** @type {number} */ x, /** @type {number} */ z) => (Math.hypot(x - mid - 12, z - mid) > 1 ? 1 : 0);
+    assert(dampShade({ x: mid + 12, z: mid, summary: s, plants: [], ground: hollow, A }).shade > 0.5, 'a hollow under a bank is shaded');
+    const late = (A.moss.fullDays + 1) * 24;
+    assert(logMoss(0, late, near, A.moss) > 0.5, 'mossy after weeks in damp shade');
+    eq(logMoss(0, late, far, A.moss), 0, 'bare on open dry ground');
+    eq(logMoss(0, A.moss.startDays * 24 - 1, near, A.moss), 0, 'no moss in its first days');
+    return `damp ${near.damp.toFixed(2)}, shade ${near.shade.toFixed(2)}, moss ${logMoss(0, late, near, A.moss).toFixed(2)}`;
   });
 
   test(G, 'Sculpt chips always fill their rows: 4 to 10 chips', () => {

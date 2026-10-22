@@ -5,7 +5,7 @@
 // tall grass only on misty autumn mornings, seeded by the cell and the day; the journal has both
 // pages, their sketches, icons and ties.
 
-import { moodsOf, autumnStartOf, dampBy, fungiBloom, fungusSize, fungiLayout, websNear, webDew, mistyAutumnMorning } from '../src/world/finds/autumn.js';
+import { moodsOf, autumnStartOf, dampBy, fungiBloom, fungiChance, fungusSize, fungiLayout, websNear, webDew, mistyAutumnMorning } from '../src/world/finds/autumn.js';
 import { fungusMeshes } from '../src/world/finds/autumn-meshes.js';
 import { logSurface } from '../src/world/pieces/log-surface.js';
 import { bakeLogSeed, logLook } from '../src/world/pieces/log-bake.js';
@@ -69,6 +69,20 @@ export function addAutumnTests(test, assert, eq) {
     const moved = movePiece(s, kept.id, 6, 6).list.find((/** @type {any} */ p) => p.id === kept.id);
     eq(moved.placedHour, kept.placedHour, 'moving it keeps its rest');
     return `kept on day 31, fruits on day ${b?.day0}`;
+  });
+
+  test(AUTUMN, 'age and damp make a log likelier to fruit: an old or damp log always can, a young dry one some autumns', async () => {
+    const C = (await json('species/autumn-finds')).fungi.chance;
+    let young = 0, again = 0;
+    for (let s = 1; s <= 400; s++) {
+      assert(fungiChance(s, 28, 1, 0, C) && fungiChance(s, 28, 0, 1, C), 'old, or damp: always');
+      if (fungiChance(s, 28, 0, 0, C)) young++;
+      if (fungiChance(s, 28, 0, 0, C) === fungiChance(s, 28, 0, 0, C)) again++;
+    }
+    assert(young > 120 && young < 280, `a young dry log fruits some autumns: ${young} of 400`);
+    eq(again, 400, 'the same log and autumn roll the same');
+    const years = [28, 84, 140, 196].map((a0) => fungiChance(7, a0, 0, 0, C));
+    return `${young} of 400 young dry logs fruit; log 7 over four autumns: ${years.join(', ')}`;
   });
 
   test(AUTUMN, 'a log\'s fungi come from its own seed: the same every time, on its flanks or its top', async () => {

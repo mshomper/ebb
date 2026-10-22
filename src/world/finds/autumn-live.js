@@ -14,7 +14,7 @@ import { packMesh } from '../creatures/bodies.js';
 import { HABITAT_CELLS, HABITAT_ORIGIN } from '../growth/habitat.js';
 import { createCreaturePass } from '../../render/passes/creatures.js';
 import { createWebsPass } from '../../render/passes/webs.js';
-import { moodsOf, fungiBloom, fungusSize, fungiLayout, websNear, webDew } from './autumn.js';
+import { moodsOf, fungiBloom, fungiChance, autumnStartOf, fungusSize, fungiLayout, websNear, webDew } from './autumn.js';
 import { fungusMeshes } from './autumn-meshes.js';
 
 /**
@@ -64,10 +64,13 @@ export function createAutumn(opts) {
       if (!log.still) continue;
       const far = recipe.nearM + log.length;
       if ((log.x - t[0]) ** 2 + (log.z - t[2]) ** 2 > far * far || inTide(log.x, log.z)) continue;
-      const key = `${log.id}:${log.placedHour}:${dayNow}:${moods.lean}`;
+      const key = `${log.id}:${log.placedHour}:${dayNow}:${moods.lean}:${log.x.toFixed(1)}:${log.z.toFixed(1)}`;
       let bloom = blooms.get(key);
       if (bloom === undefined) {
         bloom = fungiBloom({ dayNow, placedHour: log.placedHour, moodOf: mo, F });
+        // Not every log fruits every autumn: age and damp make it likelier (L2).
+        const a0 = autumnStartOf(dayNow);
+        if (bloom && F.chance && a0 !== null && !fungiChance(log.seed, a0, log.age ?? 1, log.damp ?? 0, F.chance)) bloom = null;
         if (blooms.size > 256) blooms.clear();
         blooms.set(key, bloom);
       }
