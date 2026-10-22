@@ -5,7 +5,7 @@
 // season's material, seeded, so the same seed always gives the same piece and name); the four
 // tides sit in the pool as they are, and the season's home tide opens its first morning. Each piece
 // unpacks only the notes it uses, plays on the music bus, and finishes gently at a phrase end when
-// its slot closes or the music is turned off. The music's brightness and room follow the sun
+// its slot closes or the music is turned off; a night piece still playing at dawn fades out. The music's brightness and room follow the sun
 // (daycolor.js). Nothing starts while the frogs call, during a time preview, or before the first
 // touch. Its randomness is its own (src/core/rng.js, the 'music' streams), so it never touches the
 // world.
@@ -13,7 +13,7 @@
 //   update(state) ─→ director ─→ grow() or a written piece ─→ realize() ─→ prepare ─→ performer
 //                                                                            └─→ mixer 'music' bus
 
-import { createDirector } from './director.js';
+import { createDirector, dawnReached } from './director.js';
 import { realize } from './realize.js';
 import { createPerformer } from './perform.js';
 import { createInstruments } from './instruments.js';
@@ -84,7 +84,7 @@ export async function createMusic(mixer, opts) {
   /** @type {Awaited<ReturnType<typeof createInstruments>> | null} */ let inst = null;
   /** @type {Promise<any> | null} */ let instPromise = null;
   /** @type {ReturnType<typeof createPerformer> | null} */ let performer = null;
-  /** The piece playing (or being unpacked), or null. @type {null | { id: string, title: string, seed: number, slot: string, windowEndRealS: number, finishing: boolean, started: boolean, key: string }} */
+  /** The piece playing (or being unpacked), or null. @type {null | { id: string, title: string, seed: number, slot: string, windowEndRealS: number, finishing: boolean, started: boolean, key: string, seenNight: boolean, dawnFaded: boolean }} */
   let current = null;
   /** @type {'often'|'now-and-then'|'rarely'|'off'} */ let frequency = 'now-and-then';
   /** @type {MusicState | null} */ let last = null;
@@ -161,7 +161,7 @@ export async function createMusic(mixer, opts) {
     }
     const key = d.key ?? piece.keys?.[0];
     // A tide shows its own name ("Moon pull"), a grown piece the composer's.
-    current = { id: piece.id, title: piece.theme?.name ?? piece.title ?? piece.id, seed: growSeed, slot, windowEndRealS: d.windowEndRealS, finishing: false, started: false,
+    current = { id: piece.id, title: piece.theme?.name ?? piece.title ?? piece.id, seed: growSeed, slot, windowEndRealS: d.windowEndRealS, finishing: false, started: false, seenNight: false, dawnFaded: false,
       key: heartOf({ id: piece.id, title: '', grown: !!d.piece.grownSlot, grownSlot: d.piece.grownSlot, weather: growWeather, seed: growSeed, season: growSeason }).key };
     dir.started(d, dirState(st), key);
     const mine = current;
@@ -242,6 +242,15 @@ export async function createMusic(mixer, opts) {
       const dc = dayColorAt(st.sunAltDeg, director.dayColor);
       if (current?.started) {
         mixer.setMusicTone({ lowpassHz: dc.brightHz, wet: dc.wet }, 4);
+        // A night piece still playing at dawn fades out (director.json slots.nocturne.dawnFadeS), so
+        // the morning is never pushed back, whatever the time speed.
+        const N = director.slots.nocturne;
+        if (current.slot === 'nocturne' && !current.dawnFaded && dawnReached(current, st.sunAltDeg, N.dawnSunDeg ?? -6)) {
+          current.dawnFaded = true;
+          current.finishing = true;
+          performer?.stop(N.dawnFadeS ?? 12);
+          return;
+        }
         // Past its slot's close, or turned off: finish the phrase, then the coda.
         if (!current.finishing && (st.realS > current.windowEndRealS || frequency === 'off')) {
           current.finishing = true;

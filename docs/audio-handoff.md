@@ -182,8 +182,10 @@ Anchors and material for each season, with its instruments and season-edge blend
 
 ## Known issues and loose ends
 
-- **Nocturnes across dawn.** At 1x a piece of a few real minutes covers a few game hours, so a nocturne that starts late can run past dawn and push the morning back. The first morning of a season waits up to five game hours; ordinary mornings may be skipped. Consider the slot's close when choosing a nocturne's length or short form.
-- **Low bass.** The voicing allows the bass down to A1 (55 Hz), below doc 24's "no sub-bass below 60 Hz". Raise the bass range floor to B1 (MIDI 35) or add a 60 Hz high-pass on the music bus.
+- **Nocturnes across dawn.** Fixed (October 21, 2026). A nocturne's grace never reaches past dawn; one is not started with less than a real minute before its slot closes (at the current time speed); and a night piece still playing when the sun climbs back to -6 degrees fades out over 12 s (`recipes/music/director.json` slots.nocturne minLeftRealMin, dawnSunDeg, dawnFadeS). The fade watches the sun, so 2x and 4x are covered too. A time preview that jumps to day also fades a playing nocturne.
+- **Low bass.** Fixed. The voicing floor has been B1 (MIDI 35, 62 Hz) since PR #52, and a test now checks every tide and the test piece stay there (a scan of all tides and 192 grown pieces found nothing lower). On top, the music bus has a 12 dB per octave high-pass at 40 Hz (`recipes/audio/mixer.json` musicTone.floor): it takes out pedal thumps and room rumble below the notes and leaves B1 about 1 dB down, where a 60 Hz cut would thin the bass by 3 dB. Octave-folding was not needed.
+- **Audio recipe index.** Folded into `recipes/index.json` (October 21, 2026); `recipes/audio-index.json` is gone.
+- **Audio tests on the main page.** The pure audio tests now also run in `tools/unit-tests.html`'s workers; the pond and keepsake sound tests need an OfflineAudioContext and stay on `tools/unit-tests-audio.html`.
 - **Long notation titles** are clipped in a narrow window (the Themes tab hides the title; the Piece tab would clip a long one).
 - **Thin recordings:**
   - bowed vibraphone has only six notes, so a note can be up to 3.5 semitones from its recording;

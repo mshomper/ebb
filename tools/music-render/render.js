@@ -81,7 +81,9 @@ export async function renderPiece(R, composed, onProgress = () => {}) {
   const room = createRoom(ctx, M.musicReverb, M.seed + 1, 1);
   const wet = ctx.createGain(); wet.gain.value = dayColor.wet;
   const level = ctx.createGain(); level.gain.value = M.buses.musicDefault;
-  musicIn.connect(eq).connect(duck).connect(bright);
+  const floor = ctx.createBiquadFilter(); floor.type = 'highpass';
+  floor.frequency.value = M.musicTone.floor?.hz ?? 40; floor.Q.value = M.musicTone.floor?.q ?? 0.707;
+  musicIn.connect(floor).connect(eq).connect(duck).connect(bright);
   bright.connect(level); bright.connect(room).connect(wet).connect(level); level.connect(master);
 
   onProgress('Loading the instruments', 0);

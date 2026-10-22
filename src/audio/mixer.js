@@ -10,8 +10,9 @@
 //             └─ send ─┤→ island room ────────┤
 //   tools ────────────────────────────────────┤
 //   ui ───────────────────────────────────────┤→ master → limiter → speakers
-//   music in → chorus EQ → duck → brightness ─┬─ dry ──┐                  │
-//                                             └─ music room ─ wet ┴→ music level ┘
+//   music in → floor → chorus EQ → duck → brightness ─┬─ dry ──┐                  │
+//                                                     └─ music room ─ wet ┴→ music level ┘
+//   (floor: a gentle 12 dB per octave high-pass under the lowest note, doc 24's 60 Hz rule)
 
 import { createRoom } from './reverb.js';
 
@@ -82,6 +83,13 @@ export function createMixer(recipe, opts = {}) {
 
   // Music chain.
   const musicIn = ctx.createGain();
+  // The floor: notes stay at B1 (62 Hz) or above (voicing.json), and this second-order high-pass
+  // under them takes out what sits lower still (pedal thumps, key-off knocks, low rumble in the
+  // room) while leaving B1 itself about 1 dB down.
+  const floor = ctx.createBiquadFilter();
+  floor.type = 'highpass';
+  floor.frequency.value = recipe.musicTone.floor?.hz ?? 40;
+  floor.Q.value = recipe.musicTone.floor?.q ?? 0.707;
   const chorusEq = ctx.createBiquadFilter();
   chorusEq.type = 'peaking';
   chorusEq.frequency.value = recipe.musicTone.chorusEq.hz;
@@ -97,7 +105,7 @@ export function createMixer(recipe, opts = {}) {
   wet.gain.value = recipe.musicReverb.wet;
   const musicLevel = ctx.createGain();
   musicLevel.gain.value = opts.levels?.music ?? recipe.buses.musicDefault;
-  musicIn.connect(chorusEq).connect(duck).connect(bright);
+  musicIn.connect(floor).connect(chorusEq).connect(duck).connect(bright);
   bright.connect(musicLevel);
   bright.connect(musicRoom).connect(wet).connect(musicLevel);
   musicLevel.connect(master);

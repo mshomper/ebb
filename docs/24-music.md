@@ -5,7 +5,7 @@
 ## Locked decisions
 
 - **Composed material, developed live.** Two kinds of music share one engine. **Anchor pieces** (each season's morning pieces and nocturnes, the four tides' settings and the special cues) are fully composed and re-realized each time: new voicings, instruments, register, tempo and phrasing. **Grown pieces** (interludes, evening, rain and mist pieces) are composed at play time by a development engine from authored material: each season's motif bank, chord grammar and form templates. The engine develops motifs the way a composer does and writes accompaniment and counter-lines by voice-leading rules, but never invents a motif from nothing. Matt designs and tunes the engine's rules (decided October 2026: the algorithm is the instrument); the music session writes the material and the anchors, and Matt reviews.
-- **Music is non-diegetic and quiet.** Its own bus, its own reverb, stereo, never spatialized, never louder than the island at default levels. Dynamic ceiling is mezzo-forte. No drums or percussion hits, no sub-bass below 60 Hz.
+- **Music is non-diegetic and quiet.** Its own bus, its own reverb, stereo, never spatialized, never louder than the island at default levels. Dynamic ceiling is mezzo-forte. No drums or percussion hits, no sub-bass below 60 Hz (every note stays at B1, 62 Hz, or above, and a gentle 40 Hz high-pass on the music bus, `recipes/audio/mixer.json` musicTone.floor, takes out the rumble below).
 - **Silence is part of the score.** At the default setting, music plays about 35 to 45 percent of real time (with rests of 2 to 4 real minutes between pieces, a 24-minute game day holds about three pieces, about 9 to 11 minutes); the rest belongs to the island. Every piece is followed by a rest of at least 2 real minutes. (Matt, October 19, 2026: rests shortened from 3 to 7 minutes so the island is a little less silent.)
 - **Day arc by sun, season by season phase, both from display time**, the same keys the palette uses (doc 05): night, blue hour, golden, morning and afternoon, day. Rests and tempo run on real time, so 4x never sounds frantic and pause never sounds frozen.
 - **Frogs own dusk.** From half an hour before dusk to three hours after (the frog call window, `recipes/species/frog.json` `moods.callAfterDuskH`), no piece starts while frogs are calling. The chorus is the music.
@@ -333,7 +333,8 @@ tools/music-lab.html (+ tools/music-lab.js)
     "interlude": { "fromH": "sunrise+3", "toSunDeg": 10, "max": 2, "chance": 0.6, "lenMin": [2, 3.5] },
     "evening":   { "sunDeg": [10, 2], "chance": 0.7, "lenMin": [2.5, 3.5], "mustEndBy": "frogWindow" },
     "frogWindow":{ "fromDuskH": -0.5, "toDuskH": 3, "silentWhileCalling": true, "elseNocturneChance": 0.4 },
-    "nocturne":  { "fromDuskH": 3, "toDawnH": -1, "chance": 0.5, "max": 1, "lenMin": [2, 3] }
+    "nocturne":  { "fromDuskH": 3, "toDawnH": -1, "chance": 0.5, "max": 1, "lenMin": [2, 3],
+                   "minLeftRealMin": 1, "dawnSunDeg": -6, "dawnFadeS": 12 }  // never runs into the morning: see below
   },
   "history": { "keep": 40, "minGapDays": 3, "minGapRealMin": 90 },
   "duck": { "creatureWithinM": 8, "db": -3, "attackS": 0.2, "releaseS": 2 },
@@ -342,6 +343,8 @@ tools/music-lab.html (+ tools/music-lab.js)
   "dayColor": { /* table above, keyed night, blueHour, golden, morning, day */ }
 }
 ```
+
+Night pieces never push the morning back (October 21, 2026): a nocturne that waits through a rest may start no later than dawn, one is not started with less than `minLeftRealMin` real minutes before its slot closes at the current time speed, and one still playing when the sun climbs back to `dawnSunDeg` fades out over `dawnFadeS` seconds (`dawnReached()` in `src/audio/music/director.js`, applied in `src/audio/music/index.js`).
 
 ### Module API
 

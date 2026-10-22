@@ -21,10 +21,10 @@ These are Matt's decisions (October 19, 2026) that disagree with, or add to, the
 
 The audio branches only add new files. These shared files are edited only when an audio branch merges, with Matt's approval:
 
-- `recipes/index.json`: add the audio recipe ids, currently listed in `recipes/audio-index.json`, then retire that file.
+- Done (October 21, 2026): the audio recipe ids are in `recipes/index.json`, `src/audio/recipes.js` uses the shared loader, and `recipes/audio-index.json` is gone.
 - Done (October 20, 2026, piece B): the frog and midge voice settings now live in `recipes/species/frog.json` and `recipes/species/midge.json` as their `voice` field; `recipes/audio/voices/` is gone.
 - `tools/index.html`: link the music lab and the audio check page.
-- `tools/unit-tests.html`: fold in the audio tests, which run on their own page (`tools/unit-tests-audio.html`) until then.
+- Done (October 21, 2026): `tools/unit-tests.html` runs the audio tests that need no Web Audio in its workers (listed in `tools/unit-tests-parallel.js`). The pond and keepsake sound tests render through an OfflineAudioContext, which workers lack, so they stay on `tools/unit-tests-audio.html`; that page and `node tools/run-audio-tests.mjs` still run every audio test.
 - `docs/README.md`: list docs 24 and 25.
 - `docs/17-audio.md`: apply doc 25's "Proposed amendments to doc 17", and point here.
 - `src/core/store.js`: add a music level (and the music frequency setting) to the audio settings; the mixer uses recipes/audio/mixer.json's musicDefault until then.
@@ -64,7 +64,7 @@ The support kit (strings, harp, flute, vibraphone struck and bowed, glass) is bu
 - **Solo cello.** Neither CC0 library has one (VSCO 2 CE has a cello section, VCSL no cello). The autumn cello line plays the cello section with solo settings for now. Options: a CC0 single-note set on Freesound, a free or paid library under doc 25's rules, or the viola section or VSCO's solo violin for a solo timbre. Matt decides by ear. October 20, 2026: a helper is searching for solo cello sets; Matt chooses from what it finds.
 - **Phone versions.** Retired on October 21, 2026: ebb is desktop and laptop only, so none are needed.
 - **Memory on the desktop.** A piece unpacks only the notes it uses, but a full piano piece (about 110 MB) plus a string bed (10 to 20 MB) can pass the 128 MB line while it plays; the shared budget frees the extra after it ends. Decided (Matt, October 20, 2026): accepted as it is; no change.
-- **Low bass.** Done (October 20, 2026, Matt approved): no voicing style's bass goes below B1 (MIDI 35, about 62 Hz), so the music keeps doc 24's floor of 60 Hz. The low style's bass range reaches B-flat 2 so every bass note has a place.
+- **Low bass.** Done (October 20, 2026, Matt approved): no voicing style's bass goes below B1 (MIDI 35, about 62 Hz), so the music keeps doc 24's floor of 60 Hz. The low style's bass range reaches B-flat 2 so every bass note has a place. October 21, 2026: a test checks every tide and the test piece stay at B1 or above, and the music bus has a gentle floor, a 12 dB per octave high-pass at 40 Hz (`recipes/audio/mixer.json` musicTone.floor), for the thumps and rumble below the notes.
 - **Gaps in the recordings.** Bowed vibraphone has six notes only (a note may be 3.5 semitones from its recording); the harp is recorded 10 to 20 cents flat (the sampler corrects it); the four glasses are untuned household glasses placed at their nearest notes.
 
 ## Could not be finished here
