@@ -199,6 +199,8 @@ JSON validation against the schema with clamping; deterministic generators per d
 
 The panel itself is the tuning knob for everything. Its own options: preview light (noon, golden, night), turntable speed, show bounding boxes, show habitat score overlay for the selected flora or species.
 
+Water overlays (built first on the water lab's summary map, `tools/water-lab.html`, until the panel exists): a **water table** view colors each 0.5 m cell by `tableMm` (0 to `tableMaxM`, the sea left plain), and **basin labels** mark each basin of 3 m² or more with its source (spring, rain, table or damp) and, when it stands below its lip, by how much ("rain, 12 cm low"). A day-of-year slider rebuilds the summary on the page for any of the 56 days, so ponds can be seen lower in late summer without changing the game.
+
 ## Performance budget
 
 Slider to visible change under 150 ms for reparam edits and under 500 ms for a single-instance rebuild on desktop (under 1.5 s on phone). Recipe load and validation of the full set under 50 ms. The panel costs nothing when closed (module loaded on demand).

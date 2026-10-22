@@ -32,7 +32,7 @@ export async function loadRecipes() {
   ]);
   // The instruments that exist, as the realizer's fallback list (a short probe context; no samples load).
   const probe = new OfflineAudioContext(2, SR, SR);
-  const available = (await createInstruments(probe, probe.destination, { tier: 'desktop' })).available();
+  const available = (await createInstruments(probe, probe.destination)).available();
   return { director, rules, names, recipes: { realize: rz, voicing: vo }, mixer, materials: /** @type {Record<string, any>} */ ({ spring, summer }), available };
 }
 
@@ -81,11 +81,13 @@ export async function renderPiece(R, composed, onProgress = () => {}) {
   const room = createRoom(ctx, M.musicReverb, M.seed + 1, 1);
   const wet = ctx.createGain(); wet.gain.value = dayColor.wet;
   const level = ctx.createGain(); level.gain.value = M.buses.musicDefault;
-  musicIn.connect(eq).connect(duck).connect(bright);
+  const floor = ctx.createBiquadFilter(); floor.type = 'highpass';
+  floor.frequency.value = M.musicTone.floor?.hz ?? 40; floor.Q.value = M.musicTone.floor?.q ?? 0.707;
+  musicIn.connect(floor).connect(eq).connect(duck).connect(bright);
   bright.connect(level); bright.connect(room).connect(wet).connect(level); level.connect(master);
 
   onProgress('Loading the instruments', 0);
-  const inst = await createInstruments(ctx, musicIn, { tier: 'desktop' });
+  const inst = await createInstruments(ctx, musicIn);
   await inst.prepare(perf);
   // The performer's event order (src/audio/music/perform.js), all scheduled before rendering.
   /** @type {{t: number, kind: number, n?: any, p?: any}[]} */

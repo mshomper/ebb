@@ -11,7 +11,7 @@
 - One small island to start (about 64 m across); the world expands through milestones.
 - Human touches are limited: paths, stone walls, a small bridge, lanterns.
 - Creatures are the heart of the game. Making them happy is the core activity.
-- Desktop browser first; phones and tablets supported.
+- Desktop and laptop only, in the browser, with mouse or trackpad and keyboard. A phone or tablet used by touch shows a gentle notice with a link to notarobot-eng.com/ebb instead of the game. *(Changed October 21, 2026: ebb is desktop and laptop only.)*
 - Raw WebGPU, WGSL, plain JavaScript modules, GitHub Pages.
 
 ## How it works
@@ -75,7 +75,7 @@ The player-facing knobs are time flow (pause, 1x, 2x, 4x), palette, and the tuni
 
 ## Performance budget
 
-60 fps at 1440p on Matt's desktop (RTX 4070 Ti Super). A smooth 30 fps or better on recent phones at a lower quality tier. See `19-performance-and-quality-tiers.md`.
+60 fps at 1440p on Matt's desktop (RTX 4070 Ti Super), and 60 fps on a laptop with integrated graphics at the medium tier, which is the design target. See `19-performance-and-quality-tiers.md`.
 
 ## Acceptance checks
 

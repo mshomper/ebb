@@ -6,13 +6,16 @@
 // time, faster in sun and wind, slower at night, and not at all while paused. So the flats the tide
 // just uncovered stay dark and shiny for a while, then dull. Look only: never saved, never read by
 // the simulation, and it follows the live water, which is not deterministic either.
-// The map is an rgba8unorm ping-pong pair (r wetness 0..1, g puddle level 0..1) the terrain draw
-// samples filtered.
+// The map is an rgba8unorm ping-pong pair (r wetness 0..1, g puddle level 0..1, b drying margin
+// 0..1) the terrain draw samples filtered. The drying margin (A8, recipe wetness.dryingMargin) is 1
+// where fresh water stands and falls to 0 over dryingMarginDays game days once the bed is exposed,
+// so a lowering pond leaves a band of drying, cracking mud. It is never set in the tide band, and,
+// like the rest of the map, it starts fresh on each load.
 
 import { makeBuffer, makeShaderModule, makeTexture } from '../../core/gpu.js';
 import { WATER_CELLS } from '../water/grid.js';
 
-const WET_BYTES = 80;
+const WET_BYTES = 96;
 const DEG = Math.PI / 180;
 /** Meters one spread step reaches (the shader's SPREAD_R texels of 0.25 m). */
 const SPREAD_REACH_M = 0.5;
@@ -127,6 +130,11 @@ export async function createWetness(device, opts) {
       const pg = opts.puddles;
       fv[15] = pg ? hours * rain * pg.fillPerHour : 0;
       fv[16] = pg ? (hours * speed) / pg.drainHours : 1;
+      // The drying margin (A8): bed that fresh water left loses its memory over game days.
+      const dm = recipe.dryingMargin;
+      fv[17] = dm ? hours / (24 * dm.dryingMarginDays) : 1;
+      fv[18] = dm ? dm.bedDepthM[0] : 1; fv[19] = dm ? dm.bedDepthM[1] : 2;
+      fv[20] = dm ? dm.freshAboveTideM[0] : 0.2; fv[21] = dm ? dm.freshAboveTideM[1] : 0.45;
       device.queue.writeBuffer(uniforms, 0, data);
 
       const d = water.sim.current;
@@ -151,7 +159,7 @@ export async function createWetness(device, opts) {
       uniforms.destroy();
     },
 
-    /** The wetness ping-pong pair (rgba8unorm, 0.25 m on the terrain grid; r wetness 0..1). */
+    /** The wetness ping-pong pair (rgba8unorm, 0.25 m on the terrain grid; r wetness, g puddle level, b drying margin, all 0..1). */
     textures,
     /** Index into `textures` of the latest wetness. */
     current: () => cur,

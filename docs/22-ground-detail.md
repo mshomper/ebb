@@ -77,6 +77,8 @@ Two stages after Lagarde, "Water drop 2a/2b" (2013), driven by the visual wetnes
 
 Streaks on rock and puddles reflecting the island (screen-space) are later polish, not part of G3.
 
+**Drying margin (A8).** Where the wetness map's b channel (doc 08) says fresh water stood in the last few game days and the bed is now dry, the ground blends toward dry pond silt (a physical albedo, about 0.26/0.22/0.17 linear; all of grass and soil at the recipe's cover, half of sand, hardly any rock), and grass stops showing there. Freshly exposed it is soaked, so the damp path above darkens it and makes it satin; it dries through the first third of the margin and lightens. Through the middle of the margin a polygonal crack network opens: a jittered cellular (F2 minus F1) pattern of about 18 cm plates, lines up to 12 mm wide, darkened as light traps (albedo and sky occlusion) with plate edges sloping into them through the normal. Far off, where a pixel cannot hold a line, the cracks become their average darkening. In the last 15% of the margin the mud fades back into the ground. It costs one 3 x 3 cell search, only on margin pixels, so it runs on all tiers. Numbers in `terrain.json` `wetness.dryingMargin`.
+
 ### Look
 
 This is consistent with "physical light, painted last". Palettes are tuned toward realism (doc 05): anchors pull gently so texture variety survives, most of the physical lightness is kept, the painterly filter is off by default, and terrain outlines are faint while creature outlines stay.

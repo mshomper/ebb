@@ -18,9 +18,9 @@ import { mountNetPanel } from './net-panel.js';
 
 /** @typedef {'sculpt'|'smooth'|'paint'|'water'|'plant'|'feed'} ToolId */
 /** @typedef {'reeds'|'lilies'|'iris'|'marigold'|'rushes'|'thrift'|'campion'|'willow'|'gorse'|'pondweed'} PlantSpecies */
-/** @typedef {'raise'|'lower'|'flatten'|'stone'|'loosestone'|'terrace'|'cut'} SculptMode */
+/** @typedef {'raise'|'lower'|'flatten'|'stone'|'loosestone'|'pondstones'|'terrace'|'cut'|'steps'} SculptMode */
 /** @typedef {'grass'|'sand'|'soil'|'rock'} PaintLayer */
-/** @typedef {'pour'|'drain'|'spring'} WaterMode */
+/** @typedef {'pour'|'drain'|'spring'|'net'|'raft'} WaterMode */
 /** @typedef {'trickle'|'brook'|'stream'} SpringRate */
 
 /**
@@ -112,6 +112,8 @@ const WATER_MODES = [
   { id: 'spring', label: 'Spring', icon: 'wellspring' },
   // The general net (docs/future/12): shows once the beachcomber's trail gives it (unlocks.nets.general).
   { id: 'net', label: 'Net', icon: 'net' },
+  // The reed raft (the turtles' gift, doc 09): shows once it is given (unlocks.raft).
+  { id: 'raft', label: 'Raft', icon: 'raft' },
 ];
 /** @type {{id: SpringRate, label: string}[]} */
 const SPRING_RATES = [
@@ -128,9 +130,13 @@ const MODES = [
   { id: 'stone', label: 'Boulder' },
   // Loose stone (docs/future/10, the naturalist's reward): a tap sets a stone that rests on the ground.
   { id: 'loosestone', label: 'Loose stone' },
+  // Pond stones (doc 09, the shaper's trail): a drag lays a line of flat stones across shallow water.
+  { id: 'pondstones', label: 'Pond stones' },
   // The Cliff modes (docs/08, M2): level shelves with sheer rock faces, built up or carved down.
   { id: 'terrace', label: 'Terrace' },
   { id: 'cut', label: 'Cut' },
+  // Steps (doc 13, the shaper's trail): a drag from a shelf down to the ground cuts a flight between them.
+  { id: 'steps', label: 'Steps' },
 ];
 /** What Terrace and Cut do, under their chips. */
 const CLIFF_HINTS = {
@@ -195,6 +201,17 @@ export function mountTools(parent = document.body) {
         </div>
         <p class="ebb-tools__hint" data-out="pieces-hint">Tap the ground to set a loose stone. Tap one to select it.</p>
         <p class="ebb-tools__message" data-out="pieces-message" role="status" aria-live="polite"></p>
+      </div>
+      <div class="ebb-tools__pieces ebb-tools__shaping" role="group" aria-label="Pond stones and Steps" hidden>
+        <div class="ebb-tools__spring-row">
+          <span class="ebb-tools__count" data-out="shaping" aria-live="polite"></span>
+          <button type="button" class="ebb-tools__chip ebb-tools__remove" data-shaping-remove="true"
+            title="Remove">${iconSvg('stone-remove')}<span>Remove</span></button>
+        </div>
+        <button type="button" class="ebb-tools__chip ebb-tools__remove" data-shaping-run="true"
+          title="Remove line" hidden>${iconSvg('stone-remove')}<span data-out="shaping-run">Remove line</span></button>
+        <p class="ebb-tools__hint" data-out="shaping-hint"></p>
+        <p class="ebb-tools__message" data-out="shaping-message" role="status" aria-live="polite"></p>
       </div>
       <div class="ebb-tools__stone ebb-tools__cliff" role="group" aria-label="Cliff" hidden>
         <p class="ebb-tools__hint" data-out="cliff-hint"></p>
@@ -285,7 +302,15 @@ export function mountTools(parent = document.body) {
   const piecesHint = /** @type {HTMLElement} */ (root.querySelector('[data-out="pieces-hint"]'));
   const piecesMessage = /** @type {HTMLElement} */ (root.querySelector('[data-out="pieces-message"]'));
   const pieceRemoveBtn = /** @type {HTMLButtonElement} */ (root.querySelector('[data-piece-remove]'));
+  const shapingPanel = /** @type {HTMLElement} */ (root.querySelector('.ebb-tools__shaping'));
+  const shapingCount = /** @type {HTMLElement} */ (root.querySelector('[data-out="shaping"]'));
+  const shapingHint = /** @type {HTMLElement} */ (root.querySelector('[data-out="shaping-hint"]'));
+  const shapingMessage = /** @type {HTMLElement} */ (root.querySelector('[data-out="shaping-message"]'));
+  const shapingRemoveBtn = /** @type {HTMLButtonElement} */ (root.querySelector('[data-shaping-remove]'));
+  const shapingRunBtn = /** @type {HTMLButtonElement} */ (root.querySelector('[data-shaping-run]'));
+  const shapingRunLabel = /** @type {HTMLElement} */ (root.querySelector('[data-out="shaping-run"]'));
   const netModeBtn = /** @type {HTMLButtonElement} */ (root.querySelector('[data-water-mode="net"]'));
+  const raftModeBtn = /** @type {HTMLButtonElement} */ (root.querySelector('[data-water-mode="raft"]'));
   const netPanel = mountNetPanel(card);
 
   // --- user input -> actions ---
@@ -293,7 +318,7 @@ export function mountTools(parent = document.body) {
   function onClick(e) {
     const btn = /** @type {HTMLElement|null} */ (/** @type {HTMLElement} */ (e.target).closest('button'));
     if (!btn || !(root.contains(btn) || historyRoot.contains(btn))) return;
-    const { tool, mode, layer, waterMode, rate, species, springRemove, pieceRemove, history, feed } = btn.dataset;
+    const { tool, mode, layer, waterMode, rate, species, springRemove, pieceRemove, shapingRemove, shapingRun, history, feed } = btn.dataset;
     if (tool) dispatch(/** @type {any} */ ({ type: 'tool.select', toolId: tool }));
     else if (feed) dispatch(/** @type {any} */ ({ type: 'brush.set', patch: { feedSpecies: feed } }));
     else if (species) dispatch(/** @type {any} */ ({ type: 'brush.set', patch: { plantSpecies: species } }));
@@ -309,6 +334,10 @@ export function mountTools(parent = document.body) {
       /** @type {Partial<PiecesUiSlice>} */
       const p = get('piecesUi') ?? {};
       if (p.selectedId) dispatch(/** @type {any} */ ({ type: 'pieces.remove', id: p.selectedId }));
+    } else if (shapingRemove || shapingRun) {
+      const s = shapingOf(get('shapingUi'), shapingMode() ?? undefined);
+      if (shapingRun && s?.run) dispatch(/** @type {any} */ ({ type: 'pieces.removeRun', run: s.run }));
+      else if (s?.selectedId) dispatch(/** @type {any} */ ({ type: 'pieces.remove', id: s.selectedId }));
     } else if (history && btn.getAttribute('aria-disabled') !== 'true') {
       dispatch(/** @type {any} */ ({ type: history === 'undo' ? 'history.undo' : 'history.redo', source: 'mouse' }));
     }
@@ -356,8 +385,12 @@ export function mountTools(parent = document.body) {
     // Loose stone once the naturalist's notes have (`unlocks.stones`). A stored mode not offered
     // gives way to Raise. Rows always fill the card (sculptRows): four chips in one row, five as
     // three and two, six as three and three, seven as four and three.
+    // Pond stones and Steps once the shaper's trail has reached their stops (`unlocks.pondStones`,
+    // `unlocks.steps`, written by app.js).
     const cliffsOn = !!get('unlocks')?.cliffs, stonesOn = !!get('unlocks')?.stones;
-    const offeredMode = (/** @type {string | undefined} */ m) => (m !== 'terrace' && m !== 'cut' || cliffsOn) && (m !== 'loosestone' || stonesOn);
+    const pondOn = !!get('unlocks')?.pondStones, stepsOn = !!get('unlocks')?.steps;
+    const offeredMode = (/** @type {string | undefined} */ m) => (m !== 'terrace' && m !== 'cut' || cliffsOn) && (m !== 'loosestone' || stonesOn)
+      && (m !== 'pondstones' || pondOn) && (m !== 'steps' || stepsOn);
     const sculptMode = offeredMode(t.sculptMode) ? t.sculptMode : 'raise';
     if (sculptMode !== t.sculptMode) queueMicrotask(() => dispatch(/** @type {any} */ ({ type: 'brush.set', patch: { sculptMode } })));
     for (const b of modeBtns) {
@@ -368,13 +401,15 @@ export function mountTools(parent = document.body) {
     for (const b of layerBtns) b.setAttribute('aria-pressed', String(b.dataset.layer === t.paintLayer));
 
     // Water: the spring mode exists only once unlocked; a stored 'spring' reads as 'pour' until then.
-    const springsOn = !!get('unlocks')?.springs, netsOn = !!get('unlocks')?.nets?.general;
+    // The Raft mode once the turtles give the reed raft (`unlocks.raft`).
+    const springsOn = !!get('unlocks')?.springs, netsOn = !!get('unlocks')?.nets?.general, raftOn = !!get('unlocks')?.raft;
     const storedMode = t.waterMode ?? 'pour';
-    const waterMode = (storedMode === 'spring' && !springsOn) || (storedMode === 'net' && !netsOn) ? 'pour' : storedMode;
+    const waterMode = (storedMode === 'spring' && !springsOn) || (storedMode === 'net' && !netsOn) || (storedMode === 'raft' && !raftOn) ? 'pour' : storedMode;
     const springRate = t.springRate ?? 'brook';
     springModeBtn.hidden = !springsOn;
     netModeBtn.hidden = !netsOn;
-    waterChips.style.setProperty('--tb-cols', String(2 + Number(springsOn) + Number(netsOn)));
+    raftModeBtn.hidden = !raftOn;
+    layoutRows(waterChips, waterModeBtns.filter((b) => !b.hidden), 3);
     for (const b of waterModeBtns) b.setAttribute('aria-pressed', String(b.dataset.waterMode === waterMode));
     for (const b of rateBtns) b.setAttribute('aria-pressed', String(b.dataset.rate === springRate));
     renderSprings();
@@ -437,13 +472,17 @@ export function mountTools(parent = document.body) {
       const cliffMode = tool === 'sculpt' && (sculptMode === 'terrace' || sculptMode === 'cut') ? sculptMode : null;
       stonePanel.hidden = !inStone;
       if (piecesPanel.hidden !== !inLoose) { piecesPanel.hidden = !inLoose; piecesLine.clear(); }
+      const inShaping = !!shapingMode();
+      if (shapingPanel.hidden !== !inShaping) { shapingPanel.hidden = !inShaping; shapingLine.clear(); }
+      if (inShaping) renderShaping();
       cliffPanel.hidden = !cliffMode;
       if (cliffMode && cliffHint.textContent !== CLIFF_HINTS[cliffMode]) cliffHint.textContent = CLIFF_HINTS[cliffMode];
       // A boulder has a size, not a strength; Terrace and Cut have a height in place of the strength;
-      // a loose stone's size comes from its seed, so it has no sliders.
+      // a loose stone's size comes from its seed, and pond stones, Steps and rafts size themselves, so
+      // they have no sliders.
       for (const s of sliders) {
         const which = s.dataset.slider;
-        s.hidden = inSpring || inNet || inPlant || inLoose || tool === 'feed'
+        s.hidden = inSpring || inNet || inPlant || inLoose || inShaping || tool === 'feed'
           || (which === 'strength' && (inStone || !!cliffMode)) || (which === 'height' && !cliffMode);
       }
     }
@@ -502,6 +541,34 @@ export function mountTools(parent = document.body) {
     if (p.message) piecesLine.show(p.message, !!p.refused);
   }
 
+  /** The mode the shaping panel serves now: Sculpt's Pond stones or Steps, the Water tool's Raft, or null. */
+  function shapingMode() {
+    const t = get('tools') ?? {};
+    if (t.tool === 'sculpt' && (t.sculptMode === 'pondstones' || t.sculptMode === 'steps')) return t.sculptMode;
+    if (t.tool === 'water' && t.waterMode === 'raft' && get('unlocks')?.raft) return 'raft';
+    return null;
+  }
+
+  /**
+   * Pond stones, Steps or a raft: the count, Remove (and for a pond stone, Remove line) when one is
+   * selected, else the hint; a calm line after a drag that laid or cut nothing.
+   */
+  function renderShaping() {
+    const u = get('shapingUi');
+    const mode = shapingMode();
+    const s = shapingOf(u, mode ?? undefined);
+    if (!s) return;
+    const noun = mode === 'steps' ? (s.cap === 1 ? 'flight of steps' : 'flights of steps') : mode === 'raft' ? (s.cap === 1 ? 'reed raft' : 'reed rafts') : 'pond stones';
+    const text = `${s.count} of ${s.cap} ${noun}`;
+    if (shapingCount.textContent !== text) shapingCount.textContent = text;
+    shapingRemoveBtn.hidden = !s.selectedId;
+    shapingRunBtn.hidden = !s.run;
+    if (u.words?.removeLine && shapingRunLabel.textContent !== u.words.removeLine) shapingRunLabel.textContent = u.words.removeLine;
+    shapingHint.hidden = !!s.selectedId;
+    if (shapingHint.textContent !== s.hint) shapingHint.textContent = s.hint;
+    if (u.message && u.mode === mode) shapingLine.show(u.message, !!u.refused);
+  }
+
   function renderHistory() {
     const h = get('history') ?? {};
     setDisabled(undoBtn, !h.canUndo);
@@ -511,6 +578,7 @@ export function mountTools(parent = document.body) {
   // The last Plant or Feed tap's result: shown at once, faded out after PLANT_MESSAGE_MS. The text
   // stays in place while it fades (and the line keeps its height), so the card does not jump.
   const plantLine = messageLine(plantMessage), feedLine = messageLine(feedMessage), piecesLine = messageLine(piecesMessage);
+  const shapingLine = messageLine(shapingMessage);
   const clearPlantMessage = () => plantLine.clear();
   /** @param {string} slice @param {ReturnType<typeof messageLine>} line */
   const renderMessage = (slice, line) => {
@@ -527,6 +595,7 @@ export function mountTools(parent = document.body) {
     subscribe('unlocks', renderTools),
     subscribe('waterUi', renderSprings),
     subscribe('piecesUi', renderPieces),
+    subscribe('shapingUi', () => { if (!shapingPanel.hidden) renderShaping(); }),
     subscribe('history', renderHistory),
     subscribe('plantUi', () => renderMessage('plantUi', plantLine)),
     subscribe('feedUi', () => renderMessage('feedUi', feedLine)),
@@ -542,6 +611,7 @@ export function mountTools(parent = document.body) {
     plantLine.clear();
     feedLine.clear();
     piecesLine.clear();
+    shapingLine.clear();
     root.removeEventListener('click', onClick);
     historyRoot.removeEventListener('click', onClick);
     root.remove();
@@ -552,24 +622,39 @@ export function mountTools(parent = document.body) {
 // --- helpers ---
 
 /**
- * The rows a set of chips falls into so every row fills the card: up to four in one row, else two
- * rows with the longer first (5: 3 + 2, 6: 3 + 3, 7: 4 + 3, 8: 4 + 4). Pure.
- * @param {number} n @returns {number[]}
+ * The part of the `shapingUi` slice (src/world/pieces) for a Sculpt mode, or null.
+ * @param {any} u @param {string | undefined} mode
+ * @returns {{ count: number, cap: number, selectedId: string | null, run?: string | null, hint: string } | null}
  */
-export function chipRows(n) {
+function shapingOf(u, mode) {
+  if (!u) return null;
+  return mode === 'pondstones' ? u.pond ?? null : mode === 'steps' ? u.steps ?? null : mode === 'raft' ? u.raft ?? null : null;
+}
+
+/**
+ * The rows a set of chips falls into so every row fills the card: up to four in one row, else two
+ * rows with the longer first (5: 3 + 2, 6: 3 + 3, 7: 4 + 3, 8: 4 + 4), and past eight, rows of at
+ * most four as even as they go (9: 3 + 3 + 3, 10: 4 + 3 + 3). Pure.
+ * @param {number} n @param {number} [most] the most in a row (4; the Water card's 3) @returns {number[]}
+ */
+export function chipRows(n, most = 4) {
+  // The Water card's chips lay their icon beside the word, so they go at most three to a row:
+  // four as two and two, five as three and two.
+  if (most < 4) return n <= most ? (n > 0 ? [n] : []) : [Math.ceil(n / 2), n - Math.ceil(n / 2)];
   if (n <= 4) return n > 0 ? [n] : [];
-  const first = Math.ceil(n / 2);
-  return [first, n - first];
+  if (n <= 8) { const first = Math.ceil(n / 2); return [first, n - first]; }
+  const rows = Math.ceil(n / 4), base = Math.floor(n / rows), extra = n - base * rows;
+  return Array.from({ length: rows }, (_, i) => base + (i < extra ? 1 : 0));
 }
 
 /**
  * Lay chips out by chipRows on a 12-column grid: each chip spans its row's share, so a short last
- * row widens its chips rather than leaving a gap. @param {HTMLElement} box @param {HTMLElement[]} shown
+ * row widens its chips rather than leaving a gap. @param {HTMLElement} box @param {HTMLElement[]} shown @param {number} [most] chipRows' most in a row
  */
-function layoutRows(box, shown) {
+function layoutRows(box, shown, most = 4) {
   box.style.setProperty('--tb-cols', '12');
   let i = 0;
-  for (const per of chipRows(shown.length)) {
+  for (const per of chipRows(shown.length, most)) {
     for (let k = 0; k < per; k++, i++) {
       const span = `span ${12 / per}`;
       if (shown[i].style.gridColumn !== span) shown[i].style.gridColumn = span;

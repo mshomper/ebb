@@ -57,10 +57,9 @@ export function fallsLoudness(falls, F) {
  * @param {any} F ambience.json `falls`
  * @param {any} proc procedural.json
  * @param {(i: number) => Rng} rngFor a fresh seeded stream per voice instance
- * @param {'desktop'|'mobile'} tier
  */
-export function createFallVoices(ctx, dest, F, proc, rngFor, tier) {
-  const spatialOpts = { tier, refDistance: F.distance.refM, rolloff: 0, air: F.air };
+export function createFallVoices(ctx, dest, F, proc, rngFor) {
+  const spatialOpts = { refDistance: F.distance.refM, rolloff: 0, air: F.air };
   /**
    * @typedef {Object} Voice
    * @property {number[] | null} pos  the fall it follows (null: free)

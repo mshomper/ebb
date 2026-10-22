@@ -137,6 +137,7 @@ export async function createBrushGpu(device, tex, maxStamps) {
       { binding: 2, visibility: GPUShaderStage.COMPUTE, storageTexture: { access: 'write-only', format: 'r32float' } },
       { binding: 3, visibility: GPUShaderStage.COMPUTE, texture: { sampleType: 'float' } },
       { binding: 4, visibility: GPUShaderStage.COMPUTE, storageTexture: { access: 'write-only', format: 'rgba8unorm' } },
+      { binding: 5, visibility: GPUShaderStage.COMPUTE, texture: { sampleType: 'float' } },
     ],
   });
   const pipeLayout = device.createPipelineLayout({ label: 'terrain-brush', bindGroupLayouts: [layout] });
@@ -157,6 +158,7 @@ export async function createBrushGpu(device, tex, maxStamps) {
       { binding: 2, resource: tex.heightScratch.createView() },
       { binding: 3, resource: tex.material.createView() },
       { binding: 4, resource: tex.materialScratch.createView() },
+      { binding: 5, resource: tex.guard.createView() },
     ],
   });
   const data = new ArrayBuffer(STAMP_STRIDE * maxStamps);
@@ -173,6 +175,7 @@ export async function createBrushGpu(device, tex, maxStamps) {
       { binding: 2, resource: tex.heightScratch.createView() },
       { binding: 3, resource: tex.material.createView() },
       { binding: 4, resource: tex.materialScratch.createView() },
+      { binding: 5, resource: tex.guard.createView() },
     ],
   });
 

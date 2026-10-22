@@ -12,6 +12,7 @@ import { WORLD_CELLS } from '../terrain/grid.js';
 import { buildHabitat, HABITAT_CELLS } from './habitat.js';
 import { suitability, plantSeed, plantCover, settleGrowth } from './coarse.js';
 import { lushField } from './lush.js';
+import { plantHash } from './phenology.js';
 
 /** Floats per plant instance: x, z, size, stage, species index, hash 0..1, age (h), ground height (m). */
 export const PLANT_FLOATS = 8;
@@ -104,7 +105,8 @@ export function createGrowth(device, opts) {
     for (let i = 0; i < count; i++) {
       const p = all[order[i].i];
       const o = i * PLANT_FLOATS;
-      const h = hash32(p.id, 0x51ed) / 4294967296;
+      // The plant's draw hash; also its phenology offset (phenology.js), which the shrub shader reads.
+      const h = plantHash(p.id);
       const size = lapse ? lerp(lapse.size.get(p.id) ?? 0, p.gone ? 0 : p.size, along(h)) : p.size;
       data[o] = p.x; data[o + 1] = p.z; data[o + 2] = size; data[o + 3] = p.stage;
       data[o + 4] = speciesIndex(p.sp); data[o + 5] = h;

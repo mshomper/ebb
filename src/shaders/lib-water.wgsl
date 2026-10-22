@@ -21,7 +21,7 @@ struct WaterSim {
   nudgeK: f32,         // 1 - exp(-dt / tau): share of the gap to the summary target closed per step
   sourceCount: u32,
   manningInv: f32,     // 1 / Manning's n: caps flow speed by depth and slope
-  _p0: f32,
+  evaporateK: f32,     // share of the excess over a pond or stream target lost per step (slow, game time)
   // Sources (springs, the pour and drain brush): xy cell center, z volume rate (m^3/s, negative
   // drains), w radius in cells (0: the single cell).
   sources: array<vec4f, 6>,

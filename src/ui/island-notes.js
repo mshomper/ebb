@@ -138,7 +138,12 @@ export function mountIslandNotes(parent, words, naturalist = null) {
       b.classList.remove('is-shown');
       setTimeout(() => { b.remove(); gifts.shift(); nextGift(); }, 900);
     };
-    b.addEventListener('click', () => { leave(); dispatch(n.sp ? { type: 'ui.journal', open: true, page: n.sp } : { type: 'ui.journal', open: true, view: 'notes' }); });
+    // Its page; a trail's reward opens that trail on the Trails page; else the notes.
+    b.addEventListener('click', () => {
+      leave();
+      dispatch(n.sp ? { type: 'ui.journal', open: true, page: n.sp }
+        : n.trail ? /** @type {any} */ ({ type: 'ui.journal', open: true, view: 'trails', page: null, trail: n.trail }) : { type: 'ui.journal', open: true, view: 'notes' });
+    });
     parent.appendChild(b);
     requestAnimationFrame(() => requestAnimationFrame(() => b.classList.add('is-shown')));
     setTimeout(leave, (cardS ?? 10) * 1000);

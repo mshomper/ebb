@@ -10,17 +10,19 @@ import { VERTEX_BYTES } from '../../world/creatures/bodies.js';
 
 /** @typedef {import('../frame-graph.js').PassContext} PassContext */
 
-const DRAW_BYTES = 80;
+const DRAW_BYTES = 96;
 /** Floats per piece: at, more, extra (4 each), then its bone (16). */
 const PIECE_FLOATS = 28;
-const MAX = 64;
+// Loose stones and logs, pond stones, and the slabs on every flight of Steps' treads.
+const MAX = 512;
 
 /**
  * @typedef {{ x: number, y: number, z: number, yaw: number, size: number, mesh: string, bone: Float32Array,
- *   slope: number[], seed: number, half: number[], plain?: boolean, aspect?: number }} PieceBeing
+ *   slope: number[], seed: number, half: number[], plain?: boolean, aspect?: number, moss?: number }} PieceBeing
  *   slope: the ground's rise along the piece's own x and z; half: footprint half width and length
  *   (mesh units); plain: earth, not stone (no rock scan); aspect: a driftwood log's thickness over
- *   its length (its mesh is 1 thick, squeezed by its bone; drawn as wood, not stone)
+ *   its length (its mesh is 1 thick, squeezed by its bone; drawn as wood, not stone); moss: a slab's
+ *   moss 0..1 (pond stones and Steps' treads, grown with age)
  */
 
 /**
@@ -39,6 +41,8 @@ export function createPiecesPass(opts) {
   data.set([1 / L.rock.tileMeters, 1 / L.cliff.tileMeters, D.sunTerminator[0], D.sunTerminator[1]], 12);
   const W = recipe.driftwood.look;
   data.set([W.roughness, W.bumpM, W.grainAcross, W.crackDarkness], 16);
+  const M = recipe.stepping.moss;
+  data.set([...M.albedo, M.band], 20);
   const list = new Float32Array(MAX * PIECE_FLOATS);
   /** @type {Map<string, { data: ArrayBuffer, indices: Uint32Array, vbuf?: GPUBuffer, ibuf?: GPUBuffer }>} */
   const meshes = new Map();
@@ -95,7 +99,7 @@ export function createPiecesPass(opts) {
       stones = rows.filter((b) => !b.plain).length;
       groups = [];
       rows.forEach((b, i) => {
-        list.set([b.x, b.y, b.z, b.yaw, b.size, b.slope[0], b.slope[1], b.seed, b.half[0], b.half[1], b.plain ? 1 : 0, b.aspect ?? 0], i * PIECE_FLOATS);
+        list.set([b.x, b.y, b.z, b.yaw, b.size, b.slope[0], b.slope[1], b.seed, b.half[0], b.half[1], b.plain ? 1 : -(b.moss ?? 0), b.aspect ?? 0], i * PIECE_FLOATS);
         list.set(b.bone, i * PIECE_FLOATS + 12);
         const last = groups[groups.length - 1];
         if (last && last.key === b.mesh) last.count++;

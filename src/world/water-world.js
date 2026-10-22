@@ -32,7 +32,7 @@ export async function createWaterWorld(gpu, opts) {
   // topped up toward the deterministic water summary.
   const water = await createWater(gpu, {
     terrain, recipe: waterRecipe, land: landRecipe, terrainSeed: subSeed(opts.seed, 'terrain'), tier,
-    displayHours: clock.display() / clock.SECONDS_PER_HOUR,
+    displayHours: clock.display() / clock.SECONDS_PER_HOUR, worldT: clock.worldT(),
     getHeightQ: () => getStore('terrainLive')?.mirror?.heightQ ?? null,
     springs: getStore('water')?.springs ?? [],
   });

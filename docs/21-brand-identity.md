@@ -37,7 +37,7 @@ The icon carries the mood (dusk, quiet, a creature at home). The favicon carries
 | `ebb-favicon.svg` | Master favicon, 32 × 32 viewBox |
 | `favicon.ico` | 16, 32 and 48 px combined, for older browsers |
 | `favicon-16.png`, `favicon-32.png`, `favicon-48.png` | Raster favicons |
-| `apple-touch-icon.png` | 180 px, iOS home screen |
+| `apple-touch-icon.png` | 180 px, Safari pinned and home screen icon |
 | `icon-192.png`, `icon-512.png` | Web app manifest icons |
 | `favicon-preview.png` | Reference sheet: icon and favicon at each size |
 
@@ -96,7 +96,7 @@ The favicon SVG is under 2 KB; the icon SVG is under 8 KB.
 ## Acceptance checks
 
 - The browser tab shows the favicon crisply at 16 px, and the moon and island are recognizable.
-- Adding the page to an iPhone home screen shows the full Moon tide icon.
+- Installing the page as an app from the browser (or pinning it) shows the full Moon tide icon.
 - The title screen shows the stacked lockup in Nunito and Fraunces (not fallback fonts) once loaded.
 - The tab title reads "ebb: a tended island".
 

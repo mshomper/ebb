@@ -76,6 +76,21 @@ export function sunDay(sunAltDeg, dayStart, falling) {
 }
 
 /**
+ * Whether a night piece has met the dawn: once the sun has been below the dawn height while the
+ * piece played, its rising back to that height is dawn, and the piece fades (director.json
+ * slots.nocturne.dawnSunDeg, dawnFadeS). Watching the sun, not the clock, keeps this right at any
+ * time speed. Pure, for the game and the tests.
+ * @param {{seenNight: boolean}} watch kept per piece; updated here
+ * @param {number} sunAltDeg the sun's height now
+ * @param {number} [dawnSunDeg] default -6 (civil dawn)
+ * @returns {boolean} true the moment dawn arrives
+ */
+export function dawnReached(watch, sunAltDeg, dawnSunDeg = -6) {
+  if (sunAltDeg < dawnSunDeg) { watch.seenNight = true; return false; }
+  return watch.seenNight;
+}
+
+/**
  * @param {{director: any, seasons: Record<string, any>}} recipes recipes/music/director.json and seasons
  * @param {any[]} pieces recipes/music/pieces/*.json
  * @param {{seed: number, sunAltDeg: (t: number) => number, history?: {id: string, day: number, realS: number, key?: string}[]}} opts
@@ -240,7 +255,10 @@ export function createDirector(recipes, pieces, opts) {
             rolls.set(`${key}:${tries}`, yes);
             log.push({ realS: st.realS, slot: open.slot, decision: yes ? 'rolled yes while resting: waits' : 'rolled no' });
             const grace = first ? Math.max(rules.graceH, D.tides.firstMorningGraceH ?? 0) : rules.graceH;
-            if (yes) pending.set(key, { ...open, untilGameT: open.day * DAY + (open.closeH + grace) * H });
+            let until = open.day * DAY + (open.closeH + grace) * H;
+            // A nocturne's grace never reaches past dawn (its close is toDawnH before dawn).
+            if (open.slot === 'nocturne') until = Math.min(until, open.day * DAY + (open.closeH - (D.slots.nocturne.toDawnH ?? 0)) * H);
+            if (yes) pending.set(key, { ...open, untilGameT: until });
             else counts.set(key, tries + 1);
           }
         }
@@ -278,13 +296,22 @@ export function createDirector(recipes, pieces, opts) {
         }
       }
       if (!rolls.get(rollKey)) return null;
-      const c = choose(s.slot, st.gameT, st);
-      if (!c) { log.push({ realS: st.realS, slot: s.slot, decision: 'no piece fits' }); rolls.set(rollKey, false); return null; }
-      counts.set(key, tries + 1);
       // The slot's close, in real seconds at the current flow (60 game seconds a real second at
       // normal speed, faster at 2x and 4x; paused, it never closes), for the short-form choice.
       const gameLeftS = (s.closeH - (st.gameT - s.day * DAY) / H) * H;
       const flow = st.flow ?? 1;
+      // A night piece that could not play a short while before its close (and so before dawn) is
+      // not started at all (director.json slots.nocturne.minLeftRealMin).
+      const minLeft = (s.slot === 'nocturne' || s.slot === 'early-nocturne') ? (D.slots.nocturne.minLeftRealMin ?? 0) * 60 : 0;
+      if (minLeft > 0 && flow > 0 && gameLeftS / (60 * flow) < minLeft) {
+        log.push({ realS: st.realS, slot: s.slot, decision: 'too near dawn: skipped' });
+        rolls.set(rollKey, false);
+        counts.set(key, tries + 1);
+        return null;
+      }
+      const c = choose(s.slot, st.gameT, st);
+      if (!c) { log.push({ realS: st.realS, slot: s.slot, decision: 'no piece fits' }); rolls.set(rollKey, false); return null; }
+      counts.set(key, tries + 1);
       return {
         piece: c.piece,
         seed: hash32(opts.seed >>> 0, Math.floor(st.realS), history.length),

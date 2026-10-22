@@ -2,13 +2,12 @@
 // Quality while playing (docs 04, 19): the wiring around dynamic resolution. It gathers one GPU
 // time per frame (the sum of the pass timestamps, or, where the browser has no timestamp-query, an
 // onSubmittedWorkDone round trip for the whole frame; the frame time if neither has come for a
-// while), feeds src/render/dynamic-res.js, paces frames with src/render/frame-cap.js, and makes the
-// one automatic tier step down a session with its calm note (src/ui/quality-note.js) and Undo.
-// Emits `render:gpu-frame` { ms, measure, scale } for each GPU time (tools/phone-check.html).
+// while), feeds src/render/dynamic-res.js, and makes the one automatic tier step down a session with its
+// calm note (src/ui/quality-note.js) and Undo.
+// Emits `render:gpu-frame` { ms, measure, scale } for each GPU time (for tool pages).
 
 import { on, emit } from '../core/events.js';
 import { createDynamicRes } from './dynamic-res.js';
-import { createFrameCap } from './frame-cap.js';
 import { tierBelow } from './quality.js';
 import { showQualityNote, hideQualityNote } from '../ui/quality-note.js';
 
@@ -24,14 +23,11 @@ const NOTE_UNDO = 'Undo';
 export function createQualityLive(opts) {
   const R = opts.recipe.dynamicRes;
   const dyn = createDynamicRes(R);
-  const cap = createFrameCap(opts.recipe.frameCap);
   let sinceGpu = 0;
   let workDonePending = false;
   let disposed = false;
   /** @type {null | { from: string, to: string }} */ let autoStep = null;
   let autoOff = false;
-  /** Only the tiers listed in the recipe are capped (low: a phone kept cool); desktops run free. */
-  const capped = () => (opts.recipe.frameCap.tiers ?? []).includes(opts.tier());
 
   /** @param {number} ms @param {import('./dynamic-res.js').Measure} measure */
   function gpuSample(ms, measure) {
@@ -66,12 +62,6 @@ export function createQualityLive(opts) {
 
   return {
     /**
-     * Should this animation frame be drawn (the frame cap)? Call first thing in the frame.
-     * @param {number} now rAF time
-     */
-    due: (now) => !capped() || cap.due(now, opts.settings().targetFps),
-
-    /**
      * After queue.submit: time the frame with a work-done round trip where there are no
      * timestamps, fall back to the frame time if no GPU time has come for a while, and act on a
      * long stay at the minimum scale.
@@ -98,7 +88,6 @@ export function createQualityLive(opts) {
      */
     setTier(t, settings, keepScale) {
       dyn.setTier(t, settings, keepScale, performance.now());
-      cap.reset();
     },
 
     /** The player picked a tier (Settings): no automatic step down after that, this session. */
@@ -112,7 +101,7 @@ export function createQualityLive(opts) {
 
     get scale() { return dyn.scale; },
 
-    /** Hold the render scale, or release it with null (the phone check page's sweep). @param {number | null} s */
+    /** Hold the render scale, or release it with null (a tool page's sweep). @param {number | null} s */
     pinScale: (s) => dyn.pin(s, performance.now()),
 
     /** For tools: the scale range, what the GPU time is measured with, every scale change. */

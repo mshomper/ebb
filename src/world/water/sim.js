@@ -120,7 +120,7 @@ export async function createWaterSim(device, terrainTex) {
    * Record `steps` fixed steps.
    * @param {GPUCommandEncoder} encoder
    * @param {{ rect: { x: number, y: number, w: number, h: number }, steps: number, dt: number, tide: number,
-   *   sources: Source[], nudgeK: number, recipe: any, stats: boolean,
+   *   sources: Source[], nudgeK: number, evaporateK?: number, recipe: any, stats: boolean,
    *   timestampWrites?: GPUComputePassTimestampWrites }} o  recipe: water.json `sim`
    */
   function encode(encoder, o) {
@@ -131,7 +131,7 @@ export async function createWaterSim(device, terrainTex) {
     f[4] = o.dt; f[5] = s.friction; f[6] = s.thinFriction; f[7] = s.thinDepthM;
     f[8] = s.maxSpeed; f[9] = s.dryDepthM; f[10] = o.tide; f[11] = o.nudgeK;
     const n = Math.min(o.sources.length, MAX_SOURCES);
-    u[12] = n; f[13] = 1 / s.manningN;
+    u[12] = n; f[13] = 1 / s.manningN; f[14] = o.evaporateK ?? 0;
     for (let i = 0; i < n; i++) {
       const src = o.sources[i];
       f.set([src.cell[0], src.cell[1], src.rateM3s, src.radius], 16 + i * 4);

@@ -2,7 +2,7 @@
 
 > Doc 23 sets presence up as a list of sources that creatures react to, builds rung 1 (the hand, the camera) for the slice, and sketches the seat, the walker and the camp. This doc goes deeper on everything after the hand: what patience looks like at each rung, how creatures show trust with their bodies, how groups and routines come into it, and how the later rungs feel to play on desktop and phone. It proposes answers, as leanings, to doc 23's open questions. It builds on doc 23 and changes none of its locked decisions.
 
-**Status:** Leaning. Not scheduled beyond doc 23's milestones (seat M2, walker M3 to M4, camp M6 or M7). Nothing here is built until Matt schedules it.
+**Status:** Leaning. Doc 23 now holds the milestones: the walker moved to M2 (October 21, 2026) and W0 to W6 are built and merged; the seat became the walker's Sit; the camp is M6 or M7. The rest of this doc is not scheduled until Matt schedules it.
 
 ## Decided so far
 

@@ -8,9 +8,6 @@
   --hud-edge: 12px;
   --hud-dial: 64px;
 }
-@media (pointer: coarse) {
-  :root { --hud-dial: 60px; }
-}
 
 #ebb-hud {
   position: fixed;
@@ -24,38 +21,6 @@ body.ebb-hud-hidden #ebb-hud,
 body.ebb-revealing #ebb-hud { opacity: 0; }
 /* H hides the island notes too, for a clean view; the reveal's notes stay. */
 body.ebb-hud-hidden:not(.ebb-revealing) .ebb-notes { visibility: hidden; }
-
-/* --- the faint eye that brings hidden buttons back on a touch screen --- */
-.ebb-hud-show {
-  position: fixed;
-  top: max(var(--hud-edge), env(safe-area-inset-top));
-  right: max(var(--hud-edge), env(safe-area-inset-right));
-  z-index: 10;
-  display: none;
-}
-@media (pointer: coarse) {
-  body.ebb-hud-hidden:not(.ebb-revealing) .ebb-hud-show { display: block; }
-}
-.ebb-hud-show__btn {
-  appearance: none;
-  -webkit-appearance: none;
-  width: 52px;
-  height: 52px;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  place-items: center;
-  border: 1px solid rgba(244, 238, 228, 0.12);
-  border-radius: 16px;
-  background: rgba(30, 38, 36, 0.4);
-  color: var(--ui-cream);
-  opacity: 0.6;
-  cursor: pointer;
-  touch-action: manipulation;
-  -webkit-tap-highlight-color: transparent;
-}
-.ebb-hud-show__btn .icon { width: 26px; height: 26px; display: block; }
-.ebb-hud-show__btn:focus-visible { outline: 2px solid var(--wordmark-dark); outline-offset: 2px; opacity: 1; }
 
 /* --- the clock dial, top left --- */
 .ebb-dial {

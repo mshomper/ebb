@@ -175,7 +175,8 @@ export const FLORA_KINDS = {
       f.set(C.female ?? C.pollen ?? C.twig, 60); f[63] = L.gustSpeed;
       f.set([1 / L.gustM, D.strength ?? 0, D.radiusShare ?? 1, D.bareShare ?? 1], 64);
       f.set([D.sunShift ?? 0, D.liftM ?? 0.03, L.undersideShare ?? 0, 0], 68);
-      f.set([Math.max(1, D.layers ?? 1), D.layerM ?? 0, 0, 0], 72);
+      // z: the per-plant phenology jitter in seasons (14 game days each), as world/growth/phenology.js reads it.
+      f.set([Math.max(1, D.layers ?? 1), D.layerM ?? 0, (P.jitterDays ?? 0) / 14, 0], 72);
       // Flowers among the leaves (gorse; none on willow) and how far cards are drawn to the crown.
       f.set(C.flower ?? [0, 0, 0], 76); f[79] = S.flowerM ?? 0;
       f.set([0, L.crownPull ?? 0.3, 0, 0], 80);

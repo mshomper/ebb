@@ -1,0 +1,21 @@
+/* The desktop-only notice (src/ui/desktop-only.js): stacked lockup, one line, one link. */
+
+.ebb-desk {
+  position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
+  padding: 24px 16px; background: var(--ui-night); overflow-x: hidden; overflow-y: auto;
+}
+.ebb-desk__card { max-width: 480px; width: 100%; text-align: center; color: var(--ui-cream); }
+.ebb-desk__card img { width: 112px; height: 112px; border-radius: 24px; display: block; margin: 0 auto 18px; }
+.ebb-desk__card h1 {
+  margin: 0; font-weight: 800; font-size: 44px; letter-spacing: -0.015em; color: var(--wordmark-dark);
+}
+.ebb-desk__tagline {
+  margin: 2px 0 26px; font-family: var(--font-voice); font-style: italic; font-weight: 400;
+  font-size: 20px; color: var(--tagline-dark);
+}
+.ebb-desk__line { font-size: 18px; line-height: 1.55; margin: 0 0 22px; overflow-wrap: anywhere; }
+.ebb-desk__link {
+  display: inline-block; font-size: 18px; font-weight: 800; color: var(--wordmark-dark);
+  text-decoration: underline; text-underline-offset: 4px; padding: 10px 4px;
+}
+.ebb-desk__link:focus-visible { outline: 2px solid var(--wordmark-dark); outline-offset: 2px; border-radius: 6px; }

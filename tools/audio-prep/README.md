@@ -6,7 +6,7 @@ Requirements: Python 3 with numpy and scipy, ffmpeg with libopus. The scripts ex
 
 | Folder | What it built | Notes |
 |---|---|---|
-| `piano/` | The Steinway B game set (desktop) and the phone set | `REPORT.md` is the full account. `plib.py` holds the shared measuring (onset, attack loudness, brightness, pitch from partials), `prep.py` trims and measures, `build.py` makes the game set, `mobile.py` and `mobile_recipe.py` the phone set, `align.py` lines up the loud layer's attack with the soft one's. |
+| `piano/` | The Steinway B game set | `REPORT.md` is the full account. `plib.py` holds the shared measuring (onset, attack loudness, brightness, pitch from partials), `prep.py` trims and measures, `build.py` makes the game set, `align.py` lines up the loud layer's attack with the soft one's. (The phone set and its scripts were removed on October 21, 2026, when ebb became desktop only.) |
 | `strings/` | Violin, viola and cello sections and the solo contrabass (VSCO 2 CE) | `slib.py` finds and bakes the loops. `looprms.py` adds each loop's steady level (`loopRmsDb`) to a recipe; the sampler levels held notes by it. |
 | `harp-flute/` | Harp (VCSL, two VSCO takes) and flute (VSCO 2 CE, non-vibrato and vibrato, looped) | `survey.py` compares sources before choosing. |
 | `vibraphone/` | Vibraphone soft mallets and bowed, and the wine glasses (VCSL) | Library note names sit an octave low; files are placed by measured pitch. |

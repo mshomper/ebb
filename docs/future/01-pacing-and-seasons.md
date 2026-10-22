@@ -2,7 +2,7 @@
 
 > ebb's authored arc (fifteen species, five land pieces and the year page) runs out much sooner than the game wants a player to stay. Matt imagines people living with one island for many years, and the first several days alone go to sculpting the island and getting ready for frogs. This doc records the clock changes Matt decided on October 19, 2026 to slow the island down: longer seasons, a shorter catch-up cap and slower growth while away, with the length of a game day unchanged. It lists every repo doc and file those changes reach.
 
-**Status:** Decided. F01a (clock, catch-up cap, away rate, moon) is built on branch `m1-f01a-clock`, and docs 02, 03, 06, 07, 10, 13, 18, 19, 24 and the README are updated to match. F01b, on the same branch: old saves move to the new calendar (save format 2: same year, season and hour, day d becomes 2d; doc 18), and the frog timings were reviewed (hour-based steps kept; winter sleep keeps its share of the year; the `?frogs` test link now starts on spring day 7, after the frogs wake).
+**Status:** Built and merged to main (PR #41). F01a (clock, catch-up cap, away rate, moon) is built, and docs 02, 03, 06, 07, 10, 13, 18, 19, 24 and the README are updated to match. F01b, merged with it: old saves move to the new calendar (save format 2: same year, season and hour, day d becomes 2d; doc 18), and the frog timings were reviewed (hour-based steps kept; winter sleep keeps its share of the year; the `?frogs` test link now starts on spring day 7, after the frogs wake).
 
 ## Decided so far
 

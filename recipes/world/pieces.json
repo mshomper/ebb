@@ -44,5 +44,63 @@
     },
     "look": { "roughness": 0.82, "bumpM": 0.0015, "grainAcross": 22, "crackDarkness": 0.55 },
     "carry": { "liftM": 0.25 }
+  },
+  "steppingNote": "Stepping stones and the treads of Steps (docs 09; src/world/pieces/slabs.js): each is one of a small library of rounded slab shapes, 1 mesh unit long, that the draw pass scales and turns. slab: count shapes, seeded from seed, each around vertices round, with topRings rings across its top and bevelRows rows round its rounded edge. The footprint is a rounded rectangle (a superellipse): widthShare [min, max] is its width as a share of its length, power [min, max] how square its corners are (2 an oval, higher squarer), and its outline wobbles by wobble (a share) in wobbleHarmonics [min, max] gentle waves round it. The top is nearly flat: domeShare [min, max] how much it rises in the middle (share of the length), tiltDeg [min, max] how far it leans; bevelShare [min, max] the radius of the rounded edge; capShare [min, max] how thick the stone looks (how far below the top the sides turn straight down), the sides widening by batterShare over that depth and lumpy by lump (a share). skirtUnits: how far the sides go on down below that (in lengths), so a stone can stand on a deep pond bed; the draw pass sinks what is not needed into the ground. albedo: weathered grey stone (linear); underside: the stained tone the sides reach more than stainUnits (in lengths) below the top's lowest edge; topLift: how much lighter the top is, topSmooth how much of the fine grain it loses; mottle: broad and fine tone wander (shares) at broadPerUnit and finePerUnit waves per mesh unit, and hue a touch warmer or cooler with the broad patches. Albedos are physical; the palette paints at tonemap (docs/05). Pond stones (src/world/pieces/stepping.js; Sculpt's Pond stones mode): cap how many an island holds. A drag lays one every spacingM [min, max] (seeded) along it, nudged up to jitterM to the side, never nearer than apartM to another stone; a line stops where the water is deeper than maxDepthM. Water deeper than wetM counts: there a stone is sizeM [min, max] long plus growPerM for each metre of depth, and stands its top freeboardM [min, max] above the water as it is when laid; on land its top is landRiseM [min, max] above the ground, and it leans with the slope by lean. linkM: two stones of one line this near are one way across for the walker, footing within footReachM of their line. moss: from startDays to fullDays after it was laid, moss grows on its rounded edge up to most (0..1), creeping over the top by band; albedo linear. sitInsetM: how far in from its edge a creature sits. words: the mode's calm lines.",
+  "stepping": {
+    "slab": {
+      "count": 16, "seed": 6203, "around": 36, "topRings": 4, "bevelRows": 3,
+      "widthShare": [0.62, 0.95], "power": [2.2, 3.6], "wobble": 0.03, "wobbleHarmonics": [2, 3],
+      "domeShare": [0.01, 0.035], "tiltDeg": [0.5, 4], "bevelShare": [0.04, 0.08],
+      "capShare": [0.14, 0.22], "batterShare": 0.06, "lump": 0.015, "skirtUnits": 3.2,
+      "albedo": [0.166, 0.156, 0.143], "underside": [0.085, 0.072, 0.058], "stainUnits": 0.15,
+      "topLift": 0.06, "topSmooth": 0.5,
+      "mottle": { "broad": 0.16, "broadPerUnit": 7, "fine": 0.08, "finePerUnit": 31, "hue": 0.04 }
+    },
+    "cap": 80,
+    "spacingM": [0.55, 0.75], "jitterM": 0.07, "apartM": 0.42,
+    "maxDepthM": 1.0, "wetM": 0.02,
+    "sizeM": [0.4, 0.52], "growPerM": 0.22,
+    "freeboardM": [0.03, 0.06], "landRiseM": [0.03, 0.07], "lean": 0.4,
+    "linkM": 0.85, "footReachM": 0.36,
+    "moss": { "startDays": 3, "fullDays": 40, "most": 0.85, "albedo": [0.045, 0.07, 0.022], "band": 0.35 },
+    "sitInsetM": 0.06,
+    "words": {
+      "full": "The island holds all the pond stones it can for now. Remove some to lay them somewhere else.",
+      "deep": "The water is too deep here for a stone to stand. Try nearer the edge.",
+      "hint": "Drag across shallow water to lay a line of stones, or click for one. Click a stone to select it.",
+      "removeLine": "Remove line"
+    }
+  },
+  "raftNote": "The reed raft (the turtles' gift, unlocks.raft; src/world/pieces/raft.js): the Water tool's Raft mode sets one where you tap open fresh water. cap: how many an island holds. sizeM [min, max]: its length (m), from its seed. It goes only where the water is at least minDepthM deep under its middle and at least rimDepthM toward its rim (away from the bank), never in the sea, at least apartM from another raft or stone. It floats with its base draftM under the water as it is now (so its top stands a few centimetres proud), bobbing by bobM over bobS seconds, easing to a new level over settleS; where the water has gone it rests on the ground. sitInsetM: how far in from its edge a creature sits. shape: count shapes from seed, each bundles reed bundles across widthShare [min, max] of its length, around vertices round and rings along; fatten swells them to touch, round shortens the outer ones (rounded corners), taper how far from each end they thin; bands ties at bandM wide, pinching by pinch and darker by bandDark; streak the reed stems along each bundle; albedo dry straw and endAlbedo the cut ends (linear; the palette paints at tonemap). words: the Raft mode's calm lines.",
+  "raft": {
+    "cap": 3, "sizeM": [1.1, 1.3], "minDepthM": 0.25, "rimDepthM": 0.08, "apartM": 1.0,
+    "draftM": 0.08, "bobM": 0.008, "bobS": 5.5, "settleS": 2.5, "sitInsetM": 0.08,
+    "shape": {
+      "count": 4, "seed": 4410, "bundles": 9, "around": 16, "rings": 40,
+      "widthShare": [0.62, 0.72], "fatten": 1.08, "round": 0.18, "taper": 0.08,
+      "bands": 3, "bandM": 0.025, "pinch": 0.22, "bandDark": 0.65, "streak": 0.16,
+      "albedo": [0.3, 0.24, 0.12], "endAlbedo": [0.17, 0.12, 0.06]
+    },
+    "words": {
+      "hint": "Click open water to set a reed raft. Click a raft to select it.",
+      "full": "The island holds all the rafts it can for now. Remove one to set it somewhere else.",
+      "shallow": "A raft needs open water, deeper than your knees and away from the bank.",
+      "sea": "A raft rests on fresh water, not the sea.",
+      "near": "That is too near another raft or stone. Try a little further out."
+    }
+  },
+  "stepsNote":"Steps (doc 13, the shaper's trail; src/world/pieces/steps.js): a flight cut between two levels of ground, dragged from one to the other. widthM: how wide a flight is (wide enough that the walker's half-metre grid always finds a level way up its middle). Every rise is at most maxRiseM and every tread at least minTreadM and at most maxTreadM, and the whole flight rises no steeper than maxPitch (rise over run), so the walker can always climb it; a drag shorter than that asks for more. minDropM: the least difference in level worth a step. landM: how far the flight runs on past each end at that end's level, so it meets the ground. cap: how many flights an island holds. rockShare: how far toward rock the flight's cells and the sheer walls beside it (any drop over faceDropM to a neighbour) are painted. slab: perTread slabs side by side on each tread, filling fill of their share (the rest is the gaps between them), turned up to yawJitterDeg off square, their tops riseM over the tread, with a skirt skirtUnits deep (lengths; short, since a flight can stand out from the slope). words: the Steps mode's calm lines.",
+  "steps": {
+    "widthM": 1.6, "maxRiseM": 0.22, "minTreadM": 0.5, "maxTreadM": 1.0, "maxPitch": 0.6, "minDropM": 0.2,
+    "landM": 0.25, "cap": 12, "rockShare": 0.9, "faceDropM": 0.3,
+    "slab": { "perTread": 2, "fill": 0.94, "yawJitterDeg": 5, "riseM": 0.04, "skirtUnits": 0.12 },
+    "words": {
+      "hint": "Drag from a terrace down to the ground below to cut a flight of steps. Click a flight to select it.",
+      "flat": "These two places are at the same level. Start on a terrace and drag down to the ground below it.",
+      "short": "That is too steep for steps. Drag a little further, about {m} m in all.",
+      "overlap": "Steps are already cut here. Remove them first to cut new ones.",
+      "full": "The island holds all the flights of steps it can for now.",
+      "water": "Steps start and end on dry ground."
+    }
   }
 }

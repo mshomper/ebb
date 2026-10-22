@@ -10,7 +10,7 @@
 - **New land arrives at low tide, while the player is watching.** A milestone reached during catch-up is queued and plays during the reveal or the next low tide in play. Gifts reached offline appear as journal notes in the reveal.
 - **Happiness is not lost by progress.** Once a gift is given it stays. If a species later moves on, its journal page says so gently and it can come back; nothing is taken away.
 - **No fail states, no deadlines, no pressure.** Nothing dies on screen, nothing is lost by being away, no reward is time-limited. Rare visitors (cranes) return each spring and autumn, so missing them never closes a door.
-- **Hard world ceiling**: fully expanded, the world fits inside a 192 m by 192 m area, about 4.5 times the land of the starter island. Expansion never grows past the budgets in `19-performance-and-quality-tiers.md`.
+- **Hard world ceiling**: fully expanded, the world fits inside a 192 m by 192 m area, about 4.5 times the land of the starter island. Expansion never grows past the budgets in `19-performance-and-quality-tiers.md`. *(October 21, 2026: the ceiling was sized for phones; since ebb became desktop and laptop only, its rationale is the laptop budgets of the medium tier. A larger world is to be revisited once per-chunk water simulation is built (doc 07). It stays 192 m until then.)*
 
 ## How it works
 
@@ -47,7 +47,7 @@ The gifts build on each other. The frogs' Cliff tool makes the deep, still pool 
 
 ### Trails (agreed with Matt, October 21, 2026)
 
-Three trails share one journal page, **Trails**. On desktop they sit side by side, each a line of ink stops down the paper like the naturalist's trail today; on phones they are three tabs.
+Three trails share one journal page, **Trails**. On a wide window they sit side by side, each a line of ink stops down the paper like the naturalist's trail today; on a narrower one they are three tabs.
 
 ```
 NATURALIST            BEACHCOMBER              SHAPER
@@ -223,7 +223,7 @@ Target player: 20 to 40 minutes most evenings, with the game left closed overnig
 | First frog scout | 1 to 2 | first session | reeds filling in along the pond |
 | Frogs happy (first gift, the Cliff tool) | 3 to 6 | first or second evening | group of 4 and a thick reed margin |
 | Turtles come | 14 to 20 (summer) | second week of play | only once the water is warm in summer; a sunny stone at a shallow pond with lilies; a carried log makes them happier |
-| Dragonflies come | 15 to 18 (summer) | second week of play | only from the first day of summer, and only over a second, fish-free pond the player dug with reeds along its edge (happy about 3 days later) |
+| Dragonflies come | 15 to 18 (summer) | second week of play | only from the first day of summer, and only over a second, fish-free pond the player dug with reeds along its edge (happy about 3 days later). A rain-fed pond lowers through summer (doc 07); routing the starter brook into it, or digging it below the water table near the shore, keeps it full all summer, and a gently shelving bank keeps a shallow margin at any level |
 | Tier 1 milestone, meadow islet | 6 to 10 | second or third evening | minnows happy (about 4 days after their 1 m deep spot is dug); dragonflies and turtles come only from summer |
 | Tier 2 milestone, woodland knoll and bridge | 15 to 25 | end of the first week | wildflowers and hawthorn maturing |
 | Tier 3 milestone, tide flats | 35 to 55 | second or third week | trees maturing for squirrels and owls |
@@ -260,7 +260,7 @@ Early gifts come fast so the loop teaches itself; later tiers lean on trees and 
 The camera stays where it is; you look around the island to find the wash. A species not yet seen washes nothing, so the page never gives away where it is. Instead, two or three dashed pencil circles sit a little off the best places for it: a hint, not the answer. The map is pure and comes from `src/world/journal/wash.js`. It is painted after the palette (`05-look-and-palette.md`) and is redrawn each hour and after each edit while the page stays open.
 
 - **Plant pages** (J1): grass and every flora species. The status says in words how much there is, where ("a thick margin of reeds by the water on the west side, creeping along the bank"), whether it is flowering, spreading, pulling back or resting for winter. **Likes** lines are learned as they show themselves: when it is first seen, when it spreads, when some drown or a seed gives up, or when the Plant tool refuses a spot for it; the rest wait as "more to learn by watching". **Seasons** boxes fill as the year turns. **Gives** lines stay in pencil, as a hint, until the species they point to is seen using it.
-- **Every page** (J1.5) also has **Show me** (rings the example nearest the middle of your view, without moving the camera; an arrow at the edge points to it when it is out of view), **field notes** (real natural history, learned like likes, including from moments), **your island's story** (here when you arrived or first seen, what you planted and when, how much grew on its own, the oldest plant, a better showing in the past) and **moments**: four frames that show only a pencil "?" until the player taps that thing at that moment (in flower, in rain, at dusk, in winter; for the ground: rain, mist, dawn, winter). Frames never list what is missing; photos replace their small sketches in M2.
+- **Every page** (J1.5) also has **Show me** (rings the example nearest the middle of your view, without moving the camera; an arrow at the edge points to it when it is out of view), **field notes** (real natural history, learned like likes, including from moments), **your island's story** (here when you arrived or first seen, what you planted and when, how much grew on its own, the oldest plant, a better showing in the past) and **moments**: four frames that show only a pencil "?" until the player clicks that thing at that moment (in flower, in rain, at dusk, in winter; for the ground: rain, mist, dawn, winter). Frames never list what is missing; photos replace their small sketches in M2.
 - **Field sketches** (J1.6): every page opens with a hand-drawn sketch (`src/ui/sketches/`), one drawing shown three ways: a faint pencil outline before the thing is seen, ink once it is, and a soft watercolor wash once it has flowered or been caught at a moment. Its handwritten labels ("pollen spike", "creeping root") appear one by one as the page learns them (`sketch` blocks in the journal recipes). Sketch colors are paper and ink for the cream page, not world materials, so the palette rule does not apply to them.
 - **Ground pages** (J1.5): soil, sand, rock, moss, fresh water, and shore and sea, from the painted ground and the habitat grid: how much of the island, what grows there, field notes and moments. Tapping bare ground or water names it in words (how wet, how salty, how deep) and the plants you know that would like it; one you have not met shows only as a pencil hint.
 - **The almanac** (J1.5): today on the island in words: date and part of the day, weather and wind, the tide and when it turns, the moon, the length of the days, what is flowering or resting.
@@ -314,10 +314,10 @@ Tuning panel: milestone threshold (second or third happy species), rise duration
 ## Performance budget
 
 - Terrain and ecology are stored in **32 m chunks**. Starter island plus margin is about 9 chunks; fully expanded about 26 land and shoreline chunks, inside a 6 by 6 chunk area. Open sea outside the land uses a cheap analytic water surface.
-- Ecology tick, fully expanded: under 8 ms desktop, under 20 ms mobile (worker, hourly, never in the frame).
+- Ecology tick, fully expanded: under 8 ms desktop, under 20 ms on a laptop (worker, hourly, never in the frame).
 - Live water sim runs only on chunks within 60 m of the camera focus plus all shoreline cells at reduced rate; farther water uses the analytic tide and a normal-map surface.
 - Creature caps from `11-creatures-and-ecology.md` are world totals, not per island; distant individuals tick at 4 Hz without IK.
-- Flora instances fade to lower LODs and impostors by distance; distant islets draw at LOD2 or lower, keeping total frame time at 16.6 ms desktop (60 fps, at 1440p) and 33 ms on the mobile tier.
+- Flora instances fade to lower LODs and impostors by distance; distant islets draw at LOD2 or lower, keeping total frame time at 16.6 ms desktop (60 fps, at 1440p) and on the medium tier (60 fps on a laptop).
 - A land rise costs one chunk rebuild spread over several frames (under 2 ms per frame).
 
 ## Acceptance checks
@@ -326,7 +326,7 @@ Tuning panel: milestone threshold (second or third happy species), rise duration
 - Reach a milestone while away: the reveal's drift passes over the new islet and a note says it rose.
 - Open the journal: unknown species show pencil outlines with a short hint; photographed species show the photo; the map shows each land piece.
 - Leave a happy frog group, add a lantern until they move on: the gift stays, the page says they moved on, and removing the lantern brings a scout back.
-- With everything unlocked on desktop the frame rate stays at 60 fps while orbiting the whole world; the mobile tier stays at 30 fps.
+- With everything unlocked on desktop the frame rate stays at 60 fps while orbiting the whole world, on the medium tier too.
 
 ## Open questions
 - Should the player choose where a new islet rises (from two or three spots), or is a surprise placement nicer?

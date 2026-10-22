@@ -50,7 +50,7 @@
   height: 20px;
   background: rgba(30, 38, 36, 0.18);
 }
-/* The heart: the one part you can tap, a 40 px target (44 on a phone) round a 24 px drawing. */
+/* The heart: the one part you can tap, a 40 px target round a 24 px drawing. */
 .ebb-nowplaying__heart {
   appearance: none;
   -webkit-appearance: none;
@@ -91,29 +91,16 @@
 .ebb-nowplaying__pass:hover { background: rgba(30, 38, 36, 0.08); color: var(--ui-night); }
 .ebb-nowplaying__pass:focus-visible { outline: 2px solid var(--wordmark-light); outline-offset: 1px; }
 .ebb-nowplaying__pass .icon { width: 22px; height: 22px; }
-@media (pointer: coarse) {
-  .ebb-nowplaying__pass { width: 44px; height: 44px; }
-}
 .ebb-nowplaying__heart:hover { background: rgba(181, 101, 74, 0.12); }
 .ebb-nowplaying__heart:focus-visible { outline: 2px solid var(--wordmark-light); outline-offset: 1px; }
 .ebb-nowplaying__heart .icon { width: 24px; height: 24px; grid-area: 1 / 1; transition: opacity 0.25s ease, transform 0.25s ease; }
 .ebb-nowplaying__heart .is-on { opacity: 0; transform: scale(0.7); }
 .ebb-nowplaying__heart[aria-pressed='true'] .is-on { opacity: 1; transform: scale(1); }
 .ebb-nowplaying__heart[aria-pressed='true'] .is-off { opacity: 0; }
-@media (pointer: coarse) {
-  .ebb-nowplaying__heart { width: 44px; height: 44px; }
-}
-@media (pointer: coarse) {
-  .ebb-nowplaying { bottom: calc(max(12px, env(safe-area-inset-bottom)) + 80px); font-size: calc(21px * var(--text-scale, 1)); }
-}
-/* A narrow screen held upright: undo, redo and the time button stand just above the tool bar, so
+/* A narrow, upright window: undo, redo and the time button stand just above the tool bar, so
    the bubble sits above them. */
 @media (max-width: 699px) and (orientation: portrait) {
   .ebb-nowplaying { bottom: calc(max(12px, env(safe-area-inset-bottom)) + 154px); }
-}
-/* Held sideways on a phone the tools are a column on the right: the bubble can sit lower. */
-@media (pointer: coarse) and (orientation: landscape) and (max-height: 500px) {
-  .ebb-nowplaying { bottom: max(14px, env(safe-area-inset-bottom)); }
 }
 body.ebb-hud-hidden .ebb-nowplaying,
 body.ebb-revealing .ebb-nowplaying { opacity: 0; visibility: hidden; }

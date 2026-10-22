@@ -154,7 +154,7 @@ Shaders: `src/shaders/sky-transmittance.wgsl`, `sky-multiscatter.wgsl`, `sky-vie
 
 ## Performance budget
 
-Desktop high tier at 1440p: sky LUTs and probe 0.25 ms, shadows 1.5 ms, GTAO 0.7 ms (full res), sky draw 0.15 ms, lighting cost inside the opaque budget. Mobile low tier: 1 cascade, no GTAO, sky-view LUT at half size, aerial perspective 16³, under 1.2 ms total. See `19-performance-and-quality-tiers.md`.
+Desktop high tier at 1440p: sky LUTs and probe 0.25 ms, shadows 1.5 ms, GTAO 0.7 ms (full res), sky draw 0.15 ms, lighting cost inside the opaque budget. Low tier (emergency fallback on weak laptops): 1 cascade, no GTAO, sky-view LUT at half size, aerial perspective 16³, under 1.2 ms total. See `19-performance-and-quality-tiers.md`.
 
 ## Acceptance checks
 

@@ -9,7 +9,7 @@ Matt owns this project. He is an expert in computational design, implicit surfac
 ## How to work
 
 1. **Analyze, then propose, then build.** When Matt raises an issue or a feature, analyze it and present the proposed changes for his approval before writing or modifying code. Keep proposals short and visual.
-2. **Ask before pushing to main.** Work on a branch. Matt click-tests (on desktop and in the Claude mobile app) before anything merges. Never push to main without his explicit approval.
+2. **Ask before pushing to main.** Work on a branch. Matt click-tests on desktop before anything merges. Never push to main without his explicit approval.
 3. **Commits and PRs.** A `Co-Authored-By: Claude` trailer is fine. Never put claude.ai session links in commit messages or PR descriptions.
 4. **Big jobs in small pieces.** Split large work into small, fast subagents that run in parallel, and keep working on other parts rather than waiting idle on one long task.
 5. **Heavy analysis runs on Matt's machine.** Benchmarks, long simulations and regression checks go in a page under `tools/` that Matt opens locally, side by side with the game. Do not run long computations in the cloud and wait on them.
@@ -18,9 +18,9 @@ Matt owns this project. He is an expert in computational design, implicit surfac
 
 ## Hard UI rules
 
-- **No horizontal scrolling, ever.** Every layout must fit its pane at every width, including phone portrait.
+- **No horizontal scrolling, ever.** Every layout must fit its pane at every width.
 - **No emoji and no symbol-glyph icons** (no ⊕, ▦, ⬡ and similar). Every icon is a drawn SVG icon in `src/ui/icons/`, sharing one stroke weight and the brand palette.
-- **Legible text.** UI body text is never below 15 px on desktop or 16 px on phones. Matt has flagged small text before; when in doubt, go larger.
+- **Legible text.** UI body text is never below 15 px. Matt has flagged small text before; when in doubt, go larger.
 - UI type is Nunito; the journal and tagline use Fraunces italic. Wordmark rules are in `docs/21-brand-identity.md`.
 - Never use the words "genuine" or "genuinely" in UI copy, docs or messages.
 

@@ -3,7 +3,8 @@
 // the save upgrade that brought them in (src/save/migrate-pieces.js), the handful that comes with the
 // naturalist's reward, the cap, a lifted stone's tip, and the Sculpt card's chip rows. Driftwood: its
 // reward, logs on the strandline, a carried log kept and saved, a carried stone moved, the log cap,
-// and the log shapes and roll.
+// and the log shapes and roll. Pond stones and Steps: their records, a flight's cut and guard, the
+// footing a line of stones gives the walker, and the slab shapes.
 
 import { cleanPieces, emptyPieces, makeStone, makeLog, addPiece, removePiece, movePiece, countKind, pieceAt, arrivingStones, tipAngle, tipDone, stoneBone, leanBone, logBone, mul4 } from '../src/world/pieces/model.js';
 import { stoneShapes, logShapes } from '../src/world/pieces/meshes.js';
@@ -18,6 +19,11 @@ import { due, grant } from '../src/world/expansion.js';
 import { WATER_CLASS } from '../src/world/water/summary.js';
 import { waterCellCenter } from '../src/world/water/grid.js';
 import { chipRows } from '../src/ui/tools.js';
+import { makeStepping, links, footingAt } from '../src/world/pieces/stepping.js';
+import { planFlight, flightGeom, flightRect, carveFlight, markGuard, crossesGuard, treadSlabs } from '../src/world/pieces/steps.js';
+import { slabShapes } from '../src/world/pieces/slabs.js';
+import { raftShapes, makeRaft, raftRest } from '../src/world/pieces/raft.js';
+import { WORLD_CELLS, WORLD_ORIGIN, CELL } from '../src/world/terrain/grid.js';
 
 const G = 'pieces';
 
@@ -318,11 +324,96 @@ export function addPiecesTests(test, assert, eq) {
     return means.map((m) => m.toFixed(2)).join(', ');
   });
 
-  test(G, 'Sculpt chips always fill their rows: 4, 5, 6 and 7 chips', () => {
+  test(G, 'Sculpt chips always fill their rows: 4 to 10 chips', () => {
     eq(chipRows(4).join(), '4', 'four in a row');
     eq(chipRows(5).join(), '3,2', 'five: three and two');
     eq(chipRows(6).join(), '3,3', 'six: three and three');
     eq(chipRows(7).join(), '4,3', 'seven: four and three');
-    for (const n of [4, 5, 6, 7]) assert(chipRows(n).every((per) => 12 % per === 0), `${n}: each row divides 12 columns`);
+    eq(chipRows(9).join(), '3,3,3', 'nine (with Pond stones and Steps): three rows of three');
+    eq(chipRows(10).join(), '4,3,3', 'ten: four, three and three');
+    for (const n of [4, 5, 6, 7, 8, 9, 10]) assert(chipRows(n).every((per) => 12 % per === 0), `${n}: each row divides 12 columns`);
+    eq(chipRows(3, 3).join(), '3', 'the Water card: three in a row');
+    eq(chipRows(4, 3).join(), '2,2', 'the Water card: four as two and two, so no word breaks');
+    eq(chipRows(5, 3).join(), '3,2', 'the Water card: five as three and two');
+  });
+
+  test(G, 'pond stones and flights of Steps come back from a save exactly, next to loose stones', async () => {
+    const R = await recipe;
+    let s = emptyPieces();
+    s = /** @type {any} */ (addPiece(s, makeStone(99, 1, 1, 2, 40, R), R.cap));
+    const a = makeStepping(99, 2, 3, 4, 0.6, 41, null, R.stepping), b = makeStepping(99, 3, 3.6, 4.1, 0.7, 41, a.id, R.stepping);
+    for (const p of [a, b]) s = /** @type {any} */ (addPiece(s, /** @type {any} */ (p), R.stepping.cap));
+    const flight = { id: 'p4', kind: 'steps', x: -7, z: -9, x2: -7, z2: -13.5, yaw: 0, size: R.steps.widthM, top: 4.25, bottom: 2.05, risers: 10, seed: 77, placedHour: 42 };
+    s = /** @type {any} */ (addPiece(s, /** @type {any} */ (flight), R.steps.cap));
+    const { header, sections } = snapshot(parts(s));
+    const back = restore((await decode(await encode(header, sections))).sections);
+    const c = cleanPieces(back.pieces);
+    eq(JSON.stringify(c.list), JSON.stringify(s.list), 'every record as it was');
+    eq(c.nextId, 5, 'the next id goes on from the highest');
+    assert(a.rise > 0.6 && a.rise < 0.67 && b.run === a.id, 'a stone in 0.6 m of water stands its top a few centimetres above it, and the second joins the first one\'s line');
+    eq(cleanPieces({ list: [{ ...flight, top: 1, bottom: 2 }] }).list.length, 0, 'a flight that climbs the wrong way is left out');
+  });
+
+  test(G, 'a flight of Steps: even rises the walker can climb, cut exactly, and put back after an edit', async () => {
+    const R = await recipe, ST = R.steps;
+    eq(planFlight([0, 0], [0, 1], 3, 1.5, ST).ok, false, 'too short for 1.5 m of drop');
+    eq(/** @type {any} */ (planFlight([0, 0], [0, 1], 3, 2.95, ST)).reason, 'flat', 'no drop to step down');
+    const plan = /** @type {any} */ (planFlight([0, -5.5], [0, 0], 2.05, 4.25, ST));
+    assert(plan.ok && plan.top === 4.25 && plan.z === 0, 'dragged up, it still runs from the top down');
+    const f = /** @type {any} */ ({ ...plan, id: 'p1', kind: 'steps', size: ST.widthM, seed: 3, placedHour: 0 });
+    const g = flightGeom(f, ST);
+    assert(g.rise <= ST.maxRiseM + 1e-9 && g.tread >= ST.minTreadM - 1e-9 && g.rise / g.tread <= ST.maxPitch + 1e-9, `rise ${g.rise.toFixed(3)} m, tread ${g.tread.toFixed(3)} m`);
+    const N = WORLD_CELLS, m = { heightQ: new Uint16Array(N * N), heightF: new Float32Array(N * N), material: new Uint8Array(N * N * 4) };
+    assert(carveFlight(m, f, ST), 'cutting changes the ground');
+    // The walker's half-metre steps along the middle never climb more than its step limit.
+    let worst = 0, prev = null;
+    for (let t = -0.2; t <= g.len + 0.2; t += 0.5) {
+      const z = f.z + g.uz * t, h = m.heightF[cellOf(z) * N + cellOf(0)];
+      if (prev !== null) worst = Math.max(worst, Math.abs(h - prev));
+      prev = h;
+    }
+    assert(worst <= 0.45, `the biggest step between half-metre cells is ${worst.toFixed(2)} m`);
+    const before = m.heightQ.slice();
+    const k = cellOf(-1.5) * N + cellOf(0);
+    m.heightQ[k] += 900; m.heightF[k] += 0.2;
+    assert(carveFlight(m, f, ST, flightRect(f, g)) && m.heightQ.every((q, i) => q === before[i]), 'a brushed cell goes back to its step, and nothing else moves');
+    assert(!carveFlight(m, f, ST), 'cutting again changes nothing');
+    const mask = new Uint8Array(N * N);
+    markGuard(mask, [f], ST, flightRect(f, g));
+    assert(crossesGuard(mask, { ...f, x: 0.5, x2: 0.5 }, ST) && !crossesGuard(mask, { ...f, x: 4, x2: 4 }, ST), 'a second flight may not cross the first');
+    const treads = treadSlabs(f, ST, slabShapes(R));
+    eq(treads.length, (g.risers - 1) * ST.slab.perTread, 'two slabs on every tread between the top and the bottom');
+    return `${g.risers} rises of ${g.rise.toFixed(2)} m over ${g.tread.toFixed(2)} m treads`;
+  });
+
+  test(G, 'a reed raft: saved as it was, baked the same, afloat on the water as it is, on the mud when it goes', async () => {
+    const R = await recipe, RF = R.raft;
+    const raft = makeRaft(11, 1, 4, 5, 60, RF);
+    eq(JSON.stringify(cleanPieces({ list: [raft], nextId: 2 }).list), JSON.stringify([raft]), 'the record comes back exactly, with no water depth in it');
+    const a = raftShapes(R), b = raftShapes(R);
+    assert(a.every((s, i) => s.mesh.vertices.every((v, j) => v === b[i].mesh.vertices[j]) && s.mesh.vertices.every(Number.isFinite)), 'the same shapes on every load');
+    const sh = a[0], thick = sh.hy * raft.size;
+    const afloat = raftRest(raft, sh, () => 0, () => 0.6, RF);
+    assert(afloat.afloat && Math.abs(afloat.y - (0.6 - RF.draftM)) < 1e-9, 'afloat: its base under the water by its draft');
+    const proud = 0.6 - RF.draftM + thick - 0.6;
+    assert(proud > 0.02 && proud < 0.07, `its top ${(proud * 100).toFixed(1)} cm above the water`);
+    const dry = raftRest(raft, sh, (x) => (x - 4) * 0.1, () => 0, RF);
+    assert(!dry.afloat && dry.y > 0, 'with the water gone it rests on the highest ground under it');
+  });
+
+  test(G, 'pond stones: a line is one way across, and the slabs are baked the same every time', async () => {
+    const R = await recipe, S = R.stepping;
+    const flat = () => 0;
+    const a = makeStepping(5, 1, 0, 0, 0.5, 0, null, S), b = makeStepping(5, 2, 0.7, 0, 0.5, 0, a.id, S), c = makeStepping(5, 3, 3, 0, 0.5, 0, a.id, S);
+    const L = links([a, b, c], S);
+    eq(L.length, 1, 'only stones near enough are linked');
+    assert(footingAt([a, b, c], L, flat, S, 0.35, 0.1) > 0.5, 'between two linked stones there is footing');
+    eq(footingAt([a, b, c], L, flat, S, 1.8, 0), -Infinity, 'between unlinked stones there is none');
+    const one = slabShapes(R), two = slabShapes(R);
+    eq(one.length, 16, 'sixteen shapes');
+    assert(one.every((s, i) => s.mesh.vertices.every((v, j) => v === two[i].mesh.vertices[j])), 'the same shapes on every load');
   });
 }
+
+/** The terrain cell a world coordinate falls in. @param {number} v */
+const cellOf = (v) => Math.floor((v - WORLD_ORIGIN) / CELL);

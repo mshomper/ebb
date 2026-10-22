@@ -107,7 +107,7 @@ function smootherRock(lift) {
  * Blend a cell's four weights (grass, sand, rock, soil) toward rock by `w`, keeping their sum at
  * exactly 255. @param {Uint8Array} m @param {number} at @param {number} w
  */
-function paintRock(m, at, w) {
+export function paintRock(m, at, w) {
   const g = m[at] * (1 - w), s = m[at + 1] * (1 - w), so = m[at + 3] * (1 - w);
   const g1 = Math.round(g), s1 = Math.round(s), so1 = Math.round(so);
   m[at] = g1; m[at + 1] = s1; m[at + 3] = so1;

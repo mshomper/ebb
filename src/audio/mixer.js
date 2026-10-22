@@ -10,8 +10,9 @@
 //             └─ send ─┤→ island room ────────┤
 //   tools ────────────────────────────────────┤
 //   ui ───────────────────────────────────────┤→ master → limiter → speakers
-//   music in → chorus EQ → duck → brightness ─┬─ dry ──┐                  │
-//                                             └─ music room ─ wet ┴→ music level ┘
+//   music in → floor → chorus EQ → duck → brightness ─┬─ dry ──┐                  │
+//                                                     └─ music room ─ wet ┴→ music level ┘
+//   (floor: a gentle 12 dB per octave high-pass under the lowest note, doc 24's 60 Hz rule)
 
 import { createRoom } from './reverb.js';
 
@@ -34,15 +35,13 @@ import { createRoom } from './reverb.js';
 /**
  * Build the graph. The context starts suspended until unlock().
  * @param {any} recipe recipes/audio/mixer.json
- * @param {{tier?: 'desktop'|'mobile', levels?: Partial<Record<BusName|'master', number>>, autoVisibility?: boolean}} [opts]
+ * @param {{levels?: Partial<Record<BusName|'master', number>>, autoVisibility?: boolean}} [opts]
  * @returns {Mixer}
  */
 export function createMixer(recipe, opts = {}) {
-  const tier = opts.tier ?? 'desktop';
   const ctx = new AudioContext({ latencyHint: 'interactive' });
   // Created suspended by the browser's autoplay rules on most platforms; make it explicit.
   if (ctx.state === 'running') ctx.suspend();
-  const lengthScale = tier === 'mobile' ? recipe.mobile.reverbLength : 1;
   let unlocked = false;
 
   const limiter = ctx.createDynamicsCompressor();
@@ -60,7 +59,7 @@ export function createMixer(recipe, opts = {}) {
   let masterLevel = opts.levels?.master ?? recipe.master.level;
 
   // Island room, shared by ambience and creatures.
-  const islandRoom = createRoom(ctx, recipe.islandReverb, recipe.seed, lengthScale);
+  const islandRoom = createRoom(ctx, recipe.islandReverb, recipe.seed);
   islandRoom.connect(master);
 
   /** @type {Record<string, GainNode>} */
@@ -84,6 +83,13 @@ export function createMixer(recipe, opts = {}) {
 
   // Music chain.
   const musicIn = ctx.createGain();
+  // The floor: notes stay at B1 (62 Hz) or above (voicing.json), and this second-order high-pass
+  // under them takes out what sits lower still (pedal thumps, key-off knocks, low rumble in the
+  // room) while leaving B1 itself about 1 dB down.
+  const floor = ctx.createBiquadFilter();
+  floor.type = 'highpass';
+  floor.frequency.value = recipe.musicTone.floor?.hz ?? 40;
+  floor.Q.value = recipe.musicTone.floor?.q ?? 0.707;
   const chorusEq = ctx.createBiquadFilter();
   chorusEq.type = 'peaking';
   chorusEq.frequency.value = recipe.musicTone.chorusEq.hz;
@@ -94,12 +100,12 @@ export function createMixer(recipe, opts = {}) {
   bright.type = 'lowpass';
   bright.frequency.value = recipe.musicTone.lowpassHz;
   bright.Q.value = 0.5;
-  const musicRoom = createRoom(ctx, recipe.musicReverb, recipe.seed + 1, lengthScale);
+  const musicRoom = createRoom(ctx, recipe.musicReverb, recipe.seed + 1);
   const wet = ctx.createGain();
   wet.gain.value = recipe.musicReverb.wet;
   const musicLevel = ctx.createGain();
   musicLevel.gain.value = opts.levels?.music ?? recipe.buses.musicDefault;
-  musicIn.connect(chorusEq).connect(duck).connect(bright);
+  musicIn.connect(floor).connect(chorusEq).connect(duck).connect(bright);
   bright.connect(musicLevel);
   bright.connect(musicRoom).connect(wet).connect(musicLevel);
   musicLevel.connect(master);

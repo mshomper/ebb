@@ -1,6 +1,7 @@
 // @ts-check
 // The frog size preview panel (?frogscale, ahead of S6): step between six real-size frogs around
-// the pond, look at one from 3 m, 1 m or 40 cm, and try them at real size, 1.5 or 2.5 times. Also
+// the pond, look at one from 3 m, 1 m or 40 cm, and try them at the sizes in the recipe's
+// preview.sizes (1.5, 2.5 and 3.5 times real; the game's own size, body.displayScale, is marked). Also
 // says how long the pond's edge is, for setting how many frogs it could hold. Camera moves go out
 // as `camera.focus` actions; the frogs come from app.js (`frogScale`). Styles: frog-scale.css.
 
@@ -19,7 +20,8 @@ export function mountFrogScale(parent, fs) {
   let frog = 0, view = -1;
   /** @type {any} */ let found = null;
 
-  const sizeLabel = (/** @type {number} */ s) => (s === 1 ? 'Real' : `${s}x`);
+  const now = fs.recipe.body.displayScale ?? 1;
+  const sizeLabel = (/** @type {number} */ s) => (s === 1 ? 'Real' : s === now ? `${s}x, now` : `${s}x`);
   function render() {
     const spots = found?.spots ?? [];
     const s = spots[frog];
@@ -58,7 +60,7 @@ export function mountFrogScale(parent, fs) {
     if (b.dataset.act === 'next' && found) { frog = (frog + 1) % found.spots.length; if (view < 0) view = 1; look(); }
     if (b.dataset.view) { view = Number(b.dataset.view); look(); }
     if (b.dataset.size) { fs.setSize(Number(b.dataset.size)); look(); }
-    // On a phone the open panel would cover the frog in the middle of the screen: tuck it away
+    // In a narrow window the open panel would cover the frog in the middle of the screen: tuck it away
     // after a view is chosen ("Show" brings it back).
     const tuck = window.matchMedia('(max-width: 560px)').matches && (b.dataset.view || b.dataset.act === 'next' || b.dataset.size);
     const hidden = root.classList.contains('is-hidden') || !!tuck;

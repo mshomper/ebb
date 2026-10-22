@@ -1,7 +1,6 @@
 // @ts-check
 // The field journal panel (docs/13, docs/15): the book button at the top right and the journal it
-// opens. Desktop: a 440 px cream panel on the right, so the island stays in view. Phone: a sheet
-// from the bottom that stops just under half way (the chevron makes it tall). Four sections:
+// opens: a 440 px cream panel on the right, so the island stays in view. Four sections:
 // Living things and Ground (a page each, filled from what has happened on the island), Almanac
 // (today on the island) and Notes. Words only, never numbers or bars.
 //
@@ -37,8 +36,8 @@ const MOMENT_ICON = {
   flower: 'moment-flower', rain: 'moment-rain', dusk: 'moment-dusk', dawn: 'moment-dawn', mist: 'moment-mist',
   summer: 'season-summer', winter: 'season-winter', frost: 'season-winter',
 };
-/** Under this width the journal is a sheet that covers the island's lower half (journal.css). */
-const PHONE = '(max-width: 699px)';
+/** Under this window width the panel covers most of the island. */
+const NARROW = '(max-width: 699px)';
 /** From this width the Trails page shows its three trails side by side, in a wider panel. */
 const WIDE = '(min-width: 1100px)';
 
@@ -70,7 +69,6 @@ export function mountJournal(parent, live, buttonParent = parent) {
     <header class="ebb-journal__head">
       <button type="button" class="ebb-journal__icon-btn" data-act="back" aria-label="Back to the list" title="Back">${iconSvg('back')}</button>
       <h2 class="ebb-journal__title">Field journal</h2>
-      <button type="button" class="ebb-journal__icon-btn ebb-journal__size" data-act="size" aria-label="Make the journal taller" title="Taller">${iconSvg('chevron')}</button>
       <button type="button" class="ebb-journal__icon-btn" data-act="close" aria-label="Close the journal" title="Close (J)">${iconSvg('close')}</button>
     </header>
     <nav class="ebb-journal__nav" aria-label="Journal sections">
@@ -79,7 +77,6 @@ export function mountJournal(parent, live, buttonParent = parent) {
     <div class="ebb-journal__body" tabindex="-1"></div>`;
   const body = /** @type {HTMLElement} */ (panel.querySelector('.ebb-journal__body'));
   const backBtn = /** @type {HTMLButtonElement} */ (panel.querySelector('[data-act="back"]'));
-  const sizeBtn = /** @type {HTMLButtonElement} */ (panel.querySelector('[data-act="size"]'));
   const tabs = /** @type {HTMLButtonElement[]} */ ([...panel.querySelectorAll('[data-view]')]);
 
   // The Web section (journal-web.js): the trail of things tapped there (the last is the one in the
@@ -134,15 +131,13 @@ export function mountJournal(parent, live, buttonParent = parent) {
     }
     const b = /** @type {HTMLElement | null} */ (t.closest('button'));
     if (!b) return;
-    const ui = get('journalUi') ?? {};
     if (b === openBtn) dispatch({ type: 'ui.journal', toggle: true });
     else if (b.dataset.act === 'close') dispatch({ type: 'ui.journal', open: false });
     else if (b.dataset.act === 'back') dispatch({ type: 'ui.journal', page: null });
-    else if (b.dataset.act === 'size') dispatch({ type: 'ui.journal', size: ui.size === 'full' ? 'half' : 'full' });
     else if (b.dataset.show) {
       dispatch({ type: 'journal.showMe', sp: b.dataset.show });
-      // On a phone the sheet would hide what the camera goes to; it closes, and the card leads back.
-      if (window.matchMedia(PHONE).matches) dispatch({ type: 'ui.journal', open: false });
+      // In a narrow window the panel would hide what the camera goes to; it closes, and the card leads back.
+      if (window.matchMedia(NARROW).matches) dispatch({ type: 'ui.journal', open: false });
     } else if (b.dataset.view) dispatch(/** @type {any} */ ({ type: 'ui.journal', view: b.dataset.view, page: null, ...(b.dataset.trail ? { trail: b.dataset.trail } : {}) }));
     else if (b.dataset.trail) dispatch(/** @type {any} */ ({ type: 'ui.journal', trail: b.dataset.trail }));
     else if (b.dataset.page) dispatch({ type: 'ui.journal', page: b.dataset.page });
@@ -161,13 +156,10 @@ export function mountJournal(parent, live, buttonParent = parent) {
     /** @type {import('../world/journal/index.js').JournalUiSlice} */
     const ui = get('journalUi') ?? { open: false, view: 'living', page: null, size: 'half' };
     panel.classList.toggle('is-open', ui.open);
-    panel.classList.toggle('is-full', ui.size === 'full');
     panel.inert = !ui.open;
     panel.setAttribute('aria-hidden', String(!ui.open));
     openBtn.setAttribute('aria-expanded', String(ui.open));
     openBtn.classList.toggle('is-on', ui.open);
-    sizeBtn.setAttribute('aria-label', ui.size === 'full' ? 'Make the journal shorter' : 'Make the journal taller');
-    sizeBtn.title = ui.size === 'full' ? 'Shorter' : 'Taller';
     document.documentElement.classList.toggle('ebb-journal-open', ui.open);
     // Read marks: a dot on the book while anything is unread, and on each section that holds it.
     const U = live.unread();

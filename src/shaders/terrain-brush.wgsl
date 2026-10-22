@@ -25,6 +25,7 @@ struct Stamp {
 @group(0) @binding(2) var heightOut: texture_storage_2d<r32float, write>;
 @group(0) @binding(3) var materialIn: texture_2d<f32>;
 @group(0) @binding(4) var materialOut: texture_storage_2d<rgba8unorm, write>;
+@group(0) @binding(5) var guard: texture_2d<f32>;   // 1 under a flight of Steps: heights stay put
 
 fn falloff(d: f32) -> f32 {
   return 1.0 - smoothstep(s.hardness * s.radius, s.radius, d);
@@ -85,6 +86,9 @@ fn csHeight(@builtin(global_invocation_id) gid: vec3u) {
     }
     default: {}
   }
+  // Steps keep their shape under every brush (src/world/pieces/steps.js); the stroke's end puts
+  // back anything erosion moved.
+  if (textureLoad(guard, c, 0).r > 0.5) { outH = h; }
   textureStore(heightOut, c, vec4f(clamp(outH, -4.0, 12.0), 0.0, 0.0, 0.0));
 }
 

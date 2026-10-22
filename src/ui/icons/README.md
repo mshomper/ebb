@@ -18,7 +18,7 @@ Size and color come from CSS: set `width`/`height` on `.icon` and `color` on the
 - Stroke 1.75, round caps, round joins, `stroke="currentColor"`, no fill by default.
 - Optional accent fill: `currentColor` at 20 percent opacity, for the one shape that carries the meaning (the mound, the blade, the leaf).
 - Calm, rounded, simple: few strokes, no text glyphs, arrows drawn as paths.
-- Drawn at 28 px in 48 px buttons on desktop, 26 px in 52 px buttons on phones, 22 px inside chips.
+- Drawn at 28 px in 48 px buttons, 22 px inside chips.
 
 ## Icons
 
@@ -102,7 +102,7 @@ Size and color come from CSS: set `width`/`height` on `.icon` and `color` on the
 | `heart-full` | the same heart, filled: a piece you have hearted |
 | `heart` | a soft rounded heart, lightly filled: a piece of music you love (the now-playing line) |
 | `back` | a chevron pointing left: back to a list |
-| `chevron` | a chevron pointing up (turned over by CSS to point down): the phone sheet's taller or shorter |
+| `chevron` | a chevron pointing up (turned over by CSS to point down): the journal's folds |
 | `undo` | curved arrow to the left |
 | `redo` | the mirror of undo |
 | `raise` | mound with an up stroke |
@@ -110,11 +110,14 @@ Size and color come from CSS: set `width`/`height` on `.icon` and `color` on the
 | `flatten` | level shelf line over a mound, the cut-away top dotted |
 | `terrace` | a level shelf raised on a sheer face with rock bands on it, an up stroke above: Sculpt's Terrace mode |
 | `cut` | a notch carved into the ground with sheer walls, the cut-away top dotted, a down stroke: Sculpt's Cut mode |
+| `steps` | a flight stepping down from a shelf to the ground, an up stroke beside it: Sculpt's Steps mode (the shaper's trail) |
+| `raft` | a mat of bundled reeds tied with two bands, afloat on a ripple: the Water tool's Raft mode (the turtles' gift) |
+| `pondstones` | three flat stones in a line over a ripple of water: Sculpt's Pond stones mode (the shaper's trail) |
 | `time` | half sun on a horizon with a flow arc |
 | `flow-1`, `flow-2`, `flow-4` | one, two or three pips: normal, 2x and 4x speed |
 | `flow-pause` | two rest bars: time paused |
 | `look` | painter's palette with a thumb notch, three dabs of paint and one empty well: the Look (palette) button |
-| `eye` | an open eye with its pupil: brings hidden HUD buttons back on a touch screen |
+| `eye` | an open eye with its pupil: not in use since ebb became desktop only (it brought hidden HUD buttons back on a touch screen) |
 | `settings` | three horizontal sliders with their knobs: the Settings button |
 | `sound` | a small speaker with two sound arcs: Settings > Sound |
 | `controls` | a fingertip touching, with two rings spreading from the touch: Settings > Controls |

@@ -23,7 +23,7 @@ const GAME = {
   updateHz: 10, near: NEAR,
   gust: { everyS: [6, 20], everyWindScale: 0.4, holdS: [2, 5], peak: [0.3, 1], followPerS: 1.2 },
   frost: { byHourFromSunrise: [[-10, 0], [-7, 0.7], [-1, 1], [1.5, 1], [3.5, 0]], cloudCut: 0.6 },
-  afterRainH: 1.5, mobile: { phoneMaxSidePx: 700 }, seed: 2610,
+  afterRainH: 1.5, seed: 2610,
 };
 
 /** A water summary 60 m square around the origin, every cell one class, with a pond disc. @param {number} pondR */

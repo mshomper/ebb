@@ -5,7 +5,8 @@
 // are put away; Go up glides back up over where you stand, and your figure stays there, seen
 // from above. The walk grid follows every stroke, and the water is read live: the sea at the
 // tide now, the ponds from the live water, so the sandbar opens and closes with the tide. W2 is
-// the feel test: the figure is a plain stand-in, and presence below (W3) comes next.
+// the feel test: the figure is a plain stand-in, and presence below (W3) comes next. Stepping
+// stones and Steps' slabs (o.footing) are ground too: you stand on their tops, and leave no prints.
 // Writes the store slice `walk` { below, placed }. Numbers and words: recipes/world/walker.json.
 
 import { on, emitDeferred } from '../../core/events.js';
@@ -22,22 +23,29 @@ import { level as tideLevel, tideParams } from '../tide.js';
 
 /**
  * @param {{ recipe: any, figure: any, terrain: import('../terrain/index.js').Terrain, water: any, camera: import('../../render/camera.js').OrbitCamera,
- *   tide: any, hours: () => number, creatures: () => { x: number, z: number }[] }} o
+ *   tide: any, hours: () => number, creatures: () => { x: number, z: number }[], footing?: (x: number, z: number) => number }} o
  *   recipe: recipes/world/walker.json; figure: recipes/world/figure.json (W5, the figure you are on foot);
  *   tide: recipes/world/water.json tide; hours: display time in game hours;
- *   creatures: where the animals near you are (the walk eases to a creep within pace.creepNearM)
+ *   creatures: where the animals near you are (the walk eases to a creep within pace.creepNearM);
+ *   footing: the top of a stepping stone or Steps slab there (m), -Infinity where there is none
  */
 export function createWalk(o) {
   const R = o.recipe, { terrain, water, camera } = o;
-  const ground = (/** @type {number} */ x, /** @type {number} */ z) => terrain.sampleHeight(x, z);
+  /** The land alone (terrain), and the ground you stand on: the land, or a stone or slab over it. */
+  const rawGround = (/** @type {number} */ x, /** @type {number} */ z) => terrain.sampleHeight(x, z);
+  const ground = (/** @type {number} */ x, /** @type {number} */ z) => Math.max(rawGround(x, z), o.footing ? o.footing(x, z) : -Infinity);
   const b = terrain.openBounds();
-  let grid = createWalkGrid({ ground, minX: b.openMin[0], minZ: b.openMin[1], maxX: b.openMax[0], maxZ: b.openMax[1],
+  let grid = createWalkGrid({ ground: rawGround, footing: o.footing, minX: b.openMin[0], minZ: b.openMin[1], maxX: b.openMax[0], maxZ: b.openMax[1],
     cellM: R.grid.cellM, maxSlopeDeg: R.grid.maxSlopeDeg });
   const tideP = tideParams(o.tide);
-  /** Water over a cell right now: the live water where it runs, and the sea at the tide now everywhere. */
+  /**
+   * Water over a cell right now: the live water where it runs, and the sea at the tide now
+   * everywhere. The live water is a column over the land, so it is measured from its surface.
+   */
   const depth = (/** @type {number} */ k) => {
     const [x, z] = grid.center(k);
-    return Math.max(0, water.tide - grid.height[k], water.sim.live ? water.sampleLive(x, z).depth : 0);
+    const live = water.sim.live ? rawGround(x, z) + water.sampleLive(x, z).depth - grid.height[k] : 0;
+    return Math.max(0, water.tide - grid.height[k], live);
   };
   const nearest = (/** @type {number} */ x, /** @type {number} */ z) => {
     let best = Infinity;
@@ -57,14 +65,16 @@ export function createWalk(o) {
   const depthAt = (x, z) => { const k = grid.cellAt(x, z); return k >= 0 ? depth(k) : 0; };
   // Footprints (W6): each step on sand or mud leaves one, fading over a day, gone under the tide.
   const FP = o.figure.footprints;
-  const prints = createFootprints(FP, { ground, material: (x, z) => terrain.sampleMaterial(x, z), depth: depthAt });
+  // Prints lie on the land, never on a stone or slab (there, read as deep water: no print).
+  const prints = createFootprints(FP, { ground: rawGround, material: (x, z) => terrain.sampleMaterial(x, z),
+    depth: (x, z) => (o.footing && o.footing(x, z) > rawGround(x, z) + 0.01 ? Infinity : depthAt(x, z)) });
   const printsPass = createFootprintsPass({ max: FP.max });
   /** The ground under a print's four corners, as footprints.wgsl lays the quad. @param {{ x: number, z: number, yaw: number }} p */
   const corners = (p) => {
     const [w, l] = FP.soleM, f = [Math.sin(p.yaw), Math.cos(p.yaw)], r = [f[1], -f[0]];
     const cx = p.x + f[0] * l * 0.28, cz = p.z + f[1] * l * 0.28;
     return [[-1, -1], [1, -1], [-1, 1], [1, 1]].map(([a, b]) =>
-      ground(cx + r[0] * a * w * 0.65 + f[0] * b * l * 0.6, cz + r[1] * a * w * 0.65 + f[1] * b * l * 0.6));
+      rawGround(cx + r[0] * a * w * 0.65 + f[0] * b * l * 0.6, cz + r[1] * a * w * 0.65 + f[1] * b * l * 0.6));
   };
   /** @type {WeakMap<object, number[]>} */ const printCorners = new WeakMap();
   // Grass underfoot (W6): the last few steps, with when they landed (seconds of walking time).
@@ -124,6 +134,11 @@ export function createWalk(o) {
   // Every stroke (and undo) changes the ground: re-read that part of the grid, and make sure the
   // figure isn't walled in.
   const offStroke = on('terrain:stroke-ended', (/** @type {{ rect: { x0: number, z0: number, x1: number, z1: number } }} */ p) => {
+    grid.refresh(p.rect.x0, p.rect.z0, p.rect.x1, p.rect.z1);
+    keepFree();
+  });
+  // A stepping stone or slab put down, moved or taken away: the same, over the ground it covers.
+  const offFooting = on('pieces:footing-changed', (/** @type {{ rect: { x0: number, z0: number, x1: number, z1: number } }} */ p) => {
     grid.refresh(p.rect.x0, p.rect.z0, p.rect.x1, p.rect.z1);
     keepFree();
   });
@@ -355,7 +370,7 @@ export function createWalk(o) {
       if (steps.length > 3) steps = steps.slice(-3);
     },
 
-    dispose() { offStroke(); },
+    dispose() { offStroke(); offFooting(); },
   };
 }
 

@@ -94,6 +94,13 @@ export async function createTerrain(gpu, opts) {
   /** @type {Promise<void> | null} */ let finalizing = null;
   /** @type {{ x: number, z: number, radius: number, hardness: number, visible: boolean, level: number | null }} */
   const ring = { x: 0, z: 0, radius: 1, hardness: rb.hardness, visible: false, level: null };
+  /**
+   * Steps keep their shape (src/world/pieces/steps.js): the brushes skip guarded cells on the GPU,
+   * and at each edit's end this puts back what erosion or a boulder moved there, before the undo
+   * tiles are taken. Returns whether it changed anything.
+   * @type {((m: import('./heightfield.js').Mirror, r: CellRect) => boolean) | null}
+   */
+  let guard = null;
 
   /**
    * Grow a rect by m cells and clamp it to the open land.
@@ -177,6 +184,7 @@ export async function createTerrain(gpu, opts) {
         mirror.material[k * 4 + 3] = res.materials[s + 3];
       }
     }
+    guard?.(mirror, r);
     uploadRect(device, tex, mirror, r);
     const after = copyTiles(mirror, [...st.tileIds]);
     markEdited(r);
@@ -286,11 +294,51 @@ export async function createTerrain(gpu, opts) {
       };
       const r = applyBoulder(mirror, b, point[0], point[2], area, fadeAt);
       if (r.w === 0 || r.h === 0) return null;
+      guard?.(mirror, r);
       uploadRect(device, tex, mirror, r);
       markEdited(r);
       emitDeferred('terrain:stroke-ended', { rect: worldRect(r) });
       const after = copyTiles(mirror, ids);
       return { kind: 'terrain', before, after, bytes: (before.length + after.length) * TILE_BYTES };
+    },
+
+    /**
+     * An edit made on the CPU over a cell rect (Steps, src/world/pieces/steps.js): edit(mirror)
+     * writes heights (heightQ and heightF) and paint inside the rect; returns its undo command, or
+     * null if busy. @param {CellRect} rect @param {(m: import('./heightfield.js').Mirror) => void} edit
+     * @returns {TerrainCommand | null}
+     */
+    editCells(rect, edit) {
+      if (terrain.isBusy()) return null;
+      const r = grow(rect, 0);
+      if (r.w === 0 || r.h === 0) return null;
+      const ids = tilesOf(r);
+      const before = copyTiles(mirror, ids);
+      edit(mirror);
+      uploadRect(device, tex, mirror, r);
+      markEdited(r);
+      emitDeferred('terrain:stroke-ended', { rect: worldRect(r) });
+      const after = copyTiles(mirror, ids);
+      return { kind: 'terrain', before, after, bytes: (before.length + after.length) * TILE_BYTES };
+    },
+
+    /**
+     * The cells the brushes leave alone, and what puts them back after an edit (see `guard`).
+     * @param {Uint8Array} mask N x N, 1 guarded @param {CellRect} rect what changed in it
+     * @param {(m: import('./heightfield.js').Mirror, r: CellRect) => boolean} apply
+     */
+    setGuard(mask, rect, apply) {
+      guard = apply;
+      const r = grow(rect, 0);
+      if (r.w <= 0 || r.h <= 0) return;
+      device.queue.writeTexture({ texture: tex.guard, origin: [r.x, r.y] }, mask.buffer,
+        { offset: mask.byteOffset + r.y * N + r.x, bytesPerRow: N, rowsPerImage: r.h }, [r.w, r.h]);
+    },
+
+    /** World meters to a cell rect over the open land. @param {number} x0 @param {number} z0 @param {number} x1 @param {number} z1 */
+    cellRect(x0, z0, x1, z1) {
+      const i0 = Math.floor((x0 - WORLD_ORIGIN) / CELL), j0 = Math.floor((z0 - WORLD_ORIGIN) / CELL);
+      return grow({ x: i0, y: j0, w: Math.ceil((x1 - WORLD_ORIGIN) / CELL) - i0 + 1, h: Math.ceil((z1 - WORLD_ORIGIN) / CELL) - j0 + 1 }, 0);
     },
 
     /**

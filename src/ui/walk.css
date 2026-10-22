@@ -1,7 +1,5 @@
 /* Go down and Go up (src/ui/walk.js). At the right edge, half way up, the same night glass as the
-   tool bar; nothing else sits there at any width. Phone landscape puts the tools in a column on the
-   right edge (tools.css), so there it moves to the left edge; left-handed mirrors it. While you are
-   below (body.ebb-below) the shaping tools and undo are put away. */
+   tool bar; nothing else sits there at any width. While you are below (body.ebb-below) the shaping tools and undo are put away. */
 
 .ebb-walk {
   --wk-btn: 48px;
@@ -21,11 +19,6 @@
   gap: 8px;
 }
 .ebb-walk__btn[hidden] { display: none; }
-:root.ebb-left-handed .ebb-walk { align-items: flex-start; }
-
-@media (pointer: coarse) {
-  .ebb-walk { --wk-btn: 52px; --wk-icon: 26px; }
-}
 
 .ebb-walk__btn {
   appearance: none;
@@ -64,21 +57,8 @@
 .ebb-walk__icon { display: block; flex: none; width: var(--wk-icon); height: var(--wk-icon); }
 .ebb-walk .icon { display: block; width: var(--wk-icon); height: var(--wk-icon); }
 
-:root.ebb-left-handed .ebb-walk { right: auto; left: max(var(--wk-edge), env(safe-area-inset-left)); }
-/* Phone landscape: the tools are a column on the right, undo sits half way up the left and the
-   island's notes along the bottom left (tools.css, journal.css), so the buttons sit half way up,
-   just inside the tools column. Left-handed, all of it mirrors. */
-@media (max-height: 500px) and (min-width: 600px) {
-  .ebb-walk { right: calc(max(var(--wk-edge), env(safe-area-inset-right)) + 62px + 10px); }
-  :root.ebb-left-handed .ebb-walk { right: auto; left: calc(max(var(--wk-edge), env(safe-area-inset-left)) + 62px + 10px); }
-  /* Below, the ground bar's column (78 px) takes the tools' place. */
-  body.ebb-below .ebb-walk { right: calc(max(var(--wk-edge), env(safe-area-inset-right)) + 78px + 10px); }
-  :root.ebb-left-handed body.ebb-below .ebb-walk { right: auto; left: calc(max(var(--wk-edge), env(safe-area-inset-left)) + 78px + 10px); }
-}
-
 /* The ground bar (W4): along the bottom in the tool bar's place while you are below; each button
-   an icon over its word, so four fit a 320 px phone. Phone landscape: a column at the right edge,
-   where the tools were. */
+   an icon over its word, so four fit a 320 px window. */
 .ebb-ground {
   --wk-icon: 26px;
   position: fixed;
@@ -118,24 +98,7 @@
 .ebb-ground .ebb-walk__btn:hover { background: rgba(244, 238, 228, 0.1); }
 .ebb-ground .ebb-walk__btn[aria-pressed='true'] { background: var(--wordmark-light); }
 .ebb-ground .ebb-walk__name { font-size: var(--text-body); }
-@media (max-height: 500px) and (min-width: 600px) {
-  .ebb-ground {
-    left: auto;
-    right: max(12px, env(safe-area-inset-right));
-    top: calc(max(12px, env(safe-area-inset-top)) + 62px);
-    bottom: auto;
-    transform: none;
-    flex-direction: column;
-  }
-  :root.ebb-left-handed .ebb-ground { right: auto; left: max(12px, env(safe-area-inset-left)); }
-  /* Five buttons (with Net) in a column: a little shorter, so the column fits a phone on its side
-     and stays as narrow as before, clear of Go up. */
-  .ebb-ground { --wk-icon: 22px; }
-  .ebb-ground .ebb-walk__btn { min-height: 50px; padding: 4px 8px; gap: 1px; }
-  .ebb-ground .ebb-walk__name { line-height: 1.1; }
-}
-
-/* Narrow portrait: the time button stacks above the bottom bar (time-flow.css); the ground bar is a
+/* Narrow windows: the time button stacks above the bottom bar (time-flow.css); the ground bar is a
    little taller than the tool bar, so it steps up a little more. */
 @media (max-width: 560px) {
   body.ebb-below .ebb-time { bottom: calc(max(12px, env(safe-area-inset-bottom)) + 84px); }
