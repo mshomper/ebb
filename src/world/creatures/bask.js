@@ -21,7 +21,7 @@ import { stream } from '../../core/rng.js';
  *   goal: { x: number, z: number }, seat: number, from: { x: number, y: number, z: number } | null, under: number }} Turtle
  *   seat: the spot it is bound for or on (-1 none); from: where a climb or slide began; under: until when it stays under
  * @typedef {{ water: (x: number, z: number) => { surface: number, depth: number }, ground: (x: number, z: number) => number,
- *   seats: () => Seat[] }} BaskEnv
+ *   seats: () => Seat[], ring?: (x: number, z: number) => void }} BaskEnv  ring: rings on the water where one slid in
  */
 
 /**
@@ -155,7 +155,8 @@ export function createBask(o) {
           const wy = env.water(f.x, f.z).surface - 0.02 * o.size;
           f.y = from.y + (wy - from.y) * k;
           f.pitch = 0.4 * Math.sin(k * Math.PI);
-          if (k >= 1) { f.mode = 'swim'; f.until = t + range(M.turnEveryS); }
+          // In with a plop and rings on the water (heard as a plop, recipes/audio/game.json pond.plops).
+          if (k >= 1) { f.mode = 'swim'; f.until = t + range(M.turnEveryS); if (env.water(f.x, f.z).depth > 0.02) env.ring?.(f.x, f.z); }
           return;
         }
         // Swimming: to its place by day (if there is one for it), else about home, slowly, the head
