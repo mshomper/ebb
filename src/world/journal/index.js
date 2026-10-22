@@ -266,7 +266,8 @@ export function createJournal(opts) {
     // A keepsake is not a find: tapping it writes nothing in the journal (the shelf is its only
     // record), but a mark seen is a first on the beachcomber's trail, kept or not (src/world/trails.js).
     if (card.keepsake && card.mark) emitDeferred('keepsake:seen', { n: card.mark });
-    if (card.keepsake || card.net) return;
+    // The camp's tent and ring (src/world/camp) are not lives or finds: nothing is written.
+    if (card.keepsake || card.net || card.camp) return;
     // A loose stone or a log: its card offers Lift on foot (src/world/pieces/lift.js); a tap alone
     // looks, and lifts nothing.
     if (card.piece) {

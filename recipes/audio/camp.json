@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "note": "The camp fire's one-shots (docs/future/13 sections 3.5, C-27, C-31; camp:sound from src/world/camp): strike, the fire steel on its flint (each strike of the act); catch, the twigs taking; hiss, rain on a burning fire as it drops low. Played through src/audio/keepsake-sounds.js on the tools bus. The CC0 takes go in assets/audio/one-shots/camp/ (.ogg and .m4a) with their sources in assets/audio/CREDITS.md; until they are there the sounds are silent and the console says so once each.",
+  "root": "assets/audio/one-shots/camp/",
+  "pitchCents": 40,
+  "wakeWaitMs": 400,
+  "sounds": {
+    "strike": { "file": "fire-steel-strike", "db": -14 },
+    "catch": { "file": "twigs-catch", "db": -16 },
+    "hiss": { "file": "fire-rain-hiss", "db": -15 }
+  },
+  "preload": []
+}
