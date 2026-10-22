@@ -6,7 +6,9 @@
 
 - **Live water is a GPU shallow-water heightfield using the virtual pipe model** (O'Brien and Hodgins 1995; Mei, Decaudin and Hu, "Fast Hydraulic Erosion Simulation and Visualization on GPU", 2007). Cell size **0.5 m** (2×2 terrain cells from `08-terrain-and-sculpt.md`) at every tier.
 - **Live water is visual only and not deterministic.** It runs on animation time (real seconds), at fixed step 1/120 s, capped at 4 steps per frame (see `04-render-pipeline.md`). Ecology never reads it.
-- **The water summary is the truth for ecology.** A deterministic CPU computation (integer heights, priority-flood) in a worker produces, per 1 m ecology cell: standing depth at mean tide (u8, cm), flow class (none, still, slow, running, sea), tide-band flag and basin id. It is rebuilt only when terrain or water features change, or land rises. It is never saved; it is rebuilt on load (`18-saves-and-persistence.md`).
+- **The water summary is the truth for ecology.** A deterministic CPU computation (integer heights, priority-flood) in a worker produces, per 1 m ecology cell: standing depth at mean tide (u8, cm), flow class (none, still, slow, running, sea), tide-band flag and basin id. It is rebuilt when terrain or water features change, when land rises, and once every game day (so the water table and the summer drawdown follow the calendar; about 25 ms in a worker at the 192 m ceiling). It is never saved; it is rebuilt on load (`18-saves-and-persistence.md`), so existing islands follow the current rules with no save migration.
+- **The water table** (agreed October 21, 2026): a freshwater lens, computed in the summary worker with integers only. Distance to the sea is an integer chamfer distance transform from the sea cells (3 to a side neighbor, 4 to a diagonal, per 0.5 m cell). On each landmass the lens stands `h = tableMaxM · sqrt(f · (2 − f))` above mean sea level, with `f = d / L`, `d` the cell's distance to the sea and `L` the largest distance on that landmass: the Dupuit island-lens shape, steep near the shore and flat in the middle. `tableMaxM` starts at 0.3 m and swings `tableSwingM` (0.1 m) lower in late summer. The one square root per cell is exactly rounded by IEEE 754, so every device gets the same table.
+- **Seasonal ponds.** Rain-fed ponds lower in summer by at most 15 cm below their lip, never below half their depth, and refill through autumn. They never dry out. Players have to think about pond layout (a pond high on the rise needs a real catchment; a pond near the shore or fed by the brook stays full), and the game explains itself before creatures leave (docs 12, 13).
 - **Tide is analytic** (`src/world/tide.js`): `level(t) = h0 + A(t) · cos(2π t / 12 h + φ)` with h0 = 0 m (mean sea level, Y = 0), base amplitude **A0 = 0.6 m**, and a spring and neap swing of ±15% driven by moon phase from `06-sky-and-lighting.md`: `A(t) = A0 · (1 + 0.15 · cos(4π · moonPhase(t)))`. Spring tides fall at new and full moon, four times per 14-day season (the moon keeps its 7-day cycle, F01).
 - Rendering reads tide at **display time**; ecology and `coarseStep` read it at **world time** (see `16-customization-and-photo-mode.md`).
 - **Chunk-aware.** Water textures cover the world chunk grid of doc 08 at 0.5 m (the world limit of 192 m by 192 m, 6×6 chunks of 32 m, so at most 384×384 cells), allocated once. Simulation dispatches **per active 32 m chunk tile** (64×64 cells). At that limit (doc 13's expansion ceiling) the worst case is 36 tiles, 147,456 cells.
@@ -25,9 +27,9 @@
 
 - **S4b as built** (October 2026):
   - `src/world/water/summary.js`: integer Priority-Flood with first-in-first-out flow directions (fixed neighbor order, flats resolved by breadth-first distance to the outlet); the tide band also requires a connection to the sea through ground no higher than the band top. About 5 to 25 ms for the starter island; same hash on every thread (tools/determinism.html).
-  - Pond rule tuned for an island meadow: a hollow is a pond when spring water reaches it, or when at least `pondMinCatchmentM2` (120 m²) drains into it and it is at least `pondMinDepthM` (0.15 m) deep. The doc's original 30 m² filled every small dip on the plateau.
+  - Pond rule tuned for an island meadow: a hollow is a pond when spring water reaches it, or when at least `pondMinCatchmentM2` (120 m²) drains into it and it is at least `pondMinDepthM` (0.15 m) deep. The doc's original 30 m² filled every small dip on the plateau. *(Replaced October 21, 2026 by the basin rule with the water table and the catchment ratio, below: 120 m² alone still filled most digs on the central rise, to the lip within a minute, in any season; and a hole dug below sea level but sealed from the sea stayed dry right beside it.)*
   - Stream depth from the law above is capped by the Manning depth for the local slope, so the summary agrees with the live water (steep runs 1 to 3 cm, flatter runs deeper).
-  - The nudge tops live water up toward `targetMm` (τ 20 s) and never drains it. Starting water is the sea at the current tide plus the summary's targets.
+  - The nudge tops live water up toward `targetMm` (τ 20 s) and never drains it. Starting water is the sea at the current tide plus the summary's targets. *(October 21, 2026: above its target a pond or stream now evaporates toward it, slowly; see "Summary nudge" below.)*
   - Damp hollows read on the ground: the summary's damp cells (hollows of at least `dampHollowMinM2`, 3 m²) go to a small 0.5 m texture the terrain reads, darkening them by `dampHollowWet` (a slice of the S4c wetness pass, without drying).
   - Water tool: Pour and Drain (named Soak in the first plan) at up to 60 L/s under the brush; Spring (locked behind `unlocks.springs`). `water.sampleLive(x, z)` reads a CPU copy of depth and velocity made four times a second through a ring of three buffers.
 
@@ -76,7 +78,7 @@ The terrain height texture is the water bed. When a brush changes the bed under 
 
 - **Lowering**: depth stays, so the surface dips and neighbors flow in. A dug hollow fills from its surroundings, and from the summary nudge if it is a new pond.
 - **Raising**: depth is kept, so the water rides up on the new ground and runs off it downhill on the next steps. Volume is conserved and the result is a soft bow wave instead of water vanishing. (Decided in S4a, October 2026: simpler than removing the rise and re-adding it on the brush ring, with the same look.)
-- On `terrain:stroke-ended`, the summary is rebuilt (debounced 300 ms), which updates the ecology and the nudge targets.
+- On `terrain:stroke-ended`, the summary is rebuilt (debounced 300 ms), which updates the ecology and the nudge targets. It is also rebuilt when the game day changes (the water system watches world time, so catch-up and time skips are covered too).
 
 ### The water summary (deterministic)
 
@@ -84,8 +86,16 @@ Run by `src/world/water/summary.js` as a `background` lane worker job with integ
 
 1. Bed at 0.5 m = **minimum** of the 2×2 quantized terrain heights, so a 0.25 m channel the player carved is not lost.
 2. Sea cells are those connected to the world edge with bed below mean sea level. Tide band cells have a bed within `[−1.15 A0, +1.15 A0]`, the full spring tide range. **Shore height** (docs/future/10, Z1): for the band and the splash ground above it, up to `splashFactor` (0.6) A0 over the band top and reached the same way, a byte 1..255 grades the bed from the band bottom to the splash top (0 elsewhere), with `shoreRange` giving the meters. `src/world/water/shore.js` turns it and the painted ground into shore zones from `recipes/world/shore.json` (kelp, wrack, channelled wrack and lichen on rock; rippled and firm wet sand; tidal mud), shown in `tools/shore-lab.html`. **The strandline** (Z3, `src/world/water/strandline.js`): of the last 14 high waters, each line still lying (no later high water reached above it, at most 8) is drawn as litter at its level plus a little wave run-up, newest freshest, fading over 96 game hours; from the analytic tide alone, so nothing is saved.
-3. **Priority-Flood** (Barnes, Lehman and Mulla, 2014) gives the filled surface, basin labels and spill points. Flats are resolved with Barnes' flat-resolution method (2014) so flow directions are well defined.
-4. A basin is a **pond** (filled to its spill level) if spring discharge reaches it, or if its catchment is at least 30 m² (rain-fed). Smaller basins stay dry but are marked as damp hollows, which feeds moisture in doc 10.
+3. **The water table** (`src/world/water/table.js`): the chamfer distance to the sea cells and the lens above it, for the day of the year the summary is built for. **Priority-Flood** (Barnes, Lehman and Mulla, 2014) gives the filled surface, basin labels and spill points. Flats are resolved with Barnes' flat-resolution method (2014) so flow directions are well defined.
+4. **The basin rule** (October 21, 2026). Each basin's water level, in order:
+   1. **Spring-fed**: spring discharge reaches it. Filled to its spill level (unchanged).
+   2. **Rain-fed**: its catchment is at least `rainCatchmentRatio` (8) times its own full surface area, and at least `pondMinCatchmentM2` (120 m²), and it is at least `pondMinDepthM` (0.15 m) deep. Level = spill level minus the seasonal drawdown, never below the water table where the table holds it up. The ratio is what keeps a modest dig on the rise dry: it collects little more than its own footprint.
+   3. **Below the water table**: its floor lies at least `tableMinDepthM` (5 cm) under the table. It holds water up to the table at its floor, or its spill level, whichever is lower. This covers near-shore digs and a hole below sea level sealed from the sea.
+   4. Otherwise a **damp hollow** (unchanged), which feeds moisture in doc 10. Cells of a pond left above its lowered level are damp too: the bare margin.
+
+   **Seasonal drawdown** for rain-fed ponds: `drawdown = min(drawdownMaxM · s, drawdownMaxFrac · depth)`, with `drawdownMaxM` 0.15 m, `drawdownMaxFrac` 0.5, and `s` a smoothstep over the season clock in thousandths: 0 through winter and spring, rising from the first day of summer (day 14 of the 56-day year) to 1 at late summer (day 25), falling back to 0 by mid-autumn (day 35) (`drawdownDays`).
+
+   The summary also gives each basin's source (`basinSource`: none, spring, rain or table) and how far below its lip it stands now (`basinDrawMm`), so ecology and the journal can say why a pond is low, and the table height per cell (`tableMm`) for the tuning overlay.
 5. Spring discharge (liters per second) is routed with D8 flow directions over the filled surface and accumulated down to the sea. Stream depth comes from a simple power law, `d = clamp(0.08 · Q^0.4, 0.02, 0.3)` m with Q in L/s, and speed `v = Q / (w · d)` with an assumed width `w = 0.5 + 0.1 √Q` m.
 6. Class per 0.5 m cell: `sea`; `still` (pond, or v < 0.05 m/s); `slow` (v < 0.3 m/s); `running`. Cells are aggregated into 1 m cells as follows: depth is the mean over wet subcells, and the class is that of the fastest subcell when at least a quarter of the cell is wet.
 
@@ -158,7 +168,7 @@ u   ← (f_left_in − f_left_out + f_right_out − f_right_in) / (2 · l · d̄
 - **Stability**: the gravity-wave speed `√(g d)` gives a CFL limit of about 0.08 s at 4 m depth, far above our step. Speeds are clamped to 4 m/s. Cells under 1 mm are dry. Friction `c_f = 0.6 / s` plus a depth-dependent Manning-style term on thin sheets stops endless sloshing. A NaN guard resets a cell to its target.
 - **Sea boundary**: sea cells and the outer ring of every active region are set to `max(0, level(display) − bed)` each step.
 - **Rate boundary**: across the boundary between a full-rate and a quarter-rate chunk, each side treats the other as a fixed level for that step. The tiny volume error is absorbed by the nudge.
-- **Summary nudge**: in cells the summary marks as pond or stream, `d += (target − d) · (1 − e^(−Δt/τ))` with τ = 20 real seconds, applied only when live depth is below target (so ponds refill and never overflow from the nudge). A newly dug hollow visibly fills over about a minute.
+- **Summary nudge**: in cells the summary marks as pond or stream, `d += (target − d) · (1 − e^(−Δt/τ))` with τ = 20 real seconds, applied only when live depth is below target (so ponds refill and never overflow from the nudge). A newly dug hollow visibly fills over about a minute. Above the target (a rain-fed pond whose summer level has dropped) the water evaporates toward it with a long time constant on game time, `nudge.evaporateTauH` (3 game hours; at 1x about 3 real minutes, faster at 2x and 4x, stopped when paused), so the level eases down over a day and never visibly drains. Water standing on the bare margin runs down into the pond.
 - **Rain**: adds depth uniformly at the weather rain rate (live, visual only) and drives ripples.
 - **Foam** (`world/water/foam.js`, `water-foam.wgsl`, `water.json` `foam`): a coverage field on the water cells, one dispatch per frame after the simulation steps. Made where the surface drops more than 5 cm into the neighbor the water flows toward (little falls), where flows converge (`−∇·u`), and where fast, shallow water churns over its bed (stream riffles and beach swash: under 12 cm deep, fading in from 0.25 to 0.8 m/s; this replaced S4a's separate riffle flecks, whose 0.7 s reset cycle made them blink). Films of a few millimeters spilling over a bank never froth. It is advected semi-Lagrangianly by `waterVel` and decays over about 6 s on moving water; on still water (under 0.15 m/s) it spreads toward its neighbors' average and lingers about 12 s, so foam pouring into a pond fans out into a thin veil. Capped at 0.65 cover.
 - **Ripples** (`src/world/water/ripples.js`, `water-ripples.wgsl`, `lib-ripples.wgsl`, `water.json` `ripples`): a damped 2D wave equation, h' = (2h − h_prev + C² ∇²h) · damping with C = c Δt / Δx (c = 0.25 m/s, capillary-gravity ripples; C capped at 0.5), on its own fine window: 256² texels of 0.1 m (a 25.6 m square; 128² on the low tier) centered on the camera's orbit target, stepped at a fixed 1/120 s (at most 4 substeps a frame), with rings fading to 5% over 3 s on top of their own spreading. The window is world-anchored and toroidal: world texel c = floor(xz / 0.1 m) lives at index c mod N, so moving the window never shifts the rings, and each state texel (rgba32float: h, h_prev, and the world texel it holds) starts at rest when it wraps to a new world texel. It is held at rest where the live water is thinner than 1 cm, fading in to full by 3 cm, so rings stop at the shore. Drops are smooth dips (1 − t²)² pressed into the water at rest, which then ring out. The pour brush's drops are hashed on the GPU per substep on a world grid of 0.4 m cells (at most one drop per cell per substep), 60 drops a second at full strength. Raindrops are not in this field: at 10 cm a texel they read as spreading divots. They are drawn as rings in the water shader instead (`water.json` `ripples.rings`): on 0.35 m cells each drop lives 0.9 s while its ring spreads to 18 cm (radius growing with √age), with a short train of crests 2.5 cm apart whose slope fades with age; up to 70% of the cells hold a drop at full rain, two offset grids layered so no pattern lines up. They fade out where a pixel is too coarse to hold the crests, so they never shimmer in the distance. Creatures and fish queue impulses (`addImpulse(x, z, strength, radius)`, up to 32 a frame). The drawing reads the r32float height with `rippleSlope()`: central differences blended bilinearly, faded out over the last 2 m of the window, scaled by `normalStrength`, and added to the surface slope.
@@ -211,19 +221,19 @@ u   ← (f_left_in − f_left_out + f_right_out − f_right_in) / (2 · l · d̄
 
 ## Tuning knobs
 
-- Tuning panel (`recipes/world/water.json`): base tide amplitude, spring and neap swing, tide phase; friction; foam thresholds and decay; nudge time; rain-fed pond catchment threshold; stream depth law; absorption coefficients per water body; scattering albedo; caustic strength; Gerstner wave set; refraction strength. Overlays: flow class map, basin labels, live minus summary difference.
+- Tuning panel (`recipes/world/water.json`): base tide amplitude, spring and neap swing, tide phase; friction; foam thresholds and decay; nudge time and evaporation time; rain-fed pond catchment threshold and ratio; water table height, seasonal swing and minimum depth; summer drawdown (most, share of depth, days); stream depth law; absorption coefficients per water body; scattering albedo; caustic strength; Gerstner wave set; refraction strength. Overlays: flow class map, basin labels (with each basin's source: spring, rain, table or damp), the water table height, live minus summary difference.
 - Player: starter water tool modes (pour, drain). The stream tool (dragonflies' gift) places springs and sets their rate (three steps: trickle, brook, stream).
 
 ## Performance budget
 
-| | high (desktop, 1440p) | low (phone) |
+| | high (desktop, 1440p) | low (emergency fallback on a weak laptop) |
 |---|---|---|
 | Simulation, worst case 36 tiles | 0.6 ms (2 steps per frame) | 0.9 ms (active radius 40 m, 1/60 s steps) |
 | Foam and ripples | 0.15 ms | 0.1 ms (ripples 128²) |
 | Waterfalls (M2): lips found, droplet water near the eye, curtains and spray further off | under 1 ms: 2,048 lips, 32,768 droplets within 35 m at 0.75 of the render size (measured 0.33 ms p50 close up) | under 0.3 ms: 256 lips, curtains only, 5 rows |
 | Shading | 0.9 ms (SSR, mip refraction) | 0.6 ms (no SSR, single-mip refraction) |
 | Caustics (inside opaque) | 0.15 ms | 0.05 ms (one layer) |
-| Summary rebuild (worker) | 25 ms | 80 ms |
+| Summary rebuild (worker), once a game day and after edits | 25 ms | 50 ms |
 | Readback | under 0.05 ms main thread | same |
 
 ## Acceptance checks
@@ -237,10 +247,17 @@ u   ← (f_left_in − f_left_out + f_right_out − f_right_in) / (2 · l · d̄
 - At night the moon lays a glittering path on the sea.
 - A frog hopping into the pond makes rings that spread and fade. Fish swim below the surface and never above it.
 - Drag the preview dial to low tide: the flats appear. Release it: the sea returns to the real level.
+- Water table (tools/unit-tests.html, group "water table"):
+  - A modest dig on the central rise stays a damp hollow.
+  - A dig near the shore with its floor below the table fills to the table.
+  - A hole below sea level sealed from the sea fills to about sea level.
+  - In late summer a rain-fed pond sits no more than 15 cm below its lip and never below half its depth, then refills by mid-autumn; the margin it leaves bare reads as damp.
+  - A dragonfly pond with a gentle bank keeps its margin all summer; one with steep walls triggers the journal line before they leave (docs 12, 13).
 
 ## Open questions
 
-- Should a hollow with no spring fill by itself from rain, or should ponds need a spring or the pour tool to start them?
+- ~~Should a hollow with no spring fill by itself from rain?~~ Closed October 21, 2026: yes, with the catchment ratio and the seasonal drawdown above.
+- Later, optional: fill a new rain-fed pond only while it rains rather than within a minute. The live water could do it, but ecology reads the summary, which would see the pond before it is visibly full. Worth doing only if that gap is acceptable.
 - Is the tide range (about 1.2 m from low to high, more at spring tides) right for the island's size, or should it feel smaller and gentler?
 - Should the sea have small rolling waves breaking on the beach, or stay nearly glassy?
 

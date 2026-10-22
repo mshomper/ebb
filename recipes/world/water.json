@@ -24,9 +24,16 @@
     "prefillMinAreaM2": 30
   },
   "summary": {
-    "note": "The deterministic water summary (docs/07): integers only, rebuilt after terrain edits and spring changes, read by ecology and used as the live refill target. pondMinCatchmentM2 and pondMinDepthM: a dry hollow becomes a rain-fed pond when at least this much ground drains into it and it is at least this deep at its deepest; other hollows stay damp. Spring-fed hollows always fill. Stream depth d = clamp(streamK Q^streamExp, streamMinM, streamMaxM) with Q in L/s, capped by Manning depth for the local slope (manningN) over width w = streamW0 + streamW1 sqrt(Q). Classes by speed: still under slowSpeed, slow under runningSpeed, running above. bandFactor: the tide band is +-bandFactor A0 about mean sea level (the full spring range); splashFactor: the shore (graded shore height, docs/future/10) reaches this many A0 above the band top, for the splash zone. debounceS after a stroke before rebuilding.",
+    "note": "The deterministic water summary (docs/07): integers only, rebuilt after terrain edits, spring changes and once a game day, read by ecology and used as the live refill target. Spring-fed hollows always fill to their lip. Rain-fed: a dry hollow becomes a pond when at least pondMinCatchmentM2 and at least rainCatchmentRatio times its own full area drains into it, and it is at least pondMinDepthM deep at its deepest; it stands drawdownMaxM below its lip at most in late summer, never more than drawdownMaxFrac of its depth, rising and falling smoothly between drawdownDays (start, deepest, gone; days of the 56-day year from the first day of spring). Water table: a freshwater lens, at mean sea level along the shore and rising inland as tableMaxM sqrt(f (2 - f)), f the share of the way from the sea to the landmass's middle, tableSwingM lower at the deepest drawdown; a hollow whose floor lies at least tableMinDepthM under it fills to it (or to its lip), and it holds rain-fed ponds up. Other hollows stay damp. Stream depth d = clamp(streamK Q^streamExp, streamMinM, streamMaxM) with Q in L/s, capped by Manning depth for the local slope (manningN) over width w = streamW0 + streamW1 sqrt(Q). Classes by speed: still under slowSpeed, slow under runningSpeed, running above. bandFactor: the tide band is +-bandFactor A0 about mean sea level (the full spring range); splashFactor: the shore (graded shore height, docs/future/10) reaches this many A0 above the band top, for the splash zone. debounceS after a stroke before rebuilding.",
     "pondMinCatchmentM2": 120,
     "pondMinDepthM": 0.15,
+    "rainCatchmentRatio": 8,
+    "drawdownMaxM": 0.15,
+    "drawdownMaxFrac": 0.5,
+    "drawdownDays": [14, 25, 35],
+    "tableMaxM": 0.3,
+    "tableSwingM": 0.1,
+    "tableMinDepthM": 0.05,
     "streamK": 0.08,
     "streamExp": 0.4,
     "streamMinM": 0.02,
@@ -40,8 +47,9 @@
     "debounceS": 0.3
   },
   "nudge": {
-    "note": "Live water is topped up toward the summary target, never drained by it: d += (target - d)(1 - exp(-dt / tauS)) where d < target. Ponds refill and dug hollows that count as ponds fill to their lip in about a minute.",
-    "tauS": 20
+    "note": "Live water is topped up toward the summary target: d += (target - d)(1 - exp(-dt / tauS)) where d < target. Ponds refill and dug hollows that count as ponds fill to their lip in about a minute. Where a pond or stream stands above its target (a rain-fed pond lowering in summer), it evaporates toward it far more slowly, over evaporateTauH game hours, so the level eases down and never visibly drains; paused time stops it.",
+    "tauS": 20,
+    "evaporateTauH": 3
   },
   "foam": {
     "note": "Foam on the live water (docs/07, water-foam.wgsl, drawn in water-draw.wgsl). A coverage field on the 0.5 m cells, carried by the current and fading over fadeS; on still water (slower than stillBelowMs) it spreads out at spreadPerS (a share of the neighbors' average per second) and lingers for fadeStillS. Its lace rides the current through a flow map of flowCycleS, each spot resetting at its own moment, sliding at most maxSlideM a cycle (fast water churns instead of smearing). Made at falls: where the surface drops more than fallFromM into the neighbor the water flows toward, fallGain cover per meter of extra drop per second (full at 0.3 m/s or faster); where flows meet: convergenceGain cover per unit of convergence (1/s) per second; churn (stream riffles, beach swash; this replaced S4a's separate riffle flecks): churnGain cover per second where water is shallower than churnDepthM, fading in over the churnSpeed range (m/s). maxCover caps it. Drawing: lace breaks the cover into bubbly froth of laceM cells that boils in place at boil cells per second (no reset cycle, so nothing blinks); opacity is the most of a pixel foam covers; albedo is the foam's whiteness, lit like a rough surface.",

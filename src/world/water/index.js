@@ -14,6 +14,10 @@ import { createWaterSim } from './sim.js';
 import { bedHeights, initialDepths } from './init.js';
 import { buildSummary, WATER_CLASS } from './summary.js';
 import { WATER_CELL, WATER_ORIGIN, rectForBounds, waterCellOf, waterCellCenter } from './grid.js';
+import { dayIndexOf, DAYS_PER_SEASON, SEASONS_PER_YEAR } from '../../core/clock.js';
+
+/** Game day of the year (0..55 from the first day of spring) at world time t. @param {number} t */
+const yearDayOf = (t) => dayIndexOf(t) % (DAYS_PER_SEASON * SEASONS_PER_YEAR);
 
 const SUMMARY_JOB = { module: './world/water/summary.js', fn: 'buildSummary' };
 
@@ -22,9 +26,10 @@ const SUMMARY_JOB = { module: './world/water/summary.js', fn: 'buildSummary' };
 /**
  * @param {import('../../core/gpu.js').Gpu} gpu
  * @param {{ terrain: import('../terrain/index.js').Terrain, recipe: any, land: any, terrainSeed: number,
- *   tier: string, displayHours: number, getHeightQ: () => Uint16Array | null, springs?: Spring[] }} opts
+ *   tier: string, displayHours: number, worldT?: number, getHeightQ: () => Uint16Array | null, springs?: Spring[] }} opts
  *   recipe: recipes/world/water.json; land: the land recipe (its `spring`); terrainSeed: the seed the
  *   landform was built with; displayHours: display time at start, for the starting sea level;
+ *   worldT: world time at start (game seconds), for the season's water table and pond levels;
  *   getHeightQ: the terrain's quantized heights (the summary's input); springs: placed springs to restore.
  */
 export async function createWater(gpu, opts) {
@@ -77,6 +82,14 @@ export async function createWater(gpu, opts) {
 
   /** Springs as the summary wants them. */
   const summarySprings = () => springs.map((s) => ({ cellX: waterCellOf(s.x), cellY: waterCellOf(s.z), rateLps: s.rateLps }));
+  // The summary follows the calendar (the table and the summer drawdown): rebuilt once a game day.
+  let yearDay = yearDayOf(opts.worldT ?? 0);
+  let lastWorldT = opts.worldT ?? 0;
+  let evaporateK = 0;
+  /** Everything buildSummary needs, now. */
+  const summaryArgs = (/** @type {Uint16Array} */ heightQ) => ({
+    heightQ, rect, springs: summarySprings(), params: { ...recipe.summary, manningN: simRecipe.manningN }, tide: recipe.tide, yearDay,
+  });
 
   /** @type {any} */ let summary = null;
   /** @param {any} s */
@@ -102,7 +115,7 @@ export async function createWater(gpu, opts) {
     const bed = bedHeights((x, z) => terrain.sampleHeight(x, z), rect);
     const depth = initialDepths(bed, rect, { tide, minDepth: Infinity, minArea: Infinity });
     if (heightQ) {
-      const s = buildSummary({ heightQ, rect, springs: summarySprings(), params: { ...recipe.summary, manningN: simRecipe.manningN }, tide: recipe.tide });
+      const s = buildSummary(summaryArgs(heightQ));
       for (let i = 0; i < depth.length; i++) depth[i] = Math.max(depth[i], s.targetMm[i] * 0.001);
       applySummary(s);
     }
@@ -119,8 +132,7 @@ export async function createWater(gpu, opts) {
       const heightQ = opts.getHeightQ();
       if (!heightQ) return;
       const v = ++summaryVersion;
-      run(SUMMARY_JOB, { heightQ, rect, springs: summarySprings(), params: { ...recipe.summary, manningN: simRecipe.manningN }, tide: recipe.tide },
-        { lane: 'background', key: 'water-summary' })
+      run(SUMMARY_JOB, summaryArgs(heightQ), { lane: 'background', key: 'water-summary' })
         .then((s) => { if (v === summaryVersion) applySummary(s); })
         .catch((err) => { if (err?.name !== 'Cancelled') console.warn('water summary failed', err); });
     }, recipe.summary.debounceS * 1000);
@@ -165,6 +177,13 @@ export async function createWater(gpu, opts) {
     /** @param {import('../../sim/live-sim.js').FrameInfo} f */
     tick(f) {
       tide = level(f.displayT / 3600, tideP);
+      // Evaporation runs on game time: a share per step from the game seconds this frame covered.
+      const gameDt = Math.max(0, f.worldT - lastWorldT);
+      lastWorldT = f.worldT;
+      evaporateK = f.realDt > 0 && gameDt < 3600
+        ? 1 - Math.exp(-(gameDt / f.realDt) * stepS / (recipe.nudge.evaporateTauH * 3600)) : 0;
+      const day = yearDayOf(f.worldT);
+      if (day !== yearDay) { yearDay = day; requestSummary(); }
       acc += f.realDt;
       steps = Math.min(simRecipe.maxSteps, Math.floor(acc / stepS));
       acc -= steps * stepS;
@@ -181,7 +200,7 @@ export async function createWater(gpu, opts) {
     encode(encoder) {
       const timed = wantStats && querySet && !timeBusy && steps > 0;
       sim.encode(encoder, {
-        rect, steps, dt: stepS, tide, recipe: simRecipe, stats: wantStats, sources: sources(), nudgeK,
+        rect, steps, dt: stepS, tide, recipe: simRecipe, stats: wantStats, sources: sources(), nudgeK, evaporateK,
         timestampWrites: timed && querySet ? { querySet, beginningOfPassWriteIndex: 0, endOfPassWriteIndex: 1 } : undefined,
       });
       if (timed && querySet && resolveBuf && timeRead) {
