@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ebb asset lab</title>
+<link rel="icon" href="../brand/ebb-favicon.svg" type="image/svg+xml">
+<style>
+  @font-face { font-family: 'Nunito'; src: url('../src/vendor/fonts/nunito-latin-600-normal.woff2') format('woff2'); font-weight: 600; }
+  @font-face { font-family: 'Nunito'; src: url('../src/vendor/fonts/nunito-latin-800-normal.woff2') format('woff2'); font-weight: 800; }
+  @font-face { font-family: 'Fraunces'; src: url('../src/vendor/fonts/fraunces-latin-full-italic.woff2') format('woff2'); font-style: italic; }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; max-width: 100%; overflow-x: hidden; }
+  body { background: #F4EEE4; color: #1E2624; font: 600 17px/1.45 'Nunito', system-ui, sans-serif; padding: 16px; overflow-wrap: anywhere; }
+  main { max-width: 1280px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; padding-bottom: 60px; }
+  h1 { font-size: 24px; font-weight: 800; margin: 0; }
+  h2 { font-size: 18px; font-weight: 800; margin: 0; }
+  .muted { color: #4A5551; font-size: 16px; margin: 0; }
+  .card { background: #FBF7F0; border: 1px solid #E3D9C9; border-radius: 14px; padding: 14px 16px; min-width: 0; display: flex; flex-direction: column; gap: 12px; }
+  .pair { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; }
+  @media (min-width: 900px) { .pair { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; } }
+  .stage { position: relative; width: 100%; aspect-ratio: 1 / 1; border-radius: 10px; background: #EDE6DA; overflow: hidden; }
+  .stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; cursor: grab; }
+  .stage canvas:active { cursor: grabbing; }
+  .placeholder { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 24px; text-align: center; color: #4A5551; }
+  .placeholder svg { width: 56px; height: 56px; }
+  .controls { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .grid4 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  @media (min-width: 600px) { .grid4 { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+  button { font: 800 16px/1.2 'Nunito', system-ui, sans-serif; color: #FBF7F0; background: #4a6a47; border: 0; border-radius: 12px; padding: 10px 8px; cursor: pointer; min-height: 44px; }
+  button[aria-pressed=true] { background: #23361F; box-shadow: inset 0 0 0 3px #A9C39B; }
+  button:disabled { opacity: 0.5; cursor: default; }
+  select { font: 800 17px/1.2 'Nunito', system-ui, sans-serif; color: #1E2624; background: #FBF7F0; border: 2px solid #C9BBA5; border-radius: 12px; padding: 8px 10px; min-height: 44px; width: 100%; min-width: 0; }
+  label.lead { font-weight: 800; }
+  dl { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 6px 14px; margin: 0; font-size: 16px; }
+  dt { color: #4A5551; } dd { margin: 0; font-weight: 800; }
+  .note { font-family: 'Fraunces', Georgia, serif; font-style: italic; font-size: 18px; margin: 0; color: #2E4A2C; min-height: 1.5em; }
+  .heat { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; }
+  #heat { width: 100%; max-width: 360px; aspect-ratio: 1 / 1; display: block; border-radius: 8px; background: #EDE6DA; image-rendering: auto; }
+  .bar { height: 16px; max-width: 360px; border-radius: 8px; background: linear-gradient(90deg, #C4C0BA 0%, #C4C0BA 6%, #EBD7B4 18%, #E3A64A 30%, #A8322A 100%); }
+  .ticks { display: flex; justify-content: space-between; max-width: 360px; font-size: 15px; color: #4A5551; }
+  .key { display: flex; align-items: center; gap: 10px; font-size: 16px; }
+  .key svg { flex: 0 0 auto; width: 40px; height: 16px; }
+  p.small { font-size: 16px; margin: 0; color: #4A5551; }
+  code { font-size: 15px; background: #EDE6DA; padding: 1px 5px; border-radius: 5px; }
+  a { color: #4a6a47; }
+</style>
+</head>
+<body>
+<main>
+  <h1>ebb asset lab</h1>
+  <p class="muted">Matt's models beside their web copies under day and dusk light, with triangles, file sizes and a color map difference, so the painting can be checked. Both sides turn together; drag either to turn them, scroll to come closer. <a href="./">All tools</a></p>
+  <div class="card controls">
+    <div class="grid2">
+      <button id="folder">Choose your Ebb/_assets folder</button>
+      <p class="small" id="folder-note">The originals stay on your computer: the page only reads them.</p>
+    </div>
+    <input id="folder-input" type="file" webkitdirectory multiple hidden>
+    <label class="lead" for="pick">Model</label>
+    <select id="pick"></select>
+    <div class="grid2">
+      <button id="prev">Previous</button>
+      <button id="next">Next</button>
+    </div>
+    <div class="grid4">
+      <button id="day" aria-pressed="true">Day</button>
+      <button id="dusk" aria-pressed="false">Dusk</button>
+      <button id="pause" aria-pressed="false">Pause</button>
+      <button id="front">Look at the front</button>
+    </div>
+    <p class="note" id="status" role="status" aria-live="polite">Starting</p>
+  </div>
+  <div class="pair">
+    <div class="card">
+      <h2>Original</h2>
+      <div class="stage">
+        <canvas id="left" aria-label="Matt's original model"></canvas>
+        <div class="placeholder" id="left-wait">
+          <svg viewBox="0 0 48 48" fill="none" stroke="#4a6a47" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M6 14h13l4 5h19v19a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2z"/><path d="M6 14v-2a2 2 0 0 1 2-2h9l3 4"/>
+          </svg>
+          <span id="left-text">The original shows here once you choose your Ebb/_assets folder above.</span>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Web copy</h2>
+      <div class="stage"><canvas id="right" aria-label="The web copy of the model"></canvas></div>
+    </div>
+  </div>
+  <div class="pair">
+    <div class="card">
+      <h2>Numbers</h2>
+      <dl id="stats"></dl>
+      <h2>Which way it faces</h2>
+      <div class="key"><svg viewBox="0 0 40 16" aria-hidden="true"><path d="M2 8h28" stroke="#E0914A" stroke-width="5" stroke-linecap="round"/><path d="M28 2l10 6-10 6z" fill="#E0914A"/></svg><span>The orange arrow on the ground points along +Z. The model's front should face it.</span></div>
+      <div class="key"><svg viewBox="0 0 40 16" aria-hidden="true"><path d="M2 8h36" stroke="#6FA6D6" stroke-width="2.5" stroke-linecap="round"/></svg><span>The thin blue line points along +X.</span></div>
+      <p class="small">A model that faces the wrong way is fixed by its <code>yawDeg</code> in <code>tools/assets/models.json</code> and a re-run of the build. Front toward the blue line (+X): -90. Front away from the blue line (-X): 90. Front away from the arrow (-Z): 180. "Look at the front" stops the turning and looks back along the arrow.</p>
+    </div>
+    <div class="card">
+      <h2>Color map difference</h2>
+      <div class="heat">
+        <canvas id="heat" aria-label="Where the copy's color map differs from the original's"></canvas>
+        <div class="bar" aria-hidden="true"></div>
+        <div class="ticks" aria-hidden="true"><span>0</span><span>8</span><span>16</span><span>24</span><span>32+</span></div>
+        <dl id="diff"></dl>
+        <p class="small">The original's color map is drawn down to the copy's size and compared pixel by pixel, in 0 to 255 units. Grey is the copy's own picture where nothing changed; amber to red marks change. A mean under about 3 is good: the painting carried over. Higher, or red patches, means the paint moved or blurred there.</p>
+      </div>
+    </div>
+  </div>
+</main>
+<script src="./boot-guard.js"></script>
+<script type="importmap">{ "imports": {
+  "wgpu-matrix": "../src/vendor/wgpu-matrix/wgpu-matrix.module.js" } }</script>
+<script type="module" src="./asset-lab.js"></script>
+</body>
+</html>
