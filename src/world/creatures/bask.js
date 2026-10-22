@@ -6,7 +6,7 @@
 // water. A fast swoop close by or an edit beside them sends them sliding into the water, to stay
 // under a while.
 //
-// Basking (TL4) it breathes, its limbs pumping in and out, blinks, turns its head slowly or stretches it\n// up to the sun, yawns now and then, and dries from glossy to matte.\n//\n// Swimming (TL2) is stroke and glide: the diagonal pairs of legs sweep in turn and push it on, then
+// Basking (TL4) it breathes, its limbs pumping in and out, blinks, turns its head slowly or stretches it\n// up to the sun, yawns now and then, and dries from glossy to matte.\n//\n// Startled (TL5), they slip off one by one, a plop each, hide under the water, then pop their heads up\n// to peek back at the spot before they come back.\n//\n// Swimming (TL2) is stroke and glide: the diagonal pairs of legs sweep in turn and push it on, then
 // it glides with its flippers laid back until it slows. Now and then one dives and swims along
 // under the surface, then comes up to hang at the periscope, nose and eyes out, sometimes turned to
 // face you. Its pose follows what it is doing (rigs/turtle.js).
@@ -16,7 +16,7 @@
 // patrol.js, so the live schools system (schools.js) runs it.
 
 import { stream } from '../../core/rng.js';
-import { poseState, easeWeights, poseTurtle, noseY, haulPath, haulS } from './rigs/turtle.js';
+import { poseState, easeWeights, poseTurtle, noseY, haulPath, haulS, slidePath } from './rigs/turtle.js';
 
 const DEG = Math.PI / 180;
 
@@ -28,6 +28,7 @@ const DEG = Math.PI / 180;
  *   look: number, lookTo: number, nextLook: number, mode: string, until: number,
  *   goal: { x: number, z: number }, seat: number, from: { x: number, y: number, z: number } | null, under: number,
  *   spd: number, depth: number, gliding: boolean, glideUntil: number, facing: boolean, faceTo?: number, lookUpTo?: number,
+ *   slideAt?: number, calm?: boolean, rest?: { x: number, y: number, z: number }, peekAt?: { x: number, z: number },
  *   id: number, t: number, w: Record<string, number>, ph: number, stroke: number, haulK: number, slideK: number,
  *   lookUp: number, jaw: number, wet: number }} Turtle
  *   and its pose (rigs/turtle.js TurtlePose). seat: the spot it is bound for or on (-1 none); from:
@@ -46,7 +47,7 @@ const DEG = Math.PI / 180;
  */
 export function createBask(o) {
   const { M, env } = o;
-  const P = M.pose, SW = M.swim, W = M.walk, B = M.bask;
+  const P = M.pose, SW = M.swim, W = M.walk, B = M.bask, S5 = M.startle;
   const rng = stream(o.seed >>> 0, 0xba5c, o.id);
   /** @type {Turtle[]} */ const fish = [];
   let home = { ...o.home }, t = 0, fleeUntil = -1;
@@ -123,13 +124,39 @@ export function createBask(o) {
   }
   spawn(o.count);
 
-  /** Send every turtle on a seat back into the water. */
-  function slideAll() {
-    for (const f of fish) {
-      if (f.mode !== 'bask' && f.mode !== 'climb') continue;
-      f.mode = 'slide'; f.from = { x: f.x, y: f.y, z: f.z }; f.until = t + M.climbS * 0.5;
-      f.goal = wanderPoint(); f.seat = -1;
+  /**
+   * Send every turtle on a seat back into the water, one by one (TL5): each slips off a moment after
+   * the one before, in no set order. Startled (not calm) they then hide under the water.
+   * @param {boolean} calm evening or winter coming on: in without hiding
+   */
+  function slideAll(calm) {
+    const on = fish.filter((f) => (f.mode === 'bask' || f.mode === 'climb' || f.mode === 'shuffle') && f.slideAt === undefined);
+    let at = t + (calm ? range(S5.calmFirstS) : range(S5.firstS));
+    for (let n = on.length; n > 0; n--) {
+      const f = on.splice(Math.floor(rng.next() * n), 1)[0];
+      f.slideAt = at; f.calm = calm;
+      at += range(calm ? S5.calmGapS : S5.gapS);
     }
+  }
+
+  /**
+   * Startled: dive and hide under the water a while, swimming off away from the spot it left (or
+   * anywhere), then up to peek back at it. @param {Turtle} f @param {{ x: number, z: number }} [from]
+   */
+  function hide(f, from) {
+    f.mode = 'hide'; f.depth = range(S5.hideDepthM); f.under = t + range(S5.hideS); f.gliding = false; f.seat = -1;
+    f.peekAt = from ? { x: from.x, z: from.z } : undefined;
+    f.goal = wanderPoint();
+    if (from) {
+      const d = range(S5.fleeM), gx = f.x + Math.sin(f.yaw) * d, gz = f.z + Math.cos(f.yaw) * d;
+      if (env.water(gx, gz).depth >= M.minDepthM) f.goal = { x: gx, z: gz };
+    }
+  }
+
+  /** Begin the slip off its spot, forward, the way it faces the water. @param {Turtle} f */
+  function startSlide(f) {
+    f.mode = 'slide'; f.from = { x: f.x, y: f.y, z: f.z }; f.slideK = 0; f.slideAt = undefined; f.seat = -1;
+    f.goal = wanderPoint();
   }
 
   /** Turn the yaw toward a heading by at most rate*dt. @param {Turtle} f @param {number} to @param {number} rate rad/s @param {number} dt */
@@ -214,9 +241,10 @@ export function createBask(o) {
     f.x += Math.sin(f.yaw) * f.spd * dt; f.z += Math.cos(f.yaw) * f.spd * dt;
     f.ph += dt / (P.swim.strokeS * 2.5);
     f.stroke = 0.15;
-    // Turned to face you: the whole body comes round by sculling, the head straight at you.
-    const v = env.viewer?.();
-    if (f.facing && v) {
+    // Turned to face you (or, peeking after a fright, back at the spot it left): the whole body
+    // comes round by sculling, the head straight at it.
+    const v = f.facing ? env.viewer?.() : f.peekAt ? [f.peekAt.x, 0, f.peekAt.z] : null;
+    if (v) {
       const to = Math.atan2(v[0] - f.x, v[2] - f.z);
       turnToward(f, to, SW.faceRadS, dt);
       // The head gets there first.
@@ -258,13 +286,17 @@ export function createBask(o) {
     },
     resize(/** @type {number} */ n) { if (n > fish.length) spawn(n - fish.length); else fish.length = Math.max(0, n); },
     setMood(/** @type {'day'|'night'|'winter'} */ m) {
-      if (m !== 'day' && mood === 'day') slideAll();
+      if (m !== 'day' && mood === 'day') slideAll(true);
       mood = m;
     },
     startle() {
       fleeUntil = t + M.fleeS;
-      slideAll();
-      for (const f of fish) f.under = t + M.fleeS;
+      // Those on a spot slip off one by one; those swimming dive at once and hide.
+      slideAll(false);
+      for (const f of fish) {
+        if (f.mode === 'climb') f.slideAt = t;
+        if (['swim', 'under', 'peri', 'peek', 'graze', 'bottom'].includes(f.mode)) hide(f);
+      }
     },
     get darting() { return fleeUntil > t; },
     setVisit() {},
@@ -291,12 +323,19 @@ export function createBask(o) {
         // Wet from the water, it dries in the sun: glossy to matte (the creature shader's dry).
         if (basking || f.mode === 'shuffle' || f.mode === 'walk') f.wet = Math.max(0, f.wet - dt / B.dryS);
         else if (f.mode !== 'climb') f.wet = Math.min(1, f.wet + dt / B.wetS);
-        if (f.mode === 'slide') f.slideK = Math.min(1, 1 - (f.until - t) / (M.climbS * 0.5));
         easeWeights(f, dt, P);
         if (f.mode === 'bask' || f.mode === 'climb' || f.mode === 'shuffle') {
+          // Its turn to slip off (one by one after a startle, or as evening comes on); till then it
+          // stays put where it rests.
+          if (f.slideAt !== undefined) {
+            if (t >= f.slideAt) startSlide(f);
+            else if (f.mode !== 'climb' && f.rest) { f.x = f.rest.x; f.y = f.rest.y; f.z = f.rest.z; }
+            return;
+          }
           const p = places[f.seat];
-          if (!p) { slideAll(); return; }
+          if (!p) { slideAll(true); return; }
           const at = restOn(p.s, p.k);
+          f.rest = at;
           if (f.mode === 'climb') {
             // The haul-out (TL3): front claws reach over the edge, the shell tips up, the hind legs
             // heave it over in two shoves, a pause (rigs/turtle.js haulPath). A low step goes quicker.
@@ -346,24 +385,41 @@ export function createBask(o) {
           return;
         }
         if (f.mode === 'slide') {
-          const k = Math.min(1, 1 - (f.until - t) / (M.climbS * 0.5));
-          const from = f.from ?? f;
-          const to = { x: from.x + Math.sin(f.yaw) * 0.25, z: from.z + Math.cos(f.yaw) * 0.25 };
-          f.x = from.x + (to.x - from.x) * k; f.z = from.z + (to.z - from.z) * k;
-          const wy = env.water(f.x, f.z).surface - 0.02 * o.size;
-          f.y = from.y + (wy - from.y) * k;
-          f.pitch = 0.4 * Math.sin(k * Math.PI);
+          // The slip off (TL5): forward the way it faces, nose dipping, down into the water
+          // (rigs/turtle.js slidePath).
+          f.slideK = Math.min(1, f.slideK + dt / P.slide.s);
+          const k = f.slideK, from = f.from ?? f, path = slidePath(k, P);
+          const out = S5.slideM * o.size;
+          const ex = from.x + Math.sin(f.yaw) * out, ez = from.z + Math.cos(f.yaw) * out;
+          const ew = env.water(ex, ez);
+          const endY = ew.depth > 0.02 ? ew.surface - (SW.surfaceM + 0.01) * o.size : env.ground(ex, ez);
+          f.x = from.x + (ex - from.x) * path.h; f.z = from.z + (ez - from.z) * path.h;
+          f.y = from.y + (endY - from.y) * path.v;
+          f.pitch = path.pitch;
           // In with a plop and rings on the water (heard as a plop, recipes/audio/game.json pond.plops);
           // off a spot on the shore it lands on its feet and walks to the water.
           if (k >= 1) {
             newWander(f);
-            if (env.water(f.x, f.z).depth > 0.02) { f.mode = 'swim'; f.spd = 0.1; env.ring?.(f.x, f.z); } else f.mode = 'walk';
+            if (env.water(f.x, f.z).depth > 0.02) {
+              env.ring?.(f.x, f.z);
+              f.spd = 0.1;
+              if (f.calm) f.mode = 'swim';
+              else hide(f, from);
+            } else f.mode = 'walk';
+            f.calm = undefined;
           }
           return;
         }
-        if (f.mode === 'peri') {
+        if (f.mode === 'hide') {
+          // Under, tucked, swimming off; then up for a look.
+          paddle(f, f.goal.x, f.goal.z, M.paddleMps * S5.hideSpeedShare, dt);
+          holdDepth(f, dt, 0);
+          if (t >= f.under) { f.mode = 'peek'; f.until = t + range(S5.peekS); f.depth = 0; f.facing = !!env.viewer && rng.next() < S5.peekFaceChance; }
+          return;
+        }
+        if (f.mode === 'peri' || f.mode === 'peek') {
           holdPeriscope(f, dt);
-          if (t >= f.until) { f.mode = 'swim'; f.facing = false; newWander(f); }
+          if (t >= f.until) { f.mode = 'swim'; f.facing = false; f.peekAt = undefined; newWander(f); }
           return;
         }
         // Swimming: to its place by day (if there is one for it), else about home.
