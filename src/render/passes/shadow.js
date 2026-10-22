@@ -38,6 +38,8 @@ export function createShadowPass(opts) {
   let cliffDetailM = new URLSearchParams(location.search).get('cliffdetail') === '0' ? 0 : opts.cliffDetailM ?? 45;
   /** What the chunk records were last packed for, so they repack only when it changes. */
   let packedKey = '';
+  /** Casters beside the terrain (the camp's props): each draws itself into a cascade. @type {ShadowCaster[]} */
+  const extra = [];
 
   /**
    * Every open chunk at the shadow LOD, except cliff chunks near the eye at full detail, so the
@@ -143,6 +145,10 @@ export function createShadowPass(opts) {
     enabled: () => true,
     state,
     update,
+    /** Another caster (props): it prepares once a frame with the cascades, then draws into each. @param {ShadowCaster} k */
+    addCaster(k) { extra.push(k); },
+    /** The depth bias the terrain casts with, for other casters' pipelines. */
+    get bias() { return { depthBias: recipe.depthBias, depthBiasSlopeScale: recipe.depthBiasSlopeScale }; },
 
     /** The shadow map and its comparison sampler, created on first call (lighting binds them). @param {GPUDevice} device */
     resources(device) {
@@ -232,6 +238,7 @@ export function createShadowPass(opts) {
       const data = new Float32Array((CASCADE_STRIDE / 4) * MAX_CASCADES);
       for (let c = 0; c < cascades; c++) data.set(state.viewProj[c], (c * CASCADE_STRIDE) / 4);
       ctx.device.queue.writeBuffer(cascadeBuffer, 0, data);
+      const casting = state.strength > 0 ? extra.filter((k) => k.prepare(ctx.device, data, CASCADE_STRIDE)) : [];
       // One timing for all cascades: start stamp on the first pass, end stamp on the last.
       const ts = ctx.timestampWrites('shadow');
       for (let c = 0; c < cascades; c++) {
@@ -256,6 +263,7 @@ export function createShadowPass(opts) {
             pass.setIndexBuffer(ib.buffer, 'uint16');
             pass.drawIndexed(ib.count, d.count, 0, 0, d.first);
           }
+          for (const k of casting) k.cast(pass, c * CASCADE_STRIDE);
         }
         pass.end();
       }
@@ -264,3 +272,9 @@ export function createShadowPass(opts) {
 }
 
 /** @typedef {ReturnType<typeof createShadowPass>} ShadowPass */
+/**
+ * @typedef {{ prepare: (device: GPUDevice, cascades: Float32Array, stride: number) => boolean,
+ *   cast: (pass: GPURenderPassEncoder, offset: number) => void }} ShadowCaster
+ *   prepare: once a frame, with every cascade's view-projection at stride bytes apart; false casts nothing.
+ *   cast: draw into the cascade whose matrix sits at offset (bytes) in what prepare was given.
+ */
