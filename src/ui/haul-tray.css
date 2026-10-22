@@ -1,5 +1,4 @@
-/* The haul tray (docs/future/12, K6; src/ui/haul-tray.js): a card over the island on desktop, a
-   sheet from the bottom on phones. One catch to a row: its picture, its name and one line, its
+/* The haul tray (docs/future/12, K6; src/ui/haul-tray.js): a card over the island. One catch to a row: its picture, its name and one line, its
    buttons. Body text never under 16 px; nothing ever scrolls sideways. */
 
 .ebb-haul {
@@ -96,20 +95,8 @@
 .ebb-haul__empty { margin: 0; padding: 16px 18px; border-top: 1px solid var(--haul-rule); font-size: var(--text-body); font-weight: 600; color: var(--haul-soft); }
 .ebb-haul__foot { padding: 14px 18px 18px; border-top: 1px solid var(--haul-rule); display: grid; justify-items: center; }
 
-/* Phones: a sheet from the bottom, full width; the picture smaller, the buttons full width under it. */
+/* Narrow windows: the picture smaller, the buttons full width under it. */
 @media (max-width: 600px) {
-  .ebb-haul { place-items: end stretch; padding: 0; }
-  .ebb-haul__card {
-    width: 100%;
-    max-height: 88vh;
-    max-height: 88dvh;
-    border-radius: 18px 18px 0 0;
-    padding-bottom: env(safe-area-inset-bottom);
-  }
-  .ebb-haul__head, .ebb-haul__row, .ebb-haul__foot, .ebb-haul__empty {
-    padding-left: max(16px, env(safe-area-inset-left));
-    padding-right: max(16px, env(safe-area-inset-right));
-  }
   .ebb-haul__row { grid-template-columns: 96px minmax(0, 1fr); grid-template-areas: "pic txt" "btns btns"; }
   .ebb-haul__btns { flex-direction: column; }
   .ebb-haul__btn, .ebb-haul__foot .ebb-haul__btn { width: 100%; }

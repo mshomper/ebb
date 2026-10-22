@@ -20,9 +20,14 @@
 //     ties going to the neighbor nearest the outlet in steps (a breadth-first distance-to-outlet
 //     resolution of flats, equivalent in effect to Barnes' 2014 flat resolution). These parent
 //     links form a tree that drains every cell to the ring.
-//  4. Depressions (connected cells whose filled surface is above the bed, not sea) are basins. A
-//     basin is a pond, filled to its spill level, when spring water reaches it or when at least
-//     pondMinCatchmentM2 of ground drains into it; otherwise its cells are damp hollows.
+//  The water table (table.js): a freshwater lens at mean sea level along the shore, rising inland
+//     to tableMaxM (less tableSwingM in late summer), from a chamfer distance to the sea cells.
+//  4. Depressions (connected cells whose filled surface is above the bed, not sea) are basins, each
+//     with a source, in order: spring (spring water reaches it: full to its spill level); rain (at
+//     least pondMinCatchmentM2 and rainCatchmentRatio times its own area drains into it, and it is
+//     pondMinDepthM deep: its spill level less the summer drawdown, never below the table); table
+//     (its floor lies at least tableMinDepthM under the water table: full to the table or its spill
+//     level, whichever is lower). Otherwise, and where a basin's level leaves its bed bare, damp.
 //  5. Spring discharge is accumulated down the tree. Outside ponds and sea, stream depth is
 //     d = clamp(streamK Q^streamExp, streamMinM, streamMaxM), capped by the Manning depth for the
 //     local slope, and speed v = Q / (w d) with w = streamW0 + streamW1 sqrt(Q) sets the class.
@@ -30,9 +35,13 @@
 
 import { quantize, WORLD_CELLS, H_RANGE } from '../terrain/grid.js';
 import { det } from '../../core/rng.js';
+import { waterTable, drawdownShare } from './table.js';
 
 /** Flow classes per cell. Numeric order is also "fastest" order for the wet classes 1..4. */
 export const WATER_CLASS = Object.freeze({ dry: 0, sea: 1, still: 2, slow: 3, running: 4, damp: 5 });
+
+/** Where a basin's water comes from (summary `basinSource`): none (a damp hollow), spring, rain, table. */
+export const BASIN_SOURCE = Object.freeze({ none: 0, spring: 1, rain: 2, table: 3 });
 
 /** Mean sea level as a height step (16384). */
 const SEA_Q = quantize(0);
@@ -66,6 +75,11 @@ const qToMm = (q) => Math.floor((q * H_RANGE * 1000 + 32767) / 65535);
  * @property {Uint8Array} cls        WATER_CLASS per 0.5 m cell
  * @property {Uint16Array} basin     basin id (1..65535) for pond and damp cells, else 0
  * @property {Uint8Array} band       1 in the tide band
+ * @property {Uint16Array} tableMm   water table height above mean sea level (mm; 0 on the sea)
+ * @property {Uint8Array} basinSource  BASIN_SOURCE per basin id (index 0 unused; ids past 65534 share 65535)
+ * @property {Uint16Array} basinDrawMm how far a basin stands below its spill level now (mm): the
+ *   summer drawdown of a rain-fed pond, or the gap to the lip of one held up by the table
+ * @property {number} drawdown       the season's drawdown share now, 0..1000
  * @property {Uint8Array} shore      shore height: 1..255 from the band bottom to the splash top, 0 off the shore
  * @property {{loM:number, hiM:number}} shoreRange  meters about mean sea level that shore 1 and 255 stand for
  * @property {SummaryEco} eco
@@ -79,10 +93,11 @@ const qToMm = (q) => Math.floor((q * H_RANGE * 1000 + 32767) / 65535);
  * @param {{ heightQ: Uint16Array,
  *   rect: {x:number,y:number,w:number,h:number},
  *   springs: {cellX:number, cellY:number, rateLps:number}[],
- *   params: any, tide: any }} args
+ *   params: any, tide: any, yearDay?: number }} args
  *   heightQ: 768 x 768 quantized terrain heights, row-major, x fastest. rect: water cells (0.5 m);
  *   its outer ring touches open sea. springs: water-cell coords. params: water.json `summary`.
- *   tide: water.json `tide` (amplitudeM).
+ *   tide: water.json `tide` (amplitudeM). yearDay: game day of the year, 0..55 from the first day
+ *   of spring (0 when left out), for the season's table and drawdown.
  * @returns {Summary}
  */
 export function buildSummary(args) {
@@ -130,6 +145,17 @@ export function buildSummary(args) {
     if (reach[k] && bed[k] >= bandLo) shore[k] = 1 + Math.floor(((bed[k] - bandLo) * 254) / span);
   }
   const shoreRange = { loM: (-bandQ * H_RANGE) / 65535, hiM: ((bandQ + splashQ) * H_RANGE) / 65535 };
+
+  // The water table: a lens over the sea, lower in late summer. Absolute height steps per cell.
+  const drawdown = drawdownShare(args.yearDay ?? 0, params.drawdownDays ?? [14, 25, 35]);
+  const tableTopM = (params.tableMaxM ?? 0) - ((params.tableSwingM ?? 0) * drawdown) / 1000;
+  const lens = waterTable(sea, w, h, Math.max(0, Math.round((tableTopM * 65535) / H_RANGE)), queue);
+  const table = new Uint16Array(n);
+  const tableMm = new Uint16Array(n);
+  for (let k = 0; k < n; k++) {
+    table[k] = SEA_Q + lens[k];
+    if (!sea[k]) tableMm[k] = qToMm(lens[k]);
+  }
 
   // 3. Priority-Flood with a first-in, first-out bucket queue.
   const fill = new Uint16Array(n);
@@ -196,17 +222,19 @@ export function buildSummary(args) {
   const exitAcc = [0];               // per depression: cells draining out of it (its catchment)
   const fed = [0];                   // per depression: spring water reaches it
   const deep = [0];                  // per depression: deepest fill above the bed (height steps)
+  const area = [0];                  // per depression: cells
+  const floor = [0];                 // per depression: its deepest cell (the first found)
   let nDep = 0;
   for (let k0 = 0; k0 < n; k0++) {
     if (label[k0] || sea[k0] || fill[k0] <= bed[k0]) continue;
     const id = ++nDep;
-    let catchment = 0, isFed = 0, qh = 0, qt = 0, deepest = 0;
+    let catchment = 0, isFed = 0, qh = 0, qt = 0, deepest = 0, floorK = k0;
     label[k0] = id;
     queue[qt++] = k0;
     while (qh < qt) {
       const k = queue[qh++];
       if (flow[k] > 0) isFed = 1;
-      if (fill[k] - bed[k] > deepest) deepest = fill[k] - bed[k];
+      if (fill[k] - bed[k] > deepest) { deepest = fill[k] - bed[k]; floorK = k; }
       // An exit (its parent is outside the depression; a flooded non-sea neighbor would be in this
       // same depression): everything upstream of the depression drains out through it.
       const up = parent[k];
@@ -224,14 +252,38 @@ export function buildSummary(args) {
     exitAcc.push(catchment);
     fed.push(isFed);
     deep.push(deepest);
+    area.push(qt);
+    floor.push(floorK);
   }
   const minCells = Math.ceil((params.pondMinCatchmentM2 ?? 30) * 4 - 1e-9);
+  const ratio = params.rainCatchmentRatio ?? 0;
   // Rain alone only keeps a hollow wet if it is deep enough; shallower ones stay damp (height steps).
   const minDeepQ = Math.round(((params.pondMinDepthM ?? 0) * 65535) / 16);
-  const isPond = new Uint8Array(nDep + 1);
+  const tableDeepQ = Math.round(((params.tableMinDepthM ?? 0) * 65535) / 16);
+  const drawMaxQ = Math.round(((params.drawdownMaxM ?? 0) * 65535) / 16);
+  const drawFracK = Math.round((params.drawdownMaxFrac ?? 0) * 1000);
+  // Per basin: its source and how far below its spill level it stands (height steps; the spill
+  // level is the filled surface, flat across a basin).
+  const source = new Uint8Array(nDep + 1);
+  const lowerQ = new Int32Array(nDep + 1);
   let ponds = 0;
   for (let id = 1; id <= nDep; id++) {
-    if (fed[id] || (exitAcc[id] >= minCells && deep[id] >= minDeepQ)) { isPond[id] = 1; ponds++; }
+    const fk = floor[id], spill = fill[fk];
+    const tableLv = table[fk] < spill ? table[fk] : spill;
+    const underTable = tableLv - bed[fk] >= (tableDeepQ > 1 ? tableDeepQ : 1);
+    if (fed[id]) source[id] = BASIN_SOURCE.spring;
+    else if (exitAcc[id] >= minCells && exitAcc[id] >= ratio * area[id] && deep[id] >= minDeepQ) {
+      source[id] = BASIN_SOURCE.rain;
+      // Summer drawdown: at most drawdownMaxM, never more than drawdownMaxFrac of the depth.
+      const byM = Math.floor((drawMaxQ * drawdown) / 1000), byFrac = Math.floor((deep[id] * drawFracK) / 1000);
+      let level = spill - (byM < byFrac ? byM : byFrac);
+      if (underTable && tableLv > level) level = tableLv;   // the table holds it up
+      lowerQ[id] = spill - level;
+    } else if (underTable) {
+      source[id] = BASIN_SOURCE.table;
+      lowerQ[id] = spill - tableLv;
+    }
+    if (source[id]) ponds++;
   }
 
   // 5 and 6. Classes and target depths.
@@ -251,10 +303,11 @@ export function buildSummary(args) {
     const id = label[k];
     if (id) {
       basin[k] = id < 65535 ? id : 65535;
-      if (isPond[id]) {
+      const top = fill[k] - lowerQ[id];
+      if (source[id] && top > bed[k]) {
         cls[k] = WATER_CLASS.still;
-        targetMm[k] = qToMm(fill[k] - bed[k]);
-      } else cls[k] = WATER_CLASS.damp;
+        targetMm[k] = qToMm(top - bed[k]);
+      } else cls[k] = WATER_CLASS.damp;   // a damp hollow, or a lowered pond's bare margin
       continue;
     }
     const qml = flow[k];
@@ -321,11 +374,21 @@ export function buildSummary(args) {
     }
   }
 
+  // Per basin id as the cells carry it (ids past 65534 share 65535 and take the last one's).
+  const nIds = (nDep < 65535 ? nDep : 65535) + 1;
+  const basinSource = new Uint8Array(nIds);
+  const basinDrawMm = new Uint16Array(nIds);
+  for (let id = 1; id <= nDep; id++) {
+    const b = id < 65535 ? id : 65535;
+    basinSource[b] = source[id];
+    basinDrawMm[b] = qToMm(lowerQ[id]);
+  }
+
   const out = {
-    rect, targetMm, cls, basin, band, shore, shoreRange, eco, hash: 0,
+    rect, targetMm, cls, basin, band, shore, shoreRange, eco, tableMm, basinSource, basinDrawMm, drawdown, hash: 0,
     stats: /** @type {{ponds:number, streamCells:number, ms?:number}} */ ({ ponds, streamCells }),
-    __transfer: [targetMm.buffer, cls.buffer, basin.buffer, band.buffer, shore.buffer,
-      eco.depthCm.buffer, eco.cls.buffer, eco.band.buffer, eco.basin.buffer],
+    __transfer: [targetMm.buffer, cls.buffer, basin.buffer, band.buffer, shore.buffer, tableMm.buffer,
+      basinSource.buffer, basinDrawMm.buffer, eco.depthCm.buffer, eco.cls.buffer, eco.band.buffer, eco.basin.buffer],
   };
   out.hash = hashSummary(out);
   if (perf) out.stats.ms = perf.now() - t0;
@@ -378,7 +441,8 @@ function commonId(ids, n) {
  * FNV-1a (32-bit) over the rect and every output array, element by element (little-endian bytes),
  * so the result is the same on any platform. Used by the determinism page and tests.
  * @param {{ rect: {x:number,y:number,w:number,h:number}, targetMm: Uint16Array, cls: Uint8Array,
- *   basin: Uint16Array, band: Uint8Array, shore?: Uint8Array, eco: { x:number, y:number, w:number, h:number,
+ *   basin: Uint16Array, band: Uint8Array, shore?: Uint8Array, tableMm?: Uint16Array,
+ *   basinSource?: Uint8Array, basinDrawMm?: Uint16Array, eco: { x:number, y:number, w:number, h:number,
  *   depthCm: Uint8Array, cls: Uint8Array, band: Uint8Array, basin: Uint16Array } }} s
  * @returns {number} uint32
  */
@@ -395,6 +459,9 @@ export function hashSummary(s) {
   for (const v of [s.rect.x, s.rect.y, s.rect.w, s.rect.h, s.eco.x, s.eco.y, s.eco.w, s.eco.h]) u16(v);
   words(s.targetMm); bytes(s.cls); words(s.basin); bytes(s.band);
   if (s.shore) bytes(s.shore);
+  if (s.tableMm) words(s.tableMm);
+  if (s.basinSource) bytes(s.basinSource);
+  if (s.basinDrawMm) words(s.basinDrawMm);
   bytes(s.eco.depthCm); bytes(s.eco.cls); bytes(s.eco.band); words(s.eco.basin);
   return hsh >>> 0;
 }

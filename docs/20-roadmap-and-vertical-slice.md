@@ -5,7 +5,7 @@
 ## Locked decisions
 
 - Nothing from a later milestone is built until the milestone before it is click-tested and approved.
-- The slice is desktop-first but must already run with touch input on a phone, at the low quality tier.
+- ebb is a desktop and laptop game, played with mouse, keyboard or trackpad (decided October 21, 2026). Phones and tablets used by touch get a short note that ebb is made for a desktop or laptop, with a link to notarobot-eng.com/ebb, and the game does not load behind it. Medium is the floor tier; low is a fallback for weak laptops. The slice was first built to run on phones too; those parts were retired then.
 - The slice has no human structures and no audio; both start in M2.
 - Each milestone ends with a short click-test list for Matt and a local `tools/` page for anything numeric.
 - Each milestone lands on its own branch and merges to main only with Matt's approval.
@@ -33,7 +33,7 @@ The skeleton everything else hangs on. No gameplay yet, but it should already lo
 - A flat placeholder island and a plain sky, so the camera and frame graph can be seen working.
 - `tools/frame-timing.html`: live per-pass timing graph Matt can run locally.
 
-Click-test: the page opens on desktop and phone, the camera orbits, pans and zooms smoothly with mouse and with two fingers, and the timing page shows steady frame times.
+Click-test: the page opens on desktop, the camera orbits, pans and zooms smoothly with the mouse, and the timing page shows steady frame times.
 
 ### M1 — Vertical slice
 
@@ -51,16 +51,16 @@ One island, everything in miniature. Built in seventeen steps, each its own clic
 | S4c | Water optics and wet ground: sky probe with specular mips, screen-space reflection on high, caustics, foam, ripples from rain and creatures, the visual wetness pass with drying tide flats | 07, 06, 08 |
 | G3 | Wet ground: roughness and specular, damp darkening and puddles in rain (reads S4c's wetness pass and sky probe) | 22, 06 |
 | S5 | Shipped grass, reeds, water lilies, yellow flag iris and sea thrift, each growing and spreading on its own ground, with the Plant tool and `tools/growth-lab.html` | 10, 14 |
-| J1 | Field journal v1: the book button, a page for every living thing on the island that fills from what happens there, notes on the island and in the journal, tap a plant to name it | 13, 15 |
-| J1.5 | More to explore: tap the ground too (soil, sand, rock, moss, fresh water, shore) and a Ground section; Show me rings a page's example nearest the middle of your view (first built as a camera glide; since J2a the camera stays put); field notes, your island's story and four "?" moment frames per page; the Almanac; `?day=N` to start a new world later in the year | 13, 15 |
+| J1 | Field journal v1: the book button, a page for every living thing on the island that fills from what happens there, notes on the island and in the journal, click a plant to name it | 13, 15 |
+| J1.5 | More to explore: click the ground too (soil, sand, rock, moss, fresh water, shore) and a Ground section; Show me rings a page's example nearest the middle of your view (first built as a camera glide; since J2a the camera stays put); field notes, your island's story and four "?" moment frames per page; the Almanac; `?day=N` to start a new world later in the year | 13, 15 |
 | J1.6 | Field sketches: a drawn illustration for each page, in pencil until known, then inked | 13, 15 |
 | J2a | The journal's Web: what needs what, in bands (ground, plants, animals, you); links inked once seen on the island, in one journal ink; names not yet seen are a pencil "?" | 13, 15 |
 | J2b | The "show where" wash: opening a page washes the island in one journal ink with an inked edge, strong where the species lives and pale where it would do well, painted after the palette; the camera stays where it is; an unseen species gets two or three pencil circles a little off the spot, a hint rather than the answer | 13, 05, 15 |
 | S6 | Frogs: needs, arrival, settling, behavior, presence (a list of sources, the camera first), feeding for trust and naming; midges and frogs get journal pages and sketches. In three pieces: S6a frogs arrive (the midge field, frog habitat and the arrival arc in the hourly tick, the journal's stages, posed bodies, `tools/ecology-lab.html`); S6b the frog you see (baked body, motion, the chorus, the midge swarm, presence); S6c feeding, trust and naming | 11, 12, 23 |
 | S7 | Autosave, reload, and offline catch-up with the "while you were away" reveal | 02, 18 |
-| S8 | Minimal HUD with drawn icons, touch layout on phone, low quality tier | 15, 19 |
+| S8 | Minimal HUD with drawn icons and settings; the touch layout on phone and the phone tier were built, then retired on October 21, 2026 when ebb became desktop and laptop only | 15, 19 |
 
-**Signed off October 20, 2026:** Matt passed all eight checks below together, on desktop and on an iPhone (tools/slice-review.html). M2 is the current target.
+**Signed off October 20, 2026:** Matt passed all eight checks below together (tools/slice-review.html). M2 is the current target.
 
 Slice acceptance, all together:
 
@@ -71,19 +71,19 @@ Slice acceptance, all together:
 - Switch palettes. The whole scene changes mood instantly, and the light still behaves the same.
 - Orbit in close at a low sun, then let it rain. Sand, rock and soil read as real material, show no tiling, and turn dark and glossy with puddles in the rain.
 - Close the tab, come back the next day. The island has moved on, and a short calm reveal shows what changed.
-- The same steps work on a phone with touch, at lower detail.
+- (Retired October 21, 2026: the same steps on a phone with touch. ebb is now desktop and laptop only.)
 
 ### M2 — Pond tier complete and the meadow islet
 
-- **First step: the Cliff tool** (decided October 2026). Terrace and Cut modes that build or carve level shelves with sheer rock faces, painted rock that stays sheer (talus about 82 degrees), full mesh detail near cliffs, and a shadow offset for near-vertical faces. Built first so it lands as early as possible without interrupting the slice (docs 08, 15, 04, 19). First planned as available from the start; since October 20, 2026 it is **the frogs' gift** (doc 12), replacing their water lily seed, with `?sandbox` and `?cliffs` opening it for testing. Branch `m2-cliff-tool`: built October 20, 2026 as Sculpt chips (Terrace and Cut beside Raise, Lower, Flatten and Stone), in review, together with **waterfalls**: water running over a shelf's edge is drawn as volumetric droplet water near the eye (screen-space fluid) and as a curtain further off, with foam where it lands (doc 07). Their sound is a later step, once the audio's flowing-water input is wired to the sim.
+- **First step: the Cliff tool** (decided October 2026). Terrace and Cut modes that build or carve level shelves with sheer rock faces, painted rock that stays sheer (talus about 82 degrees), full mesh detail near cliffs, and a shadow offset for near-vertical faces. Built first so it lands as early as possible without interrupting the slice (docs 08, 15, 04, 19). First planned as available from the start; since October 20, 2026 it is **the frogs' gift** (doc 12), replacing their water lily seed, with `?sandbox` and `?cliffs` opening it for testing. Built October 20, 2026 and merged (PR #54) as Sculpt chips (Terrace and Cut beside Raise, Lower, Flatten and Boulder), together with **waterfalls**: water running over a shelf's edge is drawn as volumetric droplet water near the eye (screen-space fluid) and as a curtain further off, with foam where it lands (doc 07). Their sound is built too: each waterfall near the camera is heard where it falls (doc 25).
 - Minnows (schooling), dragonflies (darting flight) and turtles (basking) join the frogs. Minnows come by themselves to a still pool with a deep spot of about 1 m; turtles to a warm pond with a sunny stone, and better with a log (doc 12; turtles moved here from the shore tier on October 20, 2026).
 - Gifts (progression agreed October 20, 2026, doc 13): the frogs' Cliff tool, the minnows' pondweed, the dragonflies' stream tool, the turtles' carry-a-log. Driftwood washes up from the naturalist's notes at 10 finds, and toads and slow worms (finds) live under logs. The gift card and the progress module are built (`src/world/expansion.js`); the frogs' gift moves from lilies to the Cliff tool.
 - The Tier 1 milestone: the meadow islet rises at low tide with a sandbar to the main island, dry only at low tide (doc 13, "The meadow islet in play").
 - Field journal with photo mode; photographs fill species pages.
 - Tuning panel v1: live sliders for species and flora recipes, saving recipe files.
-- First audio pass: water bed, wind bed, frog voice with chorus (doc 17).
+- First audio pass: water bed, wind bed, frog voice with chorus (doc 17). Done, with the music (docs 24, 25).
 - First human touches: stepping stones and one lantern, so the icon's dusk scene can be recreated in game.
-- **The walker** (doc 23; pulled forward from M3 on October 21, 2026), after the season markers already in flight. Two views: above shapes, below lives there. The seat folds into the walker's Sit. W0 (docs), W1 (the walk grid, `tools/walk-lab.html` and a `?sandbar` test island) and W2 (a stand-in figure, Go down and Go up, tap to walk, the low camera) come first as a feel test. W3 to W7 (presence below, the ground bar, the figure, the ground-level look, Steps and crossings) are scoped after Matt tries W2.
+- **The walker** (doc 23; pulled forward from M3 on October 21, 2026), after the season markers already in flight. Two views: above shapes, below lives there. The seat folds into the walker's Sit. W0 (docs), W1 (the walk grid, `tools/walk-lab.html` and a `?sandbar` test island) and W2 (a stand-in figure, Go down and Go up, click to walk, the low camera) came first as a feel test. W3 to W6 (presence below, the ground bar, the figure, the ground-level look) are built and merged; W7 (Steps and crossings) is still to come.
 - Seasons as chapters (agreed October 20, 2026, doc 13 "The year, season by season"), in this order:
   1. The cheap season markers: moon jellyfish, damselflies, fungi on logs and dewy webs, storm-tide shells.
   2. The toad and the lizard on the piece system.
@@ -91,7 +91,7 @@ Slice acceptance, all together:
   4. Turtles arriving in summer.
   5. The shore birds (sand martins, turnstones, purple sandpipers), which may run into M3.
   6. Grey seals last, with the meadow islet's sandbar.
-- **Keepsakes and the shelf** (F12, agreed October 21, 2026): unnamed, procedurally generated trinkets on the strandline, rarer at spring tides and in coves the player carved, kept on a 16-slot shelf that is its own journal section. Then the general net at the naturalist's mark 12, with living catches released and given short pages. Built as small branches beside the season markers, starting with `tools/keepsake-lab.html` (branch `m2-keepsake-lab`). The light and sinker nets wait for the meadow and shore tier milestones.
+- **Keepsakes and the shelf** (F12, agreed October 21, 2026): unnamed, procedurally generated trinkets on the strandline, rarer at spring tides and in coves the player carved, kept on a 16-slot shelf that is its own journal section. Then the general net on the beachcomber's trail at four keepsake families kept, with living catches released and given short pages. Both are built and merged, with `tools/keepsake-lab.html` and `tools/catch-lab.html`. The light and sinker nets wait for the meadow and shore tier milestones.
 
 ### M3 — Meadow, seasons and the woodland knoll
 
@@ -121,7 +121,7 @@ Slice acceptance, all together:
 - Night lighting polish, lantern glow, firefly light; the Moonlight palette as the bats' gift.
 - Presence rung 4, the camp (doc 23), here or with the M7 chapter: a bedroll, a fire and a home point that keeps a gentle presence while you are away.
 - The journal year page (all sixteen species photographed and all four seasons passed).
-- Mobile tier tuning, accessibility pass, store page and promo capture.
+- Low tier tuning for weak laptops, accessibility pass, store page and promo capture.
 
 ### M7 — Headland expansion (after v1)
 

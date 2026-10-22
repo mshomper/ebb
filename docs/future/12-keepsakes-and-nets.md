@@ -2,7 +2,7 @@
 
 > ebb's slow systems (growth, seasons, creatures settling) need a companion that gives every visit something to look for while the island takes its time. This doc proposes that hook: **keepsakes**, one-of-a-kind objects the sea leaves on the strandline and that nets snag out in the waves. Every keepsake is generated from a seed, so no two are alike, and each carries a rarity the player can read. A **memento shelf** of about 16 spaces holds the ones the player chooses to keep, so the point is choosing what is special rather than gathering everything. Three **nets**, each a different build, reach water the strandline never sees, and **signs in the water** (a sparkle, diving birds) reward paying attention. Nothing here hurries the player or pays for repetition: what turns up depends on the tide, the moon, the weather and the shape of the shore, never on how often you walk the beach. It is grounded in a read of the code on October 20, 2026.
 
-**Status:** Scheduled for M2 (October 21, 2026). Keepsakes, the shelf and the general net are built first, in small branches starting with `tools/keepsake-lab.html`. The light and sinker nets wait for the meadow and shore tier milestones; weathering waits for F04; king tides and storms wait for F08. Shells on the strandline (F11) are the seed this grows from.
+**Status:** Largely built, in M2 (October 21, 2026). Keepsakes, the shelf, the keepsake sounds, the general net with living catches, and the Trails page are built and merged to main (PRs #65, #66, #68, #69). Net wear and mending (K7) and signs in the water (K8) are still to come. The light and sinker nets wait for the meadow and shore tier milestones; weathering waits for F04; king tides and storms wait for F08. Shells on the strandline (F11) are the seed this grows from.
 
 ## Decided so far
 
@@ -29,7 +29,7 @@ Matt, October 21, 2026 (answers to the planning questions):
 - **The shelf is its own journal section, with its own icon.** Each slot is an ink sketch traced from the keepsake's mesh (the same tracing as `tools/gen-sketch-outlines.mjs`), so the meshes themselves are throwaway. The rarity word is on the card when it is found; the slot's paper ground shows the rarity, so players want to photograph their shelves.
 - **The shelf is the only record.** Keeping something writes no journal note.
 - **Letting go returns things to the sea** in version 1. Setting out on the island comes with weathering.
-- **The general net is on the naturalist's line after driftwood** (proposed at 12), so there must be enough small finds to get there.
+- **The general net comes on the beachcomber's trail at four keepsake families kept** (first proposed on the naturalist's line at 12; moved when the three trails were agreed, below).
 - **A worn net keeps fishing,** with lower odds of the higher rarities.
 - **Living catches get a short page** (an ink drawing, a name, one note) and count on the naturalist's line.
 - **Bottles hold messages,** perhaps written by a writer friend of Matt's.
@@ -227,7 +227,7 @@ From the code read on October 20, 2026:
 - **Tapping (small change).** `cardAt` in `journal/index.js` gains a keepsake lookup beside the finds lookup; the card offers keep or leave. A left keepsake stays until a higher tide sweeps its line.
 - **The shelf (new section).** A sixth entry in `VIEWS` in `src/ui/journal.js`, with a new icon in `src/ui/icons/`. Slot sketches come from a browser port of the tracer in `tools/gen-sketch-outlines.mjs`, run in a worker once per kept keepsake; the mesh is then dropped and only the numbers and the traced lines stay.
 - **Nets (new piece kind).** Nets are pieces that sit on water. Setting, lifting and mending would live with the piece system (`src/world/pieces`), with a Net mode beside Loose stone.
-- **Unlocks (exists).** The general net as a naturalist reward in `recipes/world/naturalist.json`, granted by `src/world/expansion.js`; the light and sinker nets through the same module at milestones.
+- **Unlocks (exists).** The general net as the beachcomber's reward at four keepsake families kept (`recipes/world/beachcomber.json`), granted by `src/world/expansion.js`; the light and sinker nets through the same module at milestones.
 - **Signs (new, small).** Rolled hourly from the seed; drawn as surface effects in the water pass (the sparkle and the glow use the water's own light, like pond skaters).
 - **Saves.** A new `keepsakes` section (shelf slots with their numbers, set-out keepsakes with their stamps, nets with wear and set time) and a save format step from 5 to 6, with a migration that starts older islands with an empty shelf.
 
@@ -238,7 +238,7 @@ Listed only; Matt applies these later.
 - **Doc 07 (water and tide):** strandline cells weighted by how enclosed the shore is; nets fishing through a tide; signs drawn on the water.
 - **Doc 09 (structures):** the piece system broadened to nets on water and keepsakes set out on land.
 - **Doc 12 (creature roadmap):** living net catches as a new set of journal pages; a landmark bird's feather as a keepsake mark.
-- **Doc 13 (progression):** the general net on the naturalist's line; the light and sinker nets at milestones; the shelf rule (kept things only, never a count of what is missing).
+- **Doc 13 (progression):** the general net on the beachcomber's trail at four keepsake families; the light and sinker nets at milestones; the shelf rule (kept things only, never a count of what is missing).
 - **Doc 14 (tuning panel):** the keepsake lab.
 - **Doc 15 (camera and UI):** keepsake cards, the haul tray, the Net mode and the shelf page.
 - **Doc 18 (saves):** the `keepsakes` section and save format 6.

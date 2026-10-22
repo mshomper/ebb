@@ -18,11 +18,10 @@ import { loadAudioRecipe, samplerSettingsFor } from '../recipes.js';
 /**
  * @param {BaseAudioContext} ctx
  * @param {AudioNode} output the music bus input
- * @param {{tier?: 'desktop'|'mobile', budgetMB?: number}} [opts]
+ * @param {{budgetMB?: number}} [opts]
  */
 export async function createInstruments(ctx, output, opts = {}) {
-  const tier = opts.tier ?? 'desktop';
-  const budgetMB = opts.budgetMB ?? (tier === 'mobile' ? 20 : 128);
+  const budgetMB = opts.budgetMB ?? 128;
   const [samplerRecipe, synthRecipe, piano, pedal] = await Promise.all([
     loadAudioRecipe('music/sampler'),
     loadAudioRecipe('music/synth'),
@@ -31,13 +30,13 @@ export async function createInstruments(ctx, output, opts = {}) {
   ]);
   /** @type {Record<string, Instrument>} */
   const set = {
-    piano: createSampler(ctx, output, piano, samplerSettingsFor(samplerRecipe, piano.id), { tier, pedalNoise: pedal }),
-    'fm-piano': synth.createFmPiano(ctx, output, synthRecipe, { tier }),
+    piano: createSampler(ctx, output, piano, samplerSettingsFor(samplerRecipe, piano.id), { pedalNoise: pedal }),
+    'fm-piano': synth.createFmPiano(ctx, output, synthRecipe),
   };
   // The pad and bell join as soon as synth.js has them (namespace import, so a missing one is skipped).
   const s = /** @type {any} */ (synth);
-  if (typeof s.createPad === 'function' && synthRecipe.pad) set.pad = s.createPad(ctx, output, synthRecipe, { tier });
-  if (typeof s.createBell === 'function' && synthRecipe.bell) set.bell = s.createBell(ctx, output, synthRecipe, { tier });
+  if (typeof s.createPad === 'function' && synthRecipe.pad) set.pad = s.createPad(ctx, output, synthRecipe);
+  if (typeof s.createBell === 'function' && synthRecipe.bell) set.bell = s.createBell(ctx, output, synthRecipe);
 
   // The sampled support kit, by roster name. A recipe that is not there yet is skipped.
   const roster = await loadAudioRecipe('music/roster').catch(() => null);
@@ -47,12 +46,12 @@ export async function createInstruments(ctx, output, opts = {}) {
       const rec = await recipeOf(/** @type {any} */ (e).recipe);
       if (!rec) return;
       const id = /** @type {any} */ (e).settings ?? rec.id;
-      set[name] = createSampler(ctx, output, rec, samplerSettingsFor(samplerRecipe, id), { tier, articulation: /** @type {any} */ (e).articulation });
+      set[name] = createSampler(ctx, output, rec, samplerSettingsFor(samplerRecipe, id), { articulation: /** @type {any} */ (e).articulation });
     }));
     await Promise.all(Object.entries(roster.sections ?? {}).map(async ([name, e]) => {
       const parts = (await Promise.all(/** @type {any} */ (e).parts.map(async (/** @type {any} */ p) => {
         const rec = await recipeOf(p.recipe);
-        return rec ? { sampler: createSampler(ctx, output, rec, samplerSettingsFor(samplerRecipe, p.settings ?? rec.id), { tier }), below: p.below ?? 128 } : null;
+        return rec ? { sampler: createSampler(ctx, output, rec, samplerSettingsFor(samplerRecipe, p.settings ?? rec.id)), below: p.below ?? 128 } : null;
       }))).filter(Boolean);
       if (parts.length) set[name] = createEnsemble(/** @type {any} */ (parts));
     }));

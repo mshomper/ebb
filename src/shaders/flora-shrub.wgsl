@@ -43,7 +43,7 @@ struct ShrubDraw {
   female: vec4f,   // xyz female catkins ripe (linear), w gust speed (m/s)
   shadow: vec4f,   // x 1 / gust size (1/m), y contact shadow strength, z its radius (share of the crown's), w its strength when bare (share)
   shadow2: vec4f,  // x shift away from the sun (share of height), y lift above the ground (m), z share of leaves showing their pale undersides, w spare
-  shadow3: vec4f,  // x contact shadow layers, y height between layers (m), zw spare
+  shadow3: vec4f,  // x contact shadow layers, y height between layers (m), z phenology jitter (seasons, each way), w spare
   flower: vec4f,   // xyz flower albedo (linear), w flower size (m): gorse's pea flowers over its leafy crown
   mound: vec4f,    // x share of leaf cells in flower now (0: none, as willow), y how far cards are drawn to the crown's surface, zw spare
 };
@@ -123,6 +123,7 @@ struct Shrub {
   plantU: u32,
   windV: vec3f,    // the wind's push now: direction x strength x gust
   stage: u32,
+  pos: f32,        // the season position on this plant's own calendar (world/growth/phenology.js)
 };
 
 fn shrubOf(ii: u32) -> Shrub {
@@ -141,6 +142,10 @@ fn shrubOf(ii: u32) -> Shrub {
   s.stems = select(u32(round(mix(sd.shape.x, sd.shape.y, s.size))), 2u, seed);
   let gust = floraGust(sd.c, s.center.xz, sd.shadow.x, sd.female.w, hv);
   s.windV = vec3f(sd.c.wind.x, 0.0, sd.c.wind.y) * (sd.c.wind.w * gust);
+  // The plant's own calendar: the same offset the growth step reads its stage windows with, from the
+  // same hash (b.y), so leaves fall before the plant goes dormant on every bush.
+  let p = sd.c.misc.x - sd.shadow3.z * (2.0 * b.y - 1.0);
+  s.pos = p - floor(p / 4.0) * 4.0;
   return s;
 }
 
@@ -213,24 +218,23 @@ fn forkOf(s: Shrub, i: u32, j: u32, stem: Branch) -> Branch {
 
 // How much of the crown is in leaf now: out over the leaf-out window, down over the leaf fall;
 // always on an evergreen (leaves.x < 0), never while dormant.
-fn leafCover(stage: u32) -> f32 {
+fn leafCover(stage: u32, pos: f32) -> f32 {
   if (sd.leaves.x < 0.0) { return 1.0; }
   if (stage == FLORA_DORMANT) { return 0.0; }
-  let pos = sd.c.misc.x;
   return smoothstep(sd.leaves.x, sd.leaves.y, pos) * (1.0 - smoothstep(sd.leaves.z, sd.leaves.w, pos));
 }
 
 // How far the leaves have grown: small as they come out, full a little after the leaf-out window.
-fn leafGrowth() -> f32 {
+fn leafGrowth(pos: f32) -> f32 {
   if (sd.leaves.x < 0.0) { return 1.0; }
-  return mix(0.35, 1.0, smoothstep(sd.leaves.x, sd.leaves.y + 0.2, sd.c.misc.x));
+  return mix(0.35, 1.0, smoothstep(sd.leaves.x, sd.leaves.y + 0.2, pos));
 }
 
 // How far through the flowering window the season is, 0..1 (the window may wrap past winter).
-fn bloomProgress() -> f32 {
+fn bloomProgress(pos: f32) -> f32 {
   var span = sd.bloom.y - sd.bloom.x;
   if (span <= 0.0) { span += 4.0; }
-  var d = sd.c.misc.x - sd.bloom.x;
+  var d = pos - sd.bloom.x;
   if (d < 0.0) { d += 4.0; }
   return clamp(d / span, 0.0, 1.0);
 }
@@ -335,7 +339,7 @@ fn vsShrub(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> 
   let ao = mix(1.0 - sd.bark.w, 1.0, smoothstep(0.25, 1.0, q)) * mix(sd.bloom.w, 1.0, smoothstep(0.0, 0.45, (mid.y - sh.center.y) / sh.height));
   var o = emit(p, n, sd.c.albedo.xyz * (0.88 + 0.24 * v.w), ao);
   o.uv = corner;
-  o.look = vec4f(ao, hs, leafCover(sh.stage), leafGrowth());
+  o.look = vec4f(ao, hs, leafCover(sh.stage, sh.pos), leafGrowth(sh.pos));
   // Catkins while the shrub flowers, male or female by the plant's hash.
   var catkins = 0u;
   if (sh.stage == FLORA_FLOWERING) {
@@ -343,7 +347,7 @@ fn vsShrub(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> 
   }
   // Flowers among the leaves (gorse; none on willow): this season's share, on bushes past young.
   let flowers = u32(sd.mound.x * smoothstep(0.4, 0.8, sh.size) * 1000.0);
-  o.spray = vec4u(hc, catkins, u32(bloomProgress() * 1000.0), flowers);
+  o.spray = vec4u(hc, catkins, u32(bloomProgress(sh.pos) * 1000.0), flowers);
   return o;
 }
 
@@ -526,7 +530,7 @@ fn vsShrubShadow(@builtin(vertex_index) vi0: u32, @builtin(instance_index) ii: u
   p += normalize(frame.cameraPos - p) * 0.02;
   o.pos = frame.viewProj * vec4f(p, 1.0);
   o.rho = rho;
-  let full = sd.shadow.y * mix(sd.shadow.w, 1.0, leafCover(sh.stage)) * smoothstep(0.0, 0.3, sh.size);
+  let full = sd.shadow.y * mix(sd.shadow.w, 1.0, leafCover(sh.stage, sh.pos)) * smoothstep(0.0, 0.3, sh.size);
   // Each layer's share, so all of them together darken by `full`.
   o.strength = 1.0 - pow(1.0 - full, 1.0 / layers);
   return o;

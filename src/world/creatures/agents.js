@@ -424,11 +424,18 @@ export function createFrogAgents(recipe, seed) {
   /** A hop toward a point (a day hide), as far as one hop goes, among the stems if need be. @param {Agent} a @param {any} env @param {{ x: number, z: number }} to */
   function toward(a, env, to) {
     const d = Math.hypot(to.x - a.x, to.z - a.z);
-    const len = Math.min(d, M.hop.distM[1] * scale);
-    const x = a.x + ((to.x - a.x) / d) * len, z = a.z + ((to.z - a.z) / d) * len;
-    if (env.water(x, z).depth > M.dayHide.maxDepthM || Math.abs(env.ground(x, z) - a.y) > 0.2 * scale || !clear(a, x, z)) return false;
-    startHop(a, { x, z, y: env.ground(x, z) }, env, false);
-    return true;
+    const full = Math.min(d, M.hop.distM[1] * scale);
+    // If another frog already sits where the full hop lands (a small clump holds few frogs at their
+    // drawn size), a shorter hop the same way, so it still comes in among the stems near them.
+    for (const share of [1, 0.6, 0.3]) {
+      const len = full * share;
+      if (share < 1 && len < M.hop.distM[0] * scale * 0.5) break;
+      const x = a.x + ((to.x - a.x) / d) * len, z = a.z + ((to.z - a.z) / d) * len;
+      if (env.water(x, z).depth > M.dayHide.maxDepthM || Math.abs(env.ground(x, z) - a.y) > 0.2 * scale || !clear(a, x, z)) continue;
+      startHop(a, { x, z, y: env.ground(x, z) }, env, false);
+      return true;
+    }
+    return false;
   }
 
   /**

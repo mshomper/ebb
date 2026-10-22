@@ -8,11 +8,10 @@ import { velocityDb, midiToHz, dbToGain, pickVictim } from '../sampler-math.js';
 
 /**
  * @param {BaseAudioContext} ctx @param {AudioNode} output @param {any} recipe recipes/music/synth.json
- * @param {{tier?: 'desktop'|'mobile'}} [opts]
+ * @param {{}} [opts]
  */
 export function createFmPiano(ctx, output, recipe, opts = {}) {
   let p = structuredClone(recipe.fmPiano);
-  const tier = opts.tier ?? 'desktop';
   /** @typedef {{midi: number, startT: number, peakDb: number, keyUpT: number|null, endT: number|null, env: GainNode, oscs: OscillatorNode[]}} FmVoice */
   /** @type {FmVoice[]} */
   let voices = [];
@@ -61,7 +60,7 @@ export function createFmPiano(ctx, output, recipe, opts = {}) {
       const t = Math.max(when, ctx.currentTime);
       for (const v of voices) if (v.midi === midi && v.endT === null) end(v, t, 0.03);
       const live = voices.filter((v) => v.endT === null || v.endT > t);
-      const max = p.maxVoices[tier] ?? 16;
+      const max = (typeof p.maxVoices === 'number' ? p.maxVoices : p.maxVoices?.desktop) ?? 16;
       while (live.length >= max) {
         const i = pickVictim(live.map((v) => ({ released: v.keyUpT !== null, levelDb: v.peakDb - p.amp.decayDbPerS * (t - v.startT) })));
         end(live[i], t, 0.03);

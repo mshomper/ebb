@@ -33,6 +33,21 @@ export const PARALLEL = {
   figure: () => import('./unit-tests-figure.js').then((m) => m.addFigureTests),
   nets: () => import('./unit-tests-nets.js').then((m) => m.addNetsTests),
   trails: () => import('./unit-tests-trails.js').then((m) => m.addTrailsTests),
+  waterTable: () => import('./unit-tests-water-table.js').then((m) => m.addWaterTableTests),
+  // The audio tests that need no Web Audio (workers have none). The two that render sound through
+  // an OfflineAudioContext (pond and keepsake sounds) stay on tools/unit-tests-audio.html, which
+  // also still runs all of these, as does `node tools/run-audio-tests.mjs`.
+  music: () => import('./unit-tests-music.js').then((m) => m.addMusicTests),
+  chordsExtra: () => import('./unit-tests-chords-extra.js').then((m) => m.addChordExtraTests),
+  sampler: () => import('./unit-tests-sampler.js').then((m) => m.addSamplerTests),
+  voicing: () => import('./unit-tests-voicing.js').then((m) => m.addVoicingTests),
+  director: () => import('./unit-tests-director.js').then((m) => m.addDirectorTests),
+  develop: () => import('./unit-tests-develop.js').then((m) => m.addDevelopTests),
+  soundGame: () => import('./unit-tests-sound-game.js').then((m) => m.addSoundGameTests),
+  summer: () => import('./unit-tests-summer.js').then((m) => m.addSummerTests),
+  melody: () => import('./unit-tests-melody.js').then((m) => m.addMelodyTests),
+  fallsSound: () => import('./unit-tests-falls-sound.js').then((m) => m.addFallsSoundTests),
+  musicRender: () => import('./unit-tests-music-render.js').then((m) => m.addMusicRenderTests),
 };
 
 /** @param {any} cond @param {string} [msg] */

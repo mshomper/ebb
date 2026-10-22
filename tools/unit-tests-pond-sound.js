@@ -149,7 +149,7 @@ export function addPondSoundTests(test, assert, eq) {
     const render = async (play) => {
       const ctx = new OfflineAudioContext(2, SR * 1.5, SR);
       const mixer = /** @type {any} */ ({ ctx, input: () => ctx.destination, setListener() {} });
-      const v = createVoices(mixer, { frog: frog.voice, minnow: mn.voice, proc, plop: game.frogs.plop }, 1, { tier: 'desktop' });
+      const v = createVoices(mixer, { frog: frog.voice, minnow: mn.voice, proc, plop: game.frogs.plop }, 1);
       v.setListener([0, 0.5, 0], [0, 0, -1]);
       const ok = play(v);
       return { ok, peak: peakDb(await ctx.startRendering()) };

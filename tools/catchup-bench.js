@@ -1,7 +1,7 @@
 // @ts-check
 // Catch-up bench (docs 02, 18): time away must give the same island as time watched, in pieces or
 // at once, in a worker or on the page, and through a save and load. Also times 7 game days (the cap) hour by
-// hour against the phone budget. Runs on Matt's machine; nothing here touches the game's save.
+// hour against the laptop budget (doc 19). Runs on Matt's machine; nothing here touches the game's save.
 
 import { runHour, hashWorldState } from '../src/sim/tick.js';
 import { hourStep } from '../src/sim/hour.js';
@@ -17,7 +17,7 @@ import { loadEcologyRecipes, islandWorld } from './ecology-world.js';
 /** Spring day 7: after the frogs' winter sleep (they wake 0.3 into spring, day 5 of 14). */
 const START_DAY = 6;
 const WATCHED_HOURS = 48, FIRST_PIECE = 100, LONG = CAP_HOURS;
-const BUDGET_MS = 8;
+const BUDGET_MS = 25;
 const GREEN = '#5F7F5B', RUST = '#B5654A';
 
 const $ = (/** @type {string} */ id) => /** @type {HTMLElement} */ (document.getElementById(id));
@@ -146,7 +146,7 @@ function drawChart() {
   ctx.fillStyle = RUST;
   ctx.textAlign = 'right';
   ctx.textBaseline = 'bottom';
-  ctx.fillText(`phone budget ${BUDGET_MS} ms`, left + w, y(BUDGET_MS) - 3);
+  ctx.fillText(`laptop budget ${BUDGET_MS} ms`, left + w, y(BUDGET_MS) - 3);
   ctx.fillStyle = '#4A5551';
   ctx.textBaseline = 'top';
   ctx.textAlign = 'left';
@@ -260,7 +260,7 @@ async function runChecks() {
     drawChart();
     const over = hourMs.filter((ms) => ms > BUDGET_MS).length;
     progress(`${R.terrain.islands.list.find((/** @type {any} */ i) => i.id === island)?.name ?? island}, seed ${seed}. ` +
-      `${edit.planted} of 4 reed seeds took. ${over ? `${over} of ${LONG} hours went over the ${BUDGET_MS} ms phone budget.` : `Every hour stayed under the ${BUDGET_MS} ms phone budget.`}`);
+      `${edit.planted} of 4 reed seeds took. ${over ? `${over} of ${LONG} hours went over the ${BUDGET_MS} ms laptop budget.` : `Every hour stayed under the ${BUDGET_MS} ms laptop budget.`}`);
   } catch (e) {
     console.error('[catchup-bench]', e);
     $('verdict').className = 'bad';

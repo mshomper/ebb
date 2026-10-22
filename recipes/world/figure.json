@@ -4,9 +4,9 @@
   "note": "The walker's figure (doc 23, W5; approved October 21, 2026): Matt's Meshy model, split into a body and two arms in nTop and coloured per vertex by tools/figure-prep/prep.py (assets/figures/walker.glb). The rest pose is the A-pose: the arms hang down by the rig. Metres, y up, body +z forward, feet on y = 0. bones: name, parent, pivot (the arms' pivots come from the model's extras, so a new prep moves them). skin: where each part blends between bones, as anchors along a height (y) or along the arm (t, m out from the shoulder). hang: the arms' resting direction. gait: per pace, step length, foot lift, arm swing, lean and the rise and fall of the hips; wade blends in by the water's depth. springs: the hat tip, coat skirt and pack follow a beat late (stiffness per second squared, damping 0..1 of critical). eyes: the two ovals the shader draws on the head (rest pose), their colour, a faint glow after dark (cd per m2), blinks and expressions. poses: sit, kneel, feed, and the arrivals. All motion is drawing only: it reads the walker and never changes it.",
   "model": "assets/figures/walker.glb",
   "body": {
-    "note": "What the creature pass reads: the soft contact shadow (scaleReal sizes it), the cloth's sheen (none) and the eye bones for a wet glint (none: the eyes are drawn).",
+    "note": "What the creature pass reads: the soft contact shadow (scaleReal sizes it, times displayScale), displayScale: the figure is drawn this much of the model (October 21, 2026: 0.737, so you stand 1.4 m tall, not 1.9 m, and creatures read larger beside you; the eyes, contact shadow and all the motion (gait, poses, ground under the feet) follow it, src/world/figure/motion.js works in body meters), the cloth's sheen (none) and the eye bones for a wet glint (none: the eyes are drawn).",
     "scaleReal": [0.62, 0.62],
-    "displayScale": 1,
+    "displayScale": 0.737,
     "contactShadow": 0.5,
     "wetSpecular": { "roughness": 0.65, "strength": 0.06 }
   },
@@ -46,7 +46,7 @@
   "hang": { "dir": [0.139, -0.977, 0.15], "elbowDeg": 8 },
   "legs": { "ankleM": 0.1, "hipDrop": 0.012, "footPitchMaxDeg": 22 },
   "gait": {
-    "note": "Paces by speed (m/s); the figure blends between them by the speed it is given. stance: share of a stride a foot is down.",
+    "note": "Paces by speed in body meters a second (the walker's speed divided by body.displayScale, so a smaller figure takes a longer pace for its size and quicker steps); stepM, liftM and the rest are body meters too. The figure blends between them by the speed it is given. stance: share of a stride a foot is down.",
     "stance": 0.6,
     "paces": [
       { "speed": 0.3, "stepM": 0.2, "liftM": 0.04, "armDeg": 3, "elbowDeg": 40, "leanDeg": 8, "bobM": 0.004, "crouchM": 0.035, "headDeg": 10, "twistDeg": 2 },
@@ -78,12 +78,12 @@
     "holdS": { "happy": 2.5, "curious": 3, "surprised": 0.9 }
   },
   "footprints": {
-    "note": "Prints (W6): each step that lands on sand, or on bare earth and mud, leaves a soft print the shape of the boot's sole, darkening the ground by darkness; it fades over fadeH game hours, and is gone once the tide covers it. Not on grass or rock (minWeight: how much of the ground must be sand or soil), not under water deeper than dryM. Never saved: the island forgets you between visits. max: how many at once (the oldest go first).",
-    "max": 160, "fadeH": 24, "soleM": [0.1, 0.24], "darkness": { "sand": 0.42, "soil": 0.5 }, "minWeight": 0.4, "dryM": 0.03
+    "note": "Prints (W6): each step that lands on sand, or on bare earth and mud, leaves a soft print the shape of the boot's sole, darkening the ground by darkness; it fades over fadeH game hours, and is gone once the tide covers it. Not on grass or rock (minWeight: how much of the ground must be sand or soil), not under water deeper than dryM. Never saved: the island forgets you between visits. soleM is in world meters, set for the 1.4 m figure (0.737 of the model). max: how many at once (the oldest go first).",
+    "max": 160, "fadeH": 24, "soleM": [0.074, 0.177], "darkness": { "sand": 0.42, "soil": 0.5 }, "minWeight": 0.4, "dryM": 0.03
   },
   "grass": {
-    "note": "Grass underfoot (W6): blades lean away from the walker and press a little flatter: under the body within bodyM (sitM when sitting), and where each of the last steps landed within footM, springing back over springS seconds.",
-    "bodyM": 0.42, "sitM": 0.62, "footM": 0.22, "springS": 3
+    "note": "Grass underfoot (W6): blades lean away from the walker and press a little flatter: under the body within bodyM (sitM when sitting), and where each of the last steps landed within footM, springing back over springS seconds. World meters, set for the 1.4 m figure (0.737 of the model).",
+    "bodyM": 0.31, "sitM": 0.46, "footM": 0.16, "springS": 3
   },
   "poses": {
     "sit": { "pelvisY": 0.15, "leanDeg": 16, "feetZ": 0.3, "feetX": 0.12, "headDeg": -6, "skirtDeg": 26 },

@@ -56,6 +56,7 @@
     "drownHours": 48
   },
   "flowering": [3, 0.6],
+  "phenology": { "jitterDays": 3, "note": "each plant keeps its own calendar, offset from the species by up to jitterDays game days either way (hash of the plant id; src/world/growth/phenology.js), so its flowering, seeding and dormant windows (and the willow's leaf-out and leaf fall) do not all turn on the same hour" },
   "spread": {
     "kind": "seed",
     "everyH": 48,

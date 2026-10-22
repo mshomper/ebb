@@ -25,7 +25,8 @@ const SEED = 20261019;
 const POND_R = 5;          // the frogs' ring, meters
 const MIDGE_POS = [2.2, 0.6, -1.6];
 const SEASON_NAMES = ['spring', 'summer', 'autumn', 'winter'];
-const tier = matchMedia('(pointer: coarse)').matches && Math.min(screen.width, screen.height) < 700 ? 'mobile' : 'desktop';
+/** The most frog calls at once (recipes/species/frog.json voice.maxVoices). */
+const maxCalls = () => (typeof frogVoice.maxVoices === 'number' ? frogVoice.maxVoices : frogVoice.maxVoices?.desktop);
 
 // ---- Sliders -----------------------------------------------------------------------------------
 const num = (/** @type {string} */ id) => Number(/** @type {HTMLInputElement} */ ($(id)).value);
@@ -82,10 +83,10 @@ const dormancy = seasonsRecipe?.dormancy?.frogs ?? [2.6, 0.3];
 const midgeDensity = midgeSpecies.swarm.density;
 const midgeWarmth = midgeSpecies.field.warmth;
 
-const mixer = createMixer(mixerRecipe, { tier });
-const ambience = createAmbience(mixer, ambRecipe, procRecipe, SEED, { tier });
+const mixer = createMixer(mixerRecipe);
+const ambience = createAmbience(mixer, ambRecipe, procRecipe, SEED);
 const wings = wingRecipe(dragonflySpecies);
-const voices = createVoices(mixer, { frog: frogVoice, midge: midgeVoice, dragonfly: wings, minnow: minnowSpecies.voice, proc: procRecipe }, SEED, { tier });
+const voices = createVoices(mixer, { frog: frogVoice, midge: midgeVoice, dragonfly: wings, minnow: minnowSpecies.voice, proc: procRecipe }, SEED);
 const pondLife = createPondLife(voices, wings);
 const chorus = createChorus(frogCall, frogMoods, SEED);
 chorus.place(num('frog-count'), POND_R);
@@ -165,7 +166,7 @@ $('start').addEventListener('click', async () => {
   started = true;
   /** @type {HTMLButtonElement} */ ($('start')).disabled = true;
   $('start').textContent = 'Sound is on';
-  status(ICON_CHECK, `Sound is on (${tier === 'mobile' ? 'phone' : 'desktop'} settings: ${frogVoice.maxVoices[tier]} frog calls at once at most).`);
+  status(ICON_CHECK, `Sound is on (${maxCalls()} frog calls at once at most).`);
 });
 
 // ---- The loop: 10 Hz state, frogs on the audio clock --------------------------------------------
@@ -266,7 +267,7 @@ function tick() {
 
   while (recent.length && nowMs - recent[0] > 60000) recent.shift();
   $('t-calls').textContent = String(recent.length);
-  $('t-voices').textContent = `${voices.liveCount()} of ${frogVoice.maxVoices[tier]}`;
+  $('t-voices').textContent = `${voices.liveCount()} of ${maxCalls()}`;
   map.setListener(listener.x, listener.z, listener.heading);
   map.setMidge(dens, !!heard);
   pondLife.tick(ear, dt, started);

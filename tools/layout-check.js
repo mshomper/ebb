@@ -1,5 +1,5 @@
 // @ts-check
-// Layout check (S8c): the real game (index.html) in same-origin iframes at phone sizes, loaded one
+// Layout check (S8c): the real game (index.html) in same-origin iframes at narrow window sizes, loaded one
 // at a time, and four checks read from each frame's DOM:
 //   scroll   the page is no wider than the screen, and no HUD, settings, journal, notes or brush
 //            card element runs past the left or right edge;

@@ -19,6 +19,7 @@
 import { stream, subSeed, hash32, det } from '../../core/rng.js';
 import { HABITAT_CELLS, HABITAT_ORIGIN, habitatCell } from './habitat.js';
 import { arrivedOf, volunteerAt } from './volunteers.js';
+import { plantSeasonPos } from './phenology.js';
 
 /** Stages, in order. */
 export const STAGE = Object.freeze({ seed: 0, sprout: 1, young: 2, mature: 3, flowering: 4, dormant: 5 });
@@ -148,13 +149,16 @@ function suitabilityOf(rec, g) {
 const inWindow = (pos, w) => (w[1] > w[0] ? pos >= w[0] && pos < w[1] : pos >= w[0] || pos < w[1]);
 
 /**
- * A plant's stage from its age, size and the season.
- * @param {any} rec @param {Plant} p @param {number} pos season position
+ * A plant's stage from its age, size and the season. The season windows are read on the plant's own
+ * calendar (phenology.js: a few days ahead of or behind its species), so the stored stage, which the
+ * shaders, the journal, the almanac and the trails all read, is the jittered one.
+ * @param {any} rec @param {Plant} p @param {number} worldPos the world's season position
  */
-function stageOf(rec, p, pos) {
+function stageOf(rec, p, worldPos) {
   const S = rec.growth.stages;
   if (p.age < S.sproutH) return STAGE.seed;
   if (p.size >= S.matureSize) {
+    const pos = plantSeasonPos(rec, p.id, worldPos);
     if (rec.dormant && inWindow(pos, rec.dormant)) return STAGE.dormant;
     if (rec.flowering && inWindow(pos, rec.flowering)) return STAGE.flowering;
     return STAGE.mature;
@@ -478,7 +482,7 @@ export function coarseStep(state, hourIndex, env) {
     const rec = env.recipes.flora[p.sp];
     const R = rec.spread;
     if (!R || (R.kind !== 'rhizome' && R.kind !== 'seed') || p.stage < STAGE.mature || p.stage === STAGE.dormant) continue;
-    if (R.window && !inWindow(pos, R.window)) continue;
+    if (R.window && !inWindow(plantSeasonPos(rec, p.id, pos), R.window)) continue;
     if (R.maxCount && (held.get(p.sp) ?? 0) >= R.maxCount) continue;
     if (hourIndex - p.last < R.everyH) continue;
     if (g.plants.length + born.length >= GR.maxPlants) break;

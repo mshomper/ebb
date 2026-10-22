@@ -1,13 +1,9 @@
 // @ts-check
-// Audio recipe loader. Same idea as src/core/recipes.js, but reads recipes/audio-index.json, so
-// the audio branches never edit the shared recipes/index.json (docs/audio-future-work.md).
+// Audio recipe loader. The audio recipes are listed in recipes/index.json with every other recipe
+// (they had their own recipes/audio-index.json while the audio work lived on separate branches), so
+// this is the shared loader (src/core/recipes.js) under the name the audio code already uses.
 
-const ROOT = new URL('../../recipes/', import.meta.url);
-
-/** @type {Promise<{recipes: Record<string, string>}> | null} */
-let manifest = null;
-/** @type {Map<string, Promise<any>>} */
-const cache = new Map();
+import { loadRecipe } from '../core/recipes.js';
 
 /**
  * Load an audio recipe by id, e.g. 'audio/mixer' or 'music/instruments/piano-steinway-b'.
@@ -15,17 +11,7 @@ const cache = new Map();
  * @returns {Promise<any>}
  */
 export function loadAudioRecipe(id) {
-  let p = cache.get(id);
-  if (!p) {
-    p = (async () => {
-      manifest ??= fetchJson(new URL('audio-index.json', ROOT));
-      const path = (await manifest).recipes[id];
-      if (!path) throw new Error(`Audio recipe "${id}" is not listed in recipes/audio-index.json`);
-      return fetchJson(new URL(path, ROOT));
-    })();
-    cache.set(id, p);
-  }
-  return p;
+  return loadRecipe(id);
 }
 
 /**
@@ -40,10 +26,3 @@ export function samplerSettingsFor(samplerRecipe, instrumentId) {
 
 /** The repo root, for asset paths in recipes (e.g. "assets/audio/instruments/..."). */
 export const REPO_ROOT = new URL('../../', import.meta.url);
-
-/** @param {URL} url */
-async function fetchJson(url) {
-  const r = await fetch(url, { cache: 'no-cache' });
-  if (!r.ok) throw new Error(`Could not load ${url.pathname} (${r.status})`);
-  return r.json();
-}

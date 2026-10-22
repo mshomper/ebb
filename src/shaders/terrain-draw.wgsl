@@ -68,7 +68,36 @@ struct TerrainDraw {
   cast0: vec4f,                         // x coil radius (m), y tube radius (m), z turns, w inner rise (m)
   cast1: vec4f,                         // rgb cast albedo as a share of the sand's, w view distance (m) past which casts are not drawn
   cliffLine: vec4f,                     // Terrace and Cut (docs/15): x shelf level (m), y 1 shown, z line width (m)
+  // The drying margin (A8, terrain.json wetness.dryingMargin): bed a lowering pond left.
+  margin0: vec4f,                       // rgb dry pond silt albedo (linear), w most of the ground it hides
+  margin1: vec4f,                       // xy margin shares elapsed over which the mud dries, zw over which cracks open
+  margin2: vec4f,                       // x 1 / crack cell (1/m), y most crack width (m), z crack occlusion, w crack relief
+  margin3: vec4f,                       // x margin share over which it fades back, y mud porosity, z 1 on
 };
+
+// Cracks in drying mud: a jittered cellular network (F2 - F1 of the nearest plate centers), so the
+// lines are polygonal, meeting in threes. Returns x distance to the nearest crack in cell units,
+// yz the unit direction across it (from this plate toward the neighbor).
+fn mudCracks(p: vec2f, seed: u32) -> vec3f {
+  let base = floor(p);
+  var c1 = vec2f(0.0); var c2 = vec2f(0.0);
+  var d1 = 1e9; var d2 = 1e9;
+  for (var j = -1; j <= 1; j++) {
+    for (var i = -1; i <= 1; i++) {
+      let g = base + vec2f(f32(i), f32(j));
+      let h = hash3(vec3u(vec2u(vec2i(g) + vec2i(1 << 20)), seed));
+      let o = vec2f(hashToFloat(h), hashToFloat(pcg(h))) * 0.8 + 0.1;
+      let cpt = g + o;
+      let d = dot(cpt - p, cpt - p);
+      if (d < d1) { d2 = d1; c2 = c1; d1 = d; c1 = cpt; }
+      else if (d < d2) { d2 = d; c2 = cpt; }
+    }
+  }
+  // Distance to the bisector between the two nearest centers (exact for a Voronoi edge).
+  let across = normalize(c2 - c1);
+  let dist = dot(0.5 * (c1 + c2) - p, across);
+  return vec3f(dist, across);
+}
 
 @group(0) @binding(0) var<uniform> frame: FrameUniforms;
 @group(2) @binding(0) var<uniform> td: TerrainDraw;
@@ -353,22 +382,63 @@ fn fsLand(in: VsOut) -> FsOut {
   let silt = clamp(smoothstep(td.siltDepth.x, td.siltDepth.y, wdep) * td.siltCover * soft * drift, 0.0, 1.0) * (1.0 - weed);
   albedo = mix(albedo, td.albedoSilt, silt);
   albedo = mix(albedo, td.weed.rgb * (0.8 + 0.4 * mottle), weed);
+  // The visual wetness map (world/terrain/wetness.js): r wetness, g puddle level, b drying margin.
+  let wetTex = textureSampleLevel(wetMap, linearSampler, terrainUv(xz), 0.0);
+  // The drying margin (A8): bed that fresh water covered in the last few game days and is now
+  // exposed is pond silt, soaked at first (the wet look below darkens it), lightening as it dries
+  // and opening into polygonal cracks, then blending back into the ground. Grass does not show on
+  // it. The tide band never gets a margin (the wetness pass clears it there).
+  var mudCover = 0.0;
+  var mudDamp = 0.0;
+  var crackOcc = 1.0;
+  if (td.margin3.z > 0.5 && wetTex.b > 0.004) {
+    let age = 1.0 - wetTex.b;
+    let exposed = 1.0 - smoothstep(0.002, 0.012, wdep);
+    let sandShare = mix(wf.y, gd.weights.y, gd.amount);
+    mudCover = smoothstep(0.0, td.margin3.x, wetTex.b) * exposed * td.margin0.w
+             * (1.0 - 0.9 * rockShare) * (1.0 - 0.5 * sandShare);
+    if (mudCover > 0.001) {
+      mudDamp = 1.0 - smoothstep(td.margin1.x, td.margin1.y, age);
+      let opening = smoothstep(td.margin1.z, td.margin1.w, age);
+      let cell = 1.0 / td.margin2.x;
+      let halfW = 0.5 * td.margin2.y * opening;
+      // Far off, the lines are their average share of the ground; close up, drawn.
+      var crackShare = 2.0 * halfW / cell;
+      let near = 1.0 - smoothstep(0.08 * cell, 0.25 * cell, pixM);
+      if (near > 0.001 && opening > 0.001) {
+        // A slight wobble so plate edges are not ruler-straight.
+        let wob = vec2f(valueNoise2(xz * 9.0, td.seed + 60u), valueNoise2(xz * 9.0 + vec2f(3.1, 7.7), td.seed + 61u)) - 0.5;
+        let cr = mudCracks(xz * td.margin2.x + wob * 0.3, td.seed + 62u);
+        let dM = cr.x * cell;   // meters from the crack's center line
+        let aa = max(pixM, 0.002);
+        let inCrack = 1.0 - smoothstep(halfW - 0.5 * aa, halfW + 0.5 * aa, dM);
+        // Plate edges slope down into the crack over a few times its width (height falls toward
+        // the neighbor plate, so the gradient points back toward this plate's center).
+        let edge = 1.0 - smoothstep(halfW, 4.0 * halfW + 0.01, dM);
+        shoreGrad -= cr.yz * edge * td.margin2.w * opening * near * mudCover;
+        crackShare = mix(crackShare, inCrack, near);
+      }
+      // A crack is a light trap: its floor sees little sky or sun.
+      crackOcc = 1.0 - td.margin2.z * min(crackShare, 1.0) * mudCover;
+    }
+  }
+  albedo = mix(albedo, td.margin0.rgb, mudCover) * crackOcc;
   // Macro variation (docs/22): a slow tone drift near and far, so no repeat survives at a distance.
   albedo *= groundMacro(xz, td.seed);
   // Wet ground (docs/22 G3, after Lagarde 2013). The visual wetness map (world/terrain/wetness.js)
   // remembers live water, the tide, rain and damp hollows, spreads into banks and dries over game
   // time; its g channel is how far rain has filled the puddles.
-  let wetTex = textureSampleLevel(wetMap, linearSampler, terrainUv(xz), 0.0);
   let wet = wetTex.r;
   // Damp: porous ground (sand, soil) drinks the water and goes dark and satin; dense rock darkens
   // a little but turns shiny. Moss is already a damp surface and changes least.
-  let por = gd.porosity;
+  let por = mix(gd.porosity, td.margin3.y, mudCover);
   // Wrack and kelp glisten and mud stays soaked, whatever the wetness map says; dried litter on the
-  // strandline lies above the damp sand.
-  let damp = max(wet * (1.0 - 0.6 * moss) * (1.0 - 0.7 * strandCover), max(max(max(wrack * 0.9, frondCover * 0.6), kelpCover), mud * td.shore2.z));
+  // strandline lies above the damp sand. A fresh drying margin stays soaked longer than the map.
+  let damp = max(max(wet * (1.0 - 0.6 * moss) * (1.0 - 0.7 * strandCover), max(max(max(wrack * 0.9, frondCover * 0.6), kelpCover), mud * td.shore2.z)), mudDamp * mudCover);
   albedo *= mix(1.0, mix(td.wetLook.z, td.wetLook.w, por), damp);
+  let cavity = gd.cavity * crackOcc;
   // Grass blades stay rough when wet (they scatter the light), so the meadow never turns glossy.
-  let grassy = gd.weights.x * (1.0 - moss);
+  let grassy = gd.weights.x * (1.0 - moss) * (1.0 - mudCover);
   var roughness = mix(gd.roughness, mix(td.wetLook.x, td.wetLook.y, por), damp * (1.0 - sub) * (1.0 - 0.85 * grassy));
   // Puddles: on flat ground, rain fills the low spots first. Where water stands is set by the
   // ground's own relief (the detail height, so ruts and the gaps between stones fill first) plus a
@@ -416,7 +486,7 @@ fn fsLand(in: VsOut) -> FsOut {
     let skyL = textureSampleLevel(probeTex, probeSampler, r, probeLod(roughness, levels)).rgb * PROBE_INV_SCALE;
     let nv = max(dot(nShade, vG), 0.0);
     let fr = f0w + (max(1.0 - roughness, f0w) - f0w) * pow(1.0 - nv, 5.0);
-    skySpec = skyL * fr * mix(gd.cavity, 1.0, standing) * wetAll;
+    skySpec = skyL * fr * mix(cavity, 1.0, standing) * wetAll;
   }
 
   // Caustics (lib-caustics): focused sun on the bed under live water, or moon at night. They scale
@@ -428,7 +498,7 @@ fn fsLand(in: VsOut) -> FsOut {
     caustic = causticLight(td.caustics, entry, waterVelAt(entry), wdep, max(fw.x, fw.y), frame.animTime, td.seed);
   }
 
-  var color = shadeGround(albedo, in.world, n, nShade, roughness, gd.cavity, in.pos, ground.terminator, mix(ground.f0, td.puddle2.w, standing), ground.specMode, caustic, skySpec);
+  var color = shadeGround(albedo, in.world, n, nShade, roughness, cavity, in.pos, ground.terminator, mix(ground.f0, td.puddle2.w, standing), ground.specMode, caustic, skySpec);
   color = mix(color, td.ringColor, max(max(ringAlpha(xz), marksAlpha(xz, max(fw.x, fw.y)) * td.ringOpacity), cliffLineAlpha(xz, y, max(fw.x, fw.y))));
   // normalId keeps the mesh normal, so pebbles and cracks never get outlines (docs/22).
   return FsOut(vec4f(color, 1.0), vec4f(octEncode(n), 0.0, 1.0 / 3.0));

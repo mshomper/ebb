@@ -26,7 +26,7 @@
 - **As built in S7d** (`src/save/recover.js`, `backup.js`; the Saves menu in `src/ui/saves-menu.js`):
   - **Part-by-part recovery:** the newest copy whose meta and world read is the island. Any other damaged part (journal, springs, unlocks, view, one chunk) comes from the newest older copy that has it whole. With none, a chunk regrows from the seed and the journal starts fresh.
   - **Calm note and quarantine:** a note says what happened (`recipes/world/save.json` `recovered`). Damaged copies go to the IndexedDB `quarantine` store (database version 2) once each, never deleted. With no copy readable, a recovery card offers opening a file or a new island. On previews and local builds only, it can also keep the broken save as a file for fixing (Matt: players have no use for it).
-  - **Back up:** to an `.ebb` file. Touch phones use the share sheet, other devices a download. The slot records `lastBackupAt`, and after 7 real days without a backup a quiet line appears in the Saves menu.
+  - **Back up:** to an `.ebb` file, as a download. The slot records `lastBackupAt`, and after 7 real days without a backup a quiet line appears in the Saves menu.
   - **Opening a file:** checked before anything changes (format, checksums, size, an island this build has), then asked twice on the page. It goes in as the newest copy, so the replaced island stays among the earlier saves (Matt: replace, not a second island).
   - **Earlier saves:** opening one copies it as the newest. Both an opened file and an earlier save are stamped with the time now, so the time they waited earns no time away.
   - **Fingerprint:** the island fingerprint is `hashWorldState(world)` as 8 hex digits, the same on every device.
@@ -224,8 +224,8 @@ Settings: export (with or without photos), import, earlier versions list, backup
 
 ## Performance budget
 
-- Snapshot on the main thread under 2 ms; encode and compress in a worker under 30 ms desktop, 80 ms mobile for the starter island, and the same for the full world because only dirty chunks are re-encoded.
-- Load and decode under 150 ms desktop, 400 ms mobile before catch-up starts.
+- Snapshot on the main thread under 2 ms; encode and compress in a worker under 30 ms for the starter island (80 ms on a weak laptop on the low tier), and the same for the full world because only dirty chunks are re-encoded.
+- Load and decode under 150 ms (400 ms on a weak laptop) before catch-up starts.
 - Storage per island under 5 MB including 8 generations; photos counted separately and listed in settings with their total size.
 
 ## Acceptance checks
@@ -235,7 +235,7 @@ Settings: export (with or without photos), import, earlier versions list, backup
 - Pause time, close the tab for an hour, reopen: nothing has grown.
 - Corrupt one chunk with the tuning panel: only that chunk comes back from an earlier copy; the rest of the island is current.
 - Corrupt the current save with the tuning panel button, reload: the island comes back from a minute earlier with a calm note.
-- Export an island on desktop, import it on a phone: it opens as a new island and matches.
+- Export an island on one computer, import it on another: it opens as a new island and matches.
 - Open the same island in two tabs: the second shows the "open in another window" note.
 - An old sample save in `tools/migrate-test.html` migrates and shows the same thumbnail.
 

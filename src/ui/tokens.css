@@ -49,10 +49,6 @@
   --text-small: calc(15px * var(--text-scale, 1));
 }
 
-@media (pointer: coarse) {
-  :root { --text-body: calc(17px * var(--text-scale, 1)); --text-small: calc(16px * var(--text-scale, 1)); }
-}
-
 *, *::before, *::after { box-sizing: border-box; }
 
 html, body {

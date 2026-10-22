@@ -1,7 +1,9 @@
 // @ts-check
-// Quality tier pick: ultra, high, medium or low (docs/19). A heuristic picks high, medium or low
-// from the adapter and screen; a discrete desktop GPU starts on ultra and keeps it only if the
-// startup probe passes (the app measures GPU time while the island fades in and calls
+// Quality tier pick: ultra, high, medium or low (docs/19). ebb is desktop and laptop only, so medium
+// (laptops, integrated graphics) is the floor: the heuristic picks high or medium from the adapter,
+// and low is never picked at startup; it stays as the emergency fallback the live step down
+// (src/render/quality-live.js) can reach. A discrete desktop GPU starts on ultra and keeps it only
+// if the startup probe passes (the app measures GPU time while the island fades in and calls
 // probeResult). The pick is remembered per adapter and screen.
 
 import { loadRecipe } from '../core/recipes.js';
@@ -41,7 +43,7 @@ export async function pickTier(adapter) {
     reasons.push(`forced by ?tier=${forced}`);
   } else {
     const saved = readSaved();
-    if (saved && saved.identity === identity && ORDER.includes(saved.tier) && saved.probed) {
+    if (saved && saved.identity === identity && ORDER.includes(saved.tier) && saved.tier !== 'low' && saved.probed) {
       current = saved.tier;
       reasons.push('remembered for this device');
     } else {
@@ -109,24 +111,20 @@ export function isTier(t) {
 function heuristic(adapter, reasons) {
   const info = adapter.info ?? /** @type {any} */ ({});
   const vendor = `${info.vendor ?? ''} ${info.architecture ?? ''} ${info.description ?? ''}`.toLowerCase();
-  const coarse = matchMedia('(pointer: coarse)').matches;
-  const shortSide = Math.min(screen.width, screen.height);
 
   if (info.isFallbackAdapter) {
-    reasons.push('software (fallback) graphics adapter');
-    return 'low';
+    // Medium is the floor; the live step down reaches low if this adapter cannot keep up.
+    reasons.push('software (fallback) graphics adapter: medium, the floor');
+    return 'medium';
   }
   let pick = 1;
-  if (coarse && shortSide < 900) {
-    pick = 0;
-    reasons.push('touch screen, phone size');
-  } else if (/nvidia|amd|radeon|geforce|rtx/.test(vendor) && !/integrated|apu/.test(vendor)) {
+  if (/nvidia|amd|radeon|geforce|rtx/.test(vendor) && !/integrated|apu/.test(vendor)) {
     pick = 2;
     reasons.push(`discrete GPU (${vendor.trim() || 'unknown'})`);
   } else {
     reasons.push(`integrated or unknown GPU (${vendor.trim() || 'unknown'})`);
   }
-  if (!coarse && adapter.limits.maxStorageBuffersPerShaderStage <= 8 && adapter.limits.maxTextureDimension2D <= 8192) {
+  if (adapter.limits.maxStorageBuffersPerShaderStage <= 8 && adapter.limits.maxTextureDimension2D <= 8192) {
     pick -= 1;
     reasons.push('baseline limits');
   }
@@ -139,7 +137,9 @@ function heuristic(adapter, reasons) {
     pick -= 1;
     reasons.push('under 4 GB memory');
   }
-  return ORDER[Math.max(0, Math.min(2, pick))]; // ultra is never a guess: only the probe grants it
+  // Medium is the floor (low is only reached by the live step down); ultra is never a guess: only
+  // the probe grants it.
+  return ORDER[Math.max(1, Math.min(2, pick))];
 }
 
 /** @param {GPUAdapter} adapter */

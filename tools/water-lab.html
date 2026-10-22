@@ -9,6 +9,7 @@
   @font-face { font-family: 'Nunito'; src: url('../src/vendor/fonts/nunito-latin-600-normal.woff2') format('woff2'); font-weight: 600; }
   @font-face { font-family: 'Nunito'; src: url('../src/vendor/fonts/nunito-latin-800-normal.woff2') format('woff2'); font-weight: 800; }
   *, *::before, *::after { box-sizing: border-box; }
+  [hidden] { display: none !important; }
   html, body { margin: 0; max-width: 100%; overflow-x: hidden; }
   body { background: #F4EEE4; color: #1E2624; font: 600 17px/1.45 'Nunito', system-ui, sans-serif; padding: 16px; overflow-wrap: anywhere; }
   main { max-width: 960px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
@@ -25,7 +26,19 @@
   .status { display: flex; gap: 10px; align-items: flex-start; font-weight: 800; margin: 4px 0; }
   .status svg { width: 22px; height: 22px; flex: 0 0 auto; margin-top: 2px; }
   .chart { width: 100%; height: 170px; display: block; }
-  .map { width: 100%; max-width: 520px; aspect-ratio: 1; display: block; margin: 8px 0; border-radius: 10px; image-rendering: pixelated; }
+  .mapwrap { position: relative; width: 100%; max-width: 520px; margin: 8px 0; }
+  .map { width: 100%; aspect-ratio: 1; display: block; border-radius: 10px; image-rendering: pixelated; }
+  .maplabels { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+  .blabel { position: absolute; left: 0; top: 0; white-space: nowrap; font: 800 15px/1.2 'Nunito', system-ui, sans-serif; color: #1E2624; background: rgba(251, 247, 240, 0.92); border: 2px solid #4A5551; border-radius: 7px; padding: 1px 6px; }
+  .blabel.src-spring { border-color: #185FA5; }
+  .blabel.src-rain { border-color: #5F8196; }
+  .blabel.src-table { border-color: #2F5F6B; }
+  .blabel.src-damp { border-color: #8C7A5B; border-style: dashed; }
+  .ramp { width: 100%; max-width: 520px; height: 16px; border-radius: 4px; margin-top: 8px; background: linear-gradient(90deg, #F1ECD6, #8FBFA8, #2F5F6B); }
+  .ramp-ticks { width: 100%; max-width: 520px; display: flex; justify-content: space-between; font-size: 16px; color: #4A5551; }
+  .ramp-ticks.seasons { display: grid; grid-template-columns: repeat(4, 1fr); }
+  #map-day { width: 100%; max-width: 520px; accent-color: #4a6a47; margin: 4px 0 0; min-height: 32px; }
+  button.toggle[aria-pressed="false"] { background: #FBF7F0; color: #4a6a47; box-shadow: inset 0 0 0 2px #4a6a47; }
   .legend.swatch i { width: 14px; height: 14px; border-radius: 3px; }
   .legend { display: flex; flex-wrap: wrap; gap: 16px; font-size: 16px; margin: 6px 0 14px; }
   .legend i { display: inline-block; width: 22px; height: 4px; border-radius: 2px; vertical-align: middle; margin-right: 6px; }
@@ -68,8 +81,16 @@
   <div class="card">
     <h2>Water summary: what the island knows</h2>
     <p class="muted">The deterministic map ecology reads (doc 07), rebuilt after every sculpt stroke and spring change. Seen from above, north up.</p>
-    <canvas id="g-map" class="map" aria-label="Water summary map"></canvas>
-    <div class="legend swatch">
+    <div class="buttons">
+      <button id="mv-flow" class="toggle" aria-pressed="true">Flow classes</button>
+      <button id="mv-table" class="toggle" aria-pressed="false">Water table</button>
+      <button id="mv-labels" class="toggle" aria-pressed="false">Basin labels: off</button>
+    </div>
+    <div class="mapwrap" id="map-wrap">
+      <canvas id="g-map" class="map" aria-label="Water summary map"></canvas>
+      <div id="map-labels" class="maplabels"></div>
+    </div>
+    <div class="legend swatch" id="lg-flow">
       <span><i style="background:#2F6E86"></i>sea</span>
       <span><i style="background:#9FD3E0"></i>tide band</span>
       <span><i style="background:#3B7FA8"></i>still (pond)</span>
@@ -78,7 +99,19 @@
       <span><i style="background:#8C7A5B"></i>damp hollow</span>
       <span><i style="background:#185FA5;border-radius:50%"></i>spring</span>
     </div>
+    <div id="lg-table" hidden>
+      <p class="muted">Height of the water table above mean sea level. The sea is left plain.</p>
+      <div class="ramp"></div>
+      <div class="ramp-ticks"><span id="lg-t0">0 mm</span><span id="lg-t1"></span><span id="lg-t2"></span></div>
+      <div class="legend swatch"><span><i style="background:#CFCBC2"></i>sea (not colored)</span><span><i style="background:#185FA5;border-radius:50%"></i>spring</span></div>
+    </div>
+    <p class="muted" id="map-label-note"></p>
     <p class="muted" id="map-stats">Waiting for the first summary.</p>
+    <h2 style="margin-top:12px">Day of the year</h2>
+    <input type="range" id="map-day" min="0" max="55" step="1" value="0" aria-label="Day of the year, 1 to 56">
+    <div class="ramp-ticks seasons"><span>spring</span><span>summer</span><span>autumn</span><span>winter</span></div>
+    <p class="muted" id="map-day-text"></p>
+    <div class="buttons"><button id="map-live" disabled>Back to today (the game's own summary)</button></div>
   </div>
   <div class="card">
     <h2>Water look: one effect at a time</h2>

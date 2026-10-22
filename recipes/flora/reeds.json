@@ -15,6 +15,7 @@
               "drownDepthM": 0.6, "drownHours": 72 },
   "flowering": [1.25, 2.4],
   "dormant": [3, 4],
+  "phenology": { "jitterDays": 2.5, "note": "each plant keeps its own calendar, offset from the species by up to jitterDays game days either way (hash of the plant id; src/world/growth/phenology.js), so its flowering, seeding and dormant windows (and the willow's leaf-out and leaf fall) do not all turn on the same hour" },
   "spread": { "kind": "rhizome", "everyH": 12, "distanceM": [0.6, 1.4], "minSuit": 0.6, "minSpacingM": 0.8 },
   "starter": { "count": 7, "minSuit": 0.85, "spacingM": 2.5 },
   "season": { "albedo": { "spring": [0.12, 0.20, 0.08], "summer": [0.08, 0.14, 0.06], "autumn": [0.30, 0.24, 0.10], "winter": [0.35, 0.30, 0.22] },

@@ -1,0 +1,9 @@
+{
+  "type": "desktop-only",
+  "version": 1,
+  "note": "The notice shown instead of the game on a touch-first device (src/ui/desktop-only.js, src/boot.js): ebb is made for a desktop or laptop with a mouse and keyboard (October 21, 2026). tagline sits under the wordmark; line is the one sentence; link and linkText point to the project page.",
+  "tagline": "a tended island",
+  "line": "ebb is made for a desktop or laptop with a mouse and keyboard. Come and visit from one of those.",
+  "linkText": "More about ebb",
+  "link": "https://notarobot-eng.com/ebb"
+}

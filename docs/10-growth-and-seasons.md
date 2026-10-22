@@ -86,7 +86,7 @@ As built for the marsh (October 2026, branch `m1-marsh`; `recipes/flora/rushes.j
 - **Rushes and sedges**, a second cover plant (growth.json `cover`): a share per square meter, like grass, that moves `growth.ratePerH` of the gap each hour toward how well rushes like the ground (the same plateau bells as the species: still, shallow fresh water up to about 0.3 m and soaked ground; none in streams, the sea or salt). A new island started with it full where the ground suits it (since the plants-and-ground work, rushes come by themselves instead; see below). State: `growth.cover.rushes` (Uint8Array on the habitat grid).
 - **Rushes spread; they never appear from nowhere** (review, October 2026). Bare ground is taken only from a stand beside it (a neighbouring square at least `spread.fromShare` full), so they creep out about a metre a game day. In any hour, with chance `spread.jumpPerH`, a seed carried off a stand (wind, birds, water) tries `jumpTries` landings within `jumpM`; where the ground suits it at least `jumpMinSuit`, a new tussock starts. A marsh dug far from any rushes waits for one, about every few game days on Two ponds. Spreading and seeding raise `growth:spread`, which the journal hears. Seeded by the hour.
 - **Grass gives way to rushes** on soaked ground: its target falls by `grass.yieldToCover` times the rushes' share.
-- **The Plant tool plants rushes** (`plantCover`): a tap starts a tussock `spread.plantStart` full, or says which need the ground misses most (dry, flow, salt, deep), or that rushes grow there already. Refusals teach the journal, so the rushes page learns its likes from what happens (`refused:dry`, `refused:flow`, `refused:salt`, `spread`), as the other plants do.
+- **The Plant tool plants rushes** (`plantCover`): a click starts a tussock `spread.plantStart` full, or says which need the ground misses most (dry, flow, salt, deep), or that rushes grow there already. Refusals teach the journal, so the rushes page learns its likes from what happens (`refused:dry`, `refused:flow`, `refused:salt`, `spread`), as the other plants do.
 - **Ground with no water on it counts as still** in the habitat's needs: water can only move where there is water. Before this, dry ground told rushes and water lilies that "the water moves too much here".
 - **Drawing**: the grass pass runs a second time with the rushes recipe. Stems stand on the bed and rise out of water up to `maxWaterM` (longer in deeper water), in tussocks about `clumpM` across with open water lanes between them (a slower noise), the core taller than the rim, stems splaying out from the core. A blade with no rush cover stops before reading the ground, so the pass costs little away from wet ground (about 0.33 ms on ultra looking into a marsh).
 - **Basin starters**: an island recipe may give a basin starter plants of its own (`basins[].starters`, species to count), placed on that basin's suitable cells within its outer radius plus jitter, in seeded hash order. Two ponds gives each marsh reeds and iris; the starter island has none, so its plants are unchanged.
@@ -150,7 +150,7 @@ Seeds that land on unsuitable or full cells are discarded. Per-chunk seed result
 
 ### Seasons
 
-`world/seasons.js` runs the seasons step: it turns world time into `{index, phase, year, day}` (14 game days per season, 4 per year; F01, was 7) and per-species phenology: leaf-out, bloom window, fruiting, color turn and leaf drop, each as a phase window from the recipe plus per-plant jitter of up to ±1.2 game days (hash of plant id; not built yet), so trees do not change in lockstep. Growth rates per hour stay as they were with 7-day seasons (Matt, October 19, 2026), so each season ends fuller. Leaf drop adds leaf litter to the grid (food for hedgehog beetles, shelter for fireflies). Emits `season:changed`.
+`world/seasons.js` runs the seasons step: it turns world time into `{index, phase, year, day}` (14 game days per season, 4 per year; F01, was 7) and per-species phenology: leaf-out, bloom window, fruiting, color turn and leaf drop, each as a phase window from the recipe read on the plant's own calendar: `world/growth/phenology.js` offsets each plant by up to ±`phenology.jitterDays` game days from its species (uniform, from the plant's draw hash `hash32(id, 0x51ed)`; computed, never stored), so a bed does not flower, seed or die back on the same hour. The growth step uses the jittered position for the flowering and dormant stages and the seeding window, so the stored stage (which the shaders, journal, almanac and trails read) is the jittered one; the shrub shader shifts the willow's leaf-out and leaf fall by the same offset from the instance hash. Spreads: gorse 3, reeds, thrift and sea campion 2.5, lilies, willow and pondweed 2, iris 1.5, marsh marigold 1 (a short spring window). Same seed, same island, same days; catch-up runs the same step. Growth rates per hour stay as they were with 7-day seasons (Matt, October 19, 2026), so each season ends fuller. Leaf drop adds leaf litter to the grid (food for hedgehog beetles, shelter for fireflies). Emits `season:changed`.
 
 For drawing, the season shader uniforms (color ramp position, leaf cover, frost) come from **display time** through `clock.display()` (doc 04). In normal play the two agree; in preview only the look moves.
 
@@ -164,7 +164,7 @@ Rain raises moisture (ecology step), triggers the visual wetness and puddle shee
 
 ## Data and interfaces
 
-Files in `src/world/growth/`: `index.js`, `coarse.js`, `rules.js` (growth, stages, floors), `cover.js` (cover fields), `dispersal.js`, `instances.js` (writes per-chunk instance buffers, doc 04), `gen-space-colonization.js`, `gen-lsystem.js`, `gen-flower.js`, `gen-blades.js` (worker jobs), `moss-rd.js`. Plus `world/seasons.js` and `world/weather.js`. Shaders: `foliage-draw.wgsl`, `grass-blades.wgsl`, `moss-rd.wgsl`, `lib-season.wgsl`.
+Files in `src/world/growth/`: `index.js`, `coarse.js`, `phenology.js` (per-plant season offset), `rules.js` (growth, stages, floors), `cover.js` (cover fields), `dispersal.js`, `instances.js` (writes per-chunk instance buffers, doc 04), `gen-space-colonization.js`, `gen-lsystem.js`, `gen-flower.js`, `gen-blades.js` (worker jobs), `moss-rd.js`. Plus `world/seasons.js` and `world/weather.js`. Shaders: `foliage-draw.wgsl`, `grass-blades.wgsl`, `moss-rd.wgsl`, `lib-season.wgsl`.
 
 ```js
 /** @typedef {Object} Plant
@@ -197,7 +197,7 @@ Per flora recipe (doc 14): growth rate, max size, habitat ranges and tolerances,
 
 ## Performance budget
 
-| | Desktop | Mobile |
+| | Desktop | Laptop (medium tier) |
 |---|---|---|
 | Growth coarse step, starter island | under 0.8 ms per hour (worker) | under 2.5 ms |
 | 168-hour catch-up share | under 0.3 s | under 0.9 s |

@@ -54,14 +54,12 @@ export function pickFormat() {
  * @param {AudioNode} output  where voices connect (the music bus input, or a bench gain)
  * @param {any} instrument    recipes/music/instruments/<id>.json
  * @param {any} settings      samplerSettingsFor(recipes/music/sampler.json, id)
- * @param {{tier?: 'desktop'|'mobile', format?: 'ogg'|'m4a', pedalNoise?: any, articulation?: string}} [opts]
- *   tier: 'mobile' plays the recipe's lighter `mobile` set when it has one (and its own pedal sound);
+ * @param {{format?: 'ogg'|'m4a', pedalNoise?: any, articulation?: string}} [opts]
  *   pedalNoise: the recipe of the pedal mechanism recordings (music/instruments/pedal-knight),
  *   played on each press and lift when the settings' pedalNoise is on;
  *   articulation: the one set to play (for example 'bowed'), for instruments recorded several ways
  */
 export function createSampler(ctx, output, instrument, settings, opts = {}) {
-  const tier = opts.tier ?? 'desktop';
   const format = opts.format ?? pickFormat();
   let cfg = structuredClone(settings);
   /** @type {Map<string, AudioBuffer>} */
@@ -85,11 +83,8 @@ export function createSampler(ctx, output, instrument, settings, opts = {}) {
   const pedalBufs = { down: [], up: [] };
   let pedalTurn = 0;
 
-  // Phones play the instrument's lighter set when its recipe has one (doc 24, Performance budget):
-  // its own zones, layer count, folder and pedal sound stand in for the full ones. On the desktop,
-  // or for a recipe without one, this is the recipe itself.
-  const inst = tier === 'mobile' && instrument.mobile ? { ...instrument, ...instrument.mobile } : instrument;
-  /** The pedal mechanism's recordings: the lighter set's own on phones, otherwise the ones passed in. */
+  const inst = instrument;
+  /** The pedal mechanism's recordings: the instrument's own, otherwise the ones passed in. */
   const pedalRecipe = inst.pedalNoise ?? opts.pedalNoise;
   const sets = inst.sets ?? {};
   /** @param {string} name */
@@ -360,7 +355,8 @@ export function createSampler(ctx, output, instrument, settings, opts = {}) {
     for (const v of voices) if (v.midi === midi && !v.ended && (v.dampT === null || v.dampT > t)) damp(v, t, cfg.retrigger.dampS / 3);
 
     // Too many voices: fade the quietest, released ones first.
-    const max = cfg.stealing.maxVoices[tier] ?? 24;
+    const mv = cfg.stealing.maxVoices;   // a number (an older recipe: { desktop })
+    const max = (typeof mv === 'number' ? mv : mv?.desktop) ?? 24;
     let live = voices.filter((v) => !v.ended && (v.dampT === null || v.dampT > t));
     while (live.length >= max) {
       const i = pickVictim(live.map((v) => ({ released: v.keyUpT !== null, levelDb: levelNow(v, t) })));
@@ -584,7 +580,7 @@ export function createSampler(ctx, output, instrument, settings, opts = {}) {
       const i = nearestZone(midi, z.map((x) => x.midi));
       return i >= 0 && (z[i].layers ?? [z[i]]).every((/** @type {any} */ L) => buffers.has(L.file));
     },
-    /** The recipe this sampler plays: the lighter set merged in on phones. */
+    /** The recipe this sampler plays. */
     instrument: inst,
   };
 }

@@ -76,7 +76,7 @@ Technical notes on the order:
 | `ao` | rgba8unorm (R used) | storage, sampled | full res on high, half res on medium, off on low |
 | `sceneColorCopy` | rgba16float, 4 mips | copy dst, sampled | refraction source |
 | `depthCopy` | depth32float | copy dst, sampled | water and particle depth reads |
-| `bloom-down`, `bloom-up` | rgba16float, mip chains | attachment, sampled | half res down to 1/64 (render passes, no storage, so phones run it) |
+| `bloom-down`, `bloom-up` | rgba16float, mip chains | attachment, sampled | half res down to 1/64 (render passes, no storage, so integrated laptop GPUs run it cheaply) |
 | `ldr` / `ldr2` | rgba8unorm | attachment, storage, sampled | display-encoded, ping-pong for painterly and outline |
 | `shadowMap` | depth32float 2D array | attachment, sampled | one layer per cascade, see `06-sky-and-lighting.md` |
 | swapchain | `navigator.gpu.getPreferredCanvasFormat()` | attachment | canvas size, written only by present |
@@ -152,7 +152,7 @@ Implemented as a post-process accumulation option inside photo mode (`16-customi
 - `src/core/clock.js` advances game time by `dt × timeFlow × 60` (1 game day = 24 real minutes at 1x).
 - Fixed-step subsystems (water at 1/120 s, particles at 1/60 s) use accumulators capped at 4 steps per frame. Rendering interpolates where it matters (camera, creatures).
 - When the `timestamp-query` feature is present, each pass writes begin and end timestamps into a query set. The data is resolved to a buffer and read back through a ring of 3 staging buffers, so reading never stalls the frame.
-- **Calm mode:** after 60 s with no input, the loop caps at 30 fps on desktop and 20 fps on mobile. Any input restores full rate. When the tab is hidden, the loop stops. What the clock does then is defined in `02-core-loop-and-idle-model.md`.
+- **Calm mode:** after 60 s with no input, the loop caps at 30 fps. Any input restores full rate. When the tab is hidden, the loop stops. What the clock does then is defined in `02-core-loop-and-idle-model.md`.
 
 ## Tuning knobs
 
@@ -160,7 +160,7 @@ Settings (`src/ui/settings.js`): quality tier, render scale (with an "auto" opti
 
 ## Performance budget
 
-The per-pass millisecond table is in `19-performance-and-quality-tiers.md`. Summary: on desktop (RTX 4070 Ti Super, 1440p), total GPU time is at most 12 ms, leaving 4.6 ms of headroom at 60 fps, and main-thread CPU is at most 4 ms. Mobile low tier: 30 fps, GPU sustained at most 18 ms with a hard ceiling of 24 ms.
+The per-pass millisecond table is in `19-performance-and-quality-tiers.md`. Summary: on desktop (RTX 4070 Ti Super, 1440p), total GPU time is at most 12 ms, leaving 4.6 ms of headroom at 60 fps, and main-thread CPU is at most 4 ms. Medium tier (laptops with integrated graphics) is the floor and design target, at 60 fps. Low is only an emergency fallback in the dynamic-resolution chain, tuned for 60 fps on weak laptops (changed October 21, 2026: ebb is desktop and laptop only).
 
 ## Acceptance checks
 

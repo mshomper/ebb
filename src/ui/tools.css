@@ -34,10 +34,6 @@
   z-index: 10;
 }
 
-@media (pointer: coarse) {
-  .ebb-tools, .ebb-history { --tb-btn: 52px; --tb-icon: 26px; --tb-thumb: 28px; --tb-range-h: 40px; }
-}
-
 /* Undo and redo, bottom left under the island notes (docs/15 HUD). */
 .ebb-history {
   --tb-edge: 12px;
@@ -174,7 +170,6 @@
   -webkit-tap-highlight-color: transparent;
   transition: background-color 160ms ease, border-color 160ms ease;
 }
-@media (pointer: coarse) { .ebb-tools__chip { min-height: 48px; } }
 .ebb-tools__chip:hover { background: var(--tb-hover); }
 .ebb-tools__chip[aria-pressed='true'] { background: var(--tb-active); border-color: transparent; }
 .ebb-tools__chip .icon { width: 22px; height: 22px; }
@@ -317,7 +312,7 @@
 }
 .ebb-tools__range:focus-visible { outline-offset: 0; border-radius: 8px; }
 
-/* Phone portrait and other narrow screens: the card spans the gutter-to-gutter width,
+/* Narrow windows: the card spans the gutter-to-gutter width,
    sculpt chips stack their icon above the label too. */
 @media (max-width: 420px) {
   .ebb-tools__card { width: 100%; }
@@ -325,7 +320,7 @@
   .ebb-tools__chips--water .ebb-tools__chip,
   .ebb-tools__chips--rate .ebb-tools__chip { flex-direction: column; gap: 2px; padding: 6px 4px; }
 }
-/* Narrow portrait: no room beside the centered bar, so undo and redo sit just above it at the left
+/* Narrow windows: no room beside the centered bar, so undo and redo sit just above it at the left
    edge, mirroring the time-flow button on the right. The brush card opens full width over that
    spot, so they step aside while a tool is on. */
 @media (max-width: 560px) {
@@ -338,7 +333,7 @@
   }
   .ebb-history.has-tool .ebb-tools__bar { pointer-events: none; }
 }
-/* Narrow portrait: the brush size becomes a short upright slider down the card's right side, so the
+/* Narrow windows: the brush size becomes a short upright slider down the card's right side, so the
    card is a row shorter and more of the island shows above it (docs/15). */
 @media (max-width: 560px) {
   .ebb-tools__card {
@@ -377,90 +372,27 @@
   .ebb-tools__slider[data-slider='size'] .ebb-tools__range::-moz-range-progress { width: 6px; }
 }
 /* Six tool buttons. With tight gaps the bar's own parts take 20 px (2 x 4 padding, 5 x 2 gaps,
-   border 2) plus the 24 px page gutter, so below 460 px the buttons share what is left: 52 px
-   down to a 356 px screen, 46 px on a 320 px one, so the bar never runs past the screen. */
+   border 2) plus the 24 px page gutter, so below 460 px the buttons share what is left: 48 px
+   down to a 332 px window, 46 px at 320 px, so the bar never runs past the window. */
 @media (max-width: 460px) {
   .ebb-tools {
     --tb-gap: 2px;
     --tb-pad: 4px;
-    --tb-btn: clamp(34px, calc((100vw - 44px) / 6), 52px);
-    --tb-icon: clamp(22px, calc(var(--tb-btn) - 20px), 26px);
+    --tb-btn: clamp(34px, calc((100vw - 44px) / 6), 48px);
+    --tb-icon: clamp(22px, calc(var(--tb-btn) - 20px), 28px);
   }
 }
 
-/* Short screens (phone landscape): the card stays compact, with each slider's label,
-   track and value on one row; when there is room it sits to the left of the bar. */
+/* Short windows: the card stays compact, with each slider's label, track and value on one row. */
 @media (max-height: 500px) {
   .ebb-tools__card { padding: 10px 12px; gap: 8px; }
-  .ebb-tools__chip { flex-direction: column; gap: 2px; padding: 5px 4px; min-height: 48px; }
+  .ebb-tools__chip { flex-direction: column; gap: 2px; padding: 5px 4px; }
   .ebb-tools__slider {
     grid-template-columns: 4.6em minmax(0, 1fr) 4.2em;
     grid-template-areas: 'label range value';
   }
   .ebb-tools__slider output { text-align: right; }
 }
-/* Phone landscape (docs/15): the tools become a column on the right edge, under the top right
-   buttons, with the brush card opening to its left; undo and redo stack on the left edge, half way
-   up. The buttons shrink only if the screen is too short for six, never below 44 px. */
-@media (max-height: 500px) and (min-width: 600px) {
-  .ebb-tools,
-  .ebb-history {
-    --tb-top: calc(max(12px, env(safe-area-inset-top)) + 62px);
-    --tb-gap: 2px;
-    --tb-pad: 4px;
-    --tb-btn: clamp(44px, calc((100dvh - var(--tb-top) - max(12px, env(safe-area-inset-bottom)) - 20px) / 6), 52px);
-    --tb-icon: clamp(22px, calc(var(--tb-btn) - 22px), 26px);
-  }
-  .ebb-tools {
-    top: var(--tb-top);
-    left: auto;
-    right: max(12px, env(safe-area-inset-right));
-    padding: 0;
-    flex-direction: row;
-    justify-content: flex-end;
-    align-items: center;
-  }
-  .ebb-tools__bar { flex-direction: column; }
-  .ebb-tools__card {
-    width: min(360px, calc(100vw - 2 * var(--tb-btn) - 120px));
-    flex: none;
-    max-height: 100%;
-    overflow-y: auto;
-    overscroll-behavior: contain;
-    transform: translateX(10px);
-  }
-  .ebb-history {
-    bottom: auto;
-    top: calc(50% - var(--tb-btn) - var(--tb-pad) - 1px);
-  }
-  .ebb-history .ebb-tools__bar { flex-direction: column; }
-}
-
-/* Left-handed (Settings > Controls; src/ui/motion.js sets the root class): phone layouts mirror,
-   so the tools sit under the left thumb. Desktop layouts do not change. */
-@media (max-width: 560px) {
-  :root.ebb-left-handed .ebb-history {
-    left: auto;
-    right: max(var(--tb-edge), env(safe-area-inset-right));
-  }
-}
-@media (max-height: 500px) and (min-width: 600px) {
-  /* Under the clock dial, rather than under the top right buttons; with six tools there is just room
-     for the build tag on test builds too. */
-  :root.ebb-left-handed .ebb-tools { --tb-top: calc(max(12px, env(safe-area-inset-top)) + var(--hud-dial, 64px) + 28px); }
-  :root.ebb-left-handed .ebb-tools {
-    right: auto;
-    left: max(12px, env(safe-area-inset-left));
-    flex-direction: row-reverse;
-  }
-  :root.ebb-left-handed .ebb-tools__card { transform: translateX(-10px); }
-  :root.ebb-left-handed .ebb-tools__card.is-open { transform: none; }
-  :root.ebb-left-handed .ebb-history {
-    left: auto;
-    right: max(var(--tb-edge), env(safe-area-inset-right));
-  }
-}
-
 /* Reduced motion: the system's (unless Settings says Full), or Settings' Calm (src/ui/motion.js). */
 @media (prefers-reduced-motion: reduce) {
   :root:not(.ebb-motion-full) .ebb-history,

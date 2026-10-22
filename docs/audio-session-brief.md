@@ -25,13 +25,13 @@ Matt owns ebb. He is an expert in computational design and biomimicry, does not 
 ## How to work
 
 - **Analyze, propose, then build.** Before writing code, present a short, visual plan for Matt's approval. Do the same before each new phase.
-- **Branches, never main.** Suggested: `m2-audio-engine`, `m2-music-spring`, `m2-soundscape`. Matt click-tests on desktop and in the Claude mobile app before any merge. Any steps Matt takes locally are written as GitHub Desktop actions.
+- **Branches, never main.** Suggested: `m2-audio-engine`, `m2-music-spring`, `m2-soundscape`. Matt click-tests on desktop before any merge. Any steps Matt takes locally are written as GitHub Desktop actions.
 - **Commits and PRs**: a `Co-Authored-By: Claude` trailer is fine; never a claude.ai session link. Every PR has a plain-language click-test list.
 - **Listening and heavy checks run on Matt's machine**, in pages under `tools/` (`music-lab.html`, `audio-check.html`), opened beside the game. Do not run long renders in the cloud and wait on them.
 - **Big jobs in small, parallel pieces**: for example one subagent preparing piano samples while another builds the ABC parser and a third drafts spring pieces. Keep working rather than waiting.
 - **Do not over-deliberate**: make an educated call from the specs, state it in a line, move on.
 - **Questions for Matt** go in a plain bullet list at the end of a message, in plain language, with no symbols or variable names in the questions.
-- **House rules**: no emoji or symbol-glyph icons (every icon a drawn SVG in `src/ui/icons/`), no horizontal scrolling at any width, UI text at least 15 px desktop and 16 px phone, Nunito for UI, never the words "genuine" or "genuinely".
+- **House rules**: no emoji or symbol-glyph icons (every icon a drawn SVG in `src/ui/icons/`), no horizontal scrolling at any width, UI text at least 15 px, Nunito for UI, never the words "genuine" or "genuinely".
 - **Code rules**: plain JavaScript ES modules with JSDoc, no build step, Web Audio API directly, small files (propose a split past about 600 lines), every tunable in `recipes/`, modules talk through `src/core/events.js` and `src/core/store.js`, no `Math.random()` (use `src/core/rng.js` with system id `music`), vendored libraries under `src/vendor/` with their licenses (abcjs, MIT, for the lab's notation).
 - **Milestone note**: audio is M2 work and the M1 slice is still finishing (S6 frogs in progress). Matt has opened this audio track deliberately; keep it on its own branches and touch slice code only where the audio hooks in (events it listens to, the Sound settings section).
 
