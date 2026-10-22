@@ -78,7 +78,7 @@
     "activity": { "pattern": "diurnal", "hours": [6, 20] },
     "needs": {
       "water": { "depthM": [0.2, 1.5], "damp": false, "body": { "minM2": 20, "deepM": 1.0 }, "okM": 0, "maxM": 1, "w": 0.3 },
-      "food": { "fields": { "midges": 1 }, "plants": { "pondweed": 0.6 }, "radiusM": 6, "per": 0.4, "w": 0.25 },
+      "food": { "fields": { "midges": 1, "tadpoles": 0.5 }, "plants": { "pondweed": 0.6 }, "radiusM": 6, "per": 0.4, "w": 0.25 },
       "shelter": { "cover": { "lilies": 1, "pondweed": 1, "reeds": 0.7, "rushes": 0.5, "iris": 0.4 }, "radiusM": 3, "from": 0.15, "full": 0.5, "w": 0.2 },
       "quiet": { "w": 0.1 },
       "company": { "n": [8, 16, 30], "alone": 0.5, "crowded": 0.5, "w": 0.15 }

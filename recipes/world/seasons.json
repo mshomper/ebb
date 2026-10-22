@@ -29,6 +29,7 @@
     "frogs": [2.6, 0.3],
     "reeds": [3.0, 4.0],
     "dragonflies": [2.55, 1.0],
-    "damselflies": [2.1, 0.9]
+    "damselflies": [2.1, 0.9],
+    "turtles": [2.5, 1.05]
   }
 }

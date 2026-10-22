@@ -1,13 +1,13 @@
 // @ts-check
 // A point on a log's surface in the world, and which way the wood faces there (autumn's fungi sit on
-// kept logs, src/world/finds/autumn.js). The log's mesh is built ring by ring (meshes.js bakeLog:
+// kept logs, src/world/finds/autumn.js). The log's mesh is built ring by ring (log-bake.js bakeLogSeed, its trunk first:
 // rings along it, `around` vertices round each, vertex j at the angle 2 pi j / around, 0 its right
 // flank and pi/2 its top), so a point is read between the four vertices round it, then posed exactly
 // as the draw pass poses the mesh (piece-draw.wgsl vsPiece: the bone, the log's length, its yaw, its
 // spot). A bowed, tapered, knotted log carries its fungi on the wood itself. Pure.
 
 /**
- * @param {{ vertices: Float32Array }} mesh the log shape's mesh (meshes.js logShapes) @param {number} rings @param {number} around
+ * @param {{ vertices: Float32Array }} mesh the log's own mesh (log-bake.js bakeLogSeed) @param {number} rings @param {number} around
  * @param {{ bone: Float32Array, size: number, yaw: number, at: number[] }} pose
  *   bone: the log's bone (column-major 4 x 4, index.js logBeing); size: its length (m); at: the
  *   ground under its middle

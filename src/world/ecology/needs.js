@@ -14,7 +14,8 @@
 //   food     { field: 'midges' } or { fields: { midges: 1, ... } }, plants?: { pondweed: 0.5 }, radiusM, per (or perFrog), w
 //            the fields (and plants, weight x size) summed over the square of radiusM around, against
 //            per x the ideal group
-//   shelter  { cover: { plant: weight }, radiusM, from, full, w }  the best cover within radiusM
+//   shelter  { cover: { plant: weight }, fields?: { basks: 1 }, radiusM, from, full, w }  the best
+//            cover within radiusM; fields count too (the basking spots you set, for turtles)
 //   quiet    { w }  nothing disturbs yet (no paths or lanterns), so full
 //   company  { n: [min, ideal, max], w }  scored at the ideal group here
 //   scored   { where: 'shore' | 'water' | 'near', shallowCm? }
@@ -124,7 +125,13 @@ export function needMaps(hab, growth, fields, rec) {
   const where = E.scored?.where ?? 'shore';
   const { good, label, bodies } = goodWater(hab, N.water, box);
   const dGood = chamfer(good, n, 3 * 64);
-  const cover = boxMax(plantField(hab, growth, N.shelter.cover, true), n, Math.round(N.shelter.radiusM), box);
+  const near = plantField(hab, growth, N.shelter.cover, true);
+  // Shelter from a field too (turtles' basking spots): each square keeps the better of the two.
+  for (const [name, w] of Object.entries(N.shelter.fields ?? {})) {
+    const f = fields[name];
+    if (f) for (let k = 0; k < n * n; k++) { const v = (w * f[k]) / 255; if (v > near[k]) near[k] = v; }
+  }
+  const cover = boxMax(near, n, Math.round(N.shelter.radiusM), box);
   const F = N.food;
   const per = F.per ?? F.perFrog;
   const rf = Math.round(F.radiusM);

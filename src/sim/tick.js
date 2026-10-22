@@ -11,6 +11,7 @@ import * as growth from '../world/growth/coarse.js';
 import * as ecology from '../world/ecology/coarse.js';
 import * as creatures from '../world/creatures/coarse.js';
 import * as swarms from '../world/creatures/swarms.js';
+import * as spring from '../world/creatures/spring.js';
 
 /** @typedef {{name: string, payload: any, hour?: number}} CoarseEvent */
 /** @typedef {(state: any, hourIndex: number, env: Env) => {state: any, events: CoarseEvent[]}} CoarseStep */
@@ -49,6 +50,9 @@ export const COARSE_ORDER = Object.freeze([
   { id: 'creatures', coarseStep: creatures.coarseStep },
   // Schools and swarms (M2): minnows, dragonflies, one model (src/world/creatures/swarms.js).
   { id: 'swarms', coarseStep: swarms.coarseStep },
+  // Spring at the pond (doc 13): frogspawn to froglets on happy frogs, the toad's night walk
+  // (src/world/creatures/spring.js). After the swarms, so tadpoles see this hour's minnows.
+  { id: 'spring', coarseStep: spring.coarseStep },
 ]);
 
 /**

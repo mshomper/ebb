@@ -49,7 +49,13 @@ Size and color come from CSS: set `width`/`height` on `.icon` and `color` on the
 | `loosestone` | a stone tipped up on one side, a dark gap under it: the naturalist's loose stones reward |
 | `lens` | a round glass with a glint on a short handle: the naturalist's hand lens reward |
 | `driftwood` | a bending branch at the water's edge with a broken stub and a knot, a ripple beyond: the naturalist's driftwood reward |
-| `carry` | a log lifted off the ground line, an arrow up above it: Carry on a stone's or a log's card (the turtles' gift) |
+| `carry` | a log lifted off the ground line, an arrow up above it: Carry on a stone's or a log's card (yours once driftwood washes up) |
+| `turtle` | a domed shell marked in plates on a stone's top, head raised: the pond turtles' page |
+| `toad` | a squat body low on the ground, walking, its back dotted with warts: the common toad's page |
+| `frogspawn` | jelly eggs in a clump just under a water line, a dark egg in each: the frogspawn page |
+| `slowworm` | a long smooth body in a gentle S on the ground line beside a log's cut end: the slow worm's page |
+| `lizard` | a lizard from above on a stone, legs splayed, its tail curling off: the common lizard's page |
+| `raft` | a low mat of reeds on a ripple line, stems standing up: the turtles' gift, the floating reed raft |
 | `stone` | a rounded boulder on the ground with a smaller one against it, a drop line above: Sculpt's Stone mode |
 | `name-tag` | a luggage-style tag with its hole: naming a creature on its card |
 | `water` | droplet over one ripple line |

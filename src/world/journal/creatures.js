@@ -120,6 +120,10 @@ export function observeAnimals(j, out, ctx, at) {
   // Schools and swarms with needs (minnows, dragonflies): the same arc in their own words.
   for (const [sp, srec] of Object.entries(words.species)) if (/** @type {any} */ (srec).kind === 'school') observeSchool(j, out, ctx, at, sp, srec, note);
 
+  // Spring at the pond (src/world/creatures/spring.js): frogspawn laid, hatched, leaving as froglets,
+  // and the toad's night walk. Each note offers Show me (kind sign), so a young player can find them.
+  observeSpring(j, out, ctx, at);
+
   // Midges: known by themselves at the first dusk they gather, once the island draws them (S6b).
   const mrec = words.species.midges;
   if (mrec && mrec.seenAt.drawn) {
@@ -142,6 +146,31 @@ export function observeAnimals(j, out, ctx, at) {
       if (at.season === 3) learnOnce(k, 'winter');
       track(k, m.value, hour, at.newHour, words);
     }
+  }
+}
+
+/**
+ * Spring's events, as notes: frogspawn (laid, more laid, hatched, froglets) and the toad walking.
+ * The page learns each stage as it comes, seen or not, so its field notes fill in once found.
+ * @param {Journal} j @param {Note[]} out @param {{ events?: { name: string, payload: any }[], hour: number, words: any }} ctx
+ * @param {{ date: string, know: (j: Journal, sp: string) => SpeciesKnowledge }} at
+ */
+function observeSpring(j, out, ctx, at) {
+  const { hour, words } = ctx;
+  // Several clumps hatch at the same dusk: one note for them all.
+  /** @type {Set<string>} */ const said = new Set();
+  const say = (/** @type {string} */ sp, /** @type {string} */ key) => {
+    const t = words.species[sp]?.notes?.[key];
+    if (t && !said.has(key)) { said.add(key); out.push({ hour, date: at.date, text: t, sp, kind: 'sign' }); }
+  };
+  for (const e of ctx.events ?? []) {
+    const sp = e.payload?.species;
+    if (sp === 'frogspawn' && words.species.frogspawn) {
+      const k = at.know(j, 'frogspawn');
+      if (e.name === 'creature:spawned') say(sp, e.payload.first ? 'spawned' : 'spawnedMore');
+      else if (e.name === 'creature:hatched') { say(sp, 'hatched'); learnOnce(k, 'hatched'); }
+      else if (e.name === 'creature:froglets') { say(sp, 'froglets'); learnOnce(k, 'froglets'); }
+    } else if (sp === 'toads' && e.name === 'creature:walking' && words.species.toads) say(sp, 'walking');
   }
 }
 

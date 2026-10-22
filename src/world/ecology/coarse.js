@@ -18,6 +18,21 @@ import { frogNeeds } from './habitat.js';
 import { needMaps } from './needs.js';
 import { swarmSpecies, keyOf } from '../species.js';
 import { HABITAT_ORIGIN } from '../growth/habitat.js';
+import { tadpoleField } from '../creatures/spring.js';
+
+/**
+ * The basking spots (stones, logs, the raft) as a field: 255 on each spot's square, or null when
+ * there are none. Pure. @param {{ x: number, z: number }[] | undefined} basks state.basks @param {number} n
+ */
+export function baskField(basks, n) {
+  if (!basks?.length) return null;
+  const f = new Uint8Array(n * n);
+  for (const b of basks) {
+    const i = Math.floor(b.x - HABITAT_ORIGIN), j = Math.floor(b.z - HABITAT_ORIGIN);
+    if (i >= 0 && j >= 0 && i < n && j < n) f[j * n + i] = 255;
+  }
+  return f;
+}
 
 /** @returns {{ midges: Uint8Array | null, frogs: any, habitatHash: number }} */
 export function initialEcology() {
@@ -51,7 +66,13 @@ export function ecologyNow(state, env, advance) {
   };
   // Schools and swarms (minnows, dragonflies): the habitat score per square from the same needs
   // reader, and the pools that suit them (water bodies big and deep enough), for their tick.
-  const fields = { midges };
+  // Spring's tadpoles (minnows eat them; src/world/creatures/spring.js) and the basking spots you set
+  // (turtles; state.basks), each present only while there are some.
+  /** @type {Record<string, Uint8Array | null>} */ const fields = { midges };
+  const tadpoles = tadpoleField(state, hab.n, sp.frogspawn);
+  if (tadpoles) fields.tadpoles = tadpoles;
+  const basks = baskField(state.basks, hab.n);
+  if (basks) fields.basks = basks;
   for (const rec of swarmSpecies(sp)) {
     const m = needMaps(hab, state.growth, fields, rec);
     const key = keyOf(rec);

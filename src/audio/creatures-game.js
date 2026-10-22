@@ -58,14 +58,16 @@ export function createCreatureSound(mixer, voices, store, recipe, pond) {
   }
 
   /**
-   * The minnows' rises to the surface since the last look: a sip at each ring. As the plops: the
-   * first look plays nothing, nothing plays before the first touch, and a late one is let go.
+   * The minnows' rises to the surface since the last look: a sip at each ring; and a turtle sliding
+   * into the water: a plop (pond.plops). As the frogs' plops: the first look plays nothing, nothing
+   * plays before the first touch, and a late one is let go.
    * @param {{ species: string, now?: number, rises?: { n: number, t: number, pos: number[] }[] }[]} schools
    */
   function pollRises(schools) {
     const running = mixer.ctx.state === 'running';
     for (const s of schools) {
-      if (!pond.sips.includes(s.species)) continue;
+      const plops = (pond.plops ?? []).includes(s.species);
+      if (!plops && !pond.sips.includes(s.species)) continue;
       const rises = s.rises ?? [];
       const first = !lastRise.has(s.species);
       const from = lastRise.get(s.species) ?? -1;
@@ -76,7 +78,8 @@ export function createCreatureSound(mixer, voices, store, recipe, pond) {
         if (r.n <= from) continue;
         const age = (s.now ?? r.t) - r.t;
         if (age > pond.staleS) continue;
-        voices.sip(r.pos, t0 + Math.max(0, pond.leadS - age));
+        if (plops) voices.plop(`${s.species}:${r.n}`, r.pos, t0 + Math.max(0, pond.leadS - age));
+        else voices.sip(r.pos, t0 + Math.max(0, pond.leadS - age));
       }
     }
   }

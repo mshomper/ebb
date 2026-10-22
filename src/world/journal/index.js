@@ -163,7 +163,7 @@ export function createJournal(opts) {
     }
     // Then a loose stone or a driftwood log (docs/future/10): the tap lifts or rolls it to look
     // underneath. A stone has no page; a log opens the Driftwood page (L2), its form and its wear
-    // on the card (log: what the page's sketch is traced from). With the turtles' gift
+    // on the card (log: what the page's sketch is traced from). Once driftwood washes up
     // (unlocks.carry) its card offers Carry.
     const pc = opts.pieces?.pieceAt(x, z);
     const pw = pc && words.pieces?.[pc.kind];

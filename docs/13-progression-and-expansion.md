@@ -36,7 +36,7 @@ flowchart LR
   F -->|Cut digs a deep pool| M[Minnows come<br/>gift: pondweed]
   S -->|a second, fish-free pond you dig, in summer| D[Dragonflies<br/>gift: springs]
   D -->|spring above a terrace| W[Waterfalls]
-  S -->|a sunny stone by the pond| T[Turtles<br/>gift: carry a log]
+  S -->|a sunny stone by the pond| T[Turtles<br/>gift: reed raft]
   N[10 finds<br/>driftwood on the strandline] --> T
   M --> L[2nd happy species<br/>meadow islet rises]
   D --> L
@@ -80,7 +80,7 @@ Each gift lets the player make something new, and what they make is part of what
 | Frogs | Cliff tool | deep pools, terraces, sea walls | minnows; after v1, puffins and kittiwakes on cliffs |
 | Minnows | Pondweed | an underwater meadow | more fish for herons; food for turtles |
 | Dragonflies | Springs | streams, and waterfalls off terraces | otters (running water); damp ground for butterflies; running water on the meadow islet, which has no spring |
-| Turtles | Carry a log | driftwood from the strandline, set down anywhere | a better basking log for turtles; toads and slow worms under it (finds, so the naturalist's line moves on) |
+| Turtles | Floating reed raft (Matt, October 21, 2026) | a basking spot out on open water, rising and falling with it | more turtles; herons stand on it to fish. (Carrying driftwood is no longer a gift: it comes with the logs at 10 finds, and toads and slow worms live under a carried log) |
 | Bees | Hawthorn | hedges | songbirds nest in them; hedgehogs forage beneath |
 | Butterflies | Stone wall | sunny walls that gather moss | bees bask on them; hedgehogs walk the wall bases |
 | Songbirds | Oak | a tree that grows old | squirrels (nuts); owls (a hollow, once old) |
@@ -100,7 +100,7 @@ flowchart LR
   MI -->|pondweed| HE[Herons]
   MI -->|pondweed| TU[Turtles]
   NA[Naturalist: driftwood] --> TU
-  TU -->|carry a log| FN[Toads and slow worms<br/>under logs]
+  NA -->|carry a log| FN[Toads and slow worms<br/>under logs]
   SF[Shore finds<br/>mussels and winkles] --> OY[Oystercatchers]
   DR[Dragonflies: springs] --> OT[Otters]
   BE[Bees: hawthorn] --> SO[Songbirds]
