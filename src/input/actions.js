@@ -31,6 +31,7 @@ import { emit } from '../core/events.js';
  *   | { type: 'pieces.removeRun', run: string }
  *   | { type: 'pieces.carry', id: string }
  *   | { type: 'pieces.carryCancel' }
+ *   | { type: 'pieces.lift', id: string }
  *   | { type: 'keepsakes.leave', id: string }
  *   | { type: 'keepsakes.keep', id: string }
  *   | { type: 'keepsakes.swap', out: number }

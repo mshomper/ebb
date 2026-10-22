@@ -70,6 +70,8 @@ export function createWalker(R, env) {
       if (p !== 'stand') { s.path = []; s.brisk = false; s.speed = 0; }
       s.posture = p;
     },
+    /** Turn to face a way where you are (kneeling to lift a log, L3a). @param {number} yaw */
+    face(yaw) { s.yaw = yaw; },
     /** Where the walk is going (a copy), for drawing the way. */
     path: () => s.path.map((p) => /** @type {[number, number]} */ ([p[0], p[1]])),
 

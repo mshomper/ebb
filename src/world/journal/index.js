@@ -21,6 +21,7 @@ import { groundKind, groundCard, groundSurvey, describeGround, groundSpot } from
 import { almanac } from './almanac.js';
 import { describeWeb } from './web.js';
 import { washMap } from './wash.js';
+import { UNDER_PAGES } from '../finds/under-log.js';
 import { stampNotes, markShown, markNotesSeen, markPageSeen, readOf, pageSince, unread, noteState } from './read.js';
 
 /**
@@ -39,7 +40,7 @@ import { stampNotes, markShown, markNotesSeen, markPageSeen, readOf, pageSince, 
 /**
  * @param {{ world: { state: any, env: any }, words: any, island: any, web: any, wash?: any,
  *   creatures?: { frogAt: (x: number, z: number) => { x: number, z: number, id?: number } | null } | null,
- *   finds?: any, keepsakes?: any, pieces?: any, nets?: any, shore?: (() => Record<string, number> | null) | null, list?: any,
+ *   finds?: any, keepsakes?: any, pieces?: any, lift?: any, nets?: any, shore?: (() => Record<string, number> | null) | null, list?: any,
  *   schools?: { at: (x: number, z: number, y?: number) => { sp: string, id: number, x: number, z: number } | null }[] }} opts
  *   schools: the live schools (minnows; src/world/creatures/schools.js), which say whether a tap
  *   landed on one
@@ -167,13 +168,58 @@ export function createJournal(opts) {
     const pw = pc && words.pieces?.[pc.kind];
     if (pw) {
       return { sp: `piece:${pc.kind}`, piece: pc.id, kind: pc.kind, name: pw.name, sub: null, icon: pw.icon, text: pw.cardLine, wx: pc.x, wz: pc.z,
-        r: pc.kind === 'log' ? (pc.length ?? 1) * 0.55 : pc.size * 0.7, stage: -1, noPage: true, canCarry: !!get('unlocks')?.carry };
+        r: pc.kind === 'log' ? (pc.length ?? 1) * 0.55 : pc.size * 0.7, stage: -1, noPage: true, canCarry: !!get('unlocks')?.carry, ...liftOffer(pc) };
     }
     const hab = habitat();
     const living = identify(world.state, hab, x, z, words);
     if (living) return living;
     const kind = groundKind(hab, material(), x, z, island);
     return kind ? groundCard(kind, hab, x, z, { island, flora: flora(), journal, words }) : null;
+  }
+
+  /**
+   * What a piece's card says about lifting it (L3a): Lift within reach on foot (liftPiece), else a
+   * line saying to walk closer, or to go down. @param {any} pc
+   */
+  function liftOffer(pc) {
+    const LW = words.pieces?.lift, at = opts.lift?.reach(pc);
+    if (!LW || !at) return {};
+    return { liftPiece: at === 'lift', liftNote: at === 'lift' ? null : LW[at] ?? null };
+  }
+
+  /**
+   * After a Lift (piece:lifted from src/world/pieces/lift.js): the first lift of a stone or a log is
+   * written down, and each kind found under it is found (its page inks, once). Its card now says what
+   * was there and opens that page (the beetle's before the woodlice'); with nothing there, it opens
+   * the Driftwood page or the Loose stone page.
+   * @param {{ id: string, kind: string, from?: number[], found?: Record<string, number>, rested?: boolean, strand?: boolean }} p
+   */
+  function lifted(p) {
+    if (!p.from) return;
+    const ctx = { state: world.state, hour: hourIndex(), words };
+    // A stone has a page of its own (loosestone), found at its first lift; a log's first roll is a note.
+    if (p.kind === 'stone' && words.species.loosestone) commit(foundFind(journal, 'loosestone', ctx));
+    else commit(liftedStone(journal, ctx, p.kind));
+    const LW = words.pieces?.lift;
+    if (!LW) return;
+    /** @type {string[]} */ const lines = [];
+    let page = null;
+    for (const sp of /** @type {const} */ (['beetle', 'woodlice'])) {
+      const n = p.found?.[sp] ?? 0, pg = UNDER_PAGES[sp];
+      if (!n) continue;
+      lines.push(LW[sp].replace('{n}', LW.numbers?.[n] ?? String(n)).replace(/^./, (/** @type {string} */ c) => c.toUpperCase()));
+      page ??= pg;
+      if (!words.species[pg]) continue;
+      if (words.species[pg].kind === 'find' && !journal.species[pg]?.ever) commit(foundFind(journal, pg, ctx));
+      const list = words.moments[momentKind(words.species[pg])];
+      if (list) commit(catchMoments(journal, pg, momentsNow(list, now(-1), words.moments), { ...ctx, name: words.species[pg]?.plural ?? pg, list }));
+    }
+    if (!lines.length) lines.push(p.rested ? LW.rest : p.strand ? LW.strand : LW.nothing);
+    page ??= p.kind === 'log' ? 'driftwood' : 'loosestone';
+    const c = get('identify');
+    if (c?.piece !== p.id) return;
+    update('identify', () => ({ ...c, text: lines.join(' '), liftPiece: false, liftNote: null, canCarry: false,
+      sp: words.species[page] ? page : c.sp, noPage: !words.species[page], at: performance.now() }));
   }
 
   /**
@@ -187,13 +233,9 @@ export function createJournal(opts) {
     // record), but a mark seen is a first on the beachcomber's trail, kept or not (src/world/trails.js).
     if (card.keepsake && card.mark) emitDeferred('keepsake:seen', { n: card.mark });
     if (card.keepsake || card.net) return;
-    // A loose stone tips up to show underneath, a log rolls over (src/world/pieces); the first of
-    // each is written down.
-    if (card.piece) {
-      emitDeferred('piece:lifted', { id: card.piece });
-      commit(liftedStone(journal, { state: world.state, hour: hourIndex(), words }, card.kind));
-      return;
-    }
+    // A loose stone or a log: its card offers Lift on foot (src/world/pieces/lift.js); a tap alone
+    // looks, and lifts nothing.
+    if (card.piece) return;
     // Tapping a frog, or a school of minnows, is finding it: its page inks (once).
     if (card.sp === 'frogs' || words.species[card.sp]?.kind === 'school') found(card.sp);
     // Tapping a find is finding it, the same way.
@@ -283,6 +325,8 @@ export function createJournal(opts) {
       commit(learn(journal, p.species, `refused:${p.reason}`, { state: world.state, hour: hourIndex(), words }))),
     on('look:tapped', (/** @type {{ x: number, y: number, point: number[] | null }} */ p) =>
       select(p.point ? cardAt(p.point[0], p.point[2], p.point[1]) : null, p.x, p.y)),
+    // A Lift on foot (L3a): its notes, its finds, and its card.
+    on('piece:lifted', lifted),
     // A living catch let go from a net's haul (src/world/nets): the first of each kind is a find.
     on('net:released', (/** @type {{ page: string }} */ p) => {
       if (words.species[p.page]?.kind === 'find' && !journal.species[p.page]?.ever) {
