@@ -12,8 +12,13 @@ import { migrate, FORMAT } from '../src/save/migrate.js';
 import { snapshot, restore } from '../src/save/sections.js';
 import { WATER_CLASS } from '../src/world/water/summary.js';
 import { STAGE } from '../src/world/growth/coarse.js';
-import { HABITAT_ORIGIN } from '../src/world/growth/habitat.js';
+import { HABITAT_ORIGIN, buildHabitat } from '../src/world/growth/habitat.js';
 import { waterCellOf } from '../src/world/water/grid.js';
+import { buildSummary } from '../src/world/water/summary.js';
+import { buildIslandModel } from '../src/world/island-model.js';
+import { landmarks } from '../src/world/terrain/landform.js';
+import { quantize, WORLD_CELLS } from '../src/world/terrain/grid.js';
+import { subSeed } from '../src/core/rng.js';
 
 const G = 'trails';
 const load = (/** @type {string} */ p) => fetch(`../recipes/world/${p}.json`).then((r) => r.json());
@@ -73,13 +78,37 @@ export function addTrailsTests(test, assert, eq) {
     hab.shapedCm.fill(40);
     assert(placesNow({ summary, hab }, { ...C, streamCells: 8 }).has('stream'), 'a stream on shaped ground does');
     summary.targetMm[3] = 1050;
-    assert(placesNow({ summary }, C).has('deepPool'), 'a pool a metre deep');
+    assert(placesNow({ summary, hab }, C).has('deepPool'), 'a pool a metre deep, dug by the player');
+    assert(!placesNow({ summary }, C).has('deepPool'), 'not without knowing the ground was shaped');
     const cove = new Uint8Array(16).fill(C.coveScore);
     assert(placesNow({ summary, hab, cove }, C).has('cove'), 'a sheltered cove you carved');
     assert(placesNow({ falls: [{ heightM: C.fallM + 0.1 }] }, C).has('fall') && !placesNow({ falls: [{ heightM: 0.1 }] }, C).has('fall'), 'water falling from a terrace, not a ripple');
     assert(placesNow({ pools: [{ fit: true }] }, C).has('fishFreePond') && !placesNow({ pools: [{ fit: false }] }, C).has('fishFreePond'), "the dragonflies' own pond test");
     const flowering = ['a', 'b', 'c', 'd', 'e'].map((sp) => ({ sp, x: 0, z: 0, stage: STAGE.flowering }));
     assert(placesNow({ plants: flowering }, C).has('flowers') && !placesNow({ plants: flowering.slice(1) }, C).has('flowers'), 'five kinds in flower');
+  });
+
+  test(G, "a new starter island has no deep pool of the player's; deepening its pond 30 cm makes one", async () => {
+    const C = (await load('shaper')).check;
+    const get = (/** @type {string} */ p) => fetch(`../recipes/${p}.json`).then((r) => r.json());
+    const [terrain, water, growth, land] = await Promise.all([get('world/terrain'), get('world/water'), get('world/growth'), get('land/starter-island')]);
+    const seed = 1;
+    const m = buildIslandModel({ seed, terrain, land, water, growth });
+    let deepest = 0;
+    for (const v of m.summary.targetMm) deepest = Math.max(deepest, v);
+    assert(deepest >= C.deepPoolMm, `the starter pond is a metre deep as it begins (${deepest} mm), which is the case this guards`);
+    assert(!placesNow({ summary: m.summary, hab: m.habitat }, C).has('deepPool'), 'a new island: the starter pond does not count');
+    // Deepen the pond's bed by 30 cm, as the player would with Sculpt, and look again.
+    const s = m.summary, T = WORLD_CELLS, heightQ = m.heightQ.slice(), drop = quantize(0.3) - quantize(0);
+    for (let k = 0; k < s.targetMm.length; k++) {
+      if (s.targetMm[k] < 300 || s.cls[k] !== WATER_CLASS.still) continue;
+      const i = s.rect.x + (k % s.rect.w), j = s.rect.y + Math.floor(k / s.rect.w);
+      for (const t of [2 * j * T + 2 * i, 2 * j * T + 2 * i + 1, (2 * j + 1) * T + 2 * i, (2 * j + 1) * T + 2 * i + 1]) heightQ[t] -= drop;
+    }
+    const springs = landmarks(land, subSeed(seed, 'terrain')).springs.map((p) => ({ cellX: waterCellOf(p.x), cellY: waterCellOf(p.z), rateLps: p.rateLps }));
+    const dug = buildSummary({ heightQ, rect: s.rect, springs, params: { ...water.summary, manningN: water.sim.manningN }, tide: water.tide });
+    const hab = buildHabitat({ eco: dug.eco, material: m.material, materialCells: T, params: growth.habitat, heightQ, baseQ: m.heightQ });
+    assert(placesNow({ summary: dug, hab }, C).has('deepPool'), 'the deepened pond counts');
   });
 
   test(G, 'a reed margin: reeds, rushes or iris along most of a pond edge', async () => {
