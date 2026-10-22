@@ -7,8 +7,10 @@
 // over and none once it is bare. Reed down needs nothing: it is on the reeds.
 //
 // Two creature passes (src/render/passes/creatures.js) with baked vertex colours, as the nets and
-// finds are drawn. The camp models load from assets/models/camp/ through src/render/gltf.js; until
-// they load, or if they are missing, seeded stand-ins at the same footprint are drawn (a low mound
+// finds are drawn. Matt's camp models (assets/models/camp/log-pile.glb and stone-pile.glb) load
+// through src/render/gltf.js, their base colour map baked into the vertex colours; small, good and
+// big heaps are the same model at three sizes. Until they load, or if they cannot, seeded stand-ins
+// at the same footprint are drawn (a low mound
 // of crossed sticks, a low cairn of stones). Drawing only: it reads the pieces, the pack and the
 // gather spots and never changes them. The lists are built again a few times a second at most,
 // and at once when something is gathered, set down or taken up. Numbers: recipes/world/pack.json
@@ -17,7 +19,7 @@
 import { get } from '../../core/store.js';
 import { on } from '../../core/events.js';
 import { hash32 } from '../../core/rng.js';
-import { readGlb, meshesByName } from '../../render/gltf.js';
+import { readGlb, meshesByName, materialMaps } from '../../render/gltf.js';
 import { createCreaturePass } from '../../render/passes/creatures.js';
 import { packMesh } from '../creatures/bodies.js';
 import { pileShape } from './piles.js';
@@ -34,26 +36,57 @@ const u01 = (h) => (h >>> 8) / 16777216;
  */
 const passRecipe = (P) => ({ body: { scaleReal: [P.lengthM, P.lengthM], contactShadow: P.shadow, wetSpecular: { roughness: P.roughness ?? 0.85, strength: P.sheen ?? 0 } } });
 
+/** sRGB 0..255 to linear 0..1. @param {number} c */
+const toLinear = (c) => { const s = c / 255; return s <= 0.04045 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4; };
+
 /**
- * A camp model as one mesh in the creature pass's layout: every mesh in the file joined, its vertex
- * colours read as linear albedo (color, when it has none). Pure.
- * @param {ArrayBuffer} buffer @param {number[]} color @returns {Mesh}
+ * A camp model's base colour map (materialMaps, src/render/gltf.js), decoded so a vertex can read
+ * its colour at its UV as linear albedo. Null when the model has no map or the browser cannot decode
+ * it. The creature pass draws baked vertex colours, so the map is sampled once per vertex here; its
+ * roughness and normal maps are not used yet.
+ * @param {import('../../render/gltf.js').Glb} glb
+ * @returns {Promise<((u: number, v: number) => number[]) | null>}
  */
-export function campModelMesh(buffer, color) {
-  const parts = [...meshesByName(readGlb(buffer)).values()];
+export async function baseColorSampler(glb) {
+  const map = materialMaps(glb).baseColor;
+  if (!map || typeof createImageBitmap !== 'function' || typeof OffscreenCanvas !== 'function') return null;
+  const bmp = await createImageBitmap(new Blob([map.bytes], { type: map.mimeType }));
+  const cv = new OffscreenCanvas(bmp.width, bmp.height);
+  const ctx = /** @type {OffscreenCanvasRenderingContext2D} */ (cv.getContext('2d'));
+  ctx.drawImage(bmp, 0, 0);
+  const { data, width: W, height: H } = ctx.getImageData(0, 0, bmp.width, bmp.height);
+  return (u, v) => {
+    // glTF UVs: (0, 0) is the top left; wrap, as the default sampler repeats.
+    const x = Math.min(W - 1, Math.floor((u - Math.floor(u)) * W)), y = Math.min(H - 1, Math.floor((v - Math.floor(v)) * H));
+    const k = (y * W + x) * 4;
+    return [toLinear(data[k]), toLinear(data[k + 1]), toLinear(data[k + 2])];
+  };
+}
+
+/**
+ * A camp model as one mesh in the creature pass's layout: every mesh in the file joined, each
+ * vertex's colour from its own COLOR_0, else the base colour map at its UV (sample), else color.
+ * Pure apart from the sampler.
+ * @param {ArrayBuffer | import('../../render/gltf.js').Glb} source @param {number[]} color
+ * @param {((u: number, v: number) => number[]) | null} [sample]
+ * @returns {Mesh}
+ */
+export function campModelMesh(source, color, sample = null) {
+  const parts = [...meshesByName(source instanceof ArrayBuffer ? readGlb(source) : source).values()];
   if (!parts.length) throw new Error('no meshes');
   const count = parts.reduce((s, p) => s + p.attributes.POSITION.length / 3, 0);
   const vertices = new Float32Array(count * 9);
   const indices = new Uint32Array(parts.reduce((s, p) => s + p.indices.length, 0));
   let v0 = 0, i0 = 0;
   for (const p of parts) {
-    const pos = p.attributes.POSITION, nor = p.attributes.NORMAL, col = p.attributes.COLOR_0;
+    const pos = p.attributes.POSITION, nor = p.attributes.NORMAL, col = p.attributes.COLOR_0, uv = p.attributes.TEXCOORD_0;
     const n = pos.length / 3;
     // A colour is 3 or 4 numbers a vertex, as floats or normalized integers.
     const cn = col ? col.length / n : 0;
     const norm = col instanceof Uint8Array ? 255 : col instanceof Uint16Array ? 65535 : 1;
     for (let i = 0; i < n; i++) {
-      const c = col ? [col[i * cn] / norm, col[i * cn + 1] / norm, col[i * cn + 2] / norm] : color;
+      const c = col ? [col[i * cn] / norm, col[i * cn + 1] / norm, col[i * cn + 2] / norm]
+        : sample && uv ? sample(uv[i * 2], uv[i * 2 + 1]) : color;
       vertices.set([pos[i * 3], pos[i * 3 + 1], pos[i * 3 + 2], nor ? nor[i * 3] : 0, nor ? nor[i * 3 + 1] : 1, nor ? nor[i * 3 + 2] : 0, c[0], c[1], c[2]], (v0 + i) * 9);
     }
     for (let k = 0; k < p.indices.length; k++) indices[i0 + k] = p.indices[k] + v0;
@@ -110,7 +143,11 @@ export function createPackDraw(o) {
   for (const [model, path] of Object.entries(L.models3d ?? {})) {
     fetch(new URL(`../../../${path}`, import.meta.url))
       .then((r) => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.arrayBuffer(); })
-      .then((b) => setPileMesh(model, campModelMesh(b, L.standIn[model]?.color ?? [0.3, 0.25, 0.2])))
+      .then(async (b) => {
+        const glb = readGlb(b);
+        const sample = await baseColorSampler(glb).catch(() => null);
+        setPileMesh(model, campModelMesh(glb, L.standIn[model]?.color ?? [0.3, 0.25, 0.2], sample));
+      })
       .catch((e) => console.info(`pack: ${path} not loaded, drawing the stand-in (${e.message})`));
   }
   // A few seeded shapes of each ground kind.
