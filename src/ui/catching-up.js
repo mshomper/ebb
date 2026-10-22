@@ -7,7 +7,8 @@
 import { calm } from './motion.js';
 
 /**
- * @param {{ afterS: number }} opts  afterS 0 shows it at once (the reveal opens from it)
+ * @param {{ afterS: number, plain?: boolean }} opts  afterS 0 shows it at once (the reveal opens from it);
+ *   plain: cream only, with no line and no bar (a night's rest in the tent has no away message)
  * @returns {{ progress: (f: number) => void, done: (fadeS?: number) => void }}
  *   done: fade out over fadeS (the reveal's cream opening is slower than the plain screen's)
  */
@@ -16,8 +17,8 @@ export function showCatchingUp(opts) {
   const wrap = document.createElement('div');
   wrap.className = 'ebb-catchup';
   wrap.setAttribute('role', 'status');
-  wrap.innerHTML = '<p class="ebb-catchup__line">The island moved on while you were away</p>'
-    + '<div class="ebb-catchup__bar" aria-hidden="true"><i></i></div>';
+  wrap.innerHTML = opts.plain ? '<div class="ebb-catchup__bar" aria-hidden="true" style="visibility:hidden"><i></i></div>'
+    : '<p class="ebb-catchup__line">The island moved on while you were away</p><div class="ebb-catchup__bar" aria-hidden="true"><i></i></div>';
   const fill = /** @type {HTMLElement} */ (wrap.querySelector('i'));
   document.body.appendChild(wrap);   // blocks input at once; seen only once it fades in
   if (opts.afterS <= 0) { wrap.style.transition = 'none'; wrap.classList.add('is-shown'); }

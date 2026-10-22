@@ -34,8 +34,8 @@
   "glow": { "nearM": 2, "opacity": 0.35, "breathS": 3.2, "firstGlowWithinM": 12 },
   "glowNote": "CS-05: a slot glows (a soft filled ring on the ground) the first time, then only while the pack holds what it needs and you are on or within nearM of the pad. opacity and breathS: its look. firstGlowWithinM: an older island's tent ground glows the first time you go down this near.",
 
-  "reach": { "slotM": 1.6, "ringM": 1.5, "flapM": 1.4 },
-  "reachNote": "How near you must stand: slotM to pitch or lay (the card walks you there); ringM for Light and Feed on the here-bar; flapM for Rest.",
+  "reach": { "standM": 0.35, "slotM": 1.6, "ringM": 1.5, "flapM": 1.4 },
+  "reachNote": "How near you must stand: standM at the flap itself, to pitch the tent and to crawl in (you walk there first, so you never stand where the tent goes up); slotM to pitch or lay (the card walks you there); ringM for Light and Feed on the here-bar; flapM for Rest.",
 
   "ring": { "fuelHandfuls": 1, "stoneHandfuls": 2 },
 
@@ -59,7 +59,7 @@
   "smoke": { "count": 40, "lowCount": 24, "lifeS": 10, "riseMps": 0.4, "lean": 1.0, "spreadM": 0.12, "sizeM": [0.16, 1.1], "opacity": 0.09, "albedo": [0.62, 0.62, 0.64], "embersShare": 0.35, "rainThick": 1.9, "mistLow": 0.6, "nearFadeM": [1.0, 2.5], "midgeClearM": 2 },
   "smokeNote": "C-29: count soft puffs (lowCount on the low tier), each living lifeS seconds, rising riseMps and leaning with the weather's wind by lean (meters a second at full wind), growing from sizeM[0] to sizeM[1], at most opacity. albedo: lit by the sky, sun and fire, never painted. embersShare: how much smoke banked embers give; rainThick: thicker in rain; mistLow: in mist it rises this much slower and hangs low. nearFadeM: puffs fade near the eye, so overdraw stays small. Midges keep midgeClearM from it.",
 
-  "moths": { "count": 6, "lowCount": 3, "orbitM": [0.4, 1.2], "heightM": [0.5, 1.6], "speed": [0.8, 1.6], "wingM": 0.035, "flapHz": 22, "albedo": [0.55, 0.5, 0.42], "atSunDeg": -4 },
+  "moths": { "count": 6, "lowCount": 3, "orbitM": [0.4, 1.2], "heightM": [0.35, 1.1], "speed": [0.8, 1.6], "wingM": 0.035, "flapHz": 22, "albedo": [0.32, 0.29, 0.24], "atSunDeg": -4 },
   "mothsNote": "C-30: a few moths circle the fire and the lantern after dark (the sun lower than atSunDeg), on loose seeded orbits, wings flapping at flapHz. Lit by the fire, so they read pale against the dark. Live only, never saved.",
 
   "steel": { "sparks": 14, "sparkS": 0.35, "sparkNits": 4000, "strikesAt": [0.35, 0.55, 0.75],
@@ -78,8 +78,8 @@
   },
   "propsNote": "Matt's models (meters, Y up, origin at the base centre, front +Z), drawn with their own maps by src/render/passes/props.js. look: albedo and roughness scale, normal map strength and its green's sign. shade: the soft contact shadow's half sizes (m, along the model's own x and z) and darkness. The tent model carries its rolled bedroll inside. ember: the embers' glow colour, emberNits at full glow, breathing at emberHz; charAlbedo: burnt wood.",
 
-  "rest": { "wakeBeforeSunriseMin": 10, "viewSideRad": 1.25 },
-  "restNote": "C-39: Rest, after sunset and until wakeBeforeSunriseMin minutes before sunrise, runs the night as catch-up behind the cream screen and wakes you kneeling at the flap just before sunrise. viewSideRad: the low view opens this far round from behind you, so the tent at your back does not fill it.",
+  "rest": { "wakeBeforeSunriseMin": 10, "viewSideRad": 0.75, "viewDistanceM": 4.2, "viewPitchDeg": 20 },
+  "restNote": "C-39: Rest, after sunset and until wakeBeforeSunriseMin minutes before sunrise, runs the night as catch-up behind the cream screen and wakes you kneeling at the flap just before sunrise. viewSideRad, viewDistanceM, viewPitchDeg: after pitching and on waking, the low view from this far round from behind you (radians), this far off and this far down, so you, the tent and the ring are all in it and the tent never fills it.",
 
   "standing": { "reachM": 30, "trust": 0.01, "minWord": "tolerant" },
   "standingNote": "CP-13: in catch-up only, once a game day of the absence, each creature already Tolerant or closer whose home lies within reachM of the pad gains trust (a feeding is 0.06)."

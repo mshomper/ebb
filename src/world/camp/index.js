@@ -91,6 +91,44 @@ export function createCamp(o) {
     const c = Math.cos(t.yaw), s = Math.sin(t.yaw);
     return [t.x + c * p[0] + s * p[2], t.y + p[1], t.z - s * p[0] + c * p[2]];
   }
+  /**
+   * Is a ground point on the tent's footprint (its slot, w along u and d along v), grown by margin?
+   * @param {number} x @param {number} z @param {number} [margin]
+   */
+  function inTent(x, z, margin = 0) {
+    const pad = padNow(), t = slotAt('tent');
+    if (!pad || !t) return false;
+    const dx = x - t.x, dz = z - t.z;
+    const u = dx * pad.fx + dz * pad.fz, v = dx * pad.fz - dz * pad.fx;
+    return Math.abs(u) <= (t.slot.w ?? 2.2) / 2 + margin && Math.abs(v) <= (t.slot.d ?? 1.6) / 2 + margin;
+  }
+  /** Out of the pitched tent to its flap, if you stand inside it (after pitching; I'm stuck). */
+  function stepOut() {
+    const you = o.walk.you(), f = flapAt();
+    if (!you || !f || !pitched(camp()) || !inTent(you[0], you[2], 0.1)) return false;
+    o.walk.placeAt(f.x, f.z, f.yaw, 'stand');
+    return true;
+  }
+  /** The low view from beside you at the flap: you, the tent and the ring (after pitching, on waking). */
+  function frameCamp() {
+    const f = flapAt(), pose = o.camera?.pose();
+    if (!f || !pose || !o.walk.below) return;
+    // Its own distance and pitch: the pose may still be the view from above, mid-glide down.
+    o.camera.setPose({ ...pose, target: [f.x, o.terrain.sampleHeight(f.x, f.z) + 0.8, f.z], yaw: f.yaw + Math.PI + R.rest.viewSideRad,
+      distance: R.rest.viewDistanceM, pitch: (R.rest.viewPitchDeg * Math.PI) / 180 });
+  }
+  /**
+   * The first evening, while it runs (E4's store slice `intro` { beat, done }): Light waits for its
+   * dusk beat and Rest for its rest beat. After the evening (or with no director), always true.
+   * @param {'dusk' | 'rest'} beat
+   */
+  const beatAllows = (beat) => {
+    const s = get('intro');
+    if (s) return s.done !== false || s.beat === beat;
+    // Before the slice: the director's beat now (null once the evening is done, or with none).
+    const now = o.beat?.() ?? null;
+    return now === null || now === beat;
+  };
   /** The sun's height now (radians). */
   const sunAlt = () => sunMoon(o.clock.display(), o.orbit).sunAlt;
   const weatherNow = () => weatherAt(o.world.state?.weather, o.clock.display(), o.seasons);
@@ -131,7 +169,7 @@ export function createCamp(o) {
   // ---- acts: walk, face, play, then the change ----
 
   /** @type {{ act: string, then: () => void } | null} */ let pending = null;
-  /** An act waiting for you to walk into reach first. @type {{ start: () => void, x: number, z: number, reachM: number } | null} */ let approach = null;
+  /** An act waiting for you to walk into reach first. @type {{ start: () => void, x: number, z: number, reachM: number, since: number } | null} */ let approach = null;
   let strikeT = -1, strikes = 0, strikeLen = 0, taps = 0;
   /**
    * Walk into reach of `stand` (within reachM), face `face`, play an act, then do `then` when it
@@ -140,7 +178,9 @@ export function createCamp(o) {
    * @param {() => void} [started] when the act begins
    */
   function play(act, stand, reachM, face, then, started) {
-    if (pending || approach || !o.walk.below) return false;
+    // A new press takes over from one still walking there (one press always completes).
+    if (pending || !o.walk.below) return false;
+    approach = null;
     const go = () => {
       approach = null;
       o.walk.faceToward(face.x, face.z);
@@ -152,8 +192,21 @@ export function createCamp(o) {
     // Off screen and apart each time, so the walk never reads it as a double tap.
     taps += 97;
     if (!o.walk.tap(-1e5 - taps, -1e5, [stand.x, o.terrain.sampleHeight(stand.x, stand.z), stand.z], reachM)) return false;
-    approach = { start: go, x: stand.x, z: stand.z, reachM };
+    approach = { start: go, x: stand.x, z: stand.z, reachM, since: 0 };
     return true;
+  }
+
+  /**
+   * Each frame: an approach whose walk has ended (an arrival the walk never reported, or a walk
+   * that had nowhere to go) starts its act if you are in reach, and is let go if you are not.
+   * @param {number} dt
+   */
+  function watchApproach(dt) {
+    if (!approach) return;
+    approach.since += dt;
+    if (approach.since < 0.3 || o.walk.busy()) return;
+    if (o.walk.distTo(approach.x, approach.z) <= approach.reachM + 0.6) approach.start();
+    else approach = null;
   }
   const offs = [
     on('walk:act-done', (/** @type {any} */ p) => {
@@ -165,7 +218,7 @@ export function createCamp(o) {
     // In reach: the act begins. Arriving anywhere else (you clicked away) lets it go.
     on('walk:arrived', () => {
       if (!approach) return;
-      if (o.walk.distTo(approach.x, approach.z) <= approach.reachM + 0.3) approach.start();
+      if (o.walk.distTo(approach.x, approach.z) <= approach.reachM + 0.6) approach.start();
       else approach = null;
     }),
   ];
@@ -174,11 +227,14 @@ export function createCamp(o) {
     if (pitched(camp())) return;
     const t = slotAt('tent');
     if (!t) return;
-    // From the flap side, where the tent opens toward the ring.
+    // From the flap itself, outside where the tent will stand, facing it; then the low view turns
+    // to show you, the tent and the ring.
     const f = /** @type {any} */ (flapAt());
-    play('pitch', f, R.reach.slotM, t, () => {
+    play('pitch', f, R.reach.standM, t, () => {
       change((c) => pitchTent(c, hourNow(), hash32(campSeed, 1)));
       emitDeferred('camp:pitched', { hour: hourNow() });
+      stepOut();
+      frameCamp();
     });
   }
 
@@ -231,10 +287,10 @@ export function createCamp(o) {
   function rest() {
     const c = camp(), f = flapAt();
     if (!pitched(c) || !f || resting) return;
-    if (!nightNow()) { emit('island:notice', { text: W.restDay, showS: 6 }); return; }
+    if (!nightNow() || !beatAllows('rest')) { emit('island:notice', { text: W.restDay, showS: 6 }); return; }
     // Into the tent: from the flap, facing in.
     const t = /** @type {any} */ (slotAt('tent'));
-    play('crawlIn', f, R.reach.flapM, t, () => {
+    play('crawlIn', f, R.reach.standM, t, () => {
       const now = hourNow(), cc = camp();
       if (fireAt(cc.fire, now, F).word === 'lit') {
         change((x) => ({ ...x, fire: bankFire(x.fire, now, F) }));
@@ -250,10 +306,9 @@ export function createCamp(o) {
     resting = false;
     const f = flapAt();
     if (f && o.walk.placeAt(f.x, f.z, f.yaw, 'kneel')) {
-      const pose = o.camera?.pose();
       // From beside you, so the tent behind does not fill the view: the ring, the pad and the sea.
-      if (pose) o.camera.setPose({ ...pose, target: [f.x, o.terrain.sampleHeight(f.x, f.z), f.z], yaw: f.yaw + Math.PI + R.rest.viewSideRad });
       o.walk.downHere();
+      frameCamp();
     }
     const hour = hourNow();
     change((c) => ({ ...c, fire: settleFire(c.fire, hour, F), rested: { hour, at: Date.now() } }));
@@ -276,6 +331,8 @@ export function createCamp(o) {
     else if (a.type === 'camp.light') light();
     else if (a.type === 'camp.feed') feed();
     else if (a.type === 'camp.rest') rest();
+    // I'm stuck: inside the tent, you step out to its flap.
+    else if (a.type === 'walk.stuck') stepOut();
   }));
 
   // ---- cards (one click walks there and opens it) ----
@@ -291,7 +348,7 @@ export function createCamp(o) {
     registerCardAction({ id: 'campfeed', icon: 'fire', order: 6, main: true, label: W.feed,
       when: (c) => C(c) === 'ring' && !!c.canFeed, action: () => ({ type: 'camp.feed' }) }),
     registerCardAction({ id: 'camprest', icon: 'rest', order: 6, main: true, label: W.rest,
-      when: (c) => C(c) === 'tent', action: () => ({ type: 'camp.rest' }) }),
+      when: (c) => C(c) === 'tent' && !!c.canRest, action: () => ({ type: 'camp.rest' }) }),
     // Every card ties into the journal: the camp's into the keeper's first page.
     registerCardAction({ id: 'camppage', icon: 'journal', order: 90, label: 'The first page',
       when: (c) => !!C(c), action: () => ({ type: 'ui.journal', open: true, view: 'keeper', keeper: 'first', page: null }) }),
@@ -304,8 +361,8 @@ export function createCamp(o) {
   function cardAt(x, z) {
     const c = camp(), t = slotAt('tent'), r = slotAt('ring');
     const base = { noPage: true, stage: -1, sub: null, canCarry: false };
-    if (t && Math.hypot(x - t.x, z - t.z) < 1.25) {
-      if (pitched(c)) return { ...base, sp: 'camp:tent', camp: 'tent', name: W.tent.name, icon: 'rest', text: nightNow() ? W.tent.line : W.restDay, wx: t.x, wz: t.z, r: 1.1 };
+    if (t && inTent(x, z, 0.25)) {
+      if (pitched(c)) return { ...base, sp: 'camp:tent', camp: 'tent', name: W.tent.name, icon: 'rest', text: nightNow() && beatAllows('rest') ? W.tent.line : W.restDay, wx: t.x, wz: t.z, r: 1.1, canRest: nightNow() && beatAllows('rest') };
       if (c.kit.tent === 'pack') return { ...base, sp: 'camp:tent-slot', camp: 'tentSlot', name: W.tentSlot.name, icon: 'pitch', text: W.tentSlot.line, wx: t.x, wz: t.z, r: 1.0 };
     }
     if (r && pitched(c) && Math.hypot(x - r.x, z - r.z) < 0.8) {
@@ -317,7 +374,7 @@ export function createCamp(o) {
       const line = word === 'lit' && rainy ? W.ring.low : W.ring[word] ?? W.ring.laid;
       const fuel = holds({ fuel: R.fire.feedHandfuls });
       return { ...base, sp: 'camp:ring', camp: 'ring', name: W.ring.name, icon: 'fire', text: line, wx: r.x, wz: r.z, r: 0.5,
-        canLight: word === 'laid' || (word === 'cold' && fuel), canFeed: (word === 'embers' || word === 'lit') && fuel };
+        canLight: (word === 'laid' || (word === 'cold' && fuel)) && beatAllows('dusk'), canFeed: (word === 'embers' || word === 'lit') && fuel };
     }
     return null;
   }
@@ -338,10 +395,13 @@ export function createCamp(o) {
     const you = o.walk.below ? o.walk.you() : null;
     const nearPad = !!you && Math.hypot(you[0] - pad.x, you[2] - pad.z) <= pad.r + G.nearM;
     const beat = o.beat?.() ?? null;
+    // During the first evening only the beat's own slot glows; after it, the pack's rule (CS-05).
+    const s = get('intro'), evening = s ? s.done === false : beat !== null;
+    const byPack = !evening && nearPad;
     /** @type {number[][]} */ const out = [];
     const t = slotAt('tent'), r = slotAt('ring');
-    if (t && !pitched(c) && c.kit.tent === 'pack' && (beat === 'pitch' || olderGlow || nearPad)) out.push([t.x, t.z, 1.2, k]);
-    if (r && pitched(c) && !ringLaid(c) && (beat === 'ring' || (nearPad && holds(ringNeed())))) out.push([r.x, r.z, 0.7, k]);
+    if (t && !pitched(c) && c.kit.tent === 'pack' && (beat === 'pitch' || olderGlow || byPack)) out.push([t.x, t.z, 1.2, k]);
+    if (r && pitched(c) && !ringLaid(c) && (beat === 'ring' || (byPack && holds(ringNeed())))) out.push([r.x, r.z, 0.7, k]);
     if (r && ringLaid(c) && beat === 'dusk' && sunAlt() < 0 && fireAt(c.fire, hourNow(), F).word === 'laid') out.push([r.x, r.z, 0.7, k]);
     const f = flapAt();
     if (f && beat === 'rest' && pitched(c)) out.push([f.x, f.z, 0.6, k * 0.7]);
@@ -356,11 +416,11 @@ export function createCamp(o) {
     const r = slotAt('ring'), f = flapAt();
     const atRing = ringLaid(c) && near(r, R.reach.ringM) && !pending;
     const fuel = holds({ fuel: R.fire.feedHandfuls });
-    if (atRing && (word === 'laid' || (word === 'cold' && fuel))) offerHere({ id: 'camplight', icon: 'fire', label: W.light, order: 10, action: { type: 'camp.light' } });
+    if (atRing && (word === 'laid' || (word === 'cold' && fuel)) && beatAllows('dusk')) offerHere({ id: 'camplight', icon: 'fire', label: W.light, order: 10, action: { type: 'camp.light' } });
     else withdrawHere('camplight');
     if (atRing && (word === 'embers' || word === 'lit') && fuel) offerHere({ id: 'campfeed', icon: 'fire', label: W.feed, order: 11, action: { type: 'camp.feed' } });
     else withdrawHere('campfeed');
-    if (pitched(c) && near(f, R.reach.flapM) && !pending && nightNow()) offerHere({ id: 'camprest', icon: 'rest', label: W.rest, order: 12, action: { type: 'camp.rest' } });
+    if (pitched(c) && near(f, R.reach.flapM) && !pending && nightNow() && beatAllows('rest')) offerHere({ id: 'camprest', icon: 'rest', label: W.rest, order: 12, action: { type: 'camp.rest' } });
     else withdrawHere('camprest');
   }
 
@@ -376,6 +436,9 @@ export function createCamp(o) {
     wasCold = cold;
     t0 += dt;
     if ((hereT -= dt) <= 0) { hereT = 0.25; here(c, word); }
+    watchApproach(dt);
+    // Never left standing inside the pitched tent: out to the flap once you are still.
+    if (!pending && !approach && !o.walk.busy()) stepOut();
 
     /** @type {import('../../render/passes/props.js').Prop[]} */ const list = [];
     /** @type {import('../../render/lighting.js').PointLight[]} */ const lights = [];
@@ -477,7 +540,7 @@ export function createCamp(o) {
      * "camp off" half).
      */
     debug: {
-      pitch, lay, light, feed, rest,
+      pitch, lay, light, feed, rest, frame: frameCamp,
       lightNow() {
         const lit = lightFire(camp().fire, hourNow(), F);
         if (lit) change((c) => ({ ...c, fire: lit }));
