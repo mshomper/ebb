@@ -61,11 +61,17 @@ export function mountGroundHere(parent, ground) {
     }
     place();
   }
-  /** Just right of the ground bar, its bottom on the same line. */
+  /**
+   * Just right of the ground bar, its bottom on the same line. Also tells the page how tall and
+   * wide the ground bar is now (--ground-h, --ground-half), so the song's name and the island
+   * notes keep clear of it (walk.css).
+   */
   function place() {
-    if (bar.hidden || ground.hidden) return;
+    if (ground.hidden) return;
     const r = ground.getBoundingClientRect();
-    bar.style.left = `${Math.round(r.right + 8)}px`;
+    document.body.style.setProperty('--ground-h', `${Math.round(r.height)}px`);
+    document.body.style.setProperty('--ground-half', `${Math.round(r.width / 2)}px`);
+    if (!bar.hidden) bar.style.left = `${Math.round(r.right + 8)}px`;
   }
   bar.addEventListener('click', (e) => {
     const b = /** @type {HTMLElement | null} */ (/** @type {HTMLElement} */ (e.target).closest('button'));
