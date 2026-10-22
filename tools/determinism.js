@@ -11,6 +11,7 @@ import { waterCellOf } from '../src/world/water/grid.js';
 import { buildSummary, hashSummary, WATER_CLASS } from '../src/world/water/summary.js';
 import { haulsJob } from '../src/world/nets/haul.js';
 import { gatherCheckJob } from '../src/world/gather/check.js';
+import { campCheckJob } from '../src/world/camp/check.js';
 
 const JOB = { module: './world/terrain/landform.js', fn: 'buildBase' };
 /** The island's open chunks, row by row, from its land recipe (useChunks). */
@@ -338,6 +339,45 @@ function showGather(g) {
     `The three picked reeds grew back to ${main.sizes.map((s) => s.toFixed(3)).join(', ')} of their size in three days.</p>`;
 }
 
+const CAMP_JOB = { module: './world/camp/check.js', fn: 'campCheckJob' };
+
+/**
+ * The camp's fire (docs/future/13 CP-11): a seeded month of lighting, feeding and banking, watched
+ * hour by hour and read only from its saved numbers after the fact, on the page and in a worker.
+ * @param {number} worldSeed
+ */
+async function runCamp(worldSeed) {
+  const args = { worldSeed, camp: await fetch('../recipes/world/camp.json').then((r) => r.json()) };
+  const main = campCheckJob(args);
+  initWorkers({ size: 1 });
+  let worker;
+  try { worker = await run(CAMP_JOB, args); } finally { dispose(); }
+  return { main, worker };
+}
+
+/** @param {Awaited<ReturnType<typeof runCamp>>} g */
+function showCamp(g) {
+  let card = document.getElementById('campCard');
+  if (!card) {
+    card = document.createElement('div');
+    card.className = 'card';
+    card.id = 'campCard';
+    /** @type {HTMLElement} */ (document.getElementById('gatherCard') ?? $('chunks').closest('.card')).after(card);
+  }
+  const { main, worker } = g;
+  /** @param {string} label @param {number} a @param {number} b @param {string} [an] @param {string} [bn] */
+  const row = (label, a, b, an = 'Main thread', bn = '1 worker') => {
+    const ok = a === b;
+    return `<div class="row total"><span class="label">${label}</span><span class="hash">${hex(a)}<small>${an}</small></span>` +
+      `<span class="hash">${hex(b)}<small>${bn}</small></span><span class="v ${ok ? 'ok' : 'bad'}">${icon(ok)}${ok ? 'match' : 'differ'}</span></div>`;
+  };
+  card.innerHTML = '<h2>The camp fire</h2>' +
+    row('A month, hour by hour', main.timeline, worker.timeline) +
+    row('Watched against read later', main.timeline, main.read, 'Each hourly tick', 'From the save') +
+    row('The fire at the end', main.ticked, worker.ticked) +
+    `<p class="muted">Lit with the steel ${main.lightings} times over ${main.hours / 24} game days, burning on ${main.litDays} of them.</p>`;
+}
+
 async function build() {
   const button = /** @type {HTMLButtonElement} */ ($('go'));
   const input = /** @type {HTMLInputElement} */ ($('seed'));
@@ -379,6 +419,12 @@ async function build() {
     } catch (e) {
       console.error('[determinism] pack and gathering', e);
       $('detail').textContent += ` The pack and gathering check failed: ${e instanceof Error ? e.message : String(e)}`;
+    }
+    try {
+      showCamp(await runCamp(worldSeed));
+    } catch (e) {
+      console.error('[determinism] camp fire', e);
+      $('detail').textContent += ` The camp fire check failed: ${e instanceof Error ? e.message : String(e)}`;
     }
   } catch (e) {
     console.error('[determinism]', e);
