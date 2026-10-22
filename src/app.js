@@ -455,7 +455,7 @@ export async function startApp(canvas, hooks = {}) {
     // Pond stones are footing: you step across on them (src/world/pieces/stepping.js).
     footing: (x, z) => pieces.footing(x, z) });
   // Pond stones and Steps are the shaper's trail's first and fourth stops (shaper.json, built):
-  // offered once the trail reaches them, or with `?sandbox`, or `?pondstones` and `?steps` (unsaved).
+  // offered once the trail reaches them, or with `?sandbox`, or `?pondstones` and `?steps`, for this visit.
   const shapingOffers = () => {
     const u = getStore('unlocks') ?? {};
     const reached = new Set(trailLine(firstsOf(u.earned ?? {}, 'shape'), shaperRecipe.stops, [])
@@ -774,7 +774,7 @@ export async function startApp(canvas, hooks = {}) {
       finishShapingDrag();
       shapingDrag = mode;
       presence.edit(p[0], p[2]);
-      if (mode === 'pondstones') pieces.layBegin(p); else pieces.stepsBegin(p);
+      if (mode === 'pondstones') pieces.layBegin(p, camera.ray(x, y)); else pieces.stepsBegin(p);
     } else if (shapingDrag === 'pondstones') pieces.layTo(p);
     else if (shapingDrag === 'steps') pieces.stepsTo(p);
   }

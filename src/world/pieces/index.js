@@ -284,6 +284,22 @@ export function createPieces(opts) {
     return 'ok';
   }
 
+  /**
+   * The nearest pond stone whose top a view ray crosses within its reach, or null.
+   * @param {{ o: ArrayLike<number>, d: ArrayLike<number> }} ray
+   */
+  function stoneOnRay(ray) {
+    let best = null, bestT = Infinity;
+    if (Math.abs(ray.d[1]) < 1e-6) return null;
+    for (const p of pond()) {
+      const t = (topOf(p, ground) - ray.o[1]) / ray.d[1];
+      if (!(t > 0) || t >= bestT) continue;
+      const x = ray.o[0] + ray.d[0] * t, z = ray.o[2] + ray.d[2] * t;
+      if ((x - p.x) ** 2 + (z - p.z) ** 2 <= (p.size * 0.55) ** 2) { best = p; bestT = t; }
+    }
+    return best;
+  }
+
   /** The flight a ground point lands on, if any. @param {number} x @param {number} z */
   const flightAt = (x, z) => flights().find((f) => flightHeightAt(f, flightGeom(f, ST), x, z) !== null) ?? null;
   /** @type {{ a: number[], b: number[] } | null} */ let cutting = null;
@@ -592,10 +608,12 @@ export function createPieces(opts) {
 
     /**
      * A drag (or tap) begins in the Pond stones mode at a ground point: on a pond stone it selects
-     * it; elsewhere it starts a line with a stone there. @param {ArrayLike<number>} p
+     * it (the view ray's crossing with each stone's top, since a tall stone in water hides the bed
+     * the ground point is on); elsewhere it starts a line with a stone there.
+     * @param {ArrayLike<number>} p @param {{ o: ArrayLike<number>, d: ArrayLike<number> }} [ray] camera.ray
      */
-    layBegin(p) {
-      const hit = pieceAt(pond(), p[0], p[2], tapR());
+    layBegin(p, ray) {
+      const hit = (ray && stoneOnRay(ray)) || pieceAt(pond(), p[0], p[2], tapR());
       if (hit) { shapingSel.pond = hit.id; laying = null; syncShaping({ mode: 'pondstones', message: '' }); return; }
       shapingSel.pond = null;
       laying = { run: null, last: null, laid: [], stopped: false };
