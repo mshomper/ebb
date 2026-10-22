@@ -82,6 +82,8 @@ import { SECTIONS9, empty9 } from './save/migrate-format9.js';
 import { clickKind, clickPlan } from './world/walk/click.js';
 import { createPack } from './world/pack/index.js';
 import { createGather } from './world/gather/index.js';
+import { createPiles } from './world/pack/piles-live.js';
+import { createPackDraw } from './world/pack/draw.js';
 
 /**
  * @typedef {{ ok: true, tier: string, tierReasons: string[], adapterInfo: GPUAdapterInfo | null, features: string[], stop: () => void,
@@ -513,7 +515,11 @@ export async function startApp(canvas, hooks = {}) {
   finds.addSource(underLog.shown);
 
   // The walker's pack (docs/future/13 section 4.1): cloth pouches on the ground bar, filled by Gather.
-  const pack = createPack({ recipe: await loadRecipe('world/pack'), you: () => walk.you(), day: () => clock.dayIndexOf(clock.worldT()) });
+  // Set down at camp puts a pouch onto its kind's pile in the camp's slots (src/world/pack/piles-live.js).
+  /** @type {ReturnType<typeof createPiles> | null} */ let piles = null;
+  const pack = createPack({ recipe: await loadRecipe('world/pack'), you: () => walk.you(), day: () => clock.dayIndexOf(clock.worldT()),
+    setDown: (k, h) => piles?.setDown(k, h) ?? { moved: 0, refuse: 'noSlot' } });
+  piles = createPiles({ recipe: pack.recipe, kinds: pack.kinds, seed });
   // Gathering on foot (section 4.2): Gather on a card walks you there, you kneel, a handful goes in.
   const gather = createGather({ recipe: await loadRecipe('world/gather'), seed, world, worldT: () => clock.worldT(), water, terrain, pack, walk,
     tide: waterRecipe.tide, strandline: ww.shore.recipe?.look?.strandline ?? null,
@@ -523,6 +529,9 @@ export async function startApp(canvas, hooks = {}) {
   world.env.recipes.gather = gather.recipe;
   on('world:ticked', () => gather.expire());
   on('world:caught-up', () => gather.expire());
+  // What lies on the ground to gather, the piles at camp and the heaps you left (src/world/pack/draw.js).
+  const packDraw = createPackDraw({ terrain, camera, recipe: pack.recipe, gather, pack, you: () => walk.you() });
+  sim.addSystem(packDraw);
 
   /**
    * A dry, grassy ground point near the view's middle, out of the tide, for a test log: on a widening
@@ -617,6 +626,7 @@ export async function startApp(canvas, hooks = {}) {
     finds.pass,
     keepsakes.pass,
     nets.pass,
+    ...packDraw.passes,
     pieces.pass,
     // What lives under a log, while it is lifted (L3a).
     underLog.pass,
@@ -1049,6 +1059,13 @@ export async function startApp(canvas, hooks = {}) {
       if (a.type === 'pack.empty') { pack.empty(a.i); return; }
       if (a.type === 'gather.take') { gather.take(a.n); return; }
       if (a.type === 'gather.heapHere') { gather.heapHere(); return; }
+      // A pile's Take up fills a pouch; with no room, the full card (without Set down here).
+      if (a.type === 'pile.takeUp') {
+        const r = piles?.takeUp(a.id, pack);
+        if (r?.full) updateStore('identify', (c) => (c ? { ...c, full: { kind: r.kind, g: { heap: -1 } }, text: pack.recipe.words.full } : c));
+        else updateStore('identify', () => null);
+        return;
+      }
       if (a.type === 'walk.up') { walk.up(); return; }
       if (a.type === 'walk.stuck') { walk.stuck(); return; }
       if (a.type === 'walk.posture') { walk.posture(a.posture); return; }
@@ -1640,6 +1657,8 @@ export async function startApp(canvas, hooks = {}) {
     pack,
     /** Gathering (src/world/gather/index.js): the journal's cards gain their Gather buttons from it. */
     gather,
+    /** The piles at camp (src/world/pack/piles-live.js): a pile's card reads its words from them. */
+    piles,
     terrain,
     water,
     /** The live growth (habitat, plants) and the world the hourly tick runs on (tools/growth-lab.html). */

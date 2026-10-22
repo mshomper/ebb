@@ -51,7 +51,7 @@ export function makeKinds(recipe, plantParts = []) {
   const put = (k) => { if (!byId.has(k.id)) { byId.set(k.id, k); rank.set(k.id, rank.size); } };
   for (const k of Array.isArray(recipe?.kinds) ? recipe.kinds : []) {
     if (!k || typeof k.id !== 'string') continue;
-    put({ id: k.id, group: String(k.group), sketch: String(k.sketch ?? groupSketch(k.group)), camp: String(k.camp ?? 'heap'), line: String(k.line ?? '') });
+    put({ id: k.id, ...(k.name ? { name: String(k.name) } : {}), group: String(k.group), sketch: String(k.sketch ?? groupSketch(k.group)), camp: String(k.camp ?? 'heap'), line: String(k.line ?? '') });
   }
   for (const p of plantParts) {
     const id = typeof p === 'string' ? p : p?.id;

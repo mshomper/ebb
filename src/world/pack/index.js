@@ -105,13 +105,15 @@ export function createPack(o) {
       if (!pc || !you || !atCamp(you[0], you[2]) || !o.setDown) return;
       const [k, h] = pc;
       const r = o.setDown(k, h);
-      if (r.refuse) { emitDeferred('island:notice', { text: W[r.refuse] ?? W.noSlot, showS: 5 }); return; }
+      // Worms dig themselves in (the take goes through); any other refusal keeps the pouch.
+      if (r.refuse) emitDeferred('island:notice', { text: W[r.refuse] ?? W.noSlot, showS: 5 });
+      if (r.refuse && r.refuse !== 'worms') return;
       if (r.moved > 0) {
         const t = takeFrom(pack(), k, r.moved, kinds, R);
         keep(t.pack);
         emitDeferred('pack:set-down', { kind: k, handfuls: r.moved, pile: r.pile ?? null });
       }
-      if (r.moved < h) emitDeferred('island:notice', { text: W.pileFull, showS: 4 });
+      if (!r.refuse && r.moved < h) emitDeferred('island:notice', { text: W.pileFull, showS: 4 });
       update('identify', () => null);
     },
 

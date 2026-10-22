@@ -100,6 +100,7 @@
   background: transparent;
   color: var(--ui-cream);
   cursor: pointer;
+  pointer-events: auto;
 }
 .ebb-pouch:hover { background: rgba(244, 238, 228, 0.1); }
 .ebb-pouch:focus-visible { outline: 2px solid var(--wordmark-dark); outline-offset: 2px; }

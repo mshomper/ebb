@@ -388,7 +388,8 @@ export function createPieces(opts) {
     const liftM = D.carry.liftM;
     for (const p of state().list) {
       if (p.kind === 'log') { logBeing(p, p.id, out); continue; }
-      if (p.kind === 'steps') continue;
+      // A flight is cut into the land; a pile at camp is drawn by src/world/pack/draw.js.
+      if (p.kind === 'steps' || p.kind === 'pile') continue;
       if (p.kind === 'raft') {
         const sh = raftShapeOf(p), i = rafts.indexOf(sh), now = raftNow(p, frameDt);
         // Reeds, not stone: drawn plain (no rock scan) and with no damp ring on the water.
@@ -573,11 +574,11 @@ export function createPieces(opts) {
 
     /**
      * The piece a tap at a ground point lands on, if any (the journal's tap card asks): a kept stone
-     * or log, or a log lying on the strand (strand: true; its id is its key).
+     * or log, a pile at camp, or a log lying on the strand (strand: true; its id is its key).
      * @param {number} x @param {number} z
      */
     pieceAt(x, z) {
-      const kept = state().list.filter((p) => p.kind === 'stone' || p.kind === 'log');
+      const kept = state().list.filter((p) => p.kind === 'stone' || p.kind === 'log' || p.kind === 'pile');
       const all = [...kept.map((p) => ({ ...p, strand: false })), ...strandShown.map((s) => ({ ...s, id: s.key, strand: true }))];
       return pieceAt(all, x, z, tapR(), D.tapReachM);
     },
@@ -610,10 +611,10 @@ export function createPieces(opts) {
       return { form: b.form, sea: b.sea, moss: p.strand ? 0 : logWear(p, b.sea)[2] };
     },
 
-    /** Lift a stone or a log to carry it (the card's Carry). @param {string} id @returns {boolean} */
+    /** Lift a stone or a log to carry it (the card's Carry). A pile is never carried. @param {string} id @returns {boolean} */
     carry(id) {
       const f = findPiece(id);
-      if (!f) return false;
+      if (!f || f.piece.kind === 'pile') return false;
       lifts.delete(id);
       const radius = f.piece.kind === 'log' ? (f.piece.length ?? 1) / 2 : f.piece.size * 0.7;
       setCarry({ id, kind: f.piece.kind, radius, strand: f.strand });

@@ -1,9 +1,10 @@
 // @ts-check
 // Where the camp is, for the pack (setting down at camp, the pile slots). A small adapter over the
-// camp pad that E1 keeps (src/world/camp/layout.js; the store slice `campPad`), so the pack never
-// reaches into the camp's internals. Until a pad is in the store (an island made before E1's pad
-// lands), it falls back to the spec's starting pad (docs/future/13 section 3.1) and its pile slots
-// (section 3.2), so setting down can still be tried.
+// camp pad that E1 keeps (the store slice `campPad`; src/world/camp/layout.js), so the pack never
+// reaches into the camp's internals. The pad is { x, z, r, h, blend, fx, fz, ..., camp }, camp being
+// the land recipe's camp block (its slots); an older island has none until it is stamped on its
+// first load (camp:stamped). Until a pad is in the store, it falls back to the new island's pad
+// (world 0.6, -33.3, facing 0.69, -0.72) and the spec's pile slots (docs/future/13 section 3.2).
 
 import { get } from '../../core/store.js';
 
@@ -14,17 +15,20 @@ const PILE_SLOTS = [
 ];
 const PILE_IDS = new Set(PILE_SLOTS.map((s) => s.id));
 
-/** The spec's starting pad, facing out from the island's middle (x, z of 12.5, -13; radius 4 m). */
+/** The new island's pad, until the store has one. */
 const FALLBACK = (() => {
-  const x = 12.5, z = -13, l = Math.hypot(x, z);
-  return { x, z, r: 4, fx: x / l, fz: z / l, camp: null };
+  const l = Math.hypot(0.69, -0.72);
+  return { x: 0.6, z: -33.3, r: 4, fx: 0.69 / l, fz: -0.72 / l, camp: null };
 })();
 
-/** The camp pad now: { x, z, r, fx, fz, camp } (camp: the land recipe's camp block, if known). */
+/** The camp pad now (E1's `campPad`, else the fallback). */
 export function campPadNow() {
   const p = get('campPad');
   return p && Number.isFinite(p.x) ? p : FALLBACK;
 }
+
+/** A point in the pad's frame in world meters (as layout.js padToWorld). @param {any} pad @param {number} u @param {number} v */
+const toWorld = (pad, u, v) => [pad.x + u * pad.fx + v * pad.fz, pad.z + u * pad.fz - v * pad.fx];
 
 /**
  * The pile slots in world meters: { id, x, z, yaw }. From the camp block's slot list when it gives
@@ -35,16 +39,18 @@ export function pileSlots() {
   const listed = (pad.camp?.slots ?? []).filter((/** @type {any} */ s) => s.pile || PILE_IDS.has(s.id));
   const slots = listed.length ? listed : PILE_SLOTS;
   const seaward = Math.atan2(pad.fz, pad.fx);
-  return slots.map((/** @type {{ id: string, u: number, v: number }} */ s) => ({
-    id: s.id, x: pad.x + s.u * pad.fx + s.v * pad.fz, z: pad.z + s.u * pad.fz - s.v * pad.fx, yaw: seaward,
-  }));
+  return slots.map((/** @type {{ id: string, u: number, v: number }} */ s) => {
+    const [x, z] = toWorld(pad, s.u, s.v);
+    return { id: s.id, x, z, yaw: seaward };
+  });
 }
 
 /**
- * On the camp ground, or within reach of its edge (Set down shows there, 4.1).
+ * On the camp ground (layout.js onPad), or within arm's reach of its edge: Set down shows there
+ * (docs/future/13 4.1, "on the camp ground or within reach of its edge").
  * @param {number} x @param {number} z @param {number} [reachM]
  */
-export function atCamp(x, z, reachM = 1.2) {
+export function atCamp(x, z, reachM = 0.9) {
   const pad = campPadNow();
-  return Math.hypot(x - pad.x, z - pad.z) <= pad.r + reachM;
+  return (x - pad.x) ** 2 + (z - pad.z) ** 2 <= (pad.r + reachM) ** 2;
 }

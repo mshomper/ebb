@@ -173,6 +173,14 @@ export function createJournal(opts) {
     // the page's sketch is traced from). Once driftwood washes up (unlocks.carry) its card offers Carry.
     const pc = opts.pieces?.pieceAt(x, z);
     const pw = pc && words.pieces?.[pc.kind];
+    if (pw && pc.kind === 'pile') {
+      // A pile at camp (docs/future/13 4.1): named for what it is a pile of, its line the word for
+      // how big it is (src/world/pack/piles-live.js describe). Never carried or lifted; Take up is
+      // the card's own action (pile: what it holds).
+      const pd = /** @type {any} */ (opts).piles?.describe?.(pc) ?? null;
+      return { sp: 'piece:pile', piece: pc.id, kind: 'pile', name: pd?.name ?? pw.name, sub: null, icon: pw.icon, text: pd?.text ?? pw.cardLine,
+        wx: pc.x, wz: pc.z, r: pc.size * 0.6, stage: -1, noPage: true, canCarry: false, pile: { holds: pc.holds, handfuls: pc.handfuls } };
+    }
     if (pw) {
       const look = pc.kind === 'log' ? opts.pieces?.logLook?.(pc) ?? null : null;
       const isLog = !!look && !!words.species.driftwood;

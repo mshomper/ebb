@@ -32,6 +32,9 @@ export function mountPack(row, words, sketchOf) {
   }
   registerCardAction({ id: 'heaphere', icon: 'setdown', order: 0, main: true, label: words.setDownHere,
     when: (c) => !!c.full && c.full.g?.heap === undefined, action: () => ({ type: 'gather.heapHere' }) });
+  // A pile at camp: Take up fills one pouch of its kind.
+  registerCardAction({ id: 'takeup', icon: 'takeup', order: 10, main: true, label: words.takeUp,
+    when: (c) => !!c.pile && !!c.piece && !c.full, action: (c) => ({ type: 'pile.takeUp', id: c.piece }) });
   registerCardAction({ id: 'setdown', icon: 'setdown', order: 10, main: true, label: words.setDown,
     when: (c) => c.sp === 'pouch' && !!c.atCamp, action: (c) => ({ type: 'pack.setDown', i: c.pouch }) });
   registerCardAction({ id: 'empty', icon: 'tip', order: 12, label: words.empty,

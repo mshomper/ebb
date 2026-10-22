@@ -1,7 +1,7 @@
 {
   "type": "pack",
   "version": 1,
-  "note": "The walker's pack of cloth pouches and the piles at camp (docs/future/13 sections 4.1 and 4.5). startPouches: pouches from the start; perCarrier: pouches each made carrier adds (satchel, basket, frame), so 6, 8, 10, 12; handfulsPerPouch: Gather taps that fill one pouch (one look step each). groups: the fixed sort order of pouches, never shown. partGroups: the group of a plant-part kind '<species>.<part>' that kinds does not list. kinds: one row per non-plant kind, in sort order within its group; sketch names its drawing, camp is the camp slot its pile prefers ('sticks', 'stones', 'clay', 'heap' for the first free heap slot), or where it goes instead ('rack' for herbs, 'bowl' for food, 'none' for worms, which dig themselves in, 'pouch' for seeds and clumps, which wait for a hole); a pile whose preferred slot is taken by another kind falls back to the first free heap slot. name: the pouch card's title; line: the card's one line. piles: handfuls a ground pile holds, the top of each look step (small, good, big), the rack's bunches and the handfuls a rack bunch or bowl holds. heaps: K-21 heaps left when the pack is full; cap is how many lie out at once, tapM their tap radius. pot: water classes the clay pot fills from, and whether it takes sea water. rill: when the hint about a rill to camp shows. ui: pouch tap target, gap and drawing size in px (Matt, October 22, 2026: 48 px targets). words: every line the pack, piles and pot say.",
+  "note": "The walker's pack of cloth pouches and the piles at camp (docs/future/13 sections 4.1 and 4.5). startPouches: pouches from the start; perCarrier: pouches each made carrier adds (satchel, basket, frame), so 6, 8, 10, 12; handfulsPerPouch: Gather taps that fill one pouch (one look step each). groups: the fixed sort order of pouches, never shown. partGroups: the group of a plant-part kind '<species>.<part>' that kinds does not list. kinds: one row per non-plant kind, in sort order within its group; sketch names its drawing, camp is the camp slot its pile prefers ('sticks', 'stones', 'clay', 'heap' for the first free heap slot), or where it goes instead ('rack' for herbs, 'bowl' for food, 'none' for worms, which dig themselves in, 'pouch' for seeds and clumps, which wait for a hole); a pile whose preferred slot is taken by another kind falls back to the first free heap slot. name: the pouch card's title; line: the card's one line. piles: handfuls a ground pile holds, the top of each look step (small, good, big), the rack's bunches and the handfuls a rack bunch or bowl holds. piles.look (src/world/pack/draw.js, piles.js pileShape): models, the model each kind's pile wears ('stick', 'stick-pale' the same paler, 'stone'; a kind not listed wears otherModel at otherScale); models3d, the camp model files (meters, base on the ground, front +z), drawn by their vertex colours; footprintM, each model's width across; scale, the model's scale at each look step (small, good, big; the big heap is about 0.9 of a slot); heapScale, a K-21 heap's; yawJitterDeg, a pile's seeded turn from its slot's; sinkM, how far it sits into the ground; pale, drift twigs' colour mixed toward a grey; standIn, the seeded mound of crossed sticks and cairn of stones drawn until the models load (rings: count, ring radius share, height share); pass, the contact shadow's length (m at scale 1) and darkness; nearM, max, drawn within this far of you, at most this many; rebuildS, moveM, refreshS: the lists are rebuilt at most every rebuildS, at once on a change, after moving moveM, and every refreshS anyway. pickups: what lies on the ground at a gather spot with something left today (pickup-meshes.js), within nearM, at most max shapes (nearest spots first), variants seeded shapes a kind; per kind, count is [least, most] shapes when full (fewer as it is picked over), lenM, radiusM and bend a stick's, sizeM, heightShare, lump and sink a stone's, color its linear albedo, spreadM how far round the spot they scatter. heaps: K-21 heaps left when the pack is full; cap is how many lie out at once, tapM their tap radius. pot: water classes the clay pot fills from, and whether it takes sea water. rill: when the hint about a rill to camp shows. ui: pouch tap target, gap and drawing size in px (Matt, October 22, 2026: 48 px targets). words: every line the pack, piles and pot say.",
   "startPouches": 6,
   "perCarrier": 2,
   "handfulsPerPouch": 3,
@@ -36,7 +36,32 @@
     { "id": "old-comb", "name": "Old comb", "group": "living", "sketch": "comb", "camp": "bowl", "line": "Old comb a wild colony left behind." },
     { "id": "chanterelle", "name": "Chanterelle", "group": "living", "sketch": "mushroom", "camp": "bowl", "line": "Golden chanterelles that smell of apricot." }
   ],
-  "piles": { "handfuls": 12, "looks": [3, 8, 12], "rackBunches": 6, "rackHandfuls": 6, "bowlHandfuls": 6 },
+  "piles": { "handfuls": 12, "looks": [3, 8, 12], "rackBunches": 6, "rackHandfuls": 6, "bowlHandfuls": 6,
+    "look": {
+      "models": { "sticks": "stick", "drift-twigs": "stick-pale", "pebbles": "stone", "flat-stones": "stone" },
+      "otherModel": "stick", "otherScale": 0.5,
+      "models3d": { "stick": "assets/models/camp/log-pile.glb", "stone": "assets/models/camp/stone-pile.glb" },
+      "footprintM": { "stick": 1.2, "stone": 1.0 },
+      "scale": [0.5, 0.7, 0.9], "heapScale": 0.3, "yawJitterDeg": 12, "sinkM": 0.02,
+      "pale": { "mix": 0.45, "toward": [0.5, 0.49, 0.46] },
+      "standIn": {
+        "stick": { "count": 22, "lenShare": [0.55, 0.95], "radiusM": [0.02, 0.035], "heightM": 0.45, "color": [0.16, 0.11, 0.07] },
+        "stone": { "rings": [[9, 0.62, 0], [5, 0.3, 0.4], [1, 0, 0.8]], "stoneShare": [0.3, 0.38], "heightM": 0.4, "color": [0.3, 0.29, 0.27] }
+      },
+      "pass": { "lengthM": 1.4, "shadow": 0.45 },
+      "nearM": 25, "max": 48, "rebuildS": 0.25, "moveM": 2, "refreshS": 5
+    }
+  },
+  "pickups": {
+    "nearM": 25, "max": 128, "variants": 4,
+    "pass": { "lengthM": 0.25, "shadow": 0.3 },
+    "kinds": {
+      "drift-twigs": { "shape": "stick", "count": [2, 4], "lenM": [0.1, 0.25], "radiusM": [0.006, 0.012], "bend": [0.05, 0.2], "color": [0.42, 0.4, 0.37], "spreadM": 0.6 },
+      "sticks": { "shape": "stick", "count": [2, 4], "lenM": [0.12, 0.3], "radiusM": [0.006, 0.014], "bend": [0.05, 0.25], "color": [0.14, 0.09, 0.055], "spreadM": 0.6 },
+      "pebbles": { "shape": "pebble", "count": [3, 6], "sizeM": [0.02, 0.05], "heightShare": [0.55, 0.8], "lump": 0.12, "sink": 0.15, "color": [0.32, 0.3, 0.28], "spreadM": 0.4 },
+      "flat-stones": { "shape": "flat", "count": [1, 3], "sizeM": [0.06, 0.12], "heightShare": [0.18, 0.3], "lump": 0.08, "sink": 0.2, "color": [0.24, 0.235, 0.225], "spreadM": 0.4 }
+    }
+  },
   "heaps": { "cap": 6, "tapM": 0.25 },
   "pot": { "fillClasses": ["running", "slow"], "seaFill": true },
   "rill": { "hintAfterCarries": 3, "farM": 15, "nearPadM": 6 },

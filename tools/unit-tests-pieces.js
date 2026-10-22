@@ -4,7 +4,7 @@
 // naturalist's reward, the cap, a lifted stone's tip, and the Sculpt card's chip rows. Driftwood: its
 // reward, logs on the strandline, a carried log kept and saved, a carried stone moved, the log cap,
 // and the log shapes and roll. Pond stones and Steps: their records, a flight's cut and guard, the
-// footing a line of stones gives the walker, and the slab shapes.
+// footing a line of stones gives the walker, and the slab shapes. Piles at camp: their save records.
 
 import { cleanPieces, emptyPieces, makeStone, makeLog, addPiece, removePiece, movePiece, countKind, pieceAt, arrivingStones, tipAngle, tipDone, stoneBone, leanBone, logBone, mul4 } from '../src/world/pieces/model.js';
 import { stoneShapes } from '../src/world/pieces/meshes.js';
@@ -456,6 +456,22 @@ export function addPiecesTests(test, assert, eq) {
     assert(proud > 0.02 && proud < 0.07, `its top ${(proud * 100).toFixed(1)} cm above the water`);
     const dry = raftRest(raft, sh, (x) => (x - 4) * 0.1, () => 0, RF);
     assert(!dry.afloat && dry.y > 0, 'with the water gone it rests on the highest ground under it');
+  });
+
+  test(G, 'a pile at camp: saved as it was; a bad or empty one is left out; found by a tap like a stone', () => {
+    const pile = { id: 'p3', kind: 'pile', x: 12, z: -14, yaw: 0.6, seed: 77, size: 0.84, placedHour: 30, holds: 'sticks', handfuls: 5, slot: 'sticks' };
+    const back = cleanPieces({ list: [pile], nextId: 4 });
+    eq(JSON.stringify(back.list), JSON.stringify([pile]), 'the record comes back exactly');
+    eq(cleanPieces({ list: [{ ...pile, handfuls: 30 }] }).list[0].handfuls, 12, 'more than a pile holds is kept to twelve');
+    eq(cleanPieces({ list: [{ ...pile, handfuls: 2.4 }] }).list[0].handfuls, 2, 'whole handfuls');
+    for (const [bad, why] of /** @type {[any, string][]} */ ([[{ handfuls: 0 }, 'an empty pile'], [{ handfuls: 'x' }, 'unreadable handfuls'],
+      [{ holds: '' }, 'no kind'], [{ holds: 3 }, 'a kind that is not a name'], [{ slot: undefined }, 'no slot'], [{ size: 0 }, 'no size']])) {
+      eq(cleanPieces({ list: [{ ...pile, ...bad }] }).list.length, 0, `${why} is left out`);
+    }
+    const s = /** @type {any} */ (addPiece(back, makeStone(5, 9, 0, 0, 1, { sizeM: [0.3, 0.3] }), 10));
+    eq(countKind(s.list, 'pile'), 1, 'counted apart from stones');
+    eq(pieceAt(s.list, 12.3, -14, 0.05)?.id, 'p3', 'a tap within its footprint finds it');
+    eq(pieceAt(s.list, 13, -14, 0.05), null, 'a tap beyond it does not');
   });
 
   test(G, 'pond stones: a line is one way across, and the slabs are baked the same every time', async () => {

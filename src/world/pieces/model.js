@@ -20,17 +20,25 @@ import { groundOfCell } from '../water/shore.js';
 // A pond stone (stepping.js) is { id, kind: 'stepping', x, z, yaw, seed, size, rise, run, placedHour };
 // a flight of Steps (steps.js) is { id, kind: 'steps', x, z, x2, z2, size, top, bottom, risers, seed, placedHour };
 // a reed raft (raft.js) is { id, kind: 'raft', x, z, yaw, seed, size, placedHour }, as a stone's.
+// A pile at camp (docs/future/13 4.1, src/world/pack/piles-live.js) is { id, kind: 'pile', x, z, yaw,
+// seed, size, placedHour, holds, handfuls, slot }: holds is the pack kind it is a pile of, handfuls
+// how many it holds (1 to 12; an empty pile is gone), slot the camp pile slot it sits in, and size
+// its footprint across (m). It is drawn by src/world/pack/draw.js, never by the stone pass.
 
 /**
- * @typedef {{ id: string, kind: 'stone' | 'log' | 'stepping' | 'steps' | 'raft', x: number, z: number, yaw: number, seed: number, size: number, length?: number,
- *   rise?: number, run?: string, x2?: number, z2?: number, top?: number, bottom?: number, risers?: number, placedHour: number }} Piece
- *   length: a log's length (m); rise, run: a pond stone's; x2, z2, top, bottom, risers: a flight's (yaw 0)
+ * @typedef {{ id: string, kind: 'stone' | 'log' | 'stepping' | 'steps' | 'raft' | 'pile', x: number, z: number, yaw: number, seed: number, size: number, length?: number,
+ *   rise?: number, run?: string, x2?: number, z2?: number, top?: number, bottom?: number, risers?: number, placedHour: number,
+ *   holds?: string, handfuls?: number, slot?: string }} Piece
+ *   length: a log's length (m); rise, run: a pond stone's; x2, z2, top, bottom, risers: a flight's (yaw 0);
+ *   holds, handfuls, slot: a pile's
  * @typedef {{ version: number, list: Piece[], nextId: number, arrived: boolean }} PiecesState
  *   nextId: the number the next piece's id takes; arrived: the reward's stones have come (once per island)
  */
 
 /** Kinds of piece this build knows. */
-export const PIECE_KINDS = ['stone', 'log', 'stepping', 'steps', 'raft'];
+export const PIECE_KINDS = ['stone', 'log', 'stepping', 'steps', 'raft', 'pile'];
+/** The most handfuls a pile holds (recipes/world/pack.json piles.handfuls). */
+export const PILE_HANDFULS = 12;
 
 /** How many pieces of a kind a list holds. @param {Piece[]} list @param {string} kind */
 export const countKind = (list, kind) => list.reduce((n, p) => n + (p.kind === kind ? 1 : 0), 0);
@@ -63,10 +71,14 @@ export function cleanPieces(v) {
     if (r.kind === 'log' && !(fin(r.length) && r.length > 0)) continue;
     if (r.kind === 'stepping' && !(fin(r.rise) && typeof r.run === 'string')) continue;
     if (r.kind === 'steps' && !(fin(r.x2) && fin(r.z2) && fin(r.top) && fin(r.bottom) && r.top > r.bottom && Number.isInteger(r.risers) && r.risers >= 1)) continue;
+    // A pile holds a kind, sits in a slot, and holds 1 to 12 handfuls (more is kept to the cap; none is gone).
+    if (r.kind === 'pile' && !(typeof r.holds === 'string' && r.holds && typeof r.slot === 'string' && r.slot && fin(r.handfuls) && Math.round(r.handfuls) >= 1)) continue;
     ids.add(r.id);
     const hour = fin(r.placedHour) ? r.placedHour : 0;
-    // In the order makeStone, makeLog, makeStepping and the Steps mode write them, so a record comes back exactly.
-    if (r.kind === 'stepping') list.push({ id: r.id, kind: r.kind, x: r.x, z: r.z, yaw: r.yaw, seed: r.seed >>> 0, size: r.size, rise: r.rise, run: r.run, placedHour: hour });
+    // In the order makeStone, makeLog, makeStepping, the Steps mode and piles-live.js write them, so a record comes back exactly.
+    if (r.kind === 'pile') list.push({ id: r.id, kind: r.kind, x: r.x, z: r.z, yaw: r.yaw, seed: r.seed >>> 0, size: r.size, placedHour: hour,
+      holds: r.holds, handfuls: Math.min(PILE_HANDFULS, Math.round(r.handfuls)), slot: r.slot });
+    else if (r.kind === 'stepping') list.push({ id: r.id, kind: r.kind, x: r.x, z: r.z, yaw: r.yaw, seed: r.seed >>> 0, size: r.size, rise: r.rise, run: r.run, placedHour: hour });
     else if (r.kind === 'steps') list.push({ id: r.id, kind: r.kind, x: r.x, z: r.z, x2: r.x2, z2: r.z2, yaw: r.yaw, size: r.size, top: r.top, bottom: r.bottom, risers: r.risers, seed: r.seed >>> 0, placedHour: hour });
     else list.push({ id: r.id, kind: r.kind, x: r.x, z: r.z, yaw: r.yaw, seed: r.seed >>> 0, size: r.size,
       ...(r.kind === 'log' ? { length: r.length } : {}), placedHour: hour });
@@ -117,6 +129,15 @@ export function movePiece(s, id, x, z) {
 }
 
 /**
+ * The pieces with one record changed by a patch (a pile's handfuls and size). Pure.
+ * @param {PiecesState} s @param {string} id @param {Partial<Piece>} patch
+ * @returns {PiecesState}
+ */
+export function patchPiece(s, id, patch) {
+  return { ...s, list: s.list.map((p) => (p.id === id ? { ...p, ...patch, id: p.id, kind: p.kind } : p)) };
+}
+
+/**
  * The pieces without one. Pure. @param {PiecesState} s @param {string} id
  * @returns {{ state: PiecesState, removed: Piece | null }}
  */
@@ -141,8 +162,8 @@ export function pieceDistance(p, x, z) {
 
 /**
  * The piece nearest a ground point, if a tap there would pick it: within r, or within about half
- * a stone's length (a log's half thickness and logReach: a tap on a low log's top lands on the
- * ground behind it), whichever is more.
+ * a stone's length or a pile's footprint (a log's half thickness and logReach: a tap on a low log's
+ * top lands on the ground behind it), whichever is more.
  * @template {{ x: number, z: number, yaw: number, kind: string, size: number, length?: number }} T
  * @param {T[]} list @param {number} x @param {number} z @param {number} r @param {number} [logReach]
  * @returns {T | null}

@@ -9,7 +9,7 @@
 // A pile is a piece record { id, kind: 'pile', x, z, yaw, seed, size, placedHour, holds, handfuls, slot }.
 
 /**
- * @typedef {{ id: number, kind: 'pile', x: number, z: number, yaw: number, seed: number, size: number,
+ * @typedef {{ id: string, kind: 'pile', x: number, z: number, yaw: number, seed: number, size: number,
  *   placedHour: number, holds: string, handfuls: number, slot: string }} Pile
  * @typedef {{ id: string, x: number, z: number }} Slot a camp pile slot, resolved to world meters
  * @typedef {{ slot: string } | { refuse: 'noRack' | 'noBowl' | 'worms' | 'pouch' | 'noSlot' }} SlotPick
@@ -33,6 +33,24 @@ export function pileLook(handfuls, recipe) {
 
 /** The pile card's word: "A small heap.", "A good heap." or "A big heap." @param {number} handfuls @param {any} recipe */
 export const pileWord = (handfuls, recipe) => recipe?.words?.pile?.[pileLook(handfuls, recipe)] ?? '';
+
+/**
+ * How a pile of a kind is drawn (recipes/world/pack.json piles.look): which model it wears ('stick',
+ * 'stick-pale' or 'stone'), its scale at this look step, and its footprint across in meters (the
+ * piece record's size, which a tap and the grass clear go by). A kind the look does not list wears
+ * the stick pile at its smallest. A K-21 heap (heap true) is the same model, smaller.
+ * @param {string} kind @param {number} handfuls @param {any} recipe pack.json @param {boolean} [heap]
+ * @returns {{ model: string, scale: number, size: number }}
+ */
+export function pileShape(kind, handfuls, recipe, heap = false) {
+  const L = recipe?.piles?.look ?? {};
+  const listed = L.models?.[kind];
+  const model = listed ?? L.otherModel ?? 'stick';
+  const base = model === 'stick-pale' ? 'stick' : model;
+  const scales = Array.isArray(L.scale) ? L.scale : [0.5, 0.7, 0.9];
+  const scale = heap ? (L.heapScale ?? 0.3) : listed ? scales[pileLook(handfuls, recipe)] : (L.otherScale ?? scales[0]);
+  return { model, scale, size: (L.footprintM?.[base] ?? (base === 'stone' ? 1.0 : 1.2)) * scale };
+}
 
 /**
  * Where a set-down pouch of this kind goes: its own pile's slot, its preferred slot if free, else
