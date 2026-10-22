@@ -13,7 +13,7 @@
     "variants": 2,
     "variation": 0,
     "prims": [
-      { "type": "ellipsoid", "bone": "body", "c": [0, 0.022, 0], "r": [0.068, 0.034, 0.09], "k": 0, "region": "shell" },
+      { "type": "ellipsoid", "bone": "body", "c": [0, 0.022, 0], "r": [0.068, 0.034, 0.09], "k": 0, "region": "back" },
       { "type": "ellipsoid", "bone": "body", "c": [0, 0.011, 0.002], "r": [0.064, 0.012, 0.086], "k": 0.004, "region": "belly" },
       { "type": "capsule", "bone": "head", "a": [0, 0.016, 0.08], "b": [0, 0.022, 0.104], "r": [0.012, 0.011], "k": 0.006, "region": "skin" },
       { "type": "ellipsoid", "bone": "head", "c": [0, 0.024, 0.116], "r": [0.0135, 0.012, 0.018], "k": 0.006, "region": "skin" },
@@ -29,7 +29,7 @@
       { "name": "body", "parent": -1, "pivot": [0, 0, 0] },
       { "name": "head", "parent": 0, "pivot": [0, 0.016, 0.078] }
     ],
-    "albedo": { "shell": [0.045, 0.045, 0.035], "belly": [0.3, 0.26, 0.12], "skin": [0.05, 0.05, 0.04], "blotch": [0.36, 0.3, 0.1],
+    "albedo": { "back": [0.045, 0.045, 0.035], "belly": [0.3, 0.26, 0.12], "skin": [0.05, 0.05, 0.04], "blotch": [0.36, 0.3, 0.1],
                 "eye": [0.25, 0.17, 0.04], "eyeRing": [0.02, 0.02, 0.02] },
     "blotch": { "scale": 90, "amount": 0.35 },
     "bellyBelowNormalY": -0.5,
@@ -39,8 +39,8 @@
   "bake": { "cellM": 0.0024, "lods": [{ "cellM": 0.0022, "toM": 3 }, { "cellM": 0.005 }] },
   "motion": {
     "kind": "bask", "stepHz": 20,
-    "paddleMps": 0.05, "turnEveryS": [8, 20], "leashM": 4, "minDepthM": 0.15,
-    "baskReachM": 6, "stackM": 0.12, "climbS": 4, "lookEveryS": [5, 14], "headTurnRad": 0.7,
+    "paddleMps": 0.12, "turnEveryS": [8, 20], "leashM": 4, "minDepthM": 0.15,
+    "baskReachM": 12, "stackM": 0.12, "climbS": 4, "lookEveryS": [5, 14], "headTurnRad": 0.7,
     "fleeS": 40, "rainStaysIn": true
   },
   "presence": { "ringM": 2.5, "ringTrustShrink": 0.6, "ringMinM": 0.8, "calmSpeed": 0.6, "editReachM": 3,

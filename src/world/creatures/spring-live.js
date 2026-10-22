@@ -76,6 +76,29 @@ export function createSpring(opts) {
 
   /** The water's top or the ground at a point, whichever is higher. @param {number} x @param {number} z */
   const top = (x, z) => { const w = water.sampleLive(x, z); return w.depth > 0.005 ? w.surface : terrain.sampleHeight(x, z); };
+  /**
+   * Where a clump floats in the live water: its own spot, or, when the water there is shallower now
+   * than the hourly grid says (the level eases with the season), the nearest spot within a meter
+   * deep enough to float in. Looked for again every few seconds. @type {Map<number, { x: number, z: number, at: number }>}
+   */
+  const afloat = new Map();
+  /** @param {{ id: number, x: number, z: number }} c @param {number} t */
+  function floatAt(c, t) {
+    const had = afloat.get(c.id);
+    if (had && t - had.at < 4) return had;
+    const deep = R.lay.depthCm[0] / 100;
+    let spot = { x: c.x, z: c.z, at: t };
+    if (water.sampleLive(c.x, c.z).depth < deep) {
+      search: for (let r = 0.2; r <= 1.01; r += 0.2) {
+        for (let i = 0; i < 12; i++) {
+          const a = (i / 12) * Math.PI * 2, x = c.x + Math.cos(a) * r, z = c.z + Math.sin(a) * r;
+          if (water.sampleLive(x, z).depth >= deep) { spot = { x, z, at: t }; break search; }
+        }
+      }
+    }
+    afloat.set(c.id, spot);
+    return spot;
+  }
 
   /**
    * The basking spots: the pieces' own seats when they publish them (the shaping work: loose and pond
@@ -114,7 +137,9 @@ export function createSpring(opts) {
     const h = display() / SECONDS_PER_HOUR;
     /** @type {import('../../render/passes/creatures.js').Being[]} */ const wet = [], land = [];
     /** @type {typeof shown} */ const taps = [];
-    for (const c of S?.clumps ?? []) {
+    for (const k0 of S?.clumps ?? []) {
+      // Spawn and tadpoles keep to the live water; froglets set out from where the clump floated.
+      const f0 = floatAt(k0, t), c = { ...k0, x: f0.x, z: f0.z };
       const cy = top(c.x, c.z);
       if (c.stage === 'spawn') {
         wet.push({ x: c.x, y: cy - B.clump.floatM * B.displayScale, z: c.z, yaw: unit(hash32(seed, c.id)) * Math.PI * 2, size: B.displayScale, mesh: 'clump' });
@@ -130,7 +155,7 @@ export function createSpring(opts) {
           const wag = Math.sin(t * TP.wagHz * Math.PI * 2 + i) * TP.wagRad;
           const b = new Float32Array(MAX_BONES * 16);
           poseSkeleton(rigs.tadpole, [null, { q: axisAngle([0, 1, 0], wag) }], b, 0);
-          wet.push({ x: p.x, y: top(p.x, p.z) - 0.03 - 0.02 * unit(hash32(hs, 4)), z: p.z, yaw: Math.atan2(q.x - p.x, q.z - p.z), size: TP.displayScale, mesh: 'tadpole', bones: b });
+          wet.push({ x: p.x, y: top(p.x, p.z) - 0.012 - 0.02 * unit(hash32(hs, 4)), z: p.z, yaw: Math.atan2(q.x - p.x, q.z - p.z), size: TP.displayScale, mesh: 'tadpole', bones: b });
         }
         taps.push({ sp: 'frogspawn', x: c.x, z: c.z, item: null, reach: TP.cloudM + 0.15 });
       } else if (c.stage === 'froglets' && landPass.hasMesh('froglet')) {
