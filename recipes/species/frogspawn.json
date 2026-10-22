@@ -1,0 +1,33 @@
+{
+  "type": "species",
+  "id": "frogspawn",
+  "key": "frogspawn",
+  "name": "Frogspawn",
+  "version": 1,
+  "note": "Frogspawn, tadpoles and froglets (doc 13, The year, season by season; spring marker). A field on the frogs, not a species with needs: never a gift, never toward a tier milestone. LIFE (src/world/creatures/spring.js, hourly, deterministic): in spring (season 0) on days lay.days, at the frogs' dusk, happy frogs (the frogs' happy flag, at least lay.minFrogs) may lay (lay.chance a dusk, lay.perDusk clumps) until there are min(lay.maxClumps, frogs / 2) clumps this year. A clump goes in a warm, sunny shallow: still fresh water lay.depthCm deep (measured on the habitat grid each hour), within lay.nearFrogM of a frog's home, with no willow within lay.shadeM (the willow's shade, scaled by its size); later clumps go within lay.clusterM of the first when they can, as frogs lay together. After hatch.days days, at dusk, each clump hatches into hatch.tadpoles tadpoles. Each dusk tadpoles thin by tadpoles.lossShare, and by tadpoles.eatShare more for each school of minnows living within tadpoles.eatReachM (scaled by the school's size against tadpoles.schoolFull); they also feed the minnows (field tadpoles in src/world/ecology/coarse.js: tadpoles.fieldPer per tadpole, spread over tadpoles.fieldR cells). If the water under a clump dries, it is gone. From summer day froglets.day, at dusk, the tadpoles left become froglets (froglets.share of them, at most froglets.most), which climb out over froglets.leaveH hours and are gone. A new year starts clean. LOOK (src/world/creatures/spring-live.js): sizes in real meters; displayScale per kind (Matt 2026-10-21 rescale: anything under 10 cm at 2.5 to 3): the clump 2 times (it is already about 15 cm), tadpoles 3, froglets 3. clump: eggs jelly spheres of eggR in a mound radiusM wide, each with a dark embryo; tadpoles swim in a cloud within cloudM of their clump, live up to tadpoles.drawMost per clump; froglets use the frog's body at frogletScale of a frog.",
+  "lay": { "days": [5, 10], "minFrogs": 4, "chance": 0.6, "perDusk": [1, 2], "maxClumps": 6,
+           "depthCm": [5, 30], "nearFrogM": 8, "shadeM": 3, "clusterM": 1.2 },
+  "hatch": { "days": 4, "tadpoles": 60 },
+  "tadpoles": { "lossShare": 0.03, "eatShare": 0.1, "eatReachM": 10, "schoolFull": 16, "fieldPer": 6, "fieldR": 1 },
+  "froglets": { "day": 1, "share": 0.3, "most": 18, "leaveH": 30 },
+  "body": {
+    "scaleReal": [0.12, 0.18],
+    "displayScale": 2.5,
+    "contactShadow": 0,
+    "wetSpecular": { "roughness": 0.08, "strength": 1.4 },
+    "clump": { "eggs": 90, "eggR": 0.0075, "radiusM": 0.07, "moundM": 0.03, "embryoR": 0.0029, "floatM": 0.004,
+               "albedo": { "jelly": [0.4, 0.43, 0.37], "embryo": [0.012, 0.012, 0.011] } },
+    "tadpole": { "displayScale": 3, "drawMost": 40, "cloudM": 0.5, "swimMps": 0.03, "wagHz": 6, "wagRad": 0.6,
+      "prims": [
+        { "type": "ellipsoid", "bone": "body", "c": [0, 0, 0.0035], "r": [0.0034, 0.0028, 0.0045], "k": 0, "region": "body" },
+        { "type": "capsule", "bone": "tail", "a": [0, 0, -0.0005], "b": [0, 0, -0.013], "r": [0.0012, 0.0002], "k": 0.0015, "region": "tail" },
+        { "type": "ellipsoid", "bone": "tail", "c": [0, 0, -0.008], "r": [0.0003, 0.0022, 0.0055], "k": 0.001, "region": "tail" }
+      ],
+      "bones": [
+        { "name": "body", "parent": -1, "pivot": [0, 0, 0] },
+        { "name": "tail", "parent": 0, "pivot": [0, 0, -0.0005] }
+      ],
+      "albedo": { "body": [0.02, 0.019, 0.017], "tail": [0.05, 0.048, 0.04] } },
+    "froglet": { "displayScale": 3, "frogletScale": 0.18, "hopM": [0.04, 0.09], "hopS": [2, 6] }
+  }
+}

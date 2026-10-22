@@ -33,6 +33,7 @@ export const PARALLEL = {
   figure: () => import('./unit-tests-figure.js').then((m) => m.addFigureTests),
   nets: () => import('./unit-tests-nets.js').then((m) => m.addNetsTests),
   trails: () => import('./unit-tests-trails.js').then((m) => m.addTrailsTests),
+  pondSpring: () => import('./unit-tests-pond-spring.js').then((m) => m.addPondSpringTests),
 };
 
 /** @param {any} cond @param {string} [msg] */

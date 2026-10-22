@@ -68,6 +68,9 @@
     "minnows": { "label": "Minnows", "kind": "animals", "icon": "minnow", "page": "minnows", "flag": "minnows:seen" },
     "dragonflies": { "label": "Dragonflies", "kind": "animals", "icon": "dragonfly", "page": "dragonflies", "flag": "dragonflies:seen" },
     "damselflies": { "label": "Damselflies", "kind": "animals", "icon": "damselfly", "page": "damselflies", "flag": "damselflies:seen" },
+    "turtles": { "label": "Pond turtles", "kind": "animals", "icon": "turtle", "page": "turtles", "flag": "turtles:seen" },
+    "frogspawn": { "label": "Frogspawn", "kind": "small", "icon": "frogspawn", "page": "frogspawn" },
+    "toads": { "label": "Common toad", "kind": "small", "icon": "toad", "page": "toads" },
     "you": { "label": "You", "kind": "animals", "icon": "you", "always": true }
   },
   "links": [
@@ -173,6 +176,17 @@
     { "a": "strandline", "b": "logs", "ink": "flag:driftwood:lifted", "note": "Driftwood comes ashore on the strandline." },
     { "a": "logs", "b": "fungi", "ink": "seen:fungi", "note": "Fungi fruit on a log that lies still, out of the tide." },
     { "a": "you", "b": "fungi", "ink": "seen:fungi", "note": "Fungi came to a log you carried up from the shore." },
+    { "a": "frogs", "b": "frogspawn", "ink": "seen:frogspawn", "note": "Happy frogs lay their spawn together in the warm shallows." },
+    { "a": "fresh", "b": "frogspawn", "ink": "seen:frogspawn", "note": "Frogspawn needs still, shallow water warmed by the sun." },
+    { "a": "frogspawn", "b": "minnows", "ink": "seen:frogspawn&flag:minnows:seen", "note": "Minnows eat the tadpoles that hatch from the spawn." },
+    { "a": "stones", "b": "toads", "ink": "seen:toads", "note": "A toad hides under a stone near the pond by day." },
+    { "a": "logs", "b": "toads", "ink": "seen:toads", "note": "A log by the pond is a toad's hiding place too." },
+    { "a": "fresh", "b": "toads", "ink": "seen:toads", "note": "Each spring the toad walks back to the pond to lay its eggs." },
+    { "a": "fresh", "b": "turtles", "ink": "flag:turtles:seen", "note": "Turtles need warm, still fresh water." },
+    { "a": "lilies", "b": "turtles", "ink": "flag:turtles:seen&seen:lilies", "note": "Turtles eat water lily leaves." },
+    { "a": "pondweed", "b": "turtles", "ink": "flag:turtles:seen&seen:pondweed", "note": "Turtles graze the pondweed." },
+    { "a": "stones", "b": "turtles", "ink": "flag:turtles:seen", "note": "Turtles climb out onto a stone by the water to bask." },
+    { "a": "logs", "b": "turtles", "ink": "flag:turtles:seen", "note": "A log at the water's edge is the best basking spot a turtle could want." },
     { "a": "grass", "b": "webs", "ink": "seen:webs", "note": "Orb webs hang in the tall grass." },
     { "a": "midges", "b": "webs", "ink": "seen:webs&flag:midges:seen", "note": "Midges and small flies are caught in the webs." }
   ]
