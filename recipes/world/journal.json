@@ -1147,6 +1147,7 @@
       "notes": { "found": "You let a shore crab go from your net." }
     },
     "frogs": {
+      "sketch": { "scale": "about 8 cm", "labels": { "mask": { "text": ["a dark mask", "behind the eye"], "learn": ["seen"] }, "blotches": { "text": ["olive, with", "dark blotches"], "learn": ["seen"] }, "legs": { "text": ["long hind legs", "folded under"], "learn": ["settled"] } } },
       "name": "Common frogs", "icon": "frog", "kind": "creature", "plural": "frogs", "card": "Common frog",
       "riddle": "Something small might come to still water, if its edge were thick with reeds.",
       "hints": [
@@ -1221,6 +1222,7 @@
       }
     },
     "midges": {
+      "sketch": { "scale": "about 3 mm each", "labels": { "cloud": { "text": ["a dancing cloud", "at dusk"], "learn": ["seen"] }, "midge": { "text": ["one midge,", "drawn large"], "learn": ["seen"] } } },
       "name": "Midges", "icon": "midges", "kind": "swarm", "plural": "midges", "card": "A cloud of midges",
       "seenAt": { "drawn": true, "hours": [18, 22], "share": 0.25, "m2": 3 },
       "riddle": "Something tiny might dance over the reeds on warm evenings.",
@@ -1252,6 +1254,7 @@
       }
     },
     "minnows": {
+      "sketch": { "scale": "about 6 cm", "labels": { "bars": { "text": ["dark bars", "along the side"], "learn": ["seen"] }, "tail": { "text": ["a forked", "tail"], "learn": ["seen"] }, "school": { "text": ["always in", "a school"], "learn": ["joined"] } } },
       "name": "Common minnows", "icon": "minnow", "kind": "school", "plural": "minnows", "card": "A school of minnows",
       "_school": "A school (M2, src/world/creatures/swarms.js): known only once you find it yourself, by tapping the school or watching it closely, like the frogs. Its notes follow the school's count, not single fish: joined is written when the amount word changes.",
       "riddle": "Something small and quick might come to still water, if it had a deep spot to winter in.",
@@ -1309,6 +1312,7 @@
       }
     },
     "dragonflies": {
+      "sketch": { "scale": "about 7 cm", "labels": { "eyes": { "text": ["eyes that meet", "on top"], "learn": ["seen"] }, "wings": { "text": ["four clear wings,", "held out flat"], "learn": ["seen"] }, "spots": { "text": ["green and", "blue spots"], "learn": ["settled"] } } },
       "name": "Southern hawkers", "icon": "dragonfly", "kind": "school", "plural": "dragonflies", "card": "A southern hawker",
       "_school": "A few at a time (M2, src/world/creatures/swarms.js), known only once you find one yourself, by tapping it or watching it closely. They fly from the start of summer, once the water is warm, into autumn; the rest of the year they are nymphs in the pond (dormant).",
       "riddle": "Something might hunt on sunny days over a second, quiet pond, one with no fish in it.",

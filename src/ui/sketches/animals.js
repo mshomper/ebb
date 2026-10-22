@@ -348,3 +348,173 @@ export function lizard(p, scale) {
   p.scale(30, 160, 216, scale);
   return p.svg(380, 250, 'Field sketch of a common lizard basking flat on a sunny stone, among the gorse');
 }
+
+/** A common frog's olive green, a minnow's olive and silver, a southern hawker's greens and blues. */
+const FROG = '#7F8A4C', MINNOW = '#8C8A64', HAWKER = '#7FA36A', SPOT = '#6FA8C8';
+
+/**
+ * Common frog: sitting on the bank at the water's edge, side on, head up, its long hind legs folded
+ * under it, the dark mask behind its gold eye and the blotches on its back.
+ * @param {import('./pen.js').Pen} p @param {string} [scale]
+ */
+export function frog(p, scale) {
+  const g = 206;
+  p.tint(`M198 ${g}H236V248H198Z`, WASH.water, 0.32);
+  p.line(wave(198, 236, g + 4, 1.2, 14), 1.1);
+  p.tint(`M40 ${g}H202C196 ${g + 14} 196 ${g + 30} 202 246H40Z`, WASH.mud, 0.25);
+  p.line(`M40 ${g}C100 ${g - 2} 170 ${g - 1} 202 ${g + 4}`, 1.3);
+  p.shape(blade(52, g, 48, g - 54, 2.8, -5), WASH.green, 0.42, 1);
+  p.shape(blade(60, g, 66, g - 38, 2.4, 4), WASH.green, 0.42, 1);
+  // The far legs, just showing.
+  p.shape('M150 186C154 194 156 200 158 205H165C162 198 159 191 155 184Z', FROG, 0.75, 1.1);
+  // The body: haunches low at the back, the back rising to the head, the snout at the right.
+  p.shape('M78 202C66 190 70 166 88 152C106 138 134 132 156 140C172 146 184 154 190 164C194 172 190 178 180 180C168 186 150 194 130 200C112 205 90 207 78 202Z', FROG, 0.55, 1.5);
+  // The pale throat and belly.
+  p.tint('M96 204C120 202 150 192 172 182C182 178 188 176 190 170C186 180 168 190 146 198C124 205 106 207 96 204Z', WASH.sand, 0.6);
+  // Dark blotches over the back and flank.
+  for (const [x, y, rx, ry] of [[104, 156, 6, 3.6], [122, 148, 5, 3.2], [96, 174, 5.4, 3.4], [116, 168, 4.6, 3], [138, 160, 4.2, 2.8], [88, 190, 4.2, 2.8]]) p.oval(x, y, rx, ry, '#4E5530', 0.6, 0.8);
+  // The dark mask from the eye back over the ear, the gold eye on top of the head, a ridge down the back.
+  p.shape('M160 152C166 150 174 154 176 160C170 164 162 164 156 160Z', '#3E3A2C', 0.7, 0.9);
+  p.oval(168, 146, 6, 5.4, WASH.gold, 0.95, 1.1);
+  p.oval(168, 146.4, 3.6, 1.6, WASH.tip, 1, 0.6);
+  p.fine('M150 146C130 140 108 146 92 158', 0.9, 0.6);
+  p.dot(186, 160, 0.9);
+  p.fine('M190 168C182 171 172 171 166 168', 0.9, 0.8);
+  // The long hind leg folded under: thigh, shin and the long webbed foot along the ground.
+  p.shape('M76 196C78 176 104 170 116 182C120 192 110 200 94 202C84 203 76 202 76 196Z', FROG, 0.6, 1.3);
+  p.shape('M92 202C106 205 128 206 146 206L152 209H100C92 208 88 205 92 202Z', FROG, 0.6, 1.2);
+  p.fine('M146 207l7 1M144 205l7 -2M148 209l5 2', 1, 0.8);
+  // The foreleg, straight down to its fingers.
+  p.shape('M156 182C158 192 160 198 162 204L158 206H172L168 203C166 196 165 188 164 180Z', FROG, 0.6, 1.2);
+  p.label('mask', 250, 70, 166, 158);
+  p.label('blotches', 250, 128, 116, 168);
+  p.label('legs', 250, 186, 104, 186);
+  p.scale(30, 140, g, scale);
+  return p.svg(380, 250, 'Field sketch of a common frog sitting on the bank at the water\'s edge');
+}
+
+/**
+ * Common minnows: a few swimming together under the surface, side on, the dark bars along their
+ * flanks, forked tails and small fins.
+ * @param {import('./pen.js').Pen} p @param {string} [scale]
+ */
+export function minnows(p, scale) {
+  const f = p.f;
+  p.tint('M40 96H236V244H40Z', WASH.water, 0.32);
+  p.line(wave(40, 236, 96, 1.3, 26), 1.2);
+  p.fine('M50 236C80 230 120 240 150 234C180 228 210 236 236 232', 1, 0.5);
+  /**
+   * One minnow, its snout at (x, y), w long, heading left (dir -1) or right (1).
+   * @param {number} x @param {number} y @param {number} w @param {number} dir
+   */
+  const fish = (x, y, w, dir) => {
+    /** @type {number[][]} */ const c = [];
+    /** @type {number[]} */ const r = [];
+    for (let i = 0; i <= 20; i++) {
+      const s = i / 20;
+      c.push([x - dir * s * w * 0.82, y + Math.sin(s * Math.PI) * w * 0.02]);
+      r.push(w * (s < 0.15 ? 0.03 + s * 0.48 : s < 0.45 ? 0.1 : 0.1 - 0.075 * ((s - 0.45) / 0.55)));
+    }
+    const tx = x - dir * w * 0.82;
+    // The forked tail, then the body over it, the fins, the bars, the eye.
+    p.shape(`M${f(tx)} ${f(y)}L${f(tx - dir * w * 0.2)} ${f(y - w * 0.11)}L${f(tx - dir * w * 0.13)} ${f(y)}L${f(tx - dir * w * 0.2)} ${f(y + w * 0.11)}Z`, MINNOW, 0.6, 1);
+    p.shape(tube(c, r, f), MINNOW, 0.55, 1.2);
+    p.shape(`M${f(x - dir * w * 0.42)} ${f(y - w * 0.09)}l${f(-dir * w * 0.06)} ${f(-w * 0.08)}l${f(-dir * w * 0.08)} ${f(w * 0.07)}Z`, MINNOW, 0.6, 0.9);
+    p.shape(`M${f(x - dir * w * 0.5)} ${f(y + w * 0.09)}l${f(-dir * w * 0.05)} ${f(w * 0.07)}l${f(-dir * w * 0.08)} ${f(-w * 0.06)}Z`, MINNOW, 0.6, 0.9);
+    p.tint(tube(c.slice(2, 18).map((q) => [q[0], q[1] + w * 0.035]), r.slice(2, 18).map((v) => v * 0.45), f), '#E6E2D4', 0.75);
+    let bars = '';
+    for (let i = 0; i < 8; i++) { const q = c[4 + i * 2]; bars += `M${f(q[0])} ${f(q[1] - w * 0.06)}l${f(-dir * 1.5)} ${f(w * 0.08)}`; }
+    p.fine(bars, 1.8, 0.65);
+    p.dot(x - dir * w * 0.08, y - w * 0.018, Math.max(1, w * 0.018));
+    return c;
+  };
+  const a = fish(200, 136, 92, 1);
+  fish(130, 172, 80, 1);
+  fish(206, 206, 70, 1);
+  p.label('bars', 250, 74, a[10][0], a[10][1] - 2);
+  p.label('tail', 250, 132, 200 - 92 * 0.95, 136);
+  p.label('school', 250, 196, 160, 200);
+  p.scale(30, 120, 220, scale);
+  return p.svg(380, 252, 'Field sketch of three common minnows swimming together under the water');
+}
+
+/**
+ * Southern hawker: from above, hovering over the pond, its four clear wings held out flat, the
+ * green and blue spots down its long abdomen and the big eyes meeting on top of its head.
+ * @param {import('./pen.js').Pen} p @param {string} [scale]
+ */
+export function dragonfly(p, scale) {
+  const f = p.f, cx = 138, top = 98;
+  p.tint('M40 96H236V250H40Z', WASH.water, 0.22);
+  p.fine('M52 236C80 232 110 240 140 236M170 116C190 112 210 118 230 114', 0.9, 0.4);
+  // The four wings, clear with fine veins and a dark spot near each tip.
+  /** @param {number} y0 @param {number} len @param {number} wid @param {number} side @param {number} sweep */
+  const wing = (y0, len, wid, side, sweep) => {
+    const x0 = cx + side * 6, x1 = cx + side * (6 + len);
+    const d = `M${f(x0)} ${f(y0)}C${f(x0 + side * len * 0.4)} ${f(y0 - wid + sweep)} ${f(x1 - side * 10)} ${f(y0 - wid * 0.6 + sweep)} ${f(x1)} ${f(y0 + sweep)}C${f(x1 - side * 6)} ${f(y0 + wid * 0.7 + sweep)} ${f(x0 + side * len * 0.5)} ${f(y0 + wid * 0.6)} ${f(x0)} ${f(y0 + 4)}Z`;
+    p.shape(d, '#DDE8EE', 0.45, 0.9);
+    let v = '';
+    for (let k = 1; k < 4; k++) v += `M${f(x0)} ${f(y0 + 1)}C${f(x0 + side * len * 0.4)} ${f(y0 - wid * 0.25 * k + sweep * 0.5)} ${f(x1 - side * 20)} ${f(y0 - wid * 0.1 * k + sweep)} ${f(x1 - side * 4)} ${f(y0 + sweep)}`;
+    p.fine(v, 0.5, 0.4);
+    p.oval(x1 - side * 10, y0 - 2 + sweep, 3.4, 1.6, WASH.tip, 0.9, 0.6);
+  };
+  for (const side of [-1, 1]) { wing(top + 34, 86, 13, side, -6); wing(top + 46, 80, 16, side, 6); }
+  // The abdomen, long and slim, ringed and spotted.
+  /** @type {number[][]} */ const c = [];
+  /** @type {number[]} */ const r = [];
+  for (let i = 0; i <= 24; i++) { const s = i / 24; c.push([cx, top + 52 + s * 96]); r.push(s < 0.08 ? 5 - s * 25 : s < 0.9 ? 3 : 3 + (s - 0.9) * 8); }
+  p.shape(tube(c, r, f), '#4A4A38', 0.55, 1.2);
+  let rings = '';
+  for (let k = 1; k < 9; k++) { const y = top + 52 + k * 10.5; rings += `M${cx - 3} ${f(y)}h6`; }
+  p.fine(rings, 0.8, 0.6);
+  for (let k = 0; k < 8; k++) {
+    const y = top + 58 + k * 10.5, col = k < 6 ? HAWKER : SPOT;
+    p.dot(cx - 1.6, y, 1.4, col); p.dot(cx + 1.6, y, 1.4, col);
+  }
+  // The thorax, green-striped, and the head with its great eyes meeting on top.
+  p.oval(cx, top + 40, 8, 13, HAWKER, 0.6, 1.2);
+  p.fine(`M${cx - 4} ${top + 32}l2 14M${cx + 4} ${top + 32}l-2 14`, 1.2, 0.7);
+  p.oval(cx - 5, top + 22, 6.2, 6, '#5E8C66', 0.75, 1.1);
+  p.oval(cx + 5, top + 22, 6.2, 6, '#5E8C66', 0.75, 1.1);
+  p.fine(`M${cx} ${top + 16}V${top + 28}`, 0.8, 0.7);
+  p.label('eyes', 250, 74, cx + 7, top + 20);
+  p.label('wings', 250, 132, cx + 70, top + 44);
+  p.label('spots', 250, 190, cx + 2, top + 110);
+  p.scale(30, top + 16, top + 148, scale);
+  return p.svg(380, 256, 'Field sketch of a southern hawker from above, its four wings held out flat');
+}
+
+/**
+ * Midges: a dancing cloud over the reeds at dusk, and one midge drawn large in a circle beside it:
+ * a slim body, two narrow wings, long legs and feathery antennae.
+ * @param {import('./pen.js').Pen} p @param {string} [scale]
+ */
+export function midges(p, scale) {
+  const f = p.f;
+  p.tint('M40 214H236V248H40Z', WASH.water, 0.32);
+  p.line(wave(40, 236, 214, 1.2, 24), 1.1);
+  for (const [bx, tx, ty, bend] of [[52, 50, 120, -4], [62, 70, 140, 5], [76, 74, 112, -3], [200, 206, 130, 4], [214, 210, 150, -4]]) p.shape(blade(bx, 214, tx, ty, 2.4, bend), WASH.green, 0.42, 1);
+  // The cloud: a tall loose column of specks over the water, thicker in the middle.
+  for (let i = 0; i < 90; i++) {
+    const u = scatter(i, 5), v = scatter(i, 6);
+    const y = 120 + v * 80, half = 6 + 18 * Math.sin(v * Math.PI);
+    p.dot(104 + (u - 0.5) * 2 * half, y, 0.9);
+  }
+  // One midge, large, in a circle.
+  const mx = 190, my = 74;
+  p.oval(mx, my, 34, 34, '#F4EEE4', 0.2, 0.9);
+  p.fine(`M${mx - 30} ${my + 16}L104 138`, 0.8, 0.4);
+  p.shape(`M${mx - 18} ${my + 4}C${mx - 10} ${my} ${mx + 8} ${my - 2} ${mx + 18} ${my + 2}C${mx + 8} ${my + 6} ${mx - 10} ${my + 7} ${mx - 18} ${my + 4}Z`, '#6A6A52', 0.6, 1);
+  p.oval(mx - 22, my + 2, 4.4, 3.8, '#55553F', 0.75, 1);
+  p.shape(`M${mx - 6} ${my}C${mx} ${my - 18} ${mx + 14} ${my - 22} ${mx + 22} ${my - 18}C${mx + 14} ${my - 12} ${mx + 4} ${my - 6} ${mx - 2} ${my}Z`, '#DDE8EE', 0.5, 0.8);
+  let legs = '';
+  for (const [dx, ex, ey] of [[-10, -20, 18], [-4, -8, 22], [2, 6, 22]]) legs += `M${mx + dx} ${my + 5}L${mx + ex} ${my + ey}`;
+  p.fine(legs, 0.8, 0.8);
+  let ant = '';
+  for (let k = 0; k < 6; k++) ant += `M${f(mx - 26 - k * 1.6)} ${f(my - k * 1.4)}l-3 -3M${f(mx - 26 - k * 1.6)} ${f(my - k * 1.4)}l-4 1`;
+  p.fine(`M${mx - 25} ${my}L${mx - 35} ${my - 9}` + ant, 0.6, 0.8);
+  p.label('cloud', 250, 150, 112, 150);
+  p.label('midge', 250, 74, mx + 30, my - 6);
+  p.scale(30, 120, 214, scale);
+  return p.svg(380, 252, 'Field sketch of a cloud of midges dancing over the reeds, and one midge drawn large');
+}
