@@ -76,6 +76,47 @@ export function restOn(a, b, r) {
 }
 
 /**
+ * A stone pile from one stone, many times over: seeded copies set down one at a time, each where it
+ * comes to rest lowest among a few seeded places within the footprint (on the ground, or nestled on
+ * the stones already there), so the pile grows from the bottom, every stone rests on the ground or on
+ * stones set before it, and none sinks into another. A stone is taken as a squat ball, its half
+ * width across and its half height up (the resting is worked out with heights stretched so it is
+ * round). Pure.
+ * @param {number} seed @param {number} halfW the stone mesh's half width at size 1 @param {number} halfH its half height
+ * @param {{ count: number, radiusM: number, tries: number, sizeJitter: number, tintJitter: number }} S
+ *   pack.json piles.look.stones: count, stones in a full pile; radiusM, the footprint they fall within;
+ *   tries, seeded places tried for each; sizeJitter, tintJitter as the logs'
+ * @returns {StackedLog[]} bottom up (the same record as a log: y is the stone's underside)
+ */
+export function stoneHeap(seed, halfW, halfH, S) {
+  /** @type {{ x: number, z: number, cy: number, r: number, h: number }[]} */ const placed = [];
+  /** @type {StackedLog[]} */ const out = [];
+  for (let i = 0; i < S.count; i++) {
+    /** @param {number} k */
+    const u = (k) => u01(hash32(seed, i, k));
+    const size = 1 + (2 * u(1) - 1) * S.sizeJitter, r = halfW * size, h = halfH * size;
+    let best = null;
+    for (let t = 0; t < S.tries; t++) {
+      // Within the footprint, a little nearer the middle as more stones lie there.
+      const a = u01(hash32(seed, i, 100 + t)) * 2 * Math.PI, d = (S.radiusM - r) * Math.sqrt(u01(hash32(seed, i, 200 + t)));
+      const x = Math.cos(a) * d, z = Math.sin(a) * d;
+      // Resting height of its middle: on the ground, or on whichever stone below holds it highest.
+      // Heights are stretched by halfW / halfH, so each stone is a ball of radius r there.
+      let cy = r;
+      for (const q of placed) {
+        const dd = Math.hypot(x - q.x, z - q.z), rr = r + q.r;
+        if (dd < rr) cy = Math.max(cy, q.cy + Math.sqrt(rr * rr - dd * dd));
+      }
+      if (!best || cy < best.cy) best = { x, z, cy };
+    }
+    const b = /** @type {{ x: number, z: number, cy: number }} */ (best);
+    placed.push({ x: b.x, z: b.z, cy: b.cy, r, h });
+    out.push({ x: b.x, y: (b.cy * halfH) / halfW - h, z: b.z, yaw: u(3) * 2 * Math.PI, size, tint: 1 + (2 * u(5) - 1) * S.tintJitter });
+  }
+  return out;
+}
+
+/**
  * How many of the pile's logs show at a fullness: the stage's share of them, at least one.
  * @param {number} total @param {number} share 0..1
  */

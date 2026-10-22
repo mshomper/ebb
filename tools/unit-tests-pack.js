@@ -11,7 +11,7 @@ import { emptyPack, cleanPack, sizeOf, add, take, has, handfulsOf, packHolds, no
 import { pileWord, pileLook, slotFor, setDown, takeUp } from '../src/world/pack/piles.js';
 import { createPiles } from '../src/world/pack/piles-live.js';
 import { splitPieces, firstPieces, buildsUp } from '../src/world/pack/pile-pieces.js';
-import { logStack, logsShown } from '../src/world/pack/log-stack.js';
+import { logStack, stoneHeap, logsShown } from '../src/world/pack/log-stack.js';
 import { atCamp } from '../src/world/pack/camp.js';
 import { padOf } from '../src/world/camp/layout.js';
 import { offCampGround } from '../src/world/pieces/camp-clear.js';
@@ -100,6 +100,23 @@ export function addPackTests(test, assert, eq) {
       if (i > 0) assert(C[i].cy - C[i].r >= C[i - 1].cy - C[i - 1].r - 1e-9, 'bottom up');
     }
     eq(logsShown(a.length, 0.3), 3); eq(logsShown(a.length, 1), a.length); eq(logsShown(a.length, 0), 1);
+  });
+
+  test(G, 'a stone pile of seeded stones: each rests on the ground or on stones set before it, none sinks into another', async () => {
+    const { recipe } = await load();
+    const S = recipe.piles.look.stones, w = 0.15, h = 0.12, k = w / h;
+    const a = stoneHeap(7, w, h, S);
+    eq(JSON.stringify(a), JSON.stringify(stoneHeap(7, w, h, S)), 'the same seed gives the same pile');
+    eq(a.length, S.count);
+    // In heights stretched by w / h each stone is a ball of radius w * size.
+    const B = a.map((g) => ({ x: g.x, z: g.z, cy: (g.y + h * g.size) * k, r: w * g.size }));
+    B.forEach((b, i) => {
+      assert(Math.hypot(b.x, b.z) + b.r <= S.radiusM + 1e-9, `stone ${i} within the footprint`);
+      const onGround = Math.abs(b.cy - b.r) < 1e-9;
+      const resting = B.slice(0, i).some((q) => Math.abs(Math.hypot(q.x - b.x, q.z - b.z, q.cy - b.cy) - (q.r + b.r)) < 1e-6);
+      assert(onGround || resting, `stone ${i} rests on the ground or on a stone set before it`);
+      for (let j = 0; j < i; j++) assert(Math.hypot(B[j].x - b.x, B[j].z - b.z, B[j].cy - b.cy) >= B[j].r + b.r - 1e-6, `stones ${j} and ${i} do not overlap`);
+    });
   });
 
   test(G, 'a new pack is empty with six pouches', async () => {

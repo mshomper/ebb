@@ -25,8 +25,8 @@ import { createCreaturePass } from '../../render/passes/creatures.js';
 import { packMesh } from '../creatures/bodies.js';
 import { pileShape } from './piles.js';
 import { splitPieces, firstPieces, buildsUp, scaledMesh } from './pile-pieces.js';
-import { logStack, logsShown } from './log-stack.js';
-import { pickupMesh, stickPileMesh, stonePileMesh, roundLogMesh } from './pickup-meshes.js';
+import { logStack, stoneHeap, logsShown } from './log-stack.js';
+import { pickupMesh, pebbleMesh, stickPileMesh, stonePileMesh, roundLogMesh } from './pickup-meshes.js';
 
 /** @typedef {import('./pickup-meshes.js').Mesh} Mesh */
 
@@ -161,8 +161,29 @@ export function createPackDraw(o) {
   // (stack.model), in a few shades, and paler for drift twigs. Keys 'log:<shade>' and 'log-pale:<shade>'.
   const ST = L.stack;
   let logRadius = ST?.radiusM ?? 0.13;
-  /** Each pile's logs, by its seed (the layout never changes for a pile). @type {Map<number, import('./log-stack.js').StackedLog[]>} */
+  /** Each pile's logs or stones, by its seed (the layout never changes for a pile). @type {Map<string, import('./log-stack.js').StackedLog[]>} */
   const stacks = new Map();
+  // The stone pile from one stone the same way (stoneHeap): a lumpy stand-in until Matt's single
+  // stone loads (stones.model). Keys 'stone1:<shade>'.
+  const SN = L.stones;
+  let stoneHalf = { w: (SN?.halfWM ?? 0.15), h: (SN?.halfHM ?? 0.12) };
+  /** @param {Mesh} m */
+  function setStoneMesh(m) {
+    let top = 0, wide = 0;
+    for (let i = 0; i < m.count; i++) { top = Math.max(top, m.vertices[i * 9 + 1]); wide = Math.max(wide, Math.abs(m.vertices[i * 9]), Math.abs(m.vertices[i * 9 + 2])); }
+    stoneHalf = { w: wide * 0.9, h: top / 2 };
+    [...stacks.keys()].filter((k) => k.startsWith('s')).forEach((k) => stacks.delete(k));
+    (SN.shades ?? ST?.shades ?? [1]).forEach((/** @type {number} */ k, /** @type {number} */ i) => put(pilePass, `stone1:${i}`, paler(m, { mix: 1 - k, toward: [0, 0, 0] })));
+  }
+  if (SN) {
+    setStoneMesh(pebbleMesh(0x570e, [SN.halfWM ?? 0.15, SN.halfHM ?? 0.12, SN.halfWM ?? 0.15], 0.12, SN.color ?? [0.3, 0.29, 0.27], 0));
+    if (SN.model) {
+      fetch(new URL(`../../../${SN.model}`, import.meta.url))
+        .then((r) => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.arrayBuffer(); })
+        .then((b) => setStoneMesh(campModelMesh(readGlb(b), SN.color ?? [0.3, 0.29, 0.27])))
+        .catch((e) => console.info(`pack: ${SN.model} not loaded, drawing the stand-in stone (${e.message})`));
+    }
+  }
   /** @param {Mesh} m */
   function setLogMesh(m) {
     // A split log is not quite round: rest it on the mean of its half height and half width.
@@ -242,19 +263,22 @@ export function createPackDraw(o) {
    * @param {number} x @param {number} z @param {number} yaw @param {number} seed
    */
   function addLogs(out, sh, x, z, yaw, seed) {
-    if (!ST || (sh.model !== 'stick' && sh.model !== 'stick-pale')) return false;
-    let logs = stacks.get(seed);
-    if (!logs) { logs = logStack(seed, logRadius, ST); stacks.set(seed, logs); }
+    const stones = sh.model === 'stone';
+    if (stones ? !SN : (!ST || (sh.model !== 'stick' && sh.model !== 'stick-pale'))) return false;
+    const key = `${stones ? 's' : 'l'}${seed}`;
+    let logs = stacks.get(key);
+    if (!logs) { logs = stones ? stoneHeap(seed, stoneHalf.w, stoneHalf.h, SN) : logStack(seed, logRadius, ST); stacks.set(key, logs); }
     const share = sh.stage === 'heap' ? (L.heapShare ?? 0.15) : (L.stageShares ?? [0.3, 0.6, 0.85, 1])[/** @type {number} */ (sh.stage)] ?? 1;
     const n = logsShown(logs.length, share);
     const c = Math.cos(yaw), s = Math.sin(yaw), y0 = ground(x, z) - L.sinkM;
-    const pale = sh.model === 'stick-pale' ? 'log-pale' : 'log';
-    const shades = (ST.shades ?? [1]).length;
+    const pale = stones ? 'stone1' : sh.model === 'stick-pale' ? 'log-pale' : 'log';
+    const shades = ((stones ? SN.shades : ST.shades) ?? ST?.shades ?? [1]).length;
+    const jitter = (stones ? SN.tintJitter : ST.tintJitter) || 1;
     for (let i = 0; i < n; i++) {
       const g = logs[i];
       // The pile's frame turned by its yaw (as the creature pass turns a mesh: x toward +x, z toward +z).
       const wx = x + g.x * c + g.z * s, wz = z - g.x * s + g.z * c;
-      const shade = Math.min(shades - 1, Math.max(0, Math.round(((g.tint - 1) / (2 * (ST.tintJitter || 1)) + 0.5) * (shades - 1))));
+      const shade = Math.min(shades - 1, Math.max(0, Math.round(((g.tint - 1) / (2 * jitter) + 0.5) * (shades - 1))));
       out.push({ x: wx, y: y0 + g.y, z: wz, yaw: yaw + g.yaw, size: g.size, mesh: `${pale}:${shade}` });
     }
     return true;

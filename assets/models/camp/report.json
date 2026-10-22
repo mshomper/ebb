@@ -251,5 +251,26 @@
     0.087
    ]
   }
+ },
+ "stone": {
+  "source": "Ebb_stone_single.obj",
+  "file": "stone.glb",
+  "bytes": 122768,
+  "sourceBytes": 41042,
+  "trianglesBefore": 4672,
+  "triangles": 4672,
+  "maps": 512,
+  "bounds": {
+   "min": [
+    -0.075,
+    0,
+    -0.075
+   ],
+   "max": [
+    0.075,
+    0.122,
+    0.075
+   ]
+  }
  }
 }

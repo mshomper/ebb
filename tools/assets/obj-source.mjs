@@ -42,6 +42,28 @@ function longAxis(V) {
   return { c, v };
 }
 
+/**
+ * The direction across the long axis in which the points spread least (the second axis by power
+ * iteration with the long axis taken out, then square to both).
+ * @param {number[][]} V @param {number[]} c @param {number[]} v the long axis
+ */
+function thinnest(V, c, v) {
+  const C = [[0, 0, 0], [0, 0, 0], [0, 0, 0]];
+  for (const p of V) {
+    const d = [p[0] - c[0], p[1] - c[1], p[2] - c[2]], t = d[0] * v[0] + d[1] * v[1] + d[2] * v[2];
+    const q = [d[0] - t * v[0], d[1] - t * v[1], d[2] - t * v[2]];
+    for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) C[i][j] += q[i] * q[j];
+  }
+  let w = [v[1], -v[0], 0.3];
+  for (let it = 0; it < 200; it++) {
+    const n = [0, 1, 2].map((i) => C[i][0] * w[0] + C[i][1] * w[1] + C[i][2] * w[2]);
+    const l = Math.hypot(...n) || 1;
+    w = n.map((x) => x / l);
+  }
+  const s = [v[1] * w[2] - v[2] * w[1], v[2] * w[0] - v[0] * w[2], v[0] * w[1] - v[1] * w[0]];
+  return s[1] < 0 ? s.map((x) => -x) : s;
+}
+
 /** A small seeded hash to 0..1. @param {number} a @param {number} b @param {number} c */
 function hash01(a, b, c) {
   let h = (Math.imul(a | 0, 0x9e3779b1) ^ Math.imul(b | 0, 0x85ebca6b) ^ Math.imul(c | 0, 0xc2b2ae35)) >>> 0;
@@ -70,7 +92,30 @@ async function paletteOf(from) {
     const s = px.slice(Math.floor(px.length * a), Math.floor(px.length * b));
     return [0, 1, 2].map((c) => s.reduce((t, p) => t + toLinear(p[c]), 0) / s.length);
   };
-  return { bark: mean(0.15, 0.65), end: mean(0.88, 0.99) };
+  return { bark: mean(0.15, 0.65), end: mean(0.88, 0.99), dark: mean(0.3, 0.6), mid: mean(0.6, 0.9) };
+}
+
+/**
+ * Each triangle into four, through its edges' midpoints (shared, so the mesh stays joined). The
+ * shape stays as it was; there are only more vertices to paint. In place.
+ * @param {number[][]} P @param {number[]} T
+ */
+function subdivide(P, T) {
+  /** @type {Map<string, number>} */ const mid = new Map();
+  /** @param {number} a @param {number} b */
+  const at = (a, b) => {
+    const k = a < b ? `${a},${b}` : `${b},${a}`;
+    let i = mid.get(k);
+    if (i === undefined) { i = P.length; P.push([0, 1, 2].map((c) => (P[a][c] + P[b][c]) / 2)); mid.set(k, i); }
+    return i;
+  };
+  const out = [];
+  for (let t = 0; t < T.length; t += 3) {
+    const [a, b, c] = [T[t], T[t + 1], T[t + 2]], ab = at(a, b), bc = at(b, c), ca = at(c, a);
+    out.push(a, ab, ca, ab, b, bc, ca, bc, c, ab, bc, ca);
+  }
+  T.length = 0;
+  T.push(...out);
 }
 
 /**
@@ -82,12 +127,17 @@ export async function readObjSource(path, m, read, sourceDir) {
   const { V, T } = parseObj(readFileSync(path, 'utf8'));
   // Lay the long axis along +x, about the middle (y keeps up as near as it can).
   const { c, v } = longAxis(V);
-  const up0 = Math.abs(v[1]) < 0.9 ? [0, 1, 0] : [1, 0, 0];
+  // Up: as near the file's up as it can be, or (restFlat, a stone) its thinnest direction, so it
+  // lies on its flattest side.
+  const up0 = m.restFlat ? thinnest(V, c, v) : Math.abs(v[1]) < 0.9 ? [0, 1, 0] : [1, 0, 0];
   const d = v[0] * up0[0] + v[1] * up0[1] + v[2] * up0[2];
   let y = [up0[0] - d * v[0], up0[1] - d * v[1], up0[2] - d * v[2]];
   const yl = Math.hypot(...y); y = y.map((q) => q / yl);
   const z = [v[1] * y[2] - v[2] * y[1], v[2] * y[0] - v[0] * y[2], v[0] * y[1] - v[1] * y[0]];
   const P = V.map((p) => { const q = [p[0] - c[0], p[1] - c[1], p[2] - c[2]]; return [q[0] * v[0] + q[1] * v[1] + q[2] * v[2], q[0] * y[0] + q[1] * y[1] + q[2] * y[2], q[0] * z[0] + q[1] * z[1] + q[2] * z[2]]; });
+
+  // A light model gets more vertices to carry its paint (each triangle into four, `subdivide` times).
+  for (let s = 0; s < (m.subdivide ?? 0); s++) subdivide(P, T);
 
   // Smooth normals, area weighted.
   const N = P.map(() => [0, 0, 0]);
@@ -104,7 +154,20 @@ export async function readObjSource(path, m, read, sourceDir) {
   let x0 = Infinity, x1 = -Infinity, R = 0;
   for (const p of P) { x0 = Math.min(x0, p[0]); x1 = Math.max(x1, p[0]); R = Math.max(R, Math.hypot(p[1], p[2])); }
   const colors = new Float32Array(P.length * 4);
-  P.forEach((p, i) => {
+  if (m.paint?.style === 'stone') {
+    // A stone: its pile's greys in soft blotches at two sizes, with pale flecks (lichen, quartz).
+    const span = x1 - x0;
+    P.forEach((p, i) => {
+      const q = (/** @type {number} */ s) => p.map((x) => Math.floor((x / span) * s));
+      const blot = 0.6 * hash01(...q(5)) + 0.4 * hash01(...q(13).map((x, k) => x + 31 * k));
+      const fleck = hash01(...q(40).map((x, k) => x * 3 + k)) > 0.94 ? 1 : 0;
+      for (let k = 0; k < 3; k++) {
+        const base = pal.dark[k] * (1 - blot) + pal.mid[k] * blot;
+        colors[i * 4 + k] = base * (1 - fleck) + pal.end[k] * fleck;
+      }
+      colors[i * 4 + 3] = 1;
+    });
+  } else P.forEach((p, i) => {
     const ang = Math.atan2(p[2], p[1]);
     // Streaks: by angle round the log (along the grain), with a little along its length.
     const streak = 0.78 + 0.34 * hash01(Math.floor((ang + Math.PI) * 18), Math.floor((p[0] - x0) * 6), 7);
