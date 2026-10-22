@@ -67,7 +67,9 @@
   transform: translateX(-50%);
   z-index: 10;
   display: flex;
-  gap: 4px;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
   padding: 6px;
   background: rgba(30, 38, 36, 0.72);
   border: 1px solid rgba(244, 238, 228, 0.12);
@@ -76,6 +78,74 @@
   max-width: calc(100vw - 24px);
 }
 .ebb-ground[hidden] { display: none; }
+.ebb-ground__btns { display: flex; gap: 4px; }
+/* The pouch row (src/ui/pack.js), with a thin line between it and the buttons. */
+.ebb-ground__pouches:empty { display: none; }
+.ebb-ground__pouches { align-self: stretch; padding-bottom: 6px; border-bottom: 1px solid rgba(244, 238, 228, 0.12); }
+
+.ebb-pouches__row { display: flex; justify-content: center; gap: 6px; }
+.ebb-pouches__row + .ebb-pouches__row { margin-top: 6px; }
+.ebb-pouch {
+  appearance: none;
+  -webkit-appearance: none;
+  flex: none;
+  width: 48px;
+  height: 48px;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--ui-cream);
+  cursor: pointer;
+}
+.ebb-pouch:hover { background: rgba(244, 238, 228, 0.1); }
+.ebb-pouch:focus-visible { outline: 2px solid var(--wordmark-dark); outline-offset: 2px; }
+.ebb-pouch.is-empty { opacity: 0.55; cursor: default; }
+.ebb-pouch.is-empty:hover { background: transparent; }
+.ebb-pouch__svg { display: block; width: 36px; height: 36px; }
+/* Holding the pot (Phase 2): the pouches dim. */
+.ebb-ground__pouches.is-holding .ebb-pouch { opacity: 0.4; }
+
+/* The "here" bar (src/ui/ground-here.js): just right of the ground bar, its buttons in cream, for
+   what you can do right where you stand. Its left edge is set from the ground bar's place. */
+.ebb-here {
+  --wk-icon: 26px;
+  position: fixed;
+  bottom: max(12px, env(safe-area-inset-bottom));
+  z-index: 10;
+  display: flex;
+  gap: 4px;
+  padding: 6px;
+  background: rgba(30, 38, 36, 0.72);
+  border: 1px solid rgba(244, 238, 228, 0.12);
+  border-radius: 18px;
+  box-shadow: 0 6px 24px rgba(10, 14, 13, 0.28);
+}
+.ebb-here[hidden] { display: none; }
+@media (pointer: fine) {
+  .ebb-here { -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
+}
+.ebb-here .ebb-walk__btn {
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  height: auto;
+  min-height: 56px;
+  min-width: 72px;
+  padding: 6px 8px;
+  background: var(--ui-cream);
+  color: var(--ui-night);
+  border: 0;
+  border-radius: 12px;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+.ebb-here .ebb-walk__btn:hover { background: #fffaf2; }
+.ebb-here .icon { display: block; width: var(--wk-icon); height: var(--wk-icon); }
 @media (pointer: fine) {
   .ebb-ground { -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
 }

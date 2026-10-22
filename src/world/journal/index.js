@@ -130,6 +130,12 @@ export function createJournal(opts) {
    *   dragonfly is found along the line from the eye through it, since it is not on the ground
    */
   function cardAt(x, z, y) {
+    // Last, what can be gathered there (src/world/gather): its Gather buttons and its word.
+    const card = cardBase(x, z, y);
+    return opts.gather ? opts.gather.decorate(card, x, z) : card;
+  }
+  /** @param {number} x @param {number} z @param {number} [y] */
+  function cardBase(x, z, y) {
     // A frog first: they are small, and finding one is the point.
     const frog = creatures?.frogAt(x, z);
     if (frog) return frogCard(frog, world.state, words, world.env.recipes?.species?.frog?.presence);

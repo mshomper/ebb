@@ -80,6 +80,8 @@ import { loadPrefs, keepPrefs } from './save/prefs.js';
 import { fingerprint } from './save/backup.js';
 import { SECTIONS9, empty9 } from './save/migrate-format9.js';
 import { clickKind, clickPlan } from './world/walk/click.js';
+import { createPack } from './world/pack/index.js';
+import { createGather } from './world/gather/index.js';
 
 /**
  * @typedef {{ ok: true, tier: string, tierReasons: string[], adapterInfo: GPUAdapterInfo | null, features: string[], stop: () => void,
@@ -510,6 +512,18 @@ export async function startApp(canvas, hooks = {}) {
   sim.addSystem(underLog);
   finds.addSource(underLog.shown);
 
+  // The walker's pack (docs/future/13 section 4.1): cloth pouches on the ground bar, filled by Gather.
+  const pack = createPack({ recipe: await loadRecipe('world/pack'), you: () => walk.you(), day: () => clock.dayIndexOf(clock.worldT()) });
+  // Gathering on foot (section 4.2): Gather on a card walks you there, you kneel, a handful goes in.
+  const gather = createGather({ recipe: await loadRecipe('world/gather'), seed, world, worldT: () => clock.worldT(), water, terrain, pack, walk,
+    tide: waterRecipe.tide, strandline: ww.shore.recipe?.look?.strandline ?? null,
+    weather: () => ({ weatherSeed: world.env.weatherSeed, weather: seasonsRecipe.weather, state: world.state?.weather }),
+    center: () => { const b = terrain.openBounds(); return [(b.openMin[0] + b.openMax[0]) / 2, (b.openMin[1] + b.openMax[1]) / 2]; } });
+  // Picked reeds grow back slowly, faster in rain (the growth step reads the gather recipe).
+  world.env.recipes.gather = gather.recipe;
+  on('world:ticked', () => gather.expire());
+  on('world:caught-up', () => gather.expire());
+
   /**
    * A dry, grassy ground point near the view's middle, out of the tide, for a test log: on a widening
    * spiral, the first where no water stands and the grass is thick. @returns {number[] | null}
@@ -792,13 +806,16 @@ export async function startApp(canvas, hooks = {}) {
       const card = q ? cards.cardAt(q[0], q[2], q[1]) : null;
       const kind = clickKind(card, cards.species);
       const plan = card ? clickPlan(kind, walk.distTo(card.wx ?? q?.[0], card.wz ?? q?.[2]), card.r ?? 0, walkerRecipe.click, !!card.gathers?.length) : null;
-      if (card && plan && plan.kind !== 'walk') tag = { name: card.name, x: e.clientX, y: e.clientY };
+      // Name what a click would gather, when there is something (else the thing itself).
+      if (card && plan && plan.kind !== 'walk') tag = { name: card.gathers?.[0]?.name ?? card.name, x: e.clientX, y: e.clientY };
     }
     const was = getStore('hover');
     if (tag || was) updateStore('hover', () => tag);
     canvas.classList.toggle('ebb-can-use', !!tag);
   });
-  canvas.addEventListener('pointerleave', () => { updateStore('hover', () => null); canvas.classList.remove('ebb-can-use'); });
+  const hoverOff = () => { if (getStore('hover')) updateStore('hover', () => null); canvas.classList.remove('ebb-can-use'); };
+  canvas.addEventListener('pointerleave', hoverOff);
+  canvas.addEventListener('pointerdown', hoverOff);
 
   /** Each frame: you reached the thing you clicked on, so its card opens beside it. */
   function arriveForCard() {
@@ -1026,6 +1043,12 @@ export async function startApp(canvas, hooks = {}) {
         clickBelow(a.x, a.y, pc ? [pc.x, point[1], pc.z] : point);
         return;
       }
+      // The pouches (src/world/pack): a pouch's card, Set down at camp, Empty.
+      if (a.type === 'pack.open') { pack.open(a.i, a.x, a.y); return; }
+      if (a.type === 'pack.setDown') { pack.setDown(a.i); return; }
+      if (a.type === 'pack.empty') { pack.empty(a.i); return; }
+      if (a.type === 'gather.take') { gather.take(a.n); return; }
+      if (a.type === 'gather.heapHere') { gather.heapHere(); return; }
       if (a.type === 'walk.up') { walk.up(); return; }
       if (a.type === 'walk.stuck') { walk.stuck(); return; }
       if (a.type === 'walk.posture') { walk.posture(a.posture); return; }
@@ -1426,6 +1449,7 @@ export async function startApp(canvas, hooks = {}) {
     camera.setViewport(cssW, cssH);
     walk.update(realDt);
     arriveForCard();
+    gather.update();
     camera.update(realDt);
     presence.update(realDt);
     updateRing();
@@ -1609,6 +1633,13 @@ export async function startApp(canvas, hooks = {}) {
      * @param {(x: number, z: number, y?: number) => any} cardAt @param {Record<string, any>} species
      */
     setCards(cardAt, species) { cards = { cardAt, species }; },
+    /**
+     * The walker's pack (src/world/pack/index.js): add, take, has, holds({ fuel: 1, stones: 2 }),
+     * room; it emits pack:changed { pouches, size } after every change.
+     */
+    pack,
+    /** Gathering (src/world/gather/index.js): the journal's cards gain their Gather buttons from it. */
+    gather,
     terrain,
     water,
     /** The live growth (habitat, plants) and the world the hourly tick runs on (tools/growth-lab.html). */

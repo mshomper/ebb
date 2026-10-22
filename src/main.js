@@ -32,6 +32,8 @@ import { mountHud } from './ui/hud.js';
 import { mountClockDial } from './ui/clock-dial.js';
 import { mountWalk } from './ui/walk.js';
 import { mountHoverTag } from './ui/hover-tag.js';
+import { mountPack } from './ui/pack.js';
+import { mountGroundHere } from './ui/ground-here.js';
 
 /** Shown in the corner badge when no build.json or local server info is available. */
 export const BUILD = 'm1-s3-palette';
@@ -90,12 +92,20 @@ startApp(canvas, { onDeviceLost: (rebuilding) => showRebuildingNote(rebuilding),
       mountWalk(hud.layer, (await loadRecipe('world/walker')).words);
       // Below, over something a click can use: a drawn hand and its name beside the pointer.
       mountHoverTag();
+      // The pouch row in the ground bar, and the "here" bar beside it (docs/future/13 section 4.1).
+      const groundBar = /** @type {HTMLElement | null} */ (hud.layer.querySelector('.ebb-ground'));
+      const pouchRow = /** @type {HTMLElement | null} */ (groundBar?.querySelector('.ebb-ground__pouches') ?? null);
+      const packApp = /** @type {any} */ (r).pack;
+      if (groundBar && pouchRow && packApp) {
+        mountPack(pouchRow, packApp.recipe.words, (k) => packApp.kinds.sketchOf(k));
+        mountGroundHere(hud.layer, groundBar);
+      }
       // The field journal (docs 13, 15): watches the world, writes notes, names what you tap.
       const [words, island, web, wash, list, naturalist] = await Promise.all([loadRecipe('world/journal'), loadRecipe('world/journal-island'),
         loadRecipe('world/journal-web'), loadRecipe('world/journal-wash'), loadRecipe('world/journal-list'), loadRecipe('world/naturalist')]);
       const journal = createJournal({ world: r.world, words, island, web, wash, list, creatures: /** @type {any} */ (r).creatures ?? null,
         finds: /** @type {any} */ (r).finds ?? null, keepsakes: /** @type {any} */ (r).keepsakes ?? null, pieces: /** @type {any} */ (r).pieces ?? null, lift: /** @type {any} */ (r).lift ?? null, nets: /** @type {any} */ (r).nets ?? null, shore: /** @type {any} */ (r).shorePresence ?? null,
-        schools: /** @type {any} */ (r).schools ?? [] });
+        schools: /** @type {any} */ (r).schools ?? [], gather: /** @type {any} */ (r).gather ?? null });
       // One click below walks and uses: the app reads what a point holds from the journal's cards.
       /** @type {any} */ (r).setCards?.(journal.cardAt, words.species);
       mountIslandNotes(document.body, words, naturalist);

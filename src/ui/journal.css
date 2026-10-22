@@ -663,7 +663,7 @@ button.ebb-jnotes__row:hover { background: rgba(30, 38, 36, 0.06); }
 /* How well a creature knows you (S6c): one word, never a number. */
 .ebb-idcard__word { flex: none; padding: 2px 10px; border-radius: 999px; background: rgba(95, 127, 91, 0.14); color: #3F5C3B; font-size: var(--text-small); font-weight: 800; white-space: nowrap; }
 .ebb-idcard__icon { width: 36px; height: 36px; flex: none; display: grid; place-items: center; border-radius: 50%; background: rgba(95, 127, 91, 0.14); color: var(--jr-moss); }
-.ebb-idcard__close { appearance: none; -webkit-appearance: none; width: 40px; height: 40px; margin: -6px -6px -6px 0; padding: 0; border: 0; border-radius: 10px; background: transparent; display: grid; place-items: center; cursor: pointer; }
+.ebb-idcard__close { appearance: none; -webkit-appearance: none; width: 48px; height: 48px; margin: -6px -6px -6px 0; padding: 0; border: 0; border-radius: 10px; background: transparent; display: grid; place-items: center; cursor: pointer; }
 .ebb-idcard__text { margin: 0; font-family: var(--font-voice); font-style: italic; font-weight: 400; font-size: calc(18px * var(--text-scale, 1)); }
 .ebb-idcard__suits { margin: 0; font-size: var(--text-small); color: var(--jr-soft); }
 .ebb-idcard__suits.is-pencil { color: var(--jr-pencil); }
@@ -684,6 +684,56 @@ button.ebb-jnotes__row:hover { background: rgba(30, 38, 36, 0.06); }
 }
 .ebb-idcard__open:hover { background: rgba(95, 127, 91, 0.12); }
 .ebb-idcard__open[hidden], .ebb-idcard__name[hidden] { display: none; }
+/* The card's actions as icons in one row (src/ui/card-actions.js; Matt, October 22, 2026): 48 px
+   each, the main one filled; the word shows on hover or focus, just under its icon, one at a time. */
+.ebb-idcard__acts { display: flex; gap: 8px; }
+.ebb-idcard__act {
+  appearance: none;
+  -webkit-appearance: none;
+  position: relative;
+  flex: none;
+  width: 48px;
+  height: 48px;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border: 1.5px solid var(--jr-moss);
+  border-radius: 12px;
+  background: transparent;
+  color: var(--jr-ink);
+  cursor: pointer;
+}
+.ebb-idcard__act .icon { width: 28px; height: 28px; }
+.ebb-idcard__act:hover { background: rgba(95, 127, 91, 0.16); }
+.ebb-idcard__act.is-main { background: var(--jr-moss); color: var(--jr-paper); }
+.ebb-idcard__act.is-main:hover { background: #4d6a4a; }
+.ebb-idcard__act[hidden] { display: none; }
+.ebb-idcard__act:focus-visible { outline: 2px solid var(--wordmark-light); outline-offset: 2px; }
+.ebb-idcard__act::after {
+  content: attr(data-label);
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2;
+  padding: 4px 10px;
+  border-radius: 8px;
+  background: rgba(30, 38, 36, 0.92);
+  color: var(--ui-cream);
+  font-family: var(--font-ui);
+  font-weight: 600;
+  font-size: var(--text-body);
+  font-style: normal;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+.ebb-idcard__act:hover::after, .ebb-idcard__act:focus-visible::after { opacity: 1; }
+/* What a Gather takes, small in the icon's top corner. */
+.ebb-idcard__mark { position: absolute; right: 2px; top: 2px; width: 16px; height: 16px; }
+.ebb-idcard__mark svg { display: block; width: 16px; height: 16px; }
 /* A named frog (S6c-3): what it is and since when, under its name; the name field on the card. */
 .ebb-idcard__sub { margin: -4px 0 0 46px; font-size: var(--text-small); color: var(--jr-soft); }
 .ebb-idcard__name { display: grid; gap: 8px; margin: 0; }

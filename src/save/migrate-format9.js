@@ -7,6 +7,9 @@
 // also holds its event list). The camp ground (CP-07, CP-08) and the pack (`pack9`) fill in their own
 // parts of the step here, and their own cleaners replace `clean9` for their section.
 
+import { emptyPack, cleanPack } from '../world/pack/model.js';
+import { cleanGather } from '../world/gather/events.js';
+
 /** The sections format 9 brings in, in the order they are written. */
 export const SECTIONS9 = /** @type {const} */ (['camp', 'pack', 'gather', 'dig', 'cook', 'dyes']);
 
@@ -18,7 +21,8 @@ export const SECTIONS9 = /** @type {const} */ (['camp', 'pack', 'gather', 'dig',
  * @returns {Record<string, any>}
  */
 export function empty9(id) {
-  if (id === 'gather') return { version: 1, events: [] };
+  if (id === 'pack') return emptyPack();
+  if (id === 'gather') return cleanGather(null);
   return { version: 1 };
 }
 
@@ -27,6 +31,9 @@ export function empty9(id) {
  * @param {Section9} id @param {any} v
  */
 export function clean9(id, v) {
+  // The pack and gathering clean their own sections (src/world/pack/model.js, src/world/gather/events.js).
+  if (id === 'pack') return cleanPack(v);
+  if (id === 'gather') return cleanGather(v);
   if (!v || typeof v !== 'object' || Array.isArray(v) || v.version !== 1) return empty9(id);
   const out = structuredClone(v);
   if (id === 'gather' && !Array.isArray(out.events)) out.events = [];

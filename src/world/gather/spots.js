@@ -122,6 +122,9 @@ export const WHERE = {
  */
 function onLine(k, line, ctx, recipe) {
   if (!ctx.heightOf || ctx.groundOf?.(k) === GROUND.rock) return false;
+  // Only the sea's shore: never a pond's or a stream's edge, whatever its height.
+  const s = ctx.summary;
+  if (s && (!s.shore[k] || (s.cls[k] !== WATER_CLASS.dry && s.cls[k] !== WATER_CLASS.sea))) return false;
   if (ctx.slopeOf && ctx.slopeOf(k) >= (recipe.bins?.steepDeg ?? 20)) return false;
   return Math.abs(ctx.heightOf(k) - line.level - (ctx.runupM ?? 0.05)) <= (recipe.strand?.toleranceM ?? 0.06);
 }
@@ -224,7 +227,10 @@ export function spotsNear(x, z, r, ctx, recipe) {
 export function spotsAt(x, z, ctx, recipe) {
   const d2 = (/** @type {Spot} */ s) => (s.x - x) * (s.x - x) + (s.z - z) * (s.z - z);
   const feet = footSpots(x, z, 0, ctx, recipe).sort((a, b) => d2(a) - d2(b) || KINDS.indexOf(a.kind) - KINDS.indexOf(b.kind));
-  return [...feet, ...binSpots(binOf(x, z), ctx, recipe)];
+  // A bin's spot sits at its qualifying cell: a tap a little way off (on the grass behind the
+  // beach) does not land on it.
+  const near = (recipe.bins?.tapM ?? 1);
+  return [...feet, ...binSpots(binOf(x, z), ctx, recipe).filter((s) => d2(s) <= near * near)];
 }
 
 /**

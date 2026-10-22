@@ -39,8 +39,10 @@ export function mountWalk(parent, words) {
   bar.hidden = true;
   bar.setAttribute('role', 'toolbar');
   bar.setAttribute('aria-label', 'On foot');
-  bar.innerHTML = btn('', 'sit', words.sit, ' data-posture="sit" aria-pressed="false"') + btn('', 'kneel', words.kneel, ' data-posture="kneel" aria-pressed="false"')
-    + btn('', 'feed', words.feed, ' data-feed') + btn('', 'net', words.net, ' data-net hidden');
+  // The pouch row sits above the buttons (src/ui/pack.js fills .ebb-ground__pouches).
+  bar.innerHTML = '<div class="ebb-ground__pouches"></div><div class="ebb-ground__btns">'
+    + btn('', 'sit', words.sit, ' data-posture="sit" aria-pressed="false"') + btn('', 'kneel', words.kneel, ' data-posture="kneel" aria-pressed="false"')
+    + btn('', 'feed', words.feed, ' data-feed') + btn('', 'net', words.net, ' data-net hidden') + '</div>';
 
   const go = /** @type {HTMLButtonElement} */ (root.querySelector('.ebb-walk__go'));
   const stuckBtn = /** @type {HTMLButtonElement} */ (root.querySelector('.ebb-walk__stuck'));
