@@ -7,7 +7,13 @@
 // footing a line of stones gives the walker, and the slab shapes.
 
 import { cleanPieces, emptyPieces, makeStone, makeLog, addPiece, removePiece, movePiece, countKind, pieceAt, arrivingStones, tipAngle, tipDone, stoneBone, leanBone, logBone, mul4 } from '../src/world/pieces/model.js';
-import { stoneShapes, logShapes } from '../src/world/pieces/meshes.js';
+import { stoneShapes } from '../src/world/pieces/meshes.js';
+import { bakeLogSeed, logLook, LOG_FORMS } from '../src/world/pieces/log-bake.js';
+import { hash32 } from '../src/core/rng.js';
+import { logAge, dampShade, logMoss } from '../src/world/pieces/log-age.js';
+import { initialJournal, foundFind } from '../src/world/journal/observe.js';
+import { setDriftwoodRecipe, noteLog } from '../src/ui/sketches/driftwood.js';
+import { drawSketch, hasSketch } from '../src/ui/sketches/index.js';
 import { strandLogs, cellHeights, strandMask } from '../src/world/pieces/driftwood.js';
 import { strandLines } from '../src/world/water/strandline.js';
 import { tideParams } from '../src/world/tide.js';
@@ -295,25 +301,34 @@ export function addPiecesTests(test, assert, eq) {
     eq(arrivingStones({ seed: 1, summary: pondSummary(), material: null, recipe: R, hour: 1, nextId: 50, existing: s.list }).length, R.arrive.count, 'logs do not take the stones\' room');
   });
 
-  test(G, 'log shapes bake the same every load, 1 long and 1 thick, weathered silver-grey; a roll shows the ground', async () => {
-    const R = await recipe;
-    const a = logShapes(R), b = logShapes(R);
-    eq(a.length, R.driftwood.shape.count, 'shapes');
+  test(G, 'each log bakes from its own seed the same every load, its trunk 1 long and 1 thick, weathered silver-grey; a roll shows the ground', async () => {
+    const R = await recipe, D = R.driftwood, T = D.shape.rings * D.shape.around;
     const means = [];
-    for (let i = 0; i < a.length; i++) {
-      assert(a[i].mesh.vertices.every((v, k) => v === b[i].mesh.vertices[k]), `shape ${i} the same`);
-      const V = a[i].mesh.vertices;
+    for (let i = 0; i < 24; i++) {
+      const seed = hash32(4242, i) >>> 0, aspect = 0.06 + 0.01 * i;
+      const a = bakeLogSeed(D, seed, aspect), b = bakeLogSeed(D, seed, aspect);
+      assert(a.mesh.vertices.every((v, k) => v === b.mesh.vertices[k]), `log ${i} the same`);
+      const V = a.mesh.vertices;
       let ylo = Infinity, zlo = Infinity, zhi = -Infinity, sum = 0, n = 0, bad = 0;
-      for (let v = 0; v < a[i].mesh.count; v++) {
-        ylo = Math.min(ylo, V[v * 9 + 1]); zlo = Math.min(zlo, V[v * 9 + 2]); zhi = Math.max(zhi, V[v * 9 + 2]);
+      for (let v = 0; v < a.mesh.count; v++) {
+        if (v < T) { ylo = Math.min(ylo, V[v * 9 + 1]); zlo = Math.min(zlo, V[v * 9 + 2]); zhi = Math.max(zhi, V[v * 9 + 2]); }
+        for (let c = 0; c < 9; c++) if (!Number.isFinite(V[v * 9 + c])) bad++;
         for (let c = 6; c < 9; c++) if (!(V[v * 9 + c] > 0 && V[v * 9 + c] < 0.5)) bad++;
         if (V[v * 9 + 4] > 0.3) { sum += V[v * 9 + 7]; n++; }
       }
-      assert(Math.abs(ylo) < 1e-6 && Math.abs(zhi - zlo - 1) < 1e-6, `shape ${i} on y = 0 and 1 long`);
-      assert(a[i].hy > 0.8 && a[i].hy < 2.2, `shape ${i} about 1 thick (${a[i].hy.toFixed(2)}, with its bow)`);
-      eq(bad, 0, `shape ${i} albedos outside physical wood`);
+      assert(Math.max(...a.mesh.indices) < a.mesh.count, `log ${i} indices in range`);
+      assert(Math.abs(ylo) < 1e-6 && Math.abs(zhi - zlo - 1) < 0.02, `log ${i} (${a.form}) on y = 0 and 1 long: ${(zhi - zlo).toFixed(3)}`);
+      assert(a.hy > 0.8 && a.hy < 2.2, `log ${i} (${a.form}) about 1 thick (${a.hy.toFixed(2)}, with its bow)`);
+      eq(bad, 0, `log ${i} albedos outside physical wood`);
       means.push(sum / n);
     }
+    // The four forms in about the recipe's mix, and time at sea from 0 to 1.
+    /** @type {Record<string, number>} */ const forms = {};
+    let seaLo = 1, seaHi = 0;
+    for (let s = 0; s < 1000; s++) { const l = logLook(hash32(77, s), D); forms[l.form] = (forms[l.form] ?? 0) + 1; seaLo = Math.min(seaLo, l.sea); seaHi = Math.max(seaHi, l.sea); }
+    eq(LOG_FORMS.filter((f) => forms[f] > 50).length, 4, `all four forms come: ${JSON.stringify(forms)}`);
+    assert(forms.straight > forms.rootend * 2, 'the root end is the rare one');
+    assert(seaLo < 0.05 && seaHi > 0.95, 'fresh and old logs both wash up');
     assert(means.every((m) => m > 0.22 && m < 0.36), `the tops are silver-grey (${means.map((m) => m.toFixed(2)).join(', ')})`);
     // Flat: squeezed across and set into the ground. Rolled: its middle moves over to the side.
     const A = 0.1, flat = logBone(0, 1, A, 0.2);
@@ -322,6 +337,48 @@ export function addPiecesTests(test, assert, eq) {
     const mid = [0, 1, 2].map((r) => roll[4 + r] * 0.5 + roll[12 + r]);
     assert(Math.abs(mid[0] - (Math.PI / 2) * A / 2) < 1e-6 && Math.abs(mid[1] - A / 2) < 1e-6, 'rolled a quarter turn: over by a quarter of its round, its middle the same height');
     return means.map((m) => m.toFixed(2)).join(', ');
+  });
+
+  test(G, 'a kept log ages where it lies: darker with weeks, mossy only in damp shade', async () => {
+    const A = (await recipe).driftwood.age;
+    eq(logAge(0, 0, A), 0, 'just set down');
+    eq(logAge(0, (A.fullDays + 1) * 24, A), 1, 'fully aged after fullDays');
+    assert(logAge(0, A.fullDays * 12, A) > 0.2 && logAge(0, A.fullDays * 12, A) < 0.8, 'half way');
+    const s = pondSummary(), mid = waterCellCenter(190), flat = () => 0;
+    const willow = [{ sp: 'willow', x: mid + 3.5, z: mid + 0.6, size: 1 }];
+    const near = dampShade({ x: mid + 3.2, z: mid, summary: s, plants: willow, ground: flat, A });
+    const far = dampShade({ x: mid + 12, z: mid, summary: s, plants: willow, ground: flat, A });
+    assert(near.damp > 0.5 && near.shade > 0.4, `by the pond under a willow: damp ${near.damp.toFixed(2)}, shade ${near.shade.toFixed(2)}`);
+    eq(`${far.damp} ${far.shade}`, '0 0', 'out on open dry ground');
+    // A bank rising over it on most sides shades it too.
+    const hollow = (/** @type {number} */ x, /** @type {number} */ z) => (Math.hypot(x - mid - 12, z - mid) > 1 ? 1 : 0);
+    assert(dampShade({ x: mid + 12, z: mid, summary: s, plants: [], ground: hollow, A }).shade > 0.5, 'a hollow under a bank is shaded');
+    const late = (A.moss.fullDays + 1) * 24;
+    assert(logMoss(0, late, near, A.moss) > 0.5, 'mossy after weeks in damp shade');
+    eq(logMoss(0, late, far, A.moss), 0, 'bare on open dry ground');
+    eq(logMoss(0, A.moss.startDays * 24 - 1, near, A.moss), 0, 'no moss in its first days');
+    return `damp ${near.damp.toFixed(2)}, shade ${near.shade.toFixed(2)}, moss ${logMoss(0, late, near, A.moss).toFixed(2)}`;
+  });
+
+  test(G, 'the Driftwood page: each log form found once from a tapped log, every form drawn, the sketch traced from the log tapped', async () => {
+    const R = await recipe, D = R.driftwood;
+    const words = await fetch('../recipes/world/journal.json').then((r) => r.json());
+    const rec = words.species.driftwood;
+    eq(rec.collection.map((/** @type {any} */ c) => c.id).join(), LOG_FORMS.join(), 'one item per form, in order');
+    let j = initialJournal(0);
+    const ctx = { state: null, hour: 5, words };
+    let r = foundFind(j, 'driftwood', ctx, 'forked');
+    j = r.journal;
+    assert(j.species.driftwood.ever && j.species.driftwood.learned.includes('item:forked'), 'a forked branch found');
+    eq(r.notes[0]?.text, rec.collection[2].found, 'its own note');
+    eq(foundFind(j, 'driftwood', ctx, 'forked').notes.length, 0, 'the same form again writes nothing');
+    eq(foundFind(j, 'driftwood', ctx, 'rootend').notes.length, 1, 'a new form does');
+    setDriftwoodRecipe(R);
+    for (const f of LOG_FORMS) assert(hasSketch(`driftwood:${f}`) && drawSketch(`driftwood:${f}`, { stage: 1, labels: {} }).includes('<path'), `${f} has a drawing`);
+    const seeds = [1, 2, 3].map((s) => hash32(31, s) >>> 0);
+    const svgs = seeds.map((seed) => { noteLog({ seed, size: 0.14, length: 1.2, form: logLook(seed, D).form }); return drawSketch('driftwood', { stage: 2, labels: {} }); });
+    assert(svgs.every((s) => s.includes('<path')) && new Set(svgs).size === 3, 'each tapped log draws its own sketch');
+    return seeds.map((s) => logLook(s, D).form).join(', ');
   });
 
   test(G, 'Sculpt chips always fill their rows: 4 to 10 chips', () => {

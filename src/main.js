@@ -13,13 +13,15 @@ import { mountJournal } from './ui/journal.js';
 import { mountIslandNotes } from './ui/island-notes.js';
 import { mountHaulTray } from './ui/haul-tray.js';
 import { registerCatchSketches } from './ui/sketches/catch.js';
+import { registerUnderLogSketches } from './ui/sketches/under-log.js';
+import { setDriftwoodRecipe, noteLog } from './ui/sketches/driftwood.js';
 import { mountFrogScale } from './ui/frog-scale.js';
 import { createJournal } from './world/journal/index.js';
 import { createProgress } from './world/expansion.js';
 import { keyOf } from './world/species.js';
 import { loadRecipe } from './core/recipes.js';
 import { on } from './core/events.js';
-import { get as getStore, defaultStore } from './core/store.js';
+import { get as getStore, subscribe as subscribeStore, defaultStore } from './core/store.js';
 import { startAudio } from './audio/index.js';
 import { mountNowPlaying } from './ui/now-playing.js';
 import { showElsewhere } from './ui/elsewhere.js';
@@ -89,9 +91,11 @@ startApp(canvas, { onDeviceLost: (rebuilding) => showRebuildingNote(rebuilding),
       const [words, island, web, wash, list, naturalist] = await Promise.all([loadRecipe('world/journal'), loadRecipe('world/journal-island'),
         loadRecipe('world/journal-web'), loadRecipe('world/journal-wash'), loadRecipe('world/journal-list'), loadRecipe('world/naturalist')]);
       const journal = createJournal({ world: r.world, words, island, web, wash, list, creatures: /** @type {any} */ (r).creatures ?? null,
-        finds: /** @type {any} */ (r).finds ?? null, keepsakes: /** @type {any} */ (r).keepsakes ?? null, pieces: /** @type {any} */ (r).pieces ?? null, nets: /** @type {any} */ (r).nets ?? null, shore: /** @type {any} */ (r).shorePresence ?? null,
+        finds: /** @type {any} */ (r).finds ?? null, keepsakes: /** @type {any} */ (r).keepsakes ?? null, pieces: /** @type {any} */ (r).pieces ?? null, lift: /** @type {any} */ (r).lift ?? null, nets: /** @type {any} */ (r).nets ?? null, shore: /** @type {any} */ (r).shorePresence ?? null,
         schools: /** @type {any} */ (r).schools ?? [] });
       mountIslandNotes(document.body, words, naturalist);
+      // The pages of what lives under a log draw from the creatures' own models (L3a).
+      registerUnderLogSketches(await loadRecipe('species/under-log'));
       // The haul tray (docs/future/12): what a lifted net brought up; living things go back from it.
       const netsApp = /** @type {any} */ (r).nets;
       if (netsApp) {
@@ -99,6 +103,9 @@ startApp(canvas, { onDeviceLost: (rebuilding) => showRebuildingNote(rebuilding),
         // Each living kind's page is traced from the first one you let go (src/ui/sketches/catch.js).
         registerCatchSketches(netsApp.recipe, () => getStore('nets')?.released ?? []);
       }
+      // The Driftwood page's sketch is traced from the log you last tapped (src/ui/sketches/driftwood.js).
+      setDriftwoodRecipe(await loadRecipe('world/pieces'));
+      subscribeStore('identify', (/** @type {any} */ c) => { if (c?.log) noteLog(c.log); });
       // Progress (src/world/expansion.js): the naturalist's rewards and species gifts, read from the
       // journal. A species recipe's gift goes under its journal page (frog.json's under frogs).
       /** @type {Record<string, any>} */ const gifts = {};

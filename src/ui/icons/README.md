@@ -49,6 +49,9 @@ Size and color come from CSS: set `width`/`height` on `.icon` and `color` on the
 | `loosestone` | a stone tipped up on one side, a dark gap under it: the naturalist's loose stones reward |
 | `lens` | a round glass with a glint on a short handle: the naturalist's hand lens reward |
 | `driftwood` | a bending branch at the water's edge with a broken stub and a knot, a ripple beyond: the naturalist's driftwood reward |
+| `woodlice` | from above, a domed oval of banded plates, two long antennae, short legs along its sides: the Woodlice page (L3a) |
+| `groundbeetle` | from above, long oval wing cases split down the middle, a narrower shield and head, six long legs: the Violet ground beetle page (L3a) |
+| `lift` | a log tipping up off the ground line from its far end, the damp patch beneath, a small arc: Lift on a stone's or a log's card, on foot (L3a) |
 | `carry` | a log lifted off the ground line, an arrow up above it: Carry on a stone's or a log's card (yours once driftwood washes up) |
 | `turtle` | a domed shell marked in plates on a stone's top, head raised: the pond turtles' page |
 | `toad` | a squat body low on the ground, walking, its back dotted with warts: the common toad's page |

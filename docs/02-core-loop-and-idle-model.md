@@ -66,7 +66,7 @@ The clock emits integer-boundary events on `src/core/events.js`: `clock:hour` an
 | Creatures | bodies, IK, springs, boids, behaviors | residents' presence, mood, arrivals, departures |
 | Particles, audio | yes | no |
 
-The key rule: the ecology tick never reads anything only the live sim knows. Water enters ecology through the **water summary** (per-cell standing depth at mean tide plus flow class: still, slow, running), which `src/world/water/` rebuilds only when the player edits water or terrain. Visual flow details stay visual. This is what keeps live and catch-up results identical.
+The key rule: the ecology tick never reads anything only the live sim knows. Water enters ecology through the **water summary** (per-cell standing depth at mean tide plus flow class: still, slow, running), which `src/world/water/` rebuilds when the player edits water or terrain, and once a game day since the water table (October 21, 2026: rain-fed ponds lower in summer). Catch-up rebuilds the summary and the habitat for each day it crosses from the same inputs (`src/world/growth/habitat-days.js`); the tick at hour h reads the habitat of the day of hour h − 1 in both. Visual flow details stay visual. This is what keeps live and catch-up results identical.
 
 ### What the coarse ecology model tracks
 

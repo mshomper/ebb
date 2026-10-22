@@ -185,7 +185,8 @@ export function mountIslandNotes(parent, words, naturalist = null) {
     show.type = 'button';
     show.className = 'ebb-notes__show';
     show.innerHTML = `${iconSvg('find')}<span>${esc(words.showMe?.button ?? 'Show me')}</span>`;
-    show.addEventListener('click', () => dispatch({ type: 'journal.showMe', sp: n.sp }));
+    // An uneasy note (A9) carries the pool's spot: Show me rings the pool, with the note's words.
+    show.addEventListener('click', () => dispatch(n.at ? { type: 'journal.showMe', sp: n.sp, at: n.at, text: n.text } : { type: 'journal.showMe', sp: n.sp }));
     row.append(text, show);
     return row;
   }
@@ -223,6 +224,8 @@ export function mountIslandNotes(parent, words, naturalist = null) {
         <p class="ebb-idcard__error" role="alert"></p>
         <button type="submit" class="ebb-idcard__give">${iconSvg('name-tag')}<span>Give it this name</span></button>
       </form>` : ''}
+      ${id.liftNote ? `<p class="ebb-idcard__suits is-pencil">${esc(id.liftNote)}</p>` : ''}
+      ${id.liftPiece && words.pieces?.lift ? `<button type="button" class="ebb-idcard__open" data-act="liftpiece">${iconSvg('lift')}<span>${esc(words.pieces.lift.button)}</span></button>` : ''}
       ${carryBtn}
       ${id.keepsake && id.letter && words.keepsakes?.read ? `<button type="button" class="ebb-idcard__open" data-act="read">${iconSvg('notes')}<span>${esc(words.keepsakes.read)}</span></button>` : ''}
       ${id.keepsake && words.keepsakes ? `<button type="button" class="ebb-idcard__open" data-act="keep">${iconSvg('shelf')}<span>${esc(words.keepsakes.keep)}</span></button>
@@ -298,6 +301,7 @@ export function mountIslandNotes(parent, words, naturalist = null) {
     const b = /** @type {HTMLElement | null} */ (/** @type {HTMLElement} */ (e.target).closest('button'));
     if (!b) return;
     if (b.dataset.act === 'carry' && id?.piece) { dispatch({ type: 'pieces.carry', id: id.piece }); return; }
+    if (b.dataset.act === 'liftpiece' && id?.piece) { dispatch({ type: 'pieces.lift', id: id.piece }); return; }
     if (b.dataset.act === 'leave' && id?.keepsake) { dispatch({ type: 'keepsakes.leave', id: id.keepsake }); return; }
     if (b.dataset.act === 'keep' && id?.keepsake) { dispatch({ type: 'keepsakes.keep', id: id.keepsake }); return; }
     if (b.dataset.act === 'read' && id?.keepsake) { dispatch({ type: 'keepsakes.read', shoreId: id.keepsake }); return; }

@@ -71,8 +71,10 @@ function naturalistTrail(o) {
     const last = i === line.length - 1 ? ' is-last' : '';
     if (e.type === 'mark') {
       const d = o.live.describe(e.id), first = j.species[e.id]?.first ?? -1;
+      // Some finds name where they were found (the life under a log, L3a).
+      const where = R.line.where?.[e.id] ? `<small>${esc(R.line.where[e.id])}</small>` : '';
       return stop(last, `<span class="ebb-trail__dot">${iconSvg(d.icon)}</span>
-        <span class="ebb-trail__text"><b>${esc(d.name)}</b>${first >= 0 ? `<span class="ebb-journal__voice">${esc(dateOfHour(first, o.words))}</span>` : ''}</span>`, `data-page="${esc(e.id)}"`);
+        <span class="ebb-trail__text"><b>${esc(d.name)}</b>${first >= 0 ? `<span class="ebb-journal__voice">${esc(dateOfHour(first, o.words))}</span>` : ''}${where}</span>`, `data-page="${esc(e.id)}"`);
     }
     if (e.type === 'gap') return `<li class="ebb-trail__stop is-gap${last}"><span class="ebb-trail__dot"></span></li>`;
     const r = rewards[e.id] ?? {};

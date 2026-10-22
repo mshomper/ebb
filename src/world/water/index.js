@@ -310,6 +310,17 @@ export async function createWater(gpu, opts) {
     requestSummary,
     /** The latest water summary (docs/07): what ecology reads. */
     getSummary: () => summary,
+    /**
+     * What the summary is built from, without the day of the year, so catch-up can build it for
+     * each day it crosses (src/world/growth/habitat-days.js); null before the terrain exists.
+     */
+    summaryInputs() {
+      const heightQ = opts.getHeightQ();
+      if (!heightQ) return null;
+      const { yearDay: _day, ...rest } = summaryArgs(heightQ);
+      void _day;
+      return rest;
+    },
 
     // ---- live readback ----
     /**

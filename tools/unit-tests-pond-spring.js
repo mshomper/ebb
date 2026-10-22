@@ -165,6 +165,33 @@ export function addPondSpringTests(test, assert, eq) {
     return `${walks.length} walks in eight nights`;
   });
 
+  test(G, 'the toad sets out from the damp under a log or stone when there is one (L3a)', async () => {
+    const R = await loadEcologyRecipes();
+    const w = islandWorld(R, 'starter-island', 5, 3);
+    const hab = w.model.habitat, n = hab.n;
+    // Two stones 3.5 m or more from the water, far apart: one damp underneath, one dry.
+    /** @type {{ x: number, z: number, kind: string, k: number }[]} */ const spots = [];
+    for (let k = 0; k < n * n && spots.length < 2; k++) {
+      if (!hab.open[k] || hab.sea[k] || hab.depthCm[k] > 0) continue;
+      const [x, z] = cellCenter(k, n);
+      const p = nearestPond(hab, x, z, 6, 8);
+      if (!p || Math.hypot(p.x - x, p.z - z) <= 3.5) continue;
+      if (spots.some((s) => Math.hypot(s.x - x, s.z - z) < 3)) continue;
+      spots.push({ x, z, kind: 'stone', k });
+    }
+    assert(spots.length === 2, 'two spots for stones');
+    const shelterUnder = new Uint8Array(n * n), dampUnder = new Uint8Array(n * n);
+    for (const s of spots) shelterUnder[s.k] = 255;
+    dampUnder[spots[1].k] = 240;
+    const basks = spots.map(({ x, z, kind }) => ({ x, z, kind }));
+    const state = { ...w.state, basks, ecology: { ...w.state.ecology, under: { shelterUnder, dampUnder } } };
+    const walks = runSpring(state, w.env, w.h0 + 1, 24 * 10).events.filter((e) => e.name === 'creature:walking');
+    assert(walks.length > 0, 'a toad walks');
+    const fromDamp = (/** @type {any} */ e) => Math.hypot(e.payload.x - spots[1].x, e.payload.z - spots[1].z) < 0.05;
+    eq(walks.filter(fromDamp).length, walks.length, 'every walk sets out from the damp stone');
+    return `${walks.length} walks, all from the damp`;
+  });
+
   test(G, 'turtles want a stone or log by the water: shelter only near one', async () => {
     const R = await loadEcologyRecipes();
     const w = islandWorld(R, 'starter-island', 1, 15);

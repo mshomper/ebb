@@ -56,6 +56,8 @@ import { cleanShelf, keep as keepShelf, letGo as letGoShelf, readLetter, swap as
 import { chooseLetter } from './world/keepsakes/letters.js';
 import { createPieces } from './world/pieces/index.js';
 import { createAutumn } from './world/finds/autumn-live.js';
+import { createLift } from './world/pieces/lift.js';
+import { createUnderLogLive } from './world/finds/under-log-live.js';
 import { createSpring } from './world/creatures/spring-live.js';
 import { moodsOf, mistyAutumnMorning, autumnStartOf } from './world/finds/autumn.js';
 import { HABITAT_CELLS, HABITAT_ORIGIN } from './world/growth/habitat.js';
@@ -494,6 +496,14 @@ export async function startApp(canvas, hooks = {}) {
     recipes: { frogspawn: speciesRecipes.frogspawn, toad: speciesRecipes.toad, frog: frogRecipe, slowworm: speciesRecipes.slowworm, lizard: speciesRecipes.lizard } });
   sim.addSystem(spring);
   finds.addSource(spring.shown);
+  // Lift, on foot (docs/future/11 L3a; src/world/pieces/lift.js): a kept log's or a loose stone's card
+  // offers Lift within reach, and what lives underneath is rolled for the day.
+  const underLogRecipe = await loadRecipe('species/under-log');
+  const lift = createLift({ pieces, walk, world, recipe: underLogRecipe, seed, ageRecipe: (await loadRecipe('world/pieces')).driftwood?.age ?? null });
+  // While it is up, woodlice and the violet ground beetle scuttle for the dark (under-log-live.js).
+  const underLog = createUnderLogLive({ lift, terrain, recipe: underLogRecipe });
+  sim.addSystem(underLog);
+  finds.addSource(underLog.shown);
 
   /**
    * A dry, grassy ground point near the view's middle, out of the tide, for a test log: on a widening
@@ -589,6 +599,8 @@ export async function startApp(canvas, hooks = {}) {
     keepsakes.pass,
     nets.pass,
     pieces.pass,
+    // What lives under a log, while it is lifted (L3a).
+    underLog.pass,
     // Autumn's fungi (a creature pass) and dewy webs, after the logs and the grass they are on.
     ...autumn.passes,
     ...spring.passes,
@@ -712,6 +724,22 @@ export async function startApp(canvas, hooks = {}) {
   let shiftHeld = false;
   const isCliffMode = () => tools().tool === 'sculpt' && (tools().sculptMode === 'terrace' || tools().sculptMode === 'cut');
   /** @param {number} x @param {number} y */
+  /**
+   * The stone or log a tap below lands on (L3a): low down, the ray grazes past a log onto the ground
+   * behind it, so it is tried where it passes a little over the ground too, nearest first.
+   * @param {number} x @param {number} y @param {number[]} point the ground the tap landed on
+   */
+  function pieceUnderTap(x, y, point) {
+    const r = camera.ray(x, y);
+    for (const h of [0.3, 0.2, 0.12, 0.05]) {
+      if (r.d[1] > -1e-4) break;
+      const t = (point[1] + h - r.o[1]) / r.d[1];
+      if (!(t > 0)) continue;
+      const hit = pieces.pieceAt(r.o[0] + r.d[0] * t, r.o[2] + r.d[2] * t);
+      if (hit) return hit;
+    }
+    return pieces.pieceAt(point[0], point[2]);
+  }
   function groundAt(x, y) {
     const r = camera.ray(x, y);
     const hit = terrain.raycast(r.o, r.d);
@@ -920,6 +948,9 @@ export async function startApp(canvas, hooks = {}) {
       if (a.type === 'look.tap') {
         // With Look on, a tap names what it lands on (the journal), as a tap above does.
         const point = groundAt(a.x, a.y);
+        // A log or stone right beside you shows its card (with Lift) rather than walking onto it.
+        const near = point ? pieceUnderTap(a.x, a.y, point) : null;
+        if (near && lift.reach(near) === 'lift') { emitDeferred('look:tapped', { x: a.x, y: a.y, point: [near.x, point[1], near.z] }); return; }
         if (walk.tap(a.x, a.y, point) === 'look') emitDeferred('look:tapped', { x: a.x, y: a.y, point });
         return;
       }
@@ -987,6 +1018,10 @@ export async function startApp(canvas, hooks = {}) {
       case 'pieces.carryCancel':
         pieces.cancelCarry();
         updateStore('identify', () => null);
+        break;
+      // Lift (on foot, L3a): the card's Lift rolls the piece back; the journal shows what was under it.
+      case 'pieces.lift':
+        lift.lift(a.id);
         break;
       // A keepsake's card: Leave it to the sea (docs/future/12). It goes, and the next tide takes it.
       case 'keepsakes.leave':
@@ -1513,6 +1548,8 @@ export async function startApp(canvas, hooks = {}) {
     nets: { ...nets, recipe: netsRecipe, keepsakesRecipe },
     /** The placed loose stones (the journal asks which one a tap landed on). */
     pieces,
+    /** Lift on foot (L3a): the journal asks whether a piece is in reach to lift. */
+    lift,
     /** Autumn's fungi and webs (counts() for tools). */
     autumn,
     /** The walker: the walk grid, your feet, Go down and Go up (tools and testing). */

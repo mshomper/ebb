@@ -134,6 +134,13 @@ export function describe(journal, sp, state, hab, words, hour = journal.last) {
       }
     }
   }
+  // A9: while a group's pool is failing it, the page says why (the same words as the note).
+  if (known && rec.uneasy) {
+    const g = (state?.creatures?.[sp]?.groups ?? []).find((/** @type {any} */ x) => x.uneasy !== undefined);
+    const U = rec.uneasy;
+    const text = g ? ((state?.seasons?.index === 1 && U[`${g.why}Summer`]) || U[g.why] || U.habitat) : '';
+    if (text) status = status ? `${status} ${text}` : text;
+  }
   const likeKnown = knownLines(k, rec.likes);
   const likes = (rec.likes ?? []).map((/** @type {any} */ l, /** @type {number} */ i) => ({ text: l.text, known: likeKnown[i] }));
   const fieldKnown = knownLines(k, rec.field);

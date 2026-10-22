@@ -74,6 +74,18 @@ export function fungiBloom(p) {
 }
 
 /**
+ * Does a kept log fruit at all this autumn (L2: age and damp make it likelier)? A seeded roll of the
+ * log and the autumn against a chance of base, plus age (0..1, log-age.js) and damp (0..1) each
+ * weighted: an old log, or one in damp ground, always can; a young log on dry ground some autumns
+ * and not others. Pure. @param {number} seed the log's @param {number} autumn0 the autumn's first day
+ * @param {number} age @param {number} damp @param {{ base: number, age: number, damp: number }} C autumn-finds.json fungi.chance
+ */
+export function fungiChance(seed, autumn0, age, damp, C) {
+  const chance = Math.min(1, C.base + C.age * age + C.damp * damp);
+  return chance >= 1 || u01(hash32(seed >>> 0, autumn0, 0xf1c)) < chance;
+}
+
+/**
  * How grown one fungus is, 0..1, at a game hour: growing in over growDays from its bloom (starting
  * up to spreadDays late, by its own stagger), fading over the winter's fadeDays.
  * @param {number} hourNow @param {{ day0: number, winter0: number }} bloom @param {number} grow 0..1 its stagger in

@@ -96,7 +96,7 @@ export function createSpring(opts) {
     // How many turtles a spot holds: a stone's top one, or two (the second on the first's back) if it
     // is big enough; the raft three; a log one per 0.35 m, side by side.
     const stoneRoom = (/** @type {number} */ r) => (r < 0.12 ? 1 : 2);
-    /** @type {{ id: string, kind: string, x: number, y: number, z: number, r: number, room: number, yaw?: number, inWater: boolean }[]} */ const seats = [];
+    /** @type {{ id: string, kind: string, x: number, y: number, z: number, r: number, room: number, yaw?: number, inWater: boolean, len?: number }[]} */ const seats = [];
     const listed = pieces?.seats?.();
     const list = getStore('pieces')?.list ?? [];
     if (Array.isArray(listed)) {
@@ -117,10 +117,12 @@ export function createSpring(opts) {
       const p = log.surface(0.5, Math.PI / 2).p;
       const yaw = list.find((/** @type {any} */ q) => q.id === log.id)?.yaw ?? 0;
       seats.push({ id: log.id, kind: 'log', x: p[0], y: p[1], z: p[2], r: Math.min(0.35, log.length * 0.3), room: Math.max(1, Math.floor(log.length / 0.35)),
-        yaw, inWater: water.sampleLive(p[0], p[2]).depth > 0.02 });
+        yaw, inWater: water.sampleLive(p[0], p[2]).depth > 0.02, len: log.length });
     }
     updateStore('seats', () => seats);
-    const basks = seats.map((s) => ({ x: Math.round(s.x * 100) / 100, z: Math.round(s.z * 100) / 100, kind: s.kind }))
+    // A log keeps its length and lie too, so the shelter it gives covers all of it (ecology/shelter.js).
+    const basks = seats.map((/** @type {any} */ s) => ({ x: Math.round(s.x * 100) / 100, z: Math.round(s.z * 100) / 100, kind: s.kind,
+      ...(s.kind === 'log' ? { len: Math.round(s.len * 100) / 100, yaw: Math.round((s.yaw ?? 0) * 1000) / 1000 } : {}) }))
       .sort((a, b) => a.x - b.x || a.z - b.z);
     if (JSON.stringify(basks) !== JSON.stringify(world.state?.basks ?? [])) {
       world.state = { ...world.state, basks };

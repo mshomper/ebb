@@ -20,7 +20,9 @@ import { packMesh } from '../creatures/bodies.js';
 import { createPiecesPass } from '../../render/passes/pieces.js';
 import { cleanPieces, makeStone, makeLog, addPiece, removePiece, movePiece, countKind, pieceAt, arrivingStones,
   tipAngle, tipDone, stoneBone, leanBone, logBone, mul4 } from './model.js';
-import { stoneShapes, logShapes } from './meshes.js';
+import { stoneShapes, logDamp } from './meshes.js';
+import { createLogCache } from './log-cache.js';
+import { logAge, dampShade, logMoss } from './log-age.js';
 import { strandLogs, cellHeights, strandMask } from './driftwood.js';
 import { logSurface } from './log-surface.js';
 import { slabShapes } from './slabs.js';
@@ -47,13 +49,13 @@ export function createPieces(opts) {
   const driftSeed = subSeed(opts.seed, 'driftwood');
   const tideP = tideParams(opts.tide);
   const shapes = stoneShapes(recipe);
-  const logs = logShapes(recipe);
   const pass = createPiecesPass({ ground: opts.ground, recipe, terrainRecipe: opts.terrainRecipe });
   shapes.forEach((s, i) => {
     pass.setMesh(`stone-${i}`, { data: packMesh(s.mesh), indices: s.mesh.indices });
     pass.setMesh(`damp-${i}`, { data: packMesh(s.damp), indices: s.damp.indices });
   });
-  logs.forEach((s, i) => pass.setMesh(`log-${i}`, { data: packMesh(s.mesh), indices: s.mesh.indices }));
+  // Every log is baked from its own seed (log-bake.js), the first time it is drawn.
+  const logs = createLogCache(pass, D);
   // Pond stones and the slabs on Steps' treads (slabs.js): rounded slabs with a long skirt that
   // stands on a pond bed, or sinks out of sight into the ground.
   const S = recipe.stepping, ST = recipe.steps;
@@ -67,7 +69,8 @@ export function createPieces(opts) {
   const rafts = raftShapes(recipe);
   rafts.forEach((s, i) => pass.setMesh(`raft-${i}`, { data: packMesh(s.mesh), indices: s.mesh.indices }));
   const IDENTITY = new Float32Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
-  pass.setMesh('logdamp', { data: packMesh(logs[0].damp), indices: logs[0].damp.indices });
+  const logDampMesh = logDamp(recipe);
+  pass.setMesh('logdamp', { data: packMesh(logDampMesh), indices: logDampMesh.indices });
   const shapeOf = (/** @type {{ seed: number }} */ p) => shapes[p.seed % shapes.length];
   const ground = (/** @type {number} */ x, /** @type {number} */ z) => terrain.sampleHeight(x, z);
   /**
@@ -164,17 +167,25 @@ export function createPieces(opts) {
     return s ? { piece: /** @type {any} */ ({ ...s, id: s.key }), strand: s } : null;
   }
 
-  /** Pieces being lifted: seconds since the tap, and which way (in the piece's own frame) is toward you. @type {Map<string, { e: number, dir: number[] }>} */
+  /**
+   * Pieces being lifted: seconds since the lift, which way (in the piece's own frame) is toward you,
+   * and how long it is held up (Lift on foot holds it longer, L3a; else the recipe's own).
+   * @type {Map<string, { e: number, dir: number[], holdS: number | null }>}
+   */
   const lifts = new Map();
-  const offLift = on('piece:lifted', (/** @type {{ id: string }} */ p) => {
+  const offLift = on('piece:lifted', (/** @type {{ id: string, from?: number[], holdS?: number }} */ p) => {
     const s = findPiece(p.id)?.piece;
     if (!s || lifts.has(p.id) || carrying?.id === p.id) return;
-    // Toward the eye, turned into the piece's frame (the inverse of its yaw; creature-draw.wgsl place).
-    const wx = camera.eye[0] - s.x, wz = camera.eye[2] - s.z, l = Math.hypot(wx, wz) || 1;
+    // Toward you (where you knelt, or the eye), turned into the piece's frame (the inverse of its
+    // yaw; creature-draw.wgsl place).
+    const from = p.from ?? [camera.eye[0], camera.eye[2]];
+    const wx = from[0] - s.x, wz = from[1] - s.z, l = Math.hypot(wx, wz) || 1;
     const c = Math.cos(s.yaw), sn = Math.sin(s.yaw);
     const dx = (c * wx - sn * wz) / l, dz = (sn * wx + c * wz) / l;
-    lifts.set(p.id, { e: 0, dir: [dx, dz] });
+    lifts.set(p.id, { e: 0, dir: [dx, dz], holdS: p.holdS ?? null });
   });
+  /** A lift's timing: the recipe's, held for holdS when the lift says so. @param {any} T @param {{ holdS: number | null } | undefined} l */
+  const timed = (T, l) => (l?.holdS != null ? { ...T, holdS: l.holdS } : T);
 
   // ---- carrying (the turtles' gift) ----
   /** @type {{ id: string, kind: string, radius: number, strand: import('./driftwood.js').StrandLog | null } | null} */ let carrying = null;
@@ -395,7 +406,7 @@ export function createPieces(opts) {
       const slope = slopeOf(p, p.size * 0.5);
       const lift = lifts.get(p.id);
       const held = carrying?.id === p.id;
-      const angle = lift ? tipAngle(lift.e, recipe.tip) : 0;
+      const angle = lift ? tipAngle(lift.e, timed(recipe.tip, lift)) : 0;
       const dir = lift?.dir ?? [0, 1];
       const reach = 1 / Math.hypot(dir[0] / sh.hx, dir[1] / sh.hz);
       let bone = mul4(leanBone(slope[0], slope[1], recipe.lean), stoneBone(angle, sh.hy * recipe.sink, dir, reach));
@@ -444,18 +455,42 @@ export function createPieces(opts) {
    */
   function logBeing(p, id, out) {
     const len = p.length ?? 1, a = p.size / len;
-    const i = p.seed % logs.length;
+    const log = logs.of(p);
     const y = ground(p.x, p.z);
     const slope = slopeOf(p, Math.min(0.4, len * 0.3));
     const lift = lifts.get(id);
     const held = carrying?.id === id;
-    const angle = lift ? tipAngle(lift.e, D.roll) : 0;
+    const angle = lift ? tipAngle(lift.e, timed(D.roll, lift)) : 0;
     // It rolls away from you, so the damp sand it lay on shows on your side of it.
     let bone = mul4(leanBone(slope[0], slope[1], D.lean), logBone(angle, (lift?.dir[0] ?? -1) < 0 ? 1 : -1, a, D.sink));
     if (held) bone = mul4(raise(D.carry.liftM / len), bone);
     const common = { x: p.x, z: p.z, yaw: p.yaw, size: len, slope, seed: (p.seed >>> 8) / 16777216 * 10, half: [(a / 2) * D.ringHalf[0], 0.5 * D.ringHalf[1]] };
-    out.push({ ...common, y, mesh: `log-${i}`, bone, aspect: a });
+    out.push({ ...common, y, mesh: log.key, bone, aspect: a, wear: logWear(p, log.sea) });
     if (angle > 0.01 || held) out.push({ ...common, y: y + 0.004, mesh: 'logdamp', bone: mul4(shear(slope), new Float32Array([a, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1])), plain: true });
+  }
+
+  /** A kept log's ground, looked at again every refreshS or when it moves. @type {Map<string, { key: string, ds: { damp: number, shade: number }, s: number }>} */
+  const grounds = new Map();
+  let groundClock = 0;
+  /** How damp and shaded a kept log lies (log-age.js). @param {{ id: string, x: number, z: number }} p */
+  function groundOf(p) {
+    const key = `${p.x.toFixed(2)}:${p.z.toFixed(2)}`;
+    let g = grounds.get(p.id);
+    if (!g || g.key !== key || groundClock - g.s > D.age.refreshS) {
+      const ds = dampShade({ x: p.x, z: p.z, summary: water.getSummary?.(), plants: get('world')?.growth?.plants ?? [], ground, A: D.age });
+      g = { key, ds, s: groundClock };
+      grounds.set(p.id, g);
+    }
+    return g.ds;
+  }
+  /**
+   * A log's wear for the draw pass: its time at sea, and a kept log's age and moss where it lies.
+   * @param {{ id?: string, x: number, z: number, placedHour?: number }} p @param {number} sea
+   */
+  function logWear(p, sea) {
+    if (p.placedHour === undefined || !p.id) return [sea, 0, 0, 0];
+    const now = hourIndex();
+    return [sea, logAge(p.placedHour, now, D.age), logMoss(p.placedHour, now, groundOf(/** @type {any} */ (p)), D.age.moss), 0];
   }
 
   /** How near a tap must be, from this far away. */
@@ -470,12 +505,14 @@ export function createPieces(opts) {
       for (const [id, l] of lifts) {
         l.e += f.realDt;
         const log = state().list.find((q) => q.id === id)?.kind === 'log' || id.startsWith('drift:');
-        if (tipDone(l.e, log ? D.roll : recipe.tip)) lifts.delete(id);
+        if (tipDone(l.e, timed(log ? D.roll : recipe.tip, l))) lifts.delete(id);
       }
       if (pending && (pollS += f.realDt) > 0.5) { pollS = 0; arrive(); }
       if ((strandS += f.realDt) > 0.5) { strandS = 0; refreshStrand(f.displayT / 3600); }
       frameDt = f.realDt;
       raftClock += f.realDt;
+      logs.tick(f.realDt);
+      groundClock += f.realDt;
       pass.setPieces(beings());
     },
 
@@ -493,6 +530,11 @@ export function createPieces(opts) {
         const n = Math.min(6, Math.max(2, Math.ceil(len / (r * 1.6))));
         const ax = Math.sin(p.yaw), az = Math.cos(p.yaw);
         for (let k = 0; k < n; k++) { const t = (k / (n - 1) - 0.5) * (len - r); put(p.x + ax * t, p.z + az * t, r); }
+        // A bowed log's middle, a snapped arm's tip, a root's: its own shape (log-bake.js footprint).
+        for (const [fx, fz] of logs.of(p).footprint) {
+          const dx = fx * p.size, dz = fz * (len - r);
+          put(p.x + az * dx + ax * dz, p.z - ax * dx + az * dz, r * 0.8);
+        }
       }
       return out.sort((a, b) => a.d - b.d);
     },
@@ -538,6 +580,34 @@ export function createPieces(opts) {
       const kept = state().list.filter((p) => p.kind === 'stone' || p.kind === 'log');
       const all = [...kept.map((p) => ({ ...p, strand: false })), ...strandShown.map((s) => ({ ...s, id: s.key, strand: true }))];
       return pieceAt(all, x, z, tapR(), D.tapReachM);
+    },
+
+    /**
+     * A kept piece or a strand log by id (its record; a strand log's id is its key), with strand
+     * true for one on the strand, or null. @param {string} id
+     */
+    piece(id) { const f = findPiece(id); return f ? { ...f.piece, strand: !!f.strand } : null; },
+
+    /**
+     * A lift under way (L3a: what lives underneath shows while it is up): seconds since it began, how
+     * far it is rolled or tipped now (0..1 of its most), and when it will be down again; or null.
+     * @param {string} id @returns {{ e: number, up: number, doneS: number, dir: number[] } | null}
+     */
+    liftNow(id) {
+      const l = lifts.get(id);
+      if (!l) return null;
+      const log = state().list.find((q) => q.id === id)?.kind === 'log' || id.startsWith('drift:');
+      const T = timed(log ? D.roll : recipe.tip, l);
+      return { e: l.e, up: tipAngle(l.e, T) / ((T.tipDeg * Math.PI) / 180), doneS: T.tipS + T.holdS + T.settleS, dir: l.dir.slice() };
+    },
+
+    /**
+     * A log's form and time at sea (log-bake.js), and its moss if it is kept (log-age.js): what the
+     * journal's Driftwood page learns from a tap. @param {{ id: string, seed: number, size: number, length?: number, x: number, z: number, placedHour?: number, strand?: boolean }} p
+     */
+    logLook(p) {
+      const b = logs.of(p);
+      return { form: b.form, sea: b.sea, moss: p.strand ? 0 : logWear(p, b.sea)[2] };
     },
 
     /** Lift a stone or a log to carry it (the card's Carry). @param {string} id @returns {boolean} */
@@ -602,7 +672,10 @@ export function createPieces(opts) {
      * The kept logs (carried off the strand and set down), for what grows on them (autumn's fungi,
      * src/world/finds/autumn-live.js): each with whether it lies still (not rolled by a tap, not
      * being carried) and its surface (log-surface.js) as it lies at rest.
+     * Each also says its form and time at sea (log-bake.js), and how aged it is and how damp and
+     * shaded it lies (log-age.js), for the fungi's chance and, later, what lives underneath.
      * @returns {{ id: string, seed: number, x: number, z: number, length: number, size: number, placedHour: number, still: boolean,
+     *   form: string, sea: number, age: number, damp: number, shade: number,
      *   surface: (t: number, a: number) => { p: number[], n: number[] } }[]}
      */
     keptLogs() {
@@ -610,8 +683,10 @@ export function createPieces(opts) {
         const len = p.length ?? 1, a = p.size / len;
         const bone = mul4(leanBone(...(/** @type {[number, number]} */ (slopeOf(p, Math.min(0.4, len * 0.3)))), D.lean), logBone(0, 1, a, D.sink));
         const pose = { bone, size: len, yaw: p.yaw, at: [p.x, ground(p.x, p.z), p.z] };
-        const mesh = logs[p.seed % logs.length].mesh;
+        const baked = logs.of(p), mesh = baked.mesh;
+        const ds = groundOf(p);
         return { id: p.id, seed: p.seed, x: p.x, z: p.z, length: len, size: p.size, placedHour: p.placedHour,
+          form: baked.form, sea: baked.sea, age: logAge(p.placedHour, hourIndex(), D.age), damp: ds.damp, shade: ds.shade,
           still: !lifts.has(p.id) && carrying?.id !== p.id,
           surface: (/** @type {number} */ t, /** @type {number} */ ang) => logSurface(mesh, D.shape.rings, D.shape.around, pose, t, ang) };
       });
@@ -619,7 +694,8 @@ export function createPieces(opts) {
 
     /**
      * `?debug` (window.ebb.debug.keptLog): keep a log at a ground point as if carried there long ago
-     * (placedHour daysAgo game days back), its shape seeded from the point. Undoable like any set-down.
+     * (placedHour daysAgo game days back, or the days a log takes to age fully if more), its shape
+     * seeded from the point. Undoable like any set-down.
      * @param {number} x @param {number} z @param {number} daysAgo @returns {string | null} its id, or null at the cap or in water
      */
     debugKeepLog(x, z, daysAgo) {
@@ -629,7 +705,9 @@ export function createPieces(opts) {
       const u = (/** @type {number} */ k) => (hash32(seed, k) >>> 8) / 16777216;
       const log = { x, z, yaw: u(1) * 2 * Math.PI, seed, size: D.thickM[0] + (D.thickM[1] - D.thickM[0]) * (0.5 + 0.5 * u(2)),
         length: D.lengthM[0] + (D.lengthM[1] - D.lengthM[0]) * (0.4 + 0.6 * u(3)) };
-      const piece = makeLog(s.nextId, log, hourIndex() - Math.round(daysAgo * 24));
+      // At least fully aged where it lies (log-age.js), so it shows what an old kept log looks like
+      // and always may fruit (autumn.js fungiChance).
+      const piece = makeLog(s.nextId, log, hourIndex() - Math.round(Math.max(daysAgo, D.age.fullDays) * 24));
       const next = addPiece(s, piece, D.cap);
       if (!next) return null;
       update('pieces', () => next);

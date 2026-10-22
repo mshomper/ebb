@@ -6,7 +6,8 @@
     { "id": "plants", "label": "Plants", "tint": "plants", "icon": "plant", "from": "plants" },
     { "id": "animals", "label": "Animals", "tint": "animals", "icon": "frog", "from": "animals" },
     { "id": "small", "label": "Small lives", "tint": "small", "icon": "periwinkle", "from": "finds", "foundOnly": true, "place": "shore" },
-    { "id": "shells", "label": "Shells", "tint": "small", "icon": "shells", "ids": ["shells"], "foundOnly": true, "place": "shore", "unlock": "shells", "hint": "Walk the strandline after a high tide; shells wash up where it turned." }
+    { "id": "shells", "label": "Shells", "tint": "small", "icon": "shells", "ids": ["shells"], "foundOnly": true, "place": "shore", "unlock": "shells", "hint": "Walk the strandline after a high tide; shells wash up where it turned." },
+    { "id": "driftwood", "label": "Driftwood", "tint": "ground", "icon": "driftwood", "ids": ["driftwood"], "foundOnly": true, "place": "shore", "unlock": "driftwood", "hint": "Walk the strandline after a high tide; logs wash up along it." }
   ],
   "filters": { "all": "All", "found": "Found", "notYet": "Not yet" },
   "sorts": { "recent": "Recently found", "az": "A to Z", "place": "By place" },
@@ -14,7 +15,7 @@
   "places": { "pond": "Pond", "meadow": "Meadow", "shore": "Shore" },
   "placeOf": {
     "grass": "meadow", "rushes": "pond", "reeds": "pond", "lilies": "pond", "iris": "pond", "marigold": "pond", "willow": "pond", "gorse": "meadow", "thrift": "shore", "campion": "shore", "pondweed": "pond",
-    "frogs": "pond", "midges": "pond", "minnows": "pond", "dragonflies": "pond", "damselflies": "pond", "pondskaters": "pond", "mussels": "shore", "sanddollars": "shore", "moonjelly": "shore", "fungi": "meadow", "webs": "meadow", "turtles": "pond", "frogspawn": "pond", "toads": "pond", "slowworms": "meadow", "lizards": "meadow"
+    "frogs": "pond", "midges": "pond", "minnows": "pond", "dragonflies": "pond", "damselflies": "pond", "pondskaters": "pond", "mussels": "shore", "sanddollars": "shore", "moonjelly": "shore", "fungi": "meadow", "webs": "meadow", "turtles": "pond", "frogspawn": "pond", "toads": "pond", "slowworms": "meadow", "lizards": "meadow", "woodlice": "meadow", "groundbeetle": "meadow"
   },
   "empty": "Nothing here with these choices."
 }
