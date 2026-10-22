@@ -77,7 +77,8 @@ Checked first: logs wash up (0 to 2 per high tide from the naturalist's 10th fin
   - **L3a:** the shelter field, Lift, **woodlice** (a cluster of 3 to 8 under any kept log on soil or grass after 2 days; they fill the fungi page's woodlice line) and the **violet ground beetle** (logs on grass, late spring to autumn, by day) (Matt's pick for the first two).
   - **L3b:** the **brown centipede** (logs a week or more old, damp) and the **slow worm** (a log or stone on dry, sunny grass away from water; basks on top on warm mornings).
   - **L3c:** the **smooth newt**, curled asleep under a log near a pond in winter. It waits for the winter chapter (Matt's pick).
-  - Each gets a journal page, a sketch traced from its model, Web ties (log, damp ground, fungi; the toad and centipede eat woodlice) and an "under the log" stop on the naturalist's trail. Later: a wood mouse, and a hedgehog nesting in a log pile.
+  - **No card is a dead end** (Matt's rule, October 21, 2026): woodlice, the violet ground beetle, the brown centipede, the slow worm and the smooth newt each get their own journal page with a sketch traced from their model, Web ties (log, damp ground, fungi; the toad and centipede eat woodlice) and an "under the log" stop on the naturalist's trail. Each Lift card names what you found and opens its page. A Lift that finds nothing opens the Driftwood page (which already has a "lifted" line) or the loose stone's page. Later: a wood mouse, and a hedgehog nesting in a log pile, under the same rule.
+  - L2's log forms show on the Driftwood page: its sketch is traced from the log you clicked, so each form has a drawing.
 
 ### How finds plug into the code
 
