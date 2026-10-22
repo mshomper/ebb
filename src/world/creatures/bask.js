@@ -19,6 +19,8 @@ import { stream } from '../../core/rng.js';
 import { poseState, easeWeights, poseTurtle, noseY, haulPath, haulS, slidePath } from './rigs/turtle.js';
 
 const DEG = Math.PI / 180;
+/** What a turtle does in the water (kept apart from one another there). */
+const WATER_MODES = new Set(['swim', 'under', 'peri', 'peek', 'hide', 'graze', 'bottom']);
 
 /**
  * @typedef {{ x: number, y: number, z: number, r: number, kind?: string, room?: number, yaw?: number, inWater?: boolean }} Seat
@@ -29,7 +31,7 @@ const DEG = Math.PI / 180;
  *   goal: { x: number, z: number }, seat: number, from: { x: number, y: number, z: number } | null, under: number,
  *   spd: number, depth: number, gliding: boolean, glideUntil: number, facing: boolean, faceTo?: number, lookUpTo?: number,
  *   slideAt?: number, calm?: boolean, rest?: { x: number, y: number, z: number }, peekAt?: { x: number, z: number },
- *   nudge?: { x: number, z: number, at: number }, food?: { x: number, z: number, under: boolean }, bottom?: boolean,
+ *   nudge?: { x: number, z: number, at: number }, spot?: { x: number, z: number, r: number }, food?: { x: number, z: number, under: boolean }, bottom?: boolean,
  *   id: number, t: number, w: Record<string, number>, ph: number, stroke: number, haulK: number, slideK: number,
  *   lookUp: number, jaw: number, wet: number }} Turtle
  *   and its pose (rigs/turtle.js TurtlePose). seat: the spot it is bound for or on (-1 none); from:
@@ -361,7 +363,7 @@ export function createBask(o) {
             at.x += f.nudge.x * e; at.z += f.nudge.z * e;
             if (k <= 0) f.nudge = undefined;
           }
-          f.rest = at;
+          f.rest = at; f.spot = { x: p.s.x, z: p.s.z, r: p.s.r };
           if (f.mode === 'climb') {
             // The haul-out (TL3): front claws reach over the edge, the shell tips up, the hind legs
             // heave it over in two shoves, a pause (rigs/turtle.js haulPath). A low step goes quicker.
@@ -413,7 +415,7 @@ export function createBask(o) {
           const L = 0.09 * o.size;
           const slope = Math.atan2(env.ground(f.x + Math.sin(f.yaw) * L, f.z + Math.cos(f.yaw) * L) - env.ground(f.x - Math.sin(f.yaw) * L, f.z - Math.cos(f.yaw) * L), 2 * L);
           f.pitch += (slope - f.pitch) * Math.min(1, dt * 3);
-          if (p && d <= p.s.r + W.reachM * o.size) startClimb(f, f.seat);
+          if (p && d <= p.s.r * W.edgeShare + W.reachM * o.size) startClimb(f, f.seat);
           else if (env.water(f.x, f.z).depth > W.swimDepthM) { f.mode = 'swim'; f.spd = W.walkMps; }
           else if (!p && d < 0.1) f.goal = wanderPoint();
           return;
@@ -423,7 +425,9 @@ export function createBask(o) {
           // (rigs/turtle.js slidePath).
           f.slideK = Math.min(1, f.slideK + dt / P.slide.s);
           const k = f.slideK, from = f.from ?? f, path = slidePath(k, P);
-          const out = S5.slideM * o.size;
+          // Far enough to clear the spot's edge, whichever way it faces across it.
+          const sp = f.spot, ahead = sp ? (sp.x - from.x) * Math.sin(f.yaw) + (sp.z - from.z) * Math.cos(f.yaw) : 0;
+          const out = Math.max(S5.slideM * o.size, sp ? sp.r * W.edgeShare + ahead + S5.clearM * o.size : 0);
           const ex = from.x + Math.sin(f.yaw) * out, ez = from.z + Math.cos(f.yaw) * out;
           const ew = env.water(ex, ez);
           const endY = ew.depth > 0.02 ? ew.surface - (SW.surfaceM + 0.01) * o.size : env.ground(ex, ez);
@@ -485,7 +489,8 @@ export function createBask(o) {
         if (seatI < 0 && t >= f.until) newWander(f);
         const target = seatI >= 0 ? places[seatI].s : f.food ?? f.goal;
         const tx = target.x, tz = target.z;
-        if (seatI >= 0 && Math.hypot(tx - f.x, tz - f.z) <= places[seatI].s.r + W.reachM * o.size) { startClimb(f, seatI); return; }
+        // It starts the haul-out with its shell clear of the spot's edge, its front claws reaching it.
+        if (seatI >= 0 && Math.hypot(tx - f.x, tz - f.z) <= places[seatI].s.r * W.edgeShare + W.reachM * o.size) { startClimb(f, seatI); return; }
         // Too shallow to swim: it walks out (to a spot on the shore).
         if (env.water(f.x, f.z).depth < W.walkDepthM) { f.mode = 'walk'; f.spd = 0; return; }
         // Bound for a spot it swims at the surface; at night and in winter it barely moves.
@@ -514,6 +519,15 @@ export function createBask(o) {
           f.facing = !!env.viewer && rng.next() < SW.faceChance;
         }
       });
+      // Swimmers keep a shell's width apart, never through one another.
+      const wet = fish.filter((f) => WATER_MODES.has(f.mode));
+      const gap = SW.apartM * o.size;
+      for (let a = 0; a < wet.length; a++) for (let b = a + 1; b < wet.length; b++) {
+        const f = wet[a], g = wet[b], dx = g.x - f.x, dz = g.z - f.z, d = Math.hypot(dx, dz);
+        if (d >= gap || Math.abs(g.y - f.y) > 0.6 * gap) continue;
+        const push = (gap - d) * 0.5 * Math.min(1, dt * 4), ux = d > 1e-6 ? dx / d : 1, uz = d > 1e-6 ? dz / d : 0;
+        f.x -= ux * push; f.z -= uz * push; g.x += ux * push; g.z += uz * push;
+      }
     },
   };
 }

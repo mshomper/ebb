@@ -123,10 +123,19 @@ export function addTurtleTests(test, assert, eq) {
     run(b, 120);
     b.startle();
     /** @type {number[]} */ const slid = [];
-    let peeked = 0, hid = 0;
+    let peeked = 0, hid = 0, under = 0;
+    /** @type {string[]} */ const was = b.fish.map((f) => f.mode);
     run(b, 60, (s) => {
-      b.fish.forEach((f, i) => { if (f.mode === 'slide' && slid[i] === undefined) slid[i] = s; if (f.mode === 'peek') peeked |= 1 << i; if (f.mode === 'hide') hid |= 1 << i; });
+      b.fish.forEach((f, i) => {
+        if (f.mode === 'slide' && slid[i] === undefined) slid[i] = s;
+        if (f.mode === 'peek') peeked |= 1 << i;
+        if (f.mode === 'hide') hid |= 1 << i;
+        // Slid clear of the raft, never in under it.
+        if (was[i] === 'slide' && f.mode !== 'slide' && Math.hypot(f.x - RAFT.x, f.z - RAFT.z) < RAFT.r) under++;
+        was[i] = f.mode;
+      });
     });
+    eq(under, 0, 'clear of the raft');
     const times = slid.filter((x) => x !== undefined).sort((x, y) => x - y);
     eq(times.length, 3, 'three slipped off');
     for (let i = 1; i < times.length; i++) assert(times[i] - times[i - 1] >= R.motion.startle.gapS[0] - 1e-6, 'one by one');
