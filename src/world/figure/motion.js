@@ -59,6 +59,9 @@ export function createFigureMotion(R, skeleton) {
   const LEG = [['thigh.l', 'shin.l', 'foot.l'], ['thigh.r', 'shin.r', 'foot.r']].map((n) => n.map((k) => I[k]));
   const ARM = [['upperArm.l', 'foreArm.l', 'hand.l'], ['upperArm.r', 'foreArm.r', 'hand.r']].map((n) => n.map((k) => I[k]));
   const legLen = LEG.map(([a, b, c]) => Math.hypot(...sub(skeleton[b].pivot, skeleton[a].pivot)) + Math.hypot(...sub(skeleton[c].pivot, skeleton[b].pivot)));
+  /** Thigh and shin lengths of the left leg, the one that kneels (body m). */
+  const THIGH = Math.hypot(...sub(skeleton[LEG[0][1]].pivot, skeleton[LEG[0][0]].pivot));
+  const SHIN = Math.hypot(...sub(skeleton[LEG[0][2]].pivot, skeleton[LEG[0][1]].pivot));
   const restPelvisY = piv('pelvis')[1];
   // The arms hang from the A-pose by one turn at the shoulder; the elbow bends about the axis that
   // brings the hand forward once the arm hangs.
@@ -191,7 +194,8 @@ export function createFigureMotion(R, skeleton) {
         sitE = lerp(act.from[0], 0, k); kneelE = lerp(act.from[1], A.kneel, k); crawlE = lerp(act.from[2], A.crawl, k);
         if (u >= len) { actDone = act.name; if (act.name === 'crawlIn') low = true; act = null; }
       }
-      const crawlW = crawlE, kneelW = Math.min(kneelE, 1 - crawlW), sitW = Math.min(sitE, 1 - crawlW - kneelW);
+      // Postures ease in and out (slow at both ends), so going down and getting up never jolt.
+      const crawlW = smooth(crawlE), kneelW = Math.min(smooth(kneelE), 1 - crawlW), sitW = Math.min(smooth(sitE), 1 - crawlW - kneelW);
       const standW = Math.max(0, 1 - sitW - kneelW - crawlW);
       const speed = s.speed / DS;
       m = approach(m, speed > 0.05 ? 1 : 0, dt / R.ease.settleS);
@@ -239,11 +243,21 @@ export function createFigureMotion(R, skeleton) {
         const lim = R.legs.footPitchMaxDeg * DEG;
         return { a: [bx, g + R.legs.ankleM + lift, bz], pitch: pitch * m + Math.max(-lim, Math.min(lim, slope)), yawRel, ground: g };
       });
-      // Postures: sit (knees up, feet forward) and kneel (the right foot forward, the left knee down).
+      // Postures: sit (knees up, feet forward) and kneel (the right foot planted forward, the left
+      // knee on the ground). The kneel is worked out from the leg's own lengths: the left knee rests
+      // on the ground a little behind the hip, which comes forward over it (the weight forward), the
+      // thigh near upright; the shin lies back along the ground to the tucked toes. So the knee
+      // touches down, and the hips sit as low as the thigh allows.
       const S = PO.sit, K = PO.kneel;
       const sitFeet = [0, 1].map((i) => { const x = S.feetX * SIDE[i]; return { a: [x, gnd(x, S.feetZ) + R.legs.ankleM, S.feetZ], pitch: 0.2 }; });
+      const hipL = skeleton[LEG[0][0]].pivot;
+      const kneeX = hipL[0] + K.kneeOutM, kneeZ = hipL[2] + K.pelvisZ - K.kneeBackM;
+      const kneeY = gnd(kneeX, kneeZ) + K.kneeM;
+      const kneelHipY = kneeY + Math.sqrt(Math.max(0, THIGH * THIGH - K.kneeBackM * K.kneeBackM));
+      const toeY = gnd(kneeX, kneeZ - SHIN) + K.toeM;
+      const shinBack = Math.sqrt(Math.max(0, SHIN * SHIN - (toeY - kneeY) ** 2));
       const kneelFeet = [
-        { a: [K.backAnkle[0], gnd(K.backAnkle[0], K.backAnkle[2]) + K.backAnkle[1], K.backAnkle[2]], pitch: -1.3 },
+        { a: [kneeX, toeY, kneeZ - shinBack], pitch: -1.3 },
         { a: [K.front[0], gnd(K.front[0], K.front[1]) + R.legs.ankleM, K.front[1]], pitch: 0 },
       ];
       // Crawl: both knees down, the feet back under the hips.
@@ -276,7 +290,11 @@ export function createFigureMotion(R, skeleton) {
         standY = Math.min(standY, reachY + (restPelvisY - hip[1]));
       }
       const centre = gnd(0, 0);
-      const pelvisTarget = standY * standW + (centre + S.pelvisY) * sitW + (centre + K.pelvisY) * kneelW + (centre + C.pelvisY) * crawlW - (A ? A.drop : 0);
+      // Kneeling, an act's drop is capped: the hips can sink only a little before the knee would go
+      // into the ground.
+      const kneelPelvis = kneelHipY + (restPelvisY - hipL[1]);
+      const drop = A ? A.drop * (1 - kneelW) + Math.min(A.drop, K.maxDropM) * kneelW : 0;
+      const pelvisTarget = standY * standW + (centre + S.pelvisY) * sitW + kneelPelvis * kneelW + (centre + C.pelvisY) * crawlW - drop;
       if (snapTo !== null) { springs.pelvis.x[0] = s.y / DS + pelvisTarget; springs.pelvis.v[0] = 0; }
       const pelvisY = springs.pelvis.step([s.y / DS + pelvisTarget], dt)[0] - s.y / DS;
       const pelvisWorldY = s.y / DS + pelvisY;
@@ -285,10 +303,11 @@ export function createFigureMotion(R, skeleton) {
       const twist = P.twistDeg * DEG * Math.sin(2 * Math.PI * phase) * m * standW;
       // On hands and knees the hips tip forward and come forward over the knees.
       const qPelvis = qmul(qaxis([0, 1, 0], twist), qaxis([1, 0, 0], C.hipDeg * DEG * crawlW));
-      set(I.pelvis, { q: qPelvis, t: [shift, pelvisY - restPelvisY, C.pelvisZ * crawlW] });
+      const pelvisZ = C.pelvisZ * crawlW + K.pelvisZ * kneelW;
+      set(I.pelvis, { q: qPelvis, t: [shift, pelvisY - restPelvisY, pelvisZ] });
 
       // Leg IK in the pelvis's rest frame (worked out now, applied once the arms are posed).
-      const legIK = [0, 1].map((i) => {
+      const solveLegs = () => [0, 1].map((i) => {
         const [th, sh, ft] = LEG[i];
         const T = matPointInv(out, 0, target[i].a);
         const kneelBack = i === 0 ? kneelW + crawlW : crawlW;
@@ -296,6 +315,14 @@ export function createFigureMotion(R, skeleton) {
         const r = twoBone(skeleton[th].pivot, skeleton[sh].pivot, skeleton[ft].pivot, T, pole);
         return { ...r, knee: matPoint(out, 0, r.joint) };
       });
+      let legIK = solveLegs();
+      // Never a knee through the ground (going down, getting up, or an act's drop): if one would
+      // go under, the hips rise by that much and the legs are worked out again.
+      const under = Math.max(...legIK.map((l) => gnd(l.knee[0], l.knee[2]) + K.kneeM * 0.8 - l.knee[1]));
+      if (under > 0) {
+        set(I.pelvis, { q: qPelvis, t: [shift, pelvisY + under - restPelvisY, pelvisZ] });
+        legIK = solveLegs();
+      }
 
       // Spine and chest: the lean of the pace or posture, breathing, a counter-twist to the hips.
       const br = Math.sin((2 * Math.PI * t) / R.idle.breathS);

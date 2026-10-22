@@ -92,7 +92,8 @@
   },
   "poses": {
     "sit": { "pelvisY": 0.15, "leanDeg": 16, "feetZ": 0.3, "feetX": 0.12, "headDeg": -6, "skirtDeg": 26 },
-    "kneel": { "pelvisY": 0.4, "leanDeg": 12, "front": [-0.11, 0.22], "backAnkle": [0.11, 0.12, -0.3], "headDeg": 12 },
+    "kneel": { "note": "One knee down, worked out from the leg's lengths (motion.js): the left knee rests kneeM above the ground, kneeBackM behind the hip and kneeOutM out from it; the hips come pelvisZ forward over it (the weight forward) and sit as low as the thigh allows; the shin lies back to the tucked toes, the ankle toeM up. front: the right foot planted [x, z]. maxDropM: how far an act may sink the hips while kneeling. leanDeg, headDeg: the back and head lean toward the work.",
+      "kneeM": 0.04, "kneeBackM": 0.04, "kneeOutM": 0.01, "toeM": 0.1, "pelvisZ": 0.05, "maxDropM": 0.025, "front": [-0.11, 0.26], "leanDeg": 18, "headDeg": 16 },
     "feed": { "hand": [-0.12, 0.3, 0.38], "reachS": 1.4, "holdS": 2.2, "headDeg": 22 },
     "arrive": { "lookS": 2.4, "lookDeg": 40, "tugS": 1.6, "tugHand": [0.1, 1.48, 0.22] },
     "leave": { "lookUpS": 2.2, "lookUpDeg": -28, "sitAfterS": 60 },

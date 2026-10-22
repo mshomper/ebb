@@ -247,6 +247,37 @@ export function addFigureTests(test, assert, eq) {
     return report.join(', ');
   });
 
+  test(FIG, 'kneeling, the left knee rests on the ground and no knee ever goes through it', async () => {
+    const { R, built } = await load();
+    const k = R.body.displayScale ?? 1, dt = 1 / 60;
+    const knees = ['shin.l', 'shin.r'].map((n) => built.skeleton.findIndex((/** @type {any} */ b) => b.name === n));
+    const kneeY = (/** @type {any} */ m) => knees.map((i) => matPoint(m.bones, i * 16, built.skeleton[i].pivot)[1] * k);
+    const motion = createFigureMotion(R, built.skeleton);
+    /** @param {'stand'|'kneel'} posture */
+    const still = (posture) => Object.freeze({ x: 0, z: 0, y: 0, yaw: 0, speed: 0, moving: false, ground: () => 0, depth: () => 0, below: true, posture });
+    let lowest = Infinity;
+    // Settled standing first (the hips' spring starts from nothing on the very first frame).
+    for (let f = 0; f < 30; f++) motion.update(dt, still('stand'));
+    // Down, held, and up again.
+    for (const [posture, seconds] of /** @type {const} */ ([['stand', 1], ['kneel', 3], ['stand', 3]])) {
+      for (let f = 0; f < seconds * 60; f++) { motion.update(dt, still(posture)); lowest = Math.min(lowest, ...kneeY(motion)); }
+      if (posture === 'kneel') {
+        const [l, r] = kneeY(motion);
+        assert(l < 0.07 && l > 0.01, `the kneeling knee is ${(l * 100).toFixed(1)} cm up`);
+        assert(r > 0.15, `the front knee is up (${(r * 100).toFixed(1)} cm)`);
+      }
+    }
+    // Every kneeling act, from standing.
+    for (const name of ['drink', 'pitch', 'lay', 'strike']) {
+      const m = createFigureMotion(R, built.skeleton);
+      for (let f = 0; f < 60; f++) m.update(dt, still('stand'));
+      const len = m.act(name);
+      for (let f = 0; f < (len + 1) * 60; f++) { m.update(dt, still('stand')); lowest = Math.min(lowest, ...kneeY(m)); }
+    }
+    assert(lowest > 0.01, `a knee went down to ${(lowest * 100).toFixed(1)} cm`);
+    return `lowest knee ${(lowest * 100).toFixed(1)} cm`;
+  });
+
   test(FIG, 'crawlIn ends low on hands and knees and stays there; climbOut stands up from it', async () => {
     const { R, built } = await load();
     const motion = createFigureMotion(R, built.skeleton);
