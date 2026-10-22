@@ -27,8 +27,10 @@ const MARGIN_PLANTS = ['reeds', 'iris'];
 export function placesNow(inp, C) {
   /** @type {Set<string>} */ const out = new Set();
   const s = inp.summary, hab = inp.hab;
-  // Only what the player made counts where the island could have it already (a brook, a natural
-  // cove): ground moved C.shapedCm or more from the island as generated (the habitat's shapedCm).
+  // Only what the player made counts where the island could have it already (the starter pond, a
+  // brook, a natural cove): ground moved C.shapedCm or more from the island as generated (the
+  // habitat's shapedCm). A deep pool is one the player dug or deepened: its deep water stands on
+  // shaped ground (the starter pond is a metre deep as the island begins).
   const shapedAt = (/** @type {number} */ k) => {
     if (!hab?.shapedCm || !s) return false;
     const i = Math.floor(waterCellCenter(s.rect.x + (k % s.rect.w)) - HABITAT_ORIGIN), j = Math.floor(waterCellCenter(s.rect.y + Math.floor(k / s.rect.w)) - HABITAT_ORIGIN);
@@ -37,7 +39,7 @@ export function placesNow(inp, C) {
   if (s) {
     let deepest = 0, running = 0, cove = 0;
     for (let k = 0; k < s.targetMm.length; k++) {
-      if (s.targetMm[k] > deepest) deepest = s.targetMm[k];
+      if (s.targetMm[k] > deepest && shapedAt(k)) deepest = s.targetMm[k];
       if (s.cls[k] === WATER_CLASS.running && shapedAt(k)) running++;
       if (inp.cove && inp.cove[k] >= C.coveScore && shapedAt(k)) cove++;
     }
