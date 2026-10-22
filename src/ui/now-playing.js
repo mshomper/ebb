@@ -6,7 +6,7 @@
 // src/audio/music/hearts.js) or takes the heart back; the thumbs-down beside it turns the piece down
 // (it fades out, never comes back, and the composer leans away from its form and sound). Those two are
 // the only things in it you can tap; the rest of the bubble never takes a tap from the island. It stays away while the buttons are hidden (H),
-// during the reveal, and while a tool is in hand (the tool card sits there); on a phone it waits for
+// during the reveal, and while a tool is in hand (the tool card sits there); in a narrow window it waits for
 // an island note in its place to go. Listens for music:started and music:ended
 // (src/audio/music/index.js). Timing: recipes/audio/game.json `nowPlaying`. Styles: now-playing.css.
 
@@ -73,7 +73,7 @@ export async function mountNowPlaying() {
   });
   heartBtn.addEventListener('pointerenter', () => { if (root.classList.contains('is-shown')) hideIn(N.holdS); });
 
-  /** Would the bubble cover an island note now (on a phone they share the lower left)? */
+  /** Would the bubble cover an island note now (in a narrow window they share the lower left)? */
   function coversANote() {
     const b = root.getBoundingClientRect();
     for (const n of document.querySelectorAll('.ebb-notes > *')) {

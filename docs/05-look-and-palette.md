@@ -207,7 +207,7 @@ Grade: shadow tint #6F8794 at 18%, highlight tint #F9E3A8 at 8%, chroma 1.0, kee
 
 ## Performance budget
 
-Desktop high tier at 1440p: exposure 0.05 ms, bloom 0.35 ms, tonemap plus LUT 0.15 ms, painterly 0.8 ms when on, outline plus dither 0.2 ms, bake under 0.05 ms when it runs. Mobile low tier: painterly off by default (quarter resolution if turned on), bloom 4 levels, outline on (0.3 ms), total post under 1.5 ms. Full table in `19-performance-and-quality-tiers.md`.
+Desktop high tier at 1440p: exposure 0.05 ms, bloom 0.35 ms, tonemap plus LUT 0.15 ms, painterly 0.8 ms when on, outline plus dither 0.2 ms, bake under 0.05 ms when it runs. Low tier (emergency fallback on weak laptops): painterly off by default (quarter resolution if turned on), bloom 4 levels, outline on (0.3 ms), total post under 1.5 ms. Full table in `19-performance-and-quality-tiers.md`.
 
 ## Acceptance checks
 

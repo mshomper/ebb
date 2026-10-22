@@ -4,23 +4,21 @@
 // by `step`, and after `recoverFrames` frames in a row under `recoverBelow` of the budget it climbs
 // back, always between the tier's renderScaleMin and renderScale. It also says when the scale has
 // sat at its minimum while still over budget for `stepDown.atMinSeconds` (the app then steps the
-// tier down once), and, on the tiers in `thermal.tiers`, drops a step early when GPU p95 creeps up
-// over minutes at a steady scale (a phone getting warm).
+// tier down once).
 // Each step down must earn its blur (S8d-2): the GPU time over `worth.frames` frames after a step is
 // compared with the frames just before it, and a step that saved less than `worth.minGain` is undone
-// and no lower scale is tried for `worth.holdSeconds` (on a phone whose cost is in what is drawn
-// rather than in pixels, a smaller picture only looks worse). The scale can also be pinned (the
-// phone check page's sweep). Every number comes from recipes/quality-tiers.json `dynamicRes`.
+// and no lower scale is tried for `worth.holdSeconds` (where the cost is in what is drawn rather
+// than in pixels, a smaller picture only looks worse). The scale can also be pinned (a tool page's
+// sweep). Every number comes from recipes/quality-tiers.json `dynamicRes`.
 // Pure logic: no GPU, no DOM, time is passed in.
 
 /**
  * @typedef {{ step: number, overFrames: number, recoverFrames: number, recoverBelow: number, snapPx: number,
  *   staleFrames: number, frameSlack: number, stepDown: { atMinSeconds: number, noteSeconds: number },
- *   thermal: { tiers: string[], bucketSeconds: number, windowMinutes: number, rise: number, holdMinutes: number },
  *   worth?: { settleFrames: number, frames: number, minGain: number, holdSeconds: number } }} DynamicResRecipe
  * @typedef {'timestamps'|'work-done'|'frame'} Measure  where a sample came from: GPU timestamps,
  *   an onSubmittedWorkDone round trip, or the frame time when no GPU time has come for a while
- * @typedef {{ at: number, from: number, to: number, why: 'over'|'recover'|'thermal'|'tier'|'no-gain'|'pin' }} ScaleChange
+ * @typedef {{ at: number, from: number, to: number, why: 'over'|'recover'|'tier'|'no-gain'|'pin' }} ScaleChange
  * @typedef {{ renderScale: number, renderScaleMin: number, gpuBudgetMs: number, targetFps: number }} TierScale
  */
 
@@ -51,14 +49,6 @@ export function createDynamicRes(recipe) {
   let lastT = -1;
   let atMinOverMs = 0;
   let stuck = false;
-  // Thermal care: one p95 per bucket at a steady scale; a thermal step holds a ceiling for a while,
-  // or recovery would climb straight back into the heat.
-  let thermalOn = false;
-  /** @type {number[]} */ let bucket = [];
-  let bucketStart = -1;
-  /** @type {number[]} */ let p95s = [];
-  let ceiling = 1;
-  let ceilingUntil = -1;
   /** @type {Measure} */ let measure = 'timestamps';
   /** @type {ScaleChange[]} */ const changes = [];
   // Whether a step down earned its blur: the GPU times just before it, then a trial after it.
@@ -67,16 +57,13 @@ export function createDynamicRes(recipe) {
   /** @type {null | { from: number, before: number, skip: number, samples: number[] }} */ let trial = null;
   let floor = 0;
   let floorUntil = -1;
-  /** A scale held by hand (the phone check page's sweep), or null. @type {number | null} */ let pinned = null;
+  /** A scale held by hand (a tool page's sweep), or null. @type {number | null} */ let pinned = null;
 
   function resetCounts() {
     over = 0;
     under = 0;
     recent = [];
     atMinOverMs = 0;
-    bucket = [];
-    bucketStart = -1;
-    p95s = [];
   }
 
   /** @param {number} next @param {ScaleChange['why']} why @param {number} now */
@@ -120,24 +107,6 @@ export function createDynamicRes(recipe) {
     return false;
   }
 
-  /** @param {number} ms @param {number} now */
-  function thermal(ms, now) {
-    const T = recipe.thermal;
-    if (bucketStart < 0) bucketStart = now;
-    bucket.push(ms);
-    if (now - bucketStart < T.bucketSeconds * 1000) return;
-    p95s.push(pct(bucket, 0.95));
-    bucket = [];
-    bucketStart = now;
-    const span = Math.max(1, Math.round((T.windowMinutes * 60) / T.bucketSeconds));
-    if (p95s.length > span + 1) p95s.shift();
-    if (p95s.length === span + 1 && p95s[span] > p95s[0] * (1 + T.rise) && scale > min + EPS) {
-      change(scale - recipe.step, 'thermal', now);
-      ceiling = scale;
-      ceilingUntil = now + T.holdMinutes * 60000;
-    }
-  }
-
   return {
     /**
      * A new tier: its scale range and budget. keepScale holds the current scale inside the new
@@ -150,9 +119,6 @@ export function createDynamicRes(recipe) {
       min = Math.min(max, s.renderScaleMin);
       budgetMs = s.gpuBudgetMs;
       framePeriodMs = 1000 / Math.max(1, s.targetFps);
-      thermalOn = recipe.thermal.tiers.includes(name);
-      ceiling = max;
-      ceilingUntil = -1;
       stuck = false;
       trial = null;
       lastMs = [];
@@ -165,8 +131,7 @@ export function createDynamicRes(recipe) {
 
     /**
      * One frame's time. GPU samples are judged against the tier's GPU budget; a frame-time sample
-     * (no GPU time has come for a while) against the frame period times frameSlack. Under a frame
-     * cap the frame time cannot show headroom, so a frame-time sample rarely lets the scale climb.
+     * (no GPU time has come for a while) against the frame period times frameSlack.
      * @param {number} ms @param {Measure} from @param {number} now performance.now()
      */
     sample(ms, from, now) {
@@ -180,14 +145,13 @@ export function createDynamicRes(recipe) {
       if (recent.length > recipe.overFrames) recent.shift();
       const dt = lastT < 0 ? 0 : Math.max(0, Math.min(now - lastT, 250));
       lastT = now;
-      if (ceilingUntil >= 0 && now >= ceilingUntil) { ceiling = max; ceilingUntil = -1; }
       if (floorUntil >= 0 && now >= floorUntil) floorUntil = -1;
       if (pinned !== null) return;
       const onTrial = from !== 'frame' && judge(ms, now);
 
       if (!onTrial) {
         if (over >= recipe.overFrames && scale > lowest() + EPS) change(scale - recipe.step, 'over', now);
-        else if (under >= recipe.recoverFrames && scale < Math.min(max, ceiling) - EPS) change(Math.min(scale + recipe.step, ceiling), 'recover', now);
+        else if (under >= recipe.recoverFrames && scale < max - EPS) change(scale + recipe.step, 'recover', now);
       }
 
       // At the lowest scale allowed and still mostly over budget: time toward the one automatic
@@ -196,12 +160,10 @@ export function createDynamicRes(recipe) {
       if (!onTrial && scale <= lowest() + EPS && mostlyOver) atMinOverMs += dt;
       else atMinOverMs = 0;
       if (atMinOverMs >= recipe.stepDown.atMinSeconds * 1000) { stuck = true; atMinOverMs = 0; }
-
-      if (thermalOn && from !== 'frame') thermal(ms, now);
     },
 
     /**
-     * Hold the render scale (the phone check page's sweep), or release it with null. While held the
+     * Hold the render scale (a tool page's sweep), or release it with null. While held the
      * scale never moves by itself.
      * @param {number | null} s @param {number} [now]
      */
@@ -245,7 +207,7 @@ export function createDynamicRes(recipe) {
     get lowest() { return lowest(); },
     /** Where the last sample came from. */
     get measure() { return measure; },
-    /** Every scale change this session, oldest first (the phone check page saves them). */
+    /** Every scale change this session, oldest first (for tool pages). */
     changes: () => changes.slice(),
   };
 }

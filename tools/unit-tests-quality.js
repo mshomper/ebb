@@ -1,10 +1,9 @@
 // @ts-check
 // Quality tests for tools/unit-tests.html (S8d-1, docs 04, 19): dynamic resolution steps down and
-// back, stays inside the tier's range, says when it is stuck at the minimum, eases off early when
-// the GPU warms up on low; the frame cap draws about the tier's target rate on fast displays.
+// back, stays inside the tier's range, says when it is stuck at the minimum; low is a 60 fps
+// emergency fallback below medium, the floor (desktop and laptop only, October 21, 2026).
 
 import { createDynamicRes } from '../src/render/dynamic-res.js';
-import { createFrameCap } from '../src/render/frame-cap.js';
 
 const QUALITY = 'quality';
 
@@ -45,9 +44,9 @@ export function addQualityTests(test, assert, eq) {
     const low = q.tiers.low;
     d.setTier('low', low, false, 0);
     let t = 0, stuckAt = -1;
-    // Matt's iPhone: the cost does not follow the pixels.
-    for (let i = 0; i < 30 * 30; i++) {
-      t += 1000 / 30;
+    // A weak laptop whose cost does not follow the pixels, for 30 seconds.
+    for (let i = 0; i < 60 * 30; i++) {
+      t += 1000 / 60;
       d.sample(low.gpuBudgetMs * 1.5, 'timestamps', t);
       if (d.takeStuck() && stuckAt < 0) stuckAt = t;
     }
@@ -65,10 +64,10 @@ export function addQualityTests(test, assert, eq) {
     d.setTier('low', low, false, 0);
     d.pin(0.6, 0);
     let t = 0;
-    for (let i = 0; i < 300; i++) { t += 1000 / 30; d.sample(low.gpuBudgetMs * 3 * d.scale * d.scale, 'timestamps', t); }
+    for (let i = 0; i < 600; i++) { t += 1000 / 60; d.sample(low.gpuBudgetMs * 3 * d.scale * d.scale, 'timestamps', t); }
     eq(d.scale, 0.6, 'held at 0.6 while over budget');
     d.pin(null, t);
-    for (let i = 0; i < 300; i++) { t += 1000 / 30; d.sample(low.gpuBudgetMs * 3 * d.scale * d.scale, 'timestamps', t); }
+    for (let i = 0; i < 600; i++) { t += 1000 / 60; d.sample(low.gpuBudgetMs * 3 * d.scale * d.scale, 'timestamps', t); }
     assert(d.scale < 0.6, `released, it steps down: ${d.scale}`);
     return `ended at ${d.scale}`;
   });
@@ -86,31 +85,13 @@ export function addQualityTests(test, assert, eq) {
     return `low ${w} by ${h}`;
   });
 
-  test(QUALITY, 'thermal care drops a step early on low when GPU time creeps up', async () => {
+  test(QUALITY, 'low is a 60 fps fallback below medium, with no phone-only settings left', async () => {
     const q = await recipe();
-    const d = createDynamicRes(q.dynamicRes);
-    d.setTier('low', q.tiers.low, false, 0);
-    let t = 0;
-    const minutes = q.dynamicRes.thermal.windowMinutes + 2;
-    for (let i = 0; i < 30 * 60 * minutes; i++) {
-      t += 1000 / 30;
-      d.sample(10 * (1 + 0.4 * Math.min(1, t / (minutes * 60000))), 'timestamps', t);
-    }
-    const thermal = d.changes().filter((c) => c.why === 'thermal');
-    assert(thermal.length >= 1, 'a thermal step happened');
-    return `thermal step at ${(thermal[0]?.at / 60000).toFixed(1)} min`;
-  });
-
-  test(QUALITY, 'the frame cap draws about the target rate', async () => {
-    const q = await recipe();
-    const lines = [];
-    for (const [hz, fps] of [[120, 30], [60, 30], [144, 60], [60, 60]]) {
-      const cap = createFrameCap(q.frameCap);
-      let n = 0;
-      for (let i = 0; i < hz * 10; i++) if (cap.due((i * 1000) / hz, fps)) n++;
-      assert(Math.abs(n / 10 - fps) < 1, `${hz} Hz at ${fps}: ${n / 10} fps`);
-      lines.push(`${hz} Hz at ${fps}: ${n / 10}`);
-    }
-    return lines.join('; ');
+    const { low, medium } = q.tiers;
+    eq(low.targetFps, 60, 'low targets 60 fps');
+    assert(low.gpuBudgetMs < 1000 / 60, `low's GPU budget fits a 60 fps frame: ${low.gpuBudgetMs} ms`);
+    assert(low.grassDensity <= medium.grassDensity && low.renderScale <= medium.renderScale, 'low draws no more than medium');
+    assert(!('frameCap' in q) && !('budgetGroups' in q) && !('thermal' in q.dynamicRes), 'no frame cap, mobile budget groups or thermal care');
+    return `low ${low.targetFps} fps, ${low.gpuBudgetMs} ms`;
   });
 }

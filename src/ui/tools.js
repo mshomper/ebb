@@ -409,7 +409,7 @@ export function mountTools(parent = document.body) {
     springModeBtn.hidden = !springsOn;
     netModeBtn.hidden = !netsOn;
     raftModeBtn.hidden = !raftOn;
-    layoutRows(waterChips, waterModeBtns.filter((b) => !b.hidden));
+    layoutRows(waterChips, waterModeBtns.filter((b) => !b.hidden), 3);
     for (const b of waterModeBtns) b.setAttribute('aria-pressed', String(b.dataset.waterMode === waterMode));
     for (const b of rateBtns) b.setAttribute('aria-pressed', String(b.dataset.rate === springRate));
     renderSprings();
@@ -635,9 +635,12 @@ function shapingOf(u, mode) {
  * The rows a set of chips falls into so every row fills the card: up to four in one row, else two
  * rows with the longer first (5: 3 + 2, 6: 3 + 3, 7: 4 + 3, 8: 4 + 4), and past eight, rows of at
  * most four as even as they go (9: 3 + 3 + 3, 10: 4 + 3 + 3). Pure.
- * @param {number} n @returns {number[]}
+ * @param {number} n @param {number} [most] the most in a row (4; the Water card's 3) @returns {number[]}
  */
-export function chipRows(n) {
+export function chipRows(n, most = 4) {
+  // The Water card's chips lay their icon beside the word, so they go at most three to a row:
+  // four as two and two, five as three and two.
+  if (most < 4) return n <= most ? (n > 0 ? [n] : []) : [Math.ceil(n / 2), n - Math.ceil(n / 2)];
   if (n <= 4) return n > 0 ? [n] : [];
   if (n <= 8) { const first = Math.ceil(n / 2); return [first, n - first]; }
   const rows = Math.ceil(n / 4), base = Math.floor(n / rows), extra = n - base * rows;
@@ -646,12 +649,12 @@ export function chipRows(n) {
 
 /**
  * Lay chips out by chipRows on a 12-column grid: each chip spans its row's share, so a short last
- * row widens its chips rather than leaving a gap. @param {HTMLElement} box @param {HTMLElement[]} shown
+ * row widens its chips rather than leaving a gap. @param {HTMLElement} box @param {HTMLElement[]} shown @param {number} [most] chipRows' most in a row
  */
-function layoutRows(box, shown) {
+function layoutRows(box, shown, most = 4) {
   box.style.setProperty('--tb-cols', '12');
   let i = 0;
-  for (const per of chipRows(shown.length)) {
+  for (const per of chipRows(shown.length, most)) {
     for (let k = 0; k < per; k++, i++) {
       const span = `span ${12 / per}`;
       if (shown[i].style.gridColumn !== span) shown[i].style.gridColumn = span;

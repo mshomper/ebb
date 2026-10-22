@@ -40,7 +40,8 @@ function walk(R, built, speed, h, seconds) {
     const c = Math.cos(r.yaw), sn = Math.sin(r.yaw);
     const ankles = feet.map((i) => {
       const p = matPoint(motion.bones, i * 16, built.skeleton[i].pivot);
-      return [x + c * p[0] + sn * p[2], h(x, 0) + p[1], -sn * p[0] + c * p[2]];
+      const k = R.body.displayScale ?? 1;   // the figure is drawn at this size (the shader scales the rig)
+      return [x + k * (c * p[0] + sn * p[2]), h(x, 0) + k * p[1], k * (-sn * p[0] + c * p[2])];
     });
     frames.push({ ankles, info: { ...motion.info }, bones: motion.bones.slice() });
   }
@@ -125,7 +126,7 @@ export function addFigureTests(test, assert, eq) {
         let anchor = null;
         for (const f of frames.slice(120)) {
           const a = f.ankles[i];
-          const down = a[1] < R.legs.ankleM + 0.004;
+          const down = a[1] < R.legs.ankleM * (R.body.displayScale ?? 1) + 0.004;
           if (down && anchor) worst = Math.max(worst, Math.hypot(a[0] - anchor[0], a[2] - anchor[2]));
           anchor = down ? anchor ?? a : null;
         }
@@ -145,8 +146,8 @@ export function addFigureTests(test, assert, eq) {
     // Facing along z, so the slope runs across the feet.
     for (let f = 0; f < 240; f++) r = motion.update(1 / 60, { x: 0, z: 0, y: 0, yaw: 0, speed: 0, moving: false, ground: h });
     const off = feet.map((i) => {
-      const p = matPoint(motion.bones, i * 16, built.skeleton[i].pivot);
-      return p[1] - R.legs.ankleM - h(p[0]);
+      const k = R.body.displayScale ?? 1, p = matPoint(motion.bones, i * 16, built.skeleton[i].pivot);
+      return k * (p[1] - R.legs.ankleM) - h(k * p[0]);
     });
     assert(Math.max(...off.map(Math.abs)) < 0.02, `ankles off the ground by ${off.map((o) => (o * 100).toFixed(1)).join(' and ')} cm`);
     assert(r && Math.abs(r.yaw) < 1e-9, 'facing kept');

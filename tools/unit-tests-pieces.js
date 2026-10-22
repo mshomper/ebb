@@ -332,6 +332,9 @@ export function addPiecesTests(test, assert, eq) {
     eq(chipRows(9).join(), '3,3,3', 'nine (with Pond stones and Steps): three rows of three');
     eq(chipRows(10).join(), '4,3,3', 'ten: four, three and three');
     for (const n of [4, 5, 6, 7, 8, 9, 10]) assert(chipRows(n).every((per) => 12 % per === 0), `${n}: each row divides 12 columns`);
+    eq(chipRows(3, 3).join(), '3', 'the Water card: three in a row');
+    eq(chipRows(4, 3).join(), '2,2', 'the Water card: four as two and two, so no word breaks');
+    eq(chipRows(5, 3).join(), '3,2', 'the Water card: five as three and two');
   });
 
   test(G, 'pond stones and flights of Steps come back from a save exactly, next to loose stones', async () => {

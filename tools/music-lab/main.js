@@ -18,13 +18,12 @@ const INSTRUMENTS = [
 ];
 
 const $ = (/** @type {string} */ id) => /** @type {any} */ (document.getElementById(id));
-const tier = matchMedia('(pointer: coarse)').matches && Math.min(screen.width, screen.height) < 700 ? 'mobile' : 'desktop';
 
 const [mixerRecipe, samplerRecipe, synthRecipe, pedalRecipe] = await Promise.all([
   loadAudioRecipe('audio/mixer'), loadAudioRecipe('music/sampler'), loadAudioRecipe('music/synth'),
   loadAudioRecipe('music/instruments/pedal-knight').catch(() => null),
 ]);
-const mixer = createMixer(mixerRecipe, { tier });
+const mixer = createMixer(mixerRecipe);
 const ctx = mixer.ctx;
 const out = mixer.input('music');
 
@@ -35,9 +34,8 @@ $('unlock-btn').addEventListener('click', async () => {
 
 // ---------------- budget options (applied when a slot loads) ----------------
 
-// Phones start light: a full piano decoded is hundreds of megabytes.
-// Phones unpack two octaves of pedal recordings by default; desktop all five octaves, both sets.
-const budget = { range: tier === 'mobile' ? 'piece' : 'mid', sets: tier === 'mobile' ? 'sus' : 'all' };
+// All five octaves, both pedal sets, by default; the range buttons can make it lighter.
+const budget = { range: 'mid' };
 for (const [attr, key] of /** @type {const} */ ([['data-range', 'range']])) {
   const btns = [...document.querySelectorAll(`[${attr}]`)];
   for (const o of btns) o.setAttribute('aria-pressed', String(o.getAttribute(attr) === String(/** @type {any} */ (budget)[key])));
@@ -65,16 +63,14 @@ for (const s of ['a', 'b']) {
 /** Build an instrument, applying the bench's current settings. @param {string} id @param {(f: number) => void} progress */
 async function build(id, progress) {
   if (id === 'fm-piano-code') {
-    const synth = createFmPiano(ctx, out, synthRecipe, { tier });
+    const synth = createFmPiano(ctx, out, synthRecipe);
     progress(1);
     return { inst: synth, recipe: null };
   }
   const recipe = await loadAudioRecipe(`music/instruments/${id}`);
   const settings = samplerSettingsFor(samplerRecipe, id);
-  // Phones unpack only the pedal recordings, to stay light (the game's phone set comes later).
-  if (budget.sets === 'sus' && recipe.sets?.sus) settings.load.sets = ['sus', 'rel'];
   applyLive(settings);
-  const inst = createSampler(ctx, out, recipe, settings, { tier, pedalNoise: pedalRecipe });
+  const inst = createSampler(ctx, out, recipe, settings, { pedalNoise: pedalRecipe });
   const range = budget.range === 'piece' ? { low: 53, high: 79 } : { low: 33, high: 99 };
   await inst.load({ ...range, onProgress: (d, n) => progress(d / n) });
   return { inst, recipe };

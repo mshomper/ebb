@@ -888,7 +888,7 @@ test(WSUM, 'a bowl fills to its lip, and is a pond only with enough catchment or
   const args = (/** @type {number} */ r, /** @type {any[]} */ springs) =>
     ({ heightQ: synthHeights(BOWL_RECT, bowlLand(r)), rect: BOWL_RECT, springs,
       // Thresholds pinned here, so the test checks the rule rather than the recipe's tuning.
-      params: { ...water.summary, pondMinCatchmentM2: 30, pondMinDepthM: 0.15 }, tide: water.tide });
+      params: { ...water.summary, pondMinCatchmentM2: 30, pondMinDepthM: 0.15, rainCatchmentRatio: 0 }, tide: water.tide });
   const small = buildSummary(args(4, []));
   eq(small.cls[at], WATER_CLASS.damp, 'small dry bowl class');
   eq(small.targetMm[at], 0, 'small dry bowl depth');

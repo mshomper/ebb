@@ -743,7 +743,7 @@ const ICONS = {
   back: `
     <path d="M14.5 5.5L8 12L14.5 18.5"/>`,
 
-  // A chevron pointing up (the phone sheet grows); CSS turns it over to point down.
+  // A chevron pointing up; CSS turns it over to point down (folds in the journal).
   chevron: `
     <path d="M5.5 15L12 8.5L18.5 15"/>`,
 

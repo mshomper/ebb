@@ -29,11 +29,10 @@ import { butterQs, qDb, clamp, createBus, createPedal, swellCurve, tauFor } from
 
 /**
  * @param {BaseAudioContext} ctx @param {AudioNode} output @param {any} recipe recipes/music/synth.json
- * @param {{tier?: 'desktop'|'mobile', seed?: number}} [opts]
+ * @param {{seed?: number}} [opts]
  */
 export function createPad(ctx, output, recipe, opts = {}) {
   let p = structuredClone(recipe.pad);
-  const tier = opts.tier ?? 'desktop';
   const seed = (opts.seed ?? p.seed ?? 1) >>> 0;
   const bus = createBus(ctx, output, p.highpass);
   const pedal = createPedal();
@@ -119,7 +118,7 @@ export function createPad(ctx, output, recipe, opts = {}) {
       const t = Math.max(when, ctx.currentTime);
       for (const v of voices) if (v.midi === midi && (v.endT === null || v.endT > t)) kill(v, t, p.retriggerS);
       const live = voices.filter((v) => v.endT === null || v.endT > t);
-      const max = p.maxVoices[tier] ?? 12;
+      const max = (typeof p.maxVoices === 'number' ? p.maxVoices : p.maxVoices?.desktop) ?? 12;
       while (live.length >= max) {
         const i = pickVictim(live.map((v) => ({ released: v.keyUpT !== null, levelDb: levelDb(v, t) })));
         kill(live[i], t, p.stealS);

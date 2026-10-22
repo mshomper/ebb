@@ -21,7 +21,7 @@ import { stream } from '../core/rng.js';
  * @param {ReverbShape} shape
  * @param {number} sampleRate
  * @param {number} seed
- * @param {number} [lengthScale] 1 normally, 0.5 on the mobile tier
+ * @param {number} [lengthScale] 1 normally (a shorter room for tests and tools)
  * @returns {[Float32Array, Float32Array]}
  */
 export function buildImpulse(shape, sampleRate, seed, lengthScale = 1) {

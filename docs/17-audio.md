@@ -1,6 +1,6 @@
 # 17 — Audio
 
-> Sound is half of what makes ebb calm. The island should sound like a real small place: water lapping more or less as the tide moves, wind in the reeds, birds at dawn, frogs at dusk, rain on leaves, a hush on frosty mornings. Creature voices are made on the fly so every frog sounds a little different and a happy chorus sounds fuller than a lonely call. Tools make soft, earthy sounds (soil, stone, a drop of water), never clicks or chimes that feel like a menu. Everything is mixed quietly, placed in space around the camera, and starts only after the player touches the screen, as browsers require.
+> Sound is half of what makes ebb calm. The island should sound like a real small place: water lapping more or less as the tide moves, wind in the reeds, birds at dawn, frogs at dusk, rain on leaves, a hush on frosty mornings. Creature voices are made on the fly so every frog sounds a little different and a happy chorus sounds fuller than a lonely call. Tools make soft, earthy sounds (soil, stone, a drop of water), never clicks or chimes that feel like a menu. Everything is mixed quietly, placed in space around the camera, and starts only after the player's first click or key press, as browsers require.
 
 ## Locked decisions
 
@@ -10,7 +10,7 @@
 - **Sound follows display time**, so previewing midnight in settings or photo mode (16-customization-and-photo-mode.md) sounds like midnight.
 - **Mood is audible:** a happy species sings more often, in fuller chorus; an unsettled one calls sparsely. No alert sounds, ever.
 - **Assets are CC0 only**, as Ogg Opus at 96 kbps stereo for beds and 64 kbps mono for one-shots, with an AAC (`.m4a`) fallback for older Safari. Total audio download under 6 MB for the M2 first pass, loaded after first paint.
-- **Autoplay:** the audio context is created suspended and resumed on the player's first touch or click anywhere. There is no title screen: ebb opens straight into catch-up and the reveal (02-core-loop-and-idle-model.md, 15-camera-input-and-ui.md), which runs silently until that first gesture.
+- **Autoplay:** the audio context is created suspended and resumed on the player's first click or key press anywhere. There is no title screen: ebb opens straight into catch-up and the reveal (02-core-loop-and-idle-model.md, 15-camera-input-and-ui.md), which runs silently until that first gesture.
 - **Not in the vertical slice.** Audio arrives in M2 (20-roadmap-and-vertical-slice.md). The M2 first pass is the water bed, the wind bed, and the frog voice with chorus.
 
 ## How it works
@@ -78,7 +78,7 @@ Gain changes use `setTargetAtTime` (0.8 to 3 s time constants), so nothing jumps
 - **Bee and insect swarms:** filtered noise plus a low sawtooth hum, amplitude modulated by swarm density; cicada-like buzz in summer.
 - **Owl, heron, crane, otter:** formant-filtered tones with breath noise; recipes give pitch, formants, contour.
 
-**Chorus behavior:** a happy species calls more often and individuals answer each other, producing a chorus; an unsettled species calls rarely and alone. This reads directly from mood and company in the ecology state. The frog rule matches 12-creature-roadmap.md: a frog delays its call if a neighbor started within 0.4 s, so calls alternate and the chorus ripples around the pond rather than overlapping. The behavior system (11-creatures-and-ecology.md) decides who calls and when; `voices.js` only renders the sound. A voice manager caps simultaneous voices (12 desktop, 6 mobile), prioritizing nearest and named creatures; distant groups merge into the life bed.
+**Chorus behavior:** a happy species calls more often and individuals answer each other, producing a chorus; an unsettled species calls rarely and alone. This reads directly from mood and company in the ecology state. The frog rule matches 12-creature-roadmap.md: a frog delays its call if a neighbor started within 0.4 s, so calls alternate and the chorus ripples around the pond rather than overlapping. The behavior system (11-creatures-and-ecology.md) decides who calls and when; `voices.js` only renders the sound. A voice manager caps simultaneous voices (12), prioritizing nearest and named creatures; distant groups merge into the life bed.
 
 Calls are scheduled on the audio clock (`AudioContext.currentTime`) a little ahead (look-ahead scheduling, after Chris Wilson's "A Tale of Two Clocks"), so timing stays steady even if a frame hitches.
 
@@ -88,20 +88,20 @@ Soft and material: sculpt a low soil push (pitch tied to stroke speed), smooth a
 
 ### Spatialization
 
-The `AudioListener` sits at the camera eye with orientation from the view. Creature voices and ambient one-shots use `PannerNode` with `HRTF` on desktop and `equalpower` on mobile, `inverse` distance model, `refDistance` 2 m, `rolloffFactor` 1. Beds are stereo and not panned, but their filters and gains follow camera nearness. An air-absorption lowpass on each voice drops with distance (cutoff from 18 kHz at 2 m to 3 kHz at 60 m).
+The `AudioListener` sits at the camera eye with orientation from the view. Creature voices and ambient one-shots use `PannerNode` with `HRTF`, `inverse` distance model, `refDistance` 2 m, `rolloffFactor` 1. Beds are stereo and not panned, but their filters and gains follow camera nearness. An air-absorption lowpass on each voice drops with distance (cutoff from 18 kHz at 2 m to 3 kHz at 60 m).
 
-**Finding creatures by ear** (Matt, October 2026). Creatures are drawn to blend in: a far frog has no outline (doc 05). Sound is the main way to find them, so every calling animal is its own panned voice at its live position, never a mixed-down chorus bed. You turn toward a call and move closer, and the voice gets louder, nearer and brighter. Behind the listener a voice is slightly muffled (HRTF on desktop; on mobile, an extra gentle lowpass when the source is behind the view), so look direction matters. Presence (doc 23) makes this a game: a swoop hushes the frogs near you, and a slow approach keeps them calling.
+**Finding creatures by ear** (Matt, October 2026). Creatures are drawn to blend in: a far frog has no outline (doc 05). Sound is the main way to find them, so every calling animal is its own panned voice at its live position, never a mixed-down chorus bed. You turn toward a call and move closer, and the voice gets louder, nearer and brighter. Behind the listener a voice is slightly muffled (HRTF), so look direction matters. Presence (doc 23) makes this a game: a swoop hushes the frogs near you, and a slow approach keeps them calling.
 
-### Mobile and autoplay
+### Autoplay
 
 - The context is created at boot and starts suspended. `mixer.unlock()` runs on the first `pointerdown` or `keydown` anywhere on the page, resumes the context, then fades the master in over 2 s.
-- iOS: the silent switch mutes Web Audio by default; the Sound settings note this in a plain sentence. Context interruptions (calls, Siri) set state to `interrupted`; the mixer resumes on the next touch.
+- If the browser interrupts the context, the mixer resumes on the next click or key press.
 - `visibilitychange` hidden: fade master out over 300 ms and suspend the context; visible: resume and fade in.
-- Mobile tier: fewer voices, `equalpower` panning, reverb at half length, one-shot density at 60 percent.
+- ebb is desktop and laptop only (October 21, 2026), so the phone audio settings (the phone flag, fewer voices, `equalpower` panning, half-length reverb and the lighter phone sample set) are retired. The per-piece loading and memory limits first set for phones can relax for desktop; new numbers are still to be measured.
 
 ### What plays during the "while you were away" reveal
 
-This answers the open question in 02-core-loop-and-idle-model.md: the reveal is quiet but not silent. For absences under 6 game hours (the 2 s time-lapse, no full reveal) the soundscape simply fades in over 2 s. For a full reveal, during the fade from cream only a soft wind bed and the water lap at the current tide rise over 3 s. As the camera drifts past each high-salience event, its sound fades in there: a frog chorus where frogs settled (`creature:settled`), birdsong at a new nest, a low, slow wash of water draining off sand where queued new land rises at low tide (13-progression-and-expansion.md). A species that moved on gets no sound, only its note. Each of the up to five notes gets one soft pencil scratch. Tools and UI buses stay muted until the reveal ends; on first input the full soundscape eases in over 1.5 s. If the context is still locked (first load in a fresh tab), the reveal runs silently and the soundscape fades in when the player first touches the screen. With reduced motion on, the audio behavior is the same.
+This answers the open question in 02-core-loop-and-idle-model.md: the reveal is quiet but not silent. For absences under 6 game hours (the 2 s time-lapse, no full reveal) the soundscape simply fades in over 2 s. For a full reveal, during the fade from cream only a soft wind bed and the water lap at the current tide rise over 3 s. As the camera drifts past each high-salience event, its sound fades in there: a frog chorus where frogs settled (`creature:settled`), birdsong at a new nest, a low, slow wash of water draining off sand where queued new land rises at low tide (13-progression-and-expansion.md). A species that moved on gets no sound, only its note. Each of the up to five notes gets one soft pencil scratch. Tools and UI buses stay muted until the reveal ends; on first input the full soundscape eases in over 1.5 s. If the context is still locked (first load in a fresh tab), the reveal runs silently and the soundscape fades in when the player first clicks or presses a key. With reduced motion on, the audio behavior is the same.
 
 ### Sourcing CC0 sounds
 
@@ -144,9 +144,9 @@ Settings: master, ambience, creatures, tools and UI volume; mute when in backgro
 
 ## Performance budget
 
-- Audio thread: under 15 percent of one core on desktop at 12 voices; mobile under 10 percent at 6 voices.
+- Audio thread: under 15 percent of one core at 12 voices.
 - Main thread: ambience update at 10 Hz under 0.2 ms.
-- Memory: decoded audio under 40 MB desktop, 20 MB mobile (beds streamed with `MediaElementAudioSourceNode` on mobile if needed).
+- Memory: decoded audio under 40 MB.
 
 ## Acceptance checks
 
@@ -155,7 +155,7 @@ Settings: master, ambience, creatures, tools and UI volume; mute when in backgro
 - At dusk with happy frogs, several frogs answer each other from different directions in headphones; an unsettled frog calls rarely and alone.
 - Rain on the pond sounds different from rain on the meadow.
 - Sculpting sounds like soil, not a click; placing a wall stone sounds like stone.
-- On a phone the first tap brings sound in gently; switching apps and back does not leave sound off.
+- The first click or key press brings sound in gently; switching tabs and back does not leave sound off.
 - During a reveal after frogs arrived, the chorus fades in as the camera passes the pond.
 
 ## Open questions

@@ -1,10 +1,10 @@
 {
   "type": "quality-tiers",
   "version": 1,
-  "note": "Quality tiers (docs/19). ultra is for strong desktop GPUs: picked when a discrete GPU passes the startup probe (GPU p95 under probeMaxMs while the island fades in), else high. lodDistances: terrain mesh LOD switch distances (m); fallsMax, fallsRows: the most waterfall lips drawn and the rows down each curtain (M2, water.json falls); fallsFluid: droplets for the volumetric falls near the eye, how near (m; 0 particles: curtains only), and the share of the render size its images are drawn at; cliffDetailM: chunks holding a cliff face (M2 Cliff tool) draw and cast shadows at full mesh detail within this distance (m); waterDetailFadeM: ripples and glints calm down by this distance. waterSSR: screen-space reflection of the island in water (null: sky probe only); steps along the ray plus refine bisection steps. skyProbeSize: sky probe cube face size (px). causticLayers: caustic pattern layers on underwater ground (0 off).",
+  "note": "Quality tiers (docs/19). ebb is desktop and laptop only (October 21, 2026): medium (laptops, integrated graphics) is the floor the auto-pick chooses and the design target for the lightest machine; low is never picked at startup and stays only as the emergency fallback the live step down can reach, tuned for 60 fps on a weak laptop. ultra is for strong desktop GPUs: picked when a discrete GPU passes the startup probe (GPU p95 under probeMaxMs while the island fades in), else high. lodDistances: terrain mesh LOD switch distances (m); fallsMax, fallsRows: the most waterfall lips drawn and the rows down each curtain (M2, water.json falls); fallsFluid: droplets for the volumetric falls near the eye, how near (m; 0 particles: curtains only), and the share of the render size its images are drawn at; cliffDetailM: chunks holding a cliff face (M2 Cliff tool) draw and cast shadows at full mesh detail within this distance (m); waterDetailFadeM: ripples and glints calm down by this distance. waterSSR: screen-space reflection of the island in water (null: sky probe only); steps along the ray plus refine bisection steps. skyProbeSize: sky probe cube face size (px). causticLayers: caustic pattern layers on underwater ground (0 off).",
   "probe": { "seconds": 2, "settleFrames": 30 },
   "dynamicRes": {
-    "note": "Dynamic resolution (docs 04, 19): the render scale drops by step after overFrames frames in a row over the tier's gpuBudgetMs, and climbs back by step after recoverFrames frames in a row under recoverBelow times the budget, between the tier's renderScaleMin and renderScale. Below a scale of 1 the internal size snaps to snapPx pixels so textures are not re-made every frame. GPU time comes from timestamps, else from onSubmittedWorkDone round trips; if neither has reported for staleFrames frames, the frame time is judged against the tier's frame period times frameSlack. stepDown: after atMinSeconds at the minimum scale with the last overFrames frames mostly over budget, the tier steps down once a session, with a calm note shown noteSeconds. thermal (tiers listed): GPU p95 per bucketSeconds at a steady scale; if the newest is over (1 + rise) times the one windowMinutes before, the scale drops a step early, and does not climb back above that step for holdMinutes.",
+    "note": "Dynamic resolution (docs 04, 19): the render scale drops by step after overFrames frames in a row over the tier's gpuBudgetMs, and climbs back by step after recoverFrames frames in a row under recoverBelow times the budget, between the tier's renderScaleMin and renderScale. Below a scale of 1 the internal size snaps to snapPx pixels so textures are not re-made every frame. GPU time comes from timestamps, else from onSubmittedWorkDone round trips; if neither has reported for staleFrames frames, the frame time is judged against the tier's frame period times frameSlack. stepDown: after atMinSeconds at the minimum scale with the last overFrames frames mostly over budget, the tier steps down once a session, with a calm note shown noteSeconds (medium to low is the last step).",
     "step": 0.05,
     "overFrames": 30,
     "recoverFrames": 120,
@@ -13,24 +13,7 @@
     "staleFrames": 60,
     "frameSlack": 1.15,
     "stepDown": { "atMinSeconds": 10, "noteSeconds": 12 },
-    "thermal": { "tiers": ["low"], "bucketSeconds": 60, "windowMinutes": 5, "rise": 0.2, "holdMinutes": 5 },
-    "worth": { "note": "Each step down must earn its blur (S8d-2): after a step, settleFrames are skipped, then the median GPU time over frames frames is compared with the frames before the step; a step that saved less than minGain (a fraction) is undone and no lower scale is tried for holdSeconds. On Matt's iPhone at 0.5 the cost barely followed the pixels.", "settleFrames": 10, "frames": 45, "minGain": 0.06, "holdSeconds": 120 }
-  },
-  "frameCap": {
-    "note": "On the tiers listed, on a display faster than the tier's targetFps (a 120 Hz phone on low at 30), frames are skipped so the island renders at about targetFps. A frame is drawn once toleranceMs short of a whole frame period has passed since the last one. Tiers not listed draw every frame the display offers.",
-    "tiers": ["low"],
-    "toleranceMs": 4
-  },
-  "budgetGroups": {
-    "note": "Doc 19's mobile GPU budget table (ms, low tier), with the frame graph passes that fall in each group. Passes not listed show as other. World compute, render compute and the depth prepass are not timed as passes yet.",
-    "low": [
-      { "group": "Shadows, 1 x 1024", "ms": 0.7, "passes": ["shadow"] },
-      { "group": "Opaque", "ms": 3.0, "passes": ["opaque"] },
-      { "group": "Foliage", "ms": 3.5, "passes": ["grass", "rushes", "flora"] },
-      { "group": "Creatures", "ms": 1.5, "passes": ["creatures", "minnows", "dragonflies", "damselflies", "midges"] },
-      { "group": "Copies, water shading, sky draw, particles", "ms": 1.7, "passes": ["water", "sky"] },
-      { "group": "Post", "ms": 1.5, "passes": ["exposure", "bloom", "tonemap"] }
-    ]
+    "worth": { "note": "Each step down must earn its blur (S8d-2): after a step, settleFrames are skipped, then the median GPU time over frames frames is compared with the frames before the step; a step that saved less than minGain (a fraction) is undone and no lower scale is tried for holdSeconds. Where the cost is in what is drawn rather than in pixels, a smaller picture only looks worse.", "settleFrames": 10, "frames": 45, "minGain": 0.06, "holdSeconds": 120 }
   },
   "tiers": {
     "ultra": {
@@ -76,7 +59,7 @@
       "ground": { "mapSize": 1024, "hexTiling": true, "triplanar": true, "specular": "full", "puddles": true, "anisotropy": 8, "detailFadeMeters": 60 }
     },
     "low": {
-      "targetFps": 30, "calmFps": 20, "gpuBudgetMs": 18,
+      "targetFps": 60, "calmFps": 30, "gpuBudgetMs": 14,
       "renderScale": 0.75, "renderScaleMin": 0.5,
       "maxDpr": 2, "maxMegapixels": 1.2,
       "shadows": { "cascades": 1, "size": 1024, "filter": "4tap" },

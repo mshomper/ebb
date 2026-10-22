@@ -29,13 +29,12 @@
     "dip": { "everyS": [4, 10], "s": 0.7 }
   },
   "voice": {
-    "note": "The midge swarm's voice (doc 25 'Midges', model midge-swarm; src/audio/voices.js).json as its voice field (docs/audio-future-work.md). One voice per live swarm, at the swarm's centre, nearest swarms only (nearest). SOUND: a thin high hum of partials (a count picked per swarm in that range, mobileMax at most on the mobile tier) spread across hz (400 to 700 Hz), each detuned by up to detuneCents and wandering slowly by up to wander.cents over wander.periodS seconds (two slow sines per partial at unrelated rates), so they beat against each other; triangleShare of them are triangle waves, the rest sine. A soft lowpass at lowpassHz takes the edge off the triangles. tremolo is the faint shimmer of the wings (hz, depth). LEVEL: levelDb at full density; the hum follows the swarm's live density (0..1, from the ecology: dusk peak, night near zero, damped by wind) over rampS seconds. REACH: inverse distance from refDistance 0.5 m with a steep rolloff, and a hard fade from fadeFromM to reachM (about 3 m) so it is never heard in the far field: a player bending close to the water at dusk hears it, nobody else does. Distances are from the camera eye, so height counts. Tune by ear against a CC0 chironomid swarm recording if one is found.",
+    "note": "The midge swarm's voice (doc 25 'Midges', model midge-swarm; src/audio/voices.js).json as its voice field (docs/audio-future-work.md). One voice per live swarm, at the swarm's centre, nearest swarms only (nearest). SOUND: a thin high hum of partials (a count picked per swarm in that range) spread across hz (400 to 700 Hz), each detuned by up to detuneCents and wandering slowly by up to wander.cents over wander.periodS seconds (two slow sines per partial at unrelated rates), so they beat against each other; triangleShare of them are triangle waves, the rest sine. A soft lowpass at lowpassHz takes the edge off the triangles. tremolo is the faint shimmer of the wings (hz, depth). LEVEL: levelDb at full density; the hum follows the swarm's live density (0..1, from the ecology: dusk peak, night near zero, damped by wind) over rampS seconds. REACH: inverse distance from refDistance 0.5 m with a steep rolloff, and a hard fade from fadeFromM to reachM (about 3 m) so it is never heard in the far field: a player bending close to the water at dusk hears it, nobody else does. Distances are from the camera eye, so height counts. Tune by ear against a CC0 chironomid swarm recording if one is found.",
     "model": "midge-swarm",
     "partials": [
       6,
       10
     ],
-    "mobileMax": 6,
     "hz": [
       400,
       700

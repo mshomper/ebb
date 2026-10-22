@@ -5,7 +5,7 @@
 ## Locked decisions
 
 - **Composed material, developed live.** Two kinds of music share one engine. **Anchor pieces** (each season's morning pieces and nocturnes, the four tides' settings and the special cues) are fully composed and re-realized each time: new voicings, instruments, register, tempo and phrasing. **Grown pieces** (interludes, evening, rain and mist pieces) are composed at play time by a development engine from authored material: each season's motif bank, chord grammar and form templates. The engine develops motifs the way a composer does and writes accompaniment and counter-lines by voice-leading rules, but never invents a motif from nothing. Matt designs and tunes the engine's rules (decided October 2026: the algorithm is the instrument); the music session writes the material and the anchors, and Matt reviews.
-- **Music is non-diegetic and quiet.** Its own bus, its own reverb, stereo, never spatialized, never louder than the island at default levels. Dynamic ceiling is mezzo-forte. No drums or percussion hits, no sub-bass below 60 Hz.
+- **Music is non-diegetic and quiet.** Its own bus, its own reverb, stereo, never spatialized, never louder than the island at default levels. Dynamic ceiling is mezzo-forte. No drums or percussion hits, no sub-bass below 60 Hz (every note stays at B1, 62 Hz, or above, and a gentle 40 Hz high-pass on the music bus, `recipes/audio/mixer.json` musicTone.floor, takes out the rumble below).
 - **Silence is part of the score.** At the default setting, music plays about 35 to 45 percent of real time (with rests of 2 to 4 real minutes between pieces, a 24-minute game day holds about three pieces, about 9 to 11 minutes); the rest belongs to the island. Every piece is followed by a rest of at least 2 real minutes. (Matt, October 19, 2026: rests shortened from 3 to 7 minutes so the island is a little less silent.)
 - **Day arc by sun, season by season phase, both from display time**, the same keys the palette uses (doc 05): night, blue hour, golden, morning and afternoon, day. Rests and tempo run on real time, so 4x never sounds frantic and pause never sounds frozen.
 - **Frogs own dusk.** From half an hour before dusk to three hours after (the frog call window, `recipes/species/frog.json` `moods.callAfterDuskH`), no piece starts while frogs are calling. The chorus is the music.
@@ -333,7 +333,8 @@ tools/music-lab.html (+ tools/music-lab.js)
     "interlude": { "fromH": "sunrise+3", "toSunDeg": 10, "max": 2, "chance": 0.6, "lenMin": [2, 3.5] },
     "evening":   { "sunDeg": [10, 2], "chance": 0.7, "lenMin": [2.5, 3.5], "mustEndBy": "frogWindow" },
     "frogWindow":{ "fromDuskH": -0.5, "toDuskH": 3, "silentWhileCalling": true, "elseNocturneChance": 0.4 },
-    "nocturne":  { "fromDuskH": 3, "toDawnH": -1, "chance": 0.5, "max": 1, "lenMin": [2, 3] }
+    "nocturne":  { "fromDuskH": 3, "toDawnH": -1, "chance": 0.5, "max": 1, "lenMin": [2, 3],
+                   "minLeftRealMin": 1, "dawnSunDeg": -6, "dawnFadeS": 12 }  // never runs into the morning: see below
   },
   "history": { "keep": 40, "minGapDays": 3, "minGapRealMin": 90 },
   "duck": { "creatureWithinM": 8, "db": -3, "attackS": 0.2, "releaseS": 2 },
@@ -342,6 +343,8 @@ tools/music-lab.html (+ tools/music-lab.js)
   "dayColor": { /* table above, keyed night, blueHour, golden, morning, day */ }
 }
 ```
+
+Night pieces never push the morning back (October 21, 2026): a nocturne that waits through a rest may start no later than dawn, one is not started with less than `minLeftRealMin` real minutes before its slot closes at the current time speed, and one still playing when the sun climbs back to `dawnSunDeg` fades out over `dawnFadeS` seconds (`dawnReached()` in `src/audio/music/director.js`, applied in `src/audio/music/index.js`).
 
 ### Module API
 
@@ -376,10 +379,10 @@ Mixer change (doc 17): add a `music` bus. Music goes bus → peaking EQ (chorus)
 
 ## Performance budget
 
-- Audio thread: music under 8 percent of one core on desktop at 24 sampler voices; mobile under 5 percent at 10 voices.
-- Main thread: director update at 2 Hz under 0.1 ms; realizing a piece (done once when it starts, in small slices) under 2 ms total. Growing a piece (24 candidates and the critic) runs in a worker through `src/core/workers.js`, under 150 ms on desktop and 400 ms on mobile, started a minute of real time before its slot opens.
+- Audio thread: music under 8 percent of one core at 24 sampler voices.
+- Main thread: director update at 2 Hz under 0.1 ms; realizing a piece (done once when it starts, in small slices) under 2 ms total. Growing a piece (24 candidates and the critic) runs in a worker through `src/core/workers.js`, under 150 ms (400 ms on a weak laptop), started a minute of real time before its slot opens.
 - Download: the core piano about 10 MB (the Steinway B game set: pedal, no-pedal and key-off recordings across the middle five octaves, 4 s tails, mono below C3, Opus at 90 kbps stereo and 60 kbps mono; Matt, October 19, 2026, who chose full recordings over a smaller set) plus the pedal mechanism and the code-built pad, loaded after the ambience; each season's extra instruments under 2.5 MB, loaded when that season is a game day away. Total music about 20 MB.
-- Decoded memory: under about 128 MB desktop, under 20 MB mobile (Matt, October 19, 2026). The whole piano downloads once and the browser keeps it, but only the notes a piece uses are unpacked, about a minute before it starts, and notes the next piece does not need are released after it ends (the most recent are kept). With every note unpacked the desktop piano is about 260 MB, so unpacking per piece is required. Mobile uses a lighter set (mono piano, zones every major third, two velocity layers, 2.5 s tails, no key-off sounds) and drops instruments the current season does not use. Built October 19, 2026: 1.4 MB to download, 31 MB if every note were unpacked, 10 to 15 MB unpacked for a typical piece (per-piece unpacking keeps phones under the 20 MB line).
+- Decoded memory: under about 128 MB (Matt, October 19, 2026). The whole piano downloads once and the browser keeps it, but only the notes a piece uses are unpacked, about a minute before it starts, and notes the next piece does not need are released after it ends (the most recent are kept). With every note unpacked the piano is about 260 MB, so unpacking per piece is required. The lighter phone set and its 20 MB line were retired on October 21, 2026, when ebb became desktop and laptop only; the per-piece loading and memory limits set with phones in mind can relax for desktop, with new numbers still to be measured.
 
 ## Acceptance checks
 

@@ -34,8 +34,8 @@ src/
   render/ frame-graph.js camera.js quality.js passes/ (shadow, depth-prepass, ao, opaque,
           foliage, creatures, water, sky, particles, post/)
   shaders/ *.wgsl  (common.wgsl, lib-*.wgsl, one concern per file)
-  input/  actions.js desktop.js touch.js
-  ui/     hud.js tools.js journal.js tuning-panel.js settings.js icons/
+  input/  actions.js desktop.js
+  ui/     hud.js tools.js journal.js tuning-panel.js settings.js desktop-only.js icons/
   audio/  mixer.js ambience.js voices.js
   save/   autosave.js world-file.js migrate.js sections.js idb.js prefs.js crc32.js recover.js backup.js
   vendor/ wgpu-matrix/ fonts/ (Nunito, Fraunces woff2) gltf/ (later)
@@ -93,7 +93,7 @@ Import rules (enforced in review):
 ```
 requestAnimationFrame
   clock.advance(realDt)                   -> worldT, animT, displayT; hour crossings
-  input: desktop.js / touch.js -> actions.js (commands, undo stack)
+  input: desktop.js -> actions.js (commands, undo stack)
   if an hour boundary was crossed: live-sim.hourlyTick()   -> the ordered coarseSteps
   live-sim.update(frame)                  -> per-frame tick() for each system
   encoder = device.createCommandEncoder()
@@ -195,15 +195,17 @@ if (!adapter) return showNoWebGPU('no-adapter');
 const want = ['float32-filterable', 'shader-f16', 'timestamp-query', 'rg11b10ufloat-renderable'];
 const device = await adapter.requestDevice({
   requiredFeatures: want.filter(f => adapter.features.has(f)),
-  requiredLimits: { maxStorageBuffersPerShaderStage: 8 } // stay at baseline so phones work
+  requiredLimits: { maxStorageBuffersPerShaderStage: 8 } // stay at baseline so integrated laptop GPUs work
 });
 ```
 
-Every optional feature has a fallback: no `float32-filterable` means heightfield sampling does manual bilinear in WGSL; no `timestamp-query` hides the GPU timing overlay; no `shader-f16` uses f32. `render/quality.js` picks the tier (`high`, `medium`, `low`, numbers in `recipes/quality-tiers.json`, doc 19) from touch support, adapter info and limits; it can be changed in settings.
+Every optional feature has a fallback: no `float32-filterable` means heightfield sampling does manual bilinear in WGSL; no `timestamp-query` hides the GPU timing overlay; no `shader-f16` uses f32. `render/quality.js` picks the tier (`high`, `medium`, `low`, numbers in `recipes/quality-tiers.json`, doc 19) from adapter info and limits, with medium (laptops, integrated graphics) as the floor; low is only an emergency fallback in the dynamic-resolution chain. It can be changed in settings.
+
+Before any of this, `src/ui/desktop-only.js` checks the pointer. ebb is desktop and laptop only (changed October 21, 2026): a device whose only pointer is coarse (a phone or tablet used by touch) gets a calm card saying ebb is made for a desktop or laptop, with a link to notarobot-eng.com/ebb, and the game does not load. A tablet with a trackpad or mouse passes.
 
 When WebGPU is missing, a calm full-page card replaces the canvas: the drawn ebb icon, UI cream text on the night background, 18 px body text:
 
-> ebb needs WebGPU, a graphics feature in modern browsers. It runs in current Chrome and Edge on Windows and Mac, Chrome on Android 12 or newer, Firefox on Windows, and Safari 26 on iPhone, iPad and Mac.
+> ebb needs WebGPU, a graphics feature in modern browsers. It runs in current Chrome and Edge on Windows and Mac, Firefox on Windows, and Safari 26 on Mac.
 
 The `no-adapter` case adds "Your browser has WebGPU but could not use your graphics card. Check that hardware acceleration is turned on." Device loss later shows a small note ("Rebuilding your island") and rebuilds all GPU resources from the store.
 
@@ -242,7 +244,7 @@ GitHub Pages serves `main` at `https://mshomper.github.io/ebb/`. The repo root h
 - One concern per file; propose a split past about 600 lines.
 - Every look or feel number lives in a recipe under `recipes/` so the tuning panel reaches it (doc 14).
 - Systems talk through events and the store, never by reaching into each other's internals.
-- UI: no horizontal scrolling at any width, drawn SVG icons only (`src/ui/icons/`), body text at least 15 px desktop and 16 px phone.
+- UI: no horizontal scrolling at any width, drawn SVG icons only (`src/ui/icons/`), body text at least 15 px.
 
 ### tools/
 
@@ -265,7 +267,7 @@ GitHub Pages serves `main` at `https://mshomper.github.io/ebb/`. The repo root h
 | `migrate-test.html` | doc 18: old saves through migrations |
 | `brand-export.html` | doc 21 |
 
-Testing approach: every feature ships with a plain-language click-test list in its PR (what Matt should see on desktop and in the Claude mobile app), plus a `tools/` page for anything numeric.
+Testing approach: every feature ships with a plain-language click-test list in its PR (what Matt should see on desktop), plus a `tools/` page for anything numeric.
 
 ## Algorithms and shaders
 
@@ -278,10 +280,11 @@ Settings: time flow, quality tier, GPU timing overlay (when supported), worker c
 
 ## Performance budget
 
-Boot to first frame under 3 s on desktop, under 6 s on a mid-range phone, excluding catch-up (doc 19 owns these numbers). Main-thread CPU per frame under 4 ms desktop, 8 ms mobile; anything heavier moves to a worker or the GPU. Full frame targets are in doc 19.
+Boot to first frame under 3 s on desktop, under 6 s on a laptop with integrated graphics, excluding catch-up (doc 19 owns these numbers). Main-thread CPU per frame under 4 ms desktop, 8 ms laptop; anything heavier moves to a worker or the GPU. Full frame targets are in doc 19.
 
 ## Acceptance checks
 
+- Opening the site on a phone or tablet used by touch shows the desktop-only card with its link, and the game does not load.
 - Opening the site in a browser without WebGPU shows the calm message card with the drawn icon, no blank page, no console-only error.
 - `tools/gpu-probe.html` lists the adapter, features and the tier ebb picked.
 - `tools/determinism.html` shows matching hashes for two runs and for 1 vs 14 workers.
@@ -304,6 +307,7 @@ The map above lists each module's main files. The system docs name these additio
 | `src/render/passes/post/` | `exposure.js`, `lut-bake.js`, `outline.js`, `dof.js`, `photo.js` | 04, 05, 16 |
 | `src/render/` | `quality.js` | 19 |
 | `src/ui/` | `tokens.css` (color and type tokens) | 21 |
+| `src/ui/` | `desktop-only.js` (the coarse-pointer notice) | 15 |
 | repo root | `manifest.webmanifest` | 21 |
 | `src/shaders/` | `sky-transmittance.wgsl`, `tonemap.wgsl`, `lut-bake.wgsl`, `outline.wgsl`, `kuwahara.wgsl` | 05, 06 |
 

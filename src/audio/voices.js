@@ -1,12 +1,11 @@
 // @ts-check
 // Creature voices (doc 17 "Procedural creature voices", doc 25 "Creature voices"). The behaviour
 // system decides who calls and when; this module only renders the sound. Every call is its own
-// voice placed at the creature (doc 17 "Finding creatures by ear"), with distance air absorption
-// and, on mobile, a muffle behind the view. A voice cap keeps the nearest calls (12 desktop,
-// 6 mobile). Midge swarms hum only within about 3 m, nearest two only; a dragonfly's wings rattle
+// voice placed at the creature (doc 17 "Finding creatures by ear"), with distance air absorption.
+// A voice cap keeps the nearest calls (12). Midge swarms hum only within about 3 m, nearest two only; a dragonfly's wings rattle
 // only within about 2 m, nearest two only; a minnow's sip is heard near the school.
 //
-//   call() ─→ frog pulse-croak ─→ placed chain (air lowpass, behind, panner) ─┐
+//   call() ─→ frog pulse-croak ─→ placed chain (air lowpass, panner) ─────────┐
 //   plop(), sip() ─→ bubbles ─→ placed chain ─────────────────────────────────┤
 //   spring purr (distant callers) ────────────────────────────────────────────┤→ 'creatures' bus
 //   setSwarms() ─→ midge hum per swarm (panner, reach) ───────────────────────┤
@@ -37,11 +36,10 @@ import { plop as plopSound, dropWith } from './procedural/one-shots.js';
  * @param {import('./mixer.js').Mixer} mixer
  * @param {VoiceRecipes} voiceRecipes
  * @param {number} seed world seed
- * @param {{tier?: 'desktop'|'mobile', dest?: AudioNode}} [opts]
+ * @param {{dest?: AudioNode}} [opts]
  */
 export function createVoices(mixer, voiceRecipes, seed, opts = {}) {
   const ctx = mixer.ctx;
-  const tier = opts.tier ?? 'desktop';
   const out = ctx.createGain();
   out.connect(opts.dest ?? mixer.input('creatures'));
   const meter = ctx.createAnalyser();
@@ -50,11 +48,11 @@ export function createVoices(mixer, voiceRecipes, seed, opts = {}) {
   const meterBuf = new Float32Array(meter.fftSize);
   const F = voiceRecipes.frog;
   const M = voiceRecipes.midge;
-  let maxVoices = F.maxVoices[tier];
+  let maxVoices = (typeof F.maxVoices === 'number' ? F.maxVoices : F.maxVoices?.desktop) ?? 12;
   let blend = [0, 1, 0, 0];
   /** @type {{eye: number[], forward: number[]}} */
   let ear = { eye: [0, 1.6, 0], forward: [0, 0, -1] };
-  const spatial = { tier, refDistance: F.spatial.refDistance, rolloff: F.spatial.rolloff, air: F.spatial.air, behind: F.spatial.behind };
+  const spatial = { refDistance: F.spatial.refDistance, rolloff: F.spatial.rolloff, air: F.spatial.air };
 
   /** @type {Map<string|number, {pitch: number, rhythm: number, key: number, calls: number}>} */
   const individuals = new Map();
@@ -204,7 +202,7 @@ export function createVoices(mixer, voiceRecipes, seed, opts = {}) {
     for (const { f } of ranked) {
       let v = wingVoices.get(f.id);
       if (!v) {
-        v = createWingVoice(ctx, out, D, hash32(seed >>> 0, idHash(f.id), 0x44524146), tier);
+        v = createWingVoice(ctx, out, D, hash32(seed >>> 0, idHash(f.id), 0x44524146));
         wingVoices.set(f.id, v);
       }
       const dist = v.set(f.pos, ear.eye, f.speed, true);
@@ -236,7 +234,7 @@ export function createVoices(mixer, voiceRecipes, seed, opts = {}) {
     for (const { s } of ranked) {
       let v = swarmVoices.get(s.id);
       if (!v) {
-        v = createSwarmVoice(ctx, out, M, hash32(seed >>> 0, idHash(s.id), 0x4d494447), tier);
+        v = createSwarmVoice(ctx, out, M, hash32(seed >>> 0, idHash(s.id), 0x4d494447));
         swarmVoices.set(s.id, v);
       }
       const dist = v.set(s.pos, ear.eye, s.density);

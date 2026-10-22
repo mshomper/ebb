@@ -9,7 +9,7 @@ import { moodsOf, autumnStartOf, dampBy, fungiBloom, fungusSize, fungiLayout, we
 import { fungusMeshes } from '../src/world/finds/autumn-meshes.js';
 import { logSurface } from '../src/world/pieces/log-surface.js';
 import { bakeLog } from '../src/world/pieces/meshes.js';
-import { logBone } from '../src/world/pieces/model.js';
+import { logBone, makeLog, addPiece, movePiece } from '../src/world/pieces/model.js';
 import { seasonOf, SECONDS_PER_DAY } from '../src/core/clock.js';
 import { subSeed } from '../src/core/rng.js';
 import { drawSketch, hasSketch } from '../src/ui/sketches/index.js';
@@ -50,6 +50,25 @@ export function addAutumnTests(test, assert, eq) {
     eq(fungusSize((42 + F.winter.spreadDays + F.winter.fadeDays) * 24, b, 1, 1, F), 0, 'gone by the end of the winter fade');
     eq(fungiBloom({ dayNow: 57, placedHour: 0, moodOf: wet, F }), null, 'none next spring');
     return `bloom day ${b.day0}`;
+  });
+
+  test(AUTUMN, 'a log carried off the strand and set down fruits; moving it later keeps its rest', async () => {
+    const F = (await json('species/autumn-finds')).fungi;
+    const wet = (/** @type {number} */ d) => (d >= 30 ? 'mist' : 'clear');
+    // As the Carry button does it (pieces/index.js setDown): a strand log becomes a kept piece.
+    const strand = { x: 4, z: -2, yaw: 0.3, seed: 987654321, size: 0.14, length: 1.3 };
+    let s = /** @type {any} */ ({ list: [], nextId: 1 });
+    const log = makeLog(s.nextId, { ...strand, x: 1, z: 2 }, 31 * 24);
+    s = addPiece(s, log, 8);
+    assert(s, 'the log was kept');
+    const kept = s.list.find((/** @type {any} */ p) => p.kind === 'log');
+    eq(kept.seed, strand.seed, 'the kept log keeps the strand log\'s seed (its fungi follow it)');
+    const b = fungiBloom({ dayNow: 40, placedHour: kept.placedHour, moodOf: wet, F });
+    eq(b?.day0, 31 + F.restDays, 'it fruits once rested in damp autumn weather');
+    // Carried again later: the move keeps when it was first set down.
+    const moved = movePiece(s, kept.id, 6, 6).list.find((/** @type {any} */ p) => p.id === kept.id);
+    eq(moved.placedHour, kept.placedHour, 'moving it keeps its rest');
+    return `kept on day 31, fruits on day ${b?.day0}`;
   });
 
   test(AUTUMN, 'a log\'s fungi come from its own seed: the same every time, on its flanks or its top', async () => {

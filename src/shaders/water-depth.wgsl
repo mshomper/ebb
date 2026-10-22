@@ -42,9 +42,11 @@ fn csDepth(@builtin(global_invocation_id) gid: vec3u) {
   var d = d0 + w.dt * (inflow - outflow) / (WATER_CELL * WATER_CELL);
   d += w.dt * sourceRate(c, w);
   d = max(d, 0.0);
-  // Summary nudge (docs/07): top up toward the long-run depth, never drain toward it.
+  // Summary nudge (docs/07): top up toward the long-run depth; above it, a pond or stream only
+  // evaporates toward it, slowly (a rain-fed pond lowering in summer).
   let goal = textureLoad(targetTex, c, 0).r;
   if (d < goal) { d += (goal - d) * w.nudgeK; }
+  else if (goal > 0.0) { d -= (d - goal) * w.evaporateK; }
   if (d != d) { d = 0.0; }
 
   // Velocity from the net flow through the cell, over the mean depth during the step.

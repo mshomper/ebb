@@ -14,12 +14,14 @@ const SLOTS = ['morning', 'interlude', 'evening', 'nocturne'];
 let loaded = null;
 function load() {
   const j = async (/** @type {string} */ p) => {
-    if (typeof window === 'undefined') {
-      // @ts-ignore Node only (the browser page fetches instead)
+    const url = new URL(`../${p}`, import.meta.url);
+    // Node reads from disk; the page and the test workers fetch.
+    if (url.protocol === 'file:') {
+      // @ts-ignore Node only
       const fs = await import('node:fs');
-      return JSON.parse(fs.readFileSync(new URL(`../${p}`, import.meta.url), 'utf8'));
+      return JSON.parse(fs.readFileSync(url, 'utf8'));
     }
-    return (await fetch(new URL(`../${p}`, import.meta.url))).json();
+    return (await fetch(url)).json();
   };
   loaded ??= Promise.all(['recipes/music/material/summer.json', 'recipes/music/develop.json', 'recipes/music/names.json'].map(j))
     .then(([material, rules, names]) => ({ material, rules, names }));

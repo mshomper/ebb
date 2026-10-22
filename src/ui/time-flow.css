@@ -1,6 +1,6 @@
 /* Time-flow button (src/ui/time-flow.js). Bottom right, the same night glass as the tool bar.
-   Where the bottom-center tool bar leaves no room beside it (narrow portrait) or sits at the
-   right edge (phone landscape), the button stacks just above the bar at the right edge. */
+   Where the bottom-center tool bar leaves no room beside it (a narrow window), the button stacks just
+   above the bar at the right edge. */
 
 .ebb-time {
   --tf-btn: 48px;
@@ -16,10 +16,6 @@
   z-index: 10;
   pointer-events: none;
   transition: opacity 200ms ease, transform 220ms ease, visibility 0s;
-}
-
-@media (pointer: coarse) {
-  .ebb-time { --tf-btn: 52px; --tf-icon: 26px; }
 }
 
 .ebb-time__btn {
@@ -64,7 +60,7 @@
 }
 .ebb-time__pips { width: var(--tf-state); height: var(--tf-state); }
 
-/* Narrow portrait: no room beside the centered bar, so sit just above it at the right edge.
+/* Narrow windows: no room beside the centered bar, so sit just above it at the right edge.
    The brush card opens full width over that spot, so the button steps aside while a tool is on. */
 @media (max-width: 560px) {
   .ebb-time { bottom: calc(max(var(--tf-edge), env(safe-area-inset-bottom)) + var(--tf-bar) + 10px); }
@@ -75,22 +71,6 @@
     transition: opacity 200ms ease, transform 220ms ease, visibility 0s linear 220ms;
   }
   .ebb-time.has-tool .ebb-time__btn { pointer-events: none; }
-}
-
-/* Phone landscape: the tools are a column on the right edge (tools.css), so time sits at the bottom
-   just left of it. Left-handed, everything mirrors. */
-@media (max-height: 500px) and (min-width: 600px) {
-  .ebb-time { right: calc(max(var(--tf-edge), env(safe-area-inset-right)) + var(--tf-bar) + 10px); }
-  :root.ebb-left-handed .ebb-time {
-    right: auto;
-    left: calc(max(var(--tf-edge), env(safe-area-inset-left)) + var(--tf-bar) + 10px);
-  }
-}
-@media (max-width: 560px) {
-  :root.ebb-left-handed .ebb-time {
-    right: auto;
-    left: max(var(--tf-edge), env(safe-area-inset-left));
-  }
 }
 
 /* Reduced motion: the system's (unless Settings says Full), or Settings' Calm (src/ui/motion.js). */

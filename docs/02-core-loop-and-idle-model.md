@@ -156,11 +156,11 @@ Save stores: world seed, `worldT`, last wall time, ecology state, away log (last
 
 ## Performance budget
 
-- One hourly tick (all systems) on the starter island: about 3 ms in a worker on desktop, under 8 ms on mobile. Full 168-tick catch-up: under 1 s desktop, under 3 s mobile (the reveal's fade covers it).
+- One hourly tick (all systems) on the starter island: about 3 ms in a worker on desktop, under 8 ms on a laptop with integrated graphics. Full 168-tick catch-up: under 1 s desktop, under 3 s laptop (the reveal's fade covers it).
 - Fully expanded world (see `13-progression-and-expansion.md`): tick under 8 ms desktop, catch-up under 3 s.
 - Live hourly tick never blocks a frame: it runs in a worker and the result is swapped in on the next frame.
-- Measured in S7b (Matt's desktop, Starter island, spring day 4): a median of 3.7 ms per hour and 12 to 20 ms at worst, about 1.3 s for 336 hours plus about 0.2 s for the journal's look (measured under the old 336-hour cap; the 168-hour cap halves it to about 0.65 s). That was over the 1 s goal; it runs in a worker, so the page stays smooth and the catching-up screen covers it. If phones run well over 3 s, the next step is to split the hour across workers by chunk.
-- `tools/catchup-bench.html`: checks watched against away (island and journal), in pieces against at once, worker against page, and save and load, on either island, and draws the cost of every one of 168 hours. Matt compares its numbers on desktop and phone. `tools/determinism.html` checks the landform.
+- Measured in S7b (Matt's desktop, Starter island, spring day 4): a median of 3.7 ms per hour and 12 to 20 ms at worst, about 1.3 s for 336 hours plus about 0.2 s for the journal's look (measured under the old 336-hour cap; the 168-hour cap halves it to about 0.65 s). That was over the 1 s goal; it runs in a worker, so the page stays smooth and the catching-up screen covers it. If laptops run well over 3 s, the next step is to split the hour across workers by chunk.
+- `tools/catchup-bench.html`: checks watched against away (island and journal), in pieces against at once, worker against page, and save and load, on either island, and draws the cost of every one of 168 hours. Matt compares its numbers on desktop and laptop. `tools/determinism.html` checks the landform.
 - As built (S7c), the reveal, `src/ui/reveal.js`:
   - The camera stays where you left it (Matt, S7 plan), so rings mark the places that changed in place of the drift.
   - The cream screen fades into the scene while every plant and cover grows from before to after over about 8 s, rippling by hash.

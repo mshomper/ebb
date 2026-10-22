@@ -3,7 +3,9 @@
 // live water, the sea below the tide line and a splash band above it, damp hollows (a floor that
 // never dries); rain soaks it toward 1. A wetter neighbor lends wetness into the banks (capillary
 // spread, about 1.5 m). Where nothing holds it, it dries by the step the CPU worked out from game
-// time, sun and wind. Look only: the simulation never reads it.
+// time, sun and wind. A second memory (b, the drying margin) marks bed that fresh water covered in
+// the last few game days, so a lowering pond leaves drying, cracking mud. Look only: the simulation
+// never reads it.
 
 // #include lib-hash
 // #include lib-terrain
@@ -25,7 +27,12 @@ struct WetStep {
   salt: u32,         // per-update salt for the dithered store
   puddleFill: f32,   // puddle level gained this update from rain (G3)
   puddleDrain: f32,  // puddle level lost this update to drying
-  _p0: f32, _p1: f32, _p2: f32,
+  marginStep: f32,   // drying margin (A8): memory lost this update once the bed is exposed
+  bedFrom: f32,      // fresh water depth (m) where a bed starts to count as under water
+  bedFull: f32,      // and where it fully counts
+  freshFrom: f32,    // water surface height above the tide (m) where water starts to count as fresh
+  freshFull: f32,    // and where it fully counts (the water optics' sea-or-pond test)
+  _p0: f32, _p1: f32,
 };
 
 @group(0) @binding(0) var<uniform> ws: WetStep;
@@ -65,15 +72,37 @@ fn sourceWet(c: vec2i, h: f32) -> f32 {
   return max(max(live, sea), dampAt(xz) * ws.dampWet);
 }
 
+// The drying margin (A8): how much fresh water stands over texel c right now, 0..1. Fresh by where
+// the surface sits (the water optics' test: the sea's surface is at the tide, a pond's stands above
+// it), and never in the tide band, which has its own linger and shore zones. Returns x the bed
+// share, y the tide band share (where the memory is cleared).
+fn freshBed(c: vec2i, h: f32) -> vec2f {
+  let wc = clamp(c / 2, vec2i(0), vec2i(WATER_CELLS - 1));
+  let d = textureLoad(waterDepth, wc, 0).r;
+  let surface = waterBed(heightTex, wc) + d;
+  let fresh = smoothstep(ws.freshFrom, ws.freshFull, surface - ws.tide);
+  let band = 1.0 - smoothstep(ws.tide - 0.05, ws.tide + ws.tideBand, h);
+  let bed = smoothstep(ws.bedFrom, ws.bedFull, d) * step(h, surface) * fresh * (1.0 - band);
+  return vec2f(bed, band);
+}
+
 // Dithered rounding into the 8-bit store: a slow night-time drying step is smaller than one level,
 // so plain rounding would hold the ground wet forever; this keeps the average exact.
 // r wetness, g puddle level (G3: how far rain has filled the low spots; the terrain draw decides
-// where on flat ground that much water stands).
-fn storeWet(c: vec2i, w: f32, puddle: f32) {
+// where on flat ground that much water stands), b the drying margin (A8: 1 where fresh water stands,
+// falling to 0 over the margin's game days once the bed is exposed).
+fn storeWet(c: vec2i, w: f32, puddle: f32, margin: f32) {
   let r = hashToFloat(hash3(vec3u(vec2u(c), ws.salt)));
   let q = min(floor(clamp(w, 0.0, 1.0) * 255.0 + r), 255.0) / 255.0;
   let p = min(floor(clamp(puddle, 0.0, 1.0) * 255.0 + r), 255.0) / 255.0;
-  textureStore(wetNext, c, vec4f(q, p, 0.0, 1.0));
+  let m = min(floor(clamp(margin, 0.0, 1.0) * 255.0 + r), 255.0) / 255.0;
+  textureStore(wetNext, c, vec4f(q, p, m, 1.0));
+}
+
+// The margin memory now: held at 1 under fresh water, losing marginStep a step once exposed, and
+// cleared in the tide band.
+fn marginNow(prev: f32, fb: vec2f) -> f32 {
+  return max(prev - ws.marginStep, fb.x) * (1.0 - fb.y);
 }
 
 // First build: sources only, no drying history (and soaked, with half-filled puddles, if it is
@@ -82,7 +111,8 @@ fn storeWet(c: vec2i, w: f32, puddle: f32) {
 fn csInit(@builtin(global_invocation_id) id: vec3u) {
   if (any(id.xy >= ws.size)) { return; }
   let c = vec2i(ws.origin + id.xy);
-  storeWet(c, max(sourceWet(c, terrainLoad(heightTex, c)), ws.rainInit), 0.5 * ws.rainInit);
+  let h = terrainLoad(heightTex, c);
+  storeWet(c, max(sourceWet(c, h), ws.rainInit), 0.5 * ws.rainInit, marginNow(0.0, freshBed(c, h)));
 }
 
 @compute @workgroup_size(8, 8)
@@ -110,5 +140,5 @@ fn csStep(@builtin(global_invocation_id) id: vec3u) {
       w = max(w, nw - run * ws.spreadPerM);
     }
   }
-  storeWet(c, max(w, sourceWet(c, h)), puddle);
+  storeWet(c, max(w, sourceWet(c, h)), puddle, marginNow(prev.b, freshBed(c, h)));
 }

@@ -59,11 +59,10 @@ import {
  * @param {any} recipe recipes/audio/ambience.json
  * @param {any} procRecipe recipes/audio/procedural.json
  * @param {number} seed world seed
- * @param {{tier?: 'desktop'|'mobile', dest?: AudioNode, recorded?: boolean}} [opts]
+ * @param {{dest?: AudioNode, recorded?: boolean}} [opts]
  */
 export function createAmbience(mixer, recipe, procRecipe, seed, opts = {}) {
   const ctx = mixer.ctx;
-  const tier = opts.tier ?? 'desktop';
   const sysSeed = hash32(seed >>> 0, recipe.seed >>> 0);
   const S = recipe;
 
@@ -110,7 +109,7 @@ export function createAmbience(mixer, recipe, procRecipe, seed, opts = {}) {
   const fallsMeter = ctx.createAnalyser();
   fallsMeter.fftSize = 1024;
   fallsUser.connect(fallsMeter);
-  const fallVoices = createFallVoices(ctx, fallsUser, S.falls, procRecipe, (i) => stream(sysSeed, 400, i), tier);
+  const fallVoices = createFallVoices(ctx, fallsUser, S.falls, procRecipe, (i) => stream(sysSeed, 400, i));
 
   // ---- Beds -----------------------------------------------------------------------------------
   let made = 0;
@@ -250,7 +249,7 @@ export function createAmbience(mixer, recipe, procRecipe, seed, opts = {}) {
     name, p, rng: stream(sysSeed, 200, i), acc: 0, need: 0, last: -1e9, fired: 0,
   }));
   for (const pl of pools) pl.need = -Math.log(1 - pl.rng.next());
-  const spatialOpts = { tier, refDistance: O.spatial.refDistance, rolloff: O.spatial.rolloff, air: O.spatial.air, behind: O.spatial.behind };
+  const spatialOpts = { refDistance: O.spatial.refDistance, rolloff: O.spatial.rolloff, air: O.spatial.air };
   /** @type {{eye: number[], forward: number[], target: number[]}} */
   let ear = { eye: [0, 10, 0], forward: [0, -0.9, -0.44], target: [0, 0, 0] };
   const shotRng = stream(sysSeed, 300);
@@ -301,7 +300,7 @@ export function createAmbience(mixer, recipe, procRecipe, seed, opts = {}) {
    * @param {number} dtS seconds since the last update
    */
   function scheduleOneShots(dtS) {
-    const density = value(O.density, inputs, blend) * (tier === 'mobile' ? O.mobileDensity : 1) * (1 - S.mist.oneShotCut * inputs.mist);
+    const density = value(O.density, inputs, blend) * (1 - S.mist.oneShotCut * inputs.mist);
     const now = ctx.currentTime;
     let lastAny = -1e9;
     for (const pl of pools) lastAny = Math.max(lastAny, pl.last);

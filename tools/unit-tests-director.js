@@ -4,7 +4,7 @@
 // recently played pieces waiting, and decides the same way for the same seed; the realizer gives
 // the same performance for the same seed, and a new seed keeps the melody and harmony.
 
-import { createDirector, sunDay } from '../src/audio/music/director.js';
+import { createDirector, sunDay, dawnReached } from '../src/audio/music/director.js';
 import { realize } from '../src/audio/music/realize.js';
 import { dayColorAt, dayKeyWeights } from '../src/audio/music/daycolor.js';
 import { createPerformer } from '../src/audio/music/perform.js';
@@ -84,6 +84,35 @@ export function addDirectorTests(test, assert, eq) {
     assert(w1 > 0 && Number.isFinite(w1), `normal speed: ${w1}`);
     assert(Math.abs(w4 - w1 / 4) < 1e-6 && Math.abs(w2 - w1 / 2) < 1e-6, `1x ${w1}, 2x ${w2}, 4x ${w4}`);
     eq(firstWindow(0), Infinity, 'paused: the slot never closes');
+  });
+
+  test(G, 'a nocturne never starts too near dawn, even after waiting through a rest', async () => {
+    const { director, pool } = await load();
+    const N = director.slots.nocturne;
+    const s = sunDay(sun, 0, [10, 2]);
+    const closeH = s.dawn + N.toDawnH;
+    let night = 0;
+    for (const seed of [1, 2, 3, 4, 5, 6, 7, 8]) for (const lenS of [150, 400]) {
+      for (const p of run(director, pool, { seed, startH: 16, realS: 16 * 60, lenS }).out) {
+        if (p.slot !== 'nocturne' || p.h > 12) continue;
+        night++;
+        // At 1x a real minute is a game hour.
+        assert(p.h <= closeH - N.minLeftRealMin + 1e-6, `seed ${seed}: a nocturne started at ${p.h.toFixed(2)} h, dawn ${s.dawn.toFixed(2)} h`);
+      }
+    }
+    assert(night > 0, 'some nocturnes played after midnight');
+  });
+
+  test(G, 'a night piece meets the dawn when the sun climbs back to the dawn height', async () => {
+    const { director } = await load();
+    const deg = director.slots.nocturne.dawnSunDeg;
+    const w = { seenNight: false };
+    // Started at dusk with the sun still above the dawn height: not dawn yet.
+    eq(dawnReached(w, -3, deg), false, 'dusk');
+    eq(dawnReached(w, -20, deg), false, 'night');
+    eq(dawnReached(w, -7, deg), false, 'still before dawn');
+    eq(dawnReached(w, -5.9, deg), true, 'dawn');
+    assert(director.slots.nocturne.dawnFadeS > 0, 'a fade time in the recipe');
   });
 
   test(G, 'the sun timeline of a test day', () => {
@@ -171,6 +200,22 @@ export function addDirectorTests(test, assert, eq) {
     for (let seed = 1; seed <= 30; seed++) {
       const p = realize(piece, { seed, dayColor: { register: 69, density: 3, tempo: 1, voices: 6 }, available: ['piano', 'pad'] }, recipes);
       for (const n of p.notes) if (n.instrument === 'piano') assert(n.midi >= 33 && n.midi <= 99, `seed ${seed}: ${n.midi}`);
+    }
+  });
+
+  test(R, 'no note goes below B1 (62 Hz, doc 24 keeps the music above 60 Hz), in the tides or the test piece', async () => {
+    const { piece, recipes } = await load();
+    const j = async (/** @type {string} */ p) => {
+      const url = new URL(`../${p}`, import.meta.url);
+      if (url.protocol === 'file:') { const fs = await import('node:fs/promises'); return JSON.parse(await fs.readFile(url, 'utf8')); }
+      return (await fetch(url)).json();
+    };
+    const idx = await j('recipes/music/pieces/themes/index.json');
+    const pieces = [piece, ...await Promise.all(idx.candidates.flatMap((/** @type {any} */ c) => Object.values(c.settings)).map((/** @type {any} */ id) => j(`recipes/music/pieces/themes/${id}.json`)))];
+    const avail = ['piano', 'pad', 'bell', 'fm-piano', 'strings', 'cello', 'harp', 'flute', 'vibraphone', 'vibraphone-bowed', 'guitar'];
+    for (const pc of pieces) for (const register of [60, 69]) for (let seed = 1; seed <= 2; seed++) {
+      const p = realize(pc, { seed, dayColor: { register, density: 2, tempo: 1, voices: 5 }, available: avail }, recipes);
+      for (const n of p.notes) assert(n.midi >= 35, `${pc.id} seed ${seed}: ${n.voice} on ${n.instrument} at MIDI ${n.midi}`);
     }
   });
 

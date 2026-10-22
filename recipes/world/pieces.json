@@ -67,7 +67,7 @@
     "words": {
       "full": "The island holds all the pond stones it can for now. Remove some to lay them somewhere else.",
       "deep": "The water is too deep here for a stone to stand. Try nearer the edge.",
-      "hint": "Drag across shallow water to lay a line of stones, or tap for one. Tap a stone to select it.",
+      "hint": "Drag across shallow water to lay a line of stones, or click for one. Click a stone to select it.",
       "removeLine": "Remove line"
     }
   },
@@ -82,7 +82,7 @@
       "albedo": [0.3, 0.24, 0.12], "endAlbedo": [0.17, 0.12, 0.06]
     },
     "words": {
-      "hint": "Tap open water to set a reed raft. Tap a raft to select it.",
+      "hint": "Click open water to set a reed raft. Click a raft to select it.",
       "full": "The island holds all the rafts it can for now. Remove one to set it somewhere else.",
       "shallow": "A raft needs open water, deeper than your knees and away from the bank.",
       "sea": "A raft rests on fresh water, not the sea.",
@@ -95,7 +95,7 @@
     "landM": 0.25, "cap": 12, "rockShare": 0.9, "faceDropM": 0.3,
     "slab": { "perTread": 2, "fill": 0.94, "yawJitterDeg": 5, "riseM": 0.04, "skirtUnits": 0.12 },
     "words": {
-      "hint": "Drag from a terrace down to the ground below to cut a flight of steps. Tap a flight to select it.",
+      "hint": "Drag from a terrace down to the ground below to cut a flight of steps. Click a flight to select it.",
       "flat": "These two places are at the same level. Start on a terrace and drag down to the ground below it.",
       "short": "That is too steep for steps. Drag a little further, about {m} m in all.",
       "overlap": "Steps are already cut here. Remove them first to cut new ones.",

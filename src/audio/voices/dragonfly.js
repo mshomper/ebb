@@ -63,9 +63,9 @@ export function rattleBuffer(ctx, R, r) {
  * One dragonfly's wings.
  * @param {BaseAudioContext} ctx @param {AudioNode} dest
  * @param {any} R dragonfly voice recipe, with the motion's wingHz and dartMps joined in
- * @param {number} key seed for this one @param {'desktop'|'mobile'} tier
+ * @param {number} key seed for this one
  */
-export function createWingVoice(ctx, dest, R, key, tier) {
+export function createWingVoice(ctx, dest, R, key) {
   const r = stream(key, 3);
   const src = ctx.createBufferSource();
   src.buffer = rattleBuffer(ctx, R, r);
@@ -86,7 +86,7 @@ export function createWingVoice(ctx, dest, R, key, tier) {
   const reach = ctx.createGain();
   reach.gain.value = 0;
   const panner = ctx.createPanner();
-  panner.panningModel = tier === 'mobile' ? 'equalpower' : 'HRTF';
+  panner.panningModel = 'HRTF';
   panner.distanceModel = 'inverse';
   panner.refDistance = R.refDistance;
   panner.rolloffFactor = R.rolloff;

@@ -153,7 +153,7 @@ function showResults(runs) {
   $('verdict').className = allOk ? 'ok' : 'bad';
   $('verdict').innerHTML = `${icon(allOk)}<span>${allOk ? 'All three runs match' : 'The runs differ'}</span>`;
   $('detail').textContent = allOk
-    ? 'Same seed, same island, on every thread. This combined hash should also match on your phone.'
+    ? 'Same seed, same island, on every thread. This combined hash should also match on another computer.'
     : 'Some chunks came out different. Something in the landform is not deterministic.';
 }
 

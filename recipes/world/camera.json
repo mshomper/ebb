@@ -6,9 +6,9 @@
   "start": { "yawDeg": 35, "pitchDeg": 24, "distance": 82, "target": [0, 0.5, 0] },
   "pitchSoftDeg": [18, 72],
   "pitchHardDeg": [10, 84],
-  "note": "The diorama orbit camera (doc 15). distanceSoft and distanceHard: how close and far it may come, the soft range it settles back into after input and the hard range input can push to (null: from the island's size). close (S6b): the close-up, which once came down to 35 cm from what it looks at; since the walker (doc 23, W3, October 21, 2026) the view above stops at about 4 m, and getting close means going down. Below fromM meters the view eases from the far rules (aiming half way down the slope, the eye at least minEyeHeight over the ground) to the close ones (aiming at the ground or the water, the eye at least close.minEyeHeight over the ground or the water's surface), fully at close.toM. The rest: field of view and near plane, start view, pitch limits in degrees, how far the target may stray (worldRadius plus targetMargin), damping half-lives in seconds, and input rates.",
-  "distanceSoft": [4, null],
-  "distanceHard": [3.6, null],
+  "note": "The diorama orbit camera (doc 15). distanceSoft and distanceHard: how close and far it may come, the soft range it settles back into after input and the hard range input can push to (null: from the island's size). close (S6b): the close-up, which once came down to 35 cm from what it looks at; since the walker (doc 23, W3, October 21, 2026) the view above stops at about 2.5 m (4 m until October 21, 2026, brought in with the larger creatures so a frog can be found from above), and getting close means going down. At the 2.5 m stop the close rules are already about four fifths in (the eye may come to about 0.26 m over the ground), so the view looks down at the ground and a frog there is in sight. Below fromM meters the view eases from the far rules (aiming half way down the slope, the eye at least minEyeHeight over the ground) to the close ones (aiming at the ground or the water, the eye at least close.minEyeHeight over the ground or the water's surface), fully at close.toM. The rest: field of view and near plane, start view, pitch limits in degrees, how far the target may stray (worldRadius plus targetMargin), damping half-lives in seconds, and input rates.",
+  "distanceSoft": [2.5, null],
+  "distanceHard": [2.2, null],
   "close": { "fromM": 5, "toM": 1.5, "minEyeHeight": 0.06 },
   "labClose": { "note": "Tool pages that test presence with the camera itself (tools/frog-lab.html) may still come this close, and there the camera's own eye startles frogs.", "minDistance": 0.3, "minEyeHeight": 0.06 },
   "distanceHardMaxFactor": 1.25,
@@ -22,6 +22,5 @@
   "orbitDegPerPx": 0.25,
   "panScale": 1.0,
   "wheelZoomPerNotch": 0.12,
-  "zoomToCursor": 0.6,
-  "gestureDeadZone": { "px": 4, "pinch": 0.02, "twistDeg": 3 }
+  "zoomToCursor": 0.6
 }

@@ -1,7 +1,6 @@
 /* Settings (src/ui/settings.js), docs/15. The button has the top right corner; the panel is night
-   glass like the tool bar. Desktop: a 600 px panel on the right with the sections listed down its
-   left. Phone (under 700 px wide): a full-screen sheet with the sections stacked, each opening on a
-   tap. Panels animate only opacity and transform. */
+   glass like the tool bar: a 600 px panel on the right with the sections listed down its left (icons
+   only in a narrow window). Panels animate only opacity and transform. */
 
 .ebb-setbtn {
   --sb-btn: 48px;
@@ -11,9 +10,6 @@
   right: max(var(--sb-edge), env(safe-area-inset-right));
   z-index: 11;
   pointer-events: none;
-}
-@media (pointer: coarse) {
-  .ebb-setbtn { --sb-btn: 52px; }
 }
 .ebb-setbtn__btn {
   appearance: none;
@@ -42,9 +38,6 @@
 .ebb-setbtn__btn.is-on { background: var(--wordmark-light); }
 .ebb-setbtn__btn:focus-visible { outline: 2px solid var(--wordmark-dark); outline-offset: 2px; }
 .ebb-setbtn .icon { width: 28px; height: 28px; display: block; }
-@media (pointer: coarse) {
-  .ebb-setbtn .icon { width: 26px; height: 26px; }
-}
 
 /* --- the panel --- */
 .ebb-settings {
@@ -74,9 +67,6 @@
   visibility: hidden;
   transform: translateX(16px);
   transition: opacity 220ms ease, transform 240ms ease, visibility 0s linear 240ms;
-}
-@media (pointer: coarse) {
-  .ebb-settings { --st-btn: 52px; }
 }
 .ebb-settings.is-open {
   opacity: 1;
@@ -168,25 +158,17 @@
 .ebb-set { display: none; }
 .ebb-set.is-current { display: block; }
 .ebb-set__head {
-  appearance: none;
-  -webkit-appearance: none;
+  margin: 0;
   width: 100%;
   min-height: 52px;
   padding: 14px 18px 6px;
   display: flex;
   align-items: center;
   gap: 10px;
-  border: 0;
-  background: transparent;
-  color: inherit;
-  font: inherit;
   font-size: calc(20px * var(--text-scale, 1));
   font-weight: 800;
-  text-align: left;
-  cursor: default;
 }
 .ebb-set__head span { flex: 1; min-width: 0; overflow-wrap: break-word; }
-.ebb-set__chev { display: none; }
 .ebb-set__body {
   padding: 6px 18px 20px;
   display: flex;
@@ -220,10 +202,7 @@
   -webkit-tap-highlight-color: transparent;
   transition: background-color 160ms ease, border-color 160ms ease;
 }
-@media (pointer: coarse) {
-  .ebb-set__choice, .ebb-set__btn { min-height: 48px; }
-}
-/* A row of four that must stay one row on a phone (Music plays): the buttons share the width. */
+/* A row of four that must stay one row in a narrow panel (Music plays): the buttons share the width. */
 .ebb-set__choices.is-even { flex-wrap: nowrap; gap: 6px; }
 .ebb-set__choices.is-even .ebb-set__choice { flex: 1 1 auto; min-width: 0; padding-left: 8px; padding-right: 8px; }
 .ebb-set__choice:hover, .ebb-set__btn:hover { background: rgba(244, 238, 228, 0.08); }
@@ -307,40 +286,18 @@
   border: 2px solid var(--wordmark-light);
 }
 
-/* --- phone landscape: the panel uses the full height (the bottom row is only time flow there) --- */
-@media (max-height: 500px) and (min-width: 700px) {
-  .ebb-settings { bottom: max(var(--st-edge), env(safe-area-inset-bottom)); }
-}
-
-/* --- phone: a full-screen sheet, the sections stacked and opened one by one --- */
-@media (max-width: 699px) {
-  .ebb-settings {
-    inset: 0;
-    width: auto;
-    background: var(--ui-night);
-    border-radius: 0;
-    border: 0;
-    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
-    transform: translateY(16px);
-  }
-  .ebb-settings__body { display: block; overflow-y: auto; overscroll-behavior: contain; }
-  .ebb-settings__nav { display: none; }
-  .ebb-settings__sections { overflow: visible; }
-  .ebb-set { display: block; border-bottom: 1px solid var(--st-line); }
-  .ebb-set__head { cursor: pointer; padding: 10px 18px; min-height: 56px; }
-  .ebb-set__chev { display: block; transform: rotate(180deg); transition: transform 200ms ease; }
-  .ebb-set.is-open .ebb-set__chev { transform: none; }
-  .ebb-set__body { display: none; }
-  .ebb-set.is-open .ebb-set__body { display: flex; }
+/* --- a narrow window: the section list keeps only its icons, so the panel never scrolls sideways --- */
+@media (max-width: 559px) {
+  .ebb-settings__body { grid-template-columns: 68px minmax(0, 1fr); }
+  .ebb-settings__tab { justify-content: center; padding: 8px; }
+  .ebb-settings__tab span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 }
 
 @media (prefers-reduced-motion: reduce) {
   :root:not(.ebb-motion-full) .ebb-settings,
   :root:not(.ebb-motion-full) .ebb-settings.is-open { transform: none; transition: visibility 0s; }
-  :root:not(.ebb-motion-full) .ebb-set__chev,
   :root:not(.ebb-motion-full) .ebb-set__switch::after { transition: none; }
 }
 :root.ebb-motion-calm .ebb-settings,
 :root.ebb-motion-calm .ebb-settings.is-open { transform: none; transition: visibility 0s; }
-:root.ebb-motion-calm .ebb-set__chev,
 :root.ebb-motion-calm .ebb-set__switch::after { transition: none; }

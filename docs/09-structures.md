@@ -2,7 +2,7 @@
 
 > The human touches on the island are deliberately few: winding paths and stepping stones, dry-stone walls, one small wooden bridge, and a lantern or two. They are drawn with a single stroke and the details are generated: the player draws a line and a wall of fitted stones rises along it. Then nature takes them back slowly. Moss creeps up from damp ground, lichen freckles the stone tops, the bridge silvers, grass leans in over path edges. Structures also matter to creatures: walls are shelter and basking spots, stepping stones are frog perches, bats roost under the bridge, and lantern light changes who feels at ease at night. They exist to frame the nature, never to compete with it.
 
-**Status:** The first placed piece, the loose stone, is built on branch m2-loose-stones (`src/world/pieces`, `recipes/world/pieces.json`): records `{ id, kind: 'stone', x, z, yaw, seed, size, placedHour }` in the save's `pieces` section (format 5, doc 18), a soft cap of 24 with a calm note, placement and removal through the undo history, meshes baked from the recipe on load. Stepping stones (Sculpt's Pond stones mode) and Steps (doc 08) are built on branch m2-shaping-path (October 21, 2026), as pieces of kinds `stepping` and `steps` beside the loose stones (see Stepping stones below). Paths, walls, the bridge and lanterns are not built yet.
+**Status:** The first placed piece, the loose stone, is built and in main (`src/world/pieces`, `recipes/world/pieces.json`): records `{ id, kind: 'stone', x, z, yaw, seed, size, placedHour }` in the save's `pieces` section (format 5, doc 18), a soft cap of 24 with a calm note, placement and removal through the undo history, meshes baked from the recipe on load. Stepping stones (Sculpt's Pond stones mode), Steps (doc 08) and the reed raft (the turtles' gift) are built on branch m2-shaping-path (October 21, 2026), as pieces of kinds `stepping`, `steps` and `raft` beside the loose stones (see Stepping stones below). Paths, walls, the bridge and lanterns are not built yet.
 
 ## Locked decisions
 
@@ -17,7 +17,7 @@
 
 ## How it works
 
-The player picks the path, wall or bridge tool and draws. Points are resampled every 0.25 m, smoothed, and turned into a centripetal Catmull-Rom spline (no cusps or loops on tight curves). While dragging, a light ghost preview follows; on release the generator runs in a worker (interactive lane) and the structure grows into place over about a second (stones settle top-down, planks lay one by one). Tapping a structure selects it: drag handles move control points, a drawn "erase" icon removes it, and dragging the eraser along a wall cuts a gap (a gate opening with end stones).
+The player picks the path, wall or bridge tool and draws. Points are resampled every 0.25 m, smoothed, and turned into a centripetal Catmull-Rom spline (no cusps or loops on tight curves). While dragging, a light ghost preview follows; on release the generator runs in a worker (interactive lane) and the structure grows into place over about a second (stones settle top-down, planks lay one by one). Clicking a structure selects it: drag handles move control points, a drawn "erase" icon removes it, and dragging the eraser along a wall cuts a gap (a gate opening with end stones).
 
 ```mermaid
 flowchart LR
@@ -140,7 +140,7 @@ Wall: height, thickness, batter, stone size at bottom and top, course bias, gap 
 
 ## Performance budget
 
-| | Desktop | Mobile |
+| | Desktop | Laptop (medium tier) |
 |---|---|---|
 | Wall generation, 10 m | under 40 ms in a worker | under 120 ms |
 | Triangles, all structures on starter island | under 300k | under 80k (fewer bevel segments, merged cope) |

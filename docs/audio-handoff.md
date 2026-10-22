@@ -10,7 +10,7 @@ Everything below is merged to main: phase 1 in PR #27, phases 2 and 3 in PR #32.
 |---|---|---|
 | 0. Plan | Done | The phase plan in `docs/audio-session-brief.md`. |
 | 1. Mixer and piano | Done, merged | Mixer, reverb, sampler, Steinway B game set with the Knight's pedal sound, FM piano in code, the instrument bench. |
-| 2. Score engine | Done, merged | Score reader, realizer, director, the left-hand textures, Piece and Day tabs, notation and piano roll, pad and bell, the phone piano set. |
+| 2. Score engine | Done, merged | Score reader, realizer, director, the left-hand textures, Piece and Day tabs, notation and piano roll, pad and bell, the phone piano set (retired October 21, 2026). |
 | 3. Island theme | Done, merged | Four tides, each set in all four seasons (16 settings of at most 40 s), the support layers, the support kit, the Themes tab, composer names. |
 | 4. Development engine | Not started | Next music phase. |
 | 5. Spring | Not started | Anchors built on the tides. |
@@ -41,7 +41,7 @@ All four merge cleanly with main and with each other. None touches shared files.
 |---|---|
 | Phase 4, development engine | **4a done** (harmony), and Matt approved it by ear. **4b (melody) is next.** Then 4c (the full critic in a worker), 4d (the note-job overlay and Keep), and 4e (the material editor). The plan is `docs/audio-develop-plan.md`. |
 | Soundscape beds | Done and waiting for Matt's listen: every bed that had a pick plays a recording. Previews are in the audio check page. |
-| Phone sets for the support kit | **Tabled by Matt** ("not focused on the phone at the moment"). |
+| Phone sets for the support kit | **Retired** (October 21, 2026): ebb is desktop and laptop only. |
 | Solo cello | Two candidates found; Matt is happy with them, and no audition is built yet. Karoryfer x bigcat Cello (CC0, arco in 4 layers, every minor third, no vibrato) is the first choice. University of Iowa Cello 2012 (free to use without restrictions, every semitone, 3 dynamics) is the second. Check Karoryfer's own page once to confirm CC0 before shipping. |
 | Desktop memory | Matt accepts that a piano piece plus a string bed may briefly pass 128 MB. No change. |
 
@@ -73,8 +73,8 @@ All four merge cleanly with main and with each other. None touches shared files.
 ## Matt's decisions so far (all written into doc 24 and approved)
 
 - **Piano:** Steinway B, gentle stretch tuning, blend width 20 with curve 0.5 (mix), key-off -25 dB, the Knight pedal sound on at -20 dB, dampers 0.35 s (bass) to 0.06 s (treble). Game set: 4 s tails, mono below C3, middle five octaves, pedal and no-pedal sets, 10.2 MB.
-- **Phone piano:** 17 zones, two layers, mono, 2.5 s tails, no key-off sounds; 1.4 MB, 10 to 15 MB of memory per piece.
-- **Levels:** music 0.5, music room 0.30 (headphone reference). Memory about 128 MB on desktop, 20 MB on phones, with per-piece unpacking.
+- **Phone piano:** retired on October 21, 2026, when ebb became desktop and laptop only (it was 17 zones, two layers, mono, 2.5 s tails, 1.4 MB).
+- **Levels:** music 0.5, music room 0.30 (headphone reference). Memory about 128 MB, with per-piece unpacking. The per-piece loading and memory limits set with phones in mind can relax for desktop; new numbers are still to be measured.
 - **Silence:** rests of 2 to 4 real minutes. The default measures about 62 percent silence (56 to 70) over three days.
 - **Seasons:**
   - summer mornings and middays lift (70 to 84 BPM), while summer evenings and nights stay still;
@@ -108,7 +108,7 @@ All four merge cleanly with main and with each other. None touches shared files.
 | File | What it does |
 |---|---|
 | `src/audio/mixer.js`, `reverb.js` | Buses, music bus tone (lowpass, chorus EQ), seeded convolution rooms, limiter, unlock, visibility fade. |
-| `src/audio/music/sampler.js` (+ `sampler-math.js`) | Sampled instruments: nearest zone, layer crossfade, leveling (attack loudness, or the loop's steady level for held notes), velocity curve and filter, tuning policies (stretch or equal), dampers, pedal, key-off sounds, round robins, voice stealing, baked loops (`layer.loop`), envelope (`attackS`, `releaseS`), articulations, the phone set, per-piece unpacking (`filesFor`, `loadFiles`), memory trimming. |
+| `src/audio/music/sampler.js` (+ `sampler-math.js`) | Sampled instruments: nearest zone, layer crossfade, leveling (attack loudness, or the loop's steady level for held notes), velocity curve and filter, tuning policies (stretch or equal), dampers, pedal, key-off sounds, round robins, voice stealing, baked loops (`layer.loop`), envelope (`attackS`, `releaseS`), articulations, per-piece unpacking (`filesFor`, `loadFiles`), memory trimming. |
 | `src/audio/music/ensemble.js` | Several samplers played as one instrument, split by register (the string section). |
 | `src/audio/music/instruments.js` | Builds every instrument by palette name: the piano, the code-built `fm-piano`, `pad` and `bell`, and the support kit from `recipes/music/roster.json`. Shares one memory budget across them. |
 | `src/audio/music/synth.js` + `synth/` | FM piano, pad, bell, built in code. |
@@ -143,13 +143,9 @@ Checks, which run fast in the cloud workspace:
 - **Solo cello.** Neither CC0 library has one; the autumn cello line uses the cello section. The options are in `docs/audio-future-work.md`.
 - **Desktop memory.** A full piano piece plus a string bed can briefly pass 128 MB. Either accept it, or decode string notes in mono and shorten the soft layers' settling time.
 
-### 2. Phone versions of the support kit (small, can start now)
+### 2. Phone versions of the support kit (retired)
 
-No phone sets exist yet for strings, harp, flute, vibraphone or glass, so phones would unpack the desktop files.
-- **Strings:** soft layer only, mono, core ranges (about 22 MB for all strings).
-- **Harp and vibraphone:** mono, with shorter tails.
-
-Add `mobile` blocks to the instrument recipes, the same way the piano has one; the sampler already swaps them in on phones. Measure each piece's memory against the 20 MB phone line with the tides as the test.
+Retired on October 21, 2026: ebb is desktop and laptop only, so no phone sets are needed.
 
 ### 3. Phase 4: the development engine (doc 24, "The development engine")
 
@@ -186,13 +182,14 @@ Anchors and material for each season, with its instruments and season-edge blend
 
 ## Known issues and loose ends
 
-- **Nocturnes across dawn.** At 1x a piece of a few real minutes covers a few game hours, so a nocturne that starts late can run past dawn and push the morning back. The first morning of a season waits up to five game hours; ordinary mornings may be skipped. Consider the slot's close when choosing a nocturne's length or short form.
-- **Low bass.** The voicing allows the bass down to A1 (55 Hz), below doc 24's "no sub-bass below 60 Hz". Raise the bass range floor to B1 (MIDI 35) or add a 60 Hz high-pass on the music bus.
-- **Long notation titles** are clipped on phones (the Themes tab hides the title; the Piece tab would clip a long one).
-- **The phone set's first audition** has not been done on a phone.
+- **Nocturnes across dawn.** Fixed (October 21, 2026). A nocturne's grace never reaches past dawn; one is not started with less than a real minute before its slot closes (at the current time speed); and a night piece still playing when the sun climbs back to -6 degrees fades out over 12 s (`recipes/music/director.json` slots.nocturne minLeftRealMin, dawnSunDeg, dawnFadeS). The fade watches the sun, so 2x and 4x are covered too. A time preview that jumps to day also fades a playing nocturne.
+- **Low bass.** Fixed. The voicing floor has been B1 (MIDI 35, 62 Hz) since PR #52, and a test now checks every tide and the test piece stay there (a scan of all tides and 192 grown pieces found nothing lower). On top, the music bus has a 12 dB per octave high-pass at 40 Hz (`recipes/audio/mixer.json` musicTone.floor): it takes out pedal thumps and room rumble below the notes and leaves B1 about 1 dB down, where a 60 Hz cut would thin the bass by 3 dB. Octave-folding was not needed.
+- **Audio recipe index.** Folded into `recipes/index.json` (October 21, 2026); `recipes/audio-index.json` is gone.
+- **Audio tests on the main page.** The pure audio tests now also run in `tools/unit-tests.html`'s workers; the pond and keepsake sound tests need an OfflineAudioContext and stay on `tools/unit-tests-audio.html`.
+- **Long notation titles** are clipped in a narrow window (the Themes tab hides the title; the Piece tab would clip a long one).
 - **Thin recordings:**
   - bowed vibraphone has only six notes, so a note can be up to 3.5 semitones from its recording;
   - harp tails are capped at 4 s while low notes still ring;
   - the glasses are untuned household glasses placed at their nearest notes.
 - **Soft strings** take 1 to 4.6 s to settle before their loop. Leveling now uses the steady level (`loopRmsDb`); if soft beds still feel slow to arrive, shorten the attack or start soft notes later into the file.
-- **Doc 24's original instrument table** lists clarinet, kalimba, marimba, glockenspiel and a nylon guitar. These aren't prepared yet (another session is searching for a guitar).
+- **Doc 24's original instrument table** lists clarinet, kalimba, marimba, glockenspiel and a nylon guitar. The nylon guitar is in: Matt chose the University of Iowa guitar samples (October 20, 2026), and it plays in summer. Clarinet, kalimba, marimba and glockenspiel aren't prepared yet.

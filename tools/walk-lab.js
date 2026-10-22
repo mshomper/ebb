@@ -1,8 +1,8 @@
 // @ts-check
 // The walk lab (doc 23, the walker; W1): the island from above on the walk grid, coloured by where
 // you can stand at the tide you pick, with the test sandbar and islet the game's ?sandbar link
-// builds. Tap once to stand, then tap to walk (double tap to hurry); the way is drawn and the
-// figure walks it at its real pace. CPU only: no WebGPU needed, so it runs on any phone.
+// builds. Click once to stand, then click to walk (double click to hurry); the way is drawn and the
+// figure walks it at its real pace. CPU only: no WebGPU needed.
 
 import { buildIslandModel } from '../src/world/island-model.js';
 import { createMirror, syncFloat, sampleHeight } from '../src/world/terrain/heightfield.js';
@@ -113,15 +113,13 @@ function draw() {
 // ---- input ----
 const note = /** @type {HTMLElement} */ (document.getElementById('note'));
 const say = (/** @type {string} */ s) => { note.textContent = s; };
-let lastTap = 0;
-canvas.addEventListener('pointerup', (e) => {
+canvas.addEventListener('click', (e) => {
   const r = canvas.getBoundingClientRect();
   const x = grid.minX + ((e.clientX - r.left) / r.width) * grid.w * grid.cellM;
   const z = grid.minZ + ((e.clientY - r.top) / r.height) * grid.h * grid.cellM;
-  const now = performance.now(), double = now - lastTap < R.pace.doubleTapMs;
-  lastTap = now;
+  const double = e.detail >= 2;   // the second click of a double click hurries
   if (!walker.placed) {
-    say(walker.place(x, z) ? 'You are standing here. Tap anywhere to walk there.' : R.words.noGround);
+    say(walker.place(x, z) ? 'You are standing here. Click anywhere to walk there.' : R.words.noGround);
     draw();
     return;
   }
@@ -197,4 +195,4 @@ function frame(/** @type {number} */ now) {
 }
 requestAnimationFrame(frame);
 addEventListener('resize', draw);
-say(layout ? 'Tap the map to stand somewhere, then tap again to walk.' : 'Tap the map to stand somewhere. (No room for the test sandbar on this island.)');
+say(layout ? 'Click the map to stand somewhere, then click again to walk.' : 'Click the map to stand somewhere. (No room for the test sandbar on this island.)');

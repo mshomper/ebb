@@ -59,8 +59,6 @@ export async function startAudio(store) {
     loadAudioRecipe('audio/game'), loadRecipe('world/sky'), loadRecipe('species/frog'), loadRecipe('species/midge'),
     loadRecipe('species/dragonfly'), loadRecipe('species/minnow'), loadAudioRecipe('audio/keepsakes'),
   ]);
-  const phone = matchMedia('(pointer: coarse)').matches && Math.min(screen.width, screen.height) < gameRecipe.mobile.phoneMaxSidePx;
-  const tier = phone ? 'mobile' : 'desktop';
 
   /** @type {import('./mixer.js').Mixer | null} */ let mixer = null;
   /** @type {ReturnType<typeof createAmbience> | null} */ let ambience = null;
@@ -127,10 +125,10 @@ export async function startAudio(store) {
   function begin() {
     if (mixer || disposed) return;
     const seed = store.get('meta')?.seed ?? 1;
-    mixer = createMixer(mixerRecipe, { tier });
-    ambience = createAmbience(mixer, ambRecipe, procRecipe, seed, { tier });
+    mixer = createMixer(mixerRecipe);
+    ambience = createAmbience(mixer, ambRecipe, procRecipe, seed);
     voices = createVoices(mixer, { frog: frogRecipe.voice, midge: midgeRecipe.voice, proc: procRecipe, plop: gameRecipe.frogs.plop,
-      dragonfly: wingRecipe(dragonflyRecipe), minnow: minnowRecipe.voice }, seed, { tier });
+      dragonfly: wingRecipe(dragonflyRecipe), minnow: minnowRecipe.voice }, seed);
     animals = createCreatureSound(mixer, voices, store, gameRecipe.frogs, gameRecipe.pond);
     soundState = createSoundState(gameRecipe, seed, (t) => sunMoon(t, skyRecipe.orbit).sunAlt * DEG, ambRecipe.seasonEdge);
     keepsakeSounds = createKeepsakeSounds(mixer, keepsakeRecipe);
@@ -145,7 +143,7 @@ export async function startAudio(store) {
       try { animals?.poll(); } catch (e) { console.error('ebb audio: the frog calls failed', e); }
     }, gameRecipe.frogs.pollS * 1000);
     // The music: its own seed, from the world and this device's session count (doc 24, Algorithms).
-    createMusic(mixer, { tier, emit, seed: hash32(seed >>> 0, sessionCount(), 0x6d75), sunAltDeg: (t) => sunMoon(t, skyRecipe.orbit).sunAlt * DEG })
+    createMusic(mixer, { emit, seed: hash32(seed >>> 0, sessionCount(), 0x6d75), sunAltDeg: (t) => sunMoon(t, skyRecipe.orbit).sunAlt * DEG })
       .then((m) => {
         if (disposed) { m.dispose(); return; }
         music = m;
