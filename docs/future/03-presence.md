@@ -2,7 +2,7 @@
 
 > Doc 23 sets presence up as a list of sources that creatures react to, builds rung 1 (the hand, the camera) for the slice, and sketches the seat, the walker and the camp. This doc goes deeper on everything after the hand: what patience looks like at each rung, how creatures show trust with their bodies, how groups and routines come into it, and how the later rungs feel to play on desktop and phone. It proposes answers, as leanings, to doc 23's open questions. It builds on doc 23 and changes none of its locked decisions.
 
-**Status:** Leaning. Doc 23 now holds the milestones: the walker moved to M2 (October 21, 2026) and W0 to W6 are built and merged; the seat became the walker's Sit; the camp is M6 or M7. The rest of this doc is not scheduled until Matt schedules it.
+**Status:** Leaning. Doc 23 now holds the milestones: the walker moved to M2 (October 21, 2026) and W0 to W6 are built and merged; the seat became the walker's Sit; the camp lands now, fixed and not movable, with the first evening (Phase 1 of `docs/future/13-keepers-camp.md`, approved October 22, 2026; was M6 or M7). The rest of this doc is not scheduled until Matt schedules it.
 
 ## Decided so far
 
@@ -106,23 +106,24 @@ Proposed: **no, the walker stays a visit.** The orbit view is where you shape an
 
 ### How you get it
 
-Proposed: **the camp kit arrives with your first bonded creature.** Presence earns presence: the first animal that bonds with you is what makes the island feel like somewhere to stay. It is announced as any gift is, by a card and a journal line.
+*(Changed October 22, 2026, docs/future/13: dropped.)* ~~The camp kit arrives with your first bonded creature.~~ The camp is no longer a gift. The walker carries the tent with its bedroll, the hand lantern and a fire steel from the first evening, and the camp stands from day one on every island (docs/future/13, sections 1.2 and 2).
 
 ### What it is
 
-A bedroll or small tent, a firepit, a kettle, a lantern and a crate, above high tide (doc 23).
+A canvas tent with bedroll and a fire ring, each in a fixed slot on a level, protected pad above high tide, with the lantern on the tent's front pole and piles of what you set down at the pad's edge. No crate; a later clay pot takes the kettle's place (docs/future/13, sections 3.1 and 3.2). *(Changed October 22, 2026, docs/future/13.)*
 
 ### Does it grow?
 
-Proposed: **the camp does not grow as a building, but it gathers.** Gifts from bonded creatures accumulate on the crate and around the fire: the otter's pebbles, a jay's feather, a snail shell, a robin's spot on the tent ridge. Over years the camp becomes a small museum of the island's friendships. No lean-to, garden or rain barrel, in keeping with doc 01's limit on human touches.
+Proposed: **the camp does not grow as a building, but it gathers.** Gifts from bonded creatures accumulate around the fire and, from the pond tier, on a flat gift stone by the tent (docs/future/13, section 3.2; the crate was cut): the otter's pebbles, a jay's feather, a snail shell, a robin's spot on the tent ridge. Over years the camp becomes a small museum of the island's friendships. No lean-to, garden or rain barrel, in keeping with doc 01's limit on human touches.
 
 ### One camp or several?
 
-Proposed: **one camp you can move.** Moving it leaves a pale patch that regrows over a few days (doc 23's leave no trace). The camp's familiar-place value stays with the old spot and starts again at the new one, so moving has a soft cost in calm, never in trust.
+*(Changed October 22, 2026, docs/future/13: dropped.)* ~~One camp you can move.~~ One fixed camp per island, not movable. Its familiar-place value only grows (docs/future/13, section 3.5, C-36).
 
-### The sleep ritual and time away
+### Resting and time away
 
-- Crawling into the tent ends a session; the next return opens at camp at dawn (doc 23).
+*(Changed October 22, 2026, docs/future/13.)*
+- Resting in the tent after dark skips the night to just before sunrise; the walker wakes at the tent flap. It does not end the session; closing the tab does, and the next visit opens at whatever hour it now is (doc 23; docs/future/13, section 3.5).
 - While you are away, the camp adds small standing presence events during catch-up for creatures that already know you. With the 7-day cap (F01), this stays small and bounded.
 
 ### Do bonded creatures follow you?
@@ -145,7 +146,7 @@ If F02's farewell is built: trust stays with individuals on their island. A bond
 
 Listed only; Matt applies these later.
 
-- **Doc 23 (presence):** the three new signals (footstep sound, routine, familiar places), familiarity through social learning, the seat's arrival and look-around limits, the walker's tap-distance pace and posture buttons, footprints washed by the tide, the camp kit as the first bond's gift, the camp's gathered keepsakes, and leanings on all seven open questions.
+- **Doc 23 (presence):** the three new signals (footstep sound, routine, familiar places), familiarity through social learning, the seat's arrival and look-around limits, the walker's tap-distance pace and posture buttons, footprints washed by the tide, the camp's gathered keepsakes, and leanings on all seven open questions.
 - **Doc 11 (creatures and ecology):** newcomers in a trusting group start Tolerant; routine and familiar-place values in the creature state.
 - **Doc 12 (creature roadmap):** the body language ladder per species; which species really follow people.
 - **Doc 15 (camera, input and UI):** seat glide and look limits; walker controls on desktop and phone; posture buttons.
@@ -153,7 +154,7 @@ Listed only; Matt applies these later.
 - **Doc 17 and doc 25 (audio):** footstep loudness by ground; the seat bringing ambience forward.
 - **Doc 24 (music):** its open question about the seat is answered: no cue, the director holds off new pieces at first.
 - **Doc 07 (water and tide):** footprints cleared by the tide.
-- **Doc 13 (progression):** the camp kit as a gift with the first bond.
+- ~~**Doc 13 (progression):** the camp kit as a gift with the first bond.~~ Dropped October 22, 2026 (docs/future/13): the camp comes from day one.
 - **Doc 18 (saves):** named seats, familiar-place values, the routine histogram per species and camp keepsakes.
 - **Doc 19 (performance):** the walker's near-field budget.
 
@@ -168,7 +169,7 @@ Listed only; Matt applies these later.
 
 - Should a whole group slowly get used to you through its young, or should every creature start wary no matter how long you've tended the island?
 - Do you like the idea of creatures learning the hour you usually visit?
-- Should the camp kit come with your first bonded creature, or as one species' gift?
+- ~~Should the camp kit come with your first bonded creature, or as one species' gift?~~ Answered October 22, 2026 (docs/future/13): neither; the walker carries it from the first evening.
 - Should the walker's look be found and gifted over time, or customizable from the start?
 - Is "the walker stays a visit, the diorama stays home" the right line?
 - Should the seat hold off new music when you sit down, or let the music carry on as normal?

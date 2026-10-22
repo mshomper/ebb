@@ -7,6 +7,7 @@
 ## Locked decisions
 
 - Four kinds only: **path** (worn earth or stepping stones), **stone wall**, **bridge**, **lantern**. No buildings.
+- **The keeper's camp** is the one exception, and it is not a building: a tent and a fire ring in fixed slots on a protected pad, with piles of what the walker sets down (docs/future/13, section 3). Its pieces join the placed-pieces model, not the structure tools. *(Changed October 22, 2026, docs/future/13.)*
 - Every structure is **stroke-drawn or point-placed, then generated** from a recipe and a seed (`recipes/world/structures.json` for shared tuning; stone, plank and lantern shapes are flora-like recipes in the same file).
 - Tools arrive through play (`12-creature-roadmap.md`): stepping stones and one lantern in M2; paths in M3; the **stone wall tool** is the butterflies' gift (tier 2, M3); the **bridge** arrives with the tier 2 milestone and the woodland knoll in M3 (`13-progression-and-expansion.md`). Gentle limits, not costs: 1 bridge per channel (span 4 to 14 m), one lantern at first, path and wall soft caps of 200 m and 120 m. When at a limit the tool icon dims with a calm note; nothing is spent.
 - Structures follow the terrain; they never move the ground except that paths add wear (ground.a) and a tiny flatten across their width.
@@ -71,6 +72,30 @@ Structure materials use physical linear albedo (0 to 1), never palette hex: weat
 ### Lanterns
 
 Point-placed: a short stone or wooden post with a paper or glass housing. Each lantern is a real light in the HDR pipeline with the values from `06-sky-and-lighting.md`: 2,200 K, about 8 cd, physical emission, and no shadows in v1. It turns on at dusk (display time) with a slow fade and flickers very slightly. For ecology, a lantern counts as night disturbance from sunset to sunrise of world time. Light values are tuned in `recipes/world/sky.json` (doc 06); the lantern object's placement and look stay in the structures recipe.
+
+### The camp: tent, fire ring and piles
+
+Phase 1 of the keeper's camp (docs/future/13, sections 3.2 to 3.4). The camp sits on one level, protected pad on the plateau above the beach (doc 08, The camp pad). Every camp piece has a **fixed slot**, so every island's camp looks composed and nothing lands badly. The slot list is the camp's cap: one thing per slot.
+
+- **Slots.** Positions are in the pad's own frame, in meters: u points seaward along the facing line, v to the left facing the sea. They live in the land recipe's `camp` block (`slots`), and a camp record carries `slot` instead of free `x`, `z`, `yaw`.
+
+Phase 1 fills these slots:
+
+| Slot | Thing | Center (u, v) m | Size |
+|---|---|---|---|
+| `tent` | Canvas ridge tent with bedroll; the hand lantern hangs on its front pole | (-2.4, 0.1) | 2.2 x 1.6 m, ridge along u, flap at u = -1.3 toward the ring |
+| `ring` | Fire ring of shore stones | (1.5, 0) | 1.0 m across |
+| `sticks` | Stick pile | (-1.9, -2.6) | 0.6 m radius |
+| `stones` | Stone pile | (1.3, -2.9) | 0.5 m radius |
+| `heap1`, `heap2`, `heap3` | A pile of any other kind, first free heap | (2.9, -1.9), (3.2, 1.4), (-3.35, -1.3) | 0.35 m radius |
+
+Later slots (hearth, cup, bowls, mortar, dye pot, seat, rack, clay, gift stone, lamp, jar, bird bath, chime) come with later phases; the full list is in docs/future/13, section 3.2.
+- **New piece kinds in Phase 1:** `tent`, `ring`, `pile`, and `boat` (one, at the mooring, not walkable). They join `PIECE_KINDS` in `src/world/pieces/model.js`, so they share drawing, tapping and undo. Meshes are baked from recipes as stones and logs are; the tent and boat are new meshes. Live camp code lives in `src/world/camp/` (`index.js`, `fire.js`, `rest.js`, `layout.js`, `migrate-pad.js`).
+- **Piles.** Setting a pouch down at camp moves it onto that kind's pile slot, or the first free heap. A pile holds up to twelve handfuls, drawn as a small heap, a heap or a big heap. With no free slot, a calm line asks to take one up first; nothing is lost (docs/future/13, sections 3.7 and 4.1).
+- **Walking.** The tent, ring and piles block their cells on the walk grid. A clear lane runs from the tent flap past the ring to the pad's seaward edge and down to the boat.
+- **The fire ring** is laid from one handful of fuel and two of stones. The fire burns only inside the ring and never spreads; rain drops it to embers. Its light is a 1,800 K flickering light reaching about 4 m, the first entry in doc 06's planned lights buffer (docs/future/13, section 3.5).
+- **Undo.** Pitching, laying the ring, setting a pile down and taking one up join the undo history as `{ kind: 'camp', op, slot, record }`. Undo never destroys a made thing.
+- **Saved** in the save's new `camp` section (doc 18), not in `pieces`. Pile contents are a kind and a fullness stage only.
 
 ### Weathering and overgrowth
 
@@ -157,6 +182,7 @@ Wall: height, thickness, batter, stone size at bottom and top, course bias, gap 
 - After a few game days (or a catch-up), the wall's damp side and top show moss blotches, and the bridge looks a little greyer.
 - Frogs sit on stepping stones at dusk; a lantern placed next to their pond makes them call less over the following half day (doc 11).
 - Previewing midnight in the time dial lights the lanterns; returning to now turns them back off if it is day.
+- Set down a full pouch of sticks on the camp pad: a stick pile appears in its corner. Undo: the sticks are back in the pack. Fill every heap, then try another kind: a calm line says to take one up first (docs/future/13, section 3.10).
 
 ## Open questions
 

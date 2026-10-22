@@ -69,6 +69,16 @@ Buses are `GainNode`s driven by settings sliders. A shared convolution reverb (a
 
 Gain changes use `setTargetAtTime` (0.8 to 3 s time constants), so nothing jumps. Beds are paired loops of different lengths (for example 47 s and 61 s) so their combination rarely repeats. One-shots get a rate from the state and positions from the seeded RNG over suitable cells (reed creaks over reeds, drips over shallows).
 
+### The first evening and the camp (Phase 1)
+
+Sounds for the keeper's camp, owned here as ambience (docs/future/13, sections 2.1 and 3.5). All are CC0 or procedural, like the rest.
+
+- **Oars and sea at the arrival.** Beat 0 of the first evening: oars dip in time with the 8 s row-in, over the sea bed at the boat's place; a soft scrape as the boat grounds on the sand. A click that shortens the row shortens the sound with it.
+- **A far curlew at dusk.** When the fire is first lit on the first evening, one curlew call far out over the water. A sound only, not a creature (frogs still sleep on spring day 0).
+- **Fire and embers.** A lit fire is a close panned source at the ring: soft crackle and the odd pop, louder for a moment when fuel is added, with a short strike-and-catch when the fire steel is used. Embers are a faint tick and hiss. Heard within a few meters, fading to nothing from above.
+- **Rain on canvas.** A tent sound layer within 6 m of the tent: rain drums on the canvas and drips run off the ridge, and the fire hisses as rain drops it to embers. Resting in rain muffles the island to the canvas sound as the cream screen softens.
+- Camp sounds read the camp's state (fire state, kit, distance to the tent) as one more sound-state input; numbers go in `recipes/world/ambience.json`.
+
 ### Procedural creature voices
 
 `voices.js` turns a species voice recipe plus an individual seed into calls. Each species recipe (`recipes/species/*.json`, field `voice`) names a model:
@@ -157,6 +167,7 @@ Settings: master, ambience, creatures, tools and UI volume; mute when in backgro
 - Sculpting sounds like soil, not a click; placing a wall stone sounds like stone.
 - The first click or key press brings sound in gently; switching tabs and back does not leave sound off.
 - During a reveal after frogs arrived, the chorus fades in as the camera passes the pond.
+- On a fresh island, the boat rows in to oars and the sea. At dusk, lighting the fire brings a crackle at the ring and a curlew far out. In rain near the tent, the canvas drums and the fire hisses low (docs/future/13, sections 2.5 and 3.10).
 
 ## Open questions
 

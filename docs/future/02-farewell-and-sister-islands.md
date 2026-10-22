@@ -8,6 +8,7 @@
 
 - Matt, October 19, 2026: the farewell and sister island idea is worth developing, for the reason above (a way to separate from an island and start anew).
 - The vision's rules hold: no fail states, nothing lost by being away, no land ever removed, no pressure. The farewell is a choice, never a goal, a prompt or a reward to chase.
+- October 22, 2026 (docs/future/13, sections 2 and 3.9, approved with Phase 1): **the arrival mirrors the departure.** Every new island now opens with the walker rowing in at dawn in the same small boat, which then stays at its mooring below the camp all game. On the farewell, the walker walks to that boat, the tent and bedroll are rolled into it, and the lantern goes with the walker. The fire ring stays, cold. On the resting island the pad's wear fades over about 14 game days when it next catches up, so the pad pales and grass returns; the camp slots stay in the recipe. Arriving at the sister island runs a short first evening (the boat, landfall, pitching, the ring, dusk and rest, with no hint lines). Sailing back, the tent comes too and its slot glows. *(Changed October 22, 2026, docs/future/13.)*
 
 ## The idea
 
@@ -37,9 +38,9 @@ flowchart LR
 
 1. **Choose a low tide.** The journal shows the next few evening low tides. You pick one, or "tonight".
 2. **Choose a keepsake** (below).
-3. **The departure.** At that low tide the camera glides down to the shore where a small boat waits. Before the walker exists (doc 23, rung 3), the boat is a game-driven glide, which never startles anything. With the walker, you walk to the boat yourself. Creatures that know you behave as they do at your camp: a bonded otter surfaces to watch, the robin flies to the bow.
+3. **The departure.** At that low tide the camera glides down to the shore where a small boat waits: the boat you arrived in, at its mooring below the camp (docs/future/13, section 3.9). Before the walker exists (doc 23, rung 3), the boat is a game-driven glide, which never startles anything. With the walker, you walk to the boat yourself. The tent and bedroll are rolled into the boat and the lantern goes with you; the fire ring stays, cold. Creatures that know you behave as they do at your camp: a bonded otter surfaces to watch, the robin flies to the bow.
 4. **The island recedes.** The boat rows out slowly. The island shrinks against the dusk sky, and the camera lingers on it: the reeds, the lantern, the pond's last light. The island theme plays in its winter setting (doc 24), or a dedicated farewell piece.
-5. **The sister island.** Out on the water, a pale sand shoal shows at low tide, the same way new land pieces arrive (doc 13). By the next low tide it has risen into a small starter island with a spring, and the boat comes ashore.
+5. **The sister island.** Out on the water, a pale sand shoal shows at low tide, the same way new land pieces arrive (doc 13). By the next low tide it has risen into a small starter island with a spring and a camp pad, and the boat comes ashore below it. The short first evening runs there: landfall, pitching the tent, laying the ring, dusk and rest, with no hint lines (docs/future/13, section 2.2).
 
 The whole sequence is skippable after the first time and can be stopped at any point before the boat leaves.
 
@@ -62,6 +63,7 @@ Leaning: one keepsake, chosen. The constraint makes the choice mean something.
 | The first island's journal, as a bound volume | Trust: it belongs to individuals, who live on their own island |
 | Your keepsake | Land pieces: the new island has its own five to raise |
 | Settings and preferences | Gifts: each species gives its gift again on the new island |
+| The tent with its bedroll, the lantern and the fire steel (docs/future/13, section 3.9) | The fire ring: it stays, cold, on the first island, and a new one is laid on the sister island |
 
 Open: whether tools carry over. Carrying them respects what the player learned; starting without them makes the new island feel like a new beginning. The table shows the leaning (carry them).
 

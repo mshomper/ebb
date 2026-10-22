@@ -27,6 +27,7 @@
 | [F10 Plants, surfaces and placed pieces](10-plants-surfaces-and-placed-pieces.md) | Largely built | Shore zonation, the driftline, new plants once growth reads ground type, and stones and logs to live under |
 | [F11 Creature roadmap and finds](11-creature-roadmap-and-finds.md) | Largely built | Creature weight classes, cheap finds shaped by the player, a naturalist's progression line, and what to generalize once |
 | [F12 Keepsakes and nets](12-keepsakes-and-nets.md) | Largely built (net wear and signs in the water still to come) | One-of-a-kind seeded keepsakes on the strandline and in three nets, labeled rarity, a 16-space shelf, and signs in the water |
+| [F13 The keeper's camp](13-keepers-camp.md) | Decided (Phase 1, the first evening, is the current target) | Why the keeper is here: the first evening, the camp, the pack and gathering, making, teas, treats, dyes and digging, in five phases |
 
 ## How they connect
 
@@ -48,6 +49,10 @@ flowchart TB
   F11 --> F12
   F08 --> F12
   F12 --> F04
+  F03 --> F13[F13 Keeper's camp]
+  F02 --> F13
+  F10 --> F13
+  F12 --> F13
 ```
 
 ## Working rule

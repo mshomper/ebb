@@ -15,7 +15,8 @@
 ```mermaid
 flowchart TD
     M0[M0 Foundations] --> M1[M1 Vertical slice]
-    M1 --> M2[M2 Pond tier complete]
+    M1 --> FE[The first evening, keeper's camp Phase 1]
+    FE --> M2[M2 Pond tier complete]
     M2 --> M3[M3 Meadow and seasons]
     M3 --> M4[M4 Woodland and first expansion]
     M4 --> M5[M5 Wetland shore]
@@ -60,7 +61,7 @@ One island, everything in miniature. Built in seventeen steps, each its own clic
 | S7 | Autosave, reload, and offline catch-up with the "while you were away" reveal | 02, 18 |
 | S8 | Minimal HUD with drawn icons and settings; the touch layout on phone and the phone tier were built, then retired on October 21, 2026 when ebb became desktop and laptop only | 15, 19 |
 
-**Signed off October 20, 2026:** Matt passed all eight checks below together (tools/slice-review.html). M2 is the current target.
+**Signed off October 20, 2026:** Matt passed all eight checks below together (tools/slice-review.html). M2 became the current target. Since October 22, 2026 the first evening (below) comes first.
 
 Slice acceptance, all together:
 
@@ -73,7 +74,26 @@ Slice acceptance, all together:
 - Close the tab, come back the next day. The island has moved on, and a short calm reveal shows what changed.
 - (Retired October 21, 2026: the same steps on a phone with touch. ebb is now desktop and laptop only.)
 
+### The first evening (keeper's camp Phase 1) — current target
+
+Decided October 22, 2026 (Matt): Phase 1 of the keeper's camp (`docs/future/13-keepers-camp.md`) comes before the rest of M2 and ships before ebb is marketed, because a player who lands with no orientation is likely to leave. A new island opens at dawn in a small boat below the camp. Ten short beats teach walking, the spring and the journal's first page, pitching the tent, gathering, laying the fire ring, going up to shape, lighting the fire at dusk, and resting until morning. The starter island grows to 4 x 4 chunks with a more varied coast (F13 section 3.11).
+
+| Piece | Scope | Depends on |
+|---|---|---|
+| E1 | Camp ground and the larger island: `starter-island-2`, the pad and its brush lock, the trodden look, older saves stamped, save format 9 begins | none |
+| E2 | Pack core and the gather engine: pouches, fullness, set down and piles, sticks, drift twigs, pebbles, flat stones, reed down | none |
+| E3 | Tent and fire ring: pitching, laying, lighting, light, smoke, embers, rest skipping to just before sunrise | E1, E2 |
+| E4 | The evening director: beats, walker hooks, the boat start and mooring, the keeper's first page, skip | none |
+| E5 | `tools/intro-lab.html` | E4 |
+
+Exit check: Matt plays the first evening on a fresh seed, end to end, without reading anything outside the game, and an existing island loads with its camp pad stamped.
+
+Later phases of the camp ride with the milestones below: Phase 2 (the first season: plant rules, tea herbs, digging, clay, teas, treats and trust) with the rest of M2; Phase 3 (pond tier gifts) at M2's close; Phase 4 (meadow herbs, dyes) with M3; Phase 5 (woodland, shore and night) with M4 to M6, each with its species' milestone (F13 section 13).
+
 ### M2 — Pond tier complete and the meadow islet
+
+The rest of M2 continues after the first evening.
+
 
 - **First step: the Cliff tool** (decided October 2026). Terrace and Cut modes that build or carve level shelves with sheer rock faces, painted rock that stays sheer (talus about 82 degrees), full mesh detail near cliffs, and a shadow offset for near-vertical faces. Built first so it lands as early as possible without interrupting the slice (docs 08, 15, 04, 19). First planned as available from the start; since October 20, 2026 it is **the frogs' gift** (doc 12), replacing their water lily seed, with `?sandbox` and `?cliffs` opening it for testing. Built October 20, 2026 and merged (PR #54) as Sculpt chips (Terrace and Cut beside Raise, Lower, Flatten and Boulder), together with **waterfalls**: water running over a shelf's edge is drawn as volumetric droplet water near the eye (screen-space fluid) and as a curtain further off, with foam where it lands (doc 07). Their sound is built too: each waterfall near the camera is heard where it falls (doc 25).
 - Minnows (schooling), dragonflies (darting flight) and turtles (basking) join the frogs. Minnows come by themselves to a still pool with a deep spot of about 1 m; turtles to a warm pond with a sunny stone, and better with a log (doc 12; turtles moved here from the shore tier on October 20, 2026).
@@ -119,7 +139,7 @@ Slice acceptance, all together:
 
 - Fireflies, bats, and migrating cranes as rare seasonal visitors.
 - Night lighting polish, lantern glow, firefly light; the Moonlight palette as the bats' gift.
-- Presence rung 4, the camp (doc 23), here or with the M7 chapter: a bedroll, a fire and a home point that keeps a gentle presence while you are away.
+- Presence rung 4, the camp (doc 23): changed October 22, 2026. The camp now arrives with the first evening (F13), fixed on its pad from the first day; the night tier adds its fireflies and the dark night (F13 Phase 5).
 - The journal year page (all sixteen species photographed and all four seasons passed).
 - Low tier tuning for weak laptops, accessibility pass, store page and promo capture.
 

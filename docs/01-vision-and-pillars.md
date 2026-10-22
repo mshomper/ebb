@@ -8,8 +8,8 @@
 - Genre: cozy idler and living diorama, inspired by the feel of Tiny Glades.
 - No fail states, no countdowns, no currency grind, no energy meters, no daily-login pressure.
 - The world grows while the player is away and reveals an emerged state on return.
-- One small island to start (about 64 m across); the world expands through milestones.
-- Human touches are limited: paths, stone walls, a small bridge, lanterns.
+- One small island to start (about 64 m across); the world expands through milestones. Islands made from the first-evening update on start a little larger, about 72 m across, with a more varied coast; older islands keep their shape (docs/future/13, section 3.11). *(Changed October 22, 2026, docs/future/13.)*
+- Human touches are limited: paths, stone walls, a small bridge, lanterns. The walker carries three made things: the canvas tent with its bedroll, the hand lantern and a fire steel. Everything else at camp is made from what the island grows. (docs/future/13, section 1.2) *(Changed October 22, 2026, docs/future/13.)*
 - Creatures are the heart of the game. Making them happy is the core activity.
 - Desktop and laptop only, in the browser, with mouse or trackpad and keyboard. A phone or tablet used by touch shows a gentle notice with a link to notarobot-eng.com/ebb instead of the game. *(Changed October 21, 2026: ebb is desktop and laptop only.)*
 - Raw WebGPU, WGSL, plain JavaScript modules, GitHub Pages.
@@ -47,7 +47,7 @@ flowchart LR
 ### Non-goals
 
 - No combat, predators hunting the player's creatures, disasters or anything that destroys progress.
-- No crafting trees, resource counters or inventory management. *(Changed October 21, 2026, to make room for keepsakes, `docs/future/12-keepsakes-and-nets.md`.)* Two things come close to this line on purpose. Nets are made and mended from what the island **grows** (rushes, driftwood, loose stones), and nothing is spent or counted. A **shelf of 16** holds the keepsakes the player chooses: it is a choice of what is special, not storage, and there is nothing beyond it.
+- No crafting trees, resource counters or inventory management. Three things come close on purpose: nets (F12), a shelf of 16 keepsakes, and the walker's pack of a few pouches with a short path of handmade things. Nothing is spent toward a goal, nothing is shown as a number, and everything gathered comes from what the island grows. (docs/future/13, section 14) *(Changed October 21, 2026, to make room for keepsakes, `docs/future/12-keepsakes-and-nets.md`; changed October 22, 2026, docs/future/13, to add the pack.)* Nets are made and mended from what the island **grows** (rushes, driftwood, loose stones). A **shelf of 16** holds the keepsakes the player chooses: it is a choice of what is special, not storage, and there is nothing beyond it. The pack's pouches show fullness by drawing, never by count (docs/future/13, section 4.1).
 - No multiplayer in v1. Sharing happens by exporting a world file or a photo.
 - No large human settlements. A lantern is a highlight, not a city.
 - No monetization design. ebb is a personal project.

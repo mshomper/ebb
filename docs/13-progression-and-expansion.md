@@ -16,10 +16,12 @@
 
 ### What reaches the player, and when
 
-Agreed with Matt on October 20, 2026. New things reach the player in five ways, and no single one dominates:
+Agreed with Matt on October 20, 2026. New things reach the player in five ways, and no single one dominates. From October 22, 2026, the first evening and the camp come before all of them (docs/future/13, section 13, Phase 1):
 
 | Way | What comes | Paced by |
 |---|---|---|
+| The first evening | Every new island starts with it: the boat at dawn, the spring and the keeper's first page, pitching the tent, gathering, laying the fire ring, going up to shape, the fire at dusk and the rest in the tent (docs/future/13, section 2) | ten short beats, each waiting for the player; about 10 to 15 minutes; skippable at beat 0 |
+| The camp | There from day one: a level pad above the beach with the walker's tent, fire ring and piles in fixed slots, and a pack of six pouches for what the walker gathers (docs/future/13, sections 3 and 4). Islands made before the update find the pad stamped and the tent in the pack | nothing: there from the start |
 | Starter kit | Sculpt (Raise, Lower, Flatten, Stone), Paint, Water (Pour, Drain), Plant with grass, reeds and water lilies; Feed once a creature is found | nothing: there from the start |
 | Plants that come by themselves | Iris, rushes, thrift, marigold, grey willow, campion; plantable once seen | about one every 1.7 game days (`recipes/world/growth.json`) |
 | The naturalist's trail | Shells (and keepsakes start washing up) at 3 finds; loose stones at 6, driftwood at 10, the tide table at 12, the hand lens at 15, field glasses at 20, a night lamp at 25. Ways to look. Released living catches count as finds | new kinds of finds discovered (`recipes/world/naturalist.json`) |
@@ -32,6 +34,7 @@ The first ten game days on the pond tier:
 
 ```mermaid
 flowchart LR
+  E[The first evening<br/>boat, spring, camp,<br/>fire, rest] --> S
   S[Start<br/>starter kit<br/>grass, reeds, lilies] --> F[Days 3 to 6<br/>frogs settle<br/>gift: the Cliff tool]
   F -->|Cut digs a deep pool| M[Minnows come<br/>gift: pondweed]
   S -->|a second, fish-free pond you dig, in summer| D[Dragonflies<br/>gift: springs]
@@ -123,7 +126,7 @@ Before this, almost everything a new island offered landed in its first spring, 
 - **Every season has its own small lives and its own moment**, so the year page has something to fill in each season.
 - **When the pond sleeps, the shore wakes.** Autumn and winter belong to the sea.
 
-A new island starts in early spring, so it always opens with the pond waking.
+A new island starts in early spring, so it always opens with the pond waking. It opens at dawn on spring day 0 with the first evening; frogs still sleep then, so the dusk call is a far-off curlew (docs/future/13, section 2.1).
 
 | Season (game days) | In the game now | Comes with this plan |
 |---|---|---|
@@ -220,6 +223,7 @@ Target player: 20 to 40 minutes most evenings, with the game left closed overnig
 
 | Stage | Game days (approx.) | Real time for the target player | Gated by |
 |---|---|---|---|
+| The first evening, camp pitched | 0 | the first 10 to 15 minutes | nothing; each beat waits for the player (docs/future/13, section 2) |
 | First frog scout | 1 to 2 | first session | reeds filling in along the pond |
 | Frogs happy (first gift, the Cliff tool) | 3 to 6 | first or second evening | group of 4 and a thick reed margin |
 | Turtles come | 14 to 20 (summer) | second week of play | only once the water is warm in summer; a sunny stone at a shallow pond with lilies; a carried log makes them happier |
@@ -327,6 +331,7 @@ Tuning panel: milestone threshold (second or third happy species), rise duration
 - Open the journal: unknown species show pencil outlines with a short hint; photographed species show the photo; the map shows each land piece.
 - Leave a happy frog group, add a lantern until they move on: the gift stays, the page says they moved on, and removing the lantern brings a scout back.
 - With everything unlocked on desktop the frame rate stays at 60 fps while orbiting the whole world, on the medium tier too.
+- Start a fresh island: it opens in the boat at dawn and the first evening runs; the camp stands from then on. Open an island saved before the update: no evening, the pad is stamped and the tent waits in the pack (docs/future/13, section 2.5).
 
 ## Open questions
 - Should the player choose where a new islet rises (from two or three spots), or is a surprise placement nicer?

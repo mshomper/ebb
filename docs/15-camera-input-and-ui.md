@@ -56,6 +56,18 @@ Above is the orbit camera described here: the diorama, where you shape. Below is
 - **From W3,** the closest above view stops at about 2.5 m (4 m until October 21, 2026), so getting close always means going down.
 - Numbers live in `recipes/world/walker.json`.
 
+### The first evening and the camp (Phase 1, approved October 22, 2026)
+
+What the keeper's camp adds to the camera and the UI (docs/future/13, sections 2, 3 and 4). All of it is contextual: no new visibility toggles.
+
+- **The boat start** (section 2.1, beat 0). A new island opens below, at dawn, with the low camera behind the walker sitting in a small rowing boat about 22 m out along the camp's facing line (`camera.setGround(walkerRecipe.camera, head)`). The boat rows in for about 8 s and grounds on the sand below the camp; any click shortens the row. The glide is a game move: presence speed reads 0, nothing startles. Under the first hint, at beat 0 only, a text button offers *Skip the first evening*. While the evening is unfinished (`intro:done` missing), a reload opens below at the walker's spot, the one exception to "a save opens above" (section 2.2).
+- **Evening hints** (section 2.3). One line at a time in Fraunces italic in the island-notes corner, on `intro:hint { id, text }`, with its own quiet style, at least 15 px. It stays until its beat is done; a click tucks it away. The Go up button pulses once at beat 7, in its normal look.
+- **Pouches on the ground bar** (section 4.1, K-01). Below, a row of drawn cloth pouches sits inside the ground bar, above the Sit, Kneel, Feed, Net and Look buttons, centred. Above, it is not shown, as the ground bar is not. Six pouches to start, each drawn in four fullness looks (flat, a few, half, full and tied) with a small sketch of its contents at the mouth; no text label and no number, an aria-label such as "Sticks, half full". Pouches sort themselves in a fixed order by kind. From eight pouches the row breaks into two even rows whenever one would not fit the pane; it never scrolls sideways. Clicking a pouch opens its card (sketch, one line, the fullness word, **Set down** at camp and **Empty**). Drawings are SVG in the shared stroke weight and palette.
+- **The Look card's Gather** (section 4.2, GR-14 to GR-16). Below, a click on a gatherable thing opens its card, with one **Gather** button per thing there now (labelled with the thing, at most two) plus **Leave**. Ground that is everywhere (sand, pebbles, a strandline stretch) shows its card only with Look on or within arm's reach, so walking on the beach stays walking. Gather walks the walker into reach, kneels, takes one handful, and keeps the card open with its word updated. With no room, the card offers **Set down here** or **Leave it**. From above, the same card shows no Gather and says *"You can gather this on foot."*
+- **Camp slot glow** (section 3.3, CS-05). A soft pale patch on the ground (the terrain marks' ring, filled) glows on a camp slot the first time it is needed in the evening, and after that only while the pack holds something for that slot and the walker is on or within 2 m of the pad. It stops the moment the pack no longer holds that thing. Clicking the glow shows the slot's card (**Pitch the tent**, **Lay the fire ring**). Standing at a laid ring shows **Light** on the ground bar; within 2 m of the tent flap after sunset, **Rest**.
+- **The brush edge on the pad** (section 3.1, CP-01). Above, while a brush ring overlaps the camp pad, the pad's edge draws as a soft dashed circle on the ground and fades when the brush leaves (doc 08). Loose stone, Spring and a Water pour on the pad show a quiet line: *"The camp ground stays clear."*
+- **The return at the tent flap** (section 3.5, C-40). Rest skips the night behind a short cream screen. While it is up, the walker is placed kneeling at the flap and the camera set down behind it facing seaward, so the first view is out of the tent: the ring, the pad and the sea, just before sunrise. The first click climbs out. No reveal and no away card after a rest. A new visit after closing the tab opens as today.
+
 ### The action layer
 
 ```mermaid
@@ -217,12 +229,15 @@ Settings: orbit speed, invert vertical, zoom speed, field of view, HUD dimming. 
 - Following a frog keeps it centered as it hops; panning ends follow cleanly.
 - At the largest text size every panel still fits with no horizontal scroll, and no text is smaller than 15 px.
 - Every icon is a drawn shape that takes the panel color in light and dark themes.
+- Start a fresh island: it opens below at dawn in a boat rowing in; a click shortens the row. Pitch, gather and lay the ring: each slot glows only when it is needed. Rest after dusk: the cream screen softens and the first view is out of the tent flap just before sunrise (docs/future/13, section 2.5).
+- Below, the pouch row sits above the ground-bar buttons and never scrolls sideways at any window width; above, it is hidden (docs/future/13, section 4.1).
 
 ## Open questions
 
 - Should the HUD dim on its own, or only when the player asks for a clean view?
 - Should clicking a creature with a tool selected open its card, or only in the look state?
 - Should the camera drift slowly by itself after a minute with no input?
+- The keeper's camp spec draws each pouch as a 40 px tap target (docs/future/13, section 4.1), under this doc's 48 px click floor. Raise pouches to 48 px, or allow 40 px for pouches only? To settle before E2.
 
 ## Depends on / feeds into
 
