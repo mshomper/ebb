@@ -87,7 +87,7 @@
     "arrival": { "rightScore": 0.45, "rightHoldH": 6, "scoutAfterH": 6, "comeAtH": 11, "scoutChance": 0.5, "maxWaitDays": 3,
                  "startCount": 3, "m2PerOne": 2, "settleAfterH": 24, "settleMood": 0.45, "rescoutAfterH": 48,
                  "growShare": 0.5, "growMood": 0.5, "growSeasons": [1, 1, 0, 0], "newPoolChance": 0.3,
-                 "moodEase": 0.2, "leaveMood": 0.3, "leaveAfterH": 48, "shrinkShare": 0.34,
+                 "moodEase": 0.2, "leaveMood": 0.3, "leaveAfterH": 48, "leaveGraceDays": 3, "shrinkShare": 0.34,
                  "happyMin": 6, "happyMood": 0.65, "happyHoldH": 24 }
   }
 }

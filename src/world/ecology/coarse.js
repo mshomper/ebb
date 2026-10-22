@@ -114,7 +114,8 @@ export function pondFit(hab, m, id, R, fish) {
  * The pools of a species' water and how good each is: area, room (good square meters), deepest
  * spot, its best square and score (ties to the lower square), and the groups whose home lies in it
  * (src/world/creatures/swarms.js finds each group's pool by this), and the plants in it that make
- * room for more (weed: weight x size summed, pondweed for minnows).
+ * room for more (weed: weight x size summed, pondweed for minnows), and the weakest of its needs
+ * at the best square (low: water, food or shelter).
  * @param {ReturnType<typeof needMaps>} m @param {{ id: number, k: number }[]} groups
  * @param {{ sp: string, x: number, z: number, size: number }[]} plants @param {Record<string, number> | null} roomPlants
  */
@@ -142,7 +143,14 @@ function pools(m, groups, plants, roomPlants) {
     }
     const here = groups.filter((g) => m.label?.[g.k] === b.id).map((g) => g.id);
     const wd = Math.round((weed.get(b.id) ?? 0) * 100) / 100;
-    return { id: b.id, area: b.area, room: b.good, deepCm: b.deepCm, deepK: b.deepK, best, bestScore: bestScore / 255, groups: here, weed: wd };
+    // The weakest need at the best square (A9: why a group grows uneasy), ties in this order.
+    let low = 'water';
+    if (best >= 0) {
+      let v = m.water[best];
+      if (m.food[best] < v) { v = m.food[best]; low = 'food'; }
+      if (m.shelter[best] < v) low = 'shelter';
+    }
+    return { id: b.id, area: b.area, room: b.good, deepCm: b.deepCm, deepK: b.deepK, best, bestScore: bestScore / 255, groups: here, weed: wd, low };
   });
 }
 

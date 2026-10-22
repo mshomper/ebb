@@ -7,6 +7,7 @@
 import { run } from '../core/workers.js';
 import { makeEnv } from './tick.js';
 import { hourStep } from './hour.js';
+import { habitatByDay } from '../world/growth/habitat-days.js';
 
 /** At most 7 game days per return (docs 02, future/01), so a return never skips half a season. */
 export const CAP_HOURS = 168;
@@ -47,7 +48,10 @@ export function awayHours(p) {
  * @typedef {Object} CatchUpInput
  * @property {number} seed        world seed
  * @property {any} recipes        the tick env's recipes (plain JSON): seasons, sky, water, growth, flora, covers, land, species
- * @property {any} habitat        the habitat grid: it cannot change while you are away (no edits)
+ * @property {any} habitat        the habitat grid as you left it (no edits while you are away)
+ * @property {import('../world/growth/habitat-days.js').HabitatInputs | null} [habitatInputs]  what it is
+ *   built from: then the habitat follows the season day by day, as the game's does (the water table and
+ *   the summer drawdown; A9), instead of staying as you left it
  * @property {Uint8Array | null} material  painted materials, for the journal's ground survey
  * @property {any} state          world state at the last whole hour
  * @property {any} journal        the journal, or null on a page without one
@@ -63,11 +67,14 @@ export function awayHours(p) {
  */
 export function catchUpJob(a) {
   const env = makeEnv(a.seed, a.recipes);
-  env.habitat = () => a.habitat;
+  const byDay = a.habitatInputs ? habitatByDay(a.habitatInputs) : null;
+  let habitat = a.habitat;
+  env.habitat = () => habitat;
   const jc = { material: a.material, words: a.jr?.words, island: a.jr?.island, web: a.jr?.web };
   let state = a.state, journal = a.jr ? a.journal : null;
   /** @type {any[]} */ const notes = [], events = [];
   for (let h = a.fromHour; h < a.fromHour + a.hours; h++) {
+    if (byDay) habitat = byDay(h);
     const r = hourStep(state, journal, h, env, jc);
     state = r.state;
     journal = r.journal;

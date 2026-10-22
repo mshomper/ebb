@@ -23,6 +23,7 @@ import * as spring from '../world/creatures/spring.js';
  * @property {any} recipes         loaded recipes by short name: {seasons, sky?, water?, growth?, flora?: {<species>: recipe},
  *                                 species?: {frog, midge}}
  * @property {() => any} [habitat] the current habitat grid (world/growth/habitat.js), or null until the water summary exists
+ * @property {() => any} [habitatInputs] what the habitat is built from, for catch-up to follow the season (world/growth/habitat-days.js)
  * @property {typeof det} det
  */
 
