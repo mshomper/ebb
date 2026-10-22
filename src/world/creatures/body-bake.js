@@ -220,6 +220,11 @@ export function bakeBody(body, cellM) {
       const o = body.blotch.offset ?? [0, 0, 0], s = body.blotch.scale;
       if (nrm[1] < body.bellyBelowNormalY) col = A.belly;
       else if (valueNoise(p[0] * s + o[0], p[1] * s + o[1], p[2] * s + o[2]) < body.blotch.amount * 0.75) col = A.blotch;
+      // Lines along the back (a lizard's dark mid-line, pale and dark flank lines): at |x| from the
+      // middle, between z[0] and z[1], where the skin faces up at least minNy.
+      for (const st of body.stripes ?? []) {
+        if (nrm[1] >= st.minNy && nrm[1] >= body.bellyBelowNormalY && p[2] >= st.z[0] && p[2] <= st.z[1] && Math.abs(Math.abs(p[0]) - st.x) < st.w) col = A[st.color];
+      }
     }
     // Small spots on a region (a turtle's yellow-dotted skin, its plastron's dark blotches).
     const sp = body.speckle?.[region];

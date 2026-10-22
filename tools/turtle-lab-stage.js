@@ -224,7 +224,7 @@ function makeStage(gpu, shellCode, turtleBody) {
     blend: { color: { srcFactor: 'src-alpha', dstFactor: 'one-minus-src-alpha' }, alpha: { srcFactor: 'one', dstFactor: 'one-minus-src-alpha' } },
     depth: { format: 'depth24plus', depthWriteEnabled: false, depthCompare: 'less' },
   });
-  /** @type {{ v: GPUBuffer, i: GPUBuffer, n: number } | null} */ let mesh = null;
+  /** Meshes by name (the turtle, the lizard). @type {Map<string, { v: GPUBuffer, i: GPUBuffer, n: number }>} */ const meshes = new Map();
 
   /**
    * One view on a canvas of its own.
@@ -241,7 +241,8 @@ function makeStage(gpu, shellCode, turtleBody) {
     return {
       /**
        * Draw it. @param {{ cam: { yaw: number, pitch: number, dist: number, target: number[] }, place: number[], scale: number, dry: number,
-       *   water: number | null, floorY: number, ledge: number[] | null, ring: number[], bones: Float32Array, look: number[], baked?: boolean }} s
+       *   water: number | null, floorY: number, ledge: number[] | null, ring: number[], bones: Float32Array, look: number[], baked?: boolean, mesh?: string }} s
+       *   mesh: which mesh (setMesh's name; the turtle when left out)
        *   look: wet darken, dry roughness share, dry sheen share
        */
       draw(s) {
@@ -272,6 +273,7 @@ function makeStage(gpu, shellCode, turtleBody) {
         pass.setBindGroup(0, group);
         pass.setPipeline(floor); pass.draw(6);
         if (s.ledge) { pass.setPipeline(ledge); pass.draw(36); }
+        const mesh = meshes.get(s.mesh ?? 'turtle');
         if (mesh) { pass.setPipeline(body); pass.setVertexBuffer(0, mesh.v); pass.setIndexBuffer(mesh.i, 'uint32'); pass.drawIndexed(mesh.n); }
         if (s.water !== null) { pass.setPipeline(water); pass.draw(6); }
         pass.end();
@@ -282,13 +284,13 @@ function makeStage(gpu, shellCode, turtleBody) {
 
   return {
     view,
-    /** Show a baked mesh (packed vertices and indices from bakeVariant). @param {{ data: ArrayBuffer, indices: Uint32Array }} m */
-    setMesh(m) {
+    /** Show a baked mesh (packed vertices and indices from bakeVariant) by name. @param {{ data: ArrayBuffer, indices: Uint32Array }} m @param {string} [name] */
+    setMesh(m, name = 'turtle') {
       const v = device.createBuffer({ size: m.data.byteLength, usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST });
       device.queue.writeBuffer(v, 0, m.data);
       const i = device.createBuffer({ size: m.indices.byteLength, usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST });
       device.queue.writeBuffer(i, 0, m.indices);
-      mesh = { v, i, n: m.indices.length };
+      meshes.set(name, { v, i, n: m.indices.length });
     },
   };
 }

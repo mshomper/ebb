@@ -2,7 +2,7 @@
 // ebb turtle lab (M2 turtle life, TL1; docs 11, 12): the European pond turtle at its drawn size
 // (displayScale), one view per motion, side by side, each looping: the swim stroke, the periscope,
 // the walk, the haul-out, basking (drying from wet to matte, with a yawn), the slide off with its
-// plop, grazing, and peeking up then ducking under. Every pose comes from the game's own rig
+// plop, grazing, and peeking up then ducking under; and the common lizard (LZ): basking, darting when\n// you come close, running. Every pose comes from the game's own rig
 // (src/world/creatures/rigs/turtle.js) and every number from recipes/species/turtle.json, so what
 // moves here is what moves on the island.
 
@@ -10,6 +10,8 @@ import { run } from '../src/core/workers.js';
 import { poseSkeleton, axisAngle } from '../src/world/creatures/pose.js';
 import { MAX_BONES } from '../src/world/creatures/bodies.js';
 import { poseState, poseTurtle, haulPath, haulPart, haulS, slidePath, noseY } from '../src/world/creatures/rigs/turtle.js';
+import { poseLizard } from '../src/world/creatures/rigs/lizard.js';
+import { createLizards } from '../src/world/creatures/lizard-live.js';
 import { createStage, VIEWS } from './turtle-lab-stage.js';
 
 const $ = (/** @type {string} */ id) => /** @type {HTMLElement} */ (document.getElementById(id));
@@ -184,6 +186,8 @@ $('views').addEventListener('click', (e) => {
 });
 
 const mats = new Float32Array(MAX_BONES * 16);
+// The lizard section below starts once its recipe is in.
+let lizardsReady = false;
 let clockT = 0, last = performance.now();
 /** @type {any} */ (window).turtleLab = { panels, CLIPS, setT: (/** @type {number} */ t) => { clockT = t; } };
 function frame() {
@@ -211,6 +215,74 @@ function frame() {
         water: c.water, floorY: c.floorY, ledge: c.ledge, ring: fr.ring ?? [0, 0, 0, 0], bones: mats, look: LOOK, baked });
     }
   }
+  if (lizardsReady) drawLizards(0, goal);
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
+
+// --- the common lizard (LZ): its own lives, stepped as the game steps them ---
+const LR = await fetch('../recipes/species/lizard.json').then((r) => r.json());
+const SL = LR.body.displayScale;
+const STONE = { half: 0.1, top: 0.05 };
+/** A lizard with no stone bounds: the ground is the floor, the stone a box at the middle. */
+const lizardWorld = () => createLizards({ R: { ...LR, motion: { ...LR.motion, pushEveryS: [4, 8] } }, ground: () => 0 });
+const HOME = { x: 0, y: STONE.top, z: 0, yaw: 0.5, r: STONE.half };
+/**
+ * @typedef {{ id: string, title: string, target: number[], dist: number, life: ReturnType<typeof createLizards> | null,
+ *   cycleS: number, near?: (t: number) => any[], note: (L: any) => string }} LizardClip
+ */
+/** @type {LizardClip[]} */
+const LCLIPS = [
+  { id: 'lz-bask', title: 'Lizard: basking sprawl', target: [0, 0.06, 0], dist: 0.42, life: lizardWorld(), cycleS: 0,
+    note: (L) => (L.push > 0.05 ? 'a push-up display' : 'sprawled, breathing, head in quick small jerks') },
+  { id: 'lz-dart', title: 'Lizard: you come close', target: [0, 0.05, 0], dist: 0.9, life: lizardWorld(), cycleS: 40,
+    // Someone walks up beside its stone for a moment each cycle.
+    near: (t) => (t > 2 && t < 3 ? [{ body: true, pos: [0.7, 0.4, 0.4], speed: 1, edits: [], stillS: 0 }] : []),
+    note: (L) => ({ bask: 'basking', dart: 'darting off the stone', hide: 'waiting low, watching', back: 'coming back in short bursts' })[/** @type {'bask'} */ (L.mode)] },
+  { id: 'lz-run', title: 'Lizard: running gait', target: [0, 0.02, 0], dist: 0.42, life: null, cycleS: 0,
+    note: () => 'diagonal pairs sweep out to the side; spine and tail wave' },
+];
+const lgrid = $('lizards');
+const lpanels = LCLIPS.map((clip, i) => {
+  const card = document.createElement('section');
+  card.className = 'card panel';
+  card.innerHTML = `<h2>${clip.title}</h2><canvas aria-label="${clip.title}"></canvas><p class="note">-</p>`;
+  lgrid.appendChild(card);
+  card.querySelector('canvas')?.addEventListener('click', () => card.classList.toggle('big'));
+  if (new URLSearchParams(location.search).get('big') === clip.id) card.classList.add('big');
+  const canvas = /** @type {HTMLCanvasElement} */ (card.querySelector('canvas'));
+  clip.life?.get(clip.id, 0x5eed + i * 977, HOME);
+  return { clip, canvas, note: /** @type {HTMLElement} */ (card.querySelector('.note')), view: stage.view(canvas), t: 0,
+    run: { id: 9, t: 0, look: 0, lookUp: 0, push: 0, run: 1, ph: 0, curl: 1 } };
+});
+/** @type {any[]} */ let lrig = [];
+run(BAKE, { id: 'lizard', body: LR.body, variant: 0, cellM: LR.bake.cellM }).then((r) => { stage.setMesh(r, 'lizard'); lrig = r.bones; });
+const lmats = new Float32Array(MAX_BONES * 16);
+let lastL = performance.now();
+/** @param {number} _dt @param {any} goal */
+function drawLizards(_dt, goal) {
+  const now = performance.now(), dt = playing ? Math.min(0.1, (now - lastL) / 1000) * speed : 0;
+  lastL = now;
+  if (!lrig.length) return;
+  for (const p of lpanels) {
+    const c = p.clip;
+    p.t += dt;
+    let L;
+    if (c.life) {
+      const ct = c.cycleS ? p.t % c.cycleS : p.t;
+      c.life.step(dt, new Set([c.id]), c.near ? c.near(ct) : []);
+      L = c.life.all()[0];
+    } else {
+      L = p.run; L.t = p.t; L.ph = p.t / LR.motion.gait.runStrideS;
+      L.x = 0; L.y = 0; L.z = 0; L.yaw = 0;
+    }
+    poseSkeleton(lrig, poseLizard(lrig, L, LR.motion, axisAngle), lmats, 0);
+    const n = c.note(L);
+    if (p.note.textContent !== n) p.note.textContent = n;
+    const close = /** @type {any} */ (goal).close;
+    const target = close ? [L.x + Math.sin(L.yaw) * 0.03 * SL, L.y + 0.008 * SL, L.z + Math.cos(L.yaw) * 0.03 * SL] : c.target;
+    p.view.draw({ cam: { yaw: cam.yaw + (close ? L.yaw : 0), pitch: cam.pitch, dist: close ? 0.12 : c.dist, target }, place: [L.x, L.y, L.z, L.yaw], scale: SL, dry: 1,
+      water: null, floorY: 0, ledge: c.life ? [STONE.half, -STONE.half, STONE.half, STONE.top] : null, ring: [0, 0, 0, 0], bones: lmats, look: [1, 1, 1], baked: true, mesh: 'lizard' });
+  }
+}
+lizardsReady = true;

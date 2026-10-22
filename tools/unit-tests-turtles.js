@@ -2,13 +2,15 @@
 // Turtle life (M2, TL1 to TL6), for tools/unit-tests.html: the turtle's rig and pose
 // (src/world/creatures/rigs/turtle.js), its shell plates for the creature shader, and its live
 // behaviour (src/world/creatures/bask.js) in a round test pond: swimming and diving, hauling out
-// onto a raft, slipping off one by one when startled, hiding, peeking and coming back.
+// onto a raft, slipping off one by one when startled, hiding, peeking and coming back. And the\n// common lizard (LZ): its rig and its life on a stone.
 
 import { poseState, poseTurtle, haulPath, slidePath, LAYERS } from '../src/world/creatures/rigs/turtle.js';
 import { createBask } from '../src/world/creatures/bask.js';
 import { poseSkeleton, axisAngle } from '../src/world/creatures/pose.js';
 import { skeletonOf, MAX_BONES } from '../src/world/creatures/bodies.js';
 import { shellBlock } from '../src/render/passes/creatures.js';
+import { poseLizard } from '../src/world/creatures/rigs/lizard.js';
+import { createLizards } from '../src/world/creatures/lizard-live.js';
 
 const G = 'turtle life';
 
@@ -143,6 +145,35 @@ export function addTurtleTests(test, assert, eq) {
     assert(hid !== 0 && peeked !== 0, 'hid, then peeked');
     run(b, 90);
     assert(b.fish.filter((f) => f.mode === 'bask' || f.mode === 'shuffle').length >= 2, 'back on the raft');
+  });
+
+  test('common lizard', 'a rig of 14 bones, every pose finite: basking, a push-up, running', async () => {
+    const R = await fetch('../recipes/species/lizard.json').then((x) => x.json());
+    const rig = skeletonOf('lizard', R.body.prims, R.body.bones);
+    eq(rig.length, 14, 'bones');
+    const out = new Float32Array(MAX_BONES * 16);
+    for (const f of [{ push: 0, run: 0 }, { push: 1, run: 0 }, { push: 0, run: 1 }]) {
+      poseSkeleton(rig, poseLizard(rig, { id: 1, t: 2.3, look: 0.3, lookUp: 0.2, ph: 0.37, curl: 1, ...f }, R.motion, axisAngle), out, 0);
+      assert([...out.subarray(0, rig.length * 16)].every(Number.isFinite), 'finite');
+    }
+  });
+
+  test('common lizard', 'it basks still when left alone; close by, it darts off its stone, waits, and comes back', async () => {
+    const R = await fetch('../recipes/species/lizard.json').then((x) => x.json());
+    const life = createLizards({ R, ground: () => 0 });
+    const L = life.get('s', 77, { x: 0, y: 0.05, z: 0, yaw: 0, r: 0.1 });
+    const keep = new Set(['s']);
+    for (let i = 0; i < 20 * 30; i++) life.step(1 / 20, keep, []);
+    eq(L.mode, 'bask', 'left alone it basks');
+    assert(L.x === 0 && L.z === 0, 'on its stone');
+    const you = { body: true, pos: [0.6, 0.4, 0], speed: 1, edits: [], stillS: 0 };
+    /** @type {string[]} */ const seen = [];
+    for (let i = 0; i < 20 * 60; i++) {
+      life.step(1 / 20, keep, i < 10 ? [/** @type {any} */ (you)] : []);
+      if (seen[seen.length - 1] !== L.mode) seen.push(L.mode);
+    }
+    eq(seen.join(), 'dart,hide,back,bask', 'darts, waits, comes back');
+    assert(Math.hypot(L.x, L.z) < 0.03, 'back on its stone');
   });
 
   test(G, 'habits: grazing lily leaves and pondweed, and walking the bottom', async () => {
