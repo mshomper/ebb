@@ -84,7 +84,7 @@
       "message": "Inside, a rolled note:"
     }
   },
-  "piecesNote": "Placed pieces (docs/future/10, src/world/pieces): what a tap on one says. name and icon head its card, cardLine is the line under them (no page of its own: the card has no Open its page), and lifted is the note written the first time you lift one (the flag stones:lifted; driftwood:lifted for a log, which rolls over). carry: the card's Carry button with the turtles' gift (button), the line while a piece is carried (hint), the button that puts it back (cancel), and the calm lines when a tap lands in water or the island holds all the logs it can (water, full). lift (L3a, src/world/pieces/lift.js): the card's Lift button on foot within reach (button), the line in its place from above (above) or too far (closer), and the card's line after a Lift: what was found ({n} from numbers, the first letter made a capital), nothing, a strand log (strand), or lifted again the same day (rest). The first Lift of each kind writes its lifted note.",
+  "piecesNote": "Placed pieces (docs/future/10, src/world/pieces): what a tap on one says. name and icon head its card, cardLine is the line under them (a stone's card has no Open its page until a Lift), and lifted is the note written the first time you lift one on foot (the flag stones:lifted; driftwood:lifted for a log, which rolls over). carry: the card's Carry button with the turtles' gift (button), the line while a piece is carried (hint), the button that puts it back (cancel), and the calm lines when a tap lands in water or the island holds all the logs it can (water, full). A log's card opens the Driftwood page (species.driftwood, L2): a tap finds the log's form (its collection, one item per form) and teaches its field lines by what the log shows (lessons: fresh below that time at sea, old above it, moss above that much moss; src/world/pieces/log-bake.js, log-age.js); its sketch is traced from the log you tapped. lift (L3a, src/world/pieces/lift.js): the card's Lift button on foot within reach (button), the line in its place from above (above) or too far (closer), and the card's line after a Lift: what was found ({n} from numbers, the first letter made a capital), nothing, a strand log (strand), or lifted again the same day (rest). The first Lift of each kind writes its lifted note.",
   "pieces": {
     "stone": {
       "name": "Loose stone", "icon": "loosestone",
@@ -748,6 +748,38 @@
         { "pencil": "A hermit crab might move into one one day.", "ink": "A bigger house for a growing hermit crab.", "when": "hermitcrab:seen" }
       ],
       "notes": { "found": "You found a shell on the strandline.", "storm": "A storm tide left rarer shells along the top line." }
+    },
+    "driftwood": {
+      "name": "Driftwood", "icon": "driftwood", "kind": "find", "plural": "logs", "card": "A log",
+      "cardLine": "A log the sea brought in.",
+      "place": "Washed up along the strandline after high tides, and kept where you set it down.",
+      "riddle": "Something might wash up along the line the high tide leaves.",
+      "foundLine": "You found the first log on {date}.",
+      "collection": [
+        { "id": "straight", "name": "Straight trunk", "rarity": "common", "line": "A length of trunk, snapped off at both ends.", "hint": "Something long and plain washes up after many tides.", "found": "You found a straight length of trunk, snapped at both ends." },
+        { "id": "bowed", "name": "Bowed limb", "rarity": "common", "line": "A big branch with a bend in it, thinner toward one end, with stubs where twigs broke off.", "hint": "Something with a bend in it washes up now and then.", "found": "You found a bowed limb of driftwood." },
+        { "id": "forked", "name": "Forked branch", "rarity": "uncommon", "line": "A branch that split in two. One arm runs on; the other snapped off short.", "hint": "Something that splits in two turns up now and then.", "found": "You found a forked branch, one arm snapped off short." },
+        { "id": "rootend", "name": "Root end", "rarity": "rare", "line": "The foot of a small tree, its broken roots splayed out. The sea pulled it from a bank somewhere.", "hint": "Something with roots on it comes in once in a while.", "found": "You found the root end of a small tree, its roots splayed out." }
+      ],
+      "field": [
+        { "text": "A log kept where it lies slowly darkens and softens, week by week.", "learn": ["seen"] },
+        { "text": "A log fresh from the sea still has patches of brown bark.", "learn": ["fresh"] },
+        { "text": "Long at sea, a log turns silver-grey and smooth, cracked along its grain and grooved where shipworms bored it.", "learn": ["old"] },
+        { "text": "In damp shade, by water or under tall plants, moss creeps over the top of a kept log.", "learn": ["moss"] }
+      ],
+      "fieldHint": "Look at other logs, fresh and old, to learn more.",
+      "lessons": { "fresh": 0.3, "old": 0.7, "moss": 0.2 },
+      "sketch": { "labels": {
+        "end": { "text": ["a broken", "end"], "learn": ["seen"] },
+        "grain": { "text": ["grain along", "its length"], "learn": ["old"] },
+        "bark": { "text": ["bark", "still on"], "learn": ["fresh"] } } },
+      "likes": [
+        { "text": "A strandline the high tide reaches", "learn": ["seen"] }
+      ],
+      "gives": [
+        { "pencil": "Something small might shelter under a kept log one day.", "ink": "Shelter for the small lives underneath.", "when": "woodlice:seen" }
+      ],
+      "notes": { "found": "You found driftwood on the strandline." }
     },
     "barnacles": {
       "name": "Acorn barnacles", "icon": "barnacles", "kind": "find", "plural": "acorn barnacles", "card": "Acorn barnacles",

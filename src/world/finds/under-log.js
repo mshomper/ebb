@@ -26,9 +26,9 @@ const smooth = (x, a, b) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a
  */
 
 /**
- * The ground under a piece, from the habitat grid and the plants round it. A stand-in for L2's
- * dampShade (src/world/pieces/log-age.js) until that lands: damp from the grid's moisture, shade from
- * tall plants within shade.radiusM (each plant's weight times its size).
+ * The ground under a piece, from the habitat grid and the plants round it: damp from the grid's
+ * moisture, shade from tall plants within shade.radiusM (each plant's weight times its size, the same
+ * weights as L2's dampShade in src/world/pieces/log-age.js, which reads the water summary instead).
  * @param {{ hab: any, plants: { sp: string, x: number, z: number, size: number }[], x: number, z: number, G: any }} p
  *   G: under-log.json ground
  * @returns {Ground}
@@ -70,7 +70,7 @@ export function groundUnder(p) {
 
 /**
  * How old a kept log is for what lives under it, in game days since it was set down. Read through this
- * one helper so it can switch to L2's ageing (log-age.js logAge) once that lands.
+ * one helper, so it can follow L2's ageing (log-age.js logAge) if the two should ever share a clock.
  * @param {number} placedHour @param {number} hourNow
  */
 export const keptDays = (placedHour, hourNow) => Math.max(0, (hourNow - placedHour) / 24);

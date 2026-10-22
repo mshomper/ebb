@@ -14,13 +14,14 @@ import { mountIslandNotes } from './ui/island-notes.js';
 import { mountHaulTray } from './ui/haul-tray.js';
 import { registerCatchSketches } from './ui/sketches/catch.js';
 import { registerUnderLogSketches } from './ui/sketches/under-log.js';
+import { setDriftwoodRecipe, noteLog } from './ui/sketches/driftwood.js';
 import { mountFrogScale } from './ui/frog-scale.js';
 import { createJournal } from './world/journal/index.js';
 import { createProgress } from './world/expansion.js';
 import { keyOf } from './world/species.js';
 import { loadRecipe } from './core/recipes.js';
 import { on } from './core/events.js';
-import { get as getStore, defaultStore } from './core/store.js';
+import { get as getStore, subscribe as subscribeStore, defaultStore } from './core/store.js';
 import { startAudio } from './audio/index.js';
 import { mountNowPlaying } from './ui/now-playing.js';
 import { showElsewhere } from './ui/elsewhere.js';
@@ -102,6 +103,9 @@ startApp(canvas, { onDeviceLost: (rebuilding) => showRebuildingNote(rebuilding),
         // Each living kind's page is traced from the first one you let go (src/ui/sketches/catch.js).
         registerCatchSketches(netsApp.recipe, () => getStore('nets')?.released ?? []);
       }
+      // The Driftwood page's sketch is traced from the log you last tapped (src/ui/sketches/driftwood.js).
+      setDriftwoodRecipe(await loadRecipe('world/pieces'));
+      subscribeStore('identify', (/** @type {any} */ c) => { if (c?.log) noteLog(c.log); });
       // Progress (src/world/expansion.js): the naturalist's rewards and species gifts, read from the
       // journal. A species recipe's gift goes under its journal page (frog.json's under frogs).
       /** @type {Record<string, any>} */ const gifts = {};

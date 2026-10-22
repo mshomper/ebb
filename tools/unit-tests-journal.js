@@ -429,7 +429,10 @@ export function addJournalTests(test, assert, eq) {
     const at = (/** @type {string} */ id) => first[id] ?? -1;
     const run = (/** @type {any} */ c) => livingList(list, words, { ...DEFAULT_CHOICE, ...c }, entry, at);
     const all = run({});
-    eq(all.map((g) => g.id).join(','), words.species.shells ? 'plants,animals,small,shells' : 'plants,animals,small', 'groups in order (Shells once its page exists)');
+    const g0 = (/** @type {any[]} */ gs, /** @type {string} */ id) => gs.find((x) => x.id === id);
+    eq(all.map((g) => g.id).join(','), ['plants', 'animals', 'small', ...['shells', 'driftwood'].filter((id) => words.species[id])].join(','), 'groups in order (Shells and Driftwood once their pages exist)');
+    // Driftwood is a page of its own (L2), never a small life on the naturalist's line.
+    if (words.species.driftwood) assert(!words.findOrder.includes('driftwood') && g0(all, 'driftwood')?.rows.length === 0, 'Driftwood lists no log form before you find one');
     for (const id of [...words.order, ...words.findOrder]) assert(groupsOf(list, words).some((g) => g.ids.includes(id)), `${id} is in a group`);
     const g = (/** @type {any[]} */ gs, /** @type {string} */ id) => gs.find((x) => x.id === id);
     eq(g(all, 'plants').rows.slice(0, 3).join(','), 'reeds,thrift,grass', 'recently found first');

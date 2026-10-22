@@ -221,6 +221,9 @@
 .ebb-jpage__list li.is-pencil::before { background: transparent; border: 1.5px dashed var(--jr-pencil); width: 8px; height: 8px; }
 /* A collection's rarity beside its name (the Shells page). */
 .ebb-jpage__rarity { font-size: var(--text-small); color: var(--jr-pencil); margin-left: 4px; }
+/* A collection item's own small drawing above its name (the Driftwood page's forms). */
+.ebb-jpage__item-art { display: block; width: min(240px, 100%); margin: 0 0 2px; }
+.ebb-jpage__item-art svg { width: 100%; height: auto; display: block; }
 .ebb-jpage__seasons { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
 /* Each season box wears a soft wash of its season, with its drawn mark; an unseen season stays pencil. */
 .ebb-jpage__season {

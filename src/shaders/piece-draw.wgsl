@@ -22,6 +22,8 @@ struct PieceDraw {
   tile: vec4f,      // x 1 / top tile (m), y 1 / side tile (m), z, w terminator range
   wood: vec4f,      // driftwood: x roughness, y bump (m), z grain streaks across the log, w crack darkness 0..1
   moss: vec4f,      // pond stones' and Steps' moss: rgb albedo (linear), w how far it creeps in from the rim onto the top (0..1)
+  bark: vec4f,      // driftwood's bark: rgb albedo (linear), w how much of a fresh log it still covers (0..1)
+  sea: vec4f,       // x shipworm grooves' darkness, y cracks' width on the oldest wood, z a kept log's darkening when fully aged, w its softening
 };
 
 struct Piece {
@@ -30,7 +32,8 @@ struct Piece {
   extra: vec4f,     // x, y footprint half width and half length (mesh units); z 1 for plain earth (the damp patch: no rock scan),
                     // or minus a slab's moss (0..1: how mossy its rim has grown with age);
                     // w a log's thickness over its length (0 for a stone): its mesh is 1 thick, squeezed by the bone
-  bone: mat4x4f,    // mesh units: set into the ground, leaned with the slope, tipped (a log: rolled) when lifted
+  wear: vec4f,      // a log's: x time at sea (0 fresh .. 1 old), y how aged it is where it was kept (0..1), z its moss (0..1)
+  bone: mat4x4f,   // mesh units: set into the ground, leaned with the slope, tipped (a log: rolled) when lifted
 };
 
 @group(0) @binding(0) var<uniform> frame: FrameUniforms;
@@ -57,6 +60,7 @@ struct VsOut {
   @location(9) woodP: vec3f,      // a log's cross-section (mesh units, about its middle) and meters along it, seeded
   @location(10) @interpolate(flat) wood: f32,     // 1 for a log
   @location(11) @interpolate(flat) moss: f32,     // a slab's moss 0..1
+  @location(12) @interpolate(flat) wear: vec4f,   // a log's wear (Piece.wear)
 };
 
 struct FsOut {
@@ -101,29 +105,52 @@ fn vsPiece(@location(0) position: vec3f, @location(1) normal: vec3f, @location(2
   o.az = turn((pc.bone * vec4f(0.0, 0.0, 1.0, 0.0)).xyz, pc.at.w);
   o.scanned = (1.0 - max(pc.extra.z, 0.0)) * (1.0 - o.wood);
   o.moss = max(-pc.extra.z, 0.0);
+  o.wear = pc.wear;
   return o;
 }
 
-struct Wood { albedo: f32, height: f32, crack: f32 };
+struct Wood { albedo: vec3f, height: f32, crack: f32, bark: f32 };
 
 /**
  * Driftwood's surface at a point (woodP): a grain of streaks running along the log (value noise
  * fast across it and slow along it), thin checking cracks where a coarser noise crosses its middle,
- * and growth rings on the end grain (end: 1 there). albedo is a tone multiplier, height in 0..1.
+ * and growth rings on the end grain (end: 1 there). Time at sea (wear.x) sets the rest (L2): a fresh
+ * log keeps patches of brown bark, furrowed along it; older wood's cracks open wider, and the oldest
+ * shows the meandering grooves shipworms bored. A kept log's age (wear.y) darkens it and softens its
+ * cracks and grain. albedo multiplies the baked tone (or, on bark, replaces it); height in 0..1.
  */
-fn woodAt(p: vec3f, end: f32) -> Wood {
+fn woodAt(p: vec3f, end: f32, base: vec3f, wear: vec4f) -> Wood {
   let k = pd.wood.z;
+  let sea = wear.x;
+  let age = wear.y;
   let g1 = valueNoise2(vec2f(p.x * k + p.z * 1.1, p.y * k), 71u);
   let g2 = valueNoise2(vec2f(p.y * k * 1.7 - p.z * 0.7, p.x * k * 1.7), 73u);
-  let grain = 0.6 * g1 + 0.4 * g2;
+  let grain = mix(0.6 * g1 + 0.4 * g2, 0.5, pd.sea.w * age * 0.6);
   let c = valueNoise2(vec2f(p.x * k * 0.3 + p.z * 0.35, p.y * k * 0.3), 79u);
-  let crack = (1.0 - smoothstep(0.0, 0.03, abs(c - 0.5))) * (1.0 - end);
+  // Cracks open wider with time at sea, and their edges soften as a kept log ages.
+  let cw = mix(0.015, pd.sea.y, sea);
+  let crack = (1.0 - smoothstep(0.0, cw * (1.0 + 2.0 * pd.sea.w * age), abs(c - 0.5))) * (1.0 - end) * (1.0 - 0.4 * pd.sea.w * age);
   let r = length(p.xy) * 2.0;
   let rings = 0.5 + 0.5 * sin(r * 34.0 + 3.0 * valueNoise2(p.xy * 6.0, 83u));
+  // Shipworm grooves: wandering channels mostly along the grain, in patches, on old wood only.
+  // Slow along the log and quicker across it, so the noise's middle line runs along the grain and
+  // wanders, like a bored tunnel laid open; only in a few patches.
+  let gv = 0.7 * valueNoise2(vec2f(p.z * 2.2, (p.x + p.y * 0.8) * 3.2), 89u) + 0.3 * valueNoise2(vec2f(p.z * 6.0, (p.y - p.x) * 7.0), 97u);
+  let bored = smoothstep(0.5, 0.68, valueNoise2(vec2f(p.z * 0.9, (p.x - p.y) * 1.3), 101u));
+  let groove = (1.0 - smoothstep(0.004, 0.022, abs(gv - 0.5))) * bored * smoothstep(0.5, 0.85, sea) * (1.0 - end);
+  // Bark: broad patches round and along a fresh log (two noises, so there is no seam round it),
+  // furrowed along its length; none left after long at sea.
+  let cover = pd.bark.w * (1.0 - smoothstep(0.0, 0.65, sea));
+  let bn = 0.5 * valueNoise2(vec2f(p.z * 2.2 + 3.1, p.x * 2.6), 103u) + 0.5 * valueNoise2(vec2f(p.z * 2.2 - 5.7, p.y * 2.6), 107u);
+  let bark = (1.0 - smoothstep(cover - 0.06, cover + 0.02, bn)) * (1.0 - end) * step(0.001, cover);
+  let furrow = valueNoise2(vec2f(p.z * 4.0, (p.x + p.y * 1.3) * 26.0), 109u);
   var w: Wood;
-  w.albedo = (0.84 + 0.32 * grain) * (1.0 - pd.wood.w * crack) * mix(1.0, 0.82 + 0.2 * rings, end);
-  w.height = 0.5 * grain - crack + 0.3 * rings * end;
-  w.crack = crack;
+  let wood = base * ((0.84 + 0.32 * grain) * (1.0 - pd.wood.w * crack) * (1.0 - pd.sea.x * groove) * mix(1.0, 0.82 + 0.2 * rings, end));
+  let barkA = pd.bark.rgb * (0.6 + 0.6 * furrow);
+  w.albedo = mix(wood, barkA, bark) * (1.0 - pd.sea.z * age);
+  w.height = mix((0.5 * grain - crack - 0.8 * groove + 0.3 * rings * end) * (1.0 - pd.sea.w * age * 0.5), furrow * 1.6 + 0.4, bark);
+  w.crack = max(crack, groove) * (1.0 - bark);
+  w.bark = bark;
   return w;
 }
 
@@ -175,7 +202,7 @@ fn fsPiece(in: VsOut) -> FsOut {
   let nStone = normalize(in.ax * nDL.x + in.ay * nDL.y + in.az * nDL.z);
   // Driftwood: its grain, cracks and end rings, and their bump from screen derivatives (Mikkelsen
   // 2010's surface gradient), worked out for every fragment so the derivatives stay uniform.
-  let wd = woodAt(in.woodP, smoothstep(0.6, 0.9, abs(nL.z)));
+  let wd = woodAt(in.woodP, smoothstep(0.6, 0.9, abs(nL.z)), in.albedo, in.wear);
   let hW = wd.height * pd.wood.y;
   let dpx = dpdx(in.world);
   let dpy = dpdy(in.world);
@@ -185,10 +212,20 @@ fn fsPiece(in: VsOut) -> FsOut {
   let surf = sign(det) * (dpdx(hW) * r1 + dpdy(hW) * r2);
   let nWood = normalize(abs(det) * nMesh - surf);
   let nWoodSafe = select(nMesh, nWood, abs(det) > 1e-12);
-  let albedoW = in.albedo * wd.albedo;
+  var albedoW = wd.albedo;
+  // Moss on a kept log in damp shade (L2c): it takes the top first, in soft blots, creeping down the
+  // flanks as it thickens. Physical albedo; the palette paints it at tonemap.
+  let mossW = in.wear.z;
+  if (mossW > 0.0) {
+    let blot = valueNoise2(in.woodP.zx * vec2f(5.0, 9.0), 113u) * 0.7 + valueNoise2(in.woodP.zy * vec2f(17.0, 23.0), 127u) * 0.3;
+    let up = smoothstep(0.75 - 0.6 * mossW, 1.0 - 0.45 * mossW, nMesh.y);
+    let k = up * smoothstep(1.0 - mossW, 1.12 - mossW, blot);
+    albedoW = mix(albedoW, pd.moss.rgb * (0.8 + 0.4 * blot), k);
+  }
   let isWood = in.wood;
   let nDetail = normalize(mix(nStone, nWoodSafe, isWood));
-  let color = shadeGround(mix(albedo, albedoW, isWood), in.world, nMesh, nDetail, mix(rough, pd.wood.x, isWood),
+  let roughW = mix(pd.wood.x + 0.08 * in.wear.y, 0.95, wd.bark);
+  let color = shadeGround(mix(albedo, albedoW, isWood), in.world, nMesh, nDetail, mix(rough, roughW, isWood),
     mix(cavity, 1.0 - 0.35 * wd.crack, isWood), in.pos, pd.tile.zw, pd.look.z, 1.0, 1.0, vec3f(0.0));
   let safe = select(vec3f(0.0), color, color == color);
   // Outline group 2: a soft line where it stands against the ground, not a creature's.
