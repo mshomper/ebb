@@ -19,29 +19,12 @@ import { run } from '../../core/workers.js';
 import { createCreaturePass } from '../../render/passes/creatures.js';
 import { MAX_BONES } from './bodies.js';
 import { poseSkeleton, axisAngle } from './pose.js';
-import { toadAt, initialSpring, nearestPond } from './spring.js';
+import { toadAt, initialSpring, nearestPond, clumpBody, tadpoleBody } from './spring.js';
 
 const BAKE_JOB = { module: './world/creatures/bodies.js', fn: 'bakeVariant' };
 
 /** Float 0..1 from a hash. @param {number} h */
 const unit = (h) => (h >>> 8) / 16777216;
-
-/**
- * A clump of frogspawn as prims: jelly eggs heaped in a low mound, each with its dark embryo on
- * top, all from a seed (so every device draws the same clump). Pure.
- * @param {any} C frogspawn.json body.clump @param {number} seed
- */
-export function clumpPrims(C, seed) {
-  const prims = [];
-  for (let i = 0; i < C.eggs; i++) {
-    const a = unit(hash32(seed, i, 1)) * Math.PI * 2, d = Math.sqrt(unit(hash32(seed, i, 2))) * C.radiusM;
-    const x = Math.cos(a) * d, z = Math.sin(a) * d;
-    const y = C.moundM * (1 - (d / C.radiusM) ** 2) + C.eggR * 0.6 * unit(hash32(seed, i, 3));
-    prims.push({ type: 'sphere', bone: 'root', c: [x, y, z], r: C.eggR, k: C.eggR * 0.4, region: 'jelly' });
-    prims.push({ type: 'sphere', bone: 'root', c: [x, y + C.eggR * 0.72, z], r: C.embryoR, k: 0, region: 'embryo' });
-  }
-  return prims;
-}
 
 /**
  * @param {{ world: { state: any, env: any }, terrain: { sampleHeight: (x: number, z: number) => number },
@@ -61,11 +44,8 @@ export function createSpring(opts) {
     run(BAKE_JOB, args, { lane: 'background' })
       .then((r) => { if (rig) rigs[rig] = r.bones; pass.setMesh(key, r); })
       .catch((err) => { if (err?.name !== 'Disposed') console.warn(`spring ${key} bake failed`, err); });
-  const clumpBody = { prims: clumpPrims(B.clump, 0x5ba7), albedo: { back: B.clump.albedo.jelly, belly: B.clump.albedo.jelly, ...B.clump.albedo },
-    blotch: { scale: 1, amount: 0 }, bellyBelowNormalY: -2 };
-  bake(wetPass, 'clump', { id: 'clump', body: clumpBody, variant: 0, cellM: B.clump.eggR / 2.5 }, null);
-  bake(wetPass, 'tadpole', { id: 'tadpole', body: { ...TP, albedo: { back: TP.albedo.body, belly: TP.albedo.body, ...TP.albedo }, blotch: { scale: 1, amount: 0 }, bellyBelowNormalY: -2 },
-    variant: 0, cellM: 0.0009 }, 'tadpole');
+  bake(wetPass, 'clump', { id: 'clump', body: clumpBody(R), variant: 0, cellM: B.clump.eggR / 2.5 }, null);
+  bake(wetPass, 'tadpole', { id: 'tadpole', body: tadpoleBody(R), variant: 0, cellM: 0.0009 }, 'tadpole');
   const frogLods = frog.bake.lods ?? [{ cellM: frog.bake.cellM }];
   bake(landPass, 'froglet', { id: 'frog', body: frog.body, variant: 0, cellM: frogLods[frogLods.length - 1].cellM }, 'froglet');
   bake(landPass, 'toad', { id: 'toad', body: T.body, variant: 0, cellM: T.bake.cellM }, null);

@@ -107,6 +107,32 @@ export function nearestPond(hab, x, z, reachM, minCm) {
   return best;
 }
 
+/** Float 0..1 from a hash. @param {number} h */
+const unit = (h) => (h >>> 8) / 16777216;
+
+/**
+ * A clump of frogspawn as a body to bake: jelly eggs heaped in a low mound, each with its dark
+ * embryo on top, all from a fixed seed (so every device, and the journal's sketch, draws the same
+ * clump). Pure. @param {any} R frogspawn.json
+ */
+export function clumpBody(R) {
+  const C = R.body.clump, seed = 0x5ba7, prims = [];
+  for (let i = 0; i < C.eggs; i++) {
+    const a = unit(hash32(seed, i, 1)) * Math.PI * 2, d = Math.sqrt(unit(hash32(seed, i, 2))) * C.radiusM;
+    const x = Math.cos(a) * d, z = Math.sin(a) * d;
+    const y = C.moundM * (1 - (d / C.radiusM) ** 2) + C.eggR * 0.6 * unit(hash32(seed, i, 3));
+    prims.push({ type: 'sphere', bone: 'root', c: [x, y, z], r: C.eggR, k: C.eggR * 0.4, region: 'jelly' });
+    prims.push({ type: 'sphere', bone: 'root', c: [x, y + C.eggR * 0.72, z], r: C.embryoR, k: 0, region: 'embryo' });
+  }
+  return { prims, albedo: { back: C.albedo.jelly, belly: C.albedo.jelly, ...C.albedo }, blotch: { scale: 1, amount: 0 }, bellyBelowNormalY: -2 };
+}
+
+/** A tadpole as a body to bake (two bones: body and tail). Pure. @param {any} R frogspawn.json */
+export function tadpoleBody(R) {
+  const TP = R.body.tadpole;
+  return { prims: TP.prims, bones: TP.bones, albedo: { back: TP.albedo.body, belly: TP.albedo.body, ...TP.albedo }, blotch: { scale: 1, amount: 0 }, bellyBelowNormalY: -2 };
+}
+
 /** Rounded to centimeters, so saves and fingerprints stay short. @param {number} v */
 const cm = (v) => Math.round(v * 100) / 100;
 

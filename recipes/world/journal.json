@@ -976,6 +976,10 @@
         { "text": "The bumps behind its eyes hold a bitter taste, so few things eat a toad.", "learn": ["moment:rain"] }
       ],
       "fieldHint": "Look out on other spring nights to learn more.",
+      "sketch": { "scale": "about 10 cm", "labels": {
+        "warts": { "text": ["dry, warty", "skin"], "learn": ["seen"] },
+        "glands": { "text": ["bitter glands", "behind the eyes"], "learn": ["moment:rain"] },
+        "eyes": { "text": ["copper", "eyes"], "learn": ["seen"] } } },
       "likes": [
         { "text": "A stone or log near the pond to hide under", "learn": ["seen"] },
         { "text": "Wet spring nights", "learn": ["moment:rain"] }
@@ -1385,6 +1389,10 @@
         { "text": "A pond turtle can live longer than a person.", "learn": ["trust:tolerant"] }
       ],
       "fieldHint": "Watch them on sunny summer days to learn more.",
+      "sketch": { "scale": "about 18 cm", "labels": {
+        "shell": { "text": ["dark shell,", "speckled yellow"], "learn": ["seen"] },
+        "head": { "text": ["head raised", "to the sun"], "learn": ["settled"] },
+        "feet": { "text": ["webbed,", "clawed feet"], "learn": ["joined"] } } },
       "amount": [[1, "A single pond turtle"], [2, "A pair of pond turtles"], [3, "A few pond turtles"], [5, "Pond turtles on every sunny stone"]],
       "place": "basking at the pond's edge", "compass": true,
       "none": "No turtles bask by the pond now.",
