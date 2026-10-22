@@ -287,7 +287,7 @@ export function leanBone(a, b, share) {
 
 /**
  * The bone a log's mesh is drawn with (column-major 4 x 4). The mesh is 1 long along z and 1 thick
- * (meshes.js logShapes): squeezed across to the log's thickness over its length (a), set sinkShare
+ * (log-bake.js bakeLogSeed): squeezed across to the log's thickness over its length (a), set sinkShare
  * of its thickness into the ground, and rolled by angle about its own length toward side (+1 or -1,
  * along its x), moving over as a log rolls so the ground under it shows.
  * @param {number} angle radians @param {number} side @param {number} a thickness over length @param {number} sinkShare
