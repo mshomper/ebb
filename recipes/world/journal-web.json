@@ -71,6 +71,8 @@
     "turtles": { "label": "Pond turtles", "kind": "animals", "icon": "turtle", "page": "turtles", "flag": "turtles:seen" },
     "frogspawn": { "label": "Frogspawn", "kind": "small", "icon": "frogspawn", "page": "frogspawn" },
     "toads": { "label": "Common toad", "kind": "small", "icon": "toad", "page": "toads" },
+    "slowworms": { "label": "Slow worm", "kind": "small", "icon": "slowworm", "page": "slowworms" },
+    "lizards": { "label": "Common lizard", "kind": "small", "icon": "lizard", "page": "lizards" },
     "you": { "label": "You", "kind": "animals", "icon": "you", "always": true }
   },
   "links": [
@@ -182,6 +184,10 @@
     { "a": "stones", "b": "toads", "ink": "seen:toads", "note": "A toad hides under a stone near the pond by day." },
     { "a": "logs", "b": "toads", "ink": "seen:toads", "note": "A log by the pond is a toad's hiding place too." },
     { "a": "fresh", "b": "toads", "ink": "seen:toads", "note": "Each spring the toad walks back to the pond to lay its eggs." },
+    { "a": "logs", "b": "slowworms", "ink": "seen:slowworms", "note": "A slow worm lives under a log and basks beside it on warm mornings." },
+    { "a": "you", "b": "slowworms", "ink": "seen:slowworms", "note": "A slow worm came to a log you carried up from the shore." },
+    { "a": "stones", "b": "lizards", "ink": "seen:lizards", "note": "A common lizard basks flat on a warm stone." },
+    { "a": "gorse", "b": "lizards", "ink": "seen:lizards&seen:gorse", "note": "Lizards keep near gorse, to dash into the prickles." },
     { "a": "fresh", "b": "turtles", "ink": "flag:turtles:seen", "note": "Turtles need warm, still fresh water." },
     { "a": "lilies", "b": "turtles", "ink": "flag:turtles:seen&seen:lilies", "note": "Turtles eat water lily leaves." },
     { "a": "pondweed", "b": "turtles", "ink": "flag:turtles:seen&seen:pondweed", "note": "Turtles graze the pondweed." },

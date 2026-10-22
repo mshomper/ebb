@@ -20,6 +20,7 @@ import { createCreaturePass } from '../../render/passes/creatures.js';
 import { MAX_BONES } from './bodies.js';
 import { poseSkeleton, axisAngle } from './pose.js';
 import { toadAt, initialSpring, nearestPond, clumpBody, tadpoleBody } from './spring.js';
+import { createSunFinds } from './sun-finds.js';
 
 const BAKE_JOB = { module: './world/creatures/bodies.js', fn: 'bakeVariant' };
 
@@ -29,11 +30,15 @@ const unit = (h) => (h >>> 8) / 16777216;
 /**
  * @param {{ world: { state: any, env: any }, terrain: { sampleHeight: (x: number, z: number) => number },
  *   water: { sim: { live: any }, sampleLive: (x: number, z: number) => { surface: number, depth: number } },
- *   camera: { target: ArrayLike<number> }, pieces: any, recipes: { frogspawn: any, toad: any, frog: any }, test?: string | null }} opts
+ *   camera: { target: ArrayLike<number> }, pieces: any, recipes: { frogspawn: any, toad: any, frog: any, slowworm?: any, lizard?: any },
+ *   test?: string | null }} opts
  *   pieces: src/world/pieces (kept logs; seats() once the shaping work brings it); test: `?spring=`
  */
 export function createSpring(opts) {
   const { world, terrain, water, pieces } = opts;
+  // The slow worm and the common lizard, basking by the logs and stones (sun-finds.js).
+  const sun = opts.recipes.slowworm && opts.recipes.lizard
+    ? createSunFinds({ world, terrain, water, pieces, recipes: { slowworm: opts.recipes.slowworm, lizard: opts.recipes.lizard } }) : null;
   const R = opts.recipes.frogspawn, T = opts.recipes.toad, frog = opts.recipes.frog;
   const B = R.body, TP = B.tadpole, FL = B.froglet;
   const wetPass = createCreaturePass({ recipe: { body: { wetSpecular: B.wetSpecular, contactShadow: 0, scaleReal: B.scaleReal } }, name: 'spring-water' });
@@ -247,15 +252,16 @@ export function createSpring(opts) {
   return {
     id: 'spring',
     /** The two passes, for the frame graph. */
-    passes: [wetPass, landPass],
+    passes: [wetPass, landPass, ...(sun ? [sun.pass] : [])],
     /** What a tap may land on now (the finds module's addSource). */
-    shown: () => shown,
+    shown: () => (sun ? [...shown, ...sun.shown()] : shown),
     /** @param {import('../../sim/live-sim.js').FrameInfo} f */
     tick(f) {
       if (!water.sim.live) return;
       if ((seatsAt -= f.realDt) <= 0) { seatsAt = 1; syncSeats(); }
       if (test && (testWait += f.realDt) > 2 && setTest(test)) test = null;
       draw(f.animT);
+      sun?.draw(f.animT);
     },
   };
 }

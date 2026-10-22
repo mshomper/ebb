@@ -51,6 +51,8 @@
     "species/turtle": "species/turtle.json",
     "species/frogspawn": "species/frogspawn.json",
     "species/toad": "species/toad.json",
+    "species/slowworm": "species/slowworm.json",
+    "species/lizard": "species/lizard.json",
     "species/finds": "species/finds.json",
     "species/autumn-finds": "species/autumn-finds.json",
     "palettes/dusk": "palettes/dusk.json",

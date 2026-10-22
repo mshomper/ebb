@@ -467,7 +467,7 @@ export async function startApp(canvas, hooks = {}) {
   // froglets, the toad's night walk, and the basking spots (stones, logs, the raft) turtles and the
   // toad read. `?spring=spawn|tadpoles|froglets|toad` (testing, unsaved) sets one near the view.
   const spring = createSpring({ world, terrain, water, camera, pieces, test: params.get('spring'),
-    recipes: { frogspawn: speciesRecipes.frogspawn, toad: speciesRecipes.toad, frog: frogRecipe } });
+    recipes: { frogspawn: speciesRecipes.frogspawn, toad: speciesRecipes.toad, frog: frogRecipe, slowworm: speciesRecipes.slowworm, lizard: speciesRecipes.lizard } });
   sim.addSystem(spring);
   finds.addSource(spring.shown);
 

@@ -1,0 +1,41 @@
+{
+  "type": "species",
+  "id": "lizard",
+  "key": "lizards",
+  "name": "Common lizard",
+  "version": 1,
+  "note": "The common lizard (doc 13, The year, season by season: summer; docs/future/11 finds): basks flat on a sunny stone on dry ground, more often among the gorse. A find: nothing saved, no needs, no gift (src/world/creatures/sun-finds.js, live). WHEN: in the seasons listed (late spring counts from springFrom of the way through spring), between hours[0] and hours[1] o'clock, on days whose weather is one of moods. WHERE: on a stone you set or that came by itself (the pieces' seats, kind stone, out of the water), on each with chance a day, or gorseChance with gorse growing within gorseM; seeded by the stone and the day. LOOK: a blended-SDF lizard in real meters (about 12 cm with its tail), drawn at displayScale 2.5 (Matt's rescale rule for small lives): brown back with a dark mid-line and pale flank lines, splayed legs, a long tapering tail curled to one side. It lies flat on the stone's top facing the sun, and now and then lifts its head (lookEveryS) or does a quick push-up (pushS).",
+  "seasons": [0, 1],
+  "springFrom": 0.7,
+  "hours": [10, 17],
+  "moods": ["clear", "cloud"],
+  "chance": 0.25,
+  "gorseChance": 0.7,
+  "gorseM": 8,
+  "body": {
+    "scaleReal": [0.1, 0.13],
+    "displayScale": 2.5,
+    "contactShadow": 0.5,
+    "wetSpecular": { "roughness": 0.4, "strength": 0.6 },
+    "prims": [
+      { "type": "ellipsoid", "bone": "root", "c": [0, 0.006, 0], "r": [0.0075, 0.0055, 0.022], "k": 0, "region": "back" },
+      { "type": "ellipsoid", "bone": "root", "c": [0, 0.0072, 0.03], "r": [0.0062, 0.0048, 0.011], "k": 0.004, "region": "back" },
+      { "type": "sphere", "bone": "root", "c": [0.0042, 0.0094, 0.033], "r": 0.0016, "k": 0.0006, "region": "eye" },
+      { "type": "sphere", "bone": "root", "c": [-0.0042, 0.0094, 0.033], "r": 0.0016, "k": 0.0006, "region": "eye" },
+      { "type": "capsule", "bone": "root", "a": [0, 0.005, -0.02], "b": [0.004, 0.004, -0.04], "r": [0.0048, 0.0034], "k": 0.004, "region": "back" },
+      { "type": "capsule", "bone": "root", "a": [0.004, 0.004, -0.04], "b": [0.012, 0.003, -0.058], "r": [0.0034, 0.002], "k": 0.002, "region": "back" },
+      { "type": "capsule", "bone": "root", "a": [0.012, 0.003, -0.058], "b": [0.024, 0.0025, -0.07], "r": [0.002, 0.0009], "k": 0.001, "region": "back" },
+      { "type": "capsule", "bone": "root", "a": [0.006, 0.004, 0.014], "b": [0.016, 0.0015, 0.022], "r": [0.0022, 0.0016], "k": 0.002, "region": "back" },
+      { "type": "capsule", "bone": "root", "a": [-0.006, 0.004, 0.014], "b": [-0.016, 0.0015, 0.022], "r": [0.0022, 0.0016], "k": 0.002, "region": "back" },
+      { "type": "capsule", "bone": "root", "a": [0.006, 0.004, -0.014], "b": [0.017, 0.0015, -0.02], "r": [0.0026, 0.0018], "k": 0.002, "region": "back" },
+      { "type": "capsule", "bone": "root", "a": [-0.006, 0.004, -0.014], "b": [-0.017, 0.0015, -0.02], "r": [0.0026, 0.0018], "k": 0.002, "region": "back" }
+    ],
+    "albedo": { "back": [0.16, 0.11, 0.055], "belly": [0.36, 0.27, 0.1], "blotch": [0.05, 0.035, 0.02], "eye": [0.03, 0.025, 0.02], "eyeRing": [0.25, 0.18, 0.08] },
+    "blotch": { "scale": 260, "amount": 0.55 },
+    "bellyBelowNormalY": -0.35,
+    "skin": { "blendM": 0.002 }
+  },
+  "bake": { "cellM": 0.0008 },
+  "motion": { "lookEveryS": [4, 10], "headLiftM": 0.003, "pushS": 0.5 },
+  "find": { "tapM": 0.2 }
+}

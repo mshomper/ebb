@@ -238,3 +238,113 @@ export function turtle(p, scale) {
   p.scale(30, 128, 202, scale);
   return p.svg(380, 256, 'Field sketch of a European pond turtle basking on a stone at the water\'s edge, its head raised');
 }
+
+/**
+ * A smooth tube along a center line: the outline of a body of the given radius at each point (a
+ * slow worm's, a lizard's tail), as one closed path. @param {number[][]} c center points
+ * @param {number[]} r radius at each @param {(n: number) => string} f
+ */
+function tube(c, r, f) {
+  /** @type {number[][]} */ const L = [], R = [];
+  for (let i = 0; i < c.length; i++) {
+    const a = c[Math.max(0, i - 1)], b = c[Math.min(c.length - 1, i + 1)];
+    const dx = b[0] - a[0], dy = b[1] - a[1], l = Math.hypot(dx, dy) || 1;
+    const nx = -dy / l, ny = dx / l;
+    L.push([c[i][0] + nx * r[i], c[i][1] + ny * r[i]]);
+    R.push([c[i][0] - nx * r[i], c[i][1] - ny * r[i]]);
+  }
+  const pts = [...L, ...R.reverse()];
+  return `M${pts.map((q) => `${f(q[0])} ${f(q[1])}`).join('L')}Z`;
+}
+
+/** Bronze for a slow worm's back, warm brown for a lizard's. */
+const BRONZE = '#B07A40', LIZARD = '#8A6A3E';
+
+/**
+ * Slow worm: basking on the ground in a lazy S beside the cut end of a log, smooth and bronze, its
+ * small head lifted a little and its tail tapering away.
+ * @param {import('./pen.js').Pen} p @param {string} [scale]
+ */
+export function slowworm(p, scale) {
+  const f = p.f, g = 214;
+  p.tint(`M40 ${g}H236V246H40Z`, WASH.mud, 0.25);
+  // The log behind: its length running back, bark lines, and its cut end with rings.
+  p.shape(`M40 162C64 158 120 158 146 163L146 ${g - 14}C120 ${g - 10} 64 ${g - 10} 40 ${g - 12}Z`, WASH.brown, 0.35, 1.4);
+  p.fine('M48 172C76 168 116 170 140 174M46 186C80 183 116 184 142 188', 0.8, 0.5);
+  p.oval(150, 182, 13, 21, '#C9A27A', 0.55, 1.4);
+  p.fine('M150 170A7 11 0 1 1 149.9 170M150 177A3.5 5.5 0 1 1 149.9 177', 0.7, 0.55);
+  p.line(`M40 ${g}C92 ${g - 3} 166 ${g + 3} 236 ${g - 1}`, 1.3);
+  // The slow worm: a lazy S along the ground in front of the log, head to the right.
+  /** @type {number[][]} */ const c = [];
+  /** @type {number[]} */ const r = [];
+  const n = 40;
+  for (let i = 0; i <= n; i++) {
+    // Lying on the ground in front of the log, its head lifted a little at the right.
+    const s = i / n, x = 226 - s * 180, y = g + 2 - Math.sin(s * Math.PI * 2) * 12 - (s < 0.08 ? (0.08 - s) * 140 : 0);
+    c.push([x, y]);
+    r.push(s < 0.06 ? 4.4 + s * 65 : s < 0.45 ? 8.2 : 8.2 * (1 - 0.85 * ((s - 0.45) / 0.55)));
+  }
+  p.shape(tube(c, r, f), BRONZE, 0.6, 1.3);
+  // The dark line down its flank, and the shine along its back.
+  p.fine(`M${c.slice(4, 34).map((q, i) => `${f(q[0])} ${f(q[1] + r[i + 4] * 0.35)}`).join('L')}`, 1, 0.7);
+  if (p.wash) p.raw(`<path d="M${c.slice(3, 26).map((q, i) => `${f(q[0])} ${f(q[1] - r[i + 3] * 0.55)}`).join('L')}" fill="none" stroke="#FFFFFF" stroke-width="1" opacity="0.6"/>`);
+  // The eye, near the snout.
+  p.dot(c[2][0] - 1, c[2][1] - 1.2, 1.1);
+  p.label('scales', 250, 74, c[14][0], c[14][1] - r[14]);
+  p.label('eye', 250, 132, c[2][0] - 1, c[2][1] - 1.2);
+  p.label('tail', 250, 190, c[36][0], c[36][1]);
+  p.scale(30, 160, g + 14, scale);
+  return p.svg(380, 250, 'Field sketch of a slow worm basking in a lazy curve beside a log');
+}
+
+/**
+ * Common lizard: flat on the top of a sunny stone, legs splayed, its head lifted to look about and
+ * its long tail curling down over the stone's edge.
+ * @param {import('./pen.js').Pen} p @param {string} [scale]
+ */
+export function lizard(p, scale) {
+  const f = p.f;
+  // Gorse behind: a few spiny sprays with yellow flowers.
+  for (const [x, y, s] of [[60, 132, 1], [214, 124, -1]]) {
+    p.fine(`M${x} ${y + 58}C${x + 6 * s} ${y + 30} ${x + 2 * s} ${y + 12} ${x + 10 * s} ${y}M${x + 4 * s} ${y + 34}l${10 * s} -8M${x + 6 * s} ${y + 20}l${-8 * s} -6`, 1, 0.6);
+    for (let k = 0; k < 5; k++) p.dot(x + s * (4 + 7 * scatter(k, x)), y + 4 + 40 * scatter(k, y), 1.6, WASH.yellow);
+  }
+  // The stone.
+  p.shape('M52 214C60 186 104 176 140 176C178 176 214 186 224 214C214 226 66 228 52 214Z', WASH.grey, 0.45, 1.4);
+  p.fine('M84 200l18 6M170 196l-12 8M130 214l10 -3', 0.9, 0.5);
+  p.line('M40 216C92 213 166 219 236 215', 1.2);
+  // The far legs, splayed out behind the body.
+  p.shape('M164 174L172 166L180 165L179 168L173 169L167 177Z', LIZARD, 0.75, 1);
+  p.shape('M126 175L118 166L110 165L111 168L116 169L122 178Z', LIZARD, 0.75, 1);
+  // The body and its long tail, curling down over the stone's left edge; the snout at the right,
+  // the head lifted on its neck.
+  /** @type {number[][]} */ const c = [];
+  /** @type {number[]} */ const r = [];
+  const n = 48;
+  for (let i = 0; i <= n; i++) {
+    const s = i / n;
+    let x, y;
+    if (s < 0.4) { x = 206 - s * 220; y = 176 - (s < 0.14 ? (0.14 - s) * 70 : 0); }
+    else { const u = (s - 0.4) / 0.6; x = 118 - u * 58 - Math.sin(u * Math.PI) * 8; y = 177 + u * u * 36; }
+    c.push([x, y]);
+    // A pointed snout, the head, a slimmer neck, the broad body, then the long tapering tail.
+    r.push(s < 0.06 ? 1.6 + s * 55 : s < 0.1 ? 4.9 : s < 0.13 ? 4.1 : s < 0.32 ? 6.6 : s < 0.4 ? 6.6 - (s - 0.32) * 40 : 3.4 * (1 - 0.85 * ((s - 0.4) / 0.6)));
+  }
+  p.shape(tube(c, r, f), LIZARD, 0.62, 1.3);
+  // The near legs, splayed flat on the stone, toes spread.
+  p.shape('M166 181L176 190L186 190L185 186L178 186L172 178Z', LIZARD, 0.62, 1.1);
+  p.fine('M186 190l3 -2M186 190l4 1M184 191l2 3', 0.9, 0.8);
+  p.shape('M128 182L118 191L106 191L107 187L115 187L122 179Z', LIZARD, 0.62, 1.1);
+  p.fine('M106 191l-3 -2M106 191l-4 1M108 192l-2 3', 0.9, 0.8);
+  // The dark line down its back and the pale line along its flank, dotted.
+  if (!p.pencil) for (let i = 7; i < 26; i += 2) p.dot(c[i][0], c[i][1] - r[i] * 0.35, 1.2);
+  p.fine(`M${c.slice(7, 20).map((q, i) => `${f(q[0])} ${f(q[1] + r[i + 7] * 0.5)}`).join('L')}`, 0.9, 0.55);
+  // Its eye and mouth.
+  p.dot(c[3][0], c[3][1] - 1.4, 1.3);
+  p.fine(`M${f(c[0][0])} ${f(c[0][1] + 0.6)}L${f(c[4][0])} ${f(c[4][1] + 1.6)}`, 0.8, 0.7);
+  p.label('back', 250, 74, c[14][0], c[14][1] - r[14] * 0.35);
+  p.label('legs', 250, 132, 181, 189);
+  p.label('tail', 250, 190, c[40][0], c[40][1]);
+  p.scale(30, 160, 216, scale);
+  return p.svg(380, 250, 'Field sketch of a common lizard basking flat on a sunny stone, among the gorse');
+}

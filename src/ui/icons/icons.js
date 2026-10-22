@@ -651,6 +651,22 @@ const ICONS = {
     <circle cx="17" cy="12.5" r="0.7" fill="currentColor" stroke="none"/>
     <circle cx="10.2" cy="16.4" r="0.7" fill="currentColor" stroke="none"/>
     <circle cx="14.8" cy="16.4" r="0.7" fill="currentColor" stroke="none"/>`,
+  // Slow worm (a find by the logs): a long smooth body in a gentle S on the ground line, beside a log end.
+  slowworm: `
+    <circle ${ACCENT} cx="19" cy="15.5" r="2.8"/>
+    <circle cx="19" cy="15.5" r="2.8"/>
+    <circle cx="19" cy="15.5" r="0.9"/>
+    <path d="M3 17.5C5.5 14.5 8.5 14.5 10.5 16.5S15 18.5 16.5 16.8"/>
+    <path d="M3.4 18.6C6 15.8 8.4 15.8 10.2 17.6S14.6 19.8 16.2 18.2"/>
+    <circle cx="4.6" cy="17" r="0.5" fill="currentColor" stroke="none"/>
+    <path d="M2.5 20.5H21.5"/>`,
+  // Common lizard (a summer find on stones): from above, flat on a stone, legs splayed, tail curling.
+  lizard: `
+    <path ${ACCENT} d="M4.5 19C6 16.6 18 16.6 19.5 19Z"/>
+    <path d="M4.5 19C6 16.6 18 16.6 19.5 19H4.5Z"/>
+    <path d="M12 3.5C13.4 3.5 13.8 5 13.6 6.4L13.4 12.2C13.2 13.6 10.8 13.6 10.6 12.2L10.4 6.4C10.2 5 10.6 3.5 12 3.5Z"/>
+    <path d="M12 13.4C12 15 12.6 16 14 16.4"/>
+    <path d="M10.6 7.4L8.4 6.4M13.4 7.4L15.6 6.4M10.8 11.2L8.6 12.6M13.2 11.2L15.4 12.6"/>`,
   // The floating reed raft (the turtles' gift): a low mat of reeds on the water, stems standing up.
   raft: `
     <path ${ACCENT} d="M3.5 16C5 14.6 19 14.6 20.5 16C19 17.4 5 17.4 3.5 16Z"/>
