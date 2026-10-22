@@ -29,7 +29,6 @@ const qmul = (p, q) => [
 // In the water views the surface is at 0; a swimmer's shell top sits just under it.
 const SWIM_Y = -0.045 * S;
 const LEDGE = { half: 0.32, from: 0, to: 0.55, top: 0.07 };
-const ledge = [LEDGE.half, LEDGE.from, LEDGE.to, LEDGE.top];
 
 /**
  * @typedef {{ f: any, place: number[], dry?: number, ring?: number[], note: string, M?: any }} Frame
@@ -68,12 +67,12 @@ const CLIPS = [
       const s = f.ph % 0.5;
       return { f, place: [0, 0, 0, 0], dry: 0.7, note: s < 0.5 * P.walk.stance ? 'diagonal pair planted, pushing' : 'diagonal pair stepping' };
     } },
-  { id: 'haul', title: 'Hauling out', loopS: 1.5 + haulS(P) + 3, water: 0, floorY: -0.25, ledge, target: [0, 0.02, 0.0], dist: 0.85,
+  { id: 'haul', title: 'Hauling out', loopS: 1.5 + haulS(P) + 3, water: 0, floorY: -0.25, ledge: [LEDGE.half, -LEDGE.to, -LEDGE.from, LEDGE.top], target: [0, 0.02, 0.0], dist: 0.85,
     at(t, f) {
-      const from = { z: -0.16, y: SWIM_Y }, to = { z: 0.16, y: LEDGE.top };
+      const from = { z: 0.16, y: SWIM_Y }, to = { z: -0.16, y: LEDGE.top };
       if (t < 1.5) {
         only(f, { swim: 1 }); f.mode = 'swim'; f.stroke = 1; f.ph = t / P.swim.strokeS; f.pitch = 3 * DEG;
-        return { f, place: [0, from.y, lerp(-0.45, from.z, smooth(t / 1.5)), 0], note: 'swimming up to the stone' };
+        return { f, place: [0, from.y, lerp(0.45, from.z, smooth(t / 1.5)), Math.PI], note: 'swimming up to the stone' };
       }
       const k = Math.min(1, (t - 1.5) / haulS(P));
       const into = smooth((t - 1.5) / 0.4);
@@ -83,7 +82,7 @@ const CLIPS = [
       const p = haulPath(k, P);
       f.pitch = p.pitch;
       const names = ['front claws reach over the edge', 'the shell tips up', 'hind legs heave it over', 'a pause, getting its breath'];
-      return { f, place: [0, lerp(from.y, to.y, p.v), lerp(from.z, to.z, p.h), 0], dry: 0, note: k >= 1 ? 'settling to bask' : names[haulPart(k, P).part] };
+      return { f, place: [0, lerp(from.y, to.y, p.v), lerp(from.z, to.z, p.h), Math.PI], dry: 0, note: k >= 1 ? 'settling to bask' : names[haulPart(k, P).part] };
     } },
   { id: 'bask', title: 'Basking, drying in the sun', loopS: 26, water: null, floorY: 0, ledge: null, target: [0, 0.03, 0.03], dist: 0.58,
     at(t, f) {
@@ -95,13 +94,13 @@ const CLIPS = [
       return { f, place: [0, 0, 0, 0], dry, note: yawning ? 'a yawn' : dry < 0.3 ? 'wet and glossy, breathing' : dry < 0.85 ? 'drying' : 'dry and matte, breathing',
         M: { ...M, pose: { ...P, yawn: { ...P.yawn, everyS: [13, 13] } } } };
     } },
-  { id: 'slide', title: 'Slipping off, with a plop', loopS: 1.5 + P.slide.s + 3, water: 0, floorY: -0.25, ledge, target: [0, 0.0, -0.05], dist: 0.85,
+  { id: 'slide', title: 'Slipping off, with a plop', loopS: 1.5 + P.slide.s + 3, water: 0, floorY: -0.25, ledge: [LEDGE.half, -LEDGE.to, -LEDGE.from, LEDGE.top], target: [0, 0.0, 0.05], dist: 0.85,
     at(t, f) {
       // Basking facing the water, as they do, so one push takes it in.
-      const from = { z: 0.13, y: LEDGE.top }, to = { z: -0.26, y: SWIM_Y - 0.02 };
+      const from = { z: -0.13, y: LEDGE.top }, to = { z: 0.26, y: SWIM_Y - 0.02 };
       if (t < 1.5) {
         only(f, { bask: 1 }); f.mode = 'bask'; f.pitch = 0;
-        return { f, place: [0, from.y, from.z, Math.PI], dry: 0.9, note: 'basking' };
+        return { f, place: [0, from.y, from.z, 0], dry: 0.9, note: 'basking' };
       }
       const k = Math.min(1, (t - 1.5) / P.slide.s);
       if (k < 1) {
@@ -110,13 +109,13 @@ const CLIPS = [
         only(f, { bask: 1 - into, slide: into });
         const p = slidePath(k, P);
         f.pitch = p.pitch;
-        return { f, place: [0, lerp(from.y, to.y, p.v), lerp(from.z, to.z, p.h), Math.PI], dry: 0.9, note: 'slipping off' };
+        return { f, place: [0, lerp(from.y, to.y, p.v), lerp(from.z, to.z, p.h), 0], dry: 0.9, note: 'slipping off' };
       }
       const u = t - 1.5 - P.slide.s;
       only(f, { slide: 1 - smooth(u / 0.6), swim: smooth(u / 0.6), tuck: 0.5 * smooth(u / 0.6) });
       f.mode = 'hide'; f.stroke = 1; f.ph = u / P.swim.strokeS; f.pitch = -12 * DEG * (1 - smooth(u / 2));
-      const ring = [0, -0.12, 0.04 + u * 0.18, Math.max(0, 1 - u / 1.6)];
-      return { f, place: [0, to.y - u * 0.05, to.z - u * 0.06, Math.PI], dry: 0, ring, note: u < 0.8 ? 'plop' : 'under, and away' };
+      const ring = [0, 0.12, 0.04 + u * 0.18, Math.max(0, 1 - u / 1.6)];
+      return { f, place: [0, to.y - u * 0.05, to.z + u * 0.06, 0], dry: 0, ring, note: u < 0.8 ? 'plop' : 'under, and away' };
     } },
   { id: 'graze', title: 'Grazing pondweed', loopS: P.graze.biteS * 3, water: 0, floorY: -0.3, ledge: null, target: [0, -0.07, 0.05], dist: 0.62,
     at(t, f) {
