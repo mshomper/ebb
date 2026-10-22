@@ -18,7 +18,8 @@ const inline = (s) => esc(s)
  * @returns {string}
  */
 export function letterHtml(L) {
-  const kind = /haiku/i.test(L.form) ? 'is-haiku' : /newspaper/i.test(L.form) ? 'is-paper' : '';
+  // A keeper page (docs/future/13 section 2.4) is in the walker's own hand.
+  const kind = /haiku/i.test(L.form) ? 'is-haiku' : /newspaper/i.test(L.form) ? 'is-paper' : /keeper/i.test(L.form) ? 'is-keeper' : '';
   /** @type {string[]} */ const out = [];
   let para = /** @type {string[]} */ ([]);
   const flush = () => { if (para.length) out.push(`<p>${para.join('<br>')}</p>`); para = []; };

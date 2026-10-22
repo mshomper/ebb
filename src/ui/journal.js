@@ -17,6 +17,7 @@ import { nodeOfPage } from '../world/journal/web.js';
 import { livingList, cleanChoice } from '../world/journal/list.js';
 import { createShelfView } from './journal-shelf.js';
 import { trailsView } from './journal-trails.js';
+import { keeperEntry, keeperView, keeperShown, keeperUnread } from './journal-keeper.js';
 
 
 /** Sections, in order, with their drawn icons. Trails spans the whole row above the six (doc 13). */
@@ -54,6 +55,8 @@ export function mountJournal(parent, live, buttonParent = parent) {
   // The Shelf section (journal-shelf.js): the keepsakes kept, when the app has handed in their recipes.
   const shelfLive = /** @type {any} */ (live).shelf;
   const shelf = shelfLive ? createShelfView({ ...shelfLive, words }) : null;
+  // The keeper's pages (recipes/world/keeper-pages.json), when the app has handed them in.
+  const keeper = /** @type {any} */ (live).keeper ?? null;
 
   const btnRoot = document.createElement('div');
   btnRoot.className = 'ebb-jbtn';
@@ -138,7 +141,8 @@ export function mountJournal(parent, live, buttonParent = parent) {
       dispatch({ type: 'journal.showMe', sp: b.dataset.show });
       // In a narrow window the panel would hide what the camera goes to; it closes, and the card leads back.
       if (window.matchMedia(NARROW).matches) dispatch({ type: 'ui.journal', open: false });
-    } else if (b.dataset.view) dispatch(/** @type {any} */ ({ type: 'ui.journal', view: b.dataset.view, page: null, ...(b.dataset.trail ? { trail: b.dataset.trail } : {}) }));
+    } else if (b.dataset.view) dispatch(/** @type {any} */ ({ type: 'ui.journal', view: b.dataset.view, page: null, ...(b.dataset.trail ? { trail: b.dataset.trail } : {}),
+      ...(b.dataset.keeper !== undefined ? { keeper: b.dataset.keeper || null } : {}) }));
     else if (b.dataset.trail) dispatch(/** @type {any} */ ({ type: 'ui.journal', trail: b.dataset.trail }));
     else if (b.dataset.page) dispatch({ type: 'ui.journal', page: b.dataset.page });
   }
@@ -164,13 +168,21 @@ export function mountJournal(parent, live, buttonParent = parent) {
     // Read marks: a dot on the book while anything is unread, and on each section that holds it.
     const U = live.unread();
     const inSection = (/** @type {string[]} */ ids) => ids.some((id) => U.pages.has(id));
-    dot(openBtn, U.notes > 0 || U.pages.size > 0);
+    // The keeper's pages (journal-keeper.js) live under Notes: one had and unread marks both.
+    const flags = get('journal')?.flags ?? [];
+    const keeperNew = keeperUnread(keeper, flags);
+    dot(openBtn, U.notes > 0 || U.pages.size > 0 || keeperNew);
     for (const t of tabs) {
       const v = t.dataset.view;
-      dot(t, v === 'notes' ? U.notes > 0 : v === 'living' ? inSection(words.order) : v === 'ground' ? inSection(island.groundOrder) : false);
+      dot(t, v === 'notes' ? U.notes > 0 || keeperNew : v === 'living' ? inSection(words.order) : v === 'ground' ? inSection(island.groundOrder) : false);
     }
     if (!ui.open) return;
-    for (const t of tabs) t.setAttribute('aria-pressed', String(t.dataset.view === ui.view));
+    for (const t of tabs) t.setAttribute('aria-pressed', String(t.dataset.view === (ui.view === 'keeper' ? 'notes' : ui.view)));
+    // A keeper page open: it shows, and counts as read from now on.
+    if (ui.view === 'keeper') {
+      const shownId = keeperShown(keeper, flags, ui.keeper);
+      if (shownId && !flags.includes(`keeper:${shownId}:read`)) dispatch(/** @type {any} */ ({ type: 'journal.flag', flag: `keeper:${shownId}:read` }));
+    }
     const paged = (ui.view === 'living' || ui.view === 'ground') && !!ui.page && live.hasPage(ui.page);
     backBtn.hidden = !paged;
     // Trails: on a wide window the panel widens so the three sit side by side (journal-trails.css).
@@ -183,7 +195,8 @@ export function mountJournal(parent, live, buttonParent = parent) {
     if (ui.view === 'web' && ui.webAt && ui.webAtN !== webAtSeen) { webAtSeen = ui.webAtN; toTrail(ui.webAt); webShelf = null; }
     if (ui.view === 'web' && !webTrail.length) webTrail = [live.web.start];
     const L = /** @type {any} */ (live);
-    const html = ui.view === 'shelf' && shelf ? shelf.html() : ui.view === 'notes' ? notesView() : ui.view === 'almanac' ? almanacView()
+    const html = ui.view === 'keeper' && keeper ? keeperView(keeper, flags, ui.keeper, NEW)
+      : ui.view === 'shelf' && shelf ? shelf.html() : ui.view === 'notes' ? keeperEntry(keeper, flags, NEW) + notesView() : ui.view === 'almanac' ? almanacView()
       : ui.view === 'web' ? webView(live.describeWeb(), live.web, { trail: webTrail, shelf: webShelf })
       : ui.view === 'trails' ? trailsView({ live: L, words, R: L.naturalist, B: L.beachcomber, S: L.shaper, which: /** @type {any} */ (ui).trail ?? 'naturalist', wide })
       : paged ? pageView(/** @type {string} */ (ui.page)) : ui.view === 'ground' ? listView(island.groundOrder) : livingView();
