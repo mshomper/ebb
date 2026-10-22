@@ -123,6 +123,7 @@ All four merge cleanly with main and with each other. None touches shared files.
 | `src/audio/music/names.js` | Composer names. |
 | `recipes/music/` | `sampler.json` (defaults plus `byInstrument`), `roster.json`, `realize.json` (rubato, humanize, dynamics, pedal, textures, layers), `voicing.json`, `director.json` (slots, rests, frequency, history, day color, tides), `synth.json`, `names.json`, `seasons/spring.json`, `instruments/*.json`, `pieces/` (the test piece and `themes/`). |
 | `tools/music-lab.html` + `tools/music-lab/` | The lab: Instruments (bench), Piece, Day (director simulator), Themes. `perform-ui.js` is shared by Piece and Themes. |
+| `tools/music-render.html` + `tools/music-render/` | Renders a grown piece (season, slot, weather, seed, sun) offline through the music chain and downloads a finished WAV (trimmed, -18 LUFS, peaks under -1.5 dBFS). `finish.js` is tested in `tools/unit-tests-music-render.js`. |
 | `tools/audio-prep/` | Offline scripts that built every sample set and the theme pieces, plus an offline render-to-WAV page. Read its README. |
 
 Checks, which run fast in the cloud workspace:
