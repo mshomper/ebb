@@ -73,6 +73,8 @@ import { bringSwarm, testRecipe } from './world/creatures/swarms.js';
 import { onAction, history } from './input/actions.js';
 import { attachDesktopInput } from './input/desktop.js';
 import { beginSave, TEST_PARAMS } from './save/autosave.js';
+import { createIntroBoot, introStartHour } from './world/intro/boot.js';
+import { createBoat } from './world/intro/boat.js';
 import { buildCliffDemo } from './world/terrain/cliff-demo.js';
 import { createWalk } from './world/walk/index.js';
 import { buildSandbarDemo } from './world/walk/sandbar.js';
@@ -231,6 +233,11 @@ export async function startApp(canvas, hooks = {}) {
   // `?hour=H` (testing, unsaved) starts a new world at that hour of the day: low water falls at 6
   // and 18, so `?sandbar&hour=7` opens in early light with the bar dry and the tide rising.
   const startHour = Math.min(23.9, Math.max(0, Number.parseFloat(params.get('hour') ?? '') || (skyRecipe.orbit.startHour ?? 10)));
+  // A new island opens at dawn on spring day 0, for the first evening (src/world/intro/boot.js).
+  const introRecipe = await loadRecipe('world/intro');
+  const introHour = introStartHour(introRecipe, skyRecipe.orbit, params, !back, TEST_PARAMS,
+    params.has('hour') || params.has('day') || testDay !== '0' || autumnDay !== null);
+  if (clock.worldT() === 0 && introHour !== null) clock.reset(introHour * clock.SECONDS_PER_HOUR);
   if (clock.worldT() === 0) clock.reset((startHour + 24 * startDay) * clock.SECONDS_PER_HOUR);
   updateStore('meta', (m) => { m.flow = clock.flow(); });
   const env = makeEnv(seed, { seasons: seasonsRecipe, sky: skyRecipe.orbit, water: waterRecipe });
@@ -484,6 +491,14 @@ export async function startApp(canvas, hooks = {}) {
   walkRef = walk;
   // Your figure stays where you left it (kept with the view; the save still opens above).
   walk.restoreSpot(back?.view?.walker);
+  // The first evening (docs/future/13 section 2; src/world/intro): the boat at its mooring, a new
+  // island's walker on the beach below the camp, and the director, started once the journal is up.
+  const boatRecipe = await loadRecipe('world/boat');
+  const boat = createBoat({ recipe: boatRecipe, ground: (/** @type {number} */ x, /** @type {number} */ z) => terrain.sampleHeight(x, z), water });
+  sim.addSystem({ id: 'boat', tick: (/** @type {any} */ f) => boat.update(f.realDt, clock.animT()) });
+  const intro = createIntroBoot({ R: introRecipe, boatR: boatRecipe, params, testParams: TEST_PARAMS, back, walk, terrain, water,
+    land: landRecipe, terrainSeed: subSeed(seed, 'terrain'), orbit: skyRecipe.orbit, clock, camera, boat });
+  sim.addSystem(intro);
   // Autumn's season markers (doc 13; src/world/finds/autumn-live.js): fungi on the kept logs, and
   // dewy webs in the tall grass on misty mornings. Tapping either is a find.
   const autumn = createAutumn({ world, terrain, water, camera, pieces, growth, recipe: autumnRecipe, seasons: seasonsRecipe, seed });
@@ -599,6 +614,7 @@ export async function startApp(canvas, hooks = {}) {
     keepsakes.pass,
     nets.pass,
     pieces.pass,
+    boat.pass,
     // What lives under a log, while it is lifted (L3a).
     underLog.pass,
     // Autumn's fungi (a creature pass) and dewy webs, after the logs and the grass they are on.
@@ -1170,11 +1186,15 @@ export async function startApp(canvas, hooks = {}) {
         break;
       }
       case 'tool.end':
-      case 'tool.cancel':
+      case 'tool.cancel': {
+        // A pour ended: the first evening's shape beat reads where (src/world/intro).
+        const pourEnd = pouring && tools().tool === 'water' ? groundAt(pouring.x, pouring.y) : null;
+        if (pourEnd) emitDeferred('water:pour-ended', { x: pourEnd[0], z: pourEnd[2] });
         pouring = null;
         finishStroke();
         finishShapingDrag();
         break;
+      }
       // A tap with no tool: the journal names what grows there (src/world/journal).
       // Carrying, the tap sets the piece down instead.
       case 'look.tap':
@@ -1358,7 +1378,7 @@ export async function startApp(canvas, hooks = {}) {
     presence.update(realDt);
     updateRing();
     // Plant tool rings, and a breathing ring round whatever the journal's tap card names.
-    terrainPass.setMarks(plantTool.marks(now, tools().tool === 'plant', getStore('identify'), [...(getStore('reveal')?.rings?.(now) ?? []), ...creatures.foodRings()]));
+    terrainPass.setMarks(plantTool.marks(now, tools().tool === 'plant', getStore('identify'), [...(getStore('reveal')?.rings?.(now) ?? []), ...creatures.foodRings(), ...intro.rings(now)]));
     // Lugworm casts are drawn into the sand by the terrain pass.
     terrainPass.setCasts(finds.casts());
     updatePour();
@@ -1554,6 +1574,8 @@ export async function startApp(canvas, hooks = {}) {
     autumn,
     /** The walker: the walk grid, your feet, Go down and Go up (tools and testing). */
     walk,
+    /** The first evening: its start, the boat's mooring, and the director once main.js starts it. */
+    intro,
     /**
      * Testing helpers, on window.ebb with `?debug`: autumn's misty morning and kept logs, skipping to
      * a time of year, and bringing a settled school or swarm. They change this island's time and
