@@ -44,6 +44,7 @@
     "world/walker": "world/walker.json",
     "world/figure": "world/figure.json",
     "world/intro": "world/intro.json",
+    "audio/intro": "audio/intro.json",
     "world/boat": "world/boat.json",
     "world/keeper-pages": "world/keeper-pages.json",
     "species/frog": "species/frog.json",

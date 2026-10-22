@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "note": "The first evening's one-shots (docs/future/13 section 2.1; docs/17 'A far curlew at dusk'): when the fire is first lit on the first evening (intro:curlew), one curlew call far out over the water. A sound only, not a creature: frogs still sleep on spring day 0. Played through src/audio/keepsake-sounds.js on the creatures bus, quiet, as if from far off. The CC0 take goes in assets/audio/one-shots/intro/ (.ogg and .m4a) with its source in assets/audio/CREDITS.md; until it is there the call is silent and the console says so once.",
+  "root": "assets/audio/one-shots/intro/",
+  "bus": "creatures",
+  "pitchCents": 0,
+  "wakeWaitMs": 400,
+  "sounds": {
+    "curlew": { "file": "curlew-far", "db": -16 }
+  },
+  "preload": []
+}
