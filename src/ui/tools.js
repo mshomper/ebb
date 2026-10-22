@@ -7,7 +7,7 @@
 // takes food, its food, and the last tap's result; Sculpt's Loose stone mode shows a stone count,
 // Remove for the selected stone, and a calm line at the cap). S8 grows this into the full HUD palette.
 //
-// Reads the store slices `tools`, `history`, `unlocks`, `waterUi`, `piecesUi`, `plantUi`, `feedUi`
+// Reads the store slices `tools`, `history`, `unlocks`, `waterUi`, `piecesUi`, `plantUi`, `feedUi`, `campUi`
 // and `journal` (what you have found); never writes the store. Every user choice goes out as an action through
 // src/input/actions.js. Styles: tools.css.
 
@@ -245,6 +245,7 @@ export function mountTools(parent = document.body, CLIFF_HINTS = {}) {
         <output for="ebb-tools-height" data-out="height"></output>
         <input class="ebb-tools__range" id="ebb-tools-height" type="range" data-range="height">
       </div>
+      <p class="ebb-tools__message ebb-tools__message--camp" data-out="camp-message" role="status" aria-live="polite"></p>
     </div>
     <div class="ebb-tools__bar" role="toolbar" aria-label="Tools">
       ${TOOLS.map((t) => barButton(t.id, t.label, `data-tool="${t.id}" aria-pressed="false"`)).join('')}
@@ -576,6 +577,8 @@ export function mountTools(parent = document.body, CLIFF_HINTS = {}) {
   // stays in place while it fades (and the line keeps its height), so the card does not jump.
   const plantLine = messageLine(plantMessage), feedLine = messageLine(feedMessage), piecesLine = messageLine(piecesMessage);
   const shapingLine = messageLine(shapingMessage);
+  // A tap any tool makes on the camp pad (docs/future/13 section 3.1): "The camp ground stays clear."
+  const campLine = messageLine(/** @type {HTMLElement} */ (root.querySelector('[data-out="camp-message"]')));
   const clearPlantMessage = () => plantLine.clear();
   /** @param {string} slice @param {ReturnType<typeof messageLine>} line */
   const renderMessage = (slice, line) => {
@@ -596,6 +599,7 @@ export function mountTools(parent = document.body, CLIFF_HINTS = {}) {
     subscribe('history', renderHistory),
     subscribe('plantUi', () => renderMessage('plantUi', plantLine)),
     subscribe('feedUi', () => renderMessage('feedUi', feedLine)),
+    subscribe('campUi', () => renderMessage('campUi', campLine)),
     // What you have found decides who the Feed tool offers food to.
     subscribe('journal', renderTools),
   ];

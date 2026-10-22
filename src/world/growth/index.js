@@ -6,7 +6,7 @@
 
 import { makeBuffer, makeTexture } from '../../core/gpu.js';
 import { on } from '../../core/events.js';
-import { get as getStore } from '../../core/store.js';
+import { get as getStore, subscribe as subscribeStore } from '../../core/store.js';
 import { hash32 } from '../../core/rng.js';
 import { WORLD_CELLS } from '../terrain/grid.js';
 import { buildHabitat, HABITAT_CELLS } from './habitat.js';
@@ -57,6 +57,15 @@ export function createGrowth(device, opts) {
   world.env.recipes.covers = recipes.covers ?? {};
   world.env.recipes.land = recipes.land ?? null;
 
+  /**
+   * The camp pad as the habitat takes it (CP-16): center and radius from the store slice `campPad`,
+   * or null on an older island before its pad is stamped. Plain numbers, so catch-up gets the same.
+   */
+  const padNow = () => {
+    const p = getStore('campPad');
+    return p ? { x: p.x, z: p.z, r: p.r } : null;
+  };
+
   /** Rebuild the habitat from the latest water summary and the painted ground. */
   function rebuildHabitat() {
     const s = water.getSummary();
@@ -64,14 +73,21 @@ export function createGrowth(device, opts) {
     const mirror = live?.mirror;
     if (!s || !mirror) return;
     // baseQ: the island as generated, so the habitat knows which ground the player shaped (dragonflies).
+    // pad: the camp ground, where no plant takes (CP-16).
     habitat = buildHabitat({ eco: s.eco, material: mirror.material, materialCells: WORLD_CELLS, params: recipes.growth.habitat,
-      heightQ: mirror.heightQ, baseQ: live.baseQ ?? null });
+      heightQ: mirror.heightQ, baseQ: live.baseQ ?? null, pad: padNow() });
     lush = recipes.grass?.lush ? lushField(habitat, recipes.grass.lush) : null;
     // A new island gets its starter plants and grass cover now rather than at the next hour.
     world.state = settleGrowth(world.state, world.env);
     shown = null;   // the lush field changed: upload the cover again
   }
   const unSummary = on('water:summary-updated', rebuildHabitat);
+  // The pad is stamped on an older island (or moved) while playing: the habitat follows at once.
+  let padKey = JSON.stringify(padNow());
+  const unPad = subscribeStore('campPad', () => {
+    const key = JSON.stringify(padNow());
+    if (key !== padKey) { padKey = key; rebuildHabitat(); }
+  });
   rebuildHabitat();
   // What the habitat is built from, so catch-up can follow the season day by day (A9; habitat-days.js).
   world.env.habitatInputs = () => {
@@ -79,7 +95,7 @@ export function createGrowth(device, opts) {
     const summary = water.summaryInputs?.();
     if (!summary || !live?.mirror) return null;
     return { summary, habitat: { material: live.mirror.material, materialCells: WORLD_CELLS, params: recipes.growth.habitat,
-      heightQ: live.mirror.heightQ, baseQ: live.baseQ ?? null } };
+      heightQ: live.mirror.heightQ, baseQ: live.baseQ ?? null, pad: padNow() } };
   };
 
   /**
@@ -203,6 +219,7 @@ export function createGrowth(device, opts) {
 
     dispose() {
       unSummary();
+      unPad();
       instances.destroy();
       coverTex.destroy();
     },

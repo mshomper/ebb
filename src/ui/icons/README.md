@@ -119,6 +119,15 @@ Size and color come from CSS: set `width`/`height` on `.icon` and `color` on the
 | `time` | half sun on a horizon with a flow arc |
 | `flow-1`, `flow-2`, `flow-4` | one, two or three pips: normal, 2x and 4x speed |
 | `flow-pause` | two rest bars: time paused |
+| `gather` | a cupped hand with a few stalks rising out of it: Gather on a card |
+| `setdown` | a small heap on the ground line, an arrow coming down onto it: Set down a pouch |
+| `takeup` | the same heap, the arrow rising off it: Take up from a pile |
+| `tip` | a pouch tipped over, a few bits falling: Empty a pouch |
+| `pitch` | a ridge tent with its guy lines pegged out: Pitch the tent |
+| `lay` | a ring of stones with two sticks crossed inside: Lay the fire ring |
+| `fire` | a flame over two crossed sticks: Light the fire |
+| `rest` | a tent under a crescent moon: Rest until morning |
+| `hand` | an open hand: the pointer over something a click can use, below |
 | `look` | painter's palette with a thumb notch, three dabs of paint and one empty well: the Look (palette) button |
 | `eye` | an open eye with its pupil: not in use since ebb became desktop only (it brought hidden HUD buttons back on a touch screen) |
 | `settings` | three horizontal sliders with their knobs: the Settings button |

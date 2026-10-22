@@ -8,6 +8,7 @@ import { emitDeferred } from '../../core/events.js';
 import { get as getStore, update as updateStore } from '../../core/store.js';
 import { STAGE } from './coarse.js';
 import { calm } from '../../ui/motion.js';
+import { onPad } from '../camp/layout.js';
 
 /** Ring slots the terrain shader holds (terrain-draw.wgsl marks). */
 const SLOTS = 16;
@@ -121,8 +122,10 @@ function say(sp, name, outcome) {
 }
 
 /**
- * @param {{ growth: import('./index.js').Growth, world: { state: any }, flora: Record<string, any>, recipe: any }} opts
- *   recipe: recipes/world/growth.json marks
+ * @param {{ growth: import('./index.js').Growth, world: { state: any }, flora: Record<string, any>, recipe: any,
+ *   campWords?: Record<string, string> | null }} opts
+ *   recipe: recipes/world/growth.json marks; campWords: recipes/world/camp.json words (`clear`, the
+ *   refusal on the camp pad)
  */
 export function createPlantTool(opts) {
   const { growth, world, flora, recipe } = opts;
@@ -146,11 +149,15 @@ export function createPlantTool(opts) {
         updateStore('plantUi', () => ({ message: say(sp, name, 'unseen'), refused: true, at: performance.now() }));
         return false;
       }
-      const r = growth.plant(sp, p[0], p[2]);
-      updateStore('plantUi', () => ({ message: say(sp, name, r.ok ? 'ok' : r.reason ?? 'unknown'), refused: !r.ok, at: performance.now() }));
+      // The camp ground stays clear (CP-16): a tap on the pad is refused before the ground is read.
+      // Cells just past its edge are refused by the habitat's clear mask with the same words.
+      const r = onPad(getStore('campPad') ?? null, p[0], p[2]) ? { ok: false, reason: 'camp', id: undefined } : growth.plant(sp, p[0], p[2]);
+      const message = r.reason === 'camp' ? opts.campWords?.clear ?? say(sp, name, 'unknown') : say(sp, name, r.ok ? 'ok' : r.reason ?? 'unknown');
+      updateStore('plantUi', () => ({ message, refused: !r.ok, at: performance.now() }));
       if (!r.ok) {
-        // The journal learns what the species needs from a refusal (src/world/journal).
-        if (r.reason && r.reason !== 'unknown') emitDeferred('plant:refused', { species: sp, reason: r.reason });
+        // The journal learns what the species needs from a refusal (src/world/journal); the camp
+        // pad says nothing about the species.
+        if (r.reason && r.reason !== 'unknown' && r.reason !== 'camp') emitDeferred('plant:refused', { species: sp, reason: r.reason });
         return false;
       }
       taps.push({ x: p[0], z: p[2], at: performance.now() });

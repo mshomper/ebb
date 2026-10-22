@@ -34,6 +34,13 @@ export const PARALLEL = {
   figure: () => import('./unit-tests-figure.js').then((m) => m.addFigureTests),
   nets: () => import('./unit-tests-nets.js').then((m) => m.addNetsTests),
   trails: () => import('./unit-tests-trails.js').then((m) => m.addTrailsTests),
+  format9: () => import('./unit-tests-format9.js').then((m) => m.addFormat9Tests),
+  assets: () => import('./unit-tests-assets.js').then((m) => m.addAssetTests),
+  campLock: () => import('./unit-tests-camp-lock.js').then((m) => m.addCampLockTests),
+  campGround: () => import('./unit-tests-camp-ground.js').then((m) => m.addCampGroundTests),
+  campPieces: () => import('./unit-tests-camp-pieces.js').then((m) => m.addCampPieceTests),
+  campEdge: () => import('./unit-tests-camp-edge.js').then((m) => m.addCampEdgeTests),
+  campPlants: () => import('./unit-tests-camp-plants.js').then((m) => m.addCampPlantsTests),
   pondSpring: () => import('./unit-tests-pond-spring.js').then((m) => m.addPondSpringTests),
   turtles: () => import('./unit-tests-turtles.js').then((m) => m.addTurtleTests),
   waterTable: () => import('./unit-tests-water-table.js').then((m) => m.addWaterTableTests),
@@ -41,6 +48,9 @@ export const PARALLEL = {
   grace: () => import('./unit-tests-grace.js').then((m) => m.addGraceTests),
   boat: () => import('./unit-tests-boat.js').then((m) => m.addBoatTests),
   intro: () => import('./unit-tests-intro.js').then((m) => m.addIntroTests),
+  pack: () => import('./unit-tests-pack.js').then((m) => m.addPackTests),
+  gather: () => import('./unit-tests-gather.js').then((m) => m.addGatherTests),
+  click: () => import('./unit-tests-click.js').then((m) => m.addClickTests),
   // The audio tests that need no Web Audio (workers have none). The two that render sound through
   // an OfflineAudioContext (pond and keepsake sounds) stay on tools/unit-tests-audio.html, which
   // also still runs all of these, as does `node tools/run-audio-tests.mjs`.

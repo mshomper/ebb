@@ -90,10 +90,12 @@ function groundAtCell(hab, k) {
     sand: hab.sand ? hab.sand[k] / 255 : undefined, rock: hab.rock ? hab.rock[k] / 255 : undefined,
     soil: hab.soil ? Math.min(255, hab.soil[k] + hab.grass[k]) / 255 : undefined, slope: hab.slopeDeg ? hab.slopeDeg[k] : undefined,
     // Height above mean sea level, m.
-    shore: hab.heightDm ? hab.heightDm[k] / 10 : undefined };
+    shore: hab.heightDm ? hab.heightDm[k] / 10 : undefined,
+    // The keeper's camp pad (CP-16, habitat.js padClearMask): no plant takes there; grass stays.
+    clear: hab.clear ? hab.clear[k] : 0 };
 }
 
-/** @typedef {'dry'|'wet'|'shallow'|'deep'|'fresh'|'salt'|'flow'|'outside'|'ground'|'steep'|'flat'|'low'|'high'} Need */
+/** @typedef {'dry'|'wet'|'shallow'|'deep'|'fresh'|'salt'|'flow'|'outside'|'ground'|'steep'|'flat'|'low'|'high'|'camp'} Need */
 
 /**
  * The habitat axes a recipe may use, in the order a tie names the need: [recipe key, ground key,
@@ -130,6 +132,8 @@ export function suitability(rec, hab, x, z) {
  */
 function suitabilityOf(rec, g) {
   if (!g) return { suit: 0, worst: 'outside' };
+  // The camp ground stays clear (CP-16): nothing seeds, spreads, volunteers or is planted there.
+  if (g.clear) return { suit: 0, worst: 'camp' };
   const H = rec.habitat;
   let suit = 1, low = 2;
   /** @type {Need} */ let worst = 'dry';
@@ -154,16 +158,50 @@ const inWindow = (pos, w) => (w[1] > w[0] ? pos >= w[0] && pos < w[1] : pos >= w
  * shaders, the journal, the almanac and the trails all read, is the jittered one.
  * @param {any} rec @param {Plant} p @param {number} worldPos the world's season position
  */
-function stageOf(rec, p, worldPos) {
+function stageOf(rec, p, worldPos, byBest = false) {
   const S = rec.growth.stages;
   if (p.age < S.sproutH) return STAGE.seed;
-  if (p.size >= S.matureSize) {
+  // A plant that gives a gather part reads maturity from its best size (docs/future/13 4.2), so a
+  // pick never turns a flowering plant back into a young one.
+  if ((byBest ? p.best : p.size) >= S.matureSize) {
     const pos = plantSeasonPos(rec, p.id, worldPos);
     if (rec.dormant && inWindow(pos, rec.dormant)) return STAGE.dormant;
     if (rec.flowering && inWindow(pos, rec.flowering)) return STAGE.flowering;
     return STAGE.mature;
   }
   return p.size >= S.youngSize ? STAGE.young : STAGE.sprout;
+}
+
+/**
+ * How a picked plant's hourly growth is scaled while it rests (docs/future/13 4.2, model B): once
+ * it has been mature (best at least matureSize) and its size is under readyShare x best, growth is
+ * multiplied by recoverRate x (1 + rainBoost x rain + mistBoost x mist); otherwise 1. A plant
+ * still growing toward its best always has size equal to best, so it is never slowed; only a plant
+ * that lost size is. Pure.
+ * @param {number} size @param {number} best @param {number} matureSize @param {number} readyShare
+ * @param {{ recoverRate: number, rainBoost: number, mistBoost: number }} P gather.json plants
+ * @param {number} rain this hour's rain 0..1 (weather now) @param {number} mist this hour's mist 0..1
+ */
+export function recoverFactor(size, best, matureSize, readyShare, P, rain, mist) {
+  if (best < matureSize || size >= readyShare * best) return 1;
+  return P.recoverRate * (1 + P.rainBoost * rain + P.mistBoost * mist);
+}
+
+/**
+ * The readyShare of each species that gives a gather part (gather.json plants.parts, keyed
+ * '<species>.<part>'; the highest of its parts), or null when no gather recipe is loaded.
+ * @param {any} gather gather.json, or undefined @returns {Map<string, number> | null}
+ */
+function gatherSpecies(gather) {
+  const parts = gather?.plants?.parts;
+  if (!parts) return null;
+  /** @type {Map<string, number>} */ const m = new Map();
+  for (const [key, P] of Object.entries(parts)) {
+    const sp = key.slice(0, key.indexOf('.'));
+    const ready = /** @type {any} */ (P).readyShare ?? gather.plants.defaults?.[/** @type {any} */ (P).type]?.readyShare ?? 1;
+    m.set(sp, Math.max(m.get(sp) ?? 0, ready));
+  }
+  return m;
 }
 
 /** Plants per 1 m cell, for spacing checks. @param {Plant[]} plants */
@@ -217,7 +255,8 @@ function grassTarget(hab, G, k) {
   const s = hab.salt[k] / 255;
   // The ground axes (docs/future/10): earth rather than sand or rock, and not too steep.
   const at = G.habitat ? groundAtCell(hab, k) : null;
-  const ground = at ? suitabilityOf(G, at).suit : 1;
+  // Grass stays on the camp pad (kept short by the grass shader), so the clear mask does not apply.
+  const ground = at ? suitabilityOf(G, at.clear ? { ...at, clear: 0 } : at).suit : 1;
   return Math.floor(255 * ground * (1 - smooth01((s - G.saltFrom) / (G.saltFull - G.saltFrom))));
 }
 
@@ -436,6 +475,11 @@ export function coarseStep(state, hourIndex, env) {
   const pos =(state.seasons?.index ?? 0) + (state.seasons?.phase ?? 0);
   const season = Math.min(3, Math.max(0, state.seasons?.index ?? 0));
   const seed = subSeed(env.seed, 'growth');
+  // Gathering (docs/future/13 4.2): only species that give a gather part, and only once the gather
+  // recipe is in env.recipes.gather, rest after a pick and read maturity from best. Without it
+  // every plant grows exactly as before.
+  const picked = gatherSpecies(env.recipes.gather);
+  const wx = state.weather?.now;
 
   // Grow, age, change stage; drop the dead (counted per species and reason for the journal).
   /** @type {Plant[]} */ const alive = [];
@@ -454,7 +498,11 @@ export function coarseStep(state, hourIndex, env) {
       if (p.low > G.seedDieHours) { lose(p.sp, 'seed'); continue; }
       if (p.age >= G.stages.sproutH && suit >= 0.3) p.size = Math.max(p.size, 0.05);
     } else {
-      p.size += G.ratePerH * G.seasonRate[season] * suit * (1 - p.size);
+      const ready = picked?.get(p.sp);
+      const k = ready === undefined ? 1
+        : recoverFactor(p.size, p.best, G.stages.matureSize, ready, env.recipes.gather.plants, wx?.rain ?? 0, wx?.mist ?? 0);
+      // The last factor goes on last, so k = 1 leaves the sum bit for bit as before.
+      p.size += G.ratePerH * G.seasonRate[season] * suit * (1 - p.size) * k;
       if (p.size > p.best) p.best = p.size;
       p.low = suit < G.lowSuit ? p.low + 1 : 0;
       if (p.low > G.lowHours) p.size = Math.max(G.floor * p.best, p.size - G.shrinkPerH);
@@ -462,7 +510,7 @@ export function coarseStep(state, hourIndex, env) {
     p.drown = ground && ground.depth > G.drownDepthM ? p.drown + 1 : 0;
     if (p.drown > G.drownHours) { lose(p.sp, 'drown'); continue; }
     if (!ground) { lose(p.sp, 'outside'); continue; }
-    p.stage = p.size <= 0 ? STAGE.seed : stageOf(rec, p, pos);
+    p.stage = p.size <= 0 ? STAGE.seed : stageOf(rec, p, pos, picked?.has(p.sp) ?? false);
     alive.push(p);
   }
   g.plants = alive;

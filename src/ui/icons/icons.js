@@ -1043,6 +1043,67 @@ const ICONS = {
     <rect x="7" y="6.5" width="3.5" height="11" rx="1.75"/>
     <rect ${ACCENT} x="13.5" y="6.5" width="3.5" height="11" rx="1.75"/>
     <rect x="13.5" y="6.5" width="3.5" height="11" rx="1.75"/>`,
+
+  // The keeper's camp (docs/future/13, E2): card actions as icons, and the "here" buttons.
+  // Gather: a cupped hand with a few stalks rising out of it.
+  gather: `
+    <path ${ACCENT} d="M3 13.5C5 18 8.5 20 12 20S19 18 21 13.5Z"/>
+    <path d="M3 13.5C5 18 8.5 20 12 20S19 18 21 13.5"/>
+    <path d="M3 13.5C2.6 12.4 3.6 11.6 4.6 12.2L7 13.5H21"/>
+    <path d="M8.5 11L10.5 6M12 11.2L13 5.5M15.5 11L15 6.5"/>`,
+  // Set down: a small heap on the ground line, an arrow coming down onto it.
+  setdown: `
+    <path ${ACCENT} d="M5 19.5C5 16 7.5 14 12 14S19 16 19 19.5Z"/>
+    <path d="M5 19.5C5 16 7.5 14 12 14S19 16 19 19.5"/>
+    <path d="M2.5 19.5H21.5"/>
+    <path d="M12 3V10M9.4 7.4L12 10L14.6 7.4"/>`,
+  // Take up: the same heap, the arrow rising off it.
+  takeup: `
+    <path ${ACCENT} d="M5 19.5C5 16 7.5 14 12 14S19 16 19 19.5Z"/>
+    <path d="M5 19.5C5 16 7.5 14 12 14S19 16 19 19.5"/>
+    <path d="M2.5 19.5H21.5"/>
+    <path d="M12 10V3M9.4 5.6L12 3L14.6 5.6"/>`,
+  // Empty: a pouch tipped over, a few bits falling to the ground.
+  tip: `
+    <path ${ACCENT} d="M6 4.5H14L16 12H8Z"/>
+    <path d="M6 4.5H14L16 12H8Z"/>
+    <circle cx="12" cy="16" r="0.9" fill="currentColor" stroke="none"/>
+    <circle cx="14.5" cy="18.5" r="0.9" fill="currentColor" stroke="none"/>
+    <circle cx="10.5" cy="19.5" r="0.9" fill="currentColor" stroke="none"/>
+    <path d="M3 21H21"/>`,
+  // Pitch: a ridge tent with its guy lines pegged out.
+  pitch: `
+    <path ${ACCENT} d="M12 5L5 18H19Z"/>
+    <path d="M12 5L5 18H19Z"/>
+    <path d="M12 5V18"/>
+    <path d="M5 18L2.5 20.5M19 18L21.5 20.5"/>
+    <path d="M12 5L12 2.5"/>`,
+  // Lay: a ring of stones with two sticks crossed inside.
+  lay: `
+    <ellipse ${ACCENT} cx="12" cy="15" rx="5" ry="2"/>
+    <circle cx="5" cy="15" r="1.8"/>
+    <circle cx="19" cy="15" r="1.8"/>
+    <circle cx="9" cy="18.4" r="1.8"/>
+    <circle cx="15" cy="18.4" r="1.8"/>
+    <circle cx="9" cy="11.8" r="1.6"/>
+    <circle cx="15" cy="11.8" r="1.6"/>
+    <path d="M10 15L14 13M10 13L14 15"/>`,
+  // Light: a flame over two crossed sticks.
+  fire: `
+    <path ${ACCENT} d="M12 3.5C14.5 7 17 9 17 13A5 5 0 0 1 7 13C7 10.5 8.6 9 9.6 7.6C10 9.4 11 10.4 12 10.6C11.4 8.4 11.4 5.8 12 3.5Z"/>
+    <path d="M12 3.5C14.5 7 17 9 17 13A5 5 0 0 1 7 13C7 10.5 8.6 9 9.6 7.6C10 9.4 11 10.4 12 10.6C11.4 8.4 11.4 5.8 12 3.5Z"/>
+    <path d="M4 20.5L20 17.5M4 17.5L20 20.5"/>`,
+  // Rest: a tent under a crescent moon.
+  rest: `
+    <path ${ACCENT} d="M10 8L3.5 20H16.5Z"/>
+    <path d="M10 8L3.5 20H16.5Z"/>
+    <path d="M10 8V20"/>
+    <path d="M2.5 20H21.5"/>
+    <path d="M19.5 3.5A3.2 3.2 0 1 0 21 9.5A3.8 3.8 0 0 1 19.5 3.5Z"/>`,
+  // Hand: an open hand, the pointer over something a click can use (below).
+  hand: `
+    <path ${ACCENT} d="M8 12V5.5A1.5 1.5 0 0 1 11 5.5V11V4A1.5 1.5 0 0 1 14 4V11V5.5A1.5 1.5 0 0 1 17 5.5V14C17 18 15 20.5 11.5 20.5C8.5 20.5 7 18.5 5.5 15.5L4.5 13.5A1.4 1.4 0 0 1 7 12.3Z"/>
+    <path d="M8 12V5.5A1.5 1.5 0 0 1 11 5.5V11V4A1.5 1.5 0 0 1 14 4V11V5.5A1.5 1.5 0 0 1 17 5.5V14C17 18 15 20.5 11.5 20.5C8.5 20.5 7 18.5 5.5 15.5L4.5 13.5A1.4 1.4 0 0 1 7 12.3Z"/>`,
 };
 
 /** Names of every icon in the sprite. */

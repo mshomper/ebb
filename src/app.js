@@ -28,6 +28,11 @@ import { createDaylight } from './render/daylight.js';
 import { createLiveSim } from './sim/live-sim.js';
 import { initialWorldState, makeEnv, runHour } from './sim/tick.js';
 import { createTerrain } from './world/terrain/index.js';
+import { islandLand } from './world/terrain/chunks.js';
+import { islandCenter, campOf } from './world/terrain/landform.js';
+import { padOf, onPad } from './world/camp/layout.js';
+import { edgeTarget, stepEdge, edgeMark } from './world/camp/edge.js';
+import { stampOlderPad } from './world/camp/stamp.js';
 import { createWaterWorld } from './world/water-world.js';
 import { createGrowth } from './world/growth/index.js';
 import { createPlantTool } from './world/growth/plant-tool.js';
@@ -80,6 +85,12 @@ import { createWalk } from './world/walk/index.js';
 import { buildSandbarDemo } from './world/walk/sandbar.js';
 import { loadPrefs, keepPrefs } from './save/prefs.js';
 import { fingerprint } from './save/backup.js';
+import { SECTIONS9, empty9 } from './save/migrate-format9.js';
+import { clickKind, clickPlan } from './world/walk/click.js';
+import { createPack } from './world/pack/index.js';
+import { createGather } from './world/gather/index.js';
+import { createPiles } from './world/pack/piles-live.js';
+import { createPackDraw } from './world/pack/draw.js';
 
 /**
  * @typedef {{ ok: true, tier: string, tierReasons: string[], adapterInfo: GPUAdapterInfo | null, features: string[], stop: () => void,
@@ -129,10 +140,9 @@ export async function startApp(canvas, hooks = {}) {
   /** @type {Record<string, any>} */
   const palettes = Object.fromEntries(PALETTES.map((p, i) => [p.id, paletteRecipes[i]]));
   // `?island=<id>` starts another island from recipes/world/terrain.json's list (tests, comparisons).
-  /** @type {{ id: string, name: string }[]} */ const islands = terrainRecipe.islands?.list ?? [];
+  /** @type {{ id: string, name: string, land?: string }[]} */ const islands = terrainRecipe.islands?.list ?? [];
   const asked = params.get('island');
   const island = islands.find((i) => i.id === asked) ?? islands.find((i) => `land/${i.id}` === terrainRecipe.starter.land) ?? { id: terrainRecipe.starter.land.slice(5), name: 'Starter island' };
-  const landRecipe = await loadRecipe(`land/${island.id}`);
   updateStore('meta', (m) => { m.island = island.id; });
   updateStore('settings', (s) => { s.quality = tier; });
   const rb = terrainRecipe.brush;
@@ -144,6 +154,16 @@ export async function startApp(canvas, hooks = {}) {
   if (save.status === 'damaged') return { ok: false, reason: 'damaged', save, islands };
   // What came back from the save, applied once (a GPU rebuild finds it all in the store already).
   const back = save.restored;
+  // The island's land (docs/future/13 section 3.11): a new island grows from the island's current
+  // land recipe (`land` in terrain.json's list, the larger starter island); one already made keeps
+  // the land its chunks record, so its shape never changes.
+  const landName = islandLand(island, back?.chunks ?? Object.values(getStore('chunks') ?? {}));
+  const landRecipe = await loadRecipe(`land/${landName}`);
+  updateStore('meta', (m) => { m.land = landName; });
+  // The camera starts over the island's center and keeps within its reach (cameraRadiusM).
+  const isle = islandCenter(landRecipe);
+  camRecipe = { ...camRecipe, worldRadius: landRecipe.cameraRadiusM ?? camRecipe.worldRadius, worldCenter: [isle.x, isle.z],
+    start: { ...camRecipe.start, target: [camRecipe.start.target[0] + isle.x, camRecipe.start.target[1], camRecipe.start.target[2] + isle.z] } };
   if (back) {
     seed = back.meta.seed >>> 0;
     updateStore('meta', (m) => { m.seed = seed; m.carryMinutes = back.meta.carryMinutes ?? 0; m.keepGrowing = back.meta.keepGrowing ?? true; });
@@ -160,6 +180,21 @@ export async function startApp(canvas, hooks = {}) {
     updateStore('keepsakes', () => back.keepsakes);
     // The nets (src/world/nets/model.js).
     updateStore('nets', () => back.nets);
+  }
+  // The keeper's camp sections (format 9, src/save/migrate-format9.js): from the save, empty on a
+  // new island, and as they were on a GPU rebuild.
+  for (const id of SECTIONS9) updateStore(id, (v) => (back ? back[id] : v ?? empty9(id)));
+  // The camp pad (src/world/camp/layout.js): in a new island's base from the start; on an older
+  // island once it is stamped (camp.pad, src/world/camp/migrate-pad.js).
+  {
+    const inBase = campOf(landRecipe);
+    // A new island's pad is where its land put it; the save's camp.pad says so for every reader.
+    if (inBase?.inBase && !getStore('camp')?.pad) {
+      updateStore('camp', (c) => ({ ...c, stamped: true, pad: { x: inBase.x, z: inBase.z, heightM: inBase.h,
+        facingDeg: Math.atan2(inBase.fz, inBase.fx) * 180 / Math.PI, source: 'recipe' } }));
+    }
+    const at = getStore('camp')?.pad ?? null;
+    updateStore('campPad', () => (inBase?.inBase || at ? padOf(landRecipe, at) : null));
   }
   // Device settings (src/save/prefs.js): kept on this device, never in the island.
   const prefs = loadPrefs();
@@ -212,7 +247,7 @@ export async function startApp(canvas, hooks = {}) {
   const unHistory = history.onChange(syncHistory);
   syncHistory();
 
-  const terrain = await createTerrain(gpu, { seed: subSeed(seed, 'terrain'), recipe: terrainRecipe, land: landRecipe });
+  const terrain = await createTerrain(gpu, { seed: subSeed(seed, 'terrain'), recipe: terrainRecipe, land: landRecipe, landId: `land/${landName}` });
   history.setApplier('terrain', (cmd, dir) => terrain.applyTiles(dir === 'undo' ? cmd.before : cmd.after));
   if (back) terrain.restoreChunks(back.chunks);   // before the water reads the ground
   // The world clock and the shared hourly tick (weather, seasons). A new world starts mid-morning.
@@ -253,6 +288,8 @@ export async function startApp(canvas, hooks = {}) {
     terrain, sim, seed, tier, history, recipes: { water: waterRecipe, terrain: terrainRecipe, land: landRecipe },
   });
   const { water, foam, ripples, wetness, moss } = ww;
+  // An older island's camp pad, laid once on its first load after the keeper's camp update (CP-07, CP-08).
+  stampOlderPad({ land: landRecipe, terrain, water, terrainRecipe, waterRecipe });
   // Growth (docs 10, 11): the habitat grid from the water summary, plants and grass cover grown in
   // the hourly tick; this keeps the habitat current and uploads what the drawing needs.
   // `?plants=all` (testing, unsaved): a new island starts with every plant, not only the starters
@@ -346,6 +383,10 @@ export async function startApp(canvas, hooks = {}) {
     probe: { view: atmosphere.probeView, sampler: atmosphere.probeSampler }, rings: waterRecipe.ripples.rings,
     shore: { texture: ww.shore.texture, look: ww.shore.recipe.look },
   });
+  // The camp pad's trodden look and dashed edge pattern follow the live pad (CP-01, CP-02).
+  terrainPass.setCampPad(getStore('campPad') ?? null);
+  subscribeStore('campPad', (/** @type {any} */ p) => terrainPass.setCampPad(p ?? null));
+  let padEdge = 0;   // the dashed edge's opacity now, fading toward its target
   // The meadow (docs 10): GPU grass blades where grass is painted, after the terrain.
   const grassPass = createGrassPass({
     terrain, recipe: grassRecipe, terrainRecipe, seed: subSeed(seed, 'grass'), tier: tierSettings,
@@ -367,6 +408,8 @@ export async function startApp(canvas, hooks = {}) {
   // Presence (doc 23): what creatures react to. Two views (W3): the camera above counts only for
   // its edits (reported below); you on foot are felt with your pace, posture and gaze.
   const walkerRecipe = await loadRecipe('world/walker');
+  // The keeper's camp's words (recipes/world/camp.json): `clear`, the line when a tap lands on the pad.
+  const campRecipe = await loadRecipe('world/camp');
   /** @type {import('./world/walk/index.js').Walk | null} */ let walkRef = null;
   // `hooks.labCamera` (tools/frog-lab.html): the old close camera, whose own eye startles frogs.
   if (hooks.labCamera) camera.setClose(camRecipe.labClose);
@@ -520,6 +563,25 @@ export async function startApp(canvas, hooks = {}) {
   sim.addSystem(underLog);
   finds.addSource(underLog.shown);
 
+  // The walker's pack (docs/future/13 section 4.1): cloth pouches on the ground bar, filled by Gather.
+  // Set down at camp puts a pouch onto its kind's pile in the camp's slots (src/world/pack/piles-live.js).
+  /** @type {ReturnType<typeof createPiles> | null} */ let piles = null;
+  const pack = createPack({ recipe: await loadRecipe('world/pack'), you: () => walk.you(), day: () => clock.dayIndexOf(clock.worldT()),
+    setDown: (k, h) => piles?.setDown(k, h) ?? { moved: 0, refuse: 'noSlot' } });
+  piles = createPiles({ recipe: pack.recipe, kinds: pack.kinds, seed });
+  // Gathering on foot (section 4.2): Gather on a card walks you there, you kneel, a handful goes in.
+  const gather = createGather({ recipe: await loadRecipe('world/gather'), seed, world, worldT: () => clock.worldT(), water, terrain, pack, walk,
+    tide: waterRecipe.tide, strandline: ww.shore.recipe?.look?.strandline ?? null,
+    weather: () => ({ weatherSeed: world.env.weatherSeed, weather: seasonsRecipe.weather, state: world.state?.weather }),
+    center: () => { const b = terrain.openBounds(); return [(b.openMin[0] + b.openMax[0]) / 2, (b.openMin[1] + b.openMax[1]) / 2]; } });
+  // Picked reeds grow back slowly, faster in rain (the growth step reads the gather recipe).
+  world.env.recipes.gather = gather.recipe;
+  on('world:ticked', () => gather.expire());
+  on('world:caught-up', () => gather.expire());
+  // What lies on the ground to gather, the piles at camp and the heaps you left (src/world/pack/draw.js).
+  const packDraw = createPackDraw({ terrain, camera, recipe: pack.recipe, gather, pack, you: () => walk.you() });
+  sim.addSystem(packDraw);
+
   /**
    * A dry, grassy ground point near the view's middle, out of the tide, for a test log: on a widening
    * spiral, the first where no water stands and the grass is thick. @returns {number[] | null}
@@ -613,6 +675,7 @@ export async function startApp(canvas, hooks = {}) {
     finds.pass,
     keepsakes.pass,
     nets.pass,
+    ...packDraw.passes,
     pieces.pass,
     boat.pass,
     // What lives under a log, while it is lifted (L3a).
@@ -756,6 +819,75 @@ export async function startApp(canvas, hooks = {}) {
     }
     return pieces.pieceAt(point[0], point[2]);
   }
+  /**
+   * What a ground point holds, as a card (the journal's cardAt), and the journal's species words;
+   * main.js hands these in once the journal exists (setCards below). Null until then.
+   * @type {{ cardAt: (x: number, z: number, y?: number) => any, species: Record<string, any> } | null}
+   */
+  let cards = null;
+  /** A thing you clicked on and are walking to: its card opens when you stop. @type {number[] | null} */
+  let cardOnArrival = null;
+
+  /**
+   * A click below (src/world/walk/click.js): walk, walk to a thing then open its card, or open a card
+   * where you stand. A walk elsewhere puts away the card that was open (not a Show me ring).
+   * @param {number} sx @param {number} sy CSS pixels @param {number[]} p the ground point
+   */
+  function clickBelow(sx, sy, p) {
+    const card = cards?.cardAt(p[0], p[2], p[1]) ?? null;
+    const kind = clickKind(card, cards?.species ?? {});
+    const wx = card?.wx ?? p[0], wz = card?.wz ?? p[2];
+    const plan = clickPlan(kind, walk.distTo(wx, wz), card?.r ?? 0, walkerRecipe.click, !!card?.gathers?.length);
+    cardOnArrival = null;
+    if (plan.kind === 'card') { emitDeferred('look:tapped', { x: sx, y: sy, point: p }); return; }
+    if (!getStore('identify')?.pinned) updateStore('identify', () => null);
+    if (plan.kind === 'approach') {
+      if (walk.tap(sx, sy, [wx, p[1], wz], plan.reachM)) cardOnArrival = p;
+      return;
+    }
+    walk.tap(sx, sy, p);
+  }
+
+  /**
+   * Hovering below: what a click there would use, named beside the pointer (store slice `hover`,
+   * src/ui/hover-tag.js), read a few times a second. Plain walking ground has no tag.
+   */
+  let hoverAt = 0;
+  canvas.addEventListener('pointermove', (e) => {
+    if (e.pointerType !== 'mouse') return;
+    const now = performance.now();
+    if (now - hoverAt < 1000 / walkerRecipe.click.hoverHz) return;
+    hoverAt = now;
+    let tag = null;
+    if (walk.below && cards && !e.buttons) {
+      const p = groundAt(e.offsetX, e.offsetY);
+      const pc = p ? pieceUnderTap(e.offsetX, e.offsetY, p) : null;
+      const q = pc && p ? [pc.x, p[1], pc.z] : p;
+      const card = q ? cards.cardAt(q[0], q[2], q[1]) : null;
+      const kind = clickKind(card, cards.species);
+      const plan = card ? clickPlan(kind, walk.distTo(card.wx ?? q?.[0], card.wz ?? q?.[2]), card.r ?? 0, walkerRecipe.click, !!card.gathers?.length) : null;
+      // Name what a click would gather, when there is something (else the thing itself).
+      if (card && plan && plan.kind !== 'walk') tag = { name: card.gathers?.[0]?.name ?? card.name, x: e.clientX, y: e.clientY };
+    }
+    const was = getStore('hover');
+    if (tag || was) updateStore('hover', () => tag);
+    canvas.classList.toggle('ebb-can-use', !!tag);
+  });
+  const hoverOff = () => { if (getStore('hover')) updateStore('hover', () => null); canvas.classList.remove('ebb-can-use'); };
+  canvas.addEventListener('pointerleave', hoverOff);
+  canvas.addEventListener('pointerdown', hoverOff);
+
+  /** Each frame: you reached the thing you clicked on, so its card opens beside it. */
+  function arriveForCard() {
+    if (!cardOnArrival) return;
+    if (!walk.below) { cardOnArrival = null; return; }
+    if (walk.busy()) return;
+    const p = cardOnArrival;
+    cardOnArrival = null;
+    const at = getStore('view')?.project?.(p[0], p[2]);
+    emitDeferred('look:tapped', { x: at?.x ?? cssW / 2, y: at?.y ?? cssH / 2, point: p });
+  }
+
   function groundAt(x, y) {
     const r = camera.ray(x, y);
     const hit = terrain.raycast(r.o, r.d);
@@ -779,10 +911,26 @@ export async function startApp(canvas, hooks = {}) {
   /** Screen point of a held pour or drain, or null. @type {null | { x: number, y: number }} */
   let pouring = null;
 
-  /** Each frame while pour or drain is held: the brush source under the pointer. */
+  /**
+   * The camp ground stays clear (docs/future/13 CP-01): true when a ground point is on the live pad
+   * (store slice `campPad`), after saying so in one quiet line on the island unless `quiet`.
+   * @param {ArrayLike<number>} p @param {boolean} [quiet]
+   */
+  function onCampPad(p, quiet = false) {
+    if (!onPad(getStore('campPad') ?? null, p[0], p[2])) return false;
+    // On the tool card's own line, since the island notes step aside while a card is open on narrower windows.
+    if (!quiet) updateStore('campUi', () => ({ message: campRecipe.words.clear, refused: true, at: performance.now() }));
+    return true;
+  }
+  /** The pour held over the pad has said so once this press. */
+  let pourRefusedOnPad = false;
+
+  /** Each frame while pour or drain is held: the brush source under the pointer. No water is poured on the camp pad. */
   function updatePour() {
     const t = tools();
-    const p = pouring && t.tool === 'water' ? groundAt(pouring.x, pouring.y) : null;
+    let p = pouring && t.tool === 'water' ? groundAt(pouring.x, pouring.y) : null;
+    if (!pouring) pourRefusedOnPad = false;
+    if (p && t.waterMode === 'pour' && onCampPad(p, pourRefusedOnPad)) { pourRefusedOnPad = true; p = null; }
     if (p) presence.edit(p[0], p[2]);
     ww.holdBrush(p, t);
   }
@@ -791,6 +939,8 @@ export async function startApp(canvas, hooks = {}) {
   function springTap(x, y) {
     if (!getStore('unlocks')?.springs) return;
     const p = groundAt(x, y);
+    // A spring already there (an older island's) can still be selected; a new one is refused on the pad.
+    if (p && !ww.water.springAt(p[0], p[2], 1.0) && onCampPad(p)) return;
     if (p) ww.tapSpring(p, tools().springRate);
   }
 
@@ -826,6 +976,8 @@ export async function startApp(canvas, hooks = {}) {
     if (!getStore('unlocks')?.stones) return;
     const p = groundAt(x, y);
     if (!p) return;
+    // A stone already there can still be selected; a new one is refused on the camp pad.
+    if (!pieces.pieceAt(p[0], p[2]) && onCampPad(p)) return;
     presence.edit(p[0], p[2]);
     pieces.tap(p);
   }
@@ -857,7 +1009,8 @@ export async function startApp(canvas, hooks = {}) {
   }
 
   // The Plant tool (src/world/growth/plant-tool.js): plants a seed where the ground suits it, rings where.
-  const plantTool = createPlantTool({ growth, world, flora, recipe: growthRecipe.marks });
+  // A tap on the camp pad is refused with the camp's words (CP-16, recipes/world/camp.json).
+  const plantTool = createPlantTool({ growth, world, flora, recipe: growthRecipe.marks, campWords: campRecipe?.words ?? null });
   /** @param {number} x @param {number} y */
   function plantTap(x, y) {
     const p = groundAt(x, y);
@@ -926,7 +1079,11 @@ export async function startApp(canvas, hooks = {}) {
     presence.edit(p[0], p[2]);
     const r = pieces.setDown(p);
     if (r.ok) updateStore('identify', () => null);
-    else updateStore('identify', (c) => (c ? { ...c, carrying: r.reason === 'water', carryNote: r.reason === 'gone' ? null : r.reason, canCarry: r.reason === 'water' } : c));
+    else {
+      // Water and the camp ground keep it carried, with a line saying why; the cap puts it back.
+      const still = r.reason === 'water' || r.reason === 'camp';
+      updateStore('identify', (c) => (c ? { ...c, carrying: still, carryNote: r.reason === 'gone' ? null : r.reason, canCarry: still } : c));
+    }
   }
 
   /**
@@ -962,18 +1119,31 @@ export async function startApp(canvas, hooks = {}) {
       if (a.type === 'camera.pan') { camera.orbit(a.dx, a.dy); return; }
       if (a.type === 'camera.zoom') { camera.zoom(a.factor); return; }
       if (a.type === 'look.tap') {
-        // With Look on, a tap names what it lands on (the journal), as a tap above does.
+        // One click walks and uses (src/world/walk/click.js): a thing walks you to it and opens its
+        // card; a creature's card opens where you stand; grass, sand and shingle only near you.
         const point = groundAt(a.x, a.y);
-        // A log or stone right beside you shows its card (with Lift) rather than walking onto it.
-        const near = point ? pieceUnderTap(a.x, a.y, point) : null;
-        if (near && lift.reach(near) === 'lift') { emitDeferred('look:tapped', { x: a.x, y: a.y, point: [near.x, point[1], near.z] }); return; }
-        if (walk.tap(a.x, a.y, point) === 'look') emitDeferred('look:tapped', { x: a.x, y: a.y, point });
+        if (!point) return;
+        // Low down, the ray grazes past a log or stone onto the ground behind it: try it first.
+        const pc = pieceUnderTap(a.x, a.y, point);
+        clickBelow(a.x, a.y, pc ? [pc.x, point[1], pc.z] : point);
+        return;
+      }
+      // The pouches (src/world/pack): a pouch's card, Set down at camp, Empty.
+      if (a.type === 'pack.open') { pack.open(a.i, a.x, a.y); return; }
+      if (a.type === 'pack.setDown') { pack.setDown(a.i); return; }
+      if (a.type === 'pack.empty') { pack.empty(a.i); return; }
+      if (a.type === 'gather.take') { gather.take(a.n); return; }
+      if (a.type === 'gather.heapHere') { gather.heapHere(); return; }
+      // A pile's Take up fills a pouch; with no room, the full card (without Set down here).
+      if (a.type === 'pile.takeUp') {
+        const r = piles?.takeUp(a.id, pack);
+        if (r?.full) updateStore('identify', (c) => (c ? { ...c, full: { kind: r.kind, g: { heap: -1 } }, text: pack.recipe.words.full } : c));
+        else updateStore('identify', () => null);
         return;
       }
       if (a.type === 'walk.up') { walk.up(); return; }
       if (a.type === 'walk.stuck') { walk.stuck(); return; }
       if (a.type === 'walk.posture') { walk.posture(a.posture); return; }
-      if (a.type === 'walk.look') { walk.toggleLook(); return; }
       if (a.type === 'walk.feed') { feedHere(); return; }
       if (a.type === 'walk.net') { netHere(); return; }
       if (a.type === 'tool.select' || a.type.startsWith('tool.') || a.type === 'brush.resize') return;
@@ -1374,11 +1544,17 @@ export async function startApp(canvas, hooks = {}) {
     const t = clock.advance(realDt);
     camera.setViewport(cssW, cssH);
     walk.update(realDt);
+    arriveForCard();
+    gather.update();
     camera.update(realDt);
     presence.update(realDt);
     updateRing();
     // Plant tool rings, and a breathing ring round whatever the journal's tap card names.
-    terrainPass.setMarks(plantTool.marks(now, tools().tool === 'plant', getStore('identify'), [...(getStore('reveal')?.rings?.(now) ?? []), ...creatures.foodRings(), ...intro.rings(now)]));
+    // The camp pad's dashed edge (CP-01) while a brush ring touches the pad, fading in and out.
+    const pad = getStore('campPad') ?? null;
+    padEdge = pad ? stepEdge(padEdge, edgeTarget(pad, terrain.ring, tools()), realDt, pad.dash?.opacity ?? 1, pad.dash?.fadeS) : 0;
+    const padMark = edgeMark(pad, padEdge);
+    terrainPass.setMarks(plantTool.marks(now, tools().tool === 'plant', getStore('identify'), [...(padMark ? [padMark] : []), ...(getStore('reveal')?.rings?.(now) ?? []), ...creatures.foodRings(), ...intro.rings(now)]));
     // Lugworm casts are drawn into the sand by the terrain pass.
     terrainPass.setCasts(finds.casts());
     updatePour();
@@ -1451,6 +1627,8 @@ export async function startApp(canvas, hooks = {}) {
     const pushes = walk.pushes();
     grassPass.setPushes(pushes);
     rushPass.setPushes(pushes);
+    // Short, worn grass on the camp pad (CP-16; rushes never stand there).
+    grassPass.setPad(getStore('campPad') ?? null, campRecipe?.grass?.thinWithWear ?? 0);
     // Wet-to-dry grass (lush.js): the ground's grass layer takes the blades' tint this season.
     terrainPass.setLush(grassRecipe.lush ? lushLook(grassRecipe, bladeFrame.season) : null);
     rushPass.update(bladeFrame);
@@ -1511,7 +1689,7 @@ export async function startApp(canvas, hooks = {}) {
       build: hooks.build ?? 'dev', seed, island: island.id, worldT: clock.worldT(), flow: clock.flow(),
       carryMinutes: getStore('meta')?.carryMinutes ?? 0, keepGrowing: getStore('meta')?.keepGrowing ?? true,
       world: world.state, journal: getStore('journal'), water: getStore('water'), unlocks: getStore('unlocks')?.earned ?? {},
-      view: { ...camera.pose(), walker: walk.spot() }, looks: getStore('looks') ?? {}, music: getStore('music') ?? { hearted: [] }, pieces: getStore('pieces'), keepsakes: getStore('keepsakes'), nets: getStore('nets'), chunks: getStore('chunks'), mirror: getStore('terrainLive')?.mirror ?? null,
+      view: { ...camera.pose(), walker: walk.spot() }, looks: getStore('looks') ?? {}, music: getStore('music') ?? { hearted: [] }, pieces: getStore('pieces'), keepsakes: getStore('keepsakes'), nets: getStore('nets'), ...Object.fromEntries(SECTIONS9.map((id) => [id, getStore(id)])), chunks: getStore('chunks'), mirror: getStore('terrainLive')?.mirror ?? null,
     }),
   });
 
@@ -1551,6 +1729,21 @@ export async function startApp(canvas, hooks = {}) {
     adapterInfo: gpu.adapter.info ?? null,
     features: [...gpu.features],
     stop,
+    /**
+     * Hand in what a ground point holds (the journal's cardAt) and its species words, so one click
+     * below can walk and use (src/world/walk/click.js). main.js calls it once the journal exists.
+     * @param {(x: number, z: number, y?: number) => any} cardAt @param {Record<string, any>} species
+     */
+    setCards(cardAt, species) { cards = { cardAt, species }; },
+    /**
+     * The walker's pack (src/world/pack/index.js): add, take, has, holds({ fuel: 1, stones: 2 }),
+     * room; it emits pack:changed { pouches, size } after every change.
+     */
+    pack,
+    /** Gathering (src/world/gather/index.js): the journal's cards gain their Gather buttons from it. */
+    gather,
+    /** The piles at camp (src/world/pack/piles-live.js): a pile's card reads its words from them. */
+    piles,
     terrain,
     water,
     /** The live growth (habitat, plants) and the world the hourly tick runs on (tools/growth-lab.html). */

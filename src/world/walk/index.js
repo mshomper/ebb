@@ -1,7 +1,8 @@
 // @ts-check
 // The walker in the game (doc 23, presence below; W2): two views. Above is the diorama where you
 // shape; Go down lands you on foot where you are looking, and the camera glides down behind you.
-// Below, a tap walks you there (a double tap hurries), a drag looks around and the shaping tools
+// Below, a tap walks you there (a double tap hurries; a tap on a thing stops beside it, src/app.js
+// opens its card on arrival), a drag looks around and the shaping tools
 // are put away; Go up glides back up over where you stand, and your figure stays there, seen
 // from above. The walk grid follows every stroke, and the water is read live: the sea at the
 // tide now, the ponds from the live water, so the sandbar opens and closes with the tide. W2 is
@@ -95,14 +96,12 @@ export function createWalk(o) {
   let acting = null;
 
   let below = false;
-  /** Look (W4): while on, a tap names what it lands on instead of walking there. */
-  let look = false;
   /** The last tap, for a double tap. @type {{ t: number, x: number, y: number, to: [number, number] } | null} */
   let lastTap = null;
   /** What the buttons last showed, so the store changes only when something does. */
   let shown = '';
   const publish = () => {
-    const now = { below, placed: walker.placed, posture: walker.posture, look };
+    const now = { below, placed: walker.placed, posture: walker.posture };
     const key = JSON.stringify(now);
     if (key !== shown) { shown = key; updateStore('walk', () => now); }
   };
@@ -302,11 +301,14 @@ export function createWalk(o) {
       this.reach(standS);
     },
 
-    /** Look on or off (W4). */
-    toggleLook() {
-      if (!below) return;
-      look = !look;
-      publish();
+    /** How far you stand from a ground point, in meters (Infinity while above). @param {number} x @param {number} z */
+    distTo(x, z) {
+      return below && walker.placed ? Math.hypot(x - walker.x, z - walker.z) : Infinity;
+    },
+
+    /** Still on the way somewhere (a walk or an approach not yet ended), or playing an act. */
+    busy() {
+      return below && (walker.moving || !!acting);
     },
 
     /**
@@ -376,7 +378,6 @@ export function createWalk(o) {
     up() {
       if (!below) return;
       below = false;
-      look = false;
       walker.stop();
       camera.setGround(null, [walker.x, walker.y, walker.z]);
       publish();
@@ -385,30 +386,34 @@ export function createWalk(o) {
     },
 
     /**
-     * A tap below: walk there (a second tap close by, soon after, hurries). With Look on, it names
-     * what it lands on instead, if that is near enough to see well: returns 'look' for the app to
-     * pass to the journal.
+     * A tap below: walk there (a second tap close by, soon after, hurries). With `reachM`, walk only
+     * until you are that close to the point (a thing you clicked on: you stop beside it, not on it);
+     * already that close, you stay where you are. Returns false when there is no way there.
      * @param {number} sx @param {number} sy CSS pixels @param {number[] | null} point the ground the tap landed on
-     * @returns {'look' | void}
+     * @param {number} [reachM]
      */
-    tap(sx, sy, point) {
-      if (!below || !point) return;
-      if (look) {
-        if (Math.hypot(point[0] - walker.x, point[2] - walker.z) <= R.ground.lookReachM) return 'look';
-        say(R.words.lookFar);
-        return;
-      }
+    tap(sx, sy, point, reachM = 0) {
+      if (!below || !point) return false;
       // An act playing keeps you where you are until it ends (act()).
-      if (acting) return;
+      if (acting) return false;
       const now = performance.now();
       const double = !!lastTap && now - lastTap.t < R.pace.doubleTapMs && Math.hypot(sx - lastTap.x, sy - lastTap.y) < 40;
-      const to = /** @type {[number, number]} */ (double && lastTap ? lastTap.to : [point[0], point[2]]);
+      let to = /** @type {[number, number]} */ (double && lastTap ? lastTap.to : [point[0], point[2]]);
       lastTap = { t: now, x: sx, y: sy, to };
+      if (reachM > 0) {
+        // Stop short, on the line from the thing back toward you; already in reach, stay.
+        const dx = walker.x - to[0], dz = walker.z - to[1], d = Math.hypot(dx, dz);
+        if (d <= reachM) { walker.stop(); return true; }
+        const k = (reachM * 0.8) / d;
+        const near = /** @type {[number, number]} */ ([to[0] + dx * k, to[1] + dz * k]);
+        if (walker.walkTo(near[0], near[1], double).ok) return true;
+      }
       const r = walker.walkTo(to[0], to[1], double);
-      if (r.ok) return;
+      if (r.ok) return true;
       const hours = o.hours();
       const lowDepth = depthAtLow(depth, (k) => grid.height[k], water.tide, tideLevel(hours + hoursToLow(hours, o.tide), tideP));
       say(crossingNote(grid, walker.rules, [walker.x, walker.z], to, { reason: r.reason, lowDepth, hoursToLow: hoursToLow(hours, o.tide), words: R.words }));
+      return false;
     },
 
     /** Each frame, before the camera: walk, and keep the view on you. @param {number} realDt */

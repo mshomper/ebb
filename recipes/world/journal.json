@@ -97,11 +97,13 @@
       "cardLine": "Silver and smooth from the sea. The sand under it is damp and cool.",
       "lifted": "You rolled a driftwood log. The sand under it was dark and damp, and smelled of the sea."
     },
+    "pile": { "name": "Pile", "icon": "setdown", "cardLine": "" },
     "carry": {
       "button": "Carry",
       "hint": "Tap the ground where you want to set it down.",
       "cancel": "Put it back",
       "water": "It needs land under it. Tap the ground.",
+      "camp": "The camp ground stays clear. Set it down off the camp.",
       "full": "The island keeps all the logs it can for now."
     },
     "lift": {

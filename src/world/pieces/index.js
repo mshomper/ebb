@@ -28,6 +28,7 @@ import { logSurface } from './log-surface.js';
 import { slabShapes } from './slabs.js';
 import { raftShapes, makeRaft, raftRest } from './raft.js';
 import { makeStepping, strideAfter, jitterOf, topOf, links, footingAt } from './stepping.js';
+import { onCampGround, crossesCampGround, offCampGround } from './camp-clear.js';
 import { planFlight, flightGeom, flightHeightAt, flightRect, carveFlight, paintFlight, markGuard, crossesGuard, treadSlabs } from './steps.js';
 import { emitDeferred } from '../../core/events.js';
 import { WORLD_CELLS } from '../terrain/grid.js';
@@ -300,14 +301,19 @@ export function createPieces(opts) {
   onList();
 
   /** @type {{ run: string | null, last: number[] | null, laid: any[], stopped: boolean } | null} */ let laying = null;
+  /** The camp pad, kept clear of every placed piece (camp-clear.js), or null before it is laid. */
+  const padNow = () => get('campPad') ?? null;
+  /** A pond stone's refusal on the card: the camp's own line, else the stepping stones' words. @param {string} r */
+  const pondWords = (r) => (r === 'camp' ? recipe.words.camp : S.words[r]);
   /**
-   * Lay one pond stone at a ground point, if it may go there: under the cap, water no deeper than
-   * maxDepthM, and not on top of another stone. Returns 'ok', or why not.
+   * Lay one pond stone at a ground point, if it may go there: under the cap, off the camp ground,
+   * water no deeper than maxDepthM, and not on top of another stone. Returns 'ok', or why not.
    * @param {number} x @param {number} z
    */
   function layOne(x, z) {
     const s = state();
     if (countKind(s.list, 'stepping') >= S.cap) return 'full';
+    if (onCampGround(padNow(), x, z, S.apartM / 2)) return 'camp';
     const d = depthAt(x, z);
     if (d > S.maxDepthM) return 'deep';
     const a2 = S.apartM * S.apartM;
@@ -364,8 +370,9 @@ export function createPieces(opts) {
     const summary = water.getSummary?.();
     const material = get('terrainLive')?.mirror?.material ?? null;
     if (!summary || !material) return;
-    const came = arrivingStones({ seed: piecesSeed, summary, material, ground,
-      recipe, hour: hourIndex(), nextId: state().nextId, existing: state().list });
+    // Never on the camp ground.
+    const came = offCampGround(padNow(), arrivingStones({ seed: piecesSeed, summary, material, ground,
+      recipe, hour: hourIndex(), nextId: state().nextId, existing: state().list }));
     // No fresh water yet: wait for a pond, and try again when the water changes.
     if (!came.length) return;
     let s = state();
@@ -388,7 +395,8 @@ export function createPieces(opts) {
     const liftM = D.carry.liftM;
     for (const p of state().list) {
       if (p.kind === 'log') { logBeing(p, p.id, out); continue; }
-      if (p.kind === 'steps') continue;
+      // A flight is cut into the land; a pile at camp is drawn by src/world/pack/draw.js.
+      if (p.kind === 'steps' || p.kind === 'pile') continue;
       if (p.kind === 'raft') {
         const sh = raftShapeOf(p), i = rafts.indexOf(sh), now = raftNow(p, frameDt);
         // Reeds, not stone: drawn plain (no rock scan) and with no damp ring on the water.
@@ -573,11 +581,11 @@ export function createPieces(opts) {
 
     /**
      * The piece a tap at a ground point lands on, if any (the journal's tap card asks): a kept stone
-     * or log, or a log lying on the strand (strand: true; its id is its key).
+     * or log, a pile at camp, or a log lying on the strand (strand: true; its id is its key).
      * @param {number} x @param {number} z
      */
     pieceAt(x, z) {
-      const kept = state().list.filter((p) => p.kind === 'stone' || p.kind === 'log');
+      const kept = state().list.filter((p) => p.kind === 'stone' || p.kind === 'log' || p.kind === 'pile');
       const all = [...kept.map((p) => ({ ...p, strand: false })), ...strandShown.map((s) => ({ ...s, id: s.key, strand: true }))];
       return pieceAt(all, x, z, tapR(), D.tapReachM);
     },
@@ -610,10 +618,10 @@ export function createPieces(opts) {
       return { form: b.form, sea: b.sea, moss: p.strand ? 0 : logWear(p, b.sea)[2] };
     },
 
-    /** Lift a stone or a log to carry it (the card's Carry). @param {string} id @returns {boolean} */
+    /** Lift a stone or a log to carry it (the card's Carry). A pile is never carried. @param {string} id @returns {boolean} */
     carry(id) {
       const f = findPiece(id);
-      if (!f) return false;
+      if (!f || f.piece.kind === 'pile') return false;
       lifts.delete(id);
       const radius = f.piece.kind === 'log' ? (f.piece.length ?? 1) / 2 : f.piece.size * 0.7;
       setCarry({ id, kind: f.piece.kind, radius, strand: f.strand });
@@ -629,12 +637,14 @@ export function createPieces(opts) {
     /**
      * Set the carried piece down at a ground point: a kept piece moves there; a log off the strand
      * is kept from now on, under the logs' cap. Undoable. Water, and the cap, refuse calmly (the
-     * reason says which); water keeps it carried, the cap puts it back.
-     * @param {ArrayLike<number>} p @returns {{ ok: boolean, reason?: 'water' | 'full' | 'gone' }}
+     * reason says which); water and the camp ground keep it carried, the cap puts it back.
+     * @param {ArrayLike<number>} p @returns {{ ok: boolean, reason?: 'water' | 'camp' | 'full' | 'gone' }}
      */
     setDown(p) {
       if (!carrying) return { ok: false, reason: 'gone' };
       if ((water.sampleLive?.(p[0], p[2])?.depth ?? 0) > 0.02) return { ok: false, reason: 'water' };
+      // The camp ground stays clear: it stays carried, as in water.
+      if (onCampGround(padNow(), p[0], p[2], carrying.radius)) return { ok: false, reason: 'camp' };
       const s = state();
       if (carrying.strand) {
         const piece = makeLog(s.nextId, { ...carrying.strand, x: p[0], z: p[2] }, hourIndex());
@@ -731,7 +741,9 @@ export function createPieces(opts) {
       laying = { run: null, last: null, laid: [], stopped: false };
       const r = layOne(p[0], p[2]);
       if (r === 'near') laying.last = [p[0], p[2]];
-      else if (r !== 'ok') { laying.stopped = true; syncShaping({ mode: 'pondstones', message: S.words[r], refused: true }); return; }
+      // On the camp ground: no stone here, but the line goes on and lays stones once it is off it.
+      else if (r === 'camp') { laying.last = [p[0], p[2]]; syncShaping({ mode: 'pondstones', message: pondWords(r), refused: true }); return; }
+      else if (r !== 'ok') { laying.stopped = true; syncShaping({ mode: 'pondstones', message: pondWords(r), refused: true }); return; }
       syncShaping({ mode: 'pondstones', message: '' });
     },
 
@@ -751,7 +763,13 @@ export function createPieces(opts) {
         const x = lx + ux * stride - uz * j, z = lz + uz * stride + ux * j;
         const r = layOne(x, z);
         if (r === 'near') { laying.last = [lx + ux * stride, lz + uz * stride]; continue; }
-        if (r !== 'ok') { laying.stopped = true; syncShaping({ mode: 'pondstones', message: S.words[r], refused: true }); break; }
+        // A stride that lands on the camp ground is skipped, and the card says why (once).
+        if (r === 'camp') {
+          laying.last = [lx + ux * stride, lz + uz * stride];
+          if (shapingSay.message !== pondWords(r)) syncShaping({ mode: 'pondstones', message: pondWords(r), refused: true });
+          continue;
+        }
+        if (r !== 'ok') { laying.stopped = true; syncShaping({ mode: 'pondstones', message: pondWords(r), refused: true }); break; }
         // The next stride is measured from the line, not the nudged stone, so a line stays straight.
         laying.last = [lx + ux * stride, lz + uz * stride];
       }
@@ -797,6 +815,11 @@ export function createPieces(opts) {
       cutting.b = [p[0], p[2]];
       const plan = planOf(cutting.a, cutting.b);
       const dx = cutting.b[0] - cutting.a[0], dz = cutting.b[1] - cutting.a[1];
+      // A flight may not start, end or pass over the camp ground: the card says so as you drag.
+      if (crossesCampGround(padNow(), cutting.a, cutting.b, ST.widthM / 2)) {
+        if (shapingSay.message !== recipe.words.camp) syncShaping({ mode: 'steps', message: recipe.words.camp, refused: true });
+        return;
+      }
       // Only once the drag has gone somewhere, and only for a run that wants more.
       if (!plan.ok && plan.reason === 'short' && dx * dx + dz * dz > 0.25) {
         const m = ST.words.short.replace('{m}', (Math.ceil((plan.needM ?? 0) * 2) / 2).toFixed(1));
@@ -814,6 +837,7 @@ export function createPieces(opts) {
       /** @param {string} key */
       const say = (key) => syncShaping({ mode: 'steps', message: key === 'short' ? shapingSay.message || ST.words.short.replace('{m}', '') : ST.words[key], refused: true });
       if (countKind(state().list, 'steps') >= ST.cap) { say('full'); return; }
+      if (crossesCampGround(padNow(), c.a, c.b, ST.widthM / 2)) { syncShaping({ mode: 'steps', message: recipe.words.camp, refused: true }); return; }
       if (depthAt(c.a[0], c.a[1]) > S.wetM || depthAt(c.b[0], c.b[1]) > S.wetM) { say('water'); return; }
       const plan = planOf(c.a, c.b);
       if (!plan.ok) { say(plan.reason); return; }
@@ -874,6 +898,8 @@ export function createPieces(opts) {
       const s = state();
       if (countKind(s.list, 'raft') >= RF.cap) { say('full'); return; }
       const x = p[0], z = p[2];
+      // Never on the camp ground (a pond dug beside the pad may reach its edge).
+      if (onCampGround(padNow(), x, z, RF.sizeM[1] / 2)) { syncShaping({ mode: 'raft', message: recipe.words.camp, refused: true }); return; }
       // The sea: water whose surface is the tide's (a pond's bed may lie below the tide, its surface not).
       const tide = water.tide ?? -Infinity;
       if (tide > ground(x, z) && ground(x, z) + depthAt(x, z) <= tide + 0.05) { say('sea'); return; }

@@ -10,9 +10,10 @@ import { pieces5 } from './migrate-pieces.js';
 import { keepsakes6 } from './migrate-keepsakes.js';
 import { nets7 } from './migrate-nets.js';
 import { trails8 } from './migrate-trails.js';
+import { format9 } from './migrate-format9.js';
 
 /** The data schema this build writes. */
-export const FORMAT = 8;
+export const FORMAT = 9;
 
 /**
  * Ordered steps, each from one format to the next.
@@ -26,6 +27,7 @@ export const MIGRATIONS = [
   { from: 5, to: 6, note: 'the shelf: a `keepsakes` section for the keepsakes you keep, empty on an older island (src/save/migrate-keepsakes.js)', up: keepsakes6 },
   { from: 6, to: 7, note: 'the nets: a `nets` section, empty on an older island, and the keepsake families it has kept, from its shelf (src/save/migrate-nets.js)', up: nets7 },
   { from: 7, to: 8, note: "the trails' firsts: the families, rarities and marks an older island has kept, rebuilt from its kept families and its shelf (src/save/migrate-trails.js)", up: trails8 },
+  { from: 8, to: 9, note: "the keeper's camp, the pack and gathering: `camp`, `pack`, `gather`, `dig`, `cook` and `dyes` sections, empty on an older island (src/save/migrate-format9.js)", up: format9 },
 ];
 
 /**

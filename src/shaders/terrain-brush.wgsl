@@ -18,6 +18,9 @@ struct Stamp {
   worldOrigin: f32,
   cell: f32,
   span: f32,          // smooth: tap spacing in cells, grows with the brush so big brushes soften big shapes
+  campCenter: vec2f,  // the keeper's camp pad (src/world/camp/layout.js), world xz
+  campR: f32,         // its radius (m); below 0 when there is no pad
+  campFadeM: f32,     // brushes fade from nothing at campR to full at campR + campFadeM
 };
 
 @group(0) @binding(0) var<uniform> s: Stamp;
@@ -36,6 +39,13 @@ fn edgeFade(p: vec2f) -> f32 {
   return clamp(inside / s.edgeFade, 0.0, 1.0);
 }
 
+// The camp lock (docs/future/13 CP-01): 0 on the pad, rising to 1 over campFadeM outside it.
+// Mirrors padMask() in src/world/camp/layout.js.
+fn campFade(p: vec2f) -> f32 {
+  if (s.campR < 0.0) { return 1.0; }
+  return smoothstep(s.campR, s.campR + s.campFadeM, distance(p, s.campCenter));
+}
+
 fn loadH(c: vec2i) -> f32 {
   let n = vec2i(textureDimensions(heightIn)) - 1;
   return textureLoad(heightIn, clamp(c, vec2i(0), n), 0).r;
@@ -52,7 +62,8 @@ fn csHeight(@builtin(global_invocation_id) gid: vec3u) {
   let ci = vec2i(c);
   let p = worldOf(c);
   let h = loadH(ci);
-  let f = falloff(distance(p, s.center)) * edgeFade(p);
+  let lock = campFade(p);
+  let f = falloff(distance(p, s.center)) * edgeFade(p) * lock;
   var outH = h;
   switch s.mode {
     case 0u: {
@@ -81,7 +92,8 @@ fn csHeight(@builtin(global_invocation_id) gid: vec3u) {
         let w = max(s.hardness, s.cell * 0.5);
         let fc = 1.0 - smoothstep(s.radius - w, s.radius, d);
         let fall = (1.0 - fc) * max(abs(s.amount), s.cell) + (1.0 - edgeFade(p)) * s.span;
-        outH = select(min(h, s.level + fall), max(h, s.level - fall), s.amount > 0.0);
+        // The camp pad keeps its ground; the shelf's change fades in outside it (cliff.js twin).
+        outH = mix(h, select(min(h, s.level + fall), max(h, s.level - fall), s.amount > 0.0), lock);
       }
     }
     default: {}
@@ -98,7 +110,7 @@ fn csPaint(@builtin(global_invocation_id) gid: vec3u) {
   let c = gid.xy + s.rectOrigin;
   let p = worldOf(c);
   let m = textureLoad(materialIn, c, 0);
-  let f = falloff(distance(p, s.center)) * edgeFade(p);
+  let f = falloff(distance(p, s.center)) * edgeFade(p) * campFade(p);
   let goal = vec4f(f32(s.layer == 0u), f32(s.layer == 1u), f32(s.layer == 2u), f32(s.layer == 3u));
   let k = 1.0 - exp2(-s.amount * f);
   let w = mix(m, goal, k);
@@ -117,7 +129,7 @@ fn csCliffRock(@builtin(global_invocation_id) gid: vec3u) {
   let drop = max(max(abs(h - loadH(ci + vec2i(1, 0))), abs(h - loadH(ci - vec2i(1, 0)))),
                  max(abs(h - loadH(ci + vec2i(0, 1))), abs(h - loadH(ci - vec2i(0, 1)))));
   let m = textureLoad(materialIn, c, 0);
-  let k = select(0.0, s.level, drop > s.amount);
+  let k = select(0.0, s.level, drop > s.amount) * campFade(worldOf(c));
   let w = mix(m, vec4f(0.0, 0.0, 1.0, 0.0), k);
   textureStore(materialOut, c, w / max(w.x + w.y + w.z + w.w, 1e-4));
 }
