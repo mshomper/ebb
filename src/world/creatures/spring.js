@@ -7,7 +7,7 @@
 //
 // State (state.spring): see SpringState. The toad's walk reads state.basks, the stones and logs the
 // player set (written by the live pieces watcher, src/world/creatures/spring-live.js), since pieces
-// are not part of the world state.
+// are not part of the world state, and the damp under them (state.ecology.under, ecology/shelter.js).
 //
 // Events (catch-up keeps creature:*): creature:spawned, creature:hatched, creature:froglets and
 // creature:gone with species 'frogspawn'; creature:walking with species 'toads'.
@@ -16,6 +16,7 @@ import { stream, subSeed, hash32 } from '../../core/rng.js';
 import { HOURS_PER_DAY } from '../../core/clock.js';
 import { cellCenter } from '../ecology/habitat.js';
 import { HABITAT_ORIGIN } from '../growth/habitat.js';
+import { dampUnderAt } from '../ecology/shelter.js';
 
 /**
  * @typedef {Object} Clump
@@ -230,13 +231,17 @@ export function coarseStep(state, hourIndex, env) {
     const rain = state.weather?.today?.mood === 'rain';
     const inDays = state.seasons.day >= W.days[0] && state.seasons.day <= W.days[1];
     if (inDays && rng.next() < (rain ? W.rainChance : W.chance)) {
-      /** @type {{ x: number, z: number, pond: { x: number, z: number } }[]} */ const from = [];
+      /** @type {{ x: number, z: number, pond: { x: number, z: number }, damp: number }[]} */ const from = [];
       for (const b of state.basks ?? []) {
         const p = nearestPond(hab, b.x, b.z, W.reachM, W.pondCm);
-        if (p && (p.x - b.x) ** 2 + (p.z - b.z) ** 2 >= W.minWalkM * W.minWalkM) from.push({ x: b.x, z: b.z, pond: p });
+        if (p && (p.x - b.x) ** 2 + (p.z - b.z) ** 2 >= W.minWalkM * W.minWalkM) from.push({ x: b.x, z: b.z, pond: p, damp: dampUnderAt(b, state.ecology?.under, hab.n) });
       }
-      if (from.length) {
-        const b = from[rng.int(from.length)];
+      // It spent the day in the damp under a log or stone (ecology/shelter.js): it sets out from one
+      // of the dampest, if any is damp enough; else from any.
+      const damp = from.filter((f) => f.damp >= (W.dampFrom ?? 1.1));
+      const pick = damp.length ? damp : from;
+      if (pick.length) {
+        const b = pick[rng.int(pick.length)];
         // It stops at the water's edge: half a cell short of the pond square's middle.
         const dx = b.pond.x - b.x, dz = b.pond.z - b.z, d = Math.hypot(dx, dz);
         const toX = b.pond.x - (dx / d) * 0.5, toZ = b.pond.z - (dz / d) * 0.5;

@@ -24,6 +24,7 @@ export const PARALLEL = {
   naturalist: () => import('./unit-tests-naturalist.js').then((m) => m.addNaturalistTests),
   pondlife: () => import('./unit-tests-pondlife.js').then((m) => m.addPondLifeTests),
   pieces: () => import('./unit-tests-pieces.js').then((m) => m.addPiecesTests),
+  underlog: () => import('./unit-tests-under-log.js').then((m) => m.addUnderLogTests),
   damselflies: () => import('./unit-tests-damselflies.js').then((m) => m.addDamselflyTests),
   autumn: () => import('./unit-tests-autumn.js').then((m) => m.addAutumnTests),
   keepsakes: () => import('./unit-tests-keepsakes.js').then((m) => m.addKeepsakeTests),

@@ -10,6 +10,7 @@
 //            cells and how many sides face the water)
 //   minnows, dragonflies (each school or swarm species, by its key)
 //            score 0..255 per square (needs.js) and the pools that suit it
+//   under    shelterUnder and dampUnder 0..255 per square (shelter.js), while there are logs or stones
 //
 // env.recipes.species is { frog, midge, minnow?, dragonfly? }: recipes/species/<id>.json (src/world/species.js).
 
@@ -19,6 +20,7 @@ import { needMaps } from './needs.js';
 import { swarmSpecies, keyOf } from '../species.js';
 import { HABITAT_ORIGIN } from '../growth/habitat.js';
 import { tadpoleField } from '../creatures/spring.js';
+import { shelterFields } from './shelter.js';
 
 /**
  * The basking spots (stones, logs, the raft) as a field: 255 on each spot's square, or null when
@@ -73,6 +75,9 @@ export function ecologyNow(state, env, advance) {
   if (tadpoles) fields.tadpoles = tadpoles;
   const basks = baskField(state.basks, hab.n);
   if (basks) fields.basks = basks;
+  // Shelter under the kept logs and loose stones, and the damp under them (shelter.js).
+  const under = shelterFields(state.basks, hab);
+  if (under) { fields.shelterUnder = under.shelterUnder; fields.dampUnder = under.dampUnder; eco.under = under; }
   for (const rec of swarmSpecies(sp)) {
     const m = needMaps(hab, state.growth, fields, rec);
     const key = keyOf(rec);
