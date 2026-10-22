@@ -33,6 +33,7 @@ export const PARALLEL = {
   figure: () => import('./unit-tests-figure.js').then((m) => m.addFigureTests),
   nets: () => import('./unit-tests-nets.js').then((m) => m.addNetsTests),
   trails: () => import('./unit-tests-trails.js').then((m) => m.addTrailsTests),
+  pondSpring: () => import('./unit-tests-pond-spring.js').then((m) => m.addPondSpringTests),
   waterTable: () => import('./unit-tests-water-table.js').then((m) => m.addWaterTableTests),
   // The audio tests that need no Web Audio (workers have none). The two that render sound through
   // an OfflineAudioContext (pond and keepsake sounds) stay on tools/unit-tests-audio.html, which

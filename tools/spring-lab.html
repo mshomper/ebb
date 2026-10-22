@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ebb spring lab</title>
+<link rel="icon" href="../brand/ebb-favicon.svg" type="image/svg+xml">
+<style>
+  @font-face { font-family: 'Nunito'; src: url('../src/vendor/fonts/nunito-latin-600-normal.woff2') format('woff2'); font-weight: 600; }
+  @font-face { font-family: 'Nunito'; src: url('../src/vendor/fonts/nunito-latin-800-normal.woff2') format('woff2'); font-weight: 800; }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; max-width: 100%; overflow-x: hidden; }
+  body { background: #F4EEE4; color: #1E2624; font: 600 17px/1.45 'Nunito', system-ui, sans-serif; padding: 16px; overflow-wrap: anywhere; }
+  main { max-width: 1100px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+  h1 { font-size: 24px; font-weight: 800; margin: 0; }
+  h2 { font-size: 20px; font-weight: 800; margin: 0 0 6px; }
+  .muted { color: #4A5551; font-size: 16px; margin: 0; }
+  .card { background: #FBF7F0; border: 1px solid #E3D9C9; border-radius: 14px; padding: 14px 16px; min-width: 0; }
+  .controls { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
+  .controls label { display: flex; flex-direction: column; gap: 4px; font-size: 16px; color: #4A5551; flex: 1 1 140px; }
+  .controls input, .controls select { font: 600 17px/1.2 'Nunito', system-ui, sans-serif; color: #1E2624; background: #FFFDF8; border: 1px solid #CFC3AF; border-radius: 10px; padding: 10px 12px; min-height: 48px; width: 100%; }
+  button { font: 800 17px/1.2 'Nunito', system-ui, sans-serif; color: #FBF7F0; background: #4a6a47; border: 0; border-radius: 12px; padding: 12px 18px; cursor: pointer; min-height: 48px; flex: 1 1 180px; }
+  .facts { list-style: none; margin: 6px 0 0; padding: 0; display: grid; gap: 4px; }
+  .facts li { display: grid; grid-template-columns: minmax(9em, auto) minmax(0, 1fr); gap: 10px; padding: 3px 0; border-bottom: 1px solid #E3D9C9; }
+  .facts li span:first-child { color: #4A5551; font-size: 16px; }
+  svg.chart { width: 100%; height: auto; display: block; }
+  .legend { display: flex; flex-wrap: wrap; gap: 8px 16px; font-size: 16px; color: #4A5551; margin: 8px 0 0; }
+  .legend i { display: inline-block; width: 14px; height: 14px; border-radius: 3px; vertical-align: -2px; margin-right: 6px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Spring lab</h1>
+  <p class="muted">Four weeks of spring and early summer at the pond, run by the game's own hourly step (src/world/creatures/spring.js): when happy frogs lay, when the spawn hatches, how many tadpoles the minnows eat, when the froglets leave, and which evenings the toad walks. Numbers are in recipes/species/frogspawn.json and toad.json. Open it beside the game to tune them.</p>
+  <div class="card controls">
+    <label>Island <select id="island"><option value="starter-island">Starter island</option><option value="two-ponds">Two ponds</option></select></label>
+    <label>Seed <input id="seed" type="number" value="7" min="1"></label>
+    <label>Minnows by the spawn <select id="fish"><option value="0">None</option><option value="16" selected>A school of 16</option><option value="30">A school of 30</option></select></label>
+    <button id="run" type="button">Run four weeks</button>
+  </div>
+  <div class="card"><h2>What happened</h2><ul class="facts" id="facts"><li><span>Waiting</span><span>Press Run.</span></li></ul></div>
+  <div class="card"><h2>Tadpoles and froglets by day</h2><svg class="chart" id="chart" viewBox="0 0 1000 300" role="img" aria-label="Tadpoles and froglets by game day"></svg>
+    <p class="legend"><span><i style="background:#3E3833"></i>Tadpoles</span><span><i style="background:#7F8A4C"></i>Froglets leaving</span><span><i style="background:#D9C49A"></i>Spawn laid</span><span><i style="background:#8E6B48"></i>Toad walks</span></p></div>
+</main>
+<script type="module">
+  import * as seasons from '../src/world/seasons.js';
+  import { coarseStep as springStep } from '../src/world/creatures/spring.js';
+  import { cellCenter } from '../src/world/ecology/habitat.js';
+  import { nearestPond } from '../src/world/creatures/spring.js';
+  import { HOURS_PER_DAY } from '../src/core/clock.js';
+  import { loadEcologyRecipes, islandWorld } from './ecology-world.js';
+
+  const $ = (id) => document.getElementById(id);
+  const DAYS = 28;
+
+  /** Happy frogs along the warm shallows, stones a few meters from the water, and minnows by the frogs. */
+  function setUp(R, island, seed, fish) {
+    const w = islandWorld(R, island, seed, 4);
+    const hab = w.model.habitat, n = hab.n, frogs = [], basks = [];
+    for (let k = 0; k < n * n && frogs.length < 8; k++) {
+      if (!(hab.open[k] && !hab.sea[k] && hab.still[k] && hab.depthCm[k] >= 5 && hab.depthCm[k] <= 30)) continue;
+      const [x, z] = cellCenter(k, n);
+      if (frogs.some((f) => (f.x - x) ** 2 + (f.z - z) ** 2 < 9)) continue;
+      frogs.push({ id: frogs.length + 1, k, x, z, yaw: 0, since: 0, mood: 0.9, low: 0, near: [] });
+    }
+    for (let k = 0; k < n * n && basks.length < 4; k += 97) {
+      if (!hab.open[k] || hab.sea[k] || hab.depthCm[k] > 0) continue;
+      const [x, z] = cellCenter(k, n), p = nearestPond(hab, x, z, 8, 8);
+      if (p && Math.hypot(p.x - x, p.z - z) > 3) basks.push({ x, z, kind: 'stone' });
+    }
+    const mid = frogs.reduce((a, f) => ({ x: a.x + f.x / frogs.length, z: a.z + f.z / frogs.length }), { x: 0, z: 0 });
+    const minnows = fish ? { groups: [{ id: 1, k: 0, x: mid.x, z: mid.z, count: fish, mood: 1, low: 0, since: 0 }] } : undefined;
+    w.state = { ...w.state, basks, creatures: { ...(w.state.creatures ?? {}), frogs: { phase: 'settled', happy: true, dormant: false, frogs }, ...(minnows ? { minnows } : {}) } };
+    return { w, frogs: frogs.length, stones: basks.length };
+  }
+
+  async function run() {
+    const R = await loadEcologyRecipes();
+    const { w, frogs, stones } = setUp(R, $('island').value, Number($('seed').value) || 7, Number($('fish').value));
+    let state = w.state;
+    const days = Array.from({ length: DAYS }, () => ({ tadpoles: 0, froglets: 0, laid: 0, walks: 0 }));
+    const ev = [];
+    for (let h = w.h0 + 1; h < w.h0 + 1 + DAYS * HOURS_PER_DAY; h++) {
+      state = seasons.coarseStep(state, h, w.env).state;
+      const r = springStep(state, h, w.env);
+      state = r.state;
+      const d = Math.floor((h - w.h0) / HOURS_PER_DAY);
+      if (d >= DAYS) break;
+      for (const e of r.events) {
+        ev.push({ h, day: d, ...e });
+        if (e.name === 'creature:spawned') days[d].laid++;
+        if (e.name === 'creature:walking') days[d].walks++;
+        if (e.name === 'creature:froglets') days[d].froglets += e.payload.count;
+      }
+      if (h % HOURS_PER_DAY === 23) days[d].tadpoles = (state.spring?.clumps ?? []).reduce((s, c) => s + (c.stage === 'tadpoles' ? c.tadpoles : 0), 0);
+    }
+    const first = (name) => ev.find((e) => e.name === name);
+    const dayText = (e) => (e ? `day ${e.day + 5} (${Math.floor(e.h / HOURS_PER_DAY) % 14 + 1} of ${Math.floor(e.h / HOURS_PER_DAY) < 14 ? 'spring' : 'summer'}), ${e.h % 24}:00` : 'not in four weeks');
+    const peak = Math.max(...days.map((d) => d.tadpoles));
+    const laid = ev.filter((e) => e.name === 'creature:spawned').length;
+    const hatched = ev.filter((e) => e.name === 'creature:hatched').reduce((s, e) => s + e.payload.count, 0);
+    const left = ev.filter((e) => e.name === 'creature:froglets').reduce((s, e) => s + e.payload.count, 0);
+    const facts = [
+      ['Set up', `${frogs} happy frogs, ${stones} stones near the pond, ${$('fish').value === '0' ? 'no minnows' : `a school of ${$('fish').value} minnows`}`],
+      ['First spawn', dayText(first('creature:spawned'))],
+      ['Clumps laid', String(laid)],
+      ['First hatching', dayText(first('creature:hatched'))],
+      ['Tadpoles hatched', String(hatched)],
+      ['Most at once', String(peak)],
+      ['Froglets left', `${left} (${hatched ? Math.round((100 * left) / hatched) : 0}% of the tadpoles)`],
+      ['Froglets first', dayText(first('creature:froglets'))],
+      ['Toad walks', `${ev.filter((e) => e.name === 'creature:walking').length} evenings`],
+    ];
+    $('facts').innerHTML = facts.map(([a, b]) => `<li><span>${a}</span><span>${b}</span></li>`).join('');
+    // The chart: tadpoles as a line, froglets as bars, spawn and toad walks as marks along the bottom.
+    const W = 1000, H = 300, x0 = 50, y0 = 240, xs = (W - x0 - 20) / DAYS, ys = (y0 - 20) / Math.max(10, peak);
+    let s = `<line x1="${x0}" y1="${y0}" x2="${W - 20}" y2="${y0}" stroke="#4A5551"/>`;
+    // The run starts on game day 5 (index 0), so summer's first day (game day 15) is index 10.
+    const sx = x0 + 10 * xs;
+    s += `<line x1="${sx}" y1="10" x2="${sx}" y2="${y0}" stroke="#CFC3AF" stroke-dasharray="6 6"/>`;
+    s += `<text x="${sx + 6}" y="26" font-size="17" fill="#4A5551">summer</text>`;
+    days.forEach((d, i) => {
+      const x = x0 + i * xs;
+      if (d.froglets) s += `<rect x="${x + 2}" y="${y0 - d.froglets * ys}" width="${xs - 4}" height="${d.froglets * ys}" fill="#7F8A4C"/>`;
+      if (d.laid) s += `<circle cx="${x + xs / 2}" cy="${y0 + 18}" r="${6 + d.laid * 2}" fill="#D9C49A" stroke="#8E6B48"/>`;
+      if (d.walks) s += `<rect x="${x + xs / 2 - 6}" y="${y0 + 34}" width="12" height="12" rx="3" fill="#8E6B48"/>`;
+      if (i % 7 === 0) s += `<text x="${x}" y="${H - 6}" font-size="17" fill="#4A5551">day ${i + 5}</text>`;
+    });
+    s += `<polyline fill="none" stroke="#3E3833" stroke-width="3" points="${days.map((d, i) => `${x0 + i * xs + xs / 2},${y0 - d.tadpoles * ys}`).join(' ')}"/>`;
+    s += `<text x="4" y="24" font-size="17" fill="#4A5551">${peak}</text><text x="4" y="${y0}" font-size="17" fill="#4A5551">0</text>`;
+    $('chart').innerHTML = s;
+  }
+  $('run').addEventListener('click', () => { $('facts').innerHTML = '<li><span>Running</span><span>Four weeks of game hours...</span></li>'; setTimeout(run, 20); });
+</script>
+</body>
+</html>

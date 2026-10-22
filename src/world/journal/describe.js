@@ -7,6 +7,7 @@
 import { HABITAT_ORIGIN, habitatCell } from '../growth/habitat.js';
 import { measure, present, knownLines, dateOfHour, sketchOf, coverShare, hasCover, isAnimal, COVER_HAS, COVER_FULL, FLOWER, DORMANT } from './observe.js';
 import { trustWord } from '../creatures/trust.js';
+import { springSpots } from '../creatures/spring.js';
 
 /** The island's middle and size from the habitat, cached per habitat. @type {WeakMap<object, { x: number, z: number, r: number }>} */
 const shapes = new WeakMap();
@@ -250,6 +251,18 @@ function plantCard(p, words) {
 export function showMeSpot(sp, state, hab, words, near = null) {
   const rec = words.species[sp];
   if (!rec) return null;
+  if (rec.spring) {
+    // Spring's lives (frogspawn's clumps, the toad on its walk; src/world/creatures/spring.js): the
+    // one nearest the middle of your view. The toad's ring takes in its whole walk.
+    const from = near ? { x: near[0], z: near[1] } : hab ? islandShape(hab) : { x: 0, z: 0 };
+    let best = null, bestD = Infinity;
+    for (const p of springSpots(sp, state)) {
+      const d = Math.round(((p.x - from.x) ** 2 + (p.z - from.z) ** 2) * 100);
+      if (d < bestD) { bestD = d; best = p; }
+    }
+    if (!best) return null;
+    return { sp, name: rec.card ?? rec.name, icon: rec.icon, text: rec.cardLine ?? '', wx: best.x, wz: best.z, r: best.r ?? rec.ringM ?? words.identify.ringM, stage: -1 };
+  }
   if (isAnimal(rec)) {
     // The frog, or the midge cloud's square, nearest the middle of your view.
     const m = measure(sp, state, hab, rec);

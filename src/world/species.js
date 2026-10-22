@@ -4,8 +4,12 @@
 // A recipe's id is singular (frog); its key is what the world keeps it under (state.creatures.frogs,
 // the journal page frogs, the flag frogs:happy), the recipe's `key`, else its id with an s.
 
-/** Recipe ids under recipes/species, in the order the hourly tick takes them. */
-export const SPECIES = Object.freeze(['frog', 'midge', 'minnow', 'dragonfly', 'damselfly']);
+/**
+ * Recipe ids under recipes/species, in the order the hourly tick takes them. Frogspawn and the toad
+ * have no needs: spring's markers, run by src/world/creatures/spring.js after the swarms. The slow
+ * worm and the common lizard are finds worked out live (src/world/creatures/sun-finds.js).
+ */
+export const SPECIES = Object.freeze(['frog', 'midge', 'minnow', 'dragonfly', 'damselfly', 'turtle', 'frogspawn', 'toad', 'slowworm', 'lizard']);
 
 /** The world's key for a species recipe. @param {{ id: string, key?: string }} rec */
 export const keyOf = (rec) => rec.key ?? `${rec.id}s`;

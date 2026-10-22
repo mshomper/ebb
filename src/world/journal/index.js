@@ -162,7 +162,7 @@ export function createJournal(opts) {
         noPage: true, canLift: nt.canLift, liftLabel: nt.liftLabel, inLabel: nt.inLabel };
     }
     // Then a loose stone or a driftwood log (docs/future/10): the tap lifts or rolls it to look
-    // underneath. It has no page. With the turtles' gift (unlocks.carry) its card offers Carry.
+    // underneath. It has no page. Once driftwood washes up (unlocks.carry) its card offers Carry.
     const pc = opts.pieces?.pieceAt(x, z);
     const pw = pc && words.pieces?.[pc.kind];
     if (pw) {

@@ -56,6 +56,7 @@ import { cleanShelf, keep as keepShelf, letGo as letGoShelf, readLetter, swap as
 import { chooseLetter } from './world/keepsakes/letters.js';
 import { createPieces } from './world/pieces/index.js';
 import { createAutumn } from './world/finds/autumn-live.js';
+import { createSpring } from './world/creatures/spring-live.js';
 import { moodsOf, mistyAutumnMorning, autumnStartOf } from './world/finds/autumn.js';
 import { HABITAT_CELLS, HABITAT_ORIGIN } from './world/growth/habitat.js';
 import { waterCellOf } from './world/water/grid.js';
@@ -191,7 +192,7 @@ export async function startApp(canvas, hooks = {}) {
       cliffs: !!earned.cliffs || params.has('sandbox') || params.has('cliffs'),
       stones: !!earned.stones || params.has('sandbox') || params.has('stones'), stonesTest: params.has('stones'),
       driftwood: !!earned.driftwood || params.has('driftwood'),
-      carry: !!earned.carry || params.has('sandbox') || params.has('driftwood'),
+      carry: !!earned.carry || !!earned.driftwood || params.has('sandbox') || params.has('driftwood'),
       // The general net (the beachcomber's trail, at four families kept); `?nets` (unsaved) gives it at once.
       nets: { ...(earned.nets ?? {}), ...(params.has('nets') ? { general: true } : {}) },
       allPlants: params.has('sandbox') || params.get('plants') === 'all' };
@@ -216,7 +217,8 @@ export async function startApp(canvas, hooks = {}) {
   // (they wake 0.3 into spring, day 5).
   // `?dragonflies=N` starts on summer day 2: they fly from the start of summer (recipes/world/seasons.json).
   // `?damselflies=N` starts on the last day of spring (day 13): the first ones climb out at 0.9.
-  const testDay = params.has('dragonflies') ? '15' : params.has('damselflies') ? '13' : params.has('frogs') ? '6' : '0';
+  // `?turtles=N` starts on summer day 2 too: they wake once the water has warmed (0.05 into summer).
+  const testDay = params.has('dragonflies') || params.has('turtles') ? '15' : params.has('damselflies') ? '13' : params.has('frogs') ? '6' : '0';
   const startDay = Math.max(0, Number.parseInt(params.get('day') ?? testDay, 10) || 0);
   // `?autumn` (testing, unsaved): a new world starts on its first misty autumn morning with fungi
   // grown (src/world/finds/autumn.js), and a kept log is laid near the view once the island is up.
@@ -268,6 +270,7 @@ export async function startApp(canvas, hooks = {}) {
   if (params.has('dragonflies')) speciesRecipes.dragonfly = testRecipe(speciesRecipes.dragonfly);
   // `?damselflies=N` likewise (any still pond suits them anyway).
   if (params.has('damselflies')) speciesRecipes.damselfly = testRecipe(speciesRecipes.damselfly);
+  if (params.has('turtles')) speciesRecipes.turtle = testRecipe(speciesRecipes.turtle);
   world.env.recipes.species = speciesRecipes;
   updateStore('world', () => world.state);
   /** One game hour of the shared tick, live. @param {number} hour */
@@ -372,7 +375,7 @@ export async function startApp(canvas, hooks = {}) {
   // `?minnows=N`, `?dragonflies=N`, `?damselflies=N` (testing, unsaved): a group of N comes at once
   // and is settled, once the island, its water and the journal are up (as `?frogs` does). Under
   // `?debug`, window.ebb.summon() asks for one the same way (below).
-  const testSwarms = ['minnow', 'dragonfly', 'damselfly'].filter((id) => params.has(keyOf(speciesRecipes[id])))
+  const testSwarms = ['minnow', 'dragonfly', 'damselfly', 'turtle'].filter((id) => params.has(keyOf(speciesRecipes[id])))
     .map((id) => ({ rec: speciesRecipes[id], count: Math.max(1, Math.min(30, Number.parseInt(params.get(keyOf(speciesRecipes[id])) ?? '12', 10) || 12)) }));
   let swarmWait = 0;
   if (testSwarms.length || params.has('debug')) sim.addSystem({ id: 'swarm-tests', tick(/** @type {any} */ f) {
@@ -484,6 +487,13 @@ export async function startApp(canvas, hooks = {}) {
   const autumn = createAutumn({ world, terrain, water, camera, pieces, growth, recipe: autumnRecipe, seasons: seasonsRecipe, seed });
   sim.addSystem(autumn);
   finds.addSource(autumn.shown);
+  // Spring at the pond (doc 13; src/world/creatures/spring-live.js): frogspawn, tadpoles and
+  // froglets, the toad's night walk, and the basking spots (stones, logs, the raft) turtles and the
+  // toad read. `?spring=spawn|tadpoles|froglets|toad` (testing, unsaved) sets one near the view.
+  const spring = createSpring({ world, terrain, water, camera, pieces, test: params.get('spring'),
+    recipes: { frogspawn: speciesRecipes.frogspawn, toad: speciesRecipes.toad, frog: frogRecipe, slowworm: speciesRecipes.slowworm, lizard: speciesRecipes.lizard } });
+  sim.addSystem(spring);
+  finds.addSource(spring.shown);
 
   /**
    * A dry, grassy ground point near the view's middle, out of the tide, for a test log: on a widening
@@ -581,6 +591,7 @@ export async function startApp(canvas, hooks = {}) {
     pieces.pass,
     // Autumn's fungi (a creature pass) and dewy webs, after the logs and the grass they are on.
     ...autumn.passes,
+    ...spring.passes,
     // Moon jellyfish on the summer strandline: clear, so drawn over the opaque things behind them.
     ...(finds.jellyPass ? [finds.jellyPass] : []),
     ...(frogScale ? [frogScale.pass] : []),

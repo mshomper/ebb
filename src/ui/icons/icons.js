@@ -486,7 +486,7 @@ const ICONS = {
     <path d="M9.6 14.4L8.4 10.6L9.8 10.2"/>
     <circle cx="16" cy="15.4" r="0.6"/>
     <path d="M2.5 21C4.2 20.2 5.8 20.2 7.5 21S10.8 21.8 12.5 21"/>`,
-  // Carry (the turtles' gift, src/world/pieces): a log lifted off the ground line, an arrow up above it.
+  // Carry (src/world/pieces; yours once driftwood washes up): a log lifted off the ground line, an arrow up above it.
   carry: `
     <rect ${ACCENT} x="3.5" y="12" width="17" height="5" rx="2.5"/>
     <rect x="3.5" y="12" width="17" height="5" rx="2.5"/>
@@ -617,6 +617,62 @@ const ICONS = {
     <path d="M13 11.9H2.5"/>
     <path d="M5 11V12.8M7.6 11V12.8M10.2 11V12.8"/>
     <path d="M14 12.6L16 15.2L19.5 15.6"/>`,
+  // European pond turtle (M2): from the side, basking on a stone's flat top, its domed shell
+  // marked in plates, head raised toward the sun.
+  turtle: `
+    <path ${ACCENT} d="M4 15.5C4.5 11 8 8.5 12 8.5S19 11 19.5 15.5Z"/>
+    <path d="M4 15.5C4.5 11 8 8.5 12 8.5S19 11 19.5 15.5Z"/>
+    <path d="M3 15.5H18.5"/>
+    <path d="M18.6 13.4C19.4 11.9 21.2 11.8 21.6 13.1C21.9 14.1 21 14.8 19.4 14.8"/>
+    <circle cx="20.6" cy="12.9" r="0.55" fill="currentColor" stroke="none"/>
+    <path d="M7 15.5L6.3 17.8M16.4 15.5L17.1 17.8"/>
+    <path d="M8.6 11.2L10.2 13.2M12 8.5V12.4M15.4 11.2L13.8 13.2"/>
+    <path d="M2.5 20.5H21.5"/>`,
+  // Common toad (spring marker): squat and low on the ground, walking, its back dotted with warts.
+  toad: `
+    <path ${ACCENT} d="M3.5 18C3.8 14.4 7.2 12.2 11.5 12C12.4 10.4 15 10.2 16.2 11.6C18.6 12 20.5 13.4 20.5 15C20.5 16.6 18.8 17.4 16.6 17.6L15 18Z"/>
+    <path d="M3.5 18C3.8 14.4 7.2 12.2 11.5 12C12.4 10.4 15 10.2 16.2 11.6C18.6 12 20.5 13.4 20.5 15C20.5 16.6 18.8 17.4 16.6 17.6L15 18Z"/>
+    <circle cx="14.4" cy="11.9" r="0.9" fill="currentColor" stroke="none"/>
+    <circle cx="7.4" cy="15" r="0.55" fill="currentColor" stroke="none"/>
+    <circle cx="10" cy="14.2" r="0.55" fill="currentColor" stroke="none"/>
+    <circle cx="9.2" cy="16.4" r="0.55" fill="currentColor" stroke="none"/>
+    <path d="M5.6 18L4.8 20.5M14 18L14.8 20.5"/>
+    <path d="M2.5 20.5H21.5"/>`,
+  // Frogspawn (spring marker): jelly eggs in a clump just under the water line, a dark egg in each.
+  frogspawn: `
+    <path d="M2.5 8C4.2 7.2 5.8 7.2 7.5 8S10.8 8.8 12.5 8S15.8 7.2 17.5 8S20 8.6 21.5 8"/>
+    <circle ${ACCENT} cx="8" cy="12.5" r="2.4"/><circle cx="8" cy="12.5" r="2.4"/>
+    <circle ${ACCENT} cx="12.5" cy="11.6" r="2.4"/><circle cx="12.5" cy="11.6" r="2.4"/>
+    <circle ${ACCENT} cx="17" cy="12.5" r="2.4"/><circle cx="17" cy="12.5" r="2.4"/>
+    <circle ${ACCENT} cx="10.2" cy="16.4" r="2.4"/><circle cx="10.2" cy="16.4" r="2.4"/>
+    <circle ${ACCENT} cx="14.8" cy="16.4" r="2.4"/><circle cx="14.8" cy="16.4" r="2.4"/>
+    <circle cx="8" cy="12.5" r="0.7" fill="currentColor" stroke="none"/>
+    <circle cx="12.5" cy="11.6" r="0.7" fill="currentColor" stroke="none"/>
+    <circle cx="17" cy="12.5" r="0.7" fill="currentColor" stroke="none"/>
+    <circle cx="10.2" cy="16.4" r="0.7" fill="currentColor" stroke="none"/>
+    <circle cx="14.8" cy="16.4" r="0.7" fill="currentColor" stroke="none"/>`,
+  // Slow worm (a find by the logs): a long smooth body in a gentle S on the ground line, beside a log end.
+  slowworm: `
+    <circle ${ACCENT} cx="19" cy="15.5" r="2.8"/>
+    <circle cx="19" cy="15.5" r="2.8"/>
+    <circle cx="19" cy="15.5" r="0.9"/>
+    <path d="M3 17.5C5.5 14.5 8.5 14.5 10.5 16.5S15 18.5 16.5 16.8"/>
+    <path d="M3.4 18.6C6 15.8 8.4 15.8 10.2 17.6S14.6 19.8 16.2 18.2"/>
+    <circle cx="4.6" cy="17" r="0.5" fill="currentColor" stroke="none"/>
+    <path d="M2.5 20.5H21.5"/>`,
+  // Common lizard (a summer find on stones): from above, flat on a stone, legs splayed, tail curling.
+  lizard: `
+    <path ${ACCENT} d="M4.5 19C6 16.6 18 16.6 19.5 19Z"/>
+    <path d="M4.5 19C6 16.6 18 16.6 19.5 19H4.5Z"/>
+    <path d="M12 3.5C13.4 3.5 13.8 5 13.6 6.4L13.4 12.2C13.2 13.6 10.8 13.6 10.6 12.2L10.4 6.4C10.2 5 10.6 3.5 12 3.5Z"/>
+    <path d="M12 13.4C12 15 12.6 16 14 16.4"/>
+    <path d="M10.6 7.4L8.4 6.4M13.4 7.4L15.6 6.4M10.8 11.2L8.6 12.6M13.2 11.2L15.4 12.6"/>`,
+  // The floating reed raft (the turtles' gift): a low mat of reeds on the water, stems standing up.
+  raft: `
+    <path ${ACCENT} d="M3.5 16C5 14.6 19 14.6 20.5 16C19 17.4 5 17.4 3.5 16Z"/>
+    <path d="M3.5 16C5 14.6 19 14.6 20.5 16C19 17.4 5 17.4 3.5 16Z"/>
+    <path d="M7 15V8M9.5 15V5.5M15 15V7M17 15V9.5"/>
+    <path d="M2.5 20C4.2 19.2 5.8 19.2 7.5 20S10.8 20.8 12.5 20S15.8 19.2 17.5 20S20 20.6 21.5 20"/>`,
   // Minnows (M2): a small fish under the water line, a ring above where one rose.
   minnow: `
     <path d="M2.5 7.5C4 6.5 5.5 8.5 7 7.5S10 6.5 11.5 7.5M15 7.5H21.5"/>

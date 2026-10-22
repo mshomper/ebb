@@ -21,6 +21,7 @@ import { poseSkeleton, axisAngle } from './pose.js';
 import { createReturn } from './reveal-return.js';
 import { createSchool, poseSchool } from './school.js';
 import { createPatrol, posePatrol } from './patrol.js';
+import { createBask, poseBask } from './bask.js';
 import { cellCenter } from '../ecology/habitat.js';
 import { keyOf } from '../species.js';
 
@@ -107,6 +108,8 @@ export function createSchools(opts) {
     // Reed and rush clumps to rest on (dragonflies): where each stands and how tall it has grown.
     perches: () => (world.state?.growth?.plants ?? []).filter((/** @type {any} */ p) => M.perchOn?.[p.sp] && p.stage >= 2)
       .map((/** @type {any} */ p) => ({ x: p.x, z: p.z, h: M.perchOn[p.sp] * Math.min(1, p.size) })),
+    // Stones, logs and the raft to bask on (turtles; published by src/world/creatures/spring-live.js).
+    seats: () => getStore('seats') ?? [],
   };
   const comeBack = createReturn(recipe.reveal?.growS ?? 0.6);
   const bones = new Float32Array(MAX_BONES * 16);
@@ -132,7 +135,7 @@ export function createSchools(opts) {
       const n = Math.max(1, Math.floor(g.count * share));
       const s = schools.get(g.id);
       if (s) { s.rehome({ x: g.x, z: g.z }, deepOf(g)); if (s.fish.length !== n) s.resize(n); continue; }
-      const make = M.kind === 'patrol' ? createPatrol : createSchool;
+      const make = M.kind === 'patrol' ? createPatrol : M.kind === 'bask' ? createBask : createSchool;
       schools.set(g.id, /** @type {any} */ (make)({ id: g.id, seed: world.env.seed ^ hash32(key.length, 0x5c), count: n, home: { x: g.x, z: g.z },
         deep: deepOf(g), size: body.displayScale ?? 1, M, env }));
     }
@@ -172,6 +175,7 @@ export function createSchools(opts) {
           const q = qmul(axisAngle([1, 0, 0], -f.pitch), axisAngle([0, 0, 1], f.roll));
           let moves;
           if (M.kind === 'patrol') moves = posePatrol(rig, /** @type {any} */ (f), M, q, axisAngle);
+          else if (M.kind === 'bask') moves = poseBask(rig, /** @type {any} */ (f), M, q, axisAngle);
           else moves = poseSchool(rig, f, M, q, axisAngle);
           b = new Float32Array(MAX_BONES * 16);
           poseSkeleton(rig, moves, b, 0);
