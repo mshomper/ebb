@@ -10,7 +10,7 @@ Matt, October 19, 2026:
 
 - Low-cost creatures without a large engine behind them are wanted, so players have more to explore, triggered by what they shape (a patch of sand big enough, a mound of sand).
 - A certain number of finds should trigger something worth putting on a progression line, without being tied tightly to creature gifts.
-- Be cautious with small insects. Frogs had to be drawn at 1.5 times real size to be findable, so tiny creatures are a risk however appealing they are.
+- Be cautious with small insects. Frogs had to be drawn at 2.5 times real size to be findable (1.5 was not enough), so tiny creatures are a risk however appealing they are.
 - Placed stones and logs (F10) should open up creature options, such as something living under a fallen log.
 
 ## Weight classes
@@ -38,7 +38,7 @@ Each class reuses everything above it in the table. A find never grows into a re
 
 Frogs taught the rule. A find has to be readable from the normal camera, which means one of these:
 
-1. **Large enough at real or modestly enlarged size.** A shore crab, a toad or a slow worm reads at real size or up to 1.5 times, like the frogs.
+1. **Large enough once drawn larger.** Small creatures are drawn about 2.5 to 3 times real size so players can find them (Matt, October 21, 2026: frogs and dragonflies 2.5, minnows and damselflies 3). A shore crab, a toad or a slow worm is drawn the same way, like the frogs.
 2. **Found through a place the player made.** Anemones live in the rock pool you shaped; the toad lives under the log you placed. You know where to look because you made the place.
 3. **Seen by its sign.** Lugworm casts, pond skater dimples catching the light, or a ring of crabs' tracks on wet sand are readable even when the animal is not.
 

@@ -45,6 +45,11 @@ export function createFigureMotion(R, skeleton) {
   const I = /** @type {Record<string, number>} */ (Object.fromEntries(skeleton.map((b, i) => [b.name, i])));
   const out = new Float32Array(skeleton.length * 16);
   const G = R.gait, PO = R.poses;
+  // The figure is drawn at body.displayScale (the shader scales the posed rig). All the motion below
+  // works in body meters (the rig's own, at size 1): world distances, heights, depths and speeds
+  // come in divided by it and go out multiplied by it, so the stride, the planted feet and the ground
+  // under each foot match the drawn figure and nothing slides.
+  const DS = R.body?.displayScale ?? 1;
   const piv = (/** @type {string} */ n) => skeleton[I[n]].pivot;
   const SIDE = [1, -1];
   const LEG = [['thigh.l', 'shin.l', 'foot.l'], ['thigh.r', 'shin.r', 'foot.r']].map((n) => n.map((k) => I[k]));
@@ -123,12 +128,12 @@ export function createFigureMotion(R, skeleton) {
       const yawRate = dt > 0 ? wrap(visYaw - prevYaw) / dt : 0;
       prevYaw = visYaw;
       const c = Math.cos(visYaw), sn = Math.sin(visYaw);
-      const toWorld = (/** @type {number} */ bx, /** @type {number} */ bz) => [s.x + c * bx + sn * bz, s.z - sn * bx + c * bz];
-      const toBody = (/** @type {number} */ wx, /** @type {number} */ wz) => { const dx = wx - s.x, dz = wz - s.z; return [c * dx - sn * dz, sn * dx + c * dz]; };
-      const gnd = (/** @type {number} */ bx, /** @type {number} */ bz) => { const w = toWorld(bx, bz); return s.ground(w[0], w[1]) - s.y; };
+      const toWorld = (/** @type {number} */ bx, /** @type {number} */ bz) => [s.x + DS * (c * bx + sn * bz), s.z + DS * (-sn * bx + c * bz)];
+      const toBody = (/** @type {number} */ wx, /** @type {number} */ wz) => { const dx = (wx - s.x) / DS, dz = (wz - s.z) / DS; return [c * dx - sn * dz, sn * dx + c * dz]; };
+      const gnd = (/** @type {number} */ bx, /** @type {number} */ bz) => { const w = toWorld(bx, bz); return (s.ground(w[0], w[1]) - s.y) / DS; };
 
       // Water, postures and pace.
-      const depth = s.depth ? s.depth(s.x, s.z) : 0;
+      const depth = s.depth ? s.depth(s.x, s.z) / DS : 0;
       wade = approach(wade, smooth((depth - G.wade.depthM[0]) / (G.wade.depthM[1] - G.wade.depthM[0])), dt * 3);
       aboveS = s.below === false && !s.moving ? aboveS + dt : 0;
       const still = !s.moving && s.speed < 0.05;
@@ -140,7 +145,7 @@ export function createFigureMotion(R, skeleton) {
       sitW = approach(sitW, wantSit ? 1 : 0, pr);
       kneelW = approach(kneelW, wantKneel ? 1 : 0, pr);
       const standW = Math.max(0, 1 - sitW - kneelW);
-      const speed = s.speed;
+      const speed = s.speed / DS;
       m = approach(m, speed > 0.05 ? 1 : 0, dt / R.ease.settleS);
       const P = paceAt(G, speed, wade);
       const accel = dt > 0 ? (speed - prevSpeed) / dt : 0;
@@ -212,8 +217,8 @@ export function createFigureMotion(R, skeleton) {
       }
       const centre = gnd(0, 0);
       const pelvisTarget = standY * standW + (centre + S.pelvisY) * sitW + (centre + K.pelvisY) * kneelW;
-      const pelvisY = springs.pelvis.step([s.y + pelvisTarget], dt)[0] - s.y;
-      const pelvisWorldY = s.y + pelvisY;
+      const pelvisY = springs.pelvis.step([s.y / DS + pelvisTarget], dt)[0] - s.y / DS;
+      const pelvisWorldY = s.y / DS + pelvisY;
       const pelvisVy = dt > 0 ? (pelvisWorldY - prevPelvis) / dt : 0;
       prevPelvis = pelvisWorldY;
       const twist = P.twistDeg * DEG * Math.sin(2 * Math.PI * phase) * m * standW;

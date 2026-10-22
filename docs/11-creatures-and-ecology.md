@@ -165,6 +165,7 @@ A body recipe lists SDF primitives (sphere, ellipsoid, capsule, round cone, roun
 
 - **Legs**: analytic two-bone IK; feet plant on the terrain heightfield and lift on a gait phase per leg. Body height and pitch follow the averaged foot plane. Longer chains (heron neck) use FABRIK.
 - **Hops** (frogs): a ballistic arc between planted poses, with squash-and-stretch from a spring on body scale.
+- **Drawn size** (Matt, October 21, 2026: creatures are the heart of the game, so players must be able to find them). Small creatures are drawn about 2.5 to 3 times real size (`body.displayScale`: frogs and dragonflies 2.5, minnows and damselflies 3; midges keep `body.readability` 3, below). Hops, the swim float, lily pad seats, school spacing and the tap and find reach follow the drawn size; needs, comfort rings and presence distances stay in real meters (doc 12). The walker is drawn 1.4 m tall (doc 23) so creatures read larger beside you.
 - **Springs**: critically damped second-order springs on secondary bones (tails, ears, throat sac, whiskers), driven by root acceleration.
 - **Swarms**: Reynolds boids (separation, alignment, cohesion) on the GPU with a uniform spatial hash, plus attraction to their ecology field and curl noise for insects. Fish stay below the live water surface; birds bank from lateral acceleration. **Midges, as built in S6b-5, have no flocking:**
   - Each midge loops around its swarm's centre on a path worked out from the time and its number (`src/world/ecology/midge-paths.js`, the same in `midge-draw.wgsl`), and swarms sit over the field's densest patches.
@@ -189,7 +190,7 @@ The coarse model keeps only **group records** (species, patch, population, group
 // recipes/species/frog.json (shape as built in S6a; values in doc 12). Two halves: the look
 // (body, bake, preview) a creature studio or a player's look layer may change, and the life
 // (ecology, presence, find) that nothing but the recipe changes, so catch-up stays the same.
-{ "id":"frog", "body":{ "displayScale":1.5, "prims":[ /* {type,bone,c,r,k,region} */ ] }, "bake":{...},
+{ "id":"frog", "body":{ "displayScale":2.5, "prims":[ /* {type,bone,c,r,k,region} */ ] }, "bake":{...},
   "ecology":{ "dormancy":"frogs", "activity":{"pattern":"crepuscular"},
     "needs": { "water":{"depthM":[0.05,0.6],"okM":2,"maxM":8,"w":0.25},
                "food":{"field":"midges","radiusM":6,"perFrog":2.5,"w":0.25},

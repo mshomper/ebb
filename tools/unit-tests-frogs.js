@@ -286,7 +286,7 @@ export function addFrogTests(test, assert, eq) {
     for (const a of agents.list()) {
       const d = Math.hypot(a.x - reeds.x, a.z - reeds.z);
       if (Math.hypot(a.home.x - reeds.x, a.home.z - reeds.z) < D.reachM - 0.3) { assert(d < 0.8, `frog ${a.id} is ${d.toFixed(2)} m from the reeds' middle by day`); inReeds.push(a.id); }
-      else if (Math.hypot(a.home.x - reeds.x, a.home.z - reeds.z) > D.reachM + 0.8) { assert(Math.hypot(a.x - a.home.x, a.z - a.home.z) < 0.8, `frog ${a.id} wandered off by day`); atEdge.push(a.id); }
+      else if (Math.hypot(a.home.x - reeds.x, a.home.z - reeds.z) > D.reachM + 0.8) { assert(Math.hypot(a.x - a.home.x, a.z - a.home.z) < 0.8 * r.body.displayScale / 1.5, `frog ${a.id} wandered off by day`); atEdge.push(a.id); }
     }
     assert(inReeds.length >= 2, `only ${inReeds.length} frogs near the reeds`);
     assert(atEdge.length >= 2, `only ${atEdge.length} frogs with no cover`);

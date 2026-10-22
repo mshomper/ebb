@@ -487,8 +487,8 @@ export function addPondLifeTests(test, assert, eq) {
     assert(d < F.tapM + F.tapPerM * far, `the dragonfly is ${d.toFixed(2)} m from the tap's line`);
     // The ground point under the old test was 2 m from it: missed.
     assert(Math.hypot(fly.x - 0, fly.z - 2) > F.tapM + F.tapPerM * 5, 'the ground point alone misses it');
-    // A tap a meter to the side still misses.
-    assert(tapRay(eye, [1.2, 0, 2])(fly).d > F.tapM + F.tapPerM * far, 'a tap well to the side misses');
+    // A tap two meters to the side still misses (1.2 m before the dragonflies were drawn 2.5x, October 21, 2026).
+    assert(tapRay(eye, [2, 0, 2])(fly).d > F.tapM + F.tapPerM * far, 'a tap well to the side misses');
   });
 
   test(G, 'the species list knows every recipe by its world key', async () => {

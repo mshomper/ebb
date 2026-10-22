@@ -35,8 +35,8 @@ Picture the island on a turntable. The camera looks at a point on the island (th
 Technical detail (`src/render/camera.js`):
 
 - Each of `target`, `yaw`, `pitch`, `distance`, `fovY` has a goal (set by actions) and a displayed value that chases it with frame-rate-independent damping: half-life 70 ms for direct input, 250 ms for glides (double-click recenter, follow start, reveal drift).
-- Vertical FOV 32 degrees by default (a slightly flattened, diorama read); settings range 24 to 50.
-- Pitch soft range 18 to 72 degrees, hard 10 to 84. Distance soft range 5 m to `1.4 × worldRadius / tan(fovY/2)`, hard 3 m to 1.25 × soft max. The max grows on `land:joined` as the world expands in 32 m chunks (up to 192 m by 192 m, per 13-progression-and-expansion.md).
+- Vertical FOV 40 degrees by default (`recipes/world/camera.json` fovYDeg); settings range 24 to 50.
+- Pitch soft range 18 to 72 degrees, hard 10 to 84. Distance soft range 2.5 m to `1.4 × worldRadius / tan(fovY/2)`, hard 2.2 m to 1.25 × soft max (`distanceSoft`, `distanceHard`; 4 m and 3.6 m until October 21, 2026, when the creatures were drawn larger). The max grows on `land:joined` as the world expands in 32 m chunks (up to 192 m by 192 m, per 13-progression-and-expansion.md).
 - Target is clamped to the open land chunks plus 8 m; its height follows terrain with 300 ms smoothing, so the camera rides over hills.
 - Ground clearance: the eye stays 1.2 m above terrain and water sampled at the eye and two points toward the target; if violated, pitch rises (distance does not shrink).
 - Zoom moves the target part of the way toward the terrain point under the cursor.
@@ -51,9 +51,9 @@ Above is the orbit camera described here: the diorama, where you shape. Below is
 
 - **Go down and Go up:** one drawn-icon button at the right edge, mid-height. Go down glides to a figure standing where you are looking (the middle of the view, the nearest walkable spot). Go up glides back to the orbit, and the figure stays standing on the island, visible from above. Both glides are game moves and never startle.
 - **Below, the camera** sits low behind the figure, about 3 m back. No panning: you move by walking.
-- **Below, the input:** click a spot to walk there; double-click to hurry; left drag looks around; the wheel or a trackpad pinch zooms between 2 m and 6 m.
+- **Below, the input:** click a spot to walk there; double-click to hurry; left drag looks around; the wheel or a trackpad pinch zooms between 1.8 m and 5.2 m (`recipes/world/walker.json` camera.distanceM; it lands at 3 m and aims 1 m up on the 1.4 m figure).
 - **Below, the tool bar and undo are hidden.** Sculpt, Paint, Water, Plant and Cliff work only above.
-- **From W3,** the closest above view stops at about 4 m, so getting close always means going down.
+- **From W3,** the closest above view stops at about 2.5 m (4 m until October 21, 2026), so getting close always means going down.
 - Numbers live in `recipes/world/walker.json`.
 
 ### The action layer
