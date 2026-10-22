@@ -30,7 +30,9 @@ import { initialWorldState, makeEnv, runHour } from './sim/tick.js';
 import { createTerrain } from './world/terrain/index.js';
 import { islandLand } from './world/terrain/chunks.js';
 import { islandCenter, campOf } from './world/terrain/landform.js';
-import { padOf } from './world/camp/layout.js';
+import { padOf, onPad } from './world/camp/layout.js';
+import { edgeTarget, stepEdge, edgeMark } from './world/camp/edge.js';
+import { stampOlderPad } from './world/camp/stamp.js';
 import { createWaterWorld } from './world/water-world.js';
 import { createGrowth } from './world/growth/index.js';
 import { createPlantTool } from './world/growth/plant-tool.js';
@@ -178,8 +180,14 @@ export async function startApp(canvas, hooks = {}) {
   // The camp pad (src/world/camp/layout.js): in a new island's base from the start; on an older
   // island once it is stamped (camp.pad, src/world/camp/migrate-pad.js).
   {
+    const inBase = campOf(landRecipe);
+    // A new island's pad is where its land put it; the save's camp.pad says so for every reader.
+    if (inBase?.inBase && !getStore('camp')?.pad) {
+      updateStore('camp', (c) => ({ ...c, stamped: true, pad: { x: inBase.x, z: inBase.z, heightM: inBase.h,
+        facingDeg: Math.atan2(inBase.fz, inBase.fx) * 180 / Math.PI, source: 'recipe' } }));
+    }
     const at = getStore('camp')?.pad ?? null;
-    updateStore('campPad', () => (campOf(landRecipe)?.inBase || at ? padOf(landRecipe, at) : null));
+    updateStore('campPad', () => (inBase?.inBase || at ? padOf(landRecipe, at) : null));
   }
   // Device settings (src/save/prefs.js): kept on this device, never in the island.
   const prefs = loadPrefs();
@@ -268,6 +276,8 @@ export async function startApp(canvas, hooks = {}) {
     terrain, sim, seed, tier, history, recipes: { water: waterRecipe, terrain: terrainRecipe, land: landRecipe },
   });
   const { water, foam, ripples, wetness, moss } = ww;
+  // An older island's camp pad, laid once on its first load after the keeper's camp update (CP-07, CP-08).
+  stampOlderPad({ land: landRecipe, terrain, water, terrainRecipe, waterRecipe });
   // Growth (docs 10, 11): the habitat grid from the water summary, plants and grass cover grown in
   // the hourly tick; this keeps the habitat current and uploads what the drawing needs.
   // `?plants=all` (testing, unsaved): a new island starts with every plant, not only the starters
@@ -361,6 +371,10 @@ export async function startApp(canvas, hooks = {}) {
     probe: { view: atmosphere.probeView, sampler: atmosphere.probeSampler }, rings: waterRecipe.ripples.rings,
     shore: { texture: ww.shore.texture, look: ww.shore.recipe.look },
   });
+  // The camp pad's trodden look and dashed edge pattern follow the live pad (CP-01, CP-02).
+  terrainPass.setCampPad(getStore('campPad') ?? null);
+  subscribeStore('campPad', (/** @type {any} */ p) => terrainPass.setCampPad(p ?? null));
+  let padEdge = 0;   // the dashed edge's opacity now, fading toward its target
   // The meadow (docs 10): GPU grass blades where grass is painted, after the terrain.
   const grassPass = createGrassPass({
     terrain, recipe: grassRecipe, terrainRecipe, seed: subSeed(seed, 'grass'), tier: tierSettings,
@@ -382,6 +396,8 @@ export async function startApp(canvas, hooks = {}) {
   // Presence (doc 23): what creatures react to. Two views (W3): the camera above counts only for
   // its edits (reported below); you on foot are felt with your pace, posture and gaze.
   const walkerRecipe = await loadRecipe('world/walker');
+  // The keeper's camp's words (recipes/world/camp.json): `clear`, the line when a tap lands on the pad.
+  const campRecipe = await loadRecipe('world/camp');
   /** @type {import('./world/walk/index.js').Walk | null} */ let walkRef = null;
   // `hooks.labCamera` (tools/frog-lab.html): the old close camera, whose own eye startles frogs.
   if (hooks.labCamera) camera.setClose(camRecipe.labClose);
@@ -785,10 +801,25 @@ export async function startApp(canvas, hooks = {}) {
   /** Screen point of a held pour or drain, or null. @type {null | { x: number, y: number }} */
   let pouring = null;
 
-  /** Each frame while pour or drain is held: the brush source under the pointer. */
+  /**
+   * The camp ground stays clear (docs/future/13 CP-01): true when a ground point is on the live pad
+   * (store slice `campPad`), after saying so in one quiet line on the island unless `quiet`.
+   * @param {ArrayLike<number>} p @param {boolean} [quiet]
+   */
+  function onCampPad(p, quiet = false) {
+    if (!onPad(getStore('campPad') ?? null, p[0], p[2])) return false;
+    if (!quiet) emitDeferred('island:notice', { text: campRecipe.words.clear, showS: walkerRecipe.words.noticeS });
+    return true;
+  }
+  /** The pour held over the pad has said so once this press. */
+  let pourRefusedOnPad = false;
+
+  /** Each frame while pour or drain is held: the brush source under the pointer. No water is poured on the camp pad. */
   function updatePour() {
     const t = tools();
-    const p = pouring && t.tool === 'water' ? groundAt(pouring.x, pouring.y) : null;
+    let p = pouring && t.tool === 'water' ? groundAt(pouring.x, pouring.y) : null;
+    if (!pouring) pourRefusedOnPad = false;
+    if (p && t.waterMode === 'pour' && onCampPad(p, pourRefusedOnPad)) { pourRefusedOnPad = true; p = null; }
     if (p) presence.edit(p[0], p[2]);
     ww.holdBrush(p, t);
   }
@@ -797,6 +828,8 @@ export async function startApp(canvas, hooks = {}) {
   function springTap(x, y) {
     if (!getStore('unlocks')?.springs) return;
     const p = groundAt(x, y);
+    // A spring already there (an older island's) can still be selected; a new one is refused on the pad.
+    if (p && !ww.water.springAt(p[0], p[2], 1.0) && onCampPad(p)) return;
     if (p) ww.tapSpring(p, tools().springRate);
   }
 
@@ -832,6 +865,8 @@ export async function startApp(canvas, hooks = {}) {
     if (!getStore('unlocks')?.stones) return;
     const p = groundAt(x, y);
     if (!p) return;
+    // A stone already there can still be selected; a new one is refused on the camp pad.
+    if (!pieces.pieceAt(p[0], p[2]) && onCampPad(p)) return;
     presence.edit(p[0], p[2]);
     pieces.tap(p);
   }
@@ -863,7 +898,8 @@ export async function startApp(canvas, hooks = {}) {
   }
 
   // The Plant tool (src/world/growth/plant-tool.js): plants a seed where the ground suits it, rings where.
-  const plantTool = createPlantTool({ growth, world, flora, recipe: growthRecipe.marks });
+  // A tap on the camp pad is refused with the camp's words (CP-16, recipes/world/camp.json).
+  const plantTool = createPlantTool({ growth, world, flora, recipe: growthRecipe.marks, campWords: campRecipe?.words ?? null });
   /** @param {number} x @param {number} y */
   function plantTap(x, y) {
     const p = groundAt(x, y);
@@ -1380,7 +1416,11 @@ export async function startApp(canvas, hooks = {}) {
     presence.update(realDt);
     updateRing();
     // Plant tool rings, and a breathing ring round whatever the journal's tap card names.
-    terrainPass.setMarks(plantTool.marks(now, tools().tool === 'plant', getStore('identify'), [...(getStore('reveal')?.rings?.(now) ?? []), ...creatures.foodRings()]));
+    // The camp pad's dashed edge (CP-01) while a brush ring touches the pad, fading in and out.
+    const pad = getStore('campPad') ?? null;
+    padEdge = pad ? stepEdge(padEdge, edgeTarget(pad, terrain.ring, tools()), realDt, pad.dash?.opacity ?? 1, pad.dash?.fadeS) : 0;
+    const padMark = edgeMark(pad, padEdge);
+    terrainPass.setMarks(plantTool.marks(now, tools().tool === 'plant', getStore('identify'), [...(padMark ? [padMark] : []), ...(getStore('reveal')?.rings?.(now) ?? []), ...creatures.foodRings()]));
     // Lugworm casts are drawn into the sand by the terrain pass.
     terrainPass.setCasts(finds.casts());
     updatePour();
@@ -1453,6 +1493,8 @@ export async function startApp(canvas, hooks = {}) {
     const pushes = walk.pushes();
     grassPass.setPushes(pushes);
     rushPass.setPushes(pushes);
+    // Short, worn grass on the camp pad (CP-16; rushes never stand there).
+    grassPass.setPad(getStore('campPad') ?? null, campRecipe?.grass?.thinWithWear ?? 0);
     // Wet-to-dry grass (lush.js): the ground's grass layer takes the blades' tint this season.
     terrainPass.setLush(grassRecipe.lush ? lushLook(grassRecipe, bladeFrame.season) : null);
     rushPass.update(bladeFrame);
