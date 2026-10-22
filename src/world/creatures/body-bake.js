@@ -40,7 +40,12 @@ export function primDistance(q, p) {
       const l = unrotate([p[0] - q.c[0], p[1] - q.c[1], p[2] - q.c[2]], q.rot ?? [0, 0, 0]);
       const k0 = Math.hypot(l[0] / q.r[0], l[1] / q.r[1], l[2] / q.r[2]);
       const k1 = Math.hypot(l[0] / (q.r[0] * q.r[0]), l[1] / (q.r[1] * q.r[1]), l[2] / (q.r[2] * q.r[2]));
-      return k1 > 1e-12 ? (k0 * (k0 - 1)) / k1 : -Math.min(...q.r);
+      let d = k1 > 1e-12 ? (k0 * (k0 - 1)) / k1 : -Math.min(...q.r);
+      // A dome: cut flat below cutY (a turtle's carapace, its rim at cutY).
+      if (q.cutY !== undefined) d = Math.max(d, q.cutY - p[1]);
+      // Shell plates: a shallow groove along every seam between scutes.
+      if (q.scutes?.grooveM) d += q.scutes.grooveM * (1 - Math.min(1, scuteAt(q.scutes, p).seam / q.scutes.seamW));
+      return d;
     }
     case 'capsule': return roundCone(p, q.a, q.b, q.r[0], q.r[1]);
     case 'roundCone': {
@@ -50,6 +55,44 @@ export function primDistance(q, p) {
     }
     default: return Infinity;
   }
+}
+
+/** Scute centres per scutes block, built once. @type {WeakMap<any, number[][]>} */
+const SCUTE_CENTRES = new WeakMap();
+
+/**
+ * A turtle's shell plates (body.prims[].scutes): the scutes seen from above, in the shell's own
+ * oval (u across, v along, 1 at the rim): vertebrals down the middle, costals either side, marginals
+ * round the rim (their centres past it, at marginalR). Which scute p lies in, how far it is from
+ * that scute's centre, and how far from the nearest seam (all in oval units).
+ * @param {any} S @param {number[]} p @returns {{ i: number, r: number, seam: number, du: number, dv: number }}
+ */
+export function scuteAt(S, p) {
+  let cs = SCUTE_CENTRES.get(S);
+  if (!cs) {
+    cs = [];
+    for (const v of S.vertebral) cs.push([0, v]);
+    for (const v of S.costal) cs.push([S.costalU, v], [-S.costalU, v]);
+    for (let k = 0; k < S.marginals; k++) {
+      const a = ((k + 0.5) / S.marginals) * Math.PI * 2;
+      cs.push([Math.sin(a) * S.marginalR, Math.cos(a) * S.marginalR]);
+    }
+    SCUTE_CENTRES.set(S, cs);
+  }
+  const u = (p[0] - S.c[0]) / S.rx, v = (p[2] - S.c[1]) / S.rz;
+  let d1 = Infinity, d2 = Infinity, i1 = 0;
+  for (let i = 0; i < cs.length; i++) {
+    const d = Math.hypot(u - cs[i][0], v - cs[i][1]);
+    if (d < d1) { d2 = d1; d1 = d; i1 = i; } else if (d < d2) d2 = d;
+  }
+  return { i: i1, r: d1, seam: (d2 - d1) / 2, du: u - cs[i1][0], dv: v - cs[i1][1] };
+}
+
+/** A 0..1 hash of two integers. @param {number} a @param {number} b */
+function hash2(a, b) {
+  let n = Math.imul(a, 374761393) + Math.imul(b, 668265263);
+  n = Math.imul(n ^ (n >>> 13), 1274126177);
+  return ((n ^ (n >>> 16)) >>> 0) / 4294967296;
 }
 
 /** The body's signed distance at p, and the primitive nearest it. @param {any[]} prims @param {number[]} p */
@@ -159,11 +202,30 @@ export function bakeBody(body, cellM) {
       const q = prims[bodyDistance(prims, p).near];
       const dir = [p[0] - q.c[0], p[1] - q.c[1], p[2] - q.c[2]].map((x) => x / q.r);
       col = body.eyeLook ? eyeColour(body.eyeLook, A, dir, Math.sign(q.c[0]) || 1, p) : oldEye(A, dir);
+    } else if (region === 'shell') {
+      // A turtle's carapace: dark seams between the plates, and pale dots strung in lines fanning
+      // out from each plate's middle (the scutes block on the shell piece).
+      const S = prims[bodyDistance(prims, p).near].scutes;
+      const c = scuteAt(S, p);
+      col = A.shell;
+      if (c.seam < S.seamW * 0.5) col = A.seam;
+      else if (S.streaks) {
+        const a = (Math.atan2(c.du, c.dv) / (Math.PI * 2) + 0.5) * S.streaks + hash2(c.i, 7) * 3;
+        const id = Math.floor(a), mid = Math.abs(a - id - 0.5) * 2;
+        const dot = valueNoise(p[0] * S.dotScale, p[1] * S.dotScale, p[2] * S.dotScale);
+        if (hash2(c.i, id) < S.streakShare && c.r > S.streakFrom && mid < S.streakW && dot > S.dotCut) col = A.fleck;
+      }
     } else if (region === 'back') {
       // A body variant moves its blotches by blotch.offset (in noise cells; none by default).
       const o = body.blotch.offset ?? [0, 0, 0], s = body.blotch.scale;
       if (nrm[1] < body.bellyBelowNormalY) col = A.belly;
       else if (valueNoise(p[0] * s + o[0], p[1] * s + o[1], p[2] * s + o[2]) < body.blotch.amount * 0.75) col = A.blotch;
+    }
+    // Small spots on a region (a turtle's yellow-dotted skin, its plastron's dark blotches).
+    const sp = body.speckle?.[region];
+    if (sp) {
+      const o = body.blotch?.offset ?? [0, 0, 0];
+      if (valueNoise(p[0] * sp.scale + o[0], p[1] * sp.scale + o[1], p[2] * sp.scale + o[2]) > sp.cut) col = A[sp.color];
     }
     out.set(p, vi * 9);
     out.set(nrm, vi * 9 + 3);

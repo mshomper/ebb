@@ -11,6 +11,7 @@
 // patrol.js, so the live schools system (schools.js) runs it.
 
 import { stream } from '../../core/rng.js';
+import { poseState, easeWeights, poseTurtle } from './rigs/turtle.js';
 
 /**
  * @typedef {{ x: number, y: number, z: number, r: number, kind?: string, room?: number, yaw?: number, inWater?: boolean }} Seat
@@ -18,7 +19,10 @@ import { stream } from '../../core/rng.js';
  *   and for a log or the raft the way its length runs (yaw)
  * @typedef {{ x: number, y: number, z: number, vx: number, vy: number, vz: number, roll: number, pitch: number, yaw: number,
  *   look: number, lookTo: number, nextLook: number, mode: 'swim'|'climb'|'bask'|'slide', until: number,
- *   goal: { x: number, z: number }, seat: number, from: { x: number, y: number, z: number } | null, under: number }} Turtle
+ *   goal: { x: number, z: number }, seat: number, from: { x: number, y: number, z: number } | null, under: number,
+ *   id: number, t: number, w: Record<string, number>, ph: number, stroke: number, haulK: number, slideK: number,
+ *   lookUp: number, jaw: number, wet: number }} Turtle
+ *   and its pose (rigs/turtle.js TurtlePose)
  *   seat: the spot it is bound for or on (-1 none); from: where a climb or slide began; under: until when it stays under
  * @typedef {{ water: (x: number, z: number) => { surface: number, depth: number }, ground: (x: number, z: number) => number,
  *   seats: () => Seat[], ring?: (x: number, z: number) => void }} BaskEnv  ring: rings on the water where one slid in
@@ -78,7 +82,7 @@ export function createBask(o) {
     for (let i = 0; i < n; i++) {
       const p = wanderPoint();
       const w = env.water(p.x, p.z);
-      fish.push({ x: p.x, y: w.surface - 0.01 * o.size, z: p.z, vx: 0, vy: 0, vz: 0, roll: 0, pitch: 0, yaw: rng.next() * 6.283,
+      fish.push({ ...poseState(o.id * 100 + fish.length, 'swim'), x: p.x, y: w.surface - 0.01 * o.size, z: p.z, vx: 0, vy: 0, vz: 0, roll: 0, pitch: 0, yaw: rng.next() * 6.283,
         look: 0, lookTo: 0, nextLook: range(M.lookEveryS), mode: 'swim', until: range(M.turnEveryS), goal: wanderPoint(), seat: -1, from: null, under: 0 });
     }
   }
@@ -129,6 +133,14 @@ export function createBask(o) {
       const places = mood === 'day' && t >= fleeUntil ? placesNear() : [];
       fish.forEach((f, i) => {
         const w = env.water(f.x, f.z);
+        // The pose follows what it is doing (rigs/turtle.js): strokes while it paddles, the
+        // haul-out while it climbs, the slide while it slips in.
+        f.t += dt;
+        f.stroke = Math.min(1, Math.hypot(f.vx, f.vz) / Math.max(1e-3, M.paddleMps));
+        f.ph += (dt / M.pose.swim.strokeS) * (0.35 + 0.65 * f.stroke);
+        if (f.mode === 'climb') f.haulK = Math.min(1, 1 - (f.until - t) / M.climbS);
+        if (f.mode === 'slide') f.slideK = Math.min(1, 1 - (f.until - t) / (M.climbS * 0.5));
+        easeWeights(f, dt, M.pose);
         // The head looks about now and then.
         if (t >= f.nextLook) { f.lookTo = (rng.next() * 2 - 1) * M.headTurnRad; f.nextLook = t + range(M.lookEveryS); }
         f.look += (f.lookTo - f.look) * Math.min(1, dt * 1.5);
@@ -193,26 +205,11 @@ export function createBask(o) {
 }
 
 /**
- * The head's bone move for one turtle: turned about, as it looks round, and raised while basking.
- * @param {{ name: string, parent: number }[]} rig @param {Turtle} f @param {any} M
+ * The bone moves for one turtle (rigs/turtle.js): its layers blended, its head looking about.
+ * @param {{ name: string, parent: number, pivot?: number[] }[]} rig @param {Turtle} f @param {any} M
  * @param {number[]} q the root's turn (pitch and roll)
  * @param {(a: number[], angle: number) => number[]} axisAngle
  */
 export function poseBask(rig, f, M, q, axisAngle) {
-  void M;
-  return rig.map((b) => {
-    if (b.parent < 0) return { q };
-    const up = f.mode === 'bask' ? -0.25 : 0;
-    return { q: qmul(axisAngle([0, 1, 0], f.look), axisAngle([1, 0, 0], up)) };
-  });
-}
-
-/** Quaternion product p * q (q first, then p), as schools.js's. @param {number[]} p @param {number[]} q */
-function qmul(p, q) {
-  return [
-    p[3] * q[0] + p[0] * q[3] + p[1] * q[2] - p[2] * q[1],
-    p[3] * q[1] - p[0] * q[2] + p[1] * q[3] + p[2] * q[0],
-    p[3] * q[2] + p[0] * q[1] - p[1] * q[0] + p[2] * q[3],
-    p[3] * q[3] - p[0] * q[0] - p[1] * q[1] - p[2] * q[2],
-  ];
+  return poseTurtle(rig, /** @type {any} */ (f), M, q, axisAngle);
 }

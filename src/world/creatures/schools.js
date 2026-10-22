@@ -72,7 +72,9 @@ export function createSchools(opts) {
   const body = recipe.body, M = recipe.motion, P = recipe.presence, find = recipe.find;
   const variants = Math.max(1, body.variants ?? 1);
   const lods = recipe.bake.lods ?? [{ cellM: recipe.bake.cellM }];
-  const pass = createCreaturePass({ recipe, name: key });
+  // Wet eyes for a body whose recipe lists eye bones (the turtle's).
+  const eyeAt = (/** @type {string} */ n) => (body.bones ?? []).findIndex((/** @type {any} */ b) => b.name === n);
+  const pass = createCreaturePass({ recipe, name: key, eyeBones: eyeAt('eye.l') >= 0 ? [eyeAt('eye.l'), eyeAt('eye.r')] : undefined });
   let budget = Math.min(128, opts.budget ?? 128);
   /** Each variant's skeleton, once its first bake is back. @type {({ name: string, parent: number, pivot: number[] }[] | null)[]} */
   const rigs = Array.from({ length: variants }, () => null);
@@ -182,7 +184,10 @@ export function createSchools(opts) {
         }
         const jitter = ((hash32(id, 0x51e) >>> 8) / 16777216) * 2 - 1;
         const yaw = /** @type {any} */ (f).yaw ?? Math.atan2(f.vx, f.vz);
-        beings.push({ x: f.x, y: f.y, z: f.z, yaw, size: size * (1 + (body.sizeJitter ?? 0) * jitter) * back.k, mesh, bones: b ?? bones });
+        // A turtle dries as it basks (its shell goes from glossy to matte).
+        const wet = /** @type {any} */ (f).wet;
+        beings.push({ x: f.x, y: f.y, z: f.z, yaw, size: size * (1 + (body.sizeJitter ?? 0) * jitter) * back.k, mesh, bones: b ?? bones,
+          dry: wet === undefined ? 0 : 1 - wet });
       });
     }
     pass.setBeings(beings);
