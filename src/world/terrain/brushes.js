@@ -7,9 +7,25 @@ import { makeBuffer, makeShaderModule } from '../../core/gpu.js';
 import { CELL, WORLD_CELLS as N, WORLD_ORIGIN } from './grid.js';
 import { toCell } from './heightfield.js';
 import { cliffMask, cliffHeight } from './cliff.js';
+import { padMask } from '../camp/layout.js';
 
 const STAMP_STRIDE = 256;
-const STAMP_BYTES = 80;
+const STAMP_BYTES = 96;
+
+/**
+ * Where a brush may reach: the open land (faded over edgeFade meters before unopened land) and,
+ * when there is one, the keeper's camp pad, which no brush moves (docs/future/13 CP-01).
+ * @typedef {{ openMin: number[], openMax: number[], edgeFade: number, pad?: import('../camp/layout.js').Pad | null }} Edge
+ */
+
+/**
+ * Pack the camp lock into a stamp uniform at float index o: center x, z, radius, fade. With no pad
+ * the radius is -1 and the shader's campFade is 1 everywhere. @param {Float32Array} f @param {number} o @param {Edge} edge
+ */
+function packCamp(f, o, edge) {
+  const p = edge.pad;
+  f[o] = p ? p.x : 0; f[o + 1] = p ? p.z : 0; f[o + 2] = p ? p.r : -1; f[o + 3] = p ? Math.max(1e-3, p.lockFadeM) : 1;
+}
 
 /** @typedef {'raise'|'lower'|'flatten'|'smooth'|'paint'|'terrace'|'cut'} BrushKind */
 /** @typedef {'grass'|'sand'|'rock'|'soil'} PaintLayer */
@@ -76,7 +92,8 @@ export function frameAmount(brush, pressure, dt, rb) {
 
 /**
  * The CPU twin of csHeight for raise, lower and flatten (approximate: smoothing and paint skip it).
- * @param {Float32Array} hf @param {Stamp} st @param {{openMin: number[], openMax: number[], edgeFade: number}} edge
+ * The camp pad's mask multiplies the falloff as the open-land edge fade does.
+ * @param {Float32Array} hf @param {Stamp} st @param {Edge} edge
  */
 export function applyStampCpu(hf, st, edge) {
   if (st.mode === CLIFF_MODE) { applyCliffCpu(hf, st, edge); return; }
@@ -91,7 +108,7 @@ export function applyStampCpu(hf, st, edge) {
       if (d >= st.radius) continue;
       const u = Math.min(1, Math.max(0, (d - inner) / (st.radius - inner)));
       const inside = Math.min(x - edge.openMin[0], edge.openMax[0] - x, z - edge.openMin[1], edge.openMax[1] - z);
-      const f = (1 - u * u * (3 - 2 * u)) * Math.min(1, Math.max(0, inside / edge.edgeFade));
+      const f = (1 - u * u * (3 - 2 * u)) * Math.min(1, Math.max(0, inside / edge.edgeFade)) * padMask(edge.pad ?? null, x, z);
       const k = j * N + i;
       if (st.mode === 0) hf[k] = Math.min(12, Math.max(-4, hf[k] + st.amount * f));
       else hf[k] += (st.target - hf[k]) * (1 - Math.pow(2, -st.amount * f));
@@ -102,8 +119,9 @@ export function applyStampCpu(hf, st, edge) {
 /**
  * The CPU twin of the Cliff shelf (exact: the stamp sets heights, it does not integrate them).
  * For mode 4 the stamp's `hardness` holds the rim's width in meters and `span` how far the shelf
- * falls across the fade before unopened land (m).
- * @param {Float32Array} hf @param {Stamp} st @param {{openMin: number[], openMax: number[], edgeFade: number}} edge
+ * falls across the fade before unopened land (m). The camp pad keeps its ground: the change fades
+ * from nothing on the pad to all of it lockFadeM outside.
+ * @param {Float32Array} hf @param {Stamp} st @param {Edge} edge
  */
 function applyCliffCpu(hf, st, edge) {
   const r = st.rect;
@@ -116,7 +134,8 @@ function applyCliffCpu(hf, st, edge) {
       const inside = Math.min(x - edge.openMin[0], edge.openMax[0] - x, z - edge.openMin[1], edge.openMax[1] - z);
       const fade = Math.min(1, Math.max(0, inside / edge.edgeFade));
       const k = j * N + i;
-      hf[k] = Math.min(12, Math.max(-4, cliffHeight(hf[k], st.target, cliffMask(d, st.radius, st.hardness), st.amount, fade, st.span)));
+      const goal = cliffHeight(hf[k], st.target, cliffMask(d, st.radius, st.hardness), st.amount, fade, st.span);
+      hf[k] = Math.min(12, Math.max(-4, hf[k] + (goal - hf[k]) * padMask(edge.pad ?? null, x, z)));
     }
   }
 }
@@ -184,8 +203,9 @@ export async function createBrushGpu(device, tex, maxStamps) {
    * draws as stone and erosion holds it at the rock talus. `share` is how far toward rock it goes.
    * @param {GPUCommandEncoder} encoder @param {import('./heightfield.js').CellRect} rect
    * @param {{ faceDeg: number, rockShare: number }} rc recipe.cliff
+   * @param {Edge} [edge]  its pad keeps the camp ground unpainted
    */
-  function encodeCliffRock(encoder, rect, rc) {
+  function encodeCliffRock(encoder, rect, rc, edge) {
     if (rect.w <= 0 || rect.h <= 0) return;
     const b = new ArrayBuffer(STAMP_BYTES);
     const f = new Float32Array(b);
@@ -193,6 +213,7 @@ export async function createBrushGpu(device, tex, maxStamps) {
     f[4] = Math.tan((rc.faceDeg * Math.PI) / 180) * CELL; f[5] = rc.rockShare; u[6] = CLIFF_ROCK_MODE;
     u[8] = rect.x; u[9] = rect.y; u[10] = rect.w; u[11] = rect.h;
     f[17] = WORLD_ORIGIN; f[18] = CELL;
+    packCamp(f, 20, edge ?? { openMin: [0, 0], openMax: [0, 0], edgeFade: 1, pad: null });
     device.queue.writeBuffer(rockUniform, 0, b);
     const pass = encoder.beginComputePass({ label: 'terrain-cliff-rock' });
     pass.setPipeline(rockPipe);
@@ -206,7 +227,7 @@ export async function createBrushGpu(device, tex, maxStamps) {
    * Record stamps in order; each reads the result of the one before.
    * @param {GPUCommandEncoder} encoder
    * @param {Stamp[]} stamps
-   * @param {{openMin: number[], openMax: number[], edgeFade: number}} edge
+   * @param {Edge} edge
    */
   function encode(encoder, stamps, edge) {
     const list = stamps.slice(0, maxStamps).filter((s) => s.rect.w > 0 && s.rect.h > 0);
@@ -218,6 +239,7 @@ export async function createBrushGpu(device, tex, maxStamps) {
       u32[o + 8] = st.rect.x; u32[o + 9] = st.rect.y; u32[o + 10] = st.rect.w; u32[o + 11] = st.rect.h;
       f32[o + 12] = edge.openMin[0]; f32[o + 13] = edge.openMin[1]; f32[o + 14] = edge.openMax[0]; f32[o + 15] = edge.openMax[1];
       f32[o + 16] = edge.edgeFade; f32[o + 17] = WORLD_ORIGIN; f32[o + 18] = CELL; f32[o + 19] = st.span;
+      packCamp(f32, o + 20, edge);
     });
     device.queue.writeBuffer(uniforms, 0, data, 0, list.length * STAMP_STRIDE);
     list.forEach((st, i) => {

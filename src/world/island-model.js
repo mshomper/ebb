@@ -20,7 +20,7 @@ import { buildHabitat } from './growth/habitat.js';
  */
 export function buildIslandModel(r) {
   const tSeed = subSeed(r.seed >>> 0, 'terrain');
-  const S = r.terrain.starter;
+  const S = { chunkMin: r.land.chunkMin ?? r.terrain.starter.chunkMin, chunkMax: r.land.chunkMax ?? r.terrain.starter.chunkMax };
   const N = WORLD_CELLS;
   const heightQ = new Uint16Array(N * N).fill(quantize(r.land.seabedDepth));
   const material = new Uint8Array(N * N * 4);

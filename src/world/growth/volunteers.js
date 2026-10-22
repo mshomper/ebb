@@ -57,7 +57,8 @@ export function volunteerAt(g, hab, env, hourIndex, suitCell, taken) {
     // The square it lands on: the suitable one first in this hour's hash order.
     let best = -1, bestH = 0;
     for (let k = 0; k < hab.n * hab.n; k++) {
-      if (!hab.open[k] || taken(k) || suitCell(rec, k) < V.minSuit) continue;
+      // Never on the camp pad (CP-16, habitat.js padClearMask).
+      if (!hab.open[k] || hab.clear?.[k] || taken(k) ||suitCell(rec, k) < V.minSuit) continue;
       const h = hash32(seed, hourIndex, k);
       if (best < 0 || h < bestH) { best = k; bestH = h; }
     }

@@ -73,6 +73,12 @@ struct TerrainDraw {
   margin1: vec4f,                       // xy margin shares elapsed over which the mud dries, zw over which cracks open
   margin2: vec4f,                       // x 1 / crack cell (1/m), y most crack width (m), z crack occlusion, w crack relief
   margin3: vec4f,                       // x margin share over which it fades back, y mud porosity, z 1 on
+  // The keeper's camp pad (store slice campPad, docs/future/13 CP-01, CP-02). Its trodden look is
+  // drawn from these numbers; the ground texture's a channel ("path wear", heightfield.js) is kept
+  // for the desire paths (CP-10).
+  camp0: vec4f,                         // xy pad center (m), z pad radius (m), w wear on the pad (0 no pad)
+  camp1: vec4f,                         // x wear fade outside the pad (m), y packed earth albedo factor, z share of wetness shed, w share of moss kept
+  campDash: vec4f,                      // the dashed edge (marks with a negative radius): x dash (m), y gap (m), z width (m)
 };
 
 // Cracks in drying mud: a jittered cellular network (F2 - F1 of the nearest plate centers), so the
@@ -190,16 +196,48 @@ fn cliffLineAlpha(xz: vec2f, y: f32, pixM: f32) -> f32 {
   return (1.0 - smoothstep(0.0, w, abs(y - td.cliffLine.x))) * near * td.ringOpacity;
 }
 
+// The dashed style (the camp pad's edge, CP-01): a soft band campDash.z wide, broken into dashes
+// along the circle. The dash and gap are meters along the rim, stretched a little so a whole number
+// of them goes round; when a pixel grows too big to hold them they fade to their average.
+fn dashedRing(xz: vec2f, c: vec2f, r: f32, pixM: f32) -> f32 {
+  let d = distance(xz, c);
+  let hw = max(0.5 * td.campDash.z, pixM);
+  let band = 1.0 - smoothstep(0.5 * hw, hw, abs(d - r));
+  if (band <= 0.0) { return 0.0; }
+  let period = max(td.campDash.x + td.campDash.y, 0.01);
+  let n = max(1.0, round(6.2831853 * r / period));
+  let p = 6.2831853 * r / n;                        // the period actually used (m)
+  let dash = p * td.campDash.x / period;
+  let s = fract(atan2(xz.y - c.y, xz.x - c.x) / 6.2831853 * n) * p;
+  let soft = max(min(0.04, dash * 0.25), pixM);
+  let on = 1.0 - smoothstep(0.5 * dash - soft, 0.5 * dash, abs(s - 0.5 * p));
+  let resolved = 1.0 - smoothstep(0.15 * p, 0.4 * p, pixM);
+  return band * mix(dash / p, on, resolved);
+}
+
 // Thin marker rings (a tap's bloom, young plantings), kept a couple of pixels wide at any distance.
+// A negative radius is the dashed style.
 fn marksAlpha(xz: vec2f, pixM: f32) -> f32 {
   var a = 0.0;
   let w = max(0.025, pixM * 1.5);
   for (var i = 0u; i < 16u; i++) {
     let m = td.marks[i];
     if (m.w <= 0.0) { break; }
+    if (m.z < 0.0) { a = max(a, dashedRing(xz, m.xy, -m.z, pixM) * m.w); continue; }
     a = max(a, (1.0 - smoothstep(0.0, w, abs(distance(xz, m.xy) - m.z))) * m.w);
   }
   return a;
+}
+
+// The camp pad's trodden look (CP-02): the recipe's wear on the pad, fading out over camp1.x past
+// its edge, the fade line broken up a little so it never reads as a drawn circle. Mirrors padWear in
+// src/world/camp/edge.js.
+fn campWear(xz: vec2f) -> f32 {
+  if (td.camp0.w <= 0.0) { return 0.0; }
+  let wob = (valueNoise2(xz * 0.9 + vec2f(5.7, 3.1), td.seed + 70u) - 0.5) * 0.6 * td.camp1.x;
+  let t = clamp((distance(xz, td.camp0.xy) + wob - td.camp0.z) / max(td.camp1.x, 1e-3), 0.0, 1.0);
+  let patchy = 0.85 + 0.3 * valueNoise2(xz * 1.7 + vec2f(1.3, 8.9), td.seed + 71u);
+  return clamp(td.camp0.w * (1.0 - t * t * (3.0 - 2.0 * t)) * patchy, 0.0, 1.0);
 }
 
 @fragment
@@ -225,6 +263,10 @@ fn fsLand(in: VsOut) -> FsOut {
   // A grassy bed under any standing water (from the first few millimeters): the drowned meadow below.
   let drownedGrass = w.x * smoothstep(0.002, 0.012, wdep) / max(w.x + w.y + w.z + w.w, 1e-4);
   w = vec4f(w.x * (1.0 - sub), w.y, w.z, w.w + w.x * sub);
+  // The camp pad is trodden ground (CP-02): wear turns its grass to the soil material, packed earth
+  // with the worn grass showing through (the height blend below keeps tufts). Sand and stone stay.
+  let trod = campWear(xz);
+  w = vec4f(w.x * (1.0 - trod), w.y, w.z, w.w + w.x * trod);
 
   // Height-style blend: each layer gets its own noise "relief"; layers within blendSharpness
   // of the top score share the pixel, so edges break up softly instead of fading flat.
@@ -254,7 +296,7 @@ fn fsLand(in: VsOut) -> FsOut {
   // and stone hold the most, loose sand (painted, or the beach band) almost none. Below the cap the
   // height blend lets grass tufts and stone tops stand up through the moss.
   let cap = dot(w, ground.mossRules) / max(w.x + w.y + w.z + w.w, 1e-4);
-  let moss = min(density, 1.0) * cap * (1.0 - sub);
+  let moss = min(density, 1.0) * cap * (1.0 - sub) * mix(1.0, td.camp1.w, trod);   // feet wear moss away
   // Wrack grows in clumps over rock in the tide band, drawn with the moss scan at wrack's own
   // albedo (moss never grows in the band, so they never meet).
   let wclumps = valueNoise2(xz * td.shore0.w + vec2f(4.3, 9.1), td.seed + 31u) * 0.6
@@ -273,6 +315,9 @@ fn fsLand(in: VsOut) -> FsOut {
   // Black lichen crusts the splash-zone rock in small patches; tidal mud is soil gone dark and soft.
   let rockShare = mix(wf.z, gd.weights.z, gd.amount);
   let soilShare = mix(wf.w, gd.weights.w, gd.amount);
+  // Packed, dry earth on the pad reflects a little more than loose soil (a material property, not
+  // a painted color).
+  albedo *= 1.0 + (td.camp1.y - 1.0) * trod * soilShare;
   let lclumps = valueNoise2(xz * td.shore2.x + vec2f(7.1, 2.9), td.seed + 33u) * 0.55
               + valueNoise2(xz * td.shore2.y + vec2f(3.9, 6.7), td.seed + 34u) * 0.45;
   // Lichen is a crust in patches with crisp edges, thick low in the splash zone and breaking up into
@@ -428,7 +473,7 @@ fn fsLand(in: VsOut) -> FsOut {
   // Wet ground (docs/22 G3, after Lagarde 2013). The visual wetness map (world/terrain/wetness.js)
   // remembers live water, the tide, rain and damp hollows, spreads into banks and dries over game
   // time; its g channel is how far rain has filled the puddles.
-  let wet = wetTex.r;
+  let wet = wetTex.r * (1.0 - td.camp1.z * trod);   // trodden ground sheds water and dries first
   // Damp: porous ground (sand, soil) drinks the water and goes dark and satin; dense rock darkens
   // a little but turns shiny. Moss is already a damp surface and changes least.
   let por = mix(gd.porosity, td.margin3.y, mudCover);
