@@ -11,7 +11,7 @@
 
 import * as clock from '../core/clock.js';
 import { get, update } from '../core/store.js';
-import { emit, emitDeferred } from '../core/events.js';
+import { emit, emitDeferred, on } from '../core/events.js';
 import { loadRecipe } from '../core/recipes.js';
 import { awayHours, catchUp, AWAY_RATE, CAP_HOURS } from './catchup.js';
 import { showCatchingUp } from '../ui/catching-up.js';
@@ -36,16 +36,32 @@ export async function mountAway(opts) {
     return a;
   }
 
-  /** Run `hours` game hours now and swap the result in. @param {number} hours @param {string} why */
-  async function run(hours, why) {
+  const campRecipe = await loadRecipe('world/camp');
+
+  /**
+   * The camp's standing presence for catch-up (docs/future/13 CP-13): once the tent is pitched.
+   * @returns {{ x: number, z: number, reachM: number, trust: number } | null}
+   */
+  function campAway() {
+    const pad = get('campPad'), S = campRecipe.standing;
+    return pad && S && get('camp')?.kit?.tent === 'pitched' ? { x: pad.x, z: pad.z, reachM: S.reachM, trust: S.trust } : null;
+  }
+
+  /**
+   * Run `hours` game hours now and swap the result in. @param {number} hours @param {string} why
+   * @param {{ skipS?: number, cream?: boolean }} [o] skipS: move the clock this far instead of whole
+   *   hours (a rest wakes just before sunrise, inside the last hour run); cream: the cream screen
+   *   at once and no reveal (a night's rest, docs/future/13 C-39)
+   */
+  async function run(hours, why, o = {}) {
     if (busy || hours <= 0) return;
     busy = true;
     save?.hold(true);
     clock.hold(true);
     // Long enough away for the reveal (src/ui/reveal.js): it opens from cream, so the screen is up at
     // once. Settings can turn the reveal off; the notes then wait in the journal.
-    const revealing = hours >= reveal.thresholdHours && get('settings')?.reveal !== false;
-    const screen = showCatchingUp({ afterS: revealing ? 0 : recipe.screenAfterS });
+    const revealing = !o.cream && hours >= reveal.thresholdHours && get('settings')?.reveal !== false;
+    const screen = showCatchingUp({ afterS: revealing || o.cream ? 0 : recipe.screenAfterS });
     const t0 = performance.now();
     try {
       const world = app.world;
@@ -55,11 +71,12 @@ export async function mountAway(opts) {
         habitatInputs: world.env.habitatInputs?.() ?? null,
         material: get('terrainLive')?.mirror?.material ?? null, state: world.state, journal: get('journal') ?? null, jr,
         fromHour: clock.hourIndex() + 1, hours, block: recipe.blockHours, onProgress: (d, n) => screen.progress(d / n),
+        camp: campAway(),
       });
       world.state = r.state;
       update('world', () => world.state);
       if (r.journal) emit('journal:replaced', { journal: r.journal });
-      clock.skip(hours * clock.SECONDS_PER_HOUR);
+      clock.skip(o.skipS ?? hours * clock.SECONDS_PER_HOUR);
       // The water starts again at the new tide rather than draining or filling for minutes.
       app.water?.reseed?.(clock.display() / clock.SECONDS_PER_HOUR);
       console.info(`caught up ${hours} game hours (${why}) in ${Math.round(performance.now() - t0)} ms; ${r.notes.length} notes`);
@@ -68,7 +85,7 @@ export async function mountAway(opts) {
       console.error('catch-up failed; the island carries on from where it was', err);
     } finally {
       clock.hold(false);
-      screen.done(revealing ? reveal.creamFadeS : undefined);
+      screen.done(revealing || o.cream ? reveal.creamFadeS : undefined);
       save?.hold(false);
       save?.saveSoon('event');
       busy = false;
@@ -92,6 +109,16 @@ export async function mountAway(opts) {
     hiddenAt = 0;
     const a = earned(since);
     if (a.hours > 0) run(a.hours, 'hidden');
+  });
+
+  // A night's rest in the tent (docs/future/13 section 3.5, C-39): the camp asks with `rest:begin
+  // { toS }` (the game second to wake at); the hours from now run behind the cream screen, the clock
+  // lands on toS, and `world:caught-up { why: 'rest' }` lets the camp wake the walker at the flap.
+  on('rest:begin', (/** @type {{ toS: number }} */ p) => {
+    const nowS = clock.worldT();
+    const hours = Math.floor(p.toS / clock.SECONDS_PER_HOUR) - clock.hourIndex();
+    if (hours <= 0 || p.toS <= nowS) { emitDeferred('world:caught-up', { hours: 0, why: 'rest', notes: [], events: [], before: {}, reveal: false }); return; }
+    run(hours, 'rest', { skipS: p.toS - nowS, cream: true });
   });
 
   return {

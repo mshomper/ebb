@@ -248,7 +248,16 @@ export function coarseStep(state, hourIndex, env) {
     events.push({ name: 'creature:habitat-right', payload: pay({ x, z }) });
   }
 
-  // Trust earned since the last hour (watching, feeding), and `?trust=` when testing.
+  // Standing presence (docs/future/13 CP-13): only in catch-up, once a game day, a frog that already
+  // tolerates you and lives near the camp knows it a little better for the camp being there.
+  const S = /** @type {any} */ (env).awayCamp;
+  if (S && hourIndex % HOURS_PER_DAY === 0) {
+    for (const f of fr.frogs) {
+      if ((f.trust ?? 0) < rec.presence.bands[0] || (f.x - S.x) * (f.x - S.x) + (f.z - S.z) * (f.z - S.z) > S.reachM * S.reachM) continue;
+      fr.pending = [...(fr.pending ?? []), { kind: 'camp', id: f.id, hour: hourIndex, gain: S.trust }];
+    }
+  }
+  // Trust earned since the last hour (watching, feeding, the camp), and `?trust=` when testing.
   events.push(...applyTrust(fr, rec.presence, env.testTrust ?? 0, rec.feed?.fullH));
 
   // Winter: asleep in the pond mud, mood held, nothing comes or goes.
