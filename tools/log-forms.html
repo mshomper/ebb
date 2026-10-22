@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ebb log forms</title>
+<style>
+  @font-face { font-family: 'Nunito'; src: url('../src/vendor/fonts/nunito-latin-600-normal.woff2') format('woff2'); font-weight: 600; }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; max-width: 100%; overflow-x: hidden; }
+  body { background: #F4EEE4; color: #1E2624; font: 600 17px/1.45 Nunito, system-ui, sans-serif; padding: 16px; }
+  h1 { font-size: 24px; margin: 0 0 4px; }
+  p { margin: 0 0 12px; max-width: 70ch; }
+  .bar { display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center; margin-bottom: 14px; }
+  label { display: flex; gap: 8px; align-items: center; }
+  input[type=range] { width: 180px; }
+  button { font: inherit; padding: 6px 14px; border-radius: 10px; border: 1px solid #b9ad97; background: #fffaf0; cursor: pointer; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; }
+  .cell { background: #fffaf0; border: 1px solid #d8cfbd; border-radius: 12px; padding: 8px 10px; }
+  .cell canvas { width: 100%; height: auto; display: block; }
+  .name { font-size: 15px; color: #5d6b5d; }
+</style>
+</head>
+<body>
+<h1>Log forms</h1>
+<p>Each log is baked from its own seed (src/world/pieces/log-bake.js). Every card shows one log from the side (top half) and from above (bottom half), at true proportions, lit by a low sun. Change the start seed to see another 24.</p>
+<div class="bar">
+  <label>Start seed <input id="seed" type="number" value="1" min="0" style="width:110px;font:inherit"></label>
+  <label>Thickness over length <input id="aspect" type="range" min="0.05" max="0.3" step="0.01" value="0.12"> <span id="aspectV">0.12</span></label>
+  <button id="next">Next 24</button>
+</div>
+<div class="grid" id="grid"></div>
+<script type="module">
+import { bakeLogSeed } from '../src/world/pieces/log-bake.js';
+import { hash32 } from '../src/core/rng.js';
+
+const R = await fetch('../recipes/world/pieces.json').then((r) => r.json());
+const D = R.driftwood;
+const grid = document.getElementById('grid');
+const seedIn = /** @type {HTMLInputElement} */ (document.getElementById('seed'));
+const aspIn = /** @type {HTMLInputElement} */ (document.getElementById('aspect'));
+const NAMES = { straight: 'Straight trunk', bowed: 'Bowed limb', forked: 'Forked branch', rootend: 'Root end' };
+
+/** Draw one view: proj maps a mesh point to [u, v, depth]. */
+function view(ctx, mesh, aspect, proj, ox, oy, scale) {
+  const V = mesh.vertices, I = mesh.indices;
+  const tris = [];
+  const sun = [0.45, 0.75, 0.35], sl = Math.hypot(...sun);
+  for (let t = 0; t < I.length; t += 3) {
+    const p = [I[t], I[t + 1], I[t + 2]].map((q) => proj([V[q * 9], V[q * 9 + 1], V[q * 9 + 2] / aspect]));
+    const q = I[t];
+    // The true normal: the mesh's has the squeeze's inverse in it.
+    const n = [V[q * 9 + 3] * aspect, V[q * 9 + 4] * aspect, V[q * 9 + 5]];
+    const nl = Math.hypot(...n) || 1;
+    const lam = Math.max(0, (n[0] * sun[0] + n[1] * sun[1] + n[2] * sun[2]) / nl / sl);
+    const c = [6, 7, 8].map((k) => (V[I[t] * 9 + k] + V[I[t + 1] * 9 + k] + V[I[t + 2] * 9 + k]) / 3);
+    tris.push({ p, d: (p[0][2] + p[1][2] + p[2][2]) / 3, c, lam });
+  }
+  tris.sort((a, b) => a.d - b.d);
+  for (const tr of tris) {
+    // Linear albedo, lit, then to sRGB for the screen (no palette here).
+    const rgb = tr.c.map((a) => Math.round(255 * Math.min(1, Math.pow(a * (0.35 + 1.6 * tr.lam), 1 / 2.2))));
+    ctx.fillStyle = ctx.strokeStyle = `rgb(${rgb})`;
+    ctx.beginPath();
+    tr.p.forEach(([u, v], k) => (k ? ctx.lineTo(ox + u * scale, oy - v * scale) : ctx.moveTo(ox + u * scale, oy - v * scale)));
+    ctx.closePath(); ctx.fill(); ctx.stroke();
+  }
+}
+
+function draw() {
+  const start = Number(seedIn.value) || 0, aspect = Number(aspIn.value);
+  document.getElementById('aspectV').textContent = aspect.toFixed(2);
+  grid.textContent = '';
+  for (let i = 0; i < 24; i++) {
+    const seed = hash32(start, i) >>> 0;
+    const b = bakeLogSeed(D, seed, aspect);
+    const cell = document.createElement('div'); cell.className = 'cell';
+    const cv = document.createElement('canvas'); cv.width = 600; cv.height = 360;
+    const ctx = cv.getContext('2d');
+    const len = 1 / aspect, scale = 520 / (len + 3);
+    // Side: z across, y up (seen from +x). Above: z across, x up (seen from +y).
+    view(ctx, b.mesh, aspect, ([x, y, z]) => [z, y, x], 300, 150, scale);
+    view(ctx, b.mesh, aspect, ([x, y, z]) => [z, -x, y], 300, 270, scale);
+    ctx.fillStyle = '#c9bfa9'; ctx.fillRect(20, 150, 560, 2);
+    const name = document.createElement('div'); name.className = 'name';
+    name.textContent = `${NAMES[b.form]} · at sea ${b.sea.toFixed(2)} · seed ${seed}`;
+    cell.append(cv, name);
+    grid.append(cell);
+  }
+}
+seedIn.addEventListener('change', draw);
+aspIn.addEventListener('input', draw);
+document.getElementById('next').addEventListener('click', () => { seedIn.value = String((Number(seedIn.value) || 0) + 24); draw(); });
+draw();
+</script>
+</body>
+</html>

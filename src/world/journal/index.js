@@ -162,12 +162,17 @@ export function createJournal(opts) {
         noPage: true, canLift: nt.canLift, liftLabel: nt.liftLabel, inLabel: nt.inLabel };
     }
     // Then a loose stone or a driftwood log (docs/future/10): the tap lifts or rolls it to look
-    // underneath. It has no page. Once driftwood washes up (unlocks.carry) its card offers Carry.
+    // underneath. A stone has no page; a log opens the Driftwood page (L2), its form and its wear
+    // on the card (log: what the page's sketch is traced from). Once driftwood washes up
+    // (unlocks.carry) its card offers Carry.
     const pc = opts.pieces?.pieceAt(x, z);
     const pw = pc && words.pieces?.[pc.kind];
     if (pw) {
-      return { sp: `piece:${pc.kind}`, piece: pc.id, kind: pc.kind, name: pw.name, sub: null, icon: pw.icon, text: pw.cardLine, wx: pc.x, wz: pc.z,
-        r: pc.kind === 'log' ? (pc.length ?? 1) * 0.55 : pc.size * 0.7, stage: -1, noPage: true, canCarry: !!get('unlocks')?.carry };
+      const look = pc.kind === 'log' ? opts.pieces?.logLook?.(pc) ?? null : null;
+      const isLog = !!look && !!words.species.driftwood;
+      return { sp: isLog ? 'driftwood' : `piece:${pc.kind}`, piece: pc.id, kind: pc.kind, name: pw.name, sub: null, icon: pw.icon, text: pw.cardLine, wx: pc.x, wz: pc.z,
+        r: pc.kind === 'log' ? (pc.length ?? 1) * 0.55 : pc.size * 0.7, stage: -1, noPage: !isLog, canCarry: !!get('unlocks')?.carry,
+        ...(isLog ? { form: look.form, log: { seed: pc.seed, size: pc.size, length: pc.length ?? 1, form: look.form }, wear: look } : {}) };
     }
     const hab = habitat();
     const living = identify(world.state, hab, x, z, words);
@@ -175,6 +180,17 @@ export function createJournal(opts) {
     const kind = groundKind(hab, material(), x, z, island);
     return kind ? groundCard(kind, hab, x, z, { island, flora: flora(), journal, words }) : null;
   }
+
+  /**
+   * What a tapped log teaches the Driftwood page (its field lines' triggers): bark on a fresh one,
+   * the silver and the grooves on an old one, moss on one kept in damp shade.
+   * @param {{ sea: number, moss: number } | undefined} wear @param {any} rec words.species.driftwood
+   */
+  const logLessons = (wear, rec) => {
+    const T = rec?.lessons ?? { fresh: 0.3, old: 0.7, moss: 0.2 };
+    if (!wear) return [];
+    return [wear.sea < T.fresh ? 'fresh' : '', wear.sea > T.old ? 'old' : '', wear.moss > T.moss ? 'moss' : ''].filter(Boolean);
+  };
 
   /**
    * Show a card (and its ring), and catch any moment it is part of.
@@ -191,7 +207,15 @@ export function createJournal(opts) {
     // each is written down.
     if (card.piece) {
       emitDeferred('piece:lifted', { id: card.piece });
-      commit(liftedStone(journal, { state: world.state, hour: hourIndex(), words }, card.kind));
+      const ctx = { state: world.state, hour: hourIndex(), words };
+      commit(liftedStone(journal, ctx, card.kind));
+      // A log is a find of the Driftwood page (L2): each form found once, and what its wear shows.
+      if (card.sp === 'driftwood') {
+        commit(foundFind(journal, 'driftwood', ctx, card.form));
+        for (const t of logLessons(card.wear, words.species.driftwood)) commit(learn(journal, 'driftwood', t, ctx));
+        const list = words.moments[momentKind(words.species.driftwood)];
+        commit(catchMoments(journal, 'driftwood', momentsNow(list, now(card.stage), words.moments), { ...ctx, name: 'driftwood', list }));
+      }
       return;
     }
     // Tapping a frog, or a school of minnows, is finding it: its page inks (once).
