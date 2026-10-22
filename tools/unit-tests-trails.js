@@ -138,7 +138,7 @@ export function addTrailsTests(test, assert, eq) {
   });
 
   test(G, "save format 8: the trails' firsts come back, and an older island gets them from its shelf", () => {
-    eq(FORMAT, 8, 'this build writes format 8');
+    assert(FORMAT >= 8, 'this build writes format 8 or later (9 since the keeper\'s camp, tools/unit-tests-format9.js)');
     const e = sampleTrails({});
     const { sections } = snapshot(/** @type {any} */ ({ build: 't', seed: 1, island: 'x', worldT: 0, flow: 1, world: {}, journal: null, water: null,
       unlocks: e, view: null, looks: {}, chunks: {}, mirror: null, savedAt: 0, wallHighWater: 0 }));
