@@ -54,6 +54,10 @@ Full ownership and exports are in `docs/03-tech-stack-and-module-map.md`.
 
 **Physical light, painted last.** Light, sky, shadows and water optics are computed physically in linear HDR. The soft painted palette is applied only at the tonemap step through a palette lookup. Do not paint colors into materials to fake the style; change the palette instead. Details: `docs/05-look-and-palette.md`.
 
+## Creature rule
+
+**Every creature is rigged and animated.** As far as its form allows, every creature, including each life stage (tadpole, froglet, adult), has a basic rig and plays basic animations for what it does: walking, hopping, swimming, flying, breathing at rest. A single posed model sliding across the ground is never acceptable. Swarms of tiny creatures (midges, minnow schools) may use cheap shader motion instead of bones, but they must still move like living things. Build the rig and animations with the creature, not as a later fix.
+
 ## Testing
 
 - Each feature ships with a short click-test list: what Matt should see and do, in plain language. Put it in the PR description.
