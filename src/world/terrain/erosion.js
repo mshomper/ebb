@@ -3,9 +3,10 @@
 // then a readback of that rect so the quantized CPU mirror becomes the exact result.
 
 import { makeBuffer, makeShaderModule } from '../../core/gpu.js';
-import { CELL } from './grid.js';
+import { CELL, WORLD_ORIGIN } from './grid.js';
 
 const DEG = Math.PI / 180;
+const UNIFORM_BYTES = 64;
 
 /**
  * @param {GPUDevice} device
@@ -15,7 +16,7 @@ const DEG = Math.PI / 180;
 export async function createErosionGpu(device, tex, recipe) {
   const module = await makeShaderModule(device, 'terrain-erosion');
   const pipeline = await device.createComputePipelineAsync({ label: 'terrain-erosion', layout: 'auto', compute: { module, entryPoint: 'csErode' } });
-  const uniforms = makeBuffer(device, { label: 'terrain-erosion', size: 32, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
+  const uniforms = makeBuffer(device, { label: 'terrain-erosion', size: UNIFORM_BYTES, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
   /** @param {GPUTexture} from @param {GPUTexture} to */
   const groupFor = (from, to) => device.createBindGroup({
     label: 'terrain-erosion',
@@ -35,16 +36,19 @@ export async function createErosionGpu(device, tex, recipe) {
    * @param {GPUCommandEncoder} encoder
    * @param {import('./heightfield.js').CellRect} r
    * @param {GPUComputePassTimestampWrites} [timestampWrites]  for tools pages that time the pass
+   * @param {import('../camp/layout.js').Pad | null} [pad]  the camp pad, whose cells erosion never moves
    */
-  function encode(encoder, r, timestampWrites) {
+  function encode(encoder, r, timestampWrites, pad = null) {
     if (r.w <= 0 || r.h <= 0 || recipe.iterations <= 0) return;
-    const data = new ArrayBuffer(32);
+    const data = new ArrayBuffer(UNIFORM_BYTES);
     const u = new Uint32Array(data);
     const f = new Float32Array(data);
     u[0] = r.x; u[1] = r.y; u[2] = r.w; u[3] = r.h;
     f[4] = Math.tan(recipe.talusSoilDeg * DEG) * CELL;
     f[5] = Math.tan(recipe.talusRockDeg * DEG) * CELL;
     f[6] = recipe.rate;
+    f[8] = pad ? pad.x : 0; f[9] = pad ? pad.z : 0; f[10] = pad ? pad.r : -1; f[11] = pad ? Math.max(1e-3, pad.lockFadeM) : 1;
+    f[12] = WORLD_ORIGIN; f[13] = CELL;
     device.queue.writeBuffer(uniforms, 0, data);
     // The gather reads two cells past the rect, so scratch must match the live height there first.
     const n = tex.height.width;

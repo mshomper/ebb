@@ -45,6 +45,7 @@ import { CELL, CHUNK_CELLS, CHUNK_SIZE, quantize } from './grid.js';
 const LAYER_STEP = 16;
 const L_WARP_X = 1, L_WARP_Z = 2, L_COAST = 3, L_DETAIL = 4, L_SAND = 5, L_SOIL = 6, L_ROCK = 7;
 const L_BASIN = 8, L_FLOOR = 9, L_RISE_POS = 10, L_BASIN_POS = 11, L_OUTCROP = 12, L_STONE_LUMP = 13;
+const L_LOBES = 14, L_POINTS = 15;
 
 const CELLS = CHUNK_CELLS * CHUNK_CELLS;
 
@@ -216,6 +217,9 @@ function makeContext(land, seed) {
     soil: makeFbm(seed, L_SOIL, { scale: m.soilScale, octaves: 3 }),
     rock: makeFbm(seed, L_ROCK, { scale: m.rockScale, octaves: 2 }),
     riseX, riseZ, basins, channels, outcrops, springHeads,
+    shore: makeShore(land, seed),
+    // The pad levelled into the base (new islands only; an older island's is stamped on load).
+    pad: /** @type {any} */ (land).camp && /** @type {any} */ (land).camp.inBase !== false ? campPad(/** @type {any} */ (land).camp) : null,
     // Hermite end slopes, in units of the ramp parameter, so both sides meet the
     // waterline with the same gentle beach slope (no crease at the shore).
     landM0: land.beachSlope * land.inlandWidth,
@@ -300,6 +304,86 @@ function makeOutcrop(seed, o, cx, cz, ux, uz, layer = 0) {
 }
 
 /**
+ * The keeper's camp pad (docs/future/13 section 3.1) from the land recipe's `camp` block: center,
+ * level, radius and blend, and the outward unit direction it faces (from the island's center unless
+ * `facingDeg` is given; 0 deg is +x, 90 deg is +z).
+ * @param {any} camp
+ */
+export function campPad(camp) {
+  /** @type {number} */ let fx, /** @type {number} */ fz;
+  if (typeof camp.facingDeg === 'number') {
+    fx = det.cos(camp.facingDeg * det.PI / 180); fz = det.sin(camp.facingDeg * det.PI / 180);
+  } else {
+    const l = Math.sqrt(camp.x * camp.x + camp.z * camp.z) || 1;
+    fx = camp.x / l; fz = camp.z / l;
+  }
+  return { x: camp.x, z: camp.z, r: camp.radiusM, h: camp.heightM, blend: camp.blendM, fx, fz };
+}
+
+/**
+ * The island's center in the world (m). A land recipe's own positions (rise, basins, camp) are
+ * measured from it; the 4 x 4 open land of the larger island is centered on (-16, -16), since
+ * chunks sit on multiples of 32 m (docs/future/13 section 3.11).
+ * @param {any} land
+ * @returns {{ x: number, z: number }}
+ */
+export function islandCenter(land) {
+  return { x: land.center?.x ?? 0, z: land.center?.z ?? 0 };
+}
+
+/**
+ * The keeper's camp pad in world meters, from the land recipe (the pad itself is in the island's
+ * base only when `camp.inBase` is not false). Null when the land has no camp block. An older
+ * island's live pad is in the store's `camp.pad` once it has been stamped (src/world/camp).
+ * @param {any} land
+ * @returns {{ x: number, z: number, r: number, h: number, blend: number, fx: number, fz: number, inBase: boolean } | null}
+ */
+export function campOf(land) {
+  if (!land?.camp) return null;
+  const p = campPad(land.camp), o = islandCenter(land);
+  return { ...p, x: p.x + o.x, z: p.z + o.z, inBase: land.camp.inBase !== false };
+}
+
+/**
+ * The coast's larger shapes (docs/future/13 section 3.11), all from the seed: low-frequency lobes
+ * (coves and headlands), a short spit and one rocky point, each a tongue along a seeded bearing.
+ * The lobes fade to nothing on the camp's side (`calmDeg` either side of its facing), so the camp
+ * always looks down a plain sand beach to the boat. Null when the land recipe has no `shape`.
+ * @param {LandRecipe} land @param {number} seed
+ */
+function makeShore(land, seed) {
+  /** @type {any} */ const S = /** @type {any} */ (land).shape;
+  if (!S) return null;
+  const DEG = det.PI / 180;
+  const pad = /** @type {any} */ (land).camp ? campPad(/** @type {any} */ (land).camp) : { fx: 1, fz: 0 };
+  const campDeg = det.atan2(pad.fz, pad.fx) / DEG;
+  /** Uniform in [0, 1). @param {number} k */
+  const u = (k) => (hash32(seed, L_POINTS, k) >>> 8) / 16777216;
+  // The spit and the rocky point sit on the far side from the camp, apart from each other.
+  const spitDeg = campDeg + S.spit.fromCampDeg[0] + u(0) * (S.spit.fromCampDeg[1] - S.spit.fromCampDeg[0]);
+  const side = u(1) < 0.5 ? 1 : -1;
+  const rockDeg = spitDeg + side * (S.rocky.fromSpitDeg[0] + u(2) * (S.rocky.fromSpitDeg[1] - S.rocky.fromSpitDeg[0]));
+  /** @param {number} deg @param {any} t */
+  const tongue = (deg, t) => ({ dx: det.cos(deg * DEG), dz: det.sin(deg * DEG), len: t.lengthM, half: t.widthM * 0.5 });
+  return {
+    lobes: makeFbm(seed, L_LOBES, S.lobes), amount: S.lobes.amount,
+    campX: pad.fx, campZ: pad.fz, calmIn: det.cos(S.calmDeg * 0.5 * DEG), calmOut: det.cos(S.calmDeg * DEG),
+    spit: tongue(spitDeg, S.spit), rocky: tongue(rockDeg, S.rocky), rockyPaint: S.rocky.paint,
+  };
+}
+
+/**
+ * How far one tongue (a spit or a point) pushes the coast out at (x, z), in meters, and its weight
+ * (0..1) across its width. A pointed tongue: full length on its center line, nothing past `half`.
+ * @param {{ dx: number, dz: number, len: number, half: number }} t @param {number} x @param {number} z
+ */
+function tongueAt(t, x, z) {
+  const along = x * t.dx + z * t.dz;
+  if (along <= 0) return 0;
+  return bump(Math.abs(z * t.dx - x * t.dz) / t.half);
+}
+
+/**
  * The island's springs (docs/07): each `fromBasinM` from its basin's center, uphill toward the rise
  * (or along its bearing), so its channel runs down into the pond hollow. The channel and the
  * outcrop are laid out in the warped frame, so each spring sits at the world point the warp
@@ -320,16 +404,18 @@ function springsOf(c) {
  */
 export function landmarks(land, seed) {
   const c = makeContext(land, seed >>> 0);
-  const springs = springsOf(c).map((s) => ({ x: s.x, z: s.z, rateLps: s.spec.rateLps }));
-  const basins = c.basins.map((b) => ({ x: b.x, z: b.z }));
+  const o = islandCenter(land);
+  const springs = springsOf(c).map((s) => ({ x: s.x + o.x, z: s.z + o.z, rateLps: s.spec.rateLps }));
+  const basins = c.basins.map((b) => ({ x: b.x + o.x, z: b.z + o.z }));
   return {
-    rise: { x: c.riseX, z: c.riseZ }, basin: basins[0] ?? null, basins,
+    rise: { x: c.riseX + o.x, z: c.riseZ + o.z }, basin: basins[0] ?? null, basins,
     spring: springs[0] ?? null, springs,
   };
 }
 
 /**
- * Base height and material weights at world (x, z). Writes [h, grass, sand, rock, soil] to out.
+ * Base height and material weights at (x, z), measured from the island's center (islandCenter).
+ * Writes [h, grass, sand, rock, soil] to out.
  * @param {Ctx} c @param {number} x @param {number} z @param {Float64Array} out
  */
 function sampleCell(c, x, z, out) {
@@ -344,8 +430,20 @@ function sampleCell(c, x, z, out) {
   const pz = z + L.warp.strength * fbm(c.warpZ, x, z);
 
   // Shore profile from the signed distance inland, with a noisy coast.
-  const d = r + L.coast.amount * fbm(c.coast, px, pz);
+  let d = r + L.coast.amount * fbm(c.coast, px, pz);
+  // The coast's larger shapes (section 3.11): lobes calm on the camp's side, a spit, a rocky point.
+  let rockyW = 0;
+  const sh = c.shore;
+  if (sh && r > 0) {
+    const toCamp = (x * sh.campX + z * sh.campZ) / r;
+    d -= sh.amount * fbm(sh.lobes, px, pz) * (1 - smoothstep(sh.calmOut, sh.calmIn, toCamp));
+    d -= sh.spit.len * tongueAt(sh.spit, x, z);
+    rockyW = tongueAt(sh.rocky, x, z);
+    d -= sh.rocky.len * rockyW;
+  }
   const s = L.radius - d;
+  // The rocky point is rock only near its own shore, not along its whole bearing inland.
+  rockyW *= 1 - smoothstep(2, 5, s);
   let h = s >= 0
     ? hermite(s / L.inlandWidth, c.landM0, L.plateauHeight)
     : hermite(-s / L.seaFallWidth, c.seaM0, L.seabedDepth);
@@ -461,6 +559,18 @@ function sampleCell(c, x, z, out) {
     stoneRock = Math.max(stoneRock, smoothstep(0, 0.03, stoneLift));
   }
 
+  // The camp pad (docs/future/13 section 3.1): level at its height inside the radius, easing back to
+  // the natural ground across the blend.
+  let padW = 0;
+  const pad = c.pad;
+  if (pad) {
+    const qx = x - pad.x, qz = z - pad.z, q2 = qx * qx + qz * qz, out2 = pad.r + pad.blend;
+    if (q2 < out2 * out2) {
+      padW = 1 - smoothstep(pad.r, out2, Math.sqrt(q2));
+      h += (pad.h - h) * padW;
+    }
+  }
+
   // Outer falloff: everything joins the open seabed before falloffEnd.
   const fall = smoothstep(L.falloffStart, L.falloffEnd, r);
   if (fall > 0) h += (L.seabedDepth - h) * fall;
@@ -484,6 +594,9 @@ function sampleCell(c, x, z, out) {
       rock = Math.max(rock, stoneRock);
     }
   }
+  // The rocky point is bare rock out to the water; the pad is grass and soil only.
+  if (sh && rockyW > 0) rock = Math.max(rock, sh.rockyPaint * smoothstep(0.25, 0.6, rockyW));
+  if (padW > 0) { sand *= 1 - padW; rock *= 1 - padW; }
   const sandW = sand * (1 - rock);
   const soilW = soil * (1 - rock) * (1 - sand);
   out[0] = h;
@@ -508,8 +621,10 @@ export function buildBase({ land, seed, cx, cz }) {
   const heightQ = new Uint16Array(CELLS);
   const material = new Uint8Array(CELLS * 4);
   const out = new Float64Array(5);
-  const x0 = CHUNK_SIZE * cx - CHUNK_SIZE / 2;
-  const z0 = CHUNK_SIZE * cz - CHUNK_SIZE / 2;
+  // Cells are sampled from the island's center (0 unless the land recipe moves it).
+  const o = islandCenter(land);
+  const x0 = CHUNK_SIZE * cx - CHUNK_SIZE / 2 - o.x;
+  const z0 = CHUNK_SIZE * cz - CHUNK_SIZE / 2 - o.z;
   for (let j = 0; j < CHUNK_CELLS; j++) {
     const z = z0 + (j + 0.5) * CELL;
     for (let i = 0; i < CHUNK_CELLS; i++) {

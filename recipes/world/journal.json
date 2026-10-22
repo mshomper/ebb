@@ -102,6 +102,7 @@
       "hint": "Tap the ground where you want to set it down.",
       "cancel": "Put it back",
       "water": "It needs land under it. Tap the ground.",
+      "camp": "The camp ground stays clear. Set it down off the camp.",
       "full": "The island keeps all the logs it can for now."
     },
     "lift": {

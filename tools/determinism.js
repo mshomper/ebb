@@ -1,6 +1,7 @@
 // @ts-check
-// Determinism page: builds the 9 starter chunks on the main thread, on 1 worker and on
-// the full pool, compares landform hashes, and draws the island from above (docs/08).
+// Determinism page: builds the island's open chunks (16 on the larger starter island, 9 on the
+// older one) on the main thread, on 1 worker and on the full pool, compares landform hashes, and
+// draws the island from above (docs/08).
 
 import { hash32, subSeed } from '../src/core/rng.js';
 import { initWorkers, run, dispose, defaultPoolSize } from '../src/core/workers.js';
@@ -11,9 +12,22 @@ import { buildSummary, hashSummary, WATER_CLASS } from '../src/world/water/summa
 import { haulsJob } from '../src/world/nets/haul.js';
 
 const JOB = { module: './world/terrain/landform.js', fn: 'buildBase' };
-/** The 3 x 3 starter chunks, row by row. */
-const CHUNKS = /** @type {[number, number][]} */ ([]);
-for (let cz = -1; cz <= 1; cz++) for (let cx = -1; cx <= 1; cx++) CHUNKS.push([cx, cz]);
+/** The island's open chunks, row by row, from its land recipe (useChunks). */
+let CHUNKS = /** @type {[number, number][]} */ ([]);
+/** The first open chunk on each axis, and how many chunks the open land is across. */
+let C0 = -1, SIDE = 3;
+/** The open land's water cells (0.5 m): two terrain cells each. */
+let WATER_RECT = { x: 64, y: 64, w: 192, h: 192 };
+
+/** @param {any} land  its chunkMin and chunkMax, else today's 3 x 3 */
+function useChunks(land) {
+  C0 = land.chunkMin ?? -1;
+  SIDE = (land.chunkMax ?? 1) - C0 + 1;
+  CHUNKS = [];
+  for (let cz = C0; cz < C0 + SIDE; cz++) for (let cx = C0; cx < C0 + SIDE; cx++) CHUNKS.push([cx, cz]);
+  const w = SIDE * CHUNK_CELLS / 2;
+  WATER_RECT = { x: (C0 - CHUNK_MIN) * CHUNK_CELLS / 2, y: (C0 - CHUNK_MIN) * CHUNK_CELLS / 2, w, h: w };
+}
 
 /**
  * @typedef {Object} RunResult
@@ -86,10 +100,11 @@ const COLORS = {
   deep: [52, 112, 140],
 };
 
-/** Draw the 384 x 384 cell island, shaded by slope, colored by material weights. @param {RunResult} r */
+/** Draw the open land cell by cell, shaded by slope, colored by material weights. @param {RunResult} r */
 function drawMap(r) {
   const canvas = /** @type {HTMLCanvasElement} */ ($('map'));
-  const N = CHUNK_CELLS * 3;
+  const N = CHUNK_CELLS * SIDE;
+  canvas.width = N; canvas.height = N;
   const ctx = /** @type {CanvasRenderingContext2D} */ (canvas.getContext('2d'));
   const img = ctx.createImageData(N, N);
   const H = new Float32Array(N * N);
@@ -97,7 +112,7 @@ function drawMap(r) {
   r.bases.forEach((b, k) => {
     const [cx, cz] = CHUNKS[k];
     for (let j = 0; j < CHUNK_CELLS; j++) for (let i = 0; i < CHUNK_CELLS; i++) {
-      const g = ((cz + 1) * CHUNK_CELLS + j) * N + (cx + 1) * CHUNK_CELLS + i;
+      const g = ((cz - C0) * CHUNK_CELLS + j) * N + (cx - C0) * CHUNK_CELLS + i;
       const c = j * CHUNK_CELLS + i;
       H[g] = dequantize(b.heightQ[c]);
       for (let m = 0; m < 4; m++) M[g * 4 + m] = b.material[c * 4 + m];
@@ -125,7 +140,7 @@ function drawMap(r) {
     img.data[k * 4] = col[0]; img.data[k * 4 + 1] = col[1]; img.data[k * 4 + 2] = col[2]; img.data[k * 4 + 3] = 255;
   }
   ctx.putImageData(img, 0, 0);
-  $('mapNote').textContent = `96 m across, the 3 by 3 starter chunks. Highest point ${peak.toFixed(1)} m above sea level. Thin lines mark every meter of height.`;
+  $('mapNote').textContent = `${SIDE * 32} m across, the ${SIDE} by ${SIDE} open chunks. Highest point ${peak.toFixed(1)} m above sea level. Thin lines mark every meter of height.`;
 }
 
 // ---------------------------------------------------------------------------
@@ -136,7 +151,7 @@ function showResults(runs) {
   const ref = runs[0];
   $('runs').innerHTML = runs.map((r) => `<div class="run"><span class="name">${r.name}</span>` +
     `<b class="${r.combined === ref.combined ? 'ok' : 'bad'}">${hex(r.combined)}</b>` +
-    `<span>${r.ms.toFixed(1)} ms for 9 chunks</span></div>`).join('');
+    `<span>${r.ms.toFixed(1)} ms for ${CHUNKS.length} chunks</span></div>`).join('');
 
   /** @param {string} label @param {number[]} hs @param {string} [cls] */
   const row = (label, hs, cls = '') => {
@@ -145,7 +160,7 @@ function showResults(runs) {
       hs.map((h, k) => `<span class="hash">${hex(h)}<small>${runs[k].name}</small></span>`).join('') +
       `<span class="v ${ok ? 'ok' : 'bad'}">${icon(ok)}${ok ? 'match' : 'differ'}</span></div>`;
   };
-  let html = row('All 9 chunks', runs.map((r) => r.combined), 'total');
+  let html = row(`All ${CHUNKS.length} chunks`, runs.map((r) => r.combined), 'total');
   CHUNKS.forEach(([cx, cz], k) => { html += row(`Chunk ${cx}, ${cz}`, runs.map((r) => r.hashes[k])); });
   $('chunks').innerHTML = html;
 
@@ -161,8 +176,6 @@ function showResults(runs) {
 // Water summary: the same island's water, on the main thread and on a worker
 
 const WATER_JOB = { module: './world/water/summary.js', fn: 'buildSummary' };
-/** The starter chunks' water cells: terrain cells 128..511 on each axis. */
-const WATER_RECT = { x: 64, y: 64, w: 192, h: 192 };
 /** @type {Record<number, number[]>} */
 const CLASS_COLORS = {
   [WATER_CLASS.sea]: [62, 127, 154],
@@ -172,7 +185,7 @@ const CLASS_COLORS = {
   [WATER_CLASS.damp]: [140, 106, 72],
 };
 
-/** The 768 x 768 heightQ: the 9 starter chunks in place, open seabed everywhere else. @param {any} land @param {RunResult} r */
+/** The 768 x 768 heightQ: the open chunks in place, open seabed everywhere else. @param {any} land @param {RunResult} r */
 function worldHeights(land, r) {
   const T = WORLD_CELLS;
   const heightQ = new Uint16Array(T * T).fill(quantize(land.seabedDepth));
@@ -220,13 +233,13 @@ function showWater(w) {
     ['#8C6A48', 'Damp hollow'], ['#DCC9A0', 'Dry ground in the tide band'], ['#7FA463', 'Dry ground'],
   ].map(([c, t]) => `<span><i style="background:${c}"></i>${t}</span>`).join('');
   card.innerHTML = '<h2>Water summary</h2>' +
-    `<div class="row total"><span class="label">Water, 96 m</span>` +
+    `<div class="row total"><span class="label">Water, ${SIDE * 32} m</span>` +
     `<span class="hash">${hex(main.hash)}<small>Main thread, ${(main.stats.ms ?? 0).toFixed(1)} ms</small></span>` +
     `<span class="hash">${hex(worker.hash)}<small>1 worker, ${w.workerMs.toFixed(1)} ms</small></span>` +
     `<span class="v ${ok ? 'ok' : 'bad'}">${icon(ok)}${ok ? 'match' : 'differ'}</span></div>` +
     `<p class="muted">${main.stats.ponds} ${main.stats.ponds === 1 ? 'pond' : 'ponds'}, ${main.stats.streamCells} stream cells of half a meter. ` +
     'The worker time includes sending the heights across.</p>' +
-    '<div class="map-wrap" style="margin-top:12px"><canvas id="waterMap" width="192" height="192" ' +
+    `<div class="map-wrap" style="margin-top:12px"><canvas id="waterMap" width="${WATER_RECT.w}" height="${WATER_RECT.h}" ` +
     'style="width:100%;max-width:480px;aspect-ratio:1;display:block;border-radius:12px;image-rendering:pixelated" ' +
     `aria-label="Map of water classes on the starter island"></canvas><div class="legend">${legend}</div></div>`;
 
@@ -287,9 +300,11 @@ async function build() {
   $('verdict').textContent = 'Building';
   $('detail').textContent = '';
   try {
-    // `?island=two-ponds` checks another island (recipes/world/terrain.json lists them).
-    const islandId = (new URLSearchParams(location.search).get('island') ?? 'starter-island').replace(/[^a-z0-9-]/g, '');
+    // The land a new starter island grows from; `?island=starter-island` checks the older island's
+    // land, `?island=two-ponds` another (recipes/land/<id>.json).
+    const islandId = (new URLSearchParams(location.search).get('island') ?? 'starter-island-2').replace(/[^a-z0-9-]/g, '');
     const land = await (await fetch(`../recipes/land/${islandId}.json`)).json();
+    useChunks(land);
     const seed = subSeed(worldSeed, 'terrain');
     const pool = defaultPoolSize();
     const runs = [

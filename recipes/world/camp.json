@@ -1,0 +1,13 @@
+{
+  "type": "camp",
+  "version": 1,
+  "note": "The keeper's camp (docs/future/13). The pad's shape, level and lock fade live in the land recipe's camp block; this holds what the camp says. The pad is locked ground (CP-01): no brush, erosion or boulder moves it, and a loose stone, a spring or a pour of water tapped on it is refused with one quiet line on the island.",
+  "words": {
+    "clear": "The camp ground stays clear."
+  },
+  "wordsNote": "clear: the quiet line when a loose stone, a spring or a pour lands on the camp pad. Shown for walker.json words.noticeS seconds, once per press. The Plant tool says it too when a seed is tapped on the pad (CP-16).",
+  "grass": {
+    "thinWithWear": 0.5
+  },
+  "grassNote": "thinWithWear: how much the pad's wear (the land recipe's camp.wear) thins the grass blades toward the pad's center (0 none, 1 all of the wear). The blades' height cap is camp.grassScale, softened over camp.edgeWearM outside the pad."
+}
