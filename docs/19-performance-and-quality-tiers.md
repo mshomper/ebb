@@ -119,15 +119,18 @@ Medium spends the same groups inside 13 ms at its 0.85 render scale; low inside 
 | HUD backdrop blur (doc 15) | on | on | on |
 | Worker pool | `hardwareConcurrency − 2`, max 14 | same | max 4 |
 | Photo export (doc 16) | 2x, 4096 px max | 2x, 4096 px max | 1x |
-| Keeper's camp (docs/future/13, sections 3.5 and 13): fire and lantern lights, the smoke pass (about 40 seeded billboard puffs), moths, hole pieces (Phase 2), gather pickups drawn near the walker | TBD | TBD | TBD |
+| Keeper's camp (docs/future/13, sections 3.5 and 13): camp models, fire and lantern lights, flame, smoke puffs, moths (budgets below) | 4 lights, 40 puffs, 6 moths | 4 lights, 40 puffs, 6 moths | 4 lights, 24 puffs, 3 moths |
 
-**Keeper's camp budgets: to be set before E3** (Phase 1, approved October 22, 2026; docs/future/13, sections 1.4, 3.10 and 13). The smoke pass and the lights buffer are new rendering work with no code yet. These lines are placeholders, not measured numbers; each is set from a measurement on Matt's desktop and the medium-tier laptop before E3 (tent and ring) starts:
+**Keeper's camp budgets** (E3, set October 22, 2026 and approved by Matt; docs/future/13, sections 1.4, 3.10 and 13). Budgets are measured by `tools/camp-bench.html` on Matt's desktop and the medium-tier laptop, at dusk with the fire lit, camera down by the fire. Each row is the extra GPU time with the camp on over the same view with it off:
 
 | Item | GPU ms, high | GPU ms, medium | Counts or caps |
 |---|---|---|---|
-| Fire light (1,800 K, about 4 m) and lantern light (2,200 K, about 8 m) as the first entries in doc 06's lights buffer | TBD | TBD | 2 lights at camp; TBD |
-| Smoke pass, seeded billboard puffs leaning with the wind | TBD | TBD | about 40 puffs; TBD |
-| Moths at the fire and lantern after dark | TBD | TBD | about 6; TBD |
+| Camp models: the textured prop pass (base colour, normal and roughness maps), tent with bedroll, fire ring, fire wood, lantern, with their sun shadows | 0.20 | 0.25 | about 30k triangles, 4 models, 1,024 px maps |
+| Fire light (1,800 K, about 4 m) and lantern light (2,200 K, about 8 m): point lights in the shared light block (`LightUniforms`), looped in every lit shader and skipped beyond their reach | 0.10 | 0.15 | 4 lights at most (2 used); tiled lights wait for many lanterns |
+| Flame: a few emissive flame cards feeding bloom, with a small minimum glow seen from above | 0.03 | 0.05 | 6 cards |
+| Smoke pass, seeded soft billboard puffs leaning with the wind, fading near the eye to cap overdraw | 0.15 | 0.20 | 40 puffs |
+| Moths at the fire and lantern after dark | 0.02 | 0.02 | 6 |
+| **Camp total** (only while the camp is in view; the lights only at night) | **0.50** | **0.67** | |
 | Hole pieces (Phase 2, digging) | TBD | TBD | open-hole cap from docs/future/13, section 10.8.3 |
 | Gather pickups drawn near the walker | TBD | TBD | TBD |
 
