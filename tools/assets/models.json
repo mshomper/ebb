@@ -7,12 +7,12 @@
     { "source": "Ebb_Campfire+Ring.glb", "out": "fire-ring", "along": "longest", "sizeM": 1.0, "yawDeg": 0, "triangles": 5000, "maps": 1024 },
     { "source": "Ebb_Campfire+Wood.glb", "out": "fire-wood", "along": "longest", "sizeM": 1.0, "yawDeg": 0, "triangles": 6000, "maps": 1024 },
     { "source": "Ebb_Stones.glb", "out": "stone-pile", "along": "longest", "sizeM": 1.0, "yawDeg": 0, "triangles": 5000, "maps": 1024 },
-    { "source": "Ebb_Log+Pile.glb", "out": "log-pile", "along": "longest", "sizeM": 1.2, "yawDeg": 0, "triangles": 5000, "maps": 1024 },
-    { "source": "Ebb_Bedroll.glb", "out": "bedroll", "along": "longest", "sizeM": 1.9, "yawDeg": 0, "triangles": 3000, "maps": 1024 },
+    { "source": "Ebb_Log+Pile.glb", "out": "log-pile", "along": "longest", "sizeM": 1.2, "yawDeg": 0, "triangles": 9000, "maps": 1024 },
+    { "source": "Ebb_Bedroll.glb", "out": "bedroll", "along": "longest", "sizeM": 1.9, "yawDeg": 0, "triangles": 7000, "maps": 1024 },
     { "source": "Ebb_Clay+Pot.glb", "out": "clay-pot", "along": "longest", "sizeM": 0.3, "yawDeg": 0, "triangles": 2500, "maps": 512 },
-    { "source": "Ebb_Iron+Shovel.glb", "out": "shovel-iron", "along": "longest", "sizeM": 1.1, "yawDeg": 0, "triangles": 2000, "maps": 512 },
-    { "source": "Ebb_Wood+Shovel.glb", "out": "shovel-wood", "along": "longest", "sizeM": 1.1, "yawDeg": 0, "triangles": 2000, "maps": 512 },
+    { "source": "Ebb_Iron+Shovel.glb", "out": "shovel-iron", "along": "longest", "sizeM": 1.1, "yawDeg": 0, "triangles": 4000, "maps": 512 },
+    { "source": "Ebb_Wood+Shovel.glb", "out": "shovel-wood", "along": "longest", "sizeM": 1.1, "yawDeg": 0, "triangles": 4000, "maps": 512 },
     { "source": "Ebb_Boat.glb", "out": "boat", "along": "longest", "sizeM": 2.6, "yawDeg": 90, "triangles": 6000, "maps": 1024 },
-    { "source": "Ebb_Lantern.glb", "out": "lantern", "along": "height", "sizeM": 0.3, "yawDeg": 0, "triangles": 2500, "maps": 512 }
+    { "source": "Ebb_Lantern.glb", "out": "lantern", "along": "height", "sizeM": 0.3, "yawDeg": 0, "triangles": 7000, "maps": 512 }
   ]
 }

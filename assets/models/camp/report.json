@@ -108,31 +108,31 @@
  "log-pile": {
   "source": "Ebb_Log+Pile.glb",
   "file": "log-pile.glb",
-  "bytes": 830640,
+  "bytes": 953712,
   "sourceBytes": 47374716,
   "trianglesBefore": 16582,
-  "triangles": 4999,
+  "triangles": 8998,
   "maps": 1024,
   "bounds": {
    "min": [
     -0.6,
     0,
-    -0.433
+    -0.432
    ],
    "max": [
     0.6,
-    0.744,
-    0.433
+    0.743,
+    0.432
    ]
   }
  },
  "bedroll": {
   "source": "Ebb_Bedroll.glb",
   "file": "bedroll.glb",
-  "bytes": 566112,
+  "bytes": 678736,
   "sourceBytes": 35789336,
   "trianglesBefore": 13323,
-  "triangles": 3301,
+  "triangles": 7000,
   "maps": 1024,
   "bounds": {
    "min": [
@@ -142,7 +142,7 @@
    ],
    "max": [
     0.95,
-    0.272,
+    0.273,
     0.447
    ]
   }
@@ -150,10 +150,10 @@
  "shovel-iron": {
   "source": "Ebb_Iron+Shovel.glb",
   "file": "shovel-iron.glb",
-  "bytes": 153080,
+  "bytes": 200928,
   "sourceBytes": 23554804,
   "trianglesBefore": 10854,
-  "triangles": 1999,
+  "triangles": 4000,
   "maps": 512,
   "bounds": {
    "min": [
@@ -171,21 +171,21 @@
  "shovel-wood": {
   "source": "Ebb_Wood+Shovel.glb",
   "file": "shovel-wood.glb",
-  "bytes": 152684,
+  "bytes": 202096,
   "sourceBytes": 21444092,
   "trianglesBefore": 10915,
-  "triangles": 2000,
+  "triangles": 4000,
   "maps": 512,
   "bounds": {
    "min": [
     -0.148,
     0,
-    -0.062
+    -0.063
    ],
    "max": [
     0.148,
     1.1,
-    0.062
+    0.063
    ]
   }
  },
@@ -213,21 +213,21 @@
  "lantern": {
   "source": "Ebb_Lantern.glb",
   "file": "lantern.glb",
-  "bytes": 286732,
+  "bytes": 414416,
   "sourceBytes": 16053020,
   "trianglesBefore": 13382,
-  "triangles": 2881,
+  "triangles": 6999,
   "maps": 512,
   "bounds": {
    "min": [
     -0.071,
     0,
-    -0.054
+    -0.055
    ],
    "max": [
     0.071,
     0.3,
-    0.054
+    0.055
    ]
   }
  }
