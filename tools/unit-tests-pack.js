@@ -9,6 +9,12 @@ import { makeKinds } from '../src/world/pack/kinds.js';
 import { emptyPack, cleanPack, sizeOf, add, take, has, handfulsOf, packHolds, normalize, addCarrier, removePouch,
   addHeap, takeFromHeap, expireHeaps } from '../src/world/pack/model.js';
 import { pileWord, pileLook, slotFor, setDown, takeUp } from '../src/world/pack/piles.js';
+import { createPiles } from '../src/world/pack/piles-live.js';
+import { atCamp } from '../src/world/pack/camp.js';
+import { padOf } from '../src/world/camp/layout.js';
+import { offCampGround } from '../src/world/pieces/camp-clear.js';
+import { emptyPieces } from '../src/world/pieces/model.js';
+import { get as getStore, update as updateStore } from '../src/core/store.js';
 
 const G = 'pack';
 
@@ -30,6 +36,32 @@ export function addPackTests(test, assert, eq) {
   const js = (/** @type {any} */ v) => JSON.stringify(v);
   /** Adds one handful at a time, as Gather does. @param {any} p @param {string} k @param {number} n @param {any} c */
   const gather = (p, k, n, c) => { for (let i = 0; i < n; i++) p = add(p, k, 1, c.kinds, c.recipe).pack; return p; };
+
+  test(G, 'Set down at camp makes a pile on the pad, and the camp ground keeps it there', async () => {
+    const c = await load();
+    const land = await (async () => {
+      const url = new URL('../recipes/land/starter-island-2.json', import.meta.url);
+      if (url.protocol === 'file:') { const fs = await import('node:fs/promises'); return JSON.parse(await fs.readFile(url, 'utf8')); }
+      return (await fetch(url)).json();
+    })();
+    const pad = padOf(land);
+    assert(pad, 'the new island has a camp pad');
+    updateStore('campPad', () => pad);
+    updateStore('pieces', () => emptyPieces());
+    const piles = createPiles({ recipe: c.recipe, kinds: c.kinds, seed: 7 });
+    const r = piles.setDown('drift-twigs', 3);
+    eq(r.moved, 3, 'all three handfuls go onto the pile');
+    const list = getStore('pieces').list;
+    const pile = list.find((/** @type {any} */ p) => p.kind === 'pile');
+    assert(pile && pile.slot === 'sticks' && pile.holds === 'drift-twigs', 'drift twigs go to the stick pile slot');
+    assert(atCamp(pile.x, pile.z), 'the pile lies on the camp ground');
+    eq(offCampGround(pad, list).length, list.length, 'clearing the camp ground leaves the pile');
+    eq(offCampGround(pad, [{ kind: 'stone', x: pad.x, z: pad.z, size: 0.3 }]).length, 0, 'a loose stone on the pad is still cleared');
+    const t = piles.takeUp(pile.id, { add: (/** @type {string} */ k, /** @type {number} */ n) => ({ added: n }) });
+    eq(t.taken, 3, 'Take up fills a pouch from it');
+    eq(getStore('pieces').list.filter((/** @type {any} */ p) => p.kind === 'pile').length, 0, 'an empty pile is gone');
+    updateStore('campPad', () => null);
+  });
 
   test(G, 'a new pack is empty with six pouches', async () => {
     const { recipe } = await load();
