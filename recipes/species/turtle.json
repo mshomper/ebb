@@ -82,13 +82,14 @@
   "motion": {
     "kind": "bask", "stepHz": 20,
     "paddleMps": 0.12, "turnEveryS": [8, 20], "leashM": 4, "minDepthM": 0.15,
-    "baskReachM": 12, "stackM": 0.12, "sideM": 0.3, "climbS": 4, "lookEveryS": [5, 14], "headTurnRad": 0.7,
+    "baskReachM": 12, "stackM": 0.12, "sideM": 0.33, "climbS": 4, "lookEveryS": [5, 14], "headTurnRad": 0.7,
     "fleeS": 40, "rainStaysIn": true, "ringStrength": 0.9, "ringM": 0.12,
     "swim": { "surfaceM": 0.034, "turnRadS": 0.9, "thrustMps2": 0.38, "dragPerS": 1.0, "glideChance": 0.55, "glideS": [1.2, 2.8], "glideUntilShare": 0.45,
               "diveChance": 0.35, "diveMinM": 0.35, "diveM": [0.12, 0.45], "diveMps": 0.06, "riseMps": 0.07, "bottomClearM": 0.03,
               "pitchShare": 1, "maxPitchDeg": 30, "nightShare": 0.3, "nightSinkM": 0.015,
               "periPerS": 0.15, "periS": [5, 12], "faceChance": 0.4, "faceRadS": 0.5 },
-    "walk": { "walkMps": 0.045, "turnRadS": 0.6, "walkDepthM": 0.05, "swimDepthM": 0.1, "reachM": 0.11, "lowStepM": 0.02, "lowStepPace": 1.6 },
+    "bask": { "dryS": 150, "wetS": 3, "lookEveryS": [6, 18], "lookUpRad": [0, 0.3], "lookEaseHz": 0.6 },
+    "walk": { "walkMps": 0.045, "turnRadS": 0.6, "landReachM": 1.5, "walkDepthM": 0.05, "swimDepthM": 0.1, "reachM": 0.11, "lowStepM": 0.02, "lowStepPace": 1.6 },
     "pose": {
       "easeHz": 3, "flipperDeg": { "front": 25, "hind": -35 },
       "swim": { "strokeS": 1.5, "power": 0.28, "recover": 0.16, "pairGap": 0.22, "scullDeg": 14, "neckOutM": 0.006, "headUpDeg": 16, "tailDeg": 8, "bobM": 0.0015,

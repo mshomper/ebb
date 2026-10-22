@@ -6,7 +6,7 @@
 // water. A fast swoop close by or an edit beside them sends them sliding into the water, to stay
 // under a while.
 //
-// Swimming (TL2) is stroke and glide: the diagonal pairs of legs sweep in turn and push it on, then
+// Basking (TL4) it breathes, its limbs pumping in and out, blinks, turns its head slowly or stretches it\n// up to the sun, yawns now and then, and dries from glossy to matte.\n//\n// Swimming (TL2) is stroke and glide: the diagonal pairs of legs sweep in turn and push it on, then
 // it glides with its flippers laid back until it slows. Now and then one dives and swims along
 // under the surface, then comes up to hang at the periscope, nose and eyes out, sometimes turned to
 // face you. Its pose follows what it is doing (rigs/turtle.js).
@@ -27,7 +27,7 @@ const DEG = Math.PI / 180;
  * @typedef {{ x: number, y: number, z: number, vx: number, vy: number, vz: number, roll: number, pitch: number, yaw: number,
  *   look: number, lookTo: number, nextLook: number, mode: string, until: number,
  *   goal: { x: number, z: number }, seat: number, from: { x: number, y: number, z: number } | null, under: number,
- *   spd: number, depth: number, gliding: boolean, glideUntil: number, facing: boolean, faceTo?: number,
+ *   spd: number, depth: number, gliding: boolean, glideUntil: number, facing: boolean, faceTo?: number, lookUpTo?: number,
  *   id: number, t: number, w: Record<string, number>, ph: number, stroke: number, haulK: number, slideK: number,
  *   lookUp: number, jaw: number, wet: number }} Turtle
  *   and its pose (rigs/turtle.js TurtlePose). seat: the spot it is bound for or on (-1 none); from:
@@ -46,7 +46,7 @@ const DEG = Math.PI / 180;
  */
 export function createBask(o) {
   const { M, env } = o;
-  const P = M.pose, SW = M.swim, W = M.walk;
+  const P = M.pose, SW = M.swim, W = M.walk, B = M.bask;
   const rng = stream(o.seed >>> 0, 0xba5c, o.id);
   /** @type {Turtle[]} */ const fish = [];
   let home = { ...o.home }, t = 0, fleeUntil = -1;
@@ -66,6 +66,26 @@ export function createBask(o) {
     return { ...home };
   }
 
+  /** Whether each spot is by the water, kept a while by its place. @type {Map<string, { ok: boolean, at: number }>} */
+  const nearWater = new Map();
+  /**
+   * A spot a turtle will walk to: in the water, or on the shore within W.landReachM of water deep
+   * enough to swim (never up a hill). @param {Seat} s
+   */
+  function byWater(s) {
+    if (s.inWater) return true;
+    const key = `${s.x.toFixed(2)},${s.z.toFixed(2)}`;
+    const c = nearWater.get(key);
+    if (c && t - c.at < 5) return c.ok;
+    let ok = false;
+    for (let k = 0; k < 12 && !ok; k++) {
+      const a = (k / 12) * Math.PI * 2;
+      for (const d of [W.landReachM * 0.5, W.landReachM]) if (env.water(s.x + Math.cos(a) * d, s.z + Math.sin(a) * d).depth >= W.swimDepthM) ok = true;
+    }
+    nearWater.set(key, { ok, at: t });
+    return ok;
+  }
+
   /**
    * The places to bask near home, nearest spot first: each spot holds `room` turtles (a stone's top
    * one or two, the second on the first's back; a log or the raft a few side by side). Turtles past
@@ -74,7 +94,7 @@ export function createBask(o) {
    */
   function placesNear() {
     const r2 = M.baskReachM * M.baskReachM;
-    return env.seats().filter((s) => (s.x - home.x) ** 2 + (s.z - home.z) ** 2 <= r2)
+    return env.seats().filter((s) => (s.x - home.x) ** 2 + (s.z - home.z) ** 2 <= r2 && byWater(s))
       .sort((a, b) => ((a.x - home.x) ** 2 + (a.z - home.z) ** 2) - ((b.x - home.x) ** 2 + (b.z - home.z) ** 2))
       .flatMap((s) => Array.from({ length: Math.max(1, s.room ?? 1) }, (_, k) => ({ s, k })));
   }
@@ -258,9 +278,19 @@ export function createBask(o) {
       const places = mood === 'day' && t >= fleeUntil ? placesNear() : [];
       fish.forEach((f, i) => {
         f.t += dt;
-        // The head looks about now and then.
-        if (t >= f.nextLook) { f.lookTo = (rng.next() * 2 - 1) * M.headTurnRad; f.nextLook = t + range(M.lookEveryS); }
-        f.look += (f.lookTo - f.look) * Math.min(1, dt * 1.5);
+        // The head looks about now and then; basking, slower, and often stretched up to the sun.
+        const basking = f.mode === 'bask';
+        if (t >= f.nextLook) {
+          f.lookTo = (rng.next() * 2 - 1) * M.headTurnRad;
+          f.lookUpTo = basking ? range(B.lookUpRad) : 0;
+          f.nextLook = t + range(basking ? B.lookEveryS : M.lookEveryS);
+        }
+        const ease = Math.min(1, dt * (basking ? B.lookEaseHz : 1.5));
+        f.look += (f.lookTo - f.look) * ease;
+        f.lookUp += ((f.lookUpTo ?? 0) - f.lookUp) * ease;
+        // Wet from the water, it dries in the sun: glossy to matte (the creature shader's dry).
+        if (basking || f.mode === 'shuffle' || f.mode === 'walk') f.wet = Math.max(0, f.wet - dt / B.dryS);
+        else if (f.mode !== 'climb') f.wet = Math.min(1, f.wet + dt / B.wetS);
         if (f.mode === 'slide') f.slideK = Math.min(1, 1 - (f.until - t) / (M.climbS * 0.5));
         easeWeights(f, dt, P);
         if (f.mode === 'bask' || f.mode === 'climb' || f.mode === 'shuffle') {
@@ -281,6 +311,11 @@ export function createBask(o) {
               // Then round to face the water it came from, as they bask, ready to slip back in.
               f.mode = 'shuffle';
               f.faceTo = Math.atan2(from.x - at.x, from.z - at.z);
+              // On a log or the raft they lie across it, side by side, on the side they came from.
+              if (p.s.kind === 'log' || p.s.kind === 'raft') {
+                const across = (p.s.yaw ?? 0) + Math.PI / 2;
+                f.faceTo = Math.cos(f.faceTo - across) >= 0 ? across : across + Math.PI;
+              }
             }
           } else if (f.mode === 'shuffle') {
             f.x = at.x; f.y = at.y; f.z = at.z; f.pitch *= 0.9;
