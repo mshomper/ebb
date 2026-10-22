@@ -73,7 +73,7 @@ Gain changes use `setTargetAtTime` (0.8 to 3 s time constants), so nothing jumps
 
 Sounds for the keeper's camp, owned here as ambience (docs/future/13, sections 2.1 and 3.5). All are CC0 or procedural, like the rest.
 
-- **Oars and sea at the arrival.** Beat 0 of the first evening: oars dip in time with the 8 s row-in, over the sea bed at the boat's place; a soft scrape as the boat grounds on the sand. A click that shortens the row shortens the sound with it.
+- **The sea at the arrival.** The first evening opens with the walker already standing on the beach and the boat grounded behind, so the arrival is the beach's usual sea bed; there are no oars (changed October 22, 2026, Matt: no row-in).
 - **A far curlew at dusk.** When the fire is first lit on the first evening, one curlew call far out over the water. A sound only, not a creature (frogs still sleep on spring day 0).
 - **Fire and embers.** A lit fire is a close panned source at the ring: soft crackle and the odd pop, louder for a moment when fuel is added, with a short strike-and-catch when the fire steel is used. Embers are a faint tick and hiss. Heard within a few meters, fading to nothing from above.
 - **Rain on canvas.** A tent sound layer within 6 m of the tent: rain drums on the canvas and drips run off the ridge, and the fire hisses as rain drops it to embers. Resting in rain muffles the island to the canvas sound as the cream screen softens.
@@ -167,7 +167,7 @@ Settings: master, ambience, creatures, tools and UI volume; mute when in backgro
 - Sculpting sounds like soil, not a click; placing a wall stone sounds like stone.
 - The first click or key press brings sound in gently; switching tabs and back does not leave sound off.
 - During a reveal after frogs arrived, the chorus fades in as the camera passes the pond.
-- On a fresh island, the boat rows in to oars and the sea. At dusk, lighting the fire brings a crackle at the ring and a curlew far out. In rain near the tent, the canvas drums and the fire hisses low (docs/future/13, sections 2.5 and 3.10).
+- On a fresh island, you stand on the beach at dawn to the sea (changed October 22, 2026, Matt: no row-in). At dusk, lighting the fire brings a crackle at the ring and a curlew far out. In rain near the tent, the canvas drums and the fire hisses low (docs/future/13, sections 2.5 and 3.10).
 
 ## Open questions
 

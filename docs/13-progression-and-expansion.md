@@ -20,7 +20,7 @@ Agreed with Matt on October 20, 2026. New things reach the player in five ways, 
 
 | Way | What comes | Paced by |
 |---|---|---|
-| The first evening | Every new island starts with it: the boat at dawn, the spring and the keeper's first page, pitching the tent, gathering, laying the fire ring, going up to shape, the fire at dusk and the rest in the tent (docs/future/13, section 2) | ten short beats, each waiting for the player; about 10 to 15 minutes; skippable at beat 0 |
+| The first evening | Every new island starts with it: on the beach at dawn with the boat behind (changed October 22, 2026, Matt: no row-in), the spring and the keeper's first page, pitching the tent, gathering, laying the fire ring, going up to shape, the fire at dusk and the rest in the tent (docs/future/13, section 2) | nine short beats, each waiting for the player; about 10 to 15 minutes; skippable at beat 0 |
 | The camp | There from day one: a level pad above the beach with the walker's tent, fire ring and piles in fixed slots, and a pack of six pouches for what the walker gathers (docs/future/13, sections 3 and 4). Islands made before the update find the pad stamped and the tent in the pack | nothing: there from the start |
 | Starter kit | Sculpt (Raise, Lower, Flatten, Stone), Paint, Water (Pour, Drain), Plant with grass, reeds and water lilies; Feed once a creature is found | nothing: there from the start |
 | Plants that come by themselves | Iris, rushes, thrift, marigold, grey willow, campion; plantable once seen | about one every 1.7 game days (`recipes/world/growth.json`) |
@@ -331,7 +331,7 @@ Tuning panel: milestone threshold (second or third happy species), rise duration
 - Open the journal: unknown species show pencil outlines with a short hint; photographed species show the photo; the map shows each land piece.
 - Leave a happy frog group, add a lantern until they move on: the gift stays, the page says they moved on, and removing the lantern brings a scout back.
 - With everything unlocked on desktop the frame rate stays at 60 fps while orbiting the whole world, on the medium tier too.
-- Start a fresh island: it opens in the boat at dawn and the first evening runs; the camp stands from then on. Open an island saved before the update: no evening, the pad is stamped and the tent waits in the pack (docs/future/13, section 2.5).
+- Start a fresh island: it opens on the beach at dawn, the boat behind, and the first evening runs (changed October 22, 2026, Matt: no row-in); the camp stands from then on. Open an island saved before the update: no evening, the pad is stamped and the tent waits in the pack (docs/future/13, section 2.5).
 
 ## Open questions
 - Should the player choose where a new islet rises (from two or three spots), or is a surprise placement nicer?

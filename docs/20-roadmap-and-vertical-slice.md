@@ -76,7 +76,7 @@ Slice acceptance, all together:
 
 ### The first evening (keeper's camp Phase 1) — current target
 
-Decided October 22, 2026 (Matt): Phase 1 of the keeper's camp (`docs/future/13-keepers-camp.md`) comes before the rest of M2 and ships before ebb is marketed, because a player who lands with no orientation is likely to leave. A new island opens at dawn in a small boat below the camp. Ten short beats teach walking, the spring and the journal's first page, pitching the tent, gathering, laying the fire ring, going up to shape, lighting the fire at dusk, and resting until morning. The starter island grows to 4 x 4 chunks with a more varied coast (F13 section 3.11).
+Decided October 22, 2026 (Matt): Phase 1 of the keeper's camp (`docs/future/13-keepers-camp.md`) comes before the rest of M2 and ships before ebb is marketed, because a player who lands with no orientation is likely to leave. A new island opens at dawn with the walker standing on the beach below the camp, the small boat grounded behind (changed October 22, 2026, Matt: no row-in). Nine short beats teach walking, the spring and the journal's first page, pitching the tent, gathering, laying the fire ring, going up to shape, lighting the fire at dusk, and resting until morning. The starter island grows to 4 x 4 chunks with a more varied coast (F13 section 3.11).
 
 | Piece | Scope | Depends on |
 |---|---|---|

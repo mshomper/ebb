@@ -68,44 +68,43 @@ Rules every part keeps:
 
 Phase 1 is the first evening, and it ships before marketing. The orchestrator needs only this brief and sections 2 to 4 to begin; sections 5 to 10 are the reference for later phases.
 
-- **What the player gets:** a new island opens at dawn in a small boat below the camp. Ten short beats (0 to 9, section 2.1) teach walking, the spring and the journal's first page, pitching the tent, gathering drift twigs and stones, laying the fire ring, going up to shape the pond, lighting the fire at dusk and sitting by it, and resting in the tent, which skips the night to just before sunrise. A skip at beat 0 leaves the camp ready. Islands made before the update skip the evening and find the pad and the tent in the pack.
+- **What the player gets:** a new island opens at dawn with the walker standing on the beach below the camp, the boat grounded behind (changed October 22, 2026, Matt: no row-in). Nine short beats (0 to 8, section 2.1) teach walking, the spring and the journal's first page, pitching the tent, gathering drift twigs and stones, laying the fire ring, going up to shape the pond, lighting the fire at dusk and sitting by it, and resting in the tent, which skips the night to just before sunrise. A skip at beat 0 leaves the camp ready. Islands made before the update skip the evening and find the pad and the tent in the pack.
 - **What gets built:** E1 the camp pad and its brush lock, with the larger starter island and its varied coast (3.11), E2 the pack core and the gather engine, E3 the tent and fire ring with light, smoke and rest, E4 the evening director, boat and first page, E5 `tools/intro-lab.html` (section 13).
 - **Decisions already in the sections:** the pad is 4 m in radius, 1.3 m high, 0.61 m above today's highest spring tide, re-placed on the larger island (sections 3.1, 3.11); the fire lights only when the player chooses; every camp piece has a fixed slot (3.2); the first fuel is drift twigs, because gorse and willow arrive later; the dusk sound is a far-off curlew, because frogs are still asleep on spring day 0; save format 8 goes to 9 in one step that adds the camp, pack, gather, dig, cook and dyes sections (12.1).
 - **Before E3 starts:** give the smoke pass and the fire and lantern lights performance budgets in doc 19; confirm the ground shader reads the path-wear channel (for the trodden pad); confirm nothing compares base-chunk hashes, since the pad changes every island's base (section 3, "To finish" notes).
 ## 2. The first evening
 
-Every new island opens below, at dawn, in the boat, a few meters off the shore under the camp. Ten short beats teach walking, gathering, making, shaping, sitting and resting by doing each once. Each beat waits for the player. Each has one hint line in journal italic. The whole evening takes about 10 to 15 minutes if the player does every beat. All of it is T1. (F13 "The first evening"; CS-05; CP-09; resolution 10)
+Every new island opens below, at dawn, with the walker standing on the beach under the camp and the boat grounded behind at its stake (changed October 22, 2026, Matt: no row-in, to keep the animation work down). Nine short beats teach walking, gathering, making, shaping, sitting and resting by doing each once. Each beat waits for the player. Each has one hint line in journal italic. The whole evening takes about 10 to 15 minutes if the player does every beat. All of it is T1. (F13 "The first evening"; CS-05; CP-09; resolution 10)
 
 ### 2.1 The beats
 
 ```mermaid
 flowchart TB
-  B0["0 The boat rows in at dawn<br/><i>skip offered</i>"] --> B1["1 Landfall<br/>step out onto the sand"]
-  B0 -. skip .-> SK["Camp left ready:<br/>tent up, ring laid, at the flap"]
-  B1 --> B2["2 The spring<br/>kneel and drink"]
-  B2 --> B3["3 The first page<br/>the journal opens"]
-  B3 --> B4["4 The camp ground<br/>tent spot glows: pitch"]
-  B4 --> B5["5 Gather<br/>drift twigs and stones on the shore"]
-  B5 --> B6["6 Lay the fire ring<br/>ring spot glows"]
-  B6 --> B7["7 Go up and shape<br/>widen the spring's pool"]
-  B7 --> B8["8 Dusk: light the fire<br/>then sit by it"]
-  B8 --> B9["9 Rest in the tent<br/>skip to just before dawn"]
+  B1["0 Landfall at dawn<br/>on the beach, boat behind<br/><i>skip offered</i>"]
+  B1 -. skip .-> SK["Camp left ready:<br/>tent up, ring laid, at the flap"]
+  B1 --> B2["1 The spring<br/>kneel and drink"]
+  B2 --> B3["2 The first page<br/>the journal opens"]
+  B3 --> B4["3 The camp ground<br/>tent spot glows: pitch"]
+  B4 --> B5["4 Gather<br/>drift twigs and stones on the shore"]
+  B5 --> B6["5 Lay the fire ring<br/>ring spot glows"]
+  B6 --> B7["6 Go up and shape<br/>widen the spring's pool"]
+  B7 --> B8["7 Dusk: light the fire<br/>then sit by it"]
+  B8 --> B9["8 Rest in the tent<br/>skip to just before dawn"]
   B9 --> R["Wake at the tent flap<br/>just before sunrise"]
   SK --> R
 ```
 
 | # | Beat | Starts when | What the player sees | Hint line (draft) | Done when | What the code does |
 |---|---|---|---|---|---|---|
-| 0 | The boat rows in | A new island's first frame | Dawn light. The low camera behind the walker, sitting in a small rowing boat about 22 m out along the camp's facing line. The boat rows in for about 8 s, oars dipping, and grounds on the sand below the camp. Any tap shortens the row to its end. | *Skip the first evening* (a text button under the line, beat 0 only) | The boat grounds | Clock set to dawn on spring day 0. Walker placed in the boat (not on the walk grid). Camera `setGround` at the walker. Boat glide is a game move: presence speed reads 0. Oars and sea sound (doc 17). |
-| 1 | Landfall | Beat 0 done | The beach, the camp ground's pale flat above it, the stream glinting inland. | *Tap the sand to step out and walk there.* | `walk:arrived` on land (any walkable cell) | First tap steps the figure out of the boat (a short climb-out act), then walks. The boat stays at its mooring (CP-09). |
-| 2 | The spring | Beat 1 done | Nothing new; the stream leads uphill. | *Follow the stream up to the spring. Kneel there and drink.* | The walker kneels within 1.5 m of the spring's pool | Kneel at the pool plays the drink act (cupped hands to mouth, about 3 s). The spring is the first one from `landmarks()`. |
-| 3 | The first page | Beat 2 done | The journal opens by itself on the keeper's first page, in the walker's hand. | *The journal keeps what you learn here. Close it when you're ready.* | The journal is closed | `journalUi` opens on the keeper page view. The page is also kept in the journal afterwards. |
-| 4 | The camp ground | Beat 3 done | The tent slot on the pad glows softly (CS-05). The pad already reads as trodden ground (CP-02). | *The flat ground above the beach is your camp. Tap the glowing patch to pitch your tent.* | `camp:pitched` | Tap on the glow (or the Pitch card) walks the walker to the slot; pitch act about 4 s; tent piece appears in its slot. |
-| 5 | Gather | Beat 4 done | Drift twigs along the strandline and pebbles and flat stones on the shore below camp, close to the boat. | *Twigs lie along the tide line and stones on the shore. Tap one, then Gather.* | The pack holds one handful of twigs or sticks and two handfuls of stones | The gather engine and pouches (section 4). Gorse and willow are not on a new island yet, so the first fuel is drift twigs (G-09); stones are pebbles or flat stones (G-01, G-02). |
-| 6 | Lay the fire ring | Beat 5 done | The ring slot glows in the middle of the pad. | *Tap the glowing ring of earth to lay your fire ring.* | `camp:ring-laid` | Walker kneels at the slot; lay act about 4 s; the stones go round, the twigs inside; those handfuls leave the pack. The fire is laid, cold. |
-| 7 | Go up and shape | Beat 6 done | The Go up button pulses once (its normal look, one soft pulse). After going up, the island as a diorama. | *Go up to see the whole island. From above you can shape it.* then, once above: *Widen the spring's pool into a pond with Sculpt, or pour water with Water.* | Any finished Sculpt stroke or Water pour off the pad (`terrain:stroke-ended` or a pour ending) | Two lines, one after the other, in the same beat. If it is still well before sunset when the stroke ends, one more line shows: *Evening comes in its own time. The time button can bring it sooner.* |
-| 8 | Dusk at the fire | The sun crosses sunset (`sky:sun-crossed` sunset) with beat 7 done, or beat 7 done after sunset | Low gold light. The tide coming in over the sand. | *Evening. Go down to your fire ring and light it.* then, once lit: *Sit by the fire a while.* | The fire is lit, then the walker sits within 1.5 m of it for 20 s | The fire lights only when the player chooses (Matt, October 22): standing at the laid ring shows **Light** on the ground bar; the figure kneels, strikes the fire steel, the twigs catch (C-27). One curlew call far out over the water (a sound only, not a creature). Firelight, smoke and moths begin (section 3.6). |
-| 9 | Rest | Beat 8 done | The lantern now hangs on the tent's front pole. The tent flap glows faintly as the ring slot did. | *When you're ready, tap the tent and Rest until morning.* | `camp:rested` | Rest skips the night (C-39, section 3.5): time runs on to just before sunrise and the walker wakes at the flap. Sets `intro:done`. |
+| 0 | Landfall | A new island's first frame | Dawn light. The low camera behind the walker, who stands on the beach a little inland of the boat's stake, facing inland: the camp ground's pale flat above, the stream glinting inland. The boat lies grounded behind at its mooring (CP-09). | *Click the sand to walk there.* with *Skip the first evening* (a text button under the line, beat 0 only) | `walk:arrived` on land (any walkable cell) | Clock set to dawn on spring day 0. Walker placed on the beach with `walk.placeAt` and the camera down behind it. The sea sound is the beach's usual bed (doc 17). (Changed October 22, 2026, Matt: no row-in; the boat beat and the climb-out are gone.) |
+| 1 | The spring | Beat 0 done | Nothing new; the stream leads uphill. | *Follow the stream up to the spring. Kneel there and drink.* | The walker kneels within 1.5 m of the spring's pool | Kneel at the pool plays the drink act (cupped hands to mouth, about 3 s). The spring is the first one from `landmarks()`. |
+| 2 | The first page | Beat 1 done | The journal opens by itself on the keeper's first page, in the walker's hand. | *The journal keeps what you learn here. Close it when you're ready.* | The journal is closed | `journalUi` opens on the keeper page view. The page is also kept in the journal afterwards. |
+| 3 | The camp ground | Beat 2 done | The tent slot on the pad glows softly (CS-05). The pad already reads as trodden ground (CP-02). | *The flat ground above the beach is your camp. Click the glowing patch to pitch your tent.* | `camp:pitched` | A click on the glow (or the Pitch card) walks the walker to the slot; pitch act about 4 s; tent piece appears in its slot. |
+| 4 | Gather | Beat 3 done | Drift twigs along the strandline and pebbles and flat stones on the shore below camp, close to the boat. | *Drift twigs lie along the tide line and pebbles on the shore. Click a twig, then Gather.* | The pack holds one handful of twigs or sticks and two handfuls of stones | The gather engine and pouches (section 4). Gorse and willow are not on a new island yet, so the first fuel is drift twigs (G-09); stones are pebbles or flat stones (G-01, G-02). |
+| 5 | Lay the fire ring | Beat 4 done | The ring slot glows in the middle of the pad. | *Click the glowing ring of earth to lay your fire ring.* | `camp:ring-laid` | Walker kneels at the slot; lay act about 4 s; the stones go round, the twigs inside; those handfuls leave the pack. The fire is laid, cold. |
+| 6 | Go up and shape | Beat 5 done | The Go up button pulses once (its normal look, one soft pulse). After going up, the island as a diorama. | *Go up to see the whole island. From above you can shape it.* then, once above: *Widen the spring's pool into a pond with Sculpt, or pour water with Water.* | Any finished Sculpt stroke or Water pour off the pad (`terrain:stroke-ended` or a pour ending) | Two lines, one after the other, in the same beat. If it is still well before sunset when the stroke ends, one more line shows: *Evening comes in its own time. The time button can bring it sooner.* |
+| 7 | Dusk at the fire | The sun crosses sunset (`sky:sun-crossed` sunset) with beat 6 done, or beat 6 done after sunset | Low gold light. The tide coming in over the sand. | *Evening. Go down to your fire ring and light it.* then, once lit: *Sit by the fire a while.* | The fire is lit, then the walker sits within 1.5 m of it for 20 s | The fire lights only when the player chooses (Matt, October 22): standing at the laid ring shows **Light** on the ground bar; the figure kneels, strikes the fire steel, the twigs catch (C-27). One curlew call far out over the water (a sound only, not a creature). Firelight, smoke and moths begin (section 3.6). |
+| 8 | Rest | Beat 7 done | The lantern now hangs on the tent's front pole. The tent flap glows faintly as the ring slot did. | *When you're ready, click the tent and Rest until morning.* | `camp:rested` | Rest skips the night (C-39, section 3.5): time runs on to just before sunrise and the walker wakes at the flap. Sets `intro:done`. |
 
 Changes from F13, and why:
 - **No frog at dusk.** Frogs sleep until a third of the way into spring (`seasons.json` dormancy `frogs [2.6, 0.3]`), and a new island starts on spring day 0. A distant curlew over the water takes its place. Real biology.
@@ -119,34 +118,32 @@ Changes from F13, and why:
 - **Skip (beat 0 only, CS-06).** The tent is pitched and the ring laid (cold), with nothing taken from the pack. The boat is at its mooring. The walker stands below at the tent flap. The keeper's first page is in the journal, marked unread. Every `intro:*` flag is set, plus `intro:skipped`. The clock keeps its hour. No more evening hints show.
 - **Leaving mid-evening.** Progress lives in `journal.flags` and the camp save. A reload resumes at the first beat without its `intro:<id>` flag. While `intro:done` is missing, the island opens below at the walker's spot (the one exception to "a save opens above"). A hint shows again after a reload until its beat is done. "Shown once" means never again after its beat is done.
 - **Islands made before this update** never run the evening. They get `intro:done` and `intro:older` on migration. The pad is stamped (section 3.8). The tent is in the walker's kit, not pitched. One island notice on the first load: *"There's a camp ground on the flat above the shore now. Your tent is in your pack."* The tent slot glows the first time they go down within 12 m of the pad. The first page waits in the journal, unread.
-- **The sister island (F02, CP-19).** The farewell writes `intro: "short"` into the new island's meta. The director then runs beats 0, 1, 4, 6, 8 and 9 with no hint lines.
+- **The sister island (F02, CP-19).** The farewell writes `intro: "short"` into the new island's meta. The director then runs landfall, pitch, ring, dusk and rest (beats 0, 3, 5, 7 and 8) with no hint lines (changed October 22, 2026, Matt: no row-in).
 
 ### 2.3 The evening director
 
-A small beat machine. It listens to events, checks one condition per beat, posts that beat's hint, and sets flags. It never moves the world itself except at beat 0 (boat, clock, camera) and on skip.
+A small beat machine. It listens to events, checks one condition per beat, posts that beat's hint, and sets flags. It never moves the world itself except at the start (walker, clock, camera) and on skip.
 
-- **Module:** `src/world/intro/index.js` (the director), `src/world/intro/checks.js` (named done-checks, one small pure function each), `src/world/intro/boat.js` (the row-in and the mooring pose; the mesh comes from the boat piece in section 3).
+- **Module:** `src/world/intro/index.js` (the director), `src/world/intro/checks.js` (named done-checks, one small pure function each), `src/world/intro/boat.js` (the mooring and its pose on the water or the sand; Matt's boat model), `src/world/intro/boot.js` (the new-island start and test links) and `src/world/intro/adapter.js` (the live context, and the stand-in camp until E3). (Changed October 22, 2026, Matt: no row-in.)
 - **Recipe:** `recipes/world/intro.json`. Beats are data: id, hint lines, done-check name and its numbers. The Cliff tool's hint lines move here too, out of `CLIFF_HINTS` in `src/ui/tools.js` (F13 small fix), under `hints.tools`.
 
 ```json
 {
   "type": "intro", "version": 1,
-  "startAtDawn": { "dayIndex": 0, "afterDawnH": 0.25 },
-  "boat": { "startOutM": 22, "rowInS": 8, "stepOutS": 1.6 },
+  "startAtDawn": { "dayIndex": 0, "afterDawnH": 0.25, "dawnSunDeg": -6 },
   "flagPrefix": "intro:",
   "beats": [
-    { "id": "boat",    "hint": [], "skip": "Skip the first evening", "done": { "check": "boatGrounded" } },
-    { "id": "landfall","hint": ["Tap the sand to step out and walk there."], "done": { "check": "arrivedOnLand" } },
-    { "id": "spring",  "hint": ["Follow the stream up to the spring. Kneel there and drink."], "done": { "check": "kneltAtSpring", "reachM": 1.5 } },
-    { "id": "page",    "hint": ["The journal keeps what you learn here. Close it when you're ready."], "done": { "check": "journalClosed" } },
-    { "id": "pitch",   "hint": ["The flat ground above the beach is your camp. Tap the glowing patch to pitch your tent."], "done": { "event": "camp:pitched" } },
-    { "id": "gather",  "hint": ["Twigs lie along the tide line and stones on the shore. Tap one, then Gather."], "done": { "check": "packHolds", "need": { "fuel": 1, "stones": 2 } } },
-    { "id": "ring",    "hint": ["Tap the glowing ring of earth to lay your fire ring."], "done": { "event": "camp:ring-laid" } },
-    { "id": "shape",   "hint": ["Go up to see the whole island. From above you can shape it.", "Widen the spring's pool into a pond with Sculpt, or pour water with Water."], "later": "Evening comes in its own time. The time button can bring it sooner.", "laterIfBeforeSunsetH": 2, "done": { "check": "shapedOffPad" } },
-    { "id": "dusk",    "start": { "check": "afterSunset" }, "hint": ["Evening. Go down and sit by your fire ring."], "done": { "check": "satByFire", "reachM": 1.5, "stillS": 20 } },
-    { "id": "rest",    "hint": ["When you're ready, tap the tent and Rest until morning."], "done": { "event": "camp:rested" } }
+    { "id": "landfall","hint": ["Click the sand to walk there."], "skip": "Skip the first evening", "done": { "check": "arrivedOnLand" } },
+    { "id": "spring",  "hint": ["Follow the stream up to the spring. Kneel there and drink."], "done": { "check": "kneltAtSpring", "reachM": 1.5 }, "then": { "act": "drink" } },
+    { "id": "page",    "onStart": { "page": "first" }, "hint": ["The journal keeps what you learn here. Close it when you're ready."], "done": { "check": "journalClosed" } },
+    { "id": "pitch",   "hint": ["The flat ground above the beach is your camp. Click the glowing patch to pitch your tent."], "done": { "event": "camp:pitched" } },
+    { "id": "gather",  "hint": ["Drift twigs lie along the tide line and pebbles on the shore. Click a twig, then Gather."], "done": { "check": "packHolds", "need": { "fuel": 1, "stones": 2 } } },
+    { "id": "ring",    "hint": ["Click the glowing ring of earth to lay your fire ring."], "done": { "event": "camp:ring-laid" } },
+    { "id": "shape",   "hint": ["Go up to see the whole island. From above you can shape it.", "Widen the spring's pool into a pond with Sculpt, or pour water with Water."], "hintNext": ["walk:went-up"], "later": "Evening comes in its own time. The time button can bring it sooner.", "laterIfBeforeSunsetH": 2, "done": { "check": "shapedOffPad" } },
+    { "id": "dusk",    "start": { "check": "afterSunset" }, "hint": ["Evening. Go down to your fire ring and light it.", "Sit by the fire a while."], "hintNext": ["camp:lit"], "cue": { "on": "camp:lit", "emit": "intro:curlew" }, "done": { "check": "satByFire", "reachM": 1.5, "stillS": 20 } },
+    { "id": "rest",    "hint": ["When you're ready, click the tent and Rest until morning."], "done": { "event": "camp:rested" } }
   ],
-  "short": ["boat", "landfall", "pitch", "ring", "dusk", "rest"],
+  "short": ["landfall", "pitch", "ring", "dusk", "rest"],
   "older": { "notice": "There's a camp ground on the flat above the shore now. Your tent is in your pack.", "glowWithinM": 12 },
   "hints": { "tools": { "terrace": "Drag to build a level shelf, Height above where you start, with a sheer rock face at its edge.", "cut": "Drag to carve a level floor, Height below where you start, with sheer rock walls around it." } }
 }
@@ -156,11 +153,11 @@ A small beat machine. It listens to events, checks one condition per beat, posts
 - **Hint display.** One line in Fraunces italic in the island-notes corner (`src/ui/island-notes.js`), on a new `intro:hint { id, text }` event with its own quiet style. It stays until its beat is done. A tap on it tucks it away; the beat still waits, silently. Never more than one hint at a time. Body text at least 15 px.
 - **Events the director emits:** `intro:beat-started { id }`, `intro:beat-done { id }`, `intro:hint { id, text }`, `intro:skipped`, `intro:done`.
 - **Events it listens to:** `walk:arrived`, `walk:went-up`, `walk:went-down`, `terrain:stroke-ended`, the Water tool's pour end, `sky:sun-crossed`, `camp:pitched`, `camp:ring-laid`, `camp:lit`, `camp:rested`, `journal:ui` changes (store slice `journalUi`), `pack:changed`.
-- **New-island start (`src/app.js`, where `back` is null; today that is only `freshIsland: !back` for the music).** When there is no save and no test link that sets a day or hour: `clock.reset` to dawn on spring day 0 plus `afterDawnH` (dawn found from `sunMoon()` in `src/world/sky/sun-moon.js`, the sun crossing -6 degrees rising), instead of `skyRecipe.orbit.startHour` (10). Then the director starts beat 0: walker placed in the boat, camera down behind it with `camera.setGround(walkerRecipe.camera, head)`.
+- **New-island start (`src/app.js`, where `back` is null; today that is only `freshIsland: !back` for the music).** When there is no save and no test link that sets a day or hour: `clock.reset` to dawn on spring day 0 plus `afterDawnH` (dawn found from `sunMoon()` in `src/world/sky/sun-moon.js`, the sun crossing -6 degrees rising), instead of `skyRecipe.orbit.startHour` (10). Then the walker is placed on the beach a little inland of the boat's stake, facing inland, with the camera down behind it (`walk.placeAt`, then `walk.downHere`), and the director starts on landfall (changed October 22, 2026, Matt: no row-in).
 - **Walker hooks (`src/world/walk/index.js`).**
   - `walk:arrived { x, z }`: emitted in `update()` on the frame `walker.moving` turns from true to false at the end of a walk (not on `stop()`).
-  - `walk.act(name)`: plays a short act on the figure and reports its end with `walk:act-done { name }`. Acts: `stepOut`, `drink`, `pitch`, `lay`, `strike` (fire steel), `crawlIn`, `climbOut`. Built in `src/world/figure/motion.js` beside today's `feed()`, `arrive()` and `leave()`, with poses in `recipes/world/figure.json`.
-  - `walk.placeAt(x, z, yaw, posture)`: the director's way to put the figure in the boat, at the flap, or on the seat. A game move, never a startle.
+  - `walk.act(name)`: plays a short act on the figure and reports its end with `walk:act-done { name }`. Acts: `drink`, `pitch`, `lay`, `strike` (fire steel), `crawlIn`, `climbOut` (`stepOut` dropped, changed October 22, 2026, Matt: no row-in). Built in `src/world/figure/acts.js`, played by `src/world/figure/motion.js` beside today's `feed()`, `arrive()` and `leave()`, with poses in `recipes/world/figure.json`.
+  - `walk.placeAt(x, z, yaw, posture)`: the director's way to put the figure on the beach, at the flap, or on the seat. A game move, never a startle. `walk.downHere()` goes down at the figure wherever it stands.
 - **Test links (unsaved):** `?intro` runs the evening on a fresh island; `?intro=<beatId>` starts at that beat with earlier beats' results laid in; `?nointro` starts a fresh island as if skipped. Add them to `TEST_PARAMS`.
 - **The lab:** `tools/intro-lab.html` (Phase 1, E5): jump to any beat, replay on a fresh seed, show the pad's lock edge and slots, skip to dusk, side by side with the game.
 
@@ -172,14 +169,14 @@ A small beat machine. It listens to events, checks one condition per beat, posts
 
 ### 2.5 Acceptance checks
 
-- Start a fresh island: it opens at dawn, below, in a boat rowing in. A tap shortens the row. The boat grounds below a pale flat patch above the beach.
-- Tap the sand: the walker climbs out and walks. The next hint names the spring.
+- Start a fresh island: it opens at dawn, below, with the walker standing on the beach under a pale flat patch, the boat grounded behind at its stake (changed October 22, 2026, Matt: no row-in).
+- Click the sand: the walker walks there. The next hint names the spring.
 - Kneel at the spring's pool: the figure drinks, then the journal opens on the first page by itself. Close it: the tent patch on the camp ground glows.
 - Pitch, gather twigs and stones on the shore, lay the ring. Each step's hint appears only after the one before is done, and never comes back afterwards.
 - Go up, make one stroke or pour: the lines change; if it is early, a line mentions the time button.
-- At sunset a line asks you to sit by the ring. Sit: the walker strikes a steel, the fire catches, a curlew calls far out. The tent's lantern is lit.
+- At sunset a line asks you to light the fire. Light it: the walker kneels and strikes the steel, the fire catches, a curlew calls far out, and the line asks you to sit by it. The tent's lantern is lit.
 - Rest at the tent after dusk: the screen softens to cream for a moment, and the walker wakes at the tent flap just before sunrise, with the fire banked to embers.
-- Fresh island, tap Skip: the tent stands, the ring is laid and cold, you stand at the flap, and the journal shows an unread first page. No hints follow.
+- Fresh island, click Skip: the tent stands, the ring is laid and cold, you stand at the flap, and the journal shows an unread first page. No hints follow.
 - Reload in the middle of the evening: you open below where you stood, on the same beat and its hint.
 - Open an island saved before this update: no boat, no evening, one notice about the camp ground; going down near it makes the tent patch glow.
 - `?intro=dusk` opens near sunset with the tent up and the ring laid.
@@ -3032,7 +3029,7 @@ Goal: a new player lands, learns to walk, gather, make, shape, sit and rest, and
 | **E1 Camp ground and the larger island** | The larger starter island with a varied coast (new land recipe; older islands keep theirs); camp block in the land recipe (place, radius, height, slot list); the pad levelled on new islands; trodden look (CP-02); the brush lock on CPU and GPU for Sculpt, Cliff, Stone and Water; the dashed edge on brush contact; older saves (CP-07, CP-08); save format 9 begins | none | E2, E4 | 3 |
 | **E2 Pack core** | Pouch bar with six pouches and four fullness stages; pouch kinds registry and fixed sort; pouch card; full card; set down and piles at camp; the pack save section; the gather engine (seeded pickups, picked events, recovery) with sticks, drift twigs, pebbles, flat stones, reed down; Look card with Gather (below only) | none | E1, E4 | 4 |
 | **E3 Tent and ring** | Tent and fire ring as camp pieces in their slots; CS-05 slot glow; lighting the fire, light, smoke with wind, moths, never spreads, embers; rest skips the night to just before sunrise; waking at the tent flap; camp at night and in rain (first pass); seen from above | E1, E2 | E4 | 3 |
-| **E4 The evening director** | Beats recipe and shown-once flags; walker hooks (`walk:arrived`, figure motions); new-island start in the boat; the boat mesh and its mooring; the keeper's first page; skip | none (stubs E1 to E3 until merged) | E1, E2 | 2 |
+| **E4 The evening director** | Beats recipe and shown-once flags; walker hooks (`walk:arrived`, figure motions); new-island start on the beach with the boat grounded behind (changed October 22, 2026, Matt: no row-in); the boat and its mooring; the keeper's first page; skip | none (stubs E1 to E3 until merged) | E1, E2 | 2 |
 | **E5 Intro lab** | `tools/intro-lab.html`: jump to any beat, replay on a fresh seed, show the pad's lock and slots, time-skip to dusk | E4 | — | 2 |
 
 Small fix along the way: the Cliff hint lines move out of `src/ui/tools.js` into the hints recipe used by the evening.
@@ -3092,7 +3089,7 @@ Apply each change when its phase is approved, and keep this document as the reco
 | 13 Progression | The first evening starts every new island; making as a short path; the camp from day one; firsts on the trails from digging; the keeper's cache. | 1 onward |
 | 15 Camera and UI | The boat start; pouches on the ground bar; the Look card's Gather; the camp slots' glow; the brush edge on the pad; the return at the tent flap. | 1 |
 | 16 Customization | Dyes for the walker and tent; clay slip on the tent. Answers doc 23's open question on customizing the figure: worked toward, not given. | 4 |
-| 17, 24, 25 Audio | Oars and sea at the arrival; fire, embers, rain on canvas; brewing; dig sounds per layer; the wind chime. | 1 onward |
+| 17, 24, 25 Audio | The sea at the arrival (no oars: changed October 22, 2026, Matt: no row-in); the far curlew at dusk; fire, embers, rain on canvas; brewing; dig sounds per layer; the wind chime. | 1 onward |
 | 18 Saves | Format 9: camp, pack, picked events, holes and dug events, makes and recipes found, dyes; migration from 8 with the pad stamped. | 1 onward |
 | 19 Performance | Budgets for the camp's lights and smoke, hole pieces, the gather pickups drawn near the walker. | 1 |
 | 20 Roadmap | Phase 1 as the current target ahead of the rest of M2; later phases mapped to milestones. | 1 |
