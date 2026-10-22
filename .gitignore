@@ -1,2 +1,4 @@
 # WAV renders made for listening (tools/audio-prep/render); never committed.
 renders/
+# Build-time tools for the web model copies (tools/assets); installed with npm, never committed.
+tools/assets/node_modules/
