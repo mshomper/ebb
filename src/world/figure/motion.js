@@ -335,7 +335,8 @@ export function createFigureMotion(R, skeleton) {
       set(I.head, { q: qmul(qaxis([0, 1, 0], lookYaw), qaxis([1, 0, 0], headPitch)) });
       set(I.hat, null);
       // The hat tip lags: it tips back as you speed up, dips as the body rises, and swings out on a turn.
-      const tip = springs.tip.step([(-0.05 * speed - 0.03 * accel + 0.5 * pelvisVy) * R.springs.hatTip.gain, -0.08 * yawRate * R.springs.hatTip.gain], dt);
+      const HT = R.springs.hatTip;
+      const tip = springs.tip.step([(-0.05 * speed - (HT.accelGain ?? 0.03) * accel + 0.5 * pelvisVy) * HT.gain, -0.08 * yawRate * HT.gain], dt);
       set(I.hatTip, { q: qmul(qaxis([1, 0, 0], tip[0]), qaxis([0, 0, 1], tip[1])) });
 
       // Arms: hanging from the A-pose and swinging with the opposite foot, or reaching by IK for a
@@ -347,9 +348,12 @@ export function createFigureMotion(R, skeleton) {
         const [u, f, h] = ARM[i];
         const opp = cyc[1 - i];
         const swing = P.armDeg * DEG * (opp.fz / Math.max(G.stance * P.stepM, 1e-3)) * m * standW;
-        const out1 = (P.armOutDeg + 3) * DEG * SIDE[i];
+        // Swinging forward the arm comes a little across the body and the elbow bends more; swinging
+        // back it straightens (recipes/world/figure.json arms).
+        const AR = R.arms ?? { elbowForward: 0.4, elbowBack: 0, across: 0 };
+        const out1 = (P.armOutDeg + 3) * DEG * SIDE[i] - AR.across * Math.max(0, swing) * SIDE[i];
         let qU = qmul(qaxis([1, 0, 0], -swing), qmul(qaxis([0, 0, 1], out1), HANG[i].q0));
-        const elbow = ((R.hang.elbowDeg * (1 - m) + P.elbowDeg * m) * DEG + 0.4 * Math.max(0, swing)) * standW + 0.9 * (sitW + kneelW + crawlW);
+        const elbow = ((R.hang.elbowDeg * (1 - m) + P.elbowDeg * m) * DEG + AR.elbowForward * Math.max(0, swing) - AR.elbowBack * Math.max(0, -swing)) * standW + 0.9 * (sitW + kneelW + crawlW);
         let qF = qaxis(HANG[i].flex, elbow);
         // Hand targets (body m) with a weight. An act's hands lead; the rest give way to them.
         /** @type {{ at: number[], w: number }[]} */ const goals = [];
@@ -382,17 +386,21 @@ export function createFigureMotion(R, skeleton) {
         set(ft, { q: qmul(qconj(matQuat(out, sh * 16)), want) });
       }
 
-      // The coat skirt: pushed forward by the front knee, dragged back a little by speed, swung on
-      // a turn; over the thighs when sitting.
+      // The coat skirt: pushed forward by the front knee, flaring back with speed, swaying to the
+      // side of the leg that is forward with each step, swung on a turn; over the thighs when sitting.
+      const SK = R.springs.skirt;
       const kneeFwd = Math.max(legIK[0].knee[2], legIK[1].knee[2]) - 0.04;
+      const sway = (legIK[0].knee[2] - legIK[1].knee[2]) * (SK.strideSway ?? 0) * m * standW;
       const sk = springs.skirt.step([
-        ((Math.max(0, kneeFwd) * 1.4 - 0.03 * speed) * standW + S.skirtDeg * DEG * sitW + 0.25 * kneelW + 0.3 * crawlW) * R.springs.skirt.gain,
-        -0.05 * yawRate * R.springs.skirt.gain,
+        ((Math.max(0, kneeFwd) * 1.4 - (SK.speedFlare ?? 0.03) * speed) * standW + S.skirtDeg * DEG * sitW + 0.25 * kneelW + 0.3 * crawlW) * SK.gain,
+        (-0.05 * yawRate + sway) * SK.gain,
       ], dt);
       set(I.skirt, { q: qmul(qaxis([1, 0, 0], -sk[0]), qaxis([0, 0, 1], sk[1])) });
-      // The pack follows the body's rise and fall a beat late.
-      const pk = springs.pack.step([pelvisWorldY], dt)[0];
-      set(I.pack, { t: [0, (pk - pelvisWorldY) * R.springs.pack.gain, 0], q: qaxis([1, 0, 0], -0.01 * accel) });
+      // The pack follows the body's rise and fall a beat late, tipping as it lags, and rocks with the
+      // hips' twist.
+      const PK = R.springs.pack;
+      const pk = springs.pack.step([pelvisWorldY], dt)[0], lag = pk - pelvisWorldY;
+      set(I.pack, { t: [0, lag * PK.gain, 0], q: qmul(qaxis([1, 0, 0], -0.01 * accel + lag * (PK.tiltGain ?? 0)), qaxis([0, 0, 1], twist * (PK.rock ?? 0))) });
 
       const eyeState = eyes.update(dt, { sleepy: !!s.sleepy && sitW > 0.5 });
       info = { mode, m, wade, sitW, kneelW, crawlW, phase, pace: P, expression: eyes.expression, act: act ? act.name : null };

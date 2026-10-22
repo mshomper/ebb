@@ -49,9 +49,9 @@
     "note": "Paces by speed in body meters a second (the walker's speed divided by body.displayScale, so a smaller figure takes a longer pace for its size and quicker steps); stepM, liftM and the rest are body meters too. The figure blends between them by the speed it is given. stance: share of a stride a foot is down.",
     "stance": 0.6,
     "paces": [
-      { "speed": 0.3, "stepM": 0.2, "liftM": 0.04, "armDeg": 3, "elbowDeg": 40, "leanDeg": 8, "bobM": 0.004, "crouchM": 0.035, "headDeg": 10, "twistDeg": 2 },
-      { "speed": 0.9, "stepM": 0.4, "liftM": 0.065, "armDeg": 14, "elbowDeg": 14, "leanDeg": 3.5, "bobM": 0.01, "crouchM": 0, "headDeg": 3, "twistDeg": 5 },
-      { "speed": 1.5, "stepM": 0.52, "liftM": 0.09, "armDeg": 24, "elbowDeg": 26, "leanDeg": 7, "bobM": 0.016, "crouchM": 0.01, "headDeg": 2, "twistDeg": 7 }
+      { "speed": 0.3, "stepM": 0.2, "liftM": 0.04, "armDeg": 5, "elbowDeg": 40, "leanDeg": 8, "bobM": 0.004, "crouchM": 0.035, "headDeg": 10, "twistDeg": 2 },
+      { "speed": 0.9, "stepM": 0.4, "liftM": 0.065, "armDeg": 22, "elbowDeg": 14, "leanDeg": 3.5, "bobM": 0.01, "crouchM": 0, "headDeg": 3, "twistDeg": 6 },
+      { "speed": 1.5, "stepM": 0.52, "liftM": 0.09, "armDeg": 32, "elbowDeg": 26, "leanDeg": 7, "bobM": 0.016, "crouchM": 0.01, "headDeg": 2, "twistDeg": 8 }
     ],
     "wade": { "depthM": [0.12, 0.3], "stepScale": 0.8, "liftM": 0.17, "armOutDeg": 14, "elbowDeg": 30, "leanDeg": 6 },
     "turnDegPerS": 200,
@@ -59,10 +59,15 @@
     "plantStepDeg": 28,
     "plantStepS": 0.32
   },
+  "arms": {
+    "note": "The walking arm swing's shape (the swing itself is each pace's armDeg). elbowForward: radians of extra elbow bend per radian of forward swing; elbowBack: how much the elbow straightens on the back swing, the same way; across: how far a forward swing comes in across the body, per radian of swing.",
+    "elbowForward": 1.3, "elbowBack": 0.25, "across": 0.35
+  },
   "springs": {
-    "hatTip": { "stiffness": 60, "damping": 0.35, "gain": 1 },
-    "skirt": { "stiffness": 90, "damping": 0.5, "gain": 1 },
-    "pack": { "stiffness": 140, "damping": 0.45, "gain": 1 }
+    "note": "The parts that follow a beat late. hatTip.accelGain: how far the tip tips back as you speed up (and forward as you stop). skirt.strideSway: how far the coat skirt swings to the side of the forward knee, per meter the knees are apart front to back; skirt.speedFlare: how far it flares back per body meter a second. pack.tiltGain: radians the pack tips per meter it lags the body's rise and fall; pack.rock: share of the hips' twist the pack rocks with.",
+    "hatTip": { "stiffness": 60, "damping": 0.35, "gain": 1, "accelGain": 0.06 },
+    "skirt": { "stiffness": 90, "damping": 0.5, "gain": 1, "strideSway": 0.6, "speedFlare": 0.06 },
+    "pack": { "stiffness": 140, "damping": 0.45, "gain": 1.6, "tiltGain": 4, "rock": 0.5 }
   },
   "idle": { "breathS": 4.2, "breathDeg": 0.8, "shiftS": 9, "shiftM": 0.012, "glanceEveryS": [7, 14], "glanceDeg": 14 },
   "look": { "maxYawDeg": 55, "maxPitchDeg": 25, "degPerS": 120 },
