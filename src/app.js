@@ -29,7 +29,8 @@ import { createLiveSim } from './sim/live-sim.js';
 import { initialWorldState, makeEnv, runHour } from './sim/tick.js';
 import { createTerrain } from './world/terrain/index.js';
 import { islandLand } from './world/terrain/chunks.js';
-import { islandCenter } from './world/terrain/landform.js';
+import { islandCenter, campOf } from './world/terrain/landform.js';
+import { padOf } from './world/camp/layout.js';
 import { createWaterWorld } from './world/water-world.js';
 import { createGrowth } from './world/growth/index.js';
 import { createPlantTool } from './world/growth/plant-tool.js';
@@ -174,6 +175,12 @@ export async function startApp(canvas, hooks = {}) {
   // The keeper's camp sections (format 9, src/save/migrate-format9.js): from the save, empty on a
   // new island, and as they were on a GPU rebuild.
   for (const id of SECTIONS9) updateStore(id, (v) => (back ? back[id] : v ?? empty9(id)));
+  // The camp pad (src/world/camp/layout.js): in a new island's base from the start; on an older
+  // island once it is stamped (camp.pad, src/world/camp/migrate-pad.js).
+  {
+    const at = getStore('camp')?.pad ?? null;
+    updateStore('campPad', () => (campOf(landRecipe)?.inBase || at ? padOf(landRecipe, at) : null));
+  }
   // Device settings (src/save/prefs.js): kept on this device, never in the island.
   const prefs = loadPrefs();
   updateStore('settings', (s) => {
