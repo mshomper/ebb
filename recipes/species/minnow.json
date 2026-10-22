@@ -87,7 +87,7 @@
     "arrival": { "rightScore": 0.5, "rightHoldH": 6, "scoutAfterH": 12, "comeAtH": 9, "scoutChance": 0.5, "maxWaitDays": 3,
                  "startCount": 3, "m2PerOne": 4, "settleAfterH": 24, "settleMood": 0.5, "rescoutAfterH": 48,
                  "growShare": 0.35, "growMood": 0.5, "growSeasons": [1, 1, 1, 0], "newPoolChance": 0.3,
-                 "moodEase": 0.15, "leaveMood": 0.3, "leaveAfterH": 48, "shrinkShare": 0.3,
+                 "moodEase": 0.15, "leaveMood": 0.3, "leaveAfterH": 48, "leaveGraceDays": 3, "shrinkShare": 0.3,
                  "happyMin": 8, "happyMood": 0.7, "happyHoldH": 24,
                  "roomPlants": { "pondweed": 1 }, "weedM2": 3, "perWeed": 1.5, "weedExtra": 15 },
     "gift": { "kind": "seed", "id": "pondweed" }

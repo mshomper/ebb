@@ -52,6 +52,7 @@ export async function mountAway(opts) {
       const before = { growth: world.state?.growth ?? null };
       const r = await catchUp({
         seed: world.env.seed, recipes: world.env.recipes, habitat: world.env.habitat?.() ?? null,
+        habitatInputs: world.env.habitatInputs?.() ?? null,
         material: get('terrainLive')?.mirror?.material ?? null, state: world.state, journal: get('journal') ?? null, jr,
         fromHour: clock.hourIndex() + 1, hours, block: recipe.blockHours, onProgress: (d, n) => screen.progress(d / n),
       });

@@ -37,6 +37,7 @@ export const PARALLEL = {
   pondSpring: () => import('./unit-tests-pond-spring.js').then((m) => m.addPondSpringTests),
   waterTable: () => import('./unit-tests-water-table.js').then((m) => m.addWaterTableTests),
   underLogMeshes: () => import('./unit-tests-under-log-meshes.js').then((m) => m.addUnderLogMeshTests),
+  grace: () => import('./unit-tests-grace.js').then((m) => m.addGraceTests),
   // The audio tests that need no Web Audio (workers have none). The two that render sound through
   // an OfflineAudioContext (pond and keepsake sounds) stay on tools/unit-tests-audio.html, which
   // also still runs all of these, as does `node tools/run-audio-tests.mjs`.

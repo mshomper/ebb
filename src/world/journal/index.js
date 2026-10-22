@@ -293,13 +293,17 @@ export function createJournal(opts) {
    * move is distracting); the card follows the ring on screen, and an arrow at the edge points to
    * it while it is out of view (src/ui/island-notes.js). An island note's Show me (an animal came or
    * stayed) can ring one you have not met yet: its card then keeps the riddle (`showMe.unseen`), so
-   * finding it is still yours. If none is about just now, a calm line says so. @param {string} sp
+   * finding it is still yours. If none is about just now, a calm line says so. An uneasy note (A9)
+   * gives the spot of the pool that is failing them: that pool is ringed, with the note's words.
+   * @param {string} sp @param {{ x: number, z: number }} [spot] @param {string} [text]
    */
-  function showMe(sp) {
+  function showMe(sp, spot, text) {
     const view = get('view');
     const near = view?.center() ?? null;
     let card = null;
-    if (words.species[sp]) card = showMeSpot(sp, world.state, habitat(), words, near);
+    const rec = words.species[sp];
+    if (rec && spot) card = { sp, name: rec.card ?? rec.name, icon: rec.icon, text: text ?? '', wx: spot.x, wz: spot.z, r: words.showMe?.pondRingM ?? 3, stage: -1 };
+    else if (rec) card = showMeSpot(sp, world.state, habitat(), words, near);
     else if (island.ground[sp]) {
       const spot = groundSpot(sp, habitat(), material(), survey(), island, near);
       if (spot) card = groundCard(spot.kind, habitat(), spot.x, spot.z, { island, flora: flora(), journal, words });
@@ -377,7 +381,7 @@ export function createJournal(opts) {
     onAction((a) => {
       // Choosing a tool or closing the card puts the tap card away.
       if (a.type === 'tool.select' || a.type === 'ui.identify') { if (get('identify')) update('identify', () => null); return; }
-      if (a.type === 'journal.showMe') { showMe(a.sp); return; }
+      if (a.type === 'journal.showMe') { showMe(a.sp, a.at, a.text); return; }
       // A note was shown on the island (src/ui/island-notes.js): it is no longer one you may have missed.
       if (a.type === 'journal.noteShown') {
         const next = markShown(journal, a.n);

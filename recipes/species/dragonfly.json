@@ -91,11 +91,12 @@
     },
     "scored": { "where": "near" },
     "_pond": "A pond of their own (Matt, 2026-10-20): they come only to a pond the player made, with no fish in it (src/world/ecology/coarse.js pondFit). fishFree: no group of this species (minnows) lives in it; if one moves in, the dragonflies' mood falls and they thin and move on as from any unhappy pond. shallowShare of its squares are shallowM deep (mostly shallow). At least marginM2 square meters of margin marginM deep where the player moved the ground shapedCm or more from the island as generated (dug, or a Cliff tool Terrace), with cover grown in there (shelter, from the cover weights above, marginCover or more). No starting pond qualifies: the island as generated has no shaped ground at all, so its ponds have no shaped margin (tools/ecology-lab.html, unit tests).",
+    "_grace": "A9 (Matt, 2026-10-21): when a settled group's pond starts failing it (a rain-fed pond lowered in summer so its shaped margin is dry, fish moved in, too little cover), it grows uneasy and waits arrival.leaveGraceDays game days before it thins or moves on; the journal says why and Show me rings the pond (src/world/creatures/swarms.js). A gently shelving bank keeps a margin at any level.",
     "pond": { "fishFree": "minnows", "shallowM": [0.1, 0.6], "shallowShare": 0.6, "marginM": [0.05, 0.3], "shapedCm": 5, "marginM2": 4, "marginCover": 0.5 },
     "arrival": { "rightScore": 0.5, "rightHoldH": 6, "scoutAfterH": 12, "comeAtH": 11, "scoutChance": 0.4, "maxWaitDays": 4,
                  "startCount": 2, "m2PerOne": 6, "settleAfterH": 24, "settleMood": 0.5, "rescoutAfterH": 72,
                  "growShare": 0.4, "growMood": 0.55, "growSeasons": [1, 1, 1, 0], "newPoolChance": 0.25,
-                 "moodEase": 0.15, "leaveMood": 0.3, "leaveAfterH": 48, "shrinkShare": 0.34,
+                 "moodEase": 0.15, "leaveMood": 0.3, "leaveAfterH": 48, "leaveGraceDays": 3, "shrinkShare": 0.34,
                  "happyMin": 3, "happyMood": 0.7, "happyHoldH": 24 },
     "gift": { "kind": "tool", "id": "springs" }
   }

@@ -185,7 +185,8 @@ export function mountIslandNotes(parent, words, naturalist = null) {
     show.type = 'button';
     show.className = 'ebb-notes__show';
     show.innerHTML = `${iconSvg('find')}<span>${esc(words.showMe?.button ?? 'Show me')}</span>`;
-    show.addEventListener('click', () => dispatch({ type: 'journal.showMe', sp: n.sp }));
+    // An uneasy note (A9) carries the pool's spot: Show me rings the pool, with the note's words.
+    show.addEventListener('click', () => dispatch(n.at ? { type: 'journal.showMe', sp: n.sp, at: n.at, text: n.text } : { type: 'journal.showMe', sp: n.sp }));
     row.append(text, show);
     return row;
   }
