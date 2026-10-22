@@ -88,7 +88,7 @@ export function offPadOf(pad, rect, at) {
  * @param {{ R: any, mode?: 'full' | 'short', fresh: boolean, walk: any, terrain: any, water: any,
  *   land: any, terrainSeed: number, orbit: any, clock: any,
  *   pack?: { holds: (need: Record<string, number>) => boolean, take: (kind: string, n?: number) => number, recipe?: any } | null,
- *   camp?: { fireLit: () => boolean } | null }} o
+ *   camp?: { fireLit: () => boolean, pitched?: () => boolean, ringLaid?: () => boolean } | null }} o
  *   pack: E2's pack; camp: E3's camp once it exists (null runs the stand-in camp)
  */
 export function createIntroLive(o) {
@@ -118,6 +118,16 @@ export function createIntroLive(o) {
     offPad: (rect, at) => offPadOf(padNow(), rect, at),
     ring: () => slot('ring'),
     fireLit: () => (o.camp ? o.camp.fireLit() : lit),
+    // The camp's own word if it gives one; else its save section (store slice `camp`: the kit, and
+    // what stands in which slot); else the stand-in camp.
+    campHas: (part) => {
+      if (!o.camp) return !!stub?.has(part);
+      const own = part === 'tent' ? o.camp.pitched?.() : o.camp.ringLaid?.();
+      if (own !== undefined) return !!own;
+      const c = get('camp');
+      const inSlot = !!c?.slots?.some?.((/** @type {any} */ s) => s.slot === part);
+      return part === 'tent' ? c?.kit?.tent === 'pitched' && inSlot : inSlot;
+    },
     sunsetInH: () => sunsetInH(o.clock.display(), o.orbit),
     pad: padNow,
   };
@@ -209,7 +219,7 @@ export function createIntroLive(o) {
       const p = /** @type {any} */ (at?.[0]);
       return p ? [[p.x, p.z, /** @type {number} */ (at?.[1]), k]] : [];
     };
-    return { tick, rings, dispose() { offReady(); offArrive(); offDone(); } };
+    return { tick, rings, has: (/** @type {'tent' | 'ring'} */ part) => state[part], dispose() { offReady(); offArrive(); offDone(); } };
   }
 
   return {

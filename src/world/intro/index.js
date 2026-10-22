@@ -131,6 +131,8 @@ export function createIntro(o) {
     const b = beat();
     if (!b) return;
     if (!started) { tryStart(); if (started) post(); return; }
+    // A beat done by an event can also be done already (the tent pitched before its beat came).
+    if (!acting && b.done.event && b.done.orCheck && CHECKS[b.done.orCheck]?.(ctx, b.done, mem, dt)) { finish(); return; }
     if (acting || !b.done.check) return;
     if (!CHECKS[b.done.check](ctx, b.done, mem, dt)) return;
     if (b.then?.act) { acting = b.then.act; effects.act(acting); return; }

@@ -20,7 +20,8 @@ async function recipe() {
 function rig(R, s = {}) {
   const bus = createBus();
   const flags = s.flags ?? [];
-  const W = { x: 0, z: 0, posture: 'stand', below: true, journal: false, pack: { fuel: 0, stones: 0 }, lit: false, sunsetInH: 10 };
+  const W = { x: 0, z: 0, posture: 'stand', below: true, journal: false, pack: { fuel: 0, stones: 0 }, lit: false, sunsetInH: 10,
+    camp: /** @type {Record<string, boolean>} */ ({ tent: false, ring: false }) };
   /** @type {{ hints: any[], acts: string[], pages: string[], notices: string[], glows: string[], emitted: string[], flows: number[], skipped: number }} */
   const log = { hints: [], acts: [], pages: [], notices: [], glows: [], emitted: [], flows: [], skipped: 0 };
   const spring = { x: 10, z: 0 }, ring = { x: 20, z: 0 }, pad = { x: 20, z: 0 };
@@ -35,6 +36,7 @@ function rig(R, s = {}) {
       packHolds: (need) => Object.entries(need).every(([k, n]) => (/** @type {any} */ (W.pack)[k] ?? 0) >= n),
       // The pad reaches from x 16 up; a stroke's rect comes as terrain:stroke-ended sends it.
       offPad: (rect, at) => (rect ? rect.x1 < 16 : !!at && at.x < 16), ring: () => ring, fireLit: () => W.lit,
+      campHas: (part) => !!W.camp[part],
       sunsetInH: () => W.sunsetInH, pad: () => pad,
     },
     effects: {
@@ -231,6 +233,15 @@ export function addIntroTests(test, assert, eq) {
     eq(r.line(), S[0].hint, 'pebbles first, twigs still needed');
     r.W.pack = { fuel: 1, stones: 2 }; r.bus.emit('pack:changed', {});
     eq(r.intro.current?.id, 'ring');
+  });
+
+  test(G, 'the tent pitched before its beat came: the pitch beat is done as soon as it starts', async () => {
+    const R = await recipe();
+    const r = rig(R, { flags: ['intro:begun', 'intro:landfall', 'intro:spring', 'intro:page'] });
+    r.W.camp.tent = true;
+    r.intro.start({ fresh: false });
+    r.intro.update(0.1);
+    eq(r.intro.current?.id, 'gather');
   });
 
   test(G, 'a Sculpt stroke off the pad finishes the shape beat (the rect as terrain:stroke-ended sends it)', async () => {
