@@ -52,6 +52,7 @@
     "species/turtle": "species/turtle.json",
     "species/frogspawn": "species/frogspawn.json",
     "species/toad": "species/toad.json",
+    "species/under-log": "species/under-log.json",
     "species/slowworm": "species/slowworm.json",
     "species/lizard": "species/lizard.json",
     "species/finds": "species/finds.json",
