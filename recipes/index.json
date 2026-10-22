@@ -43,6 +43,8 @@
     "world/nets": "world/nets.json",
     "world/pieces": "world/pieces.json",
     "world/walker": "world/walker.json",
+    "world/pack": "world/pack.json",
+    "world/gather": "world/gather.json",
     "world/figure": "world/figure.json",
     "world/camp": "world/camp.json",
     "species/frog": "species/frog.json",

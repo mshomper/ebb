@@ -1,8 +1,17 @@
 // @ts-check
 // The camp ground stays clear of placed pieces (docs/future/13 section 3.1, CP-01): pond stones, a
 // flight of Steps, a reed raft, a carried stone or log set down, and the loose stones that come by
-// themselves. Each check takes the live pad (the store's `campPad`, src/world/camp/layout.js), or
+// themselves. The camp's own pieces (CAMP_KINDS: piles, the tent, the ring) belong there. Each check takes the live pad (the store's `campPad`, src/world/camp/layout.js), or
 // null where there is none yet. Pure.
+
+/**
+ * The kinds that belong on the camp ground, in its own slots: piles set down from the pack (E2),
+ * and the tent and the fire ring (E3). The checks here never clear these away.
+ */
+export const CAMP_KINDS = Object.freeze(['pile', 'tent', 'ring']);
+
+/** Is this a camp piece (CAMP_KINDS), which stays on the pad? @param {{ kind?: string }} p */
+export const isCampKind = (p) => !!p.kind && CAMP_KINDS.includes(p.kind);
 
 /**
  * A round piece of the given reach (its half width, m) at (x, z) would rest on the pad.
@@ -33,5 +42,5 @@ export function crossesCampGround(pad, a, b, half) {
  * @param {{ x: number, z: number, r: number } | null} pad @param {P[]} list @returns {P[]}
  */
 export function offCampGround(pad, list) {
-  return pad ? list.filter((p) => !onCampGround(pad, p.x, p.z, (p.size ?? 0) * 0.7)) : list;
+  return pad ? list.filter((p) => isCampKind(p) || !onCampGround(pad, p.x, p.z, (p.size ?? 0) * 0.7)) : list;
 }

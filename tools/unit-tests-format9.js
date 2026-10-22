@@ -41,7 +41,10 @@ export function addFormat9Tests(test, assert, eq) {
   });
 
   test(G, 'the sections come back exactly; missing or unreadable ones come back empty', () => {
-    const live = { camp: { version: 1, pad: { x: 1.5, z: -2 } }, pack: { version: 1, pouches: [{ kind: 'reed', n: 2 }] }, gather: { version: 1, events: [[3, 4, 50]] },
+    // The pack and gather sections in their real shapes (src/world/pack/model.js, src/world/gather/events.js).
+    const live = { camp: { version: 1, pad: { x: 1.5, z: -2 } },
+      pack: { version: 1, carriers: [], pouches: [['drift-twigs', 3], ['drift-twigs', 1], ['pebbles', 2]], heaps: [['sticks', 1.5, -2, 4, 1]], holding: null },
+      gather: { version: 1, events: [3, 4, 50] },
       dig: { version: 1, events: [] }, cook: { version: 1, found: ['tea'] }, dyes: { version: 1, tent: { color: 'ochre', depth: 1 } } };
     const { sections } = snapshot(parts(live));
     const back = /** @type {any} */ (restore(Object.fromEntries(sections)));

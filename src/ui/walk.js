@@ -6,14 +6,14 @@
 //   I'm stuck: under it while you are below; always takes you to ground that joins the island.
 //   The ground bar (W4): along the bottom while you are below, in the tool bar's place. Sit and
 //     Kneel lower you where you stand (a second press stands you up); Feed kneels and puts food
-//     down in front of you; Look, while on, makes a tap name what it lands on instead of walking
-//     there; Net (once the beachcomber's trail gives it) sets your net in front of you, or lifts it
-//     when you stand by it full. Photo joins when photo mode exists.
+//     down in front of you; Net (once the beachcomber's trail gives it) sets your net in front of
+//     you, or lifts it when you stand by it full. Photo joins when photo mode exists. There is no
+//     Look button: one click walks and uses (Matt, October 22, 2026; src/world/walk/click.js).
 // While you are below, the body has the class ebb-below (walk.css puts the shaping tools away);
 // while you sit, ebb-sitting (the buttons fade).
 //
-// Reads the store slice `walk` { below, posture, look }; a press goes out as the action walk.down,
-// walk.up, walk.stuck, walk.posture, walk.feed, walk.net or walk.look (and `unlocks` for the net).
+// Reads the store slice `walk` { below, posture }; a press goes out as the action walk.down,
+// walk.up, walk.stuck, walk.posture, walk.feed or walk.net (and `unlocks` for the net).
 // Styles: walk.css.
 
 import { get, subscribe } from '../core/store.js';
@@ -22,7 +22,7 @@ import { ensureIconSprite, iconSvg } from './icons/icons.js';
 
 /**
  * @param {HTMLElement} parent the HUD layer
- * @param {{ down: string, up: string, stuck: string, sit: string, kneel: string, feed: string, net: string, look: string }} words
+ * @param {{ down: string, up: string, stuck: string, sit: string, kneel: string, feed: string, net: string }} words
  *   recipes/world/walker.json words
  * @returns {() => void} dispose
  */
@@ -39,8 +39,10 @@ export function mountWalk(parent, words) {
   bar.hidden = true;
   bar.setAttribute('role', 'toolbar');
   bar.setAttribute('aria-label', 'On foot');
-  bar.innerHTML = btn('', 'sit', words.sit, ' data-posture="sit" aria-pressed="false"') + btn('', 'kneel', words.kneel, ' data-posture="kneel" aria-pressed="false"')
-    + btn('', 'feed', words.feed, ' data-feed') + btn('', 'net', words.net, ' data-net hidden') + btn('', 'lens', words.look, ' data-look aria-pressed="false"');
+  // The pouch row sits above the buttons (src/ui/pack.js fills .ebb-ground__pouches).
+  bar.innerHTML = '<div class="ebb-ground__pouches"></div><div class="ebb-ground__btns">'
+    + btn('', 'sit', words.sit, ' data-posture="sit" aria-pressed="false"') + btn('', 'kneel', words.kneel, ' data-posture="kneel" aria-pressed="false"')
+    + btn('', 'feed', words.feed, ' data-feed') + btn('', 'net', words.net, ' data-net hidden') + '</div>';
 
   const go = /** @type {HTMLButtonElement} */ (root.querySelector('.ebb-walk__go'));
   const stuckBtn = /** @type {HTMLButtonElement} */ (root.querySelector('.ebb-walk__stuck'));
@@ -48,7 +50,6 @@ export function mountWalk(parent, words) {
   const goName = /** @type {HTMLElement} */ (go.querySelector('.ebb-walk__name'));
   const sitBtn = /** @type {HTMLButtonElement} */ (bar.querySelector('[data-posture="sit"]'));
   const kneelBtn = /** @type {HTMLButtonElement} */ (bar.querySelector('[data-posture="kneel"]'));
-  const lookBtn = /** @type {HTMLButtonElement} */ (bar.querySelector('[data-look]'));
   const netBtn = /** @type {HTMLButtonElement} */ (bar.querySelector('[data-net]'));
 
   let shown = '';
@@ -56,7 +57,7 @@ export function mountWalk(parent, words) {
     const w = get('walk') ?? {};
     const below = !!w.below;
     const hasNet = !!get('unlocks')?.nets?.general;
-    const key = `${below}|${w.posture}|${w.look}|${hasNet}`;
+    const key = `${below}|${w.posture}|${hasNet}`;
     if (key === shown) return;
     shown = key;
     netBtn.hidden = !hasNet;
@@ -67,7 +68,6 @@ export function mountWalk(parent, words) {
     bar.hidden = !below;
     sitBtn.setAttribute('aria-pressed', String(below && w.posture === 'sit'));
     kneelBtn.setAttribute('aria-pressed', String(below && w.posture === 'kneel'));
-    lookBtn.setAttribute('aria-pressed', String(below && !!w.look));
     document.body.classList.toggle('ebb-below', below);
     document.body.classList.toggle('ebb-sitting', below && w.posture === 'sit');
   }
@@ -81,7 +81,6 @@ export function mountWalk(parent, words) {
     else if (b.dataset.posture) dispatch({ type: 'walk.posture', posture: b.dataset.posture, source: 'button' });
     else if (b.dataset.feed !== undefined) dispatch({ type: 'walk.feed', source: 'button' });
     else if (b.dataset.net !== undefined) dispatch({ type: 'walk.net', source: 'button' });
-    else if (b.dataset.look !== undefined) dispatch({ type: 'walk.look', source: 'button' });
   }
   /** Keep pointer and wheel input on the buttons from reaching the island below. @param {Event} e */
   const stop = (e) => e.stopPropagation();

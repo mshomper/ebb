@@ -84,6 +84,11 @@ import { buildSandbarDemo } from './world/walk/sandbar.js';
 import { loadPrefs, keepPrefs } from './save/prefs.js';
 import { fingerprint } from './save/backup.js';
 import { SECTIONS9, empty9 } from './save/migrate-format9.js';
+import { clickKind, clickPlan } from './world/walk/click.js';
+import { createPack } from './world/pack/index.js';
+import { createGather } from './world/gather/index.js';
+import { createPiles } from './world/pack/piles-live.js';
+import { createPackDraw } from './world/pack/draw.js';
 
 /**
  * @typedef {{ ok: true, tier: string, tierReasons: string[], adapterInfo: GPUAdapterInfo | null, features: string[], stop: () => void,
@@ -543,6 +548,25 @@ export async function startApp(canvas, hooks = {}) {
   sim.addSystem(underLog);
   finds.addSource(underLog.shown);
 
+  // The walker's pack (docs/future/13 section 4.1): cloth pouches on the ground bar, filled by Gather.
+  // Set down at camp puts a pouch onto its kind's pile in the camp's slots (src/world/pack/piles-live.js).
+  /** @type {ReturnType<typeof createPiles> | null} */ let piles = null;
+  const pack = createPack({ recipe: await loadRecipe('world/pack'), you: () => walk.you(), day: () => clock.dayIndexOf(clock.worldT()),
+    setDown: (k, h) => piles?.setDown(k, h) ?? { moved: 0, refuse: 'noSlot' } });
+  piles = createPiles({ recipe: pack.recipe, kinds: pack.kinds, seed });
+  // Gathering on foot (section 4.2): Gather on a card walks you there, you kneel, a handful goes in.
+  const gather = createGather({ recipe: await loadRecipe('world/gather'), seed, world, worldT: () => clock.worldT(), water, terrain, pack, walk,
+    tide: waterRecipe.tide, strandline: ww.shore.recipe?.look?.strandline ?? null,
+    weather: () => ({ weatherSeed: world.env.weatherSeed, weather: seasonsRecipe.weather, state: world.state?.weather }),
+    center: () => { const b = terrain.openBounds(); return [(b.openMin[0] + b.openMax[0]) / 2, (b.openMin[1] + b.openMax[1]) / 2]; } });
+  // Picked reeds grow back slowly, faster in rain (the growth step reads the gather recipe).
+  world.env.recipes.gather = gather.recipe;
+  on('world:ticked', () => gather.expire());
+  on('world:caught-up', () => gather.expire());
+  // What lies on the ground to gather, the piles at camp and the heaps you left (src/world/pack/draw.js).
+  const packDraw = createPackDraw({ terrain, camera, recipe: pack.recipe, gather, pack, you: () => walk.you() });
+  sim.addSystem(packDraw);
+
   /**
    * A dry, grassy ground point near the view's middle, out of the tide, for a test log: on a widening
    * spiral, the first where no water stands and the grass is thick. @returns {number[] | null}
@@ -636,6 +660,7 @@ export async function startApp(canvas, hooks = {}) {
     finds.pass,
     keepsakes.pass,
     nets.pass,
+    ...packDraw.passes,
     pieces.pass,
     // What lives under a log, while it is lifted (L3a).
     underLog.pass,
@@ -778,6 +803,75 @@ export async function startApp(canvas, hooks = {}) {
     }
     return pieces.pieceAt(point[0], point[2]);
   }
+  /**
+   * What a ground point holds, as a card (the journal's cardAt), and the journal's species words;
+   * main.js hands these in once the journal exists (setCards below). Null until then.
+   * @type {{ cardAt: (x: number, z: number, y?: number) => any, species: Record<string, any> } | null}
+   */
+  let cards = null;
+  /** A thing you clicked on and are walking to: its card opens when you stop. @type {number[] | null} */
+  let cardOnArrival = null;
+
+  /**
+   * A click below (src/world/walk/click.js): walk, walk to a thing then open its card, or open a card
+   * where you stand. A walk elsewhere puts away the card that was open (not a Show me ring).
+   * @param {number} sx @param {number} sy CSS pixels @param {number[]} p the ground point
+   */
+  function clickBelow(sx, sy, p) {
+    const card = cards?.cardAt(p[0], p[2], p[1]) ?? null;
+    const kind = clickKind(card, cards?.species ?? {});
+    const wx = card?.wx ?? p[0], wz = card?.wz ?? p[2];
+    const plan = clickPlan(kind, walk.distTo(wx, wz), card?.r ?? 0, walkerRecipe.click, !!card?.gathers?.length);
+    cardOnArrival = null;
+    if (plan.kind === 'card') { emitDeferred('look:tapped', { x: sx, y: sy, point: p }); return; }
+    if (!getStore('identify')?.pinned) updateStore('identify', () => null);
+    if (plan.kind === 'approach') {
+      if (walk.tap(sx, sy, [wx, p[1], wz], plan.reachM)) cardOnArrival = p;
+      return;
+    }
+    walk.tap(sx, sy, p);
+  }
+
+  /**
+   * Hovering below: what a click there would use, named beside the pointer (store slice `hover`,
+   * src/ui/hover-tag.js), read a few times a second. Plain walking ground has no tag.
+   */
+  let hoverAt = 0;
+  canvas.addEventListener('pointermove', (e) => {
+    if (e.pointerType !== 'mouse') return;
+    const now = performance.now();
+    if (now - hoverAt < 1000 / walkerRecipe.click.hoverHz) return;
+    hoverAt = now;
+    let tag = null;
+    if (walk.below && cards && !e.buttons) {
+      const p = groundAt(e.offsetX, e.offsetY);
+      const pc = p ? pieceUnderTap(e.offsetX, e.offsetY, p) : null;
+      const q = pc && p ? [pc.x, p[1], pc.z] : p;
+      const card = q ? cards.cardAt(q[0], q[2], q[1]) : null;
+      const kind = clickKind(card, cards.species);
+      const plan = card ? clickPlan(kind, walk.distTo(card.wx ?? q?.[0], card.wz ?? q?.[2]), card.r ?? 0, walkerRecipe.click, !!card.gathers?.length) : null;
+      // Name what a click would gather, when there is something (else the thing itself).
+      if (card && plan && plan.kind !== 'walk') tag = { name: card.gathers?.[0]?.name ?? card.name, x: e.clientX, y: e.clientY };
+    }
+    const was = getStore('hover');
+    if (tag || was) updateStore('hover', () => tag);
+    canvas.classList.toggle('ebb-can-use', !!tag);
+  });
+  const hoverOff = () => { if (getStore('hover')) updateStore('hover', () => null); canvas.classList.remove('ebb-can-use'); };
+  canvas.addEventListener('pointerleave', hoverOff);
+  canvas.addEventListener('pointerdown', hoverOff);
+
+  /** Each frame: you reached the thing you clicked on, so its card opens beside it. */
+  function arriveForCard() {
+    if (!cardOnArrival) return;
+    if (!walk.below) { cardOnArrival = null; return; }
+    if (walk.busy()) return;
+    const p = cardOnArrival;
+    cardOnArrival = null;
+    const at = getStore('view')?.project?.(p[0], p[2]);
+    emitDeferred('look:tapped', { x: at?.x ?? cssW / 2, y: at?.y ?? cssH / 2, point: p });
+  }
+
   function groundAt(x, y) {
     const r = camera.ray(x, y);
     const hit = terrain.raycast(r.o, r.d);
@@ -1009,18 +1103,31 @@ export async function startApp(canvas, hooks = {}) {
       if (a.type === 'camera.pan') { camera.orbit(a.dx, a.dy); return; }
       if (a.type === 'camera.zoom') { camera.zoom(a.factor); return; }
       if (a.type === 'look.tap') {
-        // With Look on, a tap names what it lands on (the journal), as a tap above does.
+        // One click walks and uses (src/world/walk/click.js): a thing walks you to it and opens its
+        // card; a creature's card opens where you stand; grass, sand and shingle only near you.
         const point = groundAt(a.x, a.y);
-        // A log or stone right beside you shows its card (with Lift) rather than walking onto it.
-        const near = point ? pieceUnderTap(a.x, a.y, point) : null;
-        if (near && lift.reach(near) === 'lift') { emitDeferred('look:tapped', { x: a.x, y: a.y, point: [near.x, point[1], near.z] }); return; }
-        if (walk.tap(a.x, a.y, point) === 'look') emitDeferred('look:tapped', { x: a.x, y: a.y, point });
+        if (!point) return;
+        // Low down, the ray grazes past a log or stone onto the ground behind it: try it first.
+        const pc = pieceUnderTap(a.x, a.y, point);
+        clickBelow(a.x, a.y, pc ? [pc.x, point[1], pc.z] : point);
+        return;
+      }
+      // The pouches (src/world/pack): a pouch's card, Set down at camp, Empty.
+      if (a.type === 'pack.open') { pack.open(a.i, a.x, a.y); return; }
+      if (a.type === 'pack.setDown') { pack.setDown(a.i); return; }
+      if (a.type === 'pack.empty') { pack.empty(a.i); return; }
+      if (a.type === 'gather.take') { gather.take(a.n); return; }
+      if (a.type === 'gather.heapHere') { gather.heapHere(); return; }
+      // A pile's Take up fills a pouch; with no room, the full card (without Set down here).
+      if (a.type === 'pile.takeUp') {
+        const r = piles?.takeUp(a.id, pack);
+        if (r?.full) updateStore('identify', (c) => (c ? { ...c, full: { kind: r.kind, g: { heap: -1 } }, text: pack.recipe.words.full } : c));
+        else updateStore('identify', () => null);
         return;
       }
       if (a.type === 'walk.up') { walk.up(); return; }
       if (a.type === 'walk.stuck') { walk.stuck(); return; }
       if (a.type === 'walk.posture') { walk.posture(a.posture); return; }
-      if (a.type === 'walk.look') { walk.toggleLook(); return; }
       if (a.type === 'walk.feed') { feedHere(); return; }
       if (a.type === 'walk.net') { netHere(); return; }
       if (a.type === 'tool.select' || a.type.startsWith('tool.') || a.type === 'brush.resize') return;
@@ -1417,6 +1524,8 @@ export async function startApp(canvas, hooks = {}) {
     const t = clock.advance(realDt);
     camera.setViewport(cssW, cssH);
     walk.update(realDt);
+    arriveForCard();
+    gather.update();
     camera.update(realDt);
     presence.update(realDt);
     updateRing();
@@ -1600,6 +1709,21 @@ export async function startApp(canvas, hooks = {}) {
     adapterInfo: gpu.adapter.info ?? null,
     features: [...gpu.features],
     stop,
+    /**
+     * Hand in what a ground point holds (the journal's cardAt) and its species words, so one click
+     * below can walk and use (src/world/walk/click.js). main.js calls it once the journal exists.
+     * @param {(x: number, z: number, y?: number) => any} cardAt @param {Record<string, any>} species
+     */
+    setCards(cardAt, species) { cards = { cardAt, species }; },
+    /**
+     * The walker's pack (src/world/pack/index.js): add, take, has, holds({ fuel: 1, stones: 2 }),
+     * room; it emits pack:changed { pouches, size } after every change.
+     */
+    pack,
+    /** Gathering (src/world/gather/index.js): the journal's cards gain their Gather buttons from it. */
+    gather,
+    /** The piles at camp (src/world/pack/piles-live.js): a pile's card reads its words from them. */
+    piles,
     terrain,
     water,
     /** The live growth (habitat, plants) and the world the hourly tick runs on (tools/growth-lab.html). */

@@ -17,6 +17,8 @@ import { get, subscribe } from '../core/store.js';
 import { dispatch } from '../input/actions.js';
 import { ensureIconSprite, iconSvg } from './icons/icons.js';
 import { cleanName } from '../world/creatures/trust.js';
+import { actionsFor, cardAction } from './card-actions.js';
+import { pouchSvg } from './sketches/pouches.js';
 
 /** Notes on screen at once. */
 const AT_ONCE = 2;
@@ -203,19 +205,22 @@ export function mountIslandNotes(parent, words, naturalist = null) {
     // back (a tap anywhere on the card puts it back too).
     const C = words.pieces?.carry;
     const text = id.carrying ? C?.[id.carryNote ?? 'hint'] ?? '' : id.carryNote ? C?.[id.carryNote] ?? id.text : id.text;
-    const carryBtn = !C || !id.canCarry ? ''
-      : id.carrying ? `<button type="button" class="ebb-idcard__open" data-act="uncarry">${iconSvg('close')}<span>${esc(C.cancel)}</span></button>`
-      : `<button type="button" class="ebb-idcard__open" data-act="carry">${iconSvg('carry')}<span>${esc(C.button)}</span></button>`;
+    // Its actions as icons in one row, the word on hover (src/ui/card-actions.js).
+    const acts = actionsFor(id, words);
+    const actRow = acts.length ? `<div class="ebb-idcard__acts">${acts.map(({ a, label, main, mark }) =>
+      `<button type="button" class="ebb-idcard__act${main ? ' is-main' : ''}" data-cact="${esc(a.id)}" aria-label="${esc(label)}" data-label="${esc(label)}">${iconSvg(a.icon)}${mark ? `<span class="ebb-idcard__mark">${mark}</span>` : ''}</button>`).join('')}</div>` : '';
+    card.style.width = `min(${Math.max(300, acts.length * 56 - 8 + 28)}px, calc(100vw - 24px))`;
     card.innerHTML = `
-      <div class="ebb-idcard__head"><span class="ebb-idcard__icon">${iconSvg(id.icon)}</span><b>${esc(id.name)}</b>
+      <div class="ebb-idcard__head"><span class="ebb-idcard__icon">${id.pouchSketch ? pouchSvg(id.pouchStage ?? 0, id.pouchSketch) : iconSvg(id.icon)}</span><b>${esc(id.name)}</b>
         ${id.word ? `<span class="ebb-idcard__word">${esc(id.word)}</span>` : ''}
         <button type="button" class="ebb-idcard__close" data-act="close" aria-label="Close" title="Close">${iconSvg('close')}</button></div>
       ${id.sub ? `<p class="ebb-idcard__sub">${esc(id.sub)}</p>` : ''}
       <p class="ebb-idcard__text">${esc(text)}</p>
       ${id.suits ? `<p class="ebb-idcard__suits">${esc(id.suits)}</p>` : ''}
       ${id.suitsPencil ? `<p class="ebb-idcard__suits is-pencil">${esc(id.suitsPencil)}</p>` : ''}
-      ${id.canName ? `<button type="button" class="ebb-idcard__open" data-act="name">${iconSvg('name-tag')}<span>Give it a name</span></button>
-      <form class="ebb-idcard__name" hidden>
+      ${id.liftNote ? `<p class="ebb-idcard__suits is-pencil">${esc(id.liftNote)}</p>` : ''}
+      ${actRow}
+      ${id.canName ? `<form class="ebb-idcard__name" hidden>
         <label class="ebb-idcard__label" for="ebb-idcard-name">A name for this frog</label>
         <div class="ebb-idcard__row">
           <input class="ebb-idcard__input" id="ebb-idcard-name" maxlength="24" autocomplete="off" spellcheck="false">
@@ -223,21 +228,14 @@ export function mountIslandNotes(parent, words, naturalist = null) {
         </div>
         <p class="ebb-idcard__error" role="alert"></p>
         <button type="submit" class="ebb-idcard__give">${iconSvg('name-tag')}<span>Give it this name</span></button>
-      </form>` : ''}
-      ${id.liftNote ? `<p class="ebb-idcard__suits is-pencil">${esc(id.liftNote)}</p>` : ''}
-      ${id.liftPiece && words.pieces?.lift ? `<button type="button" class="ebb-idcard__open" data-act="liftpiece">${iconSvg('lift')}<span>${esc(words.pieces.lift.button)}</span></button>` : ''}
-      ${carryBtn}
-      ${id.keepsake && id.letter && words.keepsakes?.read ? `<button type="button" class="ebb-idcard__open" data-act="read">${iconSvg('notes')}<span>${esc(words.keepsakes.read)}</span></button>` : ''}
-      ${id.keepsake && words.keepsakes ? `<button type="button" class="ebb-idcard__open" data-act="keep">${iconSvg('shelf')}<span>${esc(words.keepsakes.keep)}</span></button>
-      <button type="button" class="ebb-idcard__open" data-act="leave">${iconSvg('close')}<span>${esc(words.keepsakes.leave)}</span></button>` : ''}
-      ${id.net !== undefined ? (id.canLift ? `<button type="button" class="ebb-idcard__open" data-act="lift">${iconSvg('net')}<span>${esc(id.liftLabel)}</span></button>`
-        : `<button type="button" class="ebb-idcard__open" data-act="netin">${iconSvg('net')}<span>${esc(id.inLabel)}</span></button>`) : ''}
-      ${id.noPage ? '' : `<button type="button" class="ebb-idcard__open" data-act="open">${iconSvg('journal')}<span>Open its page</span></button>`}`;
+      </form>` : ''}`;
     card.inert = false;
     card.classList.add('is-open');
     place(id.x, id.y);
     // While a piece is carried the card stays, holding the hint, until it is set down or put back.
-    if (!id.carrying) cardTimer = setTimeout(() => dispatch({ type: 'ui.identify' }), (id.pinned ? words.showMe.showS : words.identify.showS) * 1000);
+    // A card you can act on (Gather, a pouch's, the full card) stays until you close it or walk on.
+    const keeps = !!id.gathers?.length || id.sp === 'pouch' || !!id.full;
+    if (!id.carrying && !keeps) cardTimer = setTimeout(() => dispatch({ type: 'ui.identify' }), (id.pinned ? words.showMe.showS : words.identify.showS) * 1000);
     if (id.pinned) follow();
   }
   /** Put the card beside a screen point, kept on screen. @param {number} px @param {number} py */
@@ -300,18 +298,13 @@ export function mountIslandNotes(parent, words, naturalist = null) {
     if (id?.carrying) { dispatch({ type: 'pieces.carryCancel' }); return; }
     const b = /** @type {HTMLElement | null} */ (/** @type {HTMLElement} */ (e.target).closest('button'));
     if (!b) return;
-    if (b.dataset.act === 'carry' && id?.piece) { dispatch({ type: 'pieces.carry', id: id.piece }); return; }
-    if (b.dataset.act === 'liftpiece' && id?.piece) { dispatch({ type: 'pieces.lift', id: id.piece }); return; }
-    if (b.dataset.act === 'leave' && id?.keepsake) { dispatch({ type: 'keepsakes.leave', id: id.keepsake }); return; }
-    if (b.dataset.act === 'keep' && id?.keepsake) { dispatch({ type: 'keepsakes.keep', id: id.keepsake }); return; }
-    if (b.dataset.act === 'read' && id?.keepsake) { dispatch({ type: 'keepsakes.read', shoreId: id.keepsake }); return; }
-    if (b.dataset.act === 'lift' && id?.net !== undefined) { dispatch({ type: 'nets.lift', id: id.net }); return; }
-    if (b.dataset.act === 'netin' && id?.net !== undefined) { dispatch({ type: 'nets.bringIn', id: id.net }); return; }
+    // An action icon (src/ui/card-actions.js): dispatch its action, or open its part of the card.
+    const ca = b.dataset.cact ? cardAction(b.dataset.cact) : null;
+    if (ca && id && ca.action) { const act = ca.action(id); if (act) dispatch(act); return; }
     const form = /** @type {HTMLFormElement | null} */ (card.querySelector('.ebb-idcard__name'));
     const input = /** @type {HTMLInputElement | null} */ (card.querySelector('.ebb-idcard__input'));
-    if (b.dataset.act === 'open' && id) dispatch({ type: 'ui.journal', open: true, page: id.sp });
-    else if (b.dataset.act === 'close') dispatch({ type: 'ui.identify' });
-    else if (b.dataset.act === 'name' && form && input) {
+    if (b.dataset.act === 'close') dispatch({ type: 'ui.identify' });
+    else if (ca?.open === 'name' && form && input) {
       clearTimeout(cardTimer);
       b.hidden = true;
       form.hidden = false;

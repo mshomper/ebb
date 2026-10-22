@@ -130,6 +130,12 @@ export function createJournal(opts) {
    *   dragonfly is found along the line from the eye through it, since it is not on the ground
    */
   function cardAt(x, z, y) {
+    // Last, what can be gathered there (src/world/gather): its Gather buttons and its word.
+    const card = cardBase(x, z, y);
+    return opts.gather ? opts.gather.decorate(card, x, z) : card;
+  }
+  /** @param {number} x @param {number} z @param {number} [y] */
+  function cardBase(x, z, y) {
     // A frog first: they are small, and finding one is the point.
     const frog = creatures?.frogAt(x, z);
     if (frog) return frogCard(frog, world.state, words, world.env.recipes?.species?.frog?.presence);
@@ -167,6 +173,14 @@ export function createJournal(opts) {
     // the page's sketch is traced from). Once driftwood washes up (unlocks.carry) its card offers Carry.
     const pc = opts.pieces?.pieceAt(x, z);
     const pw = pc && words.pieces?.[pc.kind];
+    if (pw && pc.kind === 'pile') {
+      // A pile at camp (docs/future/13 4.1): named for what it is a pile of, its line the word for
+      // how big it is (src/world/pack/piles-live.js describe). Never carried or lifted; Take up is
+      // the card's own action (pile: what it holds).
+      const pd = /** @type {any} */ (opts).piles?.describe?.(pc) ?? null;
+      return { sp: 'piece:pile', piece: pc.id, kind: 'pile', name: pd?.name ?? pw.name, sub: null, icon: pw.icon, text: pd?.text ?? pw.cardLine,
+        wx: pc.x, wz: pc.z, r: pc.size * 0.6, stage: -1, noPage: true, canCarry: false, pile: { holds: pc.holds, handfuls: pc.handfuls } };
+    }
     if (pw) {
       const look = pc.kind === 'log' ? opts.pieces?.logLook?.(pc) ?? null : null;
       const isLog = !!look && !!words.species.driftwood;
@@ -430,6 +444,8 @@ export function createJournal(opts) {
     unread: () => unread(journal),
     /** A note against the last one seen: 'missed', 'new' or 'seen' (read.js). */
     noteState,
+    /** What a ground point holds, as the card a click there would open (no journal writes). */
+    cardAt,
     /** Is there a page for this id? @param {string} id */
     hasPage: (id) => !!(words.species[id] || island.ground[id]),
     /** A living thing's or a ground's page, in words. @param {string} id */

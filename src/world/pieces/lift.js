@@ -66,7 +66,8 @@ export function createLift(o) {
     lift(id) {
       const p = pieces.piece(id);
       const m = me();
-      if (!p || !m || gap(p, m) > R.lift.reachM || pieces.liftNow(id)) return false;
+      // A pile at camp is taken up, never lifted.
+      if (!p || p.kind === 'pile' || !m || gap(p, m) > R.lift.reachM || pieces.liftNow(id)) return false;
       const hour = hourIndex(), day = Math.floor(hour / 24);
       const rest = rested.get(id) === day;
       rested.set(id, day);
