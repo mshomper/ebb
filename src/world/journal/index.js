@@ -430,6 +430,8 @@ export function createJournal(opts) {
     unread: () => unread(journal),
     /** A note against the last one seen: 'missed', 'new' or 'seen' (read.js). */
     noteState,
+    /** What a ground point holds, as the card a click there would open (no journal writes). */
+    cardAt,
     /** Is there a page for this id? @param {string} id */
     hasPage: (id) => !!(words.species[id] || island.ground[id]),
     /** A living thing's or a ground's page, in words. @param {string} id */
