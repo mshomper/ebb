@@ -78,7 +78,7 @@
   },
   "propsNote": "Matt's models (meters, Y up, origin at the base centre, front +Z), drawn with their own maps by src/render/passes/props.js. look: albedo and roughness scale, normal map strength and its green's sign. shade: the soft contact shadow's half sizes (m, along the model's own x and z) and darkness. The tent model carries its rolled bedroll inside. ember: the embers' glow colour, emberNits at full glow, breathing at emberHz; charAlbedo: burnt wood.",
 
-  "rest": { "wakeBeforeSunriseMin": 10, "viewSideRad": 0.75, "viewDistanceM": 4.2, "viewPitchDeg": 20 },
+  "rest": { "wakeBeforeSunriseMin": 10, "viewSideRad": 1.35, "viewDistanceM": 5.6, "viewPitchDeg": 24 },
   "restNote": "C-39: Rest, after sunset and until wakeBeforeSunriseMin minutes before sunrise, runs the night as catch-up behind the cream screen and wakes you kneeling at the flap just before sunrise. viewSideRad, viewDistanceM, viewPitchDeg: after pitching and on waking, the low view from this far round from behind you (radians), this far off and this far down, so you, the tent and the ring are all in it and the tent never fills it.",
 
   "standing": { "reachM": 30, "trust": 0.01, "minWord": "tolerant" },

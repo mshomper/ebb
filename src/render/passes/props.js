@@ -296,7 +296,8 @@ export function createPropsPass(opts) {
       castGroup = d.createBindGroup({ label: 'prop-cast', layout: castBind, entries: [
         { binding: 0, resource: { buffer: castBuf, size: 64 } }, { binding: 1, resource: { buffer: sbuf } }] });
       device = d;
-      await Promise.all([...models.keys()].map(upload));
+      // Models that loaded meanwhile go up in the background: the first frame never waits on their maps.
+      for (const key of models.keys()) upload(key);
     },
 
     resize() {},
