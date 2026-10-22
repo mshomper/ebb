@@ -66,4 +66,6 @@ Full ownership and exports are in `docs/03-tech-stack-and-module-map.md`.
 
 ## Current target
 
-M2, the pond tier, in `docs/20-roadmap-and-vertical-slice.md` (the M1 vertical slice was signed off on October 20, 2026). Its first step is the Cliff tool. Do not build features from milestones after M2 until M2 is approved.
+Phase 1 of the keeper's camp, the first evening, in `docs/future/13-keepers-camp.md` section 13, ahead of the rest of M2 (Matt, October 22, 2026; see `docs/20-roadmap-and-vertical-slice.md`). The M1 slice was signed off on October 20, 2026. Do not build later phases of the camp, or features from milestones after M2, until Matt approves them.
+
+Matt provides the Phase 1 models in `C:\Users\mshom\Documents\Ebb\_assets` (glb). Sessions make only small pieces such as the fire steel, drift twigs, pebbles, flat stones and reed down. For anything more complex than a basic shape, ask Matt whether he will make it or the session will.

@@ -100,11 +100,17 @@ flowchart TD
 - **Kept safe from reshaping** (Matt, October 21, 2026: the game must treat steps carefully when the cliffs round them are reshaped). Every flight's cells are marked in a guard mask (`terrain-guard`, r8) that the brushes read: Raise, Lower, Smooth, Flatten, Terrace and Cut leave those cells alone on the GPU. At every edit's end (after erosion-lite, and after a boulder), the flight's cells are set back to their steps before the undo tiles are taken, so erosion cannot slump them either. Reshaping round a flight moves the ground beside it and leaves the stair standing. Removing a flight (select it, Remove) lifts the guard and keeps the ground as it was cut, now ordinary ground to reshape.
 - **Walking it.** The treads are footing for the walker (src/world/walk), so the walk grid takes each one as level and never reads the cut's walls beside it as a steep slope.
 
+**The camp pad** (Phase 1, piece E1; docs/future/13, section 3.1). One level, protected pad on the plateau above the beach where the boat lands: radius 4 m, height 1.3 m (0.61 m above the highest spring tide), with a 2.5 m smoothstep blend back to the natural ground. Numbers live in the land recipe's `camp` block (docs/future/13, section 3.4).
+- **In the base.** On islands made after the update, `landform.js` `sampleCell` levels the pad into the base: inside the radius, height = `heightM`; across `blendM`, a smoothstep back to natural. Material on the pad is grass and soil only. Older islands get the pad stamped on first load as recorded edits (doc 18; docs/future/13, section 3.8).
+- **Brush lock.** Sculpt (every mode), Cliff, Stone, Paint and Water do nothing on the pad. One mask serves every brush: 0 inside the radius, rising to 1 over `lockFadeM` (1 m) outside it, so a stroke fades to nothing at the edge. CPU: `applyStampCpu` and `applyCliffCpu` in `brushes.js` multiply their falloff by the camp mask, as they do by `edgeFade` today. GPU: `terrain-brush.wgsl` gets `campFade(p)` beside `edgeFade(p)`; the camp center, radius and fade go in the stamp uniforms (`STAMP_BYTES` 80 to 96, inside the 256-byte stride). Erosion-lite after a stroke and `stampStone`'s `fadeAt` take the same mask. Loose stone, Spring placement and a Water pour refuse a tap on the pad with a quiet line: *"The camp ground stays clear."*
+- **Dashed edge.** Only while a brush ring overlaps the pad (ring center within brush radius plus 4 m), the pad's edge draws as a soft dashed circle on the ground, drawn with the terrain marks (`terrainPass.setMarks`, which gain a dashed style). It fades when the brush leaves. Nothing to toggle.
+- **Trodden look.** Pad cells get path wear in `ground.a`, derived from the camp block on load and never saved; wear fades out over 1 m at the edge. To confirm before E1: the terrain draw shader reads `ground.a` as path wear (docs/future/13, section 3.1).
+
 Falloff `f(d) = 1 − smoothstep(hardness · r, r, d)`. Radius 0.5 to 8 m, strength 0 to 1 mapped by the recipe. Pen and touch pressure scale strength. Stamps are spaced at 25% of the radius along the stroke so fast drags stay even.
 
 **Steepness and edges.** Raise and Lower are capped so a single frame cannot create a step over 0.15 m between neighbors; erosion-lite cleans up what is left. The Cliff tool is the one exception. Smooth softens rock faces only at full strength, so a casual smoothing pass never erases a cliff. Brushes fade out over the last 2 m before an unopened chunk, so no wall forms at the edge of the world.
 
-**Structures.** Brushes avoid cells under walls and bridge abutments by default (a mask from `world/structures/`); flatten and paint still work there. When a stroke ends under a path, the path re-fits (doc 09).
+**Structures.** Brushes avoid cells under walls and bridge abutments by default (a mask from `world/structures/`); flatten and paint still work there. When a stroke ends under a path, the path re-fits (doc 09). The camp pad is fully locked, paint included (above; docs/future/13, section 3.1).
 
 ### Wetness: simulation vs. look
 
@@ -159,6 +165,8 @@ Events: `terrain:edited {rect}` (each frame of a stroke, deferred), `terrain:str
 
 **Starter island.** `recipes/land/starter-island.json` is the landform for chunks −1..1: a gentle 64 m island, a central rise to about 4 m, a shallow basin that suits a first pond, and sand margins. Its seed is the world seed's terrain sub-seed, so every world's island differs a little.
 
+**The larger starter island** (Phase 1, E1; docs/future/13, section 3.11). *(Changed October 22, 2026, docs/future/13.)* Islands made after the update use `recipes/land/starter-island-2.json`: coast radius about 36 m (from 29.5 m), open land 4 x 4 chunks (−2..1, 128 m square), and a varied coast (today's fine wobble plus a few seeded low-frequency lobes of 7 to 9 m, giving one or two coves, a headland and a short spit; one rocky point painted rock). The plateau, central hill, pond hollow and spring scale with the radius. The camp's shore stays a sand beach so the boat can land. It carries the camp block, so the pad is in its base. Islands made before keep `starter-island` (each saved chunk records its land recipe id), so their shape never changes. Land pieces' offsets are checked against the larger coast and the 192 m window (doc 13).
+
 ## Algorithms and shaders
 
 - **Landform**: value-gradient noise built from `hash32` and polynomial fades (quintic), fbm with domain warping (Quilez, "Domain Warping"), only `+ − * /`, so the same integers come out in every browser. Quantized before anything reads it.
@@ -193,6 +201,7 @@ Events: `terrain:edited {rect}` (each frame of a stroke, deferred), `terrain:str
 - A brand new world with the same seed gives the same island on desktop and phone; `tools/determinism.html` shows matching landform hashes.
 - On a phone, a one-finger drag sculpts and two fingers orbit; nothing stutters at stroke end.
 - `tools/terrain-brush-bench.html` shows per-stamp, erosion and landform timings.
+- Drag Sculpt Raise across the camp pad: a dashed circle appears at its edge while the brush is near; the ground inside does not move, and the stroke fades out across about a meter outside. The same for Lower, Flatten, Terrace, Cut, Boulder, Paint and a Water pour. Tap Loose stone or Spring on the pad: a quiet line says the camp ground stays clear (docs/future/13, section 3.10).
 
 ## Open questions
 

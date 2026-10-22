@@ -33,6 +33,18 @@ flowchart LR
   F -- not yet --> C
 ```
 
+### The first evening, before the loop
+
+Every new island opens once with a first evening, before the loop above begins (docs/future/13, section 2). The walker rows in at dawn in a small boat below the camp. Ten short beats teach the loop by doing each thing once: step ashore, drink at the spring, read the keeper's first page, pitch the tent, gather drift twigs and stones, lay the fire ring, go up and shape, light the fire at dusk and sit by it, then rest in the tent. Each beat waits for the player and shows one hint line. It takes about 10 to 15 minutes. A skip at beat 0 leaves the camp ready. Islands made before the update never run it. After the rest, the walker wakes at the tent flap just before sunrise, and the loop runs as below.
+
+```mermaid
+flowchart LR
+  B[Boat at dawn] --> S[Spring and<br/>first page] --> C[Pitch, gather,<br/>lay the ring]
+  C --> U[Go up and shape] --> F[Dusk: light the fire,<br/>sit by it] --> R[Rest in the tent] --> W[Wake at the flap<br/>the loop begins]
+```
+
+**Resting skips the night** (docs/future/13, section 3.5). Between sunset and just before sunrise, Rest at the tent runs the hours to 10 minutes before sunrise through the same catch-up code, behind a short cream screen, with no reveal and no away message. Closing the tab still ends a session as today.
+
 ### The session loop
 
 A session is: arrive (reveal) → tend → watch → maybe a gift → leave. A typical sitting is 15 to 45 real minutes, about one to two game days. Gifts and expansion are covered in `13-progression-and-expansion.md`; the creature side of "happy" in `11-creatures-and-ecology.md`.
@@ -76,6 +88,7 @@ On a 1 m ecology grid (96 x 96 cells on the starter island (3 x 3 chunks of 32 m
 - **Per large plant** (shrubs, trees, reeds clumps as individuals): species, position, seed, age, size, stage.
 - **Creatures**: resident individuals and swarms (species, home cell, mood, trust, name, age), species happiness history, scouts in transit.
 - **World**: clock, weather record per game day (seeded from world seed + day index, see `src/world/weather.js`), season, milestone queue, away log.
+- **Camp**: the fire's state (none, laid, lit, embers, cold) and the hour it changed. The fire is worked out from the clock on the hourly tick in a camp step in `src/sim/`, so a banked fire sinks to embers and then goes cold at the same hour live and in catch-up (docs/future/13, sections 3.4 and 3.6). Nothing is gathered while away.
 
 Not tracked: water velocities, foam, particles, creature poses or exact positions, wind state. These regenerate on re-seed.
 
@@ -128,6 +141,7 @@ export function season() {}                      // {index, phase, year, day}
 
 // The hourly tick = every world system's coarse.js coarseStep, in fixed order:
 // tide -> weather -> seasons -> water summary -> growth -> ecology -> creatures -> expansion
+// plus a camp step (the fire, docs/future/13 section 3.4), added in app.js like pieces
 // src/world/ecology/coarse.js  (pure, deterministic, worker-safe)
 /** @returns {{state: EcologyState, events: AwayEvent[]}} */
 export function coarseStep(state, hourIndex, env) {}   // env carries world seed, recipes, det math
@@ -177,6 +191,8 @@ Save stores: world seed, `worldT`, last wall time, ecology state, away log (last
 - Close the tab for 40 real minutes, reopen: a short reveal shows about 10 game hours of change.
 - Close for a night (about 11 hours or more), reopen: 7 game days passed (the cap, half a season), the reveal visits the frog pond, and notes mention it.
 - Run the bench page twice with the same save: identical checksums; compare a live 60-minute run to a 60-tick catch-up: identical ecology checksum.
+- Start a fresh island: it opens at dawn in the boat and the first evening runs. Rest at the tent after dusk: the walker wakes at the flap just before sunrise, with the fire banked to embers (docs/future/13, section 2.5).
+- Rest with the fire lit and come back within a game day: a thin smoke rises from the ring. After two game days it is cold, the same live and in catch-up (docs/future/13, section 3.10).
 
 ## Open questions
 

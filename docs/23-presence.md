@@ -5,7 +5,7 @@
 ## Locked decisions
 
 - **Presence is a list of sources.** Each source reports a few signals (position, speed, editing, stillness, and later posture, gaze, light and predictability). Creatures react to the nearest or strongest source. S6b builds the list with the camera as its only entry; the code never asks "where is the camera", only "what sources are there".
-- **Rung 1, the hand, is the slice** (M1 S6b and S6c). The walker (M2, which now holds the seat as Sit) and the camp (M6, or with the M7 chapter) are planned, not built, until their milestones.
+- **Rung 1, the hand, is the slice** (M1 S6b and S6c). The walker (M2, which now holds the seat as Sit) and the camp are planned, not built, until their milestones. The camp lands now, with the first evening (Phase 1 of the keeper's camp, ahead of the rest of M2), fixed and not movable (docs/future/13, sections 3 and 13). *(Changed October 22, 2026, docs/future/13; was M6, or with the M7 chapter.)*
 - **Two views (October 21, 2026).** Above is the orbit camera, the diorama where you shape. Below is you on foot. From W3, above stops counting for trust and for fast-swoop startles; sculpting or pouring right beside a creature still startles it. The closest above view stops at about 2.5 m (4 m until the creatures were drawn larger, October 21, 2026), so getting close always means going down.
 - **The camera source** is the camera's eye (where you look from), so it is close to a creature only when you have zoomed in near it. Its speed is how fast the eye moves; editing is a sculpt, pour or plant stroke within a short reach of the creature.
 - **Moves the game makes never startle.** A camera glide that the game drives (Follow, and any later one) is not a movement of the camera source: its speed is reported as zero while the glide runs, and any input ends the glide and hands speed back. This came from Matt's creature tests. Being taken to a creature must never scare it. The journal no longer moves the camera at all: Show me rings the nearest example in place, and J2b's wash leaves the camera where it is.
@@ -26,7 +26,7 @@ Each rung is a new way to be on the island and keeps the rungs below it. The gam
 flowchart LR
     H["1 The hand<br/>your attention<br/>(the camera)"] --> S["2 The seat<br/>now Sit, a posture<br/>of the walker"]
     S --> W["3 The walker<br/>below: you on foot<br/>(the second view)"]
-    W --> C["4 The camp<br/>a bedroll and fire<br/>you live beside"]
+    W --> C["4 The camp<br/>a tent and fire<br/>you live beside"]
 ```
 
 | Rung | You are | Creatures feel | Lands around |
@@ -34,7 +34,7 @@ flowchart LR
 | 1 The hand | The camera (above) | Fast swoops through their ring; sculpting or pouring beside them; quiet watching. From W3, only edits right beside them | M1 S6b and S6c |
 | 2 The seat | Sitting where you stand, as the walker | A still, low, patient presence | M2, folded into the walker's Sit |
 | 3 The walker | You on foot, below | Approach speed, posture, gaze, footsteps, lantern | M2 (October 21, 2026); paths and the bridge join as routes in M3 |
-| 4 The camp | Someone who lives here | A home point; trust keeps growing slowly while you are away | M6, or with the M7 chapter |
+| 4 The camp | Someone who lives here | A home point; firelight at night; trust keeps growing slowly while you are away | Phase 1 of the keeper's camp, ahead of the rest of M2 (docs/future/13, section 13). *(Changed October 22, 2026, docs/future/13; was M6, or with the M7 chapter.)* |
 
 ### What the repo already gives presence
 
@@ -174,14 +174,18 @@ Two views: above shapes, below lives there. Above is the diorama with every shap
 - **Build pieces** on `m2-walker`: W0 docs; W1 the walk grid, `tools/walk-lab.html` and a `?sandbar` test island; W2 the stand-in figure, Go down and Go up, click to walk and the low camera, as a feel test. W3 presence below, W4 the ground bar (Sit, Kneel, Feed, Look), W5 the figure and W6 the ground-level look (footprints, grass underfoot) are built and merged; Photo on the ground bar and W7 Steps and crossings are still to come.
 - **Cost:** the biggest rung. Near-field rendering and draw distance at ground level, grass that bends underfoot, footprints, footsteps by ground (doc 17), an animation set, and new save data.
 
-### Rung 4, the camp (M6, or with M7)
+### Rung 4, the camp (Phase 1 of the keeper's camp, approved October 22, 2026)
 
-A spot above high tide: a bedroll or small tent, a firepit, a kettle, a lantern and a crate. A home point, not a building project (doc 01's non-goal of settlements holds).
+*(Changed October 22, 2026, docs/future/13: the camp lands now, with the first evening, fixed and not movable; was M6, or with M7.)* One level, protected pad on the plateau above the beach where the boat lands, there from day one. The walker carries the canvas tent with its bedroll, the hand lantern and a fire steel; the fire ring is laid from stones and drift twigs gathered on the shore. Every camp piece has a fixed slot (docs/future/13, sections 3.1 and 3.2). There is no crate: piles at the pad's edge are the only store. A home point, not a building project (doc 01's non-goal of settlements holds).
 
-- **The sleep ritual:** crawling into the tent saves and ends a session; the next return opens at camp at dawn, the reveal starting from the tent flap. Closing the tab still works.
-- **Standing presence:** while you are away, the camp adds small trust events during catch-up for creatures that already know you. Bonded animals visit: the hedgehog by the cold firepit, the robin on the tent ridge, an otter's pebble on your stone.
-- **Fire:** a physical light at about 1,800 K with flicker and wind-blown smoke. It draws moths, the bats come for the moths, the frogs call from beyond the firelight. It never spreads; its ash fades in a day.
-- **Leave no trace:** moving camp leaves a pale patch that regrows over a few days.
+- **Fixed, not movable.** One camp per island, on the recipe's spot. Islands made before the update get the pad stamped on first load, on the nearest dry, level spot if the recipe's spot was shaped (doc 18; docs/future/13, section 3.8).
+- **Resting at the tent** (replaces the sleep ritual). Between sunset and just before sunrise, click the tent or **Rest** on the ground bar within 2 m of the flap. The walker crawls in, the screen softens to cream for a moment, and time runs on through the same catch-up code to 10 minutes before sunrise. No reveal and no away message. By day the tent card says *"Rest comes after dark."* Rest does not end the session; closing the tab does (docs/future/13, section 3.5, C-39).
+- **The return at the tent flap.** After a rest, the walker wakes kneeling at the flap and the first view is out of the tent: the ring, the pad and the sea, just before sunrise. The first click climbs out (C-40).
+- **The return hour.** A new visit after closing the tab opens as today, at whatever game hour it now is, with the usual catch-up and reveal; it does not jump to dawn at camp (docs/future/13, resolution 10 in section 1.3).
+- **Presence at camp.** The camp is a `camp` source (`kind: 'camp'`) with `light: true` while the fire is lit at night, speed 0, never startling; it widens creature rings by the existing light multiplier (1.3), so frogs keep out of the firelight (docs/future/13, section 3.5).
+- **Standing presence:** while you are away, the camp adds small trust events during catch-up for creatures that already know you. Bonded animals visit: the hedgehog by the cold fire ring, the robin on the tent ridge, an otter's pebble on the gift stone.
+- **Fire:** a physical light at about 1,800 K with flicker and wind-blown smoke. It lights only when the player chooses, with the fire steel. It draws moths, the bats come for the moths, the frogs call from beyond the firelight. It never spreads; rain drops it to embers; its ash fades in a day.
+- **Leave no trace:** the camp does not move. After the farewell (docs/future/02), the pad pales and the grass returns over about 14 game days (docs/future/13, section 3.9).
 
 ## Data and interfaces
 
@@ -238,9 +242,9 @@ Rung 1 is a few distance checks per creature per frame against one source: negli
 - Answered October 21, 2026: the main way to play is two views. Above shapes; below lives there.
 - Should the figure be customizable from the start, or found and gifted over time?
 - Should a whole group slowly get used to you (familiarity), or should closeness stay one creature at a time?
-- Should the camp kit be a creature's gift, or the reward for your first bonded creature?
-- Should the camp ever grow (a lean-to, a small garden, a rain barrel), or stay a bedroll and a fire?
-- One camp you move, or more than one camp spot?
+- ~~Should the camp kit be a creature's gift, or the reward for your first bonded creature?~~ Answered October 22, 2026 (docs/future/13): neither. The walker carries the tent, lantern and fire steel from the first evening.
+- ~~Should the camp ever grow (a lean-to, a small garden, a rain barrel), or stay a bedroll and a fire?~~ Answered October 22, 2026 (docs/future/13, section 3.2): it slowly gathers a few handmade things and creatures' gifts, each in its fixed slot, and never becomes a building.
+- ~~One camp you move, or more than one camp spot?~~ Answered October 22, 2026 (docs/future/13): one fixed camp, not movable.
 - Should a bonded creature ever follow you on walks, or only meet you at its home and at camp?
 
 ## Sources

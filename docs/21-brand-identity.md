@@ -29,6 +29,10 @@ The icon carries the mood (dusk, quiet, a creature at home). The favicon carries
 - **Stacked (title and loading screens):** icon above, wordmark and tagline centered below.
 - **Wordmark alone:** allowed in the game's own UI (title bar, settings header). In any external listing, use the tagline as well.
 
+### The landing page and the first evening
+
+The first evening (docs/future/13, section 2) ships before ebb is marketed, because it is how a new player meets the island. Once it exists, the landing page (notarobot-eng.com/ebb) can show it: the boat rowing in at dawn, the tent pitched on the trodden flat above the beach, the fire lit at dusk with the lantern on the tent pole. Captures come from the game itself (photo mode, doc 16), with the lockup and tagline as above (docs/future/13, section 14).
+
 ### Files in `brand/`
 
 | File | Use |

@@ -119,6 +119,19 @@ Medium spends the same groups inside 13 ms at its 0.85 render scale; low inside 
 | HUD backdrop blur (doc 15) | on | on | on |
 | Worker pool | `hardwareConcurrency − 2`, max 14 | same | max 4 |
 | Photo export (doc 16) | 2x, 4096 px max | 2x, 4096 px max | 1x |
+| Keeper's camp (docs/future/13, sections 3.5 and 13): fire and lantern lights, the smoke pass (about 40 seeded billboard puffs), moths, hole pieces (Phase 2), gather pickups drawn near the walker | TBD | TBD | TBD |
+
+**Keeper's camp budgets: to be set before E3** (Phase 1, approved October 22, 2026; docs/future/13, sections 1.4, 3.10 and 13). The smoke pass and the lights buffer are new rendering work with no code yet. These lines are placeholders, not measured numbers; each is set from a measurement on Matt's desktop and the medium-tier laptop before E3 (tent and ring) starts:
+
+| Item | GPU ms, high | GPU ms, medium | Counts or caps |
+|---|---|---|---|
+| Fire light (1,800 K, about 4 m) and lantern light (2,200 K, about 8 m) as the first entries in doc 06's lights buffer | TBD | TBD | 2 lights at camp; TBD |
+| Smoke pass, seeded billboard puffs leaning with the wind | TBD | TBD | about 40 puffs; TBD |
+| Moths at the fire and lantern after dark | TBD | TBD | about 6; TBD |
+| Hole pieces (Phase 2, digging) | TBD | TBD | open-hole cap from docs/future/13, section 10.8.3 |
+| Gather pickups drawn near the walker | TBD | TBD | TBD |
+
+The larger starter island (16 chunks instead of 9; docs/future/13, section 3.11) also re-runs the medium-tier laptop budget and the catch-up timing above.
 
 ### Memory budgets
 
