@@ -143,7 +143,7 @@ The best four are kept, and the seed picks one of them. Growing a piece runs in 
 +------------------------------+-----------------------------+
 ```
 
-On a phone the two columns stack, with the sliders below the music and no sideways scroll.
+In a narrow window the two columns stack, with the sliders below the music and no sideways scroll.
 
 **Twenty seeds in a row** plays 20 consecutive seeds with a short gap between them. This is the doc 24 gate: you listen through, mark any seed that doesn't sound composed, and give bar notes.
 

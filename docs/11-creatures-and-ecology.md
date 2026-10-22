@@ -71,7 +71,7 @@ flowchart LR
 
 Scouts are scheduled with the deterministic RNG keyed by species and day index. A species that has fully moved on returns through the same scout path. Swarm species skip scouting: their density field seeds at the patch edge and grows logistically toward capacity, shrinking when mood falls.
 
-**As built for frogs in S6a.** Arrival is something the player discovers, not something they are told. The scout comes at dusk, and the journal gets a sign (a plop and rings by the reeds, "Something slipped into the water by the reeds"), never "a frog arrived". The frog page inks only when the player finds one: a tap on it, or watching it in the middle of the view, zoomed in. Until then the notes speak of something, and the page shows a riddle, then hints. A content scout stays after a day, and a second frog comes the next dusk. More come on most evenings while the edge has room, and if the habitat fails, one frog a day moves on, quietly. Frogs sleep in the pond mud through the winter dormancy window (`recipes/world/seasons.json`). Events: `creature:habitat-right`, `creature:arrived` (the scout), `creature:settled`, `creature:joined`, `creature:left`, `creature:dormant`, `creature:woke`, `species:happy`, and the live `creature:found`. `tools/ecology-lab.html` runs the arc on both islands, twice, and must end the same.
+**As built for frogs in S6a.** Arrival is something the player discovers, not something they are told. The scout comes at dusk, and the journal gets a sign (a plop and rings by the reeds, "Something slipped into the water by the reeds"), never "a frog arrived". The frog page inks only when the player finds one: a click on it, or watching it in the middle of the view, zoomed in. Until then the notes speak of something, and the page shows a riddle, then hints. A content scout stays after a day, and a second frog comes the next dusk. More come on most evenings while the edge has room, and if the habitat fails, one frog a day moves on, quietly. Frogs sleep in the pond mud through the winter dormancy window (`recipes/world/seasons.json`). Events: `creature:habitat-right`, `creature:arrived` (the scout), `creature:settled`, `creature:joined`, `creature:left`, `creature:dormant`, `creature:woke`, `species:happy`, and the live `creature:found`. `tools/ecology-lab.html` runs the arc on both islands, twice, and must end the same.
 
 ### Mood expressed through behavior
 
@@ -197,7 +197,7 @@ The coarse model keeps only **group records** (species, patch, population, group
                "quiet":{"night":["lantern"],"day":["path"],"w":0.15},
                "company":{"n":[2,5,9],"alone":0.6,"crowded":0.4,"w":0.15} },
     "edge":{"metresPerFrog":3,"goodScore":0.5}, "arrival":{ /* scout, settle, join, leave, happy */ }, "gift":{...} },
-  "presence":{ /* doc 23 */ }, "find":{ /* tap or watch to find one */ } }
+  "presence":{ /* doc 23 */ }, "find":{ /* click or watch to find one */ } }
 ```
 
 Modules:
@@ -224,7 +224,7 @@ Tuning panel, per species: need weights and radii, accepted water and food, cove
 ## Performance budget
 
 - Desktop: habitat scoring for all unlocked species under 1.5 ms per tick in a worker; up to 120 live individuals with IK and springs under 1 ms CPU; 4,096 boids under 0.3 ms GPU; creature rendering under 2 ms at 1440p. Body bake under 20 ms per species at load.
-- Mobile (low) tier: 50 individuals (matching `19-performance-and-quality-tiers.md`), 1,024 boids, LOD bias +1, creature rendering under 3 ms.
+- Low tier (emergency fallback on weak laptops): 50 individuals (matching `19-performance-and-quality-tiers.md`), 1,024 boids, LOD bias +1, creature rendering under 3 ms.
 - Offscreen individuals beyond 60 m run behavior at 4 Hz and skip IK.
 
 ## Acceptance checks
