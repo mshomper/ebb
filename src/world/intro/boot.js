@@ -3,7 +3,8 @@
 // island opens at dawn on spring day 0 with the walker standing on the beach below the camp and
 // the boat grounded behind (Matt, October 22: no row-in). A save in the middle of the evening opens
 // below where you stood. The director itself starts once the journal is up (src/main.js), since
-// its flags live in the journal.
+// its flags live in the journal. The camp pad is E1's store slice `campPad` (src/world/camp); on an
+// older island it is null until stamped on the first load, and the boat moors once it is.
 //
 // Test links (unsaved): `?intro` runs the evening on a fresh island; `?intro=<beatId>` starts at
 // that beat with the earlier beats' results laid in (dusk and rest open near sunset); `?nointro`
@@ -11,10 +12,10 @@
 // open as they always have.
 
 import { emit } from '../../core/events.js';
-import { get } from '../../core/store.js';
+import { get, subscribe } from '../../core/store.js';
 import { dispatch } from '../../input/actions.js';
 import { sunMoon } from '../sky/sun-moon.js';
-import { createIntroLive, dawnHour, standInPad, flapSpot } from './adapter.js';
+import { createIntroLive, dawnHour, flapSpot } from './adapter.js';
 import { mooringOf } from './boat.js';
 
 const H = 3600;
@@ -53,8 +54,8 @@ export function introStartHour(R, orbit, params, fresh, testParams, timeSet) {
 /**
  * @param {{ R: any, boatR: any, params: URLSearchParams, testParams: string[], back: any, walk: any,
  *   terrain: any, water: any, land: any, terrainSeed: number, orbit: any, clock: any, camera?: any,
- *   boat?: { setMooring: (m: any) => void, update: (dt: number, t: number) => void } | null }} o
- *   boat: the boat (boat.js createBoat), set at its mooring here
+ *   pack?: any, boat?: { setMooring: (m: any) => void } | null }} o
+ *   pack: E2's pack (holds, take); boat: the boat (boat.js createBoat), set at its mooring here
  */
 export function createIntroBoot(o) {
   const fresh = !o.back;
@@ -64,16 +65,21 @@ export function createIntroBoot(o) {
   const at = testBeat ? Math.max(0, beatIds.indexOf(testBeat)) : 0;
   const flags = /** @type {string[]} */ (o.back?.journal?.flags ?? []);
   const ground = (/** @type {number} */ x, /** @type {number} */ z) => o.terrain.sampleHeight(x, z);
-  const pad = get('camp')?.pad ?? standInPad(o.land, o.terrainSeed);
-  const mooring = mooringOf(pad, ground, o.boatR.boat?.mooring ?? o.boatR.mooring);
+  const B = o.boatR.boat ?? o.boatR;
+  /** The mooring from a pad: the land recipe's mooring numbers over the boat recipe's. @param {any} pad */
+  const moor = (pad) => (pad ? mooringOf(pad, ground, { ...B.mooring, ...(pad.camp?.mooring ?? {}) }) : null);
+  const pad = get('campPad') ?? null;
+  const mooring = moor(pad);
   o.boat?.setMooring(mooring);
+  // An older island's pad is stamped on its first load: the boat moors once it is.
+  const offPad = subscribe('campPad', (/** @type {any} */ p) => o.boat?.setMooring(moor(p)));
   /** @type {ReturnType<typeof createIntroLive> | null} */ let live = null;
 
   // Where the walker opens: on the beach for a new island (moved up the beach while the tide
   // covers the spot); at the tent flap on a test link past the landing; below where you stood for
   // a save in the middle of the evening.
-  if (runs && fresh && !o.params.has('nointro')) {
-    let s = at >= beatIds.indexOf('page') ? { ...flapSpot(pad), yaw: Math.atan2(pad.fx, pad.fz) } : mooring?.stand ?? null;
+  if (runs && fresh && !o.params.has('nointro') && pad) {
+    let s = at >= beatIds.indexOf('page') ? flapSpot(pad) : mooring?.stand ?? null;
     for (let i = 0; s && i < 40 && ground(s.x, s.z) < o.water.tide + 0.05; i++) s = { ...s, x: s.x - pad.fx * 0.25, z: s.z - pad.fz * 0.25 };
     if (s && o.walk.placeAt(s.x, s.z, s.yaw, 'stand')) {
       // The low view opens behind you, looking where you face (the camera's yaw points from the
@@ -88,10 +94,12 @@ export function createIntroBoot(o) {
 
   return {
     id: 'intro',
-    /** The boat's stake, where it lies, and where a new island's walker stands. */
+    /** The boat's stake, where it lies, and where a new island's walker stands (as it opened). */
     mooring,
     /** The director, once started. */
     get live() { return live; },
+    /** The pack (E2), made after the walker: the ring beat asks it what you hold. @param {any} pack */
+    usePack(pack) { o.pack = pack; },
     /** Start the director, after the journal is up (src/main.js). */
     start() {
       if (!runs || live) return;
@@ -110,6 +118,6 @@ export function createIntroBoot(o) {
     tick(f) { live?.update(f.realDt); },
     /** Glowing camp slots for the terrain marks (the stand-in camp's). @param {number} now ms */
     rings: (now) => live?.rings(now / 1000) ?? [],
-    dispose() { live?.dispose(); },
+    dispose() { live?.dispose(); offPad(); },
   };
 }

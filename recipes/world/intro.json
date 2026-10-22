@@ -9,7 +9,7 @@
     { "id": "spring", "hint": ["Follow the stream up to the spring. Kneel there and drink."], "done": { "check": "kneltAtSpring", "reachM": 1.5 }, "then": { "act": "drink" } },
     { "id": "page", "onStart": { "page": "first" }, "hint": ["The journal keeps what you learn here. Close it when you're ready."], "done": { "check": "journalClosed" } },
     { "id": "pitch", "hint": ["The flat ground above the beach is your camp. Click the glowing patch to pitch your tent."], "done": { "event": "camp:pitched" } },
-    { "id": "gather", "hint": ["Twigs lie along the tide line and stones on the shore. Click one, then Gather."], "done": { "check": "packHolds", "need": { "fuel": 1, "stones": 2 } } },
+    { "id": "gather", "hint": ["Drift twigs lie along the tide line and pebbles on the shore. Click a twig, then Gather."], "done": { "check": "packHolds", "need": { "fuel": 1, "stones": 2 } } },
     { "id": "ring", "hint": ["Click the glowing ring of earth to lay your fire ring."], "done": { "event": "camp:ring-laid" } },
     { "id": "shape", "hint": ["Go up to see the whole island. From above you can shape it.", "Widen the spring's pool into a pond with Sculpt, or pour water with Water."], "hintNext": ["walk:went-up"],
       "later": "Evening comes in its own time. The time button can bring it sooner.", "laterIfBeforeSunsetH": 2, "done": { "check": "shapedOffPad" } },

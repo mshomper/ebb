@@ -1,11 +1,14 @@
 // @ts-check
 // The evening director in the live game (docs/future/13 section 2.3): builds the context its checks
-// read and the effects it asks for from the walker, the terrain, the water, the journal and the
-// camp, and answers the hint line's Tuck and Skip. The camp pad and its slots come from E1's
-// helpers and the pack from E2's packHolds once those land; until then small stand-ins here give
-// the same shapes, so the real ones drop in by passing `camp` and `pack`. Without the real camp
-// (E3), a stand-in camp below plays the walker's acts at the glowing slots and emits the camp
-// events, so the evening can be played end to end.
+// read and the effects it asks for from the walker, the terrain, the water, the journal, the camp
+// pad (E1: the store slice `campPad`, src/world/camp/layout.js) and the pack (E2: holds and
+// pack:changed), and answers the hint line's Tuck and Skip.
+//
+// The tent, the fire ring, lighting and resting are E3's. Until E3 is in, a stand-in camp here plays
+// the walker's acts when you walk onto the slot a beat waits for (a soft ring glows there) and emits
+// the camp events E3 will: camp:pitched, camp:ring-laid (taking the ring's handfuls from the pack),
+// camp:lit (kneel at the laid ring after sunset) and camp:rested (walk to the flap after the fire).
+// E3's camp drops in through the `camp` option and the stand-in goes quiet.
 //
 // Effects go out as events other pieces answer: `intro:camp-ready { tent, ring }` (the camp left
 // ready, cold: on Skip and on a test link), `intro:glow { slot }` (an older island's tent patch),
@@ -16,6 +19,7 @@ import { get } from '../../core/store.js';
 import { dispatch, onAction } from '../../input/actions.js';
 import { sunMoon } from '../sky/sun-moon.js';
 import { landmarks } from '../terrain/landform.js';
+import { padToWorld, slotWorld } from '../camp/layout.js';
 import { createIntro } from './index.js';
 
 const H = 3600, DAY = 86400, DEG = Math.PI / 180;
@@ -50,55 +54,34 @@ export function sunsetInH(t, orbit) {
   return 24;
 }
 
-/**
- * The camp pad (E1's `campPad(camp)` shape: { x, z, r, h, blend, fx, fz }, fx and fz the seaward
- * unit vector). A stand-in until E1 merges: the land recipe's camp block if there is one, else
- * the spec's spot on today's starter island, facing out from the island's rise.
- * @param {any} land the land recipe @param {number} terrainSeed
- */
-export function standInPad(land, terrainSeed) {
-  const c = land.camp ?? { x: 12.5, z: -13, radiusM: 4, heightM: 1.3, blendM: 2.5 };
-  const rise = landmarks(land, terrainSeed).rise;
-  let fx = c.x - rise.x, fz = c.z - rise.z;
-  if (Number.isFinite(c.facingDeg)) { fx = Math.sin(c.facingDeg * DEG); fz = Math.cos(c.facingDeg * DEG); }
-  const l = Math.hypot(fx, fz) || 1;
-  return { x: c.x, z: c.z, r: c.radiusM ?? 4, h: c.heightM ?? 1.3, blend: c.blendM ?? 2.5, fx: fx / l, fz: fz / l };
-}
-
-/** The spec's slots (section 3.2) in the pad's frame, for the stand-in. */
-const SLOTS = { tent: { u: -2.4, v: 0.1, flapU: -1.3 }, ring: { u: 1.5, v: 0 } };
+/** Where the flap is in the pad's frame: just seaward of the tent, in the clear lane to the ring. */
+const FLAP_U = 0.6;
 
 /**
- * A slot in world meters (E1's `slotWorld(pad, slot)` shape): u seaward, v to the left facing the sea.
- * @param {{ x: number, z: number, fx: number, fz: number }} pad @param {{ u: number, v: number }} s
- */
-export function standInSlot(pad, s) {
-  return { x: pad.x + s.u * pad.fx + s.v * pad.fz, z: pad.z + s.u * pad.fz - s.v * pad.fx };
-}
-
-/**
- * Where you stand at the tent's flap: a little seaward of it, in the clear lane to the ring.
- * @param {{ x: number, z: number, fx: number, fz: number }} pad
+ * Where you stand at the tent's flap, in world meters, facing the sea.
+ * @param {import('../camp/layout.js').Pad} pad
  */
 export function flapSpot(pad) {
-  return standInSlot(pad, { u: SLOTS.tent.flapU + 0.6, v: SLOTS.tent.v });
+  const tent = pad.camp?.slots?.find((/** @type {any} */ s) => s.id === 'tent') ?? { u: -2.4, v: 0.1, d: 1.6 };
+  const [x, z] = padToWorld(pad, tent.u + (tent.w ?? 2.2) / 2 + FLAP_U, tent.v);
+  return { x, z, yaw: Math.atan2(pad.fx, pad.fz) };
 }
 
 /**
  * @param {{ R: any, mode?: 'full' | 'short', fresh: boolean, walk: any, terrain: any, water: any,
  *   land: any, terrainSeed: number, orbit: any, clock: any,
- *   camp?: { pad: () => any, slot: (pad: any, id: string) => { x: number, z: number } | null, fireLit: () => boolean } | null,
- *   pack?: { holds: (need: Record<string, number>) => boolean } | null }} o
- *   camp and pack: E1, E2 and E3's real ones once merged; null runs the stand-ins.
+ *   pack?: { holds: (need: Record<string, number>) => boolean, take: (kind: string, n?: number) => number, recipe?: any } | null,
+ *   camp?: { fireLit: () => boolean } | null }} o
+ *   pack: E2's pack; camp: E3's camp once it exists (null runs the stand-in camp)
  */
 export function createIntroLive(o) {
   const { walk, terrain, water } = o;
-  const padNow = () => get('camp')?.pad ?? o.camp?.pad() ?? standInPad(o.land, o.terrainSeed);
+  /** @returns {import('../camp/layout.js').Pad | null} */
+  const padNow = () => get('campPad') ?? null;
   const slot = (/** @type {string} */ id) => {
     const pad = padNow();
-    if (!pad) return null;
-    if (o.camp) return o.camp.slot(pad, id);
-    return standInSlot(pad, /** @type {any} */ (SLOTS)[id] ?? { u: 0, v: 0 });
+    const s = pad?.camp?.slots?.find((/** @type {any} */ x) => x.id === id);
+    return pad && s ? slotWorld(pad, s) : null;
   };
   const flapOf = () => { const pad = padNow(); return pad && flapSpot(pad); };
   const spring = landmarks(o.land, o.terrainSeed).spring;
@@ -114,11 +97,12 @@ export function createIntroLive(o) {
     onLand: (x, z) => terrain.sampleHeight(x, z) > water.tide + 0.02,
     spring: () => spring,
     journalOpen: () => !!get('journalUi')?.open,
-    packHolds: (need) => (o.pack ? o.pack.holds(need) : !!stub?.holds(need)),
+    packHolds: (need) => !!o.pack?.holds(need),
     offPad: (rect, at) => {
       const pad = padNow();
       if (!pad) return true;
-      const r = pad.r + (pad.blend ?? 0);
+      // Off the pad means past where the brushes are locked (the pad, then its fade).
+      const r = pad.r + (pad.lockFadeM ?? 1);
       if (at) return Math.hypot(at.x - pad.x, at.z - pad.z) > r;
       if (!rect) return true;
       // A stroke's rect reaches off the pad unless the whole rect sits inside it.
@@ -142,8 +126,8 @@ export function createIntroLive(o) {
       openPage: (id) => dispatch(/** @type {any} */ ({ type: 'ui.journal', open: true, view: 'keeper', keeper: id, page: null })),
       skipCamp: () => {
         emit('intro:camp-ready', { tent: true, ring: true });
-        const f = flapOf(), pad = padNow();
-        if (f && pad) { walk.placeAt(f.x, f.z, Math.atan2(pad.fx, pad.fz), 'stand'); walk.downHere(); }
+        const f = flapOf();
+        if (f) { walk.placeAt(f.x, f.z, f.yaw, 'stand'); walk.downHere(); }
       },
       notice: (text) => emit('island:notice', { text, showS: 9 }),
       glow: (s) => emit('intro:glow', { slot: s }),
@@ -158,40 +142,41 @@ export function createIntroLive(o) {
     }),
   ];
 
+  /** Take handfuls of a group (fuel, stones) from the pack, kind by kind. @param {string} group @param {number} n */
+  function takeGroup(group, n) {
+    const kinds = (o.pack?.recipe?.kinds ?? []).filter((/** @type {any} */ k) => k.group === group).map((/** @type {any} */ k) => k.id);
+    for (const k of kinds) if (n > 0) n -= o.pack?.take(k, n) ?? 0;
+  }
+
   /**
-   * The stand-in camp and pack (until E2 and E3 merge): kneeling on the shore picks up a handful
-   * (twigs first, then stones); arriving at the tent's slot pitches it, at the ring's slot lays it,
-   * kneeling at the laid ring after sunset strikes the steel and lights it, and arriving at the
-   * flap after the fire is lit rests. Each plays its walker act first.
+   * The stand-in camp (until E3): arriving at the tent's slot pitches it, at the ring's slot (with the
+   * ring's handfuls in the pack) lays it, kneeling at the laid ring after sunset strikes the steel and
+   * lights it, and arriving at the flap after the fire is lit rests. Each plays its walker act first.
    */
   function createStandInCamp() {
-    const held = { fuel: 0, stones: 0 };
-    const state = { tent: false, ring: false, rested: false };
+    const state = { tent: false, ring: false };
     let wasKneel = false, pending = /** @type {string | null} */ (null);
     const near = (/** @type {any} */ p, /** @type {number} */ m) => { const w = walk.walker; return !!p && Math.hypot(w.x - p.x, w.z - p.z) <= m; };
     const offReady = on('intro:camp-ready', (/** @type {any} */ p) => { state.tent ||= !!p.tent; state.ring ||= !!p.ring; });
     const offArrive = on('walk:arrived', () => {
       const id = intro.current?.id;
-      if (id === 'pitch' && !state.tent && near(slot('tent'), 1.6)) { pending = 'pitch'; walk.act('pitch'); }
-      else if (id === 'ring' && state.tent && !state.ring && held.fuel >= 1 && held.stones >= 2 && near(slot('ring'), 1.4)) { pending = 'lay'; walk.act('lay'); }
+      if (id === 'pitch' && !state.tent && near(slot('tent'), 1.8)) { pending = 'pitch'; walk.act('pitch'); }
+      else if (id === 'ring' && state.tent && !state.ring && ctx.packHolds({ fuel: 1, stones: 2 }) && near(slot('ring'), 1.4)) { pending = 'lay'; walk.act('lay'); }
       else if (id === 'rest' && lit && near(flapOf(), 1.6)) { pending = 'crawlIn'; walk.act('crawlIn'); }
     });
     const offDone = on('walk:act-done', (/** @type {any} */ p) => {
       if (p.name !== pending) return;
       pending = null;
       if (p.name === 'pitch') { state.tent = true; emit('camp:pitched', {}); }
-      else if (p.name === 'lay') { state.ring = true; held.fuel -= 1; held.stones -= 2; emit('pack:changed', {}); emit('camp:ring-laid', {}); }
+      else if (p.name === 'lay') { state.ring = true; takeGroup('fuel', 1); takeGroup('stones', 2); emit('camp:ring-laid', {}); }
       else if (p.name === 'strike') { emit('camp:lit', {}); }
-      else if (p.name === 'crawlIn') { state.rested = true; emit('camp:rested', {}); }
+      else if (p.name === 'crawlIn') { emit('camp:rested', {}); }
     });
     const tick = () => {
       const w = walk.walker, kneel = walk.below && w.posture === 'kneel';
-      if (kneel && !wasKneel && !pending) {
-        const id = intro.current?.id;
-        if (id === 'gather' && terrain.sampleHeight(w.x, w.z) < 0.9) {
-          if (held.fuel < 1) held.fuel++; else held.stones++;
-          emit('pack:changed', {});
-        } else if (id === 'dusk' && state.ring && !lit && ctx.sunsetInH() <= 0 && near(slot('ring'), 1.6)) { pending = 'strike'; walk.act('strike'); }
+      if (kneel && !wasKneel && !pending && intro.current?.id === 'dusk' && state.ring && !lit && ctx.sunsetInH() <= 0 && near(slot('ring'), 1.6)) {
+        pending = 'strike';
+        walk.act('strike');
       }
       wasKneel = kneel;
     };
@@ -203,12 +188,7 @@ export function createIntroLive(o) {
       const p = /** @type {any} */ (at?.[0]);
       return p ? [[p.x, p.z, /** @type {number} */ (at?.[1]), k]] : [];
     };
-    return {
-      holds: (/** @type {Record<string, number>} */ need) => Object.entries(need).every(([k, n]) => (/** @type {any} */ (held)[k] ?? 0) >= n),
-      tick,
-      rings,
-      dispose() { offReady(); offArrive(); offDone(); },
-    };
+    return { tick, rings, dispose() { offReady(); offArrive(); offDone(); } };
   }
 
   return {

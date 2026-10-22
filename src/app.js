@@ -569,6 +569,7 @@ export async function startApp(canvas, hooks = {}) {
   const pack = createPack({ recipe: await loadRecipe('world/pack'), you: () => walk.you(), day: () => clock.dayIndexOf(clock.worldT()),
     setDown: (k, h) => piles?.setDown(k, h) ?? { moved: 0, refuse: 'noSlot' } });
   piles = createPiles({ recipe: pack.recipe, kinds: pack.kinds, seed });
+  intro.usePack(pack);
   // Gathering on foot (section 4.2): Gather on a card walks you there, you kneel, a handful goes in.
   const gather = createGather({ recipe: await loadRecipe('world/gather'), seed, world, worldT: () => clock.worldT(), water, terrain, pack, walk,
     tide: waterRecipe.tide, strandline: ww.shore.recipe?.look?.strandline ?? null,

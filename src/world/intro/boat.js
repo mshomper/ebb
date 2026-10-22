@@ -10,6 +10,7 @@
 import { packMesh } from '../creatures/bodies.js';
 import { createCreaturePass } from '../../render/passes/creatures.js';
 import { boatMeshes, hullLines } from './boat-mesh.js';
+import { readGlb, meshesByName, materialMaps } from '../../render/gltf.js';
 
 /**
  * @typedef {{ x: number, z: number, r: number, fx: number, fz: number }} Pad
@@ -66,6 +67,52 @@ function tiltMatrix(pitch, roll) {
 /** A column-major matrix times a point (no translation). @param {Float32Array} m @param {number[]} p */
 const turn = (m, p) => [m[0] * p[0] + m[4] * p[1] + m[8] * p[2], m[1] * p[0] + m[5] * p[1] + m[9] * p[2], m[2] * p[0] + m[6] * p[1] + m[10] * p[2]];
 
+/** sRGB 0..255 to linear 0..1. @param {number} c */
+const linear = (c) => { const s = c / 255; return s <= 0.04045 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4; };
+
+/**
+ * A boat model as one mesh in the creature pass's layout (position, normal, linear albedo): every
+ * mesh in the file joined, its base colour map read at each vertex's texture coordinate into the
+ * vertex colour, since the camp pieces draw with vertex colours (color where it has no map).
+ * @param {ArrayBuffer} buffer @param {number[]} color
+ * @returns {Promise<{ vertices: Float32Array, count: number, indices: Uint32Array }>}
+ */
+export async function boatModelMesh(buffer, color) {
+  const glb = readGlb(buffer);
+  const parts = [...meshesByName(glb).values()];
+  if (!parts.length) throw new Error('no meshes');
+  const map = materialMaps(glb).baseColor;
+  /** @type {{ data: Uint8ClampedArray, w: number, h: number } | null} */ let img = null;
+  if (map && typeof createImageBitmap === 'function' && typeof OffscreenCanvas === 'function') {
+    const bmp = await createImageBitmap(new Blob([map.bytes], { type: map.mimeType }));
+    const cv = new OffscreenCanvas(bmp.width, bmp.height), g = /** @type {OffscreenCanvasRenderingContext2D} */ (cv.getContext('2d'));
+    g.drawImage(bmp, 0, 0);
+    img = { data: g.getImageData(0, 0, bmp.width, bmp.height).data, w: bmp.width, h: bmp.height };
+  }
+  const count = parts.reduce((s, p) => s + p.attributes.POSITION.length / 3, 0);
+  const vertices = new Float32Array(count * 9);
+  const indices = new Uint32Array(parts.reduce((s, p) => s + p.indices.length, 0));
+  let v0 = 0, i0 = 0;
+  for (const p of parts) {
+    const pos = p.attributes.POSITION, nor = p.attributes.NORMAL, uv = p.attributes.TEXCOORD_0;
+    const n = pos.length / 3;
+    for (let i = 0; i < n; i++) {
+      let c = color;
+      if (img && uv) {
+        const px = Math.min(img.w - 1, Math.max(0, Math.floor((uv[i * 2] - Math.floor(uv[i * 2])) * img.w)));
+        const py = Math.min(img.h - 1, Math.max(0, Math.floor((uv[i * 2 + 1] - Math.floor(uv[i * 2 + 1])) * img.h)));
+        const k = (py * img.w + px) * 4;
+        c = [linear(img.data[k]), linear(img.data[k + 1]), linear(img.data[k + 2])];
+      }
+      vertices.set([pos[i * 3], pos[i * 3 + 1], pos[i * 3 + 2], nor ? nor[i * 3] : 0, nor ? nor[i * 3 + 1] : 1, nor ? nor[i * 3 + 2] : 0, c[0], c[1], c[2]], (v0 + i) * 9);
+    }
+    for (let k = 0; k < p.indices.length; k++) indices[i0 + k] = p.indices[k] + v0;
+    v0 += n;
+    i0 += p.indices.length;
+  }
+  return { vertices, count, indices };
+}
+
 /**
  * @param {{ recipe: any, ground: (x: number, z: number) => number, depthAt?: (x: number, z: number) => number,
  *   water?: { tide?: number, sampleLive?: (x: number, z: number) => { depth: number } | null }, mooring?: Mooring | null }} o
@@ -83,6 +130,15 @@ export function createBoat(o) {
     recipe: { body: { wetSpecular: B.look.wetSpecular, contactShadow: 0, scaleReal: [H.lengthM, H.lengthM] } }, name: 'boat', maxBones: 1 });
   const meshes = boatMeshes(B);
   for (const key of /** @type {const} */ (['hull', 'stake', 'rope'])) pass.setMesh(key, { data: packMesh(meshes[key]), indices: meshes[key].indices });
+  // Matt's boat (assets/models/camp/boat.glb: meters, Y up, origin at the keel's middle on the
+  // ground, bow +Z) replaces the stand-in hull once it loads; the stake and rope stay.
+  if (B.model?.file && typeof fetch === 'function') {
+    fetch(new URL(`../../../${B.model.file}`, import.meta.url))
+      .then((r) => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.arrayBuffer(); })
+      .then((b) => boatModelMesh(b, B.albedo.hull))
+      .then((m) => { pass.setMesh('hull', { data: packMesh(m), indices: m.indices }); meshes.bow = B.model.bowTieM ?? meshes.bow; })
+      .catch((e) => console.info(`boat: ${B.model.file} not loaded, drawing the stand-in (${e.message})`));
+  }
   // A few points on the hull's outside, for how low it reaches when tilted on the sand.
   /** @type {number[][]} */ const under = [];
   for (let i = 0; i <= 8; i++) {
