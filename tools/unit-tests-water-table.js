@@ -135,7 +135,7 @@ export function addWaterTableTests(test, assert, eq) {
   test(G, 'the catchment ratio: a dig that gathers little more than its own footprint stays damp', async () => {
     const s = await summary(island(1, { x: 40, y: 40, r: 9, floorM: 0.5 }));
     const k = at(40, 40);
-    // On a flat island little more than the bowl itself drains into it: far under the ratio of 8.
+    // On a flat island little more than the bowl itself drains into it: under the ratio of 2.
     eq(s.cls[k], WATER_CLASS.damp, 'bowl class');
     const loose = await summary(island(1, { x: 40, y: 40, r: 9, floorM: 0.5 }), { rainCatchmentRatio: 1, pondMinCatchmentM2: 30 });
     eq(loose.cls[k], WATER_CLASS.still, 'with a ratio of 1');

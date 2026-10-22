@@ -27,7 +27,7 @@
     "note": "The deterministic water summary (docs/07): integers only, rebuilt after terrain edits, spring changes and once a game day, read by ecology and used as the live refill target. Spring-fed hollows always fill to their lip. Rain-fed: a dry hollow becomes a pond when at least pondMinCatchmentM2 and at least rainCatchmentRatio times its own full area drains into it, and it is at least pondMinDepthM deep at its deepest; it stands drawdownMaxM below its lip at most in late summer, never more than drawdownMaxFrac of its depth, rising and falling smoothly between drawdownDays (start, deepest, gone; days of the 56-day year from the first day of spring). Water table: a freshwater lens, at mean sea level along the shore and rising inland as tableMaxM sqrt(f (2 - f)), f the share of the way from the sea to the landmass's middle, tableSwingM lower at the deepest drawdown; a hollow whose floor lies at least tableMinDepthM under it fills to it (or to its lip), and it holds rain-fed ponds up. Other hollows stay damp. Stream depth d = clamp(streamK Q^streamExp, streamMinM, streamMaxM) with Q in L/s, capped by Manning depth for the local slope (manningN) over width w = streamW0 + streamW1 sqrt(Q). Classes by speed: still under slowSpeed, slow under runningSpeed, running above. bandFactor: the tide band is +-bandFactor A0 about mean sea level (the full spring range); splashFactor: the shore (graded shore height, docs/future/10) reaches this many A0 above the band top, for the splash zone. debounceS after a stroke before rebuilding.",
     "pondMinCatchmentM2": 120,
     "pondMinDepthM": 0.15,
-    "rainCatchmentRatio": 8,
+    "rainCatchmentRatio": 2,
     "drawdownMaxM": 0.15,
     "drawdownMaxFrac": 0.5,
     "drawdownDays": [14, 25, 35],
