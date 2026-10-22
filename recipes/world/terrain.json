@@ -96,7 +96,23 @@
     "bankSpreadM": 1.5,
     "bankRiseWeight": 2,
     "tideBandM": 0.25,
-    "waterDepthM": [0.002, 0.012]
+    "waterDepthM": [0.002, 0.012],
+    "dryingMargin": {
+      "note": "A8 drying margin (docs/08, docs/22): bed that fresh water covered in the last few game days and is now exposed reads as drying, cracking mud, the cue that a pond is lowering. The wetness map's b channel is held at 1 where fresh water stands deeper than bedDepthM (from the first to the second depth) and falls to 0 over dryingMarginDays game days once the bed is exposed. Fresh, not the sea, by where the surface sits: freshAboveTideM is the surface height above the tide over which water counts as fresh (the water optics' sea-or-pond test); the tide band (tideBandM) never gets a margin. Look, as shares of the margin elapsed: the mud is soaked at first and dries through dampShare (the usual wet look darkens it, so it lightens as it dries); cracks open through crackShare; over the last fadeShare it blends back into the ground. albedo: dry pond silt (linear, physical); cover: the most of the ground it hides (grass and soil fully at this share, sand half, rock hardly); porosity: for the wet look. Cracks: a polygonal network of crackCellM plates, lines up to crackWidthM wide, crackDark: sky and sun occlusion in the cracks, crackRelief: how far plate edges slope into them. Cheap enough for all tiers; far off the lines fade to their average darkening.",
+      "dryingMarginDays": 3,
+      "bedDepthM": [0.02, 0.05],
+      "freshAboveTideM": [0.2, 0.45],
+      "albedo": [0.26, 0.22, 0.17],
+      "cover": 0.9,
+      "porosity": 0.85,
+      "dampShare": [0.05, 0.35],
+      "crackShare": [0.2, 0.65],
+      "fadeShare": 0.15,
+      "crackCellM": 0.18,
+      "crackWidthM": 0.012,
+      "crackDark": 0.5,
+      "crackRelief": 0.35
+    }
   },
   "wetGround": {
     "note": "G3 wet ground (docs/22, after Lagarde 2013), driven by the visual wetness map (wetness above). damp: soaked ground's roughness and albedo factor for dense ground (rock) and porous ground (soil, sand), blended by each material's detail.layers porosity; so sand and soil go dark and satin, rock darkens a little and turns shiny. Wet ground and puddles reflect the sky probe; dry ground stays matte. puddles: on ground flatter than flatDeg (full below the first angle, none past the second), rain raises a level at fillPerHour at full rain; it drains over drainHours of drying (sun and wind speed it, as for wetness). Water stands where the ground's relief is below the level: the detail height (ruts, the gaps between stones) mixed with a slow undulation of undulationM by undulationShare, so puddles gather in real dips first; maxCover is the most of the low spots a full level covers; turf: on grass the level rises this much less (turf soaks rain up), so only the deepest meadow dips flood. Puddle water: roughness, albedo factor of the bed under it, f0 of water. Raindrop rings in puddles use water.json ripples.rings.",

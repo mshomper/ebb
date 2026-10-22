@@ -11,7 +11,7 @@ import { strandLines } from '../../world/water/strandline.js';
 
 /** @typedef {import('../frame-graph.js').PassContext} PassContext */
 
-const DRAW_BYTES = 1312;  // 384 of look, 16 marker rings (floats 96..159), the drowned meadow (160..167), wet-to-dry grass (168..175), the shore (176..195), the strandline and kelp (196..235), wrack fronds (236..251), lugworm casts (252..323), the Cliff level line (324..327)
+const DRAW_BYTES = 1376;  // 384 of look, 16 marker rings (floats 96..159), the drowned meadow (160..167), wet-to-dry grass (168..175), the shore (176..195), the strandline and kelp (196..235), wrack fronds (236..251), lugworm casts (252..323), the Cliff level line (324..327), the drying margin (328..343)
 const GROUND_BYTES = 336;
 const DEG = Math.PI / 180;
 /** @type {Record<string, number>} GroundDetail.tiling.x in lib-ground.wgsl */
@@ -175,6 +175,14 @@ export function createTerrainPass(opts) {
     // Raindrop rings (water.json ripples.rings); f[88] follows the rain (setRain).
     const RR = opts.rings;
     if (RR) { f[89] = RR.cellM; f[90] = RR.lifeS; f[91] = RR.crestM; f[92] = RR.radiusM; f[93] = RR.slope; }
+    // The drying margin (A8, terrain.json wetness.dryingMargin), floats 328..343.
+    const M = recipe.wetness.dryingMargin;
+    if (M) {
+      f.set(M.albedo, 328); f[331] = M.cover;
+      f[332] = M.dampShare[0]; f[333] = M.dampShare[1]; f[334] = M.crackShare[0]; f[335] = M.crackShare[1];
+      f[336] = 1 / M.crackCellM; f[337] = M.crackWidthM; f[338] = M.crackDark; f[339] = M.crackRelief;
+      f[340] = M.fadeShare; f[341] = M.porosity; f[342] = 1;
+    }
   }
 
   return {
