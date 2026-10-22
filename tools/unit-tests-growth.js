@@ -7,7 +7,9 @@
 import { initialWorldState, makeEnv, runHour, hashWorldState } from '../src/sim/tick.js';
 import { HABITAT_CELLS, HABITAT_ORIGIN } from '../src/world/growth/habitat.js';
 import { lushField, lushLook, lushAt } from '../src/world/growth/lush.js';
-import { suitability, plantSeed, plantCover, settleGrowth, coarseStep, STAGE } from '../src/world/growth/coarse.js';
+import { suitability, plantSeed, plantCover, settleGrowth, coarseStep, STAGE, initialGrowth } from '../src/world/growth/coarse.js';
+import { phenologyOffsetDays, plantSeasonPos } from '../src/world/growth/phenology.js';
+import { inWindow } from '../src/world/seasons.js';
 
 const GROWTH = 'growth';
 
@@ -413,7 +415,7 @@ export function addGrowthTests(test, assert, eq) {
     assert(G && recipes.growth.species.includes('gorse'), 'gorse is in growth.json species');
     assert(!recipes.growth.starters.includes('gorse'), 'gorse is no starter');
     eq(G.draw, 'shrub', 'gorse draws with');
-    assert(!G.phenology && !G.dormant, 'gorse is evergreen: no phenology and no dormant window');
+    assert(!G.phenology?.leafOut && !G.phenology?.leafFall && !G.dormant, 'gorse is evergreen: no leaf-out, no leaf fall and no dormant window');
     const N = HABITAT_CELLS;
     const hab = /** @type {any} */ (shoreline());
     hab.sand = new Uint8Array(N * N); hab.rock = new Uint8Array(N * N); hab.soil = new Uint8Array(N * N).fill(255);
@@ -652,5 +654,76 @@ export function addGrowthTests(test, assert, eq) {
     eq(first(marsh), first(plain), 'island-wide starters');
     eq(hashWorldState(settleGrowth(initialWorldState(9), env)), hashWorldState(marsh), 'the same twice');
     return `${reeds} reeds and ${iris} iris added in the basin; the island-wide starters unchanged`;
+  });
+
+  test(GROWTH, 'phenology jitter: each plant keeps one offset, spread within its species\' jitterDays either way', async () => {
+    const recipes = await loadRecipes();
+    const lines = [];
+    for (const sp of recipes.growth.species) {
+      const rec = recipes.flora[sp];
+      const J = rec.phenology?.jitterDays ?? 0;
+      assert(J > 0, `${sp} has no phenology.jitterDays`);
+      let lo = Infinity, hi = -Infinity;
+      for (let id = 1; id <= 400; id++) {
+        const d = phenologyOffsetDays(rec, id);
+        eq(d, phenologyOffsetDays(rec, id), `${sp} plant ${id} offset twice`);
+        assert(d >= -J && d < J, `${sp} plant ${id} offset ${d} outside +-${J}`);
+        lo = Math.min(lo, d); hi = Math.max(hi, d);
+      }
+      // Spread over the whole range, not bunched.
+      assert(lo < -0.8 * J && hi > 0.8 * J, `${sp} offsets only ${lo.toFixed(2)}..${hi.toFixed(2)} of +-${J}`);
+      lines.push(`${sp} +-${J}`);
+    }
+    // No jitter in a recipe keeps the species in lockstep; the plant's season position wraps.
+    eq(phenologyOffsetDays({}, 7), 0, 'no phenology');
+    const p = plantSeasonPos(recipes.flora.reeds, 3, 0.01);
+    assert(p >= 0 && p < 4, `wrapped position ${p}`);
+    return `days each way: ${lines.join(', ')}`;
+  });
+
+  test(GROWTH, 'phenology jitter: a reed bed comes into seed head over several days, not one hour, the same way twice; five kinds still flower at once', async () => {
+    const recipes = await loadRecipes();
+    const hab = shoreline();
+    const env = { ...makeEnv(9, recipes), habitat: () => hab };
+    const rec = recipes.flora.reeds;
+    const S = rec.growth.stages;
+    // Forty mature reeds along the pond's edge, a little before their flowering window opens.
+    const [ex] = at('edge');
+    const plants = Array.from({ length: 40 }, (_, i) => ({ id: i + 1, sp: 'reeds', x: ex, z: HABITAT_ORIGIN + 2 + i * 1.5, age: 200,
+      size: S.matureSize + 0.2, best: S.matureSize + 0.2, stage: STAGE.mature, low: 0, drown: 0, last: 0 }));
+    const start = rec.flowering[0], hoursPerSeason = 14 * 24;
+    const from = Math.floor((start - 0.3) * hoursPerSeason), to = Math.ceil((start + 0.3) * hoursPerSeason);
+    const run = () => {
+      let s = { ...initialWorldState(9), growth: { ...initialGrowth(), starterDone: true, plants: plants.map((p) => ({ ...p })), nextId: 100 } };
+      /** @type {Map<number, number>} */ const first = new Map();
+      for (let h = from; h < to; h++) {
+        const pos = h / hoursPerSeason;
+        s = coarseStep({ ...s, seasons: { index: Math.floor(pos), phase: pos - Math.floor(pos) } }, h, env).state;
+        for (const q of s.growth.plants) if (q.id <= 40 && q.stage === STAGE.flowering && !first.has(q.id)) first.set(q.id, h);
+      }
+      return first;
+    };
+    const a = run(), b = run();
+    eq(a.size, 40, 'reeds in seed head by the end');
+    eq([...a].join(';'), [...b].join(';'), 'first seed-head hours of two runs');
+    const hours = [...a.values()];
+    const spanDays = (Math.max(...hours) - Math.min(...hours)) / 24;
+    const J = rec.phenology.jitterDays;
+    assert(spanDays >= J && spanDays <= 2 * J + 0.1, `the bed came into seed head over ${spanDays.toFixed(1)} days (jitter +-${J})`);
+    // Every plant opens on its own offset, give or take the hour.
+    for (const q of plants) {
+      const want = start * hoursPerSeason + phenologyOffsetDays(rec, q.id) * 24;
+      assert(Math.abs(/** @type {number} */ (a.get(q.id)) - want) <= 1, `reed ${q.id} opened at ${a.get(q.id)}, expected about ${want.toFixed(1)}`);
+    }
+    // The trails' "five kinds in flower at once": with a few plants of each kind, a moment still
+    // comes in early summer when campion, lilies, reeds, thrift and iris all flower.
+    const kinds = ['campion', 'lilies', 'reeds', 'thrift', 'iris'];
+    let together = 0;
+    for (let pos = 1; pos < 1.6; pos += 1 / hoursPerSeason) {
+      const n = kinds.filter((sp) => [1, 2, 3, 4, 5].some((id) => inWindow(plantSeasonPos(recipes.flora[sp], id + kinds.indexOf(sp) * 5, pos), recipes.flora[sp].flowering))).length;
+      if (n === 5) together++;
+    }
+    assert(together > 0, 'never five kinds in flower at once');
+    return `40 reeds came into seed head over ${spanDays.toFixed(1)} days (+-${J}); five kinds in flower together for ${(together / 24).toFixed(1)} days`;
   });
 }
