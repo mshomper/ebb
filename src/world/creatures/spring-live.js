@@ -82,6 +82,8 @@ export function createSpring(opts) {
    * deep enough to float in. Looked for again every few seconds. @type {Map<number, { x: number, z: number, at: number }>}
    */
   const afloat = new Map();
+  /** The dry directions froglets leave a clump by, found once per clump. @type {Map<number, number[]>} */
+  const banks = new Map();
   /** @param {{ id: number, x: number, z: number }} c @param {number} t */
   function floatAt(c, t) {
     const had = afloat.get(c.id);
@@ -160,13 +162,25 @@ export function createSpring(opts) {
         taps.push({ sp: 'frogspawn', x: c.x, z: c.z, item: null, reach: TP.cloudM + 0.15 });
       } else if (c.stage === 'froglets' && landPass.hasMesh('froglet')) {
         const span = R.froglets.leaveH;
+        // They climb out toward the bank: the directions whose ground two meters off is dry.
+        let dry = banks.get(c.id);
+        if (!dry) {
+          dry = [];
+          for (let j = 0; j < 16; j++) {
+            const a = (j / 16) * Math.PI * 2;
+            if (water.sampleLive(c.x + Math.cos(a) * 2, c.z + Math.sin(a) * 2).depth < 0.005) dry.push(a);
+          }
+          if (!dry.length) dry.push(0);
+          banks.set(c.id, dry);
+        }
         for (let i = 0; i < c.froglets; i++) {
           const hs = hash32(seed, c.id, i, 0xf);
-          // Each climbs out at its own time over the first half, and hops off over a few game hours.
-          const start = c.leaveH - span + unit(hash32(hs, 1)) * span * 0.6, dur = 2 + unit(hash32(hs, 2)) * 3;
+          // They climb out together, a wave over the first evening (waveShare of the time), and each
+          // hops off over a few game hours.
+          const start = c.leaveH - span + unit(hash32(hs, 1)) * span * FL.waveShare, dur = 2 + unit(hash32(hs, 2)) * 3;
           const k = (h - start) / dur;
           if (k < 0 || k > 1) continue;
-          const a = unit(hash32(hs, 3)) * Math.PI * 2, far = 1 + unit(hash32(hs, 4)) * 2;
+          const a = dry[hash32(hs, 3) % dry.length] + (unit(hash32(hs, 5)) - 0.5) * 0.4, far = 1 + unit(hash32(hs, 4)) * 2;
           const hops = Math.max(4, Math.round(far / ((FL.hopM[0] + FL.hopM[1]) / 2)));
           const along = k * hops, f = along - Math.floor(along);
           const x = c.x + Math.cos(a) * far * k, z = c.z + Math.sin(a) * far * k;
@@ -216,7 +230,8 @@ export function createSpring(opts) {
     const clump = (/** @type {number} */ dx, /** @type {number} */ dz) => ({ id: S.nextId++, x: x + dx, z: z + dz, stage: 'spawn', laidH: h, hatchH: h + R.hatch.days * 24, tadpoles: 0, froglets: 0, leaveH: 0 });
     if (kind === 'spawn') S.clumps.push(clump(0, 0), clump(0.35, 0.2));
     else if (kind === 'tadpoles') S.clumps.push({ ...clump(0, 0), stage: 'tadpoles', hatchH: h, tadpoles: R.hatch.tadpoles });
-    else if (kind === 'froglets') S.clumps.push({ ...clump(0, 0), stage: 'froglets', hatchH: h, froglets: R.froglets.most, leaveH: h + R.froglets.leaveH });
+    // As their wave begins, so they are hopping out as the island opens.
+    else if (kind === 'froglets') S.clumps.push({ ...clump(0, 0), stage: 'froglets', hatchH: h, froglets: R.froglets.most, leaveH: h + R.froglets.leaveH - 1 });
     else if (kind === 'toad') {
       // Dry ground 3 to 6 m from that water, the nearest to the view.
       let from = null, fd = Infinity;
