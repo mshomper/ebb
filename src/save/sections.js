@@ -16,9 +16,10 @@ import { FORMAT } from './migrate.js';
 import { cleanPieces } from '../world/pieces/model.js';
 import { cleanShelf } from '../world/keepsakes/shelf.js';
 import { cleanNets } from '../world/nets/model.js';
+import { SECTIONS9, clean9 } from './migrate-format9.js';
 
 /** Section ids this build writes; others found in a save are kept and written back unchanged. */
-const KNOWN = ['meta', 'world', 'journal', 'water', 'unlocks', 'view', 'looks', 'music', 'pieces', 'keepsakes', 'nets'];
+const KNOWN = ['meta', 'world', 'journal', 'water', 'unlocks', 'view', 'looks', 'music', 'pieces', 'keepsakes', 'nets', ...SECTIONS9];
 
 /**
  * @typedef {Object} SavedChunk
@@ -40,6 +41,8 @@ const KNOWN = ['meta', 'world', 'journal', 'water', 'unlocks', 'view', 'looks', 
  * @property {any} [pieces]  placed pieces (src/world/pieces/model.js PiecesState)
  * @property {any} [keepsakes]  the shelf (src/world/keepsakes/shelf.js ShelfState)
  * @property {any} [nets]  the nets (src/world/nets/model.js NetsState)
+ * @property {any} [camp] @property {any} [pack] @property {any} [gather] @property {any} [dig] @property {any} [cook] @property {any} [dyes]
+ *   the keeper's camp sections (format 9, docs/future/13 section 12.1; src/save/migrate-format9.js)
  * @property {Record<string, { state: string, land: string, edited: boolean }>} chunks  the store's `chunks` slice
  * @property {import('../world/terrain/heightfield.js').Mirror | null} mirror
  * @property {number} savedAt  UTC ms
@@ -82,6 +85,7 @@ export function snapshot(p) {
     ['pieces', cleanPieces(p.pieces)],
     ['keepsakes', cleanShelf(p.keepsakes)],
     ['nets', cleanNets(p.nets)],
+    ...SECTIONS9.map((id) => /** @type {[string, any]} */ ([id, clean9(id, p[id])])),
   ];
   for (const [key, c] of Object.entries(p.chunks ?? {})) {
     if (c.state !== 'open') continue;
@@ -105,7 +109,8 @@ export function snapshot(p) {
  * Placed pieces that are missing or unreadable come back as none.
  * @returns {{ meta: any, world: any, journal: any, water: any, unlocks: any, view: any, looks: any, music: any,
  *   pieces: import('../world/pieces/model.js').PiecesState, keepsakes: import('../world/keepsakes/shelf.js').ShelfState,
- *   nets: import('../world/nets/model.js').NetsState, chunks: SavedChunk[], extra: [string, any][], bad: string[] }}
+ *   nets: import('../world/nets/model.js').NetsState, camp: any, pack: any, gather: any, dig: any, cook: any, dyes: any,
+ *   chunks: SavedChunk[], extra: [string, any][], bad: string[] }}
  */
 export function restore(sections) {
   /** @type {SavedChunk[]} */ const chunks = [];
@@ -122,6 +127,8 @@ export function restore(sections) {
   return {
     meta: sections.meta ?? null, world: sections.world ?? null, journal: sections.journal ?? null,
     water: sections.water ?? null, unlocks: sections.unlocks ?? {}, view: sections.view ?? null,
-    looks: sections.looks ?? {}, music: sections.music ?? null, pieces: cleanPieces(sections.pieces), keepsakes: cleanShelf(sections.keepsakes), nets: cleanNets(sections.nets), chunks, extra, bad,
+    looks: sections.looks ?? {}, music: sections.music ?? null, pieces: cleanPieces(sections.pieces), keepsakes: cleanShelf(sections.keepsakes), nets: cleanNets(sections.nets),
+    camp: clean9('camp', sections.camp), pack: clean9('pack', sections.pack), gather: clean9('gather', sections.gather),
+    dig: clean9('dig', sections.dig), cook: clean9('cook', sections.cook), dyes: clean9('dyes', sections.dyes), chunks, extra, bad,
   };
 }
