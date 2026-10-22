@@ -69,7 +69,6 @@ export async function startAudio(store) {
   /** @type {ReturnType<typeof setInterval> | 0} */ let callTimer = 0;
   /** @type {Awaited<ReturnType<typeof createMusic>> | null} */ let music = null;
   /** @type {ReturnType<typeof createKeepsakeSounds> | null} */ let keepsakeSounds = null;
-  /** The first evening's one-shots (recipes/audio/intro.json): the far curlew at dusk. @type {ReturnType<typeof createKeepsakeSounds> | null} */ let introSounds = null;
   const t0 = performance.now();
   const asked = new URLSearchParams(location.search).get('music');
   let testNow = asked === 'now' ? 'morning' : ['morning', 'interlude', 'evening', 'nocturne'].includes(asked ?? '') ? /** @type {string} */ (asked) : '';
@@ -133,7 +132,6 @@ export async function startAudio(store) {
     animals = createCreatureSound(mixer, voices, store, gameRecipe.frogs, gameRecipe.pond);
     soundState = createSoundState(gameRecipe, seed, (t) => sunMoon(t, skyRecipe.orbit).sunAlt * DEG, ambRecipe.seasonEdge);
     keepsakeSounds = createKeepsakeSounds(mixer, keepsakeRecipe);
-    introSounds = createKeepsakeSounds(mixer, introRecipe);
     applySettings();
     unsubs.push(store.subscribe('settings', () => applySettings()));
     if (touched) mixer.unlock().catch(() => { /* the next touch unlocks it */ });
@@ -193,8 +191,12 @@ export async function startAudio(store) {
     heldKeepsake = id;
   }));
   unsubs.push(on('keepsake:sound', (/** @type {{ name: string, seed?: number }} */ p) => keepsakeSounds?.play(p.name, p.seed)));
-  // The first evening (src/world/intro): lighting the fire brings one curlew far out over the water.
-  unsubs.push(on('intro:curlew', () => introSounds?.play('curlew')));
+  // The first evening (src/world/intro): lighting the fire brings one call far out over the water,
+  // the frog voice (Matt's choice; recipes/audio/intro.json), outM along the camp pad's seaward line.
+  unsubs.push(on('intro:curlew', () => {
+    const C = introRecipe.call, pad = store.get('campPad');
+    if (pad) voices?.call('intro:dusk-call', C.species, [pad.x + pad.fx * C.outM, 0, pad.z + pad.fz * C.outM], C.intensity);
+  }));
 
   if (store.get('sound')) begin();
   else {
