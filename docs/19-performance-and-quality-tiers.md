@@ -144,8 +144,8 @@ Pool and lanes are defined in `03-tech-stack-and-module-map.md`. CPU work that m
 
 | Job | Lane | Desktop / laptop target |
 |---|---|---|
-| Catch-up, 168 ticks (the 7-day cap, F01; was 336), full world (doc 02) | catchup | under 3 s / under 6 s |
-| Hourly coarseStep, one tick live or in catch-up, full world (docs 02, 13) | catchup | about 3 ms / under 6 ms |
+| Catch-up, 168 ticks (the 7-day cap, F01; was 336), full world (doc 02) | catchup | under 3 s / under 6 s (measured October 21, 2026 on Matt's desktop, starter island: 1.9 s on the page, 2.1 s in a worker) |
+| Hourly coarseStep, one tick live or in catch-up, full world (docs 02, 13) | catchup | under 15 ms / under 25 ms (measured the same night: 11 ms median, 22 ms slowest; the old 3 ms line predated plants, finds and three creatures) |
 | Water summary rebuild (doc 07) | background | 25 ms / 50 ms |
 | Ecology distance transforms (doc 11) | background | under 10 ms / 20 ms |
 | Tree skeletons, space colonization (doc 10) | background | under 30 ms per tree |
