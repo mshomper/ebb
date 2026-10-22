@@ -91,6 +91,9 @@
     "bask": { "dryS": 150, "wetS": 3, "lookEveryS": [6, 18], "lookUpRad": [0, 0.3], "lookEaseHz": 0.6 },
     "startle": { "firstS": [0.1, 0.5], "gapS": [0.35, 1.2], "calmFirstS": [1, 4], "calmGapS": [3, 10], "slideM": 0.16,
                  "hideDepthM": [0.25, 0.5], "hideS": [10, 18], "hideSpeedShare": 1.4, "fleeM": [1, 2.5], "peekS": [6, 12], "peekFaceChance": 0.35 },
+    "habits": { "nudgeM": 0.05, "nudgeS": 6, "nudgeTurnRad": 0.5, "grazeOn": { "lilies": true, "pondweed": true }, "under": { "pondweed": true },
+                "grazeChance": 0.3, "foodReachM": 5, "foodGiveUpS": 40, "grazeReachM": 0.1, "grazeS": [8, 20], "weedDepthM": [0.1, 0.25],
+                "bottomChance": 0.35, "bottomS": [6, 14], "bottomMps": 0.03 },
     "walk": { "walkMps": 0.045, "turnRadS": 0.6, "landReachM": 1.5, "walkDepthM": 0.05, "swimDepthM": 0.1, "reachM": 0.11, "lowStepM": 0.02, "lowStepPace": 1.6 },
     "pose": {
       "easeHz": 3, "flipperDeg": { "front": 25, "hind": -35 },

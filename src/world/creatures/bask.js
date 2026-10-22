@@ -6,7 +6,7 @@
 // water. A fast swoop close by or an edit beside them sends them sliding into the water, to stay
 // under a while.
 //
-// Basking (TL4) it breathes, its limbs pumping in and out, blinks, turns its head slowly or stretches it\n// up to the sun, yawns now and then, and dries from glossy to matte.\n//\n// Startled (TL5), they slip off one by one, a plop each, hide under the water, then pop their heads up\n// to peek back at the spot before they come back.\n//\n// Swimming (TL2) is stroke and glide: the diagonal pairs of legs sweep in turn and push it on, then
+// Basking (TL4) it breathes, its limbs pumping in and out, blinks, turns its head slowly or stretches it\n// up to the sun, yawns now and then, and dries from glossy to matte.\n//\n// Small habits (TL6): a newcomer on a spot shoves the others over a little; they graze lily leaves at\n// the surface and pondweed under it, and now and then walk along the bottom.\n//\n// Startled (TL5), they slip off one by one, a plop each, hide under the water, then pop their heads up\n// to peek back at the spot before they come back.\n//\n// Swimming (TL2) is stroke and glide: the diagonal pairs of legs sweep in turn and push it on, then
 // it glides with its flippers laid back until it slows. Now and then one dives and swims along
 // under the surface, then comes up to hang at the periscope, nose and eyes out, sometimes turned to
 // face you. Its pose follows what it is doing (rigs/turtle.js).
@@ -29,6 +29,7 @@ const DEG = Math.PI / 180;
  *   goal: { x: number, z: number }, seat: number, from: { x: number, y: number, z: number } | null, under: number,
  *   spd: number, depth: number, gliding: boolean, glideUntil: number, facing: boolean, faceTo?: number, lookUpTo?: number,
  *   slideAt?: number, calm?: boolean, rest?: { x: number, y: number, z: number }, peekAt?: { x: number, z: number },
+ *   nudge?: { x: number, z: number, at: number }, food?: { x: number, z: number, under: boolean }, bottom?: boolean,
  *   id: number, t: number, w: Record<string, number>, ph: number, stroke: number, haulK: number, slideK: number,
  *   lookUp: number, jaw: number, wet: number }} Turtle
  *   and its pose (rigs/turtle.js TurtlePose). seat: the spot it is bound for or on (-1 none); from:
@@ -36,8 +37,10 @@ const DEG = Math.PI / 180;
  *   depth: how far under the surface it means to swim (0 at the surface); facing: the periscope
  *   turned toward you
  * @typedef {{ water: (x: number, z: number) => { surface: number, depth: number }, ground: (x: number, z: number) => number,
- *   seats: () => Seat[], ring?: (x: number, z: number) => void, viewer?: () => ArrayLike<number> | null }} BaskEnv
- *   ring: rings on the water where one slid in; viewer: where you are (the camera's eye, or you on foot)
+ *   seats: () => Seat[], ring?: (x: number, z: number) => void, viewer?: () => ArrayLike<number> | null,
+ *   food?: () => { x: number, z: number, sp: string }[] }} BaskEnv
+ *   ring: rings on the water where one slid in; viewer: where you are (the camera's eye, or you on foot);
+ *   food: the plants it grazes (lily leaves, pondweed)
  */
 
 /**
@@ -47,7 +50,7 @@ const DEG = Math.PI / 180;
  */
 export function createBask(o) {
   const { M, env } = o;
-  const P = M.pose, SW = M.swim, W = M.walk, B = M.bask, S5 = M.startle;
+  const P = M.pose, SW = M.swim, W = M.walk, B = M.bask, S5 = M.startle, S6 = M.habits;
   const rng = stream(o.seed >>> 0, 0xba5c, o.id);
   /** @type {Turtle[]} */ const fish = [];
   let home = { ...o.home }, t = 0, fleeUntil = -1;
@@ -263,11 +266,27 @@ export function createBask(o) {
     f.mode = 'climb'; f.seat = i; f.from = { x: f.x, y: f.y, z: f.z }; f.haulK = 0; f.spd = 0; f.depth = 0;
   }
 
-  /** A wander in the water: a new goal, and now and then a dive. @param {Turtle} f */
+  /**
+   * A wander in the water: a new goal, and now and then a dive (sometimes right down to walk the
+   * bottom), or off to graze a lily leaf or pondweed near home (TL6). @param {Turtle} f
+   */
   function newWander(f) {
     f.goal = wanderPoint(); f.until = t + range(M.turnEveryS);
+    f.food = undefined; f.bottom = false;
+    if (mood === 'day' && env.food && rng.next() < S6.grazeChance) {
+      const r2 = S6.foodReachM * S6.foodReachM;
+      const near = env.food().filter((p) => (p.x - home.x) ** 2 + (p.z - home.z) ** 2 <= r2 && env.water(p.x, p.z).depth >= M.minDepthM);
+      if (near.length) {
+        const p = near[Math.floor(rng.next() * near.length)];
+        f.food = { x: p.x, z: p.z, under: !!S6.under?.[p.sp] };
+        f.depth = 0;
+        f.until = t + S6.foodGiveUpS;
+        return;
+      }
+    }
     const w = env.water(f.goal.x, f.goal.z);
     f.depth = mood === 'day' && rng.next() < SW.diveChance && w.depth > SW.diveMinM ? range(SW.diveM) : 0;
+    if (f.depth > 0 && rng.next() < S6.bottomChance) { f.bottom = true; f.depth = 99; }
   }
 
   return {
@@ -335,6 +354,13 @@ export function createBask(o) {
           const p = places[f.seat];
           if (!p) { slideAll(true); return; }
           const at = restOn(p.s, p.k);
+          // Shoved over by a newcomer, it eases back into its place.
+          if (f.nudge) {
+            const k = Math.max(0, 1 - (t - f.nudge.at) / S6.nudgeS);
+            const e = k * k * (3 - 2 * k);
+            at.x += f.nudge.x * e; at.z += f.nudge.z * e;
+            if (k <= 0) f.nudge = undefined;
+          }
           f.rest = at;
           if (f.mode === 'climb') {
             // The haul-out (TL3): front claws reach over the edge, the shell tips up, the hind legs
@@ -354,6 +380,14 @@ export function createBask(o) {
               if (p.s.kind === 'log' || p.s.kind === 'raft') {
                 const across = (p.s.yaw ?? 0) + Math.PI / 2;
                 f.faceTo = Math.cos(f.faceTo - across) >= 0 ? across : across + Math.PI;
+              }
+              // Jostling for the best of it (TL6): those already there are shoved over a little and
+              // shuffle round, settling back after a while.
+              for (const g of fish) {
+                if (g === f || g.mode !== 'bask' || places[g.seat]?.s !== p.s) continue;
+                const away = Math.atan2(g.x - f.x, g.z - f.z);
+                g.nudge = { x: Math.sin(away) * S6.nudgeM * o.size, z: Math.cos(away) * S6.nudgeM * o.size, at: t };
+                g.mode = 'shuffle'; g.faceTo = g.yaw + (rng.next() * 2 - 1) * S6.nudgeTurnRad;
               }
             }
           } else if (f.mode === 'shuffle') {
@@ -417,6 +451,29 @@ export function createBask(o) {
           if (t >= f.under) { f.mode = 'peek'; f.until = t + range(S5.peekS); f.depth = 0; f.facing = !!env.viewer && rng.next() < S5.peekFaceChance; }
           return;
         }
+        if (f.mode === 'graze') {
+          // Grazing (TL6): held by the plant, head down, biting (lily leaves at the surface,
+          // pondweed under it); the pose does the bites.
+          f.spd *= 1 - Math.min(1, dt * 2);
+          f.ph += dt / (P.swim.strokeS * 2.5);
+          holdDepth(f, dt, 0);
+          if (f.food) turnToward(f, Math.atan2(f.food.x - f.x, f.food.z - f.z), SW.turnRadS * 0.5, dt);
+          if (t >= f.until || mood !== 'day') { f.mode = 'swim'; f.food = undefined; newWander(f); }
+          return;
+        }
+        if (f.mode === 'bottom') {
+          // Paddling along the bottom (TL6): walking on the pond floor, slowly, to its goal.
+          const dx = f.goal.x - f.x, dz = f.goal.z - f.z, d = Math.hypot(dx, dz);
+          turnToward(f, Math.atan2(dx, dz), W.turnRadS, dt);
+          f.ph += dt / P.walk.strideS;
+          const nx = f.x + Math.sin(f.yaw) * S6.bottomMps * dt, nz = f.z + Math.cos(f.yaw) * S6.bottomMps * dt;
+          if (env.water(nx, nz).depth > W.swimDepthM) { f.vx = (nx - f.x) / dt; f.vz = (nz - f.z) / dt; f.x = nx; f.z = nz; } else f.until = t;
+          const w = env.water(f.x, f.z);
+          f.y += (w.surface - w.depth - f.y) * Math.min(1, dt * 2);
+          f.pitch *= 0.95;
+          if (d < 0.1 || t >= f.until) { f.mode = 'swim'; f.depth = 0; newWander(f); }
+          return;
+        }
         if (f.mode === 'peri' || f.mode === 'peek') {
           holdPeriscope(f, dt);
           if (t >= f.until) { f.mode = 'swim'; f.facing = false; f.peekAt = undefined; newWander(f); }
@@ -425,8 +482,8 @@ export function createBask(o) {
         // Swimming: to its place by day (if there is one for it), else about home.
         const seatI = i < places.length && t >= f.under ? i : -1;
         f.seat = seatI;
-        const target = seatI >= 0 ? places[seatI].s : f.goal;
         if (seatI < 0 && t >= f.until) newWander(f);
+        const target = seatI >= 0 ? places[seatI].s : f.food ?? f.goal;
         const tx = target.x, tz = target.z;
         if (seatI >= 0 && Math.hypot(tx - f.x, tz - f.z) <= places[seatI].s.r + W.reachM * o.size) { startClimb(f, seatI); return; }
         // Too shallow to swim: it walks out (to a spot on the shore).
@@ -436,7 +493,20 @@ export function createBask(o) {
         const want = mood === 'day' ? M.paddleMps : M.paddleMps * SW.nightShare;
         const d = paddle(f, tx, tz, want, dt);
         holdDepth(f, dt, mood === 'day' ? 0 : SW.nightSinkM * o.size);
-        f.mode = f.depth > 0 && f.y < env.water(f.x, f.z).surface - (SW.surfaceM + 0.03) * o.size ? 'under' : 'swim';
+        const here = env.water(f.x, f.z);
+        f.mode = f.depth > 0 && f.y < here.surface - (SW.surfaceM + 0.03) * o.size ? 'under' : 'swim';
+        if (seatI < 0) {
+          // At its plant: graze a while (TL6).
+          if (f.food && d < S6.grazeReachM * o.size) {
+            f.mode = 'graze'; f.until = t + range(S6.grazeS); f.depth = f.food.under ? range(S6.weedDepthM) : 0;
+            return;
+          }
+          // Down at the bottom: walk along it a while (TL6).
+          if (f.bottom && f.y <= here.surface - here.depth + (SW.bottomClearM + 0.01) * o.size) {
+            f.mode = 'bottom'; f.until = t + range(S6.bottomS); f.bottom = false;
+            return;
+          }
+        }
         // Reaching its goal at the surface (or coming up from a dive), now and then it stops to look
         // about at the periscope, sometimes turned to you.
         if (seatI < 0 && mood === 'day' && d < 0.3 && rng.next() < SW.periPerS * dt) {

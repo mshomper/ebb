@@ -112,6 +112,9 @@ export function createSchools(opts) {
       .map((/** @type {any} */ p) => ({ x: p.x, z: p.z, h: M.perchOn[p.sp] * Math.min(1, p.size) })),
     // Stones, logs and the raft to bask on (turtles; published by src/world/creatures/spring-live.js).
     seats: () => getStore('seats') ?? [],
+    // Plants a turtle grazes (lily leaves, pondweed: motion.habits.grazeOn).
+    food: () => (world.state?.growth?.plants ?? []).filter((/** @type {any} */ p) => M.habits?.grazeOn?.[p.sp] && p.stage >= 1)
+      .map((/** @type {any} */ p) => ({ x: p.x, z: p.z, sp: p.sp })),
     // Where you are, for a turtle at the periscope to turn and face: on foot, or the camera's eye.
     viewer: () => opts.you?.() ?? camera.eye,
   };
