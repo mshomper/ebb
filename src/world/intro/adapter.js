@@ -154,9 +154,13 @@ export function createIntroLive(o) {
 
   // The evening's place for other pieces (E3 offers Light and Rest only when their beat comes):
   // the store slice `intro` { beat, started, done }, kept as the director moves.
-  let shown = '';
+  let shown = '', marked = '';
   function publish() {
     const c = intro.current, done = (get('journal')?.flags ?? []).includes(`${o.R.flagPrefix ?? 'intro:'}done`);
+    // The spring's mark over the view while its beat leads you there (island-notes draws it).
+    const mark = o.R.springGlow && spring && c?.id === 'spring' && c.started && !c.acting ? spring : null;
+    const mk = mark ? `${mark.x},${mark.z}` : '';
+    if (mk !== marked) { marked = mk; emit('intro:mark', mark ? { x: mark.x, z: mark.z } : null); }
     const key = `${c?.id}|${c?.started}|${done}`;
     if (key === shown) return;
     shown = key;

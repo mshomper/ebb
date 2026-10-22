@@ -126,6 +126,23 @@ export function mountIslandNotes(parent, words, naturalist = null) {
   hintText.addEventListener('click', () => dispatch(/** @type {any} */ ({ type: 'intro.tuck' })));
   skipBtn.addEventListener('click', () => dispatch(/** @type {any} */ ({ type: 'intro.skip' })));
   root.prepend(hint);
+  // The first evening's mark (`intro:mark { x, z }` or null): a soft breathing ring drawn over the
+  // view where a beat leads you (the spring's pool, which tall grass hides from the ground), seen
+  // from far off. Like Show me's mark, never an arrow: off screen, it simply waits.
+  const introMark = document.createElement('div');
+  introMark.className = 'ebb-mark';
+  introMark.setAttribute('aria-hidden', 'true');
+  /** @type {{ x: number, z: number } | null} */ let markAt = null;
+  let marking = 0;
+  function followMark() {
+    cancelAnimationFrame(marking);
+    const view = get('view'), p = markAt && view ? view.project(markAt.x, markAt.z) : null;
+    const on = !!p && !p.behind && p.x > 0 && p.y > 0 && p.x < window.innerWidth && p.y < window.innerHeight;
+    introMark.classList.toggle('is-on', on);
+    if (on && p) introMark.style.transform = `translate(${Math.round(p.x)}px, ${Math.round(p.y)}px)`;
+    if (markAt) marking = requestAnimationFrame(followMark);
+  }
+  const offMark = on('intro:mark', (/** @type {{ x: number, z: number } | null} */ p) => { markAt = p ?? null; followMark(); });
   const offHint = on('intro:hint', (/** @type {{ text: string | null, skip: string | null }} */ p) => {
     const showing = !!p.text;
     hint.classList.remove('is-in');
@@ -370,6 +387,7 @@ export function mountIslandNotes(parent, words, naturalist = null) {
   parent.appendChild(card);
   parent.appendChild(arrow);
   parent.appendChild(mark);
+  parent.appendChild(introMark);
 
   return function dispose() {
     offNote();
@@ -378,6 +396,9 @@ export function mountIslandNotes(parent, words, naturalist = null) {
     offRevealEnd();
     offNotice();
     offHint();
+    offMark();
+    cancelAnimationFrame(marking);
+    introMark.remove();
     offUi();
     for (const u of unsubs) u();
     clearTimeout(pumpTimer);
