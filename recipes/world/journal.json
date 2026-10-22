@@ -11,7 +11,7 @@
   "arrivedHours": 2,
   "plantableNote": "plantable: the line written under the first sighting of a plant that came by itself (src/world/growth/volunteers.js), since the Plant tool offers it from then on; {name} is its name.",
   "plantable": "{name} came to the island by itself. You can plant it now.",
-  "islandNote": { "showS": 6, "showMeS": 14, "showMeKinds": ["sign", "signAgain", "back", "settled", "settledUnseen", "joined", "joinedUnseen"], "gapS": 1.2, "queue": 3, "more": "{n} more in the journal", "moreOne": "1 more in the journal" },
+  "islandNote": { "showS": 6, "showMeS": 14, "showMeKinds": ["sign", "signAgain", "back", "settled", "settledUnseen", "joined", "joinedUnseen", "uneasy"], "gapS": 1.2, "queue": 3, "more": "{n} more in the journal", "moreOne": "1 more in the journal" },
   "readMarks": { "missed": "You may have missed", "rest": "All notes" },
   "reveal": {
     "_doc": "The reveal on return (docs/02, src/world/journal/reveal-plan.js) shows its notes best first: by the first class whose kinds hold the note's kind (doc 02's order), then newer first; kinds not listed come last. Kinds are shared by every species, so a new plant or animal ranks by the kinds of its notes.",
@@ -53,7 +53,8 @@
     "mistAt": 0.3,
     "hours": { "dawn": [5, 8], "dusk": [18, 21] }
   },
-  "showMe": { "showS": 20, "button": "Show me", "unseen": { "name": "Something here", "text": "Keep still and watch this spot for a while." }, "none": "Nothing shows just now. It may have slipped away for a while.", "noneS": 5 },
+  "showMe": { "showS": 20, "button": "Show me", "unseen": { "name": "Something here", "text": "Keep still and watch this spot for a while." }, "none": "Nothing shows just now. It may have slipped away for a while.", "noneS": 5,
+    "_pond": "A9: an uneasy note's Show me rings the pool that is failing them, pondRingM across, with the note's own words on the card.", "pondRingM": 3 },
   "keepsakesNote": "Keepsakes on the strandline (docs/future/12): what a tap on one says. card heads its card, rarity is the word under it, and its line is drawn from what it looks like (src/world/keepsakes/families). leave is the button that leaves it where it lies, and left the calm line after.",
   "keepsakes": {
     "card": "Something the sea left",
@@ -1340,7 +1341,15 @@
         "thinned": "The school of minnows is smaller than it was.",
         "left": "Some of the minnows have moved on.",
         "gone": "The minnows have gone from the pool.",
+        "eased": "The minnows have settled again. Their pool suits them.",
         "happy": "The school turns as one now, silver in the sun."
+      },
+      "uneasy": {
+        "waterSummer": "The minnows seem restless: their pool has dropped in the heat, and they like it deep. They may move on in a few days.",
+        "water": "The minnows seem restless: their pool is not as deep as it was. They may move on in a few days.",
+        "food": "The minnows seem restless: there is too little to eat in their pool. They may move on in a few days.",
+        "shelter": "The minnows seem restless: there is too little weed in their pool to hide in. They may move on in a few days.",
+        "habitat": "The minnows seem restless. They may move on in a few days."
       }
     },
     "dragonflies": {
@@ -1398,9 +1407,23 @@
         "thinned": "There are fewer dragonflies than there were.",
         "left": "A dragonfly has moved on from the pond.",
         "gone": "The dragonflies have gone from the pond.",
+        "eased": "The dragonflies have settled again. Their pond suits them.",
         "dormant": "The last dragonflies have gone. Their young wait under the water.",
         "woke": "The water has warmed. The first dragonfly of the year has climbed out of the pond.",
         "happy": "The dragonflies patrol the whole pond now, each on its own beat."
+      },
+      "_uneasy": "A9: when their pond starts failing them they wait three days before they go (recipes/species/dragonfly.json arrival.leaveGraceDays). The note and their page say why, by what is failing (src/world/creatures/swarms.js whyFailing); a ...Summer line is used in summer. Show me on the note rings the pond.",
+      "uneasy": {
+        "marginSummer": "The dragonflies seem restless: the shallow, reedy edge of their pond has dried in the heat. They may move on in a few days.",
+        "margin": "The dragonflies seem restless: the shallow, reedy edge of their pond is gone. They may move on in a few days.",
+        "shallowSummer": "The dragonflies seem restless: their pond has shrunk in the heat and lost its shallows. They may move on in a few days.",
+        "shallow": "The dragonflies seem restless: their pond has lost its shallows. They may move on in a few days.",
+        "fish": "The dragonflies seem restless: fish have come into their pond. They may move on in a few days.",
+        "waterSummer": "The dragonflies seem restless: their pond is lower in the heat than they like. They may move on in a few days.",
+        "water": "The dragonflies seem restless: their pond is not what it was. They may move on in a few days.",
+        "food": "The dragonflies seem restless: there are too few small insects over their pond. They may move on in a few days.",
+        "shelter": "The dragonflies seem restless: there are too few stems along their pond to rest on. They may move on in a few days.",
+        "habitat": "The dragonflies seem restless. They may move on in a few days."
       }
     },
     "damselflies": {
@@ -1458,9 +1481,17 @@
         "thinned": "There are fewer damselflies than there were.",
         "left": "Some of the damselflies have moved on.",
         "gone": "The damselflies have gone from the pond.",
+        "eased": "The damselflies have settled again among the reeds.",
         "dormant": "The last damselflies of the summer have gone. Their young wait under the water.",
         "woke": "Spring is ending. The first damselfly of the year has climbed out of the pond.",
         "happy": "Damselflies rest on every stem along the margin now."
+      },
+      "uneasy": {
+        "waterSummer": "The damselflies seem restless: their pond has shrunk in the heat. They may move on in a few days.",
+        "water": "The damselflies seem restless: their pond is not what it was. They may move on in a few days.",
+        "food": "The damselflies seem restless: there are too few midges by their pond. They may move on in a few days.",
+        "shelter": "The damselflies seem restless: there are too few stems along their pond to rest on. They may move on in a few days.",
+        "habitat": "The damselflies seem restless. They may move on in a few days."
       }
     },
     "turtles": {

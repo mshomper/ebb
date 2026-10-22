@@ -73,6 +73,14 @@ export function createGrowth(device, opts) {
   }
   const unSummary = on('water:summary-updated', rebuildHabitat);
   rebuildHabitat();
+  // What the habitat is built from, so catch-up can follow the season day by day (A9; habitat-days.js).
+  world.env.habitatInputs = () => {
+    const live = getStore('terrainLive');
+    const summary = water.summaryInputs?.();
+    if (!summary || !live?.mirror) return null;
+    return { summary, habitat: { material: live.mirror.material, materialCells: WORLD_CELLS, params: recipes.growth.habitat,
+      heightQ: live.mirror.heightQ, baseQ: live.baseQ ?? null } };
+  };
 
   /**
    * The reveal's time-lapse (S7c): every plant, of whatever species, and the drawn cover grow from

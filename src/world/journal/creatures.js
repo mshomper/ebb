@@ -201,6 +201,14 @@ function observeSchool(j, out, ctx, at, sp, rec, note) {
       if (k.ever) { if (word(now) !== word(now - (e.payload.added ?? 1))) note(rec, 'joined', sp); }
       else if (learnOnce(k, 'joined:unseen')) note(rec, 'joinedUnseen', sp);
       learnOnce(k, 'joined');
+    } else if (e.name === 'creature:uneasy') {
+      // A9: their pool is failing them and they will go in a few days unless it comes right. The
+      // note says why (summer's own words in summer) and its Show me rings their pool.
+      const U = rec.uneasy ?? {};
+      const text = (at.season === 1 && U[`${e.payload.why}Summer`]) || U[e.payload.why] || U.habitat;
+      if (k.ever && text) out.push({ hour, date: at.date, text, sp, kind: 'uneasy', at: { x: e.payload.x, z: e.payload.z } });
+    } else if (e.name === 'creature:eased') {
+      if (k.ever) note(rec, 'eased', sp);
     } else if (e.name === 'creature:thinned') {
       if (k.ever) note(rec, 'thinned', sp);
     } else if (e.name === 'creature:left') {

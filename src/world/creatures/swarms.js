@@ -17,6 +17,10 @@
 //             right pool may get its own group (newPoolChance a day); a group under leaveMood for
 //             leaveAfterH loses shrinkShare a day, and one whose pool is gone moves on at once
 //             (`creature:left`); enough of them content for a day is happy, once (`species:happy`)
+//   grace     (A9, leaveGraceDays) when a settled group's pool starts failing it (unhappy, no longer
+//             suitable, its margin dried), it is uneasy (`creature:uneasy` with why) and waits that
+//             many days before it thins or moves on; if the pool comes right again it settles
+//             (`creature:eased`). Only a pool that is gone (filled or drained) sends it away at once.
 // In a dormancy window (dragonflies' nymph months) mood is held and nothing comes or goes.
 //
 // State (state.creatures[key]): see SwarmState. A group's pool is found again each hour from its
@@ -38,6 +42,8 @@ import { swarmSpecies, keyOf } from '../species.js';
  * @property {number} mood   0..1, easing toward what the pool gives
  * @property {number} low    hours in a row under leaveMood
  * @property {number} since  hour it came
+ * @property {number} [uneasy] hour its pool started failing it (absent while all is well)
+ * @property {string} [why]    what is failing: fish, margin, shallow, water, food, shelter or habitat
  */
 
 /**
@@ -90,6 +96,21 @@ export function groupMood(pool, count, N) {
   if (count < lo) c = C.alone + ((1 - C.alone) * Math.max(0, count - 1)) / Math.max(1, lo - 1);
   else if (count > hi) c = Math.max(C.crowded, 1 - ((1 - C.crowded) * (count - hi)) / hi);
   return Math.min(1, pool.bestScore * det.exp(C.w * det.log(Math.max(c, 0.01))));
+}
+
+/**
+ * What is failing a group's pool, in one word for the journal: fish moved in, the shaped margin
+ * gone (dried, or filled), too little shallow water (the dragonflies' pond rule), else the weakest
+ * of its needs at the pool's best square (pool.low, ecology/coarse.js). Pure.
+ * @param {any} pool @param {any} E the recipe's ecology
+ */
+export function whyFailing(pool, E) {
+  if (pool.fit === false) {
+    if (pool.fish) return 'fish';
+    if (E.pond && pool.margin < E.pond.marginM2) return 'margin';
+    return 'shallow';
+  }
+  return pool.low ?? 'habitat';
 }
 
 /** Rounded to 4 places, as the frogs' moods are. @param {number} v */
@@ -161,8 +182,32 @@ export function swarmStep(state, hourIndex, env, rec) {
     events.push({ name: 'creature:left', payload: pay({ id: g.id, x: g.x, z: g.z, why, count: total(S), gone: g.count }) });
     if (!S.groups.length) { S.phase = 'waiting'; S.cooldownUntil = hourIndex + A.rescoutAfterH; S.happyFor = 0; }
   };
-  // A pool drained or grown unsuitable: its group is gone at once (they leave, they never die).
-  for (const g of S.groups.slice()) if (!poolOf.get(g.id) || poolOf.get(g.id).bestScore <= 0) leave(g, 'habitat');
+  // Grace (A9): a settled group whose pool starts failing it waits leaveGraceDays before it goes,
+  // and says why, so the player can put it right. Without a grace, as before.
+  const graceH = (A.leaveGraceDays ?? 0) * HOURS_PER_DAY;
+  const graceOver = (/** @type {Group} */ g) => graceH <= 0 || (g.uneasy !== undefined && hourIndex - g.uneasy >= graceH);
+  if (graceH > 0 && S.phase === 'settled') {
+    for (const g of S.groups) {
+      const p = poolOf.get(g.id);
+      if (!p) continue;
+      const failing = p.bestScore <= 0 || p.fit === false || g.mood < A.leaveMood;
+      if (failing && g.uneasy === undefined) {
+        g.uneasy = hourIndex;
+        g.why = whyFailing(p, E);
+        events.push({ name: 'creature:uneasy', payload: pay({ id: g.id, x: g.x, z: g.z, why: g.why, pool: p.id, leaveAt: hourIndex + graceH }) });
+      } else if (!failing && g.uneasy !== undefined) {
+        delete g.uneasy;
+        delete g.why;
+        events.push({ name: 'creature:eased', payload: pay({ id: g.id, x: g.x, z: g.z }) });
+      }
+    }
+  }
+  // A pool gone (filled in, drained) sends its group away at once; one grown unsuitable, once the
+  // grace is over (they leave, they never die).
+  for (const g of S.groups.slice()) {
+    const p = poolOf.get(g.id);
+    if (!p || (p.bestScore <= 0 && graceOver(g))) leave(g, g.why ?? 'habitat');
+  }
 
   /** A new group in a pool. @param {any} p */
   const newGroup = (p) => {
@@ -218,9 +263,9 @@ export function swarmStep(state, hourIndex, env, rec) {
       }
       // A group unhappy too long thins out, a share a day; too few left and it has moved on.
       for (const g of S.groups.slice()) {
-        if (g.low < A.leaveAfterH) continue;
+        if (g.low < A.leaveAfterH || !graceOver(g)) continue;
         const lose = Math.max(1, Math.ceil(A.shrinkShare * g.count));
-        if (g.count - lose < A.startCount) leave(g, 'habitat');
+        if (g.count - lose < A.startCount) leave(g, g.why ?? 'habitat');
         else { g.count -= lose; events.push({ name: 'creature:thinned', payload: pay({ id: g.id, count: g.count, total: total(S) }) }); }
       }
     }
