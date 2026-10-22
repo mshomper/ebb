@@ -21,12 +21,14 @@ struct PieceDraw {
   rough: vec4f,     // x, y top scan roughness range; z, w side scan roughness range
   tile: vec4f,      // x 1 / top tile (m), y 1 / side tile (m), z, w terminator range
   wood: vec4f,      // driftwood: x roughness, y bump (m), z grain streaks across the log, w crack darkness 0..1
+  moss: vec4f,      // pond stones' and Steps' moss: rgb albedo (linear), w how far it creeps in from the rim onto the top (0..1)
 };
 
 struct Piece {
   at: vec4f,        // x, y, z (ground under its middle), yaw (radians)
   more: vec4f,      // x size (length, m), y, z ground slope along its own x and z, w seed for the scan offset
-  extra: vec4f,     // x, y footprint half width and half length (mesh units); z 1 for plain earth (the damp patch: no rock scan);
+  extra: vec4f,     // x, y footprint half width and half length (mesh units); z 1 for plain earth (the damp patch: no rock scan),
+                    // or minus a slab's moss (0..1: how mossy its rim has grown with age);
                     // w a log's thickness over its length (0 for a stone): its mesh is 1 thick, squeezed by the bone
   bone: mat4x4f,    // mesh units: set into the ground, leaned with the slope, tipped (a log: rolled) when lifted
 };
@@ -54,6 +56,7 @@ struct VsOut {
   @location(8) @interpolate(flat) scanned: f32,   // 1 for stone, 0 for plain earth and wood
   @location(9) woodP: vec3f,      // a log's cross-section (mesh units, about its middle) and meters along it, seeded
   @location(10) @interpolate(flat) wood: f32,     // 1 for a log
+  @location(11) @interpolate(flat) moss: f32,     // a slab's moss 0..1
 };
 
 struct FsOut {
@@ -96,7 +99,8 @@ fn vsPiece(@location(0) position: vec3f, @location(1) normal: vec3f, @location(2
   o.ax = turn((pc.bone * vec4f(1.0, 0.0, 0.0, 0.0)).xyz, pc.at.w);
   o.ay = turn((pc.bone * vec4f(0.0, 1.0, 0.0, 0.0)).xyz, pc.at.w);
   o.az = turn((pc.bone * vec4f(0.0, 0.0, 1.0, 0.0)).xyz, pc.at.w);
-  o.scanned = (1.0 - pc.extra.z) * (1.0 - o.wood);
+  o.scanned = (1.0 - max(pc.extra.z, 0.0)) * (1.0 - o.wood);
+  o.moss = max(-pc.extra.z, 0.0);
   return o;
 }
 
@@ -152,7 +156,16 @@ fn fsPiece(in: VsOut) -> FsOut {
   let fade = pd.look.w * in.scanned;
   let scan = sx.albedo * w.x + sy.albedo * w.y + sz.albedo * w.z;
   // The scan's variation about its own mean, on the stone's weathered albedo.
-  let albedo = in.albedo * mix(vec3f(1.0), scan / max(pd.rockMean.rgb, vec3f(0.01)), fade);
+  var albedo = in.albedo * mix(vec3f(1.0), scan / max(pd.rockMean.rgb, vec3f(0.01)), fade);
+  // Moss on an old slab (doc 09, weathering): it rims the rounded edge first, in soft patches, then
+  // creeps in over the top as the stone ages. Physical albedo; the palette paints it at tonemap.
+  if (in.moss > 0.0) {
+    let rim = smoothstep(0.2, 0.45, nL.y) * (1.0 - smoothstep(0.88, 0.98, nL.y));
+    let blot = valueNoise2(p.xz * 9.0, 91u) * 0.7 + valueNoise2(p.xz * 31.0, 97u) * 0.3;
+    let onTop = smoothstep(0.9, 0.98, nL.y) * smoothstep(1.0 - pd.moss.w * in.moss, 1.05 - pd.moss.w * in.moss, blot);
+    let k = in.moss * clamp(max(rim * smoothstep(0.25, 0.55, blot + in.moss * 0.4), onTop), 0.0, 1.0);
+    albedo = mix(albedo, pd.moss.rgb * (0.8 + 0.4 * blot), k);
+  }
   let rough = mix(0.75, sx.rough * w.x + sy.rough * w.y + sz.rough * w.z, fade);
   let cavity = mix(1.0, sx.cavity * w.x + sy.cavity * w.y + sz.cavity * w.z, fade);
   // Surface gradient (Mikkelsen 2020), in the stone's frame, then to the world.

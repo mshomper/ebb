@@ -23,6 +23,12 @@ import { cleanPieces, makeStone, makeLog, addPiece, removePiece, movePiece, coun
 import { stoneShapes, logShapes } from './meshes.js';
 import { strandLogs, cellHeights, strandMask } from './driftwood.js';
 import { logSurface } from './log-surface.js';
+import { slabShapes } from './slabs.js';
+import { makeStepping, strideAfter, jitterOf, topOf, links, footingAt } from './stepping.js';
+import { planFlight, flightGeom, flightHeightAt, flightRect, carveFlight, paintFlight, markGuard, crossesGuard, treadSlabs } from './steps.js';
+import { emitDeferred } from '../../core/events.js';
+import { WORLD_CELLS } from '../terrain/grid.js';
+import { waterCellOf } from '../water/grid.js';
 
 /**
  * @param {{ terrain: any, water: any, camera: any, history: any, seed: number, recipe: any, ground: any, terrainRecipe: any,
@@ -47,6 +53,14 @@ export function createPieces(opts) {
     pass.setMesh(`damp-${i}`, { data: packMesh(s.damp), indices: s.damp.indices });
   });
   logs.forEach((s, i) => pass.setMesh(`log-${i}`, { data: packMesh(s.mesh), indices: s.mesh.indices }));
+  // Pond stones and the slabs on Steps' treads (slabs.js): rounded slabs with a long skirt that
+  // stands on a pond bed, or sinks out of sight into the ground.
+  const S = recipe.stepping, ST = recipe.steps;
+  const slabs = slabShapes(recipe);
+  slabs.forEach((s, i) => pass.setMesh(`slab-${i}`, { data: packMesh(s.mesh), indices: s.mesh.indices }));
+  // A tread's slabs are the same shapes with a short skirt, since a flight can stand out from the slope.
+  const treadShapes = slabShapes({ ...recipe, stepping: { ...S, slab: { ...S.slab, skirtUnits: ST.slab.skirtUnits } } });
+  treadShapes.forEach((s, i) => pass.setMesh(`tread-${i}`, { data: packMesh(s.mesh), indices: s.mesh.indices }));
   pass.setMesh('logdamp', { data: packMesh(logs[0].damp), indices: logs[0].damp.indices });
   const shapeOf = (/** @type {{ seed: number }} */ p) => shapes[p.seed % shapes.length];
   const ground = (/** @type {number} */ x, /** @type {number} */ z) => terrain.sampleHeight(x, z);
@@ -85,6 +99,15 @@ export function createPieces(opts) {
 
   // Setting, removing and moving a piece are undoable commands.
   history.setApplier('piece', (/** @type {any} */ cmd, /** @type {'undo'|'redo'} */ dir) => {
+    // A line of pond stones laid (or removed) at once.
+    if (cmd.op === 'addMany' || cmd.op === 'removeMany') {
+      const adding = (cmd.op === 'addMany') === (dir === 'redo');
+      let s = state();
+      for (const p of cmd.pieces) s = adding ? addPiece(s, p, Infinity) ?? s : removePiece(s, p.id).state;
+      update('pieces', () => s);
+      sync();
+      return true;
+    }
     if (cmd.op === 'move') {
       const to = dir === 'undo' ? cmd.from : cmd.to;
       update('pieces', () => movePiece(state(), cmd.id, to.x, to.z));
@@ -152,6 +175,131 @@ export function createPieces(opts) {
   /** @param {typeof carrying} c */
   function setCarry(c) { carrying = c; update('carry', () => (c ? { id: c.id, kind: c.kind } : null)); }
 
+  // ---- pond stones and Steps (stepping.js, steps.js) ----
+  const pond = () => /** @type {import('./stepping.js').SteppingStone[]} */ (/** @type {any} */ (state().list.filter((p) => p.kind === 'stepping')));
+  const flights = () => /** @type {import('./steps.js').Flight[]} */ (/** @type {any} */ (state().list.filter((p) => p.kind === 'steps')));
+  /**
+   * Water over a point now: the sea at the tide, and the live water (as the walker reads it); while
+   * the live water is not read back yet, a pond's standing depth from the water summary.
+   * @param {number} x @param {number} z
+   */
+  const depthAt = (x, z) => {
+    let still = 0;
+    const s = water.sim?.live ? null : water.getSummary?.();
+    if (s) {
+      const i = waterCellOf(x) - s.rect.x, j = waterCellOf(z) - s.rect.y;
+      if (i >= 0 && j >= 0 && i < s.rect.w && j < s.rect.h) still = s.targetMm[j * s.rect.w + i] / 1000;
+    }
+    return Math.max(0, (water.tide ?? -Infinity) - ground(x, z), water.sampleLive?.(x, z)?.depth ?? 0, still);
+  };
+  /** @type {{ mode: string, message: string, refused: boolean }} */ let shapingSay = { mode: '', message: '', refused: false };
+  /** @type {{ pond: string | null, steps: string | null }} */ const shapingSel = { pond: null, steps: null };
+  /** Mirror pond stones and Steps into the tool card's slice. @param {{ mode: string, message: string, refused?: boolean }} [say] */
+  function syncShaping(say) {
+    if (say) shapingSay = { mode: say.mode, message: say.message, refused: !!say.refused };
+    const list = state().list;
+    for (const k of /** @type {const} */ (['pond', 'steps'])) if (shapingSel[k] && !list.some((p) => p.id === shapingSel[k])) shapingSel[k] = null;
+    const selStone = shapingSel.pond ? pond().find((p) => p.id === shapingSel.pond) : null;
+    const runSize = selStone ? pond().filter((p) => p.run === selStone.run).length : 0;
+    update('shapingUi', () => ({
+      pond: { count: countKind(list, 'stepping'), cap: S.cap, selectedId: shapingSel.pond, run: runSize > 1 ? selStone?.run ?? null : null, hint: S.words.hint },
+      steps: { count: countKind(list, 'steps'), cap: ST.cap, selectedId: shapingSel.steps, hint: ST.words.hint },
+      words: { removeLine: S.words.removeLine },
+      ...shapingSay, at: say ? performance.now() : get('shapingUi')?.at ?? 0 }));
+  }
+
+  // Where the walker can stand (src/world/walk footing): pond stones and the lines between them.
+  /** @type {[import('./stepping.js').SteppingStone, import('./stepping.js').SteppingStone][]} */ let linked = [];
+  let pondBox = { x0: Infinity, z0: Infinity, x1: -Infinity, z1: -Infinity };
+  /** @type {Map<string, number[]>} */ let pondSeen = new Map();
+  // The brushes' guard over Steps (terrain/index.js setGuard).
+  const guardMask = new Uint8Array(WORLD_CELLS * WORLD_CELLS);
+  const guardApply = (/** @type {any} */ m, /** @type {any} */ r) => {
+    let changed = false;
+    for (const f of flights()) changed = carveFlight(m, f, ST, r) || changed;
+    return changed;
+  };
+  /** @type {Map<string, any>} */ let flightSeen = new Map();
+  /** Treads' slabs per flight, worked out when the flights change. @type {{ f: any, slabs: ReturnType<typeof treadSlabs> }[]} */ let treads = [];
+
+  /**
+   * The list changed (a stone laid, a flight cut, undo, a load): the walker's footing and the
+   * brushes' guard follow, each only where something moved.
+   */
+  function onList() {
+    const stones = pond();
+    const now = new Map(stones.map((p) => [p.id, [p.x, p.z, p.rise, p.size]]));
+    let box = null;
+    const grow = (/** @type {number[]} */ v) => { const r = 1.2; box = box ? { x0: Math.min(box.x0, v[0] - r), z0: Math.min(box.z0, v[1] - r), x1: Math.max(box.x1, v[0] + r), z1: Math.max(box.z1, v[1] + r) } : { x0: v[0] - r, z0: v[1] - r, x1: v[0] + r, z1: v[1] + r }; };
+    for (const [id, v] of now) { const w = pondSeen.get(id); if (!w || w.some((a, i) => a !== v[i])) grow(v); }
+    for (const [id, v] of pondSeen) if (!now.has(id)) grow(v);
+    pondSeen = now;
+    // Footing changed where a flight was cut or removed, too.
+    for (const f of flights()) if (flightSeen.get(f.id) !== f) grow([f.x, f.z]), grow([f.x2, f.z2]), grow([(f.x + f.x2) / 2, (f.z + f.z2) / 2]);
+    for (const [id, f] of flightSeen) if (!state().list.some((p) => p.id === id)) grow([f.x, f.z]), grow([f.x2, f.z2]);
+    if (box) {
+      linked = links(stones, S);
+      pondBox = stones.reduce((b, p) => ({ x0: Math.min(b.x0, p.x - 1), z0: Math.min(b.z0, p.z - 1), x1: Math.max(b.x1, p.x + 1), z1: Math.max(b.z1, p.z + 1) }),
+        { x0: Infinity, z0: Infinity, x1: -Infinity, z1: -Infinity });
+      emitDeferred('pieces:footing-changed', { rect: box });
+    }
+    const fl = flights();
+    const fNow = new Map(fl.map((f) => [f.id, f]));
+    /** @type {any} */ let rect = null;
+    const add = (/** @type {any} */ f) => {
+      const r = flightRect(f, flightGeom(f, ST));
+      rect = rect ? { x: Math.min(rect.x, r.x), y: Math.min(rect.y, r.y), w: Math.max(rect.x + rect.w, r.x + r.w) - Math.min(rect.x, r.x), h: Math.max(rect.y + rect.h, r.y + r.h) - Math.min(rect.y, r.y) } : r;
+    };
+    for (const [id, f] of fNow) if (flightSeen.get(id) !== f) add(f);
+    for (const [id, f] of flightSeen) if (!fNow.has(id)) add(f);
+    flightSeen = fNow;
+    if (rect) {
+      markGuard(guardMask, fl, ST, rect);
+      terrain.setGuard?.(guardMask, rect, guardApply);
+      treads = fl.map((f) => ({ f, slabs: treadSlabs(f, ST, slabs) }));
+    }
+    syncShaping();
+  }
+  const offList = subscribe('pieces', onList);
+  onList();
+
+  /** @type {{ run: string | null, last: number[] | null, laid: any[], stopped: boolean } | null} */ let laying = null;
+  /**
+   * Lay one pond stone at a ground point, if it may go there: under the cap, water no deeper than
+   * maxDepthM, and not on top of another stone. Returns 'ok', or why not.
+   * @param {number} x @param {number} z
+   */
+  function layOne(x, z) {
+    const s = state();
+    if (countKind(s.list, 'stepping') >= S.cap) return 'full';
+    const d = depthAt(x, z);
+    if (d > S.maxDepthM) return 'deep';
+    const a2 = S.apartM * S.apartM;
+    if (s.list.some((p) => (p.kind === 'stepping' || p.kind === 'stone') && (p.x - x) ** 2 + (p.z - z) ** 2 < a2)) return 'near';
+    const piece = makeStepping(piecesSeed, s.nextId, x, z, d, hourIndex(), laying?.run ?? null, S);
+    const next = addPiece(s, /** @type {any} */ (piece), S.cap);
+    if (!next) return 'full';
+    update('pieces', () => next);
+    if (laying) { laying.run ??= piece.id; laying.laid.push(piece); laying.last = [x, z]; }
+    return 'ok';
+  }
+
+  /** The flight a ground point lands on, if any. @param {number} x @param {number} z */
+  const flightAt = (x, z) => flights().find((f) => flightHeightAt(f, flightGeom(f, ST), x, z) !== null) ?? null;
+  /** @type {{ a: number[], b: number[] } | null} */ let cutting = null;
+  /** The plan a drag from a to b would make. @param {number[]} a @param {number[]} b */
+  const planOf = (a, b) => planFlight(a, b, ground(a[0], a[1]), ground(b[0], b[1]), ST);
+
+  history.setApplier('steps', (/** @type {any} */ cmd, /** @type {'undo'|'redo'} */ dir) => {
+    const adding = dir === 'redo';
+    // The ground first (busy while a stroke settles: try again shortly), then the record.
+    if (!terrain.applyTiles(adding ? cmd.after : cmd.before)) return false;
+    const next = adding ? addPiece(state(), cmd.piece, Infinity) : removePiece(state(), cmd.piece.id).state;
+    if (next) update('pieces', () => next);
+    syncShaping();
+    return true;
+  });
+
   // The reward's handful comes once per island: when stones are given (live, after a catch-up, or
   // on a reload that finds them given but not yet come), as soon as the water summary is there.
   // `?stones` (unsaved) brings it too; `?sandbox` only opens the mode, so a kept island's handful
@@ -188,6 +336,12 @@ export function createPieces(opts) {
     const liftM = D.carry.liftM;
     for (const p of state().list) {
       if (p.kind === 'log') { logBeing(p, p.id, out); continue; }
+      if (p.kind === 'steps') continue;
+      if (p.kind === 'stepping') {
+        const sp = /** @type {any} */ (p), y = ground(p.x, p.z);
+        slabBeing(p.x, p.z, y, y + sp.rise, p.yaw, p.size, p.seed, sp.rise > S.wetM + S.freeboardM[1] ? 0 : S.lean, out, undefined, false, mossOf(p.placedHour));
+        continue;
+      }
       const sh = shapeOf(p), i = shapes.indexOf(sh);
       const y = ground(p.x, p.z);
       const slope = slopeOf(p, p.size * 0.5);
@@ -203,7 +357,36 @@ export function createPieces(opts) {
       if (angle > 0.01 || held) out.push({ ...common, y: y + 0.004, mesh: `damp-${i}`, bone: shear(slope), plain: true });
     }
     for (const s of strandShown) logBeing(s, s.key, out);
+    for (const t of treads) {
+      const moss = mossOf(t.f.placedHour);
+      for (const s of t.slabs) slabBeing(s.x, s.z, s.y, s.top, s.yaw, s.size, hash32(t.f.seed, s.shape, Math.round(s.x * 100)), 0, out, s.shape, true, moss);
+    }
     return out;
+  }
+
+  /**
+   * A slab (a pond stone, or one on a Steps tread) as the draw pass wants it: its top at top, its
+   * skirt reaching down past the ground at y into it, leaned with the ground by lean (0 upright).
+   * @param {number} x @param {number} z @param {number} y the ground @param {number} top @param {number} yaw
+   * @param {number} size @param {number} seed @param {number} lean @param {import('../../render/passes/pieces.js').PieceBeing[]} out
+   * @param {number} [shape] which slab (else from the seed) @param {boolean} [tread] a Steps tread's short slab
+   */
+  function slabBeing(x, z, y, top, yaw, size, seed, lean, out, shape, tread = false, moss = 0) {
+    const i = shape ?? (seed >>> 0) % slabs.length, sh = (tread ? treadShapes : slabs)[i];
+    const slope = slopeOf({ x, z, yaw }, size * 0.5);
+    const bone = mul4(leanBone(slope[0], slope[1], lean), raise((top - y) / size - sh.hy));
+    out.push({ x, z, y, yaw, size, slope, seed: ((seed >>> 8) / 16777216) * 10, half: [sh.hx, sh.hz], mesh: `${tread ? 'tread' : 'slab'}-${i}`, bone, moss });
+  }
+
+  /**
+   * How mossy a slab laid at placedHour has grown (doc 09: stepping stones gain moss rims): none for
+   * its first startDays, then easing up to `most` by fullDays. World time, so it is as grown after
+   * time away as it would have been. @param {number} placedHour
+   */
+  function mossOf(placedHour) {
+    const M = S.moss, days = (hourIndex() - placedHour) / 24;
+    const u = Math.min(1, Math.max(0, (days - M.startDays) / (M.fullDays - M.startDays)));
+    return M.most * u * u * (3 - 2 * u);
   }
 
   /**
@@ -254,6 +437,7 @@ export function createPieces(opts) {
       /** @type {{ x: number, z: number, r: number, d: number }[]} */ const out = [];
       const put = (/** @type {number} */ x, /** @type {number} */ z, /** @type {number} */ r) => out.push({ x, z, r, d: (x - focus[0]) ** 2 + (z - focus[2]) ** 2 });
       for (const p of [...state().list, ...strandShown]) {
+        if (p.kind === 'steps') continue;
         if (p.kind !== 'log') { put(p.x, p.z, p.size * 0.5 * recipe.grassClear); continue; }
         const len = p.length ?? 1, r = p.size * 0.5 + D.grassClearM;
         const n = Math.min(6, Math.max(2, Math.ceil(len / (r * 1.6))));
@@ -301,7 +485,8 @@ export function createPieces(opts) {
      * @param {number} x @param {number} z
      */
     pieceAt(x, z) {
-      const all = [...state().list.map((p) => ({ ...p, strand: false })), ...strandShown.map((s) => ({ ...s, id: s.key, strand: true }))];
+      const kept = state().list.filter((p) => p.kind === 'stone' || p.kind === 'log');
+      const all = [...kept.map((p) => ({ ...p, strand: false })), ...strandShown.map((s) => ({ ...s, id: s.key, strand: true }))];
       return pieceAt(all, x, z, tapR(), D.tapReachM);
     },
 
@@ -403,7 +588,168 @@ export function createPieces(opts) {
       return piece.id;
     },
 
-    dispose() { offLift(); offSummary(); for (const off of offs) off(); },
+    // ---- pond stones (Sculpt's Pond stones mode) ----
+
+    /**
+     * A drag (or tap) begins in the Pond stones mode at a ground point: on a pond stone it selects
+     * it; elsewhere it starts a line with a stone there. @param {ArrayLike<number>} p
+     */
+    layBegin(p) {
+      const hit = pieceAt(pond(), p[0], p[2], tapR());
+      if (hit) { shapingSel.pond = hit.id; laying = null; syncShaping({ mode: 'pondstones', message: '' }); return; }
+      shapingSel.pond = null;
+      laying = { run: null, last: null, laid: [], stopped: false };
+      const r = layOne(p[0], p[2]);
+      if (r === 'near') laying.last = [p[0], p[2]];
+      else if (r !== 'ok') { laying.stopped = true; syncShaping({ mode: 'pondstones', message: S.words[r], refused: true }); return; }
+      syncShaping({ mode: 'pondstones', message: '' });
+    },
+
+    /**
+     * The drag moves on: a stone each stride along it (seeded, with a little sideways nudge),
+     * until the water is too deep or the island holds all it can. @param {ArrayLike<number>} p
+     */
+    layTo(p) {
+      if (!laying || laying.stopped || !laying.last) return;
+      for (let guard = 0; guard < 16; guard++) {
+        const [lx, lz] = laying.last, dx = p[0] - lx, dz = p[2] - lz;
+        const d = Math.sqrt(dx * dx + dz * dz);
+        const prev = laying.laid[laying.laid.length - 1];
+        const stride = strideAfter(prev?.seed ?? hash32(piecesSeed, state().nextId), S);
+        if (d < stride) break;
+        const ux = dx / d, uz = dz / d, j = jitterOf(hash32(piecesSeed, state().nextId, 0x1a7), S);
+        const x = lx + ux * stride - uz * j, z = lz + uz * stride + ux * j;
+        const r = layOne(x, z);
+        if (r === 'near') { laying.last = [lx + ux * stride, lz + uz * stride]; continue; }
+        if (r !== 'ok') { laying.stopped = true; syncShaping({ mode: 'pondstones', message: S.words[r], refused: true }); break; }
+        // The next stride is measured from the line, not the nudged stone, so a line stays straight.
+        laying.last = [lx + ux * stride, lz + uz * stride];
+      }
+      syncShaping();
+    },
+
+    /** The drag ends: the line is one step to undo. */
+    layEnd() {
+      if (laying?.laid.length) {
+        history.push({ kind: 'piece', bytes: 64 * laying.laid.length, op: 'addMany', pieces: laying.laid });
+        shapingSel.pond = laying.laid[laying.laid.length - 1].id;
+      }
+      laying = null;
+      syncShaping();
+    },
+
+    /** Remove a whole line of pond stones (undoable). @param {string} run */
+    removeRun(run) {
+      const gone = pond().filter((p) => p.run === run);
+      if (!gone.length) return;
+      let s = state();
+      for (const p of gone) s = removePiece(s, p.id).state;
+      update('pieces', () => s);
+      history.push({ kind: 'piece', bytes: 64 * gone.length, op: 'removeMany', pieces: gone });
+      shapingSel.pond = null;
+      syncShaping();
+    },
+
+    // ---- Steps (Sculpt's Steps mode) ----
+
+    /** A drag begins in the Steps mode: on a flight it selects it; elsewhere it is the flight's first end. @param {ArrayLike<number>} p */
+    stepsBegin(p) {
+      const hit = flightAt(p[0], p[2]);
+      if (hit) { shapingSel.steps = hit.id; cutting = null; syncShaping({ mode: 'steps', message: '' }); return; }
+      shapingSel.steps = null;
+      cutting = { a: [p[0], p[2]], b: [p[0], p[2]] };
+      syncShaping({ mode: 'steps', message: '' });
+    },
+
+    /** The drag moves on: the card says, as you go, whether the flight would fit. @param {ArrayLike<number>} p */
+    stepsTo(p) {
+      if (!cutting) return;
+      cutting.b = [p[0], p[2]];
+      const plan = planOf(cutting.a, cutting.b);
+      const dx = cutting.b[0] - cutting.a[0], dz = cutting.b[1] - cutting.a[1];
+      // Only once the drag has gone somewhere, and only for a run that wants more.
+      if (!plan.ok && plan.reason === 'short' && dx * dx + dz * dz > 0.25) {
+        const m = ST.words.short.replace('{m}', (Math.ceil((plan.needM ?? 0) * 2) / 2).toFixed(1));
+        if (shapingSay.message !== m) syncShaping({ mode: 'steps', message: m, refused: true });
+      } else if (plan.ok && shapingSay.refused) syncShaping({ mode: 'steps', message: '' });
+    },
+
+    /** The drag ends: cut the flight if it fits (undoable), or say calmly why not. */
+    stepsEnd() {
+      const c = cutting;
+      cutting = null;
+      if (!c) return;
+      const dx = c.b[0] - c.a[0], dz = c.b[1] - c.a[1];
+      if (dx * dx + dz * dz < 0.04) { syncShaping({ mode: 'steps', message: '' }); return; }
+      /** @param {string} key */
+      const say = (key) => syncShaping({ mode: 'steps', message: key === 'short' ? shapingSay.message || ST.words.short.replace('{m}', '') : ST.words[key], refused: true });
+      if (countKind(state().list, 'steps') >= ST.cap) { say('full'); return; }
+      if (depthAt(c.a[0], c.a[1]) > S.wetM || depthAt(c.b[0], c.b[1]) > S.wetM) { say('water'); return; }
+      const plan = planOf(c.a, c.b);
+      if (!plan.ok) { say(plan.reason); return; }
+      const s = state();
+      const seed = hash32(piecesSeed, s.nextId, 0x57e95);
+      /** @type {any} */ const piece = { id: `p${s.nextId}`, kind: 'steps', x: plan.x, z: plan.z, x2: plan.x2, z2: plan.z2, yaw: 0,
+        size: ST.widthM, top: plan.top, bottom: plan.bottom, seed, placedHour: hourIndex() };
+      if (crossesGuard(guardMask, piece, ST)) { say('overlap'); return; }
+      const cmd = terrain.editCells(flightRect(piece, flightGeom(piece, ST)), (/** @type {any} */ m) => { carveFlight(m, piece, ST); paintFlight(m, piece, ST); });
+      if (!cmd) return;
+      const next = addPiece(s, piece, ST.cap);
+      if (!next) return;
+      update('pieces', () => next);
+      history.push({ kind: 'steps', bytes: cmd.bytes + 96, piece, before: cmd.before, after: cmd.after });
+      shapingSel.steps = piece.id;
+      syncShaping({ mode: 'steps', message: '' });
+    },
+
+    /** Where a Steps drag is now (its two ends), for the ring. */
+    cutting: () => (cutting ? { a: cutting.a.slice(), b: cutting.b.slice() } : null),
+
+    /** The selected pond stone or flight, for the ring. @param {'pondstones' | 'steps'} mode */
+    selected(mode) {
+      if (mode === 'pondstones') { const p = pond().find((q) => q.id === shapingSel.pond); return p ? { x: p.x, z: p.z, radius: p.size * 0.7 } : null; }
+      const f = flights().find((q) => q.id === shapingSel.steps);
+      if (!f) return null;
+      const g = flightGeom(f, ST);
+      return { x: (f.x + f.x2) / 2, z: (f.z + f.z2) / 2, radius: Math.max(g.len / 2 + g.land, g.half) };
+    },
+
+    /** Drop the Pond stones and Steps selections (leaving those modes). */
+    deselectShaping() { if (shapingSel.pond || shapingSel.steps) { shapingSel.pond = null; shapingSel.steps = null; syncShaping(); } },
+
+    /**
+     * The walker's footing (src/world/walk): the top of a pond stone, or of the line between two
+     * of a line's stones, under a point, or -Infinity. @param {number} x @param {number} z
+     */
+    footing(x, z) {
+      let best = -Infinity;
+      // A flight's treads, slabs and all: footing, so the walk grid takes each tread as level
+      // ground rather than reading the cut's walls beside it as a steep slope.
+      for (const t of treads) {
+        const g = flightGeom(t.f, ST), h = flightHeightAt(t.f, g, x, z);
+        if (h !== null) best = Math.max(best, h + (h < t.f.top - 1e-6 && h > t.f.bottom + 1e-6 ? ST.slab.riseM : 0));
+      }
+      if (x < pondBox.x0 || x > pondBox.x1 || z < pondBox.z0 || z > pondBox.z1) return best;
+      return Math.max(best, footingAt(pond(), linked, ground, S, x, z));
+    },
+
+    /**
+     * Where the creatures may sit and bask (doc 09, cover type `stone`): every loose stone and pond
+     * stone, with its top, how far from its middle a sitter may be, and how the water stands now
+     * round it (wet: water at its foot; inWater: it stands in water). Sunny until shade is worked out.
+     * @returns {{ id: string, kind: string, x: number, y: number, z: number, r: number, cover: 'stone', sunny: boolean, wet: boolean, inWater: boolean }[]}
+     */
+    seats() {
+      return state().list.filter((p) => p.kind === 'stone' || p.kind === 'stepping').map((p) => {
+        const sh = p.kind === 'stone' ? shapeOf(p) : slabs[(p.seed >>> 0) % slabs.length];
+        const y = p.kind === 'stone' ? ground(p.x, p.z) + sh.hy * p.size * (1 - recipe.sink) : topOf(/** @type {any} */ (p), ground);
+        const d = depthAt(p.x, p.z);
+        return { id: p.id, kind: p.kind, x: p.x, y, z: p.z, r: Math.max(0.02, Math.min(sh.hx, sh.hz) * p.size - S.sitInsetM), cover: /** @type {'stone'} */ ('stone'),
+          sunny: true, wet: d > 0.005 || depthAt(p.x + p.size * 0.6, p.z) > 0.005, inWater: d > S.wetM };
+      });
+    },
+
+    dispose() { offLift(); offSummary(); offList(); for (const off of offs) off(); },
   };
 }
 

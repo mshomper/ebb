@@ -24,10 +24,11 @@ import { emit } from '../core/events.js';
  *   | { type: 'tool.end', source: Source }
  *   | { type: 'tool.cancel', source: Source }
  *   | { type: 'tool.hover', x: number, y: number, inside: boolean, source: Source }
- *   | { type: 'brush.set', patch: { sculptMode?: 'raise'|'lower'|'flatten'|'stone'|'loosestone'|'terrace'|'cut', paintLayer?: 'grass'|'sand'|'soil'|'rock', size?: number, strength?: number, cliffHeight?: number,
+ *   | { type: 'brush.set', patch: { sculptMode?: 'raise'|'lower'|'flatten'|'stone'|'loosestone'|'pondstones'|'terrace'|'cut'|'steps', paintLayer?: 'grass'|'sand'|'soil'|'rock', size?: number, strength?: number, cliffHeight?: number,
  *       waterMode?: 'pour'|'drain'|'spring'|'net', springRate?: 'trickle'|'brook'|'stream', plantSpecies?: PlantSpecies } }
  *   | { type: 'water.springRemove', id: string }
  *   | { type: 'pieces.remove', id: string }
+ *   | { type: 'pieces.removeRun', run: string }
  *   | { type: 'pieces.carry', id: string }
  *   | { type: 'pieces.carryCancel' }
  *   | { type: 'keepsakes.leave', id: string }

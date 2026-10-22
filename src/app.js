@@ -49,7 +49,7 @@ import { createFinds } from './world/finds/index.js';
 import { createKeepsakes } from './world/keepsakes/index.js';
 import { keepsakeWords } from './world/keepsakes/families/index.js';
 import { keptFamily } from './world/expansion.js';
-import { addFirst, keptFirsts, seenMark, firstsOf, sampleTrails } from './world/trails.js';
+import { addFirst, keptFirsts, seenMark, firstsOf, sampleTrails, trailLine } from './world/trails.js';
 import { createShaperWatch } from './world/shaper.js';
 import { createNets } from './world/nets/index.js';
 import { cleanShelf, keep as keepShelf, letGo as letGoShelf, readLetter, swap as swapShelf } from './world/keepsakes/shelf.js';
@@ -451,7 +451,21 @@ export async function startApp(canvas, hooks = {}) {
   // The walker (doc 23, presence below; W2): Go down puts you on foot where you are looking, and
   // the camera glides down behind you; a tap walks you there. Go up glides back over you.
   const walk = createWalk({ recipe: walkerRecipe, figure: await loadRecipe('world/figure'), terrain, water, camera, tide: waterRecipe.tide,
-    hours: () => clock.display() / clock.SECONDS_PER_HOUR, creatures: () => creatures.frogs() });
+    hours: () => clock.display() / clock.SECONDS_PER_HOUR, creatures: () => creatures.frogs(),
+    // Pond stones are footing: you step across on them (src/world/pieces/stepping.js).
+    footing: (x, z) => pieces.footing(x, z) });
+  // Pond stones and Steps are the shaper's trail's first and fourth stops (shaper.json, built):
+  // offered once the trail reaches them, or with `?sandbox`, or `?pondstones` and `?steps` (unsaved).
+  const shapingOffers = () => {
+    const u = getStore('unlocks') ?? {};
+    const reached = new Set(trailLine(firstsOf(u.earned ?? {}, 'shape'), shaperRecipe.stops, [])
+      .flatMap((e) => (e.type === 'station' ? [e.stop.id] : [])));
+    const pondStones = reached.has('stones') || params.has('sandbox') || params.has('pondstones');
+    const steps = reached.has('steps') || params.has('sandbox') || params.has('steps');
+    if (u.pondStones !== pondStones || u.steps !== steps) updateStore('unlocks', (v) => ({ ...v, pondStones, steps }));
+  };
+  subscribeStore('unlocks', shapingOffers);
+  shapingOffers();
   walkRef = walk;
   // Your figure stays where you left it (kept with the view; the save still opens above).
   walk.restoreSpot(back?.view?.walker);
@@ -744,6 +758,32 @@ export async function startApp(canvas, hooks = {}) {
     pieces.tap(p);
   }
 
+  /**
+   * Sculpt's Pond stones and Steps modes (src/world/pieces): a drag lays a line of stones, or cuts
+   * a flight from where it began to where it ends; a tap on one selects it.
+   * @type {'pondstones' | 'steps' | null}
+   */
+  let shapingDrag = null;
+  /** @param {'tool.begin' | 'tool.move'} type @param {number} x @param {number} y */
+  function shapingDragTo(type, x, y) {
+    const mode = tools().sculptMode;
+    if ((mode === 'pondstones' && !getStore('unlocks')?.pondStones) || (mode === 'steps' && !getStore('unlocks')?.steps)) return;
+    const p = groundAt(x, y);
+    if (!p) return;
+    if (type === 'tool.begin') {
+      finishShapingDrag();
+      shapingDrag = mode;
+      presence.edit(p[0], p[2]);
+      if (mode === 'pondstones') pieces.layBegin(p); else pieces.stepsBegin(p);
+    } else if (shapingDrag === 'pondstones') pieces.layTo(p);
+    else if (shapingDrag === 'steps') pieces.stepsTo(p);
+  }
+  function finishShapingDrag() {
+    if (shapingDrag === 'pondstones') pieces.layEnd();
+    else if (shapingDrag === 'steps') pieces.stepsEnd();
+    shapingDrag = null;
+  }
+
   // The Plant tool (src/world/growth/plant-tool.js): plants a seed where the ground suits it, rings where.
   const plantTool = createPlantTool({ growth, world, flora, recipe: growthRecipe.marks });
   /** @param {number} x @param {number} y */
@@ -899,6 +939,7 @@ export async function startApp(canvas, hooks = {}) {
         if (a.patch.springRate) ww.rateSelected(a.patch.springRate);
         if (a.patch.waterMode && a.patch.waterMode !== 'spring') ww.syncSprings(null);
         if (a.patch.sculptMode && a.patch.sculptMode !== 'loosestone') pieces.deselect();
+        if (a.patch.sculptMode) pieces.deselectShaping();
         break;
       }
       case 'water.springRemove':
@@ -906,6 +947,9 @@ export async function startApp(canvas, hooks = {}) {
         break;
       case 'pieces.remove':
         pieces.remove(a.id);
+        break;
+      case 'pieces.removeRun':
+        pieces.removeRun(a.run);
         break;
       // Carry (the turtles' gift): the card's Carry lifts the piece; the next tap on land sets it
       // down (look.tap below); a tap on the card, its close, a tool or Escape puts it back.
@@ -1045,6 +1089,7 @@ export async function startApp(canvas, hooks = {}) {
         if (tools().tool === 'feed') { if (a.type === 'tool.begin') feedTap(a.x, a.y); break; }
         if (tools().tool === 'sculpt' && tools().sculptMode === 'stone') { if (a.type === 'tool.begin') stoneTap(a.x, a.y); break; }
         if (tools().tool === 'sculpt' && tools().sculptMode === 'loosestone') { if (a.type === 'tool.begin') looseStoneTap(a.x, a.y); break; }
+        if (tools().tool === 'sculpt' && (tools().sculptMode === 'pondstones' || tools().sculptMode === 'steps')) { shapingDragTo(a.type, a.x, a.y); break; }
         if (tools().tool === 'water') {
           if (tools().waterMode === 'spring') { if (a.type === 'tool.begin') springTap(a.x, a.y); }
           else if (tools().waterMode === 'net') { if (a.type === 'tool.begin') netTap(a.x, a.y); }
@@ -1064,6 +1109,7 @@ export async function startApp(canvas, hooks = {}) {
       case 'tool.cancel':
         pouring = null;
         finishStroke();
+        finishShapingDrag();
         break;
       // A tap with no tool: the journal names what grows there (src/world/journal).
       // Carrying, the tap sets the piece down instead.
@@ -1143,6 +1189,16 @@ export async function startApp(canvas, hooks = {}) {
     // Loose stone mode marks the selected stone, else a small ring where a tap would set one.
     if (t.tool === 'sculpt' && t.sculptMode === 'loosestone') {
       terrain.setRing({ ...pieces.ring(pointer.inside ? groundAt(pointer.x, pointer.y) : null), level: null });
+      return;
+    }
+    // Pond stones and Steps mark the selected stone or flight, else where a drag would begin: a
+    // stone's width, or a flight's, round the pointer (and its far end while cutting).
+    if (t.tool === 'sculpt' && (t.sculptMode === 'pondstones' || t.sculptMode === 'steps')) {
+      const sel = pieces.selected(t.sculptMode);
+      const p = pointer.inside ? groundAt(pointer.x, pointer.y) : null;
+      if (sel) terrain.setRing({ ...sel, visible: true, level: null });
+      else if (p) terrain.setRing({ x: p[0], z: p[2], radius: t.sculptMode === 'steps' ? 0.8 : 0.3, visible: true, level: null });
+      else terrain.setRing({ visible: false, level: null });
       return;
     }
     const p = t.tool && pointer.inside ? groundAt(pointer.x, pointer.y) : null;

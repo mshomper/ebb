@@ -16,15 +16,20 @@ import { WATER_CLASS } from '../water/summary.js';
 import { waterCellCenter } from '../water/grid.js';
 import { groundOfCell } from '../water/shore.js';
 
+//
+// A pond stone (stepping.js) is { id, kind: 'stepping', x, z, yaw, seed, size, rise, run, placedHour };
+// a flight of Steps (steps.js) is { id, kind: 'steps', x, z, x2, z2, size, top, bottom, seed, placedHour }.
+
 /**
- * @typedef {{ id: string, kind: 'stone' | 'log', x: number, z: number, yaw: number, seed: number, size: number, length?: number, placedHour: number }} Piece
- *   length: a log's length (m); stones have none
+ * @typedef {{ id: string, kind: 'stone' | 'log' | 'stepping' | 'steps', x: number, z: number, yaw: number, seed: number, size: number, length?: number,
+ *   rise?: number, run?: string, x2?: number, z2?: number, top?: number, bottom?: number, placedHour: number }} Piece
+ *   length: a log's length (m); rise, run: a pond stone's; x2, z2, top, bottom: a flight's (yaw 0)
  * @typedef {{ version: number, list: Piece[], nextId: number, arrived: boolean }} PiecesState
  *   nextId: the number the next piece's id takes; arrived: the reward's stones have come (once per island)
  */
 
 /** Kinds of piece this build knows. */
-export const PIECE_KINDS = ['stone', 'log'];
+export const PIECE_KINDS = ['stone', 'log', 'stepping', 'steps'];
 
 /** How many pieces of a kind a list holds. @param {Piece[]} list @param {string} kind */
 export const countKind = (list, kind) => list.reduce((n, p) => n + (p.kind === kind ? 1 : 0), 0);
@@ -55,10 +60,15 @@ export function cleanPieces(v) {
     if (!r || !PIECE_KINDS.includes(r.kind) || typeof r.id !== 'string' || ids.has(r.id)) continue;
     if (!fin(r.x) || !fin(r.z) || !fin(r.yaw) || !fin(r.size) || !(r.size > 0) || !fin(r.seed)) continue;
     if (r.kind === 'log' && !(fin(r.length) && r.length > 0)) continue;
+    if (r.kind === 'stepping' && !(fin(r.rise) && typeof r.run === 'string')) continue;
+    if (r.kind === 'steps' && !(fin(r.x2) && fin(r.z2) && fin(r.top) && fin(r.bottom) && r.top > r.bottom)) continue;
     ids.add(r.id);
-    // In the order makeStone and makeLog write them, so a record comes back exactly.
-    list.push({ id: r.id, kind: r.kind, x: r.x, z: r.z, yaw: r.yaw, seed: r.seed >>> 0, size: r.size,
-      ...(r.kind === 'log' ? { length: r.length } : {}), placedHour: fin(r.placedHour) ? r.placedHour : 0 });
+    const hour = fin(r.placedHour) ? r.placedHour : 0;
+    // In the order makeStone, makeLog, makeStepping and the Steps mode write them, so a record comes back exactly.
+    if (r.kind === 'stepping') list.push({ id: r.id, kind: r.kind, x: r.x, z: r.z, yaw: r.yaw, seed: r.seed >>> 0, size: r.size, rise: r.rise, run: r.run, placedHour: hour });
+    else if (r.kind === 'steps') list.push({ id: r.id, kind: r.kind, x: r.x, z: r.z, x2: r.x2, z2: r.z2, yaw: r.yaw, size: r.size, top: r.top, bottom: r.bottom, seed: r.seed >>> 0, placedHour: hour });
+    else list.push({ id: r.id, kind: r.kind, x: r.x, z: r.z, yaw: r.yaw, seed: r.seed >>> 0, size: r.size,
+      ...(r.kind === 'log' ? { length: r.length } : {}), placedHour: hour });
   }
   const after = list.reduce((m, r) => Math.max(m, idNumber(r.id) + 1), 1);
   return { version: 1, list, nextId: Math.max(Number.isInteger(v.nextId) ? v.nextId : 1, after), arrived: !!v.arrived };
