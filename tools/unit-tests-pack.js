@@ -10,6 +10,7 @@ import { emptyPack, cleanPack, sizeOf, add, take, has, handfulsOf, packHolds, no
   addHeap, takeFromHeap, expireHeaps } from '../src/world/pack/model.js';
 import { pileWord, pileLook, slotFor, setDown, takeUp } from '../src/world/pack/piles.js';
 import { createPiles } from '../src/world/pack/piles-live.js';
+import { splitPieces, firstPieces, buildsUp } from '../src/world/pack/pile-pieces.js';
 import { atCamp } from '../src/world/pack/camp.js';
 import { padOf } from '../src/world/camp/layout.js';
 import { offCampGround } from '../src/world/pieces/camp-clear.js';
@@ -61,6 +62,26 @@ export function addPackTests(test, assert, eq) {
     eq(t.taken, 3, 'Take up fills a pouch from it');
     eq(getStore('pieces').list.filter((/** @type {any} */ p) => p.kind === 'pile').length, 0, 'an empty pile is gone');
     updateStore('campPad', () => null);
+  });
+
+  test(G, 'a pile builds up piece by piece from the bottom; a fused model does not come apart', () => {
+    // Three separate triangles stacked at heights 0.4, 0, 0.2 (out of order), each its own piece,
+    // and a seam: the bottom one is split into two triangles that share a place, not a vertex.
+    /** @param {number[][]} tris */
+    const mesh = (tris) => {
+      const vertices = new Float32Array(tris.length * 3 * 9);
+      tris.forEach((t, i) => t.forEach((y, j) => vertices.set([j === 1 ? 1 : 0, y, j === 2 ? 1 : 0], (i * 3 + j) * 9)));
+      return { vertices, count: tris.length * 3, indices: Uint32Array.from({ length: tris.length * 3 }, (_, i) => i) };
+    };
+    const m = mesh([[0.4, 0.4, 0.4], [0, 0, 0], [0.2, 0.2, 0.2], [0, 0, 0]]);
+    const split = splitPieces(m);
+    eq(split.ends.length, 3, 'the two bottom triangles sharing a place are one piece');
+    eq(m.vertices[split.indices[0] * 9 + 1], 0, 'the bottom piece comes first');
+    eq(Math.round(m.vertices[split.indices[split.ends[1] - 1] * 9 + 1] * 10) / 10, 0.2, 'then the middle one');
+    eq(firstPieces(m, split, 0.3).indices.length, 6, 'a small heap shows the bottom piece');
+    eq(firstPieces(m, split, 1).indices.length, 12, 'the full pile shows them all');
+    assert(buildsUp(split), 'separate pieces build up');
+    eq(buildsUp(splitPieces(mesh([[0, 0, 0]]))), false, 'one piece does not');
   });
 
   test(G, 'a new pack is empty with six pouches', async () => {

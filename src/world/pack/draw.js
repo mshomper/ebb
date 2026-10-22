@@ -8,8 +8,9 @@
 //
 // Two creature passes (src/render/passes/creatures.js) with baked vertex colours, as the nets and
 // finds are drawn. Matt's camp models (assets/models/camp/log-pile.glb and stone-pile.glb) load
-// through src/render/gltf.js, their base colour map baked into the vertex colours; small, good and
-// big heaps are the same model at three sizes. Until they load, or if they cannot, seeded stand-ins
+// through src/render/gltf.js, their base colour map baked into the vertex colours. A pile builds up
+// piece by piece at its real size, bottom first (pile-pieces.js): the full model is only the full
+// pile. Until they load, or if they cannot, seeded stand-ins
 // at the same footprint are drawn (a low mound
 // of crossed sticks, a low cairn of stones). Drawing only: it reads the pieces, the pack and the
 // gather spots and never changes them. The lists are built again a few times a second at most,
@@ -23,6 +24,7 @@ import { readGlb, meshesByName, materialMaps } from '../../render/gltf.js';
 import { createCreaturePass } from '../../render/passes/creatures.js';
 import { packMesh } from '../creatures/bodies.js';
 import { pileShape } from './piles.js';
+import { splitPieces, firstPieces, buildsUp, scaledMesh } from './pile-pieces.js';
 import { pickupMesh, stickPileMesh, stonePileMesh } from './pickup-meshes.js';
 
 /** @typedef {import('./pickup-meshes.js').Mesh} Mesh */
@@ -133,10 +135,24 @@ export function createPackDraw(o) {
   const put = (/** @type {any} */ pass, /** @type {string} */ key, /** @type {Mesh} */ m) => pass.setMesh(key, { data: packMesh(m), indices: m.indices });
 
   // The stand-ins first, so there is always something to draw; the models replace them as they load.
+  // Each model in its stages (pile-pieces.js): its pieces bottom up, the small, good and big heap
+  // showing their first share of them (stageShares), the full pile all of them, and a K-21 heap its
+  // first few (heapShare). Keys are '<model>:<stage>'.
+  // A model fused into one surface cannot build up that way (buildsUp): it is drawn whole at a
+  // size for each stage instead (fusedScales, fusedHeapScale), until it comes with separate pieces.
+  const shares = /** @type {[string, number][]} */ ([...(L.stageShares ?? [0.3, 0.6, 0.85, 1]).map((s, i) => [String(i), s]), ['heap', L.heapShare ?? 0.15]]);
+  const fused = /** @type {[string, number][]} */ ([...(L.fusedScales ?? [0.5, 0.7, 0.9, 1]).map((s, i) => [String(i), s]), ['heap', L.fusedHeapScale ?? 0.3]]);
   /** @param {string} model @param {Mesh} m */
   function setPileMesh(model, m) {
-    put(pilePass, model, m);
-    if (model === 'stick') put(pilePass, 'stick-pale', paler(m, L.pale));
+    const split = splitPieces(m);
+    const pale = model === 'stick' ? paler(m, L.pale) : null;
+    const pieces = buildsUp(split, L.mostPieceShare ?? 0.5);
+    for (const [stage, v] of pieces ? shares : fused) {
+      /** @param {Mesh} q */
+      const at = (q) => (pieces ? firstPieces(q, split, v) : scaledMesh(q, v));
+      put(pilePass, `${model}:${stage}`, at(m));
+      if (pale) put(pilePass, `stick-pale:${stage}`, at(pale));
+    }
   }
   setPileMesh('stick', stickPileMesh(0x571c, L.standIn.stick, L.footprintM.stick));
   setPileMesh('stone', stonePileMesh(0x5701, L.standIn.stone, L.footprintM.stone));
@@ -174,14 +190,14 @@ export function createPackDraw(o) {
     for (const p of get('pieces')?.list ?? []) {
       if (p.kind !== 'pile' || (p.x - f[0]) ** 2 + (p.z - f[1]) ** 2 > near2) continue;
       const sh = pileShape(p.holds ?? '', p.handfuls ?? 0, R);
-      out.push({ x: p.x, y: ground(p.x, p.z) - L.sinkM, z: p.z, yaw: p.yaw, size: sh.scale, mesh: sh.model });
+      out.push({ x: p.x, y: ground(p.x, p.z) - L.sinkM, z: p.z, yaw: p.yaw, size: sh.scale, mesh: `${sh.model}:${sh.stage}` });
     }
     for (const h of o.pack?.heaps?.() ?? []) {
       const [kind, x, z, , n] = h;
       if ((x - f[0]) ** 2 + (z - f[1]) ** 2 > near2) continue;
       const sh = pileShape(kind, n, R, true);
       const yaw = u01(hash32(Math.round(x * 100), Math.round(z * 100), 0x4ea9)) * 2 * Math.PI;
-      out.push({ x, y: ground(x, z) - L.sinkM * sh.scale, z, yaw, size: sh.scale, mesh: sh.model });
+      out.push({ x, y: ground(x, z) - L.sinkM, z, yaw, size: sh.scale, mesh: `${sh.model}:${sh.stage}` });
     }
     return out.slice(0, L.max);
   }
