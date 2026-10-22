@@ -590,6 +590,7 @@ export async function startApp(canvas, hooks = {}) {
     beat: () => intro.live?.intro.current?.id ?? null });
   sim.addSystem(camp);
   shadowPass.addCaster(camp.props.caster);
+  midges.keepClear(() => camp.smokeClear());
   intro.useCamp(camp);
 
   /**

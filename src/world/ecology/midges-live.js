@@ -27,6 +27,7 @@ export function createMidges(opts) {
   /** @type {any} */ let field = null;
   let total = 0;
   /** @type {{ x: number, z: number, share: number, seed: number, y: number, lastDip: number }[]} */ let swarms = [];
+  /** @type {(() => ({ x: number, z: number, r: number } | null)) | null} */ let noGo = null;
   /** @type {{ id: number, pos: number[], density: number }[]} */ let heard = [];
   const midHeight = ((S.heightM?.[0] ?? 0.3) + (S.heightM?.[1] ?? 1.2)) / 2;
 
@@ -57,6 +58,11 @@ export function createMidges(opts) {
     total: () => total,
     /** A new quality tier's cap on midges (its boids), from the next frame. @param {number} n */
     setBudget(n) { budget = Math.max(0, n); },
+    /**
+     * A place the swarms keep out of while it lasts (the camp's smoking fire): a function giving
+     * its centre and radius now, or null. Drawing only. @param {() => ({ x: number, z: number, r: number } | null)} fn
+     */
+    keepClear(fn) { noGo = fn; },
     /** The swarms now, with their centres (the frog lab, S6c's tongue catches). */
     swarms: () => swarms.slice(),
     /**
@@ -85,7 +91,13 @@ export function createMidges(opts) {
       const list = swarms.map((s, i) => {
         const u = (s.seed >>> 8) / 16777216;
         const drift = S.windDriftM * wind.strength * (0.6 + 0.4 * Math.sin(0.21 * t + u * 6.283));
-        const x = s.x + dx * drift, z = s.z + dz * drift;
+        let x = s.x + dx * drift, z = s.z + dz * drift;
+        // Smoke from the camp's fire keeps them clear (docs/future/13 C-29): pushed out to its edge.
+        const ng = noGo?.();
+        if (ng) {
+          const ex = x - ng.x, ez = z - ng.z, d = Math.hypot(ex, ez);
+          if (d < ng.r) { const k = d > 1e-6 ? ng.r / d : 0; x = ng.x + (k ? ex * k : ng.r); z = ng.z + ez * k; }
+        }
         const bob = S.bob.amp * Math.sin(2 * Math.PI * S.bob.hz * t + u * 6.283);
         const dip = dipNow(s.seed, counts[i], t, S);
         // A dipping midge touches the water at the bottom of its dip: a tiny ring there.

@@ -4,11 +4,11 @@
 // pad (E1: the store slice `campPad`, src/world/camp/layout.js) and the pack (E2: holds and
 // pack:changed), and answers the hint line's Tuck and Skip.
 //
-// The tent, the fire ring, lighting and resting are E3's. Until E3 is in, a stand-in camp here plays
-// the walker's acts when you walk onto the slot a beat waits for (a soft ring glows there) and emits
-// the camp events E3 will: camp:pitched, camp:ring-laid (taking the ring's handfuls from the pack),
-// camp:lit (kneel at the laid ring after sunset) and camp:rested (walk to the flap after the fire).
-// E3's camp drops in through the `camp` option and the stand-in goes quiet.
+// The tent, the fire ring, lighting and resting are E3's camp (src/world/camp), handed in through
+// the `camp` option: then the stand-in camp here stays quiet. Without it (a tool page with no camp),
+// the stand-in plays the walker's acts when you walk onto the slot a beat waits for (a soft ring
+// glows there) and emits the same camp events: camp:pitched, camp:ring-laid (taking the ring's
+// handfuls from the pack), camp:lit (kneel at the laid ring after sunset) and camp:rested.
 //
 // Effects go out as events other pieces answer: `intro:camp-ready { tent, ring }` (the camp left
 // ready, cold: on Skip and on a test link), `intro:glow { slot }` (an older island's tent patch),
