@@ -20,7 +20,7 @@ export function createChunkTable() {
     list() { return [...open.values()]; },
     /**
      * Bounding box of the open chunks, in world meters and in cells.
-     * (S1 opens a 3 x 3 block, so a box is exact; uneven shapes arrive with expansion in M2.)
+     * (The open land is a square block, 3 x 3 or 4 x 4, so a box is exact; uneven shapes arrive with expansion.)
      */
     bounds() {
       const cs = [...open.values()];
@@ -35,6 +35,20 @@ export function createChunkTable() {
       };
     },
   };
+}
+
+/**
+ * Which land recipe an island grows from (docs/future/13 section 3.11). A new island uses the
+ * island's current land (`land` in terrain.json's list, else its id); an island already made keeps
+ * the land its saved chunks record ('land/<id>'), as long as that is one of this island's own.
+ * @param {{ id: string, land?: string }} island
+ * @param {{ land?: string }[]} saved  the saved (or live) chunk records, empty for a new island
+ * @returns {string}  a land recipe id under recipes/land/
+ */
+export function islandLand(island, saved) {
+  const now = island.land ?? island.id;
+  const was = saved.find((c) => typeof c?.land === 'string')?.land?.replace(/^land\//, '');
+  return was === island.id || was === now ? was : now;
 }
 
 /**

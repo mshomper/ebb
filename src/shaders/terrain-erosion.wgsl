@@ -10,6 +10,12 @@ struct Erosion {
   talusRock: f32,
   rate: f32,        // fraction of the excess moved per step (0..1)
   _p0: f32,
+  campCenter: vec2f, // the keeper's camp pad (src/world/camp/layout.js), world xz
+  campR: f32,        // its radius (m); below 0 when there is no pad
+  campFadeM: f32,    // flows fade from nothing at campR to full at campR + campFadeM
+  worldOrigin: f32,
+  cell: f32,
+  _p1: vec2f,
 };
 
 @group(0) @binding(0) var<uniform> e: Erosion;
@@ -31,7 +37,17 @@ fn H(c: vec2i) -> f32 {
   return textureLoad(heightIn, clampCell(c), 0).r;
 }
 
-// How much cell q sends to its neighbor in direction k during this step.
+// The camp lock (docs/future/13 CP-01) at a cell: 0 on the pad, 1 from campFadeM outside it.
+// Mirrors padMask() in src/world/camp/layout.js.
+fn campFade(c: vec2i) -> f32 {
+  if (e.campR < 0.0) { return 1.0; }
+  let p = vec2f(e.worldOrigin) + (vec2f(c) + 0.5) * e.cell;
+  return smoothstep(e.campR, e.campR + e.campFadeM, distance(p, e.campCenter));
+}
+
+// How much cell q sends to its neighbor in direction k during this step. A flow touching the camp
+// pad is scaled by the lower of the two cells' locks, the same from either side, so no soil is made
+// or lost and pad cells never move.
 fn outflow(q: vec2i, k: u32) -> f32 {
   let hq = H(q);
   let rock = textureLoad(materialIn, clampCell(q), 0).z;
@@ -46,7 +62,7 @@ fn outflow(q: vec2i, k: u32) -> f32 {
     most = max(most, x);
   }
   if (total <= 0.0) { return 0.0; }
-  return e.rate * 0.5 * most * ex[k] / total;
+  return e.rate * 0.5 * most * ex[k] / total * min(campFade(q), campFade(q + dirOf(k)));
 }
 
 @compute @workgroup_size(8, 8)

@@ -23,7 +23,10 @@ export function addFormat9Tests(test, assert, eq) {
     eq(MIGRATIONS.filter((m) => m.from === 8 && m.to === 9).length, 1, 'one step');
     const old = { meta: { worldT: 5 }, unlocks: { shells: true }, nets: { version: 1, nets: [], released: [], nextId: 1 } };
     const up = migrate(structuredClone(old), 8);
-    for (const id of SECTIONS9) eq(JSON.stringify(up[id]), JSON.stringify(empty9(id)), `${id} is empty`);
+    for (const id of SECTIONS9) if (id !== 'camp') eq(JSON.stringify(up[id]), JSON.stringify(empty9(id)), `${id} is empty`);
+    eq(JSON.stringify(up.camp), '{"version":1,"stamped":false,"kit":{"tent":"pack","lantern":"pole"}}', 'the camp waits unstamped, the tent in the pack (CP-07)');
+    const withJournal = migrate({ ...structuredClone(old), journal: { species: {}, flags: ['frogs:happy'], notes: [] } }, 8);
+    eq(withJournal.journal.flags.join(), 'frogs:happy,intro:done,intro:older', 'an older island skips the first evening');
     eq(JSON.stringify(up.gather), '{"version":1,"events":[]}', 'gather starts with no events');
     assert(up.unlocks.shells && up.meta.worldT === 5 && up.nets.nextId === 1, 'the rest of the island stays');
     format9(old);

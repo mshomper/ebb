@@ -47,5 +47,21 @@ export function clean9(id, v) {
 export function format9(sections) {
   const s = structuredClone(sections);
   for (const id of SECTIONS9) s[id] = clean9(id, s[id]);
+  return camp9(s);
+}
+
+/**
+ * The camp part of the step (section 3.8): an older island skips the first evening, so its camp
+ * waits unstamped with the tent in the pack, and its journal marks the evening done for an older
+ * island. The pad itself is laid on the first load (src/world/camp/stamp.js), since this step is
+ * pure and cannot see heights.
+ * @param {Record<string, any>} s  sections, already copied
+ */
+function camp9(s) {
+  if (s.camp.stamped === undefined) s.camp = { ...s.camp, stamped: false, kit: { tent: 'pack', lantern: 'pole' } };
+  if (s.journal && typeof s.journal === 'object') {
+    const flags = Array.isArray(s.journal.flags) ? s.journal.flags : [];
+    s.journal.flags = [...flags, ...['intro:done', 'intro:older'].filter((f) => !flags.includes(f))];
+  }
   return s;
 }

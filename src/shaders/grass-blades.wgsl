@@ -35,6 +35,8 @@ struct GrassDraw {
   clearN: vec4f,                               // x how many clears are set
   clears: array<vec4f, 32>,                    // ground no blade stands on: x, z, radius (m), under each placed piece (src/world/pieces)
   pushes: array<vec4f, 4>,                     // where the walker presses the grass (W6): x, z, radius (m), strength 0..1 (0 unused)
+  pad: vec4f,                                  // the keeper's camp pad (CP-16): x, z, radius (m; 0 no pad), w grass height there (share of normal)
+  padLook: vec4f,                              // x how far outside the pad the height eases back to full (m), y how much grass thins at its center (wear)
 };
 
 @group(0) @binding(0) var<uniform> frame: FrameUniforms;
@@ -160,6 +162,16 @@ fn vsBlade(@builtin(vertex_index) vi: u32, @builtin(instance_index) ring: u32) -
       let toWet = clamp((lush - m) / (1.0 - m), 0.0, 1.0);
       bladeAlbedo = select(mix(gd.lushDry.rgb, gd.albedo, toMid), mix(gd.albedo, gd.lushWet.rgb, toWet), lush >= m);
       tall *= select(mix(gd.lushH.x, 1.0, toMid), mix(1.0, gd.lushH.y, toWet), lush >= m);
+    }
+    // The keeper's camp pad (CP-16, CP-02): short, worn grass. Height capped at pad.w on the pad,
+    // easing back to full over padLook.x outside it (the trodden edge); a little thinner toward the
+    // center, where the wear is most.
+    if (gd.pad.z > 0.0) {
+      let pd = distance(xz, gd.pad.xy);
+      let onPad = 1.0 - smoothstep(gd.pad.z, gd.pad.z + gd.padLook.x, pd);
+      tall *= mix(1.0, gd.pad.w, onPad);
+      let core = 1.0 - smoothstep(0.0, gd.pad.z, pd);
+      keep *= 1.0 - gd.padLook.y * onPad * core;
     }
   } else {
     // Rushes: tussocks with open water between them, wherever the rush cover is (not on sand or

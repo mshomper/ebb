@@ -11,7 +11,7 @@ import { strandLines } from '../../world/water/strandline.js';
 
 /** @typedef {import('../frame-graph.js').PassContext} PassContext */
 
-const DRAW_BYTES = 1376;  // 384 of look, 16 marker rings (floats 96..159), the drowned meadow (160..167), wet-to-dry grass (168..175), the shore (176..195), the strandline and kelp (196..235), wrack fronds (236..251), lugworm casts (252..323), the Cliff level line (324..327), the drying margin (328..343)
+const DRAW_BYTES = 1424;  // 384 of look, 16 marker rings (floats 96..159), the drowned meadow (160..167), wet-to-dry grass (168..175), the shore (176..195), the strandline and kelp (196..235), wrack fronds (236..251), lugworm casts (252..323), the Cliff level line (324..327), the drying margin (328..343), the camp pad (344..355)
 const GROUND_BYTES = 336;
 const DEG = Math.PI / 180;
 /** @type {Record<string, number>} GroundDetail.tiling.x in lib-ground.wgsl */
@@ -209,9 +209,27 @@ export function createTerrainPass(opts) {
 
     /**
      * Marker rings on the ground (the Plant tool): up to 16 of (x, z, radius m, opacity 0..1),
-     * the list ending at the first opacity of 0. @param {Float32Array} marks 64 floats
+     * the list ending at the first opacity of 0. A negative radius draws the ring dashed (the camp
+     * pad's edge, CP-01), with the dash, gap and width from setCampPad. @param {Float32Array} marks 64 floats
      */
     setMarks(marks) { f.set(marks.subarray(0, 64), 96); },
+
+    /**
+     * The keeper's camp pad (store slice `campPad`, src/world/camp/layout.js), floats 344..355:
+     * its trodden look (CP-02), drawn analytically from the pad, and its dashed edge's pattern (CP-01).
+     * Null (an older island before its pad is stamped) clears the wear.
+     * The ground texture's a channel ("path wear", heightfield.js) stays free for the desire paths (CP-10).
+     * @param {import('../../world/camp/layout.js').Pad | null} pad
+     */
+    setCampPad(pad) {
+      f.fill(0, 344, 356);
+      if (!pad) return;
+      f[344] = pad.x; f[345] = pad.z; f[346] = pad.r; f[347] = pad.wear ?? 0;
+      const look = pad.camp?.wearLook ?? {};
+      f[348] = pad.edgeWearM ?? 1; f[349] = look.albedoLift ?? 1; f[350] = look.dry ?? 0; f[351] = look.mossKeep ?? 1;
+      const D = pad.dash ?? {};
+      f[352] = D.dashM ?? 0.35; f[353] = D.gapM ?? 0.25; f[354] = D.widthM ?? 0.06;
+    },
 
     /**
      * Lugworm casts near the view (world/finds/index.js): up to 16 of (x, z, size, yaw), the list

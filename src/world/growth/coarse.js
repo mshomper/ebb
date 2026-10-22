@@ -90,10 +90,12 @@ function groundAtCell(hab, k) {
     sand: hab.sand ? hab.sand[k] / 255 : undefined, rock: hab.rock ? hab.rock[k] / 255 : undefined,
     soil: hab.soil ? Math.min(255, hab.soil[k] + hab.grass[k]) / 255 : undefined, slope: hab.slopeDeg ? hab.slopeDeg[k] : undefined,
     // Height above mean sea level, m.
-    shore: hab.heightDm ? hab.heightDm[k] / 10 : undefined };
+    shore: hab.heightDm ? hab.heightDm[k] / 10 : undefined,
+    // The keeper's camp pad (CP-16, habitat.js padClearMask): no plant takes there; grass stays.
+    clear: hab.clear ? hab.clear[k] : 0 };
 }
 
-/** @typedef {'dry'|'wet'|'shallow'|'deep'|'fresh'|'salt'|'flow'|'outside'|'ground'|'steep'|'flat'|'low'|'high'} Need */
+/** @typedef {'dry'|'wet'|'shallow'|'deep'|'fresh'|'salt'|'flow'|'outside'|'ground'|'steep'|'flat'|'low'|'high'|'camp'} Need */
 
 /**
  * The habitat axes a recipe may use, in the order a tie names the need: [recipe key, ground key,
@@ -130,6 +132,8 @@ export function suitability(rec, hab, x, z) {
  */
 function suitabilityOf(rec, g) {
   if (!g) return { suit: 0, worst: 'outside' };
+  // The camp ground stays clear (CP-16): nothing seeds, spreads, volunteers or is planted there.
+  if (g.clear) return { suit: 0, worst: 'camp' };
   const H = rec.habitat;
   let suit = 1, low = 2;
   /** @type {Need} */ let worst = 'dry';
@@ -251,7 +255,8 @@ function grassTarget(hab, G, k) {
   const s = hab.salt[k] / 255;
   // The ground axes (docs/future/10): earth rather than sand or rock, and not too steep.
   const at = G.habitat ? groundAtCell(hab, k) : null;
-  const ground = at ? suitabilityOf(G, at).suit : 1;
+  // Grass stays on the camp pad (kept short by the grass shader), so the clear mask does not apply.
+  const ground = at ? suitabilityOf(G, at.clear ? { ...at, clear: 0 } : at).suit : 1;
   return Math.floor(255 * ground * (1 - smooth01((s - G.saltFrom) / (G.saltFull - G.saltFrom))));
 }
 

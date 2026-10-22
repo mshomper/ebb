@@ -31,7 +31,9 @@ export const HABITAT_ORIGIN = -80;
  * @property {Uint8Array} [slopeDeg]  ground slope in degrees (0 where no heights were given)
  * @property {Int16Array} [heightDm]  ground height above mean sea level, decimeters (only where heights were given)
  * @property {Uint8Array} [shapedCm]  how far the player moved the ground there, cm, 0..255 (0 where no generated heights were given)
- * @property {number} hash        FNV-1a over the arrays (uint32), for the determinism page
+ * @property {Uint8Array} [clear]  1 on the keeper's camp pad (docs/future/13 CP-16): no plant seeds, volunteers or is
+ *   planted there; grass stays. Only when a pad was given
+ * @property {number} hash       FNV-1a over the arrays (uint32), for the determinism page
  */
 
 /**
@@ -86,11 +88,12 @@ function falloff(d, reachM) {
 /**
  * @param {{ eco: { x: number, y: number, w: number, h: number, depthCm: Uint8Array, cls: Uint8Array, band: Uint8Array },
  *   material: Uint8Array, materialCells: number, params: { bankM: number, saltM: number, bandMoisture: number, bandSalt: number },
- *   heightQ?: Uint16Array | null, baseQ?: Uint16Array | null }} args
+ *   heightQ?: Uint16Array | null, baseQ?: Uint16Array | null, pad?: { x: number, z: number, r: number } | null }} args
  *   eco: the water summary's 1 m aggregate; material: the terrain mirror's painted weights (rgba8 per
  *   0.25 m texel, grass first) over materialCells x materialCells; params: recipes/flora/habitat in
  *   the growth recipe; heightQ: the terrain heights (same grid as material), for the slope and
- *   height axes; baseQ: the heights as the island was generated, before any edit, for shapedCm
+ *   height axes; baseQ: the heights as the island was generated, before any edit, for shapedCm;
+ *   pad: the keeper's camp pad (store slice campPad: center and radius, m), for the clear mask
  * @returns {Habitat}
  */
 export function buildHabitat(args) {
@@ -203,8 +206,35 @@ export function buildHabitat(args) {
   // The ground-type, slope and height axes are left out of the hash too: they only matter to plants
   // that ask for them, and the S5 hash keeps its meaning.
   // shapedCm is left out of the hash as well: it only says which squares the player shaped.
+  // The camp pad's clear mask (CP-16) joins the hash only when there is a pad, so an island with
+  // none keeps its hash.
+  const clear = args.pad ? padClearMask(args.pad) : undefined;
+  if (clear) for (let k = 0; k < clear.length; k++) h = Math.imul(h ^ clear[k], 0x01000193) >>> 0;
   return { n: N, depthCm, moisture, salt, still, sea, grass, open, band, sand, rock, soil, slopeDeg,
-    heightDm: args.heightQ ? heightDm : undefined, shapedCm, hash: h >>> 0 };
+    heightDm: args.heightQ ? heightDm : undefined, shapedCm, clear, hash: h >>> 0 };
+}
+
+/**
+ * The camp pad's clear mask (docs/future/13 CP-16): 1 on every habitat cell that reaches onto the
+ * pad's disc (the cell's nearest point to the center lies within r), so no point of the pad sits in
+ * a cell a plant may take. Derived from the pad alone (+ - * and comparisons), so the live tick and
+ * catch-up see the same mask.
+ * @param {{ x: number, z: number, r: number }} pad
+ */
+export function padClearMask(pad) {
+  const N = HABITAT_CELLS;
+  const clear = new Uint8Array(N * N);
+  const i0 = Math.max(0, Math.floor(pad.x - pad.r - HABITAT_ORIGIN)), i1 = Math.min(N - 1, Math.floor(pad.x + pad.r - HABITAT_ORIGIN));
+  const j0 = Math.max(0, Math.floor(pad.z - pad.r - HABITAT_ORIGIN)), j1 = Math.min(N - 1, Math.floor(pad.z + pad.r - HABITAT_ORIGIN));
+  for (let j = j0; j <= j1; j++) {
+    for (let i = i0; i <= i1; i++) {
+      const x0 = HABITAT_ORIGIN + i, z0 = HABITAT_ORIGIN + j;
+      const dx = pad.x < x0 ? x0 - pad.x : pad.x > x0 + 1 ? pad.x - x0 - 1 : 0;
+      const dz = pad.z < z0 ? z0 - pad.z : pad.z > z0 + 1 ? pad.z - z0 - 1 : 0;
+      if (dx * dx + dz * dz < pad.r * pad.r) clear[j * N + i] = 1;
+    }
+  }
+  return clear;
 }
 
 /**
