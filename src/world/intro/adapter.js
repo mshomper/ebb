@@ -157,8 +157,15 @@ export function createIntroLive(o) {
   let shown = '', marked = '';
   function publish() {
     const c = intro.current, done = (get('journal')?.flags ?? []).includes(`${o.R.flagPrefix ?? 'intro:'}done`);
-    // The spring's mark over the view while its beat leads you there (island-notes draws it).
-    const mark = o.R.springGlow && spring && c?.id === 'spring' && c.started && !c.acting ? spring : null;
+    // A mark over the view on where the beat leads you (island-notes draws it): the spring's pool,
+    // the tent's patch, the ring, the tent's door. Not while an act plays, and gone once it is done.
+    const at = !c?.started || c.acting ? null
+      : c.id === 'spring' ? (o.R.springGlow ? spring : null)
+      : c.id === 'pitch' ? (ctx.campHas('tent') ? null : slot('tent'))
+      : c.id === 'ring' ? (ctx.campHas('ring') ? null : slot('ring'))
+      : c.id === 'dusk' ? (ctx.fireLit() ? null : slot('ring'))
+      : c.id === 'rest' ? flapOf() : null;
+    const mark = at ? { x: at.x, z: at.z } : null;
     const mk = mark ? `${mark.x},${mark.z}` : '';
     if (mk !== marked) { marked = mk; emit('intro:mark', mark ? { x: mark.x, z: mark.z } : null); }
     const key = `${c?.id}|${c?.started}|${done}`;

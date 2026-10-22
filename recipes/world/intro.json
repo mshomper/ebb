@@ -7,9 +7,9 @@
   "springGlow": { "radiusM": 1.6, "opacity": [0.45, 0.85], "breatheS": 2.6 },
   "beats": [
     { "id": "landfall", "hint": ["Click the sand to walk there."], "skip": "Skip the first evening", "done": { "check": "arrivedOnLand" } },
-    { "id": "spring", "hint": ["Walk inland, up the slope, to the spring: a soft ring marks its pool. Kneel there and drink."], "done": { "check": "kneltAtSpring", "reachM": 1.5 }, "then": { "act": "drink" } },
+    { "id": "spring", "hint": ["Walk inland, up the slope, to the spring: a soft ring marks its pool. Kneel there and drink."], "done": { "check": "kneltAtSpring", "reachM": 2.5 }, "then": { "act": "drink" } },
     { "id": "page", "onStart": { "page": "first" }, "hint": ["The journal keeps what you learn here. Close it when you're ready."], "done": { "check": "journalClosed" } },
-    { "id": "pitch", "hint": ["Walk back down to the flat ground above the beach: that is your camp. Click the glowing patch, then Pitch the tent."], "done": { "event": "camp:pitched", "orCheck": "tentPitched" } },
+    { "id": "pitch", "hint": ["Turn round and walk back down to the flat ground above the beach: that is your camp. Click the glowing patch, then Pitch the tent."], "done": { "event": "camp:pitched", "orCheck": "tentPitched" } },
     { "id": "gather", "steps": [
         { "need": { "fuel": 1 }, "hint": "Drift twigs lie along the tide line below the camp. Click a twig, then Gather." },
         { "need": { "stones": 1 }, "hint": "Now two handfuls of pebbles from the shore. Click a pebble, then Gather." },
