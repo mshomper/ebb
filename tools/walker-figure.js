@@ -101,7 +101,8 @@ function frame() {
       ['Feet', i.mode === 'gait' ? 'walking (stride by distance)' : 'pinned (step to turn or settle)'],
       ['Step', `${(i.pace?.stepM ?? 0).toFixed(2)} m`],
       ['Wading', `${Math.round((i.wade ?? 0) * 100)} %`],
-      ['Posture', i.sitW > 0.5 ? 'sitting' : i.kneelW > 0.5 ? 'kneeling' : 'standing'],
+      ['Posture', i.crawlW > 0.5 ? 'low, on hands and knees' : i.sitW > 0.5 ? 'sitting' : i.kneelW > 0.5 ? 'kneeling' : 'standing'],
+      ['Act', i.act ?? 'none'],
       ['Eyes', i.expression],
     ].map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('');
     if (frames > 600) { cpu = 0; frames = 0; }
@@ -153,6 +154,24 @@ $('wait').addEventListener('click', (e) => {
   press(/** @type {Element} */ (e.currentTarget), !below);
   if (!below) { motion.leave(); note.textContent = `You are above: after ${R.poses.leave.sitAfterS} seconds still, the walker sits down to wait.`; }
 });
+// The keeper's camp acts: the stand-in walker stops first (a walk ends an act's pose, as in the game).
+/** @type {Record<string, string>} */
+const ACT_NOTES = {
+  drink: 'Drink: kneel, scoop with cupped hands, bring them up and drink, then stand.',
+  pitch: 'Pitch: kneel, pull the line taut, tap the peg in twice, then stand.',
+  lay: 'Lay stones: kneel and set stones round in front, one hand then the other, then stand.',
+  strike: 'Strike: kneel, three quick strikes of the fire steel over the tinder, and watch.',
+  crawlIn: 'Crawl in: down onto hands and knees and forward. It stays low until Climb out or a walk.',
+  climbOut: 'Climb out: from low, up onto the knees, then stand and stretch.',
+};
+document.querySelectorAll('[data-act]').forEach((b) => b.addEventListener('click', () => {
+  const name = /** @type {HTMLElement} */ (b).dataset.act ?? '';
+  pace = 0; w.speed = 0;
+  document.querySelectorAll('[data-pace]').forEach((o) => press(o, o.getAttribute('data-pace') === '0'));
+  posture = 'stand'; press($('sit'), false); press($('kneel'), false);
+  const len = motion.act(name);
+  note.textContent = `${ACT_NOTES[name]} (${len} s)`;
+}));
 document.querySelectorAll('[data-face]').forEach((b) => b.addEventListener('click', () => {
   const e = /** @type {any} */ (/** @type {HTMLElement} */ (b).dataset.face);
   motion.express(e, e === 'sleepy' ? 4 : undefined);
