@@ -48,6 +48,27 @@ fn shadowVisibility(worldPos: vec3f, n: vec3f, viewDist: f32, pixel: vec2f) -> f
   return mix(1.0, s, light.shadowStrength);
 }
 
+// Illuminance (lux, rgb) at a point from the small lights (docs/06, Lanterns and small lights: the
+// camp's fire and lantern): inverse square with a smooth window (Karis 2013) that reaches exactly
+// nothing at each light's range, so a light beyond reach costs one distance test. `wrap` lets thin
+// parts (blades, leaves) take light from behind. The nearest 0.2 m is held, so nothing touching a
+// flame blows out.
+fn pointIllum(p: vec3f, n: vec3f, wrap: f32) -> vec3f {
+  var e = vec3f(0.0);
+  let count = min(u32(light.aerial.w), MAX_POINT_LIGHTS);
+  for (var i = 0u; i < count; i++) {
+    let a = light.points[i * 2u];
+    let d = a.xyz - p;
+    let d2 = max(dot(d, d), 0.04);
+    let q = d2 / (a.w * a.w);
+    if (q >= 1.0) { continue; }
+    let win = (1.0 - q * q) * (1.0 - q * q);
+    let nl = clamp(dot(n, d * inverseSqrt(d2)) * (1.0 - wrap) + wrap, 0.0, 1.0);
+    e += light.points[i * 2u + 1u].rgb * (nl * win / d2);
+  }
+  return e;
+}
+
 // GGX specular lobe for one light: D·G·F / (4 n·l n·v), times n·l (Walter et al. 2007, Smith-GGX
 // height-correlated visibility, Schlick Fresnel). Roughness is perceptual (alpha = r²).
 fn ggxSpecular(n: vec3f, v: vec3f, l: vec3f, roughness: f32, f0: f32) -> f32 {
@@ -82,7 +103,7 @@ fn shadeGround(albedo: vec3f, worldPos: vec3f, nMesh: vec3f, nDetail: vec3f, rou
   let sunNl = max(dot(nDetail, frame.sunDir), 0.0);
   let moonNl = max(dot(nDetail, frame.moonDir), 0.0);
   var radiance = albedo * ((frame.sunIlluminance * sunNl * sunVis + frame.moonIlluminance * moonNl * moonVis) * (direct / PI)
-                           + skyAmbient(nDetail) * cavity) + skySpec;
+                           + skyAmbient(nDetail) * cavity + pointIllum(worldPos, nDetail, 0.0) / PI) + skySpec;
   if (specMode > 0.5) {
     radiance += frame.sunIlluminance * sunVis * ggxSpecular(nDetail, v, frame.sunDir, roughness, f0);
   }
@@ -103,7 +124,7 @@ fn shadeSurface(albedo: vec3f, worldPos: vec3f, n: vec3f, fragPos: vec4f, ambien
   let moonVis = select(vis, 1.0, casterIsSun);
   let direct = frame.sunIlluminance * max(dot(n, frame.sunDir), 0.0) * sunVis
              + frame.moonIlluminance * max(dot(n, frame.moonDir), 0.0) * moonVis;
-  let radiance = albedo * (direct / PI + skyAmbient(n) * ambientOcclusion);
+  let radiance = albedo * ((direct + pointIllum(worldPos, n, 0.0)) / PI + skyAmbient(n) * ambientOcclusion);
   let screenUv = fragPos.xy * frame.invRenderSize;
   return applyAerial(radiance * frame.exposure, screenUv, viewDist);
 }

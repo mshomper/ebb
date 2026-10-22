@@ -201,7 +201,8 @@ fn fsBody(in: VsOut) -> FsOut {
     sheen = mix(sheen, cd.wet.y, in.dry);
   }
   let direct = frame.sunIlluminance * max(dot(n, frame.sunDir), 0.0) * sunVis
-             + frame.moonIlluminance * max(dot(n, frame.moonDir), 0.0) * moonVis;
+             + frame.moonIlluminance * max(dot(n, frame.moonDir), 0.0) * moonVis
+             + pointIllum(in.world, n, 0.0);
   var radiance = albedo * (direct / PI + skyAmbient(n) * ao);
   // Wet skin: a GGX sheen from the sun and moon.
   radiance += sheen * (frame.sunIlluminance * sunVis * ggxSpecular(n, v, frame.sunDir, rough, 0.02)
