@@ -1,0 +1,234 @@
+{
+ "note": "Written by tools/assets/build-models.mjs: each web copy against its source.",
+ "tent": {
+  "source": "Ebb_Tent.glb",
+  "file": "tent.glb",
+  "bytes": 877064,
+  "sourceBytes": 62831004,
+  "trianglesBefore": 1394258,
+  "triangles": 9999,
+  "maps": 1024,
+  "bounds": {
+   "min": [
+    -0.847,
+    0,
+    -1.1
+   ],
+   "max": [
+    0.847,
+    1.48,
+    1.1
+   ]
+  }
+ },
+ "clay-pot": {
+  "source": "Ebb_Clay+Pot.glb",
+  "file": "clay-pot.glb",
+  "bytes": 211224,
+  "sourceBytes": 32223944,
+  "trianglesBefore": 9683,
+  "triangles": 2499,
+  "maps": 512,
+  "bounds": {
+   "min": [
+    -0.15,
+    0,
+    -0.131
+   ],
+   "max": [
+    0.15,
+    0.222,
+    0.131
+   ]
+  }
+ },
+ "fire-ring": {
+  "source": "Ebb_Campfire+Ring.glb",
+  "file": "fire-ring.glb",
+  "bytes": 929136,
+  "sourceBytes": 52082388,
+  "trianglesBefore": 14054,
+  "triangles": 4997,
+  "maps": 1024,
+  "bounds": {
+   "min": [
+    -0.5,
+    0,
+    -0.492
+   ],
+   "max": [
+    0.5,
+    0.212,
+    0.492
+   ]
+  }
+ },
+ "fire-wood": {
+  "source": "Ebb_Campfire+Wood.glb",
+  "file": "fire-wood.glb",
+  "bytes": 1143484,
+  "sourceBytes": 42932372,
+  "trianglesBefore": 21347,
+  "triangles": 10131,
+  "maps": 1024,
+  "bounds": {
+   "min": [
+    -0.5,
+    0,
+    -0.479
+   ],
+   "max": [
+    0.5,
+    0.38,
+    0.479
+   ]
+  }
+ },
+ "stone-pile": {
+  "source": "Ebb_Stones.glb",
+  "file": "stone-pile.glb",
+  "bytes": 1033616,
+  "sourceBytes": 48416236,
+  "trianglesBefore": 16677,
+  "triangles": 7076,
+  "maps": 1024,
+  "bounds": {
+   "min": [
+    -0.474,
+    0,
+    -0.5
+   ],
+   "max": [
+    0.474,
+    0.511,
+    0.5
+   ]
+  }
+ },
+ "log-pile": {
+  "source": "Ebb_Log+Pile.glb",
+  "file": "log-pile.glb",
+  "bytes": 953712,
+  "sourceBytes": 47374716,
+  "trianglesBefore": 16582,
+  "triangles": 8998,
+  "maps": 1024,
+  "bounds": {
+   "min": [
+    -0.6,
+    0,
+    -0.432
+   ],
+   "max": [
+    0.6,
+    0.743,
+    0.432
+   ]
+  }
+ },
+ "bedroll": {
+  "source": "Ebb_Bedroll.glb",
+  "file": "bedroll.glb",
+  "bytes": 678736,
+  "sourceBytes": 35789336,
+  "trianglesBefore": 13323,
+  "triangles": 7000,
+  "maps": 1024,
+  "bounds": {
+   "min": [
+    -0.95,
+    0,
+    -0.447
+   ],
+   "max": [
+    0.95,
+    0.273,
+    0.447
+   ]
+  }
+ },
+ "shovel-iron": {
+  "source": "Ebb_Iron+Shovel.glb",
+  "file": "shovel-iron.glb",
+  "bytes": 200928,
+  "sourceBytes": 23554804,
+  "trianglesBefore": 10854,
+  "triangles": 4000,
+  "maps": 512,
+  "bounds": {
+   "min": [
+    -0.143,
+    0,
+    -0.037
+   ],
+   "max": [
+    0.143,
+    1.1,
+    0.037
+   ]
+  }
+ },
+ "shovel-wood": {
+  "source": "Ebb_Wood+Shovel.glb",
+  "file": "shovel-wood.glb",
+  "bytes": 202096,
+  "sourceBytes": 21444092,
+  "trianglesBefore": 10915,
+  "triangles": 4000,
+  "maps": 512,
+  "bounds": {
+   "min": [
+    -0.148,
+    0,
+    -0.063
+   ],
+   "max": [
+    0.148,
+    1.1,
+    0.063
+   ]
+  }
+ },
+ "boat": {
+  "source": "Ebb_Boat.glb",
+  "file": "boat.glb",
+  "bytes": 744968,
+  "sourceBytes": 16542268,
+  "trianglesBefore": 12728,
+  "triangles": 6000,
+  "maps": 1024,
+  "bounds": {
+   "min": [
+    -1.221,
+    0,
+    -1.3
+   ],
+   "max": [
+    1.221,
+    0.79,
+    1.3
+   ]
+  }
+ },
+ "lantern": {
+  "source": "Ebb_Lantern.glb",
+  "file": "lantern.glb",
+  "bytes": 414416,
+  "sourceBytes": 16053020,
+  "trianglesBefore": 13382,
+  "triangles": 6999,
+  "maps": 512,
+  "bounds": {
+   "min": [
+    -0.071,
+    0,
+    -0.055
+   ],
+   "max": [
+    0.071,
+    0.3,
+    0.055
+   ]
+  }
+ }
+}

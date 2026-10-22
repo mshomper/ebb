@@ -1,7 +1,9 @@
 // @ts-check
 // A small GLB reader (doc 03: small code over a library): the header, the JSON chunk and the binary
 // chunk, and accessors as typed arrays. Enough for our own assets (assets/figures/*.glb, made by
-// tools/figure-prep/prep.py): meshes with plain, tightly packed attributes and no textures.
+// tools/figure-prep/prep.py; assets/models/camp/*.glb, made by tools/assets/build-models.mjs): meshes
+// with plain, tightly packed attributes, and a material's paint maps as embedded images (PNG, JPEG or
+// WebP through EXT_texture_webp), handed back as bytes for createImageBitmap.
 // Pure: no DOM, no GPU; safe in workers and tests.
 
 const COMPONENTS = /** @type {Record<number, any>} */ ({
@@ -13,6 +15,7 @@ const SIZES = /** @type {Record<string, number>} */ ({ SCALAR: 1, VEC2: 2, VEC3:
  * @typedef {Object} Glb
  * @property {any} json                       the glTF JSON
  * @property {(i: number) => ArrayLike<number> & { length: number }} accessor   accessor i as a typed array (a copy, so it owns its buffer)
+ * @property {(i: number) => { bytes: Uint8Array, mimeType: string }} image   image i's encoded bytes (a copy) and type
  */
 
 /**
@@ -48,6 +51,37 @@ export function readGlb(buffer) {
       const start = bin.byteOffset + (bv.byteOffset ?? 0) + (a.byteOffset ?? 0);
       return new Type(bin.buffer.slice(start, start + a.count * n * Type.BYTES_PER_ELEMENT));
     },
+    image(i) {
+      const im = json.images[i];
+      if (im.bufferView === undefined) throw new Error(`image ${i}: only images inside the GLB are read`);
+      if (!bin) throw new Error('GLB has no binary chunk');
+      const bv = json.bufferViews[im.bufferView];
+      const start = bin.byteOffset + (bv.byteOffset ?? 0);
+      return { bytes: new Uint8Array(bin.buffer.slice(start, start + bv.byteLength)), mimeType: im.mimeType };
+    },
+  };
+}
+
+/**
+ * A material's paint maps (its first material unless asked), each as its image's bytes, or null
+ * where it has none: baseColor (sRGB), metallicRoughness (G roughness, B metal) and normal (tangent
+ * space). WebP maps sit behind EXT_texture_webp.
+ * @param {Glb} glb @param {number} [material]
+ * @returns {Record<'baseColor' | 'metallicRoughness' | 'normal', { bytes: Uint8Array, mimeType: string } | null>}
+ */
+export function materialMaps(glb, material = 0) {
+  const m = glb.json.materials?.[material] ?? {};
+  /** @param {any} ref */
+  const map = (ref) => {
+    if (!ref) return null;
+    const tex = glb.json.textures[ref.index];
+    const src = tex.extensions?.EXT_texture_webp?.source ?? tex.source;
+    return src === undefined ? null : glb.image(src);
+  };
+  return {
+    baseColor: map(m.pbrMetallicRoughness?.baseColorTexture),
+    metallicRoughness: map(m.pbrMetallicRoughness?.metallicRoughnessTexture),
+    normal: map(m.normalTexture),
   };
 }
 

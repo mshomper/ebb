@@ -1,0 +1,16 @@
+{
+  "name": "ebb-asset-tools",
+  "private": true,
+  "description": "Build-time tools only (never loaded by the game): web copies of Matt's models. Run: npm install, then node build-models.mjs.",
+  "type": "module",
+  "scripts": {
+    "build": "node build-models.mjs"
+  },
+  "dependencies": {
+    "@gltf-transform/core": "4.1.1",
+    "@gltf-transform/extensions": "4.1.1",
+    "@gltf-transform/functions": "4.1.1",
+    "meshoptimizer": "0.22.0",
+    "sharp": "0.33.5"
+  }
+}
