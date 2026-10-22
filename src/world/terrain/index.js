@@ -4,7 +4,8 @@
 // quantized into the CPU mirror (the saved truth) and written back so GPU and mirror agree.
 
 import { emitDeferred } from '../../core/events.js';
-import { get as getStore, update as updateStore } from '../../core/store.js';
+import { get as getStore, update as updateStore, subscribe as subscribeStore } from '../../core/store.js';
+import { padMask } from '../camp/layout.js';
 import { CELL, CHUNK_CELLS, WORLD_CELLS as N, WORLD_ORIGIN, quantize, dequantize, chunkKey, chunkFirstCell } from './grid.js';
 import {
   createMirror, createTextures, uploadRect, syncFloat,
@@ -57,7 +58,11 @@ export async function createTerrain(gpu, opts) {
     for (let cx = c0; cx <= c1; cx++) chunks.open(cx, cz, landId);
   }
   const bounds = chunks.bounds();
-  const edge = { openMin: bounds.openMin, openMax: bounds.openMax, edgeFade: rb.edgeFadeMeters };
+  // Where brushes reach: the open land, less the keeper's camp pad (docs/future/13 CP-01), which
+  // follows the store slice `campPad` (null until an older island's pad is stamped).
+  /** @type {import('./brushes.js').Edge} */
+  const edge = { openMin: bounds.openMin, openMax: bounds.openMax, edgeFade: rb.edgeFadeMeters, pad: getStore('campPad') ?? null };
+  const unPad = subscribeStore('campPad', (/** @type {any} */ pad) => { edge.pad = pad ?? null; });
   const marginCells = Math.ceil(recipe.erosion.marginMeters / CELL) + 1;
 
   // The mirror is kept in the store so a lost GPU device rebuilds the same island, edits and all.
@@ -289,11 +294,11 @@ export async function createTerrain(gpu, opts) {
       if (area.w === 0 || area.h === 0) return null;
       const ids = tilesOf(area);
       const before = copyTiles(mirror, ids);
-      // Fade out over the open land's edge, as brush strokes do.
+      // Fade out over the open land's edge and the camp pad's, as brush strokes do.
       const fadeAt = (/** @type {number} */ i, /** @type {number} */ j) => {
         const x = WORLD_ORIGIN + (i + 0.5) * CELL, z = WORLD_ORIGIN + (j + 0.5) * CELL;
         const d = Math.min(x - edge.openMin[0], edge.openMax[0] - x, z - edge.openMin[1], edge.openMax[1] - z);
-        return Math.min(1, Math.max(0, d / edge.edgeFade));
+        return Math.min(1, Math.max(0, d / edge.edgeFade)) * padMask(edge.pad ?? null, x, z);
       };
       const r = applyBoulder(mirror, b, point[0], point[2], area, fadeAt);
       if (r.w === 0 || r.h === 0) return null;
@@ -406,8 +411,8 @@ export async function createTerrain(gpu, opts) {
       if (!st.rect) { st.resolve(null); return; }
       const r = grow(st.rect, st.mode === 3 ? 0 : marginCells);
       // Faces a Cliff stroke made turn to rock first, so erosion keeps them sheer (docs/08).
-      if (st.mode === CLIFF_MODE) brushGpu.encodeCliffRock(encoder, grow(st.rect, 1), recipe.cliff);
-      if (st.mode !== 3) erosionGpu.encode(encoder, r, opts.passTimer?.('terrain-erosion'));
+      if (st.mode === CLIFF_MODE) brushGpu.encodeCliffRock(encoder, grow(st.rect, 1), recipe.cliff, edge);
+      if (st.mode !== 3) erosionGpu.encode(encoder, r, opts.passTimer?.('terrain-erosion'), edge.pad ?? null);
       pending = { st, rect: r, readback: encodeReadback(device, encoder, tex, r) };
     },
 
@@ -428,7 +433,15 @@ export async function createTerrain(gpu, opts) {
       ground: tex.ground,
     },
 
+    /**
+     * The camp pad the brushes, erosion and boulders leave alone (docs/future/13 CP-01). It follows
+     * the store slice `campPad` by itself; this sets it directly (tools pages).
+     * @param {import('../camp/layout.js').Pad | null} pad
+     */
+    setCamp(pad) { edge.pad = pad ?? null; },
+
     dispose() {
+      unPad();
       for (const t of Object.values(tex)) t.destroy();
     },
   };
