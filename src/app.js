@@ -463,6 +463,9 @@ export async function startApp(canvas, hooks = {}) {
     const pondStones = reached.has('stones') || params.has('sandbox') || params.has('pondstones');
     const steps = reached.has('steps') || params.has('sandbox') || params.has('steps');
     if (u.pondStones !== pondStones || u.steps !== steps) updateStore('unlocks', (v) => ({ ...v, pondStones, steps }));
+    // The reed raft is the turtles' gift (`unlocks.raft`, given by the spring creatures); `?sandbox`
+    // or `?raft` open its Water mode early, for this visit.
+    if (!u.raft && (params.has('sandbox') || params.has('raft'))) updateStore('unlocks', (v) => ({ ...v, raft: true }));
   };
   subscribeStore('unlocks', shapingOffers);
   shapingOffers();
@@ -736,6 +739,13 @@ export async function startApp(canvas, hooks = {}) {
     if (p) nets.tap(p);
   }
 
+  /** Tap with the Water tool's Raft mode: select a raft, or set one on open water (src/world/pieces). @param {number} x @param {number} y */
+  function raftTap(x, y) {
+    if (!getStore('unlocks')?.raft) return;
+    const p = groundAt(x, y);
+    if (p) pieces.raftTap(p, camera.ray(x, y));
+  }
+
   /**
    * Sculpt's Stone mode (docs/future/10): set a seeded boulder where you tap, undoable. The size slider
    * is the boulder's width, within terrain.json stone.widthM. @param {number} x @param {number} y
@@ -939,7 +949,7 @@ export async function startApp(canvas, hooks = {}) {
         if (a.patch.springRate) ww.rateSelected(a.patch.springRate);
         if (a.patch.waterMode && a.patch.waterMode !== 'spring') ww.syncSprings(null);
         if (a.patch.sculptMode && a.patch.sculptMode !== 'loosestone') pieces.deselect();
-        if (a.patch.sculptMode) pieces.deselectShaping();
+        if (a.patch.sculptMode || a.patch.waterMode) pieces.deselectShaping();
         break;
       }
       case 'water.springRemove':
@@ -1093,6 +1103,7 @@ export async function startApp(canvas, hooks = {}) {
         if (tools().tool === 'water') {
           if (tools().waterMode === 'spring') { if (a.type === 'tool.begin') springTap(a.x, a.y); }
           else if (tools().waterMode === 'net') { if (a.type === 'tool.begin') netTap(a.x, a.y); }
+          else if (tools().waterMode === 'raft') { if (a.type === 'tool.begin') raftTap(a.x, a.y); }
           else if (a.type === 'tool.begin' || pouring) pouring = { x: a.x, y: a.y };
           break;
         }
@@ -1171,6 +1182,13 @@ export async function startApp(canvas, hooks = {}) {
       if (s) terrain.setRing({ x: s.x, z: s.z, radius: 0.8, visible: true });
       else if (p) terrain.setRing({ x: p[0], z: p[2], radius: 0.6, visible: true });
       else terrain.setRing({ visible: false });
+      return;
+    }
+    // Raft mode: round the selected raft, else where a tap would set one.
+    if (t.tool === 'water' && t.waterMode === 'raft') {
+      const sel = pieces.selected('raft');
+      const p = !sel && pointer.inside ? groundAt(pointer.x, pointer.y) : null;
+      terrain.setRing(sel ? { ...sel, visible: true, level: null } : p ? { x: p[0], z: p[2], radius: 0.6, visible: true, level: null } : { visible: false, level: null });
       return;
     }
     // Net mode: a ring where a tap would cast the net.

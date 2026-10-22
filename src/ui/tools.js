@@ -20,7 +20,7 @@ import { mountNetPanel } from './net-panel.js';
 /** @typedef {'reeds'|'lilies'|'iris'|'marigold'|'rushes'|'thrift'|'campion'|'willow'|'gorse'|'pondweed'} PlantSpecies */
 /** @typedef {'raise'|'lower'|'flatten'|'stone'|'loosestone'|'pondstones'|'terrace'|'cut'|'steps'} SculptMode */
 /** @typedef {'grass'|'sand'|'soil'|'rock'} PaintLayer */
-/** @typedef {'pour'|'drain'|'spring'} WaterMode */
+/** @typedef {'pour'|'drain'|'spring'|'net'|'raft'} WaterMode */
 /** @typedef {'trickle'|'brook'|'stream'} SpringRate */
 
 /**
@@ -112,6 +112,8 @@ const WATER_MODES = [
   { id: 'spring', label: 'Spring', icon: 'wellspring' },
   // The general net (docs/future/12): shows once the beachcomber's trail gives it (unlocks.nets.general).
   { id: 'net', label: 'Net', icon: 'net' },
+  // The reed raft (the turtles' gift, doc 09): shows once it is given (unlocks.raft).
+  { id: 'raft', label: 'Raft', icon: 'raft' },
 ];
 /** @type {{id: SpringRate, label: string}[]} */
 const SPRING_RATES = [
@@ -308,6 +310,7 @@ export function mountTools(parent = document.body) {
   const shapingRunBtn = /** @type {HTMLButtonElement} */ (root.querySelector('[data-shaping-run]'));
   const shapingRunLabel = /** @type {HTMLElement} */ (root.querySelector('[data-out="shaping-run"]'));
   const netModeBtn = /** @type {HTMLButtonElement} */ (root.querySelector('[data-water-mode="net"]'));
+  const raftModeBtn = /** @type {HTMLButtonElement} */ (root.querySelector('[data-water-mode="raft"]'));
   const netPanel = mountNetPanel(card);
 
   // --- user input -> actions ---
@@ -332,7 +335,7 @@ export function mountTools(parent = document.body) {
       const p = get('piecesUi') ?? {};
       if (p.selectedId) dispatch(/** @type {any} */ ({ type: 'pieces.remove', id: p.selectedId }));
     } else if (shapingRemove || shapingRun) {
-      const s = shapingOf(get('shapingUi'), get('tools')?.sculptMode);
+      const s = shapingOf(get('shapingUi'), shapingMode() ?? undefined);
       if (shapingRun && s?.run) dispatch(/** @type {any} */ ({ type: 'pieces.removeRun', run: s.run }));
       else if (s?.selectedId) dispatch(/** @type {any} */ ({ type: 'pieces.remove', id: s.selectedId }));
     } else if (history && btn.getAttribute('aria-disabled') !== 'true') {
@@ -398,13 +401,15 @@ export function mountTools(parent = document.body) {
     for (const b of layerBtns) b.setAttribute('aria-pressed', String(b.dataset.layer === t.paintLayer));
 
     // Water: the spring mode exists only once unlocked; a stored 'spring' reads as 'pour' until then.
-    const springsOn = !!get('unlocks')?.springs, netsOn = !!get('unlocks')?.nets?.general;
+    // The Raft mode once the turtles give the reed raft (`unlocks.raft`).
+    const springsOn = !!get('unlocks')?.springs, netsOn = !!get('unlocks')?.nets?.general, raftOn = !!get('unlocks')?.raft;
     const storedMode = t.waterMode ?? 'pour';
-    const waterMode = (storedMode === 'spring' && !springsOn) || (storedMode === 'net' && !netsOn) ? 'pour' : storedMode;
+    const waterMode = (storedMode === 'spring' && !springsOn) || (storedMode === 'net' && !netsOn) || (storedMode === 'raft' && !raftOn) ? 'pour' : storedMode;
     const springRate = t.springRate ?? 'brook';
     springModeBtn.hidden = !springsOn;
     netModeBtn.hidden = !netsOn;
-    waterChips.style.setProperty('--tb-cols', String(2 + Number(springsOn) + Number(netsOn)));
+    raftModeBtn.hidden = !raftOn;
+    layoutRows(waterChips, waterModeBtns.filter((b) => !b.hidden));
     for (const b of waterModeBtns) b.setAttribute('aria-pressed', String(b.dataset.waterMode === waterMode));
     for (const b of rateBtns) b.setAttribute('aria-pressed', String(b.dataset.rate === springRate));
     renderSprings();
@@ -467,14 +472,14 @@ export function mountTools(parent = document.body) {
       const cliffMode = tool === 'sculpt' && (sculptMode === 'terrace' || sculptMode === 'cut') ? sculptMode : null;
       stonePanel.hidden = !inStone;
       if (piecesPanel.hidden !== !inLoose) { piecesPanel.hidden = !inLoose; piecesLine.clear(); }
-      const inShaping = tool === 'sculpt' && (sculptMode === 'pondstones' || sculptMode === 'steps');
+      const inShaping = !!shapingMode();
       if (shapingPanel.hidden !== !inShaping) { shapingPanel.hidden = !inShaping; shapingLine.clear(); }
       if (inShaping) renderShaping();
       cliffPanel.hidden = !cliffMode;
       if (cliffMode && cliffHint.textContent !== CLIFF_HINTS[cliffMode]) cliffHint.textContent = CLIFF_HINTS[cliffMode];
       // A boulder has a size, not a strength; Terrace and Cut have a height in place of the strength;
-      // a loose stone's size comes from its seed, and pond stones and Steps size themselves, so they
-      // have no sliders.
+      // a loose stone's size comes from its seed, and pond stones, Steps and rafts size themselves, so
+      // they have no sliders.
       for (const s of sliders) {
         const which = s.dataset.slider;
         s.hidden = inSpring || inNet || inPlant || inLoose || inShaping || tool === 'feed'
@@ -536,16 +541,24 @@ export function mountTools(parent = document.body) {
     if (p.message) piecesLine.show(p.message, !!p.refused);
   }
 
+  /** The mode the shaping panel serves now: Sculpt's Pond stones or Steps, the Water tool's Raft, or null. */
+  function shapingMode() {
+    const t = get('tools') ?? {};
+    if (t.tool === 'sculpt' && (t.sculptMode === 'pondstones' || t.sculptMode === 'steps')) return t.sculptMode;
+    if (t.tool === 'water' && t.waterMode === 'raft' && get('unlocks')?.raft) return 'raft';
+    return null;
+  }
+
   /**
-   * Pond stones or Steps: the count, Remove (and for a pond stone, Remove line) when one is
+   * Pond stones, Steps or a raft: the count, Remove (and for a pond stone, Remove line) when one is
    * selected, else the hint; a calm line after a drag that laid or cut nothing.
    */
   function renderShaping() {
     const u = get('shapingUi');
-    const mode = get('tools')?.sculptMode;
-    const s = shapingOf(u, mode);
+    const mode = shapingMode();
+    const s = shapingOf(u, mode ?? undefined);
     if (!s) return;
-    const noun = mode === 'steps' ? (s.cap === 1 ? 'flight of steps' : 'flights of steps') : 'pond stones';
+    const noun = mode === 'steps' ? (s.cap === 1 ? 'flight of steps' : 'flights of steps') : mode === 'raft' ? (s.cap === 1 ? 'reed raft' : 'reed rafts') : 'pond stones';
     const text = `${s.count} of ${s.cap} ${noun}`;
     if (shapingCount.textContent !== text) shapingCount.textContent = text;
     shapingRemoveBtn.hidden = !s.selectedId;
@@ -615,7 +628,7 @@ export function mountTools(parent = document.body) {
  */
 function shapingOf(u, mode) {
   if (!u) return null;
-  return mode === 'pondstones' ? u.pond ?? null : mode === 'steps' ? u.steps ?? null : null;
+  return mode === 'pondstones' ? u.pond ?? null : mode === 'steps' ? u.steps ?? null : mode === 'raft' ? u.raft ?? null : null;
 }
 
 /**

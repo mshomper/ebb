@@ -24,6 +24,7 @@ import { stoneShapes, logShapes } from './meshes.js';
 import { strandLogs, cellHeights, strandMask } from './driftwood.js';
 import { logSurface } from './log-surface.js';
 import { slabShapes } from './slabs.js';
+import { raftShapes, makeRaft, raftRest } from './raft.js';
 import { makeStepping, strideAfter, jitterOf, topOf, links, footingAt } from './stepping.js';
 import { planFlight, flightGeom, flightHeightAt, flightRect, carveFlight, paintFlight, markGuard, crossesGuard, treadSlabs } from './steps.js';
 import { emitDeferred } from '../../core/events.js';
@@ -61,6 +62,11 @@ export function createPieces(opts) {
   // A tread's slabs are the same shapes with a short skirt, since a flight can stand out from the slope.
   const treadShapes = slabShapes({ ...recipe, stepping: { ...S, slab: { ...S.slab, skirtUnits: ST.slab.skirtUnits } } });
   treadShapes.forEach((s, i) => pass.setMesh(`tread-${i}`, { data: packMesh(s.mesh), indices: s.mesh.indices }));
+  // Reed rafts (raft.js, the turtles' gift), afloat on the ponds.
+  const RF = recipe.raft;
+  const rafts = raftShapes(recipe);
+  rafts.forEach((s, i) => pass.setMesh(`raft-${i}`, { data: packMesh(s.mesh), indices: s.mesh.indices }));
+  const IDENTITY = new Float32Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
   pass.setMesh('logdamp', { data: packMesh(logs[0].damp), indices: logs[0].damp.indices });
   const shapeOf = (/** @type {{ seed: number }} */ p) => shapes[p.seed % shapes.length];
   const ground = (/** @type {number} */ x, /** @type {number} */ z) => terrain.sampleHeight(x, z);
@@ -193,17 +199,36 @@ export function createPieces(opts) {
     return Math.max(0, (water.tide ?? -Infinity) - ground(x, z), water.sampleLive?.(x, z)?.depth ?? 0, still);
   };
   /** @type {{ mode: string, message: string, refused: boolean }} */ let shapingSay = { mode: '', message: '', refused: false };
-  /** @type {{ pond: string | null, steps: string | null }} */ const shapingSel = { pond: null, steps: null };
+  /** @type {{ pond: string | null, steps: string | null, raft: string | null }} */ const shapingSel = { pond: null, steps: null, raft: null };
+  const raftList = () => state().list.filter((p) => p.kind === 'raft');
+  const raftShapeOf = (/** @type {{ seed: number }} */ p) => rafts[(p.seed >>> 0) % rafts.length];
+  /** Each raft's level as drawn, eased toward where it rests, and its bob's clock. @type {Map<string, { y: number, afloat: boolean }>} */
+  const raftAt = new Map();
+  let raftClock = 0;
+  /**
+   * Where a raft is drawn now: easing toward the water as it is (or the ground under it), bobbing
+   * gently while afloat. @param {any} p @param {number} dt real seconds since the last frame
+   */
+  function raftNow(p, dt) {
+    const rest = raftRest(p, raftShapeOf(p), ground, depthAt, RF);
+    const was = raftAt.get(p.id);
+    const k = was ? 1 - Math.exp(-dt / RF.settleS) : 1;
+    const y = was ? was.y + (rest.y - was.y) * k : rest.y;
+    raftAt.set(p.id, { y, afloat: rest.afloat });
+    const bob = rest.afloat ? RF.bobM * Math.sin((raftClock / RF.bobS) * 2 * Math.PI + (p.seed % 628) / 100) : 0;
+    return { y: y + bob, afloat: rest.afloat };
+  }
   /** Mirror pond stones and Steps into the tool card's slice. @param {{ mode: string, message: string, refused?: boolean }} [say] */
   function syncShaping(say) {
     if (say) shapingSay = { mode: say.mode, message: say.message, refused: !!say.refused };
     const list = state().list;
-    for (const k of /** @type {const} */ (['pond', 'steps'])) if (shapingSel[k] && !list.some((p) => p.id === shapingSel[k])) shapingSel[k] = null;
+    for (const k of /** @type {const} */ (['pond', 'steps', 'raft'])) if (shapingSel[k] && !list.some((p) => p.id === shapingSel[k])) shapingSel[k] = null;
     const selStone = shapingSel.pond ? pond().find((p) => p.id === shapingSel.pond) : null;
     const runSize = selStone ? pond().filter((p) => p.run === selStone.run).length : 0;
     update('shapingUi', () => ({
       pond: { count: countKind(list, 'stepping'), cap: S.cap, selectedId: shapingSel.pond, run: runSize > 1 ? selStone?.run ?? null : null, hint: S.words.hint },
       steps: { count: countKind(list, 'steps'), cap: ST.cap, selectedId: shapingSel.steps, hint: ST.words.hint },
+      raft: { count: countKind(list, 'raft'), cap: RF.cap, selectedId: shapingSel.raft, hint: RF.words.hint },
       words: { removeLine: S.words.removeLine },
       ...shapingSay, at: say ? performance.now() : get('shapingUi')?.at ?? 0 }));
   }
@@ -340,7 +365,7 @@ export function createPieces(opts) {
   }
   const offs = [subscribe('unlocks', arrive), on('water:summary-updated', arrive)];
   arrive();
-  let pollS = 0, strandS = 1;
+  let pollS = 0, strandS = 1, frameDt = 0;
 
   /**
    * The pieces as the draw pass wants them, each set into the ground and leaned with its slope,
@@ -353,6 +378,13 @@ export function createPieces(opts) {
     for (const p of state().list) {
       if (p.kind === 'log') { logBeing(p, p.id, out); continue; }
       if (p.kind === 'steps') continue;
+      if (p.kind === 'raft') {
+        const sh = raftShapeOf(p), i = rafts.indexOf(sh), now = raftNow(p, frameDt);
+        // Reeds, not stone: drawn plain (no rock scan) and with no damp ring on the water.
+        out.push({ x: p.x, z: p.z, y: now.y, yaw: p.yaw, size: p.size, slope: [0, 0], seed: ((p.seed >>> 8) / 16777216) * 10,
+          half: [sh.hx, sh.hz], mesh: `raft-${i}`, bone: IDENTITY, plain: true });
+        continue;
+      }
       if (p.kind === 'stepping') {
         const sp = /** @type {any} */ (p), y = ground(p.x, p.z);
         slabBeing(p.x, p.z, y, y + sp.rise, p.yaw, p.size, p.seed, sp.rise > S.wetM + S.freeboardM[1] ? 0 : S.lean, out, undefined, false, mossOf(p.placedHour));
@@ -442,6 +474,8 @@ export function createPieces(opts) {
       }
       if (pending && (pollS += f.realDt) > 0.5) { pollS = 0; arrive(); }
       if ((strandS += f.realDt) > 0.5) { strandS = 0; refreshStrand(f.displayT / 3600); }
+      frameDt = f.realDt;
+      raftClock += f.realDt;
       pass.setPieces(beings());
     },
 
@@ -453,7 +487,7 @@ export function createPieces(opts) {
       /** @type {{ x: number, z: number, r: number, d: number }[]} */ const out = [];
       const put = (/** @type {number} */ x, /** @type {number} */ z, /** @type {number} */ r) => out.push({ x, z, r, d: (x - focus[0]) ** 2 + (z - focus[2]) ** 2 });
       for (const p of [...state().list, ...strandShown]) {
-        if (p.kind === 'steps') continue;
+        if (p.kind === 'steps' || p.kind === 'raft') continue;
         if (p.kind !== 'log') { put(p.x, p.z, p.size * 0.5 * recipe.grassClear); continue; }
         const len = p.length ?? 1, r = p.size * 0.5 + D.grassClearM;
         const n = Math.min(6, Math.max(2, Math.ceil(len / (r * 1.6))));
@@ -723,8 +757,9 @@ export function createPieces(opts) {
     /** Where a Steps drag is now (its two ends), for the ring. */
     cutting: () => (cutting ? { a: cutting.a.slice(), b: cutting.b.slice() } : null),
 
-    /** The selected pond stone or flight, for the ring. @param {'pondstones' | 'steps'} mode */
+    /** The selected pond stone, flight or raft, for the ring. @param {'pondstones' | 'steps' | 'raft'} mode */
     selected(mode) {
+      if (mode === 'raft') { const r = raftList().find((q) => q.id === shapingSel.raft); return r ? { x: r.x, z: r.z, radius: r.size * 0.6 } : null; }
       if (mode === 'pondstones') { const p = pond().find((q) => q.id === shapingSel.pond); return p ? { x: p.x, z: p.z, radius: p.size * 0.7 } : null; }
       const f = flights().find((q) => q.id === shapingSel.steps);
       if (!f) return null;
@@ -732,8 +767,52 @@ export function createPieces(opts) {
       return { x: (f.x + f.x2) / 2, z: (f.z + f.z2) / 2, radius: Math.max(g.len / 2 + g.land, g.half) };
     },
 
-    /** Drop the Pond stones and Steps selections (leaving those modes). */
-    deselectShaping() { if (shapingSel.pond || shapingSel.steps) { shapingSel.pond = null; shapingSel.steps = null; syncShaping(); } },
+    /** Drop the Pond stones, Steps and Raft selections (leaving those modes). */
+    deselectShaping() {
+      if (shapingSel.pond || shapingSel.steps || shapingSel.raft) { shapingSel.pond = null; shapingSel.steps = null; shapingSel.raft = null; syncShaping(); }
+    },
+
+    // ---- reed rafts (the Water tool's Raft mode; the turtles' gift) ----
+
+    /**
+     * A tap in the Raft mode: on a raft (where the view ray crosses its top) it selects it; on open
+     * fresh water it sets a new one under the cap (undoable); elsewhere the card says why not.
+     * @param {ArrayLike<number>} p the ground point @param {{ o: ArrayLike<number>, d: ArrayLike<number> }} ray camera.ray
+     */
+    raftTap(p, ray) {
+      /** @param {string} key */
+      const say = (key) => syncShaping({ mode: 'raft', message: RF.words[key], refused: true });
+      let hit = null, bestT = Infinity;
+      if (Math.abs(ray.d[1]) > 1e-6) for (const r of raftList()) {
+        const sh = raftShapeOf(r), top = (raftAt.get(r.id)?.y ?? raftRest(r, sh, ground, depthAt, RF).y) + sh.hy * r.size;
+        const t = (top - ray.o[1]) / ray.d[1];
+        if (!(t > 0) || t >= bestT) continue;
+        const dx = ray.o[0] + ray.d[0] * t - r.x, dz = ray.o[2] + ray.d[2] * t - r.z;
+        const c = Math.cos(r.yaw), s = Math.sin(r.yaw), u = c * dx - s * dz, v = s * dx + c * dz;
+        if ((u / (sh.hx * r.size)) ** 2 + (v / (0.5 * r.size)) ** 2 <= 1) { hit = r; bestT = t; }
+      }
+      if (hit) { shapingSel.raft = hit.id; syncShaping({ mode: 'raft', message: '' }); return; }
+      shapingSel.raft = null;
+      const s = state();
+      if (countKind(s.list, 'raft') >= RF.cap) { say('full'); return; }
+      const x = p[0], z = p[2];
+      // The sea: water whose surface is the tide's (a pond's bed may lie below the tide, its surface not).
+      const tide = water.tide ?? -Infinity;
+      if (tide > ground(x, z) && ground(x, z) + depthAt(x, z) <= tide + 0.05) { say('sea'); return; }
+      const piece = makeRaft(piecesSeed, s.nextId, x, z, hourIndex(), RF);
+      const sh = raftShapeOf(piece), w = sh.hx * piece.size, l = 0.45 * piece.size;
+      const ax = Math.sin(piece.yaw), az = Math.cos(piece.yaw);
+      const rim = [[w, 0], [-w, 0], [0, l], [0, -l]].every(([u, t]) => depthAt(x + az * u + ax * t, z - ax * u + az * t) >= RF.rimDepthM);
+      if (depthAt(x, z) < RF.minDepthM || !rim) { say('shallow'); return; }
+      const a2 = RF.apartM * RF.apartM;
+      if (s.list.some((q) => (q.kind === 'raft' || q.kind === 'stepping' || q.kind === 'stone') && (q.x - x) ** 2 + (q.z - z) ** 2 < a2)) { say('near'); return; }
+      const next = addPiece(s, piece, RF.cap);
+      if (!next) return;
+      update('pieces', () => next);
+      history.push({ kind: 'piece', bytes: 96, op: 'add', piece });
+      shapingSel.raft = piece.id;
+      syncShaping({ mode: 'raft', message: '' });
+    },
 
     /**
      * The walker's footing (src/world/walk): the top of a pond stone, or of the line between two
@@ -752,19 +831,26 @@ export function createPieces(opts) {
     },
 
     /**
-     * Where the creatures may sit and bask (doc 09, cover type `stone`): every loose stone and pond
-     * stone, with its top, how far from its middle a sitter may be, and how the water stands now
+     * Where the creatures may sit and bask (doc 09, cover type `stone`): every reed raft, loose stone
+     * and pond stone, with its top, how far from its middle a sitter may be, and how the water stands now
      * round it (wet: water at its foot; inWater: it stands in water). Sunny until shade is worked out.
      * @returns {{ id: string, kind: string, x: number, y: number, z: number, r: number, cover: 'stone', sunny: boolean, wet: boolean, inWater: boolean }[]}
      */
     seats() {
-      return state().list.filter((p) => p.kind === 'stone' || p.kind === 'stepping').map((p) => {
+      // A raft: its top as it floats now (or rests on the mud), always counted as standing in water
+      // while afloat; turtles bask on it and herons stand on it.
+      const onRafts = raftList().map((p) => {
+        const sh = raftShapeOf(p), now = raftAt.get(p.id) ?? raftRest(p, sh, ground, depthAt, RF);
+        return { id: p.id, kind: p.kind, x: p.x, y: now.y + sh.hy * p.size, z: p.z, r: Math.max(0.05, sh.hx * p.size - RF.sitInsetM),
+          cover: /** @type {'stone'} */ ('stone'), sunny: true, wet: true, inWater: now.afloat };
+      });
+      return [...onRafts, ...state().list.filter((p) => p.kind === 'stone' || p.kind === 'stepping').map((p) => {
         const sh = p.kind === 'stone' ? shapeOf(p) : slabs[(p.seed >>> 0) % slabs.length];
         const y = p.kind === 'stone' ? ground(p.x, p.z) + sh.hy * p.size * (1 - recipe.sink) : topOf(/** @type {any} */ (p), ground);
         const d = depthAt(p.x, p.z);
         return { id: p.id, kind: p.kind, x: p.x, y, z: p.z, r: Math.max(0.02, Math.min(sh.hx, sh.hz) * p.size - S.sitInsetM), cover: /** @type {'stone'} */ ('stone'),
           sunny: true, wet: d > 0.005 || depthAt(p.x + p.size * 0.6, p.z) > 0.005, inWater: d > S.wetM };
-      });
+      })];
     },
 
     dispose() { offLift(); offSummary(); offList(); for (const off of offs) off(); },

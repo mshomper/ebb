@@ -56,7 +56,7 @@ Sections map one to one onto the store slices in 03-tech-stack-and-module-map.md
 | progression | happy-ever set per species, gifts given (one per species, never re-given), unlocked tools and palettes, land pieces with state (`queued`, `rising` with its start hour, `joined`) and the milestone queue (13-progression-and-expansion.md) | under 2 KB |
 | journal | species page states, named-creature lines, moments, away notes, map place names, year page boxes, photo references (not pixels) | under 30 KB |
 | awayLog | last 64 away events | under 8 KB |
-| pieces | from format 5: placed pieces (09-structures.md), loose stones and kept logs; with no format change, pond stones (kind `stepping`, their rise but never the water's depth) and flights of Steps (kind `steps`, their two ends and levels; the cut itself is in the chunk heights). A build that does not know a kind leaves its records out | under 4 KB |
+| pieces | from format 5: placed pieces (09-structures.md), loose stones and kept logs; with no format change, pond stones (kind `stepping`, their rise but never the water's depth) flights of Steps (kind `steps`, their two ends, levels and rises; the cut itself is in the chunk heights) and reed rafts (kind `raft`, never the water's level). A build that does not know a kind leaves its records out | under 4 KB |
 | keepsakes | from format 6 (F12): the shelf, up to 16 kept keepsakes, each with its family, generator version, its numbers (not only its seed, so later tuning never changes it), rarity, mark, where and when; and nets, up to 3, each with kind, place, the tide it was set and its wear. An older island migrates to an empty shelf and no nets | under 3 KB |
 
 Per-chunk sections, one record per open chunk, keyed `cx,cz`:

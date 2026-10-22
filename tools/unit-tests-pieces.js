@@ -22,6 +22,7 @@ import { chipRows } from '../src/ui/tools.js';
 import { makeStepping, links, footingAt } from '../src/world/pieces/stepping.js';
 import { planFlight, flightGeom, flightRect, carveFlight, markGuard, crossesGuard, treadSlabs } from '../src/world/pieces/steps.js';
 import { slabShapes } from '../src/world/pieces/slabs.js';
+import { raftShapes, makeRaft, raftRest } from '../src/world/pieces/raft.js';
 import { WORLD_CELLS, WORLD_ORIGIN, CELL } from '../src/world/terrain/grid.js';
 
 const G = 'pieces';
@@ -380,6 +381,21 @@ export function addPiecesTests(test, assert, eq) {
     const treads = treadSlabs(f, ST, slabShapes(R));
     eq(treads.length, (g.risers - 1) * ST.slab.perTread, 'two slabs on every tread between the top and the bottom');
     return `${g.risers} rises of ${g.rise.toFixed(2)} m over ${g.tread.toFixed(2)} m treads`;
+  });
+
+  test(G, 'a reed raft: saved as it was, baked the same, afloat on the water as it is, on the mud when it goes', async () => {
+    const R = await recipe, RF = R.raft;
+    const raft = makeRaft(11, 1, 4, 5, 60, RF);
+    eq(JSON.stringify(cleanPieces({ list: [raft], nextId: 2 }).list), JSON.stringify([raft]), 'the record comes back exactly, with no water depth in it');
+    const a = raftShapes(R), b = raftShapes(R);
+    assert(a.every((s, i) => s.mesh.vertices.every((v, j) => v === b[i].mesh.vertices[j]) && s.mesh.vertices.every(Number.isFinite)), 'the same shapes on every load');
+    const sh = a[0], thick = sh.hy * raft.size;
+    const afloat = raftRest(raft, sh, () => 0, () => 0.6, RF);
+    assert(afloat.afloat && Math.abs(afloat.y - (0.6 - RF.draftM)) < 1e-9, 'afloat: its base under the water by its draft');
+    const proud = 0.6 - RF.draftM + thick - 0.6;
+    assert(proud > 0.02 && proud < 0.07, `its top ${(proud * 100).toFixed(1)} cm above the water`);
+    const dry = raftRest(raft, sh, (x) => (x - 4) * 0.1, () => 0, RF);
+    assert(!dry.afloat && dry.y > 0, 'with the water gone it rests on the highest ground under it');
   });
 
   test(G, 'pond stones: a line is one way across, and the slabs are baked the same every time', async () => {

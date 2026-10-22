@@ -18,10 +18,11 @@ import { groundOfCell } from '../water/shore.js';
 
 //
 // A pond stone (stepping.js) is { id, kind: 'stepping', x, z, yaw, seed, size, rise, run, placedHour };
-// a flight of Steps (steps.js) is { id, kind: 'steps', x, z, x2, z2, size, top, bottom, risers, seed, placedHour }.
+// a flight of Steps (steps.js) is { id, kind: 'steps', x, z, x2, z2, size, top, bottom, risers, seed, placedHour };
+// a reed raft (raft.js) is { id, kind: 'raft', x, z, yaw, seed, size, placedHour }, as a stone's.
 
 /**
- * @typedef {{ id: string, kind: 'stone' | 'log' | 'stepping' | 'steps', x: number, z: number, yaw: number, seed: number, size: number, length?: number,
+ * @typedef {{ id: string, kind: 'stone' | 'log' | 'stepping' | 'steps' | 'raft', x: number, z: number, yaw: number, seed: number, size: number, length?: number,
  *   rise?: number, run?: string, x2?: number, z2?: number, top?: number, bottom?: number, risers?: number, placedHour: number }} Piece
  *   length: a log's length (m); rise, run: a pond stone's; x2, z2, top, bottom, risers: a flight's (yaw 0)
  * @typedef {{ version: number, list: Piece[], nextId: number, arrived: boolean }} PiecesState
@@ -29,7 +30,7 @@ import { groundOfCell } from '../water/shore.js';
  */
 
 /** Kinds of piece this build knows. */
-export const PIECE_KINDS = ['stone', 'log', 'stepping', 'steps'];
+export const PIECE_KINDS = ['stone', 'log', 'stepping', 'steps', 'raft'];
 
 /** How many pieces of a kind a list holds. @param {Piece[]} list @param {string} kind */
 export const countKind = (list, kind) => list.reduce((n, p) => n + (p.kind === kind ? 1 : 0), 0);

@@ -71,7 +71,25 @@
       "removeLine": "Remove line"
     }
   },
-  "stepsNote": "Steps (doc 13, the shaper's trail; src/world/pieces/steps.js): a flight cut between two levels of ground, dragged from one to the other. widthM: how wide a flight is (wide enough that the walker's half-metre grid always finds a level way up its middle). Every rise is at most maxRiseM and every tread at least minTreadM and at most maxTreadM, and the whole flight rises no steeper than maxPitch (rise over run), so the walker can always climb it; a drag shorter than that asks for more. minDropM: the least difference in level worth a step. landM: how far the flight runs on past each end at that end's level, so it meets the ground. cap: how many flights an island holds. rockShare: how far toward rock the flight's cells and the sheer walls beside it (any drop over faceDropM to a neighbour) are painted. slab: perTread slabs side by side on each tread, filling fill of their share (the rest is the gaps between them), turned up to yawJitterDeg off square, their tops riseM over the tread, with a skirt skirtUnits deep (lengths; short, since a flight can stand out from the slope). words: the Steps mode's calm lines.",
+  "raftNote": "The reed raft (the turtles' gift, unlocks.raft; src/world/pieces/raft.js): the Water tool's Raft mode sets one where you tap open fresh water. cap: how many an island holds. sizeM [min, max]: its length (m), from its seed. It goes only where the water is at least minDepthM deep under its middle and at least rimDepthM toward its rim (away from the bank), never in the sea, at least apartM from another raft or stone. It floats with its base draftM under the water as it is now (so its top stands a few centimetres proud), bobbing by bobM over bobS seconds, easing to a new level over settleS; where the water has gone it rests on the ground. sitInsetM: how far in from its edge a creature sits. shape: count shapes from seed, each bundles reed bundles across widthShare [min, max] of its length, around vertices round and rings along; fatten swells them to touch, round shortens the outer ones (rounded corners), taper how far from each end they thin; bands ties at bandM wide, pinching by pinch and darker by bandDark; streak the reed stems along each bundle; albedo dry straw and endAlbedo the cut ends (linear; the palette paints at tonemap). words: the Raft mode's calm lines.",
+  "raft": {
+    "cap": 3, "sizeM": [1.1, 1.3], "minDepthM": 0.25, "rimDepthM": 0.08, "apartM": 1.0,
+    "draftM": 0.08, "bobM": 0.008, "bobS": 5.5, "settleS": 2.5, "sitInsetM": 0.08,
+    "shape": {
+      "count": 4, "seed": 4410, "bundles": 9, "around": 16, "rings": 40,
+      "widthShare": [0.62, 0.72], "fatten": 1.08, "round": 0.18, "taper": 0.08,
+      "bands": 3, "bandM": 0.025, "pinch": 0.22, "bandDark": 0.65, "streak": 0.16,
+      "albedo": [0.3, 0.24, 0.12], "endAlbedo": [0.17, 0.12, 0.06]
+    },
+    "words": {
+      "hint": "Tap open water to set a reed raft. Tap a raft to select it.",
+      "full": "The island holds all the rafts it can for now. Remove one to set it somewhere else.",
+      "shallow": "A raft needs open water, deeper than your knees and away from the bank.",
+      "sea": "A raft rests on fresh water, not the sea.",
+      "near": "That is too near another raft or stone. Try a little further out."
+    }
+  },
+  "stepsNote":"Steps (doc 13, the shaper's trail; src/world/pieces/steps.js): a flight cut between two levels of ground, dragged from one to the other. widthM: how wide a flight is (wide enough that the walker's half-metre grid always finds a level way up its middle). Every rise is at most maxRiseM and every tread at least minTreadM and at most maxTreadM, and the whole flight rises no steeper than maxPitch (rise over run), so the walker can always climb it; a drag shorter than that asks for more. minDropM: the least difference in level worth a step. landM: how far the flight runs on past each end at that end's level, so it meets the ground. cap: how many flights an island holds. rockShare: how far toward rock the flight's cells and the sheer walls beside it (any drop over faceDropM to a neighbour) are painted. slab: perTread slabs side by side on each tread, filling fill of their share (the rest is the gaps between them), turned up to yawJitterDeg off square, their tops riseM over the tread, with a skirt skirtUnits deep (lengths; short, since a flight can stand out from the slope). words: the Steps mode's calm lines.",
   "steps": {
     "widthM": 1.6, "maxRiseM": 0.22, "minTreadM": 0.5, "maxTreadM": 1.0, "maxPitch": 0.6, "minDropM": 0.2,
     "landM": 0.25, "cap": 12, "rockShare": 0.9, "faceDropM": 0.3,

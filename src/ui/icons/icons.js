@@ -801,6 +801,14 @@ const ICONS = {
     <path d="M16.5 11.5C17.4 9.8 19.4 9.3 20.8 9.8C21.7 10.2 21.7 11.1 21 11.5Z"/>
     <path d="M2.5 19.5C4 18.3 5.5 18.3 7 19.5S10 20.7 11.5 19.5S14.5 18.3 16 19.5S19 20.7 21.5 19.5"/>`,
 
+  // Reed raft (the turtles' gift): a mat of bundled reeds tied with two bands, afloat on a ripple.
+  raft: `
+    <rect ${ACCENT} x="3.5" y="9.5" width="17" height="6" rx="3"/>
+    <rect x="3.5" y="9.5" width="17" height="6" rx="3"/>
+    <path d="M4 12.5H20"/>
+    <path d="M9 9.5V15.5M15 9.5V15.5"/>
+    <path d="M2.5 19.5C4 18.3 5.5 18.3 7 19.5S10 20.7 11.5 19.5S14.5 18.3 16 19.5S19 20.7 21.5 19.5"/>`,
+
   // A level shelf line over a mound whose top it has cut away.
   flatten: `
     <path ${ACCENT} d="M2.5 20C5 20 6.6 15.5 7.8 12H16.2C17.4 15.5 19 20 21.5 20Z"/>
