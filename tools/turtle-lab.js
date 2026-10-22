@@ -27,7 +27,7 @@ const qmul = (p, q) => [
   p[3] * q[2] + p[0] * q[1] - p[1] * q[0] + p[2] * q[3], p[3] * q[3] - p[0] * q[0] - p[1] * q[1] - p[2] * q[2]];
 
 // In the water views the surface is at 0; a swimmer's shell top sits just under it.
-const SWIM_Y = -0.045 * S;
+const SWIM_Y = -M.swim.surfaceM * S;
 const LEDGE = { half: 0.32, from: 0, to: 0.55, top: 0.07 };
 
 /**

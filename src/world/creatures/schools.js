@@ -112,6 +112,8 @@ export function createSchools(opts) {
       .map((/** @type {any} */ p) => ({ x: p.x, z: p.z, h: M.perchOn[p.sp] * Math.min(1, p.size) })),
     // Stones, logs and the raft to bask on (turtles; published by src/world/creatures/spring-live.js).
     seats: () => getStore('seats') ?? [],
+    // Where you are, for a turtle at the periscope to turn and face: on foot, or the camera's eye.
+    viewer: () => opts.you?.() ?? camera.eye,
   };
   const comeBack = createReturn(recipe.reveal?.growS ?? 0.6);
   const bones = new Float32Array(MAX_BONES * 16);
@@ -139,7 +141,7 @@ export function createSchools(opts) {
       if (s) { s.rehome({ x: g.x, z: g.z }, deepOf(g)); if (s.fish.length !== n) s.resize(n); continue; }
       const make = M.kind === 'patrol' ? createPatrol : M.kind === 'bask' ? createBask : createSchool;
       schools.set(g.id, /** @type {any} */ (make)({ id: g.id, seed: world.env.seed ^ hash32(key.length, 0x5c), count: n, home: { x: g.x, z: g.z },
-        deep: deepOf(g), size: body.displayScale ?? 1, M, env }));
+        deep: deepOf(g), size: body.displayScale ?? 1, M, env, bones: body.bones }));
     }
   }
 
