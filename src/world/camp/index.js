@@ -131,13 +131,28 @@ export function createCamp(o) {
   // ---- acts: walk, face, play, then the change ----
 
   /** @type {{ act: string, then: () => void } | null} */ let pending = null;
-  let strikeT = -1, strikes = 0, strikeLen = 0;
-  /** Play an act facing a point, then do `then` when it ends. @param {string} act @param {{ x: number, z: number }} at @param {() => void} then */
-  function play(act, at, then) {
-    if (pending || !o.walk.below) return false;
-    o.walk.faceToward(at.x, at.z);
-    if (!o.walk.act(act)) return false;
-    pending = { act, then };
+  /** An act waiting for you to walk into reach first. @type {{ start: () => void, x: number, z: number, reachM: number } | null} */ let approach = null;
+  let strikeT = -1, strikes = 0, strikeLen = 0, taps = 0;
+  /**
+   * Walk into reach of `stand` (within reachM), face `face`, play an act, then do `then` when it
+   * ends. Already in reach, it plays at once. @param {string} act @param {{ x: number, z: number }} stand
+   * @param {number} reachM @param {{ x: number, z: number }} face @param {() => void} then
+   * @param {() => void} [started] when the act begins
+   */
+  function play(act, stand, reachM, face, then, started) {
+    if (pending || approach || !o.walk.below) return false;
+    const go = () => {
+      approach = null;
+      o.walk.faceToward(face.x, face.z);
+      if (!o.walk.act(act)) return;
+      pending = { act, then };
+      started?.();
+    };
+    if (o.walk.distTo(stand.x, stand.z) <= reachM) { go(); return true; }
+    // Off screen and apart each time, so the walk never reads it as a double tap.
+    taps += 97;
+    if (!o.walk.tap(-1e5 - taps, -1e5, [stand.x, o.terrain.sampleHeight(stand.x, stand.z), stand.z], reachM)) return false;
+    approach = { start: go, x: stand.x, z: stand.z, reachM };
     return true;
   }
   const offs = [
@@ -147,13 +162,21 @@ export function createCamp(o) {
       pending = null;
       then();
     }),
+    // In reach: the act begins. Arriving anywhere else (you clicked away) lets it go.
+    on('walk:arrived', () => {
+      if (!approach) return;
+      if (o.walk.distTo(approach.x, approach.z) <= approach.reachM + 0.3) approach.start();
+      else approach = null;
+    }),
   ];
 
   function pitch() {
     if (pitched(camp())) return;
     const t = slotAt('tent');
     if (!t) return;
-    play('pitch', t, () => {
+    // From the flap side, where the tent opens toward the ring.
+    const f = /** @type {any} */ (flapAt());
+    play('pitch', f, R.reach.slotM, t, () => {
       change((c) => pitchTent(c, hourNow(), hash32(campSeed, 1)));
       emitDeferred('camp:pitched', { hour: hourNow() });
     });
@@ -163,7 +186,7 @@ export function createCamp(o) {
     const c = camp(), r = slotAt('ring');
     if (!pitched(c) || ringLaid(c) || !r) return;
     if (!holds(ringNeed())) { emit('island:notice', { text: W.ringNeeds, showS: 6 }); return; }
-    play('lay', r, () => {
+    play('lay', r, R.reach.ringM, r, () => {
       if (!holds(ringNeed())) return;
       takeGroup('fuel', R.ring.fuelHandfuls);
       takeGroup('stones', R.ring.stoneHandfuls);
@@ -179,7 +202,7 @@ export function createCamp(o) {
     if (word === 'embers' || word === 'lit') { feed(); return; }
     // A cold ring needs a fresh handful; a laid one has its own.
     if (word === 'cold' && !holds({ fuel: R.fire.feedHandfuls })) { emit('island:notice', { text: W.feedNeeds, showS: 6 }); return; }
-    const ok = play('strike', r, () => {
+    play('strike', r, R.reach.ringM, r, () => {
       strikeT = -1;
       const now = hourNow(), cc = camp();
       if (fireAt(cc.fire, now, F).word === 'cold' && !takeGroup('fuel', R.fire.feedHandfuls)) return;
@@ -188,8 +211,7 @@ export function createCamp(o) {
       change((x) => ({ ...x, fire: lit }));
       emitDeferred('camp:lit', { hour: now, first: lit.lightings === 1 });
       emit('camp:sound', { name: 'catch' });
-    });
-    if (ok) { strikeT = 0; strikes = 0; strikeLen = (o.poses && actLength(o.poses, 'strike')) || 3; }
+    }, () => { strikeT = 0; strikes = 0; strikeLen = (o.poses && actLength(o.poses, 'strike')) || 3; });
   }
 
   function feed() {
@@ -210,7 +232,9 @@ export function createCamp(o) {
     const c = camp(), f = flapAt();
     if (!pitched(c) || !f || resting) return;
     if (!nightNow()) { emit('island:notice', { text: W.restDay, showS: 6 }); return; }
-    play('crawlIn', f, () => {
+    // Into the tent: from the flap, facing in.
+    const t = /** @type {any} */ (slotAt('tent'));
+    play('crawlIn', f, R.reach.flapM, t, () => {
       const now = hourNow(), cc = camp();
       if (fireAt(cc.fire, now, F).word === 'lit') {
         change((x) => ({ ...x, fire: bankFire(x.fire, now, F) }));
