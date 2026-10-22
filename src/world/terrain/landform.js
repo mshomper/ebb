@@ -30,7 +30,8 @@ import { CELL, CHUNK_CELLS, CHUNK_SIZE, quantize } from './grid.js';
  * @property {any[]} [springs]  several, each with `basin` (index) and optional `bearingDeg`
  * @property {{sandLow: number, sandHigh: number, sandJitter: number, sandJitterScale: number,
  *   soilScale: number, soilLow: number, soilHigh: number, soilMax: number, basinSoil: number,
- *   rockScale: number, rockLow: number, rockHigh: number, rockMinHeight: number, rockFade: number}} materials
+ *   rockScale: number, rockLow: number, rockHigh: number, rockMinHeight: number, rockFade: number,
+ *   sandFloorM?: number, sandFloorSoftM?: number}} materials
  */
 
 /**
@@ -593,6 +594,13 @@ function sampleCell(c, x, z, out) {
       soil = Math.max(soil, poolSoil);
       rock = Math.max(rock, stoneRock);
     }
+  }
+  // A floor under the grass (sandFloorM, the larger island): on the shore ramp, ground below it is
+  // sand all along, not only where the sand noise says, so no grass lies where the tide and its
+  // waves reach. Pond beds keep their own ground.
+  if (M.sandFloorM !== undefined && s < L.inlandWidth) {
+    const floor = (1 - smoothstep(M.sandFloorM - (M.sandFloorSoftM ?? 0.15), M.sandFloorM, h)) * (1 - basinW);
+    if (floor > sand) sand = floor;
   }
   // The rocky point is bare rock out to the water; the pad is grass and soil only.
   if (sh && rockyW > 0) rock = Math.max(rock, sh.rockyPaint * smoothstep(0.25, 0.6, rockyW));

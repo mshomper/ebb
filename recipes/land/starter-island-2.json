@@ -50,7 +50,10 @@
     "rockLow": 0.15,
     "rockHigh": 0.4,
     "rockMinHeight": 3,
-    "rockFade": 0.5
+    "rockFade": 0.5,
+    "sandFloorNote": "On the shore ramp, ground below sandFloorM (m) is sand all along, fading to the noise's sand and grass over sandFloorSoftM above it, so no grass lies where the spring high tide (0.69 m) and its waves reach. Pond beds keep their own ground.",
+    "sandFloorM": 1.0,
+    "sandFloorSoftM": 0.15
   },
   "camp": {
     "note": "The keeper's camp (docs/future/13 section 3; src/world/camp). Read it through campOf() in src/world/terrain/landform.js, which gives world meters. inBase: the pad is levelled into this land's base (false: stamped on an older island's first load instead). x, z: pad center (m from the island's center). facingDeg: null faces outward from the island's center; a number overrides (0 is +x, 90 is +z). radiusM, heightM: the level pad; blendM: the soft fall back to natural ground; lockFadeM: brushes fade from nothing at the edge to full over this much; dash: the edge drawn on brush contact; wear: the trodden look (0..1) with edgeWearM; grassScale: grass height on the pad. Slots in the pad's frame: u seaward, v left facing the sea. mooring: the boat's stake, found by walking out along the facing line to the first ground at stakeLevelM; boatOutM: how far beyond the stake the boat lies on its rope. kingTideMarginM: any king tide must peak this far under heightM.",

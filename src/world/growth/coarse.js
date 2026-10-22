@@ -245,13 +245,14 @@ const BEARINGS = [[1, 0], [0.7071067811865476, 0.7071067811865476], [0, 1], [-0.
   [-1, 0], [-0.7071067811865476, -0.7071067811865476], [0, -1], [0.7071067811865476, -0.7071067811865476]];
 
 /**
- * Grass cover target per cell, 0..255: how well grass likes the ground (none in water, thinning on
- * salt). Painting decides where grass is at once; this cover follows the ground slowly, so a dug
- * pond drowns its grass over a day and a drained one greens again.
+ * Grass cover target per cell, 0..255: how well grass likes the ground (none in water or where the
+ * tide reaches, thinning on salt). Painting decides where grass is at once; this cover follows the
+ * ground slowly, so a dug pond drowns its grass over a day and a drained one greens again, and grass
+ * never spreads down into the tide band, where high water would stand over it.
  * @param {import('./habitat.js').Habitat} hab @param {any} G recipes/world/growth.json grass @param {number} k
  */
 function grassTarget(hab, G, k) {
-  if (hab.depthCm[k] > 0 || hab.sea[k]) return 0;
+  if (hab.depthCm[k] > 0 || hab.sea[k] || hab.band?.[k]) return 0;
   const s = hab.salt[k] / 255;
   // The ground axes (docs/future/10): earth rather than sand or rock, and not too steep.
   const at = G.habitat ? groundAtCell(hab, k) : null;

@@ -80,8 +80,9 @@ export function createGrassPass(opts) {
       f[44] = C.edge; f[45] = C.core;
     } else {
       f[32] = B.tuftM; f[33] = B.tuftDensity; f[34] = B.tuftHeight;
-      // Grass: the r channel, never in water deeper than 1 cm, tufts rather than tussocks.
-      f.set([0, 0.01, -1, 0], 40);
+      // Grass: the r channel, never in standing water (even a thin film that shows as a mirror),
+      // tufts rather than tussocks.
+      f.set([0, B.maxWaterM ?? 0.003, -1, 0], 40);
     }
     // The terrain's derived layers (terrain.json): no blades on the beach band or steep rock.
     const T = opts.terrainRecipe;
@@ -154,12 +155,14 @@ export function createGrassPass(opts) {
 
     /**
      * Each frame: where the view looks, the time, the wind and the season.
-     * @param {{ focus: ArrayLike<number>, time: number, wind: number, windDir: number, season: number }} u
+     * @param {{ focus: ArrayLike<number>, time: number, wind: number, windDir: number, season: number, seaLevel?: number }} u
      *   focus: the camera's orbit target [x, y, z]; windDir: radians the wind blows toward (0 east,
-     *   pi/2 north); season: season index plus phase (0..4)
+     *   pi/2 north); season: season index plus phase (0..4); seaLevel: the tide now (m)
      */
     update(u) {
       f[0] = u.focus[0]; f[1] = u.focus[2]; f[2] = u.time % 3600; f[3] = Math.min(1, Math.max(0, u.wind));
+      // The sea's level now and how high its waves wash (blades.seaClearM): no blade below it.
+      f[47] = (u.seaLevel ?? -100) + (recipe.blades.seaClearM ?? 0);
       f[4] = Math.cos(u.windDir); f[5] = -Math.sin(u.windDir);
       const s = seasonBlend(u.season);
       f[6] = recipe.blades.height * s.height;

@@ -28,7 +28,7 @@ struct GrassDraw {
   shape2: vec4f,                               // x tuft size (m), y how much tufts thicken and thin, z how much they raise and lower
   derived: vec4f,                              // the terrain's derived layers: x beach band top (m), y, z cos of the steep-rock slope range; w how much the near-to-far band's edge wobbles
   kind: vec4f,                                 // x cover channel (0 grass, 1 rushes), y deepest water a blade stands in (m), z tussock threshold (< 0: grass tufts), w how much thin cover raises it
-  kind2: vec4f,                                // rushes: x tussock edge softness, y how much shorter a tussock's rim stands than its core, z stem widening on thinner tiers
+  kind2: vec4f,                                // rushes: x tussock edge softness, y how much shorter a tussock's rim stands than its core, z stem widening on thinner tiers; w (both) the sea's level now plus its waves (m): no blade stands below it
   lushDry: vec4f,                              // wet-to-dry (lush.js): rgb the dry rise's albedo this season, w the lushness that looks like today's meadow
   lushWet: vec4f,                              // rgb the albedo by the water, w 1 when the grass reads the lush field
   lushH: vec4f,                                // x height factor on the dry rise, y by the water
@@ -130,6 +130,8 @@ fn vsBlade(@builtin(vertex_index) vi: u32, @builtin(instance_index) ring: u32) -
   // Painted grass, less what the terrain shader turns to sand (the beach band) and rock (steep
   // slopes), with the same rules, so blades never stand on the beach or a cliff.
   let groundH = terrainHeight(heightTex, xz);
+  // The sea is drawn at the tide's level, not held in the water depth: nothing stands under it.
+  if (groundH < gd.kind2.w) { return nothing(); }
   let nGround = terrainNormal(heightTex, xz);
   let steepRock = 1.0 - smoothstep(gd.derived.z, gd.derived.y, nGround.y);
   let beachSand = 1.0 - smoothstep(gd.derived.x - 0.15, gd.derived.x + 0.15, groundH);
