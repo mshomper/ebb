@@ -28,6 +28,8 @@ import { createDaylight } from './render/daylight.js';
 import { createLiveSim } from './sim/live-sim.js';
 import { initialWorldState, makeEnv, runHour } from './sim/tick.js';
 import { createTerrain } from './world/terrain/index.js';
+import { islandLand } from './world/terrain/chunks.js';
+import { islandCenter } from './world/terrain/landform.js';
 import { createWaterWorld } from './world/water-world.js';
 import { createGrowth } from './world/growth/index.js';
 import { createPlantTool } from './world/growth/plant-tool.js';
@@ -127,10 +129,9 @@ export async function startApp(canvas, hooks = {}) {
   /** @type {Record<string, any>} */
   const palettes = Object.fromEntries(PALETTES.map((p, i) => [p.id, paletteRecipes[i]]));
   // `?island=<id>` starts another island from recipes/world/terrain.json's list (tests, comparisons).
-  /** @type {{ id: string, name: string }[]} */ const islands = terrainRecipe.islands?.list ?? [];
+  /** @type {{ id: string, name: string, land?: string }[]} */ const islands = terrainRecipe.islands?.list ?? [];
   const asked = params.get('island');
   const island = islands.find((i) => i.id === asked) ?? islands.find((i) => `land/${i.id}` === terrainRecipe.starter.land) ?? { id: terrainRecipe.starter.land.slice(5), name: 'Starter island' };
-  const landRecipe = await loadRecipe(`land/${island.id}`);
   updateStore('meta', (m) => { m.island = island.id; });
   updateStore('settings', (s) => { s.quality = tier; });
   const rb = terrainRecipe.brush;
@@ -142,6 +143,16 @@ export async function startApp(canvas, hooks = {}) {
   if (save.status === 'damaged') return { ok: false, reason: 'damaged', save, islands };
   // What came back from the save, applied once (a GPU rebuild finds it all in the store already).
   const back = save.restored;
+  // The island's land (docs/future/13 section 3.11): a new island grows from the island's current
+  // land recipe (`land` in terrain.json's list, the larger starter island); one already made keeps
+  // the land its chunks record, so its shape never changes.
+  const landName = islandLand(island, back?.chunks ?? Object.values(getStore('chunks') ?? {}));
+  const landRecipe = await loadRecipe(`land/${landName}`);
+  updateStore('meta', (m) => { m.land = landName; });
+  // The camera starts over the island's center and keeps within its reach (cameraRadiusM).
+  const isle = islandCenter(landRecipe);
+  camRecipe = { ...camRecipe, worldRadius: landRecipe.cameraRadiusM ?? camRecipe.worldRadius, worldCenter: [isle.x, isle.z],
+    start: { ...camRecipe.start, target: [camRecipe.start.target[0] + isle.x, camRecipe.start.target[1], camRecipe.start.target[2] + isle.z] } };
   if (back) {
     seed = back.meta.seed >>> 0;
     updateStore('meta', (m) => { m.seed = seed; m.carryMinutes = back.meta.carryMinutes ?? 0; m.keepGrowing = back.meta.keepGrowing ?? true; });
@@ -210,7 +221,7 @@ export async function startApp(canvas, hooks = {}) {
   const unHistory = history.onChange(syncHistory);
   syncHistory();
 
-  const terrain = await createTerrain(gpu, { seed: subSeed(seed, 'terrain'), recipe: terrainRecipe, land: landRecipe });
+  const terrain = await createTerrain(gpu, { seed: subSeed(seed, 'terrain'), recipe: terrainRecipe, land: landRecipe, landId: `land/${landName}` });
   history.setApplier('terrain', (cmd, dir) => terrain.applyTiles(dir === 'undo' ? cmd.before : cmd.after));
   if (back) terrain.restoreChunks(back.chunks);   // before the water reads the ground
   // The world clock and the shared hourly tick (weather, seasons). A new world starts mid-morning.

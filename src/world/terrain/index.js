@@ -40,18 +40,21 @@ import { makeBoulder, applyBoulder } from './boulder.js';
 
 /**
  * @param {import('../../core/gpu.js').Gpu} gpu
- * @param {{ seed: number, recipe: any, land: any,
+ * @param {{ seed: number, recipe: any, land: any, landId?: string,
  *   passTimer?: (name: string) => GPUComputePassTimestampWrites | undefined }} opts
- *   seed is the terrain sub-seed; passTimer lets a tools page time terrain compute passes
+ *   seed is the terrain sub-seed; landId the land recipe's id as each chunk records it ('land/<id>'); passTimer lets a tools page time terrain compute passes
  */
 export async function createTerrain(gpu, opts) {
   const { device } = gpu;
   const { recipe, land, seed } = opts;
   const rb = recipe.brush;
 
+  // The open land: the land recipe's own chunk range (4 x 4 on the larger island), else the starter's.
   const chunks = createChunkTable();
-  for (let cz = recipe.starter.chunkMin; cz <= recipe.starter.chunkMax; cz++) {
-    for (let cx = recipe.starter.chunkMin; cx <= recipe.starter.chunkMax; cx++) chunks.open(cx, cz, recipe.starter.land);
+  const c0 = land.chunkMin ?? recipe.starter.chunkMin, c1 = land.chunkMax ?? recipe.starter.chunkMax;
+  const landId = opts.landId ?? recipe.starter.land;
+  for (let cz = c0; cz <= c1; cz++) {
+    for (let cx = c0; cx <= c1; cx++) chunks.open(cx, cz, landId);
   }
   const bounds = chunks.bounds();
   const edge = { openMin: bounds.openMin, openMax: bounds.openMax, edgeFade: rb.edgeFadeMeters };

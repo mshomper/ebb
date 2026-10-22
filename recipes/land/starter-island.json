@@ -1,7 +1,9 @@
 {
   "type": "land",
   "version": 1,
-  "note": "Starter island landform (docs/08), built by src/world/terrain/landform.js for chunks -1..1. Meters, Y-up, sea level 0. radius: coast distance from the center before noise. Shore profile: a smooth ramp from the waterline up to plateauHeight over inlandWidth, and down to seabedDepth over seaFallWidth, meeting the waterline at beachSlope (rise per meter). coast: noise that wobbles the coastline (amount in meters). warp: domain warp of the shape fields (strength in meters). detail: gentle fbm bumps on land (amplitude in meters). rise: the central hill (its peak is about plateauHeight + height). basin: a pond hollow with a flat floor at floor meters above sea level. jitter: how far the seed may move the rise or basin center. Everything beyond falloffEnd meters from the center is exactly seabedDepth. materials: sand below sandLow fading to grass by sandHigh (heights in meters, jittered by noise), soil patches where soil noise passes soilLow..soilHigh, rock outcrops only above rockMinHeight where rock noise passes rockLow..rockHigh.",
+  "note": "Starter island landform (docs/08), built by src/world/terrain/landform.js for chunks chunkMin..chunkMax. Islands made before the keeper's camp update keep this land; new ones grow from starter-island-2.json. Its camp block is not in the base (inBase false): the pad is stamped on an older island's first load (docs/future/13 section 3.8). Meters, Y-up, sea level 0. radius: coast distance from the center before noise. Shore profile: a smooth ramp from the waterline up to plateauHeight over inlandWidth, and down to seabedDepth over seaFallWidth, meeting the waterline at beachSlope (rise per meter). coast: noise that wobbles the coastline (amount in meters). warp: domain warp of the shape fields (strength in meters). detail: gentle fbm bumps on land (amplitude in meters). rise: the central hill (its peak is about plateauHeight + height). basin: a pond hollow with a flat floor at floor meters above sea level. jitter: how far the seed may move the rise or basin center. Everything beyond falloffEnd meters from the center is exactly seabedDepth. materials: sand below sandLow fading to grass by sandHigh (heights in meters, jittered by noise), soil patches where soil noise passes soilLow..soilHigh, rock outcrops only above rockMinHeight where rock noise passes rockLow..rockHigh.",
+  "chunkMin": -1,
+  "chunkMax": 1,
   "radius": 29.5,
   "plateauHeight": 1.3,
   "inlandWidth": 7,
@@ -41,5 +43,40 @@
     "rockHigh": 0.4,
     "rockMinHeight": 3,
     "rockFade": 0.5
+  },
+  "camp": {
+    "note": "The keeper's camp (docs/future/13 section 3; src/world/camp). Read it through campOf() in src/world/terrain/landform.js, which gives world meters. inBase: the pad is levelled into this land's base (false: stamped on an older island's first load instead). x, z: pad center (m from the island's center). facingDeg: null faces outward from the island's center; a number overrides (0 is +x, 90 is +z). radiusM, heightM: the level pad; blendM: the soft fall back to natural ground; lockFadeM: brushes fade from nothing at the edge to full over this much; dash: the edge drawn on brush contact; wear: the trodden look (0..1) with edgeWearM; grassScale: grass height on the pad. Slots in the pad's frame: u seaward, v left facing the sea. mooring: the boat's stake, found by walking out along the facing line to the first ground at stakeLevelM; boatOutM: how far beyond the stake the boat lies on its rope. kingTideMarginM: any king tide must peak this far under heightM.",
+    "inBase": false, "x": 12.5, "z": -13, "facingDeg": null,
+    "radiusM": 4, "heightM": 1.3, "blendM": 2.5, "lockFadeM": 1.0,
+    "dash": { "dashM": 0.35, "gapM": 0.25, "widthM": 0.06, "opacity": 0.55, "showWithinM": 4 },
+    "wear": 0.55, "edgeWearM": 1.0, "grassScale": 0.35,
+    "slots": [
+      { "id": "tent", "kinds": ["tent"], "u": -2.4, "v": 0.1, "w": 2.2, "d": 1.6, "yaw": "seaward", "blocks": true },
+      { "id": "ring", "kinds": ["ring"], "u": 1.5, "v": 0, "r": 0.5, "blocks": true },
+      { "id": "hearth", "kinds": ["pot"], "u": 1.5, "v": 0, "r": 0.15 },
+      { "id": "cup", "kinds": ["cup"], "u": 1.0, "v": -0.65, "r": 0.06 },
+      { "id": "bowls", "kinds": ["bowls"], "u": 1.55, "v": -0.85, "r": 0.15 },
+      { "id": "mortar", "kinds": ["mortar"], "u": 2.05, "v": -0.7, "r": 0.15 },
+      { "id": "dyepot", "kinds": ["dyepot"], "u": 2.2, "v": 0.6, "r": 0.18 },
+      { "id": "seat", "kinds": ["seat"], "u": 0.4, "v": 0, "yaw": "alongV", "maxLengthM": 1.8 },
+      { "id": "rack", "kinds": ["rack"], "u": -1.0, "v": 2.55, "w": 1.2, "d": 0.5, "yaw": "alongU", "blocks": true },
+      { "id": "sticks", "kinds": ["pile"], "pile": "fuel", "u": -1.9, "v": -2.6, "r": 0.6, "blocks": true },
+      { "id": "stones", "kinds": ["pile"], "pile": "stones", "u": 1.3, "v": -2.9, "r": 0.5, "blocks": true },
+      { "id": "clay", "kinds": ["pile"], "pile": "clay", "u": -0.3, "v": -3.3, "r": 0.3 },
+      { "id": "heap1", "kinds": ["pile"], "pile": "any", "u": 2.9, "v": -1.9, "r": 0.35, "blocks": true },
+      { "id": "heap2", "kinds": ["pile"], "pile": "any", "u": 3.2, "v": 1.4, "r": 0.35, "blocks": true },
+      { "id": "heap3", "kinds": ["pile"], "pile": "any", "u": -3.35, "v": -1.3, "r": 0.3, "blocks": true },
+      { "id": "gift", "kinds": ["giftstone"], "u": -0.9, "v": -1.2, "r": 0.28 },
+      { "id": "lamp", "kinds": ["lamp"], "u": -0.95, "v": 1.2, "r": 0.08 },
+      { "id": "jar", "kinds": ["jar"], "u": -1.6, "v": 1.4, "r": 0.12 },
+      { "id": "bath", "kinds": ["birdbath"], "u": 1.6, "v": 2.9, "r": 0.3 },
+      { "id": "chime", "kinds": ["chime"], "u": -3.3, "v": 1.6, "r": 0.08 }
+    ],
+    "offPad": {
+      "bed": { "u": -0.5, "v": 5.0, "w": 2.4, "d": 1.2 },
+      "nettles": { "fromM": 4.0, "toM": 4.6, "fromDeg": -70, "toDeg": -35 }
+    },
+    "mooring": { "stakeLevelM": 0.05, "boatOutM": 1.6, "searchM": 24 },
+    "kingTideMarginM": 0.3
   }
 }

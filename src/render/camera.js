@@ -16,6 +16,7 @@ const DEG = Math.PI / 180;
  * @property {[number, number|null]} distanceHard
  * @property {number} distanceHardMaxFactor
  * @property {number} worldRadius
+ * @property {[number, number]} [worldCenter]  the island's center (x, z), default the origin
  * @property {number} targetMargin
  * @property {number} minEyeHeight
  * @property {{ fromM: number, toM: number, minEyeHeight: number }} [close]  the close-up (S6b): below fromM the
@@ -168,11 +169,13 @@ export function createOrbitCamera(r) {
   }
 
   function clampTarget() {
+    // Around the island's center (the larger island's is not the world origin).
     const max = worldRadius + r.targetMargin;
-    const d = Math.hypot(goal.target[0], goal.target[2]);
+    const [ox, oz] = r.worldCenter ?? [0, 0];
+    const d = Math.hypot(goal.target[0] - ox, goal.target[2] - oz);
     if (d > max) {
-      goal.target[0] *= max / d;
-      goal.target[2] *= max / d;
+      goal.target[0] = ox + (goal.target[0] - ox) * max / d;
+      goal.target[2] = oz + (goal.target[2] - oz) * max / d;
     }
   }
 
