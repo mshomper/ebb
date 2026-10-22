@@ -5,7 +5,7 @@
 
 import { coveredCells, shelterFields, dampUnderAt } from '../src/world/ecology/shelter.js';
 import { HABITAT_ORIGIN } from '../src/world/growth/habitat.js';
-import { rollUnder, chanceOf, inTime, onGround, groundUnder, underToWorld } from '../src/world/finds/under-log.js';
+import { rollUnder, chanceOf, inTime, onGround, groundUnder, underToWorld, keptAge } from '../src/world/finds/under-log.js';
 
 const G = 'under-log';
 
@@ -70,6 +70,12 @@ export function addUnderLogTests(test, assert, eq) {
     const dry = chanceOf(W, { kind: 'log', ...when({ ground: ground({ damp: 0, shade: 0, nearWater: 0 }), days: 2 }) }, R.ground);
     assert(dry > 0 && dry < chanceOf(W, { kind: 'log', ...when() }, R.ground), 'a dry, sunny, new log: less likely, not never');
     assert(onGround(W.ground, ground({ grass: 0, soil: 0.6 }), R.ground), 'bare soil counts');
+    // The age share follows L2's ageing of the log itself (log-age.js).
+    const A = (await fetch('../recipes/world/pieces.json').then((r) => r.json())).driftwood.age;
+    const young = keptAge(0, 3 * 24, A), old = keptAge(0, 60 * 24, A);
+    assert(young.age !== undefined && old.age !== undefined && old.age > young.age, 'a log ages by L2\'s clock');
+    assert(chanceOf(W, { kind: 'log', ...when(old) }, R.ground) > chanceOf(W, { kind: 'log', ...when(young) }, R.ground), 'an old log is likelier');
+    eq(keptAge(0, 48, null).age, undefined, 'a stone has no age');
   });
 
   test(G, 'the violet ground beetle: logs on grass, late spring to autumn, by day', async () => {

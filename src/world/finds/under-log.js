@@ -8,6 +8,7 @@
 
 import { hash32 } from '../../core/rng.js';
 import { HABITAT_ORIGIN } from '../growth/habitat.js';
+import { logAge } from '../pieces/log-age.js';
 
 /** The kinds that live underneath, in the order they are rolled (a kind's place salts its roll). */
 export const UNDER_KINDS = /** @type {const} */ (['woodlice', 'beetle']);
@@ -69,11 +70,15 @@ export function groundUnder(p) {
 }
 
 /**
- * How old a kept log is for what lives under it, in game days since it was set down. Read through this
- * one helper, so it can follow L2's ageing (log-age.js logAge) if the two should ever share a clock.
- * @param {number} placedHour @param {number} hourNow
+ * How long a kept log has lain, in game days since it was set down (a kind's minDays), and how aged it
+ * is, 0..1, by L2's own ageing (log-age.js logAge: the same age that darkens it and brings its moss).
+ * @param {number} placedHour @param {number} hourNow @param {{ startDays: number, fullDays: number } | null} [A] pieces.json driftwood.age
+ * @returns {{ days: number, age?: number }}
  */
-export const keptDays = (placedHour, hourNow) => Math.max(0, (hourNow - placedHour) / 24);
+export function keptAge(placedHour, hourNow, A) {
+  const days = Math.max(0, (hourNow - placedHour) / 24);
+  return A ? { days, age: logAge(placedHour, hourNow, A) } : { days };
+}
 
 /**
  * Does a kind live on this ground? soil: not sand, rock or water; grass: the grass share is at least
@@ -99,14 +104,16 @@ export function inTime(K, t) {
 /**
  * The chance a kind is under this piece now, 0..most: nothing off its ground, out of its time or too
  * new; else its base and each of damp, shade, near water and the log's age adding its share.
- * @param {any} K the kind's recipe @param {{ kind: string, days: number, ground: Ground, season: number, phase: number, hourOfDay: number }} c
+ * @param {any} K the kind's recipe
+ * @param {{ kind: string, days: number, age?: number, ground: Ground, season: number, phase: number, hourOfDay: number }} c
+ *   age: the log's own age 0..1 (L2's logAge, src/world/pieces/log-age.js); without it, ageFullDays past minDays
  * @param {any} G under-log.json ground
  */
 export function chanceOf(K, c, G) {
   if (!K.on.includes(c.kind) || !onGround(K.ground, c.ground, G) || !inTime(K, c)) return 0;
   if (c.days < (K.minDays ?? 0)) return 0;
   const C = K.chance, g = c.ground;
-  const age = smooth(c.days, K.minDays ?? 0, (K.minDays ?? 0) + G.ageFullDays);
+  const age = c.age ?? smooth(c.days, K.minDays ?? 0, (K.minDays ?? 0) + G.ageFullDays);
   return Math.min(G.most, C.base + C.damp * g.damp + C.shade * g.shade + C.nearWater * g.nearWater + C.age * age);
 }
 
@@ -121,8 +128,8 @@ export function chanceOf(K, c, G) {
  * the same finds.
  * @param {number} seed the world's under-log seed
  * @param {{ id: string, kind: string, seed: number, length?: number, size: number }} piece
- * @param {{ day: number, days: number, ground: Ground, season: number, phase: number, hourOfDay: number }} c
- *   day: the game day (its index); days: how long the log has been kept
+ * @param {{ day: number, days: number, age?: number, ground: Ground, season: number, phase: number, hourOfDay: number }} c
+ *   day: the game day (its index); days: how long the log has been kept; age: its own age 0..1 (chanceOf)
  * @param {any} R recipes/species/under-log.json
  * @returns {{ found: UnderOne[], counts: Record<string, number>, chances: Record<string, number> }}
  */

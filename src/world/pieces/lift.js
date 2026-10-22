@@ -11,11 +11,12 @@
 import { emitDeferred } from '../../core/events.js';
 import { hourIndex } from '../../core/clock.js';
 import { subSeed } from '../../core/rng.js';
-import { groundUnder, keptDays, rollUnder, underToWorld } from '../finds/under-log.js';
+import { groundUnder, keptAge, rollUnder, underToWorld } from '../finds/under-log.js';
 
 /**
- * @param {{ pieces: any, walk: any, world: { state: any, env: any }, recipe: any, seed: number }} o
- *   pieces: src/world/pieces; walk: src/world/walk; recipe: recipes/species/under-log.json; seed: the world seed
+ * @param {{ pieces: any, walk: any, world: { state: any, env: any }, recipe: any, seed: number, ageRecipe?: any }} o
+ *   pieces: src/world/pieces; walk: src/world/walk; recipe: recipes/species/under-log.json; seed: the world seed;
+ *   ageRecipe: pieces.json driftwood.age (L2's ageing, which a log's age share follows)
  */
 export function createLift(o) {
   const { pieces, walk, world, recipe: R } = o;
@@ -77,7 +78,8 @@ export function createLift(o) {
       if (!rest && hab && !p.strand) {
         const hours = (hour % 24 + 24) % 24;
         const ground = groundUnder({ hab, plants: st?.growth?.plants ?? [], x: p.x, z: p.z, G: R.ground });
-        found = rollUnder(seed, p, { day, days: keptDays(p.placedHour ?? hour, hour), ground,
+        // A stone does not age; a log by L2's ageing (log-age.js).
+        found = rollUnder(seed, p, { day, ...keptAge(p.placedHour ?? hour, hour, p.kind === 'log' ? o.ageRecipe ?? null : null), ground,
           season: st?.seasons?.index ?? 0, phase: st?.seasons?.phase ?? 0, hourOfDay: hours }, R).found;
       }
       active.set(id, { piece: p, from: m, found: found.map((f) => ({ ...f, at: underToWorld(p, f.u, f.v) })), t0: performance.now() });
