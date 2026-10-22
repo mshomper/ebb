@@ -73,6 +73,8 @@
     "toads": { "label": "Common toad", "kind": "small", "icon": "toad", "page": "toads" },
     "slowworms": { "label": "Slow worm", "kind": "small", "icon": "slowworm", "page": "slowworms" },
     "lizards": { "label": "Common lizard", "kind": "small", "icon": "lizard", "page": "lizards" },
+    "woodlice": { "label": "Woodlice", "kind": "small", "icon": "woodlice", "page": "woodlice" },
+    "groundbeetle": { "label": "Violet ground beetle", "kind": "small", "icon": "groundbeetle", "page": "groundbeetle" },
     "you": { "label": "You", "kind": "animals", "icon": "you", "always": true }
   },
   "links": [
@@ -194,6 +196,13 @@
     { "a": "stones", "b": "turtles", "ink": "flag:turtles:seen", "note": "Turtles climb out onto a stone by the water to bask." },
     { "a": "logs", "b": "turtles", "ink": "flag:turtles:seen", "note": "A log at the water's edge is the best basking spot a turtle could want." },
     { "a": "grass", "b": "webs", "ink": "seen:webs", "note": "Orb webs hang in the tall grass." },
-    { "a": "midges", "b": "webs", "ink": "seen:webs&flag:midges:seen", "note": "Midges and small flies are caught in the webs." }
+    { "a": "midges", "b": "webs", "ink": "seen:webs&flag:midges:seen", "note": "Midges and small flies are caught in the webs." },
+    { "a": "logs", "b": "woodlice", "ink": "seen:woodlice", "note": "Woodlice gather in the damp under a log that has lain a while." },
+    { "a": "fresh", "b": "woodlice", "ink": "seen:woodlice", "note": "Woodlice keep to the damp: a log near water suits them best." },
+    { "a": "fungi", "b": "woodlice", "ink": "seen:woodlice&seen:fungi", "note": "Woodlice and fungi both turn old wood back into soil." },
+    { "a": "woodlice", "b": "toads", "ink": "seen:woodlice&seen:toads", "note": "The toad eats woodlice on its night walks." },
+    { "a": "logs", "b": "groundbeetle", "ink": "seen:groundbeetle", "note": "A violet ground beetle hides under a log by day." },
+    { "a": "grass", "b": "groundbeetle", "ink": "seen:groundbeetle", "note": "The beetle hunts through the grass at night." },
+    { "a": "you", "b": "woodlice", "ink": "seen:woodlice", "note": "Woodlice came to live under a log you carried up from the shore." }
   ]
 }

@@ -493,6 +493,15 @@ const ICONS = {
     <circle cx="18" cy="14.5" r="1"/>
     <path d="M12 3V9M9.4 5.6L12 3L14.6 5.6"/>
     <path d="M2.5 20.5H21.5"/>`,
+  // Lift (L3a, src/world/pieces/lift.js; on foot): a log tipping up off the ground line from its far
+  // end, the damp patch it lay on showing beneath, and a small arc where it rolls back.
+  lift: `
+    <rect ${ACCENT} x="4" y="11.5" width="15" height="4.6" rx="2.3" transform="rotate(-22 19 13.8)"/>
+    <rect x="4" y="11.5" width="15" height="4.6" rx="2.3" transform="rotate(-22 19 13.8)"/>
+    <path d="M5.5 18.2H15.5"/>
+    <path d="M7.5 19.2H13"/>
+    <path d="M4.2 8.4C4.8 6.2 6.6 4.8 8.8 4.6M7.2 3.4L8.8 4.6L7.6 6.2"/>
+    <path d="M2.5 20.8H21.5"/>`,
   // The shelf (keepsakes, docs/future/12): a plank on two brackets holding a coiled shell, a pebble
   // and a feather leaning up.
   shelf: `
@@ -667,6 +676,24 @@ const ICONS = {
     <path d="M12 3.5C13.4 3.5 13.8 5 13.6 6.4L13.4 12.2C13.2 13.6 10.8 13.6 10.6 12.2L10.4 6.4C10.2 5 10.6 3.5 12 3.5Z"/>
     <path d="M12 13.4C12 15 12.6 16 14 16.4"/>
     <path d="M10.6 7.4L8.4 6.4M13.4 7.4L15.6 6.4M10.8 11.2L8.6 12.6M13.2 11.2L15.4 12.6"/>`,
+  // Woodlice (L3a, under a kept log): from above, a domed oval of banded plates, two long antennae
+  // and the short legs along its sides.
+  woodlice: `
+    <path ${ACCENT} d="M12 4.6C15 4.6 16.6 8.2 16.6 12.4C16.6 16.8 14.6 19.6 12 19.6S7.4 16.8 7.4 12.4C7.4 8.2 9 4.6 12 4.6Z"/>
+    <path d="M12 4.6C15 4.6 16.6 8.2 16.6 12.4C16.6 16.8 14.6 19.6 12 19.6S7.4 16.8 7.4 12.4C7.4 8.2 9 4.6 12 4.6Z"/>
+    <path d="M8 9H16M7.5 12H16.5M7.7 15H16.3"/>
+    <path d="M10.8 4.9C9.8 3.4 8.4 2.6 6.6 2.4M13.2 4.9C14.2 3.4 15.6 2.6 17.4 2.4"/>
+    <path d="M7.6 10.4L5.6 9.8M7.5 13.6L5.4 13.8M8 16.6L6.2 17.6M16.4 10.4L18.4 9.8M16.5 13.6L18.6 13.8M16 16.6L17.8 17.6"/>`,
+  // Violet ground beetle (L3a, under a kept log on grass): from above, long oval wing cases split down
+  // the middle, a narrower shield and head, six long running legs.
+  groundbeetle: `
+    <path ${ACCENT} d="M12 9.6C14.8 9.6 16.2 12.4 16.2 15.4C16.2 18.6 14.4 21 12 21S7.8 18.6 7.8 15.4C7.8 12.4 9.2 9.6 12 9.6Z"/>
+    <path d="M12 9.6C14.8 9.6 16.2 12.4 16.2 15.4C16.2 18.6 14.4 21 12 21S7.8 18.6 7.8 15.4C7.8 12.4 9.2 9.6 12 9.6Z"/>
+    <path d="M12 9.8V20.8"/>
+    <path d="M9.6 6.2H14.4L15 9.4H9Z"/>
+    <path d="M10.6 6.2C10.6 4.8 13.4 4.8 13.4 6.2"/>
+    <path d="M11.2 4.6C10.4 3 9.2 2.2 7.6 2M12.8 4.6C13.6 3 14.8 2.2 16.4 2"/>
+    <path d="M9.4 8.2L6.4 6.6L5.2 4.8M14.6 8.2L17.6 6.6L18.8 4.8M8.2 13L5 13.4L3.6 15M15.8 13L19 13.4L20.4 15M8.4 17L5.6 19L5 21M15.6 17L18.4 19L19 21"/>`,
   // The floating reed raft (the turtles' gift): a low mat of reeds on the water, stems standing up.
   raft: `
     <path ${ACCENT} d="M3.5 16C5 14.6 19 14.6 20.5 16C19 17.4 5 17.4 3.5 16Z"/>
