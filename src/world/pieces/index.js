@@ -708,7 +708,7 @@ export function createPieces(opts) {
       const s = state();
       const seed = hash32(piecesSeed, s.nextId, 0x57e95);
       /** @type {any} */ const piece = { id: `p${s.nextId}`, kind: 'steps', x: plan.x, z: plan.z, x2: plan.x2, z2: plan.z2, yaw: 0,
-        size: ST.widthM, top: plan.top, bottom: plan.bottom, seed, placedHour: hourIndex() };
+        size: ST.widthM, top: plan.top, bottom: plan.bottom, risers: plan.risers, seed, placedHour: hourIndex() };
       if (crossesGuard(guardMask, piece, ST)) { say('overlap'); return; }
       const cmd = terrain.editCells(flightRect(piece, flightGeom(piece, ST)), (/** @type {any} */ m) => { carveFlight(m, piece, ST); paintFlight(m, piece, ST); });
       if (!cmd) return;

@@ -9,8 +9,9 @@
 // (terrain/index.js guard), so reshaping the cliff round it never breaks the stair. Each tread gets
 // flat stone slabs (slabs.js) set a few centimetres proud.
 //
-// A record: { id, kind: 'steps', x, z, x2, z2, size, top, bottom, seed, placedHour }: (x, z) the
-// top end, (x2, z2) the bottom end, size the width (m), top and bottom the two levels (m).
+// A record: { id, kind: 'steps', x, z, x2, z2, size, top, bottom, risers, seed, placedHour }: (x, z)
+// the top end, (x2, z2) the bottom end, size the width (m), top and bottom the two levels (m), risers
+// how many rises it was cut with.
 // Plain arithmetic and Math.sqrt only (rng.js), so a flight is cut the same on every device. Pure.
 
 import { CELL, WORLD_CELLS as N, WORLD_ORIGIN, quantize, dequantize } from '../terrain/grid.js';
@@ -19,7 +20,7 @@ import { hash32 } from '../../core/rng.js';
 
 /**
  * @typedef {{ id: string, kind: 'steps', x: number, z: number, x2: number, z2: number, size: number,
- *   top: number, bottom: number, seed: number, placedHour: number }} Flight
+ *   top: number, bottom: number, risers?: number, seed: number, placedHour: number }} Flight
  * @typedef {{ ux: number, uz: number, len: number, risers: number, tread: number, rise: number, half: number, land: number }} FlightGeom
  *   ux, uz: the unit direction from the top end down; risers: how many; tread: each tread's depth (m)
  */
@@ -54,7 +55,8 @@ export function flightGeom(f, R) {
   const dx = f.x2 - f.x, dz = f.z2 - f.z;
   const len = Math.max(1e-6, Math.sqrt(dx * dx + dz * dz));
   const drop = f.top - f.bottom;
-  const risers = Math.max(1, Math.ceil(drop / R.maxRiseM - 1e-9), Math.ceil(len / R.maxTreadM - 1e-9));
+  // A flight keeps the rises it was cut with, so retuning the recipe never recuts it.
+  const risers = f.risers ?? Math.max(1, Math.ceil(drop / R.maxRiseM - 1e-9), Math.ceil(len / R.maxTreadM - 1e-9));
   return { ux: dx / len, uz: dz / len, len, risers, tread: len / risers, rise: drop / risers, half: f.size / 2, land: R.landM };
 }
 

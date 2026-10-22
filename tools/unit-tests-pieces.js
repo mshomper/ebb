@@ -339,7 +339,7 @@ export function addPiecesTests(test, assert, eq) {
     s = /** @type {any} */ (addPiece(s, makeStone(99, 1, 1, 2, 40, R), R.cap));
     const a = makeStepping(99, 2, 3, 4, 0.6, 41, null, R.stepping), b = makeStepping(99, 3, 3.6, 4.1, 0.7, 41, a.id, R.stepping);
     for (const p of [a, b]) s = /** @type {any} */ (addPiece(s, /** @type {any} */ (p), R.stepping.cap));
-    const flight = { id: 'p4', kind: 'steps', x: -7, z: -9, x2: -7, z2: -13.5, yaw: 0, size: R.steps.widthM, top: 4.25, bottom: 2.05, seed: 77, placedHour: 42 };
+    const flight = { id: 'p4', kind: 'steps', x: -7, z: -9, x2: -7, z2: -13.5, yaw: 0, size: R.steps.widthM, top: 4.25, bottom: 2.05, risers: 10, seed: 77, placedHour: 42 };
     s = /** @type {any} */ (addPiece(s, /** @type {any} */ (flight), R.steps.cap));
     const { header, sections } = snapshot(parts(s));
     const back = restore((await decode(await encode(header, sections))).sections);
@@ -354,7 +354,7 @@ export function addPiecesTests(test, assert, eq) {
     const R = await recipe, ST = R.steps;
     eq(planFlight([0, 0], [0, 1], 3, 1.5, ST).ok, false, 'too short for 1.5 m of drop');
     eq(/** @type {any} */ (planFlight([0, 0], [0, 1], 3, 2.95, ST)).reason, 'flat', 'no drop to step down');
-    const plan = /** @type {any} */ (planFlight([0, -4.5], [0, 0], 2.05, 4.25, ST));
+    const plan = /** @type {any} */ (planFlight([0, -5.5], [0, 0], 2.05, 4.25, ST));
     assert(plan.ok && plan.top === 4.25 && plan.z === 0, 'dragged up, it still runs from the top down');
     const f = /** @type {any} */ ({ ...plan, id: 'p1', kind: 'steps', size: ST.widthM, seed: 3, placedHour: 0 });
     const g = flightGeom(f, ST);

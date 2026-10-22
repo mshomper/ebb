@@ -18,12 +18,12 @@ import { groundOfCell } from '../water/shore.js';
 
 //
 // A pond stone (stepping.js) is { id, kind: 'stepping', x, z, yaw, seed, size, rise, run, placedHour };
-// a flight of Steps (steps.js) is { id, kind: 'steps', x, z, x2, z2, size, top, bottom, seed, placedHour }.
+// a flight of Steps (steps.js) is { id, kind: 'steps', x, z, x2, z2, size, top, bottom, risers, seed, placedHour }.
 
 /**
  * @typedef {{ id: string, kind: 'stone' | 'log' | 'stepping' | 'steps', x: number, z: number, yaw: number, seed: number, size: number, length?: number,
- *   rise?: number, run?: string, x2?: number, z2?: number, top?: number, bottom?: number, placedHour: number }} Piece
- *   length: a log's length (m); rise, run: a pond stone's; x2, z2, top, bottom: a flight's (yaw 0)
+ *   rise?: number, run?: string, x2?: number, z2?: number, top?: number, bottom?: number, risers?: number, placedHour: number }} Piece
+ *   length: a log's length (m); rise, run: a pond stone's; x2, z2, top, bottom, risers: a flight's (yaw 0)
  * @typedef {{ version: number, list: Piece[], nextId: number, arrived: boolean }} PiecesState
  *   nextId: the number the next piece's id takes; arrived: the reward's stones have come (once per island)
  */
@@ -61,12 +61,12 @@ export function cleanPieces(v) {
     if (!fin(r.x) || !fin(r.z) || !fin(r.yaw) || !fin(r.size) || !(r.size > 0) || !fin(r.seed)) continue;
     if (r.kind === 'log' && !(fin(r.length) && r.length > 0)) continue;
     if (r.kind === 'stepping' && !(fin(r.rise) && typeof r.run === 'string')) continue;
-    if (r.kind === 'steps' && !(fin(r.x2) && fin(r.z2) && fin(r.top) && fin(r.bottom) && r.top > r.bottom)) continue;
+    if (r.kind === 'steps' && !(fin(r.x2) && fin(r.z2) && fin(r.top) && fin(r.bottom) && r.top > r.bottom && Number.isInteger(r.risers) && r.risers >= 1)) continue;
     ids.add(r.id);
     const hour = fin(r.placedHour) ? r.placedHour : 0;
     // In the order makeStone, makeLog, makeStepping and the Steps mode write them, so a record comes back exactly.
     if (r.kind === 'stepping') list.push({ id: r.id, kind: r.kind, x: r.x, z: r.z, yaw: r.yaw, seed: r.seed >>> 0, size: r.size, rise: r.rise, run: r.run, placedHour: hour });
-    else if (r.kind === 'steps') list.push({ id: r.id, kind: r.kind, x: r.x, z: r.z, x2: r.x2, z2: r.z2, yaw: r.yaw, size: r.size, top: r.top, bottom: r.bottom, seed: r.seed >>> 0, placedHour: hour });
+    else if (r.kind === 'steps') list.push({ id: r.id, kind: r.kind, x: r.x, z: r.z, x2: r.x2, z2: r.z2, yaw: r.yaw, size: r.size, top: r.top, bottom: r.bottom, risers: r.risers, seed: r.seed >>> 0, placedHour: hour });
     else list.push({ id: r.id, kind: r.kind, x: r.x, z: r.z, yaw: r.yaw, seed: r.seed >>> 0, size: r.size,
       ...(r.kind === 'log' ? { length: r.length } : {}), placedHour: hour });
   }

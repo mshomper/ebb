@@ -73,7 +73,7 @@
   },
   "stepsNote": "Steps (doc 13, the shaper's trail; src/world/pieces/steps.js): a flight cut between two levels of ground, dragged from one to the other. widthM: how wide a flight is (wide enough that the walker's half-metre grid always finds a level way up its middle). Every rise is at most maxRiseM and every tread at least minTreadM and at most maxTreadM, and the whole flight rises no steeper than maxPitch (rise over run), so the walker can always climb it; a drag shorter than that asks for more. minDropM: the least difference in level worth a step. landM: how far the flight runs on past each end at that end's level, so it meets the ground. cap: how many flights an island holds. rockShare: how far toward rock the flight's cells and the sheer walls beside it (any drop over faceDropM to a neighbour) are painted. slab: perTread slabs side by side on each tread, filling fill of their share (the rest is the gaps between them), turned up to yawJitterDeg off square, their tops riseM over the tread, with a skirt skirtUnits deep (lengths; short, since a flight can stand out from the slope). words: the Steps mode's calm lines.",
   "steps": {
-    "widthM": 1.6, "maxRiseM": 0.3, "minTreadM": 0.5, "maxTreadM": 1.0, "maxPitch": 0.6, "minDropM": 0.2,
+    "widthM": 1.6, "maxRiseM": 0.22, "minTreadM": 0.5, "maxTreadM": 1.0, "maxPitch": 0.6, "minDropM": 0.2,
     "landM": 0.25, "cap": 12, "rockShare": 0.9, "faceDropM": 0.3,
     "slab": { "perTread": 2, "fill": 0.94, "yawJitterDeg": 5, "riseM": 0.04, "skirtUnits": 0.12 },
     "words": {

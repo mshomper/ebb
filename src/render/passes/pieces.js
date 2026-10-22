@@ -14,7 +14,7 @@ const DRAW_BYTES = 96;
 /** Floats per piece: at, more, extra (4 each), then its bone (16). */
 const PIECE_FLOATS = 28;
 // Loose stones and logs, pond stones, and the slabs on every flight of Steps' treads.
-const MAX = 384;
+const MAX = 512;
 
 /**
  * @typedef {{ x: number, y: number, z: number, yaw: number, size: number, mesh: string, bone: Float32Array,
