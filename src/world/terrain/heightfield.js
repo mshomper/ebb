@@ -36,6 +36,8 @@ export function createTextures(device) {
     materialScratch: makeTexture(device, { label: 'terrain-material-scratch', size, format: 'rgba8unorm', usage: T.STORAGE_BINDING | T.COPY_SRC }),
     // r visual wetness, g damp paint, b moss mask, a path wear: filled by later steps (S4, M3, M4).
     ground: makeTexture(device, { label: 'terrain-ground', size, format: 'rgba8unorm', usage: T.TEXTURE_BINDING | T.COPY_DST }),
+    // Cells the brushes leave alone (1): under a flight of Steps (src/world/pieces/steps.js).
+    guard: makeTexture(device, { label: 'terrain-guard', size, format: 'r8unorm', usage: T.TEXTURE_BINDING | T.COPY_DST }),
   };
 }
 

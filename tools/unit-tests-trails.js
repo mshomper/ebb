@@ -63,7 +63,7 @@ export function addTrailsTests(test, assert, eq) {
     const S = await load('shaper');
     const sl = trailLine(firstsOf(e, 'shape'), S.stops, []);
     eq(sl.map((x) => x.type === 'first' ? x.first.id : x.type === 'station' ? `[${x.stop.id}${x.inked ? '' : '?'}]` : `next:${x.stop.id}`).join(' '),
-      'deepPool [stones?] cove [paths?] next:lantern', 'each place, its reward in pencil, then the next place ahead');
+      'deepPool [stones] cove [paths?] next:lantern', 'each place, its reward (inked once built: stepping stones are), then the next place ahead');
   });
 
   test(G, "the shaper's places come only from what the player made", async () => {

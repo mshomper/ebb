@@ -785,6 +785,30 @@ const ICONS = {
     <path d="M7 11H17" stroke-dasharray="0.01 2.9" opacity="0.7"/>
     <path d="M12 3.5V9M9.8 6.8L12 9L14.2 6.8"/>`,
 
+  // Steps (the shaper's trail): a flight cut down from a shelf to the ground, an up stroke beside it.
+  steps: `
+    <path ${ACCENT} d="M2.5 20V8.5H8V12H11.5V15.5H15V19H21.5V20Z"/>
+    <path d="M2.5 8.5H8V12H11.5V15.5H15V19H21.5"/>
+    <path d="M17.5 13V4.5M15.3 6.7L17.5 4.5L19.7 6.7"/>`,
+
+  // Pond stones (the shaper's trail): three flat stones in a line across a ripple of water.
+  pondstones: `
+    <path ${ACCENT} d="M2.5 15.5C3.4 13.8 5.2 13.2 6.8 13.6C7.9 13.9 8.2 15 7.4 15.5Z"/>
+    <path ${ACCENT} d="M9 13.5C10 11.6 12.4 11 14.2 11.6C15.4 12 15.6 13.1 14.8 13.5Z"/>
+    <path ${ACCENT} d="M16.5 11.5C17.4 9.8 19.4 9.3 20.8 9.8C21.7 10.2 21.7 11.1 21 11.5Z"/>
+    <path d="M2.5 15.5C3.4 13.8 5.2 13.2 6.8 13.6C7.9 13.9 8.2 15 7.4 15.5Z"/>
+    <path d="M9 13.5C10 11.6 12.4 11 14.2 11.6C15.4 12 15.6 13.1 14.8 13.5Z"/>
+    <path d="M16.5 11.5C17.4 9.8 19.4 9.3 20.8 9.8C21.7 10.2 21.7 11.1 21 11.5Z"/>
+    <path d="M2.5 19.5C4 18.3 5.5 18.3 7 19.5S10 20.7 11.5 19.5S14.5 18.3 16 19.5S19 20.7 21.5 19.5"/>`,
+
+  // Reed raft (the turtles' gift): a mat of bundled reeds tied with two bands, afloat on a ripple.
+  raft: `
+    <rect ${ACCENT} x="3.5" y="9.5" width="17" height="6" rx="3"/>
+    <rect x="3.5" y="9.5" width="17" height="6" rx="3"/>
+    <path d="M4 12.5H20"/>
+    <path d="M9 9.5V15.5M15 9.5V15.5"/>
+    <path d="M2.5 19.5C4 18.3 5.5 18.3 7 19.5S10 20.7 11.5 19.5S14.5 18.3 16 19.5S19 20.7 21.5 19.5"/>`,
+
   // A level shelf line over a mound whose top it has cut away.
   flatten: `
     <path ${ACCENT} d="M2.5 20C5 20 6.6 15.5 7.8 12H16.2C17.4 15.5 19 20 21.5 20Z"/>
