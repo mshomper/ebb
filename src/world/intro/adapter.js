@@ -15,7 +15,7 @@
 // `island:notice` (island-notes), and `journal.flag` actions (the journal keeps the flags).
 
 import { on, emit } from '../../core/events.js';
-import { get } from '../../core/store.js';
+import { get, update } from '../../core/store.js';
 import { dispatch, onAction } from '../../input/actions.js';
 import { sunMoon } from '../sky/sun-moon.js';
 import { landmarks } from '../terrain/landform.js';
@@ -68,6 +68,23 @@ export function flapSpot(pad) {
 }
 
 /**
+ * Did a Sculpt stroke or a Water pour reach ground off the camp pad? Off the pad means past where
+ * the brushes are locked (the pad, then its fade). A stroke's rect is terrain:stroke-ended's (world
+ * m, x0, z0 to x1, z1): it reaches off unless the whole rect sits inside; a pour is its point. Pure.
+ * @param {{ x: number, z: number, r: number, lockFadeM?: number } | null} pad
+ * @param {{ x0: number, z0: number, x1: number, z1: number } | null} rect @param {{ x: number, z: number }} [at]
+ */
+export function offPadOf(pad, rect, at) {
+  if (!pad) return true;
+  const r = pad.r + (pad.lockFadeM ?? 1);
+  if (at) return Math.hypot(at.x - pad.x, at.z - pad.z) > r;
+  if (!rect) return true;
+  const far = Math.max(Math.abs(rect.x0 - pad.x), Math.abs(rect.x1 - pad.x)) ** 2 + Math.max(Math.abs(rect.z0 - pad.z), Math.abs(rect.z1 - pad.z)) ** 2;
+  // A rect that is not numbers (a payload of another shape) counts as off the pad, never as stuck on it.
+  return !(far <= r * r);
+}
+
+/**
  * @param {{ R: any, mode?: 'full' | 'short', fresh: boolean, walk: any, terrain: any, water: any,
  *   land: any, terrainSeed: number, orbit: any, clock: any,
  *   pack?: { holds: (need: Record<string, number>) => boolean, take: (kind: string, n?: number) => number, recipe?: any } | null,
@@ -98,17 +115,7 @@ export function createIntroLive(o) {
     spring: () => spring,
     journalOpen: () => !!get('journalUi')?.open,
     packHolds: (need) => !!o.pack?.holds(need),
-    offPad: (rect, at) => {
-      const pad = padNow();
-      if (!pad) return true;
-      // Off the pad means past where the brushes are locked (the pad, then its fade).
-      const r = pad.r + (pad.lockFadeM ?? 1);
-      if (at) return Math.hypot(at.x - pad.x, at.z - pad.z) > r;
-      if (!rect) return true;
-      // A stroke's rect reaches off the pad unless the whole rect sits inside it.
-      const far = Math.max(Math.abs(rect.minX - pad.x), Math.abs(rect.maxX - pad.x)) ** 2 + Math.max(Math.abs(rect.minZ - pad.z), Math.abs(rect.maxZ - pad.z)) ** 2;
-      return far > r * r;
-    },
+    offPad: (rect, at) => offPadOf(padNow(), rect, at),
     ring: () => slot('ring'),
     fireLit: () => (o.camp ? o.camp.fireLit() : lit),
     sunsetInH: () => sunsetInH(o.clock.display(), o.orbit),
@@ -131,10 +138,24 @@ export function createIntroLive(o) {
       },
       notice: (text) => emit('island:notice', { text, showS: 9 }),
       glow: (s) => emit('intro:glow', { slot: s }),
+      flow: (n) => dispatch(/** @type {any} */ ({ type: 'time.flow', flow: n })),
     },
   });
 
+  // The evening's place for other pieces (E3 offers Light and Rest only when their beat comes):
+  // the store slice `intro` { beat, started, done }, kept as the director moves.
+  let shown = '';
+  function publish() {
+    const c = intro.current, done = (get('journal')?.flags ?? []).includes(`${o.R.flagPrefix ?? 'intro:'}done`);
+    const key = `${c?.id}|${c?.started}|${done}`;
+    if (key === shown) return;
+    shown = key;
+    update('intro', () => ({ beat: c?.id ?? null, started: !!c?.started, done }));
+  }
+
   const offs = [
+    // When the evening is over, time runs at its own pace again (the time button may have hurried it).
+    on('intro:done', () => dispatch(/** @type {any} */ ({ type: 'time.flow', flow: 1 }))),
     on('camp:lit', () => { lit = true; }),
     onAction((/** @type {any} */ a) => {
       if (a.type === 'intro.tuck') intro.tuck();
@@ -202,9 +223,21 @@ export function createIntroLive(o) {
     /** The spring the evening leads to (the lab, the tests). */
     spring: () => spring,
     /** Each frame. @param {number} dt seconds */
-    update(dt) { stub?.tick(); intro.update(dt); },
-    /** The stand-in camp's glowing slots, [x, z, radius, opacity] for the terrain marks (none once E3's camp is in). @param {number} now seconds */
-    rings: (now) => stub?.rings(now) ?? [],
+    update(dt) { stub?.tick(); intro.update(dt); publish(); },
+    /**
+     * Soft rings for the terrain marks, [x, z, radius, opacity]: the spring's pool while the evening
+     * leads you to it (so it can be found from the beach), and the stand-in camp's glowing slots
+     * (none once E3's camp is in). @param {number} now seconds
+     */
+    rings: (now) => {
+      const G = o.R.springGlow, c = intro.current;
+      const out = stub?.rings(now) ?? [];
+      if (G && spring && c?.id === 'spring' && c.started && !c.acting) {
+        const k = 0.5 + 0.5 * Math.sin((2 * Math.PI * now) / G.breatheS);
+        out.push([spring.x, spring.z, G.radiusM, G.opacity[0] + (G.opacity[1] - G.opacity[0]) * k]);
+      }
+      return out;
+    },
     dispose() { intro.dispose(); stub?.dispose(); for (const off of offs) off(); },
   };
 }

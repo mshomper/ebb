@@ -12,8 +12,8 @@
  * @property {() => { x: number, z: number } | null} spring  the first spring's pool
  * @property {() => boolean} journalOpen
  * @property {(need: Record<string, number>) => boolean} packHolds  handfuls by group or kind (E2)
- * @property {(rect: { minX: number, minZ: number, maxX: number, maxZ: number } | null, at?: { x: number, z: number }) => boolean} offPad
- *   a stroke's rect, or a pour's point, reaches ground outside the camp pad
+ * @property {(rect: { x0: number, z0: number, x1: number, z1: number } | null, at?: { x: number, z: number }) => boolean} offPad
+ *   a stroke's rect (terrain:stroke-ended's, world m), or a pour's point, reaches ground outside the camp pad
  * @property {() => { x: number, z: number } | null} ring  the fire ring's slot
  * @property {() => boolean} fireLit
  * @property {() => number} sunsetInH  game hours until the sun next sets (0 or less once it has set today)
@@ -56,6 +56,9 @@ export const CHECKS = {
 
   /** The sun has set today. */
   afterSunset: (ctx) => ctx.sunsetInH() <= 0,
+
+  /** The fire burns (lit before its beat asked, the beat goes straight on to its next line). */
+  fireLit: (ctx) => ctx.fireLit(),
 
   /** The fire is lit and the walker has sat within reach of it for stillS seconds (sitting needs nothing else). */
   satByFire: (ctx, a, mem, dt) => {

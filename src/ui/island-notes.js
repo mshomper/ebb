@@ -90,6 +90,9 @@ export function mountIslandNotes(parent, words, naturalist = null) {
     if (document.hidden) { if (unreadNote(n)) { more++; renderMore(); } return; }
     // A gift (src/world/expansion.js) is its own quiet card, not a passing note.
     if (/** @type {any} */ (n).kind === 'gift') { showGift(n); return; }
+    // While the first evening's hint shows, passing notes keep quiet (the journal keeps them), so the
+    // one line that says what to do next is the only one on the island.
+    if (hint.classList.contains('is-shown')) return;
     waiting.push(n);
     if (waiting.length > N.queue) {
       const dropped = waiting.slice(0, waiting.length - N.queue);
