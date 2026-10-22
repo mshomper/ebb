@@ -124,7 +124,7 @@ export function createCamp(o) {
    */
   const beatAllows = (beat) => {
     const s = get('intro');
-    if (s) return s.done !== false || s.beat === beat;
+    if (s) return s.done !== false || (s.beat === beat && s.started !== false);
     // Before the slice: the director's beat now (null once the evening is done, or with none).
     const now = o.beat?.() ?? null;
     return now === null || now === beat;
@@ -521,6 +521,9 @@ export function createCamp(o) {
     },
     rings,
     cardAt,
+    /** For the evening director: the tent is up; the ring is laid. */
+    pitched: () => pitched(camp()),
+    ringLaid: () => ringLaid(camp()),
     /** For the evening director: the fire is burning. */
     fireLit: () => fireAt(camp().fire, hourNow(), F).word === 'lit',
     /** Where the smoke keeps midges clear while the fire burns or smoulders (C-29), or null. */

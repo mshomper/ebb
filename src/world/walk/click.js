@@ -5,8 +5,8 @@
 //   creature    a frog, a school, a swarm: its card where you stand, never walking up to it (so a
 //               click never startles); further than creatureCardM, walk until that close;
 //   everywhere  grass, rushes, sand, shingle, the strandline: with something to gather, its card
-//               within nearLookM of you; plain, only right at your feet (thingReachM); else the
-//               click just walks there;
+//               within nearLookM of you; plain, never a card (Matt, October 22: clicking grass and
+//               getting its card is a nuisance), the click just walks there;
 //   none        plain walking.
 // Pure: no store, no DOM. The app does the walking and the opening (src/app.js).
 
@@ -34,7 +34,7 @@ export function clickKind(card, species) {
  * @param {number} ringM the card's own ring (how big the thing is)
  * @param {{ thingReachM: number, creatureCardM: number, nearLookM: number }} R recipes/world/walker.json click
  * @param {boolean} [gathers] the ground holds something to gather (its card has Gather): then it
- *   opens within nearLookM; plain grass or sand only right at your feet, so short walks stay walks
+ *   opens within nearLookM; plain grass or sand never opens a card, a click on it only walks
  * @returns {ClickPlan}
  */
 export function clickPlan(kind, distM, ringM, R, gathers = false) {
@@ -43,6 +43,6 @@ export function clickPlan(kind, distM, ringM, R, gathers = false) {
     return distM <= reachM ? { kind: 'card' } : { kind: 'approach', reachM };
   }
   if (kind === 'creature') return distM <= R.creatureCardM ? { kind: 'card' } : { kind: 'approach', reachM: R.creatureCardM * 0.9 };
-  if (kind === 'everywhere') return distM <= (gathers ? R.nearLookM : R.thingReachM) ? { kind: 'card' } : { kind: 'walk' };
+  if (kind === 'everywhere') return gathers && distM <= R.nearLookM ? { kind: 'card' } : { kind: 'walk' };
   return { kind: 'walk' };
 }

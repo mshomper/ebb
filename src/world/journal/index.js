@@ -131,8 +131,18 @@ export function createJournal(opts) {
    *   dragonfly is found along the line from the eye through it, since it is not on the ground
    */
   function cardAt(x, z, y) {
-    // Last, what can be gathered there (src/world/gather): its Gather buttons and its word.
     const card = cardBase(x, z, y);
+    // Terrain (the ground itself, grass and rushes) never pops up a card (Matt, October 22, 2026):
+    // a click on it walks. Only what lies there to gather shows, as its own card: named for the
+    // things, with their Gather buttons and the word for how much is there.
+    if (card && (card.ground || words.species[card.sp]?.kind === 'cover')) {
+      const g = opts.gather ? opts.gather.decorate({ ...card, text: '' }, x, z) : null;
+      if (!g?.gathers?.length) return null;
+      const names = g.gathers.map((/** @type {any} */ t) => t.name);
+      const name = names.length > 1 ? `${names[0]} and ${names[1].charAt(0).toLowerCase()}${names[1].slice(1)}` : names[0];
+      return { ...g, name, sub: null, icon: 'gather', noPage: true, suits: null, suitsPencil: null, gatherOnly: true };
+    }
+    // Last, what can be gathered there (src/world/gather): its Gather buttons and its word.
     return opts.gather ? opts.gather.decorate(card, x, z) : card;
   }
   /** @param {number} x @param {number} z @param {number} [y] */
@@ -266,8 +276,9 @@ export function createJournal(opts) {
     // A keepsake is not a find: tapping it writes nothing in the journal (the shelf is its only
     // record), but a mark seen is a first on the beachcomber's trail, kept or not (src/world/trails.js).
     if (card.keepsake && card.mark) emitDeferred('keepsake:seen', { n: card.mark });
-    // The camp's tent and ring (src/world/camp) are not lives or finds: nothing is written.
-    if (card.keepsake || card.net || card.camp) return;
+    // The camp's tent and ring (src/world/camp) are not lives or finds, and things to gather on bare
+    // ground have a card of their own: no page and no moment for either.
+    if (card.keepsake || card.net || card.camp || card.gatherOnly) return;
     // A loose stone or a log: its card offers Lift on foot (src/world/pieces/lift.js); a tap alone
     // looks, and lifts nothing.
     if (card.piece) {

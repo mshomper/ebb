@@ -20,6 +20,7 @@ import { CHECKS, CHECK_EVENTS } from './checks.js';
  * @property {() => void} skipCamp  leave the camp ready (tent up, ring laid cold) and the walker at the flap
  * @property {(text: string) => void} notice  one island notice (older islands)
  * @property {(slot: string) => void} glow  a camp slot glows (older islands' tent patch)
+ * @property {(flow: number) => void} [flow]  set time's flow (a beat's onStart.flow: dusk at its own pace)
  */
 
 /**
@@ -55,12 +56,24 @@ export function createIntro(o) {
 
   const beat = () => (idx >= 0 ? beats[idx] : null);
 
+  /**
+   * A beat with steps (gathering a handful of twigs, then two of pebbles) says what is still needed:
+   * the first step whose handfuls the pack does not hold yet gives the line. -1 with no steps.
+   * @param {any} b
+   */
+  const stepAt = (b) => (b.steps ? b.steps.findIndex((/** @type {any} */ s) => !CHECKS.packHolds(ctx, s, mem, 0)) : -1);
+  let lastStep = -1;
+
   /** Post the line that should show now (or none), once per change. */
   function post() {
     const b = beat();
     let id = null, text = null, skip = null;
+    // A new step's line comes back even if the one before was tucked away.
+    const si = b && started ? stepAt(b) : -1;
+    if (si !== lastStep) { lastStep = si; tucked = false; }
     if (b && !short && !tucked) {
       if (!started && later) { id = `${b.id}:later`; text = later; }
+      else if (started && si >= 0) { id = `${b.id}:${si}`; text = b.steps[si].hint; }
       else if (started && b.hint?.length) { id = b.id; text = b.hint[Math.min(step, b.hint.length - 1)]; }
       if (started && idx === 0 && b.skip && !has(`${P}done`)) skip = b.skip;
     }
@@ -88,6 +101,11 @@ export function createIntro(o) {
     later = null; tucked = false;
     o.emit('intro:beat-started', { id: b.id });
     if (b.onStart?.page) { set(`keeper:${b.onStart.page}`); effects.openPage(b.onStart.page); }
+    if (b.onStart?.flow) effects.flow?.(b.onStart.flow);
+    // Done early (the fire lit before dusk asked): its lines move on, and its cue sounds now.
+    let early = false;
+    while (step < (b.hintNextIf?.length ?? 0) && CHECKS[b.hintNextIf[step]]?.(ctx, b, mem, 0)) { step++; early = true; }
+    if (early && b.cue) o.emit(b.cue.emit, {});
   }
 
   function finish() {
@@ -113,6 +131,8 @@ export function createIntro(o) {
     const b = beat();
     if (!b) return;
     if (!started) { tryStart(); if (started) post(); return; }
+    // A beat done by an event can also be done already (the tent pitched before its beat came).
+    if (!acting && b.done.event && b.done.orCheck && CHECKS[b.done.orCheck]?.(ctx, b.done, mem, dt)) { finish(); return; }
     if (acting || !b.done.check) return;
     if (!CHECKS[b.done.check](ctx, b.done, mem, dt)) return;
     if (b.then?.act) { acting = b.then.act; effects.act(acting); return; }
@@ -158,6 +178,8 @@ export function createIntro(o) {
     /** Each frame. @param {number} dt seconds */
     update(dt) {
       check(dt);
+      // A step's line follows what the pack holds now.
+      post();
       if (older && !has(`${P}glowed`)) {
         const w = ctx.walker(), pad = ctx.pad();
         if (pad && w.below && Math.hypot(w.x - pad.x, w.z - pad.z) <= (R.older.glowWithinM ?? 12)) { set(`${P}glowed`); effects.glow('tent'); }
