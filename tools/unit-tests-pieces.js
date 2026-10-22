@@ -11,6 +11,9 @@ import { stoneShapes } from '../src/world/pieces/meshes.js';
 import { bakeLogSeed, logLook, LOG_FORMS } from '../src/world/pieces/log-bake.js';
 import { hash32 } from '../src/core/rng.js';
 import { logAge, dampShade, logMoss } from '../src/world/pieces/log-age.js';
+import { initialJournal, foundFind } from '../src/world/journal/observe.js';
+import { setDriftwoodRecipe, noteLog } from '../src/ui/sketches/driftwood.js';
+import { drawSketch, hasSketch } from '../src/ui/sketches/index.js';
 import { strandLogs, cellHeights, strandMask } from '../src/world/pieces/driftwood.js';
 import { strandLines } from '../src/world/water/strandline.js';
 import { tideParams } from '../src/world/tide.js';
@@ -355,6 +358,27 @@ export function addPiecesTests(test, assert, eq) {
     eq(logMoss(0, late, far, A.moss), 0, 'bare on open dry ground');
     eq(logMoss(0, A.moss.startDays * 24 - 1, near, A.moss), 0, 'no moss in its first days');
     return `damp ${near.damp.toFixed(2)}, shade ${near.shade.toFixed(2)}, moss ${logMoss(0, late, near, A.moss).toFixed(2)}`;
+  });
+
+  test(G, 'the Driftwood page: each log form found once from a tapped log, every form drawn, the sketch traced from the log tapped', async () => {
+    const R = await recipe, D = R.driftwood;
+    const words = await fetch('../recipes/world/journal.json').then((r) => r.json());
+    const rec = words.species.driftwood;
+    eq(rec.collection.map((/** @type {any} */ c) => c.id).join(), LOG_FORMS.join(), 'one item per form, in order');
+    let j = initialJournal(0);
+    const ctx = { state: null, hour: 5, words };
+    let r = foundFind(j, 'driftwood', ctx, 'forked');
+    j = r.journal;
+    assert(j.species.driftwood.ever && j.species.driftwood.learned.includes('item:forked'), 'a forked branch found');
+    eq(r.notes[0]?.text, rec.collection[2].found, 'its own note');
+    eq(foundFind(j, 'driftwood', ctx, 'forked').notes.length, 0, 'the same form again writes nothing');
+    eq(foundFind(j, 'driftwood', ctx, 'rootend').notes.length, 1, 'a new form does');
+    setDriftwoodRecipe(R);
+    for (const f of LOG_FORMS) assert(hasSketch(`driftwood:${f}`) && drawSketch(`driftwood:${f}`, { stage: 1, labels: {} }).includes('<path'), `${f} has a drawing`);
+    const seeds = [1, 2, 3].map((s) => hash32(31, s) >>> 0);
+    const svgs = seeds.map((seed) => { noteLog({ seed, size: 0.14, length: 1.2, form: logLook(seed, D).form }); return drawSketch('driftwood', { stage: 2, labels: {} }); });
+    assert(svgs.every((s) => s.includes('<path')) && new Set(svgs).size === 3, 'each tapped log draws its own sketch');
+    return seeds.map((s) => logLook(s, D).form).join(', ');
   });
 
   test(G, 'Sculpt chips always fill their rows: 4 to 10 chips', () => {

@@ -9,10 +9,13 @@ import { anemone, periwinkle, lugworm, hermitcrab, ediblecrab, shells, barnacles
 import { soil, sand, rock, moss, fresh, shore } from './ground.js';
 import { damselfly } from './animals.js';
 import { fungi, webs } from './autumn.js';
+import { driftwood, driftwoodForm, DRIFTWOOD_FORMS } from './driftwood.js';
 
 /** @type {Record<string, (p: import('./pen.js').Pen, scale?: string) => string>} */
 const DRAW = { grass, rushes, reeds, lilies, iris, thrift, marigold, campion, willow, gorse, pondweed, anemone, periwinkle, lugworm, hermitcrab, ediblecrab, shells, barnacles, pondskaters, mussels, sanddollars, moonjelly, soil, sand, rock, moss, fresh, shore,
-  damselflies: damselfly, fungi, webs };
+  damselflies: damselfly, fungi, webs, driftwood };
+// Each driftwood form's small drawing for its row on the page (driftwood:<form>).
+for (const f of DRIFTWOOD_FORMS) DRAW[`driftwood:${f}`] = driftwoodForm(f);
 
 /** Is there a drawing for this page? @param {string} id */
 export const hasSketch = (id) => id in DRAW;

@@ -38,7 +38,7 @@
       "weights": [4, 3, 2, 1],
       "straight": { "bow": [0.05, 0.35], "taper": [0.05, 0.2] },
       "bowed": { "bow": [1.0, 2.2], "taper": [0.25, 0.5], "extraStubs": 1 },
-      "forked": { "bow": [0.1, 0.6], "taper": [0.1, 0.3], "at": [0.35, 0.6], "angleDeg": [28, 48], "armLength": [0.16, 0.3], "armRadius": 0.66 },
+      "forked": { "bow": [0.1, 0.6], "taper": [0.1, 0.3], "at": [0.35, 0.6], "angleDeg": [34, 55], "armLength": [0.2, 0.34], "armRadius": 0.7 },
       "rootend": { "bow": [0.05, 0.3], "taper": [0.15, 0.35], "flare": [0.6, 0.95], "flareShare": 0.14, "roots": [3, 5], "backShare": [0.15, 0.6], "length": [1.0, 2.0], "radius": [0.26, 0.4] },
       "stub": { "count": [0, 3], "radius": [0.22, 0.4], "length": [0.12, 0.45], "leanDeg": 35 },
       "splitChance": 0.35, "splitDeep": [0.8, 2.2], "splitPinch": 0.55

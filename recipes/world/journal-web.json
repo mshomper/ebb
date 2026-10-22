@@ -31,7 +31,7 @@
     "ripples": { "label": "Rippled sand", "kind": "ground", "icon": "ripples", "on": "ripples" },
     "wetSand": { "label": "Wet sand", "kind": "ground", "icon": "wetsand", "on": "wetSand" },
     "mud": { "label": "Tidal mud", "kind": "ground", "icon": "mud", "on": "mud" },
-    "logs": { "label": "Driftwood", "kind": "ground", "icon": "driftwood", "flag": "driftwood:lifted" },
+    "logs": { "label": "Driftwood", "kind": "ground", "icon": "driftwood", "page": "driftwood" },
     "grass": { "label": "Grass", "kind": "plants", "icon": "grass", "page": "grass" },
     "rushes": { "label": "Rushes", "kind": "plants", "icon": "rushes", "page": "rushes" },
     "reeds": { "label": "Reeds", "kind": "plants", "icon": "reeds", "page": "reeds" },

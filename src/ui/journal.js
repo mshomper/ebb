@@ -352,7 +352,7 @@ export function mountJournal(parent, live, buttonParent = parent) {
       ${tiesStrip(live.describeWeb(), live.web, nodeOfPage(live.web, id))}
       ${d.named?.length ? section('Named', `<ul class="ebb-jpage__list">${d.named.map((/** @type {string} */ n) => `<li>${esc(n)}</li>`).join('')}</ul>`) : ''}
       ${d.collection?.length ? section('Found so far', `<ul class="ebb-jpage__list ebb-jpage__collection">${d.collection.map((/** @type {any} */ c) => c.found
-        ? `<li><span><b>${esc(c.name)}</b> <small class="ebb-jpage__rarity">${esc(c.rarity)}</small><br><span class="ebb-journal__voice">${esc(c.text)}</span></span></li>`
+        ? `<li><span>${hasSketch(`${id}:${c.id}`) ? `<span class="ebb-jpage__item-art">${drawSketch(`${id}:${c.id}`, { stage: 1, labels: {} })}</span>` : ''}<b>${esc(c.name)}</b> <small class="ebb-jpage__rarity">${esc(c.rarity)}</small><br><span class="ebb-journal__voice">${esc(c.text)}</span></span></li>`
         : `<li class="is-pencil"><span class="ebb-journal__voice">${esc(c.text)}</span></li>`).join('')}</ul>`) : ''}
       ${middle}
       ${section('Field notes', `<ul class="ebb-jpage__list ebb-jpage__field">${lines(d.field, d.fieldHint)}</ul>`)}

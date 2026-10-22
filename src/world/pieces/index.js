@@ -574,6 +574,15 @@ export function createPieces(opts) {
       return pieceAt(all, x, z, tapR(), D.tapReachM);
     },
 
+    /**
+     * A log's form and time at sea (log-bake.js), and its moss if it is kept (log-age.js): what the
+     * journal's Driftwood page learns from a tap. @param {{ id: string, seed: number, size: number, length?: number, x: number, z: number, placedHour?: number, strand?: boolean }} p
+     */
+    logLook(p) {
+      const b = logs.of(p);
+      return { form: b.form, sea: b.sea, moss: p.strand ? 0 : logWear(p, b.sea)[2] };
+    },
+
     /** Lift a stone or a log to carry it (the card's Carry). @param {string} id @returns {boolean} */
     carry(id) {
       const f = findPiece(id);
