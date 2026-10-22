@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ebb music render</title>
+<link rel="icon" href="../brand/ebb-favicon.svg" type="image/svg+xml">
+<style>
+  @font-face { font-family: 'Nunito'; src: url('../src/vendor/fonts/nunito-latin-600-normal.woff2') format('woff2'); font-weight: 600; }
+  @font-face { font-family: 'Nunito'; src: url('../src/vendor/fonts/nunito-latin-800-normal.woff2') format('woff2'); font-weight: 800; }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; max-width: 100%; overflow-x: hidden; }
+  body { background: #F4EEE4; color: #1E2624; font: 600 17px/1.45 'Nunito', system-ui, sans-serif; padding: 16px; overflow-wrap: anywhere; }
+  main { max-width: 1100px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+  h1 { font-size: 26px; font-weight: 800; margin: 0; color: #4a6a47; }
+  h2 { font-size: 20px; font-weight: 800; margin: 0 0 8px; }
+  p { margin: 4px 0 10px; }
+  .muted { color: #4A5551; font-size: 16px; }
+  a { color: #4a6a47; }
+  [hidden] { display: none !important; }
+  .card { background: #FBF7F0; border: 1px solid #E3D9C9; border-radius: 14px; padding: 14px 16px; min-width: 0; }
+  .layout { display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; }
+  @media (max-width: 820px) { .layout { grid-template-columns: minmax(0, 1fr); } }
+  .field { margin: 0 0 14px; }
+  .field > span { display: block; font-weight: 800; margin-bottom: 6px; }
+  .seg { display: grid; grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); grid-auto-flow: column; gap: 6px; }
+  button, input[type=number] { font: 800 17px/1.2 'Nunito', system-ui, sans-serif; color: #1E2624; background: #FFFDF8; border: 1px solid #CFC3AF; border-radius: 12px; padding: 10px 12px; min-height: 48px; }
+  button { cursor: pointer; min-width: 0; }
+  .seg button { padding: 10px 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  button[aria-pressed="true"] { background: #4a6a47; color: #FBF7F0; border-color: #4a6a47; }
+  button:disabled { opacity: 0.45; cursor: default; }
+  input[type=number] { width: 7.5em; max-width: 100%; font-weight: 800; }
+  .field > .sun { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: center; margin: 0; }
+  .field small { display: block; font: 600 16px/1.4 'Nunito', system-ui, sans-serif; color: #4A5551; margin: -2px 0 4px; }
+  input[type=range] { width: 100%; min-width: 0; accent-color: #4a6a47; height: 32px; }
+  .sun output { font-weight: 800; min-width: 6.5em; text-align: right; }
+  .now { border-top: 1px solid #E3D9C9; padding-top: 12px; margin-top: 4px; }
+  #title { font-size: 24px; font-weight: 800; display: block; }
+  .actions { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; margin-top: 12px; }
+  .actions button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-size: 19px; min-height: 56px; }
+  .actions button:first-child { background: #4a6a47; color: #FBF7F0; border-color: #4a6a47; }
+  .icon { width: 28px; height: 28px; flex: none; }
+  #status { margin: 12px 0 0; }
+  .bar { height: 8px; border-radius: 4px; background: #E3D9C9; overflow: hidden; margin-top: 8px; }
+  .bar i { display: block; height: 100%; width: 0; background: #8DAE80; transition: width 0.15s; }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-top: 12px; }
+  .tile { background: #FFFDF8; border: 1px solid #E3D9C9; border-radius: 12px; padding: 8px 12px; min-width: 0; }
+  .tile b { display: block; font-size: 20px; font-weight: 800; }
+  .tile span { font-size: 15px; color: #4A5551; }
+  #fname { font-size: 16px; color: #4A5551; margin-top: 10px; }
+  .note { background: #F6EBD9; border: 1px solid #E8D4B4; border-radius: 12px; padding: 10px 14px; font-size: 16px; margin-top: 10px; }
+  #list { display: flex; flex-direction: column; gap: 6px; }
+  .piece { display: grid; grid-template-columns: 2.4em minmax(0, 1fr); column-gap: 10px; text-align: left; align-items: baseline; padding: 8px 12px; }
+  .piece .seed { grid-row: 1 / 3; font-size: 17px; color: #4A5551; text-align: right; }
+  .piece b { font-size: 18px; }
+  .piece .meta { font-weight: 600; font-size: 15px; color: #4A5551; }
+  .piece[aria-pressed="true"] .seed, .piece[aria-pressed="true"] .meta { color: #E6EEE2; }
+  @media (max-width: 560px) { #slot { grid-auto-flow: row; grid-template-columns: repeat(2, minmax(0, 1fr)); } body { font-size: 17px; } .piece .meta, .tile span { font-size: 16px; } }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>music render</h1>
+    <p class="muted">Grows a piece exactly as the game would, plays it through the game's music sound (room, brightness, limiter) and makes a WAV file you can keep or share. The silence at both ends is trimmed, leaving about 3 seconds of the room after the last note, and the level is set to -18 LUFS with peaks under -1.5 dBFS.</p>
+    <p class="muted">Also: <a href="music-lab.html">music lab</a> · <a href="./">all test pages</a></p>
+  </header>
+
+  <div class="layout">
+    <section class="card" aria-label="Choose a piece">
+      <div class="field"><span>Season</span><div class="seg" id="season" role="group" aria-label="Season"></div></div>
+      <div class="field"><span>Time of day</span><div class="seg" id="slot" role="group" aria-label="Time of day"></div></div>
+      <div class="field"><span>Weather</span><div class="seg" id="weather" role="group" aria-label="Weather"></div></div>
+      <label class="field"><span>Seed</span><input type="number" id="seed" min="1" step="1" inputmode="numeric"></label>
+      <label class="field"><span>Sun height</span><small>Sets the tempo, room and brightness. Each time of day picks its usual height.</small>
+        <span class="sun"><input type="range" id="sun" min="-30" max="60" step="1"><output id="sun-out"></output></span></label>
+
+      <div class="now">
+        <span id="title">&nbsp;</span>
+        <span class="muted" id="choice-meta"></span>
+        <div class="actions">
+          <button id="listen"></button>
+          <button id="download"></button>
+        </div>
+        <p id="status" aria-live="polite"></p>
+        <div class="bar" id="bar"><i></i></div>
+        <div id="result" hidden>
+          <div class="tiles">
+            <div class="tile"><b id="lufs"></b><span>loudness</span></div>
+            <div class="tile"><b id="peak"></b><span>highest peak</span></div>
+            <div class="tile"><b id="length"></b><span>length after trimming</span></div>
+            <div class="tile"><b id="took"></b><span>time to render</span></div>
+          </div>
+          <div id="fname"></div>
+          <div class="note" id="missing" hidden></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card" aria-label="Pieces for this season and time of day">
+      <h2>Pieces by seed</h2>
+      <p class="muted">The first 40 seeds for this season, time of day and weather: name, form, meter and length. Tap one to choose it.</p>
+      <div id="list"></div>
+    </section>
+  </div>
+</main>
+<script type="module" src="./music-render/main.js"></script>
+</body>
+</html>

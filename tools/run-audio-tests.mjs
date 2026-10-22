@@ -13,6 +13,7 @@ import { addMelodyTests } from './unit-tests-melody.js';
 import { addFallsSoundTests } from './unit-tests-falls-sound.js';
 import { addPondSoundTests } from './unit-tests-pond-sound.js';
 import { addKeepsakeSoundTests } from './unit-tests-keepsake-sound.js';
+import { addMusicRenderTests } from './unit-tests-music-render.js';
 
 const tests = [];
 const test = (group, name, fn) => tests.push({ group, name, fn });
@@ -30,6 +31,7 @@ addMelodyTests(test, assert, eq);
 addFallsSoundTests(test, assert, eq);
 addPondSoundTests(test, assert, eq);
 addKeepsakeSoundTests(test, assert, eq);
+addMusicRenderTests(test, assert, eq);
 
 let passed = 0;
 for (const t of tests) {
