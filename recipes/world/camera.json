@@ -22,6 +22,5 @@
   "orbitDegPerPx": 0.25,
   "panScale": 1.0,
   "wheelZoomPerNotch": 0.12,
-  "zoomToCursor": 0.6,
-  "gestureDeadZone": { "px": 4, "pinch": 0.02, "twistDeg": 3 }
+  "zoomToCursor": 0.6
 }

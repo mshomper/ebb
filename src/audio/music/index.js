@@ -52,7 +52,7 @@ async function loadJson(p) {
 
 /**
  * @param {import('../mixer.js').Mixer} mixer
- * @param {{ tier: 'desktop'|'mobile', seed: number, sunAltDeg: (t: number) => number, emit?: (name: string, payload: any) => void }} opts
+ * @param {{ seed: number, sunAltDeg: (t: number) => number, emit?: (name: string, payload: any) => void }} opts
  *   seed: the music's own seed (the world seed and this device's session count)
  */
 export async function createMusic(mixer, opts) {
@@ -112,7 +112,7 @@ export async function createMusic(mixer, opts) {
 
   /** The instruments, made once, after the first touch (the piano loads after the island's sounds). */
   function ensure() {
-    instPromise ??= createInstruments(mixer.ctx, mixer.input('music'), { tier: opts.tier }).then((i) => {
+    instPromise ??= createInstruments(mixer.ctx, mixer.input('music')).then((i) => {
       inst = i;
       performer = createPerformer(mixer.ctx, i.set);
       return i;

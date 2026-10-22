@@ -1,6 +1,6 @@
 // @ts-check
 // Backups and earlier saves (doc 18; S7d), for the Saves menu: back an island up to a small .ebb
-// file (the share sheet on phones, a download elsewhere), open an island file (checked before
+// file (a download), open an island file (checked before
 // anything changes; the island it replaces stays as an earlier save), step back to an earlier
 // save, and, on previews and local builds, damage a save or set its clock back to test recovery.
 // A file or an earlier save is stamped with the time now when it goes in, so the time it spent
@@ -32,14 +32,8 @@ function download(bytes, name) {
   setTimeout(() => URL.revokeObjectURL(url), 10000);
 }
 
-/** Give a file to the person: the share sheet on a touch phone that has one, else a download. @param {Uint8Array} bytes @param {string} name */
+/** Give a file to the person: always a download. @param {Uint8Array} bytes @param {string} name @returns {Promise<string>} */
 async function hand(bytes, name) {
-  const file = new File([bytes], name, { type: 'application/octet-stream' });
-  const touch = typeof matchMedia !== 'undefined' && matchMedia('(pointer: coarse)').matches;
-  if (touch && navigator.canShare?.({ files: [file] })) {
-    try { await navigator.share({ files: [file], title: 'ebb island' }); return 'shared'; }
-    catch (err) { if (/** @type {any} */ (err)?.name === 'AbortError') return 'cancelled'; }
-  }
   download(bytes, name);
   return 'downloaded';
 }
@@ -57,7 +51,7 @@ export async function backUp(save) {
   const d = new Date();
   const name = `ebb-${h.island}-${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}.ebb`;
   const how = await hand(bytes, name);
-  if (how !== 'cancelled') await save.noteSlot({ lastBackupAt: Date.now() });
+  await save.noteSlot({ lastBackupAt: Date.now() });
   return { how, name, kb: Math.max(1, Math.round(bytes.length / 1024)), print: fingerprint(world) };
 }
 

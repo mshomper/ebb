@@ -17,10 +17,6 @@
   max-width: calc(50vw - var(--lk-edge) - 2 * (var(--lk-btn) + 8px));
 }
 
-@media (pointer: coarse) {
-  .ebb-look { --lk-btn: 52px; --lk-icon: 26px; }
-}
-
 .ebb-look__btn {
   appearance: none;
   -webkit-appearance: none;
@@ -65,7 +61,7 @@
   text-overflow: ellipsis;
 }
 
-/* Phone portrait and other narrow screens: icon only, a square button. */
+/* Narrow windows: icon only, a square button. */
 @media (max-width: 420px) {
   .ebb-look__name { display: none; }
   .ebb-look__btn { width: var(--lk-btn); padding: 0; justify-content: center; }

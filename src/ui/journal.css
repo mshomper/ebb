@@ -1,7 +1,6 @@
 /* The field journal (src/ui/journal.js), the island notes and the tap card (src/ui/island-notes.js).
-   Cream paper with night text and Fraunces italic for observations (docs/15). Desktop: a 440 px
-   panel on the right, above the bottom controls. Phone (under 700 px wide): a sheet from the bottom
-   that stops half way, or nearly full height. Panels animate only opacity and transform. */
+   Cream paper with night text and Fraunces italic for observations (docs/15). A 440 px panel on
+   the right, above the bottom controls. Panels animate only opacity and transform. */
 
 :root {
   --jr-paper: #F4EEE4;
@@ -21,9 +20,6 @@
   --jw-animals-wash: #F6DFCC; --jw-animals-line: #D69868; --jw-animals-ink: #87431F; --jw-animals-card: #F8EBDF;
   --jr-btn: 48px;
   --jr-edge: 12px;
-}
-@media (pointer: coarse) {
-  :root { --jr-btn: 52px; }
 }
 
 /* --- the book button, top right: Settings has the corner (settings.css), the Look button sits to
@@ -130,9 +126,8 @@
   cursor: pointer;
 }
 .ebb-journal__icon-btn:hover { background: rgba(30, 38, 36, 0.07); }
-.ebb-journal__size { display: none; }
 
-/* Six sections: three to a row in two even rows (two to a row on phones, below). */
+/* Six sections: three to a row in two even rows (two to a row in a narrow window, below). */
 .ebb-journal__nav {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -456,32 +451,6 @@ button.ebb-jnotes__row { cursor: pointer; }
 button.ebb-jnotes__row:hover { background: rgba(30, 38, 36, 0.06); }
 .ebb-jnotes__row .ebb-journal__voice { font-size: calc(18px * var(--text-scale, 1)); }
 
-/* Phone: a sheet from the bottom, half height or nearly full. */
-@media (max-width: 699px) {
-  .ebb-journal {
-    top: auto;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    width: auto;
-    height: 48vh;
-    height: 48dvh;
-    border-left: 0;
-    border-top: 8px solid var(--jr-binding);
-    border-radius: 18px 18px 0 0;
-    padding-bottom: env(safe-area-inset-bottom);
-    padding-left: env(safe-area-inset-left);
-    padding-right: env(safe-area-inset-right);
-    transform: translateY(24px);
-  }
-  .ebb-journal.is-full { height: calc(100vh - 76px); height: calc(100dvh - 76px - env(safe-area-inset-top)); }
-  .ebb-journal__size { display: grid; }
-  .ebb-journal__size .icon { transition: transform 200ms ease; }
-  .ebb-journal.is-full .ebb-journal__size .icon { transform: rotate(180deg); }
-  .ebb-journal__title { font-size: calc(20px * var(--text-scale, 1)); }
-  /* The sheet covers the bottom controls, so the notes step aside. */
-  .ebb-journal-open .ebb-notes { opacity: 0; visibility: hidden; }
-}
 @media (max-width: 380px) {
   .ebb-jpage__seasons, .ebb-jpage__moments { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
@@ -601,28 +570,15 @@ button.ebb-jnotes__row:hover { background: rgba(30, 38, 36, 0.06); }
 .ebb-jnotes__head { margin: 6px 0 4px; font-size: var(--text-small); font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--jr-moss); }
 .ebb-jnotes__head + .ebb-jnotes { margin-bottom: 14px; }
 .ebb-notes__note:focus-visible { outline: 2px solid var(--wordmark-dark); outline-offset: 2px; }
-/* Narrow portrait: the time-flow button sits at the right just above the bar (time-flow.css), so
+/* Narrow windows: the time-flow button sits at the right just above the bar (time-flow.css), so
    the notes leave it room. */
 @media (max-width: 560px) {
   .ebb-notes { max-width: calc(100vw - 2 * var(--jr-edge) - var(--jr-btn) - 12px); }
 }
-/* Narrow portrait: undo and redo sit above the bar at the left (tools.css), so the notes sit above
+/* Narrow windows: undo and redo sit above the bar at the left (tools.css), so the notes sit above
    them in turn. */
 @media (max-width: 560px) {
   .ebb-notes { bottom: calc(max(var(--jr-edge), env(safe-area-inset-bottom)) + 2 * var(--jr-btn) + 50px); }
-}
-/* Phone landscape: undo and redo stand half way up the left edge, or the tools do left-handed
-   (tools.css), so the notes sit at the bottom just right of that column. The journal panel uses the
-   full height, since the bottom row is only time flow there. */
-@media (max-height: 500px) and (min-width: 600px) {
-  .ebb-notes {
-    bottom: max(var(--jr-edge), env(safe-area-inset-bottom));
-    left: calc(max(var(--jr-edge), env(safe-area-inset-left)) + var(--jr-btn) + 24px);
-    max-width: min(420px, calc(50vw - var(--jr-btn) - 36px));
-  }
-}
-@media (max-height: 500px) and (min-width: 700px) {
-  .ebb-journal { bottom: max(var(--jr-edge), env(safe-area-inset-bottom)); }
 }
 /* A tool's card opens above the bar in the middle; on narrower screens the notes step aside. */
 @media (max-width: 1180px) {
@@ -824,9 +780,6 @@ button.ebb-trail__row:hover b { text-decoration: underline; text-decoration-colo
 .ebb-trail__stop.is-station .ebb-trail__dot .icon { width: 32px; height: 32px; }
 .ebb-trail__stop.is-pencil .ebb-trail__dot { border-style: dashed; border-color: var(--jr-pencil); color: var(--jr-pencil); background: var(--jr-paper); }
 .ebb-trail__stop.is-pencil .ebb-trail__text .ebb-journal__voice { color: var(--jr-pencil); }
-@media (max-width: 699px) {
-  .ebb-trail__text small { font-size: calc(16px * var(--text-scale, 1)); }
-}
 
 /* A gift's card (src/ui/island-notes.js): cream paper, low in the middle, fading in and out. */
 .ebb-gift {
@@ -854,7 +807,7 @@ button.ebb-trail__row:hover b { text-decoration: underline; text-decoration-colo
   box-shadow: 0 6px 24px rgba(30, 38, 36, 0.18);
 }
 .ebb-gift.is-shown { opacity: 1; transform: translate(-50%, 0); }
-/* Desktop with the journal open: the card keeps to the island's side of the panel. */
+/* With the journal open: the card keeps to the island's side of the panel. */
 @media (min-width: 700px) {
   :root.ebb-journal-open .ebb-gift { left: calc((100vw - 440px - var(--jr-edge)) / 2); width: min(420px, calc(100vw - 440px - 3 * var(--jr-edge))); }
 }
@@ -900,7 +853,6 @@ button.ebb-trail__row:hover b { text-decoration: underline; text-decoration-colo
 .ebb-shelf__cell .ebb-shelf__btn { justify-self: stretch; padding: 4px 6px; justify-content: center; }
 @media (max-width: 699px) {
   .ebb-shelf__grid { gap: 6px; padding: 6px; }
-  .ebb-shelf__btn { font-size: calc(16px * var(--text-scale, 1)); }
 }
 
 /* Bottle letters (src/ui/journal-letters.js): the Letters list and a letter on its paper. */

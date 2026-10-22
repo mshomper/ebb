@@ -14,12 +14,11 @@ const dbToGain = (db) => Math.pow(10, db / 20);
 /**
  * One swarm's voice.
  * @param {BaseAudioContext} ctx @param {AudioNode} dest @param {any} R midge voice recipe
- * @param {number} key seed for this swarm @param {'desktop'|'mobile'} tier
+ * @param {number} key seed for this swarm
  */
-export function createSwarmVoice(ctx, dest, R, key, tier) {
+export function createSwarmVoice(ctx, dest, R, key) {
   const r = stream(key, 2);
-  let n = R.partials[0] + r.int(R.partials[1] - R.partials[0] + 1);
-  if (tier === 'mobile') n = Math.min(n, R.mobileMax);
+  const n = R.partials[0] + r.int(R.partials[1] - R.partials[0] + 1);
   const sum = ctx.createGain();
   sum.gain.value = 1 / Math.sqrt(n);
   const lp = ctx.createBiquadFilter();
@@ -31,7 +30,7 @@ export function createSwarmVoice(ctx, dest, R, key, tier) {
   const reach = ctx.createGain();
   reach.gain.value = 0;
   const panner = ctx.createPanner();
-  panner.panningModel = tier === 'mobile' ? 'equalpower' : 'HRTF';
+  panner.panningModel = 'HRTF';
   panner.distanceModel = 'inverse';
   panner.refDistance = R.refDistance;
   panner.rolloffFactor = R.rolloff;

@@ -3,10 +3,10 @@
 // Look, the journal button, undo and redo, the tool bar, time flow and the build badge) and owns
 // how they show:
 //   playing  everything at full strength;
-//   dimmed   after dimAfterS without input, the layer fades to dimOpacity; any touch, mouse move,
+//   dimmed   after dimAfterS without input, the layer fades to dimOpacity; any click, mouse move,
 //            wheel or key brings it back (off when settings.hudDim is false);
-//   hidden   H (the `ui.hideHud` action) hides the layer and the island notes; H again, or on a
-//            touch screen the faint drawn eye left in the corner, brings them back;
+//   hidden   H (the `ui.hideHud` action) hides the layer and the island notes; H again brings
+//            them back;
 //   reveal   while the reveal on return plays the layer steps aside (reveal.js sets
 //            body.ebb-revealing; this module makes the layer inert until `reveal:ended`).
 // The layer is a full-screen fixed box that takes no pointer input itself; its children keep their
@@ -16,8 +16,8 @@
 import { get, update, subscribe } from '../core/store.js';
 import { on } from '../core/events.js';
 import { loadRecipe } from '../core/recipes.js';
-import { dispatch, onAction } from '../input/actions.js';
-import { ensureIconSprite, iconSvg } from './icons/icons.js';
+import { onAction } from '../input/actions.js';
+import { ensureIconSprite } from './icons/icons.js';
 
 /**
  * Mount the HUD layer. Mount the corner buttons into `layer` afterwards.
@@ -34,15 +34,6 @@ export async function mountHud(parent = document.body) {
   const layer = document.createElement('div');
   layer.id = 'ebb-hud';
 
-  // On a touch screen there is no H key, so hiding leaves this faint eye to bring the buttons back.
-  const show = document.createElement('div');
-  show.className = 'ebb-hud-show';
-  show.innerHTML = `<button type="button" class="ebb-hud-show__btn" aria-label="Show the buttons" title="Show the buttons">${iconSvg('eye')}</button>`;
-  show.inert = true;
-  const showBtn = /** @type {HTMLButtonElement} */ (show.querySelector('button'));
-  showBtn.addEventListener('click', () => dispatch({ type: 'ui.hideHud', hidden: false, source: 'touch' }));
-  for (const type of ['pointerdown', 'pointermove']) show.addEventListener(type, (e) => e.stopPropagation());
-
   let hidden = false;
   let dim = false;
   let revealing = false;
@@ -52,7 +43,6 @@ export async function mountHud(parent = document.body) {
     body.classList.toggle('ebb-hud-hidden', hidden);
     body.classList.toggle('ebb-hud-dim', dim && !hidden);
     layer.inert = hidden || revealing;
-    show.inert = !hidden || revealing;
     update('hud', () => ({ hidden, dim }));
   }
 
@@ -87,7 +77,6 @@ export async function mountHud(parent = document.body) {
 
   render();
   parent.appendChild(layer);
-  parent.appendChild(show);
 
   return {
     layer,
@@ -97,7 +86,6 @@ export async function mountHud(parent = document.body) {
       for (const u of unsubs) u?.();
       body.classList.remove('ebb-hud-hidden', 'ebb-hud-dim');
       layer.remove();
-      show.remove();
     },
   };
 }

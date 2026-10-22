@@ -38,8 +38,6 @@ export function applyDisplayPrefs() {
     root.classList.toggle('ebb-text-large', size >= 130);
     root.classList.toggle('ebb-motion-calm', s?.motion === 'calm');
     root.classList.toggle('ebb-motion-full', s?.motion === 'full');
-    // Left-handed: the phone layouts mirror (tools.css, time-flow.css).
-    root.classList.toggle('ebb-left-handed', s?.leftHanded === true);
   };
   apply(get('settings'));
   subscribe('settings', apply);

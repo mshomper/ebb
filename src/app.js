@@ -69,7 +69,6 @@ import { createSchools } from './world/creatures/schools.js';
 import { bringSwarm, testRecipe } from './world/creatures/swarms.js';
 import { onAction, history } from './input/actions.js';
 import { attachDesktopInput } from './input/desktop.js';
-import { attachTouchInput } from './input/touch.js';
 import { beginSave, TEST_PARAMS } from './save/autosave.js';
 import { buildCliffDemo } from './world/terrain/cliff-demo.js';
 import { createWalk } from './world/walk/index.js';
@@ -160,7 +159,7 @@ export async function startApp(canvas, hooks = {}) {
   // Device settings (src/save/prefs.js): kept on this device, never in the island.
   const prefs = loadPrefs();
   updateStore('settings', (s) => {
-    for (const k of ['textSize', 'motion', 'audio', 'hudDim', 'reveal', 'qualityChoice', 'leftHanded', 'journalList']) if (prefs[k] !== undefined) s[k] = prefs[k];
+    for (const k of ['textSize', 'motion', 'audio', 'hudDim', 'reveal', 'qualityChoice', 'journalList']) if (prefs[k] !== undefined) s[k] = prefs[k];
   });
   keepPrefs();
 
@@ -570,8 +569,8 @@ export async function startApp(canvas, hooks = {}) {
     tonemap,
   ], { tier, lighting });
   await graph.setup();
-  // Quality while playing (src/render/quality-live.js): dynamic resolution, the frame cap, thermal
-  // care and the one automatic tier step down with its calm note.
+  // Quality while playing (src/render/quality-live.js): dynamic resolution and the one automatic
+  // tier step down with its calm note.
   const live = createQualityLive({
     recipe: await loadRecipe('quality-tiers'), timestamps: graph.timingSupported,
     tier: () => tier, settings: () => tierSettings, applyTier: (t, keepScale) => applyTier(t, keepScale),
@@ -1112,7 +1111,6 @@ export async function startApp(canvas, hooks = {}) {
     }
   });
   const detachDesktop = attachDesktopInput(canvas, camRecipe, rb);
-  const detachTouch = attachTouchInput(canvas, camRecipe);
 
   /** Keep the brush ring on the ground under the pointer, even as the camera moves. */
   function updateRing() {
@@ -1212,7 +1210,6 @@ export async function startApp(canvas, hooks = {}) {
   function frame(now) {
     if (!running) return;
     raf = requestAnimationFrame(frame);
-    if (!live.due(now)) return;   // the frame cap: a display faster than the tier's target
     const cpuStart = performance.now();
     if (frameIndex === 0) last = now; // the first interval includes loading; don't count it
     const realDt = Math.min((now - last) / 1000, 0.25);
@@ -1386,7 +1383,6 @@ export async function startApp(canvas, hooks = {}) {
     unProbe();
     live.dispose();
     detachDesktop();
-    detachTouch();
     graph.dispose();
     sim.dispose();
     atmosphere.dispose();
@@ -1500,7 +1496,7 @@ export async function startApp(canvas, hooks = {}) {
       /** @param {any} json @param {number} [fadeS] */
       apply: (json, fadeS = 0) => baker.setPalette(json, { fadeS }),
     },
-    /** The quality tier and render scale, switched live with no reload (S8b's Settings, tools/phone-check.html). */
+    /** The quality tier and render scale, switched live with no reload (S8b's Settings, tools). */
     quality: {
       /** Switch to a tier now; a chosen tier ends automatic step downs this session. @param {string} t */
       set(t) {
@@ -1512,7 +1508,7 @@ export async function startApp(canvas, hooks = {}) {
       },
       tier: () => tier,
       renderScale: () => live.scale,
-      /** Hold the render scale, or release it with null (tools/phone-check.html's sweep). @param {number | null} s */
+      /** Hold the render scale, or release it with null (a tool page's sweep). @param {number | null} s */
       pinScale: (s) => live.pinScale(s),
       /** Scale range, GPU time measure, scale changes, the automatic step (tools). */
       info: () => live.info(),

@@ -1,7 +1,7 @@
 // @ts-check
 // Settings (docs/15 "Settings", S8): the drawn sliders button at the top right corner opens it.
-// Desktop: a 600 px panel on the right with its sections listed down the left. Phone (under 700 px
-// wide): a full-screen sheet with the sections stacked, each opening on a tap.
+// A 600 px panel on the right with its sections listed down the left (in a narrow window the list
+// keeps only its icons).
 //   Time      speed, keep growing while away (this island), show what changed on return
 //   Look      palette, text size, motion
 //   Sound     volume, island sounds, creatures, music and how often it plays, quiet in the
@@ -18,9 +18,6 @@ import { get, subscribe } from '../core/store.js';
 import { dispatch } from '../input/actions.js';
 import { ensureIconSprite, iconSvg } from './icons/icons.js';
 import { fillSavesPanel, fillTestsPanel } from './saves-menu.js';
-
-/** Under this width Settings is a full-screen sheet with stacked sections. */
-const PHONE = '(max-width: 699px)';
 
 const FLOWS = [{ id: 0, label: 'Pause' }, { id: 1, label: 'Normal' }, { id: 2, label: '2 times' }, { id: 4, label: '4 times' }];
 const TEXT_SIZES = [100, 115, 130, 160].map((v) => ({ id: v, label: `${v}%` }));
@@ -46,7 +43,6 @@ const TIERS = [{ id: 'auto', label: 'Auto' }, { id: 'low', label: 'Low' }, { id:
  */
 export function mountSettings(o) {
   ensureIconSprite();
-  const phone = matchMedia(PHONE);
 
   const btnRoot = document.createElement('div');
   btnRoot.className = 'ebb-setbtn';
@@ -76,7 +72,7 @@ export function mountSettings(o) {
 
   /** Re-render functions for the controls that show store values. @type {(() => void)[]} */
   const renders = [];
-  /** @type {{ id: string, el: HTMLElement, navBtn: HTMLButtonElement, headBtn: HTMLButtonElement, onOpen?: () => void }[]} */
+  /** @type {{ id: string, el: HTMLElement, navBtn: HTMLButtonElement, onOpen?: () => void }[]} */
   const sections = [];
 
   // --- control helpers ---
@@ -136,31 +132,22 @@ export function mountSettings(o) {
     const s = el('section', 'ebb-set');
     s.dataset.id = id;
     if (x.test) s.classList.add('is-test');
-    const headBtn = /** @type {HTMLButtonElement} */ (el('button', 'ebb-set__head'));
-    headBtn.type = 'button';
-    headBtn.innerHTML = `${iconSvg(icon)}<span></span>${iconSvg('chevron', 'ebb-set__chev')}`;
-    /** @type {HTMLElement} */ (headBtn.querySelector('span')).textContent = name;
-    headBtn.setAttribute('aria-expanded', 'false');
+    const head = el('h3', 'ebb-set__head');
+    head.innerHTML = `${iconSvg(icon)}<span></span>`;
+    /** @type {HTMLElement} */ (head.querySelector('span')).textContent = name;
     const body = el('div', 'ebb-set__body');
     body.append(...parts);
-    s.append(headBtn, body);
+    s.append(head, body);
     holder.appendChild(s);
 
     const navBtn = /** @type {HTMLButtonElement} */ (el('button', `ebb-settings__tab${x.test ? ' is-test' : ''}`));
     navBtn.type = 'button';
+    navBtn.title = name;
     navBtn.innerHTML = `${iconSvg(icon)}<span></span>`;
     /** @type {HTMLElement} */ (navBtn.querySelector('span')).textContent = name;
     nav.appendChild(navBtn);
-    const entry = { id, el: s, navBtn, headBtn, onOpen: x.onOpen };
-    sections.push(entry);
+    sections.push({ id, el: s, navBtn, onOpen: x.onOpen });
     navBtn.addEventListener('click', () => show(id));
-    headBtn.addEventListener('click', () => {
-      if (!phone.matches) return;
-      const open = !s.classList.contains('is-open');
-      s.classList.toggle('is-open', open);
-      headBtn.setAttribute('aria-expanded', String(open));
-      if (open) entry.onOpen?.();
-    });
   }
 
   const meta = () => get('meta') ?? {};
@@ -198,7 +185,7 @@ export function mountSettings(o) {
     (often) => set({ audio: { ...settings().audio, musicOften: often } }));
   /** @type {HTMLElement} */ (musicOften.querySelector('.ebb-set__choices')).classList.add('is-even');
   section('sound', 'Sound', 'sound', [
-    hint('Sound starts after your first tap or key. On an iPhone, the silent switch also silences the island.'),
+    hint('Sound starts after your first click or key.'),
     volumeSlider('Volume', 'master'),
     volumeSlider('Island sounds', 'ambience'),
     volumeSlider('Creatures', 'creatures'),
@@ -209,8 +196,7 @@ export function mountSettings(o) {
   ]);
   section('controls', 'Controls', 'controls', [
     toggle('Dim the buttons when I am not using them', () => settings().hudDim !== false, (on) => set({ hudDim: on })),
-    toggle('Left-handed layout on phones', () => settings().leftHanded === true, (on) => set({ leftHanded: on })),
-    hint('H hides the buttons on a keyboard, and H again brings them back. On a touch screen, the eye in the corner brings them back.'),
+    hint('H hides the buttons, and H again brings them back.'),
   ]);
   if (o.quality) {
     const q = /** @type {NonNullable<typeof o.quality>} */ (o.quality);
@@ -236,7 +222,7 @@ export function mountSettings(o) {
 
   // --- showing, opening and closing ---
   let current = sections[0].id;
-  /** Desktop: one section at a time, chosen from the list. @param {string} id */
+  /** One section at a time, chosen from the list. @param {string} id */
   function show(id) {
     current = id;
     for (const s of sections) {

@@ -32,7 +32,7 @@ export async function loadRecipes() {
   ]);
   // The instruments that exist, as the realizer's fallback list (a short probe context; no samples load).
   const probe = new OfflineAudioContext(2, SR, SR);
-  const available = (await createInstruments(probe, probe.destination, { tier: 'desktop' })).available();
+  const available = (await createInstruments(probe, probe.destination)).available();
   return { director, rules, names, recipes: { realize: rz, voicing: vo }, mixer, materials: /** @type {Record<string, any>} */ ({ spring, summer }), available };
 }
 
@@ -85,7 +85,7 @@ export async function renderPiece(R, composed, onProgress = () => {}) {
   bright.connect(level); bright.connect(room).connect(wet).connect(level); level.connect(master);
 
   onProgress('Loading the instruments', 0);
-  const inst = await createInstruments(ctx, musicIn, { tier: 'desktop' });
+  const inst = await createInstruments(ctx, musicIn);
   await inst.prepare(perf);
   // The performer's event order (src/audio/music/perform.js), all scheduled before rendering.
   /** @type {{t: number, kind: number, n?: any, p?: any}[]} */

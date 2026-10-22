@@ -1,6 +1,6 @@
 // @ts-check
 // The haul tray (docs/future/12, K6): what a lifted net brought up, laid out one to a row on a
-// card over the island (a sheet from the bottom on phones). Kelp and wrack are drawn along its top.
+// card over the island. Kelp and wrack are drawn along its top.
 // Each living catch moves for a moment (src/ui/catch-motion.js) and has Let it go: it slips off
 // the tray and back to the sea. A keepsake turns slowly on its rarity's paper with Keep it on the
 // shelf and Back to the sea. Closing lets everything left go back. Reads the store slice `haul`

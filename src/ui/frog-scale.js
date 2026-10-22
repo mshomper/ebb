@@ -58,7 +58,7 @@ export function mountFrogScale(parent, fs) {
     if (b.dataset.act === 'next' && found) { frog = (frog + 1) % found.spots.length; if (view < 0) view = 1; look(); }
     if (b.dataset.view) { view = Number(b.dataset.view); look(); }
     if (b.dataset.size) { fs.setSize(Number(b.dataset.size)); look(); }
-    // On a phone the open panel would cover the frog in the middle of the screen: tuck it away
+    // In a narrow window the open panel would cover the frog in the middle of the screen: tuck it away
     // after a view is chosen ("Show" brings it back).
     const tuck = window.matchMedia('(max-width: 560px)').matches && (b.dataset.view || b.dataset.act === 'next' || b.dataset.size);
     const hidden = root.classList.contains('is-hidden') || !!tuck;

@@ -30,11 +30,10 @@ import { clamp, createBus, createPedal, swellCurve, tauFor, phasedSine } from '.
 
 /**
  * @param {BaseAudioContext} ctx @param {AudioNode} output @param {any} recipe recipes/music/synth.json
- * @param {{tier?: 'desktop'|'mobile', seed?: number, damped?: boolean}} [opts]
+ * @param {{seed?: number, damped?: boolean}} [opts]
  */
 export function createBell(ctx, output, recipe, opts = {}) {
   let p = structuredClone(recipe.bell);
-  const tier = opts.tier ?? 'desktop';
   const seed = (opts.seed ?? p.seed ?? 1) >>> 0;
   const bus = createBus(ctx, output, p.highpass);
   const pedal = createPedal();
@@ -86,7 +85,7 @@ export function createBell(ctx, output, recipe, opts = {}) {
       // A bar struck again: the old ring fades out under the new stroke over retriggerS.
       for (const v of voices) if (v.midi === midi && (v.endT === null || v.endT > t)) kill(v, t, p.retriggerS);
       const live = voices.filter((v) => v.endT === null || v.endT > t);
-      const max = p.maxVoices[tier] ?? 12;
+      const max = (typeof p.maxVoices === 'number' ? p.maxVoices : p.maxVoices?.desktop) ?? 12;
       while (live.length >= max) {
         const i = pickVictim(live.map((v) => ({ released: v.keyUpT !== null, levelDb: levelDb(v, t) })));
         kill(live[i], t, p.stealS);

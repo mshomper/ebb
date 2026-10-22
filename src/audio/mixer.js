@@ -34,15 +34,13 @@ import { createRoom } from './reverb.js';
 /**
  * Build the graph. The context starts suspended until unlock().
  * @param {any} recipe recipes/audio/mixer.json
- * @param {{tier?: 'desktop'|'mobile', levels?: Partial<Record<BusName|'master', number>>, autoVisibility?: boolean}} [opts]
+ * @param {{levels?: Partial<Record<BusName|'master', number>>, autoVisibility?: boolean}} [opts]
  * @returns {Mixer}
  */
 export function createMixer(recipe, opts = {}) {
-  const tier = opts.tier ?? 'desktop';
   const ctx = new AudioContext({ latencyHint: 'interactive' });
   // Created suspended by the browser's autoplay rules on most platforms; make it explicit.
   if (ctx.state === 'running') ctx.suspend();
-  const lengthScale = tier === 'mobile' ? recipe.mobile.reverbLength : 1;
   let unlocked = false;
 
   const limiter = ctx.createDynamicsCompressor();
@@ -60,7 +58,7 @@ export function createMixer(recipe, opts = {}) {
   let masterLevel = opts.levels?.master ?? recipe.master.level;
 
   // Island room, shared by ambience and creatures.
-  const islandRoom = createRoom(ctx, recipe.islandReverb, recipe.seed, lengthScale);
+  const islandRoom = createRoom(ctx, recipe.islandReverb, recipe.seed);
   islandRoom.connect(master);
 
   /** @type {Record<string, GainNode>} */
@@ -94,7 +92,7 @@ export function createMixer(recipe, opts = {}) {
   bright.type = 'lowpass';
   bright.frequency.value = recipe.musicTone.lowpassHz;
   bright.Q.value = 0.5;
-  const musicRoom = createRoom(ctx, recipe.musicReverb, recipe.seed + 1, lengthScale);
+  const musicRoom = createRoom(ctx, recipe.musicReverb, recipe.seed + 1);
   const wet = ctx.createGain();
   wet.gain.value = recipe.musicReverb.wet;
   const musicLevel = ctx.createGain();
