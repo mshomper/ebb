@@ -77,10 +77,12 @@ function runSpecies(state, env, from, hours, key) {
 export function addPondLifeTests(test, assert, eq) {
   test(G, 'the shared needs reader leaves the frogs exactly as they were (9 days on both islands)', async () => {
     const R = await loadEcologyRecipes();
-    // Fingerprints taken on main before the needs reader existed (seed 7, nine days from 10:00).
+    // Fingerprints taken on main before the needs reader existed (seed 7, nine days from 10:00);
+    // re-pinned October 21, 2026 when plants began to change stage on their own days (doc 10
+    // phenology jitter: reeds and iris give shelter), with the same number of frogs and events.
     const before = {
-      'starter-island': { eco: 552383584, frogs: 20518727, events: 1585692829 },
-      'two-ponds': { eco: 3142424852, frogs: 37453754, events: 2368654099 },
+      'starter-island': { eco: 253477865, frogs: 2615897245, events: 1585692829 },
+      'two-ponds': { eco: 2223650066, frogs: 455491042, events: 2368654099 },
     };
     const lines = [];
     for (const [island, want] of Object.entries(before)) {
@@ -94,9 +96,15 @@ export function addPondLifeTests(test, assert, eq) {
         for (const e of r.events) if ((e.name.startsWith('creature') || e.name.startsWith('species')) && e.payload?.species === 'frogs') ev.push(h + e.name);
       }
       const F = s.ecology.frogs;
-      eq(fnv(`${join(F.score)}|${join(F.water)}|${join(F.shelter)}|${F.edge.cells.join(',')}|${F.edge.faces.join(',')}`), want.eco, `${island}: frog habitat maps`);
-      eq(fnv(JSON.stringify(s.creatures.frogs)), want.frogs, `${island}: the frogs`);
-      eq(fnv(ev.join(';')), want.events, `${island}: the arc's events`);
+      const got = {
+        eco: fnv(`${join(F.score)}|${join(F.water)}|${join(F.shelter)}|${F.edge.cells.join(',')}|${F.edge.faces.join(',')}`),
+        frogs: fnv(JSON.stringify(s.creatures.frogs)),
+        events: fnv(ev.join(';')),
+      };
+      // Every fingerprint at once, so a deliberate change can be re-pinned in one run.
+      if (got.eco !== want.eco || got.frogs !== want.frogs || got.events !== want.events) {
+        throw new Error(`${island}: fingerprints changed, now { eco: ${got.eco}, frogs: ${got.frogs}, events: ${got.events} } (${s.creatures.frogs.frogs.length} frogs, ${ev.length} events)`);
+      }
       lines.push(`${island}: ${s.creatures.frogs.frogs.length} frogs, unchanged`);
     }
     return lines.join('; ');
