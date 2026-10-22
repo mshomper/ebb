@@ -20,7 +20,7 @@ import { groundOfCell } from '../water/shore.js';
 import { strandLines } from '../water/strandline.js';
 import { tideParams } from '../tide.js';
 import { seasonOfTide, weatherOfTide } from '../finds/strand.js';
-import { gatherSeed, spotsAt, share, wordFor } from './spots.js';
+import { gatherSeed, spotsAt, spotsNear, share, wordFor } from './spots.js';
 import { taken as takenOf, record, expire, cap } from './events.js';
 import { partsOf, pickable, pick } from './plants.js';
 
@@ -203,6 +203,20 @@ export function createGather(o) {
   return {
     recipe: R,
     decorate,
+
+    /**
+     * The ground spots near a point with what is left on them today (for drawing what lies there).
+     * @param {number} x @param {number} z @param {number} r
+     * @returns {{ kind: string, x: number, z: number, left: number, share: number, source: string, key: number }[]}
+     */
+    near(x, z, r) {
+      const c = ctx();
+      const ev = events();
+      return spotsNear(x, z, r, c, R).map((sp) => {
+        const n = share(sp.kind, sp.sourceKey, sp.period, c, R);
+        return { kind: sp.kind, x: sp.x, z: sp.z, left: Math.max(0, n - takenOf(ev, sp.key, sp.period)), share: n, source: sp.source, key: sp.key };
+      });
+    },
 
     /**
      * Gather the n-th thing on the open card: walk into reach if you are not, kneel, take a handful.

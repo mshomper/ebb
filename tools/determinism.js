@@ -9,6 +9,7 @@ import { buildBase, hashBase, landmarks } from '../src/world/terrain/landform.js
 import { waterCellOf } from '../src/world/water/grid.js';
 import { buildSummary, hashSummary, WATER_CLASS } from '../src/world/water/summary.js';
 import { haulsJob } from '../src/world/nets/haul.js';
+import { gatherCheckJob } from '../src/world/gather/check.js';
 
 const JOB = { module: './world/terrain/landform.js', fn: 'buildBase' };
 /** The 3 x 3 starter chunks, row by row. */
@@ -277,6 +278,53 @@ function showHauls(h) {
     `<p class="muted">${h.main.living} living catches and ${h.main.keepsakes} keepsakes over 200 hauls of one net, at every depth, tide and season.</p>`;
 }
 
+const GATHER_JOB = { module: './world/gather/check.js', fn: 'gatherCheckJob' };
+
+/**
+ * The pack and gathering (docs/future/13 section 4.5): a year of what lies on the ground, picked
+ * spots kept and dropped, seeded adds and takes in the pack, and three reeds picked for their down
+ * then three game days of hours, twice. On the page and in a worker.
+ * @param {number} worldSeed
+ */
+async function runGather(worldSeed) {
+  const get = (/** @type {string} */ p) => fetch(`../recipes/${p}.json`).then((r) => r.json());
+  const growth = await get('world/growth');
+  const flora = Object.fromEntries(await Promise.all(growth.species.map(async (/** @type {string} */ sp) => [sp, await get(`flora/${sp}`)])));
+  const covers = Object.fromEntries(await Promise.all((growth.cover ?? []).map(async (/** @type {string} */ sp) => [sp, await get(`flora/${sp}`)])));
+  const args = { worldSeed, gather: await get('world/gather'), pack: await get('world/pack'), seasons: await get('world/seasons'), growth, flora, covers };
+  const main = gatherCheckJob(args);
+  initWorkers({ size: 1 });
+  let worker;
+  try { worker = await run(GATHER_JOB, args); } finally { dispose(); }
+  return { main, worker };
+}
+
+/** @param {Awaited<ReturnType<typeof runGather>>} g */
+function showGather(g) {
+  let card = document.getElementById('gatherCard');
+  if (!card) {
+    card = document.createElement('div');
+    card.className = 'card';
+    card.id = 'gatherCard';
+    /** @type {HTMLElement} */ (document.getElementById('haulCard') ?? document.getElementById('waterCard') ?? $('chunks').closest('.card')).after(card);
+  }
+  const { main, worker } = g;
+  /** @param {string} label @param {number} a @param {number} b @param {string} [an] @param {string} [bn] */
+  const row = (label, a, b, an = 'Main thread', bn = '1 worker') => {
+    const ok = a === b;
+    return `<div class="row total"><span class="label">${label}</span><span class="hash">${hex(a)}<small>${an}</small></span>` +
+      `<span class="hash">${hex(b)}<small>${bn}</small></span><span class="v ${ok ? 'ok' : 'bad'}">${icon(ok)}${ok ? 'match' : 'differ'}</span></div>`;
+  };
+  card.innerHTML = '<h2>The pack and gathering</h2>' +
+    row('A year of spots', main.shares, worker.shares) +
+    row('Picked spots', main.events, worker.events) +
+    row('The pack', main.pack, worker.pack) +
+    row('Picked reeds, 3 days', main.regrowth, worker.regrowth) +
+    row('The same, run again', main.regrowth, main.regrowthAgain, 'First run', 'Second run') +
+    `<p class="muted">${main.handfuls} handfuls lay on 480 spots over the year; ${main.picked} picked spots are still remembered at its end. ` +
+    `The three picked reeds grew back to ${main.sizes.map((s) => s.toFixed(3)).join(', ')} of their size in three days.</p>`;
+}
+
 async function build() {
   const button = /** @type {HTMLButtonElement} */ ($('go'));
   const input = /** @type {HTMLInputElement} */ ($('seed'));
@@ -310,6 +358,12 @@ async function build() {
     } catch (e) {
       console.error('[determinism] net hauls', e);
       $('detail').textContent += ` The net hauls failed: ${e instanceof Error ? e.message : String(e)}`;
+    }
+    try {
+      showGather(await runGather(worldSeed));
+    } catch (e) {
+      console.error('[determinism] pack and gathering', e);
+      $('detail').textContent += ` The pack and gathering check failed: ${e instanceof Error ? e.message : String(e)}`;
     }
   } catch (e) {
     console.error('[determinism]', e);
