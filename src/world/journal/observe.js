@@ -407,7 +407,9 @@ export function liftedStone(journal, ctx, kind = 'stone') {
  */
 export function noteGift(journal, g, ctx) {
   const j = copy(journal);
-  /** @type {any} */ const note = { hour: ctx.hour, date: dateText(ctx.state?.seasons, ctx.words), text: `${g.title}. ${g.line}`, sp: g.page ?? undefined, kind: 'gift', title: g.title, line: g.line, icon: g.icon };
+  // A trail's reward (the shaper's pond stones and Steps) carries its trail, whose page it opens.
+  /** @type {any} */ const note = { hour: ctx.hour, date: dateText(ctx.state?.seasons, ctx.words), text: `${g.title}. ${g.line}`, sp: g.page ?? undefined, kind: 'gift', title: g.title, line: g.line, icon: g.icon,
+    ...(g.trail ? { trail: g.trail } : {}) };
   /** @type {Note[]} */ const notes = [note];
   j.notes = [...notes, ...j.notes].slice(0, ctx.words.notesKept);
   return { journal: j, notes };

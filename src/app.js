@@ -456,10 +456,18 @@ export async function startApp(canvas, hooks = {}) {
     footing: (x, z) => pieces.footing(x, z) });
   // Pond stones and Steps are the shaper's trail's first and fourth stops (shaper.json, built):
   // offered once the trail reaches them, or with `?sandbox`, or `?pondstones` and `?steps`, for this visit.
+  // Reaching one while you play shows a quiet gift card that opens the shaper's trail (a stop
+  // reached before this visit, or in a catch-up the island already showed, makes none).
+  /** @type {Set<string> | null} */ let shapeReached = null;
   const shapingOffers = () => {
     const u = getStore('unlocks') ?? {};
     const reached = new Set(trailLine(firstsOf(u.earned ?? {}, 'shape'), shaperRecipe.stops, [])
       .flatMap((e) => (e.type === 'station' ? [e.stop.id] : [])));
+    for (const id of ['stones', 'steps']) {
+      const stop = shaperRecipe.stops.find((/** @type {any} */ s) => s.id === id);
+      if (shapeReached && !shapeReached.has(id) && reached.has(id) && stop?.gift) emitDeferred('progress:gifted', { ...stop.gift, icon: stop.icon, trail: 'shape' });
+    }
+    shapeReached = reached;
     const pondStones = reached.has('stones') || params.has('sandbox') || params.has('pondstones');
     const steps = reached.has('steps') || params.has('sandbox') || params.has('steps');
     if (u.pondStones !== pondStones || u.steps !== steps) updateStore('unlocks', (v) => ({ ...v, pondStones, steps }));
