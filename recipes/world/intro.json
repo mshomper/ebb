@@ -1,0 +1,28 @@
+{
+  "type": "intro",
+  "version": 1,
+  "note": "The first evening (docs/future/13 section 2; src/world/intro). A new island opens at dawn on spring day 0 with the walker standing on the beach below the camp, the boat grounded behind (Matt, October 22: no row-in). Beats are data, run in order: id, hint lines (the first shows when the beat starts; each later one when the event in hintNext at the same step arrives), an optional start check, and a done check by name (checks.js) or a done event. then.act plays a walker act once the check passes and the beat ends when the act does. onStart.page opens the journal on that keeper page. cue emits an event (the dusk curlew) when its own event arrives. later shows one more line after the beat if the sun sets more than laterIfBeforeSunsetH hours later. short: the beats of the short evening (the sister island), with no hint lines. older: islands made before the update. Flags go in journal.flags as flagPrefix + id.",
+  "startAtDawn": { "dayIndex": 0, "afterDawnH": 0.25, "dawnSunDeg": -6 },
+  "flagPrefix": "intro:",
+  "beats": [
+    { "id": "landfall", "hint": ["Click the sand to walk there."], "skip": "Skip the first evening", "done": { "check": "arrivedOnLand" } },
+    { "id": "spring", "hint": ["Follow the stream up to the spring. Kneel there and drink."], "done": { "check": "kneltAtSpring", "reachM": 1.5 }, "then": { "act": "drink" } },
+    { "id": "page", "onStart": { "page": "first" }, "hint": ["The journal keeps what you learn here. Close it when you're ready."], "done": { "check": "journalClosed" } },
+    { "id": "pitch", "hint": ["The flat ground above the beach is your camp. Click the glowing patch to pitch your tent."], "done": { "event": "camp:pitched" } },
+    { "id": "gather", "hint": ["Twigs lie along the tide line and stones on the shore. Click one, then Gather."], "done": { "check": "packHolds", "need": { "fuel": 1, "stones": 2 } } },
+    { "id": "ring", "hint": ["Click the glowing ring of earth to lay your fire ring."], "done": { "event": "camp:ring-laid" } },
+    { "id": "shape", "hint": ["Go up to see the whole island. From above you can shape it.", "Widen the spring's pool into a pond with Sculpt, or pour water with Water."], "hintNext": ["walk:went-up"],
+      "later": "Evening comes in its own time. The time button can bring it sooner.", "laterIfBeforeSunsetH": 2, "done": { "check": "shapedOffPad" } },
+    { "id": "dusk", "start": { "check": "afterSunset" }, "hint": ["Evening. Go down to your fire ring and light it.", "Sit by the fire a while."], "hintNext": ["camp:lit"],
+      "cue": { "on": "camp:lit", "emit": "intro:curlew" }, "done": { "check": "satByFire", "reachM": 1.5, "stillS": 20 } },
+    { "id": "rest", "hint": ["When you're ready, click the tent and Rest until morning."], "done": { "event": "camp:rested" } }
+  ],
+  "short": ["landfall", "pitch", "ring", "dusk", "rest"],
+  "older": { "notice": "There's a camp ground on the flat above the shore now. Your tent is in your pack.", "glowWithinM": 12 },
+  "hints": {
+    "tools": {
+      "terrace": "Drag to build a level shelf, Height above where you start, with a sheer rock face at its edge.",
+      "cut": "Drag to carve a level floor, Height below where you start, with sheer rock walls around it."
+    }
+  }
+}
