@@ -61,6 +61,40 @@ function smooth(m) {
 const shade = (c, h, spread) => { const k = 1 + (u01(h) * 2 - 1) * spread; return [c[0] * k, c[1] * k, c[2] * k]; };
 
 /**
+ * A round split log lying along x, its underside on y = 0: bark with a little seeded wobble round
+ * it, both ends cut and paler (end grain). The stick pile's log until Matt's single log arrives.
+ * @param {number} seed @param {number} lenM @param {number} radiusM
+ * @param {number[]} bark @param {number[]} end linear albedo @returns {Mesh}
+ */
+export function roundLogMesh(seed, lenM, radiusM, bark, end) {
+  const b = builder(), SEG = 8, RING = 14;
+  /** @param {number} i @param {number} k */
+  const r = (i, k) => radiusM * (0.94 + 0.12 * u01(hash32(seed, i, k)));
+  for (let i = 0; i <= SEG; i++) {
+    const x = (i / SEG - 0.5) * lenM;
+    for (let k = 0; k < RING; k++) {
+      const a = (k / RING) * 2 * Math.PI, ny = Math.cos(a), nz = Math.sin(a), rr = r(i % SEG, k);
+      b.vert([x, radiusM + ny * rr, nz * rr], [0, ny, nz], shade(bark, hash32(seed, 7, k, i >> 1), 0.18));
+    }
+  }
+  for (let i = 0; i < SEG; i++) for (let k = 0; k < RING; k++) {
+    const a = i * RING + k, c = i * RING + ((k + 1) % RING);
+    b.tri(a, a + RING, c); b.tri(c, a + RING, c + RING);
+  }
+  // Both ends cut, end grain toward the middle.
+  for (const [i, dx] of /** @type {[number, number][]} */ ([[0, -1], [SEG, 1]])) {
+    const x = (i / SEG - 0.5) * lenM, at = b.vert([x, radiusM, 0], [dx, 0, 0], end);
+    const ring = [];
+    for (let k = 0; k < RING; k++) {
+      const a = (k / RING) * 2 * Math.PI, rr = r(i % SEG, k);
+      ring.push(b.vert([x, radiusM + Math.cos(a) * rr, Math.sin(a) * rr], [dx, 0, 0], shade(end, hash32(seed, 9, k), 0.08)));
+    }
+    for (let k = 0; k < RING; k++) dx > 0 ? b.tri(at, ring[k], ring[(k + 1) % RING]) : b.tri(at, ring[(k + 1) % RING], ring[k]);
+  }
+  return b.done();
+}
+
+/**
  * A thin stick lying along z, bowed sideways and a little up, tapering to its tip, its underside on y = 0.
  * @param {number} seed @param {number} lenM @param {number} radiusM @param {number} bend sideways bow (share of its length)
  * @param {number[]} color linear albedo @returns {Mesh}

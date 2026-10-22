@@ -230,5 +230,26 @@
     0.055
    ]
   }
+ },
+ "log": {
+  "source": "Ebb_log_single.obj",
+  "file": "log.glb",
+  "bytes": 66296,
+  "sourceBytes": 1518418,
+  "trianglesBefore": 47184,
+  "triangles": 2500,
+  "maps": 512,
+  "bounds": {
+   "min": [
+    -0.225,
+    0,
+    -0.087
+   ],
+   "max": [
+    0.225,
+    0.143,
+    0.087
+   ]
+  }
  }
 }

@@ -11,6 +11,7 @@ import { emptyPack, cleanPack, sizeOf, add, take, has, handfulsOf, packHolds, no
 import { pileWord, pileLook, slotFor, setDown, takeUp } from '../src/world/pack/piles.js';
 import { createPiles } from '../src/world/pack/piles-live.js';
 import { splitPieces, firstPieces, buildsUp } from '../src/world/pack/pile-pieces.js';
+import { logStack, logsShown } from '../src/world/pack/log-stack.js';
 import { atCamp } from '../src/world/pack/camp.js';
 import { padOf } from '../src/world/camp/layout.js';
 import { offCampGround } from '../src/world/pieces/camp-clear.js';
@@ -82,6 +83,23 @@ export function addPackTests(test, assert, eq) {
     eq(firstPieces(m, split, 1).indices.length, 12, 'the full pile shows them all');
     assert(buildsUp(split), 'separate pieces build up');
     eq(buildsUp(splitPieces(mesh([[0, 0, 0]]))), false, 'one piece does not');
+  });
+
+  test(G, 'a stick pile of seeded logs: each rests on the ground or on two below, none floats or overlaps', async () => {
+    const { recipe } = await load();
+    const S = recipe.piles.look.stack, r = 0.16;
+    const a = logStack(42, r, S), b = logStack(42, r, S);
+    eq(JSON.stringify(a), JSON.stringify(b), 'the same seed gives the same pile');
+    assert(JSON.stringify(logStack(43, r, S)) !== JSON.stringify(a), 'another seed another pile');
+    eq(a.length, S.rows.reduce((t, n) => t + n, 0), 'every row is there');
+    const C = a.map((g) => ({ z: g.z, cy: g.y + r * g.size, r: r * g.size }));
+    for (let i = 0; i < C.length; i++) {
+      const touching = C.slice(0, i).filter((q) => Math.abs(Math.hypot(q.z - C[i].z, q.cy - C[i].cy) - (q.r + C[i].r)) < 1e-6).length;
+      assert(Math.abs(C[i].cy - C[i].r) < 1e-9 || touching >= 2, `log ${i} rests on the ground or on two logs`);
+      for (let j = 0; j < i; j++) assert(Math.hypot(C[j].z - C[i].z, C[j].cy - C[i].cy) >= C[j].r + C[i].r - 1e-6, `logs ${j} and ${i} do not overlap`);
+      if (i > 0) assert(C[i].cy - C[i].r >= C[i - 1].cy - C[i - 1].r - 1e-9, 'bottom up');
+    }
+    eq(logsShown(a.length, 0.3), 3); eq(logsShown(a.length, 1), a.length); eq(logsShown(a.length, 0), 1);
   });
 
   test(G, 'a new pack is empty with six pouches', async () => {

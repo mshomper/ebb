@@ -25,7 +25,8 @@ import { createCreaturePass } from '../../render/passes/creatures.js';
 import { packMesh } from '../creatures/bodies.js';
 import { pileShape } from './piles.js';
 import { splitPieces, firstPieces, buildsUp, scaledMesh } from './pile-pieces.js';
-import { pickupMesh, stickPileMesh, stonePileMesh } from './pickup-meshes.js';
+import { logStack, logsShown } from './log-stack.js';
+import { pickupMesh, stickPileMesh, stonePileMesh, roundLogMesh } from './pickup-meshes.js';
 
 /** @typedef {import('./pickup-meshes.js').Mesh} Mesh */
 
@@ -155,6 +156,35 @@ export function createPackDraw(o) {
     }
   }
   setPileMesh('stick', stickPileMesh(0x571c, L.standIn.stick, L.footprintM.stick));
+
+  // The stick pile from one log (log-stack.js): a round stand-in log until Matt's single log loads
+  // (stack.model), in a few shades, and paler for drift twigs. Keys 'log:<shade>' and 'log-pale:<shade>'.
+  const ST = L.stack;
+  let logRadius = ST?.radiusM ?? 0.13;
+  /** Each pile's logs, by its seed (the layout never changes for a pile). @type {Map<number, import('./log-stack.js').StackedLog[]>} */
+  const stacks = new Map();
+  /** @param {Mesh} m */
+  function setLogMesh(m) {
+    // A split log is not quite round: rest it on the mean of its half height and half width.
+    let top = 0, side = 0;
+    for (let i = 0; i < m.count; i++) { top = Math.max(top, m.vertices[i * 9 + 1]); side = Math.max(side, Math.abs(m.vertices[i * 9 + 2])); }
+    logRadius = (top / 2 + side) / 2;
+    stacks.clear();
+    (ST.shades ?? [1]).forEach((/** @type {number} */ k, /** @type {number} */ i) => {
+      const t = paler(m, { mix: 1 - k, toward: [0, 0, 0] });
+      put(pilePass, `log:${i}`, t);
+      put(pilePass, `log-pale:${i}`, paler(t, L.pale));
+    });
+  }
+  if (ST) {
+    setLogMesh(roundLogMesh(0x109, ST.lenM, ST.radiusM, ST.bark, ST.end));
+    if (ST.model) {
+      fetch(new URL(`../../../${ST.model}`, import.meta.url))
+        .then((r) => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.arrayBuffer(); })
+        .then((b) => setLogMesh(campModelMesh(readGlb(b), ST.bark)))
+        .catch((e) => console.info(`pack: ${ST.model} not loaded, drawing the stand-in log (${e.message})`));
+    }
+  }
   setPileMesh('stone', stonePileMesh(0x5701, L.standIn.stone, L.footprintM.stone));
   for (const [model, path] of Object.entries(L.models3d ?? {})) {
     fetch(new URL(`../../../${path}`, import.meta.url))
@@ -190,16 +220,44 @@ export function createPackDraw(o) {
     for (const p of get('pieces')?.list ?? []) {
       if (p.kind !== 'pile' || (p.x - f[0]) ** 2 + (p.z - f[1]) ** 2 > near2) continue;
       const sh = pileShape(p.holds ?? '', p.handfuls ?? 0, R);
-      out.push({ x: p.x, y: ground(p.x, p.z) - L.sinkM, z: p.z, yaw: p.yaw, size: sh.scale, mesh: `${sh.model}:${sh.stage}` });
+      if (!addLogs(out, sh, p.x, p.z, p.yaw, p.seed >>> 0)) {
+        out.push({ x: p.x, y: ground(p.x, p.z) - L.sinkM, z: p.z, yaw: p.yaw, size: sh.scale, mesh: `${sh.model}:${sh.stage}` });
+      }
     }
     for (const h of o.pack?.heaps?.() ?? []) {
       const [kind, x, z, , n] = h;
       if ((x - f[0]) ** 2 + (z - f[1]) ** 2 > near2) continue;
       const sh = pileShape(kind, n, R, true);
-      const yaw = u01(hash32(Math.round(x * 100), Math.round(z * 100), 0x4ea9)) * 2 * Math.PI;
-      out.push({ x, y: ground(x, z) - L.sinkM, z, yaw, size: sh.scale, mesh: `${sh.model}:${sh.stage}` });
+      const seed = hash32(Math.round(x * 100), Math.round(z * 100), 0x4ea9);
+      const yaw = u01(seed) * 2 * Math.PI;
+      if (!addLogs(out, sh, x, z, yaw, seed)) out.push({ x, y: ground(x, z) - L.sinkM, z, yaw, size: sh.scale, mesh: `${sh.model}:${sh.stage}` });
     }
-    return out.slice(0, L.max);
+    return out.slice(0, L.logMax ?? 160);
+  }
+
+  /**
+   * A stick pile (or heap) as stacked logs, bottom up, as many as its stage shows. False for a
+   * stone pile, which is still drawn as its model.
+   * @param {import('../../render/passes/creatures.js').Being[]} out @param {{ model: string, stage: number | string }} sh
+   * @param {number} x @param {number} z @param {number} yaw @param {number} seed
+   */
+  function addLogs(out, sh, x, z, yaw, seed) {
+    if (!ST || (sh.model !== 'stick' && sh.model !== 'stick-pale')) return false;
+    let logs = stacks.get(seed);
+    if (!logs) { logs = logStack(seed, logRadius, ST); stacks.set(seed, logs); }
+    const share = sh.stage === 'heap' ? (L.heapShare ?? 0.15) : (L.stageShares ?? [0.3, 0.6, 0.85, 1])[/** @type {number} */ (sh.stage)] ?? 1;
+    const n = logsShown(logs.length, share);
+    const c = Math.cos(yaw), s = Math.sin(yaw), y0 = ground(x, z) - L.sinkM;
+    const pale = sh.model === 'stick-pale' ? 'log-pale' : 'log';
+    const shades = (ST.shades ?? [1]).length;
+    for (let i = 0; i < n; i++) {
+      const g = logs[i];
+      // The pile's frame turned by its yaw (as the creature pass turns a mesh: x toward +x, z toward +z).
+      const wx = x + g.x * c + g.z * s, wz = z - g.x * s + g.z * c;
+      const shade = Math.min(shades - 1, Math.max(0, Math.round(((g.tint - 1) / (2 * (ST.tintJitter || 1)) + 0.5) * (shades - 1))));
+      out.push({ x: wx, y: y0 + g.y, z: wz, yaw: yaw + g.yaw, size: g.size, mesh: `${pale}:${shade}` });
+    }
+    return true;
   }
 
   /** What lies on the ground to gather near f, nearest spots first, up to the cap. @param {number[]} f */
