@@ -13,8 +13,9 @@
 import { stream } from '../../core/rng.js';
 
 /**
- * @typedef {{ x: number, y: number, z: number, r: number, inWater?: boolean }} Seat  a basking spot: its top's
- *   middle (y), how far across it is (r)
+ * @typedef {{ x: number, y: number, z: number, r: number, kind?: string, room?: number, yaw?: number, inWater?: boolean }} Seat
+ *   a basking spot: its top's middle (y), how far across it is (r), how many turtles it holds (room),
+ *   and for a log or the raft the way its length runs (yaw)
  * @typedef {{ x: number, y: number, z: number, vx: number, vy: number, vz: number, roll: number, pitch: number, yaw: number,
  *   look: number, lookTo: number, nextLook: number, mode: 'swim'|'climb'|'bask'|'slide', until: number,
  *   goal: { x: number, z: number }, seat: number, from: { x: number, y: number, z: number } | null, under: number }} Turtle
@@ -47,17 +48,29 @@ export function createBask(o) {
     return { ...home };
   }
 
-  /** The basking spots near home, nearest first. */
-  function seatsNear() {
+  /**
+   * The places to bask near home, nearest spot first: each spot holds `room` turtles (a stone's top
+   * one or two, the second on the first's back; a log or the raft a few side by side). Turtles past
+   * the places there are stay in the water.
+   * @returns {{ s: Seat, k: number }[]}
+   */
+  function placesNear() {
     const r2 = M.baskReachM * M.baskReachM;
     return env.seats().filter((s) => (s.x - home.x) ** 2 + (s.z - home.z) ** 2 <= r2)
-      .sort((a, b) => ((a.x - home.x) ** 2 + (a.z - home.z) ** 2) - ((b.x - home.x) ** 2 + (b.z - home.z) ** 2));
+      .sort((a, b) => ((a.x - home.x) ** 2 + (a.z - home.z) ** 2) - ((b.x - home.x) ** 2 + (b.z - home.z) ** 2))
+      .flatMap((s) => Array.from({ length: Math.max(1, s.room ?? 1) }, (_, k) => ({ s, k })));
   }
 
-  /** Where turtle i rests on its seat: stacked ones a little behind and up. @param {Seat} s @param {number} k its place in the stack */
+  /**
+   * Where a turtle rests in place k on a spot: on a stone the second climbs onto the first's back; on
+   * a log or the raft they lie side by side. @param {Seat} s @param {number} k
+   */
   function restOn(s, k) {
-    const a = (o.id * 1.7 + k * 2.1) % (Math.PI * 2);
-    const off = Math.min(s.r * 0.4, k * M.stackM);
+    if (s.kind === 'log' || s.kind === 'raft') {
+      const a = s.yaw ?? 0, off = (k - ((s.room ?? 1) - 1) / 2) * M.sideM;
+      return { x: s.x + Math.sin(a) * off, y: s.y, z: s.z + Math.cos(a) * off };
+    }
+    const a = (o.id * 1.7) % (Math.PI * 2), off = Math.min(s.r * 0.4, k * M.stackM);
     return { x: s.x + Math.cos(a) * off, y: s.y + k * shellH * 0.7, z: s.z + Math.sin(a) * off };
   }
 
@@ -112,17 +125,17 @@ export function createBask(o) {
     /** @param {number} dt */
     step(dt) {
       t += dt;
-      // Who rests where: by day, out of the water, the seats near home are shared out in turn.
-      const seats = mood === 'day' && t >= fleeUntil ? seatsNear() : [];
+      // Who rests where: by day, out of the water, the places near home are shared out in turn.
+      const places = mood === 'day' && t >= fleeUntil ? placesNear() : [];
       fish.forEach((f, i) => {
         const w = env.water(f.x, f.z);
         // The head looks about now and then.
         if (t >= f.nextLook) { f.lookTo = (rng.next() * 2 - 1) * M.headTurnRad; f.nextLook = t + range(M.lookEveryS); }
         f.look += (f.lookTo - f.look) * Math.min(1, dt * 1.5);
         if (f.mode === 'bask' || f.mode === 'climb') {
-          const s = seats[f.seat];
-          if (!s) { slideAll(); return; }
-          const at = restOn(s, Math.floor(i / Math.max(1, seats.length)));
+          const p = places[f.seat];
+          if (!p) { slideAll(); return; }
+          const at = restOn(p.s, p.k);
           if (f.mode === 'climb') {
             const k = Math.min(1, 1 - (f.until - t) / M.climbS);
             const e = k * k * (3 - 2 * k);
@@ -145,12 +158,13 @@ export function createBask(o) {
           if (k >= 1) { f.mode = 'swim'; f.until = t + range(M.turnEveryS); }
           return;
         }
-        // Swimming: to a seat by day, else about home, slowly, the head just above the water.
-        const seatI = seats.length && t >= f.under ? i % seats.length : -1;
-        const target = seatI >= 0 ? seats[seatI] : f.goal;
+        // Swimming: to its place by day (if there is one for it), else about home, slowly, the head
+        // just above the water.
+        const seatI = i < places.length && t >= f.under ? i : -1;
+        const target = seatI >= 0 ? places[seatI].s : f.goal;
         if (seatI < 0 && t >= f.until) { f.goal = wanderPoint(); f.until = t + range(M.turnEveryS); }
         const dx = target.x - f.x, dz = target.z - f.z, d = Math.hypot(dx, dz);
-        if (seatI >= 0 && d <= Math.max(0.25, seats[seatI].r + 0.15)) {
+        if (seatI >= 0 && d <= Math.max(0.25, places[seatI].s.r + 0.15)) {
           f.mode = 'climb'; f.seat = seatI; f.from = { x: f.x, y: f.y, z: f.z }; f.until = t + M.climbS;
           return;
         }

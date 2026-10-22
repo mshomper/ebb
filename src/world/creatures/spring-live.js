@@ -108,21 +108,31 @@ export function createSpring(opts) {
    * `seats`; their places kept in the world as `basks` when they change.
    */
   function syncSeats() {
-    /** @type {{ id: string, kind: string, x: number, y: number, z: number, r: number, inWater: boolean }[]} */ const seats = [];
+    // How many turtles a spot holds: a stone's top one, or two (the second on the first's back) if it
+    // is big enough; the raft three; a log one per 0.35 m, side by side.
+    const stoneRoom = (/** @type {number} */ r) => (r < 0.12 ? 1 : 2);
+    /** @type {{ id: string, kind: string, x: number, y: number, z: number, r: number, room: number, yaw?: number, inWater: boolean }[]} */ const seats = [];
     const listed = pieces?.seats?.();
+    const list = getStore('pieces')?.list ?? [];
     if (Array.isArray(listed)) {
-      for (const s of listed) seats.push({ id: s.id, kind: s.kind, x: s.x, y: s.y, z: s.z, r: s.r, inWater: !!s.inWater });
+      for (const s of listed) {
+        const yaw = list.find((/** @type {any} */ p) => p.id === s.id)?.yaw ?? 0;
+        seats.push({ id: s.id, kind: s.kind, x: s.x, y: s.y, z: s.z, r: s.r, room: s.kind === 'raft' ? 3 : stoneRoom(s.r), yaw, inWater: !!s.inWater });
+      }
     } else {
-      for (const p of getStore('pieces')?.list ?? []) {
+      for (const p of list) {
         if (p.kind !== 'stone') continue;
-        seats.push({ id: p.id, kind: 'stone', x: p.x, y: terrain.sampleHeight(p.x, p.z) + p.size * 0.42, z: p.z, r: p.size * 0.4, inWater: water.sampleLive(p.x, p.z).depth > 0.02 });
+        const r = p.size * 0.4;
+        seats.push({ id: p.id, kind: 'stone', x: p.x, y: terrain.sampleHeight(p.x, p.z) + p.size * 0.42, z: p.z, r, room: stoneRoom(r), inWater: water.sampleLive(p.x, p.z).depth > 0.02 });
       }
     }
     const ids = new Set(seats.map((s) => s.id));
     for (const log of pieces?.keptLogs?.() ?? []) {
       if (!log.still || ids.has(log.id)) continue;
       const p = log.surface(0.5, Math.PI / 2).p;
-      seats.push({ id: log.id, kind: 'log', x: p[0], y: p[1], z: p[2], r: Math.min(0.35, log.length * 0.3), inWater: water.sampleLive(p[0], p[2]).depth > 0.02 });
+      const yaw = list.find((/** @type {any} */ q) => q.id === log.id)?.yaw ?? 0;
+      seats.push({ id: log.id, kind: 'log', x: p[0], y: p[1], z: p[2], r: Math.min(0.35, log.length * 0.3), room: Math.max(1, Math.floor(log.length / 0.35)),
+        yaw, inWater: water.sampleLive(p[0], p[2]).depth > 0.02 });
     }
     updateStore('seats', () => seats);
     const basks = seats.map((s) => ({ x: Math.round(s.x * 100) / 100, z: Math.round(s.z * 100) / 100, kind: s.kind }))

@@ -121,7 +121,7 @@ Doc 09's rule holds: creatures never read structures directly. A piece writes in
 
 ### Logs over time
 
-A log is a slow story, which suits F04's deep clock: bark loosens, moss climbs, fungi fruit in autumn, it softens and eventually crumbles into a mound that grows over. Decided October 20, 2026: driftwood washes up on the driftline at 10 finds (the naturalist's notes), and the turtles, now in the pond tier, give the gift to carry a log and set it down where you want it (doc 12).
+A log is a slow story, which suits F04's deep clock: bark loosens, moss climbs, fungi fruit in autumn, it softens and eventually crumbles into a mound that grows over. Decided October 20, 2026: driftwood washes up on the driftline at 10 finds (the naturalist's notes), and the turtles, now in the pond tier, give the gift to carry a log and set it down where you want it (doc 12). Changed October 21, 2026: carrying comes with the driftwood itself (the sea brings a log and carrying it up is how you keep it), and the turtles give the floating reed raft instead.
 
 ### Lifting a stone
 
@@ -152,7 +152,7 @@ Listed only; Matt applies these later.
 ## Open questions
 
 - Should boulders be stamped into the ground with a brush, placed as loose pieces, or both?
-- Should driftwood logs wash up on their own early, before the turtles' log tool? (Decided October 20, 2026: yes, at 10 finds; the turtles' gift carries them.)
+- Should driftwood logs wash up on their own early, before the turtles' log tool? (Decided October 20, 2026: yes, at 10 finds. October 21: carrying comes with them; the turtles give the raft.)
 - Are mud and shingle as computed looks enough, or do you want to paint them?
 - Which new plants would you most like on the starter island first?
 - Should lifting a stone be a tap, or something you do only up close?

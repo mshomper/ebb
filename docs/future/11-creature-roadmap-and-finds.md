@@ -103,7 +103,7 @@ Finds do not give creature gifts and do not count toward tier milestones, so the
 |---|---|
 | 3 | **The shell collection.** A page that fills with the shells you find along the driftline (F10). Observation only, nothing to manage. |
 | 6 | **Loose stones.** The Stone piece unlocks (F10), so you can make homes for what lives under them. |
-| 10 | **Driftwood.** Logs start washing up on the driftline (F10). The turtles (pond tier since October 20, 2026) give the gift to carry one to the pond, where toads and slow worms live under it. Moved from 15 so logs come in time for the turtles. |
+| 10 | **Driftwood.** Logs start washing up on the driftline (F10). You can carry one to the pond from then on (since October 21, 2026; it was the turtles' gift, and the turtles now give the floating reed raft), where toads and slow worms live under it. Moved from 15 so logs come in time for the turtles. |
 | 15 | **The hand lens.** Look closer at small lives: the camera may come nearer to them, and small creatures under lifted stones become findable. This is the door for insects, on your terms. Moved from 10. |
 
 The thresholds and rewards are starting points. The line uses the same plumbing species gifts will need. Today `species:happy` is emitted with the frog's gift, but nothing grants anything, and nothing writes `unlocks.earned` at runtime. One small progress module, the one doc 13 plans as `src/world/expansion.js`, would grant species gifts and naturalist rewards alike.
