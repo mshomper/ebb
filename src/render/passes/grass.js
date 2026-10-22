@@ -12,7 +12,7 @@ import { lushLook } from '../../world/growth/lush.js';
 
 /** @typedef {import('../frame-graph.js').PassContext} PassContext */
 
-const DRAW_BYTES = 832;
+const DRAW_BYTES = 864;
 /** Where the walker presses the grass (W6): the uniform holds this many. */
 const MAX_PUSHES = 4;
 /** Clears (ground with no blades, under placed pieces) the uniform holds. */
@@ -137,6 +137,19 @@ export function createGrassPass(opts) {
         const p = list[i];
         f.set(p ? [p.x, p.z, p.r, p.k] : [0, 0, 0, 0], 192 + i * 4);
       }
+    },
+
+    /**
+     * The keeper's camp pad (docs/future/13 CP-16, CP-02): grass there grows to only grassScale of
+     * its height, eased back to full over edgeWearM outside the pad, and thins a little toward the
+     * center with the pad's wear. Null (no pad yet) leaves the grass as it was. Look only.
+     * @param {import('../../world/camp/layout.js').Pad | null} pad
+     * @param {number} [thinWithWear] recipes/world/camp.json grass.thinWithWear
+     */
+    setPad(pad, thinWithWear = 0) {
+      if (!pad) { f.fill(0, 208, 216); return; }
+      f.set([pad.x, pad.z, pad.r, pad.grassScale ?? 1], 208);
+      f.set([Math.max(0.01, pad.edgeWearM ?? 1), (pad.wear ?? 0) * thinWithWear, 0, 0], 212);
     },
 
     /**
