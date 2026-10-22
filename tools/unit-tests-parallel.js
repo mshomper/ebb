@@ -37,6 +37,7 @@ export const PARALLEL = {
   format9: () => import('./unit-tests-format9.js').then((m) => m.addFormat9Tests),
   campLock: () => import('./unit-tests-camp-lock.js').then((m) => m.addCampLockTests),
   campGround: () => import('./unit-tests-camp-ground.js').then((m) => m.addCampGroundTests),
+  campPieces: () => import('./unit-tests-camp-pieces.js').then((m) => m.addCampPieceTests),
   campEdge: () => import('./unit-tests-camp-edge.js').then((m) => m.addCampEdgeTests),
   campPlants: () => import('./unit-tests-camp-plants.js').then((m) => m.addCampPlantsTests),
   pondSpring: () => import('./unit-tests-pond-spring.js').then((m) => m.addPondSpringTests),

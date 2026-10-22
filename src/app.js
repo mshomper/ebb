@@ -969,7 +969,11 @@ export async function startApp(canvas, hooks = {}) {
     presence.edit(p[0], p[2]);
     const r = pieces.setDown(p);
     if (r.ok) updateStore('identify', () => null);
-    else updateStore('identify', (c) => (c ? { ...c, carrying: r.reason === 'water', carryNote: r.reason === 'gone' ? null : r.reason, canCarry: r.reason === 'water' } : c));
+    else {
+      // Water and the camp ground keep it carried, with a line saying why; the cap puts it back.
+      const still = r.reason === 'water' || r.reason === 'camp';
+      updateStore('identify', (c) => (c ? { ...c, carrying: still, carryNote: r.reason === 'gone' ? null : r.reason, canCarry: still } : c));
+    }
   }
 
   /**
