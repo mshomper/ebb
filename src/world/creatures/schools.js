@@ -72,7 +72,9 @@ export function createSchools(opts) {
   const body = recipe.body, M = recipe.motion, P = recipe.presence, find = recipe.find;
   const variants = Math.max(1, body.variants ?? 1);
   const lods = recipe.bake.lods ?? [{ cellM: recipe.bake.cellM }];
-  const pass = createCreaturePass({ recipe, name: key });
+  // Wet eyes for a body whose recipe lists eye bones (the turtle's).
+  const eyeAt = (/** @type {string} */ n) => (body.bones ?? []).findIndex((/** @type {any} */ b) => b.name === n);
+  const pass = createCreaturePass({ recipe, name: key, eyeBones: eyeAt('eye.l') >= 0 ? [eyeAt('eye.l'), eyeAt('eye.r')] : undefined });
   let budget = Math.min(128, opts.budget ?? 128);
   /** Each variant's skeleton, once its first bake is back. @type {({ name: string, parent: number, pivot: number[] }[] | null)[]} */
   const rigs = Array.from({ length: variants }, () => null);
@@ -110,6 +112,11 @@ export function createSchools(opts) {
       .map((/** @type {any} */ p) => ({ x: p.x, z: p.z, h: M.perchOn[p.sp] * Math.min(1, p.size) })),
     // Stones, logs and the raft to bask on (turtles; published by src/world/creatures/spring-live.js).
     seats: () => getStore('seats') ?? [],
+    // Plants a turtle grazes (lily leaves, pondweed: motion.habits.grazeOn).
+    food: () => (world.state?.growth?.plants ?? []).filter((/** @type {any} */ p) => M.habits?.grazeOn?.[p.sp] && p.stage >= 1)
+      .map((/** @type {any} */ p) => ({ x: p.x, z: p.z, sp: p.sp })),
+    // Where you are, for a turtle at the periscope to turn and face: on foot, or the camera's eye.
+    viewer: () => opts.you?.() ?? camera.eye,
   };
   const comeBack = createReturn(recipe.reveal?.growS ?? 0.6);
   const bones = new Float32Array(MAX_BONES * 16);
@@ -137,7 +144,7 @@ export function createSchools(opts) {
       if (s) { s.rehome({ x: g.x, z: g.z }, deepOf(g)); if (s.fish.length !== n) s.resize(n); continue; }
       const make = M.kind === 'patrol' ? createPatrol : M.kind === 'bask' ? createBask : createSchool;
       schools.set(g.id, /** @type {any} */ (make)({ id: g.id, seed: world.env.seed ^ hash32(key.length, 0x5c), count: n, home: { x: g.x, z: g.z },
-        deep: deepOf(g), size: body.displayScale ?? 1, M, env }));
+        deep: deepOf(g), size: body.displayScale ?? 1, M, env, bones: body.bones }));
     }
   }
 
@@ -182,7 +189,10 @@ export function createSchools(opts) {
         }
         const jitter = ((hash32(id, 0x51e) >>> 8) / 16777216) * 2 - 1;
         const yaw = /** @type {any} */ (f).yaw ?? Math.atan2(f.vx, f.vz);
-        beings.push({ x: f.x, y: f.y, z: f.z, yaw, size: size * (1 + (body.sizeJitter ?? 0) * jitter) * back.k, mesh, bones: b ?? bones });
+        // A turtle dries as it basks (its shell goes from glossy to matte).
+        const wet = /** @type {any} */ (f).wet;
+        beings.push({ x: f.x, y: f.y, z: f.z, yaw, size: size * (1 + (body.sizeJitter ?? 0) * jitter) * back.k, mesh, bones: b ?? bones,
+          dry: wet === undefined ? 0 : 1 - wet });
       });
     }
     pass.setBeings(beings);

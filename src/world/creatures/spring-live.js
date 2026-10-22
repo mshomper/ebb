@@ -31,14 +31,14 @@ const unit = (h) => (h >>> 8) / 16777216;
  * @param {{ world: { state: any, env: any }, terrain: { sampleHeight: (x: number, z: number) => number },
  *   water: { sim: { live: any }, sampleLive: (x: number, z: number) => { surface: number, depth: number } },
  *   camera: { target: ArrayLike<number> }, pieces: any, recipes: { frogspawn: any, toad: any, frog: any, slowworm?: any, lizard?: any },
- *   test?: string | null }} opts
+ *   test?: string | null, presence?: import('./presence.js').Presence }} opts
  *   pieces: src/world/pieces (kept logs; seats() once the shaping work brings it); test: `?spring=`
  */
 export function createSpring(opts) {
   const { world, terrain, water, pieces } = opts;
   // The slow worm and the common lizard, basking by the logs and stones (sun-finds.js).
   const sun = opts.recipes.slowworm && opts.recipes.lizard
-    ? createSunFinds({ world, terrain, water, pieces, recipes: { slowworm: opts.recipes.slowworm, lizard: opts.recipes.lizard } }) : null;
+    ? createSunFinds({ world, terrain, water, pieces, presence: opts.presence, recipes: { slowworm: opts.recipes.slowworm, lizard: opts.recipes.lizard } }) : null;
   const R = opts.recipes.frogspawn, T = opts.recipes.toad, frog = opts.recipes.frog;
   const B = R.body, TP = B.tadpole, FL = B.froglet;
   const wetPass = createCreaturePass({ recipe: { body: { wetSpecular: B.wetSpecular, contactShadow: 0, scaleReal: B.scaleReal } }, name: 'spring-water' });

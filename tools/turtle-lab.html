@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ebb turtle lab</title>
+<link rel="icon" href="../brand/ebb-favicon.svg" type="image/svg+xml">
+<style>
+  @font-face { font-family: 'Nunito'; src: url('../src/vendor/fonts/nunito-latin-600-normal.woff2') format('woff2'); font-weight: 600; }
+  @font-face { font-family: 'Nunito'; src: url('../src/vendor/fonts/nunito-latin-800-normal.woff2') format('woff2'); font-weight: 800; }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; max-width: 100%; overflow-x: hidden; }
+  body { background: #F4EEE4; color: #1E2624; font: 600 17px/1.45 'Nunito', system-ui, sans-serif; padding: 16px; overflow-wrap: anywhere; }
+  main { max-width: 1500px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+  h1 { font-size: 24px; font-weight: 800; margin: 0; }
+  h2 { font-size: 18px; font-weight: 800; margin: 0 0 8px; }
+  .muted { color: #4A5551; font-size: 16px; margin: 0; }
+  a { color: #4a6a47; }
+  .card { background: #FBF7F0; border: 1px solid #E3D9C9; border-radius: 14px; padding: 14px 16px; min-width: 0; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 14px; }
+  .panel canvas { width: 100%; aspect-ratio: 4 / 3; display: block; border-radius: 10px; background: #EDE6DA; cursor: zoom-in; }
+  .panel.big { grid-column: 1 / -1; order: -1; }
+  .panel.big canvas { aspect-ratio: 16 / 9; cursor: zoom-out; }
+  .note { margin: 8px 0 0; font-size: 16px; color: #4A5551; min-height: 1.45em; }
+  .row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+  .buttons { display: flex; flex-wrap: wrap; gap: 10px; flex: 1 1 320px; }
+  button { font: 800 16px/1.2 'Nunito', system-ui, sans-serif; color: #1E2624; background: #FFFDF8; border: 1px solid #CFC3AF; border-radius: 12px; padding: 10px 14px; cursor: pointer; min-height: 46px; flex: 1 1 110px; }
+  button[aria-pressed="true"] { background: #4a6a47; color: #FBF7F0; border-color: #4a6a47; }
+  #status { font-weight: 800; margin: 0; }
+  h2.section { font-size: 21px; margin: 8px 0 0; }
+</style>
+</head>
+<body>
+<main>
+  <h1>ebb turtle lab</h1>
+  <p class="muted">The European pond turtle at its drawn size, one view per motion, each looping (M2 turtle life). Every pose comes from the game's own rig and every number from <code>recipes/species/turtle.json</code>, so what moves here is what moves on the island. The line under each view says what the turtle is doing at that moment. Click a view to see it big; click again to put it back. Baked shell colours shows the shell as it looked before the plates were drawn per pixel, for comparison. The grid on the floor is 1 cm; the water is see-through so you can watch the strokes underneath. <a href="./">All tools</a></p>
+  <div class="card">
+    <div class="row">
+      <div class="buttons" id="speed" role="group" aria-label="Speed">
+        <button type="button" data-speed="0.25">Quarter speed</button>
+        <button type="button" data-speed="0.5">Half speed</button>
+        <button type="button" data-speed="1" aria-pressed="true">Real speed</button>
+        <button type="button" id="play" aria-pressed="false">Pause</button>
+        <button type="button" id="plates" aria-pressed="false">Baked shell colours</button>
+      </div>
+      <div class="buttons" id="views" role="group" aria-label="View">
+        <button type="button" data-view="side">Side</button>
+        <button type="button" data-view="three-quarter" aria-pressed="true">Three-quarter</button>
+        <button type="button" data-view="front">Front</button>
+        <button type="button" data-view="top">Top</button>
+        <button type="button" data-view="head">Close on the head</button>
+      </div>
+    </div>
+    <p id="status">Starting</p>
+  </div>
+  <div class="grid" id="grid"></div>
+  <h2 class="section">The common lizard</h2>
+  <p class="muted">Drawn at 2.5x real size on a stone 20 cm across. Its life runs live here as in the game: head jerks, breathing, push-ups (more often here than on the island), and in the middle view someone walks up beside its stone now and then, so it darts off, waits, and comes back.</p>
+  <div class="grid" id="lizards"></div>
+</main>
+<script src="./boot-guard.js"></script>
+<script type="importmap">{ "imports": {
+  "wgpu-matrix": "../src/vendor/wgpu-matrix/wgpu-matrix.module.js" } }</script>
+<script type="module" src="./turtle-lab.js"></script>
+</body>
+</html>

@@ -14,10 +14,39 @@ const DRAW_BYTES = 48;
 const MAX = 128;
 const IDENTITY = new Float32Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
 
+/** Floats after the usual 12 in creature-draw.wgsl: a turtle's shell plates and its drying. */
+const SHELL_FLOATS = 52;
+
 /**
- * @typedef {{ x: number, y: number, z: number, yaw: number, size: number, mesh?: string, bones?: Float32Array | null }} Being
+ * The shell and drying block for creature-draw.wgsl (all zero for a body with neither): the shell
+ * piece's scutes (body.prims[].scutes, as body-bake.js bakes them) and wetSpecular's dry look.
+ * @param {any} body a species recipe's body @returns {Float32Array}
+ */
+export function shellBlock(body) {
+  const out = new Float32Array(SHELL_FLOATS);
+  const q = body.prims?.find((/** @type {any} */ p) => p.scutes);
+  const A = body.albedo ?? {};
+  if (q) {
+    const S = q.scutes, list = [...S.vertebral, ...S.costal].slice(0, 12);
+    out.set([1, q.cutY ?? -1, S.seamW, S.grooveDark ?? 0.35,
+      q.c[0], q.c[1], q.c[2], S.streakShare ?? 0,
+      q.r[0], q.r[1], q.r[2], S.streakFrom ?? 0,
+      S.c[0], S.c[1], S.rx, S.rz,
+      S.costalU, S.marginalR, S.marginals, S.streaks ?? 0,
+      S.streakW ?? 0, S.dotScale ?? 0, S.dotCut ?? 1, S.vertebral.length], 0);
+    out.set(list, 24);
+    out.set([...(A.shell ?? A.back), Math.min(S.costal.length, 12 - S.vertebral.length)], 36);
+    out.set([...(A.seam ?? A.back), 0, ...(A.fleck ?? A.back), 0], 40);
+  }
+  const W = body.wetSpecular ?? {};
+  if (W.wetDarken) out.set([W.dryRoughness ?? W.roughness, W.dryStrength ?? W.strength, W.wetDarken, 0], 48);
+  return out;
+}
+
+/**
+ * @typedef {{ x: number, y: number, z: number, yaw: number, size: number, mesh?: string, bones?: Float32Array | null, dry?: number }} Being
  *   mesh: which mesh it wears (setMesh's key; the first mesh when left out); bones: its bone
- *   matrices, 16 floats a bone (none: the body as baked)
+ *   matrices, 16 floats a bone (none: the body as baked); dry: 0 wet .. 1 dry (a basking turtle)
  */
 
 /**
@@ -31,7 +60,9 @@ export function createCreaturePass(opts) {
   const { recipe } = opts;
   const W = recipe.body.wetSpecular;
   const bodyLength = recipe.body.scaleReal[0] + (recipe.body.scaleReal[1] - recipe.body.scaleReal[0]) / 2;
-  const drawBytes = Math.ceil((DRAW_BYTES + (opts.extraFloats ?? 0) * 4) / 16) * 16;
+  // The game's own draw shader carries a turtle's shell plates and drying after the usual 12 floats.
+  const extra = opts.extraFloats ?? (opts.shader ? 0 : SHELL_FLOATS);
+  const drawBytes = Math.ceil((DRAW_BYTES + extra * 4) / 16) * 16;
   const data = new Float32Array(drawBytes / 4);
   let uniformDirty = false;
   // Wet eyes: the skin that follows these two bones (none for the unskinned size preview).
@@ -40,6 +71,7 @@ export function createCreaturePass(opts) {
   const contact = recipe.body.contactShadow ?? 0.55;
   data.set([W.roughness, W.strength, contact, 0.62, bodyLength, 0, 0, 0,
     eyes[0], eyes[1], G?.roughness ?? 0.1, G ? G.strength : 0]);
+  if (!opts.shader) data.set(shellBlock(recipe.body), DRAW_BYTES / 4);
   const beings = new Float32Array(MAX * 8);
   // Bones per individual: the frogs' rig by default; a pass may ask for more (the hermit crab's).
   const boneCap = opts.maxBones ?? MAX_BONES;
@@ -109,7 +141,7 @@ export function createCreaturePass(opts) {
       beings.fill(0);
       rows.forEach((r, i) => {
         const b = r.b;
-        beings.set([b.x, b.y, b.z, b.yaw, b.size, i * boneCap, 0, 0], i * 8);
+        beings.set([b.x, b.y, b.z, b.yaw, b.size, i * boneCap, b.dry ?? 0, 0], i * 8);
         if (b.bones) bones.set(b.bones.subarray(0, boneCap * 16), i * boneCap * 16);
         else for (let k = 0; k < boneCap; k++) bones.set(IDENTITY, (i * boneCap + k) * 16);
         const last = groups[groups.length - 1];

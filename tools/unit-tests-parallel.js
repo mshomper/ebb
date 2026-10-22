@@ -35,6 +35,7 @@ export const PARALLEL = {
   nets: () => import('./unit-tests-nets.js').then((m) => m.addNetsTests),
   trails: () => import('./unit-tests-trails.js').then((m) => m.addTrailsTests),
   pondSpring: () => import('./unit-tests-pond-spring.js').then((m) => m.addPondSpringTests),
+  turtles: () => import('./unit-tests-turtles.js').then((m) => m.addTurtleTests),
   waterTable: () => import('./unit-tests-water-table.js').then((m) => m.addWaterTableTests),
   underLogMeshes: () => import('./unit-tests-under-log-meshes.js').then((m) => m.addUnderLogMeshTests),
   grace: () => import('./unit-tests-grace.js').then((m) => m.addGraceTests),
