@@ -234,6 +234,8 @@
   transition: opacity 600ms ease;
 }
 .ebb-tools__message.is-shown { opacity: 1; transition: opacity 120ms ease; }
+/* The camp ground's line, under every tool's card: takes no room until a tap on the pad shows it. */
+.ebb-tools__message--camp:not(.is-shown) { display: none; }
 /* A tap that did not take: the line in a muted red, so it reads as a small problem at a glance. */
 .ebb-tools__message.is-refused { color: var(--ui-refused); }
 /* net: how the net stands (in, fishing and for how long, full), in full strength under the hint */

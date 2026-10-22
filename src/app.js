@@ -808,7 +808,8 @@ export async function startApp(canvas, hooks = {}) {
    */
   function onCampPad(p, quiet = false) {
     if (!onPad(getStore('campPad') ?? null, p[0], p[2])) return false;
-    if (!quiet) emitDeferred('island:notice', { text: campRecipe.words.clear, showS: walkerRecipe.words.noticeS });
+    // On the tool card's own line, since the island notes step aside while a card is open on narrower windows.
+    if (!quiet) updateStore('campUi', () => ({ message: campRecipe.words.clear, refused: true, at: performance.now() }));
     return true;
   }
   /** The pour held over the pad has said so once this press. */
