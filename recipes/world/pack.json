@@ -1,0 +1,60 @@
+{
+  "type": "pack",
+  "version": 1,
+  "note": "The walker's pack of cloth pouches and the piles at camp (docs/future/13 sections 4.1 and 4.5). startPouches: pouches from the start; perCarrier: pouches each made carrier adds (satchel, basket, frame), so 6, 8, 10, 12; handfulsPerPouch: Gather taps that fill one pouch (one look step each). groups: the fixed sort order of pouches, never shown. partGroups: the group of a plant-part kind '<species>.<part>' that kinds does not list. kinds: one row per non-plant kind, in sort order within its group; sketch names its drawing, camp is the camp slot its pile prefers ('sticks', 'stones', 'clay', 'heap' for the first free heap slot), or where it goes instead ('rack' for herbs, 'bowl' for food, 'none' for worms, which dig themselves in, 'pouch' for seeds and clumps, which wait for a hole); a pile whose preferred slot is taken by another kind falls back to the first free heap slot. name: the pouch card's title; line: the card's one line. piles: handfuls a ground pile holds, the top of each look step (small, good, big), the rack's bunches and the handfuls a rack bunch or bowl holds. heaps: K-21 heaps left when the pack is full; cap is how many lie out at once, tapM their tap radius. pot: water classes the clay pot fills from, and whether it takes sea water. rill: when the hint about a rill to camp shows. ui: pouch tap target, gap and drawing size in px (Matt, October 22, 2026: 48 px targets). words: every line the pack, piles and pot say.",
+  "startPouches": 6,
+  "perCarrier": 2,
+  "handfulsPerPouch": 3,
+  "carriers": ["satchel", "basket", "frame"],
+  "groups": ["fuel", "stones", "fibres", "herbs", "earth", "sea", "living"],
+  "partGroups": {
+    "leaves": "herbs", "flowers": "herbs", "tops": "herbs", "bark": "herbs", "roots": "herbs", "twigs": "herbs",
+    "stems": "fibres", "withies": "fibres", "blades": "fibres", "down": "fuel",
+    "berries": "living", "hips": "living", "fruit": "living", "leaf": "living", "strands": "living",
+    "seed": "earth", "clump": "earth"
+  },
+  "kinds": [
+    { "id": "sticks", "name": "Sticks", "group": "fuel", "sketch": "sticks", "camp": "sticks", "line": "Dry sticks from under the bushes." },
+    { "id": "drift-twigs", "name": "Drift twigs", "group": "fuel", "sketch": "drift", "camp": "sticks", "line": "Salt-grey twigs from the tide line." },
+    { "id": "reeds.down", "name": "Reed down", "group": "fuel", "sketch": "down", "camp": "heap", "line": "Soft reed down for tinder." },
+    { "id": "cakes", "name": "King Alfred's cakes", "group": "fuel", "sketch": "cakes", "camp": "heap", "line": "Black knobs from an old log. They hold a spark." },
+    { "id": "charcoal", "name": "Charcoal", "group": "fuel", "sketch": "charcoal", "camp": "heap", "line": "Charcoal from the fire's edge. It draws." },
+    { "id": "pebbles", "name": "Pebbles", "group": "stones", "sketch": "pebbles", "camp": "stones", "line": "Round stones from the shore." },
+    { "id": "flat-stones", "name": "Flat stones", "group": "stones", "sketch": "flat", "camp": "stones", "line": "Flat stones that split along their grain." },
+    { "id": "rush-cord", "name": "Rush cord", "group": "fibres", "sketch": "coil", "camp": "heap", "line": "Two-ply cord, twisted by hand." },
+    { "id": "lichen-twigs", "name": "Lichen twigs", "group": "herbs", "sketch": "lichen", "camp": "rack", "line": "Twigs grey with lichen, blown down in the wind." },
+    { "id": "sand", "name": "Sand", "group": "earth", "sketch": "mound", "camp": "heap", "line": "Dry sand from above the tide." },
+    { "id": "clay", "name": "Clay", "group": "earth", "sketch": "clay", "camp": "clay", "line": "Blue-grey clay, cool and sticky." },
+    { "id": "topsoil", "name": "Topsoil", "group": "earth", "sketch": "mound", "camp": "heap", "line": "Dark crumbly soil from the top layer." },
+    { "id": "ash", "name": "Wood ash", "group": "earth", "sketch": "mound", "camp": "heap", "line": "Soft grey ash from the cold ring." },
+    { "id": "leaves", "name": "Fallen leaves", "group": "earth", "sketch": "leaves", "camp": "heap", "line": "Fallen leaves, dry and brown." },
+    { "id": "kelp", "name": "Cast kelp", "group": "sea", "sketch": "kelp", "camp": "heap", "line": "Long kelp the spring tide cast up." },
+    { "id": "wrack", "name": "Wrack", "group": "sea", "sketch": "wrack", "camp": "heap", "line": "Wrack from the strandline." },
+    { "id": "worms", "name": "Worms", "group": "living", "sketch": "worm", "camp": "none", "line": "Worms in a little damp soil." },
+    { "id": "acorns", "name": "Acorns", "group": "living", "sketch": "nuts", "camp": "bowl", "line": "Acorns from under the oak." },
+    { "id": "hazelnuts", "name": "Hazelnuts", "group": "living", "sketch": "nuts", "camp": "bowl", "line": "Hazelnuts in their green frills." },
+    { "id": "old-comb", "name": "Old comb", "group": "living", "sketch": "comb", "camp": "bowl", "line": "Old comb a wild colony left behind." },
+    { "id": "chanterelle", "name": "Chanterelle", "group": "living", "sketch": "mushroom", "camp": "bowl", "line": "Golden chanterelles that smell of apricot." }
+  ],
+  "piles": { "handfuls": 12, "looks": [3, 8, 12], "rackBunches": 6, "rackHandfuls": 6, "bowlHandfuls": 6 },
+  "heaps": { "cap": 6, "tapM": 0.25 },
+  "pot": { "fillClasses": ["running", "slow"], "seaFill": true },
+  "rill": { "hintAfterCarries": 3, "farM": 15, "nearPadM": 6 },
+  "ui": { "pouchPx": 48, "gapPx": 6, "drawPx": 36 },
+  "words": {
+    "stage": ["Empty.", "A few.", "Half full.", "Full."],
+    "setDown": "Set down", "empty": "Empty", "takeUp": "Take up", "emptied": "You tip it out. The island takes it back.",
+    "full": "No room in the pack.", "setDownHere": "Set down here", "leaveIt": "Leave it", "heap": "A small heap you left here.",
+    "pile": ["A small heap.", "A good heap.", "A big heap."], "pileFull": "This heap is as big as it gets.",
+    "noSlot": "The camp has all it needs. Set something aside first.",
+    "noRack": "Herbs want somewhere to hang. A drying rack would hold them.", "noBowl": "This wants a bowl to sit in.",
+    "worms": "They wriggle down into the soil.", "clump": "Its roots are bare. Set it in a dug hole to keep it.",
+    "newPouches": "Two more pouches.",
+    "pot": {
+      "takeUp": "Take up", "fill": "Fill the pot", "pour": "Pour out", "still": "This water stands still. The spring runs cleaner.",
+      "away": "The pot belongs by the fire.", "arms": "Your arms are full with the pot."
+    },
+    "rillHint": "Water could come down to the camp by itself, if it had a way.",
+    "rillNote": "The spring's water runs past the camp now. No more carrying."
+  }
+}
