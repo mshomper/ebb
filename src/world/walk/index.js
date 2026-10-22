@@ -228,6 +228,17 @@ export function createWalk(o) {
       standAt = walkT + standS;
     },
 
+    /**
+     * Kneel facing a spot beside you (Lift on a log's or stone's card, L3a), then stand again after
+     * standS seconds. @param {number} x @param {number} z @param {number} standS
+     */
+    kneelToward(x, z, standS) {
+      if (!below || !walker.placed) return;
+      walker.stop();
+      if (Math.hypot(x - walker.x, z - walker.z) > 1e-3) walker.face(Math.atan2(x - walker.x, z - walker.z));
+      this.reach(standS);
+    },
+
     /** Look on or off (W4). */
     toggleLook() {
       if (!below) return;

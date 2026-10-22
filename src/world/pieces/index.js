@@ -167,17 +167,25 @@ export function createPieces(opts) {
     return s ? { piece: /** @type {any} */ ({ ...s, id: s.key }), strand: s } : null;
   }
 
-  /** Pieces being lifted: seconds since the tap, and which way (in the piece's own frame) is toward you. @type {Map<string, { e: number, dir: number[] }>} */
+  /**
+   * Pieces being lifted: seconds since the lift, which way (in the piece's own frame) is toward you,
+   * and how long it is held up (Lift on foot holds it longer, L3a; else the recipe's own).
+   * @type {Map<string, { e: number, dir: number[], holdS: number | null }>}
+   */
   const lifts = new Map();
-  const offLift = on('piece:lifted', (/** @type {{ id: string }} */ p) => {
+  const offLift = on('piece:lifted', (/** @type {{ id: string, from?: number[], holdS?: number }} */ p) => {
     const s = findPiece(p.id)?.piece;
     if (!s || lifts.has(p.id) || carrying?.id === p.id) return;
-    // Toward the eye, turned into the piece's frame (the inverse of its yaw; creature-draw.wgsl place).
-    const wx = camera.eye[0] - s.x, wz = camera.eye[2] - s.z, l = Math.hypot(wx, wz) || 1;
+    // Toward you (where you knelt, or the eye), turned into the piece's frame (the inverse of its
+    // yaw; creature-draw.wgsl place).
+    const from = p.from ?? [camera.eye[0], camera.eye[2]];
+    const wx = from[0] - s.x, wz = from[1] - s.z, l = Math.hypot(wx, wz) || 1;
     const c = Math.cos(s.yaw), sn = Math.sin(s.yaw);
     const dx = (c * wx - sn * wz) / l, dz = (sn * wx + c * wz) / l;
-    lifts.set(p.id, { e: 0, dir: [dx, dz] });
+    lifts.set(p.id, { e: 0, dir: [dx, dz], holdS: p.holdS ?? null });
   });
+  /** A lift's timing: the recipe's, held for holdS when the lift says so. @param {any} T @param {{ holdS: number | null } | undefined} l */
+  const timed = (T, l) => (l?.holdS != null ? { ...T, holdS: l.holdS } : T);
 
   // ---- carrying (the turtles' gift) ----
   /** @type {{ id: string, kind: string, radius: number, strand: import('./driftwood.js').StrandLog | null } | null} */ let carrying = null;
@@ -398,7 +406,7 @@ export function createPieces(opts) {
       const slope = slopeOf(p, p.size * 0.5);
       const lift = lifts.get(p.id);
       const held = carrying?.id === p.id;
-      const angle = lift ? tipAngle(lift.e, recipe.tip) : 0;
+      const angle = lift ? tipAngle(lift.e, timed(recipe.tip, lift)) : 0;
       const dir = lift?.dir ?? [0, 1];
       const reach = 1 / Math.hypot(dir[0] / sh.hx, dir[1] / sh.hz);
       let bone = mul4(leanBone(slope[0], slope[1], recipe.lean), stoneBone(angle, sh.hy * recipe.sink, dir, reach));
@@ -452,7 +460,7 @@ export function createPieces(opts) {
     const slope = slopeOf(p, Math.min(0.4, len * 0.3));
     const lift = lifts.get(id);
     const held = carrying?.id === id;
-    const angle = lift ? tipAngle(lift.e, D.roll) : 0;
+    const angle = lift ? tipAngle(lift.e, timed(D.roll, lift)) : 0;
     // It rolls away from you, so the damp sand it lay on shows on your side of it.
     let bone = mul4(leanBone(slope[0], slope[1], D.lean), logBone(angle, (lift?.dir[0] ?? -1) < 0 ? 1 : -1, a, D.sink));
     if (held) bone = mul4(raise(D.carry.liftM / len), bone);
@@ -497,7 +505,7 @@ export function createPieces(opts) {
       for (const [id, l] of lifts) {
         l.e += f.realDt;
         const log = state().list.find((q) => q.id === id)?.kind === 'log' || id.startsWith('drift:');
-        if (tipDone(l.e, log ? D.roll : recipe.tip)) lifts.delete(id);
+        if (tipDone(l.e, timed(log ? D.roll : recipe.tip, l))) lifts.delete(id);
       }
       if (pending && (pollS += f.realDt) > 0.5) { pollS = 0; arrive(); }
       if ((strandS += f.realDt) > 0.5) { strandS = 0; refreshStrand(f.displayT / 3600); }
@@ -572,6 +580,25 @@ export function createPieces(opts) {
       const kept = state().list.filter((p) => p.kind === 'stone' || p.kind === 'log');
       const all = [...kept.map((p) => ({ ...p, strand: false })), ...strandShown.map((s) => ({ ...s, id: s.key, strand: true }))];
       return pieceAt(all, x, z, tapR(), D.tapReachM);
+    },
+
+    /**
+     * A kept piece or a strand log by id (its record; a strand log's id is its key), with strand
+     * true for one on the strand, or null. @param {string} id
+     */
+    piece(id) { const f = findPiece(id); return f ? { ...f.piece, strand: !!f.strand } : null; },
+
+    /**
+     * A lift under way (L3a: what lives underneath shows while it is up): seconds since it began, how
+     * far it is rolled or tipped now (0..1 of its most), and when it will be down again; or null.
+     * @param {string} id @returns {{ e: number, up: number, doneS: number, dir: number[] } | null}
+     */
+    liftNow(id) {
+      const l = lifts.get(id);
+      if (!l) return null;
+      const log = state().list.find((q) => q.id === id)?.kind === 'log' || id.startsWith('drift:');
+      const T = timed(log ? D.roll : recipe.tip, l);
+      return { e: l.e, up: tipAngle(l.e, T) / ((T.tipDeg * Math.PI) / 180), doneS: T.tipS + T.holdS + T.settleS, dir: l.dir.slice() };
     },
 
     /**

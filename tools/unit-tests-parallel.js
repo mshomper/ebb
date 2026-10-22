@@ -24,6 +24,7 @@ export const PARALLEL = {
   naturalist: () => import('./unit-tests-naturalist.js').then((m) => m.addNaturalistTests),
   pondlife: () => import('./unit-tests-pondlife.js').then((m) => m.addPondLifeTests),
   pieces: () => import('./unit-tests-pieces.js').then((m) => m.addPiecesTests),
+  underlog: () => import('./unit-tests-under-log.js').then((m) => m.addUnderLogTests),
   damselflies: () => import('./unit-tests-damselflies.js').then((m) => m.addDamselflyTests),
   autumn: () => import('./unit-tests-autumn.js').then((m) => m.addAutumnTests),
   keepsakes: () => import('./unit-tests-keepsakes.js').then((m) => m.addKeepsakeTests),
@@ -35,6 +36,7 @@ export const PARALLEL = {
   trails: () => import('./unit-tests-trails.js').then((m) => m.addTrailsTests),
   pondSpring: () => import('./unit-tests-pond-spring.js').then((m) => m.addPondSpringTests),
   waterTable: () => import('./unit-tests-water-table.js').then((m) => m.addWaterTableTests),
+  underLogMeshes: () => import('./unit-tests-under-log-meshes.js').then((m) => m.addUnderLogMeshTests),
   grace: () => import('./unit-tests-grace.js').then((m) => m.addGraceTests),
   // The audio tests that need no Web Audio (workers have none). The two that render sound through
   // an OfflineAudioContext (pond and keepsake sounds) stay on tools/unit-tests-audio.html, which

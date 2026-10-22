@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ebb under-log lab</title>
+<link rel="stylesheet" href="../src/ui/tokens.css">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 17px/1.5 Nunito, system-ui, sans-serif; background: #F4EEE4; color: #2F3A35; padding: 20px 16px; overflow-x: hidden; }
+  main { max-width: 1100px; margin: 0 auto; display: grid; gap: 14px; }
+  h1 { font-size: 24px; margin: 0; }
+  p { margin: 0; max-width: 70ch; }
+  .bar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  button { font: 600 16px Nunito, system-ui, sans-serif; padding: 8px 18px; border-radius: 999px; border: 1px solid #B9AD96; background: #FBF7F0; color: #2F3A35; cursor: pointer; }
+  button[aria-pressed="true"] { background: #2F3A35; color: #FBF7F0; border-color: #2F3A35; }
+  canvas { width: 100%; aspect-ratio: 16 / 10; max-height: 64vh; border-radius: 10px; background: #E9DFCE; touch-action: none; cursor: grab; display: block; }
+  .keys { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 10px; }
+  .keys div { background: #FBF7F0; border: 1px solid #DCD2C0; border-radius: 10px; padding: 10px 14px; }
+  .muted { color: #6B6A5E; font-size: 15px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Under a log</h1>
+  <p>The woodlouse and the violet ground beetle a Lift on foot can uncover, built from numbers in <code>recipes/species/under-log.json</code> (no model file), drawn here at real size, both at one scale. Drag to turn the stage.</p>
+  <div class="bar" role="group" aria-label="What they do">
+    <button id="walk" aria-pressed="true">Walk</button>
+    <button id="still" aria-pressed="false">Still</button>
+    <button id="scuttle" aria-pressed="false">Scuttle</button>
+    <span class="muted" id="note"></span>
+  </div>
+  <canvas id="cv"></canvas>
+  <div class="keys" id="keys"></div>
+</main>
+<script type="module" src="under-log-lab.js"></script>
+</body>
+</html>

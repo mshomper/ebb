@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Under the log: odds</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root { --bg:#f6f1e7; --card:#fffaf0; --ink:#2f3a2f; --soft:#5d6b5d; --line:#d8cfbd; --louse:#7d7f86; --violet:#6a4c9c; --chance:#4e6b36; }
+* { box-sizing:border-box; }
+body { margin:0; background:var(--bg); color:var(--ink); font:16px/1.5 Nunito, system-ui, sans-serif; }
+main { max-width:1100px; margin:0 auto; padding:20px 16px 48px; }
+h1 { font-size:26px; margin:0 0 4px; } h2 { font-size:19px; margin:0 0 6px; }
+p { margin:4px 0 12px; color:var(--soft); }
+.card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px 16px; margin:12px 0; }
+svg { width:100%; height:auto; display:block; }
+.lbl { fill:var(--soft); font:15px Nunito, sans-serif; }
+.legend { display:flex; flex-wrap:wrap; gap:16px; color:var(--soft); }
+.sw { display:inline-block; width:14px; height:14px; border-radius:3px; vertical-align:-2px; margin-right:6px; }
+label { color:var(--soft); }
+input[type=number] { font:16px Nunito, sans-serif; width:110px; padding:4px 6px; }
+</style>
+</head>
+<body><main>
+<h1>Under the log: odds over a year</h1>
+<p>What a Lift at noon finds under a kept log, day by day through one game year (four seasons), for a few kinds of ground. The line is the chance; the bars are what that day's seeded roll found. Numbers come from <code>recipes/species/under-log.json</code>: edit it, then reload.</p>
+<div class="card">
+  <label>Log seed <input id="seed" type="number" value="123456"></label>
+  <div class="legend" style="margin-top:10px">
+    <span><span class="sw" style="background:var(--louse)"></span>woodlice found (bar height: how many)</span>
+    <span><span class="sw" style="background:var(--violet)"></span>violet ground beetle found</span>
+    <span><span class="sw" style="background:var(--chance)"></span>chance of woodlice (solid), of the beetle (dashed)</span>
+  </div>
+</div>
+<div id="rows"></div>
+<script type="module">
+import { rollUnder, chanceOf, keptAge } from '../src/world/finds/under-log.js';
+import { DAYS_PER_SEASON, SEASONS_PER_YEAR } from '../src/core/clock.js';
+
+const R = await fetch('../recipes/species/under-log.json').then((r) => r.json());
+// A log's age share follows L2's ageing (recipes/world/pieces.json driftwood.age).
+const AGE = (await fetch('../recipes/world/pieces.json').then((r) => r.json())).driftwood?.age ?? null;
+const PER = DAYS_PER_SEASON, DAYS = PER * SEASONS_PER_YEAR;
+const SCENES = [
+  { title: 'Damp and shaded, by a pond, on grass', ground: { damp: 0.85, shade: 0.7, nearWater: 1, grass: 0.9, soil: 0.1, wet: false } },
+  { title: 'Dry and sunny, on grass, far from water', ground: { damp: 0.1, shade: 0, nearWater: 0, grass: 0.9, soil: 0.1, wet: false } },
+  { title: 'On bare soil, a little damp', ground: { damp: 0.5, shade: 0.2, nearWater: 0.3, grass: 0.1, soil: 0.8, wet: false } },
+  { title: 'On sand (nothing lives here)', ground: { damp: 0.4, shade: 0, nearWater: 0, grass: 0, soil: 0, wet: false } },
+];
+const SEASONS = ['spring', 'summer', 'autumn', 'winter'];
+
+function draw() {
+  const seed = Number(document.getElementById('seed').value) || 1;
+  const log = { id: 'lab', kind: 'log', seed, length: 1.3, size: 0.22 };
+  const W = 1000, H = 190, L = 40, T = 20, B = 40, cw = (W - L - 10) / DAYS, ph = H - T - B;
+  const out = SCENES.map((s) => {
+    let bars = '', wl = '', bl = '', found = 0, beetles = 0;
+    for (let d = 0; d < DAYS; d++) {
+      const c = { day: d, ...keptAge(0, (d + 0.5) * 24, AGE), ground: s.ground, season: Math.floor(d / PER), phase: (d % PER + 0.5) / PER, hourOfDay: 12 };
+      const r = rollUnder(1, log, c, R);
+      const x = L + d * cw;
+      const n = r.counts.woodlice ?? 0;
+      if (n) { found++; const h = (n / R.woodlice.count[1]) * ph * 0.9; bars += `<rect x="${x + 3}" y="${T + ph - h}" width="${cw * 0.5 - 4}" height="${h}" fill="var(--louse)" rx="2"/>`; }
+      if (r.counts.beetle) { beetles++; bars += `<rect x="${x + cw * 0.5}" y="${T + ph * 0.55}" width="${cw * 0.5 - 4}" height="${ph * 0.45}" fill="var(--violet)" rx="2"/>`; }
+      const cy = (/** @type {number} */ p) => (T + ph - p * ph).toFixed(1);
+      wl += `${d ? 'L' : 'M'}${(x + cw / 2).toFixed(1)} ${cy(chanceOf(R.woodlice, { kind: 'log', ...c }, R.ground))}`;
+      bl += `${d ? 'L' : 'M'}${(x + cw / 2).toFixed(1)} ${cy(chanceOf(R.beetle, { kind: 'log', ...c }, R.ground))}`;
+    }
+    let axis = `<line x1="${L}" y1="${T + ph}" x2="${W - 10}" y2="${T + ph}" stroke="var(--line)"/>`;
+    for (let k = 0; k < 4; k++) {
+      const x = L + k * PER * cw;
+      axis += `<line x1="${x}" y1="${T}" x2="${x}" y2="${T + ph}" stroke="var(--line)"/><text class="lbl" x="${x + 6}" y="${H - 14}">${SEASONS[k]}</text>`;
+    }
+    axis += `<text class="lbl" x="4" y="${T + 12}">100%</text><text class="lbl" x="14" y="${T + ph}">0</text>`;
+    return `<div class="card"><h2>${s.title}</h2><p>Woodlice on ${found} of ${DAYS} days, the beetle on ${beetles}.</p>
+      <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${s.title}">${axis}${bars}
+      <path d="${wl}" fill="none" stroke="var(--chance)" stroke-width="2.5"/><path d="${bl}" fill="none" stroke="var(--chance)" stroke-width="2" stroke-dasharray="6 5"/></svg></div>`;
+  });
+  document.getElementById('rows').innerHTML = out.join('');
+}
+document.getElementById('seed').addEventListener('input', draw);
+draw();
+</script>
+</main></body>
+</html>
