@@ -1,0 +1,28 @@
+{
+  "type": "boat",
+  "version": 1,
+  "note": "The keeper's boat at its mooring (docs/future/13 section 3.9, CP-09; src/world/intro/boat.js). A STAND-IN until Matt's boat model: a plain lofted wooden rowing-boat hull with two thwarts and two oars resting in it, a mooring stake and a rope from the stake to the bow, all built in code (boat-mesh.js). When Matt's glb arrives it ships as a compressed web copy only (no raw source in the repo) and replaces the hull and oars; the stake, rope and the pose rules here stay. mooring (pure, mooringOf): from the camp pad's seaward edge, walk out along the facing line in stepM steps to the first ground at or below stakeLevelM (within searchM): the stake goes there, the boat lies boatOutM beyond it with its bow toward the stake, and the walker starts standInM inland of the stake, facing inland. Not saved: worked out again from the pad and the ground. hull: meters; lengthM bow to stern, beamM widest, depthM keel to gunwale amidships, sheerM how much the gunwale rises toward the bow, rockerM how much the keel lifts toward the bow, transom the stern's width as a share of the beam, plankM the shell's thickness, thwarts where the seats sit (share of the length from the stern) and their height (share of depthM). oars: lengthM, shaftM radius, blade length and width, laid along the boat apart by spreadM. float: when the water under the hull is deeper than draftM it floats with its keel draftM under the surface, bobbing bobM over bobS seconds, rocking rockDeg over rockS and pitching pitchDeg over pitchS (small, time based, not simulated). sand: when the water is shallower it rests on the ground, following its slope, leaning tiltDeg onto one side and sunk sinkM into the sand. settleS eases between the two as the tide comes and goes. stake: lengthM in all, buriedM of it in the ground, thickM across; rope: radiusM, sagM at its middle, tied tieBelowTopM under the stake's top. albedo: linear, physical (weathered softwood planking, paler ash oars, hemp rope); the palette does the painting at the tonemap. look: the wet sheen of the creature pass that draws it (contact shadow off: the stake and rope would darken the ground under them too).",
+  "boat": {
+    "mooring": { "stakeLevelM": 0.05, "boatOutM": 1.6, "searchM": 30, "standInM": 2.2, "stepM": 0.1 },
+    "hull": {
+      "lengthM": 2.6, "beamM": 1.1, "depthM": 0.38, "sheerM": 0.1, "rockerM": 0.06, "transom": 0.7, "plankM": 0.02,
+      "stations": 24, "around": 14,
+      "thwarts": { "at": [0.3, 0.62], "height": 0.62, "widthM": 0.2, "thickM": 0.03 }
+    },
+    "oars": { "lengthM": 2.1, "shaftM": 0.02, "bladeLengthM": 0.5, "bladeWidthM": 0.13, "bladeThickM": 0.012, "spreadM": 0.22 },
+    "float": { "draftM": 0.15, "bobM": 0.015, "bobS": 3.4, "rockDeg": 2.2, "rockS": 4.1, "pitchDeg": 0.9, "pitchS": 5.3 },
+    "sand": { "tiltDeg": 9, "sinkM": 0.03 },
+    "settleS": 1.5,
+    "stake": { "lengthM": 0.9, "buriedM": 0.3, "thickM": 0.04 },
+    "rope": { "radiusM": 0.007, "sagM": 0.12, "tieBelowTopM": 0.08, "segments": 10 },
+    "albedo": {
+      "hull": [0.2, 0.15, 0.1],
+      "inside": [0.26, 0.2, 0.13],
+      "thwart": [0.3, 0.23, 0.15],
+      "oar": [0.42, 0.33, 0.22],
+      "stake": [0.22, 0.17, 0.11],
+      "rope": [0.4, 0.34, 0.23]
+    },
+    "look": { "wetSpecular": { "roughness": 0.6, "strength": 0.1 } }
+  }
+}
