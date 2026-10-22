@@ -1,13 +1,86 @@
 {
   "type": "camp",
   "version": 1,
-  "note": "The keeper's camp (docs/future/13). The pad's shape, level and lock fade live in the land recipe's camp block; this holds what the camp says. The pad is locked ground (CP-01): no brush, erosion or boulder moves it, and a loose stone, a spring or a pour of water tapped on it is refused with one quiet line on the island.",
+  "note": "The keeper's camp (docs/future/13). The pad's shape, level and lock fade live in the land recipe's camp block; this holds what the camp says and how its tent, fire ring, lantern, light, smoke and moths look and behave (E3). The pad is locked ground (CP-01): no brush, erosion or boulder moves it, and a loose stone, a spring or a pour of water tapped on it is refused with one quiet line on the island.",
   "words": {
-    "clear": "The camp ground stays clear."
+    "clear": "The camp ground stays clear.",
+    "tentSlot": { "name": "Tent ground", "line": "A level patch for your tent, out of the wind." },
+    "tent": { "name": "Your tent", "line": "Canvas on two poles, your bedroll rolled inside." },
+    "ringSlot": { "name": "Ring ground", "line": "Bare earth in the middle of the camp, for a fire ring." },
+    "ring": {
+      "name": "Fire ring",
+      "laid": "Stones in a ring, the wood laid inside, cold.",
+      "lit": "A small fire, burning well.",
+      "low": "The rain keeps it low and hissing.",
+      "embers": "Banked embers under the ash. A little more wood would wake them.",
+      "cold": "A cold ring of stones and ash."
+    },
+    "pitch": "Pitch the tent",
+    "lay": "Lay the fire ring",
+    "light": "Light",
+    "feed": "Feed the fire",
+    "rest": "Rest",
+    "restDay": "Rest comes after dark.",
+    "ringNeeds": "The ring needs a handful of fuel and two handfuls of stones.",
+    "feedNeeds": "A handful of twigs or sticks would feed it.",
+    "lit": "The twigs catch."
   },
-  "wordsNote": "clear: the quiet line when a loose stone, a spring or a pour lands on the camp pad. Shown for walker.json words.noticeS seconds, once per press. The Plant tool says it too when a seed is tapped on the pad (CP-16).",
+  "wordsNote": "clear: the quiet line when a loose stone, a spring or a pour lands on the camp pad. Shown for walker.json words.noticeS seconds, once per press. The Plant tool says it too when a seed is tapped on the pad (CP-16). The rest: the tent and ring cards (names and lines by state), the card actions and here-bar buttons, and the quiet lines when something is missing.",
   "grass": {
     "thinWithWear": 0.5
   },
-  "grassNote": "thinWithWear: how much the pad's wear (the land recipe's camp.wear) thins the grass blades toward the pad's center (0 none, 1 all of the wear). The blades' height cap is camp.grassScale, softened over camp.edgeWearM outside the pad."
+  "grassNote": "thinWithWear: how much the pad's wear (the land recipe's camp.wear) thins the grass blades toward the pad's center (0 none, 1 all of the wear). The blades' height cap is camp.grassScale, softened over camp.edgeWearM outside the pad.",
+
+  "glow": { "nearM": 2, "opacity": 0.35, "breathS": 3.2, "firstGlowWithinM": 12 },
+  "glowNote": "CS-05: a slot glows (a soft filled ring on the ground) the first time, then only while the pack holds what it needs and you are on or within nearM of the pad. opacity and breathS: its look. firstGlowWithinM: an older island's tent ground glows the first time you go down this near.",
+
+  "reach": { "slotM": 1.6, "ringM": 1.5, "flapM": 2 },
+  "reachNote": "How near you must stand: slotM to pitch or lay (the card walks you there); ringM for Light and Feed on the here-bar; flapM for Rest.",
+
+  "ring": { "fuelHandfuls": 1, "stoneHandfuls": 2 },
+
+  "fire": {
+    "flameH": 3, "feedHandfuls": 1, "emberH": 24, "ashFadeH": 24,
+    "lightK": 1800, "cd": 40, "rangeM": 6, "heightM": 0.3,
+    "flicker": 0.12, "flickerHz": 3.1,
+    "emberCd": 2.5, "emberLightK": 1400,
+    "rainLow": 0.35, "rainFlame": 0.3,
+    "char": { "lit": 0.45, "embers": 0.8, "cold": 1 },
+    "squash": { "lit": 0.9, "embers": 0.5, "cold": 0.38 }
+  },
+  "fireNote": "One handful of fuel burns flameH game hours, then it sinks to embers; embers (lit or banked by a rest) last emberH, then the ring is cold; the cold ring's ash fades over ashFadeH (docs/future/13 3.5, CP-11). All worked out from the clock (src/world/camp/fire.js), so live play and catch-up agree. The light: a lightK blackbody of cd candela at heightM over the ring, reaching nothing at rangeM (a smooth window), flickering by flicker at about flickerHz; banked embers glow emberCd at emberLightK. Rain over rainLow drops a lit fire to a hissing low flame (rainFlame of its size) without putting it out. char and squash: how burnt and how low the laid wood looks in each state.",
+
+  "lantern": { "lightK": 2200, "cd": 8, "rangeM": 8, "flicker": 0.06, "flickerHz": 3, "hangM": [0.0, 1.02, 1.16], "carryDropM": 0.32, "glassNits": 900, "glassM": 0.035, "lightsAtSunDeg": 2 },
+  "lanternNote": "The hand lantern (docs/06: 2,200 K, 8 cd, 8 m). hangM: where it hangs on the tent's front pole, in the tent model's frame (m, +z the flap). carryDropM: how far below the hand's wrist it swings when carried. glassNits, glassM: its lit glass, a small emissive glow that feeds bloom. lightsAtSunDeg: lit once the sun is lower than this (degrees).",
+
+  "flame": { "cards": 6, "heightM": 0.5, "widthM": 0.26, "nits": 420, "flickerHz": 2.4, "minPx": 3, "glowNits": 14, "glowM": 0.45 },
+  "flameNote": "The fire's flame: cards crossed tongues of emissive flame (heightM tall, widthM wide), flickering at flickerHz. minPx: the flame never draws smaller than this on screen, so the camp reads as a small warm point from above (C-38). glowNits, glowM: a soft halo around it.",
+
+  "smoke": { "count": 40, "lowCount": 24, "lifeS": 10, "riseMps": 0.4, "lean": 1.0, "spreadM": 0.12, "sizeM": [0.16, 1.1], "opacity": 0.11, "albedo": [0.62, 0.62, 0.64], "embersShare": 0.35, "rainThick": 1.9, "mistLow": 0.6, "nearFadeM": [1.0, 2.5], "midgeClearM": 2 },
+  "smokeNote": "C-29: count soft puffs (lowCount on the low tier), each living lifeS seconds, rising riseMps and leaning with the weather's wind by lean (meters a second at full wind), growing from sizeM[0] to sizeM[1], at most opacity. albedo: lit by the sky, sun and fire, never painted. embersShare: how much smoke banked embers give; rainThick: thicker in rain; mistLow: in mist it rises this much slower and hangs low. nearFadeM: puffs fade near the eye, so overdraw stays small. Midges keep midgeClearM from it.",
+
+  "moths": { "count": 6, "lowCount": 3, "orbitM": [0.4, 1.2], "heightM": [0.5, 1.6], "speed": [0.8, 1.6], "wingM": 0.035, "flapHz": 22, "albedo": [0.55, 0.5, 0.42], "atSunDeg": -4 },
+  "mothsNote": "C-30: a few moths circle the fire and the lantern after dark (the sun lower than atSunDeg), on loose seeded orbits, wings flapping at flapHz. Lit by the fire, so they read pale against the dark. Live only, never saved.",
+
+  "steel": { "sparks": 14, "sparkS": 0.35, "sparkNits": 4000, "strikesAt": [0.35, 0.55, 0.75],
+    "steelSrgb": [78, 74, 70], "steelRough": 0.45, "flintSrgb": [64, 60, 66], "flintRough": 0.3 },
+  "steelNote": "The fire steel and its flint (the walker carries both; src/world/camp/steel-mesh.js): in the hands only while striking. Each of strikesAt (shares of the strike act) sends sparks sparks for sparkS seconds; the twigs catch as the act ends. steelSrgb, flintSrgb: their colours (sRGB), with their roughness.",
+
+  "props": {
+    "models": {
+      "tent": { "file": "assets/models/camp/tent.glb", "look": { "albedo": 0.9, "rough": 1, "normal": 1, "normalY": -1 }, "shade": [1.05, 1.35, 0.5] },
+      "ring": { "file": "assets/models/camp/fire-ring.glb", "look": { "albedo": 0.85, "rough": 1, "normal": 1, "normalY": -1 }, "shade": [0.62, 0.62, 0.45] },
+      "wood": { "file": "assets/models/camp/fire-wood.glb", "look": { "albedo": 0.85, "rough": 1, "normal": 1, "normalY": -1 }, "shade": [0, 0, 0] },
+      "lantern": { "file": "assets/models/camp/lantern.glb", "look": { "albedo": 0.9, "rough": 1, "normal": 1, "normalY": -1 }, "shade": [0, 0, 0] }
+    },
+    "ember": [1.0, 0.3, 0.05], "emberNits": 14, "emberHz": 0.5,
+    "charAlbedo": [0.03, 0.028, 0.026]
+  },
+  "propsNote": "Matt's models (meters, Y up, origin at the base centre, front +Z), drawn with their own maps by src/render/passes/props.js. look: albedo and roughness scale, normal map strength and its green's sign. shade: the soft contact shadow's half sizes (m, along the model's own x and z) and darkness. The tent model carries its rolled bedroll inside. ember: the embers' glow colour, emberNits at full glow, breathing at emberHz; charAlbedo: burnt wood.",
+
+  "rest": { "wakeBeforeSunriseMin": 10, "viewSideRad": 1.25 },
+  "restNote": "C-39: Rest, after sunset and until wakeBeforeSunriseMin minutes before sunrise, runs the night as catch-up behind the cream screen and wakes you kneeling at the flap just before sunrise. viewSideRad: the low view opens this far round from behind you, so the tent at your back does not fill it.",
+
+  "standing": { "reachM": 30, "trust": 0.01, "minWord": "tolerant" },
+  "standingNote": "CP-13: in catch-up only, once a game day of the absence, each creature already Tolerant or closer whose home lies within reachM of the pad gains trust (a feeding is 0.06)."
 }

@@ -90,6 +90,7 @@ import { clickKind, clickPlan } from './world/walk/click.js';
 import { createPack } from './world/pack/index.js';
 import { createGather } from './world/gather/index.js';
 import { createPiles } from './world/pack/piles-live.js';
+import { createCamp } from './world/camp/index.js';
 import { createPackDraw } from './world/pack/draw.js';
 
 /**
@@ -539,7 +540,7 @@ export async function startApp(canvas, hooks = {}) {
   const boatRecipe = await loadRecipe('world/boat');
   const boat = createBoat({ recipe: boatRecipe, ground: (/** @type {number} */ x, /** @type {number} */ z) => terrain.sampleHeight(x, z), water });
   sim.addSystem({ id: 'boat', tick: (/** @type {any} */ f) => boat.update(f.realDt, clock.animT()) });
-  const intro = createIntroBoot({ R: introRecipe, boatR: boatRecipe, params, testParams: TEST_PARAMS, back, walk, terrain, water,
+  const intro = createIntroBoot({ R: introRecipe, boatR: boatRecipe, campRecipe, params, testParams: TEST_PARAMS, back, walk, terrain, water,
     land: landRecipe, terrainSeed: subSeed(seed, 'terrain'), orbit: skyRecipe.orbit, clock, camera, boat });
   sim.addSystem(intro);
   // Autumn's season markers (doc 13; src/world/finds/autumn-live.js): fungi on the kept logs, and
@@ -582,6 +583,14 @@ export async function startApp(canvas, hooks = {}) {
   // What lies on the ground to gather, the piles at camp and the heaps you left (src/world/pack/draw.js).
   const packDraw = createPackDraw({ terrain, camera, recipe: pack.recipe, gather, pack, you: () => walk.you() });
   sim.addSystem(packDraw);
+  // The keeper's camp (docs/future/13 section 3; src/world/camp): the tent and the fire ring in their
+  // slots, the fire and the lantern as small lights, smoke and moths, and a night's rest in the tent.
+  const camp = createCamp({ recipe: campRecipe, seed, walk, terrain, clock, orbit: skyRecipe.orbit, camera, world,
+    seasons: seasonsRecipe, lighting, pack, shadowBias: shadowPass.bias, low: tier === 'low', poses: (await loadRecipe('world/figure')).poses,
+    beat: () => intro.live?.intro.current?.id ?? null });
+  sim.addSystem(camp);
+  shadowPass.addCaster(camp.props.caster);
+  intro.useCamp(camp);
 
   /**
    * A dry, grassy ground point near the view's middle, out of the tide, for a test log: on a widening
@@ -678,6 +687,8 @@ export async function startApp(canvas, hooks = {}) {
     nets.pass,
     ...packDraw.passes,
     pieces.pass,
+    // The camp's tent, fire ring and lantern, drawn with their own paint maps.
+    camp.props,
     boat.pass,
     // What lives under a log, while it is lifted (L3a).
     underLog.pass,
@@ -692,6 +703,8 @@ export async function startApp(canvas, hooks = {}) {
     createSkyPass(atmosphere, skyRecipe),
     // Waterfalls after the sky, so a curtain seen against the sky is not drawn over (src/render/passes/falls.js).
     fallsPass,
+    // The camp's flame, smoke, sparks and moths: after the sky too, so smoke against it shows.
+    camp.fx,
     exposure,
     bloom,
     tonemap,
@@ -1555,7 +1568,7 @@ export async function startApp(canvas, hooks = {}) {
     const pad = getStore('campPad') ?? null;
     padEdge = pad ? stepEdge(padEdge, edgeTarget(pad, terrain.ring, tools()), realDt, pad.dash?.opacity ?? 1, pad.dash?.fadeS) : 0;
     const padMark = edgeMark(pad, padEdge);
-    terrainPass.setMarks(plantTool.marks(now, tools().tool === 'plant', getStore('identify'), [...(padMark ? [padMark] : []), ...(getStore('reveal')?.rings?.(now) ?? []), ...creatures.foodRings(), ...intro.rings(now)]));
+    terrainPass.setMarks(plantTool.marks(now, tools().tool === 'plant', getStore('identify'), [...(padMark ? [padMark] : []), ...(getStore('reveal')?.rings?.(now) ?? []), ...creatures.foodRings(), ...intro.rings(now), ...camp.rings(now / 1000)]));
     // Lugworm casts are drawn into the sand by the terrain pass.
     terrainPass.setCasts(finds.casts());
     updatePour();
@@ -1770,6 +1783,8 @@ export async function startApp(canvas, hooks = {}) {
     walk,
     /** The first evening: its start, the boat's mooring, and the director once main.js starts it. */
     intro,
+    /** The keeper's camp: the journal asks it what a click at camp lands on; tools read the fire. */
+    camp,
     /**
      * Testing helpers, on window.ebb with `?debug`: autumn's misty morning and kept logs, skipping to
      * a time of year, and bringing a settled school or swarm. They change this island's time and

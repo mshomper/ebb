@@ -54,10 +54,28 @@ export function createFigure(o) {
   pass.setMesh('figure', { data: built.data, indices: built.indices });
   const uniforms = new Float32Array(EXTRA);
   let visible = false;
+  /** Where the figure stood and faced last frame, for hand(). */
+  let at = { x: 0, y: 0, z: 0, yaw: 0 };
+  const hands = { l: built.skeleton.findIndex((b) => b.name === 'hand.l'), r: built.skeleton.findIndex((b) => b.name === 'hand.r') };
   return {
     pass,
     motion,
     skeleton: built.skeleton,
+    /**
+     * Where a hand is now in the world (its wrist pivot as posed, m), and the way the figure faces,
+     * for what it holds (the lantern, the fire steel). Null before the first frame.
+     * @param {'l' | 'r'} side @returns {{ x: number, y: number, z: number, yaw: number } | null}
+     */
+    hand(side) {
+      const i = hands[side];
+      if (!visible || i < 0) return null;
+      const p = built.skeleton[i].pivot, m = motion.bones.subarray(i * 16, i * 16 + 16), k = R.body.displayScale ?? 1;
+      const bx = (m[0] * p[0] + m[4] * p[1] + m[8] * p[2] + m[12]) * k;
+      const by = (m[1] * p[0] + m[5] * p[1] + m[9] * p[2] + m[13]) * k;
+      const bz = (m[2] * p[0] + m[6] * p[1] + m[10] * p[2] + m[14]) * k;
+      const c = Math.cos(at.yaw), s = Math.sin(at.yaw);
+      return { x: at.x + c * bx + s * bz, y: at.y + by, z: at.z - s * bx + c * bz, yaw: at.yaw };
+    },
     /** Vertices and triangles, for the tools page's cost line. */
     size: { vertices: built.count, triangles: built.indices.length / 3, bytes: built.data.byteLength + built.indices.byteLength },
     /**
@@ -68,6 +86,7 @@ export function createFigure(o) {
       visible = s.placed;
       if (!visible) { pass.setBeings([]); return []; }
       const r = motion.update(dt, s);
+      at = { x: s.x, y: s.y, z: s.z, yaw: r.yaw };
       pass.setBeings([{ x: s.x, y: s.y, z: s.z, yaw: r.yaw, size: R.body.displayScale ?? 1, bones: motion.bones }]);
       pass.setExtra(eyeUniforms(R.eyes, headBone, r.eyes, uniforms));
       return r.footfalls;

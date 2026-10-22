@@ -195,6 +195,8 @@ export async function startAudio(store) {
   unsubs.push(on('keepsake:sound', (/** @type {{ name: string, seed?: number }} */ p) => keepsakeSounds?.play(p.name, p.seed)));
   // The first evening (src/world/intro): lighting the fire brings one curlew far out over the water.
   unsubs.push(on('intro:curlew', () => introSounds?.play('curlew')));
+  // The camp's fire (src/world/camp): the steel's strike, the twigs catching, rain's hiss on a fire.
+  unsubs.push(on('camp:sound', (/** @type {{ name: string }} */ p) => introSounds?.play(p.name)));
 
   if (store.get('sound')) begin();
   else {
