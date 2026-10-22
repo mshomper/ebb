@@ -34,29 +34,29 @@
   "glow": { "nearM": 2, "opacity": 0.35, "breathS": 3.2, "firstGlowWithinM": 12 },
   "glowNote": "CS-05: a slot glows (a soft filled ring on the ground) the first time, then only while the pack holds what it needs and you are on or within nearM of the pad. opacity and breathS: its look. firstGlowWithinM: an older island's tent ground glows the first time you go down this near.",
 
-  "reach": { "slotM": 1.6, "ringM": 1.5, "flapM": 2 },
+  "reach": { "slotM": 1.6, "ringM": 1.5, "flapM": 1.4 },
   "reachNote": "How near you must stand: slotM to pitch or lay (the card walks you there); ringM for Light and Feed on the here-bar; flapM for Rest.",
 
   "ring": { "fuelHandfuls": 1, "stoneHandfuls": 2 },
 
   "fire": {
     "flameH": 3, "feedHandfuls": 1, "emberH": 24, "ashFadeH": 24,
-    "lightK": 1800, "cd": 40, "rangeM": 6, "heightM": 0.3,
+    "lightK": 1800, "cd": 28, "rangeM": 4, "heightM": 0.3,
     "flicker": 0.12, "flickerHz": 3.1,
     "emberCd": 2.5, "emberLightK": 1400,
     "rainLow": 0.35, "rainFlame": 0.3,
     "char": { "lit": 0.45, "embers": 0.8, "cold": 1 },
     "squash": { "lit": 0.9, "embers": 0.5, "cold": 0.38 }
   },
-  "fireNote": "One handful of fuel burns flameH game hours, then it sinks to embers; embers (lit or banked by a rest) last emberH, then the ring is cold; the cold ring's ash fades over ashFadeH (docs/future/13 3.5, CP-11). All worked out from the clock (src/world/camp/fire.js), so live play and catch-up agree. The light: a lightK blackbody of cd candela at heightM over the ring, reaching nothing at rangeM (a smooth window), flickering by flicker at about flickerHz; banked embers glow emberCd at emberLightK. Rain over rainLow drops a lit fire to a hissing low flame (rainFlame of its size) without putting it out. char and squash: how burnt and how low the laid wood looks in each state.",
+  "fireNote": "One handful of fuel burns flameH game hours, then it sinks to embers; embers (lit or banked by a rest) last emberH, then the ring is cold; the cold ring's ash fades over ashFadeH (docs/future/13 3.5, CP-11). All worked out from the clock (src/world/camp/fire.js), so live play and catch-up agree. The light: a lightK blackbody of cd candela at heightM over the ring, reaching nothing at rangeM (a smooth window, so from above at night the camp is a small warm pool, C-38), flickering by flicker at about flickerHz; banked embers glow emberCd at emberLightK. Rain over rainLow drops a lit fire to a hissing low flame (rainFlame of its size) without putting it out. char and squash: how burnt and how low the laid wood looks in each state.",
 
-  "lantern": { "lightK": 2200, "cd": 8, "rangeM": 8, "flicker": 0.06, "flickerHz": 3, "hangM": [0.0, 1.02, 1.16], "carryDropM": 0.32, "glassNits": 900, "glassM": 0.035, "lightsAtSunDeg": 2 },
-  "lanternNote": "The hand lantern (docs/06: 2,200 K, 8 cd, 8 m). hangM: where it hangs on the tent's front pole, in the tent model's frame (m, +z the flap). carryDropM: how far below the hand's wrist it swings when carried. glassNits, glassM: its lit glass, a small emissive glow that feeds bloom. lightsAtSunDeg: lit once the sun is lower than this (degrees).",
+  "lantern": { "lightK": 2200, "cd": 8, "rangeM": 4.5, "flicker": 0.06, "flickerHz": 3, "hangM": [0.0, 1.02, 1.16], "carryDropM": 0.32, "glassNits": 900, "glassM": 0.035, "lightsAtSunDeg": 2 },
+  "lanternNote": "The hand lantern (docs/06: 2,200 K, 8 cd; its reach kept to rangeM so the camp's light stays a small pool from above). hangM: where it hangs on the tent's front pole, in the tent model's frame (m, +z the flap). carryDropM: how far below the hand's wrist it swings when carried. glassNits, glassM: its lit glass, a small emissive glow that feeds bloom. lightsAtSunDeg: lit once the sun is lower than this (degrees).",
 
   "flame": { "cards": 6, "heightM": 0.5, "widthM": 0.26, "nits": 420, "flickerHz": 2.4, "minPx": 3, "glowNits": 14, "glowM": 0.45 },
   "flameNote": "The fire's flame: cards crossed tongues of emissive flame (heightM tall, widthM wide), flickering at flickerHz. minPx: the flame never draws smaller than this on screen, so the camp reads as a small warm point from above (C-38). glowNits, glowM: a soft halo around it.",
 
-  "smoke": { "count": 40, "lowCount": 24, "lifeS": 10, "riseMps": 0.4, "lean": 1.0, "spreadM": 0.12, "sizeM": [0.16, 1.1], "opacity": 0.11, "albedo": [0.62, 0.62, 0.64], "embersShare": 0.35, "rainThick": 1.9, "mistLow": 0.6, "nearFadeM": [1.0, 2.5], "midgeClearM": 2 },
+  "smoke": { "count": 40, "lowCount": 24, "lifeS": 10, "riseMps": 0.4, "lean": 1.0, "spreadM": 0.12, "sizeM": [0.16, 1.1], "opacity": 0.09, "albedo": [0.62, 0.62, 0.64], "embersShare": 0.35, "rainThick": 1.9, "mistLow": 0.6, "nearFadeM": [1.0, 2.5], "midgeClearM": 2 },
   "smokeNote": "C-29: count soft puffs (lowCount on the low tier), each living lifeS seconds, rising riseMps and leaning with the weather's wind by lean (meters a second at full wind), growing from sizeM[0] to sizeM[1], at most opacity. albedo: lit by the sky, sun and fire, never painted. embersShare: how much smoke banked embers give; rainThick: thicker in rain; mistLow: in mist it rises this much slower and hangs low. nearFadeM: puffs fade near the eye, so overdraw stays small. Midges keep midgeClearM from it.",
 
   "moths": { "count": 6, "lowCount": 3, "orbitM": [0.4, 1.2], "heightM": [0.5, 1.6], "speed": [0.8, 1.6], "wingM": 0.035, "flapHz": 22, "albedo": [0.55, 0.5, 0.42], "atSunDeg": -4 },

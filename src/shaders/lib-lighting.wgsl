@@ -59,7 +59,7 @@ fn pointIllum(p: vec3f, n: vec3f, wrap: f32) -> vec3f {
   for (var i = 0u; i < count; i++) {
     let a = light.points[i * 2u];
     let d = a.xyz - p;
-    let d2 = max(dot(d, d), 0.04);
+    let d2 = max(dot(d, d), 0.09);
     let q = d2 / (a.w * a.w);
     if (q >= 1.0) { continue; }
     let win = (1.0 - q * q) * (1.0 - q * q);

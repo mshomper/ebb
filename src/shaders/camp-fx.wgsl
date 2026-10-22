@@ -204,7 +204,7 @@ fn fsSmoke(in: SmokeOut) -> @location(0) vec4f {
   let up = vec3f(0.0, 1.0, 0.0);
   let sky = skyAmbient(up);
   let direct = frame.sunIlluminance * (0.5 + 0.5 * max(frame.sunDir.y, 0.0)) + frame.moonIlluminance * 0.5
-             + pointIllum(in.world, normalize(fx.fire.xyz - in.world + vec3f(0.0, 0.01, 0.0)), 1.0);
+             + pointIllum(in.world, normalize(fx.fire.xyz - in.world + vec3f(0.0, 0.01, 0.0)), 1.0) * 0.5;
   // Single scattering in a thin medium: isotropic, 1 / (4 pi) of the light reaching it.
   let radiance = fx.smokeAlb.rgb * (sky + direct / (4.0 * PI));
   let viewDist = distance(in.world, frame.cameraPos);
