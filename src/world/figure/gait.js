@@ -38,17 +38,23 @@ export function paceAt(G, speed, wade) {
 /**
  * One foot in the walking cycle at local phase p (0 lands, stance until `stance`, then the swing).
  * fz: forward of its rest spot (m); lift: off the ground (m); pitch: toe up (radians); down: planted.
+ * Jogging and running: kickM lifts the heel up behind early in the swing (the foot stays back while it
+ * rises, so the knee then drives forward), and landShare sets where the foot lands, as a share of
+ * the stance's travel in front of the hip (a half for the walk; less lands nearer under the hips
+ * and pushes off further behind).
  * @param {number} p 0..1 @param {number} stance share of the cycle down @param {number} stepM @param {number} liftM
+ * @param {number} [kickM] @param {number} [landShare]
  */
-export function footInCycle(p, stance, stepM, liftM) {
-  const reach = stance * stepM;
+export function footInCycle(p, stance, stepM, liftM, kickM = 0, landShare = 0.5) {
+  const travel = 2 * stance * stepM, land = travel * landShare, off = land - travel;
   if (p < stance) {
     const u = p / stance;
     const pitch = u > 0.7 ? -((u - 0.7) / 0.3) * 0.45 : 0;
-    return { fz: reach * (1 - 2 * u), lift: 0.12 * Math.sin(-pitch), pitch, down: true };
+    return { fz: land - travel * u, lift: 0.12 * Math.sin(-pitch), pitch, down: true };
   }
-  const v = (p - stance) / (1 - stance), e = smooth(v);
-  return { fz: reach * (-1 + 2 * e), lift: liftM * Math.sin(Math.PI * v), pitch: -0.45 + 0.6 * v, down: false };
+  const v = (p - stance) / (1 - stance), e = smooth(kickM > 0 ? v ** (1 + 4 * kickM) : v);
+  const kick = kickM * Math.sin(Math.PI * Math.min(1, v / 0.7));
+  return { fz: off + travel * e, lift: liftM * Math.sin(Math.PI * v) + kick, pitch: -0.45 - 2 * kick + 0.6 * v, down: false };
 }
 
 /**

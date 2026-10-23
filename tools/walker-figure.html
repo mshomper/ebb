@@ -48,9 +48,9 @@
         <h2>Pace</h2>
         <div class="grid" data-group="pace">
           <button data-pace="0">Stand</button>
-          <button data-pace="0.3">Creep</button>
-          <button data-pace="0.9" aria-pressed="true">Stroll</button>
-          <button data-pace="1.5">Brisk</button>
+          <button data-pace="0.3" data-from="creepMps">Creep</button>
+          <button data-pace="1.5" data-from="strollMps" aria-pressed="true">Stroll</button>
+          <button data-pace="2.7" data-from="briskMps">Run</button>
           <!-- The game's paces: recipes/world/walker.json (creep 0.3, stroll 0.9, brisk 1.5, wading 0.6 m/s). -->
           <button id="turn">Turn round</button>
           <button id="slow" aria-pressed="false">Slow motion</button>

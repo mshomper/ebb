@@ -221,7 +221,7 @@ export function createFigureMotion(R, skeleton) {
         plantRes = planted.update(dt, rest.map((p) => toWorld(p[0], p[2])), visYaw);
         plantRes.landed.forEach((l, i) => { if (l) footfalls.push({ x: plantRes.feet[i].x, z: plantRes.feet[i].z, yaw: plantRes.feet[i].yaw, side: SIDE[i] }); });
       }
-      const cyc = [0, 1].map((i) => footInCycle((phase + i * 0.5) % 1, P.stance, P.stepM, P.liftM));
+      const cyc = [0, 1].map((i) => footInCycle((phase + i * 0.5) % 1, P.stance, P.stepM, P.liftM, P.kickM ?? 0, P.landShare ?? 0.5));
       const feet = [0, 1].map((i) => {
         let bx, bz, lift, pitch, yawRel;
         if (plantRes) {
@@ -376,7 +376,7 @@ export function createFigureMotion(R, skeleton) {
       for (let i = 0; i < 2; i++) {
         const [u, f, h] = ARM[i];
         const opp = cyc[1 - i];
-        const swing = P.armDeg * DEG * (opp.fz / Math.max(P.stance * P.stepM, 1e-3)) * m * standW;
+        const swing = P.armDeg * DEG * ((opp.fz - 2 * P.stance * P.stepM * ((P.landShare ?? 0.5) - 0.5)) / Math.max(P.stance * P.stepM, 1e-3)) * m * standW;
         // Swinging forward the arm comes a little across the body and the elbow bends more; swinging
         // back it straightens (recipes/world/figure.json arms).
         const AR = R.arms ?? { elbowForward: 0.4, elbowBack: 0, across: 0 };
