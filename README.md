@@ -185,6 +185,7 @@ Open these at `/tools/` while running locally. They are for checks that run on y
 - The periwinkle is a CC0 photo scan of a rough periwinkle (Littorina brevicula, ffish.asia), simplified to 900 triangles.
 - "Blue Mussel Shell - Mytilus edulis" (https://sketchfab.com/3d-models/blue-mussel-shell-mytilus-edulis-9e5d8d32a838428e9e9cf35f25fa0ba4) by scotdiver, licensed under Creative Commons Attribution 4.0 (http://creativecommons.org/licenses/by/4.0/). Changed for ebb: texture baked to vertex colors, simplified, and the one valve mirrored into a pair that opens at the hinge.
 - "Sand Dollar" (https://sketchfab.com/3d-models/sand-dollar-ecb3b89356874d73ba449f6c0bf59cf7) by semmert179, licensed under Creative Commons Attribution 4.0 (http://creativecommons.org/licenses/by/4.0/). Changed for ebb: parts joined, simplified, tinted.
+- Camp pots, each licensed under Creative Commons Attribution 4.0 (http://creativecommons.org/licenses/by/4.0/) and simplified for ebb: "clay cooking pot" by josemtavares; "Clay teapot" by patrakeevasveta; "GENED 1105 Clay Pot" by andrew_ogundimu (drawn as a dye pot). Links in `assets/models/camp/CREDITS.md`.
 - Ground scans from Poly Haven and ambientCG (CC0); see `assets/textures/CREDITS.md`.
 
 ## Pillars

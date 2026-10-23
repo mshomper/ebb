@@ -272,5 +272,110 @@
     0.075
    ]
   }
+ },
+ "workbench": {
+  "source": "stone_workbench.glb",
+  "file": "workbench.glb",
+  "bytes": 1121380,
+  "sourceBytes": 20361872,
+  "trianglesBefore": 16846,
+  "triangles": 7999,
+  "maps": 1024,
+  "bounds": {
+   "min": [
+    -0.5,
+    0,
+    -0.327
+   ],
+   "max": [
+    0.5,
+    0.584,
+    0.327
+   ]
+  }
+ },
+ "apothecary-bench": {
+  "source": "apothecary_bench.glb",
+  "file": "apothecary-bench.glb",
+  "bytes": 1388328,
+  "sourceBytes": 20066000,
+  "trianglesBefore": 29521,
+  "triangles": 12807,
+  "maps": 1024,
+  "bounds": {
+   "min": [
+    -0.55,
+    0,
+    -0.343
+   ],
+   "max": [
+    0.55,
+    1.061,
+    0.343
+   ]
+  }
+ },
+ "cooking-pot": {
+  "source": "../_pots/cooking pot/scene.gltf",
+  "file": "cooking-pot.glb",
+  "bytes": 191656,
+  "sourceBytes": 4594565,
+  "trianglesBefore": 5536,
+  "triangles": 4000,
+  "maps": 512,
+  "bounds": {
+   "min": [
+    -0.15,
+    0,
+    -0.107
+   ],
+   "max": [
+    0.15,
+    0.237,
+    0.107
+   ]
+  }
+ },
+ "tea-pot": {
+  "source": "../_pots/teapot/scene.gltf",
+  "file": "tea-pot.glb",
+  "bytes": 157480,
+  "sourceBytes": 24932089,
+  "trianglesBefore": 7982,
+  "triangles": 4000,
+  "maps": 512,
+  "bounds": {
+   "min": [
+    -0.09,
+    0,
+    -0.072
+   ],
+   "max": [
+    0.09,
+    0.158,
+    0.072
+   ]
+  }
+ },
+ "dye-pot": {
+  "source": "../_pots/dye pot/scene.gltf",
+  "file": "dye-pot.glb",
+  "bytes": 165912,
+  "sourceBytes": 3448134,
+  "trianglesBefore": 45286,
+  "triangles": 4000,
+  "maps": 512,
+  "bounds": {
+   "min": [
+    -0.294,
+    0,
+    -0.288
+   ],
+   "max": [
+    0.294,
+    0.32,
+    0.288
+   ]
+  }
  }
 }

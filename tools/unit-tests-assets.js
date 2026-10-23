@@ -1,6 +1,6 @@
 // @ts-check
 // The web copies of Matt's models (tools/assets/build-models.mjs) for tools/unit-tests.html: each one
-// in tools/assets/models.json reads with the game's own small GLB reader, has its three paint maps,
+// in tools/assets/models.json reads with the game's own small GLB reader, has its paint maps,
 // stands on the ground at its real size with its base centered, and is well under 2 MB.
 
 import { readGlb, meshesByName, materialMaps } from '../src/render/gltf.js';
@@ -25,7 +25,10 @@ export function addAssetTests(test, assert, eq) {
       // A model painted in vertex colours (an OBJ source, models.json `paint`) has no UVs or maps.
       for (const a of ['POSITION', 'NORMAL', m.paint ? 'COLOR_0' : 'TEXCOORD_0']) assert(mesh.attributes[a], `${m.out}: ${a}`);
       const maps = materialMaps(glb);
-      if (!m.paint) for (const k of /** @type {const} */ (['baseColor', 'metallicRoughness', 'normal'])) eq(maps[k]?.mimeType, 'image/webp', `${m.out}: ${k} map`);
+      // Every painted copy has its colour map; a Sketchfab pot may come without the other two (its
+      // roughness a plain number), and any it has are WebP.
+      if (!m.paint) eq(maps.baseColor?.mimeType, 'image/webp', `${m.out}: baseColor map`);
+      if (!m.paint) for (const k of /** @type {const} */ (['metallicRoughness', 'normal'])) if (maps[k]) eq(maps[k].mimeType, 'image/webp', `${m.out}: ${k} map`);
       const p = mesh.attributes.POSITION;
       const lo = [Infinity, Infinity, Infinity], hi = [-Infinity, -Infinity, -Infinity];
       for (let i = 0; i < p.length; i += 3) for (let a = 0; a < 3; a++) { lo[a] = Math.min(lo[a], p[i + a]); hi[a] = Math.max(hi[a], p[i + a]); }
