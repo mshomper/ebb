@@ -63,6 +63,7 @@ Full ownership and exports are in `docs/03-tech-stack-and-module-map.md`.
 - Each feature ships with a short click-test list: what Matt should see and do, in plain language. Put it in the PR description.
 - For anything numeric (simulation stability, frame time, catch-up determinism), add or extend a page in `tools/` that shows the result visually and can be run locally.
 - Determinism check: the same seed and the same edits must produce the same world after catch-up. `tools/determinism.html` compares two runs.
+- Run only what a change reaches while working: `node tools/affected-tests.mjs` prints the test groups (and a `tools/unit-tests.html?groups=...` link) for what the branch changed. Run the full suite (`tools/unit-tests.html`, no parameters) once at handoff, before reporting ready. Open `tools/determinism.html` only when the script says so.
 
 ## Current target
 

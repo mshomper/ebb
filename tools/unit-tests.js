@@ -31,10 +31,14 @@ import { addQualityTests } from './unit-tests-quality.js';
 // The other test files are listed in unit-tests-parallel.js and run in workers.
 import { PARALLEL, assert, eq, runOne } from './unit-tests-parallel.js';
 
-/** @type {{group: string, name: string, fn: () => any}[]} */
+/** @type {{group: string, name: string, fn: () => any, unit: string}[]} */
 const tests = [];
+/** A group's name as a page link slug ('sky and seasons' is sky-and-seasons; tools/affected-tests.mjs). @param {string} s */
+const slug = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+/** The group the tests being added belong to for ?groups= (a WebGPU file's name, else the test's own group). */
+let unitNow = '';
 /** @param {string} group @param {string} name @param {() => any} fn */
-const test = (group, name, fn) => tests.push({ group, name, fn });
+const test = (group, name, fn) => tests.push({ group, name, fn, unit: unitNow || slug(group) });
 /** @template T @param {Promise<T>} p @param {number} ms @returns {Promise<T>} */
 function timeout(p, ms = 10000) {
   return Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error(`timed out after ${ms} ms`)), ms))]);
@@ -1384,8 +1388,24 @@ test(PAL, 'setPalette crossfades over fadeS, and fadeS 0 swaps at once', async (
 
 // ---- waterfalls (WebGPU) and quality (frame timers): these stay on the page ----
 
+unitNow = 'falls';
 addFallsTests(test, assert, eq);
+unitNow = 'quality';
 addQualityTests(test, assert, eq);
+unitNow = '';
+
+// ---- the determinism smoke (in the core set: runs on every partial run) ----
+
+test('smoke', 'two days of hourly ticks are the same twice, and the same split in two', async () => {
+  const recipe = await loadSeasons();
+  const env = makeEnv(7, { seasons: recipe });
+  /** @param {any} st @param {number} from @param {number} to */
+  const runRange = (st, from, to) => { for (let h = from; h <= to; h++) st = runHour(st, h, env).state; return st; };
+  const a = hashWorldState(runRange(initialWorldState(7), 0, 47));
+  eq(hashWorldState(runRange(initialWorldState(7), 0, 47)), a, 'second run');
+  eq(hashWorldState(runRange(runRange(initialWorldState(7), 0, 23), 24, 47)), a, 'split run');
+  return `hash ${a.toString(16).toUpperCase().padStart(8, '0')}`;
+});
 
 // Every other test file is listed in tools/unit-tests-parallel.js and runs in workers.
 
@@ -1413,6 +1433,15 @@ const serial = params.has('serial');
 const WORKERS_MAX = 8;
 /** @param {string} group @param {string} name */
 const picked = (group, name) => !only || `${group}: ${name}`.toLowerCase().includes(only);
+// ?groups=pack,gather runs only those groups and the CORE (what tools/affected-tests.mjs prints);
+// ?core runs the core alone. A group is a test file's key in unit-tests-parallel.js, or a page
+// group's slug (sky-and-seasons), or falls / quality. No parameter: the full suite.
+const CORE = ['rng', 'save', 'format9', 'smoke'];
+const asked = params.has('groups') || params.has('core')
+  ? new Set([...CORE, ...(params.get('groups') ?? '').split(',').map((g) => g.trim()).filter(Boolean)])
+  : null;
+/** Does a group run? @param {string} unit */
+const runs = (unit) => !asked || asked.has(unit);
 
 // Each test's last time, so the longest start first and the cores finish together.
 const MS_KEY = 'ebb-unit-test-ms';
@@ -1432,7 +1461,8 @@ function saveTimes(times) {
  * @param {Record<string, number>} last @param {(r: Result) => void} show
  */
 async function runInWorkers(last, show) {
-  const keys = Object.keys(PARALLEL);
+  const keys = Object.keys(PARALLEL).filter(runs);
+  if (!keys.length) return 0;
   const asked = Number(params.get('workers'));
   const n = asked >= 1 ? Math.min(16, Math.floor(asked)) : Math.max(2, Math.min(WORKERS_MAX, (navigator.hardwareConcurrency || 4) - 1));
   /** @type {Map<number, (data: any) => void>} */
@@ -1503,10 +1533,22 @@ async function main() {
     summary.textContent = `Running tests: ${passed} of ${results.length} passed so far`;
   };
 
-  if (serial) for (const key of Object.keys(PARALLEL)) (await PARALLEL[key]())(test, assert, eq);
+  // A partial run says so at the top, with the groups it ran.
+  if (asked) {
+    const known = new Set([...Object.keys(PARALLEL), ...tests.map((t) => t.unit)]);
+    const unknown = [...asked].filter((g) => !known.has(g));
+    const banner = document.createElement('p');
+    banner.className = 'partial';
+    banner.textContent = `Partial run: ${asked.size} of ${known.size} groups (the core: ${CORE.join(', ')}`
+      + `${asked.size > CORE.length ? `; and ${[...asked].filter((g) => !CORE.includes(g)).join(', ')}` : ''}). `
+      + `${unknown.length ? `No such group: ${unknown.join(', ')}. ` : ''}Run the full suite (no parameters) before handing off.`;
+    summary.before(banner);
+  }
+  if (serial) for (const key of Object.keys(PARALLEL).filter(runs)) { unitNow = key; (await PARALLEL[key]())(test, assert, eq); }
+  unitNow = '';
   const onPage = (async () => {
     for (const t of tests) {
-      if (!picked(t.group, t.name)) continue;
+      if (!runs(t.unit) || !picked(t.group, t.name)) continue;
       show({ group: t.group, name: t.name, ...(await runOne(t.fn)) });
     }
   })();
@@ -1518,7 +1560,7 @@ async function main() {
   const failed = results.length - passed;
   const how = serial ? 'one after another on the page' : `on the page and ${workerCount} workers`;
   summary.textContent = `${passed} of ${results.length} passed${failed ? ` (${failed} failed, shown first)` : ''} in ${timeText(performance.now() - t0)}, ${how}`
-    + (only ? `, only tests matching "${only}"` : '');
+    + (only ? `, only tests matching "${only}"` : '') + (asked ? ', a partial run' : '');
   const top = [...results].sort((a, b) => b.ms - a.ms).slice(0, 8);
   slowest.innerHTML = `<h2>Slowest tests</h2><ol>${top.map((r) => `<li>${timeText(r.ms)}: ${esc(r.group)}: ${esc(r.name)}</li>`).join('')}</ol>`;
 }
