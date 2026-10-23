@@ -243,6 +243,8 @@ export function createIntroLive(o) {
     flap: flapOf,
     /** The spring the evening leads to (the lab, the tests). */
     spring: () => spring,
+    /** Set the store slice `intro` and the mark now (at start, before the first frame). */
+    publish,
     /** Each frame. @param {number} dt seconds */
     update(dt) { stub?.tick(); intro.update(dt); publish(); },
     /**

@@ -151,6 +151,14 @@ export function mountIslandNotes(parent, words, naturalist = null) {
     skipBtn.textContent = p.skip ?? '';
     skipBtn.hidden = !p.skip;
     hint.classList.add('is-shown');
+    // The hint is the one line on the island: passing notes already up fade (a new island's first
+    // look writes several), and queued ones wait in the journal.
+    waiting = [];
+    root.querySelectorAll('.ebb-notes__note:not(.is-leaving)').forEach((b) => {
+      b.classList.add('is-leaving');
+      b.classList.remove('is-shown');
+      setTimeout(() => b.remove(), 700);
+    });
     requestAnimationFrame(() => requestAnimationFrame(() => hint.classList.add('is-in')));
   });
   /**

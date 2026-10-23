@@ -12,7 +12,7 @@
 // open as they always have.
 
 import { emit } from '../../core/events.js';
-import { get, subscribe } from '../../core/store.js';
+import { get, subscribe, update } from '../../core/store.js';
 import { dispatch } from '../../input/actions.js';
 import { sunMoon } from '../sky/sun-moon.js';
 import { createIntroLive, dawnHour, flapSpot } from './adapter.js';
@@ -65,7 +65,10 @@ export function createIntroBoot(o) {
   const testBeat = fresh ? o.params.get('intro') : null;
   const at = testBeat ? Math.max(0, beatIds.indexOf(testBeat)) : 0;
   const flags = /** @type {string[]} */ (o.back?.journal?.flags ?? []);
-  const ground = (/** @type {number} */ x, /** @type {number} */ z) => o.terrain.sampleHeight(x, z);
+  // The store slice `intro` { beat, started, done } is there from the first frame on every path
+  // (E3 offers Light and Rest by it): an island that never runs the evening reads as done.
+  update('intro', () => ({ beat: null, started: false, done: !runs }));
+  const ground =(/** @type {number} */ x, /** @type {number} */ z) => o.terrain.sampleHeight(x, z);
   const B = o.boatR.boat ?? o.boatR;
   /** The mooring from a pad: the land recipe's mooring numbers over the boat recipe's. @param {any} pad */
   const moor = (pad) => (pad ? mooringOf(pad, ground, { ...B.mooring, ...(pad.camp?.mooring ?? {}) }) : null);
@@ -118,6 +121,7 @@ export function createIntroBoot(o) {
       }
       live.start();
       if (fresh && o.params.has('nointro')) live.intro.skip();
+      live.publish();
     },
     /** Each frame (a system on the live sim). @param {{ realDt: number }} f */
     tick(f) { live?.update(f.realDt); },
