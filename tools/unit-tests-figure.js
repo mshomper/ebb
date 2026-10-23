@@ -15,6 +15,7 @@ import { blinkAt } from '../src/world/figure/eyes.js';
 import { matPoint } from '../src/world/figure/kinematics.js';
 import { createFootprints } from '../src/world/figure/footprints.js';
 import { ACTS, actLength } from '../src/world/figure/acts.js';
+import { paceAt, footInCycle } from '../src/world/figure/gait.js';
 
 const FIG = 'walker figure';
 
@@ -77,7 +78,25 @@ function walk(R, built, speed, h, seconds) {
  * @param {(cond: any, msg?: string) => void} assert @param {(a: any, b: any, msg?: string) => void} eq
  */
 export function addFigureTests(test, assert, eq) {
-  test(FIG, 'the GLB reader reads the figure: a body and two arms, with colour, part labels and the arms\' shoulders', async () => {
+  test(FIG, 'the hurry pace is a run: a flight between steps, a longer stride and lean, the hips lowest over the foot; the stroll is unchanged', async () => {
+    const R = await (await fetch('../recipes/world/figure.json')).json();
+    const G = R.gait, DS = R.body.displayScale;
+    const W = await (await fetch('../recipes/world/walker.json')).json();
+    const stroll = paceAt(G, W.pace.strollMps / DS, 0), run = paceAt(G, W.pace.briskMps / DS, 0), top = G.paces.find((/** @type {any} */ p) => p.speed === 1.5);
+    for (const k of ['stance', 'stepM', 'armDeg', 'leanDeg', 'bobM']) eq(stroll[k], top[k], `stroll ${k} as before`);
+    assert(run.stance < 0.5 && run.bobM < 0, 'the run: under half a stride down, hips lowest over the planted foot');
+    assert(run.stepM > stroll.stepM * 1.5 && run.leanDeg > stroll.leanDeg && run.elbowDeg > stroll.elbowDeg + 40, 'a longer stride, more lean, elbows bent to pump');
+    // Somewhere in the cycle both feet are off the ground at the run, never at the stroll.
+    const airborne = (/** @type {any} */ P) => Array.from({ length: 200 }, (_, i) => i / 200).some((p) =>
+      !footInCycle(p, P.stance, P.stepM, P.liftM).down && !footInCycle((p + 0.5) % 1, P.stance, P.stepM, P.liftM).down);
+    assert(airborne(run) && !airborne(stroll), 'a flight phase at the run only');
+    // Each pace names the same things, so the blend never meets a gap.
+    const keys = Object.keys(G.paces[0]).sort().join();
+    assert(G.paces.every((/** @type {any} */ p) => Object.keys(p).sort().join() === keys), 'every pace has the same keys');
+    return `run: stance ${run.stance.toFixed(2)}, stride ${run.stepM.toFixed(2)} m, lean ${run.leanDeg.toFixed(0)} degrees`;
+  });
+
+  test(FIG,'the GLB reader reads the figure: a body and two arms, with colour, part labels and the arms\' shoulders', async () => {
     const R = await (await fetch('../recipes/world/figure.json')).json();
     const glb = readGlb(await (await fetch(`../${R.model}`)).arrayBuffer());
     const m = meshesByName(glb);

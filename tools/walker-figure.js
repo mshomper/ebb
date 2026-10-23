@@ -46,10 +46,19 @@ let water = 0;
 // each stop as the game's walker does, waits, and turns round.
 const P = W.pace;
 const w = { x: -1.8, z: 0, yaw: Math.PI / 2, speed: 0, goal: 1.8, wait: 1.2 };
-let pace = 0.9, posture = /** @type {'stand' | 'sit' | 'kneel'} */ ('stand'), below = true, look = false;
+// The pace buttons take the game's own speeds (recipes/world/walker.json pace): Run is the hurry.
+document.querySelectorAll('[data-from]').forEach((b) => { const v = P[/** @type {HTMLElement} */ (b).dataset.from ?? '']; if (v) /** @type {HTMLElement} */ (b).dataset.pace = String(v); });
+let pace = P.strollMps ?? 1.5, posture = /** @type {'stand' | 'sit' | 'kneel'} */ ('stand'), below = true, look = false;
 let slow = false, night = false, weights = false;
 let lastT = performance.now(), cpu = 0, frames = 0;
-/** @type {any} */ (window).figurePage = { walker: w, motion };
+// Frame strips: figurePage.hold(true) keeps the walker going straight at the pace with time held;
+// figurePage.step(n, dt) then moves it on n frames of dt seconds.
+let held = false, toStep = 0, stepDt = 1 / 60;
+/** @type {any} */ (window).figurePage = {
+  walker: w, motion,
+  hold(/** @type {boolean} */ on) { held = on; if (on) { w.goal = Math.sign(w.goal - w.x || 1) * 1e4; w.yaw = w.goal > 0 ? Math.PI / 2 : -Math.PI / 2; w.speed = pace; w.wait = 0; } else w.goal = Math.sign(w.goal) * 1.8; },
+  step(n = 1, d = 1 / 60) { toStep += n; stepDt = d; },
+};
 
 function stepWalker(/** @type {number} */ dt) {
   const moving = pace > 0 && posture === 'stand' && w.wait <= 0;
@@ -77,8 +86,9 @@ function frame() {
   const now = performance.now();
   const realDt = Math.min(0.1, (now - lastT) / 1000);
   lastT = now;
-  const dt = slow ? realDt * 0.25 : realDt;
-  const moving = stepWalker(dt);
+  let dt = slow ? realDt * 0.25 : realDt;
+  if (held) { dt = toStep > 0 ? stepDt : 0; if (toStep > 0) toStep--; w.speed = pace; }
+  const moving = held ? (w.x += Math.sign(w.goal - w.x) * pace * dt, true) : stepWalker(dt);
   const t0 = performance.now();
   const r = motion.update(dt, {
     x: w.x, z: w.z, y: ground(w.x, w.z), yaw: w.yaw, speed: w.speed, moving,
