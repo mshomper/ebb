@@ -13,6 +13,7 @@
 
 import { CELL, WORLD_CELLS as N, WORLD_ORIGIN, TILE_CELLS as T, dequantize, quantize } from '../terrain/grid.js';
 import { tilesOf, copyTiles } from '../terrain/undo.js';
+import { padLevel } from '../terrain/landform.js';
 
 /** The numbers CP-07 and CP-08 judge a spot by (docs/future/13 section 3.8). */
 export const PAD_RULES = Object.freeze({ maxRangeM: 0.6, shapedM: 0.3, shapedShare: 0.1, spreadM: 0.3, levelSlackM: 0.05, ringStepM: 1, ringsM: 30, sampleM: 0.5 });
@@ -103,11 +104,12 @@ export function choosePadSpot(g, pad, kingTideMarginM) {
 }
 
 /**
- * The tiles with the pad laid in: level inside r, easing back to the ground over the blend, grass
+ * The tiles with the pad laid in: level inside r but for its slight fall toward the sea, easing back to the ground over the blend, grass
  * and soil only on the pad. Cells under water are left as they are. Returns the changed tiles for
  * terrain.applyTiles; the mirror itself is not changed.
  * @param {{ heightQ: Uint16Array, material: Uint8Array }} mirror
- * @param {{ x: number, z: number, heightM: number }} at @param {{ r: number, blend: number }} pad
+ * @param {{ x: number, z: number, heightM: number }} at
+ * @param {{ r: number, blend: number, fx?: number, fz?: number, fall?: number }} pad  its frame and fall: it falls toward the sea as a new island's does
  * @param {(x: number, z: number) => boolean} wet
  */
 export function padTiles(mirror, at, pad, wet) {
@@ -115,6 +117,7 @@ export function padTiles(mirror, at, pad, wet) {
   const i0 = Math.max(0, Math.floor((at.x - reach - WORLD_ORIGIN) / CELL)), i1 = Math.min(N - 1, Math.ceil((at.x + reach - WORLD_ORIGIN) / CELL));
   const j0 = Math.max(0, Math.floor((at.z - reach - WORLD_ORIGIN) / CELL)), j1 = Math.min(N - 1, Math.ceil((at.z + reach - WORLD_ORIGIN) / CELL));
   const tiles = copyTiles(/** @type {any} */ (mirror), tilesOf({ x: i0, y: j0, w: i1 - i0 + 1, h: j1 - j0 + 1 }));
+  const level = { x: at.x, z: at.z, r: pad.r, h: at.heightM, fx: pad.fx ?? 1, fz: pad.fz ?? 0, fall: pad.fall ?? 0 };
   for (const t of tiles) {
     for (let j = 0; j < T; j++) for (let i = 0; i < T; i++) {
       const ci = t.tx * T + i, cj = t.tz * T + j;
@@ -123,7 +126,7 @@ export function padTiles(mirror, at, pad, wet) {
       if (d >= reach || wet(x, z)) continue;
       const u = Math.min(1, Math.max(0, (d - pad.r) / pad.blend)), w = 1 - u * u * (3 - 2 * u);
       const k = j * T + i, h = dequantize(t.h[k]);
-      t.h[k] = quantize(h + (at.heightM - h) * w);
+      t.h[k] = quantize(h + (padLevel(level, x, z) - h) * w);
       // Grass and soil only on the pad: sand and rock fold into grass as the pad takes over.
       const m = t.m, o = k * 4, moved = Math.round((m[o + 1] + m[o + 2]) * w);
       const sand = Math.round(m[o + 1] * w), rock = Math.min(m[o + 2], moved - sand);

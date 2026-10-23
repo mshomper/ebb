@@ -240,6 +240,13 @@ fn campWear(xz: vec2f) -> f32 {
   return clamp(td.camp0.w * (1.0 - t * t * (3.0 - 2.0 * t)) * patchy, 0.0, 1.0);
 }
 
+// How much of the camp pad this point is: 1 on it, easing to 0 over camp1.x past its edge (none
+// with no pad). The pad sheds water (F1): in rain it goes damp and dark, never a mirror.
+fn campPadMask(xz: vec2f) -> f32 {
+  if (td.camp0.z <= 0.0) { return 0.0; }
+  return 1.0 - smoothstep(td.camp0.z, td.camp0.z + max(td.camp1.x, 1e-3), distance(xz, td.camp0.xy));
+}
+
 @fragment
 fn fsLand(in: VsOut) -> FsOut {
   let xz = in.world.xz;
@@ -493,7 +500,9 @@ fn fsLand(in: VsOut) -> FsOut {
   let standHeight = mix(gd.height, undulation, td.puddle.w);
   // Turf soaks rain up: on grass the level rises much less, so only the deepest meadow dips flood.
   let level = wetTex.g * td.puddle2.z * (1.0 - td.turf * grassy);
-  let standing = (1.0 - smoothstep(level - 0.035, level, standHeight)) * step(0.01, level) * flatGround * (1.0 - sub);
+  // No puddle on the camp pad: it is level ground of packed earth, so the flat-ground rule would
+  // spread a sheet of water across it (F1); it sheds rain toward the sea instead.
+  let standing = (1.0 - smoothstep(level - 0.035, level, standHeight)) * step(0.01, level) * flatGround * (1.0 - sub) * (1.0 - campPadMask(xz));
   albedo *= mix(1.0, td.puddle2.y, standing);
   roughness = mix(roughness, td.puddle2.x, standing);
   // Puddle surface: flat water, rung by raindrops where a pixel can hold the rings.
