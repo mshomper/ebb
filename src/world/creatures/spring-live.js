@@ -21,6 +21,8 @@ import { MAX_BONES, bodyFor } from './bodies.js';
 import { poseSkeleton, axisAngle } from './pose.js';
 import { frogMoves, legsOf } from './motion.js';
 import { frogletHop, landSquash } from './froglets.js';
+import { toadMoves, toadPhase } from './toad-walk.js';
+import { FROG_BONES } from './rigs/frog.js';
 import { toadAt, initialSpring, nearestPond, clumpBody, tadpoleBody } from './spring.js';
 import { createSunFinds } from './sun-finds.js';
 
@@ -44,11 +46,15 @@ export function createSpring(opts) {
   const R = opts.recipes.frogspawn, T = opts.recipes.toad, frog = opts.recipes.frog;
   const B = R.body, TP = B.tadpole, FL = B.froglet;
   const wetPass = createCreaturePass({ recipe: { body: { wetSpecular: B.wetSpecular, contactShadow: 0, scaleReal: B.scaleReal } }, name: 'spring-water' });
-  const landPass = createCreaturePass({ recipe: { body: { wetSpecular: T.body.wetSpecular, contactShadow: T.body.contactShadow, scaleReal: T.body.scaleReal } }, name: 'spring-land' });
+  // Froglets and the toad both wear the frog's rig: their eyes are its eye bones (a wet glint).
+  const landPass = createCreaturePass({ recipe: { body: { wetSpecular: T.body.wetSpecular, contactShadow: T.body.contactShadow, scaleReal: T.body.scaleReal, eyeGlint: frog.body.eyeGlint } }, name: 'spring-land',
+    eyeBones: ['eye.l', 'eye.r'].map((n) => FROG_BONES.findIndex((b) => b.name === n)) });
   /** @type {Record<string, any[] | null>} skeletons, once baked */
-  const rigs = { tadpole: null, froglet: null };
+  const rigs = { tadpole: null, froglet: null, toad: null };
   // A froglet's hind legs, for the frog's hop by IK (motion.js), read from the frog's own body.
   /** @type {ReturnType<typeof legsOf> | null} */ let frogLegs = null;
+  // The toad's, the same way (it wears the frog's rig, toad-walk.js).
+  /** @type {ReturnType<typeof legsOf> | null} */ let toadLegs = null;
   // Game hours a real second (1x: one an hour a minute), and the last draw's time.
   let rate = 1 / 60;
   /** @type {{ t: number, h: number } | null} */ let lastDraw = null;
@@ -56,10 +62,11 @@ export function createSpring(opts) {
     run(BAKE_JOB, args, { lane: 'background' })
       .then((r) => {
         if (rig) rigs[rig] = r.bones;
-        if (rig === 'froglet') {
-          const prims = bodyFor('frog', frog.body, 0).prims;
+        if (rig === 'froglet' || rig === 'toad') {
+          const prims = bodyFor(rig === 'toad' ? 'toad' : 'frog', rig === 'toad' ? T.body : frog.body, 0).prims;
           const tip = (/** @type {string} */ side) => prims.find((/** @type {any} */ q) => q.bone === `foot.${side}`).b;
-          frogLegs = legsOf(r.bones, { l: tip('l'), r: tip('r') });
+          const legs = legsOf(r.bones, { l: tip('l'), r: tip('r') });
+          if (rig === 'toad') toadLegs = legs; else frogLegs = legs;
         }
         pass.setMesh(key, r);
       })
@@ -68,7 +75,7 @@ export function createSpring(opts) {
   bake(wetPass, 'tadpole', { id: 'tadpole', body: tadpoleBody(R), variant: 0, cellM: 0.0009 }, 'tadpole');
   const frogLods = frog.bake.lods ?? [{ cellM: frog.bake.cellM }];
   bake(landPass, 'froglet', { id: 'frog', body: frog.body, variant: 0, cellM: frogLods[frogLods.length - 1].cellM }, 'froglet');
-  bake(landPass, 'toad', { id: 'toad', body: T.body, variant: 0, cellM: T.bake.cellM }, null);
+  bake(landPass, 'toad', { id: 'toad', body: T.body, variant: 0, cellM: T.bake.cellM }, 'toad');
 
   const seed = subSeed(world.env.seed, 'spring-live');
   /** Taps: what is shown now. @type {{ sp: string, x: number, z: number, item: string | null, reach: number }[]} */ let shown = [];
@@ -219,11 +226,16 @@ export function createSpring(opts) {
     }
     const toad = toadAt(S?.toad ?? null, h);
     if (toad && landPass.hasMesh('toad')) {
-      const C = T.crawl;
-      const step = (t / C.stepS) % 1;
-      const y = terrain.sampleHeight(toad.x, toad.z) + (toad.t < 1 ? Math.max(0, Math.sin(step * Math.PI * 2)) * C.liftM : 0);
-      const yaw = toad.yaw + (toad.t < 1 ? Math.sin(step * Math.PI * 2) * C.swayRad : 0);
-      land.push({ x: toad.x, y, z: toad.z, yaw, size: T.body.displayScale, mesh: 'toad' });
+      // Its walk on the frog's rig (toad-walk.js): the stride follows the ground covered, so the feet
+      // stay put; at the water's edge it slows to a sit, breathing.
+      /** @type {Float32Array | undefined} */ let bones;
+      if (rigs.toad && toadLegs && S?.toad) {
+        const w = S.toad, walked = toad.t * Math.hypot(w.toX - w.fromX, w.toZ - w.fromZ);
+        bones = new Float32Array(MAX_BONES * 16);
+        const walking = Math.min(1, Math.max(0, (1 - toad.t) * 20));
+        poseSkeleton(rigs.toad, toadMoves(rigs.toad, toadLegs, { id: w.seed ?? 1, ph: toadPhase(walked, T.motion, T.body.displayScale), walking }, t, T.motion), bones, 0);
+      }
+      land.push({ x: toad.x, y: terrain.sampleHeight(toad.x, toad.z), z: toad.z, yaw: toad.yaw, size: T.body.displayScale, mesh: 'toad', bones });
       taps.push({ sp: 'toads', x: toad.x, z: toad.z, item: null, reach: T.find.tapM });
     }
     wetPass.setBeings(wet);

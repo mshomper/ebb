@@ -4,7 +4,7 @@
   "key": "toads",
   "name": "Common toad",
   "version": 1,
-  "note": "The common toad's night walk (doc 13, The year, season by season; spring marker; docs/future/11 finds). A find: no needs, no gift, nothing kept but the night's walk in state.spring.toad. WALK (src/world/creatures/spring.js, hourly, deterministic): on spring days walk.days, at walk.startH o'clock (dusk, so it can still be seen: Matt's young testers find things by their light), with walk.chance a night (walk.rainChance when it rained that day), a toad sets out from one of the stones or logs you set (state.basks) whose nearest still fresh water (at least walk.pondCm deep, within walk.reachM) is at least walk.minWalkM away; it prefers one whose damp underneath (src/world/ecology/shelter.js, 0..1) is walk.dampFrom or more, when there is one (L3a). It crawls straight to the water's edge at walk.mPerH meters a game hour (at most walk.mostH hours), sits there walk.sitH hours, then slips in and is gone. LOOK (src/world/creatures/spring-live.js): a blended-SDF toad in real meters (about 10 cm), drawn at displayScale 2.5 (Matt 2026-10-21 rescale): squat, broad, warty (blotch), with copper eyes; a slow crawl, a step every crawl.stepS seconds with a low sway, in real time along the walk's line. find: tap within tapM (plus tapPerM per meter away).",
+  "note": "The common toad's night walk (doc 13, The year, season by season; spring marker; docs/future/11 finds). A find: no needs, no gift, nothing kept but the night's walk in state.spring.toad. WALK (src/world/creatures/spring.js, hourly, deterministic): on spring days walk.days, at walk.startH o'clock (dusk, so it can still be seen: Matt's young testers find things by their light), with walk.chance a night (walk.rainChance when it rained that day), a toad sets out from one of the stones or logs you set (state.basks) whose nearest still fresh water (at least walk.pondCm deep, within walk.reachM) is at least walk.minWalkM away; it prefers one whose damp underneath (src/world/ecology/shelter.js, 0..1) is walk.dampFrom or more, when there is one (L3a). It crawls straight to the water's edge at walk.mPerH meters a game hour (at most walk.mostH hours), sits there walk.sitH hours, then slips in and is gone. LOOK (src/world/creatures/spring-live.js): a blended-SDF toad in real meters (about 10 cm), drawn at displayScale 2.5 (Matt 2026-10-21 rescale): squat, broad, warty (blotch), with copper eyes under heavy brows and parotoid glands behind them. RIG (m2-rigs-spring): it wears the frog's rig (rigs/frog.js; its pieces carry the frog's bone names) with its own proportions, and walks (src/world/creatures/toad-walk.js, motion.walk): diagonal pairs of legs, each hind foot planted by IK while the body passes over it, then lifted (footLiftM) and swung forward; the front legs swing (armSwingDeg) and lift (armLiftDeg); the body low (crouchM), rolling (rollDeg) and bobbing (bobM), the head swaying against it (headSwayDeg); the stride (strideM) follows the ground covered, so the feet never slide. Sitting at the water it breathes and blinks (motion.breath, motion.blink). crawl is no longer used. find: tap within tapM (plus tapPerM per meter away).",
   "walk": { "days": [3, 12], "startH": 19, "chance": 0.4, "rainChance": 0.85, "pondCm": 8, "reachM": 20, "minWalkM": 2,
             "mPerH": 4, "mostH": 5, "sitH": 2, "dampFrom": 0.6 },
   "body": {
@@ -13,16 +13,27 @@
     "contactShadow": 0.55,
     "wetSpecular": { "roughness": 0.6, "strength": 0.3 },
     "prims": [
-      { "type": "ellipsoid", "bone": "root", "c": [0, 0.021, -0.004], "r": [0.03, 0.019, 0.04], "k": 0, "region": "back" },
-      { "type": "ellipsoid", "bone": "root", "c": [0, 0.022, 0.033], "r": [0.022, 0.014, 0.018], "k": 0.012, "region": "back" },
-      { "type": "sphere", "bone": "root", "c": [0.0135, 0.033, 0.038], "r": 0.0062, "k": 0.004, "region": "eye" },
-      { "type": "sphere", "bone": "root", "c": [-0.0135, 0.033, 0.038], "r": 0.0062, "k": 0.004, "region": "eye" },
-      { "type": "ellipsoid", "bone": "root", "c": [0.02, 0.031, 0.02], "r": [0.006, 0.004, 0.011], "k": 0.006, "region": "gland" },
-      { "type": "ellipsoid", "bone": "root", "c": [-0.02, 0.031, 0.02], "r": [0.006, 0.004, 0.011], "k": 0.006, "region": "gland" },
-      { "type": "capsule", "bone": "root", "a": [0.022, 0.012, 0.028], "b": [0.03, 0.003, 0.04], "r": [0.0055, 0.004], "k": 0.006, "region": "back" },
-      { "type": "capsule", "bone": "root", "a": [-0.022, 0.012, 0.028], "b": [-0.03, 0.003, 0.04], "r": [0.0055, 0.004], "k": 0.006, "region": "back" },
-      { "type": "capsule", "bone": "root", "a": [0.026, 0.012, -0.022], "b": [0.036, 0.004, -0.004], "r": [0.008, 0.005], "k": 0.008, "region": "back" },
-      { "type": "capsule", "bone": "root", "a": [-0.026, 0.012, -0.022], "b": [-0.036, 0.004, -0.004], "r": [0.008, 0.005], "k": 0.008, "region": "back" }
+      {"type": "ellipsoid", "bone": "torso", "c": [0, 0.0195, -0.004], "r": [0.0305, 0.018, 0.037], "rot": [4, 0, 0], "k": 0, "region": "back"},
+      {"type": "roundCone", "bone": "head", "a": [0, 0.0235, 0.024], "b": [0, 0.0215, 0.045], "ra": 0.0165, "rb": 0.0075, "scale": [1.42, 0.7, 1], "k": 0.012, "region": "back"},
+      {"type": "sphere", "bone": "eye.l", "c": [0.0132, 0.0318, 0.0335], "r": 0.006, "k": 0.0025, "region": "eye"},
+      {"type": "ellipsoid", "bone": "head", "part": "lid.l", "c": [0.0135, 0.0338, 0.0308], "r": [0.0066, 0.0052, 0.0062], "rot": [-10, 0, 0], "k": 0.003, "stiff": true, "region": "back"},
+      {"type": "ellipsoid", "bone": "head", "part": "gland.l", "c": [0.0185, 0.0285, 0.0205], "r": [0.0062, 0.0042, 0.0115], "rot": [0, -12, 0], "k": 0.006, "region": "gland"},
+      {"type": "sphere", "bone": "eye.r", "c": [-0.0132, 0.0318, 0.0335], "r": 0.006, "k": 0.0025, "region": "eye"},
+      {"type": "ellipsoid", "bone": "head", "part": "lid.r", "c": [-0.0135, 0.0338, 0.0308], "r": [0.0066, 0.0052, 0.0062], "rot": [-10, 0, 0], "k": 0.003, "stiff": true, "region": "back"},
+      {"type": "ellipsoid", "bone": "head", "part": "gland.r", "c": [-0.0185, 0.0285, 0.0205], "r": [0.0062, 0.0042, 0.0115], "rot": [0, 12, 0], "k": 0.006, "region": "gland"},
+      {"type": "ellipsoid", "bone": "throat", "c": [0, 0.0125, 0.032], "r": [0.0115, 0.0062, 0.0095], "rot": [12, 0, 0], "k": 0.004, "region": "belly"},
+      {"type": "capsule", "bone": "thigh.l", "a": [0.016, 0.009, -0.022], "b": [0.03, 0.011, -0.006], "r": [0.0078, 0.006], "k": 0.0025, "region": "back"},
+      {"type": "capsule", "bone": "shank.l", "a": [0.03, 0.011, -0.006], "b": [0.031, 0.005, -0.025], "r": [0.0056, 0.0042], "k": 0.0016, "region": "back"},
+      {"type": "capsule", "bone": "foot.l", "a": [0.031, 0.005, -0.025], "b": [0.04, 0.0019, -0.008], "r": [0.0034, 0.0024], "k": 0.0014, "region": "back"},
+      {"type": "capsule", "bone": "arm.l", "a": [0.016, 0.0145, 0.016], "b": [0.0235, 0.0085, 0.022], "r": [0.0043, 0.0036], "k": 0.0042, "region": "back"},
+      {"type": "capsule", "bone": "forearm.l", "a": [0.0235, 0.0085, 0.022], "b": [0.0255, 0.0022, 0.031], "r": [0.0036, 0.003], "k": 0.0016, "region": "back"},
+      {"type": "ellipsoid", "bone": "forearm.l", "part": "hand.l", "c": [0.025, 0.0018, 0.0345], "r": [0.0042, 0.0016, 0.0038], "rot": [0, 15, 0], "k": 0.0012, "region": "back"},
+      {"type": "capsule", "bone": "thigh.r", "a": [-0.016, 0.009, -0.022], "b": [-0.03, 0.011, -0.006], "r": [0.0078, 0.006], "k": 0.0025, "region": "back"},
+      {"type": "capsule", "bone": "shank.r", "a": [-0.03, 0.011, -0.006], "b": [-0.031, 0.005, -0.025], "r": [0.0056, 0.0042], "k": 0.0016, "region": "back"},
+      {"type": "capsule", "bone": "foot.r", "a": [-0.031, 0.005, -0.025], "b": [-0.04, 0.0019, -0.008], "r": [0.0034, 0.0024], "k": 0.0014, "region": "back"},
+      {"type": "capsule", "bone": "arm.r", "a": [-0.016, 0.0145, 0.016], "b": [-0.0235, 0.0085, 0.022], "r": [0.0043, 0.0036], "k": 0.0042, "region": "back"},
+      {"type": "capsule", "bone": "forearm.r", "a": [-0.0235, 0.0085, 0.022], "b": [-0.0255, 0.0022, 0.031], "r": [0.0036, 0.003], "k": 0.0016, "region": "back"},
+      {"type": "ellipsoid", "bone": "forearm.r", "part": "hand.r", "c": [-0.025, 0.0018, 0.0345], "r": [0.0042, 0.0016, 0.0038], "rot": [0, -15, 0], "k": 0.0012, "region": "back"}
     ],
     "albedo": { "back": [0.14, 0.095, 0.06], "belly": [0.42, 0.38, 0.3], "blotch": [0.07, 0.05, 0.035], "gland": [0.17, 0.11, 0.065],
                 "eye": [0.24, 0.12, 0.03], "eyeRing": [0.3, 0.16, 0.05] },
@@ -32,5 +43,11 @@
   },
   "bake": { "cellM": 0.0016 },
   "crawl": { "stepS": 1.6, "swayRad": 0.08, "liftM": 0.004 },
+  "motion": {
+    "breath": { "hz": 0.7, "sac": 0.1, "torso": 0.01 },
+    "blink": { "everyS": [4, 11], "s": 0.3, "squash": 0.75, "retractM": 0.004 },
+    "walk": { "strideM": 0.034, "stance": 0.62, "footLiftM": 0.006, "armSwingDeg": 24, "armLiftDeg": 22, "rollDeg": 4, "headSwayDeg": 5,
+              "bobM": 0.0012, "crouchM": 0.002 }
+  },
   "find": { "tapM": 0.3, "tapPerM": 0.03 }
 }

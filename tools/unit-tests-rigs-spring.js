@@ -1,11 +1,12 @@
 // @ts-check
 // Spring creatures rigged (m2-rigs-spring; the creature rigging rule), for tools/unit-tests.html:
-// froglets hop on the frog's rig and land with its squash.
+// froglets hop on the frog's rig and land with its squash; the toad walks on the same rig.
 
 import { frogletHop, landSquash } from '../src/world/creatures/froglets.js';
 import { frogMoves, legsOf } from '../src/world/creatures/motion.js';
 import { skeletonOf, bodyFor, MAX_BONES } from '../src/world/creatures/bodies.js';
 import { poseSkeleton } from '../src/world/creatures/pose.js';
+import { toadMoves } from '../src/world/creatures/toad-walk.js';
 
 const G = 'spring rigs';
 
@@ -33,6 +34,27 @@ export function addRigsSpringTests(test, assert, eq) {
     for (let s = 0; s < 0.2; s += 0.005) most = Math.max(most, landSquash(s, S));
     assert(most > 0.05 && most < 0.5, `squashes (${most.toFixed(3)})`);
     assert(Math.abs(landSquash(1, S)) < 0.01, 'still within a second');
+  });
+
+  test(G, 'the toad wears the frog rig and walks with its hind feet planted on the ground', async () => {
+    const T = await load('toad');
+    const prims = bodyFor('toad', T.body, 0).prims;
+    const sk = skeletonOf('toad', prims);
+    eq(sk.length, 15, 'the frog rig');
+    const tip = (/** @type {string} */ s) => prims.find((/** @type {any} */ q) => q.bone === `foot.${s}`).b;
+    const legs = legsOf(sk, { l: tip('l'), r: tip('r') });
+    const out = new Float32Array(MAX_BONES * 16);
+    const L = legs[1];   // the right hind leg plants first (phase 0)
+    /** Where the right ankle is on the ground: body space plus how far the body has walked. @param {number} ph */
+    const ankle = (ph) => {
+      poseSkeleton(sk, toadMoves(sk, legs, { id: 1, ph, walking: 1 }, ph, T.motion), out, 0);
+      const m = out.subarray(L.shank * 16, L.shank * 16 + 16), A = L.A;
+      assert([...out.subarray(0, sk.length * 16)].every(Number.isFinite), 'finite');
+      return { y: m[1] * A[0] + m[5] * A[1] + m[9] * A[2] + m[13], z: m[2] * A[0] + m[6] * A[1] + m[10] * A[2] + m[14] + ph * T.motion.walk.strideM };
+    };
+    const a = ankle(0.1), b = ankle(0.45);
+    assert(Math.abs(a.z - b.z) < 0.006, `planted while the body passes (${(a.z - b.z).toFixed(4)} m)`);
+    assert(ankle(0.8).y > a.y + 0.002, 'lifted as it steps');
   });
 
   test(G, 'a froglet poses through a whole hop with finite bones', async () => {

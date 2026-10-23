@@ -1,7 +1,7 @@
 // @ts-check
 // ebb spring rigs lab (the creature rigging rule, m2-rigs-spring): the spring creatures at their
 // drawn size, one looping view per motion, posed by the game's own code: froglets on the frog's rig
-// (froglets.js, motion.js frogMoves). Click a view to see it big. `?strip=<creature>` lays out one
+// (froglets.js, motion.js frogMoves), and the toad on the same rig with its own proportions\n// (toad-walk.js). Click a view to see it big. `?strip=<creature>` lays out one
 // motion as a row of still frames instead (the frame strips Matt approves before a commit).
 
 import { run } from '../src/core/workers.js';
@@ -9,12 +9,13 @@ import { poseSkeleton, axisAngle } from '../src/world/creatures/pose.js';
 import { MAX_BONES, bodyFor } from '../src/world/creatures/bodies.js';
 import { frogMoves, legsOf } from '../src/world/creatures/motion.js';
 import { frogletHop, landSquash } from '../src/world/creatures/froglets.js';
+import { toadMoves, toadPhase } from '../src/world/creatures/toad-walk.js';
 import { createStage, VIEWS } from './turtle-lab-stage.js';
 
 const $ = (/** @type {string} */ id) => /** @type {HTMLElement} */ (document.getElementById(id));
 const BAKE = { module: './world/creatures/bodies.js', fn: 'bakeVariant' };
 const load = (/** @type {string} */ id) => fetch(`../recipes/species/${id}.json`).then((r) => r.json());
-const [FROG, SPAWN] = await Promise.all([load('frog'), load('frogspawn')]);
+const [FROG, SPAWN, TOAD] = await Promise.all([load('frog'), load('frogspawn'), load('toad')]);
 const FL = SPAWN.body.froglet;
 const params = new URLSearchParams(location.search);
 
@@ -22,12 +23,14 @@ const params = new URLSearchParams(location.search);
  * A pose this instant: the bone matrices, where the body is (x, y, z, yaw) and what it is doing.
  * @typedef {{ bones: Float32Array, place: number[], note: string }} Frame
  * @typedef {{ id: string, creature: string, title: string, mesh: string, scale: number, target: number[], dist: number,
- *   loopS: number, at: (t: number) => Frame | null, strip?: number[] }} Clip
+ *   loopS: number, at: (t: number) => Frame | null, strip?: number[], stripDist?: number }} Clip
+ *   stripDist: the camera's distance in a strip (half dist when left out)
  */
 
 // --- the meshes and rigs, baked by the game's own worker job ---
 /** @type {Record<string, any>} */ const rigs = {};
 /** @type {ReturnType<typeof legsOf> | null} */ let frogLegs = null;
+/** @type {ReturnType<typeof legsOf> | null} */ let toadLegs = null;
 
 // --- froglets ---
 const FROGLET_SIZE = FL.frogletScale * FL.displayScale;
@@ -47,6 +50,25 @@ function froglet(t, id) {
   return { bones, place: [0, y, along, 0], note };
 }
 
+// --- the toad ---
+const TS = TOAD.body.displayScale;
+// Its walking pace in the game: walk.mPerH meters a game hour, an hour a real minute at 1x.
+const TOAD_MPS = TOAD.walk.mPerH / 60;
+const TOAD_STRIDE_S = (TOAD.motion.walk.strideM * TS) / TOAD_MPS;
+/** A toad t seconds into its walk (or sitting). @param {number} t @param {boolean} walking */
+function toad(t, walking) {
+  if (!rigs.toad || !toadLegs) return null;
+  const walked = walking ? t * TOAD_MPS : 0;
+  const bones = new Float32Array(MAX_BONES * 16);
+  const ph = toadPhase(walked, TOAD.motion, TS);
+  poseSkeleton(rigs.toad, toadMoves(rigs.toad, toadLegs, { id: 2, ph, walking: walking ? 1 : 0 }, t, TOAD.motion), bones, 0);
+  const s = ph % 1;
+  const note = !walking ? 'sitting at the water: breathing, throat pulsing, blinking'
+    : s < 0.5 ? 'front left and hind right push back; the others step forward'
+      : 'front right and hind left push back; the others step forward';
+  return { bones, place: [0, 0, (walked % (TOAD_MPS * TOAD_STRIDE_S * 3)) - 0.1, 0], note };
+}
+
 /** @type {Clip[]} */
 const CLIPS = [
   { id: 'froglet-hop', creature: 'froglet', title: 'Froglet: hopping away', mesh: 'frog', scale: FROGLET_SIZE, target: [0, 0.02, 0], dist: 0.42, loopS: HOP_EVERY_S * 4,
@@ -58,6 +80,12 @@ const CLIPS = [
     at: (t) => { const f = froglet(HOP_EVERY_S * 0.9, 3); if (!f) return null; const bones = new Float32Array(MAX_BONES * 16);
       poseSkeleton(rigs.frog, frogMoves(rigs.frog, /** @type {any} */ (frogLegs), { id: 3, hopT: -1, kick: -1, sq: 0, sac: 0, swimming: false }, t, FROG.motion), bones, 0);
       return { bones, place: [0, 0, 0, 0], note: 'throat pulsing, body breathing, a blink every few seconds' }; } },
+  { id: 'toad-walk', creature: 'toad', title: 'Toad: its slow walk', mesh: 'toad', scale: TS, target: [0, 0.04, 0.05], dist: 0.75, loopS: TOAD_STRIDE_S * 3,
+    at: (t) => toad(t, true),
+    // A strip through one whole stride, both diagonal pairs.
+    strip: Array.from({ length: 9 }, (_, i) => TOAD_STRIDE_S * (1 + i / 9)), stripDist: 0.5 },
+  { id: 'toad-sit', creature: 'toad', title: 'Toad: sitting at the water', mesh: 'toad', scale: TS, target: [0, 0.04, 0.04], dist: 0.5, loopS: 12,
+    at: (t) => toad(t, false) },
 ];
 
 // --- the page ---
@@ -86,6 +114,12 @@ const stage = made.stage;
 for (const p of panels) p.view = stage.view(p.canvas);
 $('status').textContent = 'Baking (a few seconds)';
 const frogLods = FROG.bake.lods ?? [{ cellM: FROG.bake.cellM }];
+run(BAKE, { id: 'toad', body: TOAD.body, variant: 0, cellM: TOAD.bake.cellM }).then((r) => {
+  stage.setMesh(r, 'toad'); rigs.toad = r.bones;
+  const prims = bodyFor('toad', TOAD.body, 0).prims;
+  const tip = (/** @type {string} */ side) => prims.find((/** @type {any} */ q) => q.bone === `foot.${side}`).b;
+  toadLegs = legsOf(r.bones, { l: tip('l'), r: tip('r') });
+});
 run(BAKE, { id: 'frog', body: FROG.body, variant: 0, cellM: frogLods[0].cellM }).then((r) => {
   stage.setMesh(r, 'frog'); rigs.frog = r.bones;
   const prims = bodyFor('frog', FROG.body, 0).prims;
@@ -128,7 +162,7 @@ function frame() {
     if (p.note.textContent !== fr.note) p.note.textContent = fr.note;
     // In a strip the camera follows the body along, so every frame is framed the same.
     const target = strip ? [fr.place[0] + c.target[0], c.target[1], fr.place[2] + c.target[2]] : c.target;
-    p.view.draw({ cam: { yaw: cam.yaw, pitch: cam.pitch, dist: (/** @type {any} */ (goal).close ? 0.5 : 1) * (strip ? 0.5 : 1) * c.dist, target }, place: fr.place, scale: c.scale, dry: 0,
+    p.view.draw({ cam: { yaw: cam.yaw, pitch: cam.pitch, dist: (/** @type {any} */ (goal).close ? 0.5 : 1) * (strip ? c.stripDist ?? c.dist * 0.5 : c.dist), target }, place: fr.place, scale: c.scale, dry: 0,
       water: null, floorY: 0, ledge: null, ring: [0, 0, 0, 0], bones: fr.bones, look: [1, 1, 1], baked: true, mesh: c.mesh });
   }
   requestAnimationFrame(frame);
