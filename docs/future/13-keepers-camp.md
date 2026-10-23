@@ -471,6 +471,56 @@ The starter island grows a little and gets a more varied coast, now that phones 
 | Camp | The pad keeps its rules (3.1) and is placed by the recipe on the plateau's edge above the beach; `tools/intro-lab.html` shows the pad, the coast lobes and the boat line over 60 seeds so Matt can confirm. |
 | Performance | Re-run the medium-tier laptop budget (doc 19) and the catch-up timing (doc 02) with 16 chunks instead of 9. |
 | Acceptance | Two new islands on different seeds have clearly different coasts; both have a sand beach under the camp and a boat landing; an old save loads with exactly its old shape plus the stamped pad. |
+
+### 3.12 Stations, stores and the three pots (Matt, October 23, 2026)
+
+Decided after the Phase 1 playtest. Where it differs from sections 3.2, 6.4, 6.5, 7.1 or 9.3, this section wins. The unlock rule, the no-numbers rule and the overnight rules are unchanged.
+
+**The camp in places, not scattered slots.** The pad keeps its radius (4 m; it may grow slightly only if the layout proves tight). Its slots are grouped into places with one job each:
+
+| Place | Job | Holds |
+|---|---|---|
+| The fire (heart of the camp) | Cooking, brewing tea, firing clay overnight, leaving dyes overnight, charcoal and ash at dawn | Ring, hearth stones, the three pots, cup, bowls |
+| Workbench | Making things and shaping clay | Made by the player: a flat stone slab on two stones, later a driftwood plank. Tools hang on it when not carried |
+| Apothecary bench | Preparing and keeping plants: drying, grinding, mixing, storing | Made by the player. Mortar and pestle stone, the drying rack beside or above it, the sealed jar, saved seeds |
+| Stores (land side of the pad) | Keeping what is gathered | Wood store, stone pile, clay slab, heaps |
+| Rest (back of the pad) | Resting and gifts | Tent with the lantern on its hook, clay lamp, gift stone, log seat facing the fire and the sea, bird bath at the edge |
+
+The two benches face the fire, so things move naturally between them: shape a pot at the workbench and fire it in the coals; grind dye stuff at the apothecary and leave it overnight at the fire.
+
+**Stores are places from the first frame.** The wood store (two forked stakes and a low crossbar over flat stones), the stone pile (a shallow scrape ringed by edging stones) and the clay slab are drawn empty and waiting, so the player can see where piles go. Each has a card even when empty ("Wood store. Empty."), with Set down while the pack holds that kind. The soft glow still lights the matching store while the pack holds it and the walker is near camp. First-evening hint, after the ring is laid while the pack still holds twigs or pebbles: *"Spare twigs keep dry in the wood store."* (Phase 1 polish.)
+
+**The benches are made, not given.** The workbench is the first make after the first evening (flat stones; Phase 2). Rush cord and the shovel are made on it. The apothecary bench comes with the herbs (sticks and rush cord), with the drying rack and the mortar as its parts.
+
+**Three clay pots, each with its own temper.** Each is shaped at the workbench from clay plus a different temper, fired overnight at the fire, and drawn so the three can be told apart on the hearth:
+
+| Pot | Clay plus | Use | Look |
+|---|---|---|---|
+| Cooking pot | Sand | Treats and food | Wide, pale and plain |
+| Tea pot | Crushed shell (shells ground in the mortar) | Teas only; replaces the single brewing pot of 7.1 | Small, lidded, with a spout, flecked with shell |
+| Dye pot | Crushed charcoal or ash from the fire | Dyes only (replaces M-40's clay-and-sand dye pot) | Deep, dark and stained |
+
+Tempers are what potters mix into clay for heat and strength. The tea pot is the only pot that brews; the cooking pot never brews tea, and the dye pot is never used for food or tea.
+
+**Dyes.** Dye stuff (bedstraw root, woad and ash, and the rest) is prepared at the apothecary bench by grinding. The dip is left overnight in the dye pot at the fire (9.3's overnight rule).
+
+**One combining pattern at every station.**
+1. Click a station. Its card opens as a wider workspace: the station's surface with 2 or 3 part spots on top, and the pouches along the bottom, drawn with the gather icon family (fix log F7).
+2. Click a pouch, and the walker lays one handful on the surface. Click a laid part to put it back.
+3. Combining is free. If the station knows a make that uses what is laid, the missing parts show as pencil outlines (TR-16). There is never a recipe list.
+4. The station's single action lights when the parts are complete: Make at the workbench; Brew, Cook or Fire at the fire; Dry, Grind or Mix at the apothecary. It is drawn as an icon.
+5. Nothing is used until the action is pressed. Walking away puts every part back in its pouch.
+6. Parts that make nothing give a calm line ("These don't come to anything together.") and go back. At the tea pot any two herbs still give a plain cup (7.2).
+7. Work that takes time (firing, drying, an overnight dip) shows on the station itself, never as a timer.
+8. The first time anything is made, the camp page writes it with a sketch of its parts.
+
+**Ground materials are never clicked.** The ground itself (grass, sand, soil) is not hoverable or clickable. Things lying on it are clicked, and their cards have Gather. Materials that are the ground are offered on the here-bar while the walker stands on them, and only once the player has a use for them:
+- **Scoop sand** on dry sand above the wet line.
+- **Dig** with the shovel on a damp bank near fresh water (clay comes up with layer 2).
+- **Fill** at the spring.
+
+**Models.** Matt makes the workbench, the apothecary bench, the three pots, the cup and bowl, the mortar and pestle stone, the drying rack, and later the sealed jar, the clay lamp, the satchel, the basket, the driftwood frame and the clam rake. Sessions make the simple pieces: the wood store stakes and crossbar, the stone ring, the clay slab, the hearth stones, the gift stone, the bird bath, the cord and the fire steel.
+
 ## 4. The pack and gathering
 
 The walker carries a pack of cloth pouches, one kind of thing per pouch, drawn fuller as each fills. Everything in it comes from the island by hand: picked from a plant, picked up from the ground or the strandline, dug, or taken from the fire's ring at dawn. A plant or a spot always keeps most of what it has. Nothing in the pack spoils, nothing is lost, and nothing is ever shown as a number.
