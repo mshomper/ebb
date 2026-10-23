@@ -33,6 +33,7 @@ import { createPropsPass } from '../../render/passes/props.js';
 import { createCampFxPass } from '../../render/passes/camp-fx.js';
 import { actLength } from '../figure/acts.js';
 import { steelMesh, flintMesh } from './steel-mesh.js';
+import { hookMesh } from './hook-mesh.js';
 
 const H = 3600, DEG = Math.PI / 180;
 
@@ -40,7 +41,8 @@ const H = 3600, DEG = Math.PI / 180;
  * @param {{ recipe: any, seed: number, walk: any, terrain: any, clock: any, orbit: any, camera: any,
  *   world: any, seasons: any, lighting: { setPoints: (l: any[]) => void }, pack?: any,
  *   shadowBias?: { depthBias: number, depthBiasSlopeScale: number }, low?: boolean,
- *   beat?: () => string | null, poses?: any }} o
+ *   beat?: () => string | null, poses?: any, piles?: any }} o
+ *   piles: E2's piles at camp (src/world/pack/piles-live.js): Feed and Light take a handful from the stick pile
  *   recipe: recipes/world/camp.json; walk: the walker; lighting: the shared light block;
  *   pack: E2's pack (holds, take); beat: the evening's beat now (the director), for its glows;
  *   poses: recipes/world/figure.json poses (how long the strike act is, for its sparks)
@@ -62,6 +64,11 @@ export function createCamp(o) {
   // The fire steel and flint (made here, tiny): in your hands while you strike a light.
   props.addMesh('steel', steelMesh(), R.steel.steelSrgb, R.steel.steelRough);
   props.addMesh('flint', flintMesh(), R.steel.flintSrgb, R.steel.flintRough);
+  // The lantern's hook: a loop of cord round the tent's front pole crossing, down to its handle (F2).
+  {
+    const L = R.lantern, top = [L.hangM[0], L.hangM[1] + L.handleM, L.hangM[2]];
+    props.addMesh('hook', hookMesh({ at: L.hookM, to: top, loopM: L.hookLoopM, cordM: L.cordM }), L.cordSrgb, 0.9);
+  }
 
   /** @returns {import('./model.js').Camp} */
   const camp = () => cleanCamp(get('camp'));
@@ -170,6 +177,20 @@ export function createCamp(o) {
     return got;
   }
   const holds = (/** @type {Record<string, number>} */ need) => !!o.pack?.holds(need);
+  /** A fuel pile at camp (E2's stick pile, or any pile of fuel), or null. */
+  const fuelPile = () => (o.piles?.piles?.() ?? []).find((/** @type {any} */ p) => p.handfuls > 0 && kindsOf('fuel').includes(p.holds)) ?? null;
+  /** A handful of fuel to hand, in the pack or on the camp's pile (F9). */
+  const hasFuel = () => holds({ fuel: R.fire.feedHandfuls }) || !!fuelPile();
+  /**
+   * Take a handful of fuel: from the pack first, else from the pile (it lowers by one handful).
+   * @returns {boolean} whether one came
+   */
+  function takeFuel() {
+    if (takeGroup('fuel', R.fire.feedHandfuls) >= R.fire.feedHandfuls) return true;
+    const pile = fuelPile();
+    if (!pile || !o.piles) return false;
+    return o.piles.takeUp(pile.id, () => ({ added: 1 })).taken > 0;
+  }
   const ringNeed = () => ({ fuel: R.ring.fuelHandfuls, stones: R.ring.stoneHandfuls });
 
   // ---- acts: walk, face, play, then the change ----
@@ -263,11 +284,11 @@ export function createCamp(o) {
     const word = fireAt(c.fire, hourNow(), F).word;
     if (word === 'embers' || word === 'lit') { feed(); return; }
     // A cold ring needs a fresh handful; a laid one has its own.
-    if (word === 'cold' && !holds({ fuel: R.fire.feedHandfuls })) { emit('island:notice', { text: W.feedNeeds, showS: 6 }); return; }
+    if (word === 'cold' && !hasFuel()) { emit('island:notice', { text: W.feedNeeds, showS: 6 }); return; }
     play('strike', r, R.reach.ringM, r, () => {
       strikeT = -1;
       const now = hourNow(), cc = camp();
-      if (fireAt(cc.fire, now, F).word === 'cold' && !takeGroup('fuel', R.fire.feedHandfuls)) return;
+      if (fireAt(cc.fire, now, F).word === 'cold' && !takeFuel()) return;
       const lit = lightFire(cc.fire, now, F);
       if (!lit) return;
       change((x) => ({ ...x, fire: lit }));
@@ -281,10 +302,12 @@ export function createCamp(o) {
     if (!r) return;
     const now = hourNow(), word = fireAt(c.fire, now, F).word;
     if (word !== 'embers' && word !== 'lit') return;
-    if (!holds({ fuel: R.fire.feedHandfuls })) { emit('island:notice', { text: W.feedNeeds, showS: 6 }); return; }
+    if (!hasFuel()) { emit('island:notice', { text: W.feedNeeds, showS: 6 }); return; }
     o.walk.kneelToward(r.x, r.z, 1.6);
     const fed = feedFire(c.fire, now, F);
-    if (!fed || !takeGroup('fuel', R.fire.feedHandfuls)) return;
+    if (!fed || !takeFuel()) return;
+    // The flames lift at once as the wood goes on (live only; the fuel itself is in the save).
+    flareT = R.fire.flareS;
     change((x) => ({ ...x, fire: fed }));
     emitDeferred('camp:fed', { hour: now });
   }
@@ -376,9 +399,9 @@ export function createCamp(o) {
         const canLay = holds(ringNeed());
         return { ...base, sp: 'camp:ring-slot', camp: 'ringSlot', name: W.ringSlot.name, icon: 'lay', text: canLay ? W.ringSlot.line : W.ringNeeds, wx: r.x, wz: r.z, r: 0.5, canLay };
       }
-      const word = fireAt(c.fire, hourNow(), F).word, rainy = weatherNow().rain > F.rainLow;
-      const line = word === 'lit' && rainy ? W.ring.low : W.ring[word] ?? W.ring.laid;
-      const fuel = holds({ fuel: R.fire.feedHandfuls });
+      const at = fireAt(c.fire, hourNow(), F), word = at.word, rainy = weatherNow().rain > F.rainLow;
+      const line = word === 'lit' ? (rainy ? W.ring.low : at.high ? W.ring.high : W.ring.lowFlames) : W.ring[word] ?? W.ring.laid;
+      const fuel = hasFuel();
       return { ...base, sp: 'camp:ring', camp: 'ring', name: W.ring.name, icon: 'fire', text: line, wx: r.x, wz: r.z, r: 0.5,
         canLight: (word === 'laid' || (word === 'cold' && fuel)) && beatAllows('dusk'), canFeed: (word === 'embers' || word === 'lit') && fuel };
     }
@@ -421,7 +444,7 @@ export function createCamp(o) {
   function here(c, word) {
     const r = slotAt('ring'), f = flapAt();
     const atRing = ringLaid(c) && near(r, R.reach.ringM) && !pending;
-    const fuel = holds({ fuel: R.fire.feedHandfuls });
+    const fuel = hasFuel();
     if (atRing && (word === 'laid' || (word === 'cold' && fuel)) && beatAllows('dusk')) offerHere({ id: 'camplight', icon: 'fire', label: W.light, order: 10, action: { type: 'camp.light' } });
     else withdrawHere('camplight');
     if (atRing && (word === 'embers' || word === 'lit') && fuel) offerHere({ id: 'campfeed', icon: 'fire', label: W.feed, order: 11, action: { type: 'camp.feed' } });
@@ -466,6 +489,8 @@ export function createCamp(o) {
       const at = hand ? [hand.x, hand.y - R.lantern.carryDropM, hand.z] : tentPoint(R.lantern.hangM);
       const yaw = hand ? hand.yaw : t.yaw;
       list.push({ key: 'lantern', x: at[0], y: at[1], z: at[2], yaw });
+      // On the pole it hangs from its cord; carried, the cord goes with it.
+      if (!hand) list.push({ key: 'hook', x: t.x, y: t.y, z: t.z, yaw: t.yaw });
       if (dark) {
         lanternGlass = [at[0], at[1] + 0.15, at[2]];
         const L = R.lantern;
@@ -473,17 +498,21 @@ export function createCamp(o) {
       }
     }
     let flame = 0, smoke = 0, embers = 0;
+    flareT = Math.max(0, flareT - dt);
     if (r && ringLaid(c)) {
       list.push({ key: 'ring', x: r.x, y: r.y, z: r.z, yaw: r.yaw, shade: R.props.models.ring.shade });
-      const left = word === 'lit' ? Math.max(0, Math.min(1, fireNow.flameLeftH / F.flameH)) : 0;
+      const left = word === 'lit' ? fireNow.level : 0;
       const ch = word === 'lit' ? F.char.lit + (F.char.embers - F.char.lit) * (1 - left) : word === 'embers' ? F.char.embers : word === 'cold' ? F.char.cold : 0;
       const sq = word === 'lit' ? 1 + (F.squash.lit - 1) * (1 - left) : word === 'embers' ? F.squash.embers : word === 'cold' ? F.squash.cold : 1;
       embers = word === 'embers' ? 1 : word === 'lit' ? (rainy ? 1 : 0.6) : 0;
       // The cold ring's wood and ash fade over the day; then only the stones are left.
       if (word !== 'cold' || fireNow.ash > 0.02) list.push({ key: 'wood', x: r.x, y: r.y, z: r.z, yaw: r.yaw + 0.6, char: ch, squash: sq * (word === 'cold' ? 0.6 + 0.4 * fireNow.ash : 1), glow: embers });
       if (word === 'lit') {
-        flame = (rainy ? F.rainFlame : 1) * (0.55 + 0.45 * Math.min(1, left * 3));
-        smoke = rainy ? R.smoke.rainThick : 1;
+        // High while the ring holds plenty, sinking toward low flames as the fuel burns down (F9);
+        // a handful fed lifts it at once, flaring for a moment.
+        const flare = 1 + (F.flare - 1) * Math.max(0, flareT / F.flareS);
+        flame = (rainy ? F.rainFlame : 1) * (F.lowFlame + (1 - F.lowFlame) * fireNow.level) * flare;
+        smoke = (rainy ? R.smoke.rainThick : 1) * (0.5 + 0.5 * fireNow.level);
         lights.push({ x: r.x, y: r.y + F.heightM, z: r.z, rangeM: F.rangeM, cd: F.cd * flame * flicker(time, F.flicker, F.flickerHz, 1), rgb: fireRgb });
       } else if (word === 'embers') {
         smoke = R.smoke.embersShare * (rainy ? R.smoke.rainThick : 1);
@@ -517,7 +546,7 @@ export function createCamp(o) {
       lantern: lanternGlass, sparks, moths: sunAlt() < R.moths.atSunDeg * DEG, time,
     } : null);
   }
-  let wasRainy = false, strikeAt = 0, hidden = false;
+  let wasRainy = false, strikeAt = 0, hidden = false, flareT = 0;
 
   return {
     id: 'camp',

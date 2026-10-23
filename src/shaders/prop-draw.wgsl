@@ -12,17 +12,20 @@
 // #include lighting-bindings
 // #include lib-sky
 // #include lib-lighting
+// #include lib-lift
 
 struct PropDraw {
   ember: vec4f,     // rgb ember glow (cd/m2 at full glow, linear), w flicker speed (Hz)
   charCol: vec4f,   // rgb charcoal albedo, w spare
+  liftTint: vec4f,  // the lift (lib-lift.wgsl, F5): warm tint and its strength
+  liftRim: vec4f,   // rim colour and its power
 };
 
 struct Prop {
   at: vec4f,        // x, y, z (ground under its origin), yaw (radians, 0: its +z faces +z)
   more: vec4f,      // x scale, y char 0..1, z ember glow 0..1, w squash of its height (1 as made)
   look: vec4f,      // x albedo scale, y roughness scale, z normal strength, w normal map's green sign
-  shade: vec4f,     // contact shadow: x, y half sizes along its own x and z (m), z darkness 0..1, w seed
+  shade: vec4f,     // contact shadow: x, y half sizes along its own x and z (m), z darkness 0..1, w the prop's lift 0..1 (F5: hovered or its card open)
 };
 
 @group(0) @binding(0) var<uniform> frame: FrameUniforms;
@@ -135,7 +138,8 @@ fn fsProp(in: VsOut) -> FsOut {
     radiance += pd.ember.rgb * k;
   }
   let color = applyAerial(radiance * frame.exposure, in.pos.xy * frame.invRenderSize, viewDist);
-  let safe = select(vec3f(0.0), color, color == color);
+  let lifted = liftShade(color, nMesh, v, pr.shade.w, pd.liftTint, pd.liftRim);
+  let safe = select(vec3f(0.0), lifted, lifted == lifted);
   // Outline group 2, as the placed pieces: a soft line against the ground.
   return FsOut(vec4f(max(safe, vec3f(0.0)), 1.0), vec4f(octEncode(nMesh), 0.0, 2.0 / 3.0));
 }

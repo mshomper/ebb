@@ -50,6 +50,23 @@ export function addCampFireTests(test, assert, eq) {
     eq(relit.lightings, 2, 'a cold ring lights again with the steel');
   });
 
+  test(G, 'F9: the fire burns high then low as its fuel burns down; feeding lifts it, up to what the ring holds', () => {
+    const R9 = { ...F, maxFuelH: 9, highH: 1.5 };
+    const lit = /** @type {any} */ (lightFire(layFire(noFire(), 0), 10, R9));
+    eq(fireAt(lit, 10.5, R9).high, true, 'fresh: high flames');
+    eq(fireAt(lit, 10.5, R9).level, 1, 'fresh: full level');
+    const low = fireAt(lit, 12, R9);
+    eq(low.word, 'lit', 'still burning');
+    eq(low.high, false, 'an hour from the end: low flames');
+    assert(Math.abs(low.level - 1 / 1.5) < 1e-9, 'level sinks with the fuel left');
+    const fed = /** @type {any} */ (feedFire(lit, 12, R9));
+    eq(fireAt(fed, 12.01, R9).high, true, 'fed: high again');
+    let f = fed;
+    for (let i = 0; i < 6; i++) f = /** @type {any} */ (feedFire(f, 12, R9));
+    eq(f.flameUntilHour, 21, 'never more than maxFuelH ahead');
+    eq(fireAt(f, 21.01, R9).word, 'embers', 'then embers');
+  });
+
   test(G, 'litDays counts the days lit; settling writes the clock in without changing the answers', () => {
     let f = /** @type {any} */ (lightFire(layFire(noFire(), 0), 18, F));
     f = feedFire(f, 20, F);
