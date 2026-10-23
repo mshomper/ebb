@@ -12,7 +12,7 @@ const G = 'web models';
  * @param {(cond: any, msg?: string) => void} assert @param {(a: any, b: any, msg?: string) => void} eq
  */
 export function addAssetTests(test, assert, eq) {
-  test(G, 'every web copy reads, has its paint maps, and stands on the ground at its real size', async () => {
+  test(G, 'every web copy reads, has its paint (maps, or vertex colours), and stands on the ground at its real size', async () => {
     const list = await fetch('./assets/models.json').then((r) => r.json());
     const lines = [];
     for (const m of list.models) {
@@ -22,9 +22,10 @@ export function addAssetTests(test, assert, eq) {
       assert(buf.byteLength < 2 * 1024 * 1024, `${m.out}: ${(buf.byteLength / 1048576).toFixed(2)} MB, under 2 MB`);
       const glb = readGlb(buf);
       const mesh = [...meshesByName(glb).values()][0];
-      for (const a of ['POSITION', 'NORMAL', 'TEXCOORD_0']) assert(mesh.attributes[a], `${m.out}: ${a}`);
+      // A model painted in vertex colours (an OBJ source, models.json `paint`) has no UVs or maps.
+      for (const a of ['POSITION', 'NORMAL', m.paint ? 'COLOR_0' : 'TEXCOORD_0']) assert(mesh.attributes[a], `${m.out}: ${a}`);
       const maps = materialMaps(glb);
-      for (const k of /** @type {const} */ (['baseColor', 'metallicRoughness', 'normal'])) eq(maps[k]?.mimeType, 'image/webp', `${m.out}: ${k} map`);
+      if (!m.paint) for (const k of /** @type {const} */ (['baseColor', 'metallicRoughness', 'normal'])) eq(maps[k]?.mimeType, 'image/webp', `${m.out}: ${k} map`);
       const p = mesh.attributes.POSITION;
       const lo = [Infinity, Infinity, Infinity], hi = [-Infinity, -Infinity, -Infinity];
       for (let i = 0; i < p.length; i += 3) for (let a = 0; a < 3; a++) { lo[a] = Math.min(lo[a], p[i + a]); hi[a] = Math.max(hi[a], p[i + a]); }

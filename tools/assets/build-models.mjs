@@ -11,7 +11,8 @@
 // scaled to its real size; set with the center of its base at the origin, on the ground (y = 0);
 // welded and thinned to its triangle target with meshoptimizer, which keeps UV seams in place so the
 // paint maps still fit; its maps resized and saved as WebP (EXT_texture_webp). Geometry stays plain
-// (no Draco or meshopt packing), so src/render/gltf.js reads it as it is. The originals are never
+// (no Draco or meshopt packing), so src/render/gltf.js reads it as it is. An OBJ source with no
+// paint (the single log) is read and painted in vertex colours by obj-source.mjs. The originals are never
 // copied into the repo. A report of every model goes to assets/models/camp/report.json.
 
 import { readFileSync, writeFileSync, mkdirSync, statSync } from 'node:fs';
@@ -22,6 +23,7 @@ import { ALL_EXTENSIONS } from '@gltf-transform/extensions';
 import { dedup, prune, weld, simplify, textureCompress, getBounds, transformMesh } from '@gltf-transform/functions';
 import { MeshoptSimplifier } from 'meshoptimizer';
 import sharp from 'sharp';
+import { readObjSource } from './obj-source.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const repo = resolve(here, '../..');
@@ -55,7 +57,8 @@ for (const m of list.models) {
   if (only.length && !only.includes(m.out)) continue;
   const src = join(list.sourceDir, m.source);
   const t0 = Date.now();
-  const doc = await io.read(src);
+  // An OBJ source (no UVs or paint) is read, laid along +x and painted from another model's map.
+  const doc = m.source.endsWith('.obj') ? await readObjSource(src, m, (p) => io.read(p), list.sourceDir) : await io.read(src);
   const root = doc.getRoot();
   const trisBefore = triangles(doc);
 

@@ -7,8 +7,11 @@
 // over and none once it is bare. Reed down needs nothing: it is on the reeds.
 //
 // Two creature passes (src/render/passes/creatures.js) with baked vertex colours, as the nets and
-// finds are drawn. The camp models load from assets/models/camp/ through src/render/gltf.js; until
-// they load, or if they are missing, seeded stand-ins at the same footprint are drawn (a low mound
+// finds are drawn. Matt's camp models (assets/models/camp/log-pile.glb and stone-pile.glb) load
+// through src/render/gltf.js, their base colour map baked into the vertex colours. A pile builds up
+// piece by piece at its real size, bottom first (pile-pieces.js): the full model is only the full
+// pile. Until they load, or if they cannot, seeded stand-ins
+// at the same footprint are drawn (a low mound
 // of crossed sticks, a low cairn of stones). Drawing only: it reads the pieces, the pack and the
 // gather spots and never changes them. The lists are built again a few times a second at most,
 // and at once when something is gathered, set down or taken up. Numbers: recipes/world/pack.json
@@ -17,11 +20,13 @@
 import { get } from '../../core/store.js';
 import { on } from '../../core/events.js';
 import { hash32 } from '../../core/rng.js';
-import { readGlb, meshesByName } from '../../render/gltf.js';
+import { readGlb, meshesByName, materialMaps } from '../../render/gltf.js';
 import { createCreaturePass } from '../../render/passes/creatures.js';
 import { packMesh } from '../creatures/bodies.js';
 import { pileShape } from './piles.js';
-import { pickupMesh, stickPileMesh, stonePileMesh } from './pickup-meshes.js';
+import { splitPieces, firstPieces, buildsUp, scaledMesh } from './pile-pieces.js';
+import { logStack, stoneHeap, logsShown } from './log-stack.js';
+import { pickupMesh, pebbleMesh, stickPileMesh, stonePileMesh, roundLogMesh } from './pickup-meshes.js';
 
 /** @typedef {import('./pickup-meshes.js').Mesh} Mesh */
 
@@ -34,26 +39,57 @@ const u01 = (h) => (h >>> 8) / 16777216;
  */
 const passRecipe = (P) => ({ body: { scaleReal: [P.lengthM, P.lengthM], contactShadow: P.shadow, wetSpecular: { roughness: P.roughness ?? 0.85, strength: P.sheen ?? 0 } } });
 
+/** sRGB 0..255 to linear 0..1. @param {number} c */
+const toLinear = (c) => { const s = c / 255; return s <= 0.04045 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4; };
+
 /**
- * A camp model as one mesh in the creature pass's layout: every mesh in the file joined, its vertex
- * colours read as linear albedo (color, when it has none). Pure.
- * @param {ArrayBuffer} buffer @param {number[]} color @returns {Mesh}
+ * A camp model's base colour map (materialMaps, src/render/gltf.js), decoded so a vertex can read
+ * its colour at its UV as linear albedo. Null when the model has no map or the browser cannot decode
+ * it. The creature pass draws baked vertex colours, so the map is sampled once per vertex here; its
+ * roughness and normal maps are not used yet.
+ * @param {import('../../render/gltf.js').Glb} glb
+ * @returns {Promise<((u: number, v: number) => number[]) | null>}
  */
-export function campModelMesh(buffer, color) {
-  const parts = [...meshesByName(readGlb(buffer)).values()];
+export async function baseColorSampler(glb) {
+  const map = materialMaps(glb).baseColor;
+  if (!map || typeof createImageBitmap !== 'function' || typeof OffscreenCanvas !== 'function') return null;
+  const bmp = await createImageBitmap(new Blob([map.bytes], { type: map.mimeType }));
+  const cv = new OffscreenCanvas(bmp.width, bmp.height);
+  const ctx = /** @type {OffscreenCanvasRenderingContext2D} */ (cv.getContext('2d'));
+  ctx.drawImage(bmp, 0, 0);
+  const { data, width: W, height: H } = ctx.getImageData(0, 0, bmp.width, bmp.height);
+  return (u, v) => {
+    // glTF UVs: (0, 0) is the top left; wrap, as the default sampler repeats.
+    const x = Math.min(W - 1, Math.floor((u - Math.floor(u)) * W)), y = Math.min(H - 1, Math.floor((v - Math.floor(v)) * H));
+    const k = (y * W + x) * 4;
+    return [toLinear(data[k]), toLinear(data[k + 1]), toLinear(data[k + 2])];
+  };
+}
+
+/**
+ * A camp model as one mesh in the creature pass's layout: every mesh in the file joined, each
+ * vertex's colour from its own COLOR_0, else the base colour map at its UV (sample), else color.
+ * Pure apart from the sampler.
+ * @param {ArrayBuffer | import('../../render/gltf.js').Glb} source @param {number[]} color
+ * @param {((u: number, v: number) => number[]) | null} [sample]
+ * @returns {Mesh}
+ */
+export function campModelMesh(source, color, sample = null) {
+  const parts = [...meshesByName(source instanceof ArrayBuffer ? readGlb(source) : source).values()];
   if (!parts.length) throw new Error('no meshes');
   const count = parts.reduce((s, p) => s + p.attributes.POSITION.length / 3, 0);
   const vertices = new Float32Array(count * 9);
   const indices = new Uint32Array(parts.reduce((s, p) => s + p.indices.length, 0));
   let v0 = 0, i0 = 0;
   for (const p of parts) {
-    const pos = p.attributes.POSITION, nor = p.attributes.NORMAL, col = p.attributes.COLOR_0;
+    const pos = p.attributes.POSITION, nor = p.attributes.NORMAL, col = p.attributes.COLOR_0, uv = p.attributes.TEXCOORD_0;
     const n = pos.length / 3;
     // A colour is 3 or 4 numbers a vertex, as floats or normalized integers.
     const cn = col ? col.length / n : 0;
     const norm = col instanceof Uint8Array ? 255 : col instanceof Uint16Array ? 65535 : 1;
     for (let i = 0; i < n; i++) {
-      const c = col ? [col[i * cn] / norm, col[i * cn + 1] / norm, col[i * cn + 2] / norm] : color;
+      const c = col ? [col[i * cn] / norm, col[i * cn + 1] / norm, col[i * cn + 2] / norm]
+        : sample && uv ? sample(uv[i * 2], uv[i * 2 + 1]) : color;
       vertices.set([pos[i * 3], pos[i * 3 + 1], pos[i * 3 + 2], nor ? nor[i * 3] : 0, nor ? nor[i * 3 + 1] : 1, nor ? nor[i * 3 + 2] : 0, c[0], c[1], c[2]], (v0 + i) * 9);
     }
     for (let k = 0; k < p.indices.length; k++) indices[i0 + k] = p.indices[k] + v0;
@@ -100,17 +136,85 @@ export function createPackDraw(o) {
   const put = (/** @type {any} */ pass, /** @type {string} */ key, /** @type {Mesh} */ m) => pass.setMesh(key, { data: packMesh(m), indices: m.indices });
 
   // The stand-ins first, so there is always something to draw; the models replace them as they load.
+  // Each model in its stages (pile-pieces.js): its pieces bottom up, the small, good and big heap
+  // showing their first share of them (stageShares), the full pile all of them, and a K-21 heap its
+  // first few (heapShare). Keys are '<model>:<stage>'.
+  // A model fused into one surface cannot build up that way (buildsUp): it is drawn whole at a
+  // size for each stage instead (fusedScales, fusedHeapScale), until it comes with separate pieces.
+  const shares = /** @type {[string, number][]} */ ([...(L.stageShares ?? [0.3, 0.6, 0.85, 1]).map((s, i) => [String(i), s]), ['heap', L.heapShare ?? 0.15]]);
+  const fused = /** @type {[string, number][]} */ ([...(L.fusedScales ?? [0.5, 0.7, 0.9, 1]).map((s, i) => [String(i), s]), ['heap', L.fusedHeapScale ?? 0.3]]);
   /** @param {string} model @param {Mesh} m */
   function setPileMesh(model, m) {
-    put(pilePass, model, m);
-    if (model === 'stick') put(pilePass, 'stick-pale', paler(m, L.pale));
+    const split = splitPieces(m);
+    const pale = model === 'stick' ? paler(m, L.pale) : null;
+    const pieces = buildsUp(split, L.mostPieceShare ?? 0.5);
+    for (const [stage, v] of pieces ? shares : fused) {
+      /** @param {Mesh} q */
+      const at = (q) => (pieces ? firstPieces(q, split, v) : scaledMesh(q, v));
+      put(pilePass, `${model}:${stage}`, at(m));
+      if (pale) put(pilePass, `stick-pale:${stage}`, at(pale));
+    }
   }
   setPileMesh('stick', stickPileMesh(0x571c, L.standIn.stick, L.footprintM.stick));
+
+  // The stick pile from one log (log-stack.js): a round stand-in log until Matt's single log loads
+  // (stack.model), in a few shades, and paler for drift twigs. Keys 'log:<shade>' and 'log-pale:<shade>'.
+  const ST = L.stack;
+  let logRadius = ST?.radiusM ?? 0.13;
+  /** Each pile's logs or stones, by its seed (the layout never changes for a pile). @type {Map<string, import('./log-stack.js').StackedLog[]>} */
+  const stacks = new Map();
+  // The stone pile from one stone the same way (stoneHeap): a lumpy stand-in until Matt's single
+  // stone loads (stones.model). Keys 'stone1:<shade>'.
+  const SN = L.stones;
+  let stoneHalf = { w: (SN?.halfWM ?? 0.15), h: (SN?.halfHM ?? 0.12) };
+  /** @param {Mesh} m */
+  function setStoneMesh(m) {
+    let top = 0, wide = 0;
+    for (let i = 0; i < m.count; i++) { top = Math.max(top, m.vertices[i * 9 + 1]); wide = Math.max(wide, Math.abs(m.vertices[i * 9]), Math.abs(m.vertices[i * 9 + 2])); }
+    stoneHalf = { w: wide * 0.9, h: top / 2 };
+    [...stacks.keys()].filter((k) => k.startsWith('s')).forEach((k) => stacks.delete(k));
+    (SN.shades ?? ST?.shades ?? [1]).forEach((/** @type {number} */ k, /** @type {number} */ i) => put(pilePass, `stone1:${i}`, paler(m, { mix: 1 - k, toward: [0, 0, 0] })));
+  }
+  if (SN) {
+    setStoneMesh(pebbleMesh(0x570e, [SN.halfWM ?? 0.15, SN.halfHM ?? 0.12, SN.halfWM ?? 0.15], 0.12, SN.color ?? [0.3, 0.29, 0.27], 0));
+    if (SN.model) {
+      fetch(new URL(`../../../${SN.model}`, import.meta.url))
+        .then((r) => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.arrayBuffer(); })
+        .then((b) => setStoneMesh(campModelMesh(readGlb(b), SN.color ?? [0.3, 0.29, 0.27])))
+        .catch((e) => console.info(`pack: ${SN.model} not loaded, drawing the stand-in stone (${e.message})`));
+    }
+  }
+  /** @param {Mesh} m */
+  function setLogMesh(m) {
+    // A split log is not quite round: rest it on the mean of its half height and half width.
+    let top = 0, side = 0;
+    for (let i = 0; i < m.count; i++) { top = Math.max(top, m.vertices[i * 9 + 1]); side = Math.max(side, Math.abs(m.vertices[i * 9 + 2])); }
+    logRadius = (top / 2 + side) / 2;
+    stacks.clear();
+    (ST.shades ?? [1]).forEach((/** @type {number} */ k, /** @type {number} */ i) => {
+      const t = paler(m, { mix: 1 - k, toward: [0, 0, 0] });
+      put(pilePass, `log:${i}`, t);
+      put(pilePass, `log-pale:${i}`, paler(t, L.pale));
+    });
+  }
+  if (ST) {
+    setLogMesh(roundLogMesh(0x109, ST.lenM, ST.radiusM, ST.bark, ST.end));
+    if (ST.model) {
+      fetch(new URL(`../../../${ST.model}`, import.meta.url))
+        .then((r) => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.arrayBuffer(); })
+        .then((b) => setLogMesh(campModelMesh(readGlb(b), ST.bark)))
+        .catch((e) => console.info(`pack: ${ST.model} not loaded, drawing the stand-in log (${e.message})`));
+    }
+  }
   setPileMesh('stone', stonePileMesh(0x5701, L.standIn.stone, L.footprintM.stone));
   for (const [model, path] of Object.entries(L.models3d ?? {})) {
     fetch(new URL(`../../../${path}`, import.meta.url))
       .then((r) => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.arrayBuffer(); })
-      .then((b) => setPileMesh(model, campModelMesh(b, L.standIn[model]?.color ?? [0.3, 0.25, 0.2])))
+      .then(async (b) => {
+        const glb = readGlb(b);
+        const sample = await baseColorSampler(glb).catch(() => null);
+        setPileMesh(model, campModelMesh(glb, L.standIn[model]?.color ?? [0.3, 0.25, 0.2], sample));
+      })
       .catch((e) => console.info(`pack: ${path} not loaded, drawing the stand-in (${e.message})`));
   }
   // A few seeded shapes of each ground kind.
@@ -137,16 +241,47 @@ export function createPackDraw(o) {
     for (const p of get('pieces')?.list ?? []) {
       if (p.kind !== 'pile' || (p.x - f[0]) ** 2 + (p.z - f[1]) ** 2 > near2) continue;
       const sh = pileShape(p.holds ?? '', p.handfuls ?? 0, R);
-      out.push({ x: p.x, y: ground(p.x, p.z) - L.sinkM, z: p.z, yaw: p.yaw, size: sh.scale, mesh: sh.model });
+      if (!addLogs(out, sh, p.x, p.z, p.yaw, p.seed >>> 0)) {
+        out.push({ x: p.x, y: ground(p.x, p.z) - L.sinkM, z: p.z, yaw: p.yaw, size: sh.scale, mesh: `${sh.model}:${sh.stage}` });
+      }
     }
     for (const h of o.pack?.heaps?.() ?? []) {
       const [kind, x, z, , n] = h;
       if ((x - f[0]) ** 2 + (z - f[1]) ** 2 > near2) continue;
       const sh = pileShape(kind, n, R, true);
-      const yaw = u01(hash32(Math.round(x * 100), Math.round(z * 100), 0x4ea9)) * 2 * Math.PI;
-      out.push({ x, y: ground(x, z) - L.sinkM * sh.scale, z, yaw, size: sh.scale, mesh: sh.model });
+      const seed = hash32(Math.round(x * 100), Math.round(z * 100), 0x4ea9);
+      const yaw = u01(seed) * 2 * Math.PI;
+      if (!addLogs(out, sh, x, z, yaw, seed)) out.push({ x, y: ground(x, z) - L.sinkM, z, yaw, size: sh.scale, mesh: `${sh.model}:${sh.stage}` });
     }
-    return out.slice(0, L.max);
+    return out.slice(0, L.logMax ?? 160);
+  }
+
+  /**
+   * A stick pile (or heap) as stacked logs, bottom up, as many as its stage shows. False for a
+   * stone pile, which is still drawn as its model.
+   * @param {import('../../render/passes/creatures.js').Being[]} out @param {{ model: string, stage: number | string }} sh
+   * @param {number} x @param {number} z @param {number} yaw @param {number} seed
+   */
+  function addLogs(out, sh, x, z, yaw, seed) {
+    const stones = sh.model === 'stone';
+    if (stones ? !SN : (!ST || (sh.model !== 'stick' && sh.model !== 'stick-pale'))) return false;
+    const key = `${stones ? 's' : 'l'}${seed}`;
+    let logs = stacks.get(key);
+    if (!logs) { logs = stones ? stoneHeap(seed, stoneHalf.w, stoneHalf.h, SN) : logStack(seed, logRadius, ST); stacks.set(key, logs); }
+    const share = sh.stage === 'heap' ? (L.heapShare ?? 0.15) : (L.stageShares ?? [0.3, 0.6, 0.85, 1])[/** @type {number} */ (sh.stage)] ?? 1;
+    const n = logsShown(logs.length, share);
+    const c = Math.cos(yaw), s = Math.sin(yaw), y0 = ground(x, z) - L.sinkM;
+    const pale = stones ? 'stone1' : sh.model === 'stick-pale' ? 'log-pale' : 'log';
+    const shades = ((stones ? SN.shades : ST.shades) ?? ST?.shades ?? [1]).length;
+    const jitter = (stones ? SN.tintJitter : ST.tintJitter) || 1;
+    for (let i = 0; i < n; i++) {
+      const g = logs[i];
+      // The pile's frame turned by its yaw (as the creature pass turns a mesh: x toward +x, z toward +z).
+      const wx = x + g.x * c + g.z * s, wz = z - g.x * s + g.z * c;
+      const shade = Math.min(shades - 1, Math.max(0, Math.round(((g.tint - 1) / (2 * jitter) + 0.5) * (shades - 1))));
+      out.push({ x: wx, y: y0 + g.y, z: wz, yaw: yaw + g.yaw, size: g.size, mesh: `${pale}:${shade}` });
+    }
+    return true;
   }
 
   /** What lies on the ground to gather near f, nearest spots first, up to the cap. @param {number[]} f */

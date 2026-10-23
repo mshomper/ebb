@@ -1,5 +1,5 @@
 {
-  "note": "Web copies of Matt's models (tools/assets/build-models.mjs). Each entry: source, the glb in the source folder (Ebb/_assets, never committed); out, the web copy's name under assets/models/camp/; sizeM, its real size along `along` (longest: its longest side; height: y); yawDeg, a turn about +y so its front faces +z; triangles, the target after thinning (never more than it has); maps, the paint maps' size in pixels. A new model is one more entry, then a re-run. Real sizes agreed with Matt on October 22, 2026, against the 1.4 m walker.",
+  "note": "Web copies of Matt's models (tools/assets/build-models.mjs). Each entry: source, the glb in the source folder (Ebb/_assets, never committed); out, the web copy's name under assets/models/camp/; sizeM, its real size along `along` (longest: its longest side; height: y); yawDeg, a turn about +y so its front faces +z; triangles, the target after thinning (never more than it has); maps, the paint maps' size in pixels; paint (an OBJ source with no paint, such as the single log): the model whose map gives its colours, laid on as vertex colours (obj-source.mjs; style stone: the source's greys in blotches with pale flecks); subdivide: each triangle into four that many times first, so a light model has vertices enough for its paint; restFlat: laid on its flattest side. A new model is one more entry, then a re-run. Real sizes agreed with Matt on October 22, 2026, against the 1.4 m walker.",
   "sourceDir": "C:/Users/mshom/Documents/Ebb/_assets",
   "outDir": "assets/models/camp",
   "models": [
@@ -13,6 +13,8 @@
     { "source": "Ebb_Iron+Shovel.glb", "out": "shovel-iron", "along": "longest", "sizeM": 1.1, "yawDeg": 0, "triangles": 4000, "maps": 512 },
     { "source": "Ebb_Wood+Shovel.glb", "out": "shovel-wood", "along": "longest", "sizeM": 1.1, "yawDeg": 0, "triangles": 4000, "maps": 512 },
     { "source": "Ebb_Boat.glb", "out": "boat", "along": "longest", "sizeM": 2.6, "yawDeg": 90, "triangles": 6000, "maps": 1024 },
-    { "source": "Ebb_Lantern.glb", "out": "lantern", "along": "height", "sizeM": 0.3, "yawDeg": 0, "triangles": 7000, "maps": 512 }
+    { "source": "Ebb_Lantern.glb", "out": "lantern", "along": "height", "sizeM": 0.3, "yawDeg": 0, "triangles": 7000, "maps": 512 },
+    { "source": "Ebb_log_single.obj", "out": "log", "along": "longest", "sizeM": 0.45, "yawDeg": 0, "triangles": 2500, "maps": 512, "paint": { "from": "Ebb_Log+Pile.glb" } },
+    { "source": "Ebb_stone_single.obj", "out": "stone", "along": "longest", "sizeM": 0.15, "yawDeg": 0, "triangles": 5000, "maps": 512, "subdivide": 1, "restFlat": true, "paint": { "from": "Ebb_Stones.glb", "style": "stone" } }
   ]
 }

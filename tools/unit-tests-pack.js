@@ -10,6 +10,8 @@ import { emptyPack, cleanPack, sizeOf, add, take, has, handfulsOf, packHolds, no
   addHeap, takeFromHeap, expireHeaps } from '../src/world/pack/model.js';
 import { pileWord, pileLook, slotFor, setDown, takeUp } from '../src/world/pack/piles.js';
 import { createPiles } from '../src/world/pack/piles-live.js';
+import { splitPieces, firstPieces, buildsUp } from '../src/world/pack/pile-pieces.js';
+import { logStack, stoneHeap, logsShown } from '../src/world/pack/log-stack.js';
 import { atCamp } from '../src/world/pack/camp.js';
 import { padOf } from '../src/world/camp/layout.js';
 import { offCampGround } from '../src/world/pieces/camp-clear.js';
@@ -61,6 +63,60 @@ export function addPackTests(test, assert, eq) {
     eq(t.taken, 3, 'Take up fills a pouch from it');
     eq(getStore('pieces').list.filter((/** @type {any} */ p) => p.kind === 'pile').length, 0, 'an empty pile is gone');
     updateStore('campPad', () => null);
+  });
+
+  test(G, 'a pile builds up piece by piece from the bottom; a fused model does not come apart', () => {
+    // Three separate triangles stacked at heights 0.4, 0, 0.2 (out of order), each its own piece,
+    // and a seam: the bottom one is split into two triangles that share a place, not a vertex.
+    /** @param {number[][]} tris */
+    const mesh = (tris) => {
+      const vertices = new Float32Array(tris.length * 3 * 9);
+      tris.forEach((t, i) => t.forEach((y, j) => vertices.set([j === 1 ? 1 : 0, y, j === 2 ? 1 : 0], (i * 3 + j) * 9)));
+      return { vertices, count: tris.length * 3, indices: Uint32Array.from({ length: tris.length * 3 }, (_, i) => i) };
+    };
+    const m = mesh([[0.4, 0.4, 0.4], [0, 0, 0], [0.2, 0.2, 0.2], [0, 0, 0]]);
+    const split = splitPieces(m);
+    eq(split.ends.length, 3, 'the two bottom triangles sharing a place are one piece');
+    eq(m.vertices[split.indices[0] * 9 + 1], 0, 'the bottom piece comes first');
+    eq(Math.round(m.vertices[split.indices[split.ends[1] - 1] * 9 + 1] * 10) / 10, 0.2, 'then the middle one');
+    eq(firstPieces(m, split, 0.3).indices.length, 6, 'a small heap shows the bottom piece');
+    eq(firstPieces(m, split, 1).indices.length, 12, 'the full pile shows them all');
+    assert(buildsUp(split), 'separate pieces build up');
+    eq(buildsUp(splitPieces(mesh([[0, 0, 0]]))), false, 'one piece does not');
+  });
+
+  test(G, 'a stick pile of seeded logs: each rests on the ground or on two below, none floats or overlaps', async () => {
+    const { recipe } = await load();
+    const S = recipe.piles.look.stack, r = 0.16;
+    const a = logStack(42, r, S), b = logStack(42, r, S);
+    eq(JSON.stringify(a), JSON.stringify(b), 'the same seed gives the same pile');
+    assert(JSON.stringify(logStack(43, r, S)) !== JSON.stringify(a), 'another seed another pile');
+    eq(a.length, S.rows.reduce((t, n) => t + n, 0), 'every row is there');
+    const C = a.map((g) => ({ z: g.z, cy: g.y + r * g.size, r: r * g.size }));
+    for (let i = 0; i < C.length; i++) {
+      const touching = C.slice(0, i).filter((q) => Math.abs(Math.hypot(q.z - C[i].z, q.cy - C[i].cy) - (q.r + C[i].r)) < 1e-6).length;
+      assert(Math.abs(C[i].cy - C[i].r) < 1e-9 || touching >= 2, `log ${i} rests on the ground or on two logs`);
+      for (let j = 0; j < i; j++) assert(Math.hypot(C[j].z - C[i].z, C[j].cy - C[i].cy) >= C[j].r + C[i].r - 1e-6, `logs ${j} and ${i} do not overlap`);
+      if (i > 0) assert(C[i].cy - C[i].r >= C[i - 1].cy - C[i - 1].r - 1e-9, 'bottom up');
+    }
+    eq(logsShown(a.length, 0.3), 3); eq(logsShown(a.length, 1), a.length); eq(logsShown(a.length, 0), 1);
+  });
+
+  test(G, 'a stone pile of seeded stones: each rests on the ground or on stones set before it, none sinks into another', async () => {
+    const { recipe } = await load();
+    const S = recipe.piles.look.stones, w = 0.15, h = 0.12, k = w / h;
+    const a = stoneHeap(7, w, h, S);
+    eq(JSON.stringify(a), JSON.stringify(stoneHeap(7, w, h, S)), 'the same seed gives the same pile');
+    eq(a.length, S.count);
+    // In heights stretched by w / h each stone is a ball of radius w * size.
+    const B = a.map((g) => ({ x: g.x, z: g.z, cy: (g.y + h * g.size) * k, r: w * g.size }));
+    B.forEach((b, i) => {
+      assert(Math.hypot(b.x, b.z) + b.r <= S.radiusM + 1e-9, `stone ${i} within the footprint`);
+      const onGround = Math.abs(b.cy - b.r) < 1e-9;
+      const resting = B.slice(0, i).some((q) => Math.abs(Math.hypot(q.x - b.x, q.z - b.z, q.cy - b.cy) - (q.r + b.r)) < 1e-6);
+      assert(onGround || resting, `stone ${i} rests on the ground or on a stone set before it`);
+      for (let j = 0; j < i; j++) assert(Math.hypot(B[j].x - b.x, B[j].z - b.z, B[j].cy - b.cy) >= B[j].r + b.r - 1e-6, `stones ${j} and ${i} do not overlap`);
+    });
   });
 
   test(G, 'a new pack is empty with six pouches', async () => {

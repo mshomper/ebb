@@ -36,20 +36,21 @@ export const pileWord = (handfuls, recipe) => recipe?.words?.pile?.[pileLook(han
 
 /**
  * How a pile of a kind is drawn (recipes/world/pack.json piles.look): which model it wears ('stick',
- * 'stick-pale' or 'stone'), its scale at this look step, and its footprint across in meters (the
- * piece record's size, which a tap and the grass clear go by). A kind the look does not list wears
- * the stick pile at its smallest. A K-21 heap (heap true) is the same model, smaller.
+ * 'stick-pale' or 'stone'), how far it has built up, and its footprint across in meters (the piece
+ * record's size, which a tap and the grass clear go by). A pile builds up piece by piece at its real
+ * size (pile-pieces.js): stage 0, 1 and 2 are the small, good and big heap, stage 3 the full pile
+ * (all its handfuls); a K-21 heap is stage 'heap', its bottom few pieces. A kind the look does not
+ * list wears the stick pile.
  * @param {string} kind @param {number} handfuls @param {any} recipe pack.json @param {boolean} [heap]
- * @returns {{ model: string, scale: number, size: number }}
+ * @returns {{ model: string, stage: number | 'heap', scale: number, size: number }}
  */
 export function pileShape(kind, handfuls, recipe, heap = false) {
   const L = recipe?.piles?.look ?? {};
-  const listed = L.models?.[kind];
-  const model = listed ?? L.otherModel ?? 'stick';
+  const model = L.models?.[kind] ?? L.otherModel ?? 'stick';
   const base = model === 'stick-pale' ? 'stick' : model;
-  const scales = Array.isArray(L.scale) ? L.scale : [0.5, 0.7, 0.9];
-  const scale = heap ? (L.heapScale ?? 0.3) : listed ? scales[pileLook(handfuls, recipe)] : (L.otherScale ?? scales[0]);
-  return { model, scale, size: (L.footprintM?.[base] ?? (base === 'stone' ? 1.0 : 1.2)) * scale };
+  const full = recipe?.piles?.handfuls ?? 12;
+  const stage = heap ? 'heap' : handfuls >= full ? 3 : pileLook(handfuls, recipe);
+  return { model, stage, scale: 1, size: L.footprintM?.[base] ?? (base === 'stone' ? 1.0 : 1.2) };
 }
 
 /**
