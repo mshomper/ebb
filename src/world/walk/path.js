@@ -61,18 +61,37 @@ export function nearestOpen(g, r, x, z, reachM) {
 }
 
 /**
- * Can the walker go straight from a to b? Every cell along the line open, no step too high.
+ * Can the walker go straight from a to b? Every cell the line passes through open, no step too
+ * high, and where it crosses a corner both cells beside it open (no cutting corners, as A* rules).
+ * The cells are walked exactly (Amanatides and Woo, "A Fast Voxel Traversal Algorithm", 1987): it
+ * once sampled the line every quarter metre, which missed a cell the line only clipped at a corner,
+ * so a straight leg over pond stones could cut through the deep water beside them (F10).
  * @param {WalkGrid} g @param {WalkRules} r @param {[number, number]} a @param {[number, number]} b
  */
 export function lineOpen(g, r, a, b) {
-  const len = Math.hypot(b[0] - a[0], b[1] - a[1]);
-  const n = Math.max(1, Math.ceil(len / (g.cellM * 0.5)));
-  let prev = g.cellAt(a[0], a[1]);
-  for (let s = 1; s <= n; s++) {
-    const k = g.cellAt(a[0] + ((b[0] - a[0]) * s) / n, a[1] + ((b[1] - a[1]) * s) / n);
-    if (k === prev) continue;
-    if (!isOpen(g, r, k)) return false;
-    if (prev >= 0 && Math.abs(g.height[k] - g.height[prev]) > r.maxStepM) return false;
+  const c = g.cellM, dx = b[0] - a[0], dz = b[1] - a[1];
+  let i = Math.floor((a[0] - g.minX) / c), j = Math.floor((a[1] - g.minZ) / c);
+  const iEnd = Math.floor((b[0] - g.minX) / c), jEnd = Math.floor((b[1] - g.minZ) / c);
+  const si = Math.sign(dx), sj = Math.sign(dz);
+  const tdx = dx !== 0 ? c / Math.abs(dx) : Infinity, tdz = dz !== 0 ? c / Math.abs(dz) : Infinity;
+  let tx = dx !== 0 ? ((i + (si > 0 ? 1 : 0)) * c + g.minX - a[0]) / dx : Infinity;
+  let tz = dz !== 0 ? ((j + (sj > 0 ? 1 : 0)) * c + g.minZ - a[1]) / dz : Infinity;
+  const idx = (/** @type {number} */ ci, /** @type {number} */ cj) => (ci < 0 || cj < 0 || ci >= g.w || cj >= g.h ? -1 : cj * g.w + ci);
+  let prev = idx(i, j);
+  /** Step into a cell from prev: open, and no climb or drop past the step limit. @param {number} k */
+  const ok = (k) => isOpen(g, r, k) && (prev < 0 || Math.abs(g.height[k] - g.height[prev]) <= r.maxStepM);
+  const EPS = 1e-9;
+  for (let guard = 0; (i !== iEnd || j !== jEnd) && guard < g.w + g.h + 4; guard++) {
+    if (Math.min(tx, tz) > 1 + EPS) break;
+    if (Math.abs(tx - tz) <= EPS) {
+      // Through a corner: both cells beside it must be open, and then the diagonal one.
+      const side1 = idx(i + si, j), side2 = idx(i, j + sj);
+      if (!ok(side1) || !ok(side2)) return false;
+      i += si; j += sj; tx += tdx; tz += tdz;
+    } else if (tx < tz) { i += si; tx += tdx; }
+    else { j += sj; tz += tdz; }
+    const k = idx(i, j);
+    if (!ok(k)) return false;
     prev = k;
   }
   return true;

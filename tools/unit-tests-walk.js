@@ -14,6 +14,8 @@ import { createPresence, ringScale } from '../src/world/creatures/presence.js';
 import { createWatching } from '../src/world/creatures/watching.js';
 import { createWalk } from '../src/world/walk/index.js';
 import { on, flushDeferred } from '../src/core/events.js';
+import { makeStepping, strideAfter, jitterOf, links, footingAt } from '../src/world/pieces/stepping.js';
+import { hash32 } from '../src/core/rng.js';
 
 /**
  * The game's walk (walk/index.js) on flat ground 1 m up, 40 m by 20 m, with a stand-in camera and
@@ -149,6 +151,56 @@ export function addWalkTests(test, assert, eq) {
     assert(creep <= R.pace.creepMps + 0.06, `near a creature it went ${creep.toFixed(2)} m/s`);
     assert(brisk > R.pace.strollMps + 0.3, `a double tap only reached ${brisk.toFixed(2)} m/s`);
     return `stroll ${stroll.toFixed(2)}, creep ${creep.toFixed(2)}, brisk ${brisk.toFixed(2)} m/s`;
+  });
+
+  test(WALK, 'pond stones over 0.8 m of water: walked out to the last stone and back again (F10)', async () => {
+    const R = await (await fetch('../recipes/world/walker.json')).json();
+    const S = (await (await fetch('../recipes/world/pieces.json')).json()).stepping;
+    // A bank 1.05 m up, sloping into a pond whose bed is 0.2 m, under still water 1.0 m up: 0.8 m deep.
+    const land = (/** @type {number} */ x) => lerp(1.05, 0.2, (x - 8) / 2);
+    const surface = 1.0;
+    // A line laid as the Pond stones mode lays one: a seeded stride and nudge, on a diagonal so the
+    // way back crosses the grid's cells at a slant (where the walker used to turn back on itself).
+    /** @type {any[]} */ const stones = [];
+    let at = [7.4, 4], n = 1;
+    const ux = Math.cos(0.55), uz = Math.sin(0.55);
+    for (;;) {
+      const prev = stones[stones.length - 1];
+      const stride = prev ? strideAfter(prev.seed, S) : 0, jit = jitterOf(hash32(9, n, 0x1a7), S);
+      const x = at[0] + ux * stride - uz * jit, z = at[1] + uz * stride + ux * jit;
+      if (x > 22) break;
+      stones.push(makeStepping(9, n, x, z, Math.max(0, surface - land(x)), 0, stones[0]?.id ?? null, S));
+      at = [at[0] + ux * stride, at[1] + uz * stride];
+      n++;
+    }
+    const linked = links(stones, S, (x) => land(x));
+    const footing = (/** @type {number} */ x, /** @type {number} */ z) => footingAt(stones, linked, (xx) => land(xx), S, x, z);
+    const grid = createWalkGrid({ ground: (x) => land(x), footing, minX: 0, minZ: 0, maxX: 40, maxZ: 20, cellM: R.grid.cellM, maxSlopeDeg: R.grid.maxSlopeDeg });
+    const depth = (/** @type {number} */ k) => Math.max(0, surface - grid.height[k]);
+    const w = createWalker(R, { grid, depth, ground: (x, z) => Math.max(land(x), footing(x, z)) });
+    assert(stones.every((p, i) => i === 0 || linked.some(([a, b]) => (a === p || b === p) && (a === stones[i - 1] || b === stones[i - 1]))), 'a stone is not linked to the one before it');
+    // Out on the stones, the water is deeper than the walker can wade.
+    assert(Math.max(0, surface - land(stones[stones.length - 1].x)) >= 0.8 - 1e-9, 'the last stone is not over 0.8 m of water');
+    /** Walk to a point and run until the walk ends; where it ended, and the deepest water stood in. @param {number} x @param {number} z */
+    const go = (x, z) => {
+      const r = w.walkTo(x, z);
+      assert(r.ok, `no way to ${x.toFixed(1)}, ${z.toFixed(1)}: ${!r.ok && r.reason}`);
+      let wet = 0;
+      for (let i = 0; i < 60 * 120 && w.moving; i++) { w.update(1 / 60); wet = Math.max(wet, depth(grid.cellAt(w.x, w.z))); }
+      return { d: Math.hypot(w.x - x, w.z - z), wet };
+    };
+    w.place(4, 4);
+    const last = stones[stones.length - 1], mid = stones[Math.floor(stones.length / 2)];
+    const out = go(last.x, last.z);
+    assert(out.d < 0.3, `walking out stopped ${out.d.toFixed(2)} m short of the last stone`);
+    const back = go(4, 4);
+    assert(back.d < 0.3, `walking back from the last stone stopped ${back.d.toFixed(2)} m short of the bank`);
+    // Out to the middle, then turn round there.
+    go(mid.x, mid.z);
+    const turn = go(4.5, 3.5);
+    assert(turn.d < 0.3, `turning back from the middle stopped ${turn.d.toFixed(2)} m short`);
+    assert(Math.max(out.wet, back.wet, turn.wet) < R.grid.wadeM, 'the walk stood in water deeper than wading');
+    return `${stones.length} stones, ${linked.length} links; out and back to within ${Math.max(out.d, back.d, turn.d).toFixed(2)} m`;
   });
 
   test(WALK, 'wading past the ankle slows the walk, even hurrying', async () => {
