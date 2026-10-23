@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ebb item icons</title>
+<link rel="icon" href="../brand/ebb-favicon.svg" type="image/svg+xml">
+<style>
+  @font-face { font-family: 'Nunito'; src: url('../src/vendor/fonts/nunito-latin-600-normal.woff2') format('woff2'); font-weight: 600; }
+  @font-face { font-family: 'Nunito'; src: url('../src/vendor/fonts/nunito-latin-800-normal.woff2') format('woff2'); font-weight: 800; }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; max-width: 100%; overflow-x: hidden; }
+  body { background: #F4EEE4; color: #1E2624; font: 600 17px/1.45 'Nunito', system-ui, sans-serif; padding: 0 16px 48px; overflow-wrap: anywhere; }
+  main { max-width: 1100px; margin: 0 auto; display: flex; flex-direction: column; gap: 14px; }
+  h1 { font-size: 28px; font-weight: 800; margin: 20px 0 0; }
+  h2 { font-size: 22px; font-weight: 800; margin: 20px 0 0; }
+  p { margin: 0; color: #4A5551; max-width: 780px; }
+  a { color: #4a6a47; }
+  .bar { position: sticky; top: 0; z-index: 3; background: #F4EEE4; padding: 10px 0; display: flex; gap: 8px 12px; flex-wrap: wrap; align-items: center; border-bottom: 1px solid #e2d8c4; }
+  .bar button { font: 700 16px 'Nunito', sans-serif; padding: 7px 12px; border-radius: 10px; border: 1.5px solid #5F7F5B; background: transparent; color: #1E2624; cursor: pointer; }
+  .bar button.on { background: #5F7F5B; color: #fffaf0; }
+  .icon { display: block; }
+  body.plain .item-icon, body.plain .ebb-pouch__svg { --fam: currentColor !important; --fam-op: 0.2; }
+  .light { --icon-bg: #fffaf0; background: #fffaf0; color: #2d3a36; }
+  .dark { --icon-bg: #1E2624; background: #1E2624; color: #F4EEE4; }
+  .fam { border: 1px solid #e2d8c4; border-radius: 16px; overflow: hidden; }
+  .fam header { background: #fffaf0; padding: 12px 16px 6px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .fam header b { font-size: 19px; }
+  .fam header span { color: #5f6e68; }
+  .sw { width: 16px; height: 16px; border-radius: 5px; border: 1.5px solid #2d3a36; flex: none; }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(124px, 1fr)); }
+  .tile { padding: 10px 6px 12px; display: flex; flex-direction: column; align-items: center; gap: 6px; min-width: 0; }
+  .sizes { display: flex; align-items: flex-end; gap: 9px; }
+  .btn { width: 48px; height: 48px; border-radius: 12px; border: 1.5px solid currentColor; display: grid; place-items: center; }
+  .dark .btn { border-color: rgba(244,238,228,.35); }
+  .btn .icon { width: 28px; height: 28px; }
+  .s26 { width: 26px; height: 26px; }
+  .s20 { width: 20px; height: 20px; }
+  .n { font-size: 15px; line-height: 1.25; text-align: center; }
+  .code { font-size: 15px; color: #5f6e68; }
+  .dark .code { color: #a9b6b0; }
+  .row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .gbar { --icon-bg: #2b3431; align-self: flex-start; display: inline-flex; flex-direction: column; gap: 6px; padding: 6px; background: #2b3431; color: #F4EEE4; border-radius: 18px; }
+  .pouch { width: 48px; height: 48px; display: grid; place-items: center; border-radius: 12px; }
+  .pouch .ebb-pouch__svg { width: 40px; height: 40px; display: block; }
+  .act { position: relative; width: 48px; height: 48px; border-radius: 12px; border: 1.5px solid #5F7F5B; display: grid; place-items: center; color: #2d3a36; --icon-bg: #fffaf0; }
+  .act.main { background: #5F7F5B; color: #fffaf0; --icon-bg: #5F7F5B; --chip-fg: #5F7F5B; }
+  .act .item-icon { width: 28px; height: 28px; transform: translate(-3px, -3px); }
+  .act .item-chip { position: absolute; right: 2px; bottom: 2px; width: 18px; height: 18px; border-radius: 50%; box-shadow: 0 0 0 2px #fffaf0; }
+  .act.main .item-chip { box-shadow: 0 0 0 2px #5F7F5B; }
+  .act .item-chip { color: #2d3a36; }
+  .act.main .item-chip { color: #fffaf0; }
+  .panel { background: #5d7a69; border-radius: 16px; padding: 14px; display: flex; flex-direction: column; gap: 12px; color: #fff; }
+  .card { background: #fffaf0; border: 1px solid #e2d8c4; border-radius: 14px; padding: 12px 14px; }
+  table { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 16px; }
+  th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid #e2d8c4; vertical-align: middle; }
+  th { font-size: 15px; color: #5f6e68; }
+  td.i { width: 44px; } td.i .icon { width: 26px; height: 26px; }
+  .ph { display: inline-block; padding: 0 8px; border-radius: 999px; font-size: 15px; }
+  .ph1 { background: #dcebd9; } .ph2 { background: #f6e5c6; } .ph3, .ph4, .ph5 { background: #ece6f2; }
+  @media (max-width: 600px) { th:nth-child(3), td:nth-child(3) { display: none; } }
+</style>
+</head>
+<body>
+<main>
+  <h1>ebb item icons</h1>
+  <p>Every item glyph (F7, approved October 23, 2026), drawn from <code>src/ui/icons/items.js</code> and named by <code>src/ui/icons/item-registry.js</code>. The glyph says what a thing is; the round chip in a button's corner says where it goes. <a href="./">All tools</a></p>
+  <div class="bar"><span>Family colour:</span><button id="on" class="on" type="button">Tinted</button><button id="off" type="button">Plain ink</button></div>
+
+  <h2>Chips: where a thing goes</h2>
+  <div class="card"><div class="row" id="chips"></div></div>
+
+  <h2>The pouch bar</h2>
+  <p>48 px targets, 40 px drawings. Top: the four fullness looks for one kind. Below: a first-season pack in two even rows.</p>
+  <div class="panel" id="bars"></div>
+
+  <h2>Families</h2>
+  <p>Each glyph in a 48 px card button (28 px), at 26 px and at 20 px. Light above, dark below.</p>
+  <div id="fams" style="display:flex;flex-direction:column;gap:14px"></div>
+
+  <h2>Composed glyphs</h2>
+  <p>Seeds and clumps for any species, dried bunches for any herb, and any item set out as a treat, built from the drawings above.</p>
+  <div class="fam"><div class="tiles light" id="comp"></div><div class="tiles dark" id="comp-dark"></div></div>
+
+  <h2>Every item and its glyph</h2>
+  <p>Phase 1 is in the game now; 2 is the first season; 3 to 5 come later.</p>
+  <div id="inv"></div>
+</main>
+<script src="./boot-guard.js"></script>
+<script type="module">
+  import { ensureIconSprite, iconSvg } from '../src/ui/icons/icons.js';
+  import { ensureItemSprite, itemIconSvg, itemPouchSvg, itemFamily, chipSvg, CHIP_FOR, FAMILIES, ITEM_ICON_NAMES } from '../src/ui/icons/items.js';
+  import { POUCH_KINDS, PLANT_PARTS, MAKES, TREATS, KEEPSAKES, DYE_ROWS, itemIconFor } from '../src/ui/icons/item-registry.js';
+
+  ensureIconSprite();
+  ensureItemSprite();
+  const glyph = (name, cls = '') => (name.startsWith('-') ? iconSvg(name.slice(1), cls) : itemIconSvg(name, cls));
+  const NAMES = new Map([...POUCH_KINDS, ...PLANT_PARTS, ...MAKES, ...TREATS, ...KEEPSAKES, ...DYE_ROWS].map((r) => [r.icon, r.name]));
+  const label = (n) => NAMES.get(n) ?? n;
+
+  // Chips.
+  const act = (name, chip, main = false) => `<span class="act ${main ? 'main' : ''}">${itemIconSvg(name)}${chip ? chipSvg(chip) : ''}</span>`;
+  document.getElementById('chips').innerHTML = [['gather', 'drift-twigs', 'Gather drift twigs'], ['takeup', 'sticks', 'Take up sticks'], ['setdown', 'pebbles', 'Set down pebbles'], ['setout', 'worms', 'Set out worms'], ['pot', 'mint', 'Water mint into the pot']]
+    .map(([a, n, t], i) => `<span style="display:inline-flex;align-items:center;gap:8px;margin-right:14px">${act(n, CHIP_FOR[a], i === 0)}<span>${t}</span></span>`).join('');
+
+  // Pouch bars.
+  const bar = (cells) => {
+    const tags = cells.map(([n, s]) => `<span class="pouch" ${n && s ? '' : 'style="opacity:.55"'}>${itemPouchSvg(n, s)}</span>`);
+    const rows = tags.length >= 8 ? [tags.slice(0, Math.ceil(tags.length / 2)), tags.slice(Math.ceil(tags.length / 2))] : [tags];
+    return `<div class="gbar">${rows.map((r) => `<div class="row" style="justify-content:center">${r.join('')}</div>`).join('')}</div>`;
+  };
+  const icon = (k) => itemIconFor(k);
+  document.getElementById('bars').innerHTML = bar([[null, 0], [icon('mint.leaves'), 1], [icon('mint.leaves'), 2], [icon('mint.leaves'), 3]])
+    + bar([[icon('sticks'), 2], [icon('pebbles'), 3], [icon('rush-cord'), 1], [icon('mint.leaves'), 2], [icon('chamomile.flowers'), 1], [icon('clay'), 3], [icon('thrift.seed'), 1], [icon('kelp'), 2], [icon('worms'), 1], [null, 0]]);
+
+  // Families.
+  const tiles = (names, theme) => `<div class="tiles ${theme}">${names.map((n) => `<div class="tile"><div class="sizes"><span class="btn">${glyph(n)}</span>${glyph(n, 's26')}${glyph(n, 's20')}</div><div class="n">${label(n)}</div><div class="code">${n}</div></div>`).join('')}</div>`;
+  document.getElementById('fams').innerHTML = Object.entries(FAMILIES).map(([id, f]) => {
+    const names = ITEM_ICON_NAMES.filter((n) => itemFamily(n) === id);
+    return `<section class="fam"><header>${f.tint ? `<span class="sw" style="background:${f.tint}"></span>` : ''}<b>${f.name}</b><span>${f.cue}</span></header>${tiles(names, 'light')}${tiles(names, 'dark')}</section>`;
+  }).join('');
+  const COMP = ['seed:thrift', 'seed:reeds', 'seed:gorse', 'seed:willow', 'seed:mint', 'seed:chamomile', 'seed:seedhead', 'clump:thrift', 'clump:reeds', 'clump:willow', 'clump:nettle', 'dried:mint', 'dried:chamomile', 'dried:nettle', 'offered:acorns', 'offered:strawberries', 'offered:chanterelle'];
+  document.getElementById('comp').outerHTML = tiles(COMP, 'light');
+  document.getElementById('comp-dark').outerHTML = tiles(COMP, 'dark');
+
+  // Inventory.
+  const groups = [['Pouch kinds', POUCH_KINDS], ['Plant parts', PLANT_PARTS], ['Made things and tools', MAKES], ['Treats and offerings', TREATS], ['Keepsakes', KEEPSAKES], ['Dyes', DYE_ROWS]];
+  document.getElementById('inv').innerHTML = groups.map(([t, rows]) => `<h2 style="font-size:19px">${t}</h2><table><thead><tr><th style="width:44px"></th><th>Item</th><th style="width:30%">Id</th><th style="width:11%">Tier</th><th style="width:13%">Phase</th></tr></thead><tbody>
+    ${rows.map((r) => `<tr><td class="i">${glyph(r.icon)}</td><td>${r.name}</td><td><code style="font-size:15px">${r.id}</code></td><td>${r.tier}</td><td><span class="ph ph${r.phase}">${r.phase === 1 ? 'In game' : `Phase ${r.phase}`}</span></td></tr>`).join('')}
+  </tbody></table>`).join('');
+
+  const on = document.getElementById('on'), off = document.getElementById('off');
+  on.onclick = () => { document.body.classList.remove('plain'); on.classList.add('on'); off.classList.remove('on'); };
+  off.onclick = () => { document.body.classList.add('plain'); off.classList.add('on'); on.classList.remove('on'); };
+</script>
+</body>
+</html>
