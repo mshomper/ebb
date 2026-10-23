@@ -58,6 +58,8 @@ export function awayHours(p) {
  * @property {{ words: any, island: any, web: any } | null} jr  the journal's recipes
  * @property {number} fromHour    the first hour to run
  * @property {number} hours       how many
+ * @property {{ x: number, z: number, reachM: number, trust: number } | null} [camp]  the camp's pad
+ *   centre and its standing presence (recipes/world/camp.json standing), once the tent is pitched
  */
 
 /**
@@ -67,6 +69,8 @@ export function awayHours(p) {
  */
 export function catchUpJob(a) {
   const env = makeEnv(a.seed, a.recipes);
+  // The camp's standing presence (docs/future/13 CP-13) is earned only while away.
+  /** @type {any} */ (env).awayCamp = a.camp ?? null;
   const byDay = a.habitatInputs ? habitatByDay(a.habitatInputs) : null;
   let habitat = a.habitat;
   env.habitat = () => habitat;

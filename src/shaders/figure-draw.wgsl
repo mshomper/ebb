@@ -93,7 +93,8 @@ fn fsBody(in: VsOut) -> FsOut {
   let eye = figureEyes(in.rest, in.head, fd.eyes);
   let albedo = mix(in.albedo, fd.eyes.albedo.rgb, eye);
   let direct = frame.sunIlluminance * max(dot(n, frame.sunDir), 0.0) * sunVis
-             + frame.moonIlluminance * max(dot(n, frame.moonDir), 0.0) * moonVis;
+             + frame.moonIlluminance * max(dot(n, frame.moonDir), 0.0) * moonVis
+             + pointIllum(in.world, n, 0.15);
   var radiance = albedo * (direct / PI + skyAmbient(n) * ao);
   // Cloth: a faint, broad sheen.
   radiance += fd.look.y * (frame.sunIlluminance * sunVis * ggxSpecular(n, v, frame.sunDir, fd.look.x, 0.04)

@@ -182,6 +182,10 @@ export function createJournal(opts) {
     // Then a loose stone or a driftwood log (docs/future/10): on foot within reach its card offers
     // Lift (L3a). A log opens the Driftwood page (L2), its form and its wear on the card (log: what
     // the page's sketch is traced from). Once driftwood washes up (unlocks.carry) its card offers Carry.
+    // Then the keeper's camp (docs/future/13 section 3): the tent and the fire ring, or their glowing
+    // ground before they are set up (src/world/camp cardAt: Pitch, Lay, Light, Feed, Rest).
+    const cp = /** @type {any} */ (opts).camp?.cardAt?.(x, z) ?? null;
+    if (cp) return cp;
     const pc = opts.pieces?.pieceAt(x, z);
     const pw = pc && words.pieces?.[pc.kind];
     if (pw && pc.kind === 'pile') {
@@ -272,8 +276,9 @@ export function createJournal(opts) {
     // A keepsake is not a find: tapping it writes nothing in the journal (the shelf is its only
     // record), but a mark seen is a first on the beachcomber's trail, kept or not (src/world/trails.js).
     if (card.keepsake && card.mark) emitDeferred('keepsake:seen', { n: card.mark });
-    // Things to gather on bare ground have a card of their own, with no page and no moment.
-    if (card.keepsake || card.net || card.gatherOnly) return;
+    // The camp's tent and ring (src/world/camp) are not lives or finds, and things to gather on bare
+    // ground have a card of their own: no page and no moment for either.
+    if (card.keepsake || card.net || card.camp || card.gatherOnly) return;
     // A loose stone or a log: its card offers Lift on foot (src/world/pieces/lift.js); a tap alone
     // looks, and lifts nothing.
     if (card.piece) {

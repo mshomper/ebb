@@ -63,7 +63,7 @@ fn floraShade(c: FloraCommon, world: vec3f, nIn: vec3f, albedoIn: vec3f, ao: f32
   let moonVis = select(vis, 1.0, casterIsSun);
   let sunNl = clamp(dot(n, frame.sunDir) * (1.0 - wrap) + wrap, 0.0, 1.0);
   let moonNl = clamp(dot(n, frame.moonDir) * (1.0 - wrap) + wrap, 0.0, 1.0);
-  var radiance = albedo * ((frame.sunIlluminance * sunNl * sunVis + frame.moonIlluminance * moonNl * moonVis) / PI
+  var radiance = albedo * ((frame.sunIlluminance * sunNl * sunVis + frame.moonIlluminance * moonNl * moonVis + pointIllum(world, n, wrap)) / PI
                            + skyAmbient(n) * ao);
   if (f0 > 0.0) { radiance += frame.sunIlluminance * sunVis * ggxSpecular(n, v, frame.sunDir, roughness, f0); }
   return applyAerial(radiance * frame.exposure, fragXY * frame.invRenderSize, viewDist);

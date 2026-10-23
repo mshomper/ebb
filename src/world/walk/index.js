@@ -243,6 +243,8 @@ export function createWalk(o) {
 
     /** The act playing, or null. */
     get acting() { return acting ? acting.name : null; },
+    /** Where one of your figure's hands is now (what it holds: the lantern, the fire steel), or null. @param {'l' | 'r'} side */
+    hand: (side) => figure?.hand(side) ?? null,
 
     /**
      * I'm stuck: to the nearest spot that joins the mainland with the water as it is now (off the
@@ -299,6 +301,13 @@ export function createWalk(o) {
       walker.stop();
       if (Math.hypot(x - walker.x, z - walker.z) > 1e-3) walker.face(Math.atan2(x - walker.x, z - walker.z));
       this.reach(standS);
+    },
+
+    /** Turn to face a ground point where you stand (before a camp act: pitching, laying, striking). @param {number} x @param {number} z */
+    faceToward(x, z) {
+      if (!walker.placed || Math.hypot(x - walker.x, z - walker.z) < 1e-3) return;
+      walker.stop();
+      walker.face(Math.atan2(x - walker.x, z - walker.z));
     },
 
     /** How far you stand from a ground point, in meters (Infinity while above). @param {number} x @param {number} z */

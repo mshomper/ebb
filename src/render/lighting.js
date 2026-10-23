@@ -5,7 +5,9 @@
 
 import { makeBuffer } from '../core/gpu.js';
 
-export const LIGHT_UNIFORM_BYTES = 272;
+export const LIGHT_UNIFORM_BYTES = 400;
+/** The most small lights (the camp's fire and lantern, later fireflies' clusters) the shaders loop over. */
+export const MAX_POINT_LIGHTS = 4;
 
 /** @param {GPUDevice} device */
 export function createLightingLayout(device) {
@@ -62,12 +64,21 @@ export function createLighting(device, atmosphere, shadow) {
     data[52] = v.shadow.dir[0]; data[53] = v.shadow.dir[1]; data[54] = v.shadow.dir[2]; data[55] = v.shadow.strength;
     data[56] = v.shadow.texel[0]; data[57] = v.shadow.texel[1]; data[58] = v.shadow.texel[2]; data[59] = v.shadow.taps;
     data[60] = v.weather.cloud; data[61] = v.weather.rain; data[62] = v.weather.mist; data[63] = v.weather.wet;
-    data[64] = v.aerial.maxDistance; data[65] = v.aerial.slices; data[66] = v.shadow.cliffOffset ?? 0; data[67] = 0;
+    data[64] = v.aerial.maxDistance; data[65] = v.aerial.slices; data[66] = v.shadow.cliffOffset ?? 0; data[67] = points.length;
+    data.fill(0, 68, 68 + MAX_POINT_LIGHTS * 8);
+    points.forEach((p, i) => data.set([p.x, p.y, p.z, p.rangeM, p.rgb[0] * p.cd, p.rgb[1] * p.cd, p.rgb[2] * p.cd, 0], 68 + i * 8));
     device.queue.writeBuffer(buffer, 0, data);
   }
 
+  /** @type {PointLight[]} */ let points = [];
+
   return {
     layout, write,
+    /**
+     * The small lights this frame (doc 06, Lanterns and small lights), at most MAX_POINT_LIGHTS;
+     * written with the rest at the next write. @param {PointLight[]} list
+     */
+    setPoints(list) { points = list.filter((p) => p.cd > 0 && p.rangeM > 0).slice(0, MAX_POINT_LIGHTS); },
     /** The bind group; the frame graph reads it each frame, so a new shadow map takes effect at once. */
     get group() { return group; },
     /** A new shadow map (a quality tier with another map size, S8d-1). @param {{ view: GPUTextureView, sampler: GPUSampler }} s */
@@ -76,3 +87,7 @@ export function createLighting(device, atmosphere, shadow) {
 }
 
 /** @typedef {ReturnType<typeof createLighting>} Lighting */
+/**
+ * @typedef {{ x: number, y: number, z: number, rangeM: number, cd: number, rgb: ArrayLike<number> }} PointLight
+ *   cd: luminous intensity (candela, flicker included); rgb: its colour, linear with luminance 1
+ */

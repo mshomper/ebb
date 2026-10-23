@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ebb camp bench</title>
+<link rel="icon" href="../brand/ebb-favicon.svg" type="image/svg+xml">
+<style>
+  @font-face { font-family: 'Nunito'; src: url('../src/vendor/fonts/nunito-latin-600-normal.woff2') format('woff2'); font-weight: 600; }
+  @font-face { font-family: 'Nunito'; src: url('../src/vendor/fonts/nunito-latin-800-normal.woff2') format('woff2'); font-weight: 800; }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; max-width: 100%; overflow-x: hidden; }
+  body { background: #F4EEE4; color: #1E2624; font: 600 17px/1.45 'Nunito', system-ui, sans-serif; padding: 16px; overflow-wrap: anywhere; }
+  main { max-width: 960px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+  h1 { font-size: 24px; font-weight: 800; margin: 0; }
+  h2 { font-size: 19px; font-weight: 800; margin: 0 0 8px; }
+  .muted { color: #4A5551; font-size: 16px; margin: 0; }
+  #view { width: 100%; aspect-ratio: 16 / 9; max-height: 46vh; display: block; border-radius: 14px; background: #1E2624; touch-action: none; }
+  .card { background: #FBF7F0; border: 1px solid #E3D9C9; border-radius: 14px; padding: 14px 16px; min-width: 0; }
+  #status { display: flex; gap: 10px; align-items: center; font-weight: 800; }
+  #status svg { width: 24px; height: 24px; flex: 0 0 auto; }
+  .row { margin: 12px 0; }
+  .row .label svg { width: 22px; height: 22px; vertical-align: middle; }
+  .row .label { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; font-size: 16px; }
+  .track { height: 14px; border-radius: 7px; background: #E9E0D2; overflow: hidden; margin-top: 4px; position: relative; }
+  .fill { height: 100%; border-radius: 7px; position: absolute; left: 0; top: 0; }
+  .fill.off { background: #B8C4BE; }
+  .fill.on { background: #7C9D72; height: 50%; top: 50%; }
+  .legend { display: flex; flex-wrap: wrap; gap: 16px; font-size: 16px; margin-top: 8px; }
+  .legend i { display: inline-block; width: 22px; height: 8px; border-radius: 4px; vertical-align: middle; margin-right: 6px; }
+  button { font: 800 17px 'Nunito', system-ui, sans-serif; color: #1E2624; background: #E3EBDD; border: 1px solid #A8BBA0; border-radius: 10px; padding: 10px 16px; min-height: 48px; cursor: pointer; }
+  .buttons { display: flex; flex-wrap: wrap; gap: 10px; }
+  a { color: #4a6a47; }
+</style>
+</head>
+<body>
+<main>
+  <h1>ebb camp bench</h1>
+  <p class="muted">What the keeper's camp costs on each quality tier (docs/19, the camp budgets). Each run opens a fresh island just after sunset with the tent up and the ring laid, lights the fire, and with the low view down by the fire measures the whole frame's GPU time with the camp drawn (the tent, ring and lantern, the flame, smoke and moths, and the fire and lantern lights in every lit pass), then with the camp hidden. <a href="./">All tools</a></p>
+  <canvas id="view" aria-label="The camp at dusk"></canvas>
+  <div class="card"><div id="status">Starting</div><p class="muted" id="device"></p></div>
+  <div class="card">
+    <div class="buttons">
+      <button type="button" id="run-all">Measure every tier</button>
+      <button type="button" id="clear">Clear results</button>
+    </div>
+    <p class="muted" style="margin-top:8px">Each run reloads this page with the next tier, about 25 seconds apiece, three runs in all. Leave the page in front while it runs.</p>
+  </div>
+  <div class="card">
+    <h2>Extra GPU time for the camp</h2>
+    <div id="results"><p class="muted">No runs yet.</p></div>
+    <div class="legend">
+      <span><i style="background:#B8C4BE"></i>camp hidden</span>
+      <span><i style="background:#7C9D72"></i>camp drawn</span>
+    </div>
+  </div>
+  <p class="muted">Budget from docs/19: the camp's whole extra 0.5 ms on high and 0.67 ms on medium; its models' pass 0.2 and 0.25 ms; its fire effects 0.2 and 0.27 ms. Chrome rounds GPU timestamps to 0.1 ms unless chrome://flags "WebGPU Developer Features" is on, so small differences read best with it on.</p></main>
+<script src="./boot-guard.js"></script>
+<script type="importmap">{ "imports": {
+  "wgpu-matrix": "../src/vendor/wgpu-matrix/wgpu-matrix.module.js" } }</script>
+<script type="module" src="./camp-bench.js"></script>
+</body>
+</html>

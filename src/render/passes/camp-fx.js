@@ -1,0 +1,126 @@
+// @ts-check
+// The camp's fire effects pass (docs/future/13 sections 3.5, C-29 to C-32, C-38; camp-fx.wgsl): the
+// flame and its glow, the lantern's glass, the fire steel's sparks, the smoke and the moths, after
+// the sky so smoke seen against the sky is not drawn over. Depth tested, never written. The camp
+// (src/world/camp/index.js) says each frame where the fire is and how it burns (set); every particle
+// is placed on the GPU from its seed and the time.
+
+import { makeBuffer, makeShaderModule } from '../../core/gpu.js';
+
+/** @typedef {import('../frame-graph.js').PassContext} PassContext */
+
+const FLOATS = 56;
+
+/**
+ * @typedef {Object} CampFxFrame
+ * @property {number[]} fire      the flame's foot [x, y, z] (m)
+ * @property {number} flame       flame size 0..1 (0: none)
+ * @property {number} smoke       smoke amount 0..2
+ * @property {number} embers      ember glow 0..1
+ * @property {number[]} wind      the smoke's lean [x, z] (m/s)
+ * @property {number} mist        0..1
+ * @property {number[] | null} lantern  its glass [x, y, z], null when out
+ * @property {number[] | null} sparks   the steel [x, y, z, seconds since the strike (+10 per earlier strike)], or null
+ * @property {boolean} moths      after dark
+ * @property {number} time        real seconds
+ */
+
+/**
+ * @param {{ recipe: any, low?: boolean }} opts recipe: recipes/world/camp.json; low: the low tier (fewer puffs and moths)
+ */
+export function createCampFxPass(opts) {
+  const R = opts.recipe, F = R.flame, S = R.smoke, M = R.moths, K = R.steel;
+  const puffs = opts.low ? S.lowCount : S.count, moths = opts.low ? M.lowCount : M.count;
+  const data = new Float32Array(FLOATS);
+  let on = false;
+  /** @type {GPURenderPipeline} */ let glowPipe;
+  /** @type {GPURenderPipeline} */ let smokePipe;
+  /** @type {GPURenderPipeline} */ let mothPipe;
+  /** @type {GPUBuffer} */ let ubuf;
+  /** @type {GPUBindGroup} */ let group;
+  let smokeOn = false, flameOn = false, mothsOn = false;
+
+  const pass = {
+    name: 'campfx',
+    reads: ['hdr', 'depth'],
+    writes: ['hdr'],
+    enabled: () => on,
+
+    /** This frame's fire, or null when there is nothing to draw. @param {CampFxFrame | null} f */
+    set(f) {
+      on = !!f && (f.flame > 0 || f.smoke > 0 || f.embers > 0 || !!f.lantern || !!f.sparks);
+      if (!f || !on) return;
+      const L = f.lantern;
+      smokeOn = f.smoke > 0;
+      flameOn = f.flame > 0 || f.embers > 0 || !!L || !!f.sparks;
+      mothsOn = f.moths && (f.flame > 0 || !!L);
+      const sp = f.sparks;
+      data.set([
+        f.fire[0], f.fire[1], f.fire[2], f.flame,
+        f.smoke, S.opacity, f.time, f.embers,
+        f.wind[0], S.riseMps, f.wind[1], f.mist,
+        L ? L[0] : 0, L ? L[1] : 0, L ? L[2] : 0, L ? 1 : 0,
+        F.heightM, F.widthM, F.nits, F.flickerHz,
+        F.glowNits, F.glowM, R.lantern.glassNits, R.lantern.glassM,
+        S.lifeS, S.sizeM[0], S.sizeM[1], S.spreadM,
+        S.albedo[0], S.albedo[1], S.albedo[2], S.nearFadeM[0],
+        S.nearFadeM[1], puffs, F.minPx, F.cards,
+        moths, M.orbitM[0], M.orbitM[1], M.wingM,
+        M.heightM[0], M.heightM[1], M.speed[0], M.speed[1],
+        M.albedo[0], M.albedo[1], M.albedo[2], M.flapHz,
+        sp ? sp[0] : 0, sp ? sp[1] : 0, sp ? sp[2] : 0, sp ? sp[3] : -1,
+        K.sparks, K.sparkS, K.sparkNits, f.moths ? 1 : 0,
+      ]);
+    },
+
+    /** @param {PassContext} ctx */
+    async setup(ctx) {
+      const d = ctx.device;
+      const module = await makeShaderModule(d, 'camp-fx');
+      const layout = d.createBindGroupLayout({ label: 'group2-campfx', entries: [
+        { binding: 0, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: {} }] });
+      const pl = d.createPipelineLayout({ label: 'campfx', bindGroupLayouts: [ctx.layouts.frame, ctx.layouts.lighting, layout] });
+      const depthStencil = { format: /** @type {GPUTextureFormat} */ ('depth32float'), depthWriteEnabled: false, depthCompare: /** @type {GPUCompareFunction} */ ('greater') };
+      const prim = { topology: /** @type {GPUPrimitiveTopology} */ ('triangle-list'), cullMode: /** @type {GPUCullMode} */ ('none') };
+      const add = { color: { srcFactor: /** @type {GPUBlendFactor} */ ('one'), dstFactor: /** @type {GPUBlendFactor} */ ('one'), operation: /** @type {GPUBlendOperation} */ ('add') },
+        alpha: { srcFactor: /** @type {GPUBlendFactor} */ ('zero'), dstFactor: /** @type {GPUBlendFactor} */ ('one'), operation: /** @type {GPUBlendOperation} */ ('add') } };
+      const over = { color: { srcFactor: /** @type {GPUBlendFactor} */ ('one'), dstFactor: /** @type {GPUBlendFactor} */ ('one-minus-src-alpha'), operation: /** @type {GPUBlendOperation} */ ('add') },
+        alpha: { srcFactor: /** @type {GPUBlendFactor} */ ('zero'), dstFactor: /** @type {GPUBlendFactor} */ ('one'), operation: /** @type {GPUBlendOperation} */ ('add') } };
+      [glowPipe, smokePipe, mothPipe] = await Promise.all([
+        d.createRenderPipelineAsync({ label: 'campfx-glow', layout: pl, vertex: { module, entryPoint: 'vsGlow' },
+          fragment: { module, entryPoint: 'fsGlow', targets: [{ format: 'rgba16float', blend: add }] }, primitive: prim, depthStencil }),
+        d.createRenderPipelineAsync({ label: 'campfx-smoke', layout: pl, vertex: { module, entryPoint: 'vsSmoke' },
+          fragment: { module, entryPoint: 'fsSmoke', targets: [{ format: 'rgba16float', blend: over }] }, primitive: prim, depthStencil }),
+        d.createRenderPipelineAsync({ label: 'campfx-moths', layout: pl, vertex: { module, entryPoint: 'vsMoth' },
+          fragment: { module, entryPoint: 'fsMoth', targets: [{ format: 'rgba16float' }] }, primitive: prim, depthStencil }),
+      ]);
+      ubuf = makeBuffer(d, { label: 'campfx', size: FLOATS * 4, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
+      group = d.createBindGroup({ label: 'campfx', layout, entries: [{ binding: 0, resource: { buffer: ubuf } }] });
+    },
+
+    resize() {},
+
+    /** @param {GPUCommandEncoder} encoder @param {PassContext} ctx */
+    record(encoder, ctx) {
+      if (!glowPipe || !on) return;
+      ctx.device.queue.writeBuffer(ubuf, 0, data);
+      const rp = encoder.beginRenderPass({
+        label: 'campfx',
+        colorAttachments: [{ view: ctx.targets.hdr.createView(), loadOp: 'load', storeOp: 'store' }],
+        depthStencilAttachment: { view: ctx.targets.depth.createView(), depthReadOnly: true },
+        timestampWrites: ctx.timestampWrites('campfx'),
+      });
+      rp.setBindGroup(0, ctx.groups.frame);
+      rp.setBindGroup(1, ctx.groups.lighting);
+      rp.setBindGroup(2, group);
+      // Moths first (opaque wings), then the smoke over them, then the flame's light added on top.
+      if (mothsOn) { rp.setPipeline(mothPipe); rp.draw(12, moths); }
+      if (smokeOn) { rp.setPipeline(smokePipe); rp.draw(6, puffs); }
+      if (flameOn) { rp.setPipeline(glowPipe); rp.draw(6, F.cards + 2 + K.sparks); }
+      rp.end();
+    },
+  };
+  return pass;
+}
+
+/** @typedef {ReturnType<typeof createCampFxPass>} CampFxPass */

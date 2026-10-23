@@ -266,7 +266,7 @@ fn fsBlade(in: VsOut) -> FsOut {
   // A little wrap: thin blades pass some light through.
   let sunNl = clamp(dot(n, frame.sunDir) * 0.75 + 0.25, 0.0, 1.0);
   let moonNl = clamp(dot(n, frame.moonDir) * 0.75 + 0.25, 0.0, 1.0);
-  let radiance = albedo * ((frame.sunIlluminance * sunNl * sunVis + frame.moonIlluminance * moonNl * moonVis) / PI * mix(0.8, 1.0, in.up)
+  let radiance = albedo * ((frame.sunIlluminance * sunNl * sunVis + frame.moonIlluminance * moonNl * moonVis + pointIllum(in.world, n, 0.25)) / PI * mix(0.8, 1.0, in.up)
                            + skyAmbient(n) * ao);
   let color = applyAerial(radiance * frame.exposure, in.pos.xy * frame.invRenderSize, viewDist);
   // normalId: the ground's normal and the terrain's outline group, so blades never get outlines.

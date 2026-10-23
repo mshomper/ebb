@@ -203,7 +203,7 @@ fn fsFlora(in: VsOut) -> FsOut {
   // A little wrap: thin stems pass some light through.
   let sunNl = clamp(dot(n, frame.sunDir) * 0.8 + 0.2, 0.0, 1.0);
   let moonNl = clamp(dot(n, frame.moonDir) * 0.8 + 0.2, 0.0, 1.0);
-  let radiance = albedo * ((frame.sunIlluminance * sunNl * sunVis + frame.moonIlluminance * moonNl * moonVis) / PI
+  let radiance = albedo * ((frame.sunIlluminance * sunNl * sunVis + frame.moonIlluminance * moonNl * moonVis + pointIllum(in.world, n, 0.2)) / PI
                            + skyAmbient(n) * in.ao);
   let color = applyAerial(radiance * frame.exposure, in.pos.xy * frame.invRenderSize, viewDist);
   // normalId: outline group 0 (no lines), with an upright normal so the ground beside a clump

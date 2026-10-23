@@ -49,6 +49,7 @@ export const PARALLEL = {
   grace: () => import('./unit-tests-grace.js').then((m) => m.addGraceTests),
   boat: () => import('./unit-tests-boat.js').then((m) => m.addBoatTests),
   intro: () => import('./unit-tests-intro.js').then((m) => m.addIntroTests),
+  campFire: () => import('./unit-tests-camp-fire.js').then((m) => m.addCampFireTests),
   pack: () => import('./unit-tests-pack.js').then((m) => m.addPackTests),
   gather: () => import('./unit-tests-gather.js').then((m) => m.addGatherTests),
   click: () => import('./unit-tests-click.js').then((m) => m.addClickTests),

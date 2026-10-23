@@ -13,7 +13,9 @@ export const TRUST_WORDS = /** @type {const} */ (['wary', 'tolerant', 'curious',
 
 /**
  * @typedef {{ kind: 'watched', id: number, minutes: number, hour: number }
- *   | { kind: 'fed', id: number, hour: number }} TrustEvent
+ *   | { kind: 'fed', id: number, hour: number }
+ *   | { kind: 'camp', id: number, hour: number, gain: number }} TrustEvent
+ *   camp: standing presence while away (docs/future/13 CP-13), stored only in catch-up
  */
 
 /** Rounded to four places, so saves and catch-up compare exactly. @param {number} v */
@@ -98,6 +100,7 @@ export function applyTrust(fr, P, testTrust = 0, fullH = 6) {
     if (!f) continue;
     let gain;
     if (ev.kind === 'watched') gain = Math.min(ev.minutes, P.watch.capS / 60) * P.watch.trustPerMin;
+    else if (ev.kind === 'camp') gain = ev.gain;
     else {
       gain = P.feedTrust * appetite(f, ev.hour, fullH);
       f.fedAt = ev.hour;

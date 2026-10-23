@@ -179,8 +179,12 @@ export function createExposurePass(recipe) {
         slot.buffer.unmap();
         slot.busy = false;
         if (valid && slot.seq > lastSeq) {
+          // The first measurement is taken at once, so an island opening at dawn or dusk is never
+          // a dark screen for the many seconds the eye would take from the day's starting key.
+          const first = targetEV === null;
           lastSeq = slot.seq;
           targetEV = clamp(soften(ev), minEV, maxEV);
+          if (first) current = targetEV;
         }
       }).catch(() => { slot.busy = false; });
     },

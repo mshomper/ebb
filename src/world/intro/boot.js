@@ -54,7 +54,8 @@ export function introStartHour(R, orbit, params, fresh, testParams, timeSet) {
 /**
  * @param {{ R: any, boatR: any, params: URLSearchParams, testParams: string[], back: any, walk: any,
  *   terrain: any, water: any, land: any, terrainSeed: number, orbit: any, clock: any, camera?: any,
- *   pack?: any, boat?: { setMooring: (m: any) => void } | null }} o
+ *   pack?: any, camp?: any, campRecipe?: any, boat?: { setMooring: (m: any) => void } | null }} o
+ *   campRecipe: recipes/world/camp.json (how far round the view opens at the flap)
  *   pack: E2's pack (holds, take); boat: the boat (boat.js createBoat), set at its mooring here
  */
 export function createIntroBoot(o) {
@@ -88,7 +89,9 @@ export function createIntroBoot(o) {
       // The low view opens behind you, looking where you face (the camera's yaw points from the
       // target back to the eye).
       const p = o.camera?.pose();
-      if (p) o.camera.setPose({ ...p, target: [s.x, ground(s.x, s.z), s.z], yaw: s.yaw + Math.PI });
+      // At the flap, from beside you, so the tent at your back does not fill the view (E3).
+      const side = at >= beatIds.indexOf('page') ? o.campRecipe?.rest?.viewSideRad ?? 1.25 : 0;
+      if (p) o.camera.setPose({ ...p, target: [s.x, ground(s.x, s.z), s.z], yaw: s.yaw + Math.PI + side });
       o.walk.downHere();
     }
   } else if (!fresh && flags.includes('intro:begun') && !flags.includes('intro:done')) {
@@ -103,6 +106,8 @@ export function createIntroBoot(o) {
     get live() { return live; },
     /** The pack (E2), made after the walker: the ring beat asks it what you hold. @param {any} pack */
     usePack(pack) { o.pack = pack; },
+    /** The camp (E3, src/world/camp): its tent, ring, fire and rest replace the stand-in camp. @param {any} camp */
+    useCamp(camp) { o.camp = camp; },
     /** Start the director, after the journal is up (src/main.js). */
     start() {
       if (!runs || live) return;

@@ -54,10 +54,11 @@ if (typeof window !== 'undefined') {
  * @returns {Promise<{ mixer: () => import('./mixer.js').Mixer | null, ambience: () => any, voices: () => any, music: () => any, dispose: () => void }>}
  */
 export async function startAudio(store) {
-  const [mixerRecipe, ambRecipe, procRecipe, gameRecipe, skyRecipe, frogRecipe, midgeRecipe, dragonflyRecipe, minnowRecipe, keepsakeRecipe, introRecipe] = await Promise.all([
+  const [mixerRecipe, ambRecipe, procRecipe, gameRecipe, skyRecipe, frogRecipe, midgeRecipe, dragonflyRecipe, minnowRecipe, keepsakeRecipe, introRecipe, campRecipe] = await Promise.all([
     loadAudioRecipe('audio/mixer'), loadAudioRecipe('audio/ambience'), loadAudioRecipe('audio/procedural'),
     loadAudioRecipe('audio/game'), loadRecipe('world/sky'), loadRecipe('species/frog'), loadRecipe('species/midge'),
     loadRecipe('species/dragonfly'), loadRecipe('species/minnow'), loadAudioRecipe('audio/keepsakes'), loadAudioRecipe('audio/intro'),
+    loadAudioRecipe('audio/camp'),
   ]);
 
   /** @type {import('./mixer.js').Mixer | null} */ let mixer = null;
@@ -69,6 +70,7 @@ export async function startAudio(store) {
   /** @type {ReturnType<typeof setInterval> | 0} */ let callTimer = 0;
   /** @type {Awaited<ReturnType<typeof createMusic>> | null} */ let music = null;
   /** @type {ReturnType<typeof createKeepsakeSounds> | null} */ let keepsakeSounds = null;
+  /** The camp fire's one-shots (recipes/audio/camp.json): the strike, the catch, rain's hiss. @type {ReturnType<typeof createKeepsakeSounds> | null} */ let campSounds = null;
   const t0 = performance.now();
   const asked = new URLSearchParams(location.search).get('music');
   let testNow = asked === 'now' ? 'morning' : ['morning', 'interlude', 'evening', 'nocturne'].includes(asked ?? '') ? /** @type {string} */ (asked) : '';
@@ -132,6 +134,7 @@ export async function startAudio(store) {
     animals = createCreatureSound(mixer, voices, store, gameRecipe.frogs, gameRecipe.pond);
     soundState = createSoundState(gameRecipe, seed, (t) => sunMoon(t, skyRecipe.orbit).sunAlt * DEG, ambRecipe.seasonEdge);
     keepsakeSounds = createKeepsakeSounds(mixer, keepsakeRecipe);
+    campSounds = createKeepsakeSounds(mixer, campRecipe);
     applySettings();
     unsubs.push(store.subscribe('settings', () => applySettings()));
     if (touched) mixer.unlock().catch(() => { /* the next touch unlocks it */ });
@@ -197,6 +200,8 @@ export async function startAudio(store) {
     const C = introRecipe.call, pad = store.get('campPad');
     if (pad) voices?.call('intro:dusk-call', C.species, [pad.x + pad.fx * C.outM, 0, pad.z + pad.fz * C.outM], C.intensity);
   }));
+  // The camp's fire (src/world/camp): the steel's strike, the twigs catching, rain's hiss on a fire.
+  unsubs.push(on('camp:sound', (/** @type {{ name: string }} */ p) => campSounds?.play(p.name)));
 
   if (store.get('sound')) begin();
   else {
