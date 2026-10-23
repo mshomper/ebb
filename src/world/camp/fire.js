@@ -12,7 +12,9 @@
  *   sinceHour: when it took its state (game hours, fractional); flameUntilHour: a lit fire's flame
  *   ends then; lightings: times lit with the steel; litDays: game days it has been lit on (nettles
  *   come by a fire lit on enough days, C-25); lastLitDay: the last of them
- * @typedef {{ flameH: number, emberH: number, ashFadeH: number }} FireRecipe recipes/world/camp.json fire
+ * @typedef {{ flameH: number, emberH: number, ashFadeH: number, maxFuelH?: number, highH?: number }} FireRecipe recipes/world/camp.json fire
+ *   flameH: hours of flame one handful gives; maxFuelH: the most the ring holds at once; highH: with
+ *   more than this left it burns high, with less it burns low (F9)
  */
 
 /** @returns {Fire} */
@@ -33,18 +35,20 @@ export function cleanFire(v) {
 /**
  * What the fire is at a game hour, from its saved state and the clock.
  * @param {Fire} f @param {number} hour game hours (fractional) @param {FireRecipe} F
- * @returns {{ word: FireWord, since: number, flameLeftH: number, ash: number }}
+ * @returns {{ word: FireWord, since: number, flameLeftH: number, ash: number, high: boolean, level: number }}
  *   since: when it became what it is; flameLeftH: hours of flame left (lit only); ash: the cold
- *   ring's ash, 1 just gone cold, fading to 0 over ashFadeH
+ *   ring's ash, 1 just gone cold, fading to 0 over ashFadeH; high: burning high (more than highH of
+ *   fuel left); level: the flame's fuel 0..1 of what makes it burn high (1 at highH or more)
  */
 export function fireAt(f, hour, F) {
-  if (f.state === 'none' || f.state === 'laid') return { word: f.state, since: f.sinceHour, flameLeftH: 0, ash: 0 };
+  if (f.state === 'none' || f.state === 'laid') return { word: f.state, since: f.sinceHour, flameLeftH: 0, ash: 0, high: false, level: 0 };
   let word = f.state, since = f.sinceHour;
   if (word === 'lit' && hour >= f.flameUntilHour) { word = 'embers'; since = f.flameUntilHour; }
   if (word === 'embers' && hour >= since + F.emberH) { word = 'cold'; since += F.emberH; }
   const flameLeftH = word === 'lit' ? f.flameUntilHour - hour : 0;
   const ash = word === 'cold' ? Math.max(0, 1 - (hour - since) / Math.max(1e-6, F.ashFadeH)) : word === 'embers' ? 1 : 0;
-  return { word, since, flameLeftH, ash };
+  const highH = F.highH ?? F.flameH / 2;
+  return { word, since, flameLeftH, ash, high: flameLeftH > highH, level: word === 'lit' ? Math.min(1, flameLeftH / Math.max(1e-6, highH)) : 0 };
 }
 
 /** The game day of an hour. @param {number} hour */
@@ -74,7 +78,8 @@ export function lightFire(f, hour, F) {
 export function feedFire(f, hour, F) {
   const at = fireAt(f, hour, F);
   if (at.word === 'embers') return burn(f, hour, F);
-  if (at.word === 'lit') return { ...f, flameUntilHour: f.flameUntilHour + F.flameH };
+  // More wood on a burning fire: flameH more hours, up to what the ring holds.
+  if (at.word === 'lit') return { ...f, flameUntilHour: Math.min(hour + (F.maxFuelH ?? Infinity), f.flameUntilHour + F.flameH) };
   return null;
 }
 

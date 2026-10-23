@@ -585,7 +585,7 @@ export async function startApp(canvas, hooks = {}) {
   sim.addSystem(packDraw);
   // The keeper's camp (docs/future/13 section 3; src/world/camp): the tent and the fire ring in their
   // slots, the fire and the lantern as small lights, smoke and moths, and a night's rest in the tent.
-  const camp = createCamp({ recipe: campRecipe, seed, walk, terrain, clock, orbit: skyRecipe.orbit, camera, world,
+  const camp = createCamp({ recipe: campRecipe, seed, walk, terrain, clock, orbit: skyRecipe.orbit, camera, world, piles,
     seasons: seasonsRecipe, lighting, pack, shadowBias: shadowPass.bias, low: tier === 'low', poses: (await loadRecipe('world/figure')).poses,
     beat: () => intro.live?.intro.current?.id ?? null });
   sim.addSystem(camp);
