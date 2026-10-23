@@ -28,7 +28,7 @@ export function keeperEntry(K, flags, newDot) {
   const id = had.length === 1 ? had[0].id : '';
   return `<button type="button" class="ebb-nat-entry" data-view="keeper" data-keeper="${esc(id)}">
     <span class="ebb-nat-entry__icon">${iconSvg('notes')}</span>
-    <span class="ebb-jlist__text"><b>${keeperUnread(K, flags) ? newDot : ''}${esc(W.entry)}</b><span class="ebb-journal__voice">${esc(W.entryLine)}</span></span>
+    <span class="ebb-jlist__text"><b>${keeperUnread(K, flags) ? newDot : ''}${esc(id ? W.entry : W.title)}</b><span class="ebb-journal__voice">${esc(id ? W.entryLine : W.entryLineMany ?? W.entryLine)}</span></span>
     ${iconSvg('chevron', 'ebb-nat-entry__chev')}</button>`;
 }
 

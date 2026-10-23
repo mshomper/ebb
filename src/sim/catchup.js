@@ -63,6 +63,25 @@ export function awayHours(p) {
  */
 
 /**
+ * A night's rest keeps only what changed, briefly (Phase 1 fix F3): the first note of each kind
+ * (seen, flower, spread, a creature's sign...), at most `max` of them, and the journal without the
+ * rest. Pure. @param {any[]} notes written over the night, oldest first @param {any} journal
+ * @param {number} max @returns {{ notes: any[], journal: any }}
+ */
+export function fewNotes(notes, journal, max) {
+  const kinds = new Set(), keep = [];
+  for (const n of notes) {
+    const k = n.kind ?? n.text;
+    if (kinds.has(k) || keep.length >= max) continue;
+    kinds.add(k);
+    keep.push(n);
+  }
+  const key = (/** @type {any} */ n) => `${n.hour}|${n.sp}|${n.text}`;
+  const drop = new Set(notes.filter((n) => !keep.includes(n)).map(key));
+  return { notes: keep, journal: journal && drop.size ? { ...journal, notes: (journal.notes ?? []).filter((/** @type {any} */ n) => !drop.has(key(n))) } : journal };
+}
+
+/**
  * Run hours back to back. The worker job and the page fallback are this same function.
  * @param {CatchUpInput} a
  * @returns {{ state: any, journal: any, notes: any[], events: any[] }}

@@ -73,8 +73,33 @@
   .ebb-time.has-tool .ebb-time__btn { pointer-events: none; }
 }
 
+/* Paused while you walk, gather or shape (Phase 1 fix F12): one soft pulse, and a quiet line to the
+   button's left that fades after a few seconds. */
+.ebb-time__line {
+  position: absolute;
+  right: calc(100% + 10px);
+  bottom: 0;
+  width: max-content;
+  max-width: min(320px, calc(100vw - 100px));
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: rgba(30, 38, 36, 0.72);
+  color: var(--ui-cream);
+  font: italic 16px/1.35 'Fraunces', Georgia, serif;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 600ms ease, visibility 0s linear 600ms;
+}
+.ebb-time.is-nudged .ebb-time__line { opacity: 1; visibility: visible; transition: opacity 600ms ease, visibility 0s; }
+.ebb-time.is-nudged .ebb-time__btn { animation: ebb-time-pulse 1.4s ease-out 1; }
+@keyframes ebb-time-pulse {
+  0% { box-shadow: 0 6px 24px rgba(10, 14, 13, 0.28), 0 0 0 0 rgba(244, 238, 228, 0.55); }
+  100% { box-shadow: 0 6px 24px rgba(10, 14, 13, 0.28), 0 0 0 14px rgba(244, 238, 228, 0); }
+}
+
 /* Reduced motion: the system's (unless Settings says Full), or Settings' Calm (src/ui/motion.js). */
 @media (prefers-reduced-motion: reduce) {
+  :root:not(.ebb-motion-full) .ebb-time.is-nudged .ebb-time__btn { animation: none; }
   :root:not(.ebb-motion-full) .ebb-time,
   :root:not(.ebb-motion-full) .ebb-time.has-tool { transform: none; }
 }

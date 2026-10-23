@@ -7,6 +7,8 @@
 // { type: 'time.flow', flow } through src/input/actions.js; the app applies it. Styles: time-flow.css.
 
 import { get, subscribe } from '../core/store.js';
+import { on } from '../core/events.js';
+import { loadRecipe } from '../core/recipes.js';
 import { dispatch } from '../input/actions.js';
 import { ensureIconSprite, iconSvg } from './icons/icons.js';
 
@@ -81,12 +83,36 @@ export function mountTimeFlow(parent = document.body) {
   root.addEventListener('wheel', stop, { passive: true });
   root.addEventListener('contextmenu', noMenu);
 
+  // Paused, and you walk, gather or shape (Phase 1 fix F12): one soft pulse and a quiet line beside
+  // the button, at most once a minute, never over an open card or the journal (recipes/world/hud.json timeRest).
+  const line = document.createElement('div');
+  line.className = 'ebb-time__line';
+  line.setAttribute('role', 'status');
+  root.prepend(line);
+  /** @type {any} */ let T = null;
+  loadRecipe('world/hud').then((R) => { T = R.timeRest ?? null; }).catch(() => {});
+  let lastNudge = -Infinity, hideTimer = 0;
+  function nudge() {
+    if (!T || currentFlow() !== 0 || get('identify') || get('journalUi')?.open) return;
+    const now = performance.now();
+    if (now - lastNudge < T.everyS * 1000) return;
+    lastNudge = now;
+    line.textContent = T.text;
+    root.classList.remove('is-nudged');
+    void root.offsetWidth;   // restart the pulse
+    root.classList.add('is-nudged');
+    clearTimeout(hideTimer);
+    hideTimer = setTimeout(() => root.classList.remove('is-nudged'), T.showS * 1000);
+  }
+
   render();
   renderTool();
-  const unsubs = [subscribe('meta', render), subscribe('tools', renderTool)];
+  const unsubs = [subscribe('meta', render), subscribe('tools', renderTool),
+    ...['walk:arrived', 'gather:done', 'terrain:stroke-ended', 'water:pour-ended'].map((n) => on(n, nudge))];
   parent.appendChild(root);
 
   return function dispose() {
+    clearTimeout(hideTimer);
     for (const u of unsubs) u();
     btn.removeEventListener('click', onClick);
     root.remove();

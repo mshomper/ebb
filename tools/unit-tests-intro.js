@@ -7,6 +7,8 @@
 
 import { createIntro } from '../src/world/intro/index.js';
 import { createBus } from '../src/core/events.js';
+import { keeperCardHtml } from '../src/ui/keeper-card.js';
+import { keeperEntry } from '../src/ui/journal-keeper.js';
 
 const G = 'intro: director';
 
@@ -271,6 +273,17 @@ export function addIntroTests(test, assert, eq) {
     eq(r.log.flows.join(','), '1', 'time flows at 1x from dusk');
   });
 
+  test(G, 'resting in the tent at dusk, before sitting by the fire, ends the evening (never stuck at night)', async () => {
+    const r = rig(await recipe());
+    r.intro.start({ fresh: true });
+    play(r, 'dusk');
+    eq(r.intro.current?.id, 'dusk', 'at the dusk beat');
+    r.W.sunsetInH = -0.1; r.intro.update(0.1);
+    r.bus.emit('camp:rested', {});
+    assert(r.flags.includes('intro:dusk') && r.flags.includes('intro:rest') && r.flags.includes('intro:done'), 'dusk, rest and done');
+    eq(r.intro.current, null, 'no beat left');
+  });
+
   test(G, 'a tucked hint stays away until its next line', async () => {
     const R = await recipe();
     const r = rig(R, { flags: R.beats.slice(0, 6).map((/** @type {any} */ b) => `intro:${b.id}`).concat('intro:begun') });
@@ -280,4 +293,26 @@ export function addIntroTests(test, assert, eq) {
     r.bus.emit('walk:went-up', {});
     eq(r.line(), R.beats[6].hint[1], 'the next line shows');
   });
+
+  test(G, 'the waking card: the keeper page the recipe names, in paragraphs, kept after the first page', async () => {
+    const R = await recipe();
+    const K = await json('../recipes/world/keeper-pages.json');
+    const p = K.pages.find((/** @type {any} */ x) => x.id === R.wakePage);
+    assert(p, `keeper-pages.json has the wake page "${R.wakePage}"`);
+    eq(K.pages.indexOf(p), 1, 'it comes after the first page');
+    const html = keeperCardHtml(p);
+    eq((html.match(/<p>/g) ?? []).length, p.body.filter((/** @type {string} */ l) => !l.trim()).length + 1, 'one paragraph per block of lines');
+    assert(html.includes(p.title) && !/undefined/.test(html), 'title, and clean');
+    // One page had: the entry names it; two: the entry leads to the list of them.
+    assert(keeperEntry(K, ['keeper:first'], '').includes(K.words.entry), 'one page: its own name');
+    const two = keeperEntry(K, ['keeper:first', `keeper:${p.id}`], '');
+    assert(two.includes(K.words.title) && two.includes('data-keeper=""'), 'two pages: the list');
+  });
+}
+
+/** A recipe file, in the browser or in Node. @param {string} rel */
+async function json(rel) {
+  const url = new URL(rel, import.meta.url);
+  if (url.protocol === 'file:') { const fs = await import('node:fs/promises'); return JSON.parse(await fs.readFile(url, 'utf8')); }
+  return (await fetch(url)).json();
 }

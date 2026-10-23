@@ -68,8 +68,15 @@ export function measureAnimal(sp, state, rec) {
  */
 export function observeAnimals(j, out, ctx, at) {
   const { state, hour, words } = ctx;
+  // A place already right for an animal in the island's first day (the pond a new island starts
+  // with) is not news: its flag is set silently, so a line comes only when the place becomes right later.
+  const quiet = hour - (j.born ?? 0) <= (words.quietStartHours ?? words.arrivedHours ?? 0);
   /** @param {any} rec @param {string} kind @param {string} sp */
-  const note = (rec, kind, sp) => { const t = rec.notes?.[kind]; if (t) out.push({ hour, date: at.date, text: t, sp, kind }); };
+  const note = (rec, kind, sp) => {
+    if (kind === 'right' && quiet) return;
+    const t = rec.notes?.[kind];
+    if (t) out.push({ hour, date: at.date, text: t, sp, kind });
+  };
 
   // Frogs.
   const rec = words.species.frogs;

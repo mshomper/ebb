@@ -1,8 +1,8 @@
 {
   "type": "keeper-pages",
   "version": 1,
-  "note": "The keeper's own pages (docs/future/13 section 2.4), written in the walker's hand and kept in the journal: the first opens by itself at the spring on the first evening. Each is { id, form, title, body: [lines] } in the letters' light markup (src/ui/journal-letters.js); an empty line starts a new paragraph. Under 60 words each. The first page's text is a stand-in until the story collaborator's arrives.",
-  "words": { "entry": "The first page", "entryLine": "In your own hand, from the morning you came.", "title": "Keeper's pages", "back": "Back to the notes" },
+  "note": "The keeper's own pages (docs/future/13 section 2.4), written in the walker's hand and kept in the journal: the first opens by itself at the spring on the first evening. Each is { id, form, title, body: [lines] } in the letters' light markup (src/ui/journal-letters.js); an empty line starts a new paragraph. Under 60 words each. The first page's text is a stand-in until the story collaborator's arrives. The second (tend) shows as a centered card when you wake from your first rest, one click closes it, and it is kept here after the first (Phase 1 fix F15; stand-in text from the fix log).",
+  "words": { "entry": "The first page", "entryLine": "In your own hand, from the morning you came.", "entryLineMany": "In your own hand, since the morning you came.", "title": "Keeper's pages", "back": "Back to the notes" },
   "pages": [
     {
       "id": "first",
@@ -14,6 +14,18 @@
         "Keepers don't own the islands we tend. We help them hold what comes, and write down what we see.",
         "",
         "Someone will read this after me. Start at the spring."
+      ]
+    },
+    {
+      "id": "tend",
+      "form": "Keeper page",
+      "title": "What a keeper does",
+      "body": [
+        "A keeper doesn't build. A keeper tends.",
+        "",
+        "Shape the land and let the tide shape it back; leave room, and see what comes.",
+        "",
+        "The island grows while you are away, and keeps its own time: ebb, and flow, and ebb again."
       ]
     }
   ]

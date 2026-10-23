@@ -19,6 +19,7 @@ import { ensureIconSprite, iconSvg } from './icons/icons.js';
 import { cleanName } from '../world/creatures/trust.js';
 import { actionsFor, cardAction } from './card-actions.js';
 import { pouchSvg } from './sketches/pouches.js';
+import { mountKeeperCard } from './keeper-card.js';
 
 /** Notes on screen at once. */
 const AT_ONCE = 2;
@@ -458,8 +459,11 @@ export function mountIslandNotes(parent, words, naturalist = null) {
   parent.appendChild(arrow);
   parent.appendChild(mark);
   parent.appendChild(introMark);
+  // A keeper page as a centered card (waking from the first rest; src/ui/keeper-card.js).
+  const offKeeperCard = mountKeeperCard(parent);
 
   return function dispose() {
+    offKeeperCard();
     offNote();
     offAway();
     offRevealNote();
