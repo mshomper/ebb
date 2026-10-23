@@ -36,11 +36,13 @@ export function addClickTests(test, assert, eq) {
     assert(far.kind === 'approach' && far.reachM < R.creatureCardM, 'stops short of the card reach');
   });
 
-  test(G, 'grass and sand: a card only at your feet, or within 2.5 m when something lies there to gather', () => {
-    eq(clickPlan('everywhere', 0.5, 0.45, R).kind, 'card');
+  test(G, 'grass and sand: never a card when plain; with something to gather, its card near, else walk to it first', () => {
+    eq(clickPlan('everywhere', 0.5, 0.45, R).kind, 'walk', 'plain grass at your feet is a walk, not a card');
     eq(clickPlan('everywhere', 2, 0.45, R).kind, 'walk', 'plain grass two meters off is a walk');
+    eq(clickPlan('everywhere', 12, 0.45, R).kind, 'walk', 'plain sand far off is a walk');
     eq(clickPlan('everywhere', 2, 0.45, R, true).kind, 'card', 'drift twigs two meters off open their card');
-    eq(clickPlan('everywhere', 3, 0.45, R, true).kind, 'walk');
+    const far = clickPlan('everywhere', 12, 0.45, R, true);
+    assert(far.kind === 'approach' && far.reachM < R.nearLookM, 'drift twigs far off: walk up to them, then their card');
     eq(clickPlan('none', 0.2, 0, R).kind, 'walk');
   });
 

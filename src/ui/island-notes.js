@@ -90,6 +90,9 @@ export function mountIslandNotes(parent, words, naturalist = null) {
     if (document.hidden) { if (unreadNote(n)) { more++; renderMore(); } return; }
     // A gift (src/world/expansion.js) is its own quiet card, not a passing note.
     if (/** @type {any} */ (n).kind === 'gift') { showGift(n); return; }
+    // While the first evening's hint shows, passing notes keep quiet (the journal keeps them), so the
+    // one line that says what to do next is the only one on the island.
+    if (hint.classList.contains('is-shown')) return;
     waiting.push(n);
     if (waiting.length > N.queue) {
       const dropped = waiting.slice(0, waiting.length - N.queue);
@@ -123,6 +126,27 @@ export function mountIslandNotes(parent, words, naturalist = null) {
   hintText.addEventListener('click', () => dispatch(/** @type {any} */ ({ type: 'intro.tuck' })));
   skipBtn.addEventListener('click', () => dispatch(/** @type {any} */ ({ type: 'intro.skip' })));
   root.prepend(hint);
+  // The first evening's mark (`intro:mark { x, z }` or null): a soft breathing ring drawn over the
+  // view where a beat leads you (the spring's pool, which tall grass hides from the ground), seen
+  // from far off. Like Show me's mark, never an arrow: off screen, it simply waits. A click on it
+  // walks you there (`intro.go`): a click on far ground behind it can land short, on a crest.
+  const introMark = document.createElement('button');
+  introMark.type = 'button';
+  introMark.className = 'ebb-mark ebb-mark--go';
+  introMark.title = 'Walk there';
+  introMark.setAttribute('aria-label', 'Walk there');
+  introMark.addEventListener('click', (e) => { e.stopPropagation(); dispatch(/** @type {any} */ ({ type: 'intro.go' })); });
+  /** @type {{ x: number, z: number } | null} */ let markAt = null;
+  let marking = 0;
+  function followMark() {
+    cancelAnimationFrame(marking);
+    const view = get('view'), p = markAt && view ? view.project(markAt.x, markAt.z) : null;
+    const on = !!p && !p.behind && p.x > 0 && p.y > 0 && p.x < window.innerWidth && p.y < window.innerHeight;
+    introMark.classList.toggle('is-on', on);
+    if (on && p) introMark.style.transform = `translate(${Math.round(p.x)}px, ${Math.round(p.y)}px)`;
+    if (markAt) marking = requestAnimationFrame(followMark);
+  }
+  const offMark = on('intro:mark', (/** @type {{ x: number, z: number } | null} */ p) => { markAt = p ?? null; followMark(); });
   const offHint = on('intro:hint', (/** @type {{ text: string | null, skip: string | null }} */ p) => {
     const showing = !!p.text;
     hint.classList.remove('is-in');
@@ -131,6 +155,14 @@ export function mountIslandNotes(parent, words, naturalist = null) {
     skipBtn.textContent = p.skip ?? '';
     skipBtn.hidden = !p.skip;
     hint.classList.add('is-shown');
+    // The hint is the one line on the island: passing notes already up fade (a new island's first
+    // look writes several), and queued ones wait in the journal.
+    waiting = [];
+    root.querySelectorAll('.ebb-notes__note:not(.is-leaving)').forEach((b) => {
+      b.classList.add('is-leaving');
+      b.classList.remove('is-shown');
+      setTimeout(() => b.remove(), 700);
+    });
     requestAnimationFrame(() => requestAnimationFrame(() => hint.classList.add('is-in')));
   });
   /**
@@ -404,6 +436,7 @@ export function mountIslandNotes(parent, words, naturalist = null) {
   parent.appendChild(card);
   parent.appendChild(arrow);
   parent.appendChild(mark);
+  parent.appendChild(introMark);
 
   return function dispose() {
     offNote();
@@ -412,6 +445,9 @@ export function mountIslandNotes(parent, words, naturalist = null) {
     offRevealEnd();
     offNotice();
     offHint();
+    offMark();
+    cancelAnimationFrame(marking);
+    introMark.remove();
     offUi();
     for (const u of unsubs) u();
     clearTimeout(pumpTimer);

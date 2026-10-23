@@ -689,6 +689,10 @@ button.ebb-jnotes__row:hover { background: rgba(30, 38, 36, 0.06); }
 }
 .ebb-mark::after { border-width: 2px; box-shadow: none; animation: ebb-mark-breathe 2.4s ease-out infinite; }
 @keyframes ebb-mark-breathe { from { transform: scale(1); opacity: 0.9; } to { transform: scale(1.9); opacity: 0; } }
+/* The first evening's mark is also a way there: a click on its ring walks you beside the place. */
+.ebb-mark--go { border: 0; padding: 0; background: none; }
+.ebb-mark--go.is-on { pointer-events: auto; cursor: pointer; }
+.ebb-mark--go::after { pointer-events: none; }
 /* Reduced motion: the system's (unless Settings says Full), or Settings' Calm (src/ui/motion.js). */
 @media (prefers-reduced-motion: reduce) { :root:not(.ebb-motion-full) .ebb-mark::after { animation: none; opacity: 0; } }
 :root.ebb-motion-calm .ebb-mark::after { animation: none; opacity: 0; }

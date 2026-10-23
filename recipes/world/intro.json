@@ -1,21 +1,27 @@
 {
   "type": "intro",
   "version": 1,
-  "note": "The first evening (docs/future/13 section 2; src/world/intro). A new island opens at dawn on spring day 0 with the walker standing on the beach below the camp, the boat grounded behind (Matt, October 22: no row-in). Beats are data, run in order: id, hint lines (the first shows when the beat starts; each later one when the event in hintNext at the same step arrives), an optional start check, and a done check by name (checks.js) or a done event. then.act plays a walker act once the check passes and the beat ends when the act does. onStart.page opens the journal on that keeper page. cue emits an event (the dusk curlew) when its own event arrives. later shows one more line after the beat if the sun sets more than laterIfBeforeSunsetH hours later. short: the beats of the short evening (the sister island), with no hint lines. older: islands made before the update. Flags go in journal.flags as flagPrefix + id.",
+  "note": "The first evening (docs/future/13 section 2; src/world/intro). A new island opens at dawn on spring day 0 with the walker standing on the beach below the camp, the boat grounded behind (Matt, October 22: no row-in). Beats are data, run in order: id, hint lines (the first shows when the beat starts; each later one when the event in hintNext at the same step arrives, or at once if the check in hintNextIf at that step already passes), an optional start check, and a done check by name (checks.js) or a done event (with orCheck, a check that says it is done already: the tent pitched before its beat came). steps: a beat that needs several things says what is still needed, the first step whose handfuls (need) the pack does not hold giving the line. then.act plays a walker act once the check passes and the beat ends when the act does. onStart.page opens the journal on that keeper page; onStart.flow sets time's flow (dusk at its own pace, after the time button hurried the day). cue emits an event (the dusk call) when its own event arrives. later shows one more line after the beat if the sun sets more than laterIfBeforeSunsetH hours later. Every line names the button or card icon by the word it shows on hover. springGlow: the soft ring on the spring's pool while the spring beat runs, so it can be found from the beach (radiusM, opacity from and to, breatheS). goReachM: a click on the mark over the view (where a beat leads you) walks you to within this of the place; at the spring, within the spring beat's reachM, so you can kneel there. short: the beats of the short evening (the sister island), with no hint lines. older: islands made before the update. Flags go in journal.flags as flagPrefix + id.",
   "startAtDawn": { "dayIndex": 0, "afterDawnH": 0.25, "dawnSunDeg": -6 },
   "flagPrefix": "intro:",
+  "springGlow": { "radiusM": 1.6, "opacity": [0.45, 0.85], "breatheS": 2.6 },
+  "goReachM": 1.5,
   "beats": [
-    { "id": "landfall", "hint": ["Click the sand to walk there."], "skip": "Skip the first evening", "done": { "check": "arrivedOnLand" } },
-    { "id": "spring", "hint": ["Follow the stream up to the spring. Kneel there and drink."], "done": { "check": "kneltAtSpring", "reachM": 1.5 }, "then": { "act": "drink" } },
+    { "id": "landfall", "hint": ["Click the grass above the beach to walk there."], "skip": "Skip the first evening", "done": { "check": "arrivedOnLand" } },
+    { "id": "spring", "hint": ["The spring is up the slope, inland. Click its soft ring to walk there, then Kneel and drink."], "done": { "check": "kneltAtSpring", "reachM": 2.5 }, "then": { "act": "drink" } },
     { "id": "page", "onStart": { "page": "first" }, "hint": ["The journal keeps what you learn here. Close it when you're ready."], "done": { "check": "journalClosed" } },
-    { "id": "pitch", "hint": ["The flat ground above the beach is your camp. Click the glowing patch to pitch your tent."], "done": { "event": "camp:pitched" } },
-    { "id": "gather", "hint": ["Drift twigs lie along the tide line and pebbles on the shore. Click a twig, then Gather."], "done": { "check": "packHolds", "need": { "fuel": 1, "stones": 2 } } },
-    { "id": "ring", "hint": ["Click the glowing ring of earth to lay your fire ring."], "done": { "event": "camp:ring-laid" } },
-    { "id": "shape", "hint": ["Go up to see the whole island. From above you can shape it.", "Widen the spring's pool into a pond with Sculpt, or pour water with Water."], "hintNext": ["walk:went-up"],
-      "later": "Evening comes in its own time. The time button can bring it sooner.", "laterIfBeforeSunsetH": 2, "done": { "check": "shapedOffPad" } },
-    { "id": "dusk", "start": { "check": "afterSunset" }, "hint": ["Evening. Go down to your fire ring and light it.", "Sit by the fire a while."], "hintNext": ["camp:lit"],
+    { "id": "pitch", "hint": ["Turn round and walk back down to the flat ground above the beach: that is your camp. Click the glowing patch, then Pitch the tent."], "done": { "event": "camp:pitched", "orCheck": "tentPitched" } },
+    { "id": "gather", "steps": [
+        { "need": { "fuel": 1 }, "hint": "Drift twigs lie along the tide line below the camp. Click one to walk to it, then Gather." },
+        { "need": { "stones": 1 }, "hint": "Now two handfuls of pebbles from the shore. Click a pebble, then Gather." },
+        { "need": { "stones": 2 }, "hint": "One more handful of pebbles. Gather again." }
+      ], "done": { "check": "packHolds", "need": { "fuel": 1, "stones": 2 } } },
+    { "id": "ring", "hint": ["Back up at your camp, click the glowing ring of earth, then Lay the fire ring."], "done": { "event": "camp:ring-laid", "orCheck": "ringLaid" } },
+    { "id": "shape", "hint": ["Go up to see the whole island. From above you can shape it.", "Pick Sculpt in the bar below and drag across the land, or pick Water and press to pour."], "hintNext": ["walk:went-up"],
+      "later": "Evening comes in its own time. The time button at the bottom right can bring it sooner.", "laterIfBeforeSunsetH": 2, "done": { "check": "shapedOffPad" } },
+    { "id": "dusk", "start": { "check": "afterSunset" }, "onStart": { "flow": 1 }, "hint": ["Evening. Go down to your fire ring and press Light.", "Sit by the fire a while."], "hintNext": ["camp:lit"], "hintNextIf": ["fireLit"],
       "cue": { "on": "camp:lit", "emit": "intro:curlew" }, "done": { "check": "satByFire", "reachM": 1.5, "stillS": 20 } },
-    { "id": "rest", "hint": ["When you're ready, click the tent and Rest until morning."], "done": { "event": "camp:rested" } }
+    { "id": "rest", "hint": ["When you're ready, walk to the tent's door and press Rest to sleep until morning."], "done": { "event": "camp:rested" } }
   ],
   "short": ["landfall", "pitch", "ring", "dusk", "rest"],
   "older": { "notice": "There's a camp ground on the flat above the shore now. Your tent is in your pack.", "glowWithinM": 12 },

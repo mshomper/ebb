@@ -20,9 +20,10 @@ async function recipe() {
 function rig(R, s = {}) {
   const bus = createBus();
   const flags = s.flags ?? [];
-  const W = { x: 0, z: 0, posture: 'stand', below: true, journal: false, pack: { fuel: 0, stones: 0 }, lit: false, sunsetInH: 10 };
-  /** @type {{ hints: any[], acts: string[], pages: string[], notices: string[], glows: string[], emitted: string[], skipped: number }} */
-  const log = { hints: [], acts: [], pages: [], notices: [], glows: [], emitted: [], skipped: 0 };
+  const W = { x: 0, z: 0, posture: 'stand', below: true, journal: false, pack: { fuel: 0, stones: 0 }, lit: false, sunsetInH: 10,
+    camp: /** @type {Record<string, boolean>} */ ({ tent: false, ring: false }) };
+  /** @type {{ hints: any[], acts: string[], pages: string[], notices: string[], glows: string[], emitted: string[], flows: number[], skipped: number }} */
+  const log = { hints: [], acts: [], pages: [], notices: [], glows: [], emitted: [], flows: [], skipped: 0 };
   const spring = { x: 10, z: 0 }, ring = { x: 20, z: 0 }, pad = { x: 20, z: 0 };
   const intro = createIntro({
     R, mode: s.mode,
@@ -33,12 +34,15 @@ function rig(R, s = {}) {
     ctx: {
       walker: () => W, onLand: (x) => x >= 0, spring: () => spring, journalOpen: () => W.journal,
       packHolds: (need) => Object.entries(need).every(([k, n]) => (/** @type {any} */ (W.pack)[k] ?? 0) >= n),
-      offPad: (rect, at) => (rect ? rect.maxX < 16 : !!at && at.x < 16), ring: () => ring, fireLit: () => W.lit,
+      // The pad reaches from x 16 up; a stroke's rect comes as terrain:stroke-ended sends it.
+      offPad: (rect, at) => (rect ? rect.x1 < 16 : !!at && at.x < 16), ring: () => ring, fireLit: () => W.lit,
+      campHas: (part) => !!W.camp[part],
       sunsetInH: () => W.sunsetInH, pad: () => pad,
     },
     effects: {
       act: (n) => log.acts.push(n), openPage: (id) => { log.pages.push(id); W.journal = true; },
       skipCamp: () => { log.skipped++; }, notice: (t) => log.notices.push(t), glow: (sl) => log.glows.push(sl),
+      flow: (n) => log.flows.push(n),
     },
   });
   const line = () => log.hints[log.hints.length - 1]?.text ?? null;
@@ -55,7 +59,7 @@ function play(r, until) {
     pitch: () => bus.emit('camp:pitched', {}),
     gather: () => { W.pack = { fuel: 1, stones: 2 }; bus.emit('pack:changed', {}); },
     ring: () => bus.emit('camp:ring-laid', {}),
-    shape: () => { bus.emit('walk:went-up', {}); bus.emit('terrain:stroke-ended', { rect: { minX: 4, minZ: 0, maxX: 8, maxZ: 4 } }); },
+    shape: () => { bus.emit('walk:went-up', {}); bus.emit('terrain:stroke-ended', { rect: { x0: 4, z0: 0, x1: 8, z1: 4 } }); },
     dusk: () => { W.sunsetInH = -0.1; intro.update(0.1); W.lit = true; bus.emit('camp:lit', {}); W.x = 20.5; W.posture = 'sit'; for (let i = 0; i < 210; i++) intro.update(0.1); W.posture = 'stand'; },
     rest: () => bus.emit('camp:rested', {}),
   });
@@ -74,7 +78,7 @@ export function addIntroTests(test, assert, eq) {
     const r = rig(await recipe());
     r.intro.start({ fresh: true });
     eq(r.intro.current?.id, 'landfall', 'first beat');
-    eq(r.line(), 'Click the sand to walk there.');
+    eq(r.line(), 'Click the grass above the beach to walk there.');
     eq(r.log.hints[0].skip, 'Skip the first evening', 'skip offered at beat 0');
     const order = /** @type {string[]} */ ([]);
     r.bus.on('intro:beat-done', (/** @type {any} */ p) => order.push(p.id));
@@ -132,7 +136,7 @@ export function addIntroTests(test, assert, eq) {
     eq(r.line(), R.beats[6].hint[0]);
     r.bus.emit('walk:went-up', {});
     eq(r.line(), R.beats[6].hint[1]);
-    r.bus.emit('terrain:stroke-ended', { rect: { minX: 18, minZ: 0, maxX: 22, maxZ: 2 } });
+    r.bus.emit('terrain:stroke-ended', { rect: { x0: 18, z0: 0, x1: 22, z1: 2 } });
     eq(r.intro.current?.id, 'shape', 'on the pad');
     r.bus.emit('water:pour-ended', { x: 5, z: 2 });
     eq(r.intro.current?.id, 'dusk', 'a pour off the pad');
@@ -168,7 +172,7 @@ export function addIntroTests(test, assert, eq) {
     const again = rig(R, { flags });
     again.intro.start({ fresh: false });
     eq(again.intro.current?.id, 'gather');
-    eq(again.line(), R.beats[4].hint[0]);
+    eq(again.line(), R.beats[4].steps[0].hint);
     assert(!again.flags.includes('intro:older'), 'a begun island is not older');
   });
 
@@ -213,6 +217,58 @@ export function addIntroTests(test, assert, eq) {
     const again = rig(R, { flags: r.flags.slice() });
     again.intro.start({ fresh: false });
     eq(again.log.notices.length, 0, 'the notice shows once');
+  });
+
+  test(G, 'gathering says what is still needed: twigs, then two handfuls of pebbles, then one more', async () => {
+    const R = await recipe();
+    const S = R.beats[4].steps;
+    const r = rig(R, { flags: R.beats.slice(0, 4).map((/** @type {any} */ b) => `intro:${b.id}`).concat('intro:begun') });
+    r.intro.start({ fresh: false });
+    eq(r.line(), S[0].hint, 'twigs first');
+    r.W.pack = { fuel: 1, stones: 0 }; r.bus.emit('pack:changed', {}); r.intro.update(0.1);
+    eq(r.line(), S[1].hint, 'then pebbles');
+    r.W.pack = { fuel: 1, stones: 1 }; r.intro.update(0.1);
+    eq(r.line(), S[2].hint, 'then one more');
+    r.W.pack = { fuel: 0, stones: 2 }; r.intro.update(0.1);
+    eq(r.line(), S[0].hint, 'pebbles first, twigs still needed');
+    r.W.pack = { fuel: 1, stones: 2 }; r.bus.emit('pack:changed', {});
+    eq(r.intro.current?.id, 'ring');
+  });
+
+  test(G, 'the tent pitched before its beat came: the pitch beat is done as soon as it starts', async () => {
+    const R = await recipe();
+    const r = rig(R, { flags: ['intro:begun', 'intro:landfall', 'intro:spring', 'intro:page'] });
+    r.W.camp.tent = true;
+    r.intro.start({ fresh: false });
+    r.intro.update(0.1);
+    eq(r.intro.current?.id, 'gather');
+  });
+
+  test(G, 'a Sculpt stroke off the pad finishes the shape beat (the rect as terrain:stroke-ended sends it)', async () => {
+    const R = await recipe();
+    const r = rig(R, { flags: R.beats.slice(0, 6).map((/** @type {any} */ b) => `intro:${b.id}`).concat('intro:begun') });
+    r.intro.start({ fresh: false });
+    r.bus.emit('terrain:stroke-ended', { rect: { x0: 2, z0: -3, x1: 6, z1: 3 } });
+    eq(r.intro.current?.id, 'dusk');
+  });
+
+  test(G, 'the live off-pad check reads a stroke rect as terrain sends it, and a pour by its point', async () => {
+    const { offPadOf } = await import('../src/world/intro/adapter.js');
+    const pad = { x: 0.6, z: -33.3, r: 4, lockFadeM: 1 };
+    assert(!offPadOf(pad, { x0: -1, z0: -35, x1: 2, z1: -32 }), 'a stroke inside the pad stays on it');
+    assert(offPadOf(pad, { x0: -15.5, z0: -15.25, x1: -3.5, z1: 5.25 }), 'a stroke by the spring is off the pad');
+    assert(offPadOf(pad, null, { x: -12, z: 1.4 }), 'a pour away from camp is off the pad');
+    assert(!offPadOf(pad, null, { x: 1, z: -33 }), 'a pour on the pad is not');
+  });
+
+  test(G, 'dusk with the fire already lit: the sit line at once, the call sounds, and time at its own pace', async () => {
+    const R = await recipe();
+    const r = rig(R, { flags: R.beats.slice(0, 7).map((/** @type {any} */ b) => `intro:${b.id}`).concat('intro:begun') });
+    r.W.lit = true; r.W.sunsetInH = -0.5;
+    r.intro.start({ fresh: false });
+    eq(r.line(), R.beats[7].hint[1], 'straight to sitting');
+    assert(r.log.emitted.includes('intro:curlew'), 'the dusk call');
+    eq(r.log.flows.join(','), '1', 'time flows at 1x from dusk');
   });
 
   test(G, 'a tucked hint stays away until its next line', async () => {
