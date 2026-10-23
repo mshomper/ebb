@@ -2,7 +2,10 @@
 // Walker figure tests for tools/unit-tests.html (doc 23, W5): the GLB reader reads the figure, the
 // rig has its 20 bones parents first with skin weights that add up, the IK reaches, blinks keep
 // their spacing, a planted foot never slides while walking, the feet stand on a slope, the same
-// walk poses the same twice, and the figure never changes the walker's state.
+// walk poses the same twice, and the figure never changes the walker's state. The keeper's camp acts
+// (drink, pitch, lay, strike, crawlIn, climbOut) each end after their recipe length with finite
+// bones, the feet stay put while a kneeling act's hands work, crawlIn stays low until climbOut, and
+// a placed figure starts in its posture.
 
 import { readGlb, meshesByName } from '../src/render/gltf.js';
 import { buildFigure, anchorWeights } from '../src/world/figure/rig.js';
@@ -11,8 +14,29 @@ import { twoBone, len, sub, qrot } from '../src/world/figure/kinematics.js';
 import { blinkAt } from '../src/world/figure/eyes.js';
 import { matPoint } from '../src/world/figure/kinematics.js';
 import { createFootprints } from '../src/world/figure/footprints.js';
+import { ACTS, actLength } from '../src/world/figure/acts.js';
 
 const FIG = 'walker figure';
+
+/**
+ * Stand the figure still for a second, play an act, and report each frame from the act's start to
+ * a second past its end: the ankles in the world, the posture weights, and whether it ended then.
+ * @param {any} R @param {any} built @param {any} motion @param {string} name @param {'stand'|'kneel'} [posture]
+ */
+function playAct(R, built, motion, name, posture = 'stand') {
+  const feet = ['foot.l', 'foot.r'].map((n) => built.skeleton.findIndex((/** @type {any} */ b) => b.name === n));
+  const k = R.body.displayScale ?? 1, dt = 1 / 60;
+  const s = Object.freeze({ x: 0, z: 0, y: 0, yaw: 0, speed: 0, moving: false, ground: () => 0, depth: () => 0, below: true, posture });
+  for (let f = 0; f < 60; f++) motion.update(dt, s);
+  const len = motion.act(name);
+  const frames = [];
+  for (let f = 0; f < (len + 1) * 60; f++) {
+    const r = motion.update(dt, s);
+    const ankles = feet.map((i) => matPoint(motion.bones, i * 16, built.skeleton[i].pivot).map((v) => v * k));
+    frames.push({ u: (f + 1) * dt, done: r.actDone, ankles, info: { ...motion.info }, finite: motion.bones.every(Number.isFinite) });
+  }
+  return { len, frames };
+}
 
 async function load() {
   const R = await (await fetch('../recipes/world/figure.json')).json();
@@ -187,5 +211,93 @@ export function addFigureTests(test, assert, eq) {
       for (let k = 0; k < a[f].bones.length; k++) if (a[f].bones[k] !== b[f].bones[k]) throw new Error(`frame ${f} differs`);
     }
     return `${a.length} frames`;
+  });
+
+  test(FIG, 'each keeper\'s camp act runs to its end after its recipe length, with every bone finite', async () => {
+    const { R, built } = await load();
+    const report = [];
+    for (const name of ACTS) {
+      const motion = createFigureMotion(R, built.skeleton);
+      const { len, frames } = playAct(R, built, motion, name);
+      eq(len, actLength(R.poses, name), `${name} length`);
+      assert(len > 1 && len < 5, `${name} lasts ${len} s`);
+      const ends = frames.filter((f) => f.done === name);
+      eq(ends.length, 1, `${name} reports its end once`);
+      assert(Math.abs(ends[0].u - len) < 1.5 / 60, `${name} ended at ${ends[0].u.toFixed(3)} s, not ${len} s`);
+      assert(frames.every((f) => f.finite), `${name} gave a bone that is not a number`);
+      assert(frames.some((f) => f.info.act === name) && frames[frames.length - 1].info.act === null, `${name} plays, then is over`);
+      report.push(`${name} ${len} s`);
+    }
+    eq(createFigureMotion(R, built.skeleton).act('cartwheel'), 0, 'an unknown act plays nothing');
+    return report.join(', ');
+  });
+
+  test(FIG, 'while a kneeling act\'s hands work, the feet stay planted (no slide)', async () => {
+    const { R, built } = await load();
+    const report = [];
+    for (const name of ['drink', 'pitch', 'lay', 'strike']) {
+      const { frames } = playAct(R, built, createFigureMotion(R, built.skeleton), name);
+      const knelt = frames.filter((f) => f.info.act === name && f.info.kneelW > 0.999);
+      assert(knelt.length > 30, `${name} kneels for ${knelt.length} frames`);
+      let worst = 0;
+      for (const f of knelt) for (let i = 0; i < 2; i++) worst = Math.max(worst, Math.hypot(...[0, 1, 2].map((j) => f.ankles[i][j] - knelt[0].ankles[i][j])));
+      assert(worst < 0.005, `${name}: a foot moved ${(worst * 100).toFixed(2)} cm while kneeling`);
+      report.push(`${name} ${(worst * 1000).toFixed(1)} mm`);
+    }
+    return report.join(', ');
+  });
+
+  test(FIG, 'kneeling, the left knee rests on the ground and no knee ever goes through it', async () => {
+    const { R, built } = await load();
+    const k = R.body.displayScale ?? 1, dt = 1 / 60;
+    const knees = ['shin.l', 'shin.r'].map((n) => built.skeleton.findIndex((/** @type {any} */ b) => b.name === n));
+    const kneeY = (/** @type {any} */ m) => knees.map((i) => matPoint(m.bones, i * 16, built.skeleton[i].pivot)[1] * k);
+    const motion = createFigureMotion(R, built.skeleton);
+    /** @param {'stand'|'kneel'} posture */
+    const still = (posture) => Object.freeze({ x: 0, z: 0, y: 0, yaw: 0, speed: 0, moving: false, ground: () => 0, depth: () => 0, below: true, posture });
+    let lowest = Infinity;
+    // Settled standing first (the hips' spring starts from nothing on the very first frame).
+    for (let f = 0; f < 30; f++) motion.update(dt, still('stand'));
+    // Down, held, and up again.
+    for (const [posture, seconds] of /** @type {const} */ ([['stand', 1], ['kneel', 3], ['stand', 3]])) {
+      for (let f = 0; f < seconds * 60; f++) { motion.update(dt, still(posture)); lowest = Math.min(lowest, ...kneeY(motion)); }
+      if (posture === 'kneel') {
+        const [l, r] = kneeY(motion);
+        assert(l < 0.07 && l > 0.01, `the kneeling knee is ${(l * 100).toFixed(1)} cm up`);
+        assert(r > 0.15, `the front knee is up (${(r * 100).toFixed(1)} cm)`);
+      }
+    }
+    // Every kneeling act, from standing.
+    for (const name of ['drink', 'pitch', 'lay', 'strike']) {
+      const m = createFigureMotion(R, built.skeleton);
+      for (let f = 0; f < 60; f++) m.update(dt, still('stand'));
+      const len = m.act(name);
+      for (let f = 0; f < (len + 1) * 60; f++) { m.update(dt, still('stand')); lowest = Math.min(lowest, ...kneeY(m)); }
+    }
+    assert(lowest > 0.01, `a knee went down to ${(lowest * 100).toFixed(1)} cm`);
+    return `lowest knee ${(lowest * 100).toFixed(1)} cm`;
+  });
+
+  test(FIG, 'crawlIn ends low on hands and knees and stays there; climbOut stands up from it', async () => {
+    const { R, built } = await load();
+    const motion = createFigureMotion(R, built.skeleton);
+    const inn = playAct(R, built, motion, 'crawlIn', 'kneel');
+    const last = inn.frames[inn.frames.length - 1];
+    assert(last.info.crawlW > 0.999, `a second after crawlIn the crawl is ${last.info.crawlW.toFixed(2)}`);
+    const out = playAct(R, built, motion, 'climbOut', 'stand');
+    assert(out.frames[0].info.crawlW > 0.95, 'climbOut starts from low');
+    const end = out.frames[out.frames.length - 1].info;
+    assert(end.crawlW < 0.001 && end.kneelW < 0.001, `after climbOut: crawl ${end.crawlW.toFixed(2)}, kneel ${end.kneelW.toFixed(2)}`);
+  });
+
+  test(FIG, 'a placed figure starts in its posture, with no steps to get there', async () => {
+    const { R, built } = await load();
+    const motion = createFigureMotion(R, built.skeleton);
+    const s = { x: 0, z: 0, y: 0, yaw: 0, speed: 0, moving: false, ground: () => 0, below: true, posture: /** @type {'kneel'} */ ('kneel') };
+    for (let f = 0; f < 30; f++) motion.update(1 / 60, { ...s, posture: 'stand' });
+    motion.place('kneel');
+    const r = motion.update(1 / 60, { ...s, x: 0.6 });
+    eq(motion.info.kneelW, 1, 'kneeling at once');
+    eq(r.footfalls.length, 0, 'no step taken');
   });
 }

@@ -27,7 +27,8 @@ import { stampNotes, markShown, markNotesSeen, markPageSeen, readOf, pageSince, 
 /**
  * @typedef {Object} JournalUiSlice
  * @property {boolean} open
- * @property {'trails'|'living'|'ground'|'web'|'almanac'|'notes'|'shelf'} view
+ * @property {'trails'|'living'|'ground'|'web'|'almanac'|'notes'|'shelf'|'keeper'} view  keeper: the keeper's pages (src/ui/journal-keeper.js)
+ * @property {string|null} [keeper] the keeper page open, or null for their list
  * @property {'naturalist'|'beach'|'shape'} [trail] the trail the Trails page shows when it is not wide enough for all three
  * @property {string|null} page   the page shown in the living or ground view, or null for the list
  * @property {'half'|'full'} size  the phone sheet's height
@@ -402,6 +403,12 @@ export function createJournal(opts) {
         if (next !== journal) { journal = next; update('journal', () => journal); }
         return;
       }
+      // A flag the first evening keeps (src/world/intro): beats done, and keeper pages had and read.
+      if (a.type === 'journal.flag') {
+        const next = flag(journal, a.flag);
+        if (next !== journal) { journal = next; update('journal', () => journal); }
+        return;
+      }
       if (a.type !== 'ui.journal') return;
       /** @type {JournalUiSlice} */ const u = get('journalUi');
       const open = a.toggle ? !u.open : a.open ?? u.open;
@@ -417,6 +424,7 @@ export function createJournal(opts) {
       }
       if (a.size) patch.size = a.size;
       if (a.trail) patch.trail = a.trail;
+      if (a.keeper !== undefined) patch.keeper = a.keeper;
       // Opening the journal, or a page in it, puts the tap card away (the page now says it all).
       if (open && (!u.open || a.page) && get('identify')) update('identify', () => null);
       // Opening Notes, or a page: what was unread stays marked new while you look (since), and

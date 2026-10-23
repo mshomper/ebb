@@ -69,7 +69,8 @@ export function createKeepsakeSounds(mixer, recipe, opts = {}) {
     src.detune.value = (((h >>> 8) & 0xffff) / 0xffff * 2 - 1) * (recipe.pitchCents ?? 0);
     const g = ctx.createGain();
     g.gain.value = 10 ** ((s.db ?? 0) / 20);
-    src.connect(g).connect(mixer.input('tools'));
+    // The tools bus, unless the recipe names another (the first evening's far curlew is a creature).
+    src.connect(g).connect(mixer.input(recipe.bus ?? 'tools'));
     src.onended = () => g.disconnect();
     src.start();
   }

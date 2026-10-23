@@ -138,11 +138,6 @@ const MODES = [
   // Steps (doc 13, the shaper's trail): a drag from a shelf down to the ground cuts a flight between them.
   { id: 'steps', label: 'Steps' },
 ];
-/** What Terrace and Cut do, under their chips. */
-const CLIFF_HINTS = {
-  terrace: 'Drag to build a level shelf, Height above where you start, with a sheer rock face at its edge.',
-  cut: 'Drag to carve a level floor, Height below where you start, with sheer rock walls around it.',
-};
 /** @type {{id: PaintLayer, label: string}[]} */
 const LAYERS = [
   { id: 'grass', label: 'Grass' },
@@ -158,9 +153,11 @@ const DEFAULT_SIZE_RANGE = /** @type {[number, number]} */ ([0.5, 12]);
 /**
  * Mount the tool bar and brush card.
  * @param {HTMLElement} [parent]
+ * @param {Record<string, string>} [CLIFF_HINTS] what Terrace and Cut do, under their chips
+ *   (recipes/world/intro.json hints.tools)
  * @returns {() => void} dispose: removes the DOM and unsubscribes
  */
-export function mountTools(parent = document.body) {
+export function mountTools(parent = document.body, CLIFF_HINTS = {}) {
   ensureIconSprite();
 
   const root = el('div', 'ebb-tools');

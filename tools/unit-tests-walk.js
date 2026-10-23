@@ -12,6 +12,29 @@ import { crossingNote, hoursToLow, depthAtLow } from '../src/world/walk/crossing
 import { mainland, nearestJoined } from '../src/world/walk/reach.js';
 import { createPresence, ringScale } from '../src/world/creatures/presence.js';
 import { createWatching } from '../src/world/creatures/watching.js';
+import { createWalk } from '../src/world/walk/index.js';
+import { on, flushDeferred } from '../src/core/events.js';
+
+/**
+ * The game's walk (walk/index.js) on flat ground 1 m up, 40 m by 20 m, with a stand-in camera and
+ * dry water, so its hooks can be tried: returns the walk, the events it sent (flushed each frame)
+ * and a way to run it. @param {any} R recipes/world/walker.json
+ */
+async function gameWalk(R) {
+  const figure = await (await fetch('../recipes/world/figure.json')).json();
+  const water = await (await fetch('../recipes/world/water.json')).json();
+  const camera = { eye: [10, 5, 0], target: [10, 1, 10], viewProj: new Float32Array(16), setGround() {}, follow() {} };
+  const walk = createWalk({
+    recipe: R, figure, tide: water.tide, hours: () => 0, creatures: () => [], camera: /** @type {any} */ (camera),
+    terrain: /** @type {any} */ ({ sampleHeight: () => 1, openBounds: () => ({ openMin: [0, 0], openMax: [40, 20] }), sampleMaterial: () => ({ grass: 1, sand: 0, rock: 0, soil: 0 }) }),
+    water: { sim: { live: false }, tide: -5, sampleLive: () => ({ depth: 0 }) },
+  });
+  /** @type {{ name: string, p: any }[]} */ const heard = [];
+  const offs = ['walk:arrived', 'walk:act-done', 'walk:went-down'].map((n) => on(n, (p) => heard.push({ name: n, p })));
+  flushDeferred();
+  const run = (/** @type {number} */ seconds) => { for (let i = 0; i < seconds * 60; i++) { walk.update(1 / 60); flushDeferred(); } };
+  return { walk, heard, run, done: () => { offs.forEach((off) => off()); walk.dispose(); } };
+}
 
 const WALK = 'walker';
 
@@ -233,5 +256,62 @@ export function addWalkTests(test, assert, eq) {
     const k = grid.cellAt(w.x, w.z);
     assert(isOpen(grid, w.rules, k), `the figure is left standing in ${depth(k).toFixed(2)} m of water at ${w.x.toFixed(1)}, ${w.z.toFixed(1)}`);
     return `waded back to ${w.x.toFixed(1)}, ${w.z.toFixed(1)}`;
+  });
+
+  test(WALK, 'walk:arrived comes at the end of a walk, never after a stop', async () => {
+    const R = await (await fetch('../recipes/world/walker.json')).json();
+    const g = await gameWalk(R);
+    try {
+      assert(g.walk.placeAt(5, 10, 0), 'placeAt found nowhere to stand');
+      assert(g.walk.downHere(), 'downHere did not go down');
+      g.run(0.1);
+      eq(g.heard.filter((e) => e.name === 'walk:went-down').length, 1, 'went down once');
+      g.walk.tap(100, 100, [12, 1, 10]);
+      assert(g.walk.walker.moving, 'the tap did not start a walk');
+      g.run(20);
+      const arrived = g.heard.filter((e) => e.name === 'walk:arrived');
+      eq(arrived.length, 1, 'arrivals at the end of the walk');
+      assert(Math.hypot(arrived[0].p.x - 12, arrived[0].p.z - 10) < 0.3, `arrived at ${arrived[0].p.x.toFixed(2)}, ${arrived[0].p.z.toFixed(2)}`);
+      // A walk cut short by I'm stuck (a stop) does not arrive.
+      g.walk.tap(400, 100, [20, 1, 10]);
+      g.run(1);
+      assert(g.walk.walker.moving, 'the second walk is under way');
+      g.walk.stuck();
+      g.run(3);
+      eq(g.heard.filter((e) => e.name === 'walk:arrived').length, 1, 'arrivals after a stop');
+      return `arrived at ${arrived[0].p.x.toFixed(2)}, ${arrived[0].p.z.toFixed(2)}`;
+    } finally { g.done(); }
+  });
+
+  test(WALK, 'act() reports walk:act-done after its length, holds you still meanwhile, and placeAt never reads as a fast move', async () => {
+    const R = await (await fetch('../recipes/world/walker.json')).json();
+    const g = await gameWalk(R);
+    try {
+      assert(g.walk.placeAt(5, 10, 0, 'kneel'), 'placeAt found nowhere to stand');
+      g.walk.downHere();
+      g.run(0.1);
+      // A jump of 20 m: the walker's speed (what presence reads) stays 0.
+      assert(g.walk.placeAt(25, 10, 1, 'stand'), 'placeAt again');
+      eq(g.walk.presenceNow()?.speed, 0, 'presence speed after a placeAt');
+      g.run(0.05);
+      eq(g.walk.presenceNow()?.speed, 0, 'presence speed a few frames on');
+      eq(g.walk.act('cartwheel'), false, 'an unknown act');
+      const figure = await (await fetch('../recipes/world/figure.json')).json();
+      assert(g.walk.act('drink'), 'drink did not play');
+      eq(g.walk.walker.posture, 'kneel', 'kneeling while it drinks');
+      eq(g.walk.act('lay'), false, 'a second act while one plays');
+      g.walk.tap(100, 100, [30, 1, 10]);
+      assert(!g.walk.walker.moving, 'a tap walked off mid-act');
+      const len = figure.poses.drink.keys.at(-1).t;
+      g.run(len - 0.1);
+      eq(g.heard.filter((e) => e.name === 'walk:act-done').length, 0, 'done too soon');
+      g.run(0.2);
+      const done = g.heard.filter((e) => e.name === 'walk:act-done');
+      eq(done.length, 1, 'act-done once');
+      eq(done[0].p.name, 'drink', 'the act named');
+      eq(g.walk.walker.posture, 'stand', 'standing after drinking');
+      eq(g.heard.filter((e) => e.name === 'walk:arrived').length, 0, 'no arrival from a placeAt or an act');
+      return `drink ${len} s`;
+    } finally { g.done(); }
   });
 }

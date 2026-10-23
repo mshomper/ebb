@@ -112,6 +112,27 @@ export function mountIslandNotes(parent, words, naturalist = null) {
   // A calm word from the island itself, not a journal note (a save that came back from earlier).
   const offNotice = on('island:notice', (/** @type {{ text: string, showS: number }} */ p) => showNow({ text: p.text, notice: true }, p.showS));
   const offRevealEnd = on('reveal:ended', (/** @type {{ missed: number }} */ p) => { if (p.missed > 0) { more += p.missed; renderMore(); } });
+  // The first evening's hint (src/world/intro): one line that stays until its beat is done, above
+  // the passing notes. A click tucks it away (`intro.tuck`); Skip shows under it at beat 0 only.
+  const hint = document.createElement('div');
+  hint.className = 'ebb-notes__hint';
+  hint.innerHTML = `<button type="button" class="ebb-notes__hint-text" title="Tuck this away"></button>
+    <button type="button" class="ebb-notes__skip" hidden></button>`;
+  const hintText = /** @type {HTMLButtonElement} */ (hint.querySelector('.ebb-notes__hint-text'));
+  const skipBtn = /** @type {HTMLButtonElement} */ (hint.querySelector('.ebb-notes__skip'));
+  hintText.addEventListener('click', () => dispatch(/** @type {any} */ ({ type: 'intro.tuck' })));
+  skipBtn.addEventListener('click', () => dispatch(/** @type {any} */ ({ type: 'intro.skip' })));
+  root.prepend(hint);
+  const offHint = on('intro:hint', (/** @type {{ text: string | null, skip: string | null }} */ p) => {
+    const showing = !!p.text;
+    hint.classList.remove('is-in');
+    if (!showing) { hint.classList.remove('is-shown'); return; }
+    hintText.textContent = p.text;
+    skipBtn.textContent = p.skip ?? '';
+    skipBtn.hidden = !p.skip;
+    hint.classList.add('is-shown');
+    requestAnimationFrame(() => requestAnimationFrame(() => hint.classList.add('is-in')));
+  });
   /**
    * A gift's card (the naturalist's notes, a species' gift): its drawn icon, its title and line,
    * low in the middle; it fades by itself after a while, or closes on a tap, which opens its page.
@@ -353,6 +374,7 @@ export function mountIslandNotes(parent, words, naturalist = null) {
     offRevealNote();
     offRevealEnd();
     offNotice();
+    offHint();
     offUi();
     for (const u of unsubs) u();
     clearTimeout(pumpTimer);

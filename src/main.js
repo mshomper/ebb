@@ -83,7 +83,7 @@ startApp(canvas, { onDeviceLost: (rebuilding) => showRebuildingNote(rebuilding),
       const hud = await mountHud(document.body);
       hudLayer = hud.layer;
       await mountClockDial(hud.layer);
-      mountTools(hud.layer);
+      mountTools(hud.layer, (await loadRecipe('world/intro')).hints.tools);
       // The piece playing, its name softly near the bottom, halfway through (src/ui/now-playing.js).
       mountNowPlaying().catch((err) => console.warn('ebb: the now-playing line did not mount', err));
       mountTimeFlow(hud.layer);
@@ -134,7 +134,10 @@ startApp(canvas, { onDeviceLost: (rebuilding) => showRebuildingNote(rebuilding),
       const progress = createProgress({ words, recipe: naturalist, gifts, beachcomber, shaper });
       // The Shelf section draws kept keepsakes from their numbers (docs/future/12).
       const [keepsakesRecipe, bottleMessages] = await Promise.all([loadRecipe('world/keepsakes'), loadRecipe('world/bottle-messages')]);
-      mountJournal(document.body, { ...journal, naturalist, beachcomber, shaper, progress, shelf: { K: keepsakesRecipe, messages: bottleMessages } }, hud.layer);
+      mountJournal(document.body, { ...journal, naturalist, beachcomber, shaper, progress, shelf: { K: keepsakesRecipe, messages: bottleMessages },
+        keeper: await loadRecipe('world/keeper-pages') }, hud.layer);
+      // The first evening's director (src/world/intro): its flags live in the journal, so it starts now.
+      /** @type {any} */ (r).intro?.start();
       // A save that came back from earlier copies says so, calmly (src/ui/damaged.js).
       noticeRecovered(saveInfo);
       // Time away (src/sim/away.js): catch up now on the time since the last save, and later on a

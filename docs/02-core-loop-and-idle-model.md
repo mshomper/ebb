@@ -35,7 +35,7 @@ flowchart LR
 
 ### The first evening, before the loop
 
-Every new island opens once with a first evening, before the loop above begins (docs/future/13, section 2). The walker rows in at dawn in a small boat below the camp. Ten short beats teach the loop by doing each thing once: step ashore, drink at the spring, read the keeper's first page, pitch the tent, gather drift twigs and stones, lay the fire ring, go up and shape, light the fire at dusk and sit by it, then rest in the tent. Each beat waits for the player and shows one hint line. It takes about 10 to 15 minutes. A skip at beat 0 leaves the camp ready. Islands made before the update never run it. After the rest, the walker wakes at the tent flap just before sunrise, and the loop runs as below.
+Every new island opens once with a first evening, before the loop above begins (docs/future/13, section 2). The walker stands on the beach at dawn below the camp, the small boat grounded behind (changed October 22, 2026, Matt: no row-in). Nine short beats teach the loop by doing each thing once: walk up the beach, drink at the spring, read the keeper's first page, pitch the tent, gather drift twigs and stones, lay the fire ring, go up and shape, light the fire at dusk and sit by it, then rest in the tent. Each beat waits for the player and shows one hint line. It takes about 10 to 15 minutes. A skip at beat 0 leaves the camp ready. Islands made before the update never run it. After the rest, the walker wakes at the tent flap just before sunrise, and the loop runs as below.
 
 ```mermaid
 flowchart LR
@@ -191,7 +191,7 @@ Save stores: world seed, `worldT`, last wall time, ecology state, away log (last
 - Close the tab for 40 real minutes, reopen: a short reveal shows about 10 game hours of change.
 - Close for a night (about 11 hours or more), reopen: 7 game days passed (the cap, half a season), the reveal visits the frog pond, and notes mention it.
 - Run the bench page twice with the same save: identical checksums; compare a live 60-minute run to a 60-tick catch-up: identical ecology checksum.
-- Start a fresh island: it opens at dawn in the boat and the first evening runs. Rest at the tent after dusk: the walker wakes at the flap just before sunrise, with the fire banked to embers (docs/future/13, section 2.5).
+- Start a fresh island: it opens at dawn on the beach, the boat behind, and the first evening runs (changed October 22, 2026, Matt: no row-in). Rest at the tent after dusk: the walker wakes at the flap just before sunrise, with the fire banked to embers (docs/future/13, section 2.5).
 - Rest with the fire lit and come back within a game day: a thin smoke rises from the ring. After two game days it is cold, the same live and in catch-up (docs/future/13, section 3.10).
 
 ## Open questions

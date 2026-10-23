@@ -46,6 +46,8 @@ export const PARALLEL = {
   waterTable: () => import('./unit-tests-water-table.js').then((m) => m.addWaterTableTests),
   underLogMeshes: () => import('./unit-tests-under-log-meshes.js').then((m) => m.addUnderLogMeshTests),
   grace: () => import('./unit-tests-grace.js').then((m) => m.addGraceTests),
+  boat: () => import('./unit-tests-boat.js').then((m) => m.addBoatTests),
+  intro: () => import('./unit-tests-intro.js').then((m) => m.addIntroTests),
   pack: () => import('./unit-tests-pack.js').then((m) => m.addPackTests),
   gather: () => import('./unit-tests-gather.js').then((m) => m.addGatherTests),
   click: () => import('./unit-tests-click.js').then((m) => m.addClickTests),

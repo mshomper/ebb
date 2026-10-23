@@ -552,6 +552,41 @@ button.ebb-jnotes__row:hover { background: rgba(30, 38, 36, 0.06); }
 }
 .ebb-notes__more.is-shown { display: block; }
 .ebb-notes__more:focus-visible { outline: 2px solid var(--wordmark-dark); outline-offset: 2px; }
+/* The first evening's hint (src/world/intro): one quiet line on paper that stays until its beat is
+   done; a click tucks it away. Skip sits under it at the very start. */
+.ebb-notes__hint {
+  pointer-events: auto;
+  display: none;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  max-width: 100%;
+  padding: 10px 16px 12px;
+  border: 1px solid rgba(30, 38, 36, 0.14);
+  border-radius: 14px;
+  background: rgba(244, 238, 228, 0.9);
+  color: #1E2624;
+  opacity: 0;
+  transition: opacity 600ms ease;
+}
+.ebb-notes__hint.is-shown { display: flex; }
+.ebb-notes__hint.is-in { opacity: 1; }
+.ebb-notes__hint-text {
+  appearance: none; -webkit-appearance: none;
+  margin: 0; padding: 0; border: 0; background: none; color: inherit;
+  font-family: var(--font-voice); font-style: italic; font-weight: 400;
+  font-size: calc(19px * var(--text-scale, 1)); line-height: 1.35;
+  text-align: left; overflow-wrap: break-word; cursor: pointer;
+}
+.ebb-notes__skip {
+  appearance: none; -webkit-appearance: none;
+  margin: 0; padding: 0 2px; min-height: 48px; border: 0; background: none;
+  color: #3F5A52; text-decoration: underline; text-underline-offset: 3px;
+  font-family: var(--font-ui, 'Nunito', system-ui, sans-serif); font-style: normal; font-weight: 700;
+  font-size: calc(16px * var(--text-scale, 1)); cursor: pointer;
+}
+.ebb-notes__skip[hidden] { display: none; }
+.ebb-notes__hint-text:focus-visible, .ebb-notes__skip:focus-visible { outline: 2px solid var(--wordmark-dark); outline-offset: 2px; }
 
 /* --- read marks (src/world/journal/read.js): new since you last looked, and notes you may have missed --- */
 .ebb-new {
@@ -928,6 +963,7 @@ button.ebb-trail__row:hover b { text-decoration: underline; text-decoration-colo
 .ebb-letter__body { font-family: var(--font-voice); font-weight: 400; font-size: calc(18px * var(--text-scale, 1)); line-height: 1.55; }
 .ebb-letter.is-haiku .ebb-letter__body { text-align: center; font-style: italic; padding: 12px 0; }
 .ebb-letter.is-paper .ebb-letter__body { font-family: Georgia, serif; font-size: calc(17px * var(--text-scale, 1)); }
+.ebb-letter.is-keeper .ebb-letter__body { font-style: italic; font-size: calc(19px * var(--text-scale, 1)); line-height: 1.6; }
 .ebb-letter__h1, .ebb-letter__h2, .ebb-letter__h3 { font-weight: 800; font-size: calc(19px * var(--text-scale, 1)); line-height: 1.25; }
 .ebb-letter.is-paper .ebb-letter__h3 { text-transform: uppercase; letter-spacing: 0.04em; border-top: 2px solid var(--jr-ink); border-bottom: 1px solid var(--jr-ink); padding: 6px 0; }
 .ebb-letter__h4 { font-style: italic; color: var(--jr-soft); }

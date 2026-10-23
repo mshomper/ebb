@@ -1,7 +1,7 @@
 {
   "type": "figure",
   "version": 1,
-  "note": "The walker's figure (doc 23, W5; approved October 21, 2026): Matt's Meshy model, split into a body and two arms in nTop and coloured per vertex by tools/figure-prep/prep.py (assets/figures/walker.glb). The rest pose is the A-pose: the arms hang down by the rig. Metres, y up, body +z forward, feet on y = 0. bones: name, parent, pivot (the arms' pivots come from the model's extras, so a new prep moves them). skin: where each part blends between bones, as anchors along a height (y) or along the arm (t, m out from the shoulder). hang: the arms' resting direction. gait: per pace, step length, foot lift, arm swing, lean and the rise and fall of the hips; wade blends in by the water's depth. springs: the hat tip, coat skirt and pack follow a beat late (stiffness per second squared, damping 0..1 of critical). eyes: the two ovals the shader draws on the head (rest pose), their colour, a faint glow after dark (cd per m2), blinks and expressions. poses: sit, kneel, feed, and the arrivals. All motion is drawing only: it reads the walker and never changes it.",
+  "note": "The walker's figure (doc 23, W5; approved October 21, 2026): Matt's Meshy model, split into a body and two arms in nTop and coloured per vertex by tools/figure-prep/prep.py (assets/figures/walker.glb). The rest pose is the A-pose: the arms hang down by the rig. Metres, y up, body +z forward, feet on y = 0. bones: name, parent, pivot (the arms' pivots come from the model's extras, so a new prep moves them). skin: where each part blends between bones, as anchors along a height (y) or along the arm (t, m out from the shoulder). hang: the arms' resting direction. gait: per pace, step length, foot lift, arm swing, lean and the rise and fall of the hips; wade blends in by the water's depth. springs: the hat tip, coat skirt and pack follow a beat late (stiffness per second squared, damping 0..1 of critical). eyes: the two ovals the shader draws on the head (rest pose), their colour, a faint glow after dark (cd per m2), blinks and expressions. poses: sit, kneel, feed, the arrivals, and the keeper's camp acts (crawl, drink, pitch, lay, strike, crawlIn, climbOut; see actsNote). All motion is drawing only: it reads the walker and never changes it.",
   "model": "assets/figures/walker.glb",
   "body": {
     "note": "What the creature pass reads: the soft contact shadow (scaleReal sizes it, times displayScale), displayScale: the figure is drawn this much of the model (October 21, 2026: 0.737, so you stand 1.4 m tall, not 1.9 m, and creatures read larger beside you; the eyes, contact shadow and all the motion (gait, poses, ground under the feet) follow it, src/world/figure/motion.js works in body meters), the cloth's sheen (none) and the eye bones for a wet glint (none: the eyes are drawn).",
@@ -49,9 +49,9 @@
     "note": "Paces by speed in body meters a second (the walker's speed divided by body.displayScale, so a smaller figure takes a longer pace for its size and quicker steps); stepM, liftM and the rest are body meters too. The figure blends between them by the speed it is given. stance: share of a stride a foot is down.",
     "stance": 0.6,
     "paces": [
-      { "speed": 0.3, "stepM": 0.2, "liftM": 0.04, "armDeg": 3, "elbowDeg": 40, "leanDeg": 8, "bobM": 0.004, "crouchM": 0.035, "headDeg": 10, "twistDeg": 2 },
-      { "speed": 0.9, "stepM": 0.4, "liftM": 0.065, "armDeg": 14, "elbowDeg": 14, "leanDeg": 3.5, "bobM": 0.01, "crouchM": 0, "headDeg": 3, "twistDeg": 5 },
-      { "speed": 1.5, "stepM": 0.52, "liftM": 0.09, "armDeg": 24, "elbowDeg": 26, "leanDeg": 7, "bobM": 0.016, "crouchM": 0.01, "headDeg": 2, "twistDeg": 7 }
+      { "speed": 0.3, "stepM": 0.2, "liftM": 0.04, "armDeg": 5, "elbowDeg": 40, "leanDeg": 8, "bobM": 0.004, "crouchM": 0.035, "headDeg": 10, "twistDeg": 2 },
+      { "speed": 0.9, "stepM": 0.4, "liftM": 0.065, "armDeg": 22, "elbowDeg": 14, "leanDeg": 3.5, "bobM": 0.01, "crouchM": 0, "headDeg": 3, "twistDeg": 6 },
+      { "speed": 1.5, "stepM": 0.52, "liftM": 0.09, "armDeg": 32, "elbowDeg": 26, "leanDeg": 7, "bobM": 0.016, "crouchM": 0.01, "headDeg": 2, "twistDeg": 8 }
     ],
     "wade": { "depthM": [0.12, 0.3], "stepScale": 0.8, "liftM": 0.17, "armOutDeg": 14, "elbowDeg": 30, "leanDeg": 6 },
     "turnDegPerS": 200,
@@ -59,14 +59,19 @@
     "plantStepDeg": 28,
     "plantStepS": 0.32
   },
+  "arms": {
+    "note": "The walking arm swing's shape (the swing itself is each pace's armDeg). elbowForward: radians of extra elbow bend per radian of forward swing; elbowBack: how much the elbow straightens on the back swing, the same way; across: how far a forward swing comes in across the body, per radian of swing.",
+    "elbowForward": 1.3, "elbowBack": 0.25, "across": 0.35
+  },
   "springs": {
-    "hatTip": { "stiffness": 60, "damping": 0.35, "gain": 1 },
-    "skirt": { "stiffness": 90, "damping": 0.5, "gain": 1 },
-    "pack": { "stiffness": 140, "damping": 0.45, "gain": 1 }
+    "note": "The parts that follow a beat late. hatTip.accelGain: how far the tip tips back as you speed up (and forward as you stop). skirt.strideSway: how far the coat skirt swings to the side of the forward knee, per meter the knees are apart front to back; skirt.speedFlare: how far it flares back per body meter a second. pack.tiltGain: radians the pack tips per meter it lags the body's rise and fall; pack.rock: share of the hips' twist the pack rocks with.",
+    "hatTip": { "stiffness": 60, "damping": 0.35, "gain": 1, "accelGain": 0.06 },
+    "skirt": { "stiffness": 90, "damping": 0.5, "gain": 1, "strideSway": 0.6, "speedFlare": 0.06 },
+    "pack": { "stiffness": 140, "damping": 0.45, "gain": 1.6, "tiltGain": 4, "rock": 0.5 }
   },
   "idle": { "breathS": 4.2, "breathDeg": 0.8, "shiftS": 9, "shiftM": 0.012, "glanceEveryS": [7, 14], "glanceDeg": 14 },
   "look": { "maxYawDeg": 55, "maxPitchDeg": 25, "degPerS": 120 },
-  "ease": { "settleS": 0.3, "postureS": 1.2 },
+  "ease": { "settleS": 0.3, "postureS": 1.2, "actInS": 0.4, "stepLiftM": 0.06 },
   "eyes": {
     "centre": [0.002, 1.414, 0],
     "halfSpacing": 0.093,
@@ -87,9 +92,69 @@
   },
   "poses": {
     "sit": { "pelvisY": 0.15, "leanDeg": 16, "feetZ": 0.3, "feetX": 0.12, "headDeg": -6, "skirtDeg": 26 },
-    "kneel": { "pelvisY": 0.4, "leanDeg": 12, "front": [-0.11, 0.22], "backAnkle": [0.11, 0.12, -0.3], "headDeg": 12 },
+    "kneel": { "note": "One knee down, worked out from the leg's lengths (motion.js): the left knee rests kneeM above the ground, kneeBackM behind the hip and kneeOutM out from it; the hips come pelvisZ forward over it (the weight forward) and sit as low as the thigh allows; the shin lies back to the tucked toes, the ankle toeM up. front: the right foot planted [x, z]. maxDropM: how far an act may sink the hips while kneeling. leanDeg, headDeg: the back and head lean toward the work.",
+      "kneeM": 0.04, "kneeBackM": 0.04, "kneeOutM": 0.01, "toeM": 0.1, "pelvisZ": 0.05, "maxDropM": 0.025, "front": [-0.11, 0.26], "leanDeg": 18, "headDeg": 16 },
     "feed": { "hand": [-0.12, 0.3, 0.38], "reachS": 1.4, "holdS": 2.2, "headDeg": 22 },
     "arrive": { "lookS": 2.4, "lookDeg": 40, "tugS": 1.6, "tugHand": [0.1, 1.48, 0.22] },
-    "leave": { "lookUpS": 2.2, "lookUpDeg": -28, "sitAfterS": 60 }
+    "leave": { "lookUpS": 2.2, "lookUpDeg": -28, "sitAfterS": 60 },
+    "crawl": { "pelvisY": 0.3, "pelvisZ": 0.1, "hipDeg": 35, "leanDeg": 35, "headDeg": -18, "ankles": [[0.1, 0.11, -0.2], [-0.1, 0.11, -0.2]], "hands": [[0.14, 0.05, 0.58], [-0.14, 0.05, 0.58]] },
+    "actsNote": "The keeper's camp acts (docs/future/13-keepers-camp.md 2.3; October 22, 2026), played by walk.act(name) and src/world/figure/acts.js. posture: the walker's posture while it plays (for presence and the view); after: its posture once done. keys: at t seconds in, kneel and crawl (0..1, how far into each posture), lean and head (extra degrees forward and down; negative leans back or looks up), drop (the hips lower, body m), arms (0..1, how much the hands follow l and r) and l, r (where the left and right hand reach, body m: x left, y over the ground under you, z ahead). A key changes only what it names; the rest carries on from the key before, easing between. The last key's t is the act's length, and walk:act-done comes then. crawl: the hands-and-knees pose crawlIn ends in, held until climbOut or a walk (hipDeg tips the hips, pelvisZ brings them forward over the knees). ease.actInS: an act blends in from the posture it began in; ease.stepLiftM: a foot that moves far as the posture changes lifts this high on the way, a step and not a slide.",
+    "drink": { "posture": "kneel", "after": "stand", "keys": [
+      { "t": 0 },
+      { "t": 0.8, "kneel": 1, "lean": 32, "head": 22, "drop": 0.06, "arms": 1, "l": [0.06, 0.16, 0.42], "r": [-0.06, 0.16, 0.42] },
+      { "t": 1.1 },
+      { "t": 1.7, "lean": 2, "head": -14, "drop": 0, "l": [0.04, 1.05, 0.28], "r": [-0.04, 1.05, 0.28] },
+      { "t": 2.2 },
+      { "t": 3.0, "kneel": 0, "lean": 0, "head": 0, "arms": 0, "l": [0.12, 0.5, 0.25], "r": [-0.12, 0.5, 0.25] }
+    ] },
+    "pitch": { "posture": "kneel", "after": "stand", "keys": [
+      { "t": 0 },
+      { "t": 0.7, "kneel": 1, "lean": 26, "head": 18, "arms": 1, "l": [0.05, 0.28, 0.5], "r": [-0.05, 0.28, 0.48] },
+      { "t": 1.4, "lean": 4, "head": 10, "l": [0.1, 0.62, 0.22], "r": [-0.02, 0.6, 0.2] },
+      { "t": 1.9, "lean": 28, "head": 22, "drop": 0.04, "l": [0.08, 0.26, 0.44], "r": [-0.14, 0.52, 0.4] },
+      { "t": 2.2, "r": [-0.1, 0.27, 0.44] },
+      { "t": 2.5, "r": [-0.14, 0.52, 0.4] },
+      { "t": 2.8, "r": [-0.1, 0.27, 0.44] },
+      { "t": 3.2, "lean": 18, "head": 16, "r": [-0.12, 0.4, 0.36] },
+      { "t": 4.0, "kneel": 0, "lean": 0, "head": 0, "drop": 0, "arms": 0, "l": [0.12, 0.5, 0.25], "r": [-0.12, 0.5, 0.25] }
+    ] },
+    "lay": { "posture": "kneel", "after": "stand", "keys": [
+      { "t": 0 },
+      { "t": 0.7, "kneel": 1, "lean": 30, "head": 22, "drop": 0.06, "arms": 1, "l": [0.12, 0.45, 0.28], "r": [-0.12, 0.45, 0.28] },
+      { "t": 1.1, "r": [-0.2, 0.14, 0.42] },
+      { "t": 1.5, "r": [-0.12, 0.45, 0.28], "l": [0.2, 0.14, 0.44] },
+      { "t": 1.9, "lean": 36, "l": [0.12, 0.45, 0.28], "r": [-0.1, 0.14, 0.58] },
+      { "t": 2.3, "r": [-0.12, 0.45, 0.28], "l": [0.1, 0.14, 0.6] },
+      { "t": 2.7, "l": [0.12, 0.45, 0.28], "r": [0, 0.14, 0.64] },
+      { "t": 3.2, "lean": 20, "head": 18, "r": [-0.12, 0.45, 0.28] },
+      { "t": 4.0, "kneel": 0, "lean": 0, "head": 0, "drop": 0, "arms": 0, "l": [0.12, 0.5, 0.25], "r": [-0.12, 0.5, 0.25] }
+    ] },
+    "strike": { "posture": "kneel", "after": "kneel", "keys": [
+      { "t": 0 },
+      { "t": 0.6, "kneel": 1, "lean": 22, "head": 20, "arms": 1, "l": [0.05, 0.38, 0.38], "r": [-0.06, 0.6, 0.34] },
+      { "t": 0.85, "r": [0.03, 0.4, 0.4] },
+      { "t": 1.05, "r": [-0.06, 0.6, 0.34] },
+      { "t": 1.25, "r": [0.03, 0.4, 0.4] },
+      { "t": 1.45, "r": [-0.06, 0.6, 0.34] },
+      { "t": 1.65, "r": [0.03, 0.4, 0.4] },
+      { "t": 2.0, "lean": 18, "l": [0.05, 0.42, 0.36], "r": [-0.08, 0.52, 0.32] },
+      { "t": 2.5, "lean": 0, "head": 0, "arms": 0 }
+    ] },
+    "crawlIn": { "posture": "kneel", "after": "kneel", "keys": [
+      { "t": 0 },
+      { "t": 0.6, "kneel": 1, "lean": 20, "head": 14, "arms": 1, "l": [0.14, 0.3, 0.42], "r": [-0.14, 0.3, 0.42] },
+      { "t": 1.2, "kneel": 0, "crawl": 1, "lean": 0, "head": 0, "l": [0.14, 0.05, 0.5], "r": [-0.14, 0.05, 0.5] },
+      { "t": 1.45, "r": [-0.14, 0.14, 0.56] },
+      { "t": 1.6, "r": [-0.14, 0.05, 0.58] },
+      { "t": 1.8, "l": [0.14, 0.14, 0.56] },
+      { "t": 2.0, "l": [0.14, 0.05, 0.58] }
+    ] },
+    "climbOut": { "posture": "stand", "after": "stand", "keys": [
+      { "t": 0, "crawl": 1, "arms": 1, "l": [0.14, 0.05, 0.58], "r": [-0.14, 0.05, 0.58] },
+      { "t": 0.8, "crawl": 0, "kneel": 1, "lean": 10, "l": [0.14, 0.45, 0.3], "r": [-0.14, 0.45, 0.3] },
+      { "t": 1.3, "kneel": 0, "lean": -8, "head": -18, "l": [0.22, 1.75, 0.02], "r": [-0.22, 1.75, 0.02] },
+      { "t": 1.6 },
+      { "t": 2.0, "lean": 0, "head": 0, "arms": 0, "l": [0.12, 0.5, 0.25], "r": [-0.12, 0.5, 0.25] }
+    ] }
   }
 }

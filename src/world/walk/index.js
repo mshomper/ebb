@@ -8,6 +8,9 @@
 // tide now, the ponds from the live water, so the sandbar opens and closes with the tide. W2 is
 // the feel test: the figure is a plain stand-in, and presence below (W3) comes next. Stepping
 // stones and Steps' slabs (o.footing) are ground too: you stand on their tops, and leave no prints.
+// The keeper's camp hooks (docs/future/13-keepers-camp.md 2.3): walk:arrived at the end of a walk,
+// act(name) for the evening's acts (walk:act-done when one ends), placeAt and downHere for the
+// director's own moves.
 // Writes the store slice `walk` { below, placed }. Numbers and words: recipes/world/walker.json.
 
 import { on, emitDeferred } from '../../core/events.js';
@@ -19,6 +22,7 @@ import { mainland, nearestJoined } from './reach.js';
 import { crossingNote, depthAtLow, hoursToLow } from './crossing.js';
 import { createFigurePass, createFigure, loadFigureModel } from '../figure/index.js';
 import { createFootprints } from '../figure/footprints.js';
+import { actLength } from '../figure/acts.js';
 import { createFootprintsPass } from '../../render/passes/footprints.js';
 import { level as tideLevel, tideParams } from '../tide.js';
 
@@ -60,7 +64,11 @@ export function createWalk(o) {
   const pass = createFigurePass(o.figure, 'walker');
   /** @type {import('../figure/index.js').Figure | null} */ let figure = null;
   loadFigureModel(o.figure)
-    .then((glb) => { figure = createFigure({ recipe: o.figure, glb, pass }); })
+    .then((glb) => {
+      figure = createFigure({ recipe: o.figure, glb, pass });
+      // Already put down (a save, placeAt): appear in that posture, not easing into it.
+      if (walker.placed) figure.motion.place(walker.posture);
+    })
     .catch((err) => console.error('The walker figure did not load:', err));
   /** Water over a world spot now (the cell it falls in). @param {number} x @param {number} z */
   const depthAt = (x, z) => { const k = grid.cellAt(x, z); return k >= 0 ? depth(k) : 0; };
@@ -84,6 +92,8 @@ export function createWalk(o) {
   let walkT = 0;
   /** When a reach (setting a net) stands you up again, in walkT seconds; 0 for none. */
   let standAt = 0;
+  /** A keeper's camp act playing: its name, when it ends (walkT seconds) and the posture after. @type {{ name: string, endAt: number, after: 'stand'|'kneel'|'sit' } | null} */
+  let acting = null;
 
   let below = false;
   /** The last tap, for a double tap. @type {{ t: number, x: number, y: number, to: [number, number] } | null} */
@@ -173,6 +183,16 @@ export function createWalk(o) {
         say(R.words.noGround);
         return false;
       }
+      return this.downHere();
+    },
+
+    /**
+     * Go down where your figure stands now, in view or not (the evening director: after placeAt on
+     * a new island, or restoreSpot after a reload mid-evening). False if it was never put down.
+     */
+    downHere() {
+      if (below) return true;
+      if (!walker.placed) return false;
       below = true;
       camera.setGround(R.camera, head());
       publish();
@@ -180,6 +200,49 @@ export function createWalk(o) {
       emitDeferred('walk:went-down', { x: walker.x, z: walker.z });
       return true;
     },
+
+    /**
+     * Put your figure at a spot at once (the evening director: at the tent's flap, on the seat). A
+     * move the game makes, never a startle: the walker's speed stays 0 (presence reads only that, not
+     * the jump), below the view glides there (camera.setGround is a driven glide, so the camera's
+     * speed reads 0 too), and the figure lands already in its posture, with no steps to get there.
+     * The nearest spot you can stand on within grid.snapM. False if there is none.
+     * @param {number} x @param {number} z @param {number} yaw @param {'stand'|'sit'|'kneel'} [posture]
+     */
+    placeAt(x, z, yaw, posture = 'stand') {
+      if (!walker.place(x, z, yaw, R.grid.snapM)) return false;
+      if (posture === 'kneel' || posture === 'sit') walker.setPosture(posture);
+      standAt = 0;
+      if (below) camera.setGround(R.camera, head());
+      figure?.motion.place(walker.posture);
+      publish();
+      return true;
+    },
+
+    /**
+     * Play a keeper's camp act on the figure: drink, pitch, lay, strike (the fire steel), crawlIn or
+     * climbOut (recipes/world/figure.json poses). It stops any walk and takes the act's posture, and
+     * `walk:act-done { name }` comes after the act's length, whether the model has loaded or not.
+     * While it plays, taps that would walk (and Sit and Kneel) are ignored, and so is another act:
+     * the walker never walks off mid-pose and every act reports its end. Tap again once it is done.
+     * Unknown names are ignored. @param {string} name @returns {boolean} whether it plays
+     */
+    act(name) {
+      const len = actLength(o.figure.poses, name);
+      if (!len || acting || !walker.placed) return false;
+      const P = o.figure.poses[name];
+      walker.stop();
+      standAt = 0;
+      walker.setPosture(P.posture ?? 'stand');
+      if (below) camera.follow(head());
+      publish();
+      figure?.motion.act(name);
+      acting = { name, endAt: walkT + len, after: P.after ?? 'stand' };
+      return true;
+    },
+
+    /** The act playing, or null. */
+    get acting() { return acting ? acting.name : null; },
 
     /**
      * I'm stuck: to the nearest spot that joins the mainland with the water as it is now (off the
@@ -200,7 +263,7 @@ export function createWalk(o) {
      * low and still, so trust grows fastest there. @param {'kneel'|'sit'} p
      */
     posture(p) {
-      if (!below || !walker.placed) return;
+      if (!below || !walker.placed || acting) return;
       standAt = 0;
       walker.setPosture(walker.posture === p ? 'stand' : p);
       camera.follow(head());
@@ -243,9 +306,9 @@ export function createWalk(o) {
       return below && walker.placed ? Math.hypot(x - walker.x, z - walker.z) : Infinity;
     },
 
-    /** Still on the way somewhere (a walk or an approach not yet ended). */
+    /** Still on the way somewhere (a walk or an approach not yet ended), or playing an act. */
     busy() {
-      return below && walker.moving;
+      return below && (walker.moving || !!acting);
     },
 
     /**
@@ -331,6 +394,8 @@ export function createWalk(o) {
      */
     tap(sx, sy, point, reachM = 0) {
       if (!below || !point) return false;
+      // An act playing keeps you where you are until it ends (act()).
+      if (acting) return false;
       const now = performance.now();
       const double = !!lastTap && now - lastTap.t < R.pace.doubleTapMs && Math.hypot(sx - lastTap.x, sy - lastTap.y) < 40;
       let to = /** @type {[number, number]} */ (double && lastTap ? lastTap.to : [point[0], point[2]]);
@@ -353,7 +418,12 @@ export function createWalk(o) {
 
     /** Each frame, before the camera: walk, and keep the view on you. @param {number} realDt */
     update(realDt) {
+      const wasMoving = walker.moving;
       walker.update(realDt);
+      // The end of a walk (keeper's camp 2.3): the way ran out this frame, a tapped walk or a wade
+      // back from the tide. A stop (Go up, I'm stuck, kneeling, an act, placeAt) clears the way
+      // outside update(), so it never reads as arriving.
+      if (wasMoving && !walker.moving) emitDeferred('walk:arrived', { x: walker.x, z: walker.z });
       if (below) camera.follow(head());
       publish();
       // The figure: posed from the walker (where, how fast, posture), the ground and water under
@@ -363,6 +433,14 @@ export function createWalk(o) {
       if (standAt && walkT >= standAt) {
         standAt = 0;
         if (below && walker.posture === 'kneel') { walker.setPosture('stand'); camera.follow(head()); publish(); }
+      }
+      if (acting && walkT >= acting.endAt) {
+        const { name, after } = acting;
+        acting = null;
+        walker.setPosture(after);
+        if (below) camera.follow(head());
+        publish();
+        emitDeferred('walk:act-done', { name });
       }
       // Prints age with game time; the tide takes the ones it covers.
       const hours = o.hours();

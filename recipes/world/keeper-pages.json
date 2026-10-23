@@ -1,0 +1,20 @@
+{
+  "type": "keeper-pages",
+  "version": 1,
+  "note": "The keeper's own pages (docs/future/13 section 2.4), written in the walker's hand and kept in the journal: the first opens by itself at the spring on the first evening. Each is { id, form, title, body: [lines] } in the letters' light markup (src/ui/journal-letters.js); an empty line starts a new paragraph. Under 60 words each. The first page's text is a stand-in until the story collaborator's arrives.",
+  "words": { "entry": "The first page", "entryLine": "In your own hand, from the morning you came.", "title": "Keeper's pages", "back": "Back to the notes" },
+  "pages": [
+    {
+      "id": "first",
+      "form": "Keeper page",
+      "title": "The first page",
+      "body": [
+        "I came in on the morning tide. The land here is new, still pale from the sea.",
+        "",
+        "Keepers don't own the islands we tend. We help them hold what comes, and write down what we see.",
+        "",
+        "Someone will read this after me. Start at the spring."
+      ]
+    }
+  ]
+}
