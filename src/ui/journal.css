@@ -773,6 +773,19 @@ button.ebb-jnotes__row:hover { background: rgba(30, 38, 36, 0.06); }
   transition: opacity 120ms ease;
 }
 .ebb-idcard__act:hover::after, .ebb-idcard__act:focus-visible::after { opacity: 1; }
+/* A pack kind moving (Gather, Take up, Set down; F7): the kind's item glyph, nudged up and left, and
+   a round chip in the bottom right corner for where it goes, parted from the glyph by a ring of the
+   button's colour (src/ui/icons/items.js chipSvg). */
+.ebb-idcard__act { --icon-bg: var(--jr-paper); }
+.ebb-idcard__act.is-main { --icon-bg: var(--jr-moss); --chip-fg: var(--jr-moss); }
+.ebb-idcard__act.has-chip .item-icon { transform: translate(-3px, -3px); }
+.ebb-idcard__act .item-chip { position: absolute; right: 2px; bottom: 2px; width: 18px; height: 18px; border-radius: 50%;
+  color: var(--jr-ink); box-shadow: 0 0 0 2px var(--jr-paper); --chip-fg: var(--jr-paper); }
+.ebb-idcard__act.is-main .item-chip { color: var(--jr-paper); box-shadow: 0 0 0 2px var(--jr-moss); --chip-fg: var(--jr-moss); }
+/* A pouch's card wears its pouch drawing in the head; its cloth takes the head disc's colour (moss
+   at 14 percent on the paper). */
+.ebb-idcard__icon { --icon-bg: #DFDFD1; }
+.ebb-idcard__icon .ebb-pouch__svg { width: 32px; height: 32px; }
 /* What a Gather takes, small in the icon's top corner. */
 .ebb-idcard__mark { position: absolute; right: 2px; top: 2px; width: 16px; height: 16px; }
 .ebb-idcard__mark svg { display: block; width: 16px; height: 16px; }

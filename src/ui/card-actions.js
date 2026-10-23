@@ -10,6 +10,8 @@
 // `card` is the store slice `identify` (what the journal's cardAt built, plus where it sits). A
 // press dispatches `action(card)` through src/input/actions.js; an action may instead `open` part of
 // the card itself (the frog's name field). `main` fills the one action the card is mostly for.
+// An action that moves a pack kind (Gather, Take up, Set down) names it with `item`, and the button
+// is that kind's item glyph with a `chip` in its corner saying where it goes (F7, October 23, 2026).
 // The built-in actions are registered at the end of this file. The X on the card closes it, so
 // there is no Leave button.
 
@@ -23,7 +25,11 @@
  * @property {(card: any, words: any) => boolean} when shown on this card now
  * @property {(card: any) => any} [action] the action dispatched on a press
  * @property {string} [open] instead of an action: a part of the card it opens ('name')
- * @property {(card: any) => string} [mark] a small mark drawn in the icon's corner (what a Gather takes)
+ * @property {(card: any) => string} [mark] a small mark drawn in the icon's corner
+ * @property {(card: any) => string | null} [item] the pack kind it moves (Gather, Take up, Set down):
+ *   the button shows that kind's item glyph (src/ui/icons/item-registry.js) instead of `icon`
+ * @property {'pack' | 'pile' | 'offer' | 'pot'} [chip] with an item: where it goes, as a round chip in
+ *   the button's corner (src/ui/icons/items.js chipSvg)
  */
 
 /** @type {Map<string, CardAction>} */
@@ -40,7 +46,8 @@ export function registerCardAction(a) {
 /**
  * The actions a card shows now, in order, at most MAX_ACTIONS.
  * @param {any} card @param {any} words recipes/world/journal.json
- * @returns {{ a: CardAction, label: string, main: boolean, mark: string }[]}
+ * @returns {{ a: CardAction, label: string, main: boolean, mark: string, kind: string | null }[]}
+ *   kind: the pack kind an item action moves (its glyph is drawn from it), else null
  */
 export function actionsFor(card, words) {
   if (!card) return [];
@@ -50,7 +57,7 @@ export function actionsFor(card, words) {
     try { ok = a.when(card, words); } catch { ok = false; }
     if (!ok) continue;
     out.push({ a, label: typeof a.label === 'function' ? a.label(card, words) : a.label,
-      main: typeof a.main === 'function' ? a.main(card) : !!a.main, mark: a.mark?.(card) ?? '' });
+      main: typeof a.main === 'function' ? a.main(card) : !!a.main, mark: a.mark?.(card) ?? '', kind: a.item?.(card) ?? null });
   }
   out.sort((p, q) => p.a.order - q.a.order || (p.a.id < q.a.id ? -1 : 1));
   return out.slice(0, MAX_ACTIONS);
