@@ -273,6 +273,17 @@ export function addIntroTests(test, assert, eq) {
     eq(r.log.flows.join(','), '1', 'time flows at 1x from dusk');
   });
 
+  test(G, 'resting in the tent at dusk, before sitting by the fire, ends the evening (never stuck at night)', async () => {
+    const r = rig(await recipe());
+    r.intro.start({ fresh: true });
+    play(r, 'dusk');
+    eq(r.intro.current?.id, 'dusk', 'at the dusk beat');
+    r.W.sunsetInH = -0.1; r.intro.update(0.1);
+    r.bus.emit('camp:rested', {});
+    assert(r.flags.includes('intro:dusk') && r.flags.includes('intro:rest') && r.flags.includes('intro:done'), 'dusk, rest and done');
+    eq(r.intro.current, null, 'no beat left');
+  });
+
   test(G, 'a tucked hint stays away until its next line', async () => {
     const R = await recipe();
     const r = rig(R, { flags: R.beats.slice(0, 6).map((/** @type {any} */ b) => `intro:${b.id}`).concat('intro:begun') });

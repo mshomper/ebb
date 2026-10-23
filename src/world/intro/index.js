@@ -143,6 +143,7 @@ export function createIntro(o) {
   const names = new Set(['walk:act-done']);
   for (const b of beats) {
     if (b.done.event) names.add(b.done.event);
+    if (b.alsoDoneBy) names.add(b.alsoDoneBy);
     for (const n of /** @type {Record<string, string[]>} */ (CHECK_EVENTS)[b.done.check] ?? []) names.add(n);
     for (const n of b.hintNext ?? []) names.add(n);
     if (b.cue) names.add(b.cue.on);
@@ -156,6 +157,14 @@ export function createIntro(o) {
     if (started && b.hintNext?.[step] === name) { step++; tucked = false; post(); }
     if (name === 'walk:act-done' && acting && p?.name === acting) { acting = null; finish(); return; }
     if (started && !acting && b.done.event === name) { finish(); return; }
+    // An event that also ends this beat (resting in the tent at dusk, before sitting by the fire):
+    // the beat is done, and so is the next if that event is what it waits for (rest), so a player who
+    // rests early is never left on a beat they can no longer finish.
+    if (started && !acting && b.alsoDoneBy === name) {
+      finish();
+      if (beat()?.done.event === name) finish();
+      return;
+    }
     check(0);
   }));
 
