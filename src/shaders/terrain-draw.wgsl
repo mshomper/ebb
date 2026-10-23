@@ -116,7 +116,7 @@ fn mudCracks(p: vec2f, seed: u32) -> vec3f {
 @group(2) @binding(7) var groundSampler: sampler;
 @group(2) @binding(8) var<uniform> ground: GroundDetail;
 @group(2) @binding(9) var waterDepth: texture_2d<f32>;   // live water depth (m), water-depth.wgsl
-@group(2) @binding(10) var wetMap: texture_2d<f32>;      // visual wetness, r 0..1 (rgba8unorm, 0.25 m), terrain-wetness.wgsl
+@group(2) @binding(10) var wetMap: texture_2d<f32>;      // visual wetness, r 0..1, g puddles, b drying margin, a margin may crack (rgba8unorm, 0.25 m), terrain-wetness.wgsl
 @group(2) @binding(11) var mossTex: texture_2d<f32>;     // moss cover 0..1 (r8unorm, 0.5 m), moss-live.js
 @group(2) @binding(12) var waterVel: texture_2d<f32>;    // live water velocity (rg32float, m/s, x and z)
 @group(2) @binding(13) var probeTex: texture_cube<f32>;  // sky probe (lib-probe.wgsl): wet ground reflects it
@@ -443,8 +443,11 @@ fn fsLand(in: VsOut) -> FsOut {
     mudCover = smoothstep(0.0, td.margin3.x, wetTex.b) * exposed * td.margin0.w
              * (1.0 - 0.9 * rockShare) * (1.0 - 0.5 * sandShare);
     if (mudCover > 0.001) {
-      mudDamp = 1.0 - smoothstep(td.margin1.x, td.margin1.y, age);
-      let opening = smoothstep(td.margin1.z, td.margin1.w, age);
+      // F13: cracks open only in a pond the season has lowered (wetTex.a, the water summary's
+      // basinSeasonMm); anywhere else (spring, a pond's edge settling) it stays damp mud and fades.
+      let crackable = wetTex.a;
+      mudDamp = mix(1.0, 1.0 - smoothstep(td.margin1.x, td.margin1.y, age), crackable);
+      let opening = smoothstep(td.margin1.z, td.margin1.w, age) * crackable;
       let cell = 1.0 / td.margin2.x;
       let halfW = 0.5 * td.margin2.y * opening;
       // Far off, the lines are their average share of the ground; close up, drawn.

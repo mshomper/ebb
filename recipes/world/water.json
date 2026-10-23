@@ -164,6 +164,8 @@
     "dampHollowWet": 0.6,
     "dampHollowMinM2": 3,
     "dampHollowNote": "How wet the summary's damp hollows look (0 dry, 1 as soaked as a stream bank); hollows smaller than dampHollowMinM2 stay plain.",
+    "crackMinDropM": 0.03,
+    "crackNote": "F13: a drying margin (terrain.json wetness.dryingMargin) cracks only in a pond the season has lowered at least crackMinDropM below its spring level (the summary's basinSeasonMm: a rain-fed pond's summer drawdown, or a table-fed one's summer swing). Anywhere else, spring included, bare bed reads as damp mud that fades, never cracked.",
     "flowNormalScale": 0.6,
     "reflection": {
       "note": "Island reflection (screen-space, high tiers; steps per tier in quality-tiers.json waterSSR). reachM: farthest a reflected ray looks for the island; thicknessM: how far behind a surface a ray may pass and still count as hitting it (grows 4% with distance); edgeFade: screen-edge fade width (uv); roughFade: water roughness range over which it gives way to the sky alone; startM: first step off the surface; rippleTilt: share of the ripple tilt the reflected ray follows (1 full: blotchy; lower: the bank wobbles but hangs together).",
