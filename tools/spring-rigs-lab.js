@@ -11,6 +11,7 @@ import { frogMoves, legsOf } from '../src/world/creatures/motion.js';
 import { frogletHop, landSquash } from '../src/world/creatures/froglets.js';
 import { toadMoves, toadPhase } from '../src/world/creatures/toad-walk.js';
 import { slowwormBody, tongueBody, poseSlowworm, tongueOut } from '../src/world/creatures/slowworm.js';
+import { tadpoleBody } from '../src/world/creatures/spring.js';
 import { createStage, VIEWS } from './turtle-lab-stage.js';
 
 const $ = (/** @type {string} */ id) => /** @type {HTMLElement} */ (document.getElementById(id));
@@ -72,6 +73,17 @@ function toad(t, walking) {
   return { bones, place: [0, 0, (walked % (TOAD_MPS * TOAD_STRIDE_S * 3)) - 0.1, 0], note };
 }
 
+// --- tadpoles, as the game poses them (spring-live.js): the tail's one bone swung side to side ---
+const TP = SPAWN.body.tadpole;
+/** A tadpole t seconds in. @param {number} t */
+function tadpole(t) {
+  if (!rigs.tadpole) return null;
+  const bones = new Float32Array(MAX_BONES * 16);
+  const wag = Math.sin(t * TP.wagHz * Math.PI * 2) * TP.wagRad;
+  poseSkeleton(rigs.tadpole, [null, { q: axisAngle([0, 1, 0], wag) }], bones, 0);
+  return { bones, place: [0, 0.02, 0, 0], note: 'the tail swung side to side as one stiff piece' };
+}
+
 // --- the slow worm ---
 const WS = WORM.body.displayScale, WM = WORM.motion;
 /** A slow worm t seconds in, slid slidM along itself. @param {number} t @param {number} slidM @param {string} note */
@@ -107,6 +119,10 @@ const CLIPS = [
     at: (t) => worm(t, wormSlide(t), wormSlide(t) > 0 && (t % WORM_LOOP_S) < WM.slideS * 2 ? 'sliding along itself; the S stays put on the ground' : 'resting in its S, breathing'),
     // A strip through a slide: the body moves through its S, which keeps its place.
     strip: Array.from({ length: 9 }, (_, i) => 0.05 + i * (WM.slideS / 8)), stripDist: 1.15, stripFixed: true },
+  { id: 'tadpole-wag', creature: 'tadpole', title: 'Tadpole: tail wag (as it is now)', mesh: 'tadpole', scale: TP.displayScale, target: [0, 0.02, 0], dist: 0.16, loopS: 2,
+    at: (t) => tadpole(t),
+    // One wag, at quarter speed: eight frames through one beat.
+    strip: Array.from({ length: 9 }, (_, i) => i / (TP.wagHz * 8)), stripDist: 0.13 },
   { id: 'worm-tongue', creature: 'slowworm', title: 'Slow worm: tongue flicks', mesh: 'slowworm', meshes: ['slowworm-tongue'], scale: WS, target: [0, 0.012, 0.25], dist: 0.22, loopS: 20,
     at: (t) => worm(t, 0, 'resting, breathing; a tongue flick every few seconds') },
 ];
@@ -137,6 +153,7 @@ const stage = made.stage;
 for (const p of panels) p.view = stage.view(p.canvas);
 $('status').textContent = 'Baking (a few seconds)';
 const frogLods = FROG.bake.lods ?? [{ cellM: FROG.bake.cellM }];
+run(BAKE, { id: 'tadpole', body: tadpoleBody(SPAWN), variant: 0, cellM: 0.0004 }).then((r) => { stage.setMesh(r, 'tadpole'); rigs.tadpole = r.bones; });
 run(BAKE, { id: 'slowworm', body: slowwormBody(WORM.body), variant: 0, cellM: WORM.bake.cellM }).then((r) => { stage.setMesh(r, 'slowworm'); rigs.slowworm = r.bones; });
 run(BAKE, { id: 'slowworm-tongue', body: tongueBody(WORM.body, WM.tongue), variant: 0, cellM: WM.tongue.radiusM / 1.5 }).then((r) => stage.setMesh(r, 'slowworm-tongue'));
 run(BAKE, { id: 'toad', body: TOAD.body, variant: 0, cellM: TOAD.bake.cellM }).then((r) => {
