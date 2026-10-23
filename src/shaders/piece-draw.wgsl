@@ -14,6 +14,7 @@
 // #include lighting-bindings
 // #include lib-sky
 // #include lib-lighting
+// #include lib-lift
 
 struct PieceDraw {
   look: vec4f,      // x contact darkness 0..1, y contact radius (footprint shares), z f0, w scan fade 0..1 (0 before the maps load)
@@ -24,6 +25,8 @@ struct PieceDraw {
   moss: vec4f,      // pond stones' and Steps' moss: rgb albedo (linear), w how far it creeps in from the rim onto the top (0..1)
   bark: vec4f,      // driftwood's bark: rgb albedo (linear), w how much of a fresh log it still covers (0..1)
   sea: vec4f,       // x shipworm grooves' darkness, y cracks' width on the oldest wood, z a kept log's darkening when fully aged, w its softening
+  liftTint: vec4f,  // the lift (lib-lift.wgsl): warm tint and its strength
+  liftRim: vec4f,   // rim colour and its power
 };
 
 struct Piece {
@@ -32,7 +35,8 @@ struct Piece {
   extra: vec4f,     // x, y footprint half width and half length (mesh units); z 1 for plain earth (the damp patch: no rock scan),
                     // or minus a slab's moss (0..1: how mossy its rim has grown with age);
                     // w a log's thickness over its length (0 for a stone): its mesh is 1 thick, squeezed by the bone
-  wear: vec4f,      // a log's: x time at sea (0 fresh .. 1 old), y how aged it is where it was kept (0..1), z its moss (0..1)
+  wear: vec4f,      // a log's: x time at sea (0 fresh .. 1 old), y how aged it is where it was kept (0..1), z its moss (0..1);
+                    // w any piece's lift 0..1 (F5: hovered or chosen, src/render/lift.js)
   bone: mat4x4f,   // mesh units: set into the ground, leaned with the slope, tipped (a log: rolled) when lifted
 };
 
@@ -227,7 +231,9 @@ fn fsPiece(in: VsOut) -> FsOut {
   let roughW = mix(pd.wood.x + 0.08 * in.wear.y, 0.95, wd.bark);
   let color = shadeGround(mix(albedo, albedoW, isWood), in.world, nMesh, nDetail, mix(rough, roughW, isWood),
     mix(cavity, 1.0 - 0.35 * wd.crack, isWood), in.pos, pd.tile.zw, pd.look.z, 1.0, 1.0, vec3f(0.0));
-  let safe = select(vec3f(0.0), color, color == color);
+  let v = normalize(frame.cameraPos - in.world);
+  let lifted = liftShade(color, nMesh, v, in.wear.w, pd.liftTint, pd.liftRim);
+  let safe = select(vec3f(0.0), lifted, lifted == lifted);
   // Outline group 2: a soft line where it stands against the ground, not a creature's.
   return FsOut(vec4f(max(safe, vec3f(0.0)), 1.0), vec4f(octEncode(nMesh), 0.0, 2.0 / 3.0));
 }

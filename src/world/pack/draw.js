@@ -131,8 +131,9 @@ export function pickupCount(key, left, share, range) {
 export function createPackDraw(o) {
   const R = o.recipe, L = R.piles.look, P = R.pickups;
   const ground = (/** @type {number} */ x, /** @type {number} */ z) => o.terrain.sampleHeight(x, z);
-  const pilePass = createCreaturePass({ recipe: passRecipe(L.pass), maxBones: 1, name: 'pack-piles' });
-  const pickupPass = createCreaturePass({ recipe: passRecipe(P.pass), maxBones: 1, name: 'pack-pickups' });
+  // Each lifted as its own group (src/render/lift.js, F5): a ground spot's card lifts only its pickups.
+  const pilePass = createCreaturePass({ recipe: passRecipe(L.pass), maxBones: 1, name: 'pack-piles', liftGroup: 'piles' });
+  const pickupPass = createCreaturePass({ recipe: passRecipe(P.pass), maxBones: 1, name: 'pack-pickups', liftGroup: 'pickups' });
   const put = (/** @type {any} */ pass, /** @type {string} */ key, /** @type {Mesh} */ m) => pass.setMesh(key, { data: packMesh(m), indices: m.indices });
 
   // The stand-ins first, so there is always something to draw; the models replace them as they load.

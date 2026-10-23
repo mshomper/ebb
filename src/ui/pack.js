@@ -35,6 +35,10 @@ export function mountPack(row, words, sketchOf) {
   // A pile at camp: Take up fills one pouch of its kind.
   registerCardAction({ id: 'takeup', icon: 'takeup', order: 10, main: true, label: words.takeUp,
     when: (c) => !!c.pile && !!c.piece && !c.full, action: (c) => ({ type: 'pile.takeUp', id: c.piece }) });
+  // A pile's card also sets down onto it, when the pack holds that kind: one pouch a press (F8).
+  registerCardAction({ id: 'pilesetdown', icon: 'setdown', order: 11, label: words.setDown,
+    when: (c) => !!c.pile && !!c.piece && !c.full && (get('pack')?.pouches ?? []).some((/** @type {any[]} */ p) => p[0] === c.pile.holds),
+    action: (c) => ({ type: 'pack.setDownKind', kind: c.pile.holds }) });
   registerCardAction({ id: 'setdown', icon: 'setdown', order: 10, main: true, label: words.setDown,
     when: (c) => c.sp === 'pouch' && !!c.atCamp, action: (c) => ({ type: 'pack.setDown', i: c.pouch }) });
   registerCardAction({ id: 'empty', icon: 'tip', order: 12, label: words.empty,

@@ -5,7 +5,7 @@
 // handfuls has none; picked events record, expire, cap and clean; model B picks and the words a
 // plant gives; the card's word for what is left; and the rest a picked plant takes in growth.
 
-import { KINDS, gatherSeed, share, spotsNear, spotAt, spotsAt, binOf, binCenter, binKey, BINS, wordFor, isOnshore } from '../src/world/gather/spots.js';
+import { KINDS, gatherSeed, share, spotsNear, spotAt, spotsAt, binOf, binCenter, binKey, BINS, wordFor, isOnshore, inCluster } from '../src/world/gather/spots.js';
 import { record, taken, expire, cap, cleanGather, periodOf, periodTag, periodIndex, PERIOD } from '../src/world/gather/events.js';
 import { pickable, pick, partOf, partsOf } from '../src/world/gather/plants.js';
 import { recoverFactor, STAGE } from '../src/world/growth/coarse.js';
@@ -28,6 +28,8 @@ export function addGatherTests(test, assert, eq) {
   /** @param {any} [o] */
   const ctxOf = (o = {}) => /** @type {any} */ ({ seed, day: 10, season: 0, today: dayRec(10), yesterday: dayRec(9), ...o });
   const day10 = periodOf(PERIOD.day, 10);
+  /** The table without its clusters (F6), to test the empty rates alone. @param {any} R */
+  const noCluster = (R) => ({ ...R, nearBoat: undefined, kinds: Object.fromEntries(Object.entries(R.kinds).map(([k, K]) => [k, { ...K, cluster: undefined }])) });
 
   test(G, 'the kinds list starts with the Phase 1 kinds, and the recipe has them all', async () => {
     const R = await recipeP;
@@ -38,7 +40,7 @@ export function addGatherTests(test, assert, eq) {
   });
 
   test(G, 'a share is the same for the same inputs, and the kind salts it apart', async () => {
-    const R = await recipeP;
+    const R = noCluster(await recipeP);
     const ctx = ctxOf();
     for (let key = 0; key < 50; key++) eq(share('pebbles', key, day10, ctx, R), share('pebbles', key, day10, ctx, R), `key ${key}`);
     // The same table under two kinds rolls apart.
@@ -53,9 +55,10 @@ export function addGatherTests(test, assert, eq) {
   });
 
   test(G, 'the empty rate follows the table', async () => {
-    const R = await recipeP;
+    const R = noCluster(await recipeP);
     const ctx = ctxOf();
-    for (const [kind, want, full] of /** @type {[string, number, number][]} */ ([['pebbles', 0.3, 2], ['flat-stones', 0.5, 1], ['sticks', 0.25, 1]])) {
+    for (const [kind, full] of /** @type {[string, number][]} */ ([['pebbles', 2], ['flat-stones', 1], ['sticks', 1]])) {
+      const want = R.kinds[kind].empty[0];
       let empty = 0;
       const N = 4000;
       for (let key = 0; key < N; key++) {
@@ -77,8 +80,38 @@ export function addGatherTests(test, assert, eq) {
     assert(empty > 200, 'pebbles keep their empties');
   });
 
-  test(G, 'an onshore tide adds drift twigs and fewer empty stretches', async () => {
+  test(G, 'beach kinds lie in a few clusters, about a fifth as many, and richer where the boat lands', async () => {
     const R = await recipeP;
+    const ctx = ctxOf();
+    const keys = [];
+    for (let bi = 20; bi < 100; bi++) for (let bj = 20; bj < 100; bj++) keys.push(binKey(bi, bj));
+    /** @param {any} r @param {any} c */
+    const full = (r, c) => keys.filter((k) => share('pebbles', k, day10, c, r) > 0).length / keys.length;
+    // About a fifth of the table before F6 (pebbles empty 0.3: 0.7 of bins held some).
+    const now = full(R, ctx);
+    assert(now / 0.7 > 0.12 && now / 0.7 < 0.3, `about a fifth as many (${now.toFixed(3)} of bins, was 0.7)`);
+    // Clusters: a cell is kept or not as a whole, about keep of them.
+    const C = R.kinds.pebbles.cluster;
+    let kept = 0, split = 0;
+    for (let cj = 10; cj < 30; cj++) for (let ci = 10; ci < 30; ci++) {
+      const ins = [];
+      for (let dj = 0; dj < C.cellBins; dj++) for (let di = 0; di < C.cellBins; di++) ins.push(inCluster('pebbles', binKey(ci * C.cellBins + di, cj * C.cellBins + dj), 0, ctx, C));
+      if (ins.some((v) => v !== ins[0])) split++;
+      if (ins[0]) kept++;
+    }
+    eq(split, 0, 'a cell is all in or all out');
+    assert(Math.abs(kept / 400 - C.keep) < 0.07, `cells kept ${(kept / 400).toFixed(2)} near ${C.keep}`);
+    // By the boat every bin is in play, with the richer table: at least 4 pebble spots within its radius.
+    const boat = binCenter(binKey(60, 60)), B = R.nearBoat;
+    const near = keys.filter((k) => { const c = binCenter(k); return Math.hypot(c[0] - boat[0], c[1] - boat[1]) <= B.radiusM; });
+    const held = near.filter((k) => share('pebbles', k, day10, ctxOf({ boat }), R) > 0).length;
+    assert(near.length > 10 && held / near.length > 1 - B.empty.pebbles - 0.12, `${held} of ${near.length} bins by the boat hold pebbles`);
+    assert(held >= 4, 'at least 4 pebble spots by the boat');
+  });
+
+  test(G, 'an onshore tide adds drift twigs and fewer empty stretches', async () => {
+    const R = noCluster(await recipeP);
+    const T = R.kinds['drift-twigs'];
     // East of the centre: outward is +x, so wind blowing toward -x (windDir pi) is onshore.
     const keys = [];
     for (let bi = 60; bi < 90; bi++) for (let bj = 40; bj < 56; bj++) keys.push(binKey(bi, bj));
@@ -94,7 +127,7 @@ export function addGatherTests(test, assert, eq) {
       return { empty: empty / keys.length, mean: sum / (keys.length - empty) };
     };
     const on = run(Math.PI), off = run(0);
-    assert(Math.abs(on.empty - 0.3) < 0.06 && Math.abs(off.empty - 0.6) < 0.06, `empties ${on.empty.toFixed(2)} onshore, ${off.empty.toFixed(2)} off`);
+    assert(Math.abs(on.empty - T.emptyOnshore) < 0.06 && Math.abs(off.empty - T.empty[1]) < 0.06, `empties ${on.empty.toFixed(2)} onshore, ${off.empty.toFixed(2)} off`);
     eq(on.mean, 2, 'two handfuls a stretch onshore');
     eq(off.mean, 1, 'one offshore');
     // A line no longer lying gives nothing.

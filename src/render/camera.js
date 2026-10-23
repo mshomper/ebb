@@ -123,8 +123,10 @@ export function createOrbitCamera(r) {
 
   /** Orbit by a pointer delta in CSS pixels. @param {number} dx @param {number} dy */
   function orbit(dx, dy) {
-    goal.yaw -= dx * r.orbitDegPerPx * DEG;
-    goal.pitch = clamp(goal.pitch + dy * r.orbitDegPerPx * DEG, ...pitchHard());
+    // Below, the view turns at the walker's own, gentler rate (recipes/world/walker.json camera).
+    const rate = (ground?.orbitDegPerPx ?? r.orbitDegPerPx) * DEG;
+    goal.yaw -= dx * rate;
+    goal.pitch = clamp(goal.pitch + dy * rate, ...pitchHard());
     touched();
   }
 
@@ -209,8 +211,10 @@ export function createOrbitCamera(r) {
       const far = Math.hypot(goal.target[0] - cur.target[0], goal.target[2] - cur.target[2]) + Math.abs(goal.distance - cur.distance);
       if (far < 0.02) focusing = false;
     }
-    cur.yaw += (goal.yaw - cur.yaw) * kd;
-    cur.pitch += (goal.pitch - cur.pitch) * k;
+    // Below, a drag's turn eases in over the walker's turnHalfLifeS, so the view swings softly.
+    const ky = ground?.turnHalfLife && !focusing ? 1 - 2 ** (-dt / ground.turnHalfLife) : kd;
+    cur.yaw += (goal.yaw - cur.yaw) * ky;
+    cur.pitch += (goal.pitch - cur.pitch) * (ground?.turnHalfLife && !focusing ? ky : k);
     cur.distance += (goal.distance - cur.distance) * k;
     // Close-ups aim at the ground itself (or the height a focus asked for); otherwise the target
     // sits half way down, as it always has.
@@ -285,14 +289,15 @@ export function createOrbitCamera(r) {
     /**
      * Go down to the low view behind you, or (null) back up above where you stand. Both are glides
      * the game makes (`driven`), so they never startle anything; any input ends the glide.
-     * @param {{ distanceM: number[], startM: number, pitchDeg: number[], startPitchDeg: number, minEyeHeightM: number } | null} g
+     * @param {{ distanceM: number[], startM: number, pitchDeg: number[], startPitchDeg: number, minEyeHeightM: number, orbitDegPerPx?: number, turnHalfLifeS?: number } | null} g
      *   recipes/world/walker.json camera
      * @param {ArrayLike<number>} at where you are (the point the view aims at), world meters
      */
     setGround(g, at) {
       if (g) {
         if (!ground) above = { distance: goal.distance, pitch: goal.pitch };
-        ground = { minDistance: g.distanceM[0], maxDistance: g.distanceM[1], pitchMin: g.pitchDeg[0] * DEG, pitchMax: g.pitchDeg[1] * DEG, minEyeHeight: g.minEyeHeightM };
+        ground = { minDistance: g.distanceM[0], maxDistance: g.distanceM[1], pitchMin: g.pitchDeg[0] * DEG, pitchMax: g.pitchDeg[1] * DEG, minEyeHeight: g.minEyeHeightM,
+          orbitDegPerPx: g.orbitDegPerPx, turnHalfLife: g.turnHalfLifeS };
         goal.distance = g.startM;
         goal.pitch = g.startPitchDeg * DEG;
       } else {

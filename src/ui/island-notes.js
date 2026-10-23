@@ -255,6 +255,10 @@ export function mountIslandNotes(parent, words, naturalist = null) {
   // playthrough): never while the pointer is over it, never after one of its actions was pressed
   // (until another card opens; the walker may be on its way to the thing), and only after closeS.
   let hovered = false, acted = false, shownKey = '';
+  /** The open card's anchor on screen, and the side it opened on (F4: it stays put). @type {number[]} */
+  let anchor = [0, 0];
+  /** @type {{ right: boolean, above: boolean } | null} */
+  let side = null;
   /** Which thing a card is about, so a new card resets `acted`. @param {any} id */
   const cardKey = (id) => `${id.sp}|${id.piece ?? ''}|${id.pouch ?? ''}|${Math.round((id.wx ?? 0) * 10)}|${Math.round((id.wz ?? 0) * 10)}`;
   /** Start (or restart) the quiet close, if this card may close by itself at all. */
@@ -284,7 +288,8 @@ export function mountIslandNotes(parent, words, naturalist = null) {
     clearTimeout(closingTimer);
     card.classList.remove('is-closing');
     const key = cardKey(id);
-    if (key !== shownKey) { shownKey = key; acted = false; }
+    const fresh = key !== shownKey;
+    if (fresh) { shownKey = key; acted = false; }
     // A stone's or a log's card, with the turtles' gift: Carry; while carried, a calm hint and Put it
     // back (a tap anywhere on the card puts it back too).
     const C = words.pieces?.carry;
@@ -315,16 +320,32 @@ export function mountIslandNotes(parent, words, naturalist = null) {
       </form>` : ''}`;
     card.inert = false;
     card.classList.add('is-open');
-    place(id.x, id.y);
+    // A new card opens beside its thing, on the side with room, and then stays put (F4).
+    if (fresh) anchor = anchorOf(id), side = null;
+    place(anchor[0], anchor[1]);
     // While a piece is carried the card stays, holding the hint, until it is set down or put back.
     armClose();
     if (id.pinned) follow();
   }
-  /** Put the card beside a screen point, kept on screen. @param {number} px @param {number} py */
+  /** Where a card opens: its thing's spot on screen, else the point it was opened from (a pouch). @param {any} id @returns {number[]} */
+  function anchorOf(id) {
+    const view = get('view');
+    if (view && Number.isFinite(id.wx) && Number.isFinite(id.wz)) {
+      const p = view.project(id.wx, id.wz);
+      if (!p.behind && p.x > 0 && p.x < window.innerWidth && p.y > 0 && p.y < window.innerHeight) return [p.x, p.y];
+    }
+    return [id.x ?? window.innerWidth / 2, id.y ?? window.innerHeight / 2];
+  }
+  /**
+   * Put the card beside a screen point on the side with room (right, else left; above, else
+   * below), chosen once when it opens so it never jumps across its thing; kept on screen.
+   * @param {number} px @param {number} py
+   */
   function place(px, py) {
-    const w = card.offsetWidth, h = card.offsetHeight;
-    const x = Math.min(window.innerWidth - w - 12, Math.max(12, px + 24));
-    const y = Math.min(window.innerHeight - h - 12, Math.max(12, py - h - 24));
+    const w = card.offsetWidth, h = card.offsetHeight, G = 24, M = 12;
+    side ??= { right: px + G + w <= window.innerWidth - M || px - G - w < M, above: py - G - h >= M };
+    const x = Math.min(window.innerWidth - w - M, Math.max(M, side.right ? px + G : px - G - w));
+    const y = Math.min(window.innerHeight - h - M, Math.max(M, side.above ? py - h - G : py + G));
     card.style.transform = `translate(${Math.round(x)}px, ${Math.round(y)}px)`;
   }
 
@@ -400,7 +421,7 @@ export function mountIslandNotes(parent, words, naturalist = null) {
       form.hidden = false;
       suggestAt = 0;
       input.focus();
-      if (id?.pinned) follow(); else place(id?.x ?? 0, id?.y ?? 0);
+      if (id?.pinned) follow(); else place(anchor[0], anchor[1]);
     } else if (b.dataset.act === 'suggest' && input && id?.suggest?.length) {
       input.value = id.suggest[suggestAt++ % id.suggest.length];
       nameError('');

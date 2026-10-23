@@ -1,0 +1,15 @@
+{
+  "note": "The lift (F5, Matt, October 23, 2026): a thing the pointer rests on, or whose card is open, is lifted in its own shader instead of ringed on the ground (src/render/lift.js, src/shaders/lib-lift.wgsl). tint: a warm colour (linear, about 1 at its brightest) the thing's own light is multiplied toward, by tintStrength at full lift. rim: a thin rim of light at the thing's edge, rimStrength times rim (pre-exposed, so it reads the same by day and by night), narrower as rimPower grows. It eases in over fadeInS and out over fadeOutS seconds. What a card lifts: a ground spot the pickups within their spread plus spotPadM of its middle, a small heap within heapM, a pile within its own ring (at least pileMinM), a log or stone within pieceMatchM of its middle, anything else (a creature, a find, a net, a camp prop) within matchM.",
+  "tint": [1.0, 0.8, 0.55],
+  "tintStrength": 0.3,
+  "rim": [1.0, 0.86, 0.64],
+  "rimStrength": 0.65,
+  "rimPower": 3,
+  "fadeInS": 0.18,
+  "fadeOutS": 0.35,
+  "spotPadM": 0.15,
+  "heapM": 0.5,
+  "pileMinM": 0.9,
+  "pieceMatchM": 0.3,
+  "matchM": 0.45
+}
