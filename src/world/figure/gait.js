@@ -23,6 +23,9 @@ export function paceAt(G, speed, wade) {
   }
   /** @type {Record<string, number>} */ const out = {};
   for (const k of Object.keys(a)) out[k] = lerp(a[k], b[k], t);
+  // The share of a stride each foot is down: over a half it walks; under, both feet leave the
+  // ground between steps (the jog and the run's flight).
+  out.stance ??= G.stance;
   const W = G.wade;
   out.stepM *= lerp(1, W.stepScale, wade);
   out.liftM = lerp(out.liftM, W.liftM, wade);

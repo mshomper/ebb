@@ -280,6 +280,8 @@ export function createFigureMotion(R, skeleton) {
       footWorld = target.map((f) => toWorld(f.a[0], f.a[2]));
 
       // Pelvis: over the feet, rising and falling with each step, no higher than both legs reach.
+      // Walking it is highest over the planted foot (bobM above 0); jogging and running it is lowest
+      // there and highest in the flight between steps (bobM below 0).
       const bob = P.bobM * Math.cos(2 * Math.PI * 2 * (phase - G.stance / 2)) * m;
       const shift = R.idle.shiftM * Math.sin((2 * Math.PI * t) / R.idle.shiftS) * (1 - m) * standW;
       let standY = (feet[0].ground + feet[1].ground) / 2 + restPelvisY - R.legs.hipDrop - P.crouchM * m + bob;
