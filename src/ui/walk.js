@@ -4,7 +4,8 @@
 //     puts you on foot (back on your figure when it is in view, else where you are looking);
 //     below, it takes you back up. G on a keyboard does the same.
 //   I'm stuck: under it while you are below; always takes you to ground that joins the island.
-//   The ground bar (W4): along the bottom while you are below, in the tool bar's place. Sit and
+//   The ground bar (W4): along the bottom while you are below, in the tool bar's place, its buttons
+//     drawn icons with the word on hover only, as on cards (F17, Matt, October 23, 2026). Sit and
 //     Kneel lower you where you stand (a second press stands you up); Feed kneels and puts food
 //     down in front of you; Net (once the beachcomber's trail gives it) sets your net in front of
 //     you, or lifts it when you stand by it full. Photo joins when photo mode exists. There is no
@@ -28,8 +29,9 @@ import { ensureIconSprite, iconSvg } from './icons/icons.js';
  */
 export function mountWalk(parent, words) {
   ensureIconSprite();
+  // data-label: the word over an icon-only button on hover (the ground bar, F17; walk.css).
   const btn = (/** @type {string} */ cls, /** @type {string} */ icon, /** @type {string} */ label, /** @type {string} */ extra = '') =>
-    `<button type="button" class="ebb-walk__btn ${cls}" aria-label="${label}"${extra}><span class="ebb-walk__icon">${icon ? iconSvg(icon) : ''}</span><span class="ebb-walk__name">${label}</span></button>`;
+    `<button type="button" class="ebb-walk__btn ${cls}" aria-label="${label}" data-label="${label}"${extra}><span class="ebb-walk__icon">${icon ? iconSvg(icon) : ''}</span><span class="ebb-walk__name">${label}</span></button>`;
 
   const root = document.createElement('div');
   root.className = 'ebb-walk';

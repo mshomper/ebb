@@ -63,6 +63,17 @@
     }
   },
   "heaps": { "cap": 6, "tapM": 0.25 },
+  "stores": {
+    "note": "The stores (docs/future/13 section 3.12, Matt, October 23, 2026): places at the camp's sticks, stones and clay slots, drawn empty and waiting from the first frame (src/world/pack/stores.js, draw.js). Each has a card even when empty: name, then the pile's kind and word, or empty. r: how far from the slot's middle a click finds it; glowM: its soft glow's radius while the pack holds its kind near camp. sticks.look: the wood store, two forked stakes stakeZM either side of the row (driven sinkM in, forked at forkM, tines tineM long opening tineDeg), a crossbar barR thick resting in the forks and barOverM past them, and flat stones (stones: their middles, stoneR radii) the logs lie on, floorLiftM high. stones.look: a shallow scrape radiusM across (floorM, rimM: its floor's and rim's height) ringed by edging stones of the pile's own stone, edgeSize times its size, edgeAtM from the middle. clay.look: one flat stone, radii and colour (linear).",
+    "sticks": { "name": "Wood store", "r": 0.6, "glowM": 0.8,
+      "look": { "stakeZM": 0.38, "forkM": 0.58, "sinkM": 0.06, "stakeR": 0.024, "tineM": 0.16, "tineDeg": 32, "barR": 0.02, "barOverM": 0.06,
+        "stakeColor": [0.15, 0.105, 0.07], "stones": [[-0.12, -0.17], [0.12, -0.15], [-0.1, 0.16], [0.13, 0.17]], "stoneR": [0.13, 0.024, 0.11],
+        "stoneColor": [0.15, 0.145, 0.14], "floorLiftM": 0.025 } },
+    "stones": { "name": "Stone pile", "r": 0.55, "glowM": 0.7,
+      "look": { "radiusM": 0.46, "floorM": 0.004, "rimM": 0.016, "floorColor": [0.06, 0.05, 0.04], "rimColor": [0.1, 0.085, 0.07], "edging": 5, "edgeAtM": 0.44, "edgeSize": 1.15 } },
+    "clay": { "name": "Clay slab", "r": 0.35, "glowM": 0.5, "look": { "radii": [0.26, 0.035, 0.2], "color": [0.15, 0.145, 0.14] } },
+    "words": { "empty": "Empty." }
+  },
   "pot": { "fillClasses": ["running", "slow"], "seaFill": true },
   "rill": { "hintAfterCarries": 3, "farM": 15, "nearPadM": 6 },
   "ui": { "pouchPx": 48, "gapPx": 6, "drawPx": 36 },

@@ -186,6 +186,10 @@ export function createJournal(opts) {
     // ground before they are set up (src/world/camp cardAt: Pitch, Lay, Light, Feed, Rest).
     const cp = /** @type {any} */ (opts).camp?.cardAt?.(x, z) ?? null;
     if (cp) return cp;
+    // Then the camp's stores (section 3.12; src/world/pack/stores.js): the wood store, the stone pile
+    // and the clay slab, empty or holding a pile (then the pile's card too: Take up, Set down).
+    const st = /** @type {any} */ (opts).stores?.cardAt?.(x, z) ?? null;
+    if (st) return st;
     const pc = opts.pieces?.pieceAt(x, z);
     const pw = pc && words.pieces?.[pc.kind];
     if (pw && pc.kind === 'pile') {

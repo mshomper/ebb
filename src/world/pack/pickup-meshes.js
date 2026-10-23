@@ -207,6 +207,73 @@ export function stickPileMesh(seed, S, footprintM) {
 }
 
 /**
+ * The wood store, empty (docs/future/13 section 3.12): a few flat stones laid as a floor, a forked
+ * stake at each end of the row (z ends; logs lie along x between them, log-stack.js), and a
+ * crossbar resting in the two forks. In the pile's frame, base on y = 0.
+ * @param {number} seed @param {any} S pack.json stores.sticks.look @returns {Mesh}
+ */
+export function woodStoreMesh(seed, S) {
+  const b = builder();
+  const up = (/** @type {number} */ x, /** @type {number} */ z, /** @type {number} */ y0, /** @type {number} */ len, /** @type {number} */ tilt) => {
+    // A stick stood up: its length along y, leaning tilt radians toward +x, its foot at (x, y0, z).
+    const c = Math.cos(tilt), s = Math.sin(tilt);
+    return {
+      move: (/** @type {number[]} */ p) => { const v = p[2] + len / 2, w = p[0]; return [x + w * c + v * s, y0 + v * c - w * s, z - (p[1] - S.stakeR)]; },
+      turn: (/** @type {number[]} */ n) => [n[0] * c + n[2] * s, n[2] * c - n[0] * s, -n[1]],
+    };
+  };
+  for (const [i, z] of [[0, -S.stakeZM], [1, S.stakeZM]]) {
+    // The stake to its fork, then two tines opening across the row (so the bar sits in the crotch).
+    // Driven sinkM into the ground; the fork at forkM above it.
+    const trunk = stickMesh(hash32(seed, i, 1), S.forkM + S.sinkM, S.stakeR, 0.02, S.stakeColor);
+    const t = up(0, z, -S.sinkM, S.forkM + S.sinkM, 0);
+    b.add(trunk, t.move, t.turn);
+    for (const side of [-1, 1]) {
+      const tine = stickMesh(hash32(seed, i, side + 5), S.tineM, S.stakeR * 0.8, 0.05, S.stakeColor);
+      const a = side * (S.tineDeg * Math.PI) / 180, k = up(0, z, S.forkM - 0.01, S.tineM, a);
+      b.add(tine, k.move, k.turn);
+    }
+  }
+  // The crossbar along z, resting in the forks (its underside a little below the crotch).
+  const bar = stickMesh(hash32(seed, 9), 2 * S.stakeZM + 2 * S.barOverM, S.barR, 0.015, S.stakeColor);
+  b.add(bar, (p) => [p[0], p[1] + S.forkM - S.barR * 0.6, p[2]], (n) => n);
+  // The flat stones the logs lie on.
+  S.stones.forEach((/** @type {number[]} */ at, /** @type {number} */ i) => {
+    const u = (/** @type {number} */ k) => u01(hash32(seed, 20 + i, k));
+    const r = S.stoneR;
+    const stone = pebbleMesh(hash32(seed, 20 + i), [r[0] * (0.85 + 0.3 * u(1)), r[1], r[2] * (0.85 + 0.3 * u(2))], 0.06, S.stoneColor, 0.35);
+    const turn = turner(u(3) * Math.PI, 0);
+    b.add(stone, (p) => { const q = turn(p); return [q[0] + at[0], q[1], q[2] + at[1]]; }, turn);
+  });
+  return b.done();
+}
+
+/**
+ * The stone pile's scrape, empty (section 3.12): a shallow dish of bare earth, darker in the middle,
+ * its low rim of scraped-up soil fading into the ground at its edge. The edging stones are drawn
+ * round it from the pile's own stone (draw.js). Base on y = 0.
+ * @param {any} S pack.json stores.stones.look @returns {Mesh}
+ */
+export function scrapeMesh(S) {
+  const b = builder(), RING = 24;
+  // Rings out from the middle: [radius share, height (m), colour mix 0 dark .. 1 rim].
+  const rings = [[0, S.floorM, 0], [0.55, S.floorM, 0.1], [0.85, S.rimM, 1], [1, 0, 1]];
+  const mid = b.vert([0, S.floorM, 0], [0, 1, 0], S.floorColor);
+  const ids = rings.slice(1).map(([f, y, m]) => Array.from({ length: RING }, (_, k) => {
+    const a = (k / RING) * 2 * Math.PI, r = S.radiusM * f;
+    const c = S.floorColor.map((/** @type {number} */ v, /** @type {number} */ j) => v + (S.rimColor[j] - v) * m);
+    return b.vert([Math.cos(a) * r, y, Math.sin(a) * r], [0, 1, 0], c);
+  }));
+  for (let k = 0; k < RING; k++) b.tri(mid, ids[0][(k + 1) % RING], ids[0][k]);
+  for (let i = 0; i < ids.length - 1; i++) for (let k = 0; k < RING; k++) {
+    const k1 = (k + 1) % RING;
+    b.tri(ids[i][k], ids[i][k1], ids[i + 1][k]);
+    b.tri(ids[i][k1], ids[i + 1][k1], ids[i + 1][k]);
+  }
+  return smooth(b.done());
+}
+
+/**
  * The stand-in stone pile: a low cairn of rounded stones, footprintM across (before scaling).
  * @param {number} seed @param {any} S pack.json piles.look.standIn.stone @param {number} footprintM @returns {Mesh}
  */

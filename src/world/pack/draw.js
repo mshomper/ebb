@@ -1,5 +1,7 @@
 // @ts-check
-// What the pack's world looks like (docs/future/13 sections 4.1 and 4.2), drawn near you: the piles
+// What the pack's world looks like (docs/future/13 sections 3.12, 4.1 and 4.2), drawn near you: the
+// stores waiting empty in their slots from the first frame (the wood store, the stone pile's scrape,
+// the clay slab; stores.js), the piles
 // at camp (Matt's log pile for sticks and drift twigs, paler for drift twigs, his stone pile for
 // pebbles and flat stones, small, good or big by how much they hold), the small heaps left when the
 // pack was full (K-21), and what lies on the ground to gather today: drift twigs on the strandline,
@@ -26,7 +28,8 @@ import { packMesh } from '../creatures/bodies.js';
 import { pileShape } from './piles.js';
 import { splitPieces, firstPieces, buildsUp, scaledMesh } from './pile-pieces.js';
 import { logStack, stoneHeap, logsShown } from './log-stack.js';
-import { pickupMesh, pebbleMesh, stickPileMesh, stonePileMesh, roundLogMesh } from './pickup-meshes.js';
+import { pickupMesh, pebbleMesh, stickPileMesh, stonePileMesh, roundLogMesh, woodStoreMesh, scrapeMesh } from './pickup-meshes.js';
+import { storeSlots } from './stores.js';
 
 /** @typedef {import('./pickup-meshes.js').Mesh} Mesh */
 
@@ -218,6 +221,15 @@ export function createPackDraw(o) {
       })
       .catch((e) => console.info(`pack: ${path} not loaded, drawing the stand-in (${e.message})`));
   }
+  // The stores, empty and waiting (section 3.12; stores.js): the wood store's stakes, bar and floor
+  // stones, the stone pile's scrape (its edging stones are the pile's own stone, 'stone1:<shade>'),
+  // and the clay slab. Keys 'store:<id>'.
+  const SR = R.stores;
+  if (SR) {
+    put(pilePass, 'store:sticks', woodStoreMesh(0x5701e, SR.sticks.look));
+    put(pilePass, 'store:stones', scrapeMesh(SR.stones.look));
+    put(pilePass, 'store:clay', pebbleMesh(0xc1a7, SR.clay.look.radii, 0.06, SR.clay.look.color, 0.3));
+  }
   // A few seeded shapes of each ground kind.
   for (const [kind, K] of Object.entries(P.kinds)) {
     for (let v = 0; v < P.variants; v++) put(pickupPass, `${kind}-${v}`, pickupMesh(kind, hash32(0x9c4b, v, kind.length), K));
@@ -225,7 +237,7 @@ export function createPackDraw(o) {
 
   let dirty = true, clock = 0, since = 0;
   /** @type {number[] | null} */ let lastAt = null;
-  const offs = ['gather:done', 'pack:changed', 'pack:set-down', 'pile:changed'].map((ev) => on(ev, () => { dirty = true; }));
+  const offs = ['gather:done', 'pack:changed', 'pack:set-down', 'pile:changed', 'camp:stamped'].map((ev) => on(ev, () => { dirty = true; }));
 
   /** Where to draw near: you, below; else the view's middle. */
   function focus() {
@@ -239,11 +251,28 @@ export function createPackDraw(o) {
   function pileBeings(f) {
     const near2 = L.nearM * L.nearM;
     /** @type {import('../../render/passes/creatures.js').Being[]} */ const out = [];
+    const stores = SR ? storeSlots().filter((s) => (s.x - f[0]) ** 2 + (s.z - f[1]) ** 2 <= near2) : [];
     for (const p of get('pieces')?.list ?? []) {
       if (p.kind !== 'pile' || (p.x - f[0]) ** 2 + (p.z - f[1]) ** 2 > near2) continue;
       const sh = pileShape(p.holds ?? '', p.handfuls ?? 0, R);
-      if (!addLogs(out, sh, p.x, p.z, p.yaw, p.seed >>> 0)) {
-        out.push({ x: p.x, y: ground(p.x, p.z) - L.sinkM, z: p.z, yaw: p.yaw, size: sh.scale, mesh: `${sh.model}:${sh.stage}` });
+      // A pile in a store lies square in it (the slot's own turn), the wood store's on its floor stones.
+      const st = stores.find((s) => s.id === p.slot);
+      const yaw = st ? st.yaw : p.yaw, lift = st?.id === 'sticks' ? SR.sticks.look.floorLiftM : 0;
+      if (!addLogs(out, sh, p.x, p.z, yaw, p.seed >>> 0, lift)) {
+        out.push({ x: p.x, y: ground(p.x, p.z) - L.sinkM + lift, z: p.z, yaw, size: sh.scale, mesh: `${sh.model}:${sh.stage}` });
+      }
+    }
+    for (const s of stores) {
+      const y = ground(s.x, s.z);
+      out.push({ x: s.x, y, z: s.z, yaw: s.yaw, size: 1, mesh: `store:${s.id}` });
+      // The scrape's edging stones: the pile's own stone, evenly round with a seeded wobble.
+      if (s.id === 'stones' && SN) {
+        const E = SR.stones.look, shades = (SN.shades ?? [1]).length;
+        for (let i = 0; i < E.edging; i++) {
+          const h = hash32(0x5ed9, i), a = s.yaw + ((i + 0.3 * u01(h)) / E.edging) * 2 * Math.PI, d = E.edgeAtM * (0.95 + 0.1 * u01(hash32(h, 1)));
+          const x = s.x + Math.cos(a) * d, z = s.z + Math.sin(a) * d;
+          out.push({ x, y: ground(x, z) - L.sinkM, z, yaw: u01(hash32(h, 2)) * 2 * Math.PI, size: E.edgeSize * (0.9 + 0.2 * u01(hash32(h, 3))), mesh: `stone1:${i % shades}` });
+        }
       }
     }
     for (const h of o.pack?.heaps?.() ?? []) {
@@ -261,9 +290,9 @@ export function createPackDraw(o) {
    * A stick pile (or heap) as stacked logs, bottom up, as many as its stage shows. False for a
    * stone pile, which is still drawn as its model.
    * @param {import('../../render/passes/creatures.js').Being[]} out @param {{ model: string, stage: number | string }} sh
-   * @param {number} x @param {number} z @param {number} yaw @param {number} seed
+   * @param {number} x @param {number} z @param {number} yaw @param {number} seed @param {number} [lift] raised this much (on a store's floor)
    */
-  function addLogs(out, sh, x, z, yaw, seed) {
+  function addLogs(out, sh, x, z, yaw, seed, lift = 0) {
     const stones = sh.model === 'stone';
     if (stones ? !SN : (!ST || (sh.model !== 'stick' && sh.model !== 'stick-pale'))) return false;
     const key = `${stones ? 's' : 'l'}${seed}`;
@@ -271,7 +300,7 @@ export function createPackDraw(o) {
     if (!logs) { logs = stones ? stoneHeap(seed, stoneHalf.w, stoneHalf.h, SN) : logStack(seed, logRadius, ST); stacks.set(key, logs); }
     const share = sh.stage === 'heap' ? (L.heapShare ?? 0.15) : (L.stageShares ?? [0.3, 0.6, 0.85, 1])[/** @type {number} */ (sh.stage)] ?? 1;
     const n = logsShown(logs.length, share);
-    const c = Math.cos(yaw), s = Math.sin(yaw), y0 = ground(x, z) - L.sinkM;
+    const c = Math.cos(yaw), s = Math.sin(yaw), y0 = ground(x, z) - L.sinkM + lift;
     const pale = stones ? 'stone1' : sh.model === 'stick-pale' ? 'log-pale' : 'log';
     const shades = ((stones ? SN.shades : ST.shades) ?? ST?.shades ?? [1]).length;
     const jitter = (stones ? SN.tintJitter : ST.tintJitter) || 1;

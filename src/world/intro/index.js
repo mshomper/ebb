@@ -63,6 +63,15 @@ export function createIntro(o) {
    */
   const stepAt = (b) => (b.steps ? b.steps.findIndex((/** @type {any} */ s) => !CHECKS.packHolds(ctx, s, mem, 0)) : -1);
   let lastStep = -1;
+  /**
+   * A beat's aside (section 3.12: "Spare twigs keep dry in the wood store."): one line from R.hints
+   * shown before the beat's own while the pack still holds any of its groups, for showS seconds at
+   * most, and only before the beat's first line moves on.
+   */
+  let asideS = 0;
+  /** @param {any} b */
+  const asideOn = (b) => !!b.aside && step === 0 && asideS < (b.aside.showS ?? 12)
+    && (b.aside.ifHolds ?? []).some((/** @type {string} */ g) => ctx.packHolds({ [g]: 1 }));
 
   /** Post the line that should show now (or none), once per change. */
   function post() {
@@ -74,6 +83,7 @@ export function createIntro(o) {
     if (b && !short && !tucked) {
       if (!started && later) { id = `${b.id}:later`; text = later; }
       else if (started && si >= 0) { id = `${b.id}:${si}`; text = b.steps[si].hint; }
+      else if (started && asideOn(b) && R.hints?.[b.aside.hint]) { id = `${b.id}:aside`; text = R.hints[b.aside.hint]; }
       else if (started && b.hint?.length) { id = b.id; text = b.hint[Math.min(step, b.hint.length - 1)]; }
       if (started && idx === 0 && b.skip && !has(`${P}done`)) skip = b.skip;
     }
@@ -86,7 +96,7 @@ export function createIntro(o) {
   /** Begin beat i (its start check may still wait). @param {number} i */
   function begin(i) {
     idx = i;
-    started = false; acting = null; step = 0; tucked = false;
+    started = false; acting = null; step = 0; tucked = false; asideS = 0;
     mem = { seen: {}, still: 0, sawOpen: false };
     tryStart();
     post();
@@ -187,6 +197,9 @@ export function createIntro(o) {
     /** Each frame. @param {number} dt seconds */
     update(dt) {
       check(dt);
+      // The aside's time runs only while it shows.
+      const b = beat();
+      if (b?.aside && started && !tucked && asideOn(b)) asideS += dt;
       // A step's line follows what the pack holds now.
       post();
       if (older && !has(`${P}glowed`)) {
@@ -206,7 +219,12 @@ export function createIntro(o) {
       return true;
     },
     /** A tap on the hint line tucks it away; the beat still waits, silently. */
-    tuck() { tucked = true; post(); },
+    tuck() {
+      // Tapping the aside away lets the beat's own line show; any other line tucks the beat.
+      if (shown?.startsWith(`${beat()?.id}:aside|`)) asideS = Infinity;
+      else tucked = true;
+      post();
+    },
     /** The beat running and its line, for the lab and the tests. */
     get current() {
       const b = beat();

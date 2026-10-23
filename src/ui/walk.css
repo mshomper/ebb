@@ -58,7 +58,7 @@
 .ebb-walk .icon { display: block; width: var(--wk-icon); height: var(--wk-icon); }
 
 /* The ground bar (W4): along the bottom in the tool bar's place while you are below; each button
-   an icon over its word, so four fit a 320 px window. */
+   a 44 px icon, its word on hover (F17). */
 .ebb-ground {
   --wk-icon: 26px;
   position: fixed;
@@ -130,13 +130,12 @@
   .ebb-here { -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
 }
 .ebb-here .ebb-walk__btn {
-  flex-direction: column;
+  position: relative;
   justify-content: center;
-  gap: 2px;
-  height: auto;
-  min-height: 56px;
-  min-width: 72px;
-  padding: 6px 8px;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  padding: 0;
   background: var(--ui-cream);
   color: var(--ui-night);
   border: 0;
@@ -151,13 +150,12 @@
   .ebb-ground { -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
 }
 .ebb-ground .ebb-walk__btn {
-  flex-direction: column;
+  position: relative;
   justify-content: center;
-  gap: 2px;
-  height: auto;
-  min-height: 56px;
-  min-width: 64px;
-  padding: 6px 8px;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  padding: 0;
   background: transparent;
   border: 0;
   border-radius: 12px;
@@ -168,7 +166,31 @@
 .ebb-ground .icon { display: block; width: var(--wk-icon); height: var(--wk-icon); }
 .ebb-ground .ebb-walk__btn:hover { background: rgba(244, 238, 228, 0.1); }
 .ebb-ground .ebb-walk__btn[aria-pressed='true'] { background: var(--wordmark-light); }
-.ebb-ground .ebb-walk__name { font-size: var(--text-body); }
+/* Icons only (F17, Matt, October 23, 2026): the word shows above a button on hover, as on cards. */
+.ebb-ground .ebb-walk__name,
+.ebb-here .ebb-walk__name { display: none; }
+.ebb-ground .ebb-walk__btn::after,
+.ebb-here .ebb-walk__btn::after {
+  content: attr(data-label);
+  position: absolute;
+  bottom: calc(100% + 12px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2;
+  padding: 4px 10px;
+  border-radius: 8px;
+  background: rgba(30, 38, 36, 0.92);
+  color: var(--ui-cream);
+  font-family: var(--font-ui);
+  font-weight: 600;
+  font-size: var(--text-body);
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+.ebb-ground .ebb-walk__btn:hover::after, .ebb-ground .ebb-walk__btn:focus-visible::after,
+.ebb-here .ebb-walk__btn:hover::after, .ebb-here .ebb-walk__btn:focus-visible::after { opacity: 1; }
 /* Narrow windows: the time button stacks above the bottom bar (time-flow.css); the ground bar is a
    little taller than the tool bar, so it steps up a little more. */
 @media (max-width: 560px) {
