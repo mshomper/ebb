@@ -1617,7 +1617,7 @@ export async function startApp(canvas, hooks = {}) {
     ww.update({ rain: day.weather.rain, sunY: day.sm.sunDir[1], wind: windNow }, camera.target);
     const bladeFrame = {
       focus: camera.target, time: t.animT, wind: windNow, windDir: world.state?.weather?.today?.windDir ?? 0,
-      season: season.index + season.phase,
+      season: season.index + season.phase, seaLevel: water.tide,
     };
     grassPass.update(bladeFrame);
     // No blade grows through a loose stone (src/world/pieces).
