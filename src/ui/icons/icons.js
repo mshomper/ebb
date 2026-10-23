@@ -1109,6 +1109,12 @@ const ICONS = {
 /** Names of every icon in the sprite. */
 export const ICON_NAMES = Object.freeze(Object.keys(ICONS));
 
+/**
+ * One icon's drawing, as the SVG markup inside its symbol (item icons compose species chips into
+ * seed and clump icons, src/ui/icons/items.js). @param {string} name @returns {string}
+ */
+export const iconBody = (name) => ICONS[name] ?? '';
+
 const SPRITE_ID = 'ebb-icon-sprite';
 
 /**

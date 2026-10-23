@@ -140,3 +140,31 @@ Size and color come from CSS: set `width`/`height` on `.icon` and `color` on the
 The clock dial (`src/ui/clock-dial.js`) is drawn live in the same style rather than from this sprite: a season ring, the sky's arc over a horizon with the sun or moon on it, and a tide wave with a rising or falling chevron.
 
 Adding an icon: add an entry to `ICONS` in `icons.js` following the rules above, then add a row here.
+
+## Item icons (F7)
+
+A drawn glyph for every item the roadmap names (approved by Matt, October 23, 2026), in their own sprite. Same grid and stroke as above; the one shape that carries the meaning is filled with the item's family tint instead of 20 percent ink.
+
+| File | Holds |
+|---|---|
+| `items.js` | The families and their tints, the sprite, `itemIconSvg`, `itemPouchSvg`, `chipSvg`, and the composed glyphs |
+| `items-gathered.js` | Fuel, stones, fibres, herbs, berries and nuts, earth, sea |
+| `items-made.js` | Made things and tools, dyes, keepsakes, treats |
+| `item-draw.js` | The shared fills, each family's cue, small path generators |
+| `item-registry.js` | Which glyph each item id wears, with its tier and phase |
+
+**The rule.** The glyph says what a thing is. In an action button, a small round chip in the corner says where it goes: `pack` (Gather, Take up), `pile` (Set down), `offer` (Set out), `pot` (into the pot). `CHIP_FOR` maps actions to chips.
+
+**Families and their cues.** Fuel lies on a rising slant; stones rest on a ground line; fibres are a bundle tied at the waist; herbs are one stem cut on a slant; berries and nuts sit in a bowl's curve; earth is a heap; sea things lie above a wave line; seeds and clumps are the plant's chip with seeds falling or over a root ball; made things stand on a short shelf line; dyes are a cloth hung to dry in their own colour; keepsakes rest on a little shelf; treats sit on a tinted offering stone.
+
+**Composed glyphs** are named `rule:base` and built when first used: `seed:<species>`, `clump:<species>` (from the species chip in `icons.js`, or the plant's part glyph), `dried:<herb>` (hung upside down from a loop), `offered:<item>` (on the offering stone).
+
+```js
+import { itemIconSvg, itemPouchSvg, chipSvg, CHIP_FOR } from './icons/items.js';
+import { itemIconFor } from './icons/item-registry.js';
+const icon = itemIconFor('drift-twigs');          // 'drift-twigs'; 'thrift.seed' -> 'seed:thrift'
+button.innerHTML = itemIconSvg(icon) + chipSvg(CHIP_FOR.gather);
+pouch.innerHTML = itemPouchSvg(icon, handfuls);   // 0 flat .. 3 full and tied
+```
+
+**CSS the callers set.** `itemIconSvg` sets `--fam` itself. Set `--icon-bg` to the colour behind an icon when it is not cream (it fills the pouch's cloth so the mouth hides the glyph's foot, and draws the cracks across dark fills). Chips: about 18 px in a 48 px button (15 px on the here bar), in the bottom right corner with a 2 px ring of the button's colour (`box-shadow`), the glyph nudged 3 px up and left; on a filled main button set `--chip-fg` to the button's colour. Pouches: a 40 px drawing in the 48 px target. `--fam-op: 0.2` with `--fam: currentColor` draws them in plain ink.
