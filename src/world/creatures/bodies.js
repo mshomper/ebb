@@ -12,6 +12,9 @@ import { FROG_BONES, FROG_SHAPE_KEYS, shapeFrogPrims } from './rigs/frog.js';
 /** Rigs by species id: their bones, proportion names and reshaping. */
 const RIGS = {
   frog: { bones: FROG_BONES, shapeKeys: FROG_SHAPE_KEYS, shape: shapeFrogPrims },
+  // The common toad wears the frog's rig with its own proportions (its pieces carry the frog's bone
+  // names; docs/future/11), unvaried.
+  toad: { bones: FROG_BONES, shapeKeys: /** @type {readonly string[]} */ ([]), shape: (/** @type {any[]} */ prims) => prims },
 };
 
 /** Bytes per vertex in a packed mesh: position, normal, albedo (9 floats), 4 bone indices, 4 weights. */

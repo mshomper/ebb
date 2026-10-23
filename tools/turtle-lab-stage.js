@@ -241,7 +241,7 @@ function makeStage(gpu, shellCode, turtleBody) {
     return {
       /**
        * Draw it. @param {{ cam: { yaw: number, pitch: number, dist: number, target: number[] }, place: number[], scale: number, dry: number,
-       *   water: number | null, floorY: number, ledge: number[] | null, ring: number[], bones: Float32Array, look: number[], baked?: boolean, mesh?: string }} s
+       *   water: number | null, floorY: number, ledge: number[] | null, ring: number[], bones: Float32Array, look: number[], baked?: boolean, mesh?: string | string[] }} s
        *   mesh: which mesh (setMesh's name; the turtle when left out)
        *   look: wet darken, dry roughness share, dry sheen share
        */
@@ -273,8 +273,11 @@ function makeStage(gpu, shellCode, turtleBody) {
         pass.setBindGroup(0, group);
         pass.setPipeline(floor); pass.draw(6);
         if (s.ledge) { pass.setPipeline(ledge); pass.draw(36); }
-        const mesh = meshes.get(s.mesh ?? 'turtle');
-        if (mesh) { pass.setPipeline(body); pass.setVertexBuffer(0, mesh.v); pass.setIndexBuffer(mesh.i, 'uint32'); pass.drawIndexed(mesh.n); }
+        // One mesh or a few on the same bones (a slow worm and its tongue).
+        for (const name of Array.isArray(s.mesh) ? s.mesh : [s.mesh ?? 'turtle']) {
+          const mesh = meshes.get(name);
+          if (mesh) { pass.setPipeline(body); pass.setVertexBuffer(0, mesh.v); pass.setIndexBuffer(mesh.i, 'uint32'); pass.drawIndexed(mesh.n); }
+        }
         if (s.water !== null) { pass.setPipeline(water); pass.draw(6); }
         pass.end();
         device.queue.submit([enc.finish()]);
