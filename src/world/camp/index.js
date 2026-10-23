@@ -136,6 +136,12 @@ export function createCamp(o) {
     const now = o.beat?.() ?? null;
     return now === null || now === beat;
   };
+  /**
+   * Rest may be offered: after the first evening, or in its rest beat, or once its dusk beat has
+   * begun (night has come): resting then ends dusk and rest together (the director's alsoDoneBy), so
+   * a player who never sat by the fire is not left at night with no way to rest.
+   */
+  const restAllowed = () => beatAllows('rest') || beatAllows('dusk');
   /** The sun's height now (radians). */
   const sunAlt = () => sunMoon(o.clock.display(), o.orbit).sunAlt;
   const weatherNow = () => weatherAt(o.world.state?.weather, o.clock.display(), o.seasons);
@@ -310,7 +316,7 @@ export function createCamp(o) {
   function rest() {
     const c = camp(), f = flapAt();
     if (!pitched(c) || !f || resting) return;
-    if (!nightNow() || !beatAllows('rest')) { emit('island:notice', { text: W.restDay, showS: 6 }); return; }
+    if (!nightNow() || !restAllowed()) { emit('island:notice', { text: W.restDay, showS: 6 }); return; }
     // Into the tent: from the flap, facing in.
     const t = /** @type {any} */ (slotAt('tent'));
     play('crawlIn', f, R.reach.standM, t, () => {
@@ -385,7 +391,7 @@ export function createCamp(o) {
     const c = camp(), t = slotAt('tent'), r = slotAt('ring');
     const base = { noPage: true, stage: -1, sub: null, canCarry: false };
     if (t && inTent(x, z, 0.25)) {
-      if (pitched(c)) return { ...base, sp: 'camp:tent', camp: 'tent', name: W.tent.name, icon: 'rest', text: nightNow() && beatAllows('rest') ? W.tent.line : W.restDay, wx: t.x, wz: t.z, r: 1.1, canRest: nightNow() && beatAllows('rest') };
+      if (pitched(c)) return { ...base, sp: 'camp:tent', camp: 'tent', name: W.tent.name, icon: 'rest', text: nightNow() && restAllowed() ? W.tent.line : W.restDay, wx: t.x, wz: t.z, r: 1.1, canRest: nightNow() && restAllowed() };
       if (c.kit.tent === 'pack') return { ...base, sp: 'camp:tent-slot', camp: 'tentSlot', name: W.tentSlot.name, icon: 'pitch', text: W.tentSlot.line, wx: t.x, wz: t.z, r: 1.0 };
     }
     if (r && pitched(c) && Math.hypot(x - r.x, z - r.z) < 0.8) {
@@ -443,7 +449,10 @@ export function createCamp(o) {
     else withdrawHere('camplight');
     if (atRing && (word === 'embers' || word === 'lit') && fuel) offerHere({ id: 'campfeed', icon: 'fire', label: W.feed, order: 11, action: { type: 'camp.feed' } });
     else withdrawHere('campfeed');
-    if (pitched(c) && near(f, R.reach.flapM) && !pending && nightNow() && beatAllows('rest')) offerHere({ id: 'camprest', icon: 'rest', label: W.rest, order: 12, action: { type: 'camp.rest' } });
+    // Rest: anywhere on the camp ground after dark (pressing it walks you to the flap first).
+    const you = o.walk.below ? o.walk.you() : null, padHere = padNow();
+    const onCamp = !!you && !!padHere && (onPad(padHere, you[0], you[2]) || near(f, R.reach.flapM));
+    if (pitched(c) && onCamp && !pending && nightNow() && restAllowed()) offerHere({ id: 'camprest', icon: 'rest', label: W.rest, order: 12, action: { type: 'camp.rest' } });
     else withdrawHere('camprest');
   }
 

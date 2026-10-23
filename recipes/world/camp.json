@@ -37,7 +37,7 @@
   "glowNote": "CS-05: a slot glows (a soft filled ring on the ground) the first time, then only while the pack holds what it needs and you are on or within nearM of the pad. opacity and breathS: its look. firstGlowWithinM: an older island's tent ground glows the first time you go down this near.",
 
   "reach": { "standM": 0.35, "slotM": 1.6, "ringM": 1.5, "flapM": 1.4 },
-  "reachNote": "How near you must stand: standM at the flap itself, to pitch the tent and to crawl in (you walk there first, so you never stand where the tent goes up); slotM to pitch or lay (the card walks you there); ringM for Light and Feed on the here-bar; flapM for Rest.",
+  "reachNote": "How near you must stand: standM at the flap itself, to pitch the tent and to crawl in (you walk there first, so you never stand where the tent goes up); slotM to pitch or lay (the card walks you there); ringM for Light and Feed on the here-bar; flapM: Rest is offered anywhere on the camp ground after dark, or within flapM of the flap (pressing it walks you to the flap first).",
 
   "ring": { "fuelHandfuls": 1, "stoneHandfuls": 2 },
 
