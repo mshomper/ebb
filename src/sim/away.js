@@ -13,7 +13,7 @@ import * as clock from '../core/clock.js';
 import { get, update } from '../core/store.js';
 import { emit, emitDeferred, on } from '../core/events.js';
 import { loadRecipe } from '../core/recipes.js';
-import { awayHours, catchUp, AWAY_RATE, CAP_HOURS } from './catchup.js';
+import { awayHours, catchUp, fewNotes, AWAY_RATE, CAP_HOURS } from './catchup.js';
 import { showCatchingUp } from '../ui/catching-up.js';
 
 /**
@@ -49,9 +49,10 @@ export async function mountAway(opts) {
 
   /**
    * Run `hours` game hours now and swap the result in. @param {number} hours @param {string} why
-   * @param {{ skipS?: number, cream?: boolean }} [o] skipS: move the clock this far instead of whole
-   *   hours (a rest wakes just before sunrise, inside the last hour run); cream: the cream screen
-   *   at once and no reveal (a night's rest, docs/future/13 C-39)
+   * @param {{ skipS?: number, cream?: boolean, title?: { riseS: number, holdS: number } | null }} [o]
+   *   skipS: move the clock this far instead of whole hours (a rest wakes just before sunrise, inside
+   *   the last hour run); cream: the cream screen at once and no reveal (a night's rest, docs/future/13
+   *   C-39); title: the ebb title on it (the first rest)
    */
   async function run(hours, why, o = {}) {
     if (busy || hours <= 0) return;
@@ -61,18 +62,20 @@ export async function mountAway(opts) {
     // Long enough away for the reveal (src/ui/reveal.js): it opens from cream, so the screen is up at
     // once. Settings can turn the reveal off; the notes then wait in the journal.
     const revealing = !o.cream && hours >= reveal.thresholdHours && get('settings')?.reveal !== false;
-    const screen = showCatchingUp({ afterS: revealing || o.cream ? 0 : recipe.screenAfterS, plain: !!o.cream });
+    const screen = showCatchingUp({ afterS: revealing || o.cream ? 0 : recipe.screenAfterS, plain: !!o.cream, title: o.title ?? null });
     const t0 = performance.now();
     try {
       const world = app.world;
       const before = { growth: world.state?.growth ?? null };
-      const r = await catchUp({
+      let r = await catchUp({
         seed: world.env.seed, recipes: world.env.recipes, habitat: world.env.habitat?.() ?? null,
         habitatInputs: world.env.habitatInputs?.() ?? null,
         material: get('terrainLive')?.mirror?.material ?? null, state: world.state, journal: get('journal') ?? null, jr,
         fromHour: clock.hourIndex() + 1, hours, block: recipe.blockHours, onProgress: (d, n) => screen.progress(d / n),
         camp: campAway(),
       });
+      // A night's rest writes only a few notes, one per kind of change (Phase 1 fix F3).
+      if (why === 'rest') r = { ...r, ...fewNotes(r.notes, r.journal, recipe.restNotes ?? 3) };
       world.state = r.state;
       update('world', () => world.state);
       if (r.journal) emit('journal:replaced', { journal: r.journal });
@@ -118,7 +121,8 @@ export async function mountAway(opts) {
     const nowS = clock.worldT();
     const hours = Math.floor(p.toS / clock.SECONDS_PER_HOUR) - clock.hourIndex();
     if (hours <= 0 || p.toS <= nowS) { emitDeferred('world:caught-up', { hours: 0, why: 'rest', notes: [], events: [], before: {}, reveal: false }); return; }
-    run(hours, 'rest', { skipS: p.toS - nowS, cream: true });
+    // The first rest ever (the camp has no `rested` yet): the ebb title on the cream (Phase 1 fix F14).
+    run(hours, 'rest', { skipS: p.toS - nowS, cream: true, title: get('camp')?.rested ? null : recipe.restTitle ?? null });
   });
 
   return {

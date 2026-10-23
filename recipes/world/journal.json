@@ -9,6 +9,8 @@
   "notesKept": 60,
   "pageNotes": 5,
   "arrivedHours": 2,
+  "quietStartHours": 36,
+  "_quietStartHours": "A place already right for an animal within this many hours of the island's start (its first evening and night) is recorded silently, not noted (Phase 1 fix F3).",
   "plantableNote": "plantable: the line written under the first sighting of a plant that came by itself (src/world/growth/volunteers.js), since the Plant tool offers it from then on; {name} is its name.",
   "plantable": "{name} came to the island by itself. You can plant it now.",
   "islandNote": { "showS": 6, "showMeS": 14, "showMeKinds": ["sign", "signAgain", "back", "settled", "settledUnseen", "joined", "joinedUnseen", "uneasy"], "gapS": 1.2, "queue": 3, "more": "{n} more in the journal", "moreOne": "1 more in the journal" },

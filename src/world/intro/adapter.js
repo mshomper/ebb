@@ -183,6 +183,14 @@ export function createIntroLive(o) {
     // When the evening is over, time runs at its own pace again (the time button may have hurried it).
     on('intro:done', () => dispatch(/** @type {any} */ ({ type: 'time.flow', flow: 1 }))),
     on('camp:lit', () => { lit = true; }),
+    // Waking from the first rest (Phase 1 fix F15): the keeper's second page as a centered card
+    // (src/ui/island-notes.js), had from now on in the journal after the first.
+    on('camp:rested', () => {
+      const id = o.R.wakePage;
+      if (!id || (get('journal')?.flags ?? []).includes(`keeper:${id}`)) return;
+      dispatch(/** @type {any} */ ({ type: 'journal.flag', flag: `keeper:${id}` }));
+      emit('keeper:card', { id });
+    }),
     onAction((/** @type {any} */ a) => {
       if (a.type === 'intro.tuck') intro.tuck();
       else if (a.type === 'intro.skip') intro.skip();

@@ -18,6 +18,7 @@ import { livingList, groupsOf, cleanChoice, DEFAULT_CHOICE } from '../src/world/
 import { washMap } from '../src/world/journal/wash.js';
 import { stampNotes, markShown, markNotesSeen, markPageSeen, readOf, noteState, unread } from '../src/world/journal/read.js';
 import { STAGE } from '../src/world/growth/coarse.js';
+import { fewNotes } from '../src/sim/catchup.js';
 import { WORLD_CELLS } from '../src/world/terrain/grid.js';
 import { shoreline, at, loadRecipes, startersWith } from './unit-tests-growth.js';
 
@@ -129,16 +130,38 @@ export function addJournalTests(test, assert, eq) {
     return 'missed, new and seen read right; pages and Notes clear when opened';
   });
 
-  test(JOURNAL, 'a new island: every plant on it is noted as already there', async () => {
+  test(JOURNAL, 'a new island: every plant on it is recorded silently as already there, with no notes', async () => {
     const { words, first, recipes } = await setup();
     // The plants a new island starts with (growth.json starters, and grass); the others come later.
     const starters = ['grass', ...recipes.growth.starters];
     for (const sp of plantsOf(words)) {
       if (!starters.includes(sp)) { assert(!first.journal.species[sp]?.ever, `${sp} is not on a new island`); continue; }
       assert(first.journal.species[sp]?.ever, `${sp} is seen at the first look`);
-      assert(first.notes.some((n) => n.sp === sp && n.text === words.species[sp].notes.arrived), `${sp} has its "arrived" note`);
+      assert(first.journal.species[sp]?.arrived, `${sp} is recorded as already here`);
+      assert(!first.notes.some((n) => n.sp === sp && n.text === words.species[sp].notes.arrived), `${sp} has no "arrived" note`);
     }
     return `${first.notes.length} notes at the first look, for ${starters.join(', ')}`;
+  });
+
+  test(JOURNAL, "a rest keeps a few notes, one per kind, and the journal loses the rest", async () => {
+    const n = (/** @type {number} */ hour, /** @type {string} */ kind, /** @type {string} */ sp) => ({ hour, date: 'd', text: `${sp} ${kind}`, sp, kind });
+    const notes = [n(1, 'seen', 'iris'), n(2, 'seen', 'thrift'), n(3, 'flower', 'reeds'), n(4, 'spread', 'lilies'), n(5, 'dormant', 'iris')];
+    const journal = { ...initialJournal(0), notes: [...notes].reverse() };
+    const r = fewNotes(notes, journal, 3);
+    eq(r.notes.map((x) => x.text).join(', '), 'iris seen, reeds flower, lilies spread', 'first of each kind, three at most');
+    eq(r.journal.notes.length, 3, 'the journal keeps only those');
+    eq(fewNotes([], journal, 3).journal, journal, 'nothing written: the journal is untouched');
+  });
+
+  test(JOURNAL, "a creature's place already right on the first day is not news; later it is", async () => {
+    const words = await loadWords();
+    const sp = words.order.find((/** @type {string} */ s) => words.species[s]?.notes?.right && words.species[s].kind === 'school') ?? 'frogs';
+    const state = { creatures: { [sp]: { right: true } } };
+    const early = observe(initialJournal(0), { state, events: [], hour: 3, habitat: null, words });
+    assert(!early.notes.some((x) => x.kind === 'right'), `${sp}: no "right" line on the first day`);
+    const later = observe(initialJournal(0), { state, events: [], hour: (words.quietStartHours ?? 36) + 5, habitat: null, words });
+    assert(later.notes.some((x) => x.kind === 'right' && x.sp === sp), `${sp}: a "right" line once it becomes right later`);
+    return sp;
   });
 
   test(JOURNAL, 'a plant that comes by itself: the journal notes its first sighting and that you can plant it now', async () => {
