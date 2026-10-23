@@ -218,10 +218,41 @@ export function mountIslandNotes(parent, words, naturalist = null) {
 
   // --- the tap card ---
   /** @type {ReturnType<typeof setTimeout> | undefined} */ let cardTimer;
+  /** @type {ReturnType<typeof setTimeout> | undefined} */ let closingTimer;
+  // A card closes by itself only when nothing is happening with it (October 22, 2026, from E3's
+  // playthrough): never while the pointer is over it, never after one of its actions was pressed
+  // (until another card opens; the walker may be on its way to the thing), and only after closeS.
+  let hovered = false, acted = false, shownKey = '';
+  /** Which thing a card is about, so a new card resets `acted`. @param {any} id */
+  const cardKey = (id) => `${id.sp}|${id.piece ?? ''}|${id.pouch ?? ''}|${Math.round((id.wx ?? 0) * 10)}|${Math.round((id.wz ?? 0) * 10)}`;
+  /** Start (or restart) the quiet close, if this card may close by itself at all. */
+  function armClose() {
+    clearTimeout(cardTimer);
+    const id = get('identify');
+    if (!id || hovered || acted || id.carrying) return;
+    // A card you can act on (Gather, a pouch's, the full card) stays until you close it or walk on.
+    if (id.gathers?.length || id.sp === 'pouch' || id.full) return;
+    const s = id.pinned ? words.showMe.showS : Math.max(words.identify.showS, words.identify.closeS ?? 20);
+    cardTimer = setTimeout(() => dispatch({ type: 'ui.identify' }), s * 1000);
+  }
   function renderCard() {
     const id = get('identify');
     clearTimeout(cardTimer);
-    if (!id) { card.classList.remove('is-open'); card.inert = true; follow(); return; }
+    if (!id) {
+      // For a moment after it closes, the card still takes a click (and does nothing with it), so a
+      // press meant for it never falls through to the island as a walk.
+      // (An inert card lets a press through, so it turns inert only after that moment.)
+      if (card.classList.contains('is-open')) {
+        card.classList.add('is-closing');
+        clearTimeout(closingTimer);
+        closingTimer = setTimeout(() => { card.classList.remove('is-closing'); card.inert = true; }, (words.identify.closingGraceS ?? 0.8) * 1000);
+      } else card.inert = true;
+      card.classList.remove('is-open'); shownKey = ''; acted = false; follow(); return;
+    }
+    clearTimeout(closingTimer);
+    card.classList.remove('is-closing');
+    const key = cardKey(id);
+    if (key !== shownKey) { shownKey = key; acted = false; }
     // A stone's or a log's card, with the turtles' gift: Carry; while carried, a calm hint and Put it
     // back (a tap anywhere on the card puts it back too).
     const C = words.pieces?.carry;
@@ -254,9 +285,7 @@ export function mountIslandNotes(parent, words, naturalist = null) {
     card.classList.add('is-open');
     place(id.x, id.y);
     // While a piece is carried the card stays, holding the hint, until it is set down or put back.
-    // A card you can act on (Gather, a pouch's, the full card) stays until you close it or walk on.
-    const keeps = !!id.gathers?.length || id.sp === 'pouch' || !!id.full;
-    if (!id.carrying && !keeps) cardTimer = setTimeout(() => dispatch({ type: 'ui.identify' }), (id.pinned ? words.showMe.showS : words.identify.showS) * 1000);
+    armClose();
     if (id.pinned) follow();
   }
   /** Put the card beside a screen point, kept on screen. @param {number} px @param {number} py */
@@ -313,8 +342,16 @@ export function mountIslandNotes(parent, words, naturalist = null) {
   // Naming a frog (S6c-3): the field opens on the card itself, which then stays until you close it;
   // Suggest one steps through names no other frog has; an empty name says so instead of going on.
   let suggestAt = 0;
+  // The pointer over the card holds it open; leaving starts the quiet close again from the full time.
+  card.addEventListener('pointerenter', () => { hovered = true; clearTimeout(cardTimer); });
+  card.addEventListener('pointerleave', () => { hovered = false; armClose(); });
   card.addEventListener('click', (e) => {
+    // Closing: the press was meant for the card, so it is taken here and goes nowhere else.
+    if (!card.classList.contains('is-open')) { e.stopPropagation(); return; }
     const id = get('identify');
+    // Any press on the card holds it open: an action may walk you to its thing first.
+    acted = true;
+    clearTimeout(cardTimer);
     // Carrying: a tap anywhere on the card puts the piece back.
     if (id?.carrying) { dispatch({ type: 'pieces.carryCancel' }); return; }
     const b = /** @type {HTMLElement | null} */ (/** @type {HTMLElement} */ (e.target).closest('button'));
@@ -379,6 +416,7 @@ export function mountIslandNotes(parent, words, naturalist = null) {
     for (const u of unsubs) u();
     clearTimeout(pumpTimer);
     clearTimeout(cardTimer);
+    clearTimeout(closingTimer);
     cancelAnimationFrame(following);
     root.remove();
     card.remove();
