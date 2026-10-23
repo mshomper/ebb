@@ -118,11 +118,15 @@ export function createIntroBoot(o) {
         for (const id of ['begun', ...beatIds.slice(0, at)]) dispatch(/** @type {any} */ ({ type: 'journal.flag', flag: `intro:${id}` }));
         if (at > beatIds.indexOf('page')) dispatch(/** @type {any} */ ({ type: 'journal.flag', flag: 'keeper:first' }));
         emit('intro:camp-ready', { tent: at > beatIds.indexOf('pitch'), ring: at > beatIds.indexOf('ring') });
+        // Past the gathering and before the ring: the handfuls the ring needs are in the pack.
+        if (at > beatIds.indexOf('gather') && at <= beatIds.indexOf('ring')) { o.pack?.add('drift-twigs', 1); o.pack?.add('pebbles', 2); }
       }
       live.start();
       if (fresh && o.params.has('nointro')) live.intro.skip();
       live.publish();
     },
+    /** The game hour shown now, counted from the world's start (tools/intro-lab.html). */
+    hours: () => o.clock.display() / H,
     /** Each frame (a system on the live sim). @param {{ realDt: number }} f */
     tick(f) { live?.update(f.realDt); },
     /** Glowing camp slots for the terrain marks (the stand-in camp's). @param {number} now ms */

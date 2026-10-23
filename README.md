@@ -133,6 +133,7 @@ Open these at `/tools/` while running locally. They are for checks that run on y
 | `slice-review.html` | The vertical slice's eight sign-off checks, each with steps, what you should see, a test link and Pass or Not yet; copies the results to paste to Claude |
 | `unit-tests.html` | Every unit test in one run: the core, terrain, water, growth, the journal, creatures and islands. The long runs share all the cores (about half a minute); `?only=pond` runs one area, `?serial` runs them one after another |
 | `determinism.html` | The same seed builds the same island on every thread (`?island=` for another island) |
+| `intro-lab.html` | The first evening side by side with the game: jump to any beat with the earlier ones done, replay on a new seed, skip to dusk, read the beat and hint live, and see the camp pad, its lock edge, its slots, the boat line and the walker's start on this seed and over 60 seeds, checked for a stake and dry beach at the highest tide |
 | `frame-timing.html` | The island live, with a graph of how long each drawing step takes on the graphics card |
 | `cliff-bench.html` | What full mesh detail near cliffs and the waterfalls cost on high, medium and low: the cliff scene measured with detail on and off, then with its spring pouring over the edges, against the budgets |
 | `catchup-bench.html` | Checks that time away gives the same island as time watched, and how long catch-up takes, from a new island with four reed seeds planted by the pond |
