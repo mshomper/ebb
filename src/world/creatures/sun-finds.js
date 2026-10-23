@@ -16,31 +16,12 @@ import { MAX_BONES } from './bodies.js';
 import { poseSkeleton, axisAngle } from './pose.js';
 import { poseLizard } from './rigs/lizard.js';
 import { createLizards } from './lizard-live.js';
+import { slowwormBody, tongueBody, poseSlowworm, tongueOut } from './slowworm.js';
 
 const BAKE_JOB = { module: './world/creatures/bodies.js', fn: 'bakeVariant' };
 
 /** Float 0..1 from a hash. @param {number} h */
 const unit = (h) => (h >>> 8) / 16777216;
-
-/**
- * A slow worm's body as prims: a chain of capsules along a gentle S curve, thickest in the middle
- * and tapering to the tail, with its eyes and a dark line down each flank. Pure.
- * @param {any} B slowworm.json body @returns {any} a body to bake
- */
-export function slowwormBody(B) {
-  const n = B.segments, prims = [];
-  /** A point along the body at share s (0 the snout, 1 the tail tip): forward is +z. @param {number} s */
-  const at = (s) => [Math.sin(s * Math.PI * B.waves) * B.bend * B.lengthM * 0.12, B.radiusM, B.lengthM * (0.5 - s)];
-  /** Its radius at s: the head a little narrower, thickest a third along, the tail tapering. @param {number} s */
-  const rad = (s) => B.radiusM * (s < 0.08 ? 0.8 + 2.5 * s : s < 0.4 ? 1 : 1 - (1 - B.tipShare) * ((s - 0.4) / 0.6));
-  for (let i = 0; i < n; i++) {
-    const s0 = i / n, s1 = (i + 1) / n;
-    prims.push({ type: 'capsule', bone: 'root', a: at(s0), b: at(s1), r: [rad(s0), rad(s1)], k: B.radiusM * 0.4, region: 'back' });
-  }
-  const head = at(0.03);
-  for (const side of [1, -1]) prims.push({ type: 'sphere', bone: 'root', c: [head[0] + side * B.radiusM * 0.6, head[1] + B.radiusM * 0.35, head[2]], r: B.radiusM * 0.22, k: 0, region: 'eye' });
-  return { prims, albedo: B.albedo, blotch: { scale: 1, amount: 0 }, bellyBelowNormalY: -0.2, skin: { blendM: 0.003 } };
-}
 
 /**
  * Is one of these out now, by the hour, the season and the day's weather? Pure.
@@ -67,6 +48,7 @@ export function createSunFinds(opts) {
     .then((r) => { rigs[key] = r.bones; pass.setMesh(key, r); })
     .catch((err) => { if (err?.name !== 'Disposed') console.warn(`${key} bake failed`, err); });
   bake('slowworm', { id: 'slowworm', body: slowwormBody(W.body), variant: 0, cellM: W.bake.cellM });
+  bake('slowworm-tongue', { id: 'slowworm-tongue', body: tongueBody(W.body, W.motion.tongue), variant: 0, cellM: W.motion.tongue.radiusM / 1.5 });
   bake('lizard', { id: 'lizard', body: L.body, variant: 0, cellM: L.bake.cellM });
   const seed = subSeed(world.env.seed, 'sun-finds');
   /** @type {{ sp: string, x: number, z: number, item: string | null, reach: number }[]} */ let shown = [];
@@ -95,7 +77,17 @@ export function createSunFinds(opts) {
         const M = W.motion, every = M.slideEveryS[0] + (M.slideEveryS[1] - M.slideEveryS[0]) * unit(hash32(seed, log.seed, 3));
         const k = ((t % every) / M.slideS), slide = M.slideM * Math.min(1, Math.max(0, k)) * (1 - Math.min(1, Math.max(0, k - 1)));
         x += ax * slide; z += az * slide;
-        beings.push({ x, y: terrain.sampleHeight(x, z), z, yaw, size: W.body.displayScale, mesh: 'slowworm' });
+        // Posed by its chain of bones (slowworm.js): it slithers through its S as it slides, and
+        // flicks its tongue (a mesh of its own on the same bones, drawn only while it is out).
+        /** @type {Float32Array | undefined} */ let bones;
+        const y = terrain.sampleHeight(x, z);
+        if (rigs.slowworm) {
+          const id = hash32(seed, log.seed, 0x7a);
+          bones = new Float32Array(MAX_BONES * 16);
+          poseSkeleton(rigs.slowworm, poseSlowworm(rigs.slowworm, { id, t, slidM: slide }, W.body, W.motion, axisAngle), bones, 0);
+          if (pass.hasMesh('slowworm-tongue') && tongueOut(t, id, W.motion.tongue) > 0.02) beings.push({ x, y, z, yaw, size: W.body.displayScale, mesh: 'slowworm-tongue', bones });
+        }
+        beings.push({ x, y, z, yaw, size: W.body.displayScale, mesh: 'slowworm', bones });
         taps.push({ sp: 'slowworms', x, z, item: null, reach: W.find.tapM + W.body.lengthM * W.body.displayScale * 0.4 });
       }
     }

@@ -4,7 +4,7 @@
   "key": "slowworms",
   "name": "Slow worm",
   "version": 1,
-  "note": "The slow worm (docs/future/11 finds; doc 13 season markers): a bronze legless lizard that lives under logs and basks beside them on warm mornings. A find: nothing saved, no needs, no gift (src/world/creatures/sun-finds.js, live). WHEN: in the seasons listed (0 spring, 1 summer), between hours[0] and hours[1] o'clock, on days whose weather is one of moods (not rain or mist). WHERE: beside a log you carried and set down (a kept log, lying still, out of the water), on each such log with chance a day, seeded by the log and the day, so every device sees the same. It lies along the log's flank at the log's along share of its length, offM out from its middle line, half in the log's shade. LOOK: a chain of segments capsules along a gentle S curve (bend radians, waves half-waves) lengthM long, radiusM thick at the middle tapering to tipShare at the tail, real meters, drawn at displayScale (1.8: it is long already, Matt's rescale rule is for small lives under 10 cm, but it is thin and must read from above); every so often it slides a little along itself (slideM over slideS, every slideEveryS). Albedo linear: bronze back, a darker line down the flank (stripe, the female's), dark belly, eye.",
+  "note": "The slow worm (docs/future/11 finds; doc 13 season markers): a bronze legless lizard that lives under logs and basks beside them on warm mornings. A find: nothing saved, no needs, no gift (src/world/creatures/sun-finds.js, live). WHEN: in the seasons listed (0 spring, 1 summer), between hours[0] and hours[1] o'clock, on days whose weather is one of moods (not rain or mist). WHERE: beside a log you carried and set down (a kept log, lying still, out of the water), on each such log with chance a day, seeded by the log and the day, so every device sees the same. It lies along the log's flank at the log's along share of its length, offM out from its middle line, half in the log's shade. LOOK: a chain of segments capsules lengthM long, radiusM thick at the middle tapering to tipShare at the tail, real meters, drawn at displayScale (1.8: it is long already, Matt's rescale rule is for small lives under 10 cm, but it is thin and must read from above). RIG (m2-rigs-spring; src/world/creatures/slowworm.js): one bone per segment, the head first, and a tongue bone; it lies in a gentle S made by turning each joint (bend: the heading's swing in radians, waves half-waves over its length); every so often it slides a little along itself (slideM over slideS, every slideEveryS) and the S keeps its place on the ground while the body slides through it, so it slithers; at rest the S drifts a little (breathShift of a wave, every breathS). Now and then it lifts its head a touch (tongue.headLiftRad) and flicks its dark forked tongue (tongue: flicks quick flicks of flickS each, every everyS; lengthM, radiusM, albedo). Albedo linear: bronze back, a darker line down the flank (stripe, the female's), dark belly, eye.",
   "seasons": [0, 1],
   "hours": [8, 12],
   "moods": ["clear", "cloud"],
@@ -15,10 +15,11 @@
     "displayScale": 1.8,
     "contactShadow": 0.5,
     "wetSpecular": { "roughness": 0.25, "strength": 0.9 },
-    "lengthM": 0.34, "radiusM": 0.0065, "tipShare": 0.35, "segments": 12, "bend": 0.55, "waves": 2.2,
+    "lengthM": 0.34, "radiusM": 0.0065, "tipShare": 0.35, "segments": 12, "bend": 0.95, "waves": 2.4,
     "albedo": { "back": [0.34, 0.21, 0.09], "belly": [0.06, 0.05, 0.035], "stripe": [0.1, 0.07, 0.04], "eye": [0.05, 0.04, 0.02], "eyeRing": [0.3, 0.18, 0.08] }
   },
   "bake": { "cellM": 0.0016 },
-  "motion": { "slideM": 0.03, "slideS": 2.5, "slideEveryS": [9, 20] },
+  "motion": { "slideM": 0.03, "slideS": 2.5, "slideEveryS": [9, 20], "breathS": 5, "breathShift": 0.04,
+              "tongue": { "everyS": [3, 8], "flickS": 0.18, "flicks": 2, "lengthM": 0.014, "radiusM": 0.0007, "headLiftRad": 0.12, "albedo": [0.03, 0.025, 0.025] } },
   "find": { "tapM": 0.25 }
 }

@@ -1,12 +1,13 @@
 // @ts-check
 // Spring creatures rigged (m2-rigs-spring; the creature rigging rule), for tools/unit-tests.html:
-// froglets hop on the frog's rig and land with its squash; the toad walks on the same rig.
+// froglets hop on the frog's rig and land with its squash; the toad walks on the same rig; the slow\n// worm slithers on its chain of bones and flicks its tongue.
 
 import { frogletHop, landSquash } from '../src/world/creatures/froglets.js';
 import { frogMoves, legsOf } from '../src/world/creatures/motion.js';
 import { skeletonOf, bodyFor, MAX_BONES } from '../src/world/creatures/bodies.js';
-import { poseSkeleton } from '../src/world/creatures/pose.js';
+import { poseSkeleton, axisAngle } from '../src/world/creatures/pose.js';
 import { toadMoves } from '../src/world/creatures/toad-walk.js';
+import { slowwormBody, poseSlowworm, tongueOut } from '../src/world/creatures/slowworm.js';
 
 const G = 'spring rigs';
 
@@ -55,6 +56,29 @@ export function addRigsSpringTests(test, assert, eq) {
     const a = ankle(0.1), b = ankle(0.45);
     assert(Math.abs(a.z - b.z) < 0.006, `planted while the body passes (${(a.z - b.z).toFixed(4)} m)`);
     assert(ankle(0.8).y > a.y + 0.002, 'lifted as it steps');
+  });
+
+  test(G, 'the slow worm: a chain of bones, an S that keeps its place as it slides, tongue flicks', async () => {
+    const W = await load('slowworm');
+    const body = slowwormBody(W.body);
+    const sk = skeletonOf('slowworm', body.prims, body.bones);
+    eq(sk.length, W.body.segments + 1, 'a bone per segment and the tongue');
+    eq(sk[1].parent, 0, 'a chain from the head');
+    const out = new Float32Array(MAX_BONES * 16);
+    const turns = (/** @type {number} */ slid) => poseSlowworm(sk, { id: 2, t: 0, slidM: slid }, W.body, { ...W.motion, breathShift: 0 }, axisAngle)
+      .slice(1, W.body.segments).map((m) => /** @type {any} */ (m).q[1]);
+    // Slid one whole wave along, the S is the same again (it keeps its place on the ground).
+    const wl = W.body.lengthM / (W.body.waves / 2);
+    const a = turns(0), b = turns(wl);
+    a.forEach((v, i) => assert(Math.abs(v - b[i]) < 1e-9, `joint ${i + 1} the same a wave on`));
+    assert(Math.max(...a.map(Math.abs)) > 0.05, 'curved, not straight');
+    let out1 = 0;
+    for (let t = 0; t < 20; t += 0.02) {
+      if (tongueOut(t, 2, W.motion.tongue) > 0.5) out1++;
+      poseSkeleton(sk, poseSlowworm(sk, { id: 2, t, slidM: t * 0.01 }, W.body, W.motion, axisAngle), out, 0);
+      assert([...out.subarray(0, sk.length * 16)].every(Number.isFinite), 'finite');
+    }
+    assert(out1 > 0 && out1 < 200, `the tongue flicks now and then (${out1} frames out of 1000)`);
   });
 
   test(G, 'a froglet poses through a whole hop with finite bones', async () => {

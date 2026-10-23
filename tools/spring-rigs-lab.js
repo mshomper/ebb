@@ -1,7 +1,7 @@
 // @ts-check
 // ebb spring rigs lab (the creature rigging rule, m2-rigs-spring): the spring creatures at their
 // drawn size, one looping view per motion, posed by the game's own code: froglets on the frog's rig
-// (froglets.js, motion.js frogMoves), and the toad on the same rig with its own proportions\n// (toad-walk.js). Click a view to see it big. `?strip=<creature>` lays out one
+// (froglets.js, motion.js frogMoves), and the toad on the same rig with its own proportions\n// (toad-walk.js); the slow worm on its chain of bones (slowworm.js). Click a view to see it big. `?strip=<creature>` lays out one
 // motion as a row of still frames instead (the frame strips Matt approves before a commit).
 
 import { run } from '../src/core/workers.js';
@@ -10,12 +10,13 @@ import { MAX_BONES, bodyFor } from '../src/world/creatures/bodies.js';
 import { frogMoves, legsOf } from '../src/world/creatures/motion.js';
 import { frogletHop, landSquash } from '../src/world/creatures/froglets.js';
 import { toadMoves, toadPhase } from '../src/world/creatures/toad-walk.js';
+import { slowwormBody, tongueBody, poseSlowworm, tongueOut } from '../src/world/creatures/slowworm.js';
 import { createStage, VIEWS } from './turtle-lab-stage.js';
 
 const $ = (/** @type {string} */ id) => /** @type {HTMLElement} */ (document.getElementById(id));
 const BAKE = { module: './world/creatures/bodies.js', fn: 'bakeVariant' };
 const load = (/** @type {string} */ id) => fetch(`../recipes/species/${id}.json`).then((r) => r.json());
-const [FROG, SPAWN, TOAD] = await Promise.all([load('frog'), load('frogspawn'), load('toad')]);
+const [FROG, SPAWN, TOAD, WORM] = await Promise.all([load('frog'), load('frogspawn'), load('toad'), load('slowworm')]);
 const FL = SPAWN.body.froglet;
 const params = new URLSearchParams(location.search);
 
@@ -23,7 +24,9 @@ const params = new URLSearchParams(location.search);
  * A pose this instant: the bone matrices, where the body is (x, y, z, yaw) and what it is doing.
  * @typedef {{ bones: Float32Array, place: number[], note: string }} Frame
  * @typedef {{ id: string, creature: string, title: string, mesh: string, scale: number, target: number[], dist: number,
- *   loopS: number, at: (t: number) => Frame | null, strip?: number[], stripDist?: number }} Clip
+ *   loopS: number, at: (t: number) => Frame | null, strip?: number[], stripDist?: number, meshes?: string[], stripFixed?: boolean }} Clip
+ *   meshes: more meshes drawn on the same bones (the slow worm's tongue); stripFixed: a strip's camera stays put
+ *   instead of following the body
  *   stripDist: the camera's distance in a strip (half dist when left out)
  */
 
@@ -69,6 +72,20 @@ function toad(t, walking) {
   return { bones, place: [0, 0, (walked % (TOAD_MPS * TOAD_STRIDE_S * 3)) - 0.1, 0], note };
 }
 
+// --- the slow worm ---
+const WS = WORM.body.displayScale, WM = WORM.motion;
+/** A slow worm t seconds in, slid slidM along itself. @param {number} t @param {number} slidM @param {string} note */
+function worm(t, slidM, note) {
+  if (!rigs.slowworm) return null;
+  const bones = new Float32Array(MAX_BONES * 16);
+  poseSkeleton(rigs.slowworm, poseSlowworm(rigs.slowworm, { id: 4, t, slidM }, WORM.body, WM, axisAngle), bones, 0);
+  const flick = tongueOut(t, 4, WM.tongue);
+  return { bones, place: [0, 0, slidM, 0], note: flick > 0.05 ? 'a tongue flick, the head lifted a touch' : note };
+}
+// The lab's slide: along itself and back over slideS each way, a pause between (as the game's).
+const WORM_LOOP_S = WM.slideS * 2 + 4;
+const wormSlide = (/** @type {number} */ t) => { const k = (t % WORM_LOOP_S) / WM.slideS; return WM.slideM * 2 * Math.min(1, Math.max(0, k)) * (1 - Math.min(1, Math.max(0, k - 1))); };
+
 /** @type {Clip[]} */
 const CLIPS = [
   { id: 'froglet-hop', creature: 'froglet', title: 'Froglet: hopping away', mesh: 'frog', scale: FROGLET_SIZE, target: [0, 0.02, 0], dist: 0.42, loopS: HOP_EVERY_S * 4,
@@ -86,6 +103,12 @@ const CLIPS = [
     strip: Array.from({ length: 9 }, (_, i) => TOAD_STRIDE_S * (1 + i / 9)), stripDist: 0.5 },
   { id: 'toad-sit', creature: 'toad', title: 'Toad: sitting at the water', mesh: 'toad', scale: TS, target: [0, 0.04, 0.04], dist: 0.5, loopS: 12,
     at: (t) => toad(t, false) },
+  { id: 'worm-slide', creature: 'slowworm', title: 'Slow worm: slithering along', mesh: 'slowworm', meshes: ['slowworm-tongue'], scale: WS, target: [0, 0.01, 0.03], dist: 0.95, loopS: WORM_LOOP_S,
+    at: (t) => worm(t, wormSlide(t), wormSlide(t) > 0 && (t % WORM_LOOP_S) < WM.slideS * 2 ? 'sliding along itself; the S stays put on the ground' : 'resting in its S, breathing'),
+    // A strip through a slide: the body moves through its S, which keeps its place.
+    strip: Array.from({ length: 9 }, (_, i) => 0.05 + i * (WM.slideS / 8)), stripDist: 1.15, stripFixed: true },
+  { id: 'worm-tongue', creature: 'slowworm', title: 'Slow worm: tongue flicks', mesh: 'slowworm', meshes: ['slowworm-tongue'], scale: WS, target: [0, 0.012, 0.25], dist: 0.22, loopS: 20,
+    at: (t) => worm(t, 0, 'resting, breathing; a tongue flick every few seconds') },
 ];
 
 // --- the page ---
@@ -114,6 +137,8 @@ const stage = made.stage;
 for (const p of panels) p.view = stage.view(p.canvas);
 $('status').textContent = 'Baking (a few seconds)';
 const frogLods = FROG.bake.lods ?? [{ cellM: FROG.bake.cellM }];
+run(BAKE, { id: 'slowworm', body: slowwormBody(WORM.body), variant: 0, cellM: WORM.bake.cellM }).then((r) => { stage.setMesh(r, 'slowworm'); rigs.slowworm = r.bones; });
+run(BAKE, { id: 'slowworm-tongue', body: tongueBody(WORM.body, WM.tongue), variant: 0, cellM: WM.tongue.radiusM / 1.5 }).then((r) => stage.setMesh(r, 'slowworm-tongue'));
 run(BAKE, { id: 'toad', body: TOAD.body, variant: 0, cellM: TOAD.bake.cellM }).then((r) => {
   stage.setMesh(r, 'toad'); rigs.toad = r.bones;
   const prims = bodyFor('toad', TOAD.body, 0).prims;
@@ -161,9 +186,9 @@ function frame() {
     if (!fr) continue;
     if (p.note.textContent !== fr.note) p.note.textContent = fr.note;
     // In a strip the camera follows the body along, so every frame is framed the same.
-    const target = strip ? [fr.place[0] + c.target[0], c.target[1], fr.place[2] + c.target[2]] : c.target;
+    const target = strip && !c.stripFixed ? [fr.place[0] + c.target[0], c.target[1], fr.place[2] + c.target[2]] : c.target;
     p.view.draw({ cam: { yaw: cam.yaw, pitch: cam.pitch, dist: (/** @type {any} */ (goal).close ? 0.5 : 1) * (strip ? c.stripDist ?? c.dist * 0.5 : c.dist), target }, place: fr.place, scale: c.scale, dry: 0,
-      water: null, floorY: 0, ledge: null, ring: [0, 0, 0, 0], bones: fr.bones, look: [1, 1, 1], baked: true, mesh: c.mesh });
+      water: null, floorY: 0, ledge: null, ring: [0, 0, 0, 0], bones: fr.bones, look: [1, 1, 1], baked: true, mesh: [c.mesh, ...(c.meshes ?? [])] });
   }
   requestAnimationFrame(frame);
 }
