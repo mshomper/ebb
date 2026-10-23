@@ -102,7 +102,8 @@ export function createIntroLive(o) {
   };
   const flapOf = () => { const pad = padNow(); return pad && flapSpot(pad); };
   const spring = landmarks(o.land, o.terrainSeed).spring;
-  const stub = o.camp ? null : createStandInCamp();
+  const springBeat = o.R.beats.find((/** @type {any} */ b) => b.id === 'spring');
+  const stub =o.camp ? null : createStandInCamp();
   let lit = false;
 
   /** @type {import('./checks.js').IntroContext & { pad: () => any }} */
@@ -155,6 +156,7 @@ export function createIntroLive(o) {
   // The evening's place for other pieces (E3 offers Light and Rest only when their beat comes):
   // the store slice `intro` { beat, started, done }, kept as the director moves.
   let shown = '', marked = '';
+  /** @type {{ x: number, z: number, reachM: number } | null} */ let goAt = null;
   function publish() {
     const c = intro.current, done = (get('journal')?.flags ?? []).includes(`${o.R.flagPrefix ?? 'intro:'}done`);
     // A mark over the view on where the beat leads you (island-notes draws it): the spring's pool,
@@ -166,6 +168,9 @@ export function createIntroLive(o) {
       : c.id === 'dusk' ? (ctx.fireLit() ? null : slot('ring'))
       : c.id === 'rest' ? flapOf() : null;
     const mark = at ? { x: at.x, z: at.z } : null;
+    // A click on the mark walks you beside the place: near enough to kneel at the spring's pool
+    // (its beat's reach), else goReachM (a click on far ground can land short, on the slope's crest).
+    goAt = at ? { x: at.x, z: at.z, reachM: c?.id === 'spring' ? springBeat?.done?.reachM ?? 2.5 : o.R.goReachM ?? 1.5 } : null;
     const mk = mark ? `${mark.x},${mark.z}` : '';
     if (mk !== marked) { marked = mk; emit('intro:mark', mark ? { x: mark.x, z: mark.z } : null); }
     const key = `${c?.id}|${c?.started}|${done}`;
@@ -181,6 +186,7 @@ export function createIntroLive(o) {
     onAction((/** @type {any} */ a) => {
       if (a.type === 'intro.tuck') intro.tuck();
       else if (a.type === 'intro.skip') intro.skip();
+      else if (a.type === 'intro.go' && goAt) walk.tap(-1e5, -1e5, [goAt.x, 0, goAt.z], goAt.reachM);
     }),
   ];
 

@@ -128,10 +128,14 @@ export function mountIslandNotes(parent, words, naturalist = null) {
   root.prepend(hint);
   // The first evening's mark (`intro:mark { x, z }` or null): a soft breathing ring drawn over the
   // view where a beat leads you (the spring's pool, which tall grass hides from the ground), seen
-  // from far off. Like Show me's mark, never an arrow: off screen, it simply waits.
-  const introMark = document.createElement('div');
-  introMark.className = 'ebb-mark';
-  introMark.setAttribute('aria-hidden', 'true');
+  // from far off. Like Show me's mark, never an arrow: off screen, it simply waits. A click on it
+  // walks you there (`intro.go`): a click on far ground behind it can land short, on a crest.
+  const introMark = document.createElement('button');
+  introMark.type = 'button';
+  introMark.className = 'ebb-mark ebb-mark--go';
+  introMark.title = 'Walk there';
+  introMark.setAttribute('aria-label', 'Walk there');
+  introMark.addEventListener('click', (e) => { e.stopPropagation(); dispatch(/** @type {any} */ ({ type: 'intro.go' })); });
   /** @type {{ x: number, z: number } | null} */ let markAt = null;
   let marking = 0;
   function followMark() {
