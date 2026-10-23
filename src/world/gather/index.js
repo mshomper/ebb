@@ -26,7 +26,7 @@ import { partsOf, pickable, pick } from './plants.js';
 
 /**
  * @param {{ recipe: any, seed: number, world: any, worldT: () => number, water: any, terrain: any, pack: any, walk: any,
- *   tide: any, strandline: any, weather: () => any, center: () => number[] }} o
+ *   tide: any, strandline: any, weather: () => any, center: () => number[], boat?: () => number[] | null }} o
  *   tide: water.json tide; strandline: shore.json look.strandline; weather: { weatherSeed, weather,
  *   state } as finds take it; center: the island's middle [x, z], for onshore wind
  */
@@ -80,6 +80,7 @@ export function createGather(o) {
       lines: linesNow(),
       runupM: o.strandline?.runupM ?? 0,
       center: o.center(),
+      boat: o.boat?.() ?? null,
     };
   }
 

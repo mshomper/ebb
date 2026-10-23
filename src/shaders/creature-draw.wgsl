@@ -9,6 +9,7 @@
 // #include lighting-bindings
 // #include lib-sky
 // #include lib-lighting
+// #include lib-lift
 
 struct CreatureDraw {
   look: vec4f,     // x wet roughness, y wet specular strength, z contact shadow darkness 0..1, w contact radius (body lengths)
@@ -28,11 +29,14 @@ struct CreatureDraw {
   fleckCol: vec4f,
   // Drying (a turtle basking): dry roughness, dry sheen, how much darker it is wet (0: no drying).
   wet: vec4f,
+  // The lift (lib-lift.wgsl): warm tint and its strength, rim colour and its power.
+  liftTint: vec4f,
+  liftRim: vec4f,
 };
 
 @group(0) @binding(0) var<uniform> frame: FrameUniforms;
 @group(2) @binding(0) var<uniform> cd: CreatureDraw;
-// Two vec4f per individual: (x, y, z, yaw in radians), (size, first bone, dry 0..1, spare).
+// Two vec4f per individual: (x, y, z, yaw in radians), (size, first bone, dry 0..1, lift 0..1).
 @group(2) @binding(1) var<storage, read> beings: array<vec4f>;
 // Bone matrices (body space, the rest pose is identity), MAX_BONES per individual (bodies.js).
 @group(2) @binding(2) var<storage, read> bones: array<mat4x4f>;
@@ -46,6 +50,7 @@ struct VsOut {
   @location(4) rest: vec3f,    // where this is on the body as baked (body meters), for the shell plates
   @location(5) stiff: f32,     // 1 on skin that moves with the root bone alone (a shell)
   @location(6) dry: f32,
+  @location(7) @interpolate(flat) lift: f32,
 };
 
 struct FsOut {
@@ -97,6 +102,7 @@ fn vsBody(@location(0) position: vec3f, @location(1) normal: vec3f, @location(2)
   o.rest = position;
   o.stiff = select(0.0, 1.0, joints.x == 0u && weights.x > 0.99);
   o.dry = beings[ii * 2u + 1u].z;
+  o.lift = beings[ii * 2u + 1u].w;
   return o;
 }
 
@@ -216,7 +222,7 @@ fn fsBody(in: VsOut) -> FsOut {
     let fres = 0.02 + 0.98 * pow(1.0 - max(dot(n, v), 0.0), 5.0);
     radiance += g * fres * skyAmbient(reflect(-v, n)) / PI;
   }
-  let color = applyAerial(radiance * frame.exposure, in.pos.xy * frame.invRenderSize, viewDist);
+  let color = liftShade(applyAerial(radiance * frame.exposure, in.pos.xy * frame.invRenderSize, viewDist), n, v, in.lift, cd.liftTint, cd.liftRim);
   // Never let a bad value through: one NaN would spread over the whole frame through bloom.
   let safe = select(vec3f(0.0), color, color == color);
   return FsOut(vec4f(max(safe, vec3f(0.0)), 1.0), vec4f(octEncode(n), 0.0, 1.0));

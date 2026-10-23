@@ -7,10 +7,12 @@
 
 import { makeBuffer, makeShaderModule } from '../../core/gpu.js';
 import { VERTEX_BYTES } from '../../world/creatures/bodies.js';
+import { liftAt, liftLook, liftLookVersion, liftVersion } from '../lift.js';
 
 /** @typedef {import('../frame-graph.js').PassContext} PassContext */
 
-const DRAW_BYTES = 128;
+// The usual 8 vec4s, then the lift's tint and rim (src/render/lift.js liftLook).
+const DRAW_BYTES = 160;
 /** Floats per piece: at, more, extra, wear (4 each), then its bone (16). */
 const PIECE_FLOATS = 32;
 // Loose stones and logs, pond stones, and the slabs on every flight of Steps' treads.
@@ -23,7 +25,8 @@ const MAX = 512;
  *   (mesh units); plain: earth, not stone (no rock scan); aspect: a driftwood log's thickness over
  *   its length (its mesh is 1 thick, squeezed by its bone; drawn as wood, not stone); moss: a slab's
  *   moss 0..1 (pond stones and Steps' treads, grown with age); wear: a log's [time at sea, age kept,
- *   moss, 0] (piece-draw.wgsl Piece.wear)
+ *   moss, 0] (piece-draw.wgsl Piece.wear; its last float is the piece's lift, which the pass reads
+ *   each frame from src/render/lift.js liftAt('pieces', x, z), F5)
  */
 
 /**
@@ -50,7 +53,7 @@ export function createPiecesPass(opts) {
   /** @type {Map<string, { data: ArrayBuffer, indices: Uint32Array, vbuf?: GPUBuffer, ibuf?: GPUBuffer }>} */
   const meshes = new Map();
   /** @type {{ key: string, first: number, count: number }[]} */ let groups = [];
-  let count = 0, stones = 0, dirty = true;
+  let count = 0, stones = 0, dirty = true, liftSeen = -1, lookSeen = -1;
   /** @type {GPUDevice | null} */ let device = null;
   /** @type {GPURenderPipeline} */ let bodyPipe;
   /** @type {GPURenderPipeline} */ let ringPipe;
@@ -117,6 +120,7 @@ export function createPiecesPass(opts) {
         else groups.push({ key: b.mesh, first: i, count: 1 });
       });
       dirty = true;
+      liftSeen = -1;
     },
 
     /** @param {PassContext} ctx */
@@ -177,7 +181,16 @@ export function createPiecesPass(opts) {
       if (!bodyPipe || !count || !g) return;
       // The rock scan fades in with the ground's own (0 until the maps load).
       data[3] = ground.ready ? ground.fade : 0;
+      if (lookSeen !== liftLookVersion()) { lookSeen = liftLookVersion(); data.set(liftLook, 32); }
       ctx.device.queue.writeBuffer(ubuf, 0, data);
+      // The lift (F5): each piece's from where it lies, rewritten only when a lift may have changed.
+      if (liftSeen !== liftVersion()) {
+        liftSeen = liftVersion();
+        for (let i = 0; i < count; i++) {
+          const k = i * PIECE_FLOATS, v = liftAt('pieces', list[k], list[k + 2]);
+          if (list[k + 15] !== v) { list[k + 15] = v; dirty = true; }
+        }
+      }
       if (dirty) { ctx.device.queue.writeBuffer(sbuf, 0, list, 0, count * PIECE_FLOATS); dirty = false; }
       const pass = encoder.beginRenderPass({
         label: 'pieces',

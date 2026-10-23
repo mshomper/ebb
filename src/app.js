@@ -47,6 +47,7 @@ import { createFallsPass } from './render/passes/falls.js';
 import { createGrassPass } from './render/passes/grass.js';
 import { createFloraPass } from './render/passes/flora.js';
 import { createCreaturePass } from './render/passes/creatures.js';
+import { setLiftLook, setLiftTargets, liftFor } from './render/lift.js';
 import { bakeBody } from './world/creatures/body-bake.js';
 import { previewSpots } from './world/creatures/preview-spots.js';
 import { createCreatures } from './world/creatures/index.js';
@@ -409,6 +410,8 @@ export async function startApp(canvas, hooks = {}) {
   // Presence (doc 23): what creatures react to. Two views (W3): the camera above counts only for
   // its edits (reported below); you on foot are felt with your pace, posture and gaze.
   const walkerRecipe = await loadRecipe('world/walker');
+  // The lift (F5): a hovered or chosen thing is tinted warm with a thin rim in its own shader, never ringed.
+  setLiftLook(await loadRecipe('world/highlight'));
   // The keeper's camp's words (recipes/world/camp.json): `clear`, the line when a tap lands on the pad.
   const campRecipe = await loadRecipe('world/camp');
   /** @type {import('./world/walk/index.js').Walk | null} */ let walkRef = null;
@@ -575,7 +578,9 @@ export async function startApp(canvas, hooks = {}) {
   const gather = createGather({ recipe: await loadRecipe('world/gather'), seed, world, worldT: () => clock.worldT(), water, terrain, pack, walk,
     tide: waterRecipe.tide, strandline: ww.shore.recipe?.look?.strandline ?? null,
     weather: () => ({ weatherSeed: world.env.weatherSeed, weather: seasonsRecipe.weather, state: world.state?.weather }),
-    center: () => { const b = terrain.openBounds(); return [(b.openMin[0] + b.openMax[0]) / 2, (b.openMin[1] + b.openMax[1]) / 2]; } });
+    center: () => { const b = terrain.openBounds(); return [(b.openMin[0] + b.openMax[0]) / 2, (b.openMin[1] + b.openMax[1]) / 2]; },
+    // Where the boat lands the keeper: the beach there always has something to gather (F6).
+    boat: () => { const s = boat.mooring?.stand; return s ? [s.x, s.z] : null; } });
   // Picked reeds grow back slowly, faster in rain (the growth step reads the gather recipe).
   world.env.recipes.gather = gather.recipe;
   on('world:ticked', () => gather.expire());
@@ -583,6 +588,8 @@ export async function startApp(canvas, hooks = {}) {
   // What lies on the ground to gather, the piles at camp and the heaps you left (src/world/pack/draw.js).
   const packDraw = createPackDraw({ terrain, camera, recipe: pack.recipe, gather, pack, you: () => walk.you() });
   sim.addSystem(packDraw);
+  /** How far a ground spot's pickups lie from its middle, for what its card lifts (F5). @param {string} kind */
+  const spreadOf = (kind) => pack.recipe.pickups?.kinds?.[kind]?.spreadM ?? 0.4;
   // The keeper's camp (docs/future/13 section 3; src/world/camp): the tent and the fire ring in their
   // slots, the fire and the lantern as small lights, smoke and moths, and a night's rest in the tent.
   const camp = createCamp({ recipe: campRecipe, seed, walk, terrain, clock, orbit: skyRecipe.orbit, camera, world,
@@ -864,31 +871,57 @@ export async function startApp(canvas, hooks = {}) {
   }
 
   /**
-   * Hovering below: what a click there would use, named beside the pointer (store slice `hover`,
-   * src/ui/hover-tag.js), read a few times a second. Plain walking ground has no tag.
+   * Hovering below: what a click there would use (null over plain walking ground). Names what a
+   * click would gather when there is something (else the thing itself), at the thing's own spot.
+   * @param {number} ox @param {number} oy canvas point
+   * @returns {{ key: string, name: string, wx: number, wz: number, lift: import('./render/lift.js').LiftTarget[] } | null}
    */
-  let hoverAt = 0;
+  function hoverPick(ox, oy) {
+    if (!walk.below || !cards) return null;
+    const p = groundAt(ox, oy);
+    const pc = p ? pieceUnderTap(ox, oy, p) : null;
+    const q = pc && p ? [pc.x, p[1], pc.z] : p;
+    const card = q ? cards.cardAt(q[0], q[2], q[1]) : null;
+    if (!card || !q) return null;
+    const plan = clickPlan(clickKind(card, cards.species), walk.distTo(card.wx ?? q[0], card.wz ?? q[2]), card.r ?? 0, walkerRecipe.click, !!card.gathers?.length);
+    if (plan.kind === 'walk') return null;
+    const g = card.gathers?.[0];
+    const at = g?.spot ? [g.spot.x, g.spot.z] : Number.isFinite(g?.x) ? [g.x, g.z] : [card.wx ?? q[0], card.wz ?? q[2]];
+    const name = g?.name ?? card.name;
+    return { key: `${name}|${Math.round(at[0] * 10)}|${Math.round(at[1] * 10)}`, name, wx: at[0], wz: at[1], lift: liftFor(card, spreadOf) };
+  }
+  /**
+   * The hover tag (F4; src/ui/hover-tag.js reads the store slice `hover`): the hand cursor follows
+   * the pointer a few times a second, but the tag names a thing only once the pointer rests on it
+   * (recipes/world/walker.json click.hoverRestS), sits over the thing and never chases the pointer.
+   * Moving onto another thing hides it until a new rest.
+   */
+  let hoverAt = 0, restTimer = 0, restX = -1e9, restY = -1e9;
   canvas.addEventListener('pointermove', (e) => {
     if (e.pointerType !== 'mouse') return;
-    const now = performance.now();
-    if (now - hoverAt < 1000 / walkerRecipe.click.hoverHz) return;
-    hoverAt = now;
-    let tag = null;
-    if (walk.below && cards && !e.buttons) {
-      const p = groundAt(e.offsetX, e.offsetY);
-      const pc = p ? pieceUnderTap(e.offsetX, e.offsetY, p) : null;
-      const q = pc && p ? [pc.x, p[1], pc.z] : p;
-      const card = q ? cards.cardAt(q[0], q[2], q[1]) : null;
-      const kind = clickKind(card, cards.species);
-      const plan = card ? clickPlan(kind, walk.distTo(card.wx ?? q?.[0], card.wz ?? q?.[2]), card.r ?? 0, walkerRecipe.click, !!card.gathers?.length) : null;
-      // Name what a click would gather, when there is something (else the thing itself).
-      if (card && plan && plan.kind !== 'walk') tag = { name: card.gathers?.[0]?.name ?? card.name, x: e.clientX, y: e.clientY };
+    const C = walkerRecipe.click;
+    const ox = e.offsetX, oy = e.offsetY;
+    if (Math.hypot(ox - restX, oy - restY) > (C.hoverRestPx ?? 4)) {
+      restX = ox; restY = oy;
+      clearTimeout(restTimer);
+      restTimer = e.buttons ? 0 : window.setTimeout(() => {
+        const h = hoverPick(ox, oy);
+        if (h && h.key !== getStore('hover')?.key) updateStore('hover', () => h);
+      }, (C.hoverRestS ?? 0.25) * 1000);
     }
+    const now = performance.now();
+    if (now - hoverAt < 1000 / C.hoverHz) return;
+    hoverAt = now;
+    const h = e.buttons ? null : hoverPick(ox, oy);
     const was = getStore('hover');
-    if (tag || was) updateStore('hover', () => tag);
-    canvas.classList.toggle('ebb-can-use', !!tag);
+    if (was && was.key !== h?.key) updateStore('hover', () => null);
+    canvas.classList.toggle('ebb-can-use', !!h);
   });
-  const hoverOff = () => { if (getStore('hover')) updateStore('hover', () => null); canvas.classList.remove('ebb-can-use'); };
+  const hoverOff = () => {
+    clearTimeout(restTimer); restX = restY = -1e9;
+    if (getStore('hover')) updateStore('hover', () => null);
+    canvas.classList.remove('ebb-can-use');
+  };
   canvas.addEventListener('pointerleave', hoverOff);
   canvas.addEventListener('pointerdown', hoverOff);
 
@@ -1146,6 +1179,13 @@ export async function startApp(canvas, hooks = {}) {
       // The pouches (src/world/pack): a pouch's card, Set down at camp, Empty.
       if (a.type === 'pack.open') { pack.open(a.i, a.x, a.y); return; }
       if (a.type === 'pack.setDown') { pack.setDown(a.i); return; }
+      // A pile's card: Set down one pouch of its kind, then the card again with the pile's new size.
+      if (a.type === 'pack.setDownKind') {
+        pack.setDownKind(a.kind);
+        const c = getStore('identify');
+        if (c?.piece && cards) updateStore('identify', () => ({ ...c, ...cards?.cardAt(c.wx, c.wz), x: c.x, y: c.y, at: performance.now() }));
+        return;
+      }
       if (a.type === 'pack.empty') { pack.empty(a.i); return; }
       if (a.type === 'gather.take') { gather.take(a.n); return; }
       if (a.type === 'gather.heapHere') { gather.heapHere(); return; }
@@ -1569,7 +1609,11 @@ export async function startApp(canvas, hooks = {}) {
     const pad = getStore('campPad') ?? null;
     padEdge = pad ? stepEdge(padEdge, edgeTarget(pad, terrain.ring, tools()), realDt, pad.dash?.opacity ?? 1, pad.dash?.fadeS) : 0;
     const padMark = edgeMark(pad, padEdge);
-    terrainPass.setMarks(plantTool.marks(now, tools().tool === 'plant', getStore('identify'), [...(padMark ? [padMark] : []), ...(getStore('reveal')?.rings?.(now) ?? []), ...creatures.foodRings(), ...intro.rings(now), ...camp.rings(now / 1000)]));
+    // A chosen thing is lifted in its own shader, not ringed (F5); only Show me (a pinned card, far
+    // off) keeps its ring on the ground. The first evening's slot glows are rings of their own.
+    const chosen = getStore('identify');
+    setLiftTargets([...(getStore('hover')?.lift ?? []), ...liftFor(chosen, spreadOf)], realDt);
+    terrainPass.setMarks(plantTool.marks(now, tools().tool === 'plant', chosen?.pinned ? chosen : null, [...(padMark ? [padMark] : []), ...(getStore('reveal')?.rings?.(now) ?? []), ...creatures.foodRings(), ...intro.rings(now), ...camp.rings(now / 1000)]));
     // Lugworm casts are drawn into the sand by the terrain pass.
     terrainPass.setCasts(finds.casts());
     updatePour();

@@ -98,8 +98,22 @@ export function createPack(o) {
       emitDeferred('island:notice', { text: r.kind === 'worms' ? W.worms : W.emptied, showS: 4 });
     },
 
-    /** Set a pouch down at camp onto its kind's pile (what fits; the rest stays). @param {number} i */
-    setDown(i) {
+    /**
+     * Set one pouch of a kind down onto its pile (a pile card's Set down, F8): the fullest first.
+     * The pile's card stays open, so another press sets down the next. @param {string} kind
+     */
+    setDownKind(kind) {
+      const ps = pack().pouches;
+      let i = -1;
+      ps.forEach((p, k) => { if (p[0] === kind && (i < 0 || p[1] > ps[i][1])) i = k; });
+      if (i >= 0) this.setDown(i, true);
+    },
+
+    /**
+     * Set a pouch down at camp onto its kind's pile (what fits; the rest stays).
+     * @param {number} i @param {boolean} [keepCard] leave the open card (a pile's) as it is
+     */
+    setDown(i, keepCard = false) {
       const you = o.you();
       const pc = pack().pouches[i];
       if (!pc || !you || !atCamp(you[0], you[2]) || !o.setDown) return;
@@ -114,7 +128,7 @@ export function createPack(o) {
         emitDeferred('pack:set-down', { kind: k, handfuls: r.moved, pile: r.pile ?? null });
       }
       if (!r.refuse && r.moved < h) emitDeferred('island:notice', { text: W.pileFull, showS: 4 });
-      update('identify', () => null);
+      if (!keepCard) update('identify', () => null);
     },
 
     /** The heaps left when the pack was full (K-21), for drawing and tapping. */

@@ -61,6 +61,7 @@ export const gatherSeed = (worldSeed) => subSeed(worldSeed, 'gather');
  * @property {StrandLine[]} [lines]  the lines lying now, newest first
  * @property {number} [runupM]       shore.json look.strandline.runupM
  * @property {number[]} [center]     the island's centre [x, z], for onshore wind
+ * @property {number[] | null} [boat] where the boat lands the keeper [x, z]: near it, the ground is always gatherable
  */
 
 /**
@@ -291,8 +292,29 @@ export function share(kind, sourceKey, period, ctx, recipe) {
   let more = 0, empty = K.empty?.[season] ?? 0;
   if (K.windy !== undefined && isWindy(ctx, W)) { more += K.windy; empty = K.emptyWindy ?? empty; }
   if (K.onshore !== undefined && line && isOnshore(line.day, binCenter(sourceKey), ctx.center, W)) { more += K.onshore; empty = K.emptyOnshore ?? empty; }
+  // Ground spots lie in a few natural clusters, not everywhere (F6, October 23, 2026): a bin is
+  // only in play inside a kept cluster cell. Near the boat they always are, a little richer, so the
+  // first evening has enough to gather.
+  if ((K.source === 'bin' || K.source === 'strand') && K.cluster) {
+    const at = binCenter(sourceKey), B = recipe.nearBoat;
+    const nearBoat = !!B && !!ctx.boat && Math.hypot(at[0] - ctx.boat[0], at[1] - ctx.boat[1]) <= B.radiusM;
+    if (nearBoat) empty = B.empty?.[kind] ?? empty;
+    else if (!inCluster(kind, sourceKey, K.source === 'strand' ? period : 0, ctx, K.cluster)) return 0;
+  }
   if (u01(hash32(ctx.seed, salt, sourceKey, period)) < empty) return 0;
   return base + more;
+}
+
+/**
+ * Is a bin inside one of its kind's clusters? Bins are grouped into cells of cellBins a side, and a
+ * cell is kept with chance keep (seeded; a strandline's clusters move with each tide, `period`).
+ * @param {string} kind @param {number} key bin index @param {number} period @param {GatherCtx} ctx
+ * @param {{ cellBins: number, keep: number }} C gather.json kinds.<kind>.cluster
+ */
+export function inCluster(kind, key, period, ctx, C) {
+  const bi = key % BINS, bj = Math.floor(key / BINS), n = Math.max(1, C.cellBins);
+  const cell = Math.floor(bj / n) * BINS + Math.floor(bi / n);
+  return u01(hash32(ctx.seed, KINDS.indexOf(kind) + 1, 0xc1, cell, period)) < C.keep;
 }
 
 /** share() for a spot from spotsNear or spotAt. @param {Spot} s @param {GatherCtx} ctx @param {any} recipe */
