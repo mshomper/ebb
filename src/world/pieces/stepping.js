@@ -50,21 +50,50 @@ export const jitterOf = (seed, S) => (u01(hash32(seed, 5)) - 0.5) * 2 * S.jitter
 export const topOf = (p, ground) => ground(p.x, p.z) + p.rise;
 
 /**
- * The pairs of stones the walker steps between: each stone and the next of its line (by id order),
- * when they are no further apart than linkM. @param {SteppingStone[]} list @param {any} S
+ * Can the walker step between two stones, either way? No further apart than linkM, and their tops
+ * no more than stepM apart in height. The same answer from a to b as from b to a (F10, October 23,
+ * 2026: a stone you can step out to is always one you can step back from).
+ * @param {SteppingStone} a @param {SteppingStone} b @param {any} S @param {(x: number, z: number) => number} [ground]
+ */
+export function canStep(a, b, S, ground) {
+  const dx = b.x - a.x, dz = b.z - a.z;
+  if (dx * dx + dz * dz > S.linkM * S.linkM) return false;
+  return !ground || Math.abs(topOf(a, ground) - topOf(b, ground)) <= S.stepM;
+}
+
+/**
+ * Could the walker step back from a new stone (F10)? Always where the water round it is wadeable;
+ * in deeper water, only to another stone it can step to, or to ground within linkM it can stand on
+ * (no deeper than wadeM, no further up or down than stepM). A stone that fails would be footing
+ * nobody could leave, so a line stops there instead. Plain arithmetic and Math.sqrt only.
+ * @param {SteppingStone} p the new stone @param {SteppingStone[]} others the stones already laid
+ * @param {(x: number, z: number) => number} ground @param {(x: number, z: number) => number} depth water over a point now
+ * @param {any} S pieces.json stepping
+ */
+export function stepBack(p, others, ground, depth, S) {
+  if (depth(p.x, p.z) < S.wadeM) return true;
+  if (others.some((q) => q.id !== p.id && canStep(p, q, S, ground))) return true;
+  const top = topOf(p, ground);
+  const D = [[1, 0], [-1, 0], [0, 1], [0, -1], [0.7071, 0.7071], [0.7071, -0.7071], [-0.7071, 0.7071], [-0.7071, -0.7071]];
+  for (const r of [0.5 * S.linkM, S.linkM]) for (const [ux, uz] of D) {
+    const x = p.x + ux * r, z = p.z + uz * r;
+    if (depth(x, z) < S.wadeM && Math.abs(ground(x, z) - top) <= S.stepM) return true;
+  }
+  return false;
+}
+
+/**
+ * The pairs of stones the walker steps between: every two stones it can step between (canStep),
+ * whichever line each was laid in, each pair once and in id order, so the footing between them is
+ * the same both ways. @param {SteppingStone[]} list @param {any} S @param {(x: number, z: number) => number} [ground]
  * @returns {[SteppingStone, SteppingStone][]}
  */
-export function links(list, S) {
-  /** @type {Map<string, SteppingStone[]>} */ const runs = new Map();
-  for (const p of list) { const r = runs.get(p.run); if (r) r.push(p); else runs.set(p.run, [p]); }
-  /** @type {[SteppingStone, SteppingStone][]} */ const out = [];
+export function links(list, S, ground) {
   const n = (/** @type {string} */ id) => Number.parseInt(id.slice(1), 10) || 0;
-  for (const r of runs.values()) {
-    r.sort((a, b) => n(a.id) - n(b.id));
-    for (let i = 1; i < r.length; i++) {
-      const a = r[i - 1], b = r[i], dx = b.x - a.x, dz = b.z - a.z;
-      if (dx * dx + dz * dz <= S.linkM * S.linkM) out.push([a, b]);
-    }
+  const sorted = [...list].sort((a, b) => n(a.id) - n(b.id));
+  /** @type {[SteppingStone, SteppingStone][]} */ const out = [];
+  for (let i = 0; i < sorted.length; i++) for (let j = i + 1; j < sorted.length; j++) {
+    if (canStep(sorted[i], sorted[j], S, ground)) out.push([sorted[i], sorted[j]]);
   }
   return out;
 }

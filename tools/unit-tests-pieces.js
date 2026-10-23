@@ -25,7 +25,7 @@ import { due, grant } from '../src/world/expansion.js';
 import { WATER_CLASS } from '../src/world/water/summary.js';
 import { waterCellCenter } from '../src/world/water/grid.js';
 import { chipRows } from '../src/ui/tools.js';
-import { makeStepping, links, footingAt } from '../src/world/pieces/stepping.js';
+import { makeStepping, links, footingAt, canStep, stepBack } from '../src/world/pieces/stepping.js';
 import { planFlight, flightGeom, flightRect, carveFlight, markGuard, crossesGuard, treadSlabs } from '../src/world/pieces/steps.js';
 import { slabShapes } from '../src/world/pieces/slabs.js';
 import { raftShapes, makeRaft, raftRest } from '../src/world/pieces/raft.js';
@@ -485,6 +485,27 @@ export function addPiecesTests(test, assert, eq) {
     const one = slabShapes(R), two = slabShapes(R);
     eq(one.length, 16, 'sixteen shapes');
     assert(one.every((s, i) => s.mesh.vertices.every((v, j) => v === two[i].mesh.vertices[j])), 'the same shapes on every load');
+  });
+
+  test(G, 'pond stones link both ways and across lines, and none is laid that nobody could step back from (F10)', async () => {
+    const S = (await recipe).stepping;
+    const flat = () => 0;
+    // Two lines: a's line and d's, d laid later but a stride from b.
+    const a = makeStepping(5, 1, 0, 0, 0.8, 0, null, S), b = makeStepping(5, 2, 0.7, 0, 0.8, 0, a.id, S), d = makeStepping(5, 3, 1.4, 0.1, 0.8, 0, null, S);
+    const L = links([d, b, a], S, flat);
+    const has = (/** @type {any} */ p, /** @type {any} */ q) => L.some(([x, y]) => (x === p && y === q) || (x === q && y === p));
+    assert(has(a, b) && has(b, d), 'a stone a stride away is linked, whichever line it was laid in');
+    eq(JSON.stringify(links([a, b, d], S, flat)), JSON.stringify(L), 'the same links whatever order the stones come in');
+    assert(canStep(a, b, S, flat) === canStep(b, a, S, flat), 'a step one way is a step the other');
+    // A tall step: tops more than stepM apart do not link.
+    const hi = { ...b, rise: a.rise + S.stepM + 0.05 };
+    assert(!canStep(a, hi, S, flat), 'a stone too far above the next is not one way across');
+    // Deep water everywhere but a bank at x < 0: a stone a stride out is fine, one far out alone is not.
+    const deep = (/** @type {number} */ x) => (x < 0 ? 0 : 0.8);
+    const near = makeStepping(5, 4, 0.4, 0, 0.8, 0, null, S), alone = makeStepping(5, 5, 6, 0, 0.8, 0, null, S);
+    assert(stepBack(near, [], (x) => (x < 0 ? near.rise : 0), deep, S), 'a stone by the bank can be stepped back from');
+    assert(!stepBack(alone, [], flat, deep, S), 'a stone alone in deep water was laid');
+    assert(stepBack(alone, [{ ...alone, id: 'p9', x: 6.6 }], flat, deep, S), 'a stone a stride from another is fine');
   });
 }
 
