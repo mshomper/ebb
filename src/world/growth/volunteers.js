@@ -14,6 +14,7 @@
 
 import { stream, subSeed, hash32 } from '../../core/rng.js';
 import { seasonOf, SECONDS_PER_HOUR } from '../../core/clock.js';
+import { openBox } from '../ecology/fields.js';
 
 /**
  * The species on the island by now, by the hour each came. A growth state from before volunteers
@@ -56,7 +57,9 @@ export function volunteerAt(g, hab, env, hourIndex, suitCell, taken) {
     if (rec.volunteer?.seasons && !rec.volunteer.seasons.includes(season)) continue;
     // The square it lands on: the suitable one first in this hour's hash order.
     let best = -1, bestH = 0;
-    for (let k = 0; k < hab.n * hab.n; k++) {
+    // Only open squares can take one: the opened island's box, in grid order, finds the same square.
+    const b = openBox(hab);
+    for (let j = b.j0; j <= b.j1; j++) for (let k = j * hab.n + b.i0; k <= j * hab.n + b.i1; k++) {
       // Never on the camp pad (CP-16, habitat.js padClearMask).
       if (!hab.open[k] || hab.clear?.[k] || taken(k) ||suitCell(rec, k) < V.minSuit) continue;
       const h = hash32(seed, hourIndex, k);

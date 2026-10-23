@@ -17,6 +17,7 @@
 import { stepMidges } from './midges.js';
 import { frogNeeds } from './habitat.js';
 import { needMaps } from './needs.js';
+import { openBox } from './fields.js';
 import { swarmSpecies, keyOf } from '../species.js';
 import { HABITAT_ORIGIN } from '../growth/habitat.js';
 import { tadpoleField } from '../creatures/spring.js';
@@ -41,10 +42,14 @@ export function initialEcology() {
   return { midges: null, frogs: null, habitatHash: 0 };
 }
 
-/** A 0..1 field as bytes. @param {Float32Array} a */
-function bytes(a) {
+/**
+ * A 0..1 field as bytes. The need maps are written only inside the island's box (needs.js), so only
+ * the box is read; past it they are 0, and so are the bytes.
+ * @param {Float32Array} a @param {import('./fields.js').Box} box @param {number} n
+ */
+function bytes(a, box, n) {
   const out = new Uint8Array(a.length);
-  for (let k = 0; k < a.length; k++) out[k] = Math.floor(255 * a[k] + 0.5);
+  for (let j = box.j0; j <= box.j1; j++) for (let k = j * n + box.i0; k <= j * n + box.i1; k++) out[k] = Math.floor(255 * a[k] + 0.5);
   return out;
 }
 
@@ -61,9 +66,10 @@ export function ecologyNow(state, env, advance) {
   const season = Math.min(3, Math.max(0, state.seasons?.index ?? 0));
   const midges = advance || !prev.midges ? stepMidges(hab, state.growth, prev.midges, sp.midge.field, season) : prev.midges;
   const f = frogNeeds(hab, state.growth, midges, sp.frog);
+  const box = openBox(hab, 1), n = hab.n;
   /** @type {any} */ const eco = {
     midges,
-    frogs: { score: bytes(f.score), water: bytes(f.water), shelter: bytes(f.shelter), edge: f.edge },
+    frogs: { score: bytes(f.score, box, n), water: bytes(f.water, box, n), shelter: bytes(f.shelter, box, n), edge: f.edge },
     habitatHash: hab.hash,
   };
   // Schools and swarms (minnows, dragonflies): the habitat score per square from the same needs
@@ -85,7 +91,7 @@ export function ecologyNow(state, env, advance) {
     // A species that wants a pond of its own the player made, with no fish (dragonflies): each pool
     // says whether it is one (fit), and why not.
     if (rec.ecology.pond) for (const p of list) Object.assign(p, pondFit(hab, m, p.id, rec.ecology.pond, state.creatures?.[rec.ecology.pond.fishFree]?.groups ?? []));
-    eco[key] = { score: bytes(m.score), pools: list };
+    eco[key] = { score: bytes(m.score, m.box, n), pools: list };
   }
   return eco;
 }
@@ -103,7 +109,9 @@ export function ecologyNow(state, env, advance) {
 export function pondFit(hab, m, id, R, fish) {
   let area = 0, shallow = 0, margin = 0;
   const [s0, s1] = R.shallowM, [m0, m1] = R.marginM;
-  for (let k = 0; k < m.score.length; k++) {
+  const n = hab.n, b = m.box;
+  // A pool's squares all lie inside the island's box (needs.js waterBodies).
+  for (let j = b.j0; j <= b.j1; j++) for (let k = j * n + b.i0; k <= j * n + b.i1; k++) {
     if (m.label?.[k] !== id) continue;
     area++;
     const d = hab.depthCm[k] / 100;
@@ -140,7 +148,9 @@ function pools(m, groups, plants, roomPlants) {
   return m.bodies.map((b) => {
     let best = -1, bestScore = 0;
     if (m.label) {
-      for (let k = 0; k < m.score.length; k++) {
+      // The pool lies inside the island's box; read in grid order there, the same best wins.
+      const x = m.box;
+      for (let j = x.j0; j <= x.j1; j++) for (let k = j * n + x.i0; k <= j * n + x.i1; k++) {
         if (m.label[k] !== b.id) continue;
         const s = Math.floor(255 * m.score[k] + 0.5);
         if (s > bestScore || best < 0) { best = k; bestScore = s; }

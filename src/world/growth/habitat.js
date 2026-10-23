@@ -40,33 +40,41 @@ export const HABITAT_ORIGIN = -80;
  * Chamfer distance (3-4 weights, in thirds of a cell) from every cell to the nearest source cell,
  * two passes. Integers only. Sources have distance 0; the result is capped at `cap`. Also used by
  * the ecology step (world/ecology).
+ *
+ * With a box, only the cells inside it are worked out (the rest stay at `cap`): when every source
+ * lies inside the box, each cell in it gets exactly the distance the whole grid would give it, since
+ * a chamfer path between two cells of a rectangle never needs to leave it. The hourly steps pass the
+ * open island's box (ecology/fields.js openBox), so the empty sea around it costs nothing.
  * @param {Uint8Array} src 1 where a source @param {number} n @param {number} cap
+ * @param {{ i0: number, j0: number, i1: number, j1: number }} [box]  inclusive cell bounds
  */
-export function chamfer(src, n, cap) {
+export function chamfer(src, n, cap, box) {
   const d = new Uint16Array(n * n);
-  for (let k = 0; k < d.length; k++) d[k] = src[k] ? 0 : cap;
-  for (let j = 0; j < n; j++) {
-    for (let i = 0; i < n; i++) {
+  const i0 = box?.i0 ?? 0, j0 = box?.j0 ?? 0, i1 = box?.i1 ?? n - 1, j1 = box?.j1 ?? n - 1;
+  if (box) d.fill(cap);
+  for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) { const k = j * n + i; d[k] = src[k] ? 0 : cap; }
+  for (let j = j0; j <= j1; j++) {
+    for (let i = i0; i <= i1; i++) {
       const k = j * n + i;
       let v = d[k];
-      if (i > 0) v = Math.min(v, d[k - 1] + 3);
-      if (j > 0) {
+      if (i > i0) v = Math.min(v, d[k - 1] + 3);
+      if (j > j0) {
         v = Math.min(v, d[k - n] + 3);
-        if (i > 0) v = Math.min(v, d[k - n - 1] + 4);
-        if (i < n - 1) v = Math.min(v, d[k - n + 1] + 4);
+        if (i > i0) v = Math.min(v, d[k - n - 1] + 4);
+        if (i < i1) v = Math.min(v, d[k - n + 1] + 4);
       }
       d[k] = v;
     }
   }
-  for (let j = n - 1; j >= 0; j--) {
-    for (let i = n - 1; i >= 0; i--) {
+  for (let j = j1; j >= j0; j--) {
+    for (let i = i1; i >= i0; i--) {
       const k = j * n + i;
       let v = d[k];
-      if (i < n - 1) v = Math.min(v, d[k + 1] + 3);
-      if (j < n - 1) {
+      if (i < i1) v = Math.min(v, d[k + 1] + 3);
+      if (j < j1) {
         v = Math.min(v, d[k + n] + 3);
-        if (i < n - 1) v = Math.min(v, d[k + n + 1] + 4);
-        if (i > 0) v = Math.min(v, d[k + n - 1] + 4);
+        if (i < i1) v = Math.min(v, d[k + n + 1] + 4);
+        if (i > i0) v = Math.min(v, d[k + n - 1] + 4);
       }
       d[k] = v;
     }

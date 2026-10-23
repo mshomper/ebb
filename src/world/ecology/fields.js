@@ -39,20 +39,29 @@ export function openBox(hab, pad = 0) {
 /**
  * Summed-area table of a field over the whole grid: S[(j + 1) * (n + 1) + (i + 1)] is the sum of
  * cells (0..i, 0..j). Float64, so sums of 0..1 shares stay exact enough and the same everywhere.
+ *
+ * With a box, only the entries a boxSum inside it can read are worked out. That is exact when the
+ * field is zero outside the box: the cells left out would only have added zeros, in the same order.
+ * Pass the box the queries reach (their square's half width past the cells asked about).
  * @param {ArrayLike<number>} a @param {number} n @param {number} [scale] each value is multiplied by this
+ * @param {Box} [box]
  */
-export function sat(a, n, scale = 1) {
+export function sat(a, n, scale = 1, box) {
   const W = n + 1;
   const S = new Float64Array(W * W);
-  for (let j = 0; j < n; j++) {
+  const i0 = box?.i0 ?? 0, j0 = box?.j0 ?? 0, i1 = box?.i1 ?? n - 1, j1 = box?.j1 ?? n - 1;
+  for (let j = j0; j <= j1; j++) {
     let row = 0;
-    for (let i = 0; i < n; i++) {
+    for (let i = i0; i <= i1; i++) {
       row += a[j * n + i] * scale;
       S[(j + 1) * W + i + 1] = S[j * W + i + 1] + row;
     }
   }
   return S;
 }
+
+/** A box grown by r cells on every side, kept on the grid. @param {Box} b @param {number} r @param {number} n */
+export const grow = (b, r, n) => ({ i0: Math.max(0, b.i0 - r), j0: Math.max(0, b.j0 - r), i1: Math.min(n - 1, b.i1 + r), j1: Math.min(n - 1, b.j1 + r) });
 
 /**
  * Sum over the square of half-width r cells around (i, j), clipped to the grid: four lookups.
@@ -92,13 +101,15 @@ export function boxMax(a, n, r, box) {
 /**
  * How much of each square each plant holds, weighted: a clump adds weight x its size to the square
  * it stands in; a cover plant (rushes, and grass as painted times its cover) adds weight x its
- * share. With `max`, a square keeps its largest weighted plant instead of the sum.
+ * share. With `max`, a square keeps its largest weighted plant instead of the sum. Cover and painted
+ * grass grow only on the opened island, so only its box is read (the rest of the field is zero).
  * @param {any} hab @param {any} growth state.growth @param {Record<string, number>} weights plant id to weight
  * @param {boolean} max
  */
 export function plantField(hab, growth, weights, max) {
   const n = hab.n;
   const f = new Float32Array(n * n);
+  const b = openBox(hab);
   const add = (/** @type {number} */ k, /** @type {number} */ v) => { f[k] = max ? (v > f[k] ? v : f[k]) : f[k] + v; };
   for (const p of growth?.plants ?? []) {
     const w = weights[p.sp];
@@ -111,12 +122,12 @@ export function plantField(hab, growth, weights, max) {
     if (sp === 'grass') {
       const g = growth?.grass;
       if (!g) continue;
-      for (let k = 0; k < n * n; k++) if (g[k] && hab.grass[k] && !hab.sea[k]) add(k, (w * hab.grass[k] * g[k]) / (255 * 255));
+      for (let j = b.j0; j <= b.j1; j++) for (let k = j * n + b.i0; k <= j * n + b.i1; k++) if (g[k] && hab.grass[k] && !hab.sea[k]) add(k, (w * hab.grass[k] * g[k]) / (255 * 255));
       continue;
     }
     const c = growth?.cover?.[sp];
     if (!c) continue;
-    for (let k = 0; k < n * n; k++) if (c[k]) add(k, (w * c[k]) / 255);
+    for (let j = b.j0; j <= b.j1; j++) for (let k = j * n + b.i0; k <= j * n + b.i1; k++) if (c[k]) add(k, (w * c[k]) / 255);
   }
   return f;
 }

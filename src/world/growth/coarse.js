@@ -20,6 +20,36 @@ import { stream, subSeed, hash32, det } from '../../core/rng.js';
 import { HABITAT_CELLS, HABITAT_ORIGIN, habitatCell } from './habitat.js';
 import { arrivedOf, volunteerAt } from './volunteers.js';
 import { plantSeasonPos } from './phenology.js';
+import { openBox } from '../ecology/fields.js';
+
+/**
+ * Cells past the opened island that grass cover still works out each hour: more than the farthest
+ * any ground value reaches out from the island (the salt's saltM, 4 cells, growth.json habitat).
+ */
+const MARGIN = 6;
+
+/**
+ * Each cover's target per square depends only on the ground and the recipe, never on the hour, so
+ * it is worked out once per habitat (a new habitat comes with every edit to the ground) and kept:
+ * habitat -> recipe -> targets over the whole grid. @type {WeakMap<object, WeakMap<object, Uint8Array>>}
+ */
+const targetCache = new WeakMap();
+
+/**
+ * The targets over the whole grid for one habitat and recipe, worked out on first use.
+ * @param {any} hab @param {object} key the recipe @param {(k: number) => number} target
+ */
+function targetsOf(hab, key, target) {
+  let byRec = targetCache.get(hab);
+  if (!byRec) { byRec = new WeakMap(); targetCache.set(hab, byRec); }
+  let t = byRec.get(key);
+  if (!t) {
+    t = new Uint8Array(hab.n * hab.n);
+    for (let k = 0; k < t.length; k++) t[k] = target(k);
+    byRec.set(key, t);
+  }
+  return t;
+}
 
 /** Stages, in order. */
 export const STAGE = Object.freeze({ seed: 0, sprout: 1, young: 2, mature: 3, flowering: 4, dormant: 5 });
@@ -562,13 +592,20 @@ export function coarseStep(state, hourIndex, env) {
 
   // Grass cover: toward what the ground supports, a share of the gap each hour (integers). Where
   // rushes stand thick on soaked ground, grass gives way to them.
+  // Only the opened island and a margin past it (MARGIN: more than the salt's reach) can change
+  // from hour to hour; past that the ground never does, its cover sits at its target from the first
+  // hour on, and it is copied as it was.
   const n = hab.n * hab.n;
-  const grass = new Uint8Array(n);
+  const grass = prev.grass ? prev.grass.slice() : new Uint8Array(n);
   const G2 = GR.grass;
   const rival = firstCover(prev, env);
-  for (let k = 0; k < n; k++) {
-    const target = yieldTo(grassTarget(hab, G2, k), rival?.[k], G2);
-    grass[k] = prev.grass ? approach(prev.grass[k], target, G2.ratePerH) : target;
+  const B = prev.grass ? openBox(hab, MARGIN) : openBox(hab, hab.n);
+  const grassTargets = targetsOf(hab, G2, (k) => grassTarget(hab, G2, k));
+  for (let j = B.j0; j <= B.j1; j++) {
+    for (let k = j * hab.n + B.i0; k <= j * hab.n + B.i1; k++) {
+      const target = yieldTo(grassTargets[k], rival?.[k], G2);
+      grass[k] = prev.grass ? approach(prev.grass[k], target, G2.ratePerH) : target;
+    }
   }
   g.grass = grass;
 
@@ -581,16 +618,22 @@ export function coarseStep(state, hourIndex, env) {
     /** @type {Record<string, number>} */ const took = {};
     for (const [sp, rec] of covers) {
       const was = prev.cover?.[sp];
-      const c = new Uint8Array(n);
+      // A cover plant grows only on the opened island (its target is 0 past it, and so is it), so
+      // only that box is worked out after the first hour; the rest is copied as it was.
+      const c = was ? was.slice() : new Uint8Array(n);
       const SP = rec.spread ?? {};
       const from = Math.round(255 * (SP.fromShare ?? 0));
       let newly = 0;
-      for (let k = 0; k < n; k++) {
-        const target = coverTarget(rec, hab, k);
-        if (!was) { c[k] = target; continue; }
-        if (was[k] === 0 && target > 0 && from > 0 && !standNear(was, hab.n, k, from)) continue;
-        c[k] = approach(was[k], target, rec.growth.ratePerH);
-        if (was[k] === 0 && c[k] > 0) newly++;
+      const CB = was ? openBox(hab, 1) : openBox(hab, hab.n);
+      const targets = targetsOf(hab, rec, (k) => coverTarget(rec, hab, k));
+      for (let j = CB.j0; j <= CB.j1; j++) {
+        for (let k = j * hab.n + CB.i0; k <= j * hab.n + CB.i1; k++) {
+          const target = targets[k];
+          if (!was) { c[k] = target; continue; }
+          if (was[k] === 0 && target > 0 && from > 0 && !standNear(was, hab.n, k, from)) continue;
+          c[k] = approach(was[k], target, rec.growth.ratePerH);
+          if (was[k] === 0 && c[k] > 0) newly++;
+        }
       }
       if (was && SP.jumpPerH > 0) newly += seedJump(c, was, rec, hab, from, subSeed(env.seed, `cover-seed-${sp}`), hourIndex);
       cover[sp] = c;
@@ -651,9 +694,11 @@ function seedJump(c, was, rec, hab, from, seed, hourIndex) {
   const r = stream(seed, hourIndex);
   if (r.next() >= SP.jumpPerH) return 0;
   /** @type {number[]} */ const stands = [];
-  for (let k = 0; k < was.length; k++) if (was[k] >= from) stands.push(k);
-  if (!stands.length) return 0;
   const n = hab.n;
+  // Stands grow only on the opened island: its box, read in grid order, finds the same stands.
+  const SB = openBox(hab, 1);
+  for (let j = SB.j0; j <= SB.j1; j++) for (let k = j * n + SB.i0; k <= j * n + SB.i1; k++) if (was[k] >= from) stands.push(k);
+  if (!stands.length) return 0;
   // Most seeds land on ground that will not do; a few tries per carried seed find the wet places.
   for (let tries = 0; tries < (SP.jumpTries ?? 4); tries++) {
     const s = stands[r.int(stands.length)];
