@@ -11,7 +11,8 @@ import { campOf } from '../terrain/landform.js';
  * @typedef {Object} Pad
  * @property {number} x @property {number} z  center (world m)
  * @property {number} r       radius (m), the level, locked ground
- * @property {number} h       level (m)
+ * @property {number} h       level at its center (m)
+ * @property {number} fall    how far it falls toward the sea from its center to its seaward edge (m; landform.js padLevel)
  * @property {number} blend   the soft fall back to natural ground outside r (m)
  * @property {number} fx @property {number} fz  seaward unit vector (u); v, to the left facing the sea, is (fz, -fx)
  * @property {number} lockFadeM  brushes fade from nothing at r to full at r + lockFadeM
@@ -36,7 +37,7 @@ export function padOf(land, at = null) {
     x = at.x; z = at.z; h = at.heightM ?? h;
     if (typeof at.facingDeg === 'number') { fx = Math.cos(at.facingDeg * Math.PI / 180); fz = Math.sin(at.facingDeg * Math.PI / 180); }
   }
-  return { x, z, r: p.r, h, blend: p.blend, fx, fz, lockFadeM: C.lockFadeM, dash: C.dash, wear: C.wear,
+  return { x, z, r: p.r, h, blend: p.blend, fx, fz, fall: C.fallM ?? 0, lockFadeM: C.lockFadeM, dash: C.dash, wear: C.wear,
     edgeWearM: C.edgeWearM, grassScale: C.grassScale, camp: C };
 }
 

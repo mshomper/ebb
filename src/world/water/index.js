@@ -102,9 +102,16 @@ export async function createWater(gpu, opts) {
     /** @type {Map<number, number>} */ const size = new Map();
     for (let i = 0; i < s.cls.length; i++) if (s.cls[i] === WATER_CLASS.damp) size.set(s.basin[i], (size.get(s.basin[i]) ?? 0) + 1);
     const minCells = recipe.look.dampHollowMinM2 / (WATER_CELL * WATER_CELL);
-    const damp = new Uint8Array(s.cls.length);
-    for (let i = 0; i < damp.length; i++) damp[i] = s.cls[i] === WATER_CLASS.damp && (size.get(s.basin[i]) ?? 0) >= minCells ? 255 : 0;
-    sim.setDamp(s.rect, damp);
+    // Two bytes a cell: the damp hollow, and whether a drying margin may crack there (F13): only in
+    // a pond the season has lowered a real amount below its spring level. Anywhere else (spring,
+    // a pond's edge settling, a dug bank drying) bare bed stays damp mud and fades, never cracked.
+    const crackMm = (recipe.look.crackMinDropM ?? 0.03) * 1000;
+    const dampCrack = new Uint8Array(s.cls.length * 2);
+    for (let i = 0; i < s.cls.length; i++) {
+      dampCrack[2 * i] = s.cls[i] === WATER_CLASS.damp && (size.get(s.basin[i]) ?? 0) >= minCells ? 255 : 0;
+      dampCrack[2 * i + 1] = s.basin[i] && (s.basinSeasonMm?.[s.basin[i]] ?? 0) >= crackMm ? 255 : 0;
+    }
+    sim.setDamp(s.rect, dampCrack);
     emitDeferred('water:summary-updated', { rect: s.rect, hash: s.hash });
   }
 

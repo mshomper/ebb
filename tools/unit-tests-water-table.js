@@ -132,6 +132,27 @@ export function addWaterTableTests(test, assert, eq) {
     return `500 mm in spring, ${early.targetMm[k]} early summer, ${late.targetMm[k]} late summer, ${autumn.targetMm[k]} mid-autumn`;
   });
 
+  test(G, "only the season's own lowering counts toward cracking mud (F13): none in spring, the drawdown in late summer", async () => {
+    const rain = { pondMinCatchmentM2: 30, pondMinDepthM: 0.15, rainCatchmentRatio: 0 };
+    const k = at(40, 40);
+    for (const day of [0, 1, 5, 13, 40, 50]) {
+      const s = await summary(island(1, { x: 40, y: 40, r: 9, floorM: 0.5 }), rain, day);
+      eq(s.basinSeasonMm[s.basin[k]], 0, `rain-fed pond on day ${day}`);
+    }
+    const late = await summary(island(1, { x: 40, y: 40, r: 9, floorM: 0.5 }), rain, 25);
+    eq(late.basinSeasonMm[late.basin[k]], late.basinDrawMm[late.basin[k]], 'late summer: the whole drawdown is the season');
+    assert(late.basinSeasonMm[late.basin[k]] >= 140, `about 15 cm (${late.basinSeasonMm[late.basin[k]]} mm)`);
+    // A table-fed dig near the shore stands below its lip all year (by the table, not the season):
+    // nothing in spring, only the table's summer swing in late summer.
+    const dig = island(0.6, { x: 10, y: 40, r: 4, floorM: 0 }), kd = at(10, 40);
+    const s0 = await summary(dig, NO_RAIN, 0), s25 = await summary(dig, NO_RAIN, 25);
+    assert(s0.basinDrawMm[s0.basin[kd]] > 0, 'below its lip in spring');
+    eq(s0.basinSeasonMm[s0.basin[kd]], 0, 'but none of it the season');
+    const swing = s25.basinSeasonMm[s25.basin[kd]];
+    assert(swing > 0 && swing < 100, `late summer: the table's swing (${swing} mm)`);
+    return `rain-fed: 0 all spring, ${late.basinSeasonMm[late.basin[k]]} mm in late summer; table-fed dig: ${s0.basinDrawMm[s0.basin[kd]]} mm below its lip, ${swing} mm of it the season's in late summer`;
+  });
+
   test(G, 'the catchment ratio: a dig that gathers little more than its own footprint stays damp', async () => {
     const s = await summary(island(1, { x: 40, y: 40, r: 9, floorM: 0.5 }));
     const k = at(40, 40);

@@ -1,5 +1,6 @@
-/* The hover tag (src/ui/hover-tag.js): a drawn hand and a name beside the pointer, below, over
-   something a click can use. The canvas shows the hand as its cursor too. */
+/* The hover tag (src/ui/hover-tag.js): a drawn hand and a name over the thing, below, once the
+   pointer rests on something a click can use. The canvas shows the hand as its cursor too. The
+   fade's length comes from recipes/world/walker.json click.hoverFadeS. */
 
 .ebb-hovertag {
   position: fixed;

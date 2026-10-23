@@ -27,7 +27,7 @@ import { strandLogs, cellHeights, strandMask } from './driftwood.js';
 import { logSurface } from './log-surface.js';
 import { slabShapes } from './slabs.js';
 import { raftShapes, makeRaft, raftRest } from './raft.js';
-import { makeStepping, strideAfter, jitterOf, topOf, links, footingAt } from './stepping.js';
+import { makeStepping, strideAfter, jitterOf, topOf, links, footingAt, stepBack } from './stepping.js';
 import { onCampGround, crossesCampGround, offCampGround } from './camp-clear.js';
 import { planFlight, flightGeom, flightHeightAt, flightRect, carveFlight, paintFlight, markGuard, crossesGuard, treadSlabs } from './steps.js';
 import { emitDeferred } from '../../core/events.js';
@@ -275,7 +275,7 @@ export function createPieces(opts) {
     for (const f of flights()) if (flightSeen.get(f.id) !== f) grow([f.x, f.z]), grow([f.x2, f.z2]), grow([(f.x + f.x2) / 2, (f.z + f.z2) / 2]);
     for (const [id, f] of flightSeen) if (!state().list.some((p) => p.id === id)) grow([f.x, f.z]), grow([f.x2, f.z2]);
     if (box) {
-      linked = links(stones, S);
+      linked = links(stones, S, ground);
       pondBox = stones.reduce((b, p) => ({ x0: Math.min(b.x0, p.x - 1), z0: Math.min(b.z0, p.z - 1), x1: Math.max(b.x1, p.x + 1), z1: Math.max(b.z1, p.z + 1) }),
         { x0: Infinity, z0: Infinity, x1: -Infinity, z1: -Infinity });
       emitDeferred('pieces:footing-changed', { rect: box });
@@ -319,6 +319,9 @@ export function createPieces(opts) {
     const a2 = S.apartM * S.apartM;
     if (s.list.some((p) => (p.kind === 'stepping' || p.kind === 'stone') && (p.x - x) ** 2 + (p.z - z) ** 2 < a2)) return 'near';
     const piece = makeStepping(piecesSeed, s.nextId, x, z, d, hourIndex(), laying?.run ?? null, S);
+    // Never a stone nobody could step back from (F10): in deep water it must reach another stone
+    // or ground the walker can stand on.
+    if (!stepBack(piece, pond(), ground, depthAt, S)) return 'gap';
     const next = addPiece(s, /** @type {any} */ (piece), S.cap);
     if (!next) return 'full';
     update('pieces', () => next);

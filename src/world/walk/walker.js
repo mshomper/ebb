@@ -34,6 +34,19 @@ export function createWalker(R, env) {
     posture: /** @type {'stand'|'kneel'|'sit'} */ ('stand'),
   };
 
+  /**
+   * The cell the next step lands in: up to one cell along the way to the next point of the path
+   * (the cell you stand in when there is no way ahead). @param {number} here
+   */
+  function aheadCell(here) {
+    const next = s.path[0];
+    if (!next) return here;
+    const dx = next[0] - s.x, dz = next[1] - s.z, d = Math.hypot(dx, dz);
+    if (d < 1e-6) return here;
+    const a = Math.min(d, G.cellM) / d;
+    return env.grid.cellAt(s.x + dx * a, s.z + dz * a);
+  }
+
   /** Back to the nearest ground to stand on, by the shortest way there is. */
   function retreat() {
     s.posture = 'stand';
@@ -112,10 +125,18 @@ export function createWalker(R, env) {
       // The water came up over where you stand, or over the next step: wade back to dry ground.
       if (!s.retreating) {
         const here = env.grid.cellAt(s.x, s.z);
-        const next = s.path[0];
-        const ahead = next ? env.grid.cellAt(s.x + Math.sign(next[0] - s.x) * Math.min(Math.abs(next[0] - s.x), G.cellM),
-          s.z + Math.sign(next[1] - s.z) * Math.min(Math.abs(next[1] - s.z), G.cellM)) : here;
-        if ((here >= 0 && env.depth(here) >= G.wadeM) || (ahead >= 0 && ahead !== here && !isOpen(env.grid, rules, ahead))) retreat();
+        // The next step is up to a cell along the way you are walking. (It was a cell along each
+        // axis apart, which on a diagonal leg over stones read the deep water beside the way and
+        // turned you back where you stood: F10, stuck on pond stones.)
+        const ahead = aheadCell(here);
+        if (here >= 0 && env.depth(here) >= G.wadeM) retreat();
+        else if (ahead >= 0 && ahead !== here && !isOpen(env.grid, rules, ahead)) {
+          // The way ahead closed (the tide over it): find another to the same place, else wade back.
+          const goal = s.path[s.path.length - 1];
+          const r = goal ? findPath(env.grid, rules, [s.x, s.z], goal) : null;
+          if (r && r.ok) s.path = r.points;
+          else retreat();
+        }
       }
       let want = 0;
       if (s.path.length) {

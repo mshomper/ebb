@@ -318,7 +318,19 @@ export function campPad(camp) {
     const l = Math.sqrt(camp.x * camp.x + camp.z * camp.z) || 1;
     fx = camp.x / l; fz = camp.z / l;
   }
-  return { x: camp.x, z: camp.z, r: camp.radiusM, h: camp.heightM, blend: camp.blendM, fx, fz };
+  return { x: camp.x, z: camp.z, r: camp.radiusM, h: camp.heightM, blend: camp.blendM, fx, fz, fall: camp.fallM ?? 0 };
+}
+
+/**
+ * The pad's level at (x, z): heightM at its center, falling fallM toward the sea by its seaward
+ * edge (and rising as much on its landward edge), held at the edge's level beyond it, so it sheds
+ * rain toward the beach (F1).
+ * @param {{ x: number, z: number, r: number, h: number, fx: number, fz: number, fall: number }} pad
+ * @param {number} x @param {number} z
+ */
+export function padLevel(pad, x, z) {
+  const u = ((x - pad.x) * pad.fx + (z - pad.z) * pad.fz) / pad.r;
+  return pad.h - pad.fall * (u < -1 ? -1 : u > 1 ? 1 : u);
 }
 
 /**
@@ -568,7 +580,7 @@ function sampleCell(c, x, z, out) {
     const qx = x - pad.x, qz = z - pad.z, q2 = qx * qx + qz * qz, out2 = pad.r + pad.blend;
     if (q2 < out2 * out2) {
       padW = 1 - smoothstep(pad.r, out2, Math.sqrt(q2));
-      h += (pad.h - h) * padW;
+      h += (padLevel(pad, x, z) - h) * padW;
     }
   }
 

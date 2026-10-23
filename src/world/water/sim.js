@@ -27,8 +27,9 @@ export async function createWaterSim(device, terrainTex) {
   const vel = tex('water-vel', 'rg32float');
   // Summary target depth (m) for the refill nudge; written from the CPU when a summary arrives.
   const target = makeTexture(device, { label: 'water-target', size: [N, N], format: 'r32float', usage: T.TEXTURE_BINDING | T.COPY_DST });
-  // The summary's damp hollows (1 = damp), for the terrain's damp look; filterable, so edges blur.
-  const damp = makeTexture(device, { label: 'water-damp', size: [N, N], format: 'r8unorm', usage: T.TEXTURE_BINDING | T.COPY_DST });
+  // The summary's damp hollows (r, 1 = damp), for the terrain's damp look, and where a drying margin
+  // may crack (g, F13: the bare edge of a pond the season has lowered); filterable, so edges blur.
+  const damp = makeTexture(device, { label: 'water-damp', size: [N, N], format: 'rg8unorm', usage: T.TEXTURE_BINDING | T.COPY_DST });
   const uniforms = makeBuffer(device, { label: 'water-sim', size: SIM_BYTES, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
   const statsBuf = makeBuffer(device, { label: 'water-stats', size: STATS_BYTES, usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST });
   const statsRead = makeBuffer(device, { label: 'water-stats-read', size: STATS_BYTES, usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST });
@@ -104,11 +105,12 @@ export async function createWaterSim(device, terrainTex) {
   }
 
   /**
-   * Set the summary's damp hollows for a rect (0 or 255 per cell).
+   * Set the summary's damp hollows and where a drying margin may crack, for a rect: two bytes per
+   * cell (damp, crack), each 0 or 255.
    * @param {{ x: number, y: number, w: number, h: number }} r @param {Uint8Array} m
    */
   function setDamp(r, m) {
-    device.queue.writeTexture({ texture: damp, origin: [r.x, r.y] }, m, { bytesPerRow: r.w, rowsPerImage: r.h }, [r.w, r.h]);
+    device.queue.writeTexture({ texture: damp, origin: [r.x, r.y] }, m, { bytesPerRow: r.w * 2, rowsPerImage: r.h }, [r.w, r.h]);
   }
 
   /**

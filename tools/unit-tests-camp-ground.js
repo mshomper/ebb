@@ -4,7 +4,8 @@
 // its chunks record; an older island's pad goes to the recipe spot, or to the nearest dry flat
 // ground when that spot was dug into a pond.
 
-import { buildBase, hashBase, campOf, islandCenter } from '../src/world/terrain/landform.js';
+import { buildBase, hashBase, campOf, islandCenter, padLevel, landmarks } from '../src/world/terrain/landform.js';
+import { subSeed } from '../src/core/rng.js';
 import { islandLand } from '../src/world/terrain/chunks.js';
 import { CHUNK_CELLS, CHUNK_SIZE, CELL, WORLD_CELLS, WORLD_ORIGIN, chunkFirstCell, dequantize, quantize } from '../src/world/terrain/grid.js';
 import { padOf, padMask, padToWorld, slotWorld } from '../src/world/camp/layout.js';
@@ -47,7 +48,7 @@ export function addCampGroundTests(test, assert, eq) {
       const m = mirrorOf(land, seed), pad = /** @type {any} */ (campOf(land));
       for (let a = 0; a < 16; a++) for (const rr of [0, 1.5, 3, 3.9]) {
         const x = pad.x + rr * Math.cos(a * 0.39), z = pad.z + rr * Math.sin(a * 0.39), k = cell(x, z);
-        assert(Math.abs(dequantize(m.heightQ[k]) - pad.h) < 0.002, `seed ${seed}: the pad is level at ${pad.h} m`);
+        assert(Math.abs(dequantize(m.heightQ[k]) - padLevel(pad, x, z)) < 0.002, `seed ${seed}: the pad lies at ${pad.h} m, falling gently to the sea`);
         assert(m.material[k * 4 + 1] === 0 && m.material[k * 4 + 2] === 0, `seed ${seed}: grass and soil only on the pad`);
       }
       // Out along the facing line from the pad's edge: sand at the waterline, the sea within 9 to 14 m of the center.
@@ -64,6 +65,33 @@ export function addCampGroundTests(test, assert, eq) {
       lines.push(`seed ${seed}: sea ${sea} m`);
     }
     return lines.join(', ');
+  });
+
+  test(G, 'the pad sheds water (F1): it falls toward the sea, is never a closed bowl, and no spring or pond comes near the tent, over 60 seeds', async () => {
+    const land = await get('land/starter-island-2');
+    const pad = /** @type {any} */ (campOf(land));
+    assert(pad.fall >= 0.01 && pad.fall <= 0.02, `a gentle fall of ${pad.fall} m from its center to its seaward edge`);
+    eq(+(padLevel(pad, pad.x + pad.fx * pad.r, pad.z + pad.fz * pad.r)).toFixed(4), +(pad.h - pad.fall).toFixed(4), 'lower at its seaward edge');
+    eq(+(padLevel(pad, pad.x - pad.fx * pad.r, pad.z - pad.fz * pad.r)).toFixed(4), +(pad.h + pad.fall).toFixed(4), 'higher at its landward edge');
+    const tent = land.camp.slots.find((/** @type {any} */ s) => s.id === 'tent');
+    const tx = pad.x + tent.u * pad.fx + tent.v * pad.fz, tz = pad.z + tent.u * pad.fz - tent.v * pad.fx;
+    const ring = pad.r + pad.blend + 0.5;
+    let worst = -Infinity, closest = Infinity;
+    for (let seed = 1; seed <= 60; seed++) {
+      const ts = subSeed(seed, 'terrain');
+      const cx = Math.round(pad.x / CHUNK_SIZE), cz = Math.round(pad.z / CHUNK_SIZE), b = buildBase({ land, seed: ts, cx, cz });
+      const H = (/** @type {number} */ x, /** @type {number} */ z) => dequantize(b.heightQ[Math.floor((z - (CHUNK_SIZE * cz - CHUNK_SIZE / 2)) / CELL) * CHUNK_CELLS + Math.floor((x - (CHUNK_SIZE * cx - CHUNK_SIZE / 2)) / CELL)]);
+      // Somewhere just past the pad the ground is lower than its seaward edge: rain runs off.
+      let low = Infinity;
+      for (let a = 0; a < 48; a++) low = Math.min(low, H(pad.x + ring * Math.cos(a * Math.PI / 24), pad.z + ring * Math.sin(a * Math.PI / 24)));
+      assert(low < pad.h - pad.fall, `seed ${seed}: the pad drains (lowest ground beside it ${low.toFixed(2)} m)`);
+      worst = Math.max(worst, low);
+      const lm = landmarks(land, ts), sp = lm.spring, bs = lm.basin;
+      const pondEdge = Math.hypot(tx - bs.x, tz - bs.z) - land.basin.outerRadius;
+      closest = Math.min(closest, Math.hypot(tx - sp.x, tz - sp.z), pondEdge);
+    }
+    assert(closest >= 8, `the tent is at least 8 m from the spring and the pond's edge on every seed (closest ${closest.toFixed(1)} m)`);
+    return `highest way out ${worst.toFixed(2)} m below a ${pad.h} m pad; tent at least ${closest.toFixed(1)} m from water`;
   });
 
   test(G, 'two seeds give clearly different coasts; the old land is unchanged by its stamp-only camp block', async () => {

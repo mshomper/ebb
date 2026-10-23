@@ -247,17 +247,29 @@ export function createWalk(o) {
     hand: (side) => figure?.hand(side) ?? null,
 
     /**
-     * I'm stuck: to the nearest spot that joins the mainland with the water as it is now (off the
-     * islet at high tide too), or a line saying you can walk on from here.
+     * I'm stuck: back to dry land that joins the mainland (where the camp is) with the water as it
+     * is now. Standing on dry mainland already, a line says you can walk on from here. Out on pond
+     * stones or wading, it walks you back to the nearest dry ground when there is a way, and when
+     * there is none (a stone nobody could step back from, the islet at high tide) puts you there
+     * (F10: it once looked only at whether your own cell joined the mainland).
      */
     stuck() {
       if (!below || !walker.placed) return;
       walker.stop();
       const land = mainland(grid, walker.rules);
-      if (land.joined(grid.cellAt(walker.x, walker.z))) { say(R.words.stuckFine); return; }
-      const k = nearestJoined(grid, land, walker.x, walker.z);
-      if (k >= 0) moveTo(k);
-      else say(R.words.noGround);
+      const here = grid.cellAt(walker.x, walker.z);
+      /** Dry ground of the land itself: no stone or slab under you, no water over it. @param {number} k */
+      const dry = (k) => {
+        const [x, z] = grid.center(k);
+        return depth(k) < 0.01 && !(o.footing && o.footing(x, z) > rawGround(x, z) + 0.01);
+      };
+      if (land.joined(here) && dry(here)) { say(R.words.stuckFine); return; }
+      const k = nearestJoined(grid, land, walker.x, walker.z, (c) => dry(c) && isOpen(grid, walker.rules, c));
+      const to = k >= 0 ? k : nearestJoined(grid, land, walker.x, walker.z);
+      if (to < 0) { say(R.words.noGround); return; }
+      const [x, z] = grid.center(to);
+      if (land.joined(here) && walker.walkTo(x, z).ok) { publish(); return; }
+      moveTo(to);
     },
 
     /**
