@@ -33,6 +33,7 @@ import { createPropsPass } from '../../render/passes/props.js';
 import { createCampFxPass } from '../../render/passes/camp-fx.js';
 import { actLength } from '../figure/acts.js';
 import { steelMesh, flintMesh } from './steel-mesh.js';
+import { hookMesh } from './hook-mesh.js';
 
 const H = 3600, DEG = Math.PI / 180;
 
@@ -62,6 +63,11 @@ export function createCamp(o) {
   // The fire steel and flint (made here, tiny): in your hands while you strike a light.
   props.addMesh('steel', steelMesh(), R.steel.steelSrgb, R.steel.steelRough);
   props.addMesh('flint', flintMesh(), R.steel.flintSrgb, R.steel.flintRough);
+  // The lantern's hook: a loop of cord round the tent's front pole crossing, down to its handle (F2).
+  {
+    const L = R.lantern, top = [L.hangM[0], L.hangM[1] + L.handleM, L.hangM[2]];
+    props.addMesh('hook', hookMesh({ at: L.hookM, to: top, loopM: L.hookLoopM, cordM: L.cordM }), L.cordSrgb, 0.9);
+  }
 
   /** @returns {import('./model.js').Camp} */
   const camp = () => cleanCamp(get('camp'));
@@ -457,6 +463,8 @@ export function createCamp(o) {
       const at = hand ? [hand.x, hand.y - R.lantern.carryDropM, hand.z] : tentPoint(R.lantern.hangM);
       const yaw = hand ? hand.yaw : t.yaw;
       list.push({ key: 'lantern', x: at[0], y: at[1], z: at[2], yaw });
+      // On the pole it hangs from its cord; carried, the cord goes with it.
+      if (!hand) list.push({ key: 'hook', x: t.x, y: t.y, z: t.z, yaw: t.yaw });
       if (dark) {
         lanternGlass = [at[0], at[1] + 0.15, at[2]];
         const L = R.lantern;
