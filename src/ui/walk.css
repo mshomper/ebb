@@ -61,6 +61,8 @@
    a 44 px icon, its word on hover (F17). */
 .ebb-ground {
   --wk-icon: 26px;
+  /* The bar's colour behind the pouches: a pouch's cloth is filled with it (items.js itemPouchSvg). */
+  --icon-bg: #2b3431;
   position: fixed;
   left: 50%;
   bottom: max(12px, env(safe-area-inset-bottom));
@@ -103,10 +105,13 @@
   pointer-events: auto;
 }
 .ebb-pouch:hover { background: rgba(244, 238, 228, 0.1); }
+/* The pouch a card's Gather, Take up or Set down will fill or empty, while that button is hovered. */
+.ebb-pouch.is-lit { background: rgba(244, 238, 228, 0.16); box-shadow: inset 0 0 0 1.5px var(--wordmark-light); }
 .ebb-pouch:focus-visible { outline: 2px solid var(--wordmark-dark); outline-offset: 2px; }
 .ebb-pouch.is-empty { opacity: 0.55; cursor: default; }
 .ebb-pouch.is-empty:hover { background: transparent; }
-.ebb-pouch__svg { display: block; width: 36px; height: 36px; }
+/* A 40 px drawing in the 48 px target (F7); the kind's glyph rides in its mouth (src/ui/icons/items.js). */
+.ebb-pouch__svg { display: block; width: 40px; height: 40px; }
 /* Holding the pot (Phase 2): the pouches dim. */
 .ebb-ground__pouches.is-holding .ebb-pouch { opacity: 0.4; }
 

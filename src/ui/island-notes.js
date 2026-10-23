@@ -13,12 +13,14 @@
 // Styles: journal.css.
 
 import { on } from '../core/events.js';
-import { get, subscribe } from '../core/store.js';
+import { get, subscribe, update } from '../core/store.js';
 import { dispatch } from '../input/actions.js';
 import { ensureIconSprite, iconSvg } from './icons/icons.js';
 import { cleanName } from '../world/creatures/trust.js';
 import { actionsFor, cardAction } from './card-actions.js';
 import { pouchSvg } from './sketches/pouches.js';
+import { itemIconSvg, itemPouchSvg, chipSvg } from './icons/items.js';
+import { itemIconFor } from './icons/item-registry.js';
 import { mountKeeperCard } from './keeper-card.js';
 
 /** Notes on screen at once. */
@@ -297,11 +299,19 @@ export function mountIslandNotes(parent, words, naturalist = null) {
     const text = id.carrying ? C?.[id.carryNote ?? 'hint'] ?? '' : id.carryNote ? C?.[id.carryNote] ?? id.text : id.text;
     // Its actions as icons in one row, the word on hover (src/ui/card-actions.js).
     const acts = actionsFor(id, words);
-    const actRow = acts.length ? `<div class="ebb-idcard__acts">${acts.map(({ a, label, main, mark }) =>
-      `<button type="button" class="ebb-idcard__act${main ? ' is-main' : ''}" data-cact="${esc(a.id)}" aria-label="${esc(label)}" data-label="${esc(label)}">${iconSvg(a.icon)}${mark ? `<span class="ebb-idcard__mark">${mark}</span>` : ''}</button>`).join('')}</div>` : '';
+    const actRow = acts.length ? `<div class="ebb-idcard__acts">${acts.map(({ a, label, main, mark, kind }) => {
+      // A pack kind moving (Gather, Take up, Set down): its item glyph, with where it goes as a chip (F7).
+      const item = kind ? itemIconFor(kind) : null;
+      const face = item ? `${itemIconSvg(item)}${a.chip ? chipSvg(a.chip) : ''}` : `${iconSvg(a.icon)}${mark ? `<span class="ebb-idcard__mark">${mark}</span>` : ''}`;
+      return `<button type="button" class="ebb-idcard__act${main ? ' is-main' : ''}${item && a.chip ? ' has-chip' : ''}" data-cact="${esc(a.id)}"${kind ? ` data-kind="${esc(kind)}"` : ''} aria-label="${esc(label)}" data-label="${esc(label)}">${face}</button>`;
+    }).join('')}</div>` : '';
     card.style.width = `min(${Math.max(300, acts.length * 56 - 8 + 28)}px, calc(100vw - 24px))`;
+    // A pouch's card wears its pouch as the bar draws it (the kind's glyph in the mouth); a kind with no
+    // glyph keeps its sketch.
+    const pouchIcon = id.kindId ? itemIconFor(id.kindId) : null;
+    const head = id.pouchSketch ? (pouchIcon ? itemPouchSvg(pouchIcon, id.pouchStage ?? 0) : pouchSvg(id.pouchStage ?? 0, id.pouchSketch)) : iconSvg(id.icon);
     card.innerHTML = `
-      <div class="ebb-idcard__head"><span class="ebb-idcard__icon">${id.pouchSketch ? pouchSvg(id.pouchStage ?? 0, id.pouchSketch) : iconSvg(id.icon)}</span><b>${esc(id.name)}</b>
+      <div class="ebb-idcard__head"><span class="ebb-idcard__icon">${head}</span><b>${esc(id.name)}</b>
         ${id.word ? `<span class="ebb-idcard__word">${esc(id.word)}</span>` : ''}
         <button type="button" class="ebb-idcard__close" data-act="close" aria-label="Close" title="Close">${iconSvg('close')}</button></div>
       ${id.sub ? `<p class="ebb-idcard__sub">${esc(id.sub)}</p>` : ''}
@@ -398,7 +408,14 @@ export function mountIslandNotes(parent, words, naturalist = null) {
   let suggestAt = 0;
   // The pointer over the card holds it open; leaving starts the quiet close again from the full time.
   card.addEventListener('pointerenter', () => { hovered = true; clearTimeout(cardTimer); });
-  card.addEventListener('pointerleave', () => { hovered = false; armClose(); });
+  card.addEventListener('pointerleave', () => { hovered = false; armClose(); lightPouch(null); });
+  // Over an action that moves a pack kind, that kind's pouch on the bar lights (store slice packLit, src/ui/pack.js).
+  /** @param {string | null} k */
+  const lightPouch = (k) => { if ((get('packLit') ?? null) !== k) update('packLit', () => k); };
+  card.addEventListener('pointerover', (e) => {
+    const b = /** @type {HTMLElement | null} */ (/** @type {HTMLElement} */ (e.target).closest('button[data-kind]'));
+    lightPouch(b?.dataset.kind ?? null);
+  });
   card.addEventListener('click', (e) => {
     // Closing: the press was meant for the card, so it is taken here and goes nowhere else.
     if (!card.classList.contains('is-open')) { e.stopPropagation(); return; }
