@@ -8,6 +8,7 @@
 
 import { makeBuffer, makeShaderModule, makeTexture } from '../../core/gpu.js';
 import { readGlb, meshesByName, materialMaps } from '../gltf.js';
+import { liftAt, liftLook, liftLookVersion, liftVersion } from '../lift.js';
 
 /** @typedef {import('../frame-graph.js').PassContext} PassContext */
 
@@ -108,7 +109,9 @@ export function createPropsPass(opts) {
   const models = new Map();
   const inst = new Float32Array(MAX * PROP_FLOATS);
   /** @type {{ key: string, first: number, count: number }[]} */ let groups = [];
-  let count = 0, dirty = true;
+  let count = 0, dirty = true, liftSeen = -1, lookSeen = -1;
+  /** The draw uniform: ember glow, charcoal, then the lift's tint and rim (src/render/lift.js liftLook). */
+  const uniform = new Float32Array(16);
   /** @type {GPURenderPipeline} */ let drawPipe;
   /** @type {GPURenderPipeline} */ let shadePipe;
   /** @type {GPURenderPipeline | null} */ let castPipe = null;
@@ -164,7 +167,17 @@ export function createPropsPass(opts) {
 
   /** The props' records to the GPU when they changed (the shadow pass reads them first). @param {GPUDevice} d */
   function flush(d) {
-    if (dirty && sbuf) { d.queue.writeBuffer(sbuf, 0, inst, 0, count * PROP_FLOATS); dirty = false; }
+    if (!sbuf) return;
+    if (lookSeen !== liftLookVersion() && ubuf) { lookSeen = liftLookVersion(); uniform.set(liftLook, 8); d.queue.writeBuffer(ubuf, 0, uniform); }
+    // The lift (F5): each prop's from where it stands, rewritten only when a lift may have changed.
+    if (liftSeen !== liftVersion() || dirty) {
+      liftSeen = liftVersion();
+      for (let i = 0; i < count; i++) {
+        const k = i * PROP_FLOATS, v = liftAt('props', inst[k], inst[k + 2]);
+        if (inst[k + 15] !== v) { inst[k + 15] = v; dirty = true; }
+      }
+    }
+    if (dirty) { d.queue.writeBuffer(sbuf, 0, inst, 0, count * PROP_FLOATS); dirty = false; }
   }
 
   /** @type {import('./shadow.js').ShadowCaster} */
@@ -274,9 +287,10 @@ export function createPropsPass(opts) {
         primitive: { topology: 'triangle-list', cullMode: 'none' },
         depthStencil: { ...depthStencil, depthWriteEnabled: false },
       });
-      ubuf = makeBuffer(d, { label: 'prop-draw', size: 32, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
+      ubuf = makeBuffer(d, { label: 'prop-draw', size: 64, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
       const e = R.ember, k = R.emberNits;
-      d.queue.writeBuffer(ubuf, 0, new Float32Array([e[0] * k, e[1] * k, e[2] * k, R.emberHz, ...R.charAlbedo, 0]));
+      uniform.set([e[0] * k, e[1] * k, e[2] * k, R.emberHz, ...R.charAlbedo, 0]);
+      lookSeen = -1;
       sbuf = makeBuffer(d, { label: 'prop-instances', size: inst.byteLength, usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST });
       group = d.createBindGroup({ label: 'props', layout, entries: [{ binding: 0, resource: { buffer: ubuf } }, { binding: 1, resource: { buffer: sbuf } }] });
 
