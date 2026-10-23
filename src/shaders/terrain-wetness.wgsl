@@ -38,24 +38,30 @@ struct WetStep {
 @group(0) @binding(0) var<uniform> ws: WetStep;
 @group(0) @binding(1) var heightTex: texture_2d<f32>;
 @group(0) @binding(2) var waterDepth: texture_2d<f32>;   // live water depth (m), water-depth.wgsl
-@group(0) @binding(3) var dampHollows: texture_2d<f32>;  // the water summary's damp hollows (r8unorm, 0.5 m)
+@group(0) @binding(3) var dampHollows: texture_2d<f32>;  // the water summary's damp hollows (r) and where a margin may crack (g), rg8unorm, 0.5 m
 @group(0) @binding(4) var wetPrev: texture_2d<f32>;
 @group(0) @binding(5) var wetNext: texture_storage_2d<rgba8unorm, write>;
 
 // Reach of one spread step in texels; more reach comes from repeating it each update.
 const SPREAD_R: i32 = 2;
 
-// Damp hollow share at a world point, bilinear between the 0.5 m cells for soft edges.
-fn dampAt(xz: vec2f) -> f32 {
+// Damp hollow share (x) and crack share (y, F13: a pond the season has lowered) at a world point,
+// bilinear between the 0.5 m cells for soft edges.
+fn dampCrackAt(xz: vec2f) -> vec2f {
   let g = waterCellCoord(xz);
   let c = vec2i(floor(g));
   let t = g - floor(g);
   let hi = vec2i(WATER_CELLS - 1);
-  let a = textureLoad(dampHollows, clamp(c, vec2i(0), hi), 0).r;
-  let b = textureLoad(dampHollows, clamp(c + vec2i(1, 0), vec2i(0), hi), 0).r;
-  let d = textureLoad(dampHollows, clamp(c + vec2i(0, 1), vec2i(0), hi), 0).r;
-  let e = textureLoad(dampHollows, clamp(c + vec2i(1, 1), vec2i(0), hi), 0).r;
+  let a = textureLoad(dampHollows, clamp(c, vec2i(0), hi), 0).rg;
+  let b = textureLoad(dampHollows, clamp(c + vec2i(1, 0), vec2i(0), hi), 0).rg;
+  let d = textureLoad(dampHollows, clamp(c + vec2i(0, 1), vec2i(0), hi), 0).rg;
+  let e = textureLoad(dampHollows, clamp(c + vec2i(1, 1), vec2i(0), hi), 0).rg;
   return mix(mix(a, b, t.x), mix(d, e, t.x), t.y);
+}
+
+// The world point at the middle of texel c.
+fn texelXz(c: vec2i) -> vec2f {
+  return TERRAIN_ORIGIN + (vec2f(c) + 0.5) * TERRAIN_CELL;
 }
 
 // Wetness the sources hold texel c (ground height h) at right now.
@@ -68,8 +74,7 @@ fn sourceWet(c: vec2i, h: f32) -> f32 {
   let live = smoothstep(ws.waterFrom, ws.waterFull, d) * step(h, surface + 0.01);
   // The sea below the tide line, and the splash band just above it.
   let sea = 1.0 - smoothstep(ws.tide - 0.05, ws.tide + ws.tideBand, h);
-  let xz = TERRAIN_ORIGIN + (vec2f(c) + 0.5) * TERRAIN_CELL;
-  return max(max(live, sea), dampAt(xz) * ws.dampWet);
+  return max(max(live, sea), dampCrackAt(texelXz(c)).x * ws.dampWet);
 }
 
 // The drying margin (A8): how much fresh water stands over texel c right now, 0..1. Fresh by where
@@ -90,13 +95,14 @@ fn freshBed(c: vec2i, h: f32) -> vec2f {
 // so plain rounding would hold the ground wet forever; this keeps the average exact.
 // r wetness, g puddle level (G3: how far rain has filled the low spots; the terrain draw decides
 // where on flat ground that much water stands), b the drying margin (A8: 1 where fresh water stands,
-// falling to 0 over the margin's game days once the bed is exposed).
+// falling to 0 over the margin's game days once the bed is exposed), a whether that margin may
+// crack (F13: only in a pond the season has lowered; elsewhere it stays damp mud and fades).
 fn storeWet(c: vec2i, w: f32, puddle: f32, margin: f32) {
   let r = hashToFloat(hash3(vec3u(vec2u(c), ws.salt)));
   let q = min(floor(clamp(w, 0.0, 1.0) * 255.0 + r), 255.0) / 255.0;
   let p = min(floor(clamp(puddle, 0.0, 1.0) * 255.0 + r), 255.0) / 255.0;
   let m = min(floor(clamp(margin, 0.0, 1.0) * 255.0 + r), 255.0) / 255.0;
-  textureStore(wetNext, c, vec4f(q, p, m, 1.0));
+  textureStore(wetNext, c, vec4f(q, p, m, dampCrackAt(texelXz(c)).y));
 }
 
 // The margin memory now: held at 1 under fresh water, losing marginStep a step once exposed, and
