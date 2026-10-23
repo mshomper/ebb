@@ -10,6 +10,7 @@ import { WORLD_CELLS, WORLD_ORIGIN, CELL } from '../terrain/grid.js';
 import { suitability } from '../growth/coarse.js';
 import { knownLines, dateOfHour, sketchOf } from './observe.js';
 import { amountOf } from './describe.js';
+import { openBox } from '../ecology/fields.js';
 
 /** Painted weights 0..255 at a world point: [grass, sand, rock, soil], or null off the window. @param {Uint8Array | null} material @param {number} x @param {number} z */
 function paintAt(material, x, z) {
@@ -125,7 +126,9 @@ export function groundSurvey(hab, material, state, island, paintVersion = 0) {
     return by[kind] ? [kind] : [];
   };
   if (hab) {
-    for (let k = 0; k < hab.n * hab.n; k++) {
+    // Only open squares count: the opened island's box, in grid order (so the sums come out the same).
+    const B = openBox(hab);
+    for (let j = B.j0; j <= B.j1; j++) for (let k = j * hab.n + B.i0; k <= j * hab.n + B.i1; k++) {
       if (!hab.open[k]) continue;
       const x = HABITAT_ORIGIN + (k % hab.n) + 0.5, z = HABITAT_ORIGIN + Math.floor(k / hab.n) + 0.5;
       const kind = groundKind(hab, material, x, z, island);
@@ -192,7 +195,8 @@ export function groundSpot(id, hab, material, survey, island, near = null) {
   if (!b || !b.cells || !hab) return null;
   const cx = near ? near[0] : b.sx / b.cells, cz = near ? near[1] : b.sz / b.cells;
   let best = null, bestD = Infinity;
-  for (let k = 0; k < hab.n * hab.n; k++) {
+  const B = openBox(hab);
+  for (let j = B.j0; j <= B.j1; j++) for (let k = j * hab.n + B.i0; k <= j * hab.n + B.i1; k++) {
     if (!hab.open[k]) continue;
     const x = HABITAT_ORIGIN + (k % hab.n) + 0.5, z = HABITAT_ORIGIN + Math.floor(k / hab.n) + 0.5;
     const kind = groundKind(hab, material, x, z, island);

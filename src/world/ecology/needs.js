@@ -23,7 +23,7 @@
 //            (minnows); near: any open ground or fresh water (dragonflies over a pond and its banks)
 
 import { chamfer } from '../growth/habitat.js';
-import { openBox, sat, boxSum, boxMax, plantField, smooth } from './fields.js';
+import { openBox, sat, boxSum, boxMax, plantField, smooth, grow } from './fields.js';
 import { moodOf } from './habitat.js';
 
 /**
@@ -100,8 +100,35 @@ export function goodWater(hab, W, box) {
   // Each kept body's good area, for the species that count room by the pool.
   const bodies = found.bodies.filter((b) => keep.has(b.id));
   for (const b of bodies) b.good = 0;
-  for (let k = 0; k < n * n; k++) if (good[k]) { const b = bodies.find((x) => x.id === found.label[k]); if (b) b.good++; }
+  for (let j = box.j0; j <= box.j1; j++) {
+    for (let k = j * n + box.i0; k <= j * n + box.i1; k++) if (good[k]) { const b = bodies.find((x) => x.id === found.label[k]); if (b) b.good++; }
+  }
   return { good, label: found.label, bodies };
+}
+
+/**
+ * A species' good water and how far each square is from it: they depend only on the ground and the
+ * recipe's water need, never on the hour, so they are worked out once per habitat (a new one comes
+ * with every edit) and kept. Read only: callers never change them.
+ * @type {WeakMap<object, WeakMap<object, ReturnType<typeof goodWater> & { dGood: Uint16Array }>>}
+ */
+const waterCache = new WeakMap();
+
+/**
+ * @param {any} hab @param {any} W the recipe's water need @param {import('./fields.js').Box} box
+ * @returns {ReturnType<typeof goodWater> & { dGood: Uint16Array }}
+ */
+function waterOf(hab, W, box) {
+  let byNeed = waterCache.get(hab);
+  if (!byNeed) { byNeed = new WeakMap(); waterCache.set(hab, byNeed); }
+  let w = byNeed.get(W);
+  if (!w) {
+    const g = goodWater(hab, W, box);
+    // Good water lies only inside the box, and only the box is read: exact there (habitat.js chamfer).
+    w = { ...g, dGood: chamfer(g.good, hab.n, 3 * 64, box) };
+    byNeed.set(W, w);
+  }
+  return w;
 }
 
 /**
@@ -123,22 +150,25 @@ export function needMaps(hab, growth, fields, rec) {
   const n = hab.n;
   const box = openBox(hab, 1);
   const where = E.scored?.where ?? 'shore';
-  const { good, label, bodies } = goodWater(hab, N.water, box);
-  const dGood = chamfer(good, n, 3 * 64);
+  const { good, label, bodies, dGood } = waterOf(hab, N.water, box);
   const near = plantField(hab, growth, N.shelter.cover, true);
-  // Shelter from a field too (turtles' basking spots): each square keeps the better of the two.
+  // Shelter from a field too (turtles' basking spots): each square keeps the better of the two. The
+  // fields (basks, shelter under logs and stones) lie on the island, inside the box.
   for (const [name, w] of Object.entries(N.shelter.fields ?? {})) {
     const f = fields[name];
-    if (f) for (let k = 0; k < n * n; k++) { const v = (w * f[k]) / 255; if (v > near[k]) near[k] = v; }
+    if (f) for (let j = box.j0; j <= box.j1; j++) for (let k = j * n + box.i0; k <= j * n + box.i1; k++) { const v = (w * f[k]) / 255; if (v > near[k]) near[k] = v; }
   }
   const cover = boxMax(near, n, Math.round(N.shelter.radiusM), box);
   const F = N.food;
   const per = F.per ?? F.perFrog;
   const rf = Math.round(F.radiusM);
-  const sums = foodFields(F).map(([name, w]) => ({ S: fields[name] ? sat(/** @type {Uint8Array} */ (fields[name]), n, 1 / 255) : null, w }))
+  // The food fields are zero past the box, so their sums are worked out only as far as the box's
+  // squares reach (fields.js sat).
+  const reach = grow(box, rf, n);
+  const sums = foodFields(F).map(([name, w]) => ({ S: fields[name] ? sat(/** @type {Uint8Array} */ (fields[name]), n, 1 / 255, reach) : null, w }))
     .filter((f) => f.S);
   // Plants eaten where they grow (minnows graze pondweed): each plant's weight times its size.
-  if (F.plants) sums.push({ S: sat(plantField(hab, growth, F.plants, false), n), w: 1 });
+  if (F.plants) sums.push({ S: sat(plantField(hab, growth, F.plants, false), n, 1, reach), w: 1 });
   const ideal = N.company.n[1];
   const keep = label ? new Set(bodies.map((b) => b.id)) : null;
   const shallow = E.scored?.shallowCm ?? 0;

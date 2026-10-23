@@ -8,6 +8,7 @@ import { HABITAT_ORIGIN, habitatCell } from '../growth/habitat.js';
 import { measure, present, knownLines, dateOfHour, sketchOf, coverShare, hasCover, isAnimal, COVER_HAS, COVER_FULL, FLOWER, DORMANT } from './observe.js';
 import { trustWord } from '../creatures/trust.js';
 import { springSpots } from '../creatures/spring.js';
+import { openBox } from '../ecology/fields.js';
 
 /** The island's middle and size from the habitat, cached per habitat. @type {WeakMap<object, { x: number, z: number, r: number }>} */
 const shapes = new WeakMap();
@@ -292,7 +293,9 @@ export function showMeSpot(sp, state, hab, words, near = null) {
     // Grass is shown on dry ground; rushes stand in the shallows too.
     const dryOnly = rec.amountBy !== 'area';
     let best = -1, bestD = Infinity;
-    for (let k = 0; k < hab.n * hab.n; k++) {
+    // Cover counts only on open squares (coverShare): the opened island's box, in grid order.
+    const B = openBox(hab);
+    for (let j = B.j0; j <= B.j1; j++) for (let k = j * hab.n + B.i0; k <= j * hab.n + B.i1; k++) {
       if ((dryOnly && hab.depthCm[k] > 0) || coverShare(sp, state, hab, k) <= COVER_FULL) continue;
       const x = HABITAT_ORIGIN + (k % hab.n) + 0.5, z = HABITAT_ORIGIN + Math.floor(k / hab.n) + 0.5;
       const d = (x - isl.x) ** 2 + (z - isl.z) ** 2;

@@ -6,7 +6,7 @@
 // as food. Pure and worker-safe; integers in the stored field.
 
 import { chamfer } from '../growth/habitat.js';
-import { openBox, sat, boxSum, plantField } from './fields.js';
+import { openBox, sat, boxSum, plantField, grow } from './fields.js';
 
 /** Thirds of a cell per meter in a chamfer distance. */
 const THIRDS = 3;
@@ -27,9 +27,10 @@ export function midgeTarget(hab, growth, F, season) {
       if (hab.open[k] && !hab.sea[k] && hab.still[k]) still[k] = 1;
     }
   }
-  const dWater = chamfer(still, n, THIRDS * 32);
-  const feed = sat(plantField(hab, growth, F.feed, false), n);
+  // Both only inside the box (its sources and plants are there), and exact there.
+  const dWater = chamfer(still, n, THIRDS * 32, box);
   const r = Math.round(F.feedRadiusM);
+  const feed = sat(plantField(hab, growth, F.feed, false), n, 1, grow(box, r, n));
   const warmth = F.warmth[season] ?? 0;
   const near = F.nearWaterM * THIRDS;
   const out = new Uint8Array(n * n);
@@ -53,14 +54,19 @@ export function midgeTarget(hab, growth, F, season) {
 export function stepMidges(hab, growth, prev, F, season) {
   const target = midgeTarget(hab, growth, F, season);
   const n = hab.n;
-  const out = new Uint8Array(n * n);
-  for (let k = 0; k < n * n; k++) {
-    const was = prev ? prev[k] : 0, t = target[k];
-    if (t === was) { out[k] = t; continue; }
-    const share = t > was ? F.riseShare : F.fallShare;
-    let step = Math.floor(Math.abs(t - was) * share);
-    if (step === 0) step = 1;
-    out[k] = t > was ? was + step : was - step;
+  // Past the island's box the target is always 0, so the field there stays as it was (0): only the
+  // box moves.
+  const out = prev ? prev.slice() : new Uint8Array(n * n);
+  const box = openBox(hab, 1);
+  for (let j = box.j0; j <= box.j1; j++) {
+    for (let k = j * n + box.i0; k <= j * n + box.i1; k++) {
+      const was = prev ? prev[k] : 0, t = target[k];
+      if (t === was) { out[k] = t; continue; }
+      const share = t > was ? F.riseShare : F.fallShare;
+      let step = Math.floor(Math.abs(t - was) * share);
+      if (step === 0) step = 1;
+      out[k] = t > was ? was + step : was - step;
+    }
   }
   return out;
 }

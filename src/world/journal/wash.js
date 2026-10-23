@@ -9,6 +9,7 @@ import { HABITAT_ORIGIN } from '../growth/habitat.js';
 import { suitability } from '../growth/coarse.js';
 import { groundKind, onPage } from './ground.js';
 import { coverShare, isAnimal, COVER_FULL } from './observe.js';
+import { openBox } from '../ecology/fields.js';
 
 /**
  * @typedef {{ n: number, cell: number, origin: number, data: Uint8Array, circles: number[][] }} WashMap
@@ -32,16 +33,20 @@ export function washMap(page, ctx) {
   /** @type {number[][]} */ let circles = [];
   const xOf = (/** @type {number} */ k) => HABITAT_ORIGIN + (k % n) + 0.5;
   const zOf = (/** @type {number} */ k) => HABITAT_ORIGIN + Math.floor(k / n) + 0.5;
+  // Everything a page washes lies on the opened island (and the ecology's fields only reach a cell
+  // past it), so only that box is read, in grid order.
+  const B = openBox(hab, 1);
+  const each = (/** @type {(k: number) => void} */ fn) => { for (let j = B.j0; j <= B.j1; j++) for (let k = j * n + B.i0; k <= j * n + B.i1; k++) fn(k); };
 
   // The map is drawn at half a meter, twice the habitat's resolution, so washes come out round.
   const N = n * 2;
   /** @type {Float32Array | null} */ let stamped = null;
   if (island.ground[page]) {
-    for (let k = 0; k < n * n; k++) {
-      if (!hab.open[k]) continue;
+    each((k) => {
+      if (!hab.open[k]) return;
       const x = xOf(k), z = zOf(k);
       if (onPage(page, groundKind(hab, ctx.material, x, z, island), ctx.material, x, z)) live[k] = 1;
-    }
+    });
   } else if (isAnimal(words.species[page])) {
     // Frogs: their homes, and where the habitat score says they would do well; before you have
     // found one, pencil circles near the best edge. Midges: where their cloud is now.
@@ -59,10 +64,10 @@ export function washMap(page, ctx) {
       stamped = new Float32Array(N * N);
       const homes = kind === 'creature' ? ctx.state?.creatures?.frogs?.frogs ?? [] : ctx.state?.creatures?.[page]?.groups ?? [];
       for (const f of homes) stamp(stamped, N, f.x, f.z, ctx.wash.plantM * (kind === 'creature' ? 0.6 : 1.2));
-      for (let k = 0; k < n * n; k++) if (at(k) >= island.suitAt) well[k] = 1;
+      each((k) => { if (at(k) >= island.suitAt) well[k] = 1; });
     } else {
       const share = words.species[page].seenAt.share;
-      for (let k = 0; k < n * n; k++) if (at(k) >= share) live[k] = 1;
+      each((k) => { if (at(k) >= share) live[k] = 1; });
     }
   } else if (words.species[page]) {
     const rec = ctx.flora[page];
@@ -72,12 +77,12 @@ export function washMap(page, ctx) {
       circles = hintCircles(page, hab, suitAt, ctx.wash);
     } else {
       if (words.species[page].kind === 'cover') {
-        for (let k = 0; k < n * n; k++) if (coverShare(page, ctx.state, hab, k) > COVER_FULL) live[k] = 1;
+        each((k) => { if (coverShare(page, ctx.state, hab, k) > COVER_FULL) live[k] = 1; });
       } else {
         stamped = new Float32Array(N * N);
         for (const p of ctx.state?.growth?.plants ?? []) if (p.sp === page) stamp(stamped, N, p.x, p.z, ctx.wash.plantM * (0.6 + 0.4 * Math.min(1, p.size)));
       }
-      if (rec?.habitat) for (let k = 0; k < n * n; k++) if (hab.open[k] && !hab.sea[k] && suitAt(k) >= island.suitAt) well[k] = 1;
+      if (rec?.habitat) each((k) => { if (hab.open[k] && !hab.sea[k] && suitAt(k) >= island.suitAt) well[k] = 1; });
     }
   } else return null;
 
@@ -145,7 +150,9 @@ function soften(a, n) {
 function hintCircles(page, hab, suitAt, W) {
   const n = hab.n;
   /** @type {{ k: number, s: number }[]} */ const best = [];
-  for (let k = 0; k < n * n; k++) {
+  // Only open squares count: the opened island's box, in grid order.
+  const B = openBox(hab);
+  for (let j = B.j0; j <= B.j1; j++) for (let k = j * n + B.i0; k <= j * n + B.i1; k++) {
     if (!hab.open[k] || hab.sea[k]) continue;
     const s = suitAt(k);
     if (s > 0.5) best.push({ k, s });

@@ -13,6 +13,7 @@
 
 import { STAGE } from '../growth/coarse.js';
 import { HABITAT_ORIGIN } from '../growth/habitat.js';
+import { openBox } from '../ecology/fields.js';
 import { seasonOf, SECONDS_PER_HOUR } from '../../core/clock.js';
 import { observeAnimals, measureAnimal, foundFrog, foundSchool, namedFrog } from './creatures.js';
 
@@ -122,13 +123,16 @@ export function measure(sp, state, hab, rec) {
     if (rec.amountBy === 'area') {
       // Square meters covered (rushes stand in shallow water, so wet squares count too).
       /** @type {{ x: number, z: number }[]} */ const spots = [];
-      for (let k = 0; k < hab.n * hab.n; k++) {
+      // Cover counts only on open squares (coverShare): the opened island's box, in grid order.
+      const B = openBox(hab);
+      for (let j = B.j0; j <= B.j1; j++) for (let k = j * hab.n + B.i0; k <= j * hab.n + B.i1; k++) {
         if (coverShare(sp, state, hab, k) > COVER_HAS) spots.push({ x: HABITAT_ORIGIN + (k % hab.n) + 0.5, z: HABITAT_ORIGIN + Math.floor(k / hab.n) + 0.5 });
       }
       return { count: spots.length, value: spots.length, flowering: 0, dormant: 0, mature: 0, plants: [], spots };
     }
     let land = 0, covered = 0;
-    for (let k = 0; k < hab.n * hab.n; k++) {
+    const B = openBox(hab);
+    for (let j = B.j0; j <= B.j1; j++) for (let k = j * hab.n + B.i0; k <= j * hab.n + B.i1; k++) {
       if (!hab.open[k] || hab.sea[k] || hab.depthCm[k] > 0) continue;
       land++;
       if (coverShare(sp, state, hab, k) > COVER_HAS) covered++;
