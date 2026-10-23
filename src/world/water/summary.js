@@ -79,6 +79,8 @@ const qToMm = (q) => Math.floor((q * H_RANGE * 1000 + 32767) / 65535);
  * @property {Uint8Array} basinSource  BASIN_SOURCE per basin id (index 0 unused; ids past 65534 share 65535)
  * @property {Uint16Array} basinDrawMm how far a basin stands below its spill level now (mm): the
  *   summer drawdown of a rain-fed pond, or the gap to the lip of one held up by the table
+ * @property {Uint16Array} basinSeasonMm how much of that the season brought (mm): how far below its
+ *   spring level it stands now; 0 through spring and once refilled (F13: only that margin cracks)
  * @property {number} drawdown       the season's drawdown share now, 0..1000
  * @property {Uint8Array} shore      shore height: 1..255 from the band bottom to the splash top, 0 off the shore
  * @property {{loM:number, hiM:number}} shoreRange  meters about mean sea level that shore 1 and 255 stand for
@@ -263,13 +265,20 @@ export function buildSummary(args) {
   const drawMaxQ = Math.round(((params.drawdownMaxM ?? 0) * 65535) / 16);
   const drawFracK = Math.round((params.drawdownMaxFrac ?? 0) * 1000);
   // Per basin: its source and how far below its spill level it stands (height steps; the spill
-  // level is the filled surface, flat across a basin).
+  // level is the filled surface, flat across a basin), and how much of that is the season's: how
+  // far below its spring level it stands now (F13: only that bare margin dries and cracks).
   const source = new Uint8Array(nDep + 1);
   const lowerQ = new Int32Array(nDep + 1);
+  const seasonQ = new Int32Array(nDep + 1);
+  // The table as it stands in spring, where the season has lowered it (the summer swing).
+  const lens0 = drawdown > 0 && (params.tableSwingM ?? 0) > 0
+    ? waterTable(sea, w, h, Math.max(0, Math.round(((params.tableMaxM ?? 0) * 65535) / H_RANGE)), queue) : null;
   let ponds = 0;
   for (let id = 1; id <= nDep; id++) {
     const fk = floor[id], spill = fill[fk];
     const tableLv = table[fk] < spill ? table[fk] : spill;
+    const table0 = lens0 ? SEA_Q + lens0[fk] : table[fk];
+    const tableLv0 = table0 < spill ? table0 : spill;
     const underTable = tableLv - bed[fk] >= (tableDeepQ > 1 ? tableDeepQ : 1);
     if (fed[id]) source[id] = BASIN_SOURCE.spring;
     else if (exitAcc[id] >= minCells && exitAcc[id] >= ratio * area[id] && deep[id] >= minDeepQ) {
@@ -279,9 +288,11 @@ export function buildSummary(args) {
       let level = spill - (byM < byFrac ? byM : byFrac);
       if (underTable && tableLv > level) level = tableLv;   // the table holds it up
       lowerQ[id] = spill - level;
+      seasonQ[id] = lowerQ[id];   // full to its lip in spring
     } else if (underTable) {
       source[id] = BASIN_SOURCE.table;
       lowerQ[id] = spill - tableLv;
+      seasonQ[id] = tableLv0 > tableLv ? tableLv0 - tableLv : 0;
     }
     if (source[id]) ponds++;
   }
@@ -378,17 +389,19 @@ export function buildSummary(args) {
   const nIds = (nDep < 65535 ? nDep : 65535) + 1;
   const basinSource = new Uint8Array(nIds);
   const basinDrawMm = new Uint16Array(nIds);
+  const basinSeasonMm = new Uint16Array(nIds);
   for (let id = 1; id <= nDep; id++) {
     const b = id < 65535 ? id : 65535;
     basinSource[b] = source[id];
     basinDrawMm[b] = qToMm(lowerQ[id]);
+    basinSeasonMm[b] = qToMm(seasonQ[id]);
   }
 
   const out = {
-    rect, targetMm, cls, basin, band, shore, shoreRange, eco, tableMm, basinSource, basinDrawMm, drawdown, hash: 0,
+    rect, targetMm, cls, basin, band, shore, shoreRange, eco, tableMm, basinSource, basinDrawMm, basinSeasonMm, drawdown, hash: 0,
     stats: /** @type {{ponds:number, streamCells:number, ms?:number}} */ ({ ponds, streamCells }),
     __transfer: [targetMm.buffer, cls.buffer, basin.buffer, band.buffer, shore.buffer, tableMm.buffer,
-      basinSource.buffer, basinDrawMm.buffer, eco.depthCm.buffer, eco.cls.buffer, eco.band.buffer, eco.basin.buffer],
+      basinSource.buffer, basinDrawMm.buffer, basinSeasonMm.buffer, eco.depthCm.buffer, eco.cls.buffer, eco.band.buffer, eco.basin.buffer],
   };
   out.hash = hashSummary(out);
   if (perf) out.stats.ms = perf.now() - t0;
@@ -442,7 +455,7 @@ function commonId(ids, n) {
  * so the result is the same on any platform. Used by the determinism page and tests.
  * @param {{ rect: {x:number,y:number,w:number,h:number}, targetMm: Uint16Array, cls: Uint8Array,
  *   basin: Uint16Array, band: Uint8Array, shore?: Uint8Array, tableMm?: Uint16Array,
- *   basinSource?: Uint8Array, basinDrawMm?: Uint16Array, eco: { x:number, y:number, w:number, h:number,
+ *   basinSource?: Uint8Array, basinDrawMm?: Uint16Array, basinSeasonMm?: Uint16Array, eco: { x:number, y:number, w:number, h:number,
  *   depthCm: Uint8Array, cls: Uint8Array, band: Uint8Array, basin: Uint16Array } }} s
  * @returns {number} uint32
  */
@@ -462,6 +475,7 @@ export function hashSummary(s) {
   if (s.tableMm) words(s.tableMm);
   if (s.basinSource) bytes(s.basinSource);
   if (s.basinDrawMm) words(s.basinDrawMm);
+  if (s.basinSeasonMm) words(s.basinSeasonMm);
   bytes(s.eco.depthCm); bytes(s.eco.cls); bytes(s.eco.band); words(s.eco.basin);
   return hsh >>> 0;
 }
