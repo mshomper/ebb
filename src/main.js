@@ -89,9 +89,10 @@ startApp(canvas, { onDeviceLost: (rebuilding) => showRebuildingNote(rebuilding),
       mountTimeFlow(hud.layer);
       mountLook(hud.layer, r.palette.list());
       // Go down and Go up (doc 23, the walker): the edge button between the view above and you on foot.
-      mountWalk(hud.layer, (await loadRecipe('world/walker')).words);
-      // Below, over something a click can use: a drawn hand and its name beside the pointer.
-      mountHoverTag();
+      const walkerR = await loadRecipe('world/walker');
+      mountWalk(hud.layer, walkerR.words);
+      // Below, over something a click can use: a drawn hand, and once the pointer rests, its name over it.
+      mountHoverTag(walkerR.click);
       // The pouch row in the ground bar, and the "here" bar beside it (docs/future/13 section 4.1).
       const groundBar = /** @type {HTMLElement | null} */ (hud.layer.querySelector('.ebb-ground'));
       const pouchRow = /** @type {HTMLElement | null} */ (groundBar?.querySelector('.ebb-ground__pouches') ?? null);

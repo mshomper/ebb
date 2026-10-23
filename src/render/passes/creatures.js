@@ -7,6 +7,7 @@
 
 import { makeBuffer, makeShaderModule } from '../../core/gpu.js';
 import { packMesh, VERTEX_BYTES, MAX_BONES } from '../../world/creatures/bodies.js';
+import { liftAt, liftLook, liftLookVersion, liftVersion } from '../lift.js';
 
 /** @typedef {import('../frame-graph.js').PassContext} PassContext */
 
@@ -16,6 +17,8 @@ const IDENTITY = new Float32Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 
 
 /** Floats after the usual 12 in creature-draw.wgsl: a turtle's shell plates and its drying. */
 const SHELL_FLOATS = 52;
+/** Then the lift's look (src/render/lift.js liftLook): tint and rim. */
+const LIFT_FLOATS = 8;
 
 /**
  * The shell and drying block for creature-draw.wgsl (all zero for a body with neither): the shell
@@ -46,22 +49,26 @@ export function shellBlock(body) {
 /**
  * @typedef {{ x: number, y: number, z: number, yaw: number, size: number, mesh?: string, bones?: Float32Array | null, dry?: number }} Being
  *   mesh: which mesh it wears (setMesh's key; the first mesh when left out); bones: its bone
- *   matrices, 16 floats a bone (none: the body as baked); dry: 0 wet .. 1 dry (a basking turtle)
+ *   matrices, 16 floats a bone (none: the body as baked); dry: 0 wet .. 1 dry (a basking turtle).
+ *   Its lift (F5, hovered or chosen) is not set here: the pass reads it each frame from
+ *   src/render/lift.js liftAt(its lift group, x, z), so every list of beings gets it alike.
  */
 
 /**
  * @param {{ recipe: any, mesh?: { vertices: Float32Array, indices: Uint32Array, count: number }, eyeBones?: number[], maxBones?: number,
- *   name?: string, shader?: string, extraFloats?: number }} opts
+ *   name?: string, shader?: string, extraFloats?: number, liftGroup?: import('../lift.js').LiftGroup }} opts
  *   recipe: the species recipe (recipes/species/<id>.json); mesh: one unskinned mesh to start with (the size preview);
  *   eyeBones: the two bones the eyes follow, for their wet glint (body.eyeGlint); shader: another draw shader with the
- *   same bindings (the walker's figure-draw); extraFloats: more uniform floats after the usual 12, set by setExtra
+ *   same bindings (the walker's figure-draw); extraFloats: more uniform floats after the usual 12, set by setExtra;
+ *   liftGroup: what its beings are for the lift ('beings' unless said: the camp's piles and pickups say theirs)
  */
 export function createCreaturePass(opts) {
   const { recipe } = opts;
+  const liftGroup = opts.liftGroup ?? 'beings';
   const W = recipe.body.wetSpecular;
   const bodyLength = recipe.body.scaleReal[0] + (recipe.body.scaleReal[1] - recipe.body.scaleReal[0]) / 2;
   // The game's own draw shader carries a turtle's shell plates and drying after the usual 12 floats.
-  const extra = opts.extraFloats ?? (opts.shader ? 0 : SHELL_FLOATS);
+  const extra = opts.extraFloats ?? (opts.shader ? 0 : SHELL_FLOATS + LIFT_FLOATS);
   const drawBytes = Math.ceil((DRAW_BYTES + extra * 4) / 16) * 16;
   const data = new Float32Array(drawBytes / 4);
   let uniformDirty = false;
@@ -80,7 +87,7 @@ export function createCreaturePass(opts) {
   const meshes = new Map();
   /** Draw groups this frame: a mesh and the run of individuals that wear it. @type {{ key: string, first: number, count: number }[]} */
   let groups = [];
-  let count = 0, dirty = true;
+  let count = 0, dirty = true, liftSeen = -1, lookSeen = -1;
   /** @type {GPUDevice | null} */ let device = null;
   /** @type {GPURenderPipeline} */ let bodyPipe;
   /** @type {GPURenderPipeline} */ let shadowPipe;
@@ -149,6 +156,7 @@ export function createCreaturePass(opts) {
         else groups.push({ key: /** @type {string} */ (r.key), first: i, count: 1 });
       });
       dirty = true;
+      liftSeen = -1;
     },
 
     /** @param {PassContext} ctx */
@@ -210,6 +218,19 @@ export function createCreaturePass(opts) {
     /** @param {GPUCommandEncoder} encoder @param {PassContext} ctx */
     record(encoder, ctx) {
       if (!bodyPipe || !count) return;
+      // The lift (F5): each body's from where it stands, rewritten only when a lift may have changed.
+      if (liftSeen !== liftVersion()) {
+        liftSeen = liftVersion();
+        for (let i = 0; i < count; i++) {
+          const v = liftAt(liftGroup, beings[i * 8], beings[i * 8 + 2]);
+          if (beings[i * 8 + 7] !== v) { beings[i * 8 + 7] = v; dirty = true; }
+        }
+      }
+      if (!opts.shader && lookSeen !== liftLookVersion()) {
+        lookSeen = liftLookVersion();
+        data.set(liftLook, DRAW_BYTES / 4 + SHELL_FLOATS);
+        uniformDirty = true;
+      }
       if (dirty) {
         ctx.device.queue.writeBuffer(sbuf, 0, beings, 0, count * 8);
         ctx.device.queue.writeBuffer(bbuf, 0, bones, 0, count * boneCap * 16);

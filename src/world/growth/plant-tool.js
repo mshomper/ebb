@@ -169,8 +169,9 @@ export function createPlantTool(opts) {
     /**
      * The rings to draw now, for the terrain pass's setMarks.
      * @param {number} now performance.now ms @param {boolean} open whether the Plant tool is open
-     * @param {{ wx: number, wz: number, r: number, at: number } | null} [sel] a living thing the player
-     *   tapped (store slice `identify`): it gets a ring that blooms in, then breathes gently
+     * @param {{ wx: number, wz: number, r: number, at: number } | null} [sel] a thing Show me points to
+     *   (a pinned `identify` card): it gets a ring that blooms in, then breathes gently. Any other
+     *   chosen thing is lifted in its own shader instead (F5, src/render/lift.js)
      * @param {number[][]} [extra] more rings [x, z, radius, opacity] first (the reveal's, src/ui/reveal.js)
      */
     marks(now, open, sel = null, extra = []) {
