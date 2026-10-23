@@ -13,6 +13,8 @@ import { createPiles } from '../src/world/pack/piles-live.js';
 import { splitPieces, firstPieces, buildsUp } from '../src/world/pack/pile-pieces.js';
 import { logStack, stoneHeap, logsShown } from '../src/world/pack/log-stack.js';
 import { atCamp } from '../src/world/pack/camp.js';
+import { createStores, storeSlots, heldKind } from '../src/world/pack/stores.js';
+import { woodStoreMesh, scrapeMesh } from '../src/world/pack/pickup-meshes.js';
 import { padOf } from '../src/world/camp/layout.js';
 import { offCampGround } from '../src/world/pieces/camp-clear.js';
 import { emptyPieces } from '../src/world/pieces/model.js';
@@ -62,6 +64,55 @@ export function addPackTests(test, assert, eq) {
     const t = piles.takeUp(pile.id, { add: (/** @type {string} */ k, /** @type {number} */ n) => ({ added: n }) });
     eq(t.taken, 3, 'Take up fills a pouch from it');
     eq(getStore('pieces').list.filter((/** @type {any} */ p) => p.kind === 'pile').length, 0, 'an empty pile is gone');
+    updateStore('campPad', () => null);
+  });
+
+  test(G, 'the stores are places from the first frame: a card empty or holding, and a glow while the pack holds their kind', async () => {
+    const c = await load();
+    const land = await (async () => {
+      const url = new URL('../recipes/land/starter-island-2.json', import.meta.url);
+      if (url.protocol === 'file:') { const fs = await import('node:fs/promises'); return JSON.parse(await fs.readFile(url, 'utf8')); }
+      return (await fetch(url)).json();
+    })();
+    const pad = padOf(land);
+    updateStore('campPad', () => pad);
+    updateStore('pieces', () => emptyPieces());
+    const packWas = getStore('pack');
+    updateStore('pack', () => emptyPack());
+    const piles = createPiles({ recipe: c.recipe, kinds: c.kinds, seed: 7 });
+    const you = [pad.x, 0, pad.z];
+    let laid = false;
+    const stores = createStores({ recipe: c.recipe, piles, walk: { below: true, you: () => you }, glow: { nearM: 2, opacity: 0.35, breathS: 3 }, ringLaid: () => laid });
+    eq(storeSlots().map((s) => s.id).join(), 'sticks,stones,clay', 'three stores in their slots');
+    const wood = storeSlots()[0];
+    const empty = stores.cardAt(wood.x, wood.z);
+    assert(empty && empty.name === 'Wood store' && empty.text === 'Empty.' && !empty.pile, 'an empty wood store has its card');
+    eq(empty.storeKinds.join(), 'sticks,drift-twigs', 'it keeps sticks and drift twigs');
+    eq(heldKind(empty.storeKinds, [['pebbles', 3], ['drift-twigs', 1], ['sticks', 2]]), 'sticks', 'Set down takes the fullest pouch of its kinds');
+    eq(heldKind(empty.storeKinds, [['pebbles', 3]]), null, 'nothing to set down without its kind');
+    piles.setDown('sticks', 3);
+    const held = stores.cardAt(wood.x, wood.z);
+    assert(held.pile && held.pile.holds === 'sticks' && held.sub === 'Sticks' && held.piece, 'with a pile, the card is the pile\'s too');
+    // The glow: only once the ring is laid, near camp, while the pack holds a store's kind.
+    updateStore('pack', (p) => ({ ...p, pouches: [['pebbles', 2]] }));
+    eq(stores.rings(0).length, 0, 'no glow before the ring is laid');
+    laid = true;
+    const g = stores.rings(0);
+    eq(g.length, 1, 'one store glows');
+    assert(Math.hypot(g[0][0] - storeSlots()[1].x, g[0][1] - storeSlots()[1].z) < 1e-6, 'the stone pile glows for pebbles');
+    you[0] = pad.x + pad.r + 5;
+    eq(stores.rings(0).length, 0, 'no glow away from camp');
+    // The empty stores' meshes: indices in range, the wood store's stakes standing up to their forks.
+    const L = c.recipe.stores.sticks.look;
+    for (const m of [woodStoreMesh(1, L), scrapeMesh(c.recipe.stores.stones.look)]) {
+      assert(m.count > 0 && m.indices.length % 3 === 0 && Math.max(...m.indices) < m.count, 'a well-formed mesh');
+    }
+    const w = woodStoreMesh(1, L);
+    let top = 0;
+    for (let i = 0; i < w.count; i++) top = Math.max(top, w.vertices[i * 9 + 1]);
+    assert(top > L.forkM && top < L.forkM + L.tineM + 0.05, `the forks stand at ${top.toFixed(2)} m`);
+    updateStore('pack', () => packWas);
+    updateStore('pieces', () => emptyPieces());
     updateStore('campPad', () => null);
   });
 

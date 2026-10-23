@@ -12,6 +12,7 @@ import { get, subscribe } from '../core/store.js';
 import { dispatch } from '../input/actions.js';
 import { pouchSvg, kindMarkSvg } from './sketches/pouches.js';
 import { registerCardAction } from './card-actions.js';
+import { heldKind } from '../world/pack/stores.js';
 
 /** The card's words for how full a pouch is, lower case, for aria-labels. */
 const FULL_WORDS = ['empty', 'a few', 'half full', 'full'];
@@ -39,6 +40,10 @@ export function mountPack(row, words, sketchOf) {
   registerCardAction({ id: 'pilesetdown', icon: 'setdown', order: 11, label: words.setDown,
     when: (c) => !!c.pile && !!c.piece && !c.full && (get('pack')?.pouches ?? []).some((/** @type {any[]} */ p) => p[0] === c.pile.holds),
     action: (c) => ({ type: 'pack.setDownKind', kind: c.pile.holds }) });
+  // An empty store's card (section 3.12): Set down one pouch of whichever of its kinds the pack holds.
+  registerCardAction({ id: 'storesetdown', icon: 'setdown', order: 10, main: true, label: words.setDown,
+    when: (c) => !!c.store && !c.pile && !!heldKind(c.storeKinds ?? [], get('pack')?.pouches ?? []),
+    action: (c) => ({ type: 'pack.setDownKind', kind: heldKind(c.storeKinds ?? [], get('pack')?.pouches ?? []) }) });
   registerCardAction({ id: 'setdown', icon: 'setdown', order: 10, main: true, label: words.setDown,
     when: (c) => c.sp === 'pouch' && !!c.atCamp, action: (c) => ({ type: 'pack.setDown', i: c.pouch }) });
   registerCardAction({ id: 'empty', icon: 'tip', order: 12, label: words.empty,

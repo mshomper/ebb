@@ -80,7 +80,9 @@ export function liftFor(card, spreadOf, H = R) {
     else if (g.heap !== undefined) out.push({ group: 'piles', x: g.x, z: g.z, r: H.heapM ?? 0.5 });
   }
   if (out.length || card.ground || card.gathers?.some((/** @type {any} */ g) => g.plant) || !Number.isFinite(card.wx) || !Number.isFinite(card.wz)) return out;
-  if (card.pile) out.push({ group: 'piles', x: card.wx, z: card.wz, r: Math.max(card.r ?? 0, H.pileMinM ?? 0.9) });
+  // A store (section 3.12) lifts itself and its pile, within its own reach only (stores sit close).
+  if (card.store) out.push({ group: 'piles', x: card.wx, z: card.wz, r: card.r ?? 0.5 });
+  else if (card.pile) out.push({ group: 'piles', x: card.wx, z: card.wz, r: Math.max(card.r ?? 0, H.pileMinM ?? 0.9) });
   else if (card.piece) out.push({ group: 'pieces', x: card.wx, z: card.wz, r: H.pieceMatchM ?? 0.3 });
   else {
     out.push({ group: 'beings', x: card.wx, z: card.wz, r: H.matchM ?? 0.45 });

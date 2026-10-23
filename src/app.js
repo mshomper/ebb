@@ -91,6 +91,7 @@ import { clickKind, clickPlan } from './world/walk/click.js';
 import { createPack } from './world/pack/index.js';
 import { createGather } from './world/gather/index.js';
 import { createPiles } from './world/pack/piles-live.js';
+import { createStores } from './world/pack/stores.js';
 import { createCamp } from './world/camp/index.js';
 import { createPackDraw } from './world/pack/draw.js';
 
@@ -599,6 +600,10 @@ export async function startApp(canvas, hooks = {}) {
   shadowPass.addCaster(camp.props.caster);
   midges.keepClear(() => camp.smokeClear());
   intro.useCamp(camp);
+  // The stores (section 3.12; src/world/pack/stores.js): the wood store, the stone pile and the clay
+  // slab, places with a card from the first frame (drawn by packDraw), glowing while the pack holds
+  // their kind near camp.
+  const stores = createStores({ recipe: pack.recipe, piles, walk, glow: campRecipe.glow, ringLaid: () => camp.ringLaid() });
 
   /**
    * A dry, grassy ground point near the view's middle, out of the tide, for a test log: on a widening
@@ -868,6 +873,17 @@ export async function startApp(canvas, hooks = {}) {
       return;
     }
     walk.tap(sx, sy, p);
+  }
+
+  /**
+   * After a Set down or Take up on a pile's or a store's card: the card again as it is now (the
+   * pile's new size, or the store empty), kept where it is on screen; closed if nothing is there.
+   */
+  function refreshStoreCard() {
+    const c = getStore('identify');
+    if (!c || !(c.piece || c.store) || !cards) return;
+    const next = cards.cardAt(c.wx, c.wz);
+    updateStore('identify', () => (next ? { ...next, x: c.x, y: c.y, at: performance.now() } : null));
   }
 
   /**
@@ -1182,8 +1198,7 @@ export async function startApp(canvas, hooks = {}) {
       // A pile's card: Set down one pouch of its kind, then the card again with the pile's new size.
       if (a.type === 'pack.setDownKind') {
         pack.setDownKind(a.kind);
-        const c = getStore('identify');
-        if (c?.piece && cards) updateStore('identify', () => ({ ...c, ...cards?.cardAt(c.wx, c.wz), x: c.x, y: c.y, at: performance.now() }));
+        refreshStoreCard();
         return;
       }
       if (a.type === 'pack.empty') { pack.empty(a.i); return; }
@@ -1193,6 +1208,8 @@ export async function startApp(canvas, hooks = {}) {
       if (a.type === 'pile.takeUp') {
         const r = piles?.takeUp(a.id, pack);
         if (r?.full) updateStore('identify', (c) => (c ? { ...c, full: { kind: r.kind, g: { heap: -1 } }, text: pack.recipe.words.full } : c));
+        // A store's card stays, with what is left (or Empty); a heap's goes with it.
+        else if (getStore('identify')?.store) refreshStoreCard();
         else updateStore('identify', () => null);
         return;
       }
@@ -1613,7 +1630,7 @@ export async function startApp(canvas, hooks = {}) {
     // off) keeps its ring on the ground. The first evening's slot glows are rings of their own.
     const chosen = getStore('identify');
     setLiftTargets([...(getStore('hover')?.lift ?? []), ...liftFor(chosen, spreadOf)], realDt);
-    terrainPass.setMarks(plantTool.marks(now, tools().tool === 'plant', chosen?.pinned ? chosen : null, [...(padMark ? [padMark] : []), ...(getStore('reveal')?.rings?.(now) ?? []), ...creatures.foodRings(), ...intro.rings(now), ...camp.rings(now / 1000)]));
+    terrainPass.setMarks(plantTool.marks(now, tools().tool === 'plant', chosen?.pinned ? chosen : null, [...(padMark ? [padMark] : []), ...(getStore('reveal')?.rings?.(now) ?? []), ...creatures.foodRings(), ...intro.rings(now), ...camp.rings(now / 1000), ...stores.rings(now / 1000)]));
     // Lugworm casts are drawn into the sand by the terrain pass.
     terrainPass.setCasts(finds.casts());
     updatePour();
@@ -1803,6 +1820,8 @@ export async function startApp(canvas, hooks = {}) {
     gather,
     /** The piles at camp (src/world/pack/piles-live.js): a pile's card reads its words from them. */
     piles,
+    /** The camp's stores (src/world/pack/stores.js): the journal's cards ask them first at camp. */
+    stores,
     terrain,
     water,
     /** The live growth (habitat, plants) and the world the hourly tick runs on (tools/growth-lab.html). */

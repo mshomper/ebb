@@ -8,7 +8,8 @@
 //   withdrawHere('light');
 //
 // Offers live in the store slice `here` (id -> offer). Going up hides the bar; offers stay until
-// withdrawn. A press dispatches the offer's action through src/input/actions.js. Styles: walk.css.
+// withdrawn. A press dispatches the offer's action through src/input/actions.js. Its buttons are
+// icons with the word on hover, as the ground bar's (F17). Styles: walk.css.
 
 import { get, subscribe, update } from '../core/store.js';
 import { dispatch } from '../input/actions.js';
@@ -56,7 +57,7 @@ export function mountGroundHere(parent, ground) {
     const key = offers.map((o) => `${o.id}|${o.icon}|${o.label}`).join(';');
     if (key !== shown) {
       shown = key;
-      bar.innerHTML = offers.map((o) => `<button type="button" class="ebb-walk__btn ebb-here__btn" data-here="${o.id}" aria-label="${o.label}"><span class="ebb-walk__icon">${iconSvg(o.icon)}</span><span class="ebb-walk__name">${o.label}</span></button>`).join('');
+      bar.innerHTML = offers.map((o) => `<button type="button" class="ebb-walk__btn ebb-here__btn" data-here="${o.id}" aria-label="${o.label}" data-label="${o.label}"><span class="ebb-walk__icon">${iconSvg(o.icon)}</span><span class="ebb-walk__name">${o.label}</span></button>`).join('');
       bar.hidden = !offers.length;
     }
     place();

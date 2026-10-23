@@ -95,6 +95,29 @@ export function addIntroTests(test, assert, eq) {
     return `${order.length} beats`;
   });
 
+  test(G, 'after the ring is laid with twigs or pebbles to spare, the store hint shows first', async () => {
+    const R = await recipe();
+    const r = rig(R);
+    r.intro.start({ fresh: true });
+    play(r, 'shape');
+    eq(r.intro.current?.id, 'shape');
+    eq(r.line(), R.hints.store, 'the pack still holds some: the store hint');
+    r.intro.tuck();
+    eq(r.line(), R.beats.find((/** @type {any} */ b) => b.id === 'shape').hint[0], 'tapped away, the beat\'s own line');
+    // It also goes once the pack is set down, or after its time.
+    const q = rig(R);
+    q.intro.start({ fresh: true });
+    play(q, 'shape');
+    q.W.pack = { fuel: 0, stones: 0 };
+    q.intro.update(0.1);
+    eq(q.line(), R.beats.find((/** @type {any} */ b) => b.id === 'shape').hint[0], 'set down: the beat\'s own line');
+    const t = rig(R);
+    t.intro.start({ fresh: true });
+    play(t, 'shape');
+    for (let i = 0; i < 160; i++) t.intro.update(0.1);
+    eq(t.line(), R.beats.find((/** @type {any} */ b) => b.id === 'shape').hint[0], 'after its time: the beat\'s own line');
+  });
+
   test(G, 'a walk that ends in the sea is not landfall', async () => {
     const r = rig(await recipe());
     r.intro.start({ fresh: true });
