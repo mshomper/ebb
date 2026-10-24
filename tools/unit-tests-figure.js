@@ -14,7 +14,7 @@ import { twoBone, len, sub, qrot } from '../src/world/figure/kinematics.js';
 import { blinkAt } from '../src/world/figure/eyes.js';
 import { matPoint } from '../src/world/figure/kinematics.js';
 import { createFootprints } from '../src/world/figure/footprints.js';
-import { ACTS, actLength } from '../src/world/figure/acts.js';
+import { ACTS, actLength, gestureNames, gestureLength } from '../src/world/figure/acts.js';
 import { paceAt, footInCycle } from '../src/world/figure/gait.js';
 import { createLean } from '../src/world/figure/lean.js';
 import { createLook } from '../src/world/figure/look.js';
@@ -174,6 +174,64 @@ export function addFigureTests(test, assert, eq) {
     const still = run(2, [at(40, 3, 'creature')], 0).at(-1);
     assert(Math.abs(walking.yaw + walking.chest) < Math.abs(still.yaw + still.chest) * 0.7, 'walking, it turns less');
     return `eyes lead by ${headFirst - eyeFirst} frames, top speed ${(fastest / D).toFixed(0)} degrees a second`;
+  });
+
+  test(FIG, 'each gesture plays over the posture and ends back at rest, feet planted, every bone finite; sow is a hook that plays nothing; a walk fades one; getting up plays rise', async () => {
+    const { R, built } = await load();
+    const k = R.body.displayScale ?? 1, dt = 1 / 60, D = R.poses.gestures;
+    const feet = ['foot.l', 'foot.r'].map((n) => built.skeleton.findIndex((/** @type {any} */ b) => b.name === n));
+    const ankles = (/** @type {any} */ m) => feet.map((i) => matPoint(m.bones, i * 16, built.skeleton[i].pivot).map((v) => v * k));
+    /** @param {'stand'|'kneel'} posture @param {boolean} [moving] */
+    const s = (posture = 'stand', moving = false) => Object.freeze({ x: 0, z: 0, y: 0, yaw: 0, speed: moving ? 0.6 : 0, moving, ground: () => 0, depth: () => 0, below: true, posture });
+    const report = [];
+    const names = gestureNames(R.poses);
+    for (const name of names.filter((n) => D[n].keys.length)) {
+      // A twin that never gestures, stepped alongside, for the pose at rest (breathing and blinks keep time).
+      const m = createFigureMotion(R, built.skeleton), rest = createFigureMotion(R, built.skeleton);
+      const both = (/** @type {any} */ q) => { m.update(dt, q); rest.update(dt, q); };
+      for (let f = 0; f < 60; f++) both(s());
+      const before = ankles(m), len = m.gesture(name);
+      eq(len, gestureLength(R.poses, name), `${name} length`);
+      assert(len > 0.5 && len < 9, `${name} lasts ${len} s`);
+      let finite = true, worst = 0, played = false;
+      for (let f = 0; f < (len + 0.2) * 60; f++) {
+        both(s());
+        finite &&= m.bones.every(Number.isFinite);
+        played ||= m.info.gesture === name;
+        // Feet stay where they were planted (a kneel's own step is allowed: only standing gestures here).
+        if (!D[name].keys.some((/** @type {any} */ q) => q.kneel)) for (let i = 0; i < 2; i++) worst = Math.max(worst, Math.hypot(...[0, 2].map((j) => ankles(m)[i][j] - before[i][j])));
+      }
+      assert(finite && played, `${name} played with finite bones`);
+      assert(worst < 0.005, `${name}: a foot moved ${(worst * 100).toFixed(2)} cm`);
+      eq(m.info.gesture, null, `${name} is over`);
+      // A few seconds on, back at rest: the same pose as a figure that never gestured, near enough.
+      for (let f = 0; f < 600; f++) both(s());
+      let off = 0;
+      for (let j = 0; j < m.bones.length; j++) off = Math.max(off, Math.abs(m.bones[j] - rest.bones[j]));
+      assert(off < 0.02, `${name}: ${off.toFixed(3)} off rest afterwards`);
+      report.push(`${name} ${len} s`);
+    }
+    // sow: a named hook with no keys yet.
+    assert(names.includes('sow') && createFigureMotion(R, built.skeleton).gesture('sow') === 0, 'sow plays nothing until Phase 2 gives it keys');
+    eq(createFigureMotion(R, built.skeleton).gesture('cartwheel'), 0, 'an unknown gesture plays nothing');
+    // A walk fades a gesture out over ease.gestureFadeS, never cutting it.
+    const w = createFigureMotion(R, built.skeleton);
+    for (let f = 0; f < 60; f++) w.update(dt, s());
+    w.gesture('empty');
+    for (let f = 0; f < 20; f++) w.update(dt, s());
+    let x = 0, frames = 0;
+    while (w.info.gesture && frames < 120) { x += 0.6 * dt; w.update(dt, { ...s('stand', true), x }); frames++; }
+    assert(frames > 2 && frames <= Math.ceil(R.ease.gestureFadeS / dt) + 1, `a walk faded it over ${frames} frames`);
+    // While a camp act plays, no gesture.
+    const a = createFigureMotion(R, built.skeleton);
+    a.act('strike');
+    eq(a.gesture('gather'), 0, 'no gesture over a camp act');
+    // Getting up from a kneel, standing still: rise plays.
+    const g = createFigureMotion(R, built.skeleton);
+    for (let f = 0; f < 180; f++) g.update(dt, s('kneel'));
+    g.update(dt, s('stand'));
+    eq(g.info.gesture, 'rise', 'getting up plays rise');
+    return report.join(', ');
   });
 
   test(FIG,'the GLB reader reads the figure: a body and two arms, with colour, part labels and the arms\' shoulders', async () => {

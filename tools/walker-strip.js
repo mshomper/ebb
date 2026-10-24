@@ -56,7 +56,7 @@ function walkerRun(pace, goal, waitS) {
 /**
  * The strips. Each row: a run (a motion, and a step that moves it on one frame and returns what to
  * record), then picks frames from the record by time.
- * @type {Record<string, { title: string, view: { yaw: number, pitch: number, dist: number }, rows: { name: string, extra?: (f: any) => string, run: () => { motion: any, step: () => any, place: () => number[] }, picks: (rec: any[]) => { i: number, label: string }[], curve: { key: string, label: string, unit: string } }[] }>}
+ * @type {Record<string, { title: string, view: { yaw: number, pitch: number, dist: number }, tile?: number[], rows: { name: string, view?: { yaw: number, pitch: number, dist: number }, extra?: (f: any) => string, run: () => { motion: any, step: () => any, place: () => number[] }, picks: (rec: any[]) => { i: number, label: string }[], curve?: { key: string, label: string, unit: string } }[] }>}
  */
 const STRIPS = {
   lean: {
@@ -143,7 +143,51 @@ STRIPS.look = {
   ],
 };
 
-const TILE_W = 300, TILE_H = 400, LABEL = 34, CURVE = 110, HEAD = 40, PAD = 12;
+/** The gestures as the game plays them: the walker's posture as the action sets it, how long it holds, and the side seen from (right: the working right hand nearest). @type {Record<string, { label: string, kneelS?: number, from?: 'kneel', right?: boolean }>} */
+const GESTURES = {
+  gather: { label: 'Gather', kneelS: 1.2 },
+  setDown: { label: 'Set down at camp', right: true },
+  takeUp: { label: 'Take up', right: true },
+  heapHere: { label: 'Set down here', right: true },
+  empty: { label: 'Empty a pouch', right: true },
+  lift: { label: 'Lift a log', kneelS: 7.5 },
+  feedFire: { label: 'Feed the fire', kneelS: 1.6 },
+  netSet: { label: 'Set the net', kneelS: 3.8 },
+  netLift: { label: 'Lift the net', kneelS: 3.8 },
+  rise: { label: 'Getting up', from: 'kneel' },
+  stuck: { label: "I'm stuck" },
+};
+/** A still walker playing one gesture at 0.5 s (rise: kneeling first, then standing up at 2.5 s). @param {string} name */
+function gestureRun(name) {
+  const g = GESTURES[name], motion = createFigureMotion(R, built.skeleton);
+  let t = 0;
+  return {
+    motion,
+    step() {
+      t += DT;
+      if (name !== 'rise' && Math.abs(t - 0.5) < DT / 2) motion.gesture(name);
+      const posture = /** @type {'stand'|'kneel'} */ (g.from === 'kneel' ? (t < 2.5 ? 'kneel' : 'stand') : g.kneelS && t >= 0.5 && t < 0.5 + g.kneelS ? 'kneel' : 'stand');
+      const r = motion.update(DT, { x: 0, z: 0, y: 0, yaw: 0, speed: 0, moving: false, ground: () => 0, depth: () => 0, below: true, posture });
+      return { t, r, gesture: motion.info.gesture };
+    },
+    place: () => [0, 0, 0, 0],
+  };
+}
+/** A frame at each key of the gesture (not its first or last), and once it is done. @param {string} name */
+const gesturePicks = (name) => (/** @type {any[]} */ rec) => {
+  const keys = R.poses.gestures[name].keys, at = (name === 'rise' ? 2.5 : 0.5);
+  const inner = keys.slice(1, -1).filter((k, i, a) => !(i > 0 && Object.keys(k).length === 1 && Object.keys(a[i - 1]).length === 1));
+  const picks = inner.slice(0, 6).map((k) => ({ i: Math.round((at + k.t) / DT) - 1, label: `${k.t.toFixed(2)} s` }));
+  if (name === 'rise') picks.unshift({ i: Math.round(2.4 / DT), label: 'kneeling' });
+  picks.push({ i: Math.round((at + keys[keys.length - 1].t + 0.8) / DT), label: 'done' });
+  return picks;
+};
+const SIDE = { left: { yaw: Math.PI / 2, pitch: 0.16, dist: 4 }, right: { yaw: -Math.PI / 2, pitch: 0.16, dist: 4 } };
+const gestureRows = (/** @type {string[]} */ names) => names.map((n) => ({ name: `${GESTURES[n].label}, from the ${GESTURES[n].right ? 'right' : 'left'}`, view: GESTURES[n].right ? SIDE.right : SIDE.left, run: () => gestureRun(n), picks: gesturePicks(n) }));
+STRIPS.gesturesA = { title: 'Gestures (one)', tile: [240, 320], view: { yaw: -Math.PI / 2, pitch: 0.16, dist: 4 }, rows: gestureRows(['gather', 'setDown', 'takeUp', 'heapHere', 'empty', 'lift']) };
+STRIPS.gesturesB = { title: 'Gestures (two)', tile: [240, 320], view: { yaw: -Math.PI / 2, pitch: 0.16, dist: 4 }, rows: gestureRows(['feedFire', 'netSet', 'netLift', 'rise', 'stuck']) };
+
+const LABEL = 34, CURVE_H = 110, HEAD = 40, PAD = 12;
 
 /** Draw one strip into the strip canvas. @param {string} name */
 async function render(name) {
@@ -154,10 +198,11 @@ async function render(name) {
     // First pass: record the run.
     const a = row.run();
     const rec = [];
-    for (let f = 0; f < 60 * 9; f++) rec.push(a.step());
+    for (let f = 0; f < 60 * 10; f++) rec.push(a.step());
     return { row, rec, picks: row.picks(rec).filter((p) => p.i >= 0 && p.i < rec.length) };
   });
   const cols = Math.max(...rows.map((r) => r.picks.length));
+  const [TILE_W, TILE_H] = S.tile ?? [300, 400], CURVE = S.rows.some((r) => r.curve) ? CURVE_H : 0;
   const rowH = HEAD + TILE_H + LABEL + CURVE + PAD;
   strip.width = cols * TILE_W;
   strip.height = rows.length * rowH;
@@ -166,7 +211,8 @@ async function render(name) {
   for (let ri = 0; ri < rows.length; ri++) {
     const { row, rec, picks } = rows[ri], y0 = ri * rowH;
     g.fillStyle = '#23361F'; g.font = "800 22px Nunito, sans-serif"; g.fillText(`${S.title}: ${row.name}`, 12, y0 + 28);
-    // Second pass: the same run again, drawing each picked frame.
+    // Second pass: the same run again, drawing each picked frame (from the row's own side, if it has one).
+    stage.view(row.view ?? S.view);
     const b = row.run();
     let f = 0;
     for (let c = 0; c < picks.length; c++) {
@@ -182,12 +228,12 @@ async function render(name) {
       g.strokeStyle = 'rgba(74,106,71,0.45)'; g.setLineDash([6, 6]); g.lineWidth = 2;
       g.beginPath(); g.moveTo(x + TILE_W / 2, y + 30); g.lineTo(x + TILE_W / 2, y + TILE_H - 20); g.stroke(); g.setLineDash([]);
       g.fillStyle = '#1E2624'; g.font = "800 18px Nunito, sans-serif";
-      const v = rec[picks[c].i][row.curve.key];
       g.fillText(`${c + 1}  ${picks[c].label}`, x + 12, y + TILE_H + 24);
       g.font = "600 16px Nunito, sans-serif"; g.fillStyle = '#4A5551';
-      g.fillText(`${v >= 0 ? '+' : ''}${v.toFixed(1)}${row.curve.unit}`, x + TILE_W - 70, y + TILE_H + 24);
+      if (row.curve) { const v = rec[picks[c].i][row.curve.key]; g.fillText(`${v >= 0 ? '+' : ''}${v.toFixed(1)}${row.curve.unit}`, x + TILE_W - 70, y + TILE_H + 24); }
       if (row.extra) { g.font = "600 15px Nunito, sans-serif"; g.fillText(row.extra(rec[picks[c].i]), x + 12, y + 22); }
     }
+    if (!row.curve) continue;
     // The curve, with a dot at each frame.
     const cy = y0 + HEAD + TILE_H + LABEL + 14, ch = CURVE - 34, vals = rec.map((q) => q[row.curve.key]);
     const lo = Math.min(0, ...vals), hi = Math.max(0.1, ...vals);
@@ -207,6 +253,9 @@ async function render(name) {
     note.textContent += res.ok ? ' Saved.' : ' Not saved.';
   }
 }
+
+// For the console: the recipe, the rig and the runs.
+/** @type {any} */ (window).walkerStrip = { R, built, gestureRun, lookRun, STRIPS };
 
 const bar = $('bar');
 for (const name of Object.keys(STRIPS)) {

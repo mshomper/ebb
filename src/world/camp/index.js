@@ -303,7 +303,7 @@ export function createCamp(o) {
     const now = hourNow(), word = fireAt(c.fire, now, F).word;
     if (word !== 'embers' && word !== 'lit') return;
     if (!hasFuel()) { emit('island:notice', { text: W.feedNeeds, showS: 6 }); return; }
-    o.walk.kneelToward(r.x, r.z, 1.6);
+    o.walk.kneelToward(r.x, r.z, 1.6, 'feedFire');
     const fed = feedFire(c.fire, now, F);
     if (!fed || !takeFuel()) return;
     // The flames lift at once as the wood goes on (live only; the fuel itself is in the save).

@@ -259,7 +259,7 @@ export function createGather(o) {
         }
         const g = pending.g, x = g.spot?.x ?? g.x, z = g.spot?.z ?? g.z;
         if (o.walk.distTo(x, z) > (R.reachM ?? 0.9) + 0.6) { pending = null; return; }
-        o.walk.kneelToward(x, z, R.kneelS ?? 1.2);
+        o.walk.kneelToward(x, z, R.kneelS ?? 1.2, 'gather');
         pending.kneelT = now;
         return;
       }

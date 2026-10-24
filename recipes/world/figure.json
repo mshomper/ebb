@@ -85,7 +85,7 @@
       "find": { "weight": 1, "maxM": 3.5, "dwellS": 2.5, "againS": 20, "liftM": 0.02 }
     },
     "eyes": { "stiffness": 260, "fullDeg": 30, "shiftM": [0.018, 0.012] } },
-  "ease": { "settleS": 0.3, "postureS": 1.2, "actInS": 0.4, "stepLiftM": 0.06 },
+  "ease": { "settleS": 0.3, "postureS": 1.2, "actInS": 0.4, "stepLiftM": 0.06, "gestureFadeS": 0.3 },
   "eyes": {
     "centre": [0.002, 1.414, 0],
     "halfSpacing": 0.093,
@@ -169,6 +169,97 @@
       { "t": 1.3, "kneel": 0, "lean": -8, "head": -18, "l": [0.22, 1.75, 0.02], "r": [-0.22, 1.75, 0.02] },
       { "t": 1.6 },
       { "t": 2.0, "lean": 0, "head": 0, "arms": 0, "l": [0.12, 0.5, 0.25], "r": [-0.12, 0.5, 0.25] }
-    ] }
+    ] },
+    "gestures": {
+      "note": "A short gesture for each thing the walker does by hand (walker gestures, part 3; October 24, 2026; src/world/figure/acts.js), played by walk.gesture(name, spot) or by the action itself. The same keys as the camp acts (kneel, lean, head, drop, arms, l, r), plus yaw (the head's extra turn, degrees to the left), but a gesture plays over the walker's posture: its kneel takes the figure down at least that far, it never stops a walk or a tap, and a walk fades it out over ease.gestureFadeS. Given a spot, the walker turns to face it and looks at it first. gather: kneel, reach to the ground, pinch, bring the handful up to the pouch at the hip. setDown: reach back to the pack, bring the pouch round, bend and lower it onto the pile. takeUp: bend, scoop with both hands, lift it over the shoulder into the pack. heapHere: a small bend, the hand opens at your feet. empty: hold the pouch out, tip it, a little shake. lift (a log or stone, L3a): kneel, both hands under the edge, heave it up, hold while it is up (under-log lift.holdS), lower it back. feedFire: kneel, toss a stick in, both hands out to the warmth. netSet: kneel, lay the net forward with both arms; netLift: pull it up hand over hand. rise: getting up from a kneel or a seat, a lean forward and a hand pushing on the knee. stuck: a look left and right (walks: it plays on as you walk off, not faded). sow: the hook for Phase 2's planting and gift placing (one quick arm flick toward the clicked spot, about half a second, once a click): no keys yet, so it only turns you toward the spot.",
+      "gather": { "keys": [
+        { "t": 0 },
+        { "t": 0.55, "kneel": 1, "lean": 44, "head": 22, "drop": 0.04, "arms": 1, "l": [0.12, 0.42, 0.34], "r": [-0.08, 0.06, 0.58] },
+        { "t": 0.8, "r": [-0.06, 0.04, 0.56] },
+        { "t": 1.15, "lean": 12, "head": 8, "r": [-0.2, 0.6, 0.14] },
+        { "t": 1.3, "r": [-0.21, 0.56, 0.12] },
+        { "t": 1.8, "kneel": 0, "lean": 0, "head": 0, "drop": 0, "arms": 0, "l": [0.12, 0.5, 0.25], "r": [-0.12, 0.5, 0.25] }
+      ] },
+      "setDown": { "keys": [
+        { "t": 0 },
+        { "t": 0.4, "arms": 1, "head": -4, "lean": -2, "l": [0.12, 0.5, 0.25], "r": [-0.24, 0.98, -0.18] },
+        { "t": 0.8, "lean": 6, "head": 10, "r": [-0.12, 0.9, 0.34], "l": [0.1, 0.85, 0.32] },
+        { "t": 1.25, "kneel": 0.5, "lean": 40, "head": 22, "drop": 0.05, "l": [0.1, 0.2, 0.52], "r": [-0.1, 0.2, 0.52] },
+        { "t": 1.5 },
+        { "t": 2.0, "kneel": 0, "lean": 0, "head": 0, "drop": 0, "arms": 0, "l": [0.12, 0.5, 0.25], "r": [-0.12, 0.5, 0.25] }
+      ] },
+      "takeUp": { "keys": [
+        { "t": 0 },
+        { "t": 0.5, "kneel": 0.5, "lean": 40, "head": 22, "drop": 0.05, "arms": 1, "l": [0.12, 0.2, 0.52], "r": [-0.12, 0.2, 0.52] },
+        { "t": 0.75, "l": [0.07, 0.24, 0.44], "r": [-0.07, 0.24, 0.44] },
+        { "t": 1.2, "kneel": 0, "lean": -3, "head": -6, "drop": 0, "l": [0.08, 0.95, 0.28], "r": [-0.24, 0.98, -0.18] },
+        { "t": 1.45, "r": [-0.24, 1.04, -0.2] },
+        { "t": 1.95, "lean": 0, "head": 0, "arms": 0, "l": [0.12, 0.5, 0.25], "r": [-0.12, 0.5, 0.25] }
+      ] },
+      "heapHere": { "keys": [
+        { "t": 0 },
+        { "t": 0.45, "lean": 30, "head": 22, "drop": 0.03, "arms": 1, "r": [-0.1, 0.3, 0.46] },
+        { "t": 0.75, "r": [-0.13, 0.26, 0.5] },
+        { "t": 1.3, "lean": 0, "head": 0, "drop": 0, "arms": 0, "r": [-0.12, 0.5, 0.25] }
+      ] },
+      "empty": { "keys": [
+        { "t": 0 },
+        { "t": 0.4, "arms": 1, "lean": 6, "head": 14, "r": [-0.08, 0.86, 0.42] },
+        { "t": 0.7, "r": [-0.05, 0.78, 0.47] },
+        { "t": 0.85, "r": [-0.05, 0.84, 0.45] },
+        { "t": 1.0, "r": [-0.05, 0.78, 0.47] },
+        { "t": 1.15, "r": [-0.05, 0.84, 0.45] },
+        { "t": 1.65, "lean": 0, "head": 0, "arms": 0, "r": [-0.12, 0.5, 0.25] }
+      ] },
+      "lift": { "keys": [
+        { "t": 0 },
+        { "t": 0.7, "kneel": 1, "lean": 44, "head": 20, "drop": 0.04, "arms": 1, "l": [0.14, 0.06, 0.56], "r": [-0.14, 0.06, 0.56] },
+        { "t": 1.3, "lean": 22, "head": 22, "drop": 0.02, "l": [0.14, 0.42, 0.5], "r": [-0.14, 0.42, 0.5] },
+        { "t": 6.2 },
+        { "t": 6.8, "lean": 44, "drop": 0.04, "l": [0.14, 0.06, 0.56], "r": [-0.14, 0.06, 0.56] },
+        { "t": 7.2, "lean": 16, "head": 14, "arms": 0.4, "l": [0.12, 0.45, 0.28], "r": [-0.12, 0.45, 0.28] },
+        { "t": 7.8, "kneel": 0, "lean": 0, "head": 0, "drop": 0, "arms": 0, "l": [0.12, 0.5, 0.25], "r": [-0.12, 0.5, 0.25] }
+      ] },
+      "feedFire": { "keys": [
+        { "t": 0 },
+        { "t": 0.6, "kneel": 1, "lean": 14, "head": 14, "arms": 1, "l": [0.12, 0.45, 0.28], "r": [-0.18, 0.62, 0.1] },
+        { "t": 0.85, "lean": 30, "r": [-0.04, 0.3, 0.62] },
+        { "t": 1.3, "lean": 12, "head": 10, "l": [0.08, 0.5, 0.46], "r": [-0.08, 0.5, 0.46] },
+        { "t": 2.1 },
+        { "t": 2.7, "kneel": 0, "lean": 0, "head": 0, "arms": 0, "l": [0.12, 0.5, 0.25], "r": [-0.12, 0.5, 0.25] }
+      ] },
+      "netSet": { "keys": [
+        { "t": 0 },
+        { "t": 0.9, "kneel": 1, "lean": 24, "head": 16, "drop": 0.03, "arms": 1, "l": [0.12, 0.45, 0.38], "r": [-0.12, 0.45, 0.38] },
+        { "t": 1.7, "lean": 46, "head": 24, "l": [0.13, 0.06, 0.64], "r": [-0.13, 0.06, 0.64] },
+        { "t": 2.3 },
+        { "t": 2.9, "lean": 18, "head": 14, "l": [0.12, 0.42, 0.3], "r": [-0.12, 0.42, 0.3] },
+        { "t": 3.6, "kneel": 0, "lean": 0, "head": 0, "drop": 0, "arms": 0, "l": [0.12, 0.5, 0.25], "r": [-0.12, 0.5, 0.25] }
+      ] },
+      "netLift": { "keys": [
+        { "t": 0 },
+        { "t": 0.9, "kneel": 1, "lean": 42, "head": 22, "drop": 0.03, "arms": 1, "l": [0.11, 0.08, 0.62], "r": [-0.11, 0.34, 0.52] },
+        { "t": 1.3, "lean": 34, "l": [0.11, 0.4, 0.48], "r": [-0.11, 0.08, 0.62] },
+        { "t": 1.7, "lean": 42, "l": [0.11, 0.08, 0.62], "r": [-0.11, 0.4, 0.48] },
+        { "t": 2.1, "lean": 14, "head": 10, "l": [0.1, 0.5, 0.4], "r": [-0.1, 0.5, 0.4] },
+        { "t": 2.9 },
+        { "t": 3.6, "kneel": 0, "lean": 0, "head": 0, "drop": 0, "arms": 0, "l": [0.12, 0.5, 0.25], "r": [-0.12, 0.5, 0.25] }
+      ] },
+      "rise": { "keys": [
+        { "t": 0 },
+        { "t": 0.3, "lean": 16, "head": 4, "arms": 0.8, "r": [-0.11, 0.38, 0.26] },
+        { "t": 0.75, "lean": 8, "r": [-0.11, 0.42, 0.22] },
+        { "t": 1.2, "lean": 0, "head": 0, "arms": 0, "r": [-0.12, 0.5, 0.25] }
+      ] },
+      "stuck": { "walks": true, "keys": [
+        { "t": 0 },
+        { "t": 0.5, "yaw": 38, "head": 4 },
+        { "t": 0.8 },
+        { "t": 1.3, "yaw": -38 },
+        { "t": 1.6 },
+        { "t": 2.0, "yaw": 0, "head": 0 }
+      ] },
+      "sow": { "keys": [] }
+    }
   }
 }

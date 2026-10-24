@@ -19,7 +19,7 @@ import {
 } from './kinematics.js';
 import { paceAt, footInCycle, createPlantedFeet } from './gait.js';
 import { createEyes } from './eyes.js';
-import { actLength, actPose } from './acts.js';
+import { actLength, actPose, gestureLength, gesturePose } from './acts.js';
 import { createLean } from './lean.js';
 import { createLook } from './look.js';
 
@@ -92,6 +92,10 @@ export function createFigureMotion(R, skeleton) {
   let low = false;
   /** The act playing: when it began, and the postures it blends in from. @type {{ name: string, at: number, from: number[], crawlScale: number } | null} */
   let act = null;
+  /** The gesture playing (acts.js, poses.gestures): when it began, and how much of it is left as a walk fades it. @type {{ name: string, at: number, fade: number } | null} */
+  let gest = null;
+  /** Kneeling or sitting was wanted last frame (getting up plays the rise gesture). */
+  let wantedLow = false;
   /** Put down at once (place()): the next frame starts from rest in this posture. @type {string | null} */
   let snap = null;
   let visYaw = /** @type {number | null} */ (null), prevYaw = 0, prevSpeed = 0, prevPelvis = 0;
@@ -139,6 +143,21 @@ export function createFigureMotion(R, skeleton) {
     },
     /** The act playing, or null. */
     get acting() { return act ? act.name : null; },
+    /**
+     * Play a gesture over the posture (acts.js, poses.gestures): gather, setDown, takeUp, heapHere,
+     * empty, lift, feedFire, netSet, netLift, rise, stuck, and the sow hook. Returns its length in
+     * seconds: 0, and nothing plays, for a hook with no keys yet, a name that is not one, or while a
+     * camp act plays or you are low after a crawl in. A walk fades it out.
+     * @param {string} name
+     */
+    gesture(name) {
+      const len = gestureLength(PO, name);
+      if (!len || act || low) return 0;
+      gest = { name, at: t, fade: 1 };
+      return len;
+    },
+    /** The gesture playing, or null. */
+    get gesturing() { return gest ? gest.name : null; },
     /** Put down somewhere at once (walk.placeAt): no steps to get there, already in this posture. @param {'stand'|'sit'|'kneel'} [posture] */
     place(posture = 'stand') { snap = posture; low = false; },
     /** @param {import('./eyes.js').Expression} e @param {number} [forS] */
@@ -203,6 +222,23 @@ export function createFigureMotion(R, skeleton) {
         const k = smooth(u / R.ease.actInS);
         sitE = lerp(act.from[0], 0, k); kneelE = lerp(act.from[1], A.kneel, k); crawlE = lerp(act.from[2], A.crawl, k);
         if (u >= len) { actDone = act.name; if (act.name === 'crawlIn') low = true; act = null; }
+      }
+      // Getting up from a kneel or a seat, standing still: a hand pushes on the knee as you rise.
+      const wantLow = wantKneel || wantSit;
+      if (wantedLow && !wantLow && still && !act && !gest && kneelE + sitE > 0.6) gest = { name: 'rise', at: t, fade: 1 };
+      wantedLow = wantLow;
+      // A gesture plays over the posture: its kneel takes the posture down at least that far, and the
+      // rest (lean, head, hands) is blended as an act's is. A walk fades it out instead of cutting it.
+      if (gest && (act || jumped || !gestureLength(PO, gest.name))) gest = null;
+      if (gest && !A) {
+        const u = t - gest.at, len = gestureLength(PO, gest.name);
+        if (s.moving && !PO.gestures[gest.name].walks) gest.fade = Math.max(0, gest.fade - dt / R.ease.gestureFadeS);
+        if (u >= len || gest.fade <= 0) gest = null;
+        else {
+          const Gp = gesturePose(PO, gest.name, u), f = smooth(gest.fade);
+          A = { ...Gp, kneel: Gp.kneel * f, crawl: 0, lean: Gp.lean * f, head: Gp.head * f, yaw: Gp.yaw * f, drop: Gp.drop * f, arms: Gp.arms * f };
+          kneelE = Math.max(kneelE, A.kneel);
+        }
       }
       // Postures ease in and out (slow at both ends), so going down and getting up never jolt.
       const crawlW = smooth(crawlE), kneelW = Math.min(smooth(kneelE), 1 - crawlW), sitW = Math.min(smooth(sitE), 1 - crawlW - kneelW);
@@ -367,6 +403,7 @@ export function createFigureMotion(R, skeleton) {
       const feedU = acts.feed !== null ? t - acts.feed : -1;
       const reach = feedU >= 0 ? envelope(feedU, PO.feed.reachS, PO.feed.holdS, PO.feed.reachS) : 0;
       pitch += PO.feed.headDeg * DEG * reach;
+      if (A) yawGoal += A.yaw * DEG;
       const eyeY = s.y + DS * (pelvisY - restPelvisY + R.eyes.centre[1]);
       const LK = looking.update(dt, { x: s.x, z: s.z, eyeY, yaw: /** @type {number} */ (visYaw), m, viewYaw: s.look ? s.look.yaw : null, extraYaw: yawGoal, interests: s.interests ?? [] });
       // A posture or act that already bows the head to its work keeps its own tip; the look's tip
@@ -451,7 +488,7 @@ export function createFigureMotion(R, skeleton) {
       set(I.pack, { t: [0, lag * PK.gain, 0], q: qmul(qaxis([1, 0, 0], -0.01 * accel + lag * (PK.tiltGain ?? 0)), qaxis([0, 0, 1], twist * (PK.rock ?? 0))) });
 
       const eyeState = eyes.update(dt, { sleepy: !!s.sleepy && sitW > 0.5 });
-      info = { mode, m, wade, sitW, kneelW, crawlW, phase, pace: P, leanDeg: paceLean, looking: LK.target, look: LK, expression: eyes.expression, act: act ? act.name : null };
+      info = { mode, m, wade, sitW, kneelW, crawlW, phase, pace: P, leanDeg: paceLean, looking: LK.target, look: LK, expression: eyes.expression, act: act ? act.name : null, gesture: gest ? gest.name : null };
       return { yaw: visYaw, eyes: [...eyeState, ...LK.eyes], footfalls, actDone };
     },
   };

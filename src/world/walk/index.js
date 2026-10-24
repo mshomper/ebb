@@ -278,6 +278,7 @@ export function createWalk(o) {
         const [x, z] = grid.center(k);
         return depth(k) < 0.01 && !(o.footing && o.footing(x, z) > rawGround(x, z) + 0.01);
       };
+      figure?.motion.gesture('stuck');
       if (land.joined(here) && dry(here)) { say(R.words.stuckFine); return; }
       const k = nearestJoined(grid, land, walker.x, walker.z, (c) => dry(c) && isOpen(grid, walker.rules, c));
       const to = k >= 0 ? k : nearestJoined(grid, land, walker.x, walker.z);
@@ -309,26 +310,47 @@ export function createWalk(o) {
       return [x, ground(x, z), z];
     },
 
-    /** Kneel and reach down in front of you (setting a net), then stand again after standS seconds. @param {number} standS */
-    reach(standS) {
+    /**
+     * Kneel and work in front of you (setting or lifting a net, gathering, lifting a log), then stand
+     * again after standS seconds. The figure plays that action's gesture (figure.json poses.gestures),
+     * or reaches down with an open hand when none is named.
+     * @param {number} standS @param {string} [gesture]
+     */
+    reach(standS, gesture) {
       if (!below || !walker.placed) return;
       walker.setPosture('kneel');
       camera.follow(head());
       publish();
-      figure?.motion.feed();
+      if (!gesture || !figure?.motion.gesture(gesture)) figure?.motion.feed();
       standAt = walkT + standS;
     },
 
     /**
      * Kneel facing a spot beside you (Lift on a log's or stone's card, L3a), then stand again after
-     * standS seconds. @param {number} x @param {number} z @param {number} standS
+     * standS seconds, playing that action's gesture.
+     * @param {number} x @param {number} z @param {number} standS @param {string} [gesture]
      */
-    kneelToward(x, z, standS) {
+    kneelToward(x, z, standS, gesture) {
       if (!below || !walker.placed) return;
       walker.stop();
       if (Math.hypot(x - walker.x, z - walker.z) > 1e-3) walker.face(Math.atan2(x - walker.x, z - walker.z));
       lookAt(x, z);
-      this.reach(standS);
+      this.reach(standS, gesture);
+    },
+
+    /**
+     * A short gesture for something you do by hand (figure.json poses.gestures: setDown, takeUp,
+     * heapHere, empty, stuck, and sow, Phase 2's hook for planting and placing gifts). Given a spot,
+     * you turn to face it where you stand and look at it first. It never stops a walk or a tap; a walk
+     * fades it out. Ignored above, while a camp act plays, or for a name that is not a gesture. Returns
+     * whether it was taken (sow has no keys yet: it only turns you toward the spot).
+     * @param {string} name @param {{ x: number, z: number }} [at]
+     */
+    gesture(name, at) {
+      if (!below || !walker.placed || acting || !(name in (o.figure.poses.gestures ?? {})) || name === 'note') return false;
+      if (at && !walker.moving) this.faceToward(at.x, at.z);
+      figure?.motion.gesture(name);
+      return true;
     },
 
     /** Turn to face a ground point where you stand (before a camp act: pitching, laying, striking). @param {number} x @param {number} z */
