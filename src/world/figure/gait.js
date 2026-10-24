@@ -32,6 +32,8 @@ export function paceAt(G, speed, wade) {
   out.elbowDeg = lerp(out.elbowDeg, W.elbowDeg, wade);
   out.leanDeg = lerp(out.leanDeg, W.leanDeg, wade);
   out.armOutDeg = W.armOutDeg * wade;
+  // The lean into starts and stops (lean.js): a heavier push setting off in water, a softer carry.
+  if (W.tipDeg !== undefined) { out.tipDeg = lerp(out.tipDeg, W.tipDeg, wade); out.carryDeg = lerp(out.carryDeg, W.carryDeg, wade); }
   return out;
 }
 

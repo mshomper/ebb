@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ebb walker strips</title>
+<link rel="icon" href="../brand/ebb-favicon.svg" type="image/svg+xml">
+<style>
+  @font-face { font-family: 'Nunito'; src: url('../src/vendor/fonts/nunito-latin-600-normal.woff2') format('woff2'); font-weight: 600; }
+  @font-face { font-family: 'Nunito'; src: url('../src/vendor/fonts/nunito-latin-800-normal.woff2') format('woff2'); font-weight: 800; }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; max-width: 100%; overflow-x: hidden; }
+  body { background: #F4EEE4; color: #1E2624; font: 600 17px/1.45 'Nunito', system-ui, sans-serif; padding: 16px; }
+  main { max-width: 1400px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+  h1 { font-size: 24px; font-weight: 800; margin: 0; }
+  .muted { color: #4A5551; font-size: 16px; margin: 0; }
+  .bar { display: flex; flex-wrap: wrap; gap: 8px; }
+  button { font: 800 16px/1.2 'Nunito', system-ui, sans-serif; color: #FBF7F0; background: #4a6a47; border: 0; border-radius: 12px; padding: 10px 14px; cursor: pointer; min-height: 44px; }
+  button[aria-pressed=true] { background: #23361F; box-shadow: inset 0 0 0 3px #A9C39B; }
+  #strip { width: 100%; height: auto; display: block; border-radius: 10px; background: #FBF7F0; }
+  #view { position: absolute; left: -9999px; top: 0; width: 300px; height: 400px; }
+  a { color: #4a6a47; }
+</style>
+</head>
+<body>
+<main>
+  <h1>ebb walker strips</h1>
+  <p class="muted">Frame strips of the real walker figure, one frame per pose, from a scripted run of its motion (the same code as the game). Pick a strip. <a href="./">All tools</a></p>
+  <div class="bar" id="bar"></div>
+  <p class="muted" id="note" role="status" aria-live="polite"></p>
+  <canvas id="strip" width="10" height="10" aria-label="The frame strip"></canvas>
+  <canvas id="view" aria-hidden="true"></canvas>
+</main>
+<script type="importmap">{ "imports": {
+  "wgpu-matrix": "../src/vendor/wgpu-matrix/wgpu-matrix.module.js" } }</script>
+<script type="module" src="./walker-strip.js"></script>
+</body>
+</html>

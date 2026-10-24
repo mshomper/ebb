@@ -1,8 +1,8 @@
 // @ts-check
 // The walker's motion (doc 23, W5): reads the walker (where you are, which way you face, how fast,
 // the ground and water under each foot) and poses the figure's 20 bones, gently. Nothing snaps:
-// pace, posture, facing and gaze all ease. The feet never slide: walking is a stride driven by
-// distance; standing, the feet stay pinned and step to turn or to settle. Legs reach the ground by
+// pace, posture, facing and gaze all ease, and the body leans into each start and stop (lean.js).
+// The feet never slide: walking is a stride driven by distance; standing, the feet stay pinned and step to turn or to settle. Legs reach the ground by
 // two-bone IK, the pelvis drops for the lower foot, and the hat tip, coat skirt and pack follow a
 // beat late on springs. Postures (sit, kneel) and short acts (Feed, the arrival's look about and
 // tug of the brim, the look up after you leave) blend over the walk. The keeper's camp acts (drink,
@@ -19,7 +19,9 @@ import {
 } from './kinematics.js';
 import { paceAt, footInCycle, createPlantedFeet } from './gait.js';
 import { createEyes } from './eyes.js';
-import { actLength, actPose } from './acts.js';
+import { actLength, actPose, gestureLength, gesturePose } from './acts.js';
+import { createLean } from './lean.js';
+import { createLook } from './look.js';
 
 /**
  * @typedef {Object} FigureInput
@@ -32,6 +34,7 @@ import { actLength, actPose } from './acts.js';
  * @property {'stand' | 'sit' | 'kneel'} [posture]
  * @property {boolean} [below]  you are on foot (false: you went up, and the figure waits)
  * @property {boolean} [sleepy] it is night, for half lids while sitting
+ * @property {import('./look.js').Interest[]} [interests]  things near you worth a look (creatures, finds, the fire)
  */
 
 const ID = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
@@ -78,6 +81,9 @@ export function createFigureMotion(R, skeleton) {
     tip: new Spring(2, R.springs.hatTip), skirt: new Spring(2, R.springs.skirt), pack: new Spring(1, R.springs.pack),
     pelvis: new Spring(1, { stiffness: 420, damping: 1 }),
   };
+  // wade is live state below: the lean reads the pace with the water as it is now.
+  const leanSpring = createLean(R.lean, (v) => paceAt(G, v, wade));
+  const looking = createLook(R.look);
 
   // Live state.
   // sitE, kneelE, crawlE: the postures as they ease (an act sets them while it plays).
@@ -86,9 +92,13 @@ export function createFigureMotion(R, skeleton) {
   let low = false;
   /** The act playing: when it began, and the postures it blends in from. @type {{ name: string, at: number, from: number[], crawlScale: number } | null} */
   let act = null;
+  /** The gesture playing (acts.js, poses.gestures): when it began, and how much of it is left as a walk fades it. @type {{ name: string, at: number, fade: number } | null} */
+  let gest = null;
+  /** Kneeling or sitting was wanted last frame (getting up plays the rise gesture). */
+  let wantedLow = false;
   /** Put down at once (place()): the next frame starts from rest in this posture. @type {string | null} */
   let snap = null;
-  let visYaw = /** @type {number | null} */ (null), prevYaw = 0, prevSpeed = 0, prevPelvis = 0, lookYaw = 0;
+  let visYaw = /** @type {number | null} */ (null), prevYaw = 0, prevSpeed = 0, prevPelvis = 0;
   let mode = /** @type {'plant' | 'gait'} */ ('plant');
   let last = /** @type {{ x: number, z: number } | null} */ (null);
   let footWorld = [[0, 0], [0, 0]];
@@ -133,10 +143,29 @@ export function createFigureMotion(R, skeleton) {
     },
     /** The act playing, or null. */
     get acting() { return act ? act.name : null; },
+    /**
+     * Play a gesture over the posture (acts.js, poses.gestures): gather, setDown, takeUp, heapHere,
+     * empty, lift, feedFire, netSet, netLift, rise, stuck, and the sow hook. Returns its length in
+     * seconds: 0, and nothing plays, for a hook with no keys yet, a name that is not one, or while a
+     * camp act plays or you are low after a crawl in. A walk fades it out.
+     * @param {string} name
+     */
+    gesture(name) {
+      const len = gestureLength(PO, name);
+      if (!len || act || low) return 0;
+      gest = { name, at: t, fade: 1 };
+      return len;
+    },
+    /** The gesture playing, or null. */
+    get gesturing() { return gest ? gest.name : null; },
     /** Put down somewhere at once (walk.placeAt): no steps to get there, already in this posture. @param {'stand'|'sit'|'kneel'} [posture] */
     place(posture = 'stand') { snap = posture; low = false; },
     /** @param {import('./eyes.js').Expression} e @param {number} [forS] */
     express(e, forS) { eyes.show(e, forS); },
+    /** Look at a spot (world m) for a while: a thing you clicked, an action's target (look.js). @param {number} x @param {number} y @param {number} z @param {number} [forS] */
+    lookAt(x, y, z, forS) { looking.focus(x, y, z, forS); },
+    /** A creature arrived there: the head turns to it if it is in front of you. @param {number} x @param {number} y @param {number} z */
+    notice(x, y, z) { looking.notice(x, y, z); },
     /** For the tools page: what the motion is doing. */
     get info() { return info; },
 
@@ -194,6 +223,23 @@ export function createFigureMotion(R, skeleton) {
         sitE = lerp(act.from[0], 0, k); kneelE = lerp(act.from[1], A.kneel, k); crawlE = lerp(act.from[2], A.crawl, k);
         if (u >= len) { actDone = act.name; if (act.name === 'crawlIn') low = true; act = null; }
       }
+      // Getting up from a kneel or a seat, standing still: a hand pushes on the knee as you rise.
+      const wantLow = wantKneel || wantSit;
+      if (wantedLow && !wantLow && still && !act && !gest && kneelE + sitE > 0.6) gest = { name: 'rise', at: t, fade: 1 };
+      wantedLow = wantLow;
+      // A gesture plays over the posture: its kneel takes the posture down at least that far, and the
+      // rest (lean, head, hands) is blended as an act's is. A walk fades it out instead of cutting it.
+      if (gest && (act || jumped || !gestureLength(PO, gest.name))) gest = null;
+      if (gest && !A) {
+        const u = t - gest.at, len = gestureLength(PO, gest.name);
+        if (s.moving && !PO.gestures[gest.name].walks) gest.fade = Math.max(0, gest.fade - dt / R.ease.gestureFadeS);
+        if (u >= len || gest.fade <= 0) gest = null;
+        else {
+          const Gp = gesturePose(PO, gest.name, u), f = smooth(gest.fade);
+          A = { ...Gp, kneel: Gp.kneel * f, crawl: 0, lean: Gp.lean * f, head: Gp.head * f, yaw: Gp.yaw * f, drop: Gp.drop * f, arms: Gp.arms * f };
+          kneelE = Math.max(kneelE, A.kneel);
+        }
+      }
       // Postures ease in and out (slow at both ends), so going down and getting up never jolt.
       const crawlW = smooth(crawlE), kneelW = Math.min(smooth(kneelE), 1 - crawlW), sitW = Math.min(smooth(sitE), 1 - crawlW - kneelW);
       const standW = Math.max(0, 1 - sitW - kneelW - crawlW);
@@ -202,6 +248,10 @@ export function createFigureMotion(R, skeleton) {
       const P = paceAt(G, speed, wade);
       const accel = dt > 0 ? (speed - prevSpeed) / dt : 0;
       prevSpeed = speed;
+      // The standing lean: the pace's, and a little at rest; it goes through the lean into starts and
+      // stops (lean.js), which adds the tip and the carry and swings back past upright as you stop.
+      if (jumped) { leanSpring.reset(); looking.reset(); }
+      const paceLean = leanSpring.update(dt, speed, jumped ? 0 : accel, P.leanDeg * m + 1.5 * (1 - m));
 
       // Walking and standing hand over: start a stride with the left foot about to lift; pin both
       // feet where they are when you stop, so the next step is a closing step.
@@ -326,18 +376,12 @@ export function createFigureMotion(R, skeleton) {
         legIK = solveLegs();
       }
 
-      // Spine and chest: the lean of the pace or posture, breathing, a counter-twist to the hips.
-      const br = Math.sin((2 * Math.PI * t) / R.idle.breathS);
-      const lean = ((P.leanDeg * m + 1.5 * (1 - m)) * standW + S.leanDeg * sitW + K.leanDeg * kneelW + C.leanDeg * crawlW + (A ? A.lean : 0)) * DEG;
-      set(I.spine, { q: qaxis([1, 0, 0], lean * 0.5 + br * R.idle.breathDeg * 0.3 * DEG) });
-      set(I.chest, { q: qmul(qaxis([1, 0, 0], lean * 0.5), qaxis([0, 1, 0], -twist * 0.8)), s: [1 + 0.006 * br, 1 + 0.004 * br, 1 + 0.008 * br] });
-
-      // Head: where you look below (less while walking), idle glances, and the short acts.
+      // Head: where it looks (look.js: a thing of interest, else where you look below), idle glances,
+      // and the short acts' own turns and tips.
       if (s.retreating && !wasRetreating) { acts.retreat = t; acts.retreatSide = unit(hash32(Math.floor(t * 10))) < 0.5 ? -1 : 1; }
       wasRetreating = !!s.retreating;
       const L = R.look;
       let yawGoal = 0, pitch = (P.headDeg * m * standW + S.headDeg * sitW + K.headDeg * kneelW + C.headDeg * crawlW + (A ? A.head : 0)) * DEG;
-      if (s.look) yawGoal = Math.max(-L.maxYawDeg, Math.min(L.maxYawDeg, wrap(s.look.yaw - visYaw) / DEG)) * DEG * (1 - 0.7 * m);
       const gEvery = R.idle.glanceEveryS, beat = Math.floor(t / gEvery[1]);
       const gAt = beat * gEvery[1] + unit(hash32(11, beat)) * (gEvery[1] - 2.5);
       pitch += R.idle.glanceDeg * DEG * envelope(t - gAt, 0.6, 1.2, 0.7) * (1 - m) * standW;
@@ -359,9 +403,21 @@ export function createFigureMotion(R, skeleton) {
       const feedU = acts.feed !== null ? t - acts.feed : -1;
       const reach = feedU >= 0 ? envelope(feedU, PO.feed.reachS, PO.feed.holdS, PO.feed.reachS) : 0;
       pitch += PO.feed.headDeg * DEG * reach;
-      lookYaw = approach(lookYaw, yawGoal, L.degPerS * DEG * dt);
+      if (A) yawGoal += A.yaw * DEG;
+      const eyeY = s.y + DS * (pelvisY - restPelvisY + R.eyes.centre[1]);
+      const LK = looking.update(dt, { x: s.x, z: s.z, eyeY, yaw: /** @type {number} */ (visYaw), m, viewYaw: s.look ? s.look.yaw : null, extraYaw: yawGoal, interests: s.interests ?? [] });
+      // A posture or act that already bows the head to its work keeps its own tip; the look's tip
+      // is for standing.
+      pitch += LK.pitch * standW * (1 - (A ? A.arms : 0));
+
+      // Spine and chest: the lean of the pace or posture, breathing, a counter-twist to the hips, and
+      // the chest's share of a look.
+      const br = Math.sin((2 * Math.PI * t) / R.idle.breathS);
+      const lean = (paceLean * standW + S.leanDeg * sitW + K.leanDeg * kneelW + C.leanDeg * crawlW + (A ? A.lean : 0)) * DEG;
+      set(I.spine, { q: qaxis([1, 0, 0], lean * 0.5 + br * R.idle.breathDeg * 0.3 * DEG) });
+      set(I.chest, { q: qmul(qaxis([1, 0, 0], lean * 0.5), qaxis([0, 1, 0], -twist * 0.8 + LK.chest)), s: [1 + 0.006 * br, 1 + 0.004 * br, 1 + 0.008 * br] });
       const headPitch = Math.max(-L.maxPitchDeg * DEG, Math.min(L.maxPitchDeg * DEG, pitch)) - lean * 0.7;
-      set(I.head, { q: qmul(qaxis([0, 1, 0], lookYaw), qaxis([1, 0, 0], headPitch)) });
+      set(I.head, { q: qmul(qaxis([0, 1, 0], LK.yaw), qaxis([1, 0, 0], headPitch)) });
       set(I.hat, null);
       // The hat tip lags: it tips back as you speed up, dips as the body rises, and swings out on a turn.
       const HT = R.springs.hatTip;
@@ -432,8 +488,8 @@ export function createFigureMotion(R, skeleton) {
       set(I.pack, { t: [0, lag * PK.gain, 0], q: qmul(qaxis([1, 0, 0], -0.01 * accel + lag * (PK.tiltGain ?? 0)), qaxis([0, 0, 1], twist * (PK.rock ?? 0))) });
 
       const eyeState = eyes.update(dt, { sleepy: !!s.sleepy && sitW > 0.5 });
-      info = { mode, m, wade, sitW, kneelW, crawlW, phase, pace: P, expression: eyes.expression, act: act ? act.name : null };
-      return { yaw: visYaw, eyes: eyeState, footfalls, actDone };
+      info = { mode, m, wade, sitW, kneelW, crawlW, phase, pace: P, leanDeg: paceLean, looking: LK.target, look: LK, expression: eyes.expression, act: act ? act.name : null, gesture: gest ? gest.name : null };
+      return { yaw: visYaw, eyes: [...eyeState, ...LK.eyes], footfalls, actDone };
     },
   };
 }

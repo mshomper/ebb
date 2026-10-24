@@ -71,7 +71,7 @@ export function createLift(o) {
       const hour = hourIndex(), day = Math.floor(hour / 24);
       const rest = rested.get(id) === day;
       rested.set(id, day);
-      walk.kneelToward(p.x, p.z, R.lift.holdS + 2);
+      walk.kneelToward(p.x, p.z, R.lift.holdS + 2, 'lift');
       const st = world.state;
       const hab = world.env.habitat?.();
       // A strand log is not kept: nothing lives under it yet. Nor under anything lifted earlier today.

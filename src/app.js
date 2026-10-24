@@ -610,6 +610,20 @@ export async function startApp(canvas, hooks = {}) {
   sim.addSystem(camp);
   shadowPass.addCaster(camp.props.caster);
   midges.keepClear(() => camp.smokeClear());
+  // What your figure glances at on foot (src/world/figure/look.js): frogs near you, the fire while it
+  // burns, and the finds drawn about you.
+  walk.setInterests(() => {
+    const fire = camp.smokeClear();
+    return [
+      ...creatures.frogs().map((f) => ({ x: f.x, z: f.z, kind: 'creature' })),
+      ...(fire ? [{ x: fire.x, z: fire.z, kind: 'fire' }] : []),
+      ...finds.shown().map((f) => ({ x: f.x, z: f.z, kind: 'find' })),
+    ];
+  });
+  // Its gestures for the pouches (src/world/figure/acts.js): setting one down onto a pile at camp,
+  // and emptying one.
+  on('pack:set-down', (/** @type {{ pile: string | null }} */ p) => walk.gesture('setDown', p.pile ? pieceSpot(p.pile) : undefined));
+  on('pack:emptied', () => walk.gesture('empty'));
   intro.useCamp(camp);
   // The stores (section 3.12; src/world/pack/stores.js): the wood store, the stone pile and the clay
   // slab, places with a card from the first frame (drawn by packDraw), glowing while the pack holds
@@ -1138,10 +1152,16 @@ export async function startApp(canvas, hooks = {}) {
     const r = nets.fromFoot(me, ahead, G.netReachM);
     if (!r) return;
     if (r.did === 'cast' || r.did === 'lifted') {
-      walk.reach(G.netStandS);
+      walk.reach(G.netStandS, r.did === 'lifted' ? 'netLift' : 'netSet');
       if (r.did === 'lifted') updateStore('identify', () => null);
     }
     if (r.message) emitDeferred('island:notice', { text: r.message, showS: walkerRecipe.words.noticeS });
+  }
+
+  /** Where a piece or a pile stands, for a gesture toward it. @param {string} id */
+  function pieceSpot(id) {
+    const p = pieces.piece(id);
+    return p ? { x: p.x, z: p.z } : undefined;
   }
 
   /**
@@ -1215,11 +1235,12 @@ export async function startApp(canvas, hooks = {}) {
       }
       if (a.type === 'pack.empty') { pack.empty(a.i); return; }
       if (a.type === 'gather.take') { gather.take(a.n); return; }
-      if (a.type === 'gather.heapHere') { gather.heapHere(); return; }
+      if (a.type === 'gather.heapHere') { gather.heapHere(); walk.gesture('heapHere'); return; }
       if (a.type === 'gather.leaveBe') { updateStore('identify', () => null); return; }
       // A pile's Take up fills a pouch; with no room, the full card (without Set down here).
       if (a.type === 'pile.takeUp') {
         const r = piles?.takeUp(a.id, pack);
+        if (r?.taken) walk.gesture('takeUp', pieceSpot(a.id));
         if (r?.full) updateStore('identify', (c) => (c ? { ...c, full: { kind: r.kind, g: { heap: -1 } }, text: pack.recipe.words.full } : c));
         // A store's card stays, with what is left (or Empty); a heap's goes with it.
         else if (getStore('identify')?.store) refreshStoreCard();

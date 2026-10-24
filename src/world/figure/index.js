@@ -21,7 +21,8 @@ export async function loadFigureModel(R) {
 
 /**
  * The eye uniforms the figure shader reads (lib-figure-eyes.wgsl FigureEyes).
- * @param {any} E recipes/world/figure.json eyes @param {number} headBone @param {number[]} state from eyes.js
+ * @param {any} E recipes/world/figure.json eyes @param {number} headBone
+ * @param {number[]} state from eyes.js, then the look's shift across the face (look.js, m: x left, y up)
  * @param {Float32Array} [out]
  */
 export function eyeUniforms(E, headBone, state, out = new Float32Array(EXTRA)) {
@@ -29,7 +30,7 @@ export function eyeUniforms(E, headBone, state, out = new Float32Array(EXTRA)) {
     E.radii[0], E.radii[1], E.glowNits, headBone,
     E.albedo[0], E.albedo[1], E.albedo[2], 0,
     state[0], state[1], state[2], state[3],
-    state[4], state[5], 0, 0]);
+    state[4], state[5], state[6] ?? 0, state[7] ?? 0]);
   return out;
 }
 

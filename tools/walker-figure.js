@@ -182,6 +182,27 @@ document.querySelectorAll('[data-act]').forEach((b) => b.addEventListener('click
   const len = motion.act(name);
   note.textContent = `${ACT_NOTES[name]} (${len} s)`;
 }));
+// The gestures (acts.js poses.gestures): the stand-in walker stops; the kneeling ones kneel for as long
+// as the game's action holds it (data-kneel seconds), then stand. Getting up plays its own (rise).
+document.querySelectorAll('[data-gesture]').forEach((b) => b.addEventListener('click', () => {
+  const el = /** @type {HTMLElement} */ (b), name = el.dataset.gesture ?? '';
+  pace = 0; w.speed = 0;
+  document.querySelectorAll('[data-pace]').forEach((o) => press(o, o.getAttribute('data-pace') === '0'));
+  const kneelFor = Number(el.dataset.kneel ?? 0);
+  posture = kneelFor ? 'kneel' : 'stand'; press($('sit'), false); press($('kneel'), false);
+  if (kneelFor) setTimeout(() => { if (posture === 'kneel') posture = 'stand'; }, kneelFor * 1000 / (slow ? 0.25 : 1));
+  const len = motion.gesture(name);
+  note.textContent = `${el.textContent}: a ${len.toFixed(1)} s gesture over the posture.`;
+}));
+// A frog arrives to one side, the other side each time: the eyes go first, then the head and a little
+// of the chest.
+let frogSide = 1;
+$('lookat').addEventListener('click', () => {
+  frogSide = -frogSide;
+  const a = w.yaw + frogSide * 1.0;
+  motion.notice(w.x + Math.sin(a) * 2, ground(w.x, w.z), w.z + Math.cos(a) * 2);
+  note.textContent = 'A frog arrives to one side: the eyes lead, the head follows, then it lets it be.';
+});
 document.querySelectorAll('[data-face]').forEach((b) => b.addEventListener('click', () => {
   const e = /** @type {any} */ (/** @type {HTMLElement} */ (b).dataset.face);
   motion.express(e, e === 'sleepy' ? 4 : undefined);
