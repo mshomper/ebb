@@ -16,6 +16,7 @@ import { matPoint } from '../src/world/figure/kinematics.js';
 import { createFootprints } from '../src/world/figure/footprints.js';
 import { ACTS, actLength } from '../src/world/figure/acts.js';
 import { paceAt, footInCycle } from '../src/world/figure/gait.js';
+import { createLean } from '../src/world/figure/lean.js';
 
 const FIG = 'walker figure';
 
@@ -94,6 +95,42 @@ export function addFigureTests(test, assert, eq) {
     const keys = Object.keys(G.paces[0]).sort().join();
     assert(G.paces.every((/** @type {any} */ p) => Object.keys(p).sort().join() === keys), 'every pace has the same keys');
     return `run: stance ${run.stance.toFixed(2)}, stride ${run.stepM.toFixed(2)} m, lean ${run.leanDeg.toFixed(0)} degrees`;
+  });
+
+  test(FIG, 'the body leans into a start and a stop: forward setting off, more at a jog than a stroll, back past upright once on stopping, then still', async () => {
+    const R = await (await fetch('../recipes/world/figure.json')).json();
+    const W = await (await fetch('../recipes/world/walker.json')).json();
+    const G = R.gait, DS = R.body.displayScale, a = W.pace.accelMps2 / DS, dt = 1 / 60;
+    const lean = createLean(R.lean, (v) => paceAt(G, v, 0));
+    /** Ease up to `top` (body m/s), hold, brake at three times the rate, stand: the lean each frame. @param {number} top */
+    const run = (top) => {
+      lean.reset();
+      const out = [];
+      let v = 0;
+      for (let f = 0; f < 600; f++) {
+        const t = f * dt, want = t < 0.2 ? 0 : t < 3 ? top : 0;
+        const nv = v + Math.sign(want - v) * Math.min(Math.abs(want - v), (want > v ? a : a * 3) * dt);
+        // The lean the pace asks for (motion.js eases between them; here it steps, a harder test),
+        // measured from where it rests standing.
+        const base = nv > 0.05 ? paceAt(G, nv, 0).leanDeg : 1.5;
+        out.push({ t, v: nv, deg: lean.update(dt, nv, (nv - v) / dt, base) - (nv > 0.05 || t < 0.2 ? base : 1.5) });
+        v = nv;
+      }
+      return out;
+    };
+    const stroll = run(W.pace.strollMps / DS), jog = run(W.pace.briskMps / DS);
+    const peak = (/** @type {any[]} */ r, /** @type {number} */ t0, /** @type {number} */ t1, /** @type {number} */ s) => Math.max(...r.filter((q) => q.t >= t0 && q.t < t1).map((q) => s * q.deg));
+    const sTip = peak(stroll, 0, 1.5, 1), jTip = peak(jog, 0, 2, 1);
+    assert(sTip > 2 && jTip > sTip * 1.3, `tips forward setting off: stroll ${sTip.toFixed(1)}, jog ${jTip.toFixed(1)} degrees`);
+    const stop = stroll.findIndex((q) => q.t > 3 && q.v === 0), back = peak(stroll.slice(stop), 0, 99, -1);
+    assert(back > 1 && back < sTip, `settles back past its resting lean, gently: ${back.toFixed(1)} degrees`);
+    // One swing back, not a wobble: it never comes forward again by more than a third of that.
+    const after = stroll.slice(stop).findIndex((q) => q.deg < -back * 0.99) + stop;
+    assert(peak(stroll.slice(after), 0, 99, 1) < back / 3 + 0.05, 'one swing back, then it settles');
+    assert(Math.abs(stroll[stroll.length - 1].deg) < 0.05, 'still, at rest');
+    // Walking on at a steady pace, no wobble behind the pace's lean.
+    assert(peak(stroll.filter((q) => q.t > 1.6 && q.t < 3), 0, 99, -1) < 0.3, 'never leans back while walking on');
+    return `stroll tip ${sTip.toFixed(1)}, jog tip ${jTip.toFixed(1)}, settle back ${back.toFixed(1)} degrees`;
   });
 
   test(FIG,'the GLB reader reads the figure: a body and two arms, with colour, part labels and the arms\' shoulders', async () => {

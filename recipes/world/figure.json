@@ -46,17 +46,17 @@
   "hang": { "dir": [0.139, -0.977, 0.15], "elbowDeg": 8 },
   "legs": { "ankleM": 0.1, "hipDrop": 0.012, "footPitchMaxDeg": 22 },
   "gait": {
-    "note": "Paces by speed in body meters a second (the walker's speed divided by body.displayScale, so a smaller figure takes a longer pace for its size and quicker steps); stepM, liftM and the rest are body meters too. The figure blends between them by the speed it is given. stance: share of a stride a foot is down (each pace may set its own; under a half both feet leave the ground between steps). The stroll (1.5 m/s, about 2.0 body m/s) keeps the 1.5 pace; above it the walk turns into a jog (2.9) and a run (3.7, the hurry speed of 2.7 m/s): a longer stride, a flight phase, more forward lean, a bent-elbow arm pump, and bobM below 0, so the hips are lowest over the planted foot and highest in flight, which bounces the hat tip and the pack (Phase 1 fix F11).",
+    "note": "Paces by speed in body meters a second (the walker's speed divided by body.displayScale, so a smaller figure takes a longer pace for its size and quicker steps); stepM, liftM and the rest are body meters too. The figure blends between them by the speed it is given. stance: share of a stride a foot is down (each pace may set its own; under a half both feet leave the ground between steps). The stroll (1.5 m/s, about 2.0 body m/s) keeps the 1.5 pace; above it the walk turns into a jog (2.9) and a run (3.7, the hurry speed of 2.7 m/s): a longer stride, a flight phase, more forward lean, a bent-elbow arm pump, and bobM below 0, so the hips are lowest over the planted foot and highest in flight, which bounces the hat tip and the pack (Phase 1 fix F11). tipDeg and carryDeg: how far the body tips forward setting off and carries on forward stopping, at that pace (see lean); wade blends toward its own.",
     "stance": 0.6,
     "paces": [
-      { "speed": 0.3, "stance": 0.6, "kickM": 0, "landShare": 0.5, "stepM": 0.2, "liftM": 0.04, "armDeg": 5, "elbowDeg": 40, "leanDeg": 8, "bobM": 0.004, "crouchM": 0.035, "headDeg": 10, "twistDeg": 2 },
-      { "speed": 0.9, "stance": 0.6, "kickM": 0, "landShare": 0.5, "stepM": 0.4, "liftM": 0.065, "armDeg": 22, "elbowDeg": 14, "leanDeg": 3.5, "bobM": 0.01, "crouchM": 0, "headDeg": 3, "twistDeg": 6 },
-      { "speed": 1.5, "stance": 0.6, "kickM": 0, "landShare": 0.5, "stepM": 0.52, "liftM": 0.09, "armDeg": 32, "elbowDeg": 26, "leanDeg": 7, "bobM": 0.016, "crouchM": 0.01, "headDeg": 2, "twistDeg": 8 },
-      { "speed": 2.1, "stance": 0.6, "kickM": 0, "landShare": 0.5, "stepM": 0.52, "liftM": 0.09, "armDeg": 32, "elbowDeg": 26, "leanDeg": 7, "bobM": 0.016, "crouchM": 0.01, "headDeg": 2, "twistDeg": 8 },
-      { "speed": 2.9, "stance": 0.42, "kickM": 0.1, "landShare": 0.35, "stepM": 0.78, "liftM": 0.17, "armDeg": 40, "elbowDeg": 78, "leanDeg": 11, "bobM": -0.026, "crouchM": 0, "headDeg": 0, "twistDeg": 9 },
-      { "speed": 3.7, "stance": 0.34, "kickM": 0.16, "landShare": 0.3, "stepM": 0.98, "liftM": 0.22, "armDeg": 48, "elbowDeg": 88, "leanDeg": 15, "bobM": -0.032, "crouchM": 0, "headDeg": -2, "twistDeg": 11 }
+      { "speed": 0.3, "tipDeg": 2.5, "carryDeg": 1, "stance": 0.6, "kickM": 0, "landShare": 0.5, "stepM": 0.2, "liftM": 0.04, "armDeg": 5, "elbowDeg": 40, "leanDeg": 8, "bobM": 0.004, "crouchM": 0.035, "headDeg": 10, "twistDeg": 2 },
+      { "speed": 0.9, "tipDeg": 4, "carryDeg": 2, "stance": 0.6, "kickM": 0, "landShare": 0.5, "stepM": 0.4, "liftM": 0.065, "armDeg": 22, "elbowDeg": 14, "leanDeg": 3.5, "bobM": 0.01, "crouchM": 0, "headDeg": 3, "twistDeg": 6 },
+      { "speed": 1.5, "tipDeg": 6, "carryDeg": 4, "stance": 0.6, "kickM": 0, "landShare": 0.5, "stepM": 0.52, "liftM": 0.09, "armDeg": 32, "elbowDeg": 26, "leanDeg": 7, "bobM": 0.016, "crouchM": 0.01, "headDeg": 2, "twistDeg": 8 },
+      { "speed": 2.1, "tipDeg": 6.5, "carryDeg": 4.5, "stance": 0.6, "kickM": 0, "landShare": 0.5, "stepM": 0.52, "liftM": 0.09, "armDeg": 32, "elbowDeg": 26, "leanDeg": 7, "bobM": 0.016, "crouchM": 0.01, "headDeg": 2, "twistDeg": 8 },
+      { "speed": 2.9, "tipDeg": 10, "carryDeg": 7, "stance": 0.42, "kickM": 0.1, "landShare": 0.35, "stepM": 0.78, "liftM": 0.17, "armDeg": 40, "elbowDeg": 78, "leanDeg": 11, "bobM": -0.026, "crouchM": 0, "headDeg": 0, "twistDeg": 9 },
+      { "speed": 3.7, "tipDeg": 11, "carryDeg": 8, "stance": 0.34, "kickM": 0.16, "landShare": 0.3, "stepM": 0.98, "liftM": 0.22, "armDeg": 48, "elbowDeg": 88, "leanDeg": 15, "bobM": -0.032, "crouchM": 0, "headDeg": -2, "twistDeg": 11 }
     ],
-    "wade": { "depthM": [0.12, 0.3], "stepScale": 0.8, "liftM": 0.17, "armOutDeg": 14, "elbowDeg": 30, "leanDeg": 6 },
+    "wade": { "depthM": [0.12, 0.3], "tipDeg": 7, "carryDeg": 2, "stepScale": 0.8, "liftM": 0.17, "armOutDeg": 14, "elbowDeg": 30, "leanDeg": 6 },
     "turnDegPerS": 200,
     "plantStepM": 0.07,
     "plantStepDeg": 28,
@@ -73,6 +73,7 @@
     "pack": { "stiffness": 140, "damping": 0.45, "gain": 1.6, "tiltGain": 4, "rock": 0.5 }
   },
   "idle": { "breathS": 4.2, "breathDeg": 0.8, "shiftS": 9, "shiftM": 0.012, "glanceEveryS": [7, 14], "glanceDeg": 14 },
+  "lean": { "note": "Leaning into starts and stops (walker gestures, part 1; October 24, 2026; src/world/figure/lean.js): the standing lean (the pace's, or a little at rest) follows a soft spring, with extra pulls. Speeding up pulls it toward the pace's tipDeg (full at accelRef, body m/s2; the walker eases up at 2.5 m/s2, about 3.4 body m/s2); slowing down pulls it toward carryDeg (full at brakeRef), the body carrying on as the feet brake. stiffness per second squared; damping (share of critical) while moving, settleDamping once stopped, so the walking lean easing off as you stop swings back just past upright once and settles. The pace is read at the speed you were going, falling off over cruiseFallS.", "accelRef": 3.2, "brakeRef": 3.2, "stiffness": 55, "damping": 0.8, "settleDamping": 0.38, "cruiseFallS": 0.8 },
   "look": { "maxYawDeg": 55, "maxPitchDeg": 25, "degPerS": 120 },
   "ease": { "settleS": 0.3, "postureS": 1.2, "actInS": 0.4, "stepLiftM": 0.06 },
   "eyes": {
