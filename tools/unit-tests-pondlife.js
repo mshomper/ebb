@@ -80,9 +80,11 @@ export function addPondLifeTests(test, assert, eq) {
     // Fingerprints taken on main before the needs reader existed (seed 7, nine days from 10:00);
     // re-pinned October 21, 2026 when plants began to change stage on their own days (doc 10
     // phenology jitter: reeds and iris give shelter), with the same number of frogs and events.
+    // Re-pinned October 24, 2026 (P2b): water mint now arrives after iris and stands at the pond's
+    // edge within the nine days; the frogs' events are unchanged.
     const before = {
-      'starter-island': { eco: 253477865, frogs: 2615897245, events: 1585692829 },
-      'two-ponds': { eco: 2223650066, frogs: 455491042, events: 2368654099 },
+      'starter-island': { eco: 3533890342, frogs: 1092847199, events: 1585692829 },
+      'two-ponds': { eco: 2984250628, frogs: 558216916, events: 2368654099 },
     };
     const lines = [];
     for (const [island, want] of Object.entries(before)) {
