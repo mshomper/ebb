@@ -3,7 +3,8 @@
 // ready, the beachcomber's stop that gives it, and save format 7. The haul and the living catches
 // have their own groups below.
 
-import { cleanNets, emptyNets, ensureNets, canCast, cast, bringIn, netState, nextHighTide, readyHour, noteReleased, RELEASED_CAP, footChoice } from '../src/world/nets/model.js';
+import { cleanNets, emptyNets, ensureNets, canCast, cast, bringIn, netState, nextHighTide, readyHour, noteReleased, RELEASED_CAP, netSpot } from '../src/world/nets/model.js';
+import { tideParams, level as tideLevel } from '../src/world/tide.js';
 import { due, grant, keptFamily } from '../src/world/expansion.js';
 import { nets7 } from '../src/save/migrate-nets.js';
 import { migrate, FORMAT } from '../src/save/migrate.js';
@@ -42,15 +43,20 @@ export function addNetsTests(test, assert, eq) {
     eq(/** @type {any} */ (canCast({ ...at, depth: 0.4 }, RULE)).reason, 'deep', 'too deep to wade');
   });
 
-  test(G, 'on foot, Net sets your net in front of you, lifts it full when you stand by it, and moves it from afar', async () => {
-    const W = await fetch('../recipes/world/walker.json').then((r) => r.json());
-    const reach = W.ground.netReachM, me = { x: 10, z: 20 };
-    assert(W.ground.netAheadM > 0 && W.ground.netAheadM < reach, 'it goes down in front of you, within reach');
-    eq(footChoice(null, false, me, reach), 'set', 'in: set it in front of you');
-    eq(footChoice({ x: 11, z: 21 }, true, me, reach), 'lift', 'full and close by: lift it');
-    eq(footChoice({ x: 11, z: 21 }, false, me, reach), 'say', 'still fishing close by: say how long, never bring it in by accident');
-    eq(footChoice({ x: 10, z: 20 + reach + 0.5 }, true, me, reach), 'set', 'out further away: move it here (a full one refuses, as from above)');
-    eq(footChoice({ x: 10, z: 20 + reach }, false, me, reach), 'say', 'at the edge of reach counts as close');
+  test(G, 'on foot, the net ring is read at the tide now: the same sand inks at low water, and is too deep at high water', async () => {
+    const water = await fetch('../recipes/world/water.json').then((r) => r.json());
+    const tideP = tideParams(water.tide);
+    // A low water and the high after it.
+    let lowH = 0, highH = 0;
+    for (let h = 0; h < 30; h += 0.05) { if (tideLevel(h, tideP) < tideLevel(lowH, tideP)) lowH = h; }
+    highH = lowH;
+    for (let h = lowH; h < lowH + 8; h += 0.05) { if (tideLevel(h, tideP) > tideLevel(highH, tideP)) highH = h; }
+    const ground = tideLevel(lowH, tideP) + 0.05;
+    const spot = (/** @type {number} */ h) => ({ band: true, ground, depth: Math.max(0, tideLevel(h, tideP) - ground) });
+    assert(netSpot(spot(lowH), lowH, tideP, RULE, false).ok, 'bare wet sand at low water, which the coming tide covers: inked');
+    eq(/** @type {any} */ (netSpot(spot(highH), highH, tideP, RULE, false)).reason, 'deep', 'the same sand under the high water: too deep to wade');
+    eq(/** @type {any} */ (netSpot(spot(lowH), lowH, tideP, RULE, true)).reason, 'full', 'a full net stays where it is until it is lifted');
+    eq(/** @type {any} */ (netSpot({ band: false, ground: 2, depth: 0 }, lowH, tideP, RULE, false)).reason, 'dry', 'dry land above the tide band');
   });
 
   test(G, 'cast at low water, it fishes the next high water and is ready at the low after it, and waits', () => {

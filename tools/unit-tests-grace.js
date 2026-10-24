@@ -91,7 +91,7 @@ export function addGraceTests(test, assert, eq) {
 
   test(G, 'every species with a grace has words for each reason, and a note when it settles again', async () => {
     const words = await get('world/journal');
-    for (const [id, sp] of [['dragonfly', 'dragonflies'], ['damselfly', 'damselflies'], ['minnow', 'minnows']]) {
+    for (const [id, sp] of [['dragonfly', 'dragonflies'], ['damselfly', 'damselflies'], ['minnow', 'minnows'], ['turtle', 'turtles']]) {
       const rec = await get(`species/${id}`);
       assert(rec.ecology.arrival.leaveGraceDays > 0, `${id} has a grace`);
       const U = words.species[sp].uneasy;

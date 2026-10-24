@@ -1,8 +1,10 @@
 // @ts-check
-// The Plant tool (docs 10, 13): a tap plants a seed of the chosen species where the ground suits it,
-// or says why not; rings on the ground show where. Each seed gets a ring that blooms and fades, and
-// while the tool is open the player's plantings carry a soft ring until they are mature. The rings
-// are UI only: not saved and not part of the simulation (recipes/world/growth.json marks).
+// Planting (docs 10, 13): a seed of a species goes in where the ground suits it, or the words say
+// why not. Since D1a (Matt, October 24, 2026) all planting is the walker's: the Plant tool has left
+// the view from above, and the seed tin and the gift spot on foot (src/world/sowing) sow through
+// check() and tap() here. Each seed gets a ring that blooms and fades, and while a seed is in hand
+// the player's plantings carry a soft ring until they are mature. The rings are UI only: not saved
+// and not part of the simulation (recipes/world/growth.json marks).
 
 import { emitDeferred } from '../../core/events.js';
 import { get as getStore, update as updateStore } from '../../core/store.js';
@@ -116,7 +118,7 @@ const SAYS = {
 };
 
 /** @param {string} sp @param {string} name @param {string} outcome */
-function say(sp, name, outcome) {
+export function say(sp, name, outcome) {
   const s = SAYS[sp]?.[outcome] ?? SAYS.any[outcome] ?? SAYS.any.unknown;
   return s.replace('{name}', name);
 }
@@ -135,24 +137,41 @@ export function createPlantTool(opts) {
   /** The player's plantings, newest first, until they are mature or gone. @type {number[]} */
   let mine = [];
 
+  /** The words for an outcome: the camp's own on the pad. @param {string} sp @param {string} outcome */
+  const words = (sp, outcome) => (outcome === 'camp' ? opts.campWords?.clear ?? say(sp, flora[sp]?.name ?? sp, 'unknown') : say(sp, flora[sp]?.name ?? sp, outcome));
+
   return {
     /**
+     * Would a seed take at a ground point? Nothing changes (the sowing ring on foot, D1a: inked where
+     * it would grow, faint and crossed with these words where not).
+     * @param {string} sp @param {ArrayLike<number>} p world point (x, y, z)
+     * @returns {{ ok: boolean, reason: string, message: string }}
+     */
+    check(sp, p) {
+      // The camp ground stays clear (CP-16): the pad is refused before the ground is read. Cells
+      // just past its edge are refused by the habitat's clear mask with the same words.
+      const r = onPad(getStore('campPad') ?? null, p[0], p[2]) ? { ok: false, reason: 'camp' } : growth.check(sp, p[0], p[2]);
+      const reason = r.ok ? 'ok' : r.reason ?? 'unknown';
+      return { ok: r.ok, reason, message: words(sp, reason) };
+    },
+
+    /**
      * Plant a seed at a ground point. @param {string} sp @param {ArrayLike<number>} p  world point (x, y, z)
+     * @param {{ given?: boolean }} [o] given: the seed is in hand already (the seed tin or a gift,
+     *   src/world/sowing), so it needs no sighting first
      * @returns {boolean} whether a seed went in (the world state changed)
      */
-    tap(sp, p) {
+    tap(sp, p, o = {}) {
       const name = flora[sp]?.name ?? sp;
       // Only a plant the journal has seen on the island (volunteers.js), one given as a gift's seed
       // (world/expansion.js), or any with ?sandbox.
       const u = getStore('unlocks');
-      if (!u?.allPlants && !u?.seeds?.[sp] && !getStore('journal')?.species?.[sp]?.ever) {
+      if (!o.given && !u?.allPlants && !u?.seeds?.[sp] && !getStore('journal')?.species?.[sp]?.ever) {
         updateStore('plantUi', () => ({ message: say(sp, name, 'unseen'), refused: true, at: performance.now() }));
         return false;
       }
-      // The camp ground stays clear (CP-16): a tap on the pad is refused before the ground is read.
-      // Cells just past its edge are refused by the habitat's clear mask with the same words.
       const r = onPad(getStore('campPad') ?? null, p[0], p[2]) ? { ok: false, reason: 'camp', id: undefined } : growth.plant(sp, p[0], p[2]);
-      const message = r.reason === 'camp' ? opts.campWords?.clear ?? say(sp, name, 'unknown') : say(sp, name, r.ok ? 'ok' : r.reason ?? 'unknown');
+      const message = words(sp, r.ok ? 'ok' : r.reason ?? 'unknown');
       updateStore('plantUi', () => ({ message, refused: !r.ok, at: performance.now() }));
       if (!r.ok) {
         // The journal learns what the species needs from a refusal (src/world/journal); the camp

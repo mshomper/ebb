@@ -8,8 +8,8 @@
 // Gestures (walker gestures, part 3; October 24, 2026) are short tracks of the same keys in poses.gestures,
 // one for each thing the walker does by hand (gather, set down, take up, lift, feed the fire, the net,
 // getting up, I'm stuck, sow): they play over the walker's posture and never stop a walk or a tap, and a
-// key may also turn the head (yaw, degrees to the left). A gesture with no keys yet (sow, until Phase 2) is
-// a named hook: it plays nothing. Drawing only. Pure.
+// key may also turn the head (yaw, degrees to the left). A gesture with no keys is a named hook: it plays
+// nothing. Drawing only. Pure.
 
 import { smooth, lerp } from './kinematics.js';
 

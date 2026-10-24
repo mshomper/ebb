@@ -171,6 +171,24 @@
 .ebb-ground .icon { display: block; width: var(--wk-icon); height: var(--wk-icon); }
 .ebb-ground .ebb-walk__btn:hover { background: rgba(244, 238, 228, 0.1); }
 .ebb-ground .ebb-walk__btn[aria-pressed='true'] { background: var(--wordmark-light); }
+/* An empty gift spot rests dimmed (D1a); its word says gifts come here. */
+.ebb-ground .ebb-walk__btn.is-empty { opacity: 0.5; }
+/* The seed tin's and the gift spot's menus (D1a, src/ui/walk.js): a small row of drawn icons over
+   their own button, the same glass as the bar. */
+.ebb-ground__menu {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  display: flex;
+  gap: 4px;
+  padding: 6px;
+  background: rgba(30, 38, 36, 0.86);
+  border: 1px solid rgba(244, 238, 228, 0.12);
+  border-radius: 16px;
+  box-shadow: 0 6px 24px rgba(10, 14, 13, 0.28);
+}
+.ebb-ground__menu[hidden] { display: none; }
+/* While a seed, a gift or the net is in hand, the island takes a crosshair (src/world/sowing). */
+body.ebb-in-hand canvas { cursor: crosshair; }
 /* Icons only (F17, Matt, October 23, 2026): the word shows above a button on hover, as on cards. */
 .ebb-ground .ebb-walk__name,
 .ebb-here .ebb-walk__name { display: none; }

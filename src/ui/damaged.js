@@ -15,6 +15,12 @@ import { checkIslandFile, openIslandFile, saveDamagedCopy } from '../save/backup
  * @param {any} save the save session
  */
 export async function noticeRecovered(save) {
+  // An island from before planting on foot was kept aside, and this one is new (D1a).
+  if (save?.setAside) {
+    const W = (await loadRecipe('world/save')).recovered;
+    emit('island:notice', { text: W.setAside, showS: W.setAsideS ?? W.showS });
+    return;
+  }
   const r = save?.restoredFrom;
   if (!r || r.from === 'current') return;
   const W = (await loadRecipe('world/save')).recovered;

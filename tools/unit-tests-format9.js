@@ -18,7 +18,7 @@ const parts = (more = {}) => /** @type {any} */ ({ build: 't', seed: 1, island: 
  */
 export function addFormat9Tests(test, assert, eq) {
   test(G, 'one step from 8 to 9 adds camp, pack, gather, dig, cook and dyes, empty', () => {
-    eq(FORMAT, 9, 'this build writes format 9');
+    assert(FORMAT >= 9, 'this build writes format 9 or later (10 since planting on foot, tools/unit-tests-sowing.js)');
     eq(SECTIONS9.join(), 'camp,pack,gather,dig,cook,dyes', 'the six sections of section 12.1');
     eq(MIGRATIONS.filter((m) => m.from === 8 && m.to === 9).length, 1, 'one step');
     const old = { meta: { worldT: 5 }, unlocks: { shells: true }, nets: { version: 1, nets: [], released: [], nextId: 1 } };

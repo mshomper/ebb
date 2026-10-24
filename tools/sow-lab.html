@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ebb sowing lab</title>
+<link rel="icon" href="../brand/ebb-favicon.svg" type="image/svg+xml">
+<style>
+  @font-face { font-family: 'Nunito'; src: url('../src/vendor/fonts/nunito-latin-600-normal.woff2') format('woff2'); font-weight: 600; }
+  @font-face { font-family: 'Nunito'; src: url('../src/vendor/fonts/nunito-latin-800-normal.woff2') format('woff2'); font-weight: 800; }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; max-width: 100%; overflow-x: hidden; }
+  body { background: #F4EEE4; color: #1E2624; font: 600 17px/1.45 'Nunito', system-ui, sans-serif; padding: 16px; }
+  main { max-width: 1100px; margin: 0 auto; display: flex; flex-direction: column; gap: 14px; }
+  h1 { font-size: 24px; font-weight: 800; margin: 0; }
+  h2 { font-size: 19px; font-weight: 800; margin: 10px 0 0; }
+  .muted { color: #4A5551; font-size: 16px; margin: 0; }
+  svg { width: 100%; height: auto; display: block; background: #FBF7F0; border-radius: 10px; }
+  table { border-collapse: collapse; font-size: 16px; width: 100%; }
+  th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid #DCCFBD; }
+  a { color: #4a6a47; }
+</style>
+</head>
+<body>
+<main>
+  <h1>ebb sowing lab</h1>
+  <p class="muted">Planting on foot (D1a): how a seed flies from the walker's hand to where you click, side on, at several distances, with the numbers from recipes/world/sowing.json toss. Within the near reach it is a short drop; further out, an arc that tops out over the middle. Edit the recipe and reload to tune. <a href="./">All tools</a></p>
+  <svg id="side" viewBox="0 0 1000 300" role="img" aria-label="Side view of the toss arcs"></svg>
+  <h2>Each toss</h2>
+  <table id="rows"><thead><tr><th>Distance</th><th>Kind</th><th>Top over the line</th><th>Flight</th></tr></thead><tbody></tbody></table>
+</main>
+<script type="module">
+  import { tossPlan, tossAt } from '../src/world/sowing/model.js';
+  const R = await fetch('../recipes/world/sowing.json').then((r) => r.json());
+  const T = R.toss;
+  const svg = document.getElementById('side');
+  const D = [0.8, 1.6, 2.5, 4, 7, 11, 16, 24];
+  const maxD = 25, sx = (x) => 40 + (x / maxD) * 930, sy = (y) => 260 - y * 55;
+  let out = `<line x1="20" y1="${sy(0)}" x2="990" y2="${sy(0)}" stroke="#7D6352" stroke-width="2"/>`;
+  out += `<line x1="${sx(T.nearM)}" y1="${sy(0) - 6}" x2="${sx(T.nearM)}" y2="${sy(0) + 14}" stroke="#7D6352" stroke-width="2"/><text x="${sx(T.nearM)}" y="${sy(0) + 32}" text-anchor="middle" font-size="16" fill="#4A5551">${T.nearM} m</text>`;
+  out += `<circle cx="${sx(0)}" cy="${sy(T.handM)}" r="6" fill="#2E3A36"/><line x1="${sx(0)}" y1="${sy(0)}" x2="${sx(0)}" y2="${sy(T.handM)}" stroke="#2E3A36" stroke-width="4"/>`;
+  const rows = [];
+  for (const d of D) {
+    const from = [0, T.handM, 0], to = [d, 0, 0], p = tossPlan(from, to, T);
+    let path = '';
+    for (let i = 0; i <= 40; i++) { const q = tossAt(from, to, p, i / 40); path += `${i ? 'L' : 'M'}${sx(q[0]).toFixed(1)} ${sy(q[1]).toFixed(1)}`; }
+    out += `<path d="${path}" fill="none" stroke="${p.near ? '#5F7F5B' : '#5F8196'}" stroke-width="2.5" stroke-dasharray="3 6" stroke-linecap="round"/>`;
+    out += `<ellipse cx="${sx(d)}" cy="${sy(0)}" rx="10" ry="3" fill="none" stroke="${p.near ? '#5F7F5B' : '#5F8196'}" stroke-width="2"/>`;
+    rows.push(`<tr><td>${d} m</td><td>${p.near ? 'close drop' : 'arc'}</td><td>${p.riseM.toFixed(2)} m</td><td>${p.s.toFixed(2)} s</td></tr>`);
+  }
+  svg.innerHTML = out;
+  document.querySelector('#rows tbody').innerHTML = rows.join('');
+</script>
+</body>
+</html>

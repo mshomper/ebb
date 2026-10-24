@@ -90,7 +90,8 @@ startApp(canvas, { onDeviceLost: (rebuilding) => showRebuildingNote(rebuilding),
       mountLook(hud.layer, r.palette.list());
       // Go down and Go up (doc 23, the walker): the edge button between the view above and you on foot.
       const walkerR = await loadRecipe('world/walker');
-      mountWalk(hud.layer, walkerR.words);
+      // The seed tin and the gift spot ride on its ground bar (D1a, recipes/world/sowing.json).
+      mountWalk(hud.layer, walkerR.words, await loadRecipe('world/sowing'));
       // Below, over something a click can use: a drawn hand, and once the pointer rests, its name over it.
       mountHoverTag(walkerR.click);
       // The pouch row in the ground bar, and the "here" bar beside it (docs/future/13 section 4.1).

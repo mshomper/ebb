@@ -176,7 +176,7 @@ export function addFigureTests(test, assert, eq) {
     return `eyes lead by ${headFirst - eyeFirst} frames, top speed ${(fastest / D).toFixed(0)} degrees a second`;
   });
 
-  test(FIG, 'each gesture plays over the posture and ends back at rest, feet planted, every bone finite; sow is a hook that plays nothing; a walk fades one; getting up plays rise', async () => {
+  test(FIG, 'each gesture plays over the posture and ends back at rest, feet planted, every bone finite; sow is one quick flick; a walk fades one; getting up plays rise', async () => {
     const { R, built } = await load();
     const k = R.body.displayScale ?? 1, dt = 1 / 60, D = R.poses.gestures;
     const feet = ['foot.l', 'foot.r'].map((n) => built.skeleton.findIndex((/** @type {any} */ b) => b.name === n));
@@ -211,8 +211,9 @@ export function addFigureTests(test, assert, eq) {
       assert(off < 0.02, `${name}: ${off.toFixed(3)} off rest afterwards`);
       report.push(`${name} ${len} s`);
     }
-    // sow: a named hook with no keys yet.
-    assert(names.includes('sow') && createFigureMotion(R, built.skeleton).gesture('sow') === 0, 'sow plays nothing until Phase 2 gives it keys');
+    // sow (D1a): one quick flick, under a second, so a click after click never queues up.
+    const sowS = createFigureMotion(R, built.skeleton).gesture('sow');
+    assert(sowS > 0.5 && sowS < 1, `sow is one quick flick (${sowS} s)`);
     eq(createFigureMotion(R, built.skeleton).gesture('cartwheel'), 0, 'an unknown gesture plays nothing');
     // A walk fades a gesture out over ease.gestureFadeS, never cutting it.
     const w = createFigureMotion(R, built.skeleton);
