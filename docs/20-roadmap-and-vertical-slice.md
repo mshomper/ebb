@@ -98,7 +98,7 @@ Decided October 24, 2026 (Matt). A short groundwork step comes first: the rest o
 | 1 | P2a plant rules, P2b the four tea herbs |
 | 2 | P2c cord, shovel and digging, P2i fire products |
 | 3 | The workbench and apothecary bench makes with P2j the camp store; then P2d clay and the three pots, with the star fire |
-| 4 | P2e teas, P2h treats and trust |
+| 4 | P2e teas, P2h treats and trust, P2k the forager's trail (a fourth trail, added October 24, 2026; doc 13) |
 | 5 | P2g planting from below (after D1), P2f the satchel and basket |
 
 **The camp store (P2j)**, added October 24, 2026 (Matt): a simple store at camp with 6 slots, made larger to 12, linked to the workbench, the apothecary bench and the fire, which draw from it. Its material and how it grows are proposed separately for Matt's pick.
