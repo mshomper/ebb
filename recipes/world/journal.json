@@ -11,7 +11,7 @@
   "arrivedHours": 2,
   "quietStartHours": 36,
   "_quietStartHours": "A place already right for an animal within this many hours of the island's start (its first evening and night) is recorded silently, not noted (Phase 1 fix F3).",
-  "plantableNote": "plantable: the line written under the first sighting of a plant that came by itself (src/world/growth/volunteers.js), since the Plant tool offers it from then on; {name} is its name.",
+  "plantableNote": "plantable: the line written under the first sighting of a plant that came by itself (src/world/growth/volunteers.js), since the Plant tool offers it from then on; {name} is its name. A page with plantable false (the gather plants, never in the Plant tool) gets no such line.",
   "plantable": "{name} came to the island by itself. You can plant it now.",
   "islandNote": { "showS": 6, "showMeS": 14, "showMeKinds": ["sign", "signAgain", "back", "settled", "settledUnseen", "joined", "joinedUnseen", "uneasy"], "gapS": 1.2, "queue": 3, "more": "{n} more in the journal", "moreOne": "1 more in the journal" },
   "readMarks": { "missed": "You may have missed", "rest": "All notes" },
@@ -604,7 +604,7 @@
       }
     },
     "watermint": {
-      "name": "Water mint", "icon": "watermint", "plural": "water mint clumps",
+      "name": "Water mint", "icon": "watermint", "plural": "water mint clumps", "plantable": false,
       "field": [
         { "text": "Crushed, a leaf smells strongly of mint. The stem is square, as every mint's is.", "learn": ["seen"] },
         { "text": "Its lilac flowers come late in summer, packed into a round head at the top of the stem.", "learn": ["flower"] },
@@ -650,7 +650,7 @@
       }
     },
     "meadowsweet": {
-      "name": "Meadowsweet", "icon": "meadowsweet", "plural": "meadowsweet stands",
+      "name": "Meadowsweet", "icon": "meadowsweet", "plural": "meadowsweet stands", "plantable": false,
       "field": [
         { "text": "Its stems are tall and reddish, and its leaves come as pairs of toothed leaflets.", "learn": ["seen"] },
         { "text": "In high summer it carries frothy cream heads that smell of honey and almonds.", "learn": ["flower"] },
@@ -695,7 +695,7 @@
       }
     },
     "nettle": {
-      "name": "Nettle", "icon": "nettle", "plural": "nettle patches",
+      "name": "Nettle", "icon": "nettle", "plural": "nettle patches", "plantable": false,
       "field": [
         { "text": "Nettles follow people. They come up where ash and scraps enrich the ground, close by a fire.", "learn": ["seen"] },
         { "text": "Fine hairs on its leaves and stems sting at a touch. Pick the young tops carefully, from below.", "learn": ["seen"] },
@@ -740,7 +740,7 @@
       }
     },
     "chamomile": {
-      "name": "Chamomile", "icon": "chamomile", "plural": "chamomile mats",
+      "name": "Chamomile", "icon": "chamomile", "plural": "chamomile mats", "plantable": false,
       "field": [
         { "text": "Brush it with your hand and it smells of apples. Its leaves are fine and feathery.", "learn": ["seen"] },
         { "text": "Each flower is a white daisy round a domed gold heart.", "learn": ["flower"] },

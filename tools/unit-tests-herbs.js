@@ -7,6 +7,7 @@
 import { initialWorldState, makeEnv, runHour, hashWorldState } from '../src/sim/tick.js';
 import { HABITAT_CELLS, HABITAT_ORIGIN } from '../src/world/growth/habitat.js';
 import { suitability, plantSeed, settleGrowth } from '../src/world/growth/coarse.js';
+import { volunteerAt } from '../src/world/growth/volunteers.js';
 import { loadRecipes } from './unit-tests-growth.js';
 import { partsOf, pickable, pick } from '../src/world/gather/plants.js';
 import { makeKinds } from '../src/world/pack/kinds.js';
@@ -90,14 +91,49 @@ export function addHerbTests(test, assert, eq) {
     return lines.join('; ');
   });
 
-  test(HERBS, 'the herbs are gather plants: they creep, never jump, have caps, rest in winter, are not in the Plant tool and do not arrive by themselves yet', async () => {
-    const { flora, growth } = await loadRecipes();
+  test(HERBS, 'arrivals: mint comes after iris, chamomile after marigold, meadowsweet and nettle last; nettle waits for 3 lit days and lands within 4 m of the ring', async () => {
+    const recipes = await loadRecipes();
+    const O = recipes.growth.volunteers.order;
+    eq(O[O.indexOf('iris') + 1], 'watermint', 'after iris');
+    eq(O[O.indexOf('marigold') + 1], 'chamomile', 'after marigold');
+    eq(O.slice(-2).join(), 'meadowsweet,nettle', 'last two');
+    const C = recipes.flora.nettle.volunteer.cause;
+    eq(JSON.stringify(C), JSON.stringify({ kind: 'fire', reachM: 4, days: 3 }), 'nettle cause');
+    // Everything else has come already; only nettle waits. Nettle ground everywhere, a fire in the middle.
+    const hab = /** @type {any} */ (uniform(HERB_GROUND.nettle.home));
+    const env = { ...makeEnv(13, recipes), habitat: () => hab };
+    const arrived = Object.fromEntries(O.filter((/** @type {string} */ sp) => sp !== 'nettle').map((/** @type {string} */ sp) => [sp, 0]));
+    const g = { arrived, since: 0 };
+    const suit = (/** @type {any} */ rec, /** @type {number} */ k) => suitability(rec, hab, HABITAT_ORIGIN + (k % hab.n) + 0.5, HABITAT_ORIGIN + Math.floor(k / hab.n) + 0.5).suit;
+    /** Hours of a summer's first week on which a volunteer lands, with the fire lit on `days` days. @param {number} days */
+    const landings = (days) => {
+      hab.fire = { x: CENTER, z: CENTER, days };
+      /** @type {number[]} */ const out = [];
+      for (let h = HOURS_PER_SEASON + 30; h < HOURS_PER_SEASON + 30 + 24 * 30; h++) {
+        const v = volunteerAt(g, hab, env, h, suit, () => false);
+        if (v) { eq(v.sp, 'nettle', 'the only one waiting'); out.push(v.k); }
+      }
+      return out;
+    };
+    eq(landings(2).length, 0, 'landings with the fire lit on 2 days');
+    const ks = landings(3);
+    assert(ks.length > 0, 'nettle lands once the fire has been lit on 3 days');
+    for (const k of ks) {
+      const d = Math.hypot(HABITAT_ORIGIN + (k % hab.n) + 0.5 - CENTER, HABITAT_ORIGIN + Math.floor(k / hab.n) + 0.5 - CENTER);
+      assert(d <= 4, `a nettle landed ${d.toFixed(2)} m from the ring`);
+    }
+    return `order ${O.join(', ')}; nettle could land in ${ks.length} hours over 30 days, all within 4 m`;
+  });
+
+  test(HERBS, 'the herbs are gather plants: they creep, never jump, have caps, rest in winter, and are not in the Plant tool', async () => {
+    const [{ flora, growth }, words] = await Promise.all([loadRecipes(), getJson('world/journal')]);
     /** @type {Record<string, number>} */ const caps = { watermint: 20, meadowsweet: 14, nettle: 16, chamomile: 20 };
     for (const sp of IDS) {
       const r = flora[sp];
       assert(growth.species.includes(sp), `${sp} in growth.json species`);
       assert(!growth.starters.includes(sp), `${sp} is no starter`);
       assert(r.tags.includes('gather') && r.tags.includes('tea'), `${sp} tagged gather and tea`);
+      eq(words.species[sp].plantable, false, `${sp}'s page writes no "you can plant it now"`);
       eq(r.plantTool, false, `${sp} plantTool`);
       eq(r.spread.kind, 'rhizome', `${sp} spreads by`);
       assert(r.spread.distanceM[0] > r.spread.minSpacingM, `${sp}: a creep step must clear the spacing`);

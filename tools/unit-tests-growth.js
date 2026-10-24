@@ -72,6 +72,13 @@ export function loadRecipes() {
 }
 
 /**
+ * A list of species without the tea herbs (growth.json testSets.herbs): the order tests here are
+ * about the plants before them, which keep their order; the herbs' places are tested in
+ * unit-tests-herbs.js. @param {any} growth @param {string[]} list
+ */
+const older = (growth, list) => list.filter((sp) => !(growth.testSets?.herbs ?? []).includes(sp));
+
+/**
  * The recipes with one more starter species (growth.json starters), for tests of a starting cover
  * or a basin's own starters. @param {any} recipes @param {string} sp
  */
@@ -202,7 +209,8 @@ export function addGrowthTests(test, assert, eq) {
     for (let i = 1; i < hours.length; i++) assert(hours[i] - hours[i - 1] >= V.gapH, `two came ${hours[i] - hours[i - 1]} hours apart`);
     // In the recipe's order (this made-up shore has ground for every one of them).
     const order = a.came.map((c) => c.split('@')[0]);
-    eq(order.join(), V.order.slice(0, order.length).join(), 'arrival order');
+    const kept = older(recipes.growth, order);
+    eq(kept.join(), older(recipes.growth, V.order).slice(0, kept.length).join(), 'arrival order');
     for (const sp of order) assert(sp in a.s.growth.arrived, `${sp} recorded as arrived`);
     return `arrivals ${a.came.map((c) => c.replace(/@(\d+)/, (_, h) => ` at ${Number(h) - 10} h`)).join(', ')}`;
   });
@@ -384,7 +392,8 @@ export function addGrowthTests(test, assert, eq) {
   test(GROWTH, 'grey willow arrives by itself after marsh marigold, on a bank that suits it, the same way twice', async () => {
     const recipes = await loadRecipes();
     const V = recipes.growth.volunteers;
-    eq(V.order.indexOf('willow'), V.order.indexOf('marigold') + 1, 'willow follows marigold in volunteers.order');
+    const O = older(recipes.growth, V.order);
+    eq(O.indexOf('willow'), O.indexOf('marigold') + 1, 'willow follows marigold in volunteers.order');
     const hab = shoreline();
     const env = { ...makeEnv(9, recipes), habitat: () => hab };
     const start = settleGrowth(initialWorldState(9), env);
@@ -501,8 +510,9 @@ export function addGrowthTests(test, assert, eq) {
   test(GROWTH, 'gorse arrives by itself after sea campion, on dry ground, the same way twice', async () => {
     const recipes = await loadRecipes();
     const V = recipes.growth.volunteers;
-    eq(V.order.indexOf('gorse'), V.order.indexOf('campion') + 1, 'gorse follows campion in volunteers.order');
-    eq(V.order[V.order.length - 1], 'gorse', 'gorse is the last volunteer');
+    const O = older(recipes.growth, V.order);
+    eq(O.indexOf('gorse'), O.indexOf('campion') + 1, 'gorse follows campion in volunteers.order');
+    eq(O[O.length - 1], 'gorse', 'gorse is the last volunteer before the tea herbs');
     const hab = shoreline();
     const env = { ...makeEnv(9, recipes), habitat: () => hab };
     const start = settleGrowth(initialWorldState(9), env);
@@ -521,7 +531,7 @@ export function addGrowthTests(test, assert, eq) {
     eq(hashWorldState(a.s), hashWorldState(b.s), 'world hash of two runs');
     const g = a.came.find((c) => c.sp === 'gorse');
     assert(g, `no gorse in 1200 hours: ${a.came.map((c) => c.sp).join(', ')}`);
-    eq(a.came.map((c) => c.sp).join(), V.order.join(), 'arrival order');
+    eq(older(recipes.growth, a.came.map((c) => c.sp)).join(), O.join(), 'arrival order');
     eq(zoneOf(g.x), 'dry', 'the gorse landed on');
     // It comes only in summer (gorse.json volunteer.seasons), so the year has a new plant then.
     eq(Math.floor(g.h / (14 * 24)) % 4, 1, 'the season gorse came in (0 spring, 1 summer)');
