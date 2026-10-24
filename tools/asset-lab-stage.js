@@ -46,19 +46,21 @@ fn envBrdf(f0: vec3f, rough: f32, nv: f32) -> vec3f {
   return f0 * ab.x + ab.y;
 }
 
-struct VOut { @builtin(position) pos: vec4f, @location(0) world: vec3f, @location(1) n: vec3f, @location(2) uv: vec2f };
+struct VOut { @builtin(position) pos: vec4f, @location(0) world: vec3f, @location(1) n: vec3f, @location(2) uv: vec2f, @location(3) col: vec3f };
 
-@vertex fn vsModel(@location(0) p: vec3f, @location(1) n: vec3f, @location(2) uv: vec2f) -> VOut {
+@vertex fn vsModel(@location(0) p: vec3f, @location(1) n: vec3f, @location(2) uv: vec2f, @location(3) col: vec3f) -> VOut {
   var o: VOut;
   o.pos = u.viewProj * vec4f(p, 1.0);
   o.world = p;
   o.n = n;
   o.uv = uv;
+  o.col = col;
   return o;
 }
 
 @fragment fn fsModel(i: VOut, @builtin(front_facing) front: bool) -> @location(0) vec4f {
-  let base = textureSample(baseTex, samp, i.uv) * m.base;
+  // Vertex colours (linear) multiply the colour map: white where a model has none.
+  let base = textureSample(baseTex, samp, i.uv) * m.base * vec4f(i.col, 1.0);
   let mr = textureSample(mrTex, samp, i.uv);
   let nt = textureSample(nTex, samp, i.uv).xyz * 2.0 - 1.0;
   let dp1 = dpdx(i.world); let dp2 = dpdy(i.world);
@@ -184,6 +186,7 @@ function makeStage(device, canvases) {
       { arrayStride: 12, attributes: [{ shaderLocation: 0, offset: 0, format: 'float32x3' }] },
       { arrayStride: 12, attributes: [{ shaderLocation: 1, offset: 0, format: 'float32x3' }] },
       { arrayStride: 8, attributes: [{ shaderLocation: 2, offset: 0, format: 'float32x2' }] },
+      { arrayStride: 12, attributes: [{ shaderLocation: 3, offset: 0, format: 'float32x3' }] },
     ] },
     fragment: { module, entryPoint: 'fsModel', targets: [{ format }] },
     primitive: { topology: 'triangle-list', cullMode: 'none' }, depthStencil, multisample,
@@ -212,6 +215,7 @@ function makeStage(device, canvases) {
       canvas, context, ubuf, bind: device.createBindGroup({ layout: g0, entries: [{ binding: 0, resource: { buffer: ubuf } }] }),
       /** @type {GPUTexture | null} */ depth: null, /** @type {GPUTexture | null} */ color: null,
       /** @type {null | { buffers: GPUBuffer[], textures: GPUTexture[], bind: GPUBindGroup, count: number }} */ model: null,
+      /** This view's own framing, or null for the shared one. @type {null | { radius: number, target: number[], footprint: { min: number[], max: number[] } }} */ fr: null,
     };
   });
 
@@ -268,7 +272,8 @@ function makeStage(device, canvases) {
     }
     const f = mesh.factors;
     const mbuf = buf(new Float32Array([...f.base, f.metal, f.rough, f.normalScale, bitmaps.normal ? 1 : 0]), GPUBufferUsage.UNIFORM);
-    const buffers = [buf(mesh.positions, GPUBufferUsage.VERTEX), buf(mesh.normals, GPUBufferUsage.VERTEX), buf(mesh.uvs, GPUBufferUsage.VERTEX), buf(mesh.indices, GPUBufferUsage.INDEX), mbuf];
+    const buffers = [buf(mesh.positions, GPUBufferUsage.VERTEX), buf(mesh.normals, GPUBufferUsage.VERTEX), buf(mesh.uvs, GPUBufferUsage.VERTEX), buf(mesh.indices, GPUBufferUsage.INDEX), mbuf,
+      buf(mesh.colors, GPUBufferUsage.VERTEX)];
     const bind = device.createBindGroup({ layout: g1, entries: [
       { binding: 0, resource: { buffer: mbuf } }, { binding: 1, resource: sampler },
       { binding: 2, resource: tex.baseColor.createView() }, { binding: 3, resource: tex.metallicRoughness.createView() }, { binding: 4, resource: tex.normal.createView() },
@@ -277,31 +282,36 @@ function makeStage(device, canvases) {
     view.model = { buffers, textures, bind, count: mesh.indices.length };
   }
 
-  /** Frame both views on these bounds (the copy's). @param {{ min: number[], max: number[] }} b */
-  function frameOn(b) {
+  /**
+   * Frame both views on these bounds (the copy's), or only one view (side: a piece beside the
+   * walker on the left). Both keep turning together. @param {{ min: number[], max: number[] }} b @param {number} [side]
+   */
+  function frameOn(b, side) {
     const size = [b.max[0] - b.min[0], b.max[1] - b.min[1], b.max[2] - b.min[2]];
-    cam.radius = 0.5 * Math.hypot(...size);
-    cam.target = [(b.min[0] + b.max[0]) / 2, b.max[1] * 0.42, (b.min[2] + b.max[2]) / 2];
-    cam.footprint = b;
+    // Tall, thin things (a walking stick, a hanging knife) need room above the target too.
+    const fr = { radius: Math.max(0.5 * Math.hypot(...size), b.max[1] * 0.62), target: [(b.min[0] + b.max[0]) / 2, b.max[1] * 0.42, (b.min[2] + b.max[2]) / 2], footprint: b };
+    if (side !== undefined) { views[side].fr = fr; return; }
+    Object.assign(cam, fr);
     cam.zoom = 1;
+    for (const v of views) v.fr = null;
   }
 
   /** Draw both views. */
   function draw() {
     const fov = 35 * Math.PI / 180;
-    const fp = cam.footprint;
-    const half = [(fp.max[0] - fp.min[0]) / 2, (fp.max[2] - fp.min[2]) / 2];
-    const big = Math.max(half[0], half[1], (fp.max[1] - fp.min[1]) / 2);
-    const aStart = fp.max[2] + big * 0.12 + 0.02, aLen = Math.max(0.12, big * 0.7);
-    const discR = Math.max(cam.radius * 2.0, aStart + aLen + big * 0.4);
     const L = light;
     const sd = L.sunDir, sl = Math.hypot(sd[0], sd[1], sd[2]);
     const sx = sd[0] / sl, sy = sd[1] / sl, sz = sd[2] / sl;
-    const lift = (fp.max[1] - fp.min[1]) * 0.3 / Math.max(sy, 0.35);
     const encoder = device.createCommandEncoder();
     for (const view of views) {
       const { canvas } = view;
       if (!view.model || canvas.clientWidth === 0) continue;
+      const F = view.fr ?? cam, fp = F.footprint;
+      const half = [(fp.max[0] - fp.min[0]) / 2, (fp.max[2] - fp.min[2]) / 2];
+      const big = Math.max(half[0], half[1], (fp.max[1] - fp.min[1]) / 2);
+      const aStart = fp.max[2] + big * 0.12 + 0.02, aLen = Math.max(0.12, big * 0.7);
+      const discR = Math.max(F.radius * 2.0, aStart + aLen + big * 0.4);
+      const lift = (fp.max[1] - fp.min[1]) * 0.3 / Math.max(sy, 0.35);
       const dpr = Math.min(2, devicePixelRatio || 1);
       const w = Math.max(1, Math.round(canvas.clientWidth * dpr)), h = Math.max(1, Math.round(canvas.clientHeight * dpr));
       if (canvas.width !== w || canvas.height !== h || !view.depth) {
@@ -312,11 +322,11 @@ function makeStage(device, canvases) {
       }
       const aspect = w / h;
       const fit = Math.min(1, aspect);  // narrow views back off so the model still fits across
-      const dist = cam.radius / Math.sin(fov / 2) * 1.08 / fit * cam.zoom;
+      const dist = F.radius / Math.sin(fov / 2) * 1.08 / fit * cam.zoom;
       const cp = Math.cos(cam.pitch);
-      const eye = [cam.target[0] + dist * Math.sin(cam.yaw) * cp, cam.target[1] + dist * Math.sin(cam.pitch), cam.target[2] + dist * Math.cos(cam.yaw) * cp];
+      const eye = [F.target[0] + dist * Math.sin(cam.yaw) * cp, F.target[1] + dist * Math.sin(cam.pitch), F.target[2] + dist * Math.cos(cam.yaw) * cp];
       const proj = mat4.perspective(fov, aspect, dist * 0.02, dist * 20);
-      const vp = mat4.multiply(proj, mat4.lookAt(eye, cam.target, [0, 1, 0]));
+      const vp = mat4.multiply(proj, mat4.lookAt(eye, F.target, [0, 1, 0]));
       const u = new Float32Array(16 + 8 * 4);
       u.set(vp, 0);
       u.set([...eye, L.exposure], 16);
@@ -338,8 +348,8 @@ function makeStage(device, canvases) {
       pass.draw(6);
       pass.setPipeline(modelPipe);
       pass.setBindGroup(1, view.model.bind);
-      const [p, n, t, i] = view.model.buffers;
-      pass.setVertexBuffer(0, p); pass.setVertexBuffer(1, n); pass.setVertexBuffer(2, t);
+      const [p, n, t, i, , col] = view.model.buffers;
+      pass.setVertexBuffer(0, p); pass.setVertexBuffer(1, n); pass.setVertexBuffer(2, t); pass.setVertexBuffer(3, col);
       pass.setIndexBuffer(i, 'uint32');
       pass.drawIndexed(view.model.count);
       pass.end();

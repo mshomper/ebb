@@ -11,6 +11,7 @@ import { readGlb, materialMaps } from '../src/render/gltf.js';
  * @property {Float32Array} positions
  * @property {Float32Array} normals
  * @property {Float32Array} uvs
+ * @property {Float32Array} colors   linear rgb a vertex (COLOR_0, or white where it has none)
  * @property {Uint32Array} indices
  * @property {number} triangles
  * @property {{ min: number[], max: number[] }} bounds
@@ -66,7 +67,7 @@ export function readModel(buffer, place) {
   if (!parts.length) throw new Error('no triangle mesh in this file');
 
   // Bake each part's world transform (normals by the cofactor matrix, which keeps them square to the surface).
-  /** @type {number[][]} */ const P = [], N = [], T = [], I = [];
+  /** @type {number[][]} */ const P = [], N = [], T = [], I = [], C = [];
   let base = 0, nVerts = 0;
   for (const { m, prim } of parts) {
     if (prim.attributes.NORMAL === undefined) throw new Error('a mesh has no normals');
@@ -74,6 +75,14 @@ export function readModel(buffer, place) {
     const uv = prim.attributes.TEXCOORD_0 !== undefined ? glb.accessor(prim.attributes.TEXCOORD_0) : new Float32Array(pos.length / 3 * 2);
     const count = pos.length / 3;
     const idx = prim.indices !== undefined ? glb.accessor(prim.indices) : Uint32Array.from({ length: count }, (_, i) => i);
+    // Vertex colours (a model painted in COLOR_0: the single log and stone, the pieces made in code),
+    // 3 or 4 numbers a vertex, as floats or normalized integers; white where there are none.
+    const col = new Float32Array(count * 3).fill(1);
+    if (prim.attributes.COLOR_0 !== undefined) {
+      const raw = glb.accessor(prim.attributes.COLOR_0), k = raw.length / count;
+      const scale = raw instanceof Uint8Array ? 255 : raw instanceof Uint16Array ? 65535 : 1;
+      for (let v = 0; v < count; v++) for (let q = 0; q < 3; q++) col[v * 3 + q] = raw[v * k + q] / scale;
+    }
     const c = [ // cofactor of the upper 3 x 3, column-major
       m[5] * m[10] - m[6] * m[9], m[6] * m[8] - m[4] * m[10], m[4] * m[9] - m[5] * m[8],
       m[2] * m[9] - m[1] * m[10], m[0] * m[10] - m[2] * m[8], m[1] * m[8] - m[0] * m[9],
@@ -92,7 +101,7 @@ export function readModel(buffer, place) {
     }
     const o = new Uint32Array(idx.length);
     for (let k = 0; k < idx.length; k++) o[k] = idx[k] + base;
-    P.push(/** @type {any} */ (p)); N.push(/** @type {any} */ (n)); T.push(/** @type {any} */ (uv)); I.push(/** @type {any} */ (o));
+    P.push(/** @type {any} */ (p)); N.push(/** @type {any} */ (n)); T.push(/** @type {any} */ (uv)); I.push(/** @type {any} */ (o)); C.push(/** @type {any} */ (col));
     base += count; nVerts += count;
   }
   const join = (/** @type {any[]} */ list, /** @type {any} */ Type) => {
@@ -101,7 +110,7 @@ export function readModel(buffer, place) {
     for (const a of list) { out.set(a, at); at += a.length; }
     return out;
   };
-  const positions = join(P, Float32Array), normals = join(N, Float32Array), uvs = join(T, Float32Array);
+  const positions = join(P, Float32Array), normals = join(N, Float32Array), uvs = join(T, Float32Array), colors = join(C, Float32Array);
   const indices = join(I, Uint32Array);
 
   // Turn about +y by yawDeg (the build script's matrix), then scale and set the base center at the origin.
@@ -129,12 +138,37 @@ export function readModel(buffer, place) {
   const mat = json.materials?.[matIndex] ?? {};
   const pbr = mat.pbrMetallicRoughness ?? {};
   return {
-    positions, normals, uvs, indices, triangles: indices.length / 3, bounds,
+    positions, normals, uvs, colors, indices, triangles: indices.length / 3, bounds,
     maps: materialMaps(glb, matIndex),
     factors: {
       base: pbr.baseColorFactor ?? [1, 1, 1, 1], metal: pbr.metallicFactor ?? 1, rough: pbr.roughnessFactor ?? 1,
       normalScale: mat.normalTexture?.scale ?? 1,
     },
+  };
+}
+
+/**
+ * Two placed models side by side on the ground, for scale: `a` (the walker) moved to the left of
+ * `b` (a piece) with a gap between them, as one mesh. Maps are dropped: both are painted in vertex
+ * colours. `b` stays where it is.
+ * @param {Placed} a @param {Placed} b @param {number} gap meters
+ * @returns {Placed}
+ */
+export function beside(a, b, gap) {
+  const dx = b.bounds.min[0] - gap - a.bounds.max[0], dz = (b.bounds.min[2] + b.bounds.max[2]) / 2 - (a.bounds.min[2] + a.bounds.max[2]) / 2;
+  const na = a.positions.length / 3;
+  const cat = (/** @type {Float32Array} */ x, /** @type {Float32Array} */ y) => { const o = new Float32Array(x.length + y.length); o.set(x); o.set(y, x.length); return o; };
+  const pa = a.positions.slice();
+  for (let v = 0; v < na; v++) { pa[v * 3] += dx; pa[v * 3 + 2] += dz; }
+  const indices = new Uint32Array(a.indices.length + b.indices.length);
+  indices.set(a.indices);
+  for (let k = 0; k < b.indices.length; k++) indices[a.indices.length + k] = b.indices[k] + na;
+  const min = [Math.min(a.bounds.min[0] + dx, b.bounds.min[0]), 0, Math.min(a.bounds.min[2] + dz, b.bounds.min[2])];
+  const max = [Math.max(a.bounds.max[0] + dx, b.bounds.max[0]), Math.max(a.bounds.max[1], b.bounds.max[1]), Math.max(a.bounds.max[2] + dz, b.bounds.max[2])];
+  return {
+    positions: cat(pa, b.positions), normals: cat(a.normals, b.normals), uvs: cat(a.uvs, b.uvs), colors: cat(a.colors, b.colors), indices,
+    triangles: indices.length / 3, bounds: { min, max }, maps: { baseColor: null, metallicRoughness: null, normal: null },
+    factors: { base: [1, 1, 1, 1], metal: 0, rough: 0.8, normalScale: 1 },
   };
 }
 

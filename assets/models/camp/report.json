@@ -377,5 +377,173 @@
     0.288
    ]
   }
+ },
+ "hearth-stones": {
+  "source": "made-pieces.mjs",
+  "file": "hearth-stones.glb",
+  "bytes": 117884,
+  "sourceBytes": 3811,
+  "trianglesBefore": 4320,
+  "triangles": 4320,
+  "maps": 0,
+  "bounds": {
+   "min": [
+    -0.203,
+    0,
+    -0.21
+   ],
+   "max": [
+    0.202,
+    0.089,
+    0.138
+   ]
+  }
+ },
+ "camp-store": {
+  "source": "made-pieces.mjs",
+  "file": "camp-store.glb",
+  "bytes": 677084,
+  "sourceBytes": 3811,
+  "trianglesBefore": 43664,
+  "triangles": 26000,
+  "maps": 0,
+  "bounds": {
+   "min": [
+    -0.268,
+    0,
+    -0.197
+   ],
+   "max": [
+    0.268,
+    0.394,
+    0.197
+   ]
+  }
+ },
+ "camp-store-grown": {
+  "source": "made-pieces.mjs",
+  "file": "camp-store-grown.glb",
+  "bytes": 1057932,
+  "sourceBytes": 3811,
+  "trianglesBefore": 72960,
+  "triangles": 39998,
+  "maps": 0,
+  "bounds": {
+   "min": [
+    -0.27,
+    0,
+    -0.2
+   ],
+   "max": [
+    0.27,
+    0.711,
+    0.2
+   ]
+  }
+ },
+ "gathering-knife": {
+  "source": "made-pieces.mjs",
+  "file": "gathering-knife.glb",
+  "bytes": 32176,
+  "sourceBytes": 3811,
+  "trianglesBefore": 968,
+  "triangles": 968,
+  "maps": 0,
+  "bounds": {
+   "min": [
+    -0.014,
+    0,
+    -0.012
+   ],
+   "max": [
+    0.014,
+    0.173,
+    0.012
+   ]
+  }
+ },
+ "seed-scoop": {
+  "source": "made-pieces.mjs",
+  "file": "seed-scoop.glb",
+  "bytes": 166824,
+  "sourceBytes": 3811,
+  "trianglesBefore": 6144,
+  "triangles": 6144,
+  "maps": 0,
+  "bounds": {
+   "min": [
+    -0.029,
+    0,
+    -0.026
+   ],
+   "max": [
+    0.029,
+    0.152,
+    0.026
+   ]
+  }
+ },
+ "tea-caddy": {
+  "source": "made-pieces.mjs",
+  "file": "tea-caddy.glb",
+  "bytes": 242796,
+  "sourceBytes": 3811,
+  "trianglesBefore": 9216,
+  "triangles": 9216,
+  "maps": 0,
+  "bounds": {
+   "min": [
+    -0.042,
+    0,
+    -0.042
+   ],
+   "max": [
+    0.042,
+    0.105,
+    0.042
+   ]
+  }
+ },
+ "walking-stick": {
+  "source": "made-pieces.mjs",
+  "file": "walking-stick.glb",
+  "bytes": 144048,
+  "sourceBytes": 3811,
+  "trianglesBefore": 5360,
+  "triangles": 5360,
+  "maps": 0,
+  "bounds": {
+   "min": [
+    -0.061,
+    0,
+    -0.02
+   ],
+   "max": [
+    0.061,
+    1.185,
+    0.02
+   ]
+  }
+ },
+ "pressing-frame": {
+  "source": "made-pieces.mjs",
+  "file": "pressing-frame.glb",
+  "bytes": 180684,
+  "sourceBytes": 3811,
+  "trianglesBefore": 3252,
+  "triangles": 3252,
+  "maps": 0,
+  "bounds": {
+   "min": [
+    -0.13,
+    0,
+    -0.007
+   ],
+   "max": [
+    0.13,
+    0.335,
+    0.007
+   ]
+  }
  }
 }

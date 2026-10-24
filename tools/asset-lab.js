@@ -6,7 +6,7 @@
 // For testing without the picker: ?src=<folder url> fetches the originals from that served folder.
 
 import { createStage } from './asset-lab-stage.js';
-import { readModel, decodeMap, colorDiff } from './asset-lab-model.js';
+import { readModel, decodeMap, colorDiff, beside } from './asset-lab-model.js';
 
 const $ = (/** @type {string} */ id) => /** @type {any} */ (document.getElementById(id));
 const status = $('status');
@@ -17,18 +17,23 @@ const num = (/** @type {number} */ n) => Math.round(n).toLocaleString('en-US');
 const list = await (await fetch('./assets/models.json', { cache: 'no-cache' })).json();
 /** @type {Record<string, any>} */
 const report = await fetch('../assets/models/camp/report.json', { cache: 'no-cache' }).then((r) => (r.ok ? r.json() : {})).catch(() => ({}));
-/** @type {{ source: string, out: string, sizeM: number, along: string, yawDeg?: number }[]} */
+/** @type {{ source: string, out: string, sizeM: number, along: string, yawDeg?: number, made?: string }[]} */
 const models = list.models;
+/** The walker (assets/figures/walker.glb, 1.4 m), fetched once, to stand beside the pieces made in code. @type {Promise<ArrayBuffer> | null} */
+let walkerBuf = null;
+const walker = () => (walkerBuf ??= fetch('../assets/figures/walker.glb').then((r) => r.arrayBuffer()));
 const srcUrl = new URLSearchParams(location.search).get('src');
 /** @type {Map<string, File>} */ const files = new Map();
 
 const r = await createStage([$('left'), $('right')]);
 if (!r.ok) { say(r.reason); throw new Error(r.reason); }
 const stage = r.stage;
+// For scripted render sheets (a session saving pictures of every piece): the stage's camera.
+/** @type {any} */ (globalThis).assetLab = { stage };
 
 // Picker.
 const pick = $('pick');
-for (const [i, m] of models.entries()) pick.add(new Option(`${m.out} (${m.source})`, String(i)));
+for (const [i, m] of models.entries()) pick.add(new Option(`${m.out} (${m.made ? 'made in code' : m.source})`, String(i)));
 const startAt = Math.max(0, models.findIndex((m) => m.out === new URLSearchParams(location.search).get('model')));
 pick.value = String(startAt);
 pick.addEventListener('change', () => show(+pick.value));
@@ -134,6 +139,7 @@ async function run(i, id) {
   await stage.setModel(1, null);
   $('left').style.visibility = 'hidden';
   $('left-wait').style.display = '';
+  $('left-title').textContent = m.made ? 'Beside the walker (1.4 m)' : 'Original';
   const heat = $('heat');
   heat.getContext('2d').clearRect(0, 0, heat.width, heat.height);
   $('diff').innerHTML = row('Mean', 'needs the original') + row('99th percentile', 'needs the original');
@@ -157,6 +163,25 @@ async function run(i, id) {
         row('Real size', `${m.sizeM} m along its ${m.along === 'height' ? 'height' : 'longest side'}, turned ${m.yawDeg ?? 0} degrees`) +
         (o ? '' : row('', 'Original numbers from the build report until the original is loaded.'));
     };
+    if (m.made) {
+      // Made in code (tools/assets/made-pieces.mjs): no original to compare, so the left view shows
+      // the piece beside the walker for scale, framed on its own.
+      $('stats').innerHTML = row('Triangles', num(copy.mesh.triangles)) + row('File size', mb(copyBuf.byteLength)) + row('Paint', 'vertex colours') +
+        row('Size (x, y, z)', `${dims} m`) + row('Made by', `<code>tools/assets/made/pieces.mjs</code> (${m.made})`);
+      $('diff').innerHTML = row('Reading', 'Made in code: there is no original to compare.');
+      stage.frameOn(b);
+      await stage.setModel(1, copy);
+      const fig = readModel(await walker(), { yawDeg: 0, sizeM: 1.4, along: 'height' });
+      if (stale()) return;
+      const both = beside(fig, copy.mesh, Math.max(0.15, (b.max[0] - b.min[0]) * 0.4));
+      stage.frameOn(both.bounds, 0);
+      await stage.setModel(0, { mesh: both, bitmaps: { baseColor: null, metallicRoughness: null, normal: null } });
+      if (stale()) return;
+      $('left').style.visibility = 'visible';
+      $('left-wait').style.display = 'none';
+      say(`${m.out}: made in code, shown beside the walker.`);
+      return;
+    }
     fill(null);
     stage.frameOn(b);
     await stage.setModel(1, copy);

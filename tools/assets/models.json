@@ -23,6 +23,14 @@
     { "source": "../_pots/teapot/scene.gltf", "out": "tea-pot", "along": "longest", "sizeM": 0.18, "yawDeg": 0, "triangles": 4000, "maps": 512,
       "credit": "This work is based on \"Clay teapot\" (https://sketchfab.com/3d-models/clay-teapot-65e455e165d94b1aba4117a78093ae3e) by patrakeevasveta (https://sketchfab.com/patrakeevasveta) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)" },
     { "source": "../_pots/dye pot/scene.gltf", "out": "dye-pot", "along": "height", "sizeM": 0.32, "yawDeg": 0, "triangles": 4000, "maps": 512, "rebuildNormals": true,
-      "credit": "This work is based on \"GENED 1105 Clay Pot\" (https://sketchfab.com/3d-models/gened-1105-clay-pot-c5332e6fcb7246dca817f53c4d8cddd5) by andrew_ogundimu (https://sketchfab.com/andrew_ogundimu) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)" }
+      "credit": "This work is based on \"GENED 1105 Clay Pot\" (https://sketchfab.com/3d-models/gened-1105-clay-pot-c5332e6fcb7246dca817f53c4d8cddd5) by andrew_ogundimu (https://sketchfab.com/andrew_ogundimu) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)" },
+    { "source": "made-pieces.mjs", "made": "hearth-stones", "out": "hearth-stones", "along": "longest", "sizeM": 0.405, "yawDeg": 0, "triangles": 4400, "maps": 0, "keepOrigin": true },
+    { "source": "made-pieces.mjs", "made": "camp-store", "out": "camp-store", "along": "longest", "sizeM": 0.536, "yawDeg": 0, "triangles": 26000, "maps": 0, "error": 0.002 },
+    { "source": "made-pieces.mjs", "made": "camp-store-grown", "out": "camp-store-grown", "along": "height", "sizeM": 0.711, "yawDeg": 0, "triangles": 40000, "maps": 0, "error": 0.002 },
+    { "source": "made-pieces.mjs", "made": "gathering-knife", "out": "gathering-knife", "along": "height", "sizeM": 0.173, "yawDeg": 0, "triangles": 1000, "maps": 0 },
+    { "source": "made-pieces.mjs", "made": "seed-scoop", "out": "seed-scoop", "along": "height", "sizeM": 0.152, "yawDeg": 0, "triangles": 6200, "maps": 0 },
+    { "source": "made-pieces.mjs", "made": "tea-caddy", "out": "tea-caddy", "along": "height", "sizeM": 0.105, "yawDeg": 0, "triangles": 9400, "maps": 0 },
+    { "source": "made-pieces.mjs", "made": "walking-stick", "out": "walking-stick", "along": "height", "sizeM": 1.185, "yawDeg": 0, "triangles": 5400, "maps": 0 },
+    { "source": "made-pieces.mjs", "made": "pressing-frame", "out": "pressing-frame", "along": "height", "sizeM": 0.335, "yawDeg": 0, "triangles": 3300, "maps": 0 }
   ]
 }
