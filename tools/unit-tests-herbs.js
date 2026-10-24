@@ -11,6 +11,8 @@ import { loadRecipes } from './unit-tests-growth.js';
 import { partsOf, pickable, pick } from '../src/world/gather/plants.js';
 import { makeKinds } from '../src/world/pack/kinds.js';
 import { itemIconFor, driedIconFor } from '../src/ui/icons/item-registry.js';
+import { ICON_NAMES } from '../src/ui/icons/icons.js';
+import { drawSketch, hasSketch } from '../src/ui/sketches/index.js';
 
 /** @param {string} p */
 const getJson = (p) => fetch(`../recipes/${p}.json`).then((r) => {
@@ -188,5 +190,28 @@ export function addHerbTests(test, assert, eq) {
       eq(driedIconFor(id), `dried:${icon}`, `${id} dried icon`);
     }
     return want.map((w) => `${w[1]} (${w[2]})`).join(', ');
+  });
+
+  test(HERBS, 'each herb has a home: a journal page with its chip, a sketch drawing every label, a Gives line inked by the first pick, a web node and a place', async () => {
+    const [words, web, list] = await Promise.all([getJson('world/journal'), getJson('world/journal-web'), getJson('world/journal-list')]);
+    for (const sp of IDS) {
+      const rec = words.species[sp];
+      assert(rec, `journal.json page ${sp}`);
+      assert(words.order.includes(sp), `${sp} in the journal's order`);
+      assert(ICON_NAMES.includes(rec.icon), `${sp}'s chip ${rec.icon} is drawn`);
+      eq(rec.stages.length, 6, `${sp} stage lines`);
+      for (const k of ['arrived', 'seen', 'spread', 'flower', 'dormant', 'woke', 'drown', 'seed', 'gone']) assert(rec.notes[k], `${sp} note ${k}`);
+      assert(rec.gives.some((/** @type {any} */ g) => g.when === `picked:${sp}` && /tea/i.test(g.ink)), `${sp}'s Gives line says it is for tea, inked by picked:${sp}`);
+      assert(hasSketch(sp), `${sp} has a sketch`);
+      const labels = Object.fromEntries(Object.entries(rec.sketch.labels).map(([k, v]) => [k, /** @type {any} */ (v).text]));
+      const svg = drawSketch(sp, { stage: 2, labels, scale: rec.sketch.scale });
+      for (const [k, lines] of Object.entries(labels)) assert(svg.includes(`>${lines[0]}<`), `${sp} sketch draws its ${k} label`);
+      assert(!drawSketch(sp, { stage: 0, labels: {}, scale: rec.sketch.scale }).includes('<text'), `${sp} pencil sketch has no labels`);
+      eq(web.nodes[sp]?.page, sp, `${sp} web node`);
+      assert(web.links.some((/** @type {any} */ l) => l.b === sp), `${sp} has a web link`);
+      assert(list.placeOf[sp], `${sp} has a place in the list`);
+    }
+    assert(words.species.nettle.field.some((/** @type {any} */ f) => /sting/.test(f.text)), 'the nettle sting is a field note');
+    return IDS.map((sp) => `${sp}: ${Object.keys(words.species[sp].sketch.labels).join(', ')}`).join('; ');
   });
 }
