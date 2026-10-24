@@ -17,10 +17,24 @@ import { FLORA_KINDS } from './flora-kinds.js';
 const DRAW_BYTES = 384;
 
 /**
+ * growth.json `looks` as lib-flora.wgsl's FloraLooks: pick, thin, drown, a vec4f each. Missing
+ * numbers are 0 (no look). @param {any} L @returns {Float32Array}
+ */
+export function packLooks(L) {
+  const v = (/** @type {string} */ k) => (L && typeof L[k] === 'number' ? L[k] : 0);
+  return new Float32Array([
+    v('pickHeads'), v('pickTrim'), L?.cutFrom ?? 2, v('cutBlades'),
+    v('thinPale'), v('thinSparse'), 0, 0,
+    v('drownLean'), v('drownDark'), v('drownDroop'), 0,
+  ]);
+}
+
+/**
  * @param {{ growth: { instances: GPUBuffer, range: (index: number) => number[] },
  *   terrain: import('../../world/terrain/index.js').Terrain,
- *   water: { depthTextures: GPUTexture[], current: () => number }, recipes: Record<string, any> }} opts
- *   growth: the plant instances (src/world/growth/index.js); recipes: the flora recipes by species id
+ *   water: { depthTextures: GPUTexture[], current: () => number }, recipes: Record<string, any>, looks?: any }} opts
+ *   growth: the plant instances (src/world/growth/index.js); recipes: the flora recipes by species id;
+ *   looks: recipes/world/growth.json `looks`, how strongly the picked, thin and drowned looks show
  */
 export function createFloraPass(opts) {
   const { growth } = opts;
@@ -73,8 +87,12 @@ export function createFloraPass(opts) {
           { binding: 1, visibility: GPUShaderStage.VERTEX, buffer: { type: 'read-only-storage' } },
           { binding: 2, visibility: GPUShaderStage.VERTEX, texture: { sampleType: 'unfilterable-float' } },
           { binding: 3, visibility: GPUShaderStage.VERTEX, texture: { sampleType: 'unfilterable-float' } },
+          { binding: 4, visibility: VF, buffer: {} },
         ],
       });
+      // The looks' strengths (lib-flora.wgsl FloraLooks), the same for every species.
+      const looksBuffer = makeBuffer(device, { label: 'flora-looks', size: 48, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
+      device.queue.writeBuffer(looksBuffer, 0, packLooks(opts.looks));
       const pipelineLayout = device.createPipelineLayout({ label: 'flora', bindGroupLayouts: [ctx.layouts.frame, ctx.layouts.lighting, layout] });
       const heightView = opts.terrain.gpu.height.createView();
       const depthViews = opts.water.depthTextures.map((t) => t.createView());
@@ -115,6 +133,7 @@ export function createFloraPass(opts) {
             { binding: 1, resource: { buffer: growth.instances } },
             { binding: 2, resource: heightView },
             { binding: 3, resource: depth },
+            { binding: 4, resource: { buffer: looksBuffer } },
           ],
         }));
       }));

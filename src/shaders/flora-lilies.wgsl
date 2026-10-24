@@ -124,8 +124,8 @@ fn emit(p: vec3f, n: vec3f, albedo: vec3f, look: vec3f) -> VsOut {
 
 @vertex
 fn vsLily(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> VsOut {
-  let a = plants[ii * 2u];
-  let b = plants[ii * 2u + 1u];
+  let a = plants[ii * FLORA_STRIDE];
+  let b = plants[ii * FLORA_STRIDE + 1u];
   let stage = u32(round(a.w));
   let size = clamp(a.z, 0.0, 1.0);
   let seed = stage == FLORA_SEED;

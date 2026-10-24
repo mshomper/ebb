@@ -53,6 +53,7 @@ export const PARALLEL = {
   campFire: () => import('./unit-tests-camp-fire.js').then((m) => m.addCampFireTests),
   pack: () => import('./unit-tests-pack.js').then((m) => m.addPackTests),
   gather: () => import('./unit-tests-gather.js').then((m) => m.addGatherTests),
+  plantRules: () => import('./unit-tests-plant-rules.js').then((m) => m.addPlantRulesTests),
   click: () => import('./unit-tests-click.js').then((m) => m.addClickTests),
   items: () => import('./unit-tests-items.js').then((m) => m.addItemTests),
   // The audio tests that need no Web Audio (workers have none). The two that render sound through
