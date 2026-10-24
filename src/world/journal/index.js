@@ -397,6 +397,11 @@ export function createJournal(opts) {
         commit(foundFind(journal, p.page, { state: world.state, hour: hourIndex(), words }));
       }
     }),
+    // The first pick of a plant (src/world/gather): its page's Gives line inks (`picked:<species>`).
+    on('plant:picked', (/** @type {{ sp: string }} */ p) => {
+      const next = flag(journal, `picked:${p.sp}`);
+      if (next !== journal) { journal = next; update('journal', () => journal); }
+    }),
     // The island gave you something (src/world/expansion.js): written once, shown as a card.
     on('progress:gifted', (/** @type {any} */ g) => commit(noteGift(journal, g, { state: world.state, hour: hourIndex(), words }))),
     // Watching a frog (or a school) from close by finds it too (src/world/creatures/index.js, schools.js).

@@ -8,6 +8,15 @@ import { initialWorldState, makeEnv, runHour, hashWorldState } from '../src/sim/
 import { HABITAT_CELLS, HABITAT_ORIGIN } from '../src/world/growth/habitat.js';
 import { suitability, plantSeed, settleGrowth } from '../src/world/growth/coarse.js';
 import { loadRecipes } from './unit-tests-growth.js';
+import { partsOf, pickable, pick } from '../src/world/gather/plants.js';
+import { makeKinds } from '../src/world/pack/kinds.js';
+import { itemIconFor, driedIconFor } from '../src/ui/icons/item-registry.js';
+
+/** @param {string} p */
+const getJson = (p) => fetch(`../recipes/${p}.json`).then((r) => {
+  if (!r.ok) throw new Error(`recipes/${p}.json: HTTP ${r.status}`);
+  return r.json();
+});
 
 const HERBS = 'herbs';
 const IDS = ['watermint', 'meadowsweet', 'nettle', 'chamomile'];
@@ -130,5 +139,54 @@ export function addHerbTests(test, assert, eq) {
     const c = run(2 * HOURS_PER_SEASON, HOURS_PER_SEASON);
     eq(c.most, 1, 'mint clumps after an autumn');
     return `${a.most} clumps by midsummer (cap ${cap}); 1 after an autumn`;
+  });
+
+  test(HERBS, 'each herb gives its part only in its window: mint leaves, meadowsweet flowers, nettle tops in spring and autumn, chamomile flowers', async () => {
+    const [{ flora }, gather] = await Promise.all([loadRecipes(), getJson('world/gather')]);
+    /** Season positions [pos, can pick] per herb (well inside or outside its window, past the plant's jitter). @type {Record<string, [string, [number, boolean][]]>} */
+    const CASES = {
+      watermint: ['leaves', [[0.3, false], [1.5, true], [2.2, true], [2.8, false], [3.5, false]]],
+      meadowsweet: ['flowers', [[0.8, false], [1.6, true], [2.4, false], [3.5, false]]],
+      nettle: ['tops', [[0.5, true], [1.5, false], [2.4, true], [3.5, false]]],
+      chamomile: ['flowers', [[0.6, false], [1.6, true], [2.0, true], [2.6, false], [3.5, false]]],
+    };
+    const lines = [];
+    for (const [sp, [part, cases]] of Object.entries(CASES)) {
+      eq(partsOf(sp, gather).join(), part, `${sp} parts`);
+      const env0 = { flora: flora[sp] };
+      for (let id = 1; id <= 5; id++) {
+        const plant = { id, sp, size: 0.9, best: 0.9 };
+        for (const [pos, ok] of cases) {
+          const r = pickable(plant, part, { ...env0, pos }, gather);
+          assert(r.ok === ok, `${sp} ${part} at season ${pos}, plant ${id}: ${r.ok ? 'pickable' : r.why}`);
+        }
+      }
+      // A pick takes a third and leaves it resting; a young plant gives nothing.
+      const picked = pick({ id: 1, sp, size: 0.9, best: 0.9 }, part, env0, gather);
+      assert(Math.abs(picked.size - 0.9 * (1 - gather.plants.defaults.herb.share)) < 1e-9, `${sp} after one pick: ${picked.size}`);
+      eq(pickable(picked, part, { ...env0, pos: cases.find((c) => c[1])?.[0] ?? 0 }, gather).why, 'rest', `${sp} just picked`);
+      eq(pickable({ id: 1, sp, size: 0.5, best: 0.5 }, part, { ...env0, pos: 1.6 }, gather).why, 'young', `${sp} still young`);
+      lines.push(`${sp}.${part}`);
+    }
+    return lines.join(', ');
+  });
+
+  test(HERBS, 'herb parts go into named herb pouches with their drawn icons, and dry on the rack', async () => {
+    const pack = await getJson('world/pack');
+    const kinds = makeKinds(pack);
+    /** @type {[string, string, string][]} */
+    const want = [['watermint.leaves', 'Water mint', 'mint'], ['meadowsweet.flowers', 'Meadowsweet', 'meadowsweet'],
+      ['nettle.tops', 'Nettle tops', 'nettle'], ['chamomile.flowers', 'Chamomile', 'chamomile']];
+    for (const [id, name, icon] of want) {
+      const k = /** @type {any} */ (kinds.byId.get(id));
+      assert(k, `${id} in pack.json kinds`);
+      eq(k.name, name, `${id} name`);
+      eq(kinds.groupOf(id), 'herbs', `${id} group`);
+      eq(kinds.campOf(id), 'rack', `${id} at camp`);
+      assert(k.line.length > 10, `${id} has a card line`);
+      eq(itemIconFor(id), icon, `${id} icon`);
+      eq(driedIconFor(id), `dried:${icon}`, `${id} dried icon`);
+    }
+    return want.map((w) => `${w[1]} (${w[2]})`).join(', ');
   });
 }

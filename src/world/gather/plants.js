@@ -12,7 +12,7 @@ import { plantSeasonPos } from '../growth/phenology.js';
  * A part's numbers: the gather.json plants.defaults of its type, overridden by its own entry
  * under plants.parts['<species>.<part>']. null when the species has no such part.
  * @param {string} sp @param {string} part @param {any} recipe gather.json
- * @returns {{ type: string, share: number, readyShare: number, window: number[] } | null}
+ * @returns {{ type: string, share: number, readyShare: number, window: number[] | number[][] } | null}
  */
 export function partOf(sp, part, recipe) {
   const P = recipe.plants?.parts?.[`${sp}.${part}`];
@@ -44,7 +44,9 @@ export function pickable(plant, part, env, recipe) {
   const P = partOf(plant.sp, part, recipe);
   if (!P) return { ok: false, why: 'season' };
   if (plant.best < env.flora.growth.stages.matureSize) return { ok: false, why: 'young' };
-  if (!inWindow(plantSeasonPos(env.flora, plant.id, env.pos), P.window)) return { ok: false, why: 'season' };
+  // A part may have two windows in the year (nettle tops: spring, and again in autumn): [[from, to), ...].
+  const pos = plantSeasonPos(env.flora, plant.id, env.pos);
+  if (!(Array.isArray(P.window[0]) ? P.window : [P.window]).some((w) => inWindow(pos, /** @type {number[]} */ (w)))) return { ok: false, why: 'season' };
   if (plant.size < P.readyShare * plant.best) return { ok: false, why: 'rest' };
   return { ok: true, why: null };
 }
