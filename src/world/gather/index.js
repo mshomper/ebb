@@ -22,7 +22,7 @@ import { tideParams } from '../tide.js';
 import { seasonOfTide, weatherOfTide } from '../finds/strand.js';
 import { gatherSeed, spotsAt, spotsNear, share, wordFor } from './spots.js';
 import { taken as takenOf, record, expire, cap } from './events.js';
-import { partsOf, pickable, pick } from './plants.js';
+import { partsOf, pickable, pick, outOfSeasonLine } from './plants.js';
 
 /**
  * @param {{ recipe: any, seed: number, world: any, worldT: () => number, water: any, terrain: any, pack: any, walk: any,
@@ -36,6 +36,8 @@ export function createGather(o) {
   const tideP = tideParams(o.tide);
   /** A Gather on its way: walking to the spot, then the kneel. @type {{ g: any, t: number, kneelT: number } | null} */
   let pending = null;
+  /** The plants whose refusal was said this session (the journal keeps it from then on). @type {Set<string>} */
+  const refusedSaid = new Set();
 
   const events = () => /** @type {number[]} */ (get('gather')?.events ?? []);
   /** @param {number[]} ev */
@@ -132,6 +134,11 @@ export function createGather(o) {
     });
     // A plant's part in season (reed down).
     const pl = card?.sp ? plantOf(card) : null;
+    // Look, don't pick (docs/future/13 PR-44): iris and marsh marigold are never gathered.
+    if (pl && R.lookOnly?.includes(pl.sp)) {
+      lines.push(W.notForDrinking);
+      return { gathers: out.slice(0, 2), word: out[0]?.word ?? lines[0] ?? null, lookOnly: pl.sp };
+    }
     if (pl) {
       const flora = o.world.env.recipes?.flora?.[pl.sp];
       for (const part of partsOf(pl.sp, R)) {
@@ -140,10 +147,11 @@ export function createGather(o) {
         if (r.ok) { out.push({ kind, name: o.pack.nameOf(kind), plant: pl.id, part, x: pl.x, z: pl.z, left: 1, word: W.plenty }); lines.push(W.plenty); }
         else if (r.why === 'rest') lines.push(W.rest);
         else if (r.why === 'young') lines.push(W.young);
+        else if (r.why === 'season') lines.push(outOfSeasonLine(pl, pl.sp, part, R, seasonPos()));
       }
     }
     // The word for what you can take first; with nothing to take, the first spot's word.
-    return { gathers: out.slice(0, 2), word: out[0]?.word ?? lines[0] ?? null };
+    return { gathers: out.slice(0, 2), word: out[0]?.word ?? lines[0] ?? null, lookOnly: null };
   }
 
   /**
@@ -159,7 +167,15 @@ export function createGather(o) {
     // The card's own line, then the word for what is there (a line that ends bare gets its stop).
     const own = card.text && !/[.!?]$/.test(card.text.trim()) ? `${card.text.trim()}.` : card.text;
     const text = [own, g.word, !below && g.gathers.length ? W.above : null].filter(Boolean).join(' ');
-    return { ...card, baseText: card.text, text, gathers: below ? g.gathers : [], gatherAt: [x, z] };
+    // The first time the walker meets a plant not to pick, the refusal is said once and its page
+    // learns why (journal trigger pick:refused).
+    if (g.lookOnly && below && !refusedSaid.has(g.lookOnly) && !get('journal')?.species?.[g.lookOnly]?.learned?.includes('pick:refused')) {
+      refusedSaid.add(g.lookOnly);
+      emitDeferred('pick:refused', { species: g.lookOnly });
+      const said = W.refused?.[g.lookOnly];
+      if (said) emitDeferred('island:notice', { text: said, showS: R.refusedS ?? 6 });
+    }
+    return { ...card, baseText: card.text, text, gathers: below ? g.gathers : [], gatherAt: [x, z], lookOnly: below ? g.lookOnly : null, leaveBeLabel: W.leaveBe };
   }
 
   /** The card again after a handful: its word and buttons as they are now. */

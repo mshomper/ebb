@@ -15,8 +15,44 @@ const FLORA_SEED: u32 = 0u;
 const FLORA_FLOWERING: u32 = 4u;
 const FLORA_DORMANT: u32 = 5u;
 
-// Two vec4f per plant: (x, z, size, stage), (species, hash, age, ground height).
+// Three vec4f per plant (src/world/growth/index.js PLANT_FLOATS): (x, z, size, stage),
+// (species, hash, age, ground height), (picked, thin, drowned, spare), each look 0..1.
+const FLORA_STRIDE: u32 = 3u;
 @group(2) @binding(1) var<storage, read> plants: array<vec4f>;
+
+// How strongly the picked, thin and drowned looks show (recipes/world/growth.json `looks`, packed
+// by src/render/passes/flora.js), the same for every species.
+struct FloraLooks {
+  pick: vec4f,     // x share of heads gone at one full pick, y share of tips trimmed, z picked share from which cut blades lie at the foot, w cut blades
+  thin: vec4f,     // x how much paler (toward a pale straw grey), y share of blades and leaves gone, zw spare
+  drown: vec4f,    // x lean toward the ground (share of the way), y darkening, z heads droop (share of stalk height), w spare
+};
+@group(2) @binding(4) var<uniform> floraLooks: FloraLooks;
+
+// The plant's looks: x picked, y thin, z drowned (0..1).
+fn floraLookOf(ii: u32) -> vec4f {
+  return plants[ii * FLORA_STRIDE + 2u];
+}
+
+// How many of n blades, leaves or heads a plant keeps: thin plants are sparser; heads (isHead) also
+// go with a pick, and a thin plant makes no new ones.
+fn floraKeep(n: f32, look: vec4f, isHead: bool) -> f32 {
+  if (isHead) { return n * (1.0 - floraLooks.pick.x * look.x) * (1.0 - look.y); }
+  return n * (1.0 - floraLooks.thin.y * look.y);
+}
+
+// A leaf's albedo with the looks: paler on poor ground, darker under water too long.
+fn floraLookAlbedo(albedo: vec3f, look: vec4f) -> vec3f {
+  let pale = vec3f(dot(albedo, vec3f(0.3, 0.55, 0.15))) * vec3f(1.35, 1.3, 1.0);
+  return mix(albedo, pale, floraLooks.thin.x * look.y) * (1.0 - floraLooks.drown.y * look.z);
+}
+
+// A stem or leaf axis leaning toward the ground on its own outward bearing as the plant drowns.
+fn floraLookLean(axis: vec3f, look: vec4f) -> vec3f {
+  let level = vec3f(axis.x, 0.0, axis.z);
+  let out = select(vec3f(1.0, 0.0, 0.0), normalize(level), length(level) > 1e-4);
+  return normalize(mix(axis, normalize(out + vec3f(0.0, 0.15, 0.0)), floraLooks.drown.x * look.z));
+}
 
 fn floraOct(n: vec3f) -> vec2f {
   var p = n.xz / (abs(n.x) + abs(n.y) + abs(n.z));

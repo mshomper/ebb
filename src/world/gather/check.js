@@ -5,7 +5,8 @@
 //   shares   what every ground spot holds, a year of days, with that year's weather
 //   events   picked spots recorded through the year and dropped as their days pass
 //   pack     a few hundred seeded adds and takes, in normal form
-//   regrowth three reeds picked for their down, then three game days of hours, twice
+//   regrowth three reeds picked for their down, two buried by a raise and one of them brought back
+//            by its undo, then three game days of hours, twice
 // Each part gives a hash; the page compares page against worker, and the regrowth's two runs.
 
 import { hash32, stream } from '../../core/rng.js';
@@ -16,6 +17,7 @@ import { settleGrowth } from '../growth/coarse.js';
 import { gatherSeed, KINDS, share } from './spots.js';
 import { record, expire, periodOf, PERIOD } from './events.js';
 import { pick } from './plants.js';
+import { buryUnder, restoreBuried } from '../growth/bury.js';
 import { makeKinds } from '../pack/kinds.js';
 import { emptyPack, add, take } from '../pack/model.js';
 
@@ -89,6 +91,15 @@ export function gatherCheckJob(a) {
     const plants = [...(st.growth?.plants ?? []), ...reeds];
     st = { ...st, growth: { ...st.growth, plants } };
     st = { ...st, growth: { ...st.growth, plants: st.growth.plants.map((/** @type {any} */ q) => (q.id >= 9000 ? pick(q, 'down', { flora: a.flora.reeds }, R) : q)) } };
+    // A raise over the second and third reed buries them (growth/bury.js); its undo brings the
+    // second back exactly, and the third stays under (P2a A5).
+    if (a.growth.bury) {
+      const zCut = HABITAT_ORIGIN + 23;
+      const b = buryUnder(st.growth.plants, a.flora, a.growth.bury, () => 0, (_x, z) => (z > zCut ? 1 : 0),
+        { x0: HABITAT_ORIGIN, z0: HABITAT_ORIGIN, x1: HABITAT_ORIGIN + HABITAT_CELLS, z1: HABITAT_ORIGIN + HABITAT_CELLS });
+      const undone = b.buried.filter((/** @type {any} */ q) => q.id === 9001);
+      st = { ...st, growth: { ...st.growth, plants: restoreBuried(b.kept, undone) } };
+    }
     const h0 = 24 * 14 * 2 + 24 * 10;   // autumn, day 10
     for (let h = h0; h < h0 + 72; h++) st = runHour(st, h, env).state;
     return { hash: hashWorldState(st), sizes: st.growth.plants.filter((/** @type {any} */ q) => q.id >= 9000).map((/** @type {any} */ q) => Math.round(q.size * 1e6) / 1e6) };

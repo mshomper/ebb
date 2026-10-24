@@ -21,6 +21,7 @@ import { HABITAT_CELLS, HABITAT_ORIGIN, habitatCell } from './habitat.js';
 import { arrivedOf, volunteerAt } from './volunteers.js';
 import { plantSeasonPos } from './phenology.js';
 import { openBox } from '../ecology/fields.js';
+import { isGather, gatherCount, gatherClear } from './rules.js';
 
 /**
  * Cells past the opened island that grass cover still works out each hour: more than the farthest
@@ -557,12 +558,18 @@ export function coarseStep(state, hourIndex, env) {
   const born = [];
   /** @type {Map<string, number>} */ const held = new Map();
   for (const p of g.plants) held.set(p.sp, (held.get(p.sp) ?? 0) + 1);
+  // Gather plants (rules.js): one shared budget, and never onto held ground or crowding any plant.
+  const GA = GR.gather;
+  const rush = firstCover(prev, env);
+  let gathered = gatherCount(g.plants, env.recipes.flora);
   for (const p of g.plants) {
     const rec = env.recipes.flora[p.sp];
     const R = rec.spread;
     if (!R || (R.kind !== 'rhizome' && R.kind !== 'seed') || p.stage < STAGE.mature || p.stage === STAGE.dormant) continue;
     if (R.window && !inWindow(plantSeasonPos(rec, p.id, pos), R.window)) continue;
     if (R.maxCount && (held.get(p.sp) ?? 0) >= R.maxCount) continue;
+    const gather = isGather(rec);
+    if (gather && GA?.budget !== undefined && gathered >= GA.budget) continue;
     if (hourIndex - p.last < R.everyH) continue;
     if (g.plants.length + born.length >= GR.maxPlants) break;
     p.last = hourIndex;
@@ -580,8 +587,10 @@ export function coarseStep(state, hourIndex, env) {
     if (best < R.minSuit) continue;
     if (crowded(index, g.plants, p.sp, bx, bz, R.minSpacingM)) continue;
     if (born.some((q) => q.sp === p.sp && (q.x - bx) * (q.x - bx) + (q.z - bz) * (q.z - bz) < R.minSpacingM * R.minSpacingM)) continue;
+    if (gather && !gatherClear(hab, bx, bz, index, g.plants, GA, rush, born)) continue;
     born.push({ id: g.nextId++, sp: p.sp, x: bx, z: bz, age: 0, size: 0.05, best: 0.05, stage: STAGE.sprout, low: 0, drown: 0, last: hourIndex });
     held.set(p.sp, (held.get(p.sp) ?? 0) + 1);
+    if (gather) gathered++;
   }
   if (born.length) {
     g.plants = [...g.plants, ...born];
@@ -647,7 +656,12 @@ export function coarseStep(state, hourIndex, env) {
   // as a fresh sprout (a plant) or a new tussock (a cover plant).
   if (g.plants.length < GR.maxPlants) {
     const held = cellIndex(g.plants);
-    const v = volunteerAt(g, hab, env, hourIndex, (rec, k) => suitabilityOf(rec, groundAtCell(hab, k)).suit, (k) => held.has(k));
+    // A gather plant lands only on clear ground and while the shared budget has room (rules.js).
+    const full = GR.gather?.budget !== undefined && gatherCount(g.plants, env.recipes.flora) >= GR.gather.budget;
+    const rushNow = firstCover(g, env);
+    const allow = (/** @type {any} */ rec, /** @type {number} */ k) => !isGather(rec) || (!full
+      && gatherClear(hab, HABITAT_ORIGIN + (k % hab.n) + 0.5, HABITAT_ORIGIN + Math.floor(k / hab.n) + 0.5, held, g.plants, GR.gather, rushNow));
+    const v = volunteerAt(g, hab, env, hourIndex, (rec, k) => suitabilityOf(rec, groundAtCell(hab, k)).suit, (k) => held.has(k), allow);
     if (v) {
       const x = HABITAT_ORIGIN + (v.k % hab.n) + 0.5, z = HABITAT_ORIGIN + Math.floor(v.k / hab.n) + 0.5;
       const cov = g.cover?.[v.sp];

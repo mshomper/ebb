@@ -13,6 +13,7 @@
 // #include lighting-bindings
 // #include lib-sky
 // #include lib-lighting
+// #include lib-flora
 
 struct FloraDraw {
   wind: vec4f,      // xy direction the wind blows toward, z real seconds, w wind strength 0..1
@@ -36,8 +37,7 @@ const PER_STEM: u32 = 21u;   // 15 stem corners and 6 head corners
 
 @group(0) @binding(0) var<uniform> frame: FrameUniforms;
 @group(2) @binding(0) var<uniform> fd: FloraDraw;
-// Two vec4f per plant: (x, z, size, stage), (species, hash, age, ground height).
-@group(2) @binding(1) var<storage, read> plants: array<vec4f>;
+// The plant instances and their looks come from lib-flora.
 
 struct VsOut {
   @builtin(position) pos: vec4f,
@@ -94,8 +94,9 @@ fn stemTangent(axis: vec3f, bend: vec3f, k: f32, t: f32) -> vec3f {
 
 @vertex
 fn vsFlora(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> VsOut {
-  let a = plants[ii * 2u];
-  let b = plants[ii * 2u + 1u];
+  let a = plants[ii * FLORA_STRIDE];
+  let b = plants[ii * FLORA_STRIDE + 1u];
+  let lk = floraLookOf(ii);
   let species = u32(round(b.x));
   let stage = u32(round(a.w));
   let size = clamp(a.z, 0.0, 1.0);
@@ -106,7 +107,7 @@ fn vsFlora(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> 
   // More stems as the clump grows; stem i keeps its spot as new ones join.
   let stem = vi / PER_STEM;
   let slot = vi % PER_STEM;
-  let stems = select(u32(round(mix(fd.shape.x, fd.shape.y, size))), u32(fd.look3.y), seed);
+  let stems = select(max(u32(round(floraKeep(mix(fd.shape.x, fd.shape.y, size), lk, false))), 1u), u32(fd.look3.y), seed);
   if (stem >= stems) { return nothing(); }
   let plantU = u32(b.y * 16777216.0);
   let h0 = hash3(vec3u(plantU, stem, u32(fd.look2.z)));
@@ -134,7 +135,7 @@ fn vsFlora(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> 
   let yaw = v.z * 6.2831853;
   let leanDir = normalize(vec2f(cos(yaw), sin(yaw)) + vec2f(cos(ang), sin(ang)) * rShare * 1.5 + vec2f(1e-4));
   let lean = fd.shape2.y * (0.4 + 1.2 * v.w) * select(1.0, fd.dormant.w, dormant);
-  let axis = vec3f(leanDir.x * sin(lean), cos(lean), leanDir.y * sin(lean));
+  let axis = floraLookLean(vec3f(leanDir.x * sin(lean), cos(lean), leanDir.y * sin(lean)), lk);
   // Wind: passing gusts plus a little flutter per stem; the bend at the tip is a share of the height.
   let gustPhase = dot(center, fd.wind.xy) * fd.sway.z - fd.wind.z * fd.sway.w * fd.sway.z;
   let gust = 0.6 + 0.4 * sin(gustPhase * 6.2831853) + 0.25 * sin(fd.wind.z * 1.7 + v.y * 6.2831853);
@@ -156,11 +157,11 @@ fn vsFlora(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> 
     corner = STEM[slot];
     t = corner.y;
     width = max(fd.shape2.x * (0.8 + 0.4 * v.w), pixelM * fd.look.z) * (1.0 - 0.6 * t);
-    albedo = select(fd.albedo.xyz, fd.dormant.xyz, dormant) * tint * (0.85 + 0.3 * t);
+    albedo = floraLookAlbedo(select(fd.albedo.xyz, fd.dormant.xyz, dormant), lk) * tint * (0.85 + 0.3 * t);
     ao = mix(fd.look.w, 1.0, t);
   } else {
-    // Seed heads: flowering clumps only, on most stems, just below the stem's tip.
-    if (stage != STAGE_FLOWERING || hashToFloat(pcg(h3 ^ 0x68e3u)) > fd.head.w) { return nothing(); }
+    // Seed heads: flowering clumps only, on most stems, just below the stem's tip (fewer once picked).
+    if (stage != STAGE_FLOWERING || hashToFloat(pcg(h3 ^ 0x68e3u)) > floraKeep(fd.head.w, lk, true)) { return nothing(); }
     corner = HEAD[slot - 15u];
     let t1 = clamp(1.0 - fd.look.y / height, 0.5, 1.0);
     let t0 = max(t1 - fd.shape2.z / height, 0.3);
