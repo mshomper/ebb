@@ -599,6 +599,16 @@ export async function startApp(canvas, hooks = {}) {
   sim.addSystem(camp);
   shadowPass.addCaster(camp.props.caster);
   midges.keepClear(() => camp.smokeClear());
+  // What your figure glances at on foot (src/world/figure/look.js): frogs near you, the fire while it
+  // burns, and the finds drawn about you.
+  walk.setInterests(() => {
+    const fire = camp.smokeClear();
+    return [
+      ...creatures.frogs().map((f) => ({ x: f.x, z: f.z, kind: 'creature' })),
+      ...(fire ? [{ x: fire.x, z: fire.z, kind: 'fire' }] : []),
+      ...finds.shown().map((f) => ({ x: f.x, z: f.z, kind: 'find' })),
+    ];
+  });
   intro.useCamp(camp);
   // The stores (section 3.12; src/world/pack/stores.js): the wood store, the stone pile and the clay
   // slab, places with a card from the first frame (drawn by packDraw), glowing while the pack holds

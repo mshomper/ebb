@@ -17,6 +17,7 @@ import { createFootprints } from '../src/world/figure/footprints.js';
 import { ACTS, actLength } from '../src/world/figure/acts.js';
 import { paceAt, footInCycle } from '../src/world/figure/gait.js';
 import { createLean } from '../src/world/figure/lean.js';
+import { createLook } from '../src/world/figure/look.js';
 
 const FIG = 'walker figure';
 
@@ -131,6 +132,48 @@ export function addFigureTests(test, assert, eq) {
     // Walking on at a steady pace, no wobble behind the pace's lean.
     assert(peak(stroll.filter((q) => q.t > 1.6 && q.t < 3), 0, 99, -1) < 0.3, 'never leans back while walking on');
     return `stroll tip ${sTip.toFixed(1)}, jog tip ${jTip.toFixed(1)}, settle back ${back.toFixed(1)} degrees`;
+  });
+
+  test(FIG, 'the head looks at things in front (eyes first, eased, within limits), never behind, a click first, and lets a passing thing be', async () => {
+    const R = await (await fetch('../recipes/world/figure.json')).json();
+    const L = R.look, D = Math.PI / 180, dt = 1 / 60;
+    const look = createLook(L);
+    const at = (/** @type {number} */ deg, /** @type {number} */ m, kind = 'find') => ({ x: Math.sin(deg * D) * m, y: 0, z: Math.cos(deg * D) * m, kind });
+    /** Run for `s` seconds with these interests; every frame's result. @param {number} s @param {any[]} interests */
+    const run = (s, interests = [], m = 0) => Array.from({ length: Math.round(s / dt) }, () => look.update(dt, { x: 0, z: 0, eyeY: 1, yaw: 0, m, viewYaw: null, extraYaw: 0, interests }));
+    // Nothing: ahead.
+    assert(Math.abs(run(1).at(-1).yaw) < 1e-6, 'ahead with nothing to look at');
+    // A creature 80 degrees to the left: the eyes move before the head, the turn eases and stays in its limits.
+    const frog = at(80, 2, 'creature');
+    const r = run(2, [frog]);
+    const eyeFirst = r.findIndex((q) => Math.abs(q.eyes[0]) > 0.003), headFirst = r.findIndex((q) => Math.abs(q.yaw) > 1 * D);
+    assert(eyeFirst >= 0 && eyeFirst < headFirst, `the eyes lead (frame ${eyeFirst}, the head at ${headFirst})`);
+    let fastest = 0;
+    for (let i = 1; i < r.length; i++) fastest = Math.max(fastest, Math.abs(r[i].yaw - r[i - 1].yaw) / dt);
+    assert(fastest <= L.degPerS * D + 1e-6, `never faster than ${L.degPerS} degrees a second (${(fastest / D).toFixed(0)})`);
+    const end = r.at(-1);
+    assert(Math.abs(end.yaw) <= L.maxYawDeg * D + 1e-6 && Math.abs(end.chest) <= L.chestMaxDeg * D + 1e-6, 'head and chest in their limits');
+    assert(Math.abs(end.yaw + end.chest - 75 * D) < 2 * D && end.eyes[0] > 0, `head and chest turn 75 of the 80 degrees (${((end.yaw + end.chest) / D).toFixed(1)}), the eyes the rest`);
+    // Behind you: never.
+    look.reset();
+    assert(Math.abs(run(2, [at(160, 1, 'creature')]).at(-1).yaw) < 1e-6, 'a creature behind you is not looked round at');
+    // A find in front, then a click elsewhere takes over at once (after the head's short wait).
+    look.reset();
+    run(1, [at(-30, 1)]);
+    look.focus(Math.sin(40 * D) * 3, 0, Math.cos(40 * D) * 3);
+    const f = run(1.5, [at(-30, 1)]).at(-1);
+    assert(f.target?.kind === 'focus' && f.yaw + f.chest > 30 * D, 'a click wins over a find');
+    // A find is looked at for its dwell, then let be: the head comes back to ahead.
+    look.reset();
+    const find = run(L.kinds.find.dwellS + 3, [at(20, 1.5)]);
+    assert(find.some((q) => q.target?.kind === 'find') && find.at(-1).target === null && Math.abs(find.at(-1).yaw) < 1 * D, 'a find is looked at, then let be');
+    // Walking it turns less.
+    look.reset();
+    const walking = run(2, [at(40, 3, 'creature')], 1).at(-1);
+    look.reset();
+    const still = run(2, [at(40, 3, 'creature')], 0).at(-1);
+    assert(Math.abs(walking.yaw + walking.chest) < Math.abs(still.yaw + still.chest) * 0.7, 'walking, it turns less');
+    return `eyes lead by ${headFirst - eyeFirst} frames, top speed ${(fastest / D).toFixed(0)} degrees a second`;
   });
 
   test(FIG,'the GLB reader reads the figure: a body and two arms, with colour, part labels and the arms\' shoulders', async () => {

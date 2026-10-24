@@ -56,7 +56,7 @@ function walkerRun(pace, goal, waitS) {
 /**
  * The strips. Each row: a run (a motion, and a step that moves it on one frame and returns what to
  * record), then picks frames from the record by time.
- * @type {Record<string, { title: string, view: { yaw: number, pitch: number, dist: number }, rows: { name: string, run: () => { motion: any, step: () => any, place: () => number[] }, picks: (rec: any[]) => { i: number, label: string }[], curve: { key: string, label: string, unit: string } }[] }>}
+ * @type {Record<string, { title: string, view: { yaw: number, pitch: number, dist: number }, rows: { name: string, extra?: (f: any) => string, run: () => { motion: any, step: () => any, place: () => number[] }, picks: (rec: any[]) => { i: number, label: string }[], curve: { key: string, label: string, unit: string } }[] }>}
  */
 const STRIPS = {
   lean: {
@@ -94,6 +94,53 @@ const STRIPS = {
       },
     })),
   },
+};
+
+/**
+ * A still walker facing +z; at 1 s something worth a look turns up (notice: a creature arriving; a
+ * find in reach, as the game lists it), at a bearing (degrees to the walker's left) and distance.
+ * @param {'notice' | 'find'} how @param {number} bearingDeg @param {number} distM
+ */
+function lookRun(how, bearingDeg, distM) {
+  const motion = createFigureMotion(R, built.skeleton);
+  const b = (bearingDeg * Math.PI) / 180, at = { x: Math.sin(b) * distM, y: 0.03, z: Math.cos(b) * distM };
+  let t = 0;
+  return {
+    motion,
+    step() {
+      t += DT;
+      if (how === 'notice' && Math.abs(t - 1) < DT / 2) motion.notice(at.x, at.y, at.z);
+      const interests = how === 'find' && t >= 1 ? [{ ...at, kind: 'find' }] : [];
+      const r = motion.update(DT, { x: 0, z: 0, y: 0, yaw: 0, speed: 0, moving: false, ground: () => 0, depth: () => 0, below: true, interests });
+      const L = motion.info.look;
+      return { t, r, turn: ((L.yaw + L.chest) * 180) / Math.PI, chest: (L.chest * 180) / Math.PI, eyeX: L.eyes[0] * 100, eyeY: L.eyes[1] * 100 };
+    },
+    place: () => [0, 0, 0, 0],
+  };
+}
+/** Frames for a look: before, the eyes leading, the turn under way, there, held, and back. @param {any[]} rec */
+const lookPicks = (rec) => {
+  const s = rec.findIndex((f) => f.t >= 1);
+  // Just as the head sets off, the eyes are already on their way.
+  const lead = s + Math.round(R.look.headDelayS / DT) + 1;
+  const end = rec.findIndex((f, i) => i > s + 60 && Math.abs(f.turn) < 2);
+  return [
+    { i: s - 5, label: 'before' },
+    { i: lead, label: 'eyes lead' },
+    { i: lead + 12, label: 'head follows' },
+    { i: s + 70, label: 'looking' },
+    { i: s + 150, label: 'still looking' },
+    { i: end > 0 ? end + 30 : rec.length - 1, label: 'back to ahead' },
+  ];
+};
+const lookExtra = (/** @type {any} */ f) => `eyes ${f.eyeX >= 0 ? '+' : ''}${f.eyeX.toFixed(1)}, ${f.eyeY >= 0 ? '+' : ''}${f.eyeY.toFixed(1)} cm`;
+STRIPS.look = {
+  title: 'Looking at things (front view)',
+  view: { yaw: 0, pitch: 0.04, dist: 1.9 },
+  rows: [
+    { name: 'a frog arrives 60° to your left, 2 m off', curve: { key: 'turn', label: 'head and chest turn', unit: '°' }, extra: lookExtra, run: () => lookRun('notice', 60, 2), picks: lookPicks },
+    { name: 'a find low on your right, 1 m off', curve: { key: 'turn', label: 'head and chest turn', unit: '°' }, extra: lookExtra, run: () => lookRun('find', -35, 1), picks: lookPicks },
+  ],
 };
 
 const TILE_W = 300, TILE_H = 400, LABEL = 34, CURVE = 110, HEAD = 40, PAD = 12;
@@ -139,6 +186,7 @@ async function render(name) {
       g.fillText(`${c + 1}  ${picks[c].label}`, x + 12, y + TILE_H + 24);
       g.font = "600 16px Nunito, sans-serif"; g.fillStyle = '#4A5551';
       g.fillText(`${v >= 0 ? '+' : ''}${v.toFixed(1)}${row.curve.unit}`, x + TILE_W - 70, y + TILE_H + 24);
+      if (row.extra) { g.font = "600 15px Nunito, sans-serif"; g.fillText(row.extra(rec[picks[c].i]), x + 12, y + 22); }
     }
     // The curve, with a dot at each frame.
     const cy = y0 + HEAD + TILE_H + LABEL + 14, ch = CURVE - 34, vals = rec.map((q) => q[row.curve.key]);

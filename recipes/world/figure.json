@@ -74,7 +74,17 @@
   },
   "idle": { "breathS": 4.2, "breathDeg": 0.8, "shiftS": 9, "shiftM": 0.012, "glanceEveryS": [7, 14], "glanceDeg": 14 },
   "lean": { "note": "Leaning into starts and stops (walker gestures, part 1; October 24, 2026; src/world/figure/lean.js): the standing lean (the pace's, or a little at rest) follows a soft spring, with extra pulls. Speeding up pulls it toward the pace's tipDeg (full at accelRef, body m/s2; the walker eases up at 2.5 m/s2, about 3.4 body m/s2); slowing down pulls it toward carryDeg (full at brakeRef), the body carrying on as the feet brake. stiffness per second squared; damping (share of critical) while moving, settleDamping once stopped, so the walking lean easing off as you stop swings back just past upright once and settles. The pace is read at the speed you were going, falling off over cruiseFallS.", "accelRef": 3.2, "brakeRef": 3.2, "stiffness": 55, "damping": 0.8, "settleDamping": 0.38, "cruiseFallS": 0.8 },
-  "look": { "maxYawDeg": 55, "maxPitchDeg": 25, "degPerS": 120 },
+  "look": { "note": "Where the walker looks (walker gestures, part 2; October 24, 2026; src/world/figure/look.js). The head turns up to maxYawDeg and tips up or down up to maxPitchDeg in all (a posture's and an act's tip included); toward a thing it tips pitchShare of the way, up to targetPitchDeg, so the face stays in view and the eyes look the rest; the chest takes chestShare of a turn and what is past the head's limit, up to chestMaxDeg. Both ease on springs (headStiffness, chestStiffness per second squared, never faster than degPerS) and turn walkingLess less while walking. What it looks at, first wins by weight over (1 + distance times distFalloff): kinds.focus, the thing you clicked or are about to use (held focusS); kinds.arrival, a creature that just arrived (worth a look for arrivalS); the fire, a creature close by, a find. Each only within its maxM and within frontDeg of straight ahead (never behind you). A choice holds at least holdS and gives way only to one switchRatio better; a passing interest is looked at for its dwellS, then left be for againS. sameM: how far a thing may move and still be the same thing. liftM: how far over the ground it is looked at. eyes: the drawn eyes lead the head (it starts headDelayS after them), shifting up to shiftM (m across the face, x and y) by how far the head and chest still are from the thing (full at fullDeg), on a quick spring.",
+    "maxYawDeg": 55, "maxPitchDeg": 25, "targetPitchDeg": 14, "pitchShare": 0.6, "headDelayS": 0.12, "degPerS": 120, "headStiffness": 30, "chestStiffness": 14, "chestMaxDeg": 20, "chestShare": 0.2,
+    "frontDeg": 110, "walkingLess": 0.5, "holdS": 1.5, "switchRatio": 1.6, "distFalloff": 0.4, "sameM": 0.8, "focusS": 3, "arrivalS": 6,
+    "kinds": {
+      "focus": { "weight": 10, "maxM": 99, "dwellS": 99, "againS": 0, "liftM": 0.05 },
+      "arrival": { "weight": 6, "maxM": 12, "dwellS": 3.5, "againS": 30, "liftM": 0.05 },
+      "fire": { "weight": 3, "maxM": 6, "dwellS": 4, "againS": 25, "liftM": 0.15 },
+      "creature": { "weight": 2, "maxM": 5, "dwellS": 3, "againS": 15, "liftM": 0.05 },
+      "find": { "weight": 1, "maxM": 3.5, "dwellS": 2.5, "againS": 20, "liftM": 0.02 }
+    },
+    "eyes": { "stiffness": 260, "fullDeg": 30, "shiftM": [0.018, 0.012] } },
   "ease": { "settleS": 0.3, "postureS": 1.2, "actInS": 0.4, "stepLiftM": 0.06 },
   "eyes": {
     "centre": [0.002, 1.414, 0],
