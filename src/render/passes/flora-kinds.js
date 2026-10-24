@@ -7,6 +7,8 @@
 
 const DEG = Math.PI / 180;
 const SEASONS = /** @type {const} */ (['spring', 'summer', 'autumn', 'winter']);
+/** A thrift-drawn head's form (flora-thrift.wgsl form.x). @type {Record<string, number>} */
+const HEAD_FORMS = { ball: 0, flat: 1, daisy: 2 };
 
 /**
  * @typedef {Object} FloraKind
@@ -146,6 +148,11 @@ export const FLORA_KINDS = {
       f.set([L.heightVar, L.radiusMin, L.rootShade, r.wind.sway], 24);
       f.set(C.flower, 28); f[31] = 1 / L.gustM;
       f.set(C.stalk, 32); f[35] = L.gustSpeed;
+      // The head's form and the winter crown (P2b; thrift and campion keep the ball and stay green).
+      const H = S.head ?? {}, W = r.crown;
+      f.set([HEAD_FORMS[H.form] ?? 0, H.dome ?? 0, W ? 1 : 0, H.heartShare ?? 0], 36);
+      f.set(C.heart ?? [0, 0, 0], 40); f[43] = H.petals ?? 0;
+      f.set(W?.albedo ?? [0, 0, 0], 44); f[47] = W?.heightShare ?? 1;
     },
     frame: common,
   },
