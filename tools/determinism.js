@@ -333,10 +333,10 @@ function showGather(g) {
     row('A year of spots', main.shares, worker.shares) +
     row('Picked spots', main.events, worker.events) +
     row('The pack', main.pack, worker.pack) +
-    row('Picked reeds, 3 days', main.regrowth, worker.regrowth) +
+    row('Picked and buried reeds, 3 days', main.regrowth, worker.regrowth) +
     row('The same, run again', main.regrowth, main.regrowthAgain, 'First run', 'Second run') +
     `<p class="muted">${main.handfuls} handfuls lay on 480 spots over the year; ${main.picked} picked spots are still remembered at its end. ` +
-    `The three picked reeds grew back to ${main.sizes.map((s) => s.toFixed(3)).join(', ')} of their size in three days.</p>`;
+    `Three reeds were picked, then a raise buried two and its undo brought one back; the ${main.sizes.length} still standing grew back to ${main.sizes.map((s) => s.toFixed(3)).join(', ')} of their size in three days.</p>`;
 }
 
 const CAMP_JOB = { module: './world/camp/check.js', fn: 'campCheckJob' };

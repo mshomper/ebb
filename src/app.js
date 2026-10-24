@@ -46,6 +46,7 @@ import { createWaterPass } from './render/passes/water.js';
 import { createFallsPass } from './render/passes/falls.js';
 import { createGrassPass } from './render/passes/grass.js';
 import { createFloraPass } from './render/passes/flora.js';
+import { buryRings, RAISING_MODES } from './world/growth/rings.js';
 import { createCreaturePass } from './render/passes/creatures.js';
 import { setLiftLook, setLiftTargets, liftFor } from './render/lift.js';
 import { bakeBody } from './world/creatures/body-bake.js';
@@ -306,6 +307,13 @@ export async function startApp(canvas, hooks = {}) {
   const grassRecipe = await loadRecipe('flora/grass');
   const growth = createGrowth(gpu.device, { terrain, water, world, recipes: { growth: growthRecipe, flora, covers, land: landRecipe, grass: grassRecipe } });
   sim.addSystem(growth);
+  // A burying stroke's plants come back with its undo and go under again with its redo (bury.js).
+  history.setApplier('terrain', (cmd, dir) => {
+    const r = terrain.applyTiles(dir === 'undo' ? cmd.before : cmd.after);
+    // applyTiles is false while a stroke settles (undo tries again shortly): the plants wait with it.
+    if (r && cmd.buried) { if (dir === 'undo') growth.unbury(cmd.buried); else growth.rebury(cmd.buried); }
+    return r;
+  });
   // Ecology and creatures (S6a, docs 11, 12): the midge field, frog habitat and the frogs' arrival
   // run in the hourly tick from these recipes.
   // Every species in the list (src/world/species.js): frogs and midges, then minnows and dragonflies.
@@ -402,7 +410,7 @@ export async function startApp(canvas, hooks = {}) {
     water: { depthTextures: water.sim.depthTextures, current: () => water.sim.current }, cover: growth.coverTex,
   });
   // Plants (docs 10): every species from the growth step's instances, after the grass.
-  const floraPass = createFloraPass({ growth, terrain, water: { depthTextures: water.sim.depthTextures, current: () => water.sim.current }, recipes: flora });
+  const floraPass = createFloraPass({ growth, terrain, water: { depthTextures: water.sim.depthTextures, current: () => water.sim.current }, recipes: flora, looks: growthRecipe.looks });
   // The frogs (src/world/creatures): posed bodies at their homes until S6b, the plop, finding one.
   // `?frogs=N` (testing): N frogs come at once instead of over days (1: a scout, the sign).
   const testFrogs = params.has('frogs') ? Math.max(1, Math.min(12, Number.parseInt(params.get('frogs') ?? '1', 10) || 1)) : 0;
@@ -982,7 +990,8 @@ export async function startApp(canvas, hooks = {}) {
     if (!stroking) { wantStroke = false; return; }
     stroking = false;
     wantStroke = false;
-    terrain.endStroke().then((cmd) => { if (cmd) history.push(cmd); });
+    // Plants whose ground rose past their bury depth go under, and ride in the undo (bury.js).
+    terrain.endStroke().then((cmd) => { if (cmd) history.push(growth.buryFor(cmd)); });
   }
 
   // ---- the water tool (docs/07): pour and drain while held; springs on tap (when unlocked) ----
@@ -1046,7 +1055,7 @@ export async function startApp(canvas, hooks = {}) {
     presence.edit(p[0], p[2]);
     const [wMin, wMax] = terrainRecipe.stone.widthM;
     const cmd = terrain.stampStone(p, Math.min(wMax, Math.max(wMin, tools().size)) / 2);
-    if (cmd) { history.push(cmd); emitDeferred('terrain:stone-set', { x: p[0], z: p[2] }); }
+    if (cmd) { history.push(growth.buryFor(cmd)); emitDeferred('terrain:stone-set', { x: p[0], z: p[2] }); }
   }
 
   /** Sculpt's Loose stone mode: select a placed stone, or set one under the cap (src/world/pieces). @param {number} x @param {number} y */
@@ -1224,6 +1233,7 @@ export async function startApp(canvas, hooks = {}) {
       if (a.type === 'pack.empty') { pack.empty(a.i); return; }
       if (a.type === 'gather.take') { gather.take(a.n); return; }
       if (a.type === 'gather.heapHere') { gather.heapHere(); walk.gesture('heapHere'); return; }
+      if (a.type === 'gather.leaveBe') { updateStore('identify', () => null); return; }
       // A pile's Take up fills a pouch; with no room, the full card (without Set down here).
       if (a.type === 'pile.takeUp') {
         const r = piles?.takeUp(a.id, pack);
@@ -1651,7 +1661,10 @@ export async function startApp(canvas, hooks = {}) {
     // off) keeps its ring on the ground. The first evening's slot glows are rings of their own.
     const chosen = getStore('identify');
     setLiftTargets([...(getStore('hover')?.lift ?? []), ...liftFor(chosen, spreadOf)], realDt);
-    terrainPass.setMarks(plantTool.marks(now, tools().tool === 'plant', chosen?.pinned ? chosen : null, [...(padMark ? [padMark] : []), ...(getStore('reveal')?.rings?.(now) ?? []), ...creatures.foodRings(), ...intro.rings(now), ...camp.rings(now / 1000), ...stores.rings(now / 1000)]));
+    // A raising Sculpt brush rings every plant it would cover (rings.js).
+    const raising = tools().tool === 'sculpt' && RAISING_MODES.includes(tools().sculptMode);
+    const bury = raising ? buryRings(world.state?.growth?.plants ?? [], flora, terrain.ring, growthRecipe.bury) : [];
+    terrainPass.setMarks(plantTool.marks(now, tools().tool === 'plant', chosen?.pinned ? chosen : null, [...(padMark ? [padMark] : []), ...bury,...(getStore('reveal')?.rings?.(now) ?? []), ...creatures.foodRings(), ...intro.rings(now), ...camp.rings(now / 1000), ...stores.rings(now / 1000)]));
     // Lugworm casts are drawn into the sand by the terrain pass.
     terrainPass.setCasts(finds.casts());
     updatePour();

@@ -16,6 +16,7 @@ import { HABITAT_ORIGIN } from '../growth/habitat.js';
 import { openBox } from '../ecology/fields.js';
 import { seasonOf, SECONDS_PER_HOUR } from '../../core/clock.js';
 import { observeAnimals, measureAnimal, foundFrog, foundSchool, namedFrog } from './creatures.js';
+import { buriedLine } from './buried.js';
 
 /** Season box bits. */
 export const GROW = 1, FLOWER = 2, DORMANT = 4;
@@ -272,6 +273,11 @@ export function observe(journal, ctx) {
       const sp = e.payload?.species, why = e.payload?.why;
       const rec = words.species[sp], k = j.species[sp];
       if (rec && k && (why === 'drown' || why === 'seed') && learnTrigger(k, `lost:${why}`)) note(out, rec, why, sp, hour, date);
+      // A patch that went under new ground and was not undone: one kind line each (buried.js).
+      if (rec && why === 'buried') {
+        const text = buriedLine(sp, e.payload.x, e.payload.z, hab, words);
+        if (text) out.push({ hour, date, text, sp, kind: 'buried' });
+      }
     } else if (e.name === 'season:changed') {
       const text = words.seasonNotes?.[e.payload?.index];
       if (text) out.push({ hour, date, text, sp: null, kind: 'season' });

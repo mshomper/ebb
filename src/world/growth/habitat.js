@@ -33,7 +33,11 @@ export const HABITAT_ORIGIN = -80;
  * @property {Uint8Array} [shapedCm]  how far the player moved the ground there, cm, 0..255 (0 where no generated heights were given)
  * @property {Uint8Array} [clear]  1 on the keeper's camp pad (docs/future/13 CP-16): no plant seeds, volunteers or is
  *   planted there; grass stays. Only when a pad was given
- * @property {number} hash       FNV-1a over the arrays (uint32), for the determinism page
+ * @property {Uint8Array} [held]  1 under a placed piece (heldMask): no gather plant spreads or volunteers there. Only when pieces were given
+ * @property {{ x: number, z: number, days: number }} [fire]  the camp's fire ring and the game days it has been lit on (the
+ *   fire cause of volunteers.js). Only when a ring was given
+ * @property {{ x: number, z: number, r: number }} [pad]  the camp pad (the camp cause of volunteers.js). Only when a pad was given
+ * @property {number} hash      FNV-1a over the arrays (uint32), for the determinism page
  */
 
 /**
@@ -96,12 +100,15 @@ function falloff(d, reachM) {
 /**
  * @param {{ eco: { x: number, y: number, w: number, h: number, depthCm: Uint8Array, cls: Uint8Array, band: Uint8Array },
  *   material: Uint8Array, materialCells: number, params: { bankM: number, saltM: number, bandMoisture: number, bandSalt: number },
- *   heightQ?: Uint16Array | null, baseQ?: Uint16Array | null, pad?: { x: number, z: number, r: number } | null }} args
+ *   heightQ?: Uint16Array | null, baseQ?: Uint16Array | null, pad?: { x: number, z: number, r: number } | null,
+ *   held?: any[] | null, fire?: { x: number, z: number, days: number } | null }} args
  *   eco: the water summary's 1 m aggregate; material: the terrain mirror's painted weights (rgba8 per
  *   0.25 m texel, grass first) over materialCells x materialCells; params: recipes/flora/habitat in
  *   the growth recipe; heightQ: the terrain heights (same grid as material), for the slope and
  *   height axes; baseQ: the heights as the island was generated, before any edit, for shapedCm;
- *   pad: the keeper's camp pad (store slice campPad: center and radius, m), for the clear mask
+ *   pad: the keeper's camp pad (store slice campPad: center and radius, m), for the clear mask;
+ *   held: the placed pieces' footprints (store slice pieces), for the held mask; fire: the fire
+ *   ring and its lit days (store slice camp), for the fire cause
  * @returns {Habitat}
  */
 export function buildHabitat(args) {
@@ -218,8 +225,51 @@ export function buildHabitat(args) {
   // none keeps its hash.
   const clear = args.pad ? padClearMask(args.pad) : undefined;
   if (clear) for (let k = 0; k < clear.length; k++) h = Math.imul(h ^ clear[k], 0x01000193) >>> 0;
+  // Held ground under placed pieces and the fire's cause (docs/future/13 PR-07, PR-40): each joins
+  // the hash only when given, so an island with neither keeps its hash.
+  const held = args.held?.length ? heldMask(args.held) : undefined;
+  if (held) for (let k = 0; k < held.length; k++) h = Math.imul(h ^ held[k], 0x01000193) >>> 0;
+  const fire = args.fire ? { x: args.fire.x, z: args.fire.z, days: args.fire.days } : undefined;
+  if (fire) for (const v of [Math.round(fire.x * 100), Math.round(fire.z * 100), fire.days]) h = Math.imul(h ^ (v | 0), 0x01000193) >>> 0;
   return { n: N, depthCm, moisture, salt, still, sea, grass, open, band, sand, rock, soil, slopeDeg,
-    heightDm: args.heightQ ? heightDm : undefined, shapedCm, clear, hash: h >>> 0 };
+    heightDm: args.heightQ ? heightDm : undefined, shapedCm, clear, held, fire,
+    pad: args.pad ? { x: args.pad.x, z: args.pad.z, r: args.pad.r } : undefined, hash: h >>> 0 };
+}
+
+/**
+ * The held mask (docs/future/13 PR-07): 1 on every habitat cell that reaches onto a placed piece's
+ * footprint (stones, logs, pond stones, Steps, rafts, camp piles), so no gather plant spreads or
+ * volunteers into them. A footprint is a segment with a half width: a log along its length, a
+ * flight of Steps from its foot to its head, every other piece a disc of half its size.
+ * @param {{ kind: string, x: number, z: number, yaw: number, size: number, length?: number, x2?: number, z2?: number }[]} list
+ */
+export function heldMask(list) {
+  const N = HABITAT_CELLS;
+  const held = new Uint8Array(N * N);
+  for (const p of list) {
+    let ax = p.x, az = p.z, bx = p.x, bz = p.z;
+    const w = p.size / 2;
+    if (p.kind === 'log' && p.length) {
+      const hx = det.sin(p.yaw) * p.length / 2, hz = det.cos(p.yaw) * p.length / 2;
+      ax -= hx; az -= hz; bx += hx; bz += hz;
+    } else if (p.kind === 'steps' && typeof p.x2 === 'number' && typeof p.z2 === 'number') { bx = p.x2; bz = p.z2; }
+    const i0 = Math.max(0, Math.floor(Math.min(ax, bx) - w - HABITAT_ORIGIN)), i1 = Math.min(N - 1, Math.floor(Math.max(ax, bx) + w - HABITAT_ORIGIN));
+    const j0 = Math.max(0, Math.floor(Math.min(az, bz) - w - HABITAT_ORIGIN)), j1 = Math.min(N - 1, Math.floor(Math.max(az, bz) + w - HABITAT_ORIGIN));
+    const dx = bx - ax, dz = bz - az, len2 = dx * dx + dz * dz;
+    for (let j = j0; j <= j1; j++) {
+      for (let i = i0; i <= i1; i++) {
+        // The cell's nearest point to the segment, tried at the segment point nearest its middle.
+        const cx = HABITAT_ORIGIN + i + 0.5, cz = HABITAT_ORIGIN + j + 0.5;
+        const t = len2 > 0 ? Math.min(1, Math.max(0, ((cx - ax) * dx + (cz - az) * dz) / len2)) : 0;
+        const sx = ax + dx * t, sz = az + dz * t;
+        const x0 = cx - 0.5, z0 = cz - 0.5;
+        const ex = sx < x0 ? x0 - sx : sx > x0 + 1 ? sx - x0 - 1 : 0;
+        const ez = sz < z0 ? z0 - sz : sz > z0 + 1 ? sz - z0 - 1 : 0;
+        if (ex * ex + ez * ez < w * w) held[j * N + i] = 1;
+      }
+    }
+  }
+  return held;
 }
 
 /**

@@ -40,6 +40,9 @@ export function mountPack(row, words, sketchOf) {
       item: (c) => c.gathers?.[n]?.kind ?? null, chip: CHIP_FOR.gather,
       when: (c) => !!c.gathers?.[n], action: () => ({ type: 'gather.take', n }) });
   }
+  // A plant to look at, never pick (iris, marsh marigold): Leave it be closes the card.
+  registerCardAction({ id: 'leavebe', icon: 'release', order: 0, main: true, label: (c) => c.leaveBeLabel ?? 'Leave it be',
+    when: (c) => !!c.lookOnly, action: () => ({ type: 'gather.leaveBe' }) });
   registerCardAction({ id: 'heaphere', icon: 'setdown', order: 0, main: true, label: words.setDownHere,
     item: (c) => c.full?.kind ?? null, chip: CHIP_FOR.setdown,
     when: (c) => !!c.full && c.full.g?.heap === undefined, action: () => ({ type: 'gather.heapHere' }) });

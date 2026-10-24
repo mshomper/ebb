@@ -74,8 +74,9 @@ fn facingSide(p: vec3f, dir: vec3f) -> vec3f {
 
 @vertex
 fn vsThrift(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> VsOut {
-  let a = plants[ii * 2u];
-  let b = plants[ii * 2u + 1u];
+  let a = plants[ii * FLORA_STRIDE];
+  let b = plants[ii * FLORA_STRIDE + 1u];
+  let lk = floraLookOf(ii);
   let stage = u32(round(a.w));
   let size = clamp(a.z, 0.0, 1.0);
   let seed = stage == FLORA_SEED;
@@ -91,7 +92,7 @@ fn vsThrift(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) ->
     // ---- a blade of the cushion ----
     let blade = vi / BLADE_VERTS;
     let corner = vi % BLADE_VERTS;
-    let blades = select(u32(round(mix(td.shape.x, td.shape.y, size))), u32(td.head.w), seed);
+    let blades = select(u32(round(floraKeep(mix(td.shape.x, td.shape.y, size), lk, false))), u32(td.head.w), seed);
     if (blade >= blades) { return nothing(); }
     let h0 = hash3(vec3u(plantU, blade, salt));
     let h1 = pcg(h0);
@@ -106,8 +107,25 @@ fn vsThrift(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) ->
     let elev = mix(0.35, 1.5, sqrt(v.z));
     let az2 = az + (v.w - 0.5) * 0.8;
     let domeN = normalize(vec3f(cos(az2) * cos(elev) / max(radius, 1e-3), sin(elev) / max(domeH, 1e-3), sin(az2) * cos(elev) / max(radius, 1e-3)));
-    let tipP = center + vec3f(cos(az2) * cos(elev) * radius, sin(elev) * domeH, sin(az2) * cos(elev) * radius) * (0.85 + 0.3 * v.w);
-    let tip = select(tipP, root + vec3f((v.w - 0.5) * 0.02, td.head.z * (0.7 + 0.6 * v.z), (v.x - 0.5) * 0.02), seed);
+    var tipP = center + vec3f(cos(az2) * cos(elev) * radius, sin(elev) * domeH, sin(az2) * cos(elev) * radius) * (0.85 + 0.3 * v.w);
+    // Picked: the tips trimmed back; drowned: the blades laid down toward the ground.
+    tipP = root + (tipP - root) * (1.0 - floraLooks.pick.y * lk.x * step(0.4, v.w));
+    tipP.y = mix(tipP.y, center.y + 0.01, floraLooks.drown.x * lk.z);
+    var tip = select(tipP, root + vec3f((v.w - 0.5) * 0.02, td.head.z * (0.7 + 0.6 * v.z), (v.x - 0.5) * 0.02), seed);
+    // A plant picked past the cut share lays a few cut blades flat at its foot.
+    let cuts = select(0u, u32(floraLooks.pick.w), !seed && lk.x >= floraLooks.pick.z);
+    if (blade < cuts) {
+      let ca = (f32(blade) + 0.4 * v.x) * 2.3;
+      let cr = radius * (1.05 + 0.3 * v.y);
+      tip = center + vec3f(cos(ca) * (cr + 0.6 * radius), 0.008, sin(ca) * (cr + 0.6 * radius));
+      let cp = center + vec3f(cos(ca + 0.15) * cr, 0.008, sin(ca + 0.15) * cr);
+      let cs = facingSide(cp, normalize(tip - cp));
+      let cw = max(td.bloom.x * 1.2, floraPixelM(cp) * td.c.misc.z);
+      var q = tip;
+      if (corner == 0u) { q = cp - cs * cw * 0.5; }
+      if (corner == 1u) { q = cp + cs * cw * 0.5; }
+      return emit(q, up, floraLookAlbedo(td.c.albedo.xyz, lk) * 0.85, 0.9);
+    }
     let dir = normalize(tip - root);
     let side = facingSide(root, dir);
     let width = max(td.bloom.x * (0.8 + 0.4 * v.y), floraPixelM(root) * td.c.misc.z);
@@ -116,14 +134,14 @@ fn vsThrift(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) ->
     if (corner == 1u) { p = root + side * width * 0.5; }
     let tint = 0.85 + 0.3 * hashToFloat(h3 ^ 0x2b7u);
     let t = select(1.0, 0.0, corner < 2u);
-    return emit(p, mix(up, domeN, 0.8), td.c.albedo.xyz * tint * (0.8 + 0.35 * t), mix(td.look.z, 1.0, t));
+    return emit(p, mix(up, domeN, 0.8), floraLookAlbedo(td.c.albedo.xyz, lk) * tint * (0.8 + 0.35 * t), mix(td.look.z, 1.0, t));
   }
 
   // ---- a pompom on its stalk: flowering cushions only ----
   let kf = vi - bladesMax * BLADE_VERTS;
   let fi = kf / FLOWER_VERTS;
   let slot = kf % FLOWER_VERTS;
-  let flowers = u32(round(mix(td.bloom.y, td.bloom.z, size)));
+  let flowers = u32(round(floraKeep(mix(td.bloom.y, td.bloom.z, size), lk, true)));
   if (stage != FLORA_FLOWERING || fi >= flowers) { return nothing(); }
   let hf = hash3(vec3u(plantU, fi, salt ^ 0x7f4au));
   let vf = vec3f(hashToFloat(hf), hashToFloat(pcg(hf)), hashToFloat(pcg(pcg(hf))));
@@ -131,10 +149,11 @@ fn vsThrift(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) ->
   let rb = radius * 0.55 * sqrt(vf.y);
   let baseXZ = center.xz + vec2f(cos(az), sin(az)) * rb;
   let base = vec3f(baseXZ.x, center.y, baseXZ.y);
-  let height = td.bloom.w * (1.0 - td.look.x * 0.5 + td.look.x * vf.z) * mix(0.6, 1.0, size);
+  // A drowning plant's heads droop on lower, leaning stalks.
+  let height = td.bloom.w * (1.0 - td.look.x * 0.5 + td.look.x * vf.z) * mix(0.6, 1.0, size) * (1.0 - floraLooks.drown.z * lk.z);
   // Lean a little outward; sway with gusts, stiff at the base.
   let lean = 0.12 + 0.2 * vf.y;
-  let axis = normalize(vec3f(cos(az) * lean, 1.0, sin(az) * lean));
+  let axis = floraLookLean(normalize(vec3f(cos(az) * lean, 1.0, sin(az) * lean)), lk);
   let gust = floraGust(td.c, baseXZ, td.flower.w, td.stalk.w, vf.z);
   let bend = vec3f(td.c.wind.x, 0.0, td.c.wind.y) * (td.c.wind.w * td.look.w * gust);
   let k = 2.0;
@@ -145,7 +164,7 @@ fn vsThrift(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) ->
     let tangent = floraTangent(axis, bend, k, corner.y);
     let side = facingSide(p0, tangent);
     let width = max(td.head.x, floraPixelM(p0) * td.c.misc.z);
-    return emit(p0 + side * corner.x * width * 0.5, normalize(cross(side, tangent)), td.stalk.xyz, mix(td.look.z, 1.0, corner.y));
+    return emit(p0 + side * corner.x * width * 0.5, normalize(cross(side, tangent)), floraLookAlbedo(td.stalk.xyz, lk), mix(td.look.z, 1.0, corner.y));
   }
   // The head: a hexagon facing the camera at the stalk's top, shaded as a ball.
   let top = floraCurve(base, axis, bend, height, k, 1.0);
