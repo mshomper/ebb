@@ -7,6 +7,12 @@
 
 const DEG = Math.PI / 180;
 const SEASONS = /** @type {const} */ (['spring', 'summer', 'autumn', 'winter']);
+/** A thrift-drawn head's form (flora-thrift.wgsl form.x). @type {Record<string, number>} */
+const HEAD_FORMS = { ball: 0, flat: 1, daisy: 2 };
+/** An iris-drawn flower's shape (flora-iris.wgsl gust.y) and its vertices. @type {Record<string, number>} */
+const IRIS_FLOWERS = { flag: 0, cup: 1, spike: 2 };
+/** @type {Record<string, number>} */
+const IRIS_FLOWER_VERTS = { flag: 42, cup: 81, spike: 78 };
 
 /**
  * @typedef {Object} FloraKind
@@ -96,8 +102,8 @@ export const FLORA_KINDS = {
 
   iris: {
     shader: 'flora-iris', vs: 'vsIris', fs: 'fsIris',
-    // Leaves of 21 vertices, then flowers of 42 (flag) or 81 (cup).
-    vertices: (r) => 21 * r.shape.fansPerClump[1] * r.shape.leavesPerFan[1] + (r.shape.flower === 'cup' ? 81 : 42) * r.shape.flowersPerClump[1],
+    // Leaves of 21 vertices, then flowers of 42 (flag), 81 (cup) or 78 (spike).
+    vertices: (r) => 21 * r.shape.fansPerClump[1] * r.shape.leavesPerFan[1] + (IRIS_FLOWER_VERTS[r.shape.flower] ?? 42) * r.shape.flowersPerClump[1],
     pack(r, f) {
       const S = r.shape, L = r.look, C = r.season;
       f.set([S.fansPerClump[0], S.fansPerClump[1], S.clumpRadius, S.maxHeight], 12);
@@ -108,9 +114,10 @@ export const FLORA_KINDS = {
       f.set(C.tipBrown, 32); f[35] = r.wind.stiffness;
       f.set(C.flower, 36); f[39] = r.wind.sway;
       f.set(C.stalk, 40); f[43] = 1 / L.gustM;
-      // The flower and leaf shapes (marsh marigold: a glossy cup and kidney leaves; iris: flag, sword).
-      const G = r.gloss ?? {}, U = S.cup ?? {};
-      f.set([L.gustSpeed, S.flower === 'cup' ? 1 : 0, S.leaf === 'kidney' ? 1 : 0, 0], 44);
+      // The flower and leaf shapes (marsh marigold: a glossy cup and kidney leaves; iris: flag, sword;
+      // water mint: a spike, its width and length shares in the cup's last two slots).
+      const G = r.gloss ?? {}, U = S.cup ?? S.spike ?? {};
+      f.set([L.gustSpeed, IRIS_FLOWERS[S.flower] ?? 0, S.leaf === 'kidney' ? 1 : 0, 0], 44);
       f.set([G.petalRoughness ?? 0, G.leafRoughness ?? 0, G.f0 ?? 0.04, 0], 48);
       f.set([(U.riseDeg ?? 45) * DEG, U.curl ?? 0, U.widthShare ?? 0.9, U.lengthShare ?? 0.5], 52);
     },
@@ -146,6 +153,11 @@ export const FLORA_KINDS = {
       f.set([L.heightVar, L.radiusMin, L.rootShade, r.wind.sway], 24);
       f.set(C.flower, 28); f[31] = 1 / L.gustM;
       f.set(C.stalk, 32); f[35] = L.gustSpeed;
+      // The head's form and the winter crown (P2b; thrift and campion keep the ball and stay green).
+      const H = S.head ?? {}, W = r.crown;
+      f.set([HEAD_FORMS[H.form] ?? 0, H.dome ?? 0, W ? 1 : 0, H.heartShare ?? 0], 36);
+      f.set(C.heart ?? [0, 0, 0], 40); f[43] = H.petals ?? 0;
+      f.set(W?.albedo ?? [0, 0, 0], 44); f[47] = W?.heightShare ?? 1;
     },
     frame: common,
   },

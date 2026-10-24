@@ -206,6 +206,55 @@ const ICONS = {
     <circle ${ACCENT} cx="17" cy="10" r="2.1"/>
     <circle cx="17" cy="10" r="2.1"/>`,
 
+  // Water mint (species chip): a square stem rising from a wavy water line, two pairs of round
+  // leaves, and a short lilac flower head at the top.
+  watermint: `
+    <path d="M3 20.5C4.5 19.5 6 19.5 7.5 20.5S10.5 21.5 12 20.5S15 19.5 16.5 20.5S19.5 21.5 21 20.5"/>
+    <path d="M12 19.5V7.6"/>
+    <path ${ACCENT} d="M12 15.4C10 17 6.6 16.6 5.8 13.8C8 12.4 10.8 13 12 15.4ZM12 15.4C14 17 17.4 16.6 18.2 13.8C16 12.4 13.2 13 12 15.4Z"/>
+    <path d="M12 15.4C10 17 6.6 16.6 5.8 13.8C8 12.4 10.8 13 12 15.4Z"/>
+    <path d="M12 15.4C14 17 17.4 16.6 18.2 13.8C16 12.4 13.2 13 12 15.4Z"/>
+    <path d="M12 11C10.6 12.2 8.2 11.8 7.6 9.8C9.2 8.8 11.2 9.2 12 11Z"/>
+    <path d="M12 11C13.4 12.2 15.8 11.8 16.4 9.8C14.8 8.8 12.8 9.2 12 11Z"/>
+    <path ${ACCENT} d="M12 2.6C13.4 2.6 14.1 3.8 14.1 5.1S13.3 7.6 12 7.6S9.9 6.4 9.9 5.1S10.6 2.6 12 2.6Z"/>
+    <path d="M12 2.6C13.4 2.6 14.1 3.8 14.1 5.1S13.3 7.6 12 7.6S9.9 6.4 9.9 5.1S10.6 2.6 12 2.6Z"/>`,
+
+  // Meadowsweet (species chip): two tall stems from the ground line, each under a frothy,
+  // flat-topped head, one broad leaf low on the stem.
+  meadowsweet: `
+    <path d="M3.5 20.5H20.5"/>
+    <path d="M10 20.5C9.8 15.5 9.6 11 9.6 7.6M9.6 7.6L6.4 6.4M9.6 7.6L12.6 6.2M13.4 20.5C14.4 16 15.4 13.4 16.6 11.6M16.6 11.6L14.6 10.6M16.6 11.6L18.6 10.8"/>
+    <circle ${ACCENT} cx="9.4" cy="4.6" r="3.6"/>
+    <circle cx="5.6" cy="5.4" r="1.3"/><circle cx="8" cy="3.6" r="1.3"/><circle cx="10.8" cy="3.4" r="1.3"/><circle cx="13.2" cy="5" r="1.3"/>
+    <circle ${ACCENT} cx="16.8" cy="9.4" r="2.6"/>
+    <circle cx="14.2" cy="9.6" r="1.1"/><circle cx="16.6" cy="8.2" r="1.1"/><circle cx="19" cy="9.4" r="1.1"/>
+    <path d="M9.8 16.2C8.2 14.4 5.8 14 4 15C5.4 16.8 7.8 17.2 9.8 16.2Z"/>`,
+
+  // Nettle (species chip): one upright stem from the ground line, pairs of pointed, toothed
+  // leaves getting smaller toward the top.
+  nettle: `
+    <path d="M3.5 20.5H20.5"/>
+    <path d="M12 20.5V3"/>
+    <path ${ACCENT} d="M12 17Q8 18.5 5 12L6.8 12.2L7.2 13.3L8.6 13L9 14.2L10.4 14L11 15.2ZM12 17Q16 18.5 19 12L17.2 12.2L16.8 13.3L15.4 13L15 14.2L13.6 14L13 15.2Z"/>
+    <path d="M12 17Q8 18.5 5 12L6.8 12.2L7.2 13.3L8.6 13L9 14.2L10.4 14L11 15.2Z"/>
+    <path d="M12 17Q16 18.5 19 12L17.2 12.2L16.8 13.3L15.4 13L15 14.2L13.6 14L13 15.2Z"/>
+    <path d="M12 11.6Q9 12.7 6.8 7.9L8.1 8L8.4 8.8L9.5 8.6L9.8 9.5L10.8 9.4L11.3 10.3Z"/>
+    <path d="M12 11.6Q15 12.7 17.2 7.9L15.9 8L15.6 8.8L14.5 8.6L14.2 9.5L13.2 9.4L12.7 10.3Z"/>
+    <path d="M12 6.4Q10.2 7.1 8.9 4.2Q10.6 4.4 12 6.4ZM12 6.4Q13.8 7.1 15.1 4.2Q13.4 4.4 12 6.4Z"/>`,
+
+  // Chamomile (species chip): a low feathery mat on the ground line, two daisies on short stems,
+  // white petals round a solid gold heart.
+  chamomile: `
+    <path ${ACCENT} d="M4 20.5C4.6 17.8 8 16.6 12 16.6S19.4 17.8 20 20.5Z"/>
+    <path d="M4 20.5C4.6 17.8 8 16.6 12 16.6S19.4 17.8 20 20.5"/>
+    <path d="M2.5 20.5H21.5"/>
+    <path d="M6.4 18.6L5.6 17.6M9 17.4L8.6 16.2M15 17.4L15.4 16.2M17.6 18.6L18.4 17.6"/>
+    <path d="M10.4 16.8C10 14.6 9 12.8 7.8 11.6M13.6 16.8C14 14 15 11.6 16.2 10"/>
+    <path d="M7.8 11.6m-1.3 0a1.3 1.3 0 1 0 2.6 0a1.3 1.3 0 1 0 -2.6 0M7.8 8.6V7.2M7.8 14.6V16M4.8 11.6H3.4M10.8 11.6H12.2M5.7 9.5L4.7 8.5M9.9 9.5L10.9 8.5M5.7 13.7L4.7 14.7M9.9 13.7L10.9 14.7"/>
+    <circle cx="7.8" cy="11.6" r="1.3" fill="currentColor" stroke="none"/>
+    <path d="M16.2 7m-1.3 0a1.3 1.3 0 1 0 2.6 0a1.3 1.3 0 1 0 -2.6 0M16.2 4V2.6M16.2 10V11.4M13.2 7H11.8M19.2 7H20.6M14.1 4.9L13.1 3.9M18.3 4.9L19.3 3.9M14.1 9.1L13.1 10.1M18.3 9.1L19.3 10.1"/>
+    <circle cx="16.2" cy="7" r="1.3" fill="currentColor" stroke="none"/>`,
+
   // Grass (journal page): five blades of different heights rising from the ground line.
   grass: `
     <path d="M3.5 20.5H20.5"/>

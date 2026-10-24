@@ -7,7 +7,7 @@
 import { plantLooks, pickShares } from '../src/world/growth/looks.js';
 import { packLooks } from '../src/render/passes/flora.js';
 import { loadShader } from '../src/core/gpu.js';
-import { outOfSeasonLine, pickable, partsOf } from '../src/world/gather/plants.js';
+import { outOfSeasonLine, pickable, partsOf, windowsOf } from '../src/world/gather/plants.js';
 import { heldMask, habitatCell, HABITAT_CELLS, HABITAT_ORIGIN } from '../src/world/growth/habitat.js';
 import { gatherClear } from '../src/world/growth/rules.js';
 import { causeOf } from '../src/world/growth/volunteers.js';
@@ -103,12 +103,14 @@ export function addPlantRulesTests(test, assert, eq) {
   test(G, 'every half day from autumn to the end of spring: gathering opens and closes where the words say, and they never name now as still to come', async () => {
     const gather = await json('world/gather');
     const W = gather.words;
-    const floraOf = { willow: await json('flora/willow'), reeds: await json('flora/reeds'), gorse: await json('flora/gorse') };
+    /** @type {Record<string, any>} */
+    const floraOf = { willow: await json('flora/willow'), reeds: await json('flora/reeds'), gorse: await json('flora/gorse'), nettle: await json('flora/nettle') };
     const SEASONS = ['spring', 'summer', 'autumn', 'winter'];
     /** @type {string[]} */ const opened = [];
-    for (const [sp, part] of [['willow', 'withies'], ['willow', 'bark'], ['reeds', 'down'], ['gorse', 'flowers']]) {
-      const flora = floraOf[/** @type {'willow'|'reeds'|'gorse'} */ (sp)];
-      const w = gather.plants.parts[`${sp}.${part}`].window;
+    // Nettle tops (P2b) have two windows, spring and again in autumn.
+    for (const [sp, part] of [['willow', 'withies'], ['willow', 'bark'], ['reeds', 'down'], ['gorse', 'flowers'], ['nettle', 'tops']]) {
+      const flora = floraOf[sp];
+      const ws = windowsOf(gather.plants.parts[`${sp}.${part}`].window);
       let days = 0;
       // Autumn day 0 to spring day 13, every game hour on the hour of noon and of midnight.
       for (let h = 0; h < 3 * 14 * 2; h++) {
@@ -116,7 +118,7 @@ export function addPlantRulesTests(test, assert, eq) {
         const day = `${SEASONS[Math.floor(pos)]} day ${Math.floor((pos % 1) * 14)}`;
         const plant = { id: 31, sp, size: 0.95, best: 0.95, stage: 3 };
         const r = pickable(plant, part, { flora, pos }, gather);
-        const inside = w[1] > w[0] ? pos >= w[0] && pos < w[1] : pos >= w[0] || pos < w[1];
+        const inside = ws.some((w) => (w[1] > w[0] ? pos >= w[0] && pos < w[1] : pos >= w[0] || pos < w[1]));
         eq(r.ok, inside, `${sp} ${part} on ${day}`);
         if (r.ok) { if (h % 2 === 0) days++; continue; }
         const line = outOfSeasonLine(plant, sp, part, gather, pos);
@@ -129,6 +131,12 @@ export function addPlantRulesTests(test, assert, eq) {
     }
     // Every day of winter, withies and bark; reed down all autumn and winter but the last day or so.
     assert(opened[0].startsWith('willow withies 14 ') && opened[1].startsWith('willow bark 14 '), opened.join('; '));
+    // Nettle tops: most of autumn, then most of spring; after autumn's, the words point to spring.
+    assert(opened[4].startsWith('nettle tops 2'), opened.join('; '));
+    const afterAutumn = outOfSeasonLine({ stage: 3 }, 'nettle', 'tops', gather, 2.9);
+    assert(/spring/.test(afterAutumn), `nettle tops at the end of autumn: "${afterAutumn}"`);
+    const summer = outOfSeasonLine({ stage: 3 }, 'nettle', 'tops', gather, 1.5);
+    assert(/autumn/.test(summer), `nettle tops in summer: "${summer}"`);
     return opened.join('; ');
   });
 

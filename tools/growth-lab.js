@@ -12,6 +12,7 @@ import { hourIndex } from '../src/core/clock.js';
 import { HABITAT_CELLS, HABITAT_ORIGIN } from '../src/world/growth/habitat.js';
 import { initialJournal, observe } from '../src/world/journal/observe.js';
 import { loadRecipe } from '../src/core/recipes.js';
+import { suitability } from '../src/world/growth/coarse.js';
 
 const DAYS = 14;
 const HOURS = DAYS * 24;
@@ -25,7 +26,8 @@ const DOT_OK = '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" fill="#7C
 
 // One fixed color per known species; any other id gets the fallback so it still shows.
 /** @type {Record<string, string>} */
-const SPECIES_RGB = { reeds: '#3E6B3A', lilies: '#2E7D6B', iris: '#C9A227', thrift: '#C8628C', marigold: '#E0A800', campion: '#8E9AA6', willow: '#6F8A6A', gorse: '#8C7A1C' };
+const SPECIES_RGB = { reeds: '#3E6B3A', lilies: '#2E7D6B', iris: '#C9A227', thrift: '#C8628C', marigold: '#E0A800', campion: '#8E9AA6', willow: '#6F8A6A', gorse: '#8C7A1C',
+  watermint: '#8A6FB0', meadowsweet: '#B8A46A', nettle: '#2F5A2A', chamomile: '#D08A2E' };
 const OTHER_RGB = '#6B6F80';
 // Map colors (r, g, b). Up here so they exist before the first map is drawn during startup.
 const SEA = [47, 110, 134];
@@ -77,8 +79,7 @@ if (!result.ok) {
   $('status').innerHTML = `${ICON_WARN}<span>WebGPU is not available here (${result.reason}). Open this page in current Chrome or Edge.</span>`;
 } else {
   const world = result.world;
-  ENV = world.env;
-  buildSpeciesUi(speciesIds(world.state?.growth?.plants ?? []));
+  ENV = world.env;  buildSpeciesUi(speciesIds(world.state?.growth?.plants ?? []));
   drawCharts();
   addEventListener('resize', drawCharts);
 
@@ -95,6 +96,7 @@ if (!result.ok) {
     const plants = world.state?.growth?.plants ?? [];
     buildSpeciesUi(speciesIds(plants));
     drawMap(hab, plants);
+    drawHerbGround(hab);
     $('map-title').textContent = 'What the plants see now, one square per meter, north up. After a run it shows the island 14 days later.';
   };
   waitForHabitat();
@@ -428,6 +430,73 @@ function drawMap(hab, plants) {
   $('map-stats').textContent =
     `Plants: ${perSpecies}. Wet ground ${wet} m², salty ground ${salty} m² (over half way on each scale). ` +
     `Habitat fingerprint ${hex(hab.hash ?? 0)}.`;
+}
+
+/**
+ * Where each tea herb could grow on this island now (P2b): one small map per herb (growth.json
+ * testSets.herbs), the island in grey, ground a volunteer could land on (at least volunteers.minSuit)
+ * in the herb's colour, and fair ground (half that or more) in a paler wash, with the square meters
+ * of each. The camp pad never counts.
+ * @param {any} hab
+ */
+function drawHerbGround(hab) {
+  const box = $('herb-ground');
+  const ids = ENV?.recipes?.growth?.testSets?.herbs ?? [];
+  const minSuit = ENV?.recipes?.growth?.volunteers?.minSuit ?? 0.8;
+  const N = HABITAT_CELLS;
+  let x0 = N, z0 = N, x1 = -1, z1 = -1;
+  for (let k = 0; k < N * N; k++) {
+    if (!hab.open[k]) continue;
+    const i = k % N, j = Math.floor(k / N);
+    if (i < x0) x0 = i; if (i > x1) x1 = i; if (j < z0) z0 = j; if (j > z1) z1 = j;
+  }
+  if (x1 < 0) return;
+  const cw = x1 - x0 + 1, ch = z1 - z0 + 1;
+  box.textContent = '';
+  for (const id of ids) {
+    const rec = ENV.recipes.flora?.[id];
+    if (!rec) continue;
+    const rgb = hexRgb(colorOf(id));
+    const small = document.createElement('canvas');
+    small.width = cw; small.height = ch;
+    const sg = /** @type {CanvasRenderingContext2D} */ (small.getContext('2d'));
+    const img = sg.createImageData(cw, ch);
+    let good = 0, fair = 0;
+    for (let j = 0; j < ch; j++) for (let i = 0; i < cw; i++) {
+      const k = (z0 + j) * N + (x0 + i);
+      let c;
+      if (hab.sea[k] || !hab.open[k]) c = [196, 210, 214];
+      else {
+        const x = HABITAT_ORIGIN + x0 + i + 0.5, z = HABITAT_ORIGIN + z0 + j + 0.5;
+        const s = hab.clear?.[k] ? 0 : suitability(rec, hab, x, z).suit;
+        const base = hab.depthCm[k] > 0 ? [170, 196, 210] : [214, 208, 192];
+        if (s >= minSuit) { good++; c = rgb; } else if (s >= minSuit / 2) { fair++; c = mix(base, rgb, 0.35); } else c = base;
+      }
+      const o = (j * cw + i) * 4;
+      img.data[o] = c[0]; img.data[o + 1] = c[1]; img.data[o + 2] = c[2]; img.data[o + 3] = 255;
+    }
+    sg.putImageData(img, 0, 0);
+    const cv = document.createElement('canvas');
+    const scale = Math.max(1, Math.floor(240 / Math.max(cw, ch)));
+    cv.width = cw * scale; cv.height = ch * scale;
+    cv.className = 'herbmap';
+    cv.setAttribute('aria-label', `Where ${nameOf(id)} could grow`);
+    const g = /** @type {CanvasRenderingContext2D} */ (cv.getContext('2d'));
+    g.imageSmoothingEnabled = false;
+    g.drawImage(small, 0, 0, cv.width, cv.height);
+    const fig = el('figure', 'card herb');
+    fig.append(cv);
+    const cap = el('figcaption');
+    cap.append(el('b', '', nameOf(id)));
+    cap.append(el('span', good ? '' : 'none', good ? `${good} m² it could arrive on, ${fair} m² fair` : `No ground for it yet (${fair} m² fair)`));
+    fig.append(cap);
+    box.append(fig);
+  }
+}
+
+/** '#RRGGBB' as [r, g, b]. @param {string} h */
+function hexRgb(h) {
+  return [1, 3, 5].map((i) => Number.parseInt(h.slice(i, i + 2), 16));
 }
 
 /** @param {number[]} a @param {number[]} b @param {number} t */

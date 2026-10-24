@@ -221,8 +221,9 @@ export function observe(journal, ctx) {
       // Here when you arrived: recorded silently (the page's story says "already here"), not a note.
       if (!arrived) note(out, rec, 'seen', sp, hour, date);
       // A plant that came by itself (src/world/growth/volunteers.js): the Plant tool offers it now.
+      // Not a gather plant (plantable false on its page): those are never in the Plant tool.
       const came = state?.growth?.arrived?.[sp];
-      if (!arrived && !k.ever && words.plantable && came !== undefined && came > (state.growth.since ?? came)) {
+      if (!arrived && !k.ever && words.plantable && rec.plantable !== false && came !== undefined && came > (state.growth.since ?? came)) {
         out.push({ hour, date, text: words.plantable.replace('{name}', rec.name), sp, kind: 'plantable' });
       }
       if (!k.ever) { k.first = hour; k.arrived = arrived; }

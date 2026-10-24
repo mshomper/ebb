@@ -10,7 +10,7 @@
  * A part's numbers: the gather.json plants.defaults of its type, overridden by its own entry
  * under plants.parts['<species>.<part>']. null when the species has no such part.
  * @param {string} sp @param {string} part @param {any} recipe gather.json
- * @returns {{ type: string, share: number, readyShare: number, window: number[] } | null}
+ * @returns {{ type: string, share: number, readyShare: number, window: number[] | number[][] } | null}
  */
 export function partOf(sp, part, recipe) {
   const P = recipe.plants?.parts?.[`${sp}.${part}`];
@@ -44,7 +44,8 @@ export function pickable(plant, part, env, recipe) {
   if (plant.best < env.flora.growth.stages.matureSize) return { ok: false, why: 'young' };
   // On the world's calendar, the one the island shows, so the card's words never disagree with it
   // (Matt's click test, October 24: a plant's own few days ahead or behind left gaps at the edges).
-  if (!inWindow(env.pos, P.window)) return { ok: false, why: 'season' };
+  // A part may have two windows in the year (nettle tops: spring, and again in autumn).
+  if (!windowsOf(P.window).some((w) => inWindow(env.pos, w))) return { ok: false, why: 'season' };
   if (plant.size < P.readyShare * plant.best) return { ok: false, why: 'rest' };
   return { ok: true, why: null };
 }
@@ -61,9 +62,12 @@ export function pickable(plant, part, env, recipe) {
 export function outOfSeasonLine(plant, sp, part, recipe, pos) {
   const W = recipe.words ?? {};
   if (plant.stage === DORMANT && W.resting) return W.resting;
-  const start = (((partOf(sp, part, recipe)?.window ?? [0, 4])[0] % 4) + 4) % 4;
   const now = ((pos % 4) + 4) % 4;
-  const days = (((start - now) % 4) + 4) % 4 * 14;
+  // The start of the next window from now (a part with two windows names the nearer one).
+  const ahead = (/** @type {number} */ s) => ((((s % 4) + 4) % 4 - now) % 4 + 4) % 4;
+  const start = windowsOf(partOf(sp, part, recipe)?.window ?? [0, 4]).map((w) => ((w[0] % 4) + 4) % 4)
+    .reduce((a, b) => (ahead(b) < ahead(a) ? b : a));
+  const days = ahead(start) * 14;
   const thirds = /** @type {string[]} */ (W.when ?? []);
   let when = thirds[Math.floor(start * 3) % 12];
   if (days <= (W.soonDays ?? 3)) when = W.soon;
@@ -71,6 +75,12 @@ export function outOfSeasonLine(plant, sp, part, recipe, pos) {
   const tpl = W.comes?.[part] ?? W.comes?.default;
   return [W.nothingNow, tpl && when ? tpl.replace('{when}', when) : null].filter(Boolean).join(' ');
 }
+
+/**
+ * A part's windows as a list: one [from, to) or several ([[from, to), [from, to)]).
+ * @param {number[] | number[][]} w @returns {number[][]}
+ */
+export const windowsOf = (w) => (Array.isArray(w[0]) ? /** @type {number[][]} */ (w) : [/** @type {number[]} */ (w)]);
 
 /** The dormant stage, as growth/coarse.js STAGE.dormant. */
 const DORMANT = 5;

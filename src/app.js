@@ -300,6 +300,9 @@ export async function startApp(canvas, hooks = {}) {
   // (growth.json starters; the rest otherwise come by themselves, volunteers.js).
   const growthRecipe = { ...(await loadRecipe('world/growth')) };
   if (params.get('plants') === 'all') growthRecipe.starters = [...growthRecipe.species, ...(growthRecipe.cover ?? [])];
+  // `?plants=herbs` (testing, unsaved): the starters plus a set from growth.json testSets (the four tea herbs).
+  const testSet = growthRecipe.testSets?.[params.get('plants') ?? ''];
+  if (testSet) growthRecipe.starters = [...growthRecipe.starters, ...testSet];
   /** @type {Record<string, any>} */
   const flora = Object.fromEntries(await Promise.all(growthRecipe.species.map(async (/** @type {string} */ sp) => [sp, await loadRecipe(`flora/${sp}`)])));
   /** @type {Record<string, any>} the cover plants other than grass (rushes) */

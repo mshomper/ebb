@@ -2,7 +2,7 @@
   "type": "journal",
   "version": 1,
   "note": "The field journal (docs 13, 15): the words it writes and the numbers that shape them. order: the living things with pages, in page order. Each species: name and icon (src/ui/icons), riddle (shown before it has been seen), amount ([at least this many plants, words] steps; a cover plant (kind cover: grass, rushes) uses its share of the dry ground instead, or with amountBy area the square meters it covers), place and compass (where words: compass false skips the side of the island), none (after it has gone), clause words (flowering, dormant, spreading, receding), stages (what tapping one says, by growth stage: seed, sprout, young, mature, flowering, dormant), seasons (what each season box says: grow per season, flower, dormant), likes (lines learned when one of the learn triggers happens: seen, spread, flower, lost:drown, lost:seed, refused:<need>, grass:flooded), gives (a pencil line until the when trigger, then the ink line), notes (the lines the journal writes). trend: a species is spreading when it has gained at least max(upMin, upShare x then) plants over trend hours, receding when it has lost at least max(downMin, downShare x then). where: spreadOut is the mean distance from the plants' middle, as a share of the island's radius, past which they are all around the island; centerShare is how close to the island's middle counts as the middle. notesKept: notes the journal keeps; pageNotes: notes on a species page. islandNote: how long a note stays on the island (showS), the gap between two (gapS) and how many may wait (queue). identify: how near a tap must be to a plant (radiusM), how long the card stays (showS; it closes by itself only after closeS at the least, never while the pointer is over it or after one of its actions was pressed, and for closingGraceS after closing it still takes a late press so it never falls through as a walk), and the size of the breathing ring around what was tapped (ringM for a full-grown plant, smaller for young ones; grassRingM on grass; its timing is in recipes/world/growth.json marks); a species may set its own tapM (how near a tap must be) and ringM, as grey willow does for its wide crown. arrivedHours: plants seen within this many hours of the journal starting were here when you arrived. J1.5: each species also has plural (for the story lines), field (field notes: natural history lines learned like likes, by triggers that include dormant, woke and moment:<id>) and fieldHint (the pencil line while some are still to learn). story: the lines of 'your island's story' ({Plural}, {plural} and {date} are filled in; peak shows when the count has fallen under peakShare of its best). moments: four frames per page by kind (plant, cover for grass and rushes, ground in journal-island.json), each filled the first time you tap that thing at that moment: flower (in flower), summer, winter, rain (rain at least rainAt), mist (at least mistAt), dawn and dusk (hours of the day, inclusive start, exclusive end), frost (a winter dawn); note is the line written. showMe: how long (showS) the ring and card stay after a page's Show me rings the example nearest the middle of your view (the camera does not move). S6a, animals: a creature (kind creature: frogs) is known only once you find one yourself (tap it, or watch it from close by; recipes/species/frog.json find), never just because it is on the island; until then its page shows the riddle, or the latest of its hints whose journal flag is set (frogs:right when the pond is right for them, frogs:sign after the first sign). Its notes come in two voices: the unseen ones speak of something (a sign, rings on the water), never naming it; the others once it is known. A swarm (kind swarm: midges) is known by itself, like a plant, at the first dusk (seenAt.hours) that at least seenAt.m2 square meters hold seenAt.share of a full cloud; its amount is in those square meters. seenAt.drawn: whether the island draws the swarm yet; until it does (S6b), midges stay a pencil ? and nothing names them, because the journal only tells what you could see. card: what a tap on one says. foundLine: its story's first line. The animals' moments are moments.creature. buried (src/world/journal/buried.js, docs/future/13 PR-21, PR-29): line, the kind journal line for a patch still gone an hour after the stroke ({where}: the side of the island and the page's place); stroke, the island's notice when one stroke covers growth.json bury.strokeNotice gather plants ({others}: otherOne or others with numbers, {back}: it or them); session, the notice once a session (load or rest to the next rest) at bury.sessionNotice; showS, how long a notice shows.",
-  "order": ["grass", "rushes", "reeds", "lilies", "iris", "marigold", "willow", "thrift", "campion", "gorse", "pondweed", "frogs", "midges", "minnows", "dragonflies", "damselflies", "turtles"],
+  "order": ["grass", "rushes", "reeds", "lilies", "iris", "marigold", "willow", "thrift", "campion", "gorse", "pondweed", "watermint", "meadowsweet", "nettle", "chamomile", "frogs", "midges", "minnows", "dragonflies", "damselflies", "turtles"],
   "findsNote": "Finds (docs/future/11): small shore lives (kind find) found by tapping them, kept apart from order in findOrder. They show under Small lives at the end of Living things, once found and never before (the journal never lists what is missing), with smallLives.marks: one drawn mark for each you have found. card is what a tap names it, cardLine the line under it; place is its page's status once found.",
   "findOrder": ["anemone", "periwinkle", "lugworm", "hermitcrab", "ediblecrab", "shells", "barnacles", "pondskaters", "mussels", "sanddollars", "moonjelly", "fungi", "webs", "sandeel", "goby", "pipefish", "plaice", "wrasse", "shrimp", "shorecrab", "frogspawn", "toads", "slowworms", "lizards", "woodlice", "groundbeetle"],
   "smallLives": { "title": "Small lives", "none": "Look closely along the shore, at low tide, in the rock pools and on the wet sand.", "marks": "Found so far" },
@@ -11,7 +11,7 @@
   "arrivedHours": 2,
   "quietStartHours": 36,
   "_quietStartHours": "A place already right for an animal within this many hours of the island's start (its first evening and night) is recorded silently, not noted (Phase 1 fix F3).",
-  "plantableNote": "plantable: the line written under the first sighting of a plant that came by itself (src/world/growth/volunteers.js), since the Plant tool offers it from then on; {name} is its name.",
+  "plantableNote": "plantable: the line written under the first sighting of a plant that came by itself (src/world/growth/volunteers.js), since the Plant tool offers it from then on; {name} is its name. A page with plantable false (the gather plants, never in the Plant tool) gets no such line.",
   "plantable": "{name} came to the island by itself. You can plant it now.",
   "islandNote": { "showS": 6, "showMeS": 14, "showMeKinds": ["sign", "signAgain", "back", "settled", "settledUnseen", "joined", "joinedUnseen", "uneasy"], "gapS": 1.2, "queue": 3, "more": "{n} more in the journal", "moreOne": "1 more in the journal" },
   "readMarks": { "missed": "You may have missed", "rest": "All notes" },
@@ -601,6 +601,186 @@
         "drown": "A gorse bush drowned where the water rose.",
         "seed": "A gorse seed found the ground too wet to take.",
         "gone": "The last of the gorse is gone."
+      }
+    },
+    "watermint": {
+      "name": "Water mint", "icon": "watermint", "plural": "water mint clumps", "plantable": false,
+      "field": [
+        { "text": "Crushed, a leaf smells strongly of mint. The stem is square, as every mint's is.", "learn": ["seen"] },
+        { "text": "Its lilac flowers come late in summer, packed into a round head at the top of the stem.", "learn": ["flower"] },
+        { "text": "It creeps through the shallows on runners, so one clump becomes a close stand.", "learn": ["spread"] },
+        { "text": "Bees and butterflies work the flower heads on a warm afternoon.", "learn": ["moment:summer"] },
+        { "text": "In winter it dies back to a few dark leaves at the water line.", "learn": ["dormant", "moment:winter"] }
+      ],
+      "fieldHint": "Watch the shallows through the summer to learn more.",
+      "sketch": { "scale": "about 40 cm", "labels": {
+        "leaves": { "text": ["round, toothed", "leaves in pairs"], "learn": ["seen"] },
+        "stem": { "text": ["a square", "stem"], "learn": ["seen"] },
+        "flower": { "text": ["lilac", "flower heads"], "learn": ["flower"] },
+        "water": { "text": ["feet in the", "shallows"], "learn": ["spread"] } } },
+      "riddle": "Something that smells of mint would stand in the shallows, if the pond had a gentle edge.",
+      "amount": [[1, "A single water mint clump"], [2, "A few water mint clumps"], [6, "Water mint along the edge"], [16, "Water mint all along the shallows"]],
+      "place": "in the shallows", "compass": true,
+      "none": "No water mint grows on the island now.",
+      "flowering": "in lilac flower", "dormant": "died back for winter",
+      "spreading": "creeping through the shallows", "receding": "thinning out",
+      "stages": ["A mint seed, waiting in the shallows", "A new mint shoot", "A young water mint clump", "A water mint clump", "A water mint clump in lilac flower", "A water mint clump died back for winter"],
+      "seasons": { "grow": ["new leaves in pairs", "a close green stand", "lilac heads going to seed", "died back"], "flower": "lilac flower heads", "dormant": "died back" },
+      "likes": [
+        { "text": "Shallow fresh water at a gentle edge, a hand's depth at most", "learn": ["seen"] },
+        { "text": "Wet feet: it wilts on a dry bank", "learn": ["refused:dry", "lost:seed"] },
+        { "text": "Not a pond's depths", "learn": ["refused:deep", "lost:drown"] },
+        { "text": "Never the salt of the shore", "learn": ["refused:salt"] },
+        { "text": "Creeps along the edge, a step at a time", "learn": ["spread"] }
+      ],
+      "gives": [
+        { "pencil": "Its leaves might be good for something, picked fresh.", "ink": "Leaves for tea, fresh or dried.", "when": "picked:watermint" },
+        { "pencil": "Something that hums might come to these flowers one day.", "ink": "Nectar for bees and butterflies.", "when": "bees:seen" }
+      ],
+      "notes": {
+        "arrived": "Water mint was already growing in the shallows when you arrived.",
+        "seen": "Water mint has come up in the shallows. A leaf crushed between the fingers smells of mint.",
+        "spread": "The water mint has crept a little further along the edge.",
+        "flower": "The water mint is in lilac flower.",
+        "dormant": "The water mint has died back for winter.",
+        "woke": "New water mint leaves are up in the shallows.",
+        "drown": "Some water mint drowned where the water rose too deep.",
+        "seed": "A mint seed gave up on dry ground.",
+        "gone": "The last of the water mint is gone."
+      }
+    },
+    "meadowsweet": {
+      "name": "Meadowsweet", "icon": "meadowsweet", "plural": "meadowsweet stands", "plantable": false,
+      "field": [
+        { "text": "Its stems are tall and reddish, and its leaves come as pairs of toothed leaflets.", "learn": ["seen"] },
+        { "text": "In high summer it carries frothy cream heads that smell of honey and almonds.", "learn": ["flower"] },
+        { "text": "It spreads by its roots, so a stand slowly widens along the bank.", "learn": ["spread"] },
+        { "text": "The scent hangs heaviest in the warm, still air of a summer dusk.", "learn": ["moment:dusk"] },
+        { "text": "In winter only a crown of dead stalks marks where it stands.", "learn": ["dormant", "moment:winter"] }
+      ],
+      "fieldHint": "Watch the damp bank through high summer to learn more.",
+      "sketch": { "scale": "about 1.2 m", "labels": {
+        "froth": { "text": ["frothy", "cream heads"], "learn": ["flower"] },
+        "stems": { "text": ["tall red", "stems"], "learn": ["seen"] },
+        "leaves": { "text": ["leaflets", "in pairs"], "learn": ["seen"] } } },
+      "riddle": "Something tall and sweet-smelling would grow on damp ground near fresh water, but not in it.",
+      "amount": [[1, "A single meadowsweet"], [2, "A few meadowsweet stems"], [6, "Meadowsweet along the bank"], [12, "Meadowsweet all along the damp bank"]],
+      "place": "on the damp bank", "compass": true,
+      "none": "No meadowsweet grows on the island now.",
+      "flowering": "in frothy cream flower", "dormant": "dead stalks for winter",
+      "spreading": "spreading along the bank", "receding": "thinning out",
+      "stages": ["A meadowsweet seed, waiting for damp ground", "A new meadowsweet shoot", "A young meadowsweet", "A tall meadowsweet", "A meadowsweet in frothy cream flower", "Meadowsweet stalks, dead for winter"],
+      "seasons": { "grow": ["leaflets unfolding", "tall stems and froth", "brown seed heads", "dead stalks"], "flower": "frothy cream heads", "dormant": "dead stalks" },
+      "likes": [
+        { "text": "Damp soil near fresh water", "learn": ["seen"] },
+        { "text": "Never standing in the water itself", "learn": ["refused:deep", "lost:drown"] },
+        { "text": "Wilts on dry ground away from the water", "learn": ["refused:dry", "lost:seed"] },
+        { "text": "Never the salt of the shore", "learn": ["refused:salt"] },
+        { "text": "Widens slowly, by its roots", "learn": ["spread"] }
+      ],
+      "gives": [
+        { "pencil": "These flowers might be good for something, picked in high summer.", "ink": "Flowers for tea, sweet as honey.", "when": "picked:meadowsweet" },
+        { "pencil": "Something small and buzzing might come to this froth one day.", "ink": "Pollen for hoverflies and beetles.", "when": "bees:seen" }
+      ],
+      "notes": {
+        "arrived": "Meadowsweet was already growing on the damp bank when you arrived.",
+        "seen": "Meadowsweet has come up on the damp bank.",
+        "spread": "The meadowsweet stand has widened along the bank.",
+        "flower": "The meadowsweet is out in frothy cream flower, and the bank smells of honey.",
+        "dormant": "The meadowsweet has died back to dead stalks for winter.",
+        "woke": "New meadowsweet leaves are unfolding on the bank.",
+        "drown": "Some meadowsweet drowned where the water rose over the bank.",
+        "seed": "A meadowsweet seed gave up on dry ground.",
+        "gone": "The last of the meadowsweet is gone."
+      }
+    },
+    "nettle": {
+      "name": "Nettle", "icon": "nettle", "plural": "nettle patches", "plantable": false,
+      "field": [
+        { "text": "Nettles follow people. They come up where ash and scraps enrich the ground, close by a fire.", "learn": ["seen"] },
+        { "text": "Fine hairs on its leaves and stems sting at a touch. Pick the young tops carefully, from below.", "learn": ["seen"] },
+        { "text": "Its flowers are strings of tiny green beads hanging from where the leaves join.", "learn": ["flower"] },
+        { "text": "Butterflies lay their eggs on its leaves, and their caterpillars eat nothing else.", "learn": ["spread"] },
+        { "text": "In winter it dies right back, and comes again from the same roots in spring.", "learn": ["dormant", "moment:winter"] }
+      ],
+      "fieldHint": "Keep the fire going, and watch the ground beside it through the year.",
+      "sketch": { "scale": "about 1 m", "labels": {
+        "leaves": { "text": ["toothed leaves", "in pairs"], "learn": ["seen"] },
+        "hairs": { "text": ["stinging", "hairs"], "learn": ["seen"] },
+        "flowers": { "text": ["hanging green", "flowers"], "learn": ["flower"] } } },
+      "riddle": "Something would come up close by, where your fire's ash falls, once the fire had been lit a few times.",
+      "amount": [[1, "A single nettle"], [2, "A few nettles"], [6, "A nettle patch"], [12, "A thick nettle patch"]],
+      "place": "by the fire", "compass": false,
+      "none": "No nettles grow on the island now.",
+      "flowering": "hung with green flowers", "dormant": "died back for winter",
+      "spreading": "spreading by the fire", "receding": "thinning out",
+      "stages": ["A nettle seed, waiting in the ash", "A new nettle shoot", "A young nettle", "A nettle patch", "A nettle patch hung with green flowers", "A nettle patch died back for winter"],
+      "seasons": { "grow": ["young tops", "tall and dark", "fresh tops again", "died back"], "flower": "hanging green flowers", "dormant": "died back" },
+      "likes": [
+        { "text": "Rich soil, where ash has fallen", "learn": ["seen"] },
+        { "text": "Not standing water", "learn": ["refused:deep", "lost:drown"] },
+        { "text": "Not the salt of the shore", "learn": ["refused:salt"] },
+        { "text": "Soil, not sand or bare rock", "learn": ["refused:ground"] },
+        { "text": "Spreads by its roots into a patch", "learn": ["spread"] }
+      ],
+      "gives": [
+        { "pencil": "Its young tops might be good for something, picked with care.", "ink": "Young tops for tea, in spring and again in autumn.", "when": "picked:nettle" },
+        { "pencil": "Something with bright wings might lay its eggs here one day.", "ink": "A nursery for butterflies.", "when": "butterflies:seen" }
+      ],
+      "notes": {
+        "arrived": "Nettles were already growing by the fire when you arrived.",
+        "seen": "A nettle has come up beside the fire, where the ash falls.",
+        "spread": "The nettle patch by the fire has grown.",
+        "flower": "The nettles are hung with strings of green flowers.",
+        "dormant": "The nettles have died back for winter.",
+        "woke": "New nettle tops are up beside the fire.",
+        "drown": "Some nettles drowned where the water rose.",
+        "seed": "A nettle seed found nothing to take in.",
+        "gone": "The last of the nettles is gone."
+      }
+    },
+    "chamomile": {
+      "name": "Chamomile", "icon": "chamomile", "plural": "chamomile mats", "plantable": false,
+      "field": [
+        { "text": "Brush it with your hand and it smells of apples. Its leaves are fine and feathery.", "learn": ["seen"] },
+        { "text": "Each flower is a white daisy round a domed gold heart.", "learn": ["flower"] },
+        { "text": "Mayweed looks almost the same, but smells of nothing. Chamomile always smells of apples.", "learn": ["flower"] },
+        { "text": "It creeps over the sandy turf in late summer, a low mat that can be walked on.", "learn": ["spread"] },
+        { "text": "In winter it sinks to a flat brown mat, and greens again in spring.", "learn": ["dormant", "moment:winter"] }
+      ],
+      "fieldHint": "Watch the sandy turf above the tide through the summer to learn more.",
+      "sketch": { "scale": "about 15 cm", "labels": {
+        "flower": { "text": ["white daisies"], "learn": ["flower"] },
+        "heart": { "text": ["a domed", "gold heart"], "learn": ["flower"] },
+        "mat": { "text": ["a low,", "feathery mat"], "learn": ["seen"] } } },
+      "riddle": "Something small that smells of apples would grow on sandy turf, above the reach of the tide.",
+      "amount": [[1, "A single chamomile mat"], [2, "A few chamomile mats"], [6, "Chamomile over the sandy turf"], [16, "Chamomile all over the sandy turf"]],
+      "place": "on the sandy turf above the tide", "compass": true,
+      "none": "No chamomile grows on the island now.",
+      "flowering": "in white flower", "dormant": "flat and brown for winter",
+      "spreading": "creeping over the sandy turf", "receding": "thinning out",
+      "stages": ["A chamomile seed, waiting in the sand", "A new chamomile shoot", "A young chamomile mat", "A chamomile mat", "A chamomile mat in white flower", "A chamomile mat, flat and brown for winter"],
+      "seasons": { "grow": ["feathery green", "white daisies", "creeping mats", "flat and brown"], "flower": "white daisies", "dormant": "flat and brown" },
+      "likes": [
+        { "text": "Sandy turf above the strandline", "learn": ["seen"] },
+        { "text": "Out of the tide's reach", "learn": ["refused:low", "refused:wet", "lost:drown"] },
+        { "text": "Some sand in the ground, not turf alone", "learn": ["refused:ground"] },
+        { "text": "Only a little salt", "learn": ["refused:salt", "lost:seed"] },
+        { "text": "Creeps outward in late summer", "learn": ["spread"] }
+      ],
+      "gives": [
+        { "pencil": "These flowers might be good for something, picked in summer.", "ink": "Flowers for a calming tea.", "when": "picked:chamomile" }
+      ],
+      "notes": {
+        "arrived": "Chamomile was already growing on the sandy turf when you arrived.",
+        "seen": "Chamomile has come up on the sandy turf above the tide. It smells of apples.",
+        "spread": "The chamomile has crept further over the sandy turf.",
+        "flower": "The chamomile is in white flower.",
+        "dormant": "The chamomile has gone flat and brown for winter.",
+        "woke": "The chamomile is greening again.",
+        "drown": "Some chamomile drowned where the tide reached it.",
+        "seed": "A chamomile seed found no sandy turf to take in.",
+        "gone": "The last of the chamomile is gone."
       }
     },
     "anemone": {
