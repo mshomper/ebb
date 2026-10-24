@@ -31,12 +31,32 @@ async function exists(path) {
 /** @param {any} s @returns {string[]} */
 const filesOf = (s) => s.files ?? [s.file];
 
+/** A repository text file, by fetch in the browser and from disk in Node. @param {string} path */
+async function text(path) {
+  const url = new URL(`../${path}`, import.meta.url);
+  if (typeof window === 'undefined' && typeof self === 'undefined') {
+    const fs = await import('node:fs');
+    return fs.readFileSync(url, 'utf8');
+  }
+  return (await fetch(url, { cache: 'no-cache' })).text();
+}
+
 /**
  * @param {(group: string, name: string, fn: () => any) => void} test
  * @param {(cond: any, msg?: string) => void} assert
  * @param {(a: any, b: any, msg?: string) => void} eq
  */
 export function addCampSoundTests(test, assert, eq) {
+  // One recipe missing from recipes/index.json stops every sound in the game (startAudio loads them
+  // all at once); audio/camp went unlisted from October 22 to 24, 2026.
+  test(G, 'every recipe the audio start loads is listed in recipes/index.json', async () => {
+    const index = JSON.parse(await text('recipes/index.json')).recipes;
+    const src = await text('src/audio/index.js');
+    const ids = [...src.matchAll(/load(?:Audio)?Recipe\('([^']+)'\)/g)].map((m) => m[1]);
+    assert(ids.includes('audio/camp'), 'the audio start loads audio/camp');
+    for (const id of ids) assert(index[id], `${id} is listed`);
+    return `${ids.length} recipes listed`;
+  });
   test(G, 'the strike, catch, hiss and feed each have a level and their takes', async () => {
     const R = await recipe();
     for (const n of ['strike', 'catch', 'hiss', 'feed']) {
