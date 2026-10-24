@@ -135,6 +135,8 @@ export function attachDesktopInput(canvas, opts, brush) {
       dispatch({ type: 'ui.hideHud', source: 'key' });
     } else if (e.key === 'Escape') {
       if (get('journalUi')?.open) dispatch({ type: 'ui.journal', open: false });
+      // A seed, a gift or the net in hand is put away first (D1a).
+      else if (get('walk')?.below && get('hand')) dispatch({ type: 'hand.putAway', source: 'key' });
       else if (get('walk')?.below) dispatch({ type: 'walk.up', source: 'key' });
       else dispatch({ type: 'tool.select', toolId: null, source: 'key' });
     } else if (e.key === '[' || e.key === ']') {

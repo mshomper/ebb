@@ -340,10 +340,10 @@ export function createWalk(o) {
 
     /**
      * A short gesture for something you do by hand (figure.json poses.gestures: setDown, takeUp,
-     * heapHere, empty, stuck, and sow, Phase 2's hook for planting and placing gifts). Given a spot,
+     * heapHere, empty, stuck, and sow, planting and placing gifts on foot, D1a). Given a spot,
      * you turn to face it where you stand and look at it first. It never stops a walk or a tap; a walk
      * fades it out. Ignored above, while a camp act plays, or for a name that is not a gesture. Returns
-     * whether it was taken (sow has no keys yet: it only turns you toward the spot).
+     * whether it was taken.
      * @param {string} name @param {{ x: number, z: number }} [at]
      */
     gesture(name, at) {

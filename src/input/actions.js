@@ -44,6 +44,8 @@ import { emit } from '../core/events.js';
  *   | { type: 'nets.keep' }
  *   | { type: 'nets.leave' }
  *   | { type: 'nets.close' }
+ *   | { type: 'hand.pick', kind: 'seed'|'gift'|'net', id: string, source?: Source }
+ *   | { type: 'hand.putAway', source?: Source }
  *   | { type: 'brush.resize', factor: number, source?: Source }
  *   | { type: 'history.undo', source?: Source }
  *   | { type: 'history.redo', source?: Source }

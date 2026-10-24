@@ -70,7 +70,8 @@ const TOOLS = [
   { id: 'smooth', label: 'Smooth' },
   { id: 'paint', label: 'Paint' },
   { id: 'water', label: 'Water' },
-  { id: 'plant', label: 'Plant' },
+  // Plant has left the view from above (D1a, Matt, October 24, 2026): all planting is the walker's,
+  // from the seed tin and the gift spot (src/world/sowing). Its card stays for tools that still select it.
   // Feed is on foot only now (doc 23, W4: the ground bar's Feed, from the hand); its card stays
   // below for tools that still select it.
 ];
@@ -399,8 +400,8 @@ export function mountTools(parent = document.body, CLIFF_HINTS = {}) {
     for (const b of layerBtns) b.setAttribute('aria-pressed', String(b.dataset.layer === t.paintLayer));
 
     // Water: the spring mode exists only once unlocked; a stored 'spring' reads as 'pour' until then.
-    // The Raft mode once the turtles give the reed raft (`unlocks.raft`).
-    const springsOn = !!get('unlocks')?.springs, netsOn = !!get('unlocks')?.nets?.general, raftOn = !!get('unlocks')?.raft;
+    // The net and the reed raft are set on foot now (D1a, src/world/sowing), so their modes stay away.
+    const springsOn = !!get('unlocks')?.springs, netsOn = false, raftOn = false;
     const storedMode = t.waterMode ?? 'pour';
     const waterMode = (storedMode === 'spring' && !springsOn) || (storedMode === 'net' && !netsOn) || (storedMode === 'raft' && !raftOn) ? 'pour' : storedMode;
     const springRate = t.springRate ?? 'brook';

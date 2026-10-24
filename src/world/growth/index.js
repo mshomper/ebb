@@ -17,7 +17,7 @@ import { pickShares, plantLooks } from './looks.js';
 import { padToWorld } from '../camp/layout.js';
 import { seatHeight, buryUnder, restoreBuried, removeBuried, buriedSummary } from './bury.js';
 import { isGather } from './rules.js';
-import { heightFromTiles, tilesArea } from '../terrain/undo.js';
+import { heightFromTiles, tilesArea } from '../terrain/undo.js';
 
 /**
  * Floats per plant instance: x, z, size, stage, species index, hash 0..1, age (h), ground height (m),
@@ -241,10 +241,20 @@ export function createGrowth(device, opts) {
      * @param {string} sp @param {number} x @param {number} z
      */
     plant(sp, x, z) {
-      // A cover plant (rushes) starts a tussock in its cover; the others plant a seed.
-      const r = world.env.recipes.covers?.[sp] ? plantCover(world.state, sp, x, z, world.env) : plantSeed(world.state, sp, x, z, world.env);
+      const r = this.check(sp, x, z);
       if (r.ok) world.state = r.state;
       return { ok: r.ok, id: 'id' in r ? r.id : undefined, reason: r.reason };
+    },
+
+    /**
+     * Would a seed take at a world point? plant() without keeping the result: the world is left
+     * as it is (the sowing ring's ink, D1a). Returns the world it would make, for plant().
+     * @param {string} sp @param {number} x @param {number} z
+     * @returns {{ state: any, ok: boolean, id?: number, reason?: string }}
+     */
+    check(sp, x, z) {
+      // A cover plant (rushes) starts a tussock in its cover; the others plant a seed.
+      return world.env.recipes.covers?.[sp] ? plantCover(world.state, sp, x, z, world.env) : plantSeed(world.state, sp, x, z, world.env);
     },
 
     /**

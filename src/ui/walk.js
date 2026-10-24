@@ -7,31 +7,38 @@
 //   The ground bar (W4): along the bottom while you are below, in the tool bar's place, its buttons
 //     drawn icons with the word on hover only, as on cards (F17, Matt, October 23, 2026). Sit and
 //     Kneel lower you where you stand (a second press stands you up); Feed kneels and puts food
-//     down in front of you; Net (once the beachcomber's trail gives it) sets your net in front of
-//     you, or lifts it when you stand by it full. Photo joins when photo mode exists. There is no
-//     Look button: one click walks and uses (Matt, October 22, 2026; src/world/walk/click.js).
+//     down in front of you. Photo joins when photo mode exists. There is no Look button: one click
+//     walks and uses (Matt, October 22, 2026; src/world/walk/click.js).
+//   Planting on foot (D1a, Matt, October 24, 2026; src/world/sowing): the seed tin and the gift spot,
+//     each one drawn icon that opens its own small menu above it (the tin's seeds; the gifts waiting
+//     to be placed, with how many on hover). Picking one puts it in hand; the item again puts it
+//     away. Net (once the beachcomber's trail gives it) is picked the same way: a click on the
+//     water then walks you out to set it.
 // While you are below, the body has the class ebb-below (walk.css puts the shaping tools away);
 // while you sit, ebb-sitting (the buttons fade).
 //
-// Reads the store slice `walk` { below, posture }; a press goes out as the action walk.down,
-// walk.up, walk.stuck, walk.posture, walk.feed or walk.net (and `unlocks` for the net).
+// Reads the store slices `walk` { below, posture }, `unlocks` and `hand`; a press goes out as the
+// action walk.down, walk.up, walk.stuck, walk.posture, walk.feed, hand.pick or hand.putAway.
 // Styles: walk.css.
 
 import { get, subscribe } from '../core/store.js';
 import { dispatch } from '../input/actions.js';
 import { ensureIconSprite, iconSvg } from './icons/icons.js';
+import { tinItems, giftItems, itemLabel, samePick } from '../world/sowing/model.js';
 
 /**
  * @param {HTMLElement} parent the HUD layer
  * @param {{ down: string, up: string, stuck: string, sit: string, kneel: string, feed: string, net: string }} words
  *   recipes/world/walker.json words
+ * @param {any} sowing recipes/world/sowing.json (the seed tin and the gift spot)
  * @returns {() => void} dispose
  */
-export function mountWalk(parent, words) {
+export function mountWalk(parent, words, sowing) {
   ensureIconSprite();
   // data-label: the word over an icon-only button on hover (the ground bar, F17; walk.css).
   const btn = (/** @type {string} */ cls, /** @type {string} */ icon, /** @type {string} */ label, /** @type {string} */ extra = '') =>
     `<button type="button" class="ebb-walk__btn ${cls}" aria-label="${label}" data-label="${label}"${extra}><span class="ebb-walk__icon">${icon ? iconSvg(icon) : ''}</span><span class="ebb-walk__name">${label}</span></button>`;
+  const W = sowing.words;
 
   const root = document.createElement('div');
   root.className = 'ebb-walk';
@@ -41,10 +48,15 @@ export function mountWalk(parent, words) {
   bar.hidden = true;
   bar.setAttribute('role', 'toolbar');
   bar.setAttribute('aria-label', 'On foot');
-  // The pouch row sits above the buttons (src/ui/pack.js fills .ebb-ground__pouches).
+  // The pouch row sits above the buttons (src/ui/pack.js fills .ebb-ground__pouches); the tin's and
+  // the gift spot's menus open above their buttons.
   bar.innerHTML = '<div class="ebb-ground__pouches"></div><div class="ebb-ground__btns">'
     + btn('', 'sit', words.sit, ' data-posture="sit" aria-pressed="false"') + btn('', 'kneel', words.kneel, ' data-posture="kneel" aria-pressed="false"')
-    + btn('', 'feed', words.feed, ' data-feed') + btn('', 'net', words.net, ' data-net hidden') + '</div>';
+    + btn('', 'feed', words.feed, ' data-feed')
+    + btn('', 'seed-tin', W.tin, ' data-menu="tin" aria-pressed="false" aria-haspopup="true" aria-expanded="false"')
+    + btn('', 'gift-spot', W.gifts, ' data-menu="gifts" aria-pressed="false" aria-haspopup="true" aria-expanded="false"')
+    + btn('', 'net', words.net, ' data-pick-kind="net" data-pick-id="net" aria-pressed="false" hidden') + '</div>'
+    + '<div class="ebb-ground__menu" role="menu" hidden></div>';
 
   const go = /** @type {HTMLButtonElement} */ (root.querySelector('.ebb-walk__go'));
   const stuckBtn = /** @type {HTMLButtonElement} */ (root.querySelector('.ebb-walk__stuck'));
@@ -52,17 +64,50 @@ export function mountWalk(parent, words) {
   const goName = /** @type {HTMLElement} */ (go.querySelector('.ebb-walk__name'));
   const sitBtn = /** @type {HTMLButtonElement} */ (bar.querySelector('[data-posture="sit"]'));
   const kneelBtn = /** @type {HTMLButtonElement} */ (bar.querySelector('[data-posture="kneel"]'));
-  const netBtn = /** @type {HTMLButtonElement} */ (bar.querySelector('[data-net]'));
+  const netBtn = /** @type {HTMLButtonElement} */ (bar.querySelector('[data-pick-kind="net"]'));
+  const tinBtn = /** @type {HTMLButtonElement} */ (bar.querySelector('[data-menu="tin"]'));
+  const giftBtn = /** @type {HTMLButtonElement} */ (bar.querySelector('[data-menu="gifts"]'));
+  const menu = /** @type {HTMLElement} */ (bar.querySelector('.ebb-ground__menu'));
+  /** Which menu is open. @type {'tin' | 'gifts' | null} */ let open = null;
+
+  /** The items a menu holds now. @param {'tin' | 'gifts'} which */
+  const itemsOf = (which) => (which === 'tin' ? tinItems(sowing) : giftItems(sowing, get('unlocks')));
 
   let shown = '';
   function render() {
     const w = get('walk') ?? {};
     const below = !!w.below;
     const hasNet = !!get('unlocks')?.nets?.general;
-    const key = `${below}|${w.posture}|${hasNet}`;
+    const hand = get('hand') ?? null;
+    const gifts = giftItems(sowing, get('unlocks'));
+    if (!below) open = null;
+    const key = `${below}|${w.posture}|${hasNet}|${hand?.kind}:${hand?.id}|${open}|${gifts.map((g) => `${g.id}${g.left}`).join(',')}`;
     if (key === shown) return;
     shown = key;
     netBtn.hidden = !hasNet;
+    netBtn.setAttribute('aria-pressed', String(hand?.kind === 'net'));
+    tinBtn.setAttribute('aria-pressed', String(hand?.kind === 'seed'));
+    giftBtn.setAttribute('aria-pressed', String(hand?.kind === 'gift'));
+    // An empty gift spot rests dimmed; its word says gifts come here.
+    giftBtn.classList.toggle('is-empty', !gifts.length);
+    const giftWord = gifts.length ? W.gifts : W.giftsEmpty;
+    giftBtn.dataset.label = giftWord;
+    giftBtn.setAttribute('aria-label', giftWord);
+    tinBtn.setAttribute('aria-expanded', String(open === 'tin'));
+    giftBtn.setAttribute('aria-expanded', String(open === 'gifts'));
+    const list = open ? itemsOf(open) : [];
+    if (open && !list.length) open = null;
+    menu.hidden = !open;
+    if (open) {
+      menu.innerHTML = list.map((it) => {
+        const label = itemLabel(sowing, it);
+        return `<button type="button" class="ebb-walk__btn" role="menuitemradio" aria-checked="${samePick(hand, it)}" aria-pressed="${samePick(hand, it)}" aria-label="${label}" data-label="${label}" data-pick-kind="${it.kind}" data-pick-id="${it.id}"><span class="ebb-walk__icon">${iconSvg(it.icon)}</span><span class="ebb-walk__name">${label}</span></button>`;
+      }).join('');
+      // Over its own button, kept inside the bar's width.
+      const b = (open === 'tin' ? tinBtn : giftBtn).getBoundingClientRect(), r = bar.getBoundingClientRect();
+      const mw = list.length * 48 + 12;
+      menu.style.left = `${Math.max(0, Math.min(r.width - mw, b.left - r.left + b.width / 2 - mw / 2))}px`;
+    }
     goIcon.innerHTML = iconSvg(below ? 'go-up' : 'go-down');
     goName.textContent = below ? words.up : words.down;
     go.setAttribute('aria-label', below ? words.up : words.down);
@@ -72,6 +117,7 @@ export function mountWalk(parent, words) {
     kneelBtn.setAttribute('aria-pressed', String(below && w.posture === 'kneel'));
     document.body.classList.toggle('ebb-below', below);
     document.body.classList.toggle('ebb-sitting', below && w.posture === 'sit');
+    document.body.classList.toggle('ebb-in-hand', below && !!hand);
   }
 
   /** @param {Event} e */
@@ -82,7 +128,16 @@ export function mountWalk(parent, words) {
     else if (b === stuckBtn) dispatch({ type: 'walk.stuck', source: 'button' });
     else if (b.dataset.posture) dispatch({ type: 'walk.posture', posture: b.dataset.posture, source: 'button' });
     else if (b.dataset.feed !== undefined) dispatch({ type: 'walk.feed', source: 'button' });
-    else if (b.dataset.net !== undefined) dispatch({ type: 'walk.net', source: 'button' });
+    else if (b.dataset.menu) {
+      const which = /** @type {'tin' | 'gifts'} */ (b.dataset.menu);
+      open = open === which || !itemsOf(which).length ? null : which;
+      shown = '';
+      render();
+      return;
+    } else if (b.dataset.pickKind) {
+      dispatch(/** @type {any} */ ({ type: 'hand.pick', kind: b.dataset.pickKind, id: b.dataset.pickId, source: 'button' }));
+    }
+    if (open) { open = null; shown = ''; render(); }
   }
   /** Keep pointer and wheel input on the buttons from reaching the island below. @param {Event} e */
   const stop = (e) => e.stopPropagation();
@@ -95,14 +150,12 @@ export function mountWalk(parent, words) {
   }
 
   render();
-  const unsub = subscribe('walk', render);
-  const unsubUnlocks = subscribe('unlocks', render);
+  const unsubs = ['walk', 'unlocks', 'hand'].map((s) => subscribe(s, render));
   parent.appendChild(root);
   parent.appendChild(bar);
   return () => {
-    unsub();
-    unsubUnlocks();
-    document.body.classList.remove('ebb-below', 'ebb-sitting');
+    for (const u of unsubs) u();
+    document.body.classList.remove('ebb-below', 'ebb-sitting', 'ebb-in-hand');
     root.remove();
     bar.remove();
   };

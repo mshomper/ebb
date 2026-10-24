@@ -36,6 +36,8 @@ import { stampOlderPad } from './world/camp/stamp.js';
 import { createWaterWorld } from './world/water-world.js';
 import { createGrowth } from './world/growth/index.js';
 import { createPlantTool } from './world/growth/plant-tool.js';
+import { createSowing } from './world/sowing/index.js';
+import { mountSowOverlay } from './ui/sow-overlay.js';
 import { weatherAt } from './world/weather.js';
 import { state as tideState, tideParams } from './world/tide.js';
 import { soundNear, nothingNear } from './world/sound-near.js';
@@ -361,6 +363,15 @@ export async function startApp(canvas, hooks = {}) {
       const r = canvas.getBoundingClientRect();
       return { x: r.left + (cx * s * 0.5 + 0.5) * r.width, y: r.top + (0.5 - cy * s * 0.5) * r.height, behind };
     },
+    /** A world point on screen (CSS pixels), as project() but at its own height. @param {number} x @param {number} y @param {number} z */
+    project3(x, y, z) {
+      const m = camera.viewProj;
+      const cx = m[0] * x + m[4] * y + m[8] * z + m[12], cy = m[1] * x + m[5] * y + m[9] * z + m[13];
+      const w = m[3] * x + m[7] * y + m[11] * z + m[15];
+      const behind = w <= 1e-4, s = behind ? -1 / Math.max(Math.abs(w), 1e-4) : 1 / w;
+      const r = canvas.getBoundingClientRect();
+      return { x: r.left + (cx * s * 0.5 + 0.5) * r.width, y: r.top + (0.5 - cy * s * 0.5) * r.height, behind };
+    },
   }));
 
   // Light: the physical sky, sun or moon shadows, the shared lighting group, slow eye adaptation.
@@ -422,6 +433,8 @@ export async function startApp(canvas, hooks = {}) {
   // Presence (doc 23): what creatures react to. Two views (W3): the camera above counts only for
   // its edits (reported below); you on foot are felt with your pace, posture and gaze.
   const walkerRecipe = await loadRecipe('world/walker');
+  // Planting on foot (D1a): the seed tin, the gift spot and the net in hand (src/world/sowing).
+  const sowingRecipe = await loadRecipe('world/sowing');
   // The lift (F5): a hovered or chosen thing is tinted warm with a thin rim in its own shader, never ringed.
   setLiftLook(await loadRecipe('world/highlight'));
   // The keeper's camp's words (recipes/world/camp.json): `clear`, the line when a tap lands on the pad.
@@ -942,6 +955,13 @@ export async function startApp(canvas, hooks = {}) {
     if (e.pointerType !== 'mouse') return;
     const C = walkerRecipe.click;
     const ox = e.offsetX, oy = e.offsetY;
+    // Something in hand (D1a): the sowing ring follows the pointer, and nothing else is named.
+    if (walk.below && getStore('hand')) {
+      sowing.setPointer(e.buttons ? null : groundAt(ox, oy));
+      if (getStore('hover')) updateStore('hover', () => null);
+      canvas.classList.remove('ebb-can-use');
+      return;
+    }
     if (Math.hypot(ox - restX, oy - restY) > (C.hoverRestPx ?? 4)) {
       restX = ox; restY = oy;
       clearTimeout(restTimer);
@@ -963,7 +983,7 @@ export async function startApp(canvas, hooks = {}) {
     if (getStore('hover')) updateStore('hover', () => null);
     canvas.classList.remove('ebb-can-use');
   };
-  canvas.addEventListener('pointerleave', hoverOff);
+  canvas.addEventListener('pointerleave', () => { hoverOff(); sowing.setPointer(null); });
   canvas.addEventListener('pointerdown', hoverOff);
 
   /** Each frame: you reached the thing you clicked on, so its card opens beside it. */
@@ -1034,20 +1054,6 @@ export async function startApp(canvas, hooks = {}) {
     if (p) ww.tapSpring(p, tools().springRate);
   }
 
-  /** Tap with the Water tool's Net mode: cast the net there, or say why not (src/world/nets). @param {number} x @param {number} y */
-  function netTap(x, y) {
-    if (!getStore('unlocks')?.nets?.general) return;
-    const p = groundAt(x, y);
-    if (p) nets.tap(p);
-  }
-
-  /** Tap with the Water tool's Raft mode: select a raft, or set one on open water (src/world/pieces). @param {number} x @param {number} y */
-  function raftTap(x, y) {
-    if (!getStore('unlocks')?.raft) return;
-    const p = groundAt(x, y);
-    if (p) pieces.raftTap(p, camera.ray(x, y));
-  }
-
   /**
    * Sculpt's Stone mode (docs/future/10): set a seeded boulder where you tap, undoable. The size slider
    * is the boulder's width, within terrain.json stone.widthM. @param {number} x @param {number} y
@@ -1107,6 +1113,14 @@ export async function startApp(canvas, hooks = {}) {
     if (p) presence.edit(p[0], p[2]);
     if (p && plantTool.tap(tools().plantSpecies ?? 'reeds', p)) updateStore('world', () => world.state);
   }
+  // Planting on foot (D1a, src/world/sowing): the seed tin, the gift spot and the net in hand, the
+  // ring under the pointer, a click to sow, place or set; drawn over the island by sow-overlay.js.
+  const sowing = createSowing({ recipe: sowingRecipe, plantTool, pieces, nets, walk,
+    ground: (x, z) => terrain.sampleHeight(x, z),
+    depth: (x, z) => water.sampleLive(x, z)?.depth ?? 0,
+    worldChanged: () => updateStore('world', () => world.state) });
+  updateStore('hand', () => null);
+  const sowOverlay = mountSowOverlay(document.body, sowingRecipe);
 
   // The Feed tool (S6c-2, src/world/creatures/feeding.js): food lands where you tap and a frog may
   // come for it. Not an edit: a gentle toss never startles. Its line goes to the tool card (`feedUi`).
@@ -1136,26 +1150,6 @@ export async function startApp(canvas, hooks = {}) {
     const message = wet && known.length ? known[0].feed(p[0], p[2])
       : getStore('journal')?.species?.frogs?.ever || !known.length ? creatures.feed(p[0], p[2]) : walkerRecipe.words.feedNone;
     if (message) emitDeferred('island:notice', { text: message, showS: walkerRecipe.words.noticeS });
-  }
-
-  /**
-   * The Net on the ground bar (on foot, once the beachcomber's trail gives the net): your net is set
-   * just in front of you by the same rules as casting from above, or lifted when you stand by it
-   * full. You kneel to set or lift it, then stand again. Its line goes on the island.
-   */
-  function netHere() {
-    if (!getStore('unlocks')?.nets?.general) return;
-    const G = walkerRecipe.ground;
-    const me = walk.spot();
-    const ahead = walk.aheadPoint(G.netAheadM);
-    if (!me || !ahead) return;
-    const r = nets.fromFoot(me, ahead, G.netReachM);
-    if (!r) return;
-    if (r.did === 'cast' || r.did === 'lifted') {
-      walk.reach(G.netStandS, r.did === 'lifted' ? 'netLift' : 'netSet');
-      if (r.did === 'lifted') updateStore('identify', () => null);
-    }
-    if (r.message) emitDeferred('island:notice', { text: r.message, showS: walkerRecipe.words.noticeS });
   }
 
   /** Where a piece or a pile stands, for a gesture toward it. @param {string} id */
@@ -1219,6 +1213,9 @@ export async function startApp(canvas, hooks = {}) {
         // card; a creature's card opens where you stand; grass, sand and shingle only near you.
         const point = groundAt(a.x, a.y);
         if (!point) return;
+        // A seed, a gift or the net in hand: the click sows, places or sets it instead (D1a).
+        if (sowing.click(a.x, a.y, point)) return;
+        sowing.cancelWalk();
         // Low down, the ray grazes past a log or stone onto the ground behind it: try it first.
         const pc = pieceUnderTap(a.x, a.y, point);
         clickBelow(a.x, a.y, pc ? [pc.x, point[1], pc.z] : point);
@@ -1247,11 +1244,13 @@ export async function startApp(canvas, hooks = {}) {
         else updateStore('identify', () => null);
         return;
       }
-      if (a.type === 'walk.up') { walk.up(); return; }
-      if (a.type === 'walk.stuck') { walk.stuck(); return; }
+      if (a.type === 'walk.up') { sowing.putAway(); sowing.cancelWalk(); walk.up(); return; }
+      if (a.type === 'walk.stuck') { sowing.cancelWalk(); walk.stuck(); return; }
       if (a.type === 'walk.posture') { walk.posture(a.posture); return; }
       if (a.type === 'walk.feed') { feedHere(); return; }
-      if (a.type === 'walk.net') { netHere(); return; }
+      // The seed tin, the gift spot and the net (D1a): pick one into your hand, or put it away.
+      if (a.type === 'hand.pick') { sowing.pick({ kind: a.kind, id: a.id }); updateStore('identify', () => null); return; }
+      if (a.type === 'hand.putAway') { sowing.putAway(); return; }
       if (a.type === 'tool.select' || a.type.startsWith('tool.') || a.type === 'brush.resize') return;
     }
     switch (a.type) {
@@ -1447,8 +1446,8 @@ export async function startApp(canvas, hooks = {}) {
         if (tools().tool === 'sculpt' && (tools().sculptMode === 'pondstones' || tools().sculptMode === 'steps')) { shapingDragTo(a.type, a.x, a.y); break; }
         if (tools().tool === 'water') {
           if (tools().waterMode === 'spring') { if (a.type === 'tool.begin') springTap(a.x, a.y); }
-          else if (tools().waterMode === 'net') { if (a.type === 'tool.begin') netTap(a.x, a.y); }
-          else if (tools().waterMode === 'raft') { if (a.type === 'tool.begin') raftTap(a.x, a.y); }
+          // The net and the raft are set on foot now (D1a): their old modes from above do nothing.
+          else if (tools().waterMode === 'net' || tools().waterMode === 'raft') { /* set on foot */ }
           else if (a.type === 'tool.begin' || pouring) pouring = { x: a.x, y: a.y };
           break;
         }
@@ -1667,7 +1666,10 @@ export async function startApp(canvas, hooks = {}) {
     // A raising Sculpt brush rings every plant it would cover (rings.js).
     const raising = tools().tool === 'sculpt' && RAISING_MODES.includes(tools().sculptMode);
     const bury = raising ? buryRings(world.state?.growth?.plants ?? [], flora, terrain.ring, growthRecipe.bury) : [];
-    terrainPass.setMarks(plantTool.marks(now, tools().tool === 'plant', chosen?.pinned ? chosen : null, [...(padMark ? [padMark] : []), ...bury,...(getStore('reveal')?.rings?.(now) ?? []), ...creatures.foodRings(), ...intro.rings(now), ...camp.rings(now / 1000), ...stores.rings(now / 1000)]));
+    // Planting on foot (D1a): the ring under the pointer, a net walk's end, the tossed seeds.
+    sowing.update(now);
+    sowOverlay.draw(sowing.visuals(), getStore('view').project3, now);
+    terrainPass.setMarks(plantTool.marks(now, getStore('hand')?.kind === 'seed' || getStore('hand')?.kind === 'gift', chosen?.pinned ? chosen : null, [...(padMark ? [padMark] : []), ...bury,...(getStore('reveal')?.rings?.(now) ?? []), ...creatures.foodRings(), ...intro.rings(now), ...camp.rings(now / 1000), ...stores.rings(now / 1000)]));
     // Lugworm casts are drawn into the sand by the terrain pass.
     terrainPass.setCasts(finds.casts());
     updatePour();
@@ -1815,6 +1817,7 @@ export async function startApp(canvas, hooks = {}) {
     observer.disconnect();
     unAction();
     walk.dispose();
+    sowOverlay.dispose();
     unHistory();
     unHour();
     unWash();
