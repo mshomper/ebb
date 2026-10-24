@@ -86,6 +86,15 @@ export function createWalk(o) {
       rawGround(cx + r[0] * a * w * 0.65 + f[0] * b * l * 0.6, cz + r[1] * a * w * 0.65 + f[1] * b * l * 0.6));
   };
   /** @type {WeakMap<object, number[]>} */ const printCorners = new WeakMap();
+  // Where the figure looks (look.js): things near you worth a look, set by the game (setInterests),
+  // and creatures arriving (their events), each looked at a little over the ground.
+  const LK = o.figure.look.kinds;
+  /** @type {() => { x: number, z: number, kind: string }[]} */ let interests = () => [];
+  const lift = (/** @type {number} */ x, /** @type {number} */ z, /** @type {string} */ kind) => ground(x, z) + (LK[kind]?.liftM ?? 0);
+  /** Look at a spot for a while (a thing clicked, an action's target). @param {number} x @param {number} z */
+  const lookAt = (x, z) => figure?.motion.lookAt(x, lift(x, z, 'focus'), z);
+  const onArrive = (/** @type {any} */ p) => { if (below && Number.isFinite(p?.x) && Number.isFinite(p?.z)) figure?.motion.notice(p.x, lift(p.x, p.z, 'arrival'), p.z); };
+  const offArrivals = [on('creature:arrived', onArrive), on('creature:joined', onArrive)];
   // Grass underfoot (W6): the last few steps, with when they landed (seconds of walking time).
   const GR = o.figure.grass;
   /** @type {{ x: number, z: number, t: number }[]} */ let steps = [];
@@ -241,6 +250,12 @@ export function createWalk(o) {
       return true;
     },
 
+    /**
+     * What near you is worth a look (look.js kinds: creature, fire, find), from the game each frame.
+     * @param {() => { x: number, z: number, kind: string }[]} fn
+     */
+    setInterests(fn) { interests = fn; },
+
     /** The act playing, or null. */
     get acting() { return acting ? acting.name : null; },
     /** Where one of your figure's hands is now (what it holds: the lantern, the fire steel), or null. @param {'l' | 'r'} side */
@@ -263,6 +278,7 @@ export function createWalk(o) {
         const [x, z] = grid.center(k);
         return depth(k) < 0.01 && !(o.footing && o.footing(x, z) > rawGround(x, z) + 0.01);
       };
+      figure?.motion.gesture('stuck');
       if (land.joined(here) && dry(here)) { say(R.words.stuckFine); return; }
       const k = nearestJoined(grid, land, walker.x, walker.z, (c) => dry(c) && isOpen(grid, walker.rules, c));
       const to = k >= 0 ? k : nearestJoined(grid, land, walker.x, walker.z);
@@ -294,25 +310,47 @@ export function createWalk(o) {
       return [x, ground(x, z), z];
     },
 
-    /** Kneel and reach down in front of you (setting a net), then stand again after standS seconds. @param {number} standS */
-    reach(standS) {
+    /**
+     * Kneel and work in front of you (setting or lifting a net, gathering, lifting a log), then stand
+     * again after standS seconds. The figure plays that action's gesture (figure.json poses.gestures),
+     * or reaches down with an open hand when none is named.
+     * @param {number} standS @param {string} [gesture]
+     */
+    reach(standS, gesture) {
       if (!below || !walker.placed) return;
       walker.setPosture('kneel');
       camera.follow(head());
       publish();
-      figure?.motion.feed();
+      if (!gesture || !figure?.motion.gesture(gesture)) figure?.motion.feed();
       standAt = walkT + standS;
     },
 
     /**
      * Kneel facing a spot beside you (Lift on a log's or stone's card, L3a), then stand again after
-     * standS seconds. @param {number} x @param {number} z @param {number} standS
+     * standS seconds, playing that action's gesture.
+     * @param {number} x @param {number} z @param {number} standS @param {string} [gesture]
      */
-    kneelToward(x, z, standS) {
+    kneelToward(x, z, standS, gesture) {
       if (!below || !walker.placed) return;
       walker.stop();
       if (Math.hypot(x - walker.x, z - walker.z) > 1e-3) walker.face(Math.atan2(x - walker.x, z - walker.z));
-      this.reach(standS);
+      lookAt(x, z);
+      this.reach(standS, gesture);
+    },
+
+    /**
+     * A short gesture for something you do by hand (figure.json poses.gestures: setDown, takeUp,
+     * heapHere, empty, stuck, and sow, Phase 2's hook for planting and placing gifts). Given a spot,
+     * you turn to face it where you stand and look at it first. It never stops a walk or a tap; a walk
+     * fades it out. Ignored above, while a camp act plays, or for a name that is not a gesture. Returns
+     * whether it was taken (sow has no keys yet: it only turns you toward the spot).
+     * @param {string} name @param {{ x: number, z: number }} [at]
+     */
+    gesture(name, at) {
+      if (!below || !walker.placed || acting || !(name in (o.figure.poses.gestures ?? {})) || name === 'note') return false;
+      if (at && !walker.moving) this.faceToward(at.x, at.z);
+      figure?.motion.gesture(name);
+      return true;
     },
 
     /** Turn to face a ground point where you stand (before a camp act: pitching, laying, striking). @param {number} x @param {number} z */
@@ -320,6 +358,7 @@ export function createWalk(o) {
       if (!walker.placed || Math.hypot(x - walker.x, z - walker.z) < 1e-3) return;
       walker.stop();
       walker.face(Math.atan2(x - walker.x, z - walker.z));
+      lookAt(x, z);
     },
 
     /** How far you stand from a ground point, in meters (Infinity while above). @param {number} x @param {number} z */
@@ -422,6 +461,8 @@ export function createWalk(o) {
       let to = /** @type {[number, number]} */ (double && lastTap ? lastTap.to : [point[0], point[2]]);
       lastTap = { t: now, x: sx, y: sy, to };
       if (reachM > 0) {
+        // A thing: you look at it as you go.
+        lookAt(to[0], to[1]);
         // Stop short, on the line from the thing back toward you; already in reach, stay.
         const dx = walker.x - to[0], dz = walker.z - to[1], d = Math.hypot(dx, dz);
         if (d <= reachM) { walker.stop(); return true; }
@@ -474,6 +515,7 @@ export function createWalk(o) {
         placed: walker.placed, x: walker.x, z: walker.z, y: walker.y, yaw: walker.yaw, speed: walker.speed,
         moving: walker.moving, retreating: walker.retreating, ground, depth: depthAt,
         look: below ? { yaw: Math.atan2(t[0] - e[0], t[2] - e[2]) } : null,
+        interests: below ? interests().filter((it) => Math.abs(it.x - walker.x) < 8 && Math.abs(it.z - walker.z) < 8).map((it) =>({ x: it.x, z: it.z, kind: it.kind, y: lift(it.x, it.z, it.kind) })) : [],
         posture: walker.posture, below, sleepy: hour < 6 || hour > 21,
       });
       for (const f of falls) {
@@ -485,7 +527,7 @@ export function createWalk(o) {
       if (steps.length > 3) steps = steps.slice(-3);
     },
 
-    dispose() { offStroke(); offFooting(); },
+    dispose() { offStroke(); offFooting(); for (const off of offArrivals) off(); },
   };
 }
 

@@ -184,7 +184,7 @@ function makeStage(canvas, gpu, lib) {
   /** @type {GPUTexture | null} */ let depth = null;
 
   const cam = { ...VIEWS['three-quarter'], goal: { ...VIEWS['three-quarter'] }, spin: false };
-  let facing = 0;
+  let facing = 0, snapNext = false;
   /** @type {Map<number, { x: number, y: number }>} */ const down = new Map();
   let pinch = 0;
   canvas.addEventListener('pointerdown', (e) => { down.set(e.pointerId, { x: e.clientX, y: e.clientY }); canvas.setPointerCapture(e.pointerId); pinch = 0; });
@@ -239,10 +239,12 @@ function makeStage(canvas, gpu, lib) {
       device.queue.writeBuffer(i, 0, idx);
       groundMesh = { v, i, n: idx.length };
     },
-    /** @param {keyof typeof VIEWS} name */
-    view(name) { cam.goal = { ...VIEWS[name] }; },
+    /** A set view by name, or one of your own ({ yaw, pitch, dist }). @param {keyof typeof VIEWS | { yaw: number, pitch: number, dist: number }} name */
+    view(name) { cam.goal = typeof name === 'string' ? { ...VIEWS[name] } : { ...name }; },
     /** @param {boolean} on */
     spin(on) { cam.spin = on; },
+    /** The next draw puts the camera straight at its view, with no easing (frame strips). */
+    snap() { snapNext = true; },
     /**
      * @param {{ bones: Float32Array, eyes: Float32Array, place: number[], weights: boolean, night: boolean, water: number, follow: number[], dt: number }} f
      */
@@ -255,6 +257,11 @@ function makeStage(canvas, gpu, lib) {
         depth = device.createTexture({ size: [w, h], format: 'depth24plus', usage: GPUTextureUsage.RENDER_ATTACHMENT });
       }
       if (cam.spin) cam.goal.yaw += f.dt * 0.5;
+      if (snapNext) {
+        snapNext = false;
+        facing = f.place[3];
+        Object.assign(cam, { yaw: cam.goal.yaw + facing, pitch: cam.goal.pitch, dist: cam.goal.dist });
+      }
       // Views are about the figure: front always sees its face (its facing eases in, so turns are calm).
       let df = f.place[3] - facing;
       df -= Math.round(df / (2 * Math.PI)) * 2 * Math.PI;
