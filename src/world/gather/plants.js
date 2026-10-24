@@ -6,8 +6,6 @@
 // no new per-plant state is kept. Pure: works on a plant record of world.state.growth.plants and
 // returns a new one.
 
-import { plantSeasonPos } from '../growth/phenology.js';
-
 /**
  * A part's numbers: the gather.json plants.defaults of its type, overridden by its own entry
  * under plants.parts['<species>.<part>']. null when the species has no such part.
@@ -44,23 +42,32 @@ export function pickable(plant, part, env, recipe) {
   const P = partOf(plant.sp, part, recipe);
   if (!P) return { ok: false, why: 'season' };
   if (plant.best < env.flora.growth.stages.matureSize) return { ok: false, why: 'young' };
-  if (!inWindow(plantSeasonPos(env.flora, plant.id, env.pos), P.window)) return { ok: false, why: 'season' };
+  // On the world's calendar, the one the island shows, so the card's words never disagree with it
+  // (Matt's click test, October 24: a plant's own few days ahead or behind left gaps at the edges).
+  if (!inWindow(env.pos, P.window)) return { ok: false, why: 'season' };
   if (plant.size < P.readyShare * plant.best) return { ok: false, why: 'rest' };
   return { ok: true, why: null };
 }
 
 /**
  * The card's line for a part out of season (docs/future/13 5.2, PR-42): a dormant plant is resting
- * for winter; otherwise nothing to pick now, and when the part comes, from where its window opens
- * ("It flowers in high summer.").
+ * for winter; otherwise nothing to pick now, and when the part comes, said against the season the
+ * island shows: within soonDays, "in a few days"; later in this same season, "later this autumn";
+ * else the third of the season its window opens in ("It flowers in high summer."). Never names the
+ * season it is now as one still to come.
  * @param {{ stage: number }} plant @param {string} sp @param {string} part @param {any} recipe gather.json
+ * @param {number} pos the world's season position now (0 spring .. 4)
  */
-export function outOfSeasonLine(plant, sp, part, recipe) {
+export function outOfSeasonLine(plant, sp, part, recipe, pos) {
   const W = recipe.words ?? {};
   if (plant.stage === DORMANT && W.resting) return W.resting;
-  const w = partOf(sp, part, recipe)?.window ?? [0, 4];
+  const start = (((partOf(sp, part, recipe)?.window ?? [0, 4])[0] % 4) + 4) % 4;
+  const now = ((pos % 4) + 4) % 4;
+  const days = (((start - now) % 4) + 4) % 4 * 14;
   const thirds = /** @type {string[]} */ (W.when ?? []);
-  const when = thirds[Math.floor((((w[0] % 4) + 4) % 4) * 3) % 12];
+  let when = thirds[Math.floor(start * 3) % 12];
+  if (days <= (W.soonDays ?? 3)) when = W.soon;
+  else if (Math.floor(start) === Math.floor(now) && start > now) when = W.later?.replace('{season}', W.seasons?.[Math.floor(now)] ?? '');
   const tpl = W.comes?.[part] ?? W.comes?.default;
   return [W.nothingNow, tpl && when ? tpl.replace('{when}', when) : null].filter(Boolean).join(' ');
 }

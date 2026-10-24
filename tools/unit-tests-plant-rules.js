@@ -83,11 +83,14 @@ export function addPlantRulesTests(test, assert, eq) {
   // ---- A2: winter and season words, winter picks ----
   test(G, 'season words: a dormant plant rests; out of season says when its part comes; winter picks open', async () => {
     const gather = await json('world/gather');
-    eq(outOfSeasonLine({ stage: 5 }, 'thrift', 'flowers', gather), gather.words.resting, 'dormant');
-    const withies = outOfSeasonLine({ stage: 3 }, 'willow', 'withies', gather);
-    assert(withies.startsWith(gather.words.nothingNow) && /withies are ready in (early|mid|late) ?winter/.test(withies), withies);
-    const down = outOfSeasonLine({ stage: 3 }, 'reeds', 'down', gather);
-    assert(/down comes in (late )?autumn/.test(down), down);
+    eq(outOfSeasonLine({ stage: 5 }, 'thrift', 'flowers', gather, 3.5), gather.words.resting, 'dormant');
+    const withies = outOfSeasonLine({ stage: 3 }, 'willow', 'withies', gather, 1.5);
+    eq(withies, `${gather.words.nothingNow} The withies are ready in early winter.`, 'summer');
+    eq(outOfSeasonLine({ stage: 3 }, 'willow', 'withies', gather, 2.85), `${gather.words.nothingNow} The withies are ready in a few days.`, 'two days before winter');
+    eq(outOfSeasonLine({ stage: 3 }, 'reeds', 'down', gather, 1.5), `${gather.words.nothingNow} The down comes in early autumn.`, 'summer reeds');
+    // Matt's click test: autumn day 6 shows brown seed heads, and the down is there to gather.
+    const reeds = { growth: { stages: { matureSize: 0.6 } } };
+    eq(pickable({ id: 3, sp: 'reeds', size: 0.9, best: 0.9 }, 'down', { flora: reeds, pos: 2 + 6.4 / 14 }, gather).ok, true, 'reed down on autumn day 6');
     const flora = { growth: { stages: { matureSize: 0.6 } } };
     const bush = { id: 7, sp: 'willow', size: 0.9, best: 0.9 };
     eq(pickable(bush, 'withies', { flora, pos: 3.5 }, gather).ok, true, 'willow withies in winter');
@@ -95,6 +98,38 @@ export function addPlantRulesTests(test, assert, eq) {
     eq(pickable(bush, 'withies', { flora, pos: 1.5 }, gather).why, 'season', 'no withies in summer');
     for (const pos of [0.2, 1.2, 2.2, 3.2]) eq(pickable({ ...bush, sp: 'gorse' }, 'flowers', { flora, pos }, gather).ok, true, `gorse flowers at ${pos}`);
     return withies;
+  });
+
+  test(G, 'every half day from autumn to the end of spring: gathering opens and closes where the words say, and they never name now as still to come', async () => {
+    const gather = await json('world/gather');
+    const W = gather.words;
+    const floraOf = { willow: await json('flora/willow'), reeds: await json('flora/reeds'), gorse: await json('flora/gorse') };
+    const SEASONS = ['spring', 'summer', 'autumn', 'winter'];
+    /** @type {string[]} */ const opened = [];
+    for (const [sp, part] of [['willow', 'withies'], ['willow', 'bark'], ['reeds', 'down'], ['gorse', 'flowers']]) {
+      const flora = floraOf[/** @type {'willow'|'reeds'|'gorse'} */ (sp)];
+      const w = gather.plants.parts[`${sp}.${part}`].window;
+      let days = 0;
+      // Autumn day 0 to spring day 13, every game hour on the hour of noon and of midnight.
+      for (let h = 0; h < 3 * 14 * 2; h++) {
+        const pos = (2 + h / 28) % 4;
+        const day = `${SEASONS[Math.floor(pos)]} day ${Math.floor((pos % 1) * 14)}`;
+        const plant = { id: 31, sp, size: 0.95, best: 0.95, stage: 3 };
+        const r = pickable(plant, part, { flora, pos }, gather);
+        const inside = w[1] > w[0] ? pos >= w[0] && pos < w[1] : pos >= w[0] || pos < w[1];
+        eq(r.ok, inside, `${sp} ${part} on ${day}`);
+        if (r.ok) { if (h % 2 === 0) days++; continue; }
+        const line = outOfSeasonLine(plant, sp, part, gather, pos);
+        const nowThird = W.when[Math.floor(pos * 3) % 12];
+        assert(!line.includes(`${nowThird}.`), `${sp} ${part} on ${day}: "${line}" names now as still to come`);
+        const named = SEASONS.find((s) => line.includes(` ${s}.`) || line.includes(` ${s} `));
+        if (named === SEASONS[Math.floor(pos)]) assert(line.includes('later this'), `${sp} ${part} on ${day}: "${line}"`);
+      }
+      opened.push(`${sp} ${part} ${days} of 42 days`);
+    }
+    // Every day of winter, withies and bark; reed down all autumn and winter but the last day or so.
+    assert(opened[0].startsWith('willow withies 14 ') && opened[1].startsWith('willow bark 14 '), opened.join('; '));
+    return opened.join('; ');
   });
 
   // ---- A3: caps, clear ground, the shared budget ----

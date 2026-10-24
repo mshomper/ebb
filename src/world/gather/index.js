@@ -147,7 +147,7 @@ export function createGather(o) {
         if (r.ok) { out.push({ kind, name: o.pack.nameOf(kind), plant: pl.id, part, x: pl.x, z: pl.z, left: 1, word: W.plenty }); lines.push(W.plenty); }
         else if (r.why === 'rest') lines.push(W.rest);
         else if (r.why === 'young') lines.push(W.young);
-        else if (r.why === 'season') lines.push(outOfSeasonLine(pl, pl.sp, part, R));
+        else if (r.why === 'season') lines.push(outOfSeasonLine(pl, pl.sp, part, R, seasonPos()));
       }
     }
     // The word for what you can take first; with nothing to take, the first spot's word.
