@@ -55,6 +55,7 @@ export const PARALLEL = {
   gather: () => import('./unit-tests-gather.js').then((m) => m.addGatherTests),
   click: () => import('./unit-tests-click.js').then((m) => m.addClickTests),
   items: () => import('./unit-tests-items.js').then((m) => m.addItemTests),
+  herbs: () => import('./unit-tests-herbs.js').then((m) => m.addHerbTests),
   // The audio tests that need no Web Audio (workers have none). The two that render sound through
   // an OfflineAudioContext (pond and keepsake sounds) stay on tools/unit-tests-audio.html, which
   // also still runs all of these, as does `node tools/run-audio-tests.mjs`.

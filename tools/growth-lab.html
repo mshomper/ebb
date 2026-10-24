@@ -39,6 +39,12 @@
   .notes { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 6px; }
   .notes li { display: grid; grid-template-columns: minmax(7.5em, auto) minmax(0, 1fr); gap: 12px; padding: 4px 0; border-bottom: 1px solid #E3D9C9; }
   .notes li span:first-child { color: #4A5551; font-size: 16px; }
+  .herbs { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+  .herb { margin: 0; display: flex; flex-direction: column; gap: 6px; }
+  .herbmap { width: 100%; height: auto; border-radius: 8px; display: block; }
+  .herb figcaption { display: flex; flex-direction: column; font-size: 16px; }
+  .herb figcaption span { color: #4A5551; }
+  .herb figcaption span.none { color: #B5654A; font-weight: 800; }
   @media (max-width: 600px) { body { font-size: 17px; } .muted, .tile span, .legend { font-size: 16px; } }
 </style>
 </head>
@@ -91,6 +97,11 @@
     </div>
     <div class="legend swatch" id="legend-map-plants"></div>
     <p class="muted" id="map-stats"></p>
+  </div>
+  <div class="card">
+    <h2>Where the tea herbs can grow</h2>
+    <p class="muted">Each herb's ground on this island as it is now: strong colour where one could arrive by itself, a pale wash where the ground is fair, grey where it cannot grow. The camp pad never counts. Try each island: <a href="?island=starter-island">the starter island</a>, <a href="?island=two-ponds">two ponds</a>. Add <b>&amp;plants=herbs</b> to see all four planted too.</p>
+    <div class="herbs" id="herb-ground"><p class="muted">Waiting for the water summary.</p></div>
   </div>
   <p class="muted">Add ?seed=2 (or any number) to the address to try another island.</p>
 </main>
