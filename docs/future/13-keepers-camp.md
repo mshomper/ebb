@@ -3105,6 +3105,9 @@ Small fix along the way: the Cliff hint lines move out of `src/ui/tools.js` into
 | **P2g Planting from below** | Seed saving, seed in a hole, kelp in the hole, willow cuttings, moving plants with the shovel, seed balls | 5, 10 |
 | **P2h Treats and trust** | Frog wrack heap, minnow leaf pack; the treat trust event; slower natural trust per species; `tools/trust-lab.html` | 8 |
 | **P2i Fire products** | Charcoal and ash at dawn; nettles arriving on the ash; willow charcoal sticks for journal sketches | 4, 6 |
+| **P2j Camp store** | A simple store at camp with 6 slots, made larger to 12; the workbench, the apothecary bench and the fire draw from it (Matt, October 24, 2026). What it is made of and how it grows are proposed separately for Matt's pick. It relaxes K-20's "no store beyond the piles" once chosen | 3.12, 4.1 |
+
+Build order (October 24, 2026): P2a with P2b; P2c with P2i; the workbench and apothecary bench makes with P2j, then P2d with the star fire; P2e with P2h; P2g with P2f. **All planting is the walker's** (Matt, October 24, 2026): the Plant tool leaves the view from above, and the D1 planting sketch shows planting on foot, tossing water plants from the bank and the raft push-off before P2g starts.
 
 ### Phase 3 — Pond tier gifts (T3)
 
