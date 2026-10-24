@@ -4,7 +4,7 @@
 // stroke settles, the same tiles are copied again for redo. The mirror is exact between
 // strokes, so CPU copies are enough and the GPU never stalls.
 
-import { WORLD_CELLS as N, TILE_CELLS as T } from './grid.js';
+import { WORLD_CELLS as N, TILE_CELLS as T, WORLD_ORIGIN, CELL, dequantize } from './grid.js';
 
 /** Tiles per window side (24). */
 export const TILES = N / T;
@@ -57,6 +57,34 @@ export function copyTiles(mirror, ids) {
     }
     return { tx, tz, h, m };
   });
+}
+
+/**
+ * A ground height sampler (m) over a set of tiles (a stroke's before or after copies): the height
+ * of the 0.25 m cell under a point, read from the tile that holds it, or `fallback` where no tile
+ * does (ground the stroke never touched). docs/future/13 5.7: burying reads a stroke's raise.
+ * @param {Tile[]} tiles @param {(x: number, z: number) => number} fallback
+ * @returns {(x: number, z: number) => number}
+ */
+export function heightFromTiles(tiles, fallback) {
+  /** @type {Map<number, Tile>} */ const byId = new Map(tiles.map((t) => [tileId(t.tx, t.tz), t]));
+  return (x, z) => {
+    const i = Math.floor((x - WORLD_ORIGIN) / CELL), j = Math.floor((z - WORLD_ORIGIN) / CELL);
+    if (i < 0 || j < 0 || i >= N || j >= N) return fallback(x, z);
+    const t = byId.get(tileId(Math.floor(i / T), Math.floor(j / T)));
+    if (!t) return fallback(x, z);
+    return dequantize(t.h[(j % T) * T + (i % T)]);
+  };
+}
+
+/** The world rect (m) a set of tiles covers. @param {Tile[]} tiles */
+export function tilesArea(tiles) {
+  let x0 = Infinity, z0 = Infinity, x1 = -Infinity, z1 = -Infinity;
+  for (const t of tiles) {
+    x0 = Math.min(x0, WORLD_ORIGIN + t.tx * T * CELL); x1 = Math.max(x1, WORLD_ORIGIN + (t.tx + 1) * T * CELL);
+    z0 = Math.min(z0, WORLD_ORIGIN + t.tz * T * CELL); z1 = Math.max(z1, WORLD_ORIGIN + (t.tz + 1) * T * CELL);
+  }
+  return { x0, z0, x1, z1 };
 }
 
 /**

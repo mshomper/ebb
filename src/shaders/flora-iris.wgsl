@@ -144,8 +144,9 @@ fn fanBase(plantU: u32, f: u32, salt: u32, center: vec2f, radius: f32) -> vec3f 
 
 @vertex
 fn vsIris(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> VsOut {
-  let a = plants[ii * 2u];
-  let b = plants[ii * 2u + 1u];
+  let a = plants[ii * FLORA_STRIDE];
+  let b = plants[ii * FLORA_STRIDE + 1u];
+  let lk = floraLookOf(ii);
   let stage = u32(round(a.w));
   let size = clamp(a.z, 0.0, 1.0);
   let seed = stage == FLORA_SEED;
@@ -167,7 +168,7 @@ fn vsIris(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> V
     let slot = vi % LEAF_VERTS;
     let f = leafI / leavesMax;
     let j = leafI % leavesMax;
-    let leaves = select(u32(round(mix(ird.leaf.x, ird.leaf.y, size))), u32(ird.look.z), seed);
+    let leaves = select(max(u32(round(floraKeep(mix(ird.leaf.x, ird.leaf.y, size), lk, false))), 1u), u32(ird.look.z), seed);
     if (f >= fans || j >= leaves) { return nothing(); }
     let fb = fanBase(plantU, f, salt, a.xy, radius);
     let bearing = fb.y;
@@ -182,30 +183,44 @@ fn vsIris(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> V
     let tilt = ird.leaf.w * (s + (v.x - 0.5) * 0.3);
     var height = full * (1.0 - ird.look.w * 0.5 + ird.look.w * v.y) * (1.0 - 0.35 * abs(s));
     if (dormant) { height *= ird.look2.x; }
+    // Picked: some leaves cut back with a square end (their tip folded onto the last level).
+    let cut = !seed && hashToFloat(pcg(h2 ^ 0xc07u)) < lk.x;
+    if (cut) { height *= 1.0 - floraLooks.pick.y; }
+    // Picked past the cut share: the first fan's outer leaves lie cut on the ground at its foot.
+    let lying = !seed && f == 0u && lk.x >= floraLooks.pick.z && j + u32(floraLooks.pick.w) >= leaves;
     let autumnK = smoothstep(2.1, 2.9, pos) * (1.0 - smoothstep(3.9, 4.0, pos));
     if (ird.gust.z > 0.5) {
       // A kidney leaf on its stalk, leaning out on its own bearing around the clump.
       let bearingK = bearing + f32(j) * (6.2831853 / f32(max(leaves, 1u))) + (v.x - 0.5) * 0.6;
       let dk = vec3f(cos(bearingK), 0.0, sin(bearingK));
       let leanK = ird.leaf.w * (0.4 + 0.6 * v.y);
-      let axisK = normalize(dk * sin(leanK) + up * cos(leanK));
+      let axisK = floraLookLean(normalize(dk * sin(leanK) + up * cos(leanK)), lk);
       let gustK = floraGust(ird.c, fb.xz, ird.stalk.w, ird.gust.x, v.z);
       let bendK = dk * ird.bloom.x + vec3f(ird.c.wind.x, 0.0, ird.c.wind.y) * (ird.c.wind.w * ird.flower.w * gustK);
       let baseK = vec3f(fb.x, b.w - ird.look2.y, fb.z);
       let radiusK = ird.leaf.z * (0.8 + 0.4 * v.x) * mix(0.55, 1.0, size);
       let brownK = select(0.6 * step(0.001, ird.look2.w * autumnK) * autumnK, 0.85, dormant);
       let tintK = 0.88 + 0.24 * hashToFloat(pcg(h2));
-      let albedoK = mix(ird.c.albedo.xyz, ird.tip.xyz, brownK) * tintK;
+      let albedoK = floraLookAlbedo(mix(ird.c.albedo.xyz, ird.tip.xyz, brownK), lk) * tintK;
       return glossy(kidneyLeaf(slot, baseK, axisK, bendK, height, k, dk, radiusK, albedoK, ird.look2.z), ird.gloss.y, ird.gloss.z);
     }
-    let axis = d * sin(tilt) + up * cos(tilt);
+    let outSide = select(-1.0, 1.0, s >= 0.0);
+    var axis = floraLookLean(d * sin(tilt) + up * cos(tilt), lk);
     // Arch outward on the leaf's own side, plus the wind (gusts, a little flutter per leaf).
     let gust = floraGust(ird.c, fb.xz, ird.stalk.w, ird.gust.x, v.z);
     let windV = vec3f(ird.c.wind.x, 0.0, ird.c.wind.y) * (ird.c.wind.w * ird.flower.w * gust);
-    let bend = d * (select(-1.0, 1.0, s >= 0.0) * ird.bloom.x * (0.5 + abs(s))) + windV;
+    var bend = d * (outSide * ird.bloom.x * (0.5 + abs(s))) + windV;
     let corner = LEAF[slot];
-    let t = corner.y;
-    let base = vec3f(fb.x, b.w - ird.look2.y, fb.z);
+    // A cut leaf ends square: its tip point sits on the last level, so the tip triangle closes.
+    let t = select(corner.y, min(corner.y, 0.9), cut || lying);
+    var base = vec3f(fb.x, b.w - ird.look2.y, fb.z);
+    if (lying) {
+      // Out past the clump, lying along the ground.
+      axis = normalize(d * outSide + up * 0.04);
+      bend = vec3f(0.0);
+      base = vec3f(fb.x, b.w + 0.01, fb.z) + d * (outSide * radius * 1.2);
+      height *= 0.5;
+    }
     let p0 = floraCurve(base, axis, bend, height, k, t);
     let tangent = floraTangent(axis, bend, k, t);
     // Flat in the fan plane, twisting a little toward the tip.
@@ -221,7 +236,7 @@ fn vsIris(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> V
     let reach = ird.look2.w * autumn;
     let brown = select(smoothstep(1.0 - reach, 1.0 - reach + 0.12, t) * step(0.001, reach), 0.85, dormant);
     let tint = 0.88 + 0.24 * hashToFloat(pcg(h2));
-    let albedo = mix(ird.c.albedo.xyz, ird.tip.xyz, brown) * tint * (0.85 + 0.3 * t);
+    let albedo = floraLookAlbedo(mix(ird.c.albedo.xyz, ird.tip.xyz, brown), lk) * tint * (0.85 + 0.3 * t) * select(1.0, 0.85, lying);
     return emit(p, n, albedo, mix(ird.look2.z, 1.0, t));
   }
 
@@ -231,14 +246,14 @@ fn vsIris(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> V
   let kf = vi - fansMax * leavesMax * LEAF_VERTS;
   let fi = kf / flowerVerts;
   let slot = kf % flowerVerts;
-  let flowers = u32(round(mix(ird.bloom.y, ird.bloom.z, size)));
+  let flowers = u32(round(floraKeep(mix(ird.bloom.y, ird.bloom.z, size), lk, true)));
   if (stage != FLORA_FLOWERING || fi >= min(flowers, fans)) { return nothing(); }
   let fb = fanBase(plantU, fi, salt, a.xy, radius);
   let hs = hash3(vec3u(plantU, fi, salt ^ 0x5a1cu));
   let hv = vec2f(hashToFloat(hs), hashToFloat(pcg(hs)));
-  let stalkH = full * ird.bloom.w * (0.9 + 0.2 * hv.x);
+  let stalkH = full * ird.bloom.w * (0.9 + 0.2 * hv.x) * (1.0 - floraLooks.drown.z * lk.z);
   let lean = (hv.y - 0.5) * 0.25;
-  let axis = normalize(vec3f(cos(fb.y) * lean, 1.0, sin(fb.y) * lean));
+  let axis = floraLookLean(normalize(vec3f(cos(fb.y) * lean, 1.0, sin(fb.y) * lean)), lk);
   let gust = floraGust(ird.c, fb.xz, ird.stalk.w, ird.gust.x, hv.x);
   let bend = vec3f(ird.c.wind.x, 0.0, ird.c.wind.y) * (ird.c.wind.w * ird.flower.w * gust);
   let base = vec3f(fb.x, b.w - ird.look2.y, fb.z);

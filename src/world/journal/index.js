@@ -21,6 +21,7 @@ import { groundKind, groundCard, groundSurvey, describeGround, groundSpot } from
 import { almanac } from './almanac.js';
 import { describeWeb } from './web.js';
 import { washMap } from './wash.js';
+import { buriedNotice } from './buried.js';
 import { UNDER_PAGES } from '../finds/under-log.js';
 import { stampNotes, markShown, markNotesSeen, markPageSeen, readOf, pageSince, unread, noteState } from './read.js';
 
@@ -355,8 +356,40 @@ export function createJournal(opts) {
     select({ ...card, pinned: true }, at?.x ?? 0, at?.y ?? 0);
   }
 
+  // Plants that went under new ground (buried.js): each patch waits for the next game hour, and is
+  // written then only if its plants are still gone (an undo straight away writes nothing). The
+  // session's count runs from load or a rest to the next rest. Neither is saved.
+  /** @type {{ sp: string, x: number, z: number, ids: number[], hour: number }[]} */ let buriedPatches = [];
+  let buriedSession = { count: 0, shown: false };
+  /** The patches whose hour has passed, as growth:lost events. @param {number} hour @param {any} state */
+  function buriedLost(hour, state) {
+    const due = buriedPatches.filter((b) => hour > b.hour);
+    if (!due.length) return [];
+    buriedPatches = buriedPatches.filter((b) => hour <= b.hour);
+    const here = new Set((state?.growth?.plants ?? []).map((/** @type {any} */ q) => q.id));
+    return due.map((b) => ({ b, gone: b.ids.filter((id) => !here.has(id)).length })).filter((d) => d.gone > 0)
+      .map(({ b, gone }) => ({ name: 'growth:lost', payload: { species: b.sp, why: 'buried', count: gone, x: b.x, z: b.z } }));
+  }
+
   const offs = [
-    on('world:ticked', (/** @type {{ hour: number, events: any[], state: any }} */ p) => look(p.events ?? [], p.hour, p.state)),
+    on('world:ticked', (/** @type {{ hour: number, events: any[], state: any }} */ p) => look([...(p.events ?? []), ...buriedLost(p.hour, p.state)], p.hour, p.state)),
+    on('growth:buried', (/** @type {any} */ p) => {
+      const hour = hourIndex();
+      for (const [sp, s] of Object.entries(p.bySpecies ?? {})) buriedPatches.push({ sp, x: s.x, z: s.z, ids: s.ids, hour });
+      const B = world.env.recipes?.growth?.bury;
+      if (!B) return;
+      const r = buriedNotice(p, buriedSession, B, habitat(), words);
+      buriedSession = r.session;
+      if (r.text) emitDeferred('island:notice', { text: r.text, showS: words.buried?.showS ?? 6 });
+    }),
+    on('growth:restored', (/** @type {{ ids: number[] }} */ p) => {
+      const back = new Set(p.ids ?? []);
+      buriedPatches = buriedPatches.map((b) => ({ ...b, ids: b.ids.filter((id) => !back.has(id)) })).filter((b) => b.ids.length);
+    }),
+    on('camp:rested', () => { buriedSession = { count: 0, shown: false }; }),
+    // A plant not to pick, met for the first time (gather/index.js): its page learns why.
+    on('pick:refused', (/** @type {{ species: string }} */ p) =>
+      commit(learn(journal, p.species, 'pick:refused', { state: world.state, hour: hourIndex(), words }))),
     // Catch-up wrote the hours you were away (src/sim/away.js): its journal is the journal now. Its
     // notes are not posted, so they wait under "You may have missed".
     on('journal:replaced', (/** @type {{ journal: any }} */ p) => {
