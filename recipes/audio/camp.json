@@ -1,13 +1,43 @@
 {
   "version": 1,
-  "note": "The camp fire's one-shots (docs/future/13 sections 3.5, C-27, C-31; camp:sound from src/world/camp): strike, the fire steel on its flint (each strike of the act); catch, the twigs taking; hiss, rain on a burning fire as it drops low. Played through src/audio/keepsake-sounds.js on the tools bus. The CC0 takes go in assets/audio/one-shots/camp/ (.ogg and .m4a) with their sources in assets/audio/CREDITS.md; until they are there the sounds are silent and the console says so once each.",
+  "note": "The camp's sounds (docs/future/13 sections 3.5, C-27, C-31, C-33; doc 17 'The first evening and the camp'). ONE-SHOTS (camp:sound from src/world/camp, played through src/audio/keepsake-sounds.js on the tools bus; CC0 takes in assets/audio/one-shots/camp/, each peaked at -3 dBFS): strike, the fire steel on its flint (each strike of the act, four takes in turn); catch, the twigs taking; hiss, rain on a burning fire as it drops low; feed, a handful of sticks dropped on and the fire flaring (camp:fed). db sets each one's level; pitchCents is a small seeded spread. LOOPS (src/audio/camp-loops.js, from the store slice campSound and the sound slice; CC0 loops in assets/audio/beds/, on the ambience bus): fire is the crackle placed at the ring, mono, peaking at -3 dB: db at full flame, lowShare its level as the fire burns low, embersDb for embers (also lowpassed from litHz to embersHz), rainDb while rain keeps a burning fire low; heard from the camera eye, full within refM, then falling as refM over the distance, gone from fadeFromM to reachM; air is the distance dulling of doc 17's spatial chain; rampS how fast it follows. canvas is rain drumming on the tent canvas (two takes; a session plays one): db at full rain, from rainFrom to rainFull of the weather's rain, full within nearM of the tent (measured from you, the camera target, on the ground) and gone by reachM (doc 17: 6 m), and fading away from above as the camera eye goes from eyeFadeFromM to eyeReachM. Sources are in assets/audio/CREDITS.md.",
   "root": "assets/audio/one-shots/camp/",
   "pitchCents": 40,
   "wakeWaitMs": 400,
   "sounds": {
-    "strike": { "file": "fire-steel-strike", "db": -14 },
+    "strike": { "files": ["fire-steel-strike-a", "fire-steel-strike-b", "fire-steel-strike-c", "fire-steel-strike-d"], "db": -14 },
     "catch": { "file": "twigs-catch", "db": -16 },
-    "hiss": { "file": "fire-rain-hiss", "db": -15 }
+    "hiss": { "file": "fire-rain-hiss", "db": -15 },
+    "feed": { "file": "fire-feed", "db": -15 }
   },
-  "preload": []
+  "preload": [],
+  "loops": {
+    "root": "assets/audio/beds/",
+    "bus": "ambience",
+    "fire": {
+      "file": "fire/crackle",
+      "db": 6,
+      "lowShare": 0.45,
+      "embersDb": -14,
+      "rainDb": -6,
+      "litHz": 16000,
+      "embersHz": 2500,
+      "refM": 2,
+      "fadeFromM": 8,
+      "reachM": 18,
+      "air": { "nearM": 2, "nearHz": 18000, "farM": 60, "farHz": 3000 },
+      "rampS": 1.5
+    },
+    "canvas": {
+      "files": ["canvas/a", "canvas/b"],
+      "db": -3,
+      "rainFrom": 0.05,
+      "rainFull": 0.5,
+      "nearM": 3,
+      "reachM": 6,
+      "eyeFadeFromM": 10,
+      "eyeReachM": 20,
+      "rampS": 2.5
+    }
+  }
 }

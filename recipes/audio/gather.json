@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "note": "Gathering's soft sounds (docs/future/13 gather:done, 'a soft sound by group', doc 17): one short CC0 take by the pack group of what was gathered, played through src/audio/keepsake-sounds.js on the tools bus, each peaked at -3 dBFS. groups maps each pack group (recipes/world pack kinds) to a sound; a group not listed is silent. sea reuses the keepsakes' wet-sand pickup. db sets each one's level; pitchCents is a small seeded spread (the gathered spot's place seeds it, so the same spot sounds the same). Sources are in assets/audio/CREDITS.md.",
+  "root": "assets/audio/one-shots/gather/",
+  "pitchCents": 80,
+  "wakeWaitMs": 400,
+  "sounds": {
+    "sticks": { "files": ["sticks-a", "sticks-b", "sticks-c"], "db": -12 },
+    "pebbles": { "files": ["pebbles-a", "pebbles-b", "pebbles-c"], "db": -13 },
+    "leaves": { "files": ["leaves-a", "leaves-b", "leaves-c"], "db": -14 },
+    "earth": { "files": ["earth-a", "earth-b"], "db": -14 },
+    "wet": { "file": "../keepsakes/pickup", "db": -10 }
+  },
+  "groups": { "fuel": "sticks", "stones": "pebbles", "fibres": "leaves", "herbs": "leaves", "living": "leaves", "earth": "earth", "sea": "wet" },
+  "preload": []
+}
