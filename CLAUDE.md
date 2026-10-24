@@ -68,6 +68,8 @@ Full ownership and exports are in `docs/03-tech-stack-and-module-map.md`.
 
 ## Current target
 
-Phase 1 of the keeper's camp, the first evening, in `docs/future/13-keepers-camp.md` section 13, ahead of the rest of M2 (Matt, October 22, 2026; see `docs/20-roadmap-and-vertical-slice.md`). The M1 slice was signed off on October 20, 2026. Do not build later phases of the camp, or features from milestones after M2, until Matt approves them.
+Phase 2 of the keeper's camp, the first season (`docs/future/13-keepers-camp.md` section 13, with 3.12), after a short groundwork step: the rest of the walker's motion and the planting sketch (D1). Phase 1 passed its exit check on October 23, 2026. Do not build Phase 3 or later until Matt approves. See `docs/20-roadmap-and-vertical-slice.md`.
 
-Matt provides the Phase 1 models in `C:\Users\mshom\Documents\Ebb\_assets` (glb). Sessions make only small pieces such as the fire steel, drift twigs, pebbles, flat stones and reed down. For anything more complex than a basic shape, ask Matt whether he will make it or the session will.
+All planting is the walker's (Matt, October 24, 2026): the Plant tool leaves the view from above.
+
+Matt provides the camp models in `C:\Users\mshom\Documents\Ebb\_assets` (glb). Sessions make only small pieces such as the fire steel, drift twigs, pebbles, flat stones and reed down. For anything more complex than a basic shape, ask Matt whether he will make it or the session will.

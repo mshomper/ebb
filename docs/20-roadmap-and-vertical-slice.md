@@ -16,7 +16,8 @@
 flowchart TD
     M0[M0 Foundations] --> M1[M1 Vertical slice]
     M1 --> FE[The first evening, keeper's camp Phase 1]
-    FE --> M2[M2 Pond tier complete]
+    FE --> FS[The first season, keeper's camp Phase 2]
+    FS --> M2[M2 Pond tier complete]
     M2 --> M3[M3 Meadow and seasons]
     M3 --> M4[M4 Woodland and first expansion]
     M4 --> M5[M5 Wetland shore]
@@ -74,7 +75,7 @@ Slice acceptance, all together:
 - Close the tab, come back the next day. The island has moved on, and a short calm reveal shows what changed.
 - (Retired October 21, 2026: the same steps on a phone with touch. ebb is now desktop and laptop only.)
 
-### The first evening (keeper's camp Phase 1) — current target
+### The first evening (keeper's camp Phase 1) — done
 
 Decided October 22, 2026 (Matt): Phase 1 of the keeper's camp (`docs/future/13-keepers-camp.md`) comes before the rest of M2 and ships before ebb is marketed, because a player who lands with no orientation is likely to leave. A new island opens at dawn with the walker standing on the beach below the camp, the small boat grounded behind (changed October 22, 2026, Matt: no row-in). Nine short beats teach walking, the spring and the journal's first page, pitching the tent, gathering, laying the fire ring, going up to shape, lighting the fire at dusk, and resting until morning. The starter island grows to 4 x 4 chunks with a more varied coast (F13 section 3.11).
 
@@ -86,13 +87,27 @@ Decided October 22, 2026 (Matt): Phase 1 of the keeper's camp (`docs/future/13-k
 | E4 | The evening director: beats, walker hooks, the boat start and mooring, the keeper's first page, skip | none |
 | E5 | `tools/intro-lab.html` | E4 |
 
-Exit check: Matt plays the first evening on a fresh seed, end to end, without reading anything outside the game, and an existing island loads with its camp pad stamped.
+Exit check: Matt plays the first evening on a fresh seed, end to end, without reading anything outside the game, and an existing island loads with its camp pad stamped. **Passed October 23, 2026.**
 
-Later phases of the camp ride with the milestones below: Phase 2 (the first season: plant rules, tea herbs, digging, clay, teas, treats and trust) with the rest of M2; Phase 3 (pond tier gifts) at M2's close; Phase 4 (meadow herbs, dyes) with M3; Phase 5 (woodland, shore and night) with M4 to M6, each with its species' milestone (F13 section 13).
+### The first season (keeper's camp Phase 2) — current target
+
+Decided October 24, 2026 (Matt). A short groundwork step comes first: the rest of the walker's motion (leaning into starts and stops, the head turning to look, a gesture for each action) and the planting sketch (D1). **All planting is the walker's:** the Plant tool leaves the view from above, water plants are tossed from the bank and the raft is pushed off. Then Phase 2 in pairs (F13 section 13, with 3.12):
+
+| Step | Side by side |
+|---|---|
+| 1 | P2a plant rules, P2b the four tea herbs |
+| 2 | P2c cord, shovel and digging, P2i fire products |
+| 3 | The workbench and apothecary bench makes with P2j the camp store; then P2d clay and the three pots, with the star fire |
+| 4 | P2e teas, P2h treats and trust, P2k the forager's trail (a fourth trail, added October 24, 2026; doc 13) |
+| 5 | P2g planting from below (after D1), P2f the satchel and basket |
+
+**The camp store (P2j)**, added October 24, 2026 (Matt): a simple store at camp with 6 slots, made larger to 12, linked to the workbench, the apothecary bench and the fire, which draw from it. Its material and how it grows are proposed separately for Matt's pick.
+
+Later phases of the camp ride with the milestones below: Phase 2 (the first season: plant rules, tea herbs, digging, clay, teas, treats and trust) now comes next, before the rest of M2 (October 24, 2026, below); Phase 3 (pond tier gifts) at M2's close; Phase 4 (meadow herbs, dyes) with M3; Phase 5 (woodland, shore and night) with M4 to M6, each with its species' milestone (F13 section 13).
 
 ### M2 — Pond tier complete and the meadow islet
 
-The rest of M2 continues after the first evening.
+The rest of M2 continues after the first season (changed October 24, 2026), together with the camp's Phase 3. Check the meadow islet's placement against the larger 4 x 4 island first.
 
 
 - **First step: the Cliff tool** (decided October 2026). Terrace and Cut modes that build or carve level shelves with sheer rock faces, painted rock that stays sheer (talus about 82 degrees), full mesh detail near cliffs, and a shadow offset for near-vertical faces. Built first so it lands as early as possible without interrupting the slice (docs 08, 15, 04, 19). First planned as available from the start; since October 20, 2026 it is **the frogs' gift** (doc 12), replacing their water lily seed, with `?sandbox` and `?cliffs` opening it for testing. Built October 20, 2026 and merged (PR #54) as Sculpt chips (Terrace and Cut beside Raise, Lower, Flatten and Boulder), together with **waterfalls**: water running over a shelf's edge is drawn as volumetric droplet water near the eye (screen-space fluid) and as a curtain further off, with foam where it lands (doc 07). Their sound is built too: each waterfall near the camera is heard where it falls (doc 25).

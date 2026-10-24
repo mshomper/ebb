@@ -27,6 +27,7 @@ Agreed with Matt on October 20, 2026. New things reach the player in five ways, 
 | The naturalist's trail | Shells (and keepsakes start washing up) at 3 finds; loose stones at 6, driftwood at 10, the tide table at 12, the hand lens at 15, field glasses at 20, a night lamp at 25. Ways to look. Released living catches count as finds | new kinds of finds discovered (`recipes/world/naturalist.json`) |
 | The beachcomber's trail | The shelf, then the general net, a glass case, the light net, the sinker net, a second shelf, a gold border for a first once-in-a-lifetime, the cabinet frame. Ways to reach the sea and to keep | each family's first keepsake kept, each rarity's first kept, each rare mark first seen (F12) |
 | The shaper's trail | Stepping stones, a lantern, paths, Steps up a cliff face (for the walker), photo frames, the island map, a wind chime. Human touches and places to be | the first time the island has each kind of place: a metre-deep pool, a fish-free pond, a cove, a terrace with a fall, a stream, a meadow in bloom, a reed-ringed pond |
+| The forager's trail (added October 24, 2026; build piece P2k) | The herbarium, a gathering knife, seed papers, a seed scoop, the forager's almanac, a tea caddy, a hazel walking stick, a pressing frame. Ways to gather, keep and press | the first handful of each plant gathered, the first handful in each season, the first seed of each plant saved |
 | Species gifts | One seed or tool per species, when it first settles happy (list in `12-creature-roadmap.md`) | creature happiness |
 | Tier milestones | New land, when the second species of a tier is happy | creature happiness |
 
@@ -50,13 +51,15 @@ The gifts build on each other. The frogs' Cliff tool makes the deep, still pool 
 
 ### Trails (agreed with Matt, October 21, 2026)
 
-Three trails share one journal page, **Trails**. On a wide window they sit side by side, each a line of ink stops down the paper like the naturalist's trail today; on a narrower one they are three tabs.
+Three trails share one journal page, **Trails**. On a wide window they sit side by side, each a line of ink stops down the paper like the naturalist's trail today; on a narrower one they are three tabs. **A fourth, the forager's trail, was added on October 24, 2026 (Matt):** gathering came with the camp after the trails were agreed, and plants are not finds, so nothing counted it. With four, they sit side by side from 1400 px, two by two from 1100 px, and as four tabs below that, with no horizontal scroll at any width.
 
 ```
-NATURALIST            BEACHCOMBER              SHAPER
-what you notice       what you keep            what you make
-ways to look          ways to reach and keep   human touches, places to be
+NATURALIST            BEACHCOMBER              SHAPER                        FORAGER
+what you notice       what you keep            what you make                 what you gather
+ways to look          ways to reach and keep   human touches, places to be   ways to gather, keep and press
 ```
+
+The forager's stops (plan page `forager-trail-plan.html`, October 24, 2026): the herbarium at 1 plant gathered (a journal page of pressed sprigs); a gathering knife at 4 (picked plants look less bare and are ready again at 0.8 of their size, not 0.9); seed papers at seed saved from 3 plants (a seed pouch holds 6 handfuls); a seed scoop at seed saved from 5 (two handfuls per saving); the forager's almanac at a handful gathered in all four seasons (a ring calendar of the parts gathered); a tea caddy at 6 plants (after P2e: keeps the last blend as one pencil outline and a pinch of each herb from blends made); a hazel walking stick at 10 (Phase 4: gathers lily leaves and pondweed from the bank); a pressing frame at 16 (Phase 4: four pressed flowers on the tent pole, the last stop). Stops live in `recipes/world/forager.json`; firsts are `trail: 'forage'` in the saved unlocks, with no save format change.
 
 - **A stop is a first or a new kind, never a total.** "7 of 13 families kept" may show; "keep 50 shells" never exists. Nothing is missable or time-limited.
 - **The next reward on each trail shows in pencil;** the rest stay unseen.
@@ -68,6 +71,7 @@ ways to look          ways to reach and keep   human touches, places to be
 | The naturalist's trail | Ways to look and understand | Tools that shape |
 | The beachcomber's trail | Ways to reach the sea, keep and display | Tools that shape |
 | The shaper's trail | Human touches, places to be, ways to show the island | New creatures; tools that shape |
+| The forager's trail | Ways to gather, keep and press what grows | Tools that shape; new plants; seed |
 
 - **Species gifts stay the only source of new shaping power,** so creatures stay the heart. The gifts are the means; the shaper's trail notices what you make with them. For example, the frogs' Cliff tool lets you build a terrace with a fall, and that stop on the shaper's trail brings Steps: steps set into a cliff face, so you can walk up your own terraces.
 - **No trail locks another, or a creature.**
