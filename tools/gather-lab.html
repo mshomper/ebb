@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ebb gather lab</title>
+<link rel="icon" href="../brand/ebb-favicon.svg" type="image/svg+xml">
+<style>
+  @font-face { font-family: 'Nunito'; src: url('../src/vendor/fonts/nunito-latin-600-normal.woff2') format('woff2'); font-weight: 600; }
+  @font-face { font-family: 'Nunito'; src: url('../src/vendor/fonts/nunito-latin-800-normal.woff2') format('woff2'); font-weight: 800; }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; max-width: 100%; overflow-x: hidden; }
+  body { background: #F4EEE4; color: #1E2624; font: 600 17px/1.45 'Nunito', system-ui, sans-serif; padding: 16px; overflow-wrap: anywhere; }
+  main { max-width: 960px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+  h1 { font-size: 24px; font-weight: 800; margin: 0; }
+  h2 { font-size: 19px; font-weight: 800; margin: 0 0 4px; }
+  .muted { color: #4A5551; font-size: 16px; margin: 0; }
+  .card { background: #FBF7F0; border: 1px solid #E3D9C9; border-radius: 14px; padding: 14px 16px; min-width: 0; }
+  .grid { display: flex; flex-direction: column; gap: 12px; }
+  .charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(420px, 100%), 1fr)); gap: 8px 16px; margin-top: 8px; }
+  .charts h3 { font-size: 16px; font-weight: 800; margin: 0; color: #4A5551; }
+  .legend { display: flex; flex-wrap: wrap; gap: 16px; font-size: 16px; margin: 4px 0 8px; }
+  .legend i { display: inline-block; width: 14px; height: 14px; border-radius: 3px; vertical-align: -2px; margin-right: 6px; }
+  svg { width: 100%; height: auto; display: block; }
+  svg text { font: 600 15px 'Nunito', system-ui, sans-serif; fill: #4A5551; }
+  svg text.v { fill: #1E2624; font-weight: 800; }
+  a { color: #4a6a47; }
+  .facts { margin: 8px 0 0; padding: 0; list-style: none; display: grid; gap: 4px; font-size: 16px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>ebb gather lab</h1>
+  <p class="muted">How much one plant gives if the walker picks it every time it is ready: handfuls a game day, by season, on dry days and in steady rain, from <code>recipes/world/gather.json</code> (share, readyShare, window, rest speed, rain help) and each plant's growth recipe. Below each, how a plant grows back after one pick. Open it beside <a href="growth-lab.html">growth lab</a> while tuning; edit the recipes and reload. <a href="./">All tools</a></p>
+  <div class="legend"><span><i style="background:#C99A3E"></i>dry days</span><span><i style="background:#5F8196"></i>steady rain</span></div>
+  <div class="grid" id="parts"></div>
+</main>
+<script type="module">
+  import { handfulsBySeason, runPlant, restAfterPicks, SEASON_H } from './gather-lab-model.js';
+  import { partOf } from '../src/world/gather/plants.js';
+
+  const get = (p) => fetch(`../recipes/${p}.json`, { cache: 'no-cache' }).then((r) => r.json());
+  const gather = await get('world/gather');
+  const pack = await get('world/pack');
+  const SEASONS = ['Spring', 'Summer', 'Autumn', 'Winter'];
+  const DRY = '#C99A3E', WET = '#5F8196';
+  const nameOf = (k) => pack.kinds.find((q) => q.id === k)?.name ?? k;
+  const host = document.getElementById('parts');
+
+  /** Bars: handfuls a day per season, dry and wet side by side. */
+  function bars(r) {
+    const W = 440, H = 190, top = 24, base = 150, max = Math.max(1, ...r.dry, ...r.wet);
+    let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Handfuls a game day by season">`;
+    s += `<line x1="10" y1="${base}" x2="${W - 10}" y2="${base}" stroke="#DCCFBD" stroke-width="2"/>`;
+    SEASONS.forEach((name, i) => {
+      const cx = 10 + (W - 20) * (i + 0.5) / 4;
+      [[r.dry[i], DRY, -24], [r.wet[i], WET, 2]].forEach(([v, c, dx]) => {
+        const h = (base - top) * v / max;
+        s += `<rect x="${cx + dx}" y="${base - h}" width="22" height="${h}" rx="4" fill="${c}"/>`;
+        s += `<text class="v" x="${cx + dx + 11}" y="${base - h - 6}" text-anchor="middle">${v.toFixed(1)}</text>`;
+      });
+      s += `<text x="${cx}" y="${base + 26}" text-anchor="middle">${name}</text>`;
+    });
+    return s + '</svg>';
+  }
+
+  /** Lines: size over three game days, picked whenever ready, dry and wet. */
+  function curve(sp, part, flora, pos0, ready) {
+    const W = 440, H = 170, x0 = 40, x1 = W - 12, y0 = 140, y1 = 16, hours = 72;
+    const dry = runPlant({ sp, part, flora, gather, pos0, hours, rain: 0 }).sizes;
+    const wet = runPlant({ sp, part, flora, gather, pos0, hours, rain: 1 }).sizes;
+    const lo = Math.min(...dry, ...wet) - 0.05, hi = 1;
+    const X = (h) => x0 + (x1 - x0) * h / (hours - 1), Y = (v) => y0 - (y0 - y1) * (v - lo) / (hi - lo);
+    const path = (a) => a.map((v, h) => `${h ? 'L' : 'M'}${X(h).toFixed(1)} ${Y(v).toFixed(1)}`).join(' ');
+    let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Size over three game days, picked whenever ready">`;
+    s += `<line x1="${x0}" y1="${Y(ready)}" x2="${x1}" y2="${Y(ready)}" stroke="#4a6a47" stroke-dasharray="6 5" stroke-width="2"/>`;
+    s += `<text x="${x1}" y="${Y(ready) - 6}" text-anchor="end">pickable again</text>`;
+    s += `<path d="${path(dry)}" fill="none" stroke="${DRY}" stroke-width="3"/><path d="${path(wet)}" fill="none" stroke="${WET}" stroke-width="3"/>`;
+    for (const d of [0, 1, 2, 3]) s += `<text x="${X(Math.min(hours - 1, d * 24))}" y="${H - 6}" text-anchor="middle">day ${d}</text>`;
+    return s + '</svg>';
+  }
+
+  for (const key of Object.keys(gather.plants.parts)) {
+    const [sp, part] = key.split('.');
+    const flora = await get(`flora/${sp}`);
+    const P = partOf(sp, part, gather);
+    const r = handfulsBySeason(sp, part, flora, gather);
+    // The recovery curve in the middle of the part's window.
+    const w = P.window, mid = (w[1] > w[0] ? (w[0] + w[1]) / 2 : ((w[0] + w[1] + 4) / 2) % 4);
+    const rDry = restAfterPicks(sp, part, flora, gather, mid, 0), rWet = restAfterPicks(sp, part, flora, gather, mid, 1);
+    const fmt = (r) => `${r.inARow} handful${r.inARow === 1 ? '' : 's'} in a row, then ${r.restH === null ? `no more within ${SEASON_H / 24} days` : r.restH < 48 ? `${r.restH} h` : `${(r.restH / 24).toFixed(1)} days`} of rest`;
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.innerHTML = `<h2>${nameOf(key)}</h2>
+      <p class="muted">Takes ${Math.round(P.share * 100)}% a pick, pickable from ${Math.round(P.readyShare * 100)}% of its best; in season ${w[0]} to ${w[1]}.</p>
+      <div class="charts"><div><h3>Handfuls a game day</h3>${bars(r)}</div><div><h3>Size over three days in season, picked whenever ready</h3>${curve(sp, part, flora, mid, P.readyShare * 0.95)}</div></div>
+      <ul class="facts"><li>Dry: ${fmt(rDry)}.</li><li>In rain: ${fmt(rWet)}.</li></ul>`;
+    host.appendChild(card);
+  }
+</script>
+</body>
+</html>

@@ -19,6 +19,7 @@ import { TILE_CELLS, WORLD_ORIGIN, CELL, quantize } from '../src/world/terrain/g
 import { coarseStep, initialGrowth } from '../src/world/growth/coarse.js';
 import { initialWorldState, makeEnv } from '../src/sim/tick.js';
 import { shoreline, at, loadRecipes } from './unit-tests-growth.js';
+import { handfulsBySeason, restAfterPicks } from './gather-lab-model.js';
 
 const G = 'plant rules';
 
@@ -236,6 +237,19 @@ export function addPlantRulesTests(test, assert, eq) {
       assert(words.species[sp].likes.some((/** @type {any} */ l) => l.learn.includes('pick:refused')), `${sp}'s page learns from pick:refused`);
     }
     assert(!partsOf('iris', gather).length && !partsOf('marigold', gather).length, 'no parts to gather');
+  });
+
+  // ---- A8: the gather lab's model ----
+  test(G, 'gather lab: nothing out of season, rain shortens the rest, the same run twice', async () => {
+    const gather = await json('world/gather');
+    const gorse = await json('flora/gorse'), willow = await json('flora/willow');
+    const w = handfulsBySeason('willow', 'withies', willow, gather);
+    eq(w.dry[1], 0, 'no withies in summer');
+    assert(w.dry[3] > 0, 'withies in winter');
+    const dry = restAfterPicks('gorse', 'flowers', gorse, gather, 1.5, 0), wet = restAfterPicks('gorse', 'flowers', gorse, gather, 1.5, 1);
+    assert(dry.inARow >= 1 && dry.restH !== null && wet.restH !== null && wet.restH < dry.restH, `gorse rests ${dry.restH} h dry, ${wet.restH} h in rain`);
+    eq(JSON.stringify(handfulsBySeason('gorse', 'flowers', gorse, gather)), JSON.stringify(handfulsBySeason('gorse', 'flowers', gorse, gather)), 'the same twice');
+    return `gorse: ${dry.inARow} in a row, rest ${dry.restH} h dry, ${wet.restH} h wet`;
   });
 
   // ---- brush rings ----
