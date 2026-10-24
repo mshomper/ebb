@@ -109,6 +109,21 @@ for (const m of list.models) {
   const root = doc.getRoot();
   const trisBefore = triangles(doc);
 
+  // dropNodes: parts left out by node name (the cooking pot's clay stove and grate), with
+  // everything under them; the rest stays as it was.
+  for (const name of m.dropNodes ?? []) {
+    for (const node of root.listNodes()) if (node.getName() === name) node.traverse((n) => n.dispose());
+  }
+  await doc.transform(prune());
+  // setNodes: a part moved by node name (the wicker basket's lid, set beside it in the file, put on
+  // top), its translation and rotation replaced.
+  for (const [name, t] of Object.entries(m.setNodes ?? {})) {
+    for (const node of root.listNodes()) if (node.getName() === name) {
+      if (t.translation) node.setTranslation(t.translation);
+      if (t.rotation) node.setRotation(t.rotation);
+    }
+  }
+
   // Bake each mesh node's world transform into its vertices, then clear the transforms.
   for (const node of root.listNodes()) {
     const mesh = node.getMesh();

@@ -11,7 +11,7 @@ import { readGlb, materialMaps } from '../src/render/gltf.js';
  * @property {Float32Array} positions
  * @property {Float32Array} normals
  * @property {Float32Array} uvs
- * @property {Float32Array} colors   linear rgb a vertex (COLOR_0, or white where it has none)
+ * @property {Float32Array} colors   linear rgba a vertex: rgb from COLOR_0 (white where it has none); a 1 where the paint maps apply, 0 where they do not (the walker beside a piece)
  * @property {Uint32Array} indices
  * @property {number} triangles
  * @property {{ min: number[], max: number[] }} bounds
@@ -77,11 +77,11 @@ export function readModel(buffer, place) {
     const idx = prim.indices !== undefined ? glb.accessor(prim.indices) : Uint32Array.from({ length: count }, (_, i) => i);
     // Vertex colours (a model painted in COLOR_0: the single log and stone, the pieces made in code),
     // 3 or 4 numbers a vertex, as floats or normalized integers; white where there are none.
-    const col = new Float32Array(count * 3).fill(1);
+    const col = new Float32Array(count * 4).fill(1);
     if (prim.attributes.COLOR_0 !== undefined) {
       const raw = glb.accessor(prim.attributes.COLOR_0), k = raw.length / count;
       const scale = raw instanceof Uint8Array ? 255 : raw instanceof Uint16Array ? 65535 : 1;
-      for (let v = 0; v < count; v++) for (let q = 0; q < 3; q++) col[v * 3 + q] = raw[v * k + q] / scale;
+      for (let v = 0; v < count; v++) for (let q = 0; q < 3; q++) col[v * 4 + q] = raw[v * k + q] / scale;
     }
     const c = [ // cofactor of the upper 3 x 3, column-major
       m[5] * m[10] - m[6] * m[9], m[6] * m[8] - m[4] * m[10], m[4] * m[9] - m[5] * m[8],
@@ -149,8 +149,8 @@ export function readModel(buffer, place) {
 
 /**
  * Two placed models side by side on the ground, for scale: `a` (the walker) moved to the left of
- * `b` (a piece) with a gap between them, as one mesh. Maps are dropped: both are painted in vertex
- * colours. `b` stays where it is.
+ * `b` (a piece) with a gap between them, as one mesh. `b` keeps its paint maps; the walker, painted in
+ * vertex colours, is marked to skip them. `b` stays where it is.
  * @param {Placed} a @param {Placed} b @param {number} gap meters
  * @returns {Placed}
  */
@@ -158,7 +158,8 @@ export function beside(a, b, gap) {
   const dx = b.bounds.min[0] - gap - a.bounds.max[0], dz = (b.bounds.min[2] + b.bounds.max[2]) / 2 - (a.bounds.min[2] + a.bounds.max[2]) / 2;
   const na = a.positions.length / 3;
   const cat = (/** @type {Float32Array} */ x, /** @type {Float32Array} */ y) => { const o = new Float32Array(x.length + y.length); o.set(x); o.set(y, x.length); return o; };
-  const pa = a.positions.slice();
+  const pa = a.positions.slice(), ca = a.colors.slice();
+  for (let v = 0; v < na; v++) ca[v * 4 + 3] = 0;
   for (let v = 0; v < na; v++) { pa[v * 3] += dx; pa[v * 3 + 2] += dz; }
   const indices = new Uint32Array(a.indices.length + b.indices.length);
   indices.set(a.indices);
@@ -166,9 +167,8 @@ export function beside(a, b, gap) {
   const min = [Math.min(a.bounds.min[0] + dx, b.bounds.min[0]), 0, Math.min(a.bounds.min[2] + dz, b.bounds.min[2])];
   const max = [Math.max(a.bounds.max[0] + dx, b.bounds.max[0]), Math.max(a.bounds.max[1], b.bounds.max[1]), Math.max(a.bounds.max[2] + dz, b.bounds.max[2])];
   return {
-    positions: cat(pa, b.positions), normals: cat(a.normals, b.normals), uvs: cat(a.uvs, b.uvs), colors: cat(a.colors, b.colors), indices,
-    triangles: indices.length / 3, bounds: { min, max }, maps: { baseColor: null, metallicRoughness: null, normal: null },
-    factors: { base: [1, 1, 1, 1], metal: 0, rough: 0.8, normalScale: 1 },
+    positions: cat(pa, b.positions), normals: cat(a.normals, b.normals), uvs: cat(a.uvs, b.uvs), colors: cat(ca, b.colors), indices,
+    triangles: indices.length / 3, bounds: { min, max }, maps: b.maps, factors: b.factors,
   };
 }
 

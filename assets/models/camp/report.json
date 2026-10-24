@@ -318,21 +318,21 @@
  "cooking-pot": {
   "source": "../_pots/cooking pot/scene.gltf",
   "file": "cooking-pot.glb",
-  "bytes": 191656,
+  "bytes": 118412,
   "sourceBytes": 4594565,
   "trianglesBefore": 5536,
-  "triangles": 4000,
+  "triangles": 1612,
   "maps": 512,
   "bounds": {
    "min": [
     -0.15,
     0,
-    -0.107
+    -0.106
    ],
    "max": [
     0.15,
-    0.237,
-    0.107
+    0.124,
+    0.106
    ]
   }
  },
@@ -543,6 +543,69 @@
     0.13,
     0.335,
     0.007
+   ]
+  }
+ },
+ "willow-basket": {
+  "source": "../_polyhaven/wicker_basket_02/wicker_basket_02_1k.gltf",
+  "file": "willow-basket.glb",
+  "bytes": 463372,
+  "sourceBytes": 3064509,
+  "trianglesBefore": 17850,
+  "triangles": 7999,
+  "maps": 512,
+  "bounds": {
+   "min": [
+    -0.138,
+    0,
+    -0.129
+   ],
+   "max": [
+    0.138,
+    0.3,
+    0.129
+   ]
+  }
+ },
+ "larger-pot": {
+  "source": "../_polyhaven/ceramic_pot/ceramic_pot_1k.gltf",
+  "file": "larger-pot.glb",
+  "bytes": 203436,
+  "sourceBytes": 1641542,
+  "trianglesBefore": 3592,
+  "triangles": 3592,
+  "maps": 512,
+  "bounds": {
+   "min": [
+    -0.2,
+    0,
+    -0.153
+   ],
+   "max": [
+    0.2,
+    0.227,
+    0.153
+   ]
+  }
+ },
+ "clay-cup": {
+  "source": "../_polyhaven/planter_pot_clay/planter_pot_clay_1k.gltf",
+  "file": "clay-cup.glb",
+  "bytes": 162156,
+  "sourceBytes": 1797158,
+  "trianglesBefore": 3080,
+  "triangles": 1500,
+  "maps": 512,
+  "bounds": {
+   "min": [
+    -0.054,
+    0,
+    -0.053
+   ],
+   "max": [
+    0.054,
+    0.09,
+    0.053
    ]
   }
  }

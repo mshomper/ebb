@@ -46,9 +46,9 @@ fn envBrdf(f0: vec3f, rough: f32, nv: f32) -> vec3f {
   return f0 * ab.x + ab.y;
 }
 
-struct VOut { @builtin(position) pos: vec4f, @location(0) world: vec3f, @location(1) n: vec3f, @location(2) uv: vec2f, @location(3) col: vec3f };
+struct VOut { @builtin(position) pos: vec4f, @location(0) world: vec3f, @location(1) n: vec3f, @location(2) uv: vec2f, @location(3) col: vec4f };
 
-@vertex fn vsModel(@location(0) p: vec3f, @location(1) n: vec3f, @location(2) uv: vec2f, @location(3) col: vec3f) -> VOut {
+@vertex fn vsModel(@location(0) p: vec3f, @location(1) n: vec3f, @location(2) uv: vec2f, @location(3) col: vec4f) -> VOut {
   var o: VOut;
   o.pos = u.viewProj * vec4f(p, 1.0);
   o.world = p;
@@ -59,9 +59,10 @@ struct VOut { @builtin(position) pos: vec4f, @location(0) world: vec3f, @locatio
 }
 
 @fragment fn fsModel(i: VOut, @builtin(front_facing) front: bool) -> @location(0) vec4f {
-  // Vertex colours (linear) multiply the colour map: white where a model has none.
-  let base = textureSample(baseTex, samp, i.uv) * m.base * vec4f(i.col, 1.0);
-  let mr = textureSample(mrTex, samp, i.uv);
+  // Vertex colours (linear) multiply the colour map: white where a model has none. Where col.a is 0
+  // (the walker standing beside a piece) the maps are skipped and it is not metal.
+  let base = mix(vec4f(1.0), textureSample(baseTex, samp, i.uv) * m.base, i.col.a) * vec4f(i.col.rgb, 1.0);
+  let mr = mix(vec4f(1.0, 0.8, 0.0, 1.0), textureSample(mrTex, samp, i.uv), i.col.a);
   let nt = textureSample(nTex, samp, i.uv).xyz * 2.0 - 1.0;
   let dp1 = dpdx(i.world); let dp2 = dpdy(i.world);
   let du1 = dpdx(i.uv); let du2 = dpdy(i.uv);
@@ -74,7 +75,7 @@ struct VOut { @builtin(position) pos: vec4f, @location(0) world: vec3f, @locatio
   let tv = (dp2 * du1.x - dp1 * du2.x) * sgn;   // along +v (down the image in glTF)
   var t = tu - ng * dot(ng, tu);
   var n = ng;
-  if (dot(t, t) > 1e-20 && m.pbr.w > 0.5) {
+  if (dot(t, t) > 1e-20 && m.pbr.w > 0.5 && i.col.a > 0.5) {
     t = normalize(t);
     // Green points up the image (against +v); mirrored UVs flip it.
     let c = cross(ng, t);
@@ -88,8 +89,8 @@ struct VOut { @builtin(position) pos: vec4f, @location(0) world: vec3f, @locatio
   let nv = max(dot(n, v), 1e-3);
   let nh = max(dot(n, h), 0.0);
   let vh = max(dot(v, h), 0.0);
-  let rough = clamp(mr.g * m.pbr.y, 0.045, 1.0);
-  let metal = clamp(mr.b * m.pbr.x, 0.0, 1.0);
+  let rough = clamp(mr.g * mix(1.0, m.pbr.y, i.col.a), 0.045, 1.0);
+  let metal = clamp(mr.b * m.pbr.x, 0.0, 1.0) * i.col.a;
   let a2 = rough * rough * rough * rough;
   let dd = nh * nh * (a2 - 1.0) + 1.0;
   let D = a2 / (PI * dd * dd);
@@ -186,7 +187,7 @@ function makeStage(device, canvases) {
       { arrayStride: 12, attributes: [{ shaderLocation: 0, offset: 0, format: 'float32x3' }] },
       { arrayStride: 12, attributes: [{ shaderLocation: 1, offset: 0, format: 'float32x3' }] },
       { arrayStride: 8, attributes: [{ shaderLocation: 2, offset: 0, format: 'float32x2' }] },
-      { arrayStride: 12, attributes: [{ shaderLocation: 3, offset: 0, format: 'float32x3' }] },
+      { arrayStride: 16, attributes: [{ shaderLocation: 3, offset: 0, format: 'float32x4' }] },
     ] },
     fragment: { module, entryPoint: 'fsModel', targets: [{ format }] },
     primitive: { topology: 'triangle-list', cullMode: 'none' }, depthStencil, multisample,
