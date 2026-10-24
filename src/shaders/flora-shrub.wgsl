@@ -124,12 +124,14 @@ struct Shrub {
   windV: vec3f,    // the wind's push now: direction x strength x gust
   stage: u32,
   pos: f32,        // the season position on this plant's own calendar (world/growth/phenology.js)
+  look: vec4f,     // x picked, y thin, z drowned (lib-flora floraLookOf)
 };
 
 fn shrubOf(ii: u32) -> Shrub {
-  let a = plants[ii * 2u];
-  let b = plants[ii * 2u + 1u];
+  let a = plants[ii * FLORA_STRIDE];
+  let b = plants[ii * FLORA_STRIDE + 1u];
   var s: Shrub;
+  s.look = floraLookOf(ii);
   s.stage = u32(round(a.w));
   s.size = clamp(a.z, 0.0, 1.0);
   s.plantU = u32(b.y * 16777216.0);
@@ -337,16 +339,18 @@ fn vsShrub(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> 
   let n = normalize(mix(normalize(e / radii), up, 0.2));
   let q = length(e);
   let ao = mix(1.0 - sd.bark.w, 1.0, smoothstep(0.25, 1.0, q)) * mix(sd.bloom.w, 1.0, smoothstep(0.0, 0.45, (mid.y - sh.center.y) / sh.height));
-  var o = emit(p, n, sd.c.albedo.xyz * (0.88 + 0.24 * v.w), ao);
+  var o = emit(p, n, floraLookAlbedo(sd.c.albedo.xyz, sh.look) * (0.88 + 0.24 * v.w), ao);
   o.uv = corner;
-  o.look = vec4f(ao, hs, leafCover(sh.stage, sh.pos), leafGrowth(sh.pos));
+  // A shrub on poor ground carries fewer leaves (the thin look).
+  o.look = vec4f(ao, hs, floraKeep(leafCover(sh.stage, sh.pos), sh.look, false), leafGrowth(sh.pos));
   // Catkins while the shrub flowers, male or female by the plant's hash.
   var catkins = 0u;
   if (sh.stage == FLORA_FLOWERING) {
     catkins = select(2u, 1u, hashToFloat(hash2(vec2u(sh.plantU, 0x3a1eu))) < sd.bloom.z);
   }
-  // Flowers among the leaves (gorse; none on willow): this season's share, on bushes past young.
-  let flowers = u32(sd.mound.x * smoothstep(0.4, 0.8, sh.size) * 1000.0);
+  // Flowers among the leaves (gorse; none on willow): this season's share, on bushes past young;
+  // fewer on a picked or thin bush.
+  let flowers = u32(floraKeep(sd.mound.x * smoothstep(0.4, 0.8, sh.size), sh.look, true) * 1000.0);
   o.spray = vec4u(hc, catkins, u32(bloomProgress(sh.pos) * 1000.0), flowers);
   return o;
 }

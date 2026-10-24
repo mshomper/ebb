@@ -13,9 +13,13 @@ import { buildHabitat, HABITAT_CELLS } from './habitat.js';
 import { suitability, plantSeed, plantCover, settleGrowth } from './coarse.js';
 import { lushField } from './lush.js';
 import { plantHash } from './phenology.js';
+import { pickShares, plantLooks } from './looks.js';
 
-/** Floats per plant instance: x, z, size, stage, species index, hash 0..1, age (h), ground height (m). */
-export const PLANT_FLOATS = 8;
+/**
+ * Floats per plant instance: x, z, size, stage, species index, hash 0..1, age (h), ground height (m),
+ * then the looks (looks.js): picked, thin, drowned (0..1) and a spare.
+ */
+export const PLANT_FLOATS = 12;
 
 /**
  * @param {GPUDevice} device
@@ -126,6 +130,7 @@ export function createGrowth(device, opts) {
     order.sort((a, b) => a.s - b.s || a.i - b.i);
     for (const r of ranges) { r[0] = 0; r[1] = 0; }
     for (let n = order.length - 1; n >= 0; n--) { const r = ranges[order[n].s]; r[0] = n; r[1]++; }
+    const takes = pickShares(world.env.recipes.gather);
     for (let i = 0; i < count; i++) {
       const p = all[order[i].i];
       const o = i * PLANT_FLOATS;
@@ -135,6 +140,8 @@ export function createGrowth(device, opts) {
       data[o] = p.x; data[o + 1] = p.z; data[o + 2] = size; data[o + 3] = p.stage;
       data[o + 4] = speciesIndex(p.sp); data[o + 5] = h;
       data[o + 6] = p.age; data[o + 7] = terrain.sampleHeight(p.x, p.z);
+      const lk = plantLooks(p, recipes.flora[p.sp], recipes.growth.looks, takes.get(p.sp));
+      data[o + 8] = lk[0]; data[o + 9] = lk[1]; data[o + 10] = lk[2]; data[o + 11] = 0;
     }
     if (count) device.queue.writeBuffer(instances, 0, data, 0, count * PLANT_FLOATS);
     if (g.grass) {

@@ -402,7 +402,7 @@ export async function startApp(canvas, hooks = {}) {
     water: { depthTextures: water.sim.depthTextures, current: () => water.sim.current }, cover: growth.coverTex,
   });
   // Plants (docs 10): every species from the growth step's instances, after the grass.
-  const floraPass = createFloraPass({ growth, terrain, water: { depthTextures: water.sim.depthTextures, current: () => water.sim.current }, recipes: flora });
+  const floraPass = createFloraPass({ growth, terrain, water: { depthTextures: water.sim.depthTextures, current: () => water.sim.current }, recipes: flora, looks: growthRecipe.looks });
   // The frogs (src/world/creatures): posed bodies at their homes until S6b, the plop, finding one.
   // `?frogs=N` (testing): N frogs come at once instead of over days (1: a scout, the sign).
   const testFrogs = params.has('frogs') ? Math.max(1, Math.min(12, Number.parseInt(params.get('frogs') ?? '1', 10) || 1)) : 0;
