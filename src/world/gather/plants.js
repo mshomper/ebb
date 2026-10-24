@@ -50,6 +50,25 @@ export function pickable(plant, part, env, recipe) {
 }
 
 /**
+ * The card's line for a part out of season (docs/future/13 5.2, PR-42): a dormant plant is resting
+ * for winter; otherwise nothing to pick now, and when the part comes, from where its window opens
+ * ("It flowers in high summer.").
+ * @param {{ stage: number }} plant @param {string} sp @param {string} part @param {any} recipe gather.json
+ */
+export function outOfSeasonLine(plant, sp, part, recipe) {
+  const W = recipe.words ?? {};
+  if (plant.stage === DORMANT && W.resting) return W.resting;
+  const w = partOf(sp, part, recipe)?.window ?? [0, 4];
+  const thirds = /** @type {string[]} */ (W.when ?? []);
+  const when = thirds[Math.floor((((w[0] % 4) + 4) % 4) * 3) % 12];
+  const tpl = W.comes?.[part] ?? W.comes?.default;
+  return [W.nothingNow, tpl && when ? tpl.replace('{when}', when) : null].filter(Boolean).join(' ');
+}
+
+/** The dormant stage, as growth/coarse.js STAGE.dormant. */
+const DORMANT = 5;
+
+/**
  * The plant after one pick: size = max(floor x best, size x (1 - share)). Best and stage stay.
  * @template {{ sp: string, size: number, best: number }} T
  * @param {T} plant @param {string} part @param {{ flora: any }} env flora: the species recipe @param {any} recipe gather.json

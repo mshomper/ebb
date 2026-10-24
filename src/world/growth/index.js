@@ -5,7 +5,7 @@
 // the grass cover map. The growth itself runs in the tick (coarse.js), never here.
 
 import { makeBuffer, makeTexture } from '../../core/gpu.js';
-import { on } from '../../core/events.js';
+import { on, emitDeferred } from '../../core/events.js';
 import { get as getStore, subscribe as subscribeStore } from '../../core/store.js';
 import { hash32 } from '../../core/rng.js';
 import { WORLD_CELLS } from '../terrain/grid.js';
@@ -14,6 +14,10 @@ import { suitability, plantSeed, plantCover, settleGrowth } from './coarse.js';
 import { lushField } from './lush.js';
 import { plantHash } from './phenology.js';
 import { pickShares, plantLooks } from './looks.js';
+import { padToWorld } from '../camp/layout.js';
+import { seatHeight, buryUnder, restoreBuried, removeBuried, buriedSummary } from './bury.js';
+import { isGather } from './rules.js';
+import { heightFromTiles, tilesArea } from '../terrain/undo.js';
 
 /**
  * Floats per plant instance: x, z, size, stage, species index, hash 0..1, age (h), ground height (m),
@@ -48,6 +52,8 @@ export function createGrowth(device, opts) {
   const coverIds = /** @type {string[]} */ (recipes.growth.cover ?? []);
   const data = new Float32Array(cap * PLANT_FLOATS);
   const speciesIndex = (/** @type {string} */ sp) => recipes.flora[sp]?.index ?? 0;
+  /** growth.json bury: depths and the seat (bury.js). */
+  const B = recipes.growth.bury ?? null;
   const kinds = 1 + Math.max(0, ...Object.values(recipes.flora).map((r) => r.index ?? 0));
   /** Per species index: [first instance, instances], so each species draws only its own plants. */
   const ranges = Array.from({ length: kinds }, () => [0, 0]);
@@ -69,6 +75,19 @@ export function createGrowth(device, opts) {
     const p = getStore('campPad');
     return p ? { x: p.x, z: p.z, r: p.r } : null;
   };
+  /** The placed pieces' footprints (held ground, PR-07), as plain numbers. */
+  const heldNow = () => (getStore('pieces')?.list ?? []).map((/** @type {any} */ p) => ({ kind: p.kind, x: p.x, z: p.z, yaw: p.yaw, size: p.size,
+    ...(p.length ? { length: p.length } : {}), ...(typeof p.x2 === 'number' ? { x2: p.x2, z2: p.z2 } : {}) }));
+  /** The fire ring and the game days it has been lit on (the nettles' cause, PR-40), or null. */
+  const fireNow = () => {
+    const pad = getStore('campPad');
+    const s = pad?.camp?.slots?.find((/** @type {any} */ q) => q.id === 'ring');
+    if (!pad || !s || typeof pad.fx !== 'number') return null;
+    const [x, z] = padToWorld(pad, s.u, s.v);
+    return { x, z, days: getStore('camp')?.fire?.litDays ?? 0 };
+  };
+  /** Everything the habitat takes from the camp and pieces, for catch-up and rebuilds. */
+  const placed = () => ({ pad: padNow(), held: heldNow(), fire: fireNow() });
 
   /** Rebuild the habitat from the latest water summary and the painted ground. */
   function rebuildHabitat() {
@@ -79,19 +98,21 @@ export function createGrowth(device, opts) {
     // baseQ: the island as generated, so the habitat knows which ground the player shaped (dragonflies).
     // pad: the camp ground, where no plant takes (CP-16).
     habitat = buildHabitat({ eco: s.eco, material: mirror.material, materialCells: WORLD_CELLS, params: recipes.growth.habitat,
-      heightQ: mirror.heightQ, baseQ: live.baseQ ?? null, pad: padNow() });
+      heightQ: mirror.heightQ, baseQ: live.baseQ ?? null, ...placed() });
     lush = recipes.grass?.lush ? lushField(habitat, recipes.grass.lush) : null;
     // A new island gets its starter plants and grass cover now rather than at the next hour.
     world.state = settleGrowth(world.state, world.env);
     shown = null;   // the lush field changed: upload the cover again
   }
   const unSummary = on('water:summary-updated', rebuildHabitat);
-  // The pad is stamped on an older island (or moved) while playing: the habitat follows at once.
-  let padKey = JSON.stringify(padNow());
-  const unPad = subscribeStore('campPad', () => {
-    const key = JSON.stringify(padNow());
+  // The pad is stamped on an older island (or moved), a piece is set or lifted, or the fire is lit
+  // on a new day, while playing: the habitat follows at once.
+  let padKey = JSON.stringify(placed());
+  const follow = () => {
+    const key = JSON.stringify(placed());
     if (key !== padKey) { padKey = key; rebuildHabitat(); }
-  });
+  };
+  const unPad = [subscribeStore('campPad', follow), subscribeStore('pieces', follow), subscribeStore('camp', follow)];
   rebuildHabitat();
   // What the habitat is built from, so catch-up can follow the season day by day (A9; habitat-days.js).
   world.env.habitatInputs = () => {
@@ -99,7 +120,7 @@ export function createGrowth(device, opts) {
     const summary = water.summaryInputs?.();
     if (!summary || !live?.mirror) return null;
     return { summary, habitat: { material: live.mirror.material, materialCells: WORLD_CELLS, params: recipes.growth.habitat,
-      heightQ: live.mirror.heightQ, baseQ: live.baseQ ?? null, pad: padNow() } };
+      heightQ: live.mirror.heightQ, baseQ: live.baseQ ?? null, ...placed() } };
   };
 
   /**
@@ -139,8 +160,10 @@ export function createGrowth(device, opts) {
       const size = lapse ? lerp(lapse.size.get(p.id) ?? 0, p.gone ? 0 : p.size, along(h)) : p.size;
       data[o] = p.x; data[o + 1] = p.z; data[o + 2] = size; data[o + 3] = p.stage;
       data[o + 4] = speciesIndex(p.sp); data[o + 5] = h;
-      data[o + 6] = p.age; data[o + 7] = terrain.sampleHeight(p.x, p.z);
-      const lk = plantLooks(p, recipes.flora[p.sp], recipes.growth.looks, takes.get(p.sp));
+      // Its seat (bury.js): the ground under its base ring, so no plant shows half in the ground.
+      const rec = recipes.flora[p.sp];
+      data[o + 6] = p.age; data[o + 7] = B && rec ? seatHeight(p, rec, B, terrain.sampleHeight) : terrain.sampleHeight(p.x, p.z);
+      const lk = plantLooks(p, rec, recipes.growth.looks, takes.get(p.sp));
       data[o + 8] = lk[0]; data[o + 9] = lk[1]; data[o + 10] = lk[2]; data[o + 11] = 0;
     }
     if (count) device.queue.writeBuffer(instances, 0, data, 0, count * PLANT_FLOATS);
@@ -224,9 +247,41 @@ export function createGrowth(device, opts) {
       return { ok: r.ok, id: 'id' in r ? r.id : undefined, reason: r.reason };
     },
 
+    /**
+     * A settled terrain stroke buries the plants whose seat rose past their bury depth (bury.js).
+     * They leave the world now and ride in the command (cmd.buried, its bytes counted), so undo
+     * brings them back. Emits growth:buried. Returns the command.
+     * @param {any} cmd a 'terrain' undo command ({ before, after, bytes })
+     */
+    buryFor(cmd) {
+      const g = world.state?.growth;
+      if (!B || !cmd?.after?.length || !g?.plants?.length) return cmd;
+      const fallback = (/** @type {number} */ x, /** @type {number} */ z) => terrain.sampleHeight(x, z);
+      const r = buryUnder(g.plants, recipes.flora, B, heightFromTiles(cmd.before, fallback), heightFromTiles(cmd.after, fallback), tilesArea(cmd.after));
+      if (!r.buried.length) return cmd;
+      world.state = { ...world.state, growth: { ...g, plants: r.kept } };
+      emitDeferred('growth:buried', buriedSummary(r.buried, recipes.flora, isGather));
+      return { ...cmd, buried: r.buried.map((p) => ({ ...p })), bytes: (cmd.bytes ?? 0) + r.buried.length * (B.recordBytes ?? 64) };
+    },
+
+    /** Undo of a burying stroke: its plants return exactly as they were. @param {any[]} records */
+    unbury(records) {
+      const g = world.state?.growth;
+      if (!g || !records?.length) return;
+      world.state = { ...world.state, growth: { ...g, plants: restoreBuried(g.plants, records) } };
+      emitDeferred('growth:restored', { count: records.length, ids: records.map((p) => p.id) });
+    },
+
+    /** Redo of a burying stroke: its plants go under again. @param {any[]} records */
+    rebury(records) {
+      const g = world.state?.growth;
+      if (!g || !records?.length) return;
+      world.state = { ...world.state, growth: { ...g, plants: removeBuried(g.plants, records) } };
+    },
+
     dispose() {
       unSummary();
-      unPad();
+      for (const u of unPad) u();
       instances.destroy();
       coverTex.destroy();
     },
