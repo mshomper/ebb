@@ -5,7 +5,8 @@
 // three segments and a pointed tip (21 vertices) that sway with the wind, stiff at the base. In
 // autumn the tips brown; a dormant clump keeps short brown leaves. A flowering clump carries yellow
 // flowers on stalks a little above the leaves: three drooping falls and three small upright
-// standards. Lit like the reeds; season albedo is physical (recipes/flora/iris.json).
+// standards. Lit like the reeds; season albedo is physical (recipes/flora/iris.json). Water mint
+// (P2b) carries a short spike instead: a closed, rounded head of tiny whorled flowers.
 
 // #include common
 // #include lib-hash
@@ -24,15 +25,17 @@ struct IrisDraw {
   tip: vec4f,       // xyz autumn tip albedo (linear), w stiffness 0..1
   flower: vec4f,    // xyz flower albedo (linear), w sway per unit wind
   stalk: vec4f,     // xyz stalk albedo (linear), w 1 / gust size (1/m)
-  gust: vec4f,      // x gust speed (m/s), y flower shape (0 flag, 1 cup), z leaf shape (0 sword, 1 kidney), w spare
+  gust: vec4f,      // x gust speed (m/s), y flower shape (0 flag, 1 cup, 2 spike), z leaf shape (0 sword, 1 kidney), w spare
   gloss: vec4f,     // x petal roughness, y leaf roughness, z reflectance f0, w spare (0 roughness: matte, as the iris)
-  cup: vec4f,       // x cup petals' rise above level (radians), y how far a petal's sides curl in, z petal width share, w petal length share of flower size
+  cup: vec4f,       // x cup petals' rise above level (radians), y how far a petal's sides curl in, z petal (or spike) width share, w petal (or spike) length share of flower size
 };
 
 const LEAF_VERTS: u32 = 21u;     // three segments and a tip; or a stalk quad and a five-triangle blade
 const FLAG_VERTS: u32 = 42u;     // a stalk quad, then six petals of two triangles
 const CUP_VERTS: u32 = 81u;      // a stalk quad, then five rounded petals of five triangles
 const CUP_PETALS: u32 = 5u;
+const SPIKE_VERTS: u32 = 78u;    // a stalk quad, then six sides of two bands
+const SPIKE_SIDES: u32 = 6u;
 
 // The outline of a rounded cup petal (across -1..1, along 0..1), fanned from its base.
 var<private> PETAL: array<vec2f, 6> = array<vec2f, 6>(
@@ -241,8 +244,9 @@ fn vsIris(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> V
   }
 
   // ---- a flower: flowering clumps only, one per fan at most ----
-  let cupped = ird.gust.y > 0.5;
-  let flowerVerts = select(FLAG_VERTS, CUP_VERTS, cupped);
+  let spike = ird.gust.y > 1.5;
+  let cupped = ird.gust.y > 0.5 && !spike;
+  let flowerVerts = select(select(FLAG_VERTS, CUP_VERTS, cupped), SPIKE_VERTS, spike);
   let kf = vi - fansMax * leavesMax * LEAF_VERTS;
   let fi = kf / flowerVerts;
   let slot = kf % flowerVerts;
@@ -267,9 +271,29 @@ fn vsIris(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> V
     var side = cross(tangent, frame.cameraPos - p0);
     side = select(vec3f(1.0, 0.0, 0.0), normalize(side), length(side) > 1e-5);
     // Thin stalks under a cup (marigold, whose leaf width is a blade's radius), stouter under a flag.
-    let width = max(ird.leaf.z * select(0.25, 0.08, cupped), floraPixelM(p0) * ird.c.misc.z);
+    let width = max(ird.leaf.z * select(0.25, 0.08, cupped || spike), floraPixelM(p0) * ird.c.misc.z);
     let n = normalize(cross(side, tangent));
     return emit(p0 + side * corner.x * width * 0.5, n, ird.stalk.xyz, mix(ird.look2.z, 1.0, corner.y));
+  }
+  if (spike) {
+    // A short spike (water mint): a rounded head, closed at its top, along the stalk's top, made of
+    // six sides in two bands, its colour in whorls of tiny flowers.
+    let pk = slot - 6u;
+    let quad = pk / 6u;
+    let cq = QUAD[pk % 6u];
+    let sideI = (quad % SPIKE_SIDES) + select(0u, 1u, cq.x > 0.0);
+    let ring = quad / SPIKE_SIDES + select(0u, 1u, cq.y > 0.5);
+    let t = f32(ring) * 0.5;
+    let ang = f32(sideI) * (6.2831853 / f32(SPIKE_SIDES)) + hv.x * 6.2831853;
+    let ax = floraTangent(axis, bend, k, 1.0);
+    let dx = normalize(select(cross(ax, vec3f(0.0, 0.0, 1.0)), vec3f(1.0, 0.0, 0.0), abs(ax.z) > 0.999));
+    let dz = cross(dx, ax);
+    let radial = dx * cos(ang) + dz * sin(ang);
+    let rr = ird.look.x * ird.cup.z * sin(3.1415927 * (0.12 + 0.88 * t));
+    let p = top + ax * (t * ird.look.x * ird.cup.w) + radial * rr;
+    let n = normalize(radial + ax * (t - 0.4) * 1.6);
+    let whorl = hashToFloat(hash3(vec3u(plantU ^ fi, (sideI % SPIKE_SIDES) + ring * 7u, salt ^ 0x3e1u)));
+    return glossy(emit(p, n, ird.flower.xyz * (0.75 + 0.4 * whorl), mix(0.8, 1.0, t)), ird.gloss.x, ird.gloss.z);
   }
   if (cupped) {
     // A cup of five rounded petals rising from the stalk's top, as a buttercup's: each petal fanned
