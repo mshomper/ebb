@@ -14,7 +14,7 @@ import { run } from '../core/workers.js';
 import { openDb, getSlot, writeGeneration, deleteSlot, putSlot } from './idb.js';
 import { encode } from './world-file.js';
 import { snapshot, restore } from './sections.js';
-import { loadIsland } from './recover.js';
+import { loadIsland, setAsideOlder } from './recover.js';
 
 const ENCODE_JOB = { module: './save/world-file.js', fn: 'encodeJob' };
 /** URL parameters that start a throwaway test island. */
@@ -44,6 +44,8 @@ export const TEST_PARAMS = ['seed', 'day', 'frogs', 'trust', 'plants', 'shells',
  * @property {(ms: number) => void} setHighWater  the clock guard's mark after a catch-up (doc 18)
  * @property {{ from: 'current'|'earlier'|'parts', mended: string[], lost: string[] } | null} restoredFrom
  *   how the island came back (recover.js), for the calm note
+ * @property {boolean} setAside  an island from before planting on foot was kept aside, and this
+ *   one is new (recover.js setAsideOlder), for its calm line
  * @property {() => Promise<void>} saveNow  a full save now (before a backup or a test)
  * @property {() => void} stop  no more saves from this page (before replacing the island and reloading)
  * @property {() => any} slotRecord  the slot's record (created, lastBackupAt)
@@ -82,6 +84,7 @@ export async function beginSave(opts) {
   let wallHighWater = 0;
   /** @type {{ savedAt: number, wallHighWater: number } | null} */ let lastSeen = null;
   /** @type {SaveSession['restoredFrom']} */ let restoredFrom = null;
+  let setAside = false;
   /** @type {(() => void) | null} */ let releaseLock = null;
 
   if (status === 'fresh') {
@@ -92,6 +95,8 @@ export async function beginSave(opts) {
       try {
         db = await openDb();
         slotRec = (await getSlot(db, slot)) ?? null;
+        // An island from before planting on foot (D1a) is kept aside, and a new one begins.
+        if (slotRec && await setAsideOlder(db, slot)) { slotRec = null; setAside = true; }
         if (slotRec) {
           // The newest copy that reads, any damaged part from an older one (recover.js).
           const got = await loadIsland(db, slot);
@@ -251,6 +256,7 @@ export async function beginSave(opts) {
     },
     setHighWater(ms) { wallHighWater = ms; },
     restoredFrom,
+    setAside,
     async saveNow() {
       clearTimeout(timer);
       while (inFlight) await new Promise((ok) => setTimeout(ok, 30));

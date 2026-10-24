@@ -91,7 +91,7 @@ Exit check: Matt plays the first evening on a fresh seed, end to end, without re
 
 ### The first season (keeper's camp Phase 2) — current target
 
-Decided October 24, 2026 (Matt). A short groundwork step comes first: the rest of the walker's motion (leaning into starts and stops, the head turning to look, a gesture for each action) and the planting sketch (D1). **All planting is the walker's:** the Plant tool leaves the view from above, water plants are tossed from the bank and the raft is pushed off. Then Phase 2 in pairs (F13 section 13, with 3.12):
+Decided October 24, 2026 (Matt). A short groundwork step comes first: the rest of the walker's motion (leaning into starts and stops, the head turning to look, a gesture for each action) and the planting sketch (D1). **All planting is the walker's:** the Plant tool leaves the view from above, and seeds and gifts are tossed from where the walker stands (D1a: the seed tin and the gift spot on the walker's bar; the raft simply appears on the pond, no pushing off; the net is set by walking out to the clicked spot). Then Phase 2 in pairs (F13 section 13, with 3.12):
 
 | Step | Side by side |
 |---|---|

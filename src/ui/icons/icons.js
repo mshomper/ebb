@@ -1027,6 +1027,31 @@ const ICONS = {
     <path d="M14 10L20.5 4"/>
     <path d="M16.5 4H20.5V8"/>`,
 
+  // The seed tin (D1a, on the walker's bar): a round tin, its lid tipped up on one side, three
+  // seeds falling from the gap.
+  'seed-tin': `
+    <path ${ACCENT} d="M4.5 11.5V18.6C4.5 19.9 7.9 20.8 12 20.8S19.5 19.9 19.5 18.6V11.5Z"/>
+    <path d="M4.5 11.5V18.6C4.5 19.9 7.9 20.8 12 20.8S19.5 19.9 19.5 18.6V11.5"/>
+    <ellipse cx="12" cy="11.5" rx="7.5" ry="1.9"/>
+    <path d="M4.2 9.6L17.6 4.6"/>
+    <path d="M4.2 9.6L4.6 11"/>
+    <path d="M4.5 15.4C8.6 16.8 15.4 16.8 19.5 15.4" opacity="0.7"/>
+    <ellipse cx="19.4" cy="6.2" rx="0.8" ry="1.1" fill="currentColor" stroke="none"/>
+    <ellipse cx="21" cy="8.6" rx="0.8" ry="1.1" fill="currentColor" stroke="none"/>
+    <ellipse cx="17.6" cy="8.4" rx="0.8" ry="1.1" fill="currentColor" stroke="none"/>`,
+
+  // The gift spot (D1a, on the walker's bar): a bundle wrapped in a broad leaf, tied with twine in
+  // a loop, resting on a ground line.
+  'gift-spot': `
+    <path ${ACCENT} d="M5 19.5C4.3 15.2 6.6 10.6 12 10.6S19.7 15.2 19 19.5Z"/>
+    <path d="M5 19.5C4.3 15.2 6.6 10.6 12 10.6S19.7 15.2 19 19.5"/>
+    <path d="M12 10.6C10.8 13.4 10.6 16.6 11.4 19.5" opacity="0.7"/>
+    <path d="M6.2 14.4C9.8 15.6 14.2 15.6 17.8 14.4"/>
+    <path d="M12 10.6C10 8.4 8.2 7.4 7.4 8.4S8.6 10.8 12 10.6Z"/>
+    <path d="M12 10.6C14 8.4 15.8 7.4 16.6 8.4S15.4 10.8 12 10.6Z"/>
+    <path d="M12 10.6L11 5.2M12 10.6L13.4 5.6"/>
+    <path d="M2.5 19.5H21.5"/>`,
+
   // Settings: three horizontal sliders with their knobs.
   settings: `
     <path d="M3.5 6.5H20.5"/>

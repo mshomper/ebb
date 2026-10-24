@@ -1,0 +1,28 @@
+{
+  "type": "sowing",
+  "version": 1,
+  "note": "Planting on foot (D1a; Matt, October 24, 2026; src/world/sowing). All planting is the walker's: the seed tin and the gift spot sit on the walker's bar, each one drawn icon that opens a small menu of drawn icons above it. tin.endless: the only seeds that live in the tin for good (reeds, water lilies and sea thrift set up the first pond and shore); every other plant is deliberate (gathered seed, D1b; cuttings; gifts). gifts: what a species' gift puts on the gift spot, and how many there are to place: `unlock` is the path in the saved unlocks that gives it (seeds.pondweed, the minnows'; raft, the turtles'), `place` says what a placing makes (a plant of `species`, or a raft), `count` how many. ring: the pencil ring that follows the pointer while something is in hand, radiusM on the ground, re-read at most checkHz times a second; ink and faint its strokes' opacity, crossM the arms of the cross on a spot that will not do. toss: within nearM of the walker a seed drops along a short dotted line (nearS), further it flies on a dotted arc whose top rises arcRise of the distance (at least arcMinM, at most arcMaxM) over flightPerM seconds a meter (between flightS), and the line fades over fadeS once the seed lands. puff: a puff of soil on land (r grows from rM[0] to rM[1] over s); splash: rings on water (a little one near you, rings of them further out). flickS: when in the sow gesture the seed leaves the hand. net: setting the net on foot: the walker walks to within reachM of the clicked spot, then kneels and sets it over standS seconds (the netSet gesture). words: the lines and hover labels.",
+  "tin": { "endless": ["reeds", "lilies", "thrift"] },
+  "gifts": [
+    { "id": "pondweed", "unlock": "seeds.pondweed", "place": "plant", "species": "pondweed", "count": 6, "icon": "pondweed" },
+    { "id": "raft", "unlock": "raft", "place": "raft", "count": 2, "icon": "raft" }
+  ],
+  "ring": { "radiusM": 0.35, "checkHz": 12, "ink": 0.9, "faint": 0.35, "crossM": 0.22 },
+  "toss": { "nearM": 2, "nearS": 0.35, "arcRise": 0.16, "arcMinM": 0.35, "arcMaxM": 2.5, "flightPerM": 0.07, "flightS": [0.45, 1.4], "fadeS": 0.9, "handM": 1.0 },
+  "puff": { "rM": [0.08, 0.4], "s": 0.7, "bits": 7 },
+  "splash": { "nearRings": 1, "farRings": 3, "rM": [0.1, 0.9], "s": 1.3, "gapS": 0.22 },
+  "flickS": 0.32,
+  "net": { "reachM": 0.6, "standS": 3.8 },
+  "words": {
+    "tin": "Seed tin",
+    "gifts": "Gift spot",
+    "giftsEmpty": "Nothing waiting. Gifts from the island come here.",
+    "putAway": "Put away",
+    "firstSow": "Plants spread on their own once they settle. Sow a few, and watch where they go.",
+    "names": { "reeds": "Reeds", "lilies": "Water lilies", "thrift": "Sea thrift", "pondweed": "Pondweed", "raft": "Reed raft", "net": "Net" },
+    "left": { "one": "{name}, one left", "many": "{name}, {n} left" },
+    "placed": { "raft": "The raft floats on the pond." },
+    "netWalk": "Walking out to set the net.",
+    "netGone": "The tide has moved; the net can't go there now."
+  }
+}

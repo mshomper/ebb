@@ -171,7 +171,7 @@
       { "t": 2.0, "lean": 0, "head": 0, "arms": 0, "l": [0.12, 0.5, 0.25], "r": [-0.12, 0.5, 0.25] }
     ] },
     "gestures": {
-      "note": "A short gesture for each thing the walker does by hand (walker gestures, part 3; October 24, 2026; src/world/figure/acts.js), played by walk.gesture(name, spot) or by the action itself. The same keys as the camp acts (kneel, lean, head, drop, arms, l, r), plus yaw (the head's extra turn, degrees to the left), but a gesture plays over the walker's posture: its kneel takes the figure down at least that far, it never stops a walk or a tap, and a walk fades it out over ease.gestureFadeS. Given a spot, the walker turns to face it and looks at it first. gather: kneel, reach to the ground, pinch, bring the handful up to the pouch at the hip. setDown: reach back to the pack, bring the pouch round, bend and lower it onto the pile. takeUp: bend, scoop with both hands, lift it over the shoulder into the pack. heapHere: a small bend, the hand opens at your feet. empty: hold the pouch out, tip it, a little shake. lift (a log or stone, L3a): kneel, both hands under the edge, heave it up, hold while it is up (under-log lift.holdS), lower it back. feedFire: kneel, toss a stick in, both hands out to the warmth. netSet: kneel, lay the net forward with both arms; netLift: pull it up hand over hand. rise: getting up from a kneel or a seat, a lean forward and a hand pushing on the knee. stuck: a look left and right (walks: it plays on as you walk off, not faded). sow: the hook for Phase 2's planting and gift placing (one quick arm flick toward the clicked spot, about half a second, once a click): no keys yet, so it only turns you toward the spot.",
+      "note": "A short gesture for each thing the walker does by hand (walker gestures, part 3; October 24, 2026; src/world/figure/acts.js), played by walk.gesture(name, spot) or by the action itself. The same keys as the camp acts (kneel, lean, head, drop, arms, l, r), plus yaw (the head's extra turn, degrees to the left), but a gesture plays over the walker's posture: its kneel takes the figure down at least that far, it never stops a walk or a tap, and a walk fades it out over ease.gestureFadeS. Given a spot, the walker turns to face it and looks at it first. gather: kneel, reach to the ground, pinch, bring the handful up to the pouch at the hip. setDown: reach back to the pack, bring the pouch round, bend and lower it onto the pile. takeUp: bend, scoop with both hands, lift it over the shoulder into the pack. heapHere: a small bend, the hand opens at your feet. empty: hold the pouch out, tip it, a little shake. lift (a log or stone, L3a): kneel, both hands under the edge, heave it up, hold while it is up (under-log lift.holdS), lower it back. feedFire: kneel, toss a stick in, both hands out to the warmth. netSet: kneel, lay the net forward with both arms; netLift: pull it up hand over hand. rise: getting up from a kneel or a seat, a lean forward and a hand pushing on the knee. stuck: a look left and right (walks: it plays on as you walk off, not faded). sow: planting and placing gifts on foot (D1a): the right hand dips to the hip pouch, then one quick flick forward and up toward the clicked spot, the seed leaving the hand at sowing.json flickS (0.32 s), once a click.",
       "gather": { "keys": [
         { "t": 0 },
         { "t": 0.55, "kneel": 1, "lean": 44, "head": 22, "drop": 0.04, "arms": 1, "l": [0.12, 0.42, 0.34], "r": [-0.08, 0.06, 0.58] },
@@ -259,7 +259,13 @@
         { "t": 1.6 },
         { "t": 2.0, "yaw": 0, "head": 0 }
       ] },
-      "sow": { "keys": [] }
+      "sow": { "keys": [
+        { "t": 0 },
+        { "t": 0.18, "arms": 1, "lean": -2, "head": 4, "r": [-0.2, 0.62, -0.06] },
+        { "t": 0.32, "lean": 6, "head": 2, "r": [-0.12, 1.0, 0.42] },
+        { "t": 0.42, "r": [-0.1, 0.94, 0.5] },
+        { "t": 0.8, "lean": 0, "head": 0, "arms": 0, "r": [-0.12, 0.5, 0.25] }
+      ] }
     }
   }
 }

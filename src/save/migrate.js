@@ -13,7 +13,17 @@ import { trails8 } from './migrate-trails.js';
 import { format9 } from './migrate-format9.js';
 
 /** The data schema this build writes. */
-export const FORMAT = 9;
+export const FORMAT = 10;
+
+/**
+ * Islands saved before this format are set aside, not brought forward: planting moved on foot (D1a,
+ * Matt, October 24, 2026), and nothing is public yet, so an older island is kept aside and a new one
+ * opens with a calm line (src/save/recover.js setAsideOlder, src/ui/damaged.js).
+ */
+export const FRESH_FROM = 10;
+
+/** Is a save of this format one to set aside? @param {number} format */
+export const setAsideFormat = (format) => Number.isFinite(format) && format < FRESH_FROM;
 
 /**
  * Ordered steps, each from one format to the next.
@@ -28,6 +38,7 @@ export const MIGRATIONS = [
   { from: 6, to: 7, note: 'the nets: a `nets` section, empty on an older island, and the keepsake families it has kept, from its shelf (src/save/migrate-nets.js)', up: nets7 },
   { from: 7, to: 8, note: "the trails' firsts: the families, rarities and marks an older island has kept, rebuilt from its kept families and its shelf (src/save/migrate-trails.js)", up: trails8 },
   { from: 8, to: 9, note: "the keeper's camp, the pack and gathering: `camp`, `pack`, `gather`, `dig`, `cook` and `dyes` sections, empty on an older island (src/save/migrate-format9.js)", up: format9 },
+  { from: 9, to: 10, note: 'planting on foot (D1a): the unlocks may hold `placed` (gifts placed) and `firstSown`; nothing to change, but an island from before is set aside at load (FRESH_FROM)', up: (s) => s },
 ];
 
 /**
