@@ -22,7 +22,9 @@ import { tideParams } from '../tide.js';
 import { seasonOfTide, weatherOfTide } from '../finds/strand.js';
 import { gatherSeed, spotsAt, spotsNear, share, wordFor } from './spots.js';
 import { taken as takenOf, record, expire, cap } from './events.js';
-import { partsOf, pickable, pick, outOfSeasonLine } from './plants.js';
+import { partsOf, pickable, pick, outOfSeasonLine, coverPickable, coverPick } from './plants.js';
+import { habitatCell } from '../growth/habitat.js';
+import { coverSpecies, coverTarget } from '../growth/cover.js';
 
 /**
  * @param {{ recipe: any, seed: number, world: any, worldT: () => number, water: any, terrain: any, pack: any, walk: any,
@@ -150,8 +152,31 @@ export function createGather(o) {
         else if (r.why === 'season') lines.push(outOfSeasonLine(pl, pl.sp, part, R, seasonPos()));
       }
     }
+    // A cover plant's stand (rushes): a pick takes a share of the cell, which grows back.
+    const cv = coverAt(x, z);
+    if (cv) {
+      const r = coverPickable(cv.share, cv.target, cv.sp, seasonPos(), R);
+      const kind = r.part ? `${cv.sp}.${r.part}` : null;
+      if (r.ok && kind) { out.push({ kind, name: o.pack.nameOf(kind), cover: cv.sp, cell: cv.k, x, z, left: 1, word: W.plenty }); lines.push(W.plenty); }
+      else if (r.why === 'rest') lines.push(W.rest);
+      else if (r.why === 'season' && R.cover?.species?.[cv.sp]?.outOfSeason) lines.push(R.cover.species[cv.sp].outOfSeason);
+    }
     // The word for what you can take first; with nothing to take, the first spot's word.
     return { gathers: out.slice(0, 2), word: out[0]?.word ?? lines[0] ?? null, lookOnly: null };
+  }
+
+  /**
+   * The cover plant (rushes) standing in the 1 m cell under a point, with its share and the share the
+   * ground there supports, or null where none stands. @param {number} x @param {number} z
+   */
+  function coverAt(x, z) {
+    const hab = o.world.env.habitat?.(), k = habitatCell(x, z);
+    if (!hab || k < 0) return null;
+    for (const [sp, rec] of coverSpecies(o.world.env)) {
+      const share = o.world.state?.growth?.cover?.[sp]?.[k] ?? 0;
+      if (share > 0 && R.cover?.species?.[sp]) return { sp, k, share, target: coverTarget(rec, hab, k) };
+    }
+    return null;
   }
 
   /**
@@ -204,6 +229,14 @@ export function createGather(o) {
       const n = share(g.spot.kind, g.spot.sourceKey, g.spot.period, c, R);
       if (takenOf(events(), g.spot.key, g.spot.period) >= n) { refresh(); return; }
       keepEvents(record(events(), g.spot.key, g.spot.period, 1));
+    } else if (g.cover) {
+      // A pick between hours, as a plant's: the cell's share goes down and grows back toward its target.
+      const st = o.world.state, was = st?.growth?.cover?.[g.cover];
+      if (!was) { refresh(); return; }
+      const c = was.slice();
+      c[g.cell] = coverPick(c[g.cell], R);
+      o.world.state = { ...st, growth: { ...st.growth, cover: { ...st.growth.cover, [g.cover]: c } } };
+      emitDeferred('plant:picked', { id: -1, sp: g.cover, part: g.kind.split('.')[1], cell: g.cell });
     } else if (g.plant !== undefined) {
       const st = o.world.state;
       const flora = o.world.env.recipes?.flora?.[g.kind.split('.')[0]];
@@ -213,7 +246,7 @@ export function createGather(o) {
     }
     o.pack.add(g.kind, 1);
     const x = g.spot?.x ?? g.x, z = g.spot?.z ?? g.z;
-    emitDeferred('gather:done', { kind: g.kind, group: o.pack.kinds.groupOf(g.kind), x, z, from: g.spot ? 'spot' : 'plant' });
+    emitDeferred('gather:done', { kind: g.kind, group: o.pack.kinds.groupOf(g.kind), x, z, from: g.spot ? 'spot' : g.cover ? 'cover' : 'plant' });
     refresh();
   }
 

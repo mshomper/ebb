@@ -130,6 +130,9 @@ Size and color come from CSS: set `width`/`height` on `.icon` and `color` on the
 | `fire` | a flame over two crossed sticks: Light the fire |
 | `rest` | a tent under a crescent moon: Rest until morning |
 | `hand` | an open hand: the pointer over something a click can use, below |
+| `dig` | a shovel driven into the ground, a small spoil heap beside it: Dig on the here-bar (P2c) |
+| `scoop` | a cupped hand under falling sand, a sand heap on the ground line: Scoop sand on the here-bar (P2c) |
+| `marram` | a tussock of stiff rolled blades and one straw spike on the sand: the marram chip (P2c) |
 | `look` | painter's palette with a thumb notch, three dabs of paint and one empty well: the Look (palette) button |
 | `eye` | an open eye with its pupil: not in use since ebb became desktop only (it brought hidden HUD buttons back on a touch screen) |
 | `settings` | three horizontal sliders with their knobs: the Settings button |

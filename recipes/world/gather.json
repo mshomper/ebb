@@ -21,9 +21,13 @@
       "watermint.leaves": { "type": "herb", "window": [0.6, 2.4] },
       "meadowsweet.flowers": { "type": "herb", "window": [1.2, 2.0] },
       "nettle.tops": { "type": "herb", "window": [[0, 0.9], [2.0, 2.8]] },
-      "chamomile.flowers": { "type": "herb", "window": [1.0, 2.2] }
+      "chamomile.flowers": { "type": "herb", "window": [1.0, 2.2] },
+      "marram.leaves": { "type": "herb", "window": [1.6, 2.4] }
     }
   },
+  "cover": { "note": "Cover plants picked by the cell (docs/future/13 4.2, P2c C1): a pick lowers the 1 m cell's share by coverShare of full, and it grows back toward what the ground supports at the cover's own rate (about a day or two). A cell can be picked while its share is at least readyShare of that target and at least minShare of full. species: each cover plant that gives a part, its part and window (season positions, as plant parts), and the line its card says out of season.",
+    "coverShare": 0.25, "readyShare": 0.9, "minShare": 0.35,
+    "species": { "rushes": { "part": "stems", "window": [1.0, 3.0], "outOfSeason": "Too soft yet. The stems toughen in summer." } } },
   "weather": { "windyMin": 0.6, "onshoreDot": -0.3, "springMin": 0.5, "fireNightH": 3 },
   "bins": { "steepDeg": 20, "ankleM": 0.12, "tapM": 1 },
   "strand": { "toleranceM": 0.06 },

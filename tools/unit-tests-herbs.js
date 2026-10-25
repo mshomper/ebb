@@ -250,4 +250,52 @@ export function addHerbTests(test, assert, eq) {
     assert(words.species.nettle.field.some((/** @type {any} */ f) => /sting/.test(f.text)), 'the nettle sting is a field note');
     return IDS.map((sp) => `${sp}: ${Object.keys(words.species[sp].sketch.labels).join(', ')}`).join('; ');
   });
+
+  test(HERBS, 'marram grass, a fibre plant: loose sand above the tide, a gather plant out of the Plant tool, leaves in late summer, a page that says it builds dunes', async () => {
+    const [{ flora, growth }, words, web, list, gather] = await Promise.all([loadRecipes(), getJson('world/journal'),
+      getJson('world/journal-web'), getJson('world/journal-list'), getJson('world/gather')]);
+    const r = flora.marram;
+    assert(r, 'recipes/flora/marram.json is listed in growth.json species');
+    eq(r.draw, 'iris', 'drawn with the iris shader');
+    const home = suitability(r, /** @type {any} */ (uniform({ sand: 0.85, moisture: 0.15, salt: 0.5, shoreM: 2 })), CENTER, CENTER).suit;
+    assert(home >= 0.9, `marram at home: ${home.toFixed(2)}, wanted at least 0.9`);
+    /** @type {[string, any, string][]} */
+    const never = [['the tide band', { sand: 0.6, moisture: 0.82, salt: 0.82, shoreM: 0.3 }, 'wet'], ['turf with no sand', { soil: 1, moisture: 0.2, shoreM: 2 }, 'ground'],
+      ['wet sand', { sand: 0.85, moisture: 0.8, salt: 0.2, shoreM: 2 }, 'wet']];
+    for (const [name, g, need] of never) {
+      const s = suitability(r, /** @type {any} */ (uniform(g)), CENTER, CENTER);
+      assert(s.suit < 0.2, `marram on ${name}: ${s.suit.toFixed(2)}, wanted under 0.2`);
+      eq(s.worst, need, `marram on ${name} names the need`);
+    }
+    assert(!growth.starters.includes('marram'), 'marram is no starter');
+    eq(JSON.stringify(growth.testSets.fibres), '["marram"]', 'growth.json testSets.fibres');
+    assert(growth.volunteers.order.includes('marram'), 'marram volunteers');
+    eq(JSON.stringify(r.volunteer.seasons), '[1]', 'it arrives in summer');
+    assert(r.tags.includes('gather'), 'tagged gather');
+    eq(r.plantTool, false, 'plantTool');
+    eq(r.spread.kind, 'rhizome', 'spreads by');
+    assert(r.spread.distanceM[0] > r.spread.minSpacingM, 'a creep step must clear the spacing');
+    eq(JSON.stringify(r.dormant), '[3.05,3.95]', 'winter rest');
+    assert(r.look.dormantHeight >= 0.8, 'it keeps its blades standing through winter');
+    eq(partsOf('marram', gather).join(), 'leaves', 'marram parts');
+    for (const [pos, ok] of /** @type {[number, boolean][]} */ ([[0.6, false], [2.0, true], [3.5, false]])) {
+      const p = pickable({ id: 1, sp: 'marram', size: 0.9, best: 0.9 }, 'leaves', { flora: r, pos }, gather);
+      assert(p.ok === ok, `marram leaves at season ${pos}: ${p.ok ? 'pickable' : p.why}`);
+    }
+    const rec = words.species.marram;
+    assert(rec && words.order.includes('marram'), 'journal.json page marram, in the order');
+    eq(rec.plantable, false, 'its page writes no "you can plant it now"');
+    eq(rec.stages.length, 6, 'stage lines');
+    for (const k of ['arrived', 'seen', 'spread', 'flower', 'dormant', 'woke', 'drown', 'seed', 'gone']) assert(rec.notes[k], `note ${k}`);
+    assert(rec.field.some((/** @type {any} */ f) => /dune/.test(f.text)), 'a field note says it builds dunes');
+    assert(rec.gives.some((/** @type {any} */ g) => g.when === 'picked:marram' && /cord/.test(g.ink)), 'its Gives line says the leaves make cord');
+    assert(hasSketch('marram'), 'marram has a sketch');
+    const labels = Object.fromEntries(Object.entries(rec.sketch.labels).map(([k, v]) => [k, /** @type {any} */ (v).text]));
+    const svg = drawSketch('marram', { stage: 2, labels, scale: rec.sketch.scale });
+    for (const [k, lines] of Object.entries(labels)) assert(svg.includes(`>${lines[0]}<`), `sketch draws its ${k} label`);
+    eq(web.nodes.marram?.page, 'marram', 'web node');
+    assert(web.links.some((/** @type {any} */ l) => l.b === 'marram'), 'a web link');
+    eq(list.placeOf.marram, 'shore', 'its place in the list');
+    return `${home.toFixed(2)} at home; index ${r.index}; labels ${Object.keys(labels).join(', ')}`;
+  });
 }
