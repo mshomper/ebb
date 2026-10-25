@@ -115,3 +115,25 @@ Short takes cut from Freesound's high-quality MP3 previews (downloaded October 2
 - **Fish Being Netted on River** by **paulprit**: https://freesound.org/people/paulprit/sounds/581580/ (from 0:00.5, 1.8 s) as `net-lift`
 - **Water, shallow splash** by **Vrymaa**: https://freesound.org/people/Vrymaa/sounds/770033/ (from 0:00.33, 1.4 s), with **shovel in wet sand** by **f3bbbo**: https://freesound.org/people/f3bbbo/sounds/651293/ (0:00-0:00.72, 450 ms later, -1 dB) as `net-set`
 - **Fish flopping over on sand** by **adviseme333**: https://freesound.org/people/adviseme333/sounds/679389/ (from 0:00.5, 1.4 s) as `flop`
+## Camp sounds (`one-shots/camp/`, `beds/canvas/`, `beds/fire/`)
+
+Downloaded October 24, 2026 from Freesound's high-quality MP3 previews (no sign-in), with Matt's OK. All CC0 1.0. One-shots are made mono, 5 ms fade in and a short fade out, high-pass 40 Hz, peak-normalised to -3 dBFS, encoded as Ogg Opus 64 kbps with an AAC 96 kbps (.m4a) copy. Loops are made like the beds: high-pass 40 Hz, looped (2 s equal-power), loudness-matched with true peak at or under -3 dB, Opus 56 kbps with an AAC 64 kbps copy. Levels in play are in `recipes/audio/camp.json`.
+
+- **05_Flint and steel.wav** by **16FThumaF**: https://freesound.org/people/16FThumaF/sounds/499027/ (four single strikes, 0.45 s each, from 0:03.96, 0:06.87, 0:10.14 and 0:13.13) as `fire-steel-strike-a` to `-d`
+- **Match Ignite (No Strike)** by **brachern**: https://freesound.org/people/brachern/sounds/398448/ (whole, 0.85 s), with **Campfire (Position 2)** by **SKrafft**: https://freesound.org/people/SKrafft/sounds/681367/ (0:04.4-0:06.4, from 0.3 s, +8 dB, 0.25 s fade in) as `twigs-catch` (2.3 s)
+- **Extinguishing fire at night camping** by **Sassaby**: https://freesound.org/people/Sassaby/sounds/827829/ (0:05.15-0:09.95, 1.8 s fade out) as `fire-rain-hiss`
+- **Small Sticks Drop** by **IENBA**: https://freesound.org/people/IENBA/sounds/773759/ (0:00-0:00.75), with **Campfire (Position 1)** by **SKrafft**: https://freesound.org/people/SKrafft/sounds/681366/ (0:26.0-0:28.4, from 0.25 s, +10 dB) as `fire-feed` (2.65 s)
+- **Rain patters on the tarp over my tent** by **wrowley**: https://freesound.org/people/wrowley/sounds/872373/
+  - `beds/canvas/a.ogg` (and `.m4a`): stretch 0:25-1:12, stereo, looped (2 s equal-power), -30 LUFS
+  - `beds/canvas/b.ogg` (and `.m4a`): stretch 1:30-2:27, stereo, looped (2 s equal-power), -30 LUFS
+- **Campfire (Position 1)** by **SKrafft**: https://freesound.org/people/SKrafft/sounds/681366/
+  - `beds/fire/crackle.ogg` (and `.m4a`): stretch 0:01-1:20, mono, peak limiting on the loudest pops (up to 7.0 dB), looped (2 s equal-power), -37 LUFS (a sparse crackle held to -3 dB true peak)
+
+## Gathering one-shots (`one-shots/gather/`)
+
+Downloaded October 24, 2026 as above, made the same way as the camp one-shots. Levels in play are in `recipes/audio/gather.json`; the sea group reuses the keepsakes' `pickup`. All CC0 1.0.
+
+- **Small Sticks Drop** by **IENBA**: https://freesound.org/people/IENBA/sounds/773759/ (0:00.03-0:00.75, 0:01.52-0:02.60, 0:03.51-0:04.30) as `sticks-a` to `-c`
+- **pebbles in the hand.wav** by **Dalibor**: https://freesound.org/people/Dalibor/sounds/34174/ (0:01.36-0:02.00, 0:08.43-0:09.00, 0:24.48-0:25.50) as `pebbles-a` to `-c`
+- **brushing leaves_with hand** by **newtad1**: https://freesound.org/people/newtad1/sounds/836390/ (0:01.70-0:02.70, 0:03.85-0:05.20, 0:06.49-0:07.80) as `leaves-a` to `-c`
+- **Hand digging dirt, leaves crunch.wav** by **SpliceSound**: https://freesound.org/people/SpliceSound/sounds/260130/ (0:07.40-0:08.50, 0:12.84-0:14.10) as `earth-a`, `earth-b`

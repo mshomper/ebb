@@ -71,6 +71,7 @@ export const PARALLEL = {
   summer: () => import('./unit-tests-summer.js').then((m) => m.addSummerTests),
   melody: () => import('./unit-tests-melody.js').then((m) => m.addMelodyTests),
   fallsSound: () => import('./unit-tests-falls-sound.js').then((m) => m.addFallsSoundTests),
+  campSound: () => import('./unit-tests-camp-sound.js').then((m) => m.addCampSoundTests),
   musicRender: () => import('./unit-tests-music-render.js').then((m) => m.addMusicRenderTests),
 };
 

@@ -79,6 +79,8 @@
     "audio/ambience": "audio/ambience.json",
     "audio/game": "audio/game.json",
     "audio/keepsakes": "audio/keepsakes.json",
+    "audio/camp": "audio/camp.json",
+    "audio/gather": "audio/gather.json",
     "music/sampler": "music/sampler.json",
     "music/instruments/piano-steinway-b": "music/instruments/piano-steinway-b.json",
     "music/synth": "music/synth.json",
