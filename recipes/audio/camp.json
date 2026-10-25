@@ -1,14 +1,14 @@
 {
   "version": 1,
-  "note": "The camp's sounds (docs/future/13 sections 3.5, C-27, C-31, C-33; doc 17 'The first evening and the camp'). ONE-SHOTS (camp:sound from src/world/camp, played through src/audio/keepsake-sounds.js on the tools bus; CC0 takes in assets/audio/one-shots/camp/, each peaked at -3 dBFS): strike, the fire steel on its flint (each strike of the act, four takes in turn); catch, the twigs taking; hiss, rain on a burning fire as it drops low; feed, a handful of sticks dropped on and the fire flaring (camp:fed). db sets each one's level; pitchCents is a small seeded spread. LOOPS (src/audio/camp-loops.js, from the store slice campSound and the sound slice; CC0 loops in assets/audio/beds/, on the ambience bus): fire is the crackle placed at the ring, mono, peaking at -3 dB: db at full flame, lowShare its level as the fire burns low, embersDb for embers (also lowpassed from litHz to embersHz), rainDb while rain keeps a burning fire low; heard from the camera eye, full within refM, then falling as refM over the distance, gone from fadeFromM to reachM; air is the distance dulling of doc 17's spatial chain; rampS how fast it follows. canvas is rain drumming on the tent canvas (two takes; a session plays one): db at full rain, from rainFrom to rainFull of the weather's rain, full within nearM of the tent (measured from you, the camera target, on the ground) and gone by reachM (doc 17: 6 m), and fading away from above as the camera eye goes from eyeFadeFromM to eyeReachM. Sources are in assets/audio/CREDITS.md.",
+  "note": "The camp's sounds (docs/future/13 sections 3.5, C-27, C-31, C-33; doc 17 'The first evening and the camp'). ONE-SHOTS (camp:sound from src/world/camp, played through src/audio/keepsake-sounds.js on the tools bus; CC0 takes in assets/audio/one-shots/camp/, each peaked at -3 dBFS): strike, the fire steel on its flint (each strike of the act, four takes in turn); catch, the twigs taking; hiss, rain on a burning fire as it drops low; feed, a handful of sticks dropped on and the fire flaring (camp:fed). db sets each one's level; pitchCents is a small seeded spread. LOOPS (src/audio/camp-loops.js, from the store slice campSound and the sound slice; CC0 loops in assets/audio/beds/, on the ambience bus): fire is the crackle placed at the ring, mono, peaking at -3 dB: db at full flame, lowShare its level as the fire burns low, embersDb for embers (also lowpassed from litHz to embersHz), rainDb while rain keeps a burning fire low; heard from the camera eye, full within refM, then falling as refM over the distance, gone from fadeFromM to reachM; air is the distance dulling of doc 17's spatial chain; rampS how fast it follows. canvas is rain drumming on the tent canvas (two takes; a session plays one): db at full rain, from rainFrom to rainFull of the weather's rain, full within nearM of the tent (measured from you, the camera target, on the ground) and gone by reachM (doc 17: 6 m), and fading away from above as the camera eye goes from eyeFadeFromM to eyeReachM. Sources are in assets/audio/CREDITS.md. Levels raised October 24, 2026 (Matt: the fire should be louder): the one-shots by 4 dB and the crackle by 6 dB. With the island bus and the master each 2 dB lower (mixer.json), the fire is about 2 dB louder overall and 6 dB further above the island's other sounds than before. Close up (within refM) the crackle now reaches the master compressor a little above full scale; if it sounds harsh there, lower db here first.",
   "root": "assets/audio/one-shots/camp/",
   "pitchCents": 40,
   "wakeWaitMs": 400,
   "sounds": {
-    "strike": { "files": ["fire-steel-strike-a", "fire-steel-strike-b", "fire-steel-strike-c", "fire-steel-strike-d"], "db": -14 },
-    "catch": { "file": "twigs-catch", "db": -16 },
-    "hiss": { "file": "fire-rain-hiss", "db": -15 },
-    "feed": { "file": "fire-feed", "db": -15 }
+    "strike": { "files": ["fire-steel-strike-a", "fire-steel-strike-b", "fire-steel-strike-c", "fire-steel-strike-d"], "db": -10 },
+    "catch": { "file": "twigs-catch", "db": -12 },
+    "hiss": { "file": "fire-rain-hiss", "db": -11 },
+    "feed": { "file": "fire-feed", "db": -11 }
   },
   "preload": [],
   "loops": {
@@ -16,7 +16,7 @@
     "bus": "ambience",
     "fire": {
       "file": "fire/crackle",
-      "db": 6,
+      "db": 12,
       "lowShare": 0.45,
       "embersDb": -14,
       "rainDb": -6,
