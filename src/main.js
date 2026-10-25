@@ -11,6 +11,7 @@ import { mountTimeFlow } from './ui/time-flow.js';
 import { mountLook } from './ui/look.js';
 import { mountJournal } from './ui/journal.js';
 import { mountIslandNotes } from './ui/island-notes.js';
+import { mountStation } from './ui/station.js';
 import { mountHaulTray } from './ui/haul-tray.js';
 import { registerCatchSketches } from './ui/sketches/catch.js';
 import { registerUnderLogSketches } from './ui/sketches/under-log.js';
@@ -112,6 +113,8 @@ startApp(canvas, { onDeviceLost: (rebuilding) => showRebuildingNote(rebuilding),
       // One click below walks and uses: the app reads what a point holds from the journal's cards.
       /** @type {any} */ (r).setCards?.(journal.cardAt, words.species);
       mountIslandNotes(document.body, words, naturalist);
+      // A station's card opens as its wider workspace (S1; docs/future/13 3.12; src/ui/station.js).
+      mountStation(document.body, words, (await loadRecipe('world/camp')).stations?.ui);
       // The pages of what lives under a log draw from the creatures' own models (L3a).
       registerUnderLogSketches(await loadRecipe('species/under-log'));
       // The haul tray (docs/future/12): what a lifted net brought up; living things go back from it.
@@ -138,7 +141,7 @@ startApp(canvas, { onDeviceLost: (rebuilding) => showRebuildingNote(rebuilding),
       // The Shelf section draws kept keepsakes from their numbers (docs/future/12).
       const [keepsakesRecipe, bottleMessages] = await Promise.all([loadRecipe('world/keepsakes'), loadRecipe('world/bottle-messages')]);
       mountJournal(document.body, { ...journal, naturalist, beachcomber, shaper, progress, shelf: { K: keepsakesRecipe, messages: bottleMessages },
-        keeper: await loadRecipe('world/keeper-pages') }, hud.layer);
+        keeper: await loadRecipe('world/keeper-pages'), cook: await loadRecipe('world/cook') }, hud.layer);
       // The first evening's director (src/world/intro): its flags live in the journal, so it starts now.
       /** @type {any} */ (r).intro?.start();
       // A save that came back from earlier copies says so, calmly (src/ui/damaged.js).

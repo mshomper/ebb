@@ -519,6 +519,8 @@ Tempers are what potters mix into clay for heat and strength. The tea pot is the
 - **Dig** with the shovel on a damp bank near fresh water (clay comes up with layer 2).
 - **Fill** at the spring.
 
+**Built (S1, October 24, 2026).** The workbench is built in its slot (`workbench`, u 0.3, v -1.5, facing the ring) from two handfuls of flat stones; the fire ring, once laid, is the fire station. The workspace is `src/world/camp/stations.js` (live) and `src/ui/station.js`; the pure making core is `src/world/camp/making.js` with `recipes/world/cook.json`; station spots and reach are in `recipes/world/camp.json` `stations`. The save's reserved `cook` section holds `{ version, made: { id: firstHour }, count, tools }` (format 10, no bump). Slots for the apothecary bench (u 0.3, v 1.5) and the store (u -0.9, v -2.5) are in the land recipes; the mortar sits on the apothecary bench. The store's draw is a hook (`store` in `createStations`) for P2j. The camp page is `src/ui/journal-camp.js`.
+
 **Models.** Matt makes the workbench, the apothecary bench, the three pots, the cup and bowl, the mortar and pestle stone, the drying rack, and later the sealed jar, the clay lamp, the satchel, the basket, the driftwood frame and the clam rake. Sessions make the simple pieces: the wood store stakes and crossbar, the stone ring, the clay slab, the hearth stones, the gift stone, the bird bath, the cord and the fire steel.
 
 ## 4. The pack and gathering

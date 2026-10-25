@@ -988,3 +988,18 @@ button.ebb-trail__row:hover b { text-decoration: underline; text-decoration-colo
 .ebb-letter.is-paper .ebb-letter__h3 { text-transform: uppercase; letter-spacing: 0.04em; border-top: 2px solid var(--jr-ink); border-bottom: 1px solid var(--jr-ink); padding: 6px 0; }
 .ebb-letter__h4 { font-style: italic; color: var(--jr-soft); }
 .ebb-letter.is-paper .ebb-letter__body > p:first-child b { display: block; text-align: center; font-size: calc(20px * var(--text-scale, 1)); letter-spacing: 0.08em; }
+
+/* The camp page (src/ui/journal-camp.js; S1): the camp from above, then the firsts in the walker's
+   hand, each with its parts drawn small beside it. */
+.ebb-camppage__h { margin: 14px 0 6px; font-size: var(--text-small); font-weight: 800; color: var(--jr-soft); }
+.ebb-camppage__sketch { display: block; width: min(100%, 220px); height: auto; margin: 0 auto; }
+.ebb-camppage__sketch .cp-pad { fill: rgba(156, 123, 96, 0.22); stroke: none; }
+.ebb-camppage__sketch .cp-tent { fill: #E6D3BE; stroke: #7D6352; stroke-width: 2; }
+.ebb-camppage__sketch .cp-ring { fill: none; stroke: #949A93; stroke-width: 5; }
+.ebb-camppage__sketch .cp-bench { fill: #949A93; stroke: var(--jr-ink); stroke-width: 1.2; }
+.ebb-camppage__sketch .cp-store { fill: none; stroke: #7D6352; stroke-width: 1.5; stroke-dasharray: 4 3; }
+.ebb-camppage__list { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.ebb-camppage__first { display: flex; align-items: center; gap: 10px; min-width: 0; padding-bottom: 8px; border-bottom: 1px solid var(--jr-rule); }
+.ebb-camppage__parts { display: inline-flex; gap: 2px; flex: none; color: var(--jr-ink); }
+.ebb-camppage__parts .icon { width: 30px; height: 30px; }
+.ebb-camppage__line { font-family: var(--font-voice); font-style: italic; font-weight: 400; font-size: calc(17px * var(--text-scale, 1)); min-width: 0; overflow-wrap: break-word; }

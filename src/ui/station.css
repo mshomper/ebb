@@ -1,0 +1,129 @@
+/* The station workspace (src/ui/station.js; docs/future/13 3.12, S1): one wide card near the top of
+   the view. Its surface and the pouches stack below 1100 px and sit side by side from there
+   (.is-wide). Part spots and buttons never shrink under 48 px; nothing scrolls sideways. */
+
+.ebb-station {
+  position: fixed;
+  top: 72px;
+  left: 50%;
+  z-index: 16;
+  width: min(var(--st-max, 980px), calc(100vw - 32px));
+  max-height: calc(100vh - 180px);
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 12px 16px 16px;
+  display: grid;
+  gap: 10px;
+  background: var(--jr-paper);
+  color: var(--jr-ink);
+  border-radius: 16px;
+  box-shadow: 0 10px 32px rgba(10, 14, 13, 0.38);
+  opacity: 0;
+  transform: translate(-50%, -8px);
+  transition: opacity 0.18s ease, transform 0.18s ease;
+  pointer-events: none;
+}
+.ebb-station.is-open { opacity: 1; transform: translate(-50%, 0); pointer-events: auto; }
+.ebb-station .icon { width: 28px; height: 28px; }
+.ebb-station .ebb-idcard__icon .icon { width: 24px; height: 24px; }
+.ebb-station__head { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.ebb-station__head b { font-weight: 800; font-size: calc(19px * var(--text-scale, 1)); margin-right: auto; min-width: 0; overflow-wrap: break-word; }
+.ebb-station__acts { display: flex; flex-wrap: wrap; gap: 8px; }
+.ebb-station__text { margin: 0; font-family: var(--font-voice); font-style: italic; font-weight: 400; font-size: calc(18px * var(--text-scale, 1)); }
+
+.ebb-station__body { display: grid; gap: 14px; grid-template-columns: minmax(0, 1fr); }
+.ebb-station.is-wide .ebb-station__body { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); align-items: start; }
+
+/* The surface: a stone-grey slab with its spots, the action beside them. */
+.ebb-station__surface {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 14px;
+  background: rgba(148, 154, 147, 0.32);
+}
+.ebb-station__spots { display: flex; flex-wrap: wrap; gap: 10px; min-width: 0; }
+.ebb-station__spot {
+  appearance: none;
+  -webkit-appearance: none;
+  width: calc(var(--st-target, 56px) * 1.4);
+  height: calc(var(--st-target, 56px) * 1.25);
+  margin: 0;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  border: 1.5px dashed var(--jr-rule);
+  background: transparent;
+  color: var(--jr-ink);
+}
+.ebb-station__spot .icon { width: 44px; height: 44px; }
+.ebb-station__spot.is-laid { border: 1.5px solid var(--jr-rule); background: #FBF7F0; cursor: pointer; }
+.ebb-station__spot.is-laid:hover { background: #fffaf0; border-color: var(--jr-moss); }
+.ebb-station__spot.is-extra { opacity: 0.7; }
+.ebb-station__spot.is-outline { border-style: dashed; }
+/* A pencil outline: the part's shape only, dashed, no fill and no name (TR-16). */
+.ebb-station__spot .is-pencil { color: var(--jr-pencil); --fam-op: 0; }
+.ebb-station__spot .is-pencil * { fill-opacity: 0 !important; stroke-dasharray: 2 2; }
+.ebb-station__go { width: var(--st-target, 56px); height: var(--st-target, 56px); }
+.ebb-station__go:disabled { opacity: 0.45; cursor: default; border-style: dashed; }
+.ebb-station__go:disabled:hover { background: transparent; }
+.ebb-station__surface.is-working .ebb-station__spot.is-laid { animation: ebb-station-work 0.9s ease-in-out infinite alternate; }
+@keyframes ebb-station-work { to { transform: translateY(-3px); } }
+.ebb-station__line { grid-column: 1 / -1; margin: 0; font-family: var(--font-voice); font-style: italic; font-weight: 400; font-size: calc(17px * var(--text-scale, 1)); color: var(--jr-soft); }
+
+/* The pouches you carry, then the camp's piles. */
+.ebb-station__stores h4 { margin: 0 0 6px; font-size: var(--text-small); font-weight: 800; color: var(--jr-soft); }
+.ebb-station__stores h4 + .ebb-station__row { margin-bottom: 10px; }
+.ebb-station__row { display: flex; flex-wrap: wrap; gap: 8px; min-width: 0; }
+.ebb-station__pouch, .ebb-station__pile {
+  appearance: none;
+  -webkit-appearance: none;
+  min-width: var(--st-target, 56px);
+  height: var(--st-target, 56px);
+  margin: 0;
+  padding: 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 12px;
+  border: 1.5px solid var(--jr-rule);
+  background: #2b3431;
+  color: var(--ui-cream);
+  --icon-bg: #2b3431;
+  cursor: pointer;
+}
+.ebb-station__pouch { justify-content: center; }
+.ebb-station__pouch .ebb-pouch__svg { width: 44px; height: 44px; }
+.ebb-station__pile { padding: 4px 12px 4px 6px; background: #FBF7F0; color: var(--jr-ink); --icon-bg: #FBF7F0; font-size: var(--text-small); }
+.ebb-station__pile .icon { width: 36px; height: 36px; flex: none; }
+.ebb-station__pouch:hover, .ebb-station__pile:hover { border-color: var(--jr-moss); }
+.ebb-station__pouch:disabled, .ebb-station__pile:disabled { opacity: 0.4; cursor: default; }
+.ebb-station__pouch:focus-visible, .ebb-station__pile:focus-visible, .ebb-station__spot:focus-visible { outline: 2px solid var(--wordmark-light); outline-offset: 2px; }
+.ebb-station__none { min-height: var(--st-target, 56px); }
+/* A part's or a pouch's name on hover, as the card actions show theirs. */
+.ebb-station__spot, .ebb-station__pouch, .ebb-station__pile { position: relative; }
+.ebb-station__spot[data-label]:hover::after, .ebb-station__pouch[data-label]:hover::after, .ebb-station__pile[data-label]:hover::after {
+  content: attr(data-label);
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2;
+  padding: 4px 10px;
+  border-radius: 8px;
+  background: rgba(30, 38, 36, 0.92);
+  color: var(--ui-cream);
+  font-family: var(--font-ui);
+  font-weight: 600;
+  font-size: var(--text-body);
+  font-style: normal;
+  white-space: nowrap;
+  pointer-events: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ebb-station { transition: none; }
+  .ebb-station__surface.is-working .ebb-station__spot.is-laid { animation: none; }
+}

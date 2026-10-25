@@ -18,7 +18,7 @@ import { loadIsland, setAsideOlder } from './recover.js';
 
 const ENCODE_JOB = { module: './save/world-file.js', fn: 'encodeJob' };
 /** URL parameters that start a throwaway test island. */
-export const TEST_PARAMS = ['seed', 'day', 'frogs', 'trust', 'plants', 'shells', 'cliffs', 'stones', 'driftwood', 'minnows', 'dragonflies', 'damselflies', 'turtles', 'spring', 'autumn', 'keepsakes', 'nets', 'sandbar', 'hour', 'trails', 'intro', 'nointro', 'shovel'];
+export const TEST_PARAMS = ['seed', 'day', 'frogs', 'trust', 'plants', 'shells', 'cliffs', 'stones', 'driftwood', 'minnows', 'dragonflies', 'damselflies', 'turtles', 'spring', 'autumn', 'keepsakes', 'nets', 'sandbar', 'hour', 'trails', 'intro', 'nointro', 'camp', 'shovel'];
 
 /**
  * @typedef {'off'|'test'|'fresh'|'loaded'|'elsewhere'|'failed'|'damaged'} SaveStatus

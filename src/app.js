@@ -5,7 +5,7 @@
 
 import { initGpu, onDeviceLost } from './core/gpu.js';
 import * as clock from './core/clock.js';
-import { flushDeferred, emitDeferred, on } from './core/events.js';
+import { flushDeferred, emit, emitDeferred, on } from './core/events.js';
 import { get as getStore, update as updateStore, subscribe as subscribeStore } from './core/store.js';
 import { loadRecipe } from './core/recipes.js';
 import { subSeed } from './core/rng.js';
@@ -620,7 +620,7 @@ export async function startApp(canvas, hooks = {}) {
   // slots, the fire and the lantern as small lights, smoke and moths, and a night's rest in the tent.
   const camp = createCamp({ recipe: campRecipe, seed, walk, terrain, clock, orbit: skyRecipe.orbit, camera, world, piles,
     seasons: seasonsRecipe, lighting, pack, shadowBias: shadowPass.bias, low: tier === 'low', poses: (await loadRecipe('world/figure')).poses,
-    beat: () => intro.live?.intro.current?.id ?? null });
+    beat: () => intro.live?.intro.current?.id ?? null, cook: await loadRecipe('world/cook') });
   sim.addSystem(camp);
   shadowPass.addCaster(camp.props.caster);
   midges.keepClear(() => camp.smokeClear());
@@ -650,6 +650,21 @@ export async function startApp(canvas, hooks = {}) {
   dig.setKeepsakeWords((n) => keepsakeWords(n, keepsakesRecipe));
   sim.addSystem(dig);
   shadowPass.addCaster(dig.props.caster);
+  // `?camp` (a test link, unsaved; S1): the evening skipped, the camp ready, the pack holding what
+  // the workbench and the shovel take, and you standing at the workbench's ground; `?camp=bench`
+  // has the workbench built already.
+  if (params.has('camp') && !back) {
+    emit('intro:camp-ready', { tent: true, ring: true });
+    for (const [k, n] of [['flat-stones', 3], ['sticks', 2], ['rush-cord', 1], ['pebbles', 2]]) pack.add(/** @type {string} */ (k), /** @type {number} */ (n));
+    if (params.get('camp') === 'bench') camp.stations.debug.buildNow('workbench');
+    const at = camp.stations.benchAt('workbench');
+    if (at && walk.placeAt(at.stand.x, at.stand.z, Math.atan2(at.x - at.stand.x, at.z - at.stand.z), 'stand')) {
+      const p = camera.pose();
+      camera.setPose({ ...p, target: [at.stand.x, terrain.sampleHeight(at.stand.x, at.stand.z), at.stand.z], yaw: Math.atan2(at.x - at.stand.x, at.z - at.stand.z) + Math.PI + 0.9,
+        distance: campRecipe.rest.viewDistanceM, pitch: (campRecipe.rest.viewPitchDeg * Math.PI) / 180 });
+      walk.downHere();
+    }
+  }
 
   /**
    * A dry, grassy ground point near the view's middle, out of the tide, for a test log: on a widening
