@@ -40,9 +40,11 @@ export function thinning(ev, c, R) {
   const p = patchOf(c, R);
   let n = 1;
   for (const e of ev) if (patchOf(e.c, R) === p) n++;
-  let share = 1, at = 1;
-  for (const [from, s] of R.rest.thin) if (n >= from) { share = s; at = from; }
-  return { share, firstThin: share < 1 && n === at, n };
+  let share = 1;
+  for (const [from, s] of R.rest.thin) if (n >= from) share = s;
+  // The dig that first thins it this season (the walker says so once).
+  const firstStep = R.rest.thin.find((/** @type {number[]} */ t) => t[1] < 1)?.[0] ?? Infinity;
+  return { share, firstThin: n === firstStep, n };
 }
 
 /**

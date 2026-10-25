@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ebb dig lab</title>
+<link rel="icon" href="../brand/ebb-favicon.svg" type="image/svg+xml">
+<style>
+  @font-face { font-family: 'Nunito'; src: url('../src/vendor/fonts/nunito-latin-600-normal.woff2') format('woff2'); font-weight: 600; }
+  @font-face { font-family: 'Nunito'; src: url('../src/vendor/fonts/nunito-latin-800-normal.woff2') format('woff2'); font-weight: 800; }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; max-width: 100%; overflow-x: hidden; }
+  body { background: #F4EEE4; color: #1E2624; font: 600 17px/1.45 'Nunito', system-ui, sans-serif; padding: 16px; overflow-wrap: anywhere; }
+  main { max-width: 1100px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+  h1 { font-size: 24px; font-weight: 800; margin: 0; }
+  h2 { font-size: 19px; font-weight: 800; margin: 0 0 6px; }
+  h3 { font-size: 16px; font-weight: 800; margin: 8px 0 2px; color: #4A5551; }
+  .muted { color: #4A5551; font-size: 16px; margin: 0; }
+  .card { background: #FBF7F0; border: 1px solid #E3D9C9; border-radius: 14px; padding: 14px 16px; min-width: 0; }
+  .row { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; }
+  label { font-size: 16px; display: inline-flex; gap: 6px; align-items: center; }
+  select, input[type=number], button { font: inherit; font-size: 16px; padding: 4px 8px; border-radius: 8px; border: 1px solid #CFC3AF; background: #FFFDF8; color: #1E2624; }
+  button { cursor: pointer; background: #4a6a47; color: #FBF7F0; border-color: #4a6a47; font-weight: 800; }
+  .split { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(360px, 100%), 1fr)); gap: 16px; }
+  canvas.map { width: 100%; max-width: 560px; aspect-ratio: 1; image-rendering: pixelated; border-radius: 10px; border: 1px solid #E3D9C9; display: block; }
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 15px; margin: 6px 0; }
+  .legend i { display: inline-block; width: 14px; height: 14px; border-radius: 3px; vertical-align: -2px; margin-right: 5px; }
+  #cell { font-size: 16px; }
+  #cell svg { max-width: 240px; }
+  svg { width: 100%; height: auto; display: block; }
+  svg text { font: 600 15px 'Nunito', system-ui, sans-serif; fill: #4A5551; }
+  table { border-collapse: collapse; width: 100%; font-size: 15px; overflow-wrap: normal; }
+  th, td { text-align: left; padding: 4px 6px; border-bottom: 1px solid #E3D9C9; vertical-align: top; }
+  th { font-weight: 800; }
+  .knobs { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(250px, 100%), 1fr)); gap: 6px 16px; }
+  .knobs label { display: grid; grid-template-columns: 1fr 4.5em; gap: 2px 8px; font-size: 15px; }
+  .knobs input[type=range] { grid-column: 1 / -1; width: 100%; }
+  .runs { display: grid; grid-template-columns: 1fr; gap: 16px; }
+  .scrolly { max-width: 100%; }
+  textarea { width: 100%; min-height: 120px; font: 15px/1.4 ui-monospace, monospace; }
+  a { color: #4a6a47; }
+</style>
+</head>
+<body>
+<main>
+  <h1>ebb dig lab</h1>
+  <p class="muted">Digging (docs/future/13 section 10, P2c) worked out with the same pure modules as the game (<code>src/world/dig</code>): the island coloured by where the shovel can dig; hover a square for what lies under it and this season's chances; a simulated year of a keeper digging against the island's budget; one hole's stages through a dry and a wet week; and the spade's sounds. Every knob in <code>recipes/world/dig.json</code> has a slider below, and the year runs again at once. <a href="./">All tools</a></p>
+
+  <div class="card">
+    <div class="row">
+      <label>Island <select id="land"><option value="starter-island-2">starter island</option><option value="starter-island">older starter island</option><option value="two-ponds">two ponds</option></select></label>
+      <label>Seed <input id="seed" type="number" value="1" min="0" style="width:7em"></label>
+      <label>Season <select id="season"><option value="0">spring</option><option value="1">summer</option><option value="2">autumn</option><option value="3">winter</option></select></label>
+      <label><input id="rain" type="checkbox"> rain yesterday</label>
+      <button id="build">Build the island</button>
+    </div>
+    <p class="muted" id="status">Building the island...</p>
+  </div>
+
+  <div class="split">
+    <div class="card">
+      <h2>Where the shovel digs</h2>
+      <canvas class="map" id="map" width="192" height="192" aria-label="The island by ground class"></canvas>
+      <div class="legend" id="legend"></div>
+    </div>
+    <div class="card" id="cell"><h2>A square</h2><p class="muted">Hover the map.</p></div>
+  </div>
+
+  <div class="card">
+    <h2>A year of digging</h2>
+    <div class="row">
+      <label>Holes a day <input id="perDay" type="range" min="1" max="30" value="8"> <b id="perDayV">8</b></label>
+      <button id="pin">Keep this run beside</button>
+    </div>
+    <div class="runs"><div id="run"></div><div id="pinned"></div></div>
+  </div>
+
+  <div class="card">
+    <h2>One hole</h2>
+    <p class="muted">The same hole dug at 9 in the morning, through a dry week and through a week with four hours of rain a day: open, slumped, settled, closed, then its darker patch fading.</p>
+    <div id="holes"></div>
+  </div>
+
+  <div class="card">
+    <h2>The spade's sounds</h2>
+    <div class="row" id="sounds"></div>
+  </div>
+
+  <div class="card">
+    <h2>Tuning</h2>
+    <div class="knobs" id="knobs"></div>
+    <div class="row" style="margin-top:10px"><button id="copy">Copy recipe</button><span class="muted" id="copied"></span></div>
+    <textarea id="json" readonly aria-label="The recipe as tuned"></textarea>
+  </div>
+</main>
+<script type="module" src="dig-lab.js"></script>
+</body>
+</html>
