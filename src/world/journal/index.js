@@ -28,9 +28,9 @@ import { stampNotes, markShown, markNotesSeen, markPageSeen, readOf, pageSince, 
 /**
  * @typedef {Object} JournalUiSlice
  * @property {boolean} open
- * @property {'trails'|'living'|'ground'|'web'|'almanac'|'notes'|'shelf'|'keeper'} view  keeper: the keeper's pages (src/ui/journal-keeper.js)
+ * @property {'trails'|'living'|'ground'|'web'|'almanac'|'notes'|'shelf'|'keeper'|'herbarium'} view  keeper: the keeper's pages (src/ui/journal-keeper.js); herbarium: the forager's trail's page (src/ui/journal-herbarium.js)
  * @property {string|null} [keeper] the keeper page open, or null for their list
- * @property {'naturalist'|'beach'|'shape'} [trail] the trail the Trails page shows when it is not wide enough for all three
+ * @property {'naturalist'|'beach'|'shape'|'forage'} [trail] the trail the Trails page shows when it is not wide enough for all four
  * @property {string|null} page   the page shown in the living or ground view, or null for the list
  * @property {'half'|'full'} size  the phone sheet's height
  * @property {number} [notesSince] the last note number seen before Notes was opened (read.js): newer ones show as new

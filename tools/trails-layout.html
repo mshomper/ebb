@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Trails layout</title>
+<link rel="stylesheet" href="../src/ui/tokens.css">
+<style>
+  :root { --bg: #F4EEE4; --ink: #1E2624; --soft: #4A5551; --ok: #5F7F5B; --bad: #A4473B; --rule: #DCCFBB; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 600 17px/1.45 Nunito, system-ui, sans-serif; overflow-x: hidden; }
+  main { max-width: 1200px; margin: 0 auto; padding: 24px 16px 60px; }
+  h1 { margin: 0 0 4px; font-size: 30px; }
+  .lede { margin: 0 0 18px; color: var(--soft); }
+  .win { margin: 0 0 22px; }
+  .win h2 { margin: 0 0 6px; font-size: 19px; display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+  .verdict { font-size: 16px; font-weight: 800; padding: 0 10px; border-radius: 999px; background: var(--rule); }
+  .verdict.ok { background: #DDE8D2; color: var(--ok); }
+  .verdict.bad { background: #F2D9D3; color: var(--bad); }
+  /* Each window drawn at its real size, scaled down to fit this page's width. */
+  .stage { position: relative; width: 100%; overflow: hidden; border: 1.5px solid var(--rule); border-radius: 12px; background: #3c4a46; }
+  .stage iframe { position: absolute; top: 0; left: 0; border: 0; transform-origin: 0 0; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Trails layout</h1>
+  <p class="lede">The journal's Trails page (and the herbarium) at several window widths, with the ?trails and ?forager sample, laid out by the game's own CSS. Four side by side from 1400 px, two by two from 1100 px, four tabs below that. Each window says whether anything scrolls sideways and whether any text is under 15 px.</p>
+  <div id="wins"></div>
+</main>
+<script>
+const WINDOWS = [
+  { w: 900, h: 860, q: '' }, { w: 1100, h: 1100, q: '' }, { w: 1280, h: 1100, q: '' },
+  { w: 1400, h: 900, q: '' }, { w: 1920, h: 900, q: '' }, { w: 900, h: 1300, q: 'herbarium' },
+];
+const host = document.getElementById('wins');
+const cards = WINDOWS.map((W) => {
+  const sec = document.createElement('section');
+  sec.className = 'win';
+  sec.innerHTML = `<h2>${W.w} px window <span class="verdict">loading</span></h2><div class="stage"><iframe title="Trails at ${W.w} px" src="trails-layout-frame.html?${W.q}" width="${W.w}" height="${W.h}"></iframe></div>`;
+  host.appendChild(sec);
+  return { W, sec, frame: sec.querySelector('iframe'), stage: sec.querySelector('.stage'), verdict: sec.querySelector('.verdict') };
+});
+function fit() {
+  for (const c of cards) {
+    const k = Math.min(1, c.stage.clientWidth / c.W.w);
+    c.frame.style.transform = `scale(${k})`;
+    c.stage.style.height = `${c.W.h * k}px`;
+  }
+}
+addEventListener('resize', fit);
+fit();
+addEventListener('message', (ev) => {
+  const c = cards.find((x) => x.frame.contentWindow === ev.source);
+  if (!c) return;
+  const d = ev.data, ok = d.side <= 0 && d.small === 0;
+  c.verdict.className = `verdict ${ok ? 'ok' : 'bad'}`;
+  c.verdict.textContent = `${d.layout}: ${d.side > 0 ? `scrolls sideways by ${d.side} px` : 'no sideways scroll'}${d.small ? `, ${d.small} texts under 15 px` : ''}`;
+});
+</script>
+</body>
+</html>
