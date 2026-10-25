@@ -156,6 +156,7 @@ const GESTURES = {
   netLift: { label: 'Lift the net', kneelS: 3.8 },
   rise: { label: 'Getting up', from: 'kneel' },
   stuck: { label: "I'm stuck" },
+  make: { label: 'Make at the workbench', kneelS: 3.0 },
 };
 /** A still walker playing one gesture at 0.5 s (rise: kneeling first, then standing up at 2.5 s). @param {string} name */
 function gestureRun(name) {
@@ -186,6 +187,8 @@ const SIDE = { left: { yaw: Math.PI / 2, pitch: 0.16, dist: 4 }, right: { yaw: -
 const gestureRows = (/** @type {string[]} */ names) => names.map((n) => ({ name: `${GESTURES[n].label}, from the ${GESTURES[n].right ? 'right' : 'left'}`, view: GESTURES[n].right ? SIDE.right : SIDE.left, run: () => gestureRun(n), picks: gesturePicks(n) }));
 STRIPS.gesturesA = { title: 'Gestures (one)', tile: [240, 320], view: { yaw: -Math.PI / 2, pitch: 0.16, dist: 4 }, rows: gestureRows(['gather', 'setDown', 'takeUp', 'heapHere', 'empty', 'lift']) };
 STRIPS.gesturesB = { title: 'Gestures (two)', tile: [240, 320], view: { yaw: -Math.PI / 2, pitch: 0.16, dist: 4 }, rows: gestureRows(['feedFire', 'netSet', 'netLift', 'rise', 'stuck']) };
+STRIPS.making = { title: 'Making (S1)', tile: [240, 320], view: { yaw: -Math.PI / 2, pitch: 0.16, dist: 4 }, rows: [...gestureRows(['make']),
+  { name: 'Make at the workbench, from the front', view: { yaw: 0, pitch: 0.16, dist: 4 }, run: () => gestureRun('make'), picks: gesturePicks('make') }] };
 
 const LABEL = 34, CURVE_H = 110, HEAD = 40, PAD = 12;
 

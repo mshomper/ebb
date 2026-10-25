@@ -2,11 +2,12 @@
 // Making at camp (S1; docs/future/13 sections 3.12 and 6.5): the pencil outlines a station shows for
 // what is laid, nothing taken until the action and then the pack before the piles, the cook section's
 // cleaner and firsts, the camp page's order, the new bench slots clear of every other slot in both
-// land recipes.
+// land recipes, and the walker's make motion as long as the make.
 
 import { cleanCook, layout, drawPlan, available, recordMade, buildKinds, makesAt } from '../src/world/camp/making.js';
 import { clean9, empty9 } from '../src/save/migrate-format9.js';
 import { campFirsts, campPageHad } from '../src/ui/journal-camp.js';
+import { gestureLength } from '../src/world/figure/acts.js';
 
 const G = 'camp: making';
 /** @param {string} p */
@@ -94,5 +95,11 @@ export function addCampMakingTests(test, assert, eq) {
         assert(Math.hypot(q.u - su, q.v - sv) >= rOf(q) + 0.25, `${land}: you can stand at the workbench clear of ${q.id}`);
       }
     }
+  });
+
+  test(G, 'the walker works at the bench for the make: the make gesture is as long as the make', async () => {
+    const PO = (await load('world/figure')).poses, C = await load('world/cook');
+    const len = gestureLength(PO, 'make');
+    assert(len > 2 && Math.abs(len - C.makeS) < 0.05, `make gesture ${len} s for a ${C.makeS} s make`);
   });
 }
