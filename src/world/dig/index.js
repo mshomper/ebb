@@ -292,7 +292,7 @@ export function createDig(o) {
     else if (f.clay === 'winter') lines.push(W.clayWinter);
     let keepsake = null;
     if (f.keepsake) {
-      keepsake = { ...f.keepsake, dug: { layer: P.layer, ground: P.cls } };
+      keepsake = { ...f.keepsake, dug: { layer: P.layer, ground: P.cls, where: W.where[P.layer] } };
       lines.push(W.keepsake, o.keepsakes ? keepsakeLine(keepsake) : '');
       emitDeferred('dig:found', { kind: 'keepsake', id: keepsake.family });
       emitDeferred('dig:detail', { id: keepsake.form === 'belemnite' ? 'belemnite' : keepsake.family });

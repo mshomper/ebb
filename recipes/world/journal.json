@@ -87,6 +87,7 @@
       "photo": "Save a picture of the shelf",
       "turn": "Drag to turn it",
       "where": "Found on the strandline after {tide} on {season} day {day}, year {year}.",
+      "dugWhere": "Dug from {layer} on {season} day {day}, year {year}.",
       "springTide": "a spring tide",
       "tide": "the high tide",
       "message": "Inside, a rolled note:"

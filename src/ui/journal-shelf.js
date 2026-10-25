@@ -50,7 +50,10 @@ export function createShelfView(o) {
   /** Where and when, in words. @param {{ hour: number, spring: boolean }} e */
   function where(e) {
     const s = seasonOf(e.hour * 3600);
-    return T.where.replace('{tide}', e.spring ? T.springTide : T.tide).replace('{season}', SEASON_NAMES[s.index])
+    // One dug from the ground (src/world/dig) says which layer it came from.
+    const dug = /** @type {any} */ (e).n?.dug;
+    const line = dug && T.dugWhere ? T.dugWhere.replace('{layer}', dug.where ?? 'the ground') : T.where.replace('{tide}', e.spring ? T.springTide : T.tide);
+    return line.replace('{season}', SEASON_NAMES[s.index])
       .replace('{day}', String(s.day + 1)).replace('{year}', String(s.year + 1));
   }
 
