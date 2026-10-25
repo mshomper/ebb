@@ -152,6 +152,7 @@ A drawn glyph for every item the roadmap names (approved by Matt, October 23, 20
 | `items.js` | The families and their tints, the sprite, `itemIconSvg`, `itemPouchSvg`, `chipSvg`, and the composed glyphs |
 | `items-gathered.js` | Fuel, stones, fibres, herbs, berries and nuts, earth, sea |
 | `items-made.js` | Made things and tools, dyes, keepsakes, treats |
+| `items-camp.js` | The camp store (a lidded rush hamper; grown, two stacked under a withy lid) and the forager's things: gathering knife, seed scoop, tea caddy, walking stick, pressing frame. Its rows join `MAKES` |
 | `item-draw.js` | The shared fills, each family's cue, small path generators |
 | `item-registry.js` | Which glyph each item id wears, with its tier and phase |
 

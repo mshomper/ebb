@@ -19,6 +19,7 @@ import { iconBody, ICON_NAMES } from './icons.js';
 import { A, A2, CUT, STONE, placed } from './item-draw.js';
 import { GATHERED } from './items-gathered.js';
 import { MADE } from './items-made.js';
+import { CAMP } from './items-camp.js';
 
 /** The families: name, palette tint (null: the glyph carries its own colour), and the shared cue. */
 export const FAMILIES = Object.freeze({
@@ -37,7 +38,7 @@ export const FAMILIES = Object.freeze({
 });
 
 /** @type {Record<string, [string, string]>} */
-const ITEMS = { ...GATHERED, ...MADE };
+const ITEMS = { ...GATHERED, ...MADE, ...CAMP };
 
 /** Names of every drawn item glyph (composites not included). */
 export const ITEM_ICON_NAMES = Object.freeze(Object.keys(ITEMS));

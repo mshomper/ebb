@@ -22,18 +22,21 @@ export function addAssetTests(test, assert, eq) {
       assert(buf.byteLength < 2 * 1024 * 1024, `${m.out}: ${(buf.byteLength / 1048576).toFixed(2)} MB, under 2 MB`);
       const glb = readGlb(buf);
       const mesh = [...meshesByName(glb).values()][0];
-      // A model painted in vertex colours (an OBJ source, models.json `paint`) has no UVs or maps.
-      for (const a of ['POSITION', 'NORMAL', m.paint ? 'COLOR_0' : 'TEXCOORD_0']) assert(mesh.attributes[a], `${m.out}: ${a}`);
+      // A model painted in vertex colours (an OBJ source, models.json `paint`, or a piece made in code,
+      // `made`) has no UVs or maps.
+      const vc = m.paint || m.made;
+      for (const a of ['POSITION', 'NORMAL', vc ? 'COLOR_0' : 'TEXCOORD_0']) assert(mesh.attributes[a], `${m.out}: ${a}`);
       const maps = materialMaps(glb);
       // Every painted copy has its colour map; a Sketchfab pot may come without the other two (its
       // roughness a plain number), and any it has are WebP.
-      if (!m.paint) eq(maps.baseColor?.mimeType, 'image/webp', `${m.out}: baseColor map`);
-      if (!m.paint) for (const k of /** @type {const} */ (['metallicRoughness', 'normal'])) if (maps[k]) eq(maps[k].mimeType, 'image/webp', `${m.out}: ${k} map`);
+      if (!vc) eq(maps.baseColor?.mimeType, 'image/webp', `${m.out}: baseColor map`);
+      if (!vc) for (const k of /** @type {const} */ (['metallicRoughness', 'normal'])) if (maps[k]) eq(maps[k].mimeType, 'image/webp', `${m.out}: ${k} map`);
       const p = mesh.attributes.POSITION;
       const lo = [Infinity, Infinity, Infinity], hi = [-Infinity, -Infinity, -Infinity];
       for (let i = 0; i < p.length; i += 3) for (let a = 0; a < 3; a++) { lo[a] = Math.min(lo[a], p[i + a]); hi[a] = Math.max(hi[a], p[i + a]); }
       assert(Math.abs(lo[1]) < 0.005, `${m.out}: on the ground (lowest point ${lo[1].toFixed(3)} m)`);
-      assert(Math.abs(lo[0] + hi[0]) < 0.01 && Math.abs(lo[2] + hi[2]) < 0.01, `${m.out}: base centered`);
+      // keepOrigin (the hearth stones) keeps the fire ring's middle at the origin instead.
+      if (!m.keepOrigin) assert(Math.abs(lo[0] + hi[0]) < 0.01 && Math.abs(lo[2] + hi[2]) < 0.01, `${m.out}: base centered`);
       const span = m.along === 'height' ? hi[1] - lo[1] : Math.max(hi[0] - lo[0], hi[1] - lo[1], hi[2] - lo[2]);
       assert(Math.abs(span - m.sizeM) < 0.01 * m.sizeM + 0.005, `${m.out}: ${span.toFixed(2)} m, wants ${m.sizeM} m`);
       lines.push(`${m.out} ${(buf.byteLength / 1048576).toFixed(2)} MB`);

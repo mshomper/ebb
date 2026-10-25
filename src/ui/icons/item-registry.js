@@ -15,6 +15,7 @@
 
 import { ICON_NAMES } from './icons.js';
 import { DYES } from './items-made.js';
+import { CAMP_ROWS } from './items-camp.js';
 
 /**
  * @typedef {{ id: string, icon: string, name: string, tier: string, phase: number }} ItemRow
@@ -83,6 +84,7 @@ export const MAKES = /** @type {[string, string, string, string, number][]} */ (
   ['bird-bath', 'bird-bath', 'Bird-bath stone', 'T4', 4], ['bee-dish', 'bee-dish', 'Bee water dish', 'T4', 4], ['floats', 'floats', 'Driftwood floats', 'T4', 4],
   ['larger-pot', 'larger-pot', 'Larger pot', 'T5', 5], ['hedgehog-house', 'hedgehog-house', 'Hedgehog house', 'T5', 5], ['wind-chime', 'wind-chime', 'Shell wind chime', 'T5', 5],
   ['sinker-stones', 'sinker-stones', 'Grooved sinker stones', 'T6', 5],
+  ...CAMP_ROWS,
 ]).map(row);
 
 /** Treats and offerings (docs/future/13 section 8). @type {ItemRow[]} */

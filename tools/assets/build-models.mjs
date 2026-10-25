@@ -12,7 +12,8 @@
 // welded and thinned to its triangle target with meshoptimizer, which keeps UV seams in place so the
 // paint maps still fit; its maps resized and saved as WebP (EXT_texture_webp). Geometry stays plain
 // (no Draco or meshopt packing), so src/render/gltf.js reads it as it is. An OBJ source with no
-// paint (the single log) is read and painted in vertex colours by obj-source.mjs. The originals are never
+// paint (the single log) is read and painted in vertex colours by obj-source.mjs; a piece made in code
+// (made: the hearth stones, camp store, forager's things) comes from made-pieces.mjs. The originals are never
 // copied into the repo. A report of every model goes to assets/models/camp/report.json.
 
 import { readFileSync, writeFileSync, mkdirSync, statSync, readdirSync } from 'node:fs';
@@ -24,6 +25,7 @@ import { dedup, prune, weld, simplify, textureCompress, getBounds, transformMesh
 import { MeshoptSimplifier } from 'meshoptimizer';
 import sharp from 'sharp';
 import { readObjSource } from './obj-source.mjs';
+import { makePiece } from './made-pieces.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const repo = resolve(here, '../..');
@@ -98,12 +100,29 @@ try { report = JSON.parse(readFileSync(join(outDir, 'report.json'), 'utf8')); } 
 
 for (const m of list.models) {
   if (only.length && !only.includes(m.out)) continue;
-  const src = join(list.sourceDir, m.source);
+  const src = m.made ? join(here, m.source) : join(list.sourceDir, m.source);
   const t0 = Date.now();
-  // An OBJ source (no UVs or paint) is read, laid along +x and painted from another model's map.
-  const doc = m.source.endsWith('.obj') ? await readObjSource(src, m, (p) => io.read(p), list.sourceDir) : await io.read(src);
+  // A piece made in code (made-pieces.mjs) is built here; an OBJ source (no UVs or paint) is read,
+  // laid along +x and painted from another model's map.
+  const doc = m.made ? makePiece(m.made, repo)
+    : m.source.endsWith('.obj') ? await readObjSource(src, m, (p) => io.read(p), list.sourceDir) : await io.read(src);
   const root = doc.getRoot();
   const trisBefore = triangles(doc);
+
+  // dropNodes: parts left out by node name (the cooking pot's clay stove and grate), with
+  // everything under them; the rest stays as it was.
+  for (const name of m.dropNodes ?? []) {
+    for (const node of root.listNodes()) if (node.getName() === name) node.traverse((n) => n.dispose());
+  }
+  await doc.transform(prune());
+  // setNodes: a part moved by node name (the wicker basket's lid, set beside it in the file, put on
+  // top), its translation and rotation replaced.
+  for (const [name, t] of Object.entries(m.setNodes ?? {})) {
+    for (const node of root.listNodes()) if (node.getName() === name) {
+      if (t.translation) node.setTranslation(t.translation);
+      if (t.rotation) node.setRotation(t.rotation);
+    }
+  }
 
   // Bake each mesh node's world transform into its vertices, then clear the transforms.
   for (const node of root.listNodes()) {
@@ -115,7 +134,7 @@ for (const m of list.models) {
   // A model in parts (a Sketchfab download: the cooking pot is four meshes) becomes one mesh, since
   // the game draws a model's first mesh; and only position, normal and UV stay (tangents are worked
   // out in the shader; a second UV set is a lightmap's).
-  if (!m.source.endsWith('.obj')) {
+  if (!m.source.endsWith('.obj') && !m.made) {
     for (const mesh of root.listMeshes()) for (const p of mesh.listPrimitives()) {
       for (const sem of p.listSemantics()) if (!KEEP.has(sem)) p.setAttribute(sem, null);
     }
@@ -143,7 +162,8 @@ for (const m of list.models) {
   const span = [b.max[0] - b.min[0], b.max[1] - b.min[1], b.max[2] - b.min[2]];
   const k = m.sizeM / (m.along === 'height' ? span[1] : Math.max(...span));
   const place = mul([k, 0, 0, 0, 0, k, 0, 0, 0, 0, k, 0, 0, 0, 0, 1],
-    [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, -(b.min[0] + b.max[0]) / 2, -b.min[1], -(b.min[2] + b.max[2]) / 2, 1]);
+    // keepOrigin (the hearth stones, set round the fire ring's middle): only lifted onto the ground.
+    [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, m.keepOrigin ? 0 : -(b.min[0] + b.max[0]) / 2, -b.min[1], m.keepOrigin ? 0 : -(b.min[2] + b.max[2]) / 2, 1]);
   for (const mesh of root.listMeshes()) transformMesh(mesh, place);
 
   // Paint maps: color and roughness/metal as WebP at the map size; normals a little gentler.
