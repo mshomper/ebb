@@ -1,0 +1,50 @@
+{
+  "type": "cook",
+  "version": 1,
+  "note": "Making at camp (docs/future/13 sections 3.12 and 6; S1, October 24, 2026). Read by src/world/camp/making.js (pure) and src/world/camp/stations.js (live). A make's parts are what is laid on a station's surface, one handful each; nothing is taken until its action is pressed, and then each handful comes from the pack first, then the camp's piles, then the store (P2j, later). Tier is for the docs and labs only: the code checks parts and what is already made, never a tier.",
+
+  "builds": {
+    "workbench": { "slot": "workbench", "parts": [["flat-stones", 2]], "act": "lay", "afterRing": true, "src": ["3.12", "C-41"] }
+  },
+  "buildsNote": "Things built in their own camp slot, the way the ring is laid (CS-05): the slot glows while the pack (or a pile at camp) holds the parts and you are near camp, once the ring is laid (afterRing); its card offers Build; the walker plays act at the slot and the parts leave. parts: [kind, handfuls] pairs. The first build is written on the camp page.",
+
+  "makes": {
+    "shovel": { "tier": "T2", "at": "workbench", "parts": ["sticks", "flat-stones", "rush-cord"], "out": "tool", "max": 1, "src": ["M-08", "DR-20", "resolution 4a"] }
+  },
+  "makesNote": "Every make at a station. at: the station (workbench, fire, later apothecary); parts: one handful each, a kind id or a list of kinds that serve (['sticks', 'drift-twigs']); out: where it goes when made ('tool' hangs on the pack and takes no pouch, kept in the cook section's tools; 'slot' and 'pouch' come with later makes); max: how many can ever be made (the station stops offering it). The shovel is here as data for S1's click test; P2c gives it its use (Dig) and adds rush cord's own make. One make is shown at a time: the one with the most parts laid, then the lower tier, then this file's order.",
+
+  "makeS": 3.2,
+  "makeSNote": "How long the walker works at the station for a make (real seconds), kneeling at the bench: figure.json gestures.make. The thing is made as it ends.",
+
+  "nothingHoldS": 1.4,
+  "nothingHoldSNote": "Parts that make nothing together stay on the surface this long (real seconds) with the calm line, then go back to their pouches.",
+
+  "words": {
+    "workbenchSlot": { "name": "Workbench ground", "line": "Level ground facing the fire. A stone slab on a frame would make a bench here.", "needs": "A bench here needs two handfuls of flat stones." },
+    "build": "Build the workbench",
+    "built": "A stone slab on a lashed frame. Somewhere to make things.",
+    "workbench": { "name": "Workbench", "line": "A stone slab on a lashed frame, facing the fire." },
+    "fire": { "name": "The fire" },
+    "make": "Make",
+    "fireAct": "Fire",
+    "nothing": "These don't come to anything together.",
+    "spotsFull": "The surface is full. Take something off first.",
+    "none": "Nothing in the pack or the piles to lay here.",
+    "pack": "Your pack",
+    "piles": "At camp",
+    "laid": "Click a pouch to lay a handful. Click a laid part to take it back.",
+    "made": { "shovel": "A shovel, bound tight. It hangs on your pack." },
+    "page": {
+      "entry": "Camp",
+      "entryLine": "What you have made, and when.",
+      "title": "Camp",
+      "back": "Back to the notes",
+      "empty": "Nothing made yet but the fire ring.",
+      "firsts": "First made",
+      "now": "The camp now"
+    },
+    "pageNames": { "ring": "Fire ring", "workbench": "Workbench", "shovel": "Shovel" },
+    "pageParts": { "ring": "Sticks and stones", "workbench": "Two flat stones", "shovel": "A stick, a flat stone, cord" }
+  },
+  "wordsNote": "Every line the stations and the camp page say. made: the line after a first make, by make id. pageNames, pageParts: the camp page's first-made lines, in the walker's hand: name, what it was made of, and the date."
+}
