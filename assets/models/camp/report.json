@@ -589,23 +589,23 @@
   }
  },
  "clay-cup": {
-  "source": "../_polyhaven/planter_pot_clay/planter_pot_clay_1k.gltf",
+  "source": "made-pieces.mjs",
   "file": "clay-cup.glb",
-  "bytes": 162156,
-  "sourceBytes": 1797158,
-  "trianglesBefore": 3080,
-  "triangles": 1500,
-  "maps": 512,
+  "bytes": 209352,
+  "sourceBytes": 3965,
+  "trianglesBefore": 17280,
+  "triangles": 7999,
+  "maps": 0,
   "bounds": {
    "min": [
-    -0.054,
+    -0.039,
     0,
-    -0.053
+    -0.038
    ],
    "max": [
-    0.054,
+    0.039,
     0.09,
-    0.053
+    0.038
    ]
   }
  },
@@ -867,6 +867,27 @@
     0.059,
     0,
     0.065
+   ]
+  }
+ },
+ "clay-bowl": {
+  "source": "made-pieces.mjs",
+  "file": "clay-bowl.glb",
+  "bytes": 209352,
+  "sourceBytes": 3965,
+  "trianglesBefore": 17280,
+  "triangles": 7999,
+  "maps": 0,
+  "bounds": {
+   "min": [
+    -0.078,
+    0,
+    -0.077
+   ],
+   "max": [
+    0.078,
+    0.065,
+    0.077
    ]
   }
  }

@@ -8,7 +8,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { Document } from '@gltf-transform/core';
 import { readGlb, meshesByName } from '../../src/render/gltf.js';
-import { hearthStones, campStore, campStoreGrown, gatheringKnife, seedScoop, teaCaddy, walkingStick, pressingFrame } from './made/pieces.mjs';
+import { hearthStones, campStore, campStoreGrown, gatheringKnife, seedScoop, teaCaddy, walkingStick, pressingFrame, clayBowl, clayCup } from './made/pieces.mjs';
 
 /**
  * The single shore stone's colours (assets/models/camp/stone.glb, painted from Matt's stone pile):
@@ -39,6 +39,8 @@ const PIECES = {
   'tea-caddy': () => teaCaddy(),
   'walking-stick': () => walkingStick(),
   'pressing-frame': () => pressingFrame(),
+  'clay-bowl': () => clayBowl(),
+  'clay-cup': () => clayCup(),
 };
 
 /** The names the builders answer to. */
