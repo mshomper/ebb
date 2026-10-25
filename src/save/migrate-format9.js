@@ -11,9 +11,10 @@ import { emptyPack, cleanPack } from '../world/pack/model.js';
 import { cleanGather } from '../world/gather/events.js';
 import { cleanDig, emptyDig } from '../world/dig/rest.js';
 import { cleanCook } from '../world/camp/making.js';
+import { cleanBook, emptyBook } from '../world/sketchbook/model.js';
 
 /** The sections format 9 brings in, in the order they are written. */
-export const SECTIONS9 = /** @type {const} */ (['camp', 'pack', 'gather', 'dig', 'cook', 'dyes']);
+export const SECTIONS9 = /** @type {const} */ (['camp', 'pack', 'gather', 'dig', 'cook', 'dyes', 'sketchbook']);
 
 /** @typedef {typeof SECTIONS9[number]} Section9 */
 
@@ -27,6 +28,7 @@ export function empty9(id) {
   if (id === 'gather') return cleanGather(null);
   if (id === 'dig') return emptyDig();
   if (id === 'cook') return cleanCook(null);
+  if (id === 'sketchbook') return emptyBook();
   return { version: 1 };
 }
 
@@ -42,6 +44,9 @@ export function clean9(id, v) {
   if (id === 'dig') return cleanDig(v);
   // What was made at camp: firsts, counts and tools (S1, src/world/camp/making.js).
   if (id === 'cook') return cleanCook(v);
+  // The walker's sketchbook (P2i): it joined the list later, and a save without it reads as an
+  // empty book, so it needs no step of its own (src/world/sketchbook/model.js).
+  if (id === 'sketchbook') return cleanBook(v);
   if (!v || typeof v !== 'object' || Array.isArray(v) || v.version !== 1) return empty9(id);
   const out = structuredClone(v);
   if (id === 'gather' && !Array.isArray(out.events)) out.events = [];

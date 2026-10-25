@@ -1,0 +1,121 @@
+/* The walker's sketchbook (src/ui/sketchbook.js; P2i I5). The book button sits in the top-right
+   row, left of Look; the book opens in the middle of the view, two pages a spread, one page each
+   below 760 px. Its paper is the drawings' own flat cream, so they sit on it with no edge. */
+
+:root {
+  --sb-paper: #E9E0CC;
+  --sb-cover: #6E5A44;
+  --sb-ink: #2E2B26;
+  --sb-soft: #5A554B;
+}
+
+.ebb-sbbtn {
+  position: fixed;
+  top: max(var(--jr-edge, 12px), env(safe-area-inset-top));
+  right: calc(max(var(--jr-edge, 12px), env(safe-area-inset-right)) + 3 * (var(--jr-btn, 48px) + 8px));
+  z-index: 11;
+  pointer-events: none;
+}
+.ebb-sbbtn[hidden] { display: none; }
+.ebb-sbbtn .icon { width: 28px; height: 28px; display: block; }
+
+.ebb-sketchbook {
+  position: fixed;
+  z-index: 22;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -48%);
+  width: min(980px, calc(100vw - 32px));
+  max-height: calc(100vh - 120px);
+  overflow-y: auto;
+  overflow-x: hidden;
+  box-sizing: border-box;
+  padding: 12px 14px 14px;
+  background: var(--sb-cover);
+  border-radius: 14px;
+  box-shadow: 0 18px 50px rgba(20, 16, 10, 0.45);
+  color: var(--sb-ink);
+  font-family: var(--font-ui, Nunito, sans-serif);
+  font-size: 16px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 180ms ease, transform 180ms ease;
+}
+.ebb-sketchbook.is-open { opacity: 1; pointer-events: auto; transform: translate(-50%, -50%); }
+
+.ebb-sketchbook__head { display: flex; align-items: center; justify-content: space-between; gap: 12px; color: var(--sb-paper); padding: 0 2px 10px; }
+.ebb-sketchbook__head .ebb-idcard__close {
+  appearance: none; width: 48px; height: 48px; flex: none; display: grid; place-items: center; padding: 0; margin: 0;
+  background: transparent; border: 0; border-radius: 12px; color: var(--sb-paper); cursor: pointer;
+}
+.ebb-sketchbook__head .ebb-idcard__close:hover { background: rgba(233, 224, 204, 0.14); }
+.ebb-sketchbook__head .ebb-idcard__close .icon { width: 26px; height: 26px; display: block; }
+.ebb-sketchbook__head b { font-family: var(--font-voice, Fraunces, serif); font-style: italic; font-weight: 600; font-size: 22px; }
+
+.ebb-sketchbook__spread {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 4px;
+}
+.ebb-sketchbook__page {
+  position: relative;
+  min-width: 0;
+  min-height: 420px;
+  padding: 20px 22px;
+  background: var(--sb-paper);
+  border-radius: 6px;
+  /* The corners wear with the book's age. */
+  box-shadow: inset 0 0 calc(10px + 34px * var(--sb-age, 0)) rgba(95, 74, 40, calc(0.08 + 0.22 * var(--sb-age, 0)));
+}
+.ebb-sketchbook__page.is-left { border-radius: 6px 2px 2px 6px; }
+.ebb-sketchbook__page.is-right { border-radius: 2px 6px 6px 2px; }
+.ebb-sketchbook__page h3 { margin: 0; font-family: var(--font-voice, Fraunces, serif); font-style: italic; font-weight: 600; font-size: 28px; line-height: 1.2; }
+.ebb-sketchbook__hand { margin: 4px 0 0; font-family: var(--font-voice, Fraunces, serif); font-style: italic; font-size: 17px; color: var(--sb-soft); }
+.ebb-sketchbook__hand.is-margin { margin-top: 18px; font-size: 18px; color: var(--sb-ink); max-width: 34ch; }
+
+/* The drawing: the hand's sureness darkens its lines. */
+.ebb-sketchbook__draw { margin-top: 8px; }
+.ebb-sketchbook__draw img,
+.ebb-sketchbook__loose img { display: block; max-width: 100%; height: auto; filter: contrast(var(--sb-sure, 1)); }
+.ebb-sketchbook__draw img { width: 100%; }
+
+/* Earlier drawings, tucked in as loose sheets. */
+.ebb-sketchbook__loose { display: flex; flex-wrap: wrap; gap: 14px; }
+.ebb-sketchbook__loose img { width: min(190px, 44%); box-shadow: 0 2px 6px rgba(40, 30, 15, 0.28); }
+.ebb-sketchbook__loose img.is-a { transform: rotate(-2.5deg); }
+.ebb-sketchbook__loose img.is-b { transform: rotate(1.8deg); }
+
+/* A pressed sprig from the herbarium, laid in the corner. */
+.ebb-sketchbook__pressed { position: absolute; right: 20px; bottom: 18px; color: #6C7A52; opacity: 0.75; transform: rotate(-18deg); }
+.ebb-sketchbook__pressed .icon { width: 64px; height: 64px; display: block; }
+
+.ebb-sketchbook__tag { position: absolute; right: 16px; top: 16px; font-size: 15px; color: var(--sb-soft); border: 1px solid currentColor; border-radius: 20px; padding: 1px 10px; }
+
+.ebb-sketchbook__turn { display: flex; justify-content: space-between; padding-top: 10px; }
+.ebb-sketchbook__turn .ebb-idcard__act { color: var(--sb-paper); }
+.ebb-sketchbook__turn .ebb-idcard__act[disabled] { opacity: 0.35; }
+.ebb-sketchbook__turn .is-on-turn .icon { transform: scaleX(-1); }
+
+@media (max-width: 759px) {
+  .ebb-sketchbook__spread { grid-template-columns: minmax(0, 1fr); }
+  .ebb-sketchbook__page { min-height: 0; }
+}
+
+/* The journal page's "In the sketchbook" corner. */
+.ebb-sbcorner {
+  appearance: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 8px 0 4px;
+  padding: 6px 12px 6px 6px;
+  background: var(--sb-paper);
+  border: 1px solid rgba(110, 90, 68, 0.35);
+  border-radius: 10px;
+  font: inherit;
+  font-size: 15px;
+  color: var(--sb-ink);
+  cursor: pointer;
+}
+.ebb-sbcorner img, .ebb-sbcorner__blank { width: 64px; height: 64px; display: block; border-radius: 6px; background: var(--sb-paper); object-fit: cover; }
+.ebb-sbcorner:hover { border-color: rgba(110, 90, 68, 0.7); }

@@ -84,7 +84,9 @@ def split():
 
 
 def ship():
-    subjects = set(json.loads((REPO / 'recipes' / 'world' / 'sketchbook.json').read_text(encoding='utf-8'))['subjects'])
+    book = json.loads((REPO / 'recipes' / 'world' / 'sketchbook.json').read_text(encoding='utf-8'))
+    # Art is named by the subject's art id where it has one (frog for the journal's frogs).
+    subjects = {book['art'].get(s, s) for s in book['subjects']}
     OUT.mkdir(parents=True, exist_ok=True)
     art = {}
     for f in sorted(SRC.glob('*.png')):

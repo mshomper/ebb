@@ -20,6 +20,7 @@ import { trailsView } from './journal-trails.js';
 import { herbariumView } from './journal-herbarium.js';
 import { keeperEntry, keeperView, keeperShown, keeperUnread } from './journal-keeper.js';
 import { campEntry, campView } from './journal-camp.js';
+import { sketchCornerHtml } from './sketchbook.js';
 
 
 /** Sections, in order, with their drawn icons. Trails spans the whole row above the six (doc 13). */
@@ -374,6 +375,7 @@ export function mountJournal(parent, live, buttonParent = parent) {
       <div class="ebb-jpage__top">${art ? '' : `<span class="ebb-jpage__sketch">${iconSvg(d.icon)}</span>`}<h3>${esc(d.name)}</h3>${show}</div>
       ${art}
       <p class="ebb-jpage__status ebb-journal__voice">${esc(d.status)}</p>
+      ${sketchCornerHtml(id)}
       ${tiesStrip(live.describeWeb(), live.web, nodeOfPage(live.web, id))}
       ${d.named?.length ? section('Named', `<ul class="ebb-jpage__list">${d.named.map((/** @type {string} */ n) => `<li>${esc(n)}</li>`).join('')}</ul>`) : ''}
       ${d.collection?.length ? section('Found so far', `<ul class="ebb-jpage__list ebb-jpage__collection">${d.collection.map((/** @type {any} */ c) => c.found

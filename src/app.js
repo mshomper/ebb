@@ -97,6 +97,7 @@ import { createPack } from './world/pack/index.js';
 import { createGather } from './world/gather/index.js';
 import { ashMarks } from './world/gather/ashes.js';
 import { createDig } from './world/dig/index.js';
+import { createSketchbook } from './world/sketchbook/index.js';
 import { createPiles } from './world/pack/piles-live.js';
 import { setDownAtCamp } from './world/pack/route.js';
 import { createStores } from './world/pack/stores.js';
@@ -685,6 +686,15 @@ export async function startApp(canvas, hooks = {}) {
   dig.setKeepsakeWords((n) => keepsakeWords(n, keepsakesRecipe));
   sim.addSystem(dig);
   shadowPass.addCaster(dig.props.caster);
+  // The walker's sketchbook (P2i I5; src/world/sketchbook): Sketch on the here-bar with charcoal
+  // sticks in the pack and a creature, plant or find near the middle of the view.
+  const sketchRecipe = await loadRecipe('world/sketchbook');
+  const sketchbook = createSketchbook({ recipe: sketchRecipe, walk, pack, worldT: () => clock.worldT(), season: () => world.state?.seasons?.index ?? 0,
+    weather: () => { const w = weatherAt(world.state?.weather, clock.display(), seasonsRecipe); return { rain: w.rain ?? 0, mist: w.mist ?? 0 }; },
+    subject: () => sketchSubject() });
+  sim.addSystem(sketchbook);
+  // `?sketch` (a test link, unsaved): a full pouch of charcoal sticks in the pack.
+  if (params.has('sketch') && !back) pack.add('charcoal-sticks', 3);
   // `?camp` (a test link, unsaved; S1): the evening skipped, the camp ready, the pack holding what
   // the workbench and the shovel take, and you standing at the workbench's ground; `?camp=bench`
   // has the workbench built already; `?camp=apothecary` (S2, P2j) the workbench and the apothecary
@@ -986,6 +996,29 @@ export async function startApp(canvas, hooks = {}) {
       return;
     }
     walk.tap(sx, sy, p);
+  }
+
+  /**
+   * What the walker would sketch (P2i): the creature, plant or find nearest the middle of the view,
+   * within reach. The view is sampled in rings out from its middle through the journal's cards, so
+   * the first one found is the nearest the middle. Null above, or with nothing there.
+   * @returns {{ id: string, name: string, x: number, z: number } | null}
+   */
+  function sketchSubject() {
+    if (!walk.below || !cards) return null;
+    const w = canvas.clientWidth, h = canvas.clientHeight, s = sketchRecipe.viewSampleSpreadPx ?? 70;
+    for (let ring = 0; ring <= 4; ring++) {
+      for (let k = 0; k < (ring ? 8 : 1); k++) {
+        const a = (k / 8) * 2 * Math.PI, p = groundAt(w / 2 + Math.cos(a) * ring * s, h / 2 + Math.sin(a) * ring * s);
+        const c = p ? cards.cardAt(p[0], p[2], p[1]) : null;
+        if (!c?.sp || !sketchRecipe.subjects.includes(c.sp)) continue;
+        const x = c.wx ?? p?.[0] ?? 0, z = c.wz ?? p?.[2] ?? 0;
+        // Named by its kind, singular and without its article ("school of minnows"), never a frog's own name.
+        const sw = cards.species?.[c.sp], name = String(sw?.card ?? sw?.name ?? c.name ?? c.sp).replace(/^(a|an|the) /i, '');
+        if (walk.distTo(x, z) <= sketchRecipe.reachM) return { id: c.sp, name, x, z };
+      }
+    }
+    return null;
   }
 
   /**

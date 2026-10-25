@@ -61,6 +61,7 @@
     "world/keeper-pages": "world/keeper-pages.json",
     "world/camp": "world/camp.json",
     "world/cook": "world/cook.json",
+    "world/sketchbook": "world/sketchbook.json",
     "species/frog": "species/frog.json",
     "species/midge": "species/midge.json",
     "flora/pondweed": "flora/pondweed.json",

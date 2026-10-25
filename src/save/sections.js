@@ -42,7 +42,8 @@ const KNOWN = ['meta', 'world', 'journal', 'water', 'unlocks', 'view', 'looks', 
  * @property {any} [keepsakes]  the shelf (src/world/keepsakes/shelf.js ShelfState)
  * @property {any} [nets]  the nets (src/world/nets/model.js NetsState)
  * @property {any} [camp] @property {any} [pack] @property {any} [gather] @property {any} [dig] @property {any} [cook] @property {any} [dyes]
- *   the keeper's camp sections (format 9, docs/future/13 section 12.1; src/save/migrate-format9.js)
+ * @property {any} [sketchbook]
+ *   the keeper's camp sections (format 9, docs/future/13 section 12.1; src/save/migrate-format9.js), and the sketchbook (P2i)
  * @property {Record<string, { state: string, land: string, edited: boolean }>} chunks  the store's `chunks` slice
  * @property {import('../world/terrain/heightfield.js').Mirror | null} mirror
  * @property {number} savedAt  UTC ms
@@ -109,7 +110,7 @@ export function snapshot(p) {
  * Placed pieces that are missing or unreadable come back as none.
  * @returns {{ meta: any, world: any, journal: any, water: any, unlocks: any, view: any, looks: any, music: any,
  *   pieces: import('../world/pieces/model.js').PiecesState, keepsakes: import('../world/keepsakes/shelf.js').ShelfState,
- *   nets: import('../world/nets/model.js').NetsState, camp: any, pack: any, gather: any, dig: any, cook: any, dyes: any,
+ *   nets: import('../world/nets/model.js').NetsState, camp: any, pack: any, gather: any, dig: any, cook: any, dyes: any, sketchbook: any,
  *   chunks: SavedChunk[], extra: [string, any][], bad: string[] }}
  */
 export function restore(sections) {
@@ -129,6 +130,6 @@ export function restore(sections) {
     water: sections.water ?? null, unlocks: sections.unlocks ?? {}, view: sections.view ?? null,
     looks: sections.looks ?? {}, music: sections.music ?? null, pieces: cleanPieces(sections.pieces), keepsakes: cleanShelf(sections.keepsakes), nets: cleanNets(sections.nets),
     camp: clean9('camp', sections.camp), pack: clean9('pack', sections.pack), gather: clean9('gather', sections.gather),
-    dig: clean9('dig', sections.dig), cook: clean9('cook', sections.cook), dyes: clean9('dyes', sections.dyes), chunks, extra, bad,
+    dig: clean9('dig', sections.dig), cook: clean9('cook', sections.cook), dyes: clean9('dyes', sections.dyes), sketchbook: clean9('sketchbook', sections.sketchbook), chunks, extra, bad,
   };
 }

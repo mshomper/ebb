@@ -12,6 +12,7 @@ import { mountLook } from './ui/look.js';
 import { mountJournal } from './ui/journal.js';
 import { mountIslandNotes } from './ui/island-notes.js';
 import { mountStation } from './ui/station.js';
+import { mountSketchbook } from './ui/sketchbook.js';
 import { mountHaulTray } from './ui/haul-tray.js';
 import { registerCatchSketches } from './ui/sketches/catch.js';
 import { registerUnderLogSketches } from './ui/sketches/under-log.js';
@@ -144,6 +145,8 @@ startApp(canvas, { onDeviceLost: (rebuilding) => showRebuildingNote(rebuilding),
       mountJournal(document.body, { ...journal, naturalist, beachcomber, shaper, forager, gatherRecipe: /** @type {any} */ (r).gather?.recipe ?? null,
         partName: (/** @type {string} */ k) => /** @type {any} */ (r).pack?.nameOf(k) ?? k, progress, shelf: { K: keepsakesRecipe, messages: bottleMessages },
         keeper: await loadRecipe('world/keeper-pages'), cook: await loadRecipe('world/cook') }, hud.layer);
+      // The walker's sketchbook (P2i I5): its book button beside the journal's, once the first sketch is made.
+      mountSketchbook(document.body, hud.layer, { recipe: await loadRecipe('world/sketchbook'), words, describe: (id) => journal.describe(id) });
       // The first evening's director (src/world/intro): its flags live in the journal, so it starts now.
       /** @type {any} */ (r).intro?.start();
       // A save that came back from earlier copies says so, calmly (src/ui/damaged.js).

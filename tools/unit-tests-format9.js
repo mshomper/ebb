@@ -17,9 +17,9 @@ const parts = (more = {}) => /** @type {any} */ ({ build: 't', seed: 1, island: 
  * @param {(cond: any, msg?: string) => void} assert @param {(a: any, b: any, msg?: string) => void} eq
  */
 export function addFormat9Tests(test, assert, eq) {
-  test(G, 'one step from 8 to 9 adds camp, pack, gather, dig, cook and dyes, empty', () => {
+  test(G, 'one step from 8 to 9 adds camp, pack, gather, dig, cook and dyes, empty (and the sketchbook, P2i)', () => {
     assert(FORMAT >= 9, 'this build writes format 9 or later (10 since planting on foot, tools/unit-tests-sowing.js)');
-    eq(SECTIONS9.join(), 'camp,pack,gather,dig,cook,dyes', 'the six sections of section 12.1');
+    eq(SECTIONS9.join(), 'camp,pack,gather,dig,cook,dyes,sketchbook', 'the six sections of section 12.1, then the sketchbook (P2i)');
     eq(MIGRATIONS.filter((m) => m.from === 8 && m.to === 9).length, 1, 'one step');
     const old = { meta: { worldT: 5 }, unlocks: { shells: true }, nets: { version: 1, nets: [], released: [], nextId: 1 } };
     const up = migrate(structuredClone(old), 8);
@@ -46,7 +46,8 @@ export function addFormat9Tests(test, assert, eq) {
     const live = { camp: { version: 1, pad: { x: 1.5, z: -2 } },
       pack: { version: 1, carriers: [], pouches: [['drift-twigs', 3], ['drift-twigs', 1], ['pebbles', 2]], heaps: [['sticks', 1.5, -2, 4, 1]], holding: null },
       gather: { version: 1, events: [3, 4, 50] },
-      dig: { version: 1, events: [{ c: 4, d: 2, l: 1, k: 0 }], firsts: ['layer:topsoil'] }, cook: { version: 1, made: { workbench: 4 }, count: { workbench: 1 }, tools: [], found: ['tea'] }, dyes: { version: 1, tent: { color: 'ochre', depth: 1 } } };
+      dig: { version: 1, events: [{ c: 4, d: 2, l: 1, k: 0 }], firsts: ['layer:topsoil'] }, cook: { version: 1, made: { workbench: 4 }, count: { workbench: 1 }, tools: [], found: ['tea'] }, dyes: { version: 1, tent: { color: 'ochre', depth: 1 } },
+      sketchbook: { version: 1, made: 2, wear: 2, first: 5, subjects: { frogs: [{ stage: 1, hour: 5, season: 0, moment: null }, { stage: 0, hour: 6, season: 0, moment: 'dusk' }] } } };
     const { sections } = snapshot(parts(live));
     const back = /** @type {any} */ (restore(Object.fromEntries(sections)));
     for (const id of SECTIONS9) eq(JSON.stringify(back[id]), JSON.stringify(live[id]), `${id} comes back exactly`);
