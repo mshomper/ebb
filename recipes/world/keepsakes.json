@@ -280,7 +280,21 @@
       "lifetime": { "sizeM": [0.067, 0.101], "ribAmp": [0.09, 0.14], "rock": [2, 3], "fossil": [2, 3], "markLean": 16 }
     },
     "colors": { "rock": [[0.5, 0.48, 0.44], [0.32, 0.32, 0.33], [0.66, 0.56, 0.42], [0.2, 0.2, 0.22]], "rockNames": ["grey", "dark", "pale", "black"], "fossil": [[0.56, 0.52, 0.46], [0.7, 0.62, 0.5], [0.62, 0.42, 0.28], [0.78, 0.62, 0.2]], "fossilNames": ["stone", "pale stone", "rust", "pyrite"] },
-    "marks": { "complete": { "chance": 0.06, "word": "whole, every turn of it" }}
+    "marks": { "complete": { "chance": 0.06, "word": "whole, every turn of it" }},
+    "belemnite": {
+      "note": "The belemnite form (docs/future/13 10.5, P2c): dug from the blue-grey clay, never left by the tide. A guard: a tapering bullet sizeM long, girth its half thickness as a share of its length, drawn to a point by taper (a power), bent a little; glassy (gloss) and coloured from colors by tier, pyrite at the top tiers. The mark is the hollow cone showing at its blunt end.",
+      "girth": [0.09, 0.13], "taper": [0.7, 1.2], "bend": [-0.3, 0.3],
+      "tiers": {
+        "common": { "sizeM": [0.035, 0.055], "color": [0, 1], "gloss": [0.05, 0.15] },
+        "uncommon": { "sizeM": [0.045, 0.07], "color": [0, 1, 2], "gloss": [0.1, 0.25], "markLean": 2 },
+        "rare": { "sizeM": [0.055, 0.085], "color": [1, 2], "gloss": [0.2, 0.35], "markLean": 4 },
+        "veryRare": { "sizeM": [0.07, 0.1], "color": [2, 3], "gloss": [0.3, 0.45], "markLean": 8 },
+        "lifetime": { "sizeM": [0.08, 0.11], "color": [3], "gloss": [0.4, 0.5], "markLean": 16 }
+      },
+      "colors": { "base": [[0.36, 0.24, 0.13], [0.62, 0.42, 0.18], [0.1, 0.09, 0.08], [0.78, 0.62, 0.2]], "names": ["glassy brown", "honey-coloured", "black", "turned to pyrite"] },
+      "marks": { "cone": { "chance": 0.12, "word": "the hollow cone showing at its blunt end" } },
+      "mesh": { "rows": 22, "cols": 18 }
+    }
   },
   "driftwood": {
     "gen": 1,

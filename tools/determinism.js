@@ -12,6 +12,7 @@ import { buildSummary, hashSummary, WATER_CLASS } from '../src/world/water/summa
 import { haulsJob } from '../src/world/nets/haul.js';
 import { gatherCheckJob } from '../src/world/gather/check.js';
 import { campCheckJob } from '../src/world/camp/check.js';
+import { digCheckJob } from '../src/world/dig/check.js';
 
 const JOB = { module: './world/terrain/landform.js', fn: 'buildBase' };
 /** The island's open chunks, row by row, from its land recipe (useChunks). */
@@ -378,6 +379,46 @@ function showCamp(g) {
     `<p class="muted">Lit with the steel ${main.lightings} times over ${main.hours / 24} game days, burning on ${main.litDays} of them.</p>`;
 }
 
+const DIG_JOB = { module: './world/dig/check.js', fn: 'digCheckJob' };
+
+/**
+ * Digging (docs/future/13 10.10.8, P2c): a season of ten digs a day, saved and read back, and every
+ * hole's stage three game days later, run twice, on the page and in a worker. @param {number} worldSeed
+ */
+async function runDig(worldSeed) {
+  const get = (/** @type {string} */ p) => fetch(`../recipes/${p}.json`).then((r) => r.json());
+  const args = { worldSeed, dig: await get('world/dig'), keepsakes: await get('world/keepsakes') };
+  const main = digCheckJob(args);
+  initWorkers({ size: 1 });
+  let worker;
+  try { worker = await run(DIG_JOB, args); } finally { dispose(); }
+  return { main, worker };
+}
+
+/** @param {Awaited<ReturnType<typeof runDig>>} g */
+function showDig(g) {
+  let card = document.getElementById('digCard');
+  if (!card) {
+    card = document.createElement('div');
+    card.className = 'card';
+    card.id = 'digCard';
+    /** @type {HTMLElement} */ (document.getElementById('campCard') ?? document.getElementById('gatherCard') ?? $('chunks').closest('.card')).after(card);
+  }
+  const { main, worker } = g;
+  /** @param {string} label @param {number} a @param {number} b @param {string} [an] @param {string} [bn] */
+  const row = (label, a, b, an = 'Main thread', bn = '1 worker') => {
+    const ok = a === b;
+    return `<div class="row total"><span class="label">${label}</span><span class="hash">${hex(a)}<small>${an}</small></span>` +
+      `<span class="hash">${hex(b)}<small>${bn}</small></span><span class="v ${ok ? 'ok' : 'bad'}">${icon(ok)}${ok ? 'match' : 'differ'}</span></div>`;
+  };
+  card.innerHTML = '<h2>Digging</h2>' +
+    row('What each dig gave', main.finds, worker.finds) +
+    row('Dug events, saved and read back', main.events, worker.events) +
+    row('Holes three days on', main.holes, worker.holes) +
+    row('The same season, run again', main.first, main.again, 'First run', 'Second run') +
+    `<p class="muted">Over 14 game days of ten digs a day: ${main.worms} worms, ${main.clay} handfuls of clay and ${main.keepsakes} keepsakes (the island's budget holds them to about one a day).</p>`;
+}
+
 async function build() {
   const button = /** @type {HTMLButtonElement} */ ($('go'));
   const input = /** @type {HTMLInputElement} */ ($('seed'));
@@ -425,6 +466,12 @@ async function build() {
     } catch (e) {
       console.error('[determinism] camp fire', e);
       $('detail').textContent += ` The camp fire check failed: ${e instanceof Error ? e.message : String(e)}`;
+    }
+    try {
+      showDig(await runDig(worldSeed));
+    } catch (e) {
+      console.error('[determinism] digging', e);
+      $('detail').textContent += ` The digging check failed: ${e instanceof Error ? e.message : String(e)}`;
     }
   } catch (e) {
     console.error('[determinism]', e);

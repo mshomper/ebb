@@ -191,6 +191,9 @@ export function createJournal(opts) {
     // and the clay slab, empty or holding a pile (then the pile's card too: Take up, Set down).
     const st = /** @type {any} */ (opts).stores?.cardAt?.(x, z) ?? null;
     if (st) return st;
+    // Then an open hole you dug (docs/future/13 10.2; src/world/dig): its layer, and Dig deeper.
+    const dg = /** @type {any} */ (opts).dig?.cardAt?.(x, z) ?? null;
+    if (dg) return dg;
     const pc = opts.pieces?.pieceAt(x, z);
     const pw = pc && words.pieces?.[pc.kind];
     if (pw && pc.kind === 'pile') {
@@ -283,7 +286,7 @@ export function createJournal(opts) {
     if (card.keepsake && card.mark) emitDeferred('keepsake:seen', { n: card.mark });
     // The camp's tent and ring (src/world/camp) are not lives or finds, and things to gather on bare
     // ground have a card of their own: no page and no moment for either.
-    if (card.keepsake || card.net || card.camp || card.gatherOnly) return;
+    if (card.keepsake || card.net || card.camp || card.gatherOnly || card.dig) return;
     // A loose stone or a log: its card offers Lift on foot (src/world/pieces/lift.js); a tap alone
     // looks, and lifts nothing.
     if (card.piece) {
@@ -433,6 +436,16 @@ export function createJournal(opts) {
     // The first pick of a plant (src/world/gather): its page's Gives line inks (`picked:<species>`).
     on('plant:picked', (/** @type {{ sp: string }} */ p) => {
       const next = flag(journal, `picked:${p.sp}`);
+      if (next !== journal) { journal = next; update('journal', () => journal); }
+    }),
+    // Digging (src/world/dig): each layer reached and each first find (a worm, a stone, a belemnite)
+    // inks its band or detail on the Soil and Sand pages (`dig:<id>` flags, the sketches' labels).
+    on('dig:layer', (/** @type {{ layer: string }} */ p) => {
+      const next = flag(journal, `dig:${p.layer}`);
+      if (next !== journal) { journal = next; update('journal', () => journal); }
+    }),
+    on('dig:detail', (/** @type {{ id: string }} */ p) => {
+      const next = flag(journal, `dig:${p.id}`);
       if (next !== journal) { journal = next; update('journal', () => journal); }
     }),
     // The island gave you something (src/world/expansion.js): written once, shown as a card.

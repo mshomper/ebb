@@ -76,7 +76,8 @@ export function loadRecipes() {
  * about the plants before them, which keep their order; the herbs' places are tested in
  * unit-tests-herbs.js. @param {any} growth @param {string[]} list
  */
-const older = (growth, list) => list.filter((sp) => !(growth.testSets?.herbs ?? []).includes(sp));
+// The species before Phase 2's gather plants: the tea herbs and marram (growth.json testSets herbs, fibres).
+const older = (growth, list) => list.filter((sp) => ![...(growth.testSets?.herbs ?? []), ...(growth.testSets?.fibres ?? [])].includes(sp));
 
 /**
  * The recipes with one more starter species (growth.json starters), for tests of a starting cover

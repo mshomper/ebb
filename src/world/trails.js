@@ -6,8 +6,10 @@
 // met (recipes/world/beachcomber.json, shaper.json); never a total, never taken back.
 
 /**
- * @typedef {{ trail: 'beach' | 'shape' | 'forage', kind: 'family' | 'rarity' | 'mark' | 'place' | 'plant' | 'season' | 'seed' | 'part', id: string, hour: number }} First
+ * @typedef {{ trail: 'beach' | 'shape' | 'forage' | 'nature', kind: 'family' | 'rarity' | 'mark' | 'place' | 'plant' | 'season' | 'seed' | 'part' | 'dug' | 'layer', id: string, hour: number }} First
  *   forage (the forager's, src/world/forager.js): plant, season and seed count; part feeds the almanac only
+ *   dug: the first keepsake of a family kept from the ground (P2c), a record that counts toward no stop;
+ *   layer: a layer dug for the first time, on the naturalist's line (src/world/expansion.js), never counted
  * @typedef {{ families?: number, rarity?: string, marks?: number, place?: string, plants?: number, seasons?: number, seeds?: number }} Need
  * @typedef {{ id: string, need: Need, icon: string, hint: string, give?: Record<string, any>, built?: boolean, title?: string, line?: string }} Stop
  *   built: nothing to give, but it exists already (the shelf), so it inks when reached

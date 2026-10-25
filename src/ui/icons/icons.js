@@ -1174,6 +1174,26 @@ const ICONS = {
     <path d="M10 8V20"/>
     <path d="M2.5 20H21.5"/>
     <path d="M19.5 3.5A3.2 3.2 0 1 0 21 9.5A3.8 3.8 0 0 1 19.5 3.5Z"/>`,
+  // Dig: a shovel driven into the ground, a small spoil heap beside it (P2c, the here-bar).
+  dig: `
+    <path ${ACCENT} d="M13.2 14.4L17.6 12.8L19 17L15.2 18.6Z"/>
+    <path d="M13.2 14.4L17.6 12.8L19 17L15.2 18.6Z"/>
+    <path d="M15.4 13.6L11.4 3.4M9.6 4.1L13.2 2.7"/>
+    <path d="M2.5 20.5H21.5"/>
+    <path d="M3.6 20.5C4.4 17.6 8.8 17.6 9.8 20.5"/>`,
+  // Scoop sand: a cupped hand under a little falling sand, a sand heap on the ground line.
+  scoop: `
+    <path ${ACCENT} d="M4.5 12.5C6 17 18 17 19.5 12.5Z"/>
+    <path d="M4.5 12.5C6 17 18 17 19.5 12.5Z"/>
+    <path d="M10 9.6v.1M13 8.2v.1M15.4 10v.1M11.8 5.4v.1"/>
+    <path d="M2.5 20.5H21.5"/>
+    <path d="M8 20.5C9.4 18.6 14.6 18.6 16 20.5"/>`,
+  // Marram (species chip): a tussock of stiff rolled blades fanning from the sand, one straw spike.
+  marram: `
+    <path ${ACCENT} d="M6 20.5C7.4 18.8 16.6 18.8 18 20.5Z"/>
+    <path d="M2.5 20.5H21.5"/>
+    <path d="M12 19.6C11.2 14 8.6 9 5 5.6M12 19.6C11.6 13.4 11.4 8.4 11.6 3.4M12 19.6C13 14.2 15.4 9.6 19 6.8M12 19.6C10.4 16 7.6 13.4 4 12.4M12 19.6C14 16.4 16.8 14.6 20.2 14"/>
+    <path d="M13.6 9.4C13.8 6.6 14.4 4.4 15.4 2.6"/>`,
   // Build: a flat slab laid across two stones (building a bench in its slot, S1).
   build: `
     <path ${ACCENT} d="M3 9.5H21V12.5H3Z"/>

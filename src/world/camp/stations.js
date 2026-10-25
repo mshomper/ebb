@@ -199,6 +199,12 @@ export function createStations(k) {
     const id = L.make, m = C.makes[id], hour = k.hourNow();
     const first = cookNow().made[id] === undefined;
     changeCook((s) => recordMade(s, id, hour, m.out === 'tool'));
+    // A make that fills a pouch (rush cord, P2c): into the pack, or a small heap at your feet when full.
+    if (m.out === 'pouch') {
+      const kind = m.gives ?? id, n = m.count ?? 1;
+      if (o.pack?.room(kind)) o.pack.add(kind, n);
+      else o.pack?.heapHere?.(kind, n);
+    }
     emitDeferred('camp:made', { make: id, station: open.id, hour, first });
     open.laid = [];
     open.line = W.made?.[id] ?? null;

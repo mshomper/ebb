@@ -82,6 +82,25 @@ export function outOfSeasonLine(plant, sp, part, recipe, pos) {
  */
 export const windowsOf = (w) => (Array.isArray(w[0]) ? /** @type {number[][]} */ (w) : [/** @type {number[]} */ (w)]);
 
+/**
+ * Can a cover plant's cell be picked now (docs/future/13 4.2, rushes)? Its share must be at least
+ * readyShare of what the ground there supports (its target) and at least minShare of full, and the
+ * cover's part in its window (gather.json cover.<sp>.window). why as pickable's.
+ * @param {number} share the cell's cover 0..255 @param {number} target its target 0..255
+ * @param {string} sp @param {number} pos the world's season position @param {any} recipe gather.json
+ * @returns {{ ok: boolean, why: 'rest' | 'season' | null, part: string | null }}
+ */
+export function coverPickable(share, target, sp, pos, recipe) {
+  const C = recipe.cover, P = C?.species?.[sp];
+  if (!P) return { ok: false, why: 'season', part: null };
+  if (!windowsOf(P.window).some((w) => inWindow(pos, w))) return { ok: false, why: 'season', part: P.part };
+  if (share < 255 * (C.minShare ?? 0) || share < (C.readyShare ?? 0.9) * target) return { ok: false, why: 'rest', part: P.part };
+  return { ok: true, why: null, part: P.part };
+}
+
+/** A cover cell's share after one pick: lowered by coverShare of full. @param {number} share @param {any} recipe gather.json */
+export const coverPick = (share, recipe) => Math.max(0, share - Math.round(255 * (recipe.cover?.coverShare ?? 0.25)));
+
 /** The dormant stage, as growth/coarse.js STAGE.dormant. */
 const DORMANT = 5;
 

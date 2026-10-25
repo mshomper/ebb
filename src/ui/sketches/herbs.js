@@ -2,7 +2,8 @@
 // Field sketches of the four tea herbs (P2b): water mint, meadowsweet, nettle and chamomile, drawn
 // with the journal pen (pen.js) like the other plants in living.js. Each sheet shows the whole
 // plant and, in a round inset at the top left, one close detail: mint's square stem, meadowsweet's
-// froth of tiny flowers, a nettle leaf's teeth and stinging hairs, chamomile's gold heart.
+// froth of tiny flowers, a nettle leaf's teeth and stinging hairs, chamomile's gold heart. Marram
+// grass (a fibre plant, not a tea herb) shares the sheet: a rolled blade cut across.
 //
 // Layout as living.js: the drawing in x 40..236 on a ground line, a scale bar at x 30, labels in
 // the right column from x 250, each with a leader from the thing it names.
@@ -219,4 +220,50 @@ export function chamomile(p, scale) {
   p.label('mat', 250, 196, 222, 204);
   p.scale(30, 112, 214, scale);
   return p.svg(380, 260, 'Field sketch of chamomile');
+}
+
+const MARRAM = '#9DAA8E';
+const STRAW = '#CDB98A';
+
+/**
+ * A narrow blade from its base (bx, by) to a sharp tip (tx, ty), bowed sideways by bend at its
+ * middle, w half wide at the base. @param {number} bx @param {number} by @param {number} tx @param {number} ty
+ * @param {number} bend @param {number} w
+ */
+function blade(bx, by, tx, ty, bend, w) {
+  const mx = (bx + tx) / 2 + bend, my = (by + ty) / 2;
+  return `M${r1(bx - w)} ${r1(by)}Q${r1(mx - w * 0.6)} ${r1(my)} ${r1(tx)} ${r1(ty)}Q${r1(mx + w * 0.6)} ${r1(my)} ${r1(bx + w)} ${r1(by)}Z`;
+}
+
+/** Marram grass: a tussock of stiff rolled grey-green blades on loose sand, a straw spike, runners binding the sand. @param {import('./pen.js').Pen} p @param {string} [scale] */
+export function marram(p, scale) {
+  const f = p.f;
+  // A low dune: loose sand piled round the tussock.
+  p.tint('M40 266C90 252 190 252 236 266V304H40Z', WASH.sand, 0.45);
+  p.line('M40 266C90 252 190 252 236 266', 1.5);
+  for (const [x, y] of [[56, 280], [92, 292], [170, 296], [212, 282], [120, 298]]) p.dot(x, y, 1.1);
+  // Runners under the sand, with roots going down from their joints.
+  p.fine('M140 258C120 270 92 276 60 286M142 258C164 272 192 278 224 290M141 258L138 300', 1, 0.6);
+  p.fine('M100 274l-3 12M78 281l-2 10M178 276l3 12M206 284l2 10', 0.8, 0.5);
+  // The flower spike on its stalk, behind the blades: a long narrow straw panicle.
+  p.line(stem(148, 256, 186, 64, 8), 1.1);
+  p.oval(187, 88, 6, 26, STRAW, 0.8, 1.1);
+  for (let k = 0; k < 6; k++) p.fine(`M${f(182)} ${f(70 + k * 7)}l5 3M${f(192)} ${f(70 + k * 7)}l-5 3`, 0.6, 0.5);
+  // The stiff blades: narrow, straight-ish, sharp at the tip, fanned from the tussock's foot.
+  /** @type {[number, number, number, number][]} */
+  const blades = [[130, 66, 150, -14], [134, 86, 108, -10], [137, 104, 80, -6], [139, 122, 64, -3], [140, 140, 58, 0],
+    [142, 156, 72, 3], [144, 172, 104, 6], [146, 196, 132, 8], [148, 214, 166, 10], [138, 112, 136, -4], [144, 166, 142, 4]];
+  for (const [bx, tx, ty, bend] of blades) p.shape(blade(bx, 260, tx, ty, bend, 3.2), MARRAM, 0.55, 1.1);
+  // A rolled blade shows its pale inside edge as a fine line along its length.
+  for (const [bx, tx, ty, bend] of blades.slice(2, 7)) p.fine(`M${f(bx)} ${f(250)}Q${f((bx + tx) / 2 + bend)} ${f((250 + ty) / 2)} ${f(tx)} ${f(ty + 10)}`, 0.6, 0.45);
+  // Inset: a blade cut across is rolled tight, ribbed on its inner face.
+  inset(p);
+  p.shape('M68 45A14 14 0 1 0 80 45L78 50A9 9 0 1 1 70 50Z', MARRAM, 0.6, 1.2);
+  p.fine('M74 67v-4M67 63l2 -3M81 63l-2 -3M65 56h3M83 56h-3', 0.6, 0.6);
+  p.fine('M102 66L120 104', 0.8, 0.4);
+  p.label('leaves', 250, 56, 104, 58);
+  p.label('spike', 250, 120, 194, 96);
+  p.label('runners', 250, 284, 214, 288);
+  p.scale(30, 58, 260, scale);
+  return p.svg(380, 310, 'Field sketch of marram grass');
 }

@@ -137,3 +137,13 @@ Downloaded October 24, 2026 as above, made the same way as the camp one-shots. L
 - **pebbles in the hand.wav** by **Dalibor**: https://freesound.org/people/Dalibor/sounds/34174/ (0:01.36-0:02.00, 0:08.43-0:09.00, 0:24.48-0:25.50) as `pebbles-a` to `-c`
 - **brushing leaves_with hand** by **newtad1**: https://freesound.org/people/newtad1/sounds/836390/ (0:01.70-0:02.70, 0:03.85-0:05.20, 0:06.49-0:07.80) as `leaves-a` to `-c`
 - **Hand digging dirt, leaves crunch.wav** by **SpliceSound**: https://freesound.org/people/SpliceSound/sounds/260130/ (0:07.40-0:08.50, 0:12.84-0:14.10) as `earth-a`, `earth-b`
+
+## Dig sounds (`one-shots/dig/`)
+Downloaded October 24, 2026 from Freesound's high-quality MP3 previews (no sign-in), made the same way as the camp one-shots: mono, 5 ms fade in and a short fade out, high-pass 40 Hz, peak-normalised to -3 dBFS, Ogg Opus 64 kbps with an AAC 96 kbps (.m4a) copy. Levels in play are in `recipes/audio/dig.json`. All CC0 1.0.
+
+- **Digging dirt shovel 05.flac** by **TRP**: https://freesound.org/people/TRP/sounds/574859/ (3:00.16-3:01.06, 3:39.41-3:40.31, 4:20.81-4:21.61) as `topsoil-a`, `topsoil-b`, `lift`
+- **Digging dirt cu variations 06.mp3** by **TRP**: https://freesound.org/people/TRP/sounds/574881/ (1:22.21-1:23.31) as `pour`
+- **Digging v1.wav** by **wormletter**: https://freesound.org/people/wormletter/sounds/513866/ (0:07.76-0:08.61, 0:29.41-0:30.26) as `subsoil-a`, `subsoil-b`
+- **digging into mud.wav** by **Stefan21100190**: https://freesound.org/people/Stefan21100190/sounds/593113/ (0:12.41-0:13.41, 0:10.21-0:11.21) as `clay-a`, `clay-b`
+- **ShovelingSand.wav** by **mitchanary**: https://freesound.org/people/mitchanary/sounds/505169/ (0:30.31-0:31.11, 0:51.21-0:52.01, 0:47.46-0:48.86) as `sand-a`, `sand-b`, `pour-sand`
+- **Square shovel rock hits** by **Sadiquecat**: https://freesound.org/people/Sadiquecat/sounds/855628/ (0:30.71-0:31.81) as `stones`

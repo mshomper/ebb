@@ -29,7 +29,7 @@ export const POUCH_KINDS = /** @type {[string, string, string, string, number][]
   ['cakes', 'cakes', "King Alfred's cakes", 'T3', 5], ['hardwood', 'hardwood', 'Hardwood', 'T5', 5],
   ['pebbles', 'pebbles', 'Pebbles', 'T1', 1], ['flat-stones', 'flat-stones', 'Flat stones', 'T1', 1],
   ['rush-cord', 'rush-cord', 'Rush cord', 'T2', 2], ['lichen-twigs', 'lichen-twigs', 'Lichen twigs', 'T4', 4],
-  ['sand', 'sand', 'Sand', 'T2', 2], ['clay', 'clay', 'Clay', 'T2', 2], ['topsoil', 'topsoil', 'Topsoil', 'T2', 2], ['ash', 'ash', 'Wood ash', 'T1', 2],
+  ['sand', 'sand', 'Sand', 'T2', 2], ['clay', 'clay', 'Clay', 'T2', 2], ['ash', 'ash', 'Wood ash', 'T1', 2],
   ['leaves', 'leaves', 'Fallen leaves', 'T2', 2], ['kelp', 'kelp', 'Cast kelp', 'T2', 2], ['wrack', 'wrack', 'Wrack', 'T1', 2],
   ['worms', 'worms', 'Worms', 'T2', 2], ['acorns', 'acorns', 'Acorns', 'T5', 5], ['hazelnuts', 'hazelnuts', 'Hazelnuts', 'T5', 5],
   ['old-comb', 'old-comb', 'Old comb', 'T4', 4], ['chanterelle', 'chanterelle', 'Chanterelle', 'T5', 5],

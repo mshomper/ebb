@@ -26,6 +26,7 @@ struct Prop {
   more: vec4f,      // x scale, y char 0..1, z ember glow 0..1, w squash of its height (1 as made)
   look: vec4f,      // x albedo scale, y roughness scale, z normal strength, w normal map's green sign
   shade: vec4f,     // contact shadow: x, y half sizes along its own x and z (m), z darkness 0..1, w the prop's lift 0..1 (F5: hovered or its card open)
+  tilt: vec4f,      // x pitch about its own x (its +y toward its +z), y roll about its own z, both before the yaw (a held tool); zw spare
 };
 
 @group(0) @binding(0) var<uniform> frame: FrameUniforms;
@@ -63,9 +64,19 @@ fn turn(d: vec3f, yaw: f32) -> vec3f {
   return vec3f(c * d.x + s * d.z, d.y, -s * d.x + c * d.z);
 }
 
+/** A direction in the prop's frame tipped by its roll (about z), then its pitch (about x). */
+fn tip(d: vec3f, t: vec4f) -> vec3f {
+  let cr = cos(t.y);
+  let sr = sin(t.y);
+  let r = vec3f(cr * d.x - sr * d.y, sr * d.x + cr * d.y, d.z);
+  let cp = cos(t.x);
+  let sp = sin(t.x);
+  return vec3f(r.x, cp * r.y - sp * r.z, sp * r.y + cp * r.z);
+}
+
 fn placed(position: vec3f, pr: Prop) -> vec3f {
   let p = position * vec3f(1.0, pr.more.w, 1.0) * pr.more.x;
-  return turn(p, pr.at.w) + pr.at.xyz;
+  return turn(tip(p, pr.tilt), pr.at.w) + pr.at.xyz;
 }
 
 @vertex
@@ -76,7 +87,7 @@ fn vsProp(@location(0) position: vec3f, @location(1) normal: vec3f, @location(2)
   o.world = placed(position, pr);
   o.pos = frame.viewProj * vec4f(o.world, 1.0);
   // A squash in height takes the inverse on the normal, so it stays true.
-  o.normal = turn(normalize(normal * vec3f(1.0, 1.0 / max(pr.more.w, 0.05), 1.0)), pr.at.w);
+  o.normal = turn(tip(normalize(normal * vec3f(1.0, 1.0 / max(pr.more.w, 0.05), 1.0)), pr.tilt), pr.at.w);
   o.uv = uv;
   o.localY = position.y;
   o.ii = ii;

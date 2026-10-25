@@ -415,7 +415,9 @@ export function createFigureMotion(R, skeleton) {
       const br = Math.sin((2 * Math.PI * t) / R.idle.breathS);
       const lean = (paceLean * standW + S.leanDeg * sitW + K.leanDeg * kneelW + C.leanDeg * crawlW + (A ? A.lean : 0)) * DEG;
       set(I.spine, { q: qaxis([1, 0, 0], lean * 0.5 + br * R.idle.breathDeg * 0.3 * DEG) });
-      set(I.chest, { q: qmul(qaxis([1, 0, 0], lean * 0.5), qaxis([0, 1, 0], -twist * 0.8 + LK.chest)), s: [1 + 0.006 * br, 1 + 0.004 * br, 1 + 0.008 * br] });
+      // An act's twist turns the chest to the right (the dig's tip onto the spoil heap).
+      const actTwist = A ? -(A.twist ?? 0) * DEG : 0;
+      set(I.chest, { q: qmul(qaxis([1, 0, 0], lean * 0.5), qaxis([0, 1, 0], -twist * 0.8 + LK.chest + actTwist)), s: [1 + 0.006 * br, 1 + 0.004 * br, 1 + 0.008 * br] });
       const headPitch = Math.max(-L.maxPitchDeg * DEG, Math.min(L.maxPitchDeg * DEG, pitch)) - lean * 0.7;
       set(I.head, { q: qmul(qaxis([0, 1, 0], LK.yaw), qaxis([1, 0, 0], headPitch)) });
       set(I.hat, null);

@@ -24,10 +24,10 @@
     "intro": "What the sea has given you that you kept, and the marks you have noticed, in the order they came.",
     "count": "{n} of {total} families kept",
     "familyTotal": 13,
-    "icons": { "family": "shells", "rarity": "shelf", "mark": "eye" },
+    "icons": { "family": "shells", "rarity": "shelf", "mark": "eye", "dug": "dig" },
     "family": "Kept: {name}",
     "rarity": "Kept: your first {name} one",
-    "mark": "Noticed: {name}",
+    "mark": "Noticed: {name}", "dug": "Dug up: {name}",
     "next": "A little further on",
     "later": "One day",
     "families": {
@@ -37,7 +37,7 @@
     },
     "rarities": { "uncommon": "uncommon", "rare": "rare", "veryRare": "very rare", "lifetime": "once in a lifetime" },
     "marks": {
-      "shell:leftCoiled": "a shell coiled to the left", "stone:holed": "a holed stone", "fossil:complete": "a whole ammonite",
+      "shell:leftCoiled": "a shell coiled to the left", "stone:holed": "a holed stone", "fossil:complete": "a whole ammonite", "fossil:cone": "a belemnite showing its hollow cone",
       "driftwood:rootKnot": "driftwood with a root knot", "feather:twinned": "two vanes from one quill", "bottle:message": "a message in a bottle",
       "urchin:sixRayed": "a six-rayed urchin", "starfish:oddArms": "a starfish with odd arms", "seed:seaHeart": "a sea heart",
       "purse:curly": "a catshark's purse", "cuttlebone:whole": "a whole cuttlebone", "coral:fan": "a coral fan", "bivalve:pair": "a shell with both halves",

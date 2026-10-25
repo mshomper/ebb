@@ -11,7 +11,7 @@ import { strandLines } from '../../world/water/strandline.js';
 
 /** @typedef {import('../frame-graph.js').PassContext} PassContext */
 
-const DRAW_BYTES = 1424;  // 384 of look, 16 marker rings (floats 96..159), the drowned meadow (160..167), wet-to-dry grass (168..175), the shore (176..195), the strandline and kelp (196..235), wrack fronds (236..251), lugworm casts (252..323), the Cliff level line (324..327), the drying margin (328..343), the camp pad (344..355)
+const DRAW_BYTES = 1952;  // 384 of look, 16 marker rings (floats 96..159), the drowned meadow (160..167), wet-to-dry grass (168..175), the shore (176..195), the strandline and kelp (196..235), wrack fronds (236..251), lugworm casts (252..323), the Cliff level line (324..327), the drying margin (328..343), the camp pad (344..355), dug holes (356..483) and their look (484..487)
 const GROUND_BYTES = 336;
 const DEG = Math.PI / 180;
 /** @type {Record<string, number>} GroundDetail.tiling.x in lib-ground.wgsl */
@@ -229,6 +229,17 @@ export function createTerrainPass(opts) {
       f[348] = pad.edgeWearM ?? 1; f[349] = look.albedoLift ?? 1; f[350] = look.dry ?? 0; f[351] = look.mossKeep ?? 1;
       const D = pad.dash ?? {};
       f[352] = D.dashM ?? 0.35; f[353] = D.gapM ?? 0.25; f[354] = D.widthM ?? 0.06;
+    },
+
+    /**
+     * Holes the walker dug near the view (src/world/dig/draw.js holeMarks): 16 of (x, z, radius, mouth
+     * darkness) and (wall rgb, fresh soil darkening), the list ending at the first radius of 0; and how
+     * far the fresh soil reaches past the rim (dig.json look.fresh.ringM), once.
+     * @param {Float32Array} holes 128 floats @param {number} [ringM]
+     */
+    setHoles(holes, ringM) {
+      f.set(holes.subarray(0, 128), 356);
+      if (ringM !== undefined) f[484] = ringM;
     },
 
     /**

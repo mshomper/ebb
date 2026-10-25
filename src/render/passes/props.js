@@ -13,7 +13,8 @@ import { liftAt, liftLook, liftLookVersion, liftVersion } from '../lift.js';
 /** @typedef {import('../frame-graph.js').PassContext} PassContext */
 
 const MAX = 32;
-const PROP_FLOATS = 16;
+// at, more, look, shade, then tilt (a held prop's pitch and roll).
+const PROP_FLOATS = 20;
 const VERTEX_BYTES = 32;
 
 /**
@@ -243,7 +244,7 @@ export function createPropsPass(opts) {
         const L = /** @type {any} */ (models.get(p.key)).look;
         const sh = p.shade ?? [0, 0, 0];
         inst.set([p.x, p.y, p.z, p.yaw, p.scale ?? 1, p.char ?? 0, p.glow ?? 0, p.squash ?? 1,
-          L.albedo ?? 1, L.rough ?? 1, L.normal ?? 1, L.normalY ?? -1, sh[0], sh[1], sh[2], 0], i * PROP_FLOATS);
+          L.albedo ?? 1, L.rough ?? 1, L.normal ?? 1, L.normalY ?? -1, sh[0], sh[1], sh[2], 0, p.pitch ?? 0, p.roll ?? 0, 0, 0], i * PROP_FLOATS);
         const last = groups[groups.length - 1];
         if (last && last.key === p.key) last.count++;
         else groups.push({ key: p.key, first: i, count: 1 });

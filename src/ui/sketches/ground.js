@@ -10,18 +10,35 @@ import { WASH, petal } from './living.js';
 const EARTH = '#7B5C42';
 const SUBSOIL = '#A88B6A';
 
-/** @param {import('./pen.js').Pen} p */
+const CLAY = '#7F95A0';
+
+/**
+ * Soil as a cross-section that inks band by band as the walker digs (docs/future/13 10.9.1, P2c): the
+ * topsoil is there from the start; the subsoil, the blue-grey clay (a wedge rising toward the bank
+ * side) and the small details (a red worm, a big dark worm, a stone, a belemnite) ink the first time
+ * each is dug (the page's `dig:` labels). A band not yet seen is blank paper.
+ * @param {import('./pen.js').Pen} p
+ */
 export function soil(p) {
-  p.tint('M40 70H236V170H40Z', EARTH, 0.4);
-  p.tint('M40 170H236V236H40Z', SUBSOIL, 0.35);
-  // The block: its surface, the line between topsoil and subsoil, and its sides.
+  const sub = p.knows('sub'), clay = p.knows('clay');
+  const bottom = clay ? 270 : sub ? 220 : 150;
+  p.tint('M40 70H236V150H40Z', EARTH, 0.4);
+  if (sub) p.tint(`M40 150H236V${bottom}H40Z`, SUBSOIL, 0.35);
+  // The clay: a wedge under the topsoil, rising toward the bank on the right.
+  if (clay) p.tint('M40 270H236V168C196 176 120 230 40 262Z', CLAY, 0.45);
+  // The block: its surface, the lines between the bands, and its sides as deep as is known.
   p.line(wave(40, 236, 70, 1.6, 28), 1.6);
-  p.line('M40 170C90 166 150 174 236 168', 1);
-  p.line('M40 70V236H236V70', 1.1);
-  // Clods in the topsoil, stones in the subsoil, and a worm.
-  for (const [x, y, rx, ry] of [[70, 96, 7, 5], [104, 118, 5, 4], [84, 152, 6, 4], [200, 100, 6, 4], [210, 124, 5, 3.5]]) p.oval(x, y, rx, ry, EARTH, 0.6, 1);
-  for (const [x, y, rx, ry] of [[72, 206, 13, 8], [140, 214, 10, 6], [204, 200, 14, 8]]) p.oval(x, y, rx, ry, WASH.grey, 0.5, 1.1);
-  p.line('M60 134C68 126 80 128 86 134S100 144 108 136', 3);
+  p.line('M40 150C90 146 150 154 236 148', 1);
+  if (sub && !clay) p.line('M40 220C90 216 150 224 236 218', 1);
+  if (clay) p.line('M40 262C120 230 196 176 236 168', 1);
+  p.line(`M40 70V${bottom}H236V70`, 1.1);
+  // Clods in the topsoil; stones in the subsoil and a worm, once dug.
+  for (const [x, y, rx, ry] of [[70, 96, 7, 5], [104, 118, 5, 4], [84, 136, 6, 4], [200, 100, 6, 4], [210, 124, 5, 3.5]]) p.oval(x, y, rx, ry, EARTH, 0.6, 1);
+  if (sub && p.knows('stone')) for (const [x, y, rx, ry] of [[66, 196, 12, 7], [118, 204, 9, 5]]) p.oval(x, y, rx, ry, WASH.grey, 0.5, 1.1);
+  if (p.knows('worm')) p.line('M168 136C174 130 182 132 186 136S196 142 202 138', 2);
+  if (sub && p.knows('bigworm')) p.line('M54 176C66 166 82 170 90 178S110 190 122 180', 3.4);
+  // A belemnite lying in the clay: a stone bullet with its blunt end and point.
+  if (clay && p.knows('belemnite')) p.shape('M168 244L196 238C200 237 201 242 197 243L169 249C165 250 164 245 168 244Z', WASH.brown, 0.8, 1.1);
   // A sprout with its roots: side roots grow from the main one.
   const R = /** @type {[number, number, number, number, number]} */ ([150, 72, 146, 156, 4]);
   p.line(stem(...R), 1.2);
@@ -37,7 +54,9 @@ export function soil(p) {
   p.label('rain', 250, 46, 209, 65);
   p.label('top', 250, 92, 226, 92);
   p.label('roots', 250, 140, rx + 24, ry + 12);
-  return p.svg(380, 250, 'Field sketch of soil');
+  if (sub) p.label('sub', 250, 188, 226, 190);
+  if (clay) p.label('clay', 250, 240, 226, 236);
+  return p.svg(380, clay ? 290 : 250, 'Field sketch of soil');
 }
 
 /** @param {import('./pen.js').Pen} p */
@@ -69,10 +88,18 @@ export function sand(p) {
   const sx = 168, sy = surfY(168);
   p.shape(`M${sx} ${p.f(sy)}L${sx - 14} ${p.f(sy - 13)}A18 18 0 0 1 ${sx + 14} ${p.f(sy - 15)}Z`, WASH.petal, 0.9, 1.2);
   p.fine(`M${sx} ${p.f(sy)}L${sx - 8} ${p.f(sy - 15)}M${sx} ${p.f(sy)}L${sx} ${p.f(sy - 18)}M${sx} ${p.f(sy)}L${sx + 8} ${p.f(sy - 16)}`, 0.8, 0.8);
+  // Once dug (P2c): a spade's hole in the dry sand high on the slope, and a drift seed from it.
+  const dug = p.knows('dug');
+  if (dug) {
+    const hx = 120, hy = surfY(hx);
+    p.shape(`M${hx - 10} ${p.f(hy + 0.5)}C${hx - 8} ${p.f(hy + 16)} ${hx + 8} ${p.f(hy + 16)} ${hx + 10} ${p.f(hy - 0.5)}Z`, WASH.brown, 0.35, 1.1);
+    if (p.knows('seed')) p.oval(hx + 22, hy - 6, 5, 3.4, WASH.brown, 0.85, 1);
+  }
   p.label('ripples', 250, 66, 226, surfY(226) - 1);
   p.label('drains', 250, 124, 196, 126);
   p.label('wet', 250, 176, 214, 172);
-  return p.svg(380, 230, 'Field sketch of sand');
+  if (dug) p.label('dug', 250, 224, 124, surfY(124) + 10);
+  return p.svg(380, dug ? 260 : 230, 'Field sketch of sand');
 }
 
 /** @param {import('./pen.js').Pen} p */
