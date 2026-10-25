@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ebb camp cards</title>
+<link rel="icon" href="../brand/ebb-favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../src/ui/tokens.css">
+<link rel="stylesheet" href="../src/ui/journal.css">
+<link rel="stylesheet" href="../src/ui/station.css">
+<style>
+  @font-face { font-family: 'Nunito'; src: url('../src/vendor/fonts/nunito-latin-600-normal.woff2') format('woff2'); font-weight: 600; }
+  @font-face { font-family: 'Nunito'; src: url('../src/vendor/fonts/nunito-latin-800-normal.woff2') format('woff2'); font-weight: 800; }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; max-width: 100%; overflow-x: hidden; }
+  body { min-height: 100vh; background: linear-gradient(#58625c, #2f3a35); color: #F4EEE4; font: 600 17px/1.45 'Nunito', system-ui, sans-serif; overflow-wrap: anywhere; }
+  .bar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; display: flex; flex-wrap: wrap; gap: 8px; padding: 12px 16px; background: rgba(20, 26, 24, 0.9); }
+  .bar b { width: 100%; font-weight: 800; }
+  .bar button { font: 700 16px 'Nunito', sans-serif; padding: 8px 12px; border-radius: 10px; border: 1.5px solid #9DB89A; background: transparent; color: #F4EEE4; cursor: pointer; }
+  .bar button.on { background: #5F7F5B; }
+  .note { flex: 1 1 100%; max-width: 900px; margin: 0 0 4px; color: #e9e1d2; font-size: 16px; }
+</style>
+</head>
+<body>
+<div class="bar" id="bar"><b>Camp cards (S2, P2j)</b><p class="note">The apothecary bench, the hamper and the drying rack in the camp's workspace card, drawn by the game's own card (src/ui/station.js) from sample views. Resize the window to see it stack under 1100 px. Clicks on the card do nothing here.</p></div>
+<script type="module" src="apothecary-check.js"></script>
+</body>
+</html>

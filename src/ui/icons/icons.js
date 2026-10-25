@@ -1207,6 +1207,18 @@ const ICONS = {
     <path d="M4 17C7 14.6 15 14.6 19 16.4C16.4 19.4 7.4 19.8 4 17Z"/>
     <path d="M10.5 15L19.5 3.5"/>
     <path d="M11.2 12.2L14 14.4M12.4 10.6L15.2 12.8M13.6 9L16.4 11.2"/>`,
+  // Dry: a herb bunch hung head down from a bar, tied at its stems (the apothecary's Dry, S2).
+  dry: `
+    <path ${ACCENT} d="M10.2 9.2C7.4 11 7 15.6 9.6 19.4C10.6 20.8 13.4 20.8 14.4 19.4C17 15.6 16.6 11 13.8 9.2Z"/>
+    <path d="M10.2 9.2C7.4 11 7 15.6 9.6 19.4C10.6 20.8 13.4 20.8 14.4 19.4C17 15.6 16.6 11 13.8 9.2Z"/>
+    <path d="M2.5 3.5H21.5M12 3.5V7.2M10 7.2H14M10.2 9.2V7.2M13.8 9.2V7.2"/>
+    <path d="M12 10.4V19M12 13.4L10.2 15.4M12 15.8L13.8 17.6"/>`,
+  // Grind: a pestle standing in a stone mortar (the apothecary's Grind, S2).
+  grind: `
+    <path ${ACCENT} d="M3.6 12.4H20.4C20.4 17 16.6 20.4 12 20.4S3.6 17 3.6 12.4Z"/>
+    <path d="M3.6 12.4H20.4C20.4 17 16.6 20.4 12 20.4S3.6 17 3.6 12.4Z"/>
+    <path d="M10.8 13.6L15.6 3.8C16 3 17.4 3.6 17.1 4.4L13 14.2"/>
+    <path d="M7 15.2C8.4 16.2 9.8 16.6 11.2 16.6"/>`,
   // Hand: an open hand, the pointer over something a click can use (below).
   hand: `
     <path ${ACCENT} d="M8 12V5.5A1.5 1.5 0 0 1 11 5.5V11V4A1.5 1.5 0 0 1 14 4V11V5.5A1.5 1.5 0 0 1 17 5.5V14C17 18 15 20.5 11.5 20.5C8.5 20.5 7 18.5 5.5 15.5L4.5 13.5A1.4 1.4 0 0 1 7 12.3Z"/>

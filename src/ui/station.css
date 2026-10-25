@@ -103,6 +103,54 @@
 .ebb-station__pouch:disabled, .ebb-station__pile:disabled { opacity: 0.4; cursor: default; }
 .ebb-station__pouch:focus-visible, .ebb-station__pile:focus-visible, .ebb-station__spot:focus-visible { outline: 2px solid var(--wordmark-light); outline-offset: 2px; }
 .ebb-station__none { min-height: var(--st-target, 56px); }
+
+/* The hamper's slots and the rack's bunches (P2j, S2): even tiles, each its kind's glyph over the
+   pile word, a click takes up one pouch's worth; empty slots dashed and plain. As many columns as
+   fit, never wider than the card. */
+.ebb-station__keep { grid-template-columns: minmax(0, 1fr); }
+.ebb-station__slots { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 10px; min-width: 0; }
+.ebb-station__slot {
+  appearance: none;
+  -webkit-appearance: none;
+  position: relative;
+  min-height: calc(var(--st-target, 56px) * 1.6);
+  margin: 0;
+  padding: 8px 6px;
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 4px;
+  border-radius: 12px;
+  border: 1.5px solid var(--jr-rule);
+  background: #FBF7F0;
+  color: var(--jr-ink);
+  --icon-bg: #FBF7F0;
+  font-family: var(--font-ui);
+  font-size: var(--text-small);
+  text-align: center;
+  cursor: pointer;
+}
+.ebb-station__slot .icon { width: 44px; height: 44px; }
+.ebb-station__slot span { overflow-wrap: break-word; min-width: 0; }
+.ebb-station__slot:hover { border-color: var(--jr-moss); }
+.ebb-station__slot:focus-visible { outline: 2px solid var(--wordmark-light); outline-offset: 2px; }
+.ebb-station__slot.is-empty { border: 1.5px dashed rgba(30, 38, 36, 0.38); background: rgba(255, 250, 240, 0.28); cursor: default; }
+.ebb-station__slot[data-label]:hover::after {
+  content: attr(data-label);
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2;
+  padding: 4px 10px;
+  border-radius: 8px;
+  background: rgba(30, 38, 36, 0.92);
+  color: var(--ui-cream);
+  font-weight: 600;
+  font-size: var(--text-body);
+  white-space: nowrap;
+  pointer-events: none;
+}
 /* A part's or a pouch's name on hover, as the card actions show theirs. */
 .ebb-station__spot, .ebb-station__pouch, .ebb-station__pile { position: relative; }
 .ebb-station__spot[data-label]:hover::after, .ebb-station__pouch[data-label]:hover::after, .ebb-station__pile[data-label]:hover::after {

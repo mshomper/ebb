@@ -12,7 +12,7 @@ import { liftAt, liftLook, liftLookVersion, liftVersion } from '../lift.js';
 
 /** @typedef {import('../frame-graph.js').PassContext} PassContext */
 
-const MAX = 32;
+const MAX = 48;
 // at, more, look, shade, then tilt (a held prop's pitch and roll).
 const PROP_FLOATS = 20;
 const VERTEX_BYTES = 32;
@@ -27,6 +27,7 @@ const VERTEX_BYTES = 32;
  * @property {number} [glow]    0..1 its embers' glow
  * @property {number} [squash]  its height as a share of the model's (1 as made)
  * @property {number[]} [shade] contact shadow: half sizes along its own x and z (m), darkness 0..1
+ * @property {number} [dry]     0..1 how dried a plant is (a herb bunch on the rack): its green goes to straw
  */
 
 /**
@@ -97,7 +98,7 @@ export function packModel(buffer) {
 }
 
 /**
- * @param {{ name?: string, recipe: { ember: number[], emberNits: number, emberHz: number, charAlbedo: number[] },
+ * @param {{ name?: string, recipe: { ember: number[], emberNits: number, emberHz: number, charAlbedo: number[], dryTint?: number[], dryMix?: number },
  *   bias?: { depthBias: number, depthBiasSlopeScale: number } }} opts
  *   recipe: recipes/world/camp.json props (the embers' glow and the charcoal's albedo); bias: the
  *   shadow pass's, so the props' shadows match the terrain's
@@ -111,8 +112,8 @@ export function createPropsPass(opts) {
   const inst = new Float32Array(MAX * PROP_FLOATS);
   /** @type {{ key: string, first: number, count: number }[]} */ let groups = [];
   let count = 0, dirty = true, liftSeen = -1, lookSeen = -1;
-  /** The draw uniform: ember glow, charcoal, then the lift's tint and rim (src/render/lift.js liftLook). */
-  const uniform = new Float32Array(16);
+  /** The draw uniform: ember glow, charcoal, the lift's tint and rim (src/render/lift.js liftLook), then a dried plant's tint. */
+  const uniform = new Float32Array(20);
   /** @type {GPURenderPipeline} */ let drawPipe;
   /** @type {GPURenderPipeline} */ let shadePipe;
   /** @type {GPURenderPipeline | null} */ let castPipe = null;
@@ -244,7 +245,7 @@ export function createPropsPass(opts) {
         const L = /** @type {any} */ (models.get(p.key)).look;
         const sh = p.shade ?? [0, 0, 0];
         inst.set([p.x, p.y, p.z, p.yaw, p.scale ?? 1, p.char ?? 0, p.glow ?? 0, p.squash ?? 1,
-          L.albedo ?? 1, L.rough ?? 1, L.normal ?? 1, L.normalY ?? -1, sh[0], sh[1], sh[2], 0, p.pitch ?? 0, p.roll ?? 0, 0, 0], i * PROP_FLOATS);
+          L.albedo ?? 1, L.rough ?? 1, L.normal ?? 1, L.normalY ?? -1, sh[0], sh[1], sh[2], 0, p.pitch ?? 0, p.roll ?? 0, p.dry ?? 0, 0], i * PROP_FLOATS);
         const last = groups[groups.length - 1];
         if (last && last.key === p.key) last.count++;
         else groups.push({ key: p.key, first: i, count: 1 });
@@ -288,9 +289,10 @@ export function createPropsPass(opts) {
         primitive: { topology: 'triangle-list', cullMode: 'none' },
         depthStencil: { ...depthStencil, depthWriteEnabled: false },
       });
-      ubuf = makeBuffer(d, { label: 'prop-draw', size: 64, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
+      ubuf = makeBuffer(d, { label: 'prop-draw', size: uniform.byteLength, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
       const e = R.ember, k = R.emberNits;
       uniform.set([e[0] * k, e[1] * k, e[2] * k, R.emberHz, ...R.charAlbedo, 0]);
+      uniform.set([...(R.dryTint ?? [1, 1, 1]), R.dryMix ?? 0], 16);
       lookSeen = -1;
       sbuf = makeBuffer(d, { label: 'prop-instances', size: inst.byteLength, usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST });
       group = d.createBindGroup({ label: 'props', layout, entries: [{ binding: 0, resource: { buffer: ubuf } }, { binding: 1, resource: { buffer: sbuf } }] });

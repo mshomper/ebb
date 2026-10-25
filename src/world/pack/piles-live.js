@@ -17,8 +17,9 @@ import { slotFor, setDown as setDownOnto, takeUp as takeUpFrom, pileShape, pileW
 import { pileSlots } from './camp.js';
 
 /**
- * @param {{ recipe: any, kinds: import('./kinds.js').Kinds, seed: number }} o
- *   recipe: recipes/world/pack.json; kinds: the pack's kinds registry (pack.kinds); seed: the world seed
+ * @param {{ recipe: any, kinds: import('./kinds.js').Kinds, seed: number, noHeaps?: () => boolean }} o
+ *   recipe: recipes/world/pack.json; kinds: the pack's kinds registry (pack.kinds); seed: the world seed;
+ *   noHeaps: the heap slots are retired (a hamper stands at camp, P2j)
  */
 export function createPiles(o) {
   const R = o.recipe, kinds = o.kinds;
@@ -44,7 +45,7 @@ export function createPiles(o) {
      */
     setDown(kind, handfuls) {
       const n = Math.max(0, Math.floor(handfuls));
-      const pick = slotFor(kind, piles(), pileSlots(), kinds);
+      const pick = slotFor(kind, piles(), pileSlots(), kinds, !!o.noHeaps?.());
       if ('refuse' in pick) return pick.refuse === 'worms' ? { moved: n, refuse: 'worms', pile: null } : { moved: 0, refuse: pick.refuse, pile: null };
       const own = piles().find((p) => p.holds === kind && p.slot === pick.slot && p.handfuls > 0);
       if (own) {

@@ -97,6 +97,7 @@ import { createPack } from './world/pack/index.js';
 import { createGather } from './world/gather/index.js';
 import { createDig } from './world/dig/index.js';
 import { createPiles } from './world/pack/piles-live.js';
+import { setDownAtCamp } from './world/pack/route.js';
 import { createStores } from './world/pack/stores.js';
 import { createCamp } from './world/camp/index.js';
 import { createPackDraw } from './world/pack/draw.js';
@@ -600,10 +601,14 @@ export async function startApp(canvas, hooks = {}) {
 
   // The walker's pack (docs/future/13 section 4.1): cloth pouches on the ground bar, filled by Gather.
   // Set down at camp puts a pouch onto its kind's pile in the camp's slots (src/world/pack/piles-live.js).
+  // A pouch goes to its kind's own place first (the drying rack, its store's pile), then the hamper;
+  // the heaps take the rest until a hamper stands (src/world/pack/route.js, P2j).
   /** @type {ReturnType<typeof createPiles> | null} */ let piles = null;
+  /** @type {any} */ let keeps = null;
   const pack = createPack({ recipe: await loadRecipe('world/pack'), you: () => walk.you(), day: () => clock.dayIndexOf(clock.worldT()),
-    setDown: (k, h) => piles?.setDown(k, h) ?? { moved: 0, refuse: 'noSlot' } });
-  piles = createPiles({ recipe: pack.recipe, kinds: pack.kinds, seed });
+    setDown: (k, h) => (piles && keeps ? setDownAtCamp(k, h, { campOf: pack.kinds.campOf, piles, rack: keeps.rack, hamper: keeps.hamper })
+      : piles?.setDown(k, h) ?? { moved: 0, refuse: 'noSlot' }) });
+  piles = createPiles({ recipe: pack.recipe, kinds: pack.kinds, seed, noHeaps: () => !!keeps?.hamper.here() });
   intro.usePack(pack);
   // Gathering on foot (section 4.2): Gather on a card walks you there, you kneel, a handful goes in.
   const gather = createGather({ recipe: await loadRecipe('world/gather'), seed, world, worldT: () => clock.worldT(), water, terrain, pack, walk,
@@ -646,6 +651,7 @@ export async function startApp(canvas, hooks = {}) {
     seasons: seasonsRecipe, lighting, pack, shadowBias: shadowPass.bias, low: tier === 'low', poses: (await loadRecipe('world/figure')).poses,
     beat: () => intro.live?.intro.current?.id ?? null, cook: await loadRecipe('world/cook') });
   sim.addSystem(camp);
+  keeps = camp.stations.keeps;
   shadowPass.addCaster(camp.props.caster);
   midges.keepClear(() => camp.smokeClear());
   // What your figure glances at on foot (src/world/figure/look.js): frogs near you, the fire while it
@@ -660,7 +666,7 @@ export async function startApp(canvas, hooks = {}) {
   });
   // Its gestures for the pouches (src/world/figure/acts.js): setting one down onto a pile at camp,
   // and emptying one.
-  on('pack:set-down', (/** @type {{ pile: string | null }} */ p) => walk.gesture('setDown', p.pile ? pieceSpot(p.pile) : undefined));
+  on('pack:set-down', (/** @type {{ pile: string | null, at?: { x: number, z: number } | null }} */ p) => walk.gesture('setDown', p.pile ? pieceSpot(p.pile) : p.at ?? undefined));
   on('pack:emptied', () => walk.gesture('empty'));
   intro.useCamp(camp);
   // The stores (section 3.12; src/world/pack/stores.js): the wood store, the stone pile and the clay
@@ -676,12 +682,18 @@ export async function startApp(canvas, hooks = {}) {
   shadowPass.addCaster(dig.props.caster);
   // `?camp` (a test link, unsaved; S1): the evening skipped, the camp ready, the pack holding what
   // the workbench and the shovel take, and you standing at the workbench's ground; `?camp=bench`
-  // has the workbench built already.
+  // has the workbench built already; `?camp=apothecary` (S2, P2j) the workbench and the apothecary
+  // bench built, the rack, mortar and hamper made, and the pack holding herbs and shells, standing
+  // at the apothecary bench.
   if (params.has('camp') && !back) {
     emit('intro:camp-ready', { tent: true, ring: true });
-    for (const [k, n] of [['flat-stones', 3], ['sticks', 2], ['rush-cord', 1], ['pebbles', 2]]) pack.add(/** @type {string} */ (k), /** @type {number} */ (n));
-    if (params.get('camp') === 'bench') camp.stations.debug.buildNow('workbench');
-    const at = camp.stations.benchAt('workbench');
+    const apo = params.get('camp') === 'apothecary';
+    const kit = apo ? [['shells', 3], ['watermint.leaves', 2], ['chamomile.flowers', 2], ['sticks', 3], ['pebbles', 2], ['rushes.stems', 3]]
+      : [['flat-stones', 3], ['sticks', 2], ['rush-cord', 1], ['pebbles', 2]];
+    for (const [k, n] of kit) pack.add(/** @type {string} */ (k), /** @type {number} */ (n));
+    if (params.get('camp') === 'bench' || apo) camp.stations.debug.buildNow('workbench');
+    if (apo) { camp.stations.debug.buildNow('apothecary'); for (const m of ['rack', 'mortar', 'hamper']) camp.stations.debug.placeNow(m); }
+    const at = camp.stations.benchAt(apo ? 'apothecary' : 'workbench');
     if (at && walk.placeAt(at.stand.x, at.stand.z, Math.atan2(at.x - at.stand.x, at.z - at.stand.z), 'stand')) {
       const p = camera.pose();
       camera.setPose({ ...p, target: [at.stand.x, terrain.sampleHeight(at.stand.x, at.stand.z), at.stand.z], yaw: Math.atan2(at.x - at.stand.x, at.z - at.stand.z) + Math.PI + 0.9,

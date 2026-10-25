@@ -19,6 +19,7 @@ struct PropDraw {
   charCol: vec4f,   // rgb charcoal albedo, w spare
   liftTint: vec4f,  // the lift (lib-lift.wgsl, F5): warm tint and its strength
   liftRim: vec4f,   // rim colour and its power
+  dryTint: vec4f,   // a dried plant: rgb the tint its brightness takes, w how far it goes at dry 1
 };
 
 struct Prop {
@@ -26,7 +27,7 @@ struct Prop {
   more: vec4f,      // x scale, y char 0..1, z ember glow 0..1, w squash of its height (1 as made)
   look: vec4f,      // x albedo scale, y roughness scale, z normal strength, w normal map's green sign
   shade: vec4f,     // contact shadow: x, y half sizes along its own x and z (m), z darkness 0..1, w the prop's lift 0..1 (F5: hovered or its card open)
-  tilt: vec4f,      // x pitch about its own x (its +y toward its +z), y roll about its own z, both before the yaw (a held tool); zw spare
+  tilt: vec4f,      // x pitch about its own x (its +y toward its +z), y roll about its own z, both before the yaw (a held tool); z dry 0..1 (a herb bunch); w spare
 };
 
 @group(0) @binding(0) var<uniform> frame: FrameUniforms;
@@ -123,7 +124,10 @@ fn fsProp(in: VsOut) -> FsOut {
   let n = perturb(nMesh, in.world, in.uv, tn);
   // Char: the wood blackens from the bottom up as it burns, all of it at char 1.
   let charred = smoothstep(-0.05, 0.15, pr.more.y * 1.2 - in.localY * 2.0 + 0.1);
-  let albedo = mix(base.rgb * pr.look.x, pd.charCol.rgb, charred * pr.more.y);
+  // Drying: a herb's green fades as it dries, its brightness kept, toward straw.
+  let fresh = base.rgb * pr.look.x;
+  let dried = mix(fresh, vec3f(dot(fresh, vec3f(0.2126, 0.7152, 0.0722))) * pd.dryTint.rgb, pd.dryTint.w * pr.tilt.z);
+  let albedo = mix(dried, pd.charCol.rgb, charred * pr.more.y);
   let rough = clamp(mr.g * pr.look.y, 0.04, 1.0);
 
   let viewDist = distance(in.world, frame.cameraPos);

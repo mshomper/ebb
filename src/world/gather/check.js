@@ -60,7 +60,8 @@ export function gatherCheckJob(a) {
     const ctx = { seed, day, season, today: day0, yesterday, lines: [{ tideId: day * 2, level: 0.5, spring: 0.2, season, day: day0 }], center: [0, 0] };
     for (const kind of KINDS) {
       for (let key = 0; key < 120; key++) {
-        const n = share(kind, key, periodOf(kind === 'drift-twigs' ? PERIOD.tide : PERIOD.day, kind === 'drift-twigs' ? day * 2 : day), ctx, R);
+        const strand = R.kinds?.[kind]?.source === 'strand';
+        const n = share(kind, key, periodOf(strand ? PERIOD.tide : PERIOD.day, strand ? day * 2 : day), ctx, R);
         handfuls += n;
         sh = hash32(sh, n);
         // Take a handful from every seventh spot that has one.
@@ -72,7 +73,7 @@ export function gatherCheckJob(a) {
 
   // The pack: seeded adds and takes, as gathering and making would.
   const kinds = makeKinds(a.pack);
-  const ids = ['sticks', 'drift-twigs', 'reeds.down', 'pebbles', 'flat-stones', 'wrack', 'kelp', 'clay'];
+  const ids = ['sticks', 'drift-twigs', 'reeds.down', 'pebbles', 'flat-stones', 'wrack', 'kelp', 'clay', 'shells', 'crushed-shell'];
   const s = stream(seed, 0x9ac);
   let p = emptyPack();
   for (let i = 0; i < 400; i++) {

@@ -348,7 +348,7 @@ const CAMP_JOB = { module: './world/camp/check.js', fn: 'campCheckJob' };
  * @param {number} worldSeed
  */
 async function runCamp(worldSeed) {
-  const args = { worldSeed, camp: await fetch('../recipes/world/camp.json').then((r) => r.json()) };
+  const args = { worldSeed, camp: await fetch('../recipes/world/camp.json').then((r) => r.json()), pack: await fetch('../recipes/world/pack.json').then((r) => r.json()) };
   const main = campCheckJob(args);
   initWorkers({ size: 1 });
   let worker;
@@ -376,7 +376,12 @@ function showCamp(g) {
     row('A month, hour by hour', main.timeline, worker.timeline) +
     row('Watched against read later', main.timeline, main.read, 'Each hourly tick', 'From the save') +
     row('The fire at the end', main.ticked, worker.ticked) +
-    `<p class="muted">Lit with the steel ${main.lightings} times over ${main.hours / 24} game days, burning on ${main.litDays} of them.</p>`;
+    `<p class="muted">Lit with the steel ${main.lightings} times over ${main.hours / 24} game days, burning on ${main.litDays} of them.</p>` +
+    // The keeps (S2, P2j): the drying rack and the hamper.
+    row('The rack drying, hour by hour', main.rack ?? 0, worker.rack ?? 0) +
+    row('Rack watched against read later', main.rack ?? 0, main.rackRead ?? 0, 'Each hour', 'From the save') +
+    row('The hamper at the end', main.hamper ?? 0, worker.hamper ?? 0) +
+    `<p class="muted">${main.bunches ?? 0} bunches on the rack and ${main.kinds ?? 0} hamper slots in use at the month's end.</p>`;
 }
 
 const DIG_JOB = { module: './world/dig/check.js', fn: 'digCheckJob' };

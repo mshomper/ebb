@@ -197,6 +197,85 @@ export function campStoreGrown() {
   return { mesh: m, material: { name: 'camp-store-grown', roughness: 0.9, metallic: 0 } };
 }
 
+// ---- Clay: the bowl and the cup (P2d's pieces, shaped and fired later) ----
+
+// Fired earthenware, from Matt's clay pot (clay-pot.glb's colour map: its shadows, middle and
+// highlights, sRGB), with the dark clouds an open fire leaves and the soot of the hearth.
+const CLAY = lin([146, 75, 40]), CLAY_DARK = lin([114, 57, 33]), CLAY_PALE = lin([184, 106, 66]), CLOUD = lin([72, 50, 38]), SOOT = lin([46, 36, 30]);
+
+/**
+ * A hand-thrown pot as one closed skin: from the middle of its base out under the foot, up the
+ * outside, over a rounded rim, down the inside and across the floor to the middle. Never quite
+ * round: its radius and its rim height wobble a little round it (seeded), faint throwing rings ring
+ * the outside, the rim is rubbed paler, open-firing clouds darken it in patches, the inside is a
+ * little darker and smoother, the underside sooty from the hearth.
+ * @param {Mesh} m @param {{ R: number, H: number, base: number, wall: number, floor: number, belly?: number, flare?: number, seed: number }} s
+ *   R: radius at the rim (outside), H: height to the rim's top, base: the foot's radius, wall and
+ *   floor: thicknesses, belly: how far the wall swells out at its middle, flare: how much the wall
+ *   bows out from base to rim (0 straight, 1 a bowl's curve)
+ */
+function thrown(m, s) {
+  const t = s.wall, belly = s.belly ?? 0, flare = s.flare ?? 0, rimY = s.H - t / 2;
+  /** The outside wall's radius at a share of the way up (0 the foot, 1 the rim). @param {number} k */
+  const outR = (k) => s.base + (s.R - s.base) * ((1 - flare) * k + flare * (1 - (1 - k) ** 2)) + belly * Math.sin(Math.PI * k);
+  /** @type {{ r: number, y: number, part: 'under' | 'out' | 'rim' | 'in' | 'floor' }[]} */ const pts = [];
+  pts.push({ r: 0, y: 0, part: 'under' }, { r: s.base - 0.003, y: 0, part: 'under' }, { r: s.base, y: 0.002, part: 'out' });
+  for (let i = 1; i <= 30; i++) { const k = i / 30; pts.push({ r: outR(k), y: 0.002 + (rimY - 0.002) * k, part: 'out' }); }
+  // Over the rim: a half round of the wall's thickness.
+  for (let i = 1; i < 10; i++) { const a = (i / 10) * Math.PI; pts.push({ r: s.R - t / 2 + (t / 2) * Math.cos(a), y: rimY + (t / 2) * Math.sin(a), part: 'rim' }); }
+  for (let i = 0; i <= 30; i++) { const k = 1 - i / 30; pts.push({ r: Math.max(0.004, outR(k) - t), y: s.floor + (rimY - s.floor) * k, part: 'in' }); }
+  pts.push({ r: Math.max(0.002, outR(0) - t - 0.006), y: s.floor, part: 'floor' }, { r: 0, y: s.floor, part: 'floor' });
+  // Arc length along the profile, so its rows space evenly.
+  const len = [0];
+  for (let i = 1; i < pts.length; i++) len.push(len[i - 1] + Math.hypot(pts[i].r - pts[i - 1].r, pts[i].y - pts[i - 1].y));
+  const total = len[len.length - 1];
+  const at = (/** @type {number} */ v) => {
+    const d = v * total;
+    let i = 1;
+    while (i < len.length - 1 && len[i] < d) i++;
+    const f = (d - len[i - 1]) / (len[i] - len[i - 1] || 1), a = pts[i - 1], b = pts[i];
+    return { r: a.r + (b.r - a.r) * f, y: a.y + (b.y - a.y) * f, part: f < 0.5 ? a.part : b.part };
+  };
+  const seed = s.seed;
+  grid(m, 72, 120, (u, v) => {
+    const q = at(v), ang = u * TAU, cs = Math.cos(ang), sn = Math.sin(ang);
+    // Hand-thrown: a slow wobble in radius and rim height round the pot, felt most near the rim.
+    const up = Math.max(0, q.y / s.H);
+    const wob = (noise3(cs * 1.3, sn * 1.3, 0, seed) - 0.5) * 0.004 * up;
+    const rimLift = (noise3(cs * 1.1, sn * 1.1, 5, seed) - 0.5) * 0.004 * up ** 3;
+    const rings = q.part === 'out' ? 0.0002 * Math.sin((q.y / 0.0055) * TAU + noise3(cs, sn, 2, seed) * 3) : 0;
+    const r = q.r > 0 ? q.r + wob + rings : 0, y = q.y + rimLift;
+    const p = [cs * r, y, sn * r];
+    // The clay itself: blotched between its shadows and highlights, flecked with grit.
+    const sc = 1 / 0.03;
+    const blot = 0.65 * noise3(p[0] * sc, p[1] * sc, p[2] * sc, seed + 1) + 0.35 * noise3(p[0] * sc * 4, p[1] * sc * 4, p[2] * sc * 4, seed + 2);
+    let c = blot < 0.5 ? mix(CLAY_DARK, CLAY, blot * 2) : mix(CLAY, CLAY_PALE, (blot - 0.5) * 1.2);
+    if (hash01(Math.floor(p[0] * 900), Math.floor(p[1] * 900), Math.floor(p[2] * 900) + seed) > 0.988) c = mix(c, CLAY_PALE, 0.6);
+    // Fire clouds: broad dark patches where the flames licked it in an open firing.
+    const cloud = Math.max(0, noise3(p[0] * 22, p[1] * 22, p[2] * 22, seed + 7) - 0.58) / 0.42;
+    c = mix(c, CLOUD, Math.min(0.75, cloud * 1.6));
+    if (q.part === 'rim') c = mix(c, CLAY_PALE, 0.4);
+    else if (q.part === 'in' || q.part === 'floor') c = shade(mix(c, CLAY_DARK, 0.35), 0.92);
+    else if (q.part === 'under') c = mix(c, SOOT, 0.55);
+    else if (q.part === 'out' && q.y < 0.012) c = mix(c, SOOT, 0.3 * (1 - q.y / 0.012));
+    return { p, c };
+  });
+}
+
+/** A low, wide clay bowl, thrown by hand: 16 cm across, 6.5 cm deep. @returns {Piece} */
+export function clayBowl() {
+  const m = mesh();
+  thrown(m, { R: 0.08, H: 0.065, base: 0.04, wall: 0.006, floor: 0.008, flare: 0.85, seed: 31 });
+  return { mesh: m, material: { name: 'clay-bowl', roughness: 0.85, metallic: 0 } };
+}
+
+/** A small handleless clay cup, a beaker thrown by hand: 8 cm across, 9 cm tall, a little bellied. @returns {Piece} */
+export function clayCup() {
+  const m = mesh();
+  thrown(m, { R: 0.039, H: 0.09, base: 0.031, wall: 0.005, floor: 0.008, belly: 0.004, flare: 0.1, seed: 47 });
+  return { mesh: m, material: { name: 'clay-cup', roughness: 0.85, metallic: 0 } };
+}
+
 // ---- The forager's trail ----
 
 /**

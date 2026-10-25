@@ -26,6 +26,8 @@ import { MeshoptSimplifier } from 'meshoptimizer';
 import sharp from 'sharp';
 import { readObjSource } from './obj-source.mjs';
 import { makePiece } from './made-pieces.mjs';
+import { dropPaint } from './drop-paint.mjs';
+import { findBunches, keepBunch } from './bunches.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const repo = resolve(here, '../..');
@@ -115,6 +117,15 @@ for (const m of list.models) {
     for (const node of root.listNodes()) if (node.getName() === name) node.traverse((n) => n.dispose());
   }
   await doc.transform(prune());
+  // dropPaint: parts of a fused model left out by their paint (the herb bunches baked onto the
+  // drying rack), or with `keep`, only those parts kept (the bunches on their own).
+  // Both halves are placed and sized by the whole model's bounds, so they line up when drawn together.
+  /** @type {{ min: number[], max: number[] } | null} */ let whole = null;
+  if (m.dropPaint) {
+    whole = getBounds(root.listScenes()[0]);
+    const r = await dropPaint(doc, m.dropPaint);
+    console.log(`${m.out}: dropPaint left out ${r.dropped} of ${r.pieces} pieces, kept ${r.after} of ${r.before} triangles`);
+  }
   // setNodes: a part moved by node name (the wicker basket's lid, set beside it in the file, put on
   // top), its translation and rotation replaced.
   for (const [name, t] of Object.entries(m.setNodes ?? {})) {
@@ -141,12 +152,23 @@ for (const m of list.models) {
     if (root.listMeshes().reduce((n, mesh) => n + mesh.listPrimitives().length, 0) > 1) await doc.transform(flatten(), joinPrimitives({ keepNamed: false }));
   }
 
+  // bunches: the lifted bunches told apart (bunches.mjs), their hang points kept for the report;
+  // with bunchOf, only that one bunch stays, set with its hang point at the origin.
+  /** @type {number[][] | null} */ let hangs = null, hangAt = null;
+  if (m.bunches) {
+    const prim = root.listMeshes()[0].listPrimitives()[0], found = findBunches(prim, m.bunches);
+    hangs = found.hangs;
+    if (m.bunches.bunchOf !== undefined) { keepBunch(prim, found.tris[m.bunches.bunchOf]); hangAt = found.hangs[m.bunches.bunchOf]; }
+    console.log(`${m.out}: ${found.hangs.length} bunches`);
+  }
+
   // A scan whose corners are split by faceted normals (rebuildNormals: the dye pot) cannot be welded
   // or thinned: its normals go first and are worked out again, smooth, once it is thinned.
   if (m.rebuildNormals) for (const mesh of root.listMeshes()) for (const p of mesh.listPrimitives()) p.setAttribute('NORMAL', null);
 
   // Thin to the target, keeping UV seams (the paint maps stay where they were).
-  const ratio = Math.min(1, m.triangles / Math.max(1, trisBefore));
+  // Against what is left now (a dropPaint or a single bunch leaves less than the source had).
+  const ratio = Math.min(1, m.triangles / Math.max(1, triangles(doc)));
   await doc.transform(
     weld(),
     simplify({ simplifier: MeshoptSimplifier, ratio, error: m.error ?? 0.02, lockBorder: false }),
@@ -159,12 +181,22 @@ for (const m of list.models) {
   const turn = [c, 0, -s, 0, 0, 1, 0, 0, s, 0, c, 0, 0, 0, 0, 1];
   for (const mesh of root.listMeshes()) transformMesh(mesh, turn);
   let b = getBounds(root.listScenes()[0]);
+  if (whole) {
+    // The whole model's corners, turned the same way.
+    const xs = [], ys = [whole.min[1], whole.max[1]], zs = [];
+    for (const x of [whole.min[0], whole.max[0]]) for (const z of [whole.min[2], whole.max[2]]) { xs.push(c * x + s * z); zs.push(-s * x + c * z); }
+    b = { min: [Math.min(...xs), Math.min(...ys), Math.min(...zs)], max: [Math.max(...xs), Math.max(...ys), Math.max(...zs)] };
+  }
   const span = [b.max[0] - b.min[0], b.max[1] - b.min[1], b.max[2] - b.min[2]];
   const k = m.sizeM / (m.along === 'height' ? span[1] : Math.max(...span));
-  const place = mul([k, 0, 0, 0, 0, k, 0, 0, 0, 0, k, 0, 0, 0, 0, 1],
-    // keepOrigin (the hearth stones, set round the fire ring's middle): only lifted onto the ground.
-    [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, m.keepOrigin ? 0 : -(b.min[0] + b.max[0]) / 2, -b.min[1], m.keepOrigin ? 0 : -(b.min[2] + b.max[2]) / 2, 1]);
+  // keepOrigin (the hearth stones, set round the fire ring's middle): only lifted onto the ground. A
+  // single bunch hangs from its own hang point, at the origin.
+  const turned = (/** @type {number[]} */ h) => [c * h[0] + s * h[2], h[1], -s * h[0] + c * h[2]];
+  const off = hangAt ? turned(hangAt) : [m.keepOrigin ? 0 : (b.min[0] + b.max[0]) / 2, b.min[1], m.keepOrigin ? 0 : (b.min[2] + b.max[2]) / 2];
+  const place = mul([k, 0, 0, 0, 0, k, 0, 0, 0, 0, k, 0, 0, 0, 0, 1], [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, -off[0], -off[1], -off[2], 1]);
   for (const mesh of root.listMeshes()) transformMesh(mesh, place);
+  // The bunches' hang points where the web copy has them (m, its own frame), for the rack's recipe.
+  const hangsM = hangs && !hangAt ? hangs.map((h) => turned(h).map((v, i) => +(k * (v - off[i])).toFixed(3))) : null;
 
   // Paint maps: color and roughness/metal as WebP at the map size; normals a little gentler.
   await doc.transform(
@@ -188,6 +220,7 @@ for (const m of list.models) {
     source: m.source, file: `${m.out}.glb`, bytes: statSync(outPath).size, sourceBytes: sourceBytes(src),
     trianglesBefore: trisBefore, triangles: triangles(doc), maps: m.maps,
     bounds: { min: b.min.map((v) => +v.toFixed(3)), max: b.max.map((v) => +v.toFixed(3)) },
+    ...(hangsM ? { hangs: hangsM } : {}),
   };
   report[m.out] = entry;
   console.log(`${m.out}: ${(entry.sourceBytes / 1048576).toFixed(1)} MB -> ${(entry.bytes / 1048576).toFixed(2)} MB, ` +

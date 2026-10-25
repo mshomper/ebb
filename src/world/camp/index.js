@@ -169,8 +169,9 @@ export function createCamp(o) {
   /** What the cards and the frame read. @type {import('./cards.js').CampKit} */
   const kit = { R, walk: o.walk, camp, where, player, hourNow, holds, ringNeed, hasFuel, nightNow, restAllowed, beatAllows, weatherNow, near };
   const frame = createCampFrame({ ...kit, o, props, fx, sunAlt });
-  // The stations (S1): the workbench built in its slot, the fire, and their workspace.
-  const stations = createStations({ ...kit, o, cook: o.cook ?? { builds: {}, makes: {}, words: {} }, change, campSeed, frame, store: null });
+  // The stations (S1, S2): the workbench and the apothecary bench built in their slots, the fire,
+  // their workspace, and the keeps (the drying rack and the hamper, P2j).
+  const stations = createStations({ ...kit, o, cook: o.cook ?? { builds: {}, makes: {}, words: {} }, change, campSeed, frame });
 
   // ---- acts: walk, face, play, then the change ----
 

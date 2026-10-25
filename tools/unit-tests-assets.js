@@ -34,11 +34,20 @@ export function addAssetTests(test, assert, eq) {
       const p = mesh.attributes.POSITION;
       const lo = [Infinity, Infinity, Infinity], hi = [-Infinity, -Infinity, -Infinity];
       for (let i = 0; i < p.length; i += 3) for (let a = 0; a < 3; a++) { lo[a] = Math.min(lo[a], p[i + a]); hi[a] = Math.max(hi[a], p[i + a]); }
+      // The rack's lifted bunches are sized and placed by the whole rack (they hang above the ground);
+      // a single bunch hangs from its hang point at the origin, below it, and fits in the rack.
+      if (m.dropPaint?.keep) {
+        if (m.bunches?.bunchOf !== undefined) assert(Math.abs(hi[1]) < 0.005 && lo[1] < -0.1 && hi[0] - lo[0] < 0.3, `${m.out}: hangs from the origin`);
+        else assert(lo[1] > -0.005 && hi[1] < m.sizeM, `${m.out}: within the rack's height`);
+        lines.push(`${m.out} ${(buf.byteLength / 1048576).toFixed(2)} MB`);
+        continue;
+      }
       assert(Math.abs(lo[1]) < 0.005, `${m.out}: on the ground (lowest point ${lo[1].toFixed(3)} m)`);
       // keepOrigin (the hearth stones) keeps the fire ring's middle at the origin instead.
       if (!m.keepOrigin) assert(Math.abs(lo[0] + hi[0]) < 0.01 && Math.abs(lo[2] + hi[2]) < 0.01, `${m.out}: base centered`);
       const span = m.along === 'height' ? hi[1] - lo[1] : Math.max(hi[0] - lo[0], hi[1] - lo[1], hi[2] - lo[2]);
-      assert(Math.abs(span - m.sizeM) < 0.01 * m.sizeM + 0.005, `${m.out}: ${span.toFixed(2)} m, wants ${m.sizeM} m`);
+      // The empty rack is sized by the whole model, bunches and all; it stands a hair lower without them.
+      assert(Math.abs(span - m.sizeM) < (m.dropPaint ? 0.05 : 0.01) * m.sizeM + 0.005, `${m.out}: ${span.toFixed(2)} m, wants ${m.sizeM} m`);
       lines.push(`${m.out} ${(buf.byteLength / 1048576).toFixed(2)} MB`);
     }
     return lines.join(', ');
