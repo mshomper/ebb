@@ -9,6 +9,7 @@
 
 import { emptyPack, cleanPack } from '../world/pack/model.js';
 import { cleanGather } from '../world/gather/events.js';
+import { cleanCook } from '../world/camp/making.js';
 
 /** The sections format 9 brings in, in the order they are written. */
 export const SECTIONS9 = /** @type {const} */ (['camp', 'pack', 'gather', 'dig', 'cook', 'dyes']);
@@ -23,6 +24,7 @@ export const SECTIONS9 = /** @type {const} */ (['camp', 'pack', 'gather', 'dig',
 export function empty9(id) {
   if (id === 'pack') return emptyPack();
   if (id === 'gather') return cleanGather(null);
+  if (id === 'cook') return cleanCook(null);
   return { version: 1 };
 }
 
@@ -34,6 +36,8 @@ export function clean9(id, v) {
   // The pack and gathering clean their own sections (src/world/pack/model.js, src/world/gather/events.js).
   if (id === 'pack') return cleanPack(v);
   if (id === 'gather') return cleanGather(v);
+  // What was made at camp: firsts, counts and tools (S1, src/world/camp/making.js).
+  if (id === 'cook') return cleanCook(v);
   if (!v || typeof v !== 'object' || Array.isArray(v) || v.version !== 1) return empty9(id);
   const out = structuredClone(v);
   if (id === 'gather' && !Array.isArray(out.events)) out.events = [];

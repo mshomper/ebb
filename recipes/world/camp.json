@@ -73,7 +73,8 @@
       "tent": { "file": "assets/models/camp/tent.glb", "look": { "albedo": 0.9, "rough": 1, "normal": 1, "normalY": -1 }, "shade": [1.05, 1.35, 0.5] },
       "ring": { "file": "assets/models/camp/fire-ring.glb", "look": { "albedo": 0.85, "rough": 1, "normal": 1, "normalY": -1 }, "shade": [0.62, 0.62, 0.45] },
       "wood": { "file": "assets/models/camp/fire-wood.glb", "look": { "albedo": 0.85, "rough": 1, "normal": 1, "normalY": -1 }, "shade": [0, 0, 0] },
-      "lantern": { "file": "assets/models/camp/lantern.glb", "look": { "albedo": 0.9, "rough": 1, "normal": 1, "normalY": -1 }, "shade": [0, 0, 0] }
+      "lantern": { "file": "assets/models/camp/lantern.glb", "look": { "albedo": 0.9, "rough": 1, "normal": 1, "normalY": -1 }, "shade": [0, 0, 0] },
+      "workbench": { "file": "assets/models/camp/workbench.glb", "look": { "albedo": 0.9, "rough": 1, "normal": 1, "normalY": -1 }, "shade": [0.62, 0.4, 0.5] }
     },
     "ember": [1.0, 0.3, 0.05], "emberNits": 14, "emberHz": 0.5,
     "charAlbedo": [0.03, 0.028, 0.026]
@@ -82,6 +83,14 @@
 
   "rest": { "wakeBeforeSunriseMin": 10, "viewSideRad": 1.35, "viewDistanceM": 5.6, "viewPitchDeg": 24 },
   "restNote": "C-39: Rest, after sunset and until wakeBeforeSunriseMin minutes before sunrise, runs the night as catch-up behind the cream screen and wakes you kneeling at the flap just before sunrise. viewSideRad, viewDistanceM, viewPitchDeg: after pitching and on waking, the low view from this far round from behind you (radians), this far off and this far down, so you, the tent and the ring are all in it and the tent never fills it.",
+
+  "stations": {
+    "workbench": { "spots": 3, "action": "make" },
+    "fire": { "spots": 2, "action": "fire" },
+    "standM": 0.42, "reachM": 0.9, "awayM": 1.2,
+    "ui": { "sideBySidePx": 1100, "targetPx": 56, "maxWidthPx": 980 }
+  },
+  "stationsNote": "The camp's stations (docs/future/13 3.12; S1; src/world/camp/stations.js, src/ui/station.js). spots: the part spots on each station's surface; action: its one action's icon. standM: you stand this far out from a bench's working edge (the side away from the slot it faces); reachM: in reach of it from there; awayM: walk this much further off and the workspace closes, every laid part back in its pouch. ui: the workspace card sits its surface and the pouches side by side from sideBySidePx wide, stacked below that; its part spots and buttons are targetPx (never under 48), and it is at most maxWidthPx wide.",
 
   "standing": { "reachM": 30, "trust": 0.01, "minWord": "tolerant" },
   "standingNote": "CP-13: in catch-up only, once a game day of the absence, each creature already Tolerant or closer whose home lies within reachM of the pad gains trust (a feeding is 0.06)."

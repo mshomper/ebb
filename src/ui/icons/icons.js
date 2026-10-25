@@ -1174,6 +1174,19 @@ const ICONS = {
     <path d="M10 8V20"/>
     <path d="M2.5 20H21.5"/>
     <path d="M19.5 3.5A3.2 3.2 0 1 0 21 9.5A3.8 3.8 0 0 1 19.5 3.5Z"/>`,
+  // Build: a flat slab laid across two stones (building a bench in its slot, S1).
+  build: `
+    <path ${ACCENT} d="M3 9.5H21V12.5H3Z"/>
+    <path d="M3 9.5H21V12.5H3Z"/>
+    <path d="M5 20.5C4.4 17.6 5.4 13.8 7.6 13.4C9.8 13.8 10.6 17.6 10 20.5Z"/>
+    <path d="M14 20.5C13.4 17.6 14.4 13.8 16.6 13.4C18.8 13.8 19.6 17.6 19 20.5Z"/>
+    <path d="M2.5 20.5H21.5"/>`,
+  // Make: a stick bound to a flat stone with cord, the work of the workbench (S1).
+  make: `
+    <path ${ACCENT} d="M4 17C7 14.6 15 14.6 19 16.4C16.4 19.4 7.4 19.8 4 17Z"/>
+    <path d="M4 17C7 14.6 15 14.6 19 16.4C16.4 19.4 7.4 19.8 4 17Z"/>
+    <path d="M10.5 15L19.5 3.5"/>
+    <path d="M11.2 12.2L14 14.4M12.4 10.6L15.2 12.8M13.6 9L16.4 11.2"/>`,
   // Hand: an open hand, the pointer over something a click can use (below).
   hand: `
     <path ${ACCENT} d="M8 12V5.5A1.5 1.5 0 0 1 11 5.5V11V4A1.5 1.5 0 0 1 14 4V11V5.5A1.5 1.5 0 0 1 17 5.5V14C17 18 15 20.5 11.5 20.5C8.5 20.5 7 18.5 5.5 15.5L4.5 13.5A1.4 1.4 0 0 1 7 12.3Z"/>

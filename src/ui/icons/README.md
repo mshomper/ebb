@@ -130,6 +130,8 @@ Size and color come from CSS: set `width`/`height` on `.icon` and `color` on the
 | `fire` | a flame over two crossed sticks: Light the fire |
 | `rest` | a tent under a crescent moon: Rest until morning |
 | `hand` | an open hand: the pointer over something a click can use, below |
+| `build` | a flat slab laid across two stones: Build the workbench in its slot (S1) |
+| `make` | a stick bound to a flat stone with cord: Make at the workbench (S1) |
 | `look` | painter's palette with a thumb notch, three dabs of paint and one empty well: the Look (palette) button |
 | `eye` | an open eye with its pupil: not in use since ebb became desktop only (it brought hidden HUD buttons back on a touch screen) |
 | `settings` | three horizontal sliders with their knobs: the Settings button |
