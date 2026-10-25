@@ -16,26 +16,28 @@
 // from the clock (fire.js), so nothing here ticks the world. Events: camp:pitched, camp:ring-laid,
 // camp:lit, camp:fed, camp:banked, camp:cold, camp:rested. Listens to intro:camp-ready (Skip and test
 // links: the camp laid ready, cold, taking nothing) and intro:glow (an older island's tent ground).
+// Split by job: where.js (where things stand), player.js (walk there, play an act), cards.js (the
+// cards and the here-bar), frame.js (drawing each frame).
 
 import { on, emit, emitDeferred } from '../../core/events.js';
 import { get, update } from '../../core/store.js';
 import { onAction } from '../../input/actions.js';
 import { subSeed, hash32 } from '../../core/rng.js';
-import { registerCardAction } from '../../ui/card-actions.js';
-import { offerHere, withdrawHere } from '../../ui/ground-here.js';
 import { sunMoon } from '../sky/sun-moon.js';
 import { weatherAt } from '../weather.js';
-import { onPad, padToWorld } from './layout.js';
 import { cleanCamp, pitched, ringLaid, pitchTent, layRing } from './model.js';
 import { fireAt, lightFire, feedFire, bankFire, settleFire } from './fire.js';
-import { kelvinRgb, flicker } from './light.js';
 import { createPropsPass } from '../../render/passes/props.js';
 import { createCampFxPass } from '../../render/passes/camp-fx.js';
 import { actLength } from '../figure/acts.js';
 import { steelMesh, flintMesh } from './steel-mesh.js';
 import { hookMesh } from './hook-mesh.js';
+import { createWhere } from './where.js';
+import { createActPlayer } from './player.js';
+import { registerCampCards, campCardAt, campHere } from './cards.js';
+import { createCampFrame } from './frame.js';
 
-const H = 3600, DEG = Math.PI / 180;
+const H = 3600;
 
 /**
  * @param {{ recipe: any, seed: number, walk: any, terrain: any, clock: any, orbit: any, camera: any,
@@ -52,7 +54,6 @@ export function createCamp(o) {
   const campSeed = subSeed(o.seed, 'camp');
   const props = createPropsPass({ recipe: R.props, bias: o.shadowBias });
   const fx = createCampFxPass({ recipe: R, low: o.low });
-  const fireRgb = kelvinRgb(F.lightK), emberRgb = kelvinRgb(F.emberLightK), lanternRgb = kelvinRgb(R.lantern.lightK);
   /** Models' tops, once loaded: the tent's height for the camera, the ring's for the flame. */
   /** @type {Record<string, number[]>} */ const bounds = {};
   for (const [key, m] of Object.entries(R.props.models)) {
@@ -74,41 +75,11 @@ export function createCamp(o) {
   const camp = () => cleanCamp(get('camp'));
   /** @param {(c: import('./model.js').Camp) => import('./model.js').Camp} fn */
   const change = (fn) => update('camp', (c) => fn(cleanCamp(c)));
-  /** @returns {import('./layout.js').Pad | null} */
-  const padNow = () => get('campPad') ?? null;
+  const where = createWhere(o);
+  const { slotAt, flapAt, inTent } = where;
+  const player = createActPlayer(o);
+  const { play } = player;
   const hourNow = () => o.clock.worldT() / H;
-  /** A slot's ground point and the yaw that turns a model's +z seaward. @param {string} id */
-  function slotAt(id) {
-    const pad = padNow();
-    const s = pad?.camp?.slots?.find((/** @type {any} */ q) => q.id === id);
-    if (!pad || !s) return null;
-    const [x, z] = padToWorld(pad, s.u, s.v);
-    return { x, z, y: o.terrain.sampleHeight(x, z), yaw: Math.atan2(pad.fx, pad.fz), slot: s };
-  }
-  /** Where you kneel at the tent's flap, facing the sea (the evening's flapSpot). */
-  function flapAt() {
-    const pad = padNow(), t = slotAt('tent');
-    if (!pad || !t) return null;
-    const [x, z] = padToWorld(pad, t.slot.u + (t.slot.w ?? 2.2) / 2 + 0.6, t.slot.v);
-    return { x, z, yaw: Math.atan2(pad.fx, pad.fz) };
-  }
-  /** A point in the tent model's frame, in the world. @param {number[]} p */
-  function tentPoint(p) {
-    const t = /** @type {any} */ (slotAt('tent'));
-    const c = Math.cos(t.yaw), s = Math.sin(t.yaw);
-    return [t.x + c * p[0] + s * p[2], t.y + p[1], t.z - s * p[0] + c * p[2]];
-  }
-  /**
-   * Is a ground point on the tent's footprint (its slot, w along u and d along v), grown by margin?
-   * @param {number} x @param {number} z @param {number} [margin]
-   */
-  function inTent(x, z, margin = 0) {
-    const pad = padNow(), t = slotAt('tent');
-    if (!pad || !t) return false;
-    const dx = x - t.x, dz = z - t.z;
-    const u = dx * pad.fx + dz * pad.fz, v = dx * pad.fz - dz * pad.fx;
-    return Math.abs(u) <= (t.slot.w ?? 2.2) / 2 + margin && Math.abs(v) <= (t.slot.d ?? 1.6) / 2 + margin;
-  }
   /** Out of the pitched tent to its flap, if you stand inside it (after pitching; I'm stuck). */
   function stepOut() {
     const you = o.walk.you(), f = flapAt();
@@ -193,62 +164,13 @@ export function createCamp(o) {
   }
   const ringNeed = () => ({ fuel: R.ring.fuelHandfuls, stones: R.ring.stoneHandfuls });
 
+  /** What the cards and the frame read. @type {import('./cards.js').CampKit} */
+  const kit = { R, walk: o.walk, camp, where, player, hourNow, holds, ringNeed, hasFuel, nightNow, restAllowed, beatAllows, weatherNow, near };
+  const frame = createCampFrame({ ...kit, o, props, fx, sunAlt });
+
   // ---- acts: walk, face, play, then the change ----
 
-  /** @type {{ act: string, then: () => void } | null} */ let pending = null;
-  /** An act waiting for you to walk into reach first. @type {{ start: () => void, x: number, z: number, reachM: number, since: number } | null} */ let approach = null;
-  let strikeT = -1, strikes = 0, strikeLen = 0, taps = 0;
-  /**
-   * Walk into reach of `stand` (within reachM), face `face`, play an act, then do `then` when it
-   * ends. Already in reach, it plays at once. @param {string} act @param {{ x: number, z: number }} stand
-   * @param {number} reachM @param {{ x: number, z: number }} face @param {() => void} then
-   * @param {() => void} [started] when the act begins
-   */
-  function play(act, stand, reachM, face, then, started) {
-    // A new press takes over from one still walking there (one press always completes).
-    if (pending || !o.walk.below) return false;
-    approach = null;
-    const go = () => {
-      approach = null;
-      o.walk.faceToward(face.x, face.z);
-      if (!o.walk.act(act)) return;
-      pending = { act, then };
-      started?.();
-    };
-    if (o.walk.distTo(stand.x, stand.z) <= reachM) { go(); return true; }
-    // Off screen and apart each time, so the walk never reads it as a double tap.
-    taps += 97;
-    if (!o.walk.tap(-1e5 - taps, -1e5, [stand.x, o.terrain.sampleHeight(stand.x, stand.z), stand.z], reachM)) return false;
-    approach = { start: go, x: stand.x, z: stand.z, reachM, since: 0 };
-    return true;
-  }
-
-  /**
-   * Each frame: an approach whose walk has ended (an arrival the walk never reported, or a walk
-   * that had nowhere to go) starts its act if you are in reach, and is let go if you are not.
-   * @param {number} dt
-   */
-  function watchApproach(dt) {
-    if (!approach) return;
-    approach.since += dt;
-    if (approach.since < 0.3 || o.walk.busy()) return;
-    if (o.walk.distTo(approach.x, approach.z) <= approach.reachM + 0.6) approach.start();
-    else approach = null;
-  }
-  const offs = [
-    on('walk:act-done', (/** @type {any} */ p) => {
-      if (!pending || p.name !== pending.act) return;
-      const then = pending.then;
-      pending = null;
-      then();
-    }),
-    // In reach: the act begins. Arriving anywhere else (you clicked away) lets it go.
-    on('walk:arrived', () => {
-      if (!approach) return;
-      if (o.walk.distTo(approach.x, approach.z) <= approach.reachM + 0.6) approach.start();
-      else approach = null;
-    }),
-  ];
+  const offs = [];
 
   function pitch() {
     if (pitched(camp())) return;
@@ -286,7 +208,7 @@ export function createCamp(o) {
     // A cold ring needs a fresh handful; a laid one has its own.
     if (word === 'cold' && !hasFuel()) { emit('island:notice', { text: W.feedNeeds, showS: 6 }); return; }
     play('strike', r, R.reach.ringM, r, () => {
-      strikeT = -1;
+      frame.strikeEnd();
       const now = hourNow(), cc = camp();
       if (fireAt(cc.fire, now, F).word === 'cold' && !takeFuel()) return;
       const lit = lightFire(cc.fire, now, F);
@@ -294,7 +216,7 @@ export function createCamp(o) {
       change((x) => ({ ...x, fire: lit }));
       emitDeferred('camp:lit', { hour: now, first: lit.lightings === 1 });
       emit('camp:sound', { name: 'catch' });
-    }, () => { strikeT = 0; strikes = 0; strikeLen = (o.poses && actLength(o.poses, 'strike')) || 3; });
+    }, () => frame.strikeBegin((o.poses && actLength(o.poses, 'strike')) || 3));
   }
 
   function feed() {
@@ -307,7 +229,7 @@ export function createCamp(o) {
     const fed = feedFire(c.fire, now, F);
     if (!fed || !takeFuel()) return;
     // The flames lift at once as the wood goes on (live only; the fuel itself is in the save).
-    flareT = R.fire.flareS;
+    frame.flare();
     change((x) => ({ ...x, fire: fed }));
     emitDeferred('camp:fed', { hour: now });
     emit('camp:sound', { name: 'feed' });
@@ -367,51 +289,10 @@ export function createCamp(o) {
 
   // ---- cards (one click walks there and opens it) ----
 
-  const C = (/** @type {any} */ c) => c?.camp;
-  offs.push(
-    registerCardAction({ id: 'camppitch', icon: 'pitch', order: 5, main: true, label: W.pitch,
-      when: (c) => C(c) === 'tentSlot', action: () => ({ type: 'camp.pitch' }) }),
-    registerCardAction({ id: 'camplay', icon: 'lay', order: 5, main: true, label: W.lay,
-      when: (c) => C(c) === 'ringSlot' && !!c.canLay, action: () => ({ type: 'camp.lay' }) }),
-    registerCardAction({ id: 'camplight', icon: 'fire', order: 6, main: true, label: W.light,
-      when: (c) => C(c) === 'ring' && !!c.canLight, action: () => ({ type: 'camp.light' }) }),
-    registerCardAction({ id: 'campfeed', icon: 'fire', order: 6, main: true, label: W.feed,
-      when: (c) => C(c) === 'ring' && !!c.canFeed, action: () => ({ type: 'camp.feed' }) }),
-    registerCardAction({ id: 'camprest', icon: 'rest', order: 6, main: true, label: W.rest,
-      when: (c) => C(c) === 'tent' && !!c.canRest, action: () => ({ type: 'camp.rest' }) }),
-    // Every card ties into the journal: the camp's into the keeper's first page.
-    registerCardAction({ id: 'camppage', icon: 'journal', order: 90, label: 'The first page',
-      when: (c) => !!C(c), action: () => ({ type: 'ui.journal', open: true, view: 'keeper', keeper: 'first', page: null }) }),
-  );
-
-  /**
-   * The card a click at a ground point opens, if it lands on the camp's tent or ring (or their
-   * glowing ground). The journal's cardAt asks this before the pieces. @param {number} x @param {number} z
-   */
-  function cardAt(x, z) {
-    const c = camp(), t = slotAt('tent'), r = slotAt('ring');
-    const base = { noPage: true, stage: -1, sub: null, canCarry: false };
-    if (t && inTent(x, z, 0.25)) {
-      if (pitched(c)) return { ...base, sp: 'camp:tent', camp: 'tent', name: W.tent.name, icon: 'rest', text: nightNow() && restAllowed() ? W.tent.line : W.restDay, wx: t.x, wz: t.z, r: 1.1, canRest: nightNow() && restAllowed() };
-      if (c.kit.tent === 'pack') return { ...base, sp: 'camp:tent-slot', camp: 'tentSlot', name: W.tentSlot.name, icon: 'pitch', text: W.tentSlot.line, wx: t.x, wz: t.z, r: 1.0 };
-    }
-    if (r && pitched(c) && Math.hypot(x - r.x, z - r.z) < 0.8) {
-      if (!ringLaid(c)) {
-        const canLay = holds(ringNeed());
-        return { ...base, sp: 'camp:ring-slot', camp: 'ringSlot', name: W.ringSlot.name, icon: 'lay', text: canLay ? W.ringSlot.line : W.ringNeeds, wx: r.x, wz: r.z, r: 0.5, canLay };
-      }
-      const at = fireAt(c.fire, hourNow(), F), word = at.word, rainy = weatherNow().rain > F.rainLow;
-      const line = word === 'lit' ? (rainy ? W.ring.low : at.high ? W.ring.high : W.ring.lowFlames) : W.ring[word] ?? W.ring.laid;
-      const fuel = hasFuel();
-      return { ...base, sp: 'camp:ring', camp: 'ring', name: W.ring.name, icon: 'fire', text: line, wx: r.x, wz: r.z, r: 0.5,
-        canLight: (word === 'laid' || (word === 'cold' && fuel)) && beatAllows('dusk'), canFeed: (word === 'embers' || word === 'lit') && fuel };
-    }
-    return null;
-  }
+  offs.push(...registerCampCards(W));
 
   // ---- each frame ----
 
-  /** @type {'pole' | 'carried'} */ let lantern = 'pole';
   let wasCold = false, t0 = 0;
 
   /**
@@ -419,7 +300,7 @@ export function createCamp(o) {
    * @param {number} now seconds
    */
   function rings(now) {
-    const c = camp(), pad = padNow();
+    const c = camp(), pad = where.padNow();
     if (!pad) return [];
     const G = R.glow, k = G.opacity * (0.75 + 0.25 * Math.sin((now * 2 * Math.PI) / G.breathS));
     const you = o.walk.below ? o.walk.you() : null;
@@ -438,29 +319,10 @@ export function createCamp(o) {
     return out;
   }
 
-  /**
-   * The here-bar: Light at the laid ring, Feed at a burning one, Rest at the flap after dark.
-   * @param {import('./model.js').Camp} c @param {import('./fire.js').FireWord} word
-   */
-  function here(c, word) {
-    const r = slotAt('ring'), f = flapAt();
-    const atRing = ringLaid(c) && near(r, R.reach.ringM) && !pending;
-    const fuel = hasFuel();
-    if (atRing && (word === 'laid' || (word === 'cold' && fuel)) && beatAllows('dusk')) offerHere({ id: 'camplight', icon: 'fire', label: W.light, order: 10, action: { type: 'camp.light' } });
-    else withdrawHere('camplight');
-    if (atRing && (word === 'embers' || word === 'lit') && fuel) offerHere({ id: 'campfeed', icon: 'fire', label: W.feed, order: 11, action: { type: 'camp.feed' } });
-    else withdrawHere('campfeed');
-    // Rest: anywhere on the camp ground after dark (pressing it walks you to the flap first).
-    const you = o.walk.below ? o.walk.you() : null, padHere = padNow();
-    const onCamp = !!you && !!padHere && (onPad(padHere, you[0], you[2]) || near(f, R.reach.flapM));
-    if (pitched(c) && onCamp && !pending && nightNow() && restAllowed()) offerHere({ id: 'camprest', icon: 'rest', label: W.rest, order: 12, action: { type: 'camp.rest' } });
-    else withdrawHere('camprest');
-  }
-
   let hereT = 0;
   /** @param {number} dt real seconds @param {number} time real seconds (animation time) */
   function updateFrame(dt, time) {
-    const c = camp(), pad = padNow();
+    const c = camp();
     const hour = hourNow();
     const fireNow = fireAt(c.fire, hour, F), word = fireNow.word;
     // The ring goes cold by the clock alone; say so once when it does (live).
@@ -468,93 +330,13 @@ export function createCamp(o) {
     if (cold && !wasCold && t0 > 0) emitDeferred('camp:cold', { hour });
     wasCold = cold;
     t0 += dt;
-    if ((hereT -= dt) <= 0) { hereT = 0.25; here(c, word); }
-    watchApproach(dt);
+    if ((hereT -= dt) <= 0) { hereT = 0.25; campHere(kit, c, word); }
+    player.watch(dt);
     // Never left standing inside the pitched tent: out to the flap once you are still.
-    if (!pending && !approach && !o.walk.busy()) stepOut();
-
-    /** @type {import('../../render/passes/props.js').Prop[]} */ const list = [];
-    /** @type {import('../../render/lighting.js').PointLight[]} */ const lights = [];
-    const w = weatherNow();
-    const rainy = w.rain > F.rainLow;
-    const dark = sunAlt() < R.lantern.lightsAtSunDeg * DEG;
-    const t = slotAt('tent'), r = slotAt('ring');
-    let lanternGlass = /** @type {number[] | null} */ (null);
-    if (t && pitched(c)) {
-      const sh = R.props.models.tent.shade;
-      list.push({ key: 'tent', x: t.x, y: t.y, z: t.z, yaw: t.yaw, shade: sh });
-      // The lantern: on the front pole, or in your hand off the pad at night.
-      const you = o.walk.below ? o.walk.you() : null;
-      lantern = dark && you && pad && !onPad(pad, you[0], you[2]) ? 'carried' : 'pole';
-      const hand = lantern === 'carried' ? o.walk.hand('l') : null;
-      const at = hand ? [hand.x, hand.y - R.lantern.carryDropM, hand.z] : tentPoint(R.lantern.hangM);
-      const yaw = hand ? hand.yaw : t.yaw;
-      list.push({ key: 'lantern', x: at[0], y: at[1], z: at[2], yaw });
-      // On the pole it hangs from its cord; carried, the cord goes with it.
-      if (!hand) list.push({ key: 'hook', x: t.x, y: t.y, z: t.z, yaw: t.yaw });
-      if (dark) {
-        lanternGlass = [at[0], at[1] + 0.15, at[2]];
-        const L = R.lantern;
-        lights.push({ x: lanternGlass[0], y: lanternGlass[1], z: lanternGlass[2], rangeM: L.rangeM, cd: L.cd * flicker(time, L.flicker, L.flickerHz, 2), rgb: lanternRgb });
-      }
-    }
-    let flame = 0, smoke = 0, embers = 0;
-    flareT = Math.max(0, flareT - dt);
-    if (r && ringLaid(c)) {
-      list.push({ key: 'ring', x: r.x, y: r.y, z: r.z, yaw: r.yaw, shade: R.props.models.ring.shade });
-      const left = word === 'lit' ? fireNow.level : 0;
-      const ch = word === 'lit' ? F.char.lit + (F.char.embers - F.char.lit) * (1 - left) : word === 'embers' ? F.char.embers : word === 'cold' ? F.char.cold : 0;
-      const sq = word === 'lit' ? 1 + (F.squash.lit - 1) * (1 - left) : word === 'embers' ? F.squash.embers : word === 'cold' ? F.squash.cold : 1;
-      embers = word === 'embers' ? 1 : word === 'lit' ? (rainy ? 1 : 0.6) : 0;
-      // The cold ring's wood and ash fade over the day; then only the stones are left.
-      if (word !== 'cold' || fireNow.ash > 0.02) list.push({ key: 'wood', x: r.x, y: r.y, z: r.z, yaw: r.yaw + 0.6, char: ch, squash: sq * (word === 'cold' ? 0.6 + 0.4 * fireNow.ash : 1), glow: embers });
-      if (word === 'lit') {
-        // High while the ring holds plenty, sinking toward low flames as the fuel burns down (F9);
-        // a handful fed lifts it at once, flaring for a moment.
-        const flare = 1 + (F.flare - 1) * Math.max(0, flareT / F.flareS);
-        flame = (rainy ? F.rainFlame : 1) * (F.lowFlame + (1 - F.lowFlame) * fireNow.level) * flare;
-        smoke = (rainy ? R.smoke.rainThick : 1) * (0.5 + 0.5 * fireNow.level);
-        lights.push({ x: r.x, y: r.y + F.heightM, z: r.z, rangeM: F.rangeM, cd: F.cd * flame * flicker(time, F.flicker, F.flickerHz, 1), rgb: fireRgb });
-      } else if (word === 'embers') {
-        smoke = R.smoke.embersShare * (rainy ? R.smoke.rainThick : 1);
-        lights.push({ x: r.x, y: r.y + 0.3, z: r.z, rangeM: F.rangeM * 0.5, cd: F.emberCd * flicker(time, 0.2, 0.4, 3), rgb: emberRgb });
-      }
-    }
-    // Rain on a burning fire: a hiss as it drops low (once as the rain sets in).
-    if (word === 'lit' && rainy && !wasRainy) emit('camp:sound', { name: 'hiss' });
-    wasRainy = word === 'lit' && rainy;
-    // For the camp's held sounds (src/audio/camp-loops.js): where the ring and tent are, the fire now.
-    const heard = {
-      ring: r && ringLaid(c) ? [r.x, r.y + 0.1, r.z] : null, tent: t && pitched(c) ? [t.x, t.y + 0.8, t.z] : null,
-      fire: word, level: Math.round(fireNow.level * 20) / 20, rainy,
-    };
-    const heardKey = JSON.stringify(heard);
-    if (heardKey !== campSoundKey) { campSoundKey = heardKey; update('campSound', () => heard); }
-    // The steel and flint in your hands while you strike.
-    if (pending?.act === 'strike') {
-      const hr = o.walk.hand('r'), hl = o.walk.hand('l');
-      if (hr) list.push({ key: 'steel', x: hr.x, y: hr.y - 0.02, z: hr.z, yaw: hr.yaw + 1.2 });
-      if (hl) list.push({ key: 'flint', x: hl.x, y: hl.y - 0.01, z: hl.z, yaw: hl.yaw });
-    }
-    props.setProps(list);
-    o.lighting.setPoints(lights);
-    // The fire steel's sparks, at each strike in the act.
-    let sparks = null;
-    if (strikeT >= 0 && r) {
-      strikeT += dt;
-      const share = strikeT / Math.max(0.1, strikeLen), at = R.steel.strikesAt;
-      while (strikes < at.length && share >= at[strikes]) { strikes++; strikeAt = strikeT; emit('camp:sound', { name: 'strike' }); }
-      const hand = o.walk.hand('r');
-      if (strikes > 0 && hand) sparks = [hand.x, hand.y, hand.z, (strikeT - strikeAt) + 10 * (strikes - 1)];
-    }
-    const wind = w.wind * R.smoke.lean, dir = o.world.state?.weather?.today?.windDir ?? 0;
-    fx.set(r && (flame > 0 || smoke > 0 || lanternGlass || sparks) ? {
-      fire: [r.x, r.y + 0.04, r.z], flame, smoke, embers: word === 'embers' ? 1 : 0,
-      wind: [Math.cos(dir) * wind, -Math.sin(dir) * wind], mist: w.mist,
-      lantern: lanternGlass, sparks, moths: sunAlt() < R.moths.atSunDeg * DEG, time,
-    } : null);
+    if (!player.busy() && !o.walk.busy()) stepOut();
+    frame.draw(dt, time, c, fireNow);
   }
-  let wasRainy = false, strikeAt = 0, hidden = false, flareT = 0, campSoundKey = '';
+  let hidden = false;
 
   return {
     id: 'camp',
@@ -563,11 +345,11 @@ export function createCamp(o) {
     /** A sim system: each frame. @param {{ realDt: number }} f */
     tick(f) {
       if (!hidden) { updateFrame(f.realDt, o.clock.animT()); return; }
-      props.setProps([]); fx.set(null); o.lighting.setPoints([]);
-      if (campSoundKey !== 'hidden') { campSoundKey = 'hidden'; update('campSound', () => ({ ring: null, tent: null, fire: 'none', level: 0, rainy: false })); }
+      frame.hide();
     },
     rings,
-    cardAt,
+    /** The card a click at a ground point opens (cards.js). @param {number} x @param {number} z */
+    cardAt: (x, z) => campCardAt(kit, x, z),
     /** For the evening director: the tent is up; the ring is laid. */
     pitched: () => pitched(camp()),
     ringLaid: () => ringLaid(camp()),
@@ -581,7 +363,7 @@ export function createCamp(o) {
     /** The fire now (tools, tests). */
     fire: () => fireAt(camp().fire, hourNow(), F),
     /** The lantern: on its pole or carried (live only). */
-    lantern: () => lantern,
+    lantern: frame.lantern,
     /** Where you kneel at the flap. */
     flap: flapAt,
     /**
@@ -599,7 +381,7 @@ export function createCamp(o) {
       /** @param {boolean} on */
       hide(on) { hidden = on; },
     },
-    dispose() { for (const off of offs) off(); },
+    dispose() { for (const off of offs) off(); player.dispose(); },
   };
 }
 
