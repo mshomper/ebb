@@ -46,6 +46,7 @@
     "world/naturalist": "world/naturalist.json",
     "world/beachcomber": "world/beachcomber.json",
     "world/shaper": "world/shaper.json",
+    "world/forager": "world/forager.json",
     "world/nets": "world/nets.json",
     "world/pieces": "world/pieces.json",
     "world/walker": "world/walker.json",

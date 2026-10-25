@@ -34,6 +34,7 @@ export const PARALLEL = {
   figure: () => import('./unit-tests-figure.js').then((m) => m.addFigureTests),
   nets: () => import('./unit-tests-nets.js').then((m) => m.addNetsTests),
   trails: () => import('./unit-tests-trails.js').then((m) => m.addTrailsTests),
+  forager: () => import('./unit-tests-forager.js').then((m) => m.addForagerTests),
   format9: () => import('./unit-tests-format9.js').then((m) => m.addFormat9Tests),
   assets: () => import('./unit-tests-assets.js').then((m) => m.addAssetTests),
   campLock: () => import('./unit-tests-camp-lock.js').then((m) => m.addCampLockTests),

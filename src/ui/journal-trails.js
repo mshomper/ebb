@@ -1,25 +1,33 @@
 // @ts-check
-// The journal's Trails page (doc 13 "Trails"): three trails, each a line of inked stops down the
+// The journal's Trails page (doc 13 "Trails"): four trails, each a line of inked stops down the
 // paper. The naturalist's (what you notice: a stop for each kind of find, src/world/expansion.js),
-// the beachcomber's (what you keep: families and rarities kept, marks seen) and the shaper's (what
-// you make: the kinds of place; src/world/trails.js). A reward reached but not built yet sits in
-// pencil where it falls; only the next one ahead shows, in pencil with its hint. On a wide window
-// the three sit side by side (journal.js widens the panel); otherwise three tabs show one at a time.
-// Kinds may be counted ("4 of 13 families kept"), totals never. Styles: journal-trails.css.
+// the beachcomber's (what you keep: families and rarities kept, marks seen), the shaper's (what
+// you make: the kinds of place; src/world/trails.js) and the forager's (what you gather: plants and
+// seasons; src/world/forager.js). A reward reached but not built yet sits in pencil where it falls;
+// only the next one ahead shows, in pencil with its hint. From a 1400 px window the four sit side by
+// side, from 1100 px two by two (journal.js widens the panel); otherwise four tabs, two by two, show
+// one at a time. Kinds may be counted ("4 of 13 families kept"), totals never. Styles:
+// journal-trails.css.
 
-import { iconSvg } from './icons/icons.js';
+import { iconSvg, ICON_NAMES } from './icons/icons.js';
+import { itemIconSvg } from './icons/items.js';
 import { dateOfHour } from '../world/journal/observe.js';
 
-/** The three trails, in order, with the key each keeps in journalUi.trail. */
-export const TRAILS = /** @type {const} */ (['naturalist', 'beach', 'shape']);
+/** The four trails, in order, with the key each keeps in journalUi.trail. */
+export const TRAILS = /** @type {const} */ (['naturalist', 'beach', 'shape', 'forage']);
 
 /** @param {string} s */
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c] ?? c);
 
+/** A drawn icon, or an item icon (the forager's tools) when the house set has none of that name. @param {string} name */
+const glyph = (name) => (ICON_NAMES.includes(name) ? iconSvg(name) : itemIconSvg(name));
+
 /**
- * The page. @param {{ live: any, words: any, R: any, B: any, S: any, which: string, wide: boolean }} o
- *   live: the live journal (describe, journal, progress); words: journal.json; R, B, S: naturalist.json,
- *   beachcomber.json, shaper.json; which: the trail shown when not wide; wide: all three side by side
+ * The page. @param {{ live: any, words: any, R: any, B: any, S: any, F?: any, which: string, wide: boolean, four?: boolean, herbarium?: boolean }} o
+ *   live: the live journal (describe, journal, progress); words: journal.json; R, B, S, F: naturalist.json,
+ *   beachcomber.json, shaper.json, forager.json (the forager's trail shows when it is given); which:
+ *   the trail shown when not wide; wide: all side by side, two by two; four: in one row of four;
+ *   herbarium: given, so the forager's plants and its stop open that page
  * @returns {string}
  */
 export function trailsView(o) {
@@ -29,9 +37,10 @@ export function trailsView(o) {
     { key: 'naturalist', title: o.R.line.trail, html: naturalistTrail(o) },
     { key: 'beach', title: o.B.words.title, html: keptTrail(o, P.beachLine(), o.B, 'beach') },
     { key: 'shape', title: o.S.words.title, html: keptTrail(o, P.shapeLine(), o.S, 'shape') },
+    ...(o.F && P.forageLine ? [{ key: 'forage', title: o.F.words.title, html: keptTrail(o, P.forageLine(), o.F, 'forage') }] : []),
   ];
   if (o.wide) {
-    return `<div class="ebb-trails is-wide">${cols.map((c) => `<section class="ebb-trails__col" data-tint="${c.key}">${c.html}</section>`).join('')}</div>`;
+    return `<div class="ebb-trails is-wide${o.four ? ' is-four' : ''}">${cols.map((c) => `<section class="ebb-trails__col" data-tint="${c.key}">${c.html}</section>`).join('')}</div>`;
   }
   const shown = cols.find((c) => c.key === o.which) ?? cols[0];
   const tabs = cols.map((c) => `<button type="button" class="ebb-trails__tab" data-tint="${c.key}" data-trail="${c.key}" aria-pressed="${c === shown}">${esc(short(c.title))}</button>`).join('');
@@ -44,8 +53,8 @@ const short = (t) => { const s = t.replace(/^The /, ''); return s.charAt(0).toUp
 
 /**
  * A trail's head: its name, what it is about, its count of kinds (always on a line of its own, so
- * the three trails' heads match), and its intro. Side by side, journal-trails.css lines these rows
- * up across the trails. @param {string} title @param {string} sub @param {string} count @param {string} intro
+ * the trails' heads match), and its intro. Side by side, journal-trails.css lines these rows up
+ * across the trails. @param {string} title @param {string} sub @param {string} count @param {string} intro
  */
 function head(title, sub, count, intro) {
   return `<h3 class="ebb-trail__title">${esc(title)}</h3>
@@ -92,39 +101,55 @@ function naturalistTrail(o) {
 }
 
 /**
- * The beachcomber's or the shaper's trail (src/world/trails.js trailLine).
- * @param {any} o @param {import('../world/trails.js').TrailEntry[]} line @param {any} rec beachcomber.json or shaper.json
- * @param {'beach' | 'shape'} which
+ * A first's name and icon on the forager's trail: a plant by its journal name and icon, a season
+ * by its own mark, a seed by its plant. @param {any} o @param {import('../world/trails.js').First} f @param {any} W forager.json words
+ */
+function forageFirst(o, f, W) {
+  if (f.kind === 'season') return { name: (W.season ?? '{name}').replace('{name}', W.seasons?.[f.id] ?? f.id), icon: `season-${f.id}` };
+  const sp = o.words?.species?.[f.id];
+  const name = sp?.name ? sp.name.charAt(0).toLowerCase() + sp.name.slice(1) : f.id;
+  return { name: (W[f.kind] ?? '{name}').replace('{name}', name), icon: sp?.icon && ICON_NAMES.includes(sp.icon) ? sp.icon : W.icons?.[f.kind] ?? 'gather' };
+}
+
+/**
+ * The beachcomber's, the shaper's or the forager's trail (src/world/trails.js trailLine).
+ * @param {any} o @param {import('../world/trails.js').TrailEntry[]} line @param {any} rec beachcomber.json, shaper.json or forager.json
+ * @param {'beach' | 'shape' | 'forage'} which
  */
 function keptTrail(o, line, rec, which) {
   const W = rec.words;
   const firsts = line.filter((e) => e.type === 'first');
   const n = which === 'beach'
     ? new Set(firsts.map((e) => /** @type {any} */ (e).first).filter((f) => f.kind === 'family').map((f) => f.id)).size
-    : firsts.length;
+    : which === 'forage' ? firsts.filter((e) => /** @type {any} */ (e).first.kind === 'plant').length
+      : firsts.length;
   const total = which === 'beach' ? W.familyTotal : rec.stops.length;
+  // The herbarium, once given, is a page of its own: its stop and each plant open it.
+  const herbarium = which === 'forage' && o.herbarium ? 'data-view="herbarium"' : undefined;
   const rows = line.map((e, i) => {
     const last = i === line.length - 1 ? ' is-last' : '';
     if (e.type === 'first') {
       const f = e.first;
-      const name = which === 'shape' ? W.places[f.id] ?? f.id
+      const ff = which === 'forage' ? forageFirst(o, f, W) : null;
+      const name = ff ? ff.name : which === 'shape' ? W.places[f.id] ?? f.id
         : (W[f.kind] ?? '{name}').replace('{name}', (f.kind === 'family' || f.kind === 'dug' ? W.families : f.kind === 'rarity' ? W.rarities : W.marks)[f.id] ?? f.id);
-      const icon = which === 'shape' ? W.placeIcons?.[f.id] ?? 'shore' : W.icons?.[f.kind] ?? 'shelf';
+      const icon = ff ? ff.icon : which === 'shape' ? W.placeIcons?.[f.id] ?? 'shore' : W.icons?.[f.kind] ?? 'shelf';
       const when = f.hour >= 0 ? `<span class="ebb-journal__voice">${esc(dateOfHour(f.hour, o.words))}</span>` : '';
-      // A keepsake first opens the Shelf; a place has nowhere to open.
-      return stop(last, `<span class="ebb-trail__dot">${iconSvg(icon)}</span><span class="ebb-trail__text"><b>${esc(name)}</b>${when}</span>`,
-        which === 'beach' ? 'data-view="shelf"' : undefined);
+      // A keepsake first opens the Shelf, a plant the herbarium; a place has nowhere to open.
+      return stop(last, `<span class="ebb-trail__dot">${glyph(icon)}</span><span class="ebb-trail__text"><b>${esc(name)}</b>${when}</span>`,
+        which === 'beach' ? 'data-view="shelf"' : which === 'forage' && f.kind === 'plant' ? herbarium : undefined);
     }
     const s = e.stop;
     if (e.type === 'station' && e.inked) {
-      return stop(` is-station${last}`, `<span class="ebb-trail__dot">${iconSvg(s.icon)}</span>
-        <span class="ebb-trail__text"><b>${esc(s.title ?? '')}</b><span class="ebb-journal__voice">${esc(s.line ?? '')}</span></span>`);
+      return stop(` is-station${last}`, `<span class="ebb-trail__dot">${glyph(s.icon)}</span>
+        <span class="ebb-trail__text"><b>${esc(s.title ?? '')}</b><span class="ebb-journal__voice">${esc(s.line ?? '')}</span></span>`,
+        which === 'forage' && (s.id === 'herbarium' || s.id === 'almanac') ? herbarium : undefined);
     }
     // Reached but not built yet: what it will be, one day. Ahead: only its hint.
     const text = e.type === 'station'
       ? `<b>${esc(s.title ?? '')}</b><small>${esc(W.later)}</small>`
       : `<span class="ebb-journal__voice">${esc(s.hint)}</span><small>${esc(W.next)}</small>`;
-    return stop(` is-station is-pencil${last}`, `<span class="ebb-trail__dot">${iconSvg(s.icon)}</span><span class="ebb-trail__text">${text}</span>`);
+    return stop(` is-station is-pencil${last}`, `<span class="ebb-trail__dot">${glyph(s.icon)}</span><span class="ebb-trail__text">${text}</span>`);
   }).join('');
   return head(W.title, W.sub, W.count.replace('{n}', String(n)).replace('{total}', String(total)), W.intro) + `<ol class="ebb-trail__list">${rows}</ol>`;
 }

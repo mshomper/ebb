@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Trails frame</title>
+<link rel="stylesheet" href="../src/ui/tokens.css">
+<link rel="stylesheet" href="../src/ui/journal.css">
+<link rel="stylesheet" href="../src/ui/journal-trails.css">
+<link rel="stylesheet" href="../src/ui/journal-herbarium.css">
+<style>
+  html, body { margin: 0; background: #3c4a46; overflow-x: hidden; }
+  /* The panel as the game shows it (no fade in), from the frame's own window size. */
+  .ebb-journal { transition: none; }
+</style>
+</head>
+<body>
+<!-- One window of trails-layout.html: the journal panel, open on Trails (or the herbarium with
+     ?herbarium), with the sample of ?trails and ?forager, laid out by the real CSS at this frame's
+     width. It posts back whether anything scrolls sideways. -->
+<aside class="ebb-journal is-open" id="ebb-journal"><div class="ebb-journal__body" tabindex="-1"></div></aside>
+<script type="module">
+import { ensureIconSprite } from '../src/ui/icons/icons.js';
+import { trailsView } from '../src/ui/journal-trails.js';
+import { herbariumView } from '../src/ui/journal-herbarium.js';
+import { trailLine, firstsOf, sampleTrails } from '../src/world/trails.js';
+import { sampleForager, forageLineFirsts } from '../src/world/forager.js';
+import { due, grant } from '../src/world/expansion.js';
+
+const load = (p) => fetch(`../recipes/world/${p}.json`).then((r) => r.json());
+const [R, B, S, F, words, gather, pack] = await Promise.all(['naturalist', 'beachcomber', 'shaper', 'forager', 'journal', 'gather', 'pack'].map(load));
+ensureIconSprite();
+let e = sampleForager(sampleTrails({}));
+for (const g of due({ found: 0, flags: [], earned: e, rewards: [], gifts: {}, words: {}, giftWords: {}, stops: B.stops, forage: F.stops })) e = grant(e, g);
+const live = { journal: () => ({ species: {} }), describe: () => ({ icon: 'find', name: 'x' }),
+  progress: { line: () => [], beachLine: () => trailLine(firstsOf(e, 'beach'), B.stops, e.beachcomber ?? [], e.kept),
+    shapeLine: () => trailLine(firstsOf(e, 'shape'), S.stops, []), forageLine: () => trailLine(forageLineFirsts(e), F.stops, e.forager ?? []) } };
+const panel = document.getElementById('ebb-journal'), body = panel.querySelector('.ebb-journal__body');
+const q = new URLSearchParams(location.search);
+const names = Object.fromEntries(pack.kinds.map((k) => [k.id, k.name]));
+const wide = !q.has('herbarium') && matchMedia('(min-width: 1100px)').matches;
+const four = wide && matchMedia('(min-width: 1400px)').matches;
+panel.classList.toggle('is-wide', wide);
+panel.classList.toggle('is-four', four);
+body.innerHTML = q.has('herbarium')
+  ? herbariumView({ earned: e, F, words, gather, partName: (k) => names[k] ?? k })
+  : trailsView({ live, words, R, B, S, F, which: q.get('which') ?? 'forage', wide, four, herbarium: true });
+// After layout (a timer, not an animation frame: a hidden tab gets none).
+setTimeout(() => {
+  const side = Math.max(body.scrollWidth - body.clientWidth, document.documentElement.scrollWidth - document.documentElement.clientWidth);
+  const small = [...body.querySelectorAll('b, span, small, p, button, h3, text')].map((n) => parseFloat(getComputedStyle(n).fontSize)).filter((s) => s > 0 && s < 15);
+  parent.postMessage({ w: innerWidth, layout: q.has('herbarium') ? 'herbarium' : four ? 'four side by side' : wide ? 'two by two' : 'four tabs', side, small: small.length }, '*');
+}, 300);
+</script>
+</body>
+</html>
