@@ -60,6 +60,8 @@ import { keepsakeWords } from './world/keepsakes/families/index.js';
 import { keptFamily } from './world/expansion.js';
 import { addFirst, keptFirsts, seenMark, firstsOf, sampleTrails, trailLine } from './world/trails.js';
 import { createShaperWatch } from './world/shaper.js';
+import { pickedFirsts, noteFirsts, knifed, hasForage, sampleForager } from './world/forager.js';
+import { createForagerBelt } from './world/forager-belt.js';
 import { createNets } from './world/nets/index.js';
 import { cleanShelf, keep as keepShelf, letGo as letGoShelf, readLetter, swap as swapShelf } from './world/keepsakes/shelf.js';
 import { chooseLetter } from './world/keepsakes/letters.js';
@@ -232,7 +234,9 @@ export async function startApp(canvas, hooks = {}) {
   // campion, for one, grows nowhere until there is rock by the sea.
   updateStore('unlocks', (u) => {
     // `?trails` (testing, unsaved): stops on the beachcomber's and shaper's trails already reached.
-    const earned = params.has('trails') ? sampleTrails(u?.earned ?? back?.unlocks ?? {}) : u?.earned ?? back?.unlocks ?? {};
+    // `?forager` (testing, unsaved): a year of gathering, so the herbarium, the knife and the almanac are reached.
+    let earned = params.has('trails') ? sampleTrails(u?.earned ?? back?.unlocks ?? {}) : u?.earned ?? back?.unlocks ?? {};
+    if (params.has('forager')) earned = sampleForager(earned);
     return { earned, ...earned, springs: !!earned.springs || params.has('sandbox'),
       cliffs: !!earned.cliffs || params.has('sandbox') || params.has('cliffs'),
       stones: !!earned.stones || params.has('sandbox') || params.has('stones'), stonesTest: params.has('stones'),
@@ -533,7 +537,8 @@ export async function startApp(canvas, hooks = {}) {
   sim.addSystem(pieces);
   // The walker (doc 23, presence below; W2): Go down puts you on foot where you are looking, and
   // the camera glides down behind you; a tap walks you there. Go up glides back over you.
-  const walk = createWalk({ recipe: walkerRecipe, figure: await loadRecipe('world/figure'), terrain, water, camera, tide: waterRecipe.tide,
+  const figureRecipe = await loadRecipe('world/figure');
+  const walk = createWalk({ recipe: walkerRecipe, figure: figureRecipe, terrain, water, camera, tide: waterRecipe.tide,
     hours: () => clock.display() / clock.SECONDS_PER_HOUR, creatures: () => creatures.frogs(),
     // Pond stones are footing: you step across on them (src/world/pieces/stepping.js).
     footing: (x, z) => pieces.footing(x, z) });
@@ -606,8 +611,27 @@ export async function startApp(canvas, hooks = {}) {
     center: () => { const b = terrain.openBounds(); return [(b.openMin[0] + b.openMax[0]) / 2, (b.openMin[1] + b.openMax[1]) / 2]; },
     // Where the boat lands the keeper: the beach there always has something to gather (F6).
     boat: () => { const s = boat.mooring?.stand; return s ? [s.x, s.z] : null; } });
-  // Picked reeds grow back slowly, faster in rain (the growth step reads the gather recipe).
-  world.env.recipes.gather = gather.recipe;
+  // Picked reeds grow back slowly, faster in rain (the growth step reads the gather recipe). The
+  // forager's trail's gathering knife changes it (src/world/forager.js knifed): ready again sooner,
+  // less bare; picking, growing back and catch-up all read it from here.
+  const foragerRecipe = await loadRecipe('world/forager');
+  const hasKnife = () => hasForage(getStore('unlocks')?.earned, 'knife');
+  /** @type {boolean | null} */ let knifeOn = null;
+  const applyKnife = () => {
+    if (hasKnife() === knifeOn) return;
+    knifeOn = hasKnife();
+    world.env.recipes.gather = knifed(gather.recipe, knifeOn ? foragerRecipe.knife : null);
+  };
+  applyKnife();
+  subscribeStore('unlocks', applyKnife);
+  // The forager's trail (doc 13 "Trails"): a picked handful writes its plant, part and season firsts, once, for good.
+  on('plant:picked', (/** @type {{ sp: string, part: string }} */ p) => updateStore('unlocks', (u) => {
+    const earned = noteFirsts(u?.earned ?? {}, pickedFirsts(p.sp, p.part, world.state?.seasons?.index ?? 0, clock.hourIndex()));
+    return earned === u?.earned ? u : { ...u, earned };
+  }));
+  // The knife on the walker's belt, once given.
+  const belt = createForagerBelt({ recipe: foragerRecipe, figure: figureRecipe, walk, has: hasKnife });
+  sim.addSystem({ id: 'forager-belt', tick() { belt.update(); } });
   on('world:ticked', () => gather.expire());
   on('world:caught-up', () => gather.expire());
   // What lies on the ground to gather, the piles at camp and the heaps you left (src/world/pack/draw.js).
@@ -747,6 +771,8 @@ export async function startApp(canvas, hooks = {}) {
     walk.printsPass,
     creatures.pass,
     walk.pass,
+    // The gathering knife on the walker's belt (the forager's trail).
+    belt.pass,
     ...schools.map((s) => s.pass),
     finds.pass,
     keepsakes.pass,

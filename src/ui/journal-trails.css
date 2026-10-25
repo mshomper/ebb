@@ -1,7 +1,8 @@
 /* The journal's Trails page (doc 13 "Trails"; src/ui/journal-trails.js). The Trails tab spans the
-   whole row above the six sections, so every row stays full. From a 1100 px window the panel widens
-   and the three trails sit side by side; below that, three tabs show one at a time. Each trail has a
-   quiet tint: moss for the naturalist, sea blue for the beachcomber, earth brown for the shaper.
+   whole row above the six sections, so every row stays full. Four trails: from a 1400 px window the
+   panel widens and they sit side by side; from 1100 px, two by two; below that, four tabs (two by
+   two) show one at a time. Never a horizontal scroll. Each trail has a quiet tint: moss for the
+   naturalist, sea blue for the beachcomber, earth brown for the shaper, sage for the forager.
    The stops themselves use journal.css's trail styles. */
 
 .ebb-journal__tab.is-wide { grid-column: 1 / -1; }
@@ -10,24 +11,29 @@
   .ebb-journal__nav .ebb-journal__tab:last-child:nth-child(odd):not(.is-wide) { grid-column: auto; }
 }
 .ebb-journal.is-wide { width: min(800px, calc(100vw - 2 * var(--jr-edge))); }
+.ebb-journal.is-wide.is-four { width: min(1120px, calc(100vw - 2 * var(--jr-edge))); }
 
 .ebb-trails { display: grid; gap: 14px; min-width: 0; }
-.ebb-trails.is-wide { grid-template-columns: repeat(3, minmax(0, 1fr)); column-gap: 20px; row-gap: 0; align-items: start; }
+.ebb-trails.is-wide { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 20px; row-gap: 0; align-items: start; }
+.ebb-trails.is-wide.is-four { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 /* Side by side, the trails share their rows (title, what it is about, the count, the intro, the
-   line of stops), so each row starts level across all three whatever its words' length. */
+   line of stops), so each row starts level across a row of trails whatever its words' length. */
 .ebb-trails.is-wide .ebb-trails__col { display: grid; grid-row: span 5; grid-template-rows: subgrid; align-content: start; }
+/* Two by two: the second pair starts a little below the first's lines. */
+.ebb-trails.is-wide:not(.is-four) .ebb-trails__col:nth-child(n + 3) { margin-top: 28px; }
 .ebb-trails__col { --tr: var(--jr-moss); --tr-wash: rgba(95, 127, 91, 0.16); min-width: 0; padding-top: 8px; border-top: 4px solid var(--tr); }
 [data-tint='naturalist'] { --tr: var(--jr-moss); --tr-wash: rgba(95, 127, 91, 0.16); }
 [data-tint='beach'] { --tr: #4F7B92; --tr-wash: rgba(79, 123, 146, 0.16); }
 [data-tint='shape'] { --tr: #8A6A4E; --tr-wash: rgba(138, 106, 78, 0.16); }
+[data-tint='forage'] { --tr: #6E8F4E; --tr-wash: rgba(110, 143, 78, 0.16); }
 .ebb-trails__col .ebb-trail__title { margin-top: 2px; }
 .ebb-trails__sub { margin: 0; }
 .ebb-trails__count { margin: 2px 0 6px; font-weight: 800; font-size: calc(16px * var(--text-scale, 1)); color: var(--tr); }
 .ebb-trails__col .ebb-trail__stop.is-station .ebb-trail__dot { background: var(--tr-wash); color: var(--tr); }
 .ebb-trails__col .ebb-trail__stop.is-pencil .ebb-trail__dot { background: var(--jr-paper); color: var(--jr-pencil); }
 
-/* Each tab as wide as its word, the spare room shared out, so "Beachcomber" never breaks. */
-.ebb-trails__tabs { display: grid; grid-template-columns: repeat(3, auto); gap: 6px; }
+/* Four tabs, two by two, so "Beachcomber" never breaks in the narrow panel. */
+.ebb-trails__tabs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
 .ebb-trails__tab {
   appearance: none;
   -webkit-appearance: none;

@@ -15,11 +15,11 @@
 import { on } from '../core/events.js';
 import { get, subscribe, update } from '../core/store.js';
 import { dispatch } from '../input/actions.js';
-import { ensureIconSprite, iconSvg } from './icons/icons.js';
+import { ensureIconSprite, iconSvg, ICON_NAMES } from './icons/icons.js';
 import { cleanName } from '../world/creatures/trust.js';
 import { actionsFor, cardAction } from './card-actions.js';
 import { pouchSvg } from './sketches/pouches.js';
-import { itemIconSvg, itemPouchSvg, chipSvg } from './icons/items.js';
+import { itemIconSvg, itemPouchSvg, chipSvg, hasItemIcon } from './icons/items.js';
 import { itemIconFor } from './icons/item-registry.js';
 import { mountKeeperCard } from './keeper-card.js';
 
@@ -186,7 +186,8 @@ export function mountIslandNotes(parent, words, naturalist = null) {
     b.type = 'button';
     b.className = 'ebb-gift';
     b.title = 'Open the journal';
-    b.innerHTML = `<span class="ebb-gift__icon">${iconSvg(n.icon ?? 'find')}</span><span class="ebb-gift__text"><b></b><span class="ebb-journal__voice"></span></span>`;
+    // A tool from the forager's trail (the gathering knife) wears its item icon.
+    b.innerHTML = `<span class="ebb-gift__icon">${n.icon && hasItemIcon(n.icon) && !ICON_NAMES.includes(n.icon) ? itemIconSvg(n.icon) : iconSvg(n.icon ?? 'find')}</span><span class="ebb-gift__text"><b></b><span class="ebb-journal__voice"></span></span>`;
     /** @type {HTMLElement} */ (b.querySelector('b')).textContent = n.title ?? '';
     /** @type {HTMLElement} */ (b.querySelector('.ebb-journal__voice')).textContent = n.line ?? n.text;
     let gone = false;

@@ -58,6 +58,16 @@ export function createFigure(o) {
   /** Where the figure stood and faced last frame, for hand(). */
   let at = { x: 0, y: 0, z: 0, yaw: 0 };
   const hands = { l: built.skeleton.findIndex((b) => b.name === 'hand.l'), r: built.skeleton.findIndex((b) => b.name === 'hand.r') };
+  /** A point of the rest model (m) as bone i holds it now, in the world, and the way the figure faces. @param {number} i @param {number[]} p */
+  function pointOf(i, p) {
+    if (!visible || i < 0) return null;
+    const m = motion.bones.subarray(i * 16, i * 16 + 16), k = R.body.displayScale ?? 1;
+    const bx = (m[0] * p[0] + m[4] * p[1] + m[8] * p[2] + m[12]) * k;
+    const by = (m[1] * p[0] + m[5] * p[1] + m[9] * p[2] + m[13]) * k;
+    const bz = (m[2] * p[0] + m[6] * p[1] + m[10] * p[2] + m[14]) * k;
+    const c = Math.cos(at.yaw), s = Math.sin(at.yaw);
+    return { x: at.x + c * bx + s * bz, y: at.y + by, z: at.z - s * bx + c * bz, yaw: at.yaw };
+  }
   return {
     pass,
     motion,
@@ -69,14 +79,14 @@ export function createFigure(o) {
      */
     hand(side) {
       const i = hands[side];
-      if (!visible || i < 0) return null;
-      const p = built.skeleton[i].pivot, m = motion.bones.subarray(i * 16, i * 16 + 16), k = R.body.displayScale ?? 1;
-      const bx = (m[0] * p[0] + m[4] * p[1] + m[8] * p[2] + m[12]) * k;
-      const by = (m[1] * p[0] + m[5] * p[1] + m[9] * p[2] + m[13]) * k;
-      const bz = (m[2] * p[0] + m[6] * p[1] + m[10] * p[2] + m[14]) * k;
-      const c = Math.cos(at.yaw), s = Math.sin(at.yaw);
-      return { x: at.x + c * bx + s * bz, y: at.y + by, z: at.z - s * bx + c * bz, yaw: at.yaw };
+      return i < 0 ? null : pointOf(i, built.skeleton[i].pivot);
     },
+    /**
+     * Where a point of the rest model is now, carried by a bone (the knife on the belt, by the
+     * pelvis), in the world, and the way the figure faces. Null before the first frame or for a bone
+     * the rig does not have. @param {string} bone @param {number[]} p rest model meters
+     */
+    pointOn: (bone, p) => pointOf(built.skeleton.findIndex((b) => b.name === bone), p),
     /** Vertices and triangles, for the tools page's cost line. */
     size: { vertices: built.count, triangles: built.indices.length / 3, bytes: built.data.byteLength + built.indices.byteLength },
     /**

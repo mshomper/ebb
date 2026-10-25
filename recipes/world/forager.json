@@ -1,0 +1,71 @@
+{
+  "type": "forager",
+  "version": 1,
+  "note": "The forager's trail (doc 13 'Trails', added October 24, 2026; build piece P2k), read by src/world/trails.js, src/world/forager.js and src/world/expansion.js, drawn on the journal's Trails page (src/ui/journal-trails.js) and the herbarium (src/ui/journal-herbarium.js). A stop is a first, never a total: the first handful of each plant gathered (kind plant, by species), the first handful gathered in each season (kind season), and the first seed of each plant saved (kind seed: nothing writes it until seed saving, P2g). The first handful of each part gathered is written too (kind part, '<species>.<part>'), for the almanac; it counts toward no stop and does not show on the line. They are written in the saved unlocks' firsts with trail 'forage', in order, and never taken back. Each stop's need: plants (so many plants gathered), seasons (gathered in so many seasons), seeds (seed saved from so many plants). A stop with a give is given once, for good, merged into the saved unlocks (forage.herbarium, forage.knife, forage.almanac), with its title and line as a card and a journal note that opens this trail; any other stop is not built yet and shows in pencil, 'one day', where it falls (the seed stops wait for seed saving, the caddy for teas, the stick and the frame for Phase 4). Only the next stop ahead shows, in pencil with its hint; stops are listed in the order they can come, so the next one ahead is one that can be reached. Currency (doc 13): ways to gather, keep and press, never tools that shape, new plants or seed. icon: drawn from src/ui/icons, or an item icon (src/ui/icons/items.js). knife: once given, every gathered part is ready again at readyShare of the plant's best size (where its own is higher), and a picked plant shows bareLook of the picked look (a cleaner cut); belt: where its point hangs on the walker, a point in the figure's rest model (assets/figures/walker.glb units, x toward the figure's left, y up, z forward; the coat is about 0.22 wide each side at the hip) moved with that bone, drawn at the figure's displayScale times scale (1.35: its real 17 cm beside the 1.4 m walker). herbarium: the page's words; seasons names each season's first. almanac: the ring calendar; ringPx its drawing's size (px, drawn at that size at most), ring the arcs' radii (outermost first, one ring a part, stepMax apart at most), their width and where the season names sit, all in drawing px; colors, one per part in the order gathered (the legend's swatch matches); when, the twelve thirds of the year a window is named by.",
+  "stops": [
+    { "id": "herbarium", "need": { "plants": 1 }, "icon": "journal", "give": { "forage": { "herbarium": true } },
+      "hint": "somewhere to press what you pick", "title": "The herbarium",
+      "line": "A page in the journal where a pressed sprig of each plant you gather lies flat. Open it from the forager's trail." },
+    { "id": "knife", "need": { "plants": 4 }, "icon": "gathering-knife", "give": { "forage": { "knife": true } },
+      "hint": "a cleaner cut", "title": "A gathering knife",
+      "line": "A small knife on your belt. A clean cut leaves a plant less bare, and it is ready again sooner." },
+    { "id": "almanac", "need": { "seasons": 4 }, "icon": "almanac", "give": { "forage": { "almanac": true } },
+      "hint": "a year of picking", "title": "The forager's almanac",
+      "line": "A ring calendar in the herbarium: when each part you have gathered is ready, around the year." },
+    { "id": "caddy", "need": { "plants": 6 }, "icon": "tea-caddy",
+      "hint": "a tin for the good ones", "title": "A tea caddy",
+      "line": "A lidded tin on the apothecary bench that keeps your blends to hand." },
+    { "id": "papers", "need": { "seeds": 3 }, "icon": "seedhead",
+      "hint": "a better way to keep seed", "title": "Seed papers",
+      "line": "Folded paper twists, so a pouch of seed holds twice as much." },
+    { "id": "scoop", "need": { "seeds": 5 }, "icon": "seed-scoop",
+      "hint": "more from each head", "title": "A seed scoop",
+      "line": "Saving seed from a plant past bloom gives two handfuls instead of one." },
+    { "id": "stick", "need": { "plants": 10 }, "icon": "walking-stick",
+      "hint": "a longer reach", "title": "A hazel walking stick",
+      "line": "Gather from a step further away, across a ditch or shallow water." },
+    { "id": "frame", "need": { "plants": 16 }, "icon": "pressing-frame",
+      "hint": "a frame for the year", "title": "A pressing frame",
+      "line": "Four pressed flowers you choose, on the tent pole." }
+  ],
+  "knife": {
+    "readyShare": 0.8,
+    "bareLook": 0.5,
+    "model": "assets/models/camp/gathering-knife.glb",
+    "color": [0.3, 0.26, 0.2],
+    "belt": { "bone": "pelvis", "at": [-0.235, 0.6, 0.06], "scale": 1.35 }
+  },
+  "words": {
+    "title": "The forager",
+    "sub": "what you gather",
+    "intro": "The plants you have gathered and the seasons you gathered in, in the order they first came.",
+    "count": "{n} kinds of plant gathered",
+    "plant": "Gathered: {name}",
+    "season": "Gathered in {name}",
+    "seed": "Seed saved: {name}",
+    "icons": { "plant": "gather", "season": "season-{id}", "seed": "seedhead" },
+    "next": "A little further on",
+    "later": "One day",
+    "seasons": { "spring": "spring", "summer": "summer", "autumn": "autumn", "winter": "winter" }
+  },
+  "herbarium": {
+    "title": "The herbarium",
+    "intro": "A pressed sprig of each plant you have gathered, in the order you first gathered it.",
+    "back": "Back to the trails",
+    "first": "{date}",
+    "parts": "Gathered: {parts}",
+    "none": "Nothing pressed yet. Gather a handful from a plant, on foot."
+  },
+  "almanac": {
+    "title": "The forager's almanac",
+    "intro": "When each part you have gathered is ready. The year goes round clockwise from the top, spring first.",
+    "ringPx": 320,
+    "ring": { "outerR": 112, "innerR": 44, "stepMax": 16, "width": 10, "labelR": 140 },
+    "colors": ["#5F7F5B", "#4F7B92", "#C99A4E", "#8A6A4E", "#8E7FAE", "#C27B72", "#7FA37A", "#6F96A8"],
+    "seasons": ["Spring", "Summer", "Autumn", "Winter"],
+    "when": ["early spring", "spring", "late spring", "early summer", "high summer", "late summer",
+             "early autumn", "autumn", "late autumn", "early winter", "midwinter", "late winter"],
+    "span": "{from} to {to}",
+    "all": "all year"
+  }
+}

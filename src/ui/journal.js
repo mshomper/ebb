@@ -17,6 +17,7 @@ import { nodeOfPage } from '../world/journal/web.js';
 import { livingList, cleanChoice } from '../world/journal/list.js';
 import { createShelfView } from './journal-shelf.js';
 import { trailsView } from './journal-trails.js';
+import { herbariumView } from './journal-herbarium.js';
 import { keeperEntry, keeperView, keeperShown, keeperUnread } from './journal-keeper.js';
 import { campEntry, campView } from './journal-camp.js';
 
@@ -40,8 +41,9 @@ const MOMENT_ICON = {
 };
 /** Under this window width the panel covers most of the island. */
 const NARROW = '(max-width: 699px)';
-/** From this width the Trails page shows its three trails side by side, in a wider panel. */
+/** From this width the Trails page shows its four trails two by two, in a wider panel; from WIDE4, side by side. */
 const WIDE = '(min-width: 1100px)';
+const WIDE4 = '(min-width: 1400px)';
 
 /**
  * Mount the journal button and panel.
@@ -180,7 +182,7 @@ export function mountJournal(parent, live, buttonParent = parent) {
       dot(t, v === 'notes' ? U.notes > 0 || keeperNew : v === 'living' ? inSection(words.order) : v === 'ground' ? inSection(island.groundOrder) : false);
     }
     if (!ui.open) return;
-    for (const t of tabs) t.setAttribute('aria-pressed', String(t.dataset.view === (ui.view === 'keeper' || ui.view === 'camp' ? 'notes' : ui.view)));
+    for (const t of tabs) t.setAttribute('aria-pressed', String(t.dataset.view === (ui.view === 'keeper' || ui.view === 'camp' ? 'notes' : ui.view === 'herbarium' ? 'trails' : ui.view)));
     // A keeper page open: it shows, and counts as read from now on.
     if (ui.view === 'keeper') {
       const shownId = keeperShown(keeper, flags, ui.keeper);
@@ -188,9 +190,12 @@ export function mountJournal(parent, live, buttonParent = parent) {
     }
     const paged = (ui.view === 'living' || ui.view === 'ground') && !!ui.page && live.hasPage(ui.page);
     backBtn.hidden = !paged;
-    // Trails: on a wide window the panel widens so the three sit side by side (journal-trails.css).
+    // Trails: on a wide window the panel widens so the four sit two by two, or side by side (journal-trails.css).
     const wide = ui.view === 'trails' && window.matchMedia(WIDE).matches;
+    const four = wide && window.matchMedia(WIDE4).matches;
     panel.classList.toggle('is-wide', wide);
+    panel.classList.toggle('is-four', four);
+    const earned = get('unlocks')?.earned ?? {};
     // The Web opens on whatever the journal last showed.
     if (paged) lastShown = nodeOfPage(live.web, ui.page);
     if (ui.view === 'web' && lastShown) { toTrail(lastShown); lastShown = null; webShelf = null; }
@@ -202,7 +207,10 @@ export function mountJournal(parent, live, buttonParent = parent) {
       : ui.view === 'keeper' && keeper ? keeperView(keeper, flags, ui.keeper, NEW)
       : ui.view === 'shelf' && shelf ? shelf.html() : ui.view === 'notes' ? keeperEntry(keeper, flags, NEW) + campEntry(cookR, get('camp'), get('cook')) + notesView() : ui.view === 'almanac' ? almanacView()
       : ui.view === 'web' ? webView(live.describeWeb(), live.web, { trail: webTrail, shelf: webShelf })
-      : ui.view === 'trails' ? trailsView({ live: L, words, R: L.naturalist, B: L.beachcomber, S: L.shaper, which: /** @type {any} */ (ui).trail ?? 'naturalist', wide })
+      : ui.view === 'trails' ? trailsView({ live: L, words, R: L.naturalist, B: L.beachcomber, S: L.shaper, F: L.forager, which: /** @type {any} */ (ui).trail ?? 'naturalist', wide, four,
+        herbarium: !!earned.forage?.herbarium })
+      // The herbarium (the forager's trail): opened from its trail, once given.
+      : ui.view === 'herbarium' && L.forager && earned.forage?.herbarium ? herbariumView({ earned, F: L.forager, words, gather: L.gatherRecipe, partName: L.partName ?? ((/** @type {string} */ k) => k) })
       : paged ? pageView(/** @type {string} */ (ui.page)) : ui.view === 'ground' ? listView(island.groundOrder) : livingView();
     // A new thing in the middle of the Web scrolls back up to its card.
     const key = `${ui.view}|${ui.page}|${ui.view === 'web' ? webTrail[webTrail.length - 1] : ''}`;
@@ -414,7 +422,7 @@ export function mountJournal(parent, live, buttonParent = parent) {
   const timer = setInterval(() => { const u = get('journalUi'); if (u?.open && u.view === 'almanac') render(); }, 2000);
   const unsubs = [subscribe('journal', render), subscribe('journalUi', render), subscribe('keepsakes', render), subscribe('shelfPending', render), subscribe('shelfUi', render),
     // A first written (a keepsake kept, a mark seen, a place made) moves the trails on.
-    subscribe('unlocks', () => { if (get('journalUi')?.view === 'trails') render(); }),
+    subscribe('unlocks', () => { const v = get('journalUi')?.view; if (v === 'trails' || v === 'herbarium') render(); }),
     // Something made or built at camp: the camp page and its row in Notes (S1).
     subscribe('cook', () => { const v = get('journalUi')?.view; if (v === 'camp' || v === 'notes') render(); })];
   // The Trails page sits side by side or in tabs by the window's width.
