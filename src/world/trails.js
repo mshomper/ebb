@@ -6,8 +6,9 @@
 // met (recipes/world/beachcomber.json, shaper.json); never a total, never taken back.
 
 /**
- * @typedef {{ trail: 'beach' | 'shape', kind: 'family' | 'rarity' | 'mark' | 'place', id: string, hour: number }} First
- * @typedef {{ families?: number, rarity?: string, marks?: number, place?: string }} Need
+ * @typedef {{ trail: 'beach' | 'shape' | 'forage', kind: 'family' | 'rarity' | 'mark' | 'place' | 'plant' | 'season' | 'seed' | 'part', id: string, hour: number }} First
+ *   forage (the forager's, src/world/forager.js): plant, season and seed count; part feeds the almanac only
+ * @typedef {{ families?: number, rarity?: string, marks?: number, place?: string, plants?: number, seasons?: number, seeds?: number }} Need
  * @typedef {{ id: string, need: Need, icon: string, hint: string, give?: Record<string, any>, built?: boolean, title?: string, line?: string }} Stop
  *   built: nothing to give, but it exists already (the shelf), so it inks when reached
  * @typedef {{ type: 'first', first: First } | { type: 'station', stop: Stop, inked: boolean } | { type: 'next', stop: Stop }} TrailEntry
@@ -52,13 +53,17 @@ export function seenMark(n, hour) {
  */
 export function counts(firsts, kept = []) {
   const families = new Set(kept), rarities = new Set(), marks = new Set(), places = new Set();
+  const plants = new Set(), seasons = new Set(), seeds = new Set();
   for (const f of firsts) {
     if (f.kind === 'family') families.add(f.id);
     else if (f.kind === 'rarity') rarities.add(f.id);
     else if (f.kind === 'mark') marks.add(f.id);
     else if (f.kind === 'place') places.add(f.id);
+    else if (f.kind === 'plant') plants.add(f.id);
+    else if (f.kind === 'season') seasons.add(f.id);
+    else if (f.kind === 'seed') seeds.add(f.id);
   }
-  return { families: families.size, rarities, marks: marks.size, places };
+  return { families: families.size, rarities, marks: marks.size, places, plants: plants.size, seasons: seasons.size, seeds: seeds.size };
 }
 
 /** Is a stop's need met? @param {Need} need @param {ReturnType<typeof counts>} c */
@@ -67,6 +72,9 @@ export function reached(need, c) {
   if (need.rarity !== undefined && !c.rarities.has(need.rarity)) return false;
   if (need.marks !== undefined && c.marks < need.marks) return false;
   if (need.place !== undefined && !c.places.has(need.place)) return false;
+  if (need.plants !== undefined && c.plants < need.plants) return false;
+  if (need.seasons !== undefined && c.seasons < need.seasons) return false;
+  if (need.seeds !== undefined && c.seeds < need.seeds) return false;
   return true;
 }
 
@@ -121,5 +129,5 @@ export function sampleTrails(earned) {
   return e;
 }
 
-/** The firsts of one trail, in the order they happened. @param {Record<string, any>} earned @param {'beach' | 'shape'} trail @returns {First[]} */
+/** The firsts of one trail, in the order they happened. @param {Record<string, any>} earned @param {'beach' | 'shape' | 'forage'} trail @returns {First[]} */
 export const firstsOf = (earned, trail) => (earned?.firsts ?? []).filter((/** @type {First} */ f) => f.trail === trail);
