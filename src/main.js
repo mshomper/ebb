@@ -133,11 +133,13 @@ startApp(canvas, { onDeviceLost: (rebuilding) => showRebuildingNote(rebuilding),
       }
       // The beachcomber's and shaper's trails (recipes/world/beachcomber.json, shaper.json; doc 13
       // "Trails"): the general net at four families kept; the rest drawn on the journal's Trails page.
-      const [beachcomber, shaper] = await Promise.all([loadRecipe('world/beachcomber'), loadRecipe('world/shaper')]);
-      const progress = createProgress({ words, recipe: naturalist, gifts, beachcomber, shaper });
+      // The forager's (forager.json): the herbarium, the gathering knife and the almanac, from what you gather.
+      const [beachcomber, shaper, forager] = await Promise.all([loadRecipe('world/beachcomber'), loadRecipe('world/shaper'), loadRecipe('world/forager')]);
+      const progress = createProgress({ words, recipe: naturalist, gifts, beachcomber, shaper, forager });
       // The Shelf section draws kept keepsakes from their numbers (docs/future/12).
       const [keepsakesRecipe, bottleMessages] = await Promise.all([loadRecipe('world/keepsakes'), loadRecipe('world/bottle-messages')]);
-      mountJournal(document.body, { ...journal, naturalist, beachcomber, shaper, progress, shelf: { K: keepsakesRecipe, messages: bottleMessages },
+      mountJournal(document.body, { ...journal, naturalist, beachcomber, shaper, forager, gatherRecipe: /** @type {any} */ (r).gather?.recipe ?? null,
+        partName: (/** @type {string} */ k) => /** @type {any} */ (r).pack?.nameOf(k) ?? k, progress, shelf: { K: keepsakesRecipe, messages: bottleMessages },
         keeper: await loadRecipe('world/keeper-pages') }, hud.layer);
       // The first evening's director (src/world/intro): its flags live in the journal, so it starts now.
       /** @type {any} */ (r).intro?.start();

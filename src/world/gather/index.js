@@ -103,6 +103,12 @@ export function createGather(o) {
     return best;
   }
 
+  /**
+   * The plant rules now: the world's gather recipe, which the gathering knife changes (src/world/forager.js
+   * knifed: ready again sooner), so picking and growing back read the same numbers.
+   */
+  const plantRules = () => o.world.env.recipes?.gather ?? R;
+
   /** The season position (0 spring .. 4), for part windows. */
   const seasonPos = () => {
     const st = o.world.state?.seasons;
@@ -142,7 +148,7 @@ export function createGather(o) {
     if (pl) {
       const flora = o.world.env.recipes?.flora?.[pl.sp];
       for (const part of partsOf(pl.sp, R)) {
-        const r = pickable(pl, part, { flora, pos: seasonPos() }, R);
+        const r = pickable(pl, part, { flora, pos: seasonPos() }, plantRules());
         const kind = `${pl.sp}.${part}`;
         if (r.ok) { out.push({ kind, name: o.pack.nameOf(kind), plant: pl.id, part, x: pl.x, z: pl.z, left: 1, word: W.plenty }); lines.push(W.plenty); }
         else if (r.why === 'rest') lines.push(W.rest);
@@ -207,7 +213,7 @@ export function createGather(o) {
     } else if (g.plant !== undefined) {
       const st = o.world.state;
       const flora = o.world.env.recipes?.flora?.[g.kind.split('.')[0]];
-      const plants = st.growth.plants.map((/** @type {any} */ p) => (p.id === g.plant ? pick(p, g.part, { flora }, R) : p));
+      const plants = st.growth.plants.map((/** @type {any} */ p) => (p.id === g.plant ? pick(p, g.part, { flora }, plantRules()) : p));
       o.world.state = { ...st, growth: { ...st.growth, plants } };
       emitDeferred('plant:picked', { id: g.plant, sp: g.kind.split('.')[0], part: g.part });
     }

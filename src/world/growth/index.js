@@ -152,6 +152,8 @@ export function createGrowth(device, opts) {
     for (const r of ranges) { r[0] = 0; r[1] = 0; }
     for (let n = order.length - 1; n >= 0; n--) { const r = ranges[order[n].s]; r[0] = n; r[1]++; }
     const takes = pickShares(world.env.recipes.gather);
+    // The gathering knife's cleaner cut (src/world/forager.js knifed): a picked plant looks less bare.
+    const bare = world.env.recipes.gather?.plants?.bareLook ?? 1;
     for (let i = 0; i < count; i++) {
       const p = all[order[i].i];
       const o = i * PLANT_FLOATS;
@@ -164,7 +166,7 @@ export function createGrowth(device, opts) {
       const rec = recipes.flora[p.sp];
       data[o + 6] = p.age; data[o + 7] = B && rec ? seatHeight(p, rec, B, terrain.sampleHeight) : terrain.sampleHeight(p.x, p.z);
       const lk = plantLooks(p, rec, recipes.growth.looks, takes.get(p.sp));
-      data[o + 8] = lk[0]; data[o + 9] = lk[1]; data[o + 10] = lk[2]; data[o + 11] = 0;
+      data[o + 8] = lk[0] * bare; data[o + 9] = lk[1]; data[o + 10] = lk[2]; data[o + 11] = 0;
     }
     if (count) device.queue.writeBuffer(instances, 0, data, 0, count * PLANT_FLOATS);
     if (g.grass) {
