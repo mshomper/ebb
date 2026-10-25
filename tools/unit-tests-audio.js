@@ -14,6 +14,7 @@ import { addMelodyTests } from './unit-tests-melody.js';
 import { addFallsSoundTests } from './unit-tests-falls-sound.js';
 import { addPondSoundTests } from './unit-tests-pond-sound.js';
 import { addKeepsakeSoundTests } from './unit-tests-keepsake-sound.js';
+import { addCampSoundTests } from './unit-tests-camp-sound.js';
 import { addMusicRenderTests } from './unit-tests-music-render.js';
 
 /** @type {{group: string, name: string, fn: () => any}[]} */
@@ -41,6 +42,7 @@ addMelodyTests(test, assert, eq);
 addFallsSoundTests(test, assert, eq);
 addPondSoundTests(test, assert, eq);
 addKeepsakeSoundTests(test, assert, eq);
+addCampSoundTests(test, assert, eq);
 addMusicRenderTests(test, assert, eq);
 
 const CHECK = '<path d="M4.5 12.5l4.8 4.8L19.5 7"/>';

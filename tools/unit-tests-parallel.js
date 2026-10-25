@@ -57,6 +57,7 @@ export const PARALLEL = {
   click: () => import('./unit-tests-click.js').then((m) => m.addClickTests),
   items: () => import('./unit-tests-items.js').then((m) => m.addItemTests),
   herbs: () => import('./unit-tests-herbs.js').then((m) => m.addHerbTests),
+  sowing: () => import('./unit-tests-sowing.js').then((m) => m.addSowingTests),
   // The audio tests that need no Web Audio (workers have none). The two that render sound through
   // an OfflineAudioContext (pond and keepsake sounds) stay on tools/unit-tests-audio.html, which
   // also still runs all of these, as does `node tools/run-audio-tests.mjs`.
@@ -70,6 +71,7 @@ export const PARALLEL = {
   summer: () => import('./unit-tests-summer.js').then((m) => m.addSummerTests),
   melody: () => import('./unit-tests-melody.js').then((m) => m.addMelodyTests),
   fallsSound: () => import('./unit-tests-falls-sound.js').then((m) => m.addFallsSoundTests),
+  campSound: () => import('./unit-tests-camp-sound.js').then((m) => m.addCampSoundTests),
   musicRender: () => import('./unit-tests-music-render.js').then((m) => m.addMusicRenderTests),
 };
 

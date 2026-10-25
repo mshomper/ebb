@@ -7,7 +7,7 @@
 // waiting does not count as time away.
 
 import { encode, decode, SaveError } from './world-file.js';
-import { migrate, FORMAT } from './migrate.js';
+import { migrate, FORMAT, setAsideFormat } from './migrate.js';
 import { restore } from './sections.js';
 import { getSlot, getSave, listSaves, writeGeneration, quarantined } from './idb.js';
 import { slotFor } from './autosave.js';
@@ -67,6 +67,8 @@ export async function checkIslandFile(file, islands) {
   try { d = await decode(new Uint8Array(await file.arrayBuffer())); }
   catch { throw new SaveError('This is not an ebb island file, or it is damaged.'); }
   if (d.bad.includes('meta') || d.bad.includes('world')) throw new SaveError('This island file is damaged: its island does not read.');
+  // Islands from before planting on foot (D1a) are kept aside, not opened (migrate.js FRESH_FROM).
+  if (setAsideFormat(d.header.format)) throw new SaveError('This island is from before planting moved on foot, so this version of ebb starts a new one instead.');
   let sections;
   try { sections = migrate(d.sections, d.header.format); }
   catch { throw new SaveError('This island was saved by a newer version of ebb. Open it there, or update this one.'); }

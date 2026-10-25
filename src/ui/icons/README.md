@@ -116,6 +116,8 @@ Size and color come from CSS: set `width`/`height` on `.icon` and `color` on the
 | `steps` | a flight stepping down from a shelf to the ground, an up stroke beside it: Sculpt's Steps mode (the shaper's trail) |
 | `raft` | a mat of bundled reeds tied with two bands, afloat on a ripple: the Water tool's Raft mode (the turtles' gift) |
 | `pondstones` | three flat stones in a line over a ripple of water: Sculpt's Pond stones mode (the shaper's trail) |
+| `seed-tin` | a round tin, its lid tipped up, three seeds falling from the gap: the seed tin on the walker's bar (D1a) |
+| `gift-spot` | a bundle wrapped in a broad leaf, tied with a twine loop, on a ground line: the gift spot on the walker's bar (D1a) |
 | `time` | half sun on a horizon with a flow arc |
 | `flow-1`, `flow-2`, `flow-4` | one, two or three pips: normal, 2x and 4x speed |
 | `flow-pause` | two rest bars: time paused |

@@ -898,27 +898,50 @@ export function createPieces(opts) {
       }
       if (hit) { shapingSel.raft = hit.id; syncShaping({ mode: 'raft', message: '' }); return; }
       shapingSel.raft = null;
+      const r = this.raftAdd(p);
+      if (!r.ok) { syncShaping({ mode: 'raft', message: r.message, refused: true }); return; }
+      shapingSel.raft = r.id;
+      syncShaping({ mode: 'raft', message: '' });
+    },
+
+    /**
+     * Could a reed raft float at a ground point? The same rules as the Raft mode: under the cap, off
+     * the camp ground, on fresh open water deep enough under its whole mat, apart from other rafts
+     * and stones. Changes nothing (the gift spot's ring, D1a).
+     * @param {ArrayLike<number>} p @returns {{ ok: true, piece: any } | { ok: false, reason: string, message: string }}
+     */
+    raftCheck(p) {
+      const no = (/** @type {string} */ reason, msg = RF.words[reason]) => ({ ok: /** @type {false} */ (false), reason, message: msg });
       const s = state();
-      if (countKind(s.list, 'raft') >= RF.cap) { say('full'); return; }
+      if (countKind(s.list, 'raft') >= RF.cap) return no('full');
       const x = p[0], z = p[2];
       // Never on the camp ground (a pond dug beside the pad may reach its edge).
-      if (onCampGround(padNow(), x, z, RF.sizeM[1] / 2)) { syncShaping({ mode: 'raft', message: recipe.words.camp, refused: true }); return; }
+      if (onCampGround(padNow(), x, z, RF.sizeM[1] / 2)) return no('camp', recipe.words.camp);
       // The sea: water whose surface is the tide's (a pond's bed may lie below the tide, its surface not).
       const tide = water.tide ?? -Infinity;
-      if (tide > ground(x, z) && ground(x, z) + depthAt(x, z) <= tide + 0.05) { say('sea'); return; }
+      if (tide > ground(x, z) && ground(x, z) + depthAt(x, z) <= tide + 0.05) return no('sea');
       const piece = makeRaft(piecesSeed, s.nextId, x, z, hourIndex(), RF);
       const sh = raftShapeOf(piece), w = sh.hx * piece.size, l = 0.45 * piece.size;
       const ax = Math.sin(piece.yaw), az = Math.cos(piece.yaw);
       const rim = [[w, 0], [-w, 0], [0, l], [0, -l]].every(([u, t]) => depthAt(x + az * u + ax * t, z - ax * u + az * t) >= RF.rimDepthM);
-      if (depthAt(x, z) < RF.minDepthM || !rim) { say('shallow'); return; }
+      if (depthAt(x, z) < RF.minDepthM || !rim) return no('shallow');
       const a2 = RF.apartM * RF.apartM;
-      if (s.list.some((q) => (q.kind === 'raft' || q.kind === 'stepping' || q.kind === 'stone') && (q.x - x) ** 2 + (q.z - z) ** 2 < a2)) { say('near'); return; }
-      const next = addPiece(s, piece, RF.cap);
-      if (!next) return;
+      if (s.list.some((q) => (q.kind === 'raft' || q.kind === 'stepping' || q.kind === 'stone') && (q.x - x) ** 2 + (q.z - z) ** 2 < a2)) return no('near');
+      return { ok: /** @type {true} */ (true), piece };
+    },
+
+    /**
+     * Set a reed raft at a ground point if raftCheck allows it (undoable).
+     * @param {ArrayLike<number>} p @returns {{ ok: true, id: string } | { ok: false, reason: string, message: string }}
+     */
+    raftAdd(p) {
+      const c = this.raftCheck(p);
+      if (!c.ok) return c;
+      const next = addPiece(state(), c.piece, RF.cap);
+      if (!next) return { ok: false, reason: 'full', message: RF.words.full };
       update('pieces', () => next);
-      history.push({ kind: 'piece', bytes: 96, op: 'add', piece });
-      shapingSel.raft = piece.id;
-      syncShaping({ mode: 'raft', message: '' });
+      history.push({ kind: 'piece', bytes: 96, op: 'add', piece: c.piece });
+      return { ok: true, id: c.piece.id };
     },
 
     /**

@@ -137,7 +137,7 @@
     "arrival": { "rightScore": 0.5, "rightHoldH": 6, "scoutAfterH": 12, "comeAtH": 11, "scoutChance": 0.4, "maxWaitDays": 4,
                  "startCount": 2, "m2PerOne": 8, "settleAfterH": 24, "settleMood": 0.5, "rescoutAfterH": 72,
                  "growShare": 0.4, "growMood": 0.55, "growSeasons": [0, 1, 0, 0], "newPoolChance": 0.2,
-                 "moodEase": 0.15, "leaveMood": 0.3, "leaveAfterH": 48, "shrinkShare": 0.34,
+                 "moodEase": 0.15, "leaveMood": 0.3, "leaveAfterH": 48, "leaveGraceDays": 3, "shrinkShare": 0.34,
                  "happyMin": 3, "happyMood": 0.65, "happyHoldH": 24 },
     "gift": { "kind": "tool", "id": "raft" }
   }

@@ -8,6 +8,8 @@
 //
 // The store slice `nets` holds a NetsState, saved as the `nets` section (format 7).
 
+import { level } from '../tide.js';
+
 /**
  * @typedef {{ x: number, z: number, setTide: number }} NetCast where it is staked, and the high
  *   water (its index: hour = setTide * periodH + phaseH) it fishes through
@@ -104,16 +106,17 @@ export function canCast(at, rule) {
 }
 
 /**
- * What the walker's Net button does (W4): your net out within reachM of where you stand is lifted
- * when it is full ('lift') or says how long it has to fish ('say'); in, or out further away, it is
- * set in front of you ('set', moved if it was out).
- * @param {{ x: number, z: number } | null} at where the net is out, or null when it is in
- * @param {boolean} ready it is full @param {{ x: number, z: number }} me where you stand @param {number} reachM
- * @returns {'lift' | 'say' | 'set'}
+ * Can your net be set at a spot with the tide as it is now (the net's ring on foot, D1a)? A full
+ * net stays where it is until it is lifted; otherwise canCast, against the high water a net set now
+ * would fish.
+ * @param {{ band: boolean, sea?: boolean, depth: number, ground: number }} at the spot now (canCast)
+ * @param {number} nowH game hours @param {any} tideP tideParams (src/world/tide.js)
+ * @param {{ wadeM: number, coverM: number }} rule nets.json `set` @param {boolean} full your net is out and full
+ * @returns {{ ok: true } | { ok: false, reason: 'full' | 'fresh' | 'dry' | 'deep' }}
  */
-export function footChoice(at, ready, me, reachM) {
-  if (!at || Math.hypot(at.x - me.x, at.z - me.z) > reachM) return 'set';
-  return ready ? 'lift' : 'say';
+export function netSpot(at, nowH, tideP, rule, full) {
+  if (full) return { ok: false, reason: 'full' };
+  return canCast({ ...at, nextHighLevel: level(highHour(nextHighTide(nowH, tideP), tideP), tideP) }, rule);
 }
 
 /**

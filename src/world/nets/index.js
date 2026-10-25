@@ -1,6 +1,7 @@
 // @ts-check
-// The nets, live (docs/future/12, piece K6). The Water tool's Net mode casts the net where you tap,
-// if the shallows there are right (model.js canCast); the net is drawn staked in the water, under
+// The nets, live (docs/future/12, piece K6). On foot, the net in hand shows where it can be set at
+// the tide now (check, model.js netSpot), and a click walks you out to set it there (D1a,
+// src/world/sowing); the net is drawn staked in the water, under
 // the sea at high tide, and full of weed once ready. Tapped with no tool it shows its card: how long
 // it has left, or Lift. Lifting rolls the haul from the tide it fished (haul.js), brings the net in,
 // and hands the haul to the tray (store slice `haul`, src/ui/haul-tray.js); living catches are let
@@ -17,7 +18,7 @@ import { waterCellOf } from '../water/grid.js';
 import { WATER_CLASS } from '../water/summary.js';
 import { packMesh } from '../creatures/bodies.js';
 import { createCreaturePass } from '../../render/passes/creatures.js';
-import { cleanNets, ensureNets, canCast, cast, bringIn, netState, nextHighTide, highHour, noteReleased, footChoice } from './model.js';
+import { cleanNets, ensureNets, netSpot, cast, bringIn, netState, highHour, noteReleased } from './model.js';
 import { haulOf } from './haul.js';
 import { netMesh } from './net-mesh.js';
 import { catchPage, distinctive } from './living/index.js';
@@ -127,13 +128,8 @@ export function createNets(opts) {
         sync({ message: words(net) });
         return { did: 'said', message: words(net) };
       }
-      const live = water.sampleLive?.(p[0], p[2]);
-      // A full net stays where it is until it is lifted: moving it would lose its haul.
-      if (netState(net, nowH, tideP).state === 'ready') { sync({ message: W.fullStays, refused: true }); return { did: 'refused', message: W.fullStays }; }
-      const at = { ...placeOf(p[0], p[2]), depth: live?.depth ?? 0, ground: terrain.sampleHeight(p[0], p[2]),
-        nextHighLevel: level(highHour(nextHighTide(nowH, tideP), tideP), tideP) };
-      const r = canCast(at, NR.set);
-      if (!r.ok) { sync({ message: W.refused[r.reason], refused: true }); return { did: 'refused', message: W.refused[r.reason] }; }
+      const r = api.check(p);
+      if (!r.ok) { sync({ message: r.message, refused: true }); return { did: 'refused', message: r.message }; }
       const readyNow = !!opts.test && !!NR.test?.readyNow;
       update('nets', () => cast(state(), net.id, p[0], p[2], nowH, tideP, { readyNow }));
       emitDeferred('keepsake:sound', { name: 'net-set' });
@@ -143,18 +139,19 @@ export function createNets(opts) {
     },
 
     /**
-     * The walker's Net button (W4): your net within reachM of where you stand is lifted when full,
-     * or says how long it has to fish; otherwise it is set at the point in front of you (moved there
-     * if it was out further away). @param {{ x: number, z: number }} me @param {ArrayLike<number>} ahead
-     * @param {number} reachM @returns {{ did: 'cast' | 'lifted' | 'said' | 'refused', message: string } | null}
+     * Could your net be set at a ground point with the tide as it is now? The same rules as a cast,
+     * changing nothing (the net's hover ring on foot, D1a). A full net stays where it is until it
+     * is lifted: moving it would lose its haul. @param {ArrayLike<number>} p
+     * @returns {{ ok: true } | { ok: false, reason: string, message: string }}
      */
-    fromFoot(me, ahead, reachM) {
+    check(p) {
       const net = state().nets[0];
-      if (!net) return null;
-      const choice = footChoice(net.at, netState(net, opts.nowH(), tideP).state === 'ready', me, reachM);
-      if (choice === 'lift') { api.lift(net.id); return { did: 'lifted', message: '' }; }
-      if (choice === 'say') { sync({ message: words(net) }); return { did: 'said', message: words(net) }; }
-      return api.tap(ahead);
+      if (!net) return { ok: false, reason: 'none', message: '' };
+      const nowH = opts.nowH();
+      const live = water.sampleLive?.(p[0], p[2]);
+      const at = { ...placeOf(p[0], p[2]), depth: live?.depth ?? 0, ground: terrain.sampleHeight(p[0], p[2]) };
+      const r = netSpot(at, nowH, tideP, NR.set, netState(net, nowH, tideP).state === 'ready');
+      return r.ok ? r : { ok: false, reason: r.reason, message: r.reason === 'full' ? W.fullStays : W.refused[r.reason] };
     },
 
     /** Bring the net in without lifting a haul. @param {number} id */

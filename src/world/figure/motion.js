@@ -145,7 +145,7 @@ export function createFigureMotion(R, skeleton) {
     get acting() { return act ? act.name : null; },
     /**
      * Play a gesture over the posture (acts.js, poses.gestures): gather, setDown, takeUp, heapHere,
-     * empty, lift, feedFire, netSet, netLift, rise, stuck, and the sow hook. Returns its length in
+     * empty, lift, feedFire, netSet, netLift, rise, stuck, and sow. Returns its length in
      * seconds: 0, and nothing plays, for a hook with no keys yet, a name that is not one, or while a
      * camp act plays or you are low after a crawl in. A walk fades it out.
      * @param {string} name

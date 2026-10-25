@@ -1835,7 +1835,17 @@
         "gone": "The turtles have gone from the pond.",
         "dormant": "The turtles have gone down into the pond mud for the winter.",
         "woke": "The water has warmed. A turtle is basking by the pond again.",
+        "eased": "The turtles have settled again. Their pond suits them.",
         "happy": "The turtles bask together in the sun, stacked on their stones."
+      },
+      "uneasy": {
+        "waterSummer": "The turtles seem restless: their pond has dropped in the heat, and they like it deeper. They may move on in a few days.",
+        "water": "The turtles seem restless: their pond is not as deep or as wide as it was. They may move on in a few days.",
+        "food": "The turtles seem restless: there are too few lilies and too little pondweed to feed on. They may move on in a few days.",
+        "shelter": "The turtles seem restless: there is nowhere left to bask, or too little cover at the edge. They may move on in a few days.",
+        "quiet": "The turtles seem restless: their pond has grown too busy. They may move on in a few days.",
+        "company": "The turtles seem restless: the pond is too crowded for them. They may move on in a few days.",
+        "habitat": "The turtles seem restless. They may move on in a few days."
       }
     }
   }
