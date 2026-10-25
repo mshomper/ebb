@@ -644,7 +644,7 @@ export async function startApp(canvas, hooks = {}) {
   // their kind near camp.
   const stores = createStores({ recipe: pack.recipe, piles, walk, glow: campRecipe.glow, ringLaid: () => camp.ringLaid() });
   // Digging (docs/future/13 section 10, P2c; src/world/dig): Dig and Scoop sand on the here-bar once
-  // the shovel is made; `?shovel` (testing, unsaved) puts it in the walker's kit until the workbench makes it.
+  // the shovel is made at the workbench; `?shovel` (testing, unsaved) puts it in the walker's kit.
   const dig = createDig({ recipe: await loadRecipe('world/dig'), keepsakes: keepsakesRecipe, seed, world, walk, terrain, water, pieces, pack, gather, presence,
     worldT: () => clock.worldT(), test: params.has('shovel'), propsRecipe: campRecipe.props, shadowBias: shadowPass.bias, noteKept: (n) => noteKept(n) });
   dig.setKeepsakeWords((n) => keepsakeWords(n, keepsakesRecipe));

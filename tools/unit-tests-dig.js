@@ -14,6 +14,7 @@ import { cleanPieces } from '../src/world/pieces/model.js';
 import { coverPickable, coverPick } from '../src/world/gather/plants.js';
 import { actLength, actPose } from '../src/world/figure/acts.js';
 import { subSeed } from '../src/core/rng.js';
+import { cleanCook, layout, recordMade } from '../src/world/camp/making.js';
 import { HABITAT_CELLS, HABITAT_ORIGIN } from '../src/world/growth/habitat.js';
 
 const G = 'dig';
@@ -212,6 +213,21 @@ export function addDigTests(test, assert, eq) {
     eq(maxFoot, 1, 'the foot drives the blade'); assert(maxTwist >= 20 && maxTwist <= 30, `the twist ${maxTwist}`);
     const end = actPose(PO, 'dig', len);
     eq(end.footW + end.twist + end.lean + end.drop, 0, 'back at rest');
+  });
+
+  test(G, 'rush cord at the workbench: a handful of rushes or marram makes a handful of cord; the shovel takes a stick, a flat stone and cord', async () => {
+    const C = await json('world/cook');
+    const st = cleanCook(null);
+    const cord = C.makes['rush-cord'];
+    eq(cord.at, 'workbench'); eq(cord.out, 'pouch'); eq(cord.gives, 'rush-cord'); eq(cord.count, 1);
+    eq(layout(C, 'workbench', ['rushes.stems'], st).make, 'rush-cord', 'rushes make cord');
+    assert(layout(C, 'workbench', ['rushes.stems'], st).complete, 'one handful is all it takes');
+    eq(layout(C, 'workbench', ['marram.leaves'], st).make, 'rush-cord', 'marram leaves serve too');
+    const sh = layout(C, 'workbench', ['sticks', 'flat-stones', 'rush-cord'], st);
+    eq(sh.make, 'shovel', 'the shovel'); assert(sh.complete, 'complete with three parts');
+    const made = recordMade(st, 'shovel', 40, C.makes.shovel.out === 'tool');
+    assert(made.tools.includes('shovel'), 'the shovel is kept as a tool: Dig is offered from then on');
+    eq(layout(C, 'workbench', ['sticks', 'flat-stones', 'rush-cord'], recordMade(made, 'shovel', 41)).make === 'shovel', false, 'only one shovel is ever made');
   });
 
   test(G, 'rushes: a pick lowers the cell by a quarter and waits until it grows back; out of season, none', async () => {

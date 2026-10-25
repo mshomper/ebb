@@ -53,8 +53,8 @@ export function createDig(o) {
     shapes.forEach((m, i) => o.pieces.pass.setMesh(`spoil-${layer}-${i}`, { data: packMesh(m), indices: m.indices }));
   }
 
-  /** Has the walker the shovel? (S1's workbench makes it, unlocks.shovel; `?shovel` for testing.) */
-  const hasShovel = () => { const u = get('unlocks'); return !!(o.test || u?.shovel || u?.earned?.shovel); };
+  /** Has the walker the shovel? Made at the workbench (the cook section's tools, src/world/camp/making.js); `?shovel` for testing. */
+  const hasShovel = () => !!(o.test || get('cook')?.tools?.includes('shovel'));
 
   // ---- holes ----
 
@@ -350,6 +350,20 @@ export function createDig(o) {
     scooping = { spot: s.spot, t: 0 };
   }
 
+  /**
+   * The shovel on the walker's pack between digs, blade up, leaning a little (act.back); not while
+   * sitting. @returns {any}
+   */
+  function onPack() {
+    const s = o.walk.spot(), B = A.back;
+    if (!s || s.posture === 'sit') return null;
+    const fx = Math.sin(s.yaw), fz = Math.cos(s.yaw), rx = -Math.cos(s.yaw), rz = Math.sin(s.yaw);
+    const x = s.x - fx * B.behindM + rx * B.sideM, z = s.z - fz * B.behindM + rz * B.sideM;
+    const up = B.upM * (s.posture === 'kneel' ? B.kneelShare : 1);
+    // Upside down (pitch past 90 degrees), leaning back over the shoulder.
+    return { key: 'shovel', x, y: ground(s.x, s.z) + up, z, yaw: s.yaw, pitch: Math.PI - (B.leanDeg * Math.PI) / 180, scale: A.scale ?? 1 };
+  }
+
   // ---- cards ----
 
   const offs = [
@@ -397,7 +411,7 @@ export function createDig(o) {
         scooping = null;
       }
       const digging = !!pending && o.walk.acting === 'dig';
-      const sh = digging ? shovelProp(o.walk.hand('r'), o.walk.hand('l'), A) : null;
+      const sh = digging ? shovelProp(o.walk.hand('r'), o.walk.hand('l'), A) : hasShovel() ? onPack() : null;
       props.setProps(sh ? [sh] : []);
     },
 
