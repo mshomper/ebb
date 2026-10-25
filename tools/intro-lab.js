@@ -234,7 +234,7 @@ function openGame(q) {
 
 const NAMES = /** @type {Record<string, string>} */ ({
   landfall: 'Landfall', spring: 'The spring', page: 'The first page', pitch: 'Pitch the tent', gather: 'Gather',
-  ring: 'Lay the ring', shape: 'Go up and shape', dusk: 'Dusk at the fire', rest: 'Rest',
+  ring: 'Lay the ring', shape: 'Shape a pond', plant: 'Plant the pond', store: 'Fill the stores', dusk: 'Dusk at the fire', rest: 'Rest',
 });
 $('beats').innerHTML = intro.beats.map((/** @type {any} */ b, /** @type {number} */ i) =>
   `<button type="button" data-beat="${b.id}">${NAMES[b.id] ?? b.id}<small>beat ${i}</small></button>`).join('');
@@ -243,6 +243,10 @@ $('beats').addEventListener('click', (/** @type {MouseEvent} */ e) => {
   if (b?.dataset.beat) openGame({ intro: b.dataset.beat === 'landfall' ? '' : b.dataset.beat });
 });
 $('replay').addEventListener('click', () => openGame({ intro: '' }));
+// Two moments (src/world/intro/boot.js MOMENTS): the sun setting two parts into the shape beat, and
+// the first dawn coming up on a player who never rested.
+$('sunsetShape').addEventListener('click', () => openGame({ intro: 'shape-sunset' }));
+$('dawnAwake').addEventListener('click', () => openGame({ intro: 'dawn' }));
 $('skipped').addEventListener('click', () => openGame({ nointro: '' }));
 $('newSeed').addEventListener('click', () => {
   seed = (Math.random() * 0xffffffff) >>> 0;
@@ -264,6 +268,11 @@ $('duskNow').addEventListener('click', async () => {
   if (now % 24 < hr - 0.15) w.ebb.debug.skipTo(day, hr - 0.15);
 });
 
+/** The journal's flags in the frame's game. @param {any} w @returns {string[]} */
+function flagsOf(w) {
+  try { return w?.ebb?.intro?.live?.flags?.() ?? []; } catch { return []; }
+}
+
 /** What the director in the frame is doing now, a few times a second. */
 function readGame() {
   /** @type {any} */ let w = null;
@@ -271,7 +280,8 @@ function readGame() {
   const live = w?.ebb?.intro?.live, cur = live?.intro?.current;
   const hint = w?.document?.querySelector('.ebb-notes__hint.is-shown .ebb-notes__hint-text')?.textContent ?? '';
   const rows = [
-    ['Beat', cur ? `${NAMES[cur.id] ?? cur.id}${cur.started ? '' : ' (waiting to start)'}${cur.acting ? `, playing ${cur.acting}` : ''}` : live ? 'The evening is done' : 'Loading'],
+    ['Beat', cur ? `${NAMES[cur.id] ?? cur.id}${cur.part >= 0 ? `, part ${cur.part + 1}` : ''}${cur.started ? '' : ' (waiting to start)'}${cur.acting ? `, playing ${cur.acting}` : ''}` : live ? 'The evening is done' : 'Loading'],
+    ['Evening', flagsOf(w).includes('intro:done') ? (flagsOf(w).includes('intro:stayed-up') ? 'Ended at dawn, never rested' : 'Ended') + (cur ? ', on the morning list' : '') : live ? 'Running' : ''],
     ['Hint', hint ? `<span class="hint">${hint.replace(/</g, '&lt;')}</span>` : 'None showing'],
     ['Below', w?.ebb?.walk ? (w.ebb.walk.below ? 'Yes, on foot' : 'No, above') : ''],
   ];
