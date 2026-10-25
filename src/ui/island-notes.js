@@ -276,7 +276,8 @@ export function mountIslandNotes(parent, words, naturalist = null) {
     cardTimer = setTimeout(() => dispatch({ type: 'ui.identify' }), s * 1000);
   }
   function renderCard() {
-    const id = get('identify');
+    // A station's card opens as its wider workspace instead (src/ui/station.js, S1).
+    const id = get('identify')?.station ? null : get('identify');
     clearTimeout(cardTimer);
     if (!id) {
       // For a moment after it closes, the card still takes a click (and does nothing with it), so a

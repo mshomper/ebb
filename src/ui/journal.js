@@ -19,6 +19,7 @@ import { createShelfView } from './journal-shelf.js';
 import { trailsView } from './journal-trails.js';
 import { herbariumView } from './journal-herbarium.js';
 import { keeperEntry, keeperView, keeperShown, keeperUnread } from './journal-keeper.js';
+import { campEntry, campView } from './journal-camp.js';
 
 
 /** Sections, in order, with their drawn icons. Trails spans the whole row above the six (doc 13). */
@@ -59,6 +60,8 @@ export function mountJournal(parent, live, buttonParent = parent) {
   const shelf = shelfLive ? createShelfView({ ...shelfLive, words }) : null;
   // The keeper's pages (recipes/world/keeper-pages.json), when the app has handed them in.
   const keeper = /** @type {any} */ (live).keeper ?? null;
+  // The camp page (src/ui/journal-camp.js; S1), when the app has handed in recipes/world/cook.json.
+  const cookR = /** @type {any} */ (live).cook ?? null;
 
   const btnRoot = document.createElement('div');
   btnRoot.className = 'ebb-jbtn';
@@ -179,7 +182,7 @@ export function mountJournal(parent, live, buttonParent = parent) {
       dot(t, v === 'notes' ? U.notes > 0 || keeperNew : v === 'living' ? inSection(words.order) : v === 'ground' ? inSection(island.groundOrder) : false);
     }
     if (!ui.open) return;
-    for (const t of tabs) t.setAttribute('aria-pressed', String(t.dataset.view === (ui.view === 'keeper' ? 'notes' : ui.view === 'herbarium' ? 'trails' : ui.view)));
+    for (const t of tabs) t.setAttribute('aria-pressed', String(t.dataset.view === (ui.view === 'keeper' || ui.view === 'camp' ? 'notes' : ui.view === 'herbarium' ? 'trails' : ui.view)));
     // A keeper page open: it shows, and counts as read from now on.
     if (ui.view === 'keeper') {
       const shownId = keeperShown(keeper, flags, ui.keeper);
@@ -200,8 +203,9 @@ export function mountJournal(parent, live, buttonParent = parent) {
     if (ui.view === 'web' && ui.webAt && ui.webAtN !== webAtSeen) { webAtSeen = ui.webAtN; toTrail(ui.webAt); webShelf = null; }
     if (ui.view === 'web' && !webTrail.length) webTrail = [live.web.start];
     const L = /** @type {any} */ (live);
-    const html = ui.view === 'keeper' && keeper ? keeperView(keeper, flags, ui.keeper, NEW)
-      : ui.view === 'shelf' && shelf ? shelf.html() : ui.view === 'notes' ? keeperEntry(keeper, flags, NEW) + notesView() : ui.view === 'almanac' ? almanacView()
+    const html = ui.view === 'camp' && cookR ? campView(cookR, get('camp'), get('cook'), get('campPad'), words)
+      : ui.view === 'keeper' && keeper ? keeperView(keeper, flags, ui.keeper, NEW)
+      : ui.view === 'shelf' && shelf ? shelf.html() : ui.view === 'notes' ? keeperEntry(keeper, flags, NEW) + campEntry(cookR, get('camp'), get('cook')) + notesView() : ui.view === 'almanac' ? almanacView()
       : ui.view === 'web' ? webView(live.describeWeb(), live.web, { trail: webTrail, shelf: webShelf })
       : ui.view === 'trails' ? trailsView({ live: L, words, R: L.naturalist, B: L.beachcomber, S: L.shaper, F: L.forager, which: /** @type {any} */ (ui).trail ?? 'naturalist', wide, four,
         herbarium: !!earned.forage?.herbarium })
@@ -418,7 +422,9 @@ export function mountJournal(parent, live, buttonParent = parent) {
   const timer = setInterval(() => { const u = get('journalUi'); if (u?.open && u.view === 'almanac') render(); }, 2000);
   const unsubs = [subscribe('journal', render), subscribe('journalUi', render), subscribe('keepsakes', render), subscribe('shelfPending', render), subscribe('shelfUi', render),
     // A first written (a keepsake kept, a mark seen, a place made) moves the trails on.
-    subscribe('unlocks', () => { const v = get('journalUi')?.view; if (v === 'trails' || v === 'herbarium') render(); })];
+    subscribe('unlocks', () => { const v = get('journalUi')?.view; if (v === 'trails' || v === 'herbarium') render(); }),
+    // Something made or built at camp: the camp page and its row in Notes (S1).
+    subscribe('cook', () => { const v = get('journalUi')?.view; if (v === 'camp' || v === 'notes') render(); })];
   // The Trails page sits side by side or in tabs by the window's width.
   const onResize = () => { if (get('journalUi')?.view === 'trails') render(); };
   window.addEventListener('resize', onResize);
