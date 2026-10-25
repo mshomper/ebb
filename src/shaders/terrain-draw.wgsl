@@ -19,6 +19,7 @@
 // #include lib-rain
 // #include lib-shore
 // #include lib-casts
+// #include lib-holes
 
 struct TerrainDraw {
   albedoGrass: vec3f, variation: f32,
@@ -79,6 +80,9 @@ struct TerrainDraw {
   camp0: vec4f,                         // xy pad center (m), z pad radius (m), w wear on the pad (0 no pad)
   camp1: vec4f,                         // x wear fade outside the pad (m), y packed earth albedo factor, z share of wetness shed, w share of moss kept
   campDash: vec4f,                      // the dashed edge (marks with a negative radius): x dash (m), y gap (m), z width (m)
+  // Holes the walker dug (lib-holes, src/world/dig): up to 16 near the view, two vec4s each.
+  holes: array<vec4f, 32>,
+  holeLook: vec4f,                      // x how far the darker fresh soil reaches past a hole's rim (m)
 };
 
 // Cracks in drying mud: a jittered cellular network (F2 - F1 of the nearest plate centers), so the
@@ -411,6 +415,12 @@ fn fsLand(in: VsOut) -> FsOut {
     let fade = 1.0 - smoothstep(td.cast1.w * 0.6, td.cast1.w, viewDist);
     albedo = mix(albedo, albedo * td.cast1.rgb * (0.6 + 0.45 * lug.tone), lug.cover * fade);
     shoreGrad += lug.grad * fade;
+  }
+  // Holes you dug: the mouth and the darker fresh soil round it, drawn into the ground.
+  if (td.holes[0].z > 0.0) {
+    let ho = dugHoles(xz, albedo, td.holes, td.holeLook.x);
+    albedo = ho.albedo;
+    shoreGrad += ho.grad;
   }
   // Wet to dry (lush.js): the grass layer takes the blades' tint, deeper by the water, paler and
   // straw-cured on the dry rise, so the areas read past where blades end, with no ring there.

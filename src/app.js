@@ -1682,6 +1682,8 @@ export async function startApp(canvas, hooks = {}) {
     terrainPass.setMarks(plantTool.marks(now, getStore('hand')?.kind === 'seed' || getStore('hand')?.kind === 'gift', chosen?.pinned ? chosen : null, [...(padMark ? [padMark] : []), ...bury,...(getStore('reveal')?.rings?.(now) ?? []), ...creatures.foodRings(), ...intro.rings(now), ...camp.rings(now / 1000), ...stores.rings(now / 1000)]));
     // Lugworm casts are drawn into the sand by the terrain pass.
     terrainPass.setCasts(finds.casts());
+    // So are the holes you dug (src/world/dig): their mouths and the fresh soil round them.
+    terrainPass.setHoles(dig.marks([camera.target[0], camera.target[2]]), dig.ringM);
     updatePour();
     if (queuedHistory && !terrain.isBusy()) runHistory(queuedHistory);
     // Ground detail waits for a few calm frames so the first picture is as quick as before (docs/22).

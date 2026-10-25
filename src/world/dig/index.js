@@ -379,6 +379,8 @@ export function createDig(o) {
   return {
     id: 'dig',
     props,
+    /** How far the fresh soil reaches past a hole's rim (m), for the terrain pass. */
+    ringM: R.look.fresh.ringM,
     /** For tools and testing: the ground class at a point, and what a press of Dig would do now. */
     classAt, plan,
     /** The words a dug keepsake's card says (its family's line). @param {(n: any) => string} fn */
