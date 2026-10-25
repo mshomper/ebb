@@ -246,6 +246,16 @@ function makeStage(canvas, gpu, lib) {
     /** The next draw puts the camera straight at its view, with no easing (frame strips). */
     snap() { snapNext = true; },
     /**
+     * Where a world point (body m) fell in the last frame drawn, as shares of the canvas [0..1, 0..1]
+     * from its top left (frame strips draw a held tool over the figure). @param {number[]} p
+     */
+    project(p) {
+      const m = u;
+      const x = m[0] * p[0] + m[4] * p[1] + m[8] * p[2] + m[12], y = m[1] * p[0] + m[5] * p[1] + m[9] * p[2] + m[13];
+      const w = m[3] * p[0] + m[7] * p[1] + m[11] * p[2] + m[15];
+      return [(x / w) * 0.5 + 0.5, 0.5 - (y / w) * 0.5];
+    },
+    /**
      * @param {{ bones: Float32Array, eyes: Float32Array, place: number[], weights: boolean, night: boolean, water: number, follow: number[], dt: number }} f
      */
     draw(f) {

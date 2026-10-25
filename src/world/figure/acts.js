@@ -1,6 +1,7 @@
 // @ts-check
 // The walker's short acts (keeper's camp, docs/future/13-keepers-camp.md 2.3): drink, pitch, lay,
-// strike (the fire steel), crawlIn and climbOut. Each is a track of keys in recipes/world/figure.json
+// strike (the fire steel), crawlIn and climbOut, and dig (the shovel, docs/future/13 10.2: bent over, the
+// hands drive the blade, and a twist of the chest tips the spoil, P2c). Each is a track of keys in recipes/world/figure.json
 // poses: at t seconds in, how far into the kneel and the crawl, extra lean, head pitch and hip drop,
 // and where each hand reaches (body meters, y over the ground under you). A key changes only what it
 // names; the rest carries on from the key before. Between keys the pose eases (smoothstep), so
@@ -14,7 +15,7 @@
 import { smooth, lerp } from './kinematics.js';
 
 /** The acts there are. */
-export const ACTS = ['drink', 'pitch', 'lay', 'strike', 'crawlIn', 'climbOut'];
+export const ACTS = ['drink', 'pitch', 'lay', 'strike', 'crawlIn', 'climbOut', 'dig'];
 
 /**
  * @typedef {Object} ActPose
@@ -24,9 +25,10 @@ export const ACTS = ['drink', 'pitch', 'lay', 'strike', 'crawlIn', 'climbOut'];
  * @property {number} drop  the hips lower by this (body m)
  * @property {number} arms  how much the hands follow l and r, 0..1
  * @property {number[]} l @property {number[]} r  hand targets (body m, y over the ground under you)
+ * @property {number} twist  the chest's turn to the right (degrees; the dig's tip onto the spoil heap)
  */
 
-const START = { t: 0, kneel: 0, crawl: 0, lean: 0, head: 0, yaw: 0, drop: 0, arms: 0, l: [0.12, 0.5, 0.25], r: [-0.12, 0.5, 0.25] };
+const START = { t: 0, kneel: 0, crawl: 0, lean: 0, head: 0, yaw: 0, drop: 0, arms: 0, l: [0.12, 0.5, 0.25], r: [-0.12, 0.5, 0.25], twist: 0 };
 /** Keys with everything filled in from the key before. @type {WeakMap<object[], ActPose & { t: number }[]>} */
 const resolved = new WeakMap();
 
@@ -79,7 +81,7 @@ function posed(keys, u) {
   const mix = (/** @type {number} */ p, /** @type {number} */ q) => lerp(p, q, f);
   return {
     kneel: mix(a.kneel, b.kneel), crawl: mix(a.crawl, b.crawl), lean: mix(a.lean, b.lean), head: mix(a.head, b.head), yaw: mix(a.yaw, b.yaw),
-    drop: mix(a.drop, b.drop), arms: mix(a.arms, b.arms),
+    drop: mix(a.drop, b.drop), arms: mix(a.arms, b.arms), twist: mix(a.twist, b.twist),
     l: [0, 1, 2].map((j) => mix(a.l[j], b.l[j])), r: [0, 1, 2].map((j) => mix(a.r[j], b.r[j])),
   };
 }

@@ -190,6 +190,72 @@ STRIPS.gesturesB = { title: 'Gestures (two)', tile: [240, 320], view: { yaw: -Ma
 STRIPS.making = { title: 'Making (S1)', tile: [240, 320], view: { yaw: -Math.PI / 2, pitch: 0.16, dist: 4 }, rows: [...gestureRows(['make']),
   { name: 'Make at the workbench, from the front', view: { yaw: 0, pitch: 0.16, dist: 4 }, run: () => gestureRun('make'), picks: gesturePicks('make') }] };
 
+// The dig (P2c, docs/future/13 10.2): one press of Dig, the shovel drawn over the figure from its two
+// hands as the game holds it (src/world/dig/draw.js shovelProp: the blade gripM past the right hand,
+// through the left), its buried part left out below the ground line. Seen from the right, the side
+// the spoil is thrown to, and from the left.
+const DIG = await (await fetch('../recipes/world/dig.json')).json();
+const handBones = { l: built.skeleton.findIndex((b) => b.name === 'hand.l'), r: built.skeleton.findIndex((b) => b.name === 'hand.r') };
+/** A hand's wrist in the stage's world (body m), the figure placed at the origin facing yaw. @param {any} motion @param {'l'|'r'} side @param {number} yaw */
+function handAt(motion, side, yaw) {
+  const i = handBones[side], p = built.skeleton[i].pivot, m = motion.bones.subarray(i * 16, i * 16 + 16);
+  const bx = m[0] * p[0] + m[4] * p[1] + m[8] * p[2] + m[12], by = m[1] * p[0] + m[5] * p[1] + m[9] * p[2] + m[13], bz = m[2] * p[0] + m[6] * p[1] + m[10] * p[2] + m[14];
+  const c = Math.cos(yaw), s = Math.sin(yaw);
+  return [c * bx + s * bz, by, -s * bx + c * bz];
+}
+function digRun() {
+  const motion = createFigureMotion(R, built.skeleton);
+  let t = 0;
+  return {
+    motion,
+    step() {
+      t += DT;
+      if (Math.abs(t - 0.5) < DT / 2) motion.act('dig');
+      const r = motion.update(DT, { x: 0, z: 0, y: 0, yaw: 0, speed: 0, moving: false, ground: () => 0, depth: () => 0, below: true, posture: 'stand' });
+      return { t, r, act: motion.acting };
+    },
+    place: () => [0, 0, 0, 0],
+    /** The shovel's shaft and blade now, in the stage's world (body m). */
+    shovel() {
+      const r = handAt(motion, 'r', 0), l = handAt(motion, 'l', 0);
+      const d = [l[0] - r[0], l[1] - r[1], l[2] - r[2]], n = Math.hypot(...d) || 1;
+      const g = (DIG.act.gripM * (DIG.act.scale ?? 1)) / (R.body.displayScale ?? 1);
+      const top = r.map((v, k) => v - (d[k] / n) * 0.1 * g), tip = r.map((v, k) => v + (d[k] / n) * g);
+      return { top, tip, blade: r.map((v, k) => v + (d[k] / n) * g * 0.72) };
+    },
+  };
+}
+const digKeys = R.poses.dig.keys;
+const digPicks = () => digKeys.map((k, i) => ({ i: Math.round((0.5 + k.t) / DT) - 1, label: `${k.t.toFixed(2)} s ${['ready', 'bend', 'drive', 'lever', 'lift', 'tip', 'ready'][i] ?? ''}` }));
+STRIPS.dig = {
+  title: 'Dig with the shovel',
+  tile: [260, 360],
+  view: SIDE.right,
+  rows: [
+    { name: 'from the right', view: SIDE.right, run: digRun, picks: digPicks, overlay: true },
+    { name: 'from the left', view: SIDE.left, run: digRun, picks: digPicks, overlay: true },
+  ],
+};
+
+/**
+ * The shovel over a drawn frame: its shaft from above the right hand down through the left, the blade
+ * near its end; nothing below the ground line (y = 0), where the blade is in the earth.
+ * @param {CanvasRenderingContext2D} g @param {any} run @param {number} x @param {number} y tile corner @param {number} w @param {number} h
+ */
+function drawShovel(g, run, x, y, w, h) {
+  const s = run.shovel();
+  /** @param {number[]} a @param {number[]} b */
+  const cut = (a, b) => (b[1] >= 0 ? b : a[1] <= 0 ? a : a.map((v, k) => v + (b[k] - v) * (a[1] / (a[1] - b[1]))));
+  const at = (/** @type {number[]} */ p) => { const q = stage.project(p); return [x + q[0] * w, y + q[1] * h]; };
+  const top = at(s.top), blade = at(cut(s.top, s.blade)), tip = at(cut(s.top, s.tip));
+  g.lineCap = 'round';
+  g.strokeStyle = '#7D6352'; g.lineWidth = 6;
+  g.beginPath(); g.moveTo(top[0], top[1]); g.lineTo(blade[0], blade[1]); g.stroke();
+  g.strokeStyle = '#6E6E68'; g.lineWidth = 14;
+  if (Math.hypot(tip[0] - blade[0], tip[1] - blade[1]) > 1) { g.beginPath(); g.moveTo(blade[0], blade[1]); g.lineTo(tip[0], tip[1]); g.stroke(); }
+  g.lineCap = 'butt';
+}
+
 const LABEL = 34, CURVE_H = 110, HEAD = 40, PAD = 12;
 
 /** Draw one strip into the strip canvas. @param {string} name */
@@ -226,6 +292,7 @@ async function render(name) {
       // Copied in the same task as the draw, while the frame is still the canvas's own.
       const x = c * TILE_W, y = y0 + HEAD;
       g.drawImage(view, x, y, TILE_W, TILE_H);
+      if (row.overlay) drawShovel(g, b, x, y, TILE_W, TILE_H);
       await new Promise((ok) => setTimeout(ok, 0));
       // Upright: a faint line through the feet.
       g.strokeStyle = 'rgba(74,106,71,0.45)'; g.setLineDash([6, 6]); g.lineWidth = 2;

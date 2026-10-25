@@ -198,21 +198,21 @@ export function addDigTests(test, assert, eq) {
     eq(cleanHoleFields({ ...hole(), closedHour: 'x' })?.closedHour, -1, 'an unreadable closing hour is open');
   });
 
-  test(G, 'the dig motion: about two seconds, hands on the shovel throughout, a foot and a twist, back at rest', async () => {
+  test(G, 'the dig motion: about two seconds, hands on the shovel throughout, bent over and a twist, back at rest', async () => {
     const PO = (await FP).poses;
     const len = actLength(PO, 'dig');
     assert(len >= 1.8 && len <= 2.4, `length ${len}`);
-    let maxFoot = 0, maxTwist = 0;
+    let maxLean = 0, maxTwist = 0;
     for (let u = 0; u <= len; u += 0.05) {
       const p = actPose(PO, 'dig', u);
       assert(p.arms > 0.99, 'both hands on the handle');
       assert(p.kneel === 0 && p.crawl === 0, 'standing');
-      assert(Math.abs(p.lean) <= 30 && p.drop <= 0.2, `within limits at ${u.toFixed(2)}`);
-      maxFoot = Math.max(maxFoot, p.footW); maxTwist = Math.max(maxTwist, p.twist);
+      assert(p.lean >= 0 && p.lean <= 70 && p.drop <= 0.2, `within limits at ${u.toFixed(2)}`);
+      maxLean = Math.max(maxLean, p.lean); maxTwist = Math.max(maxTwist, p.twist);
     }
-    eq(maxFoot, 1, 'the foot drives the blade'); assert(maxTwist >= 20 && maxTwist <= 30, `the twist ${maxTwist}`);
+    assert(maxLean >= 55, `bent over (${maxLean})`); assert(maxTwist >= 20 && maxTwist <= 30, `the twist ${maxTwist}`);
     const end = actPose(PO, 'dig', len);
-    eq(end.footW + end.twist + end.lean + end.drop, 0, 'back at rest');
+    eq(end.twist + end.lean + end.drop, 0, 'back at rest');
   });
 
   test(G, 'rush cord at the workbench: a handful of rushes or marram makes a handful of cord; the shovel takes a stick, a flat stone and cord', async () => {
