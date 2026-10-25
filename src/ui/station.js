@@ -13,7 +13,7 @@ import { get, subscribe } from '../core/store.js';
 import { dispatch } from '../input/actions.js';
 import { ensureIconSprite, iconSvg } from './icons/icons.js';
 import { itemIconSvg, itemPouchSvg } from './icons/items.js';
-import { itemIconFor } from './icons/item-registry.js';
+import { itemIconFor, driedIconFor } from './icons/item-registry.js';
 import { actionsFor, cardAction } from './card-actions.js';
 
 /** @param {string} s */
@@ -53,6 +53,7 @@ export function mountStation(parent, words, ui = {}) {
     const acts = card?.station ? actionsFor(card, words) : [];
     const actRow = acts.map(({ a, label, main }) =>
       `<button type="button" class="ebb-idcard__act${main ? ' is-main' : ''}" data-cact="${esc(a.id)}" aria-label="${esc(label)}" data-label="${esc(label)}">${iconSvg(a.icon)}</button>`).join('');
+    if (v.mode === 'store') { renderKeep(v, card, actRow); return; }
     // The surface: laid parts, then the pencil outlines, then empty spots.
     const spots = [];
     v.laid.forEach((/** @type {any} */ p, /** @type {number} */ i) => spots.push(
@@ -72,6 +73,9 @@ export function mountStation(parent, words, ui = {}) {
     }).join('');
     const piles = v.piles.map((/** @type {any} */ p) =>
       `<button type="button" class="ebb-station__pile" data-lay="${esc(p.kind)}" ${p.left > 0 ? '' : 'disabled'} aria-label="${esc(p.name)}" data-label="${esc(p.name)}">${glyph(p.kind)}<span>${esc(p.word)}</span></button>`).join('');
+    // What the hamper holds (P2j): laid from as the piles are, after them.
+    const store = (v.store ?? []).map((/** @type {any} */ p) =>
+      `<button type="button" class="ebb-station__pile" data-lay="${esc(p.kind)}" ${p.left > 0 ? '' : 'disabled'} aria-label="${esc(p.name)}" data-label="${esc(p.name)}">${glyph(p.kind)}<span>${esc(p.word)}</span></button>`).join('');
     root.innerHTML = `
       <div class="ebb-station__head"><span class="ebb-idcard__icon">${iconSvg(A.icon)}</span><b>${esc(v.name)}</b>
         <span class="ebb-station__acts">${actRow}</span>
@@ -87,6 +91,40 @@ export function mountStation(parent, words, ui = {}) {
           <h4>${esc(v.packName)}</h4>
           <div class="ebb-station__row">${pouches || '<span class="ebb-station__none"></span>'}</div>
           ${piles ? `<h4>${esc(v.pilesName)}</h4><div class="ebb-station__row">${piles}</div>` : ''}
+          ${store ? `<h4>${esc(v.storeName)}</h4><div class="ebb-station__row">${store}</div>` : ''}
+        </section>
+      </div>`;
+  }
+
+  /**
+   * The hamper's or the drying rack's card (P2j, S2): its slots (or bunches) as drawn icons with the
+   * pile words, each a Take up; empty slots drawn plain; the pouches below to set down.
+   * @param {any} v @param {any} card @param {string} actRow
+   */
+  function renderKeep(v, card, actRow) {
+    const slots = v.slots.map((/** @type {any} */ s) => {
+      const icon = v.id === 'rack' && s.dried ? driedIconFor(s.kind) : itemIconFor(s.kind);
+      const label = `${v.takeLabel}: ${s.name}`;
+      return `<button type="button" class="ebb-station__slot" data-take="${s.i}" aria-label="${esc(label)}" data-label="${esc(label)}">${icon ? itemIconSvg(icon) : ''}<span>${esc(s.word)}</span></button>`;
+    });
+    for (let i = v.slots.length; i < v.size; i++) slots.push(`<span class="ebb-station__slot is-empty" role="img" aria-label="${esc(v.emptyName)}"></span>`);
+    const pouches = v.pack.map((/** @type {any} */ p) => {
+      const icon = itemIconFor(p.kind);
+      return `<button type="button" class="ebb-station__pouch" data-down="${esc(p.kind)}" aria-label="${esc(p.name)}" data-label="${esc(p.name)}">${itemPouchSvg(icon, p.handfuls)}</button>`;
+    }).join('');
+    root.innerHTML = `
+      <div class="ebb-station__head"><span class="ebb-idcard__icon">${iconSvg(v.id === 'rack' ? 'dry' : 'takeup')}</span><b>${esc(v.name)}</b>
+        <span class="ebb-station__acts">${actRow}</span>
+        <button type="button" class="ebb-idcard__close" data-close="1" aria-label="Close" title="Close">${iconSvg('close')}</button></div>
+      ${card?.text ? `<p class="ebb-station__text">${esc(card.text)}</p>` : ''}
+      <div class="ebb-station__body">
+        <section class="ebb-station__surface ebb-station__keep">
+          <div class="ebb-station__slots">${slots.join('')}</div>
+          ${v.line ? `<p class="ebb-station__line">${esc(v.line)}</p>` : ''}
+        </section>
+        <section class="ebb-station__stores">
+          <h4>${esc(v.packName)}</h4>
+          <div class="ebb-station__row">${pouches || '<span class="ebb-station__none"></span>'}</div>
         </section>
       </div>`;
   }
@@ -98,6 +136,8 @@ export function mountStation(parent, words, ui = {}) {
     else if (b.dataset.lay) dispatch({ type: 'station.lay', kind: b.dataset.lay });
     else if (b.dataset.unlay !== undefined) dispatch({ type: 'station.unlay', i: Number(b.dataset.unlay) });
     else if (b.dataset.go) dispatch({ type: 'station.act' });
+    else if (b.dataset.take !== undefined) dispatch({ type: 'keep.takeUp', i: Number(b.dataset.take) });
+    else if (b.dataset.down) dispatch({ type: 'pack.setDownKind', kind: b.dataset.down });
     else if (b.dataset.cact) {
       const ca = cardAction(b.dataset.cact), card = get('identify');
       const act = ca?.action && card ? ca.action(card) : null;

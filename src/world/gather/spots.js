@@ -15,7 +15,7 @@ import { PERIOD, periodOf } from './events.js';
 // New kinds go at the end: a kind's place here salts its rolls (as finds' KINDS), so sticks and
 // lichen twigs at the same shrub roll apart. Later kinds: kelp, wrack, sand, leaves, lichen-twigs,
 // acorns, hazelnuts, old-comb, charcoal, ash, cakes.
-export const KINDS = Object.freeze(['sticks', 'drift-twigs', 'pebbles', 'flat-stones', 'sand']);
+export const KINDS = Object.freeze(['sticks', 'drift-twigs', 'pebbles', 'flat-stones', 'sand', 'shells']);
 
 /** A bin's side (m), gather.json spotM. Keys are bin indices, so this stays 2. */
 export const BIN_M = 2;

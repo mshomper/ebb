@@ -5,9 +5,13 @@
 // what the player did is kept; everything drawn is worked out from it. Pure.
 
 import { cleanFire, noFire, layFire } from './fire.js';
+import { cleanHolds } from '../pack/store.js';
+import { cleanBunches } from '../pack/piles.js';
 
 /**
- * @typedef {{ slot: string, kind: string, seed: number, placedHour: number }} SlotRecord
+ * @typedef {{ slot: string, kind: string, seed: number, placedHour: number, stack?: number,
+ *   holds?: import('../pack/store.js').Holds, bunches?: import('../pack/piles.js').Bunches }} SlotRecord
+ *   stack, holds: the hamper's (P2j); bunches: the drying rack's (S2)
  * @typedef {{ version: number, stamped?: boolean, pad?: any, kit: { tent: 'pack' | 'pitched' | 'boat', lantern: 'pole' | 'carried' },
  *   slots: SlotRecord[], fire: import('./fire.js').Fire, rested: { hour: number, at: number } | null, firstPitchedHour: number | null }} Camp
  *   Other fields a save carries (E1's, later phases') are kept as they are.
@@ -26,7 +30,11 @@ export function cleanCamp(v) {
   /** @type {SlotRecord[]} */ const slots = [];
   for (const s of Array.isArray(c.slots) ? c.slots : []) {
     if (!s || typeof s.slot !== 'string' || typeof s.kind !== 'string' || slots.some((q) => q.slot === s.slot)) continue;
-    slots.push({ slot: s.slot, kind: s.kind, seed: (Number(s.seed) >>> 0), placedHour: Number.isFinite(s.placedHour) ? s.placedHour : 0 });
+    /** @type {SlotRecord} */ const r = { slot: s.slot, kind: s.kind, seed: (Number(s.seed) >>> 0), placedHour: Number.isFinite(s.placedHour) ? s.placedHour : 0 };
+    // The hamper (P2j) carries what it holds and how many stack; the rack (S2) its bunches.
+    if (s.kind === 'hamper') { r.stack = s.stack === 2 ? 2 : 1; r.holds = cleanHolds(s.holds); }
+    if (s.kind === 'rack') r.bunches = cleanBunches(s.bunches);
+    slots.push(r);
   }
   const tent = TENT.includes(kitIn.tent) ? kitIn.tent : slots.some((s) => s.kind === 'tent') ? 'pitched' : 'pack';
   const rested = c.rested && Number.isFinite(c.rested.hour) && Number.isFinite(c.rested.at) ? { hour: c.rested.hour, at: c.rested.at } : null;

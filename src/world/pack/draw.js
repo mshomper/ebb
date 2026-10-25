@@ -30,6 +30,8 @@ import { splitPieces, firstPieces, buildsUp, scaledMesh } from './pile-pieces.js
 import { logStack, stoneHeap, logsShown } from './log-stack.js';
 import { pickupMesh, pebbleMesh, stickPileMesh, stonePileMesh, roundLogMesh, woodStoreMesh, scrapeMesh } from './pickup-meshes.js';
 import { storeSlots } from './stores.js';
+import { campPadNow } from './camp.js';
+import { slotWorld } from '../camp/layout.js';
 
 /** @typedef {import('./pickup-meshes.js').Mesh} Mesh */
 
@@ -230,6 +232,15 @@ export function createPackDraw(o) {
     put(pilePass, 'store:stones', scrapeMesh(SR.stones.look));
     put(pilePass, 'store:clay', pebbleMesh(0xc1a7, SR.clay.look.radii, 0.06, SR.clay.look.color, 0.3));
   }
+  // The hamper (P2j): the rush hamper made in code, painted in vertex colours, and the stacked pair.
+  // Keys 'hamper:1' and 'hamper:2'; drawn once the camp's store slot holds one.
+  const HL = R.store?.look;
+  (HL?.models ?? []).forEach((/** @type {string} */ path, /** @type {number} */ i) => {
+    fetch(new URL(`../../../${path}`, import.meta.url))
+      .then((r) => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.arrayBuffer(); })
+      .then((b) => { put(pilePass, `hamper:${i + 1}`, campModelMesh(readGlb(b), HL.color ?? [0.4, 0.33, 0.2])); dirty = true; })
+      .catch((e) => console.info(`pack: ${path} not loaded (${e.message})`));
+  });
   // A few seeded shapes of each ground kind.
   for (const [kind, K] of Object.entries(P.kinds)) {
     for (let v = 0; v < P.variants; v++) put(pickupPass, `${kind}-${v}`, pickupMesh(kind, hash32(0x9c4b, v, kind.length), K));
@@ -237,7 +248,7 @@ export function createPackDraw(o) {
 
   let dirty = true, clock = 0, since = 0;
   /** @type {number[] | null} */ let lastAt = null;
-  const offs = ['gather:done', 'pack:changed', 'pack:set-down', 'pile:changed', 'camp:stamped'].map((ev) => on(ev, () => { dirty = true; }));
+  const offs = ['gather:done', 'pack:changed', 'pack:set-down', 'pile:changed', 'camp:stamped', 'camp:placed'].map((ev) => on(ev, () => { dirty = true; }));
 
   /** Where to draw near: you, below; else the view's middle. */
   function focus() {
@@ -273,6 +284,17 @@ export function createPackDraw(o) {
           const x = s.x + Math.cos(a) * d, z = s.z + Math.sin(a) * d;
           out.push({ x, y: ground(x, z) - L.sinkM, z, yaw: u01(hash32(h, 2)) * 2 * Math.PI, size: E.edgeSize * (0.9 + 0.2 * u01(hash32(h, 3))), mesh: `stone1:${i % shades}` });
         }
+      }
+    }
+    // The hamper in the store slot, facing the fire (P2j); the stacked pair once it has grown.
+    const hamper = (get('camp')?.slots ?? []).find((/** @type {any} */ s) => s.slot === 'store' && s.kind === 'hamper');
+    const pad = hamper ? campPadNow() : null;
+    const hs = pad ? (pad.camp?.slots ?? []).find((/** @type {any} */ s) => s.id === 'store') : null;
+    if (hamper && pad && hs) {
+      const at = slotWorld(pad, hs), rs = (pad.camp?.slots ?? []).find((/** @type {any} */ s) => s.id === 'ring');
+      const ring = rs ? slotWorld(pad, rs) : null;
+      if ((at.x - f[0]) ** 2 + (at.z - f[1]) ** 2 <= near2) {
+        out.push({ x: at.x, y: ground(at.x, at.z), z: at.z, yaw: ring ? Math.atan2(ring.x - at.x, ring.z - at.z) : at.yaw, size: 1, mesh: `hamper:${hamper.stack === 2 ? 2 : 1}` });
       }
     }
     for (const h of o.pack?.heaps?.() ?? []) {

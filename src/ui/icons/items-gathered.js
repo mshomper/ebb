@@ -247,6 +247,16 @@ export const GATHERED = {
   wrack: ['sea', `<path d="M12 17.8V13.6C12 11 9.6 9.6 8.2 6.8M12 13.6C12 11 14.4 9.6 15.8 6.8M8.2 6.8L6.8 3.6M8.2 6.8L9.8 3.8M15.8 6.8L14.2 3.8M15.8 6.8L17.2 3.6"/>
     ${ring(9.6, 9.8, 1.4)}${ring(14.4, 9.8, 1.4)}${ring(12, 15.2, 1.3)}${WAVE}`],
 
+  // Broken shells (S2): a ribbed cockle half with a bite out of its rim, and a shard beside it.
+  shells: ['sea', `${both('d="M4.6 15.4C4.6 10.6 7.6 6.8 11.4 6.8C15.2 6.8 18.2 10.6 18.2 15.4L15.8 15.4L14.6 13.8L13 15.4Z"')}
+    <path d="M11.4 6.8V15.4M8.2 8.6L7 15.4M14.6 8.6L15.4 13.6"/><path d="M10.2 15.4H12.6V17H10.2Z"/>
+    ${both('d="M17.4 18.2L20.6 16.8L21.2 18.8Z"')}${WAVE}`],
+
+  // Crushed shell (S2, ground at the apothecary): a pale heap of angular grit.
+  'crushed-shell': ['earth', `${both('d="M3.5 19.5C5.5 14 8.6 11.5 12 11.5S18.5 14 20.5 19.5Z"')}<path d="M2.5 19.5H21.5"/>
+    <path d="M8 17L9.2 15.8L10 17.2ZM12.4 14.4L13.8 13.6L13.6 15ZM14.8 17.4L16.2 16.6L16.4 18ZM11 18.2L12.2 17.4L12.6 18.6Z"/>
+    <path d="M11.6 8.8L12.6 8.2L12.4 9.4ZM13.4 5.6L14.2 5L14.2 6.2ZM10.8 4.2L11.6 3.6L11.8 4.8Z"/>`],
+
   // ---- Seeds: the fallback when a plant has no chip or part of its own ----
   // A dry seed head on its stem, seeds dropping from it.
   seedhead: ['seeds', `<path d="M12 20.6V10"/>${both('d="M12 10C9.6 10 8.4 8 8.6 6.2C8.8 4.4 10.2 3.4 12 3.4S15.2 4.4 15.4 6.2C15.6 8 14.4 10 12 10Z"')}

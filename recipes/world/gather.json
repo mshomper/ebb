@@ -37,7 +37,8 @@
     "drift-twigs": { "source": "strand", "lines": 2, "handfuls": [1, 1, 1, 1], "onshore": 1, "empty": [0.75, 0.75, 0.75, 0.75], "emptyOnshore": 0.6, "cluster": { "cellBins": 3, "keep": 0.35 } },
     "pebbles": { "source": "bin", "where": ["shoreShingle", "streamBed"], "handfuls": [2, 2, 2, 2], "empty": [0.55, 0.55, 0.55, 0.55], "cluster": { "cellBins": 3, "keep": 0.35 } },
     "flat-stones": { "source": "bin", "where": ["bandRock", "steepShingle"], "handfuls": [1, 1, 1, 1], "empty": [0.7, 0.7, 0.7, 0.7], "cluster": { "cellBins": 3, "keep": 0.35 } },
-    "sand": { "source": "bin", "where": ["drySand"], "handfuls": [3, 3, 3, 3], "rainNone": true, "empty": [0, 0, 0, 0], "hereOnly": true, "note": "P2c: dry sand above the wet line, three handfuls a 2 m bin a day, none on a rain day or the day after (rainNone). hereOnly: the ground itself is never clicked (docs/future/13 3.12); it is offered as Scoop sand on the here-bar while you stand on it (src/world/dig)." }
+    "sand": { "source": "bin", "where": ["drySand"], "handfuls": [3, 3, 3, 3], "rainNone": true, "empty": [0, 0, 0, 0], "hereOnly": true, "note": "P2c: dry sand above the wet line, three handfuls a 2 m bin a day, none on a rain day or the day after (rainNone). hereOnly: the ground itself is never clicked (docs/future/13 3.12); it is offered as Scoop sand on the here-bar while you stand on it (src/world/dig)." },
+    "shells": { "source": "strand", "lines": 2, "handfuls": [1, 1, 1, 1], "onshore": 1, "empty": [0.7, 0.75, 0.7, 0.6], "emptyOnshore": 0.5, "cluster": { "cellBins": 3, "keep": 0.35 }, "note": "S2: broken shells along the newest two strandlines, more after an onshore blow and in winter storms; ground to crushed shell at the apothecary (Grind)." }
   },
   "words": {
     "plenty": "Plenty here.", "little": "A little left.", "pickedOver": "Picked over for today.",

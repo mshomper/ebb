@@ -63,7 +63,8 @@ function campSketch(pad, camp) {
       const f = slots.find((/** @type {any} */ q) => q.id === s.faces);
       const deg = f ? Math.atan2(-(f.v - s.v), f.u - s.u) * 180 / Math.PI + 90 : 0;
       parts.push(`<rect x="${x - (s.w / 2) * S}" y="${y - (s.d / 2) * S}" width="${s.w * S}" height="${s.d * S}" rx="3" class="cp-bench" transform="rotate(${deg.toFixed(1)} ${x} ${y})"/>`);
-    } else if (['sticks', 'stones', 'clay'].includes(s.id)) parts.push(`<circle cx="${x}" cy="${y}" r="${(s.r ?? 0.4) * S}" class="cp-store"/>`);
+    } else if (s.id === 'rack' && has('rack')) parts.push(`<rect x="${x - (s.w / 2) * S}" y="${y - (s.d / 2) * S}" width="${s.w * S}" height="${s.d * S}" rx="3" class="cp-bench"/>`);
+    else if (['sticks', 'stones', 'clay'].includes(s.id) || (s.id === 'store' && has('store'))) parts.push(`<circle cx="${x}" cy="${y}" r="${(s.r ?? 0.4) * S}" class="cp-store"/>`);
   }
   const w = (2 * R) * S + 20;
   return `<svg class="ebb-camppage__sketch" viewBox="0 0 ${w} ${w}" role="img" aria-label="The camp from above">

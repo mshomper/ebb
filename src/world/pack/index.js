@@ -15,9 +15,10 @@ import { atCamp } from './camp.js';
 
 /**
  * @param {{ recipe: any, you: () => number[] | null, day: () => number,
- *   setDown?: (kind: string, handfuls: number) => { moved: number, refuse?: string, pile?: string } }} o
+ *   setDown?: (kind: string, handfuls: number) => { moved: number, refuse?: string, pile?: string | null, at?: { x: number, z: number } | null, full?: string } }} o
  *   you: where you stand below ([x, y, z]) or null above; day: the game day index; setDown: the
- *   camp's piles (src/world/pack/piles-live.js), which take what fits and say why not otherwise
+ *   camp's places (route.js: the rack, the piles, the hamper), which take what fits and say why not
+ *   otherwise (full: the words key for the place that filled)
  */
 export function createPack(o) {
   const R = o.recipe;
@@ -125,9 +126,10 @@ export function createPack(o) {
       if (r.moved > 0) {
         const t = takeFrom(pack(), k, r.moved, kinds, R);
         keep(t.pack);
-        emitDeferred('pack:set-down', { kind: k, handfuls: r.moved, pile: r.pile ?? null });
+        emitDeferred('pack:set-down', { kind: k, handfuls: r.moved, pile: r.pile ?? null, at: r.at ?? null });
       }
-      if (!r.refuse && r.moved < h) emitDeferred('island:notice', { text: W.pileFull, showS: 4 });
+      // What did not fit: the line for the place that filled (a pile, the rack, the hamper).
+      if (!r.refuse && r.moved < h) emitDeferred('island:notice', { text: W[r.full ?? 'pileFull'] ?? W.pileFull, showS: 4 });
       if (!keepCard) update('identify', () => null);
     },
 

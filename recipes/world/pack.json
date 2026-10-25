@@ -35,16 +35,18 @@
     { "id": "sand", "name": "Sand", "group": "earth", "sketch": "mound", "camp": "heap", "line": "Dry sand from above the tide." },
     { "id": "clay", "name": "Clay", "group": "earth", "sketch": "clay", "camp": "clay", "line": "Blue-grey clay, cool and sticky." },
     { "id": "ash", "name": "Wood ash", "group": "earth", "sketch": "mound", "camp": "heap", "line": "Soft grey ash from the cold ring." },
+    { "id": "crushed-shell", "name": "Crushed shell", "group": "earth", "sketch": "mound", "camp": "heap", "line": "Shell ground to grit in the mortar." },
     { "id": "leaves", "name": "Fallen leaves", "group": "earth", "sketch": "leaves", "camp": "heap", "line": "Fallen leaves, dry and brown." },
     { "id": "kelp", "name": "Cast kelp", "group": "sea", "sketch": "kelp", "camp": "heap", "line": "Long kelp the spring tide cast up." },
     { "id": "wrack", "name": "Wrack", "group": "sea", "sketch": "wrack", "camp": "heap", "line": "Wrack from the strandline." },
+    { "id": "shells", "name": "Broken shells", "group": "sea", "sketch": "pebbles", "camp": "heap", "line": "Broken shells from the strandline, bleached by the sun." },
     { "id": "worms", "name": "Worms", "group": "living", "sketch": "worm", "camp": "none", "line": "Worms in a little damp soil." },
     { "id": "acorns", "name": "Acorns", "group": "living", "sketch": "nuts", "camp": "bowl", "line": "Acorns from under the oak." },
     { "id": "hazelnuts", "name": "Hazelnuts", "group": "living", "sketch": "nuts", "camp": "bowl", "line": "Hazelnuts in their green frills." },
     { "id": "old-comb", "name": "Old comb", "group": "living", "sketch": "comb", "camp": "bowl", "line": "Old comb a wild colony left behind." },
     { "id": "chanterelle", "name": "Chanterelle", "group": "living", "sketch": "mushroom", "camp": "bowl", "line": "Golden chanterelles that smell of apricot." }
   ],
-  "piles": { "handfuls": 12, "looks": [3, 8, 12], "rackBunches": 6, "rackHandfuls": 6, "bowlHandfuls": 6,
+  "piles": { "handfuls": 12, "looks": [3, 8, 12], "rackBunches": 12, "rackHandfuls": 6, "bowlHandfuls": 6,
     "look": {
       "models": { "sticks": "stick", "drift-twigs": "stick-pale", "pebbles": "stone", "flat-stones": "stone" },
       "otherModel": "stick",
@@ -67,7 +69,8 @@
       "drift-twigs": { "shape": "stick", "count": [2, 4], "lenM": [0.1, 0.25], "radiusM": [0.006, 0.012], "bend": [0.05, 0.2], "color": [0.42, 0.4, 0.37], "spreadM": 0.6 },
       "sticks": { "shape": "stick", "count": [2, 4], "lenM": [0.12, 0.3], "radiusM": [0.006, 0.014], "bend": [0.05, 0.25], "color": [0.14, 0.09, 0.055], "spreadM": 0.6 },
       "pebbles": { "shape": "pebble", "count": [3, 6], "sizeM": [0.02, 0.05], "heightShare": [0.55, 0.8], "lump": 0.12, "sink": 0.15, "color": [0.32, 0.3, 0.28], "spreadM": 0.4 },
-      "flat-stones": { "shape": "flat", "count": [1, 3], "sizeM": [0.06, 0.12], "heightShare": [0.18, 0.3], "lump": 0.08, "sink": 0.2, "color": [0.24, 0.235, 0.225], "spreadM": 0.4 }
+      "flat-stones": { "shape": "flat", "count": [1, 3], "sizeM": [0.06, 0.12], "heightShare": [0.18, 0.3], "lump": 0.08, "sink": 0.2, "color": [0.24, 0.235, 0.225], "spreadM": 0.4 },
+      "shells": { "shape": "flat", "count": [3, 6], "sizeM": [0.02, 0.04], "heightShare": [0.25, 0.4], "lump": 0.15, "sink": 0.1, "color": [0.62, 0.58, 0.52], "spreadM": 0.5 }
     }
   },
   "heaps": { "cap": 6, "tapM": 0.25 },
@@ -82,6 +85,8 @@
     "clay": { "name": "Clay slab", "r": 0.35, "glowM": 0.5, "look": { "radii": [0.26, 0.035, 0.2], "color": [0.15, 0.145, 0.14] } },
     "words": { "empty": "Empty." }
   },
+  "store": { "slots": [6, 12], "handfuls": 12, "look": { "models": ["assets/models/camp/camp-store.glb", "assets/models/camp/camp-store-grown.glb"], "color": [0.4, 0.33, 0.2] },
+    "note": "The camp store (docs/future/13 P2j; src/world/pack/store.js): a lidded rush hamper with slots[0] slots, slots[1] once a second hamper stacks on it; one kind a slot, up to handfuls a slot (a pile's worth). Its card shows the slots as drawn icons with the pile words, never a number; Take up on a slot fills one pouch. Set down at camp goes to a kind's own place first (the rack, the wood store, the stone pile, the clay slab), then the hamper (src/world/pack/route.js). Once a hamper stands, the heap slots retire and what they held moves in. look: the hamper made in code (vertex colours; colour where it has none), then the stacked pair, drawn with the stores facing the fire (src/world/pack/draw.js)." },
   "pot": { "fillClasses": ["running", "slow"], "seaFill": true },
   "rill": { "hintAfterCarries": 3, "farM": 15, "nearPadM": 6 },
   "ui": { "pouchPx": 48, "gapPx": 6, "drawPx": 36 },
@@ -91,7 +96,8 @@
     "full": "No room in the pack.", "setDownHere": "Set down here", "leaveIt": "Leave it", "heap": "A small heap you left here.",
     "pile": ["A small heap.", "A good heap.", "A big heap."], "pileFull": "This heap is as big as it gets.",
     "noSlot": "The camp has all it needs. Set something aside first.",
-    "noRack": "Herbs want somewhere to hang. A drying rack would hold them.", "noBowl": "This wants a bowl to sit in.",
+    "noRack": "Herbs want somewhere to hang. A drying rack would hold them.", "rackFull": "The rack is full. Take a bunch down first.", "hamperFull": "The hamper is full. Take something out first.",
+    "rack": { "fresh": "Hung today. Still green.", "drying": "Drying.", "dry": "Dry and crisp." }, "noBowl": "This wants a bowl to sit in.",
     "worms": "They wriggle down into the soil.", "clump": "Its roots are bare. Set it in a dug hole to keep it.",
     "newPouches": "Two more pouches.",
     "pot": {
