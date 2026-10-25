@@ -86,8 +86,16 @@ export function createGrowth(device, opts) {
     const [x, z] = padToWorld(pad, s.u, s.v);
     return { x, z, days: getStore('camp')?.fire?.litDays ?? 0 };
   };
+  /**
+   * The ash patches spread on the ground (P2i; store slice gather ashes), as saved, with their
+   * radius and days: catch-up reads each against its own hour. Null with none.
+   */
+  const ashNow = () => {
+    const a = getStore('gather')?.ashes, S = world.env.recipes?.gather?.kinds?.ash?.spread;
+    return Array.isArray(a) && a.length && S ? { patches: a.map((/** @type {number[]} */ p) => [p[0], p[1], p[2]]), r: S.patchM / 2, days: S.days } : null;
+  };
   /** Everything the habitat takes from the camp and pieces, for catch-up and rebuilds. */
-  const placed = () => ({ pad: padNow(), held: heldNow(), fire: fireNow() });
+  const placed = () => ({ pad: padNow(), held: heldNow(), fire: fireNow(), ash: ashNow() });
 
   /** Rebuild the habitat from the latest water summary and the painted ground. */
   function rebuildHabitat() {
@@ -112,7 +120,7 @@ export function createGrowth(device, opts) {
     const key = JSON.stringify(placed());
     if (key !== padKey) { padKey = key; rebuildHabitat(); }
   };
-  const unPad = [subscribeStore('campPad', follow), subscribeStore('pieces', follow), subscribeStore('camp', follow)];
+  const unPad = [subscribeStore('campPad', follow), subscribeStore('pieces', follow), subscribeStore('camp', follow), subscribeStore('gather', follow)];
   rebuildHabitat();
   // What the habitat is built from, so catch-up can follow the season day by day (A9; habitat-days.js).
   world.env.habitatInputs = () => {

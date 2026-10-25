@@ -1223,6 +1223,27 @@ const ICONS = {
   hand: `
     <path ${ACCENT} d="M8 12V5.5A1.5 1.5 0 0 1 11 5.5V11V4A1.5 1.5 0 0 1 14 4V11V5.5A1.5 1.5 0 0 1 17 5.5V14C17 18 15 20.5 11.5 20.5C8.5 20.5 7 18.5 5.5 15.5L4.5 13.5A1.4 1.4 0 0 1 7 12.3Z"/>
     <path d="M8 12V5.5A1.5 1.5 0 0 1 11 5.5V11V4A1.5 1.5 0 0 1 14 4V11V5.5A1.5 1.5 0 0 1 17 5.5V14C17 18 15 20.5 11.5 20.5C8.5 20.5 7 18.5 5.5 15.5L4.5 13.5A1.4 1.4 0 0 1 7 12.3Z"/>`,
+  // Spread: a handful tipped from a cupped palm, flecks falling onto a low pale patch (the ash
+  // pouch's Spread here, P2i).
+  spread: `
+    <path ${ACCENT} d="M3.5 8.5C6.2 6.4 10.6 6 13.6 7.6L15.2 10.6C11.6 11.6 6.8 11.2 3.5 8.5Z"/>
+    <path d="M3.5 8.5C6.2 6.4 10.6 6 13.6 7.6L15.2 10.6C11.6 11.6 6.8 11.2 3.5 8.5Z"/>
+    <path d="M15.8 13.2v.1M13.6 14.8v.1M17.6 15.6v.1M15.2 17.2v.1"/>
+    <path d="M8.4 20C11 18.4 17 18.4 20.4 20"/>
+    <path d="M2.5 20.5H21.5"/>`,
+  // Sketch: a charcoal stick drawing a loose line on a sheet (the here-bar's Sketch, P2i).
+  sketch: `
+    <path ${ACCENT} d="M3.5 6.5H15.5V20.5H3.5Z"/>
+    <path d="M3.5 6.5H15.5V20.5H3.5Z"/>
+    <path d="M6 16.4C7.4 13.4 8.8 17.2 10.4 14.4S12.6 12.6 13.2 11.8"/>
+    <path d="M13.2 12.6L20 4.4C20.6 3.7 21.6 4.5 21.1 5.3L14.6 13.8Z"/>`,
+  // Sketchbook: a bound book, its binding down the left, a drawing on the cover (P2i).
+  sketchbook: `
+    <path ${ACCENT} d="M5.5 3.5H19.5V20.5H5.5Z"/>
+    <path d="M5.5 3.5H19.5V20.5H5.5Z"/>
+    <path d="M3.5 6.5H7.5M3.5 10H7.5M3.5 13.5H7.5M3.5 17H7.5"/>
+    <path d="M10 15.5C10.4 12.6 12.4 11 15 11.6C16.6 12 17 13.8 16.2 15.2"/>
+    <path d="M9.6 15.6H17"/>`,
 };
 
 /** Names of every icon in the sprite. */

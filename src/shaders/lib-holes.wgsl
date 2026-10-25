@@ -4,6 +4,9 @@
 // going dark toward the middle, and a ring of darker fresh-turned soil round it that fades after the
 // hole has closed. A seep pool is a wall colour of wet dark water. Up to 16 holes near the view, two
 // vec4s each: (x, z, radius, mouth darkness 0..1) and (wall rgb linear, fresh soil darkening 0..1).
+// An ash patch spread on the ground (P2i; src/world/gather/ashes.js ashMarks) shares the list after
+// the holes, its mouth darkness negative: a soft pale wash of wood ash (rgb) as strong as -w, with
+// a ragged edge and no bowl.
 
 struct HoleHit {
   albedo: vec3f,   // the ground's albedo with the hole drawn over it
@@ -26,6 +29,12 @@ fn dugHoles(xz: vec2f, base: vec3f, holes: array<vec4f, 32>, ringM: f32) -> Hole
     // A rim a little ragged, as cut turf is.
     let ang = atan2(off.y, off.x);
     let r = a.z * (1.0 + 0.08 * sin(ang * 5.0 + a.x * 7.0) + 0.05 * sin(ang * 11.0 + a.y * 3.0));
+    // An ash patch: thickest in the middle, thinning out ragged toward its edge.
+    if (a.w < 0.0) {
+      let thin = 0.8 + 0.2 * sin(ang * 7.0 + d * 9.0 + a.y * 5.0);
+      hit.albedo = mix(hit.albedo, b.rgb, -a.w * thin * (1.0 - smoothstep(r * 0.35, r, d)));
+      continue;
+    }
     // The fresh soil: darker turned earth from the rim out, fading with distance.
     let fresh = b.w * (1.0 - smoothstep(r * 0.9, r + ringM, d));
     hit.albedo = hit.albedo * (1.0 - fresh);

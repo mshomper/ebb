@@ -22,15 +22,18 @@ import { tideParams } from '../tide.js';
 import { seasonOfTide, weatherOfTide } from '../finds/strand.js';
 import { gatherSeed, spotsAt, spotsNear, share, wordFor } from './spots.js';
 import { taken as takenOf, record, expire, cap } from './events.js';
+import { cleanAshes, spreadAsh, liveAshes, ashFresh } from './ashes.js';
 import { partsOf, pickable, pick, outOfSeasonLine, coverPickable, coverPick } from './plants.js';
 import { habitatCell } from '../growth/habitat.js';
 import { coverSpecies, coverTarget } from '../growth/cover.js';
 
 /**
  * @param {{ recipe: any, seed: number, world: any, worldT: () => number, water: any, terrain: any, pack: any, walk: any,
- *   tide: any, strandline: any, weather: () => any, center: () => number[], boat?: () => number[] | null }} o
+ *   tide: any, strandline: any, weather: () => any, center: () => number[], boat?: () => number[] | null,
+ *   ring?: () => import('./spots.js').RingPlace | null }} o
  *   tide: water.json tide; strandline: shore.json look.strandline; weather: { weatherSeed, weather,
- *   state } as finds take it; center: the island's middle [x, z], for onshore wind
+ *   state } as finds take it; center: the island's middle [x, z], for onshore wind; ring: the camp's
+ *   fire ring and its fire-nights (P2i), for charcoal and ash at dawn
  */
 export function createGather(o) {
   const R = o.recipe, W = R.words;
@@ -43,7 +46,10 @@ export function createGather(o) {
 
   const events = () => /** @type {number[]} */ (get('gather')?.events ?? []);
   /** @param {number[]} ev */
-  const keepEvents = (ev) => update('gather', () => ({ version: 1, events: cap(ev, R.eventCap ?? 256) }));
+  const keepEvents = (ev) => update('gather', (g) => ({ ...(g ?? {}), version: 1, events: cap(ev, R.eventCap ?? 256) }));
+  /** The ash patches spread on the ground (P2i, ashes.js). */
+  const ashes = () => cleanAshes(get('gather')?.ashes);
+  const AS = R.kinds?.ash?.spread ?? { patchM: 1.2, days: 14, max: 6 };
 
   /** The strandlines lying now, newest first, with each one's tide, springness, season and day. */
   function linesNow() {
@@ -85,6 +91,8 @@ export function createGather(o) {
       runupM: o.strandline?.runupM ?? 0,
       center: o.center(),
       boat: o.boat?.() ?? null,
+      hour: o.worldT() / 3600,
+      ring: o.ring?.() ?? null,
     };
   }
 
@@ -129,6 +137,8 @@ export function createGather(o) {
       // Ground that is the ground itself (sand) is never a card: the here-bar offers it (src/world/dig).
       if (R.kinds?.[sp.kind]?.hereOnly) continue;
       const n = share(sp.kind, sp.sourceKey, sp.period, c, R);
+      // The ring says nothing of charcoal or ash until a fire-night leaves some (P2i).
+      if (sp.source === 'ring' && n <= 0) continue;
       const left = Math.max(0, n - takenOf(events(), sp.key, sp.period));
       const under = underWater(sp.x, sp.z);
       const word = under ? W.underTide : wordFor(left, n, sp.source, W);
@@ -354,13 +364,37 @@ export function createGather(o) {
       apply(g);
     },
 
-    /** Each game hour: picked spots whose day or line is over look fresh again; old heaps go. */
+    /** Each game hour: picked spots whose day or line is over look fresh again; old heaps and ash patches go. */
     expire() {
       const ev = events();
       const day = dayIndexOf(o.worldT());
       const next = expire(ev, { day, year: Math.floor(o.worldT() / SECONDS_PER_YEAR), tides: linesNow().map((l) => l.tideId) });
       if (next.length !== ev.length) keepEvents(next);
+      const was = ashes(), live = liveAshes(was, o.worldT() / 3600, AS);
+      if (live.length !== was.length) update('gather', (g) => ({ ...(g ?? {}), ashes: live }));
       o.pack.dawn();
     },
+
+    /**
+     * Spread here on the ash pouch's card (P2i): a handful tipped where you stand, a pale patch that
+     * lies there for a while (ashes.js), nettles already on the island may come up on it.
+     * @returns {boolean} whether it was spread
+     */
+    spreadAsh() {
+      const you = o.walk.below ? o.walk.you() : null;
+      if (!you || o.pack.take('ash', 1) < 1) return false;
+      const hour = o.worldT() / 3600;
+      update('gather', (g) => ({ ...(g ?? { version: 1, events: [] }), ashes: spreadAsh(ashes(), you[0], you[2], hour, AS) }));
+      emitDeferred('gather:ash-spread', { x: you[0], z: you[2], hour });
+      if (W.ashSpread) emitDeferred('island:notice', { text: W.ashSpread, showS: 5 });
+      return true;
+    },
+    /** The ash patches lying now: where, how big and how fresh (drawn marks, tests). */
+    ashesNow() {
+      const h = o.worldT() / 3600;
+      return liveAshes(ashes(), h, AS).map((p) => ({ x: p[0], z: p[1], r: AS.patchM / 2, fresh: ashFresh(p, h, AS) }));
+    },
+    /** Every patch as saved, with the radius and days the habitat reads (catch-up filters by the hour). */
+    ashHabitat: () => { const a = ashes(); return a.length ? { patches: a, r: AS.patchM / 2, days: AS.days } : null; },
   };
 }

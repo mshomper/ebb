@@ -12,6 +12,8 @@
 // fire-night, or the game year. A period is a plain integer (it may be negative for the high
 // waters just before the world's first hour), so the save's number[] holds it as it is.
 
+import { cleanAshes } from './ashes.js';
+
 /** Period tags, in a period's low three bits. New tags go at the end. */
 export const PERIOD = Object.freeze({ day: 0, tide: 1, ring: 2, year: 3 });
 
@@ -93,9 +95,16 @@ const isInt = (v) => typeof v === 'number' && Number.isInteger(v);
  * The save's gather section, cleaned: anything unreadable comes back empty; a malformed triple
  * (a key that is not a uint32, a period that is not an integer, a count under 1) is dropped, and a
  * trailing part-triple too. Triples written as nested [key, period, taken] arrays are flattened.
- * @param {any} v @returns {{ version: 1, events: number[] }}
+ * The ash patches spread on the ground (P2i, ashes.js) ride along as `ashes` once there are any.
+ * @param {any} v @returns {{ version: 1, events: number[], ashes?: import('./ashes.js').AshPatch[] }}
  */
 export function cleanGather(v) {
+  const ashes = cleanAshes(v?.ashes);
+  return { ...cleanEvents(v), ...(ashes.length ? { ashes } : {}) };
+}
+
+/** @param {any} v @returns {{ version: 1, events: number[] }} */
+function cleanEvents(v) {
   const src = v && typeof v === 'object' && Array.isArray(v.events) ? v.events : [];
   const flat = src.some(Array.isArray) ? src.flatMap((/** @type {any} */ e) => (Array.isArray(e) && e.length === 3 ? e : [])) : src;
   /** @type {number[]} */ const events = [];

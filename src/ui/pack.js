@@ -65,6 +65,9 @@ export function mountPack(row, words, sketchOf) {
     when: (c) => c.sp === 'pouch' && !!c.atCamp, action: (c) => ({ type: 'pack.setDown', i: c.pouch }) });
   registerCardAction({ id: 'empty', icon: 'tip', order: 12, label: words.empty,
     when: (c) => c.sp === 'pouch', action: (c) => ({ type: 'pack.empty', i: c.pouch }) });
+  // Wood ash (P2i): Spread here tips a handful where you stand, below (src/world/gather ashes).
+  registerCardAction({ id: 'spreadash', icon: 'spread', order: 11, main: true, label: words.spread ?? 'Spread here',
+    when: (c) => c.sp === 'pouch' && c.kindId === 'ash' && !c.atCamp, action: () => ({ type: 'gather.spreadAsh' }) });
 
   let shown = '';
   function render() {

@@ -348,8 +348,9 @@ export function createPackDraw(o) {
       const n = pickupCount(key, s.left, s.share, K.count);
       for (let i = 0; i < n && out.length < P.max; i++) {
         const u = (/** @type {number} */ k) => u01(hash32(key, i, k));
-        // Scattered round the spot, each its own turn, shape and size.
-        const r = K.spreadM * Math.sqrt(u(1)), a = u(2) * 2 * Math.PI;
+        // Scattered round the spot, each its own turn, shape and size; the ring's charcoal round
+        // its edge, between ringM[0] and ringM[1] of its middle (P2i).
+        const r = K.ringM ? K.ringM[0] + (K.ringM[1] - K.ringM[0]) * u(1) : K.spreadM * Math.sqrt(u(1)), a = u(2) * 2 * Math.PI;
         const x = s.x + Math.cos(a) * r, z = s.z + Math.sin(a) * r;
         // Drawn larger than life (pickups.scale), as creatures are, so they can be found.
         out.push({ x, y: ground(x, z), z, yaw: u(3) * 2 * Math.PI, size: (P.scale ?? 1) * (0.85 + 0.3 * u(4)), mesh: `${s.kind}-${Math.floor(u(5) * P.variants)}` });

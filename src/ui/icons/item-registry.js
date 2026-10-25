@@ -34,6 +34,7 @@ export const POUCH_KINDS = /** @type {[string, string, string, string, number][]
   ['worms', 'worms', 'Worms', 'T2', 2], ['acorns', 'acorns', 'Acorns', 'T5', 5], ['hazelnuts', 'hazelnuts', 'Hazelnuts', 'T5', 5],
   ['old-comb', 'old-comb', 'Old comb', 'T4', 4], ['chanterelle', 'chanterelle', 'Chanterelle', 'T5', 5],
   ['shells', 'shells', 'Broken shells', 'T2', 2], ['crushed-shell', 'crushed-shell', 'Crushed shell', 'T2', 2],
+  ['charcoal-sticks', 'charcoal-sticks', 'Charcoal sticks', 'T2', 2],
 ]).map(row);
 
 /** Plant parts, '<species>.<part>' (docs/future/13 sections 4.1 and 5.3). @type {ItemRow[]} */

@@ -26,6 +26,7 @@ import { registerCardAction } from '../../ui/card-actions.js';
 import { ringLaid, inSlot } from './model.js';
 import { cleanCook, layout, drawPlan, available, recordMade, buildKinds, partKinds } from './making.js';
 import { createKeeps } from './keeps.js';
+import { layWork } from './work.js';
 import { pileWord, rackWord } from '../pack/piles.js';
 
 /** The keeps that open in the workspace's store mode, and the slot each stands in. */
@@ -58,6 +59,8 @@ export function createStations(k) {
     return { x: s.x, z: s.z, y: s.y, yaw: Math.atan2(dx, dz), slot: s.slot, stand: { x: s.x + dx * out, z: s.z + dz * out } };
   }
   const built = (/** @type {string} */ id) => !!inSlot(k.camp(), id);
+  /** Room at the fire for another piece overnight (cook.json work.max). */
+  const workRoom = () => k.camp().work.length < (C.work?.max ?? 2);
   const keeps = createKeeps({ R, P, camp: k.camp, change: k.change, where: k.where, hourNow: k.hourNow, benchAt, piles: o.piles });
 
   /** A keep's place: its slot, and where you stand (on the ring's side of it). @param {string} id */
@@ -263,8 +266,9 @@ export function createStations(k) {
     const L = layout(C, open.id, open.laid, cookNow(), ctx);
     if (!L.complete || !L.make) return;
     if (!drawPlan(open.laid, sources())) { open.line = W.none; publish(); return; }
-    // A herb for the rack needs a place on it.
+    // A herb for the rack needs a place on it; a piece for the night's fire, room at the fire (P2i).
     if (C.makes[L.make].out === 'rack' && !keeps.rack.room(open.laid[0])) { open.line = W.rackFull; publish(); return; }
+    if (C.makes[L.make].out === 'work' && !workRoom()) { open.line = W.workFull; publish(); return; }
     const at = stationAt(open.id);
     if (at) o.walk.kneelToward(at.x, at.z, C.makeS, 'make');
     makeT = 0;
@@ -279,6 +283,7 @@ export function createStations(k) {
     if (!plan || !L.make) { publish(); return; }
     const id = L.make, m = C.makes[id], hour = k.hourNow(), laid = open.laid;
     if (m.out === 'rack' && !keeps.rack.room(laid[0])) { open.line = W.rackFull; publish(); return; }
+    if (m.out === 'work' && !workRoom()) { open.line = W.workFull; publish(); return; }
     takePlan(plan);
     const first = cookNow().made[id] === undefined;
     // A make that stands in a camp slot (the rack, the mortar, the hamper) or stacks on one.
@@ -292,6 +297,8 @@ export function createStations(k) {
     }
     // Dry: the herb hangs on the rack as a bunch.
     if (m.out === 'rack') keeps.rack.hang(laid[0], 1);
+    // A piece for the night's fire goes on the overnight work list (work.js): willow charcoal.
+    if (m.out === 'work') k.change((c) => ({ ...c, work: layWork(c.work, { id, needH: m.needH ?? 8, gives: m.gives ?? id, count: m.count ?? 1 }, hour) }));
     emitDeferred('camp:made', { make: id, station: open.id, hour, first });
     if (!open) return;
     open.laid = [];
