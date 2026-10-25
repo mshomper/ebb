@@ -87,23 +87,83 @@ flowchart LR
   F --> LO[Finds: better with<br/>every step]
 ```
 
-- **Skills** are internal numbers that grow with use:
-  - **Fighting**, from hits landed and enemies beaten.
-  - **Lamp craft**, from trips made. The lantern burns a little more slowly.
-  - **Footing**, from dodges and climbs. The dodge step gets quicker.
-  - **Hollow lore**, from bestiary pages filled. Enemies' tells read sooner.
+- **Skills** are the four tracks below. Each rank reached adds to the measure.
 - **Equipped items** each carry a tier: the weapon, the coat, the lantern and a worn charm.
 - **A trip starts a little below the measure**, so the first floor of any trip feels comfortable. **Each floor further down in the same trip adds a step**, and finds get better with each step. How deep a player goes in one trip is how hard it gets, so pushing on pays off.
 - **The measure lags growth.** If the Hollow matched every gain, getting stronger would feel like nothing. That's the known trap of level scaling. So the Hollow counts only part of each gain (about 70% to start, a recipe value). A better weapon always feels better, and the Hollow catches up only slowly.
 - **A slow average.** The measure uses a slowly moving average of the player's best kit, so swapping to a stick at the arch to make the Hollow easy doesn't work.
 
+## The four skill tracks
+
+Each skill is its own track with four ranks. A track fills by doing that thing in the Hollow, and each rank makes the walker stronger in a way the player can feel. The thresholds are recipe values. A new rank gets a line in the walker's hand on the Lamplighter's trail page (*"My feet have learned the wet rock"*), and the track shows as four marks, never as a number.
+
+```mermaid
+flowchart LR
+  subgraph F[Fighting: hits landed, enemies beaten]
+    F1[1 Steady hand] --> F2[2 Follow-through] --> F3[3 Finding the seam] --> F4[4 The sweep]
+  end
+  subgraph L[Lamp craft: time spent below]
+    L1[1 Trimmed wick] --> L2[2 Steady flame] --> L3[3 Flare] --> L4[4 Ember keep]
+  end
+  subgraph O[Footing: dodges, climbs, wet ground crossed]
+    O1[1 Light step] --> O2[2 Sure feet] --> O3[3 Tumble] --> O4[4 Second wind]
+  end
+  subgraph H[Hollow lore: kinds met, bestiary pages, floors read]
+    H1[1 Tells] --> H2[2 Weak points] --> H3[3 Reading the stone] --> H4[4 Old ways]
+  end
+```
+
+### Fighting
+
+Fills from hits landed and enemies beaten.
+
+| Rank | Name | What it does |
+|---|---|---|
+| 1 | **Steady hand** | Recovery after each swing is shorter, so swings come faster |
+| 2 | **Follow-through** | Every third hit in a row staggers the enemy |
+| 3 | **Finding the seam** | Hits on armored enemies (silt crawlers, barnacle backs) from the side or behind do full damage |
+| 4 | **The sweep** | Hold the swing to charge it, then let go to hit everything around the walker |
+
+### Lamp craft
+
+Fills from time spent below, more on deeper floors.
+
+| Rank | Name | What it does |
+|---|---|---|
+| 1 | **Trimmed wick** | Fuel lasts about 15% longer |
+| 2 | **Steady flame** | Hits make the flame gutter less, so each one costs less fuel |
+| 3 | **Flare** | Once per floor, the walker flares the lantern. Light-shy enemies nearby scatter and are stunned for a moment |
+| 4 | **Ember keep** | Once per trip, when the light would go out, it holds as an ember long enough to walk to the way up and keep everything |
+
+### Footing
+
+Fills from dodges that avoid a hit, climbs, and wet or broken ground crossed.
+
+| Rank | Name | What it does |
+|---|---|---|
+| 1 | **Light step** | The dodge step recovers faster |
+| 2 | **Sure feet** | No slowing on wet rock, weed or silt; climbs and rope drops are quicker |
+| 3 | **Tumble** | The dodge becomes a roll that passes through enemies untouched |
+| 4 | **Second wind** | After a dodge at the last moment, the next hit does double damage |
+
+### Hollow lore
+
+Fills from each new kind met, each bestiary page and each floor fully walked.
+
+| Rank | Name | What it does |
+|---|---|---|
+| 1 | **Tells** | Enemies' wind-ups show sooner, as a glint in the lantern light |
+| 2 | **Weak points** | Kinds with a full bestiary page take more damage |
+| 3 | **Reading the stone** | On each floor, a draft of air shows toward the way down, and finds glint at the lantern's edge |
+| 4 | **Old ways** | Once per trip, the walker spots a hidden side passage to a find room |
+
 ## The lantern
 
 The lantern is how far you can go.
 
-- **Fuel is made at camp.** Rushlights come first: rush pith dipped in fat. Then pressed seed oil from the mortar. Each trip starts with whatever fuel the walker brings.
+- **Fuel is made at camp** (see Lanterns below for the fuels). Each trip starts with whatever fuel the walker brings.
 - **It burns down** as you go, and a little faster on deeper floors.
-- **Its light is a real light.** Lantern tiers reach further: the hand lantern, a horn lantern, a bulls-eye lantern. Some enemies shy from the light, so a bigger light is a defense.
+- **Its light is a real light.** Better lanterns reach further or burn longer (see Lanterns below). Some enemies shy from the light, so a bigger light is a defense.
 - **Recommended: the lantern is also the walker's health.** A hit makes the flame gutter and costs fuel. One thing to watch, drawn as the flame itself, with no hearts or health bar. A long, clean trip goes deep; a scrappy one ends early. The alternative is a separate steadiness meter.
 - **When it runs low**, the light shrinks, enemies grow bolder, and the walker says it's time: *"The light won't last."* The player heads for the way up.
 
@@ -123,19 +183,112 @@ Simple, readable, from the below-view camera.
 - **Sling.** It throws pebbles, which the walker already gathers, so the pebble store becomes ammunition.
 - A gentle lock-on to the nearest enemy, and a **"gentler Hollow"** setting for younger players (Matt's testers are 7 and 10).
 
-### Weapons and gear
+## What the walker carries
 
-All of them are made at camp with the making core (S1). Better tiers use what the Hollow gives, which is the loop.
+Weapons, lanterns and coats are all made at camp with the making core (S1).
 
-| Item | Made from | Notes |
-|---|---|---|
-| **Driftwood staff** | A long drift stick, bound with rush cord | The first weapon; it opens the arch |
-| **Sling** | Braided rush cord | Throws pebbles |
-| **Flint spear** | Ship's timber shaft (F14), flint from the Hollow | Long reach |
-| **Star-iron knife** | Star-iron from the falling star (F14) | The best blade; only one per island |
-| **Oilskin coat** | Cloth, waxed, dyed | Takes the edge off hits (less fuel lost) |
-| **Lanterns** | Hand, horn, bulls-eye | Reach and burn time |
-| **Charms** | Keepsakes worn on the belt | Small effects, such as a steadier flame |
+- **At most three ingredients** per item.
+- **Better tiers use what the Hollow gives**, which is the loop: go down, bring back, make, go deeper.
+- **An item can be an ingredient of its own upgrade**, so nothing made is wasted.
+- **Tiers 1 to 4** feed the keeper's measure.
+
+These lists are a pool to pick from, not a build list. A suggested first set is marked in each table.
+
+### Weapons
+
+| Weapon | Kind | Made from | Tier | Good at | First set |
+|---|---|---|---|---|---|
+| **Driftwood staff** | Staff | Drift stick, rush cord | 1 | Balanced reach and speed. The first weapon; it opens the arch | Yes |
+| **Hazel quarterstaff** | Staff | Hazel rod, rush cord | 2 | Faster swings than the drift staff | |
+| **Barnacle staff** | Staff | Ship's timber, barnacle shell, birch tar | 3 | Rough ends that crack armor: good against crawlers and barnacle backs | |
+| **Lantern staff** | Staff | Hazel rod, crystal, rush cord | 3 | The lantern hangs from its head, so the light reaches further while fighting. Weaker hits | |
+| **Burl club** | Club | Drift root, rush cord | 1 | Slow, heavy, staggers | |
+| **Stone maul** | Club | Flat stone, ship's timber, rush cord | 2 | The biggest stagger, knocks enemies back. Very slow | Yes |
+| **Pearl-studded club** | Club | Drift root, cave pearls, birch tar | 3 | Each hit throws a spark of light that sends light-shy enemies back | |
+| **Shell knife** | Blade | Razor shell, rush cord | 1 | Quick and short. Cuts free of tanglers at once | Yes |
+| **Flint knife** | Blade | Flint, hazel rod, birch tar | 2 | Quick and sure | |
+| **Crystal blade** | Blade | Crystal, ship's timber, birch tar | 3 | Very sharp. The best against tide shades | |
+| **Star-iron knife** | Blade | Star-iron, ship's timber, brine salt (to quench it) | 4 | The best blade | |
+| **Fire-hardened spear** | Spear | Hazel rod, hardened at the hearth | 1 | Long reach, cheap | |
+| **Flint spear** | Spear | Ship's timber, flint, rush cord | 2 | Long reach and a real point | Yes |
+| **Bone harpoon** | Spear | Bone, hazel rod, nettle cord | 3 | Thrown on its line and pulled back. Drags brine eels out of the water and drip wisps off the ceiling | |
+| **Star-iron spear** | Spear | Star-iron, ship's timber, birch tar | 4 | The best reach. The island's star-iron makes either this or the knife, never both | |
+| **Sling** | Thrown | Rush cord, sailcloth | 1 | Pebbles as shot, from the pebble store | Yes |
+| **Bolas** | Thrown | Nettle cord, pebbles | 2 | Tangles legs and wings: slows enemies, brings wisps down | Yes |
+| **Hazel bow** | Shot | Hazel rod, nettle cord | 3 | The longest reach; needs arrows | |
+| **Wrack whip** | Odd | Tangle fibre, rush cord | 2 | A long lash that pulls small enemies in | |
+| **Ember brand** | Odd | Hazel rod, rushes, oil | 2 | A burning club with its own light. Light-shy enemies won't close. Burns out after a floor | |
+| **Hagstone flail** | Odd | Hagstone, hazel rod, nettle cord | 3 | A wide spinning arc. Looking through its stone shows tide shades, and it hits watchers hard | |
+
+**Shot and arrows,** made by the handful:
+
+| Ammunition | Made from | For | Does |
+|---|---|---|---|
+| **Pebbles** | Gathered as now | Sling | Plain shot |
+| **Clay shot** | Clay, fired at the hearth | Sling | Heavier, staggers |
+| **Flare shot** | Clay, oil, soot | Sling | Bursts into light where it lands, scattering light-shy enemies |
+| **Pearl shot** | Cave pearls | Sling | The hardest hit |
+| **Arrows** | Reed, flint, feather | Bow | Plain arrows |
+
+### Lanterns
+
+The lantern is the trip's limit and, as proposed, the walker's health, so lanterns matter as much as weapons. Reach is how far the light goes; burn is how long a fill of fuel lasts, against the hand lantern.
+
+| Lantern | Made from | Reach | Burn | Good at | First set |
+|---|---|---|---|---|---|
+| **Hand lantern** | The walker already has it | 6 m | 1x | Where everyone starts | Yes |
+| **Clay lamp** | Clay, rush pith | 4 m | 1.5x | Cheap and long-burning, but a small light | Yes |
+| **Shell lantern** | Ship's timber, oyster shell scraped thin, rush cord | 6 m | 1.2x | A steadier flame: hits cost less fuel | |
+| **Sea-glass lantern** | Sea glass, ship's timber, birch tar | 8 m | 1x | A wider light, tinted by the glass | Yes |
+| **Bulls-eye lantern** | Crystal, ship's timber, birch tar | 12 m ahead, 3 m around | 1x | A beam. Light-shy enemies caught in it slow down | |
+| **Pearl lantern** | Cave pearls, crystal, clay | 7 m | 1.2x | An even, soft glow. Tide shades can't fade inside it | |
+| **Ship's lantern** | The wreck's lantern (F14), sea glass, rush cord | 8 m | 1.6x | Storm-built: the longest burn | |
+| **Ember pot** | Clay, charcoal, rush cord | Belt light | — | Worn with any lantern. If the lantern goes out, the ember pot lights the way to the way up once. Works with Ember keep | |
+
+**Fuel:**
+- **Rushlights:** rush pith dipped in seed oil. The first fuel.
+- **Seed oil:** pressed in the mortar. It burns longer.
+- **Hollow oil:** from lamp-eaters and oil seeps. It burns longest.
+
+### Coats
+
+A coat's guard is how much of a hit it takes off, which means less fuel lost from the lantern. Heavier coats guard more but slow the dodge.
+
+| Coat | Made from | Guard | Good at | Tier | First set |
+|---|---|---|---|---|---|
+| **Rush cape** | Rushes, rush cord | Light | Keeps the dodge quick | 1 | Yes |
+| **Oilskin coat** | Sailcloth, seed oil | Medium | Sheds hits; the all-rounder | 2 | Yes |
+| **Soot cloak** | Sailcloth, soot, seed oil | Light | Enemies notice the walker later; watchers take longer to see them | 2 | |
+| **Wrack cloak** | Tangle fibre, rush cord | Light | Tanglers can't hold on | 2 | |
+| **Feather cape** | Feathers, nettle cord, sailcloth | Light | The dodge goes further | 3 | |
+| **Limpet scale coat** | Limpet shells, sailcloth, birch tar | Heavy | Strong guard; a slower dodge | 3 | |
+| **Barnacle mail** | Barnacle shell, nettle cord, birch tar | Heaviest | Stops the most; the slowest dodge | 3 | |
+| **Pearl-lined oilskin** | Oilskin coat, cave pearls, crystal | Medium | The lining glows faintly, a little light of its own | 4 | |
+
+### Charms
+
+Keepsakes worn on the belt, one at a time, each with one small effect. A hagstone lets the walker see tide shades a moment sooner. A piece of sea glass tints the light. A cave pearl steadies the flame. Charms come from finds, not from making.
+
+### Where the ingredients come from
+
+| Ingredient | From |
+|---|---|
+| Drift stick, drift root | The strand (F10 logs) |
+| Rushes, rush cord, rush pith | Rushes, worked at camp (F13) |
+| Reed | Reeds at the pond |
+| Nettle cord | Nettles, if they come to the island, worked at camp. A new plant |
+| Hazel rod | A hazel, coppiced (F07). If none grows on the island, the passing boat (F14) can bring one |
+| Birch tar | Birch bark cooked at the hearth: a camp make. Needs a birch |
+| Flat stone, pebbles, razor shell, limpet shells, oyster shell, sea glass | The strand |
+| Hagstone | Rare on the strand; common from hagstone watchers |
+| Feathers | The hen (F15), or gulls' feathers on the strand |
+| Seed oil | Pressed in the mortar (F13) |
+| Charcoal | The hearth |
+| Clay | The Hollow (silt crawlers), or the silted crawl |
+| Ship's timber, sailcloth, the ship's lantern | The wreck (F14) |
+| Star-iron | The falling star (F14) |
+| Bone | The rubble passage |
+| Flint, barnacle shell, crystal, cave pearls, soot, oil, brine salt, tangle fibre | The Hollow, from enemies and finds |
 
 ## The bestiary: things in the dark
 
@@ -150,6 +303,8 @@ They are not animals. They're made of the dark and the old sea, so the island's 
 | **Brine eels** | Lunge from the water's edge | Pool floors | Brine salt |
 | **Lamp-eaters** | Snuff the light: each touch drains fuel | Deeper floors | Oil |
 | **Tide shades** | Fade between pools of light; only seen in the lantern's glow | Deepest floors | Crystal |
+| **Wrack tanglers** | Heaps of dark weed that lie still until the walker is close, then grab and hold. Struggle free, or cut free with a blade | Wet and pool floors | Tangle fibre |
+| **Hagstone watchers** | Floating stones with a hole through them that turn toward light. When one sees the walker it calls everything nearby. Dim the lantern, or reach it first | Any floor; in groups deeper down | Hagstones |
 
 - **As the level rises**, kinds get tougher and gain behaviors: crawlers that burrow, wisps in pairs, shades that circle.
 - **Each kind gets a bestiary page** in the journal the first time it's beaten: a sketch, its habits and its tells. Filling the bestiary is the Hollow lore skill.
@@ -202,7 +357,8 @@ A fifth trail, alongside the naturalist's, the beachcomber's, the shaper's and t
 - **13** progression and journal: the Lamplighter's trail, the bestiary pages.
 - **15** input: swing, dodge, raise the lantern, sling.
 - **23** walker: fighting animations (swing per weapon, dodge, hit, lantern raise) and a climb.
-- **F13** camp: weapons, gear, lantern fuel, and the Hollow's materials as inputs.
+- **F13** camp: weapons, lanterns, coats, fuel and ammunition as makes (at most three ingredients each); birch tar at the hearth; the Hollow's materials as inputs.
+- **F10, 12** plants: hazel, birch and nettles as possible new plants, since several makes need them.
 - **F14** scripted events: star-iron, ship's timber, the cairns.
 - **17, 25** audio: cave reverb, enemy sounds, the lantern's flame.
 - **18** saves: the measure, skills, trip count, rubble progress, the bestiary, the deepest trip.
@@ -213,7 +369,7 @@ A fifth trail, alongside the naturalist's, the beachcomber's, the shaper's and t
 
 - **Tone.** Combat can sour a cozy game. Stardew shows it can live beside farming when it stays optional, bright and short. Keep the enemies strange rather than horrible, and keep the walker's lines calm.
 - **Level scaling.** If the Hollow tracks the player too closely, progress feels pointless. The lag and the per-trip steps are there to prevent it. The cave-lab curves are where to check it.
-- **Scope.** This is the biggest feature ebb would have: combat, enemy AI, a floor generator, seven rigged enemy kinds and fighting animations. A first version could be the mouth, the arch, three floor kinds and three enemies.
+- **Scope.** This is the biggest feature ebb would have: combat, enemy AI, a floor generator, nine rigged enemy kinds, many made items and fighting animations. A first version could be the mouth, the arch, three floor kinds and three enemies.
 - **The surface must never need it.** Hollow materials make things better, but nothing on the island requires them.
 - **Kid testers.** The gentler setting, and an end to a trip that never feels like punishment.
 
@@ -226,6 +382,8 @@ A fifth trail, alongside the naturalist's, the beachcomber's, the shaper's and t
 - What do the Hollow's things look like? Matt to sketch a direction, or a session to propose some. Who makes their models is Matt's call (CLAUDE.md).
 - Guardian floors: should there be bigger set-piece enemies, and how often?
 - Should the player ever see anything of the measure, such as a hint like "the Hollow feels deeper today"?
+- Which weapons, lanterns and coats make the first set? The tables suggest six weapons, three lanterns and two coats.
+- Should hazel, birch and nettles come to the island as plants, or should their makes use something already here?
 
 ## Depends on / feeds into
 
