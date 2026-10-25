@@ -438,6 +438,16 @@ export function createJournal(opts) {
       const next = flag(journal, `picked:${p.sp}`);
       if (next !== journal) { journal = next; update('journal', () => journal); }
     }),
+    // Digging (src/world/dig): each layer reached and each first find (a worm, a stone, a belemnite)
+    // inks its band or detail on the Soil and Sand pages (`dig:<id>` flags, the sketches' labels).
+    on('dig:layer', (/** @type {{ layer: string }} */ p) => {
+      const next = flag(journal, `dig:${p.layer}`);
+      if (next !== journal) { journal = next; update('journal', () => journal); }
+    }),
+    on('dig:detail', (/** @type {{ id: string }} */ p) => {
+      const next = flag(journal, `dig:${p.id}`);
+      if (next !== journal) { journal = next; update('journal', () => journal); }
+    }),
     // The island gave you something (src/world/expansion.js): written once, shown as a card.
     on('progress:gifted', (/** @type {any} */ g) => commit(noteGift(journal, g, { state: world.state, hour: hourIndex(), words }))),
     // Watching a frog (or a school) from close by finds it too (src/world/creatures/index.js, schools.js).

@@ -6,7 +6,9 @@
 // met (recipes/world/beachcomber.json, shaper.json); never a total, never taken back.
 
 /**
- * @typedef {{ trail: 'beach' | 'shape', kind: 'family' | 'rarity' | 'mark' | 'place', id: string, hour: number }} First
+ * @typedef {{ trail: 'beach' | 'shape' | 'nature', kind: 'family' | 'rarity' | 'mark' | 'place' | 'dug' | 'layer', id: string, hour: number }} First
+ *   dug: the first keepsake of a family kept from the ground (P2c), a record that counts toward no stop;
+ *   layer: a layer dug for the first time, on the naturalist's line (src/world/expansion.js), never counted
  * @typedef {{ families?: number, rarity?: string, marks?: number, place?: string }} Need
  * @typedef {{ id: string, need: Need, icon: string, hint: string, give?: Record<string, any>, built?: boolean, title?: string, line?: string }} Stop
  *   built: nothing to give, but it exists already (the shelf), so it inks when reached

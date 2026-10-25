@@ -46,17 +46,25 @@ export const ready = (r) => !!r.give && Object.keys(r.give).length > 0;
  * @param {string[]} found findsFound
  * @param {Reward[]} rewards naturalist.json rewards
  * @param {Record<string, any>} earned the saved unlocks
- * @returns {({ type: 'mark', id: string } | { type: 'station', id: string, icon: string, inked: boolean, hint: string } | { type: 'gap' })[]}
+ * @param {(id: string) => number} [firstOf] the game hour a kind of find was first found (layer marks fall in by hour)
+ * @returns {({ type: 'mark', id: string } | { type: 'layer', id: string, hour: number } | { type: 'station', id: string, icon: string, inked: boolean, hint: string } | { type: 'gap' })[]}
  */
-export function naturalistLine(found, rewards, earned) {
+export function naturalistLine(found, rewards, earned, firstOf = () => Infinity) {
   const sorted = rewards.slice().sort((a, b) => a.at - b.at);
   /** @type {any[]} */ const out = [];
   const station = (/** @type {Reward} */ r) => ({ type: 'station', id: r.id, icon: r.icon, inked: !!earned?.naturalist?.includes(r.id), hint: r.hint });
+  // Layers dug for the first time (src/world/dig) show on the line in the order they came, but never
+  // count toward its rewards (the orchestrator's call, Matt OK'd, October 24, 2026).
+  const layers = (earned?.firsts ?? []).filter((/** @type {any} */ f) => f.trail === 'nature' && f.kind === 'layer').slice().sort((/** @type {any} */ a, /** @type {any} */ b) => a.hour - b.hour);
+  let li = 0;
+  const layersBefore = (/** @type {number} */ hour) => { while (li < layers.length && layers[li].hour < hour) { out.push({ type: 'layer', id: layers[li].id, hour: layers[li].hour }); li++; } };
   let ri = 0;
   for (let n = 1; n <= found.length; n++) {
+    layersBefore(firstOf(found[n - 1]));
     out.push({ type: 'mark', id: found[n - 1] });
     while (ri < sorted.length && sorted[ri].at <= n) out.push(station(sorted[ri++]));
   }
+  layersBefore(Infinity);
   // The next reward ahead: pencil gaps up to it, and it in pencil. Nothing past it.
   const next = sorted[ri];
   if (next) {
@@ -161,7 +169,7 @@ export function createProgress(opts) {
   const offs = [subscribe('journal', check), subscribe('unlocks', check)];
   check();
   return {
-    line: () => naturalistLine(findsFound(get('journal'), words), recipe.rewards, get('unlocks')?.earned ?? {}),
+    line: () => { const j = get('journal'); return naturalistLine(findsFound(j, words), recipe.rewards, get('unlocks')?.earned ?? {}, (id) => j?.species?.[id]?.first ?? -1); },
     beachLine: () => { const e = get('unlocks')?.earned ?? {}; return trailLine(firstsOf(e, 'beach'), opts.beachcomber?.stops ?? [], e.beachcomber ?? [], e.kept ?? []); },
     shapeLine: () => { const e = get('unlocks')?.earned ?? {}; return trailLine(firstsOf(e, 'shape'), opts.shaper?.stops ?? [], []); },
     dispose: () => { for (const off of offs) off(); },

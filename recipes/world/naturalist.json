@@ -38,7 +38,9 @@
     "intro": "What you have found along the shore and the water, in the order you found it.",
     "next": "A little further on",
     "later": "One day",
-    "where": { "woodlice": "Under the log", "groundbeetle": "Under the log" }
+    "where": { "woodlice": "Under the log", "groundbeetle": "Under the log" },
+    "layers": { "topsoil": "Dug: dark topsoil", "subsoil": "Dug: pale subsoil", "clay": "Dug: blue-grey clay", "sand": "Dug: beach sand" },
+    "layerNote": "A layer under the ground, seen."
   },
   "gifts": {
     "seed": {

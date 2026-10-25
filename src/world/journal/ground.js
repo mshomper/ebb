@@ -167,7 +167,9 @@ export function describeGround(journal, id, survey, island, words) {
   if (id === 'fresh' && survey.stream > 0 && g.stream) status = `${status} ${g.stream}`;
   const k = journal.species[id];
   // The ground is known as soon as it is on the island; the rest is learned like a plant's.
-  const learned = { learned: [...(k?.learned ?? []), ...(b.cells > 0 ? ['seen'] : [])] };
+  // What digging found (src/world/dig: `dig:<layer or find>` journal flags) is learned by every ground page.
+  const dug = (journal.flags ?? []).filter((f) => f.startsWith('dig:'));
+  const learned = { learned: [...(k?.learned ?? []), ...(b.cells > 0 ? ['seen'] : []), ...dug] };
   const fieldKnown = knownLines(/** @type {any} */ (learned), g.field);
   const field = (g.field ?? []).map((/** @type {any} */ l, /** @type {number} */ i) => ({ text: l.text, known: fieldKnown[i] }));
   const grows = Object.entries(b.plants)

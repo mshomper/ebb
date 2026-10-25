@@ -77,6 +77,12 @@ function naturalistTrail(o) {
         <span class="ebb-trail__text"><b>${esc(d.name)}</b>${first >= 0 ? `<span class="ebb-journal__voice">${esc(dateOfHour(first, o.words))}</span>` : ''}${where}</span>`, `data-page="${esc(e.id)}"`);
     }
     if (e.type === 'gap') return `<li class="ebb-trail__stop is-gap${last}"><span class="ebb-trail__dot"></span></li>`;
+    // A layer dug for the first time (src/world/dig): shown on the line, never counted. It opens its ground page.
+    if (e.type === 'layer') {
+      return stop(last, `<span class="ebb-trail__dot">${iconSvg('dig')}</span>
+        <span class="ebb-trail__text"><b>${esc(R.line.layers?.[e.id] ?? e.id)}</b><span class="ebb-journal__voice">${esc(dateOfHour(e.hour, o.words))}</span><small>${esc(R.line.layerNote ?? '')}</small></span>`,
+        `data-page="${e.id === 'sand' ? 'sand' : 'soil'}"`);
+    }
     const r = rewards[e.id] ?? {};
     const text = e.inked ? `<b>${esc(r.title ?? '')}</b><span class="ebb-journal__voice">${esc(r.line ?? '')}</span>`
       : `<span class="ebb-journal__voice">${esc(e.hint)}</span><small>${esc(last ? R.line.next : R.line.later)}</small>`;
@@ -102,7 +108,7 @@ function keptTrail(o, line, rec, which) {
     if (e.type === 'first') {
       const f = e.first;
       const name = which === 'shape' ? W.places[f.id] ?? f.id
-        : (W[f.kind] ?? '{name}').replace('{name}', (f.kind === 'family' ? W.families : f.kind === 'rarity' ? W.rarities : W.marks)[f.id] ?? f.id);
+        : (W[f.kind] ?? '{name}').replace('{name}', (f.kind === 'family' || f.kind === 'dug' ? W.families : f.kind === 'rarity' ? W.rarities : W.marks)[f.id] ?? f.id);
       const icon = which === 'shape' ? W.placeIcons?.[f.id] ?? 'shore' : W.icons?.[f.kind] ?? 'shelf';
       const when = f.hour >= 0 ? `<span class="ebb-journal__voice">${esc(dateOfHour(f.hour, o.words))}</span>` : '';
       // A keepsake first opens the Shelf; a place has nowhere to open.
