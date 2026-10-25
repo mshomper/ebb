@@ -43,9 +43,12 @@ export function registerCampCards(W) {
       when: (c) => C(c) === 'ring' && !!c.canFeed, action: () => ({ type: 'camp.feed' }) }),
     registerCardAction({ id: 'camprest', icon: 'rest', order: 6, main: true, label: W.rest,
       when: (c) => C(c) === 'tent' && !!c.canRest, action: () => ({ type: 'camp.rest' }) }),
-    // Every card ties into the journal: the camp's into the keeper's first page.
+    // Every card ties into the journal: the tent's into the keeper's first page, the stations' and
+    // the benches' into the camp page (S1, src/ui/journal-camp.js).
     registerCardAction({ id: 'camppage', icon: 'journal', order: 90, label: 'The first page',
-      when: (c) => !!C(c), action: () => ({ type: 'ui.journal', open: true, view: 'keeper', keeper: 'first', page: null }) }),
+      when: (c) => !!C(c) && !c.station && C(c) !== 'benchSlot', action: () => ({ type: 'ui.journal', open: true, view: 'keeper', keeper: 'first', page: null }) }),
+    registerCardAction({ id: 'campmadepage', icon: 'journal', order: 90, label: 'The camp page',
+      when: (c) => !!c?.station || C(c) === 'benchSlot', action: () => ({ type: 'ui.journal', open: true, view: 'camp', page: null }) }),
   ];
 }
 
@@ -71,7 +74,8 @@ export function campCardAt(k, x, z) {
     const at = fireAt(c.fire, k.hourNow(), F), word = at.word, rainy = k.weatherNow().rain > F.rainLow;
     const line = word === 'lit' ? (rainy ? W.ring.low : at.high ? W.ring.high : W.ring.lowFlames) : W.ring[word] ?? W.ring.laid;
     const fuel = k.hasFuel();
-    return { ...base, sp: 'camp:ring', camp: 'ring', name: W.ring.name, icon: 'fire', text: line, wx: r.x, wz: r.z, r: 0.5,
+    // The laid ring is the fire station (S1): its card opens as a workspace (stations.js).
+    return { ...base, sp: 'camp:ring', camp: 'ring', station: 'fire', name: W.ring.name, icon: 'fire', text: line, wx: r.x, wz: r.z, r: 0.5,
       canLight: (word === 'laid' || (word === 'cold' && fuel)) && k.beatAllows('dusk'), canFeed: (word === 'embers' || word === 'lit') && fuel };
   }
   return null;

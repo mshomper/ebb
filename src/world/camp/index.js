@@ -36,6 +36,7 @@ import { createWhere } from './where.js';
 import { createActPlayer } from './player.js';
 import { registerCampCards, campCardAt, campHere } from './cards.js';
 import { createCampFrame } from './frame.js';
+import { createStations } from './stations.js';
 
 const H = 3600;
 
@@ -43,7 +44,8 @@ const H = 3600;
  * @param {{ recipe: any, seed: number, walk: any, terrain: any, clock: any, orbit: any, camera: any,
  *   world: any, seasons: any, lighting: { setPoints: (l: any[]) => void }, pack?: any,
  *   shadowBias?: { depthBias: number, depthBiasSlopeScale: number }, low?: boolean,
- *   beat?: () => string | null, poses?: any, piles?: any }} o
+ *   beat?: () => string | null, poses?: any, piles?: any, cook?: any }} o
+ *   cook: recipes/world/cook.json (the stations' makes and builds, S1)
  *   piles: E2's piles at camp (src/world/pack/piles-live.js): Feed and Light take a handful from the stick pile
  *   recipe: recipes/world/camp.json; walk: the walker; lighting: the shared light block;
  *   pack: E2's pack (holds, take); beat: the evening's beat now (the director), for its glows;
@@ -167,6 +169,8 @@ export function createCamp(o) {
   /** What the cards and the frame read. @type {import('./cards.js').CampKit} */
   const kit = { R, walk: o.walk, camp, where, player, hourNow, holds, ringNeed, hasFuel, nightNow, restAllowed, beatAllows, weatherNow, near };
   const frame = createCampFrame({ ...kit, o, props, fx, sunAlt });
+  // The stations (S1): the workbench built in its slot, the fire, and their workspace.
+  const stations = createStations({ ...kit, o, cook: o.cook ?? { builds: {}, makes: {}, words: {} }, change, campSeed, frame, store: null });
 
   // ---- acts: walk, face, play, then the change ----
 
@@ -316,6 +320,8 @@ export function createCamp(o) {
     if (r && ringLaid(c) && beat === 'dusk' && sunAlt() < 0 && fireAt(c.fire, hourNow(), F).word === 'laid') out.push([r.x, r.z, 0.7, k]);
     const f = flapAt();
     if (f && beat === 'rest' && pitched(c)) out.push([f.x, f.z, 0.6, k * 0.7]);
+    // A bench's ground, while its parts are to hand (S1).
+    if (byPack) out.push(...stations.rings(k));
     return out;
   }
 
@@ -334,6 +340,7 @@ export function createCamp(o) {
     player.watch(dt);
     // Never left standing inside the pitched tent: out to the flap once you are still.
     if (!player.busy() && !o.walk.busy()) stepOut();
+    stations.update(dt);
     frame.draw(dt, time, c, fireNow);
   }
   let hidden = false;
@@ -349,7 +356,9 @@ export function createCamp(o) {
     },
     rings,
     /** The card a click at a ground point opens (cards.js). @param {number} x @param {number} z */
-    cardAt: (x, z) => campCardAt(kit, x, z),
+    cardAt: (x, z) => stations.cardAt(x, z) ?? campCardAt(kit, x, z),
+    /** The stations (S1): the workbench and the fire's workspace (tools, tests, test links). */
+    stations,
     /** For the evening director: the tent is up; the ring is laid. */
     pitched: () => pitched(camp()),
     ringLaid: () => ringLaid(camp()),
@@ -381,7 +390,7 @@ export function createCamp(o) {
       /** @param {boolean} on */
       hide(on) { hidden = on; },
     },
-    dispose() { for (const off of offs) off(); player.dispose(); },
+    dispose() { for (const off of offs) off(); player.dispose(); stations.dispose(); },
   };
 }
 
