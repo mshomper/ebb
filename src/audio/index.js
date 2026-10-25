@@ -12,7 +12,8 @@
 //   frame loop ── store 'sound' ──→ game-state ──→ ambience ──→ mixer ──→ speakers
 //   frog agents, midges, minnows, dragonflies ── store 'creatureSound' ──→ voices ──┤
 //   director ─→ composer or a tide ─→ performer ─→ music bus ─┤
-//   keepsake taps, keepsake:sound ─→ keepsake sounds ─→ tools bus ─┘
+//   keepsake taps, keepsake:sound ─→ keepsake sounds ─→ tools bus ─┤
+//   store 'campSound' + 'sound' ─→ camp loops (fire crackle, rain on canvas) ─→ ambience bus ─┘
 //   store 'settings'.audio ───────────────────────────────────→ mixer levels
 
 import { loadAudioRecipe } from './recipes.js';
@@ -25,6 +26,7 @@ import { createCreatureSound } from './creatures-game.js';
 import { wingRecipe } from './voices/dragonfly.js';
 import { createMusic } from './music/index.js';
 import { createKeepsakeSounds } from './keepsake-sounds.js';
+import { createCampLoops } from './camp-loops.js';
 import { hash32 } from '../core/rng.js';
 import { emit, on } from '../core/events.js';
 import { sunMoon } from '../world/sky/sun-moon.js';
@@ -54,11 +56,11 @@ if (typeof window !== 'undefined') {
  * @returns {Promise<{ mixer: () => import('./mixer.js').Mixer | null, ambience: () => any, voices: () => any, music: () => any, dispose: () => void }>}
  */
 export async function startAudio(store) {
-  const [mixerRecipe, ambRecipe, procRecipe, gameRecipe, skyRecipe, frogRecipe, midgeRecipe, dragonflyRecipe, minnowRecipe, keepsakeRecipe, introRecipe, campRecipe] = await Promise.all([
+  const [mixerRecipe, ambRecipe, procRecipe, gameRecipe, skyRecipe, frogRecipe, midgeRecipe, dragonflyRecipe, minnowRecipe, keepsakeRecipe, introRecipe, campRecipe, gatherRecipe] = await Promise.all([
     loadAudioRecipe('audio/mixer'), loadAudioRecipe('audio/ambience'), loadAudioRecipe('audio/procedural'),
     loadAudioRecipe('audio/game'), loadRecipe('world/sky'), loadRecipe('species/frog'), loadRecipe('species/midge'),
     loadRecipe('species/dragonfly'), loadRecipe('species/minnow'), loadAudioRecipe('audio/keepsakes'), loadAudioRecipe('audio/intro'),
-    loadAudioRecipe('audio/camp'),
+    loadAudioRecipe('audio/camp'), loadAudioRecipe('audio/gather'),
   ]);
 
   /** @type {import('./mixer.js').Mixer | null} */ let mixer = null;
@@ -71,6 +73,8 @@ export async function startAudio(store) {
   /** @type {Awaited<ReturnType<typeof createMusic>> | null} */ let music = null;
   /** @type {ReturnType<typeof createKeepsakeSounds> | null} */ let keepsakeSounds = null;
   /** The camp fire's one-shots (recipes/audio/camp.json): the strike, the catch, rain's hiss. @type {ReturnType<typeof createKeepsakeSounds> | null} */ let campSounds = null;
+  /** The camp's held sounds: the fire's crackle, rain on the canvas. @type {ReturnType<typeof createCampLoops> | null} */ let campLoops = null;
+  /** Gathering's soft sounds by group (recipes/audio/gather.json). @type {ReturnType<typeof createKeepsakeSounds> | null} */ let gatherSounds = null;
   const t0 = performance.now();
   const asked = new URLSearchParams(location.search).get('music');
   let testNow = asked === 'now' ? 'morning' : ['morning', 'interlude', 'evening', 'nocturne'].includes(asked ?? '') ? /** @type {string} */ (asked) : '';
@@ -108,6 +112,7 @@ export async function startAudio(store) {
     const state = soundState.build(s, dtS);
     ambience.update(state);
     animals.update(/** @type {number[]} */ (state.eye), /** @type {number[]} */ (state.forward), ambience.blend());
+    campLoops?.update(s, store.get('campSound'));
     // The music decides twice a second (doc 24), and dips while a frog calls close by.
     if (music && ticks++ % Math.max(1, Math.round(gameRecipe.updateHz / gameRecipe.music.updateHz)) === 0) {
       mixer.duckMusic(animals.nearCall() ? mixerRecipe.duck.db : 0);
@@ -135,6 +140,8 @@ export async function startAudio(store) {
     soundState = createSoundState(gameRecipe, seed, (t) => sunMoon(t, skyRecipe.orbit).sunAlt * DEG, ambRecipe.seasonEdge);
     keepsakeSounds = createKeepsakeSounds(mixer, keepsakeRecipe);
     campSounds = createKeepsakeSounds(mixer, campRecipe);
+    campLoops = createCampLoops(mixer, campRecipe, hash32(seed >>> 0, 0x6370));
+    gatherSounds = createKeepsakeSounds(mixer, gatherRecipe);
     applySettings();
     unsubs.push(store.subscribe('settings', () => applySettings()));
     if (touched) mixer.unlock().catch(() => { /* the next touch unlocks it */ });
@@ -202,6 +209,11 @@ export async function startAudio(store) {
   }));
   // The camp's fire (src/world/camp): the steel's strike, the twigs catching, rain's hiss on a fire.
   unsubs.push(on('camp:sound', (/** @type {{ name: string }} */ p) => campSounds?.play(p.name)));
+  // Gathering (docs/future/13 gather:done): a soft sound by the group gathered, the spot seeding the take.
+  unsubs.push(on('gather:done', (/** @type {{ group: string, x: number, z: number }} */ p) => {
+    const name = gatherRecipe.groups?.[p.group];
+    if (name) gatherSounds?.play(name, hash32(Math.round(p.x * 10), Math.round(p.z * 10)));
+  }));
 
   if (store.get('sound')) begin();
   else {
@@ -220,6 +232,7 @@ export async function startAudio(store) {
       if (callTimer) clearInterval(callTimer);
       for (const u of unsubs) u();
       music?.dispose();
+      campLoops?.dispose();
       voices?.dispose();
       ambience?.dispose();
       mixer?.dispose();

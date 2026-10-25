@@ -310,6 +310,7 @@ export function createCamp(o) {
     flareT = R.fire.flareS;
     change((x) => ({ ...x, fire: fed }));
     emitDeferred('camp:fed', { hour: now });
+    emit('camp:sound', { name: 'feed' });
   }
 
   let resting = false;
@@ -522,6 +523,13 @@ export function createCamp(o) {
     // Rain on a burning fire: a hiss as it drops low (once as the rain sets in).
     if (word === 'lit' && rainy && !wasRainy) emit('camp:sound', { name: 'hiss' });
     wasRainy = word === 'lit' && rainy;
+    // For the camp's held sounds (src/audio/camp-loops.js): where the ring and tent are, the fire now.
+    const heard = {
+      ring: r && ringLaid(c) ? [r.x, r.y + 0.1, r.z] : null, tent: t && pitched(c) ? [t.x, t.y + 0.8, t.z] : null,
+      fire: word, level: Math.round(fireNow.level * 20) / 20, rainy,
+    };
+    const heardKey = JSON.stringify(heard);
+    if (heardKey !== campSoundKey) { campSoundKey = heardKey; update('campSound', () => heard); }
     // The steel and flint in your hands while you strike.
     if (pending?.act === 'strike') {
       const hr = o.walk.hand('r'), hl = o.walk.hand('l');
@@ -546,7 +554,7 @@ export function createCamp(o) {
       lantern: lanternGlass, sparks, moths: sunAlt() < R.moths.atSunDeg * DEG, time,
     } : null);
   }
-  let wasRainy = false, strikeAt = 0, hidden = false, flareT = 0;
+  let wasRainy = false, strikeAt = 0, hidden = false, flareT = 0, campSoundKey = '';
 
   return {
     id: 'camp',
@@ -556,6 +564,7 @@ export function createCamp(o) {
     tick(f) {
       if (!hidden) { updateFrame(f.realDt, o.clock.animT()); return; }
       props.setProps([]); fx.set(null); o.lighting.setPoints([]);
+      if (campSoundKey !== 'hidden') { campSoundKey = 'hidden'; update('campSound', () => ({ ring: null, tent: null, fire: 'none', level: 0, rainy: false })); }
     },
     rings,
     cardAt,
