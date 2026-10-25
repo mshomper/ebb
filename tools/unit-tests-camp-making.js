@@ -59,7 +59,7 @@ export function addCampMakingTests(test, assert, eq) {
   test(G, 'the workbench is built from two flat stones; the camp page lists the ring, then each first in order', async () => {
     const C = await load('world/cook');
     eq(JSON.stringify(buildKinds(C.builds.workbench)), JSON.stringify(['flat-stones', 'flat-stones']), 'two handfuls of flat stones');
-    eq(makesAt(C, 'workbench').join(), 'rush-cord,shovel', 'the workbench knows rush cord (P2c) and the shovel');
+    eq(makesAt(C, 'workbench').join(), 'rush-cord,shovel,rack,mortar,hamper,hamper2', 'the workbench knows rush cord, the shovel (P2c), the rack and mortar (S2) and the hampers (P2j)');
     const camp = { slots: [{ slot: 'ring', kind: 'ring', placedHour: 3 }] };
     assert(!campPageHad({ slots: [] }, cleanCook(null)), 'no page before the ring');
     assert(campPageHad(camp, cleanCook(null)), 'the page once the ring is laid');
@@ -95,6 +95,47 @@ export function addCampMakingTests(test, assert, eq) {
         assert(Math.hypot(q.u - su, q.v - sv) >= rOf(q) + 0.25, `${land}: you can stand at the workbench clear of ${q.id}`);
       }
     }
+  });
+
+  test(G, 'S2: the rack and mortar wait for the apothecary bench; Dry takes any herb once the rack stands; Grind turns shells to crushed shell', async () => {
+    const C = await load('world/cook'), s = cleanCook(null);
+    /** @param {string[]} built */
+    const ctx = (built) => ({ filled: (/** @type {string} */ id) => built.includes(id), groupOf: (/** @type {string} */ k) => (k.endsWith('.leaves') || k.endsWith('.flowers') ? 'herbs' : 'other') });
+    eq(layout(C, 'workbench', ['flat-stones', 'pebbles'], s, ctx([])).make, 'shovel', 'no mortar before the bench: a flat stone points to the shovel');
+    const m = layout(C, 'workbench', ['flat-stones', 'pebbles'], s, ctx(['apothecary']));
+    assert(m.make === 'mortar' && m.complete, 'a flat stone and a pebble make the mortar once the bench stands');
+    const r = layout(C, 'workbench', ['willow.withies', 'sticks'], s, ctx(['apothecary']));
+    eq(r.make, 'rack', 'withies and a stick point to the rack');
+    eq(JSON.stringify(r.missing), JSON.stringify([['rush-cord']]), 'cord in pencil');
+    // Sticks and cord: the shovel wins a tie (the lower tier); a second stick makes it the rack.
+    eq(layout(C, 'workbench', ['sticks', 'rush-cord'], s, ctx(['apothecary'])).make, 'shovel', 'a stick and cord show the shovel first');
+    assert(layout(C, 'workbench', ['sticks', 'rush-cord', 'sticks'], s, ctx(['apothecary'])).complete, 'two sticks and cord are the rack');
+    eq(layout(C, 'apothecary', ['watermint.leaves'], s, ctx(['apothecary'])).make, null, 'Dry waits for the rack');
+    const d = layout(C, 'apothecary', ['watermint.leaves'], s, ctx(['apothecary', 'rack']));
+    assert(d.make === 'dry' && d.complete, 'any herb dries');
+    eq(layout(C, 'apothecary', ['chamomile.flowers'], s, ctx(['apothecary', 'rack'])).make, 'dry', 'chamomile too');
+    eq(layout(C, 'apothecary', ['sticks'], s, ctx(['apothecary', 'rack', 'mortar'])).make, null, 'sticks are no herb');
+    const g = layout(C, 'apothecary', ['shells'], s, ctx(['apothecary', 'mortar']));
+    assert(g.make === 'grind' && g.complete, 'shells grind in the mortar');
+    eq(C.makes.grind.gives, 'crushed-shell', 'to crushed shell');
+    eq(C.makes.dry.act, 'dry', 'Dry wears its own icon'); eq(C.makes.grind.act, 'grind', 'Grind its own');
+    // Pencil outlines for a herb part wear the kind it shows.
+    eq(JSON.stringify(layout(C, 'apothecary', [], s, ctx(['apothecary', 'rack'])).missing), JSON.stringify([]), 'nothing laid shows nothing');
+    eq(JSON.stringify(buildKinds(C.builds.apothecary)), JSON.stringify(['sticks', 'sticks', 'rush-cord']), 'the bench: two sticks and cord');
+  });
+
+  test(G, 'P2j: rushes and cord make the hamper; the second needs the first and a withy lid; each is made once', async () => {
+    const C = await load('world/cook'), s = cleanCook(null);
+    const ctx = (/** @type {string[]} */ built) => ({ filled: (/** @type {string} */ id) => built.includes(id) });
+    eq(layout(C, 'workbench', ['rushes.stems'], s, ctx([])).make, 'rush-cord', 'rushes alone still twist cord');
+    const h = layout(C, 'workbench', ['rushes.stems', 'rush-cord', 'marram.leaves'], s, ctx([]));
+    assert(h.make === 'hamper' && h.complete, 'rushes, cord and marram make a hamper');
+    eq(layout(C, 'workbench', ['rushes.stems', 'rush-cord', 'willow.withies'], s, ctx([])).make, 'hamper', 'before a hamper stands, the second is not offered');
+    const made = recordMade(s, 'hamper', 10);
+    const h2 = layout(C, 'workbench', ['rushes.stems', 'rush-cord', 'willow.withies'], made, ctx(['store']));
+    assert(h2.make === 'hamper2' && h2.complete, 'with a hamper standing, rushes, cord and a withy lid make the second');
+    eq(layout(C, 'workbench', ['rushes.stems', 'rush-cord', 'willow.withies'], recordMade(made, 'hamper2', 20), ctx(['store'])).make, 'rush-cord', 'and only once');
+    for (const id of ['apothecary', 'rack', 'mortar', 'hamper', 'hamper2', 'dry', 'grind']) assert(C.words.pageNames[id] && C.words.pageParts[id] && (C.words.made[id] || C.builds[id]), `${id} has its words`);
   });
 
   test(G, 'the walker works at the bench for the make: the make gesture is as long as the make', async () => {

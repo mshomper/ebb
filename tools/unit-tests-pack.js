@@ -8,7 +8,10 @@
 import { makeKinds } from '../src/world/pack/kinds.js';
 import { emptyPack, cleanPack, sizeOf, add, take, has, handfulsOf, packHolds, normalize, addCarrier, removePouch,
   addHeap, takeFromHeap, expireHeaps } from '../src/world/pack/model.js';
-import { pileWord, pileLook, slotFor, setDown, takeUp } from '../src/world/pack/piles.js';
+import { pileWord, pileLook, slotFor, setDown, takeUp, hang, dryShare, rackWord, takeBunch, cleanBunches } from '../src/world/pack/piles.js';
+import { slotsOf, capOf, put as storePut, room as storeRoom, take as storeTake, takeSlot, holdsOf, cleanHolds } from '../src/world/pack/store.js';
+import { routeOf, setDownAtCamp } from '../src/world/pack/route.js';
+import { cleanCamp } from '../src/world/camp/model.js';
 import { createPiles } from '../src/world/pack/piles-live.js';
 import { splitPieces, firstPieces, buildsUp } from '../src/world/pack/pile-pieces.js';
 import { logStack, stoneHeap, logsShown } from '../src/world/pack/log-stack.js';
@@ -309,5 +312,63 @@ export function addPackTests(test, assert, eq) {
     eq(pileWord(8, recipe), 'A good heap.'); eq(pileWord(12, recipe), 'A big heap.');
     eq(pileLook(9, recipe), 2);
     assert(p.handfuls === 10, 'the pile record is untouched');
+  });
+
+  test(G, 'P2j: the hamper keeps one kind a slot up to 12, has 6 slots then 12, takes from a slot and cleans its save', async () => {
+    const { recipe } = await load();
+    eq(slotsOf(1, recipe), 6, 'one hamper: 6 slots'); eq(slotsOf(2, recipe), 12, 'stacked: 12'); eq(capOf(recipe), 12, '12 handfuls a slot');
+    let h = storePut([], 'kelp', 14, 12, 6);
+    eq(js(h), js({ holds: [['kelp', 12], ['kelp', 2]], moved: 14 }), 'a kind fills a slot, then opens another');
+    h = storePut(h.holds, 'kelp', 3, 12, 6);
+    eq(js(h.holds), js([['kelp', 12], ['kelp', 5]]), 'more of a kind tops up its own slot first');
+    let full = { holds: /** @type {[string, number][]} */ ([]), moved: 0 };
+    for (const k of ['a', 'b', 'c', 'd', 'e', 'f']) full = storePut(full.holds, k, 12, 12, 6);
+    eq(storePut(full.holds, 'g', 1, 12, 6).moved, 0, 'six full slots take nothing more');
+    assert(!storeRoom(full.holds, 'g', 12, 6) && storeRoom(full.holds, 'g', 12, 12), 'a second hamper makes room');
+    eq(js(storeTake(h.holds, 'kelp', 6)), js({ holds: [['kelp', 11]], taken: 6 }), 'a make takes from the last slot back; an emptied slot goes');
+    eq(js(takeSlot([['shells', 2], ['sand', 9]], 1, 3)), js({ holds: [['shells', 2], ['sand', 6]], kind: 'sand', taken: 3 }), 'Take up fills one pouch from a slot');
+    eq(js(holdsOf([['kelp', 12], ['sand', 1], ['kelp', 2]])), js({ kelp: 14, sand: 1 }), 'what it holds, by kind');
+    eq(js(cleanHolds([['kelp', 3], ['x', 0], ['y', 2.5], 'z', ['sand', 4]])), js([['kelp', 3], ['sand', 4]]), 'a saved hamper comes back clean');
+    const c = cleanCamp({ slots: [{ slot: 'store', kind: 'hamper', seed: 1, placedHour: 2, stack: 2, holds: [['kelp', 3]] }, { slot: 'rack', kind: 'rack', seed: 2, placedHour: 3, bunches: [['mint.leaves', 2, 30], ['bad', -1, 2]] }] });
+    eq(js(c.slots.map((s) => [s.stack, s.holds, s.bunches])), js([[2, [['kelp', 3]], undefined], [undefined, undefined, [['mint.leaves', 2, 30]]]]), 'the camp section keeps the hamper and the rack');
+  });
+
+  test(G, 'S2: herbs hang in bunches by kind and day, dry over three game days, and come down a pouch at a time', async () => {
+    const { recipe } = await load();
+    let b = hang([], 'mint.leaves', 2, 10, 6, 12);
+    b = hang(b.bunches, 'mint.leaves', 5, 12, 6, 12);
+    eq(js(b.bunches), js([['mint.leaves', 6, 10], ['mint.leaves', 1, 12]]), 'the same day tops up a bunch to six, then starts another');
+    eq(js(hang(b.bunches, 'mint.leaves', 1, 40, 6, 12).bunches[2]), js(['mint.leaves', 1, 40]), 'a new day hangs a new bunch');
+    eq(hang(b.bunches, 'nettle.tops', 3, 12, 6, 2).moved, 0, 'a full rack takes nothing');
+    eq(dryShare(10, 10, 3), 0, 'just hung'); eq(dryShare(10, 46, 3), 0.5, 'half dry after a day and a half'); eq(dryShare(10, 200, 3), 1, 'dry');
+    const W = recipe.words.rack;
+    eq(rackWord(0, W), W.fresh); eq(rackWord(0.5, W), W.drying); eq(rackWord(1, W), W.dry);
+    eq(js(takeBunch(b.bunches, 0, 3)), js({ bunches: [['mint.leaves', 3, 10], ['mint.leaves', 1, 12]], kind: 'mint.leaves', taken: 3 }), 'Take up a bunch fills one pouch');
+    eq(js(cleanBunches([['mint.leaves', 2, 5], ['x', 1, 'no']])), js([['mint.leaves', 2, 5]]), 'a saved rack comes back clean');
+  });
+
+  test(G, 'P2j: set down goes to a kind\'s own place first, then the hamper; heaps only before a hamper; full says so', async () => {
+    const { kinds } = await load();
+    eq(routeOf('rack', { rack: true, hamper: true }).join(), 'rack,hamper', 'a herb: the rack, then the hamper');
+    eq(routeOf('rack', { rack: false, hamper: false }).join(), 'piles', 'a herb with neither: the piles say there is no rack');
+    eq(routeOf('sticks', { rack: false, hamper: true }).join(), 'piles,hamper', 'sticks: the wood store, then the hamper');
+    eq(routeOf('heap', { rack: false, hamper: true }).join(), 'hamper', 'a heap kind goes straight in the hamper');
+    eq(routeOf('heap', { rack: false, hamper: false }).join(), 'piles', 'before a hamper, the heaps');
+    eq(routeOf('none', { rack: true, hamper: true }).join(), 'piles', 'worms still dig in');
+    // A live run with fakes: the stick pile takes 2, the hamper 3 of the rest; then the hamper is full.
+    let inHamper = 0;
+    const k = { campOf: kinds.campOf, piles: { setDown: (/** @type {string} */ _k, /** @type {number} */ n) => ({ moved: Math.min(n, 2), pile: 'p1' }) },
+      rack: { here: () => false, hang: () => 0, at: () => null },
+      hamper: { here: () => true, put: (/** @type {string} */ _k, /** @type {number} */ n) => { const m = Math.min(n, 3 - inHamper); inHamper += m; return m; }, at: () => ({ x: 1, z: 2 }) } };
+    eq(js(setDownAtCamp('sticks', 6, k)), js({ moved: 5, pile: 'p1', at: { x: 1, z: 2 }, full: 'hamperFull' }), 'what fits moves; the hamper filled');
+    eq(js(setDownAtCamp('kelp', 2, k)), js({ moved: 0, refuse: 'hamperFull', pile: null, at: null }), 'The hamper is full.');
+    assert(/hamper is full/i.test((await load()).recipe.words.hamperFull), 'its line');
+  });
+
+  test(G, 'P2j: once a hamper stands the heap slots retire: a heap kind is refused a heap slot', async () => {
+    const { kinds } = await load();
+    const slots = ['sticks', 'stones', 'clay', 'heap1', 'heap2', 'heap3'].map((id, i) => ({ id, x: i, z: 0 }));
+    eq(js(slotFor('kelp', [], slots, kinds, true)), js({ refuse: 'noSlot' }), 'no heap slot once retired');
+    eq(js(slotFor('sticks', [], slots, kinds, true)), js({ slot: 'sticks' }), 'a store still takes its own kind');
   });
 }
