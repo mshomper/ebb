@@ -15,7 +15,7 @@ import { PERIOD, periodOf } from './events.js';
 // New kinds go at the end: a kind's place here salts its rolls (as finds' KINDS), so sticks and
 // lichen twigs at the same shrub roll apart. Later kinds: kelp, wrack, sand, leaves, lichen-twigs,
 // acorns, hazelnuts, old-comb, charcoal, ash, cakes.
-export const KINDS = Object.freeze(['sticks', 'drift-twigs', 'pebbles', 'flat-stones']);
+export const KINDS = Object.freeze(['sticks', 'drift-twigs', 'pebbles', 'flat-stones', 'sand']);
 
 /** A bin's side (m), gather.json spotM. Keys are bin indices, so this stays 2. */
 export const BIN_M = 2;
@@ -112,6 +112,8 @@ export const WHERE = {
   },
   // Rock in the tide band.
   bandRock: (k, ctx) => !!ctx.summary && ctx.summary.band[k] === 1 && ctx.groundOf?.(k) === GROUND.rock,
+  // Dry sand above the wet line (P2c): painted sand out of the tide band, with no water on it.
+  drySand: (k, ctx) => !!ctx.summary && !ctx.summary.band[k] && ctx.summary.cls[k] === WATER_CLASS.dry && ctx.groundOf?.(k) === GROUND.sand,
   // Shore sand steep enough to be shingle (docs/future/10, computed shingle).
   steepShingle: (k, ctx, recipe) => WHERE.shoreShingle(k, ctx, recipe) && !!ctx.slopeOf && ctx.slopeOf(k) >= (recipe.bins?.steepDeg ?? 20),
 };
@@ -290,6 +292,8 @@ export function share(kind, sourceKey, period, ctx, recipe) {
   const base = K.handfuls?.[season] ?? 0;
   if (base <= 0) return 0;
   let more = 0, empty = K.empty?.[season] ?? 0;
+  // Sand is wet through on a rain day and the day after ("Wet through. It will dry.").
+  if (K.rainNone && ((ctx.today?.rainAmount ?? 0) > 0 || (ctx.yesterday?.rainAmount ?? 0) > 0)) return 0;
   if (K.windy !== undefined && isWindy(ctx, W)) { more += K.windy; empty = K.emptyWindy ?? empty; }
   if (K.onshore !== undefined && line && isOnshore(line.day, binCenter(sourceKey), ctx.center, W)) { more += K.onshore; empty = K.emptyOnshore ?? empty; }
   // Ground spots lie in a few natural clusters, not everywhere (F6, October 23, 2026): a bin is

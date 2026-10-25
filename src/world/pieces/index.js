@@ -393,6 +393,8 @@ export function createPieces(opts) {
    * with any lift's damp patch beneath; a carried piece hangs above its spot.
    * @returns {import('../../render/passes/pieces.js').PieceBeing[]}
    */
+  /** Other modules' beings for the same pass (a hole's spoil heap, src/world/dig). @type {(() => import('../../render/passes/pieces.js').PieceBeing[])[]} */
+  const extraBeings = [];
   function beings() {
     /** @type {import('../../render/passes/pieces.js').PieceBeing[]} */ const out = [];
     const liftM = D.carry.liftM;
@@ -400,6 +402,8 @@ export function createPieces(opts) {
       if (p.kind === 'log') { logBeing(p, p.id, out); continue; }
       // A flight is cut into the land; a pile at camp is drawn by src/world/pack/draw.js.
       if (p.kind === 'steps' || p.kind === 'pile') continue;
+      // A hole's spoil heap comes from the dig module (extra beings, below).
+      if (p.kind === 'hole') continue;
       if (p.kind === 'raft') {
         const sh = raftShapeOf(p), i = rafts.indexOf(sh), now = raftNow(p, frameDt);
         // Reeds, not stone: drawn plain (no rock scan) and with no damp ring on the water.
@@ -427,6 +431,7 @@ export function createPieces(opts) {
       if (angle > 0.01 || held) out.push({ ...common, y: y + 0.004, mesh: `damp-${i}`, bone: shear(slope), plain: true });
     }
     for (const s of strandShown) logBeing(s, s.key, out);
+    for (const fn of extraBeings) out.push(...fn());
     for (const t of treads) {
       const moss = mossOf(t.f.placedHour);
       for (const s of t.slabs) slabBeing(s.x, s.z, s.y, s.top, s.yaw, s.size, hash32(t.f.seed, s.shape, Math.round(s.x * 100)), 0, out, s.shape, true, moss);
@@ -510,6 +515,8 @@ export function createPieces(opts) {
   return {
     id: 'pieces',
     pass,
+    /** Draw another module's beings in this pass each frame (a hole's spoil heap). @param {() => import('../../render/passes/pieces.js').PieceBeing[]} fn */
+    addBeings(fn) { extraBeings.push(fn); },
 
     /** Each frame: lifts move on in real seconds; the pieces follow the ground under them. @param {import('../../sim/live-sim.js').FrameInfo} f */
     tick(f) {

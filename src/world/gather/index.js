@@ -120,6 +120,8 @@ export function createGather(o) {
     /** @type {string[]} */ const lines = [];
     const c = ctx();
     for (const sp of spotsAt(x, z, c, R)) {
+      // Ground that is the ground itself (sand) is never a card: the here-bar offers it (src/world/dig).
+      if (R.kinds?.[sp.kind]?.hereOnly) continue;
       const n = share(sp.kind, sp.sourceKey, sp.period, c, R);
       const left = Math.max(0, n - takenOf(events(), sp.key, sp.period));
       const under = underWater(sp.x, sp.z);
@@ -284,6 +286,34 @@ export function createGather(o) {
         if (!o.walk.tap(-1e4, -1e4, [x, y, z], reach)) return;
       }
       pending = { g, t: performance.now(), kneelT: 0 };
+    },
+
+    /**
+     * The dry sand at a point for Scoop sand on the here-bar (src/world/dig): its spot and what is left
+     * today, whether rain has wet it through, or null where there is no dry sand.
+     * @param {number} x @param {number} z @returns {{ spot: any, left: number, wet: boolean } | null}
+     */
+    sandAt(x, z) {
+      const c = ctx();
+      const sp = spotsAt(x, z, c, R).find((s) => s.kind === 'sand');
+      if (!sp) return null;
+      const wet = (c.today?.rainAmount ?? 0) > 0 || (c.yesterday?.rainAmount ?? 0) > 0;
+      const n = share(sp.kind, sp.sourceKey, sp.period, c, R);
+      return { spot: sp, left: Math.max(0, n - takenOf(events(), sp.key, sp.period)), wet };
+    },
+
+    /**
+     * Take one handful of sand from a spot (you have knelt). 'full' when the pack has no room.
+     * @param {any} spot @returns {'ok' | 'full' | 'none'}
+     */
+    takeSand(spot) {
+      const c = ctx();
+      if (takenOf(events(), spot.key, spot.period) >= share(spot.kind, spot.sourceKey, spot.period, c, R)) return 'none';
+      if (!o.pack.room(spot.kind)) { emitDeferred('pack:full', { kind: spot.kind }); return 'full'; }
+      keepEvents(record(events(), spot.key, spot.period, 1));
+      o.pack.add(spot.kind, 1);
+      emitDeferred('gather:done', { kind: spot.kind, group: o.pack.kinds.groupOf(spot.kind), x: spot.x, z: spot.z, from: 'spot' });
+      return 'ok';
     },
 
     /** Set down here (the full card): the handful goes as a small heap at your feet. */

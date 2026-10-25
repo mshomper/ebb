@@ -6,7 +6,8 @@
 
 import { shellMesh } from './shell.js';
 import { stoneMesh } from './stone.js';
-import { draws } from './common.js';
+import { draws, closedBody } from './common.js';
+import { builder } from '../../finds/procedural.js';
 
 /** @typedef {import('../rarity.js').Rarity} Rarity */
 
@@ -26,9 +27,33 @@ export function fossilNumbers(h0, rarity, K) {
   };
 }
 
+/**
+ * A belemnite (docs/future/13 10.5, dug from the blue-grey clay): the guard of a squid-like animal, a
+ * tapering bullet of glassy brown, honey or black stone; sometimes the hollow cone shows at its blunt
+ * end (the mark); at the top tiers it has turned to pyrite. Tiers in keepsakes.json fossils.belemnite.
+ * @param {number} h0 @param {Rarity} rarity @param {any} K keepsakes.json
+ */
+export function belemniteNumbers(h0, rarity, K) {
+  const B = K.fossils.belemnite, Tr = B.tiers[rarity], d = draws(h0);
+  const cone = d.chance(B.marks.cone.chance * (Tr.markLean ?? 1), 20) ? 1 : 0;
+  const ci = d.pick(Tr.color, 9);
+  return {
+    family: 'fossil', gen: K.fossils.gen, rarity, form: 'belemnite',
+    sizeM: d.range(Tr.sizeM, 3), girth: d.range(B.girth, 4), taper: d.range(B.taper, 5), bend: d.range(B.bend, 6),
+    color: d.tone(B.colors.base[ci], 0.06, 10), colorName: B.colors.names[ci], gloss: d.range(Tr.gloss, 11),
+    cone, mark: cone ? 'cone' : null,
+  };
+}
+
 /** @param {any} n @param {any} K */
 export function fossilWords(n, K) {
   const S = K.fossils;
+  if (n.form === 'belemnite') {
+    const B = S.belemnite;
+    let line = `a fossil like a stone bullet, ${n.colorName}`;
+    if (n.mark === 'cone') line += ', ' + B.marks.cone.word;
+    return line[0].toUpperCase() + line.slice(1) + '.';
+  }
   let line = n.complete ? `an ammonite in ${n.rockName} stone` : `part of an ammonite in ${n.rockName} stone`;
   if (n.fossilName !== 'stone') line += `, turned to ${n.fossilName}`;
   if (n.mark === 'complete') line += ', ' + S.marks.complete.word;
@@ -37,6 +62,7 @@ export function fossilWords(n, K) {
 
 /** @param {any} n @param {any} K @returns {import('../../finds/procedural.js').Mesh} */
 export function fossilMesh(n, K) {
+  if (n.form === 'belemnite') return belemniteMesh(n, K);
   // The slab: a flat stone, a little wider than the coil.
   const slab = stoneMesh({
     family: 'stone', sizeM: n.sizeM, flat: n.flat, long: 0.85, lump: 0.05, lumpSeed: n.lumpSeed,
@@ -67,4 +93,24 @@ export function fossilMesh(n, K) {
   indices.set(slab.indices, 0);
   for (let i = 0; i < coil.indices.length; i++) indices[slab.indices.length + i] = coil.indices[i] + slab.count;
   return { vertices, count: slab.count + coil.count, indices };
+}
+
+/**
+ * A belemnite's mesh: a closed body lying along its length (x), rounded at the blunt end and drawn
+ * to a point, a little bent; glossy along its top, darker in the hollow cone at the blunt end when
+ * it shows. @param {any} n @param {any} K @returns {import('../../finds/procedural.js').Mesh}
+ */
+function belemniteMesh(n, K) {
+  const M = K.fossils.belemnite.mesh, b = builder();
+  closedBody(b, M.rows, M.cols, n.sizeM, (dir) => {
+    // u along the length: -1 the blunt end, 1 the point; (cs, sn) round the body.
+    const u = dir[1], s = Math.max(Math.hypot(dir[0], dir[2]), 1e-6), cs = dir[0] / s, sn = dir[2] / s;
+    const cap = u < -0.75 ? Math.sqrt(Math.max(0, 1 - ((u + 0.75) / 0.25) ** 2)) : 1;
+    const r = n.girth * cap * (u > 0 ? Math.pow(1 - u, n.taper) : 1);
+    const y = sn * r * 0.95 + n.bend * (1 - u * u) * 0.05;
+    const dark = n.cone && u < -0.82 ? 0.5 : 1;
+    const sheen = 1 + n.gloss * Math.max(0, sn) * (1 - Math.abs(u));
+    return { p: [u * 0.5, y, cs * r], c: n.color.map((/** @type {number} */ v) => Math.min(1, v * dark * sheen)) };
+  });
+  return b.done();
 }

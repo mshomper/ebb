@@ -51,6 +51,7 @@
     "world/walker": "world/walker.json",
     "world/pack": "world/pack.json",
     "world/gather": "world/gather.json",
+    "world/dig": "world/dig.json",
     "world/highlight": "world/highlight.json",
     "world/figure": "world/figure.json",
     "world/intro": "world/intro.json",

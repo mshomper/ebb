@@ -93,6 +93,7 @@ import { SECTIONS9, empty9 } from './save/migrate-format9.js';
 import { clickKind, clickPlan } from './world/walk/click.js';
 import { createPack } from './world/pack/index.js';
 import { createGather } from './world/gather/index.js';
+import { createDig } from './world/dig/index.js';
 import { createPiles } from './world/pack/piles-live.js';
 import { createStores } from './world/pack/stores.js';
 import { createCamp } from './world/camp/index.js';
@@ -642,6 +643,13 @@ export async function startApp(canvas, hooks = {}) {
   // slab, places with a card from the first frame (drawn by packDraw), glowing while the pack holds
   // their kind near camp.
   const stores = createStores({ recipe: pack.recipe, piles, walk, glow: campRecipe.glow, ringLaid: () => camp.ringLaid() });
+  // Digging (docs/future/13 section 10, P2c; src/world/dig): Dig and Scoop sand on the here-bar once
+  // the shovel is made; `?shovel` (testing, unsaved) puts it in the walker's kit until the workbench makes it.
+  const dig = createDig({ recipe: await loadRecipe('world/dig'), keepsakes: keepsakesRecipe, seed, world, walk, terrain, water, pieces, pack, gather, presence,
+    worldT: () => clock.worldT(), test: params.has('shovel'), propsRecipe: campRecipe.props, shadowBias: shadowPass.bias, noteKept: (n) => noteKept(n) });
+  dig.setKeepsakeWords((n) => keepsakeWords(n, keepsakesRecipe));
+  sim.addSystem(dig);
+  shadowPass.addCaster(dig.props.caster);
 
   /**
    * A dry, grassy ground point near the view's middle, out of the tide, for a test log: on a widening
@@ -740,6 +748,8 @@ export async function startApp(canvas, hooks = {}) {
     pieces.pass,
     // The camp's tent, fire ring and lantern, drawn with their own paint maps.
     camp.props,
+    // The shovel in the walker's hands while it digs (src/world/dig).
+    dig.props,
     boat.pass,
     // What lives under a log, while it is lifted (L3a).
     underLog.pass,
@@ -1889,6 +1899,8 @@ export async function startApp(canvas, hooks = {}) {
     intro,
     /** The keeper's camp: the journal asks it what a click at camp lands on; tools read the fire. */
     camp,
+    /** Digging: the journal asks it whether a tap landed on an open hole. */
+    dig,
     /**
      * Testing helpers, on window.ebb with `?debug`: autumn's misty morning and kept logs, skipping to
      * a time of year, and bringing a settled school or swarm. They change this island's time and

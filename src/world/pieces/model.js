@@ -15,6 +15,7 @@ import { hash32, det } from '../../core/rng.js';
 import { WATER_CLASS } from '../water/summary.js';
 import { waterCellCenter } from '../water/grid.js';
 import { groundOfCell } from '../water/shore.js';
+import { cleanHoleFields } from '../dig/holes.js';
 
 //
 // A pond stone (stepping.js) is { id, kind: 'stepping', x, z, yaw, seed, size, rise, run, placedHour };
@@ -24,6 +25,9 @@ import { groundOfCell } from '../water/shore.js';
 // seed, size, placedHour, holds, handfuls, slot }: holds is the pack kind it is a pile of, handfuls
 // how many it holds (1 to 12; an empty pile is gone), slot the camp pile slot it sits in, and size
 // its footprint across (m). It is drawn by src/world/pack/draw.js, never by the stone pass.
+// A hole (docs/future/13 10.8, src/world/dig) is { id, kind: 'hole', x, z, yaw, seed, size, placedHour,
+// depth, layer, cls, dugHour, closedHour, wetH, seep, side } (src/world/dig/holes.js); its spoil heap
+// is drawn by the dig module, and its mouth by the terrain shader (lib-holes.wgsl).
 
 /**
  * @typedef {{ id: string, kind: 'stone' | 'log' | 'stepping' | 'steps' | 'raft' | 'pile', x: number, z: number, yaw: number, seed: number, size: number, length?: number,
@@ -36,7 +40,7 @@ import { groundOfCell } from '../water/shore.js';
  */
 
 /** Kinds of piece this build knows. */
-export const PIECE_KINDS = ['stone', 'log', 'stepping', 'steps', 'raft', 'pile'];
+export const PIECE_KINDS = ['stone', 'log', 'stepping', 'steps', 'raft', 'pile', 'hole'];
 /** The most handfuls a pile holds (recipes/world/pack.json piles.handfuls). */
 export const PILE_HANDFULS = 12;
 
@@ -73,8 +77,12 @@ export function cleanPieces(v) {
     if (r.kind === 'steps' && !(fin(r.x2) && fin(r.z2) && fin(r.top) && fin(r.bottom) && r.top > r.bottom && Number.isInteger(r.risers) && r.risers >= 1)) continue;
     // A pile holds a kind, sits in a slot, and holds 1 to 12 handfuls (more is kept to the cap; none is gone).
     if (r.kind === 'pile' && !(typeof r.holds === 'string' && r.holds && typeof r.slot === 'string' && r.slot && fin(r.handfuls) && Math.round(r.handfuls) >= 1)) continue;
+    // A hole (docs/future/13 10.10.2, src/world/dig/holes.js) keeps its own fields, or is left out.
+    const hole = r.kind === 'hole' ? cleanHoleFields(r) : null;
+    if (r.kind === 'hole' && !hole) continue;
     ids.add(r.id);
     const hour = fin(r.placedHour) ? r.placedHour : 0;
+    if (hole) { list.push({ id: r.id, kind: r.kind, x: r.x, z: r.z, yaw: r.yaw, seed: r.seed >>> 0, size: r.size, placedHour: hour, ...hole }); continue; }
     // In the order makeStone, makeLog, makeStepping, the Steps mode and piles-live.js write them, so a record comes back exactly.
     if (r.kind === 'pile') list.push({ id: r.id, kind: r.kind, x: r.x, z: r.z, yaw: r.yaw, seed: r.seed >>> 0, size: r.size, placedHour: hour,
       holds: r.holds, handfuls: Math.min(PILE_HANDFULS, Math.round(r.handfuls)), slot: r.slot });

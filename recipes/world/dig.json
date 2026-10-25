@@ -1,0 +1,77 @@
+{
+  "type": "dig",
+  "version": 1,
+  "note": "Digging with the shovel (docs/future/13 section 10, P2c; src/world/dig). Tune with tools/dig-lab.html. hole: a hole's size (m across), the dig point ahead of the walker (aheadM), the least gap between open holes (spacingM: a press nearer an open hole than this digs that hole deeper), how far a hole may slide off a plant's stem (slideM, tried in slideSteps rings of 8 directions) and how far it keeps clear of a placed piece's footprint (pieceClearM); plantClearM is how near a plant's middle a hole may come. ground: ankleM, the deepest water (live, or the habitat's standing fresh water) a hole may be dug in; dampBank, the moisture (0..1, at least) and salt (at most) that make grass, soil or moss ground a damp bank, where clay lies a spade down. layers: the stack under each ground class, top first, and the word said at the bottom (stones, harder: a deeper layer the shovel cannot reach yet, sand). fill: a hole fills a third of the way each hoursPerThird game hours, each hour of rain counting rainWeight times, in four stages (open, slumped, settled, closed); a closed hole's darker patch fades over darkDays; at most openCap holes are open (a new one beyond settles the oldest closed at once) and the list keeps at most listCap records; waterM: live water this deep over a hole (a tide, a flood) closes it. rest: a cellM cell gives each layer once a game day; thin: in a patchM patch, the n-th dig of the season gives keepsakes at this share ([from the n-th, share]); it recovers at the season's turn. budget: the island's dug keepsakes a game day, 0, 1 or 2 with these weights, drawn from the seed. keepsake: the chance a dig holds one by layer, the family by layer, summerSandLean (drift seeds lean in in summer), holedLean (a dug stone's holed mark, at this share of the shore's). rarity: weights per layer depth (common, uncommon, rare, very rare, once in a lifetime); gates (a rare one needs depth 2, sand excepted; very rare and once in a lifetime need depth 3, which the first shovel never reaches); lean on rain yesterday and on a frost day (a winter day that dawned clear or misty). worms: the chance by layer and season (spring, summer, autumn, winter), summer times summerRainBoost after rain yesterday. clay: the seasons it can be worked. seep: a dig to a clay layer at least moistureMin wet shows water creeping into the hole until it slumps. startleM: a dig is an edit at the hole for presence within this reach. events.cap: the dug events kept this season. shovel: the test link that puts the shovel in the walker's kit (until the workbench makes it). act: the dig motion's sound beats (seconds into figure.json poses.dig): bite at the step, lift, pour as it tips; the hole changes at holeAtS and the card opens at cardAtS. look: the hole and spoil drawn (linear albedo by layer, the spoil heap's size and its shrinking by stage, the dark mouth's darkness and the fresh soil's darkening ring). scoop: Scoop sand on the here-bar, kneeling for kneelS; needs is the unlock it waits for. words: every line digging says; layers are the walker's first lines (drafts, docs/future/13 10.4.3); seen is a layer in words for the card and the shelf.",
+  "hole": { "sizeM": 0.4, "aheadM": 0.6, "spacingM": 0.5, "deeperM": 0.3, "slideM": 0.4, "slideSteps": 2, "pieceClearM": 0.2, "plantClearM": 0.18 },
+  "ground": { "ankleM": 0.08, "dampBank": { "moistureMin": 0.55, "saltMax": 0.35 } },
+  "layers": {
+    "soil": { "stack": ["topsoil", "subsoil"], "bottom": "stones" },
+    "bank": { "stack": ["topsoil", "clay"], "bottom": "harder" },
+    "sand": { "stack": ["sand"], "bottom": "sand" }
+  },
+  "fill": { "hoursPerThird": 24, "rainWeight": 3, "darkDays": 3, "openCap": 12, "listCap": 24, "waterM": 0.03 },
+  "rest": { "cellM": 1, "patchM": 8, "thin": [[1, 1], [6, 0.5], [12, 0.25]] },
+  "budget": { "perDay": [20, 65, 15] },
+  "keepsake": {
+    "chance": { "subsoil": 0.12, "clay": 0.10, "sand": 0.03 },
+    "families": { "subsoil": "stone", "clay": "belemnite", "sand": "seed" },
+    "summerSandLean": 1.5, "holedLean": 0.5
+  },
+  "rarity": {
+    "weights": { "1": [80, 17, 3, 0, 0], "2": [74, 20, 5.5, 0.5, 0] },
+    "gates": { "rare": { "minDepth": 2, "sandOk": true }, "veryRare": { "minDepth": 3 }, "lifetime": { "minDepth": 3 } },
+    "lean": { "rainBefore": { "rare": 1.5, "veryRare": 2 }, "frost": { "rare": 1.5, "veryRare": 2.5, "lifetime": 3 } }
+  },
+  "worms": {
+    "topsoil": [0.7, 0.15, 0.7, 0],
+    "subsoil": [0.4, 0.2, 0.4, 0.1],
+    "summerRainBoost": 3
+  },
+  "clay": { "seasons": [0, 1, 2] },
+  "seep": { "moistureMin": 0.7 },
+  "startleM": 2,
+  "events": { "cap": 600 },
+  "shovel": { "test": "shovel" },
+  "act": { "biteS": 0.6, "liftS": 1.3, "pourS": 1.65, "holeAtS": 1.65, "cardAtS": 2.0, "gripM": 0.95, "scale": 0.9, "model": "assets/models/camp/shovel-wood.glb" },
+  "look": {
+    "walls": { "topsoil": [0.06, 0.042, 0.028], "subsoil": [0.2, 0.15, 0.1], "clay": [0.16, 0.19, 0.2], "sand": [0.46, 0.4, 0.3] },
+    "spoil": { "sizeM": 0.34, "fromM": 0.36, "byStage": [1, 0.55, 0, 0], "shapes": 3, "seed": 6131, "cellM": 0.012 },
+    "mouth": { "dark": 0.85, "byStage": [1, 0.6, 0.25, 0] },
+    "fresh": { "darken": 0.35, "ringM": 0.35, "seep": [0.05, 0.07, 0.08] },
+    "nearM": 30, "max": 16
+  },
+  "scoop": { "kneelS": 1.2, "needs": "shovel" },
+  "words": {
+    "dig": "Dig", "scoop": "Scoop sand", "deeper": "Dig deeper", "keep": "Keep it", "leave": "Leave it",
+    "rest": "Let it rest a while.",
+    "stones": "Only stones below.",
+    "sand": "Only sand below, and more sand.",
+    "harder": "Something harder below. The shovel won't reach it.",
+    "roots": "Too many roots here.",
+    "clayWinter": "Too stiff and cold to work. In spring.",
+    "thinned": "This ground has given what it had this season. Somewhere else, perhaps.",
+    "wetSand": "Wet through. It will dry.",
+    "scooped": "Picked over for today.",
+    "hole": "A hole you dug.",
+    "layers": {
+      "topsoil": "Dark and crumbly, and threaded with roots. Everything here stands on this.",
+      "subsoil": "Paler underneath, and full of small stones. The roots thin out here.",
+      "clay": "Blue-grey, and it holds the spade. Clay. The pot is in here somewhere.",
+      "sand": "Clean sand, and cooler a hand down. The sea built this part.",
+      "stones": "Stones, and more stones under them. That's as deep as it goes here.",
+      "seep": "Water is creeping in from the sides. The ground is full of it here."
+    },
+    "seen": {
+      "topsoil": "Dark topsoil, one spade down.", "subsoil": "Pale brown subsoil, two spades down.",
+      "clay": "Blue-grey clay, two spades down.", "sand": "Clean pale sand, a spade down."
+    },
+    "where": { "topsoil": "the topsoil", "subsoil": "the subsoil", "clay": "the blue-grey clay", "sand": "the beach sand" },
+    "names": { "topsoil": "Topsoil", "subsoil": "Subsoil", "clay": "Blue-grey clay", "sand": "Beach sand" },
+    "worm": { "small": "A small red worm, quick as anything.", "big": "A big dark worm, long as your hand." },
+    "wormsIn": "Into the worms pouch.",
+    "clay1": "A handful of clay, cool and sticky, into the pack.",
+    "nothing": "Nothing else comes up.",
+    "keepsake": "Something hard in the spoil.",
+    "covered": "You set it back and cover it."
+  }
+}
