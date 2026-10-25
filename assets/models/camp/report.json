@@ -608,5 +608,266 @@
     0.053
    ]
   }
+ },
+ "mortar": {
+  "source": "Ebb_Mortar.glb",
+  "file": "mortar.glb",
+  "bytes": 270400,
+  "sourceBytes": 19027992,
+  "trianglesBefore": 9514,
+  "triangles": 2999,
+  "maps": 512,
+  "bounds": {
+   "min": [
+    -0.1,
+    0,
+    -0.1
+   ],
+   "max": [
+    0.1,
+    0.125,
+    0.1
+   ]
+  }
+ },
+ "pestle": {
+  "source": "Ebb_Pestle.glb",
+  "file": "pestle.glb",
+  "bytes": 225264,
+  "sourceBytes": 18829972,
+  "trianglesBefore": 6248,
+  "triangles": 1499,
+  "maps": 512,
+  "bounds": {
+   "min": [
+    -0.09,
+    0,
+    -0.023
+   ],
+   "max": [
+    0.09,
+    0.048,
+    0.023
+   ]
+  }
+ },
+ "drying-rack": {
+  "source": "Ebb_Drying+Rack.glb",
+  "file": "drying-rack.glb",
+  "bytes": 896560,
+  "sourceBytes": 18827864,
+  "trianglesBefore": 69455,
+  "triangles": 7999,
+  "maps": 1024,
+  "bounds": {
+   "min": [
+    -0.511,
+    0,
+    -0.323
+   ],
+   "max": [
+    0.511,
+    1.1,
+    0.323
+   ]
+  }
+ },
+ "satchel": {
+  "source": "Ebb_Satchel.glb",
+  "file": "satchel.glb",
+  "bytes": 914140,
+  "sourceBytes": 22364848,
+  "trianglesBefore": 32495,
+  "triangles": 11954,
+  "maps": 512,
+  "bounds": {
+   "min": [
+    -0.18,
+    0,
+    -0.14
+   ],
+   "max": [
+    0.18,
+    0.236,
+    0.14
+   ]
+  }
+ },
+ "drying-rack-bunches": {
+  "source": "Ebb_Drying+Rack.glb",
+  "file": "drying-rack-bunches.glb",
+  "bytes": 1022240,
+  "sourceBytes": 18827864,
+  "trianglesBefore": 69455,
+  "triangles": 13545,
+  "maps": 512,
+  "bounds": {
+   "min": [
+    -0.409,
+    0.001,
+    -0.028
+   ],
+   "max": [
+    0.415,
+    0.999,
+    0.311
+   ]
+  },
+  "hangs": [
+   [
+    -0.254,
+    0.915,
+    0.059
+   ],
+   [
+    -0.096,
+    0.921,
+    0.049
+   ],
+   [
+    0.092,
+    0.932,
+    0.057
+   ],
+   [
+    0.25,
+    0.936,
+    0.037
+   ],
+   [
+    -0.251,
+    0.604,
+    0.107
+   ],
+   [
+    -0.099,
+    0.6,
+    0.09
+   ],
+   [
+    0.034,
+    0.597,
+    0.086
+   ],
+   [
+    0.188,
+    0.596,
+    0.089
+   ],
+   [
+    0.324,
+    0.613,
+    0.088
+   ],
+   [
+    -0.255,
+    0.308,
+    0.16
+   ],
+   [
+    -0.111,
+    0.294,
+    0.149
+   ],
+   [
+    0.082,
+    0.307,
+    0.164
+   ],
+   [
+    0.239,
+    0.312,
+    0.147
+   ],
+   [
+    -0.103,
+    0.087,
+    0.12
+   ]
+  ]
+ },
+ "rack-bunch-1": {
+  "source": "Ebb_Drying+Rack.glb",
+  "file": "rack-bunch-1.glb",
+  "bytes": 261692,
+  "sourceBytes": 18827864,
+  "trianglesBefore": 69455,
+  "triangles": 1199,
+  "maps": 512,
+  "bounds": {
+   "min": [
+    -0.059,
+    -0.239,
+    -0.059
+   ],
+   "max": [
+    0.059,
+    -0.001,
+    0.059
+   ]
+  }
+ },
+ "rack-bunch-2": {
+  "source": "Ebb_Drying+Rack.glb",
+  "file": "rack-bunch-2.glb",
+  "bytes": 260264,
+  "sourceBytes": 18827864,
+  "trianglesBefore": 69455,
+  "triangles": 1199,
+  "maps": 512,
+  "bounds": {
+   "min": [
+    -0.062,
+    -0.254,
+    -0.056
+   ],
+   "max": [
+    0.062,
+    0,
+    0.056
+   ]
+  }
+ },
+ "rack-bunch-3": {
+  "source": "Ebb_Drying+Rack.glb",
+  "file": "rack-bunch-3.glb",
+  "bytes": 264448,
+  "sourceBytes": 18827864,
+  "trianglesBefore": 69455,
+  "triangles": 1230,
+  "maps": 512,
+  "bounds": {
+   "min": [
+    -0.068,
+    -0.279,
+    -0.075
+   ],
+   "max": [
+    0.068,
+    0,
+    0.075
+   ]
+  }
+ },
+ "rack-bunch-4": {
+  "source": "Ebb_Drying+Rack.glb",
+  "file": "rack-bunch-4.glb",
+  "bytes": 269184,
+  "sourceBytes": 18827864,
+  "trianglesBefore": 69455,
+  "triangles": 1267,
+  "maps": 512,
+  "bounds": {
+   "min": [
+    -0.073,
+    -0.278,
+    -0.065
+   ],
+   "max": [
+    0.059,
+    0,
+    0.065
+   ]
+  }
  }
 }
