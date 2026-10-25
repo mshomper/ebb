@@ -30,7 +30,7 @@
 | [F13 The keeper's camp](13-keepers-camp.md) | Decided (Phase 1, the first evening, is the current target) | Why the keeper is here: the first evening, the camp, the pack and gathering, making, teas, treats, dyes and digging, in five phases |
 | [F14 Scripted events](14-scripted-events.md) | Seed (Matt: "a great start") | Written set pieces with a warning, beats over days, choices made by doing and a lasting change: the wreck, the great storm, the falling star, the cairn builder, the hard freeze, the new bank, the passing boat |
 | [F15 The hen](15-the-hen.md) | Seed | A feral hen who comes to trust the walker, roosts at camp, follows you, and lays eggs for the walker's first meal; chicks if Matt wants them |
-| [F16 The sea cave and the Hollow](16-the-sea-cave.md) | Seed (layout and scaling are Matt's design) | An optional cave: a fixed mouth, a rubble passage to the sleeping bear, and an arch that needs a made weapon, leading to the Hollow's changing floors, with enemies scaled to the keeper's skills and gear and the lantern as the limit; its own trail |
+| [F16 The sea cave and the Hollow](16-the-sea-cave.md) | Leaning (Matt's design; for a later date) | An optional cave: a fixed mouth, a rubble passage to the sleeping bear, and an arch that needs a made weapon, leading to the Hollow's changing floors. Enemies scale to four skill tracks and the gear you've made; the lantern is the limit. Pools of weapons, lanterns and coats; its own trail |
 
 ## How they connect
 

@@ -2,7 +2,7 @@
 
 > Where the sea has worked at a cliff long enough, it opens a mouth. Inside is a chamber that is always the same: tide pools, weed, the sound of the sea. Two ways lead on. One is choked with fallen rock, and digging through it, visit by visit, leads to quiet chambers and a sleeping bear. The other is an old arch with soot marks around it, and the walker won't go through it with empty hands. Beyond it is **the Hollow**: floors that are different every time you go down, things in the dark that don't belong to the island, and a lantern that decides how far you get before you have to turn back. Nothing makes a player go there. It's for the ones who want it, the way the mines are in Stardew Valley.
 
-**Status:** Seed. Not scheduled. Drafted October 25, 2026, from Matt's ask for a cave with a dungeon-crawling experience, then redrafted the same day to Matt's own design (below). It builds on Matt's pin of October 18, 2026 (caves for a landmark creature such as a bear) and doc 20's M7 line on placed rock pieces for sea caves.
+**Status:** Leaning. Not scheduled: work for a later date. Drafted October 25, 2026, from Matt's ask for a cave with a dungeon-crawling experience, then redrafted the same day to Matt's own design (below). It builds on Matt's pin of October 18, 2026 (caves for a landmark creature such as a bear) and doc 20's M7 line on placed rock pieces for sea caves.
 
 ## Decided so far (Matt, October 25, 2026)
 
@@ -12,6 +12,9 @@
 - **Another entrance that needs a weapon.** The player can't go through until they've made one.
 - **Beyond it, the Hollow:** floors that change procedurally and get tougher as the player progresses.
 - **No numbered levels.** Progress is tracked by internal numbers for the player's skills and equipped items, and the Hollow sets its enemies' level from them.
+- **Each skill is a track of four ranks**, each rank making the walker stronger.
+- **Enemies never learn new behavior.** Harder levels bring more enemies, and more of the harder kinds.
+- **Making is gated by progress**, and the first set of weapons, lanterns and coats in the tables is approved.
 - **The lantern decides** how far the player can go before they have to call it quits.
 
 ## What this changes for ebb
@@ -83,7 +86,7 @@ flowchart LR
   E[Equipped<br/><i>weapon, coat,<br/>lantern, charm</i>] --> K
   K --> D0[A trip's starting level<br/><i>a little below the measure</i>]
   D0 --> F[Each floor down this trip<br/>adds a step]
-  F --> EN[Enemies: health, damage,<br/>speed, kinds, numbers]
+  F --> EN[Enemies: how many,<br/>and how many of the harder kinds]
   F --> LO[Finds: better with<br/>every step]
 ```
 
@@ -192,7 +195,9 @@ Weapons, lanterns and coats are all made at camp with the making core (S1).
 - **An item can be an ingredient of its own upgrade**, so nothing made is wasted.
 - **Tiers 1 to 4** feed the keeper's measure.
 
-These lists are a pool to pick from, not a build list. A suggested first set is marked in each table.
+- **Making is gated by progress.** A recipe can only be made once its ingredients exist on the island, so a player can build up to a certain point and no further until the rest of the game catches up: a birch for birch tar, the wreck for ship's timber, the falling star for star-iron, deeper floors for crystal and pearls. That is intended.
+
+These lists are a pool to pick from, not a build list. The first set is marked in each table (Matt approved it, October 25, 2026).
 
 ### Weapons
 
@@ -276,9 +281,9 @@ Keepsakes worn on the belt, one at a time, each with one small effect. A hagston
 | Drift stick, drift root | The strand (F10 logs) |
 | Rushes, rush cord, rush pith | Rushes, worked at camp (F13) |
 | Reed | Reeds at the pond |
-| Nettle cord | Nettles, if they come to the island, worked at camp. A new plant |
-| Hazel rod | A hazel, coppiced (F07). If none grows on the island, the passing boat (F14) can bring one |
-| Birch tar | Birch bark cooked at the hearth: a camp make. Needs a birch |
+| Nettle cord | Nettles (already on the island), worked at camp |
+| Hazel rod | A hazel, coppiced (F07). Hazel comes with the woodland tier (doc 12): a dependency |
+| Birch tar | Birch bark cooked at the hearth: a camp make. Needs a birch, a dependency |
 | Flat stone, pebbles, razor shell, limpet shells, oyster shell, sea glass | The strand |
 | Hagstone | Rare on the strand; common from hagstone watchers |
 | Feathers | The hen (F15), or gulls' feathers on the strand |
@@ -306,7 +311,7 @@ They are not animals. They're made of the dark and the old sea, so the island's 
 | **Wrack tanglers** | Heaps of dark weed that lie still until the walker is close, then grab and hold. Struggle free, or cut free with a blade | Wet and pool floors | Tangle fibre |
 | **Hagstone watchers** | Floating stones with a hole through them that turn toward light. When one sees the walker it calls everything nearby. Dim the lantern, or reach it first | Any floor; in groups deeper down | Hagstones |
 
-- **As the level rises**, kinds get tougher and gain behaviors: crawlers that burrow, wisps in pairs, shades that circle.
+- **Each kind keeps one fixed set of behaviors.** Nothing learns or gains new moves as the level rises (Matt, October 25, 2026). A harder level means more enemies on a floor, and more of the harder kinds: soot motes and crawlers at the start, then barnacle backs, lamp-eaters, watchers and tide shades mixed in more and more. Health and damage can scale a little with the level too, as recipe values.
 - **Each kind gets a bestiary page** in the journal the first time it's beaten: a sketch, its habits and its tells. Filling the bestiary is the Hollow lore skill.
 
 ## What comes back up
@@ -358,7 +363,7 @@ A fifth trail, alongside the naturalist's, the beachcomber's, the shaper's and t
 - **15** input: swing, dodge, raise the lantern, sling.
 - **23** walker: fighting animations (swing per weapon, dodge, hit, lantern raise) and a climb.
 - **F13** camp: weapons, lanterns, coats, fuel and ammunition as makes (at most three ingredients each); birch tar at the hearth; the Hollow's materials as inputs.
-- **F10, 12** plants: hazel, birch and nettles as possible new plants, since several makes need them.
+- **F10, 12** plants: hazel (woodland tier) and birch, which several makes need.
 - **F14** scripted events: star-iron, ship's timber, the cairns.
 - **17, 25** audio: cave reverb, enemy sounds, the lantern's flame.
 - **18** saves: the measure, skills, trip count, rubble progress, the bestiary, the deepest trip.
@@ -382,10 +387,8 @@ A fifth trail, alongside the naturalist's, the beachcomber's, the shaper's and t
 - What do the Hollow's things look like? Matt to sketch a direction, or a session to propose some. Who makes their models is Matt's call (CLAUDE.md).
 - Guardian floors: should there be bigger set-piece enemies, and how often?
 - Should the player ever see anything of the measure, such as a hint like "the Hollow feels deeper today"?
-- Which weapons, lanterns and coats make the first set? The tables suggest six weapons, three lanterns and two coats.
-- Should hazel, birch and nettles come to the island as plants, or should their makes use something already here?
 
 ## Depends on / feeds into
 
-- Depends on: the walker (doc 23) and its lantern, F13 (makes, the shovel and digging, the mortar), F14 (star-iron, ship's timber), doc 09 (the reed raft), 08 (placed rock pieces), M7 (the Headland), 04 to 06 (rendering and light).
+- Depends on: the walker (doc 23) and its lantern, F13 (makes, the shovel and digging, the mortar), F14 (star-iron, ship's timber, sailcloth, the ship's lantern), doc 09 (the reed raft), 08 (placed rock pieces), M7 (the Headland), 04 to 06 (rendering and light), doc 12's woodland tier (hazel), a birch (birch tar), F07 (coppicing), F15 (feathers, or gulls' feathers on the strand).
 - Feeds into: F12 (keepsakes), F13 (clay, ochre, soot, flint, oil), F04 (the bear's years), the sketchbook (P2i).
