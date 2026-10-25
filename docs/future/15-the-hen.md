@@ -133,7 +133,7 @@ Contented murmur while foraging, the egg song after laying, a sharp alarm when t
 - **11** creatures and ecology: a scrub-and-dust suitability; roosting at camp once Familiar; laying from day length.
 - **12** creature roadmap: the hen at the meadow tier, with her life stages; the cockerel choice.
 - **F13** keeper's camp: the nest box make, the egg pouch kind, the walker's meal at the hearth, eggshell grit in the mortar, a camp perch slot.
-- **F14** almanac: her laying season and broody spring as happenings.
+- **F14** scripted events: her arrival out of the gorse could be written as a set piece.
 - **17, 25** audio: hen sounds.
 - **18** saves: her trust, flock, nest and eggs, a few hundred bytes.
 - **01** vision: one line, since she is the first creature that follows the walker and the first food the walker eats.
@@ -156,4 +156,4 @@ Contented murmur while foraging, the egg song after laying, a sharp alarm when t
 ## Depends on / feeds into
 
 - Depends on: 11 and 12 (species, suitability, meadow tier), F13 (trust, treats, camp, makes, pouches, hearth, salt), 06 (day length), the creature rig work.
-- Feeds into: F14 (laying season), F05 (lineages: a flock's colours drifting over generations), the sketchbook (P2i).
+- Feeds into: F14 (her arrival as a set piece), F05 (lineages: a flock's colours drifting over generations), the sketchbook (P2i).

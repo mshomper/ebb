@@ -1,158 +1,233 @@
-# F16 — The sea cave
+# F16 — The sea cave and the Hollow
 
-> Where the sea has worked at a cliff for long enough, it opens a mouth. At low tide the walker can step in with the lantern. The cave goes back further than it should: a pool chamber, a gallery of dripstone, a roost of bats, a lake you'd need the raft to cross, and further in, places no one has lit for a long time. It is ebb's dungeon. You explore it chamber by chamber over many visits, opening the way deeper with things you've made, and you find what the dark has kept. Nothing in it can hurt you, and you can always walk out.
+> Where the sea has worked at a cliff long enough, it opens a mouth. Inside is a chamber that is always the same: tide pools, weed, the sound of the sea. Two ways lead on. One is choked with fallen rock, and digging through it, visit by visit, leads to quiet chambers and a sleeping bear. The other is an old arch with soot marks around it, and the walker won't go through it with empty hands. Beyond it is **the Hollow**: floors that are different every time you go down, things in the dark that don't belong to the island, and a lantern that decides how far you get before you have to turn back. Nothing makes a player go there. It's for the ones who want it, the way the mines are in Stardew Valley.
 
-**Status:** Seed. Not scheduled. Drafted October 25, 2026, from Matt's ask for a cave that gives a dungeon-crawling experience. It builds on Matt's pin of October 18, 2026 (burrows and caves for a landmark creature such as a bear, doc 12) and doc 20's M7 line: "Placed rock pieces for arches and sea caves, which the heightfield cannot hold."
+**Status:** Seed. Not scheduled. Drafted October 25, 2026, from Matt's ask for a cave with a dungeon-crawling experience, then redrafted the same day to Matt's own design (below). It builds on Matt's pin of October 18, 2026 (caves for a landmark creature such as a bear) and doc 20's M7 line on placed rock pieces for sea caves.
 
-## Decided so far
+## Decided so far (Matt, October 25, 2026)
 
-Nothing. These rules carry over and shape everything below:
+- **Optional.** Nothing on the surface needs the cave. A player goes there only to do everything, as in Stardew Valley's mines. It has **its own trail**.
+- **The mouth never changes.** It is one fixed, hand-made area.
+- **To one side, a rubble passage**, blocked at first, that eventually leads to the bear.
+- **Another entrance that needs a weapon.** The player can't go through until they've made one.
+- **Beyond it, the Hollow:** floors that change procedurally and get tougher as the player progresses.
+- **No numbered levels.** Progress is tracked by internal numbers for the player's skills and equipped items, and the Hollow sets its enemies' level from them.
+- **The lantern decides** how far the player can go before they have to call it quits.
 
-- **No combat, no harm, no fail states** (doc 01's non-goals). The dungeon is exploration, not danger.
-- **No meters.** No oil that runs out, no stamina, no health. The lantern always burns.
-- **The heightfield holds no caves** (doc 08). The cave is its own placed space, joined to the island at its mouth.
-- **Deterministic and seeded.** The same island makes the same cave.
-- **Physical light, painted last** (doc 05). A cave is mostly darkness, so it is the strongest test of that rule.
+## What this changes for ebb
 
-## The idea
+This is the first place in ebb with enemies. Doc 01 lists "no combat" as a non-goal. The proposal is a single, bounded exception:
 
-A dungeon crawl is a place you go into, a little further each time, with a sense that it keeps going. Doors open with keys you earn. Every room holds something, and a map fills in behind you. ebb can keep all of that and drop the parts that don't belong:
+- **Combat happens only in the Hollow, and only when the player chooses to go in.** The island, the camp, the rubble passage and the bear's chambers never have enemies.
+- **Nothing from the Hollow ever comes up.** The surface stays exactly as cozy as it is now.
+- **The island's real creatures are never fought.** The Hollow's things are not animals (see the bestiary).
+- **No death.** When the light gives out, the walker finds their way out in the dark and wakes at the mouth (see when the lantern goes out).
 
-| Dungeon crawl | In the sea cave |
-|---|---|
-| Monsters and traps | None. The dark, the tide and the way the cave is built are the obstacles |
-| Keys and locked doors | Things the walker already makes or is given: the lantern, a rope ladder, the reed raft, the shovel, the net |
-| Loot | Finds and keepsakes that exist only underground |
-| Running out of torches | No. The lantern always burns; what it lights is how far you can see |
-| Getting lost | The journal draws the map as you go, and "Back to the mouth" walks you out from anywhere |
-| A boss at the bottom | A landmark creature in the deepest chamber, met quietly: Matt's bear |
-| Procedural floors | One seeded cave per island, the same every visit, growing slowly over the years |
-
-## How it could work
-
-### How the cave opens: the sea makes it
-
-**Shape the land and let the tide shape it back** (the keeper's page). The cave fits that line exactly.
-
-- A cave can only open in a **seaward rock face** at least about 3 m tall whose foot sits in the tide band. The Cliff tool (Terrace and Cut, doc 08) can make one. The Headland (M7) has them already.
-- Once such a face has stood for **a season**, the sea opens a mouth at its foot: first a notch, then a dark arch. The journal notes it ("The waves have found a weakness in the cliff below the point").
-- If the face is reshaped away, the mouth closes and the cave waits, kept in the save, for the next face that qualifies. Nothing found inside is lost.
-- **One cave per island.** Its inside is seeded from the island, so it doesn't depend on where the mouth opens.
-
-Alternatively it could just be **found** (on the Headland, or on a new island's coast from the start). That's simpler, but it loses the link to shaping.
-
-### The way in
-
-- **At low tide** the mouth is dry. At high tide the sea fills its first chamber, as real sea caves do.
-- **Inside, the walker can't be trapped.** The inner chambers sit above the highest tide. If the tide rises while the walker is deep inside, the first chamber floods behind them, and they wait on the dry ledge or press **Rest** to sleep until the water drops. It's a quiet hour, never a danger.
-- **Going in** is a walk, as anywhere. The view switches to the cave scene at the mouth with a short fade to darkness. The island is not drawn while you are inside, so the cave has the whole frame budget.
-
-### The chambers
-
-The cave is a small graph of chambers and passages, 6 to 12 chambers in 3 depths, seeded per island. Each chamber is one of a set of kinds. Each kind is a real cave feature with something to find and sometimes something that opens the way on.
+## The layout
 
 ```mermaid
 flowchart LR
-  M[Mouth<br/>tide floods it] --> P[Pool chamber]
-  P --> D[Dripstone gallery]
-  P -->|rope ladder| U[Upper crawl]
-  D --> R[Bat roost]
-  D -->|reed raft| L[Underground lake]
-  U -->|shovel: silted crawl| E[Echo chamber]
-  L --> S[Crystal pocket]
-  E --> K[The old marks]
-  S --> B[The deep den]
-  K --> B
+  M[The mouth<br/><i>fixed, never changes</i>] -->|shovel, over several visits| R[Rubble passage]
+  R --> Q1[Dripstone gallery]
+  Q1 -->|reed raft| Q2[Underground lake]
+  Q2 --> Q3[The old marks]
+  Q3 --> B[The bear's den]
+  M -->|a weapon you made| G[The arch]
+  G --> H1[Hollow floor]
+  H1 --> H2[Hollow floor]
+  H2 --> H3[Hollow floor]
+  H3 --> H4[... as deep as<br/>the lantern lasts]
 ```
 
-| Chamber | What it is | Life | Finds | Opens on with |
-|---|---|---|---|---|
-| **Mouth** | Wave-cut floor, weed, the sea's sound | Anemones, limpets on the walls | Wrack, sea-polished stones | — |
-| **Pool chamber** | Rock pools left by the tide, light from the mouth | Prawns, a blenny, a starfish | Shells only found here | — |
-| **Dripstone gallery** | Stalactites and flowstone | Cave spiders (*Meta menardi*, real and harmless) | Cave pearls (drip-rolled stones, real), flowstone chips | — |
-| **Bat roost** | A high dome, quiet | Bats, which roost here in winter (doc 12's night tier) | None to take: the find is the roost itself, a journal moment | Pass quietly; lantern dimmed |
-| **Underground lake** | Still, clear, very cold water | Blind shrimp, nothing else | A drowned old lantern; a lake-floor keepsake for the net | **The reed raft** (the turtles' gift) |
-| **Upper crawl** | A high ledge to a low passage | — | Bones of long-gone animals; a fossil | **A rope ladder** (a make: rush cord and sticks) |
-| **Silted crawl** | Sand washed in over centuries | — | Whatever digging finds here: old layers, a bead | **The shovel**, a few digs to clear it |
-| **Echo chamber** | Round and hard-walled | — | Its sound: whistle and it answers | — |
-| **Crystal pocket** | Calcite crystals catching the lantern | — | A crystal keepsake | — |
-| **The old marks** | Soot and scratched signs on the wall | — | A keeper's letter, like the cache's (F13 section 10), from whoever was here before | — |
-| **The deep den** | The furthest chamber, dry and quiet | The landmark creature, if it has come | — | — |
+### The mouth
 
-- **Keys come from the rest of the game.** Every way deeper uses something the player already gets from camp, gifts or trails. The cave rewards a keeper who has lived on the island a while, and it gives the late game somewhere new to go.
-- **Rooms keep giving, slowly.** Pool life changes with the tides. Cave pearls form again over a season. The dripstone grows a little every game year, which is F04's deep clock underground.
-- **Seasons reach in.** Bats roost in winter and are gone in summer. In spring, swallows nest in the mouth. On F08's glowing-plankton nights, the pool chamber's water lights blue.
+- One fixed space, hand-built, the same on every island: a wave-cut floor, weed, rock pools with prawns and a blenny, daylight from the entrance.
+- At high tide the sea fills the entrance. The walker comes in at low tide. The rubble passage, the arch and everything beyond are above the highest tide, so no one is ever trapped: the walker waits on the ledge or rests until the water drops.
+- A **lantern hook** by the arch. The walker hangs the lantern here and it lights the mouth while they look around. It's where every trip into the Hollow starts and ends.
 
-### The map
+### The rubble passage and the bear
 
-- The journal gets a **cave page** that draws itself as you explore, in the same pencil as the sketchbook: chamber outlines, the passages between, small marks for what you found. Unexplored passages show as a line that trails off.
-- The page is also the "you are here". **Back to the mouth** on it walks the walker out along the known way.
-- Nothing on the map lists what is still to find.
+The quiet half of the cave, with no enemies.
 
-### Light
+- **The rubble** is cleared with the shovel (P2c digging), a stretch per visit, so getting through takes several trips. Each stretch turns up something: old bones, a bead, a fossil.
+- **Behind it** are hand-made chambers that never change: a dripstone gallery, an underground lake crossed on the reed raft, and a wall of old soot marks with the earlier keeper's letter (F13 section 10).
+- **The bear's den** is the last chamber. A brown bear comes to the island late in the game, once the woodland can feed it, and winters here. Finding it asleep is the quiet climax: you lower the lantern and leave. Its trust grows by being left alone. It is never an enemy.
+- The cairn builder (F14) can lead here.
 
-The lantern is the only light most of the time, so the cave is where ebb's physical lighting shows best.
+### The arch
 
-- **The lantern** is a point light with soft shadows. It reaches about 6 m, so a big chamber shows its far walls only as you cross it.
-- **Daylight** comes in at the mouth and through any shaft to the surface, as a real light shaft with dust in it.
-- **Wet rock** shines with the lantern's highlights; flowstone glows a little where light passes through its edges.
-- **Glow** from life only, where it is real: plankton in the pool on its nights, and nothing invented.
-- The palette lookup at tonemap (doc 05) keeps all of it soft. Darkness is a palette question, not a black screen: the darks should read as deep blue-green, never as nothing.
+- An old arch to the other side of the mouth, ringed with soot and scratched signs. Something moves in the dark beyond it, just past the lantern's reach.
+- **Without a weapon** the walker stops at the arch: *"Not with empty hands."*
+- **With a weapon they made**, the walker steps through. The first time, the arch's journal page opens the Lamplighter's trail.
 
-### The landmark creature
+### The Hollow
 
-Matt's pin was a bear. A bear needs a landmark place, and the deep den is that place.
+A trip is a run down through floors, one after another, until the player decides to head back up or the lantern gives out.
 
-- **Recommended: a brown bear that winters in the den.** It comes to the island late in the game, once the woodland can feed it (berries, roots and the like, doc 12's woodland tier). It sleeps in the den through winter and ranges the woods in summer.
-- **Meeting it is the cave's quiet climax.** In winter you find it asleep in the deepest chamber. The right thing to do is lower the lantern and leave, and that is all the "boss" there is. Its trust grows by being left alone, as the herons' does (F13 section 8.4).
-- **Smaller alternative:** a badger sett in the silted crawl, or otters using the mouth. Both are real cave users and much cheaper to make.
+- **Each floor** is a handful of chambers and passages. It has a way down (a shaft, a slope or a rope drop), enemies, finds, and sometimes a feature:
+  - an oil seep that tops up the lantern a little
+  - a crystal pocket
+  - a still pool with something in it for the net
+  - a guardian floor: one strong enemy and a better find
+- **Every trip is new.** A floor's layout comes from the island seed, the trip number and the floor's place in the trip. The Hollow is seeded, so saves and replays are exact, but no two trips repeat.
+- **The way up** is always marked. On any floor the walker can climb back out with everything they're carrying. Going up is a walk back to the arch with a fade, not a climb through every floor.
+- **Not simulated while away.** Nothing grows or moves in the Hollow while the game is closed. It has no part in catch-up.
 
-### How it is built
+## How hard it gets: the keeper's measure
 
-This is the part that leans on Matt's own field.
+There are no numbered levels. Instead the game keeps one internal number, the **keeper's measure**, made from the walker's skills and what they carry. The player never sees it as a number.
 
-- **The cave is an implicit surface.** Each chamber is a smooth blob (a few ellipsoids, smoothly unioned), each passage a capsule along a curve, all blended with a smooth minimum. Then domain noise wears it to rock. The SDF is evaluated once, in a worker, and meshed (dual contouring keeps the ledges and arches crisp) into a cave mesh stored by seed. Like the terrain, the mesh is never saved; it is rebuilt from the seed.
-- **TPMS for the strange places.** One rare chamber kind could be a **gyroid sponge**: a gallery where the rock is eroded into a continuous porous lattice, as karst can be. A gyroid field clipped by the chamber's blob gives it for almost nothing.
-- **Dripstone is grown.** Stalactites are tapered capsules placed where the SDF's ceiling faces down and is wet. Their length grows with the island's age. Flowstone is the same thing on walls.
-- **Walking.** The walk grid comes from the mesh's upward-facing surfaces, sampled into cells as the island's walk grid is, with steps and ledges marked. The walker's motion code needs only one new thing, a climb for the rope ladder.
-- **Camera.** Below-view only: the low follow camera, pulled in close in tight passages. There is no "above" in a cave. The map page stands in for it.
-- **Budget.** One cave mesh of about 150k to 300k triangles at high, a single lantern shadow, light shafts, and pool water using the existing water shading. The island is not drawn while inside, so this fits inside the island's own budget.
-- **Recipe.** `recipes/world/cave.json`: chamber kinds and counts, sizes, noise, dripstone rates, the lantern's reach, tide margins.
-- **A tool page:** `tools/cave-lab.html` generates caves from seeds side by side, shows the chamber graph and the walk grid, and times the meshing.
+```mermaid
+flowchart LR
+  S[Skills<br/><i>fighting, lamp craft,<br/>footing, Hollow lore</i>] --> K[Keeper's measure]
+  E[Equipped<br/><i>weapon, coat,<br/>lantern, charm</i>] --> K
+  K --> D0[A trip's starting level<br/><i>a little below the measure</i>]
+  D0 --> F[Each floor down this trip<br/>adds a step]
+  F --> EN[Enemies: health, damage,<br/>speed, kinds, numbers]
+  F --> LO[Finds: better with<br/>every step]
+```
+
+- **Skills** are internal numbers that grow with use:
+  - **Fighting**, from hits landed and enemies beaten.
+  - **Lamp craft**, from trips made. The lantern burns a little more slowly.
+  - **Footing**, from dodges and climbs. The dodge step gets quicker.
+  - **Hollow lore**, from bestiary pages filled. Enemies' tells read sooner.
+- **Equipped items** each carry a tier: the weapon, the coat, the lantern and a worn charm.
+- **A trip starts a little below the measure**, so the first floor of any trip feels comfortable. **Each floor further down in the same trip adds a step**, and finds get better with each step. How deep a player goes in one trip is how hard it gets, so pushing on pays off.
+- **The measure lags growth.** If the Hollow matched every gain, getting stronger would feel like nothing. That's the known trap of level scaling. So the Hollow counts only part of each gain (about 70% to start, a recipe value). A better weapon always feels better, and the Hollow catches up only slowly.
+- **A slow average.** The measure uses a slowly moving average of the player's best kit, so swapping to a stick at the arch to make the Hollow easy doesn't work.
+
+## The lantern
+
+The lantern is how far you can go.
+
+- **Fuel is made at camp.** Rushlights come first: rush pith dipped in fat. Then pressed seed oil from the mortar. Each trip starts with whatever fuel the walker brings.
+- **It burns down** as you go, and a little faster on deeper floors.
+- **Its light is a real light.** Lantern tiers reach further: the hand lantern, a horn lantern, a bulls-eye lantern. Some enemies shy from the light, so a bigger light is a defense.
+- **Recommended: the lantern is also the walker's health.** A hit makes the flame gutter and costs fuel. One thing to watch, drawn as the flame itself, with no hearts or health bar. A long, clean trip goes deep; a scrappy one ends early. The alternative is a separate steadiness meter.
+- **When it runs low**, the light shrinks, enemies grow bolder, and the walker says it's time: *"The light won't last."* The player heads for the way up.
+
+### When the lantern goes out
+
+- The screen goes dark, and the walker finds their way out by touch. They wake at the mouth with the hook's lantern lit.
+- Everything brought in is kept: the weapon, the coat, the lantern, anything from camp.
+- Part of what was found on this trip is dropped in the dark, a seeded share of it. This is Stardew's rule, and it's what makes turning back in time a real decision.
+
+## Fighting
+
+Simple, readable, from the below-view camera.
+
+- **Swing** the weapon. Each weapon has its own reach and rhythm.
+- **Dodge step** out of the way.
+- **Raise the lantern.** This pushes back light-shy enemies but burns fuel faster.
+- **Sling.** It throws pebbles, which the walker already gathers, so the pebble store becomes ammunition.
+- A gentle lock-on to the nearest enemy, and a **"gentler Hollow"** setting for younger players (Matt's testers are 7 and 10).
+
+### Weapons and gear
+
+All of them are made at camp with the making core (S1). Better tiers use what the Hollow gives, which is the loop.
+
+| Item | Made from | Notes |
+|---|---|---|
+| **Driftwood staff** | A long drift stick, bound with rush cord | The first weapon; it opens the arch |
+| **Sling** | Braided rush cord | Throws pebbles |
+| **Flint spear** | Ship's timber shaft (F14), flint from the Hollow | Long reach |
+| **Star-iron knife** | Star-iron from the falling star (F14) | The best blade; only one per island |
+| **Oilskin coat** | Cloth, waxed, dyed | Takes the edge off hits (less fuel lost) |
+| **Lanterns** | Hand, horn, bulls-eye | Reach and burn time |
+| **Charms** | Keepsakes worn on the belt | Small effects, such as a steadier flame |
+
+## The bestiary: things in the dark
+
+They are not animals. They're made of the dark and the old sea, so the island's naturalist rules never apply to them. Beaten, they break into grey sand and motes of light, and drop what they were made around. No blood, no bodies. Each is rigged and animated (the creature rule). Swarms may use shader motion.
+
+| Kind | What it does | Where | Drops |
+|---|---|---|---|
+| **Soot motes** | A swarm that drifts in and nips; scatters from the light | Any floor | Soot, for ink and dye |
+| **Silt crawlers** | Crab-shaped, made of packed silt; slow, armored front | Wet floors | Clay, sand glass |
+| **Drip wisps** | Hang from the ceiling and drop; quick | Dripstone floors | Cave pearls |
+| **Barnacle backs** | Big, slow, charge in a straight line | Deeper floors | Shell, flint |
+| **Brine eels** | Lunge from the water's edge | Pool floors | Brine salt |
+| **Lamp-eaters** | Snuff the light: each touch drains fuel | Deeper floors | Oil |
+| **Tide shades** | Fade between pools of light; only seen in the lantern's glow | Deepest floors | Crystal |
+
+- **As the level rises**, kinds get tougher and gain behaviors: crawlers that burrow, wisps in pairs, shades that circle.
+- **Each kind gets a bestiary page** in the journal the first time it's beaten: a sketch, its habits and its tells. Filling the bestiary is the Hollow lore skill.
+
+## What comes back up
+
+- **Materials** the surface can't give: flint, clay, ochre, soot, cave pearls, crystal, brine salt, oil. They feed the camp: clay for pots and bowls, ochre and soot for dyes, flint for tools, oil for the lantern.
+- **Keepsakes** (F12) found only underground.
+- **Make plans** for gear, found on guardian floors.
+
+## The Lamplighter's trail
+
+A fifth trail, alongside the naturalist's, the beachcomber's, the shaper's and the forager's.
+
+- **Marks:**
+  - first through the arch
+  - the deepest a single trip has gone (a personal best in floors, not a level)
+  - each bestiary page
+  - each weapon made
+  - each Hollow material found
+  - through the rubble
+  - the bear
+- **Gifts along it:**
+  - a better lantern
+  - a rope back (once per trip, climb out from any floor and keep everything, even with the light going out)
+  - make plans for gear
+
+## How it is built
+
+- **The fixed parts** (the mouth, the rubble passage and the bear's chambers) are implicit surfaces: chambers as smoothly blended blobs, passages as capsules, worn with noise, meshed once in a worker with dual contouring, and rebuilt from the seed.
+- **Hollow floors** use the same mesher on a generated floor plan: a small graph of chambers and passages, made in a worker while the descent fades to black. Each floor is about 60k to 100k triangles, small enough to build in a moment.
+- **TPMS for the strange floors.** A rare floor kind can be a gyroid sponge: rock eroded into a porous lattice, from a gyroid field clipped by the chamber shapes.
+- **Walking** uses a walk grid from the mesh's upward-facing surfaces, and enemies path on the same grid.
+- **Enemies** run simple state machines: idle, notice, approach, attack with a tell, recover. The tell is how a player learns them.
+- **Light** is the lantern as a point light with soft shadows. The palette keeps the darks deep blue-green, never black (doc 05).
+- **Recipes:** `recipes/world/cave.json` for the fixed parts and the lantern, and `recipes/world/hollow.json` for floor sizes, enemy tables, the measure's weights, the lag and the drop share.
+- **A tool page,** `tools/cave-lab.html`, shows:
+  - floors made from seeds side by side
+  - the walk grid
+  - the measure against floor depth, as curves for different players
+  - how long meshing takes
 
 ## What it would change
 
-- **01** vision: one line, the cave as the late game's exploration, with no danger.
-- **04** render pipeline: an interior scene with its own pass list (no sky, no ocean, the lantern's shadow).
+- **01** vision: the non-goal "no combat" gains its one exception, the Hollow, which is opt-in and never reaches the surface. **Matt's call.**
+- **04** render pipeline: an interior scene with its own pass list.
 - **05** look: the cave's darks in the palette.
-- **08** terrain and sculpt: the rule for a cave-forming rock face; the mouth as a placed rock piece in the heightfield (M7's plan).
-- **11** creatures and ecology: a den field for the landmark creature; the cave's own small life.
-- **12** creature roadmap: the bear (or badger) as the landmark; bats' winter roost.
-- **13** progression: the cave page; cave finds on the trails.
-- **F04** deep clock: dripstone growth by year.
-- **F12** keepsakes: underground keepsakes.
-- **F13** keeper's camp: the rope ladder make; the raft and shovel used underground.
-- **17, 25** audio: cave reverb, drips, the sea's sound from the mouth, the echo chamber.
-- **18** saves: the cave's seed, explored chambers, cleared crawls, finds taken. Well under 1 KB.
+- **08** terrain: the cave mouth as a placed rock piece.
+- **11, 12** creatures: the bear as the landmark; the Hollow's kinds kept apart from the ecology.
+- **13** progression and journal: the Lamplighter's trail, the bestiary pages.
+- **15** input: swing, dodge, raise the lantern, sling.
+- **23** walker: fighting animations (swing per weapon, dodge, hit, lantern raise) and a climb.
+- **F13** camp: weapons, gear, lantern fuel, and the Hollow's materials as inputs.
+- **F14** scripted events: star-iron, ship's timber, the cairns.
+- **17, 25** audio: cave reverb, enemy sounds, the lantern's flame.
+- **18** saves: the measure, skills, trip count, rubble progress, the bestiary, the deepest trip.
 - **19** performance: the interior budget.
-- **20** roadmap: the cave sits with M7 (the Headland) or later.
+- **20** roadmap: a late milestone, after the Headland (M7) at the earliest.
 
 ## Risks and guardrails
 
-- **Scary is easy to make by accident.** Darkness, tight spaces and a bear can all frighten. Keep the light warm, keep the passages wide enough to see down, and let the soundscape stay calm. The bear sleeps.
-- **Claustrophobia and controls.** A low camera in tight space fights the walls. The camera should pull close and rise rather than clip through, and passages should never be tighter than the walker plus a margin.
-- **Scope.** A whole new scene, mesher, walk grid and camera mode is large. A first version could be three chambers with no generation: mouth, pool and dripstone, hand-placed.
-- **The cave must not compete with the island.** It is a place to visit, not to live in. Nothing in it is needed for any creature on the surface.
+- **Tone.** Combat can sour a cozy game. Stardew shows it can live beside farming when it stays optional, bright and short. Keep the enemies strange rather than horrible, and keep the walker's lines calm.
+- **Level scaling.** If the Hollow tracks the player too closely, progress feels pointless. The lag and the per-trip steps are there to prevent it. The cave-lab curves are where to check it.
+- **Scope.** This is the biggest feature ebb would have: combat, enemy AI, a floor generator, seven rigged enemy kinds and fighting animations. A first version could be the mouth, the arch, three floor kinds and three enemies.
+- **The surface must never need it.** Hollow materials make things better, but nothing on the island requires them.
+- **Kid testers.** The gentler setting, and an end to a trip that never feels like punishment.
 
 ## Open questions
 
-- Does the sea open the cave in a cliff the player made, or is it found where it already is?
-- Is the bear the landmark, or something smaller (badger, otter)?
-- Should rooms ever regrow their finds, or is each find once per island?
-- How deep should it go: one visit's worth of chambers, or many visits?
-- Does a first, hand-made three-chamber version come before the generated one?
+- Is the one exception to "no combat" right, kept to the Hollow?
+- Does the sea open the cave in a tall cliff the player made (F16's first draft), or is it found in a cliff that's already there?
+- Is the lantern also the walker's health, or is there a separate steadiness?
+- When the light goes out, how much of the trip's finds is dropped: a share, everything found, or nothing?
+- What do the Hollow's things look like? Matt to sketch a direction, or a session to propose some. Who makes their models is Matt's call (CLAUDE.md).
+- Guardian floors: should there be bigger set-piece enemies, and how often?
+- Should the player ever see anything of the measure, such as a hint like "the Hollow feels deeper today"?
 
 ## Depends on / feeds into
 
-- Depends on: 08 (rock faces, placed rock pieces), M7 (the Headland), the walker and its lantern, F13 (makes, the shovel, digging layers), doc 09 (the reed raft), 11 and 12 (bats, the landmark creature), 04 to 06 (rendering and light).
-- Feeds into: F04 (dripstone), F12 (keepsakes), F14 (the bats' swarming and winter roost, plankton nights in the pool), the sketchbook (P2i).
+- Depends on: the walker (doc 23) and its lantern, F13 (makes, the shovel and digging, the mortar), F14 (star-iron, ship's timber), doc 09 (the reed raft), 08 (placed rock pieces), M7 (the Headland), 04 to 06 (rendering and light).
+- Feeds into: F12 (keepsakes), F13 (clay, ochre, soot, flint, oil), F04 (the bear's years), the sketchbook (P2i).

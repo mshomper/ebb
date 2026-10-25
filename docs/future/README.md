@@ -28,9 +28,9 @@
 | [F11 Creature roadmap and finds](11-creature-roadmap-and-finds.md) | Largely built | Creature weight classes, cheap finds shaped by the player, a naturalist's progression line, and what to generalize once |
 | [F12 Keepsakes and nets](12-keepsakes-and-nets.md) | Largely built (net wear and signs in the water still to come) | One-of-a-kind seeded keepsakes on the strandline and in three nets, labeled rarity, a 16-space shelf, and signs in the water |
 | [F13 The keeper's camp](13-keepers-camp.md) | Decided (Phase 1, the first evening, is the current target) | Why the keeper is here: the first evening, the camp, the pack and gathering, making, teas, treats, dyes and digging, in five phases |
-| [F14 The almanac: events that come round](14-almanac-of-events.md) | Seed | One calendar for everything that recurs: F08's phenomena, creature happenings (spawning night, emergence, the eel run), keeper's customs (the shortest-night fire) and the lowest tides |
+| [F14 Scripted events](14-scripted-events.md) | Seed (Matt: "a great start") | Written set pieces with a warning, beats over days, choices made by doing and a lasting change: the wreck, the great storm, the falling star, the cairn builder, the hard freeze, the new bank, the passing boat |
 | [F15 The hen](15-the-hen.md) | Seed | A feral hen who comes to trust the walker, roosts at camp, follows you, and lays eggs for the walker's first meal; chicks if Matt wants them |
-| [F16 The sea cave](16-the-sea-cave.md) | Seed | A cave the sea opens in a tall shore cliff: a seeded chamber graph explored by lantern over many visits, opened deeper with made things, with no danger and a sleeping landmark creature at the bottom |
+| [F16 The sea cave and the Hollow](16-the-sea-cave.md) | Seed (layout and scaling are Matt's design) | An optional cave: a fixed mouth, a rubble passage to the sleeping bear, and an arch that needs a made weapon, leading to the Hollow's changing floors, with enemies scaled to the keeper's skills and gear and the lantern as the limit; its own trail |
 
 ## How they connect
 
@@ -52,9 +52,10 @@ flowchart TB
   F11 --> F12
   F08 --> F12
   F12 --> F04
-  F08 --> F14[F14 Almanac]
+  F08 --> F14[F14 Scripted events]
+  F13 --> F14
   F13 --> F15[F15 The hen]
-  F14 --> F15
+  F14 --> F16
   F12 --> F16[F16 Sea cave]
   F13 --> F16
   F04 --> F16
