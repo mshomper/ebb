@@ -83,6 +83,7 @@
     "audio/keepsakes": "audio/keepsakes.json",
     "audio/camp": "audio/camp.json",
     "audio/gather": "audio/gather.json",
+    "audio/dig": "audio/dig.json",
     "music/sampler": "music/sampler.json",
     "music/instruments/piano-steinway-b": "music/instruments/piano-steinway-b.json",
     "music/synth": "music/synth.json",
