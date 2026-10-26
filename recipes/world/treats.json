@@ -3,8 +3,9 @@
   "version": 1,
   "note": "Treats (P2h, docs/future/13 section 8; plan approved October 25, 2026). A treat is a pouch thing a species likes, set out from its pouch card: the nearest creature that likes it comes and eats it at once, the Feed pattern. What it earns is in each species' presence (treatFeeds meals of feedTrust, once a game day); which treats a species likes, and where, is its recipe's treat block. Read by src/world/creatures/treats.js and tools/trust-lab.html.",
 
-  "setOutM": 0.7,
-  "setOutMNote": "How far in front of the walker a treat is set down (the same as Feed).",
+  "setOutM": 0.8, "setOutTurnDeg": 60, "tossM": 3, "tossDeeperM": 0.03,
+  "tossNote": "A treat for a school in the water (its species' treat.water) is tossed on out along the same line, up to tossM from the walker, to the first water deep enough for that school to swim (its motion.minDepthM plus tossDeeperM): ponds shelve gently and you kneel at the edge.",
+  "setOutMNote": "How far in front of the walker a treat is set down. First the walker turns setOutTurnDeg off the way the view looks (toward the side it already faces), so the treat lies beside the kneeling figure on the screen, not hidden behind it.",
 
   "fadeH": 12, "paleH": 4,
   "fadeNote": "A treat nobody comes for lies where it was set, then pales over its last paleH game hours and is gone fadeH game hours after it was set: back into the ground. Saved with the island, so a reload and a catch-up agree.",

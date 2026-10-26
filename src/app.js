@@ -651,6 +651,7 @@ export async function startApp(canvas, hooks = {}) {
   // back into the ground. `?treats` (a test link, unsaved): a pouch of wrack, a pouch of leaf packs and
   // a handful of fallen leaves (with `&camp=bench`, enough to make another leaf pack).
   const treats = createTreats({ recipe: await loadRecipe('world/treats'), pack, walk, hour: () => clock.worldT() / 3600,
+    depth: (x, z) => water.sampleLive(x, z)?.depth ?? 0,
     species: [{ key: 'frogs', rec: frogRecipe, live: creatures },
       ...swarmSpecies(speciesRecipes).filter((rec) => rec.treat).map((rec) => ({ key: keyOf(rec), rec, live: schools.find((s) => s.id === keyOf(rec)) ?? null }))] });
   updateStore('treatKinds', () => pack.recipe.kinds.map((/** @type {any} */ k) => k.id).filter((/** @type {string} */ k) => treats.isTreat(k)));
@@ -675,7 +676,7 @@ export async function startApp(canvas, hooks = {}) {
     } });
   }
   // What lies on the ground to gather, the piles at camp and the heaps you left (src/world/pack/draw.js).
-  const packDraw = createPackDraw({ terrain, camera, recipe: pack.recipe, gather, pack, treats, you: () => walk.you() });
+  const packDraw = createPackDraw({ terrain, camera, recipe: pack.recipe, gather, pack, treats, water: (x, z) => water.sampleLive(x, z), you: () => walk.you() });
   sim.addSystem(packDraw);
   /** How far a ground spot's pickups lie from its middle, for what its card lifts (F5). @param {string} kind */
   const spreadOf = (kind) => pack.recipe.pickups?.kinds?.[kind]?.spreadM ?? 0.4;

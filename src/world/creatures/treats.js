@@ -23,10 +23,11 @@ const r2 = (v) => Math.round(v * 100) / 100;
 
 /**
  * @param {{ recipe: any, species: { key: string, rec: any, live: { treat: (x: number, z: number, t: { treat: string, tid: number, reachM: number }) => string } | null }[],
- *   pack: { take: (kind: string, n: number) => number }, walk: { feedPoint: () => number[] | null },
- *   hour: () => number }} o
+ *   pack: { take: (kind: string, n: number) => number }, walk: { feedPoint: (aheadM?: number, turnDeg?: number, like?: (x: number, z: number) => boolean) => number[] | null, walker?: { x: number, z: number } },
+ *   hour: () => number, depth?: (x: number, z: number) => number }} o
  *   recipe: recipes/world/treats.json; species: every species with a treat block, its live module (the
- *   frogs' creatures, a school's schools) or null when it is not on the island; hour: game hours now
+ *   frogs' creatures, a school's schools) or null when it is not on the island; hour: game hours now;
+ *   depth: the water's depth there (m)
  */
 export function createTreats(o) {
   const R = o.recipe, W = R.words ?? {};
@@ -52,8 +53,29 @@ export function createTreats(o) {
      * @param {string} kind
      */
     setOut(kind) {
-      const p = o.walk.feedPoint();
+      // A treat for the water (a school's) is tossed on out along the line you face, up to tossM, to
+      // the first water deep enough for that school to swim (its motion.minDepthM): a pond shelves
+      // gently, and you kneel at its edge.
+      const w = o.walk.walker, depth = o.depth;
+      const swimM = Math.max(0, ...likersOf(kind, o.species).filter(({ T }) => T.water)
+        .map(({ key }) => (o.species.find((s) => s.key === key)?.rec?.motion?.minDepthM ?? 0.1) + (R.tossDeeperM ?? 0)));
+      const water = !!depth && !!w && swimM > 0;
+      /** @param {number} x @param {number} z @returns {number[] | null} */
+      const toss = (x, z) => {
+        if (!depth || !w) return null;
+        const dx = x - w.x, dz = z - w.z, d = Math.hypot(dx, dz) || 1;
+        for (let s = d; s <= Math.max(d, R.tossM ?? 0) + 1e-6; s += 0.1) {
+          const tx = w.x + (dx / d) * s, tz = w.z + (dz / d) * s;
+          if (depth(tx, tz) >= swimM) return [tx, tz];
+        }
+        return null;
+      };
+      // Turned so it lies in view, but toward the water if straight ahead is (a leaf pack for a
+      // pool), or on land if that is (wrack for the frogs).
+      const p = o.walk.feedPoint(R.setOutM, R.setOutTurnDeg, water ? (x, z) => !!toss(x, z) : depth && ((x, z) => depth(x, z) > 0.03));
       if (!p || o.pack.take(kind, 1) < 1) return '';
+      const t = water ? toss(p[0], p[2]) : null;
+      if (t) { p[0] = t[0]; p[2] = t[1]; }
       const hour = o.hour();
       const list = lyingAt(saved(), hour, R);
       const tid = list.reduce((m, t) => Math.max(m, t[4]), 0) + 1;
@@ -71,10 +93,10 @@ export function createTreats(o) {
       return waits || (W.none ?? '');
     },
 
-    /** The treats lying now, for the drawing: kind, where, and how pale (0..1). */
+    /** The treats lying now, for the drawing: kind, where, how pale (0..1) and how long set (game hours). */
     lying() {
       const h = o.hour();
-      return lyingAt(saved(), h, R).map((t) => ({ kind: t[0], x: t[1], z: t[2], pale: paleOf(t, h, R), tid: t[4] }));
+      return lyingAt(saved(), h, R).map((t) => ({ kind: t[0], x: t[1], z: t[2], pale: paleOf(t, h, R), tid: t[4], ageH: Math.max(0, h - t[3]) }));
     },
 
     dispose() { off(); },

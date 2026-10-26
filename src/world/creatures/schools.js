@@ -91,7 +91,11 @@ export function createSchools(opts) {
   /** @type {any} */ let shown = null;
   let acc = 0, watched = 0;
   const watching = P.watch ? createWatching(P.watch) : null;
-  /** Crumbs (or a treat, P2h) a school is swimming up to, by school id. @type {{ id: number, x: number, z: number, treat?: string, tid?: number }[]} */
+  /**
+   * Crumbs (or a treat, P2h) a school is swimming up to, by school id; a treat's moment still lying
+   * (waitS), its seconds nibbled (nibbleS) and how many swirls it has had.
+   * @type {{ id: number, x: number, z: number, treat?: string, tid?: number, waitS?: number, nibbleS?: number, swirls?: number }[]}
+   */
   let foods = [];
   const stepS = 1 / (M.stepHz ?? 30);
   /** Seconds of real time these schools have run, the clock their rises are stamped with. */
@@ -287,8 +291,8 @@ export function createSchools(opts) {
       let best = null, bestD = t.reachM;
       for (const s of schools.values()) { const c = s.centre(); const d = Math.hypot(c.x - x, c.z - z); if (d < bestD) { bestD = d; best = s; } }
       if (!best) return 'none';
-      best.feed({ x, z });
-      foods = [...foods.filter((g) => g.id !== best.id), { id: best.id, x, z, treat: t.treat, tid: t.tid }];
+      // It lies a moment first (treat.noticeS), then the school swirls up and nibbles (tick).
+      foods = [...foods.filter((g) => g.id !== best.id), { id: best.id, x, z, treat: t.treat, tid: t.tid, waitS: recipe.treat?.noticeS ?? 0, nibbleS: 0, swirls: 0 }];
       return 'coming';
     },
 
@@ -333,15 +337,26 @@ export function createSchools(opts) {
       for (const fd of foods.slice()) {
         const s = schools.get(fd.id);
         if (!s) { foods = foods.filter((g) => g !== fd); continue; }
+        // A treat: after its moment lying, the school swirls up to it, and keeps swirling round it
+        // (up to a few times) while it nibbles, nibbleS seconds near before it is eaten.
+        if (fd.treat) {
+          if (/** @type {number} */ (fd.waitS) > 0) { fd.waitS = /** @type {number} */ (fd.waitS) - f.realDt; continue; }
+          if (!s.feeding) {
+            if ((fd.swirls = (fd.swirls ?? 0) + 1) > 4) { foods = foods.filter((g) => g !== fd); continue; }
+            s.feed({ x: fd.x, z: fd.z });
+          }
+        }
         const c = s.centre();
-        if (Math.hypot(c.x - fd.x, c.z - fd.z) < 0.5) {
+        const near = Math.hypot(c.x - fd.x, c.z - fd.z) < 0.5;
+        if (fd.treat && near) fd.nibbleS = (fd.nibbleS ?? 0) + f.realDt;
+        if (fd.treat ? (fd.nibbleS ?? 0) >= (recipe.treat?.nibbleS ?? 0) : near) {
           foods = foods.filter((g) => g !== fd);
           if (fd.treat) {
             world.state = addSwarmEvent(world.state, key, { kind: 'treat', hour: hourIndex(), treat: fd.treat });
             emitDeferred('treat:taken', { species: key, id: fd.id, treat: fd.treat, tid: fd.tid });
           } else world.state = addSwarmEvent(world.state, key, { kind: 'fed', hour: hourIndex() });
           updateStore('world', () => world.state);
-        } else if (!s.feeding) foods = foods.filter((g) => g !== fd);
+        } else if (!s.feeding && !fd.treat) foods = foods.filter((g) => g !== fd);
       }
       acc = Math.min(acc + f.realDt, stepS * 6);
       while (acc >= stepS) { clockS += stepS; for (const s of schools.values()) s.step(stepS); acc -= stepS; }

@@ -129,9 +129,10 @@ export function pickupCount(key, left, share, range) {
 }
 
 /**
- * @param {{ terrain: any, camera: any, recipe: any, gather?: any, pack?: any, treats?: any, you?: () => number[] | null }} o
+ * @param {{ terrain: any, camera: any, recipe: any, gather?: any, pack?: any, treats?: any, water?: (x: number, z: number) => { depth: number } | null,
+ *   you?: () => number[] | null }} o
  *   recipe: recipes/world/pack.json; gather: src/world/gather (near); pack: src/world/pack (heaps);
- *   treats: src/world/creatures/treats.js (lying);
+ *   treats: src/world/creatures/treats.js (lying); water: the live water there (a treat sinks in it);
  *   you: where you stand below ([x, y, z]) or null above (the view's middle is used then)
  */
 export function createPackDraw(o) {
@@ -345,6 +346,24 @@ export function createPackDraw(o) {
   /** What lies on the ground to gather near f, nearest spots first, up to the cap. @param {number[]} f */
   function pickupBeings(f) {
     /** @type {import('../../render/passes/creatures.js').Being[]} */ const out = [];
+    // Treats set out and lying (P2h, src/world/creatures/treats.js) go first, so the strandline's
+    // own pickups never crowd them out: a small heap where each was set, paler and lower over its
+    // last hours. One set in water starts just under the surface and sinks to the bed (treatSink).
+    const S = P.treatSink ?? { startM: 0, perH: Infinity };
+    for (const t of o.treats?.lying() ?? []) {
+      const K = P.kinds[t.kind];
+      if (!K || (t.x - f[0]) ** 2 + (t.z - f[1]) ** 2 > P.nearM * P.nearM) continue;
+      const key = hash32(t.tid, 0x7ea7);
+      const depth = o.water?.(t.x, t.z)?.depth ?? 0;
+      const lift = depth > 0.03 ? Math.max(0, depth - (S.startM + S.perH * t.ageH)) : 0;
+      for (let i = 0; i < K.count[1] && out.length < P.max; i++) {
+        const u = (/** @type {number} */ k) => u01(hash32(key, i, k));
+        const r = (P.treatSpreadM ?? 0.1) * Math.sqrt(u(1)), a = u(2) * 2 * Math.PI;
+        const x = t.x + Math.cos(a) * r, z = t.z + Math.sin(a) * r;
+        const mesh = `${t.kind}-${Math.floor(u(5) * P.variants)}${t.pale > 0.4 && P.treatPale ? '-pale' : ''}`;
+        out.push({ x, y: ground(x, z) + lift, z, yaw: u(3) * 2 * Math.PI, size: (P.scale ?? 1) * (P.treatScale ?? 1) * (0.85 + 0.3 * u(4)) * (1 - 0.4 * t.pale), mesh });
+      }
+    }
     if (!o.gather?.near) return out;
     const spots = o.gather.near(f[0], f[1], P.nearM).filter((/** @type {any} */ s) => s.left > 0 && P.kinds[s.kind]);
     spots.sort((/** @type {any} */ a, /** @type {any} */ b) => ((a.x - f[0]) ** 2 + (a.z - f[1]) ** 2) - ((b.x - f[0]) ** 2 + (b.z - f[1]) ** 2));
@@ -362,20 +381,6 @@ export function createPackDraw(o) {
         out.push({ x, y: ground(x, z), z, yaw: u(3) * 2 * Math.PI, size: (P.scale ?? 1) * (0.85 + 0.3 * u(4)), mesh: `${s.kind}-${Math.floor(u(5) * P.variants)}` });
       }
       if (out.length >= P.max) break;
-    }
-    // Treats set out and lying (P2h, src/world/creatures/treats.js): a small heap where each was set,
-    // paler and lower over its last hours.
-    for (const t of o.treats?.lying() ?? []) {
-      const K = P.kinds[t.kind];
-      if (!K || (t.x - f[0]) ** 2 + (t.z - f[1]) ** 2 > P.nearM * P.nearM) continue;
-      const key = hash32(t.tid, 0x7ea7);
-      for (let i = 0; i < K.count[1] && out.length < P.max; i++) {
-        const u = (/** @type {number} */ k) => u01(hash32(key, i, k));
-        const r = (P.treatSpreadM ?? 0.1) * Math.sqrt(u(1)), a = u(2) * 2 * Math.PI;
-        const x = t.x + Math.cos(a) * r, z = t.z + Math.sin(a) * r;
-        const mesh = `${t.kind}-${Math.floor(u(5) * P.variants)}${t.pale > 0.4 && P.treatPale ? '-pale' : ''}`;
-        out.push({ x, y: ground(x, z), z, yaw: u(3) * 2 * Math.PI, size: (P.scale ?? 1) * (0.85 + 0.3 * u(4)) * (1 - 0.4 * t.pale), mesh });
-      }
     }
     return out;
   }

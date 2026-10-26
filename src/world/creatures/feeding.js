@@ -79,6 +79,8 @@ export function createFeeding(opts) {
         // A treat left without its frog (it swam off, or moved on) waits for the next one near.
         if (f.treat && f.frog === null && !f.sent) f.frog = nearest(f.x, f.z, f.treat.reachM)?.id ?? null;
         if (f.frog === null || f.sent) continue;
+        // A treat lies a moment first (treat.noticeS), so it is seen set down before a frog comes.
+        if (f.treat && now - f.placedS < (recipe.treat?.noticeS ?? 0)) continue;
         const a = agents.list().find((g) => g.id === f.frog);
         if (!a || a.mode === 'leave') { f.frog = null; continue; }
         if (agents.wary(a.id) || Math.hypot(eye[0] - a.x, eye[2] - a.z) < ringOf(a.trust)) continue;

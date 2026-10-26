@@ -65,8 +65,8 @@
       "nearM": 25, "max": 48, "rebuildS": 0.25, "moveM": 2, "refreshS": 5
     }
   },
-  "pickups": { "scale": 2.5, "treatSpreadM": 0.1, "treatPale": { "mix": 0.55, "toward": [0.3, 0.27, 0.22] },
-    "treatNote": "P2h: a treat set out and lying is drawn as a small heap of its kind's pickups within treatSpreadM of where it was set; over its last hours (treats.json paleH) it is drawn mixed treatPale.mix toward the ground's colour and lower, then it is gone.",
+  "pickups": { "scale": 2.5, "treatSpreadM": 0.1, "treatScale": 1.3, "treatSink": { "startM": 0.04, "perH": 0.08 }, "treatPale": { "mix": 0.55, "toward": [0.3, 0.27, 0.22] },
+    "treatNote": "P2h: a treat set out and lying is drawn as a small heap of its kind's pickups within treatSpreadM of where it was set, treatScale times their size (drawn first, so the strandline's own never crowd it out); one set in water lies treatSink.startM under the surface and sinks perH meters a game hour until it rests on the bed; over its last hours (treats.json paleH) it is drawn mixed treatPale.mix toward the ground's colour and lower, then it is gone.",
     "nearM": 25, "max": 128, "variants": 4,
     "pass": { "lengthM": 0.25, "shadow": 0.3 },
     "kinds": {
