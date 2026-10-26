@@ -132,6 +132,7 @@ const look = attachMouseLook(view, {
 const say = (/** @type {string} */ s) => { note.textContent = s; };
 document.addEventListener('pointerlockchange', () => {
   $('look-badge').hidden = !pointerLocked();
+  $('free-badge').hidden = pointerLocked();
   say(pointerLocked() ? 'The mouse turns the view; a click walks to where the dot rests. Hold Alt or press Esc to free the pointer.' : 'Click the view to look round with the mouse.');
 });
 
@@ -175,6 +176,7 @@ const SLIDERS = /** @type {[string, () => any, string, number, number, number, s
   ['Roll distance', () => R.steer.roll, 'distM', 1, 4, 0.1, 'm'],
   ['Roll time', () => R.steer.roll, 'durS', 0.2, 0.8, 0.02, 's'],
   ['Wait between rolls', () => R.steer.roll, 'waitS', 0, 1, 0.05, 's'],
+  ['Carry out of a roll', () => R.steer.roll, 'carryS', 0, 0.8, 0.05, 's'],
   ['Mouse look', () => R.steer.look, 'degPerPx', 0.03, 0.4, 0.01, 'deg/px'],
   ['Mouse look easing', () => R.steer.look, 'halfLifeS', 0, 0.2, 0.005, 's'],
   ['Clearance from solids', () => R.solids, 'bodyM', 0.05, 0.5, 0.01, 'm'],
@@ -273,7 +275,7 @@ function frame(/** @type {number} */ now) {
   const e = camera.eye, t = camera.target;
   const r = motion.update(dt, {
     x: walker.x, z: walker.z, y: walker.y, yaw: walker.yaw, speed: walker.speed, moving: walker.moving, retreating: walker.retreating,
-    rolling: walker.rolling, ground, depth: depthAt, posture: walker.posture, below: true, look: { yaw: Math.atan2(t[0] - e[0], t[2] - e[2]) },
+    rolling: walker.rolling, airborne: walker.airborne, ground, depth: depthAt, posture: walker.posture, below: true, look: { yaw: Math.atan2(t[0] - e[0], t[2] - e[2]) },
   });
   stage.setProps(props());
   stage.draw({ bones: motion.bones, eyes: eyeUniforms(FR.eyes, headBone, r.eyes, eyeBuf), place: [walker.x, walker.y, walker.z, r.yaw],

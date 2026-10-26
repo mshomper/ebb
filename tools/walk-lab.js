@@ -302,6 +302,7 @@ const SLIDERS = /** @type {[string, () => any, string, number, number, number, s
   ['Roll distance', () => R.steer.roll, 'distM', 1, 4, 0.1, 'm'],
   ['Roll time', () => R.steer.roll, 'durS', 0.2, 0.8, 0.02, 's'],
   ['Wait between rolls', () => R.steer.roll, 'waitS', 0, 1, 0.05, 's'],
+  ['Carry out of a roll', () => R.steer.roll, 'carryS', 0, 0.8, 0.05, 's'],
   ['Mouse look', () => R.steer.look, 'degPerPx', 0.03, 0.4, 0.01, 'deg/px'],
 ]);
 const sliders = /** @type {HTMLElement} */ (document.getElementById('sliders'));

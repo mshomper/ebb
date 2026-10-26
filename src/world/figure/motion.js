@@ -30,6 +30,7 @@ import { rollPose, turnBones } from './roll.js';
  * @property {number} yaw  facing (radians, body +z forward) @property {number} speed m/s
  * @property {boolean} moving @property {boolean} [retreating]
  * @property {number} [rolling]  how far into a dodge roll (0..1), or -1 (roll.js)
+ * @property {boolean} [airborne]  falling, the feet over the ground
  * @property {(x: number, z: number) => number} ground  land height (m)
  * @property {(x: number, z: number) => number} [depth] water over a spot now (m)
  * @property {{ yaw: number } | null} [look]  where you look below (world yaw), if anywhere
@@ -199,7 +200,8 @@ export function createFigureMotion(R, skeleton) {
       const c = Math.cos(visYaw), sn = Math.sin(visYaw);
       const toWorld = (/** @type {number} */ bx, /** @type {number} */ bz) => [s.x + DS * (c * bx + sn * bz), s.z + DS * (-sn * bx + c * bz)];
       const toBody = (/** @type {number} */ wx, /** @type {number} */ wz) => { const dx = (wx - s.x) / DS, dz = (wz - s.z) / DS; return [c * dx - sn * dz, sn * dx + c * dz]; };
-      const gnd = (/** @type {number} */ bx, /** @type {number} */ bz) => { const w = toWorld(bx, bz); return (s.ground(w[0], w[1]) - s.y) / DS; };
+      // Falling (off an edge a roll went over): the feet stay under you, not reaching for the ground below.
+      const gnd = (/** @type {number} */ bx, /** @type {number} */ bz) => { if (s.airborne) return 0; const w = toWorld(bx, bz); return (s.ground(w[0], w[1]) - s.y) / DS; };
 
       // Water, postures and pace.
       const depth = s.depth ? s.depth(s.x, s.z) / DS : 0;

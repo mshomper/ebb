@@ -548,7 +548,7 @@ export function createWalk(o) {
       const e = camera.eye, t = camera.target;
       const hour = ((hours % 24) + 24) % 24;
       const falls = figure.update(realDt, {
-        placed: walker.placed, x: walker.x, z: walker.z, y: walker.y, yaw: walker.yaw, speed: walker.speed, rolling: walker.rolling,
+        placed: walker.placed, x: walker.x, z: walker.z, y: walker.y, yaw: walker.yaw, speed: walker.speed, rolling: walker.rolling, airborne: walker.airborne,
         moving: walker.moving, retreating: walker.retreating, ground, depth: depthAt,
         look: below ? { yaw: Math.atan2(t[0] - e[0], t[2] - e[2]) } : null,
         interests: below ? interests().filter((it) => Math.abs(it.x - walker.x) < 8 && Math.abs(it.z - walker.z) < 8).map((it) =>({ x: it.x, z: it.z, kind: it.kind, y: lift(it.x, it.z, it.kind) })) : [],

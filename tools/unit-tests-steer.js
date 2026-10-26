@@ -102,27 +102,62 @@ export function addSteerTests(test, assert, eq) {
     return `creep ${creep.toFixed(2)}, Shift ${hurry.toFixed(2)} m/s`;
   });
 
-  test(G, 'the dodge roll covers its distance, waits before the next, and stops short at a cliff edge', async () => {
+  test(G, 'the dodge roll covers its distance, waits before the next, goes off an edge and falls, and stops short at a face or deep water', async () => {
     const { R, grid } = await world(() => 1);
     const RL = R.steer.roll;
     const w = createWalker(R, { grid, depth: () => 0, ground: () => 1 });
     w.place(10, 10, 0);
     assert(w.roll(0, 0), 'the roll did not start');
     let top = 0;
-    for (let i = 0; i < Math.round(RL.durS / DT) + 2; i++) { w.update(DT); top = Math.max(top, w.speed); }
+    for (let i = 0; i < 60 && w.rolling >= 0; i++) { w.update(DT); top = Math.max(top, w.speed); }
     assert(Math.abs(w.z - 10 - RL.distM) < 0.1, `rolled ${(w.z - 10).toFixed(2)} m`);
     assert(top > R.pace.briskMps, `the roll's speed ${top.toFixed(2)} m/s is not fast movement`);
     assert(!w.roll(0, 1), 'a second roll started with no wait');
     for (let i = 0; i < Math.round(RL.waitS / DT) + 1; i++) w.update(DT);
     assert(w.roll(0, 1), 'no roll after the wait');
+    // Off a 2 m edge: the roll goes over and you fall to the ground below, never snapping down.
     const cliff = (/** @type {number} */ x) => (x < 20 ? 0.5 : -1.5);
     const c = await world(cliff);
     const e = createWalker(R, { grid: c.grid, depth: () => 0, ground: (x) => cliff(x) });
     e.place(19, 10, Math.PI / 2);
     e.roll(1, 0);
-    for (let i = 0; i < 40; i++) e.update(DT);
-    assert(e.x < 20, `rolled off the edge to x ${e.x.toFixed(2)}`);
-    return `rolled ${(w.z - 10).toFixed(2)} m at up to ${top.toFixed(2)} m/s; stopped at x ${e.x.toFixed(2)} by the edge`;
+    let fell = false;
+    for (let i = 0; i < 60; i++) { e.update(DT); if (e.x > 20.2 && e.y > -1.4) fell = true; }
+    assert(e.x > 20.5 && Math.abs(e.y + 1.5) < 1e-6, `did not roll off the edge: x ${e.x.toFixed(2)}, y ${e.y.toFixed(2)}`);
+    assert(fell, 'snapped down instead of falling');
+    // Up a 2 m face: stopped short. Into deep water: stopped short.
+    const up = createWalker(R, { grid: c.grid, depth: () => 0, ground: (x) => cliff(x) });
+    up.place(21, 10, -Math.PI / 2);
+    up.roll(-1, 0);
+    for (let i = 0; i < 40; i++) up.update(DT);
+    assert(up.x > 20, `rolled up a 2 m face to x ${up.x.toFixed(2)}`);
+    const flat = await world(() => 1);
+    const pond = (/** @type {number} */ k) => (flat.grid.center(k)[0] > 12 ? 1 : 0);
+    const p = createWalker(R, { grid: flat.grid, depth: pond, ground: () => 1 });
+    p.place(11, 10, Math.PI / 2);
+    p.roll(1, 0);
+    for (let i = 0; i < 40; i++) p.update(DT);
+    assert(p.x < 12, `rolled into deep water to x ${p.x.toFixed(2)}`);
+    return `rolled ${(w.z - 10).toFixed(2)} m at up to ${top.toFixed(2)} m/s; off the edge to x ${e.x.toFixed(2)}; stopped by the face and the pond`;
+  });
+
+  test(G, 'a roll keeps its way and its momentum: keys mid-roll cannot turn it, and you carry on after it', async () => {
+    const { R, grid } = await world(() => 1);
+    const RL = R.steer.roll;
+    const w = createWalker(R, { grid, depth: () => 0, ground: () => 1 });
+    w.place(10, 10, 0);
+    w.roll(0, 1);
+    // Hard left the whole time, from the first frame of the roll.
+    for (let i = 0; i < Math.round(RL.durS / DT); i++) { w.steer(1, 0); w.update(DT); }
+    assert(Math.abs(w.x - 10) < 1e-6, `the roll turned under the keys: x ${w.x.toFixed(3)}`);
+    const zEnd = w.z;
+    // Just after it: still going its way, faster than a walk.
+    w.steer(1, 0); w.update(DT);
+    assert(w.z > zEnd && w.speed > R.pace.strollMps, `no momentum out of the roll: ${w.speed.toFixed(2)} m/s`);
+    for (let i = 0; i < Math.round(RL.carryS / DT); i++) { w.steer(1, 0); w.update(DT); }
+    for (let i = 0; i < 30; i++) { w.steer(1, 0); w.update(DT); }
+    assert(w.x > 10.3, 'the keys never took over after the carry');
+    return `carried ${(w.z - zEnd).toFixed(2)} m on past the roll`;
   });
 
   test(G, 'a movement key takes over from a click walk: no arrival, and walk:keys for the card it would open', async () => {
