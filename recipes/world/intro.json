@@ -1,7 +1,7 @@
 {
   "type": "intro",
   "version": 1,
-  "note": "The first evening (docs/future/13 section 2; src/world/intro). A new island opens at dawn on spring day 0 with the walker standing on the beach below the camp, the boat grounded behind (Matt, October 22: no row-in). Beats are data, run in order: id, hint lines (the first shows when the beat starts; each later one when the event in hintNext at the same step arrives, or at once if the check in hintNextIf at that step already passes), an optional start check, and a done check by name (checks.js) or a done event (with orCheck, a check that says it is done already: the tent pitched before its beat came). steps: a beat that needs several things says what is still needed, the first step whose handfuls (need) the pack does not hold giving the line. then.act plays a walker act once the check passes and the beat ends when the act does. onStart.page opens the journal on that keeper page; onStart.flow sets time's flow (dusk at its own pace, after the time button hurried the day). cue emits an event (the dusk call) when its own event arrives. aside: one line from hints (hints.store, section 3.12) shown before the beat's own while the pack still holds any of the groups in ifHolds, for showS seconds at most; tapping it away brings the beat's line. later shows one more line after the beat if the sun sets more than laterIfBeforeSunsetH hours later. Every line names the button or card icon by the word it shows on hover. springGlow: the soft ring on the spring's pool while the spring beat runs, so it can be found from the beach (radiusM, opacity from and to, breatheS). goReachM: a click on the mark over the view (where a beat leads you) walks you to within this of the place; at the spring, within the spring beat's reachM, so you can kneel there. alsoDoneBy: an event that also ends a beat once it has started, and the next beat with it when that is the event it waits for (resting in the tent at dusk ends dusk and rest). short: the beats of the short evening (the sister island), with no hint lines. older: islands made before the update. Flags go in journal.flags as flagPrefix + id.",
+  "note": "The first evening (docs/future/13 section 2; src/world/intro). A new island opens at dawn on spring day 0 with the walker standing on the beach below the camp, the boat grounded behind (Matt, October 22: no row-in). Beats are data, run in order: id, hint lines (the first shows when the beat starts; each later one when the event in hintNext at the same step arrives, or at once if the check in hintNextIf at that step already passes), an optional start check, and a done check by name (checks.js) or a done event (with orCheck, a check that says it is done already: the tent pitched before its beat came). steps: a beat that needs several things says what is still needed, the first step whose handfuls (need) the pack does not hold giving the line. parts: a beat walked through in order (Matt, October 25, 2026: the pond tool by tool, planting it, filling the stores), each part one line and one done check (or its orCheck) by name, its args beside it; a part done earlier in the visit (raised land before being asked) passes at once, and each part done is flagged as flagPrefix + id.index, so a reload or the first morning picks up where it stopped. more: a line added to the part's own after n refused sowings of that species since the part began. day: a beat of the day; when the sun sets (or the night is past midnight) before it is done, it is set aside with any day beats not started, and dusk begins on time. morning: when the evening ends, at the first rest or at the first dawn for a player who never rested, the beats in morning.beats still undone run again in order, from where they stopped, with one opening line first (open, by the first beat; or stayedUp's, tent or noTent, for the dawn), shown for showS seconds or until tapped; no deadline, no reminders. At that dawn the beats in dropped are flagged (as Skip leaves them), the wake page shows, and the title still waits for the first real rest. then.act plays a walker act once the check passes and the beat ends when the act does. onStart.page opens the journal on that keeper page; onStart.flow sets time's flow (dusk at its own pace, after the time button hurried the day). cue emits an event (the dusk call) when its own event arrives. later shows one more line after the beat if the sun sets more than laterIfBeforeSunsetH hours later. Every line names the button or card icon by the word it shows on hover. springGlow: the soft ring on the spring's pool while the spring beat runs, so it can be found from the beach (radiusM, opacity from and to, breatheS). goReachM: a click on the mark over the view (where a beat leads you) walks you to within this of the place; at the spring, within the spring beat's reachM, so you can kneel there. alsoDoneBy: an event that also ends a beat once it has started, and the next beat with it when that is the event it waits for (resting in the tent at dusk ends dusk and rest). short: the beats of the short evening (the sister island), with no hint lines. older: islands made before the update. Flags go in journal.flags as flagPrefix + id.",
   "startAtDawn": { "dayIndex": 0, "afterDawnH": 0.25, "dawnSunDeg": -6 },
   "flagPrefix": "intro:",
   "wakePage": "tend",
@@ -19,16 +19,47 @@
         { "need": { "stones": 2 }, "hint": "One more handful of pebbles. Gather again." }
       ], "done": { "check": "packHolds", "need": { "fuel": 1, "stones": 2 } } },
     { "id": "ring", "hint": ["Back up at your camp, click the glowing ring of earth, then Lay the fire ring."], "done": { "event": "camp:ring-laid", "orCheck": "ringLaid" } },
-    { "id": "shape", "aside": { "hint": "store", "ifHolds": ["fuel", "stones"], "showS": 14 }, "hint": ["Go up to see the whole island. From above you can shape it.", "Pick Sculpt in the bar below and drag across the land, or pick Water and press to pour."], "hintNext": ["walk:went-up"],
-      "later": "Evening comes in its own time. The time button at the bottom right can bring it sooner.", "laterIfBeforeSunsetH": 2, "done": { "check": "shapedOffPad" } },
+    { "id": "shape", "day": true, "parts": [
+        { "hint": "Go up to see the whole island. From above you can shape it.", "done": { "check": "above" } },
+        { "hint": "Pick Sculpt, then Raise, and drag across the land to lift it.", "done": { "check": "stroked", "mode": "raise" } },
+        { "hint": "Now Lower: drag in one place to scoop a hollow for a pond.", "done": { "check": "stroked", "mode": "lower" } },
+        { "hint": "Smooth softens what you've shaped. Drag over the hollow's edges.", "done": { "check": "stroked", "mode": "smooth" } },
+        { "hint": "Paint lays new ground: grass, sand and the rest. Try a little sand.", "done": { "check": "stroked", "mode": "paint" } },
+        { "hint": "Pick Water and press in the hollow to fill it. Drain takes water back if you pour too much.", "done": { "check": "poured", "mode": "pour" } }
+      ] },
+    { "id": "plant", "day": true, "parts": [
+        { "hint": "Go down to your pond. Planting is done on foot.", "done": { "check": "below" } },
+        { "hint": "Open the Seed tin on your bar, pick Reeds, and sow a few along the pond's edge.", "done": { "check": "sown", "species": "reeds", "n": 3 } },
+        { "hint": "Now Water lilies, out in the middle where the water is deeper.", "done": { "check": "sown", "species": "lilies", "n": 1 },
+          "more": { "refused": "lilies", "n": 3, "hint": "Lilies need water about knee deep. Go up and Lower the middle a little more." } }
+      ] },
+    { "id": "store", "day": true, "parts": [
+        { "hint": "Your camp needs more wood for the nights ahead. Gather two handfuls of drift twigs.", "done": { "check": "packHolds", "need": { "drift-twigs": 2 }, "orCheck": "setDownAt", "store": "sticks", "n": 2 } },
+        { "hint": "Click the Wood store at your camp and Set them down.", "done": { "check": "setDownAt", "store": "sticks", "n": 2 } },
+        { "hint": "Now two handfuls of pebbles from the shore.", "done": { "check": "packHolds", "need": { "stones": 2 }, "orCheck": "setDownAt", "store": "stones", "n": 2 } },
+        { "hint": "Set them down at the Stone pile beside the wood store.", "done": { "check": "setDownAt", "store": "stones", "n": 2 } }
+      ], "later": "Evening comes in its own time. The time button at the bottom right can bring it sooner.", "laterIfBeforeSunsetH": 2 },
     { "id": "dusk", "start": { "check": "afterSunset" }, "alsoDoneBy": "camp:rested", "onStart": { "flow": 1 }, "hint": ["Evening. Go down to your fire ring and press Light.", "Sit by the fire a while."], "hintNext": ["camp:lit"], "hintNextIf": ["fireLit"],
       "cue": { "on": "camp:lit", "emit": "intro:curlew" }, "done": { "check": "satByFire", "reachM": 1.5, "stillS": 20 } },
     { "id": "rest", "hint": ["When you're ready, walk to the tent's door and press Rest to sleep until morning."], "done": { "event": "camp:rested" } }
   ],
   "short": ["landfall", "pitch", "ring", "dusk", "rest"],
+  "morning": {
+    "beats": ["pitch", "gather", "ring", "shape", "plant", "store"],
+    "dropped": ["landfall", "spring", "page", "dusk", "rest"],
+    "showS": 10,
+    "open": {
+      "shape": "A new day. There's still a pond to finish.",
+      "plant": "A new day. Your pond is still waiting for its plants.",
+      "store": "A new day. The stores at camp still want filling."
+    },
+    "stayedUp": {
+      "tent": "You stayed up through the night. The tent will be there when you're tired.",
+      "noTent": "You stayed up through the night. Your tent is still in your pack."
+    }
+  },
   "older": { "notice": "There's a camp ground on the flat above the shore now. Your tent is in your pack.", "glowWithinM": 12 },
   "hints": {
-    "store": "Spare twigs keep dry in the wood store.",
     "tools": {
       "terrace": "Drag to build a level shelf, Height above where you start, with a sheer rock face at its edge.",
       "cut": "Drag to carve a level floor, Height below where you start, with sheer rock walls around it."

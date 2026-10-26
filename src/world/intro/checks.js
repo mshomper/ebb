@@ -18,11 +18,16 @@
  * @property {() => boolean} fireLit
  * @property {(part: 'tent' | 'ring') => boolean} campHas  the tent pitched, the ring laid (E3's camp)
  * @property {() => number} sunsetInH  game hours until the sun next sets (0 or less once it has set today)
+ * @property {() => number} day  whole game days since the island's first (0 on the first evening, 1 after its midnight)
+ * @property {() => boolean} sunUp  the sun is above the horizon
+ * @property {(kind: string) => string | null} storeOf  the camp store a pack kind is kept in (sticks, stones, clay), or null
+ * @property {(store: string) => number} storeHolds  handfuls on a store's pile now
  */
 
 /**
  * A beat's memory. @typedef {Object} BeatMemory
- * @property {Record<string, any[]>} seen  payloads of the events the beat listens to, since it started
+ * @property {Record<string, any[]>} seen  payloads of the events the beat listens to, since it (or its part) started
+ * @property {Record<string, any[]>} ever  the same, since the director started this visit (a part done early)
  * @property {number} still  seconds the walker has sat still by the fire
  * @property {boolean} sawOpen  the journal was seen open during this beat
  */
@@ -50,13 +55,30 @@ export const CHECKS = {
   /** The pack holds what the ring needs. */
   packHolds: (ctx, a) => ctx.packHolds(a.need ?? {}),
 
-  /** A Sculpt stroke or a Water pour ended that reached ground off the pad. */
-  shapedOffPad: (ctx, _a, mem) =>
-    (mem.seen['terrain:stroke-ended'] ?? []).some((p) => ctx.offPad(p?.rect ?? null))
-    || (mem.seen['water:pour-ended'] ?? []).some((p) => ctx.offPad(null, p)),
+  /** You are up above the island. */
+  above: (ctx) => !ctx.walker().below,
 
-  /** The sun has set today. */
-  afterSunset: (ctx) => ctx.sunsetInH() <= 0,
+  /** You are down on foot. */
+  below: (ctx) => ctx.walker().below,
+
+  /** A brush stroke of this mode (raise, lower, smooth, paint) ended off the pad, this visit. */
+  stroked: (ctx, a, mem) => (mem.ever['terrain:stroke-ended'] ?? []).some((p) => p?.mode === a.mode && ctx.offPad(p.rect ?? null)),
+
+  /** A Water stroke of this mode (pour, drain) ended off the pad, this visit. */
+  poured: (ctx, a, mem) => (mem.ever['water:pour-ended'] ?? []).some((p) => (p?.mode ?? 'pour') === a.mode && ctx.offPad(null, p)),
+
+  /** n seeds of a species took, this visit (`sow:landed` with ok). */
+  sown: (_c, a, mem) => (mem.ever['sow:landed'] ?? []).filter((p) => p?.ok && p.species === a.species).length >= (a.n ?? 1),
+
+  /** n handfuls set down at a store (sticks: the wood store, stones: the stone pile), this visit, or it holds them. */
+  setDownAt: (ctx, a, mem) => {
+    const n = a.n ?? 1;
+    const put = (mem.ever['pack:set-down'] ?? []).reduce((s, p) => s + (ctx.storeOf(p?.kind) === a.store ? p.handfuls ?? 1 : 0), 0);
+    return put >= n || ctx.storeHolds(a.store) >= n;
+  },
+
+  /** The sun has set today, or the night is past midnight. */
+  afterSunset: (ctx) => ctx.sunsetInH() <= 0 || ctx.day() > 0,
 
   /** The fire burns (lit before its beat asked, the beat goes straight on to its next line). */
   fireLit: (ctx) => ctx.fireLit(),
@@ -80,5 +102,10 @@ export const CHECKS = {
 export const CHECK_EVENTS = {
   arrivedOnLand: ['walk:arrived'],
   packHolds: ['pack:changed'],
-  shapedOffPad: ['terrain:stroke-ended', 'water:pour-ended'],
+  above: ['walk:went-up'],
+  below: ['walk:went-down'],
+  stroked: ['terrain:stroke-ended'],
+  poured: ['water:pour-ended'],
+  sown: ['sow:landed'],
+  setDownAt: ['pack:set-down'],
 };

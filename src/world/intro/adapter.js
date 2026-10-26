@@ -130,6 +130,11 @@ export function createIntroLive(o) {
       return part === 'tent' ? c?.kit?.tent === 'pitched' && inSlot : inSlot;
     },
     sunsetInH: () => sunsetInH(o.clock.display(), o.orbit),
+    day: () => Math.floor(o.clock.display() / DAY) - (o.R.startAtDawn?.dayIndex ?? 0),
+    sunUp: () => sunMoon(o.clock.display(), o.orbit).sunAlt >= 0,
+    storeOf: (kind) => (o.pack?.recipe?.kinds ?? []).find((/** @type {any} */ k) => k.id === kind)?.camp ?? null,
+    // A store's pile is a piece of kind 'pile' in its slot (src/world/pack/piles-live.js).
+    storeHolds: (store) => (get('pieces')?.list ?? []).reduce((/** @type {number} */ n, /** @type {any} */ p) => n + (p.kind === 'pile' && p.slot === store ? p.handfuls ?? 0 : 0), 0),
     pad: padNow,
   };
 
@@ -179,18 +184,24 @@ export function createIntroLive(o) {
     update('intro', () => ({ beat: c?.id ?? null, started: !!c?.started, done }));
   }
 
+  /**
+   * Waking from the first rest (Phase 1 fix F15), or the first dawn for a player who never rested
+   * (Matt, October 25, 2026): the keeper's second page as a centered card (src/ui/keeper-card.js),
+   * had from now on in the journal after the first. Once only.
+   */
+  function wakePage() {
+    const id = o.R.wakePage;
+    if (!id || (get('journal')?.flags ?? []).includes(`keeper:${id}`)) return;
+    dispatch(/** @type {any} */ ({ type: 'journal.flag', flag: `keeper:${id}` }));
+    emit('keeper:card', { id });
+  }
+
   const offs = [
     // When the evening is over, time runs at its own pace again (the time button may have hurried it).
     on('intro:done', () => dispatch(/** @type {any} */ ({ type: 'time.flow', flow: 1 }))),
     on('camp:lit', () => { lit = true; }),
-    // Waking from the first rest (Phase 1 fix F15): the keeper's second page as a centered card
-    // (src/ui/island-notes.js), had from now on in the journal after the first.
-    on('camp:rested', () => {
-      const id = o.R.wakePage;
-      if (!id || (get('journal')?.flags ?? []).includes(`keeper:${id}`)) return;
-      dispatch(/** @type {any} */ ({ type: 'journal.flag', flag: `keeper:${id}` }));
-      emit('keeper:card', { id });
-    }),
+    on('camp:rested', wakePage),
+    on('intro:stayed-up', wakePage),
     onAction((/** @type {any} */ a) => {
       if (a.type === 'intro.tuck') intro.tuck();
       else if (a.type === 'intro.skip') intro.skip();
@@ -257,6 +268,8 @@ export function createIntroLive(o) {
     flap: flapOf,
     /** The spring the evening leads to (the lab, the tests). */
     spring: () => spring,
+    /** The journal's flags now (the lab: how the evening ended). @returns {string[]} */
+    flags: () => get('journal')?.flags ?? [],
     /** Set the store slice `intro` and the mark now (at start, before the first frame). */
     publish,
     /** Each frame. @param {number} dt seconds */

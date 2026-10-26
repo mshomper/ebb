@@ -196,7 +196,9 @@ export async function createTerrain(gpu, opts) {
     uploadRect(device, tex, mirror, r);
     const after = copyTiles(mirror, [...st.tileIds]);
     markEdited(r);
-    emitDeferred('terrain:stroke-ended', { rect: worldRect(r) });
+    // Which tool and mode made it (the first evening walks through them: src/world/intro).
+    const kind = st.brush.kind;
+    emitDeferred('terrain:stroke-ended', { rect: worldRect(r), tool: kind === 'smooth' || kind === 'paint' ? kind : 'sculpt', mode: kind });
     st.resolve({ kind: 'terrain', before: st.before, after, bytes: (st.before.length + after.length) * TILE_BYTES });
   }
 
