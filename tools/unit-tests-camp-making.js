@@ -141,6 +141,6 @@ export function addCampMakingTests(test, assert, eq) {
   test(G, 'the walker works at the bench for the make: the make gesture is as long as the make', async () => {
     const PO = (await load('world/figure')).poses, C = await load('world/cook');
     const len = gestureLength(PO, 'make');
-    assert(len > 2 && Math.abs(len - C.makeS) < 0.05, `make gesture ${len} s for a ${C.makeS} s make`);
+    assert(len > 1.5 && Math.abs(len - C.makeS) < 0.05, `make gesture ${len} s for a ${C.makeS} s make`);
   });
 }

@@ -5,9 +5,12 @@
 // A short still left click with no tool is a tap (look.tap: the journal names what grows there).
 // Keys: 1 2 3 pick a tool (again returns to look), J opens or closes the journal, Esc closes the
 // journal or returns to look, [ ] resize the brush, Ctrl+Z undo, Ctrl+Shift+Z or Ctrl+Y redo.
+// On foot, W A S D, Shift, Space and mouse look are src/world/walk/controls.js; an Esc that frees the
+// pointer from mouse look does nothing more.
 
 import { dispatch } from './actions.js';
 import { get } from '../core/store.js';
+import { escapeFreesPointer } from './mouse-look.js';
 
 const TOOL_KEYS = /** @type {const} */ (['sculpt', 'smooth', 'paint']);
 /** A click that moves less than this (px) and lasts less than this (ms) is a tap. */
@@ -134,6 +137,8 @@ export function attachDesktopInput(canvas, opts, brush) {
     } else if (e.code === 'KeyH') {
       dispatch({ type: 'ui.hideHud', source: 'key' });
     } else if (e.key === 'Escape') {
+      // On foot with mouse look, the first Esc only frees the pointer (src/input/mouse-look.js).
+      if (escapeFreesPointer()) return;
       if (get('journalUi')?.open) dispatch({ type: 'ui.journal', open: false });
       // A seed, a gift or the net in hand is put away first (D1a).
       else if (get('walk')?.below && get('hand')) dispatch({ type: 'hand.putAway', source: 'key' });

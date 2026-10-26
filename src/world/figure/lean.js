@@ -15,11 +15,13 @@
  */
 export function createLean(L, paceOf) {
   let x = 0, v = 0, cruise = 0, fresh = true;
+  /** The push off (0..1), held a moment after a quick start (holdS) so a snappy start still tips; and the brake now. */
+  let push = 0, brake = 0;
   return {
     /** The lean now (degrees, forward). */
     get deg() { return x; },
     /** Start again from the next frame's lean, still (put down somewhere new). */
-    reset() { fresh = true; v = 0; cruise = 0; },
+    reset() { fresh = true; v = 0; cruise = 0; push = 0; brake = 0; },
     /**
      * Step the spring toward the lean the pace asks for (base) plus the tip or the carry. Returns the
      * lean in degrees, forward. The walking lean easing off as you stop goes through the spring too,
@@ -30,9 +32,12 @@ export function createLean(L, paceOf) {
     update(dt, speed, accel, base = 0) {
       cruise = Math.max(speed, cruise * Math.exp(-dt / L.cruiseFallS));
       const P = paceOf(cruise);
-      const target = base + (accel > 0
-        ? P.tipDeg * Math.min(1, accel / L.accelRef)
-        : P.carryDeg * Math.min(1, -accel / L.brakeRef));
+      const fade = L.holdS > 0 ? Math.exp(-dt / L.holdS) : 0;
+      push = Math.max(Math.min(1, Math.max(0, accel) / L.accelRef), push * fade);
+      brake = Math.min(1, Math.max(0, -accel) / L.brakeRef);
+      // Setting off again cuts the carry of the stop before (and stopping, the push).
+      if (accel > 0) brake = 0; else if (accel < 0) push = 0;
+      const target = base + (push > brake ? P.tipDeg * push : P.carryDeg * brake);
       if (fresh) { fresh = false; x = target; v = 0; }
       const k = L.stiffness, c = 2 * Math.sqrt(k) * (speed > 0.05 ? L.damping : L.settleDamping);
       const n = Math.max(1, Math.ceil(dt * 120)), h = dt / n;

@@ -80,14 +80,15 @@ function walk(R, built, speed, h, seconds) {
  * @param {(cond: any, msg?: string) => void} assert @param {(a: any, b: any, msg?: string) => void} eq
  */
 export function addFigureTests(test, assert, eq) {
-  test(FIG, 'the hurry pace is a run: a flight between steps, a longer stride and lean, the hips lowest over the foot; the stroll is unchanged', async () => {
+  test(FIG, 'the hurry pace is a run: a flight between steps, a longer stride and lean, the hips lowest over the foot; the walk is its own pace (October 26, 2026: walk 2.2 m/s, about 3 body m/s)', async () => {
     const R = await (await fetch('../recipes/world/figure.json')).json();
     const G = R.gait, DS = R.body.displayScale;
     const W = await (await fetch('../recipes/world/walker.json')).json();
-    const stroll = paceAt(G, W.pace.strollMps / DS, 0), run = paceAt(G, W.pace.briskMps / DS, 0), top = G.paces.find((/** @type {any} */ p) => p.speed === 1.5);
-    for (const k of ['stance', 'stepM', 'armDeg', 'leanDeg', 'bobM']) eq(stroll[k], top[k], `stroll ${k} as before`);
+    const stroll = paceAt(G, W.pace.strollMps / DS, 0), run = paceAt(G, W.pace.briskMps / DS, 0), top = G.paces.find((/** @type {any} */ p) => p.speed === 3);
+    for (const k of ['stance', 'stepM', 'armDeg', 'leanDeg', 'bobM']) assert(Math.abs(stroll[k] - top[k]) <= Math.abs(top[k]) * 0.02 + 1e-6, `walk ${k} is the walk pace: ${stroll[k]}`);
     assert(run.stance < 0.5 && run.bobM < 0, 'the run: under half a stride down, hips lowest over the planted foot');
-    assert(run.stepM > stroll.stepM * 1.5 && run.leanDeg > stroll.leanDeg && run.elbowDeg > stroll.elbowDeg + 40, 'a longer stride, more lean, elbows bent to pump');
+    // Short, quick strides at the run (Matt, October 26, 2026: long ones over-reached and bobbed), still longer than the walk.
+    assert(run.stepM > stroll.stepM * 1.3 && run.kickM <= 0.06 && Math.abs(run.bobM) <= 0.012 && run.leanDeg > stroll.leanDeg && run.elbowDeg > stroll.elbowDeg + 40, 'a longer stride, a small heel kick and bob, more lean, elbows bent to pump');
     // Somewhere in the cycle both feet are off the ground at the run, never at the stroll.
     const airborne = (/** @type {any} */ P) => Array.from({ length: 200 }, (_, i) => i / 200).some((p) =>
       !footInCycle(p, P.stance, P.stepM, P.liftM).down && !footInCycle((p + 0.5) % 1, P.stance, P.stepM, P.liftM).down);

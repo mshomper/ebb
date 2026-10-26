@@ -104,7 +104,7 @@ export function addIntroTests(test, assert, eq) {
     const r = rig(await recipe());
     r.intro.start({ fresh: true });
     eq(r.intro.current?.id, 'landfall', 'first beat');
-    eq(r.line(), 'Click the grass above the beach to walk there.');
+    eq(r.line(), 'Walk up onto the grass above the beach: W A S D to walk, the mouse to look round. Or click where you want to go.');
     eq(r.log.hints[0].skip, 'Skip the first evening', 'skip offered at beat 0');
     const order = /** @type {string[]} */ ([]);
     r.bus.on('intro:beat-done', (/** @type {any} */ p) => order.push(p.id));

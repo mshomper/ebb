@@ -31,6 +31,7 @@ export const PARALLEL = {
   cove: () => import('./unit-tests-cove.js').then((m) => m.addCoveTests),
   keepsakeArtifacts: () => import('./unit-tests-keepsake-artifacts.js').then((m) => m.addKeepsakeArtifactTests),
   walk: () => import('./unit-tests-walk.js').then((m) => m.addWalkTests),
+  steer: () => import('./unit-tests-steer.js').then((m) => m.addSteerTests),
   figure: () => import('./unit-tests-figure.js').then((m) => m.addFigureTests),
   nets: () => import('./unit-tests-nets.js').then((m) => m.addNetsTests),
   trails: () => import('./unit-tests-trails.js').then((m) => m.addTrailsTests),

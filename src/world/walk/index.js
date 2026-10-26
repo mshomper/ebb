@@ -363,6 +363,29 @@ export function createWalk(o) {
       lookAt(x, z);
     },
 
+    /**
+     * Walking with the keys (src/world/walk/controls.js): the way wanted this frame, in the world
+     * (length up to 1), and Shift to run. Held still while an act plays. @param {number} x @param {number} z @param {boolean} run
+     */
+    steer(x, z, run) {
+      if (!below || acting) { walker.steer(0, 0); return; }
+      if (x || z) standAt = 0;
+      walker.steer(x, z, run);
+    },
+    /** A movement key pressed: it takes over from a click walk, and the card it would open (never from wading back). */
+    keyTakeover() {
+      if (!below || acting) return;
+      if (walker.pathing && !walker.retreating) walker.stop();
+      emitDeferred('walk:keys', {});
+    },
+    /** Space: a dodge roll the way given (or the way you face). Not while an act plays. @param {number} x @param {number} z */
+    roll(x, z) {
+      if (!below || acting || !walker.roll(x, z)) return false;
+      standAt = 0;
+      emitDeferred('walk:keys', {});
+      return true;
+    },
+
     /** How far you stand from a ground point, in meters (Infinity while above). @param {number} x @param {number} z */
     distTo(x, z) {
       return below && walker.placed ? Math.hypot(x - walker.x, z - walker.z) : Infinity;
@@ -514,7 +537,7 @@ export function createWalk(o) {
       const e = camera.eye, t = camera.target;
       const hour = ((hours % 24) + 24) % 24;
       const falls = figure.update(realDt, {
-        placed: walker.placed, x: walker.x, z: walker.z, y: walker.y, yaw: walker.yaw, speed: walker.speed,
+        placed: walker.placed, x: walker.x, z: walker.z, y: walker.y, yaw: walker.yaw, speed: walker.speed, rolling: walker.rolling,
         moving: walker.moving, retreating: walker.retreating, ground, depth: depthAt,
         look: below ? { yaw: Math.atan2(t[0] - e[0], t[2] - e[2]) } : null,
         interests: below ? interests().filter((it) => Math.abs(it.x - walker.x) < 8 && Math.abs(it.z - walker.z) < 8).map((it) =>({ x: it.x, z: it.z, kind: it.kind, y: lift(it.x, it.z, it.kind) })) : [],

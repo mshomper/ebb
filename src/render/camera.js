@@ -24,6 +24,7 @@ const DEG = Math.PI / 180;
  * @property {number} halfLifeDirect
  * @property {number} halfLifeGlide
  * @property {number} [halfLifeFocus]  the slower glide of focus() (the journal's Show me)
+ * @property {number} [halfLifeGoDown]  the glide of Go down and Go up (setGround)
  * @property {number} softReturnDelay
  * @property {number} orbitDegPerPx
  * @property {number} panScale
@@ -68,6 +69,10 @@ export function createOrbitCamera(r) {
    * any input ends it. Presence reads it as `driven`: a move the game makes never startles a creature.
    */
   let focusing = false;
+  /** The mouse look's half life while it turns the view (0: a drag's own). */
+  let lookHalfLife = 0;
+  /** The glide under way: Show me's, or the quicker one of Go down and Go up. */
+  let focusHalfLife = r.halfLifeFocus ?? 0.5;
   /**
    * Close-up limits (the frog size preview, ?frogscale): a nearer zoom and a lower eye; while set,
    * the target sits on the ground (or at the height a focus asked for) instead of half way down.
@@ -119,6 +124,7 @@ export function createOrbitCamera(r) {
     goal.distance = clamp(distance, minSoft(), maxSoft());
     goal.pitch = clamp(pitchDeg * DEG, ...pitchSoft());
     focusing = true;
+    focusHalfLife = r.halfLifeFocus ?? 0.5;
   }
 
   /** Orbit by a pointer delta in CSS pixels. @param {number} dx @param {number} dy */
@@ -127,6 +133,19 @@ export function createOrbitCamera(r) {
     const rate = (ground?.orbitDegPerPx ?? r.orbitDegPerPx) * DEG;
     goal.yaw -= dx * rate;
     goal.pitch = clamp(goal.pitch + dy * rate, ...pitchHard());
+    lookHalfLife = 0;
+    touched();
+  }
+
+  /**
+   * Mouse look below (pointer lock, recipes/world/walker.json steer.look): turn by a mouse delta in
+   * pixels at degPerPx, eased over halfLifeS, much quicker than a drag's soft turn.
+   * @param {number} dx @param {number} dy @param {number} degPerPx @param {number} halfLifeS
+   */
+  function look(dx, dy, degPerPx, halfLifeS) {
+    goal.yaw -= dx * degPerPx * DEG;
+    goal.pitch = clamp(goal.pitch + dy * degPerPx * DEG, ...pitchHard());
+    lookHalfLife = halfLifeS;
     touched();
   }
 
@@ -207,14 +226,16 @@ export function createOrbitCamera(r) {
     let kd = 1 - 2 ** (-dt / r.halfLifeDirect);
     if (focusing) {
       // A slow, even glide for Show me; it ends on arrival.
-      k = kd = 1 - 2 ** (-dt / (r.halfLifeFocus ?? 0.5));
+      k = kd = 1 - 2 ** (-dt / focusHalfLife);
       const far = Math.hypot(goal.target[0] - cur.target[0], goal.target[2] - cur.target[2]) + Math.abs(goal.distance - cur.distance);
       if (far < 0.02) focusing = false;
     }
     // Below, a drag's turn eases in over the walker's turnHalfLifeS, so the view swings softly.
-    const ky = ground?.turnHalfLife && !focusing ? 1 - 2 ** (-dt / ground.turnHalfLife) : kd;
+    // Mouse look eases over its own, much shorter half life.
+    const turnHL = lookHalfLife || ground?.turnHalfLife;
+    const ky = ground && turnHL && !focusing ? 1 - 2 ** (-dt / turnHL) : kd;
     cur.yaw += (goal.yaw - cur.yaw) * ky;
-    cur.pitch += (goal.pitch - cur.pitch) * (ground?.turnHalfLife && !focusing ? ky : k);
+    cur.pitch += (goal.pitch - cur.pitch) * (ground && turnHL && !focusing ? ky : k);
     cur.distance += (goal.distance - cur.distance) * k;
     // Close-ups aim at the ground itself (or the height a focus asked for); otherwise the target
     // sits half way down, as it always has.
@@ -265,7 +286,9 @@ export function createOrbitCamera(r) {
   }
 
   return {
-    orbit, pan, zoom, twist, update, ray, focus,
+    orbit, pan, zoom, twist, update, ray, focus, look,
+    /** The yaw the view is turning to (radians; the eye sits at +sin, +cos from the target). */
+    get yaw() { return goal.yaw; },
     /** Is the game gliding the camera (not the player moving it)? */
     driven: () => focusing,
     /** @param {number} w CSS px @param {number} h CSS px */
@@ -310,6 +333,7 @@ export function createOrbitCamera(r) {
       targetY = g ? at[1] : null;
       clampTarget();
       focusing = true;
+      focusHalfLife = r.halfLifeGoDown ?? r.halfLifeFocus ?? 0.5;
     },
     /** Below: keep aiming at you as you walk (each frame). @param {ArrayLike<number>} at world meters */
     follow(at) {

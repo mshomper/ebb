@@ -22,12 +22,14 @@ import { createEyes } from './eyes.js';
 import { actLength, actPose, gestureLength, gesturePose } from './acts.js';
 import { createLean } from './lean.js';
 import { createLook } from './look.js';
+import { rollPose, turnBones } from './roll.js';
 
 /**
  * @typedef {Object} FigureInput
  * @property {number} x @property {number} z @property {number} y   feet height under the walker (m)
  * @property {number} yaw  facing (radians, body +z forward) @property {number} speed m/s
  * @property {boolean} moving @property {boolean} [retreating]
+ * @property {number} [rolling]  how far into a dodge roll (0..1), or -1 (roll.js)
  * @property {(x: number, z: number) => number} ground  land height (m)
  * @property {(x: number, z: number) => number} [depth] water over a spot now (m)
  * @property {{ yaw: number } | null} [look]  where you look below (world yaw), if anywhere
@@ -66,6 +68,7 @@ export function createFigureMotion(R, skeleton) {
   const THIGH = Math.hypot(...sub(skeleton[LEG[0][1]].pivot, skeleton[LEG[0][0]].pivot));
   const SHIN = Math.hypot(...sub(skeleton[LEG[0][2]].pivot, skeleton[LEG[0][1]].pivot));
   const restPelvisY = piv('pelvis')[1];
+  const PIVOTS = skeleton.map((b) => b.pivot);
   // The arms hang from the A-pose by one turn at the shoulder; the elbow bends about the axis that
   // brings the hand forward once the arm hangs.
   const HANG = [0, 1].map((i) => {
@@ -106,7 +109,7 @@ export function createFigureMotion(R, skeleton) {
   const wasDown = [true, true];
   /** @type {{ feed: number | null, arrive: number | null, leave: number | null, retreat: number | null, retreatSide: number }} */
   const acts = { feed: null, arrive: null, leave: null, retreat: null, retreatSide: 1 };
-  let wasRetreating = false;
+  let wasRetreating = false, wasRolling = false;
   let info = {};
 
   /** Set bone i's move and its matrix (parents are always set first). @param {number} i @param {import('../creatures/pose.js').BoneMove | null} mv */
@@ -184,9 +187,12 @@ export function createFigureMotion(R, skeleton) {
       const jumped = !last || snapTo !== null || Math.hypot(s.x - last.x, s.z - last.z) > 1.5;
       last = { x: s.x, z: s.z };
       if (visYaw === null || jumped) { visYaw = s.yaw; prevYaw = s.yaw; mode = 'plant'; }
+      // A dodge roll (roll.js): the body faces the roll at once and curls into a ball over it.
+      const RO = R.roll, rollU = s.rolling ?? -1, RP = rollPose(RO, rollU), tuck = RP.tuck;
+      if (rollU >= 0) visYaw = s.yaw;
 
       // Facing: quick while walking, a stepped turn on the spot while standing.
-      const rate = (m > 0.5 ? 360 : G.turnDegPerS) * DEG * dt;
+      const rate = (m > 0.5 ? G.walkTurnDegPerS ?? 360 : G.turnDegPerS) * DEG * dt;
       visYaw = /** @type {number} */ (visYaw) + Math.max(-rate, Math.min(rate, wrap(s.yaw - /** @type {number} */ (visYaw))));
       const yawRate = dt > 0 ? wrap(visYaw - prevYaw) / dt : 0;
       prevYaw = visYaw;
@@ -243,7 +249,10 @@ export function createFigureMotion(R, skeleton) {
       // Postures ease in and out (slow at both ends), so going down and getting up never jolt.
       const crawlW = smooth(crawlE), kneelW = Math.min(smooth(kneelE), 1 - crawlW), sitW = Math.min(smooth(sitE), 1 - crawlW - kneelW);
       const standW = Math.max(0, 1 - sitW - kneelW - crawlW);
-      const speed = s.speed / DS;
+      // Rolling, the legs do not stride; back on the feet, they are pinned where they land.
+      const speed = rollU >= 0 ? 0 : s.speed / DS;
+      if (wasRolling && rollU < 0) { mode = 'plant'; m = 0; planted.pin([0, 1].map((i) => toWorld(skeleton[LEG[i][2]].pivot[0], skeleton[LEG[i][2]].pivot[2])), visYaw); }
+      wasRolling = rollU >= 0;
       m = approach(m, speed > 0.05 ? 1 : 0, dt / R.ease.settleS);
       const P = paceAt(G, speed, wade);
       const accel = dt > 0 ? (speed - prevSpeed) / dt : 0;
@@ -346,9 +355,16 @@ export function createFigureMotion(R, skeleton) {
       // into the ground.
       const kneelPelvis = kneelHipY + (restPelvisY - hipL[1]);
       const drop = A ? A.drop * (1 - kneelW) + Math.min(A.drop, K.maxDropM) * kneelW : 0;
-      const pelvisTarget = standY * standW + (centre + S.pelvisY) * sitW + kneelPelvis * kneelW + (centre + C.pelvisY) * crawlW - drop;
+      const pelvisTarget = lerp(standY * standW + (centre + S.pelvisY) * sitW + kneelPelvis * kneelW + (centre + C.pelvisY) * crawlW - drop, centre + RO.pelvisY, tuck);
       if (snapTo !== null) { springs.pelvis.x[0] = s.y / DS + pelvisTarget; springs.pelvis.v[0] = 0; }
-      const pelvisY = springs.pelvis.step([s.y / DS + pelvisTarget], dt)[0] - s.y / DS;
+      // Tucked, the hips go straight where the ball wants them (a roll is too quick for the spring).
+      const pelvisY = lerp(springs.pelvis.step([s.y / DS + pelvisTarget], dt)[0] - s.y / DS, pelvisTarget, tuck);
+      // The tuck: the feet come up under the hips, so the knees come to the chest.
+      if (tuck > 0) for (let i = 0; i < 2; i++) {
+        const tk = [rest[i][0] * 0.9, pelvisY + RO.footY, RO.footZ];
+        target[i].a = target[i].a.map((v, k) => lerp(v, tk[k], tuck));
+        target[i].pitch = lerp(target[i].pitch, -0.6, tuck);
+      }
       const pelvisWorldY = s.y / DS + pelvisY;
       const pelvisVy = dt > 0 ? (pelvisWorldY - prevPelvis) / dt : 0;
       prevPelvis = pelvisWorldY;
@@ -413,12 +429,12 @@ export function createFigureMotion(R, skeleton) {
       // Spine and chest: the lean of the pace or posture, breathing, a counter-twist to the hips, and
       // the chest's share of a look.
       const br = Math.sin((2 * Math.PI * t) / R.idle.breathS);
-      const lean = (paceLean * standW + S.leanDeg * sitW + K.leanDeg * kneelW + C.leanDeg * crawlW + (A ? A.lean : 0)) * DEG;
+      const lean = (paceLean * standW + S.leanDeg * sitW + K.leanDeg * kneelW + C.leanDeg * crawlW + (A ? A.lean : 0) + RO.curlDeg * tuck) * DEG;
       set(I.spine, { q: qaxis([1, 0, 0], lean * 0.5 + br * R.idle.breathDeg * 0.3 * DEG) });
       // An act's twist turns the chest to the right (the dig's tip onto the spoil heap).
       const actTwist = A ? -(A.twist ?? 0) * DEG : 0;
       set(I.chest, { q: qmul(qaxis([1, 0, 0], lean * 0.5), qaxis([0, 1, 0], -twist * 0.8 + LK.chest + actTwist)), s: [1 + 0.006 * br, 1 + 0.004 * br, 1 + 0.008 * br] });
-      const headPitch = Math.max(-L.maxPitchDeg * DEG, Math.min(L.maxPitchDeg * DEG, pitch)) - lean * 0.7;
+      const headPitch = Math.max(-L.maxPitchDeg * DEG, Math.min(L.maxPitchDeg * DEG, pitch)) - lean * 0.7 + RO.headDeg * DEG * tuck;
       set(I.head, { q: qmul(qaxis([0, 1, 0], LK.yaw), qaxis([1, 0, 0], headPitch)) });
       set(I.hat, null);
       // The hat tip lags: it tips back as you speed up, dips as the body rises, and swings out on a turn.
@@ -449,6 +465,8 @@ export function createFigureMotion(R, skeleton) {
         if (kneelW > 0) goals.push({ at: i === 1 && reach > 0 ? [0, 1, 2].map((k) => lerp(kneeHand(1, 0.03)[k], [PO.feed.hand[0], centre + PO.feed.hand[1], PO.feed.hand[2]][k], reach)) : kneeHand(1, i === 0 ? 0.06 : -0.02), w: kneelW * keep });
         if (crawlW > 0) { const h = C.hands[i]; goals.push({ at: [h[0], gnd(h[0], h[2]) + h[1], h[2]], w: crawlW * keep }); }
         if (i === 0 && tugW > 0) goals.push({ at: PO.arrive.tugHand, w: tugW * keep });
+        // Tucked: hands hug the shins.
+        if (tuck > 0) goals.push({ at: kneeHand(i, -0.03 * SIDE[i]).map((v, k) => v + (k === 1 ? -0.12 : k === 2 ? 0.04 : 0)), w: tuck * 4 });
         if (A && aw > 0) { const h = i === 0 ? A.l : A.r; goals.push({ at: [h[0], centre + h[1], h[2]], w: aw }); }
         const w = Math.min(1, goals.reduce((a, g) => a + g.w, 0));
         if (w > 0.001) {
@@ -489,6 +507,9 @@ export function createFigureMotion(R, skeleton) {
       const pk = springs.pack.step([pelvisWorldY], dt)[0], lag = pk - pelvisWorldY;
       set(I.pack, { t: [0, lag * PK.gain, 0], q: qmul(qaxis([1, 0, 0], -0.01 * accel + lag * (PK.tiltGain ?? 0)), qaxis([0, 0, 1], twist * (PK.rock ?? 0))) });
 
+      // The roll turns the whole curled figure about the ball's middle; no footfalls while it rolls.
+      turnBones(RO, out, RP.angle, centre, PIVOTS);
+      if (rollU >= 0) footfalls.length = 0;
       const eyeState = eyes.update(dt, { sleepy: !!s.sleepy && sitW > 0.5 });
       info = { mode, m, wade, sitW, kneelW, crawlW, phase, pace: P, leanDeg: paceLean, looking: LK.target, look: LK, expression: eyes.expression, act: act ? act.name : null, gesture: gest ? gest.name : null };
       return { yaw: visYaw, eyes: [...eyeState, ...LK.eyes], footfalls, actDone };

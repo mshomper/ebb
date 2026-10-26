@@ -198,10 +198,10 @@ export function addDigTests(test, assert, eq) {
     eq(cleanHoleFields({ ...hole(), closedHour: 'x' })?.closedHour, -1, 'an unreadable closing hour is open');
   });
 
-  test(G, 'the dig motion: about two seconds, hands on the shovel throughout, bent over and a twist, back at rest', async () => {
+  test(G, 'the dig motion: about 1.2 seconds (two until October 26, 2026), hands on the shovel throughout, bent over and a twist, back at rest', async () => {
     const PO = (await FP).poses;
     const len = actLength(PO, 'dig');
-    assert(len >= 1.8 && len <= 2.4, `length ${len}`);
+    assert(len >= 1 && len <= 1.5, `length ${len}`);
     let maxLean = 0, maxTwist = 0;
     for (let u = 0; u <= len; u += 0.05) {
       const p = actPose(PO, 'dig', u);

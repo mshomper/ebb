@@ -9,8 +9,8 @@
   "springGlow": { "radiusM": 1.6, "opacity": [0.45, 0.85], "breatheS": 2.6 },
   "goReachM": 1.5,
   "beats": [
-    { "id": "landfall", "hint": ["Click the grass above the beach to walk there."], "skip": "Skip the first evening", "done": { "check": "arrivedOnLand" } },
-    { "id": "spring", "hint": ["The spring is up the slope, inland. Click its soft ring to walk there, then Kneel and drink."], "done": { "check": "kneltAtSpring", "reachM": 2.5 }, "then": { "act": "drink" } },
+    { "id": "landfall", "hint": ["Walk up onto the grass above the beach: W A S D to walk, the mouse to look round. Or click where you want to go."], "skip": "Skip the first evening", "done": { "check": "arrivedOnLand" } },
+    { "id": "spring", "hint": ["The spring is up the slope, inland. Walk to its soft ring, then Kneel and drink."], "done": { "check": "kneltAtSpring", "reachM": 2.5 }, "then": { "act": "drink" } },
     { "id": "page", "onStart": { "page": "first" }, "hint": ["The journal keeps what you learn here. Close it when you're ready."], "done": { "check": "journalClosed" } },
     { "id": "pitch", "hint": ["Turn round and walk back down to the flat ground above the beach: that is your camp. Click the glowing patch, then Pitch the tent."], "done": { "event": "camp:pitched", "orCheck": "tentPitched" } },
     { "id": "gather", "steps": [

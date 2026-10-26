@@ -24,7 +24,7 @@
 
   "work": { "max": 2 },
 
-  "makeS": 3.2,
+  "makeS": 1.8,
   "makeSNote": "How long the walker works at the station for a make (real seconds), kneeling at the bench: figure.json gestures.make. The thing is made as it ends.",
 
   "nothingHoldS": 1.4,
