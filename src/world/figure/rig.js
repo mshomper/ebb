@@ -58,7 +58,7 @@ export function anchorWeights(anchors, v) {
  * @param {any} R recipes/world/figure.json
  * @param {{ textured?: boolean }} [o] textured: the colour slot carries the baked maps' UV and a 2
  *   (u, v, 2), for figure-draw.wgsl to sample them (a model with no UVs keeps its vertex colours)
- * @returns {{ data: ArrayBuffer, indices: Uint32Array, count: number, skeleton: Bone[], arms: Record<string, ArmInfo>, parts: Record<string, number>, partOf: Uint8Array, partLow: Record<number, number>, textured: boolean }}
+ * @returns {{ data: ArrayBuffer, indices: Uint32Array, count: number, skeleton: Bone[], arms: Record<string, ArmInfo>, parts: Record<string, number>, partOf: Uint8Array, partLow: Record<number, number>, pieces: Record<string, { first: number, count: number }>, textured: boolean }}
  */
 export function buildFigure(glb, R, o = {}) {
   const arms = glb.json.extras?.arms ?? {};
@@ -75,6 +75,9 @@ export function buildFigure(glb, R, o = {}) {
   // Each vertex's part id (the arms 255), for drawing one part alone (the pack hung at camp, P2f).
   const partOf = new Uint8Array(count);
   /** @type {Record<number, number>} each part's lowest point (rest m) */ const partLow = {};
+  /** Each mesh of the model as a piece of its own (the body, the arms, the pack, the hat): its run of
+   * indices, so a piece can be drawn alone or left out (the hat swapped for another later).
+   * @type {Record<string, { first: number, count: number }>} */ const pieces = {};
   let v0 = 0, i0 = 0;
   const textured = !!o.textured && [...meshes.values()].every((m) => m.attributes.TEXCOORD_0);
   for (const [name, m] of meshes) {
@@ -108,9 +111,10 @@ export function buildFigure(glb, R, o = {}) {
       });
     }
     for (let t = 0; t < m.indices.length; t++) indices[i0 + t] = m.indices[t] + v0;
+    pieces[name] = { first: i0, count: m.indices.length };
     v0 += n;
     i0 += m.indices.length;
   }
   const data = packMesh({ vertices, count }, joints, weights);
-  return { data, indices, count, skeleton, arms, parts: partIds, partOf, partLow, textured };
+  return { data, indices, count, skeleton, arms, parts: partIds, partOf, partLow, pieces, textured };
 }

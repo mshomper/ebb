@@ -239,11 +239,11 @@ export function addFigureTests(test, assert, eq) {
     return report.join(', ');
   });
 
-  test(FIG,'the GLB reader reads the figure: a body and two arms, with colour, part labels and the arms\' shoulders', async () => {
+  test(FIG,'the GLB reader reads the figure: a body, two arms, the pack and the hat, with colour, part labels and the arms\' shoulders', async () => {
     const R = await (await fetch('../recipes/world/figure.json')).json();
     const glb = readGlb(await (await fetch(`../${R.model}`)).arrayBuffer());
     const m = meshesByName(glb);
-    eq([...m.keys()].sort().join(','), 'arm.l,arm.r,body', 'parts');
+    eq([...m.keys()].sort().join(','), 'arm.l,arm.r,body,hat,pack', 'parts');
     for (const [name, part] of m) {
       for (const a of ['POSITION', 'NORMAL', 'COLOR_0', '_PART']) assert(part.attributes[a], `${name} has ${a}`);
       assert(part.indices.length % 3 === 0, `${name} indices make triangles`);
@@ -557,6 +557,11 @@ export function addFigureTests(test, assert, eq) {
     assert(Math.abs(a.yaw - 0.3) < 1e-9 && Math.abs(a.pitch) < 1e-9 && Math.abs(a.roll) < 1e-9, 'a yaw alone reads back');
     const idx = partIndices(built.indices, built.partOf, built.parts.pack);
     assert(idx.length > 0 && idx.length % 3 === 0 && [...idx].every((v) => built.partOf[v] === built.parts.pack), 'the pack alone, to set down at camp');
+    // Matt's clean split (October 26, 2026): the body, both arms, the pack and the hat, each its own piece.
+    eq(Object.keys(built.pieces).sort().join(), 'arm.l,arm.r,body,hat,pack', 'five pieces');
+    eq(built.pieces.pack.count, idx.length, 'the pack piece is the whole pack');
+    const hat = built.indices.subarray(built.pieces.hat.first, built.pieces.hat.first + built.pieces.hat.count);
+    assert([...hat].every((v) => built.partOf[v] === built.parts.hat), 'the hat piece is all hat, skinned to the head and the hat bones');
   });
 
   test(FIG, 'a placed figure starts in its posture, with no steps to get there', async () => {

@@ -59,8 +59,8 @@ export async function addCarrierStrips(o) {
   /** A run with the pack folded away and the carrier worn. @param {() => any} make @param {string | null} id */
   const wearing = (make, id) => () => {
     const run = make();
-    run.motion.showPack(false);
-    return { ...run, props: id ? () => carrierTris(id, run.motion, run.place()) : null };
+    run.motion.showPack(id === 'pack');
+    return { ...run, props: id && id !== 'pack' ? () => carrierTris(id, run.motion, run.place()) : null };
   };
   /** Sitting down (as resting at the fire): standing a moment, then sitting, held. */
   function sitRun() {
@@ -81,7 +81,7 @@ export async function addCarrierStrips(o) {
   const BEHIND = { yaw: Math.PI + 0.55, pitch: 0.22, dist: 3.4 }, BACK = { yaw: Math.PI, pitch: 0.12, dist: 2.6 };
   const four = (/** @type {any[]} */ rec) => o.stridePicks(rec).filter((_, i) => i % 2 === 0);
 
-  for (const id of [...Object.keys(meshes), null]) {
+  for (const id of ['pack', ...Object.keys(meshes), null]) {
     const name = id ? P.words.carrierNames?.[id] ?? id : 'No carrier';
     const rows = [
       { name: `${name}: walking, ${walk} m/s`, view: BEHIND, run: wearing(() => o.strideRun(walk, true), id), picks: four },
