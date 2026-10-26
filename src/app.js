@@ -710,9 +710,9 @@ export async function startApp(canvas, hooks = {}) {
       for (const [k, n] of [['willow.withies', 1], ['ash', 2], ['sticks', 2]]) pack.add(/** @type {string} */ (k), /** @type {number} */ (n));
     }
     const apo = params.get('camp') === 'apothecary';
-    // `?camp=hearth` (S4, S5): the workbench built, the hearth stones set, the cooking pot, tea pot
-    // and cup fired in their places, clay, sand and crushed shell in the pack, standing at the ring;
-    // `&fire=lit|embers|cold` sets the fire, `&shaped` adds pale pieces on the workbench and at the fire.
+    // `?camp=hearth` (S4, S5): the workbench built, the hearth stones set, the cooking pot and the
+    // cup fired in their places, clay, sand and crushed shell in the pack, standing at the ring;
+    // `&fire=lit|embers|cold` sets the fire.
     const hearthLink = params.get('camp') === 'hearth';
     const kit = apo ? [['shells', 3], ['watermint.leaves', 2], ['chamomile.flowers', 2], ['sticks', 3], ['pebbles', 2], ['rushes.stems', 3]]
       : hearthLink ? [['clay', 3], ['sand', 2], ['crushed-shell', 1], ['sticks', 3]]
@@ -721,7 +721,10 @@ export async function startApp(canvas, hooks = {}) {
     if (params.get('camp') === 'bench' || apo || hearthLink) camp.stations.debug.buildNow('workbench');
     if (apo) { camp.stations.debug.buildNow('apothecary'); for (const m of ['rack', 'mortar', 'hamper']) camp.stations.debug.placeNow(m); }
     if (hearthLink) {
-      camp.hearth.debug.setUp(params.has('shaped') ? { shaped: ['bowl', 'cup', 'tea-pot'], firing: ['bowl'] } : {});
+      // `&shaped` is the look of it all at once (tools/hearth-check.html): every piece fired, a pale
+      // bowl, cup and tea pot on the bench and a bowl firing. Without it, the tea pot and bowls are
+      // still to shape and fire.
+      camp.hearth.debug.setUp(params.has('shaped') ? { fired: ['cooking-pot', 'tea-pot', 'cup'], shaped: ['bowl', 'cup', 'tea-pot'], firing: ['bowl'] } : {});
       const f = params.get('fire');
       if (f === 'lit' || f === 'embers' || f === 'cold') camp.debug.fireAs(f);
     }

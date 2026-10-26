@@ -55,7 +55,7 @@ for (const b of document.querySelectorAll('[data-fire]')) {
 const hb = $('[data-hearth]');
 hb.addEventListener('click', () => {
   const on = hb.getAttribute('aria-pressed') !== 'true';
-  if (on) app.camp.hearth.debug.setUp(); else app.camp.hearth.debug.clearHearth();
+  if (on) app.camp.hearth.debug.setUp({ fired: ['cooking-pot', 'tea-pot', 'cup'] }); else app.camp.hearth.debug.clearHearth();
   hb.setAttribute('aria-pressed', String(on));
 });
 for (const b of document.querySelectorAll('[data-view]')) b.addEventListener('click', () => view(/** @type {HTMLElement} */ (b).dataset.view ?? 'fire'));

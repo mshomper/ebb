@@ -14,6 +14,7 @@ import { potOnHearth, pieceOf, shapedOn, setHearth, placeFired, addShaped, swapO
 import { fired, layWork, workDone } from './work.js';
 import { workSpot } from './star.js';
 import { hash32 } from '../../core/rng.js';
+import { cleanCook, recordMade } from './making.js';
 
 /** The model each piece wears (camp.json props.models): its kind's own. @param {string} kind */
 const modelOf = (kind) => kind;
@@ -85,15 +86,17 @@ export function createHearth(k) {
   }
 
   /**
-   * The test link's hearth (?camp=hearth, unsaved): the hearth stones set, the cooking pot, tea pot
-   * and cup fired in their places, the shaped kinds waiting pale on the workbench, the firing ones
-   * laid at the star's edge. Takes nothing. @param {{ shaped?: string[], firing?: string[] }} [o]
+   * The test link's hearth (?camp=hearth, unsaved): the hearth stones set, the fired kinds (the
+   * cooking pot and the cup) in their places, the shaped kinds waiting pale on the workbench, the
+   * firing ones laid at the star's edge. Takes nothing. @param {{ fired?: string[], shaped?: string[], firing?: string[] }} [o]
    */
   function setUp(o = {}) {
-    const hour = k.hourNow();
+    const hour = k.hourNow(), fired0 = o.fired ?? ['cooking-pot', 'cup'];
+    // Counted as made, so the workbench offers what is still to make (the tea pot, bowls).
+    update('cook', (s) => [...fired0, 'hearth-stones'].reduce((x, id) => (x.made[id] === undefined ? recordMade(x, id, hour) : x), cleanCook(s)));
     k.change((c) => {
       let x = setHearth(c, hour, hash32(k.campSeed, 40), H);
-      for (const [i, kind] of ['cooking-pot', 'tea-pot', 'cup'].entries()) x = placeFired(x, kind, hour, hash32(k.campSeed, 41 + i), H);
+      for (const [i, kind] of fired0.entries()) x = placeFired(x, kind, hour, hash32(k.campSeed, 41 + i), H);
       for (const kind of o.shaped ?? []) x = addShaped(x, kind);
       for (const kind of o.firing ?? []) x = { ...x, work: layWork(x.work, { id: `fire-${kind}`, needH: k.cook.makes?.[`fire-${kind}`]?.needH ?? 8, gives: kind, count: 1 }, hour) };
       return x;
