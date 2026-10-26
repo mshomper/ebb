@@ -317,7 +317,7 @@ export function createSchools(opts) {
           if (s.darting) continue;
           // The nearest of them (a dragonfly's beat spreads over a few meters); lower and looking away is closer.
           const near = fast && s.fish.some((f) => Math.hypot(p.pos[0] - f.x, p.pos[1] - f.y, p.pos[2] - f.z)
-            <= ring * (P.multipliers ? ringScale(p, f.x, f.z, P.multipliers) : 1));
+            <= ring * (p.ringK ?? 1) * (P.multipliers ? ringScale(p, f.x, f.z, P.multipliers) : 1));
           const edited = p.edits.some((e) => s.fish.some((f) => Math.hypot(e.x - f.x, e.z - f.z) <= P.editReachM));
           if (near || edited) { s.startle(); emitDeferred('creature:startled', { species: key, id: s.id }); }
         }

@@ -99,6 +99,8 @@ import { clickKind, clickPlan } from './world/walk/click.js';
 import { createPack } from './world/pack/index.js';
 import { createGather } from './world/gather/index.js';
 import { createTreats } from './world/creatures/treats.js';
+import { createTeaReveal } from './world/creatures/tea-reveal.js';
+import { setActRate } from './world/figure/acts.js';
 import { ashMarks } from './world/gather/ashes.js';
 import { createDig } from './world/dig/index.js';
 import { createSketchbook } from './world/sketchbook/index.js';
@@ -296,6 +298,9 @@ export async function startApp(canvas, hooks = {}) {
   const env = makeEnv(seed, { seasons: seasonsRecipe, sky: skyRecipe.orbit, water: waterRecipe });
   // `?trust=0.5` (testing): every frog knows you at least this well from the next hour (S6c, trust.js).
   /** @type {any} */ (env).testTrust = Math.max(0, Math.min(1, Number.parseFloat(params.get('trust') ?? '0') || 0));
+  // A tea's boon on trust (P2e): read as the hour's trust is applied, so it lifts only what live play
+  // earned while the tea worked (away time earns no trust to lift). 1 without a tea.
+  Object.defineProperty(env, 'trustBoost', { get: () => getStore('boonLift')?.trust ?? 1, enumerable: false });
   /** @type {import('./sim/live-sim.js').LiveWorld} */
   const world = { state: getStore('world') ?? runHour(initialWorldState(seed), clock.hourIndex(), env).state, env };
   updateStore('world', () => world.state);
@@ -454,7 +459,8 @@ export async function startApp(canvas, hooks = {}) {
   /** @type {import('./world/walk/index.js').Walk | null} */ let walkRef = null;
   // `hooks.labCamera` (tools/frog-lab.html): the old close camera, whose own eye startles frogs.
   if (hooks.labCamera) camera.setClose(camRecipe.labClose);
-  const presence = createPresence({ camera, cameraBody: !!hooks.labCamera, walker: () => walkRef?.presenceNow() ?? null, heightM: walkerRecipe.presence.heightM });
+  const presence = createPresence({ camera, cameraBody: !!hooks.labCamera, walker: () => walkRef?.presenceNow() ?? null, heightM: walkerRecipe.presence.heightM,
+    ringK: () => getStore('boonLift')?.comfort ?? 1 });
   /** Where you are felt on foot (finds, food, finding by watching); null while you are above. */
   const you = () => walkRef?.you() ?? null;
   const creatures = createCreatures({ world, recipe: frogRecipe, terrain, water, ripples, camera, testFrogs, flora, floraFrame: () => floraFrame, presence, you });
@@ -778,6 +784,35 @@ export async function startApp(canvas, hooks = {}) {
       walk.downHere();
     }
   }
+  // `?teas` (a test link, unsaved; P2e): the camp ready, the tea pot fired, full of spring water and on
+  // the hearth over a lit fire, the cup fired, the apothecary bench, rack and hamper made with a
+  // dried bunch of chamomile on the rack (for Deep rest), a handful of each tea herb in the pack, and
+  // you standing at the ring.
+  if (params.has('teas') && !back && !params.has('camp')) {
+    emit('intro:camp-ready', { tent: true, ring: true });
+    for (const id of ['workbench', 'apothecary']) camp.stations.debug.buildNow(id);
+    for (const m of ['rack', 'mortar', 'hamper']) camp.stations.debug.placeNow(m);
+    camp.hearth.debug.setUp({ fired: ['tea-pot', 'cup', 'cooking-pot'] });
+    camp.debug.fireAs('lit');
+    const h = clock.worldT() / 3600;
+    camp.stations.keeps.rack.hang('chamomile.flowers', 2);
+    updateStore('camp', (c) => ({ ...c, slots: c.slots.map((/** @type {any} */ s) => (s.slot === 'pot-tea' || s.kind === 'tea-pot' ? { ...s, water: 'fresh' }
+      : s.kind === 'rack' ? { ...s, bunches: (s.bunches ?? []).map((/** @type {[string, number, number]} */ b) => [b[0], b[1], h - 24 * 4]) } : s)) }));
+    for (const herb of Object.values((await loadRecipe('world/cook')).teas.herbs)) pack.add(/** @type {string} */ (herb), 1);
+    const rp = camp.ringPlace(), pad = getStore('campPad');
+    if (rp && pad) {
+      const a = Math.atan2(pad.z - rp.z, pad.x - rp.x) - 0.5, sx = rp.x + Math.cos(a) * 1.2, sz = rp.z + Math.sin(a) * 1.2, yaw = Math.atan2(rp.x - sx, rp.z - sz);
+      if (walk.placeAt(sx, sz, yaw, 'stand')) {
+        camera.setPose({ ...camera.pose(), target: [sx, terrain.sampleHeight(sx, sz), sz], yaw: yaw + Math.PI + 0.9, distance: campRecipe.rest.viewDistanceM, pitch: (campRecipe.rest.viewPitchDeg * Math.PI) / 180 });
+        walk.downHere();
+      }
+    }
+  }
+  // A long, slow look (P2e, src/world/creatures/tea-reveal.js): an unfound creature gives itself away
+  // once while that tea lasts. A strong back: the dig's swing keeps pace with its quicker beats.
+  const teaReveal = createTeaReveal({ frogs: () => creatures.frogs(), schools, ripples, you: () => (walk.below ? walk.you() : null), spend: () => camp.boons.spendReveal() });
+  sim.addSystem({ id: 'tea-reveal', tick: (/** @type {any} */ f) => teaReveal.update(f.realDt) });
+  setActRate((name) => (name === 'dig' ? 1 / Math.max(0.25, getStore('boonLift')?.dig ?? 1) : 1));
 
   /**
    * A dry, grassy ground point near the view's middle, out of the tide, for a test log: on a widening

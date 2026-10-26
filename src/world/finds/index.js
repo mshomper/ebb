@@ -219,7 +219,8 @@ export function createFinds(opts) {
     refresh();
     if (!rect) return;
     const t = camera.target, eye = feltAt();
-    const near2 = recipe.nearM * recipe.nearM;
+    // A tea's bright eye (P2e, boonLift.sight) shows them from further off.
+    const nearM = recipe.nearM * (getStore('boonLift')?.sight ?? 1), near2 = nearM * nearM;
     const tide = Math.floor((f.displayT / 3600) / 12);
     const hour = (((f.displayT / 3600) % 24) + 24) % 24;
     /** @type {typeof list} */ const all = [];
@@ -306,7 +307,7 @@ export function createFinds(opts) {
     });
     const Sd = S && force.dense ? { ...S, density: 0.3 } : S;
     const Jd = J && force.dense ? { ...J, density: 0.25 } : J;
-    const t = camera.target, near = recipe.nearM;
+    const t = camera.target, near = recipe.nearM * (getStore('boonLift')?.sight ?? 1);
     const i0 = Math.max(0, waterCellOf(t[0] - near) - rect.x), i1 = Math.min(rect.w - 1, waterCellOf(t[0] + near) - rect.x);
     const j0 = Math.max(0, waterCellOf(t[2] - near) - rect.y), j1 = Math.min(rect.h - 1, waterCellOf(t[2] + near) - rect.y);
     for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) {

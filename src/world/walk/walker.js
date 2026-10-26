@@ -15,6 +15,7 @@ import { findPath, nearestOpen, isOpen } from './path.js';
  * @property {(x: number, z: number) => number} ground the land's height (m)
  * @property {(x: number, z: number) => number} [nearest] distance to the nearest creature (m)
  * @property {import('./solids.js').Solids} [solids] solid things you cannot walk through
+ * @property {() => number} [paceK] a lift on every pace (a tea's boon, P2e; 1 without one)
  */
 
 /**
@@ -124,7 +125,7 @@ export function createWalker(R, env) {
     let pace = run ? P.briskMps : feel.creep && near < P.creepNearM ? P.creepMps : P.strollMps;
     const here = env.grid.cellAt(s.x, s.z);
     if (here >= 0 && env.depth(here) > P.wadeAnkleM) pace = Math.min(pace, P.wadeMps);
-    return pace;
+    return pace * (env.paceK?.() ?? 1);
   }
 
   /** Steering and rolling, when there is no way to follow (keys, doc 23). @param {number} dt */
@@ -338,6 +339,7 @@ export function createWalker(R, env) {
         // Wading past the ankle is slower, hurrying or not.
         const here = env.grid.cellAt(s.x, s.z);
         if (here >= 0 && env.depth(here) > P.wadeAnkleM) want = Math.min(want, P.wadeMps);
+        want *= env.paceK?.() ?? 1;
         // Slow down into the last stop, so arriving is gentle.
         const [gx, gz] = s.path[s.path.length - 1];
         const left = s.path.length === 1 ? Math.hypot(gx - s.x, gz - s.z) : Infinity;

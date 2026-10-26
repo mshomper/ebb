@@ -50,10 +50,17 @@ function fill(keys) {
  */
 const speedOf = (track) => (track?.speed > 0 ? track.speed : 1);
 
+/** A lift on an act's pace by its name (a tea's boon, P2e: the dig quicker); 1 for none. @type {(name: string) => number} */
+let rateOf = () => 1;
+/** Set the acts' lift (app.js, from the store slice boonLift). @param {(name: string) => number} fn */
+export function setActRate(fn) { rateOf = fn; }
+/** An act's pace now: its track's speed with the lift. @param {any} PO @param {string} name */
+const actSpeed = (PO, name) => speedOf(PO[name]) * Math.max(0.25, rateOf(name) || 1);
+
 /** How long an act lasts (s): its last key, at its speed. 0 for a name that is not an act. @param {any} PO poses @param {string} name */
 export function actLength(PO, name) {
   const keys = ACTS.includes(name) ? PO[name]?.keys : null;
-  return keys?.length ? keys[keys.length - 1].t / speedOf(PO[name]) : 0;
+  return keys?.length ? keys[keys.length - 1].t / actSpeed(PO, name) : 0;
 }
 
 /**
@@ -61,7 +68,7 @@ export function actLength(PO, name) {
  * @param {any} PO poses @param {string} name @param {number} u @returns {ActPose}
  */
 export function actPose(PO, name, u) {
-  return posed(PO[name].keys, u * speedOf(PO[name]));
+  return posed(PO[name].keys, u * actSpeed(PO, name));
 }
 
 /** The gestures there are (named in the recipe, keys or not). @param {any} PO poses */

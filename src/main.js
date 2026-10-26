@@ -32,6 +32,7 @@ import { mountReveal } from './ui/reveal.js';
 import { showDamaged, noticeRecovered } from './ui/damaged.js';
 import { mountHud } from './ui/hud.js';
 import { mountClockDial } from './ui/clock-dial.js';
+import { mountBoonBadge } from './ui/boon-badge.js';
 import { mountWalk } from './ui/walk.js';
 import { mountHoverTag } from './ui/hover-tag.js';
 import { mountPack } from './ui/pack.js';
@@ -85,6 +86,8 @@ startApp(canvas, { onDeviceLost: (rebuilding) => showRebuildingNote(rebuilding),
       const hud = await mountHud(document.body);
       hudLayer = hud.layer;
       await mountClockDial(hud.layer);
+  // The tea's boon under the clock (P2e): its herb, a draining ring, its words on hover.
+  mountBoonBadge(hud.layer);
       mountTools(hud.layer, (await loadRecipe('world/intro')).hints.tools);
       // The piece playing, its name softly near the bottom, halfway through (src/ui/now-playing.js).
       mountNowPlaying().catch((err) => console.warn('ebb: the now-playing line did not mount', err));

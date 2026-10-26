@@ -25,7 +25,8 @@ const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<
  */
 function glyph(kind, cls = '') {
   const shaped = kind.startsWith('shaped:');
-  const icon = shaped ? makeIcon(kind.slice(7)) : itemIconFor(kind);
+  // A herb laid dried off the rack at the tea pot (P2e): 'dried:<kind>', its rack bunch glyph.
+  const icon = shaped ? makeIcon(kind.slice(7)) : kind.startsWith('dried:') ? driedIconFor(kind.slice(6)) : itemIconFor(kind);
   return icon ? itemIconSvg(icon, `${cls}${shaped ? ' is-raw' : ''}`.trim()) : '';
 }
 

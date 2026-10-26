@@ -43,10 +43,29 @@
   "nothingHoldSNote": "Parts that make nothing together stay on the surface this long (real seconds) with the calm line, then go back to their pouches.",
 
   "boons": {
+    "watermint": { "walk": 1.05, "h": 8 },
     "meadowsweet": { "trust": 1.05, "h": 8 },
-    "meadowsweet+chamomile": { "trust": 1.12, "h": 16 }
+    "gorse": { "sight": 1.5, "h": 8 },
+    "nettle": { "dig": 0.9, "h": 8 },
+    "chamomile": { "comfort": 0.9, "h": 8 },
+    "willow": { "make": 0.85, "burn": 1.1, "h": 8 },
+    "watermint+nettle": { "walk": 1.1, "dig": 0.85, "h": 16 },
+    "meadowsweet+chamomile": { "trust": 1.12, "comfort": 0.85, "h": 16 },
+    "gorse+chamomile": { "sight": 2.2, "reveal": true, "h": 16 },
+    "willow+gorse": { "make": 0.75, "handful": 0.15, "h": 16 },
+    "willow+chamomile": { "dried": 1, "rest": ["meadowsweet", "watermint"], "h": 24 },
+    "meadowsweet+watermint": { "trust": 1.05, "walk": 1.05, "h": 24, "after": "willow+chamomile" }
   },
-  "boonsNote": "Tea boons (P2e, approved October 25, 2026), only the friendship numbers so far, set by P2h for the trust lab: trust multiplies every trust gain while the boon lasts (h game hours on the island). P2e fills in the rest of the table.",
+  "boonsNote": "Tea boons (P2e, approved October 25, 2026). Keys are teas.herbs names, a blend's two joined by + in either order. h: game hours on the island it lasts (it counts down only while you are there, never in time away). walk: walk speed; trust: every trust gain (read by trust.js and swarms.js); comfort: a creature's comfort ring (0.9 lets you 10% closer before it shies); sight: how far finds and gather spots show; dig: dig time; make: make time at the stations; burn: how long the fire burns on its fuel; handful: the chance (seeded) of an extra handful at each gather; reveal: an unfound creature gives itself away once, a call or a ripple. dried: how many of the two herbs must come dried off the rack. rest: Deep rest gives no lift itself; rest in the tent while it lasts and you wake with these two herbs' boons together for after's h. A key with after: a boon only that blend gives on waking, never brewed. Boons lift the walker and the walker's friendships, never growth or the land.",
+
+  "teas": {
+    "herbs": { "watermint": "watermint.leaves", "meadowsweet": "meadowsweet.flowers", "gorse": "gorse.flowers", "nettle": "nettle.tops", "chamomile": "chamomile.flowers", "willow": "willow.bark" },
+    "strength": ["willow", "nettle", "gorse", "chamomile", "meadowsweet", "watermint"],
+    "steepS": 3.2,
+    "sipS": 4.5,
+    "left": [[0.66, "strong"], [0.33, "half"], [0.1, "low"], [0, "last"]]
+  },
+  "teasNote": "Brewing at the tea pot (P2e). herbs: each tea herb's short name and the pack kind it is. strength: the order that decides any other pair (the stronger herb's single boon, with a taste line the first time). steepS: real seconds the pot steeps after Brew (steam rises); sipS: real seconds the walker sits and sips (figure.json gestures.sip). left: the HUD's word for how much is left, by share (words.teaLeft).",
 
   "words": {
     "workbenchSlot": { "name": "Workbench ground", "line": "Level ground facing the fire. A stone slab on a frame would make a bench here.", "needs": "A bench here needs two handfuls of flat stones.", "build": "Build the workbench" },
@@ -109,6 +128,24 @@
     "workTake": "Take up the charcoal sticks",
     "workWaiting": "Withies in the ashes, waiting for a night of fire.",
     "workDone": "Charcoal sticks, ready in the ashes.",
+    "teapot": { "name": "Tea pot", "brew": "Brew", "laid": "Lay a herb, or two. Click one to take it back.", "noWater": "The pot is empty. Fill it at the spring first.",
+      "sea": "Sea water. Pour it out and fill it at the spring.", "noFire": "Light the fire under it first.", "noCup": "A cup to drink from first. Shape one at the workbench.",
+      "steeping": "Steeping.", "rack": "On the rack", "dried": "dried", "noHerbs": "No herbs in the pack, on the rack or in the hamper." },
+    "boonNames": { "watermint": "Light on your feet", "meadowsweet": "Easy company", "gorse": "A bright eye", "nettle": "A strong back", "chamomile": "A calm way about you",
+      "willow": "Steady hands", "watermint+nettle": "Out all day", "meadowsweet+chamomile": "Old friends", "gorse+chamomile": "A long, slow look",
+      "willow+gorse": "A good day's work", "willow+chamomile": "Deep rest", "meadowsweet+watermint": "Easy company, light on your feet" },
+    "boonLines": { "watermint": "Your step is lighter.", "meadowsweet": "Creatures warm to you sooner.", "gorse": "Finds and good picking show from further off.",
+      "nettle": "The shovel bites easier.", "chamomile": "Creatures let you come a little closer.", "willow": "Making goes quicker, and the fire lasts longer.",
+      "watermint+nettle": "A quick step and an easy shovel.", "meadowsweet+chamomile": "Creatures warm to you, and let you near.",
+      "gorse+chamomile": "Finds show from far off, and something hidden may give itself away.", "willow+gorse": "Quick making, and now and then an extra handful.",
+      "willow+chamomile": "Rest in the tent tonight and wake to an easy day.", "meadowsweet+watermint": "Rested well. Easy company and a light step all day." },
+    "drank": "{tea} tea. {name}.",
+    "teaNames": { "watermint": "Water mint", "meadowsweet": "Meadowsweet", "gorse": "Gorse", "nettle": "Nettle", "chamomile": "Chamomile", "willow": "Willow bark" },
+    "tasteNames": { "watermint": "mint", "meadowsweet": "meadowsweet", "gorse": "gorse", "nettle": "nettle", "chamomile": "chamomile", "willow": "willow" },
+    "taste": ["{A} and {b}. Pleasant. Nothing more.", "{A} and {b}. Warm, and no more than that.", "{A} with {b}. A good cup, and that is all."],
+    "tasteDry": { "willow+chamomile": "Willow and chamomile. Thin. Perhaps it wants something drier." },
+    "teaLeft": { "strong": "Still strong.", "half": "Half gone.", "low": "Wearing off.", "last": "Nearly gone." },
+    "woke": "You slept deep. An easy day ahead.",
     "page": {
       "entry": "Camp",
       "entryLine": "What you have made, and when.",
@@ -116,7 +153,9 @@
       "back": "Back to the notes",
       "empty": "Nothing made yet but the fire ring.",
       "firsts": "First made",
-      "now": "The camp now"
+      "now": "The camp now",
+      "teas": "Teas",
+      "tastes": "Tried together"
     },
     "pageNames": { "ring": "Fire ring", "workbench": "Workbench", "shovel": "Shovel", "rush-cord": "Rush cord", "apothecary": "Apothecary bench", "rack": "Drying rack",
       "mortar": "Mortar and pebble", "hamper": "Rush hamper", "hamper2": "Second hamper", "dry": "First herbs drying", "grind": "Crushed shell", "willow-charcoal": "Willow charcoal",

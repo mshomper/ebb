@@ -218,7 +218,8 @@ export function createDig(o) {
   function step(dt) {
     if (!pending) return;
     const P = pending;
-    P.t += dt;
+    // A tea's strong back (P2e, boonLift.dig 0.9: a tenth quicker); the act's swing keeps pace (acts.js).
+    P.t += dt / Math.max(0.25, get('boonLift')?.dig ?? 1);
     const beat = (/** @type {string} */ id, /** @type {number} */ at, /** @type {() => void} */ fn) => { if (P.t >= at && !P.steps.has(id)) { P.steps.add(id); fn(); } };
     beat('bite', A.biteS, () => { emitDeferred('dig:sound', { name: P.layer, seed: P.k }); o.presence?.edit?.(P.x, P.z); });
     beat('lift', A.liftS, () => emitDeferred('dig:sound', { name: 'lift', seed: P.k }));

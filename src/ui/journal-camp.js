@@ -10,6 +10,7 @@ import { itemIconSvg } from './icons/items.js';
 import { itemIconFor } from './icons/item-registry.js';
 import { dateOfHour } from '../world/journal/observe.js';
 import { partKinds, buildKinds } from '../world/camp/making.js';
+import { cleanTeaNotes } from '../world/camp/brew.js';
 
 /** @param {string} s */
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c] ?? c);
@@ -89,5 +90,26 @@ export function campView(C, camp, cook, pad, words) {
     <h4 class="ebb-camppage__h">${esc(P.now)}</h4>
     ${campSketch(pad, camp)}
     <h4 class="ebb-camppage__h">${esc(P.firsts)}</h4>
-    ${rows ? `<ul class="ebb-camppage__list">${rows}</ul>` : `<p class="ebb-journal__voice">${esc(P.empty)}</p>`}</section>`;
+    ${rows ? `<ul class="ebb-camppage__list">${rows}</ul>` : `<p class="ebb-journal__voice">${esc(P.empty)}</p>`}
+    ${teasView(C, cook, words)}</section>`;
+}
+
+/**
+ * The teas found (P2e): each the first time it was drunk, its herbs drawn, its boon's name and words
+ * and the date; then the pairs tried that came to nothing more, by their taste lines. Nothing lists
+ * what is unfound. '' before the first cup. @param {any} C @param {any} cook @param {any} words
+ */
+export function teasView(C, cook, words) {
+  const P = C.words.page, W = C.words, notes = cleanTeaNotes(cook?.teas);
+  const found = Object.entries(notes.found).sort((a, b) => a[1] - b[1]);
+  if (!found.length) return '';
+  const rows = found.map(([id, hour]) => {
+    const glyphs = id.split('+').map((h) => { const i = itemIconFor(C.teas?.herbs?.[h] ?? h); return i ? itemIconSvg(i) : ''; }).join('');
+    const line = `${W.boonNames?.[id] ?? id}. ${W.boonLines?.[id] ?? ''} ${dateOfHour(hour, words)}.`;
+    return `<li class="ebb-camppage__first"><span class="ebb-camppage__parts" aria-hidden="true">${glyphs}</span><span class="ebb-camppage__line">${esc(line)}</span></li>`;
+  }).join('');
+  const tastes = Object.entries(notes.tastes).sort((a, b) => (notes.tried[a[0]] ?? 0) - (notes.tried[b[0]] ?? 0))
+    .map(([, line]) => `<li class="ebb-journal__voice">${esc(line)}</li>`).join('');
+  return `<h4 class="ebb-camppage__h">${esc(P.teas)}</h4><ul class="ebb-camppage__list">${rows}</ul>
+    ${tastes ? `<h4 class="ebb-camppage__h">${esc(P.tastes)}</h4><ul class="ebb-camppage__list ebb-camppage__tastes">${tastes}</ul>` : ''}`;
 }

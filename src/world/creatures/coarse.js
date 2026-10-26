@@ -207,7 +207,7 @@ export function bringFrogs(state, hourIndex, env, count) {
     fr.lastJoin = hourIndex;
     events.push({ name: 'creature:settled', payload: { species: 'frogs', id: fr.frogs[0].id, x: fr.frogs[0].x, z: fr.frogs[0].z } });
   } else if (fr.frogs.length === 1) fr.phase = 'visiting';
-  events.push(...applyTrust(fr, rec.presence, env.testTrust ?? 0, rec.feed?.fullH));
+  events.push(...applyTrust(fr, rec.presence, env.testTrust ?? 0, rec.feed?.fullH, env.trustBoost ?? 1));
   return { state: { ...state, creatures: { ...(state.creatures ?? {}), frogs: fr } }, events };
 }
 
@@ -259,7 +259,7 @@ export function coarseStep(state, hourIndex, env) {
     }
   }
   // Trust earned since the last hour (watching, feeding, the camp), and `?trust=` when testing.
-  events.push(...applyTrust(fr, rec.presence, env.testTrust ?? 0, rec.feed?.fullH));
+  events.push(...applyTrust(fr, rec.presence, env.testTrust ?? 0, rec.feed?.fullH, env.trustBoost ?? 1));
 
   // Winter: asleep in the pond mud, mood held, nothing comes or goes.
   const dormant = !!state.seasons?.dormant?.[E.dormancy];

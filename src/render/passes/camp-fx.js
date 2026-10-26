@@ -22,6 +22,7 @@ const FLOATS = 56;
  * @property {number[] | null} lantern  its glass [x, y, z], null when out
  * @property {number[] | null} sparks   the steel [x, y, z, seconds since the strike (+10 per earlier strike)], or null
  * @property {boolean} moths      after dark
+ * @property {number[] | null} [steam] a pot's steam on the hearth [x, y, z, amount 0..2] (P2e), or null
  * @property {number} time        real seconds
  */
 
@@ -29,16 +30,22 @@ const FLOATS = 56;
  * @param {{ recipe: any, low?: boolean }} opts recipe: recipes/world/camp.json; low: the low tier (fewer puffs and moths)
  */
 export function createCampFxPass(opts) {
-  const R = opts.recipe, F = R.flame, S = R.smoke, M = R.moths, K = R.steel;
+  const R = opts.recipe, F = R.flame, S = R.smoke, M = R.moths, K = R.steel, ST = R.steam;
   const puffs = opts.low ? S.lowCount : S.count, moths = opts.low ? M.lowCount : M.count;
+  const wisps = ST ? (opts.low ? ST.lowCount : ST.count) : 0;
   const data = new Float32Array(FLOATS);
+  // The steam (P2e) is drawn by the smoke's own pipeline from a copy of the uniforms with its own
+  // place, look and count.
+  const steamData = new Float32Array(FLOATS);
   let on = false;
   /** @type {GPURenderPipeline} */ let glowPipe;
   /** @type {GPURenderPipeline} */ let smokePipe;
   /** @type {GPURenderPipeline} */ let mothPipe;
   /** @type {GPUBuffer} */ let ubuf;
   /** @type {GPUBindGroup} */ let group;
-  let smokeOn = false, flameOn = false, mothsOn = false;
+  /** @type {GPUBuffer} */ let steamBuf;
+  /** @type {GPUBindGroup} */ let steamGroup;
+  let smokeOn = false, flameOn = false, mothsOn = false, steamOn = false;
 
   const pass = {
     name: 'campfx',
@@ -48,7 +55,7 @@ export function createCampFxPass(opts) {
 
     /** This frame's fire, or null when there is nothing to draw. @param {CampFxFrame | null} f */
     set(f) {
-      on = !!f && (f.flame > 0 || f.smoke > 0 || f.embers > 0 || !!f.lantern || !!f.sparks);
+      on = !!f && (f.flame > 0 || f.smoke > 0 || f.embers > 0 || !!f.lantern || !!f.sparks || (!!f.steam && f.steam[3] > 0 && wisps > 0));
       if (!f || !on) return;
       const L = f.lantern;
       smokeOn = f.smoke > 0;
@@ -71,6 +78,17 @@ export function createCampFxPass(opts) {
         sp ? sp[0] : 0, sp ? sp[1] : 0, sp ? sp[2] : 0, sp ? sp[3] : -1,
         K.sparks, K.sparkS, K.sparkNits, f.moths ? 1 : 0,
       ]);
+      const st = f.steam;
+      steamOn = !!st && st[3] > 0 && wisps > 0;
+      if (steamOn && st) {
+        steamData.set(data);
+        steamData.set([st[0], st[1], st[2]], 0);
+        steamData.set([st[3], ST.opacity], 4);
+        steamData[9] = ST.riseMps;
+        // Rising from the pot's top itself: no flame height under it.
+        steamData[16] = 0;
+        steamData.set([ST.lifeS, ST.sizeM[0], ST.sizeM[1], ST.spreadM, ST.albedo[0], ST.albedo[1], ST.albedo[2], ST.nearFadeM[0], ST.nearFadeM[1], wisps], 24);
+      }
     },
 
     /** @param {PassContext} ctx */
@@ -96,6 +114,8 @@ export function createCampFxPass(opts) {
       ]);
       ubuf = makeBuffer(d, { label: 'campfx', size: FLOATS * 4, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
       group = d.createBindGroup({ label: 'campfx', layout, entries: [{ binding: 0, resource: { buffer: ubuf } }] });
+      steamBuf = makeBuffer(d, { label: 'campfx-steam', size: FLOATS * 4, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
+      steamGroup = d.createBindGroup({ label: 'campfx-steam', layout, entries: [{ binding: 0, resource: { buffer: steamBuf } }] });
     },
 
     resize() {},
@@ -104,6 +124,7 @@ export function createCampFxPass(opts) {
     record(encoder, ctx) {
       if (!glowPipe || !on) return;
       ctx.device.queue.writeBuffer(ubuf, 0, data);
+      if (steamOn) ctx.device.queue.writeBuffer(steamBuf, 0, steamData);
       const rp = encoder.beginRenderPass({
         label: 'campfx',
         colorAttachments: [{ view: ctx.targets.hdr.createView(), loadOp: 'load', storeOp: 'store' }],
@@ -116,6 +137,7 @@ export function createCampFxPass(opts) {
       // Moths first (opaque wings), then the smoke over them, then the flame's light added on top.
       if (mothsOn) { rp.setPipeline(mothPipe); rp.draw(12, moths); }
       if (smokeOn) { rp.setPipeline(smokePipe); rp.draw(6, puffs); }
+      if (steamOn) { rp.setPipeline(smokePipe); rp.setBindGroup(2, steamGroup); rp.draw(6, wisps); rp.setBindGroup(2, group); }
       if (flameOn) { rp.setPipeline(glowPipe); rp.draw(6, F.cards + 2 + K.sparks); }
       rp.end();
     },

@@ -196,6 +196,8 @@ export function createStations(k) {
   const nameOf = (/** @type {string} */ kind) => (kind.startsWith('shaped:') ? W.shapedNames?.[kind.slice(7)] ?? kind.slice(7) : o.pack?.nameOf?.(kind) ?? kind);
   /** Room on the workbench for another shaped piece to wait (cook.json shaped.max). */
   const benchRoom = () => shapedOn(k.camp()).length < (C.shaped?.max ?? 4);
+  /** How long a make takes now: a tea's steady hands make it quicker (P2e, boonLift.make). */
+  const makeS = () => C.makeS * (get('boonLift')?.make ?? 1);
 
   /** The action a station shows: its make's own (Dry, Grind), else the station's. @param {string} id @param {string | null} make */
   function actionOf(id, make) {
@@ -292,7 +294,7 @@ export function createStations(k) {
     // A shaped piece needs room on the workbench to wait for the fire (S5).
     if (C.makes[L.make].out === 'shaped' && !benchRoom()) { open.line = W.benchFull; publish(); return; }
     const at = stationAt(open.id);
-    if (at) o.walk.kneelToward(at.x, at.z, C.makeS, 'make');
+    if (at) o.walk.kneelToward(at.x, at.z, makeS(), 'make');
     makeT = 0;
     publish();
   }
@@ -366,7 +368,8 @@ export function createStations(k) {
   const offs = [
     subscribe('identify', (/** @type {any} */ c) => {
       const id = c?.station ?? null;
-      if (!id) { if (open) close(); return; }
+      // The tea pot's workspace is its own (teapot.js, P2e).
+      if (!id || id === 'teapot') { if (open) close(); return; }
       if (open?.id !== id) { open = { id, laid: [], nothingT: 0, line: null }; makeT = -1; }
       publish();
     }),
@@ -450,7 +453,7 @@ export function createStations(k) {
       // A camp with a hamper and heaps still lying out (a save loaded, a test link): they move in.
       if ((retireT -= dt) <= 0) { retireT = 1; if (keeps.hamper.here()) keeps.retireHeaps(); }
       if (!open) return;
-      if (makeT >= 0 && (makeT += dt) >= C.makeS) made();
+      if (makeT >= 0 && (makeT += dt) >= makeS()) made();
       if (open && open.nothingT > 0 && (open.nothingT -= dt) <= 0) { open.laid = []; open.nothingT = 0; open.line = W.nothing; publish(); }
       const at = open ? stationAt(open.id) : null;
       if (open && at && o.walk.distTo(at.stand.x, at.stand.z) > at.reachM + S.awayM && makeT < 0 && !k.player.busy()) dispatch({ type: 'ui.identify' });
