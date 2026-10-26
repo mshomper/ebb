@@ -648,12 +648,13 @@ export async function startApp(canvas, hooks = {}) {
   on('world:caught-up', () => gather.expire());
   // Treats (P2h; src/world/creatures/treats.js): Set out on a pouch's card puts a handful down in front
   // of you and the nearest creature that likes it comes and eats it at once; one nobody wants fades
-  // back into the ground. `?treats` (a test link, unsaved): a pouch of wrack and a pouch of leaf packs.
+  // back into the ground. `?treats` (a test link, unsaved): a pouch of wrack, a pouch of leaf packs and
+  // a handful of fallen leaves (with `&camp=bench`, enough to make another leaf pack).
   const treats = createTreats({ recipe: await loadRecipe('world/treats'), pack, walk, hour: () => clock.worldT() / 3600,
     species: [{ key: 'frogs', rec: frogRecipe, live: creatures },
       ...swarmSpecies(speciesRecipes).filter((rec) => rec.treat).map((rec) => ({ key: keyOf(rec), rec, live: schools.find((s) => s.id === keyOf(rec)) ?? null }))] });
   updateStore('treatKinds', () => pack.recipe.kinds.map((/** @type {any} */ k) => k.id).filter((/** @type {string} */ k) => treats.isTreat(k)));
-  if (params.has('treats') && !back) { pack.add('wrack', 3); pack.add('leaf-pack', 3); }
+  if (params.has('treats') && !back) { pack.add('wrack', 3); pack.add('leaf-pack', 3); pack.add('leaves', 1); }
   // `?treats&frogs=N`: once the frogs are there, you stand on the bank a few steps from one, facing it.
   if (params.has('treats') && params.has('frogs') && !back) {
     let stood = false;
