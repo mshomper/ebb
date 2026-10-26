@@ -91,7 +91,11 @@ export function createSchools(opts) {
   /** @type {any} */ let shown = null;
   let acc = 0, watched = 0;
   const watching = P.watch ? createWatching(P.watch) : null;
-  /** Crumbs a school is swimming up to, by school id. @type {{ id: number, x: number, z: number }[]} */
+  /**
+   * Crumbs (or a treat, P2h) a school is swimming up to, by school id; a treat's moment still lying
+   * (waitS), its seconds nibbled (nibbleS) and how many swirls it has had.
+   * @type {{ id: number, x: number, z: number, treat?: string, tid?: number, waitS?: number, nibbleS?: number, swirls?: number }[]}
+   */
   let foods = [];
   const stepS = 1 / (M.stepHz ?? 30);
   /** Seconds of real time these schools have run, the clock their rises are stamped with. */
@@ -275,6 +279,23 @@ export function createSchools(opts) {
       return msg('coming');
     },
 
+    /**
+     * A treat this species likes set in the water at (x, z) (P2h, treats.js): the nearest school
+     * within reachM swirls up to it at once, found or not. Returns 'coming', 'none' or 'land'; once
+     * eaten, `treat:taken` says so with the treat's id.
+     * @param {number} x @param {number} z @param {{ treat: string, tid: number, reachM: number }} t
+     */
+    treat(x, z, t) {
+      if (water.sampleLive(x, z).depth < 0.1) return 'land';
+      if (world.state?.creatures?.[key]?.dormant) return 'none';
+      let best = null, bestD = t.reachM;
+      for (const s of schools.values()) { const c = s.centre(); const d = Math.hypot(c.x - x, c.z - z); if (d < bestD) { bestD = d; best = s; } }
+      if (!best) return 'none';
+      // It lies a moment first (treat.noticeS), then the school swirls up and nibbles (tick).
+      foods = [...foods.filter((g) => g.id !== best.id), { id: best.id, x, z, treat: t.treat, tid: t.tid, waitS: recipe.treat?.noticeS ?? 0, nibbleS: 0, swirls: 0 }];
+      return 'coming';
+    },
+
     /** @param {import('../../sim/live-sim.js').FrameInfo} f */
     tick(f) {
       if (!water.sim.live) return;
@@ -316,12 +337,26 @@ export function createSchools(opts) {
       for (const fd of foods.slice()) {
         const s = schools.get(fd.id);
         if (!s) { foods = foods.filter((g) => g !== fd); continue; }
+        // A treat: after its moment lying, the school swirls up to it, and keeps swirling round it
+        // (up to a few times) while it nibbles, nibbleS seconds near before it is eaten.
+        if (fd.treat) {
+          if (/** @type {number} */ (fd.waitS) > 0) { fd.waitS = /** @type {number} */ (fd.waitS) - f.realDt; continue; }
+          if (!s.feeding) {
+            if ((fd.swirls = (fd.swirls ?? 0) + 1) > 4) { foods = foods.filter((g) => g !== fd); continue; }
+            s.feed({ x: fd.x, z: fd.z });
+          }
+        }
         const c = s.centre();
-        if (Math.hypot(c.x - fd.x, c.z - fd.z) < 0.5) {
+        const near = Math.hypot(c.x - fd.x, c.z - fd.z) < 0.5;
+        if (fd.treat && near) fd.nibbleS = (fd.nibbleS ?? 0) + f.realDt;
+        if (fd.treat ? (fd.nibbleS ?? 0) >= (recipe.treat?.nibbleS ?? 0) : near) {
           foods = foods.filter((g) => g !== fd);
-          world.state = addSwarmEvent(world.state, key, { kind: 'fed', hour: hourIndex() });
+          if (fd.treat) {
+            world.state = addSwarmEvent(world.state, key, { kind: 'treat', hour: hourIndex(), treat: fd.treat });
+            emitDeferred('treat:taken', { species: key, id: fd.id, treat: fd.treat, tid: fd.tid });
+          } else world.state = addSwarmEvent(world.state, key, { kind: 'fed', hour: hourIndex() });
           updateStore('world', () => world.state);
-        } else if (!s.feeding) foods = foods.filter((g) => g !== fd);
+        } else if (!s.feeding && !fd.treat) foods = foods.filter((g) => g !== fd);
       }
       acc = Math.min(acc + f.realDt, stepS * 6);
       while (acc >= stepS) { clockS += stepS; for (const s of schools.values()) s.step(stepS); acc -= stepS; }

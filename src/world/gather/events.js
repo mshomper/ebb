@@ -13,6 +13,7 @@
 // waters just before the world's first hour), so the save's number[] holds it as it is.
 
 import { cleanAshes } from './ashes.js';
+import { cleanTreats } from '../creatures/treat-rules.js';
 
 /** Period tags, in a period's low three bits. New tags go at the end. */
 export const PERIOD = Object.freeze({ day: 0, tide: 1, ring: 2, year: 3 });
@@ -99,8 +100,9 @@ const isInt = (v) => typeof v === 'number' && Number.isInteger(v);
  * @param {any} v @returns {{ version: 1, events: number[], ashes?: import('./ashes.js').AshPatch[] }}
  */
 export function cleanGather(v) {
-  const ashes = cleanAshes(v?.ashes);
-  return { ...cleanEvents(v), ...(ashes.length ? { ashes } : {}) };
+  const ashes = cleanAshes(v?.ashes), treats = cleanTreats(v?.treats);
+  // Treats set out and lying (P2h, creatures/treats.js).
+  return { ...cleanEvents(v), ...(ashes.length ? { ashes } : {}), ...(treats.length ? { treats } : {}) };
 }
 
 /** @param {any} v @returns {{ version: 1, events: number[] }} */

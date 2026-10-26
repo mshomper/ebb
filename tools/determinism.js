@@ -13,6 +13,7 @@ import { haulsJob } from '../src/world/nets/haul.js';
 import { gatherCheckJob } from '../src/world/gather/check.js';
 import { campCheckJob } from '../src/world/camp/check.js';
 import { digCheckJob } from '../src/world/dig/check.js';
+import { treatCheckJob } from '../src/world/creatures/treat-check.js';
 
 const JOB = { module: './world/terrain/landform.js', fn: 'buildBase' };
 /** The island's open chunks, row by row, from its land recipe (useChunks). */
@@ -435,6 +436,47 @@ function showDig(g) {
     `<p class="muted">Over 14 game days of ten digs a day: ${main.worms} worms, ${main.clay} handfuls of clay and ${main.keepsakes} keepsakes (the island's budget holds them to about one a day).</p>`;
 }
 
+const TREAT_JOB = { module: './world/creatures/treat-check.js', fn: 'treatCheckJob' };
+
+/**
+ * Trust with treats (P2h): a seeded month of watching, meals and treats for three frogs and a
+ * school, applied hour by hour and all at once, and treats set out and fading, on the page and in a
+ * worker. @param {number} worldSeed
+ */
+async function runTreats(worldSeed) {
+  const get = (/** @type {string} */ p) => fetch(`../recipes/${p}.json`).then((r) => r.json());
+  const args = { worldSeed, frog: await get('species/frog'), minnow: await get('species/minnow'), treats: await get('world/treats') };
+  const main = treatCheckJob(args);
+  initWorkers({ size: 1 });
+  let worker;
+  try { worker = await run(TREAT_JOB, args); } finally { dispose(); }
+  return { main, worker };
+}
+
+/** @param {Awaited<ReturnType<typeof runTreats>>} g */
+function showTreats(g) {
+  let card = document.getElementById('treatCard');
+  if (!card) {
+    card = document.createElement('div');
+    card.className = 'card';
+    card.id = 'treatCard';
+    /** @type {HTMLElement} */ (document.getElementById('digCard') ?? document.getElementById('campCard') ?? $('chunks').closest('.card')).after(card);
+  }
+  const { main, worker } = g;
+  /** @param {string} label @param {number} a @param {number} b @param {string} [an] @param {string} [bn] */
+  const row = (label, a, b, an = 'Main thread', bn = '1 worker') => {
+    const ok = a === b;
+    return `<div class="row total"><span class="label">${label}</span><span class="hash">${hex(a)}<small>${an}</small></span>` +
+      `<span class="hash">${hex(b)}<small>${bn}</small></span><span class="v ${ok ? 'ok' : 'bad'}">${icon(ok)}${ok ? 'match' : 'differ'}</span></div>`;
+  };
+  card.innerHTML = '<h2>Trust with treats</h2>' +
+    row('A month of trust, hour by hour', main.timeline, worker.timeline) +
+    row('Frogs: each hour against one late tick', main.frogsEach, main.once, 'Each hourly tick', 'All at once') +
+    row('Trust at the month\'s end', main.each, worker.each) +
+    row('Treats lying and fading, watched against read later', main.watched, main.read, 'Each hour', 'From the save') +
+    `<p class="muted">After 30 game days the frogs know you ${main.trust.map((/** @type {number} */ t) => t.toFixed(3)).join(', ')} and the school ${main.school.toFixed(3)}; ${main.set} treats were set out.</p>`;
+}
+
 async function build() {
   const button = /** @type {HTMLButtonElement} */ ($('go'));
   const input = /** @type {HTMLInputElement} */ ($('seed'));
@@ -488,6 +530,12 @@ async function build() {
     } catch (e) {
       console.error('[determinism] digging', e);
       $('detail').textContent += ` The digging check failed: ${e instanceof Error ? e.message : String(e)}`;
+    }
+    try {
+      showTreats(await runTreats(worldSeed));
+    } catch (e) {
+      console.error('[determinism] trust with treats', e);
+      $('detail').textContent += ` The trust with treats check failed: ${e instanceof Error ? e.message : String(e)}`;
     }
   } catch (e) {
     console.error('[determinism]', e);

@@ -71,7 +71,8 @@ export function addFireProductsTests(test, assert, eq) {
     eq(share('charcoal', 0, periodOf(PERIOD.ring, 6), at(6 * 24 + 8), RECIPE), 0, 'the next day, no fire-night: none');
     eq(ringSpots(1.2, 2, 0, at(5 * 24 + 6), RECIPE).length, 2, 'a tap on the ring finds both');
     eq(spotsAt(9, 9, at(5 * 24 + 6), RECIPE).length, 0, 'a tap far off finds neither');
-    eq(KINDS.slice(-2).join(','), 'charcoal,ash', 'appended at the end of the kinds');
+    eq(KINDS.slice(KINDS.indexOf('charcoal'), KINDS.indexOf('charcoal') + 2).join(','), 'charcoal,ash', 'appended after shells, in order (P2h kinds follow)');
+    eq(KINDS.indexOf('charcoal'), KINDS.indexOf('shells') + 1, 'right after shells');
   });
 
   test(G, 'willow charcoal: done after eight hours of fire, lit or banked, however the hours are cut', () => {

@@ -30,7 +30,7 @@ import { stream, subSeed, det } from '../../core/rng.js';
 import { HOURS_PER_DAY } from '../../core/clock.js';
 import { cellCenter } from '../ecology/habitat.js';
 import { ecologyNow } from '../ecology/coarse.js';
-import { trustWord, maxTrust } from './trust.js';
+import { trustWord, maxTrust, treatGain } from './trust.js';
 import { swarmSpecies, keyOf } from '../species.js';
 
 /**
@@ -59,7 +59,8 @@ import { swarmSpecies, keyOf } from '../species.js';
  * @property {Group[]} groups
  * @property {number} [trust]  how well the species here knows you, 0..1, only ever growing (doc 23; absent is 0)
  * @property {number} [fedAt] the hour they last ate food you offered
- * @property {{ kind: 'watched'|'fed', minutes?: number, hour: number }[]} [pending]  trust earned in live play, for the next hour
+ * @property {{ kind: 'watched'|'fed'|'treat', minutes?: number, hour: number, treat?: string }[]} [pending]  trust earned in live play, for the next hour
+ * @property {number} [treatDay] the game day they last had a treat (P2h: one a day counts)
  */
 
 /** @returns {SwarmState} */
@@ -299,7 +300,7 @@ export function testRecipe(rec) {
 /**
  * Trust live play recorded for a school species (watching it quietly, feeding it), for the next
  * hourly tick to apply (doc 23). Pure: a new state.
- * @param {any} state @param {string} key @param {{ kind: 'watched'|'fed', minutes?: number, hour: number }} ev
+ * @param {any} state @param {string} key @param {{ kind: 'watched'|'fed'|'treat', minutes?: number, hour: number, treat?: string }} ev
  */
 export function addSwarmEvent(state, key, ev) {
   const S = state?.creatures?.[key];
@@ -311,21 +312,28 @@ export function addSwarmEvent(state, key, ev) {
  * Apply the recorded trust (changes S in place): watching earns trustPerMin a minute, a meal
  * feedTrust (less if they ate within feed fullH hours), never past the ceiling; `creature:trusted`
  * when the word moves up. @param {any} S @param {any} P the recipe's presence @param {string} key
+ * @param {number} [boost] a tea boon's multiplier on every gain (P2e; 1 without one)
  */
-export function applySwarmTrust(S, P, key) {
+export function applySwarmTrust(S, P, key, boost = 1) {
   /** @type {{ name: string, payload: any }[]} */ const events = [];
   const list = S.pending ?? [];
   if (!list.length || !P?.bands) { if (S.pending) delete S.pending; return events; }
   const before = S.trust ?? 0;
   let t = before;
   for (const ev of list) {
-    if (ev.kind === 'watched') t += (P.watch?.trustPerMin ?? 0) * (ev.minutes ?? 0);
+    if (ev.kind === 'watched') t += (P.watch?.trustPerMin ?? 0) * (ev.minutes ?? 0) * boost;
     else if (ev.kind === 'fed') {
       const full = P.fullH ?? 6;
       const hungry = S.fedAt === undefined ? 1 : Math.max(0, Math.min(1, (ev.hour - S.fedAt) / full));
-      t += (P.feedTrust ?? 0) * (0.25 + 0.75 * hungry);
+      t += (P.feedTrust ?? 0) * (0.25 + 0.75 * hungry) * boost;
       S.fedAt = ev.hour;
       events.push({ name: 'creature:ate', payload: { species: key } });
+    } else if (ev.kind === 'treat') {
+      // A treat (P2h): treatFeeds meals' worth, once a game day for the school; eaten at once.
+      const g = treatGain(P, S.treatDay, ev.hour);
+      t += g.gain * boost;
+      S.treatDay = g.day;
+      events.push({ name: 'creature:ate', payload: { species: key, treat: ev.treat } });
     }
   }
   delete S.pending;
