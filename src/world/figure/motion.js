@@ -108,6 +108,8 @@ export function createFigureMotion(R, skeleton) {
   const acts = { feed: null, arrive: null, leave: null, retreat: null, retreatSide: 1 };
   let wasRetreating = false;
   let info = {};
+  /** Holding the pot in both arms (S5), and how far the hands have come to it 0..1. */
+  let holding = false, holdE = 0;
 
   /** Set bone i's move and its matrix (parents are always set first). @param {number} i @param {import('../creatures/pose.js').BoneMove | null} mv */
   function set(i, mv) {
@@ -125,6 +127,8 @@ export function createFigureMotion(R, skeleton) {
     feed() { acts.feed = t; },
     /** You just went down: a look about and a tug of the brim. */
     arrive() { acts.arrive = t; acts.leave = null; aboveS = 0; },
+    /** Hold the pot in both arms, or let go (S5). @param {boolean} on */
+    hold(on) { holding = on; },
     /** You just went up: the figure looks up after you, and in a while sits to wait. */
     leave() { acts.leave = t; },
     /**
@@ -178,6 +182,7 @@ export function createFigureMotion(R, skeleton) {
     update(dtIn, s) {
       const dt = Math.min(Math.max(dtIn, 0), 0.1);
       t += dt;
+      holdE = Math.min(1, Math.max(0, holdE + (holding ? 1 : -1) * dt / Math.max(0.05, PO.hold?.easeS ?? 0.35)));
       // Placed somewhere new (going down elsewhere): start from rest, facing the walker's way.
       const snapTo = snap;
       snap = null;
@@ -450,6 +455,8 @@ export function createFigureMotion(R, skeleton) {
         if (crawlW > 0) { const h = C.hands[i]; goals.push({ at: [h[0], gnd(h[0], h[2]) + h[1], h[2]], w: crawlW * keep }); }
         if (i === 0 && tugW > 0) goals.push({ at: PO.arrive.tugHand, w: tugW * keep });
         if (A && aw > 0) { const h = i === 0 ? A.l : A.r; goals.push({ at: [h[0], centre + h[1], h[2]], w: aw }); }
+        // The pot in both arms (S5): the hands hold its sides in front of you.
+        if (holdE > 0 && PO.hold) { const h = i === 0 ? PO.hold.l : PO.hold.r; goals.push({ at: [h[0], centre + h[1], h[2]], w: smooth(holdE) * keep }); }
         const w = Math.min(1, goals.reduce((a, g) => a + g.w, 0));
         if (w > 0.001) {
           const at = [0, 1, 2].map((k) => goals.reduce((a, g) => a + g.at[k] * g.w, 0) / goals.reduce((a, g) => a + g.w, 0));

@@ -29,6 +29,7 @@ import { workDone as isDone } from './work.js';
  * @property {() => { rain: number }} weatherNow
  * @property {(p: { x: number, z: number } | null, m: number) => boolean} near
  * @property {any} [cookWords] recipes/world/cook.json words (the overnight work's lines, P2i)
+ * @property {(p: import('./work.js').WorkPiece) => boolean} [takeable] overnight work taken up from the ring into the pack (not a fired pot, S5)
  */
 
 /**
@@ -39,7 +40,7 @@ export function registerCampCards(W, CW = {}) {
   const C = (/** @type {any} */ c) => c?.camp;
   return [
     // Overnight work done in the ashes (P2i): the charcoal sticks taken up from the ring.
-    registerCardAction({ id: 'campworktake', icon: 'takeup', order: 4, main: true, label: CW.workTake ?? 'Take up',
+    registerCardAction({ id: 'campworktake', icon: 'takeup', order: 4, main: true, label: (c) => CW.workTakes?.[c?.workTakeId] ?? CW.workTake ?? 'Take up',
       when: (c) => C(c) === 'ring' && c.workDone > 0, action: () => ({ type: 'camp.workTake' }) }),
     registerCardAction({ id: 'camppitch', icon: 'pitch', order: 5, main: true, label: W.pitch,
       when: (c) => C(c) === 'tentSlot', action: () => ({ type: 'camp.pitch' }) }),
@@ -54,9 +55,9 @@ export function registerCampCards(W, CW = {}) {
     // Every card ties into the journal: the tent's into the keeper's first page, the stations' and
     // the benches' into the camp page (S1, src/ui/journal-camp.js).
     registerCardAction({ id: 'camppage', icon: 'journal', order: 90, label: 'The first page',
-      when: (c) => !!C(c) && !c.station && C(c) !== 'benchSlot', action: () => ({ type: 'ui.journal', open: true, view: 'keeper', keeper: 'first', page: null }) }),
+      when: (c) => !!C(c) && !c.station && !c.campPage && C(c) !== 'benchSlot', action: () => ({ type: 'ui.journal', open: true, view: 'keeper', keeper: 'first', page: null }) }),
     registerCardAction({ id: 'campmadepage', icon: 'journal', order: 90, label: 'The camp page',
-      when: (c) => !!c?.station || C(c) === 'benchSlot', action: () => ({ type: 'ui.journal', open: true, view: 'camp', page: null }) }),
+      when: (c) => !!c?.station || !!c?.campPage || C(c) === 'benchSlot', action: () => ({ type: 'ui.journal', open: true, view: 'camp', page: null }) }),
   ];
 }
 
@@ -82,13 +83,16 @@ export function campCardAt(k, x, z) {
     const at = fireAt(c.fire, k.hourNow(), F), word = at.word, rainy = k.weatherNow().rain > F.rainLow;
     const line = word === 'lit' ? (rainy ? W.ring.low : c.fire.charcoal && W.ring.charcoal ? W.ring.charcoal : at.high ? W.ring.high : W.ring.lowFlames) : W.ring[word] ?? W.ring.laid;
     const fuel = k.hasFuel();
-    // The overnight work laid in the ashes (P2i, work.js): waiting for its night, or done to take up.
-    const workDone = c.work.filter((p) => isDone(p, c.fire, k.hourNow(), F)).length;
+    // The overnight work laid in the ashes (P2i, work.js): waiting for its night, or done to take up;
+    // clay firing at the star's edge says so by its own make's line (S5).
+    const may = k.takeable ?? (() => true);
+    const done = c.work.filter((p) => may(p) && isDone(p, c.fire, k.hourNow(), F)), workDone = done.length;
     const CW = k.cookWords ?? {};
-    const workLine = workDone ? CW.workDone : c.work.length ? CW.workWaiting : null;
+    const first = done[0] ?? c.work[0];
+    const workLine = first ? (workDone ? CW.workDones?.[first.id] ?? CW.workDone : CW.workWaitings?.[first.id] ?? CW.workWaiting) : null;
     // The laid ring is the fire station (S1): its card opens as a workspace (stations.js).
     return { ...base, sp: 'camp:ring', camp: 'ring', station: 'fire', name: W.ring.name, icon: 'fire', text: [line, workLine].filter(Boolean).join(' '), wx: r.x, wz: r.z, r: 0.5,
-      canLight: (word === 'laid' || (word === 'cold' && fuel)) && k.beatAllows('dusk'), canFeed: (word === 'embers' || word === 'lit') && fuel, workDone };
+      canLight: (word === 'laid' || (word === 'cold' && fuel)) && k.beatAllows('dusk'), canFeed: (word === 'embers' || word === 'lit') && fuel, workDone, workTakeId: done[0]?.id ?? null };
   }
   return null;
 }

@@ -108,6 +108,9 @@ export function observeAnimals(j, out, ctx, at) {
       } else if (e.name === 'species:happy') {
         setFlag(j, 'frogs:happy');
         if (k.ever) note(rec, 'happy', 'frogs');
+      } else if (e.name === 'creature:ate' && e.payload.treat) {
+        // A frog took a treat (P2h): the first time teaches its Likes line, and says so.
+        if (learnOnce(k, `likes:${e.payload.treat}`)) note(rec, 'treat', 'frogs');
       } else if (e.name === 'creature:ate') {
         // A frog ate what you offered (S6c-2): noted the first time, and the web's "you" link inks.
         if (setFlag(j, 'you:fed') && k.ever) note(rec, 'fed', 'frogs');
@@ -226,6 +229,9 @@ function observeSchool(j, out, ctx, at, sp, rec, note) {
     } else if (e.name === 'species:happy') {
       setFlag(j, `${sp}:happy`);
       if (k.ever) note(rec, 'happy', sp);
+    } else if (e.name === 'creature:ate' && e.payload.treat) {
+      // They took a treat (P2h): the first time teaches its Likes line, and says so.
+      if (learnOnce(k, `likes:${e.payload.treat}`)) note(rec, 'treat', sp);
     } else if (e.name === 'creature:ate') {
       // They ate what you offered: noted the first time, and the web's "you" link inks.
       if (learnOnce(k, 'fed') && k.ever) note(rec, 'fed', sp);

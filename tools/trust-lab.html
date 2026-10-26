@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ebb trust lab</title>
+<link rel="icon" href="../brand/ebb-favicon.svg" type="image/svg+xml">
+<style>
+  @font-face { font-family: 'Nunito'; src: url('../src/vendor/fonts/nunito-latin-600-normal.woff2') format('woff2'); font-weight: 600; }
+  @font-face { font-family: 'Nunito'; src: url('../src/vendor/fonts/nunito-latin-800-normal.woff2') format('woff2'); font-weight: 800; }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; max-width: 100%; overflow-x: hidden; }
+  body { background: #F4EEE4; color: #1E2624; font: 600 17px/1.45 'Nunito', system-ui, sans-serif; padding: 16px; overflow-wrap: anywhere; }
+  main { max-width: 1200px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+  h1 { font-size: 24px; font-weight: 800; margin: 0; }
+  h2 { font-size: 19px; font-weight: 800; margin: 0 0 6px; }
+  .muted { color: #4A5551; font-size: 16px; margin: 0; }
+  .card { background: #FBF7F0; border: 1px solid #E3D9C9; border-radius: 14px; padding: 14px 16px; min-width: 0; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(460px, 100%), 1fr)); gap: 16px; }
+  .knobs { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(250px, 100%), 1fr)); gap: 6px 16px; }
+  .knobs label { display: grid; grid-template-columns: 1fr 4.5em; gap: 2px 8px; font-size: 15px; }
+  .knobs input[type=range] { grid-column: 1 / -1; width: 100%; }
+  .knobs b { text-align: right; }
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 15px; margin: 4px 0 8px; }
+  .legend i { display: inline-block; width: 22px; height: 4px; border-radius: 2px; vertical-align: 4px; margin-right: 6px; }
+  .legend i.dash { background: repeating-linear-gradient(90deg, #8E8C84 0 6px, transparent 6px 10px) !important; }
+  svg { width: 100%; height: auto; display: block; }
+  svg text { font: 600 15px 'Nunito', system-ui, sans-serif; fill: #4A5551; }
+  table { border-collapse: collapse; width: 100%; font-size: 15px; overflow-wrap: normal; }
+  th, td { text-align: left; padding: 4px 6px; border-bottom: 1px solid #E3D9C9; vertical-align: top; }
+  th { font-weight: 800; }
+  td.n { text-align: right; white-space: nowrap; }
+  .sw { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+  button { font: inherit; font-size: 16px; padding: 4px 10px; border-radius: 8px; cursor: pointer; background: #4a6a47; color: #FBF7F0; border: 1px solid #4a6a47; font-weight: 800; }
+  textarea { width: 100%; min-height: 150px; font: 15px/1.4 ui-monospace, monospace; }
+  a { color: #4a6a47; }
+</style>
+</head>
+<body>
+<main>
+  <h1>ebb trust lab</h1>
+  <p class="muted">Friendship pace (P2h, docs/future/13 section 8): how each creature's trust grows over played days (24 real minutes each at normal speed) for a keeper with the same habit every day. Each day becomes the trust events live play records, and the game's own rules apply them (<code>applyTrust</code>, <code>applySwarmTrust</code>), so the curves are the game's. Sliders try numbers live; nothing is saved. <a href="./">All tools</a></p>
+
+  <div class="card">
+    <h2>The keeper's day</h2>
+    <div class="knobs" id="habit"></div>
+  </div>
+
+  <div class="card">
+    <h2>Days to the top word</h2>
+    <p class="muted">Each species' top word is its ceiling. Today is main before this branch.</p>
+    <table id="summary"></table>
+  </div>
+
+  <div class="grid" id="charts"></div>
+
+  <div class="card">
+    <h2>Recipe lines</h2>
+    <p class="muted">The numbers as tuned, to paste back to Claude.</p>
+    <div style="margin:8px 0"><button id="copy">Copy</button> <span class="muted" id="copied"></span></div>
+    <textarea id="json" readonly aria-label="The numbers as tuned"></textarea>
+  </div>
+</main>
+<script type="module" src="trust-lab.js"></script>
+</body>
+</html>

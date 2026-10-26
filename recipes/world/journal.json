@@ -1534,7 +1534,8 @@
         { "text": "Comes in ones and twos, at dusk", "learn": ["joined"] },
         { "text": "Moves on when the edge grows bare or dry", "learn": ["left"] },
         { "text": "Doesn't mind you close, if you come slowly", "learn": ["trust:tolerant"] },
-        { "text": "Takes the insects you offer, if you give it room", "learn": ["fed"] }
+        { "text": "Takes the insects you offer, if you give it room", "learn": ["fed"] },
+        { "text": "Snaps at the flies over rotting weed", "learn": ["likes:wrack"] }
       ],
       "_trust": "How well one frog knows you (S6c, doc 23), as a word on its card, never a number; lines: what the card says at each word; notes: written once per frog when its word moves up to that one. Bands are in recipes/species/frog.json presence. since: the line under a named frog's name; names: what Suggest one offers (S6c-3), names no other frog has, starting at a different one per frog.",
       "trust": {
@@ -1573,6 +1574,7 @@
         "scoutLeftUnseen": "The reeds were quiet tonight.",
         "left": "A frog has moved on from the pond.",
         "fed": "A frog came for the insects you offered.",
+        "treat": "A frog hopped to the wrack you set out and snapped at the flies over it.",
         "named": "You named a frog {name}.",
         "leftNamed": "{name} has moved on from the pond.",
         "gone": "The last of the frogs has moved on.",
@@ -1641,7 +1643,8 @@
         { "text": "Small insects over the water", "learn": ["joined"] },
         { "text": "Moves on when the pool grows shallow or is drained", "learn": ["left"] },
         { "text": "Doesn't mind you close, if you come slowly", "learn": ["trust:tolerant"] },
-        { "text": "Swirls up to crumbs you scatter on the water", "learn": ["fed"] }
+        { "text": "Swirls up to crumbs you scatter on the water", "learn": ["fed"] },
+        { "text": "Picks at the small life on sunk leaves", "learn": ["likes:leaf-pack"] }
       ],
       "_trust": "How well the minnows know you (doc 23): one for the whole school, as notes when it moves up; the ceiling is Familiar (recipes/species/minnow.json presence).",
       "trust": { "notes": {
@@ -1664,6 +1667,7 @@
         "joinedUnseen": "More rings rose on the deep water this morning.",
         "joined": "The school of minnows is growing.",
         "fed": "The minnows swirled up to the crumbs you scattered.",
+        "treat": "The minnows swirled up to the leaf pack and picked it over.",
         "scoutLeftUnseen": "The deep water has been still for a while.",
         "thinned": "The school of minnows is smaller than it was.",
         "left": "Some of the minnows have moved on.",

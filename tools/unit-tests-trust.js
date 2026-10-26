@@ -46,13 +46,13 @@ export function addTrustTests(test, assert, eq) {
   test(TRUST, 'events apply once, raise trust, never lower it, and say when the word moves', async () => {
     const P = (await frogRecipe()).presence;
     let s = twoFrogs();
-    s = addTrustEvent(s, { kind: 'watched', id: 2, minutes: 5, hour: 10 });
+    s = addTrustEvent(s, { kind: 'watched', id: 2, minutes: 10, hour: 10 });
     s = addTrustEvent(s, { kind: 'fed', id: 2, hour: 10 });
-    s = addTrustEvent(s, { kind: 'watched', id: 9, minutes: 5, hour: 10 });
+    s = addTrustEvent(s, { kind: 'watched', id: 9, minutes: 10, hour: 10 });
     eq(s.creatures.frogs.pending.length, 2, 'an event for a frog that is not there is dropped');
     const a = hour(s, P);
     const t2 = a.state.creatures.frogs.frogs[1].trust;
-    eq(t2, Math.round((0.4 + 5 * P.watch.trustPerMin + P.feedTrust) * 10000) / 10000, 'watching and feeding add up');
+    eq(t2, Math.round((0.4 + 10 * P.watch.trustPerMin + P.feedTrust) * 10000) / 10000, 'watching and feeding add up');
     const words = a.events.filter((e) => e.name === 'creature:trusted');
     eq(words.length, 1, 'one word moved');
     eq(words[0].payload.word, 'curious', 'tolerant to curious');

@@ -456,9 +456,10 @@ export function addPondLifeTests(test, assert, eq) {
   test(G, 'trust for a school: quiet watching and meals earn it in the tick, never past the ceiling', async () => {
     const R = await loadEcologyRecipes();
     const P = R.species.minnow.presence, D = R.species.dragonfly.presence;
-    const S = { groups: [{ id: 1, count: 10 }], pending: [{ kind: 'watched', minutes: 10, hour: 5 }, { kind: 'fed', hour: 5 }, { kind: 'fed', hour: 6 }] };
+    // Fifty minutes (P2h's slower pace, recipes/species/minnow.json) and two meals reach Tolerant.
+    const S = { groups: [{ id: 1, count: 10 }], pending: [{ kind: 'watched', minutes: 50, hour: 5 }, { kind: 'fed', hour: 5 }, { kind: 'fed', hour: 6 }] };
     const ev = applySwarmTrust(S, P, 'minnows');
-    assert(/** @type {any} */ (S).trust > 0.2, `trust after ten minutes and two meals: ${/** @type {any} */ (S).trust}`);
+    assert(/** @type {any} */ (S).trust > 0.2, `trust after fifty minutes and two meals: ${/** @type {any} */ (S).trust}`);
     eq(ev.filter((e) => e.name === 'creature:ate').length, 2, 'meals told');
     eq(ev.find((e) => e.name === 'creature:trusted')?.payload.word, 'tolerant', 'the word it moved up to');
     eq(/** @type {any} */ (S).pending, undefined, 'pending cleared');
