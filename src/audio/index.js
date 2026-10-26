@@ -209,6 +209,10 @@ export async function startAudio(store) {
     const C = introRecipe.call, pad = store.get('campPad');
     if (pad) voices?.call('intro:dusk-call', C.species, [pad.x + pad.fx * C.outM, 0, pad.z + pad.fz * C.outM], C.intensity);
   }));
+  // A long, slow look (P2e, src/world/creatures/tea-reveal.js): a frog not yet found calls once from where it sits.
+  unsubs.push(on('creature:reveal', (/** @type {{ species: string, x: number, y: number, z: number }} */ p) => {
+    if (p.species === 'frogs') voices?.call('tea:reveal', 'frog', [p.x, p.y, p.z], 0.6);
+  }));
   // The camp's fire (src/world/camp): the steel's strike, the twigs catching, rain's hiss on a fire.
   unsubs.push(on('camp:sound', (/** @type {{ name: string }} */ p) => campSounds?.play(p.name)));
   // Digging (docs/future/13 10.4.3, P2c): the spade's bite by layer, the lift and the pour, timed to the dig's motion.

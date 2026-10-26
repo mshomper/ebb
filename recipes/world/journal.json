@@ -408,6 +408,7 @@
         { "text": "Its sharp sap blisters the hands: one to look at, never to pick", "learn": ["pick:refused"] }
       ],
       "gives": [
+        { "pencil": "Golden cups. Not for the tea pot, I think.", "ink": "Never for the tea pot. Its sap would blister the mouth.", "when": "tea:first" },
         { "pencil": "Something early in the year might be glad of these flowers.", "ink": "Early nectar for bees.", "when": "bees:seen" }
       ],
       "notes": {
@@ -455,6 +456,8 @@
         { "text": "Seeds itself slowly, a few bushes apart", "learn": ["spread"] }
       ],
       "gives": [
+        { "pencil": "Bitter alone. Something golden might soften it.", "ink": "The bark with gorse: A good day's work.", "when": "tea:willow+gorse" },
+        { "pencil": "Bitter alone. Something dried and sleepy might calm it.", "ink": "The bark with dried chamomile: Deep rest.", "when": "tea:willow+chamomile" },
         { "pencil": "Something small might shelter at the foot of this bush one day.", "ink": "Shelter for frogs at its foot.", "when": "frogs:willow" },
         { "pencil": "Something early in the year might be glad of these catkins.", "ink": "The first pollen of the year for bees.", "when": "bees:seen" }
       ],
@@ -589,6 +592,8 @@
         { "text": "Seeds itself in high summer, a few meters off", "learn": ["spread"] }
       ],
       "gives": [
+        { "pencil": "Bright as coconut. Something sleepy might go well with it.", "ink": "With chamomile: A long, slow look.", "when": "tea:gorse+chamomile" },
+        { "pencil": "Golden. It might soften something bitter.", "ink": "With willow bark: A good day's work.", "when": "tea:willow+gorse" },
         { "pencil": "Something that hums might come to these flowers in every month.", "ink": "Flowers for bees all year round, even in winter.", "when": "bees:seen" },
         { "pencil": "Something small might nest safe among these spines one day.", "ink": "A safe, spiny place for small birds to nest.", "when": "birds:seen" }
       ],
@@ -635,6 +640,7 @@
         { "text": "Creeps along the edge, a step at a time", "learn": ["spread"] }
       ],
       "gives": [
+        { "pencil": "Sharp and clean. It might wake a sturdier herb.", "ink": "With nettle: Out all day. A quick step and an easy shovel.", "when": "tea:watermint+nettle" },
         { "pencil": "Its leaves might be good for something, picked fresh.", "ink": "Leaves for tea, fresh or dried.", "when": "picked:watermint" },
         { "pencil": "Something that hums might come to these flowers one day.", "ink": "Nectar for bees and butterflies.", "when": "bees:seen" }
       ],
@@ -680,6 +686,7 @@
         { "text": "Widens slowly, by its roots", "learn": ["spread"] }
       ],
       "gives": [
+        { "pencil": "Honey-sweet. Something sleepy might go well with it.", "ink": "With chamomile: Old friends.", "when": "tea:meadowsweet+chamomile" },
         { "pencil": "These flowers might be good for something, picked in high summer.", "ink": "Flowers for tea, sweet as honey.", "when": "picked:meadowsweet" },
         { "pencil": "Something small and buzzing might come to this froth one day.", "ink": "Pollen for hoverflies and beetles.", "when": "bees:seen" }
       ],
@@ -725,6 +732,7 @@
         { "text": "Spreads by its roots into a patch", "learn": ["spread"] }
       ],
       "gives": [
+        { "pencil": "Stinging and green. It might wake a sharper herb.", "ink": "With water mint: Out all day.", "when": "tea:watermint+nettle" },
         { "pencil": "Its young tops might be good for something, picked with care.", "ink": "Young tops for tea, in spring and again in autumn.", "when": "picked:nettle" },
         { "pencil": "Something with bright wings might lay its eggs here one day.", "ink": "A nursery for butterflies.", "when": "butterflies:seen" }
       ],
@@ -770,6 +778,9 @@
         { "text": "Creeps outward in late summer", "learn": ["spread"] }
       ],
       "gives": [
+        { "pencil": "Sweet and sleepy. It might soften something sweeter still.", "ink": "With meadowsweet: Old friends. Creatures warm to you, and let you near.", "when": "tea:meadowsweet+chamomile" },
+        { "pencil": "Sweet and sleepy. Better beside something bright.", "ink": "With gorse: A long, slow look.", "when": "tea:gorse+chamomile" },
+        { "pencil": "Dried, it might calm something bitter.", "ink": "Dried, with willow bark: Deep rest.", "when": "tea:willow+chamomile" },
         { "pencil": "These flowers might be good for something, picked in summer.", "ink": "Flowers for a calming tea.", "when": "picked:chamomile" }
       ],
       "notes": {

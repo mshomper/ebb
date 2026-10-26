@@ -1846,153 +1846,108 @@ Each part is one pouch kind (K-24 order: fuel, stones, fibres, herbs, earth, sea
 
 ## 7. Teas
 
-Tea is the walker's own ritual: the pot on the hearth stones, spring water, a handful or two of herbs, and a cup drunk sitting by the fire. Each cup brings one kind of journal entry in the walker's hand. Most of those entries are worked out from the island itself; a few come from the story collaborator's keeper lines. No tea changes the world or makes anything faster.
+Tea is the walker's own ritual, and it helps the player (Matt, October 25, 2026: teas as boons, P2e). The pot on the hearth stones, spring water, a handful or two of herbs, a short sit with the cup by the fire, and then a small lift for a while: a lighter step, easier company, a sharper eye. Blends are stronger and last longer. One tea works at a time. A boon lifts the walker and the walker's friendships, never growth or the land, so catch-up and saves stay exact. The first draft's journal entries, dreams, the company, keeper letters by tea and the story lines are dropped.
 
 ### 7.1 What the player sees and does
 
-1. With the pot made and the fire lit, the walker fills the pot at the spring (K-26: carried in both arms, nothing else carried meanwhile), or at a rill led past camp (K-28). It is set on the hearth stones. A fill lasts until the next rest.
-2. Tap the pot. Its card shows the herb pouches (and dried bunches on the rack) as sketches. Tap one or two; with the larger pot, up to three (TR-14). Then **Brew**.
-3. The pot steams for a few real seconds. The walker pours, takes the cup and sits (the Sit posture, HUD faded).
-4. When the cup is drunk, the entry inks into the journal as a note. Standing up early still writes it.
+1. Make the tea pot (clay and crushed shell, a night in the fire) and the cup (S5). Fill the pot at the spring and set it on the hearth stones over a lit fire (K-26: carried in both arms). A pot of water over a lit fire simmers: a thin steam rises off it.
+2. Click the tea pot on the hearth. Its card is the stations' workspace (`src/ui/station.js`): two spots, and below them the herbs to hand from the pack, the drying rack (a dried bunch says so) and the hamper. Click one or two to lay them; click a laid herb to take it back. A tea already found names itself under the spots ("Out all day. A quick step and an easy shovel."); nothing names a tea not yet found.
+3. **Brew** (the tea pot icon). The herbs and the water are taken. The walker kneels at the hearth and watches it steep while the steam thickens (`teas.steepS`, about 3 seconds).
+4. The card closes. The walker pours, sits back with the cup in both hands and sips twice (`teas.sipS`, about 4.5 seconds, the `sip` gesture). The cup leaves its place by the fire for the walker's hands while it is drunk.
+5. A line on the island says what was drunk ("Water mint and nettle tea. Out all day."), with a taste line the first time a pair comes to nothing more. The boon begins: one drawn icon under the clock dial, the herb (or the blend's two herbs) inside a ring that drains as it runs out. Hover it for its name, a line and a word for what is left ("Still strong.", "Half gone.", "Wearing off.", "Nearly gone."). No numbers on screen.
 
-### 7.2 Brewing rules
+Brew waits, with its reason on the card, while the pot is empty ("Fill it at the spring first"), holds sea water, the fire is not lit, or there is no fired cup.
 
-- **Any two in the pot** (TR-01). Any two brewable things go in together. Most give a plain cup that brings the stronger herb's own entry. A few pairs are known blends with a rarer entry, found only by trying.
-- **Brewable** means a plant part with a `brew` entry in `cook.json` (herbs, flowers, berries, bark, kelp). Stones, sticks, clay and cord are never offered on the pot card.
-- **Sitting with the cup is quiet watching at the seat rate** (TR-02). It is simply Sit: the existing watching code counts each second sitting as `watch.sitBoost` seconds near any creature in reach. Nothing extra is earned by the tea itself.
-- **A plain cup still counts** (TR-02). A cup with no entry is still a warm cup and still Sit. Nothing is wasted.
-- **One entry of each kind a day** (TR-08). About one entry of each kind per game day, however many cups. A second cup of the same kind that day writes no note; its card says "A warm cup. The journal can wait for tomorrow."
-- **Seasons only gate the herbs.** A blend never checks the calendar (the unlock rule). The season column below is when each herb can be picked fresh; dried bunches (7.7) carry them to any season.
-- **Three herbs** only in the larger pot (TR-14, T5). Only T-45 is a three-herb blend (resolution 15). Three herbs that are not T-45 give the best known pair among them (blend table order), else the strongest single herb's entry.
-- **Dreams wait for dawn.** Chamomile's dream, the old dream and winter's dream are written at the next return after resting in the tent (T-05), with the return's date.
-- One handful of each herb goes into the pot (K-30). A picked plant keeps its share (TR-20, PR-11).
+### 7.2 Rules
 
-### 7.3 Single teas
+- **One tea at a time.** A new cup replaces the boon working, full. No stacking, nothing to manage.
+- **The cost is the herbs.** One handful of each herb laid, and the pot's water. No daily limit; herbs regrow at their own pace.
+- **Away time doesn't use it up.** A boon counts down only in game hours played on the island (one game hour is one real minute at normal speed). Closing the game, time away and a night's rest never spend it.
+- **Two of the same herb** is that herb's single cup.
+- **Any other pair** is the stronger herb's single cup (`teas.strength`: willow bark, nettle, gorse, chamomile, meadowsweet, water mint), with a taste line the first time ("Gorse and mint. Pleasant. Nothing more."), the same line for that pair every time.
+- **Never the world.** Boons lift the walker and the walker's friendships. Nothing makes plants grow or the island change faster.
 
-"Computed" means the entry is built from game state with template lines in `cook.json`. "Story" means the story collaborator writes the text (in `recipes/world/keeper-pages.json`); until their lines arrive, Matt's stand-in lines fill each list, as bottle set 1 did.
+### 7.3 Single cups (the six T2 herbs)
 
-| Tea | Herb | Fresh season | Tier | Entry kind | What the entry holds | Text from | Example line | Source IDs |
-|---|---|---|---|---|---|---|---|---|
-| Gorse flower | Gorse flowers | Spring; a few all year | T2 | Morning | What changed since the walker last rested | Computed | "The reeds have crossed to the east bank in the night." | T-01 |
-| Water mint | Water mint | Summer | T2 | Clear | One pencil "?" on the web becomes a little less unknown | Computed | "Something on the warm stones seems to need still water nearby." | T-02 |
-| Meadowsweet | Meadowsweet | High summer | T2 | Then and now | Today's island beside the one the walker landed on | Computed | "There was only sand here, the first morning." | T-03 |
-| Nettle | Nettle tops | Spring and autumn | T2 | Close by | Where a creature that knows you sleeps, eats or hides | Computed | "The old frog keeps the same lily pad at dusk." | T-04 |
-| Chamomile | Chamomile | Summer | T2 | A dream | A dream, written at the next dawn after resting | Story | "I dreamt the island was still under the sea, and I could hear it waiting." (stand-in) | T-05 |
-| Willow bark | Grey willow bark | Late winter | T2 | The company | Lines about other keepers and other islands | Story | "Somewhere north, another keeper is lighting a fire tonight." (stand-in) | T-06 |
-| Rose hip | Dog rose hips | Autumn into winter | T4 | Ahead | A quiet look at the season to come | Computed | "The frogs will go down into the mud before long, I think." | T-08 |
-| Red clover | Red clover heads | Summer | T4 | The hum | Notes on bees and other pollinators | Computed | "The bees work the clover in the low field first." | T-10 |
-| Elderberry | Elderberries, always simmered | Autumn | T5 | Leaving | Who is leaving or going to sleep for winter, and where | Computed | "The dragonflies are thinning over the west pond. The last ones keep to the warm side." | T-23 |
-| Evening primrose | Evening primrose flowers, picked at dusk | Summer nights | T7 | Night list | What moved after dark, in order | Computed | "Dusk: the frogs began by the reeds. Late: something small in the stick pile. Before dawn: the bats came home." | T-27, resolution 16 |
+Length in game hours on the island. Every number is a starting value in `cook.json` `boons`, for the tuning panel.
 
-### 7.4 Blends
+| Herb | Boon | What it does | Hours |
+|---|---|---|---|
+| Water mint | Light on your feet | Walk 5% faster (`walk` 1.05) | 8 |
+| Meadowsweet | Easy company | Friendship grows 5% faster (`trust` 1.05) | 8 |
+| Gorse flowers | A bright eye | Finds and gather spots show from further away (`sight` 1.5): the kids' "where is it" help | 8 |
+| Nettle tops | A strong back | Digging 10% quicker (`dig` 0.9) | 8 |
+| Chamomile | A calm way about you | Creatures let you 10% closer before they shy (`comfort` 0.9) | 8 |
+| Willow bark | Steady hands | Making at the stations 15% quicker, and the fire burns 10% longer (`make` 0.85, `burn` 1.1) | 8 |
 
-| Blend | Herbs | Fresh together | Tier | Entry kind | What the entry holds | Text from | Example line | Source IDs |
-|---|---|---|---|---|---|---|---|---|
-| Gorse and chamomile | Gorse, chamomile | Summer (or one dried) | T2 | Long morning | A look back over the whole last season | Computed | "Spring was the reeds' season. The frogs came late in it, and the first to stay was Pip." | T-29 |
-| Water mint and nettle | Water mint, nettle | Summer and autumn | T2 | Trust | What one creature that knows you seems to think of you | Story lines, computed fill | "Pip sits on as I come. I think it knows my step now." | T-30 |
-| Willow bark and chamomile | Willow bark, chamomile | Never together fresh; needs one dried | T2 | Old dream | A longer keeper fragment, at the next dawn | Story | (story collaborator) | T-31 |
-| Meadowsweet and rose hip | Meadowsweet, rose hip | Never together fresh; needs one dried | T4 | The year | A page on the year so far | Computed | "Spring: the pond and the first reeds. Summer: the frogs, and the chorus. Autumn so far: the hips are red." | T-32 |
-| Willow bark and gorse | Willow bark, gorse | Late winter | T2 | A keeper's letter | A whole letter from the company, written into the journal | Story | (a keeper letter) | T-35 |
-| Nettle and self-heal | Nettle, self-heal | Summer | T4 | What came back | The island after a hard stretch: a drained pond, a cold spell, a storm | Computed | "The pond was low all the dry week. The minnows have come up out of the deep spot again." | T-36 |
-| Elderflower and water mint | Elderflower, water mint | Early summer | T4 | Dusk sounds | What called at dusk, nearest first | Computed | "Nearest: the frogs by the camp pond. Then the robin in the hawthorn. Far off: something on the islet." | T-38 |
-| Kelp and wild thyme | Cast kelp, wild thyme | Summer | T4 | Storm watch | The next spring tide and whether wind may ride it | Computed | "The big tide comes the night after next. The wind is rising with it; the strandline may be rich." | T-40 |
-| Chamomile and elderberry | Chamomile (dried), elderberry | Autumn into winter, with dried chamomile | T5 | Winter's dream | A dream about the sleeping creatures, at the next dawn | Story, picked by who sleeps | "I dreamt of the frogs in the mud, all facing the same way, waiting for the warm." (stand-in) | T-44, resolution 15 |
-| Gorse, meadowsweet and willow bark | Gorse, meadowsweet, willow bark (larger pot) | Never together fresh; needs dried | T5 | The first morning | The landing day written fresh, as remembered now | Story frame, computed details | "The first morning there was only the spring, a pale shore and the gorse. I laid the ring with stones from the shore." | T-45, TR-14 |
-| Rose hip and kelp | Rose hip, cast kelp | Winter (hips stay on the bush) | T4 | The shore wakes | The winter flocks' routine on the strandline | Computed | "At the first low water the turnstones came to the wrack below camp, flipping it one after another." | T-46, resolution 15 |
-| Evening primrose and chamomile | Evening primrose, chamomile | Summer nights | T7 | Moon page | The moon's phase and what it brings tonight | Computed | "The moon is nearly full. The tide will run high, and the fireflies will be faint tonight." | T-47, resolution 15 |
+### 7.4 Blends (found by trying)
 
-### 7.5 Entry kinds, precisely
+| Herbs | Boon | What it does | Hours |
+|---|---|---|---|
+| Water mint and nettle | Out all day | Walk 10% faster and dig 15% quicker | 16 |
+| Meadowsweet and chamomile | Old friends | Friendship 12% faster, and creatures let you 15% closer | 16 |
+| Gorse and chamomile | A long, slow look | Finds show from much further away (`sight` 2.2), and a creature you haven't found yet gives itself away once: a frog calls from where it sits, a school stirs a ripple | 16 |
+| Willow bark and gorse | A good day's work | Making 25% quicker, and each gather has a small chance (15%) of an extra handful | 16 |
+| Willow bark and chamomile, one dried | Deep rest | No lift itself. Rest in the tent while it lasts and you wake with Easy company and Light on your feet together for the whole next day (24 hours) | 24 |
 
-Every entry is a journal note `{ hour, date, text, sp, kind }` (`src/world/journal/observe.js` Note) with `kind: 'tea:<entry>'` and, for page-long entries, `lines: string[]`. Picks that need a choice use `hash32(worldSeed, dayIndex, kindIndex)` from `src/core/rng.js`, so the same day gives the same entry. Place words are the plant pages' existing words: side of the island (journal.json `compass`) plus the ground, never landmark names (resolution 2). No entry ever shows a number.
+Without its dried herb, willow bark and chamomile is a plain willow cup with its own taste line ("Thin. Perhaps it wants something drier."). The waking boon (`meadowsweet+watermint`, `after: willow+chamomile`) is never brewed.
 
-| Entry | Note kind | Reads | Picks | When there is nothing to say |
-|---|---|---|---|---|
-| Morning | `tea:morning` | Journal notes with hour after the last rest (`camp.lastRestHour`); `growth:spread` payloads (`bySpecies`, direction from the parent plant to the new one) | The highest-ranked note by journal.json `reveal.rank`, preferring one the reveal did not show; phrased with a place | "Nothing much moved. The island was resting too." |
-| Clear | `tea:clear` | `recipes/world/journal-web.json` links not yet inked (`inkFlag` absent from `journal.flags`) where one end is known | One such link; writes its `hint` line (a new per-link field, plain naturalist words, written into journal-web.json with the build) and sets flag `hint:<a>><b>`, which the web draws as a faint pencil dash | "Everything I know of, I know a little." |
-| Then and now | `tea:thenNow` | `camp.firstLook`: a coarse 16 by 16 map of ground kind (sand, soil, grass, rock, water) saved on the first evening; today's habitat grid at the same cells | The block of cells that changed most (sand to grass, land to water), named by side | "It looks much as it did, the first morning." |
-| Close by | `tea:closeBy` | Creatures at Tolerant or above: a frog's home and its day-hide spot (`creatures.frogs.frogs[].x, z`, `motion.dayHide`), a school's pool (`creatures.minnows.groups`), later species' homes | The highest-trust creature, ties broken by the day hash; uses its name if named | "Nothing knows me well enough yet to keep near." |
-| A dream | `tea:dream` | Sets `camp.dream = 'dream'`; at the next return after a rest, `keeper-pages.json` `dreams`, each with optional `season`, `after` and `knows` (a journal page that must be known) | The next unread dream whose conditions hold | The first unread dream with no conditions |
-| The company | `tea:company` | `keeper-pages.json` `company`, in order, optional `season` | The next unread line | Starts the list again from the top |
-| Ahead | `tea:ahead` | `recipes/world/seasons.json` dormancy windows; species flight seasons (dragonfly, damselfly); `growth.json` volunteer seasons; flowering windows of plants the journal knows; next spring tides (`src/world/tide.js`) | One event in the coming season about something the journal knows | "The next season will come in its own time." |
-| The hum | `tea:hum` | Flowering counts (`measure()` in observe.js) of known nectar plants; bee and butterfly state once built | The flowering patch with the most bloom, and which pollinators work it, by side | "Not much in flower. The bees will wait." |
-| Leaving | `tea:leaving` | Dormancy windows starting within the next few days; species near their season's end; journal page sleep lines (doc 12: pages say where they sleep) | One species going, with where it goes | "Nothing is leaving yet." |
-| Night list | `tea:nightList` | Present species whose `ecology.activity` hours fall between dusk and dawn; last night's weather (rain hushes callers); the fire's moths (C-30) | Up to four, in order of when their hours begin | "A quiet night. Only the tide." |
-| Long morning | `tea:longMorning` | Notes in the hours of the last whole season; gift notes (`kind: 'gift'`); `trusted` notes; first sightings | Three to five, best first by reveal rank, as `lines` | "Last season was a quiet one." |
-| Trust | `tea:trust` | The highest-trust creature; its trust word (`trustWord`), name, and where you most often sat near it | A line from `keeper-pages.json` `trust.<species>.<word>`, filled with name and place | A line for its word from `trust.any` |
-| Old dream | `tea:oldDream` | As A dream, from `oldDreams` | Next unread | First unread with no conditions |
-| The year | `tea:year` | The year page's data (doc 13): seasons passed, species happy, gifts, trust words reached | One line per season so far, as `lines` | Always has the first season |
-| A keeper's letter | `tea:letter` | `recipes/world/bottle-messages.json` letters with the `keeper` flag (F13), unread, `after` met | The next one; marks it read so no bottle repeats it | The company's next line instead |
-| What came back | `tea:cameBack` | Note pairs for one species: `gone`, `left`, `dormant` or `drown`, followed later by `seen`, `back` or `woke`; the season change from winter to spring | The most recent pair | "Nothing hard has passed yet. The island is steady." |
-| Dusk sounds | `tea:duskSounds` | Known species with voices calling at dusk (frog `motion.moods.callAfterDuskH`, later birds), their homes' distance from camp | Nearest first, up to four | "Only the water, at dusk." |
-| Storm watch | `tea:storm` | The next spring tide hour from tide.js; that day's weather record (`dayRecord()` in `src/world/weather.js`: mood and wind); later F08 storms | One line: when, and whether wind or rain rides it; hour words from journal-island.json almanac | Always has a next tide |
-| Winter's dream | `tea:winterDream` | Species dormant now, or whose dormancy starts within this season; `keeper-pages.json` `winterDreams.<species>` | A sleeping species the journal knows, by the day hash; written at the next dawn | `winterDreams.any` |
-| The first morning | `tea:firstMorning` | `keeper-pages.json` `firstMorning` frame; `camp.firstLook`; the first notes after `journal.born`; first makes (`made:` flags) | Frame with the details filled in, as `lines`; mentions how long ago in words | Always has the frame |
-| The shore wakes | `tea:shoreWakes` | Today's low tides (tide.js); winter flocks on the strandline (turnstones, purple sandpipers) when present; strandline wrack not picked over (GR-02) | One line about the first low water | Out of winter: the shore finds at low water |
-| Moon page | `tea:moon` | `moonPhaseOf()` in `src/core/clock.js`; tide amplitude tonight; known night creatures (fireflies dim in bright moonlight) | One or two lines | Always has a moon |
+### 7.5 How each system reads its lift
 
-- **Dawn entries in the reveal.** Dream notes are written at the return hour; journal.json `reveal.rank` gains a first class `{ "class": "dream", "kinds": ["tea:dream", "tea:oldDream", "tea:winterDream"] }`, so the dream is the first thing on waking.
-- **Computed templates** live in `cook.json` `entries.<kind>.lines` with `{name}`, `{place}`, `{species}`, `{when}` slots, in the walker's voice. The story collaborator may rewrite any template later; the code does not change.
+`src/world/camp/boons.js` holds the boon and publishes the store slice `boonLift` (all 1, `handful` 0 and `reveal` false without a tea). Each system reads it; none reaches into the camp.
 
-### 7.6 Plain cups, taste lines and hints
+| Lift | Read by | How |
+|---|---|---|
+| walk | `src/world/walk/walker.js` (env `paceK`) | every pace times it |
+| trust | `trust.js`, `swarms.js` through `env.trustBoost` (app.js) | every trust gain from watching, meals and treats, applied on the hourly tick; never the camp's standing presence |
+| comfort | the walker's presence source (`ringK`), read by `agents.js`, `schools.js`, `lizard-live.js` | the comfort ring times it |
+| sight | `src/world/finds/index.js`, `src/world/pack/draw.js` | the radius finds and gather pickups are shown within |
+| dig | `src/world/dig/index.js`, `src/world/figure/acts.js` (`setActRate`) | the dig's beats and its swing both quicker |
+| make | `src/world/camp/stations.js` | `makeS` times it |
+| burn | `src/world/camp/index.js` `burnLonger` | the flame hours a light or a feed adds, written into the fire record as it goes on |
+| handful | `src/world/gather/index.js` | a seeded chance (`hash32` of the gather seed, the place and the minute) of one more handful, never taken from the spot or plant |
+| reveal | `src/world/creatures/tea-reveal.js` | once, while you are on foot within 40 m of an unfound creature; `creature:reveal` |
 
-- **Strength order** for plain cups is `cook.json` `brew.strength`, strongest first: willow bark, nettle, water mint, gorse, meadowsweet, rose hip, elderberry, red clover, evening primrose, chamomile. Herbs with no tea of their own (kelp, wild thyme, self-heal, elderflower, yarrow, heather and the rest) have no entry; a cup of only those is a plain cup.
-- **A taste line on failure** (TR-03). A pairing that is not a known blend writes one small line on the camp page the first time it is tried, from each herb's taste word: "Mint and gorse. Pleasant. Nothing more." Saved as flag `tasted:<a>+<b>` (sorted).
-- **Known blends** are written on the camp page the first time each is brewed (TR-04), with a sketch of the herbs: flag `blend:<id>`. Nothing lists what is unfound.
-- **Plant page hints** (TR-05). Each tea herb's Gives line, in pencil, hints at its partner without naming it: water mint "Sharp and clean. It might wake a sleepier herb."; chamomile "Sweet and sleepy. Better beside something bright."; willow bark "Bitter alone. Something golden might soften it." Lines in `cook.json` `brew.<herb>.hint`.
+### 7.6 Found teas, taste lines and hints
+
+- **The camp page** (`src/ui/journal-camp.js`) gains Teas: each tea the first time it was drunk, its herbs drawn, its boon's name and line and the date; then Tried together: the taste lines of pairs that came to nothing more. Nothing lists what is unfound. Saved in the cook section's `teas` `{ found, tried, tastes }`.
+- **Plant pages** (journal.json `gives`) carry a pencil hint at each herb's partners without naming them ("Bitter alone. Something golden might soften it."). A cup sets journal flags `tea:<id>` (and `tea:first`), which ink the hint into the blend it named.
+- **Marsh marigold** stays look-only (its sap blisters, gather.json `lookOnly`); its page gains "Not for the tea pot, I think.", inked "Never for the tea pot." once any tea is drunk.
 
 ### 7.7 Dried herbs
 
-- The drying rack is T2 (M-21, resolution 14). Tap the rack with a herb pouch in the pack: **Hang**. The whole pouch becomes one bunch on the rack; the pouch is free again.
-- A bunch pales and shrinks over `rack.dryH` game hours, then hangs dry for good (CP-12: time away does the work). It never spoils (X-09).
-- **Dried herbs brew exactly like fresh** (resolution 14; TR-18 and TR-22 are cut). A dried bunch has no entry of its own; X-09's "entry about the season it was picked" is dropped.
-- The rack is the herb store at camp, as piles are for sticks (K-20): the pot card offers rack bunches beside the pouches. One bunch per herb kind; a bunch takes more of the same kind up to full.
-- This is how summer herbs meet late-winter willow bark (T-31, T-35, T-45) without filling the pack for months.
+- Dry on the apothecary bench hangs a herb on the drying rack (S2). A bunch is dry after `rack.dryDays`.
+- The tea pot's card offers rack bunches beside the pack and the hamper; a dry bunch is laid as dried (`dried:<kind>`), and one is what Deep rest needs. A bunch still drying brews as fresh.
 
-### 7.8 Poison refusals
+### 7.8 Data and code
 
-- **Refusals teach** (TR-19). The first time the walker is asked to gather a plant that is not for drinking, the walker kneels, looks, sets it back and says one line. The plant page gains a pencil note. After that the card shows the note where Gather would be; the refusal line never repeats. Nothing bad ever happens.
-- On the island now: **marsh marigold** ("Not for drinking. The sap would blister."). **Yellow flag iris** stays look-don't-pick (PR-44): its card never offers Gather, and its page carries the note from the first look.
-- Later, inside the pot card: **raw acorns** ("Too bitter to drink. These are for the jay."), **King Alfred's cakes** ("That one is for the fire, not the cup."), **chanterelle** ("Not for the pot. A squirrel might like it."). **Elder** gives only flowers and ripe berries; leaves and bark are never gathered, and berries are always simmered, as every tea is.
-- Data: `cook.json` `refuse.<plant>: { line, note }`; the journal learns `refused:drink` for that page (observe.js `learn()`).
+- **`recipes/world/cook.json`**: `boons` (by herb short name, a blend's two joined by +: `walk`, `trust`, `comfort`, `sight`, `dig`, `make`, `burn`, `handful`, `reveal`, `dried`, `rest`, `after`, `h`), `teas` (`herbs`, `strength`, `steepS`, `sipS`, `left`), and the words (`teapot`, `boonNames`, `boonLines`, `drank`, `teaNames`, `tasteNames`, `taste`, `tasteDry`, `teaLeft`, `woke`).
+- **`recipes/world/camp.json`**: `stations.teapot` (two spots, the brew icon) and `steam` (the pot's steam, drawn by the smoke's pipeline in `src/render/passes/camp-fx.js`).
+- **`recipes/world/figure.json`**: gestures `steep` and `sip`.
+- **`src/world/camp/brew.js`** (pure): herbs in, tea out; the blend table, strength order, taste lines and the tea notes.
+- **`src/world/camp/boons.js`**: the boon's pure rules (drink, tick, lift, wake, clean) and its live part (countdown, `boon` and `boonLift` slices, Deep rest waking on `camp:rested`).
+- **`src/world/camp/teapot.js`**: the tea pot's workspace, Brew, the steep and the sip.
+- **`src/ui/boon-badge.js`**, `boon-badge.css`: the HUD icon.
+- **Save:** the camp section's `boon` `{ id, leftH, h }` and the cook section's `teas`; no format bump.
+- **Events:** `tea:drunk { id, pair, blend, first, hour }`, `creature:reveal { species, x, y, z }`.
+- **Test link:** `?teas` (unsaved): the tea pot full on a lit hearth, the cup, the rack with dried chamomile, a handful of each herb.
 
-### 7.9 Data and code
+### 7.9 Edge cases
 
-- **`recipes/world/cook.json`**: `brew: { brewS, cupS, strength, <herb>: { taste, hint, entry } }`, `blends: [{ id, herbs, entry }]` (order matters for three-herb fallback), `entries.<kind>.lines`, `refuse`, `rack: { dryH, bunches }`, `perDay` (TR-08 on).
-- **`recipes/world/keeper-pages.json`** (F13's new recipe, story collaborator): `dreams`, `oldDreams`, `winterDreams`, `company`, `trust`, `firstMorning`.
-- **`src/world/camp/brew.js`** (new, pure): `brew(herbs, cook)` returns `{ blend, entry }`; `src/world/journal/tea.js` (new, pure): one writer per entry kind, `(state, journal, hour, words) => Note | null`, worker-safe so catch-up can write dawn entries.
-- **Camp state** (save section `camp`): `pot: { water: boolean }`, `lastRestHour`, `dream: null | 'dream' | 'oldDream' | 'winterDream'`, `cups: { [kind]: dayIndex }` (TR-08), `firstLook` (256 bytes), `rack: [{ herb, stage, since }]`, read-list indexes for story lists.
-- **Events:** `tea:brewed { herbs, blend }`, `tea:entry { kind }`.
+- **Walking away mid-brew:** the card closes; the steep and the sip carry on to the end.
+- **A pot of sea water:** Brew waits; pour it out and fill at the spring.
+- **A save from before teas:** no boon, no notes; the herbs and pots as they were.
+- **A boon the recipe no longer has:** dropped on load.
+- **Deep rest without resting:** it runs out with no lift; the herbs are spent.
 
-### 7.10 Tuning knobs (starting values)
+### 7.10 Acceptance checks
 
-| Knob | Start | Where |
-|---|---|---|
-| Steep time (`brew.brewS`) | 8 real seconds | cook.json |
-| Cup length before the entry inks (`brew.cupS`) | 40 real seconds of Sit | cook.json |
-| Entries of one kind a day (`perDay`) | 1 | cook.json |
-| Drying time (`rack.dryH`) | 48 game hours | cook.json |
-| Rack bunches | 6 | cook.json |
-| First-look map | 16 by 16 cells | cook.json |
-
-### 7.11 Edge cases
-
-- **Fire out:** the pot card says "The fire is out." with Light (C-27). **Pot empty:** "The pot needs water from the spring."
-- **Two of the same herb:** a plain single-herb cup (no blend).
-- **Older saves:** `camp.firstLook` is taken on the first load after the update; Then and now and The first morning say "the day the camp was made" instead of "the first morning".
-- **Story lists run out:** A dream and the old dream fall back to the first line without conditions; the company starts over.
-- **Rest without a lit fire** after chamomile: the dream still comes; dreams need only the rest.
-- **Nothing to say:** every computed kind has its gentle fallback line, so a cup never writes an empty note.
-
-### 7.12 Acceptance checks
-
-- Brew gorse alone after time away: a Morning note names something that changed, with a place word.
-- Brew gorse and water mint: water mint is the stronger herb, so a Clear note; the camp page writes "Mint and gorse. Pleasant. Nothing more."
-- Brew gorse and chamomile: Long morning, and the camp page writes the blend with a sketch.
-- Brew a second gorse tea the same game day: the card says the journal can wait; no second Morning note.
-- Drink chamomile, rest, return: the dream is the first note in the reveal.
-- Hang chamomile on the rack in summer; in late winter brew it with willow bark: Old dream.
-- Tap Gather on marsh marigold: the walker sets it back with the line; the page has the note; the second tap shows the note, no Gather.
-- Sit with a cup by the frog pond: the frogs' trust word moves as it does with Sit alone, no faster.
+- `?teas`: click the tea pot, lay water mint and nettle, Brew: steam thickens, the walker kneels, then sips with the cup; the line says "Out all day"; the icon under the clock shows both herbs and its words on hover.
+- Drink a second tea: the icon changes to it, full.
+- Close the game for an hour and come back: the ring has not moved.
+- Lay willow bark and fresh chamomile: a willow cup and the drier taste line; with dried chamomile from the rack: Deep rest. Rest in the tent: wake to Easy company and Light on your feet.
+- The camp page lists each tea found and each pair tried; the plant pages' hints ink.
+- `tools/unit-tests.html?groups=teas`: every multiplier on and off, the replace rule, the countdown pausing, save and reload mid-boon.
 
 ## 8. Treats, offerings and trust
 

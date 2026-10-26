@@ -73,6 +73,9 @@
   "smoke": { "count": 40, "lowCount": 24, "lifeS": 10, "riseMps": 0.4, "lean": 1.0, "spreadM": 0.12, "sizeM": [0.16, 1.1], "opacity": 0.09, "albedo": [0.62, 0.62, 0.64], "embersShare": 0.35, "rainThick": 1.9, "mistLow": 0.6, "nearFadeM": [1.0, 2.5], "midgeClearM": 2 },
   "smokeNote": "C-29: count soft puffs (lowCount on the low tier), each living lifeS seconds, rising riseMps and leaning with the weather's wind by lean (meters a second at full wind), growing from sizeM[0] to sizeM[1], at most opacity. albedo: lit by the sky, sun and fire, never painted. embersShare: how much smoke banked embers give; rainThick: thicker in rain; mistLow: in mist it rises this much slower and hangs low. nearFadeM: puffs fade near the eye, so overdraw stays small. Midges keep midgeClearM from it.",
 
+  "steam": { "count": 14, "lowCount": 8, "lifeS": 2.6, "riseMps": 0.3, "spreadM": 0.025, "sizeM": [0.035, 0.3], "opacity": 0.16, "albedo": [0.86, 0.86, 0.88], "nearFadeM": [0.25, 0.8], "topM": 0.17, "simmer": 0.35, "steep": 1.2 },
+  "steamNote": "P2e: steam off a pot on the hearth, drawn as the smoke is (the same puffs, its own numbers): soft white wisps topM above the stones, simmer strong while a pot holds water over a lit fire, steep while the tea pot steeps after Brew. Live only.",
+
   "moths": { "count": 6, "lowCount": 3, "orbitM": [0.4, 1.2], "heightM": [0.35, 1.1], "speed": [0.8, 1.6], "wingM": 0.035, "flapHz": 22, "albedo": [0.32, 0.29, 0.24], "atSunDeg": -4 },
   "mothsNote": "C-30: a few moths circle the fire and the lantern after dark (the sun lower than atSunDeg), on loose seeded orbits, wings flapping at flapHz. Lit by the fire, so they read pale against the dark. Live only, never saved.",
 
@@ -116,6 +119,7 @@
     "workbench": { "spots": 3, "action": "make" },
     "apothecary": { "spots": 2, "action": "grind" },
     "fire": { "spots": 2, "action": "fire" },
+    "teapot": { "spots": 2, "action": "brew" },
     "standM": 0.42, "reachM": 0.9, "awayM": 1.2,
     "ui": { "sideBySidePx": 1100, "targetPx": 56, "maxWidthPx": 980 }
   },

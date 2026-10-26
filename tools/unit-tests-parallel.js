@@ -66,6 +66,7 @@ export const PARALLEL = {
   hearth: () => import('./unit-tests-hearth.js').then((m) => m.addHearthTests),
   sketchbook: () => import('./unit-tests-sketchbook.js').then((m) => m.addSketchbookTests),
   treats: () => import('./unit-tests-treats.js').then((m) => m.addTreatsTests),
+  teas: () => import('./unit-tests-teas.js').then((m) => m.addTeasTests),
   // The audio tests that need no Web Audio (workers have none). The two that render sound through
   // an OfflineAudioContext (pond and keepsake sounds) stay on tools/unit-tests-audio.html, which
   // also still runs all of these, as does `node tools/run-audio-tests.mjs`.

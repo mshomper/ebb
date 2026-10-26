@@ -48,7 +48,7 @@ export function createLizards(o) {
     for (const s of sources) {
       if (s.edits.some((e) => Math.hypot(e.x - L.x, e.z - L.z) <= PR.editReachM)) return s;
       if (!s.body) continue;
-      const ring = PR.ringM * (s.speed < PR.calmSpeed ? PR.calmShare : 1) * (PR.multipliers ? ringScale(s, L.x, L.z, PR.multipliers) : 1);
+      const ring = PR.ringM * (s.ringK ?? 1) * (s.speed < PR.calmSpeed ? PR.calmShare : 1) * (PR.multipliers ? ringScale(s, L.x, L.z, PR.multipliers) : 1);
       if (Math.hypot(s.pos[0] - L.x, s.pos[1] - L.y, s.pos[2] - L.z) <= ring) return s;
     }
     return null;
