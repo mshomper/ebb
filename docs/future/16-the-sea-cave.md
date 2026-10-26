@@ -160,6 +160,81 @@ Fills from each new kind met, each bestiary page and each floor fully walked.
 | 3 | **Reading the stone** | On each floor, a draft of air shows toward the way down, and finds glint at the lantern's edge |
 | 4 | **Old ways** | Once per trip, the walker spots a hidden side passage to a find room |
 
+## Special moves: Q and E
+
+Decided by Matt, October 26, 2026. Each rank of each track also unlocks one active move, so the four tracks give sixteen. The walker carries only two, one on **Q** and one on **E**. The pair, together with the weapon, lantern and coat, is the player's build, and choosing only two makes them refine it.
+
+- **Every move draws a mark on the floor** (a ring, an arc, a line) before or as it lands, so it reads from the Hollow's high camera.
+- **Costs follow the lantern-as-health rule.** A *sip* is about one hit's worth of fuel. Moves that don't spend fuel use a short wait, once a floor, once a trip, or pebbles and rushlights from the pack.
+- **Raise the lantern is not a move.** Holding the right mouse button raises it for everyone, so it never takes a peg.
+- **Some passives become moves.** The sweep and Flare are now moves, unlocked by their ranks. Old ways' passive becomes the deliberate knock below. Ember keep and Second wind stay automatic: a safety net shouldn't cost a peg. Space is now everyone's dodge roll, so Tumble upgrades it to pass through enemies untouched.
+
+### The sixteen moves
+
+**Fighting**
+
+| Rank | Move | What it does | Cost | Suits |
+|---|---|---|---|---|
+| 1 | **Shoulder in** | A short barge forward; small enemies are knocked back a step and lose their wind-up | 6 s wait | Burl club, stone maul |
+| 2 | **Pin down** | A long thrust that holds one enemy in place for 2 s | 8 s wait | Flint spear, bone harpoon |
+| 3 | **Seam strike** | A quick side step and a strike that always counts as a hit from the side | 10 s wait | Knives, barnacle staff |
+| 4 | **The sweep** | Hold to charge (a ring grows on the floor), let go to hit everything in the ring | 12 s wait | Staffs, hagstone flail |
+
+**Lamp craft**
+
+| Rank | Move | What it does | Cost | Suits |
+|---|---|---|---|---|
+| 1 | **Cast the flame** | A ball of the lantern's fire thrown to a marked spot, bursting in a small ring there (Matt: a mage-style fireball) | A sip, 6 s wait | Bulls-eye lantern |
+| 2 | **Hood the lamp** | Cover the light for up to 6 s: half the fuel, watchers can't see you, but the light shrinks to 2 m | 10 s wait | Soot cloak, sling |
+| 3 | **Flare** | A burst of light; light-shy enemies within 5 m scatter and are stunned a moment | Once a floor, and a sip | Bulls-eye lantern |
+| 4 | **Rushlight ring** | Plant a burning rushlight; a 3 m circle stays safe from light-shy enemies for 30 s | One rushlight from the pack, once a floor | Pearl lantern, spear |
+
+**Footing**
+
+| Rank | Move | What it does | Cost | Suits |
+|---|---|---|---|---|
+| 1 | **Back step** | A 3 m hop backward that also tears free of a tangler's grip | 5 s wait | Rush cape, sling |
+| 2 | **Vault** | Leap over a low enemy, a pool or a gap to a marked spot up to 4 m away | 8 s wait | Feather cape |
+| 3 | **Slip past** | A long low roll through a line of enemies; everything passed turns round, so its side is open | 10 s wait | Knives, with Seam strike |
+| 4 | **Light on the rock** | For 5 s dodges have no recovery, and each last-moment dodge gives back a sip | Once a floor | Rush cape |
+
+**Hollow lore**
+
+| Rank | Move | What it does | Cost | Suits |
+|---|---|---|---|---|
+| 1 | **Toss a pebble** | Throw a pebble to a spot; enemies nearby go to look and watchers turn to the sound | One pebble, 8 s wait | Sling, soot cloak |
+| 2 | **Name it** | Mark one enemy for 8 s: its weak point glows and it takes more damage, more still with a full bestiary page | 10 s wait | Crystal blade, bow |
+| 3 | **Turn aside** | Pressed during a glinting wind-up: the walker pivots and the enemy's own lunge carries it into the rock, staggered | 8 s wait (a miss costs only the wait) | Any weapon, with Tells |
+| 4 | **Knock for the old way** | Knock where the draft points and a hidden side passage to a find room opens | Once a trip | Any |
+
+### Choosing them
+
+- **Only at camp or at the lantern hook in the mouth**, never inside the Hollow, so a choice holds for the whole trip. The hook's card has a page with two pegs, Q and E, and every unlocked move on a rail below, one per row, each a drawn icon with its name.
+- A newly unlocked move goes onto an empty peg by itself, with a line on the Lamplighter's trail, so a new player never has a blank peg.
+- The pegs are saved with the skills.
+- The **gentler Hollow** setting halves every wait.
+
+### On screen
+
+- Two round tablets beside the lantern flame, each with the move's drawn icon and Q or E beneath. No numbers.
+- A waiting move drains to a pale outline and refills with ink from the bottom; a glint runs round the rim when it is ready.
+- Once-a-floor moves show a small wick, lit or spent. A move that spends fuel has a small flame mark on its rim.
+- Out of pebbles or already spent: the tablet greys and does nothing, with no buzzer.
+
+### Example builds
+
+| Build | Q | E | Kit | How it plays |
+|---|---|---|---|---|
+| **The lamplighter** | Cast the flame | Rushlight ring | Bulls-eye lantern, pearl-studded club, oilskin coat | Owns the light; an easy, strong start for younger players |
+| **Wet-rock dancer** | Slip past | Seam strike | Flint knife, rush or feather cape | Rolls through a line of crawlers, then cuts their open sides |
+| **The breakwater** | Shoulder in | The sweep | Stone maul or hagstone flail, barnacle mail | Stands in the middle, knocks enemies off their wind-ups, clears rooms |
+| **The quiet keeper** | Hood the lamp | Toss a pebble | Soot cloak, sling | Slips past watchers, avoids fights, saves fuel to go deep |
+
+### What ships first, and the rig
+
+- **First version: ranks 1 to 3** of each track (twelve moves). The rank 4 moves come after.
+- New clips on the walker's rig: Shoulder in, Pin down, Seam strike, The sweep, Cast the flame (a lantern throw), Hood the lamp (an arm layer), Flare, Rushlight ring (the planting kneel may serve), Back step, Vault, Toss a pebble (the sling throw may serve), Name it (a point), Turn aside, Knock. The heaviest are Vault, The sweep and Turn aside, two of them rank 4.
+
 ## The lantern
 
 The lantern is how far you can go.
@@ -178,11 +253,12 @@ The lantern is how far you can go.
 
 ## Fighting
 
-Simple, readable, from the below-view camera.
+Simple, readable, from a fixed high camera that follows room by room, in the manner of Moonlighter (the WASD walking plan, approved October 26, 2026: W A S D move, Shift runs, Space rolls the way you move).
 
-- **Swing** the weapon. Each weapon has its own reach and rhythm.
-- **Dodge step** out of the way.
-- **Raise the lantern.** This pushes back light-shy enemies but burns fuel faster.
+- **Swing** the weapon with a left click. Each weapon has its own reach and rhythm.
+- **Dodge roll** on Space, out of the way.
+- **Raise the lantern** by holding the right mouse button. This pushes back light-shy enemies but burns fuel faster.
+- **Q and E** are the two special moves the player chose (see Special moves).
 - **Sling.** It throws pebbles, which the walker already gathers, so the pebble store becomes ammunition.
 - A gentle lock-on to the nearest enemy, and a **"gentler Hollow"** setting for younger players (Matt's testers are 7 and 10).
 
@@ -360,7 +436,7 @@ A fifth trail, alongside the naturalist's, the beachcomber's, the shaper's and t
 - **08** terrain: the cave mouth as a placed rock piece.
 - **11, 12** creatures: the bear as the landmark; the Hollow's kinds kept apart from the ecology.
 - **13** progression and journal: the Lamplighter's trail, the bestiary pages.
-- **15** input: swing, dodge, raise the lantern, sling.
+- **15** input: swing (left click), dodge roll (Space), raise the lantern (right mouse held), the two special moves (Q and E), sling.
 - **23** walker: fighting animations (swing per weapon, dodge, hit, lantern raise) and a climb.
 - **F13** camp: weapons, lanterns, coats, fuel and ammunition as makes (at most three ingredients each); birch tar at the hearth; the Hollow's materials as inputs.
 - **F10, 12** plants: hazel (woodland tier) and birch, which several makes need.
@@ -387,6 +463,7 @@ A fifth trail, alongside the naturalist's, the beachcomber's, the shaper's and t
 - What do the Hollow's things look like? Matt to sketch a direction, or a session to propose some. Who makes their models is Matt's call (CLAUDE.md).
 - Guardian floors: should there be bigger set-piece enemies, and how often?
 - Should the player ever see anything of the measure, such as a hint like "the Hollow feels deeper today"?
+- **A character and inventory page** (Matt, October 26, 2026: needed with this build-out). One place to see the walker as equipped: weapon, lantern, coat, charm, the Q and E moves, the four tracks' marks, and what is carried. It needs its own plan: where it opens (a key, the journal, the lantern hook), how it relates to the pack bar and the camp's stores, and how it stays words and drawings, never numbers.
 
 ## Depends on / feeds into
 
