@@ -86,6 +86,8 @@ export function mountSketchbook(parent, buttonParent, o) {
   function render() {
     const b = cleanBook(get('sketchbook'));
     btnRoot.hidden = b.made <= 0;
+    // Look moves one slot left while the book button shows (look.css).
+    document.documentElement.classList.toggle('ebb-has-sketchbook', !btnRoot.hidden);
     const u = ui();
     root.classList.toggle('is-open', u.open);
     root.inert = !u.open;

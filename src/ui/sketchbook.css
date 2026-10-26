@@ -1,5 +1,5 @@
 /* The walker's sketchbook (src/ui/sketchbook.js; P2i I5). The book button sits in the top-right
-   row, left of Look; the book opens in the middle of the view, two pages a spread, one page each
+   row between the journal and Look (Look moves over a slot while it shows); the book opens in the middle of the view, two pages a spread, one page each
    below 760 px. Its paper is the drawings' own flat cream, so they sit on it with no edge. */
 
 :root {
@@ -12,7 +12,7 @@
 .ebb-sbbtn {
   position: fixed;
   top: max(var(--jr-edge, 12px), env(safe-area-inset-top));
-  right: calc(max(var(--jr-edge, 12px), env(safe-area-inset-right)) + 3 * (var(--jr-btn, 48px) + 8px));
+  right: calc(max(var(--jr-edge, 12px), env(safe-area-inset-right)) + 2 * (var(--jr-btn, 48px) + 8px));
   z-index: 11;
   pointer-events: none;
 }
