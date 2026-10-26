@@ -33,18 +33,49 @@
   dl { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 14px; margin: 0; font-size: 16px; }
   dt { color: #4A5551; } dd { margin: 0; font-weight: 800; }
   a { color: #4a6a47; }
+  .view-wrap { position: relative; }
+  .badge { position: absolute; left: 12px; top: 12px; background: rgba(251, 247, 240, 0.92); border-radius: 10px; padding: 6px 10px; font-size: 16px; font-weight: 800; }
+  #trace { width: 100%; height: 150px; display: block; border-radius: 10px; border: 1px solid #E3D9C9; }
+  .slider { display: grid; grid-template-columns: minmax(0, 9em) minmax(0, 1fr) minmax(0, 6.5em); align-items: center; gap: 4px 12px; font-size: 16px; }
+  .slider input { width: 100%; min-width: 0; accent-color: #4a6a47; height: 30px; }
+  .slider output { font-weight: 800; }
+  .keys { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 14px; margin: 0; font-size: 16px; }
+  .numbers { font-size: 15px; color: #4A5551; margin: 0; }
 </style>
 </head>
 <body>
 <main>
   <h1>ebb walk lab</h1>
-  <p class="muted">Where the walker can go (doc 23, W1). Click the map once to stand there, then click anywhere to walk; double click to hurry. Move the tide to watch the sandbar open and close. The test sandbar and islet are the ones the game's ?sandbar link builds. <a href="./">All tools</a></p>
+  <p class="muted">Where and how the walker goes (doc 23). Click the map once to stand there. Then walk with the keys, relative to the camera; in the follow view the mouse turns the camera, as it will in the game. In the map view a click still walks there, and any key takes over. Every slider changes the walk at once; nothing here is saved. <a href="./">All tools</a></p>
   <div class="split">
     <div class="card">
-      <canvas id="map" aria-label="Map of the island from above, the walk grid coloured by where you can stand"></canvas>
+      <div class="buttons" id="view">
+        <button data-view="follow" aria-pressed="true">Follow view</button>
+        <button data-view="map" aria-pressed="false">Whole map</button>
+      </div>
+      <div class="view-wrap">
+        <canvas id="map" aria-label="The island from above on the walk grid, coloured by where you can stand"></canvas>
+        <span class="badge" id="look-badge" hidden>Mouse look on</span>
+      </div>
       <p class="note" id="note" role="status" aria-live="polite"></p>
+      <h2>Speed</h2>
+      <canvas id="trace" aria-label="Your speed over the last six seconds"></canvas>
+      <dl class="keys">
+        <dt>W A S D or arrows</dt><dd>Walk, relative to the camera</dd>
+        <dt>Shift held</dt><dd>Run</dd>
+        <dt>Space</dt><dd>Dodge roll</dd>
+        <dt>Mouse</dt><dd>Turns the camera (follow view: click the view first)</dd>
+        <dt>Alt held, or Esc</dt><dd>Frees the pointer</dd>
+      </dl>
     </div>
     <div class="card">
+      <h2>The feel</h2>
+      <div class="buttons" id="feel">
+        <button data-feel="island" aria-pressed="true">Island</button>
+        <button data-feel="hollow" aria-pressed="false">Hollow (later)</button>
+      </div>
+      <div id="sliders"></div>
+      <p class="numbers" id="numbers"></p>
       <h2>The tide</h2>
       <div class="tide">
         <label for="level">Sea level</label>
@@ -58,7 +89,7 @@
       </div>
       <div class="buttons">
         <button id="bar" aria-pressed="true">Test sandbar on</button>
-        <button id="frog" aria-pressed="false">A frog by the bar</button>
+        <button id="frog" aria-pressed="false">A frog in front of you</button>
       </div>
       <h2>The walker</h2>
       <dl id="stats"></dl>

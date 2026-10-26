@@ -21,7 +21,7 @@ import { findPath, nearestOpen, isOpen } from './path.js';
  * @param {WalkerEnv} env
  */
 export function createWalker(R, env) {
-  const G = R.grid, P = R.pace;
+  const G = R.grid, P = R.pace, ST = R.steer;
   /** @type {import('./path.js').WalkRules} */
   const rules = { depth: env.depth, wadeM: G.wadeM, wadeCost: G.wadeCost, maxStepM: G.maxStepM, snapM: G.snapM };
   const s = {
@@ -32,7 +32,104 @@ export function createWalker(R, env) {
     retreating: false,
     /** Standing, kneeling or sitting (W4); walking always stands you up. @type {'stand'|'kneel'|'sit'} */
     posture: /** @type {'stand'|'kneel'|'sit'} */ ('stand'),
+    /** Steering (keys): the way wanted this frame (world x, z, length 0..1) and whether Shift runs. */
+    want: { x: 0, z: 0, run: false },
+    /** Steering: the pace being driven toward (m/s); speed is what the feet really cover. */
+    v: 0,
+    /** A dodge roll under way: its way (unit x, z) and time into it (s); null when none. @type {{ x: number, z: number, t: number } | null} */
+    roll: null,
+    /** Seconds until another roll may start. */
+    rollWait: 0,
   };
+  /** The feel in use (recipes/world/walker.json steer.profiles): island now, hollow later. */
+  let feel = ST.profiles[ST.profile];
+
+  /** Could you step from one spot to another, one short step (grid rules: open, no cliff, no cut corner)? */
+  function canStep(/** @type {number} */ x0, /** @type {number} */ z0, /** @type {number} */ x1, /** @type {number} */ z1) {
+    const g = env.grid, k0 = g.cellAt(x0, z0), k1 = g.cellAt(x1, z1);
+    if (k1 < 0) return false;
+    if (k1 === k0) return true;
+    if (!isOpen(g, rules, k1)) return false;
+    // Standing somewhere closed (a stroke, the tide), any open cell beside you is a way out.
+    if (k0 < 0 || !isOpen(g, rules, k0)) return true;
+    if (Math.abs(g.height[k1] - g.height[k0]) > G.maxStepM) return false;
+    const i0 = k0 % g.w, j0 = Math.floor(k0 / g.w), i1 = k1 % g.w, j1 = Math.floor(k1 / g.w);
+    // Across a corner: both cells beside it open, as the paths never cut one.
+    if (i0 !== i1 && j0 !== j1) return isOpen(g, rules, j0 * g.w + i1) && isOpen(g, rules, j1 * g.w + i0);
+    return true;
+  }
+
+  /**
+   * Move by (dx, dz), sliding along whatever blocks the way: the step is tried whole, then along each
+   * axis (the grid's edges), the longer first. slide false: all or nothing (a roll stops short).
+   * @returns {number} meters moved
+   */
+  function moveBy(/** @type {number} */ dx, /** @type {number} */ dz, slide = true) {
+    // Long steps (a roll, a slow frame) go in pieces under half a cell, so no cell is jumped.
+    const n = Math.max(1, Math.ceil(Math.hypot(dx, dz) / (G.cellM * 0.4)));
+    let moved = 0;
+    for (let i = 0; i < n; i++) {
+      const sx = dx / n, sz = dz / n;
+      /** @type {[number, number][]} */
+      const tries = !slide ? [[sx, sz]] : Math.abs(sx) >= Math.abs(sz) ? [[sx, sz], [sx, 0], [0, sz]] : [[sx, sz], [0, sz], [sx, 0]];
+      const ok = tries.find(([a, b]) => (a || b) && canStep(s.x, s.z, s.x + a, s.z + b));
+      if (!ok) break;
+      s.x += ok[0]; s.z += ok[1];
+      moved += Math.hypot(ok[0], ok[1]);
+    }
+    return moved;
+  }
+
+  /** Turn toward a facing by at most degPerS this frame. @param {number} face @param {number} dt @param {number} degPerS */
+  function turnToward(face, dt, degPerS) {
+    let turn = face - s.yaw;
+    turn = Math.atan2(Math.sin(turn), Math.cos(turn));
+    const most = (degPerS * Math.PI / 180) * dt;
+    s.yaw += Math.max(-most, Math.min(most, turn));
+  }
+
+  /** The pace to steer at here: run, creep near a creature (unless running), slower when wading. @param {boolean} run */
+  function steerPace(run) {
+    const near = env.nearest ? env.nearest(s.x, s.z) : Infinity;
+    let pace = run ? P.briskMps : feel.creep && near < P.creepNearM ? P.creepMps : P.strollMps;
+    const here = env.grid.cellAt(s.x, s.z);
+    if (here >= 0 && env.depth(here) > P.wadeAnkleM) pace = Math.min(pace, P.wadeMps);
+    return pace;
+  }
+
+  /** Steering and rolling, when there is no way to follow (keys, doc 23). @param {number} dt */
+  function steerUpdate(dt) {
+    s.rollWait = Math.max(0, s.rollWait - dt);
+    if (s.roll) {
+      const RL = ST.roll, r = s.roll;
+      const step = Math.min(dt, RL.durS - r.t);
+      r.t += dt;
+      const want = (RL.distM / RL.durS) * step;
+      const moved = moveBy(r.x * want, r.z * want, false);
+      s.speed = moved / dt;
+      // Stopped short (deep water, a cliff edge), or done: back on your feet, at the pace you had.
+      if (moved < want * 0.5 || r.t >= RL.durS) { s.roll = null; s.rollWait = RL.waitS; s.speed = s.v; }
+      return;
+    }
+    const w = s.want, mag = Math.min(1, Math.hypot(w.x, w.z));
+    let want = 0;
+    if (mag > 0.01) {
+      s.posture = 'stand';
+      const face = Math.atan2(w.x, w.z);
+      if (feel.eightWay) s.yaw = Math.round(face / (Math.PI / 4)) * (Math.PI / 4);
+      else turnToward(face, dt, feel.turnDegPerS);
+      // Slower while turning sharply, so a U-turn is a tight arc, never a spin in place at full pace.
+      let err = face - s.yaw;
+      err = Math.abs(Math.atan2(Math.sin(err), Math.cos(err)));
+      want = steerPace(w.run) * mag * Math.max(feel.turnSlowFloor, Math.cos(err));
+    }
+    const pace = Math.max(P.strollMps, want);
+    const dv = want - s.v;
+    s.v += Math.sign(dv) * Math.min(Math.abs(dv), (dv > 0 ? pace / feel.accelS : Math.max(s.v, P.strollMps) / feel.stopS) * dt);
+    if (s.v < 1e-3) { s.v = 0; s.speed = 0; return; }
+    const step = s.v * dt;
+    s.speed = moveBy(Math.sin(s.yaw) * step, Math.cos(s.yaw) * step) / dt;
+  }
 
   /**
    * The cell the next step lands in: up to one cell along the way to the next point of the path
@@ -70,7 +167,37 @@ export function createWalker(R, env) {
     get yaw() { return s.yaw; },
     /** m/s, now. */
     get speed() { return s.speed; },
-    get moving() { return s.path.length > 0; },
+    /** Walking a way, steering, or rolling. */
+    get moving() { return s.path.length > 0 || s.speed > 1e-3 || !!s.roll; },
+    /** Following a way (a click, the tide), not steered by keys. */
+    get pathing() { return s.path.length > 0; },
+    /** How far into a dodge roll (0..1), or -1 when not rolling. */
+    get rolling() { return s.roll ? Math.min(1, s.roll.t / ST.roll.durS) : -1; },
+    /** The feel in use: 'island' or 'hollow'. */
+    get feel() { return feel === ST.profiles.hollow ? 'hollow' : 'island'; },
+    /** Switch the feel (the walk lab tries the Hollow's today). @param {string} name */
+    setFeel(name) { feel = ST.profiles[name] ?? feel; },
+    /**
+     * Steer this frame (keys, camera-relative, turned into the world by the caller): the way you want
+     * to go (length up to 1; 0 lets you stop) and whether Shift runs. Ignored while wading back from
+     * the tide. A way to follow (a click) wins until the caller stops it.
+     * @param {number} x @param {number} z @param {boolean} [run]
+     */
+    steer(x, z, run = false) { s.want.x = x; s.want.z = z; s.want.run = run; },
+    /**
+     * Dodge roll (Space): about roll.distM along (x, z), or the way you face when that is 0. Not while
+     * one is waiting, wading back, or after placing; stops a walk. Returns whether it started.
+     * @param {number} x @param {number} z
+     */
+    roll(x, z) {
+      if (!s.placed || s.roll || s.rollWait > 0 || s.retreating) return false;
+      const l = Math.hypot(x, z);
+      const [rx, rz] = l > 1e-3 ? [x / l, z / l] : [Math.sin(s.yaw), Math.cos(s.yaw)];
+      s.path = []; s.brisk = false; s.posture = 'stand';
+      s.roll = { x: rx, z: rz, t: 0 };
+      s.yaw = Math.atan2(rx, rz);
+      return true;
+    },
     get brisk() { return s.brisk; },
     get retreating() { return s.retreating; },
     /** Standing, kneeling or sitting. */
@@ -80,7 +207,7 @@ export function createWalker(R, env) {
      * @param {'stand'|'kneel'|'sit'} p
      */
     setPosture(p) {
-      if (p !== 'stand') { s.path = []; s.brisk = false; s.speed = 0; }
+      if (p !== 'stand') { s.path = []; s.brisk = false; s.speed = 0; s.v = 0; s.roll = null; }
       s.posture = p;
     },
     /** Turn to face a way where you are (kneeling to lift a log, L3a). @param {number} yaw */
@@ -96,7 +223,7 @@ export function createWalker(R, env) {
       const k = nearestOpen(env.grid, rules, x, z, reachM);
       if (k < 0) return false;
       const [cx, cz] = env.grid.cellAt(x, z) === k ? [x, z] : env.grid.center(k);
-      Object.assign(s, { placed: true, x: cx, z: cz, y: env.ground(cx, cz), yaw, speed: 0, path: [], brisk: false, retreating: false, posture: 'stand' });
+      Object.assign(s, { placed: true, x: cx, z: cz, y: env.ground(cx, cz), yaw, speed: 0, v: 0, roll: null, path: [], brisk: false, retreating: false, posture: 'stand' });
       return true;
     },
 
@@ -112,16 +239,27 @@ export function createWalker(R, env) {
         s.brisk = brisk;
         s.retreating = false;
         s.posture = 'stand';
+        s.roll = null; s.v = 0;
       }
       return r;
     },
 
-    /** Stop where you are. */
-    stop() { s.path = []; s.brisk = false; },
+    /** Stop where you are (a walk, a steer or a roll). */
+    stop() { s.path = []; s.brisk = false; s.v = 0; s.speed = 0; s.roll = null; },
 
     /** @param {number} dt seconds */
     update(dt) {
       if (!s.placed || dt <= 0) return;
+      // Steered by keys, or rolling: no way to follow. The tide still sends you back to dry ground.
+      if (!s.path.length) {
+        const here = env.grid.cellAt(s.x, s.z);
+        if (here >= 0 && env.depth(here) >= G.wadeM && !s.roll) retreat();
+        else {
+          steerUpdate(dt);
+          s.y = env.ground(s.x, s.z);
+          return;
+        }
+      }
       // The water came up over where you stand, or over the next step: wade back to dry ground.
       if (!s.retreating) {
         const here = env.grid.cellAt(s.x, s.z);
