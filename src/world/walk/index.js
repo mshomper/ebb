@@ -63,11 +63,14 @@ export function createWalk(o) {
   // Drawing only: it reads the walker and never changes it.
   const pass = createFigurePass(o.figure, 'walker');
   /** @type {import('../figure/index.js').Figure | null} */ let figure = null;
+  /** The pot in both arms (S5). */
+  let holding = false;
   loadFigureModel(o.figure)
     .then((glb) => {
       figure = createFigure({ recipe: o.figure, glb, pass });
       // Already put down (a save, placeAt): appear in that posture, not easing into it.
       if (walker.placed) figure.motion.place(walker.posture);
+      if (holding) figure.motion.hold(true);
     })
     .catch((err) => console.error('The walker figure did not load:', err));
   /** Water over a world spot now (the cell it falls in). @param {number} x @param {number} z */
@@ -338,6 +341,12 @@ export function createWalk(o) {
       if (Math.hypot(x - walker.x, z - walker.z) > 1e-3) walker.face(Math.atan2(x - walker.x, z - walker.z));
       lookAt(x, z);
       this.reach(standS, gesture);
+    },
+
+    /** Hold the pot in both arms, or let go (S5, K-26): the figure's hands come to its sides. @param {boolean} on */
+    hold(on) {
+      holding = on;
+      figure?.motion.hold(on);
     },
 
     /**

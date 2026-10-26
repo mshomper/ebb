@@ -114,6 +114,8 @@
 .ebb-pouch__svg { display: block; width: 40px; height: 40px; }
 /* Holding the pot (Phase 2): the pouches dim. */
 .ebb-ground__pouches.is-holding .ebb-pouch { opacity: 0.4; }
+/* The pot in your arms (K-26): its own tile, first and not dimmed. */
+.ebb-ground__pouches.is-holding .ebb-pouch--pot { opacity: 1; }
 
 /* The "here" bar (src/ui/ground-here.js): just right of the ground bar, its buttons in cream, for
    what you can do right where you stand. Its left edge is set from the ground bar's place. */

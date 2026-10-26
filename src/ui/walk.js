@@ -65,6 +65,7 @@ export function mountWalk(parent, words, sowing) {
   const sitBtn = /** @type {HTMLButtonElement} */ (bar.querySelector('[data-posture="sit"]'));
   const kneelBtn = /** @type {HTMLButtonElement} */ (bar.querySelector('[data-posture="kneel"]'));
   const netBtn = /** @type {HTMLButtonElement} */ (bar.querySelector('[data-pick-kind="net"]'));
+  const feedBtn = /** @type {HTMLButtonElement} */ (bar.querySelector('[data-feed]'));
   const tinBtn = /** @type {HTMLButtonElement} */ (bar.querySelector('[data-menu="tin"]'));
   const giftBtn = /** @type {HTMLButtonElement} */ (bar.querySelector('[data-menu="gifts"]'));
   const menu = /** @type {HTMLElement} */ (bar.querySelector('.ebb-ground__menu'));
@@ -80,11 +81,14 @@ export function mountWalk(parent, words, sowing) {
     const hasNet = !!get('unlocks')?.nets?.general;
     const hand = get('hand') ?? null;
     const gifts = giftItems(sowing, get('unlocks'));
+    // The pot in both arms (K-26): no Feed and no Net until it is set down.
+    const arms = get('pack')?.holding === 'pot';
     if (!below) open = null;
-    const key = `${below}|${w.posture}|${hasNet}|${hand?.kind}:${hand?.id}|${open}|${gifts.map((g) => `${g.id}${g.left}`).join(',')}`;
+    const key = `${below}|${w.posture}|${hasNet}|${arms}|${hand?.kind}:${hand?.id}|${open}|${gifts.map((g) => `${g.id}${g.left}`).join(',')}`;
     if (key === shown) return;
     shown = key;
-    netBtn.hidden = !hasNet;
+    netBtn.hidden = !hasNet || arms;
+    feedBtn.hidden = arms;
     netBtn.setAttribute('aria-pressed', String(hand?.kind === 'net'));
     tinBtn.setAttribute('aria-pressed', String(hand?.kind === 'seed'));
     giftBtn.setAttribute('aria-pressed', String(hand?.kind === 'gift'));
@@ -150,7 +154,7 @@ export function mountWalk(parent, words, sowing) {
   }
 
   render();
-  const unsubs = ['walk', 'unlocks', 'hand'].map((s) => subscribe(s, render));
+  const unsubs = ['walk', 'unlocks', 'hand', 'pack'].map((s) => subscribe(s, render));
   parent.appendChild(root);
   parent.appendChild(bar);
   return () => {
