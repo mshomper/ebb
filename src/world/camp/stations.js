@@ -27,7 +27,7 @@ import { dispatch, onAction } from '../../input/actions.js';
 import { hash32 } from '../../core/rng.js';
 import { registerCardAction } from '../../ui/card-actions.js';
 import { ringLaid, inSlot } from './model.js';
-import { cleanCook, layout, drawPlan, available, recordMade, buildKinds, partKinds } from './making.js';
+import { cleanCook, layout, drawPlan, available, recordMade, buildKinds, partKinds, givesOf } from './making.js';
 import { createKeeps } from './keeps.js';
 import { layWork } from './work.js';
 import { shapedOn, addShaped, takeShaped, setHearth } from './pots.js';
@@ -318,7 +318,7 @@ export function createStations(k) {
     if (m.out === 'shaped') k.change((c) => addShaped(c, id));
     // A make that fills a pouch (rush cord, crushed shell): into the pack, or a small heap at your feet when full.
     if (m.out === 'pouch') {
-      const kind = m.gives ?? id, n = m.count ?? 1;
+      const kind = givesOf(m, id, laid), n = m.count ?? 1;
       if (o.pack?.room(kind)) o.pack.add(kind, n);
       else o.pack?.heapHere?.(kind, n);
     }

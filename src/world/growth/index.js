@@ -10,7 +10,7 @@ import { get as getStore, subscribe as subscribeStore } from '../../core/store.j
 import { hash32 } from '../../core/rng.js';
 import { WORLD_CELLS } from '../terrain/grid.js';
 import { buildHabitat, HABITAT_CELLS } from './habitat.js';
-import { suitability, plantSeed, plantCover, settleGrowth } from './coarse.js';
+import { suitability, plantSeed, plantCover, liftPlant, settleGrowth } from './coarse.js';
 import { lushField } from './lush.js';
 import { plantHash } from './phenology.js';
 import { pickShares, plantLooks } from './looks.js';
@@ -250,8 +250,8 @@ export function createGrowth(device, opts) {
      * the hourly tick and a later catch-up see.
      * @param {string} sp @param {number} x @param {number} z
      */
-    plant(sp, x, z) {
-      const r = this.check(sp, x, z);
+    plant(sp, x, z, o = {}) {
+      const r = this.check(sp, x, z, o);
       if (r.ok) world.state = r.state;
       return { ok: r.ok, id: 'id' in r ? r.id : undefined, reason: r.reason };
     },
@@ -260,11 +260,22 @@ export function createGrowth(device, opts) {
      * Would a seed take at a world point? plant() without keeping the result: the world is left
      * as it is (the sowing ring's ink, D1a). Returns the world it would make, for plant().
      * @param {string} sp @param {number} x @param {number} z
+     * @param {import('./starters.js').PlantOpts} [o] a seed ball's poorer ground, a clump's or a cutting's size (P2g)
      * @returns {{ state: any, ok: boolean, id?: number, reason?: string }}
      */
-    check(sp, x, z) {
+    check(sp, x, z, o = {}) {
       // A cover plant (rushes) starts a tussock in its cover; the others plant a seed.
-      return world.env.recipes.covers?.[sp] ? plantCover(world.state, sp, x, z, world.env) : plantSeed(world.state, sp, x, z, world.env);
+      return world.env.recipes.covers?.[sp] ? plantCover(world.state, sp, x, z, world.env) : plantSeed(world.state, sp, x, z, world.env, o);
+    },
+
+    /**
+     * Lift a plant out whole with the shovel (P2g): it leaves the island now (part of what the next
+     * hour and a catch-up see), and its record comes back. @param {number} id @returns {any | null}
+     */
+    lift(id) {
+      const r = liftPlant(world.state, id);
+      if (r.plant) world.state = r.state;
+      return r.plant;
     },
 
     /**

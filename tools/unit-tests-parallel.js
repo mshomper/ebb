@@ -60,6 +60,7 @@ export const PARALLEL = {
   items: () => import('./unit-tests-items.js').then((m) => m.addItemTests),
   herbs: () => import('./unit-tests-herbs.js').then((m) => m.addHerbTests),
   sowing: () => import('./unit-tests-sowing.js').then((m) => m.addSowingTests),
+  planting: () => import('./unit-tests-planting.js').then((m) => m.addPlantingTests),
   dig: () => import('./unit-tests-dig.js').then((m) => m.addDigTests),
   campMaking: () => import('./unit-tests-camp-making.js').then((m) => m.addCampMakingTests),
   fireProducts: () => import('./unit-tests-fire-products.js').then((m) => m.addFireProductsTests),

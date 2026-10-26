@@ -190,7 +190,7 @@ export function addHerbTests(test, assert, eq) {
     };
     const lines = [];
     for (const [sp, [part, cases]] of Object.entries(CASES)) {
-      eq(partsOf(sp, gather).join(), part, `${sp} parts`);
+      eq(partsOf(sp, gather).filter((p) => p !== 'seed').join(), part, `${sp} parts (and its seed, P2g)`);
       const env0 = { flora: flora[sp] };
       for (let id = 1; id <= 5; id++) {
         const plant = { id, sp, size: 0.9, best: 0.9 };
@@ -277,7 +277,7 @@ export function addHerbTests(test, assert, eq) {
     assert(r.spread.distanceM[0] > r.spread.minSpacingM, 'a creep step must clear the spacing');
     eq(JSON.stringify(r.dormant), '[3.05,3.95]', 'winter rest');
     assert(r.look.dormantHeight >= 0.8, 'it keeps its blades standing through winter');
-    eq(partsOf('marram', gather).join(), 'leaves', 'marram parts');
+    eq(partsOf('marram', gather).join(), 'leaves,seed', 'marram parts: leaves, and its seed (P2g)');
     for (const [pos, ok] of /** @type {[number, boolean][]} */ ([[0.6, false], [2.0, true], [3.5, false]])) {
       const p = pickable({ id: 1, sp: 'marram', size: 0.9, best: 0.9 }, 'leaves', { flora: r, pos }, gather);
       assert(p.ok === ok, `marram leaves at season ${pos}: ${p.ok ? 'pickable' : p.why}`);

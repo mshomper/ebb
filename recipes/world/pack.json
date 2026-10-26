@@ -17,7 +17,7 @@
     "leaves": "herbs", "flowers": "herbs", "tops": "herbs", "bark": "herbs", "roots": "herbs", "twigs": "herbs",
     "stems": "fibres", "withies": "fibres", "blades": "fibres", "down": "fuel",
     "berries": "living", "hips": "living", "fruit": "living", "leaf": "living", "strands": "living",
-    "seed": "earth", "clump": "earth"
+    "seed": "earth", "clump": "earth", "ball": "earth"
   },
   "kinds": [
     { "id": "sticks", "name": "Sticks", "group": "fuel", "sketch": "sticks", "camp": "sticks", "line": "Dry sticks from under the bushes." },
@@ -114,8 +114,10 @@
     "noSlot": "The camp has all it needs. Set something aside first.",
     "noRack": "Herbs want somewhere to hang. A drying rack would hold them.", "rackFull": "The rack is full. Take a bunch down first.", "hamperFull": "The hamper is full. Take something out first.",
     "rack": { "fresh": "Hung today. Still green.", "drying": "Drying.", "dry": "Dry and crisp." }, "noBowl": "This wants a bowl to sit in.",
-    "worms": "They wriggle down into the soil.", "clump": "Its roots are bare. Set it in a dug hole to keep it.",
+    "worms": "They wriggle down into the soil.", "clump": "Its roots are bare. Set it in the ground to keep it.",
+    "pouch": "Seed and clumps keep in their pouch, or in a hamper once there is one.",
     "newPouches": "Two more pouches.",
+    "partNames": { "seed": "{name} seed", "clump": "{name}, lifted", "ball": "{name} seed balls" },
     "carrierNames": { "pack": "Your first pack", "satchel": "Rush satchel", "basket": "Willow basket" },
     "carrierLines": { "pack": "Six cloth pouches on a strap. It hangs here while you wear another.", "satchel": "Plaited rushes on a cord strap. Eight pouches.", "basket": "Woven withies on two cord straps. Ten pouches." },
     "wear": "Wear it",

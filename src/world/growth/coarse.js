@@ -33,7 +33,7 @@ import { plantStarters } from './starters.js';
 
 export { groundAt, suitability } from './ground.js';
 export { STAGE, initialGrowth, recoverFactor } from './plant.js';
-export { settleGrowth, plantSeed, plantCover } from './starters.js';
+export { settleGrowth, plantSeed, plantCover, liftPlant } from './starters.js';
 
 /** @typedef {import('./plant.js').Plant} Plant @typedef {import('./plant.js').GrowthState} GrowthState */
 

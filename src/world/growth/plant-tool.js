@@ -86,6 +86,7 @@ const SAYS = {
     ground: 'Grey willow needs soil, not sand or rock',
     steep: 'Too steep for grey willow; try a gentler bank',
     crowded: 'Too close to another willow; give it room to spread',
+    full: 'The island has all the willows it can hold',
   },
   gorse: {
     wet: 'Too wet for gorse; it wants dry ground that drains fast',
@@ -145,20 +146,21 @@ export function createPlantTool(opts) {
      * Would a seed take at a ground point? Nothing changes (the sowing ring on foot, D1a: inked where
      * it would grow, faint and crossed with these words where not).
      * @param {string} sp @param {ArrayLike<number>} p world point (x, y, z)
+     * @param {import('./starters.js').PlantOpts} [po] how it goes in (P2g: a seed ball, a clump, a cutting)
      * @returns {{ ok: boolean, reason: string, message: string }}
      */
-    check(sp, p) {
+    check(sp, p, po = {}) {
       // The camp ground stays clear (CP-16): the pad is refused before the ground is read. Cells
       // just past its edge are refused by the habitat's clear mask with the same words.
-      const r = onPad(getStore('campPad') ?? null, p[0], p[2]) ? { ok: false, reason: 'camp' } : growth.check(sp, p[0], p[2]);
+      const r = onPad(getStore('campPad') ?? null, p[0], p[2]) ? { ok: false, reason: 'camp' } : growth.check(sp, p[0], p[2], po);
       const reason = r.ok ? 'ok' : r.reason ?? 'unknown';
       return { ok: r.ok, reason, message: words(sp, reason) };
     },
 
     /**
      * Plant a seed at a ground point. @param {string} sp @param {ArrayLike<number>} p  world point (x, y, z)
-     * @param {{ given?: boolean }} [o] given: the seed is in hand already (the seed tin or a gift,
-     *   src/world/sowing), so it needs no sighting first
+     * @param {{ given?: boolean, plant?: import('./starters.js').PlantOpts }} [o] given: the seed is in hand already (the seed tin or a gift,
+     *   src/world/sowing), so it needs no sighting first; plant: how it goes in (P2g)
      * @returns {boolean} whether a seed went in (the world state changed)
      */
     tap(sp, p, o = {}) {
@@ -170,7 +172,7 @@ export function createPlantTool(opts) {
         updateStore('plantUi', () => ({ message: say(sp, name, 'unseen'), refused: true, at: performance.now() }));
         return false;
       }
-      const r = onPad(getStore('campPad') ?? null, p[0], p[2]) ? { ok: false, reason: 'camp', id: undefined } : growth.plant(sp, p[0], p[2]);
+      const r = onPad(getStore('campPad') ?? null, p[0], p[2]) ? { ok: false, reason: 'camp', id: undefined } : growth.plant(sp, p[0], p[2], o.plant ?? {});
       const message = words(sp, r.ok ? 'ok' : r.reason ?? 'unknown');
       updateStore('plantUi', () => ({ message, refused: !r.ok, at: performance.now() }));
       if (!r.ok) {

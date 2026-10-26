@@ -11,13 +11,17 @@
 import { get, update } from '../../core/store.js';
 import { emitDeferred } from '../../core/events.js';
 import { makeKinds } from './kinds.js';
-import { add as addTo, take as takeFrom, has as hasIn, packHolds, normalize, sizeOf, removePouch, addHeap, takeFromHeap, expireHeaps, cleanPack, addCarrier, wear } from './model.js';
+import { add as addTo, take as takeFrom, has as hasIn, packHolds, normalize, sizeOf, removePouch, addHeap, takeFromHeap, expireHeaps, cleanPack, addCarrier, wear, noteClump, takeClump } from './model.js';
+
+/** Handfuls in a full pouch: a clump fills one (P2g). */
+const FULL = 3;
 import { atCamp } from './camp.js';
 
 /**
- * @param {{ recipe: any, you: () => number[] | null, day: () => number,
+ * @param {{ recipe: any, you: () => number[] | null, day: () => number, speciesName?: (sp: string) => string | undefined,
  *   setDown?: (kind: string, handfuls: number) => { moved: number, refuse?: string, pile?: string | null, at?: { x: number, z: number } | null, full?: string } }} o
- *   you: where you stand below ([x, y, z]) or null above; day: the game day index; setDown: the
+ *   you: where you stand below ([x, y, z]) or null above; day: the game day index; speciesName: a
+ *   plant's name, for its seed, clump and seed balls (P2g); setDown: the
  *   camp's places (route.js: the rack, the piles, the hamper), which take what fits and say why not
  *   otherwise (full: the words key for the place that filled)
  */
@@ -41,8 +45,13 @@ export function createPack(o) {
     const pouches = p.pouches.map(([k, h]) => ({ kind: k, handfuls: h, sketch: kinds.sketchOf(k), name: nameOf(k) }));
     update('packView', () => ({ size, pouches, holding: p.holding, words: W.stage }));
   }
+  /** A plant's seed, clump or seed balls by its species' name (P2g: "Iris seed"), or null. @param {string} k */
+  const partName = (k) => {
+    const dot = k.lastIndexOf('.'), tpl = W.partNames?.[k.slice(dot + 1)], sp = o.speciesName?.(k.slice(0, dot));
+    return dot > 0 && tpl && sp ? tpl.replace('{name}', sp) : null;
+  };
   /** A kind's name for its card and aria-label. @param {string} k */
-  const nameOf = (k) => kinds.byId.get(k)?.name ?? k.split('.').pop()?.replace(/-/g, ' ').replace(/^./, (c) => c.toUpperCase()) ?? k;
+  const nameOf = (k) => kinds.byId.get(k)?.name ?? partName(k) ?? k.split('.').pop()?.replace(/-/g, ' ').replace(/^./, (c) => c.toUpperCase()) ?? k;
 
   // A save from before format 9, or from a newer build, comes back in normal form.
   update('pack', (p) => normalize(cleanPack(p, kinds, R), kinds, R));
@@ -94,7 +103,8 @@ export function createPack(o) {
       const you = o.you();
       const r = removePouch(pack(), i);
       if (!r.kind) return;
-      keep(normalize(r.pack, kinds, R));
+      // A clump tipped out is gone, and its size with it (P2g).
+      keep(normalize(r.kind.endsWith('.clump') ? takeClump(r.pack, r.kind.slice(0, -6)).pack : r.pack, kinds, R));
       update('identify', () => null);
       emitDeferred('pack:emptied', { kind: r.kind, x: you?.[0] ?? 0, z: you?.[2] ?? 0 });
       emitDeferred('island:notice', { text: r.kind === 'worms' ? W.worms : W.emptied, showS: 4 });
@@ -132,6 +142,30 @@ export function createPack(o) {
       // What did not fit: the line for the place that filled (a pile, the rack, the hamper).
       if (!r.refuse && r.moved < h) emitDeferred('island:notice', { text: W[r.full ?? 'pileFull'] ?? W.pileFull, showS: 4 });
       if (!keepCard) update('identify', () => null);
+    },
+
+    /** Is there a whole pouch free for a lifted clump (P2g G2)? @param {string} sp */
+    roomForClump: (sp) => addTo(pack(), `${sp}.clump`, FULL, kinds, R).added === FULL,
+    /**
+     * A plant lifted whole (P2g G2): its clump fills a pouch, its size kept until it is set in.
+     * @param {string} sp @param {number} size @param {number} best @returns {boolean} it went in
+     */
+    addClump(sp, size, best) {
+      const r = addTo(pack(), `${sp}.clump`, FULL, kinds, R);
+      if (r.added < FULL) { emitDeferred('pack:full', { kind: `${sp}.clump` }); return false; }
+      keep(noteClump(r.pack, sp, size, best));
+      return true;
+    },
+    /**
+     * A clump taken out to set in (P2g G2): its pouch empties and its size comes back (null with no
+     * clump of the species in the pack). @param {string} sp @returns {{ size: number, best: number } | null}
+     */
+    takeClump(sp) {
+      const t = takeFrom(pack(), `${sp}.clump`, FULL, kinds, R);
+      if (t.taken < FULL) return null;
+      const c = takeClump(t.pack, sp);
+      keep(c.pack);
+      return c.clump ? { size: c.clump[1], best: c.clump[2] } : null;
     },
 
     /** The carriers made, and the one worn (null: the starting pack; P2f). */

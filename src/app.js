@@ -37,6 +37,7 @@ import { createWaterWorld } from './world/water-world.js';
 import { createGrowth } from './world/growth/index.js';
 import { createPlantTool } from './world/growth/plant-tool.js';
 import { createSowing } from './world/sowing/index.js';
+import { createPlanting } from './world/sowing/planting.js';
 import { mountSowOverlay } from './ui/sow-overlay.js';
 import { weatherAt } from './world/weather.js';
 import { state as tideState, tideParams } from './world/tide.js';
@@ -612,6 +613,7 @@ export async function startApp(canvas, hooks = {}) {
   /** @type {ReturnType<typeof createPiles> | null} */ let piles = null;
   /** @type {any} */ let keeps = null;
   const pack = createPack({ recipe: await loadRecipe('world/pack'), you: () => walk.you(), day: () => clock.dayIndexOf(clock.worldT()),
+    speciesName: (sp) => flora[sp]?.name ?? world.env.recipes?.covers?.[sp]?.name,
     setDown: (k, h) => (piles && keeps ? setDownAtCamp(k, h, { campOf: pack.kinds.campOf, piles, rack: keeps.rack, hamper: keeps.hamper })
       : piles?.setDown(k, h) ?? { moved: 0, refuse: 'noSlot' }) });
   piles = createPiles({ recipe: pack.recipe, kinds: pack.kinds, seed, noHeaps: () => !!keeps?.hamper.here() });
@@ -733,6 +735,13 @@ export async function startApp(canvas, hooks = {}) {
   sim.addSystem(sketchbook);
   // `?sketch` (a test link, unsaved): a full pouch of charcoal sticks in the pack.
   if (params.has('sketch') && !back) pack.add('charcoal-sticks', 3);
+  // `?planting` (a test link, unsaved; P2g): in the pack, water mint seed, an iris clump, two willow
+  // withies, kelp for a good start and clay with campion seed for seed balls; the shovel made, for Lift.
+  if (params.has('planting') && !back) {
+    for (const [k, n] of [['watermint.seed', 3], ['willow.withies', 2], ['kelp', 1], ['clay', 1], ['campion.seed', 1]]) pack.add(/** @type {string} */ (k), /** @type {number} */ (n));
+    pack.addClump('iris', 0.55, 0.8);
+    updateStore('cook', (c) => ({ ...(c ?? {}), tools: [...new Set([...(c?.tools ?? []), 'shovel'])] }));
+  }
   // `?camp` (a test link, unsaved; S1): the evening skipped, the camp ready, the pack holding what
   // the workbench and the shovel take, and you standing at the workbench's ground; `?camp=bench`
   // has the workbench built already; `?camp=apothecary` (S2, P2j) the workbench and the apothecary
@@ -1304,7 +1313,12 @@ export async function startApp(canvas, hooks = {}) {
   }
   // Planting on foot (D1a, src/world/sowing): the seed tin, the gift spot and the net in hand, the
   // ring under the pointer, a click to sow, place or set; drawn over the island by sow-overlay.js.
-  const sowing = createSowing({ recipe: sowingRecipe, plantTool, pieces, nets, walk,
+  // P2g (src/world/sowing/planting.js): saved seed, seed balls, clumps and withies from the pack, and
+  // the plant card's Lift with the shovel.
+  const planting = createPlanting({ recipe: sowingRecipe, plantTool, growth, pack, flora, walk,
+    hasShovel: () => !!getStore('cook')?.tools?.includes('shovel'), plants: () => world.state?.growth?.plants ?? [],
+    ground: (x, z) => terrain.sampleHeight(x, z), worldChanged: () => updateStore('world', () => world.state) });
+  const sowing = createSowing({ recipe: sowingRecipe, plantTool, pieces, nets, walk, planting,
     ground: (x, z) => terrain.sampleHeight(x, z),
     depth: (x, z) => water.sampleLive(x, z)?.depth ?? 0,
     worldChanged: () => updateStore('world', () => world.state) });
@@ -1867,7 +1881,7 @@ export async function startApp(canvas, hooks = {}) {
     // Planting on foot (D1a): the ring under the pointer, a net walk's end, the tossed seeds.
     sowing.update(now);
     sowOverlay.draw(sowing.visuals(), getStore('view').project3, now);
-    terrainPass.setMarks(plantTool.marks(now, getStore('hand')?.kind === 'seed' || getStore('hand')?.kind === 'gift', chosen?.pinned ? chosen : null, [...(padMark ? [padMark] : []), ...bury,...(getStore('reveal')?.rings?.(now) ?? []), ...creatures.foodRings(), ...intro.rings(now), ...camp.rings(now / 1000), ...stores.rings(now / 1000)]));
+    terrainPass.setMarks(plantTool.marks(now, !!getStore('hand') && getStore('hand').kind !== 'net', chosen?.pinned ? chosen : null, [...(padMark ? [padMark] : []), ...bury,...(getStore('reveal')?.rings?.(now) ?? []), ...creatures.foodRings(), ...intro.rings(now), ...camp.rings(now / 1000), ...stores.rings(now / 1000)]));
     // Lugworm casts are drawn into the sand by the terrain pass.
     terrainPass.setCasts(finds.casts());
     // So are the holes you dug (src/world/dig): their mouths and the fresh soil round them; and the
@@ -2144,6 +2158,9 @@ export async function startApp(canvas, hooks = {}) {
         return this.summon('damselfly', count);
       },
     },
+    /** Planting on foot (D1a, P2g; tests and the test links). */
+    sowing,
+    planting,
     /** The shore zones and rock pools now (the journal's Web shows which are on the island). */
     shorePresence: () => shorePresence(ww.shore.zones(), water.getSummary(), getStore('terrainLive')?.mirror?.material ?? null),
     /** Every live animal system's hooks for the reveal on return (src/ui/reveal.js). */

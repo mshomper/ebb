@@ -184,11 +184,13 @@
 /* An empty gift spot rests dimmed (D1a); its word says gifts come here. */
 .ebb-ground .ebb-walk__btn.is-empty { opacity: 0.5; }
 /* The seed tin's and the gift spot's menus (D1a, src/ui/walk.js): a small row of drawn icons over
-   their own button, the same glass as the bar. */
+   their own button, the same glass as the bar; from seven items two even rows (P2g, walk.js sets
+   the columns). */
 .ebb-ground__menu {
   position: absolute;
   bottom: calc(100% + 8px);
-  display: flex;
+  display: grid;
+  grid-auto-flow: row;
   gap: 4px;
   padding: 6px;
   background: rgba(30, 38, 36, 0.86);

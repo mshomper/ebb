@@ -411,7 +411,8 @@ export function createDig(o) {
         if (r === 'full') say(o.pack.recipe.words.full);
         scooping = null;
       }
-      const digging = !!pending && o.walk.acting === 'dig';
+      // The shovel in both hands while digging, and while lifting a plant whole (P2g's liftClump).
+      const digging = (!!pending && o.walk.acting === 'dig') || o.walk.acting === 'liftClump';
       const sh = digging ? shovelProp(o.walk.hand('r'), o.walk.hand('l'), A) : hasShovel() ? onPack() : null;
       props.setProps(sh ? [sh] : []);
     },

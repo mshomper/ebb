@@ -15,8 +15,10 @@
  * @typedef {import('./kinds.js').Kinds} Kinds
  * @typedef {[string, number]} Pouch kind id, handfuls 1..3
  * @typedef {[string, number, number, number, number]} Heap kind id, x, z, game day, handfuls
- * @typedef {{ version: 1, carriers: string[], worn?: string, pouches: Pouch[], heaps: Heap[], holding: null | 'pot' }} Pack
+ * @typedef {{ version: 1, carriers: string[], worn?: string, clumps?: Clump[], pouches: Pouch[], heaps: Heap[], holding: null | 'pot' }} Pack
  *   carriers: the carriers made; worn: the one on your back (left out: the starting pack, so a save from before P2f reads the same)
+ *   clumps: the lifted plants waiting to be set in, oldest first (P2g; left out when none)
+ * @typedef {[string, number, number]} Clump species, size, best
  */
 
 const FULL = 3;
@@ -77,7 +79,8 @@ function formPouches(pouches, kinds, full = FULL) {
 }
 
 /** A copy of a pack with its own arrays. @param {Pack} pack @returns {Pack} */
-const copy = (pack) => ({ version: 1, carriers: pack.carriers.slice(), ...(pack.worn ? { worn: pack.worn } : {}), pouches: pack.pouches.map((p) => /** @type {Pouch} */ ([p[0], p[1]])),
+const copy = (pack) => ({ version: 1, carriers: pack.carriers.slice(), ...(pack.worn ? { worn: pack.worn } : {}),
+  ...(pack.clumps?.length ? { clumps: pack.clumps.map((c) => /** @type {Clump} */ (c.slice())) } : {}), pouches: pack.pouches.map((p) => /** @type {Pouch} */ ([p[0], p[1]])),
   heaps: pack.heaps.map((h) => /** @type {Heap} */ (/** @type {unknown} */ (h.slice()))), holding: pack.holding });
 
 /**
@@ -156,6 +159,27 @@ export function wear(pack, id, recipe) {
 }
 
 /**
+ * A plant lifted whole (P2g G2): its clump fills a pouch, and how big it was is kept here, oldest
+ * first, until it is set in again (wherever its pouch is, the pack or the hamper).
+ * @param {Pack} pack @param {string} sp @param {number} size @param {number} best @returns {Pack}
+ */
+export function noteClump(pack, sp, size, best) {
+  return { ...copy(pack), clumps: [...(pack.clumps ?? []), /** @type {Clump} */ ([sp, size, best])] };
+}
+
+/**
+ * The oldest clump of a species taken off the list (set in, or tipped out), or null when there is
+ * none. @param {Pack} pack @param {string} sp @returns {{ pack: Pack, clump: Clump | null }}
+ */
+export function takeClump(pack, sp) {
+  const list = pack.clumps ?? [], i = list.findIndex((c) => c[0] === sp);
+  if (i < 0) return { pack: copy(pack), clump: null };
+  const out = copy(pack), rest = list.filter((_, j) => j !== i);
+  if (rest.length) out.clumps = rest; else delete out.clumps;
+  return { pack: out, clump: /** @type {Clump} */ (list[i].slice()) };
+}
+
+/**
  * Takes the whole pouch at sorted index i out of the pack (Set down, Empty).
  * @param {Pack} pack @param {number} i @returns {{ pack: Pack, kind: string | null, handfuls: number }}
  */
@@ -228,5 +252,7 @@ export function cleanPack(v, kinds, recipe) {
     .slice(-Math.max(1, cap));
   // A pack from before P2f wore nothing made: the starting pack.
   const worn = typeof v.worn === 'string' && carriers.includes(v.worn) ? { worn: v.worn } : {};
-  return { version: 1, carriers, ...worn, pouches: formPouches(pouches, kinds ?? null, full), heaps: cap > 0 ? heaps : [], holding: v.holding === 'pot' ? 'pot' : null };
+  const clumps = (Array.isArray(v.clumps) ? v.clumps : []).filter((/** @type {any} */ c) => Array.isArray(c) && typeof c[0] === 'string' && Number.isFinite(c[1]) && Number.isFinite(c[2]))
+    .map((/** @type {any} */ c) => /** @type {Clump} */ ([c[0], Math.max(0, Math.min(1, c[1])), Math.max(0, Math.min(1, c[2]))]));
+  return { version: 1, carriers, ...worn, ...(clumps.length ? { clumps } : {}), pouches: formPouches(pouches, kinds ?? null, full), heaps: cap > 0 ? heaps : [], holding: v.holding === 'pot' ? 'pot' : null };
 }
