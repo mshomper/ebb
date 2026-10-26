@@ -81,7 +81,10 @@ import { createMidges } from './world/ecology/midges-live.js';
 import { SPECIES, keyOf, swarmSpecies } from './world/species.js';
 import { createSchools } from './world/creatures/schools.js';
 import { bringSwarm, testRecipe } from './world/creatures/swarms.js';
-import { onAction, history } from './input/actions.js';
+import { onAction, history, dispatch } from './input/actions.js';
+import { createWalkControls } from './world/walk/controls.js';
+import { createSolidsLive } from './world/walk/solids-live.js';
+import { createWhere } from './world/camp/where.js';
 import { attachDesktopInput } from './input/desktop.js';
 import { beginSave, TEST_PARAMS } from './save/autosave.js';
 import { createIntroBoot, introStartHour } from './world/intro/boot.js';
@@ -688,6 +691,11 @@ export async function startApp(canvas, hooks = {}) {
   sim.addSystem(camp);
   ringPlace = camp.ringPlace;
   keeps = camp.stations.keeps;
+  // Solid things the walker cannot pass through (src/world/walk/solids-live.js): camp pieces, logs,
+  // stones and the boat.
+  const solidsLive = createSolidsLive({ walk, where: createWhere({ terrain }), benchAt: camp.stations.benchAt, rackYawDeg: campRecipe.rack?.yawDeg ?? 0,
+    strand: () => pieces.strandLogs(), boat: () => (boat.visible ? boat.mooring?.boat ?? null : null), boatSize: boatRecipe.boat.hull });
+  sim.addSystem({ id: 'solids', tick: (/** @type {any} */ f) => solidsLive.update(f.realDt) });
   shadowPass.addCaster(camp.props.caster);
   midges.keepClear(() => camp.smokeClear());
   // What your figure glances at on foot (src/world/figure/look.js): frogs near you, the fire while it
@@ -1144,6 +1152,26 @@ export async function startApp(canvas, hooks = {}) {
   };
   canvas.addEventListener('pointerleave', () => { hoverOff(); sowing.setPointer(null); });
   canvas.addEventListener('pointerdown', hoverOff);
+
+  // ---- walking with the keys and the mouse (WASD; src/world/walk/controls.js) ----
+  /** What the centre dot rests on, and since when (ms): its tag shows after hoverRestS, as a pointer's rest. */
+  let dotKey = '', dotSince = 0;
+  const walkControls = createWalkControls({
+    canvas, walk, camera, recipe: walkerRecipe,
+    // A card or panel over the view: keys wait, and the pointer is freed to use it.
+    open: () => !!getStore('identify') || !!getStore('journalUi')?.open || !!getStore('haul') || !!getStore('shelfPending')
+      || !!getStore('sketchbookUi')?.open || !!getStore('stationView'),
+    use: (x, y) => dispatch({ type: 'look.tap', x, y, source: 'mouse' }),
+    hover: (x, y) => {
+      if (getStore('hand')) { sowing.setPointer(groundAt(x, y)); return; }
+      const h = hoverPick(x, y), key = h?.key ?? '', now = performance.now();
+      if (key !== dotKey) { dotKey = key; dotSince = now; if (getStore('hover')) updateStore('hover', () => null); }
+      else if (h && now - dotSince >= walkerRecipe.click.hoverRestS * 1000 && getStore('hover')?.key !== key) updateStore('hover', () => h);
+    },
+    pan: (dx, dy) => camera.pan(dx, dy),
+  });
+  // A movement key or a roll takes over from a click walk: the card it would open, and a walk to sow, are let go.
+  on('walk:keys', () => { cardOnArrival = null; sowing.cancelWalk(); });
 
   /** Each frame: you reached the thing you clicked on, so its card opens beside it. */
   function arriveForCard() {
@@ -1815,6 +1843,7 @@ export async function startApp(canvas, hooks = {}) {
 
     const t = clock.advance(realDt);
     camera.setViewport(cssW, cssH);
+    walkControls.update(realDt);
     walk.update(realDt);
     arriveForCard();
     gather.update();
@@ -1987,6 +2016,7 @@ export async function startApp(canvas, hooks = {}) {
     cancelAnimationFrame(raf);
     observer.disconnect();
     unAction();
+    walkControls.dispose();
     walk.dispose();
     sowOverlay.dispose();
     unHistory();

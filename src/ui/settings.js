@@ -197,6 +197,10 @@ export function mountSettings(o) {
   section('controls', 'Controls', 'controls', [
     toggle('Dim the buttons when I am not using them', () => settings().hudDim !== false, (on) => set({ hudDim: on })),
     hint('H hides the buttons, and H again brings them back.'),
+    hint('On foot, W A S D or the arrow keys walk, Shift runs and Space rolls.'),
+    hint('On foot, the mouse turns the view, and a click uses what the dot in the middle rests on.'),
+    hint('Hold Alt, or press Esc, to use the mouse on cards and buttons. Click the view to look round again.'),
+    hint('From above, W A S D move the view.'),
   ]);
   if (o.quality) {
     const q = /** @type {NonNullable<typeof o.quality>} */ (o.quality);

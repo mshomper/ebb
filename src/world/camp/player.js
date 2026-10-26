@@ -61,6 +61,8 @@ export function createActPlayer(o) {
       if (o.walk.distTo(approach.x, approach.z) <= approach.reachM + 0.6) approach.start();
       else approach = null;
     }),
+    // A movement key or a roll takes over from the walk there: the act waiting for it is let go.
+    on('walk:keys', () => { approach = null; }),
   ];
   return {
     play, watch,

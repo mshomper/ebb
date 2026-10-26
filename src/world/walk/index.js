@@ -18,6 +18,7 @@ import { update as updateStore } from '../../core/store.js';
 import { createWalkGrid } from './grid.js';
 import { createWalker } from './walker.js';
 import { isOpen } from './path.js';
+import { createSolids } from './solids.js';
 import { mainland, nearestJoined } from './reach.js';
 import { crossingNote, depthAtLow, hoursToLow } from './crossing.js';
 import { createFigurePass, createFigure, loadFigureModel } from '../figure/index.js';
@@ -57,7 +58,9 @@ export function createWalk(o) {
     for (const c of o.creatures()) best = Math.min(best, Math.hypot(c.x - x, c.z - z));
     return best;
   };
-  const walker = createWalker(R, { get grid() { return grid; }, depth, ground, nearest });
+  // Solid things you cannot walk through (solids.js): set by the game as they come and go.
+  const solids = createSolids(R.solids.bodyM);
+  const walker = createWalker(R, { get grid() { return grid; }, depth, ground, nearest, solids });
 
   // The figure (W5): its pass is ready at once; the model loads alongside and appears when it has.
   // Drawing only: it reads the walker and never changes it.
@@ -372,6 +375,37 @@ export function createWalk(o) {
       lookAt(x, z);
     },
 
+    /**
+     * Walking with the keys (src/world/walk/controls.js): the way wanted this frame, in the world
+     * (length up to 1), and Shift to run. Held still while an act plays. @param {number} x @param {number} z @param {boolean} run
+     */
+    steer(x, z, run) {
+      if (!below || acting) { walker.steer(0, 0); return; }
+      if (x || z) standAt = 0;
+      walker.steer(x, z, run);
+    },
+    /**
+     * The solid things now (camp pieces, logs, stones; solids.js): the walk grid closes their cells,
+     * and steering slides along them. @param {import('./solids.js').Solid[]} list
+     */
+    setSolids(list) {
+      solids.set(list);
+      solids.mark(grid);
+    },
+    /** A movement key pressed: it takes over from a click walk, and the card it would open (never from wading back). */
+    keyTakeover() {
+      if (!below || acting) return;
+      if (walker.pathing && !walker.retreating) walker.stop();
+      emitDeferred('walk:keys', {});
+    },
+    /** Space: a dodge roll the way given (or the way you face). Not while an act plays. @param {number} x @param {number} z */
+    roll(x, z) {
+      if (!below || acting || !walker.roll(x, z)) return false;
+      standAt = 0;
+      emitDeferred('walk:keys', {});
+      return true;
+    },
+
     /** How far you stand from a ground point, in meters (Infinity while above). @param {number} x @param {number} z */
     distTo(x, z) {
       return below && walker.placed ? Math.hypot(x - walker.x, z - walker.z) : Infinity;
@@ -540,7 +574,7 @@ export function createWalk(o) {
       const e = camera.eye, t = camera.target;
       const hour = ((hours % 24) + 24) % 24;
       const falls = figure.update(realDt, {
-        placed: walker.placed, x: walker.x, z: walker.z, y: walker.y, yaw: walker.yaw, speed: walker.speed,
+        placed: walker.placed, x: walker.x, z: walker.z, y: walker.y, yaw: walker.yaw, speed: walker.speed, rolling: walker.rolling, airborne: walker.airborne,
         moving: walker.moving, retreating: walker.retreating, ground, depth: depthAt,
         look: below ? { yaw: Math.atan2(t[0] - e[0], t[2] - e[2]) } : null,
         interests: below ? interests().filter((it) => Math.abs(it.x - walker.x) < 8 && Math.abs(it.z - walker.z) < 8).map((it) =>({ x: it.x, z: it.z, kind: it.kind, y: lift(it.x, it.z, it.kind) })) : [],
