@@ -1,0 +1,31 @@
+{
+  "type": "sketchbook",
+  "version": 1,
+  "note": "The walker's sketchbook (docs/future/13 P2i I5; the sketchbook brief). With charcoal sticks in the pack and a creature, plant or find within reachM of you and under the middle of the view, Sketch joins the here-bar; the walker sits and draws for sketchS real seconds (going up or walking off stops it, and nothing is used). Stages (src/world/sketchbook/model.js): 1 the first sketch, 2 sketched on a later game day, 3 sketched during a moment (moments below), 4 in another season. Each stage shows its drawing from assets/sketches (art: a subject's file name where it differs from its journal id; tier 1 Rough, 2 Shading, 3 Detail), listed in assets/sketches/manifest.json by tools/assets/sketch-sheets.py ship. A stage with no drawing yet leaves its page blank paper. placeholderArt: the drawings in assets/sketches are Matt's placeholder sheets (October 25, 2026); the page wears a small Placeholder tag while true. Matt's real drawings drop in by file name. wearPer: sketches a handful of charcoal sticks lasts; loose: loose sheets kept a page; fullConfidence: sketches until the hand is sure (lines darker); ageDays: game days until the book's corners are as worn as they get. subjects: the pages, in the journal's order (creatures, plants, finds), by journal species id. moments: what counts as something happening for stage 3: rain or mist at least these, or the hour of the day inside dusk or dawn.",
+  "placeholderArt": true,
+  "reachM": 8, "sketchS": 5, "offerEveryS": 0.3, "viewSampleSpreadPx": 70,
+  "wearPer": 3, "loose": 3, "fullConfidence": 40, "ageDays": 56,
+  "art": { "frogs": "frog", "toads": "toad", "minnows": "minnow", "dragonflies": "dragonfly", "damselflies": "damselfly", "turtles": "turtle", "midges": "midge", "slowworms": "slowworm", "lizards": "lizard" },
+  "subjects": [
+    "frogs", "toads", "minnows", "dragonflies", "damselflies", "turtles", "midges", "slowworms", "lizards",
+    "reeds", "rushes", "lilies", "pondweed", "iris", "marigold", "thrift", "campion", "willow", "gorse", "watermint", "meadowsweet", "nettle", "chamomile", "marram",
+    "anemone", "periwinkle", "lugworm", "hermitcrab", "ediblecrab", "shorecrab", "shells", "driftwood", "barnacles", "mussels", "sanddollars", "moonjelly",
+    "pondskaters", "fungi", "webs", "frogspawn", "woodlice", "groundbeetle", "loosestone", "sandeel", "goby", "pipefish", "plaice", "wrasse", "shrimp"
+  ],
+  "moments": { "rain": 0.3, "mist": 0.4, "dusk": [18.5, 21.5], "dawn": [4.5, 7] },
+  "words": {
+    "sketch": "Sketch the {name}",
+    "newPage": "A new page in the sketchbook.",
+    "loose": "Another sheet for the page. The hand is surer.",
+    "noSticks": "The charcoal sticks are worn down to nothing.",
+    "book": "Sketchbook",
+    "open": "Open the sketchbook",
+    "close": "Close",
+    "back": "Turn back",
+    "on": "Turn on",
+    "first": "First drawn {date}",
+    "placeholder": "Placeholder",
+    "inBook": "In the sketchbook",
+    "empty": "Nothing sketched yet. Charcoal sticks come from willow withies left in the fire overnight."
+  }
+}

@@ -5,6 +5,7 @@
 // what the player did is kept; everything drawn is worked out from it. Pure.
 
 import { cleanFire, noFire, layFire } from './fire.js';
+import { cleanWork } from './work.js';
 import { cleanHolds } from '../pack/store.js';
 import { cleanBunches } from '../pack/piles.js';
 
@@ -13,7 +14,9 @@ import { cleanBunches } from '../pack/piles.js';
  *   holds?: import('../pack/store.js').Holds, bunches?: import('../pack/piles.js').Bunches }} SlotRecord
  *   stack, holds: the hamper's (P2j); bunches: the drying rack's (S2)
  * @typedef {{ version: number, stamped?: boolean, pad?: any, kit: { tent: 'pack' | 'pitched' | 'boat', lantern: 'pole' | 'carried' },
- *   slots: SlotRecord[], fire: import('./fire.js').Fire, rested: { hour: number, at: number } | null, firstPitchedHour: number | null }} Camp
+ *   slots: SlotRecord[], fire: import('./fire.js').Fire, work: import('./work.js').WorkPiece[], rested: { hour: number, at: number } | null,
+ *   firstPitchedHour: number | null }} Camp
+ *   work: the pieces laid at the fire overnight (work.js, P2i)
  *   Other fields a save carries (E1's, later phases') are kept as they are.
  */
 
@@ -38,7 +41,7 @@ export function cleanCamp(v) {
   }
   const tent = TENT.includes(kitIn.tent) ? kitIn.tent : slots.some((s) => s.kind === 'tent') ? 'pitched' : 'pack';
   const rested = c.rested && Number.isFinite(c.rested.hour) && Number.isFinite(c.rested.at) ? { hour: c.rested.hour, at: c.rested.at } : null;
-  return { ...c, version: 1, kit: { ...kitIn, tent, lantern: 'pole' }, slots, fire: cleanFire(c.fire), rested,
+  return { ...c, version: 1, kit: { ...kitIn, tent, lantern: 'pole' }, slots, fire: cleanFire(c.fire), work: cleanWork(c.work), rested,
     firstPitchedHour: Number.isFinite(c.firstPitchedHour) ? c.firstPitchedHour : null };
 }
 

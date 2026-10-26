@@ -37,6 +37,8 @@ export const HABITAT_ORIGIN = -80;
  * @property {{ x: number, z: number, days: number }} [fire]  the camp's fire ring and the game days it has been lit on (the
  *   fire cause of volunteers.js). Only when a ring was given
  * @property {{ x: number, z: number, r: number }} [pad]  the camp pad (the camp cause of volunteers.js). Only when a pad was given
+ * @property {{ patches: number[][], r: number, days: number }} [ash]  ash patches spread on the ground ([x, z, hour] each), their
+ *   radius (m) and how many game days they lie (P2i; volunteers.js ashSpreadAt). Only when patches were given
  * @property {number} hash      FNV-1a over the arrays (uint32), for the determinism page
  */
 
@@ -101,14 +103,16 @@ function falloff(d, reachM) {
  * @param {{ eco: { x: number, y: number, w: number, h: number, depthCm: Uint8Array, cls: Uint8Array, band: Uint8Array },
  *   material: Uint8Array, materialCells: number, params: { bankM: number, saltM: number, bandMoisture: number, bandSalt: number },
  *   heightQ?: Uint16Array | null, baseQ?: Uint16Array | null, pad?: { x: number, z: number, r: number } | null,
- *   held?: any[] | null, fire?: { x: number, z: number, days: number } | null }} args
+ *   held?: any[] | null, fire?: { x: number, z: number, days: number } | null,
+ *   ash?: { patches: number[][], r: number, days: number } | null }} args
  *   eco: the water summary's 1 m aggregate; material: the terrain mirror's painted weights (rgba8 per
  *   0.25 m texel, grass first) over materialCells x materialCells; params: recipes/flora/habitat in
  *   the growth recipe; heightQ: the terrain heights (same grid as material), for the slope and
  *   height axes; baseQ: the heights as the island was generated, before any edit, for shapedCm;
  *   pad: the keeper's camp pad (store slice campPad: center and radius, m), for the clear mask;
  *   held: the placed pieces' footprints (store slice pieces), for the held mask; fire: the fire
- *   ring and its lit days (store slice camp), for the fire cause
+ *   ring and its lit days (store slice camp), for the fire cause; ash: the ash patches (store slice
+ *   gather ashes, P2i), for nettles spreading onto them
  * @returns {Habitat}
  */
 export function buildHabitat(args) {
@@ -231,8 +235,11 @@ export function buildHabitat(args) {
   if (held) for (let k = 0; k < held.length; k++) h = Math.imul(h ^ held[k], 0x01000193) >>> 0;
   const fire = args.fire ? { x: args.fire.x, z: args.fire.z, days: args.fire.days } : undefined;
   if (fire) for (const v of [Math.round(fire.x * 100), Math.round(fire.z * 100), fire.days]) h = Math.imul(h ^ (v | 0), 0x01000193) >>> 0;
+  // Ash patches (P2i) likewise join only when there are some.
+  const ash = args.ash?.patches?.length ? { patches: args.ash.patches.map((p) => [p[0], p[1], p[2]]), r: args.ash.r, days: args.ash.days } : undefined;
+  if (ash) for (const p of ash.patches) for (const v of [Math.round(p[0] * 100), Math.round(p[1] * 100), Math.round(p[2])]) h = Math.imul(h ^ (v | 0), 0x01000193) >>> 0;
   return { n: N, depthCm, moisture, salt, still, sea, grass, open, band, sand, rock, soil, slopeDeg,
-    heightDm: args.heightQ ? heightDm : undefined, shapedCm, clear, held, fire,
+    heightDm: args.heightQ ? heightDm : undefined, shapedCm, clear, held, fire, ash,
     pad: args.pad ? { x: args.pad.x, z: args.pad.z, r: args.pad.r } : undefined, hash: h >>> 0 };
 }
 

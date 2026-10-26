@@ -95,7 +95,9 @@ import { SECTIONS9, empty9 } from './save/migrate-format9.js';
 import { clickKind, clickPlan } from './world/walk/click.js';
 import { createPack } from './world/pack/index.js';
 import { createGather } from './world/gather/index.js';
+import { ashMarks } from './world/gather/ashes.js';
 import { createDig } from './world/dig/index.js';
+import { createSketchbook } from './world/sketchbook/index.js';
 import { createPiles } from './world/pack/piles-live.js';
 import { setDownAtCamp } from './world/pack/route.js';
 import { createStores } from './world/pack/stores.js';
@@ -610,13 +612,16 @@ export async function startApp(canvas, hooks = {}) {
       : piles?.setDown(k, h) ?? { moved: 0, refuse: 'noSlot' }) });
   piles = createPiles({ recipe: pack.recipe, kinds: pack.kinds, seed, noHeaps: () => !!keeps?.hamper.here() });
   intro.usePack(pack);
+  /** The camp's ring for gathering, set once the camp is made below. @type {(() => any) | null} */ let ringPlace = null;
   // Gathering on foot (section 4.2): Gather on a card walks you there, you kneel, a handful goes in.
   const gather = createGather({ recipe: await loadRecipe('world/gather'), seed, world, worldT: () => clock.worldT(), water, terrain, pack, walk,
     tide: waterRecipe.tide, strandline: ww.shore.recipe?.look?.strandline ?? null,
     weather: () => ({ weatherSeed: world.env.weatherSeed, weather: seasonsRecipe.weather, state: world.state?.weather }),
     center: () => { const b = terrain.openBounds(); return [(b.openMin[0] + b.openMax[0]) / 2, (b.openMin[1] + b.openMax[1]) / 2]; },
     // Where the boat lands the keeper: the beach there always has something to gather (F6).
-    boat: () => { const s = boat.mooring?.stand; return s ? [s.x, s.z] : null; } });
+    boat: () => { const s = boat.mooring?.stand; return s ? [s.x, s.z] : null; },
+    // The fire ring's charcoal and ash the morning after a fire-night (P2i), once the camp exists.
+    ring: () => ringPlace?.() ?? null });
   // Picked reeds grow back slowly, faster in rain (the growth step reads the gather recipe). The
   // forager's trail's gathering knife changes it (src/world/forager.js knifed): ready again sooner,
   // less bare; picking, growing back and catch-up all read it from here.
@@ -651,6 +656,7 @@ export async function startApp(canvas, hooks = {}) {
     seasons: seasonsRecipe, lighting, pack, shadowBias: shadowPass.bias, low: tier === 'low', poses: (await loadRecipe('world/figure')).poses,
     beat: () => intro.live?.intro.current?.id ?? null, cook: await loadRecipe('world/cook') });
   sim.addSystem(camp);
+  ringPlace = camp.ringPlace;
   keeps = camp.stations.keeps;
   shadowPass.addCaster(camp.props.caster);
   midges.keepClear(() => camp.smokeClear());
@@ -680,6 +686,15 @@ export async function startApp(canvas, hooks = {}) {
   dig.setKeepsakeWords((n) => keepsakeWords(n, keepsakesRecipe));
   sim.addSystem(dig);
   shadowPass.addCaster(dig.props.caster);
+  // The walker's sketchbook (P2i I5; src/world/sketchbook): Sketch on the here-bar with charcoal
+  // sticks in the pack and a creature, plant or find near the middle of the view.
+  const sketchRecipe = await loadRecipe('world/sketchbook');
+  const sketchbook = createSketchbook({ recipe: sketchRecipe, walk, pack, worldT: () => clock.worldT(), season: () => world.state?.seasons?.index ?? 0,
+    weather: () => { const w = weatherAt(world.state?.weather, clock.display(), seasonsRecipe); return { rain: w.rain ?? 0, mist: w.mist ?? 0 }; },
+    subject: () => sketchSubject() });
+  sim.addSystem(sketchbook);
+  // `?sketch` (a test link, unsaved): a full pouch of charcoal sticks in the pack.
+  if (params.has('sketch') && !back) pack.add('charcoal-sticks', 3);
   // `?camp` (a test link, unsaved; S1): the evening skipped, the camp ready, the pack holding what
   // the workbench and the shovel take, and you standing at the workbench's ground; `?camp=bench`
   // has the workbench built already; `?camp=apothecary` (S2, P2j) the workbench and the apothecary
@@ -687,6 +702,13 @@ export async function startApp(canvas, hooks = {}) {
   // at the apothecary bench.
   if (params.has('camp') && !back) {
     emit('intro:camp-ready', { tent: true, ring: true });
+    // `?camp=dawn&hour=7` (P2i): the morning after a fire-night, the ring banked to embers with its
+    // charcoal and ash, a handful of withies and a pouch of ash in the pack, standing at the ring.
+    if (params.get('camp') === 'dawn') {
+      const h = clock.worldT() / 3600;
+      updateStore('camp', (c) => ({ ...c, fire: { ...c.fire, state: 'embers', sinceHour: h - 8, flameUntilHour: h - 8, litDays: 3, lastLitDay: Math.floor(h / 24) - 1, nights: [Math.floor(h / 24)], carry: null } }));
+      for (const [k, n] of [['willow.withies', 1], ['ash', 2], ['sticks', 2]]) pack.add(/** @type {string} */ (k), /** @type {number} */ (n));
+    }
     const apo = params.get('camp') === 'apothecary';
     const kit = apo ? [['shells', 3], ['watermint.leaves', 2], ['chamomile.flowers', 2], ['sticks', 3], ['pebbles', 2], ['rushes.stems', 3]]
       : [['flat-stones', 3], ['sticks', 2], ['rush-cord', 1], ['pebbles', 2]];
@@ -974,6 +996,29 @@ export async function startApp(canvas, hooks = {}) {
       return;
     }
     walk.tap(sx, sy, p);
+  }
+
+  /**
+   * What the walker would sketch (P2i): the creature, plant or find nearest the middle of the view,
+   * within reach. The view is sampled in rings out from its middle through the journal's cards, so
+   * the first one found is the nearest the middle. Null above, or with nothing there.
+   * @returns {{ id: string, name: string, x: number, z: number } | null}
+   */
+  function sketchSubject() {
+    if (!walk.below || !cards) return null;
+    const w = canvas.clientWidth, h = canvas.clientHeight, s = sketchRecipe.viewSampleSpreadPx ?? 70;
+    for (let ring = 0; ring <= 4; ring++) {
+      for (let k = 0; k < (ring ? 8 : 1); k++) {
+        const a = (k / 8) * 2 * Math.PI, p = groundAt(w / 2 + Math.cos(a) * ring * s, h / 2 + Math.sin(a) * ring * s);
+        const c = p ? cards.cardAt(p[0], p[2], p[1]) : null;
+        if (!c?.sp || !sketchRecipe.subjects.includes(c.sp)) continue;
+        const x = c.wx ?? p?.[0] ?? 0, z = c.wz ?? p?.[2] ?? 0;
+        // Named by its kind, singular and without its article ("school of minnows"), never a frog's own name.
+        const sw = cards.species?.[c.sp], name = String(sw?.card ?? sw?.name ?? c.name ?? c.sp).replace(/^(a|an|the) /i, '');
+        if (walk.distTo(x, z) <= sketchRecipe.reachM) return { id: c.sp, name, x, z };
+      }
+    }
+    return null;
   }
 
   /**
@@ -1297,6 +1342,7 @@ export async function startApp(canvas, hooks = {}) {
       if (a.type === 'gather.take') { gather.take(a.n); return; }
       if (a.type === 'gather.heapHere') { gather.heapHere(); walk.gesture('heapHere'); return; }
       if (a.type === 'gather.leaveBe') { updateStore('identify', () => null); return; }
+      if (a.type === 'gather.spreadAsh') { if (gather.spreadAsh()) { walk.gesture('empty'); updateStore('identify', () => null); } return; }
       // A pile's Take up fills a pouch; with no room, the full card (without Set down here).
       if (a.type === 'pile.takeUp') {
         const r = piles?.takeUp(a.id, pack);
@@ -1735,8 +1781,10 @@ export async function startApp(canvas, hooks = {}) {
     terrainPass.setMarks(plantTool.marks(now, getStore('hand')?.kind === 'seed' || getStore('hand')?.kind === 'gift', chosen?.pinned ? chosen : null, [...(padMark ? [padMark] : []), ...bury,...(getStore('reveal')?.rings?.(now) ?? []), ...creatures.foodRings(), ...intro.rings(now), ...camp.rings(now / 1000), ...stores.rings(now / 1000)]));
     // Lugworm casts are drawn into the sand by the terrain pass.
     terrainPass.setCasts(finds.casts());
-    // So are the holes you dug (src/world/dig): their mouths and the fresh soil round them.
-    terrainPass.setHoles(dig.marks([camera.target[0], camera.target[2]]), dig.ringM);
+    // So are the holes you dug (src/world/dig): their mouths and the fresh soil round them; and the
+    // ash you spread (P2i), in the slots after them.
+    const markAt = [camera.target[0], camera.target[2]], ashLook = gather.recipe.kinds?.ash?.spread?.look;
+    terrainPass.setHoles(ashLook ? ashMarks(dig.marks(markAt), gather.ashesNow(), markAt, ashLook) : dig.marks(markAt), dig.ringM);
     updatePour();
     if (queuedHistory && !terrain.isBusy()) runHistory(queuedHistory);
     // Ground detail waits for a few calm frames so the first picture is as quick as before (docs/22).

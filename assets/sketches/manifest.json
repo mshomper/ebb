@@ -1,0 +1,40 @@
+{
+  "note": "Written by tools/assets/sketch-sheets.py ship: the sketchbook drawings in this folder, by subject id (tiers 1 to 3, moments m-<moment>).",
+  "art": {
+    "chamomile": [
+      "1",
+      "2",
+      "3"
+    ],
+    "dragonfly": [
+      "1",
+      "2",
+      "3"
+    ],
+    "frog": [
+      "1",
+      "2",
+      "3"
+    ],
+    "iris": [
+      "1",
+      "2",
+      "3"
+    ],
+    "lilies": [
+      "1",
+      "2",
+      "3"
+    ],
+    "minnow": [
+      "1",
+      "2",
+      "3"
+    ],
+    "turtle": [
+      "1",
+      "2",
+      "3"
+    ]
+  }
+}

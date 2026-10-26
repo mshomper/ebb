@@ -8,9 +8,12 @@
 //   ticked    the same month settled on every hour, against the same month read only at the end
 //   rack, hamper  the keeps (S2, P2j): a month of bunches hung and handfuls stored, the rack's
 //             drying words watched hourly against read from the save
+//   nights, work  fire products (P2i): the dawns that leave charcoal and ash, and willow charcoal's
+//             done hours, watched hourly against the same month with no ticks between
 
 import { stream, subSeed } from '../../core/rng.js';
-import { noFire, layFire, lightFire, feedFire, bankFire, settleFire, fireAt } from './fire.js';
+import { noFire, layFire, lightFire, feedFire, bankFire, settleFire, fireAt, fireNights } from './fire.js';
+import { cleanWork, layWork, workDone, withFire } from './work.js';
 import { hang, takeBunch, dryShare, rackWord, cleanBunches } from '../pack/piles.js';
 import { put, take, takeSlot, slotsOf, capOf, cleanHolds } from '../pack/store.js';
 
@@ -60,7 +63,41 @@ export function campCheckJob(a) {
     readWords.push(fireAt(f, h + 1, F).word);
   }
   return { timeline: textHash(words.join(',')), ticked: textHash(JSON.stringify(watched)), read: textHash(readWords.join(',')),
-    lightings: away.lightings, litDays: away.litDays, hours: HOURS, ...(a.pack ? keepsCheck(a, HOURS) : {}) };
+    lightings: away.lightings, litDays: away.litDays, hours: HOURS, ...(a.pack ? keepsCheck(a, HOURS) : {}), ...productsCheck(ops, apply, F, HOURS, a.worldSeed) };
+}
+
+/**
+ * Fire products (P2i): the same month's fire-nights, and willow charcoal laid at the fire every few
+ * evenings, watched hour by hour (every change and every hourly settle going through withFire) against
+ * the same month with no ticks between (catch-up). The dawns that leave charcoal and the hour each
+ * piece of work is done must match. @param {{ at: number, op: string }[]} ops
+ * @param {(f: any, op: string, h: number) => any} apply @param {any} F @param {number} HOURS @param {number} worldSeed
+ */
+function productsCheck(ops, apply, F, HOURS, worldSeed) {
+  const rnd = stream(subSeed(worldSeed >>> 0, 'work-check'));
+  const make = { id: 'willow-charcoal', needH: 8, gives: 'charcoal-sticks', count: 3 };
+  const lays = [];
+  for (let day = 0; day < 30; day++) if (rnd.next() < 0.3) lays.push(day * 24 + 17 + rnd.next());
+  /** Every hour's dawn charcoal and each piece's done hour, for one camp run. @param {boolean} ticked */
+  const run = (ticked) => {
+    let c = { fire: noFire(), work: /** @type {any[]} */ ([]) };
+    const events = [...ops.map((o) => ({ ...o })), ...lays.map((at) => ({ at, op: 'work' }))].sort((x, y) => x.at - y.at);
+    const dawns = [], done = new Map();
+    let next = 0;
+    for (let h = 0; h < HOURS; h++) {
+      while (next < events.length && events[next].at < h + 1) {
+        const e = events[next++];
+        c = e.op === 'work' ? { ...c, work: layWork(cleanWork(c.work), make, e.at) } : withFire(c, apply(c.fire, e.op, e.at), e.at, F);
+      }
+      if (ticked) c = withFire(c, settleFire(c.fire, h + 1, F), h + 1, F);
+      if ((h + 1) % 24 === 6) dawns.push(fireNights(c.fire, h + 1, F).includes(Math.floor((h + 1) / 24)) ? 1 : 0);
+      c.work.forEach((p, i) => { if (!done.has(i) && workDone(p, c.fire, h + 1, F)) done.set(i, h + 1); });
+    }
+    return { dawns: dawns.join(''), done: [...done.entries()].sort((x, y) => x[0] - y[0]).map(([, h]) => h).join(',') };
+  };
+  const watched = run(true), read = run(false);
+  return { nights: textHash(watched.dawns), nightsRead: textHash(read.dawns), fireNights: [...watched.dawns].filter((d) => d === '1').length,
+    work: textHash(watched.done), workRead: textHash(read.done), workDone: watched.done ? watched.done.split(',').length : 0 };
 }
 
 /**

@@ -16,6 +16,11 @@
   /* Never wider than half the screen less the two buttons, so the dial at the top left keeps its side. */
   max-width: calc(50vw - var(--lk-edge) - 2 * (var(--lk-btn) + 8px));
 }
+/* Once the sketchbook's button shows (sketchbook.css), it takes this slot and Look moves left. */
+:root.ebb-has-sketchbook .ebb-look {
+  right: calc(max(var(--lk-edge), env(safe-area-inset-right)) + 3 * (var(--lk-btn) + 8px));
+  max-width: calc(50vw - var(--lk-edge) - 3 * (var(--lk-btn) + 8px));
+}
 
 .ebb-look__btn {
   appearance: none;

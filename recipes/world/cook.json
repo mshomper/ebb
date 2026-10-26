@@ -17,9 +17,12 @@
     "hamper": { "tier": "T3", "at": "workbench", "parts": [["rushes.stems", "marram.leaves"], ["rushes.stems", "marram.leaves"], "rush-cord"], "out": "slot", "slot": "store", "max": 1, "src": ["P2j"] },
     "hamper2": { "tier": "T4", "at": "workbench", "parts": [["rushes.stems", "marram.leaves"], "rush-cord", "willow.withies"], "out": "stack", "slot": "store", "max": 1, "after": "store", "src": ["P2j"] },
     "dry": { "tier": "T2", "at": "apothecary", "act": "dry", "parts": [{ "group": "herbs", "shows": "chamomile.flowers" }], "out": "rack", "after": "rack", "src": ["3.12", "7.7", "S2"] },
-    "grind": { "tier": "T2", "at": "apothecary", "act": "grind", "parts": ["shells"], "out": "pouch", "gives": "crushed-shell", "count": 1, "after": "mortar", "src": ["3.12", "S2", "question 5"] }
+    "grind": { "tier": "T2", "at": "apothecary", "act": "grind", "parts": ["shells"], "out": "pouch", "gives": "crushed-shell", "count": 1, "after": "mortar", "src": ["3.12", "S2", "question 5"] },
+    "willow-charcoal": { "tier": "T2", "at": "fire", "parts": ["willow.withies"], "out": "work", "needH": 8, "gives": "charcoal-sticks", "count": 3, "src": ["X-15", "P2i"] }
   },
-  "makesNote": "Every make at a station. at: the station (workbench, fire, apothecary); act: its action's icon and label (words.acts), else the station's own; parts: one handful each, a kind id, a list of kinds that serve (['sticks', 'drift-twigs']), or any kind of a pack group ({ group: 'herbs', shows: the kind its pencil outline wears }); after: a camp slot that must be built first (the mortar and rack wait for the apothecary bench, the second hamper for the first, Dry for the rack, Grind for the mortar); out: where it goes when made ('tool' hangs on the pack and takes no pouch, kept in the cook section's tools; 'pouch' fills a pouch of gives, count handfuls, or a small heap at your feet when the pack is full; 'slot' stands in its camp slot (slot), carried there; 'stack' stacks a second hamper on the first, 6 slots to 12; 'rack' hangs the herb on the drying rack as a bunch); max: how many can ever be made (the station stops offering it). Rush cord (P2c): one handful of rushes or marram leaves twisted into one handful of cord. The shovel needs a stick, a flat stone and cord. The drying rack: two withies or sticks lashed with cord; the mortar: a flat stone hollowed with a pebble. The hamper (P2j): two handfuls of rushes coiled and stitched with cord; the second hamper takes rushes, cord and a willow-withy lid. Dry hangs a handful of any herb on the rack; Grind turns a handful of broken shells into crushed shell (Mix waits for P2e). One make is shown at a time: the one with the most parts laid, then the lower tier, then this file's order.",
+  "makesNote": "Every make at a station. at: the station (workbench, fire, apothecary); act: its action's icon and label (words.acts), else the station's own; parts: one handful each, a kind id, a list of kinds that serve (['sticks', 'drift-twigs']), or any kind of a pack group ({ group: 'herbs', shows: the kind its pencil outline wears }); after: a camp slot that must be built first (the mortar and rack wait for the apothecary bench, the second hamper for the first, Dry for the rack, Grind for the mortar); out: where it goes when made ('tool' hangs on the pack and takes no pouch, kept in the cook section's tools; 'pouch' fills a pouch of gives, count handfuls, or a small heap at your feet when the pack is full; 'slot' stands in its camp slot (slot), carried there; 'stack' stacks a second hamper on the first, 6 slots to 12; 'rack' hangs the herb on the drying rack as a bunch); max: how many can ever be made (the station stops offering it). Rush cord (P2c): one handful of rushes or marram leaves twisted into one handful of cord. The shovel needs a stick, a flat stone and cord. The drying rack: two withies or sticks lashed with cord; the mortar: a flat stone hollowed with a pebble. The hamper (P2j): two handfuls of rushes coiled and stitched with cord; the second hamper takes rushes, cord and a willow-withy lid. Dry hangs a handful of any herb on the rack; Grind turns a handful of broken shells into crushed shell (Mix waits for P2e). willow-charcoal (P2i, X-15): a handful of withies laid at the fire with Fire goes on the overnight work list (out 'work', src/world/camp/work.js): after needH game hours of fire, lit or banked, it is a full pouch (count handfuls) of charcoal sticks, taken up from the ring's card. work.max: the most pieces laid at the fire at once. One make is shown at a time: the one with the most parts laid, then the lower tier, then this file's order.",
+
+  "work": { "max": 2 },
 
   "makeS": 3.2,
   "makeSNote": "How long the walker works at the station for a make (real seconds), kneeling at the bench: figure.json gestures.make. The thing is made as it ends.",
@@ -55,7 +58,12 @@
     "made": { "shovel": "A shovel, bound tight. It hangs on your pack.", "rush-cord": "Twisted two ways, it holds. A handful of cord.",
       "rack": "A drying rack, lashed tight. It stands beside the bench.", "mortar": "A hollow worn in the stone. A mortar, with a pebble to grind.",
       "hamper": "A lidded hamper of coiled rushes. It goes among the stores.", "hamper2": "A second hamper, a willow lid on top. Twice the room.",
-      "dry": "Hung on the rack to dry.", "grind": "Ground fine. A handful of crushed shell." },
+      "dry": "Hung on the rack to dry.", "grind": "Ground fine. A handful of crushed shell.",
+      "willow-charcoal": "Withies wrapped tight and laid in the ashes. A night of fire will turn them to charcoal." },
+    "workFull": "The fire has all it can hold overnight. Take up what is done first.",
+    "workTake": "Take up the charcoal sticks",
+    "workWaiting": "Withies in the ashes, waiting for a night of fire.",
+    "workDone": "Charcoal sticks, ready in the ashes.",
     "page": {
       "entry": "Camp",
       "entryLine": "What you have made, and when.",
@@ -66,10 +74,10 @@
       "now": "The camp now"
     },
     "pageNames": { "ring": "Fire ring", "workbench": "Workbench", "shovel": "Shovel", "rush-cord": "Rush cord", "apothecary": "Apothecary bench", "rack": "Drying rack",
-      "mortar": "Mortar and pebble", "hamper": "Rush hamper", "hamper2": "Second hamper", "dry": "First herbs drying", "grind": "Crushed shell" },
+      "mortar": "Mortar and pebble", "hamper": "Rush hamper", "hamper2": "Second hamper", "dry": "First herbs drying", "grind": "Crushed shell", "willow-charcoal": "Willow charcoal" },
     "pageParts": { "ring": "Sticks and stones", "workbench": "Two flat stones", "shovel": "A stick, a flat stone, cord", "rush-cord": "Rushes or marram, twisted",
       "apothecary": "Sticks lashed with cord", "rack": "Withies or sticks, cord", "mortar": "A flat stone and a pebble", "hamper": "Rushes coiled, stitched with cord",
-      "hamper2": "Rushes, cord, a willow lid", "dry": "A handful of herbs, hung", "grind": "Broken shells, ground" }
+      "hamper2": "Rushes, cord, a willow lid", "dry": "A handful of herbs, hung", "grind": "Broken shells, ground", "willow-charcoal": "Withies, a night in the fire" }
   },
-  "wordsNote": "Every line the stations and the camp page say. <slot>Slot: a bench's ground card (name, line, needs, and its Build label); builtLines: the line after a build other than the workbench's (built). acts: the apothecary's actions. hamper: the stations' row of what the hamper holds; takeUp, setDownHere, emptySlot: the hamper's and the rack's cards. made: the line after a first make, by make id. pageNames, pageParts: the camp page's first-made lines, in the walker's hand: name, what it was made of, and the date."
+  "wordsNote": "Every line the stations and the camp page say. <slot>Slot: a bench's ground card (name, line, needs, and its Build label); builtLines: the line after a build other than the workbench's (built). acts: the apothecary's actions. hamper: the stations' row of what the hamper holds; takeUp, setDownHere, emptySlot: the hamper's and the rack's cards. made: the line after a first make, by make id. workFull, workTake, workWaiting, workDone: the overnight work at the fire (the ring's card). pageNames, pageParts: the camp page's first-made lines, in the walker's hand: name, what it was made of, and the date."
 }

@@ -10,12 +10,12 @@ import { hash32, subSeed, det } from '../../core/rng.js';
 import { WATER_CLASS } from '../water/summary.js';
 import { WATER_CELL, WATER_CELLS, WATER_ORIGIN } from '../water/grid.js';
 import { STAGE } from '../growth/coarse.js';
-import { PERIOD, periodOf } from './events.js';
+import { PERIOD, periodOf, periodIndex } from './events.js';
 
 // New kinds go at the end: a kind's place here salts its rolls (as finds' KINDS), so sticks and
-// lichen twigs at the same shrub roll apart. Later kinds: kelp, wrack, sand, leaves, lichen-twigs,
-// acorns, hazelnuts, old-comb, charcoal, ash, cakes.
-export const KINDS = Object.freeze(['sticks', 'drift-twigs', 'pebbles', 'flat-stones', 'sand', 'shells']);
+// lichen twigs at the same shrub roll apart. Later kinds: kelp, wrack, leaves, lichen-twigs, acorns,
+// hazelnuts, old-comb, cakes.
+export const KINDS = Object.freeze(['sticks', 'drift-twigs', 'pebbles', 'flat-stones', 'sand', 'shells', 'charcoal', 'ash']);
 
 /** A bin's side (m), gather.json spotM. Keys are bin indices, so this stays 2. */
 export const BIN_M = 2;
@@ -62,6 +62,16 @@ export const gatherSeed = (worldSeed) => subSeed(worldSeed, 'gather');
  * @property {number} [runupM]       shore.json look.strandline.runupM
  * @property {number[]} [center]     the island's centre [x, z], for onshore wind
  * @property {number[] | null} [boat] where the boat lands the keeper [x, z]: near it, the ground is always gatherable
+ * @property {number} [hour]          game hour now (fractional), for the ring's morning
+ * @property {RingPlace | null} [ring] the camp's fire ring, once laid, with its fire-nights (P2i)
+ */
+
+/**
+ * The fire ring as the ring spots read it: where it is, how far from its middle a tap still lands
+ * on it, the dawn days of its last fire-nights (src/world/camp/fire.js fireNights) and the hours of
+ * the day dawn and dusk fall at (camp.json fire.night). What a fire-night leaves lies there from that
+ * dawn until the next dusk.
+ * @typedef {{ x: number, z: number, r: number, nights: number[], dawnH: number, duskH: number }} RingPlace
  */
 
 /**
@@ -204,12 +214,24 @@ function footSpots(x, z, r, ctx, recipe) {
 }
 
 /**
+ * The ring's spots near a point (P2i): one of each ring kind (charcoal, ash) at the fire ring, keyed
+ * by today's fire-night period, whether or not anything lies there today (share says).
+ * @param {number} x @param {number} z @param {number} r @param {GatherCtx} ctx @param {any} recipe @returns {Spot[]}
+ */
+export function ringSpots(x, z, r, ctx, recipe) {
+  const g = ctx.ring;
+  if (!g || (g.x - x) * (g.x - x) + (g.z - z) * (g.z - z) > (r + g.r) * (r + g.r)) return [];
+  return KINDS.filter((kind) => recipe.kinds?.[kind]?.source === 'ring').map((kind) => ({ kind, source: 'ring', key: spotKey(ctx.seed, kind, 0),
+    sourceKey: 0, period: periodOf(PERIOD.ring, ctx.day), x: g.x, z: g.z, cell: -1, reach: g.r }));
+}
+
+/**
  * Every spot within r of a point (a plant's foot counts from its crown's edge), in a fixed order:
- * feet first, then bins and stretches by bin, each by kind.
+ * feet first, then the ring's, then bins and stretches by bin, each by kind.
  * @param {number} x @param {number} z @param {number} r @param {GatherCtx} ctx @param {any} recipe @returns {Spot[]}
  */
 export function spotsNear(x, z, r, ctx, recipe) {
-  const out = footSpots(x, z, r, ctx, recipe);
+  const out = [...footSpots(x, z, r, ctx, recipe), ...ringSpots(x, z, r, ctx, recipe)];
   const lo = (/** @type {number} */ v) => Math.max(0, Math.floor((v - r - WATER_ORIGIN) / BIN_M));
   const hi = (/** @type {number} */ v) => Math.min(BINS - 1, Math.floor((v + r - WATER_ORIGIN) / BIN_M));
   for (let bj = lo(z); bj <= hi(z); bj++) {
@@ -233,7 +255,7 @@ export function spotsAt(x, z, ctx, recipe) {
   // A bin's spot sits at its qualifying cell: a tap a little way off (on the grass behind the
   // beach) does not land on it.
   const near = (recipe.bins?.tapM ?? 1);
-  return [...feet, ...binSpots(binOf(x, z), ctx, recipe).filter((s) => d2(s) <= near * near)];
+  return [...feet, ...ringSpots(x, z, 0, ctx, recipe), ...binSpots(binOf(x, z), ctx, recipe).filter((s) => d2(s) <= near * near)];
 }
 
 /**
@@ -291,6 +313,11 @@ export function share(kind, sourceKey, period, ctx, recipe) {
   }
   const base = K.handfuls?.[season] ?? 0;
   if (base <= 0) return 0;
+  // The ring (P2i): the morning after a fire-night, from dawn until the next dusk, and never rolled.
+  if (K.source === 'ring') {
+    const g = ctx.ring, day = periodIndex(period), h = (ctx.hour ?? 0) - 24 * day;
+    return g && day === ctx.day && g.nights.includes(day) && h >= g.dawnH && h < g.duskH ? base : 0;
+  }
   let more = 0, empty = K.empty?.[season] ?? 0;
   // Sand is wet through on a rain day and the day after ("Wet through. It will dry.").
   if (K.rainNone && ((ctx.today?.rainAmount ?? 0) > 0 || (ctx.yesterday?.rainAmount ?? 0) > 0)) return 0;

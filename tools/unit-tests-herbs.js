@@ -98,7 +98,7 @@ export function addHerbTests(test, assert, eq) {
     eq(O[O.indexOf('marigold') + 1], 'chamomile', 'after marigold');
     eq(O.slice(-2).join(), 'meadowsweet,nettle', 'last two');
     const C = recipes.flora.nettle.volunteer.cause;
-    eq(JSON.stringify(C), JSON.stringify({ kind: 'fire', reachM: 4, days: 3 }), 'nettle cause');
+    eq(JSON.stringify(C), JSON.stringify({ kind: 'fire', reachM: 4, days: 3, ash: { chancePerH: 0.03 } }), 'nettle cause (with its ash option, P2i)');
     // Everything else has come already; only nettle waits. Nettle ground everywhere, a fire in the middle.
     const hab = /** @type {any} */ (uniform(HERB_GROUND.nettle.home));
     const env = { ...makeEnv(13, recipes), habitat: () => hab };

@@ -10,6 +10,7 @@ import { offerHere, withdrawHere } from '../../ui/ground-here.js';
 import { onPad } from './layout.js';
 import { pitched, ringLaid } from './model.js';
 import { fireAt } from './fire.js';
+import { workDone as isDone } from './work.js';
 
 /**
  * @typedef {Object} CampKit  what the cards read (built in index.js)
@@ -27,12 +28,19 @@ import { fireAt } from './fire.js';
  * @property {(beat: 'dusk' | 'rest') => boolean} beatAllows
  * @property {() => { rain: number }} weatherNow
  * @property {(p: { x: number, z: number } | null, m: number) => boolean} near
+ * @property {any} [cookWords] recipes/world/cook.json words (the overnight work's lines, P2i)
  */
 
-/** The camp's card actions, registered once. @param {any} W camp.json words @returns {(() => void)[]} */
-export function registerCampCards(W) {
+/**
+ * The camp's card actions, registered once. @param {any} W camp.json words @param {any} [CW] cook.json words
+ * @returns {(() => void)[]}
+ */
+export function registerCampCards(W, CW = {}) {
   const C = (/** @type {any} */ c) => c?.camp;
   return [
+    // Overnight work done in the ashes (P2i): the charcoal sticks taken up from the ring.
+    registerCardAction({ id: 'campworktake', icon: 'takeup', order: 4, main: true, label: CW.workTake ?? 'Take up',
+      when: (c) => C(c) === 'ring' && c.workDone > 0, action: () => ({ type: 'camp.workTake' }) }),
     registerCardAction({ id: 'camppitch', icon: 'pitch', order: 5, main: true, label: W.pitch,
       when: (c) => C(c) === 'tentSlot', action: () => ({ type: 'camp.pitch' }) }),
     registerCardAction({ id: 'camplay', icon: 'lay', order: 5, main: true, label: W.lay,
@@ -72,11 +80,15 @@ export function campCardAt(k, x, z) {
       return { ...base, sp: 'camp:ring-slot', camp: 'ringSlot', name: W.ringSlot.name, icon: 'lay', text: canLay ? W.ringSlot.line : W.ringNeeds, wx: r.x, wz: r.z, r: 0.5, canLay };
     }
     const at = fireAt(c.fire, k.hourNow(), F), word = at.word, rainy = k.weatherNow().rain > F.rainLow;
-    const line = word === 'lit' ? (rainy ? W.ring.low : at.high ? W.ring.high : W.ring.lowFlames) : W.ring[word] ?? W.ring.laid;
+    const line = word === 'lit' ? (rainy ? W.ring.low : c.fire.charcoal && W.ring.charcoal ? W.ring.charcoal : at.high ? W.ring.high : W.ring.lowFlames) : W.ring[word] ?? W.ring.laid;
     const fuel = k.hasFuel();
+    // The overnight work laid in the ashes (P2i, work.js): waiting for its night, or done to take up.
+    const workDone = c.work.filter((p) => isDone(p, c.fire, k.hourNow(), F)).length;
+    const CW = k.cookWords ?? {};
+    const workLine = workDone ? CW.workDone : c.work.length ? CW.workWaiting : null;
     // The laid ring is the fire station (S1): its card opens as a workspace (stations.js).
-    return { ...base, sp: 'camp:ring', camp: 'ring', station: 'fire', name: W.ring.name, icon: 'fire', text: line, wx: r.x, wz: r.z, r: 0.5,
-      canLight: (word === 'laid' || (word === 'cold' && fuel)) && k.beatAllows('dusk'), canFeed: (word === 'embers' || word === 'lit') && fuel };
+    return { ...base, sp: 'camp:ring', camp: 'ring', station: 'fire', name: W.ring.name, icon: 'fire', text: [line, workLine].filter(Boolean).join(' '), wx: r.x, wz: r.z, r: 0.5,
+      canLight: (word === 'laid' || (word === 'cold' && fuel)) && k.beatAllows('dusk'), canFeed: (word === 'embers' || word === 'lit') && fuel, workDone };
   }
   return null;
 }

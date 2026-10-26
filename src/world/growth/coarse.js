@@ -23,7 +23,7 @@
 
 import { stream, subSeed } from '../../core/rng.js';
 import { HABITAT_ORIGIN } from './habitat.js';
-import { arrivedOf, volunteerAt } from './volunteers.js';
+import { arrivedOf, volunteerAt, ashSpreadAt } from './volunteers.js';
 import { plantSeasonPos } from './phenology.js';
 import { isGather, gatherCount, gatherClear } from './rules.js';
 import { groundAt, groundAtCell, suitability, suitabilityOf, inWindow } from './ground.js';
@@ -184,6 +184,14 @@ export function coarseStep(state, hourIndex, env) {
       }
       g.arrived[v.sp] = hourIndex;
       events.push({ name: 'growth:arrived', payload: { species: v.sp, x, z } });
+    }
+    // Ash spread on the ground (P2i): a plant already on the island may come up on it.
+    const a = hab.ash ? ashSpreadAt(g, hab, env, hourIndex, (rec, k) => suitabilityOf(rec, groundAtCell(hab, k)).suit, (k) => held.has(k), allow) : null;
+    const arec = a ? env.recipes.flora[a.sp] : null;
+    if (a && arec && !v) {
+      const x = HABITAT_ORIGIN + (a.k % hab.n) + 0.5, z = HABITAT_ORIGIN + Math.floor(a.k / hab.n) + 0.5;
+      g.plants = [...g.plants, { id: g.nextId++, sp: a.sp, x, z, age: arec.growth.stages.sproutH, size: 0.05, best: 0.05, stage: STAGE.sprout, low: 0, drown: 0, last: hourIndex }];
+      events.push({ name: 'growth:spread', payload: { count: 1, bySpecies: { [a.sp]: 1 }, ash: true } });
     }
   }
 

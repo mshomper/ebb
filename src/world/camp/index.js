@@ -14,7 +14,8 @@
 //
 // State is the store slice `camp` (model.js; save format 9 section `camp`); the fire is worked out
 // from the clock (fire.js), so nothing here ticks the world. Events: camp:pitched, camp:ring-laid,
-// camp:lit, camp:fed, camp:banked, camp:cold, camp:rested. Listens to intro:camp-ready (Skip and test
+// camp:lit, camp:fed, camp:banked, camp:cold, camp:rested, camp:work-taken (the overnight work done
+// in the ashes, work.js, P2i; every change to the fire writes that work in first). Listens to intro:camp-ready (Skip and test
 // links: the camp laid ready, cold, taking nothing) and intro:glow (an older island's tent ground).
 // Split by job: where.js (where things stand), player.js (walk there, play an act), cards.js (the
 // cards and the here-bar), frame.js (drawing each frame).
@@ -26,7 +27,7 @@ import { subSeed, hash32 } from '../../core/rng.js';
 import { sunMoon } from '../sky/sun-moon.js';
 import { weatherAt } from '../weather.js';
 import { cleanCamp, pitched, ringLaid, pitchTent, layRing } from './model.js';
-import { fireAt, lightFire, feedFire, bankFire, settleFire } from './fire.js';
+import { fireAt, lightFire, feedFire, bankFire, settleFire, fireNights } from './fire.js';
 import { createPropsPass } from '../../render/passes/props.js';
 import { createCampFxPass } from '../../render/passes/camp-fx.js';
 import { actLength } from '../figure/acts.js';
@@ -37,6 +38,7 @@ import { createActPlayer } from './player.js';
 import { registerCampCards, campCardAt, campHere } from './cards.js';
 import { createCampFrame } from './frame.js';
 import { createStations } from './stations.js';
+import { withFire, takeDone } from './work.js';
 
 const H = 3600;
 
@@ -156,18 +158,18 @@ export function createCamp(o) {
   const hasFuel = () => holds({ fuel: R.fire.feedHandfuls }) || !!fuelPile();
   /**
    * Take a handful of fuel: from the pack first, else from the pile (it lowers by one handful).
-   * @returns {boolean} whether one came
+   * @returns {string | null} the kind that came (charcoal burns longer, P2i), or null
    */
   function takeFuel() {
-    if (takeGroup('fuel', R.fire.feedHandfuls) >= R.fire.feedHandfuls) return true;
+    for (const k of kindsOf('fuel')) if ((o.pack?.take(k, R.fire.feedHandfuls) ?? 0) >= R.fire.feedHandfuls) return k;
     const pile = fuelPile();
-    if (!pile || !o.piles) return false;
-    return o.piles.takeUp(pile.id, () => ({ added: 1 })).taken > 0;
+    if (!pile || !o.piles) return null;
+    return o.piles.takeUp(pile.id, () => ({ added: 1 })).taken > 0 ? pile.holds : null;
   }
   const ringNeed = () => ({ fuel: R.ring.fuelHandfuls, stones: R.ring.stoneHandfuls });
 
   /** What the cards and the frame read. @type {import('./cards.js').CampKit} */
-  const kit = { R, walk: o.walk, camp, where, player, hourNow, holds, ringNeed, hasFuel, nightNow, restAllowed, beatAllows, weatherNow, near };
+  const kit = { R, walk: o.walk, camp, where, player, hourNow, holds, ringNeed, hasFuel, nightNow, restAllowed, beatAllows, weatherNow, near, cookWords: o.cook?.words ?? {} };
   const frame = createCampFrame({ ...kit, o, props, fx, sunAlt });
   // The stations (S1, S2): the workbench and the apothecary bench built in their slots, the fire,
   // their workspace, and the keeps (the drying rack and the hamper, P2j).
@@ -215,10 +217,12 @@ export function createCamp(o) {
     play('strike', r, R.reach.ringM, r, () => {
       frame.strikeEnd();
       const now = hourNow(), cc = camp();
-      if (fireAt(cc.fire, now, F).word === 'cold' && !takeFuel()) return;
-      const lit = lightFire(cc.fire, now, F);
+      // A cold ring takes a fresh handful, which burns by its kind; a laid one has its own.
+      const kind = fireAt(cc.fire, now, F).word === 'cold' ? takeFuel() : undefined;
+      if (kind === null) return;
+      const lit = lightFire(cc.fire, now, F, kind);
       if (!lit) return;
-      change((x) => ({ ...x, fire: lit }));
+      change((x) => withFire(x, lit, now, F));
       emitDeferred('camp:lit', { hour: now, first: lit.lightings === 1 });
       emit('camp:sound', { name: 'catch' });
     }, () => frame.strikeBegin((o.poses && actLength(o.poses, 'strike')) || 3));
@@ -231,13 +235,30 @@ export function createCamp(o) {
     if (word !== 'embers' && word !== 'lit') return;
     if (!hasFuel()) { emit('island:notice', { text: W.feedNeeds, showS: 6 }); return; }
     o.walk.kneelToward(r.x, r.z, 1.6, 'feedFire');
-    const fed = feedFire(c.fire, now, F);
-    if (!fed || !takeFuel()) return;
+    if (!feedFire(c.fire, now, F)) return;
+    const kind = takeFuel();
+    const fed = kind ? feedFire(c.fire, now, F, kind) : null;
+    if (!fed) return;
     // The flames lift at once as the wood goes on (live only; the fuel itself is in the save).
     frame.flare();
-    change((x) => ({ ...x, fire: fed }));
+    change((x) => withFire(x, fed, now, F));
     emitDeferred('camp:fed', { hour: now });
     emit('camp:sound', { name: 'feed' });
+  }
+
+  /** Take up what the night's fire has done (P2i, work.js): into the pack, or a heap at your feet. */
+  function workTake() {
+    const c = camp(), now = hourNow(), r = slotAt('ring');
+    const { work, piece } = takeDone(c.work, c.fire, now, F);
+    if (!piece || !r) return;
+    o.walk.kneelToward(r.x, r.z, 1.2, 'gather');
+    change((x) => ({ ...x, work }));
+    if (o.pack?.room(piece.gives)) o.pack.add(piece.gives, piece.count);
+    else o.pack?.heapHere?.(piece.gives, piece.count);
+    emitDeferred('camp:work-taken', { make: piece.id, gives: piece.gives, hour: now });
+    // The open card says so at once.
+    const card = get('identify');
+    if (card?.camp === 'ring') update('identify', () => ({ ...card, ...(campCardAt(kit, card.wx, card.wz) ?? {}), at: performance.now() }));
   }
 
   let resting = false;
@@ -250,7 +271,7 @@ export function createCamp(o) {
     play('crawlIn', f, R.reach.standM, t, () => {
       const now = hourNow(), cc = camp();
       if (fireAt(cc.fire, now, F).word === 'lit') {
-        change((x) => ({ ...x, fire: bankFire(x.fire, now, F) }));
+        change((x) => withFire(x, bankFire(x.fire, now, F), now, F));
         emitDeferred('camp:banked', { hour: now });
       }
       resting = true;
@@ -268,7 +289,7 @@ export function createCamp(o) {
       frameCamp();
     }
     const hour = hourNow();
-    change((c) => ({ ...c, fire: settleFire(c.fire, hour, F), rested: { hour, at: Date.now() } }));
+    change((c) => ({ ...withFire(c, settleFire(c.fire, hour, F), hour, F), rested: { hour, at: Date.now() } }));
     emitDeferred('camp:rested', { hour });
   }));
 
@@ -288,13 +309,14 @@ export function createCamp(o) {
     else if (a.type === 'camp.light') light();
     else if (a.type === 'camp.feed') feed();
     else if (a.type === 'camp.rest') rest();
+    else if (a.type === 'camp.workTake') workTake();
     // I'm stuck: inside the tent, you step out to its flap.
     else if (a.type === 'walk.stuck') stepOut();
   }));
 
   // ---- cards (one click walks there and opens it) ----
 
-  offs.push(...registerCampCards(W));
+  offs.push(...registerCampCards(W, o.cook?.words));
 
   // ---- each frame ----
 
@@ -372,6 +394,15 @@ export function createCamp(o) {
     },
     /** The fire now (tools, tests). */
     fire: () => fireAt(camp().fire, hourNow(), F),
+    /**
+     * The laid ring and its fire-nights, for charcoal and ash at dawn (P2i; src/world/gather/spots.js
+     * RingPlace), or null before the ring is laid.
+     */
+    ringPlace() {
+      const r = slotAt('ring'), c = camp();
+      if (!r || !ringLaid(c)) return null;
+      return { x: r.x, z: r.z, r: R.reach.ringCardM ?? 0.8, nights: fireNights(c.fire, hourNow(), F), dawnH: F.night?.dawnH ?? 4, duskH: F.night?.duskH ?? 20 };
+    },
     /** The lantern: on its pole or carried (live only). */
     lantern: frame.lantern,
     /** Where you kneel at the flap. */
@@ -385,7 +416,7 @@ export function createCamp(o) {
       pitch, lay, light, feed, rest, frame: frameCamp,
       lightNow() {
         const lit = lightFire(camp().fire, hourNow(), F);
-        if (lit) change((c) => ({ ...c, fire: lit }));
+        if (lit) change((c) => withFire(c, lit, hourNow(), F));
         return !!lit;
       },
       /** @param {boolean} on */

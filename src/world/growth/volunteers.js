@@ -80,6 +80,52 @@ export function volunteerAt(g, hab, env, hourIndex, suitCell, taken, allow) {
 }
 
 /**
+ * This hour's spread onto an ash patch (P2i, docs/future/13 G-42), if one comes: a species already on
+ * the island whose cause takes ash (`volunteer.cause.ash`, nettles) may come up on a patch spread
+ * on the ground while it lies, with that chance an hour, on the patch's best square. It guides a
+ * plant that came by itself and never brings a new one, so a species not yet arrived never does,
+ * and one at its spread.maxCount waits. Seeded by the hour and the patch, as volunteers are.
+ * @param {any} g the growth state @param {import('./habitat.js').Habitat} hab @param {any} env @param {number} hourIndex
+ * @param {(rec: any, k: number) => number} suitCell @param {(k: number) => boolean} taken
+ * @param {(rec: any, k: number) => boolean} [allow]
+ * @returns {{ sp: string, k: number } | null}
+ */
+export function ashSpreadAt(g, hab, env, hourIndex, suitCell, taken, allow) {
+  const A = hab.ash;
+  if (!A?.patches?.length) return null;
+  const V = env.recipes.growth.volunteers;
+  const seed = subSeed(env.seed, 'growth-ash');
+  // A patch reaches the squares whose middles lie within half a square of its edge.
+  const n = hab.n, o = HABITAT_ORIGIN, R = A.r + 0.5;
+  for (const sp of Object.keys(g.arrived ?? {}).sort()) {
+    const rec = env.recipes.flora?.[sp], C = rec?.volunteer?.cause?.ash;
+    if (!C) continue;
+    const count = (g.plants ?? []).filter((/** @type {any} */ p) => p.sp === sp).length;
+    if (rec.spread?.maxCount && count >= rec.spread.maxCount) continue;
+    if (rec.volunteer?.seasons && !rec.volunteer.seasons.includes(seasonOf(hourIndex * SECONDS_PER_HOUR).index)) continue;
+    for (let i = 0; i < A.patches.length; i++) {
+      const [x, z, h] = A.patches[i];
+      if (hourIndex < h || hourIndex >= h + A.days * 24) continue;
+      // One plant a patch: a patch already holding one of its kind is left be.
+      if ((g.plants ?? []).some((/** @type {any} */ p) => p.sp === sp && (p.x - x) * (p.x - x) + (p.z - z) * (p.z - z) <= R * R)) continue;
+      if (stream(seed, hourIndex, i).next() >= (C.chancePerH ?? 0)) continue;
+      let best = -1, bestH = 0;
+      const i0 = Math.max(0, Math.floor(x - R - o)), i1 = Math.min(n - 1, Math.floor(x + R - o));
+      const j0 = Math.max(0, Math.floor(z - R - o)), j1 = Math.min(n - 1, Math.floor(z + R - o));
+      for (let j = j0; j <= j1; j++) for (let ii = i0; ii <= i1; ii++) {
+        const k = j * n + ii, dx = o + ii + 0.5 - x, dz = o + j + 0.5 - z;
+        if (dx * dx + dz * dz > R * R) continue;
+        if (!hab.open[k] || hab.clear?.[k] || taken(k) || suitCell(rec, k) < V.minSuit || (allow && !allow(rec, k))) continue;
+        const hh = hash32(seed, hourIndex, k);
+        if (best < 0 || hh < bestH) { best = k; bestH = hh; }
+      }
+      if (best >= 0) return { sp, k: best };
+    }
+  }
+  return null;
+}
+
+/**
  * Where a volunteer with a cause may land (docs/future/13 PR-40, recipe `volunteer.cause`): a filter
  * on habitat cells, null when it has no cause, or false when its cause is not met anywhere yet (it
  * waits). fire: within reachM of the fire ring once it has been lit on `days` game days; camp:

@@ -6,7 +6,7 @@
   "perCarrier": 2,
   "handfulsPerPouch": 3,
   "carriers": ["satchel", "basket", "frame"],
-  "groups": ["fuel", "stones", "fibres", "herbs", "earth", "sea", "living"],
+  "groups": ["fuel", "stones", "fibres", "herbs", "earth", "sea", "living", "craft"],
   "partGroups": {
     "leaves": "herbs", "flowers": "herbs", "tops": "herbs", "bark": "herbs", "roots": "herbs", "twigs": "herbs",
     "stems": "fibres", "withies": "fibres", "blades": "fibres", "down": "fuel",
@@ -44,7 +44,8 @@
     { "id": "acorns", "name": "Acorns", "group": "living", "sketch": "nuts", "camp": "bowl", "line": "Acorns from under the oak." },
     { "id": "hazelnuts", "name": "Hazelnuts", "group": "living", "sketch": "nuts", "camp": "bowl", "line": "Hazelnuts in their green frills." },
     { "id": "old-comb", "name": "Old comb", "group": "living", "sketch": "comb", "camp": "bowl", "line": "Old comb a wild colony left behind." },
-    { "id": "chanterelle", "name": "Chanterelle", "group": "living", "sketch": "mushroom", "camp": "bowl", "line": "Golden chanterelles that smell of apricot." }
+    { "id": "chanterelle", "name": "Chanterelle", "group": "living", "sketch": "mushroom", "camp": "bowl", "line": "Golden chanterelles that smell of apricot." },
+    { "id": "charcoal-sticks", "name": "Charcoal sticks", "group": "craft", "sketch": "charcoal", "camp": "heap", "line": "Thin sticks of willow charcoal, for drawing. They wear down as you sketch." }
   ],
   "piles": { "handfuls": 12, "looks": [3, 8, 12], "rackBunches": 12, "rackHandfuls": 6, "bowlHandfuls": 6,
     "look": {
@@ -70,7 +71,9 @@
       "sticks": { "shape": "stick", "count": [2, 4], "lenM": [0.12, 0.3], "radiusM": [0.006, 0.014], "bend": [0.05, 0.25], "color": [0.14, 0.09, 0.055], "spreadM": 0.6 },
       "pebbles": { "shape": "pebble", "count": [3, 6], "sizeM": [0.02, 0.05], "heightShare": [0.55, 0.8], "lump": 0.12, "sink": 0.15, "color": [0.32, 0.3, 0.28], "spreadM": 0.4 },
       "flat-stones": { "shape": "flat", "count": [1, 3], "sizeM": [0.06, 0.12], "heightShare": [0.18, 0.3], "lump": 0.08, "sink": 0.2, "color": [0.24, 0.235, 0.225], "spreadM": 0.4 },
-      "shells": { "shape": "flat", "count": [3, 6], "sizeM": [0.02, 0.04], "heightShare": [0.25, 0.4], "lump": 0.15, "sink": 0.1, "color": [0.62, 0.58, 0.52], "spreadM": 0.5 }
+      "shells": { "shape": "flat", "count": [3, 6], "sizeM": [0.02, 0.04], "heightShare": [0.25, 0.4], "lump": 0.15, "sink": 0.1, "color": [0.62, 0.58, 0.52], "spreadM": 0.5 },
+      "charcoal": { "shape": "pebble", "count": [4, 7], "sizeM": [0.018, 0.035], "heightShare": [0.5, 0.8], "lump": 0.35, "sink": 0.1, "color": [0.022, 0.021, 0.02], "ringM": [0.28, 0.36] },
+      "ash": { "shape": "flat", "count": [1, 2], "sizeM": [0.07, 0.1], "heightShare": [0.18, 0.26], "lump": 0.12, "sink": 0.35, "color": [0.4, 0.39, 0.37], "spreadM": 0.05 }
     }
   },
   "heaps": { "cap": 6, "tapM": 0.25 },
@@ -92,7 +95,7 @@
   "ui": { "pouchPx": 48, "gapPx": 6, "drawPx": 36 },
   "words": {
     "stage": ["Empty.", "A few.", "Half full.", "Full."],
-    "setDown": "Set down", "empty": "Empty", "takeUp": "Take up", "emptied": "You tip it out. The island takes it back.",
+    "setDown": "Set down", "empty": "Empty", "spread": "Spread here", "takeUp": "Take up", "emptied": "You tip it out. The island takes it back.",
     "full": "No room in the pack.", "setDownHere": "Set down here", "leaveIt": "Leave it", "heap": "A small heap you left here.",
     "pile": ["A small heap.", "A good heap.", "A big heap."], "pileFull": "This heap is as big as it gets.",
     "noSlot": "The camp has all it needs. Set something aside first.",

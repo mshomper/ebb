@@ -41,6 +41,12 @@ export const GATHERED = {
     <path ${D} d="M3.4 17.4L5 12.6L10.6 11.2L13.4 14.6L11.2 19.4L5.4 19.8Z"/><path d="M3.4 17.4L5 12.6L10.6 11.2L13.4 14.6L11.2 19.4L5.4 19.8Z"/>
     <path ${D} d="M11.6 10.4L13.2 5.4L18.6 4.2L20.8 8.2L18.4 12.4L14 12.6Z"/><path d="M11.6 10.4L13.2 5.4L18.6 4.2L20.8 8.2L18.4 12.4L14 12.6Z"/>
     <path d="M15.6 15.6L17.4 14.6M17.6 18.4L19.8 17.2" opacity=".55"/>`],
+  // Charcoal sticks (P2i, X-15): three thin black drawing sticks of willow charcoal, one worn short.
+  'charcoal-sticks': ['fuel', `<g transform="rotate(-38 12 12)">
+    <rect ${D} x="3" y="7" width="17" height="2.4" rx="1.2"/><rect x="3" y="7" width="17" height="2.4" rx="1.2"/>
+    <rect ${D} x="4.4" y="11" width="15.4" height="2.4" rx="1.2"/><rect x="4.4" y="11" width="15.4" height="2.4" rx="1.2"/>
+    <rect ${D} x="6" y="15" width="9" height="2.4" rx="1.2"/><rect x="6" y="15" width="9" height="2.4" rx="1.2"/>
+    <path d="M16.6 16.2H19.4" opacity=".55"/></g>`],
   // Hardwood: sticks from under oak, hazel or beech, a lobed oak leaf at their tip.
   hardwood: ['fuel', `<g transform="rotate(-38 12 12)">
     <rect ${A} x="2.5" y="9.4" width="15" height="3.4" rx="1.7"/><rect x="2.5" y="9.4" width="15" height="3.4" rx="1.7"/><path d="M15.2 9.4V12.8"/>

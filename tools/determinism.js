@@ -381,7 +381,12 @@ function showCamp(g) {
     row('The rack drying, hour by hour', main.rack ?? 0, worker.rack ?? 0) +
     row('Rack watched against read later', main.rack ?? 0, main.rackRead ?? 0, 'Each hour', 'From the save') +
     row('The hamper at the end', main.hamper ?? 0, worker.hamper ?? 0) +
-    `<p class="muted">${main.bunches ?? 0} bunches on the rack and ${main.kinds ?? 0} hamper slots in use at the month's end.</p>`;
+    `<p class="muted">${main.bunches ?? 0} bunches on the rack and ${main.kinds ?? 0} hamper slots in use at the month's end.</p>` +
+    // Fire products (P2i): the mornings with charcoal and ash, and willow charcoal's done hours.
+    row('Charcoal mornings, a month', main.nights ?? 0, worker.nights ?? 0) +
+    row('Charcoal mornings, watched against catch-up', main.nights ?? 0, main.nightsRead ?? 0, 'Each hourly tick', 'No ticks between') +
+    row('Willow charcoal done, watched against catch-up', main.work ?? 0, main.workRead ?? 0, 'Each hourly tick', 'No ticks between') +
+    `<p class="muted">${main.fireNights ?? 0} mornings left charcoal and ash; ${main.workDone ?? 0} pouches of charcoal sticks were done by morning.</p>`;
 }
 
 const DIG_JOB = { module: './world/dig/check.js', fn: 'digCheckJob' };
