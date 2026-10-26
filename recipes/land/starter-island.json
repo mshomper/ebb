@@ -59,6 +59,8 @@
       { "id": "bowls", "kinds": ["bowls"], "u": 1.55, "v": -0.85, "r": 0.15 },
       { "id": "mortar", "kinds": ["mortar"], "u": 0.45, "v": 1.4, "r": 0.15, "on": "apothecary" },
       { "id": "dyepot", "kinds": ["dyepot"], "u": 2.2, "v": 0.6, "r": 0.18 },
+      { "id": "pot-cook", "kinds": ["cooking-pot"], "u": 2.15, "v": -0.5, "r": 0.17 },
+      { "id": "pot-tea", "kinds": ["tea-pot"], "u": 1.6, "v": 0.8, "r": 0.1 },
       { "id": "seat", "kinds": ["seat"], "u": 0.4, "v": 0, "yaw": "alongV", "maxLengthM": 1.8 },
       { "id": "rack", "kinds": ["rack"], "u": -1.0, "v": 2.55, "w": 1.2, "d": 0.5, "yaw": "alongU", "blocks": true },
       { "id": "sticks", "kinds": ["pile"], "pile": "fuel", "u": -1.9, "v": -2.6, "r": 0.6, "blocks": true },

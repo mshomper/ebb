@@ -710,12 +710,26 @@ export async function startApp(canvas, hooks = {}) {
       for (const [k, n] of [['willow.withies', 1], ['ash', 2], ['sticks', 2]]) pack.add(/** @type {string} */ (k), /** @type {number} */ (n));
     }
     const apo = params.get('camp') === 'apothecary';
+    // `?camp=hearth` (S4, S5): the workbench built, the hearth stones set, the cooking pot, tea pot
+    // and cup fired in their places, clay, sand and crushed shell in the pack, standing at the ring;
+    // `&fire=lit|embers|cold` sets the fire, `&shaped` adds pale pieces on the workbench and at the fire.
+    const hearthLink = params.get('camp') === 'hearth';
     const kit = apo ? [['shells', 3], ['watermint.leaves', 2], ['chamomile.flowers', 2], ['sticks', 3], ['pebbles', 2], ['rushes.stems', 3]]
+      : hearthLink ? [['clay', 3], ['sand', 2], ['crushed-shell', 1], ['sticks', 3]]
       : [['flat-stones', 3], ['sticks', 2], ['rush-cord', 1], ['pebbles', 2]];
     for (const [k, n] of kit) pack.add(/** @type {string} */ (k), /** @type {number} */ (n));
-    if (params.get('camp') === 'bench' || apo) camp.stations.debug.buildNow('workbench');
+    if (params.get('camp') === 'bench' || apo || hearthLink) camp.stations.debug.buildNow('workbench');
     if (apo) { camp.stations.debug.buildNow('apothecary'); for (const m of ['rack', 'mortar', 'hamper']) camp.stations.debug.placeNow(m); }
-    const at = camp.stations.benchAt(apo ? 'apothecary' : 'workbench');
+    if (hearthLink) {
+      camp.hearth.debug.setUp(params.has('shaped') ? { shaped: ['bowl', 'cup', 'tea-pot'], firing: ['bowl'] } : {});
+      const f = params.get('fire');
+      if (f === 'lit' || f === 'embers' || f === 'cold') camp.debug.fireAs(f);
+    }
+    const rp = hearthLink ? camp.ringPlace() : null, pad = getStore('campPad');
+    // At the ring, on the pad's side of it, a little round so the workbench shows too.
+    const ringAt = rp && pad ? (() => { const a = Math.atan2(pad.z - rp.z, pad.x - rp.x) - 0.5;
+      return { x: rp.x, z: rp.z, stand: { x: rp.x + Math.cos(a) * 1.2, z: rp.z + Math.sin(a) * 1.2 } }; })() : null;
+    const at = hearthLink ? ringAt : camp.stations.benchAt(apo ? 'apothecary' : 'workbench');
     if (at && walk.placeAt(at.stand.x, at.stand.z, Math.atan2(at.x - at.stand.x, at.z - at.stand.z), 'stand')) {
       const p = camera.pose();
       camera.setPose({ ...p, target: [at.stand.x, terrain.sampleHeight(at.stand.x, at.stand.z), at.stand.z], yaw: Math.atan2(at.x - at.stand.x, at.z - at.stand.z) + Math.PI + 0.9,

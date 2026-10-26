@@ -39,6 +39,7 @@ import { registerCampCards, campCardAt, campHere } from './cards.js';
 import { createCampFrame } from './frame.js';
 import { createStations } from './stations.js';
 import { withFire, takeDone } from './work.js';
+import { createHearth } from './hearth.js';
 
 const H = 3600;
 
@@ -174,6 +175,9 @@ export function createCamp(o) {
   // The stations (S1, S2): the workbench and the apothecary bench built in their slots, the fire,
   // their workspace, and the keeps (the drying rack and the hamper, P2j).
   const stations = createStations({ ...kit, o, cook: o.cook ?? { builds: {}, makes: {}, words: {} }, change, campSeed, frame });
+  // The hearth stones, the pots, the cup and the clay pieces (S4, S5): drawn with the camp's models.
+  const hearth = createHearth({ ...kit, o, cook: o.cook ?? { makes: {} }, benchAt: stations.benchAt, holdingPot: () => get('pack')?.holding === 'pot', change, campSeed });
+  frame.addProps(hearth.props);
 
   // ---- acts: walk, face, play, then the change ----
 
@@ -382,6 +386,8 @@ export function createCamp(o) {
     cardAt: (x, z) => stations.cardAt(x, z) ?? campCardAt(kit, x, z),
     /** The stations (S1): the workbench and the fire's workspace (tools, tests, test links). */
     stations,
+    /** The hearth, the pots and the clay pieces (S4, S5; tools, tests, test links). */
+    hearth,
     /** For the evening director: the tent is up; the ring is laid. */
     pitched: () => pitched(camp()),
     ringLaid: () => ringLaid(camp()),
@@ -421,6 +427,15 @@ export function createCamp(o) {
       },
       /** @param {boolean} on */
       hide(on) { hidden = on; },
+      /**
+       * The fire set as a word (the test links, tools/hearth-check.html): lit with four hours of
+       * flame left, banked two hours ago, or gone cold half a day ago. @param {'lit' | 'embers' | 'cold'} word
+       */
+      fireAs(word) {
+        const h = hourNow(), set = word === 'lit' ? { state: 'lit', sinceHour: h - 1, flameUntilHour: h + 4 }
+          : word === 'embers' ? { state: 'embers', sinceHour: h - 2, flameUntilHour: h - 2 } : { state: 'embers', sinceHour: h - 36, flameUntilHour: h - 36 };
+        update('camp', (c) => ({ ...c, fire: { ...c.fire, ...set, lightings: Math.max(1, c.fire?.lightings ?? 0) } }));
+      },
     },
     dispose() { for (const off of offs) off(); player.dispose(); stations.dispose(); },
   };

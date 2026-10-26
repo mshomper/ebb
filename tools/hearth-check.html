@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ebb hearth check</title>
+<link rel="icon" href="../brand/ebb-favicon.svg" type="image/svg+xml">
+<style>
+  @font-face { font-family: 'Nunito'; src: url('../src/vendor/fonts/nunito-latin-600-normal.woff2') format('woff2'); font-weight: 600; }
+  @font-face { font-family: 'Nunito'; src: url('../src/vendor/fonts/nunito-latin-800-normal.woff2') format('woff2'); font-weight: 800; }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; max-width: 100%; overflow-x: hidden; }
+  body { background: #F4EEE4; color: #1E2624; font: 600 17px/1.45 'Nunito', system-ui, sans-serif; padding: 16px; overflow-wrap: anywhere; }
+  main { max-width: 1100px; margin: 0 auto; display: flex; flex-direction: column; gap: 12px; }
+  h1 { font-size: 24px; font-weight: 800; margin: 0; }
+  p { margin: 0; color: #4A5551; }
+  #view { width: 100%; aspect-ratio: 16 / 9; display: block; border-radius: 14px; background: #1E2624; touch-action: none; }
+  .row { display: flex; flex-wrap: wrap; gap: 8px; }
+  button { font: 800 16px/1.2 'Nunito', system-ui, sans-serif; color: #FBF7F0; background: #4a6a47; border: 0; border-radius: 12px; padding: 10px 14px; cursor: pointer; min-height: 48px; }
+  button[aria-pressed=true] { background: #23361F; }
+  a { color: #4a6a47; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Hearth check</h1>
+  <canvas id="view" aria-label="The camp's fire"></canvas>
+  <p>The star fire (S4): Matt's single log, six times, burnt ends meeting in the middle, with the hearth stones and a pot on them. Below it, the clay pieces (S5) pale on the workbench and one firing at the star's edge. The real game, drawn as it plays. Pick the fire's state and a view; the time of day is in the links. <a href="./">All tools</a></p>
+  <div class="row">
+    <button data-fire="lit" aria-pressed="true">Lit</button><button data-fire="embers" aria-pressed="false">Embers</button><button data-fire="cold" aria-pressed="false">Cold</button>
+    <button data-hearth="1" aria-pressed="true">Hearth stones</button>
+  </div>
+  <div class="row">
+    <button data-view="fire">The fire</button><button data-view="above">From above</button><button data-view="bench">The workbench</button><button data-view="side">The pots by the fire</button>
+  </div>
+  <div class="row"><a href="?camp=hearth&shaped&hour=16">Afternoon</a> <a href="?camp=hearth&shaped&hour=19.6">Dusk</a> <a href="?camp=hearth&shaped&hour=22">Night</a></div>
+</main>
+<script src="./boot-guard.js"></script>
+<script type="importmap">{ "imports": {
+  "wgpu-matrix": "../src/vendor/wgpu-matrix/wgpu-matrix.module.js" } }</script>
+<script type="module" src="./hearth-check.js"></script>
+</body>
+</html>
