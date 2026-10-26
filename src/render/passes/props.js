@@ -50,7 +50,7 @@ const VERTEX_BYTES = 44;
  * @param {GPUTextureFormat} format @param {number[]} fallback rgba 0..255 for a missing map
  * @param {string} label
  */
-async function mapTexture(device, img, format, fallback, label) {
+export async function mapTexture(device, img, format, fallback, label) {
   if (!img || typeof createImageBitmap !== 'function') {
     const t = makeTexture(device, { label, size: [1, 1], format, usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST });
     device.queue.writeTexture({ texture: t }, new Uint8Array(fallback), { bytesPerRow: 4 }, [1, 1]);

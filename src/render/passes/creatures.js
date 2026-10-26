@@ -8,6 +8,8 @@
 import { makeBuffer, makeShaderModule } from '../../core/gpu.js';
 import { packMesh, VERTEX_BYTES, MAX_BONES } from '../../world/creatures/bodies.js';
 import { liftAt, liftLook, liftLookVersion, liftVersion } from '../lift.js';
+import { materialMaps } from '../gltf.js';
+import { mapTexture } from './props.js';
 
 /** @typedef {import('../frame-graph.js').PassContext} PassContext */
 
@@ -56,11 +58,12 @@ export function shellBlock(body) {
 
 /**
  * @param {{ recipe: any, mesh?: { vertices: Float32Array, indices: Uint32Array, count: number }, eyeBones?: number[], maxBones?: number,
- *   name?: string, shader?: string, extraFloats?: number, liftGroup?: import('../lift.js').LiftGroup }} opts
+ *   name?: string, shader?: string, extraFloats?: number, liftGroup?: import('../lift.js').LiftGroup, maps?: boolean }} opts
  *   recipe: the species recipe (recipes/species/<id>.json); mesh: one unskinned mesh to start with (the size preview);
  *   eyeBones: the two bones the eyes follow, for their wet glint (body.eyeGlint); shader: another draw shader with the
  *   same bindings (the walker's figure-draw); extraFloats: more uniform floats after the usual 12, set by setExtra;
- *   liftGroup: what its beings are for the lift ('beings' unless said: the camp's piles and pickups say theirs)
+ *   liftGroup: what its beings are for the lift ('beings' unless said: the camp's piles and pickups say theirs);
+ *   maps: the shader reads baked colour and normal maps (bindings 3 to 5; setMaps gives them)
  */
 export function createCreaturePass(opts) {
   const { recipe } = opts;
@@ -95,6 +98,18 @@ export function createCreaturePass(opts) {
   /** @type {GPUBuffer} */ let sbuf;
   /** @type {GPUBuffer} */ let bbuf;
   /** @type {GPUBindGroup} */ let group;
+  /** @type {GPUBindGroupLayout} */ let groupLayout;
+  // Baked maps (opts.maps: the walker's figure): its colour and normal textures, and their sampler.
+  /** @type {GPUTexture[] | null} */ let maps = null;
+  /** @type {GPUSampler | null} */ let mapSampler = null;
+  /** @type {import('../gltf.js').Glb | null} */ let pendingMaps = null;
+  /** The pass's bind group, with the maps if it has them. */
+  function bindGroup() {
+    if (!device) return;
+    group = device.createBindGroup({ label: 'creatures', layout: groupLayout, entries: [
+      { binding: 0, resource: { buffer: ubuf } }, { binding: 1, resource: { buffer: sbuf } }, { binding: 2, resource: { buffer: bbuf } },
+      ...(maps && mapSampler ? [{ binding: 3, resource: maps[0].createView() }, { binding: 4, resource: maps[1].createView() }, { binding: 5, resource: mapSampler }] : [])] });
+  }
 
   /** Put a mesh on the GPU once there is a device. @param {string} key */
   function upload(key) {
@@ -169,8 +184,15 @@ export function createCreaturePass(opts) {
           { binding: 0, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: {} },
           { binding: 1, visibility: GPUShaderStage.VERTEX, buffer: { type: 'read-only-storage' } },
           { binding: 2, visibility: GPUShaderStage.VERTEX, buffer: { type: 'read-only-storage' } },
+          // A body with baked maps (the walker's figure): colour, normal and their sampler.
+          ...(opts.maps ? [
+            { binding: 3, visibility: GPUShaderStage.FRAGMENT, texture: {} },
+            { binding: 4, visibility: GPUShaderStage.FRAGMENT, texture: {} },
+            { binding: 5, visibility: GPUShaderStage.FRAGMENT, sampler: {} },
+          ] : []),
         ],
       });
+      groupLayout = layout;
       const pipelineLayout = device.createPipelineLayout({ label: 'creatures', bindGroupLayouts: [ctx.layouts.frame, ctx.layouts.lighting, layout] });
       const depthStencil = { format: /** @type {GPUTextureFormat} */ ('depth32float'), depthWriteEnabled: true, depthCompare: /** @type {GPUCompareFunction} */ ('greater') };
       bodyPipe = await device.createRenderPipelineAsync({
@@ -208,9 +230,32 @@ export function createCreaturePass(opts) {
       device.queue.writeBuffer(ubuf, 0, data);
       sbuf = makeBuffer(device, { label: 'creature-beings', size: beings.byteLength, usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST });
       bbuf = makeBuffer(device, { label: 'creature-bones', size: bones.byteLength, usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST });
-      group = device.createBindGroup({ label: 'creatures', layout, entries: [
-        { binding: 0, resource: { buffer: ubuf } }, { binding: 1, resource: { buffer: sbuf } }, { binding: 2, resource: { buffer: bbuf } }] });
+      if (opts.maps) {
+        mapSampler = device.createSampler({ label: `${pass.name}-maps`, magFilter: 'linear', minFilter: 'linear', mipmapFilter: 'linear', maxAnisotropy: 8,
+          addressModeU: 'clamp-to-edge', addressModeV: 'clamp-to-edge' });
+        // Plain stand-ins until the baked maps are made.
+        maps = await Promise.all([mapTexture(device, null, 'rgba8unorm-srgb', [128, 128, 128, 255], `${pass.name}-colour`),
+          mapTexture(device, null, 'rgba8unorm', [128, 255, 128, 255], `${pass.name}-normal`)]);
+      }
+      bindGroup();
+      if (pendingMaps) await pass.setMaps(pendingMaps);
       for (const key of meshes.keys()) upload(key);
+    },
+
+    /**
+     * The body's baked maps (a pass made with maps: true), from a GLB's material: colour (sRGB) and
+     * normal, mipmapped. Before the pass is set up they wait for it. @param {import('../gltf.js').Glb} glb
+     */
+    async setMaps(glb) {
+      if (!opts.maps) return;
+      if (!device) { pendingMaps = glb; return; }
+      pendingMaps = null;
+      const m = materialMaps(glb);
+      const made = await Promise.all([mapTexture(device, m.baseColor, 'rgba8unorm-srgb', [128, 128, 128, 255], `${pass.name}-colour`),
+        mapTexture(device, m.normal, 'rgba8unorm', [128, 255, 128, 255], `${pass.name}-normal`)]);
+      maps?.forEach((t) => t.destroy());
+      maps = made;
+      bindGroup();
     },
 
     resize() {},

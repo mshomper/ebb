@@ -22,7 +22,8 @@ import { createEyes } from './eyes.js';
 import { actLength, actPose, gestureLength, gesturePose } from './acts.js';
 import { createLean } from './lean.js';
 import { createLook } from './look.js';
-import { rollPose, turnBones } from './roll.js';
+import { rollPose, turnBones, onGround } from './roll.js';
+import { createClipPlayer } from './clips.js';
 
 /**
  * @typedef {Object} FigureInput
@@ -50,9 +51,14 @@ const envelope = (u, a, hold, b) => (u < 0 ? 0 : u < a ? smooth(u / a) : u < a +
 /**
  * @param {any} R recipes/world/figure.json
  * @param {{ name: string, parent: number, pivot: number[] }[]} skeleton from rig.js
+ * @param {import('./clips.js').ClipFile | null} [clipFile] Matt's clips (clips.js); without them the
+ *   code's own stride and roll play
  */
-export function createFigureMotion(R, skeleton) {
+export function createFigureMotion(R, skeleton, clipFile = null) {
   const I = /** @type {Record<string, number>} */ (Object.fromEntries(skeleton.map((b, i) => [b.name, i])));
+  const clips = clipFile && R.clips ? createClipPlayer(clipFile, R.clips, skeleton) : null;
+  /** A driven bone's turn in the clip pose, or none. @param {Float32Array} p @param {number} i @returns {number[]} */
+  const clipQ = (p, i) => clips?.turn(p, i) ?? QI;
   const out = new Float32Array(skeleton.length * 16);
   const G = R.gait, PO = R.poses;
   // The figure is drawn at body.displayScale (the shader scales the posed rig). All the motion below
@@ -194,7 +200,8 @@ export function createFigureMotion(R, skeleton) {
       last = { x: s.x, z: s.z };
       if (visYaw === null || jumped) { visYaw = s.yaw; prevYaw = s.yaw; mode = 'plant'; }
       // A dodge roll (roll.js): the body faces the roll at once and curls into a ball over it.
-      const RO = R.roll, rollU = s.rolling ?? -1, RP = rollPose(RO, rollU), tuck = RP.tuck;
+      // With Matt's clips the roll is his (clips.js), not the code's tuck and turn.
+      const RO = R.roll, rollU = s.rolling ?? -1, RP = clips ? { tuck: 0, angle: 0 } : rollPose(RO, rollU), tuck = RP.tuck;
       if (rollU >= 0) visYaw = s.yaw;
 
       // Facing: quick while walking, a stepped turn on the spot while standing.
@@ -279,6 +286,15 @@ export function createFigureMotion(R, skeleton) {
       }
       else if (mode === 'gait' && (speed < 0.03 || standW < 0.5)) { mode = 'plant'; planted.pin(footWorld, visYaw); }
       phase = (phase + (speed * dt) / (2 * Math.max(P.stepM, 0.05))) % 1;
+      // Matt's clips (clips.js) under the code's layers: striding on your feet, and the roll. CB: the
+      // clip pose's own bones, for where its feet and knees are; cw: how much it leads; cwFeet: standing
+      // pinned, only the roll moves the feet (a stop never slides them).
+      const CL = clips ? clips.update(dt, { speed, gait: mode === 'gait' ? standW : 0, rolling: rollU }) : null;
+      const cw = CL ? CL.weight : 0, CP = CL ? CL.pose : null;
+      const CB = CL && cw > 0 ? clips.pose(CL.pose) : null;
+      const cwFeet = CL ? (mode === 'plant' ? CL.roll : cw) : 0;
+      /** Where a clip bone's pivot is in the clip pose (body m). @param {number} i */
+      const clipAt = (i) => matPoint(/** @type {Float32Array} */ (CB), i * 16, skeleton[i].pivot);
 
       /** @type {{ x: number, z: number, yaw: number, side: number }[]} */ const footfalls = [];
       // Each foot's target: ankle (body m), toe pitch and its turn about y relative to the body.
@@ -289,7 +305,7 @@ export function createFigureMotion(R, skeleton) {
       }
       const cyc = [0, 1].map((i) => footInCycle((phase + i * 0.5) % 1, P.stance, P.stepM, P.liftM, P.kickM ?? 0, P.landShare ?? 0.5));
       const feet = [0, 1].map((i) => {
-        let bx, bz, lift, pitch, yawRel;
+        let bx, bz, lift, pitch, yawRel, land = false;
         if (plantRes) {
           const f = plantRes.feet[i];
           [bx, bz] = toBody(f.x, f.z);
@@ -299,15 +315,22 @@ export function createFigureMotion(R, skeleton) {
           bx = rest[i][0] * 0.95; bz = rest[i][2] + cy.fz; lift = cy.lift; pitch = cy.pitch; yawRel = 0;
           // The first steps ease out of where the feet stood.
           if (m < 1) { const p = toBody(startPins[i][0], startPins[i][1]); bx = lerp(p[0], bx, m); bz = lerp(p[1], bz, m); lift *= m; }
-          if (cy.down && !wasDown[i]) { const w = toWorld(bx, bz); footfalls.push({ x: w[0], z: w[1], yaw: /** @type {number} */ (visYaw), side: SIDE[i] }); }
+          land = CL && cw > 0.5 ? CL.landed[i] : cy.down && !wasDown[i];
           wasDown[i] = cy.down;
         }
+        // The clip's foot, its stride stretched fore and aft of the hip.
+        if (CB && cwFeet > 0) {
+          const ft = clipAt(LEG[i][2]), hip = clipAt(LEG[i][0]);
+          bx = lerp(bx, ft[0], cwFeet); bz = lerp(bz, hip[2] + (ft[2] - hip[2]) * /** @type {any} */ (CL).stretch, cwFeet);
+          lift = lerp(lift, ft[1] - R.legs.ankleM, cwFeet); pitch *= 1 - cwFeet; yawRel *= 1 - cwFeet;
+        }
+        if (land) { const w = toWorld(bx, bz); footfalls.push({ x: w[0], z: w[1], yaw: /** @type {number} */ (visYaw), side: SIDE[i] }); }
         // The ground under the foot, and a look ahead so a swing clears a step up.
         let g = gnd(bx, bz);
         if (lift > 0.01 && !plantRes) g = Math.max(g, gnd(bx, bz + 0.12));
         const slope = Math.atan((gnd(bx, bz + 0.1) - gnd(bx, bz - 0.1)) / 0.2);
-        const lim = R.legs.footPitchMaxDeg * DEG;
-        return { a: [bx, g + R.legs.ankleM + lift, bz], pitch: pitch * m + Math.max(-lim, Math.min(lim, slope)), yawRel, ground: g };
+        const lim = R.legs.footPitchMaxDeg * DEG, tilt = Math.max(-lim, Math.min(lim, slope));
+        return { a: [bx, g + R.legs.ankleM + lift, bz], pitch: pitch * m + tilt, tilt, yawRel, ground: g };
       });
       // Postures: sit (knees up, feet forward) and kneel (the right foot planted forward, the left
       // knee on the ground). The kneel is worked out from the leg's own lengths: the left knee rests
@@ -349,8 +372,10 @@ export function createFigureMotion(R, skeleton) {
       // Walking it is highest over the planted foot (bobM above 0); jogging and running it is lowest
       // there and highest in the flight between steps (bobM below 0).
       const bob = P.bobM * Math.cos(2 * Math.PI * 2 * (phase - P.stance / 2)) * m;
-      const shift = R.idle.shiftM * Math.sin((2 * Math.PI * t) / R.idle.shiftS) * (1 - m) * standW;
+      let shift = R.idle.shiftM * Math.sin((2 * Math.PI * t) / R.idle.shiftS) * (1 - m) * standW;
       let standY = (feet[0].ground + feet[1].ground) / 2 + restPelvisY - R.legs.hipDrop - P.crouchM * m + bob;
+      // The clip's hips: its rise and fall and its sway, over the ground under the feet.
+      if (CP && cw > 0) { standY = lerp(standY, (feet[0].ground + feet[1].ground) / 2 + restPelvisY + CP[1], cw); shift = lerp(shift, CP[0], cw); }
       for (let i = 0; i < 2; i++) {
         const hip = skeleton[LEG[i][0]].pivot, f = feet[i].a;
         const horiz = Math.hypot(f[0] - hip[0] - (i === 0 ? shift : shift), f[2] - hip[2]);
@@ -377,8 +402,9 @@ export function createFigureMotion(R, skeleton) {
       prevPelvis = pelvisWorldY;
       const twist = P.twistDeg * DEG * Math.sin(2 * Math.PI * phase) * m * standW;
       // On hands and knees the hips tip forward and come forward over the knees.
-      const qPelvis = qmul(qaxis([0, 1, 0], twist), qaxis([1, 0, 0], C.hipDeg * DEG * crawlW));
-      const pelvisZ = C.pelvisZ * crawlW + K.pelvisZ * kneelW;
+      const qPelvisCode = qmul(qaxis([0, 1, 0], twist), qaxis([1, 0, 0], C.hipDeg * DEG * crawlW));
+      const qPelvis = CP ? qslerp(qPelvisCode, clipQ(CP, I.pelvis), cw) : qPelvisCode;
+      const pelvisZ = C.pelvisZ * crawlW + K.pelvisZ * kneelW + (CP ? CP[2] * cw : 0);
       set(I.pelvis, { q: qPelvis, t: [shift, pelvisY - restPelvisY, pelvisZ] });
 
       // Leg IK in the pelvis's rest frame (worked out now, applied once the arms are posed).
@@ -386,7 +412,14 @@ export function createFigureMotion(R, skeleton) {
         const [th, sh, ft] = LEG[i];
         const T = matPointInv(out, 0, target[i].a);
         const kneelBack = i === 0 ? kneelW + crawlW : crawlW;
-        const pole = qrot(qconj(qPelvis), norm([0.15 * SIDE[i], -0.6 * kneelBack, 1]));
+        let bend = norm([0.15 * SIDE[i], -0.6 * kneelBack, 1]);
+        // The knee bends the clip's way (as far as the clip's leg is bent enough to say).
+        if (CB && cwFeet > 0) {
+          const h = clipAt(th), k = clipAt(sh), f = clipAt(ft), d = sub(k, [(h[0] + f[0]) / 2, (h[1] + f[1]) / 2, (h[2] + f[2]) / 2]);
+          const say = cwFeet * Math.min(1, Math.hypot(d[0], d[1], d[2]) / 0.02);
+          bend = norm(bend.map((v, j) => v * (1 - say) + norm(d)[j] * say));
+        }
+        const pole = qrot(qconj(qPelvis), bend);
         const r = twoBone(skeleton[th].pivot, skeleton[sh].pivot, skeleton[ft].pivot, T, pole);
         return { ...r, knee: matPoint(out, 0, r.joint) };
       });
@@ -437,12 +470,21 @@ export function createFigureMotion(R, skeleton) {
       // the chest's share of a look.
       const br = Math.sin((2 * Math.PI * t) / R.idle.breathS);
       const lean = (paceLean * standW + S.leanDeg * sitW + K.leanDeg * kneelW + C.leanDeg * crawlW + (A ? A.lean : 0) + RO.curlDeg * tuck) * DEG;
-      set(I.spine, { q: qaxis([1, 0, 0], lean * 0.5 + br * R.idle.breathDeg * 0.3 * DEG) });
+      // With the clip: its back, with the lean into starts and stops (the lean past the pace's own),
+      // breathing, the look's share and an act's twist on top.
+      const leanOn = (paceLean - (P.leanDeg * m + 1.5 * (1 - m))) * DEG * standW;
+      const spineQ = qaxis([1, 0, 0], lean * 0.5 + br * R.idle.breathDeg * 0.3 * DEG);
+      set(I.spine, { q: CP ? qslerp(spineQ, qmul(clipQ(CP, I.spine), qaxis([1, 0, 0], leanOn * 0.5 + br * R.idle.breathDeg * 0.3 * DEG)), cw) : spineQ });
       // An act's twist turns the chest to the right (the dig's tip onto the spoil heap).
       const actTwist = A ? -(A.twist ?? 0) * DEG : 0;
-      set(I.chest, { q: qmul(qaxis([1, 0, 0], lean * 0.5), qaxis([0, 1, 0], -twist * 0.8 + LK.chest + actTwist)), s: [1 + 0.006 * br, 1 + 0.004 * br, 1 + 0.008 * br] });
+      const chestQ0 = qmul(qaxis([1, 0, 0], lean * 0.5), qaxis([0, 1, 0], -twist * 0.8 + LK.chest + actTwist));
+      set(I.chest, { q: CP ? qslerp(chestQ0, qmul(clipQ(CP, I.chest), qmul(qaxis([1, 0, 0], leanOn * 0.5), qaxis([0, 1, 0], LK.chest + actTwist))), cw) : chestQ0,
+        s: [1 + 0.006 * br, 1 + 0.004 * br, 1 + 0.008 * br] });
       const headPitch = Math.max(-L.maxPitchDeg * DEG, Math.min(L.maxPitchDeg * DEG, pitch)) - lean * 0.7 + RO.headDeg * DEG * tuck;
-      set(I.head, { q: qmul(qaxis([0, 1, 0], LK.yaw), qaxis([1, 0, 0], headPitch)) });
+      const headQ = qmul(qaxis([0, 1, 0], LK.yaw), qaxis([1, 0, 0], headPitch));
+      // The clip's head carries the look (not the pace's own tip: the clip has its own).
+      const lookPitch = Math.max(-L.maxPitchDeg * DEG, Math.min(L.maxPitchDeg * DEG, pitch - P.headDeg * DEG * m * standW));
+      set(I.head, { q: CP ? qslerp(headQ, qmul(clipQ(CP, I.head), qmul(qaxis([0, 1, 0], LK.yaw), qaxis([1, 0, 0], lookPitch))), cw) : headQ });
       set(I.hat, null);
       // The hat tip lags: it tips back as you speed up, dips as the body rises, and swings out on a turn.
       const HT = R.springs.hatTip;
@@ -465,6 +507,8 @@ export function createFigureMotion(R, skeleton) {
         let qU = qmul(qaxis([1, 0, 0], -swing), qmul(qaxis([0, 0, 1], out1), HANG[i].q0));
         const elbow = ((R.hang.elbowDeg * (1 - m) + P.elbowDeg * m) * DEG + AR.elbowForward * Math.max(0, swing) - AR.elbowBack * Math.max(0, -swing)) * standW + 0.9 * (sitW + kneelW + crawlW);
         let qF = qaxis(HANG[i].flex, elbow);
+        // The clip's arms swing in place of the code's; reaching hands (below) still lead.
+        if (CP) { qU = qslerp(qU, clipQ(CP, u), cw); qF = qslerp(qF, clipQ(CP, f), cw); }
         // Hand targets (body m) with a weight. An act's hands lead; the rest give way to them.
         /** @type {{ at: number[], w: number }[]} */ const goals = [];
         const aw = A ? A.arms : 0, keep = 1 - aw;
@@ -488,7 +532,7 @@ export function createFigureMotion(R, skeleton) {
         }
         set(u, { q: qU });
         set(f, { q: qF });
-        set(h, null);
+        set(h, CP && cw > 0 ? { q: qslerp(QI, clipQ(CP, h), cw) } : null);
       }
 
       // Legs: the IK turns, then each foot set to the ground's slope and its own facing.
@@ -496,7 +540,9 @@ export function createFigureMotion(R, skeleton) {
         const [th, sh, ft] = LEG[i];
         set(th, { q: legIK[i].q1 });
         set(sh, { q: legIK[i].q2 });
-        const want = qmul(qaxis([0, 1, 0], target[i].yawRel), qaxis([1, 0, 0], -target[i].pitch));
+        let want = qmul(qaxis([0, 1, 0], target[i].yawRel), qaxis([1, 0, 0], -target[i].pitch));
+        // The clip's foot (heel strike, toe off), tipped to the ground's slope.
+        if (CB && cwFeet > 0) want = qslerp(want, qmul(qaxis([1, 0, 0], -feet[i].tilt), matQuat(CB, ft * 16)), cwFeet * standW);
         set(ft, { q: qmul(qconj(matQuat(out, sh * 16)), want) });
       }
 
@@ -518,9 +564,12 @@ export function createFigureMotion(R, skeleton) {
 
       // The roll turns the whole curled figure about the ball's middle; no footfalls while it rolls.
       turnBones(RO, out, RP.angle, centre, PIVOTS);
+      // The clip's roll never sinks into the ground: lifted so the lowest joint clears it.
+      if (CL && CL.roll > 0) onGround(out, PIVOTS, centre + R.clips.roll.contactM, CL.roll, true);
       if (rollU >= 0) footfalls.length = 0;
       const eyeState = eyes.update(dt, { sleepy: !!s.sleepy && sitW > 0.5 });
-      info = { mode, m, wade, sitW, kneelW, crawlW, phase, pace: P, leanDeg: paceLean, looking: LK.target, look: LK, expression: eyes.expression, act: act ? act.name : null, gesture: gest ? gest.name : null };
+      info = { mode, m, wade, sitW, kneelW, crawlW, phase, pace: P, leanDeg: paceLean, looking: LK.target, look: LK, expression: eyes.expression, act: act ? act.name : null, gesture: gest ? gest.name : null,
+        clip: CL ? { weight: cw, roll: CL.roll, phase: CL.phase } : null };
       return { yaw: visYaw, eyes: [...eyeState, ...LK.eyes], footfalls, actDone };
     },
   };

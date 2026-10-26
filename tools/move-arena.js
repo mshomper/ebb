@@ -11,7 +11,7 @@
 // Hollow's Q and E moves join there with their own recipe numbers).
 
 import { createStage } from './walker-figure-stage.js';
-import { loadFigureModel, eyeUniforms } from '../src/world/figure/index.js';
+import { loadFigureModel, loadFigureClips, eyeUniforms } from '../src/world/figure/index.js';
 import { buildFigure } from '../src/world/figure/rig.js';
 import { createFigureMotion } from '../src/world/figure/motion.js';
 import { createWalkGrid } from '../src/world/walk/grid.js';
@@ -55,9 +55,12 @@ const nearest = (/** @type {number} */ x, /** @type {number} */ z) => actors.red
 
 // ---- the walker and its figure ----
 const walker = createWalker(R, { get grid() { return grid; }, depth, ground, nearest, get solids() { return solids; } });
-const built = buildFigure(await loadFigureModel(FR), FR);
+// As the game draws it: Matt's clips and the baked texture.
+const figureGlb = await loadFigureModel(FR);
+const built = buildFigure(figureGlb, FR, { textured: true });
 stage.setMesh(built);
-const motion = createFigureMotion(FR, built.skeleton);
+await stage.setMaps(figureGlb);
+const motion = createFigureMotion(FR, built.skeleton, await loadFigureClips(FR));
 const headBone = built.skeleton.findIndex((b) => b.name === 'head');
 const eyeBuf = new Float32Array(20);
 const DS = FR.body.displayScale;

@@ -17,8 +17,9 @@ import numpy as np
 from PIL import Image
 from scipy.spatial import cKDTree
 import glb
+import bake
 
-PARTS = {'torso': 0, 'head': 1, 'hat': 2, 'pack': 3, 'skirt': 4, 'leg.l': 5, 'leg.r': 6, 'arm': 7}
+PARTS ={'torso': 0, 'head': 1, 'hat': 2, 'pack': 3, 'skirt': 4, 'leg.l': 5, 'leg.r': 6, 'arm': 7}
 GLOVE_T = 0.475              # where the glove starts along an arm (m out from the shoulder)
 GLOVE_Y = 0.645 - 0.951      # the old gloves are below this height (the textured model's frame)
 REST = {1: np.array([0.065, -0.46, 0.07]), -1: np.array([-0.065, -0.46, 0.07])}   # the old hanging arms
@@ -27,6 +28,9 @@ OBJ_SCALE = 0.1              # nTop exports tenths of a metre
 # The hat's felt, dyed madder rust (approved October 21, 2026): seen from above it stands clear of
 # grass, sand and water. Linear albedo; the felt's own light and dark (wear, folds) are kept.
 HAT_RUST = np.array([0.254, 0.069, 0.034])
+# The face, which the texture bake leaves as it is (rest model m, standing on y = 0): out to halfX
+# either side, between the heights y, in front of z, fading over edgeM; head skin facing forward.
+FACE = dict(halfX=0.15, y=[1.29, 1.53], z=0.0, edgeM=0.02)
 
 
 def read_obj(path):
@@ -92,7 +96,7 @@ def textured_samples(path, n=2_500_000):
     return S, col, fn[k]
 
 
-def main(meshy, body_obj, left_obj, right_obj, out):
+def main(meshy, body_obj, left_obj, right_obj, out, stills=None):
     S, col, SN = textured_samples(meshy)
     tree = cKDTree(S)
 
@@ -111,7 +115,7 @@ def main(meshy, body_obj, left_obj, right_obj, out):
         N = vertex_normals(P, F)
         if name == 'body':
             C = colours(P, N)
-            parts.append(dict(name=name, P=P, N=N, C=C, F=F))
+            parts.append(dict(name=name, P=P, N=N, C=C, F=F, Ps=P.copy(), Ns=N.copy(), Rt=np.eye(3)))
             continue
         s = 1 if P[:, 0].mean() > 0 else -1
         near = P[np.argsort(np.abs(P[:, 0]))[: max(20, len(P) // 20)]]
@@ -122,6 +126,7 @@ def main(meshy, body_obj, left_obj, right_obj, out):
         R = rot_from_to(axis, REST[s])
         Pm = (P - pivot) @ R.T + pivot
         Nm = N @ R.T
+        Rt = R.copy()
         region = (np.sign(S[:, 0]) == s) & (np.abs(S[:, 0]) > 0.14) & (S[:, 1] > -0.48) & (S[:, 1] < 0.26)
         sub = np.where(region)[0]
         local = cKDTree(S[sub])
@@ -137,6 +142,7 @@ def main(meshy, body_obj, left_obj, right_obj, out):
                 Rk = (U @ Vt).T
             Pm = (Pm - ca) @ Rk.T + ct
             Nm = Nm @ Rk.T
+            Rt = Rk @ Rt
         C = colours(Pm, Nm)
         tt = (P - pivot) @ axis
         g = np.clip((tt - GLOVE_T + 0.01) / 0.02, 0, 1)
@@ -145,7 +151,8 @@ def main(meshy, body_obj, left_obj, right_obj, out):
         gc = (col[gi[ii]] / (d[..., None] + 0.002)).sum(1) / (1 / (d + 0.002)).sum(1)[:, None]
         C = C * (1 - g[:, None]) + gc * g[:, None]
         report[name] = dict(shoulder=pivot.tolist(), axis=axis.tolist(), lengthM=float(tt.max()))
-        parts.append(dict(name=name, P=P, N=N, C=C, F=F))
+        # The bake samples the arm where it was turned onto the sleeve; the glove keeps its colour.
+        parts.append(dict(name=name, P=P, N=N, C=C, F=F, Ps=Pm, Ns=Nm, Rt=Rt, keep=g))
 
     # Stand on the ground (y = 0), and keep the shoulders and axes in that frame for the rig.
     y0 = min(p['P'][:, 1].min() for p in parts)
@@ -193,6 +200,28 @@ def main(meshy, body_obj, left_obj, right_obj, out):
         p['L'] = np.full(len(p['P']), PARTS['arm'], np.uint8)
     counts = {k: int((lab == v).sum()) for k, v in PARTS.items()}
 
+    # The face keeps exactly what it has today (its vertex colours; the shader draws the eyes): the
+    # texture bake leaves it alone, fading out over a couple of centimetres at its edge.
+    edge = lambda v, a, b: np.clip((v - a) / (b - a), 0, 1)
+    F_ = FACE
+    body['keep'] = (edge(F_['halfX'] - np.abs(P[:, 0]), 0, F_['edgeM']) * edge(P[:, 1], F_['y'][0], F_['y'][0] + F_['edgeM'])
+                    * edge(-P[:, 1], -F_['y'][1], -F_['y'][1] + F_['edgeM']) * edge(P[:, 2], F_['z'], F_['z'] + F_['edgeM'])
+                    * edge(body['N'][:, 2], 0.15, 0.35) * (lab == PARTS['head']))
+
+    def eyes_mask(S):
+        out = np.zeros(len(S), bool)
+        for side in (-1, 1):
+            e = ((S[:, 0] - EYES['mid'] - side * EYES['cx']) / (EYES['rx'] * 1.5)) ** 2 + ((S[:, 1] - EYES['cy']) / (EYES['ry'] * 1.3)) ** 2
+            out |= (e < 1) & (S[:, 2] > 0.05)
+        return out
+    maps, colour_img, normal_img, cover = bake.bake(parts, meshy, eyes_mask)
+    for p, (vm, F2, UV) in zip(parts, maps):
+        vm = vm.astype(np.int64)
+        for k in ('P', 'N', 'C', 'L'):
+            p[k] = p[k][vm]
+        p['F'] = F2.astype(np.int64)
+        p['UV'] = UV.astype(np.float32)
+
     # The GLB: one node per part; POSITION, NORMAL, COLOR_0 (linear), _PART; extras say where the arms are.
     blobs, views, accessors, meshes, nodes, off = [], [], [], [], [], 0
 
@@ -215,14 +244,26 @@ def main(meshy, body_obj, left_obj, right_obj, out):
     for p in parts:
         attrs = dict(POSITION=add(p['P'].astype(np.float32), 34962, 5126, 'VEC3'),
                      NORMAL=add(p['N'].astype(np.float32), 34962, 5126, 'VEC3'),
+                     TEXCOORD_0=add(p['UV'], 34962, 5126, 'VEC2'),
                      COLOR_0=add(np.clip(p['C'], 0, 1).astype(np.float32), 34962, 5126, 'VEC3'),
                      _PART=add(p['L'], 34962, 5121, 'SCALAR'))
         meshes.append(dict(name=p['name'], primitives=[dict(attributes=attrs, indices=add(p['F'].astype(np.uint32).ravel(), 34963, 5125, 'SCALAR'), material=0)]))
         nodes.append(dict(name=p['name'], mesh=len(meshes) - 1))
+    # The baked maps, inside the GLB: colour (sRGB JPEG) and the normal in object space (rest pose).
+    images = []
+    for img, mime in ((bake.encode(colour_img, 'JPEG', quality=92), 'image/jpeg'), (bake.encode(normal_img, 'JPEG', quality=95), 'image/jpeg')):
+        views.append(dict(buffer=0, byteOffset=off, byteLength=len(img)))
+        blobs.append(img + b'\0' * ((-len(img)) % 4))
+        off += len(img) + (-len(img)) % 4
+        images.append(dict(bufferView=len(views) - 1, mimeType=mime))
     blob = b''.join(blobs)
     gj = dict(asset=dict(version='2.0', generator='ebb tools/figure-prep/prep.py'), scene=0,
               scenes=[dict(nodes=list(range(len(nodes))))], nodes=nodes, meshes=meshes,
-              materials=[dict(name='cloth', pbrMetallicRoughness=dict(baseColorFactor=[1, 1, 1, 1], metallicFactor=0, roughnessFactor=0.65))],
+              materials=[dict(name='cloth', pbrMetallicRoughness=dict(baseColorFactor=[1, 1, 1, 1], metallicFactor=0, roughnessFactor=0.65,
+                                                                        baseColorTexture=dict(index=0)),
+                              normalTexture=dict(index=1), extras=dict(normalSpace='object'))],
+              images=images, samplers=[dict(magFilter=9729, minFilter=9987, wrapS=33071, wrapT=33071)],
+              textures=[dict(source=0, sampler=0), dict(source=1, sampler=0)],
               accessors=accessors, bufferViews=views, buffers=[dict(byteLength=len(blob))],
               extras=dict(parts=PARTS, arms=report))
     js = json.dumps(gj, separators=(',', ':')).encode()
@@ -233,9 +274,14 @@ def main(meshy, body_obj, left_obj, right_obj, out):
         f.write(js)
         f.write(struct.pack('<I4s', len(blob), b'BIN\0'))
         f.write(blob)
-    print(json.dumps(dict(out=out, bytes=12 + 16 + len(js) + len(blob), parts=counts, arms=report,
+    print(json.dumps(dict(out=out, bytes=12 + 16 + len(js) + len(blob), parts=counts, arms=report, atlasCover=round(cover, 3),
+                          maps=[len(blobs[-2]), len(blobs[-1])],
                           verts=sum(len(p['P']) for p in parts), tris=sum(len(p['F']) for p in parts)), indent=1))
+    # Stills of the two maps, for a look before the game takes them (given a folder for them).
+    if stills:
+        Image.fromarray(colour_img).save(f'{stills}/walker-colour.jpg', quality=90)
+        Image.fromarray(normal_img).save(f'{stills}/walker-normal.jpg', quality=90)
 
 
 if __name__ == '__main__':
-    main(*sys.argv[1:6])
+    main(*sys.argv[1:7])

@@ -2,7 +2,11 @@
 // bones and lit the same way (sun and moon with shadows, sky fill, aerial perspective), with the eyes
 // drawn on the head from its rest pose (lib-figure-eyes.wgsl): cream ovals that blink and change
 // shape, and glow faintly after dark (a small light of their own, so the palette rule holds).
-// Albedo is the model's own linear vertex colour (tools/figure-prep/prep.py).
+// Albedo is Matt's textured model baked onto ours (tools/figure-prep/bake.py, October 26, 2026): a
+// vertex's colour slot holds its UV and a 2, and the colour map (sRGB, read linear) and the normal map
+// (object space in the rest pose, turned by the skin like the vertex normal) are sampled here. A
+// model with no UVs carries its linear vertex colour there instead. Light stays physical; the
+// palette applies at the tonemap.
 
 // #include common
 // #include lib-hash
@@ -23,14 +27,20 @@ struct FigureDraw {
 // Two vec4f per individual: (x, y, z, yaw in radians), (size, first bone, spare, spare).
 @group(2) @binding(1) var<storage, read> beings: array<vec4f>;
 @group(2) @binding(2) var<storage, read> bones: array<mat4x4f>;
+@group(2) @binding(3) var colourMap: texture_2d<f32>;
+@group(2) @binding(4) var normalMap: texture_2d<f32>;
+@group(2) @binding(5) var mapSampler: sampler;
 
 struct VsOut {
   @builtin(position) pos: vec4f,
   @location(0) world: vec3f,
   @location(1) normal: vec3f,
-  @location(2) albedo: vec3f,
+  @location(2) albedo: vec3f,   // linear colour, or (u, v, 2) for the maps
   @location(3) rest: vec3f,     // the point on the body at rest, where the eyes are drawn
   @location(4) head: f32,       // how much of the skin here follows the head
+  @location(5) rx: vec3f,       // the skin's turn (rest to world), for the object-space normal map
+  @location(6) ry: vec3f,
+  @location(7) rz: vec3f,
 };
 
 struct FsOut {
@@ -70,6 +80,10 @@ fn vsBody(@location(0) position: vec3f, @location(1) normal: vec3f, @location(2)
   o.world = world;
   o.pos = frame.viewProj * vec4f(world, 1.0);
   o.normal = vec3f(c * nPosed.x + s * nPosed.z, nPosed.y, -s * nPosed.x + c * nPosed.z);
+  let yaw = mat3x3f(vec3f(c, 0.0, -s), vec3f(0.0, 1.0, 0.0), vec3f(s, 0.0, c));
+  o.rx = yaw * m[0].xyz;
+  o.ry = yaw * m[1].xyz;
+  o.rz = yaw * m[2].xyz;
   o.albedo = albedo;
   o.rest = position;
   var head = 0.0;
@@ -82,7 +96,10 @@ fn vsBody(@location(0) position: vec3f, @location(1) normal: vec3f, @location(2)
 
 @fragment
 fn fsBody(in: VsOut) -> FsOut {
-  let n = normalize(in.normal);
+  let mapped = in.albedo.z > 1.5;
+  let mapColour = textureSample(colourMap, mapSampler, in.albedo.xy).rgb;
+  let mapNormal = textureSample(normalMap, mapSampler, in.albedo.xy).xyz * 2.0 - 1.0;
+  let n = select(normalize(in.normal), normalize(mat3x3f(in.rx, in.ry, in.rz) * mapNormal), mapped);
   let viewDist = distance(in.world, frame.cameraPos);
   let v = (frame.cameraPos - in.world) / max(viewDist, 1e-4);
   let vis = shadowVisibility(in.world, n, viewDist, in.pos.xy);
@@ -91,7 +108,7 @@ fn fsBody(in: VsOut) -> FsOut {
   let moonVis = select(vis, 1.0, casterIsSun);
   let ao = mix(0.55, 1.0, clamp(n.y * 0.5 + 0.5, 0.0, 1.0));
   let eye = figureEyes(in.rest, in.head, fd.eyes);
-  let albedo = mix(in.albedo, fd.eyes.albedo.rgb, eye);
+  let albedo = mix(select(in.albedo, mapColour, mapped), fd.eyes.albedo.rgb, eye);
   let direct = frame.sunIlluminance * max(dot(n, frame.sunDir), 0.0) * sunVis
              + frame.moonIlluminance * max(dot(n, frame.moonDir), 0.0) * moonVis
              + pointIllum(in.world, n, 0.15);

@@ -90,6 +90,17 @@
   "ease": { "settleS": 0.3, "postureS": 0.7, "actInS": 0.4, "stepLiftM": 0.06, "gestureFadeS": 0.3 },
   "roll": { "note": "The dodge roll (Space; WASD, October 26, 2026; src/world/figure/roll.js), in shares of the roll's length (recipes/world/walker.json steer.roll) and body meters. tuck: fully curled by the first share, uncurling from the second; turn: the one full turn runs between these shares. Curled, the hips sit pelvisY over the ground, the feet footY under the hips and footZ forward (knees to the chest), the back curls curlDeg and the head tucks headDeg. The ball turns about a point pivotY up and pivotZ forward, on an axis tilted shoulderTilt across the back, so it goes over one shoulder.",
     "tuck": [0.2, 0.8], "turn": [0.12, 0.86], "pelvisY": 0.42, "footY": -0.26, "footZ": 0.14, "curlDeg": 70, "headDeg": 50, "pivotY": 0.55, "pivotZ": 0.12, "shoulderTilt": 0.6, "contactM": 0.1 },
+  "clips": { "note": "Matt's Meshy clips on our rig (October 26, 2026; src/world/figure/clips.js; made by tools/figure-prep/clips.py into file). paces: which clip plays at which speed (body m/s: the walker's speed over body.displayScale; creep 0.45, the wade 1.0, the stroll 2.2 and Shift's 4.2 m/s are 0.61, 1.36, 2.99 and 5.70), blended between neighbours, all in step; each plays as fast as the walker moves over its own stride, stretched by stride (the feet reach that much further fore and aft, so the steps come that much slower). The stroll is a light jog: on our 1.4 m figure 2.2 m/s is about twice a walking pace, and Meshy's walk would play at 3.4 times its speed there. easeS: the clips ease in and out over this as you set off and stop. roll: Space's roll is the clip's span (seconds into the cut roll) over the roll's length, blended in over the first inShare of it; the rest of the clip (getting up) plays out over tailS after, blending back out.",
+    "file": "assets/figures/walker-clips.json",
+    "easeS": 0.2,
+    "paces": [
+      { "clip": "creep", "speed": 0.61, "stride": 1.15 },
+      { "clip": "casual", "speed": 1.0, "stride": 1.1 },
+      { "clip": "walk", "speed": 1.6, "stride": 1.1 },
+      { "clip": "jog", "speed": 3.0, "stride": 1.0 },
+      { "clip": "run", "speed": 5.7, "stride": 1.15 }
+    ],
+    "roll": { "clip": "roll", "span": [0, 0.87], "inShare": 0.15, "tailS": 0.3, "contactM": 0.08 } },
   "eyes": {
     "centre": [0.002, 1.414, 0],
     "halfSpacing": 0.093,

@@ -7,9 +7,10 @@
 // bones, the feet stay put while a kneeling act's hands work, crawlIn stays low until climbOut, and
 // a placed figure starts in its posture.
 
-import { readGlb, meshesByName } from '../src/render/gltf.js';
+import { readGlb, meshesByName, materialMaps } from '../src/render/gltf.js';
 import { buildFigure, anchorWeights } from '../src/world/figure/rig.js';
 import { createFigureMotion } from '../src/world/figure/motion.js';
+import { loadFigureClips } from '../src/world/figure/clips.js';
 import { twoBone, len, sub, qrot } from '../src/world/figure/kinematics.js';
 import { blinkAt } from '../src/world/figure/eyes.js';
 import { matPoint } from '../src/world/figure/kinematics.js';
@@ -51,9 +52,10 @@ async function load() {
  * Walk the figure in a straight line along +x at `speed` over ground h, and report each frame's
  * ankle positions in the world. @param {any} R @param {any} built @param {number} speed
  * @param {(x: number, z: number) => number} h @param {number} seconds
+ * @param {any} [clips] Matt's clips (clips.js), or the code's own stride
  */
-function walk(R, built, speed, h, seconds) {
-  const motion = createFigureMotion(R, built.skeleton);
+function walk(R, built, speed, h, seconds, clips = null) {
+  const motion = createFigureMotion(R, built.skeleton, clips);
   const feet = ['foot.l', 'foot.r'].map((n) => built.skeleton.findIndex((/** @type {any} */ b) => b.name === n));
   const dt = 1 / 60;
   let x = 0;
@@ -318,6 +320,94 @@ export function addFigureTests(test, assert, eq) {
       assert(worst < 0.012, `a planted foot slid ${(worst * 100).toFixed(1)} cm at ${speed} m/s`);
     }
     return report.join(', ');
+  });
+
+  test(FIG, 'the baked texture: colour and object-space normal maps in the GLB, and every vertex of the textured build carries a UV inside the atlas', async () => {
+    const { R, glb } = await load();
+    const maps = materialMaps(glb);
+    assert(maps.baseColor && maps.normal, 'both maps are in the model');
+    eq(glb.json.materials[0].extras?.normalSpace, 'object', 'the normal map is in the rest pose\'s own space');
+    const built = buildFigure(glb, R, { textured: true });
+    assert(built.textured, 'the build reads the UVs');
+    const v = new Float32Array(built.data);
+    let bad = 0;
+    const stride = v.length / built.count;
+    for (let k = 0; k < built.count; k++) {
+      const u = v[k * stride + 6], w = v[k * stride + 7], flag = v[k * stride + 8];
+      if (!(u >= 0 && u <= 1 && w >= 0 && w <= 1 && flag === 2)) bad++;
+    }
+    eq(bad, 0, 'UVs in 0..1 and marked');
+    return `${built.count.toLocaleString()} vertices, maps ${maps.baseColor.bytes.length} and ${maps.normal.bytes.length} bytes`;
+  });
+
+  test(FIG, 'Meshy clips: the file holds every clip on our driven bones, finite, the walks and runs in place with a forward stride and left landings', async () => {
+    const { R } = await load();
+    const C = await loadFigureClips(R);
+    assert(C, 'the clip file loads');
+    eq(C.bones.length, 16, 'sixteen driven bones (hat, hat tip, skirt and pack are the springs\')');
+    for (const p of R.clips.paces) {
+      const c = C.clips[p.clip];
+      assert(c && c.loop, `${p.clip} is a loop`);
+      assert(c.speed > 0.2 && c.cycleM > 0.3, `${p.clip} strides forward (${c.speed} m/s)`);
+      assert(c.landsL.length >= 1 && c.landsL.every((t) => t >= 0 && t < c.dur), `${p.clip} has its landings`);
+    }
+    for (const [name, c] of Object.entries(C.clips)) {
+      eq(c.data.length, c.frames * (3 + 4 * C.bones.length), `${name} frame count`);
+      assert(c.data.every(Number.isFinite), `${name} finite`);
+    }
+    assert(C.clips[R.clips.roll.clip] && !C.clips[R.clips.roll.clip].loop, 'the roll is there, not a loop');
+    return `${Object.keys(C.clips).length} clips`;
+  });
+
+  test(FIG, 'Meshy clips: a planted foot never slides (at a creep, wading, a stroll and with Shift), and the same walk poses the same twice', async () => {
+    const { R, built } = await load();
+    const C = await loadFigureClips(R);
+    const report = [];
+    for (const speed of [0.45, 1.0, 2.2, 4.2]) {
+      const frames = walk(R, built, speed, () => 0, 6, C);
+      let worst = 0;
+      for (let i = 0; i < 2; i++) {
+        let anchor = null;
+        for (const f of frames.slice(120)) {
+          const a = f.ankles[i];
+          const down = a[1] < R.legs.ankleM * (R.body.displayScale ?? 1) + 0.004;
+          if (down && anchor) worst = Math.max(worst, Math.hypot(a[0] - anchor[0], a[2] - anchor[2]));
+          anchor = down ? anchor ?? a : null;
+        }
+      }
+      assert(frames.slice(60).every((f) => f.info.clip && f.info.clip.weight > 0.99), `the clips lead at ${speed} m/s`);
+      report.push(`${speed} m/s ${(worst * 100).toFixed(1)} cm`);
+      assert(worst < 0.02, `a planted foot slid ${(worst * 100).toFixed(1)} cm at ${speed} m/s`);
+    }
+    const a = walk(R, built, 2.2, () => 0, 2, C), b = walk(R, built, 2.2, () => 0, 2, C);
+    for (let f = 0; f < a.length; f += 7) {
+      for (let k = 0; k < a[f].bones.length; k++) if (a[f].bones[k] !== b[f].bones[k]) throw new Error(`frame ${f} differs`);
+    }
+    return report.join(', ');
+  });
+
+  test(FIG, 'Meshy clips: the roll plays on Space, never under the ground, and stands back up', async () => {
+    const { R, built } = await load();
+    const C = await loadFigureClips(R);
+    const W = await (await fetch('../recipes/world/walker.json')).json();
+    const motion = createFigureMotion(R, built.skeleton, C);
+    const RL = W.steer.roll, dt = 1 / 60;
+    let x = 0, lowest = Infinity, rolled = 0;
+    for (let f = 0; f < 120; f++) {
+      const t = f * dt, u = (t - 0.5) / RL.durS, rolling = u >= 0 && u <= 1 ? u : -1;
+      if (rolling >= 0) x += (RL.distM / RL.durS) * dt;
+      motion.update(dt, { x, z: 0, y: 0, yaw: 0, speed: rolling >= 0 ? RL.distM / RL.durS : 0, moving: rolling >= 0, rolling, ground: () => 0, depth: () => 0, below: true });
+      assert(motion.bones.every(Number.isFinite), `finite at ${t.toFixed(2)} s`);
+      // (From a few frames in: the very first frame settles the hips from nothing.)
+      if (f > 5) built.skeleton.forEach((b, i) => { lowest = Math.min(lowest, matPoint(motion.bones, i * 16, b.pivot)[1]); });
+      if (motion.info.clip.roll > 0.99) rolled++;
+    }
+    assert(rolled > RL.durS * 40, 'the clip leads through the roll');
+    assert(lowest > -0.01, `a joint went ${(lowest * 100).toFixed(1)} cm under the ground`);
+    const head = built.skeleton.findIndex((b) => b.name === 'head');
+    const up = matPoint(motion.bones, head * 16, built.skeleton[head].pivot)[1];
+    assert(Math.abs(up - built.skeleton[head].pivot[1]) < 0.08, `standing again (head ${up.toFixed(2)} m)`);
+    return `lowest joint ${(lowest * 100).toFixed(1)} cm`;
   });
 
   test(FIG, 'standing on a 15 degree slope, both feet are on the ground', async () => {

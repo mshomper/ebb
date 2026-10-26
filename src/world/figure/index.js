@@ -9,6 +9,8 @@ import { createCreaturePass } from '../../render/passes/creatures.js';
 import { buildFigure } from './rig.js';
 import { createFigureMotion } from './motion.js';
 
+export { loadFigureClips } from './clips.js';
+
 const EXTRA = 20;
 
 /** Fetch the model named by the recipe (a path from the repo root). @param {any} R */
@@ -39,19 +41,22 @@ export function eyeUniforms(E, headBone, state, out = new Float32Array(EXTRA)) {
  * @param {any} R recipes/world/figure.json @param {string} [name]
  */
 export function createFigurePass(R, name = 'figure') {
-  return createCreaturePass({ recipe: R, name, shader: 'figure-draw', maxBones: R.bones.length, extraFloats: EXTRA });
+  return createCreaturePass({ recipe: R, name, shader: 'figure-draw', maxBones: R.bones.length, extraFloats: EXTRA, maps: true });
 }
 
 /**
- * @param {{ recipe: any, glb: import('../../render/gltf.js').Glb, pass?: ReturnType<typeof createFigurePass> }} o
- *   recipe: recipes/world/figure.json; glb: the model, read (loadFigureModel); pass: one made earlier by createFigurePass
+ * @param {{ recipe: any, glb: import('../../render/gltf.js').Glb, clips?: import('./clips.js').ClipFile | null, pass?: ReturnType<typeof createFigurePass> }} o
+ *   recipe: recipes/world/figure.json; glb: the model, read (loadFigureModel); clips: Matt's clips
+ *   (loadFigureClips; without them the code's own stride and roll play); pass: one made earlier by createFigurePass
  */
 export function createFigure(o) {
   const R = o.recipe;
-  const built = buildFigure(o.glb, R);
-  const motion = createFigureMotion(R, built.skeleton);
+  // The baked texture (prep.py): the colour slot carries each vertex's UV, and the pass the maps.
+  const built = buildFigure(o.glb, R, { textured: true });
+  const motion = createFigureMotion(R, built.skeleton, o.clips ?? null);
   const headBone = built.skeleton.findIndex((b) => b.name === 'head');
   const pass = o.pass ?? createFigurePass(R);
+  if (built.textured) pass.setMaps(o.glb).catch((err) => console.error('The walker maps did not load:', err));
   pass.setMesh('figure', { data: built.data, indices: built.indices });
   const uniforms = new Float32Array(EXTRA);
   let visible = false;

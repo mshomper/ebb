@@ -7,7 +7,7 @@
 // accepts PUT /__strip/<name>.png (the game's own server refuses it, so nothing is written there).
 
 import { createStage } from './walker-figure-stage.js';
-import { loadFigureModel, eyeUniforms } from '../src/world/figure/index.js';
+import { loadFigureModel, loadFigureClips, eyeUniforms } from '../src/world/figure/index.js';
 import { buildFigure } from '../src/world/figure/rig.js';
 import { createFigureMotion } from '../src/world/figure/motion.js';
 
@@ -21,9 +21,13 @@ if (!made.ok) { note.textContent = `This page needs WebGPU (${made.reason}).`; t
 const stage = made.stage;
 const R = await (await fetch('../recipes/world/figure.json')).json();
 const W = await (await fetch('../recipes/world/walker.json')).json();
-const built = buildFigure(await loadFigureModel(R), R);
+const figureGlb = await loadFigureModel(R);
+const built = buildFigure(figureGlb, R, { textured: true });
+await stage.setMaps(figureGlb);
+const CLIPS = await loadFigureClips(R);
 stage.setMesh(built);
-stage.setGround(() => 0);
+// Wide enough that a run's frames still stand on it.
+stage.setGround(() => 0, 80, 160);
 const headBone = built.skeleton.findIndex((b) => b.name === 'head');
 const eyeBuf = new Float32Array(20);
 const DT = 1 / 60;
@@ -101,8 +105,8 @@ const STRIPS = {
  * over one full stride once it is up to speed, with the hips' height traced underneath.
  * @param {number} pace m/s
  */
-function strideRun(pace) {
-  const motion = createFigureMotion(R, built.skeleton);
+function strideRun(pace, clips = false) {
+  const motion = createFigureMotion(R, built.skeleton, clips ? CLIPS : null);
   const w = { x: 0, t: 0 };
   const hip = built.skeleton.findIndex((b) => b.name === 'pelvis');
   return {
@@ -112,7 +116,8 @@ function strideRun(pace) {
       const speed = w.t < 0.3 ? 0 : pace;
       w.x += speed * DT;
       const r = motion.update(DT, { x: w.x, z: 0, y: 0, yaw: Math.PI / 2, speed, moving: speed > 0, ground: () => 0, depth: () => 0, below: true, posture: 'stand' });
-      return { t: w.t, r, phase: motion.info.phase, hips: motion.bones[hip * 16 + 13] * 100 };
+      const ph = clips ? motion.info.clip.phase % 1 : motion.info.phase;
+      return { t: w.t, r, phase: ph, hips: motion.bones[hip * 16 + 13] * 100 };
     },
     place: () => [w.x, 0, 0, Math.PI / 2],
   };
@@ -144,8 +149,8 @@ STRIPS.stride = {
  * The dodge roll (Space; WASD, October 26, 2026): standing half a second, then one roll of the
  * walker's own distance and time along +x, then standing again.
  */
-function rollRun() {
-  const motion = createFigureMotion(R, built.skeleton);
+function rollRun(clips = false) {
+  const motion = createFigureMotion(R, built.skeleton, clips ? CLIPS : null);
   const RL = W.steer.roll, w = { x: 0, t: 0 };
   const at = () => {
     const u = (w.t - 0.5) / RL.durS;
@@ -180,10 +185,45 @@ STRIPS.roll = {
   tile: [200, 260],
   view: { yaw: -Math.PI / 2, pitch: 0.16, dist: 4.5 },
   rows: [
-    { name: 'from the right', view: { yaw: -Math.PI / 2, pitch: 0.16, dist: 4.5 }, run: rollRun, picks: rollPicks },
-    { name: 'from behind, a little to the side', view: { yaw: Math.PI + 0.5, pitch: 0.3, dist: 4.5 }, run: rollRun, picks: rollPicks },
+    { name: 'from the right', view: { yaw: -Math.PI / 2, pitch: 0.16, dist: 4.5 }, run: () => rollRun(), picks: rollPicks },
+    { name: 'from behind, a little to the side', view: { yaw: Math.PI + 0.5, pitch: 0.3, dist: 4.5 }, run: () => rollRun(), picks: rollPicks },
   ],
 };
+
+// Matt's Meshy clips on our rig (October 26, 2026): the same strides and roll as above, played by
+// the clips (clips.js), for side-by-side checks with today's code.
+if (CLIPS) {
+  const creep = W.pace.creepMps, walk = +(R.clips.paces.find((/** @type {any} */ p) => p.clip === 'walk').speed * R.body.displayScale).toFixed(2);
+  STRIPS.clipStrides = {
+    title: 'Meshy clips: strides (side view)',
+    tile: [200, 260],
+    view: { yaw: -Math.PI / 2, pitch: 0.05, dist: 4 },
+    rows: [['Creep', creep], ['Walk', walk], ['Stroll', W.pace.strollMps], ['Run (Shift)', W.pace.briskMps]].map(([name, pace]) => ({
+      name: `${name}, ${pace} m/s`, curve: { key: 'hips', label: 'hip height', unit: ' cm' },
+      run: () => strideRun(/** @type {number} */ (pace), true), picks: stridePicks,
+    })),
+  };
+  STRIPS.clipCheck = {
+    title: 'Meshy clips: walk, stroll, run and roll',
+    tile: [200, 260],
+    view: { yaw: -Math.PI / 2, pitch: 0.05, dist: 4 },
+    rows: [
+      { ...STRIPS.clipStrides.rows[1], name: `Walk (Meshy Walking), ${walk} m/s` },
+      { ...STRIPS.clipStrides.rows[2], name: `Stroll (Meshy Run_02, a light jog), ${W.pace.strollMps} m/s` },
+      { ...STRIPS.clipStrides.rows[3], name: `Run with Shift (Meshy Running), ${W.pace.briskMps} m/s` },
+      { name: 'Roll (Space; the roll alone, no run-up or jump)', view: { yaw: -Math.PI / 2, pitch: 0.16, dist: 4.5 }, run: () => rollRun(true), picks: rollPicks },
+    ],
+  };
+  STRIPS.clipRoll = {
+    title: 'Meshy clips: dodge roll',
+    tile: [200, 260],
+    view: { yaw: -Math.PI / 2, pitch: 0.16, dist: 4.5 },
+    rows: [
+      { name: 'from the right', view: { yaw: -Math.PI / 2, pitch: 0.16, dist: 4.5 }, run: () => rollRun(true), picks: rollPicks },
+      { name: 'from behind, a little to the side', view: { yaw: Math.PI + 0.5, pitch: 0.3, dist: 4.5 }, run: () => rollRun(true), picks: rollPicks },
+    ],
+  };
+}
 
 /**
  * A still walker facing +z; at 1 s something worth a look turns up (notice: a creature arriving; a
