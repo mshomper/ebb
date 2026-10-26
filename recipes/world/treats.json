@@ -1,0 +1,21 @@
+{
+  "type": "treats",
+  "version": 1,
+  "note": "Treats (P2h, docs/future/13 section 8; plan approved October 25, 2026). A treat is a pouch thing a species likes, set out from its pouch card: the nearest creature that likes it comes and eats it at once, the Feed pattern. What it earns is in each species' presence (treatFeeds meals of feedTrust, once a game day); which treats a species likes, and where, is its recipe's treat block. Read by src/world/creatures/treats.js and tools/trust-lab.html.",
+
+  "setOutM": 0.7,
+  "setOutMNote": "How far in front of the walker a treat is set down (the same as Feed).",
+
+  "fadeH": 12, "paleH": 4,
+  "fadeNote": "A treat nobody comes for lies where it was set, then pales over its last paleH game hours and is gone fadeH game hours after it was set: back into the ground. Saved with the island, so a reload and a catch-up agree.",
+
+  "words": {
+    "coming": { "frogs": "A frog has seen it.", "minnows": "The minnows swirl up to it." },
+    "waiting": { "frogs": "A frog has seen it, but waits for you to back off." },
+    "none": "Nothing comes for it. In time the ground will take it back."
+  },
+  "wordsNote": "What the island says after Set out (the pouch card's action for a kind some species likes, recipes/species/<id>.json treat.kinds; its label is pack.json words.setOut). coming and waiting, by species key, when one comes for it; none for anything else, the same line whoever might like it, so the card never tells you whose it is.",
+
+  "labHabit": { "sitMin": 6, "standMin": 4, "feeds": 2 },
+  "labHabitNote": "The trust lab's keeper (docs/future/13 8.5): each played day (24 real minutes at normal speed) sits near the creature 6 real minutes (each counts watch.sitBoost), stands near it 4, and feeds it twice, at least fullH game hours apart. The game never reads this."
+}

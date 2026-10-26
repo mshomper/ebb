@@ -39,6 +39,7 @@ import { applyTrust } from './trust.js';
  * @property {string[]} near the cover plants within its shelter reach (for the journal's web)
  * @property {number} [trust] how well it knows you, 0..1, only ever growing (trust.js; absent is 0)
  * @property {number} [fedAt] the hour it last ate food you offered (S6c-2; absent: never)
+ * @property {number} [treatDay] the game day it last had a treat (P2h: one a day counts; absent: never)
  * @property {string} [name] the name you gave it (S6c-3); named frogs are the last to leave
  * @property {number} [namedAt] the hour you named it
  */

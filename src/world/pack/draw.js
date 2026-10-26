@@ -129,8 +129,9 @@ export function pickupCount(key, left, share, range) {
 }
 
 /**
- * @param {{ terrain: any, camera: any, recipe: any, gather?: any, pack?: any, you?: () => number[] | null }} o
+ * @param {{ terrain: any, camera: any, recipe: any, gather?: any, pack?: any, treats?: any, you?: () => number[] | null }} o
  *   recipe: recipes/world/pack.json; gather: src/world/gather (near); pack: src/world/pack (heaps);
+ *   treats: src/world/creatures/treats.js (lying);
  *   you: where you stand below ([x, y, z]) or null above (the view's middle is used then)
  */
 export function createPackDraw(o) {
@@ -241,14 +242,19 @@ export function createPackDraw(o) {
       .then((b) => { put(pilePass, `hamper:${i + 1}`, campModelMesh(readGlb(b), HL.color ?? [0.4, 0.33, 0.2])); dirty = true; })
       .catch((e) => console.info(`pack: ${path} not loaded (${e.message})`));
   });
-  // A few seeded shapes of each ground kind.
+  // A few seeded shapes of each ground kind, and each paled toward the ground for a treat nobody took
+  // (P2h, its last hours).
   for (const [kind, K] of Object.entries(P.kinds)) {
-    for (let v = 0; v < P.variants; v++) put(pickupPass, `${kind}-${v}`, pickupMesh(kind, hash32(0x9c4b, v, kind.length), K));
+    for (let v = 0; v < P.variants; v++) {
+      const m = pickupMesh(kind, hash32(0x9c4b, v, kind.length), K);
+      put(pickupPass, `${kind}-${v}`, m);
+      if (P.treatPale) put(pickupPass, `${kind}-${v}-pale`, paler(m, P.treatPale));
+    }
   }
 
   let dirty = true, clock = 0, since = 0;
   /** @type {number[] | null} */ let lastAt = null;
-  const offs = ['gather:done', 'pack:changed', 'pack:set-down', 'pile:changed', 'camp:stamped', 'camp:placed'].map((ev) => on(ev, () => { dirty = true; }));
+  const offs = ['gather:done', 'pack:changed', 'pack:set-down', 'pile:changed', 'camp:stamped', 'camp:placed', 'treat:changed'].map((ev) => on(ev, () => { dirty = true; }));
 
   /** Where to draw near: you, below; else the view's middle. */
   function focus() {
@@ -356,6 +362,20 @@ export function createPackDraw(o) {
         out.push({ x, y: ground(x, z), z, yaw: u(3) * 2 * Math.PI, size: (P.scale ?? 1) * (0.85 + 0.3 * u(4)), mesh: `${s.kind}-${Math.floor(u(5) * P.variants)}` });
       }
       if (out.length >= P.max) break;
+    }
+    // Treats set out and lying (P2h, src/world/creatures/treats.js): a small heap where each was set,
+    // paler and lower over its last hours.
+    for (const t of o.treats?.lying() ?? []) {
+      const K = P.kinds[t.kind];
+      if (!K || (t.x - f[0]) ** 2 + (t.z - f[1]) ** 2 > P.nearM * P.nearM) continue;
+      const key = hash32(t.tid, 0x7ea7);
+      for (let i = 0; i < K.count[1] && out.length < P.max; i++) {
+        const u = (/** @type {number} */ k) => u01(hash32(key, i, k));
+        const r = (P.treatSpreadM ?? 0.1) * Math.sqrt(u(1)), a = u(2) * 2 * Math.PI;
+        const x = t.x + Math.cos(a) * r, z = t.z + Math.sin(a) * r;
+        const mesh = `${t.kind}-${Math.floor(u(5) * P.variants)}${t.pale > 0.4 && P.treatPale ? '-pale' : ''}`;
+        out.push({ x, y: ground(x, z), z, yaw: u(3) * 2 * Math.PI, size: (P.scale ?? 1) * (0.85 + 0.3 * u(4)) * (1 - 0.4 * t.pale), mesh });
+      }
     }
     return out;
   }

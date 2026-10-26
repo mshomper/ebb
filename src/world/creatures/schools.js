@@ -91,7 +91,7 @@ export function createSchools(opts) {
   /** @type {any} */ let shown = null;
   let acc = 0, watched = 0;
   const watching = P.watch ? createWatching(P.watch) : null;
-  /** Crumbs a school is swimming up to, by school id. @type {{ id: number, x: number, z: number }[]} */
+  /** Crumbs (or a treat, P2h) a school is swimming up to, by school id. @type {{ id: number, x: number, z: number, treat?: string, tid?: number }[]} */
   let foods = [];
   const stepS = 1 / (M.stepHz ?? 30);
   /** Seconds of real time these schools have run, the clock their rises are stamped with. */
@@ -275,6 +275,23 @@ export function createSchools(opts) {
       return msg('coming');
     },
 
+    /**
+     * A treat this species likes set in the water at (x, z) (P2h, treats.js): the nearest school
+     * within reachM swirls up to it at once, found or not. Returns 'coming', 'none' or 'land'; once
+     * eaten, `treat:taken` says so with the treat's id.
+     * @param {number} x @param {number} z @param {{ treat: string, tid: number, reachM: number }} t
+     */
+    treat(x, z, t) {
+      if (water.sampleLive(x, z).depth < 0.1) return 'land';
+      if (world.state?.creatures?.[key]?.dormant) return 'none';
+      let best = null, bestD = t.reachM;
+      for (const s of schools.values()) { const c = s.centre(); const d = Math.hypot(c.x - x, c.z - z); if (d < bestD) { bestD = d; best = s; } }
+      if (!best) return 'none';
+      best.feed({ x, z });
+      foods = [...foods.filter((g) => g.id !== best.id), { id: best.id, x, z, treat: t.treat, tid: t.tid }];
+      return 'coming';
+    },
+
     /** @param {import('../../sim/live-sim.js').FrameInfo} f */
     tick(f) {
       if (!water.sim.live) return;
@@ -319,7 +336,10 @@ export function createSchools(opts) {
         const c = s.centre();
         if (Math.hypot(c.x - fd.x, c.z - fd.z) < 0.5) {
           foods = foods.filter((g) => g !== fd);
-          world.state = addSwarmEvent(world.state, key, { kind: 'fed', hour: hourIndex() });
+          if (fd.treat) {
+            world.state = addSwarmEvent(world.state, key, { kind: 'treat', hour: hourIndex(), treat: fd.treat });
+            emitDeferred('treat:taken', { species: key, id: fd.id, treat: fd.treat, tid: fd.tid });
+          } else world.state = addSwarmEvent(world.state, key, { kind: 'fed', hour: hourIndex() });
           updateStore('world', () => world.state);
         } else if (!s.feeding) foods = foods.filter((g) => g !== fd);
       }

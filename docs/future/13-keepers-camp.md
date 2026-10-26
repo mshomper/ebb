@@ -1996,10 +1996,19 @@ Every entry is a journal note `{ hour, date, text, sp, kind }` (`src/world/journ
 
 Feed stays exactly as it is (F13). A treat sits beside it: something one species likes best, set out by the walker, earning more trust than a feeding, once per creature per game day. For species that are never fed, the gift is a place or a restraint, an offering, which counts when the creature uses it. Real food only, and nothing that would harm an animal.
 
+**As built in P2h (October 26, 2026; plan page "Teas and treats", second draft, approved by Matt).** Where this section's older text differs, this wins: there are no dusk waits and no picking over days; **a treat is eaten at once**. Built: frogs (wrack or kelp) and minnows (the leaf pack); the rest of 8.3 waits for its species.
+
+- **Gathering (H1).** `kelp`, `wrack` and `leaves` are appended to `src/world/gather/spots.js` `KINDS` after `ash`, general pouch kinds (P2g lays kelp, wrack and ash in planting holes). Kelp lies along the newest two strandlines only from a tide at least `weather.springMin` toward spring (`spring: true`); wrack on any tide; both more after an onshore blow, in beach clusters. Fallen leaves lie at the foot of willows from autumn into early winter (`handfuls [0, 0, 2, 1]`), more after wind. The leaf pack is made at the workbench from fallen leaves and rush cord (`cook.json makes.leaf-pack`).
+- **Set out (H2, `src/world/creatures/treats.js`, rules in `treat-rules.js`).** On a pouch card whose kind some species likes (`treat.kinds` in its recipe), **Set out** kneels the walker and puts a handful down 0.7 m in front (`walk.feedPoint`, as Feed). The nearest creature that likes it comes by the Feed pattern: a frog within `treat.reachM` (3 m) hops over and snaps it up once you are outside its comfort ring (`feeding.js`, with no extra wait for a full stomach; if that frog swims off the next one near comes, for up to `feed.treatLingerS`), the minnows' school within 4 m swirls up to a leaf pack set in their pool (`schools.js`). The island's line says "A frog has seen it." or "The minnows swirl up to it.", or for anything else the same line whoever might like it: "Nothing comes for it. In time the ground will take it back."
+- **Lying and fading.** A treat lies, saved in the gather section (`gather.treats`, `[kind, x, z, hour, id]`, at most 24), drawn as a small heap of its kind's pickups, paler and lower over its last `paleH` (4) game hours, and is gone `fadeH` (12) game hours after it was set (`recipes/world/treats.json`). Whether one lies is worked out from the hour alone. Eaten, it is gone at once (`treat:taken`).
+- **The trust event (H3).** `{ kind: 'treat', id, hour, treat }` for a frog (`trust.js`), `{ kind: 'treat', hour, treat }` for a school (`swarms.js`), recorded live and applied on the hourly tick like `fed`. It earns `presence.feedTrust x presence.treatFeeds` (2.5 meals), not scaled by appetite and not touching the meal hour; once per creature (or school) per game day (`treatDay`); a second the same day is eaten and earns nothing. Never past the ceiling.
+- **Likes lines (H4).** The first time a frog or the school takes its treat, `creature:ate` with its `treat` teaches `likes:<treat id>`: frogs "Snaps at the flies over rotting weed" (`likes:wrack`), minnows "Picks at the small life on sunk leaves" (`likes:leaf-pack`), with a note. Nothing else tells you.
+- **Pace (H4, H5).** See 8.5 as built and `tools/trust-lab.html`.
+
 ### 8.1 What the player sees and does
 
 - A treat is a pouch thing (wrack, pondweed, worms, acorns, hazelnuts) or a made treat (leaf pack, seed cake, made at camp by section 6's rules). From its pouch card, **Set out** kneels the walker and puts it 0.7 m in front, as Feed does: on the water for water treats, on the ground for the rest.
-- A creature that likes it comes to it in its own time and takes it, or uses it. A treat nobody likes is left alone and the island takes it back.
+- A creature that likes it comes to it at once and takes it, or uses it. A treat nobody likes is left alone and the island takes it back.
 - Offerings that are places (perch stick, water dishes, spraint stone, patches left uncut or planted) stay as pieces until moved. Offerings that are restraint (a dark night, wrack left on the strandline) are things the walker simply does or leaves.
 - Nothing tells the player which treat is whose. Watching teaches it (TR-07).
 
@@ -2018,8 +2027,8 @@ Tier is the recipe tier (when the parts and the creature first exist). Species n
 
 | Species (doc 12 tier) | Treat or offering | Parts | How it is placed | What the creature does | Likes line (natural sight) | Tier | Source IDs |
 |---|---|---|---|---|---|---|---|
-| Frogs (pond) | Wrack heap (treat) | Cast kelp or wrack | Set out on land within 3 m of a pond's edge | Kelp flies gather over it within an hour; at dusk frogs hop to it and hunt them. Each frog that forages there counts | "Snaps at the flies over rotting weed" (watched foraging near strandline wrack or a heap) | T2 | F-02, G-05, G-06 |
-| Minnows (pond) | Leaf pack (treat, made) | Fallen leaves, rush cord | Made at camp; set out in water 0.1 to 0.6 m deep in the school's pool | Small life moves in; the school picks at it over days | "Picks at the small life on sunk leaves" (watched near fallen leaves in the water) | T2 | F-04, G-24 |
+| Frogs (pond) | Wrack heap (treat) | Cast kelp or wrack | Set out on land, a frog within 3 m | The nearest frog hops over and snaps at the flies over it at once (built, P2h) | "Snaps at the flies over rotting weed" (the first time a frog takes it) | T2 | F-02, G-05, G-06 |
+| Minnows (pond) | Leaf pack (treat, made) | Fallen leaves, rush cord | Made at the workbench; set in the school's pool, the school within 4 m | The school swirls up to it at once (built, P2h) | "Picks at the small life on sunk leaves" (the first time the school takes it) | T2 | F-04, G-24 |
 | Minnows (pond) | Pondweed bundle (treat) | Pondweed (minnows' gift) | Set out on the water | The school swirls up and grazes it | "Swirls up to graze the pondweed" (watched among grown pondweed) | T3 | F-05 |
 | Dragonflies (pond) | Perch stick (offering) | Sticks | Set out in the shallows of their pond; stays as a piece | A dragonfly claims it as a perch and returns to it | "Comes back again and again to the same bare perch" (watched perched on a reed tip) | T3 | F-07 |
 | Turtles (pond) | Lily leaf (treat) | A water lily leaf | Set out at the basking stone or log | A turtle tears at it | "Tears at lily leaves by the basking stone" | T3 | F-08 |
@@ -2059,6 +2068,8 @@ The offering for these is distance or restraint, and it earns nothing but their 
 
 ### 8.5 Trust numbers
 
+**As built (P2h, Matt: "a couple of days to the top is too quick").** For the trust lab's keeper (each played day, 24 real minutes: 6 minutes sitting near the creature, 4 standing, two meals), every species reaches its top word in about 7 played days without treats, and frogs and minnows in about 5 with a treat a day (4.7 with meadowsweet, 4.4 with the meadowsweet and chamomile blend; `cook.json boons`, +5% and +12% on every trust gain while the boon lasts, read by P2e). Frogs and minnows: watching 0.004 a counted minute (was 0.012), a meal 0.015 (was 0.06), a treat 2.5 meals (0.0375). Dragonflies 0.004 a minute (was 0.015); damselflies and turtles 0.0018 (were 0.015 and 0.01). Naming stays at trust 0.5 (a Curious frog): about day 5.3 without treats, 3.8 with them. Trust already earned is kept. The older proposal below is kept for its reasoning.
+
 A liked treat starts at **2.5 times a feeding** (F13). To keep the overall pace, natural feeding and watching slow a little per species (F13), so a player who never cooks reaches Familiar in about the same time as today, and one who learns what each creature likes gets there sooner.
 
 **Current values** (read from the repo, October 22, 2026):
@@ -2090,6 +2101,8 @@ A liked treat starts at **2.5 times a feeding** (F13). To keep the overall pace,
 A lighter player (2 minutes sitting, 3 standing, 1 meal) goes from 4.52 days to Familiar today to 4.66 never cooking, and 2.42 with a treat a day. Naming at trust 0.5 (frogs) is unchanged.
 
 ### 8.6 The trust lab (`tools/trust-lab.html`)
+
+**As built (P2h):** one chart per species with a presence block (frogs, minnows, dragonflies, damselflies, turtles), game days across, the band words up the side, the ceiling as "as far as it goes", the frog's naming line; curves today (main before P2h, dashed), no treats, a treat a day, a treat with meadowsweet and with the blend (treat curves only for a species with `treatFeeds`); a table of played days to each word under each chart and a summary of days to every top word; sliders for minutes sitting and standing, meals a day, the two boons, and each species' watching, meal and treat numbers; the tuned numbers as recipe lines with a copy button. It runs `src/world/creatures/pace.js`, which builds each day's events and applies them with `applyTrust` and `applySwarmTrust`. The original spec follows.
 
 A page Matt opens on his own machine, side by side with the game (CLAUDE.md rule 5).
 

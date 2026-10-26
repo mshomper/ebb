@@ -63,6 +63,7 @@ export const PARALLEL = {
   campMaking: () => import('./unit-tests-camp-making.js').then((m) => m.addCampMakingTests),
   fireProducts: () => import('./unit-tests-fire-products.js').then((m) => m.addFireProductsTests),
   sketchbook: () => import('./unit-tests-sketchbook.js').then((m) => m.addSketchbookTests),
+  treats: () => import('./unit-tests-treats.js').then((m) => m.addTreatsTests),
   // The audio tests that need no Web Audio (workers have none). The two that render sound through
   // an OfflineAudioContext (pond and keepsake sounds) stay on tools/unit-tests-audio.html, which
   // also still runs all of these, as does `node tools/run-audio-tests.mjs`.

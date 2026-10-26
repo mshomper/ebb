@@ -8,15 +8,30 @@
 // applies them (coarse.js), so an hour watched, a save and a catch-up all agree. While you are away
 // nothing is recorded, so trust does not change. Pure and worker-safe.
 
+import { HOURS_PER_DAY } from '../../core/clock.js';
+
 /** Trust words, lowest first; recipes/world/journal.json holds what each one says. */
 export const TRUST_WORDS = /** @type {const} */ (['wary', 'tolerant', 'curious', 'familiar', 'bonded']);
 
 /**
  * @typedef {{ kind: 'watched', id: number, minutes: number, hour: number }
  *   | { kind: 'fed', id: number, hour: number }
+ *   | { kind: 'treat', id: number, hour: number, treat: string }
  *   | { kind: 'camp', id: number, hour: number, gain: number }} TrustEvent
  *   camp: standing presence while away (docs/future/13 CP-13), stored only in catch-up
+ *   treat: a liked treat eaten (P2h, docs/future/13 section 8): presence.treatFeeds meals' worth,
+ *   once per creature a game day (treatGain); a second is eaten and earns nothing
  */
+
+/**
+ * What a treat earns, and the game day it marks: feedTrust times treatFeeds, nothing if the
+ * creature already had one this game day. Never scaled by appetite: a treat is eaten at once.
+ * @param {any} P the species' presence recipe @param {number | undefined} lastDay @param {number} hour
+ */
+export function treatGain(P, lastDay, hour) {
+  const day = Math.floor(hour / HOURS_PER_DAY);
+  return { gain: lastDay === day ? 0 : (P.feedTrust ?? 0) * (P.treatFeeds ?? 0), day };
+}
 
 /** Rounded to four places, so saves and catch-up compare exactly. @param {number} v */
 const r4 = (v) => Math.round(v * 10000) / 10000;
@@ -89,9 +104,10 @@ export function appetite(f, hour, fullH) {
  * @param {any} P recipes/species/frog.json presence
  * @param {number} testTrust 0 unless `?trust=` asks for more
  * @param {number} [fullH] recipes/species/frog.json feed.fullH
+ * @param {number} [boost] a tea boon's multiplier on every gain (P2e; 1 without one)
  * @returns {{ name: string, payload: any }[]} `creature:ate` and `creature:trusted` events
  */
-export function applyTrust(fr, P, testTrust = 0, fullH = 6) {
+export function applyTrust(fr, P, testTrust = 0, fullH = 6, boost = 1) {
   /** @type {{ name: string, payload: any }[]} */ const events = [];
   const top = maxTrust(P);
   const before = new Map(fr.frogs.map((f) => [f.id, f.trust ?? 0]));
@@ -101,12 +117,17 @@ export function applyTrust(fr, P, testTrust = 0, fullH = 6) {
     let gain;
     if (ev.kind === 'watched') gain = Math.min(ev.minutes, P.watch.capS / 60) * P.watch.trustPerMin;
     else if (ev.kind === 'camp') gain = ev.gain;
-    else {
+    else if (ev.kind === 'treat') {
+      const t = treatGain(P, f.treatDay, ev.hour);
+      gain = t.gain;
+      f.treatDay = t.day;
+      events.push({ name: 'creature:ate', payload: { species: 'frogs', id: f.id, x: f.x, z: f.z, treat: ev.treat } });
+    } else {
       gain = P.feedTrust * appetite(f, ev.hour, fullH);
       f.fedAt = ev.hour;
       events.push({ name: 'creature:ate', payload: { species: 'frogs', id: f.id, x: f.x, z: f.z } });
     }
-    f.trust = r4(Math.min(top, (f.trust ?? 0) + gain));
+    f.trust = r4(Math.min(top, (f.trust ?? 0) + gain * (ev.kind === 'camp' ? 1 : boost)));
   }
   fr.pending = [];
   for (const f of fr.frogs) {

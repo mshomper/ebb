@@ -68,6 +68,10 @@ export function mountPack(row, words, sketchOf) {
   // Wood ash (P2i): Spread here tips a handful where you stand, below (src/world/gather ashes).
   registerCardAction({ id: 'spreadash', icon: 'spread', order: 11, main: true, label: words.spread ?? 'Spread here',
     when: (c) => c.sp === 'pouch' && c.kindId === 'ash' && !c.atCamp, action: () => ({ type: 'gather.spreadAsh' }) });
+  // A treat some creature likes (P2h, src/world/creatures/treats.js; store slice treatKinds): Set out
+  // puts a handful down in front of you, as Feed does.
+  registerCardAction({ id: 'setout', icon: 'feed', order: 11, main: true, label: words.setOut ?? 'Set out',
+    when: (c) => c.sp === 'pouch' && (get('treatKinds') ?? []).includes(c.kindId), action: (c) => ({ type: 'treats.setOut', kind: c.kindId }) });
 
   let shown = '';
   function render() {

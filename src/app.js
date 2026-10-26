@@ -95,6 +95,7 @@ import { SECTIONS9, empty9 } from './save/migrate-format9.js';
 import { clickKind, clickPlan } from './world/walk/click.js';
 import { createPack } from './world/pack/index.js';
 import { createGather } from './world/gather/index.js';
+import { createTreats } from './world/creatures/treats.js';
 import { ashMarks } from './world/gather/ashes.js';
 import { createDig } from './world/dig/index.js';
 import { createSketchbook } from './world/sketchbook/index.js';
@@ -645,8 +646,35 @@ export async function startApp(canvas, hooks = {}) {
   sim.addSystem({ id: 'forager-belt', tick() { belt.update(); } });
   on('world:ticked', () => gather.expire());
   on('world:caught-up', () => gather.expire());
+  // Treats (P2h; src/world/creatures/treats.js): Set out on a pouch's card puts a handful down in front
+  // of you and the nearest creature that likes it comes and eats it at once; one nobody wants fades
+  // back into the ground. `?treats` (a test link, unsaved): a pouch of wrack and a pouch of leaf packs.
+  const treats = createTreats({ recipe: await loadRecipe('world/treats'), pack, walk, hour: () => clock.worldT() / 3600,
+    species: [{ key: 'frogs', rec: frogRecipe, live: creatures },
+      ...swarmSpecies(speciesRecipes).filter((rec) => rec.treat).map((rec) => ({ key: keyOf(rec), rec, live: schools.find((s) => s.id === keyOf(rec)) ?? null }))] });
+  updateStore('treatKinds', () => pack.recipe.kinds.map((/** @type {any} */ k) => k.id).filter((/** @type {string} */ k) => treats.isTreat(k)));
+  if (params.has('treats') && !back) { pack.add('wrack', 3); pack.add('leaf-pack', 3); }
+  // `?treats&frogs=N`: once the frogs are there, you stand on the bank a few steps from one, facing it.
+  if (params.has('treats') && params.has('frogs') && !back) {
+    let stood = false;
+    sim.addSystem({ id: 'treats-test', tick() {
+      const f = stood ? null : creatures.frogs()[0];
+      if (!f) return;
+      stood = true;
+      for (let i = 0; i < 12; i++) {
+        // Just outside a shy frog's comfort ring (frog.json presence.ringM), so it comes at once.
+        const a = (i / 12) * 2 * Math.PI, d = frogRecipe.presence.ringM + 0.9, x = f.x + Math.sin(a) * d, z = f.z + Math.cos(a) * d;
+        if ((water.sampleLive(x, z)?.depth ?? 0) > 0.01) continue;
+        const yaw = Math.atan2(f.x - x, f.z - z);
+        if (!walk.placeAt(x, z, yaw, 'stand')) continue;
+        camera.setPose({ ...camera.pose(), target: [x, terrain.sampleHeight(x, z), z], yaw: yaw + Math.PI, distance: campRecipe.rest.viewDistanceM, pitch: (campRecipe.rest.viewPitchDeg * Math.PI) / 180 });
+        walk.downHere();
+        return;
+      }
+    } });
+  }
   // What lies on the ground to gather, the piles at camp and the heaps you left (src/world/pack/draw.js).
-  const packDraw = createPackDraw({ terrain, camera, recipe: pack.recipe, gather, pack, you: () => walk.you() });
+  const packDraw = createPackDraw({ terrain, camera, recipe: pack.recipe, gather, pack, treats, you: () => walk.you() });
   sim.addSystem(packDraw);
   /** How far a ground spot's pickups lie from its middle, for what its card lifts (F5). @param {string} kind */
   const spreadOf = (kind) => pack.recipe.pickups?.kinds?.[kind]?.spreadM ?? 0.4;
@@ -1343,6 +1371,13 @@ export async function startApp(canvas, hooks = {}) {
       if (a.type === 'gather.heapHere') { gather.heapHere(); walk.gesture('heapHere'); return; }
       if (a.type === 'gather.leaveBe') { updateStore('identify', () => null); return; }
       if (a.type === 'gather.spreadAsh') { if (gather.spreadAsh()) { walk.gesture('empty'); updateStore('identify', () => null); } return; }
+      // Set out a treat (P2h): its line on the island, as Feed's.
+      if (a.type === 'treats.setOut') {
+        const line = treats.setOut(a.kind);
+        updateStore('identify', () => null);
+        if (line) emitDeferred('island:notice', { text: line, showS: walkerRecipe.words.noticeS });
+        return;
+      }
       // A pile's Take up fills a pouch; with no room, the full card (without Set down here).
       if (a.type === 'pile.takeUp') {
         const r = piles?.takeUp(a.id, pack);
