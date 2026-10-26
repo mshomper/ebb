@@ -97,6 +97,95 @@ const STRIPS = {
 };
 
 /**
+ * One stride at a steady pace (WASD, October 26, 2026): the walker cruising at `pace`, eight frames
+ * over one full stride once it is up to speed, with the hips' height traced underneath.
+ * @param {number} pace m/s
+ */
+function strideRun(pace) {
+  const motion = createFigureMotion(R, built.skeleton);
+  const w = { x: 0, t: 0 };
+  const hip = built.skeleton.findIndex((b) => b.name === 'pelvis');
+  return {
+    motion,
+    step() {
+      w.t += DT;
+      const speed = w.t < 0.3 ? 0 : pace;
+      w.x += speed * DT;
+      const r = motion.update(DT, { x: w.x, z: 0, y: 0, yaw: Math.PI / 2, speed, moving: speed > 0, ground: () => 0, depth: () => 0, below: true, posture: 'stand' });
+      return { t: w.t, r, phase: motion.info.phase, hips: motion.bones[hip * 16 + 13] * 100 };
+    },
+    place: () => [w.x, 0, 0, Math.PI / 2],
+  };
+}
+/** @param {any[]} rec */
+const stridePicks = (rec) => {
+  // From 2 s in (well up to speed): the first frame at or past each eighth of one stride, in order.
+  let i = Math.round(2 / DT);
+  while (i < rec.length - 1 && !(rec[i].phase < rec[i - 1].phase)) i++;
+  const picks = [];
+  for (let k = 0; k < 8 && i < rec.length; k++) {
+    while (i < rec.length - 1 && rec[i].phase < k / 8) i++;
+    picks.push({ i, label: `${k}/8 stride` });
+    i++;
+  }
+  return picks;
+};
+STRIPS.stride = {
+  title: 'Walk and run strides (side view)',
+  tile: [200, 260],
+  view: { yaw: -Math.PI / 2, pitch: 0.05, dist: 4 },
+  rows: [['Walk', W.pace.strollMps], ['Run (Shift)', W.pace.briskMps]].map(([name, pace]) => ({
+    name: `${name}, ${pace} m/s`, curve: { key: 'hips', label: 'hip height', unit: ' cm' },
+    run: () => strideRun(/** @type {number} */ (pace)), picks: stridePicks,
+  })),
+};
+
+/**
+ * The dodge roll (Space; WASD, October 26, 2026): standing half a second, then one roll of the
+ * walker's own distance and time along +x, then standing again.
+ */
+function rollRun() {
+  const motion = createFigureMotion(R, built.skeleton);
+  const RL = W.steer.roll, w = { x: 0, t: 0 };
+  const at = () => {
+    const u = (w.t - 0.5) / RL.durS;
+    return u >= 0 && u <= 1 ? u : -1;
+  };
+  const input = () => ({ x: w.x, z: 0, y: 0, yaw: Math.PI / 2, speed: at() >= 0 ? RL.distM / RL.durS : 0, moving: at() >= 0, rolling: at(),
+    ground: () => 0, depth: () => 0, below: true, posture: /** @type {'stand'} */ ('stand') });
+  return {
+    motion,
+    step() {
+      w.t += DT;
+      if (at() >= 0) w.x += (RL.distM / RL.durS) * DT;
+      const s = input(), r = motion.update(DT, s);
+      return { t: w.t, r, u: s.rolling };
+    },
+    place: () => [w.x, 0, 0, Math.PI / 2],
+  };
+}
+/** @param {any[]} rec */
+const rollPicks = (rec) => {
+  const first = rec.findIndex((f) => f.u >= 0);
+  const n = Math.round(W.steer.roll.durS / DT);
+  return [
+    { i: first - 3, label: 'standing' },
+    ...[0.12, 0.25, 0.38, 0.5, 0.62, 0.75, 0.88].map((u) => ({ i: first + Math.round(u * n), label: `${Math.round(u * W.steer.roll.durS * 1000)} ms` })),
+    { i: first + n + 2, label: 'up again' },
+    { i: first + n + 20, label: 'settled' },
+  ];
+};
+STRIPS.roll = {
+  title: 'Dodge roll',
+  tile: [200, 260],
+  view: { yaw: -Math.PI / 2, pitch: 0.16, dist: 4.5 },
+  rows: [
+    { name: 'from the right', view: { yaw: -Math.PI / 2, pitch: 0.16, dist: 4.5 }, run: rollRun, picks: rollPicks },
+    { name: 'from behind, a little to the side', view: { yaw: Math.PI + 0.5, pitch: 0.3, dist: 4.5 }, run: rollRun, picks: rollPicks },
+  ],
+};
+
+/**
  * A still walker facing +z; at 1 s something worth a look turns up (notice: a creature arriving; a
  * find in reach, as the game lists it), at a bearing (degrees to the walker's left) and distance.
  * @param {'notice' | 'find'} how @param {number} bearingDeg @param {number} distM
@@ -145,7 +234,7 @@ STRIPS.look = {
 
 /** The gestures as the game plays them: the walker's posture as the action sets it, how long it holds, and the side seen from (right: the working right hand nearest). @type {Record<string, { label: string, kneelS?: number, from?: 'kneel', right?: boolean }>} */
 const GESTURES = {
-  gather: { label: 'Gather', kneelS: 1.2 },
+  gather: { label: 'Gather', kneelS: 0.7 },
   setDown: { label: 'Set down at camp', right: true },
   takeUp: { label: 'Take up', right: true },
   heapHere: { label: 'Set down here', right: true },
@@ -156,7 +245,7 @@ const GESTURES = {
   netLift: { label: 'Lift the net', kneelS: 3.8 },
   rise: { label: 'Getting up', from: 'kneel' },
   stuck: { label: "I'm stuck" },
-  make: { label: 'Make at the workbench', kneelS: 3.0 },
+  make: { label: 'Make at the workbench', kneelS: 1.8 },
 };
 /** A still walker playing one gesture at 0.5 s (rise: kneeling first, then standing up at 2.5 s). @param {string} name */
 function gestureRun(name) {
@@ -176,11 +265,12 @@ function gestureRun(name) {
 }
 /** A frame at each key of the gesture (not its first or last), and once it is done. @param {string} name */
 const gesturePicks = (name) => (/** @type {any[]} */ rec) => {
-  const keys = R.poses.gestures[name].keys, at = (name === 'rise' ? 2.5 : 0.5);
+  // Key times are as drawn; the gesture plays them at its speed (acts.js).
+  const keys = R.poses.gestures[name].keys, at = (name === 'rise' ? 2.5 : 0.5), sp = R.poses.gestures[name].speed ?? 1;
   const inner = keys.slice(1, -1).filter((k, i, a) => !(i > 0 && Object.keys(k).length === 1 && Object.keys(a[i - 1]).length === 1));
-  const picks = inner.slice(0, 6).map((k) => ({ i: Math.round((at + k.t) / DT) - 1, label: `${k.t.toFixed(2)} s` }));
+  const picks = inner.slice(0, 6).map((k) => ({ i: Math.round((at + k.t / sp) / DT) - 1, label: `${(k.t / sp).toFixed(2)} s` }));
   if (name === 'rise') picks.unshift({ i: Math.round(2.4 / DT), label: 'kneeling' });
-  picks.push({ i: Math.round((at + keys[keys.length - 1].t + 0.8) / DT), label: 'done' });
+  picks.push({ i: Math.round((at + keys[keys.length - 1].t / sp + 0.8) / DT), label: 'done' });
   return picks;
 };
 const SIDE = { left: { yaw: Math.PI / 2, pitch: 0.16, dist: 4 }, right: { yaw: -Math.PI / 2, pitch: 0.16, dist: 4 } };
@@ -226,7 +316,8 @@ function digRun() {
   };
 }
 const digKeys = R.poses.dig.keys;
-const digPicks = () => digKeys.map((k, i) => ({ i: Math.round((0.5 + k.t) / DT) - 1, label: `${k.t.toFixed(2)} s ${['ready', 'bend', 'drive', 'lever', 'lift', 'tip', 'ready'][i] ?? ''}` }));
+const digSp = R.poses.dig.speed ?? 1;
+const digPicks = () => digKeys.map((k, i) => ({ i: Math.round((0.5 + k.t / digSp) / DT) - 1, label: `${(k.t / digSp).toFixed(2)} s ${['ready', 'bend', 'drive', 'lever', 'lift', 'tip', 'ready'][i] ?? ''}` }));
 STRIPS.dig = {
   title: 'Dig with the shovel',
   tile: [260, 360],

@@ -46,21 +46,23 @@
   "hang": { "dir": [0.139, -0.977, 0.15], "elbowDeg": 8 },
   "legs": { "ankleM": 0.1, "hipDrop": 0.012, "footPitchMaxDeg": 22 },
   "gait": {
-    "note": "Paces by speed in body meters a second (the walker's speed divided by body.displayScale, so a smaller figure takes a longer pace for its size and quicker steps); stepM, liftM and the rest are body meters too. The figure blends between them by the speed it is given. stance: share of a stride a foot is down (each pace may set its own; under a half both feet leave the ground between steps). The stroll (1.5 m/s, about 2.0 body m/s) keeps the 1.5 pace; above it the walk turns into a jog (2.9) and a run (3.7, the hurry speed of 2.7 m/s): a longer stride, a flight phase, more forward lean, a bent-elbow arm pump, and bobM below 0, so the hips are lowest over the planted foot and highest in flight, which bounces the hat tip and the pack (Phase 1 fix F11). tipDeg and carryDeg: how far the body tips forward setting off and carries on forward stopping, at that pace (see lean); wade blends toward its own.",
+    "note": "Paces by speed in body meters a second (the walker's speed divided by body.displayScale, so a smaller figure takes a longer pace for its size and quicker steps); stepM, liftM and the rest are body meters too. The figure blends between them by the speed it is given. stance: share of a stride a foot is down (each pace may set its own; under a half both feet leave the ground between steps). The walk (2.2 m/s since October 26, 2026, about 3.0 body m/s) has its own pace; above it the walk turns into a jog (3.9) and a run (5.7, the run of 4.2 m/s with Shift): a flight phase, more forward lean, a bent-elbow arm pump, and bobM below 0, so the hips are lowest over the planted foot and highest in flight (Phase 1 fix F11). October 26, 2026 (Matt: the calves popped up and the run bobbed): the jog and run take short, quick strides (stepM), a small heel kick (kickM) and a small bob, so the legs never over-reach and drop the hips twice a stride. walkTurnDegPerS: how fast the body turns while walking (turnDegPerS standing). tipDeg and carryDeg: how far the body tips forward setting off and carries on forward stopping, at that pace (see lean); wade blends toward its own.",
     "stance": 0.6,
     "paces": [
       { "speed": 0.3, "tipDeg": 2.5, "carryDeg": 1, "stance": 0.6, "kickM": 0, "landShare": 0.5, "stepM": 0.2, "liftM": 0.04, "armDeg": 5, "elbowDeg": 40, "leanDeg": 8, "bobM": 0.004, "crouchM": 0.035, "headDeg": 10, "twistDeg": 2 },
       { "speed": 0.9, "tipDeg": 4, "carryDeg": 2, "stance": 0.6, "kickM": 0, "landShare": 0.5, "stepM": 0.4, "liftM": 0.065, "armDeg": 22, "elbowDeg": 14, "leanDeg": 3.5, "bobM": 0.01, "crouchM": 0, "headDeg": 3, "twistDeg": 6 },
       { "speed": 1.5, "tipDeg": 6, "carryDeg": 4, "stance": 0.6, "kickM": 0, "landShare": 0.5, "stepM": 0.52, "liftM": 0.09, "armDeg": 32, "elbowDeg": 26, "leanDeg": 7, "bobM": 0.016, "crouchM": 0.01, "headDeg": 2, "twistDeg": 8 },
       { "speed": 2.1, "tipDeg": 6.5, "carryDeg": 4.5, "stance": 0.6, "kickM": 0, "landShare": 0.5, "stepM": 0.52, "liftM": 0.09, "armDeg": 32, "elbowDeg": 26, "leanDeg": 7, "bobM": 0.016, "crouchM": 0.01, "headDeg": 2, "twistDeg": 8 },
-      { "speed": 2.9, "tipDeg": 10, "carryDeg": 7, "stance": 0.42, "kickM": 0.1, "landShare": 0.35, "stepM": 0.78, "liftM": 0.17, "armDeg": 40, "elbowDeg": 78, "leanDeg": 11, "bobM": -0.026, "crouchM": 0, "headDeg": 0, "twistDeg": 9 },
-      { "speed": 3.7, "tipDeg": 11, "carryDeg": 8, "stance": 0.34, "kickM": 0.16, "landShare": 0.3, "stepM": 0.98, "liftM": 0.22, "armDeg": 48, "elbowDeg": 88, "leanDeg": 15, "bobM": -0.032, "crouchM": 0, "headDeg": -2, "twistDeg": 11 }
+      { "speed": 3.0, "tipDeg": 7, "carryDeg": 5, "stance": 0.58, "kickM": 0, "landShare": 0.5, "stepM": 0.6, "liftM": 0.09, "armDeg": 36, "elbowDeg": 30, "leanDeg": 8, "bobM": 0.012, "crouchM": 0.01, "headDeg": 2, "twistDeg": 9 },
+      { "speed": 3.9, "tipDeg": 10, "carryDeg": 7, "stance": 0.42, "kickM": 0.04, "landShare": 0.4, "stepM": 0.72, "liftM": 0.11, "armDeg": 40, "elbowDeg": 78, "leanDeg": 11, "bobM": -0.008, "crouchM": 0, "headDeg": 0, "twistDeg": 9 },
+      { "speed": 5.7, "tipDeg": 11, "carryDeg": 8, "stance": 0.34, "kickM": 0.05, "landShare": 0.4, "stepM": 0.9, "liftM": 0.12, "armDeg": 48, "elbowDeg": 88, "leanDeg": 15, "bobM": -0.01, "crouchM": 0, "headDeg": -2, "twistDeg": 11 }
     ],
     "wade": { "depthM": [0.12, 0.3], "tipDeg": 7, "carryDeg": 2, "stepScale": 0.8, "liftM": 0.17, "armOutDeg": 14, "elbowDeg": 30, "leanDeg": 6 },
-    "turnDegPerS": 200,
+    "turnDegPerS": 450,
+    "walkTurnDegPerS": 720,
     "plantStepM": 0.07,
     "plantStepDeg": 28,
-    "plantStepS": 0.32
+    "plantStepS": 0.2
   },
   "arms": {
     "note": "The walking arm swing's shape (the swing itself is each pace's armDeg). elbowForward: radians of extra elbow bend per radian of forward swing; elbowBack: how much the elbow straightens on the back swing, the same way; across: how far a forward swing comes in across the body, per radian of swing.",
@@ -73,7 +75,7 @@
     "pack": { "stiffness": 140, "damping": 0.45, "gain": 1.6, "tiltGain": 4, "rock": 0.5 }
   },
   "idle": { "breathS": 4.2, "breathDeg": 0.8, "shiftS": 9, "shiftM": 0.012, "glanceEveryS": [7, 14], "glanceDeg": 14 },
-  "lean": { "note": "Leaning into starts and stops (walker gestures, part 1; October 24, 2026; src/world/figure/lean.js): the standing lean (the pace's, or a little at rest) follows a soft spring, with extra pulls. Speeding up pulls it toward the pace's tipDeg (full at accelRef, body m/s2; the walker eases up at 2.5 m/s2, about 3.4 body m/s2); slowing down pulls it toward carryDeg (full at brakeRef), the body carrying on as the feet brake. stiffness per second squared; damping (share of critical) while moving, settleDamping once stopped, so the walking lean easing off as you stop swings back just past upright once and settles. The pace is read at the speed you were going, falling off over cruiseFallS.", "accelRef": 3.2, "brakeRef": 3.2, "stiffness": 55, "damping": 0.8, "settleDamping": 0.38, "cruiseFallS": 0.8 },
+  "lean": { "note": "Leaning into starts and stops (walker gestures, part 1; October 24, 2026; src/world/figure/lean.js): the standing lean (the pace's, or a little at rest) follows a soft spring, with extra pulls. Speeding up pulls it toward the pace's tipDeg (full at accelRef, body m/s2; the walker eases up at 2.5 m/s2, about 3.4 body m/s2); slowing down pulls it toward carryDeg (full at brakeRef), the body carrying on as the feet brake. stiffness per second squared; damping (share of critical) while moving, settleDamping once stopped, so the walking lean easing off as you stop swings back just past upright once and settles. The pace is read at the speed you were going, falling off over cruiseFallS. holdS (October 26, 2026, with starts of about 0.15 s): the push off is held, fading over holdS, so a quick start still tips the body.", "accelRef": 3.2, "brakeRef": 3.2, "holdS": 0.3, "stiffness": 55, "damping": 0.8, "settleDamping": 0.38, "cruiseFallS": 0.8 },
   "look": { "note": "Where the walker looks (walker gestures, part 2; October 24, 2026; src/world/figure/look.js). The head turns up to maxYawDeg and tips up or down up to maxPitchDeg in all (a posture's and an act's tip included); toward a thing it tips pitchShare of the way, up to targetPitchDeg, so the face stays in view and the eyes look the rest; the chest takes chestShare of a turn and what is past the head's limit, up to chestMaxDeg. Both ease on springs (headStiffness, chestStiffness per second squared, never faster than degPerS) and turn walkingLess less while walking. What it looks at, first wins by weight over (1 + distance times distFalloff): kinds.focus, the thing you clicked or are about to use (held focusS); kinds.arrival, a creature that just arrived (worth a look for arrivalS); the fire, a creature close by, a find. Each only within its maxM and within frontDeg of straight ahead (never behind you). A choice holds at least holdS and gives way only to one switchRatio better; a passing interest is looked at for its dwellS, then left be for againS. sameM: how far a thing may move and still be the same thing. liftM: how far over the ground it is looked at. eyes: the drawn eyes lead the head (it starts headDelayS after them), shifting up to shiftM (m across the face, x and y) by how far the head and chest still are from the thing (full at fullDeg), on a quick spring.",
     "maxYawDeg": 55, "maxPitchDeg": 25, "targetPitchDeg": 14, "pitchShare": 0.6, "headDelayS": 0.12, "degPerS": 120, "headStiffness": 30, "chestStiffness": 14, "chestMaxDeg": 20, "chestShare": 0.2,
     "frontDeg": 110, "walkingLess": 0.5, "holdS": 1.5, "switchRatio": 1.6, "distFalloff": 0.4, "sameM": 0.8, "focusS": 3, "arrivalS": 6,
@@ -85,7 +87,9 @@
       "find": { "weight": 1, "maxM": 3.5, "dwellS": 2.5, "againS": 20, "liftM": 0.02 }
     },
     "eyes": { "stiffness": 260, "fullDeg": 30, "shiftM": [0.018, 0.012] } },
-  "ease": { "settleS": 0.3, "postureS": 1.2, "actInS": 0.4, "stepLiftM": 0.06, "gestureFadeS": 0.3 },
+  "ease": { "settleS": 0.3, "postureS": 0.7, "actInS": 0.4, "stepLiftM": 0.06, "gestureFadeS": 0.3 },
+  "roll": { "note": "The dodge roll (Space; WASD, October 26, 2026; src/world/figure/roll.js), in shares of the roll's length (recipes/world/walker.json steer.roll) and body meters. tuck: fully curled by the first share, uncurling from the second; turn: the one full turn runs between these shares. Curled, the hips sit pelvisY over the ground, the feet footY under the hips and footZ forward (knees to the chest), the back curls curlDeg and the head tucks headDeg. The ball turns about a point pivotY up and pivotZ forward, on an axis tilted shoulderTilt across the back, so it goes over one shoulder.",
+    "tuck": [0.2, 0.8], "turn": [0.12, 0.86], "pelvisY": 0.42, "footY": -0.26, "footZ": 0.14, "curlDeg": 70, "headDeg": 50, "pivotY": 0.55, "pivotZ": 0.12, "shoulderTilt": 0.6, "contactM": 0.1 },
   "eyes": {
     "centre": [0.002, 1.414, 0],
     "halfSpacing": 0.093,
@@ -171,7 +175,7 @@
       { "t": 1.6 },
       { "t": 2.0, "lean": 0, "head": 0, "arms": 0, "l": [0.12, 0.5, 0.25], "r": [-0.12, 0.5, 0.25] }
     ] },
-    "dig": { "posture": "stand", "after": "stand", "note": "One press of Dig (docs/future/13 10.2, P2c; src/world/dig): both hands on the shovel (the right on the handle's top, the left lower down; the shovel's shaft runs from the right hand through the left), ready, bend over and raise the blade, drive it down into the spot with both hands, pull the handle back to lever, lift the spadeful, twist right to tip the spoil onto its heap, ready again. The feet stay put (Matt, October 25, 2026: hands only, bent over). About 2 real seconds (it plays in real time at any speed). twist turns the chest to the right (degrees).", "keys": [
+    "dig": { "speed": 1.667, "posture": "stand", "after": "stand", "note": "One press of Dig (docs/future/13 10.2, P2c; src/world/dig): both hands on the shovel (the right on the handle's top, the left lower down; the shovel's shaft runs from the right hand through the left), ready, bend over and raise the blade, drive it down into the spot with both hands, pull the handle back to lever, lift the spadeful, twist right to tip the spoil onto its heap, ready again. The feet stay put (Matt, October 25, 2026: hands only, bent over). About 2 real seconds (it plays in real time at any speed). twist turns the chest to the right (degrees).", "keys": [
       { "t": 0, "arms": 1, "head": 10, "l": [-0.12, 0.68, 0.42], "r": [-0.18, 1.0, 0.18] },
       { "t": 0.3, "lean": 55, "head": 30, "drop": 0.1, "l": [-0.02, 0.62, 0.48], "r": [-0.12, 0.74, 0.36] },
       { "t": 0.6, "lean": 65, "head": 34, "drop": 0.12, "l": [-0.02, 0.5, 0.46], "r": [-0.12, 0.6, 0.36] },
@@ -182,7 +186,7 @@
     ] },
     "gestures": {
       "note": "A short gesture for each thing the walker does by hand (walker gestures, part 3; October 24, 2026; src/world/figure/acts.js), played by walk.gesture(name, spot) or by the action itself. The same keys as the camp acts (kneel, lean, head, drop, arms, l, r), plus yaw (the head's extra turn, degrees to the left), but a gesture plays over the walker's posture: its kneel takes the figure down at least that far, it never stops a walk or a tap, and a walk fades it out over ease.gestureFadeS. Given a spot, the walker turns to face it and looks at it first. gather: kneel, reach to the ground, pinch, bring the handful up to the pouch at the hip. setDown: reach back to the pack, bring the pouch round, bend and lower it onto the pile. takeUp: bend, scoop with both hands, lift it over the shoulder into the pack. heapHere: a small bend, the hand opens at your feet. empty: hold the pouch out, tip it, a little shake. lift (a log or stone, L3a): kneel, both hands under the edge, heave it up, hold while it is up (under-log lift.holdS), lower it back. feedFire: kneel, toss a stick in, both hands out to the warmth. netSet: kneel, lay the net forward with both arms; netLift: pull it up hand over hand. rise: getting up from a kneel or a seat, a lean forward and a hand pushing on the knee. stuck: a look left and right (walks: it plays on as you walk off, not faded). sow: planting and placing gifts on foot (D1a): the right hand dips to the hip pouch, then one quick flick forward and up toward the clicked spot, the seed leaving the hand at sowing.json flickS (0.32 s), once a click. make (S1, October 24, 2026): kneeling at the workbench, both hands work at its top (about 0.6 m): a twist with one hand, then the other, pull the binding tight, settle, and up; as long as cook.json makeS.",
-      "gather": { "keys": [
+      "gather": { "speed": 1.714, "keys": [
         { "t": 0 },
         { "t": 0.55, "kneel": 1, "lean": 44, "head": 22, "drop": 0.04, "arms": 1, "l": [0.12, 0.42, 0.34], "r": [-0.08, 0.06, 0.58] },
         { "t": 0.8, "r": [-0.06, 0.04, 0.56] },
@@ -276,7 +280,7 @@
         { "t": 0.42, "r": [-0.1, 0.94, 0.5] },
         { "t": 0.8, "lean": 0, "head": 0, "arms": 0, "r": [-0.12, 0.5, 0.25] }
       ] },
-      "make": { "keys": [
+      "make": { "speed": 1.778, "keys": [
         { "t": 0 },
         { "t": 0.6, "kneel": 1, "lean": 16, "head": 26, "arms": 1, "l": [0.14, 0.64, 0.38], "r": [-0.14, 0.64, 0.38] },
         { "t": 0.9, "r": [-0.05, 0.62, 0.47] },

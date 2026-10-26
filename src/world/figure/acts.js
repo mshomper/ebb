@@ -43,10 +43,17 @@ function fill(keys) {
   return k;
 }
 
-/** How long an act lasts (s): its last key. 0 for a name that is not an act. @param {any} PO poses @param {string} name */
+/**
+ * How much faster than its keys a track plays (its optional `speed`; WASD, October 26, 2026: the
+ * gather, the dig and making brought to about 60% of their old length, the keys kept as drawn).
+ * @param {any} track
+ */
+const speedOf = (track) => (track?.speed > 0 ? track.speed : 1);
+
+/** How long an act lasts (s): its last key, at its speed. 0 for a name that is not an act. @param {any} PO poses @param {string} name */
 export function actLength(PO, name) {
   const keys = ACTS.includes(name) ? PO[name]?.keys : null;
-  return keys?.length ? keys[keys.length - 1].t : 0;
+  return keys?.length ? keys[keys.length - 1].t / speedOf(PO[name]) : 0;
 }
 
 /**
@@ -54,7 +61,7 @@ export function actLength(PO, name) {
  * @param {any} PO poses @param {string} name @param {number} u @returns {ActPose}
  */
 export function actPose(PO, name, u) {
-  return posed(PO[name].keys, u);
+  return posed(PO[name].keys, u * speedOf(PO[name]));
 }
 
 /** The gestures there are (named in the recipe, keys or not). @param {any} PO poses */
@@ -63,12 +70,12 @@ export const gestureNames = (PO) => Object.keys(PO.gestures ?? {}).filter((k) =>
 /** How long a gesture lasts (s): its last key; 0 for a hook with no keys yet, or a name that is not one. @param {any} PO poses @param {string} name */
 export function gestureLength(PO, name) {
   const keys = gestureNames(PO).includes(name) ? PO.gestures[name].keys : null;
-  return keys?.length ? keys[keys.length - 1].t : 0;
+  return keys?.length ? keys[keys.length - 1].t / speedOf(PO.gestures[name]) : 0;
 }
 
 /** A gesture's pose u seconds in. @param {any} PO poses @param {string} name @param {number} u @returns {ActPose} */
 export function gesturePose(PO, name, u) {
-  return posed(PO.gestures[name].keys, u);
+  return posed(PO.gestures[name].keys, u * speedOf(PO.gestures[name]));
 }
 
 /** A track of keys at u seconds. @param {object[]} keys @param {number} u @returns {ActPose} */

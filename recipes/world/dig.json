@@ -32,7 +32,7 @@
   "startleM": 2,
   "events": { "cap": 600 },
   "shovel": { "test": "shovel" },
-  "act": { "biteS": 0.6, "liftS": 1.3, "pourS": 1.65, "holeAtS": 1.65, "cardAtS": 2.0, "gripM": 0.95, "scale": 0.9, "back": { "behindM": 0.2, "sideM": 0.03, "upM": 1.18, "leanDeg": 14, "kneelShare": 0.72 }, "model": "assets/models/camp/shovel-wood.glb" },
+  "act": { "biteS": 0.36, "liftS": 0.78, "pourS": 0.99, "holeAtS": 0.99, "cardAtS": 1.2, "gripM": 0.95, "scale": 0.9, "back": { "behindM": 0.2, "sideM": 0.03, "upM": 1.18, "leanDeg": 14, "kneelShare": 0.72 }, "model": "assets/models/camp/shovel-wood.glb" },
   "look": {
     "walls": { "topsoil": [0.06, 0.042, 0.028], "subsoil": [0.2, 0.15, 0.1], "clay": [0.16, 0.19, 0.2], "sand": [0.46, 0.4, 0.3] },
     "spoil": { "sizeM": 0.34, "fromM": 0.36, "byStage": [1, 0.55, 0, 0], "shapes": 3, "seed": 6131, "cellM": 0.012 },
@@ -40,7 +40,7 @@
     "fresh": { "darken": 0.35, "ringM": 0.35, "seep": [0.05, 0.07, 0.08] },
     "nearM": 30, "max": 16
   },
-  "scoop": { "kneelS": 1.2, "needs": "shovel" },
+  "scoop": { "kneelS": 0.7, "needs": "shovel" },
   "words": {
     "dig": "Dig", "scoop": "Scoop sand", "deeper": "Dig deeper", "keep": "Keep it", "leave": "Leave it",
     "rest": "Let it rest a while.",

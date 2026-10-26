@@ -36,7 +36,7 @@
   "shaped": { "max": 4 },
   "shapedNote": "Clay pieces shaped at the workbench (S5) wait pale on its slab, at most max at once, until each is laid at the fire with Fire (makes fire-<kind>: the part 'shaped:<kind>' is laid from the workbench's row in the fire's workspace). Fired after needH game hours of fire, lit or banked, on the overnight work list (work.js); never cracks, never fails. A fired pot or the cup goes to its own slot at the ring's side (camp.json hearth.slots; the first pot onto empty hearth stones); a fired bowl waits at the ring's edge until taken up from the ring's card into a bowl pouch.",
 
-  "makeS": 3.2,
+  "makeS": 1.8,
   "makeSNote": "How long the walker works at the station for a make (real seconds), kneeling at the bench: figure.json gestures.make. The thing is made as it ends.",
 
   "nothingHoldS": 1.4,
