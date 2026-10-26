@@ -8,11 +8,14 @@ import { cleanFire, noFire, layFire } from './fire.js';
 import { cleanWork } from './work.js';
 import { cleanHolds } from '../pack/store.js';
 import { cleanBunches } from '../pack/piles.js';
+import { cleanPieceFields } from './pots.js';
 
 /**
  * @typedef {{ slot: string, kind: string, seed: number, placedHour: number, stack?: number,
- *   holds?: import('../pack/store.js').Holds, bunches?: import('../pack/piles.js').Bunches }} SlotRecord
- *   stack, holds: the hamper's (P2j); bunches: the drying rack's (S2)
+ *   holds?: import('../pack/store.js').Holds, bunches?: import('../pack/piles.js').Bunches,
+ *   pot?: string | null, water?: import('./pots.js').Water, shaped?: string[] }} SlotRecord
+ *   stack, holds: the hamper's (P2j); bunches: the drying rack's (S2); pot: the hearth's pot; water:
+ *   a pot's; shaped: the pieces waiting pale on the workbench (S4, S5)
  * @typedef {{ version: number, stamped?: boolean, pad?: any, kit: { tent: 'pack' | 'pitched' | 'boat', lantern: 'pole' | 'carried' },
  *   slots: SlotRecord[], fire: import('./fire.js').Fire, work: import('./work.js').WorkPiece[], rested: { hour: number, at: number } | null,
  *   firstPitchedHour: number | null }} Camp
@@ -37,7 +40,8 @@ export function cleanCamp(v) {
     // The hamper (P2j) carries what it holds and how many stack; the rack (S2) its bunches.
     if (s.kind === 'hamper') { r.stack = s.stack === 2 ? 2 : 1; r.holds = cleanHolds(s.holds); }
     if (s.kind === 'rack') r.bunches = cleanBunches(s.bunches);
-    slots.push(r);
+    // The hearth's pot, a pot's water, the workbench's shaped pieces (S4, S5).
+    slots.push(cleanPieceFields(s, r));
   }
   const tent = TENT.includes(kitIn.tent) ? kitIn.tent : slots.some((s) => s.kind === 'tent') ? 'pitched' : 'pack';
   const rested = c.rested && Number.isFinite(c.rested.hour) && Number.isFinite(c.rested.at) ? { hour: c.rested.hour, at: c.rested.at } : null;

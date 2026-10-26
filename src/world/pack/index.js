@@ -133,6 +133,14 @@ export function createPack(o) {
       if (!keepCard) update('identify', () => null);
     },
 
+    /** What is held in both arms: the hearth's pot, or nothing (K-26). */
+    holding: () => pack().holding,
+    /** Take the hearth's pot in both arms, or set it back (K-26): the pouch row dims while held. @param {null | 'pot'} what */
+    hold(what) {
+      if (pack().holding === what) return;
+      keep({ ...pack(), holding: what });
+    },
+
     /** The heaps left when the pack was full (K-21), for drawing and tapping. */
     heaps: () => pack().heaps,
     /**

@@ -20,6 +20,7 @@ struct PropDraw {
   liftTint: vec4f,  // the lift (lib-lift.wgsl, F5): warm tint and its strength
   liftRim: vec4f,   // rim colour and its power
   dryTint: vec4f,   // a dried plant: rgb the tint its brightness takes, w how far it goes at dry 1
+  raw: vec4f,       // unfired clay: rgb its pale albedo (linear), w how much of the fired paint's light and dark it keeps
 };
 
 struct Prop {
@@ -28,6 +29,7 @@ struct Prop {
   look: vec4f,      // x albedo scale, y roughness scale, z normal strength, w normal map's green sign
   shade: vec4f,     // contact shadow: x, y half sizes along its own x and z (m), z darkness 0..1, w the prop's lift 0..1 (F5: hovered or its card open)
   tilt: vec4f,      // x pitch about its own x (its +y toward its +z), y roll about its own z, both before the yaw (a held tool); z dry 0..1 (a herb bunch); w spare
+  burn: vec4f,      // x its length along its own x (1 as made); y burnt from its -x end this far along it (0: char rises from the bottom instead); z the model's half length along x (m); w raw clay 0..1
 };
 
 @group(0) @binding(0) var<uniform> frame: FrameUniforms;
@@ -45,6 +47,8 @@ struct VsOut {
   @location(2) uv: vec2f,
   @location(3) localY: f32,
   @location(4) @interpolate(flat) ii: u32,
+  @location(5) localX: f32,
+  @location(6) paint: vec3f,
 };
 
 struct FsOut {
@@ -76,21 +80,23 @@ fn tip(d: vec3f, t: vec4f) -> vec3f {
 }
 
 fn placed(position: vec3f, pr: Prop) -> vec3f {
-  let p = position * vec3f(1.0, pr.more.w, 1.0) * pr.more.x;
+  let p = position * vec3f(pr.burn.x, pr.more.w, 1.0) * pr.more.x;
   return turn(tip(p, pr.tilt), pr.at.w) + pr.at.xyz;
 }
 
 @vertex
 fn vsProp(@location(0) position: vec3f, @location(1) normal: vec3f, @location(2) uv: vec2f,
-          @builtin(instance_index) ii: u32) -> VsOut {
+          @location(3) paint: vec3f, @builtin(instance_index) ii: u32) -> VsOut {
   let pr = props[ii];
   var o: VsOut;
   o.world = placed(position, pr);
   o.pos = frame.viewProj * vec4f(o.world, 1.0);
-  // A squash in height takes the inverse on the normal, so it stays true.
-  o.normal = turn(tip(normalize(normal * vec3f(1.0, 1.0 / max(pr.more.w, 0.05), 1.0)), pr.tilt), pr.at.w);
+  // A squash in height (or a stretch in length) takes the inverse on the normal, so it stays true.
+  o.normal = turn(tip(normalize(normal * vec3f(1.0 / max(pr.burn.x, 0.05), 1.0 / max(pr.more.w, 0.05), 1.0)), pr.tilt), pr.at.w);
   o.uv = uv;
   o.localY = position.y;
+  o.localX = position.x;
+  o.paint = paint;
   o.ii = ii;
   return o;
 }
@@ -117,18 +123,26 @@ fn fsProp(in: VsOut) -> FsOut {
   var nMesh = normalize(in.normal);
   // Two-sided canvas: the side you see.
   if (dot(nMesh, frame.cameraPos - in.world) < 0.0) { nMesh = -nMesh; }
-  let base = textureSample(baseMap, mapSampler, in.uv);
+  let base = textureSample(baseMap, mapSampler, in.uv) * vec4f(in.paint, 1.0);
   let mr = textureSample(roughMap, mapSampler, in.uv);
   let nm = textureSample(normalMap, mapSampler, in.uv).xyz * 2.0 - 1.0;
   let tn = normalize(vec3f(nm.x * pr.look.z, nm.y * pr.look.z * pr.look.w, max(nm.z, 0.05)));
   let n = perturb(nMesh, in.world, in.uv, tn);
-  // Char: the wood blackens from the bottom up as it burns, all of it at char 1.
-  let charred = smoothstep(-0.05, 0.15, pr.more.y * 1.2 - in.localY * 2.0 + 0.1);
+  // Char: the wood blackens from the bottom up as it burns, all of it at char 1. A star fire's log
+  // (burn.y) is burnt from its end in the fire instead: black that far along it, then a scorched edge.
+  let along = clamp(in.localX / max(pr.burn.z, 1e-3) * 0.5 + 0.5, 0.0, 1.0);
+  let endMode = pr.burn.y > 0.0;
+  let charred = select(smoothstep(-0.05, 0.15, pr.more.y * 1.2 - in.localY * 2.0 + 0.1),
+                       1.0 - smoothstep(pr.burn.y - 0.1, pr.burn.y + 0.06, along), endMode);
+  let charK = select(pr.more.y, 1.0, endMode);
   // Drying: a herb's green fades as it dries, its brightness kept, toward straw.
   let fresh = base.rgb * pr.look.x;
   let dried = mix(fresh, vec3f(dot(fresh, vec3f(0.2126, 0.7152, 0.0722))) * pd.dryTint.rgb, pd.dryTint.w * pr.tilt.z);
-  let albedo = mix(dried, pd.charCol.rgb, charred * pr.more.y);
-  let rough = clamp(mr.g * pr.look.y, 0.04, 1.0);
+  // Raw clay (a shaped piece not yet fired): pale and dry, keeping a little of its light and dark.
+  let lum = dot(dried, vec3f(0.2126, 0.7152, 0.0722));
+  let raw = pd.raw.rgb * mix(1.0, clamp(lum / 0.12, 0.4, 1.8), pd.raw.w);
+  let albedo = mix(mix(dried, raw, pr.burn.w), pd.charCol.rgb, charred * charK);
+  let rough = mix(clamp(mr.g * pr.look.y, 0.04, 1.0), 1.0, pr.burn.w);
 
   let viewDist = distance(in.world, frame.cameraPos);
   let v = (frame.cameraPos - in.world) / max(viewDist, 1e-4);
@@ -146,10 +160,14 @@ fn fsProp(in: VsOut) -> FsOut {
   // Embers: the dark, low wood glows in slow patches that breathe.
   if (pr.more.z > 0.0) {
     let t = frame.animTime * pd.ember.w;
-    let patchy = valueNoise2(in.uv * 18.0 + vec2f(t * 0.37, -t * 0.21), 131u) * 0.7 + valueNoise2(in.uv * 53.0 - vec2f(t * 0.6, t * 0.4), 137u) * 0.3;
-    let low = 1.0 - smoothstep(0.04, 0.2, in.localY * pr.more.w);
+    // Patches over its paint map; a star fire's log (painted in vertex colours, no map) over its own length and height.
+    let pq = select(in.uv, vec2f(in.localX, in.localY + in.localX * 0.3) * 1.2, endMode);
+    let patchy = valueNoise2(pq * 18.0 + vec2f(t * 0.37, -t * 0.21), 131u) * 0.7 + valueNoise2(pq * 53.0 - vec2f(t * 0.6, t * 0.4), 137u) * 0.3;
+    // Low in the wood; a star fire's log along its burnt end, brightest toward the tip.
+    let low = select(1.0 - smoothstep(0.04, 0.2, in.localY * pr.more.w), 1.0 - smoothstep(pr.burn.y * 0.6, pr.burn.y + 0.04, along), endMode);
     let dark = 1.0 - smoothstep(0.05, 0.25, dot(base.rgb, vec3f(0.333)));
-    let k = pr.more.z * smoothstep(0.42, 0.8, patchy) * max(low, dark * 0.6);
+    // A log's embers run along its charred end in a deep orange, never blown out to white.
+    let k = pr.more.z * select(smoothstep(0.42, 0.8, patchy) * max(low, dark * 0.6), smoothstep(0.3, 0.7, patchy) * low * charred * 0.6, endMode);
     radiance += pd.ember.rgb * k;
   }
   let color = applyAerial(radiance * frame.exposure, in.pos.xy * frame.invRenderSize, viewDist);

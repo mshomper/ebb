@@ -18,17 +18,35 @@
     "hamper2": { "tier": "T4", "at": "workbench", "parts": [["rushes.stems", "marram.leaves"], "rush-cord", "willow.withies"], "out": "stack", "slot": "store", "max": 1, "after": "store", "src": ["P2j"] },
     "dry": { "tier": "T2", "at": "apothecary", "act": "dry", "parts": [{ "group": "herbs", "shows": "chamomile.flowers" }], "out": "rack", "after": "rack", "src": ["3.12", "7.7", "S2"] },
     "grind": { "tier": "T2", "at": "apothecary", "act": "grind", "parts": ["shells"], "out": "pouch", "gives": "crushed-shell", "count": 1, "after": "mortar", "src": ["3.12", "S2", "question 5"] },
-    "willow-charcoal": { "tier": "T2", "at": "fire", "parts": ["willow.withies"], "out": "work", "needH": 8, "gives": "charcoal-sticks", "count": 3, "src": ["X-15", "P2i"] }
+    "willow-charcoal": { "tier": "T2", "at": "fire", "parts": ["willow.withies"], "out": "work", "needH": 8, "gives": "charcoal-sticks", "count": 3, "src": ["X-15", "P2i"] },
+    "hearth-stones": { "tier": "T2", "at": "workbench", "parts": ["flat-stones", "flat-stones"], "out": "hearth", "max": 1, "after": "ring", "src": ["C-07", "S4"] },
+    "cooking-pot": { "tier": "T2", "at": "workbench", "parts": ["clay", "sand"], "out": "shaped", "max": 1, "src": ["M-09", "3.12", "S5"] },
+    "tea-pot": { "tier": "T2", "at": "workbench", "parts": ["clay", "crushed-shell"], "out": "shaped", "max": 1, "src": ["3.12", "S5"] },
+    "cup": { "tier": "T2", "at": "workbench", "parts": ["clay"], "out": "shaped", "max": 1, "src": ["M-11", "C-10", "S5"] },
+    "bowl": { "tier": "T2", "at": "workbench", "parts": ["clay"], "out": "shaped", "max": 3, "src": ["M-12", "F-22", "S5"] },
+    "fire-cooking-pot": { "tier": "T2", "at": "fire", "parts": ["shaped:cooking-pot"], "out": "work", "needH": 8, "gives": "cooking-pot", "count": 1, "fires": "cooking-pot", "src": ["M-09", "S5"] },
+    "fire-tea-pot": { "tier": "T2", "at": "fire", "parts": ["shaped:tea-pot"], "out": "work", "needH": 8, "gives": "tea-pot", "count": 1, "fires": "tea-pot", "src": ["3.12", "S5"] },
+    "fire-cup": { "tier": "T2", "at": "fire", "parts": ["shaped:cup"], "out": "work", "needH": 8, "gives": "cup", "count": 1, "fires": "cup", "src": ["M-11", "S5"] },
+    "fire-bowl": { "tier": "T2", "at": "fire", "parts": ["shaped:bowl"], "out": "work", "needH": 8, "gives": "bowl", "count": 1, "fires": "bowl", "src": ["M-12", "S5"] },
+    "leaf-pack": { "tier": "T2", "at": "workbench", "parts": ["leaves", "rush-cord"], "out": "pouch", "gives": "leaf-pack", "count": 1, "src": ["F-04", "G-24", "P2h"] }
   },
-  "makesNote": "Every make at a station. at: the station (workbench, fire, apothecary); act: its action's icon and label (words.acts), else the station's own; parts: one handful each, a kind id, a list of kinds that serve (['sticks', 'drift-twigs']), or any kind of a pack group ({ group: 'herbs', shows: the kind its pencil outline wears }); after: a camp slot that must be built first (the mortar and rack wait for the apothecary bench, the second hamper for the first, Dry for the rack, Grind for the mortar); out: where it goes when made ('tool' hangs on the pack and takes no pouch, kept in the cook section's tools; 'pouch' fills a pouch of gives, count handfuls, or a small heap at your feet when the pack is full; 'slot' stands in its camp slot (slot), carried there; 'stack' stacks a second hamper on the first, 6 slots to 12; 'rack' hangs the herb on the drying rack as a bunch); max: how many can ever be made (the station stops offering it). Rush cord (P2c): one handful of rushes or marram leaves twisted into one handful of cord. The shovel needs a stick, a flat stone and cord. The drying rack: two withies or sticks lashed with cord; the mortar: a flat stone hollowed with a pebble. The hamper (P2j): two handfuls of rushes coiled and stitched with cord; the second hamper takes rushes, cord and a willow-withy lid. Dry hangs a handful of any herb on the rack; Grind turns a handful of broken shells into crushed shell (Mix waits for P2e). willow-charcoal (P2i, X-15): a handful of withies laid at the fire with Fire goes on the overnight work list (out 'work', src/world/camp/work.js): after needH game hours of fire, lit or banked, it is a full pouch (count handfuls) of charcoal sticks, taken up from the ring's card. work.max: the most pieces laid at the fire at once. One make is shown at a time: the one with the most parts laid, then the lower tier, then this file's order.",
+  "makesNote": "Every make at a station. at: the station (workbench, fire, apothecary); act: its action's icon and label (words.acts), else the station's own; parts: one handful each, a kind id, a list of kinds that serve (['sticks', 'drift-twigs']), or any kind of a pack group ({ group: 'herbs', shows: the kind its pencil outline wears }); after: a camp slot that must be built first (the mortar and rack wait for the apothecary bench, the second hamper for the first, Dry for the rack, Grind for the mortar); out: where it goes when made ('tool' hangs on the pack and takes no pouch, kept in the cook section's tools; 'pouch' fills a pouch of gives, count handfuls, or a small heap at your feet when the pack is full; 'slot' stands in its camp slot (slot), carried there; 'stack' stacks a second hamper on the first, 6 slots to 12; 'rack' hangs the herb on the drying rack as a bunch); max: how many can ever be made (the station stops offering it). Rush cord (P2c): one handful of rushes or marram leaves twisted into one handful of cord. The shovel needs a stick, a flat stone and cord. The drying rack: two withies or sticks lashed with cord; the mortar: a flat stone hollowed with a pebble. The hamper (P2j): two handfuls of rushes coiled and stitched with cord; the second hamper takes rushes, cord and a willow-withy lid. Dry hangs a handful of any herb on the rack; Grind turns a handful of broken shells into crushed shell (Mix waits for P2e). willow-charcoal (P2i, X-15): a handful of withies laid at the fire with Fire goes on the overnight work list (out 'work', src/world/camp/work.js): after needH game hours of fire, lit or banked, it is a full pouch (count handfuls) of charcoal sticks, taken up from the ring's card. work.max: the most pieces laid at the fire at once. leaf-pack (P2h): a handful of fallen leaves bound with rush cord into one leaf pack, the minnows' treat (recipes/world/treats.json). One make is shown at a time: the one with the most parts laid, then the lower tier, then this file's order.",
 
-  "work": { "max": 2 },
+  "work": { "max": 4 },
+  "shaped": { "max": 4 },
+  "shapedNote": "Clay pieces shaped at the workbench (S5) wait pale on its slab, at most max at once, until each is laid at the fire with Fire (makes fire-<kind>: the part 'shaped:<kind>' is laid from the workbench's row in the fire's workspace). Fired after needH game hours of fire, lit or banked, on the overnight work list (work.js); never cracks, never fails. A fired pot or the cup goes to its own slot at the ring's side (camp.json hearth.slots; the first pot onto empty hearth stones); a fired bowl waits at the ring's edge until taken up from the ring's card into a bowl pouch.",
 
   "makeS": 1.8,
   "makeSNote": "How long the walker works at the station for a make (real seconds), kneeling at the bench: figure.json gestures.make. The thing is made as it ends.",
 
   "nothingHoldS": 1.4,
   "nothingHoldSNote": "Parts that make nothing together stay on the surface this long (real seconds) with the calm line, then go back to their pouches.",
+
+  "boons": {
+    "meadowsweet": { "trust": 1.05, "h": 8 },
+    "meadowsweet+chamomile": { "trust": 1.12, "h": 16 }
+  },
+  "boonsNote": "Tea boons (P2e, approved October 25, 2026), only the friendship numbers so far, set by P2h for the trust lab: trust multiplies every trust gain while the boon lasts (h game hours on the island). P2e fills in the rest of the table.",
 
   "words": {
     "workbenchSlot": { "name": "Workbench ground", "line": "Level ground facing the fire. A stone slab on a frame would make a bench here.", "needs": "A bench here needs two handfuls of flat stones.", "build": "Build the workbench" },
@@ -59,7 +77,34 @@
       "rack": "A drying rack, lashed tight. It stands beside the bench.", "mortar": "A hollow worn in the stone. A mortar, with a pebble to grind.",
       "hamper": "A lidded hamper of coiled rushes. It goes among the stores.", "hamper2": "A second hamper, a willow lid on top. Twice the room.",
       "dry": "Hung on the rack to dry.", "grind": "Ground fine. A handful of crushed shell.",
-      "willow-charcoal": "Withies wrapped tight and laid in the ashes. A night of fire will turn them to charcoal." },
+      "willow-charcoal": "Withies wrapped tight and laid in the ashes. A night of fire will turn them to charcoal.",
+      "hearth-stones": "Three flat stones, set in the middle of the fire. A pot can stand on them now.",
+      "cooking-pot": "A wide pot, shaped and smoothed. It waits pale on the bench for the fire.",
+      "tea-pot": "A small pot with a lid and a spout, flecked with shell. It waits pale on the bench for the fire.",
+      "cup": "A cup to fit your hands. It waits pale on the bench for the fire.",
+      "bowl": "A shallow bowl. It waits pale on the bench for the fire.",
+      "fire-cooking-pot": "Set at the fire's edge. A night of fire will harden it.", "fire-tea-pot": "Set at the fire's edge. A night of fire will harden it.",
+      "fire-cup": "Set at the fire's edge. A night of fire will harden it.", "fire-bowl": "Set at the fire's edge. A night of fire will harden it.",
+      "leaf-pack": "Fallen leaves bound tight with cord. A leaf pack, to sink in still water." },
+    "benchFull": "The bench is full of pieces waiting for the fire. Fire one first.",
+    "onBench": "On the workbench",
+    "benchWaiting": "Waiting for the fire",
+    "benchToFire": "Each wants a night in the fire. Press one to carry it there and lay it at the edge.",
+    "toFire": "Lay it at the fire",
+    "shapedCard": "Shaped, still pale and soft. It wants a night in the fire: lay it at the fire's edge, and by morning it is fired.",
+    "shapedNoRing": "Shaped, still pale and soft. It wants a night in a fire.",
+    "shapedHint": "It wants a night in the fire.",
+    "shapedNames": { "cooking-pot": "Unfired cooking pot", "tea-pot": "Unfired tea pot", "cup": "Unfired cup", "bowl": "Unfired bowl" },
+    "workWaitings": { "fire-cooking-pot": "A pale pot at the fire's edge, firing.", "fire-tea-pot": "A pale tea pot at the fire's edge, firing.",
+      "fire-cup": "A pale cup at the fire's edge, firing.", "fire-bowl": "A pale bowl at the fire's edge, firing." },
+    "workDones": { "fire-bowl": "A fired bowl at the fire's edge." },
+    "workTakes": { "willow-charcoal": "Take up the charcoal sticks", "fire-bowl": "Take up the bowl" },
+    "firedLines": { "cooking-pot": "The cooking pot is fired, hard and ringing.", "tea-pot": "The tea pot is fired, hard and ringing.", "cup": "The cup is fired. It rings when you tap it." },
+    "pieceNames": { "cooking-pot": "Cooking pot", "tea-pot": "Tea pot", "cup": "Clay cup", "bowl": "Clay bowl", "stand": "Pot stand" },
+    "pieceLines": { "hearth": "On the hearth stones.", "waiting": "Waiting by the fire.", "cup": "Your cup, by the fire.", "stand": "A flat stone by the fire, keeping a place for a dye pot. Dyes come later." },
+    "potWater": { "none": "Empty.", "fresh": "Full of spring water.", "sea": "Full of sea water." },
+    "potSwap": "Set it on the hearth",
+    "potSetDown": "Set it back on the hearth",
     "workFull": "The fire has all it can hold overnight. Take up what is done first.",
     "workTake": "Take up the charcoal sticks",
     "workWaiting": "Withies in the ashes, waiting for a night of fire.",
@@ -74,10 +119,15 @@
       "now": "The camp now"
     },
     "pageNames": { "ring": "Fire ring", "workbench": "Workbench", "shovel": "Shovel", "rush-cord": "Rush cord", "apothecary": "Apothecary bench", "rack": "Drying rack",
-      "mortar": "Mortar and pebble", "hamper": "Rush hamper", "hamper2": "Second hamper", "dry": "First herbs drying", "grind": "Crushed shell", "willow-charcoal": "Willow charcoal" },
+      "mortar": "Mortar and pebble", "hamper": "Rush hamper", "hamper2": "Second hamper", "dry": "First herbs drying", "grind": "Crushed shell", "willow-charcoal": "Willow charcoal",
+      "hearth-stones": "Hearth stones", "cooking-pot": "Cooking pot, shaped", "tea-pot": "Tea pot, shaped", "cup": "Clay cup, shaped", "bowl": "Clay bowl, shaped",
+      "fire-cooking-pot": "Cooking pot, fired", "fire-tea-pot": "Tea pot, fired", "fire-cup": "Clay cup, fired", "fire-bowl": "Clay bowl, fired", "leaf-pack": "Leaf pack" },
     "pageParts": { "ring": "Sticks and stones", "workbench": "Two flat stones", "shovel": "A stick, a flat stone, cord", "rush-cord": "Rushes or marram, twisted",
       "apothecary": "Sticks lashed with cord", "rack": "Withies or sticks, cord", "mortar": "A flat stone and a pebble", "hamper": "Rushes coiled, stitched with cord",
-      "hamper2": "Rushes, cord, a willow lid", "dry": "A handful of herbs, hung", "grind": "Broken shells, ground", "willow-charcoal": "Withies, a night in the fire" }
+      "hamper2": "Rushes, cord, a willow lid", "dry": "A handful of herbs, hung", "grind": "Broken shells, ground", "willow-charcoal": "Withies, a night in the fire",
+      "hearth-stones": "Two handfuls of flat stones", "cooking-pot": "Clay, tempered with sand; it wants a night in the fire", "tea-pot": "Clay, tempered with crushed shell; it wants a night in the fire", "cup": "A handful of clay; it wants a night in the fire", "bowl": "A handful of clay; it wants a night in the fire",
+      "fire-cooking-pot": "A night in the fire", "fire-tea-pot": "A night in the fire", "fire-cup": "A night in the fire", "fire-bowl": "A night in the fire",
+      "leaf-pack": "Fallen leaves, rush cord" }
   },
   "wordsNote": "Every line the stations and the camp page say. <slot>Slot: a bench's ground card (name, line, needs, and its Build label); builtLines: the line after a build other than the workbench's (built). acts: the apothecary's actions. hamper: the stations' row of what the hamper holds; takeUp, setDownHere, emptySlot: the hamper's and the rack's cards. made: the line after a first make, by make id. workFull, workTake, workWaiting, workDone: the overnight work at the fire (the ring's card). pageNames, pageParts: the camp page's first-made lines, in the walker's hand: name, what it was made of, and the date."
 }

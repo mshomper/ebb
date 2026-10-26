@@ -96,17 +96,20 @@
     "ringM": 1.5, "ringTrustShrink": 0.8, "ringMinM": 0.3,
     "calmSpeed": 0.5, "calmTrustGain": 2,
     "editReachM": 2, "fleeM": 2, "fleeMps": 0.3, "wariS": [40, 70], "hushReachM": 4, "hushS": [14, 20],
-    "watch": { "reachM": 3, "minS": 20, "capS": 600, "trustPerMin": 0.012, "stillMps": 0.05, "sitBoost": 2 },
+    "watch": { "reachM": 3, "minS": 20, "capS": 600, "trustPerMin": 0.004, "stillMps": 0.05, "sitBoost": 2 },
     "multipliers": { "posture": { "stand": 1, "kneel": 0.8, "sit": 0.65 }, "gaze": { "watch": 1.15, "away": 0.9 }, "gazeConeDeg": 30, "light": 1.3 },
-    "feedTrust": 0.06, "ceiling": "familiar", "namingTrust": 0.5,
+    "feedTrust": 0.015, "treatFeeds": 2.5, "ceiling": "familiar", "namingTrust": 0.5,
+    "_pace": "P2h (October 26, 2026): friendship slowed to about 7 played days to Familiar without treats, about 5 with a treat a day (was about 2), for the trust lab's keeper (tools/trust-lab.html). treatFeeds: a liked treat is worth that many meals (feedTrust), once a game day.",
     "_trust": "Trust (S6c, doc 23): 0..1 per frog, saved, only ever grows. bands: where each word after Wary begins (Tolerant, Curious, Familiar, Bonded); the ceiling word caps it just under the next band. Quiet watching: the camera slower than watch.stillMps within watch.reachM of a frog for at least watch.minS, closed when it moves or at watch.capS, earns trustPerMin a minute. Both kinds are saved as events the hourly tick applies.",
     "bands": [0.2, 0.45, 0.65, 0.85],
     "_portrait": "A Familiar frog (S6c-3) holds still, resting, while a calm source is within portraitM, for portraitHoldS after the last such look: ready for photo mode in M2.",
     "portraitM": 0.6, "portraitHoldS": 2
   },
+  "_treat": "The frogs' treat (P2h, docs/future/13 section 8; recipes/world/treats.json): cast kelp or wrack from the strandline, set out on land near the pond; the nearest frog within reachM (not one leaving) comes and snaps it up at once, once you are outside its comfort ring, as with food; if that frog swims off, the next one near comes instead, for up to feed.treatLingerS real seconds. id names it in the trust event, the journal's likes:<id> trigger and the treat:taken event.",
+  "treat": { "id": "wrack", "kinds": ["wrack", "kelp"], "reachM": 3, "noticeS": 4, "noticeNote": "Real seconds a treat lies before the frog sets off for it, so you see it set down first, even with a frog beside you." },
   "_feed": "Feeding (S6c-2): the Feed tool's food for this species (the tool card's words are in src/ui/tools.js FEED_SPECIES). A frog within reachM of where the food lands (not one leaving) comes for it, once the camera is outside its comfort ring, after waitS, more (up to fullWaitS) if it ate within fullH game hours; food nobody takes is gone after lingerS (real seconds). A meal earns presence.feedTrust, scaled down if it ate within fullH. specks: how many little dark bits, each speckM long, within spreadM; ringM: the soft ring on the ground where food lies. messages: what the card says after a tap.",
   "feed": {
-    "reachM": 2, "waitS": 1, "fullH": 6, "fullWaitS": 10, "lingerS": 60,
+    "reachM": 2, "waitS": 1, "fullH": 6, "fullWaitS": 10, "lingerS": 60, "treatLingerS": 720,
     "specks": 5, "speckM": 0.008, "spreadM": 0.04, "speckAlbedo": [0.09, 0.07, 0.05], "ringM": 0.2, "ringOpacity": 0.55,
     "messages": {
       "coming": "A frog has seen it.",

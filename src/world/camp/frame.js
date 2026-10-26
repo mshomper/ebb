@@ -7,9 +7,10 @@
 import { emit } from '../../core/events.js';
 import { update } from '../../core/store.js';
 import { onPad } from './layout.js';
-import { pitched, ringLaid } from './model.js';
+import { pitched, ringLaid, inSlot } from './model.js';
 import { fireAt } from './fire.js';
 import { kelvinRgb, flicker } from './light.js';
+import { starLogs, logPlace } from './star.js';
 
 const DEG = Math.PI / 180;
 
@@ -22,6 +23,10 @@ export function createCampFrame(k) {
   const fireRgb = kelvinRgb(F.lightK), emberRgb = kelvinRgb(F.emberLightK), lanternRgb = kelvinRgb(R.lantern.lightK);
   /** @type {'pole' | 'carried'} */ let lantern = 'pole';
   let wasRainy = false, strikeT = -1, strikes = 0, strikeLen = 0, strikeAt = 0, flareT = 0, campSoundKey = '';
+  /** The star's logs left out (tools/camp-bench.html: what the star costs to draw). */
+  let starHidden = false;
+  /** Another rule for laying the star (tools/hearth-check.html: the logs as they lay before). @type {typeof starLogs | null} */
+  let starRule = null;
 
   /**
    * The camp drawn now, from the camp state and the fire now.
@@ -59,12 +64,15 @@ export function createCampFrame(k) {
     flareT = Math.max(0, flareT - dt);
     if (r && ringLaid(c)) {
       list.push({ key: 'ring', x: r.x, y: r.y, z: r.z, yaw: r.yaw, shade: R.props.models.ring.shade });
-      const left = word === 'lit' ? fireNow.level : 0;
-      const ch = word === 'lit' ? F.char.lit + (F.char.embers - F.char.lit) * (1 - left) : word === 'embers' ? F.char.embers : word === 'cold' ? F.char.cold : 0;
-      const sq = word === 'lit' ? 1 + (F.squash.lit - 1) * (1 - left) : word === 'embers' ? F.squash.embers : word === 'cold' ? F.squash.cold : 1;
       embers = word === 'embers' ? 1 : word === 'lit' ? (rainy ? 1 : 0.6) : 0;
-      // The cold ring's wood and ash fade over the day; then only the stones are left.
-      if (word !== 'cold' || fireNow.ash > 0.02) list.push({ key: 'wood', x: r.x, y: r.y, z: r.z, yaw: r.yaw + 0.6, char: ch, squash: sq * (word === 'cold' ? 0.6 + 0.4 * fireNow.ash : 1), glow: embers });
+      // The star fire (S4, star.js): logs radiating, their burnt ends meeting in the middle; the
+      // ones lined up with a hearth stone stop at it. A cold ring keeps its burnt logs.
+      const S = R.star, halfX = S.logLenM / 2, cy = Math.cos(r.yaw), sy = Math.sin(r.yaw);
+      for (const g of starHidden ? [] : (starRule ?? starLogs)(fireNow, c.fire, k.hourNow(), F, S, { seed: inSlot(c, 'ring')?.seed ?? 1, hearth: !!inSlot(c, 'hearth'), rainy })) {
+        const p = logPlace(g, halfX);
+        list.push({ key: 'log', x: r.x + cy * p.x + sy * p.z, y: r.y + p.y, z: r.z - sy * p.x + cy * p.z, yaw: r.yaw + p.yaw, roll: g.roll,
+          scale: g.size, stretch: g.stretch, endChar: g.endChar, halfX, char: g.endChar > 0 ? 1 : 0, glow: g.glow });
+      }
       if (word === 'lit') {
         // High while the ring holds plenty, sinking toward low flames as the fuel burns down (F9);
         // a handful fed lifts it at once, flaring for a moment.
@@ -131,5 +139,9 @@ export function createCampFrame(k) {
     strikeEnd() { strikeT = -1; },
     /** Draw more camp things with the camp's models each frame. @param {() => import('../../render/passes/props.js').Prop[]} f */
     addProps(f) { extra.push(f); },
+    /** Leave the star's logs out, or draw them again (the bench). @param {boolean} on */
+    hideStar(on) { starHidden = on; },
+    /** Lay the star by another rule, or by star.js again (null; the hearth check). @param {typeof starLogs | null} f */
+    starAs(f) { starRule = f; },
   };
 }

@@ -66,11 +66,14 @@ export function createWalk(o) {
   // Drawing only: it reads the walker and never changes it.
   const pass = createFigurePass(o.figure, 'walker');
   /** @type {import('../figure/index.js').Figure | null} */ let figure = null;
+  /** The pot in both arms (S5). */
+  let holding = false;
   loadFigureModel(o.figure)
     .then((glb) => {
       figure = createFigure({ recipe: o.figure, glb, pass });
       // Already put down (a save, placeAt): appear in that posture, not easing into it.
       if (walker.placed) figure.motion.place(walker.posture);
+      if (holding) figure.motion.hold(true);
     })
     .catch((err) => console.error('The walker figure did not load:', err));
   /** Water over a world spot now (the cell it falls in). @param {number} x @param {number} z */
@@ -343,6 +346,12 @@ export function createWalk(o) {
       this.reach(standS, gesture);
     },
 
+    /** Hold the pot in both arms, or let go (S5, K-26): the figure's hands come to its sides. @param {boolean} on */
+    hold(on) {
+      holding = on;
+      figure?.motion.hold(on);
+    },
+
     /**
      * A short gesture for something you do by hand (figure.json poses.gestures: setDown, takeUp,
      * heapHere, empty, stuck, and sow, planting and placing gifts on foot, D1a). Given a spot,
@@ -408,16 +417,33 @@ export function createWalk(o) {
     },
 
     /**
-     * Feed from the hand (W4): you kneel, and the food goes down just in front of you.
+     * Feed from the hand (W4): you kneel, and the food goes down just in front of you. A treat
+     * (P2h) goes down aheadM in front, and first you turn turnDeg off the way the view looks, so it
+     * lies beside you on the screen rather than hidden behind you: the widest turn (in sixths, the
+     * side you already face first) whose spot is `like` the one straight ahead (in the water if that
+     * is, on land if that is), else straight on.
+     * @param {number} [aheadM] @param {number} [turnDeg]
+     * @param {(x: number, z: number) => boolean} [like] what the spot straight ahead should share
      * @returns {number[] | null} the ground point for the food
      */
-    feedPoint() {
+    feedPoint(aheadM = R.ground.feedAheadM, turnDeg, like) {
       if (!below || !walker.placed) return null;
+      if (turnDeg !== undefined) {
+        const e = camera.eye, t = camera.target, view = Math.atan2(t[0] - e[0], t[2] - e[2]);
+        const off = ((walker.yaw - view) % (2 * Math.PI) + 3 * Math.PI) % (2 * Math.PI) - Math.PI;
+        const side = off >= 0 ? 1 : -1;
+        const is = (/** @type {number} */ y) => !like || like(walker.x + Math.sin(y) * aheadM, walker.z + Math.cos(y) * aheadM);
+        const want = is(walker.yaw);
+        const yaws = [1, 5 / 6, 4 / 6, 3 / 6, 2 / 6, 1 / 6].flatMap((k) => [side * k, -side * k]).map((k) => view + k * turnDeg * Math.PI / 180);
+        const yaw = yaws.find((y) => is(y) === want) ?? walker.yaw;
+        walker.stop();
+        walker.face(yaw);
+      }
       walker.setPosture('kneel');
       camera.follow(head());
       publish();
       figure?.motion.feed();
-      const x = walker.x + Math.sin(walker.yaw) * R.ground.feedAheadM, z = walker.z + Math.cos(walker.yaw) * R.ground.feedAheadM;
+      const x = walker.x + Math.sin(walker.yaw) * aheadM, z = walker.z + Math.cos(walker.yaw) * aheadM;
       return [x, ground(x, z), z];
     },
 

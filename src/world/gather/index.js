@@ -209,7 +209,9 @@ export function createGather(o) {
     const below = !!o.walk.below;
     // The card's own line, then the word for what is there (a line that ends bare gets its stop).
     const own = card.text && !/[.!?]$/.test(card.text.trim()) ? `${card.text.trim()}.` : card.text;
-    const text = [own, g.word, !below && g.gathers.length ? W.above : null].filter(Boolean).join(' ');
+    // Carrying the pot in both arms (K-26): no Gather, only the line saying so.
+    const arms = below && g.gathers.length && get('pack')?.holding === 'pot' ? o.pack?.recipe?.words?.pot?.arms ?? null : null;
+    const text = [own, g.word, !below && g.gathers.length ? W.above : null, arms].filter(Boolean).join(' ');
     // The first time the walker meets a plant not to pick, the refusal is said once and its page
     // learns why (journal trigger pick:refused).
     if (g.lookOnly && below && !refusedSaid.has(g.lookOnly) && !get('journal')?.species?.[g.lookOnly]?.learned?.includes('pick:refused')) {
@@ -218,7 +220,7 @@ export function createGather(o) {
       const said = W.refused?.[g.lookOnly];
       if (said) emitDeferred('island:notice', { text: said, showS: R.refusedS ?? 6 });
     }
-    return { ...card, baseText: card.text, text, gathers: below ? g.gathers : [], gatherAt: [x, z], lookOnly: below ? g.lookOnly : null, leaveBeLabel: W.leaveBe };
+    return { ...card, baseText: card.text, text, gathers: below && !arms ? g.gathers : [], gatherAt: [x, z], lookOnly: below ? g.lookOnly : null, leaveBeLabel: W.leaveBe };
   }
 
   /** The card again after a handful: its word and buttons as they are now. */

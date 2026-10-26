@@ -290,6 +290,16 @@ export function createCreatures(opts) {
       const key = feeding.offer(x, z, { known: !!getStore('journal')?.species?.frogs?.ever, dormant: !!world.state?.creatures?.frogs?.dormant, eye: opts.you?.() ?? camera.eye });
       return recipe.feed.messages[key] ?? '';
     },
+    /**
+     * A treat frogs like set out at (x, z) (P2h, treats.js): the nearest frog within the treat's
+     * reach comes and snaps it up, the Feed pattern. Returns 'coming', 'waiting', 'none', 'water' or
+     * 'asleep'; once eaten, `treat:taken` says so with the treat's id.
+     * @param {number} x @param {number} z @param {{ treat: string, tid: number, reachM: number }} t
+     */
+    treat(x, z, t) {
+      if (!feeding) return 'none';
+      return feeding.offer(x, z, { known: true, dormant: !!world.state?.creatures?.frogs?.dormant, eye: opts.you?.() ?? camera.eye }, t);
+    },
     /** Soft rings where food lies, for the terrain marks: [x, z, radius, opacity]. */
     foodRings: () => (feeding ? feeding.rings() : []),
 
@@ -329,7 +339,13 @@ export function createCreatures(opts) {
       if (feeding) {
         const ate = feeding.step(f.realDt, opts.you?.() ?? camera.eye, (id) => tickFrogs().find((/** @type {any} */ g) => g.id === id), hourIndex());
         if (ate.length) {
-          for (const m of ate) world.state = addTrustEvent(world.state, { kind: 'fed', id: m.id, hour: hourIndex() });
+          for (const m of ate) {
+            // A treat (P2h) is its own trust event, worth more and once a day.
+            if (m.treat) {
+              world.state = addTrustEvent(world.state, { kind: 'treat', id: m.id, hour: hourIndex(), treat: m.treat });
+              emitDeferred('treat:taken', { species: 'frogs', id: m.id, treat: m.treat, tid: m.tid });
+            } else world.state = addTrustEvent(world.state, { kind: 'fed', id: m.id, hour: hourIndex() });
+          }
           updateStore('world', () => world.state);
         }
       }

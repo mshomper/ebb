@@ -13,9 +13,10 @@ import { STAGE } from '../growth/coarse.js';
 import { PERIOD, periodOf, periodIndex } from './events.js';
 
 // New kinds go at the end: a kind's place here salts its rolls (as finds' KINDS), so sticks and
-// lichen twigs at the same shrub roll apart. Later kinds: kelp, wrack, leaves, lichen-twigs, acorns,
-// hazelnuts, old-comb, cakes.
-export const KINDS = Object.freeze(['sticks', 'drift-twigs', 'pebbles', 'flat-stones', 'sand', 'shells', 'charcoal', 'ash']);
+// lichen twigs at the same shrub roll apart. Later kinds: lichen-twigs, acorns, hazelnuts, old-comb,
+// cakes. Kelp, wrack and fallen leaves (P2h) are general pouch kinds: treats now, and P2g lays kelp,
+// wrack and ash in planting holes.
+export const KINDS = Object.freeze(['sticks', 'drift-twigs', 'pebbles', 'flat-stones', 'sand', 'shells', 'charcoal', 'ash', 'kelp', 'wrack', 'leaves']);
 
 /** A bin's side (m), gather.json spotM. Keys are bin indices, so this stays 2. */
 export const BIN_M = 2;
@@ -310,6 +311,8 @@ export function share(kind, sourceKey, period, ctx, recipe) {
     line = (ctx.lines ?? []).find((l) => periodOf(PERIOD.tide, l.tideId) === period) ?? null;
     if (!line) return 0;
     season = line.season;
+    // Cast kelp (P2h): only a tide far enough toward spring reaches the kelp beds to tear it loose.
+    if (K.spring && line.spring < (W?.springMin ?? 0.5)) return 0;
   }
   const base = K.handfuls?.[season] ?? 0;
   if (base <= 0) return 0;

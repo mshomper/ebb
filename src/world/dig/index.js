@@ -157,7 +157,8 @@ export function createDig(o) {
 
   let hereT = 0;
   function here() {
-    const busy = !!pending || o.walk.busy();
+    // Busy, or the pot in both arms (K-26): no Dig, no Scoop.
+    const busy = !!pending || o.walk.busy() || get('pack')?.holding === 'pot';
     if (!busy && plan()) offerHere({ id: 'dig', icon: 'dig', label: W.dig, order: 20, action: { type: 'dig.press' } });
     else withdrawHere('dig');
     // Scoop sand: on dry sand at your feet, once there is a use for it (the shovel, for now).
