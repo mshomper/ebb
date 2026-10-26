@@ -681,7 +681,7 @@ export async function startApp(canvas, hooks = {}) {
   const spreadOf = (kind) => pack.recipe.pickups?.kinds?.[kind]?.spreadM ?? 0.4;
   // The keeper's camp (docs/future/13 section 3; src/world/camp): the tent and the fire ring in their
   // slots, the fire and the lantern as small lights, smoke and moths, and a night's rest in the tent.
-  const camp = createCamp({ recipe: campRecipe, seed, walk, terrain, clock, orbit: skyRecipe.orbit, camera, world, piles,
+  const camp = createCamp({ recipe: campRecipe, seed, walk, terrain, water, clock, orbit: skyRecipe.orbit, camera, world, piles,
     seasons: seasonsRecipe, lighting, pack, shadowBias: shadowPass.bias, low: tier === 'low', poses: (await loadRecipe('world/figure')).poses,
     beat: () => intro.live?.intro.current?.id ?? null, cook: await loadRecipe('world/cook') });
   sim.addSystem(camp);
@@ -739,12 +739,29 @@ export async function startApp(canvas, hooks = {}) {
       for (const [k, n] of [['willow.withies', 1], ['ash', 2], ['sticks', 2]]) pack.add(/** @type {string} */ (k), /** @type {number} */ (n));
     }
     const apo = params.get('camp') === 'apothecary';
+    // `?camp=hearth` (S4, S5): the workbench built, the hearth stones set, the cooking pot and the
+    // cup fired in their places, clay, sand and crushed shell in the pack, standing at the ring;
+    // `&fire=lit|embers|cold` sets the fire.
+    const hearthLink = params.get('camp') === 'hearth';
     const kit = apo ? [['shells', 3], ['watermint.leaves', 2], ['chamomile.flowers', 2], ['sticks', 3], ['pebbles', 2], ['rushes.stems', 3]]
+      : hearthLink ? [['clay', 3], ['sand', 2], ['crushed-shell', 1], ['sticks', 3]]
       : [['flat-stones', 3], ['sticks', 2], ['rush-cord', 1], ['pebbles', 2]];
     for (const [k, n] of kit) pack.add(/** @type {string} */ (k), /** @type {number} */ (n));
-    if (params.get('camp') === 'bench' || apo) camp.stations.debug.buildNow('workbench');
+    if (params.get('camp') === 'bench' || apo || hearthLink) camp.stations.debug.buildNow('workbench');
     if (apo) { camp.stations.debug.buildNow('apothecary'); for (const m of ['rack', 'mortar', 'hamper']) camp.stations.debug.placeNow(m); }
-    const at = camp.stations.benchAt(apo ? 'apothecary' : 'workbench');
+    if (hearthLink) {
+      // `&shaped` is the look of it all at once (tools/hearth-check.html): every piece fired, a pale
+      // bowl, cup and tea pot on the bench and a bowl firing. Without it, the tea pot and bowls are
+      // still to shape and fire.
+      camp.hearth.debug.setUp(params.has('shaped') ? { fired: ['cooking-pot', 'tea-pot', 'cup'], shaped: ['bowl', 'cup', 'tea-pot'], firing: ['bowl'] } : {});
+      const f = params.get('fire');
+      if (f === 'lit' || f === 'embers' || f === 'cold') camp.debug.fireAs(f);
+    }
+    const rp = hearthLink ? camp.ringPlace() : null, pad = getStore('campPad');
+    // At the ring, on the pad's side of it, a little round so the workbench shows too.
+    const ringAt = rp && pad ? (() => { const a = Math.atan2(pad.z - rp.z, pad.x - rp.x) - 0.5;
+      return { x: rp.x, z: rp.z, stand: { x: rp.x + Math.cos(a) * 1.2, z: rp.z + Math.sin(a) * 1.2 } }; })() : null;
+    const at = hearthLink ? ringAt : camp.stations.benchAt(apo ? 'apothecary' : 'workbench');
     if (at && walk.placeAt(at.stand.x, at.stand.z, Math.atan2(at.x - at.stand.x, at.z - at.stand.z), 'stand')) {
       const p = camera.pose();
       camera.setPose({ ...p, target: [at.stand.x, terrain.sampleHeight(at.stand.x, at.stand.z), at.stand.z], yaw: Math.atan2(at.x - at.stand.x, at.z - at.stand.z) + Math.PI + 0.9,
@@ -989,6 +1006,10 @@ export async function startApp(canvas, hooks = {}) {
    */
   function pieceUnderTap(x, y, point) {
     const r = camera.ray(x, y);
+    // What sits up on the hearth or by the fire (a pot, the cup, a piece firing) wins over the ring
+    // under it: the ray is tried against each one's own height.
+    const lifted = camp.liftedUnderRay(r.o, r.d);
+    if (lifted) return lifted;
     for (const h of [0.3, 0.2, 0.12, 0.05]) {
       if (r.d[1] > -1e-4) break;
       const t = (point[1] + h - r.o[1]) / r.d[1];

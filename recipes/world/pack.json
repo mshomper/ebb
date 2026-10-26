@@ -46,6 +46,7 @@
     { "id": "old-comb", "name": "Old comb", "group": "living", "sketch": "comb", "camp": "bowl", "line": "Old comb a wild colony left behind." },
     { "id": "chanterelle", "name": "Chanterelle", "group": "living", "sketch": "mushroom", "camp": "bowl", "line": "Golden chanterelles that smell of apricot." },
     { "id": "charcoal-sticks", "name": "Charcoal sticks", "group": "craft", "sketch": "charcoal", "camp": "heap", "line": "Thin sticks of willow charcoal, for drawing. They wear down as you sketch." },
+    { "id": "bowl", "name": "Clay bowls", "group": "craft", "sketch": "mound", "camp": "heap", "line": "Fired clay bowls, nested one in another. A handful is one bowl." },
     { "id": "leaf-pack", "name": "Leaf pack", "group": "craft", "sketch": "leaves", "camp": "heap", "line": "Fallen leaves bound with rush cord, to sink in still water." }
   ],
   "piles": { "handfuls": 12, "looks": [3, 8, 12], "rackBunches": 12, "rackHandfuls": 6, "bowlHandfuls": 6,
@@ -113,6 +114,7 @@
       "takeUp": "Take up", "fill": "Fill the pot", "pour": "Pour out", "still": "This water stands still. The spring runs cleaner.",
       "away": "The pot belongs by the fire.", "arms": "Your arms are full with the pot."
     },
+    "potTile": "The pot in your arms",
     "rillHint": "Water could come down to the camp by itself, if it had a way.",
     "rillNote": "The spring's water runs past the camp now. No more carrying."
   }

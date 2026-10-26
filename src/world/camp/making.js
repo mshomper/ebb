@@ -69,7 +69,8 @@ function fit(laid, parts, ctx) {
 
 /**
  * The make a station shows for what is laid (TR-16): of the open makes there that use at least one
- * laid handful, the one with the most parts present, then the lower tier, then the recipe's order.
+ * laid handful, the one with the most parts present, then one complete with them, then the lower
+ * tier, then the recipe's order.
  * Nothing laid shows nothing. @param {any} cook @param {string} station @param {string[]} laid
  * @param {Cook} state @param {MakeCtx} [ctx] @returns {Layout}
  */
@@ -82,8 +83,11 @@ export function layout(cook, station, laid, state, ctx = {}) {
     const m = cook.makes[id], f = fit(laid, m.parts, ctx);
     const used = f.have.filter((i) => i >= 0).length;
     if (!used) continue;
-    // More parts present first; then the lower tier (a later make in the file loses a tie).
-    const score = used * 100 - (parseInt(String(m.tier ?? 'T9').slice(1), 10) || 9);
+    // More parts present first; then one that is complete with what is laid (a handful of clay is
+    // the cup, not a cooking pot waiting for sand, S5); then the lower tier (a later make in the file
+    // loses a tie).
+    const complete = f.filled.every(Boolean) && used === laid.length;
+    const score = used * 100 + (complete ? 50 : 0) - (parseInt(String(m.tier ?? 'T9').slice(1), 10) || 9);
     if (score > bestScore) { best = { id, f, m }; bestScore = score; }
   }
   if (!best) return none;

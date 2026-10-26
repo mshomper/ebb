@@ -54,10 +54,11 @@ export const writeWork = (work, fire, hour, F) => work.map((p) => ({ ...p, fired
 export const withFire = (c, next, hour, F) => ({ ...c, work: writeWork(cleanWork(c.work), c.fire, hour, F), fire: next });
 
 /**
- * Take the first done piece off the list. @param {WorkPiece[]} work @param {import('./fire.js').Fire} fire
- * @param {number} hour @param {import('./fire.js').FireRecipe} F @returns {{ work: WorkPiece[], piece: WorkPiece | null }}
+ * Take the first done piece off the list (of those `may` allows). @param {WorkPiece[]} work @param {import('./fire.js').Fire} fire
+ * @param {number} hour @param {import('./fire.js').FireRecipe} F @param {(p: WorkPiece) => boolean} [may]
+ * @returns {{ work: WorkPiece[], piece: WorkPiece | null }}
  */
-export function takeDone(work, fire, hour, F) {
-  const i = work.findIndex((p) => workDone(p, fire, hour, F));
+export function takeDone(work, fire, hour, F, may = () => true) {
+  const i = work.findIndex((p) => may(p) && workDone(p, fire, hour, F));
   return i < 0 ? { work, piece: null } : { work: work.filter((_, j) => j !== i), piece: work[i] };
 }

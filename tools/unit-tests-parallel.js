@@ -62,6 +62,7 @@ export const PARALLEL = {
   dig: () => import('./unit-tests-dig.js').then((m) => m.addDigTests),
   campMaking: () => import('./unit-tests-camp-making.js').then((m) => m.addCampMakingTests),
   fireProducts: () => import('./unit-tests-fire-products.js').then((m) => m.addFireProductsTests),
+  hearth: () => import('./unit-tests-hearth.js').then((m) => m.addHearthTests),
   sketchbook: () => import('./unit-tests-sketchbook.js').then((m) => m.addSketchbookTests),
   treats: () => import('./unit-tests-treats.js').then((m) => m.addTreatsTests),
   // The audio tests that need no Web Audio (workers have none). The two that render sound through

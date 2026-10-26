@@ -12,10 +12,11 @@ import { liftAt, liftLook, liftLookVersion, liftVersion } from '../lift.js';
 
 /** @typedef {import('../frame-graph.js').PassContext} PassContext */
 
-const MAX = 48;
-// at, more, look, shade, then tilt (a held prop's pitch and roll).
-const PROP_FLOATS = 20;
-const VERTEX_BYTES = 32;
+const MAX = 64;
+// at, more, look, shade, tilt (a held prop's pitch and roll), then burn (a star fire's log, raw clay).
+const PROP_FLOATS = 24;
+// position, normal, uv, then a vertex colour (a model made in code, painted in COLOR_0; white otherwise).
+const VERTEX_BYTES = 44;
 
 /**
  * @typedef {Object} Prop
@@ -28,12 +29,19 @@ const VERTEX_BYTES = 32;
  * @property {number} [squash]  its height as a share of the model's (1 as made)
  * @property {number[]} [shade] contact shadow: half sizes along its own x and z (m), darkness 0..1
  * @property {number} [dry]     0..1 how dried a plant is (a herb bunch on the rack): its green goes to straw
+ * @property {number} [pitch] @property {number} [roll]  tipped before its yaw (radians)
+ * @property {number} [stretch] its length along its own x as a share of the model's (a log burnt shorter)
+ * @property {number} [endChar] 0..1 how far along its own x, from its -x end, it is burnt (a star fire's
+ *   log: the end in the fire); with it, char and glow sit at that end instead of rising from the bottom
+ * @property {number} [halfX]   the model's half length along its own x (m), for endChar
+ * @property {number} [raw]     0..1 unfired clay: pale, dry and matte (a shaped piece waiting to be fired)
  */
 
 /**
- * @typedef {{ albedo?: number, rough?: number, normal?: number, normalY?: number }} PropLook
+ * @typedef {{ albedo?: number, rough?: number, normal?: number, normalY?: number, roughness?: number }} PropLook
  *   albedo: base colour scale; rough: roughness scale; normal: normal map strength; normalY: the
- *   normal map's green sign (-1 when read with derivative tangents, as three.js does for glTF)
+ *   normal map's green sign (-1 when read with derivative tangents, as three.js does for glTF);
+ *   roughness: a model painted in vertex colours with no maps (a piece made in code), its roughness
  */
 
 /**
@@ -63,25 +71,33 @@ async function mapTexture(device, img, format, fallback, label) {
   return t;
 }
 
+/** Floats a vertex: position, normal, uv, colour. */
+const VF = VERTEX_BYTES / 4;
+
 /**
- * A model's meshes joined into one, packed for the pass: position, normal, uv (8 floats a vertex).
- * Pure. @param {ArrayBuffer} buffer @returns {{ data: Float32Array, indices: Uint32Array, maps: ReturnType<typeof materialMaps>, bounds: number[] }}
- *   bounds: [minX, minY, minZ, maxX, maxY, maxZ]
+ * A model's meshes joined into one, packed for the pass: position, normal, uv and a vertex colour
+ * (11 floats a vertex). The colour is the model's own COLOR_0 (a piece made in code, its paint in
+ * linear vertex colours), else white, so the paint map alone gives its colour. Pure.
+ * @param {ArrayBuffer} buffer @returns {{ data: Float32Array, indices: Uint32Array, maps: ReturnType<typeof materialMaps>, bounds: number[], painted: boolean }}
+ *   bounds: [minX, minY, minZ, maxX, maxY, maxZ]; painted: it carries vertex colours
  */
 export function packModel(buffer) {
   const glb = readGlb(buffer);
   const parts = [...meshesByName(glb).values()];
   if (!parts.length) throw new Error('no meshes');
   const count = parts.reduce((s, p) => s + p.attributes.POSITION.length / 3, 0);
-  const data = new Float32Array(count * 8);
+  const data = new Float32Array(count * VF);
   const indices = new Uint32Array(parts.reduce((s, p) => s + p.indices.length, 0));
   const bounds = [Infinity, Infinity, Infinity, -Infinity, -Infinity, -Infinity];
-  let v0 = 0, i0 = 0;
+  let v0 = 0, i0 = 0, painted = false;
   for (const p of parts) {
-    const pos = p.attributes.POSITION, nor = p.attributes.NORMAL, uv = p.attributes.TEXCOORD_0;
+    const pos = p.attributes.POSITION, nor = p.attributes.NORMAL, uv = p.attributes.TEXCOORD_0, col = p.attributes.COLOR_0;
     const n = pos.length / 3;
+    // A colour is 3 or 4 numbers a vertex, as floats or normalized integers.
+    const cn = col ? col.length / n : 0, norm = col instanceof Uint8Array ? 255 : col instanceof Uint16Array ? 65535 : 1;
+    if (col) painted = true;
     for (let i = 0; i < n; i++) {
-      const o = (v0 + i) * 8;
+      const o = (v0 + i) * VF;
       for (let k = 0; k < 3; k++) {
         data[o + k] = pos[i * 3 + k];
         bounds[k] = Math.min(bounds[k], pos[i * 3 + k]);
@@ -89,16 +105,17 @@ export function packModel(buffer) {
       }
       data[o + 3] = nor ? nor[i * 3] : 0; data[o + 4] = nor ? nor[i * 3 + 1] : 1; data[o + 5] = nor ? nor[i * 3 + 2] : 0;
       data[o + 6] = uv ? uv[i * 2] : 0; data[o + 7] = uv ? uv[i * 2 + 1] : 0;
+      for (let k = 0; k < 3; k++) data[o + 8 + k] = col ? col[i * cn + k] / norm : 1;
     }
     for (let k = 0; k < p.indices.length; k++) indices[i0 + k] = p.indices[k] + v0;
     v0 += n;
     i0 += p.indices.length;
   }
-  return { data, indices, maps: materialMaps(glb), bounds };
+  return { data, indices, maps: materialMaps(glb), bounds, painted };
 }
 
 /**
- * @param {{ name?: string, recipe: { ember: number[], emberNits: number, emberHz: number, charAlbedo: number[], dryTint?: number[], dryMix?: number },
+ * @param {{ name?: string, recipe: { ember: number[], emberNits: number, emberHz: number, charAlbedo: number[], dryTint?: number[], dryMix?: number, rawAlbedo?: number[], rawKeep?: number },
  *   bias?: { depthBias: number, depthBiasSlopeScale: number } }} opts
  *   recipe: recipes/world/camp.json props (the embers' glow and the charcoal's albedo); bias: the
  *   shadow pass's, so the props' shadows match the terrain's
@@ -112,8 +129,8 @@ export function createPropsPass(opts) {
   const inst = new Float32Array(MAX * PROP_FLOATS);
   /** @type {{ key: string, first: number, count: number }[]} */ let groups = [];
   let count = 0, dirty = true, liftSeen = -1, lookSeen = -1;
-  /** The draw uniform: ember glow, charcoal, the lift's tint and rim (src/render/lift.js liftLook), then a dried plant's tint. */
-  const uniform = new Float32Array(20);
+  /** The draw uniform: ember glow, charcoal, the lift's tint and rim (src/render/lift.js liftLook), a dried plant's tint, then raw clay's. */
+  const uniform = new Float32Array(24);
   /** @type {GPURenderPipeline} */ let drawPipe;
   /** @type {GPURenderPipeline} */ let shadePipe;
   /** @type {GPURenderPipeline | null} */ let castPipe = null;
@@ -152,6 +169,7 @@ export function createPropsPass(opts) {
     { shaderLocation: 0, offset: 0, format: 'float32x3' },
     { shaderLocation: 1, offset: 12, format: 'float32x3' },
     { shaderLocation: 2, offset: 24, format: 'float32x2' },
+    { shaderLocation: 3, offset: 32, format: 'float32x3' },
   ] }]);
   const castLayout = /** @type {GPUVertexBufferLayout[]} */ ([{ arrayStride: VERTEX_BYTES, attributes: [{ shaderLocation: 0, offset: 0, format: 'float32x3' }] }]);
 
@@ -213,7 +231,8 @@ export function createPropsPass(opts) {
       const r = await fetch(url);
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
       const pack = packModel(await r.arrayBuffer());
-      models.set(key, { pack, look });
+      // A model painted in vertex colours with no paint map: its colour is all in the vertices.
+      models.set(key, { pack, look, ...(pack.painted && !pack.maps.baseColor ? { color: [255, 255, 255, 255], roughByte: Math.round((look.roughness ?? 0.85) * 255) } : {}) });
       await upload(key);
       dirty = true;
       return pack.bounds;
@@ -226,7 +245,10 @@ export function createPropsPass(opts) {
      */
     addMesh(key, mesh, srgb, roughness, look = {}) {
       const maps = { baseColor: null, metallicRoughness: null, normal: null };
-      models.set(key, { pack: { data: mesh.data, indices: mesh.indices, maps, bounds: [] }, look, color: [...srgb, 255], roughByte: Math.round(roughness * 255) });
+      // Into the pass's layout: its 8 floats a vertex, then a white vertex colour.
+      const n = mesh.data.length / 8, data = new Float32Array(n * VF);
+      for (let i = 0; i < n; i++) { data.set(mesh.data.subarray(i * 8, i * 8 + 8), i * VF); data.fill(1, i * VF + 8, i * VF + 11); }
+      models.set(key, { pack: { data, indices: mesh.indices, maps, bounds: [], painted: false }, look, color: [...srgb, 255], roughByte: Math.round(roughness * 255) });
       upload(key);
       dirty = true;
     },
@@ -245,7 +267,8 @@ export function createPropsPass(opts) {
         const L = /** @type {any} */ (models.get(p.key)).look;
         const sh = p.shade ?? [0, 0, 0];
         inst.set([p.x, p.y, p.z, p.yaw, p.scale ?? 1, p.char ?? 0, p.glow ?? 0, p.squash ?? 1,
-          L.albedo ?? 1, L.rough ?? 1, L.normal ?? 1, L.normalY ?? -1, sh[0], sh[1], sh[2], 0, p.pitch ?? 0, p.roll ?? 0, p.dry ?? 0, 0], i * PROP_FLOATS);
+          L.albedo ?? 1, L.rough ?? 1, L.normal ?? 1, L.normalY ?? -1, sh[0], sh[1], sh[2], 0, p.pitch ?? 0, p.roll ?? 0, p.dry ?? 0, 0,
+          p.stretch ?? 1, p.endChar ?? 0, p.halfX ?? 0.2, p.raw ?? 0], i * PROP_FLOATS);
         const last = groups[groups.length - 1];
         if (last && last.key === p.key) last.count++;
         else groups.push({ key: p.key, first: i, count: 1 });
@@ -293,6 +316,7 @@ export function createPropsPass(opts) {
       const e = R.ember, k = R.emberNits;
       uniform.set([e[0] * k, e[1] * k, e[2] * k, R.emberHz, ...R.charAlbedo, 0]);
       uniform.set([...(R.dryTint ?? [1, 1, 1]), R.dryMix ?? 0], 16);
+      uniform.set([...(R.rawAlbedo ?? [0.5, 0.45, 0.37]), R.rawKeep ?? 0.3], 20);
       lookSeen = -1;
       sbuf = makeBuffer(d, { label: 'prop-instances', size: inst.byteLength, usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST });
       group = d.createBindGroup({ label: 'props', layout, entries: [{ binding: 0, resource: { buffer: ubuf } }, { binding: 1, resource: { buffer: sbuf } }] });
