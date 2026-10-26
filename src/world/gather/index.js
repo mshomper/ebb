@@ -13,6 +13,7 @@
 // Emits gather:done { kind, group, x, z, from }.
 
 import { get, update } from '../../core/store.js';
+import { hash32 } from '../../core/rng.js';
 import { emitDeferred } from '../../core/events.js';
 import { dayIndexOf, SECONDS_PER_YEAR } from '../../core/clock.js';
 import { waterCellCenter } from '../water/grid.js';
@@ -280,6 +281,10 @@ export function createGather(o) {
     }
     o.pack.add(g.kind, 1);
     const x = g.spot?.x ?? g.x, z = g.spot?.z ?? g.z;
+    // A tea's good day's work (P2e, boonLift.handful): now and then an extra handful, seeded by the
+    // place and the minute, never taken from the spot or the plant.
+    const extra = get('boonLift')?.handful ?? 0;
+    if (extra > 0 && o.pack.room(g.kind) && (hash32(seed, 0x7ea, Math.round(x * 100), Math.round(z * 100), Math.floor(o.worldT() / 60)) >>> 8) / 16777216 < extra) o.pack.add(g.kind, 1);
     emitDeferred('gather:done', { kind: g.kind, group: o.pack.kinds.groupOf(g.kind), x, z, from: g.spot ? 'spot' : g.cover ? 'cover' : 'plant' });
     refresh();
   }

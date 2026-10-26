@@ -14,7 +14,7 @@
 // Writes the store slice `walk` { below, placed }. Numbers and words: recipes/world/walker.json.
 
 import { on, emitDeferred } from '../../core/events.js';
-import { update as updateStore } from '../../core/store.js';
+import { update as updateStore, get } from '../../core/store.js';
 import { createWalkGrid } from './grid.js';
 import { createWalker } from './walker.js';
 import { isOpen } from './path.js';
@@ -60,7 +60,8 @@ export function createWalk(o) {
   };
   // Solid things you cannot walk through (solids.js): set by the game as they come and go.
   const solids = createSolids(R.solids.bodyM);
-  const walker = createWalker(R, { get grid() { return grid; }, depth, ground, nearest, solids });
+  // A tea's boon lifts every pace (P2e; the store slice boonLift, 1 without one).
+  const walker = createWalker(R, { get grid() { return grid; }, depth, ground, nearest, solids, paceK: () => get('boonLift')?.walk ?? 1 });
 
   // The figure (W5): its pass is ready at once; the model loads alongside and appears when it has.
   // Drawing only: it reads the walker and never changes it.

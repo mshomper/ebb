@@ -156,7 +156,8 @@ export function swarmStep(state, hourIndex, env, rec) {
 
   // Trust earned in live play since the last hour (watching quietly, feeding): one for the species
   // here, never lower (doc 23), up to its ceiling.
-  events.push(...applySwarmTrust(S, rec.presence, key));
+  // A tea's boon (P2e) lifts what live play earned: env.trustBoost, 1 without one.
+  events.push(...applySwarmTrust(S, rec.presence, key, env.trustBoost ?? 1));
 
   const dormant = !!(E.dormancy && state.seasons?.dormant?.[E.dormancy]);
   if (dormant !== S.dormant) {

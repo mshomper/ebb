@@ -205,7 +205,7 @@
       { "t": 2.3, "lean": 0, "head": 10, "drop": 0, "l": [-0.12, 0.68, 0.42], "r": [-0.18, 1.0, 0.18] }
     ] },
     "gestures": {
-      "note": "A short gesture for each thing the walker does by hand (walker gestures, part 3; October 24, 2026; src/world/figure/acts.js), played by walk.gesture(name, spot) or by the action itself. The same keys as the camp acts (kneel, lean, head, drop, arms, l, r), plus yaw (the head's extra turn, degrees to the left), but a gesture plays over the walker's posture: its kneel takes the figure down at least that far, it never stops a walk or a tap, and a walk fades it out over ease.gestureFadeS. Given a spot, the walker turns to face it and looks at it first. gather: kneel, reach to the ground, pinch, bring the handful up to the pouch at the hip. setDown: reach back to the pack, bring the pouch round, bend and lower it onto the pile. takeUp: bend, scoop with both hands, lift it over the shoulder into the pack. heapHere: a small bend, the hand opens at your feet. empty: hold the pouch out, tip it, a little shake. lift (a log or stone, L3a): kneel, both hands under the edge, heave it up, hold while it is up (under-log lift.holdS), lower it back. feedFire: kneel, toss a stick in, both hands out to the warmth. netSet: kneel, lay the net forward with both arms; netLift: pull it up hand over hand. rise: getting up from a kneel or a seat, a lean forward and a hand pushing on the knee. stuck: a look left and right (walks: it plays on as you walk off, not faded). sow: planting and placing gifts on foot (D1a): the right hand dips to the hip pouch, then one quick flick forward and up toward the clicked spot, the seed leaving the hand at sowing.json flickS (0.32 s), once a click. make (S1, October 24, 2026): kneeling at the workbench, both hands work at its top (about 0.6 m): a twist with one hand, then the other, pull the binding tight, settle, and up; as long as cook.json makeS.",
+      "note": "A short gesture for each thing the walker does by hand (walker gestures, part 3; October 24, 2026; src/world/figure/acts.js), played by walk.gesture(name, spot) or by the action itself. The same keys as the camp acts (kneel, lean, head, drop, arms, l, r), plus yaw (the head's extra turn, degrees to the left), but a gesture plays over the walker's posture: its kneel takes the figure down at least that far, it never stops a walk or a tap, and a walk fades it out over ease.gestureFadeS. Given a spot, the walker turns to face it and looks at it first. gather: kneel, reach to the ground, pinch, bring the handful up to the pouch at the hip. setDown: reach back to the pack, bring the pouch round, bend and lower it onto the pile. takeUp: bend, scoop with both hands, lift it over the shoulder into the pack. heapHere: a small bend, the hand opens at your feet. empty: hold the pouch out, tip it, a little shake. lift (a log or stone, L3a): kneel, both hands under the edge, heave it up, hold while it is up (under-log lift.holdS), lower it back. feedFire: kneel, toss a stick in, both hands out to the warmth. netSet: kneel, lay the net forward with both arms; netLift: pull it up hand over hand. rise: getting up from a kneel or a seat, a lean forward and a hand pushing on the knee. stuck: a look left and right (walks: it plays on as you walk off, not faded). sow: planting and placing gifts on foot (D1a): the right hand dips to the hip pouch, then one quick flick forward and up toward the clicked spot, the seed leaving the hand at sowing.json flickS (0.32 s), once a click. make (S1, October 24, 2026): kneeling at the workbench, both hands work at its top (about 0.6 m): a twist with one hand, then the other, pull the binding tight, settle, and up; as long as cook.json makeS. steep (P2e): kneeling at the hearth, hands out to the tea pot's warmth, leaning in to watch it, a glance aside, for cook.json teas.steepS. sip (P2e): still kneeling, the cup in both hands brought up, the head tipping back to drink, lowered to the chest, a breath, a second sip; cook.json teas.sipS.",
       "gather": { "speed": 1.714, "keys": [
         { "t": 0 },
         { "t": 0.55, "kneel": 1, "lean": 44, "head": 22, "drop": 0.04, "arms": 1, "l": [0.12, 0.42, 0.34], "r": [-0.08, 0.06, 0.58] },
@@ -332,6 +332,25 @@
         { "t": 1.6, "lean": 54, "head": 28, "l": [0.03, 0.1, 0.56], "r": [-0.03, 0.18, 0.56] },
         { "t": 2.0, "lean": 50, "l": [0.12, 0.02, 0.56], "r": [-0.12, 0.02, 0.56] },
         { "t": 2.6, "kneel": 0, "lean": 0, "head": 0, "drop": 0, "arms": 0, "l": [0.12, 0.5, 0.25], "r": [-0.12, 0.5, 0.25] }
+      ] },
+      "steep": { "keys": [
+        { "t": 0 },
+        { "t": 0.6, "kneel": 1, "lean": 14, "head": 18, "arms": 1, "l": [0.13, 0.46, 0.4], "r": [-0.13, 0.46, 0.4] },
+        { "t": 1.1, "lean": 22, "head": 24, "l": [0.08, 0.5, 0.5], "r": [-0.08, 0.5, 0.5] },
+        { "t": 1.9, "lean": 18, "head": 16, "yaw": 6, "l": [0.1, 0.48, 0.47], "r": [-0.1, 0.48, 0.47] },
+        { "t": 2.6, "lean": 22, "head": 24, "yaw": 0, "l": [0.08, 0.5, 0.5], "r": [-0.08, 0.5, 0.5] },
+        { "t": 3.2, "lean": 16, "head": 14, "l": [0.12, 0.46, 0.4], "r": [-0.12, 0.46, 0.4] }
+      ] },
+      "sip": { "keys": [
+        { "t": 0 },
+        { "t": 0.5, "kneel": 1, "lean": 4, "head": 8, "arms": 1, "l": [0.06, 0.6, 0.26], "r": [-0.05, 0.62, 0.27] },
+        { "t": 1.1, "lean": -2, "head": -6, "l": [0.05, 0.8, 0.2], "r": [-0.04, 0.86, 0.17] },
+        { "t": 1.7, "head": -10, "r": [-0.04, 0.88, 0.15] },
+        { "t": 2.2, "lean": 2, "head": 8, "l": [0.06, 0.6, 0.26], "r": [-0.05, 0.62, 0.27] },
+        { "t": 2.8, "lean": -4, "head": -2, "drop": 0.02 },
+        { "t": 3.3, "lean": -2, "head": -6, "drop": 0, "l": [0.05, 0.8, 0.2], "r": [-0.04, 0.86, 0.17] },
+        { "t": 3.8, "head": -10, "r": [-0.04, 0.88, 0.15] },
+        { "t": 4.5, "lean": 2, "head": 6, "l": [0.06, 0.6, 0.26], "r": [-0.05, 0.62, 0.27] }
       ] }
     }
   }

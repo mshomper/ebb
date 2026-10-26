@@ -365,7 +365,8 @@ export function createPackDraw(o) {
       }
     }
     if (!o.gather?.near) return out;
-    const spots = o.gather.near(f[0], f[1], P.nearM).filter((/** @type {any} */ s) => s.left > 0 && P.kinds[s.kind]);
+    // A tea's bright eye (P2e, boonLift.sight) shows good picking from further off.
+    const spots = o.gather.near(f[0], f[1], P.nearM * (get('boonLift')?.sight ?? 1)).filter((/** @type {any} */ s) => s.left > 0 && P.kinds[s.kind]);
     spots.sort((/** @type {any} */ a, /** @type {any} */ b) => ((a.x - f[0]) ** 2 + (a.z - f[1]) ** 2) - ((b.x - f[0]) ** 2 + (b.z - f[1]) ** 2));
     for (const s of spots) {
       const K = P.kinds[s.kind];

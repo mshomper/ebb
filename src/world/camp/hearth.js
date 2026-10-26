@@ -41,8 +41,9 @@ export function rayCylinder(o, d, q) {
 
 /**
  * @param {import('./cards.js').CampKit & { o: any, cook: any, benchAt: (id: string) => any, holdingPot: () => boolean,
- *   change: (fn: (c: import('./model.js').Camp) => import('./model.js').Camp) => void, campSeed: number }} k
- *   cook: recipes/world/cook.json; benchAt: the stations' bench pose; holdingPot: the pot is in your arms
+ *   change: (fn: (c: import('./model.js').Camp) => import('./model.js').Camp) => void, campSeed: number, cupInHand?: () => boolean }} k
+ *   cook: recipes/world/cook.json; benchAt: the stations' bench pose; holdingPot: the pot is in your arms;
+ *   cupInHand: the cup is in your hands, sipping tea (P2e)
  */
 export function createHearth(k) {
   const R = k.R, H = R.hearth, F = R.fire;
@@ -80,6 +81,12 @@ export function createHearth(k) {
     for (const [kind, slot] of Object.entries(H.slots)) {
       const p = pieceOf(c, kind), s = k.where.slotAt(slot);
       if (!p || !s || (kind === onIt && hearth)) continue;
+      // The cup in your hands while you sip (P2e), not in its place.
+      if (kind === 'cup' && k.cupInHand?.()) {
+        const hr = k.walk.hand?.('r'), hl = k.walk.hand?.('l');
+        if (hr && hl) out.push({ key: modelOf(kind), x: (hl.x + hr.x) / 2, y: (hl.y + hr.y) / 2 + (H.cupInHandM ?? 0.01), z: (hl.z + hr.z) / 2, yaw: hr.yaw, shade: M[modelOf(kind)]?.shade });
+        continue;
+      }
       out.push({ key: modelOf(kind), x: s.x, y: s.y, z: s.z, yaw: s.yaw + turnOf(p.seed), shade: M[modelOf(kind)]?.shade });
     }
     // The dye pot's stand: a flat stone by the fire, waiting for Phase 4's dyes.
@@ -189,8 +196,9 @@ export function createHearth(k) {
   function cardAt(x, z) {
     const c = k.camp(), r = k.where.slotAt('ring'), onIt = potOnHearth(c);
     if (r && inSlot(c, 'hearth') && onIt && !k.holdingPot() && Math.hypot(x - r.x, z - r.z) < (H.potCardM ?? 0.22)) {
-      return { ...base, sp: 'camp:pot', camp: 'pot', pot: onIt, onHearth: true, name: CW.pieceNames?.[onIt] ?? onIt, icon: 'takeup',
-        text: [CW.pieceLines?.hearth ?? '', waterLine(onIt)].filter(Boolean).join(' '), wx: r.x, wz: r.z, r: 0.5 };
+      // The tea pot's card is its workspace, where herbs are laid and brewed (P2e, teapot.js).
+      return { ...base, sp: 'camp:pot', camp: 'pot', pot: onIt, onHearth: true, name: CW.pieceNames?.[onIt] ?? onIt, icon: onIt === 'tea-pot' ? 'brew' : 'takeup',
+        text: [CW.pieceLines?.hearth ?? '', waterLine(onIt)].filter(Boolean).join(' '), wx: r.x, wz: r.z, r: 0.5, ...(onIt === 'tea-pot' ? { station: 'teapot' } : {}) };
     }
     // A piece firing at the star's edge: how it is coming on, and a bowl done is taken up from here.
     if (r) {

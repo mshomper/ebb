@@ -45,6 +45,8 @@ import { withFire, takeDone } from './work.js';
 import { createHearth } from './hearth.js';
 import { createCarriers } from './carriers.js';
 import { createCarry } from './carry.js';
+import { createBoons } from './boons.js';
+import { createTeapot } from './teapot.js';
 
 const H = 3600;
 
@@ -181,18 +183,24 @@ export function createCamp(o) {
   const takeable = (p) => { const f = o.cook?.makes?.[p.id]?.fires; return !f || !R.hearth?.slots?.[f]; };
   /** What the cards and the frame read. @type {import('./cards.js').CampKit} */
   const kit = { R, walk: o.walk, camp, where, player, hourNow, holds, ringNeed, hasFuel, nightNow, restAllowed, beatAllows, weatherNow, near, cookWords: o.cook?.words ?? {}, takeable };
-  const frame = createCampFrame({ ...kit, o, props, fx, sunAlt });
+  const holdingPot = () => get('pack')?.holding === 'pot';
+  const frame = createCampFrame({ ...kit, o, props, fx, sunAlt, holdingPot });
   // The stations (S1, S2): the workbench and the apothecary bench built in their slots, the fire,
   // their workspace, and the keeps (the drying rack and the hamper, P2j).
   const stations = createStations({ ...kit, o, cook: o.cook ?? { builds: {}, makes: {}, words: {} }, change, campSeed, frame });
   // The hearth stones, the pots, the cup and the clay pieces (S4, S5): drawn with the camp's models.
-  const hearth = createHearth({ ...kit, o, cook: o.cook ?? { makes: {} }, benchAt: stations.benchAt, holdingPot: () => get('pack')?.holding === 'pot', change, campSeed });
+  /** @type {ReturnType<typeof createTeapot> | null} */ let teapot = null;
+  const hearth = createHearth({ ...kit, o, cook: o.cook ?? { makes: {} }, benchAt: stations.benchAt, holdingPot, change, campSeed, cupInHand: () => !!teapot?.sipping() });
   frame.addProps(hearth.props);
   // The carriers (P2f): the one worn on the figure, the others set down by the workbench.
   const carriers = createCarriers({ P: o.pack?.recipe ?? {}, pack: o.pack, walk: o.walk, benchAt: stations.benchAt });
   frame.addProps(carriers.props);
   // The pot carried in both arms, filled at the spring or the sea, set back on the hearth (K-26).
   const carry = createCarry({ ...kit, o, change });
+  // The tea's boon (P2e, boons.js): one at a time, counting down only while you play; and the tea
+  // pot's workspace, Brew, the steep and the sip (teapot.js).
+  const boons = createBoons({ cook: o.cook ?? { boons: {} }, change, hourNow });
+  teapot = createTeapot({ ...kit, o, cook: o.cook ?? { boons: {}, teas: { herbs: {}, strength: [] }, words: {} }, keeps: stations.keeps, change, frame, boons });
 
   // ---- acts: walk, face, play, then the change ----
 
@@ -239,12 +247,23 @@ export function createCamp(o) {
       // A cold ring takes a fresh handful, which burns by its kind; a laid one has its own.
       const kind = fireAt(cc.fire, now, F).word === 'cold' ? takeFuel() : undefined;
       if (kind === null) return;
-      const lit = lightFire(cc.fire, now, F, kind);
-      if (!lit) return;
+      const lit0 = lightFire(cc.fire, now, F, kind);
+      if (!lit0) return;
+      const lit = burnLonger(cc.fire, lit0, now);
       change((x) => withFire(x, lit, now, F));
       emitDeferred('camp:lit', { hour: now, first: lit.lightings === 1 });
       emit('camp:sound', { name: 'catch' });
     }, () => frame.strikeBegin((o.poses && actLength(o.poses, 'strike')) || 3));
+  }
+
+  /**
+   * A tea's steady hands (P2e, boonLift.burn): the flame hours a light or a feed adds, a little
+   * longer. Written into the fire record as it goes on, so the night runs on from the save alike.
+   * @param {import('./fire.js').Fire} before @param {import('./fire.js').Fire} after @param {number} now
+   */
+  function burnLonger(before, after, now) {
+    const k = get('boonLift')?.burn ?? 1, from = Math.max(now, before.flameUntilHour ?? now), added = (after.flameUntilHour ?? now) - from;
+    return k === 1 || !(added > 0) ? after : { ...after, flameUntilHour: after.flameUntilHour + added * (k - 1) };
   }
 
   function feed() {
@@ -256,8 +275,9 @@ export function createCamp(o) {
     o.walk.kneelToward(r.x, r.z, 1.6, 'feedFire');
     if (!feedFire(c.fire, now, F)) return;
     const kind = takeFuel();
-    const fed = kind ? feedFire(c.fire, now, F, kind) : null;
-    if (!fed) return;
+    const fed0 = kind ? feedFire(c.fire, now, F, kind) : null;
+    if (!fed0) return;
+    const fed = burnLonger(c.fire, fed0, now);
     // The flames lift at once as the wood goes on (live only; the fuel itself is in the save).
     frame.flare();
     change((x) => withFire(x, fed, now, F));
@@ -389,6 +409,8 @@ export function createCamp(o) {
     stations.update(dt);
     hearth.settle(dt);
     carry.update(dt);
+    teapot?.update(dt);
+    boons.update(dt);
     frame.draw(dt, time, c, fireNow);
   }
   let hidden = false;
@@ -419,6 +441,8 @@ export function createCamp(o) {
     carry,
     /** The carriers (P2f; tests). */
     carriers,
+    /** The tea's boon and the tea pot (P2e; tests, test links). */
+    boons, teapot: () => teapot,
     /** For the evening director: the tent is up; the ring is laid. */
     pitched: () => pitched(camp()),
     ringLaid: () => ringLaid(camp()),
@@ -472,7 +496,7 @@ export function createCamp(o) {
         update('camp', (c) => ({ ...c, fire: { ...c.fire, ...set, lightings: Math.max(1, c.fire?.lightings ?? 0) } }));
       },
     },
-    dispose() { for (const off of offs) off(); player.dispose(); stations.dispose(); hearth.dispose(); carry.dispose(); carriers.dispose(); },
+    dispose() { for (const off of offs) off(); player.dispose(); stations.dispose(); hearth.dispose(); carry.dispose(); teapot?.dispose(); boons.dispose(); carriers.dispose(); },
   };
 }
 

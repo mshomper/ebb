@@ -1,0 +1,85 @@
+/* The tea's boon on the HUD (src/ui/boon-badge.js, P2e): a round button under the clock dial and
+   the build badge, the herb glyph inside, a ring draining around it; its words on hover or focus,
+   to the right. Only opacity and the ring's dash change. */
+
+.ebb-boon {
+  --boon-size: 52px;
+  position: fixed;
+  top: calc(max(var(--hud-edge, 12px), env(safe-area-inset-top)) + var(--hud-dial, 64px) + 56px);
+  left: calc(max(var(--hud-edge, 12px), env(safe-area-inset-left)) + (var(--hud-dial, 64px) - var(--boon-size)) / 2);
+  z-index: 10;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.6s ease, visibility 0s linear 0.6s;
+}
+.ebb-boon.is-on { opacity: 1; visibility: visible; transition: opacity 0.6s ease, visibility 0s; }
+.ebb-boon__btn {
+  appearance: none;
+  -webkit-appearance: none;
+  pointer-events: auto;
+  position: relative;
+  width: var(--boon-size);
+  height: var(--boon-size);
+  margin: 0;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(244, 238, 228, 0.12);
+  border-radius: 50%;
+  background: rgba(30, 38, 36, 0.72);
+  box-shadow: 0 6px 24px rgba(10, 14, 13, 0.28);
+  color: var(--ui-cream);
+  --icon-bg: #1e2624;
+  cursor: default;
+}
+@media (pointer: fine) {
+  .ebb-boon__btn { -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
+}
+.ebb-boon__btn:focus-visible { outline: 2px solid var(--wordmark-dark); outline-offset: 2px; }
+.ebb-boon__ring { position: absolute; inset: 0; width: 100%; height: 100%; }
+.ebb-boon__track { fill: none; stroke: rgba(244, 238, 228, 0.14); stroke-width: 3; }
+.ebb-boon__left { fill: none; stroke: #C9B26A; stroke-width: 3; stroke-linecap: round; transition: stroke-dashoffset 1s linear; }
+.ebb-boon__glyphs { position: relative; width: 34px; height: 34px; }
+.ebb-boon__herb { position: absolute; width: 30px; height: 30px; }
+.ebb-boon__herb.is-one { inset: 2px; }
+/* A blend: its two herbs side by side, a little overlapped. */
+.ebb-boon__herb.is-a { left: -5px; top: 3px; width: 26px; height: 26px; }
+.ebb-boon__herb.is-b { right: -5px; top: 3px; width: 26px; height: 26px; }
+
+.ebb-boon__card {
+  position: absolute;
+  top: 0;
+  left: calc(100% + 10px);
+  width: max-content;
+  max-width: min(320px, calc(100vw - 2 * var(--hud-edge, 12px) - var(--boon-size) - 30px));
+  margin: 0;
+  padding: 8px 14px 10px;
+  display: grid;
+  gap: 2px;
+  border: 1px solid rgba(244, 238, 228, 0.12);
+  border-radius: 14px;
+  background: rgba(30, 38, 36, 0.86);
+  color: var(--ui-cream);
+  font-family: var(--font-ui);
+  font-size: var(--text-body);
+  line-height: 1.35;
+  overflow-wrap: break-word;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateX(-4px);
+  transition: opacity 200ms ease, transform 200ms ease, visibility 0s linear 200ms;
+  pointer-events: none;
+}
+.ebb-boon__card b { font-weight: 800; }
+.ebb-boon__card span { font-weight: 600; }
+.ebb-boon__card i { font-family: var(--font-voice); font-weight: 400; color: rgba(244, 238, 228, 0.78); }
+.ebb-boon__btn:focus-visible + .ebb-boon__card,
+.ebb-boon.is-peek .ebb-boon__card { opacity: 1; visibility: visible; transform: none; transition: opacity 200ms ease, transform 200ms ease, visibility 0s; }
+@media (hover: hover) {
+  .ebb-boon__btn:hover + .ebb-boon__card { opacity: 1; visibility: visible; transform: none; transition: opacity 200ms ease, transform 200ms ease, visibility 0s; }
+}
+@media (prefers-reduced-motion: reduce) {
+  :root:not(.ebb-motion-full) .ebb-boon, :root:not(.ebb-motion-full) .ebb-boon__card, :root:not(.ebb-motion-full) .ebb-boon__left { transition: none; }
+}
+:root.ebb-motion-calm .ebb-boon, :root.ebb-motion-calm .ebb-boon__card, :root.ebb-motion-calm .ebb-boon__left { transition: none; }

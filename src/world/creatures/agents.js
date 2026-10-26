@@ -234,7 +234,7 @@ export function createFrogAgents(recipe, seed) {
       for (const s of sources) {
         // Only a source with a body is felt coming close; lower and looking away is closer (doc 23).
         const d = Math.hypot(s.pos[0] - a.x, s.pos[1] - a.y, s.pos[2] - a.z);
-        if (s.body && d < ring * (P.multipliers ? ringScale(s, a.x, a.z, P.multipliers) : 1) && s.speed > calm) { from = { x: s.pos[0], z: s.pos[2] }; break; }
+        if (s.body && d < ring * (s.ringK ?? 1) * (P.multipliers ? ringScale(s, a.x, a.z, P.multipliers) : 1) && s.speed > calm) { from = { x: s.pos[0], z: s.pos[2] }; break; }
         const e = s.edits.find((p) => Math.hypot(p.x - a.x, p.z - a.z) < P.editReachM);
         if (e) { from = e; break; }
       }

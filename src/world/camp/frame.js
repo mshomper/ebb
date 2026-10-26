@@ -11,6 +11,7 @@ import { pitched, ringLaid, inSlot } from './model.js';
 import { fireAt } from './fire.js';
 import { kelvinRgb, flicker } from './light.js';
 import { starLogs, logPlace } from './star.js';
+import { potOnHearth, pieceOf } from './pots.js';
 
 const DEG = Math.PI / 180;
 
@@ -27,6 +28,8 @@ export function createCampFrame(k) {
   let starHidden = false;
   /** Another rule for laying the star (tools/hearth-check.html: the logs as they lay before). @type {typeof starLogs | null} */
   let starRule = null;
+  /** The tea pot steeping after Brew (P2e): its steam thickens. */
+  let steeping = false;
 
   /**
    * The camp drawn now, from the camp state and the fire now.
@@ -115,9 +118,22 @@ export function createCampFrame(k) {
     const wind = w.wind * R.smoke.lean, dir = o.world.state?.weather?.today?.windDir ?? 0;
     k.fx.set(r && (flame > 0 || smoke > 0 || lanternGlass || sparks) ? {
       fire: [r.x, r.y + 0.04, r.z], flame, smoke, embers: word === 'embers' ? 1 : 0,
-      wind: [Math.cos(dir) * wind, -Math.sin(dir) * wind], mist: w.mist,
+      wind: [Math.cos(dir) * wind, -Math.sin(dir) * wind], mist: w.mist, steam: steamNow(c, word, r),
       lantern: lanternGlass, sparks, moths: k.sunAlt() < R.moths.atSunDeg * DEG, time,
     } : null);
+  }
+
+  /**
+   * A pot's steam on the hearth (P2e): a simmer while it holds water over a lit fire, thicker while
+   * the tea steeps; null when the fire is not lit or the pot is dry or in your arms.
+   * @param {import('./model.js').Camp} c @param {string} word @param {any} r the ring's slot
+   */
+  function steamNow(c, word, r) {
+    const ST = R.steam, pot = potOnHearth(c);
+    if (!ST || !r || word !== 'lit' || !pot || !inSlot(c, 'hearth') || k.holdingPot?.()) return null;
+    const wet = !!pieceOf(c, pot)?.water;
+    const amount = steeping ? ST.steep : wet ? ST.simmer : 0;
+    return amount > 0 ? [r.x, r.y + R.hearth.stonesTopM + ST.topM, r.z, amount] : null;
   }
 
   /** Other camp things drawn with the camp's models (the stations' benches): each gives its props now. @type {(() => import('../../render/passes/props.js').Prop[])[]} */
@@ -132,6 +148,8 @@ export function createCampFrame(k) {
     },
     /** The lantern: on its pole or carried (live only). */
     lantern: () => lantern,
+    /** The tea pot steeping, or done (P2e). @param {boolean} on */
+    steep(on) { steeping = on; },
     /** A handful fed: the flames lift at once (live only). */
     flare() { flareT = F.flareS; },
     /** The strike act began: its sparks follow its strikes. @param {number} len the act's length (s) */

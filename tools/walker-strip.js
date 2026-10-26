@@ -289,6 +289,8 @@ const GESTURES = {
   make: { label: 'Make at the workbench', kneelS: 1.8 },
   setClump: { label: 'Set a clump in', kneelS: 2.6 },
   pushIn: { label: 'Push a withy in', kneelS: 2.2 },
+  steep: { label: 'Steep the tea', kneelS: 3.2 },
+  sip: { label: 'Sip the tea', kneelS: 4.5 },
 };
 /** A still walker playing one gesture at 0.5 s (rise: kneeling first, then standing up at 2.5 s). @param {string} name */
 function gestureRun(name) {
@@ -322,6 +324,9 @@ STRIPS.gesturesA = { title: 'Gestures (one)', tile: [240, 320], view: { yaw: -Ma
 STRIPS.gesturesB = { title: 'Gestures (two)', tile: [240, 320], view: { yaw: -Math.PI / 2, pitch: 0.16, dist: 4 }, rows: gestureRows(['feedFire', 'netSet', 'netLift', 'rise', 'stuck']) };
 STRIPS.making = { title: 'Making (S1)', tile: [240, 320], view: { yaw: -Math.PI / 2, pitch: 0.16, dist: 4 }, rows: [...gestureRows(['make']),
   { name: 'Make at the workbench, from the front', view: { yaw: 0, pitch: 0.16, dist: 4 }, run: () => gestureRun('make'), picks: gesturePicks('make') }] };
+// Tea (P2e): steeping at the hearth, then the sit-and-sip.
+STRIPS.tea = { title: 'Tea (P2e)', tile: [240, 320], view: { yaw: -Math.PI / 2, pitch: 0.16, dist: 4 }, rows: [...gestureRows(['steep', 'sip']),
+  { name: 'Sip the tea, from the front', view: { yaw: 0, pitch: 0.16, dist: 4 }, run: () => gestureRun('sip'), picks: gesturePicks('sip') }] };
 
 // The dig (P2c, docs/future/13 10.2): one press of Dig, the shovel drawn over the figure from its two
 // hands as the game holds it (src/world/dig/draw.js shovelProp: the blade gripM past the right hand,

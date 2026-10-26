@@ -23,6 +23,7 @@
  * @property {boolean} body                           whether creatures feel it (its ring, its pace, quiet watching)
  * @property {'stand'|'kneel'|'sit'} [posture]        the walker
  * @property {[number, number] | null} [gaze]        the walker: unit direction it looks along the ground
+ * @property {number} [ringK]                        the walker: a tea's lift on every comfort ring (P2e; 1 without one)
  */
 
 /**
@@ -32,10 +33,11 @@
 
 /**
  * @param {{ camera: { eye: ArrayLike<number>, driven: () => boolean }, smoothS?: number, stillMps?: number,
- *   cameraBody?: boolean, walker?: () => WalkerNow | null, heightM?: Record<string, number> }} opts
+ *   cameraBody?: boolean, walker?: () => WalkerNow | null, heightM?: Record<string, number>, ringK?: () => number }} opts
  *   smoothS: how quickly the speed follows the eye (s); stillMps: slower than this counts as still;
  *   cameraBody: whether the camera's own eye is felt (tools: yes; the game: no, only its edits);
- *   walker: you on foot, or null while you are above; heightM: where your body is over your feet, by posture
+ *   walker: you on foot, or null while you are above; heightM: where your body is over your feet, by posture;
+ *   ringK: a tea's boon on the comfort rings you meet (P2e: 0.9 lets you 10% closer)
  */
 export function createPresence(opts) {
   const { camera } = opts;
@@ -76,6 +78,7 @@ export function createPresence(opts) {
         you.stillS = w.speed < stillMps ? you.stillS + realDt : 0;
         you.posture = w.posture;
         you.gaze = w.gaze;
+        you.ringK = opts.ringK?.() ?? 1;
       } else you.stillS = 0;
     },
 
