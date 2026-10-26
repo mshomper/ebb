@@ -386,7 +386,13 @@ function showCamp(g) {
     row('Charcoal mornings, a month', main.nights ?? 0, worker.nights ?? 0) +
     row('Charcoal mornings, watched against catch-up', main.nights ?? 0, main.nightsRead ?? 0, 'Each hourly tick', 'No ticks between') +
     row('Willow charcoal done, watched against catch-up', main.work ?? 0, main.workRead ?? 0, 'Each hourly tick', 'No ticks between') +
-    `<p class="muted">${main.fireNights ?? 0} mornings left charcoal and ash; ${main.workDone ?? 0} pouches of charcoal sticks were done by morning.</p>`;
+    `<p class="muted">${main.fireNights ?? 0} mornings left charcoal and ash; ${main.workDone ?? 0} pouches of charcoal sticks were done by morning.</p>` +
+    // Clay firing and the star fire (S4, S5): each piece's done hour, where they stand at the end, the logs burnt.
+    row('Clay fired, a month', main.clay ?? 0, worker.clay ?? 0) +
+    row('Clay fired, watched against catch-up', main.clay ?? 0, main.clayRead ?? 0, 'Each hourly tick', 'No ticks between') +
+    row('The pots in their places at the end', main.clayEnd ?? 0, main.clayEndRead ?? 0, 'Each hourly tick', 'No ticks between') +
+    row('The star fire burning down', main.star ?? 0, main.starRead ?? 0, 'Each hourly tick', 'No ticks between') +
+    `<p class="muted">${main.clayDone ?? 0} clay pieces fired: the cooking pot, the tea pot, the cup and a bowl.</p>`;
 }
 
 const DIG_JOB = { module: './world/dig/check.js', fn: 'digCheckJob' };

@@ -9,7 +9,10 @@
 // Known makes show their missing parts as pencil outlines (making.js). Make draws each handful from
 // the pack, then the camp's piles, then the hamper. A make may stand in its own camp slot (the rack,
 // the mortar, the hamper) or stack a second hamper on the first. Firsts go to the cook section (the
-// camp page, src/ui/journal-camp.js).
+// camp page, src/ui/journal-camp.js). S4, S5: the hearth stones made at the workbench go into the
+// ring's middle; a clay piece shaped there waits pale on its slab (out 'shaped', pots.js) and is laid
+// at the fire from the workspace's workbench row (kinds 'shaped:<make>', the 'bench' source), then
+// fired on the overnight work list (work.js; hearth.js moves it to its slot once done).
 //
 // The hamper and the rack (keeps.js) open in the same wide card in its store mode: their slots or
 // bunches as drawn icons with their words, each with Take up, and the pouches to set down.

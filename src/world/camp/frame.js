@@ -23,6 +23,8 @@ export function createCampFrame(k) {
   const fireRgb = kelvinRgb(F.lightK), emberRgb = kelvinRgb(F.emberLightK), lanternRgb = kelvinRgb(R.lantern.lightK);
   /** @type {'pole' | 'carried'} */ let lantern = 'pole';
   let wasRainy = false, strikeT = -1, strikes = 0, strikeLen = 0, strikeAt = 0, flareT = 0, campSoundKey = '';
+  /** The star's logs left out (tools/camp-bench.html: what the star costs to draw). */
+  let starHidden = false;
 
   /**
    * The camp drawn now, from the camp state and the fire now.
@@ -64,7 +66,7 @@ export function createCampFrame(k) {
       // The star fire (S4, star.js): logs radiating, their burnt ends meeting in the middle; the
       // ones lined up with a hearth stone stop at it. A cold ring keeps its burnt logs.
       const S = R.star, halfX = S.logLenM / 2, cy = Math.cos(r.yaw), sy = Math.sin(r.yaw);
-      for (const g of starLogs(fireNow, c.fire, k.hourNow(), F, S, { seed: inSlot(c, 'ring')?.seed ?? 1, hearth: !!inSlot(c, 'hearth'), rainy })) {
+      for (const g of starHidden ? [] : starLogs(fireNow, c.fire, k.hourNow(), F, S, { seed: inSlot(c, 'ring')?.seed ?? 1, hearth: !!inSlot(c, 'hearth'), rainy })) {
         const p = logPlace(g, halfX);
         list.push({ key: 'log', x: r.x + cy * p.x + sy * p.z, y: r.y + p.y, z: r.z - sy * p.x + cy * p.z, yaw: r.yaw + p.yaw, roll: g.roll,
           scale: g.size, stretch: g.stretch, endChar: g.endChar, halfX, char: g.endChar > 0 ? 1 : 0, glow: g.glow });
@@ -135,5 +137,7 @@ export function createCampFrame(k) {
     strikeEnd() { strikeT = -1; },
     /** Draw more camp things with the camp's models each frame. @param {() => import('../../render/passes/props.js').Prop[]} f */
     addProps(f) { extra.push(f); },
+    /** Leave the star's logs out, or draw them again (the bench). @param {boolean} on */
+    hideStar(on) { starHidden = on; },
   };
 }

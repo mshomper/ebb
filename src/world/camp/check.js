@@ -10,12 +10,17 @@
 //             drying words watched hourly against read from the save
 //   nights, work  fire products (P2i): the dawns that leave charcoal and ash, and willow charcoal's
 //             done hours, watched hourly against the same month with no ticks between
+//   clay, star  clay firing (S5): each piece's done hour and where the fired pieces stand at the
+//             end, and the star's burnt logs (S4), watched hourly against catch-up
 
 import { stream, subSeed } from '../../core/rng.js';
 import { noFire, layFire, lightFire, feedFire, bankFire, settleFire, fireAt, fireNights } from './fire.js';
 import { cleanWork, layWork, workDone, withFire } from './work.js';
 import { hang, takeBunch, dryShare, rackWord, cleanBunches } from '../pack/piles.js';
 import { put, take, takeSlot, slotsOf, capOf, cleanHolds } from '../pack/store.js';
+import { cleanCamp, layRing } from './model.js';
+import { setHearth, placeFired, potOnHearth } from './pots.js';
+import { burntM } from './star.js';
 
 /** A small text hash (FNV-1a), for comparing whole results. @param {string} s */
 function textHash(s) {
@@ -63,7 +68,8 @@ export function campCheckJob(a) {
     readWords.push(fireAt(f, h + 1, F).word);
   }
   return { timeline: textHash(words.join(',')), ticked: textHash(JSON.stringify(watched)), read: textHash(readWords.join(',')),
-    lightings: away.lightings, litDays: away.litDays, hours: HOURS, ...(a.pack ? keepsCheck(a, HOURS) : {}), ...productsCheck(ops, apply, F, HOURS, a.worldSeed) };
+    lightings: away.lightings, litDays: away.litDays, hours: HOURS, ...(a.pack ? keepsCheck(a, HOURS) : {}), ...productsCheck(ops, apply, F, HOURS, a.worldSeed),
+    ...(a.camp.hearth && a.camp.star ? clayCheck(ops, apply, F, a.camp, HOURS, a.worldSeed) : {}) };
 }
 
 /**
@@ -98,6 +104,53 @@ function productsCheck(ops, apply, F, HOURS, worldSeed) {
   const watched = run(true), read = run(false);
   return { nights: textHash(watched.dawns), nightsRead: textHash(read.dawns), fireNights: [...watched.dawns].filter((d) => d === '1').length,
     work: textHash(watched.done), workRead: textHash(read.done), workDone: watched.done ? watched.done.split(',').length : 0 };
+}
+
+/**
+ * Clay firing and the star (S4, S5): the cooking pot, the tea pot, the cup and a bowl laid at the
+ * fire on seeded evenings, each fired after needH hours of fire, lit or banked. Watched hour by hour
+ * (every change through withFire, the clock settling the fire each hour, fired pieces leaving for
+ * their slots as soon as they are done, as hearth.js does) against the same month with no ticks
+ * between and everything done settled once at the end (a return from time away). The hour each piece
+ * is done, the camp's slots and hearth pot at the end, and the star's burnt length each hour must
+ * match. @param {{ at: number, op: string }[]} ops @param {(f: any, op: string, h: number) => any} apply
+ * @param {any} F @param {any} A recipes/world/camp.json @param {number} HOURS @param {number} worldSeed
+ */
+function clayCheck(ops, apply, F, A, HOURS, worldSeed) {
+  const rnd = stream(subSeed(worldSeed >>> 0, 'clay-check'));
+  const kinds = ['cooking-pot', 'tea-pot', 'cup', 'bowl'], H = A.hearth;
+  const lays = kinds.map((kind, i) => ({ at: (3 + i * 5) * 24 + 16 + rnd.next() * 3, op: 'clay', kind }));
+  /** @param {boolean} ticked */
+  const run = (ticked) => {
+    /** @type {any} */ let c = setHearth(layRing(cleanCamp(null), 2, 7), 2.4, 11, H);
+    const events = [...ops.map((o) => ({ ...o, kind: '' })), ...lays].sort((x, y) => x.at - y.at);
+    const done = new Map(), burnt = [];
+    /** Done pieces off the list, pots and the cup to their slots (a bowl waits to be taken up). @param {number} h */
+    const settle = (h) => {
+      for (const p of c.work.filter((/** @type {any} */ q) => workDone(q, c.fire, h, F))) {
+        if (H.slots[p.gives]) c = placeFired({ ...c, work: c.work.filter((/** @type {any} */ q) => q !== p) }, p.gives, h, 50 + kinds.indexOf(p.gives), H);
+      }
+    };
+    let next = 0;
+    for (let h = 0; h < HOURS; h++) {
+      while (next < events.length && events[next].at < h + 1) {
+        const e = events[next++];
+        c = e.op === 'clay' ? { ...c, work: layWork(cleanWork(c.work), { id: `fire-${e.kind}`, needH: 8, gives: e.kind, count: 1 }, e.at) } : withFire(c, apply(c.fire, e.op, e.at), e.at, F);
+      }
+      if (ticked) c = withFire(c, settleFire(c.fire, h + 1, F), h + 1, F);
+      // Each piece's done hour as it stands now (no tick needed: worked out from the clock).
+      for (const p of c.work) if (!done.has(p.gives) && workDone(p, c.fire, h + 1, F)) done.set(p.gives, h + 1);
+      if (ticked) settle(h + 1);
+      burnt.push(burntM(fireAt(c.fire, h + 1, F), c.fire, h + 1, F, A.star).toFixed(6));
+    }
+    // Catch-up comes back to the camp: whatever is done goes to its place now.
+    if (!ticked) settle(HOURS);
+    const slots = c.slots.map((/** @type {any} */ s) => `${s.slot}:${s.kind}`).sort().join('|');
+    return { done: [...done.entries()].sort().map(([k, h]) => `${k}@${h}`).join(','), end: `${slots}#${potOnHearth(c)}`, burnt: burnt.join(',') };
+  };
+  const watched = run(true), read = run(false);
+  return { clay: textHash(watched.done), clayRead: textHash(read.done), clayEnd: textHash(watched.end), clayEndRead: textHash(read.end),
+    star: textHash(watched.burnt), starRead: textHash(read.burnt), clayDone: watched.done ? watched.done.split(',').length : 0 };
 }
 
 /**

@@ -18,12 +18,14 @@ const FRAMES = Number(params.get('frames')) || 240;
 /** Budgets (docs/19): the camp's whole extra GPU time, and its own two passes. */
 const BUDGET = { high: 0.5, medium: 0.67, low: 0.67 };
 const PASS_BUDGET = { props: { high: 0.2, medium: 0.25, low: 0.3 }, campfx: { high: 0.2, medium: 0.27, low: 0.3 } };
+/** The star fire's six logs (S4), their share of the models' pass (ms): less than the one wood model they replace cost. */
+const STAR_BUDGET = 0.05;
 const ICON_OK = '<svg viewBox="0 0 24 24" fill="none" stroke="#5F7F5B" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M7.5 12.5l3 3 6-6.5"/></svg>';
 const ICON_WARN = '<svg viewBox="0 0 24 24" fill="none" stroke="#B5654A" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5l9.5 16.5h-19z"/><path d="M12 10v4.5M12 17.5v.2"/></svg>';
 
 const $ = (/** @type {string} */ id) => /** @type {HTMLElement} */ (document.getElementById(id));
 
-/** @typedef {{ tier: string, on: number[], off: number[], props: number[], fx: number[] }} Run */
+/** @typedef {{ tier: string, on: number[], off: number[], props: number[], fx: number[], star?: number[] }} Run */
 
 /** @returns {{ queue: number[], runs: Run[] }} */
 function load() {
@@ -63,7 +65,12 @@ function render() {
       `<span>${ok ? 'within' : 'over'} the ${aim} ms budget: ${extra >= 0 ? '+' : ''}${fmt(extra)} ms</span></div>` +
       `<div class="track"><div class="fill off" style="width:${((a / scale) * 100 || 0).toFixed(1)}%"></div>` +
       `<div class="fill on" style="width:${((b / scale) * 100 || 0).toFixed(1)}%"></div></div>` +
-      `<p class="muted">The models' pass ${fmt(pp)} ms, the fire's effects ${fmt(fp)} ms (p50); p95 ${fmt(pct(r.off, 0.95))} off, ${fmt(pct(r.on, 0.95))} on.</p></div>`;
+      `<p class="muted">The models' pass ${fmt(pp)} ms, the fire's effects ${fmt(fp)} ms (p50); p95 ${fmt(pct(r.off, 0.95))} off, ${fmt(pct(r.on, 0.95))} on.</p>` +
+      // The star fire (S4): the models' pass with and without its logs; the hearth and pots stay in both.
+      (r.star?.length ? (() => {
+        const st = pp - pct(r.star, 0.5), sok = st <= STAR_BUDGET + 0.02;
+        return `<div class="label"><span>${sok ? ICON_OK : ICON_WARN} The star fire's logs: ${st >= 0 ? '+' : ''}${fmt(st)} ms in the models' pass</span><span>${sok ? 'within' : 'over'} ${STAR_BUDGET} ms</span></div>`;
+      })() : '') + '</div>';
   }).join('');
 }
 
@@ -94,9 +101,11 @@ if (!result.ok) {
       app.camera.setPose({ ...pose, target: [flap.x, pose.target[1], flap.z], yaw: flap.yaw + Math.PI + 1.25 });
     }
     $('status').textContent = `Run ${runIndex + 1} of ${TIERS.length}: ${tier}. Lighting the fire.`;
-    /** @type {Run} */ const run = { tier, on: [], off: [], props: [], fx: [] };
-    /** @type {'wait' | 'on' | 'off' | 'done'} */ let half = 'wait';
+    /** @type {Run} */ const run = { tier, on: [], off: [], props: [], fx: [], star: [] };
+    /** @type {'wait' | 'on' | 'nostar' | 'off' | 'done'} */ let half = 'wait';
     on('render:timings', (/** @type {any} */ p) => {
+      // The star fire (S4): the models' pass again with the star's logs left out.
+      if (half === 'nostar') { for (const { name, ms } of p.passes) if (name === 'props') run.star?.push(ms); return; }
       if (half !== 'on' && half !== 'off') return;
       let total = 0;
       for (const { name, ms } of p.passes) {
@@ -108,12 +117,18 @@ if (!result.ok) {
     });
     setTimeout(() => {
       camp.debug.lightNow();
+      // The hearth stones, the pots and the cup in their places, as a camp in its first season stands.
+      camp.hearth.debug.setUp();
       setTimeout(() => {
         half = 'on';
         $('status').textContent = `Run ${runIndex + 1} of ${TIERS.length}: ${tier}. Measuring with the camp.`;
         const wait = setInterval(() => {
           if (half === 'on' && run.on.length >= FRAMES) {
+            half = 'nostar';
+            camp.debug.hideStar(true);
+          } else if (half === 'nostar' && (run.star?.length ?? 0) >= FRAMES / 2) {
             half = 'wait';
+            camp.debug.hideStar(false);
             camp.debug.hide(true);
             setTimeout(() => { half = 'off'; $('status').textContent = `Run ${runIndex + 1} of ${TIERS.length}: ${tier}. Measuring without it.`; }, 1000);
           } else if (half === 'off' && run.off.length >= FRAMES) {

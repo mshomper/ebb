@@ -18,7 +18,9 @@
 // in the ashes, work.js, P2i; every change to the fire writes that work in first). Listens to intro:camp-ready (Skip and test
 // links: the camp laid ready, cold, taking nothing) and intro:glow (an older island's tent ground).
 // Split by job: where.js (where things stand), player.js (walk there, play an act), cards.js (the
-// cards and the here-bar), frame.js (drawing each frame).
+// cards and the here-bar), frame.js (drawing each frame, the star fire from star.js), hearth.js (the
+// hearth stones, the pots, the cup and the clay pieces, S4 and S5), carry.js (the pot in both arms,
+// filled at the spring or the sea, K-26 and K-28).
 
 import { on, emit, emitDeferred } from '../../core/events.js';
 import { get, update } from '../../core/store.js';
@@ -440,6 +442,8 @@ export function createCamp(o) {
       },
       /** @param {boolean} on */
       hide(on) { hidden = on; },
+      /** The star's logs left out (the bench's star row). @param {boolean} on */
+      hideStar(on) { frame.hideStar(on); },
       /**
        * The fire set as a word (the test links, tools/hearth-check.html): lit with four hours of
        * flame left, banked two hours ago, or gone cold half a day ago. @param {'lit' | 'embers' | 'cold'} word
