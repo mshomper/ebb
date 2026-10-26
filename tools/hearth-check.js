@@ -5,6 +5,8 @@
 
 import { startApp } from '../src/app.js';
 import { get } from '../src/core/store.js';
+import { starLogs } from '../src/world/camp/star.js';
+import { starBefore, pierce, logPanel } from './star-profile.js';
 
 const params = new URLSearchParams(location.search);
 if (params.get('camp') !== 'hearth') location.search = '?camp=hearth&shaped&hour=16';
@@ -76,10 +78,34 @@ async function carry() {
 }
 $('[data-carry]').addEventListener('click', () => { carry(); });
 
+// Logs on the stones: each log side on, before the fit and after, for the fire and hearth now.
+const camp = await (await fetch(new URL('../recipes/world/camp.json', import.meta.url))).json();
+let before = false;
+function drawLogs() {
+  const S = camp.star, F = camp.fire, word = document.querySelector('[data-fire][aria-pressed=true]')?.getAttribute('data-fire') ?? 'lit';
+  const hearth = hb.getAttribute('aria-pressed') === 'true', seed = get('camp')?.slots?.find((/** @type {any} */ s) => s.slot === 'ring')?.seed ?? 1;
+  // Lit an hour in, banked or cold after a long burn, as fireAs sets it.
+  const fire = { sinceHour: 0, flameUntilHour: word === 'lit' ? 5 : 9 }, hour = word === 'lit' ? 1 : 30;
+  const o = { seed, hearth }, at = { word, ash: 0 };
+  const was = starBefore(at, fire, hour, F, S, o), now = starLogs(at, fire, hour, F, S, o);
+  const bad = was.filter((g) => pierce(g, S, hearth) > 0.002).length, badNow = now.filter((g) => pierce(g, S, hearth) > 0.002).length;
+  $('#tally').textContent = `Before: ${bad} of ${was.length} logs pass into a stone. After: ${badNow} of ${now.length}.`;
+  $('#logs').innerHTML = now.map((g, i) => `<h3>Log ${i + 1}</h3>${logPanel(was[i], S, hearth, 'Before')}${logPanel(g, S, hearth, 'After')}`).join('');
+}
+const bb = $('[data-before]');
+bb.addEventListener('click', () => {
+  before = !before;
+  bb.setAttribute('aria-pressed', String(before));
+  app.camp.debug.starAs(before ? starBefore : null);
+});
+for (const b of document.querySelectorAll('[data-fire], [data-hearth]')) b.addEventListener('click', () => setTimeout(drawLogs, 0));
+
 // `&fire=embers`, `&view=above` and `&bare` (no hearth stones) open on that state and view.
 const fire0 = params.get('fire') ?? 'lit';
 app.camp.debug.fireAs(fire0);
 for (const q of document.querySelectorAll('[data-fire]')) q.setAttribute('aria-pressed', String(/** @type {HTMLElement} */ (q).dataset.fire === fire0));
 if (params.has('bare')) { app.camp.hearth.debug.clearHearth(); hb.setAttribute('aria-pressed', 'false'); }
+if (params.has('before')) bb.click();
+drawLogs();
 // Once the walker has settled below, so the view is not taken back.
 setTimeout(() => view(params.get('view') ?? 'fire'), 2500);

@@ -9,6 +9,7 @@
 // where each log lies in the ring's own frame; frame.js turns that into the world.
 
 import { hash32 } from '../../core/rng.js';
+import { ANGLES, DR, RING, HEARTH } from './ring-top.js';
 
 const DEG = Math.PI / 180;
 
@@ -17,7 +18,7 @@ const u01 = (h) => (h >>> 8) / 16777216;
 
 /**
  * @typedef {{ logs: number, sizeM: number, logLenM: number, innerM: number, hearthInnerM: number, stoneClearM: number, stoneHalfDeg: number,
- *   tiltDeg: number, startDeg: number, jitterDeg: number, sizeJitter: number, pushM: number, maxBurntM: number, settledBurnt: number,
+ *   minTiltDeg: number, maxTiltDeg: number, sinkM: number, clearM: number, ashTopM: number, logHalfW: number, logThick: number, minStretch: number, startDeg: number, jitterDeg: number, sizeJitter: number, pushM: number, maxBurntM: number, settledBurnt: number,
  *   endChar: Record<string, number>, glow: Record<string, number>, workM: number[], workLiftM: number }} StarRecipe recipes/world/camp.json star
  * @typedef {{ a: number, r: number, y: number, roll: number, size: number, stretch: number, endChar: number, glow: number }} StarLog
  *   a: its direction from the middle in the ring model's frame (radians, 0 along the model's +x,
@@ -63,13 +64,81 @@ export function starLogs(at, fire, hour, F, S, o) {
     // A log lined up with a hearth stone stops at the stone's outer face.
     const onStone = o.hearth && stones.some((s) => Math.abs(Math.atan2(Math.sin(a - s), Math.cos(a - s))) < half);
     const inner = o.hearth ? (onStone ? S.stoneClearM : S.hearthInnerM) : S.innerM;
-    const len = S.logLenM * size, stretch = Math.max(0.3, (len - burnt) / len);
-    const roll = S.tiltDeg * DEG * (1 + (u01(hash32(h, 2)) - 0.5) * 0.4);
-    const halfLen = (len * stretch) / 2;
-    // Its inner end on the ground in the middle, its outer end raised over the ring's stones.
-    out.push({ a, r: inner, y: halfLen * Math.sin(roll), roll, size, stretch, endChar: char * (0.9 + 0.2 * u01(hash32(h, 3))), glow });
+    const len = S.logLenM * size;
+    // Its inner end on the ash in the middle, the rest resting on the stones it crosses: tipped up
+    // just enough to clear each one, or, where that would stand it too steep, shorter, so its outer
+    // end stops against the stone instead of passing through it.
+    const fit = fitLog(a, inner, Math.max(S.minStretch * len, len - burnt), size, !!o.hearth, S, S.minTiltDeg * DEG * (1 + (u01(hash32(h, 2)) - 0.5) * 0.4));
+    const stretch = fit.len / len, roll = fit.roll;
+    const halfLen = fit.len / 2;
+    out.push({ a, r: inner, y: fit.y0 + halfLen * Math.sin(roll), roll, size, stretch, endChar: char * (0.9 + 0.2 * u01(hash32(h, 3))), glow });
   }
   return out;
+}
+
+/**
+ * The tops of the ring's stones (and the hearth stones, once laid) under a point in the ring
+ * model's frame (m), from the baked tables (ring-top.js; each cell's highest point, so it never
+ * reads low). @param {number} x @param {number} z @param {boolean} hearth
+ */
+export function stoneTop(x, z, hearth) {
+  const r = Math.hypot(x, z), ai = ((Math.floor((Math.atan2(z, x) / (2 * Math.PI)) * ANGLES) % ANGLES) + ANGLES) % ANGLES;
+  const at = (/** @type {{ radii: number, mm: number[] }} */ T) => { const ri = Math.floor(r / DR); return ri < T.radii ? T.mm[ai * T.radii + ri] / 1000 : 0; };
+  return Math.max(at(RING), hearth ? at(HEARTH) : 0);
+}
+
+/** Each log line's profile of what it must clear, kept by its direction and inner end. @type {Map<string, { y0: number, need: Float64Array }>} */
+const profiles = new Map();
+const STEP = 0.01;
+
+/**
+ * What a log along direction a from inner end r0 rests on: y0 the height of its inner end, and
+ * need[i] the least slope (rise over run) its underside must have to clear everything out to
+ * i * STEP from its inner end, across its width. Ash is sunk into by sinkM; stone is kept clearM off.
+ * @param {number} a @param {number} r0 @param {number} halfW @param {boolean} hearth @param {StarRecipe} S
+ */
+function profile(a, r0, halfW, hearth, S) {
+  const key = `${a.toFixed(5)}|${r0}|${halfW.toFixed(5)}|${hearth}`;
+  const had = profiles.get(key);
+  if (had) return had;
+  const ca = Math.cos(a), sa = Math.sin(a);
+  const under = (/** @type {number} */ s) => {
+    let m = -1;
+    for (const w of [-1, -0.5, 0, 0.5, 1]) {
+      const t = stoneTop(ca * (r0 + s) - sa * w * halfW, sa * (r0 + s) + ca * w * halfW, hearth);
+      m = Math.max(m, t <= S.ashTopM ? t - S.sinkM : t + S.clearM);
+    }
+    return m;
+  };
+  const y0 = Math.max(under(0), under(STEP), under(2 * STEP));
+  const n = Math.ceil(0.6 / STEP), need = new Float64Array(n + 1);
+  for (let i = 3; i <= n; i++) need[i] = Math.max(need[i - 1], (under(i * STEP) - y0) / (i * STEP));
+  const p = { y0, need };
+  if (profiles.size > 512) profiles.clear();
+  profiles.set(key, p);
+  return p;
+}
+
+/**
+ * A log's length and tip so it rests on the stones it crosses and never passes through one: the
+ * least tip that clears them along its length (and its end's face), at least minRoll; where that
+ * is steeper than maxTiltDeg, it is shortened until it fits (down to minStretch of its length).
+ * @param {number} a @param {number} r0 @param {number} len its length now (m) @param {number} size
+ * @param {boolean} hearth @param {StarRecipe} S @param {number} minRoll
+ * @returns {{ len: number, roll: number, y0: number }}
+ */
+export function fitLog(a, r0, len, size, hearth, S, minRoll) {
+  const P = profile(a, r0, S.logHalfW * size, hearth, S), thick = S.logThick * size;
+  const needTo = (/** @type {number} */ run) => P.need[Math.min(P.need.length - 1, Math.max(0, Math.ceil(run / STEP)))];
+  const rollFor = (/** @type {number} */ L) => {
+    let roll = minRoll;
+    for (let k = 0; k < 3; k++) roll = Math.max(minRoll, Math.atan(needTo(L * Math.cos(roll) + thick * Math.sin(roll))));
+    return roll;
+  };
+  const maxRoll = S.maxTiltDeg * DEG, least = S.minStretch * S.logLenM * size;
+  let L = len, roll = rollFor(L);
+  while (roll > maxRoll && L - STEP >= least) { L -= STEP; roll = rollFor(L); }
+  return { len: L, roll, y0: P.y0 };
 }
 
 /**

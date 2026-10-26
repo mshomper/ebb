@@ -7,7 +7,7 @@
 // piece laid at the fire from the workbench; firing that agrees whether the hours pass in one go or
 // through a lighting, a feed, a banking and a settling, as catch-up and live play do.
 
-import { starLogs, logPlace, burntM, workSpot } from '../src/world/camp/star.js';
+import { starLogs, logPlace, burntM, workSpot, stoneTop } from '../src/world/camp/star.js';
 import { cleanCamp, layRing } from '../src/world/camp/model.js';
 import { swapOn, placeFired, setHearth, potOnHearth, pieceOf, setWater, waterIn, shapedOn, addShaped, takeShaped, waterHere, potsMade } from '../src/world/camp/pots.js';
 import { cleanCook, layout, drawPlan, recordMade } from '../src/world/camp/making.js';
@@ -16,6 +16,7 @@ import { layWork, withFire, workDone, takeDone, fired } from '../src/world/camp/
 import { WATER_CLASS, BASIN_SOURCE } from '../src/world/water/summary.js';
 
 const G = 'camp: hearth and pots';
+const DEG = Math.PI / 180;
 /** @param {string} p */
 const load = async (p) => (await fetch(new URL(`../recipes/${p}.json`, import.meta.url))).json();
 
@@ -34,6 +35,28 @@ export function addHearthTests(test, assert, eq) {
     eq(JSON.stringify(starLogs(lit, fire, 10, F, S, { seed: 7, hearth: true })), JSON.stringify(withStones), 'seeded');
     assert(JSON.stringify(starLogs(lit, fire, 10, F, S, { seed: 8, hearth: true })) !== JSON.stringify(withStones), 'another seed, another star');
     eq(starLogs({ word: 'none', ash: 0 }, fire, 10, F, S, { seed: 7, hearth: false }).length, 0, 'no ring, no star');
+  });
+
+  test(G, 'the logs rest on the stones and never pass through one, at every burn state, with and without the hearth stones', async () => {
+    const R = await load('world/camp'), S = R.star, F = R.fire, fire = { sinceHour: 0, flameUntilHour: 100 };
+    let worst = 0, checked = 0;
+    for (const seed of [1, 7, 99, 12345]) for (const hearth of [false, true]) {
+      for (const [word, hour] of /** @type {[string, number][]} */ ([['laid', 0], ['lit', 1], ['lit', 20], ['embers', 30], ['cold', 50]])) {
+        for (const g of starLogs({ word, ash: 0 }, fire, hour, F, S, { seed, hearth })) {
+          // Its underside, from the inner end's bottom along its tip, across its width.
+          const len = S.logLenM * g.size * g.stretch, hw = S.logHalfW * g.size, ca = Math.cos(g.a), sa = Math.sin(g.a);
+          const y0 = g.y - (len / 2) * Math.sin(g.roll);
+          for (let t = 0.03; t <= len; t += 0.005) for (const w of [-1, 0, 1]) {
+            const s = t * Math.cos(g.roll), top = stoneTop(ca * (g.r + s) - sa * w * hw, sa * (g.r + s) + ca * w * hw, hearth);
+            if (top > S.ashTopM) worst = Math.max(worst, top - (y0 + t * Math.sin(g.roll)));
+          }
+          assert(g.roll <= S.maxTiltDeg * DEG + 1e-9 || g.stretch <= S.minStretch + 1e-9, 'steeper than the most only as a short end');
+          checked++;
+        }
+      }
+    }
+    assert(checked > 200, 'every log checked');
+    assert(worst <= 0.001, `no log passes into a stone (worst ${(worst * 1000).toFixed(1)} mm)`);
   });
 
   test(G, 'the logs are pushed in as the fire burns, never past maxBurntM; a log keeps its inner end where it was', async () => {

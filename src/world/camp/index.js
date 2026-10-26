@@ -444,6 +444,8 @@ export function createCamp(o) {
       hide(on) { hidden = on; },
       /** The star's logs left out (the bench's star row). @param {boolean} on */
       hideStar(on) { frame.hideStar(on); },
+      /** @param {Parameters<typeof frame.starAs>[0]} f */
+      starAs(f) { frame.starAs(f); },
       /**
        * The fire set as a word (the test links, tools/hearth-check.html): lit with four hours of
        * flame left, banked two hours ago, or gone cold half a day ago. @param {'lit' | 'embers' | 'cold'} word

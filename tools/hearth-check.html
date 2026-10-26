@@ -19,6 +19,10 @@
   button { font: 800 16px/1.2 'Nunito', system-ui, sans-serif; color: #FBF7F0; background: #4a6a47; border: 0; border-radius: 12px; padding: 10px 14px; cursor: pointer; min-height: 48px; }
   button[aria-pressed=true] { background: #23361F; }
   a { color: #4a6a47; }
+  h2 { font-size: 20px; font-weight: 800; margin: 8px 0 0; }
+  .logs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .logs h3 { grid-column: 1 / -1; font-size: 17px; font-weight: 800; margin: 6px 0 0; }
+  @media (max-width: 640px) { .logs { grid-template-columns: minmax(0, 1fr); } }
 </style>
 </head>
 <body>
@@ -34,6 +38,11 @@
     <button data-view="fire">The fire</button><button data-view="above">From above</button><button data-view="bench">The workbench</button><button data-view="side">The pots by the fire</button><button data-carry="1">Carry the pot</button>
   </div>
   <div class="row"><a href="?camp=hearth&shaped&hour=16">Afternoon</a> <a href="?camp=hearth&shaped&hour=19.6">Dusk</a> <a href="?camp=hearth&shaped&hour=22">Night</a></div>
+  <h2>Logs on the stones</h2>
+  <p>Each log side on, over the tops of the stones under it (grey). Before: one tilt for every log, so some passed into a stone (red). After: each log tipped just enough to rest on the stones it crosses, or shortened so its end stops against a tall one. Follows the fire and hearth buttons above; Before also draws the old star in the view.</p>
+  <div class="row"><button data-before="1" aria-pressed="false">Before</button></div>
+  <p id="tally"></p>
+  <div id="logs" class="logs"></div>
 </main>
 <script src="./boot-guard.js"></script>
 <script type="importmap">{ "imports": {
