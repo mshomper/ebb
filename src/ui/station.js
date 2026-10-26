@@ -80,9 +80,10 @@ export function mountStation(parent, words, ui = {}) {
     // What the hamper holds (P2j): laid from as the piles are, after them.
     const store = (v.store ?? []).map((/** @type {any} */ p) =>
       `<button type="button" class="ebb-station__pile" data-lay="${esc(p.kind)}" ${p.left > 0 ? '' : 'disabled'} aria-label="${esc(p.name)}" data-label="${esc(p.name)}">${glyph(p.kind)}<span>${esc(p.word)}</span></button>`).join('');
-    // At the fire, the pale pieces waiting on the workbench (S5): laid the same way.
+    // At the fire, the pale pieces waiting on the workbench (S5): laid the same way. At the workbench
+    // the same pieces, each pressed to carry it to the fire and lay it there.
     const bench = (v.bench ?? []).map((/** @type {any} */ p) =>
-      `<button type="button" class="ebb-station__pile" data-lay="${esc(p.kind)}" ${p.left > 0 ? '' : 'disabled'} aria-label="${esc(p.name)}" data-label="${esc(p.name)}">${glyph(p.kind)}<span>${esc(p.name)}</span></button>`).join('');
+      `<button type="button" class="ebb-station__pile" ${v.benchToFire ? 'data-tofire' : 'data-lay'}="${esc(p.kind)}" ${p.left > 0 ? '' : 'disabled'} aria-label="${esc(p.name)}" data-label="${esc(p.name)}">${glyph(p.kind)}<span>${esc(p.name)}</span></button>`).join('');
     root.innerHTML = `
       <div class="ebb-station__head"><span class="ebb-idcard__icon">${iconSvg(A.icon)}</span><b>${esc(v.name)}</b>
         <span class="ebb-station__acts">${actRow}</span>
@@ -100,6 +101,7 @@ export function mountStation(parent, words, ui = {}) {
           ${piles ? `<h4>${esc(v.pilesName)}</h4><div class="ebb-station__row">${piles}</div>` : ''}
           ${store ? `<h4>${esc(v.storeName)}</h4><div class="ebb-station__row">${store}</div>` : ''}
           ${bench ? `<h4>${esc(v.benchName)}</h4><div class="ebb-station__row">${bench}</div>` : ''}
+          ${bench && v.benchLine ? `<p class="ebb-station__line">${esc(v.benchLine)}</p>` : ''}
         </section>
       </div>`;
   }
@@ -142,6 +144,7 @@ export function mountStation(parent, words, ui = {}) {
     if (!b || /** @type {HTMLButtonElement} */ (b).disabled) return;
     if (b.dataset.close) dispatch({ type: 'ui.identify' });
     else if (b.dataset.lay) dispatch({ type: 'station.lay', kind: b.dataset.lay });
+    else if (b.dataset.tofire) dispatch({ type: 'shaped.toFire', kind: b.dataset.tofire });
     else if (b.dataset.unlay !== undefined) dispatch({ type: 'station.unlay', i: Number(b.dataset.unlay) });
     else if (b.dataset.go) dispatch({ type: 'station.act' });
     else if (b.dataset.take !== undefined) dispatch({ type: 'keep.takeUp', i: Number(b.dataset.take) });

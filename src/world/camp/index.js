@@ -29,6 +29,7 @@ import { subSeed, hash32 } from '../../core/rng.js';
 import { sunMoon } from '../sky/sun-moon.js';
 import { weatherAt } from '../weather.js';
 import { cleanCamp, pitched, ringLaid, pitchTent, layRing } from './model.js';
+import { shapedOn } from './pots.js';
 import { fireAt, lightFire, feedFire, bankFire, settleFire, fireNights } from './fire.js';
 import { createPropsPass } from '../../render/passes/props.js';
 import { createCampFxPass } from '../../render/passes/camp-fx.js';
@@ -274,6 +275,7 @@ export function createCamp(o) {
     // The open card says so at once.
     const card = get('identify');
     if (card?.camp === 'ring') update('identify', () => ({ ...card, ...(campCardAt(kit, card.wx, card.wz) ?? {}), at: performance.now() }));
+    else if (card?.camp === 'firing') update('identify', () => null);
   }
 
   let resting = false;
@@ -360,6 +362,8 @@ export function createCamp(o) {
     if (f && beat === 'rest' && pitched(c)) out.push([f.x, f.z, 0.6, k * 0.7]);
     // A bench's ground, while its parts are to hand (S1).
     if (byPack) out.push(...stations.rings(k));
+    // The ring, while a pale piece waits on the workbench for its night in the fire (S5).
+    if (byPack && r && ringLaid(c) && shapedOn(c).length) out.push([r.x, r.z, 0.7, k]);
     return out;
   }
 
@@ -396,7 +400,13 @@ export function createCamp(o) {
     },
     rings,
     /** The card a click at a ground point opens (cards.js). @param {number} x @param {number} z */
-    cardAt: (x, z) => stations.cardAt(x, z) ?? hearth.cardAt(x, z) ?? campCardAt(kit, x, z),
+    cardAt: (x, z) => hearth.benchPieceAt(x, z) ?? stations.cardAt(x, z) ?? hearth.cardAt(x, z) ?? campCardAt(kit, x, z),
+    /**
+     * What a view ray meets first among the things sitting up on the hearth and by the fire (a pot,
+     * the cup, a piece firing), as the ground point under its middle: tried before the ground, so
+     * they win over the ring that holds them. @param {number[]} o @param {number[]} d
+     */
+    liftedUnderRay: (o, d) => (hidden ? null : hearth.liftedUnderRay(o, d)),
     /** The stations (S1): the workbench and the fire's workspace (tools, tests, test links). */
     stations,
     /** The hearth, the pots and the clay pieces (S4, S5; tools, tests, test links). */

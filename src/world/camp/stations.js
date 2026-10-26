@@ -32,6 +32,7 @@ import { createKeeps } from './keeps.js';
 import { layWork } from './work.js';
 import { shapedOn, addShaped, takeShaped, setHearth } from './pots.js';
 import { pileWord, rackWord } from '../pack/piles.js';
+import { campCardAt } from './cards.js';
 
 /** The keeps that open in the workspace's store mode, and the slot each stands in. */
 const KEEPS = /** @type {Record<string, string>} */ ({ store: 'store', rack: 'rack' });
@@ -234,14 +235,17 @@ export function createStations(k) {
     const store = Object.entries(keeps.hamper.holds()).map(([kind, h]) => ({ kind, name: nameOf(kind), handfuls: h,
       left: Math.min(h, avail[kind] ?? 0), word: pileWord(h, P) }));
     // At the fire, the pale pieces waiting on the workbench, to lay at the star's edge (S5).
-    const bench = id === 'fire' ? Object.entries(benchHolds()).map(([kind, h]) => ({ kind, name: nameOf(kind), handfuls: h, left: Math.min(h, avail[kind] ?? 0), word: '' })) : [];
+    // At the workbench, the same pieces, each carried to the fire and laid there with a press.
+    const bench = id === 'fire' ? Object.entries(benchHolds()).map(([kind, h]) => ({ kind, name: nameOf(kind), handfuls: h, left: Math.min(h, avail[kind] ?? 0), word: '' }))
+      : id === 'workbench' ? Object.entries(benchHolds()).map(([kind, h]) => ({ kind, name: nameOf(kind), handfuls: h, left: h, word: '' })) : [];
     return {
       id, name: id === 'fire' ? W.fire.name : W[id]?.name ?? id, spots,
       laid: open.laid.map((kind, i) => ({ kind, name: nameOf(kind), used: L.have[i] >= 0 })),
       outlines: open.laid.length < spots ? L.missing.slice(0, spots - open.laid.length) : [],
       action: { ...actionOf(id, L.make), ready: L.complete && makeT < 0, make: L.make },
       line: open.line ?? (makeT >= 0 ? null : W.laid), working: makeT >= 0,
-      pack: packKinds, piles: row(pilesHolds()), store, bench, packName: W.pack, pilesName: W.piles, storeName: W.hamper, benchName: W.onBench, at: stationAt(id),
+      pack: packKinds, piles: row(pilesHolds()), store, bench, packName: W.pack, pilesName: W.piles, storeName: W.hamper, at: stationAt(id),
+      benchName: id === 'workbench' ? W.benchWaiting : W.onBench, benchToFire: id === 'workbench', benchLine: id === 'workbench' && bench.length ? W.benchToFire : null,
     };
   }
   let viewKey = '';
@@ -257,7 +261,7 @@ export function createStations(k) {
     publish();
   }
 
-  function lay(/** @type {string} */ kind) {
+  function lay(/** @type {string} */ kind, quiet = false) {
     if (!open || makeT >= 0 || KEEPS[open.id]) return;
     const spots = S[open.id]?.spots ?? 2;
     if (open.laid.length >= spots) { open.line = W.spotsFull; publish(); return; }
@@ -265,7 +269,7 @@ export function createStations(k) {
     open.laid = [...open.laid, kind];
     open.line = null;
     const at = stationAt(open.id);
-    o.walk.gesture('setDown', at ?? undefined);
+    if (!quiet) o.walk.gesture('setDown', at ?? undefined);
     // Parts that make nothing together say so, then go back.
     if (!layout(C, open.id, open.laid, cookNow(), ctx).make) { open.line = W.nothing; open.nothingT = C.nothingHoldS; }
     publish();
@@ -329,6 +333,25 @@ export function createStations(k) {
     publish();
   }
 
+  /**
+   * A pale piece waiting on the workbench carried to the fire (S5): taken up from the bench, walked
+   * to the ring and laid there, the fire's workspace open on it so Fire is one press away. From the
+   * workbench's workspace or the piece's own card, so a piece is never left stranded on the bench.
+   * @param {string} kind 'shaped:<kind>' or the kind alone
+   */
+  function toFire(kind) {
+    const key = kind.startsWith('shaped:') ? kind : `shaped:${kind}`, at = stationAt('fire'), from = stationAt('workbench');
+    if (!at || !ringLaid(k.camp()) || !((benchHolds()[key] ?? 0) > 0)) return;
+    if (get('identify')) update('identify', () => null);
+    if (from) o.walk.gesture('takeUp', from);
+    k.player.play('lay', at.stand, at.reachM, at, () => {
+      const card = campCardAt(k, at.x, at.z);
+      if (!card) return;
+      update('identify', () => ({ ...card, at: performance.now() }));
+      if (open?.id === 'fire') lay(key, true);
+    });
+  }
+
   /** Take up on a hamper slot or a rack bunch: one pouch's worth into the pack. @param {number} i */
   function keepTakeUp(i) {
     if (!open || !KEEPS[open.id] || !o.pack) return;
@@ -356,7 +379,10 @@ export function createStations(k) {
       else if (a.type === 'station.unlay') unlay(a.i);
       else if (a.type === 'station.act') act();
       else if (a.type === 'keep.takeUp') keepTakeUp(a.i);
+      else if (a.type === 'shaped.toFire') toFire(a.kind);
     }),
+    registerCardAction({ id: 'shapedtofire', icon: 'fire', order: 4, main: true, label: W.toFire ?? 'Lay it at the fire',
+      when: (c) => c?.camp === 'shaped' && !!c.canFire, action: (c) => ({ type: 'shaped.toFire', kind: c.kind }) }),
     registerCardAction({ id: 'campbuild', icon: 'build', order: 5, main: true, label: (c) => slotWords(c?.build ?? '').build ?? W.build,
       when: (c) => c?.camp === 'benchSlot' && !!c.canBuild, action: (c) => ({ type: 'camp.build', id: c.build }) }),
   ];

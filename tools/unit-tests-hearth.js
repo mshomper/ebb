@@ -14,6 +14,7 @@ import { cleanCook, layout, drawPlan, recordMade } from '../src/world/camp/makin
 import { noFire, layFire, lightFire, feedFire, bankFire, settleFire, fireAt } from '../src/world/camp/fire.js';
 import { layWork, withFire, workDone, takeDone, fired } from '../src/world/camp/work.js';
 import { WATER_CLASS, BASIN_SOURCE } from '../src/world/water/summary.js';
+import { rayCylinder } from '../src/world/camp/hearth.js';
 
 const G = 'camp: hearth and pots';
 const DEG = Math.PI / 180;
@@ -57,6 +58,18 @@ export function addHearthTests(test, assert, eq) {
     }
     assert(checked > 200, 'every log checked');
     assert(worst <= 0.001, `no log passes into a stone (worst ${(worst * 1000).toFixed(1)} mm)`);
+  });
+
+  test(G, 'a pointer finds a pot on the hearth before the ground behind it', () => {
+    const pot = { x: 0, z: 0, r: 0.13, y0: 0.086, y1: 0.246 };
+    // From 2 m off, 0.4 m up, looking at the pot's middle: it hits the pot's side.
+    const o = [2, 0.4, 0], t = [0, 0.15, 0], d = [t[0] - o[0], t[1] - o[1], t[2] - o[2]], L = Math.hypot(d[0], d[1], d[2]);
+    const hit = rayCylinder(o, d.map((v) => v / L), pot);
+    assert(Number.isFinite(hit) && hit < L, 'the pot is met before its middle');
+    // From straight above it lands on its top; looking past it, it misses.
+    assert(Number.isFinite(rayCylinder([0.05, 2, 0], [0, -1, 0], pot)), 'from above, its top');
+    eq(rayCylinder([2, 0.4, 0.5], [-1, 0, 0], pot), Infinity, 'past it, nothing');
+    eq(rayCylinder([2, 0.02, 0], [-1, 0, 0], pot), Infinity, 'under it (the stones), not the pot');
   });
 
   test(G, 'the logs are pushed in as the fire burns, never past maxBurntM; a log keeps its inner end where it was', async () => {

@@ -977,6 +977,10 @@ export async function startApp(canvas, hooks = {}) {
    */
   function pieceUnderTap(x, y, point) {
     const r = camera.ray(x, y);
+    // What sits up on the hearth or by the fire (a pot, the cup, a piece firing) wins over the ring
+    // under it: the ray is tried against each one's own height.
+    const lifted = camp.liftedUnderRay(r.o, r.d);
+    if (lifted) return lifted;
     for (const h of [0.3, 0.2, 0.12, 0.05]) {
       if (r.d[1] > -1e-4) break;
       const t = (point[1] + h - r.o[1]) / r.d[1];

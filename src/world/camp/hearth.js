@@ -5,11 +5,11 @@
 // workbench, the pieces firing at the star's edge (pale at first, taking the fired clay's colour as
 // their hours of fire add up), and the pot in your arms. Rules: pots.js (pure); firing: work.js.
 
-import { emit, emitDeferred } from '../../core/events.js';
+import { emit, emitDeferred, on } from '../../core/events.js';
 import { get, update } from '../../core/store.js';
 import { onAction } from '../../input/actions.js';
 import { registerCardAction } from '../../ui/card-actions.js';
-import { inSlot } from './model.js';
+import { inSlot, ringLaid } from './model.js';
 import { potOnHearth, pieceOf, shapedOn, setHearth, placeFired, addShaped, swapOn } from './pots.js';
 import { fired, layWork, workDone } from './work.js';
 import { workSpot } from './star.js';
@@ -18,6 +18,26 @@ import { cleanCook, recordMade } from './making.js';
 
 /** The model each piece wears (camp.json props.models): its kind's own. @param {string} kind */
 const modelOf = (kind) => kind;
+
+/**
+ * Where a ray first meets an upright cylinder (its side or its top), as the ray's t; Infinity if
+ * it misses. @param {number[]} o @param {number[]} d
+ * @param {{ x: number, z: number, r: number, y0: number, y1: number }} q
+ */
+export function rayCylinder(o, d, q) {
+  let best = Infinity;
+  const ox = o[0] - q.x, oz = o[2] - q.z, a = d[0] * d[0] + d[2] * d[2], b = ox * d[0] + oz * d[2], cc = ox * ox + oz * oz - q.r * q.r;
+  const disc = b * b - a * cc;
+  if (a > 1e-12 && disc >= 0) {
+    const t = (-b - Math.sqrt(disc)) / a, y = o[1] + d[1] * t;
+    if (t > 0 && y >= q.y0 && y <= q.y1) best = t;
+  }
+  if (Math.abs(d[1]) > 1e-9) {
+    const t = (q.y1 - o[1]) / d[1];
+    if (t > 0 && Math.hypot(ox + d[0] * t, oz + d[2] * t) <= q.r) best = Math.min(best, t);
+  }
+  return best;
+}
 
 /**
  * @param {import('./cards.js').CampKit & { o: any, cook: any, benchAt: (id: string) => any, holdingPot: () => boolean,
@@ -31,6 +51,20 @@ export function createHearth(k) {
 
   /** The fire make that fires a shaped kind (cook.json makes, out 'work', fires: kind). @param {string} make */
   const firesOf = (make) => k.cook.makes?.[make]?.fires ?? null;
+
+  /**
+   * The shaped pieces waiting pale on the workbench's slab, where each sits.
+   * @param {import('./model.js').Camp} c @returns {{ kind: string, x: number, y: number, z: number, yaw: number }[]}
+   */
+  function benchPieces(c) {
+    const b = k.benchAt('workbench');
+    if (!b || !inSlot(c, 'workbench')) return [];
+    const cb = Math.cos(b.yaw), sb = Math.sin(b.yaw);
+    return shapedOn(c).map((kind, i) => {
+      const at = H.benchAt[i % H.benchAt.length];
+      return { kind, x: b.x + cb * at[0] + sb * at[2], y: b.y + at[1], z: b.z - sb * at[0] + cb * at[2], yaw: b.yaw + i * 1.3 };
+    });
+  }
 
   /** Everything the hearth draws now. @returns {import('../../render/passes/props.js').Prop[]} */
   function props() {
@@ -52,14 +86,7 @@ export function createHearth(k) {
     const d = k.where.slotAt(H.slots['dye-pot']);
     if (d && hearth && !pieceOf(c, 'dye-pot')) out.push({ key: 'stand', x: d.x, y: d.y - 0.01, z: d.z, yaw: d.yaw + 0.7, scale: H.standScale, squash: H.standSquash, shade: M.stand?.shade });
     // Shaped pieces waiting pale on the workbench's slab.
-    const b = k.benchAt('workbench');
-    if (b && inSlot(c, 'workbench')) {
-      const cb = Math.cos(b.yaw), sb = Math.sin(b.yaw);
-      shapedOn(c).forEach((kind, i) => {
-        const at = H.benchAt[i % H.benchAt.length];
-        out.push({ key: modelOf(kind), x: b.x + cb * at[0] + sb * at[2], y: b.y + at[1], z: b.z - sb * at[0] + cb * at[2], yaw: b.yaw + i * 1.3, raw: 1 });
-      });
-    }
+    for (const p of benchPieces(c)) out.push({ key: modelOf(p.kind), x: p.x, y: p.y, z: p.z, yaw: p.yaw, raw: 1 });
     // Pieces firing at the star's edge: pale, taking the fired clay's colour as their hours add up.
     if (r) {
       const cy = Math.cos(r.yaw), sy = Math.sin(r.yaw), hour = k.hourNow();
@@ -106,6 +133,48 @@ export function createHearth(k) {
   /** The hearth stones lifted out again (tools/hearth-check.html: the star as the first evening has it). */
   const clearHearth = () => k.change((c) => ({ ...c, slots: c.slots.filter((s) => s.slot !== 'hearth') }));
 
+  // ---- what the pointer lands on: the things sitting up on the hearth and by the fire ----
+
+  /**
+   * The things standing up off the ground here, each as an upright cylinder (centre, radius, its
+   * bottom and top), so a pointer on one wins over the ring under it (a ground point behind a pot
+   * would land on the ring's card). @returns {{ x: number, z: number, r: number, y0: number, y1: number }[]}
+   */
+  function lifted() {
+    const c = k.camp(), r = k.where.slotAt('ring'), L = H.lift;
+    /** @type {{ x: number, z: number, r: number, y0: number, y1: number }[]} */
+    const out = benchPieces(c).map((p) => ({ x: p.x, z: p.z, r: L.pieceM, y0: p.y, y1: p.y + L.pieceH }));
+    if (!r) return out;
+    const onIt = potOnHearth(c);
+    if (inSlot(c, 'hearth') && onIt && !k.holdingPot()) out.push({ x: r.x, z: r.z, r: L.potM, y0: r.y + H.stonesTopM, y1: r.y + H.stonesTopM + L.potH });
+    for (const [kind, slot] of Object.entries(H.slots)) {
+      const s = k.where.slotAt(slot);
+      if (!s || !pieceOf(c, kind) || (kind === onIt && inSlot(c, 'hearth'))) continue;
+      out.push({ x: s.x, z: s.z, r: L.pieceM, y0: s.y, y1: s.y + L.potH });
+    }
+    const cy = Math.cos(r.yaw), sy = Math.sin(r.yaw);
+    let i = 0;
+    for (const p of c.work) {
+      if (!firesOf(p.id)) continue;
+      const w = workSpot(i++, R.star);
+      out.push({ x: r.x + cy * w.x + sy * w.z, z: r.z - sy * w.x + cy * w.z, r: L.pieceM, y0: r.y, y1: r.y + L.pieceH });
+    }
+    return out;
+  }
+
+  /**
+   * The nearest of those a view ray passes through, as the ground point of its middle (what the
+   * cards read). @param {number[]} o @param {number[]} d @returns {{ x: number, z: number } | null}
+   */
+  function liftedUnderRay(o, d) {
+    let best = Infinity, hit = null;
+    for (const q of lifted()) {
+      const t = rayCylinder(o, d, q);
+      if (t < best) { best = t; hit = { x: q.x, z: q.z }; }
+    }
+    return hit;
+  }
+
   // ---- cards: the pot on the hearth, the pots and cup waiting by the fire, the dye pot's stand ----
 
   const CW = k.cookWords ?? {};
@@ -122,6 +191,20 @@ export function createHearth(k) {
     if (r && inSlot(c, 'hearth') && onIt && !k.holdingPot() && Math.hypot(x - r.x, z - r.z) < (H.potCardM ?? 0.22)) {
       return { ...base, sp: 'camp:pot', camp: 'pot', pot: onIt, onHearth: true, name: CW.pieceNames?.[onIt] ?? onIt, icon: 'takeup',
         text: [CW.pieceLines?.hearth ?? '', waterLine(onIt)].filter(Boolean).join(' '), wx: r.x, wz: r.z, r: 0.5 };
+    }
+    // A piece firing at the star's edge: how it is coming on, and a bowl done is taken up from here.
+    if (r) {
+      const cy = Math.cos(r.yaw), sy = Math.sin(r.yaw), hour = k.hourNow();
+      let i = 0;
+      for (const p of c.work) {
+        const kind = firesOf(p.id);
+        if (!kind) continue;
+        const w = workSpot(i++, R.star), wx = r.x + cy * w.x + sy * w.z, wz = r.z - sy * w.x + cy * w.z;
+        if (Math.hypot(x - wx, z - wz) > H.lift.pieceM + 0.04) continue;
+        const done = workDone(p, c.fire, hour, F);
+        return { ...base, sp: `camp:firing-${kind}`, camp: 'firing', make: p.id, name: done ? CW.pieceNames?.[kind] ?? kind : CW.shapedNames?.[kind] ?? kind, icon: 'fire',
+          text: done ? CW.workDones?.[p.id] ?? CW.firedLines?.[kind] ?? '' : CW.workWaitings?.[p.id] ?? '', wx, wz, r: 0.3, done, takeable: done && !toSlot(p) };
+      }
     }
     for (const [kind, slot] of Object.entries(H.slots)) {
       const s = k.where.slotAt(slot);
@@ -140,6 +223,20 @@ export function createHearth(k) {
     return null;
   }
 
+  /**
+   * A pale piece waiting on the workbench, as its own card: it names the fire and lays it there
+   * (stations.js shaped.toFire). Asked before the workbench's own card. @param {number} x @param {number} z
+   */
+  function benchPieceAt(x, z) {
+    const c = k.camp();
+    for (const p of benchPieces(c)) {
+      if (Math.hypot(x - p.x, z - p.z) > H.lift.pieceM) continue;
+      return { ...base, sp: `camp:shaped-${p.kind}`, camp: 'shaped', kind: p.kind, name: CW.shapedNames?.[p.kind] ?? p.kind, icon: 'fire',
+        text: ringLaid(c) ? CW.shapedCard ?? '' : CW.shapedNoRing ?? '', wx: p.x, wz: p.z, r: 0.3, canFire: ringLaid(c) };
+    }
+    return null;
+  }
+
   /** A waiting pot onto the hearth stones; the one there goes back to its slot. @param {string} kind */
   function swap(kind) {
     const s = k.where.slotAt(H.slots[kind] ?? ''), r = k.where.slotAt('ring');
@@ -150,10 +247,22 @@ export function createHearth(k) {
     if (get('identify')?.pot === kind) update('identify', () => null);
   }
 
+  /** The clay hint shown this session (its flag rides in the journal, which a test page may not have). */
+  let clayHinted = false;
   const offs = [
     registerCardAction({ id: 'potswap', icon: 'setdown', order: 4, main: true, label: CW.potSwap ?? 'Set it on the hearth',
       when: (c) => c?.camp === 'potWaiting' && !!c.canSwap, action: (c) => ({ type: 'pot.swap', pot: c.pot }) }),
+    registerCardAction({ id: 'firingtake', icon: 'takeup', order: 4, main: true, label: (c) => CW.workTakes?.[c?.make] ?? CW.workTake ?? 'Take up',
+      when: (c) => c?.camp === 'firing' && !!c.takeable, action: () => ({ type: 'camp.workTake' }) }),
     onAction((/** @type {any} */ a) => { if (a.type === 'pot.swap') swap(a.pot); }),
+    // The first piece shaped: a hint, once, that it wants a night in the fire (as the evening's hints are).
+    on('camp:made', (/** @type {any} */ p) => {
+      if (k.cook.makes?.[p.make]?.out !== 'shaped' || clayHinted || (get('journal')?.flags ?? []).includes('hint:fire-clay')) return;
+      clayHinted = true;
+      update('journal', (j) => (j ? { ...j, flags: [...(j.flags ?? []), 'hint:fire-clay'] } : j));
+      emit('intro:hint', { id: 'fire-clay', text: CW.shapedHint ?? '', skip: null });
+      setTimeout(() => emit('intro:hint', { id: 'fire-clay', text: null, skip: null }), (H.hintS ?? 14) * 1000);
+    }),
   ];
 
   // ---- fired pieces to their places ----
@@ -186,5 +295,5 @@ export function createHearth(k) {
     }
   }
 
-  return { props, cardAt, swap, settle, debug: { setUp, clearHearth }, dispose() { for (const off of offs) off(); } };
+  return { props, cardAt, benchPieceAt, liftedUnderRay, swap, settle, debug: { setUp, clearHearth }, dispose() { for (const off of offs) off(); } };
 }

@@ -137,7 +137,7 @@ export function fitLog(a, r0, len, size, hearth, S, minRoll) {
   };
   const maxRoll = S.maxTiltDeg * DEG, least = S.minStretch * S.logLenM * size;
   let L = len, roll = rollFor(L);
-  while (roll > maxRoll && L - STEP >= least) { L -= STEP; roll = rollFor(L); }
+  while (roll > maxRoll && L > least) { L = Math.max(least, L - STEP); roll = rollFor(L); }
   return { len: L, roll, y0: P.y0 };
 }
 
