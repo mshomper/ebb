@@ -41,7 +41,7 @@ export function eyeUniforms(E, headBone, state, out = new Float32Array(EXTRA)) {
  * @param {any} R recipes/world/figure.json @param {string} [name]
  */
 export function createFigurePass(R, name = 'figure') {
-  return createCreaturePass({ recipe: R, name, shader: 'figure-draw', maxBones: R.bones.length, extraFloats: EXTRA });
+  return createCreaturePass({ recipe: R, name, shader: 'figure-draw', maxBones: R.bones.length, extraFloats: EXTRA, maps: true });
 }
 
 /**
@@ -51,10 +51,12 @@ export function createFigurePass(R, name = 'figure') {
  */
 export function createFigure(o) {
   const R = o.recipe;
-  const built = buildFigure(o.glb, R);
+  // The baked texture (prep.py): the colour slot carries each vertex's UV, and the pass the maps.
+  const built = buildFigure(o.glb, R, { textured: true });
   const motion = createFigureMotion(R, built.skeleton, o.clips ?? null);
   const headBone = built.skeleton.findIndex((b) => b.name === 'head');
   const pass = o.pass ?? createFigurePass(R);
+  if (built.textured) pass.setMaps(o.glb).catch((err) => console.error('The walker maps did not load:', err));
   pass.setMesh('figure', { data: built.data, indices: built.indices });
   const uniforms = new Float32Array(EXTRA);
   let visible = false;

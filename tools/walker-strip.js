@@ -21,7 +21,9 @@ if (!made.ok) { note.textContent = `This page needs WebGPU (${made.reason}).`; t
 const stage = made.stage;
 const R = await (await fetch('../recipes/world/figure.json')).json();
 const W = await (await fetch('../recipes/world/walker.json')).json();
-const built = buildFigure(await loadFigureModel(R), R);
+const figureGlb = await loadFigureModel(R);
+const built = buildFigure(figureGlb, R, { textured: true });
+await stage.setMaps(figureGlb);
 const CLIPS = await loadFigureClips(R);
 stage.setMesh(built);
 // Wide enough that a run's frames still stand on it.

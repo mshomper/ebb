@@ -7,7 +7,7 @@
 // bones, the feet stay put while a kneeling act's hands work, crawlIn stays low until climbOut, and
 // a placed figure starts in its posture.
 
-import { readGlb, meshesByName } from '../src/render/gltf.js';
+import { readGlb, meshesByName, materialMaps } from '../src/render/gltf.js';
 import { buildFigure, anchorWeights } from '../src/world/figure/rig.js';
 import { createFigureMotion } from '../src/world/figure/motion.js';
 import { loadFigureClips } from '../src/world/figure/clips.js';
@@ -320,6 +320,24 @@ export function addFigureTests(test, assert, eq) {
       assert(worst < 0.012, `a planted foot slid ${(worst * 100).toFixed(1)} cm at ${speed} m/s`);
     }
     return report.join(', ');
+  });
+
+  test(FIG, 'the baked texture: colour and object-space normal maps in the GLB, and every vertex of the textured build carries a UV inside the atlas', async () => {
+    const { R, glb } = await load();
+    const maps = materialMaps(glb);
+    assert(maps.baseColor && maps.normal, 'both maps are in the model');
+    eq(glb.json.materials[0].extras?.normalSpace, 'object', 'the normal map is in the rest pose\'s own space');
+    const built = buildFigure(glb, R, { textured: true });
+    assert(built.textured, 'the build reads the UVs');
+    const v = new Float32Array(built.data);
+    let bad = 0;
+    const stride = v.length / built.count;
+    for (let k = 0; k < built.count; k++) {
+      const u = v[k * stride + 6], w = v[k * stride + 7], flag = v[k * stride + 8];
+      if (!(u >= 0 && u <= 1 && w >= 0 && w <= 1 && flag === 2)) bad++;
+    }
+    eq(bad, 0, 'UVs in 0..1 and marked');
+    return `${built.count.toLocaleString()} vertices, maps ${maps.baseColor.bytes.length} and ${maps.normal.bytes.length} bytes`;
   });
 
   test(FIG, 'Meshy clips: the file holds every clip on our driven bones, finite, the walks and runs in place with a forward stride and left landings', async () => {

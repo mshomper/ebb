@@ -56,9 +56,11 @@ export function anchorWeights(anchors, v) {
  * weights from the part labels.
  * @param {import('../../render/gltf.js').Glb} glb assets/figures/walker.glb, read
  * @param {any} R recipes/world/figure.json
- * @returns {{ data: ArrayBuffer, indices: Uint32Array, count: number, skeleton: Bone[], arms: Record<string, ArmInfo>, parts: Record<string, number> }}
+ * @param {{ textured?: boolean }} [o] textured: the colour slot carries the baked maps' UV and a 2
+ *   (u, v, 2), for figure-draw.wgsl to sample them (a model with no UVs keeps its vertex colours)
+ * @returns {{ data: ArrayBuffer, indices: Uint32Array, count: number, skeleton: Bone[], arms: Record<string, ArmInfo>, parts: Record<string, number>, textured: boolean }}
  */
-export function buildFigure(glb, R) {
+export function buildFigure(glb, R, o = {}) {
   const arms = glb.json.extras?.arms ?? {};
   const partIds = glb.json.extras?.parts ?? {};
   const partName = Object.fromEntries(Object.entries(partIds).map(([k, v]) => [v, k]));
@@ -71,8 +73,9 @@ export function buildFigure(glb, R) {
   const joints = new Uint8Array(count * 4), weights = new Uint8Array(count * 4);
   const indices = new Uint32Array(tris);
   let v0 = 0, i0 = 0;
+  const textured = !!o.textured && [...meshes.values()].every((m) => m.attributes.TEXCOORD_0);
   for (const [name, m] of meshes) {
-    const P = m.attributes.POSITION, N = m.attributes.NORMAL, C = m.attributes.COLOR_0, L = m.attributes._PART;
+    const P = m.attributes.POSITION, N = m.attributes.NORMAL, C = m.attributes.COLOR_0, L = m.attributes._PART, UV = m.attributes.TEXCOORD_0;
     const n = P.length / 3;
     const arm = arms[name];
     for (let k = 0; k < n; k++) {
@@ -80,7 +83,7 @@ export function buildFigure(glb, R) {
       for (let a = 0; a < 3; a++) {
         vertices[o + a] = P[k * 3 + a];
         vertices[o + 3 + a] = N[k * 3 + a];
-        vertices[o + 6 + a] = C ? C[k * 3 + a] : 0.5;
+        vertices[o + 6 + a] = textured ? (a < 2 ? UV[k * 2 + a] : 2) : C ? C[k * 3 + a] : 0.5;
       }
       // Which part, and where along it.
       const part = arm ? name : partName[L ? L[k] : 0] ?? 'torso';
@@ -104,5 +107,5 @@ export function buildFigure(glb, R) {
     i0 += m.indices.length;
   }
   const data = packMesh({ vertices, count }, joints, weights);
-  return { data, indices, count, skeleton, arms, parts: partIds };
+  return { data, indices, count, skeleton, arms, parts: partIds, textured };
 }

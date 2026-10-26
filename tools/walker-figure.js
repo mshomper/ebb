@@ -5,30 +5,48 @@
 // gait, the closing step and the turn on the spot look as they will on the island. Nothing here is
 // saved.
 
+// Side by side (Meshy clips, October 26, 2026): today's figure (the code's own stride and roll, vertex
+// colours) on the left, the new one (Matt's clips, the baked texture) on the right, both moved by the
+// same stand-in walker and every button, with each one's pose cost in the frame-time row.
 import { createStage } from './walker-figure-stage.js';
-import { loadFigureModel, eyeUniforms } from '../src/world/figure/index.js';
+import { loadFigureModel, loadFigureClips, eyeUniforms } from '../src/world/figure/index.js';
 import { buildFigure } from '../src/world/figure/rig.js';
 import { createFigureMotion } from '../src/world/figure/motion.js';
 
 const canvas = /** @type {HTMLCanvasElement} */ (document.getElementById('view'));
+const canvasOld = /** @type {HTMLCanvasElement} */ (document.getElementById('view-old'));
 const note = /** @type {HTMLElement} */ (document.getElementById('note'));
 const stats = /** @type {HTMLElement} */ (document.getElementById('stats'));
 const $ = (/** @type {string} */ id) => /** @type {HTMLElement} */ (document.getElementById(id));
 
-const made = await createStage(canvas);
-if (!made.ok) {
-  note.textContent = `This page needs WebGPU (${made.reason}).`;
-  throw new Error(made.reason);
+const made = await createStage(canvas), madeOld = await createStage(canvasOld);
+if (!made.ok || !madeOld.ok) {
+  const why = !made.ok ? made.reason : !madeOld.ok ? madeOld.reason : '';
+  note.textContent = `This page needs WebGPU (${why}).`;
+  throw new Error(why);
 }
-const stage = made.stage;
+const stage = made.stage, stageOld = madeOld.stage;
 const R = await (await fetch('../recipes/world/figure.json')).json();
 const W = await (await fetch('../recipes/world/walker.json')).json();
 const glb = await loadFigureModel(R);
-const built = buildFigure(glb, R);
+const clips = await loadFigureClips(R);
+const built = buildFigure(glb, R, { textured: true });
+const builtOld = buildFigure(glb, R);
 stage.setMesh(built);
-const motion = createFigureMotion(R, built.skeleton);
+stageOld.setMesh(builtOld);
+await stage.setMaps(glb);
+const motionNew = createFigureMotion(R, built.skeleton, clips);
+const motionOld = createFigureMotion(R, builtOld.skeleton);
+/** Every call goes to both figures (the first's answer comes back); info and bones are the new one's. @type {any} */
+const motion = new Proxy(motionNew, {
+  get(target, key) {
+    const v = /** @type {any} */ (target)[key];
+    if (typeof v !== 'function') return v;
+    return (/** @type {any[]} */ ...args) => { /** @type {any} */ (motionOld)[key](...args); return v.apply(target, args); };
+  },
+});
 const headBone = built.skeleton.findIndex((b) => b.name === 'head');
-const eyeBuf = new Float32Array(20);
+const eyeBuf = new Float32Array(20), eyeBufOld = new Float32Array(20);
 
 // The test grounds.
 /** @type {Record<string, (x: number, z: number) => number>} */
@@ -40,6 +58,7 @@ const GROUNDS = {
 let groundName = 'flat';
 let ground = GROUNDS.flat;
 stage.setGround(ground);
+stageOld.setGround(ground);
 let water = 0;
 
 // The stand-in walker: walks between x = -1.8 and 1.8 at the chosen pace, eases up and slows into
@@ -50,10 +69,13 @@ const w = { x: -1.8, z: 0, yaw: Math.PI / 2, speed: 0, goal: 1.8, wait: 1.2 };
 document.querySelectorAll('[data-from]').forEach((b) => { const v = P[/** @type {HTMLElement} */ (b).dataset.from ?? '']; if (v) /** @type {HTMLElement} */ (b).dataset.pace = String(v); });
 let pace = P.strollMps ?? 1.5, posture = /** @type {'stand' | 'sit' | 'kneel'} */ ('stand'), below = true, look = false;
 let slow = false, night = false, weights = false;
-let lastT = performance.now(), cpu = 0, frames = 0;
+let lastT = performance.now(), cpu = 0, cpuOld = 0, frameMs = 0, frames = 0;
 // Frame strips: figurePage.hold(true) keeps the walker going straight at the pace with time held;
 // figurePage.step(n, dt) then moves it on n frames of dt seconds.
 let held = false, toStep = 0, stepDt = 1 / 60;
+/** Seconds into a roll, or -1. */
+let rollT = -1;
+const rollAt = () => (rollT >= 0 ? Math.min(1, rollT / W.steer.roll.durS) : -1);
 /** @type {any} */ (window).figurePage = {
   walker: w, motion,
   hold(/** @type {boolean} */ on) { held = on; if (on) { w.goal = Math.sign(w.goal - w.x || 1) * 1e4; w.yaw = w.goal > 0 ? Math.PI / 2 : -Math.PI / 2; w.speed = pace; w.wait = 0; } else w.goal = Math.sign(w.goal) * 1.8; },
@@ -88,25 +110,36 @@ function frame() {
   lastT = now;
   let dt = slow ? realDt * 0.25 : realDt;
   if (held) { dt = toStep > 0 ? stepDt : 0; if (toStep > 0) toStep--; w.speed = pace; }
-  const moving = held ? (w.x += Math.sign(w.goal - w.x) * pace * dt, true) : stepWalker(dt);
-  const t0 = performance.now();
-  const r = motion.update(dt, {
-    x: w.x, z: w.z, y: ground(w.x, w.z), yaw: w.yaw, speed: w.speed, moving,
-    ground, depth: (x, z) => Math.max(0, water - ground(x, z)),
+  // Space's roll: the walker's own distance and time, along the way it faces.
+  const RL = W.steer.roll;
+  if (rollT >= 0) { rollT += dt; w.x += Math.sign(Math.sin(w.yaw)) * (RL.distM / RL.durS) * dt; if (rollT > RL.durS) rollT = -1; }
+  const moving = rollT >= 0 || (held ? (w.x += Math.sign(w.goal - w.x) * pace * dt, true) : stepWalker(dt));
+  const input = {
+    x: w.x, z: w.z, y: ground(w.x, w.z), yaw: w.yaw, speed: w.speed, moving, rolling: rollAt(),
+    ground, depth: (/** @type {number} */ x, /** @type {number} */ z) => Math.max(0, water - ground(x, z)),
     look: look ? { yaw: w.yaw + Math.sin(now / 1500) * 1.4 } : null,
     posture, below, sleepy: night,
-  });
-  cpu += performance.now() - t0; frames++;
+  };
+  const t0 = performance.now();
+  const r = motionNew.update(dt, input);
+  const t1 = performance.now();
+  const rOld = motionOld.update(dt, input);
+  cpu += t1 - t0; cpuOld += performance.now() - t1; frameMs += realDt * 1000; frames++;
+  const at = [w.x, ground(w.x, w.z), w.z];
   stage.draw({
-    bones: motion.bones, eyes: eyeUniforms(R.eyes, headBone, r.eyes, eyeBuf),
-    place: [w.x, ground(w.x, w.z), w.z, r.yaw], weights, night, water: water > 0 ? water : -9,
-    follow: [w.x, ground(w.x, w.z), w.z], dt: realDt,
+    bones: motionNew.bones, eyes: eyeUniforms(R.eyes, headBone, r.eyes, eyeBuf),
+    place: [...at, r.yaw], weights, night, water: water > 0 ? water : -9, follow: at, dt: realDt,
+  });
+  stageOld.draw({
+    bones: motionOld.bones, eyes: eyeUniforms(R.eyes, headBone, rOld.eyes, eyeBufOld),
+    place: [...at, rOld.yaw], weights, night, water: water > 0 ? water : -9, follow: at, dt: realDt,
   });
   if (frames % 15 === 0) {
-    const i = motion.info;
+    const i = motionNew.info;
     stats.innerHTML = [
       ['Model', `${built.count.toLocaleString()} vertices, ${(built.indices.length / 3).toLocaleString()} triangles, ${((built.data.byteLength + built.indices.byteLength) / 1048576).toFixed(2)} MB`],
-      ['Pose cost', `${(cpu / frames).toFixed(3)} ms a frame`],
+      ['Frame time', `${(frameMs / frames).toFixed(1)} ms a frame; posing today ${(cpuOld / frames).toFixed(3)} ms, new ${(cpu / frames).toFixed(3)} ms`],
+      ['Clips', i.clip ? `${Math.round(i.clip.weight * 100)} % leading${i.clip.roll > 0 ? ', rolling' : ''}` : 'none'],
       ['Speed', `${w.speed.toFixed(2)} m/s`],
       ['Feet', i.mode === 'gait' ? 'walking (stride by distance)' : 'pinned (step to turn or settle)'],
       ['Step', `${(i.pace?.stepM ?? 0).toFixed(2)} m`],
@@ -115,7 +148,7 @@ function frame() {
       ['Act', i.act ?? 'none'],
       ['Eyes', i.expression],
     ].map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('');
-    if (frames > 600) { cpu = 0; frames = 0; }
+    if (frames > 600) { cpu = 0; cpuOld = 0; frameMs = 0; frames = 0; }
   }
   requestAnimationFrame(frame);
 }
@@ -136,11 +169,13 @@ $('turn').addEventListener('click', () => {
   w.yaw += Math.PI * 0.75;
   note.textContent = 'A turn on the spot: small steps, one foot then the other.';
 });
-$('slow').addEventListener('click', (e) => { slow = !slow; press(/** @type {Element} */ (e.currentTarget), slow); });
+$('roll').addEventListener('click', () => { if (rollT < 0) rollT = 0; note.textContent = 'Roll (Space): Matt\'s roll on the right, the code\'s tuck and turn on the left.'; });
+$('slow').addEventListener('click',(e) => { slow = !slow; press(/** @type {Element} */ (e.currentTarget), slow); });
 document.querySelectorAll('[data-ground]').forEach((b) => b.addEventListener('click', () => {
   groundName = /** @type {HTMLElement} */ (b).dataset.ground ?? 'flat';
   ground = GROUNDS[groundName];
   stage.setGround(ground);
+  stageOld.setGround(ground);
   document.querySelectorAll('[data-ground]').forEach((o) => press(o, o === b));
   note.textContent = groundName === 'shelf' ? 'A 30 cm shelf: the walker steps up it and down again.' : groundName === 'slope' ? 'A 15 degree slope: the pelvis drops for the lower foot, the feet tilt to the ground.' : '';
 }));
@@ -208,7 +243,7 @@ document.querySelectorAll('[data-face]').forEach((b) => b.addEventListener('clic
   motion.express(e, e === 'sleepy' ? 4 : undefined);
 }));
 $('night').addEventListener('click', (e) => { night = !night; press(/** @type {Element} */ (e.currentTarget), night); note.textContent = night ? 'After dark the eyes glow faintly.' : ''; });
-document.querySelectorAll('[data-view]').forEach((b) => b.addEventListener('click', () => stage.view(/** @type {any} */ (/** @type {HTMLElement} */ (b).dataset.view))));
-$('spin').addEventListener('click', (e) => { const on = e.currentTarget instanceof Element && e.currentTarget.getAttribute('aria-pressed') !== 'true'; press(/** @type {Element} */ (e.currentTarget), on); stage.spin(on); });
+document.querySelectorAll('[data-view]').forEach((b) => b.addEventListener('click', () => { const v = /** @type {any} */ (/** @type {HTMLElement} */ (b).dataset.view); stage.view(v); stageOld.view(v); }));
+$('spin').addEventListener('click', (e) => { const on = e.currentTarget instanceof Element && e.currentTarget.getAttribute('aria-pressed') !== 'true'; press(/** @type {Element} */ (e.currentTarget), on); stage.spin(on); stageOld.spin(on); });
 $('weights').addEventListener('click', (e) => { weights = !weights; press(/** @type {Element} */ (e.currentTarget), weights); note.textContent = weights ? 'Each colour is a bone; blends show where the skin follows two.' : ''; });
 $('look').addEventListener('click', (e) => { look = !look; press(/** @type {Element} */ (e.currentTarget), look); note.textContent = look ? 'The head follows where you look, less while walking.' : ''; });
