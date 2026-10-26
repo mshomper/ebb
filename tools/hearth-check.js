@@ -60,6 +60,22 @@ hb.addEventListener('click', () => {
 });
 for (const b of document.querySelectorAll('[data-view]')) b.addEventListener('click', () => view(/** @type {HTMLElement} */ (b).dataset.view ?? 'fire'));
 
+/** The pot taken up from the hearth and carried: the walker down on the pad, turned to face the view. */
+async function carry() {
+  const pad = get('campPad');
+  if (!pad) return;
+  app.camp.carry.debug.takeUp();
+  const x = pad.x - pad.fx * 0.5 + pad.fz * 2, z = pad.z - pad.fz * 0.5 - pad.fx * 2, yaw = Math.atan2(pad.fx, pad.fz);
+  app.walk.placeAt(x, z, yaw, 'stand');
+  // A free camera in front of the walker, looking back at the pot in its arms.
+  const y = app.terrain.sampleHeight(x, z) + 0.6;
+  if (app.camera.below) app.camera.setGround(null, [x, y, z]);
+  app.camera.setClose({ minDistance: 0.3, minEyeHeight: 0.05 });
+  await new Promise((res) => setTimeout(res, 300));
+  app.camera.setPose({ target: [x, y, z], yaw: yaw + 0.5, distance: 1.9, pitch: 0.18 });
+}
+$('[data-carry]').addEventListener('click', () => { carry(); });
+
 // `&fire=embers`, `&view=above` and `&bare` (no hearth stones) open on that state and view.
 const fire0 = params.get('fire') ?? 'lit';
 app.camp.debug.fireAs(fire0);

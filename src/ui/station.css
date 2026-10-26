@@ -67,6 +67,8 @@
 /* A pencil outline: the part's shape only, dashed, no fill and no name (TR-16). */
 .ebb-station__spot .is-pencil { color: var(--jr-pencil); --fam-op: 0; }
 .ebb-station__spot .is-pencil * { fill-opacity: 0 !important; stroke-dasharray: 2 2; }
+/* A clay piece shaped and not yet fired (S5): its glyph in pale unfired clay. */
+.item-icon.is-raw { --fam: #D9CBB2 !important; }
 .ebb-station__go { width: var(--st-target, 56px); height: var(--st-target, 56px); }
 .ebb-station__go:disabled { opacity: 0.45; cursor: default; border-style: dashed; }
 .ebb-station__go:disabled:hover { background: transparent; }

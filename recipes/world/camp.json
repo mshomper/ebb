@@ -63,7 +63,7 @@
 
   "hearth": { "stonesTopM": 0.086, "slots": { "cooking-pot": "pot-cook", "tea-pot": "pot-tea", "dye-pot": "dyepot", "cup": "cup" },
     "pots": ["cooking-pot", "tea-pot"], "benchAt": [[-0.3, 0.584, 0.02], [-0.1, 0.584, 0.06], [0.12, 0.584, 0.02], [0.32, 0.584, 0.06]], "standSquash": 0.45, "standScale": 1.4,
-    "carryAt": [0, -0.08, 0.2] },
+    "carryAt": [0, -0.07, 0.02] },
   "hearthNote": "The hearth (S4, S5; src/world/camp/hearth.js): the hearth stones (props.models hearth-stones, made at the workbench) stand in the ring's middle, their tops stonesTopM up; one pot stands on them at a time, the others wait in their own slots at the ring's side (slots: the camp slot each fired piece goes to; the land recipe places them), and a click on a waiting pot swaps it on. pots: the pots that can stand on the hearth (the dye pot's slot is drawn, a flat stand stone, standScale times the stone and standSquash high; its make waits for Phase 4). benchAt: where shaped pieces wait pale on the workbench's slab (m, in the bench's own frame: x across, y up, z toward where you work). carryAt: the pot held in both arms, from between your hands (m: right, down, forward).",
 
   "lantern": { "lightK": 2200, "cd": 8, "rangeM": 4.5, "flicker": 0.06, "flickerHz": 3, "hangM": [0.0, 0.95, 0.95], "handleM": 0.3, "hookM": [0.0, 1.37, 0.865], "hookLoopM": 0.03, "cordM": 0.007, "cordSrgb": [92, 74, 52], "carryDropM": 0.32, "glassNits": 900, "glassM": 0.035, "lightsAtSunDeg": 2 },

@@ -15,8 +15,8 @@ import { get, subscribe } from '../core/store.js';
 import { dispatch } from '../input/actions.js';
 import { pouchSvg } from './sketches/pouches.js';
 import { registerCardAction } from './card-actions.js';
-import { itemPouchSvg, ensureItemSprite, CHIP_FOR } from './icons/items.js';
-import { itemIconFor } from './icons/item-registry.js';
+import { itemPouchSvg, itemIconSvg, ensureItemSprite, CHIP_FOR } from './icons/items.js';
+import { itemIconFor, makeIcon } from './icons/item-registry.js';
 import { heldKind } from '../world/pack/stores.js';
 
 /** The card's words for how full a pouch is, lower case, for aria-labels. */
@@ -73,10 +73,14 @@ export function mountPack(row, words, sketchOf) {
   function render() {
     const v = get('packView');
     if (!v) { row.innerHTML = ''; shown = ''; return; }
-    const key = JSON.stringify([v.size, v.pouches, v.holding]);
+    const held = v.holding ? get('potHeld') ?? null : null;
+    const key = JSON.stringify([v.size, v.pouches, v.holding, held?.key ?? null]);
     if (key === shown) return;
     shown = key;
     const cells = [];
+    // The pot in your arms (K-26): its tile first, not dimmed; a click opens its card (Set down, Pour out).
+    const potIcon = held?.pot ? makeIcon(held.pot) : null;
+    if (potIcon) cells.push(`<button type="button" class="ebb-pouch ebb-pouch--pot" data-pot="1" aria-label="${words.potTile ?? 'The pot'}">${itemIconSvg(potIcon)}</button>`);
     for (let i = 0; i < Math.max(v.size, v.pouches.length); i++) {
       const p = v.pouches[i];
       // Its kind's item glyph standing in the mouth over the fullness look (F7); a kind with no glyph
@@ -92,6 +96,8 @@ export function mountPack(row, words, sketchOf) {
     row.classList.toggle('is-holding', !!v.holding);
   }
   row.addEventListener('click', (e) => {
+    const pot = /** @type {HTMLElement | null} */ (/** @type {HTMLElement} */ (e.target).closest('button[data-pot]'));
+    if (pot) { const r = pot.getBoundingClientRect(); dispatch({ type: 'pot.card', x: r.left + r.width / 2, y: r.top, source: 'button' }); return; }
     const b = /** @type {HTMLElement | null} */ (/** @type {HTMLElement} */ (e.target).closest('button[data-i]'));
     if (!b) return;
     const r = b.getBoundingClientRect();
@@ -104,6 +110,7 @@ export function mountPack(row, words, sketchOf) {
   }
   render();
   const off = subscribe('packView', () => { render(); light(); });
+  const offPot = subscribe('potHeld', render);
   const offLit = subscribe('packLit', light);
-  return () => { off(); offLit(); row.innerHTML = ''; };
+  return () => { off(); offLit(); offPot(); row.innerHTML = ''; };
 }

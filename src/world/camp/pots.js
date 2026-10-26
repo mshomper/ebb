@@ -91,6 +91,39 @@ export function placeFired(c, kind, hour, seed, H) {
 }
 
 /**
+ * The water within reach of a point, for Fill (K-26): 'fresh' for running or slow water or a pool
+ * a spring feeds (the spring's pool, its stream, a rill led past camp), 'sea' for the sea, 'still'
+ * for standing water no spring feeds, else null. Fresh before sea, sea before still. Off the
+ * summary's rect is open sea. Pure.
+ * @param {{ rect: { x: number, y: number, w: number, h: number }, cls: Uint8Array, basin?: Uint16Array, basinSource?: Uint8Array }} s the water summary
+ * @param {number} x @param {number} z @param {number} reachM
+ * @param {{ cellOf: (m: number) => number, cellM: number, fresh: number[], sea: number, still: number, spring: number, seaFill: boolean }} W
+ *   cellOf: a world meter to its water cell; fresh: the classes that fill fresh (running, slow); sea,
+ *   still: their classes; spring: the basin source a spring is; seaFill: the sea fills the pot
+ * @returns {null | 'fresh' | 'sea' | 'still'}
+ */
+export function waterHere(s, x, z, reachM, W) {
+  const n = Math.ceil(reachM / W.cellM);
+  const ci = W.cellOf(x) - s.rect.x, cj = W.cellOf(z) - s.rect.y;
+  let sea = false, still = false;
+  for (let dj = -n; dj <= n; dj++) {
+    for (let di = -n; di <= n; di++) {
+      if ((di * di + dj * dj) * W.cellM * W.cellM > reachM * reachM) continue;
+      const i = ci + di, j = cj + dj;
+      if (i < 0 || j < 0 || i >= s.rect.w || j >= s.rect.h) { sea = true; continue; }
+      const k = j * s.rect.w + i, c = s.cls[k];
+      if (W.fresh.includes(c)) return 'fresh';
+      if (c === W.still) {
+        if (s.basin && s.basinSource && s.basinSource[s.basin[k]] === W.spring) return 'fresh';
+        still = true;
+      }
+      if (c === W.sea) sea = true;
+    }
+  }
+  return sea && W.seaFill ? 'sea' : still ? 'still' : null;
+}
+
+/**
  * The hearth stones made: set in the ring's middle, with the first pot already fired on them.
  * @param {import('./model.js').Camp} c @param {number} hour @param {number} seed @param {HearthRecipe} H
  * @returns {import('./model.js').Camp}

@@ -27,6 +27,7 @@ import { ringLaid, inSlot } from './model.js';
 import { cleanCook, layout, drawPlan, available, recordMade, buildKinds, partKinds } from './making.js';
 import { createKeeps } from './keeps.js';
 import { layWork } from './work.js';
+import { shapedOn, addShaped, takeShaped, setHearth } from './pots.js';
 import { pileWord, rackWord } from '../pack/piles.js';
 
 /** The keeps that open in the workspace's store mode, and the slot each stands in. */
@@ -95,7 +96,13 @@ export function createStations(k) {
     for (const p of o.piles?.piles?.() ?? []) if (p.handfuls > 0) n[p.holds] = (n[p.holds] ?? 0) + p.handfuls;
     return n;
   };
-  const sources = () => [{ id: 'pack', holds: packHolds() }, { id: 'piles', holds: pilesHolds() }, { id: 'store', holds: keeps.hamper.holds() }];
+  /** The clay pieces waiting pale on the workbench (S5), as kinds 'shaped:<kind>' the fire lays. */
+  const benchHolds = () => {
+    /** @type {Record<string, number>} */ const n = {};
+    for (const kind of shapedOn(k.camp())) n[`shaped:${kind}`] = (n[`shaped:${kind}`] ?? 0) + 1;
+    return n;
+  };
+  const sources = () => [{ id: 'pack', holds: packHolds() }, { id: 'piles', holds: pilesHolds() }, { id: 'store', holds: keeps.hamper.holds() }, { id: 'bench', holds: benchHolds() }];
   /**
    * Take the handfuls a plan names from where it says. @param {{ kind: string, from: string }[]} plan
    * @returns {boolean} all came
@@ -108,6 +115,8 @@ export function createStations(k) {
         const pile = (o.piles?.piles?.() ?? []).find((/** @type {any} */ p) => p.holds === kind && p.handfuls > 0);
         ok = !!pile && o.piles.takeUp(pile.id, () => ({ added: 1 })).taken > 0 && ok;
       } else if (from === 'store') ok = keeps.hamper.take(kind, 1) > 0 && ok;
+      // A pale piece lifted off the workbench to the fire (S5).
+      else if (from === 'bench') k.change((c) => takeShaped(c, kind.slice('shaped:'.length)));
     }
     return ok;
   }
@@ -180,7 +189,9 @@ export function createStations(k) {
   /** The station open now and what is laid on it (live only). @type {{ id: string, laid: string[], nothingT: number, line: string | null } | null} */
   let open = null;
   let makeT = -1, retireT = 0;
-  const nameOf = (/** @type {string} */ kind) => o.pack?.nameOf?.(kind) ?? kind;
+  const nameOf = (/** @type {string} */ kind) => (kind.startsWith('shaped:') ? W.shapedNames?.[kind.slice(7)] ?? kind.slice(7) : o.pack?.nameOf?.(kind) ?? kind);
+  /** Room on the workbench for another shaped piece to wait (cook.json shaped.max). */
+  const benchRoom = () => shapedOn(k.camp()).length < (C.shaped?.max ?? 4);
 
   /** The action a station shows: its make's own (Dry, Grind), else the station's. @param {string} id @param {string | null} make */
   function actionOf(id, make) {
@@ -219,13 +230,15 @@ export function createStations(k) {
       left: Math.min(h, avail[kind] ?? 0), word: o.piles?.describe?.({ holds: kind, handfuls: h })?.text ?? '' }));
     const store = Object.entries(keeps.hamper.holds()).map(([kind, h]) => ({ kind, name: nameOf(kind), handfuls: h,
       left: Math.min(h, avail[kind] ?? 0), word: pileWord(h, P) }));
+    // At the fire, the pale pieces waiting on the workbench, to lay at the star's edge (S5).
+    const bench = id === 'fire' ? Object.entries(benchHolds()).map(([kind, h]) => ({ kind, name: nameOf(kind), handfuls: h, left: Math.min(h, avail[kind] ?? 0), word: '' })) : [];
     return {
       id, name: id === 'fire' ? W.fire.name : W[id]?.name ?? id, spots,
       laid: open.laid.map((kind, i) => ({ kind, name: nameOf(kind), used: L.have[i] >= 0 })),
       outlines: open.laid.length < spots ? L.missing.slice(0, spots - open.laid.length) : [],
       action: { ...actionOf(id, L.make), ready: L.complete && makeT < 0, make: L.make },
       line: open.line ?? (makeT >= 0 ? null : W.laid), working: makeT >= 0,
-      pack: packKinds, piles: row(pilesHolds()), store, packName: W.pack, pilesName: W.piles, storeName: W.hamper, at: stationAt(id),
+      pack: packKinds, piles: row(pilesHolds()), store, bench, packName: W.pack, pilesName: W.piles, storeName: W.hamper, benchName: W.onBench, at: stationAt(id),
     };
   }
   let viewKey = '';
@@ -269,6 +282,8 @@ export function createStations(k) {
     // A herb for the rack needs a place on it; a piece for the night's fire, room at the fire (P2i).
     if (C.makes[L.make].out === 'rack' && !keeps.rack.room(open.laid[0])) { open.line = W.rackFull; publish(); return; }
     if (C.makes[L.make].out === 'work' && !workRoom()) { open.line = W.workFull; publish(); return; }
+    // A shaped piece needs room on the workbench to wait for the fire (S5).
+    if (C.makes[L.make].out === 'shaped' && !benchRoom()) { open.line = W.benchFull; publish(); return; }
     const at = stationAt(open.id);
     if (at) o.walk.kneelToward(at.x, at.z, C.makeS, 'make');
     makeT = 0;
@@ -284,11 +299,16 @@ export function createStations(k) {
     const id = L.make, m = C.makes[id], hour = k.hourNow(), laid = open.laid;
     if (m.out === 'rack' && !keeps.rack.room(laid[0])) { open.line = W.rackFull; publish(); return; }
     if (m.out === 'work' && !workRoom()) { open.line = W.workFull; publish(); return; }
+    if (m.out === 'shaped' && !benchRoom()) { open.line = W.benchFull; publish(); return; }
     takePlan(plan);
     const first = cookNow().made[id] === undefined;
     // A make that stands in a camp slot (the rack, the mortar, the hamper) or stacks on one.
     if (m.out === 'slot' || m.out === 'stack') placeNow(id);
     else changeCook((s) => recordMade(s, id, hour, m.out === 'tool'));
+    // The hearth stones set in the ring's middle, the first pot on them (S4); a clay piece shaped,
+    // waiting pale on the workbench for the fire (S5).
+    if (m.out === 'hearth') { k.change((c) => setHearth(c, hour, hash32(k.campSeed, 40) >>> 0, R.hearth)); emitDeferred('camp:placed', { slot: 'hearth', kind: id }); }
+    if (m.out === 'shaped') k.change((c) => addShaped(c, id));
     // A make that fills a pouch (rush cord, crushed shell): into the pack, or a small heap at your feet when full.
     if (m.out === 'pouch') {
       const kind = m.gives ?? id, n = m.count ?? 1;

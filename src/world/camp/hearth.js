@@ -5,9 +5,13 @@
 // workbench, the pieces firing at the star's edge (pale at first, taking the fired clay's colour as
 // their hours of fire add up), and the pot in your arms. Rules: pots.js (pure); firing: work.js.
 
+import { emit, emitDeferred } from '../../core/events.js';
+import { get, update } from '../../core/store.js';
+import { onAction } from '../../input/actions.js';
+import { registerCardAction } from '../../ui/card-actions.js';
 import { inSlot } from './model.js';
-import { potOnHearth, pieceOf, shapedOn, setHearth, placeFired, addShaped } from './pots.js';
-import { fired, layWork } from './work.js';
+import { potOnHearth, pieceOf, shapedOn, setHearth, placeFired, addShaped, swapOn } from './pots.js';
+import { fired, layWork, workDone } from './work.js';
 import { workSpot } from './star.js';
 import { hash32 } from '../../core/rng.js';
 
@@ -71,7 +75,8 @@ export function createHearth(k) {
     if (held && onIt) {
       const hl = k.walk.hand?.('l'), hr = k.walk.hand?.('r');
       if (hl && hr) {
-        const yaw = Math.atan2(hr.x - hl.x, hr.z - hl.z) - Math.PI / 2, A = H.carryAt;
+        // Between your hands, turned your way (a hand's yaw is your facing: +z of the walker's frame).
+        const yaw = hl.yaw, A = H.carryAt;
         const fx = Math.sin(yaw), fz = Math.cos(yaw);
         out.push({ key: modelOf(onIt), x: (hl.x + hr.x) / 2 + fx * A[2], y: (hl.y + hr.y) / 2 + A[1], z: (hl.z + hr.z) / 2 + fz * A[2], yaw });
       }
@@ -98,5 +103,85 @@ export function createHearth(k) {
   /** The hearth stones lifted out again (tools/hearth-check.html: the star as the first evening has it). */
   const clearHearth = () => k.change((c) => ({ ...c, slots: c.slots.filter((s) => s.slot !== 'hearth') }));
 
-  return { props, debug: { setUp, clearHearth } };
+  // ---- cards: the pot on the hearth, the pots and cup waiting by the fire, the dye pot's stand ----
+
+  const CW = k.cookWords ?? {};
+  const base = { noPage: true, stage: -1, sub: null, canCarry: false, campPage: true };
+  /** A pot's line: its water now. @param {string} kind */
+  const waterLine = (kind) => CW.potWater?.[pieceOf(k.camp(), kind)?.water ?? 'none'] ?? '';
+
+  /**
+   * The card a click at a ground point opens, if it lands on the hearth's pot, a piece waiting in its
+   * slot, or the dye pot's stand. @param {number} x @param {number} z
+   */
+  function cardAt(x, z) {
+    const c = k.camp(), r = k.where.slotAt('ring'), onIt = potOnHearth(c);
+    if (r && inSlot(c, 'hearth') && onIt && !k.holdingPot() && Math.hypot(x - r.x, z - r.z) < (H.potCardM ?? 0.22)) {
+      return { ...base, sp: 'camp:pot', camp: 'pot', pot: onIt, onHearth: true, name: CW.pieceNames?.[onIt] ?? onIt, icon: 'takeup',
+        text: [CW.pieceLines?.hearth ?? '', waterLine(onIt)].filter(Boolean).join(' '), wx: r.x, wz: r.z, r: 0.5 };
+    }
+    for (const [kind, slot] of Object.entries(H.slots)) {
+      const s = k.where.slotAt(slot);
+      if (!s || Math.hypot(x - s.x, z - s.z) > (s.slot.r ?? 0.15) + 0.12) continue;
+      const p = pieceOf(c, kind);
+      if (kind === 'dye-pot' && !p) {
+        if (!inSlot(c, 'hearth')) continue;
+        return { ...base, sp: 'camp:dyepot', camp: 'dyeStand', name: CW.pieceNames?.stand ?? 'Pot stand', icon: 'fire', text: CW.pieceLines?.stand ?? '', wx: s.x, wz: s.z, r: 0.3 };
+      }
+      if (!p || (kind === onIt && inSlot(c, 'hearth'))) continue;
+      const pot = H.pots.includes(kind);
+      return { ...base, sp: `camp:${kind}`, camp: pot ? 'potWaiting' : 'piece', pot: kind, name: CW.pieceNames?.[kind] ?? kind, icon: pot ? 'setdown' : 'fire',
+        text: [CW.pieceLines?.[pot ? 'waiting' : kind] ?? '', pot ? waterLine(kind) : ''].filter(Boolean).join(' '), wx: s.x, wz: s.z, r: 0.3,
+        canSwap: pot && !!inSlot(c, 'hearth') && !k.holdingPot() };
+    }
+    return null;
+  }
+
+  /** A waiting pot onto the hearth stones; the one there goes back to its slot. @param {string} kind */
+  function swap(kind) {
+    const s = k.where.slotAt(H.slots[kind] ?? ''), r = k.where.slotAt('ring');
+    if (!s || !r || k.holdingPot()) return;
+    k.walk.gesture('takeUp', s);
+    k.change((c) => swapOn(c, kind));
+    emitDeferred('pot:swapped', { pot: kind });
+    if (get('identify')?.pot === kind) update('identify', () => null);
+  }
+
+  const offs = [
+    registerCardAction({ id: 'potswap', icon: 'setdown', order: 4, main: true, label: CW.potSwap ?? 'Set it on the hearth',
+      when: (c) => c?.camp === 'potWaiting' && !!c.canSwap, action: (c) => ({ type: 'pot.swap', pot: c.pot }) }),
+    onAction((/** @type {any} */ a) => { if (a.type === 'pot.swap') swap(a.pot); }),
+  ];
+
+  // ---- fired pieces to their places ----
+
+  /** A fired pot or the cup: done at the fire, it goes to its own slot (a bowl waits to be taken up). @param {import('./work.js').WorkPiece} p */
+  const toSlot = (p) => { const f = firesOf(p.id); return !!f && !!H.slots[f]; };
+  let settleT = 0;
+  /**
+   * Each frame, now and then: pieces whose hours of fire are done leave the work list for their
+   * slots, the first pot onto empty hearth stones (pots.js placeFired). The clock alone decides, so
+   * live play and a return from rest or time away end the same. @param {number} dt
+   */
+  function settle(dt) {
+    if ((settleT -= dt) > 0) return;
+    settleT = 1;
+    const c0 = k.camp(), hour = k.hourNow();
+    const due = c0.work.filter((p) => toSlot(p) && workDone(p, c0.fire, hour, F));
+    if (!due.length) return;
+    k.change((c) => {
+      let x = { ...c, work: c.work.filter((p) => !(toSlot(p) && workDone(p, c.fire, hour, F))) };
+      for (const p of due) x = placeFired(x, /** @type {string} */ (firesOf(p.id)), hour, hash32(k.campSeed, 60, Math.round(p.laidHour * 60)), H);
+      return x;
+    });
+    for (const p of due) {
+      const kind = /** @type {string} */ (firesOf(p.id));
+      emitDeferred('camp:fired', { make: p.id, kind, hour });
+      // Said on the island when you are at camp to see it; the camp page keeps it either way.
+      const you = k.walk.below ? k.walk.you() : null, pad = k.where.padNow();
+      if (you && pad && Math.hypot(you[0] - pad.x, you[2] - pad.z) <= pad.r + 3 && CW.firedLines?.[kind]) emit('island:notice', { text: CW.firedLines[kind], showS: 6 });
+    }
+  }
+
+  return { props, cardAt, swap, settle, debug: { setUp, clearHearth }, dispose() { for (const off of offs) off(); } };
 }

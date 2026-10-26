@@ -40,6 +40,7 @@ import { createCampFrame } from './frame.js';
 import { createStations } from './stations.js';
 import { withFire, takeDone } from './work.js';
 import { createHearth } from './hearth.js';
+import { createCarry } from './carry.js';
 
 const H = 3600;
 
@@ -47,8 +48,8 @@ const H = 3600;
  * @param {{ recipe: any, seed: number, walk: any, terrain: any, clock: any, orbit: any, camera: any,
  *   world: any, seasons: any, lighting: { setPoints: (l: any[]) => void }, pack?: any,
  *   shadowBias?: { depthBias: number, depthBiasSlopeScale: number }, low?: boolean,
- *   beat?: () => string | null, poses?: any, piles?: any, cook?: any }} o
- *   cook: recipes/world/cook.json (the stations' makes and builds, S1)
+ *   beat?: () => string | null, poses?: any, piles?: any, cook?: any, water?: any }} o
+ *   cook: recipes/world/cook.json (the stations' makes and builds, S1); water: the live water (Fill the pot, K-26)
  *   piles: E2's piles at camp (src/world/pack/piles-live.js): Feed and Light take a handful from the stick pile
  *   recipe: recipes/world/camp.json; walk: the walker; lighting: the shared light block;
  *   pack: E2's pack (holds, take); beat: the evening's beat now (the director), for its glows;
@@ -169,8 +170,13 @@ export function createCamp(o) {
   }
   const ringNeed = () => ({ fuel: R.ring.fuelHandfuls, stones: R.ring.stoneHandfuls });
 
+  /**
+   * Overnight work taken up from the ring into the pack (charcoal sticks, a fired bowl): not a fired
+   * pot or the cup, which go to their own slots (hearth.js). @param {import('./work.js').WorkPiece} p
+   */
+  const takeable = (p) => { const f = o.cook?.makes?.[p.id]?.fires; return !f || !R.hearth?.slots?.[f]; };
   /** What the cards and the frame read. @type {import('./cards.js').CampKit} */
-  const kit = { R, walk: o.walk, camp, where, player, hourNow, holds, ringNeed, hasFuel, nightNow, restAllowed, beatAllows, weatherNow, near, cookWords: o.cook?.words ?? {} };
+  const kit = { R, walk: o.walk, camp, where, player, hourNow, holds, ringNeed, hasFuel, nightNow, restAllowed, beatAllows, weatherNow, near, cookWords: o.cook?.words ?? {}, takeable };
   const frame = createCampFrame({ ...kit, o, props, fx, sunAlt });
   // The stations (S1, S2): the workbench and the apothecary bench built in their slots, the fire,
   // their workspace, and the keeps (the drying rack and the hamper, P2j).
@@ -178,6 +184,8 @@ export function createCamp(o) {
   // The hearth stones, the pots, the cup and the clay pieces (S4, S5): drawn with the camp's models.
   const hearth = createHearth({ ...kit, o, cook: o.cook ?? { makes: {} }, benchAt: stations.benchAt, holdingPot: () => get('pack')?.holding === 'pot', change, campSeed });
   frame.addProps(hearth.props);
+  // The pot carried in both arms, filled at the spring or the sea, set back on the hearth (K-26).
+  const carry = createCarry({ ...kit, o, change });
 
   // ---- acts: walk, face, play, then the change ----
 
@@ -253,7 +261,8 @@ export function createCamp(o) {
   /** Take up what the night's fire has done (P2i, work.js): into the pack, or a heap at your feet. */
   function workTake() {
     const c = camp(), now = hourNow(), r = slotAt('ring');
-    const { work, piece } = takeDone(c.work, c.fire, now, F);
+    // Taken up into the pack: charcoal sticks, a fired bowl; never a pot or the cup, which go to their slots.
+    const { work, piece } = takeDone(c.work, c.fire, now, F, takeable);
     if (!piece || !r) return;
     o.walk.kneelToward(r.x, r.z, 1.2, 'gather');
     change((x) => ({ ...x, work }));
@@ -368,6 +377,8 @@ export function createCamp(o) {
     // Never left standing inside the pitched tent: out to the flap once you are still.
     if (!player.busy() && !o.walk.busy()) stepOut();
     stations.update(dt);
+    hearth.settle(dt);
+    carry.update(dt);
     frame.draw(dt, time, c, fireNow);
   }
   let hidden = false;
@@ -383,11 +394,13 @@ export function createCamp(o) {
     },
     rings,
     /** The card a click at a ground point opens (cards.js). @param {number} x @param {number} z */
-    cardAt: (x, z) => stations.cardAt(x, z) ?? campCardAt(kit, x, z),
+    cardAt: (x, z) => stations.cardAt(x, z) ?? hearth.cardAt(x, z) ?? campCardAt(kit, x, z),
     /** The stations (S1): the workbench and the fire's workspace (tools, tests, test links). */
     stations,
     /** The hearth, the pots and the clay pieces (S4, S5; tools, tests, test links). */
     hearth,
+    /** The pot carried in both arms (K-26; tests). */
+    carry,
     /** For the evening director: the tent is up; the ring is laid. */
     pitched: () => pitched(camp()),
     ringLaid: () => ringLaid(camp()),
@@ -437,7 +450,7 @@ export function createCamp(o) {
         update('camp', (c) => ({ ...c, fire: { ...c.fire, ...set, lightings: Math.max(1, c.fire?.lightings ?? 0) } }));
       },
     },
-    dispose() { for (const off of offs) off(); player.dispose(); stations.dispose(); },
+    dispose() { for (const off of offs) off(); player.dispose(); stations.dispose(); hearth.dispose(); carry.dispose(); },
   };
 }
 

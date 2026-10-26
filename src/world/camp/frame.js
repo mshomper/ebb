@@ -67,7 +67,7 @@ export function createCampFrame(k) {
       for (const g of starLogs(fireNow, c.fire, k.hourNow(), F, S, { seed: inSlot(c, 'ring')?.seed ?? 1, hearth: !!inSlot(c, 'hearth'), rainy })) {
         const p = logPlace(g, halfX);
         list.push({ key: 'log', x: r.x + cy * p.x + sy * p.z, y: r.y + p.y, z: r.z - sy * p.x + cy * p.z, yaw: r.yaw + p.yaw, roll: g.roll,
-          scale: g.size, stretch: g.stretch, endChar: g.endChar, halfX, char: 1, glow: g.glow });
+          scale: g.size, stretch: g.stretch, endChar: g.endChar, halfX, char: g.endChar > 0 ? 1 : 0, glow: g.glow });
       }
       if (word === 'lit') {
         // High while the ring holds plenty, sinking toward low flames as the fuel burns down (F9);
