@@ -18,6 +18,7 @@ import { update as updateStore } from '../../core/store.js';
 import { createWalkGrid } from './grid.js';
 import { createWalker } from './walker.js';
 import { isOpen } from './path.js';
+import { createSolids } from './solids.js';
 import { mainland, nearestJoined } from './reach.js';
 import { crossingNote, depthAtLow, hoursToLow } from './crossing.js';
 import { createFigurePass, createFigure, loadFigureModel } from '../figure/index.js';
@@ -57,7 +58,9 @@ export function createWalk(o) {
     for (const c of o.creatures()) best = Math.min(best, Math.hypot(c.x - x, c.z - z));
     return best;
   };
-  const walker = createWalker(R, { get grid() { return grid; }, depth, ground, nearest });
+  // Solid things you cannot walk through (solids.js): set by the game as they come and go.
+  const solids = createSolids(R.solids.bodyM);
+  const walker = createWalker(R, { get grid() { return grid; }, depth, ground, nearest, solids });
 
   // The figure (W5): its pass is ready at once; the model loads alongside and appears when it has.
   // Drawing only: it reads the walker and never changes it.
@@ -371,6 +374,14 @@ export function createWalk(o) {
       if (!below || acting) { walker.steer(0, 0); return; }
       if (x || z) standAt = 0;
       walker.steer(x, z, run);
+    },
+    /**
+     * The solid things now (camp pieces, logs, stones; solids.js): the walk grid closes their cells,
+     * and steering slides along them. @param {import('./solids.js').Solid[]} list
+     */
+    setSolids(list) {
+      solids.set(list);
+      solids.mark(grid);
     },
     /** A movement key pressed: it takes over from a click walk, and the card it would open (never from wading back). */
     keyTakeover() {

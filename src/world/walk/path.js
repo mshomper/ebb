@@ -30,7 +30,7 @@ const NEIGH = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, 
 
 /** Is a cell open to stand on? @param {WalkGrid} g @param {WalkRules} r @param {number} k */
 export function isOpen(g, r, k) {
-  return k >= 0 && !g.steep[k] && r.depth(k) < r.wadeM;
+  return k >= 0 && !g.steep[k] && !g.blocked?.[k] && r.depth(k) < r.wadeM;
 }
 
 /**
@@ -127,7 +127,7 @@ function search(g, r, start, goal) {
   /** Depth read once per cell (the live water is asked at most once). */
   const depth = new Float32Array(N).fill(NaN);
   const deep = (/** @type {number} */ k) => (Number.isNaN(depth[k]) ? (depth[k] = r.depth(k)) : depth[k]);
-  const open = (/** @type {number} */ k) => !g.steep[k] && deep(k) < r.wadeM;
+  const open = (/** @type {number} */ k) => !g.steep[k] && !g.blocked?.[k] && deep(k) < r.wadeM;
   const gi = goal % g.w, gj = Math.floor(goal / g.w);
   const guess = (/** @type {number} */ k) => {
     const dx = Math.abs((k % g.w) - gi), dz = Math.abs(Math.floor(k / g.w) - gj);

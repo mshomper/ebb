@@ -10,6 +10,8 @@ import { createWalker } from '../src/world/walk/walker.js';
 import { createWalk } from '../src/world/walk/index.js';
 import { keyAxes, worldWay } from '../src/input/move-keys.js';
 import { rollPose } from '../src/world/figure/roll.js';
+import { createSolids } from '../src/world/walk/solids.js';
+import { campSolids, pieceSolids } from '../src/world/walk/solids-live.js';
 import { on, flushDeferred } from '../src/core/events.js';
 
 const G = 'steer';
@@ -153,6 +155,67 @@ export function addSteerTests(test, assert, eq) {
       eq(heard.filter((n) => n === 'walk:arrived').length, 1, 'arrivals after a steered walk stops');
       return `${heard.join(', ')}`;
     } finally { offs.forEach((off) => off()); walk.dispose(); }
+  });
+
+  test(G, 'solid things: steering stops at a workbench and slides along a wall, and a click walk goes round them', async () => {
+    const { R, grid } = await world(() => 1);
+    const solids = createSolids(R.solids.bodyM);
+    // A workbench turned a little, and a long wall.
+    solids.set([{ x: 10, z: 10, hw: 0.5, hd: 0.33, yaw: 0.3, id: 'bench' }, { x: 25, z: 10, hw: 0.15, hd: 5, yaw: 0, id: 'wall' }]);
+    solids.mark(grid);
+    const w = createWalker(R, { grid, depth: () => 0, ground: () => 1, solids });
+    w.place(10, 13, Math.PI);
+    steerFor(w, 0, -1, 3);
+    assert(!solids.hit(w.x, w.z), `walked into the workbench, to ${w.x.toFixed(2)}, ${w.z.toFixed(2)}`);
+    assert(w.z > 10.2, `stood at z ${w.z.toFixed(2)}, inside the bench`);
+    const stoppedZ = w.z;
+    // Slanting into the wall: you slide along it.
+    w.place(22, 8, Math.PI / 4);
+    steerFor(w, Math.SQRT1_2, Math.SQRT1_2, 2);
+    assert(w.x < 24.85 && w.z > 9.5, `slid only to ${w.x.toFixed(2)}, ${w.z.toFixed(2)}`);
+    // A click across the bench: a way round it, every leg clear of it, ending at its edge for a card.
+    w.place(10, 13, Math.PI);
+    w.steer(0, 0);
+    const r = w.walkTo(10, 7);
+    assert(r.ok, 'no way round the bench');
+    const legs = r.ok ? r.points.length : 0;
+    for (let i = 0; i < 600 && w.moving; i++) { w.update(DT); assert(!solids.hit(w.x, w.z) || i === 0, `walked through the bench at ${w.x.toFixed(2)}, ${w.z.toFixed(2)}`); }
+    assert(Math.hypot(w.x - 10, w.z - 7) < 0.3, `ended at ${w.x.toFixed(2)}, ${w.z.toFixed(2)}`);
+    const edge = w.walkTo(10, 10);
+    assert(edge.ok, 'a click on the bench found nowhere to stand');
+    const g = edge.ok ? edge.goal : [0, 0];
+    assert(!solids.hit(g[0], g[1]) && Math.hypot(g[0] - 10, g[1] - 10) < 1.5, `a click on the bench ends at ${g[0].toFixed(2)}, ${g[1].toFixed(2)}`);
+    return `the bench stopped you at z ${stoppedZ.toFixed(2)}; ${legs} legs round it`;
+  });
+
+  test(G, 'the camp\'s slots become solids once something stands there; logs and stones are solids, the carried one is not', () => {
+    const slots = [
+      { id: 'tent', kinds: ['tent'], w: 2.2, d: 1.6, blocks: true }, { id: 'ring', kinds: ['ring'], r: 0.5, blocks: true },
+      { id: 'workbench', kinds: ['workbench'], w: 1, d: 0.66, faces: 'ring', blocks: true }, { id: 'sticks', kinds: ['pile'], r: 0.6, blocks: true },
+      { id: 'heap1', kinds: ['pile'], r: 0.35, blocks: true }, { id: 'hearth', kinds: ['hearth'], r: 0.3 },
+    ];
+    const at = (/** @type {string} */ id) => ({ x: slots.findIndex((s) => s.id === id) * 3, z: 0, yaw: 0 });
+    const empty = campSolids({ kit: {}, slots: [] }, slots, at, at, new Set(), 90).map((s) => s.id);
+    eq(empty.join(), 'sticks', 'a new camp: only the wood store\'s stakes');
+    const built = campSolids({ kit: { tent: 'pitched' }, slots: [{ slot: 'tent', kind: 'tent' }, { slot: 'ring', kind: 'ring' }, { slot: 'workbench', kind: 'workbench' }, { slot: 'hearth', kind: 'hearth' }] },
+      slots, at, at, new Set(['heap1']), 90);
+    eq(built.map((s) => s.id).sort().join(), 'heap1,ring,sticks,tent,workbench', 'built, pitched, laid and piled; the hearth stays open');
+    const tent = /** @type {any} */ (built.find((s) => s.id === 'tent'));
+    assert(tent.hd === 1.1 && tent.hw === 0.8, 'the tent\'s length runs seaward');
+    const ps = pieceSolids([{ id: 'a', kind: 'stone', x: 1, z: 1, size: 0.4 }, { id: 'b', kind: 'log', x: 2, z: 2, yaw: 0, size: 0.2, length: 1.4 },
+      { id: 'c', kind: 'log', x: 3, z: 3, size: 0.2, length: 1 }, { id: 'd', kind: 'stepping', x: 4, z: 4 }, { id: 'e', kind: 'hole', x: 5, z: 5 }], 'c', []);
+    eq(ps.map((s) => s.id).join(), 'a,b', 'a stone and a log; not the carried log, a pond stone or a hole');
+  });
+
+  test(G, 'creeping never startles: the creep is under every creature\'s calm pace', async () => {
+    const R = await (await fetch('../recipes/world/walker.json')).json();
+    /** @type {[string, number][]} */ const calm = [];
+    for (const sp of ['frog', 'lizard', 'turtle', 'damselfly', 'dragonfly', 'minnow']) {
+      const P = (await (await fetch(`../recipes/species/${sp}.json`)).json()).presence;
+      if (P?.calmSpeed !== undefined) calm.push([sp, P.calmSpeed]);
+    }
+    for (const [sp, v] of calm) assert(R.pace.creepMps < v, `the creep ${R.pace.creepMps} m/s startles a ${sp} (calm under ${v})`);
+    return calm.map(([sp, v]) => `${sp} ${v}`).join(', ');
   });
 
   test(G, 'the roll on the rig: tucked in the middle, one full turn, upright at both ends', async () => {

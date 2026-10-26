@@ -83,6 +83,8 @@ import { createSchools } from './world/creatures/schools.js';
 import { bringSwarm, testRecipe } from './world/creatures/swarms.js';
 import { onAction, history, dispatch } from './input/actions.js';
 import { createWalkControls } from './world/walk/controls.js';
+import { createSolidsLive } from './world/walk/solids-live.js';
+import { createWhere } from './world/camp/where.js';
 import { attachDesktopInput } from './input/desktop.js';
 import { beginSave, TEST_PARAMS } from './save/autosave.js';
 import { createIntroBoot, introStartHour } from './world/intro/boot.js';
@@ -659,6 +661,11 @@ export async function startApp(canvas, hooks = {}) {
   sim.addSystem(camp);
   ringPlace = camp.ringPlace;
   keeps = camp.stations.keeps;
+  // Solid things the walker cannot pass through (src/world/walk/solids-live.js): camp pieces, logs,
+  // stones and the boat.
+  const solidsLive = createSolidsLive({ walk, where: createWhere({ terrain }), benchAt: camp.stations.benchAt, rackYawDeg: campRecipe.rack?.yawDeg ?? 0,
+    strand: () => pieces.strandLogs(), boat: () => (boat.visible ? boat.mooring?.boat ?? null : null), boatSize: boatRecipe.boat.hull });
+  sim.addSystem({ id: 'solids', tick: (/** @type {any} */ f) => solidsLive.update(f.realDt) });
   shadowPass.addCaster(camp.props.caster);
   midges.keepClear(() => camp.smokeClear());
   // What your figure glances at on foot (src/world/figure/look.js): frogs near you, the fire while it

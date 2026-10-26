@@ -14,6 +14,7 @@ import { findPath, nearestOpen, isOpen } from './path.js';
  * @property {(k: number) => number} depth water over a cell right now (m)
  * @property {(x: number, z: number) => number} ground the land's height (m)
  * @property {(x: number, z: number) => number} [nearest] distance to the nearest creature (m)
+ * @property {import('./solids.js').Solids} [solids] solid things you cannot walk through
  */
 
 /**
@@ -46,16 +47,20 @@ export function createWalker(R, env) {
 
   /** Could you step from one spot to another, one short step (grid rules: open, no cliff, no cut corner)? */
   function canStep(/** @type {number} */ x0, /** @type {number} */ z0, /** @type {number} */ x1, /** @type {number} */ z1) {
+    // A solid thing (solids.js), tested exactly: never into one (stepping out of one is fine).
+    if (env.solids && env.solids.hit(x1, z1) && !env.solids.hit(x0, z0)) return false;
     const g = env.grid, k0 = g.cellAt(x0, z0), k1 = g.cellAt(x1, z1);
     if (k1 < 0) return false;
     if (k1 === k0) return true;
-    if (!isOpen(g, rules, k1)) return false;
+    // The ground's own rules here; solids were tested above, finer than their closed cells.
+    const open = (/** @type {number} */ k) => k >= 0 && !g.steep[k] && env.depth(k) < G.wadeM;
+    if (!open(k1)) return false;
     // Standing somewhere closed (a stroke, the tide), any open cell beside you is a way out.
-    if (k0 < 0 || !isOpen(g, rules, k0)) return true;
+    if (!open(k0)) return true;
     if (Math.abs(g.height[k1] - g.height[k0]) > G.maxStepM) return false;
     const i0 = k0 % g.w, j0 = Math.floor(k0 / g.w), i1 = k1 % g.w, j1 = Math.floor(k1 / g.w);
     // Across a corner: both cells beside it open, as the paths never cut one.
-    if (i0 !== i1 && j0 !== j1) return isOpen(g, rules, j0 * g.w + i1) && isOpen(g, rules, j1 * g.w + i0);
+    if (i0 !== i1 && j0 !== j1) return open(j0 * g.w + i1) && open(j1 * g.w + i0);
     return true;
   }
 

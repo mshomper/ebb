@@ -11,7 +11,7 @@ import { VERTEX_BYTES } from '../src/world/creatures/bodies.js';
 
 const SHADER = /* wgsl */ `
 struct U { viewProj: mat4x4f, eye: vec4f, sun: vec4f, place: vec4f, misc: vec4f, water: vec4f };
-// place: x, y, z, yaw; misc: x weights view, y night, z bone count; water: x level (m, -9 none)
+// place: x, y, z, yaw; misc: x weights view, y night, z bone count, w the figure's scale (0: 1); water: x level (m, -9 none), y the ground's half size (m)
 @group(0) @binding(0) var<uniform> u: U;
 @group(0) @binding(1) var<storage, read> bones: array<mat4x4f>;
 @group(0) @binding(2) var<uniform> eyes: FigureEyes;
@@ -27,7 +27,7 @@ fn hue(i: u32) -> vec3f {
 @vertex fn vsBody(@location(0) p: vec3f, @location(1) n: vec3f, @location(2) a: vec3f,
                   @location(3) j: vec4u, @location(4) w: vec4f) -> BodyOut {
   let m = bones[j.x] * w.x + bones[j.y] * w.y + bones[j.z] * w.z + bones[j.w] * w.w;
-  let posed = (m * vec4f(p, 1.0)).xyz;
+  let posed = (m * vec4f(p, 1.0)).xyz * select(1.0, u.misc.w, u.misc.w > 0.0);
   let pn = normalize((m * vec4f(n, 0.0)).xyz + vec3f(0.0, 1e-6, 0.0));
   let c = cos(u.place.w); let s = sin(u.place.w);
   let world = vec3f(c * posed.x + s * posed.z, posed.y, -s * posed.x + c * posed.z) + u.place.xyz;
@@ -89,7 +89,7 @@ struct GroundOut { @builtin(position) pos: vec4f, @location(0) world: vec3f, @lo
   let l = normalize(u.sun.xyz);
   let day = 1.0 - u.misc.y;
   c *= max(dot(normalize(i.n), l), 0.0) * 0.9 * day + mix(0.05, 0.55, day);
-  let fade = 1.0 - smoothstep(2.4, 3.0, max(abs(i.world.x), abs(i.world.z)));
+  let fade = 1.0 - smoothstep(u.water.y * 0.8, u.water.y, max(abs(i.world.x), abs(i.world.z)));
   return finish(mix(vec3f(0.55, 0.52, 0.47) * mix(0.1, 1.0, day), c * 1.3, fade));
 }
 
@@ -98,10 +98,26 @@ struct WaterOut { @builtin(position) pos: vec4f, @location(0) world: vec3f };
 @vertex fn vsWater(@builtin(vertex_index) vi: u32) -> WaterOut {
   let q = array<vec2f, 6>(vec2f(-1.0, -1.0), vec2f(1.0, -1.0), vec2f(-1.0, 1.0), vec2f(1.0, -1.0), vec2f(1.0, 1.0), vec2f(-1.0, 1.0))[vi];
   var o: WaterOut;
-  let p = vec3f(q.x * 3.0, u.water.x, q.y * 3.0);
+  let p = vec3f(q.x * u.water.y, u.water.x, q.y * u.water.y);
   o.pos = u.viewProj * vec4f(p, 1.0);
   o.world = p;
   return o;
+}
+
+struct PropOut { @builtin(position) pos: vec4f, @location(0) n: vec3f, @location(1) c: vec3f };
+
+@vertex fn vsProp(@location(0) p: vec3f, @location(1) n: vec3f, @location(2) c: vec3f) -> PropOut {
+  var o: PropOut;
+  o.pos = u.viewProj * vec4f(p, 1.0);
+  o.n = n;
+  o.c = c;
+  return o;
+}
+
+@fragment fn fsProp(i: PropOut) -> @location(0) vec4f {
+  let day = 1.0 - u.misc.y;
+  let l = normalize(u.sun.xyz);
+  return finish(i.c * (max(dot(normalize(i.n), l), 0.0) * 2.2 * day + (0.55 + 0.35 * normalize(i.n).y) * mix(0.06, 1.0, day)));
 }
 
 @fragment fn fsWater(i: WaterOut) -> @location(0) vec4f {
@@ -173,6 +189,19 @@ function makeStage(canvas, gpu, lib) {
     primitive: { topology: 'triangle-list' },
     depthStencil: { ...depthStencil, depthWriteEnabled: false },
   });
+  // Simple coloured shapes (the movement arena's walls, pillars and stand-ins): position, normal, colour.
+  const props = device.createRenderPipeline({
+    label: 'figure-stage-props', layout: pl,
+    vertex: { module, entryPoint: 'vsProp', buffers: [{ arrayStride: 36, attributes: [
+      { shaderLocation: 0, offset: 0, format: 'float32x3' }, { shaderLocation: 1, offset: 12, format: 'float32x3' },
+      { shaderLocation: 2, offset: 24, format: 'float32x3' }] }] },
+    fragment: { module, entryPoint: 'fsProp', targets: [{ format }] },
+    primitive: { topology: 'triangle-list' },
+    depthStencil,
+  });
+  /** @type {{ v: GPUBuffer, n: number } | null} */ let propMesh = null;
+  /** The ground's half size (m). */
+  let groundHalf = 3;
   const ubuf = device.createBuffer({ size: 160, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
   const bbuf = device.createBuffer({ size: 32 * 64, usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST });
   const ebuf = device.createBuffer({ size: 80, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
@@ -217,10 +246,14 @@ function makeStage(canvas, gpu, lib) {
       device.queue.writeBuffer(i, 0, m.indices);
       mesh = { v, i, n: m.indices.length };
     },
-    /** A ground of height h(x, z) over 6 m by 6 m. @param {(x: number, z: number) => number} h */
-    setGround(h) {
+    /**
+     * A ground of height h(x, z) over size by size meters (6 by 6 unless given), in N by N quads.
+     * @param {(x: number, z: number) => number} h @param {number} [size] @param {number} [N]
+     */
+    setGround(h, size = 6, N = 150) {
       groundMesh?.v.destroy(); groundMesh?.i.destroy();
-      const N = 150, size = 6, step = size / N;
+      groundHalf = size / 2;
+      const step = size / N;
       const vtx = new Float32Array((N + 1) * (N + 1) * 6), idx = new Uint32Array(N * N * 6);
       for (let j = 0; j <= N; j++) for (let i = 0; i <= N; i++) {
         const x = -size / 2 + i * step, z = -size / 2 + j * step, e = 0.01;
@@ -239,6 +272,18 @@ function makeStage(canvas, gpu, lib) {
       device.queue.writeBuffer(i, 0, idx);
       groundMesh = { v, i, n: idx.length };
     },
+    /**
+     * Coloured shapes in world meters, as triangles: 9 floats a vertex (position, normal, colour).
+     * Null clears them. @param {Float32Array | null} tris
+     */
+    setProps(tris) {
+      propMesh?.v.destroy();
+      propMesh = null;
+      if (!tris || !tris.length) return;
+      const v = device.createBuffer({ size: tris.byteLength, usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST });
+      device.queue.writeBuffer(v, 0, tris);
+      propMesh = { v, n: tris.length / 9 };
+    },
     /** A set view by name, or one of your own ({ yaw, pitch, dist }). @param {keyof typeof VIEWS | { yaw: number, pitch: number, dist: number }} name */
     view(name) { cam.goal = typeof name === 'string' ? { ...VIEWS[name] } : { ...name }; },
     /** @param {boolean} on */
@@ -256,7 +301,9 @@ function makeStage(canvas, gpu, lib) {
       return [(x / w) * 0.5 + 0.5, 0.5 - (y / w) * 0.5];
     },
     /**
-     * @param {{ bones: Float32Array, eyes: Float32Array, place: number[], weights: boolean, night: boolean, water: number, follow: number[], dt: number }} f
+     * camera: an outside camera's eye and target (the arena runs the game's own); else the stage's orbit.
+     * @param {{ bones: Float32Array, eyes: Float32Array, place: number[], weights: boolean, night: boolean, water: number, follow: number[], dt: number,
+     *   camera?: { eye: ArrayLike<number>, target: ArrayLike<number> }, scale?: number }} f
      */
     draw(f) {
       const dpr = Math.min(2, devicePixelRatio || 1);
@@ -281,14 +328,14 @@ function makeStage(canvas, gpu, lib) {
       const k = 1 - Math.exp(-f.dt * 8);
       cam.yaw += dy * k; cam.pitch += (cam.goal.pitch - cam.pitch) * k; cam.dist += (cam.goal.dist - cam.dist) * k;
       const lookH = cam.dist < 2 ? 1.38 : 0.95;
-      const target = [f.follow[0], f.follow[1] + lookH, f.follow[2]];
-      const eye = [target[0] + cam.dist * Math.cos(cam.pitch) * Math.sin(cam.yaw), target[1] + cam.dist * Math.sin(cam.pitch), target[2] + cam.dist * Math.cos(cam.pitch) * Math.cos(cam.yaw)];
-      u.set(mat4.multiply(mat4.perspective(0.6, w / h, 0.05, 50), mat4.lookAt(eye, target, [0, 1, 0])), 0);
+      const target = f.camera ? [...f.camera.target] : [f.follow[0], f.follow[1] + lookH, f.follow[2]];
+      const eye = f.camera ? [...f.camera.eye] : [target[0] + cam.dist * Math.cos(cam.pitch) * Math.sin(cam.yaw), target[1] + cam.dist * Math.sin(cam.pitch), target[2] + cam.dist * Math.cos(cam.pitch) * Math.cos(cam.yaw)];
+      u.set(mat4.multiply(mat4.perspective(f.camera ? 40 * Math.PI / 180 : 0.6, w / h, 0.05, 200), mat4.lookAt(eye, target, [0, 1, 0])), 0);
       u.set([eye[0], eye[1], eye[2], 0], 16);
       u.set([0.5, 0.75, 0.6, 0], 20);
       u.set(f.place, 24);
-      u.set([f.weights ? 1 : 0, f.night ? 1 : 0, 0, 0], 28);
-      u.set([f.water, 0, 0, 0], 32);
+      u.set([f.weights ? 1 : 0, f.night ? 1 : 0, 0, f.scale ?? 0], 28);
+      u.set([f.water, groundHalf, 0, 0], 32);
       device.queue.writeBuffer(ubuf, 0, u);
       device.queue.writeBuffer(bbuf, 0, f.bones);
       device.queue.writeBuffer(ebuf, 0, f.eyes);
@@ -300,6 +347,7 @@ function makeStage(canvas, gpu, lib) {
       });
       pass.setBindGroup(0, group);
       if (groundMesh) { pass.setPipeline(ground); pass.setVertexBuffer(0, groundMesh.v); pass.setIndexBuffer(groundMesh.i, 'uint32'); pass.drawIndexed(groundMesh.n); }
+      if (propMesh) { pass.setPipeline(props); pass.setVertexBuffer(0, propMesh.v); pass.draw(propMesh.n); }
       if (mesh) { pass.setPipeline(body); pass.setVertexBuffer(0, mesh.v); pass.setIndexBuffer(mesh.i, 'uint32'); pass.drawIndexed(mesh.n); }
       if (f.water > -5) { pass.setPipeline(water); pass.draw(6); }
       pass.end();
