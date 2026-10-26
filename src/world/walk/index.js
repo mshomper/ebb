@@ -21,7 +21,7 @@ import { isOpen } from './path.js';
 import { createSolids } from './solids.js';
 import { mainland, nearestJoined } from './reach.js';
 import { crossingNote, depthAtLow, hoursToLow } from './crossing.js';
-import { createFigurePass, createFigure, loadFigureModel } from '../figure/index.js';
+import { createFigurePass, createFigure, loadFigureModel, loadFigureClips } from '../figure/index.js';
 import { createFootprints } from '../figure/footprints.js';
 import { actLength } from '../figure/acts.js';
 import { createFootprintsPass } from '../../render/passes/footprints.js';
@@ -68,9 +68,10 @@ export function createWalk(o) {
   /** @type {import('../figure/index.js').Figure | null} */ let figure = null;
   /** The pot in both arms (S5). */
   let holding = false;
-  loadFigureModel(o.figure)
-    .then((glb) => {
-      figure = createFigure({ recipe: o.figure, glb, pass });
+  // Matt's clips come with it; without them (a failed fetch) the code's own stride and roll play.
+  Promise.all([loadFigureModel(o.figure), loadFigureClips(o.figure).catch((err) => { console.warn('The walker clips did not load:', err); return null; })])
+    .then(([glb, clips]) => {
+      figure = createFigure({ recipe: o.figure, glb, clips, pass });
       // Already put down (a save, placeAt): appear in that posture, not easing into it.
       if (walker.placed) figure.motion.place(walker.posture);
       if (holding) figure.motion.hold(true);

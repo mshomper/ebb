@@ -36,13 +36,22 @@ export function turnBones(RO, bones, angle, groundY, pivots) {
     mul(M, tmp, bones, o);
   }
   // Keep the ball on the ground all the way round: the lowest joint sits contactM over it.
+  // Eased in and out at the turn's ends, so setting off and landing never jump.
+  const w = Math.min(1, angle / 0.6, (2 * Math.PI - angle) / 0.6);
+  onGround(bones, pivots, groundY + RO.contactM, Math.max(0, w), false);
+}
+
+/**
+ * Move every posed bone up or down so the lowest joint sits at y (body m), by share w; upOnly: only
+ * ever lift (the clip roll: its body never sinks into the ground, and never floats).
+ * @param {Float32Array} bones @param {number[][]} pivots @param {number} y @param {number} w @param {boolean} upOnly
+ */
+export function onGround(bones, pivots, y, w, upOnly) {
   let low = Infinity;
   pivots.forEach((p, i) => {
     const o = i * 16;
     low = Math.min(low, bones[o + 1] * p[0] + bones[o + 5] * p[1] + bones[o + 9] * p[2] + bones[o + 13]);
   });
-  // Eased in and out at the turn's ends, so setting off and landing never jump.
-  const w = Math.min(1, angle / 0.6, (2 * Math.PI - angle) / 0.6);
-  const dy = (groundY + RO.contactM - low) * Math.max(0, w);
+  const dy = (upOnly ? Math.max(0, y - low) : y - low) * w;
   for (let o = 0; o < bones.length; o += 16) bones[o + 13] += dy;
 }
