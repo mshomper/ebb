@@ -1527,7 +1527,7 @@ export async function startApp(canvas, hooks = {}) {
       case 'tool.cancel': {
         // A pour ended: the first evening's shape beat reads where (src/world/intro).
         const pourEnd = pouring && tools().tool === 'water' ? groundAt(pouring.x, pouring.y) : null;
-        if (pourEnd) emitDeferred('water:pour-ended', { x: pourEnd[0], z: pourEnd[2] });
+        if (pourEnd) emitDeferred('water:pour-ended', { x: pourEnd[0], z: pourEnd[2], tool: 'water', mode: tools().waterMode });
         pouring = null;
         finishStroke();
         finishShapingDrag();

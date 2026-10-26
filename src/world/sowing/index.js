@@ -116,7 +116,9 @@ export function createSowing(o) {
       const item = /** @type {any} */ (held());
       if (!item) { if (get('hand')) api.putAway(); return false; }
       ring = ringAt(item, p);
-      if (!ring.ok) { ring.flashAt = performance.now(); return true; }
+      // Where a seed lands, and whether it took (the first evening's planting beat, src/world/intro).
+      const landed = (/** @type {boolean} */ ok) => { if (item.species) emitDeferred('sow:landed', { species: item.species, x: p[0], z: p[2], ok }); };
+      if (!ring.ok) { ring.flashAt = performance.now(); landed(false); return true; }
       if (item.kind === 'net') {
         // The walker walks out to the spot, then kneels and sets it (update()).
         if (o.walk.tap(sx, sy, p, R.net.reachM)) { netTo = p; say(R.words.netWalk, 3); }
@@ -128,8 +130,8 @@ export function createSowing(o) {
         const r = o.pieces.raftAdd(p);
         if (!r.ok) { ring.ok = false; ring.message = r.message; ring.flashAt = performance.now(); return true; }
         say(R.words.placed?.raft ?? '', 4);
-      } else if (!o.plantTool.tap(item.species, p, { given: true })) return true;
-      else o.worldChanged();
+      } else if (!o.plantTool.tap(item.species, p, { given: true })) { landed(false); return true; }
+      else { o.worldChanged(); landed(true); }
       toss(p);
       if (item.kind === 'gift') update('unlocks', (u) => ({ ...u, earned: notePlaced(u?.earned, item.id) }));
       else firstSow();

@@ -7,7 +7,8 @@
 // older island it is null until stamped on the first load, and the boat moors once it is.
 //
 // Test links (unsaved): `?intro` runs the evening on a fresh island; `?intro=<beatId>` starts at
-// that beat with the earlier beats' results laid in (dusk and rest open near sunset); `?nointro`
+// that beat with the earlier beats' results laid in (dusk and rest open near sunset);
+// `?intro=shape-sunset` and `?intro=dawn` open a moment (MOMENTS below); `?nointro`
 // starts a fresh island as if skipped. Other test links leave the evening out entirely, so they
 // open as they always have.
 
@@ -22,6 +23,21 @@ const H = 3600;
 
 /** Beats that open near sunset on a test link. */
 const DUSK_BEATS = ['dusk', 'rest'];
+
+/**
+ * Test links that open a moment rather than a beat (tools/intro-lab.html): `?intro=shape-sunset`
+ * opens a minute of game time before sunset, two parts into the shape beat; `?intro=dawn` opens just
+ * before the first sunrise with the ring and the day's beats undone, never having rested.
+ * @type {Record<string, { beat: string, parts?: number, at: 'sunset' | 'dawn' }>}
+ */
+const MOMENTS = { 'shape-sunset': { beat: 'shape', parts: 2, at: 'sunset' }, dawn: { beat: 'ring', at: 'dawn' } };
+
+/** The hour of today's sunset on day 0. @param {any} orbit */
+function sunsetHour(orbit) {
+  let h = 12;
+  while (h < 23 && sunMoon(h * H, orbit).sunAlt >= 0) h += 1 / 60;
+  return h;
+}
 
 /**
  * Does the evening run on this visit? A save always runs it (it may be done already); a fresh
@@ -42,10 +58,17 @@ export function introRuns(params, fresh, testParams) {
 export function introStartHour(R, orbit, params, fresh, testParams, timeSet) {
   if (!fresh || timeSet || !introRuns(params, fresh, testParams)) return null;
   const beat = params.get('intro');
+  const m = beat ? MOMENTS[beat] : null;
+  if (m?.at === 'sunset') return sunsetHour(orbit) - 0.1;
+  if (m?.at === 'dawn') {
+    // Just before the sun rises on day 1.
+    let h = 24 + 2;
+    while (h < 24 + 12 && sunMoon(h * H, orbit).sunAlt < 0) h += 1 / 60;
+    return h - 0.1;
+  }
   if (beat && DUSK_BEATS.includes(beat)) {
     // Just before sunset on day 0 for dusk (the beat starts as the sun goes), just after for rest.
-    let h = 12;
-    while (h < 23 && sunMoon(h * H, orbit).sunAlt >= 0) h += 1 / 60;
+    const h = sunsetHour(orbit);
     return beat === 'dusk' ? h - 0.2 : h + 0.3;
   }
   return dawnHour(R, orbit);
@@ -62,7 +85,9 @@ export function createIntroBoot(o) {
   const fresh = !o.back;
   const runs = introRuns(o.params, fresh, o.testParams);
   const beatIds = o.R.beats.map((/** @type {any} */ b) => b.id);
-  const testBeat = fresh ? o.params.get('intro') : null;
+  const testLink = fresh ? o.params.get('intro') : null;
+  const moment = testLink ? MOMENTS[testLink] ?? null : null;
+  const testBeat = moment?.beat ?? testLink;
   const at = testBeat ? Math.max(0, beatIds.indexOf(testBeat)) : 0;
   const flags = /** @type {string[]} */ (o.back?.journal?.flags ?? []);
   // The store slice `intro` { beat, started, done } is there from the first frame on every path
@@ -116,6 +141,8 @@ export function createIntroBoot(o) {
       // A test link past the start: the earlier beats' results laid in.
       if (at > 0) {
         for (const id of ['begun', ...beatIds.slice(0, at)]) dispatch(/** @type {any} */ ({ type: 'journal.flag', flag: `intro:${id}` }));
+        // Mid-beat: its first parts done.
+        for (let i = 0; i < (moment?.parts ?? 0); i++) dispatch(/** @type {any} */ ({ type: 'journal.flag', flag: `intro:${testBeat}.${i}` }));
         if (at > beatIds.indexOf('page')) dispatch(/** @type {any} */ ({ type: 'journal.flag', flag: 'keeper:first' }));
         emit('intro:camp-ready', { tent: at > beatIds.indexOf('pitch'), ring: at > beatIds.indexOf('ring') });
         // Past the gathering and before the ring: the handfuls the ring needs are in the pack.
