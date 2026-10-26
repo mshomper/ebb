@@ -324,6 +324,8 @@ export function createStations(k) {
     }
     // Dry: the herb hangs on the rack as a bunch.
     if (m.out === 'rack') keeps.rack.hang(laid[0], 1);
+    // A carrier (P2f): put on at once; the one taken off hangs by the bench (carriers.js).
+    if (m.out === 'carrier') o.pack?.addCarrier?.(id);
     // A piece for the night's fire goes on the overnight work list (work.js): willow charcoal.
     if (m.out === 'work') k.change((c) => ({ ...c, work: layWork(c.work, { id, needH: m.needH ?? 8, gives: m.gives ?? id, count: m.count ?? 1 }, hour) }));
     emitDeferred('camp:made', { make: id, station: open.id, hour, first });

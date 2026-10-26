@@ -3,9 +3,11 @@
 // of its pouches. Pure. One kind per pouch, three handfuls to a full pouch. The pack keeps one normal
 // form: for each kind every pouch is full except at most one, and pouches sort by group, then by the
 // order of recipes/world/pack.json `kinds` (kinds.js), so the same pouches always save the same way.
-// Empty pouches are not saved; the size says how many lie flat at the end of the row. A pack grows
-// only through made carriers and never shrinks. When it is full, a handful may be laid as a small
-// heap at the walker's feet, which the island takes back at the next dawn.
+// Empty pouches are not saved; the size says how many lie flat at the end of the row. The walker
+// wears one carrier at a time (P2f, Matt, October 26, 2026: they replace, never stack): the starting
+// pack, or a made one (the rush satchel, the willow basket), each two pouches more than the one
+// before; the one taken off hangs at camp. When it is full, a handful may be laid as a small heap at
+// the walker's feet, which the island takes back at the next dawn.
 //
 // The store slice `pack` holds a Pack, saved as the `pack` section (format 9).
 
@@ -13,7 +15,8 @@
  * @typedef {import('./kinds.js').Kinds} Kinds
  * @typedef {[string, number]} Pouch kind id, handfuls 1..3
  * @typedef {[string, number, number, number, number]} Heap kind id, x, z, game day, handfuls
- * @typedef {{ version: 1, carriers: string[], pouches: Pouch[], heaps: Heap[], holding: null | 'pot' }} Pack
+ * @typedef {{ version: 1, carriers: string[], worn?: string, pouches: Pouch[], heaps: Heap[], holding: null | 'pot' }} Pack
+ *   carriers: the carriers made; worn: the one on your back (left out: the starting pack, so a save from before P2f reads the same)
  */
 
 const FULL = 3;
@@ -26,14 +29,22 @@ const fullOf = (recipe) => (Number.isInteger(recipe?.handfulsPerPouch) && recipe
 export const emptyPack = () => ({ version: 1, carriers: [], pouches: [], heaps: [], holding: null });
 
 /**
- * How many pouches the pack has: the start plus two for each carrier made.
- * @param {Pack} pack @param {any} recipe
+ * How many pouches a carrier has: the starting pack (null) startPouches, each carrier in the
+ * recipe's order two more than the one before (the satchel 8, the basket 10, the frame 12).
+ * @param {string | null} id @param {any} recipe
  */
-export function sizeOf(pack, recipe) {
+export function pouchesOf(id, recipe) {
   const start = Number.isInteger(recipe?.startPouches) ? recipe.startPouches : 6;
   const per = Number.isInteger(recipe?.perCarrier) ? recipe.perCarrier : 2;
-  return start + per * pack.carriers.length;
+  const order = Array.isArray(recipe?.carriers) ? recipe.carriers : [];
+  return start + per * (id === null ? 0 : order.indexOf(id) + 1);
 }
+
+/**
+ * How many pouches the pack has: the carrier worn's.
+ * @param {Pack} pack @param {any} recipe
+ */
+export const sizeOf = (pack, recipe) => pouchesOf(pack.worn ?? null, recipe);
 
 /** Every handful of one kind in the pack. @param {Pack} pack @param {string} kind */
 export function handfulsOf(pack, kind) {
@@ -66,7 +77,7 @@ function formPouches(pouches, kinds, full = FULL) {
 }
 
 /** A copy of a pack with its own arrays. @param {Pack} pack @returns {Pack} */
-const copy = (pack) => ({ version: 1, carriers: pack.carriers.slice(), pouches: pack.pouches.map((p) => /** @type {Pouch} */ ([p[0], p[1]])),
+const copy = (pack) => ({ version: 1, carriers: pack.carriers.slice(), ...(pack.worn ? { worn: pack.worn } : {}), pouches: pack.pouches.map((p) => /** @type {Pouch} */ ([p[0], p[1]])),
   heaps: pack.heaps.map((h) => /** @type {Heap} */ (/** @type {unknown} */ (h.slice()))), holding: pack.holding });
 
 /**
@@ -123,11 +134,25 @@ export function packHolds(pack, need, kinds) {
   return true;
 }
 
-/** A made carrier, added once. @param {Pack} pack @param {string} id @returns {Pack} */
+/** A made carrier, added once, and put on. @param {Pack} pack @param {string} id @returns {Pack} */
 export function addCarrier(pack, id) {
   const out = copy(pack);
   if (!out.carriers.includes(id)) out.carriers.push(id);
+  out.worn = id;
   return out;
+}
+
+/**
+ * Put on another carrier (null: the starting pack), one that is made. It fits only if what the pack
+ * holds goes into its pouches; a smaller one never drops anything. ok: worn now.
+ * @param {Pack} pack @param {string | null} id @param {any} recipe @returns {{ pack: Pack, ok: boolean }}
+ */
+export function wear(pack, id, recipe) {
+  if (id !== null && !pack.carriers.includes(id)) return { pack: copy(pack), ok: false };
+  if (pack.pouches.length > pouchesOf(id, recipe)) return { pack: copy(pack), ok: false };
+  const out = copy(pack);
+  if (id === null) delete out.worn; else out.worn = id;
+  return { pack: out, ok: true };
 }
 
 /**
@@ -201,5 +226,7 @@ export function cleanPack(v, kinds, recipe) {
       && Number.isInteger(h[3]) && Number.isFinite(h[4]) && h[4] > 0)
     .map((/** @type {any} */ h) => /** @type {Heap} */ ([h[0], h[1], h[2], h[3], Math.floor(h[4])]))
     .slice(-Math.max(1, cap));
-  return { version: 1, carriers, pouches: formPouches(pouches, kinds ?? null, full), heaps: cap > 0 ? heaps : [], holding: v.holding === 'pot' ? 'pot' : null };
+  // A pack from before P2f wore nothing made: the starting pack.
+  const worn = typeof v.worn === 'string' && carriers.includes(v.worn) ? { worn: v.worn } : {};
+  return { version: 1, carriers, ...worn, pouches: formPouches(pouches, kinds ?? null, full), heaps: cap > 0 ? heaps : [], holding: v.holding === 'pot' ? 'pot' : null };
 }

@@ -10,6 +10,7 @@ import { createStage } from './walker-figure-stage.js';
 import { loadFigureModel, loadFigureClips, eyeUniforms } from '../src/world/figure/index.js';
 import { buildFigure } from '../src/world/figure/rig.js';
 import { createFigureMotion } from '../src/world/figure/motion.js';
+import { addCarrierStrips } from './walker-strip-carriers.js';
 
 const $ = (/** @type {string} */ id) => /** @type {HTMLElement} */ (document.getElementById(id));
 const view = /** @type {HTMLCanvasElement} */ ($('view'));
@@ -387,6 +388,9 @@ function drawShovel(g, run, x, y, w, h) {
   g.lineCap = 'butt';
 }
 
+// The carriers worn (P2f): walking, jogging, running, sitting, digging and rolling.
+await addCarrierStrips({ STRIPS, stage, R, W, built, DT, strideRun, rollRun, digRun, stridePicks, rollPicks, digPicks, createFigureMotion, clips: CLIPS });
+
 const LABEL = 34, CURVE_H = 110, HEAD = 40, PAD = 12;
 
 /** Draw one strip into the strip canvas. @param {string} name */
@@ -419,6 +423,8 @@ async function render(name) {
       let r = null;
       while (f <= picks[c].i) { r = b.step(); f++; }
       stage.snap();
+      // A carrier worn (walker-strip-carriers.js) is drawn as the stage's plain shapes.
+      stage.setProps(b.props ? b.props() : null);
       stage.draw({ bones: b.motion.bones, eyes: eyeUniforms(R.eyes, headBone, r.r.eyes, eyeBuf), place: b.place(), weights: false, night: false, water: -9, follow: b.place(), dt: DT });
       // Copied in the same task as the draw, while the frame is still the canvas's own.
       const x = c * TILE_W, y = y0 + HEAD;
@@ -456,7 +462,7 @@ async function render(name) {
 }
 
 // For the console: the recipe, the rig and the runs.
-/** @type {any} */ (window).walkerStrip = { R, built, gestureRun, lookRun, STRIPS };
+/** @type {any} */ (window).walkerStrip = { R, built, stage, gestureRun, lookRun, STRIPS, render };
 
 const bar = $('bar');
 for (const name of Object.keys(STRIPS)) {

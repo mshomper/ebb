@@ -752,11 +752,13 @@ export async function startApp(canvas, hooks = {}) {
     // cup fired in their places, clay, sand and crushed shell in the pack, standing at the ring;
     // `&fire=lit|embers|cold` sets the fire.
     const hearthLink = params.get('camp') === 'hearth';
-    const kit = apo ? [['shells', 3], ['watermint.leaves', 2], ['chamomile.flowers', 2], ['sticks', 3], ['pebbles', 2], ['rushes.stems', 3]]
+    // `?camp=carriers` (P2f): the workbench built and the pack holding a satchel's and a basket's parts.
+    const carriersLink = params.get('camp') === 'carriers';
+    const kit = carriersLink ? [['rushes.stems', 1], ['willow.withies', 1], ['rush-cord', 4]] : apo ? [['shells', 3], ['watermint.leaves', 2], ['chamomile.flowers', 2], ['sticks', 3], ['pebbles', 2], ['rushes.stems', 3]]
       : hearthLink ? [['clay', 3], ['sand', 2], ['crushed-shell', 1], ['sticks', 3]]
       : [['flat-stones', 3], ['sticks', 2], ['rush-cord', 1], ['pebbles', 2]];
     for (const [k, n] of kit) pack.add(/** @type {string} */ (k), /** @type {number} */ (n));
-    if (params.get('camp') === 'bench' || apo || hearthLink) camp.stations.debug.buildNow('workbench');
+    if (params.get('camp') === 'bench' || apo || hearthLink || carriersLink) camp.stations.debug.buildNow('workbench');
     if (apo) { camp.stations.debug.buildNow('apothecary'); for (const m of ['rack', 'mortar', 'hamper']) camp.stations.debug.placeNow(m); }
     if (hearthLink) {
       // `&shaped` is the look of it all at once (tools/hearth-check.html): every piece fired, a pale

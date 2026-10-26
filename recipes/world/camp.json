@@ -101,7 +101,9 @@
       "rack-bunch-3": { "file": "assets/models/camp/rack-bunch-3.glb", "look": { "albedo": 0.9, "rough": 1, "normal": 1, "normalY": -1 } },
       "rack-bunch-4": { "file": "assets/models/camp/rack-bunch-4.glb", "look": { "albedo": 0.9, "rough": 1, "normal": 1, "normalY": -1 } },
       "mortar": { "file": "assets/models/camp/mortar.glb", "look": { "albedo": 0.9, "rough": 1, "normal": 1, "normalY": -1 } },
-      "pestle": { "file": "assets/models/camp/pestle.glb", "look": { "albedo": 0.9, "rough": 1, "normal": 1, "normalY": -1 } }
+      "pestle": { "file": "assets/models/camp/pestle.glb", "look": { "albedo": 0.9, "rough": 1, "normal": 1, "normalY": -1 } },
+      "satchel": { "file": "assets/models/camp/satchel.glb", "look": { "albedo": 0.9, "rough": 1, "normal": 1, "normalY": -1 } },
+      "willow-basket": { "file": "assets/models/camp/willow-basket.glb", "look": { "albedo": 0.9, "rough": 1, "normal": 1, "normalY": -1 } }
     },
     "ember": [1.0, 0.3, 0.05], "emberNits": 14, "emberHz": 0.5,
     "charAlbedo": [0.03, 0.028, 0.026], "dryTint": [1.7, 1.42, 0.86], "dryMix": 0.85,

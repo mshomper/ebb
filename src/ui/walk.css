@@ -110,6 +110,14 @@
 .ebb-pouch:focus-visible { outline: 2px solid var(--wordmark-dark); outline-offset: 2px; }
 .ebb-pouch.is-empty { opacity: 0.55; cursor: default; }
 .ebb-pouch.is-empty:hover { background: transparent; }
+/* A bigger carrier put on (P2f): its new pouches unfold up from the bar, one after the other. */
+.ebb-pouch.is-new { animation: ebb-pouch-unfold 0.9s cubic-bezier(0.3, 1.4, 0.5, 1) both; transform-origin: 50% 100%; }
+@keyframes ebb-pouch-unfold {
+  0% { transform: scaleY(0.05) scaleX(0.6); opacity: 0; }
+  60% { opacity: 0.8; }
+  100% { transform: none; opacity: 0.55; }
+}
+@media (prefers-reduced-motion: reduce) { .ebb-pouch.is-new { animation: none; } }
 /* A 40 px drawing in the 48 px target (F7); the kind's glyph rides in its mouth (src/ui/icons/items.js). */
 .ebb-pouch__svg { display: block; width: 40px; height: 40px; }
 /* Holding the pot (Phase 2): the pouches dim. */

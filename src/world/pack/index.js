@@ -3,14 +3,15 @@
 // `pack` section) in normal form, and `packView` for the pouch row (src/ui/pack.js). Answers the
 // pouch actions: pack.open (the pouch's card), pack.setDown (at camp, onto its pile), pack.empty
 // (tipped out where you stand) and heap.take. Emits pack:changed { pouches, size } after every
-// change, pack:full { kind }, pack:set-down { kind, handfuls, pile } and pack:emptied { kind, x, z }.
+// change, pack:full { kind }, pack:set-down { kind, handfuls, pile }, pack:emptied { kind, x, z } and
+// pack:worn { id, size, was } (another carrier put on, P2f).
 // Other modules use add, take, has and holds (the evening's beat 5 asks holds({ fuel: 1, stones: 2 })).
 // Nothing in the pack spoils, and nothing is ever shown as a number.
 
 import { get, update } from '../../core/store.js';
 import { emitDeferred } from '../../core/events.js';
 import { makeKinds } from './kinds.js';
-import { add as addTo, take as takeFrom, has as hasIn, packHolds, normalize, sizeOf, removePouch, addHeap, takeFromHeap, expireHeaps, cleanPack } from './model.js';
+import { add as addTo, take as takeFrom, has as hasIn, packHolds, normalize, sizeOf, removePouch, addHeap, takeFromHeap, expireHeaps, cleanPack, addCarrier, wear } from './model.js';
 import { atCamp } from './camp.js';
 
 /**
@@ -131,6 +132,29 @@ export function createPack(o) {
       // What did not fit: the line for the place that filled (a pile, the rack, the hamper).
       if (!r.refuse && r.moved < h) emitDeferred('island:notice', { text: W[r.full ?? 'pileFull'] ?? W.pileFull, showS: 4 });
       if (!keepCard) update('identify', () => null);
+    },
+
+    /** The carriers made, and the one worn (null: the starting pack; P2f). */
+    carriers: () => ({ made: pack().carriers, worn: pack().worn ?? null }),
+    /**
+     * A carrier made at the workbench (P2f): put on at once, the old one off to hang at camp. Its new
+     * pouches unfold on the bar. @param {string} id
+     */
+    addCarrier(id) {
+      const was = sizeOf(pack(), R);
+      keep(addCarrier(pack(), id));
+      emitDeferred('pack:worn', { id, size: sizeOf(pack(), R), was });
+    },
+    /**
+     * Put on another made carrier (null: the starting pack), from its card at camp. Refused with a
+     * line when the pack holds more than it has pouches. @param {string | null} id @returns {boolean}
+     */
+    wear(id) {
+      const was = sizeOf(pack(), R), r = wear(pack(), id, R);
+      if (!r.ok) { emitDeferred('island:notice', { text: W.wearFull, showS: 5 }); return false; }
+      keep(r.pack);
+      emitDeferred('pack:worn', { id, size: sizeOf(r.pack, R), was });
+      return true;
     },
 
     /** What is held in both arms: the hearth's pot, or nothing (K-26). */

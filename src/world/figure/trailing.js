@@ -27,10 +27,12 @@ export function createTrailing(R, I, set) {
      * the pack: it follows the body's rise and fall a beat late, tipping as it lags, and rocks with
      * the hips' twist.
      * @param {number} dt
+     * The baked pack is folded away to nothing while another carrier is worn (packShown false, P2f);
+     * the bone still moves, for the carrier hung on it.
      * @param {{ legIK: { knee: number[] }[], m: number, standW: number, sitW: number, kneelW: number, crawlW: number,
-     *   speed: number, yawRate: number, sitSkirtDeg: number, pelvisWorldY: number, accel: number, twist: number }} f
+     *   speed: number, yawRate: number, sitSkirtDeg: number, pelvisWorldY: number, accel: number, twist: number, packShown?: boolean }} f
      */
-    skirtAndPack(dt, { legIK, m, standW, sitW, kneelW, crawlW, speed, yawRate, sitSkirtDeg, pelvisWorldY, accel, twist }) {
+    skirtAndPack(dt, { legIK, m, standW, sitW, kneelW, crawlW, speed, yawRate, sitSkirtDeg, pelvisWorldY, accel, twist, packShown = true }) {
       const SK = R.springs.skirt;
       const kneeFwd = Math.max(legIK[0].knee[2], legIK[1].knee[2]) - 0.04;
       const sway = (legIK[0].knee[2] - legIK[1].knee[2]) * (SK.strideSway ?? 0) * m * standW;
@@ -41,7 +43,8 @@ export function createTrailing(R, I, set) {
       set(I.skirt, { q: qmul(qaxis([1, 0, 0], -sk[0]), qaxis([0, 0, 1], sk[1])) });
       const PK = R.springs.pack;
       const pk = springs.pack.step([pelvisWorldY], dt)[0], lag = pk - pelvisWorldY;
-      set(I.pack, { t: [0, lag * PK.gain, 0], q: qmul(qaxis([1, 0, 0], -0.01 * accel + lag * (PK.tiltGain ?? 0)), qaxis([0, 0, 1], twist * (PK.rock ?? 0))) });
+      set(I.pack, { t: [0, lag * PK.gain, 0], q: qmul(qaxis([1, 0, 0], -0.01 * accel + lag * (PK.tiltGain ?? 0)), qaxis([0, 0, 1], twist * (PK.rock ?? 0))),
+        ...(packShown ? {} : { s: [1e-4, 1e-4, 1e-4] }) });
     },
   };
 }

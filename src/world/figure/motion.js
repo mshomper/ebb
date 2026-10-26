@@ -112,6 +112,8 @@ export function createFigureMotion(R, skeleton, clipFile = null) {
   let info = {};
   /** Holding the pot in both arms (S5), and how far the hands have come to it 0..1. */
   let holding = false, holdE = 0;
+  /** The baked pack drawn (false while another carrier is worn, P2f). */
+  let packShown = true;
 
   /** Set bone i's move and its matrix (parents are always set first). @param {number} i @param {import('../creatures/pose.js').BoneMove | null} mv */
   function set(i, mv) {
@@ -131,6 +133,8 @@ export function createFigureMotion(R, skeleton, clipFile = null) {
     arrive() { acts.arrive = t; acts.leave = null; aboveS = 0; },
     /** Hold the pot in both arms, or let go (S5). @param {boolean} on */
     hold(on) { holding = on; },
+    /** Draw the baked pack, or fold it away while another carrier is worn (P2f). @param {boolean} on */
+    showPack(on) { packShown = on; },
     /** You just went up: the figure looks up after you, and in a while sits to wait. */
     leave() { acts.leave = t; },
     /**
@@ -496,7 +500,7 @@ export function createFigureMotion(R, skeleton, clipFile = null) {
       }
 
       // The coat skirt and the pack, a beat late on springs (trailing.js).
-      trailing.skirtAndPack(dt, { legIK, m, standW, sitW, kneelW, crawlW, speed, yawRate, sitSkirtDeg: S.skirtDeg, pelvisWorldY, accel, twist });
+      trailing.skirtAndPack(dt, { legIK, m, standW, sitW, kneelW, crawlW, speed, yawRate, sitSkirtDeg: S.skirtDeg, pelvisWorldY, accel, twist, packShown });
 
       // The roll turns the whole curled figure about the ball's middle; no footfalls while it rolls.
       turnBones(RO, out, RP.angle, centre, PIVOTS);

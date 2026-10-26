@@ -19,6 +19,7 @@ import { ACTS, actLength, gestureNames, gestureLength } from '../src/world/figur
 import { paceAt, footInCycle } from '../src/world/figure/gait.js';
 import { createLean } from '../src/world/figure/lean.js';
 import { createLook } from '../src/world/figure/look.js';
+import { carriedOn, propAngles, partIndices } from '../src/world/figure/carry.js';
 
 const FIG = 'walker figure';
 
@@ -537,6 +538,25 @@ export function addFigureTests(test, assert, eq) {
     assert(out.frames[0].info.crawlW > 0.95, 'climbOut starts from low');
     const end = out.frames[out.frames.length - 1].info;
     assert(end.crawlW < 0.001 && end.kneelW < 0.001, `after climbOut: crawl ${end.crawlW.toFixed(2)}, kneel ${end.kneelW.toFixed(2)}`);
+  });
+
+  test(FIG, 'P2f: a carrier rides its bone at full size while the baked pack folds away', async () => {
+    const { R, built } = await load();
+    const motion = createFigureMotion(R, built.skeleton), twin = createFigureMotion(R, built.skeleton);
+    const s = { x: 0, z: 0, y: 0, yaw: 0.7, speed: 0, moving: false, ground: () => 0, below: true };
+    motion.showPack(false);
+    for (let f = 0; f < 30; f++) { motion.update(1 / 60, s); twin.update(1 / 60, s); }
+    const pk = built.skeleton.findIndex((/** @type {any} */ b) => b.name === 'pack'), piv = built.skeleton[pk].pivot, at = [0, 0.9, -0.25];
+    const shown = carriedOn(twin.bones, pk, piv, at, [0, 0, 0], 0.7, 1);
+    assert(Math.abs(motion.bones[pk * 16]) < 1e-3, 'the pack bone is folded small');
+    const folded = carriedOn(motion.bones, pk, piv, at, [0, 0, 0], 0.7, 1);
+    assert(Math.hypot(folded.dx - shown.dx, folded.dy - shown.dy, folded.dz - shown.dz) < 0.01, 'the carrier sits where it did');
+    assert(Math.abs(folded.yaw - 0.7) < 0.1, `it faces the way the figure does (${folded.yaw.toFixed(2)})`);
+    // A turn read back as a prop's yaw, pitch and roll is the same turn.
+    const a = propAngles([[Math.cos(0.3), 0, Math.sin(0.3)], [0, 1, 0], [-Math.sin(0.3), 0, Math.cos(0.3)]]);
+    assert(Math.abs(a.yaw - 0.3) < 1e-9 && Math.abs(a.pitch) < 1e-9 && Math.abs(a.roll) < 1e-9, 'a yaw alone reads back');
+    const idx = partIndices(built.indices, built.partOf, built.parts.pack);
+    assert(idx.length > 0 && idx.length % 3 === 0 && [...idx].every((v) => built.partOf[v] === built.parts.pack), 'the pack alone, to set down at camp');
   });
 
   test(FIG, 'a placed figure starts in its posture, with no steps to get there', async () => {

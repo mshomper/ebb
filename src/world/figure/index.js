@@ -8,6 +8,7 @@ import { readGlb } from '../../render/gltf.js';
 import { createCreaturePass } from '../../render/passes/creatures.js';
 import { buildFigure } from './rig.js';
 import { createFigureMotion } from './motion.js';
+import { carriedOn, partIndices } from './carry.js';
 
 export { loadFigureClips } from './clips.js';
 
@@ -58,6 +59,13 @@ export function createFigure(o) {
   const pass = o.pass ?? createFigurePass(R);
   if (built.textured) pass.setMaps(o.glb).catch((err) => console.error('The walker maps did not load:', err));
   pass.setMesh('figure', { data: built.data, indices: built.indices });
+  // The pack alone, to hang at camp while another carrier is worn (P2f): its own triangles of the
+  // same vertices, drawn unposed.
+  const packPart = built.parts.pack, packPivot = built.skeleton.find((b) => b.name === 'pack')?.pivot ?? [0, 1, 0];
+  if (packPart !== undefined) pass.setMesh('pack', { data: built.data, indices: partIndices(built.indices, built.partOf, packPart) });
+  const packLow = packPart !== undefined ? built.partLow[packPart] ?? packPivot[1] : packPivot[1];
+  /** Where the pack stands at camp (the ground under its pivot, world m, and the way its back faces), or null. @type {{ x: number, y: number, z: number, yaw: number } | null} */
+  let hung = null;
   const uniforms = new Float32Array(EXTRA);
   let visible = false;
   /** Where the figure stood and faced last frame, for hand(). */
@@ -92,6 +100,19 @@ export function createFigure(o) {
      * the rig does not have. @param {string} bone @param {number[]} p rest model meters
      */
     pointOn: (bone, p) => pointOf(built.skeleton.findIndex((b) => b.name === bone), p),
+    /**
+     * A thing carried on a bone (P2f: a carrier), as a camp prop's place now: where its origin is and
+     * how it is turned (carry.js). Null before the first frame or for a bone the rig does not have.
+     * @param {string} bone @param {number[]} p its origin, rest model meters @param {number[]} turnDeg its pitch, yaw and roll on the bone
+     */
+    carried(bone, p, turnDeg) {
+      const i = built.skeleton.findIndex((b) => b.name === bone);
+      if (!visible || i < 0) return null;
+      const c = carriedOn(motion.bones, i, built.skeleton[i].pivot, p, turnDeg, at.yaw, R.body.displayScale ?? 1);
+      return { x: at.x + c.dx, y: at.y + c.dy, z: at.z + c.dz, yaw: c.yaw, pitch: c.pitch, roll: c.roll };
+    },
+    /** Set the baked pack down at camp, standing on a spot (world m), or take it up (null; P2f). @param {{ x: number, y: number, z: number, yaw: number } | null} place */
+    hangPack(place) { hung = place; },
     /** Vertices and triangles, for the tools page's cost line. */
     size: { vertices: built.count, triangles: built.indices.length / 3, bytes: built.data.byteLength + built.indices.byteLength },
     /**
@@ -100,10 +121,16 @@ export function createFigure(o) {
      */
     update(dt, s) {
       visible = s.placed;
-      if (!visible) { pass.setBeings([]); return []; }
+      const k = R.body.displayScale ?? 1;
+      // The pack set down at camp: drawn unposed, its pivot over the spot and its base on the ground.
+      const hangs = hung && packPart !== undefined ? (({ x, y, z, yaw }) => {
+        const c = Math.cos(yaw), sn = Math.sin(yaw), px = packPivot[0] * k, pz = packPivot[2] * k;
+        return [{ x: x - (c * px + sn * pz), y: y - packLow * k, z: z - (-sn * px + c * pz), yaw, size: k, mesh: 'pack', bones: null }];
+      })(hung) : [];
+      if (!visible) { pass.setBeings(hangs); return []; }
       const r = motion.update(dt, s);
       at = { x: s.x, y: s.y, z: s.z, yaw: r.yaw };
-      pass.setBeings([{ x: s.x, y: s.y, z: s.z, yaw: r.yaw, size: R.body.displayScale ?? 1, bones: motion.bones }]);
+      pass.setBeings([{ x: s.x, y: s.y, z: s.z, yaw: r.yaw, size: k, bones: motion.bones }, ...hangs]);
       pass.setExtra(eyeUniforms(R.eyes, headBone, r.eyes, uniforms));
       return r.footfalls;
     },

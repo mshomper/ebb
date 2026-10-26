@@ -6,6 +6,12 @@
   "perCarrier": 2,
   "handfulsPerPouch": 3,
   "carriers": ["satchel", "basket", "frame"],
+  "carriersNote": "P2f (Matt, October 26, 2026): carriers replace, never stack. The walker wears one at a time: the starting pack (startPouches), or a made carrier in carriers' order, each perCarrier pouches more than the one before (the satchel 8, the basket 10, the frame 12, Phase 3). A carrier is made at the workbench (cook.json makes, out 'carrier') and put on at once; the one taken off hangs at camp, and its card's Wear swaps back, if what the pack holds fits its pouches. wear: how each made carrier sits on the figure (src/world/camp/carriers.js): model, the camp model it wears (camp.json props.models); bone, the figure bone that carries it (the satchel at the hip, the basket on the pack bone's spring); at, its model's origin (base middle) in rest model meters; turnDeg, pitch, yaw and roll of the model before the bone turns it; scale, of its real size. Wearing one hides the baked pack (the figure's pack region). hang: where the carriers not worn hang at camp, by the workbench (slot), spots in the bench's own frame (x across, y up, z toward where you work, m), one per carrier in order (the starting pack first), each with its yaw (deg) and a click radius r.",
+  "wear": {
+    "satchel": { "model": "satchel", "bone": "pelvis", "at": [-0.25, 0.6, 0.0], "turnDeg": [0, -90, -8], "scale": 0.8 },
+    "basket": { "model": "willow-basket", "bone": "pack", "at": [0, 0.87, -0.25], "turnDeg": [-6, 0, 0], "scale": 1.15 }
+  },
+  "hang": { "slot": "workbench", "r": 0.3, "spots": [[0.74, 0, -0.1, 90], [0.74, 0, 0.32, 90], [-0.74, 0, 0.1, -90]] },
   "groups": ["fuel", "stones", "fibres", "herbs", "earth", "sea", "living", "craft"],
   "partGroups": {
     "leaves": "herbs", "flowers": "herbs", "tops": "herbs", "bark": "herbs", "roots": "herbs", "twigs": "herbs",
@@ -110,6 +116,11 @@
     "rack": { "fresh": "Hung today. Still green.", "drying": "Drying.", "dry": "Dry and crisp." }, "noBowl": "This wants a bowl to sit in.",
     "worms": "They wriggle down into the soil.", "clump": "Its roots are bare. Set it in a dug hole to keep it.",
     "newPouches": "Two more pouches.",
+    "carrierNames": { "pack": "Your first pack", "satchel": "Rush satchel", "basket": "Willow basket" },
+    "carrierLines": { "pack": "Six cloth pouches on a strap. It hangs here while you wear another.", "satchel": "Plaited rushes on a cord strap. Eight pouches.", "basket": "Woven withies on two cord straps. Ten pouches." },
+    "wear": "Wear it",
+    "worn": "You hang the other up by the bench.",
+    "wearFull": "The pack holds more than this one has pouches. Set something down first.",
     "pot": {
       "takeUp": "Take up", "fill": "Fill the pot", "pour": "Pour out", "still": "This water stands still. The spring runs cleaner.",
       "away": "The pot belongs by the fire.", "arms": "Your arms are full with the pot."

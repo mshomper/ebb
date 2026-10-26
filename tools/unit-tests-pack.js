@@ -6,7 +6,7 @@
 // takes, the refusals, a full pile and Take up.
 
 import { makeKinds } from '../src/world/pack/kinds.js';
-import { emptyPack, cleanPack, sizeOf, add, take, has, handfulsOf, packHolds, normalize, addCarrier, removePouch,
+import { emptyPack, cleanPack, sizeOf, add, take, has, handfulsOf, packHolds, normalize, addCarrier, wear, removePouch,
   addHeap, takeFromHeap, expireHeaps } from '../src/world/pack/model.js';
 import { pileWord, pileLook, slotFor, setDown, takeUp, hang, dryShare, rackWord, takeBunch, cleanBunches } from '../src/world/pack/piles.js';
 import { slotsOf, capOf, put as storePut, room as storeRoom, take as storeTake, takeSlot, holdsOf, cleanHolds } from '../src/world/pack/store.js';
@@ -235,13 +235,27 @@ export function addPackTests(test, assert, eq) {
     eq(packHolds(p, { 'flat-stones': 1, 'drift-twigs': 1 }, c.kinds), true);
   });
 
-  test(G, 'each carrier adds two pouches, once', async () => {
+  test(G, 'carriers replace, never stack: the one worn sets the pouches (P2f)', async () => {
     const c = await load();
     let p = addCarrier(emptyPack(), 'satchel');
-    p = addCarrier(addCarrier(p, 'satchel'), 'frame');
-    eq(js(p.carriers), js(['satchel', 'frame']));
-    eq(sizeOf(p, c.recipe), 10);
+    eq(p.worn, 'satchel'); eq(sizeOf(p, c.recipe), 8);
+    p = addCarrier(addCarrier(p, 'satchel'), 'basket');
+    eq(js(p.carriers), js(['satchel', 'basket']), 'each made once:');
+    eq(sizeOf(p, c.recipe), 10, 'the basket worn, not 6 + 2 + 2 + 2:');
     eq(add(p, 'sand', 40, c.kinds, c.recipe).added, 30);
+    eq(sizeOf(wear(p, null, c.recipe).pack, c.recipe), 6, 'the starting pack back on:');
+    eq(wear(p, 'frame', c.recipe).ok, false, 'a carrier not made cannot be worn:');
+  });
+
+  test(G, 'a smaller carrier goes on only if what the pack holds fits it (P2f)', async () => {
+    const c = await load();
+    const p = add(addCarrier(emptyPack(), 'basket'), 'pebbles', 24, c.kinds, c.recipe).pack;
+    eq(p.pouches.length, 8);
+    eq(wear(p, 'satchel', c.recipe).ok, false, 'the satchel is not made yet:');
+    const q = addCarrier(p, 'satchel');
+    eq(wear(q, 'basket', c.recipe).ok, true);
+    eq(wear(q, null, c.recipe).ok, false, 'eight pouches do not fit the starting six:');
+    eq(js(wear(q, null, c.recipe).pack), js(q), 'nothing dropped:');
   });
 
   test(G, 'removing a pouch hands back its kind and handfuls', async () => {

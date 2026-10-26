@@ -58,7 +58,7 @@ export function anchorWeights(anchors, v) {
  * @param {any} R recipes/world/figure.json
  * @param {{ textured?: boolean }} [o] textured: the colour slot carries the baked maps' UV and a 2
  *   (u, v, 2), for figure-draw.wgsl to sample them (a model with no UVs keeps its vertex colours)
- * @returns {{ data: ArrayBuffer, indices: Uint32Array, count: number, skeleton: Bone[], arms: Record<string, ArmInfo>, parts: Record<string, number>, textured: boolean }}
+ * @returns {{ data: ArrayBuffer, indices: Uint32Array, count: number, skeleton: Bone[], arms: Record<string, ArmInfo>, parts: Record<string, number>, partOf: Uint8Array, partLow: Record<number, number>, textured: boolean }}
  */
 export function buildFigure(glb, R, o = {}) {
   const arms = glb.json.extras?.arms ?? {};
@@ -72,6 +72,9 @@ export function buildFigure(glb, R, o = {}) {
   const vertices = new Float32Array(count * 9);
   const joints = new Uint8Array(count * 4), weights = new Uint8Array(count * 4);
   const indices = new Uint32Array(tris);
+  // Each vertex's part id (the arms 255), for drawing one part alone (the pack hung at camp, P2f).
+  const partOf = new Uint8Array(count);
+  /** @type {Record<number, number>} each part's lowest point (rest m) */ const partLow = {};
   let v0 = 0, i0 = 0;
   const textured = !!o.textured && [...meshes.values()].every((m) => m.attributes.TEXCOORD_0);
   for (const [name, m] of meshes) {
@@ -87,6 +90,8 @@ export function buildFigure(glb, R, o = {}) {
       }
       // Which part, and where along it.
       const part = arm ? name : partName[L ? L[k] : 0] ?? 'torso';
+      partOf[v0 + k] = arm ? 255 : L ? L[k] : 0;
+      partLow[partOf[v0 + k]] = Math.min(partLow[partOf[v0 + k]] ?? Infinity, P[k * 3 + 1]);
       const S = R.skin[part] ?? R.skin.torso;
       const value = S.along === 't' && arm
         ? (P[k * 3] - arm.shoulder[0]) * arm.axis[0] + (P[k * 3 + 1] - arm.shoulder[1]) * arm.axis[1] + (P[k * 3 + 2] - arm.shoulder[2]) * arm.axis[2]
@@ -107,5 +112,5 @@ export function buildFigure(glb, R, o = {}) {
     i0 += m.indices.length;
   }
   const data = packMesh({ vertices, count }, joints, weights);
-  return { data, indices, count, skeleton, arms, parts: partIds, textured };
+  return { data, indices, count, skeleton, arms, parts: partIds, partOf, partLow, textured };
 }
