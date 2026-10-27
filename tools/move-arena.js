@@ -35,7 +35,7 @@ import { createMoveLayer } from './arena/moves.js';
 import { createMovesPanel } from './arena/moves-panel.js';
 import { loadMoteModel } from '../src/world/hollow/mote-model.js';
 import { createMotePass } from './arena/mote-pass.js';
-import { createCrowd } from '../src/world/hollow/crowd.js';
+import { createCrowd, walkerBodies } from '../src/world/hollow/crowd.js';
 import { loadCrawlerModel } from '../src/world/hollow/crawler-model.js';
 import { createCrawlerPass } from './arena/crawler-pass.js';
 import { loadWatcherModel } from '../src/world/hollow/watcher-model.js';
@@ -98,7 +98,9 @@ let actors = course.actors.map(makeActor);
 const nearest = (/** @type {number} */ x, /** @type {number} */ z) => actors.reduce((m, a) => (a.broken ? m : Math.min(m, Math.hypot(a.x - x, a.z - z))), Infinity);
 
 // ---- the walker and its figure ----
-const walker = createWalker(R, { get grid() { return grid; }, depth, ground, nearest, get solids() { return solids; } });
+const walker = createWalker(R, { get grid() { return grid; }, depth, ground, nearest, get solids() { return solids; },
+  // A crawler holding its ground is solid to you (H2, Matt's call): you slide round it.
+  bodies: () => (HR ? walkerBodies(actors.filter((a) => a.foe).map((a) => a.foe), HR.crowd) : []) });
 // As the game draws it: Matt's clips and the baked texture.
 const figureGlb = await loadFigureModel(FR);
 const built = buildFigure(figureGlb, FR, { textured: true });

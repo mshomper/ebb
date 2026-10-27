@@ -34,6 +34,17 @@ const wrap = (/** @type {number} */ a) => Math.atan2(Math.sin(a), Math.cos(a));
 /** Steps that hold their ground. */
 const HOLDING = new Set(['wind', 'strike', 'recover']);
 
+/**
+ * The walker's solid bodies this frame (Matt, October 27, 2026): a crawler holding its ground (rearing,
+ * lunging, stuck after it, stunned: Wick snare, Anchor's reel) is solid, so the walker slides round it
+ * (walker.js roundBodies), a roll too; every other state and kind stays walk-through. r is its body
+ * and the walker's together. @param {CrowdFoe[]} foes @param {any} C recipes/world/hollow.json crowd
+ */
+export function walkerBodies(foes, C) {
+  return foes.filter((f) => !f.broken && f.kind === 'lunger' && (HOLDING.has(f.step) || f.stunS > 0))
+    .map((f) => ({ x: f.x, z: f.z, r: (f.K.bodyM ?? 0.3) + C.walkerBodyM }));
+}
+
 /** @param {any} C recipes/world/hollow.json crowd (read live) @param {number} seed */
 export function createCrowd(C, seed) {
   /** Who holds a slot. @type {Set<number>} */ const slots = new Set();

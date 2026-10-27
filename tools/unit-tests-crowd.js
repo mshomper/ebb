@@ -3,10 +3,13 @@
 // of each other spread out; while five come for a walker, no more than the attack slots wind up at once
 // (one in the gentler Hollow), every one gets a turn, and the rest wait on the ring; a thing holding its
 // ground is not pushed; nothing is pushed into rock; a floating watcher is not pushed by crawlers; and
-// the same seed gives the same crowd.
+// the same seed gives the same crowd. A lunge stops at the walker's body; and a crawler holding its
+// ground is solid to the walker, who slides round it (walking or rolling), while one walking in is not.
 
 import { createFoe } from '../src/world/hollow/foes.js';
-import { createCrowd } from '../src/world/hollow/crowd.js';
+import { createCrowd, walkerBodies } from '../src/world/hollow/crowd.js';
+import { createWalker } from '../src/world/walk/walker.js';
+import { createWalkGrid } from '../src/world/walk/grid.js';
 
 const G = 'crowd';
 const DT = 1 / 60;
@@ -163,6 +166,37 @@ export function addCrowdTests(test, assert, eq) {
     held.take({ kind: 'bind', forS: 3 });
     crowd.spread([held], w, DT * 10, you);
     eq(`${held.x},${held.z}`, '0.1,0.2', 'stunned, it holds its ground');
+  });
+
+  test(G, 'walking or rolling straight into a stuck crawler ends at contact, slid to one side, never inside it; a walking one is walk-through', async () => {
+    const H = await recipe(), R = await (await fetch('../recipes/world/walker.json')).json(), K = H.foes.lunger;
+    const grid = createWalkGrid({ ground: () => 0, minX: -10, minZ: -10, maxX: 10, maxZ: 10, cellM: R.grid.cellM, maxSlopeDeg: R.grid.maxSlopeDeg });
+    /** Head straight at a crawler at the middle from 3 m off, walking (or rolling once there's 1.2 m left). @param {any} f @param {boolean} roll */
+    const go = (f, roll) => {
+      const w = createWalker(R, { grid, depth: () => 0, ground: () => 0, bodies: () => walkerBodies([f], H.crowd) });
+      w.place(0, 3, Math.PI);
+      const r = K.bodyM + H.crowd.walkerBodyM;
+      let near = Infinity, rolled = false;
+      for (let i = 0; i < 4 / DT; i++) {
+        if (roll && !rolled && w.z < 1.2) { rolled = w.roll(0, -1) !== false; }
+        w.steer(0, -1);
+        w.update(DT);
+        near = Math.min(near, Math.hypot(w.x - f.x, w.z - f.z));
+      }
+      return { near, x: w.x, z: w.z, r };
+    };
+    // Stuck after a lunge (it holds its ground), and stunned (Wick snare): solid.
+    const stuck = createFoe('lunger', 1, { x: 0, z: 0, yaw: 0 }, K, 3, H.swing);
+    stuck.take({ kind: 'bind', forS: 30 });
+    const walk = go(stuck, false);
+    assert(walk.near >= walk.r - 0.01, `never inside it (nearest ${walk.near.toFixed(3)} m, bodies ${walk.r} m)`);
+    assert(Math.abs(walk.x) > 0.2, `slid round to one side (x ${walk.x.toFixed(2)} m)`);
+    assert(walk.z < 0, `and on past it, never stopped dead (z ${walk.z.toFixed(2)} m)`);
+    const rollIn = go(stuck, true);
+    assert(rollIn.near >= rollIn.r - 0.01, `a roll can't go through it either (nearest ${rollIn.near.toFixed(3)} m)`);
+    // Resting (not holding its ground): walk-through, as before.
+    const resting = createFoe('lunger', 2, { x: 0, z: 0, yaw: 0 }, K, 3, H.swing);
+    assert(go(resting, false).near < 0.1, 'a resting crawler is walked through');
   });
 
   test(G, 'the same seed and the same moves give the same crowd', async () => {
