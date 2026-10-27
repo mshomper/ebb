@@ -69,12 +69,18 @@
   font-size: calc(32px * var(--text-scale, 1));
   line-height: 1.1;
 }
-/* Q and E's spot is always kept, so finding the Hollow never changes the page's height. */
-.ebb-wp__pegs { display: flex; gap: 10px; align-items: center; padding-bottom: 18px; }
-.ebb-wp__pegs.is-unseen { visibility: hidden; }
-.ebb-wp__peg { width: 56px; height: 56px; border-radius: 14px; border: 2px solid var(--jr-moss); background: var(--wp-tile); display: grid; place-items: center; position: relative; }
-.ebb-wp__peg.is-empty { border-style: dashed; border-color: #B9C6B0; }
-.ebb-wp__peg b { position: absolute; bottom: -22px; font-size: 15px; font-weight: 800; color: var(--jr-soft); }
+/* Q and E float in the portrait's top corners (Matt, October 27, 2026): round tablets in the slot
+   buttons' style, the move's icon inside, the key letter beneath; dashed while empty. Over the
+   portrait, so they never change the page's size. */
+.ebb-wp__pegs { position: absolute; inset: 10px 12px auto; display: flex; justify-content: space-between; pointer-events: none; z-index: 1; }
+.ebb-wp__peg { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.ebb-wp__peg i {
+  width: 48px; height: 48px; box-sizing: border-box; border-radius: 50%; display: grid; place-items: center;
+  background: var(--wp-tile); border: 2px solid var(--jr-rule, #DCCFBB); --icon-bg: var(--wp-tile);
+}
+.ebb-wp__peg i .item-icon, .ebb-wp__peg i .icon { width: 28px; height: 28px; }
+.ebb-wp__peg.is-empty i { border-style: dashed; border-color: var(--wp-blank); background: rgba(251, 247, 240, 0.6); }
+.ebb-wp__peg b { font-size: 15px; font-weight: 800; line-height: 1.2; color: var(--jr-soft); }
 .ebb-wp__close {
   appearance: none; width: 48px; height: 48px; flex: none; display: grid; place-items: center; padding: 0; margin: 0;
   background: transparent; border: 0; border-radius: 12px; color: var(--jr-soft);

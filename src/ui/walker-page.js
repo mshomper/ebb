@@ -5,7 +5,7 @@
 // choices popping out beside it; the walker in the middle (src/ui/walker-portrait.js), drag to turn,
 // with the belt under it (shovel, knife, fire steel, sketchbook, the net); the carrier as a strap above
 // the pouches, with the same pop-out; the pouches in two columns on the right (under the walker below
-// 760 px); Q and E top right once the Hollow is found; the chosen thing's name and the walker's words
+// 760 px); Q and E in the portrait's top corners once the Hollow is found; the chosen thing's name and the walker's words
 // on a card at the bottom, its actions the item cards' own (src/ui/card-actions.js), so a pouch here
 // offers Set down, Empty and the rest as its card does. A choice not owned is a blank outline, never
 // named. Opened by I or the walker button at the bottom right, beside the time button; Esc or the
@@ -27,6 +27,8 @@ import { SLOTS } from '../world/kit/model.js';
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c] ?? c);
 /** A drawn icon from either family: the item glyphs first, then the interface's. @param {string} name */
 const glyph = (name) => (name && !['sketchbook', 'net', 'walker'].includes(name) ? itemIconSvg(name) : iconSvg(name));
+/** `?hollow` shows Q and E for a look without the Hollow found (a view only: nothing is set or saved). */
+const PEEK_PEGS = typeof location !== 'undefined' && new URLSearchParams(location.search).has('hollow');
 
 /**
  * @typedef {{ kind: 'slot' | 'carrier' | 'pouch' | 'belt', id: string }} Sel
@@ -69,13 +71,12 @@ export function mountWalkerPage(parent, buttonParent, o) {
   root.innerHTML = `
     <div class="ebb-wp__head">
       <h2 class="ebb-wp__title">${esc(W.title)}</h2>
-      <div class="ebb-wp__pegs" data-pegs></div>
       <button type="button" class="ebb-wp__close" data-close="1" aria-label="${esc(W.close)}" title="${esc(W.close)}">${iconSvg('close')}</button>
     </div>
     <div class="ebb-wp__body">
       <div class="ebb-wp__kit" data-kit></div>
       <div class="ebb-wp__middle">
-        <div class="ebb-wp__portrait" data-portrait><span class="ebb-wp__turn">${esc(W.dragToTurn)}</span></div>
+        <div class="ebb-wp__portrait" data-portrait><span class="ebb-wp__turn">${esc(W.dragToTurn)}</span><div class="ebb-wp__pegs" data-pegs hidden></div></div>
         <div class="ebb-wp__belt" data-belt role="group" aria-label="${esc(W.belt)}"></div>
       </div>
       <div class="ebb-wp__side">
@@ -177,11 +178,13 @@ export function mountWalkerPage(parent, buttonParent, o) {
   }
 
   function renderPegs(/** @type {any} */ v) {
-    // Hidden until the Hollow is found, so nothing hints at what is not found yet; their spot stays
-    // kept (is-unseen hides them without taking them out of the layout) so the page never grows.
-    pegsEl.classList.toggle('is-unseen', !v.hollow);
-    pegsEl.innerHTML = v.hollow ? `<span class="ebb-wp__peg is-empty" role="img" aria-label="${esc(W.q)}"><b>${esc(W.q)}</b></span>
-      <span class="ebb-wp__peg is-empty" role="img" aria-label="${esc(W.e)}"><b>${esc(W.e)}</b></span>` : '';
+    // In the portrait's top corners (Q left, E right), floating over it so the page never changes size.
+    // Hidden until the Hollow is found, so nothing hints at what is not found yet; ?hollow shows them for a look.
+    const show = v.hollow || PEEK_PEGS;
+    pegsEl.hidden = !show;
+    // No Hollow moves exist yet, so both are empty pegs; a move's drawn icon goes inside once it does.
+    pegsEl.innerHTML = show ? [['q', W.q], ['e', W.e]].map(([k, label]) =>
+      `<span class="ebb-wp__peg is-${k} is-empty" role="img" aria-label="${esc(label)}"><i></i><b>${esc(label)}</b></span>`).join('') : '';
   }
 
   /** The card the bottom shows for what is chosen: the item cards' shape, so their actions fit it. @param {any} v @param {any} pv @param {Sel} sel */
