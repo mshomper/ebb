@@ -23,7 +23,7 @@ import { stream } from '../../core/rng.js';
 /**
  * The world as a thing reads it this frame.
  * @typedef {{
- *   you: { x: number, z: number, speed: number },
+ *   you: { x: number, z: number, speed: number, bodyM?: number, rolling?: boolean },
  *   lamp: { x: number, z: number, reachM: number, raised: boolean, snuffed: boolean },
  *   open: (x: number, z: number) => boolean,
  *   crowd?: { may: (id: number) => boolean, waitAt: (id: number) => [number, number] | null, driftShare?: number },
@@ -33,7 +33,7 @@ import { stream } from '../../core/rng.js';
 /**
  * What a thing did this frame: a strike (and whether it landed on you), or a call (where to).
  * A root's burst (Taproot): broke, or cracked and staggered.
- * @typedef {{ type: 'strike', id: number, hit: boolean } | { type: 'call', id: number, x: number, z: number } | { type: 'notice', id: number }
+ * @typedef {{ type: 'strike', id: number, hit: boolean, dirX?: number, dirZ?: number } | { type: 'call', id: number, x: number, z: number } | { type: 'notice', id: number }
  *   | { type: 'burst', id: number, broke: boolean }} FoeEvent
  */
 
@@ -79,6 +79,7 @@ export function createFoe(kind, id, at, K, seed, sides) {
     /** How many hits it has taken, by side. */ hits: { front: 0, side: 0, back: 0 },
     /** What it last did, for the arena's log. */ note: 'Resting.',
     /** In reach to wind up but waiting for an attack slot (motes, a watcher). */ ready: false,
+    /** A lunge's recoil off the walker (s left), for the drawing. */ recoilS: 0,
   };
   /** Its members' phases (the mote cluster), seeded. */
   const members = kind === 'motes' ? Array.from({ length: K.count ?? 7 }, () => [rnd.range(0, 6.283), rnd.range(0.6, 1.4), rnd.range(0.15, 0.45)]) : [];
@@ -111,6 +112,7 @@ export function createFoe(kind, id, at, K, seed, sides) {
     s.lureS = Math.max(0, s.lureS - dt);
     s.crackS = Math.max(0, s.crackS - dt);
     s.hurtS = Math.max(0, s.hurtS - dt);
+    s.recoilS = Math.max(0, s.recoilS - dt);
     if (s.knock) {
       const k = s.knock, step = Math.min(dt, k.left);
       move(w, k.vx * step, k.vz * step);
@@ -152,9 +154,30 @@ export function createFoe(kind, id, at, K, seed, sides) {
         case 'wind': if (s.t >= K.windS) { s.goal = [s.x + Math.sin(s.yaw) * K.dashM, s.z + Math.cos(s.yaw) * K.dashM]; go('strike', 'Lunged.'); } break;
         case 'strike': {
           const g = /** @type {[number, number]} */ (s.goal);
-          toward(w, g[0], g[1], K.dashM / K.strikeS * pace(), dt);
+          // The walker is solid to a lunge (you.bodyM): it stops at contact and bounces off, never
+          // passing through. Rolling clear dodges it, and it carries on to its goal.
+          const solid = you.bodyM !== undefined && !you.rolling, R = (K.bodyM ?? 0.3) + (you.bodyM ?? 0);
+          const x0 = s.x, z0 = s.z;
+          if (!solid || Math.hypot(you.x - x0, you.z - z0) > R) toward(w, g[0], g[1], K.dashM / K.strikeS * pace(), dt);
+          if (solid) {
+            // Where along this frame's move it first touched you (the segment against the circle).
+            const mx = s.x - x0, mz = s.z - z0, fx = x0 - you.x, fz = z0 - you.z;
+            const a = mx * mx + mz * mz, b = 2 * (fx * mx + fz * mz), c = fx * fx + fz * fz - R * R;
+            const disc = b * b - 4 * a * c, u = c <= 0 ? 0 : a > 1e-12 && disc >= 0 ? (-b - Math.sqrt(disc)) / (2 * a) : 2;
+            if (u >= 0 && u <= 1) {
+              s.x = x0 + mx * u; s.z = z0 + mz * u;
+              const dx = you.x - s.x, dz = you.z - s.z, l = Math.hypot(dx, dz) || 1;
+              ev.push({ type: 'strike', id, hit: true, dirX: dx / l, dirZ: dz / l });
+              // Bounced back a short way, a quick recoil, then stuck as after any lunge.
+              s.knock = { vx: -dx / l * (K.bounceM ?? 0.4) / KNOCK_S, vz: -dz / l * (K.bounceM ?? 0.4) / KNOCK_S, left: KNOCK_S };
+              s.recoilS = K.recoilS ?? 0.25; s.goal = null;
+              go('recover', 'Its lunge hit you and bounced off; now it is stuck, its back soft.');
+              break;
+            }
+          }
           if (s.t >= K.strikeS) {
-            const hit = Math.hypot(you.x - s.x, you.z - s.z) < K.hitM;
+            // With a solid walker only contact lands (a roll dodges); otherwise the old reach (hitM).
+            const hit = you.bodyM === undefined && Math.hypot(you.x - s.x, you.z - s.z) < K.hitM;
             ev.push({ type: 'strike', id, hit });
             go('recover', hit ? 'Its lunge caught you; now it is stuck, its back soft.' : 'Missed; stuck for a moment, its back soft.');
           }
@@ -287,9 +310,11 @@ export function createFoe(kind, id, at, K, seed, sides) {
     switch (e.kind) {
       case 'reel': {
         // Anchor caught its hit: it rocks back, open.
+        // The way back, worked out once, so its pieces add up to pushM (in six, so it stops at rock).
         const d = Math.hypot(s.x - (e.fromX ?? s.x), s.z - (e.fromZ ?? s.z)) || 1;
+        const ux = (s.x - (e.fromX ?? s.x)) / d, uz = (s.z - (e.fromZ ?? s.z)) / d;
         s.goal = null;
-        for (let i = 0; i < 6; i++) open(e.world, ((s.x - (e.fromX ?? s.x)) / d) * (e.pushM ?? 1) / 6, ((s.z - (e.fromZ ?? s.z)) / d) * (e.pushM ?? 1) / 6);
+        for (let i = 0; i < 6; i++) open(e.world, ux * (e.pushM ?? 1) / 6, uz * (e.pushM ?? 1) / 6);
         s.stunS = e.forS ?? 1; go('recover', 'Its hit was caught: it reeled back, open.');
         return { landed: true };
       }
@@ -374,6 +399,8 @@ export function createFoe(kind, id, at, K, seed, sides) {
     nudge: (/** @type {number} */ dx, /** @type {number} */ dz, /** @type {{ open: (x: number, z: number) => boolean } | undefined} */ w) => open(w, dx, dz),
     /** Being knocked back by a hit (it holds its ground in the crowd). */
     get knocked() { return !!s.knock; },
+    /** Recoiling off the walker after a lunge hit it (s left). */
+    get recoilS() { return s.recoilS; },
     /** Coming for you, so wanting an attack slot: a lunger from noticing you on; motes and a watcher only once ready to strike. */
     get wantsSlot() { return s.step === 'wind' || s.step === 'strike' || (kind === 'lunger' ? s.step === 'notice' || s.step === 'close' : s.ready); },
     /** The tuning objects read live, so sliders change it at once. */

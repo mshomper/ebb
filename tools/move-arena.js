@@ -389,12 +389,13 @@ function tick(realDt, draw = true) {
   const you = /** @type {any} */ (youNow());
   // The crowd (H2): who may come in to strike, and where the rest wait; then bodies pushed apart.
   const crowdFoes = crowd ? actors.filter((a) => a.foe).map((a) => a.foe) : [];
-  if (crowd) { crowd.assign(crowdFoes, you, !!moveLayer?.moves.gentle); you.crowd = crowd; }
+  // The walker's body is solid to the things (a lunge stops at it; the push keeps them out of it).
+  if (crowd) { crowd.assign(crowdFoes, you, !!moveLayer?.moves.gentle); you.crowd = crowd; you.bodyM = HR.crowd.walkerBodyM; }
   for (const act of actors) {
     const ev = act.update(dt, you);
     if (ev?.length) hollow?.onEvents(ev);
   }
-  if (crowd && you.open) crowd.spread(crowdFoes, { open: you.open }, dt);
+  if (crowd && you.open) crowd.spread(crowdFoes, { open: you.open }, dt, you);
   // Drawn after the crowd has spaced them, so a nudge plays as a step.
   for (const act of actors) {
     act.swarm?.update(dt, clockS, { ground, lamp: you.lamp, you });

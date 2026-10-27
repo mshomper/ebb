@@ -5,7 +5,7 @@
 // moved on from them, in diagonal pairs, so they never slide (a shuffle). Resting, it breathes, a
 // stalk twitches now and then and its tail curls to a side. Its tell is a rear-up: the front rises
 // about the hind hips, the forelegs lift and the soft pale underside shows. The lunge drives plate
-// first; stuck after it, the plate is dug into the silt and the back is up and soft. A front hit
+// first; if it meets the walker it bounces off and recoils; stuck after it, the plate is dug into the silt and the back is up and soft. A front hit
 // glances off the plate in sparks and rocks it back; a side or back hit makes it flinch. Breaking,
 // it slumps into grey sand and motes of light. The tail lags on a spring; the eye stalks bob and turn
 // to look at the walker. Every bit of variation is seeded (src/core/rng.js). Pure: the caller gives
@@ -29,7 +29,7 @@ const PAIR = /** @type {Record<string, number>} */ ({ fl: 0, hr: 0, fr: 1, hl: 1
 
 /**
  * @typedef {{ x: number, z: number, yaw: number, step: string, t: number, stunS: number, broken: boolean,
- *   hits: { front: number, side: number, back: number } }} CrawlerFoe the lunger as foes.js gives it
+ *   hits: { front: number, side: number, back: number }, recoilS?: number }} CrawlerFoe the lunger as foes.js gives it
  * @typedef {{ ground: (x: number, z: number) => number, you: { x: number, z: number } }} CrawlerWorld
  */
 
@@ -132,6 +132,9 @@ export function createCrawlerMotion(foe, model, K, seed) {
     const gl = glanceT < M.glance.s ? Math.sin(Math.PI * glanceT / M.glance.s) : 0;
     const fl = flinchT < M.flinch.s ? Math.sin(Math.PI * flinchT / M.flinch.s) : 0;
     up += gl * M.glance.recoilDeg * DEG;
+    // A lunge that hit the walker bounced off: the front rocks back as it recoils.
+    const rc = (foe.recoilS ?? 0) > 0 ? Math.sin(Math.PI * (1 - /** @type {number} */ (foe.recoilS) / (K.recoilS ?? 0.25))) : 0;
+    up += rc * M.bounce.recoilDeg * DEG;
     roll += -flinchSide * fl * M.flinch.flinchDeg * DEG;
     pose.root.up = up; pose.root.lift = lift; pose.root.roll = roll; pose.root.fwd = 0;
 

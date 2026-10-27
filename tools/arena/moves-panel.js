@@ -51,6 +51,9 @@ export function createMovesPanel(box, o) {
     <h2>The crowd</h2>
     <p class="muted">How many may close in at once (attack slots), where the rest wait (the ring), and how hard bodies push apart. Each stand-in's body size is its bodyM above.</p>
     <div id="crowd-sliders"></div>
+    <h2>A hit on you</h2>
+    <p class="muted">A lunge stops at your body (the crowd's walkerBodyM) and bounces off (each stand-in's bounceM and recoilS). You stagger for staggerS with no control, shoved shoveM along the blow, then no strike lands for graceS.</p>
+    <div id="hurt-sliders"></div>
     <div class="buttons"><button id="copy-hollow">Copy the Hollow's numbers as recipe blocks</button></div>`;
   const $ = (/** @type {string} */ id) => /** @type {HTMLElement} */ (box.querySelector(`#${id}`));
 
@@ -104,11 +107,12 @@ export function createMovesPanel(box, o) {
   tuneFoe.addEventListener('change', () => { showFoe(); tuneFoe.blur(); });
   showMove(); showFoe();
   if (HR.crowd) sliders($('crowd-sliders'), HR.crowd, 'c');
+  sliders($('hurt-sliders'), HR.hurt, 'h');
   $('copy-hollow').addEventListener('click', async (e) => {
     const line = (/** @type {string} */ k, /** @type {any} */ v, /** @type {any} */ was) => `    "${k}": ${JSON.stringify(v)},${JSON.stringify(v) === JSON.stringify(was) ? '' : '   (changed)'}`;
     const text = ['recipes/world/hollow-moves.json moves:', ...ids.map((id) => line(id, MR.moves[id], o.MR0.moves[id])),
       'recipes/world/hollow.json foes:', ...Object.keys(HR.foes).map((k) => line(k, HR.foes[k], o.HR0.foes[k])),
-      'recipes/world/hollow.json:', line('crowd', HR.crowd, o.HR0.crowd),
+      'recipes/world/hollow.json:', line('crowd', HR.crowd, o.HR0.crowd), line('hurt', HR.hurt, o.HR0.hurt),
       'recipes/world/fight-clips.json clips.raiseLantern:', line('layer', o.FC.clips.raiseLantern.layer, o.FC0.clips.raiseLantern.layer)].join('\n');
     o.blocks.value = text;
     try { await navigator.clipboard.writeText(text); o.say('Copied: paste each line over the same entry in those two recipes.'); } catch { o.say('Shown below; copy them from the box.'); }

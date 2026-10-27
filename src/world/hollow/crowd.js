@@ -13,7 +13,9 @@
 //     frame. A thing winding up, striking, stuck after it, stunned or knocked back holds its ground;
 //     the other takes the whole push; if both hold (two lunges ending together), they share it. Pushes go through the open ground
 //     (nudge checks it), so nothing is pushed into rock. Floating things (the watcher) only space
-//     against other floating things.
+//     against other floating things. The walker is a body too (walkerBodyM) that never moves for them:
+//     a thing inside it is pushed out unless it holds its ground. (A lunge stops at the walker's body
+//     in foes.js.)
 // Every pass runs in id order, so the same seed and the same moves give the same crowd. Pure: the
 // caller gives the things and the walker. Numbers: recipes/world/hollow.json crowd and foes.*.bodyM.
 
@@ -88,10 +90,10 @@ export function createCrowd(C, seed) {
   }
 
   /**
-   * After the steps: push overlapping bodies apart. @param {CrowdFoe[]} foes @param {{ open: (x: number, z: number) => boolean }} w
-   * @param {number} dt
+   * After the steps: push overlapping bodies apart, and out of the walker. @param {CrowdFoe[]} foes @param {{ open: (x: number, z: number) => boolean }} w
+   * @param {number} dt @param {{ x: number, z: number }} [you] the walker, solid (walkerBodyM) to things on the floor
    */
-  function spread(foes, w, dt) {
+  function spread(foes, w, dt, you) {
     const live = foes.filter((f) => !f.broken).sort((a, b) => a.id - b.id);
     // A share of the overlap a frame, the same at any frame rate.
     const k = 1 - Math.exp(-dt * C.pushPerS);
@@ -109,6 +111,16 @@ export function createCrowd(C, seed) {
         const sa = ha === hb ? 0.5 : ha ? 0 : 1, m = over * k;
         a.nudge(-dx / d * m * sa, -dz / d * m * sa, w);
         b.nudge(dx / d * m * (1 - sa), dz / d * m * (1 - sa), w);
+      }
+      // The walker never moves for them: a thing inside its body takes the whole push out, unless it
+      // holds its ground (the walker may still walk into one; Matt's call that you walk through things).
+      if (you) for (const f of live) {
+        if (f.K.floats || holds(f)) continue;
+        let dx = f.x - you.x, dz = f.z - you.z, d = Math.hypot(dx, dz);
+        const over = C.walkerBodyM + body(f) - d;
+        if (over <= 0) continue;
+        if (d < 1e-6) { const t = ((hash32(seed, f.id) >>> 8) / 16777216) * Math.PI * 2; dx = Math.sin(t); dz = Math.cos(t); d = 1; }
+        f.nudge(dx / d * over * k, dz / d * over * k, w);
       }
     }
   }

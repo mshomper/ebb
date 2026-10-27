@@ -303,6 +303,9 @@ export function createWalker(R, env) {
     /** Stop where you are (a walk, a steer or a roll). */
     stop() { s.path = []; s.brisk = false; s.v = 0; s.speed = 0; s.roll = null; s.carry = null; },
 
+    /** Pushed by (dx, dz) (a hit's shove in the Hollow), over the walk grid as a step is: never into rock. Returns metres moved. @param {number} dx @param {number} dz */
+    shove(dx, dz) { return moveBy(dx, dz, true, false); },
+
     /** @param {number} dt seconds */
     update(dt) {
       if (!s.placed || dt <= 0) return;

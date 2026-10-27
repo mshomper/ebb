@@ -121,6 +121,50 @@ export function addCrowdTests(test, assert, eq) {
     assert(Math.hypot(wa.x - wb.x, wa.z - wb.z) > 0.1, 'two watchers space apart');
   });
 
+  test(G, 'a lunge into a standing walker ends at contact, never past it, and bounces off; rolling clear dodges it', async () => {
+    const H = await recipe(), K = H.foes.lunger, R = K.bodyM + H.crowd.walkerBodyM;
+    /** One lunge at a walker at the middle, from 2.5 m off: the nearest it came, its events, whether it crossed. @param {boolean} rolling */
+    const lunge = (rolling) => {
+      const f = createFoe('lunger', 1, { x: 0, z: 2.5, yaw: Math.PI }, K, 3, H.swing);
+      const you = { x: 0, z: 0, speed: 1, bodyM: H.crowd.walkerBodyM, rolling: false };
+      const w = { you, lamp: { x: 0, z: 0, reachM: 6, raised: false, snuffed: false }, open: () => true };
+      let near = Infinity, crossed = false, hitAt = -1, after = 0;
+      /** @type {any[]} */ const ev = [];
+      for (let i = 0; i < 3 / DT; i++) {
+        you.rolling = rolling && f.step === 'strike';
+        const e = f.update(DT, w);
+        ev.push(...e);
+        if (e.some((x) => x.type === 'strike' && x.hit)) hitAt = Math.hypot(f.x, f.z);
+        near = Math.min(near, Math.hypot(f.x, f.z));
+        if (f.z < 0) crossed = true;
+        if (f.step === 'recover' && f.t > 0.5) { after = Math.hypot(f.x, f.z); break; }
+      }
+      return { near, crossed, ev, hitAt, after, f };
+    };
+    const hit = lunge(false);
+    const e = hit.ev.find((x) => x.type === 'strike');
+    assert(e?.hit && e.dirZ < -0.9, 'it hit you, and the blow points along the lunge');
+    assert(Math.abs(hit.hitAt - R) < 1e-6, `it stopped at contact (${hit.hitAt.toFixed(3)} m, bodies ${R} m)`);
+    assert(hit.near >= R - 1e-6 && !hit.crossed, `never past your body (nearest ${hit.near.toFixed(3)} m)`);
+    assert(hit.after > R + K.bounceM * 0.8, `bounced back (${hit.after.toFixed(2)} m)`);
+    eq(hit.f.step, 'recover', 'then stuck, as after any lunge');
+    const dodge = lunge(true);
+    assert(!dodge.ev.some((x) => x.type === 'strike' && x.hit), 'rolled clear: no hit');
+    assert(dodge.near < R - 0.1, `the lunge carried on to its goal, through where you were (${dodge.near.toFixed(2)} m)`);
+  });
+
+  test(G, 'the walker is solid to the push: a free thing is pushed out of its body, one holding its ground stays', async () => {
+    const H = await recipe(), crowd = createCrowd(H.crowd, 1), K = H.foes.lunger;
+    const you = { x: 0, z: 0 }, w = { open };
+    const free = createFoe('lunger', 1, { x: 0.1, z: 0.2, yaw: 0 }, K, 3, H.swing);
+    for (let i = 0; i < 60; i++) crowd.spread([free], w, DT, you);
+    assert(Math.hypot(free.x, free.z) > K.bodyM + H.crowd.walkerBodyM - 0.01, `pushed out (${Math.hypot(free.x, free.z).toFixed(2)} m)`);
+    const held = createFoe('lunger', 2, { x: 0.1, z: 0.2, yaw: 0 }, K, 3, H.swing);
+    held.take({ kind: 'bind', forS: 3 });
+    crowd.spread([held], w, DT * 10, you);
+    eq(`${held.x},${held.z}`, '0.1,0.2', 'stunned, it holds its ground');
+  });
+
   test(G, 'the same seed and the same moves give the same crowd', async () => {
     const H = await recipe();
     const go = () => { const foes = five(H, 5), crowd = createCrowd(H.crowd, 9); run(foes, crowd, world(), 8); return foes.map((f) => `${f.x.toFixed(6)},${f.z.toFixed(6)},${f.step}`).join(' '); };

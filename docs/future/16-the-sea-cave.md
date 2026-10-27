@@ -640,6 +640,12 @@ Five motes are about 69,000 triangles in one instanced draw. The arena ran smoot
 - **Nudges play as steps.** The crawler's feet follow where its body actually went each frame, so a sideways push plays as a sidestep shuffle, never a slide.
 - **Tuning:** the move arena's "The crowd" sliders cover the slots, ring, spread, drift and push, and each stand-in's bodyM. "Copy the Hollow's numbers" includes them.
 - **What's left:** a lunge still drives through, so two bodies can touch for a moment as it lands; the push sorts it out within a few frames.
+- **Lunges bounce off the walker** (Matt, October 27, 2026). The walker has a solid body too (crowd.walkerBodyM, 0.25 m).
+  - A crawler's lunge stops the moment its body touches the walker's, never passing through.
+  - On a hit it bounces back (bounceM, 0.4 m) and recoils (recoilS) before its stuck recovery. The walker plays its hit clip, is shoved 0.3 m along the blow over the walk grid (hurt.shoveM, never into rock), loses control for staggerS, and the lantern sip still applies.
+  - Braced with Anchor, there's no stagger: the crawler bounces back harder and reels open.
+  - Rolling clear dodges it, and the lunge carries on to its goal as before.
+  - The crowd's push treats the walker as solid, so nothing settles inside it. A thing holding its ground stays put, and the walker can still walk through things (Matt's earlier call), so walking into a stuck or rearing crawler still overlaps it. That one is for Matt to decide.
 
 ## What comes back up
 
