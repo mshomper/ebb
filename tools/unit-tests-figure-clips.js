@@ -68,6 +68,34 @@ export function addFigureClipTests(test, assert, eq) {
     return `${Object.keys(F.clips).length} clips; lantern hand ${(m1 * 100).toFixed(1)} cm on the chest masked, ${(m2 * 100).toFixed(0)} cm not`;
   });
 
+  test(FIG, 'raise the lantern: a held layer lifts the left hand in upS, holds through a swing, and comes down in downS', async () => {
+    const { R, built } = await load();
+    const C = await loadFigureClips(R);
+    const FR = await (await fetch('../recipes/world/fight-clips.json')).json();
+    const F = await (await fetch(`../${FR.file}`)).json();
+    const L = FR.clips.raiseLantern.layer, dt = 1 / 60, still = { x: 0, z: 0, y: 0, yaw: 0, speed: 0, moving: false, ground: () => 0, depth: () => 0, below: true };
+    const m = createFigureMotion(R, built.skeleton, C);
+    m.addClips(F);
+    const hi = built.skeleton.findIndex((b) => b.name === 'hand.l'), p = built.skeleton[hi].pivot;
+    const handY = () => matPoint(m.bones, hi * 16, p)[1];
+    for (let f = 0; f < 30; f++) m.update(dt, still);
+    const low = handY();
+    let n = 0;
+    while (m.holding < 1 && n < 120) { m.hold('raiseLantern', true, L); m.update(dt, still); n++; }
+    assert(Math.abs(n * dt - L.upS) < 2.5 * dt, `up in upS (${(n * dt).toFixed(2)} s)`);
+    const up = handY();
+    assert(up - low > 0.3, `the lantern hand rises ${((up - low) * 100).toFixed(0)} cm`);
+    m.shoot('swingDouble', { mask: FR.clips.swingDouble.mask ? FR.mask : undefined, feet: true });
+    let lowest = Infinity;
+    for (let f = 0; f < 40; f++) { m.hold('raiseLantern', true, L); m.update(dt, still); lowest = Math.min(lowest, handY()); }
+    assert(lowest - low > 0.15 && m.holding === 1, `held through a swing (never below ${((lowest - low) * 100).toFixed(0)} cm over hanging)`);
+    n = 0;
+    while (m.holding > 0 && n < 120) { m.hold('raiseLantern', false, L); m.update(dt, still); n++; }
+    assert(Math.abs(n * dt - L.downS) < 2.5 * dt, `down in downS (${(n * dt).toFixed(2)} s)`);
+    assert(m.bones.every(Number.isFinite), 'finite');
+    return `up ${((up - low) * 100).toFixed(0)} cm in ${L.upS} s, down in ${L.downS} s`;
+  });
+
   test(FIG, 'island clips (C3): each act, gesture and the kneel names a clip and a span inside it, never lengthens the act, and plays finite and back to rest', async () => {
     const { R, built } = await load();
     const C = await loadFigureClips(R);

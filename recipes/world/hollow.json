@@ -5,7 +5,7 @@
   "camera": { "distanceM": [4, 7], "startM": 5.5, "pitchDeg": [20, 55], "startPitchDeg": 32, "lookHeightM": 1.0, "minEyeHeightM": 0.28, "orbitDegPerPx": 0.1, "turnHalfLifeS": 0.16,
     "fade": { "fillAlpha": 0.14, "outlineAlpha": 0.55, "marginM": 0.25 },
     "lockFrame": { "frameShare": 0.35, "turnPerS": 3.5, "sideDeg": 20 } },
-  "lantern": { "fuel": 100, "burnPerS": 0.25, "raisedBurnPerS": 1.5, "sipFuel": 8, "reachM": 6, "raisedReachM": 9, "emberReachM": 1.5, "glintM": 1.5, "ambient": 0.035, "strength": 2.2, "raiseS": 0.2 },
+  "lantern": { "fuel": 100, "burnPerS": 0.25, "raisedBurnPerS": 1.5, "sipFuel": 8, "reachM": 6, "raisedReachM": 9, "emberReachM": 1.5, "glintM": 1.5, "ambient": 0.035, "strength": 2.2, "raiseS": 0.15 },
   "lock": { "outOfReachS": 2 },
   "dot": { "nearM": 2, "farM": 10, "levelDeg": 20, "downDeg": 55, "stepM": 0.25 },
   "swing": {

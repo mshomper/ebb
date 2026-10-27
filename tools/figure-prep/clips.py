@@ -66,13 +66,16 @@ FIGHT = [
     # Matt's Text-to-Animation pair (The+Walker_Toss_Point+Cast.glb), unnamed in the file.
     ('throwToss', '_01a17e2a_2988_746c_b10a_07f3f5e55122', (0.1, 1.85), False),
     ('pointCast', '_01a17e29_1736_762f_bbb2_2d60d27c6ba7', (0.15, 2.3), False),
+    # Raise the lantern (Matt, October 27, 2026): the same point unmirrored, so the left (lantern)
+    # hand rises; played as a held layer on the left arm only (fight-clips.json raiseLantern).
+    ('raiseLantern', '_01a17e29_1736_762f_bbb2_2d60d27c6ba7', (0.15, 2.3), False),
 ]
 SETS = {'main': CLIPS, 'fight': FIGHT}
 # Cheap cleaning for Matt's Text-to-Animation pair (passable, not perfect): smooth, passes of a
 # 1-2-1 smoothing over the frames against jitter; mirror, left for right (the point is Meshy's left
 # hand, the lantern's).
 # unturn: the hips' turn about the vertical taken out (the point turns the body nearly round).
-CLEAN = {'throwToss': {'smooth': 2}, 'pointCast': {'smooth': 2, 'mirror': True, 'unturn': True}}
+CLEAN = {'throwToss': {'smooth': 2}, 'pointCast': {'smooth': 2, 'mirror': True, 'unturn': True}, 'raiseLantern': {'smooth': 2, 'unturn': True}}
 BACKWARD = {'backAway'}
 DRIVEN = ['pelvis', 'spine', 'chest', 'head', 'upperArm.l', 'foreArm.l', 'hand.l', 'upperArm.r', 'foreArm.r', 'hand.r',
           'thigh.l', 'shin.l', 'foot.l', 'thigh.r', 'shin.r', 'foot.r']

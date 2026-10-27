@@ -22,7 +22,7 @@ const wrap = (/** @type {number} */ a) => Math.atan2(Math.sin(a), Math.cos(a));
 /**
  * @param {{
  *   HR: any, FR: any, walker: any, camera: any, grid: any, ground: (x: number, z: number) => number, course: any,
- *   motion: any, held: any, DS: number, actors: () => any[], head: () => number[], say: (s: string) => void,
+ *   motion: any, held: any, built: any, DS: number, actors: () => any[], head: () => number[], say: (s: string) => void,
  *   lookRates: () => { degPerPx: number, halfLifeS: number },
  * }} o
  */
@@ -47,11 +47,13 @@ export function createHollow(o) {
   const foes = () => o.actors().filter((a) => a.foe && !a.broken);
   const byId = (/** @type {number | null} */ id) => (id === null ? null : foes().find((a) => a.id === id) ?? null);
 
-  /** The lantern's light, where it hangs or is held up (world m). */
+  const HAND = o.built.skeleton.findIndex((/** @type {any} */ b) => b.name === 'hand.l');
+  /** The lantern's light: where it hangs from the left hand, which the raise lifts (world m). */
   function lampAt() {
-    const k = Math.cos(walker.yaw), s = Math.sin(walker.yaw), lift = lantern.lift;
-    // Hanging at the left hand, a little ahead; held up, over the head and forward.
-    return [walker.x + k * 0.22 + s * (0.12 + 0.25 * lift), walker.y + 0.55 + 0.75 * lift, walker.z - s * 0.22 + k * (0.12 + 0.25 * lift)];
+    const m = motion.bones, p = o.built.skeleton[HAND].pivot, i = HAND * 16;
+    const b = [0, 1, 2].map((r) => (m[i + r] * p[0] + m[i + 4 + r] * p[1] + m[i + 8 + r] * p[2] + m[i + 12 + r]) * o.DS);
+    const c = Math.cos(walker.yaw), s = Math.sin(walker.yaw);
+    return [walker.x + c * b[0] + s * b[2], walker.y + b[1] - 0.12, walker.z - s * b[0] + c * b[2]];
   }
   /** The lantern as the stand-ins read it. */
   function lampState() {
@@ -183,6 +185,9 @@ export function createHollow(o) {
   /** Each frame, after the walker moves. @param {number} dt */
   function update(dt) {
     lantern.update(dt);
+    // The lantern arm rises while the right mouse holds it up: a layer over walking and any swing.
+    const RL = FR.clips.raiseLantern;
+    motion.hold('raiseLantern', lantern.raised && !lantern.snuffed && !lantern.out, { span: RL.layer.span, mask: RL.layer.mask, upS: RL.layer.upS, downS: RL.layer.downS });
     reeling = Math.max(0, reeling - dt);
     grace = Math.max(0, grace - dt);
     const why = lock.update(dt, candidates());
@@ -230,15 +235,11 @@ export function createHollow(o) {
   /** What the walker holds (the staff, the lantern), in world meters. @param {number[]} place [x, y, z, yaw] */
   function heldTris(/** @type {number[]} */ place, /** @type {string} */ staffLook) {
     const lamp = o.held.held(motion, { lantern: true, look: null }, place), staff = o.held.held(motion, { lantern: false, look: staffLook }, place);
-    // The stage draws the figure scaled about where it stands; scale what it holds the same way.
-    const lift = lantern.lift, k = Math.cos(place[3]), s = Math.sin(place[3]);
-    for (const [tris, isLamp] of /** @type {[Float32Array | null, boolean][]} */ ([[lamp, true], [staff, false]])) {
+    // The stage draws the figure scaled about where it stands; scale what it holds the same way. Held
+    // up, the lantern rises with the hand (the raise is the arm's own pose, fight-clips.json raiseLantern).
+    for (const tris of [lamp, staff]) {
       if (!tris) continue;
-      for (let i = 0; i < tris.length; i += 9) {
-        for (let j = 0; j < 3; j++) tris[i + j] = place[j] + (tris[i + j] - place[j]) * o.DS;
-        // Held up: the lantern rises over the head and forward.
-        if (isLamp && lift > 0) { tris[i] += s * 0.25 * lift; tris[i + 1] += 0.75 * lift; tris[i + 2] += k * 0.25 * lift; }
-      }
+      for (let i = 0; i < tris.length; i += 9) for (let j = 0; j < 3; j++) tris[i + j] = place[j] + (tris[i + j] - place[j]) * o.DS;
     }
     return [lamp, staff].filter(Boolean);
   }
