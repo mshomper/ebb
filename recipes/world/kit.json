@@ -1,7 +1,7 @@
 {
   "type": "kit",
   "version": 1,
-  "note": "The walker's kit and the Walker page (Matt's mock and the plan approved October 26, 2026; src/world/kit, src/ui/walker-page.js). slots: the four kit slots down the page's left (hat, lantern, in hand, coat), each with its owned choices popping out beside it; the carrier is the strap above the pouches with the same pop-out. items: per slot, each thing's name, the walker's words about it (Fraunces italic on the bottom card) and its drawn icon (src/ui/icons). A choice not yet owned is a blank outline and is never named; popSlots: how many outlines a pop-out shows at least. belt: the tools that hang on the walker and never use a pouch, in order (shovel, knife, fire steel, sketchbook, the net): an unowned one is a blank outline. The carrier changes at camp only (where the others hang); campOnly is the line elsewhere. hollow: Q and E stay hidden until the Hollow is found. page: widest the page draws (px) and the width below which the pouches move under the walker. portrait: the walker drawn in its own small view while the page is open: px its largest side at most, idleTurnDegS the slow turn (degrees a second) while nobody drags, dragDegPerPx how far a drag turns it, settleS how long after a drag before the slow turn resumes, camera its distance, height and field of view (degrees), light the key light's direction and colour and the sky fill (linear), exposure into the tonemap. figure: the hat and coat looks for Phase 4 dyes (null: as made).",
+  "note": "The walker's kit and the Walker page (Matt's mock and the plan approved October 26, 2026; src/world/kit, src/ui/walker-page.js). slots: the four kit slots down the page's left (hat, lantern, in hand, coat), each with its owned choices popping out beside it; the carrier is the strap above the pouches with the same pop-out. items: per slot, each thing's name, the walker's words about it (Fraunces italic on the bottom card) and its drawn icon (src/ui/icons). A choice not yet owned is a blank outline and is never named; popSlots: how many outlines a pop-out shows at least. belt: the tools that hang on the walker and never use a pouch, in order (shovel, knife, fire steel, sketchbook, the net): an unowned one is a blank outline. The carrier changes at camp only (where the others hang); campOnly is the line elsewhere. hollow: Q and E stay hidden until the Hollow is found. page: widest the page draws (px) and the width below which the pouches move under the walker. portrait: the walker drawn in its own small view while the page is open: px its longer side at most (device pixels; the box's own size below that), idleTurnDegS the slow turn (degrees a second) while nobody drags, dragDegPerPx how far a drag turns it, settleS how long after a drag before the slow turn resumes, camera its distance, height and field of view (degrees), light the key light's direction and colour and the sky fill (linear), exposure into the tonemap. figure: the hat and coat looks for Phase 4 dyes (null: as made).",
   "slots": ["hat", "lantern", "hand", "coat"],
   "popSlots": 4,
   "items": {
@@ -27,6 +27,7 @@
     "lantern": { "name": "No lantern", "line": "Left on the tent pole. The camp keeps its light." },
     "hand": { "name": "Empty hands", "line": "Nothing in hand. Room for whatever I find." }
   },
+  "off": { "lantern": "Leave it on the pole", "hand": "Put it away" },
   "belt": [
     { "id": "shovel", "name": "Shovel", "icon": "shovel", "line": "A stick, a flat stone and cord, bound tight. It hangs on the pack." },
     { "id": "knife", "name": "Gathering knife", "icon": "gathering-knife", "line": "A clean cut leaves a plant less bare, and it is ready again sooner." },
@@ -56,7 +57,7 @@
   "hollow": { "flag": "hollow:found" },
   "page": { "maxPx": 860, "stackBelowPx": 760 },
   "portrait": {
-    "px": 360,
+    "px": 900,
     "idleTurnDegS": 9,
     "dragDegPerPx": 0.6,
     "settleS": 2.5,
@@ -65,7 +66,7 @@
     "exposure": 1.0
   },
   "figure": {
-    "note": "Hat and coat looks for Phase 4 dyes: per id, a tint mixed into that part's colour (null: as made). Read by src/world/kit/wear.js; the walker's own are as made.",
+    "note": "Hat and coat looks for Phase 4 dyes: per id, a linear tint [r, g, b] for that part (null: as made). Read by src/world/kit/model.js looksOf; the walker's own are as made.",
     "hat": { "own": null },
     "coat": { "own": null }
   }

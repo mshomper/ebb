@@ -1214,7 +1214,7 @@ export async function startApp(canvas, hooks = {}) {
     canvas, walk, camera, recipe: walkerRecipe,
     // A card or panel over the view: keys wait, and the pointer is freed to use it.
     open: () => !!getStore('identify') || !!getStore('journalUi')?.open || !!getStore('haul') || !!getStore('shelfPending')
-      || !!getStore('sketchbookUi')?.open || !!getStore('stationView'),
+      || !!getStore('sketchbookUi')?.open || !!getStore('stationView') || !!getStore('walkerPageUi')?.open,
     use: (x, y) => dispatch({ type: 'look.tap', x, y, source: 'mouse' }),
     hover: (x, y) => {
       if (getStore('hand')) { sowing.setPointer(groundAt(x, y)); return; }

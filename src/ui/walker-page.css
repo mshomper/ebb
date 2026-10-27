@@ -1,0 +1,176 @@
+/* The Walker page (src/ui/walker-page.js; K2). The journal's cream paper, binding edge and ink, moss
+   for headings, ember only for the selection. At most 860 px wide, centred; below 760 px the pouches
+   move under the walker in one row. No sideways scrolling, text 15 px and up, 48 px targets. */
+
+:root {
+  --wp-ember: #B86A3C;
+  --wp-ember-ring: rgba(184, 106, 60, 0.18);
+  --wp-tile: #FBF7F0;
+  --wp-blank: #D7CCB9;
+  --wp-moss-wash: #E1ECD3;
+}
+
+/* --- the walker button, beside the journal's (the sketchbook and Look move a slot left) --- */
+.ebb-wpbtn {
+  position: fixed;
+  top: max(var(--jr-edge, 12px), env(safe-area-inset-top));
+  right: calc(max(var(--jr-edge, 12px), env(safe-area-inset-right)) + 2 * (var(--jr-btn, 48px) + 8px));
+  z-index: 11;
+  pointer-events: none;
+}
+.ebb-wpbtn .icon { width: 28px; height: 28px; display: block; }
+
+/* --- the page --- */
+.ebb-wp {
+  position: fixed;
+  z-index: 22;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -48%);
+  width: min(860px, calc(100vw - 32px));
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+  overflow-x: hidden;
+  box-sizing: border-box;
+  padding: 16px 20px 18px 18px;
+  background: var(--jr-paper, #F4EEE4);
+  color: var(--jr-ink, #1E2624);
+  border-left: 12px solid var(--jr-binding, #C8B89A);
+  border-radius: 8px 18px 18px 8px;
+  box-shadow: 0 14px 40px rgba(10, 14, 13, 0.35);
+  font-family: var(--font-ui, Nunito, sans-serif);
+  font-weight: 600;
+  font-size: var(--text-body, 16px);
+  line-height: 1.45;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 180ms ease, transform 180ms ease, visibility 0s linear 180ms;
+}
+.ebb-wp.is-open { opacity: 1; visibility: visible; pointer-events: auto; transform: translate(-50%, -50%); transition: opacity 180ms ease, transform 180ms ease, visibility 0s; }
+.ebb-wp [hidden] { display: none !important; }
+.ebb-wp button { font: inherit; color: inherit; -webkit-tap-highlight-color: transparent; cursor: pointer; }
+.ebb-wp :focus-visible { outline: 2px solid var(--jr-moss, #5F7F5B); outline-offset: 2px; }
+
+.ebb-wp__head { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+.ebb-wp__title {
+  margin: 0 auto 0 0;
+  font-family: var(--font-voice, Fraunces, serif);
+  font-style: italic;
+  font-weight: 500;
+  font-variation-settings: "SOFT" 100;
+  font-size: calc(32px * var(--text-scale, 1));
+  line-height: 1.1;
+}
+.ebb-wp__pegs { display: flex; gap: 10px; align-items: center; padding-bottom: 18px; }
+.ebb-wp__peg { width: 56px; height: 56px; border-radius: 14px; border: 2px solid var(--jr-moss); background: var(--wp-tile); display: grid; place-items: center; position: relative; }
+.ebb-wp__peg.is-empty { border-style: dashed; border-color: #B9C6B0; }
+.ebb-wp__peg b { position: absolute; bottom: -22px; font-size: 15px; font-weight: 800; color: var(--jr-soft); }
+.ebb-wp__close {
+  appearance: none; width: 48px; height: 48px; flex: none; display: grid; place-items: center; padding: 0; margin: 0;
+  background: transparent; border: 0; border-radius: 12px; color: var(--jr-soft);
+}
+.ebb-wp__close:hover { background: rgba(30, 38, 36, 0.07); }
+.ebb-wp__close .icon { width: 24px; height: 24px; display: block; }
+
+/* Kit slots | the walker and the belt | the strap and the pouches. */
+.ebb-wp__body {
+  position: relative;
+  display: grid;
+  grid-template-columns: 76px minmax(0, 1fr) 148px;
+  gap: 16px;
+  align-items: stretch;
+}
+.ebb-wp__kit { display: flex; flex-direction: column; gap: 12px; }
+.ebb-wp__slot, .ebb-wp__opt, .ebb-wp__tool, .ebb-wp__pouch, .ebb-wp__strap {
+  appearance: none; margin: 0; padding: 0; box-sizing: border-box;
+  background: var(--wp-tile); border: 2px solid var(--jr-rule, #DCCFBB); color: var(--jr-ink);
+  display: grid; place-items: center; position: relative;
+  --icon-bg: var(--wp-tile);
+}
+.ebb-wp__slot { width: 76px; height: 76px; border-radius: 16px; }
+.ebb-wp__slot .item-icon, .ebb-wp__slot .icon { width: 44px; height: 44px; }
+.ebb-wp__slot.is-empty { border-style: dashed; }
+.ebb-wp__slot:hover, .ebb-wp__tool:hover, .ebb-wp__pouch:hover, .ebb-wp__strap:hover, .ebb-wp__opt:hover { border-color: #C3B293; }
+.ebb-wp .is-sel, .ebb-wp .is-sel:hover { border-color: var(--wp-ember); box-shadow: 0 0 0 3px var(--wp-ember-ring); }
+
+/* The walker in the middle: its own small view (src/ui/walker-portrait.js). */
+.ebb-wp__middle { min-width: 0; display: flex; flex-direction: column; }
+.ebb-wp__portrait {
+  position: relative;
+  flex: 1;
+  min-height: 380px;
+  background: linear-gradient(180deg, #FFFDF8, #EFE6D6);
+  border: 2px solid var(--jr-rule);
+  border-radius: 18px;
+  overflow: hidden;
+  touch-action: none;
+  cursor: grab;
+}
+.ebb-wp__portrait.is-dragging { cursor: grabbing; }
+.ebb-wp__portrait canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.ebb-wp__turn {
+  position: absolute; left: 0; right: 0; bottom: 8px; text-align: center; pointer-events: none;
+  font-family: var(--font-voice, Fraunces, serif); font-style: italic; font-size: 15px; color: var(--jr-pencil, #8A8478);
+}
+.ebb-wp__belt { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 10px; }
+.ebb-wp__tool { width: 48px; height: 48px; border-radius: 12px; }
+.ebb-wp__tool .item-icon, .ebb-wp__tool .icon { width: 30px; height: 30px; }
+.ebb-wp__tool.is-blank, .ebb-wp__opt.is-blank { border-style: dashed; border-color: var(--wp-blank); background: transparent; }
+
+/* The strap above the pouches, and the pouches in two columns. */
+.ebb-wp__side { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.ebb-wp__strap {
+  display: flex; align-items: center; gap: 8px; width: 100%; min-height: 48px; border-radius: 12px; padding: 0 10px;
+  font-size: 15px; color: var(--jr-soft); text-align: left;
+}
+.ebb-wp__strap .item-icon, .ebb-wp__strap .icon { width: 28px; height: 28px; flex: none; color: var(--jr-ink); }
+.ebb-wp__strap span { min-width: 0; overflow-wrap: anywhere; }
+.ebb-wp__pouches { display: grid; grid-template-columns: repeat(2, 64px); gap: 8px; justify-content: space-between; }
+.ebb-wp__pouch { width: 64px; height: 64px; border-radius: 14px; }
+.ebb-wp__pouch .item-icon, .ebb-wp__pouch svg { width: 46px; height: 46px; }
+.ebb-wp__pouch.is-flat { opacity: 0.7; }
+.ebb-wp__pouch.is-locked { border-style: dashed; border-color: var(--wp-blank); background: transparent; }
+
+/* A slot's choices popping out beside it (over the portrait's edge), or under the strap. */
+.ebb-wp__pop {
+  position: absolute; z-index: 2;
+  display: grid; grid-template-columns: repeat(2, 64px); gap: 10px;
+  padding: 12px;
+  background: var(--wp-tile);
+  border: 2px solid var(--wp-ember);
+  border-radius: 16px;
+  box-shadow: 0 10px 26px rgba(10, 14, 13, 0.25);
+}
+.ebb-wp__pop::before {
+  content: ""; position: absolute; left: -9px; top: 30px; width: 14px; height: 14px; background: var(--wp-tile);
+  border-left: 2px solid var(--wp-ember); border-bottom: 2px solid var(--wp-ember); transform: rotate(45deg);
+}
+.ebb-wp__pop.is-strap::before { left: var(--wp-arrow, 30px); top: -9px; transform: rotate(135deg); }
+.ebb-wp__opt { width: 64px; height: 64px; border-radius: 14px; background: var(--jr-paper); }
+.ebb-wp__opt .item-icon, .ebb-wp__opt .icon { width: 38px; height: 38px; }
+.ebb-wp__opt.is-on { border-color: var(--jr-moss); background: var(--wp-moss-wash); --icon-bg: var(--wp-moss-wash); }
+
+/* The chosen thing at the bottom: its name on moss, the walker's words, its actions. */
+.ebb-wp__about { margin-top: 18px; border: 2px solid var(--jr-moss); border-radius: 12px; overflow: hidden; background: var(--wp-tile); }
+.ebb-wp__name { display: flex; align-items: center; gap: 10px; background: var(--jr-moss); color: var(--jr-paper); padding: 6px 14px; }
+.ebb-wp__name b { font-weight: 800; font-size: calc(18px * var(--text-scale, 1)); margin-right: auto; }
+.ebb-wp__nameicon { display: grid; place-items: center; --icon-bg: var(--jr-moss); --fam: currentColor; }
+.ebb-wp__nameicon .item-icon, .ebb-wp__nameicon .icon, .ebb-wp__nameicon svg { width: 28px; height: 28px; display: block; }
+.ebb-wp__worn { font-size: 15px; opacity: 0.85; }
+.ebb-wp__words {
+  margin: 0; padding: 10px 14px 12px;
+  font-family: var(--font-voice, Fraunces, serif); font-style: italic; font-variation-settings: "SOFT" 100;
+  font-size: calc(18px * var(--text-scale, 1)); line-height: 1.45; color: var(--jr-ink);
+}
+.ebb-wp__words.is-hint { color: var(--jr-soft); }
+.ebb-wp__note { margin: -4px 14px 12px; font-size: 15px; color: var(--jr-soft); }
+.ebb-wp__acts { padding: 0 14px 12px; flex-wrap: wrap; }
+
+@media (max-width: 759px) {
+  .ebb-wp__body { grid-template-columns: 76px minmax(0, 1fr); }
+  .ebb-wp__side { grid-column: 1 / -1; }
+  .ebb-wp__strap { width: auto; align-self: flex-start; }
+  .ebb-wp__pouches { grid-template-columns: repeat(auto-fill, 64px); justify-content: start; }
+  .ebb-wp__portrait { min-height: 320px; }
+}
