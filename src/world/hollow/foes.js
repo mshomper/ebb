@@ -3,7 +3,7 @@
 // Every kind runs the same steps: rest, notice, close in, wind-up (its tell), strike, recover (its
 // opening). What differs is what makes it notice, its tell and the opening it leaves, each a recipe
 // value (recipes/world/hollow.json foes). Three kinds for the move arena, one of each instinct:
-//   lunger (a silt crawler): strikes at movement; claws rise, then a short lunge; stuck after, its
+//   lunger (a silt crawler): strikes at movement; rears up (H2: in place of rising claws), then a short lunge; stuck after, its
 //     back soft; an armored front, so only side and back hits count;
 //   watcher (a hagstone watcher): goes toward light; turns to the lantern, its hole glows for the
 //     tell, then it calls everything near to it; it turns slowly to look again;
@@ -136,7 +136,7 @@ export function createFoe(kind, id, at, K, seed, sides) {
         case 'close':
           if (d > K.noticeM * 1.6 && s.alertS <= 0) { go('rest', 'Lost you.'); break; }
           toward(w, you.x, you.z, K.closeMps * pace(), dt, K.strikeM * 0.8);
-          if (d <= K.strikeM) { s.yaw = toYou; go('wind', 'Claws up: the tell.'); }
+          if (d <= K.strikeM) { s.yaw = toYou; go('wind', 'Rearing up: the tell.'); }
           break;
         case 'wind': if (s.t >= K.windS) { s.goal = [s.x + Math.sin(s.yaw) * K.dashM, s.z + Math.cos(s.yaw) * K.dashM]; go('strike', 'Lunged.'); } break;
         case 'strike': {

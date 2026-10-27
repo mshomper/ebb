@@ -62,6 +62,6 @@ export const HOLLOW_COURSE = {
   spawns: [[1, -6.5], [-4.5, -6.5], [6, -3], [-6.5, 3], [0, -8], [6.5, 3.5], [-3.5, -1.5], [3, 0.5]],
   labels: [
     ['Start', 0, 6.5], ['Ring of six pillars', 0, 0], ['Bending passage (south, then east)', 3, 14], ['Shallow pool edge (west)', -7, 0],
-    ['Lunger: strikes at movement', 1, -6.5], ['Watcher: goes toward light', -4.5, -6.5], ['Mote cluster: shies from light', 6, -3],
+    ['Silt crawler: strikes at movement', 1, -6.5], ['Watcher: goes toward light', -4.5, -6.5], ['Mote cluster: shies from light', 6, -3],
   ],
 };

@@ -35,6 +35,8 @@ import { createMoveLayer } from './arena/moves.js';
 import { createMovesPanel } from './arena/moves-panel.js';
 import { loadMoteModel } from '../src/world/hollow/mote-model.js';
 import { createMotePass } from './arena/mote-pass.js';
+import { loadCrawlerModel } from '../src/world/hollow/crawler-model.js';
+import { createCrawlerPass } from './arena/crawler-pass.js';
 
 const $ = (/** @type {string} */ id) => /** @type {HTMLElement} */ (document.getElementById(id));
 /** @param {string} p */
@@ -60,6 +62,9 @@ const HR0 = structuredClone(HR), MR0 = structuredClone(MR), FC0 = structuredClon
 // The soot motes, Matt's model (H2), drawn in the stage's pass.
 const moteModel = HR ? await loadMoteModel(new URL('../assets/models/hollow/mote.glb', import.meta.url)) : null;
 const motePass = HR && moteModel ? await createMotePass(stage.gpu, moteModel, HR.foes.motes.mote) : null;
+// The silt crawler, Matt's model rigged in code (H2), drawn in the stage's pass too.
+const crawlerModel = HR ? await loadCrawlerModel(new URL('../assets/models/hollow/crawler.glb', import.meta.url)) : null;
+const crawlerPass = HR && crawlerModel ? await createCrawlerPass(stage.gpu, crawlerModel, HR.foes.lunger.crawler) : null;
 
 // ---- the world: ground, water, walk grid, solids ----
 const ground = course.ground;
@@ -72,7 +77,7 @@ const setSolids = () => { solids = createSolids(R.solids.bodyM); solids.set(cour
 setSolids();
 
 // ---- the actors (stand-ins that react to you); the Hollow's are seeded by their id ----
-const kindRecipes = { frog: frogR, hollow: HR, seed: 1, moteAcrossM: moteModel?.acrossM };
+const kindRecipes = { frog: frogR, hollow: HR, seed: 1, moteAcrossM: moteModel?.acrossM, crawlerModel };
 let nextId = 1, spawnAt = 0;
 /** @param {{ kind: string, x: number, z: number }} a */
 const makeActor = (a) => KINDS[a.kind]({ ...a, id: nextId++ }, kindRecipes);
@@ -354,10 +359,16 @@ $('legend').innerHTML = course.labels.map(([t]) => `<li>${t}</li>`).join('');
 // ---- running ----
 reset();
 let last = performance.now(), clockS = 0, statAcc = 0, paused = false;
+/** Frame time (ms): the time between frames, and the time one tick takes on the main thread, over the last frames. */
+const frameMs = { gap: /** @type {number[]} */ ([]), work: /** @type {number[]} */ ([]) };
+const mean = (/** @type {number[]} */ a) => a.reduce((n, v) => n + v, 0) / Math.max(1, a.length);
 function frame(/** @type {number} */ now) {
   const dt = Math.min(0.1, (now - last) / 1000);
+  frameMs.gap.push(now - last); if (frameMs.gap.length > 120) frameMs.gap.shift();
   last = now;
+  const t0 = performance.now();
   tick(paused ? 0 : dt);
+  frameMs.work.push(performance.now() - t0); if (frameMs.work.length > 120) frameMs.work.shift();
   requestAnimationFrame(frame);
 }
 /** One step of everything, realDt seconds; draw false skips drawing (arena.run). @param {number} realDt */
@@ -377,6 +388,7 @@ function tick(realDt, draw = true) {
     const ev = act.update(dt, you);
     if (ev?.length) hollow?.onEvents(ev);
     act.swarm?.update(dt, clockS, { ground, lamp: you.lamp, you });
+    act.crawler?.update(dt, clockS, { ground, you });
   }
   if (!hollow) $('actor-note').textContent = actors.map((act) => `${act.note} Startled ${act.startles} times.`).join(' ');
   hollow?.update(dt);
@@ -395,7 +407,8 @@ function tick(realDt, draw = true) {
     const p = props(place);
     stage.setProps(p.tris, p.faded);
     motePass?.set(actors.filter((a) => a.swarm && !a.broken).map((a) => a.swarm), clockS);
-    stage.draw({ extra: motePass ? (pass, u) => motePass.draw(pass, u) : undefined, bones: motion.bones, eyes: eyeUniforms(FR.eyes, headBone, r.eyes, eyeBuf), place,
+    crawlerPass?.set(actors.filter((a) => a.crawler).map((a) => a.crawler));
+    stage.draw({ extra: motePass || crawlerPass ? (pass, u) => { motePass?.draw(pass, u); crawlerPass?.draw(pass, u); } : undefined, bones: motion.bones, eyes: eyeUniforms(FR.eyes, headBone, r.eyes, eyeBuf), place,
       weights: false, night: false, water: course.waterY, follow: [walker.x, walker.y, walker.z], dt, camera: { eye: e, target: t }, scale: DS,
       ...(hollow && HR ? { lamp: hollow.lamp(), fade: [HR.camera.fade.fillAlpha, HR.camera.fade.outlineAlpha] } : {}) });
     drawTrace(clockS);
@@ -407,6 +420,7 @@ function tick(realDt, draw = true) {
     const pace = walker.rolling >= 0 ? 'rolling' : !walker.moving ? 'standing' : walker.speed > R.pace.strollMps + 0.1 ? 'running'
       : nearest(walker.x, walker.z) < R.pace.creepNearM && walker.speed <= R.pace.creepMps + 0.01 ? 'creeping' : 'walking';
     $('stats').innerHTML = `<dt>Pace</dt><dd>${pace}</dd><dt>Speed</dt><dd>${walker.speed.toFixed(2)} m/s</dd>`
+      + `<dt>Frame</dt><dd>${mean(frameMs.gap).toFixed(1)} ms (${(1000 / Math.max(1e-3, mean(frameMs.gap))).toFixed(0)} a second), its work ${mean(frameMs.work).toFixed(1)} ms</dd>`
       + `<dt>Water here</dt><dd>${k >= 0 ? `${depth(k).toFixed(2)} m` : 'none'}</dd><dt>Ground</dt><dd>${walker.y.toFixed(2)} m up</dd>`
       + (hollow ? `<dt>Floor dot</dt><dd>${(() => { const d = hollow.dot(); return d.locked ? 'under the locked target' : `${d.m.toFixed(1)} m out`; })()}</dd>` : '');
     panel?.show();
@@ -415,10 +429,12 @@ function tick(realDt, draw = true) {
 }
 requestAnimationFrame(frame);
 /** For checking from the console: the walker, the actors, the solids. */
-/** @type {any} */ (window).arena = { walker, get actors() { return actors; }, get solids() { return solids; }, camera, grid, R, hollow, motion, moveLayer,
+/** @type {any} */ (window).arena = { walker, crawlerPass, motePass, get actors() { return actors; }, get solids() { return solids; }, camera, grid, R, hollow, motion, moveLayer,
   /** Run on s seconds at once in 60ths (checks from the console, and a hidden tab). @param {number} s */
   run(s) { const n = Math.round(s * 60); for (let i = 0; i < n; i++) tick(1 / 60, i === n - 1); last = performance.now(); },
   /** Hold time still (the view still draws), for checks and screenshots. @param {boolean} on */
-  pause(on) { paused = on; } };
+  pause(on) { paused = on; },
+  /** The mean frame gap and tick work (ms) over the last 120 frames. */
+  get frameMs() { return { gap: mean(frameMs.gap), work: mean(frameMs.work), frames: frameMs.gap.length }; } };
 say(hollow ? 'Click the view, then walk with W A S D. Left click swings the staff, the right mouse held raises the lantern, Tab locks on.'
   : 'Click the view to look round with the mouse, then walk with W A S D.');
