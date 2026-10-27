@@ -1,0 +1,72 @@
+{
+  "type": "kit",
+  "version": 1,
+  "note": "The walker's kit and the Walker page (Matt's mock and the plan approved October 26, 2026; src/world/kit, src/ui/walker-page.js). slots: the four kit slots down the page's left (hat, lantern, in hand, coat), each with its owned choices popping out beside it; the carrier is the strap above the pouches with the same pop-out. items: per slot, each thing's name, the walker's words about it (Fraunces italic on the bottom card) and its drawn icon (src/ui/icons). A choice not yet owned is a blank outline and is never named; popSlots: how many outlines a pop-out shows at least. belt: the tools that hang on the walker and never use a pouch, in order (shovel, knife, fire steel, sketchbook, the net): an unowned one is a blank outline. The carrier changes at camp only (where the others hang); campOnly is the line elsewhere. hollow: Q and E stay hidden until the Hollow is found. page: widest the page draws (px) and the width below which the pouches move under the walker. portrait: the walker drawn in its own small view while the page is open: px its largest side at most, idleTurnDegS the slow turn (degrees a second) while nobody drags, dragDegPerPx how far a drag turns it, settleS how long after a drag before the slow turn resumes, camera its distance, height and field of view (degrees), light the key light's direction and colour and the sky fill (linear), exposure into the tonemap. figure: the hat and coat looks for Phase 4 dyes (null: as made).",
+  "slots": ["hat", "lantern", "hand", "coat"],
+  "popSlots": 4,
+  "items": {
+    "hat": {
+      "own": { "name": "Your hat", "icon": "hat", "line": "Wide enough to keep the rain off a sketch. The brim has gone soft at the front where I pull it down." }
+    },
+    "lantern": {
+      "hand": { "name": "Hand lantern", "icon": "lantern", "line": "It hangs on the tent pole by day. After dark I take it with me when I leave the camp." }
+    },
+    "hand": {
+      "stick": { "name": "Hazel walking stick", "icon": "walking-stick", "line": "A step further, across a ditch or shallow water." }
+    },
+    "coat": {
+      "own": { "name": "Your coat", "icon": "coat", "line": "Patched at both elbows and longer than it needs to be. The pockets still smell of the boat." }
+    },
+    "carrier": {
+      "pack": { "name": "Your first pack", "icon": "pack", "line": "Six cloth pouches on a strap." },
+      "satchel": { "name": "Rush satchel", "icon": "satchel", "line": "Plaited rushes on a cord strap. Eight pouches." },
+      "basket": { "name": "Willow basket", "icon": "basket", "line": "Woven withies on two cord straps. Ten pouches." }
+    }
+  },
+  "none": {
+    "lantern": { "name": "No lantern", "line": "Left on the tent pole. The camp keeps its light." },
+    "hand": { "name": "Empty hands", "line": "Nothing in hand. Room for whatever I find." }
+  },
+  "belt": [
+    { "id": "shovel", "name": "Shovel", "icon": "shovel", "line": "A stick, a flat stone and cord, bound tight. It hangs on the pack." },
+    { "id": "knife", "name": "Gathering knife", "icon": "gathering-knife", "line": "A clean cut leaves a plant less bare, and it is ready again sooner." },
+    { "id": "steel", "name": "Fire steel", "icon": "fire-steel", "line": "Steel and flint in a small pouch of their own. Three strikes, most evenings." },
+    { "id": "sketchbook", "name": "Sketchbook", "icon": "sketchbook", "line": "Charcoal and a book of rough paper. The hand gets surer with every page." },
+    { "id": "net", "name": "Net", "icon": "net", "line": "A hand net on a short pole, for the shallows." }
+  ],
+  "words": {
+    "title": "The Walker",
+    "open": "The Walker",
+    "close": "Close",
+    "dragToTurn": "drag to turn",
+    "slots": { "hat": "Hat", "lantern": "Lantern", "hand": "In hand", "coat": "Coat", "carrier": "Carrier" },
+    "pouches": "Pouches",
+    "belt": "Belt",
+    "wear": "Wear it",
+    "wearing": "Wearing it",
+    "openBook": "Open the sketchbook",
+    "campOnly": "The other carriers hang at camp. Change it there.",
+    "worn": "Worn.",
+    "notFound": "Not found yet",
+    "emptyPouch": "An empty pouch",
+    "pick": "Choose a slot, a pouch or a tool to see it here.",
+    "q": "Q",
+    "e": "E"
+  },
+  "hollow": { "flag": "hollow:found" },
+  "page": { "maxPx": 860, "stackBelowPx": 760 },
+  "portrait": {
+    "px": 360,
+    "idleTurnDegS": 9,
+    "dragDegPerPx": 0.6,
+    "settleS": 2.5,
+    "camera": { "distanceM": 3.4, "aimM": 0.72, "heightM": 0.95, "fovDeg": 28 },
+    "light": { "dir": [0.45, 0.75, 0.55], "rgb": [1.0, 0.94, 0.84], "lux": 3.0, "sky": [0.42, 0.46, 0.52], "rim": 0.35 },
+    "exposure": 1.0
+  },
+  "figure": {
+    "note": "Hat and coat looks for Phase 4 dyes: per id, a tint mixed into that part's colour (null: as made). Read by src/world/kit/wear.js; the walker's own are as made.",
+    "hat": { "own": null },
+    "coat": { "own": null }
+  }
+}

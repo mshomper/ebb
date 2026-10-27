@@ -83,6 +83,7 @@ export const MAKES = /** @type {[string, string, string, string, number][]} */ (
   ['workbench', 'workbench', 'Workbench', 'T2', 2], ['apothecary', 'apothecary', 'Apothecary bench', 'T2', 2], ['shovel', 'shovel', 'Shovel', 'T2', 2],
   ['hearth-stones', 'hearth-stones', 'Hearth stones', 'T2', 2], ['cooking-pot', 'cooking-pot', 'Cooking pot', 'T2', 2], ['tea-pot', 'tea-pot', 'Tea pot', 'T2', 2],
   ['cup', 'cup', 'Clay cup', 'T2', 2], ['bowl', 'bowl', 'Clay bowl', 'T2', 2], ['mortar', 'mortar', 'Mortar and pebble', 'T2', 2], ['drying-rack', 'drying-rack', 'Drying rack', 'T2', 2],
+  ['pack', 'pack', 'Your first pack', 'T1', 1], ['hat', 'hat', 'Your hat', 'T1', 1], ['coat', 'coat', 'Your coat', 'T1', 1],
   ['satchel', 'satchel', 'Rush satchel', 'T2', 2], ['basket', 'basket', 'Willow basket', 'T2', 2], ['seed-balls', 'seed-balls', 'Seed balls', 'T2', 2], ['fill-pot', 'fill-pot', 'Fill the pot', 'T2', 2],
   ['keepers-blade', 'keepers-blade', "Keeper's blade", 'T2', 3], ['log-seat', 'log-seat', 'Log seat', 'T3', 3], ['driftwood-frame', 'driftwood-frame', 'Driftwood frame', 'T3', 3],
   ['clam-rake', 'clam-rake', 'Clam rake', 'T3', 3], ['net-stakes', 'net-stakes', 'Net stakes', 'T3', 3], ['mending-coil', 'mending-coil', 'Mending coil', 'T3', 3], ['gift-stone', 'gift-stone', 'Gift stone', 'T3', 3],

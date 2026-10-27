@@ -5,7 +5,7 @@
 // store slice `campSound` for the camp's held sounds (src/audio/camp-loops.js). Live only.
 
 import { emit } from '../../core/events.js';
-import { update } from '../../core/store.js';
+import { get, update } from '../../core/store.js';
 import { onPad } from './layout.js';
 import { pitched, ringLaid, inSlot } from './model.js';
 import { fireAt } from './fire.js';
@@ -48,9 +48,11 @@ export function createCampFrame(k) {
     if (t && pitched(c)) {
       const sh = R.props.models.tent.shade;
       list.push({ key: 'tent', x: t.x, y: t.y, z: t.z, yaw: t.yaw, shade: sh });
-      // The lantern: on the front pole, or in your hand off the pad at night.
+      // The lantern: on the front pole, or in your hand off the pad at night, unless the kit leaves it
+      // on the pole (the Walker page, K4: the lantern slot empty).
       const you = k.walk.below ? k.walk.you() : null;
-      lantern = dark && you && pad && !onPad(pad, you[0], you[2]) ? 'carried' : 'pole';
+      const taken = get('kit')?.lantern !== null;
+      lantern = taken && dark && you && pad && !onPad(pad, you[0], you[2]) ? 'carried' : 'pole';
       const hand = lantern === 'carried' ? k.walk.hand('l') : null;
       const at = hand ? [hand.x, hand.y - R.lantern.carryDropM, hand.z] : k.where.tentPoint(R.lantern.hangM);
       const yaw = hand ? hand.yaw : t.yaw;
