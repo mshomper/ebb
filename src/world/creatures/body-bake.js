@@ -4,6 +4,8 @@
 // pale belly underneath, seeded blotches on the back). Pure and deterministic: the same recipe
 // gives the same mesh. First used by the frog size preview (?frogscale); S6b skins and animates it.
 
+import { surfaceNets } from '../mesh/surface-nets.js';
+
 const DEG = Math.PI / 180;
 
 /** @param {number} a @param {number} b @param {number} k smooth minimum radius (m); 0 is a hard union */
@@ -145,46 +147,9 @@ export function bakeBody(body, cellM) {
     field[at(i, j, k)] = bodyDistance(prims, [min[0] + i * cellM, min[1] + j * cellM, min[2] + k * cellM]).d;
   }
 
-  // Surface nets: one vertex per cell the surface crosses, at the mean of its edge crossings.
-  const cellVert = new Int32Array((n[0] - 1) * (n[1] - 1) * (n[2] - 1)).fill(-1);
-  const cAt = (/** @type {number} */ i, /** @type {number} */ j, /** @type {number} */ k) => (k * (n[1] - 1) + j) * (n[0] - 1) + i;
-  /** @type {number[]} */ const pos = [];
-  const EDGES = [[0, 1], [2, 3], [4, 5], [6, 7], [0, 2], [1, 3], [4, 6], [5, 7], [0, 4], [1, 5], [2, 6], [3, 7]];
-  for (let k = 0; k < n[2] - 1; k++) for (let j = 0; j < n[1] - 1; j++) for (let i = 0; i < n[0] - 1; i++) {
-    const v = [];
-    for (let c = 0; c < 8; c++) v.push(field[at(i + (c & 1), j + ((c >> 1) & 1), k + ((c >> 2) & 1))]);
-    if (v.every((x) => x > 0) || v.every((x) => x <= 0)) continue;
-    let sx = 0, sy = 0, sz = 0, m = 0;
-    for (const [a, b] of EDGES) {
-      if ((v[a] > 0) === (v[b] > 0)) continue;
-      const t = v[a] / (v[a] - v[b]);
-      sx += (a & 1) + ((b & 1) - (a & 1)) * t; sy += ((a >> 1) & 1) + (((b >> 1) & 1) - ((a >> 1) & 1)) * t; sz += ((a >> 2) & 1) + (((b >> 2) & 1) - ((a >> 2) & 1)) * t;
-      m++;
-    }
-    cellVert[cAt(i, j, k)] = pos.length / 3;
-    pos.push(min[0] + (i + sx / m) * cellM, min[1] + (j + sy / m) * cellM, min[2] + (k + sz / m) * cellM);
-  }
-
-  // Quads across every grid edge the surface crosses, wound so they face outward.
-  /** @type {number[]} */ const idx = [];
-  for (let k = 1; k < n[2] - 1; k++) for (let j = 1; j < n[1] - 1; j++) for (let i = 1; i < n[0] - 1; i++) {
-    const d0 = field[at(i, j, k)];
-    for (let axis = 0; axis < 3; axis++) {
-      const d1 = axis === 0 ? field[at(i + 1, j, k)] : axis === 1 ? field[at(i, j + 1, k)] : field[at(i, j, k + 1)];
-      if ((d0 > 0) === (d1 > 0)) continue;
-      // The four cells around this edge.
-      const cells = axis === 0 ? [[i, j - 1, k - 1], [i, j, k - 1], [i, j, k], [i, j - 1, k]]
-        : axis === 1 ? [[i - 1, j, k - 1], [i - 1, j, k], [i, j, k], [i, j, k - 1]]
-          : [[i - 1, j - 1, k], [i, j - 1, k], [i, j, k], [i - 1, j, k]];
-      const q = cells.map(([a, b, c]) => cellVert[cAt(a, b, c)]);
-      if (q.some((x) => x < 0)) continue;
-      if (d0 <= 0) idx.push(q[0], q[1], q[2], q[0], q[2], q[3]);
-      else idx.push(q[0], q[2], q[1], q[0], q[3], q[2]);
-    }
-  }
-
-  // Normals from the field's gradient; albedo from the nearest primitive's region.
-  const count = pos.length / 3;
+  // Surface nets (src/world/mesh/surface-nets.js), then normals from the field's gradient and albedo
+  // from the nearest primitive's region.
+  const { pos, idx, count } = surfaceNets(field, n, min, cellM);
   const out = new Float32Array(count * 9);
   const A = body.albedo, e = cellM * 0.5;
   for (let vi = 0; vi < count; vi++) {
