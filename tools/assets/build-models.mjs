@@ -28,6 +28,7 @@ import { readObjSource } from './obj-source.mjs';
 import { makePiece } from './made-pieces.mjs';
 import { dropPaint } from './drop-paint.mjs';
 import { findBunches, keepBunch } from './bunches.mjs';
+import { keepPart } from './parts.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const repo = resolve(here, '../..');
@@ -160,6 +161,12 @@ for (const m of list.models) {
     hangs = found.hangs;
     if (m.bunches.bunchOf !== undefined) { keepBunch(prim, found.tris[m.bunches.bunchOf]); hangAt = found.hangs[m.bunches.bunchOf]; }
     console.log(`${m.out}: ${found.hangs.length} bunches`);
+  }
+
+  // part (parts.mjs): one of several separate pieces in one mesh (the two driftwood staves), the rest left out.
+  if (m.part) {
+    const r = keepPart(root.listMeshes()[0].listPrimitives()[0], m.part);
+    console.log(`${m.out}: piece ${m.part.keep} of ${r.pieces} (${r.triangles.join(', ')} triangles, left to right)`);
   }
 
   // A scan whose corners are split by faceted normals (rebuildNormals: the dye pot) cannot be welded

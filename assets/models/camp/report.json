@@ -890,5 +890,47 @@
     0.077
    ]
   }
+ },
+ "staff-slim": {
+  "source": "Ebb_Driftwood+Staves.glb",
+  "file": "staff-slim.glb",
+  "bytes": 232680,
+  "sourceBytes": 11150048,
+  "trianglesBefore": 19227,
+  "triangles": 2109,
+  "maps": 512,
+  "bounds": {
+   "min": [
+    -0.037,
+    0,
+    -0.025
+   ],
+   "max": [
+    0.037,
+    1,
+    0.025
+   ]
+  }
+ },
+ "staff-knotted": {
+  "source": "Ebb_Driftwood+Staves.glb",
+  "file": "staff-knotted.glb",
+  "bytes": 233016,
+  "sourceBytes": 11150048,
+  "trianglesBefore": 19227,
+  "triangles": 2112,
+  "maps": 512,
+  "bounds": {
+   "min": [
+    -0.065,
+    0,
+    -0.023
+   ],
+   "max": [
+    0.065,
+    1,
+    0.023
+   ]
+  }
  }
 }

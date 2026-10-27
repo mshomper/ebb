@@ -1,0 +1,12 @@
+{
+  "type": "staff",
+  "version": 1,
+  "note": "The driftwood staff (C2, approved October 27, 2026; docs/future/16-the-sea-cave.md weapons: the first weapon, one-handed in the right hand, the lantern hand never free). Matt's two staves from one file, split and cut down by tools/assets/build-models.mjs (models.json part) into two looks of the one staff; each island draws one from its seed (src/world/kit/staff.js), so nothing is saved for it. Shown on tool pages only (tools/walker-strip.html) until the move arena (H0); not in the game's kit or the arch yet. lengthM: the staff's length in the world (the models are baked 1.0 m long; this scales them). gripM: how far up from its foot the right hand holds it. hold: carried on the bone like a carrier (src/world/figure/carry.js): at, the grip in rest model meters (the palm, a little below and inside the wrist); turnDeg, the staff's pitch, yaw and roll on the hand, so it stands near upright in the hanging hand, leaning a little forward, and follows the swings; upright, walking or standing it stays this share of the way to upright (leaning tiltDeg forward) as the arm swings, so it reads as a walking staff; while a swing plays it moves with the hand alone.",
+  "lengthM": 1.0,
+  "gripM": 0.56,
+  "looks": [
+    { "id": "slim", "model": "assets/models/camp/staff-slim.glb", "name": "Slim driftwood staff" },
+    { "id": "knotted", "model": "assets/models/camp/staff-knotted.glb", "name": "Knotted driftwood staff" }
+  ],
+  "hold": { "bone": "hand.r", "at": [-0.52, 0.745, 0.075], "turnDeg": [23, 0, -28], "upright": 0.75, "tiltDeg": 10 }
+}
