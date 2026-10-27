@@ -309,6 +309,11 @@ Each kind keeps one fixed set of behaviors and never learns, and the set is buil
 
 - **First version: ranks 1 to 3** of each track (twelve moves). The rank 4 moves come after.
 - **Clips:** the five shared poses (Swing, Plant, Throw, Raise, Kneel) plus Point, on the walker's rig. Swing, Throw, Raise and Kneel are already planned for fighting, the sling, the lantern and planting. Moth lure's moths are shader motion with no rig.
+- **Feel, approved by Matt (October 26, 2026):**
+  - **Aiming:** in the Hollow the cursor is free (a high, fixed camera, not the island's pointer lock). Cast the flame, Taproot and Moth lure land under the cursor, and every other move goes the way the walker faces.
+  - **Hold to aim, tap to fire:** holding Q or E shows the mark and the move goes on release. A tap fires at once at the cursor.
+  - **Plant and Throw come from Meshy's animation library**, picked by Matt and retargeted onto our rig like the walk clips. Point and the hand variants of Raise are made in code.
+  - **The movement arena comes first.** `tools/move-arena.html` gains Q and E pegs, a pick list of the twelve moves, stand-in enemies (one that winds up and lunges, a watcher) and a slider for each timing. It's the first piece of Phase 3, so the feel is settled before any cave is built. The timings start from the feel page (plan-pages folder `hollow-moves-feel-plan.html`).
 
 ## The lantern
 
