@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ebb Hollow foes</title>
+<link rel="icon" href="../brand/ebb-favicon.svg" type="image/svg+xml">
+<style>
+  @font-face { font-family: 'Nunito'; src: url('../src/vendor/fonts/nunito-latin-600-normal.woff2') format('woff2'); font-weight: 600; }
+  @font-face { font-family: 'Nunito'; src: url('../src/vendor/fonts/nunito-latin-800-normal.woff2') format('woff2'); font-weight: 800; }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; max-width: 100%; overflow-x: hidden; }
+  body { background: #F4EEE4; color: #1E2624; font: 600 17px/1.45 'Nunito', system-ui, sans-serif; padding: 16px; overflow-wrap: anywhere; }
+  main { max-width: 1400px; margin: 0 auto; display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; padding-bottom: 60px; }
+  @media (min-width: 1100px) { main { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); } header { grid-column: 1 / -1; } }
+  h1 { font-size: 24px; font-weight: 800; margin: 0; }
+  h2 { font-size: 19px; font-weight: 800; margin: 0; }
+  .muted { color: #4A5551; font-size: 16px; margin: 0; }
+  .card { background: #FBF7F0; border: 1px solid #E3D9C9; border-radius: 14px; padding: 14px 16px; min-width: 0; display: flex; flex-direction: column; gap: 10px; }
+  canvas { width: 100%; aspect-ratio: 1 / 1; max-height: 78vh; height: auto; display: block; border-radius: 10px; background: #EDE6DA; touch-action: none; }
+  button { font: 800 16px/1.2 'Nunito', system-ui, sans-serif; color: #1E2624; background: #E3D9C9; border: 0; border-radius: 12px; padding: 10px 14px; cursor: pointer; min-height: 44px; }
+  button[aria-pressed=true] { background: #2E4A2C; color: #FBF7F0; }
+  .buttons { display: flex; flex-wrap: wrap; gap: 10px; }
+  .slider { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) 5em; gap: 8px; align-items: center; font-size: 16px; }
+  input[type=range] { width: 100%; min-width: 0; accent-color: #4a6a47; height: 30px; }
+  dl { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 4px 14px; margin: 0; font-size: 16px; }
+  dt { font-weight: 800; } dd { margin: 0; }
+  .status { font-size: 16px; min-height: 1.5em; margin: 0; }
+</style>
+</head>
+<body>
+<main>
+  <header class="card">
+    <h1>Hollow foes: the soot mote</h1>
+    <p class="muted">Matt's mote (nTop, October 27, 2026) at its size in the game, turning slowly, close up. No bones: the bob, the turn, the breathing, the squash and stretch, the trail and the eyes are all drawn by the shader (src/shaders/lib-mote.wgsl). Drag to turn the view, wheel to come closer. Numbers live in recipes/world/hollow.json (foes.motes.mote).</p>
+  </header>
+  <section class="card">
+    <canvas id="view"></canvas>
+    <p class="status" id="note"></p>
+  </section>
+  <section class="card">
+    <h2>Light</h2>
+    <div class="buttons" id="light">
+      <button data-light="day" aria-pressed="true">Daylight</button>
+      <button data-light="dark">The Hollow, by lantern</button>
+    </div>
+    <h2>What it does</h2>
+    <div class="buttons" id="act">
+      <button data-act="drift" aria-pressed="true">Drift</button>
+      <button data-act="tell">The tell: bunch up</button>
+      <button data-act="nip">Dart and nip</button>
+      <button data-act="widen">A light hits it</button>
+      <button data-act="scatter">Scatter</button>
+    </div>
+    <div class="buttons">
+      <button id="spin" aria-pressed="true">Turning</button>
+      <button id="close">Face to face</button>
+      <button id="whole">Whole mote</button>
+    </div>
+    <h2>Tune</h2>
+    <div id="sliders"></div>
+    <dl id="facts"></dl>
+  </section>
+</main>
+<script type="importmap">{ "imports": {
+  "wgpu-matrix": "../src/vendor/wgpu-matrix/wgpu-matrix.module.js" } }</script>
+<script type="module" src="./hollow-foes.js"></script>
+</body>
+</html>

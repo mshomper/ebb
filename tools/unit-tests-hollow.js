@@ -6,7 +6,8 @@
 // staff's arc and which side a hit lands on; walls in the way; and the stand-ins' steps (a lunger's
 // tell and lunge, a watcher's call, motes held off by the raised light), seeded and repeatable. H0b:
 // the Q and E moves' timings and costs (waits, the gentler Hollow, once a floor, seeds, Snuff cut
-// short) and how each reaches a thing by its instinct.
+// short) and how each reaches a thing by its instinct. H2: Matt's soot mote as loaded, and its swarm's
+// shader inputs (the tell, the dart, the nip, the trail, the eyes), seeded and never in lockstep.
 
 import { dotRange, walkDot } from '../src/world/hollow/aim.js';
 import { createLock } from '../src/world/hollow/lock.js';
@@ -15,6 +16,8 @@ import { arcHits, hitsDue, createSwingChain } from '../src/world/hollow/swing.js
 import { inTheWay } from '../src/world/hollow/occlude.js';
 import { createFoe, sideOf } from '../src/world/hollow/foes.js';
 import { createMoves } from '../src/world/hollow/moves.js';
+import { loadMoteModel } from '../src/world/hollow/mote-model.js';
+import { createSwarm, MOTE_FLOATS, PUFF_FLOATS } from '../src/world/hollow/mote-swarm.js';
 import { HOLLOW_ICONS } from '../src/ui/icons/icons-hollow.js';
 import { createWalkGrid } from '../src/world/walk/grid.js';
 import { createSolids } from '../src/world/walk/solids.js';
@@ -313,5 +316,71 @@ export function addHollowTests(test, assert, eq) {
     runFor(a, w, 5); runFor(b, w, 5);
     eq(`${a.x},${a.z},${a.yaw},${a.step}`, `${b.x},${b.z},${b.yaw},${b.step}`);
     eq(JSON.stringify(a.members), JSON.stringify(b.members), 'the swarm the same');
+  });
+
+  // H2: Matt's soot mote, drawn round the cluster by mote-swarm.js.
+  test(G, "Matt's mote loads as it is: 13,856 triangles, sizeM across, two eyes facing forward", async () => {
+    const H = await recipe(), M = H.foes.motes.mote, model = await loadMoteModel('../assets/models/hollow/mote.glb');
+    eq(model.triangles, 13856, 'no further cut');
+    const lo = [Infinity, Infinity, Infinity], hi = [-Infinity, -Infinity, -Infinity];
+    for (let i = 0; i < model.data.length; i += 6) for (let k = 0; k < 3; k++) { lo[k] = Math.min(lo[k], model.data[i + k]); hi[k] = Math.max(hi[k], model.data[i + k]); }
+    const across = Math.max(...hi.map((h, k) => h - lo[k]));
+    assert(Math.abs(across - model.acrossM) < 1e-3 && Math.abs(model.acrossM - M.sizeM) < 1e-6, `${across.toFixed(3)} m across`);
+    eq(model.eyes.length, 2, 'two eyes');
+    assert(model.eyes[0].centre[0] > 0 && model.eyes[1].centre[0] < 0, 'left (+x) first');
+    for (const e of model.eyes) assert(e.axis[2] > 0.5 && e.centre[2] > 0 && e.radiusM > 0.01 && e.radiusM < 0.04, `an eye on the face (${e.axis}, ${e.radiusM} m)`);
+  });
+
+  test(G, 'a swarm of five bunches for its tell, stretches on the dart, squashes on the nip and leaves a trail', async () => {
+    const H = await recipe(), { open } = floor(), K = H.foes.motes, M = K.mote;
+    const f = createFoe('motes', 4, { x: 3, z: 3 }, K, 7, H.swing), s = createSwarm(f, M, 9, M.sizeM);
+    eq(s.count, 5, 'five a swarm');
+    const w = { you: { x: 0, z: 0, speed: 0 }, lamp: { x: 0, z: 0, reachM: 6, raised: false, snuffed: false }, open };
+    const sw = { ground: () => 0.3, lamp: w.lamp, you: w.you };
+    const spread = () => s.motes.reduce((n, m) => n + Math.hypot(m.x - f.x, m.z - f.z), 0) / s.count;
+    let clock = 0, loose = 0, tight = Infinity, squash = 0, stretch = 0, nip = 0, puffs = 0;
+    for (let i = 0; i < 6 / DT; i++) {
+      f.update(DT, w); s.update(DT, clock += DT, sw);
+      const inst = s.instances(clock);
+      if (f.step === 'close' || f.step === 'rest') loose = Math.max(loose, spread());
+      if (f.step === 'wind' && f.t > K.windS * 0.8) { tight = Math.min(tight, spread()); squash = Math.max(squash, inst[MOTE_FLOATS + 8]); }
+      if (f.step === 'strike') { stretch = Math.max(stretch, inst[7]); puffs = Math.max(puffs, s.puffs().length / PUFF_FLOATS); }
+      if (f.step === 'recover' && f.t < M.dart.nipS) nip = Math.max(nip, inst[8]);
+    }
+    assert(tight < loose * 0.7, `bunched up (${tight.toFixed(2)} m from ${loose.toFixed(2)} m)`);
+    assert(squash > M.tell.squash * 0.8, `squashed in its tell (${squash.toFixed(2)})`);
+    assert(stretch > 0.1, `stretched along the dart (${stretch.toFixed(2)})`);
+    assert(nip > M.dart.nipSquash * 0.5, `squashed on the nip (${nip.toFixed(2)})`);
+    assert(puffs > 0, 'a smoky trail behind the dart');
+  });
+
+  test(G, 'motes never move in lockstep, blink on their own, and the same seed draws the same swarm', async () => {
+    const H = await recipe(), { open } = floor(), K = H.foes.motes, M = K.mote;
+    const w = { you: { x: 9, z: 9, speed: 0 }, lamp: { x: 9, z: 9, reachM: 6, raised: false, snuffed: false }, open };
+    const sw = { ground: () => 0.3, lamp: w.lamp, you: w.you };
+    const run = () => {
+      const f = createFoe('motes', 6, { x: 0, z: 0 }, K, 11, H.swing), s = createSwarm(f, M, 5, M.sizeM);
+      let clock = 0;
+      for (let i = 0; i < 4 / DT; i++) { f.update(DT, w); s.update(DT, clock += DT, sw); }
+      return { s, inst: Array.from(s.instances(clock)) };
+    };
+    const a = run(), b = run();
+    eq(JSON.stringify(a.inst), JSON.stringify(b.inst), 'the same seed, the same swarm');
+    const ys = new Set(a.s.motes.map((m) => m.y.toFixed(3))), blinks = new Set(a.s.motes.map((m) => m.blinkAt.toFixed(2)));
+    eq(ys.size, 5, 'each at its own height');
+    assert(blinks.size >= 4, `blinks of their own (${[...blinks]})`);
+  });
+
+  test(G, 'a raised light widens the motes\' eyes quickly, and they settle slowly', async () => {
+    const H = await recipe(), K = H.foes.motes, M = K.mote;
+    const f = createFoe('motes', 2, { x: 2, z: 0 }, K, 3, H.swing), s = createSwarm(f, M, 1, M.sizeM);
+    const lamp = { x: 0, z: 0, reachM: 6, raised: false };
+    const sw = { ground: () => 0, lamp, you: { x: 0, z: 0 } };
+    let clock = 0;
+    const go = (/** @type {number} */ sec) => { for (let i = 0; i < Math.round(sec / DT); i++) s.update(DT, clock += DT, sw); return s.instances(clock)[13]; };
+    assert(go(1) < 0.01, 'calm in the hanging light');
+    lamp.raised = true;
+    assert(go(M.eyes.widenInS + 0.02) > 0.95, 'wide at once');
+    assert(go(M.eyes.widenOutS + 0.1) < 0.05, 'settled after');
   });
 }

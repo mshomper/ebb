@@ -33,6 +33,8 @@ import { createHollow } from './arena/hollow.js';
 import { createHollowPanel } from './arena/hollow-panel.js';
 import { createMoveLayer } from './arena/moves.js';
 import { createMovesPanel } from './arena/moves-panel.js';
+import { loadMoteModel } from '../src/world/hollow/mote-model.js';
+import { createMotePass } from './arena/mote-pass.js';
 
 const $ = (/** @type {string} */ id) => /** @type {HTMLElement} */ (document.getElementById(id));
 /** @param {string} p */
@@ -55,6 +57,9 @@ const FC = course.dark ? await recipe('world/fight-clips') : null;
 const MR = course.dark ? await recipe('world/hollow-moves') : null;
 /** The Hollow's recipes as loaded, to show what the sliders changed. */
 const HR0 = structuredClone(HR), MR0 = structuredClone(MR), FC0 = structuredClone(FC);
+// The soot motes, Matt's model (H2), drawn in the stage's pass.
+const moteModel = HR ? await loadMoteModel(new URL('../assets/models/hollow/mote.glb', import.meta.url)) : null;
+const motePass = HR && moteModel ? await createMotePass(stage.gpu, moteModel, HR.foes.motes.mote) : null;
 
 // ---- the world: ground, water, walk grid, solids ----
 const ground = course.ground;
@@ -67,7 +72,7 @@ const setSolids = () => { solids = createSolids(R.solids.bodyM); solids.set(cour
 setSolids();
 
 // ---- the actors (stand-ins that react to you); the Hollow's are seeded by their id ----
-const kindRecipes = { frog: frogR, hollow: HR, seed: 1 };
+const kindRecipes = { frog: frogR, hollow: HR, seed: 1, moteAcrossM: moteModel?.acrossM };
 let nextId = 1, spawnAt = 0;
 /** @param {{ kind: string, x: number, z: number }} a */
 const makeActor = (a) => KINDS[a.kind]({ ...a, id: nextId++ }, kindRecipes);
@@ -371,6 +376,7 @@ function tick(realDt, draw = true) {
   for (const act of actors) {
     const ev = act.update(dt, you);
     if (ev?.length) hollow?.onEvents(ev);
+    act.swarm?.update(dt, clockS, { ground, lamp: you.lamp, you });
   }
   if (!hollow) $('actor-note').textContent = actors.map((act) => `${act.note} Startled ${act.startles} times.`).join(' ');
   hollow?.update(dt);
@@ -388,7 +394,8 @@ function tick(realDt, draw = true) {
     const place = [walker.x, walker.y, walker.z, r.yaw];
     const p = props(place);
     stage.setProps(p.tris, p.faded);
-    stage.draw({ bones: motion.bones, eyes: eyeUniforms(FR.eyes, headBone, r.eyes, eyeBuf), place,
+    motePass?.set(actors.filter((a) => a.swarm && !a.broken).map((a) => a.swarm), clockS);
+    stage.draw({ extra: motePass ? (pass, u) => motePass.draw(pass, u) : undefined, bones: motion.bones, eyes: eyeUniforms(FR.eyes, headBone, r.eyes, eyeBuf), place,
       weights: false, night: false, water: course.waterY, follow: [walker.x, walker.y, walker.z], dt, camera: { eye: e, target: t }, scale: DS,
       ...(hollow && HR ? { lamp: hollow.lamp(), fade: [HR.camera.fade.fillAlpha, HR.camera.fade.outlineAlpha] } : {}) });
     drawTrace(clockS);

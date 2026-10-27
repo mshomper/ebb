@@ -8,10 +8,13 @@
 // the calm pace startles it, and it hops fleeM away. The Hollow's stand-ins (H0, October 27, 2026) are
 // three more kinds, lunger, watcher and motes: their steps run in src/world/hollow/foes.js, timed from
 // recipes/world/hollow.json foes, and here they are drawn as plain shapes showing their tells.
-// Motes' swirl reads the page clock for drawing only; where they are comes from the seeded steps.
+// Motes' swirl reads the arena's clock for drawing only; where the cluster is comes from the seeded
+// steps. Since H2 (October 27, 2026) the motes are Matt's model, five a swarm (mote-swarm.js).
 
 import { ringScale } from '../../src/world/creatures/presence.js';
 import { createFoe } from '../../src/world/hollow/foes.js';
+import { createSwarm } from '../../src/world/hollow/mote-swarm.js';
+import { hash32 } from '../../src/core/rng.js';
 
 /**
  * What the walker is, for the actors: where, speed, posture and the way it looks along the ground.
@@ -79,8 +82,11 @@ function standIn(kind, at, rec) {
   const H = rec.hollow;
   const f = createFoe(kind, at.id, at, H.foes[kind], rec.seed ?? 1, H.swing);
   const SIZE = { lunger: 0.4, watcher: 0.45, motes: 0.5 };
+  // H2: the motes are Matt's model, each worked out round the cluster (mote-swarm.js) and drawn by
+  // tools/arena/mote-pass.js; the plain shapes stay only if the model is not loaded.
+  const swarm = kind === 'motes' && rec.moteAcrossM ? createSwarm(f, H.foes.motes.mote, hash32(rec.seed ?? 1, at.id), rec.moteAcrossM) : null;
   return {
-    kind, foe: f, id: at.id,
+    kind, foe: f, id: at.id, swarm,
     get x() { return f.x; },
     get z() { return f.z; },
     get note() { return `${H.foes[kind].name}: ${f.note}`; },
@@ -120,6 +126,7 @@ function standIn(kind, at, rec) {
           [hx, hy, hz, 0.13, 0.13, 0.04, f.yaw, ...glow([1.6 * bright, 1.3 * bright, 0.7 * bright])],
         ];
       }
+      if (swarm) return [];
       // Motes: a loose swarm round the cluster's middle, bunched tight in the tell.
       const tight = tell ? 0.35 : f.step === 'recover' ? 1.6 : 1;
       return f.members.map(([ph, sp, r], i) => {

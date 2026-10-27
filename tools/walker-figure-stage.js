@@ -318,6 +318,8 @@ function makeStage(canvas, gpu, lib) {
   canvas.addEventListener('wheel', (e) => { e.preventDefault(); cam.goal.dist = Math.min(12, Math.max(1, cam.goal.dist * Math.exp(e.deltaY * 0.001))); }, { passive: false });
 
   return {
+    /** The device and the canvas format, for passes drawn in the stage's pass (draw's extra). */
+    gpu: { device, format },
     /**
      * The figure's baked maps, from its GLB (mipmapped; colour read as sRGB). @param {import('../src/render/gltf.js').Glb} glb
      */
@@ -395,8 +397,10 @@ function makeStage(canvas, gpu, lib) {
      * camera: an outside camera's eye and target (the arena runs the game's own); else the stage's orbit.
      * @param {{ bones: Float32Array, eyes: Float32Array, place: number[], weights: boolean, night: boolean, water: number, follow: number[], dt: number,
      *   camera?: { eye: ArrayLike<number>, target: ArrayLike<number> }, scale?: number,
-     *   lamp?: { at: number[], reachM: number, ambient: number, strength: number }, fade?: number[] }} f
-     *   lamp: dim, lit by the lantern alone (the Hollow); fade: a faded wall's fill and outline opacity
+     *   lamp?: { at: number[], reachM: number, ambient: number, strength: number }, fade?: number[],
+     *   extra?: (pass: GPURenderPassEncoder, u: Float32Array) => void, hideFigure?: boolean }} f
+     *   lamp: dim, lit by the lantern alone (the Hollow); fade: a faded wall's fill and outline opacity;
+     *   extra: more to draw in the pass, after the figure; hideFigure: the figure left out (a turntable of something else)
      */
     draw(f) {
       const dpr = Math.min(2, devicePixelRatio || 1);
@@ -445,7 +449,9 @@ function makeStage(canvas, gpu, lib) {
       pass.setBindGroup(0, group);
       if (groundMesh) { pass.setPipeline(ground); pass.setVertexBuffer(0, groundMesh.v); pass.setIndexBuffer(groundMesh.i, 'uint32'); pass.drawIndexed(groundMesh.n); }
       if (propMesh) { pass.setPipeline(props); pass.setVertexBuffer(0, propMesh.v); pass.draw(propMesh.n); }
-      if (mesh) { pass.setPipeline(body); pass.setVertexBuffer(0, mesh.v); pass.setIndexBuffer(mesh.i, 'uint32'); pass.drawIndexed(mesh.n); }
+      if (mesh && !f.hideFigure) { pass.setPipeline(body); pass.setVertexBuffer(0, mesh.v); pass.setIndexBuffer(mesh.i, 'uint32'); pass.drawIndexed(mesh.n); }
+      // More drawn in the same pass (the Hollow's motes, tools/arena/mote-pass.js), with this frame's numbers.
+      if (f.extra) { f.extra(pass, u); pass.setBindGroup(0, group); }
       if (f.water > -5) { pass.setPipeline(water); pass.draw(6); }
       if (fadedMesh) { pass.setPipeline(faded); pass.setVertexBuffer(0, fadedMesh.v); pass.draw(fadedMesh.n); }
       if (lineMesh) { pass.setPipeline(outline); pass.setVertexBuffer(0, lineMesh.v); pass.draw(lineMesh.n); }
