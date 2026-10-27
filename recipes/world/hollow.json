@@ -22,5 +22,49 @@
     "lunger": { "name": "Lunger", "like": "silt crawler", "instinct": "movement", "noticeM": 5, "moveMps": 0.3, "closeMps": 1.4, "strikeM": 1.8, "windS": 0.6, "strikeS": 0.25, "dashM": 1.4, "hitM": 0.9, "recoverS": 1.0, "hp": 3, "frontDeg": 60, "size": "small", "restS": 1.2, "knockM": 0.7, "flinchS": 0.35 },
     "watcher": { "name": "Watcher", "like": "hagstone watcher", "instinct": "toward", "floats": true, "noticeM": 9, "closeMps": 0.5, "keepM": 4, "windS": 1.5, "strikeS": 0.3, "callM": 12, "recoverS": 3, "turnDegPerS": 40, "hp": 5, "size": "large", "restS": 2, "knockM": 0.35, "flinchS": 0.3 },
     "motes": { "name": "Mote cluster", "like": "soot motes", "instinct": "shy", "noticeM": 8, "closeMps": 1.6, "strikeM": 2.2, "windS": 0.4, "strikeS": 0.3, "dashM": 2.4, "hitM": 0.8, "recoverS": 1.2, "keepOutM": 0.6, "hp": 1, "size": "small", "restS": 0.8, "count": 7, "knockM": 1.2, "flinchS": 0.3 }
+  },
+  "floors": {
+    "note": "H1, the floor maker (approved by Matt October 27, 2026; doc 16, A floor and How it is built). Read by src/world/hollow/plan.js, shapes.js, field.js, floor.js and walk-grid.js, and shown on tools/cave-lab.html; nothing in the game reads it until H3. depths: the four depths in order (id, name). level: a floor's level picks its depth; borders are the levels between depths, and within softLevels of a border either depth can come up (the chance slides across the band). flavors: the sponge takes the place of the depth's rock about share of floors from depth index fromDepth (0 is the wet shelf); the root halls wait for the island's tree count (a later piece), so their share is 0 until then. count: chambers on a floor, total from about total[0] at the wet shelf to total[1] in the glass halls (give or take jitter), split into a main path of main[0] to main[1] (the way in and the way down included) and side[0] to side[1] side chambers; seepShare: the chance of an oil seep among the side chambers, from seepFromDepth. layout: chambers acrossM wide, at least gapM of rock between any two, each next main chamber turned up to turnDeg off the last; floors rise or fall up to floorStepM between joined chambers, the main path drifting down by downM a chamber; tries: placements tried before the plan starts again. passage: rock gap between joined chambers (lengthM), the tube's radius, how far its middle bends to one side (bendM, so one chamber can't see into the next), how high its round middle sits over its flat floor (liftShare of the radius), its blend into the chambers (blendM), and how far apart unrelated passages must stay (clearM). wear: seeded noise on the rock, amountM high at scaleM across (fineM at fineScaleM for grain), much less on the floor (floorShare) up to wallFromM above it. mesh: the field is sampled every cellM over the floor's bounds plus marginM (cellM for refChambers chambers, coarser by the square root of how many more a floor has, up to maxCellM, and spongeCellShare coarser for the sponge's busier rock, or a depth's own shapes.cellShare, so a floor lands near 60k to 100k triangles), rock values clamped at clampM (only the surface matters), split into slabs for the workers. walk: the walk grid's cells, slope and step limits (as recipes/world/walker.json grid), the headroom a floor cell needs under the rock above, the up-facing share of a surface (upY, the normal's height) that counts as floor at all, wadeM (water deeper than this is not walkable), and retries: how many next seeds a floor may try when it is not walkable end to end. shapes: each depth's chamber shapes. heightM: floor to roof; blobs: how many blended ellipsoids make a chamber, spreadShare of its radius apart, blended over blendM, squash: how far the blobs flatten across. Wet shelf: shelves (raised flat rock, low ones steppable at lowM, high ones a ledge at highM, highShare of them high, sizeM across), puddles (hollows depthM deep, radiusM wide, waterM of water in them). Dripstone: columns (radiusM, kept doorClearM from the doorways), hanging stone (stalactites lengthM long, radiusM at the root), and floor stone (stalagmites). Silt deeps: long chambers (lengthShare longer, widthShare as wide), a channel down the middle (widthM, depthM, lengthShare of the chamber, water standing waterM below the floor), and causeways across it (count, widthM). Glass halls: faceted pockets (facets planes, offsetShare of the radius, each wall facet facing wallTiltDeg up from level and each of the four roof facets roofTiltDeg up (90 would be a flat roof), a second smaller pocket secondShare as wide, blended over blendM) and crystals (count, lengthM, radiusM, floorShare of them standing on the floor). sponge: a gyroid lattice through the chambers (periodM the cell size, thickness the strut level, thicker near walls by wallThicken, and thinned to bandLevel up to walkBandM over the floor, easing back over bandFadeM, so struts reach the floor only as slim pillars and the walker has headroom), the chambers widened by growShare and joined by fat tubes (joinRadiusM) instead of passages.",
+    "depths": [
+      { "id": "shelf", "name": "The wet shelf" },
+      { "id": "drip", "name": "The dripstone" },
+      { "id": "silt", "name": "The silt deeps" },
+      { "id": "glass", "name": "The glass halls" }
+    ],
+    "level": { "borders": [3.5, 6.5, 9.5], "softLevels": 0.75 },
+    "flavors": {
+      "sponge": { "share": 0.0833, "fromDepth": 1 },
+      "roots": { "share": 0, "fromDepth": 1 }
+    },
+    "count": { "total": [4, 8], "jitter": 0.6, "main": [3, 5], "side": [1, 3], "seepShare": 0.5, "seepFromDepth": 1 },
+    "layout": { "acrossM": [12, 20], "gapM": 4, "turnDeg": 70, "floorStepM": 0.7, "downM": 0.25, "tries": 40 },
+    "passage": { "lengthM": [4, 7], "radiusM": [1.6, 1.9], "bendM": [3, 4.2], "liftShare": 0.5, "blendM": 1.2, "clearM": 1.5 },
+    "wear": { "amountM": 0.5, "scaleM": 2.8, "fineM": 0.12, "fineScaleM": 0.7, "floorShare": 0.12, "wallFromM": 1.4 },
+    "mesh": { "cellM": 0.3, "refChambers": 4, "maxCellM": 0.44, "spongeCellShare": 1.35, "marginM": 2.5, "clampM": 2, "slabs": 12 },
+    "walk": { "cellM": 0.5, "maxSlopeDeg": 35, "maxStepM": 0.45, "headroomM": 1.6, "upY": 0.35, "wadeM": 0.4, "retries": 6 },
+    "shapes": {
+      "shelf": {
+        "heightM": [3.2, 4.4], "blobs": [3, 4], "spreadShare": 0.38, "blendM": 3.5, "squash": 0.85,
+        "shelves": { "count": [1, 3], "lowM": 0.32, "highM": 0.9, "highShare": 0.4, "sizeM": [3, 6] },
+        "puddles": { "count": [2, 5], "depthM": 0.3, "radiusM": [1, 2.4], "waterM": 0.22 }
+      },
+      "drip": {
+        "heightM": [7, 10], "blobs": [2, 3], "spreadShare": 0.3, "blendM": 3, "squash": 1, "cellShare": 1.06,
+        "columns": { "count": [3, 6], "radiusM": [0.5, 1.2], "doorClearM": 3.5 },
+        "stalactites": { "count": [8, 16], "lengthM": [1.2, 3.2], "radiusM": [0.25, 0.6] },
+        "stalagmites": { "count": [2, 6], "lengthM": [0.5, 1.1], "radiusM": [0.2, 0.4] }
+      },
+      "silt": {
+        "heightM": [5, 7], "blobs": [3, 4], "spreadShare": 0.45, "blendM": 3, "squash": 1,
+        "lengthShare": 1.25, "widthShare": 0.72,
+        "channel": { "widthM": [2.4, 3.4], "depthM": 1.6, "lengthShare": 0.62, "waterM": 0.35 },
+        "causeways": { "count": [1, 2], "widthM": [1.8, 2.4] }
+      },
+      "glass": {
+        "heightM": [6, 8], "facets": [9, 13], "offsetShare": [0.82, 1], "wallTiltDeg": [-10, 24], "roofTiltDeg": [62, 84], "secondShare": 0.6, "blendM": 0.8,
+        "crystals": { "count": [10, 18], "lengthM": [1.2, 3], "radiusM": [0.2, 0.5], "floorShare": 0.25 }
+      },
+      "sponge": { "periodM": 5.5, "thickness": 0.95, "wallThicken": 0.7, "walkBandM": 2.2, "bandLevel": 1.3, "bandFadeM": 1, "growShare": 1.15, "joinRadiusM": 4 }
+    }
   }
 }

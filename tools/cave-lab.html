@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ebb cave lab</title>
+<link rel="icon" href="../brand/ebb-favicon.svg" type="image/svg+xml">
+<style>
+  @font-face { font-family: 'Nunito'; src: url('../src/vendor/fonts/nunito-latin-600-normal.woff2') format('woff2'); font-weight: 600; }
+  @font-face { font-family: 'Nunito'; src: url('../src/vendor/fonts/nunito-latin-800-normal.woff2') format('woff2'); font-weight: 800; }
+  @font-face { font-family: 'Fraunces'; src: url('../src/vendor/fonts/fraunces-latin-full-italic.woff2') format('woff2'); font-style: italic; }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; max-width: 100%; overflow-x: hidden; }
+  body { background: #F4EEE4; color: #1E2624; font: 600 17px/1.45 'Nunito', system-ui, sans-serif; padding: 16px; overflow-wrap: anywhere; }
+  main { max-width: 1700px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; padding-bottom: 60px; }
+  h1 { font-size: 24px; font-weight: 800; margin: 0; }
+  h2 { font-size: 19px; font-weight: 800; margin: 0; }
+  .muted { color: #4A5551; font-size: 16px; margin: 0; }
+  .note { font-family: 'Fraunces', Georgia, serif; font-style: italic; font-size: 18px; margin: 0; color: #2E4A2C; }
+  .card { background: #FBF7F0; border: 1px solid #E3D9C9; border-radius: 14px; padding: 14px 16px; min-width: 0; display: flex; flex-direction: column; gap: 10px; }
+  .controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); gap: 10px 16px; align-items: end; }
+  label.field { display: flex; flex-direction: column; gap: 4px; font-size: 16px; min-width: 0; }
+  input[type=number], select { font: 700 16px 'Nunito', system-ui, sans-serif; padding: 8px 10px; border-radius: 10px; border: 1px solid #E3D9C9; background: #FFFDF8; color: #1E2624; width: 100%; min-width: 0; }
+  input[type=range] { width: 100%; min-width: 0; accent-color: #4a6a47; height: 30px; }
+  button { font: 800 16px/1.2 'Nunito', system-ui, sans-serif; color: #FBF7F0; background: #4a6a47; border: 0; border-radius: 12px; padding: 10px 14px; cursor: pointer; min-height: 44px; }
+  button.quiet { background: #E3D9C9; color: #1E2624; }
+  button[aria-pressed=true] { background: #2E4A2C; color: #FBF7F0; }
+  button:disabled { opacity: 0.55; cursor: progress; }
+  .buttons { display: flex; flex-wrap: wrap; gap: 10px; }
+  .floors { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 520px), 1fr)); gap: 16px; }
+  .floor h2 small { font-weight: 600; color: #4A5551; font-size: 16px; }
+  .floor canvas { width: 100%; display: block; border-radius: 10px; }
+  .floor canvas.view { aspect-ratio: 4 / 3; height: auto; background: #EDE6DA; cursor: grab; touch-action: none; }
+  canvas.big { width: 100%; aspect-ratio: 16 / 9; height: auto; display: block; border-radius: 10px; background: #EDE6DA; cursor: grab; touch-action: none; }
+  #closer[hidden] { display: none; }
+  .tabs { display: flex; flex-wrap: wrap; gap: 8px; }
+  .tabs button { flex: 1 1 120px; }
+  .facts { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 16px; }
+  .facts b { font-weight: 800; }
+  .ok { color: #2E6B3A; } .bad { color: #A33A2A; }
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 16px; }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .legend i { display: inline-block; width: 16px; height: 16px; border-radius: 4px; border: 1px solid rgba(30, 38, 36, 0.25); }
+  .table-wrap { min-width: 0; }
+  table { width: 100%; border-collapse: collapse; font-size: 16px; table-layout: fixed; }
+  th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid #E3D9C9; vertical-align: top; overflow-wrap: anywhere; }
+  th { font-weight: 800; }
+  @media (max-width: 1000px) {
+    table, thead, tbody, tr, th, td { display: block; }
+    thead { display: none; }
+    tr { border-bottom: 2px solid #E3D9C9; padding: 6px 0; }
+    td { border: 0; padding: 2px 0; }
+    td::before { content: attr(data-h) ': '; font-weight: 800; }
+  }
+  .status { font-size: 16px; min-height: 1.5em; margin: 0; }
+</style>
+</head>
+<body>
+<main>
+  <header class="card">
+    <h1>Cave lab: the Hollow's floor maker</h1>
+    <p class="muted">H1. Each floor is planned from the island seed, the trip, the floor and its level, dressed in its depth's chamber shapes, sampled as a signed field across every core, meshed by surface nets in a worker, and walked from the way in to the way down. Nothing here is in the game yet. Numbers live in recipes/world/hollow.json (floors).</p>
+    <p class="muted">Why surface nets and not dual contouring: surface nets was already in the repo (the creature bodies), is fast, and its slightly rounded edges suit worn rock. Dual contouring would give the glass halls sharper facet edges and crystal tips, at roughly two to three times the meshing time and with care needed at thin features. That is worth trying only if the glass halls read soft once H3 lights them.</p>
+  </header>
+
+  <section class="card">
+    <h2>Make floors</h2>
+    <div class="controls">
+      <label class="field">Island seed <input id="seed" type="number" value="7" step="1"></label>
+      <label class="field">Trip <input id="trip" type="number" value="1" min="0" step="1"></label>
+      <label class="field">Floor in the trip <input id="floor" type="number" value="2" min="0" step="1"></label>
+      <label class="field">Level <output id="levelOut">4</output><input id="level" type="range" min="1" max="12" step="0.5" value="4"></label>
+      <label class="field">Depth
+        <select id="depth">
+          <option value="level">From the level</option>
+          <option value="0">The wet shelf</option>
+          <option value="1">The dripstone</option>
+          <option value="2">The silt deeps</option>
+          <option value="3">The glass halls</option>
+          <option value="sponge">The sponge (dripstone level)</option>
+        </select>
+      </label>
+      <label class="field">Side by side
+        <select id="mode">
+          <option value="depths">One of each depth and the sponge</option>
+          <option value="seeds3">Three seeds in a row</option>
+          <option value="seeds6">Six seeds in a row</option>
+        </select>
+      </label>
+    </div>
+    <div class="buttons">
+      <button id="make">Make floors</button>
+    </div>
+    <p class="status" id="status"></p>
+  </section>
+
+  <section class="card">
+    <div class="legend" id="legend"></div>
+    <p class="muted">Maps: the walk grid in 0.5 m cells under the chamber graph. Field: the signed distance, air in teal and rock in stone, banded every half metre, the rock face as a dark line; level is 1 m over each chamber's floor; upright follows the main path from the way in to the way down, heights drawn twice as tall, with the walk grid's floor in orange. 3D: drag to turn, wheel to come closer, and lower the roof cut to look in from above.</p>
+  </section>
+
+  <section class="card" id="closer" hidden>
+    <h2 id="closerTitle">Closer</h2>
+    <canvas class="big" id="bigView"></canvas>
+    <label class="field">Roof cut <input id="bigCut" type="range" step="0.1"></label>
+    <div class="buttons"><button class="quiet" id="bigTop">From above</button><button class="quiet" id="bigAngled">At an angle</button><button class="quiet" id="bigLow">Low, along the floor</button></div>
+  </section>
+
+  <section class="floors" id="floors"></section>
+
+  <section class="card">
+    <h2>Many seeds</h2>
+    <p class="muted">Makes floors from many seeds at every depth (and the sponge) without drawing them, at the level and trip above: how often a floor walks end to end at the first seed, the most seeds any floor needed, triangles and time. Runs on this machine, all cores.</p>
+    <div class="controls">
+      <label class="field">Seeds per depth <input id="sweepN" type="number" value="20" min="1" max="500" step="1"></label>
+    </div>
+    <div class="buttons"><button id="sweep">Check many seeds</button></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Depth</th><th>Floors</th><th>Walkable at the first seed</th><th>Most seeds needed</th><th>Never walkable</th><th>Triangles (least, middle, most)</th><th>Time, middle</th></tr></thead>
+        <tbody id="sweepRows"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Every floor</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Floor</th><th>Depth</th><th>Chambers</th><th>Triangles</th><th>Field (all cores)</th><th>Mesh and grid</th><th>Total</th><th>Walkable</th><th>Seeds tried</th><th>Same on one thread</th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+  </section>
+</main>
+<script type="importmap">{ "imports": {
+  "wgpu-matrix": "../src/vendor/wgpu-matrix/wgpu-matrix.module.js" } }</script>
+<script type="module" src="./cave-lab.js"></script>
+</body>
+</html>
