@@ -653,6 +653,41 @@ A fifth trail, alongside the naturalist's, the beachcomber's, the shaper's and t
   - each chamber's threat budget and what it bought, for a new and a seasoned keeper
   - how long meshing takes
 
+### H1 as built: the floor maker (October 27, 2026)
+
+H1 makes floors but puts nothing in the game. Its modules sit in `src/world/hollow/`, ready for H3 to drop floors in, and every number lives in `recipes/world/hollow.json` under `floors`.
+
+```mermaid
+flowchart LR
+  IN[seed, trip, floor, level] --> P[plan.js<br/>chamber graph]
+  P --> S[shapes.js<br/>depth shapes]
+  S --> FD[field.js<br/>signed field, slabs on every core]
+  FD --> M[surface nets<br/>one worker]
+  M --> W[walk-grid.js<br/>grid and walk check]
+  W -->|cut off| P
+```
+
+- **The plan** (`plan.js`): the level picks the depth. Within 0.75 of a border (3.5, 6.5, 9.5) either depth can come up. A floor has 4 chambers near the top, rising to 8 deep down. The main path runs from the way in to the way down and has 3 to 5 chambers, those two included. 1 to 3 side chambers (quiet, find, or at most one seep, from the dripstone down) hang off the fights. Chambers are 12 to 20 m across with at least 4 m of rock between any two. Each passage bends 3 to 4.2 m to one side at its middle, so no chamber sees straight into the next. The sponge comes up on about 1 floor in 12 from the dripstone down. The root halls have a hook, `rootHallsShare`, which returns 0 until the island's tree count feeds it. A plan comes from the island seed, the trip, the floor and a retry number, and nothing else.
+- **The field** (`shapes.js`, `field.js`): chambers are smooth-min blends of yawed ellipsoids with flat floors. Glass halls chambers are instead faceted pockets: convex shapes cut by 9 to 13 planes, plus a smaller second pocket. Passages are capsules with flat floors. Then each depth adds its own pieces:
+  - Wet shelf: low steppable shelves, ledges, and puddle hollows with shallow water.
+  - Dripstone: hourglass columns kept off the door lanes, hanging stone measured down from the roof, and floor stone.
+  - Silt deeps: long rooms with a 1.6 m channel down their length holding deep water, crossed by one or two causeways.
+  - Glass halls: hexagonal crystals on the walls and floor.
+  - The sponge: a gyroid network, `sin x cos y + sin y cos z + sin z cos x` above a strut level, inside widened chambers joined by fat tubes. It thickens toward the walls and thins to slim pillars in a 2.2 m walking band over the floor.
+
+  Everything is worn with seeded value noise: up to 0.5 m on the walls, a tenth of that on the floor. The field's math uses only `+ - * /`, `sqrt`, `min`, `max` and `floor`, and the gyroid's sines come from `det`, so a floor is bit-identical in any browser and worker.
+- **Meshing** reuses the creature bodies' surface nets, which moved to `src/world/mesh/surface-nets.js`; every species still bakes bit-identical. Normals come from the sampled field's gradient. The field is sampled in z slabs across the whole worker pool, then meshed in one worker. The cell is 0.3 m for 4 chambers and grows with the square root of the chamber count, up to 0.44 m. The dripstone samples 6 % coarser and the sponge 35 % coarser. Most floors land between 60k and 100k triangles, the dripstone near the top of that. A floor takes about 0.15 to 0.35 s on all cores; in one Node thread it takes about 0.3 to 0.5 s.
+- **Surface nets, not dual contouring.** Surface nets was already in the repo, it is fast, and its slightly rounded edges suit worn rock. Dual contouring would sharpen the glass halls' facet edges and crystal tips. The cost is a gradient per crossing edge plus a small least-squares solve per cell, roughly two to three times the meshing time, and care at thin features. That is worth trying only for the glass halls, and only if their facets read soft in H3's light.
+- **The walk grid** (`walk-grid.js`) has the island grid's interface (`cellM, w, h, height, steep, blocked, cellAt, center`), so `path.js` works on it unchanged. It adds three things: `floor` (does the cell have a floor at all), `water` (depth) and `room` (headroom). Cells are 0.5 m, read from the mesh's upward-facing triangles. Each cell stands on the lowest upward surface with at least 1.6 m of room above it. The slope limit (35 degrees) and step limit (0.45 m) are the island's. Water deeper than 0.4 m is not walkable, so the silt channel must be crossed by a causeway. A flood from the way in, under the path finder's rules, checks the way down. A floor that fails is made again from the next retry number, up to 6 times, and every try is reported. In a sweep of 15 seeds per depth, every floor walked, most at the first try.
+- **Determinism**: `tools/unit-tests.html` group `hollowFloors` covers it. The same inputs must give the same plan hash and mesh hash. Sampling the field in uneven slabs must give the same field and mesh as one pass. The cave lab also checks every floor it makes from the pool against a one-thread build.
+- **`tools/cave-lab.html`** shows floors side by side: one of each depth and the sponge, or 3 or 6 seeds in a row. Each floor gets four views:
+  - the map: the chamber graph over the walk grid, kinds coloured and labelled
+  - the field 1 m over the floor, air and rock banded every half metre
+  - the field cut upright along the main path
+  - 3D, with an orbit and a roof cut, and a larger "Look closer" view
+
+  Below them, a table of times, triangles, walk checks, seeds tried and the one-thread hash check, and a "many seeds" sweep. The measure curves and threat budgets are H4's.
+
 ## What it would change
 
 - **01** vision: the non-goal "no combat" gains its one exception, the Hollow, which is opt-in and never reaches the surface. **Matt's call.**

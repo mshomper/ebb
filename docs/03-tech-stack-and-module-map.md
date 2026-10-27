@@ -303,6 +303,8 @@ The map above lists each module's main files. The system docs name these additio
 | `src/world/water/` | `summary.js` | 07 |
 | `src/world/sky/` | `sun-moon.js` | 06 |
 | `src/world/structures/` | `lights.js` | 09 |
+| `src/world/hollow/` | The Hollow, not in the game yet: H0's fighting (`aim.js`, `lock.js`, `lantern.js`, `swing.js`, `occlude.js`, `foes.js`, `moves.js`); H1's floor maker: `plan.js` (the chamber graph), `shapes.js` (each depth's shapes), `field.js` (the signed field, sampled in slabs in workers), `walk-grid.js` (the walk grid from the mesh), `floor.js` (all of it, one thread or the pool) | F16 |
+| `src/world/mesh/` | `surface-nets.js`: the surface nets mesher shared by creature bodies and Hollow floors | 11, F16 |
 | `src/render/passes/` | `shadow.js`, `creatures.js`, `ao.js` | 04, 06 |
 | `src/render/passes/post/` | `exposure.js`, `lut-bake.js`, `outline.js`, `dof.js`, `photo.js` | 04, 05, 16 |
 | `src/render/` | `quality.js` | 19 |
