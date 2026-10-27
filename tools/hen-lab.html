@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ebb hen lab</title>
+<link rel="icon" href="../brand/ebb-favicon.svg" type="image/svg+xml">
+<style>
+  @font-face { font-family: 'Nunito'; src: url('../src/vendor/fonts/nunito-latin-600-normal.woff2') format('woff2'); font-weight: 600; }
+  @font-face { font-family: 'Nunito'; src: url('../src/vendor/fonts/nunito-latin-800-normal.woff2') format('woff2'); font-weight: 800; }
+  @font-face { font-family: 'Fraunces'; src: url('../src/vendor/fonts/fraunces-latin-full-italic.woff2') format('woff2'); font-style: italic; }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; max-width: 100%; overflow-x: hidden; }
+  body { background: #F4EEE4; color: #1E2624; font: 600 17px/1.45 'Nunito', system-ui, sans-serif; padding: 16px; overflow-wrap: anywhere; }
+  main { max-width: 1280px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; padding-bottom: 60px; }
+  .split { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; }
+  @media (min-width: 960px) { .split { grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); align-items: start; } }
+  h1 { font-size: 24px; font-weight: 800; margin: 0; }
+  h2 { font-size: 18px; font-weight: 800; margin: 0; }
+  .muted { color: #4A5551; font-size: 16px; margin: 0; }
+  .card { background: #FBF7F0; border: 1px solid #E3D9C9; border-radius: 14px; padding: 14px 16px; min-width: 0; display: flex; flex-direction: column; gap: 12px; }
+  .view { width: 100%; aspect-ratio: 4 / 3; display: block; border-radius: 10px; background: #EDE6DA; touch-action: none; }
+  .group { display: flex; flex-direction: column; gap: 8px; }
+  .grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  button { font: 800 16px/1.2 'Nunito', system-ui, sans-serif; color: #FBF7F0; background: #4a6a47; border: 0; border-radius: 12px; padding: 10px 8px; cursor: pointer; min-height: 44px; }
+  button[aria-pressed=true] { background: #23361F; box-shadow: inset 0 0 0 3px #A9C39B; }
+  dl { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 14px; margin: 0; font-size: 16px; }
+  dt { color: #4A5551; } dd { margin: 0; font-weight: 800; }
+  .note { font-family: 'Fraunces', Georgia, serif; font-style: italic; font-size: 18px; margin: 0; color: #2E4A2C; min-height: 1.5em; }
+  a { color: #4a6a47; }
+</style>
+</head>
+<body>
+<main>
+  <h1>ebb hen lab</h1>
+  <p class="muted">The hen (docs/future/15, slice 1): Matt's supplied model, moved by code clips over its own Idle. Each clip plays on its own, and Life runs her day on a test ground: click the ground to put the walker down and watch her wary ring. Drag to turn the view, scroll to come closer. <a href="./">All tools</a></p>
+  <div class="split">
+    <div class="card">
+      <canvas id="view" class="view" aria-label="The hen on a test ground"></canvas>
+      <p class="note" id="note" role="status" aria-live="polite"></p>
+    </div>
+    <div class="card">
+      <div class="group">
+        <h2>Clips</h2>
+        <div class="grid">
+          <button data-mode="life" aria-pressed="true">Life</button>
+          <button data-mode="idle" aria-pressed="false">Idle</button>
+          <button data-mode="walk" aria-pressed="false">Walk</button>
+          <button data-mode="run" aria-pressed="false">Run</button>
+          <button data-mode="scratch" aria-pressed="false">Scratch</button>
+          <button data-mode="peck" aria-pressed="false">Peck</button>
+          <button data-mode="look" aria-pressed="false">Look down</button>
+          <button data-mode="alert" aria-pressed="false">Alert</button>
+          <button id="slow" aria-pressed="false">Slow motion</button>
+        </div>
+      </div>
+      <div class="group">
+        <h2>The walker (Life)</h2>
+        <div class="grid">
+          <button id="approach">Walk to her</button>
+          <button id="stop">Stand still</button>
+          <button id="away">Take away</button>
+        </div>
+      </div>
+      <div class="group">
+        <h2>View</h2>
+        <div class="grid">
+          <button data-view="side">Side</button>
+          <button data-view="front">Front</button>
+          <button data-view="three-quarter">Three quarter</button>
+          <button data-view="above">From above</button>
+          <button data-view="wide">Wide</button>
+        </div>
+      </div>
+      <dl><dt>Doing</dt><dd id="mode"></dd></dl>
+      <dl id="stats"></dl>
+    </div>
+  </div>
+</main>
+<script src="./boot-guard.js"></script>
+<script type="importmap">{ "imports": {
+  "wgpu-matrix": "../src/vendor/wgpu-matrix/wgpu-matrix.module.js" } }</script>
+<script type="module" src="./hen-lab.js"></script>
+</body>
+</html>
