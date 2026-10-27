@@ -9,12 +9,27 @@ import { clean9, empty9, SECTIONS9 } from '../src/save/migrate-format9.js';
 import { cleanPack, emptyPack } from '../src/world/pack/model.js';
 import { ICON_NAMES } from '../src/ui/icons/icons.js';
 import { hasItemIcon } from '../src/ui/icons/items.js';
+import { staffLook } from '../src/world/kit/staff.js';
 
 const G = 'kit';
 const js = (/** @type {any} */ v) => JSON.stringify(v);
 
 /** @param {(g: string, name: string, fn: () => any) => void} test @param {(c: any, m?: string) => void} assert @param {(a: any, b: any, m?: string) => void} eq */
 export function addKitTests(test, assert, eq) {
+  test(G, 'the driftwood staff (C2): each island draws one of its two looks from the seed, the same every time, both drawn across islands; 1.0 m, models on disk', async () => {
+    const SR = await (await fetch('../recipes/world/staff.json')).json();
+    eq(SR.lengthM, 1.0, 'one meter long');
+    assert(SR.gripM > 0 && SR.gripM < SR.lengthM, 'held along its length');
+    const seen = new Set();
+    for (let seed = 1; seed <= 40; seed++) {
+      eq(staffLook(seed, SR).id, staffLook(seed, SR).id, `seed ${seed} draws the same twice`);
+      seen.add(staffLook(seed, SR).id);
+    }
+    eq([...seen].sort().join(), SR.looks.map((/** @type {any} */ l) => l.id).sort().join(), 'both looks drawn');
+    for (const l of SR.looks) assert((await fetch(`../${l.model}`, { method: 'HEAD' })).ok, `${l.model} is there`);
+    return [...seen].join(' and ');
+  });
+
   test(G, "a new walker wears their own hat, coat and hand lantern; an older save reads the same", () => {
     const k = emptyKit();
     eq(js([k.hat, k.lantern, k.hand, k.coat, k.carrier]), js(['own', 'hand', null, 'own', null]));

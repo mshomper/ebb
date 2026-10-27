@@ -23,6 +23,8 @@ turn, the left foot's landings (so walks and runs blend in step), and the speed 
 
 Run (Python 3 with numpy), from the repo root:
   python tools/figure-prep/clips.py <Meshy rigged .glb with clips> recipes/world/figure.json assets/figures/walker.glb assets/figures/walker-clips.json
+Several Meshy files on the same rig split by ';' (a clip comes from the first that has it); --set fight
+writes the fighting clips (C1, October 27, 2026) to their own file.
 """
 import json, sys, warnings
 import numpy as np
@@ -41,7 +43,37 @@ CLIPS = [
     ('torchWalk', 'Crouch_Walk_with_Torch', None, True),
     ('torchLeft', 'Crouch_Walk_Left_with_Torch_inplace', None, True),
     ('torchRight', 'Crouch_Walk_Right_with_Torch_inplace', None, True),
+    # On the island now (C3, October 27, 2026; the additional animations file): Lift with the shovel,
+    # gathering and picking up, and going down to kneel. Played as one-shots (clips.js shots).
+    ('pull', 'Pull_Radish', None, False),
+    ('collect', 'Collect_Object', None, False),
+    ('squat', 'air_squat', None, False),
 ]
+# The fighting clips (C1, October 27, 2026), a set of their own (--set fight) so the game's walk load
+# doesn't grow: named by the pose each serves (recipes/world/fight-clips.json), for the move arena.
+FIGHT = [
+    ('swingDouble', 'Double_Combo_Attack', None, False),
+    ('swingTriple', 'Triple_Combo_Attack', None, False),
+    ('swingCombo', 'Weapon_Combo_2', None, False),
+    ('swingThrust', 'Thrust_Slash', None, False),
+    ('plantSlam', 'Charged_Ground_Slam', None, False),
+    ('brace', 'Block10', None, False),
+    ('feint', 'Sword_Parry_Backward_4', None, False),
+    ('sidestep', 'Stand_Dodge', None, False),
+    ('hit', 'Hit_Reaction', None, False),
+    ('raiseCast', 'mage_soell_cast_7', None, False),
+    ('backAway', 'Cautious_Crouch_Walk_Backward', None, True),
+    # Matt's Text-to-Animation pair (The+Walker_Toss_Point+Cast.glb), unnamed in the file.
+    ('throwToss', '_01a17e2a_2988_746c_b10a_07f3f5e55122', (0.1, 1.85), False),
+    ('pointCast', '_01a17e29_1736_762f_bbb2_2d60d27c6ba7', (0.15, 2.3), False),
+]
+SETS = {'main': CLIPS, 'fight': FIGHT}
+# Cheap cleaning for Matt's Text-to-Animation pair (passable, not perfect): smooth, passes of a
+# 1-2-1 smoothing over the frames against jitter; mirror, left for right (the point is Meshy's left
+# hand, the lantern's).
+# unturn: the hips' turn about the vertical taken out (the point turns the body nearly round).
+CLEAN = {'throwToss': {'smooth': 2}, 'pointCast': {'smooth': 2, 'mirror': True, 'unturn': True}}
+BACKWARD = {'backAway'}
 DRIVEN = ['pelvis', 'spine', 'chest', 'head', 'upperArm.l', 'foreArm.l', 'hand.l', 'upperArm.r', 'foreArm.r', 'hand.r',
           'thigh.l', 'shin.l', 'foot.l', 'thigh.r', 'shin.r', 'foot.r']
 SOURCE = {'pelvis': 'spine', 'spine': 'spine.002', 'chest': 'spine.003', 'head': 'spine.005',
@@ -49,6 +81,12 @@ SOURCE = {'pelvis': 'spine', 'spine': 'spine.002', 'chest': 'spine.003', 'head':
           'upperArm.r': 'upper_arm.R', 'foreArm.r': 'forearm.R', 'hand.r': 'hand.R',
           'thigh.l': 'thigh.L', 'shin.l': 'shin.L', 'foot.l': 'foot.L',
           'thigh.r': 'thigh.R', 'shin.r': 'shin.R', 'foot.r': 'foot.R'}
+# The additional animations file (October 27, 2026) names the same Meshy joints the Mixamo way: read
+# under the first file's names.
+MIXAMO = {'Hips': 'spine', 'Spine': 'spine.001', 'Spine1': 'spine.002', 'Spine2': 'spine.003', 'Neck': 'spine.004', 'Head': 'spine.005'}
+for _s, _S in (('Left', 'L'), ('Right', 'R')):
+    MIXAMO.update({_s + 'Shoulder': 'shoulder.' + _S, _s + 'Arm': 'upper_arm.' + _S, _s + 'ForeArm': 'forearm.' + _S, _s + 'Hand': 'hand.' + _S,
+                   _s + 'UpLeg': 'thigh.' + _S, _s + 'Leg': 'shin.' + _S, _s + 'Foot': 'foot.' + _S, _s + 'ToeBase': 'toe.' + _S})
 FPS = 30
 ANKLE_UP = 0.02      # a foot is down while its ankle is within this of its standing height (m)
 
@@ -92,7 +130,7 @@ class Meshy:
     def __init__(self, path):
         self.j, self.b = glb.read(path)
         j = self.j
-        self.names = [n.get('name') for n in j['nodes']]
+        self.names = [MIXAMO.get((n.get('name') or '').replace('mixamorig:', ''), n.get('name')) for n in j['nodes']]
         self.parent = {c: i for i, n in enumerate(j['nodes']) for c in n.get('children', [])}
         sk = j['skins'][0]
         ibm = glb.accessor(j, self.b, sk['inverseBindMatrices']).reshape(-1, 4, 4)
@@ -186,8 +224,48 @@ def fk(bones, local, shift):
     return Rg, Pg
 
 
-def main(src, recipe, model, out):
-    M = Meshy(src)
+MIRROR = np.diag([-1.0, 1.0, 1.0])
+
+
+def mirror(g):
+    """A frame's (or the rest pose's) joints mirrored left for right: the point clip points with
+    Meshy's left hand, the lantern hand, and every move that needs a hand uses the weapon hand."""
+    sw = lambda n: n[:-2] + ('.R' if n.endswith('.L') else '.L') if n and n[-2:] in ('.L', '.R') else n
+    return {n: (MIRROR @ g[sw(n)][0] @ MIRROR, MIRROR @ g[sw(n)][1]) for n in g if sw(n) in g}
+
+
+def unturned(q):
+    """The hips' turns with their twist about the vertical taken out (x, y, z, w rows): the body
+    keeps facing ahead, its lean and sway kept."""
+    t = np.zeros_like(q)
+    t[:, 1], t[:, 3] = q[:, 1], q[:, 3]
+    t /= np.linalg.norm(t, axis=1, keepdims=True) + 1e-12
+    # conj(t) * q
+    x, y, z, w = -t[:, 0], -t[:, 1], -t[:, 2], t[:, 3]
+    a, b, c, d = q[:, 0], q[:, 1], q[:, 2], q[:, 3]
+    out = np.stack([w * a + x * d + y * c - z * b, w * b - x * c + y * d + z * a, w * c + x * b - y * a + z * d, w * d - x * a - y * b - z * c], 1)
+    return out * np.where(out[:, 3:] < 0, -1, 1)
+
+
+def smooth_frames(shifts, quats):
+    """One pass of a 1-2-1 smoothing over the frames (the ends kept), for a jittery clip: the turns
+    each brought to the same side as the frame's own before they are averaged."""
+    s, q = shifts.copy(), quats.copy()
+    for i in range(1, len(s) - 1):
+        s[i] = (shifts[i - 1] + 2 * shifts[i] + shifts[i + 1]) / 4
+        a, b, c = quats[i - 1], quats[i], quats[i + 1]
+        a = a * np.sign(np.sum(a * b, axis=1, keepdims=True) + 1e-12)
+        c = c * np.sign(np.sum(c * b, axis=1, keepdims=True) + 1e-12)
+        m = a + 2 * b + c
+        q[i] = m / np.linalg.norm(m, axis=1, keepdims=True)
+    return s, q
+
+
+def main(src, recipe, model, out, which='main'):
+    # One or more Meshy files (split by ';'), the same rig; a clip comes from the first that has it,
+    # read against that file's own rest pose.
+    Ms = [Meshy(p) for p in src.split(';')]
+    M = Ms[0]
     bones, arms = our_skeleton(recipe, model)
     I = {b['name']: i for i, b in enumerate(bones)}
     piv = lambda n: bones[I[n]]['pivot']
@@ -214,8 +292,13 @@ def main(src, recipe, model, out):
 
     result = dict(version=1, fps=FPS, bones=DRIVEN, legScale=round(float(k), 4), clips={})
     report = {}
-    for name, src_name, span, loop in CLIPS:
-        times, F = M.frames(src_name, span)
+    for name, src_name, span, loop in SETS[which]:
+        Mc = next(m for m in Ms if src_name in m.anims)
+        times, F = Mc.frames(src_name, span)
+        rest = Mc.rest
+        cl = CLEAN.get(name, {})
+        if cl.get('mirror'):
+            F, rest = [mirror(f) for f in F], mirror(Mc.rest)
         n = len(F)
         root = np.array([f['spine'][1] for f in F])
         drift = root[-1] - root[0]
@@ -223,7 +306,7 @@ def main(src, recipe, model, out):
         for fi, f in enumerate(F):
             Q = {}
             for ours in DRIVEN:
-                Rr = M.rest[SOURCE[ours]][0]
+                Rr = rest[SOURCE[ours]][0]
                 D = f[SOURCE[ours]][0] @ Rr.T
                 # Scale (Meshy keeps it at one) is taken out before the turn is read.
                 U, _, Vt = np.linalg.svd(D)
@@ -253,6 +336,9 @@ def main(src, recipe, model, out):
             y, z = ankles[:-1, :, 1], ankles[:-1, :, 2]
             down = y < ankle_rest + ANKLE_UP
             vz = (np.roll(z, -1, 0) - np.roll(z, 1, 0)) / (2 * dt)
+            # A walk backward (backAway): its planted foot slides forward; read it as the same walk.
+            if name in BACKWARD:
+                vz = -vz
             speed = float(np.median(-vz[down]))
 
             def lands(f):
@@ -280,11 +366,17 @@ def main(src, recipe, model, out):
             clip.update(speed=round(float(track[-1] / times[-1]), 4), cycleM=round(float(track[-1]) / max(1, len(ll)), 4),
                         landsL=ll or [0.0], landsR=lr or [round(0.5 * float(times[-1]), 4)],
                         track=[round(float(d), 4) for d in track])
+        shifts = np.array([s + [0, lift, 0] for s, _ in rows])
+        quats = np.array([[matq(m) for m in qs] for _, qs in rows])     # n, bones, 4
+        if cl.get('unturn'):
+            quats[:, 0] = unturned(quats[:, 0])
+        for _ in range(cl.get('smooth', 0)):
+            shifts, quats = smooth_frames(shifts, quats)
         data = []
-        for shift, qs in rows:
-            data += [round(float(v), 4) for v in (shift + [0, lift, 0])]
-            for m in qs:
-                data += [round(float(v), 4) for v in matq(m)]
+        for fi in range(n):
+            data += [round(float(v), 4) for v in shifts[fi]]
+            for q in quats[fi]:
+                data += [round(float(v), 4) for v in q]
         clip['data'] = data
         result['clips'][name] = clip
         report[name] = {kk: v for kk, v in clip.items() if kk != 'data'}
@@ -294,4 +386,6 @@ def main(src, recipe, model, out):
 
 
 if __name__ == '__main__':
-    main(*sys.argv[1:5])
+    a = sys.argv[1:]
+    which = a[a.index('--set') + 1] if '--set' in a else 'main'
+    main(*[v for i, v in enumerate(a) if v != '--set' and (i == 0 or a[i - 1] != '--set')][:4], which=which)

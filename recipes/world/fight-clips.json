@@ -1,0 +1,33 @@
+{
+  "type": "fight-clips",
+  "version": 1,
+  "note": "The fighting clips (C1, approved October 27, 2026; docs/future/16-the-sea-cave.md, the five shared poses): Matt's Meshy clips retargeted onto the walker's rig by tools/figure-prep/clips.py --set fight into file, a set of its own so the game's walk load doesn't grow. Loaded on tool pages only (tools/walker-strip.html) until the move arena (H0). Played as one-shots over the walker (src/world/figure/clips.js shoot) with mask: the bones taken from the clip (the hips, spine, head, legs and the right arm); the left arm keeps the lantern's hold, so a masked swing is one-handed (each clip's own mask says whether it plays masked). poses: which clips serve each pose, so the arena can pick by pose; clips: each clip's Meshy source, its pose and what it is for. Throw (the underarm toss for the sling, Cast the flame and Taproot) and Point (Moth lure and Unmake, in place of a code-made point) came later the same day from Matt's Text-to-Animation pair (The+Walker_Toss_Point+Cast.glb), cleaned cheaply in clips.py CLEAN (made says how); the hand variants of Raise are still made in code. feet: false keeps the code's planted feet under a clip whose own steps slide. mask (Matt's picks, October 27, 2026, from walker-figure.html): true plays the clip with mask, the left arm keeping the lantern's hold; false plays it whole, as Meshy made it, both arms moving (the lantern swings with the left hand).",
+  "file": "assets/figures/walker-clips-fight.json",
+  "mask": ["pelvis", "spine", "chest", "head", "upperArm.r", "foreArm.r", "hand.r", "thigh.l", "shin.l", "foot.l", "thigh.r", "shin.r", "foot.r"],
+  "easeS": 0.12,
+  "poses": {
+    "Swing": ["swingDouble", "swingTriple", "swingCombo", "swingThrust", "feint"],
+    "Plant": ["plantSlam", "brace"],
+    "Raise": ["raiseCast"],
+    "Dodge": ["sidestep"],
+    "Hit": ["hit"],
+    "Back": ["backAway"],
+    "Throw": ["throwToss"],
+    "Point": ["pointCast"]
+  },
+  "clips": {
+    "swingDouble": { "meshy": "Double_Combo_Attack", "mask": false, "pose": "Swing", "for": "The staff's two-hit chain on left click" },
+    "swingTriple": { "meshy": "Triple_Combo_Attack", "mask": false, "pose": "Swing", "for": "A longer chain for later weapons; its first two hits may serve the staff better" },
+    "swingCombo": { "meshy": "Weapon_Combo_2", "mask": false, "pose": "Swing", "for": "An alternative chain to try in the arena" },
+    "swingThrust": { "meshy": "Thrust_Slash", "mask": true, "pose": "Swing", "for": "Spears and knives; the thrust half is Hook and turn's lead-in" },
+    "plantSlam": { "meshy": "Charged_Ground_Slam", "mask": false, "pose": "Plant", "for": "Anchor (held), Groundline, and The sweep's charge" },
+    "brace": { "meshy": "Block10", "mask": false, "pose": "Plant", "for": "Anchor's brace when a hit lands" },
+    "feint": { "meshy": "Sword_Parry_Backward_4", "mask": true, "pose": "Swing", "for": "Feint, the half swing cut short" },
+    "sidestep": { "meshy": "Stand_Dodge", "mask": true, "pose": "Dodge", "for": "A side-step for close dodges where a roll is too much" },
+    "hit": { "meshy": "Hit_Reaction", "mask": false, "pose": "Hit", "for": "Taking a hit (the flame gutters)" },
+    "raiseCast": { "meshy": "mage_soell_cast_7", "mask": false, "pose": "Raise", "for": "Kindling burst, Spring chorus" },
+    "backAway": { "meshy": "Cautious_Crouch_Walk_Backward", "mask": false, "pose": "Back", "for": "Backing away with the lantern low; Snuff's slow walk" },
+    "throwToss": { "meshy": "_01a17e2a_2988_746c_b10a_07f3f5e55122", "mask": true, "pose": "Throw", "for": "The underarm toss: the sling, Cast the flame and Taproot", "made": "Text-to-Animation; trimmed to 0.1 to 1.85 s, smoothed" },
+    "pointCast": { "meshy": "_01a17e29_1736_762f_bbb2_2d60d27c6ba7", "mask": false, "pose": "Point", "for": "Moth lure and Unmake (in place of a point made in code)", "made": "Text-to-Animation; mirrored (Meshy points with the lantern hand), the hips' turn taken out, trimmed to 0.15 to 2.3 s, smoothed", "feet": false }
+  }
+}

@@ -95,12 +95,30 @@
           <button data-act="strike">Strike</button>
           <button data-act="crawlIn">Crawl in</button>
           <button data-act="climbOut">Climb out</button>
+          <button data-act="liftClump">Lift with the shovel</button>
+        </div>
+      </div>
+      <div class="group">
+        <h2>In hand</h2>
+        <div class="grid">
+          <button data-staff="" aria-pressed="true">No staff</button>
+          <button data-staff="slim" aria-pressed="false">Slim staff</button>
+          <button data-staff="knotted" aria-pressed="false">Knotted staff</button>
+          <button id="lantern" aria-pressed="false">Lantern</button>
+        </div>
+      </div>
+      <div class="group">
+        <h2>Fighting clips</h2>
+        <p class="muted">On the new figure only. Each plays once as you picked it: masked (the left arm keeps the lantern while the right swings) or, marked no mask, as Meshy made it. Other way plays the other one, to compare.</p>
+        <div class="grid" id="fight"></div>
+        <div class="grid">
+          <button id="otherway" aria-pressed="false">Other way</button>
         </div>
       </div>
       <div class="group">
         <h2>Gestures</h2>
         <div class="grid">
-          <button data-gesture="gather" data-kneel="1.2">Gather</button>
+          <button data-gesture="gather" data-kneel="0.7">Gather</button>
           <button data-gesture="setDown">Set down</button>
           <button data-gesture="takeUp">Take up</button>
           <button data-gesture="heapHere">Heap here</button>

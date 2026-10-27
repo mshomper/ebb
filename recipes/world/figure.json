@@ -100,7 +100,15 @@
       { "clip": "jog", "speed": 3.0, "stride": 1.0 },
       { "clip": "run", "speed": 5.7, "stride": 1.15 }
     ],
-    "roll": { "clip": "roll", "span": [0, 0.87], "inShare": 0.15, "tailS": 0.3, "contactM": 0.08 } },
+    "roll": { "clip": "roll", "span": [0, 0.87], "inShare": 0.15, "tailS": 0.3, "contactM": 0.08 },
+    "shotsNote": "C3 (October 27, 2026): Matt's clips played once over an act, a gesture or the kneel (clips.js shoot), in place of the code's bend: span, the part of the clip (s) played over the act's or gesture's own length (doc 23's speeds; never longer), eased in and out over easeS, at most weight over the code (gather's stoop comes on top of the kneel, so half of it), and only on mask's bones (the squat leaves the lantern arm to the code). The code still keeps the feet on the ground and the hands where they act (the act's hand keys lead), and the act's own lean, head tip and hip drop give way to the clip while it plays. liftClump (Lift with the shovel): Pull_Radish from the stoop to the pull's end. gather (picking up finds and gathering): Collect_Object from the reach down to standing again. kneel: air_squat's way down over ease.postureS going down to kneel, its way up getting up again.",
+    "shotEaseS": 0.15,
+    "shots": {
+      "liftClump": { "clip": "pull", "span": [0.6, 3.9], "weight": 0.8 },
+      "gather": { "clip": "collect", "span": [0.9, 4.0], "weight": 0.5 },
+      "kneel": { "clip": "squat", "down": [0, 0.95], "up": [0.95, 1.86],
+        "mask": ["pelvis", "spine", "chest", "head", "upperArm.r", "foreArm.r", "hand.r", "thigh.l", "shin.l", "foot.l", "thigh.r", "shin.r", "foot.r"] }
+    } },
   "eyes": {
     "centre": [0.002, 1.414, 0],
     "halfSpacing": 0.093,

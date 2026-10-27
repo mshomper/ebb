@@ -12,6 +12,7 @@ import { createStage } from './walker-figure-stage.js';
 import { loadFigureModel, loadFigureClips, eyeUniforms } from '../src/world/figure/index.js';
 import { buildFigure } from '../src/world/figure/rig.js';
 import { createFigureMotion } from '../src/world/figure/motion.js';
+import { createHeld } from './walker-held.js';
 
 const canvas = /** @type {HTMLCanvasElement} */ (document.getElementById('view'));
 const canvasOld = /** @type {HTMLCanvasElement} */ (document.getElementById('view-old'));
@@ -36,6 +37,11 @@ stage.setMesh(built);
 stageOld.setMesh(builtOld);
 await stage.setMaps(glb);
 const motionNew = createFigureMotion(R, built.skeleton, clips);
+// The fighting clips (C1) and what the new figure holds (C2): tool pages only.
+const FR = await (await fetch('../recipes/world/fight-clips.json')).json();
+motionNew.addClips(await (await fetch(`../${FR.file}`)).json());
+const H = await createHeld(R, built);
+let staffLook = /** @type {string | null} */ (null), lanternOn = false, otherWay = false;
 const motionOld = createFigureMotion(R, builtOld.skeleton);
 /** Every call goes to both figures (the first's answer comes back); info and bones are the new one's. @type {any} */
 const motion = new Proxy(motionNew, {
@@ -126,6 +132,7 @@ function frame() {
   const rOld = motionOld.update(dt, input);
   cpu += t1 - t0; cpuOld += performance.now() - t1; frameMs += realDt * 1000; frames++;
   const at = [w.x, ground(w.x, w.z), w.z];
+  stage.setProps(H.held(motionNew, { lantern: lanternOn, look: staffLook }, [...at, r.yaw]));
   stage.draw({
     bones: motionNew.bones, eyes: eyeUniforms(R.eyes, headBone, r.eyes, eyeBuf),
     place: [...at, r.yaw], weights, night, water: water > 0 ? water : -9, follow: at, dt: realDt,
@@ -208,6 +215,7 @@ const ACT_NOTES = {
   strike: 'Strike: kneel, three quick strikes of the fire steel over the tinder, and watch.',
   crawlIn: 'Crawl in: down onto hands and knees and forward. It stays low until Climb out or a walk.',
   climbOut: 'Climb out: from low, up onto the knees, then stand and stretch.',
+  liftClump: 'Lift with the shovel: on the right, Matt\'s Pull_Radish bends the body while the hands keep the shovel\'s grip (the shovel is not drawn here).',
 };
 document.querySelectorAll('[data-act]').forEach((b) => b.addEventListener('click', () => {
   const name = /** @type {HTMLElement} */ (b).dataset.act ?? '';
@@ -215,7 +223,7 @@ document.querySelectorAll('[data-act]').forEach((b) => b.addEventListener('click
   document.querySelectorAll('[data-pace]').forEach((o) => press(o, o.getAttribute('data-pace') === '0'));
   posture = 'stand'; press($('sit'), false); press($('kneel'), false);
   const len = motion.act(name);
-  note.textContent = `${ACT_NOTES[name]} (${len} s)`;
+  note.textContent = `${ACT_NOTES[name]} (${len.toFixed(1)} s)`;
 }));
 // The gestures (acts.js poses.gestures): the stand-in walker stops; the kneeling ones kneel for as long
 // as the game's action holds it (data-kneel seconds), then stand. Getting up plays its own (rise).
@@ -229,6 +237,32 @@ document.querySelectorAll('[data-gesture]').forEach((b) => b.addEventListener('c
   const len = motion.gesture(name);
   note.textContent = `${el.textContent}: a ${len.toFixed(1)} s gesture over the posture.`;
 }));
+// In hand (C2): the driftwood staff's two looks in the right hand, and the lantern in the left.
+document.querySelectorAll('[data-staff]').forEach((b) => b.addEventListener('click', () => {
+  staffLook = /** @type {HTMLElement} */ (b).dataset.staff || null;
+  document.querySelectorAll('[data-staff]').forEach((o) => press(o, o === b));
+  note.textContent = staffLook ? `The ${staffLook} driftwood staff, ${H.SR.lengthM} m, in the right hand: near upright as you walk, with the hand in a swing.` : '';
+}));
+$('lantern').addEventListener('click', (e) => { lanternOn = !lanternOn; press(/** @type {Element} */ (e.currentTarget), lanternOn); });
+// The fighting clips (C1), by pose: each plays once on the new figure, the walker stopped.
+const fight = $('fight');
+for (const [pose, names] of Object.entries(FR.poses)) {
+  for (const name of /** @type {string[]} */ (names)) {
+    const b = document.createElement('button');
+    b.textContent = `${pose}: ${name}${FR.clips[name].mask === false ? ' (no mask)' : ''}`;
+    b.addEventListener('click', () => {
+      pace = 0; w.speed = 0;
+      document.querySelectorAll('[data-pace]').forEach((o) => press(o, o.getAttribute('data-pace') === '0'));
+      posture = 'stand'; press($('sit'), false); press($('kneel'), false);
+      // Each clip plays as Matt picked (fight-clips.json mask); Other way plays it the other way, to compare.
+      const c = FR.clips[name], masked = (c.mask ?? true) !== otherWay;
+      const len = motionNew.shoot(name, { mask: masked ? FR.mask : undefined, feet: c.feet ?? true, easeS: FR.easeS });
+      note.textContent = `${name} (${c.meshy}): ${c.for}. ${len.toFixed(1)} s, ${masked ? 'the lantern arm masked' : 'both arms, as Meshy made it'}${otherWay ? ' (the other way from your pick)' : ''}.`;
+    });
+    fight.append(b);
+  }
+}
+$('otherway').addEventListener('click', (e) => { otherWay = !otherWay; press(/** @type {Element} */ (e.currentTarget), otherWay); });
 // A frog arrives to one side, the other side each time: the eyes go first, then the head and a little
 // of the chest.
 let frogSide = 1;
