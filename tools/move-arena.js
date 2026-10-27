@@ -38,6 +38,8 @@ import { createMotePass } from './arena/mote-pass.js';
 import { createCrowd, walkerBodies } from '../src/world/hollow/crowd.js';
 import { loadCrawlerModel } from '../src/world/hollow/crawler-model.js';
 import { createCrawlerPass } from './arena/crawler-pass.js';
+import { loadWatcherModel } from '../src/world/hollow/watcher-model.js';
+import { createWatcherPass } from './arena/watcher-pass.js';
 
 const $ = (/** @type {string} */ id) => /** @type {HTMLElement} */ (document.getElementById(id));
 /** @param {string} p */
@@ -66,6 +68,9 @@ const motePass = HR && moteModel ? await createMotePass(stage.gpu, moteModel, HR
 // The silt crawler, Matt's model rigged in code (H2), drawn in the stage's pass too.
 const crawlerModel = HR ? await loadCrawlerModel(new URL('../assets/models/hollow/crawler.glb', import.meta.url)) : null;
 const crawlerPass = HR && crawlerModel ? await createCrawlerPass(stage.gpu, crawlerModel, HR.foes.lunger.crawler) : null;
+// The hagstone watcher, from the generator, rigged in code (H2), drawn in the stage's pass too.
+const watcherModel = HR ? await loadWatcherModel(new URL('../assets/models/hollow/watcher.glb', import.meta.url)) : null;
+const watcherPass = HR && watcherModel ? await createWatcherPass(stage.gpu, watcherModel, HR.foes.watcher.stone) : null;
 // The Hollow's crowd (H2): attack slots and bodies kept apart (src/world/hollow/crowd.js).
 const crowd = HR ? createCrowd(HR.crowd, 1) : null;
 
@@ -80,7 +85,11 @@ const setSolids = () => { solids = createSolids(R.solids.bodyM); solids.set(cour
 setSolids();
 
 // ---- the actors (stand-ins that react to you); the Hollow's are seeded by their id ----
-const kindRecipes = { frog: frogR, hollow: HR, seed: 1, moteAcrossM: moteModel?.acrossM, crawlerModel };
+const kindRecipes = { frog: frogR, hollow: HR, seed: 1, moteAcrossM: moteModel?.acrossM, crawlerModel, watcherModel,
+  /** The watcher's sound cues (no audio yet): counted, for the stats and checks. @param {string} cue */
+  onCue: (cue) => { cues[cue] = (cues[cue] ?? 0) + 1; } };
+/** @type {Record<string, number>} */
+const cues = {};
 let nextId = 1, spawnAt = 0;
 /** @param {{ kind: string, x: number, z: number }} a */
 const makeActor = (a) => KINDS[a.kind]({ ...a, id: nextId++ }, kindRecipes);
@@ -402,6 +411,7 @@ function tick(realDt, draw = true) {
   for (const act of actors) {
     act.swarm?.update(dt, clockS, { ground, lamp: you.lamp, you });
     act.crawler?.update(dt, clockS, { ground, you });
+    act.watcher?.update(dt, clockS, { ground, you, lamp: you.lamp });
   }
   if (!hollow) $('actor-note').textContent = actors.map((act) => `${act.note} Startled ${act.startles} times.`).join(' ');
   hollow?.update(dt);
@@ -421,7 +431,8 @@ function tick(realDt, draw = true) {
     stage.setProps(p.tris, p.faded);
     motePass?.set(actors.filter((a) => a.swarm && !a.broken).map((a) => a.swarm), clockS);
     crawlerPass?.set(actors.filter((a) => a.crawler).map((a) => a.crawler));
-    stage.draw({ extra: motePass || crawlerPass ? (pass, u) => { motePass?.draw(pass, u); crawlerPass?.draw(pass, u); } : undefined, bones: motion.bones, eyes: eyeUniforms(FR.eyes, headBone, r.eyes, eyeBuf), place,
+    watcherPass?.set(actors.filter((a) => a.watcher).map((a) => a.watcher));
+    stage.draw({ extra: motePass || crawlerPass || watcherPass ? (pass, u) => { motePass?.draw(pass, u); crawlerPass?.draw(pass, u); watcherPass?.draw(pass, u); } : undefined, bones: motion.bones, eyes: eyeUniforms(FR.eyes, headBone, r.eyes, eyeBuf), place,
       weights: false, night: false, water: course.waterY, follow: [walker.x, walker.y, walker.z], dt, camera: { eye: e, target: t }, scale: DS,
       ...(hollow && HR ? { lamp: hollow.lamp(), fade: [HR.camera.fade.fillAlpha, HR.camera.fade.outlineAlpha] } : {}) });
     drawTrace(clockS);
@@ -442,7 +453,7 @@ function tick(realDt, draw = true) {
 }
 requestAnimationFrame(frame);
 /** For checking from the console: the walker, the actors, the solids. */
-/** @type {any} */ (window).arena = { walker, crawlerPass, motePass, crowd, HR, get actors() { return actors; }, get solids() { return solids; }, camera, grid, R, hollow, motion, moveLayer,
+/** @type {any} */ (window).arena = { walker, crawlerPass, motePass, watcherPass, cues, gpu: stage.gpu, crowd, HR, get actors() { return actors; }, get solids() { return solids; }, camera, grid, R, hollow, motion, moveLayer,
   /** Run on s seconds at once in 60ths (checks from the console, and a hidden tab). @param {number} s */
   run(s) { const n = Math.round(s * 60); for (let i = 0; i < n; i++) tick(1 / 60, i === n - 1); last = performance.now(); },
   /** Hold time still (the view still draws), for checks and screenshots. @param {boolean} on */

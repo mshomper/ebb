@@ -33,10 +33,11 @@
 <main>
   <header class="card">
     <h1 id="title">Hollow foes</h1>
-    <p class="muted">Matt's Hollow things (nTop, October 27, 2026) at their size in the game, close up. The soot mote has no bones: its bob, turn, breathing, squash and stretch, trail and eyes are drawn by the shader (src/shaders/lib-mote.wgsl). The silt crawler is rigged in code (16 bones: knees that bend, feet planted on the ground, a tail on a spring, eye stalks that look at you; src/world/hollow/crawler-motion.js). Drag to turn the view, wheel to come closer. Numbers live in recipes/world/hollow.json (foes.motes.mote, foes.lunger.crawler).</p>
+    <p class="muted">Matt's Hollow things (nTop, October 27, 2026) at their size in the game, close up. The soot mote has no bones: its bob, turn, breathing, squash and stretch, trail and eyes are drawn by the shader (src/shaders/lib-mote.wgsl). The silt crawler is rigged in code (16 bones: knees that bend, feet planted on the ground, a tail on a spring, eye stalks that look at you; src/world/hollow/crawler-motion.js). The hagstone watcher is a stone from a signed-field generator, rigged in code (a root for the float, turn and look, and four wrack blades of five bones on lagging springs), its hole's light drawn by the shader; you hold the lantern where the view is (src/world/hollow/watcher-motion.js). Drag to turn the view, wheel to come closer. Numbers live in recipes/world/hollow.json (foes.motes.mote, foes.lunger.crawler, foes.watcher.stone).</p>
     <div class="buttons" id="foe">
       <button data-foe="mote" aria-pressed="true">Soot mote</button>
       <button data-foe="crawler">Silt crawler</button>
+      <button data-foe="watcher">Hagstone watcher</button>
     </div>
   </header>
   <section class="card">
@@ -67,10 +68,22 @@
       <button data-act="back">Back hit</button>
       <button data-act="break">Break</button>
     </div>
+    <div class="buttons" id="watcher-act" hidden>
+      <button data-act="rest" aria-pressed="true">Rest</button>
+      <button data-act="notice">Turns to the lantern</button>
+      <button data-act="tell">The tell: glow builds</button>
+      <button data-act="call">The call</button>
+      <button data-act="snuff">Dimmed by Snuff</button>
+      <button data-act="unmade">Unmade</button>
+      <button data-act="lure">Follows moths</button>
+      <button data-act="drift">Drift: weed streams</button>
+      <button data-act="hit">Hit</button>
+      <button data-act="break">Break</button>
+    </div>
     <div class="buttons">
       <button id="spin" aria-pressed="true">Turning</button>
       <button id="close">Face to face</button>
-      <button id="whole">Whole mote</button>
+      <button id="whole">The whole thing</button>
     </div>
     <h2>Tune</h2>
     <div id="sliders"></div>

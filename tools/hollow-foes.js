@@ -4,14 +4,17 @@
 // (src/world/hollow/mote-swarm.js) on a stand-in cluster that loops through what it does: drifting,
 // bunching up for its tell, darting in to nip, a light hitting it, scattering. The silt crawler runs
 // its rig and motion (tools/hollow-foes-crawler.js): resting, shuffling, the rear-up, the lunge, stuck,
-// a glance off its plate, a back hit, breaking. The page clock drives the loops; nothing here is seeded
-// game state. ?foe=crawler opens on the crawler.
+// a glance off its plate, a back hit, breaking. The hagstone watcher runs its rig, weed and hole's light
+// (tools/hollow-foes-watcher.js): resting, turning to the lantern, the tell, the call, dimmed by Snuff or
+// Unmade, following moths, drifting, a hit, breaking. The page clock drives the loops; nothing here is
+// seeded game state. ?foe=crawler or ?foe=watcher opens on that one.
 
 import { createStage } from './walker-figure-stage.js';
 import { loadMoteModel, moteScale } from '../src/world/hollow/mote-model.js';
 import { createSwarm } from '../src/world/hollow/mote-swarm.js';
 import { createMotePass } from './arena/mote-pass.js';
 import { createCrawlerStand } from './hollow-foes-crawler.js';
+import { createWatcherStand } from './hollow-foes-watcher.js';
 
 const $ = (/** @type {string} */ id) => /** @type {HTMLElement} */ (document.getElementById(id));
 const view = /** @type {HTMLCanvasElement} */ ($('view'));
@@ -23,6 +26,8 @@ const K = HR.foes.motes, M = K.mote, L = HR.lantern, CK = HR.foes.lunger, CR = C
 const model = await loadMoteModel(new URL('../assets/models/hollow/mote.glb', import.meta.url));
 const pass = await createMotePass(stage.gpu, model, M);
 const crawler = await createCrawlerStand(stage.gpu, CK);
+const WK = HR.foes.watcher, WS = WK.stone;
+const watcher = await createWatcherStand(stage.gpu, WK);
 stage.setGround(() => 0, 4, 40);
 
 /** A stand-in cluster of one mote, at the middle. */
@@ -39,10 +44,13 @@ const ACTS = /** @type {Record<string, [string, number, number, boolean][]>} */ 
   scatter: [['rest', 1.2, 0, false], ['recover', 1.6, -0.5, true]],
 });
 const VIEWS = { mote: { whole: { dist: 0.8, pitch: 0.18, yaw: 0.35 }, close: { dist: 0.42, pitch: 0.12, yaw: 0 } },
-  crawler: { whole: { dist: 1.9, pitch: 0.42, yaw: 0.7 }, close: { dist: 1.05, pitch: 0.25, yaw: 0.25 } } };
-let kind = new URLSearchParams(location.search).get('foe') === 'crawler' ? 'crawler' : 'mote';
+  crawler: { whole: { dist: 1.9, pitch: 0.42, yaw: 0.7 }, close: { dist: 1.05, pitch: 0.25, yaw: 0.25 } },
+  watcher: { whole: { dist: 2.9, pitch: 0.1, yaw: 0.45 }, close: { dist: 1.25, pitch: 0.04, yaw: 0.1 } } };
+/** @typedef {'mote' | 'crawler' | 'watcher'} Kind */
+const asked = new URLSearchParams(location.search).get('foe');
+let kind = /** @type {Kind} */ (asked === 'crawler' || asked === 'watcher' ? asked : 'mote');
 let act = 'drift', actT = 0, spin = true, spinA = 0;
-const cam = { ...VIEWS[/** @type {'mote' | 'crawler'} */ (kind)].whole };
+const cam = { ...VIEWS[kind].whole };
 let light = 'day';
 /** Where the view aims (eased onto the thing). */
 let aim = [0, M.heightM, 0], eye = [0, 1, 2];
@@ -55,6 +63,9 @@ for (const b of /** @type {NodeListOf<HTMLButtonElement>} */ ($('act').querySele
 for (const b of /** @type {NodeListOf<HTMLButtonElement>} */ ($('crawler-act').querySelectorAll('button'))) b.addEventListener('click', () => {
   crawler.set(/** @type {string} */ (b.dataset.act)); press('crawler-act', b);
 });
+for (const b of /** @type {NodeListOf<HTMLButtonElement>} */ ($('watcher-act').querySelectorAll('button'))) b.addEventListener('click', () => {
+  watcher.set(/** @type {string} */ (b.dataset.act)); press('watcher-act', b);
+});
 for (const b of /** @type {NodeListOf<HTMLButtonElement>} */ ($('light').querySelectorAll('button'))) b.addEventListener('click', () => {
   light = /** @type {string} */ (b.dataset.light); press('light', b);
 });
@@ -62,8 +73,8 @@ for (const b of /** @type {NodeListOf<HTMLButtonElement>} */ ($('foe').querySele
   setKind(/** @type {string} */ (b.dataset.foe));
 });
 $('spin').addEventListener('click', () => { spin = !spin; $('spin').setAttribute('aria-pressed', String(spin)); });
-$('close').addEventListener('click', () => Object.assign(cam, VIEWS[/** @type {'mote' | 'crawler'} */ (kind)].close));
-$('whole').addEventListener('click', () => Object.assign(cam, VIEWS[/** @type {'mote' | 'crawler'} */ (kind)].whole));
+$('close').addEventListener('click', () => Object.assign(cam, VIEWS[kind].close));
+$('whole').addEventListener('click', () => Object.assign(cam, VIEWS[kind].whole));
 
 // Drag turns the view round the thing; the wheel comes closer.
 let drag = /** @type {{ x: number, y: number } | null} */ (null);
@@ -105,6 +116,23 @@ const SLIDERS = /** @type {Record<string, [string, any, string, number, number, 
     ['Tail sway', CR.motion.tail, 'swayDeg', 0, 20, 0.5, 'deg'],
     ['Stalk look', CR.motion.stalks, 'lookDeg', 0, 80, 1, 'deg'],
   ],
+  watcher: [
+    ['Light at rest', WS.look, 'restNits', 0, 2, 0.05, 'cd/m2'],
+    ['Light noticing', WS.look, 'noticeNits', 0, 4, 0.05, 'cd/m2'],
+    ['The tell at its peak', WS.look, 'tellNits', 0, 8, 0.1, 'cd/m2'],
+    ['The call', WS.look, 'callNits', 0, 12, 0.1, 'cd/m2'],
+    ['Dimmed', WS.look, 'dimNits', 0, 0.5, 0.01, 'cd/m2'],
+    ['Light up the walls', WS.look, 'wallM', 0.005, 0.1, 0.005, 'm'],
+    ['Light on the rim', WS.look, 'rimLight', 0, 2, 0.05, ''],
+    ['Light on the floor', WS.look, 'floorLight', 0, 1.5, 0.05, ''],
+    ['Hover', WS.motion, 'hoverM', 0.6, 2.4, 0.05, 'm'],
+    ['Bob', WS.motion, 'bobM', 0, 0.15, 0.005, 'm'],
+    ['Look up or down', WS.motion, 'lookDeg', 0, 40, 1, 'deg'],
+    ['Weed current', WS.motion.weed, 'currentDeg', 0, 25, 0.5, 'deg'],
+    ['Weed streams back', WS.motion.weed, 'dragDeg', 0, 60, 1, 'deg'],
+    ['Weed flares in the tell', WS.motion.weed, 'flareDeg', 0, 70, 1, 'deg'],
+    ['Weed springiness', WS.motion.weed, 'stiffness', 5, 80, 1, ''],
+  ],
 });
 function buildSliders() {
   $('sliders').innerHTML = '';
@@ -119,7 +147,7 @@ function buildSliders() {
     $('sliders').append(row);
   }
 }
-const eyeMm = (model.eyes[0].radiusM * 2 * moteScale(model, M.sizeM) * 1000).toFixed(0), cm = crawler.model;
+const eyeMm = (model.eyes[0].radiusM * 2 * moteScale(model, M.sizeM) * 1000).toFixed(0), cm = crawler.model, wm = watcher.model;
 const FACTS = {
   mote: `<dt>Triangles</dt><dd>${model.triangles.toLocaleString()} (Matt's own decimation, as it is)</dd>`
     + `<dt>Across</dt><dd>${(M.sizeM * 100).toFixed(0)} cm</dd><dt>Eyes</dt><dd>about ${eyeMm} mm each, drawn by the shader on Matt's eye discs</dd>`,
@@ -127,6 +155,10 @@ const FACTS = {
     + `<dt>Size</dt><dd>${(cm.widthM * 100).toFixed(0)} cm across the legs, ${(cm.lengthM * 100).toFixed(0)} cm long with the tail, at the mote's scale</dd>`
     + `<dt>Rig</dt><dd>16 bones: root, body, 2 eye stalks, a hip and a knee each leg, 4 tail bones</dd>`
     + `<dt>Surfaces</dt><dd>No textures (no UVs in the OBJs): silt, shells and the pale underside drawn by the shader</dd>`,
+  watcher: `<dt>Triangles</dt><dd>${wm.triangles.toLocaleString()} (stone ${wm.parts.stone.toLocaleString()}, cut from ${wm.cutFrom.toLocaleString()} keeping its ${wm.barnacles} barnacles; weed ${wm.parts.weed})</dd>`
+    + `<dt>Size</dt><dd>${(wm.widthM * 100).toFixed(0)} cm across, ${(wm.heightM * 100).toFixed(0)} cm high, ${(wm.depthM * 100).toFixed(0)} cm thick, floating ${WS.motion.hoverM} m up</dd>`
+    + `<dt>Rig</dt><dd>${wm.skeleton.length} bones: the root (the float, the turn, the look) and four wrack blades of ${(wm.skeleton.length - 1) / 4} on lagging springs</dd>`
+    + `<dt>Surfaces</dt><dd>Albedo and the fine field's normals baked into 1024 px maps; the hole's light drawn by the shader</dd>`,
 };
 const NOTES = {
   drift: 'Drifting: a slow bob and turn, breathing.', tell: 'The tell: it bunches up, squashes and quivers, and squints.', nip: 'It winds up, darts at you (stretching along the way it goes), nips (a squash) and scatters back.', widen: 'The light is raised: its eyes open wide, then settle.', scatter: 'Scattering from the raised light, its trail of soot behind it.',
@@ -134,13 +166,26 @@ const NOTES = {
   lunge: 'The tell, then the lunge: plate first, the forelegs reaching, the hind legs driving; stuck after, then it backs off.', stuck: 'Stuck for 1 s after the lunge: the plate dug into the silt, the back up and soft.',
   glance: 'A front hit glances off the plate: sparks, and the front rocks back a little.', back: 'A hit on its back lands: it flinches away, flashing pale.', break: 'Breaking: it slumps into grey sand, and motes of light rise.',
 };
-function setKind(/** @type {string} */ k) {
-  kind = k;
+/** The watcher's notes (you hold the lantern where the view is). */
+const NOTES_W = {
+  rest: 'Resting: it floats, bobbing and turning slowly; the hole breathes a faint, cool light; the weed sways in its own slow current.',
+  notice: 'Noticing the lantern: it turns to face your light and tilts to look at it, and the glow warms.',
+  tell: 'The tell (1.5 s): the glow builds bright and the weed flares out. Here it stops short of the call.',
+  call: 'The call: the tell, then a pulse of light and a ring running out over the floor, and everything near comes. Then it turns slowly to look again.',
+  snuff: 'Snuffed mid-tell: your light drops to an ember, the hole dims and it can\'t build the call.',
+  unmade: 'Unmade: the hole stays dim, and it can\'t call.',
+  lure: 'Moth lure: it turns to follow the moths (the small lights), its glow drawn warm.',
+  drift: 'Drifting: the weed streams back from the way it goes and from its turn.',
+  hit: 'A hit: it rocks back and flashes pale.',
+  break: 'Breaking: its light goes out, it drops to the floor and sinks away in grit and motes of light.',
+};
+function setKind(/** @type {string} */ name) {
+  const k = kind = /** @type {Kind} */ (name);
   press('foe', /** @type {HTMLElement} */ ($('foe').querySelector(`[data-foe=${k}]`)));
-  $('act').hidden = k !== 'mote'; $('crawler-act').hidden = k !== 'crawler';
-  Object.assign(cam, VIEWS[/** @type {'mote' | 'crawler'} */ (k)].whole);
-  $('facts').innerHTML = FACTS[/** @type {'mote' | 'crawler'} */ (k)];
-  $('title').textContent = k === 'mote' ? 'Hollow foes: the soot mote' : 'Hollow foes: the silt crawler';
+  $('act').hidden = k !== 'mote'; $('crawler-act').hidden = k !== 'crawler'; $('watcher-act').hidden = k !== 'watcher';
+  Object.assign(cam, VIEWS[k].whole);
+  $('facts').innerHTML = FACTS[k];
+  $('title').textContent = { mote: 'Hollow foes: the soot mote', crawler: 'Hollow foes: the silt crawler', watcher: 'Hollow foes: the hagstone watcher' }[k];
   buildSliders();
 }
 setKind(kind);
@@ -180,7 +225,12 @@ function tick(dt, draw = true) {
   clock += dt;
   let to;
   if (kind === 'mote') to = moteTick(dt);
-  else {
+  else if (kind === 'watcher') {
+    // It floats on the turntable; the view goes round it, and you hold the lantern where the view is.
+    if (spin && dt > 1e-5) cam.yaw += dt * 0.2;
+    watcher.tick(dt, clock, eye);
+    to = watcher.aim();
+  } else {
     // The crawler stays put on the turntable; the view goes round it.
     if (spin && dt > 1e-5) cam.yaw += dt * 0.25;
     crawler.tick(dt, clock, eye);
@@ -192,22 +242,25 @@ function tick(dt, draw = true) {
   const target = aim;
   eye = [target[0] + cam.dist * Math.cos(cam.pitch) * Math.sin(cam.yaw), target[1] + cam.dist * Math.sin(cam.pitch), target[2] + cam.dist * Math.cos(cam.pitch) * Math.cos(cam.yaw)];
   if (!draw) return;
-  const drawn = kind === 'mote' ? pass : crawler.pass;
+  const drawn = kind === 'mote' ? pass : kind === 'crawler' ? crawler.pass : watcher.pass;
+  // Snuffed, the lantern pulls in to an ember.
+  const reach = kind === 'watcher' && watcher.snuffed ? L.emberReachM : L.reachM;
   stage.draw({ bones, eyes, place: [0, -10, 0, 0], weights: false, night: false, water: -9, follow: target, dt, camera: { eye, target }, hideFigure: true,
     extra: (p, u) => drawn.draw(p, u),
-    ...(light === 'dark' ? { lamp: { at: [target[0] + Math.sin(cam.yaw + 0.5) * 1.6, target[1] + 0.6, target[2] + Math.cos(cam.yaw + 0.5) * 1.6], reachM: L.reachM, ambient: L.ambient, strength: L.strength } } : {}) });
-  $('note').textContent = NOTES[/** @type {keyof typeof NOTES} */ (kind === 'mote' ? act : crawler.act)] ?? '';
+    ...(light === 'dark' ? { lamp: { at: [target[0] + Math.sin(cam.yaw + 0.5) * 1.6, target[1] + (kind === 'watcher' ? -0.4 : 0.6), target[2] + Math.cos(cam.yaw + 0.5) * 1.6], reachM: reach, ambient: L.ambient, strength: L.strength } } : {}) });
+  $('note').textContent = kind === 'watcher' ? NOTES_W[/** @type {keyof typeof NOTES_W} */ (watcher.act)] ?? ''
+    : NOTES[/** @type {keyof typeof NOTES} */ (kind === 'mote' ? act : crawler.act)] ?? '';
 }
 requestAnimationFrame(frame);
 /** For checking from the console. */
-/** @type {any} */ (window).foes = { get swarm() { return swarm; }, foe, M, pass, crawler, cam,
-  set(/** @type {string} */ a) { if (kind === 'mote') { act = a; actT = 0; } else crawler.set(a); },
+/** @type {any} */ (window).foes = { get swarm() { return swarm; }, foe, M, pass, crawler, watcher, cam,
+  set(/** @type {string} */ a) { if (kind === 'mote') { act = a; actT = 0; } else if (kind === 'watcher') watcher.set(a); else crawler.set(a); },
   kind(/** @type {string} */ k) { setKind(k); }, light(/** @type {string} */ l) { light = l; },
   /** Hold time still (the view still draws), for stills. @param {boolean} on */
   pause(on) { paused = on; },
   /** Aim the view on the thing at once (a held still mid-lunge). */
-  snap() { aim = kind === 'mote' ? [swarm.motes[0].x, swarm.motes[0].y, swarm.motes[0].z] : crawler.aim(); tick(1e-6); },
+  snap() { aim = kind === 'mote' ? [swarm.motes[0].x, swarm.motes[0].y, swarm.motes[0].z] : kind === 'watcher' ? watcher.aim() : crawler.aim(); tick(1e-6); },
   /** Run on s seconds at once, then hold. @param {number} s */
   run(s) { paused = true; for (let n = Math.round(s * 60); n > 0; n--) tick(1 / 60, false); tick(1e-6); },
   /** Run until the loop reaches a step at least t seconds in, then hold (for stills). @param {string} step @param {number} t */
-  holdAt(step, t) { paused = true; const f = kind === 'mote' ? foe : crawler.foe; for (let n = 0; n < 6000 && !(f.step === step && f.t >= t); n++) tick(1 / 60, false); tick(1e-6); } };
+  holdAt(step, t) { paused = true; const f = kind === 'mote' ? foe : kind === 'watcher' ? watcher.foe : crawler.foe; for (let n = 0; n < 6000 && !(f.step === step && f.t >= t); n++) tick(1 / 60, false); tick(1e-6); } };
