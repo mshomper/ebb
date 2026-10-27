@@ -106,9 +106,9 @@ flowchart LR
     F1[1 Steady hand] --> F2[2 Follow-through] --> F3[3 Finding the seam] --> F4[4 The sweep]
   end
   subgraph L[Lamp craft: time spent below]
-    L1[1 Trimmed wick] --> L2[2 Steady flame] --> L3[3 Flare] --> L4[4 Ember keep]
+    L1[1 Trimmed wick] --> L2[2 Steady flame] --> L3[3 Kindling burst] --> L4[4 Ember keep]
   end
-  subgraph O[Footing: dodges, climbs, wet ground crossed]
+  subgraph O[Footing: dodges, wet ground crossed]
     O1[1 Light step] --> O2[2 Sure feet] --> O3[3 Tumble] --> O4[4 Second wind]
   end
   subgraph H[Hollow lore: kinds met, bestiary pages, floors read]
@@ -135,17 +135,17 @@ Fills from time spent below, more on deeper floors.
 |---|---|---|
 | 1 | **Trimmed wick** | Fuel lasts about 15% longer |
 | 2 | **Steady flame** | Hits make the flame gutter less, so each one costs less fuel |
-| 3 | **Flare** | Once per floor, the walker flares the lantern. Light-shy enemies nearby scatter and are stunned for a moment |
+| 3 | **Kindling burst** | The rank unlocks the Kindling burst move (see Special moves): the lantern's stored light sent out in one straight beam |
 | 4 | **Ember keep** | Once per trip, when the light would go out, it holds as an ember long enough to walk to the way up and keep everything |
 
 ### Footing
 
-Fills from dodges that avoid a hit, climbs, and wet or broken ground crossed.
+Fills from dodges that avoid a hit, and wet or broken ground crossed.
 
 | Rank | Name | What it does |
 |---|---|---|
 | 1 | **Light step** | The dodge step recovers faster |
-| 2 | **Sure feet** | No slowing on wet rock, weed or silt; climbs and rope drops are quicker |
+| 2 | **Sure feet** | No slowing on wet rock, weed or silt; rope drops are quicker |
 | 3 | **Tumble** | The dodge becomes a roll that passes through enemies untouched |
 | 4 | **Second wind** | After a dodge at the last moment, the next hit does double damage |
 
@@ -162,50 +162,123 @@ Fills from each new kind met, each bestiary page and each floor fully walked.
 
 ## Special moves: Q and E
 
-Decided by Matt, October 26, 2026. Each rank of each track also unlocks one active move, so the four tracks give sixteen. The walker carries only two, one on **Q** and one on **E**. The pair, together with the weapon, lantern and coat, is the player's build, and choosing only two makes them refine it.
+Decided by Matt, October 26, 2026, and redrawn by him the same day (the second pass, below). Each rank of each track also unlocks one active move, so the four tracks give sixteen. The walker carries only two, one on **Q** and one on **E**. The pair, together with the weapon, lantern and coat, is the player's build, and choosing only two makes them refine it.
 
 - **Every move draws a mark on the floor** (a ring, an arc, a line) before or as it lands, so it reads from the Hollow's high camera.
-- **Costs follow the lantern-as-health rule.** A *sip* is about one hit's worth of fuel. Moves that don't spend fuel use a short wait, once a floor, once a trip, or pebbles and rushlights from the pack.
+- **Costs follow the lantern-as-health rule.** A *sip* is about one hit's worth of fuel. Moves that don't spend fuel use a short wait, once a floor, once a trip, or seeds and rushlights from the pack.
 - **Raise the lantern is not a move.** Holding the right mouse button raises it for everyone, so it never takes a peg.
-- **Some passives become moves.** The sweep and Flare are now moves, unlocked by their ranks. Old ways' passive becomes the deliberate knock below. Ember keep and Second wind stay automatic: a safety net shouldn't cost a peg. Space is now everyone's dodge roll, so Tumble upgrades it to pass through enemies untouched.
+- **Some passives become moves.** The sweep and Kindling burst are moves, unlocked by their ranks. Ember keep and Second wind stay automatic: a safety net shouldn't cost a peg. Old ways stays a passive, so the hidden side passage exists without a peg. Space is everyone's dodge roll, so Tumble upgrades it to pass through enemies untouched, and nothing in Footing is a second dodge.
+- **Unlocks are by rank alone.** Spring chorus and Moth lure don't wait for frogs or moths to live on the island; they're flavor, not gates.
+
+What the set is for:
+
+- **A spread of range.** Every track has at least one close move, and the set has five long-reach moves.
+- **Magic and natural side by side.** Seven moves feel like casting. The rest are weapon, body and hand work.
+- **The light and the island.** Lamp craft is the light. Hollow lore is the island's own magic: salt, seed and sea water carried down into a place that was never meant to hold them.
+- **Each move stands alone.** No move needs another move to work. No "every third hit", no "pairs with". Every move works with every weapon. (Passives such as Follow-through, Tumble and Tells are not moves and stay as they are.)
+- **Cheap to animate.** Every move uses one of five shared poses. The show is the mark on the floor and the light, not the walker's body.
+- **No jumps, no climbing.**
+
+### The five shared poses
+
+| Pose | What the walker does | Already planned for |
+|---|---|---|
+| **Swing** | The weapon's own swing, sometimes held or cut short | Fighting |
+| **Plant** | Drives the weapon or a palm down into the floor | Close to the planting kneel |
+| **Throw** | An underarm toss | The sling throw |
+| **Raise** | Lifts or covers the lantern | Raise the lantern (right mouse) |
+| **Kneel** | Kneels and sets something on the floor | Planting (all planting is the walker's) |
+
+A sixth, **Point**, is one arm held out, the smallest clip in the set. Back step is the dodge roll's clip played backward and cut short, so it adds no clip of its own.
+
+**Hands.** The lantern hand is never free, so a move that needs a hand (Spring chorus's cupped hand, Snuff's hand over the glass) uses the weapon hand. With the lantern staff, the staff hand holds the light and the other hand does it.
 
 ### The sixteen moves
 
-**Fighting**
+**Fighting: weapon and body.** Close and natural. Each weapon kind still flavors these: a spear's Groundline runs longer, a club's Anchor reels harder, a knife's Hook and turn is quicker.
 
-| Rank | Move | What it does | Cost | Suits |
-|---|---|---|---|---|
-| 1 | **Shoulder in** | A short barge forward; small enemies are knocked back a step and lose their wind-up | 6 s wait | Burl club, stone maul |
-| 2 | **Pin down** | A long thrust that holds one enemy in place for 2 s | 8 s wait | Flint spear, bone harpoon |
-| 3 | **Seam strike** | A quick side step and a strike that always counts as a hit from the side | 10 s wait | Knives, barnacle staff |
-| 4 | **The sweep** | Hold to charge (a ring grows on the floor), let go to hit everything in the ring | 12 s wait | Staffs, hagstone flail |
+| Rank | Move | What it does | Reach | Pose | Mark on the floor | Cost |
+|---|---|---|---|---|---|---|
+| 1 | **Anchor** | Plant the weapon and brace. A hit that lands during the brace costs no fuel, and the attacker reels back open for a moment | At the walker | Plant | A small ring at the feet that flashes when a hit is caught | 6 s wait |
+| 2 | **Hook and turn** | A hooking sweep that spins one enemy to face away. Its back and sides are open, and a charge goes off the wrong way | Close | Swing | A curved arrow round the enemy | 8 s wait |
+| 3 | **Groundline** | Drive the weapon down and send a crack along the floor. Everything standing on the line stumbles and loses its wind-up. Drip wisps on the ceiling and tide shades between pools are untouched | 6 m line | Plant | A crack that races out ahead | 10 s wait |
+| 4 | **The sweep** | Hold to charge, let go to hit everything in the ring | Ring round the walker | Swing, held | A ring that grows while held | 12 s wait |
 
-**Lamp craft**
+**Lamp craft: the light (the mage track).** The lantern is health, so every flame move spends something real.
 
-| Rank | Move | What it does | Cost | Suits |
-|---|---|---|---|---|
-| 1 | **Cast the flame** | A ball of the lantern's fire thrown to a marked spot, bursting in a small ring there (Matt: a mage-style fireball) | A sip, 6 s wait | Bulls-eye lantern |
-| 2 | **Hood the lamp** | Cover the light for up to 6 s: half the fuel, watchers can't see you, but the light shrinks to 2 m | 10 s wait | Soot cloak, sling |
-| 3 | **Flare** | A burst of light; light-shy enemies within 5 m scatter and are stunned a moment | Once a floor, and a sip | Bulls-eye lantern |
-| 4 | **Rushlight ring** | Plant a burning rushlight; a 3 m circle stays safe from light-shy enemies for 30 s | One rushlight from the pack, once a floor | Pearl lantern, spear |
+| Rank | Move | What it does | Reach | Pose | Mark on the floor | Cost |
+|---|---|---|---|---|---|---|
+| 1 | **Cast the flame** | A ball of the lantern's fire thrown to a marked spot, bursting in a small ring (Matt: a mage-style fireball) | Long, to 10 m | Throw | The landing ring, then scorch | A sip, 6 s wait |
+| 2 | **Wick snare** | Set a lit wick on the floor. The first Hollow thing to cross it is bound in threads of light for 3 s. Lasts the floor or until sprung | Placed at the feet | Kneel | A small glowing wick and a faint circle | 10 s wait, one on the floor at a time |
+| 3 | **Kindling burst** | The lantern's stored light leaves in one straight beam. Light-shy things in it are thrown back to its end and stunned. Anything beside the beam is untouched | Long line, 10 m | Raise | A bright lane that fades | Once a floor, and a sip |
+| 4 | **Rushlight ring** | Plant a burning rushlight. A 3 m circle stays safe from light-shy things for 30 s | Placed | Kneel | The ring of light itself | One rushlight from the pack, once a floor |
 
-**Footing**
+**Footing: where you stand and when.**
 
-| Rank | Move | What it does | Cost | Suits |
-|---|---|---|---|---|
-| 1 | **Back step** | A 3 m hop backward that also tears free of a tangler's grip | 5 s wait | Rush cape, sling |
-| 2 | **Vault** | Leap over a low enemy, a pool or a gap to a marked spot up to 4 m away | 8 s wait | Feather cape |
-| 3 | **Slip past** | A long low roll through a line of enemies; everything passed turns round, so its side is open | 10 s wait | Knives, with Seam strike |
-| 4 | **Light on the rock** | For 5 s dodges have no recovery, and each last-moment dodge gives back a sip | Once a floor | Rush cape |
+| Rank | Move | What it does | Reach | Pose | Mark on the floor | Cost |
+|---|---|---|---|---|---|---|
+| 1 | **Back step** | A 3 m hop backward that tears free of a tangler's grip | At the walker | The dodge, reversed | Two scuff marks | 5 s wait |
+| 2 | **Feint** | A half swing, cut short. Every guarding thing in reach (crawlers, barnacle backs, eels) throws its attack at the spot and stays open while it recovers | Close | Swing, cut short | A faint arc where the swing would have landed | 8 s wait |
+| 3 | **Snuff** | Cover the lantern and go still. Watchers and light-hunters lose the walker. The light shrinks to an ember and burns no fuel. Moving or being hit ends it | At the walker | Raise (a hand over the glass) | The light pulls in to a small ring | 12 s wait, up to 8 s |
+| 4 | **Light on the rock** | For 5 s, dodges have no recovery and each last-moment dodge gives back a sip | — | — | Footprints glint | Once a floor |
 
-**Hollow lore**
+**Hollow lore: the island's ways.** The Hollow's things are made of the dark and the old sea. The island's living things unsettle them. The keeper carries the island down.
 
-| Rank | Move | What it does | Cost | Suits |
-|---|---|---|---|---|
-| 1 | **Toss a pebble** | Throw a pebble to a spot; enemies nearby go to look and watchers turn to the sound | One pebble, 8 s wait | Sling, soot cloak |
-| 2 | **Name it** | Mark one enemy for 8 s: its weak point glows and it takes more damage, more still with a full bestiary page | 10 s wait | Crystal blade, bow |
-| 3 | **Turn aside** | Pressed during a glinting wind-up: the walker pivots and the enemy's own lunge carries it into the rock, staggered | 8 s wait (a miss costs only the wait) | Any weapon, with Tells |
-| 4 | **Knock for the old way** | Knock where the draft points and a hidden side passage to a find room opens | Once a trip | Any |
+| Rank | Move | What it does | Reach | Pose | Mark on the floor | Cost |
+|---|---|---|---|---|---|---|
+| 1 | **Taproot** | Throw a seed at one Hollow thing. It roots in the silt the thing is made of, green cracks spread over it, and 3 s later the root bursts. What the burst does depends on the thing's size (below). If the thing is beaten first, the seed falls and does nothing | Long, to 10 m | Throw | Green cracks across the target | One seed from the pack, 10 s wait |
+| 2 | **Spring chorus** | Sing the frog's call, the first sound that kept the keeper on the island. Every Hollow thing within 5 m hears living water, and for 6 s its wind-ups and movement run at half speed | Ring round the walker, 5 m | Raise (a hand cupped to the mouth) | Soft ripples spreading across the floor | 12 s wait |
+| 3 | **Moth lure** | Open a hand and island moths drift out to a marked spot, glowing. Things that go toward light (lamp-eaters, hagstone watchers) break off and follow them for 8 s | Long, to 10 m | Point | The drifting swarm itself, shader motion with no rig | 10 s wait |
+| 4 | **Unmake** | Point at one kind with a full bestiary page. For 6 s it loses the one thing that makes it itself. No damage | Long, to 12 m | Point | A pale ring round the target | 10 s wait |
+
+Unmake sits at rank 4 because it grows with the bestiary: the more pages filled, the more kinds it works on.
+
+**Taproot is never a one-shot on anything big.** The root breaks small things, but larger things only crack. The shares are recipe values, starting at a quarter for large kinds. A thing can carry only one root at a time. **Seeds** become a Hollow supply in the pack, alongside rushlights.
+
+| Size | Kinds | The burst… |
+|---|---|---|
+| **Small** | Soot motes, drip wisps, silt crawlers, brine eels, wrack tanglers | Breaks it apart |
+| **Large** | Barnacle backs, lamp-eaters, hagstone watchers, tide shades | Takes about a quarter of its strength and staggers it. The cracks stay for 5 s, and hits land harder while they show |
+| **Guardians** | The guardian floor's strong one | Takes about a tenth of its strength, with no stagger. The cracks stay for 5 s |
+
+**What Unmake does to each kind**, since each keeps one defining trait:
+
+| Kind | Unmade, it… |
+|---|---|
+| Soot motes | Can't scatter from the light |
+| Silt crawlers | Loses its armored front |
+| Drip wisps | Drops from the ceiling and can't climb back |
+| Barnacle backs | Can't charge |
+| Brine eels | Can't sink back into the water |
+| Lamp-eaters | Can't drain fuel |
+| Tide shades | Can't fade |
+| Wrack tanglers | Can't grab |
+| Hagstone watchers | Can't call |
+
+### The set at a glance
+
+| | Close | Mid or placed | Long |
+|---|---|---|---|
+| **Fighting** | Anchor, Hook and turn, The sweep | Groundline | |
+| **Lamp craft** | | Wick snare, Rushlight ring | Cast the flame, Kindling burst |
+| **Footing** | Back step, Feint, Snuff | | |
+| **Hollow lore** | Spring chorus | | Taproot, Moth lure, Unmake |
+
+- **Mage-style (seven):** Cast the flame, Kindling burst, Wick snare, Taproot, Spring chorus, Moth lure, Unmake.
+- **The light (five):** Cast the flame, Wick snare, Kindling burst, Rushlight ring, Snuff.
+- **The island (three):** Taproot (seeds), Spring chorus (the frogs), Moth lure (the moths). Each carries something living from the surface into the dark.
+- **Holding ground** is left to Wick snare and Rushlight ring, so the island track has no zoning moves.
+
+### Clever or instinctive: instinctive
+
+Each kind keeps one fixed set of behaviors and never learns, and the set is built on that. No trick asks an enemy to think; each one presses on a plain instinct the bestiary page names (see the bestiary's instinct column):
+
+| Instinct | Kinds | Moves that use it |
+|---|---|---|
+| Shies from light | Soot motes, tide shades, lamp-eaters | Kindling burst, Wick snare, Rushlight ring |
+| Strikes at movement | Crawlers, barnacle backs, eels | Feint |
+| Goes toward light | Hagstone watchers, lamp-eaters | Snuff, Moth lure |
+| Unsettled by island life | Every kind | Taproot, Spring chorus |
 
 ### Choosing them
 
@@ -219,21 +292,23 @@ Decided by Matt, October 26, 2026. Each rank of each track also unlocks one acti
 - Two round tablets beside the lantern flame, each with the move's drawn icon and Q or E beneath. No numbers.
 - A waiting move drains to a pale outline and refills with ink from the bottom; a glint runs round the rim when it is ready.
 - Once-a-floor moves show a small wick, lit or spent. A move that spends fuel has a small flame mark on its rim.
-- Out of pebbles or already spent: the tablet greys and does nothing, with no buzzer.
+- Out of seeds or rushlights, or already spent: the tablet greys and does nothing, with no buzzer.
 
 ### Example builds
 
-| Build | Q | E | Kit | How it plays |
-|---|---|---|---|---|
-| **The lamplighter** | Cast the flame | Rushlight ring | Bulls-eye lantern, pearl-studded club, oilskin coat | Owns the light; an easy, strong start for younger players |
-| **Wet-rock dancer** | Slip past | Seam strike | Flint knife, rush or feather cape | Rolls through a line of crawlers, then cuts their open sides |
-| **The breakwater** | Shoulder in | The sweep | Stone maul or hagstone flail, barnacle mail | Stands in the middle, knocks enemies off their wind-ups, clears rooms |
-| **The quiet keeper** | Hood the lamp | Toss a pebble | Soot cloak, sling | Slips past watchers, avoids fights, saves fuel to go deep |
+| Build | Q | E | How it plays |
+|---|---|---|---|
+| **The lamplighter** | Cast the flame | Kindling burst | Burns from range. Spends fuel fast, so trips are bright and shorter. Easy for younger players |
+| **The breakwater** | Anchor | Groundline | Stands in the middle, catches hits and knocks lines of enemies off their wind-ups |
+| **The gardener** | Taproot | Moth lure | Leads the light-hungry away with moths, roots the big one and lets it crack |
+| **The chorister** | Spring chorus | Anchor | Slows the whole crowd, then braces against whatever still gets through |
+| **The quiet keeper** | Snuff | Wick snare | Lets watchers pass, leaves snares behind, saves fuel to go deep |
+| **The reader** | Unmake | Hook and turn | Takes apart the hardest kind in a room, then turns it to open its side |
 
 ### What ships first, and the rig
 
 - **First version: ranks 1 to 3** of each track (twelve moves). The rank 4 moves come after.
-- New clips on the walker's rig: Shoulder in, Pin down, Seam strike, The sweep, Cast the flame (a lantern throw), Hood the lamp (an arm layer), Flare, Rushlight ring (the planting kneel may serve), Back step, Vault, Toss a pebble (the sling throw may serve), Name it (a point), Turn aside, Knock. The heaviest are Vault, The sweep and Turn aside, two of them rank 4.
+- **Clips:** the five shared poses (Swing, Plant, Throw, Raise, Kneel) plus Point, on the walker's rig. Swing, Throw, Raise and Kneel are already planned for fighting, the sling, the lantern and planting. Moth lure's moths are shader motion with no rig.
 
 ## The lantern
 
@@ -259,7 +334,7 @@ Simple, readable, from a fixed high camera that follows room by room, in the man
 - **Dodge roll** on Space, out of the way.
 - **Raise the lantern** by holding the right mouse button. This pushes back light-shy enemies but burns fuel faster.
 - **Q and E** are the two special moves the player chose (see Special moves).
-- **Sling.** It throws pebbles, which the walker already gathers, so the pebble store becomes ammunition.
+- **Sling.** It throws pebbles, which the walker already gathers, so the pebble store becomes ammunition. A sling pebble makes a sound where it lands: things nearby go to look, and watchers turn to it. This does the old Toss a pebble move's job without a peg.
 - A gentle lock-on to the nearest enemy, and a **"gentler Hollow"** setting for younger players (Matt's testers are 7 and 10).
 
 ## What the walker carries
@@ -277,14 +352,16 @@ These lists are a pool to pick from, not a build list. The first set is marked i
 
 ### Weapons
 
+**One hand only** (Matt, October 26, 2026). The keeper always holds the lantern, so the lantern hand is never free and every weapon is one-handed. The lantern arm is its own animation layer, and each weapon needs only right-arm and body swings. Weight still exists, as a short dense head that is slow and staggers hard, never as a two-handed swing. The lantern staff is the one exception.
+
 | Weapon | Kind | Made from | Tier | Good at | First set |
 |---|---|---|---|---|---|
 | **Driftwood staff** | Staff | Drift stick, rush cord | 1 | Balanced reach and speed. The first weapon; it opens the arch | Yes |
-| **Hazel quarterstaff** | Staff | Hazel rod, rush cord | 2 | Faster swings than the drift staff | |
+| **Hazel walking staff** | Staff | Hazel rod, rush cord | 2 | Faster swings than the drift staff | |
 | **Barnacle staff** | Staff | Ship's timber, barnacle shell, birch tar | 3 | Rough ends that crack armor: good against crawlers and barnacle backs | |
-| **Lantern staff** | Staff | Hazel rod, crystal, rush cord | 3 | The lantern hangs from its head, so the light reaches further while fighting. Weaker hits | |
+| **Lantern staff** | Staff | Hazel rod, crystal, rush cord | 3 | The one exception to the lantern hand: the lantern hangs from the staff's head, so the light leads where you point, and raising the lantern lifts the staff. Weaker hits | |
 | **Burl club** | Club | Drift root, rush cord | 1 | Slow, heavy, staggers | |
-| **Stone maul** | Club | Flat stone, ship's timber, rush cord | 2 | The biggest stagger, knocks enemies back. Very slow | Yes |
+| **Stone mallet** | Club | Flat stone, ship's timber, rush cord | 2 | A flat stone lashed to a short haft. The biggest stagger, knocks enemies back. Very slow | Yes |
 | **Pearl-studded club** | Club | Drift root, cave pearls, birch tar | 3 | Each hit throws a spark of light that sends light-shy enemies back | |
 | **Shell knife** | Blade | Razor shell, rush cord | 1 | Quick and short. Cuts free of tanglers at once | Yes |
 | **Flint knife** | Blade | Flint, hazel rod, birch tar | 2 | Quick and sure | |
@@ -296,12 +373,13 @@ These lists are a pool to pick from, not a build list. The first set is marked i
 | **Star-iron spear** | Spear | Star-iron, ship's timber, birch tar | 4 | The best reach. The island's star-iron makes either this or the knife, never both | |
 | **Sling** | Thrown | Rush cord, sailcloth | 1 | Pebbles as shot, from the pebble store | Yes |
 | **Bolas** | Thrown | Nettle cord, pebbles | 2 | Tangles legs and wings: slows enemies, brings wisps down | Yes |
-| **Hazel bow** | Shot | Hazel rod, nettle cord | 3 | The longest reach; needs arrows | |
 | **Wrack whip** | Odd | Tangle fibre, rush cord | 2 | A long lash that pulls small enemies in | |
 | **Ember brand** | Odd | Hazel rod, rushes, oil | 2 | A burning club with its own light. Light-shy enemies won't close. Burns out after a floor | |
 | **Hagstone flail** | Odd | Hagstone, hazel rod, nettle cord | 3 | A wide spinning arc. Looking through its stone shows tide shades, and it hits watchers hard | |
 
-**Shot and arrows,** made by the handful:
+The hazel bow and its arrows are cut. Long reach stays with the sling, the bone harpoon and Cast the flame.
+
+**Shot,** made by the handful:
 
 | Ammunition | Made from | For | Does |
 |---|---|---|---|
@@ -309,7 +387,6 @@ These lists are a pool to pick from, not a build list. The first set is marked i
 | **Clay shot** | Clay, fired at the hearth | Sling | Heavier, staggers |
 | **Flare shot** | Clay, oil, soot | Sling | Bursts into light where it lands, scattering light-shy enemies |
 | **Pearl shot** | Cave pearls | Sling | The hardest hit |
-| **Arrows** | Reed, flint, feather | Bow | Plain arrows |
 
 ### Lanterns
 
@@ -375,20 +452,22 @@ Keepsakes worn on the belt, one at a time, each with one small effect. A hagston
 
 They are not animals. They're made of the dark and the old sea, so the island's naturalist rules never apply to them. Beaten, they break into grey sand and motes of light, and drop what they were made around. No blood, no bodies. Each is rigged and animated (the creature rule). Swarms may use shader motion.
 
-| Kind | What it does | Where | Drops |
-|---|---|---|---|
-| **Soot motes** | A swarm that drifts in and nips; scatters from the light | Any floor | Soot, for ink and dye |
-| **Silt crawlers** | Crab-shaped, made of packed silt; slow, armored front | Wet floors | Clay, sand glass |
-| **Drip wisps** | Hang from the ceiling and drop; quick | Dripstone floors | Cave pearls |
-| **Barnacle backs** | Big, slow, charge in a straight line | Deeper floors | Shell, flint |
-| **Brine eels** | Lunge from the water's edge | Pool floors | Brine salt |
-| **Lamp-eaters** | Snuff the light: each touch drains fuel | Deeper floors | Oil |
-| **Tide shades** | Fade between pools of light; only seen in the lantern's glow | Deepest floors | Crystal |
-| **Wrack tanglers** | Heaps of dark weed that lie still until the walker is close, then grab and hold. Struggle free, or cut free with a blade | Wet and pool floors | Tangle fibre |
-| **Hagstone watchers** | Floating stones with a hole through them that turn toward light. When one sees the walker it calls everything nearby. Dim the lantern, or reach it first | Any floor; in groups deeper down | Hagstones |
+| Kind | What it does | Size | Instinct | Where | Drops |
+|---|---|---|---|---|---|
+| **Soot motes** | A swarm that drifts in and nips; scatters from the light | Small | Shies from light | Any floor | Soot, for ink and dye |
+| **Silt crawlers** | Crab-shaped, made of packed silt; slow, armored front | Small | Strikes at movement | Wet floors | Clay, sand glass |
+| **Drip wisps** | Hang from the ceiling and drop; quick | Small | | Dripstone floors | Cave pearls |
+| **Barnacle backs** | Big, slow, charge in a straight line | Large | Strikes at movement | Deeper floors | Shell, flint |
+| **Brine eels** | Lunge from the water's edge | Small | Strikes at movement | Pool floors | Brine salt |
+| **Lamp-eaters** | Snuff the light: each touch drains fuel | Large | Shies from light, and goes toward it | Deeper floors | Oil |
+| **Tide shades** | Fade between pools of light; only seen in the lantern's glow | Large | Shies from light | Deepest floors | Crystal |
+| **Wrack tanglers** | Heaps of dark weed that lie still until the walker is close, then grab and hold. Struggle free, or cut free with a blade | Small | | Wet and pool floors | Tangle fibre |
+| **Hagstone watchers** | Floating stones with a hole through them that turn toward light. When one sees the walker it calls everything nearby. Dim the lantern, or reach it first | Large | Goes toward light | Any floor; in groups deeper down | Hagstones |
+
+Every kind is also **unsettled by island life**, which is what Taproot and Spring chorus press on. A guardian floor's strong one counts as a third size, **guardian**.
 
 - **Each kind keeps one fixed set of behaviors.** Nothing learns or gains new moves as the level rises (Matt, October 25, 2026). A harder level means more enemies on a floor, and more of the harder kinds: soot motes and crawlers at the start, then barnacle backs, lamp-eaters, watchers and tide shades mixed in more and more. Health and damage can scale a little with the level too, as recipe values.
-- **Each kind gets a bestiary page** in the journal the first time it's beaten: a sketch, its habits and its tells. Filling the bestiary is the Hollow lore skill.
+- **Each kind gets a bestiary page** in the journal the first time it's beaten: a sketch, its habits, its tells, its size, and one "It…" line naming its instinct, so the player learns which tricks work on what. Filling the bestiary is the Hollow lore skill.
 
 ## What comes back up
 
@@ -437,7 +516,7 @@ A fifth trail, alongside the naturalist's, the beachcomber's, the shaper's and t
 - **11, 12** creatures: the bear as the landmark; the Hollow's kinds kept apart from the ecology.
 - **13** progression and journal: the Lamplighter's trail, the bestiary pages.
 - **15** input: swing (left click), dodge roll (Space), raise the lantern (right mouse held), the two special moves (Q and E), sling.
-- **23** walker: fighting animations (swing per weapon, dodge, hit, lantern raise) and a climb.
+- **23** walker: fighting animations (a one-handed swing per weapon, dodge, hit, lantern raise), the five shared move poses plus Point (see Special moves), and a climb.
 - **F13** camp: weapons, lanterns, coats, fuel and ammunition as makes (at most three ingredients each); birch tar at the hearth; the Hollow's materials as inputs.
 - **F10, 12** plants: hazel (woodland tier) and birch, which several makes need.
 - **F14** scripted events: star-iron, ship's timber, the cairns.
