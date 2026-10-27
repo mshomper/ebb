@@ -10,15 +10,22 @@
   --wp-moss-wash: #E1ECD3;
 }
 
-/* --- the walker button, beside the journal's (the sketchbook and Look move a slot left) --- */
+/* --- the walker button, bottom right just left of the time button (Matt, October 27, 2026);
+   --wp-time-w is the time button's width, measured (walker-page.js), since its pips change it --- */
 .ebb-wpbtn {
   position: fixed;
-  top: max(var(--jr-edge, 12px), env(safe-area-inset-top));
-  right: calc(max(var(--jr-edge, 12px), env(safe-area-inset-right)) + 2 * (var(--jr-btn, 48px) + 8px));
-  z-index: 11;
+  right: calc(max(12px, env(safe-area-inset-right)) + var(--wp-time-w, 88px) + 8px);
+  bottom: max(12px, env(safe-area-inset-bottom));
+  z-index: 10;
   pointer-events: none;
 }
 .ebb-wpbtn .icon { width: 28px; height: 28px; display: block; }
+/* The time button's paused line opens to the left of both buttons. */
+:root.ebb-has-walker-btn .ebb-time__line { right: calc(100% + 10px + 48px + 8px); }
+/* Narrow windows: the time button sits above the tool bar at the right edge, and so does this. */
+@media (max-width: 560px) {
+  .ebb-wpbtn { bottom: calc(max(12px, env(safe-area-inset-bottom)) + 62px + 10px); }
+}
 
 /* --- the page --- */
 .ebb-wp {

@@ -8,7 +8,8 @@
 // 760 px); Q and E top right once the Hollow is found; the chosen thing's name and the walker's words
 // on a card at the bottom, its actions the item cards' own (src/ui/card-actions.js), so a pouch here
 // offers Set down, Empty and the rest as its card does. A choice not owned is a blank outline, never
-// named. Opened by I or the walker button beside the journal's; Esc or the close button shuts it.
+// named. Opened by I or the walker button at the bottom right, beside the time button; Esc or the
+// close button shuts it.
 // Reads the store slices `kitView` (src/world/kit) and `packView` (src/world/pack); keeps
 // `walkerPageUi` { open, sel, pop }. Answers ui.walkerPage { open | toggle }. Styles: walker-page.css.
 
@@ -312,6 +313,13 @@ export function mountWalkerPage(parent, buttonParent, o) {
   const closeFor = (/** @type {any} */ x) => { if (x?.open && ui().open) setUi({ open: false }); };
   const onResize = () => { if (ui().open) render(); };
   addEventListener('resize', onResize);
+  // The button sits just left of the time button, whose width changes with its pips.
+  const timeBtn = document.querySelector('.ebb-time__btn');
+  const fit = () => { if (timeBtn) btnRoot.style.setProperty('--wp-time-w', `${/** @type {HTMLElement} */ (timeBtn).offsetWidth}px`); };
+  const timeObs = timeBtn && typeof ResizeObserver !== 'undefined' ? new ResizeObserver(fit) : null;
+  if (timeBtn) timeObs?.observe(timeBtn);
+  fit();
+  document.documentElement.classList.add('ebb-has-walker-btn');
 
   const unsubs = [subscribe('walkerPageUi', render), subscribe('kitView', render), subscribe('packView', render),
     subscribe('journalUi', closeFor), subscribe('sketchbookUi', closeFor), subscribe('stationView', (x) => { if (x && ui().open) setUi({ open: false }); })];
@@ -323,6 +331,8 @@ export function mountWalkerPage(parent, buttonParent, o) {
     for (const off of offActs) off();
     offAction();
     removeEventListener('resize', onResize);
+    timeObs?.disconnect();
+    document.documentElement.classList.remove('ebb-has-walker-btn');
     portrait?.stop();
     btnRoot.remove(); root.remove();
   };

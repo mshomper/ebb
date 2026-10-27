@@ -12,8 +12,7 @@
 .ebb-sbbtn {
   position: fixed;
   top: max(var(--jr-edge, 12px), env(safe-area-inset-top));
-  /* Left of the walker's button (walker-page.css), which sits beside the journal's. */
-  right: calc(max(var(--jr-edge, 12px), env(safe-area-inset-right)) + 3 * (var(--jr-btn, 48px) + 8px));
+  right: calc(max(var(--jr-edge, 12px), env(safe-area-inset-right)) + 2 * (var(--jr-btn, 48px) + 8px));
   z-index: 11;
   pointer-events: none;
 }

@@ -9,18 +9,17 @@
 
   position: fixed;
   top: max(var(--lk-edge), env(safe-area-inset-top));
-  /* Left of the walker's button (walker-page.css) and the journal's book button (journal.css), which
-     sits left of Settings in the corner. */
-  right: calc(max(var(--lk-edge), env(safe-area-inset-right)) + 3 * (var(--lk-btn) + 8px));
+  /* Left of the journal's book button (journal.css), which sits left of Settings in the corner. */
+  right: calc(max(var(--lk-edge), env(safe-area-inset-right)) + 2 * (var(--lk-btn) + 8px));
   z-index: 10;
   pointer-events: none;
-  /* Never wider than half the screen less the three buttons, so the dial at the top left keeps its side. */
-  max-width: calc(50vw - var(--lk-edge) - 3 * (var(--lk-btn) + 8px));
+  /* Never wider than half the screen less the two buttons, so the dial at the top left keeps its side. */
+  max-width: calc(50vw - var(--lk-edge) - 2 * (var(--lk-btn) + 8px));
 }
 /* Once the sketchbook's button shows (sketchbook.css), it takes this slot and Look moves left. */
 :root.ebb-has-sketchbook .ebb-look {
-  right: calc(max(var(--lk-edge), env(safe-area-inset-right)) + 4 * (var(--lk-btn) + 8px));
-  max-width: calc(50vw - var(--lk-edge) - 4 * (var(--lk-btn) + 8px));
+  right: calc(max(var(--lk-edge), env(safe-area-inset-right)) + 3 * (var(--lk-btn) + 8px));
+  max-width: calc(50vw - var(--lk-edge) - 3 * (var(--lk-btn) + 8px));
 }
 
 .ebb-look__btn {
