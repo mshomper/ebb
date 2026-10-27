@@ -685,7 +685,7 @@ A fifth trail, alongside the naturalist's, the beachcomber's, the shaper's and t
 - Does the sea open the cave in a tall cliff the player made (F16's first draft), or is it found in a cliff that's already there?
 - What do the Hollow's things look like? Matt is trying text-to-3D for the first kinds; who makes the rest is Matt's call (CLAUDE.md).
 - Should the player ever see anything of the measure, such as a hint like "the Hollow feels deeper today"?
-- **A character and inventory page** (Matt, October 26, 2026: needed with this build-out). The Walker page (doc 23, the I key) now exists with the kit, the pouches and hidden Q and E pegs. With this build-out it gains the weapon and charm, the Q and E moves and the four tracks' marks, still words and drawings, never numbers.
+- **A character and inventory page** (Matt, October 26, 2026: needed with this build-out). The Walker page (doc 23, the I key) now exists with the kit, the pouches and hidden Q and E pegs, which sit as round tablets in the portrait's top corners, Q left and E right (Matt, October 27, 2026). With this build-out it gains the weapon and charm, the Q and E moves and the four tracks' marks, still words and drawings, never numbers.
 
 ## Depends on / feeds into
 
