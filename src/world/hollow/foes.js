@@ -42,6 +42,8 @@ import { stream } from '../../core/rng.js';
  */
 
 const DEG = Math.PI / 180;
+/** How long a hit's knockback slides (s). */
+const KNOCK_S = 0.12;
 /** The angle between two headings, 0..PI. @param {number} a @param {number} b */
 const off = (a, b) => Math.abs(Math.atan2(Math.sin(a - b), Math.cos(a - b)));
 
@@ -71,6 +73,8 @@ export function createFoe(kind, id, at, K, seed, sides) {
     /** Effects with a time on them (s left). */ slowS: 0, stunS: 0, lureS: 0, /** @type {[number, number] | null} */ lure: null,
     /** A Taproot's root, bursting when t runs out; then its cracks (hits land harder) for crackS. */
     /** @type {{ t: number, share: number, crackS: number, staggerS: number } | null} */ root: null, crackS: 0,
+    /** A hit's knockback, sliding it back over KNOCK_S; and how long it shows the hit (s left). */
+    /** @type {{ vx: number, vz: number, left: number, world?: { open: (x: number, z: number) => boolean } } | null} */ knock: null, hurtS: 0,
     /** How many hits it has taken, by side. */ hits: { front: 0, side: 0, back: 0 },
     /** What it last did, for the arena's log. */ note: 'Resting.',
   };
@@ -104,6 +108,12 @@ export function createFoe(kind, id, at, K, seed, sides) {
     s.alertS = Math.max(0, s.alertS - dt);
     s.lureS = Math.max(0, s.lureS - dt);
     s.crackS = Math.max(0, s.crackS - dt);
+    s.hurtS = Math.max(0, s.hurtS - dt);
+    if (s.knock) {
+      const k = s.knock, step = Math.min(dt, k.left);
+      move(w, k.vx * step, k.vz * step);
+      if ((k.left -= dt) <= 0) s.knock = null;
+    }
     if (s.root && (s.root.t -= dt) <= 0) {
       const r = s.root;
       s.root = null;
@@ -232,12 +242,24 @@ export function createFoe(kind, id, at, K, seed, sides) {
       const side = sideOf(s.yaw, s.x, s.z, e.fromX ?? s.x, e.fromZ ?? s.z, sides.sideDeg, sides.backDeg);
       const armored = K.frontDeg !== undefined && side === 'front';
       s.hits[side]++;
-      if (armored) { s.note = 'The hit glanced off its armored front.'; return { landed: false, broke: false, side, glanced: true }; }
+      // Every hit pushes it back from the swing: a landed one hard, a glance a little.
+      const fx = s.x - (e.fromX ?? s.x), fz = s.z - (e.fromZ ?? s.z), fl = Math.hypot(fx, fz) || 1, push = (K.knockM ?? 0.5) * (armored ? 0.35 : 1);
+      s.knock = { vx: (fx / fl) * push / KNOCK_S, vz: (fz / fl) * push / KNOCK_S, left: KNOCK_S, world: e.world };
+      if (armored) {
+        // A glance still breaks a wind-up, but not a lunge already going.
+        s.hurtS = 0.12;
+        if (s.step === 'wind') go('recover', 'The hit glanced off its armored front and broke its wind-up.');
+        else s.note = 'The hit glanced off its armored front.';
+        return { landed: false, broke: false, side, glanced: true };
+      }
       s.hp -= (e.power ?? 1) * (s.crackS > 0 ? 2 : 1);
       if (s.hp <= 0) { go('broken', 'Broke into grey sand and motes of light.'); return { landed: true, broke: true, side }; }
-      s.note = `Hit on its ${side}.`;
-      // Motes scatter from any hit; a lunger in its wind-up loses it.
-      if (kind === 'motes' || s.step === 'wind') go('recover', s.note);
+      // It flinches: a wind-up or a lunge is broken off, and it is open while it recovers.
+      s.hurtS = K.flinchS ?? 0.3;
+      s.stunS = Math.max(s.stunS, s.hurtS);
+      s.goal = null;
+      s.note = `Hit on its ${side}: knocked back.`;
+      if (kind === 'motes' || s.step === 'wind' || s.step === 'strike') go('recover', s.note);
       return { landed: true, broke: false, side };
     }
     if (e.kind === 'alert') {
@@ -324,6 +346,8 @@ export function createFoe(kind, id, at, K, seed, sides) {
     /** Seconds left of a stun, a slow and a lure; a root's time to burst (or -1); cracks showing. */
     get stunS() { return s.stunS; },
     get rootS() { return s.root ? s.root.t : -1; },
+    /** Showing a hit (s left): the page flashes and tips it back. */
+    get hurtS() { return s.hurtS; },
     get crackS() { return s.crackS; },
     get slowS() { return s.slowS; },
     get lureS() { return s.lureS; },

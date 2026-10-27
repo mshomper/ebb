@@ -25,7 +25,8 @@ export function createHollowPanel(box, o) {
     <div class="flame-row"><div id="flame"></div><div><p class="big" id="fuel"></p><p class="muted" id="raise"></p></div></div>
     <div class="buttons"><button id="refill">Refill the lantern</button></div>
     <h2>The staff's swing</h2>
-    <label class="pick">Left click plays <select id="swing-clip">${Object.keys(HR.swing.clips).map((c) => `<option value="${c}">${c}</option>`).join('')}</select></label>
+    <label class="pick">Left click plays <select id="swing-clip">${Object.entries(HR.swing.chains).map(([c, ch]) => `<option value="${c}">${c}, ${/** @type {any} */ (ch).hits.length} swings</option>`).join('')}</select></label>
+    <p class="muted">One swing a click; click again during a swing (or just after) for the next, up to the last.</p>
     <dl id="tally"></dl>
     <h2>Stand-ins</h2>
     <div class="buttons">${Object.entries(HR.foes).map(([k, f]) => `<button data-spawn="${k}">Add a ${/** @type {any} */ (f).name.toLowerCase()}</button>`).join('')}</div>

@@ -11,7 +11,7 @@
 import { dotRange, walkDot } from '../src/world/hollow/aim.js';
 import { createLock } from '../src/world/hollow/lock.js';
 import { createLantern } from '../src/world/hollow/lantern.js';
-import { arcHits, hitsDue } from '../src/world/hollow/swing.js';
+import { arcHits, hitsDue, createSwingChain } from '../src/world/hollow/swing.js';
 import { inTheWay } from '../src/world/hollow/occlude.js';
 import { createFoe, sideOf } from '../src/world/hollow/foes.js';
 import { createMoves } from '../src/world/hollow/moves.js';
@@ -254,6 +254,56 @@ export function addHollowTests(test, assert, eq) {
       assert(['self', 'target', 'dot', 'ahead'].includes(m.at), `${id}: where it goes`);
       assert(HOLLOW_ICONS[id], `${id}: a drawn icon`);
     }
+  });
+
+  test(G, 'one swing a click: clicks during a swing chain the next, up to the last, then it starts again', async () => {
+    const H = await recipe(), S = H.swing, ch = S.chains.swingTriple, c = createSwingChain(S);
+    const first = c.press(ch);
+    assert(first && first.seg === 0, 'a click starts the first swing');
+    eq(Math.round(first.lenS * 1000), Math.round(((ch.segments[0][1] - ch.segments[0][0]) / S.speed) * 1000), 'played speed times faster');
+    eq(c.press(ch), null, 'a click during it queues');
+    c.press(ch); c.press(ch);
+    /** @type {string[]} */ const ev = [];
+    let t = 0;
+    while (c.swinging && t < 5) { for (const e of c.update(DT)) ev.push(`${e.type}${e.seg}`); t += DT; }
+    eq(ev.join(), 'hit0,start1,hit1,start2,hit2,end2', 'three swings, each with its hit, and no more');
+    const again = c.press(ch);
+    eq(again?.seg, 0, 'after the last it starts again from the first');
+    const d = createSwingChain(S);
+    d.press(ch);
+    while (d.swinging) d.update(DT);
+    d.update(S.chainWindowS / 2);
+    eq(d.press(ch)?.seg, 1, 'a click just after a swing ends chains');
+    const e = createSwingChain(S);
+    e.press(ch);
+    while (e.swinging) e.update(DT);
+    e.update(S.chainWindowS + 0.1);
+    eq(e.press(ch)?.seg, 0, 'a click after the window starts from the first');
+  });
+
+  test(G, 'a landed hit knocks a thing back and breaks its lunge; a glance only nudges it', async () => {
+    const H = await recipe(), { open } = floor();
+    const you = { x: 0, z: 0, speed: 2 };
+    const w = { you, lamp: { x: 0, z: 0, reachM: 6, raised: false, snuffed: false }, open };
+    const f = createFoe('lunger', 1, { x: 0, z: 3, yaw: Math.PI }, H.foes.lunger, 7, H.swing);
+    let n = 0;
+    while (f.step !== 'strike' && n++ < 600) f.update(DT, w);
+    eq(f.step, 'strike', 'lunging');
+    const z0 = f.z;
+    // From behind it: a landed hit.
+    const r = f.take({ kind: 'hit', fromX: f.x, fromZ: f.z + 1, world: w });
+    assert(r.landed && r.side === 'back', 'landed on its back');
+    eq(f.step, 'recover', 'its lunge is broken off');
+    assert(f.hurtS > 0, 'it shows the hit');
+    const ev = runFor(f, w, 0.5);
+    assert(!ev.some((e) => e.type === 'strike'), 'so its strike never lands');
+    assert(z0 - f.z > H.foes.lunger.knockM * 0.9, `knocked back about knockM (${(z0 - f.z).toFixed(2)} m)`);
+    const g = createFoe('lunger', 2, { x: 0, z: 3, yaw: Math.PI }, H.foes.lunger, 7, H.swing);
+    const gz = g.z;
+    assert(g.take({ kind: 'hit', fromX: 0, fromZ: 1, world: w }).glanced, 'its front glances');
+    runFor(g, { ...w, you: { x: 0, z: -20, speed: 0 } }, 0.3);
+    const pushed = g.z - gz;
+    assert(pushed > 0.1 && pushed < H.foes.lunger.knockM * 0.5, `a glance only nudges it (${pushed.toFixed(2)} m)`);
   });
 
   test(G, 'the same seed gives the same stand-in, step for step', async () => {

@@ -10,7 +10,7 @@
 import { createLantern } from '../../src/world/hollow/lantern.js';
 import { createLock } from '../../src/world/hollow/lock.js';
 import { dotRange, walkDot } from '../../src/world/hollow/aim.js';
-import { arcHits, hitsDue } from '../../src/world/hollow/swing.js';
+import { arcHits, createSwingChain } from '../../src/world/hollow/swing.js';
 import { inTheWay } from '../../src/world/hollow/occlude.js';
 import { pushRing, pushArc, pushDisc, pushSolidEdges } from './props.js';
 
@@ -32,12 +32,14 @@ export function createHollow(o) {
   const lock = createLock(HR.lock);
   /** The marks on the floor, fading: a swing's arc, a move's mark. @type {{ draw: (out: number[], k: number) => void, age: number, life: number }[]} */
   let marks = [];
-  /** The swing playing: its clip, length, time and hits. @type {{ clip: string, lenS: number, t: number, hits: number[] } | null} */
-  let swing = null;
-  let swingClip = Object.keys(HR.swing.clips)[0];
+  /** The staff's swings, one a click, chaining (src/world/hollow/swing.js). */
+  const chain = createSwingChain(HR.swing);
+  let swingClip = Object.keys(HR.swing.chains)[0];
   const tally = { hits: 0, side: 0, back: 0, glanced: 0, misses: 0, broke: 0, taken: 0 };
-  /** The walk's hit reaction playing (s left), so a hit isn't stacked on a hit. */
-  let reeling = 0;
+  /** Staggered by a hit (s left), then a grace when no strike lands (s left, counting the stagger). */
+  let reeling = 0, grace = 0;
+  /** The hit-stop left (s): the world holds still a moment as a hit lands. */
+  let hitStop = 0;
   /** Things standing in for the game's moves (H0b) hook in here: a brace that catches a hit. */
   const hooks = { /** @type {null | ((e: any) => boolean)} */ catchHit: null };
 
@@ -117,16 +119,20 @@ export function createHollow(o) {
     return m > 1 ? [x / m, z / m] : [x, z];
   }
 
-  /** Left click: swing the staff (the pick list's clip), facing the target when locked. */
+  /** Left click: one swing of the chain, or the next queued (Matt: one swing a click, up to three). */
   function swingNow() {
-    if (swing || reeling > 0 || lantern.out) return false;
+    if (reeling > 0 || lantern.out) return false;
+    const ev = chain.press(HR.swing.chains[swingClip]);
+    if (ev) startSwing(ev);
+    return true;
+  }
+  /** A single swing begins: the walker stops dead and faces the target, and its span of the clip plays. @param {{ span: number[], lenS: number }} ev */
+  function startSwing(ev) {
+    walker.stop();
     const t = byId(lock.target);
     if (t) walker.face(Math.atan2(t.x - walker.x, t.z - walker.z));
     const c = FR.clips[swingClip];
-    const lenS = motion.shoot(swingClip, { mask: c.mask ? FR.mask : undefined, feet: c.feet ?? true, easeS: FR.easeS });
-    if (!lenS) return false;
-    swing = { clip: swingClip, lenS, t: 0, hits: HR.swing.clips[swingClip].hits };
-    return true;
+    motion.shoot(swingClip, { span: ev.span, lenS: ev.lenS, mask: c.mask ? FR.mask : undefined, feet: c.feet ?? true, easeS: HR.swing.easeS });
   }
 
   /** One hit of the swing: the arc on the floor, and what it lands on. */
@@ -135,7 +141,7 @@ export function createHollow(o) {
     const on = arcHits(x, z, yaw, foes(), S.reachM, S.arcDeg, (a) => a.size);
     let landed = false;
     for (const a of on) {
-      const r = a.foe.take({ kind: 'hit', fromX: x, fromZ: z });
+      const r = a.foe.take({ kind: 'hit', fromX: x, fromZ: z, world: { open } });
       if (r.glanced) tally.glanced++;
       else if (r.landed) {
         landed = true;
@@ -146,6 +152,8 @@ export function createHollow(o) {
       }
     }
     if (!on.length) tally.misses++;
+    // The world holds still a moment as a hit lands (and a little less for a glance).
+    if (on.length) hitStop = HR.swing.hitStopS * (landed ? 1 : 0.5);
     const col = landed ? MARK.ember : on.length ? MARK.paper : MARK.miss;
     marks.push({ age: 0, life: 0.6, draw: (out, k) => pushArc(out, x, z, 0.45, S.reachM, yaw, S.arcDeg, ground, col.map((v) => v * k)) });
   }
@@ -154,11 +162,15 @@ export function createHollow(o) {
   function onEvents(ev) {
     for (const e of ev) {
       if (e.type === 'strike' && e.hit) {
+        // Just hit: for graceS no strike lands, so nothing can stunlock you.
+        if (grace > 0) continue;
         if (hooks.catchHit?.(e)) continue;
         lantern.sip(1);
         tally.taken++;
-        reeling = Math.max(reeling, motion.shoot('hit', { feet: FR.clips.hit.feet ?? true, easeS: FR.easeS }) * 0.6);
-        swing = null;
+        const H = HR.hurt;
+        reeling = H.staggerS; grace = H.staggerS + H.graceS;
+        motion.shoot('hit', { lenS: H.clipS, feet: FR.clips.hit.feet ?? true, easeS: 0.05 });
+        chain.stop();
         o.say(`Hit: the flame gutters (${Math.round(lantern.fuel)} of ${HR.lantern.fuel} left).`);
       } else if (e.type === 'call') {
         const w = foes().find((a) => a.id === e.id);
@@ -172,15 +184,14 @@ export function createHollow(o) {
   function update(dt) {
     lantern.update(dt);
     reeling = Math.max(0, reeling - dt);
+    grace = Math.max(0, grace - dt);
     const why = lock.update(dt, candidates());
     if (why === 'moved') o.say('Its target broke: the lock moved to the nearest thing in the light.');
     else if (why === 'off') o.say('Its target broke, and nothing else is in the light: the lock is off.');
     else if (why === 'dropped') o.say('Out of the light for 2 s: the lock dropped.');
-    if (swing) {
-      const t0 = swing.t;
-      swing.t += dt;
-      for (const _ of hitsDue(swing.hits, swing.lenS, t0, swing.t)) landHit();
-      if (swing.t >= swing.lenS) swing = null;
+    for (const e of chain.update(dt)) {
+      if (e.type === 'hit') landHit();
+      else if (e.type === 'start') startSwing(e);
     }
     for (const m of marks) m.age += dt;
     marks = marks.filter((m) => m.age < m.life);
@@ -256,8 +267,16 @@ export function createHollow(o) {
   return {
     lantern, lock, cam, tally, hooks, marks: () => marks, foes, byId, dot, lampAt,
     steerWay, swingNow, onEvents, update, youExtra, draw, heldTris, fadedShapes, onKey,
-    get swinging() { return !!swing; },
+    get swinging() { return chain.swinging; },
+    /** Break off a swing (a roll). */
+    cancelSwing() { chain.stop(); motion.shoot(swingClip, { span: [0, 0], lenS: 0.05, weight: 0 }); },
     get reeling() { return reeling > 0; },
+    /** In the grace after a hit (no strike lands). */
+    get grace() { return grace > 0; },
+    /**
+     * The step the world moves this frame: during a hit-stop it nearly holds still. @param {number} dt real seconds
+     */
+    simDt(dt) { if (hitStop <= 0) return dt; hitStop -= dt; return dt * 0.08; },
     get swingClip() { return swingClip; },
     set swingClip(c) { swingClip = c; },
     /** Push a mark that fades over life seconds (moves use this). @param {number} life @param {(out: number[], k: number) => void} draw */

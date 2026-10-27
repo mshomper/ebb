@@ -150,6 +150,9 @@ const keyWay = () => {
 const keys = attachMoveKeys(window, {
   onPress(name) {
     if (name === 'move') { if (walker.pathing && !walker.retreating) walker.stop(); return true; }
+    // A roll breaks off a swing (never during a stagger).
+    if (hollow?.reeling) return true;
+    if (hollow?.swinging) hollow.cancelSwing();
     MOVES.roll(keyWay());
     return true;
   },
@@ -352,14 +355,16 @@ function frame(/** @type {number} */ now) {
   tick(paused ? 0 : dt);
   requestAnimationFrame(frame);
 }
-/** One step of everything, dt seconds; draw false skips drawing (arena.run). @param {number} dt */
-function tick(dt, draw = true) {
+/** One step of everything, realDt seconds; draw false skips drawing (arena.run). @param {number} realDt */
+function tick(realDt, draw = true) {
+  // A hit-stop holds the world nearly still for a moment; the camera keeps real time.
+  const dt = hollow ? hollow.simDt(realDt) : realDt;
   clockS += dt;
   camera.setViewport(view.clientWidth, view.clientHeight);
   look.update();
   const way = keyWay();
-  // Taking a hit, or planting and kneeling for a move, the walker stops for a moment.
-  if (hollow?.reeling || moveLayer?.holdsStill) walker.steer(0, 0); else walker.steer(way[0], way[1], keys.run);
+  // Anchored: swinging, staggered by a hit, or playing a move, the walker stands where it is.
+  if (hollow?.reeling || hollow?.swinging || moveLayer?.holdsStill) walker.steer(0, 0); else walker.steer(way[0], way[1], keys.run);
   walker.update(dt);
   moveLayer?.afterWalker();
   const you = youNow();
@@ -370,8 +375,8 @@ function tick(dt, draw = true) {
   if (!hollow) $('actor-note').textContent = actors.map((act) => `${act.note} Startled ${act.startles} times.`).join(' ');
   hollow?.update(dt);
   moveLayer?.update(dt);
-  cam.update(dt);
-  camera.update(dt);
+  cam.update(realDt);
+  camera.update(realDt);
   const e = camera.eye, t = camera.target;
   const r = motion.update(dt, {
     x: walker.x, z: walker.z, y: walker.y, yaw: walker.yaw, speed: walker.speed, moving: walker.moving, retreating: walker.retreating,

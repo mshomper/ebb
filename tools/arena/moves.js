@@ -85,6 +85,8 @@ export function createMoveLayer(o) {
     const at = placeFor(id);
     if (m.at === 'target' && at.target === null && m.seeds) { o.say(`${m.name}: nothing in reach to take the seed.`); return false; }
     moves.start(id, at);
+    if (id !== 'snuff' && id !== 'backStep') walker.stop();
+    if (hollow.swinging) hollow.cancelSwing();
     if (m.sips) hollow.lantern.sip(m.sips);
     // Face the way it goes (not Back step, which keeps your facing).
     if (id !== 'backStep' && m.at !== 'self') walker.face(Math.atan2(at.ux, at.uz));
@@ -195,8 +197,8 @@ export function createMoveLayer(o) {
     get readied() { return readied; },
     /** Back step under way: the figure plays its own reversed roll, not the walk's. */
     get backStepping() { return !!back; },
-    /** Plant and Kneel hold you still while they play (Snuff doesn't: moving ends it). */
-    get holdsStill() { const p = moves.playing; return !!p && ['Plant', 'Kneel'].includes(M(p).pose); },
+    /** Every move anchors you while it plays (Matt: no sliding), but Snuff (moving ends it) and Back step (it moves you). */
+    get holdsStill() { const p = moves.playing; return !!p && p !== 'snuff' && p !== 'backStep'; },
     /** Q or E. @param {KeyboardEvent} e */
     onKey(e) {
       const key = e.code === 'KeyQ' ? 'Q' : e.code === 'KeyE' ? 'E' : null;

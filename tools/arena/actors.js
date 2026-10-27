@@ -94,7 +94,9 @@ function standIn(kind, at, rec) {
     /** @param {(x: number, z: number) => number} ground */
     shapes(ground) {
       if (f.broken) return [];
-      const y = ground(f.x, f.z), c = Math.cos(f.yaw), s = Math.sin(f.yaw), tell = f.step === 'wind', stun = f.stunS > 0;
+      // Hit: it flashes pale and hops, tipping back (hurt, 0..1).
+      const hurt = Math.min(1, f.hurtS / 0.2), flash = /** @param {number[]} col */ (col) => (hurt > 0 ? col.map((v) => v + (1.6 - v) * hurt) : col);
+      const y = ground(f.x, f.z) + Math.sin(Math.min(1, hurt) * Math.PI) * 0.12, c = Math.cos(f.yaw), s = Math.sin(f.yaw), tell = f.step === 'wind', stun = f.stunS > 0 && hurt === 0;
       /** A point ahead (fwd) and to the side (side) of it, turned with it. @param {number} fwd @param {number} side */
       const at2 = (fwd, side) => [f.x + s * fwd + c * side, f.z + c * fwd - s * side];
       if (kind === 'lunger') {
@@ -102,7 +104,7 @@ function standIn(kind, at, rec) {
         const [lx, lz] = at2(0.42, 0.22), [rx, rz] = at2(0.42, -0.22);
         const claw = tell ? [0.95, 0.85, 0.7] : [0.5, 0.42, 0.34];
         return [
-          [f.x, y + 0.16, f.z, 0.32, 0.16, 0.36, f.yaw, ...(stun ? [0.55, 0.62, 0.8] : f.step === 'recover' ? [0.62, 0.5, 0.38] : [0.45, 0.38, 0.3])],
+          [f.x, y + 0.16, f.z, 0.32, 0.16, 0.36, f.yaw, ...flash(stun ? [0.55, 0.62, 0.8] : f.step === 'recover' ? [0.62, 0.5, 0.38] : [0.45, 0.38, 0.3])],
           // The armored front: a darker plate.
           [fx, y + 0.2, fz, 0.34, 0.19, 0.06, f.yaw, 0.26, 0.24, 0.22],
           [lx, y + 0.2 + lift, lz, 0.06, 0.06, 0.14, f.yaw, ...claw],
@@ -113,7 +115,7 @@ function standIn(kind, at, rec) {
         const hy = y + 1.5 + Math.sin(f.x * 3 + f.z) * 0.05, [hx, hz] = at2(0.36, 0);
         const bright = tell ? 0.5 + 0.5 * Math.min(1, f.t / (H.foes.watcher.windS || 1)) : f.step === 'close' || f.step === 'notice' ? 0.35 : 0.15;
         return [
-          [f.x, hy, f.z, 0.42, 0.4, 0.34, f.yaw, ...(stun ? [0.55, 0.62, 0.8] : [0.5, 0.5, 0.47])],
+          [f.x, hy, f.z, 0.42, 0.4, 0.34, f.yaw, ...flash(stun ? [0.55, 0.62, 0.8] : [0.5, 0.5, 0.47])],
           // The hole through it, glowing brighter for its tell.
           [hx, hy, hz, 0.13, 0.13, 0.04, f.yaw, ...glow([1.6 * bright, 1.3 * bright, 0.7 * bright])],
         ];
