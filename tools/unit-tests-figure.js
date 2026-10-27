@@ -28,7 +28,7 @@ const FIG = 'walker figure';
  * a second past its end: the ankles in the world, the posture weights, and whether it ended then.
  * @param {any} R @param {any} built @param {any} motion @param {string} name @param {'stand'|'kneel'} [posture]
  */
-function playAct(R, built, motion, name, posture = 'stand') {
+export function playAct(R, built, motion, name, posture = 'stand') {
   const feet = ['foot.l', 'foot.r'].map((n) => built.skeleton.findIndex((/** @type {any} */ b) => b.name === n));
   const k = R.body.displayScale ?? 1, dt = 1 / 60;
   const s = Object.freeze({ x: 0, z: 0, y: 0, yaw: 0, speed: 0, moving: false, ground: () => 0, depth: () => 0, below: true, posture });
@@ -43,7 +43,7 @@ function playAct(R, built, motion, name, posture = 'stand') {
   return { len, frames };
 }
 
-async function load() {
+export async function load() {
   const R = await (await fetch('../recipes/world/figure.json')).json();
   const glb = readGlb(await (await fetch(`../${R.model}`)).arrayBuffer());
   return { R, glb, built: buildFigure(glb, R) };

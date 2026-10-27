@@ -99,7 +99,17 @@ export function createClipPlayer(file, RC, skeleton) {
   const paces = RC.paces.map((/** @type {any} */ p) => ({ ...p, c: prepare(file, p.clip) }));
   const roll = prepare(file, RC.roll.clip);
   const size = 3 + 4 * driven.length;
-  const tmp = new Float32Array(size), loco = new Float32Array(size), rollPose = new Float32Array(size);
+  const tmp = new Float32Array(size), loco = new Float32Array(size), rollPose = new Float32Array(size), shotPose = new Float32Array(size);
+  /** Every clip a shot may play: this file's, and any added (the fighting set, on tool pages only). @type {ClipFile[]} */
+  const files = [file];
+  /** Each driven bone's clip weight in the last pose (the shot's mask leaves some to the code). */
+  const boneW = new Float32Array(skeleton.length);
+  /**
+   * The one-shot playing (shoot()): its clip, the span (s into the clip) played over lenS, its age,
+   * which driven bones it takes (by pose slot), and whether its feet lead.
+   * @type {{ c: ReturnType<typeof prepare>, span: number[], lenS: number, t: number, ease: number, take: boolean[], feet: boolean, most: number } | null}
+   */
+  let shot = null, shotW = 0, shotFeet = 0, shotEnded = false;
   const pose = new Float32Array(size);
   const bones = new Float32Array(skeleton.length * 16);
   const ID = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
@@ -191,8 +201,68 @@ export function createClipPlayer(file, RC, skeleton) {
       if (a > 0) accumulate(pose, loco, a);
       if (rw > 0) accumulate(pose, rollPose, rw);
       settle(pose, total);
-      return { pose, weight: Math.min(1, total), roll: rw, stretch: lerp(1, stretch, a / (total || 1)), landed, phase };
+      // A one-shot over the rest, on the bones it takes: eased in, and out at its end.
+      const base = Math.min(1, total);
+      shotW = 0; shotEnded = false;
+      if (shot) {
+        shot.t += dt;
+        const u = shot.t / shot.lenS;
+        if (u >= 1) { shot = null; shotEnded = true; }
+        else {
+          sample(shot.c, lerp(shot.span[0], shot.span[1], u), shotPose);
+          const e = shot.ease / shot.lenS;
+          shotW = shot.most * smooth(u / Math.max(e, 1e-3)) * (1 - smooth((u - (1 - e)) / Math.max(e, 1e-3)));
+        }
+      }
+      shotFeet = shot?.feet ? shotW : 0;
+      // Per bone: the shot's share of what the clips give, and the clips' weight over the code's.
+      const share = (/** @type {number} */ k) => { const sw = shot && shot.take[k] ? shotW : 0, bw = base + (1 - base) * sw; return { bw, f: bw > 0 ? sw / bw : 0 }; };
+      if (shotW > 0) {
+        const p = share(0);
+        for (let j = 0; j < 3; j++) pose[j] = lerp(total > 0 ? pose[j] : shotPose[j], shotPose[j], p.f);
+      }
+      driven.forEach((bi, k) => {
+        const { bw, f } = share(k), o = 3 + 4 * k;
+        boneW[bi] = bw;
+        if (f <= 0) return;
+        if (total <= 0) { for (let j = 0; j < 4; j++) pose[o + j] = shotPose[o + j]; return; }
+        const d = pose[o] * shotPose[o] + pose[o + 1] * shotPose[o + 1] + pose[o + 2] * shotPose[o + 2] + pose[o + 3] * shotPose[o + 3], s = d < 0 ? -1 : 1;
+        let l = 0;
+        for (let j = 0; j < 4; j++) { pose[o + j] = pose[o + j] * (1 - f) + s * shotPose[o + j] * f; l += pose[o + j] ** 2; }
+        l = Math.sqrt(l) || 1;
+        for (let j = 0; j < 4; j++) pose[o + j] /= l;
+      });
+      const weight = boneW[driven[0]];
+      return { pose, weight, roll: rw, shot: shotW, feet: Math.max(rw, shotFeet), shotEnded, stretch: lerp(1, stretch, a / (total || 1)), landed, phase };
     },
+    /**
+     * Play a clip once over the rest (C1 and C3, October 27, 2026): span seconds of it (all of it
+     * without one) over lenS (its own length without one), eased in and out over easeS. mask: the
+     * driven bones it takes (all without one; the fighting clips leave the lantern arm to the code).
+     * feet: its feet lead too (else they stay where the code has them). weight: at most this much over
+     * the code (a stoop over a kneel only half). Returns its length (0 for no such clip).
+     * @param {string} name @param {{ span?: number[], lenS?: number, easeS?: number, mask?: string[], feet?: boolean, weight?: number }} [o]
+     */
+    shoot(name, o = {}) {
+      const f = files.find((x) => x.clips[name]);
+      if (!f) return 0;
+      const c = prepare(f, name), span = o.span ?? [0, c.dur];
+      const lenS = Math.max(0.05, o.lenS ?? span[1] - span[0]);
+      shot = { c, span, lenS, t: 0, ease: Math.min(o.easeS ?? RC.shotEaseS ?? 0.15, lenS / 2), take: file.bones.map((b) => !o.mask || o.mask.includes(b)), feet: !!o.feet,
+        most: Math.max(0, Math.min(1, o.weight ?? 1)) };
+      return lenS;
+    },
+    /** Stop the shot playing at once. */
+    stopShot() { shot = null; },
+    /** The shot playing (its clip's name), or null. */
+    get shooting() { return shot ? shot.c.name : null; },
+    /** Add another clip file's clips for shots (the fighting set; the same driven bones). @param {ClipFile} f */
+    addClips(f) {
+      if (f.bones.join() !== file.bones.join()) throw new Error('figure clips: an added set drives other bones');
+      files.push(f);
+    },
+    /** How much the clips lead bone i (rig index) in the last pose, 0..1. @param {number} i */
+    weightOf(i) { return boneW[i]; },
     /**
      * The clip pose's own bones (body space, 16 floats each; undriven bones follow their parents), for
      * where its feet and knees are. @param {Float32Array} p a pose from update

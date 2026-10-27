@@ -115,6 +115,15 @@ export function createFigureMotion(R, skeleton, clipFile = null) {
   /** The baked pack drawn (false while another carrier is worn, P2f). */
   let packShown = true;
 
+  /**
+   * An act's or gesture's own clip (C3, October 27, 2026; figure.json clips.shots): its span played
+   * over the act's length, under the code's feet and hands. @param {string} name @param {number} lenS
+   */
+  function clipFor(name, lenS) {
+    const SH = R.clips?.shots?.[name];
+    if (clips && SH?.clip) clips.shoot(SH.clip, { span: SH.span, lenS, easeS: SH.easeS, mask: SH.mask, weight: SH.weight });
+  }
+
   /** Set bone i's move and its matrix (parents are always set first). @param {number} i @param {import('../creatures/pose.js').BoneMove | null} mv */
   function set(i, mv) {
     const b = skeleton[i], o = i * 16;
@@ -149,8 +158,19 @@ export function createFigureMotion(R, skeleton, clipFile = null) {
       // An act that begins low (climbOut) begins from however low the figure is now.
       act = { name, at: t, from: [sitE, kneelE, crawlE], crawlScale: first > 0 ? crawlE / first : 1 };
       low = false;
+      clipFor(name, len);
       return len;
     },
+    /**
+     * Play one of Matt's clips once over the walker (clips.js shoot; the tool pages' fighting clips).
+     * Returns its length, 0 without clips or for no such clip.
+     * @param {string} name @param {{ span?: number[], lenS?: number, easeS?: number, mask?: string[], feet?: boolean }} [o]
+     */
+    shoot(name, o) { return clips ? clips.shoot(name, o) : 0; },
+    /** Add a clip set for shots (the fighting set, tool pages only). @param {import('./clips.js').ClipFile} f */
+    addClips(f) { clips?.addClips(f); },
+    /** The clip a shot is playing, or null. */
+    get shooting() { return clips?.shooting ?? null; },
     /** The act playing, or null. */
     get acting() { return act ? act.name : null; },
     /**
@@ -164,6 +184,7 @@ export function createFigureMotion(R, skeleton, clipFile = null) {
       const len = gestureLength(PO, name);
       if (!len || act || low) return 0;
       gest = { name, at: t, fade: 1 };
+      clipFor(name, len);
       return len;
     },
     /** The gesture playing, or null. */
@@ -241,6 +262,13 @@ export function createFigureMotion(R, skeleton, clipFile = null) {
       }
       // Getting up from a kneel or a seat, standing still: a hand pushes on the knee as you rise.
       const wantLow = wantKneel || wantSit;
+      // Going down to kneel and getting up again play the squat's halves (C3), unless a clip is on.
+      const KS = R.clips?.shots?.kneel;
+      if (clips && KS && !act && !clips.shooting && still) {
+        const ko = { lenS: R.ease.postureS, easeS: KS.easeS, mask: KS.mask, weight: KS.weight };
+        if (wantKneel && !wantedLow && kneelE < 0.4) clips.shoot(KS.clip, { ...ko, span: KS.down });
+        else if (wantedLow && !wantLow && kneelE > 0.6) clips.shoot(KS.clip, { ...ko, span: KS.up });
+      }
       if (wantedLow && !wantLow && still && !act && !gest && kneelE + sitE > 0.6) gest = { name: 'rise', at: t, fade: 1 };
       wantedLow = wantLow;
       // A gesture plays over the posture: its kneel takes the posture down at least that far, and the
@@ -287,8 +315,14 @@ export function createFigureMotion(R, skeleton, clipFile = null) {
       // pinned, only the roll moves the feet (a stop never slides them).
       const CL = clips ? clips.update(dt, { speed, gait: mode === 'gait' ? standW : 0, rolling: rollU }) : null;
       const cw = CL ? CL.weight : 0, CP = CL ? CL.pose : null;
+      /** How much the clips lead one bone (a shot may leave the lantern arm to the code). @param {number} i */
+      const cwOf = (i) => (clips ? clips.weightOf(i) : 0);
       const CB = CL && cw > 0 ? clips.pose(CL.pose) : null;
-      const cwFeet = CL ? (mode === 'plant' ? CL.roll : cw) : 0;
+      // A shot whose feet lead moves them as the roll does; once it ends they are pinned where they are.
+      const cwFeet = CL ? (mode === 'plant' ? CL.feet : Math.max(cw * (1 - CL.shot), CL.feet)) : 0;
+      if (CL?.shotEnded && mode === 'plant') planted.pin(footWorld, visYaw);
+      // An act's or gesture's own clip (C3) bends the body in place of its lean, head tip and hip drop.
+      if (A && CL && CL.shot > 0) { const k = 1 - CL.shot; A = { ...A, lean: A.lean * k, head: A.head * k, drop: A.drop * k }; }
       /** Where a clip bone's pivot is in the clip pose (body m). @param {number} i */
       const clipAt = (i) => matPoint(/** @type {Float32Array} */ (CB), i * 16, skeleton[i].pivot);
 
@@ -470,23 +504,23 @@ export function createFigureMotion(R, skeleton, clipFile = null) {
       // breathing, the look's share and an act's twist on top.
       const leanOn = (paceLean - (P.leanDeg * m + 1.5 * (1 - m))) * DEG * standW;
       const spineQ = qaxis([1, 0, 0], lean * 0.5 + br * R.idle.breathDeg * 0.3 * DEG);
-      set(I.spine, { q: CP ? qslerp(spineQ, qmul(clipQ(CP, I.spine), qaxis([1, 0, 0], leanOn * 0.5 + br * R.idle.breathDeg * 0.3 * DEG)), cw) : spineQ });
+      set(I.spine, { q: CP ? qslerp(spineQ, qmul(clipQ(CP, I.spine), qaxis([1, 0, 0], leanOn * 0.5 + br * R.idle.breathDeg * 0.3 * DEG)), cwOf(I.spine)) : spineQ });
       // An act's twist turns the chest to the right (the dig's tip onto the spoil heap).
       const actTwist = A ? -(A.twist ?? 0) * DEG : 0;
       const chestQ0 = qmul(qaxis([1, 0, 0], lean * 0.5), qaxis([0, 1, 0], -twist * 0.8 + LK.chest + actTwist));
-      set(I.chest, { q: CP ? qslerp(chestQ0, qmul(clipQ(CP, I.chest), qmul(qaxis([1, 0, 0], leanOn * 0.5), qaxis([0, 1, 0], LK.chest + actTwist))), cw) : chestQ0,
+      set(I.chest, { q: CP ? qslerp(chestQ0, qmul(clipQ(CP, I.chest), qmul(qaxis([1, 0, 0], leanOn * 0.5), qaxis([0, 1, 0], LK.chest + actTwist))), cwOf(I.chest)) : chestQ0,
         s: [1 + 0.006 * br, 1 + 0.004 * br, 1 + 0.008 * br] });
       const headPitch = Math.max(-L.maxPitchDeg * DEG, Math.min(L.maxPitchDeg * DEG, pitch)) - lean * 0.7 + RO.headDeg * DEG * tuck;
       const headQ = qmul(qaxis([0, 1, 0], LK.yaw), qaxis([1, 0, 0], headPitch));
       // The clip's head carries the look (not the pace's own tip: the clip has its own).
       const lookPitch = Math.max(-L.maxPitchDeg * DEG, Math.min(L.maxPitchDeg * DEG, pitch - P.headDeg * DEG * m * standW));
-      set(I.head, { q: CP ? qslerp(headQ, qmul(clipQ(CP, I.head), qmul(qaxis([0, 1, 0], LK.yaw), qaxis([1, 0, 0], lookPitch))), cw) : headQ });
+      set(I.head, { q: CP ? qslerp(headQ, qmul(clipQ(CP, I.head), qmul(qaxis([0, 1, 0], LK.yaw), qaxis([1, 0, 0], lookPitch))), cwOf(I.head)) : headQ });
       set(I.hat, null);
       trailing.hatTip(dt, { speed, accel, pelvisVy, yawRate });
 
       // Arms (arms.js): hanging and swinging, or reaching for a knee, the brim or the ground in front.
       const tugW = acts.arrive !== null ? envelope(t - acts.arrive - PO.arrive.lookS, 0.5, PO.arrive.tugS - 1, 0.5) : 0;
-      poseArms({ P, cyc, m, standW, sitW, kneelW, crawlW, tuck, A, holdE, reach, tugW, legIK, centre, gnd, CP, cw });
+      poseArms({ P, cyc, m, standW, sitW, kneelW, crawlW, tuck, A, holdE, reach, tugW, legIK, centre, gnd, CP, cw, cwOf });
 
       // Legs: the IK turns, then each foot set to the ground's slope and its own facing.
       for (let i = 0; i < 2; i++) {

@@ -23,6 +23,8 @@ turn, the left foot's landings (so walks and runs blend in step), and the speed 
 
 Run (Python 3 with numpy), from the repo root:
   python tools/figure-prep/clips.py <Meshy rigged .glb with clips> recipes/world/figure.json assets/figures/walker.glb assets/figures/walker-clips.json
+Several Meshy files on the same rig split by ';' (a clip comes from the first that has it); --set fight
+writes the fighting clips (C1, October 27, 2026) to their own file.
 """
 import json, sys, warnings
 import numpy as np
@@ -41,7 +43,29 @@ CLIPS = [
     ('torchWalk', 'Crouch_Walk_with_Torch', None, True),
     ('torchLeft', 'Crouch_Walk_Left_with_Torch_inplace', None, True),
     ('torchRight', 'Crouch_Walk_Right_with_Torch_inplace', None, True),
+    # On the island now (C3, October 27, 2026; the additional animations file): Lift with the shovel,
+    # gathering and picking up, and going down to kneel. Played as one-shots (clips.js shots).
+    ('pull', 'Pull_Radish', None, False),
+    ('collect', 'Collect_Object', None, False),
+    ('squat', 'air_squat', None, False),
 ]
+# The fighting clips (C1, October 27, 2026), a set of their own (--set fight) so the game's walk load
+# doesn't grow: named by the pose each serves (recipes/world/fight-clips.json), for the move arena.
+FIGHT = [
+    ('swingDouble', 'Double_Combo_Attack', None, False),
+    ('swingTriple', 'Triple_Combo_Attack', None, False),
+    ('swingCombo', 'Weapon_Combo_2', None, False),
+    ('swingThrust', 'Thrust_Slash', None, False),
+    ('plantSlam', 'Charged_Ground_Slam', None, False),
+    ('brace', 'Block10', None, False),
+    ('feint', 'Sword_Parry_Backward_4', None, False),
+    ('sidestep', 'Stand_Dodge', None, False),
+    ('hit', 'Hit_Reaction', None, False),
+    ('raiseCast', 'mage_soell_cast_7', None, False),
+    ('backAway', 'Cautious_Crouch_Walk_Backward', None, True),
+]
+SETS = {'main': CLIPS, 'fight': FIGHT}
+BACKWARD = {'backAway'}
 DRIVEN = ['pelvis', 'spine', 'chest', 'head', 'upperArm.l', 'foreArm.l', 'hand.l', 'upperArm.r', 'foreArm.r', 'hand.r',
           'thigh.l', 'shin.l', 'foot.l', 'thigh.r', 'shin.r', 'foot.r']
 SOURCE = {'pelvis': 'spine', 'spine': 'spine.002', 'chest': 'spine.003', 'head': 'spine.005',
@@ -49,6 +73,12 @@ SOURCE = {'pelvis': 'spine', 'spine': 'spine.002', 'chest': 'spine.003', 'head':
           'upperArm.r': 'upper_arm.R', 'foreArm.r': 'forearm.R', 'hand.r': 'hand.R',
           'thigh.l': 'thigh.L', 'shin.l': 'shin.L', 'foot.l': 'foot.L',
           'thigh.r': 'thigh.R', 'shin.r': 'shin.R', 'foot.r': 'foot.R'}
+# The additional animations file (October 27, 2026) names the same Meshy joints the Mixamo way: read
+# under the first file's names.
+MIXAMO = {'Hips': 'spine', 'Spine': 'spine.001', 'Spine1': 'spine.002', 'Spine2': 'spine.003', 'Neck': 'spine.004', 'Head': 'spine.005'}
+for _s, _S in (('Left', 'L'), ('Right', 'R')):
+    MIXAMO.update({_s + 'Shoulder': 'shoulder.' + _S, _s + 'Arm': 'upper_arm.' + _S, _s + 'ForeArm': 'forearm.' + _S, _s + 'Hand': 'hand.' + _S,
+                   _s + 'UpLeg': 'thigh.' + _S, _s + 'Leg': 'shin.' + _S, _s + 'Foot': 'foot.' + _S, _s + 'ToeBase': 'toe.' + _S})
 FPS = 30
 ANKLE_UP = 0.02      # a foot is down while its ankle is within this of its standing height (m)
 
@@ -92,7 +122,7 @@ class Meshy:
     def __init__(self, path):
         self.j, self.b = glb.read(path)
         j = self.j
-        self.names = [n.get('name') for n in j['nodes']]
+        self.names = [MIXAMO.get((n.get('name') or '').replace('mixamorig:', ''), n.get('name')) for n in j['nodes']]
         self.parent = {c: i for i, n in enumerate(j['nodes']) for c in n.get('children', [])}
         sk = j['skins'][0]
         ibm = glb.accessor(j, self.b, sk['inverseBindMatrices']).reshape(-1, 4, 4)
@@ -186,8 +216,11 @@ def fk(bones, local, shift):
     return Rg, Pg
 
 
-def main(src, recipe, model, out):
-    M = Meshy(src)
+def main(src, recipe, model, out, which='main'):
+    # One or more Meshy files (split by ';'), the same rig; a clip comes from the first that has it,
+    # read against that file's own rest pose.
+    Ms = [Meshy(p) for p in src.split(';')]
+    M = Ms[0]
     bones, arms = our_skeleton(recipe, model)
     I = {b['name']: i for i, b in enumerate(bones)}
     piv = lambda n: bones[I[n]]['pivot']
@@ -214,8 +247,9 @@ def main(src, recipe, model, out):
 
     result = dict(version=1, fps=FPS, bones=DRIVEN, legScale=round(float(k), 4), clips={})
     report = {}
-    for name, src_name, span, loop in CLIPS:
-        times, F = M.frames(src_name, span)
+    for name, src_name, span, loop in SETS[which]:
+        Mc = next(m for m in Ms if src_name in m.anims)
+        times, F = Mc.frames(src_name, span)
         n = len(F)
         root = np.array([f['spine'][1] for f in F])
         drift = root[-1] - root[0]
@@ -223,7 +257,7 @@ def main(src, recipe, model, out):
         for fi, f in enumerate(F):
             Q = {}
             for ours in DRIVEN:
-                Rr = M.rest[SOURCE[ours]][0]
+                Rr = Mc.rest[SOURCE[ours]][0]
                 D = f[SOURCE[ours]][0] @ Rr.T
                 # Scale (Meshy keeps it at one) is taken out before the turn is read.
                 U, _, Vt = np.linalg.svd(D)
@@ -253,6 +287,9 @@ def main(src, recipe, model, out):
             y, z = ankles[:-1, :, 1], ankles[:-1, :, 2]
             down = y < ankle_rest + ANKLE_UP
             vz = (np.roll(z, -1, 0) - np.roll(z, 1, 0)) / (2 * dt)
+            # A walk backward (backAway): its planted foot slides forward; read it as the same walk.
+            if name in BACKWARD:
+                vz = -vz
             speed = float(np.median(-vz[down]))
 
             def lands(f):
@@ -294,4 +331,6 @@ def main(src, recipe, model, out):
 
 
 if __name__ == '__main__':
-    main(*sys.argv[1:5])
+    a = sys.argv[1:]
+    which = a[a.index('--set') + 1] if '--set' in a else 'main'
+    main(*[v for i, v in enumerate(a) if v != '--set' and (i == 0 or a[i - 1] != '--set')][:4], which=which)

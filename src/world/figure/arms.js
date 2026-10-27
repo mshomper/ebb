@@ -15,6 +15,7 @@ import { qmul, qrot, qfromTo, qaxis, qconj, qslerp, matQuat, matPointInv, twoBon
  * @property {{ knee: number[] }[]} legIK @property {number} centre ground under the body (body m)
  * @property {(bx: number, bz: number) => number} gnd ground under a body spot (body m)
  * @property {Float32Array | null} CP the clip pose @property {number} cw how much the clip leads
+ * @property {(i: number) => number} [cwOf] how much it leads one bone (a shot's mask leaves the lantern arm to the code)
  */
 
 /**
@@ -40,7 +41,8 @@ export function createArms(R, skeleton, I, out, set, clipQ) {
 
   /** Pose both arms (the chest is already set). @param {ArmFrame} F */
   return function poseArms(F) {
-    const { P, cyc, m, standW, sitW, kneelW, crawlW, tuck, A, holdE, reach, tugW, legIK, centre, gnd, CP, cw } = F;
+    const { P, cyc, m, standW, sitW, kneelW, crawlW, tuck, A, holdE, reach, tugW, legIK, centre, gnd, CP } = F;
+    const cwOf = F.cwOf ?? (() => F.cw);
     const C = PO.crawl;
     const chestQ = matQuat(out, I.chest * 16);
     const kneeHand = (/** @type {number} */ k, /** @type {number} */ dx) => [legIK[k].knee[0] + dx, legIK[k].knee[1] + 0.03, legIK[k].knee[2] + 0.06];
@@ -56,7 +58,7 @@ export function createArms(R, skeleton, I, out, set, clipQ) {
       const elbow = ((R.hang.elbowDeg * (1 - m) + P.elbowDeg * m) * DEG + AR.elbowForward * Math.max(0, swing) - AR.elbowBack * Math.max(0, -swing)) * standW + 0.9 * (sitW + kneelW + crawlW);
       let qF = qaxis(HANG[i].flex, elbow);
       // The clip's arms swing in place of the code's; reaching hands (below) still lead.
-      if (CP) { qU = qslerp(qU, clipQ(CP, u), cw); qF = qslerp(qF, clipQ(CP, f), cw); }
+      if (CP) { qU = qslerp(qU, clipQ(CP, u), cwOf(u)); qF = qslerp(qF, clipQ(CP, f), cwOf(f)); }
       // Hand targets (body m) with a weight. An act's hands lead; the rest give way to them.
       /** @type {{ at: number[], w: number }[]} */ const goals = [];
       const aw = A ? A.arms : 0, keep = 1 - aw;
@@ -80,7 +82,7 @@ export function createArms(R, skeleton, I, out, set, clipQ) {
       }
       set(u, { q: qU });
       set(f, { q: qF });
-      set(h, CP && cw > 0 ? { q: qslerp(QI, clipQ(CP, h), cw) } : null);
+      set(h, CP && cwOf(h) > 0 ? { q: qslerp(QI, clipQ(CP, h), cwOf(h)) } : null);
     }
   };
 }

@@ -11,6 +11,7 @@ import { loadFigureModel, loadFigureClips, eyeUniforms } from '../src/world/figu
 import { buildFigure } from '../src/world/figure/rig.js';
 import { createFigureMotion } from '../src/world/figure/motion.js';
 import { addCarrierStrips } from './walker-strip-carriers.js';
+import { addClipStrips } from './walker-strip-clips.js';
 
 const $ = (/** @type {string} */ id) => /** @type {HTMLElement} */ (document.getElementById(id));
 const view = /** @type {HTMLCanvasElement} */ ($('view'));
@@ -341,8 +342,8 @@ function handAt(motion, side, yaw) {
   const c = Math.cos(yaw), s = Math.sin(yaw);
   return [c * bx + s * bz, by, -s * bx + c * bz];
 }
-function digRun(act = 'dig') {
-  const motion = createFigureMotion(R, built.skeleton);
+function digRun(act = 'dig', clips = false) {
+  const motion = createFigureMotion(R, built.skeleton, clips ? CLIPS : null);
   let t = 0;
   return {
     motion,
@@ -406,6 +407,8 @@ function drawShovel(g, run, x, y, w, h) {
 
 // The carriers worn (P2f): walking, jogging, running, sitting, digging and rolling.
 await addCarrierStrips({ STRIPS, stage, R, W, built, DT, strideRun, rollRun, digRun, stridePicks, rollPicks, digPicks, createFigureMotion, clips: CLIPS });
+// The fighting clips, the driftwood staff, and the island's pick-up, gather and kneel clips (C1 to C3).
+await addClipStrips({ STRIPS, R, W, built, DT, createFigureMotion, clips: CLIPS, strideRun, stridePicks, digRun });
 
 const LABEL = 34, CURVE_H = 110, HEAD = 40, PAD = 12;
 
