@@ -35,12 +35,34 @@
   ul { margin: 0; padding-left: 20px; font-size: 16px; columns: 2 12em; }
   textarea { width: 100%; min-height: 110px; font: 15px/1.4 ui-monospace, Consolas, monospace; border: 1px solid #E3D9C9; border-radius: 10px; padding: 8px; background: #FFFDF8; color: #1E2624; resize: vertical; }
   a { color: #4a6a47; }
+  .flame-row { display: flex; align-items: center; gap: 14px; }
+  .big { font-size: 19px; font-weight: 800; margin: 0; }
+  .pick { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; font-size: 16px; }
+  select { font: 700 16px 'Nunito', system-ui, sans-serif; padding: 8px 10px; border-radius: 10px; border: 1px solid #E3D9C9; background: #FFFDF8; color: #1E2624; max-width: 100%; }
+  ul.notes { columns: 1; }
+  #hollow-panel { display: flex; flex-direction: column; gap: 10px; }
+  #hollow-panel[hidden], #moves-panel[hidden] { display: none; }
+  #moves-panel { display: flex; flex-direction: column; gap: 10px; }
+  .tablets { display: flex; flex-wrap: wrap; justify-content: center; gap: 28px; }
+  .peg { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .key { font-size: 19px; font-weight: 800; }
+  .tablet { position: relative; width: 92px; height: 92px; border-radius: 50%; border: 2.5px solid #1E2624; background: #FBF7F0; overflow: hidden; display: grid; place-items: center; transition: border-color 0.2s; }
+  .tablet .ink { position: absolute; left: 0; right: 0; bottom: 0; height: 100%; background: rgba(46, 74, 44, 0.24); transition: height 0.2s linear; }
+  .tablet .glyph { position: relative; color: #1E2624; line-height: 0; }
+  .tablet .rim-flame { position: absolute; top: 5px; left: 50%; transform: translateX(-50%); line-height: 0; }
+  .tablet .wick { position: absolute; bottom: 5px; left: 50%; transform: translateX(-50%); line-height: 0; }
+  .tablet.waiting { border-color: #B9B2A6; }
+  .tablet.waiting .glyph { color: #8A8F8C; }
+  .tablet.grey { filter: grayscale(1); opacity: 0.45; }
+  .tablet.readied { box-shadow: 0 0 0 5px #E08A5B; }
+  .tablet.glint { animation: glint 0.6s ease-out; }
+  @keyframes glint { from { box-shadow: 0 0 0 0 rgba(224, 138, 91, 0.9); } to { box-shadow: 0 0 0 14px rgba(224, 138, 91, 0); } }
 </style>
 </head>
 <body>
 <main>
   <h1>ebb movement arena</h1>
-  <p class="muted">The walker on a test ground with one of each thing movement meets, with the game's own controls and camera. Click the view, then walk. Every slider changes the walk at once; nothing here is saved. <a href="./">All tools</a></p>
+  <p class="muted">The walker on a test ground with one of each thing movement meets, with the game's own controls and camera. Click the view, then walk. Every slider changes the walk at once; nothing here is saved. Courses: <a href="?course=island">the island</a>, <a href="?course=hollow">the Hollow chamber</a> (<a href="?course=hollow&amp;staff=b">with the knotted staff</a>). <a href="./">All tools</a></p>
   <div class="split">
     <div class="card">
       <div class="view-wrap">
@@ -61,8 +83,17 @@
         <dt>Click</dt><dd>Walks to where the dot rests, by the walk grid</dd>
         <dt>Alt held, or Esc</dt><dd>Frees the pointer</dd>
       </dl>
+      <dl id="hollow-keys" hidden>
+        <dt>In the Hollow: click</dt><dd>Swings the staff</dd>
+        <dt>Right mouse held</dt><dd>Raises the lantern: further light, faster burn</dd>
+        <dt>Tab</dt><dd>Locks on; again for the next, left to right; off after the last</dd>
+        <dt>Esc (pointer free)</dt><dd>Drops the lock</dd>
+        <dt>Q, E</dt><dd>The two moves: fire at once, or ready them and click (the switch beside)</dd>
+      </dl>
     </div>
     <div class="card">
+      <section id="moves-panel" hidden></section>
+      <section id="hollow-panel" hidden></section>
       <div class="buttons">
         <button id="reset">Back to the start</button>
         <button id="copy">Copy as recipe blocks</button>

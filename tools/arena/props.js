@@ -52,3 +52,69 @@ export function pushRing(out, x, z, r, ground, col, widthM = 0.05, sides = 48) {
     for (const k of [0, 1, 3, 0, 3, 2]) out.push(...pts[k], 0, 1, 0, ...col);
   }
 }
+
+/**
+ * A flat band on the ground between two radii over an arc (a swing's arc, a curved arrow's body), as
+ * thin quads following the ground. yaw: the middle of the arc (+z turned by yaw); arcDeg its width.
+ * @param {number[]} out @param {number} x @param {number} z @param {number} r0 @param {number} r1 @param {number} yaw @param {number} arcDeg
+ * @param {(x: number, z: number) => number} ground @param {number[]} col
+ */
+export function pushArc(out, x, z, r0, r1, yaw, arcDeg, ground, col, sides = 24) {
+  const half = (arcDeg / 2) * Math.PI / 180;
+  for (let i = 0; i < sides; i++) {
+    const pts = [i, i + 1].flatMap((k) => {
+      const a = yaw - half + (k / sides) * 2 * half, s = Math.sin(a), c = Math.cos(a);
+      return [[x + s * r0, z + c * r0], [x + s * r1, z + c * r1]];
+    }).map(([px, pz]) => [px, ground(px, pz) + 0.035, pz]);
+    for (const k of [0, 1, 3, 0, 3, 2]) out.push(...pts[k], 0, 1, 0, ...col);
+  }
+}
+
+/**
+ * A straight band on the ground from (x0, z0) to (x1, z1), widthM wide (a crack, a beam's lane).
+ * @param {number[]} out @param {number} x0 @param {number} z0 @param {number} x1 @param {number} z1 @param {number} widthM
+ * @param {(x: number, z: number) => number} ground @param {number[]} col
+ */
+export function pushLane(out, x0, z0, x1, z1, widthM, ground, col, pieces = 16, lift = 0.035) {
+  const dx = x1 - x0, dz = z1 - z0, l = Math.hypot(dx, dz) || 1, nx = (-dz / l) * widthM / 2, nz = (dx / l) * widthM / 2;
+  for (let i = 0; i < pieces; i++) {
+    const pts = [i, i + 1].flatMap((k) => { const t = k / pieces, px = x0 + dx * t, pz = z0 + dz * t; return [[px - nx, pz - nz], [px + nx, pz + nz]]; })
+      .map(([px, pz]) => [px, ground(px, pz) + lift, pz]);
+    for (const k of [0, 1, 3, 0, 3, 2]) out.push(...pts[k], 0, 1, 0, ...col);
+  }
+}
+
+/** A flat disc on the ground (the floor dot). @param {number[]} out @param {number} x @param {number} z @param {number} r @param {(x: number, z: number) => number} ground @param {number[]} col */
+export function pushDisc(out, x, z, r, ground, col, sides = 20) {
+  const y = ground(x, z) + 0.04;
+  for (let i = 0; i < sides; i++) {
+    const a0 = (i / sides) * 2 * Math.PI, a1 = ((i + 1) / sides) * 2 * Math.PI;
+    out.push(x, y, z, 0, 1, 0, ...col, x + Math.sin(a0) * r, y, z + Math.cos(a0) * r, 0, 1, 0, ...col, x + Math.sin(a1) * r, y, z + Math.cos(a1) * r, 0, 1, 0, ...col);
+  }
+}
+
+/**
+ * A solid's edges as line pairs (a faded wall's outline): a box's twelve edges, or a cylinder's top
+ * and foot rings and four uprights. @param {number[]} out @param {{ x: number, z: number, r?: number, hw?: number, hd?: number, yaw?: number, heightM: number }} s
+ * @param {number} y its foot @param {number[]} col
+ */
+export function pushSolidEdges(out, s, y, col, sides = 16) {
+  const v = (/** @type {number[]} */ p) => out.push(p[0], p[1], p[2], 0, 1, 0, ...col);
+  const seg = (/** @type {number[]} */ a, /** @type {number[]} */ b) => { v(a); v(b); };
+  if (s.r !== undefined) {
+    const r = /** @type {number} */ (s.r);
+    for (let i = 0; i < sides; i++) {
+      const a0 = (i / sides) * 2 * Math.PI, a1 = ((i + 1) / sides) * 2 * Math.PI;
+      for (const h of [y, y + s.heightM]) seg([s.x + Math.sin(a0) * r, h, s.z + Math.cos(a0) * r], [s.x + Math.sin(a1) * r, h, s.z + Math.cos(a1) * r]);
+      if (i % (sides / 4) === 0) seg([s.x + Math.sin(a0) * r, y, s.z + Math.cos(a0) * r], [s.x + Math.sin(a0) * r, y + s.heightM, s.z + Math.cos(a0) * r]);
+    }
+    return;
+  }
+  const cs = Math.cos(s.yaw ?? 0), sn = Math.sin(s.yaw ?? 0), hw = s.hw ?? 0, hd = s.hd ?? 0;
+  const c = [[-hw, -hd], [hw, -hd], [hw, hd], [-hw, hd]].map(([lx, lz]) => [s.x + cs * lx + sn * lz, s.z - sn * lx + cs * lz]);
+  for (let i = 0; i < 4; i++) {
+    const a = c[i], b = c[(i + 1) % 4];
+    for (const h of [y, y + s.heightM]) seg([a[0], h, a[1]], [b[0], h, b[1]]);
+    seg([a[0], y, a[1]], [a[0], y + s.heightM, a[1]]);
+  }
+}

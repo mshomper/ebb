@@ -161,6 +161,7 @@ A drawn glyph for every item the roadmap names (approved by Matt, October 23, 20
 | `items-camp.js` | The camp store (a lidded rush hamper; grown, two stacked under a withy lid) and the forager's things: gathering knife, seed scoop, tea caddy, walking stick, pressing frame. Its rows join `MAKES` |
 | `item-draw.js` | The shared fills, each family's cue, small path generators |
 | `item-registry.js` | Which glyph each item id wears, with its tier and phase |
+| `icons-hollow.js` | The Hollow's twelve move icons (H0), in the same rules, drawn inline by the move arena only; they join the sprite when the Hollow ships |
 
 **The rule.** The glyph says what a thing is. In an action button, a small round chip in the corner says where it goes: `pack` (Gather, Take up), `pile` (Set down), `offer` (Set out), `pot` (into the pot). `CHIP_FOR` maps actions to chips.
 

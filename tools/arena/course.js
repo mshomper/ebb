@@ -2,9 +2,11 @@
 // The movement arena's courses (doc 23; WASD, October 26, 2026): a compact test ground, as data, with
 // one of each thing movement meets. A course is { sizeM, waterY, start, ground(x, z), solids, actors,
 // labels }: the ground's height, the water's level, the solid things (src/world/walk/solids.js), the
-// stand-ins that move (actors.js) and where each feature is, for the legend. The island course is
-// built now; the Hollow's (a room of rock with training dummies, under the fixed high camera) is a
-// second entry in COURSES later, with no change to the arena itself. World meters, Y up.
+// stand-ins that move (actors.js) and where each feature is, for the legend. The island course was
+// built first; the Hollow's chamber (course-hollow.js, H0) is a second entry, under the Hollow camera.
+// World meters, Y up.
+
+import { HOLLOW_COURSE } from './course-hollow.js';
 
 const T15 = Math.tan((15 * Math.PI) / 180);
 /** Ease between two heights across a short rim (m), so a pool or a ramp has edges, not walls. */
@@ -85,6 +87,11 @@ export const COURSES = {
       ['Wall', -8, 3], ['Narrow passage', 7.15, 8], ['Pillars', -9, 9.5], ['Workbench, log, stone', 1, 11], ['Frog', 10, 9],
     ],
   },
+  hollow: HOLLOW_COURSE,
 };
 
-/** @typedef {typeof COURSES.island} Course */
+/**
+ * A course. camera: the CAMERAS entry it uses (follow unless given); feel: the walk's feel to start
+ * in; dark: dim, lit by the lantern; spawns: where the spawn panel puts stand-ins, in turn.
+ * @typedef {typeof COURSES.island & { camera?: string, feel?: string, dark?: boolean, spawns?: number[][] }} Course
+ */
