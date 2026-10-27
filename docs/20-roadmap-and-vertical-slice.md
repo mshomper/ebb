@@ -17,8 +17,9 @@ flowchart TD
     M0[M0 Foundations] --> M1[M1 Vertical slice]
     M1 --> FE[The first evening, keeper's camp Phase 1]
     FE --> FS[The first season, keeper's camp Phase 2]
-    FS --> M2[M2 Pond tier complete]
-    M2 --> M3[M3 Meadow and seasons]
+    FS --> M2[M2 Pond tier complete, with the hen]
+    M2 --> HO[The Hollow, first version]
+    HO --> M3[M3 Meadow and seasons]
     M3 --> M4[M4 Woodland and first expansion]
     M4 --> M5[M5 Wetland shore]
     M5 --> M6[M6 Night tier and polish]
@@ -103,11 +104,21 @@ Decided October 24, 2026 (Matt). A short groundwork step comes first: the rest o
 
 **The camp store (P2j)**, added October 24, 2026 (Matt): a simple store at camp with 6 slots, made larger to 12, linked to the workbench, the apothecary bench and the fire, which draw from it. Its material and how it grows are proposed separately for Matt's pick.
 
+**All built by October 27, 2026** (every Phase 2 piece in `docs/progress.md`). Exit check (Matt, October 27, 2026): the ten checks on `tools/season-review.html`, played on his own island and the test links there; anything not yet right becomes a fix log, as Phase 1's did.
+
 Later phases of the camp ride with the milestones below: Phase 2 (the first season: plant rules, tea herbs, digging, clay, teas, treats and trust) now comes next, before the rest of M2 (October 24, 2026, below); Phase 3 (pond tier gifts) at M2's close; Phase 4 (meadow herbs, dyes) with M3; Phase 5 (woodland, shore and night) with M4 to M6, each with its species' milestone (F13 section 13).
 
 ### M2 — Pond tier complete and the meadow islet
 
 The rest of M2 continues after the first season (changed October 24, 2026), together with the camp's Phase 3. Check the meadow islet's placement against the larger 4 x 4 island first.
+
+**M2's close, in order** (Matt, October 27, 2026):
+
+| Stage | What |
+|---|---|
+| B1 | The camp's Phase 3 (pond tier gifts), with the hen's slices 2 to 4 (trust and Fond, her day, eggs and the nest box; F15). She needs only scrub, dust and water, all on the island by now; her chicks wait for M3 |
+| B2 | W7 Steps and crossings, the stepping stones and one lantern, photo mode, tuning panel v1 |
+| B3 | The meadow islet and its sandbar, then the autumn and winter creatures (season chapters 5 and 6 and whatever is chosen to fill the colder half of the year: autumn and winter have no creature of their own yet) |
 
 
 - **First step: the Cliff tool** (decided October 2026). Terrace and Cut modes that build or carve level shelves with sheer rock faces, painted rock that stays sheer (talus about 82 degrees), full mesh detail near cliffs, and a shadow offset for near-vertical faces. Built first so it lands as early as possible without interrupting the slice (docs 08, 15, 04, 19). First planned as available from the start; since October 20, 2026 it is **the frogs' gift** (doc 12), replacing their water lily seed, with `?sandbox` and `?cliffs` opening it for testing. Built October 20, 2026 and merged (PR #54) as Sculpt chips (Terrace and Cut beside Raise, Lower, Flatten and Boulder), together with **waterfalls**: water running over a shelf's edge is drawn as volumetric droplet water near the eye (screen-space fluid) and as a curtain further off, with foam where it lands (doc 07). Their sound is built too: each waterfall near the camera is heard where it falls (doc 25).
@@ -127,6 +138,10 @@ The rest of M2 continues after the first season (changed October 24, 2026), toge
   5. The shore birds (sand martins, turnstones, purple sandpipers), which may run into M3.
   6. Grey seals last, with the meadow islet's sandbar.
 - **Keepsakes and the shelf** (F12, agreed October 21, 2026): unnamed, procedurally generated trinkets on the strandline, rarer at spring tides and in coves the player carved, kept on a 16-slot shelf that is its own journal section. Then the general net on the beachcomber's trail at four keepsake families kept, with living catches released and given short pages. Both are built and merged, with `tools/keepsake-lab.html` and `tools/catch-lab.html`. The light and sinker nets wait for the meadow and shore tier milestones.
+
+### The Hollow, first version (after M2)
+
+Moved up from "after M7" on October 27, 2026 (Matt). Doc 16's first pieces need nothing past M2 (the lantern, the drift staff, the shovel and the mortar), and the cave opens in a cliff the island already has or the player made with the Cliff tool. H0 to H2 were built as test pages (the move arena and the cave lab) and change nothing in the game; H4 (the threat budget) and H5 (the old crawler) may go on there at any time. **H3**, the wet shelf and the dripstone playable in the game, is this milestone, with H4 and H5 brought in. Hazel, the Headland's sea caves and F14's star iron feed later makes and deeper floors, and grow with their own milestones.
 
 ### M3 — Meadow, seasons and the woodland knoll
 
