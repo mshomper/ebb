@@ -28,3 +28,18 @@ Makes `assets/models/hollow/crawler.glb` from the four `silt+crawler_*.obj` file
 ```
 python tools/hollow-prep/crawler.py <folder with the four OBJs> assets/models/hollow/crawler.glb
 ```
+
+## The hagstone watcher: `watcher.mjs`
+
+Makes `assets/models/hollow/watcher.glb` from a signed field, not from Matt's files (the orchestrator's draft 2, approved by Matt on October 27, 2026). Matt's `hagstone+watcher_*_draft.obj` files in `_enemies` are the same model in his nTop space, for reference only. Every number is in `recipes/world/hollow.json` foes.watcher.stone.prep.
+
+- `watcher-field.mjs`: the shape and colours. A lopsided, flattened pebble with an off-centre hole whose rim flares toward the faces, a barnacle crust on the lower left only, four flat wrack blades and the albedo (pale banded stone, lichen on top, chalky barnacles, a darker worn rim, olive-brown weed lighter at the tips). Seeded by the draft's own small generator, so the approved look stays exactly the same.
+- `decimate.mjs`: quadric edge collapse. The field is meshed at prep.cellM (5.5 mm, about 135k triangles) by the repo's surface nets and cut to prep.targetTris (15,000), so the barnacles keep their shells while the smooth pebble is cut hardest.
+- `atlas.py`: xatlas unwraps the cut stone; the script carries each texel back onto the fine field and bakes the albedo (sRGB) and the field's own normals (object space, rest pose) into prep.textureSize maps, embedded as JPEGs.
+- Then the rig: a root at the stone's middle and each blade a chain of prep.blades.bones bones, with the stone all on the root (it is rigid) and each blade blended along its chain. The hole's middle, radius and flare go in the node's extras, for `src/shaders/lib-watcher.wgsl`.
+
+Needs Node, and Python 3 with numpy, pillow and xatlas. About 20 seconds. From the repo root:
+
+```
+node tools/hollow-prep/watcher.mjs assets/models/hollow/watcher.glb [folder for the before-and-after OBJs and the two maps]
+```
