@@ -426,7 +426,9 @@ async function render(name) {
   });
   const cols = Math.max(...rows.map((r) => r.picks.length));
   const [TILE_W, TILE_H] = S.tile ?? [300, 400], CURVE = S.rows.some((r) => r.curve) ? CURVE_H : 0;
-  const rowH = HEAD + TILE_H + LABEL + CURVE + PAD;
+  // A row may carry a note under its title (what still looks off in a clip).
+  const NOTE = S.rows.some((r) => r.note) ? 26 : 0, TOP = HEAD + NOTE;
+  const rowH = TOP + TILE_H + LABEL + CURVE + PAD;
   strip.width = cols * TILE_W;
   strip.height = rows.length * rowH;
   const g = /** @type {CanvasRenderingContext2D} */ (strip.getContext('2d'));
@@ -434,6 +436,7 @@ async function render(name) {
   for (let ri = 0; ri < rows.length; ri++) {
     const { row, rec, picks } = rows[ri], y0 = ri * rowH;
     g.fillStyle = '#23361F'; g.font = "800 22px Nunito, sans-serif"; g.fillText(`${S.title}: ${row.name}`, 12, y0 + 28);
+    if (row.note) { g.fillStyle = '#7A3F22'; g.font = "600 18px Nunito, sans-serif"; g.fillText(row.note, 12, y0 + 28 + NOTE); }
     // Second pass: the same run again, drawing each picked frame (from the row's own side, if it has one).
     stage.view(row.view ?? S.view);
     const b = row.run();
@@ -446,7 +449,7 @@ async function render(name) {
       stage.setProps(b.props ? b.props() : null);
       stage.draw({ bones: b.motion.bones, eyes: eyeUniforms(R.eyes, headBone, r.r.eyes, eyeBuf), place: b.place(), weights: false, night: false, water: -9, follow: b.place(), dt: DT });
       // Copied in the same task as the draw, while the frame is still the canvas's own.
-      const x = c * TILE_W, y = y0 + HEAD;
+      const x = c * TILE_W, y = y0 + TOP;
       g.drawImage(view, x, y, TILE_W, TILE_H);
       if (row.overlay) drawShovel(g, b, x, y, TILE_W, TILE_H);
       await new Promise((ok) => setTimeout(ok, 0));
@@ -461,7 +464,7 @@ async function render(name) {
     }
     if (!row.curve) continue;
     // The curve, with a dot at each frame.
-    const cy = y0 + HEAD + TILE_H + LABEL + 14, ch = CURVE - 34, vals = rec.map((q) => q[row.curve.key]);
+    const cy = y0 + TOP + TILE_H + LABEL + 14, ch = CURVE - 34, vals = rec.map((q) => q[row.curve.key]);
     const lo = Math.min(0, ...vals), hi = Math.max(0.1, ...vals);
     const px = (/** @type {number} */ i) => 12 + (i / (rec.length - 1)) * (strip.width - 24);
     const py = (/** @type {number} */ v) => cy + ch - ((v - lo) / (hi - lo)) * ch;

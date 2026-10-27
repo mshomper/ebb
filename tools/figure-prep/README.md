@@ -36,7 +36,7 @@ Since October 27, 2026 (C1 and C3) the clips come from two of Matt's files on th
 There are two clip sets:
 
 - `main` (the default): the walks, runs, roll and torch walks, plus `pull` (Pull_Radish), `collect` (Collect_Object) and `squat` (air_squat) for Lift with the shovel, gathering and kneeling on the island (`recipes/world/figure.json clips.shots`).
-- `fight` (`--set fight`): the eleven fighting clips in a file of their own, `assets/figures/walker-clips-fight.json`, so the game's walk load doesn't grow. Each is named by the pose it serves (`swingDouble`, `plantSlam`, `raiseCast` and so on; the table is `recipes/world/fight-clips.json`). Only tool pages load it until the move arena.
+- `fight` (`--set fight`): the thirteen fighting clips (eleven from the additional animations file, and Throw and Point from `The+Walker_Toss_Point+Cast.glb`, a third file passed the same way; its two clips are unnamed ids, listed in `FIGHT`) in a file of their own, `assets/figures/walker-clips-fight.json`, so the game's walk load doesn't grow. Each is named by the pose it serves (`swingDouble`, `plantSlam`, `raiseCast` and so on; the table is `recipes/world/fight-clips.json`). Only tool pages load it until the move arena. `CLEAN` cleans Matt's Text-to-Animation pair cheaply: `smooth` (1-2-1 passes over the frames against jitter), `mirror` (left for right: the point is Meshy's lantern hand) and `unturn` (the hips' turn about the vertical taken out).
 
 ```
 python tools/figure-prep/clips.py "<_assets>/Ebb_Walker+Animations.glb;<_walker>/The+Walker_Additional+Animations.glb" recipes/world/figure.json assets/figures/walker.glb assets/figures/walker-clips.json

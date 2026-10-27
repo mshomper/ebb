@@ -1,7 +1,7 @@
 {
   "type": "fight-clips",
   "version": 1,
-  "note": "The fighting clips (C1, approved October 27, 2026; docs/future/16-the-sea-cave.md, the five shared poses): Matt's Meshy clips retargeted onto the walker's rig by tools/figure-prep/clips.py --set fight into file, a set of its own so the game's walk load doesn't grow. Loaded on tool pages only (tools/walker-strip.html) until the move arena (H0). Played as one-shots over the walker (src/world/figure/clips.js shoot) with mask: the bones taken from the clip (the hips, spine, head, legs and the right arm); the left arm keeps the lantern's hold, so every swing is one-handed. poses: which clips serve each pose, so the arena can pick by pose; clips: each clip's Meshy source, its pose and what it is for. Throw is still missing (an underarm toss for the sling, Cast the flame and Taproot); Point and the hand variants of Raise are made in code.",
+  "note": "The fighting clips (C1, approved October 27, 2026; docs/future/16-the-sea-cave.md, the five shared poses): Matt's Meshy clips retargeted onto the walker's rig by tools/figure-prep/clips.py --set fight into file, a set of its own so the game's walk load doesn't grow. Loaded on tool pages only (tools/walker-strip.html) until the move arena (H0). Played as one-shots over the walker (src/world/figure/clips.js shoot) with mask: the bones taken from the clip (the hips, spine, head, legs and the right arm); the left arm keeps the lantern's hold, so every swing is one-handed. poses: which clips serve each pose, so the arena can pick by pose; clips: each clip's Meshy source, its pose and what it is for. Throw (the underarm toss for the sling, Cast the flame and Taproot) and Point (Moth lure and Unmake, in place of a code-made point) came later the same day from Matt's Text-to-Animation pair (The+Walker_Toss_Point+Cast.glb), cleaned cheaply in clips.py CLEAN (made says how); the hand variants of Raise are still made in code. feet: false keeps the code's planted feet under a clip whose own steps slide.",
   "file": "assets/figures/walker-clips-fight.json",
   "mask": ["pelvis", "spine", "chest", "head", "upperArm.r", "foreArm.r", "hand.r", "thigh.l", "shin.l", "foot.l", "thigh.r", "shin.r", "foot.r"],
   "easeS": 0.12,
@@ -11,7 +11,9 @@
     "Raise": ["raiseCast"],
     "Dodge": ["sidestep"],
     "Hit": ["hit"],
-    "Back": ["backAway"]
+    "Back": ["backAway"],
+    "Throw": ["throwToss"],
+    "Point": ["pointCast"]
   },
   "clips": {
     "swingDouble": { "meshy": "Double_Combo_Attack", "pose": "Swing", "for": "The staff's two-hit chain on left click" },
@@ -24,6 +26,8 @@
     "sidestep": { "meshy": "Stand_Dodge", "pose": "Dodge", "for": "A side-step for close dodges where a roll is too much" },
     "hit": { "meshy": "Hit_Reaction", "pose": "Hit", "for": "Taking a hit (the flame gutters)" },
     "raiseCast": { "meshy": "mage_soell_cast_7", "pose": "Raise", "for": "Kindling burst, Spring chorus" },
-    "backAway": { "meshy": "Cautious_Crouch_Walk_Backward", "pose": "Back", "for": "Backing away with the lantern low; Snuff's slow walk" }
+    "backAway": { "meshy": "Cautious_Crouch_Walk_Backward", "pose": "Back", "for": "Backing away with the lantern low; Snuff's slow walk" },
+    "throwToss": { "meshy": "_01a17e2a_2988_746c_b10a_07f3f5e55122", "pose": "Throw", "for": "The underarm toss: the sling, Cast the flame and Taproot", "made": "Text-to-Animation; trimmed to 0.1 to 1.85 s, smoothed" },
+    "pointCast": { "meshy": "_01a17e29_1736_762f_bbb2_2d60d27c6ba7", "pose": "Point", "for": "Moth lure and Unmake (in place of a point made in code)", "made": "Text-to-Animation; mirrored (Meshy points with the lantern hand), the hips' turn taken out, trimmed to 0.15 to 2.3 s, smoothed", "feet": false }
   }
 }

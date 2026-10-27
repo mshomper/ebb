@@ -23,6 +23,11 @@ export async function addClipStrips(o) {
   const FR = await json('../recipes/world/fight-clips.json'), SR = await json('../recipes/world/staff.json');
   const C = await json('../recipes/world/camp.json');
   const FIGHT = await json(`../${FR.file}`);
+  /** What still looks off in Matt's Text-to-Animation pair after the cheap cleaning, for him to decide on regenerating. @type {Record<string, string>} */
+  const OFF = {
+    throwToss: 'the release goes out level at chest height, not up and forward; the arm then holds out about half a second; the wind-up is a deep bow from the waist.',
+    pointCast: 'it points up and across to the left, not straight ahead; the chest still turns that way; the hand comes back near the face before it lowers.',
+  };
   const DS = R.body.displayScale ?? 1;
   /** @param {string} file */
   const meshOf = async (file) => { const glb = readGlb(await (await fetch(`../${file}`)).arrayBuffer()); return campModelMesh(glb, [0.4, 0.33, 0.2], await baseColorSampler(glb)); };
@@ -104,7 +109,7 @@ export async function addClipStrips(o) {
       motion,
       step() {
         t += DT;
-        if (Math.abs(t - AT) < DT / 2) motion.shoot(name, { mask: mask ?? undefined, feet: true, easeS: FR.easeS });
+        if (Math.abs(t - AT) < DT / 2) motion.shoot(name, { mask: mask ?? undefined, feet: FR.clips[name]?.feet ?? true, easeS: FR.easeS });
         return { t, r: motion.update(DT, STILL) };
       },
       place: () => [0, 0, 0, 0],
@@ -119,8 +124,9 @@ export async function addClipStrips(o) {
   const durOf = (/** @type {string} */ n) => (FIGHT.clips[n] ?? clips.clips[n]).dur;
   const FRONT = { yaw: -0.65, pitch: 0.14, dist: 4.4 };
 
-  // C1: the fighting clips, three or so to a strip, each masked and then as Meshy made it.
-  const names = Object.keys(FR.clips), per = 3;
+  // C1: the fighting clips, three or so to a strip, each masked and then as Meshy made it. Throw and
+  // Point (Matt's Text-to-Animation pair) have a strip of their own, with what still looks off.
+  const names = Object.keys(FR.clips).filter((n) => !OFF[n]), per = 3;
   for (let s = 0; s * per < names.length; s++) {
     const group = names.slice(s * per, s * per + per);
     STRIPS[`fight${s + 1}`] = {
@@ -134,6 +140,19 @@ export async function addClipStrips(o) {
       }),
     };
   }
+
+  const SIDEV = { yaw: -Math.PI / 2, pitch: 0.12, dist: 4.2 };
+  STRIPS.throwPoint = {
+    title: 'Throw and Point', tile: [200, 270], view: FRONT,
+    rows: Object.keys(OFF).flatMap((n) => {
+      const c = FR.clips[n], picks = evenPicks(durOf(n), 8);
+      return [
+        { name: `${n} (${c.pose}), lantern arm masked, from the front and right`, note: `Cleaned: ${c.made}.`, run: () => shotRun(n, FR.mask, 'slim'), picks },
+        { name: `${n}, from the right`, note: `Still off: ${OFF[n]}`, view: SIDEV, run: () => shotRun(n, FR.mask, 'slim'), picks },
+        { name: `${n} cleaned, no mask: both arms`, run: () => shotRun(n, null, null), picks },
+      ];
+    }),
+  };
 
   // C2: the staff in hand, each look: standing, walking, and the two-hit swing.
   const walk = +(R.clips.paces.find((/** @type {any} */ p) => p.clip === 'walk').speed * DS).toFixed(2);

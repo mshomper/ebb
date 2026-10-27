@@ -30,6 +30,16 @@ export function addFigureClipTests(test, assert, eq) {
       assert(k && k.data.length === k.frames * (3 + 4 * F.bones.length) && k.data.every(Number.isFinite), `${name} there and finite`);
       assert(FR.poses[/** @type {any} */ (c).pose]?.includes(name), `${name} listed under its pose`);
     }
+    for (const pose of ['Swing', 'Plant', 'Raise', 'Throw', 'Point']) assert(FR.poses[pose]?.length, `a clip for ${pose}`);
+    // The point is mirrored onto the weapon hand: at its height the right hand is well above the left.
+    const PC = F.clips.pointCast, stride = 3 + 4 * F.bones.length;
+    const pointer = createFigureMotion(R, built.skeleton, C);
+    pointer.addClips(F);
+    const hand = (/** @type {string} */ n) => { const i = built.skeleton.findIndex((b) => b.name === n); return matPoint(pointer.bones, i * 16, built.skeleton[i].pivot)[1]; };
+    pointer.shoot('pointCast', { mask: FR.mask, feet: FR.clips.pointCast.feet });
+    let lift = 0;
+    for (let f = 0; f < PC.dur * 60; f++) { pointer.update(1 / 60, { x: 0, z: 0, y: 0, yaw: 0, speed: 0, moving: false, ground: () => 0, depth: () => 0, below: true }); lift = Math.max(lift, hand('hand.r') - hand('hand.l')); }
+    assert(lift > 0.3 && PC.data.length === PC.frames * stride, `the right hand points (up to ${(lift * 100).toFixed(0)} cm over the left)`);
     assert(!FR.mask.some((/** @type {string} */ b) => b.endsWith('.l') && /Arm|hand/.test(b)), 'the mask leaves the left arm out');
     // A swing played standing, masked and not: the left forearm matches a still walker only when masked.
     const dt = 1 / 60, still = { x: 0, z: 0, y: 0, yaw: 0, speed: 0, moving: false, ground: () => 0, depth: () => 0, below: true };

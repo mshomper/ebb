@@ -63,8 +63,16 @@ FIGHT = [
     ('hit', 'Hit_Reaction', None, False),
     ('raiseCast', 'mage_soell_cast_7', None, False),
     ('backAway', 'Cautious_Crouch_Walk_Backward', None, True),
+    # Matt's Text-to-Animation pair (The+Walker_Toss_Point+Cast.glb), unnamed in the file.
+    ('throwToss', '_01a17e2a_2988_746c_b10a_07f3f5e55122', (0.1, 1.85), False),
+    ('pointCast', '_01a17e29_1736_762f_bbb2_2d60d27c6ba7', (0.15, 2.3), False),
 ]
 SETS = {'main': CLIPS, 'fight': FIGHT}
+# Cheap cleaning for Matt's Text-to-Animation pair (passable, not perfect): smooth, passes of a
+# 1-2-1 smoothing over the frames against jitter; mirror, left for right (the point is Meshy's left
+# hand, the lantern's).
+# unturn: the hips' turn about the vertical taken out (the point turns the body nearly round).
+CLEAN = {'throwToss': {'smooth': 2}, 'pointCast': {'smooth': 2, 'mirror': True, 'unturn': True}}
 BACKWARD = {'backAway'}
 DRIVEN = ['pelvis', 'spine', 'chest', 'head', 'upperArm.l', 'foreArm.l', 'hand.l', 'upperArm.r', 'foreArm.r', 'hand.r',
           'thigh.l', 'shin.l', 'foot.l', 'thigh.r', 'shin.r', 'foot.r']
@@ -216,6 +224,43 @@ def fk(bones, local, shift):
     return Rg, Pg
 
 
+MIRROR = np.diag([-1.0, 1.0, 1.0])
+
+
+def mirror(g):
+    """A frame's (or the rest pose's) joints mirrored left for right: the point clip points with
+    Meshy's left hand, the lantern hand, and every move that needs a hand uses the weapon hand."""
+    sw = lambda n: n[:-2] + ('.R' if n.endswith('.L') else '.L') if n and n[-2:] in ('.L', '.R') else n
+    return {n: (MIRROR @ g[sw(n)][0] @ MIRROR, MIRROR @ g[sw(n)][1]) for n in g if sw(n) in g}
+
+
+def unturned(q):
+    """The hips' turns with their twist about the vertical taken out (x, y, z, w rows): the body
+    keeps facing ahead, its lean and sway kept."""
+    t = np.zeros_like(q)
+    t[:, 1], t[:, 3] = q[:, 1], q[:, 3]
+    t /= np.linalg.norm(t, axis=1, keepdims=True) + 1e-12
+    # conj(t) * q
+    x, y, z, w = -t[:, 0], -t[:, 1], -t[:, 2], t[:, 3]
+    a, b, c, d = q[:, 0], q[:, 1], q[:, 2], q[:, 3]
+    out = np.stack([w * a + x * d + y * c - z * b, w * b - x * c + y * d + z * a, w * c + x * b - y * a + z * d, w * d - x * a - y * b - z * c], 1)
+    return out * np.where(out[:, 3:] < 0, -1, 1)
+
+
+def smooth_frames(shifts, quats):
+    """One pass of a 1-2-1 smoothing over the frames (the ends kept), for a jittery clip: the turns
+    each brought to the same side as the frame's own before they are averaged."""
+    s, q = shifts.copy(), quats.copy()
+    for i in range(1, len(s) - 1):
+        s[i] = (shifts[i - 1] + 2 * shifts[i] + shifts[i + 1]) / 4
+        a, b, c = quats[i - 1], quats[i], quats[i + 1]
+        a = a * np.sign(np.sum(a * b, axis=1, keepdims=True) + 1e-12)
+        c = c * np.sign(np.sum(c * b, axis=1, keepdims=True) + 1e-12)
+        m = a + 2 * b + c
+        q[i] = m / np.linalg.norm(m, axis=1, keepdims=True)
+    return s, q
+
+
 def main(src, recipe, model, out, which='main'):
     # One or more Meshy files (split by ';'), the same rig; a clip comes from the first that has it,
     # read against that file's own rest pose.
@@ -250,6 +295,10 @@ def main(src, recipe, model, out, which='main'):
     for name, src_name, span, loop in SETS[which]:
         Mc = next(m for m in Ms if src_name in m.anims)
         times, F = Mc.frames(src_name, span)
+        rest = Mc.rest
+        cl = CLEAN.get(name, {})
+        if cl.get('mirror'):
+            F, rest = [mirror(f) for f in F], mirror(Mc.rest)
         n = len(F)
         root = np.array([f['spine'][1] for f in F])
         drift = root[-1] - root[0]
@@ -257,7 +306,7 @@ def main(src, recipe, model, out, which='main'):
         for fi, f in enumerate(F):
             Q = {}
             for ours in DRIVEN:
-                Rr = Mc.rest[SOURCE[ours]][0]
+                Rr = rest[SOURCE[ours]][0]
                 D = f[SOURCE[ours]][0] @ Rr.T
                 # Scale (Meshy keeps it at one) is taken out before the turn is read.
                 U, _, Vt = np.linalg.svd(D)
@@ -317,11 +366,17 @@ def main(src, recipe, model, out, which='main'):
             clip.update(speed=round(float(track[-1] / times[-1]), 4), cycleM=round(float(track[-1]) / max(1, len(ll)), 4),
                         landsL=ll or [0.0], landsR=lr or [round(0.5 * float(times[-1]), 4)],
                         track=[round(float(d), 4) for d in track])
+        shifts = np.array([s + [0, lift, 0] for s, _ in rows])
+        quats = np.array([[matq(m) for m in qs] for _, qs in rows])     # n, bones, 4
+        if cl.get('unturn'):
+            quats[:, 0] = unturned(quats[:, 0])
+        for _ in range(cl.get('smooth', 0)):
+            shifts, quats = smooth_frames(shifts, quats)
         data = []
-        for shift, qs in rows:
-            data += [round(float(v), 4) for v in (shift + [0, lift, 0])]
-            for m in qs:
-                data += [round(float(v), 4) for v in matq(m)]
+        for fi in range(n):
+            data += [round(float(v), 4) for v in shifts[fi]]
+            for q in quats[fi]:
+                data += [round(float(v), 4) for v in q]
         clip['data'] = data
         result['clips'][name] = clip
         report[name] = {kk: v for kk, v in clip.items() if kk != 'data'}
