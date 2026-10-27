@@ -4,7 +4,9 @@
 // stopping before a wall or a drop; Tab lock-on (nearest the middle, left to right, off after the last,
 // moving on when a target breaks, dropping after 2 s out of the light); the lantern as health; the
 // staff's arc and which side a hit lands on; walls in the way; and the stand-ins' steps (a lunger's
-// tell and lunge, a watcher's call, motes held off by the raised light), seeded and repeatable.
+// tell and lunge, a watcher's call, motes held off by the raised light), seeded and repeatable. H0b:
+// the Q and E moves' timings and costs (waits, the gentler Hollow, once a floor, seeds, Snuff cut
+// short) and how each reaches a thing by its instinct.
 
 import { dotRange, walkDot } from '../src/world/hollow/aim.js';
 import { createLock } from '../src/world/hollow/lock.js';
@@ -12,12 +14,15 @@ import { createLantern } from '../src/world/hollow/lantern.js';
 import { arcHits, hitsDue } from '../src/world/hollow/swing.js';
 import { inTheWay } from '../src/world/hollow/occlude.js';
 import { createFoe, sideOf } from '../src/world/hollow/foes.js';
+import { createMoves } from '../src/world/hollow/moves.js';
+import { HOLLOW_ICONS } from '../src/ui/icons/icons-hollow.js';
 import { createWalkGrid } from '../src/world/walk/grid.js';
 import { createSolids } from '../src/world/walk/solids.js';
 
 const G = 'hollow';
 const DT = 1 / 60;
 const recipe = async () => (await fetch('../recipes/world/hollow.json')).json();
+const moveRecipe = async () => (await fetch('../recipes/world/hollow-moves.json')).json();
 
 /** A flat floor 20 m square with a wall across it at x = 4 and a drop (a pit) at z = -4. */
 function floor() {
@@ -172,6 +177,83 @@ export function addHollowTests(test, assert, eq) {
     const ev = runFor(g, up, 8);
     assert(!ev.some((e) => e.type === 'strike'), 'held up: no nips');
     assert(Math.hypot(g.x, g.z) > 7, `held off near the light's edge (${Math.hypot(g.x, g.z).toFixed(1)} m)`);
+  });
+
+  test(G, 'a move runs its wind-up, active and recovery times, then waits; the gentler Hollow halves the wait', async () => {
+    const MR = await moveRecipe(), m = createMoves(MR), F = MR.moves.castFlame;
+    assert(m.start('castFlame', { x: 0, z: 5 }), 'started');
+    eq(m.why('anchor'), 'busy', 'one move at a time');
+    /** @type {string[]} */ const seen = [];
+    let t = 0;
+    while (m.playing) { for (const e of m.update(DT)) seen.push(`${e.type}@${(t + DT).toFixed(2)}`); t += DT; }
+    eq(seen.map((s) => s.split('@')[0]).join(), 'active,ended,done', 'its parts in order');
+    assert(Math.abs(t - (F.windS + F.activeS + F.recoverS)) < 2 * DT, `its whole time (${t.toFixed(2)})`);
+    eq(m.why('castFlame'), 'waiting', 'then it waits');
+    for (let i = 0; i < Math.round((F.waitS - t) / DT) + 2; i++) m.update(DT);
+    eq(m.why('castFlame'), null, `ready after ${F.waitS} s`);
+    const g = createMoves(MR, { gentle: true });
+    g.start('castFlame', {});
+    for (let i = 0; i < Math.round((F.waitS * MR.gentlerWaitK) / DT) + 2; i++) g.update(DT);
+    eq(g.why('castFlame'), null, 'the gentler Hollow: ready in half the wait');
+  });
+
+  test(G, 'once-a-floor moves spend until a new floor, seeds run out, and Snuff can be cut short', async () => {
+    const MR = await moveRecipe(), m = createMoves(MR);
+    m.start('kindlingBurst', {});
+    while (m.playing) m.update(DT);
+    eq(m.why('kindlingBurst'), 'spent', 'once a floor');
+    assert(m.spent('kindlingBurst'), 'its wick is spent');
+    m.newFloor();
+    eq(m.why('kindlingBurst'), null, 'back on a new floor');
+    for (let i = 0; i < MR.seeds; i++) { m.newFloor(); const s = m.seeds; m.start('taproot', {}); eq(m.seeds, s - 1, 'a seed from the pack'); }
+    const n = createMoves({ ...MR, seeds: 1 });
+    n.start('taproot', {}); while (n.playing) n.update(DT);
+    for (let i = 0; i < 2000; i++) n.update(DT);
+    eq(n.why('taproot'), 'seeds', 'out of seeds: greyed');
+    const s = createMoves(MR);
+    s.start('snuff', {});
+    for (let i = 0; i < 30; i++) s.update(DT);
+    s.cut();
+    const ev = s.update(DT).map((e) => e.type);
+    assert(ev.includes('ended') && !s.playing, `cut short: it ends at once (${ev})`);
+  });
+
+  test(G, 'moves reach things by their instinct: feint, lure, throw, stumble, turn, root, slow', async () => {
+    const H = await recipe(), { open } = floor(), w = { open };
+    const lunger = () => createFoe('lunger', 1, { x: 0, z: 2, yaw: Math.PI }, H.foes.lunger, 3, H.swing);
+    const watcher = () => createFoe('watcher', 2, { x: 0, z: 4, yaw: Math.PI }, H.foes.watcher, 3, H.swing);
+    const motes = () => createFoe('motes', 3, { x: 0, z: 3 }, H.foes.motes, 3, H.swing);
+    assert(lunger().take({ kind: 'feint', x: 1, z: 1 }).landed && !watcher().take({ kind: 'feint', x: 1, z: 1 }).landed, 'Feint draws the striker only');
+    const l = lunger(); l.take({ kind: 'feint', x: 1, z: 1 }); eq(l.step, 'strike', 'it strikes at the spot');
+    assert(watcher().take({ kind: 'lure', x: 5, z: 5, forS: 8 }).landed && !lunger().take({ kind: 'lure', x: 5, z: 5 }).landed, 'Moth lure leads the light-seeker only');
+    const m = motes();
+    assert(m.take({ kind: 'throw', toX: 0, toZ: 9, forS: 1.5, world: w }).landed && m.z === 9 && m.stunS > 0, 'Kindling burst throws the light-shy to the beam\'s end, stunned');
+    assert(!lunger().take({ kind: 'throw', toX: 0, toZ: 9 }).landed, 'and nothing else');
+    assert(lunger().take({ kind: 'stumble', forS: 0.8 }).landed && !watcher().take({ kind: 'stumble' }).landed, 'Groundline passes under a floating thing');
+    const t = lunger(), y0 = t.yaw; t.take({ kind: 'turn', openS: 1.5 });
+    assert(Math.abs(Math.abs(t.yaw - y0) - Math.PI) < 1e-9, 'Hook and turn spins it to face away');
+    const small = motes(), big = watcher(), hp0 = big.hp;
+    small.take({ kind: 'root', burstS: 3, share: { small: 1, large: 0.25 } });
+    big.take({ kind: 'root', burstS: 3, share: { small: 1, large: 0.25 }, crackS: 5, staggerS: 1 });
+    assert(!big.take({ kind: 'root', burstS: 3 }).landed, 'one root at a time');
+    const lit = { you: { x: 0, z: -9, speed: 0 }, lamp: { x: 0, z: -9, reachM: 1, raised: false, snuffed: false }, open };
+    runFor(small, lit, 3.1); runFor(big, lit, 3.1);
+    assert(small.broken, 'Taproot breaks a small thing');
+    assert(!big.broken && big.hp < hp0 && big.crackS > 0, 'and only cracks a large one');
+    const sl = lunger(); sl.take({ kind: 'slow', forS: 6 });
+    eq(sl.slowS, 6, 'Spring chorus slows it');
+  });
+
+  test(G, 'the twelve moves are all in the recipe with their timings, costs and icons', async () => {
+    const MR = await moveRecipe();
+    const ids = ['anchor', 'hookTurn', 'groundline', 'castFlame', 'wickSnare', 'kindlingBurst', 'backStep', 'feint', 'snuff', 'taproot', 'springChorus', 'mothLure'];
+    eq(Object.keys(MR.moves).join(), ids.join(), 'ranks 1 to 3 of the four tracks');
+    for (const id of ids) {
+      const m = MR.moves[id];
+      assert(['windS', 'activeS', 'recoverS', 'waitS', 'reachM'].every((k) => Number.isFinite(m[k])), `${id}: its numbers`);
+      assert(['self', 'target', 'dot', 'ahead'].includes(m.at), `${id}: where it goes`);
+      assert(HOLLOW_ICONS[id], `${id}: a drawn icon`);
+    }
   });
 
   test(G, 'the same seed gives the same stand-in, step for step', async () => {

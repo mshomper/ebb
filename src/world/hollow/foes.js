@@ -9,7 +9,10 @@
 //     tell, then it calls everything near to it; it turns slowly to look again;
 //   motes (soot motes): shy from light; they keep out of the raised lantern's reach, bunch up, dart
 //     in and nip, and scatter.
-// Moves and the staff reach a thing through one call, take(effect), never its insides. Every choice
+// Moves and the staff reach a thing through one call, take(effect), never its insides; each move
+// presses on the thing's one instinct (K.instinct: movement, toward or shy), as doc 16 says: Feint
+// draws a striker's attack, Moth lure leads a light-seeker away, Kindling burst throws the light-shy
+// back, Groundline trips what stands on the floor, Taproot bursts by size, and so on. Every choice
 // is seeded (src/core/rng.js): no Math.random. Pure: the caller gives where you are, the lantern and
 // which ground is open.
 
@@ -28,7 +31,9 @@ import { stream } from '../../core/rng.js';
 
 /**
  * What a thing did this frame: a strike (and whether it landed on you), or a call (where to).
- * @typedef {{ type: 'strike', id: number, hit: boolean } | { type: 'call', id: number, x: number, z: number } | { type: 'notice', id: number }} FoeEvent
+ * A root's burst (Taproot): broke, or cracked and staggered.
+ * @typedef {{ type: 'strike', id: number, hit: boolean } | { type: 'call', id: number, x: number, z: number } | { type: 'notice', id: number }
+ *   | { type: 'burst', id: number, broke: boolean }} FoeEvent
  */
 
 /**
@@ -64,6 +69,8 @@ export function createFoe(kind, id, at, K, seed, sides) {
     /** Where it is going (a lunge's end, a call, a lure). @type {[number, number] | null} */ goal: null,
     /** Alerted by a call: it closes in without needing to notice, for this long (s). */ alertS: 0,
     /** Effects with a time on them (s left). */ slowS: 0, stunS: 0, lureS: 0, /** @type {[number, number] | null} */ lure: null,
+    /** A Taproot's root, bursting when t runs out; then its cracks (hits land harder) for crackS. */
+    /** @type {{ t: number, share: number, crackS: number, staggerS: number } | null} */ root: null, crackS: 0,
     /** How many hits it has taken, by side. */ hits: { front: 0, side: 0, back: 0 },
     /** What it last did, for the arena's log. */ note: 'Resting.',
   };
@@ -96,6 +103,16 @@ export function createFoe(kind, id, at, K, seed, sides) {
     s.slowS = Math.max(0, s.slowS - dt);
     s.alertS = Math.max(0, s.alertS - dt);
     s.lureS = Math.max(0, s.lureS - dt);
+    s.crackS = Math.max(0, s.crackS - dt);
+    if (s.root && (s.root.t -= dt) <= 0) {
+      const r = s.root;
+      s.root = null;
+      if (r.share >= 1) { go('broken', 'The root burst and broke it apart.'); ev.push({ type: 'burst', id, broke: true }); return ev; }
+      s.hp = Math.max(1, s.hp - Math.max(1, Math.round(K.hp * r.share)));
+      s.crackS = r.crackS; s.stunS = Math.max(s.stunS, r.staggerS);
+      s.note = 'The root burst: cracked and staggered; hits land harder while the cracks show.';
+      ev.push({ type: 'burst', id, broke: false });
+    }
     if (s.stunS > 0) { s.stunS = Math.max(0, s.stunS - dt); return ev; }
     const t = dt * pace();
     s.t += t;
@@ -216,7 +233,7 @@ export function createFoe(kind, id, at, K, seed, sides) {
       const armored = K.frontDeg !== undefined && side === 'front';
       s.hits[side]++;
       if (armored) { s.note = 'The hit glanced off its armored front.'; return { landed: false, broke: false, side, glanced: true }; }
-      s.hp -= e.power ?? 1;
+      s.hp -= (e.power ?? 1) * (s.crackS > 0 ? 2 : 1);
       if (s.hp <= 0) { go('broken', 'Broke into grey sand and motes of light.'); return { landed: true, broke: true, side }; }
       s.note = `Hit on its ${side}.`;
       // Motes scatter from any hit; a lunger in its wind-up loses it.
@@ -230,8 +247,67 @@ export function createFoe(kind, id, at, K, seed, sides) {
       if (s.step === 'rest') go('close', 'Answered a watcher\'s call.');
       return { landed: true };
     }
+    // The moves (doc 16, Clever or instinctive: each presses on one plain instinct, K.instinct).
+    switch (e.kind) {
+      case 'reel': {
+        // Anchor caught its hit: it rocks back, open.
+        const d = Math.hypot(s.x - (e.fromX ?? s.x), s.z - (e.fromZ ?? s.z)) || 1;
+        s.goal = null;
+        for (let i = 0; i < 6; i++) open(e.world, ((s.x - (e.fromX ?? s.x)) / d) * (e.pushM ?? 1) / 6, ((s.z - (e.fromZ ?? s.z)) / d) * (e.pushM ?? 1) / 6);
+        s.stunS = e.forS ?? 1; go('recover', 'Its hit was caught: it reeled back, open.');
+        return { landed: true };
+      }
+      case 'turn': {
+        // Hook and turn: spun to face away; a lunge already going goes off the wrong way.
+        s.yaw += Math.PI;
+        if (s.step === 'strike' && s.goal) s.goal = [2 * s.x - s.goal[0], 2 * s.z - s.goal[1]];
+        else { s.stunS = e.openS ?? 1.5; if (s.step === 'wind') go('recover'); }
+        s.note = 'Spun to face away: its back and sides are open.';
+        return { landed: true };
+      }
+      case 'stumble':
+        // Groundline: whatever stands on the line loses its wind-up. A floating thing is untouched.
+        if (K.floats) return { landed: false };
+        s.stunS = e.forS ?? 0.8;
+        if (s.step === 'wind' || s.step === 'strike') go('recover');
+        s.note = 'Stumbled on the crack and lost its wind-up.';
+        return { landed: true };
+      case 'bind':
+        s.stunS = e.forS ?? 3; s.note = 'Bound in threads of light.';
+        return { landed: true };
+      case 'throw':
+        // Kindling burst: light-shy things in the beam are thrown back to its end and stunned.
+        if (K.instinct !== 'shy') return { landed: false };
+        if (e.world?.open(e.toX, e.toZ) ?? true) { s.x = e.toX; s.z = e.toZ; }
+        s.stunS = e.forS ?? 1.5; go('recover', 'Thrown back down the beam, stunned.');
+        return { landed: true };
+      case 'feint':
+        // Feint: a thing that strikes at movement throws its attack at the spot, and is open after.
+        if (K.instinct !== 'movement' || s.step === 'strike' || s.step === 'recover') return { landed: false };
+        s.yaw = Math.atan2(e.x - s.x, e.z - s.z); s.goal = [e.x, e.z];
+        go('strike', 'Fell for the feint: struck at the spot.');
+        return { landed: true };
+      case 'lure':
+        // Moth lure: a thing that goes toward light follows the moths.
+        if (K.instinct !== 'toward') return { landed: false };
+        s.lure = [e.x, e.z]; s.lureS = e.forS ?? 8;
+        if (s.step !== 'rest') go('rest');
+        s.note = 'Broke off to follow the moths.';
+        return { landed: true };
+      case 'root':
+        // Taproot: one root at a time; it bursts after burstS by the thing's size.
+        if (s.root) return { landed: false };
+        s.root = { t: e.burstS ?? 3, share: e.share?.[K.size] ?? 1, crackS: e.crackS ?? 5, staggerS: e.staggerS ?? 1 };
+        s.note = 'A seed took root: green cracks spread over it.';
+        return { landed: true };
+      case 'slow':
+        s.slowS = e.forS ?? 6; s.note = 'It hears living water: slowed.';
+        return { landed: true };
+    }
     return { landed: false };
   }
+  /** Move a thing on open ground (an effect's push). @param {FoeWorld | undefined} w @param {number} dx @param {number} dz */
+  function open(w, dx, dz) { if (!w || w.open(s.x + dx, s.z + dz)) { s.x += dx; s.z += dz; } }
 
   return {
     id, kind,
@@ -245,8 +321,10 @@ export function createFoe(kind, id, at, K, seed, sides) {
     get hits() { return s.hits; },
     get note() { return s.note; },
     get broken() { return s.step === 'broken'; },
-    /** Seconds left of a stun, a slow and a lure. */
+    /** Seconds left of a stun, a slow and a lure; a root's time to burst (or -1); cracks showing. */
     get stunS() { return s.stunS; },
+    get rootS() { return s.root ? s.root.t : -1; },
+    get crackS() { return s.crackS; },
     get slowS() { return s.slowS; },
     get lureS() { return s.lureS; },
     /** Its size for Taproot. */

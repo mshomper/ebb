@@ -31,6 +31,8 @@ import { pushBox, pushCylinder, pushRing } from './arena/props.js';
 import { createHeld } from './walker-held.js';
 import { createHollow } from './arena/hollow.js';
 import { createHollowPanel } from './arena/hollow-panel.js';
+import { createMoveLayer } from './arena/moves.js';
+import { createMovesPanel } from './arena/moves-panel.js';
 
 const $ = (/** @type {string} */ id) => /** @type {HTMLElement} */ (document.getElementById(id));
 /** @param {string} p */
@@ -50,6 +52,9 @@ const half = course.sizeM / 2;
 // The Hollow's numbers and the fighting clips, on the Hollow course only.
 const HR = course.dark ? await recipe('world/hollow') : null;
 const FC = course.dark ? await recipe('world/fight-clips') : null;
+const MR = course.dark ? await recipe('world/hollow-moves') : null;
+/** The Hollow's recipes as loaded, to show what the sliders changed. */
+const HR0 = structuredClone(HR), MR0 = structuredClone(MR);
 
 // ---- the world: ground, water, walk grid, solids ----
 const ground = course.ground;
@@ -99,6 +104,8 @@ const hollow = HR ? createHollow({
   actors: () => actors, head, say, lookRates: () => R.steer.look,
 }) : null;
 const SR = hollow ? await recipe('world/staff') : null;
+// The Q and E moves (H0b).
+const moveLayer = hollow && MR ? createMoveLayer({ MR, hollow, walker, motion, FC, FR, R, ground, say }) : null;
 /** The staff's look: ?staff=a (slim) or b (knotted). */
 const staffLook = SR ? SR.looks[params.get('staff') === 'b' ? 1 : 0].id : '';
 
@@ -148,7 +155,7 @@ const keys = attachMoveKeys(window, {
   },
 });
 if (hollow) {
-  window.addEventListener('keydown', (e) => hollow.onKey(e));
+  window.addEventListener('keydown', (e) => { if (e.target instanceof HTMLSelectElement || e.target instanceof HTMLInputElement) return; hollow.onKey(e); moveLayer?.onKey(e); });
   // Holding the right mouse button raises the lantern (doc 16: everyone's, never a peg).
   window.addEventListener('pointerdown', (e) => { if (e.button === 2 && (pointerLocked() || e.target === view)) { e.preventDefault(); hollow.lantern.raise(true); } }, { capture: true });
   window.addEventListener('pointerup', (e) => { if (e.button === 2) hollow.lantern.raise(false); }, { capture: true });
@@ -172,7 +179,8 @@ const look = attachMouseLook(view, {
   // A click on what the dot rests on: walk there by the walk grid (round solids, stopping at their edge).
   // In the Hollow a click swings the staff.
   use: (x, y) => {
-    if (hollow) { hollow.swingNow(); return; }
+    // Ready, then click: a readied move fires instead.
+    if (hollow) { if (!moveLayer?.click() && !moveLayer?.moves.playing) hollow.swingNow(); return; }
     const p = groundAt(x, y);
     if (!p) return;
     const r = walker.walkTo(p[0], p[2]);
@@ -199,6 +207,7 @@ const solidTris = course.solids.map((s) => {
 function props(place) {
   /** @type {number[]} */ const out = [];
   const you = youNow();
+  moveLayer?.draw(out);
   for (const a of actors) {
     for (const b of a.shapes(ground)) pushBox(out, [b[0], b[1], b[2]], [b[3], b[4], b[5]], b[6], [b[7], b[8], b[9]]);
     if (a.foe) continue;
@@ -232,6 +241,10 @@ const panel = hollow && HR ? createHollowPanel($('hollow-panel'), {
   },
 }) : null;
 if (panel) { $('hollow-panel').hidden = false; $('hollow-keys').hidden = false; }
+const movesPanel = moveLayer && HR && MR ? createMovesPanel($('moves-panel'), {
+  layer: moveLayer, MR, HR, MR0, HR0, say, blocks: /** @type {HTMLTextAreaElement} */ ($('blocks')),
+}) : null;
+if (movesPanel) $('moves-panel').hidden = false;
 
 // ---- tuning: sliders, the feel, copy as recipe blocks ----
 const feelOf = () => R.steer.profiles[walker.feel];
@@ -345,9 +358,10 @@ function tick(dt, draw = true) {
   camera.setViewport(view.clientWidth, view.clientHeight);
   look.update();
   const way = keyWay();
-  // Taking a hit, the walker stops for a moment.
-  if (hollow?.reeling) walker.steer(0, 0); else walker.steer(way[0], way[1], keys.run);
+  // Taking a hit, or planting and kneeling for a move, the walker stops for a moment.
+  if (hollow?.reeling || moveLayer?.holdsStill) walker.steer(0, 0); else walker.steer(way[0], way[1], keys.run);
   walker.update(dt);
+  moveLayer?.afterWalker();
   const you = youNow();
   for (const act of actors) {
     const ev = act.update(dt, you);
@@ -355,12 +369,13 @@ function tick(dt, draw = true) {
   }
   if (!hollow) $('actor-note').textContent = actors.map((act) => `${act.note} Startled ${act.startles} times.`).join(' ');
   hollow?.update(dt);
+  moveLayer?.update(dt);
   cam.update(dt);
   camera.update(dt);
   const e = camera.eye, t = camera.target;
   const r = motion.update(dt, {
     x: walker.x, z: walker.z, y: walker.y, yaw: walker.yaw, speed: walker.speed, moving: walker.moving, retreating: walker.retreating,
-    rolling: walker.rolling, airborne: walker.airborne, ground, depth: depthAt, posture: walker.posture, below: true, look: { yaw: Math.atan2(t[0] - e[0], t[2] - e[2]) },
+    rolling: moveLayer?.backStepping ? -1 : walker.rolling, airborne: walker.airborne, ground, depth: depthAt, posture: walker.posture, below: true, look: { yaw: Math.atan2(t[0] - e[0], t[2] - e[2]) },
   });
   samples.push({ t: clockS, v: walker.speed, roll: walker.rolling >= 0 });
   samples = samples.filter((s) => clockS - s.t <= TRACE_S);
@@ -383,11 +398,12 @@ function tick(dt, draw = true) {
       + `<dt>Water here</dt><dd>${k >= 0 ? `${depth(k).toFixed(2)} m` : 'none'}</dd><dt>Ground</dt><dd>${walker.y.toFixed(2)} m up</dd>`
       + (hollow ? `<dt>Floor dot</dt><dd>${(() => { const d = hollow.dot(); return d.locked ? 'under the locked target' : `${d.m.toFixed(1)} m out`; })()}</dd>` : '');
     panel?.show();
+    movesPanel?.show();
   }
 }
 requestAnimationFrame(frame);
 /** For checking from the console: the walker, the actors, the solids. */
-/** @type {any} */ (window).arena = { walker, get actors() { return actors; }, get solids() { return solids; }, camera, grid, R, hollow, motion,
+/** @type {any} */ (window).arena = { walker, get actors() { return actors; }, get solids() { return solids; }, camera, grid, R, hollow, motion, moveLayer,
   /** Run on s seconds at once in 60ths (checks from the console, and a hidden tab). @param {number} s */
   run(s) { const n = Math.round(s * 60); for (let i = 0; i < n; i++) tick(1 / 60, i === n - 1); last = performance.now(); },
   /** Hold time still (the view still draws), for checks and screenshots. @param {boolean} on */

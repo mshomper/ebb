@@ -15,7 +15,8 @@ import { inTheWay } from '../../src/world/hollow/occlude.js';
 import { pushRing, pushArc, pushDisc, pushSolidEdges } from './props.js';
 
 /** Colours of the marks: drawn unlit (negative), so they read in the dark. Paper, ink, ember. */
-const MARK = { paper: [-0.86, -0.82, -0.72], ink: [-0.12, -0.15, -0.14], ember: [-1.1, -0.62, -0.3], miss: [-0.45, -0.43, -0.4] };
+// Bright enough to stand out on the lantern-lit floor (the stage tonemaps them like light).
+const MARK = { paper: [-4, -3.8, -3.2], ink: [-0.12, -0.15, -0.14], ember: [-5, -2.2, -0.6], miss: [-0.45, -0.43, -0.4] };
 const wrap = (/** @type {number} */ a) => Math.atan2(Math.sin(a), Math.cos(a));
 
 /**
@@ -38,7 +39,7 @@ export function createHollow(o) {
   /** The walk's hit reaction playing (s left), so a hit isn't stacked on a hit. */
   let reeling = 0;
   /** Things standing in for the game's moves (H0b) hook in here: a brace that catches a hit. */
-  const hooks = { /** @type {null | (() => boolean)} */ catchHit: null };
+  const hooks = { /** @type {null | ((e: any) => boolean)} */ catchHit: null };
 
   /** Live stand-ins (not the frog, not broken). */
   const foes = () => o.actors().filter((a) => a.foe && !a.broken);
@@ -153,7 +154,7 @@ export function createHollow(o) {
   function onEvents(ev) {
     for (const e of ev) {
       if (e.type === 'strike' && e.hit) {
-        if (hooks.catchHit?.()) continue;
+        if (hooks.catchHit?.(e)) continue;
         lantern.sip(1);
         tally.taken++;
         reeling = Math.max(reeling, motion.shoot('hit', { feet: FR.clips.hit.feet ?? true, easeS: FR.easeS }) * 0.6);

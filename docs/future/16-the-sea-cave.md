@@ -392,6 +392,14 @@ Each kind keeps one fixed set of behaviors and never learns, and the set is buil
   - **Plant and Throw come from Meshy's animation library**, picked by Matt and retargeted onto our rig like the walk clips. Point and the hand variants of Raise are made in code.
   - **The movement arena comes first.** `tools/move-arena.html` gains Q and E pegs, a pick list of the twelve moves, stand-in enemies (one that winds up and lunges, a watcher) and a slider for each timing. It also gets the Hollow camera, Tab lock-on, the floor dot and a switch between tap to fire and ready-then-click, so both are felt before one is fixed. It's the first piece of Phase 3, so the feel is settled before any cave is built. The timings start from the feel page (plan-pages folder `hollow-moves-feel-plan.html`).
 
+- **H0 as built (October 27, 2026; m2-move-arena-h0).** The move arena's Hollow chamber (`tools/move-arena.html?course=hollow`, doc 23) has everything above to feel before any cave is built: the Hollow camera with walls fading to an outline, the staff's swing, the lantern as health (right mouse raises it), Tab lock-on, the floor dot, a lunger, a watcher and a mote cluster on the behavior table's steps, and the twelve rank 1 to 3 moves on Q and E with tap to fire, "Ready, then click", the gentler Hollow and sliders. The starting numbers are `recipes/world/hollow.json` and `recipes/world/hollow-moves.json` (the feel page's timings). Choices made while building, for Matt to judge in the arena:
+  - The floor dot's 10 m to 2 m runs across the Hollow camera's own tilt range (20 to 55 degrees), so every tilt the camera allows moves the dot.
+  - While locked the camera sits 20 degrees off the line to the target, so the walker never hides it.
+  - The watcher floats, so Groundline passes under it; Moth lure leads any watcher within 14 m of the moths.
+  - Hook and turn and Taproot take the locked thing, or else the thing nearest the dot.
+  - Raising the lantern lifts the light and the drawn lantern; the arm's raise pose is still to come.
+  - Snuff doesn't hold the walker still: moving ends it, as the table says.
+
 ## The lantern
 
 The lantern is how far you can go.

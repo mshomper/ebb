@@ -75,11 +75,11 @@ export function pushArc(out, x, z, r0, r1, yaw, arcDeg, ground, col, sides = 24)
  * @param {number[]} out @param {number} x0 @param {number} z0 @param {number} x1 @param {number} z1 @param {number} widthM
  * @param {(x: number, z: number) => number} ground @param {number[]} col
  */
-export function pushLane(out, x0, z0, x1, z1, widthM, ground, col, pieces = 16) {
+export function pushLane(out, x0, z0, x1, z1, widthM, ground, col, pieces = 16, lift = 0.035) {
   const dx = x1 - x0, dz = z1 - z0, l = Math.hypot(dx, dz) || 1, nx = (-dz / l) * widthM / 2, nz = (dx / l) * widthM / 2;
   for (let i = 0; i < pieces; i++) {
     const pts = [i, i + 1].flatMap((k) => { const t = k / pieces, px = x0 + dx * t, pz = z0 + dz * t; return [[px - nx, pz - nz], [px + nx, pz + nz]]; })
-      .map(([px, pz]) => [px, ground(px, pz) + 0.035, pz]);
+      .map(([px, pz]) => [px, ground(px, pz) + lift, pz]);
     for (const k of [0, 1, 3, 0, 3, 2]) out.push(...pts[k], 0, 1, 0, ...col);
   }
 }
