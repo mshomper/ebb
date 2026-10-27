@@ -645,7 +645,8 @@ Five motes are about 69,000 triangles in one instanced draw. The arena ran smoot
   - On a hit it bounces back (bounceM, 0.4 m) and recoils (recoilS) before its stuck recovery. The walker plays its hit clip, is shoved 0.3 m along the blow over the walk grid (hurt.shoveM, never into rock), loses control for staggerS, and the lantern sip still applies.
   - Braced with Anchor, there's no stagger: the crawler bounces back harder and reels open.
   - Rolling clear dodges it, and the lunge carries on to its goal as before.
-  - The crowd's push treats the walker as solid, so nothing settles inside it. A thing holding its ground stays put, and the walker can still walk through things (Matt's earlier call), so walking into a stuck or rearing crawler still overlaps it. That one is for Matt to decide.
+  - The crowd's push treats the walker as solid, so nothing settles inside it.
+  - **A crawler holding its ground is solid to the walker** (Matt, October 27, 2026), while it rears, lunges, is stuck after a lunge, or is stunned (Wick snare, Anchor's reel). The walker slides round its body circle (bodyM plus walkerBodyM) as it slides along solids. Head-on it slides to the crawler's left, a fixed side, so it never stops dead and can still walk right up to the soft back. A roll obeys the same rule. Every other state and every other kind stays walk-through, as before (`walkerBodies` in crowd.js, `roundBodies` in walker.js).
 
 ## What comes back up
 

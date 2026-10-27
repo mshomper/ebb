@@ -16,6 +16,8 @@ import { findPath, nearestOpen, isOpen } from './path.js';
  * @property {(x: number, z: number) => number} [nearest] distance to the nearest creature (m)
  * @property {import('./solids.js').Solids} [solids] solid things you cannot walk through
  * @property {() => number} [paceK] a lift on every pace (a tea's boon, P2e; 1 without one)
+ * @property {() => { x: number, z: number, r: number }[]} [bodies] solid round bodies this frame, slid
+ *   round (r includes the walker's own radius; the Hollow's things holding their ground, H2)
  */
 
 /**
@@ -90,6 +92,34 @@ export function createWalker(R, env) {
   }
 
   /**
+   * A step round solid bodies (env.bodies: circles, the walker's own radius included; in the Hollow a
+   * thing holding its ground): the part of the step going into one is taken off, so you slide round it
+   * and never stop dead; head on, you slide to its left (a fixed side, so a walk is repeatable). A step
+   * never ends deeper in one than it started (stepping out of one is fine). A roll obeys it too.
+   * @param {number} sx @param {number} sz @returns {[number, number]}
+   */
+  function roundBodies(sx, sz) {
+    const bodies = env.bodies?.();
+    if (!bodies?.length) return [sx, sz];
+    const len = Math.hypot(sx, sz);
+    for (const b of bodies) {
+      const nx0 = s.x + sx - b.x, nz0 = s.z + sz - b.z, d = Math.hypot(nx0, nz0);
+      if (d >= b.r || d < 1e-9) continue;
+      const nx = nx0 / d, nz = nz0 / d, into = sx * nx + sz * nz;
+      if (into >= 0) continue;
+      sx -= into * nx; sz -= into * nz;
+      // Head on: what is left is too little to slide on, so slide to its left at half the step.
+      if (Math.hypot(sx, sz) < len * 0.3) { sx += -nz * len * 0.5; sz += nx * len * 0.5; }
+    }
+    // Still deeper in one than before (a curve's bend): back onto its edge.
+    for (const b of bodies) {
+      const x1 = s.x + sx, z1 = s.z + sz, d1 = Math.hypot(x1 - b.x, z1 - b.z), d0 = Math.hypot(s.x - b.x, s.z - b.z);
+      if (d1 < b.r && d1 < d0 && d1 > 1e-9) { const e = Math.min(b.r, d0); sx = b.x + (x1 - b.x) / d1 * e - s.x; sz = b.z + (z1 - b.z) / d1 * e - s.z; }
+    }
+    return [sx, sz];
+  }
+
+  /**
    * Move by (dx, dz), sliding along whatever blocks the way: the step is tried whole, then along each
    * axis (the grid's edges), the longer first. slide false: all or nothing (a roll stops short).
    * rolling: a roll's rules (canStep).
@@ -100,7 +130,7 @@ export function createWalker(R, env) {
     const n = Math.max(1, Math.ceil(Math.hypot(dx, dz) / (G.cellM * 0.4)));
     let moved = 0;
     for (let i = 0; i < n; i++) {
-      const sx = dx / n, sz = dz / n;
+      const [sx, sz] = roundBodies(dx / n, dz / n);
       /** @type {[number, number][]} */
       const tries = !slide ? [[sx, sz]] : Math.abs(sx) >= Math.abs(sz) ? [[sx, sz], [sx, 0], [0, sz]] : [[sx, sz], [0, sz], [sx, 0]];
       const ok = tries.find(([a, b]) => (a || b) && canStep(s.x, s.z, s.x + a, s.z + b, rolling));
