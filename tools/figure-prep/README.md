@@ -30,3 +30,21 @@ Makes `assets/figures/walker-clips.json` from Meshy's rigged file with its clips
 ```
 python tools/figure-prep/clips.py <Meshy rigged .glb with clips> recipes/world/figure.json assets/figures/walker.glb assets/figures/walker-clips.json
 ```
+
+Since October 27, 2026 (C1 and C3) the clips come from two of Matt's files on the same Meshy rig: `Ebb_Walker+Animations.glb` (in `Documents\Ebb\_assets`) and `The+Walker_Additional+Animations.glb` (in `Documents\Ebb\_walker`). Pass both, split by `;`; a clip is read from the first file that has it, against that file's own rest pose. The second file names its joints the Mixamo way (`mixamorig:Hips` and so on); `MIXAMO` at the top of the script reads them under the first file's names (the joint positions are the same to the millimetre; only their axes differ, which the per-file rest pose takes out).
+
+There are two clip sets:
+
+- `main` (the default): the walks, runs, roll and torch walks, plus `pull` (Pull_Radish), `collect` (Collect_Object) and `squat` (air_squat) for Lift with the shovel, gathering and kneeling on the island (`recipes/world/figure.json clips.shots`).
+- `fight` (`--set fight`): the eleven fighting clips in a file of their own, `assets/figures/walker-clips-fight.json`, so the game's walk load doesn't grow. Each is named by the pose it serves (`swingDouble`, `plantSlam`, `raiseCast` and so on; the table is `recipes/world/fight-clips.json`). Only tool pages load it until the move arena.
+
+```
+python tools/figure-prep/clips.py "<_assets>/Ebb_Walker+Animations.glb;<_walker>/The+Walker_Additional+Animations.glb" recipes/world/figure.json assets/figures/walker.glb assets/figures/walker-clips.json
+python tools/figure-prep/clips.py "<same two files>" recipes/world/figure.json assets/figures/walker.glb assets/figures/walker-clips-fight.json --set fight
+```
+
+`src/world/figure/clips.js` plays any of them once over the walker (`shoot`), with a mask of the bones it takes: the fighting clips take the hips, spine, head, legs and right arm, and leave the left arm, which holds the lantern, to the code. `tools/walker-strip.html` shows each fighting clip masked beside Meshy's own, the staff in hand, and the island clips.
+
+## The driftwood staff
+
+Matt's two staves (`Ebb_Driftwood+Staves.glb`, one mesh) are split and cut down by `tools/assets/build-models.mjs` (the `part` option, `tools/assets/parts.mjs`: triangles sharing a corner are one piece) into `assets/models/camp/staff-slim.glb` and `staff-knotted.glb`, about 2,100 triangles each, 1.0 m long, foot at the origin, with the shared texture as 512 px WebP maps, the same way as the boat. `recipes/world/staff.json` holds the length, the grip and how the right hand holds it.
