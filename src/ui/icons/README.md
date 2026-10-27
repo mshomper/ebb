@@ -143,6 +143,7 @@ Size and color come from CSS: set `width`/`height` on `.icon` and `color` on the
 | `quality` | two stacked layers, the top one raised: Settings > Quality |
 | `saves` | a keepsake box with an arrow going in: Settings > Saves |
 | `tests` | a small flask a third full: Settings > Tests, on previews and local builds only |
+| `walker` | a figure in a tall soft hat with a wide brim and a long coat: the Walker page's button (src/ui/walker-page.js) |
 
 The clock dial (`src/ui/clock-dial.js`) is drawn live in the same style rather than from this sprite: a season ring, the sky's arc over a horizon with the sun or moon on it, and a tide wave with a rising or falling chevron.
 
@@ -156,7 +157,7 @@ A drawn glyph for every item the roadmap names (approved by Matt, October 23, 20
 |---|---|
 | `items.js` | The families and their tints, the sprite, `itemIconSvg`, `itemPouchSvg`, `chipSvg`, and the composed glyphs |
 | `items-gathered.js` | Fuel, stones, fibres, herbs, berries and nuts, earth, sea |
-| `items-made.js` | Made things and tools, dyes, keepsakes, treats |
+| `items-made.js` | Made things and tools, dyes, keepsakes, treats; the walker's own kit for the Walker page: `pack` (the first pack), `hat` and `coat` |
 | `items-camp.js` | The camp store (a lidded rush hamper; grown, two stacked under a withy lid) and the forager's things: gathering knife, seed scoop, tea caddy, walking stick, pressing frame. Its rows join `MAKES` |
 | `item-draw.js` | The shared fills, each family's cue, small path generators |
 | `item-registry.js` | Which glyph each item id wears, with its tier and phase |

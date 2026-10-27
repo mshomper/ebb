@@ -76,6 +76,15 @@ export const MADE = {
   // Willow basket: woven, with a bowed handle (ten pouches).
   basket: ['made', `<path d="M6.6 10C6.6 3.2 17.4 3.2 17.4 10"/>${both('d="M4.4 10H19.6L17.8 18.4C17.6 19.2 17 19.6 16.2 19.6H7.8C7 19.6 6.4 19.2 6.2 18.4Z"')}
     <path d="M5.2 13.2H18.8M5.8 16.4H18.2"/><path d="M9 10V19.6M12 10V19.6M15 10V19.6" opacity=".6"/>${BASE}`],
+  // The first pack: a soft cloth pack seen from the back, its flap tied down, two pouches at the foot (six pouches).
+  pack: ['made', `<path d="M9 5.4C9 2.8 15 2.8 15 5.4"/>${both('d="M6.4 6.8C6.4 5.8 7.2 5.2 8.2 5.2H15.8C16.8 5.2 17.6 5.8 17.6 6.8V18.2C17.6 19 17 19.6 16.2 19.6H7.8C7 19.6 6.4 19 6.4 18.2Z"')}
+    <path d="M6.4 10.4C9.6 11.8 14.4 11.8 17.6 10.4M12 11.4V13M7.8 15H11V18.4H7.8ZM13 15H16.2V18.4H13Z"/>${BASE}`],
+  // The walker's hat: a tall soft cone tipping back, its wide brim drooping at the front, a band at its foot.
+  hat: ['made', `${both('d="M8.4 14.2C9.4 10.8 10.6 7.4 12.8 4.4C13.8 3 15.6 2.6 17 3.6C15.4 4 14.6 5.4 14.6 7.2C14.6 9.4 15.4 12 15.8 14.2Z"')}
+    <path d="M8.4 12.6H15.6"/><path d="M3 16.6C4.6 14.6 8 14 12 14S19.4 14.6 21 16.6C19.6 17.6 17 17.2 15.4 16.6C13.6 16.1 10.4 16.1 8.6 16.6C7 17.2 4.4 17.6 3 16.6Z"/>${BASE}`],
+  // The walker's coat: long, on its shoulders, open down the front, a patch at one elbow.
+  coat: ['made', `${both('d="M9.4 3.4L5.6 5.2L3.6 12.4L5.6 13.2L6.8 9.6V20.2H11.2L12 8.6L12.8 20.2H17.2V9.6L18.4 13.2L20.4 12.4L18.4 5.2L14.6 3.4C13.8 4.6 13 5.2 12 5.2S10.2 4.6 9.4 3.4Z"')}
+    <path d="M9.4 3.4L12 8.6L14.6 3.4M8.4 14.4H10.2M13.8 14.4H15.6"/><rect x="3.9" y="9.6" width="2" height="2" rx=".5" transform="rotate(16 4.9 10.6)"/>`],
   // Driftwood frame: two bowed uprights and lashed crossbars, a flat stone shelf (twelve pouches).
   'driftwood-frame': ['made', `<path d="M7.6 3.2C8.2 8 6.8 14 6.2 20M16.4 3.2C15.8 8 17.2 14 17.8 20M7.4 7.6H16.6M7 12.6H17"/>
     <path d="M6.6 6.8L8.2 8.4M15.8 8.4L17.4 6.8M6.2 11.8L7.8 13.4M16.2 13.4L17.8 11.8"/><rect ${A} x="5.4" y="16.4" width="13.2" height="2.4" rx="1.2"/><rect x="5.4" y="16.4" width="13.2" height="2.4" rx="1.2"/>`],
