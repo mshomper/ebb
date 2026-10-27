@@ -10,6 +10,7 @@ import { createStage } from './walker-figure-stage.js';
 import { loadFigureModel, loadFigureClips, eyeUniforms } from '../src/world/figure/index.js';
 import { buildFigure } from '../src/world/figure/rig.js';
 import { createFigureMotion } from '../src/world/figure/motion.js';
+import { addCarrierStrips } from './walker-strip-carriers.js';
 
 const $ = (/** @type {string} */ id) => /** @type {HTMLElement} */ (document.getElementById(id));
 const view = /** @type {HTMLCanvasElement} */ ($('view'));
@@ -286,6 +287,8 @@ const GESTURES = {
   rise: { label: 'Getting up', from: 'kneel' },
   stuck: { label: "I'm stuck" },
   make: { label: 'Make at the workbench', kneelS: 1.8 },
+  setClump: { label: 'Set a clump in', kneelS: 2.6 },
+  pushIn: { label: 'Push a withy in', kneelS: 2.2 },
   steep: { label: 'Steep the tea', kneelS: 3.2 },
   sip: { label: 'Sip the tea', kneelS: 4.5 },
 };
@@ -338,14 +341,14 @@ function handAt(motion, side, yaw) {
   const c = Math.cos(yaw), s = Math.sin(yaw);
   return [c * bx + s * bz, by, -s * bx + c * bz];
 }
-function digRun() {
+function digRun(act = 'dig') {
   const motion = createFigureMotion(R, built.skeleton);
   let t = 0;
   return {
     motion,
     step() {
       t += DT;
-      if (Math.abs(t - 0.5) < DT / 2) motion.act('dig');
+      if (Math.abs(t - 0.5) < DT / 2) motion.act(act);
       const r = motion.update(DT, { x: 0, z: 0, y: 0, yaw: 0, speed: 0, moving: false, ground: () => 0, depth: () => 0, below: true, posture: 'stand' });
       return { t, r, act: motion.acting };
     },
@@ -360,9 +363,18 @@ function digRun() {
     },
   };
 }
-const digKeys = R.poses.dig.keys;
-const digSp = R.poses.dig.speed ?? 1;
-const digPicks = () => digKeys.map((k, i) => ({ i: Math.round((0.5 + k.t / digSp) / DT) - 1, label: `${(k.t / digSp).toFixed(2)} s ${['ready', 'bend', 'drive', 'lever', 'lift', 'tip', 'ready'][i] ?? ''}` }));
+/** A frame at each key of an act, named. @param {string} act @param {string[]} names */
+const actPicks = (act, names) => () => R.poses[act].keys.map((/** @type {any} */ k, /** @type {number} */ i) => ({ i: Math.round((0.5 + k.t / (R.poses[act].speed ?? 1)) / DT) - 1, label: `${(k.t / (R.poses[act].speed ?? 1)).toFixed(2)} s ${names[i] ?? ''}` }));
+const digPicks = actPicks('dig', ['ready', 'bend', 'drive', 'lever', 'lift', 'tip', 'ready']);
+// Planting from below (P2g): Lift with the shovel (the liftClump act, the shovel drawn as the dig's),
+// then setting a clump in and pushing a withy in, both kneeling.
+const liftPicks = actPicks('liftClump', ['ready', 'blade in', 'driven', 'lever back', 'up', 'the roots', 'ready']);
+STRIPS.planting = { title: 'Planting from below (P2g)', tile: [240, 320], view: SIDE.right, rows: [
+  { name: 'Lift with the shovel, from the right', view: SIDE.right, run: () => digRun('liftClump'), picks: liftPicks, overlay: true },
+  ...['setClump', 'pushIn'].map((n) => ({ name: `${GESTURES[n].label}, from the front and right`, view: { yaw: -0.8, pitch: 0.2, dist: 3.4 }, run: () => gestureRun(n), picks: gesturePicks(n) })),
+  ...gestureRows(['setClump', 'pushIn']),
+] };
+
 STRIPS.dig = {
   title: 'Dig with the shovel',
   tile: [260, 360],
@@ -391,6 +403,9 @@ function drawShovel(g, run, x, y, w, h) {
   if (Math.hypot(tip[0] - blade[0], tip[1] - blade[1]) > 1) { g.beginPath(); g.moveTo(blade[0], blade[1]); g.lineTo(tip[0], tip[1]); g.stroke(); }
   g.lineCap = 'butt';
 }
+
+// The carriers worn (P2f): walking, jogging, running, sitting, digging and rolling.
+await addCarrierStrips({ STRIPS, stage, R, W, built, DT, strideRun, rollRun, digRun, stridePicks, rollPicks, digPicks, createFigureMotion, clips: CLIPS });
 
 const LABEL = 34, CURVE_H = 110, HEAD = 40, PAD = 12;
 
@@ -424,6 +439,8 @@ async function render(name) {
       let r = null;
       while (f <= picks[c].i) { r = b.step(); f++; }
       stage.snap();
+      // A carrier worn (walker-strip-carriers.js) is drawn as the stage's plain shapes.
+      stage.setProps(b.props ? b.props() : null);
       stage.draw({ bones: b.motion.bones, eyes: eyeUniforms(R.eyes, headBone, r.r.eyes, eyeBuf), place: b.place(), weights: false, night: false, water: -9, follow: b.place(), dt: DT });
       // Copied in the same task as the draw, while the frame is still the canvas's own.
       const x = c * TILE_W, y = y0 + HEAD;
@@ -461,7 +478,7 @@ async function render(name) {
 }
 
 // For the console: the recipe, the rig and the runs.
-/** @type {any} */ (window).walkerStrip = { R, built, gestureRun, lookRun, STRIPS };
+/** @type {any} */ (window).walkerStrip = { R, built, stage, gestureRun, lookRun, STRIPS, render };
 
 const bar = $('bar');
 for (const name of Object.keys(STRIPS)) {

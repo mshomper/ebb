@@ -136,21 +136,50 @@ function basinStarters(g, hab, env, pos = 0) {
 }
 
 /**
- * Plant a seed by hand (the Plant tool). Returns the new state, or the reason it would not take.
+ * @typedef {Object} PlantOpts  how a planting by hand goes in (P2g: seed balls, moved clumps, cuttings)
+ * @property {number} [minSuit] the least suitability it takes on (0.2; a seed ball a little less)
+ * @property {number} [size] it goes in grown this far (a clump at the size it was lifted, a cutting
+ *   rooted young), its age past sprouting, its stage from its size; else a seed
+ * @property {number} [best] the largest it had been (a moved clump keeps it)
+ * @property {boolean} [capped] the species' island cap (spread.maxCount) applies, as to its own spread
+ */
+
+/**
+ * Plant a seed by hand (the Plant tool), or set a grown plant in (P2g). Returns the new state, or
+ * the reason it would not take.
  * @param {any} state @param {string} sp @param {number} x @param {number} z @param {any} env
+ * @param {PlantOpts} [o]
  * @returns {{ state: any, ok: boolean, id?: number, reason?: Need|'crowded'|'full'|'unknown' }}
  */
-export function plantSeed(state, sp, x, z, env) {
+export function plantSeed(state, sp, x, z, env, o = {}) {
   const hab = env.habitat?.();
   const rec = env.recipes.flora?.[sp];
   if (!hab || !rec) return { state, ok: false, reason: 'unknown' };
   const g = state.growth ?? initialGrowth();
   if (g.plants.length >= env.recipes.growth.maxPlants) return { state, ok: false, reason: 'full' };
   const s = suitability(rec, hab, x, z);
-  if (s.suit < 0.2) return { state, ok: false, reason: s.worst };
+  if (s.suit < (o.minSuit ?? 0.2)) return { state, ok: false, reason: s.worst };
   if (crowded(cellIndex(g.plants), g.plants, sp, x, z, rec.spread?.minSpacingM ?? 0.5)) return { state, ok: false, reason: 'crowded' };
+  if (o.capped && rec.spread?.maxCount && g.plants.filter((q) => q.sp === sp).length >= rec.spread.maxCount) return { state, ok: false, reason: 'full' };
   const p = { id: g.nextId, sp, x, z, age: 0, size: 0, best: 0, stage: STAGE.seed, low: 0, drown: 0, last: 0 };
+  if (o.size !== undefined) {
+    // Set in grown: past sprouting, its stage from its size (the next hour reads the season too).
+    const S = rec.growth.stages, size = Math.max(0, Math.min(1, o.size));
+    Object.assign(p, { age: S.sproutH, size, best: Math.max(size, o.best ?? 0), stage: size >= S.matureSize ? STAGE.mature : size >= S.youngSize ? STAGE.young : STAGE.sprout });
+  }
   return { state: { ...state, growth: { ...g, nextId: g.nextId + 1, plants: [...g.plants, p] } }, ok: true, id: p.id };
+}
+
+/**
+ * Lift a plant out whole (P2g, the shovel): it leaves the island, and its record comes back to be
+ * set in elsewhere at the size it was. @param {any} state @param {number} id
+ * @returns {{ state: any, plant: any | null }}
+ */
+export function liftPlant(state, id) {
+  const g = state.growth;
+  const plant = g?.plants?.find((/** @type {any} */ p) => p.id === id) ?? null;
+  if (!plant) return { state, plant: null };
+  return { state: { ...state, growth: { ...g, plants: g.plants.filter((/** @type {any} */ p) => p.id !== id) } }, plant: { ...plant } };
 }
 
 /**

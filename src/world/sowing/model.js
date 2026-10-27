@@ -6,25 +6,44 @@
 // gathered seed pouches (D1b): each an item sown the same way. The gift spot holds what a species'
 // gift left to place, a recipe count of each, less those placed (saved in the unlocks' `earned.placed`).
 
+import { hash32 } from '../../core/rng.js';
+
 /**
- * @typedef {{ kind: 'seed', id: string, species: string, icon: string, endless: boolean, left: number }} TinItem
- *   left: Infinity for an endless seed, else how many sowings the pouch has
+ * @typedef {{ kind: 'seed' | 'ball' | 'clump' | 'cutting', id: string, species: string, icon: string, endless: boolean, left: number,
+ *   from?: string, name?: string, fill?: number }} TinItem
+ *   left: Infinity for an endless seed, else how many sowings (or clumps, or withies) the pack holds;
+ *   from: the pack kind it is taken from (P2g); name: its name, the pouch's; fill: how full its
+ *   pouch is drawn (1 to 3)
  * @typedef {{ kind: 'gift', id: string, place: 'plant' | 'raft', species: string | null, icon: string, left: number }} GiftItem
  * @typedef {{ kind: 'net', id: 'net' }} NetItem
  * @typedef {TinItem | GiftItem | NetItem} HandItem
  */
 
+/** The tin's own kind for a pack kind, and its id prefix (P2g). */
+const FROM_PACK = /** @type {Record<string, 'seed' | 'ball' | 'clump'>} */ ({ seed: 'seed', ball: 'ball', clump: 'clump' });
+
 /**
- * The seed tin's items: the endless seeds, then any gathered pouches (D1b's hook: { species, left }
- * from the satchel; none yet).
- * @param {any} R recipes/world/sowing.json @param {{ species: string, left: number }[]} [gathered]
+ * The seed tin's items: the endless seeds, then what the pack holds to plant (D1b and P2g): each
+ * species' saved seed, its seed balls and its lifted clumps, and willow withies to set as cuttings.
+ * @param {any} R recipes/world/sowing.json
+ * @param {{ kind: string, handfuls: number, name?: string }[]} [pouches] the pack's pouches (packView)
  * @returns {TinItem[]}
  */
-export function tinItems(R, gathered = []) {
+export function tinItems(R, pouches = []) {
   /** @type {TinItem[]} */ const out = R.tin.endless.map((/** @type {string} */ sp) => ({ kind: 'seed', id: sp, species: sp, icon: sp, endless: true, left: Infinity }));
-  for (const g of gathered) {
-    if (!(g.left > 0) || R.tin.endless.includes(g.species)) continue;
-    out.push({ kind: 'seed', id: `pouch:${g.species}`, species: g.species, icon: g.species, endless: false, left: g.left });
+  /** @type {Map<string, TinItem>} */ const byId = new Map();
+  for (const p of pouches) {
+    if (!(p.handfuls > 0)) continue;
+    const dot = p.kind.lastIndexOf('.'), sp = p.kind.slice(0, dot), tin = FROM_PACK[p.kind.slice(dot + 1)];
+    const cut = R.cutting && p.kind === R.cutting.kind;
+    if (!tin && !cut) continue;
+    const kind = cut ? 'cutting' : /** @type {'seed' | 'ball' | 'clump'} */ (tin);
+    const id = cut ? 'cutting' : `${kind}:${sp}`;
+    const it = byId.get(id) ?? { kind, id, species: cut ? R.cutting.species : sp, icon: p.kind, endless: false, left: 0, from: p.kind, name: p.name, fill: 0 };
+    // A clump fills a whole pouch: one a pouch.
+    it.left += kind === 'clump' ? Math.floor(p.handfuls / 3) : p.handfuls;
+    it.fill = Math.max(it.fill ?? 0, p.handfuls);
+    if (it.left > 0 && !byId.has(id)) { byId.set(id, it); out.push(it); }
   }
   return out;
 }
@@ -104,6 +123,11 @@ export function landing(depthM, near, S) {
  */
 export function itemLabel(R, item) {
   const W = R.words;
+  // What the pack holds (P2g) goes by its pouch's name ("Iris seed"), and how full it is.
+  if ('from' in item && item.from) {
+    const name = item.kind === 'cutting' ? W.seedNames?.cutting ?? item.name ?? item.id : item.name ?? item.id;
+    return [name, W.fill?.[Math.min(3, item.fill ?? 0)]].filter(Boolean).join(', ');
+  }
   const name = W.names[item.kind === 'seed' || item.kind === 'gift' ? (item.kind === 'seed' ? item.species : item.id) : 'net'] ?? item.id;
   if (item.kind === 'net' || (item.kind === 'seed' && item.endless)) return name;
   const n = item.left;
@@ -112,3 +136,15 @@ export function itemLabel(R, item) {
 
 /** Two hand items are the same pick. @param {{ kind: string, id: string } | null} a @param {{ kind: string, id: string } | null} b */
 export const samePick = (a, b) => !!a && !!b && a.kind === b.kind && a.id === b.id;
+
+/**
+ * Where a seed ball's seeds land (P2g G5): n spots round the middle, r from it (the species'
+ * spacing, a little over), turned by a hash of the spot so each ball's cluster lies its own way. The
+ * same spot always gives the same cluster, so a ring read and its sowing agree. Pure.
+ * @param {number} x @param {number} z @param {number} n @param {number} r
+ * @returns {number[][]} [x, z] each
+ */
+export function ballSpots(x, z, n, r) {
+  const turn = ((hash32(Math.round(x * 100), Math.round(z * 100)) >>> 0) / 4294967296) * Math.PI * 2;
+  return Array.from({ length: n }, (_, i) => { const a = turn + (i * Math.PI * 2) / n; return [x + Math.cos(a) * r, z + Math.sin(a) * r]; });
+}

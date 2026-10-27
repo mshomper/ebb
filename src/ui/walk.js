@@ -25,6 +25,8 @@ import { get, subscribe } from '../core/store.js';
 import { dispatch } from '../input/actions.js';
 import { ensureIconSprite, iconSvg } from './icons/icons.js';
 import { tinItems, giftItems, itemLabel, samePick } from '../world/sowing/model.js';
+import { itemPouchSvg, ensureItemSprite } from './icons/items.js';
+import { itemIconFor } from './icons/item-registry.js';
 
 /**
  * @param {HTMLElement} parent the HUD layer
@@ -35,6 +37,7 @@ import { tinItems, giftItems, itemLabel, samePick } from '../world/sowing/model.
  */
 export function mountWalk(parent, words, sowing) {
   ensureIconSprite();
+  ensureItemSprite();
   // data-label: the word over an icon-only button on hover (the ground bar, F17; walk.css).
   const btn = (/** @type {string} */ cls, /** @type {string} */ icon, /** @type {string} */ label, /** @type {string} */ extra = '') =>
     `<button type="button" class="ebb-walk__btn ${cls}" aria-label="${label}" data-label="${label}"${extra}><span class="ebb-walk__icon">${icon ? iconSvg(icon) : ''}</span><span class="ebb-walk__name">${label}</span></button>`;
@@ -72,7 +75,12 @@ export function mountWalk(parent, words, sowing) {
   /** Which menu is open. @type {'tin' | 'gifts' | null} */ let open = null;
 
   /** The items a menu holds now. @param {'tin' | 'gifts'} which */
-  const itemsOf = (which) => (which === 'tin' ? tinItems(sowing) : giftItems(sowing, get('unlocks')));
+  const itemsOf = (which) => (which === 'tin' ? tinItems(sowing, get('packView')?.pouches ?? []) : giftItems(sowing, get('unlocks')));
+  /** A menu item's drawing: the tin's endless seeds their own icons; what the pack holds (P2g) its item glyph in a pouch as full as it is. @param {any} it */
+  const drawItem = (it) => {
+    const g = it.from ? itemIconFor(it.from) : null;
+    return g ? itemPouchSvg(g, Math.max(1, Math.min(3, it.fill ?? 3))) : iconSvg(it.icon);
+  };
 
   let shown = '';
   function render() {
@@ -84,13 +92,14 @@ export function mountWalk(parent, words, sowing) {
     // The pot in both arms (K-26): no Feed and no Net until it is set down.
     const arms = get('pack')?.holding === 'pot';
     if (!below) open = null;
-    const key = `${below}|${w.posture}|${hasNet}|${arms}|${hand?.kind}:${hand?.id}|${open}|${gifts.map((g) => `${g.id}${g.left}`).join(',')}`;
+    const tinKey = open === 'tin' ? itemsOf('tin').map((t) => `${t.id}${t.fill ?? ''}`).join(',') : '';
+    const key = `${below}|${w.posture}|${hasNet}|${arms}|${hand?.kind}:${hand?.id}|${open}|${gifts.map((g) => `${g.id}${g.left}`).join(',')}|${tinKey}`;
     if (key === shown) return;
     shown = key;
     netBtn.hidden = !hasNet || arms;
     feedBtn.hidden = arms;
     netBtn.setAttribute('aria-pressed', String(hand?.kind === 'net'));
-    tinBtn.setAttribute('aria-pressed', String(hand?.kind === 'seed'));
+    tinBtn.setAttribute('aria-pressed', String(['seed', 'ball', 'clump', 'cutting'].includes(hand?.kind)));
     giftBtn.setAttribute('aria-pressed', String(hand?.kind === 'gift'));
     // An empty gift spot rests dimmed; its word says gifts come here.
     giftBtn.classList.toggle('is-empty', !gifts.length);
@@ -105,11 +114,13 @@ export function mountWalk(parent, words, sowing) {
     if (open) {
       menu.innerHTML = list.map((it) => {
         const label = itemLabel(sowing, it);
-        return `<button type="button" class="ebb-walk__btn" role="menuitemradio" aria-checked="${samePick(hand, it)}" aria-pressed="${samePick(hand, it)}" aria-label="${label}" data-label="${label}" data-pick-kind="${it.kind}" data-pick-id="${it.id}"><span class="ebb-walk__icon">${iconSvg(it.icon)}</span><span class="ebb-walk__name">${label}</span></button>`;
+        return `<button type="button" class="ebb-walk__btn" role="menuitemradio" aria-checked="${samePick(hand, it)}" aria-pressed="${samePick(hand, it)}" aria-label="${label}" data-label="${label}" data-pick-kind="${it.kind}" data-pick-id="${it.id}"><span class="ebb-walk__icon">${drawItem(it)}</span><span class="ebb-walk__name">${label}</span></button>`;
       }).join('');
-      // Over its own button, kept inside the bar's width.
+      // Over its own button, kept inside the bar's width: from seven items, two even rows (P2g).
       const b = (open === 'tin' ? tinBtn : giftBtn).getBoundingClientRect(), r = bar.getBoundingClientRect();
-      const mw = list.length * 48 + 12;
+      const perRow = list.length >= 7 ? Math.ceil(list.length / 2) : list.length;
+      menu.style.gridTemplateColumns = `repeat(${perRow}, 48px)`;
+      const mw = perRow * 52 + 8;
       menu.style.left = `${Math.max(0, Math.min(r.width - mw, b.left - r.left + b.width / 2 - mw / 2))}px`;
     }
     goIcon.innerHTML = iconSvg(below ? 'go-up' : 'go-down');
@@ -154,7 +165,7 @@ export function mountWalk(parent, words, sowing) {
   }
 
   render();
-  const unsubs = ['walk', 'unlocks', 'hand', 'pack'].map((s) => subscribe(s, render));
+  const unsubs = ['walk', 'unlocks', 'hand', 'pack', 'packView'].map((s) => subscribe(s, render));
   parent.appendChild(root);
   parent.appendChild(bar);
   return () => {

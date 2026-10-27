@@ -279,7 +279,7 @@ export function addPlantRulesTests(test, assert, eq) {
       assert(gather.words.refused[sp], `${sp} has a refusal line`);
       assert(words.species[sp].likes.some((/** @type {any} */ l) => l.learn.includes('pick:refused')), `${sp}'s page learns from pick:refused`);
     }
-    assert(!partsOf('iris', gather).length && !partsOf('marigold', gather).length, 'no parts to gather');
+    assert(partsOf('iris', gather).join() === 'seed' && partsOf('marigold', gather).join() === 'seed', 'nothing to pick, only their seed to save (P2g)');
   });
 
   // ---- A8: the gather lab's model ----

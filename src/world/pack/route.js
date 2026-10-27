@@ -14,8 +14,10 @@
  * @returns {Place[]}
  */
 export function routeOf(camp, have) {
-  // Worms dig themselves in and seeds wait in the pouch: the piles say so.
-  if (camp === 'none' || camp === 'pouch') return ['piles'];
+  // Worms dig themselves in: the piles say so. Seed, seed balls and clumps keep in the hamper, one
+  // slot a species (P2g G6); with no hamper they wait in the pouch.
+  if (camp === 'none') return ['piles'];
+  if (camp === 'pouch') return have.hamper ? ['hamper'] : ['piles'];
   const hamper = have.hamper ? /** @type {Place[]} */ (['hamper']) : [];
   // Herbs hang on the rack; with no rack and no hamper, the piles give the rack's reason.
   if (camp === 'rack') return have.rack ? ['rack', ...hamper] : have.hamper ? hamper : ['piles'];

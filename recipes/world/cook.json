@@ -28,8 +28,13 @@
     "fire-tea-pot": { "tier": "T2", "at": "fire", "parts": ["shaped:tea-pot"], "out": "work", "needH": 8, "gives": "tea-pot", "count": 1, "fires": "tea-pot", "src": ["3.12", "S5"] },
     "fire-cup": { "tier": "T2", "at": "fire", "parts": ["shaped:cup"], "out": "work", "needH": 8, "gives": "cup", "count": 1, "fires": "cup", "src": ["M-11", "S5"] },
     "fire-bowl": { "tier": "T2", "at": "fire", "parts": ["shaped:bowl"], "out": "work", "needH": 8, "gives": "bowl", "count": 1, "fires": "bowl", "src": ["M-12", "S5"] },
-    "leaf-pack": { "tier": "T2", "at": "workbench", "parts": ["leaves", "rush-cord"], "out": "pouch", "gives": "leaf-pack", "count": 1, "src": ["F-04", "G-24", "P2h"] }
+    "leaf-pack": { "tier": "T2", "at": "workbench", "parts": ["leaves", "rush-cord"], "out": "pouch", "gives": "leaf-pack", "count": 1, "src": ["F-04", "G-24", "P2h"] },
+    "satchel": { "tier": "T3", "at": "workbench", "parts": [["rushes.stems", "marram.leaves"], "rush-cord", "rush-cord"], "out": "carrier", "max": 1, "src": ["4.1", "P2f"] },
+    "basket": { "tier": "T3", "at": "workbench", "parts": ["willow.withies", "rush-cord", "rush-cord"], "out": "carrier", "max": 1, "src": ["4.1", "P2f"] },
+    "seed-balls": { "tier": "T2", "at": "workbench", "parts": ["clay", { "part": "seed", "shows": "thrift.seed" }], "out": "pouch", "gives": "{sp}.ball", "count": 1, "src": ["5", "P2g G5"] }
   },
+  "seedBallsNote": "P2g G5: a handful of clay and a handful of any plant's saved seed ({ part: 'seed' } takes any '<species>.seed'; its pencil outline wears thrift seed) roll into a handful of seed balls of that species (gives '{sp}.ball', the laid seed's species). Each ball sows a cluster of three on slightly poorer ground (sowing.json ball).",
+  "carriersNote": "P2f: the rush satchel (a handful of rushes or marram plaited, two of cord for its strap) and the willow basket (a handful of withies woven, two of cord for its straps), out 'carrier': put on at once in place of the carrier worn, which hangs at camp (recipes/world/pack.json wear, hang). Their parts never tie with the hamper's (two rushes, one cord) or the rack's (two withies or sticks, one cord): with one of each laid, the make using all three wins.",
   "makesNote": "Every make at a station. at: the station (workbench, fire, apothecary); act: its action's icon and label (words.acts), else the station's own; parts: one handful each, a kind id, a list of kinds that serve (['sticks', 'drift-twigs']), or any kind of a pack group ({ group: 'herbs', shows: the kind its pencil outline wears }); after: a camp slot that must be built first (the mortar and rack wait for the apothecary bench, the second hamper for the first, Dry for the rack, Grind for the mortar); out: where it goes when made ('tool' hangs on the pack and takes no pouch, kept in the cook section's tools; 'pouch' fills a pouch of gives, count handfuls, or a small heap at your feet when the pack is full; 'slot' stands in its camp slot (slot), carried there; 'stack' stacks a second hamper on the first, 6 slots to 12; 'rack' hangs the herb on the drying rack as a bunch); max: how many can ever be made (the station stops offering it). Rush cord (P2c): one handful of rushes or marram leaves twisted into one handful of cord. The shovel needs a stick, a flat stone and cord. The drying rack: two withies or sticks lashed with cord; the mortar: a flat stone hollowed with a pebble. The hamper (P2j): two handfuls of rushes coiled and stitched with cord; the second hamper takes rushes, cord and a willow-withy lid. Dry hangs a handful of any herb on the rack; Grind turns a handful of broken shells into crushed shell (Mix waits for P2e). willow-charcoal (P2i, X-15): a handful of withies laid at the fire with Fire goes on the overnight work list (out 'work', src/world/camp/work.js): after needH game hours of fire, lit or banked, it is a full pouch (count handfuls) of charcoal sticks, taken up from the ring's card. work.max: the most pieces laid at the fire at once. leaf-pack (P2h): a handful of fallen leaves bound with rush cord into one leaf pack, the minnows' treat (recipes/world/treats.json). One make is shown at a time: the one with the most parts laid, then the lower tier, then this file's order.",
 
   "work": { "max": 4 },
@@ -104,7 +109,10 @@
       "bowl": "A shallow bowl. It waits pale on the bench for the fire.",
       "fire-cooking-pot": "Set at the fire's edge. A night of fire will harden it.", "fire-tea-pot": "Set at the fire's edge. A night of fire will harden it.",
       "fire-cup": "Set at the fire's edge. A night of fire will harden it.", "fire-bowl": "Set at the fire's edge. A night of fire will harden it.",
-      "leaf-pack": "Fallen leaves bound tight with cord. A leaf pack, to sink in still water." },
+      "leaf-pack": "Fallen leaves bound tight with cord. A leaf pack, to sink in still water.",
+      "satchel": "A satchel of plaited rushes on a cord strap. You put it on, and hang the old pack by the bench. Two more pouches.",
+      "basket": "A basket of woven withies on two cord straps. You put it on, and hang the other by the bench. Two more pouches.",
+      "seed-balls": "Seed rolled into clay. Each ball will land as a little cluster, and take where a bare seed would not." },
     "benchFull": "The bench is full of pieces waiting for the fire. Fire one first.",
     "onBench": "On the workbench",
     "benchWaiting": "Waiting for the fire",
@@ -160,13 +168,14 @@
     "pageNames": { "ring": "Fire ring", "workbench": "Workbench", "shovel": "Shovel", "rush-cord": "Rush cord", "apothecary": "Apothecary bench", "rack": "Drying rack",
       "mortar": "Mortar and pebble", "hamper": "Rush hamper", "hamper2": "Second hamper", "dry": "First herbs drying", "grind": "Crushed shell", "willow-charcoal": "Willow charcoal",
       "hearth-stones": "Hearth stones", "cooking-pot": "Cooking pot, shaped", "tea-pot": "Tea pot, shaped", "cup": "Clay cup, shaped", "bowl": "Clay bowl, shaped",
-      "fire-cooking-pot": "Cooking pot, fired", "fire-tea-pot": "Tea pot, fired", "fire-cup": "Clay cup, fired", "fire-bowl": "Clay bowl, fired", "leaf-pack": "Leaf pack" },
+      "fire-cooking-pot": "Cooking pot, fired", "fire-tea-pot": "Tea pot, fired", "fire-cup": "Clay cup, fired", "fire-bowl": "Clay bowl, fired", "leaf-pack": "Leaf pack",
+      "satchel": "Rush satchel, eight pouches", "basket": "Willow basket, ten pouches", "seed-balls": "Seed balls" },
     "pageParts": { "ring": "Sticks and stones", "workbench": "Two flat stones", "shovel": "A stick, a flat stone, cord", "rush-cord": "Rushes or marram, twisted",
       "apothecary": "Sticks lashed with cord", "rack": "Withies or sticks, cord", "mortar": "A flat stone and a pebble", "hamper": "Rushes coiled, stitched with cord",
       "hamper2": "Rushes, cord, a willow lid", "dry": "A handful of herbs, hung", "grind": "Broken shells, ground", "willow-charcoal": "Withies, a night in the fire",
       "hearth-stones": "Two handfuls of flat stones", "cooking-pot": "Clay, tempered with sand; it wants a night in the fire", "tea-pot": "Clay, tempered with crushed shell; it wants a night in the fire", "cup": "A handful of clay; it wants a night in the fire", "bowl": "A handful of clay; it wants a night in the fire",
       "fire-cooking-pot": "A night in the fire", "fire-tea-pot": "A night in the fire", "fire-cup": "A night in the fire", "fire-bowl": "A night in the fire",
-      "leaf-pack": "Fallen leaves, rush cord" }
+      "leaf-pack": "Fallen leaves, rush cord", "satchel": "Rushes plaited, a cord strap", "basket": "Withies woven, two cord straps", "seed-balls": "Clay and saved seed, rolled" }
   },
   "wordsNote": "Every line the stations and the camp page say. <slot>Slot: a bench's ground card (name, line, needs, and its Build label); builtLines: the line after a build other than the workbench's (built). acts: the apothecary's actions. hamper: the stations' row of what the hamper holds; takeUp, setDownHere, emptySlot: the hamper's and the rack's cards. made: the line after a first make, by make id. workFull, workTake, workWaiting, workDone: the overnight work at the fire (the ring's card). pageNames, pageParts: the camp page's first-made lines, in the walker's hand: name, what it was made of, and the date."
 }

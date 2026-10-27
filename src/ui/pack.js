@@ -74,6 +74,8 @@ export function mountPack(row, words, sketchOf) {
     when: (c) => c.sp === 'pouch' && (get('treatKinds') ?? []).includes(c.kindId), action: (c) => ({ type: 'treats.setOut', kind: c.kindId }) });
 
   let shown = '';
+  /** The row's size last drawn: a bigger carrier put on unfolds the new pouches (P2f). */
+  let lastSize = -1;
   function render() {
     const v = get('packView');
     if (!v) { row.innerHTML = ''; shown = ''; return; }
@@ -81,6 +83,8 @@ export function mountPack(row, words, sketchOf) {
     const key = JSON.stringify([v.size, v.pouches, v.holding, held?.key ?? null]);
     if (key === shown) return;
     shown = key;
+    const grew = lastSize >= 0 && v.size > lastSize ? v.size - lastSize : 0;
+    lastSize = v.size;
     const cells = [];
     // The pot in your arms (K-26): its tile first, not dimmed; a click opens its card (Set down, Pour out).
     const potIcon = held?.pot ? makeIcon(held.pot) : null;
@@ -92,7 +96,7 @@ export function mountPack(row, words, sketchOf) {
       const icon = p ? itemIconFor(p.kind) : null;
       cells.push(p
         ? `<button type="button" class="ebb-pouch" data-i="${i}" data-kind="${p.kind}" aria-label="${p.name}, ${FULL_WORDS[p.handfuls] ?? ''}">${icon ? itemPouchSvg(icon, p.handfuls) : pouchSvg(p.handfuls, p.sketch)}</button>`
-        : `<span class="ebb-pouch is-empty" role="img" aria-label="An empty pouch">${itemPouchSvg(null, 0)}</span>`);
+        : `<span class="ebb-pouch is-empty${i >= v.size - grew ? ' is-new' : ''}" role="img" aria-label="An empty pouch"${i >= v.size - grew ? ` style="animation-delay: ${(i - (v.size - grew)) * 0.35}s"` : ''}>${itemPouchSvg(null, 0)}</span>`);
     }
     // Two even rows from eight pouches (4 and 4, 5 and 5, 6 and 6).
     const n = cells.length, rows = n >= 8 ? [cells.slice(0, Math.ceil(n / 2)), cells.slice(Math.ceil(n / 2))] : [cells];

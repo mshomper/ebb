@@ -26,11 +26,11 @@ export function addSowingTests(test, assert, eq) {
     eq(tin.map((i) => i.species).join(), 'reeds,lilies,thrift', 'the endless three');
     assert(tin.every((i) => i.endless && i.left === Infinity), 'endless');
     for (const sp of ['iris', 'marigold', 'campion', 'rushes', 'gorse', 'willow', 'pondweed', 'watermint']) assert(!isEndless(R, sp), `${sp} is deliberate, never endless`);
-    // D1b's hook: a gathered pouch is sown the same way, with how many it holds.
-    const more = tinItems(R, [{ species: 'iris', left: 3 }, { species: 'gorse', left: 0 }, { species: 'reeds', left: 2 }]);
-    eq(more.length, 4, 'one pouch with seed in it; an empty pouch and an endless kind add nothing');
-    eq(JSON.stringify(more[3]), JSON.stringify({ kind: 'seed', id: 'pouch:iris', species: 'iris', icon: 'iris', endless: false, left: 3 }), 'the iris pouch');
-    assert(itemLabel(R, more[3]).endsWith(', 3 left'), 'its label counts what is left');
+    // D1b and P2g: the pack's saved seed is sown the same way, with how full its pouch is drawn.
+    const more = tinItems(R, [{ kind: 'iris.seed', handfuls: 3, name: 'Yellow flag iris seed' }, { kind: 'gorse.seed', handfuls: 0 }, { kind: 'sticks', handfuls: 2 }]);
+    eq(more.length, 4, 'one pouch with seed in it; an empty pouch and a kind that is not planted add nothing');
+    eq(JSON.stringify(more[3]), JSON.stringify({ kind: 'seed', id: 'seed:iris', species: 'iris', icon: 'iris.seed', endless: false, left: 3, from: 'iris.seed', name: 'Yellow flag iris seed', fill: 3 }), 'the iris pouch');
+    eq(itemLabel(R, more[3]), 'Yellow flag iris seed, a full pouch', 'its label says how full');
     eq(itemLabel(R, tin[0]), 'Reeds', 'an endless seed is only its name');
   });
 

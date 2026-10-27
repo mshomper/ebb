@@ -96,9 +96,16 @@ def textured_samples(path, n=2_500_000):
     return S, col, fn[k]
 
 
-def main(meshy, body_obj, left_obj, right_obj, out, stills=None):
+def main(meshy, body_obj, left_obj, right_obj, out, stills=None, pack_obj=None, hat_obj=None):
     S, col, SN = textured_samples(meshy)
     tree = cKDTree(S)
+    # Matt's clean split (October 26, 2026): the pack and the hat as pieces of their own, the body
+    # without them. Each is its own mesh in the GLB (the pack folds away under another carrier, and
+    # the hat will be swapped for found and made hats).
+    pieces = [('body', body_obj), ('arm.l', left_obj), ('arm.r', right_obj)]
+    pieces += [(n, o) for n, o in (('pack', pack_obj), ('hat', hat_obj)) if o]
+    split = bool(pack_obj)
+    coat_back = 0
 
     def colours(P, N):
         d, idx = tree.query(P, k=24)
@@ -110,10 +117,10 @@ def main(meshy, body_obj, left_obj, right_obj, out, stills=None):
         return (col[idx] * w[..., None]).sum(1)
 
     parts, report = [], {}
-    for name, path in (('body', body_obj), ('arm.l', left_obj), ('arm.r', right_obj)):
+    for name, path in pieces:
         P, F = read_obj(path)
         N = vertex_normals(P, F)
-        if name == 'body':
+        if not name.startswith('arm'):
             C = colours(P, N)
             parts.append(dict(name=name, P=P, N=N, C=C, F=F, Ps=P.copy(), Ns=N.copy(), Rt=np.eye(3)))
             continue
@@ -176,29 +183,59 @@ def main(meshy, body_obj, left_obj, right_obj, out, stills=None):
     legs = ((P[:, 1] < 0.37) & near_leg) | (P[:, 1] < 0.2) | trousers
     lab[legs & (P[:, 0] >= 0)] = PARTS['leg.l']
     lab[legs & (P[:, 0] < 0)] = PARTS['leg.r']
-    lab[(P[:, 2] < -0.17) & (P[:, 1] > 0.72) & (P[:, 1] < 1.32) & (np.abs(P[:, 0]) < 0.28)] = PARTS['pack']
+    if not split:
+        lab[(P[:, 2] < -0.17) & (P[:, 1] > 0.72) & (P[:, 1] < 1.32) & (np.abs(P[:, 0]) < 0.28)] = PARTS['pack']
     lab[(P[:, 1] > 1.24) & (dh < 0.3)] = PARTS['head']
     # The hat: everything high, and the brim all round (out past the head, and lighter than the dark
-    # hair and face beside it).
+    # hair and face beside it). A hat of its own is labelled whole below.
     Y = C @ np.array([0.2126, 0.7152, 0.0722])
     rxz = np.hypot(P[:, 0], P[:, 2])
-    lab[(P[:, 1] > 1.62) | ((P[:, 1] > 1.38) & (rxz > 0.2) & (Y > 0.08))] = PARTS['hat']
+    if not hat_obj:
+        lab[(P[:, 1] > 1.62) | ((P[:, 1] > 1.38) & (rxz > 0.2) & (Y > 0.08))] = PARTS['hat']
     body['L'] = lab
+    for p in parts[1:]:
+        p['L'] = np.full(len(p['P']), PARTS[p['name']] if p['name'] in PARTS else PARTS['arm'], np.uint8)
+
+    # The coat's back where the pack sat: the textured model has the pack there, so its colour would
+    # come off the pack. The coat under it takes the coat's own colour (the back below the pack),
+    # kept as a vertex colour with no texture detail (its own surface's normal).
+    if split:
+        pk = next(p for p in parts if p['name'] == 'pack')
+        cell, grow = 0.01, 3
+        under = set()
+        for x, y in np.round(pk['P'][:, :2] / cell).astype(int):
+            for i in range(-grow, grow + 1):
+                for j in range(-grow, grow + 1):
+                    under.add((x + i, y + j))
+        xy = np.round(P[:, :2] / cell).astype(int)
+        behind = (P[:, 2] < -0.02) & np.array([(a, b) in under for a, b in xy]) & (lab != PARTS['head'])
+        # The coat's own colour from its sides at the pack's height (under the pack, and just below it,
+        # the textured model is pack-brown).
+        ys = pk['P'][:, 1]
+        side = (np.abs(P[:, 0]) > 0.17) & (np.abs(P[:, 2]) < 0.06) & (P[:, 1] > ys.min()) & (P[:, 1] < ys.max()) & ~behind & ((lab == PARTS['torso']) | (lab == PARTS['skirt']))
+        coat = np.median(C[side], axis=0) if side.sum() > 20 else np.median(C[lab == PARTS['skirt']], axis=0)
+        # Its light and dark kept a little, so it is cloth, not a flat panel.
+        shade = np.clip(Y[behind] / max(np.median(Y[behind]), 1e-6), 0.85, 1.15)[:, None]
+        C[behind] = coat[None, :] * shade
+        body['coatBack'] = behind
+        coat_back = int(behind.sum())
 
     # Dye the hat's felt rust: each vertex keeps its brightness against the felt's middle, so the
     # wear and folds stay; the dark band and the green leaf stay as they were.
-    hat = lab == PARTS['hat']
-    mid = np.median(Y[hat])
-    # The leaf in the band (the walker's left side of the crown): greener than the felt around it.
-    in_box = (P[:, 0] > 0.13) & (P[:, 0] < 0.28) & (P[:, 1] > 1.56) & (P[:, 1] < 1.78) & (P[:, 2] > -0.1) & (P[:, 2] < 0.04)
-    leaf = in_box & (C[:, 1] > C[:, 0] * 0.68)
-    band = np.clip((Y / mid - 0.25) / 0.15, 0, 1)
-    w = (hat & ~leaf) * band
-    dyed = HAT_RUST[None, :] * (Y / mid)[:, None]
-    C[:] = C * (1 - w[:, None]) + np.clip(dyed, 0, 1) * w[:, None]
-    for p in parts[1:]:
-        p['L'] = np.full(len(p['P']), PARTS['arm'], np.uint8)
-    counts = {k: int((lab == v).sum()) for k, v in PARTS.items()}
+    hp = next((p for p in parts if p['name'] == 'hat'), body)
+    HP, HC = hp['P'], hp['C']
+    HY = HC @ np.array([0.2126, 0.7152, 0.0722])
+    hat = hp['L'] == PARTS['hat']
+    if hat.any():
+        mid = np.median(HY[hat])
+        # The leaf in the band (the walker's left side of the crown): greener than the felt around it.
+        in_box = (HP[:, 0] > 0.13) & (HP[:, 0] < 0.28) & (HP[:, 1] > 1.56) & (HP[:, 1] < 1.78) & (HP[:, 2] > -0.1) & (HP[:, 2] < 0.04)
+        leaf = in_box & (HC[:, 1] > HC[:, 0] * 0.68)
+        band = np.clip((HY / mid - 0.25) / 0.15, 0, 1)
+        w = (hat & ~leaf) * band
+        dyed = HAT_RUST[None, :] * (HY / mid)[:, None]
+        HC[:] = HC * (1 - w[:, None]) + np.clip(dyed, 0, 1) * w[:, None]
+    counts = {k: int(sum((p['L'] == v).sum() for p in parts)) for k, v in PARTS.items()}
 
     # The face keeps exactly what it has today (its vertex colours; the shader draws the eyes): the
     # texture bake leaves it alone, fading out over a couple of centimetres at its edge.
@@ -207,6 +244,10 @@ def main(meshy, body_obj, left_obj, right_obj, out, stills=None):
     body['keep'] = (edge(F_['halfX'] - np.abs(P[:, 0]), 0, F_['edgeM']) * edge(P[:, 1], F_['y'][0], F_['y'][0] + F_['edgeM'])
                     * edge(-P[:, 1], -F_['y'][1], -F_['y'][1] + F_['edgeM']) * edge(P[:, 2], F_['z'], F_['z'] + F_['edgeM'])
                     * edge(body['N'][:, 2], 0.15, 0.35) * (lab == PARTS['head']))
+    if 'coatBack' in body:
+        body['keep'] = np.maximum(body['keep'], body.pop('coatBack').astype(float))
+    for p in parts[1:]:
+        p.setdefault('keep', np.zeros(len(p['P'])))
 
     def eyes_mask(S):
         out = np.zeros(len(S), bool)
@@ -274,7 +315,7 @@ def main(meshy, body_obj, left_obj, right_obj, out, stills=None):
         f.write(js)
         f.write(struct.pack('<I4s', len(blob), b'BIN\0'))
         f.write(blob)
-    print(json.dumps(dict(out=out, bytes=12 + 16 + len(js) + len(blob), parts=counts, arms=report, atlasCover=round(cover, 3),
+    print(json.dumps(dict(out=out, coatBack=coat_back, bytes=12 + 16 + len(js) + len(blob), parts=counts, arms=report, atlasCover=round(cover, 3),
                           maps=[len(blobs[-2]), len(blobs[-1])],
                           verts=sum(len(p['P']) for p in parts), tris=sum(len(p['F']) for p in parts)), indent=1))
     # Stills of the two maps, for a look before the game takes them (given a folder for them).
@@ -284,4 +325,12 @@ def main(meshy, body_obj, left_obj, right_obj, out, stills=None):
 
 
 if __name__ == '__main__':
-    main(*sys.argv[1:7])
+    # Optional: --pack <obj> --hat <obj> (Matt's clean split, October 26, 2026).
+    args, opt = [], {}
+    it = iter(sys.argv[1:])
+    for a in it:
+        if a in ('--pack', '--hat'):
+            opt[a[2:] + '_obj'] = next(it)
+        else:
+            args.append(a)
+    main(*args[:6], **opt)

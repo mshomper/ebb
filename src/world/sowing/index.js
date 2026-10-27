@@ -22,9 +22,10 @@ import { tinItems, giftItems, notePlaced, tossPlan, landing, samePick } from './
 
 /**
  * @param {{ recipe: any, plantTool: any, pieces: any, nets: any, walk: any, ground: (x: number, z: number) => number,
- *   depth: (x: number, z: number) => number, worldChanged: () => void }} o
+ *   depth: (x: number, z: number) => number, worldChanged: () => void, planting: ReturnType<typeof import('./planting.js').createPlanting> }} o
  *   recipe: recipes/world/sowing.json; plantTool: src/world/growth/plant-tool.js; depth: water over a
- *   spot now (m); worldChanged: the world state moved on (a seed went in)
+ *   spot now (m); worldChanged: the world state moved on (a seed went in); planting: what the pack
+ *   holds to plant, sown and set (P2g, planting.js)
  */
 export function createSowing(o) {
   const R = o.recipe;
@@ -33,11 +34,12 @@ export function createSowing(o) {
   /** The last point under the pointer, and when the ring was last read. @type {number[] | null} */ let pointer = null;
   let readAt = -1e9;
   /** A net you are walking out to set. @type {number[] | null} */ let netTo = null;
+  /** A clump or a withy you are walking over to set in (P2g). @type {{ item: any, p: number[] } | null} */ let setTo = null;
 
-  /** What the tin, the gift spot and the net hold now. */
+  /** What the tin, the gift spot and the net hold now: the tin with what the pack holds to plant (P2g). */
   function items() {
     const u = get('unlocks');
-    return { tin: tinItems(R), gifts: giftItems(R, u), net: !!u?.nets?.general && !!o.nets.nets().length };
+    return { tin: tinItems(R, get('packView')?.pouches ?? []), gifts: giftItems(R, u), net: !!u?.nets?.general && !!o.nets.nets().length };
   }
   /** The item in hand as it is now, or null (a gift with none left is gone from the hand). */
   function held() {
@@ -53,6 +55,8 @@ export function createSowing(o) {
   function check(item, p) {
     if (item.kind === 'net') return o.nets.check(p);
     if (item.kind === 'gift' && item.place === 'raft') return o.pieces.raftCheck(p);
+    // What the pack holds (P2g): saved seed, a seed ball, a clump, a withy.
+    if (item.from) return o.planting.check(item, p);
     return o.plantTool.check(item.species, p);
   }
 
@@ -87,7 +91,7 @@ export function createSowing(o) {
 
     /**
      * Pick an item (the tin's seed, a gift, the net), or put it away if it is already in hand.
-     * @param {{ kind: 'seed' | 'gift' | 'net', id: string }} pick
+     * @param {{ kind: 'seed' | 'ball' | 'clump' | 'cutting' | 'gift' | 'net', id: string }} pick
      */
     pick(pick) {
       if (samePick(get('hand'), pick)) { api.putAway(); return; }
@@ -125,12 +129,18 @@ export function createSowing(o) {
         api.putAway();
         return true;
       }
+      // A clump or a withy (P2g): walk there, then kneel and set it in (update()).
+      if (item.kind === 'clump' || item.kind === 'cutting') {
+        if (o.walk.distTo(p[0], p[2]) <= R.set.reachM || o.walk.tap(sx, sy, p, R.set.reachM)) { setTo = { item, p }; say(R.words.setWalk, 3); }
+        api.putAway();
+        return true;
+      }
       o.walk.gesture('sow', { x: p[0], z: p[2] });
       if (item.kind === 'gift' && item.place === 'raft') {
         const r = o.pieces.raftAdd(p);
         if (!r.ok) { ring.ok = false; ring.message = r.message; ring.flashAt = performance.now(); return true; }
         say(R.words.placed?.raft ?? '', 4);
-      } else if (!o.plantTool.tap(item.species, p, { given: true })) { landed(false); return true; }
+      } else if (!(item.from ? o.planting.sow(item, p) : o.plantTool.tap(item.species, p, { given: true }))) { landed(false); return true; }
       else { o.worldChanged(); landed(true); }
       toss(p);
       if (item.kind === 'gift') update('unlocks', (u) => ({ ...u, earned: notePlaced(u?.earned, item.id) }));
@@ -149,6 +159,16 @@ export function createSowing(o) {
         ring = ringAt(item, pointer);
       } else if (!item || !pointer) ring = null;
       tosses = tosses.filter((t) => now < t.at + (t.plan.s + Math.max(R.toss.fadeS, R.splash.s + R.splash.gapS * 3, R.puff.s)) * 1000);
+      o.planting.update(now);
+      // At the spot for a clump or a withy (P2g): kneel and set it in, or push it in.
+      if (setTo && !o.walk.busy()) {
+        const { item: it, p } = setTo;
+        setTo = null;
+        if (o.walk.distTo(p[0], p[2]) > R.set.reachM + 0.6) return;
+        const cut = it.kind === 'cutting';
+        o.walk.kneelToward(p[0], p[2], cut ? R.set.pushS : R.set.setS, cut ? 'pushIn' : 'setClump');
+        if (o.planting.set(it, p)) o.worldChanged();
+      }
       if (netTo && !o.walk.busy()) {
         const p = netTo;
         netTo = null;
@@ -163,7 +183,7 @@ export function createSowing(o) {
     },
 
     /** A walk elsewhere (a click with nothing in hand, Go up): forget the net walk. */
-    cancelWalk() { netTo = null; },
+    cancelWalk() { netTo = null; setTo = null; },
 
     /** What the overlay draws now (src/ui/sow-overlay.js). */
     visuals: () => ({ ring, tosses }),

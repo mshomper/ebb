@@ -27,7 +27,7 @@ function partKind(id, partGroups) {
   if (dot <= 0) return null;
   const part = id.slice(dot + 1), group = partGroups[part];
   if (!group) return null;
-  const camp = part === 'seed' || part === 'clump' ? 'pouch' : (GROUP_CAMP[group] ?? 'heap');
+  const camp = part === 'seed' || part === 'clump' || part === 'ball' ? 'pouch' : (GROUP_CAMP[group] ?? 'heap');
   return { id, group, sketch: groupSketch(group), camp, line: '' };
 }
 

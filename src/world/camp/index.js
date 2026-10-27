@@ -43,6 +43,7 @@ import { createCampFrame } from './frame.js';
 import { createStations } from './stations.js';
 import { withFire, takeDone } from './work.js';
 import { createHearth } from './hearth.js';
+import { createCarriers } from './carriers.js';
 import { createCarry } from './carry.js';
 import { createBoons } from './boons.js';
 import { createTeapot } from './teapot.js';
@@ -191,6 +192,9 @@ export function createCamp(o) {
   /** @type {ReturnType<typeof createTeapot> | null} */ let teapot = null;
   const hearth = createHearth({ ...kit, o, cook: o.cook ?? { makes: {} }, benchAt: stations.benchAt, holdingPot, change, campSeed, cupInHand: () => !!teapot?.sipping() });
   frame.addProps(hearth.props);
+  // The carriers (P2f): the one worn on the figure, the others set down by the workbench.
+  const carriers = createCarriers({ P: o.pack?.recipe ?? {}, pack: o.pack, walk: o.walk, benchAt: stations.benchAt });
+  frame.addProps(carriers.props);
   // The pot carried in both arms, filled at the spring or the sea, set back on the hearth (K-26).
   const carry = createCarry({ ...kit, o, change });
   // The tea's boon (P2e, boons.js): one at a time, counting down only while you play; and the tea
@@ -422,7 +426,7 @@ export function createCamp(o) {
     },
     rings,
     /** The card a click at a ground point opens (cards.js). @param {number} x @param {number} z */
-    cardAt: (x, z) => hearth.benchPieceAt(x, z) ?? stations.cardAt(x, z) ?? hearth.cardAt(x, z) ?? campCardAt(kit, x, z),
+    cardAt: (x, z) => hearth.benchPieceAt(x, z) ?? carriers.cardAt(x, z) ?? stations.cardAt(x, z) ?? hearth.cardAt(x, z) ?? campCardAt(kit, x, z),
     /**
      * What a view ray meets first among the things sitting up on the hearth and by the fire (a pot,
      * the cup, a piece firing), as the ground point under its middle: tried before the ground, so
@@ -435,6 +439,8 @@ export function createCamp(o) {
     hearth,
     /** The pot carried in both arms (K-26; tests). */
     carry,
+    /** The carriers (P2f; tests). */
+    carriers,
     /** The tea's boon and the tea pot (P2e; tests, test links). */
     boons, teapot: () => teapot,
     /** For the evening director: the tent is up; the ring is laid. */
@@ -490,7 +496,7 @@ export function createCamp(o) {
         update('camp', (c) => ({ ...c, fire: { ...c.fire, ...set, lightings: Math.max(1, c.fire?.lightings ?? 0) } }));
       },
     },
-    dispose() { for (const off of offs) off(); player.dispose(); stations.dispose(); hearth.dispose(); carry.dispose(); teapot?.dispose(); boons.dispose(); },
+    dispose() { for (const off of offs) off(); player.dispose(); stations.dispose(); hearth.dispose(); carry.dispose(); teapot?.dispose(); boons.dispose(); carriers.dispose(); },
   };
 }
 

@@ -24,7 +24,7 @@ import { seasonOfTide, weatherOfTide } from '../finds/strand.js';
 import { gatherSeed, spotsAt, spotsNear, share, wordFor } from './spots.js';
 import { taken as takenOf, record, expire, cap } from './events.js';
 import { cleanAshes, spreadAsh, liveAshes, ashFresh } from './ashes.js';
-import { partsOf, pickable, pick, outOfSeasonLine, coverPickable, coverPick } from './plants.js';
+import { partsOf, pickable, pick, outOfSeasonLine, coverPickable, coverPick, windowsOf, inWindow } from './plants.js';
 import { habitatCell } from '../growth/habitat.js';
 import { coverSpecies, coverTarget } from '../growth/cover.js';
 
@@ -155,21 +155,27 @@ export function createGather(o) {
     });
     // A plant's part in season (reed down).
     const pl = card?.sp ? plantOf(card) : null;
-    // Look, don't pick (docs/future/13 PR-44): iris and marsh marigold are never gathered.
-    if (pl && R.lookOnly?.includes(pl.sp)) {
-      lines.push(W.notForDrinking);
-      return { gathers: out.slice(0, 2), word: out[0]?.word ?? lines[0] ?? null, lookOnly: pl.sp };
-    }
+    // Look, don't pick (docs/future/13 PR-44): iris and marsh marigold are never gathered, but
+    // their seed is saved (P2g G1).
+    const looking = !!pl && !!R.lookOnly?.includes(pl.sp);
     if (pl) {
       const flora = o.world.env.recipes?.flora?.[pl.sp];
       for (const part of partsOf(pl.sp, R)) {
+        // Seed past bloom (P2g G1): offered in its window, and said nothing of outside it.
+        const seed = part === 'seed';
+        if (looking && !seed) continue;
         const r = pickable(pl, part, { flora, pos: seasonPos() }, plantRules());
         const kind = `${pl.sp}.${part}`;
         if (r.ok) { out.push({ kind, name: o.pack.nameOf(kind), plant: pl.id, part, x: pl.x, z: pl.z, left: 1, word: W.plenty }); lines.push(W.plenty); }
+        else if (seed) continue;
         else if (r.why === 'rest') lines.push(W.rest);
         else if (r.why === 'young') lines.push(W.young);
         else if (r.why === 'season') lines.push(outOfSeasonLine(pl, pl.sp, part, R, seasonPos()));
       }
+    }
+    if (looking && pl) {
+      lines.push(W.notForDrinking);
+      return { gathers: out.slice(0, 2), word: out[0]?.word ?? lines[lines.length - 1] ?? null, lookOnly: out.length ? null : pl.sp };
     }
     // A cover plant's stand (rushes): a pick takes a share of the cell, which grows back.
     const cv = coverAt(x, z);
@@ -179,6 +185,12 @@ export function createGather(o) {
       if (r.ok && kind) { out.push({ kind, name: o.pack.nameOf(kind), cover: cv.sp, cell: cv.k, x, z, left: 1, word: W.plenty }); lines.push(W.plenty); }
       else if (r.why === 'rest') lines.push(W.rest);
       else if (r.why === 'season' && R.cover?.species?.[cv.sp]?.outOfSeason) lines.push(R.cover.species[cv.sp].outOfSeason);
+      // Its seed too, in its window (P2g G1): the stand gives no share for it.
+      const sw = R.cover?.species?.[cv.sp]?.seedWindow;
+      if (sw && windowsOf(sw).some((w) => inWindow(seasonPos(), w))) {
+        const sk = `${cv.sp}.seed`;
+        out.push({ kind: sk, name: o.pack.nameOf(sk), cover: cv.sp, cell: cv.k, seedOnly: true, x, z, left: 1, word: W.plenty });
+      }
     }
     // The word for what you can take first; with nothing to take, the first spot's word.
     return { gathers: out.slice(0, 2), word: out[0]?.word ?? lines[0] ?? null, lookOnly: null };
@@ -250,6 +262,8 @@ export function createGather(o) {
       const n = share(g.spot.kind, g.spot.sourceKey, g.spot.period, c, R);
       if (takenOf(events(), g.spot.key, g.spot.period) >= n) { refresh(); return; }
       keepEvents(record(events(), g.spot.key, g.spot.period, 1));
+    } else if (g.cover && g.seedOnly) {
+      emitDeferred('plant:picked', { id: -1, sp: g.cover, part: 'seed', cell: g.cell });
     } else if (g.cover) {
       // A pick between hours, as a plant's: the cell's share goes down and grows back toward its target.
       const st = o.world.state, was = st?.growth?.cover?.[g.cover];

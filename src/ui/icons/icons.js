@@ -1131,6 +1131,11 @@ const ICONS = {
     <path d="M5 19.5C5 16 7.5 14 12 14S19 16 19 19.5"/>
     <path d="M2.5 19.5H21.5"/>
     <path d="M12 3V10M9.4 7.4L12 10L14.6 7.4"/>`,
+  // Wear (P2f): a carrier standing with its two shoulder straps looped over the top, ready to put on.
+  wear: `
+    <path ${ACCENT} d="M6 10C6 8 7.4 7 9 7H15C16.6 7 18 8 18 10V18.6C18 19.4 17.4 20 16.6 20H7.4C6.6 20 6 19.4 6 18.6Z"/>
+    <path d="M6 10C6 8 7.4 7 9 7H15C16.6 7 18 8 18 10V18.6C18 19.4 17.4 20 16.6 20H7.4C6.6 20 6 19.4 6 18.6Z"/>
+    <path d="M9.4 7C9.4 3.4 14.6 3.4 14.6 7M8.4 13H15.6V16.4H8.4Z"/>`,
   // Take up: the same heap, the arrow rising off it.
   takeup: `
     <path ${ACCENT} d="M5 19.5C5 16 7.5 14 12 14S19 16 19 19.5Z"/>

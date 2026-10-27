@@ -30,18 +30,30 @@ export function cleanCook(v) {
 }
 
 /**
- * @typedef {string | string[] | { group: string, shows?: string }} Part a kind, kinds that serve, or any kind of a
- *   group (the apothecary's Dry takes any herb; shows: the kind its pencil outline wears)
+ * @typedef {string | string[] | { group?: string, part?: string, shows?: string }} Part a kind, kinds that serve, any kind of a
+ *   group (the apothecary's Dry takes any herb), or any plant's part (P2g's seed balls take any saved
+ *   seed: { part: 'seed' }); shows: the kind its pencil outline wears
  * @typedef {{ filled?: (slot: string) => boolean, groupOf?: (kind: string) => string | null }} MakeCtx
  *   filled: is a camp slot built (a make's `after`); groupOf: a kind's pack group
  */
 
 /** The kinds that serve a part, for its pencil outline. @param {Part} part @returns {string[]} */
-export const partKinds = (part) => (Array.isArray(part) ? part : typeof part === 'object' ? [part.shows ?? `@${part.group}`] : [part]);
+export const partKinds = (part) => (Array.isArray(part) ? part : typeof part === 'object' ? [part.shows ?? `@${part.group ?? part.part}`] : [part]);
 
 /** Does a laid kind serve a part? @param {Part} part @param {string} kind @param {MakeCtx} [ctx] */
 export const serves = (part, kind, ctx = {}) => (part && typeof part === 'object' && !Array.isArray(part)
-  ? !!ctx.groupOf && ctx.groupOf(kind) === part.group : partKinds(part).includes(kind));
+  ? (part.part ? kind.endsWith(`.${part.part}`) : !!ctx.groupOf && ctx.groupOf(kind) === part.group) : partKinds(part).includes(kind));
+
+/**
+ * What a make gives, from what was laid (P2g: '{sp}.ball' takes the species of the laid seed).
+ * @param {any} make cook.json makes.<id> @param {string} id @param {string[]} laid
+ */
+export function givesOf(make, id, laid) {
+  const g = make.gives ?? id;
+  if (!g.includes('{sp}')) return g;
+  const seed = laid.find((k) => k.endsWith('.seed'));
+  return seed ? g.replace('{sp}', seed.slice(0, seed.lastIndexOf('.'))) : id;
+}
 
 /** The makes at a station, in cook.json's order. @param {any} cook recipes/world/cook.json @param {string} station */
 export const makesAt = (cook, station) => Object.entries(cook.makes ?? {}).filter(([, m]) => /** @type {any} */ (m).at === station).map(([id]) => id);

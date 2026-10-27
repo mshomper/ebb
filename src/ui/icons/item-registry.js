@@ -142,6 +142,8 @@ export function itemIconFor(kind) {
   const sp = kind.slice(0, dotAt), part = kind.slice(dotAt + 1);
   if (part === 'seed') return `seed:${speciesBase(sp)}`;
   if (part === 'clump') return `clump:${speciesBase(sp)}`;
+  // Seed balls of any species (P2g) wear the made seed balls' glyph.
+  if (part === 'ball') return 'seed-balls';
   return BY_ID.get(`${species(sp)}.${part}`) ?? null;
 }
 

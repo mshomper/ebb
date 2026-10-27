@@ -270,6 +270,8 @@ export function createWalk(o) {
     hand: (side) => figure?.hand(side) ?? null,
     /** Where a point carried by one of your figure's bones is now (the knife on the belt), or null. @param {string} bone @param {number[]} p rest model meters */
     pointOn: (bone, p) => figure?.pointOn(bone, p) ?? null,
+    /** Your figure, once loaded (what it carries and where its pack hangs, P2f), or null. */
+    figure: () => figure,
 
     /**
      * I'm stuck: back to dry land that joins the mainland (where the camp is) with the water as it

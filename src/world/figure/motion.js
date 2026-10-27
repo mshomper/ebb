@@ -14,7 +14,7 @@
 import { moveMatrix, mul } from '../creatures/pose.js';
 import { hash32 } from '../../core/rng.js';
 import {
-  qmul, qrot, qfromTo, qaxis, qconj, qslerp, matQuat, matPoint, matPointInv, twoBone,
+  qmul, qrot, qaxis, qconj, qslerp, matQuat, matPoint, matPointInv, twoBone,
   sub, norm, lerp, smooth, DEG, QI, Spring,
 } from './kinematics.js';
 import { paceAt, footInCycle, createPlantedFeet } from './gait.js';
@@ -24,6 +24,8 @@ import { createLean } from './lean.js';
 import { createLook } from './look.js';
 import { rollPose, turnBones, onGround } from './roll.js';
 import { createClipPlayer } from './clips.js';
+import { createArms } from './arms.js';
+import { createTrailing } from './trailing.js';
 
 /**
  * @typedef {Object} FigureInput
@@ -69,28 +71,18 @@ export function createFigureMotion(R, skeleton, clipFile = null) {
   const piv = (/** @type {string} */ n) => skeleton[I[n]].pivot;
   const SIDE = [1, -1];
   const LEG = [['thigh.l', 'shin.l', 'foot.l'], ['thigh.r', 'shin.r', 'foot.r']].map((n) => n.map((k) => I[k]));
-  const ARM = [['upperArm.l', 'foreArm.l', 'hand.l'], ['upperArm.r', 'foreArm.r', 'hand.r']].map((n) => n.map((k) => I[k]));
   const legLen = LEG.map(([a, b, c]) => Math.hypot(...sub(skeleton[b].pivot, skeleton[a].pivot)) + Math.hypot(...sub(skeleton[c].pivot, skeleton[b].pivot)));
   /** Thigh and shin lengths of the left leg, the one that kneels (body m). */
   const THIGH = Math.hypot(...sub(skeleton[LEG[0][1]].pivot, skeleton[LEG[0][0]].pivot));
   const SHIN = Math.hypot(...sub(skeleton[LEG[0][2]].pivot, skeleton[LEG[0][1]].pivot));
   const restPelvisY = piv('pelvis')[1];
   const PIVOTS = skeleton.map((b) => b.pivot);
-  // The arms hang from the A-pose by one turn at the shoulder; the elbow bends about the axis that
-  // brings the hand forward once the arm hangs.
-  const HANG = [0, 1].map((i) => {
-    const [u, f] = ARM[i];
-    const axis = norm(sub(skeleton[f].pivot, skeleton[u].pivot));
-    const q0 = qfromTo(axis, [R.hang.dir[0] * SIDE[i], R.hang.dir[1], R.hang.dir[2]]);
-    return { q0, flex: qrot(qconj(q0), [-1, 0, 0]) };
-  });
 
   const eyes = createEyes(R.eyes);
   const planted = createPlantedFeet(G);
-  const springs = {
-    tip: new Spring(2, R.springs.hatTip), skirt: new Spring(2, R.springs.skirt), pack: new Spring(1, R.springs.pack),
-    pelvis: new Spring(1, { stiffness: 420, damping: 1 }),
-  };
+  const springs = { pelvis: new Spring(1, { stiffness: 420, damping: 1 }) };
+  const trailing = createTrailing(R, I, set);
+  const poseArms = createArms(R, skeleton, I, out, set, clipQ);
   // wade is live state below: the lean reads the pace with the water as it is now.
   const leanSpring = createLean(R.lean, (v) => paceAt(G, v, wade));
   const looking = createLook(R.look);
@@ -120,6 +112,8 @@ export function createFigureMotion(R, skeleton, clipFile = null) {
   let info = {};
   /** Holding the pot in both arms (S5), and how far the hands have come to it 0..1. */
   let holding = false, holdE = 0;
+  /** The baked pack drawn (false while another carrier is worn, P2f). */
+  let packShown = true;
 
   /** Set bone i's move and its matrix (parents are always set first). @param {number} i @param {import('../creatures/pose.js').BoneMove | null} mv */
   function set(i, mv) {
@@ -139,6 +133,8 @@ export function createFigureMotion(R, skeleton, clipFile = null) {
     arrive() { acts.arrive = t; acts.leave = null; aboveS = 0; },
     /** Hold the pot in both arms, or let go (S5). @param {boolean} on */
     hold(on) { holding = on; },
+    /** Draw the baked pack, or fold it away while another carrier is worn (P2f). @param {boolean} on */
+    showPack(on) { packShown = on; },
     /** You just went up: the figure looks up after you, and in a while sits to wait. */
     leave() { acts.leave = t; },
     /**
@@ -486,54 +482,11 @@ export function createFigureMotion(R, skeleton, clipFile = null) {
       const lookPitch = Math.max(-L.maxPitchDeg * DEG, Math.min(L.maxPitchDeg * DEG, pitch - P.headDeg * DEG * m * standW));
       set(I.head, { q: CP ? qslerp(headQ, qmul(clipQ(CP, I.head), qmul(qaxis([0, 1, 0], LK.yaw), qaxis([1, 0, 0], lookPitch))), cw) : headQ });
       set(I.hat, null);
-      // The hat tip lags: it tips back as you speed up, dips as the body rises, and swings out on a turn.
-      const HT = R.springs.hatTip;
-      const tip = springs.tip.step([(-0.05 * speed - (HT.accelGain ?? 0.03) * accel + 0.5 * pelvisVy) * HT.gain, -0.08 * yawRate * HT.gain], dt);
-      set(I.hatTip, { q: qmul(qaxis([1, 0, 0], tip[0]), qaxis([0, 0, 1], tip[1])) });
+      trailing.hatTip(dt, { speed, accel, pelvisVy, yawRate });
 
-      // Arms: hanging from the A-pose and swinging with the opposite foot, or reaching by IK for a
-      // knee, the brim or the ground in front.
-      const chestQ = matQuat(out, I.chest * 16);
+      // Arms (arms.js): hanging and swinging, or reaching for a knee, the brim or the ground in front.
       const tugW = acts.arrive !== null ? envelope(t - acts.arrive - PO.arrive.lookS, 0.5, PO.arrive.tugS - 1, 0.5) : 0;
-      const kneeHand = (/** @type {number} */ k, /** @type {number} */ dx) => [legIK[k].knee[0] + dx, legIK[k].knee[1] + 0.03, legIK[k].knee[2] + 0.06];
-      for (let i = 0; i < 2; i++) {
-        const [u, f, h] = ARM[i];
-        const opp = cyc[1 - i];
-        const swing = P.armDeg * DEG * ((opp.fz - 2 * P.stance * P.stepM * ((P.landShare ?? 0.5) - 0.5)) / Math.max(P.stance * P.stepM, 1e-3)) * m * standW;
-        // Swinging forward the arm comes a little across the body and the elbow bends more; swinging
-        // back it straightens (recipes/world/figure.json arms).
-        const AR = R.arms ?? { elbowForward: 0.4, elbowBack: 0, across: 0 };
-        const out1 = (P.armOutDeg + 3) * DEG * SIDE[i] - AR.across * Math.max(0, swing) * SIDE[i];
-        let qU = qmul(qaxis([1, 0, 0], -swing), qmul(qaxis([0, 0, 1], out1), HANG[i].q0));
-        const elbow = ((R.hang.elbowDeg * (1 - m) + P.elbowDeg * m) * DEG + AR.elbowForward * Math.max(0, swing) - AR.elbowBack * Math.max(0, -swing)) * standW + 0.9 * (sitW + kneelW + crawlW);
-        let qF = qaxis(HANG[i].flex, elbow);
-        // The clip's arms swing in place of the code's; reaching hands (below) still lead.
-        if (CP) { qU = qslerp(qU, clipQ(CP, u), cw); qF = qslerp(qF, clipQ(CP, f), cw); }
-        // Hand targets (body m) with a weight. An act's hands lead; the rest give way to them.
-        /** @type {{ at: number[], w: number }[]} */ const goals = [];
-        const aw = A ? A.arms : 0, keep = 1 - aw;
-        if (sitW > 0) goals.push({ at: kneeHand(i, -0.02 * SIDE[i]), w: sitW * keep });
-        if (kneelW > 0) goals.push({ at: i === 1 && reach > 0 ? [0, 1, 2].map((k) => lerp(kneeHand(1, 0.03)[k], [PO.feed.hand[0], centre + PO.feed.hand[1], PO.feed.hand[2]][k], reach)) : kneeHand(1, i === 0 ? 0.06 : -0.02), w: kneelW * keep });
-        if (crawlW > 0) { const h = C.hands[i]; goals.push({ at: [h[0], gnd(h[0], h[2]) + h[1], h[2]], w: crawlW * keep }); }
-        if (i === 0 && tugW > 0) goals.push({ at: PO.arrive.tugHand, w: tugW * keep });
-        // Tucked: hands hug the shins.
-        if (tuck > 0) goals.push({ at: kneeHand(i, -0.03 * SIDE[i]).map((v, k) => v + (k === 1 ? -0.12 : k === 2 ? 0.04 : 0)), w: tuck * 4 });
-        if (A && aw > 0) { const h = i === 0 ? A.l : A.r; goals.push({ at: [h[0], centre + h[1], h[2]], w: aw }); }
-        // The pot in both arms (S5): the hands hold its sides in front of you.
-        if (holdE > 0 && PO.hold) { const h = i === 0 ? PO.hold.l : PO.hold.r; goals.push({ at: [h[0], centre + h[1], h[2]], w: smooth(holdE) * keep }); }
-        const w = Math.min(1, goals.reduce((a, g) => a + g.w, 0));
-        if (w > 0.001) {
-          const at = [0, 1, 2].map((k) => goals.reduce((a, g) => a + g.at[k] * g.w, 0) / goals.reduce((a, g) => a + g.w, 0));
-          const T = matPointInv(out, I.chest * 16, at);
-          const pole = qrot(qconj(chestQ), norm([0.4 * SIDE[i], -0.3, -1]));
-          const r = twoBone(skeleton[u].pivot, skeleton[f].pivot, skeleton[h].pivot, T, pole);
-          qU = qslerp(qU, r.q1, w);
-          qF = qslerp(qF, r.q2, w);
-        }
-        set(u, { q: qU });
-        set(f, { q: qF });
-        set(h, CP && cw > 0 ? { q: qslerp(QI, clipQ(CP, h), cw) } : null);
-      }
+      poseArms({ P, cyc, m, standW, sitW, kneelW, crawlW, tuck, A, holdE, reach, tugW, legIK, centre, gnd, CP, cw });
 
       // Legs: the IK turns, then each foot set to the ground's slope and its own facing.
       for (let i = 0; i < 2; i++) {
@@ -546,21 +499,8 @@ export function createFigureMotion(R, skeleton, clipFile = null) {
         set(ft, { q: qmul(qconj(matQuat(out, sh * 16)), want) });
       }
 
-      // The coat skirt: pushed forward by the front knee, flaring back with speed, swaying to the
-      // side of the leg that is forward with each step, swung on a turn; over the thighs when sitting.
-      const SK = R.springs.skirt;
-      const kneeFwd = Math.max(legIK[0].knee[2], legIK[1].knee[2]) - 0.04;
-      const sway = (legIK[0].knee[2] - legIK[1].knee[2]) * (SK.strideSway ?? 0) * m * standW;
-      const sk = springs.skirt.step([
-        ((Math.max(0, kneeFwd) * 1.4 - (SK.speedFlare ?? 0.03) * speed) * standW + S.skirtDeg * DEG * sitW + 0.25 * kneelW + 0.3 * crawlW) * SK.gain,
-        (-0.05 * yawRate + sway) * SK.gain,
-      ], dt);
-      set(I.skirt, { q: qmul(qaxis([1, 0, 0], -sk[0]), qaxis([0, 0, 1], sk[1])) });
-      // The pack follows the body's rise and fall a beat late, tipping as it lags, and rocks with the
-      // hips' twist.
-      const PK = R.springs.pack;
-      const pk = springs.pack.step([pelvisWorldY], dt)[0], lag = pk - pelvisWorldY;
-      set(I.pack, { t: [0, lag * PK.gain, 0], q: qmul(qaxis([1, 0, 0], -0.01 * accel + lag * (PK.tiltGain ?? 0)), qaxis([0, 0, 1], twist * (PK.rock ?? 0))) });
+      // The coat skirt and the pack, a beat late on springs (trailing.js).
+      trailing.skirtAndPack(dt, { legIK, m, standW, sitW, kneelW, crawlW, speed, yawRate, sitSkirtDeg: S.skirtDeg, pelvisWorldY, accel, twist, packShown });
 
       // The roll turns the whole curled figure about the ball's middle; no footfalls while it rolls.
       turnBones(RO, out, RP.angle, centre, PIVOTS);

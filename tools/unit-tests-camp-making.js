@@ -59,8 +59,8 @@ export function addCampMakingTests(test, assert, eq) {
   test(G, 'the workbench is built from two flat stones; the camp page lists the ring, then each first in order', async () => {
     const C = await load('world/cook');
     eq(JSON.stringify(buildKinds(C.builds.workbench)), JSON.stringify(['flat-stones', 'flat-stones']), 'two handfuls of flat stones');
-    eq(makesAt(C, 'workbench').join(), 'rush-cord,shovel,rack,mortar,hamper,hamper2,hearth-stones,cooking-pot,tea-pot,cup,bowl,leaf-pack',
-      'the workbench knows rush cord, the shovel (P2c), the rack and mortar (S2), the hampers (P2j), the hearth stones and the clay pieces (S4, S5) and the leaf pack (P2h)');
+    eq(makesAt(C, 'workbench').join(), 'rush-cord,shovel,rack,mortar,hamper,hamper2,hearth-stones,cooking-pot,tea-pot,cup,bowl,leaf-pack,satchel,basket,seed-balls',
+      'the workbench knows rush cord, the shovel (P2c), the rack and mortar (S2), the hampers (P2j), the hearth stones and the clay pieces (S4, S5), the leaf pack (P2h), the carriers (P2f) and seed balls (P2g)');
     const camp = { slots: [{ slot: 'ring', kind: 'ring', placedHour: 3 }] };
     assert(!campPageHad({ slots: [] }, cleanCook(null)), 'no page before the ring');
     assert(campPageHad(camp, cleanCook(null)), 'the page once the ring is laid');
@@ -96,6 +96,18 @@ export function addCampMakingTests(test, assert, eq) {
         assert(Math.hypot(q.u - su, q.v - sv) >= rOf(q) + 0.25, `${land}: you can stand at the workbench clear of ${q.id}`);
       }
     }
+  });
+
+  test(G, 'P2f: the satchel and the basket never tie with the hamper or the rack', async () => {
+    const C = await load('world/cook'), s = cleanCook(null);
+    const ctx = { filled: (/** @type {string} */ id) => id === 'apothecary', groupOf: () => 'other' };
+    const at = (/** @type {string[]} */ laid) => layout(C, 'workbench', laid, s, ctx);
+    assert(at(['rushes.stems', 'rush-cord', 'rush-cord']).make === 'satchel' && at(['marram.leaves', 'rush-cord', 'rush-cord']).complete, 'rushes or marram and two cords: the satchel');
+    eq(at(['rushes.stems', 'rushes.stems', 'rush-cord']).make, 'hamper', 'two rushes and a cord: still the hamper');
+    assert(at(['willow.withies', 'rush-cord', 'rush-cord']).make === 'basket' && at(['willow.withies', 'rush-cord', 'rush-cord']).complete, 'withies and two cords: the basket');
+    eq(at(['willow.withies', 'willow.withies', 'rush-cord']).make, 'rack', 'two withies and a cord: still the rack');
+    eq(C.makes.satchel.out, 'carrier'); eq(C.makes.basket.out, 'carrier');
+    eq(at(['willow.withies', 'rush-cord', 'rush-cord']).make === 'basket' && layout(C, 'workbench', ['willow.withies', 'rush-cord', 'rush-cord'], recordMade(s, 'basket', 1), ctx).make !== 'basket', true, 'one basket only');
   });
 
   test(G, 'S2: the rack and mortar wait for the apothecary bench; Dry takes any herb once the rack stands; Grind turns shells to crushed shell', async () => {
@@ -135,7 +147,8 @@ export function addCampMakingTests(test, assert, eq) {
     const made = recordMade(s, 'hamper', 10);
     const h2 = layout(C, 'workbench', ['rushes.stems', 'rush-cord', 'willow.withies'], made, ctx(['store']));
     assert(h2.make === 'hamper2' && h2.complete, 'with a hamper standing, rushes, cord and a withy lid make the second');
-    eq(layout(C, 'workbench', ['rushes.stems', 'rush-cord', 'willow.withies'], recordMade(made, 'hamper2', 20), ctx(['store'])).make, 'rush-cord', 'and only once');
+    // Once both stand, the same handfuls point to another make (the satchel, P2f), never a third hamper.
+    assert(layout(C, 'workbench', ['rushes.stems', 'rush-cord', 'willow.withies'], recordMade(made, 'hamper2', 20), ctx(['store'])).make !== 'hamper2', 'and only once');
     for (const id of ['apothecary', 'rack', 'mortar', 'hamper', 'hamper2', 'dry', 'grind']) assert(C.words.pageNames[id] && C.words.pageParts[id] && (C.words.made[id] || C.builds[id]), `${id} has its words`);
   });
 

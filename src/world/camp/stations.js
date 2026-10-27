@@ -27,7 +27,7 @@ import { dispatch, onAction } from '../../input/actions.js';
 import { hash32 } from '../../core/rng.js';
 import { registerCardAction } from '../../ui/card-actions.js';
 import { ringLaid, inSlot } from './model.js';
-import { cleanCook, layout, drawPlan, available, recordMade, buildKinds, partKinds } from './making.js';
+import { cleanCook, layout, drawPlan, available, recordMade, buildKinds, partKinds, givesOf } from './making.js';
 import { createKeeps } from './keeps.js';
 import { layWork } from './work.js';
 import { shapedOn, addShaped, takeShaped, setHearth } from './pots.js';
@@ -320,12 +320,14 @@ export function createStations(k) {
     if (m.out === 'shaped') k.change((c) => addShaped(c, id));
     // A make that fills a pouch (rush cord, crushed shell): into the pack, or a small heap at your feet when full.
     if (m.out === 'pouch') {
-      const kind = m.gives ?? id, n = m.count ?? 1;
+      const kind = givesOf(m, id, laid), n = m.count ?? 1;
       if (o.pack?.room(kind)) o.pack.add(kind, n);
       else o.pack?.heapHere?.(kind, n);
     }
     // Dry: the herb hangs on the rack as a bunch.
     if (m.out === 'rack') keeps.rack.hang(laid[0], 1);
+    // A carrier (P2f): put on at once; the one taken off hangs by the bench (carriers.js).
+    if (m.out === 'carrier') o.pack?.addCarrier?.(id);
     // A piece for the night's fire goes on the overnight work list (work.js): willow charcoal.
     if (m.out === 'work') k.change((c) => ({ ...c, work: layWork(c.work, { id, needH: m.needH ?? 8, gives: m.gives ?? id, count: m.count ?? 1 }, hour) }));
     emitDeferred('camp:made', { make: id, station: open.id, hour, first });

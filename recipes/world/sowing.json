@@ -13,6 +13,12 @@
   "splash": { "nearRings": 1, "farRings": 3, "rM": [0.1, 0.9], "s": 1.3, "gapS": 0.22 },
   "flickS": 0.32,
   "net": { "reachM": 0.6, "standS": 3.8 },
+  "p2gNote": "Planting from below (P2g, Matt's plan page, October 25, 2026; src/world/sowing). Everything is planted from the bar: the seed tin's menu also holds the pack's saved seed ('<species>.seed', one sowing a handful, its pouch drawn as full as it is), its seed balls ('<species>.ball', one ball a handful) and its lifted clumps and withies. Seed and balls are tossed with the sow flick. A ball holds ball.seeds seeds and lands as a small cluster round the spot (spreadShare of the species' spacing from the middle), each taking on ground down to ball.minSuit (a bare seed needs 0.2). A clump or a withy: the walker walks to within set.reachM, kneels and sets it (the setClump gesture, set.setS s) or pushes the withy in (pushIn, set.pushS s). A clump goes in at the size it was lifted; a withy roots as a young grey willow (cutting.size) under willow's own ground rule and its island cap. lift: the plants a shovel can lift whole (the plant card's Lift, the liftClump act), with maxSize where a bush or tree is only lifted young; reachM, how close you stand. goodStart: setting a clump or a cutting with kelp, wrack or ash in the pack lays one handful in the hole first (the first that the pack holds, in order): it starts bonus bigger. Every ring keeps D1a's rule.",
+  "ball": { "seeds": 3, "minSuit": 0.12, "spreadShare": 1.05 },
+  "set": { "reachM": 0.7, "setS": 2.6, "pushS": 2.2 },
+  "cutting": { "species": "willow", "kind": "willow.withies", "size": 0.2 },
+  "lift": { "species": ["watermint", "meadowsweet", "nettle", "chamomile", "marram", "iris", "marigold", "campion", "thrift", "reeds", "gorse", "willow"], "maxSize": { "gorse": 0.5, "willow": 0.35 }, "reachM": 0.8 },
+  "goodStart": { "kinds": ["kelp", "wrack", "ash"], "bonus": 0.12 },
   "words": {
     "tin": "Seed tin",
     "gifts": "Gift spot",
@@ -23,6 +29,18 @@
     "left": { "one": "{name}, one left", "many": "{name}, {n} left" },
     "placed": { "raft": "The raft floats on the pond." },
     "netWalk": "Walking out to set the net.",
-    "netGone": "The tide has moved; the net can't go there now."
+    "netGone": "The tide has moved; the net can't go there now.",
+    "seedNames": { "seed": "{name} seed", "ball": "{name} seed balls", "clump": "{name}, lifted", "cutting": "A willow withy" },
+    "fill": ["", "a little left", "half a pouch", "a full pouch"],
+    "setWalk": "Walking over to set it in.",
+    "setGone": "The ground there has changed; it can't go in now.",
+    "lift": "Lift with the shovel",
+    "lifted": "It comes up whole on the blade. Its roots are bare: set it in the ground to keep it.",
+    "liftNoShovel": "Lifting a plant whole wants a shovel.",
+    "liftTooBig": "Too big to lift now. Young, it would have come up whole.",
+    "liftFull": "No pouch free for a clump. A clump fills a whole pouch.",
+    "goodStart": "You lay a handful of {kind} in the hole first. It will start a little stronger.",
+    "rooted": "Pushed into the damp ground, the withy will root.",
+    "set": "Set in and pressed down."
   }
 }
