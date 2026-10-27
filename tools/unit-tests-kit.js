@@ -4,7 +4,7 @@
 // (a save from before the kit, and one after); the pack's save section leaves its carriers to the
 // kit; the section round trip; and the recipe names every slot, item and belt tool with a drawn icon.
 
-import { emptyKit, cleanKit, own, wearKit, joinCarriers, packForSave, SLOTS, ALL } from '../src/world/kit/model.js';
+import { emptyKit, cleanKit, own, wearKit, joinCarriers, packForSave, looksOf, SLOTS, ALL } from '../src/world/kit/model.js';
 import { clean9, empty9, SECTIONS9 } from '../src/save/migrate-format9.js';
 import { cleanPack, emptyPack } from '../src/world/pack/model.js';
 import { ICON_NAMES } from '../src/ui/icons/icons.js';
@@ -60,6 +60,13 @@ export function addKitTests(test, assert, eq) {
     j = joinCarriers(cleanKit({ ...emptyKit(), owned: { ...emptyKit().owned, carrier: ['satchel'] } }), emptyPack());
     assert(!('worn' in j.pack) && j.kit.carrier === null, 'the starting pack');
     eq(js(j.pack.carriers), js(['satchel']), 'the satchel hangs at camp');
+  });
+
+  test(G, 'hat and coat looks for Phase 4: as made for the walker\'s own, a tint once a dyed one is worn', () => {
+    const R = { figure: { hat: { own: null, woad: [0.2, 0.3, 0.5] }, coat: { own: null } } };
+    eq(js(looksOf(emptyKit(), R)), js({ hat: null, coat: null }), 'the walker\'s own: as made');
+    const dyed = wearKit(own(emptyKit(), 'hat', 'woad'), 'hat', 'woad').kit;
+    eq(js(looksOf(dyed, R).hat), js([0.2, 0.3, 0.5]), 'a dyed hat tints the hat');
   });
 
   test(G, 'the recipe names every slot, item and belt tool, each with a drawn icon', async () => {

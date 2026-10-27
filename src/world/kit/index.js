@@ -13,7 +13,7 @@ import { emitDeferred } from '../../core/events.js';
 import { onAction, dispatch } from '../../input/actions.js';
 import { atCamp } from '../pack/camp.js';
 import { hasForage } from '../forager.js';
-import { cleanKit, own, wearKit, ALL } from './model.js';
+import { cleanKit, own, wearKit, looksOf, ALL } from './model.js';
 
 /**
  * @param {{ recipe: any, pack: any, you: () => number[] | null }} o
@@ -100,6 +100,8 @@ export function createKit(o) {
     kit,
     /** Is the hand lantern taken along (off the pad after dark), or left on the pole (K4)? */
     lanternTaken: () => kit().lantern === 'hand',
+    /** The hat's and coat's looks on the figure (K4; Phase 4 dyes): tints, or null as made. */
+    looks: () => looksOf(kit(), R),
     /** Wear something (tests; the page dispatches kit.wear). @param {string} slot @param {string | null} id */
     wear: (slot, id) => wear({ slot, id }),
     belt,

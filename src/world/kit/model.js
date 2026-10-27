@@ -86,6 +86,18 @@ export function joinCarriers(kit, pack) {
 }
 
 /**
+ * How the hat and coat worn change the figure (K4, ready for Phase 4 dyes): each a tint for that
+ * part (recipes/world/kit.json figure), or null to draw it as made. The walker's own are as made, so
+ * nothing changes on screen yet; the figure keeps its hat as a piece of its own (rig.js pieces) for a
+ * hat swapped whole. @param {Kit} k @param {any} R recipes/world/kit.json
+ * @returns {{ hat: number[] | null, coat: number[] | null }}
+ */
+export function looksOf(k, R) {
+  const tint = (/** @type {'hat' | 'coat'} */ s) => { const t = R?.figure?.[s]?.[k[s]]; return Array.isArray(t) && t.length === 3 ? t : null; };
+  return { hat: tint('hat'), coat: tint('coat') };
+}
+
+/**
  * The pack as the save keeps it: its carriers are the kit's to keep. @param {import('../pack/model.js').Pack} pack
  * @returns {import('../pack/model.js').Pack}
  */
