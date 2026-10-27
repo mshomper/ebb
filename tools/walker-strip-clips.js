@@ -62,7 +62,7 @@ export async function addClipStrips(o) {
 
   // C1: the fighting clips, three or so to a strip, each masked and then as Meshy made it. Throw and
   // Point (Matt's Text-to-Animation pair) have a strip of their own, with what still looks off.
-  const names = Object.keys(FR.clips).filter((n) => !OFF[n]), per = 3;
+  const names = Object.keys(FR.clips).filter((n) => !OFF[n] && !FR.clips[n].layer), per = 3;
   /** Marks the row Matt picked (fight-clips.json mask). @param {any} c @param {boolean} masked */
   const pick = (c, masked) => ((c.mask ?? true) === masked ? ' (your pick)' : '');
   for (let s = 0; s * per < names.length; s++) {
@@ -105,6 +105,25 @@ export async function addClipStrips(o) {
       { name: `${l.name}: walking, ${walk} m/s, from the right`, view: SIDE, run: walkRun(l.id), picks: (/** @type {any[]} */ rec) => o.stridePicks(rec).filter((_, i) => i % 2 === 0) },
       { name: `${l.name}: swingDouble, the two-hit swing`, run: () => shotRun('swingDouble', FR.mask, l.id), picks: evenPicks(durOf('swingDouble'), 8) },
     ]),
+  };
+
+  // Raise the lantern (Matt, October 27, 2026): the right mouse held, a layer on the lantern arm over
+  // everything (clips.js hold): standing, walking, and through a swing; up for ~0.65 s, then let go.
+  const RL = FR.clips.raiseLantern, HOLD = 0.65;
+  /** Hold the raise from AT to AT + HOLD in a run whose motion this sets each step. @param {any} r a run */
+  const raised = (r) => {
+    let t = 0;
+    return { ...r, step() { t += DT; r.motion.hold('raiseLantern', t >= AT && t < AT + HOLD, RL.layer); return r.step(); } };
+  };
+  const raisePicks = () => [0, 0.05, 0.1, 0.15, 0.4, HOLD, HOLD + 0.07, HOLD + 0.14, HOLD + 0.3].map((s) => ({ i: Math.round((AT + s) / DT), label: s < HOLD ? `${s.toFixed(2)} s held` : `${(s - HOLD).toFixed(2)} s let go` }));
+  STRIPS.raise = {
+    title: `Raise the lantern: up ${RL.layer.upS} s, down ${RL.layer.downS} s`, tile: [200, 270], view: FRONT,
+    rows: [
+      { name: 'Standing, from the front and right', run: () => raised(shotRun('none', null, 'slim')), picks: raisePicks },
+      { name: 'Standing, from the left (the lantern side)', view: { yaw: Math.PI / 2, pitch: 0.12, dist: 4.2 }, run: () => raised(shotRun('none', null, 'slim')), picks: raisePicks },
+      { name: `Walking, ${walk} m/s, from the left`, view: { yaw: Math.PI / 2, pitch: 0.12, dist: 4.2 }, run: () => { const r = o.strideRun(walk, true); r.motion.addClips(FIGHT); return raised({ ...r, props: held(r.motion, 'slim', r.place) }); }, picks: raisePicks },
+      { name: 'Through the first swing of swingTriple (held all along)', run: () => raised(shotRun('swingTriple', FR.clips.swingTriple.mask ? FR.mask : null, 'slim')), picks: raisePicks },
+    ],
   };
 
   // C3: the clips for the island as Matt made them, whole (which part of each serves).

@@ -54,7 +54,7 @@ const HR = course.dark ? await recipe('world/hollow') : null;
 const FC = course.dark ? await recipe('world/fight-clips') : null;
 const MR = course.dark ? await recipe('world/hollow-moves') : null;
 /** The Hollow's recipes as loaded, to show what the sliders changed. */
-const HR0 = structuredClone(HR), MR0 = structuredClone(MR);
+const HR0 = structuredClone(HR), MR0 = structuredClone(MR), FC0 = structuredClone(FC);
 
 // ---- the world: ground, water, walk grid, solids ----
 const ground = course.ground;
@@ -100,7 +100,7 @@ const say = (/** @type {string} */ s) => { note.textContent = s; };
 
 // ---- the Hollow (H0): lantern, staff, swing, lock-on, the floor dot ----
 const hollow = HR ? createHollow({
-  HR, FR: FC, walker, camera, grid, ground, course, motion, held: await createHeld(FR, built), DS,
+  HR, FR: FC, walker, camera, grid, ground, course, motion, held: await createHeld(FR, built), built, DS,
   actors: () => actors, head, say, lookRates: () => R.steer.look,
 }) : null;
 const SR = hollow ? await recipe('world/staff') : null;
@@ -232,7 +232,7 @@ function youNow() {
 
 // ---- the Hollow's panel: the flame, the swing, the stand-ins ----
 const panel = hollow && HR ? createHollowPanel($('hollow-panel'), {
-  hollow, HR, actors: () => actors,
+  hollow, HR, FC, actors: () => actors,
   spawn(kind) {
     const sp = course.spawns ?? [[0, 0]], [x, z] = sp[spawnAt++ % sp.length];
     actors.push(makeActor({ kind, x, z }));
@@ -245,7 +245,7 @@ const panel = hollow && HR ? createHollowPanel($('hollow-panel'), {
 }) : null;
 if (panel) { $('hollow-panel').hidden = false; $('hollow-keys').hidden = false; }
 const movesPanel = moveLayer && HR && MR ? createMovesPanel($('moves-panel'), {
-  layer: moveLayer, MR, HR, MR0, HR0, say, blocks: /** @type {HTMLTextAreaElement} */ ($('blocks')),
+  layer: moveLayer, MR, HR, MR0, HR0, FC, FC0, say, blocks: /** @type {HTMLTextAreaElement} */ ($('blocks')),
 }) : null;
 if (movesPanel) $('moves-panel').hidden = false;
 

@@ -110,6 +110,14 @@ export function createClipPlayer(file, RC, skeleton) {
    * @type {{ c: ReturnType<typeof prepare>, span: number[], lenS: number, t: number, ease: number, take: boolean[], feet: boolean, most: number } | null}
    */
   let shot = null, shotW = 0, shotFeet = 0, shotEnded = false;
+  /**
+   * A held layer over everything, on its mask's bones only (the lantern raised, Matt, October 27,
+   * 2026): held, it rises through span (s into the clip) over upS and stays at its end; let go, it
+   * plays back down over downS. up: 0 down to 1 held.
+   * @type {{ c: ReturnType<typeof prepare>, span: number[], upS: number, downS: number, take: boolean[], on: boolean, up: number } | null}
+   */
+  let held = null;
+  const heldPose = new Float32Array(size);
   const pose = new Float32Array(size);
   const bones = new Float32Array(skeleton.length * 16);
   const ID = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
@@ -221,17 +229,36 @@ export function createClipPlayer(file, RC, skeleton) {
         const p = share(0);
         for (let j = 0; j < 3; j++) pose[j] = lerp(total > 0 ? pose[j] : shotPose[j], shotPose[j], p.f);
       }
+      /** Blend a bone's turn in the pose toward another pose's by f (nlerp). @param {number} o @param {Float32Array} to @param {number} f */
+      const toward = (o, to, f) => {
+        const d = pose[o] * to[o] + pose[o + 1] * to[o + 1] + pose[o + 2] * to[o + 2] + pose[o + 3] * to[o + 3], s = d < 0 ? -1 : 1;
+        let l = 0;
+        for (let j = 0; j < 4; j++) { pose[o + j] = pose[o + j] * (1 - f) + s * to[o + j] * f; l += pose[o + j] ** 2; }
+        l = Math.sqrt(l) || 1;
+        for (let j = 0; j < 4; j++) pose[o + j] /= l;
+      };
       driven.forEach((bi, k) => {
         const { bw, f } = share(k), o = 3 + 4 * k;
         boneW[bi] = bw;
         if (f <= 0) return;
         if (total <= 0) { for (let j = 0; j < 4; j++) pose[o + j] = shotPose[o + j]; return; }
-        const d = pose[o] * shotPose[o] + pose[o + 1] * shotPose[o + 1] + pose[o + 2] * shotPose[o + 2] + pose[o + 3] * shotPose[o + 3], s = d < 0 ? -1 : 1;
-        let l = 0;
-        for (let j = 0; j < 4; j++) { pose[o + j] = pose[o + j] * (1 - f) + s * shotPose[o + j] * f; l += pose[o + j] ** 2; }
-        l = Math.sqrt(l) || 1;
-        for (let j = 0; j < 4; j++) pose[o + j] /= l;
+        toward(o, shotPose, f);
       });
+      // The held layer over all of it, on its own bones: it rises through its span as it comes up.
+      if (held) {
+        held.up = Math.max(0, Math.min(1, held.up + (held.on ? dt / Math.max(held.upS, 1e-3) : -dt / Math.max(held.downS, 1e-3))));
+        if (held.up > 0) {
+          sample(held.c, lerp(held.span[0], held.span[1], held.up), heldPose);
+          const hw = smooth(Math.min(1, held.up * 2));
+          driven.forEach((bi, k) => {
+            if (!held?.take[k]) return;
+            const o = 3 + 4 * k, bw = boneW[bi], nw = bw + (1 - bw) * hw;
+            if (bw <= 0) for (let j = 0; j < 4; j++) pose[o + j] = heldPose[o + j];
+            else toward(o, heldPose, hw / nw);
+            boneW[bi] = nw;
+          });
+        } else if (!held.on) held = null;
+      }
       const weight = boneW[driven[0]];
       return { pose, weight, roll: rw, shot: shotW, feet: Math.max(rw, shotFeet), shotEnded, stretch: lerp(1, stretch, a / (total || 1)), landed, phase };
     },
@@ -254,6 +281,24 @@ export function createClipPlayer(file, RC, skeleton) {
     },
     /** Stop the shot playing at once. */
     stopShot() { shot = null; },
+    /**
+     * Hold a clip's pose as a layer over everything (walking, a shot), on mask's bones only: on, it
+     * rises through span (s into the clip) over upS and stays; off, it plays back down over downS.
+     * Call it each frame or on each change; a new name replaces the layer. Returns whether it is up at all.
+     * @param {string} name @param {boolean} on @param {{ span: number[], mask: string[], upS: number, downS: number }} o
+     */
+    hold(name, on, o) {
+      if (!held || held.c.name !== name) {
+        if (!on) return false;
+        const f = files.find((x) => x.clips[name]);
+        if (!f) return false;
+        held = { c: prepare(f, name), span: o.span, upS: o.upS, downS: o.downS, take: file.bones.map((b) => o.mask.includes(b)), on, up: 0 };
+      }
+      Object.assign(held, { on, span: o.span, upS: o.upS, downS: o.downS });
+      return held.up > 0 || on;
+    },
+    /** How far up the held layer is (0 down, 1 held). */
+    get holding() { return held ? held.up : 0; },
     /** The shot playing (its clip's name), or null. */
     get shooting() { return shot ? shot.c.name : null; },
     /** Add another clip file's clips for shots (the fighting set; the same driven bones). @param {ClipFile} f */
