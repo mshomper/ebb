@@ -18,7 +18,7 @@ const FLAME = '<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true
 
 /**
  * @param {HTMLElement} box
- * @param {{ layer: any, MR: any, HR: any, MR0: any, HR0: any, say: (s: string) => void, blocks: HTMLTextAreaElement }} o
+ * @param {{ layer: any, MR: any, HR: any, MR0: any, HR0: any, FC: any, FC0: any, say: (s: string) => void, blocks: HTMLTextAreaElement }} o
  *   MR0, HR0: the recipes as loaded, to mark what changed
  */
 export function createMovesPanel(box, o) {
@@ -102,7 +102,8 @@ export function createMovesPanel(box, o) {
   $('copy-hollow').addEventListener('click', async (e) => {
     const line = (/** @type {string} */ k, /** @type {any} */ v, /** @type {any} */ was) => `    "${k}": ${JSON.stringify(v)},${JSON.stringify(v) === JSON.stringify(was) ? '' : '   (changed)'}`;
     const text = ['recipes/world/hollow-moves.json moves:', ...ids.map((id) => line(id, MR.moves[id], o.MR0.moves[id])),
-      'recipes/world/hollow.json foes:', ...Object.keys(HR.foes).map((k) => line(k, HR.foes[k], o.HR0.foes[k]))].join('\n');
+      'recipes/world/hollow.json foes:', ...Object.keys(HR.foes).map((k) => line(k, HR.foes[k], o.HR0.foes[k])),
+      'recipes/world/fight-clips.json clips.raiseLantern:', line('layer', o.FC.clips.raiseLantern.layer, o.FC0.clips.raiseLantern.layer)].join('\n');
     o.blocks.value = text;
     try { await navigator.clipboard.writeText(text); o.say('Copied: paste each line over the same entry in those two recipes.'); } catch { o.say('Shown below; copy them from the box.'); }
     /** @type {HTMLElement} */ (e.currentTarget).blur();

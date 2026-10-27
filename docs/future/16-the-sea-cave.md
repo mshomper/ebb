@@ -397,7 +397,7 @@ Each kind keeps one fixed set of behaviors and never learns, and the set is buil
   - While locked the camera sits 20 degrees off the line to the target, so the walker never hides it.
   - The watcher floats, so Groundline passes under it; Moth lure leads any watcher within 14 m of the moths.
   - Hook and turn and Taproot take the locked thing, or else the thing nearest the dot.
-  - Raising the lantern lifts the light and the drawn lantern; the arm's raise pose is still to come.
+  - Raising the lantern lifts the arm (Matt, October 27, 2026; m2-lantern-raise): Meshy's point, unmirrored so the lantern hand rises, plays as a held layer on the left arm only (`fight-clips.json` raiseLantern), up in 0.15 s and down in 0.2 s, over walking and any swing; the lantern hangs plumb from the hand and the light rises with it.
   - Snuff doesn't hold the walker still: moving ends it, as the table says.
 
 ## The lantern

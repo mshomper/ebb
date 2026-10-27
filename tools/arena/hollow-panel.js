@@ -16,7 +16,7 @@ const FLAME = (/** @type {number} */ k) => {
 
 /**
  * @param {HTMLElement} box where the panel goes
- * @param {{ hollow: any, HR: any, spawn: (kind: string) => void, clear: () => void, reset: () => void, actors: () => any[] }} o
+ * @param {{ hollow: any, HR: any, FC: any, spawn: (kind: string) => void, clear: () => void, reset: () => void, actors: () => any[] }} o
  */
 export function createHollowPanel(box, o) {
   const { hollow, HR } = o;
@@ -24,6 +24,7 @@ export function createHollowPanel(box, o) {
     <h2>The lantern</h2>
     <div class="flame-row"><div id="flame"></div><div><p class="big" id="fuel"></p><p class="muted" id="raise"></p></div></div>
     <div class="buttons"><button id="refill">Refill the lantern</button></div>
+    <div id="raise-sliders"></div>
     <h2>The staff's swing</h2>
     <label class="pick">Left click plays <select id="swing-clip">${Object.entries(HR.swing.chains).map(([c, ch]) => `<option value="${c}">${c}, ${/** @type {any} */ (ch).hits.length} swings</option>`).join('')}</select></label>
     <p class="muted">One swing a click; click again during a swing (or just after) for the next, up to the last.</p>
@@ -37,6 +38,19 @@ export function createHollowPanel(box, o) {
   sel.value = hollow.swingClip;
   sel.addEventListener('change', () => { hollow.swingClip = sel.value; sel.blur(); });
   $('refill').addEventListener('click', (e) => { hollow.lantern.refill(); /** @type {HTMLElement} */ (e.currentTarget).blur(); });
+  // The raise's timing (fight-clips.json raiseLantern layer): how quickly the arm comes up and goes down.
+  const RL = o.FC.clips.raiseLantern.layer;
+  for (const [key, label] of [['upS', 'Lantern up'], ['downS', 'Lantern down']]) {
+    const row = document.createElement('div');
+    row.className = 'slider';
+    row.innerHTML = `<label for="raise-${key}">${label}</label><input id="raise-${key}" type="range" min="0.05" max="0.8" step="0.01" value="${RL[key]}"><output for="raise-${key}"></output>`;
+    const input = /** @type {HTMLInputElement} */ (row.querySelector('input')), out = /** @type {HTMLOutputElement} */ (row.querySelector('output'));
+    const show = () => { out.textContent = `${RL[key]} s`; };
+    input.addEventListener('input', () => { RL[key] = Number(input.value); show(); });
+    input.addEventListener('change', () => input.blur());
+    show();
+    $('raise-sliders').append(row);
+  }
   for (const b of /** @type {NodeListOf<HTMLButtonElement>} */ (box.querySelectorAll('[data-spawn]'))) b.addEventListener('click', () => { o.spawn(/** @type {string} */ (b.dataset.spawn)); b.blur(); });
   $('foes-reset').addEventListener('click', (e) => { o.reset(); /** @type {HTMLElement} */ (e.currentTarget).blur(); });
   $('foes-clear').addEventListener('click', (e) => { o.clear(); /** @type {HTMLElement} */ (e.currentTarget).blur(); });
