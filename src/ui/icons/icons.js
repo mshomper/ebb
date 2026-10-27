@@ -1256,6 +1256,13 @@ const ICONS = {
     <path d="M3.5 6.5H7.5M3.5 10H7.5M3.5 13.5H7.5M3.5 17H7.5"/>
     <path d="M10 15.5C10.4 12.6 12.4 11 15 11.6C16.6 12 17 13.8 16.2 15.2"/>
     <path d="M9.6 15.6H17"/>`,
+  // The walker: a figure in a tall soft hat with a wide brim and a long coat (the Walker page's button).
+  walker: `
+    <path ${ACCENT} d="M8.4 20.5L9.4 12.2H14.6L15.6 20.5Z"/>
+    <path d="M8.4 20.5L9.4 12.2H14.6L15.6 20.5Z"/>
+    <path d="M10.2 9.6C10.6 6.8 11.6 4.4 13.2 3C14 2.4 15.2 2.6 15.8 3.4C14.8 3.8 14.4 5 14.6 6.6L14.8 9.6"/>
+    <path d="M5.8 10.4C7.6 9.2 16.4 9.2 18.2 10.4C16.4 11.6 7.6 11.6 5.8 10.4Z"/>
+    <path d="M12 12.2V20.5M10.6 14.6H11.4M12.6 14.6H13.4"/>`,
 };
 
 /** Names of every icon in the sprite. */

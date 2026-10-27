@@ -105,6 +105,8 @@ import { setActRate } from './world/figure/acts.js';
 import { ashMarks } from './world/gather/ashes.js';
 import { createDig } from './world/dig/index.js';
 import { createSketchbook } from './world/sketchbook/index.js';
+import { createKit } from './world/kit/index.js';
+import { joinCarriers, packForSave } from './world/kit/model.js';
 import { createPiles } from './world/pack/piles-live.js';
 import { setDownAtCamp } from './world/pack/route.js';
 import { createStores } from './world/pack/stores.js';
@@ -203,6 +205,9 @@ export async function startApp(canvas, hooks = {}) {
   // The keeper's camp sections (format 9, src/save/migrate-format9.js): from the save, empty on a
   // new island, and as they were on a GPU rebuild.
   for (const id of SECTIONS9) updateStore(id, (v) => (back ? back[id] : v ?? empty9(id)));
+  // The carriers live in the kit's section (the Walker page, K1); the pack keeps its own copy for its
+  // pouch rules. A save from before the kit kept them in the pack: both come back agreeing.
+  { const j = joinCarriers(getStore('kit'), getStore('pack')); updateStore('kit', () => j.kit); updateStore('pack', () => j.pack); }
   // The camp pad (src/world/camp/layout.js): in a new island's base from the start; on an older
   // island once it is stamped (camp.pad, src/world/camp/migrate-pad.js).
   {
@@ -739,6 +744,9 @@ export async function startApp(canvas, hooks = {}) {
     weather: () => { const w = weatherAt(world.state?.weather, clock.display(), seasonsRecipe); return { rain: w.rain ?? 0, mist: w.mist ?? 0 }; },
     subject: () => sketchSubject() });
   sim.addSystem(sketchbook);
+  // The walker's kit (the Walker page, K1; src/world/kit): hat, lantern, in hand, coat and carrier.
+  const kit = createKit({ recipe: await loadRecipe('world/kit'), pack, you: () => (walk.below ? walk.you() : null) });
+  sim.addSystem(kit);
   // `?sketch` (a test link, unsaved): a full pouch of charcoal sticks in the pack.
   if (params.has('sketch') && !back) pack.add('charcoal-sticks', 3);
   // `?planting` (a test link, unsaved; P2g): in the pack, water mint seed, an iris clump, two willow
@@ -1206,7 +1214,7 @@ export async function startApp(canvas, hooks = {}) {
     canvas, walk, camera, recipe: walkerRecipe,
     // A card or panel over the view: keys wait, and the pointer is freed to use it.
     open: () => !!getStore('identify') || !!getStore('journalUi')?.open || !!getStore('haul') || !!getStore('shelfPending')
-      || !!getStore('sketchbookUi')?.open || !!getStore('stationView'),
+      || !!getStore('sketchbookUi')?.open || !!getStore('stationView') || !!getStore('walkerPageUi')?.open,
     use: (x, y) => dispatch({ type: 'look.tap', x, y, source: 'mouse' }),
     hover: (x, y) => {
       if (getStore('hand')) { sowing.setPointer(groundAt(x, y)); return; }
@@ -2055,7 +2063,7 @@ export async function startApp(canvas, hooks = {}) {
       build: hooks.build ?? 'dev', seed, island: island.id, worldT: clock.worldT(), flow: clock.flow(),
       carryMinutes: getStore('meta')?.carryMinutes ?? 0, keepGrowing: getStore('meta')?.keepGrowing ?? true,
       world: world.state, journal: getStore('journal'), water: getStore('water'), unlocks: getStore('unlocks')?.earned ?? {},
-      view: { ...camera.pose(), walker: walk.spot() }, looks: getStore('looks') ?? {}, music: getStore('music') ?? { hearted: [] }, pieces: getStore('pieces'), keepsakes: getStore('keepsakes'), nets: getStore('nets'), ...Object.fromEntries(SECTIONS9.map((id) => [id, getStore(id)])), chunks: getStore('chunks'), mirror: getStore('terrainLive')?.mirror ?? null,
+      view: { ...camera.pose(), walker: walk.spot() }, looks: getStore('looks') ?? {}, music: getStore('music') ?? { hearted: [] }, pieces: getStore('pieces'), keepsakes: getStore('keepsakes'), nets: getStore('nets'), ...Object.fromEntries(SECTIONS9.map((id) => [id, getStore(id)])), pack: packForSave(getStore('pack')), chunks: getStore('chunks'), mirror: getStore('terrainLive')?.mirror ?? null,
     }),
   });
 
@@ -2137,6 +2145,12 @@ export async function startApp(canvas, hooks = {}) {
     autumn,
     /** The walker: the walk grid, your feet, Go down and Go up (tools and testing). */
     walk,
+    /** The walker's kit (src/world/kit): the Walker page reads and wears through it. */
+    kit,
+    /** The GPU device, for the Walker page's portrait (its own small view, src/render/portrait.js). */
+    device: gpu.device,
+    /** The figure recipe, for the portrait. */
+    figureRecipe,
     /** The first evening: its start, the boat's mooring, and the director once main.js starts it. */
     intro,
     /** The keeper's camp: the journal asks it what a click at camp lands on; tools read the fire. */
