@@ -29,6 +29,7 @@ export function addFigureClipTests(test, assert, eq) {
       const k = F.clips[name];
       assert(k && k.data.length === k.frames * (3 + 4 * F.bones.length) && k.data.every(Number.isFinite), `${name} there and finite`);
       assert(FR.poses[/** @type {any} */ (c).pose]?.includes(name), `${name} listed under its pose`);
+      assert(typeof (/** @type {any} */ (c).mask) === 'boolean', `${name} says whether it plays masked (Matt's pick)`);
     }
     for (const pose of ['Swing', 'Plant', 'Raise', 'Throw', 'Point']) assert(FR.poses[pose]?.length, `a clip for ${pose}`);
     // The point is mirrored onto the weapon hand: at its height the right hand is well above the left.

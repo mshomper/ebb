@@ -63,6 +63,8 @@ export async function addClipStrips(o) {
   // C1: the fighting clips, three or so to a strip, each masked and then as Meshy made it. Throw and
   // Point (Matt's Text-to-Animation pair) have a strip of their own, with what still looks off.
   const names = Object.keys(FR.clips).filter((n) => !OFF[n]), per = 3;
+  /** Marks the row Matt picked (fight-clips.json mask). @param {any} c @param {boolean} masked */
+  const pick = (c, masked) => ((c.mask ?? true) === masked ? ' (your pick)' : '');
   for (let s = 0; s * per < names.length; s++) {
     const group = names.slice(s * per, s * per + per);
     STRIPS[`fight${s + 1}`] = {
@@ -70,8 +72,8 @@ export async function addClipStrips(o) {
       rows: group.flatMap((n) => {
         const c = FR.clips[n], picks = evenPicks(durOf(n), 8);
         return [
-          { name: `${n} (${c.meshy}, ${c.pose}), lantern arm masked, staff in hand`, run: () => shotRun(n, FR.mask, 'slim'), picks },
-          { name: `${n} as Meshy made it: both arms`, run: () => shotRun(n, null, null), picks },
+          { name: `${n} (${c.meshy}, ${c.pose}), lantern arm masked, staff in hand${pick(c, true)}`, run: () => shotRun(n, FR.mask, 'slim'), picks },
+          { name: `${n} as Meshy made it: both arms${pick(c, false)}`, run: () => shotRun(n, null, null), picks },
         ];
       }),
     };
@@ -83,9 +85,9 @@ export async function addClipStrips(o) {
     rows: Object.keys(OFF).flatMap((n) => {
       const c = FR.clips[n], picks = evenPicks(durOf(n), 8);
       return [
-        { name: `${n} (${c.pose}), lantern arm masked, from the front and right`, note: `Cleaned: ${c.made}.`, run: () => shotRun(n, FR.mask, 'slim'), picks },
+        { name: `${n} (${c.pose}), lantern arm masked, from the front and right${pick(c, true)}`, note: `Cleaned: ${c.made}.`, run: () => shotRun(n, FR.mask, 'slim'), picks },
         { name: `${n}, from the right`, note: `Still off: ${OFF[n]}`, view: SIDEV, run: () => shotRun(n, FR.mask, 'slim'), picks },
-        { name: `${n} cleaned, no mask: both arms`, run: () => shotRun(n, null, null), picks },
+        { name: `${n} cleaned, no mask: both arms${pick(c, false)}`, run: () => shotRun(n, null, null), picks },
       ];
     }),
   };

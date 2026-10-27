@@ -41,7 +41,7 @@ const motionNew = createFigureMotion(R, built.skeleton, clips);
 const FR = await (await fetch('../recipes/world/fight-clips.json')).json();
 motionNew.addClips(await (await fetch(`../${FR.file}`)).json());
 const H = await createHeld(R, built);
-let staffLook = /** @type {string | null} */ (null), lanternOn = false, noMask = false;
+let staffLook = /** @type {string | null} */ (null), lanternOn = false, otherWay = false;
 const motionOld = createFigureMotion(R, builtOld.skeleton);
 /** Every call goes to both figures (the first's answer comes back); info and bones are the new one's. @type {any} */
 const motion = new Proxy(motionNew, {
@@ -249,19 +249,20 @@ const fight = $('fight');
 for (const [pose, names] of Object.entries(FR.poses)) {
   for (const name of /** @type {string[]} */ (names)) {
     const b = document.createElement('button');
-    b.textContent = `${pose}: ${name}`;
+    b.textContent = `${pose}: ${name}${FR.clips[name].mask === false ? ' (no mask)' : ''}`;
     b.addEventListener('click', () => {
       pace = 0; w.speed = 0;
       document.querySelectorAll('[data-pace]').forEach((o) => press(o, o.getAttribute('data-pace') === '0'));
       posture = 'stand'; press($('sit'), false); press($('kneel'), false);
-      const c = FR.clips[name];
-      const len = motionNew.shoot(name, { mask: noMask ? undefined : FR.mask, feet: c.feet ?? true, easeS: FR.easeS });
-      note.textContent = `${name} (${c.meshy}): ${c.for}. ${len.toFixed(1)} s, ${noMask ? 'both arms, as Meshy made it' : 'the lantern arm masked'}.`;
+      // Each clip plays as Matt picked (fight-clips.json mask); Other way plays it the other way, to compare.
+      const c = FR.clips[name], masked = (c.mask ?? true) !== otherWay;
+      const len = motionNew.shoot(name, { mask: masked ? FR.mask : undefined, feet: c.feet ?? true, easeS: FR.easeS });
+      note.textContent = `${name} (${c.meshy}): ${c.for}. ${len.toFixed(1)} s, ${masked ? 'the lantern arm masked' : 'both arms, as Meshy made it'}${otherWay ? ' (the other way from your pick)' : ''}.`;
     });
     fight.append(b);
   }
 }
-$('nomask').addEventListener('click', (e) => { noMask = !noMask; press(/** @type {Element} */ (e.currentTarget), noMask); });
+$('otherway').addEventListener('click', (e) => { otherWay = !otherWay; press(/** @type {Element} */ (e.currentTarget), otherWay); });
 // A frog arrives to one side, the other side each time: the eyes go first, then the head and a little
 // of the chest.
 let frogSide = 1;
