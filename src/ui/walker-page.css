@@ -69,7 +69,9 @@
   font-size: calc(32px * var(--text-scale, 1));
   line-height: 1.1;
 }
+/* Q and E's spot is always kept, so finding the Hollow never changes the page's height. */
 .ebb-wp__pegs { display: flex; gap: 10px; align-items: center; padding-bottom: 18px; }
+.ebb-wp__pegs.is-unseen { visibility: hidden; }
 .ebb-wp__peg { width: 56px; height: 56px; border-radius: 14px; border: 2px solid var(--jr-moss); background: var(--wp-tile); display: grid; place-items: center; position: relative; }
 .ebb-wp__peg.is-empty { border-style: dashed; border-color: #B9C6B0; }
 .ebb-wp__peg b { position: absolute; bottom: -22px; font-size: 15px; font-weight: 800; color: var(--jr-soft); }
@@ -158,9 +160,11 @@
 .ebb-wp__opt .item-icon, .ebb-wp__opt .icon { width: 38px; height: 38px; }
 .ebb-wp__opt.is-on { border-color: var(--jr-moss); background: var(--wp-moss-wash); --icon-bg: var(--wp-moss-wash); }
 
-/* The chosen thing at the bottom: its name on moss, the walker's words, its actions. */
+/* The chosen thing at the bottom: its name on moss, the walker's words, its actions. Its height is
+   fixed (name bar, three lines of words, one 48 px action row kept even when empty), so the page
+   never jumps as the choice changes. */
 .ebb-wp__about { margin-top: 18px; border: 2px solid var(--jr-moss); border-radius: 12px; overflow: hidden; background: var(--wp-tile); }
-.ebb-wp__name { display: flex; align-items: center; gap: 10px; background: var(--jr-moss); color: var(--jr-paper); padding: 6px 14px; }
+.ebb-wp__name { display: flex; align-items: center; gap: 10px; height: 44px; box-sizing: border-box; background: var(--jr-moss); color: var(--jr-paper); padding: 6px 14px; }
 .ebb-wp__name b { font-weight: 800; font-size: calc(18px * var(--text-scale, 1)); margin-right: auto; }
 .ebb-wp__nameicon { display: grid; place-items: center; --icon-bg: var(--jr-moss); --fam: currentColor; }
 .ebb-wp__nameicon .item-icon, .ebb-wp__nameicon .icon, .ebb-wp__nameicon svg { width: 28px; height: 28px; display: block; }
@@ -169,10 +173,12 @@
   margin: 0; padding: 10px 14px 12px;
   font-family: var(--font-voice, Fraunces, serif); font-style: italic; font-variation-settings: "SOFT" 100;
   font-size: calc(18px * var(--text-scale, 1)); line-height: 1.45; color: var(--jr-ink);
+  box-sizing: border-box; height: calc(3 * 1.45em + 22px); overflow: hidden;
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3;
 }
 .ebb-wp__words.is-hint { color: var(--jr-soft); }
-.ebb-wp__note { margin: -4px 14px 12px; font-size: 15px; color: var(--jr-soft); }
-.ebb-wp__acts { padding: 0 14px 12px; flex-wrap: wrap; }
+.ebb-wp__note { margin: 0; font-size: 15px; color: var(--jr-soft); }
+.ebb-wp .ebb-wp__acts { display: flex; align-items: center; flex-wrap: nowrap; gap: 8px; height: 48px; margin: 0; padding: 0 14px 12px; overflow: hidden; }
 
 @media (max-width: 759px) {
   .ebb-wp__body { grid-template-columns: 76px minmax(0, 1fr); }

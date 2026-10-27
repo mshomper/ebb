@@ -146,7 +146,8 @@ export function createWalkerPortrait(host, o) {
   host.addEventListener('pointerdown', (e) => { dragX = e.clientX; host.setPointerCapture(e.pointerId); host.classList.add('is-dragging'); });
   host.addEventListener('pointermove', (e) => {
     if (dragX === null) return;
-    yaw += (e.clientX - dragX) * PR.dragDegPerPx * DEG;
+    // The near side follows the pointer, like spinning a figure on a table: a drag right swings its front right.
+    yaw -= (e.clientX - dragX) * PR.dragDegPerPx * DEG;
     dragX = e.clientX;
     settle = PR.settleS;
   });

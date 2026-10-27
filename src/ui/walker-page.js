@@ -177,8 +177,9 @@ export function mountWalkerPage(parent, buttonParent, o) {
   }
 
   function renderPegs(/** @type {any} */ v) {
-    // Hidden until the Hollow is found, so nothing hints at what is not found yet.
-    pegsEl.hidden = !v.hollow;
+    // Hidden until the Hollow is found, so nothing hints at what is not found yet; their spot stays
+    // kept (is-unseen hides them without taking them out of the layout) so the page never grows.
+    pegsEl.classList.toggle('is-unseen', !v.hollow);
     pegsEl.innerHTML = v.hollow ? `<span class="ebb-wp__peg is-empty" role="img" aria-label="${esc(W.q)}"><b>${esc(W.q)}</b></span>
       <span class="ebb-wp__peg is-empty" role="img" aria-label="${esc(W.e)}"><b>${esc(W.e)}</b></span>` : '';
   }
@@ -219,21 +220,22 @@ export function mountWalkerPage(parent, buttonParent, o) {
   function renderAbout(/** @type {any} */ v, /** @type {any} */ pv, /** @type {PageUi} */ u) {
     const c = peek && u.pop === peek.slot ? choiceCard(v, peek.slot, peek.id) : cardFor(v, pv, u.sel);
     shownCard = c;
-    if (!c) { aboutEl.innerHTML = `<p class="ebb-wp__words is-hint">${esc(W.pick)}</p>`; return; }
+    // Every part is always there, empty when unused, so the card (and the page) never changes height.
+    if (!c) { aboutEl.innerHTML = `<div class="ebb-wp__name"><span class="ebb-wp__nameicon"></span><b></b></div><p class="ebb-wp__words is-hint">${esc(W.pick)}</p><div class="ebb-wp__acts"></div>`; return; }
     // A carrier's Wear works at camp only: elsewhere the card says so instead.
     const away = c.kitSlot === 'carrier' && !c.worn && !v.atCamp;
     const acts = away ? [] : actionsFor(c, o.words);
-    const row = acts.length ? `<div class="ebb-idcard__acts ebb-wp__acts">${acts.map(({ a, label, main, mark, kind }) => {
+    // The action row is always one 48 px row: the icons, the camp-only note, or nothing.
+    const row = `<div class="ebb-idcard__acts ebb-wp__acts">${away ? `<p class="ebb-wp__note">${esc(W.campOnly)}</p>` : acts.map(({ a, label, main, mark, kind }) => {
       const it = kind ? itemIconFor(kind) : null;
       const face = it ? `${itemIconSvg(it)}${a.chip ? chipSvg(a.chip) : ''}` : `${iconSvg(a.icon)}${mark ? `<span class="ebb-idcard__mark">${mark}</span>` : ''}`;
       return `<button type="button" class="ebb-idcard__act${main ? ' is-main' : ''}${it && a.chip ? ' has-chip' : ''}" data-cact="${esc(a.id)}" aria-label="${esc(label)}" data-label="${esc(label)}">${face}</button>`;
-    }).join('')}</div>` : '';
+    }).join('')}</div>`;
     const head = c.pouchSketch ? (itemIconFor(c.kindId) ? itemPouchSvg(/** @type {string} */ (itemIconFor(c.kindId)), c.pouchStage ?? 0) : pouchSvg(c.pouchStage ?? 0, c.pouchSketch))
       : c.icon ? glyph(c.icon) : '';
     aboutEl.innerHTML = `<div class="ebb-wp__name"><span class="ebb-wp__nameicon" aria-hidden="true">${head}</span><b>${esc(c.name)}</b>
         ${c.worn && c.kitSlot && c.kitId ? `<span class="ebb-wp__worn">${esc(W.wearing)}</span>` : ''}</div>
       <p class="ebb-wp__words">${esc(c.text)}</p>
-      ${away ? `<p class="ebb-wp__note">${esc(W.campOnly)}</p>` : ''}
       ${row}`;
   }
 
