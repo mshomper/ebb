@@ -193,6 +193,19 @@ Two views: above shapes, below lives there. Above is the diorama with every shap
 - **Fire:** a physical light at about 1,800 K with flicker and wind-blown smoke. It lights only when the player chooses, with the fire steel. It draws moths, the bats come for the moths, the frogs call from beyond the firelight. It never spreads; rain drops it to embers; its ash fades in a day.
 - **Leave no trace:** the camp does not move. After the farewell (docs/future/02), the pad pales and the grass returns over about 14 game days (docs/future/13, section 3.9).
 
+### The Walker page (Matt's mock and plan, approved October 26, 2026)
+
+Everything the walker wears and carries, in one place: `src/ui/walker-page.js` and `walker-page.css`, on the journal's cream paper with its binding edge (moss for headings, ember only for the selection). Opened with **I** or the drawn walker button at the bottom right, just left of the time button; Esc or the close button shuts it. Opening it frees the pointer, as the journal does, and the world keeps time. At most 860 px wide, centred; below 760 px the pouches move under the walker.
+
+- **Kit slots** down the left: hat, lantern, in hand, coat. A click rings the slot in ember and pops its owned choices out beside it; a click on a choice wears it, and the portrait changes at once. Owned things live with the kit, never in a pouch. A choice not yet found is a blank outline and is never named. Today: the walker's own hat and coat, the hand lantern (worn: carried off the pad after dark; left: it stays on the tent pole), and empty hands until the forager's trail gives the hazel walking stick.
+- **The carrier** is a strap above the pouches with the same pop-out (the first pack, the rush satchel, the willow basket). It changes at camp only, through the camp's own Wear (P2f), so the pack still refuses when what it holds would not fit; elsewhere the card says the others hang at camp.
+- **Pouches** in two columns, drawn as the pack bar draws them. A click shows the pouch's own card at the bottom with its own actions (Set down at camp, Empty, Spread here, Set out). Pouches beyond the carrier show as faint dashed squares only once a bigger carrier is made.
+- **The belt** under the walker: shovel, gathering knife, fire steel, sketchbook, net, each a blank outline until owned. A click shows its card; the sketchbook's opens the book.
+- **Q and E** stay hidden until the Hollow is found (a journal flag, `hollow:found`), so nothing hints at it.
+- **The bottom card**: the chosen thing's name on moss, the walker's words in Fraunces italic, and its actions as the item cards' drawn buttons (src/ui/card-actions.js).
+- **The portrait** (`src/ui/walker-portrait.js`, `src/render/portrait.js`, `portrait-draw.wgsl`): the walker as worn, in a small view of its own drawn with the game's device, breathing at rest with a slow turn; a drag turns it. It wears the carrier on its bone as the world does. Lit by a soft key and sky fill in linear light with a gentle filmic curve (the page is paper, not the island, so there is no sun or palette pass here). **Frame-time note:** it draws only while the page is open; measured at about 2.7 ms of CPU a frame on a background tab (its own figure motion and one small draw at the box's size, capped at 900 px, four samples a pixel), and nothing at all while the page is shut. With `?debug`, `window.ebbPortraitMs` shows the smoothed figure.
+- **The kit** (`src/world/kit`, save section `kit`, no format bump): hat, lantern, hand, coat and carrier, and what is owned for each. A save without it reads as the walker's own things. P2f's carrier choice now saves here; the pack keeps its own copy for its pouch rules, so carriers behave as before. Hat and coat looks for Phase 4 dyes come from `recipes/world/kit.json` (`looksOf`); the walker's own are as made. Words and tunables: `recipes/world/kit.json`.
+
 ## Data and interfaces
 
 ```js
