@@ -21,6 +21,7 @@
   button { font: 800 16px/1.2 'Nunito', system-ui, sans-serif; color: #1E2624; background: #E3D9C9; border: 0; border-radius: 12px; padding: 10px 14px; cursor: pointer; min-height: 44px; }
   button[aria-pressed=true] { background: #2E4A2C; color: #FBF7F0; }
   .buttons { display: flex; flex-wrap: wrap; gap: 10px; }
+  [hidden] { display: none !important; }
   .slider { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) 5em; gap: 8px; align-items: center; font-size: 16px; }
   input[type=range] { width: 100%; min-width: 0; accent-color: #4a6a47; height: 30px; }
   dl { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 4px 14px; margin: 0; font-size: 16px; }
@@ -31,8 +32,13 @@
 <body>
 <main>
   <header class="card">
-    <h1>Hollow foes: the soot mote</h1>
-    <p class="muted">Matt's mote (nTop, October 27, 2026) at its size in the game, turning slowly, close up. No bones: the bob, the turn, the breathing, the squash and stretch, the trail and the eyes are all drawn by the shader (src/shaders/lib-mote.wgsl). Drag to turn the view, wheel to come closer. Numbers live in recipes/world/hollow.json (foes.motes.mote).</p>
+    <h1 id="title">Hollow foes</h1>
+    <p class="muted">Matt's Hollow things (nTop, October 27, 2026) at their size in the game, close up. The soot mote has no bones: its bob, turn, breathing, squash and stretch, trail and eyes are drawn by the shader (src/shaders/lib-mote.wgsl). The silt crawler is rigged in code (16 bones: knees that bend, feet planted on the ground, a tail on a spring, eye stalks that look at you; src/world/hollow/crawler-motion.js). The hagstone watcher is a stone from a signed-field generator, rigged in code (a root for the float, turn and look, and four wrack blades of five bones on lagging springs), its hole's light drawn by the shader; you hold the lantern where the view is (src/world/hollow/watcher-motion.js). Drag to turn the view, wheel to come closer. Numbers live in recipes/world/hollow.json (foes.motes.mote, foes.lunger.crawler, foes.watcher.stone).</p>
+    <div class="buttons" id="foe">
+      <button data-foe="mote" aria-pressed="true">Soot mote</button>
+      <button data-foe="crawler">Silt crawler</button>
+      <button data-foe="watcher">Hagstone watcher</button>
+    </div>
   </header>
   <section class="card">
     <canvas id="view"></canvas>
@@ -52,10 +58,32 @@
       <button data-act="widen">A light hits it</button>
       <button data-act="scatter">Scatter</button>
     </div>
+    <div class="buttons" id="crawler-act" hidden>
+      <button data-act="rest" aria-pressed="true">Rest</button>
+      <button data-act="shuffle">Shuffle</button>
+      <button data-act="rear">The tell: rear up</button>
+      <button data-act="lunge">Lunge</button>
+      <button data-act="stuck">Stuck</button>
+      <button data-act="glance">Front hit: glance</button>
+      <button data-act="back">Back hit</button>
+      <button data-act="break">Break</button>
+    </div>
+    <div class="buttons" id="watcher-act" hidden>
+      <button data-act="rest" aria-pressed="true">Rest</button>
+      <button data-act="notice">Turns to the lantern</button>
+      <button data-act="tell">The tell: glow builds</button>
+      <button data-act="call">The call</button>
+      <button data-act="snuff">Dimmed by Snuff</button>
+      <button data-act="unmade">Unmade</button>
+      <button data-act="lure">Follows moths</button>
+      <button data-act="drift">Drift: weed streams</button>
+      <button data-act="hit">Hit</button>
+      <button data-act="break">Break</button>
+    </div>
     <div class="buttons">
       <button id="spin" aria-pressed="true">Turning</button>
       <button id="close">Face to face</button>
-      <button id="whole">Whole mote</button>
+      <button id="whole">The whole thing</button>
     </div>
     <h2>Tune</h2>
     <div id="sliders"></div>

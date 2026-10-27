@@ -38,6 +38,8 @@ export function createHollow(o) {
   const tally = { hits: 0, side: 0, back: 0, glanced: 0, misses: 0, broke: 0, taken: 0 };
   /** Staggered by a hit (s left), then a grace when no strike lands (s left, counting the stagger). */
   let reeling = 0, grace = 0;
+  /** A hit's shove on you, sliding over shoveS (m/s each way, s left). @type {{ x: number, z: number, left: number } | null} */
+  let shove = null;
   /** The hit-stop left (s): the world holds still a moment as a hit lands. */
   let hitStop = 0;
   /** Things standing in for the game's moves (H0b) hook in here: a brace that catches a hit. */
@@ -58,7 +60,7 @@ export function createHollow(o) {
   /** The lantern as the stand-ins read it. */
   function lampState() {
     const p = lampAt();
-    return { x: p[0], z: p[2], reachM: lantern.reach(), raised: lantern.raised && lantern.lift > 0.5, snuffed: lantern.snuffed };
+    return { x: p[0], y: p[1], z: p[2], reachM: lantern.reach(), raised: lantern.raised && lantern.lift > 0.5, snuffed: lantern.snuffed };
   }
   /** Is this ground open to a stand-in? */
   const open = (/** @type {number} */ x, /** @type {number} */ z) => {
@@ -172,6 +174,8 @@ export function createHollow(o) {
         const H = HR.hurt;
         reeling = H.staggerS; grace = H.staggerS + H.graceS;
         motion.shoot('hit', { lenS: H.clipS, feet: FR.clips.hit.feet ?? true, easeS: 0.05 });
+        // A lunge that met you shoves you along its way (over the walk grid, never into rock).
+        if (e.dirX !== undefined) shove = { x: e.dirX * H.shoveM / H.shoveS, z: e.dirZ * H.shoveM / H.shoveS, left: H.shoveS };
         chain.stop();
         o.say(`Hit: the flame gutters (${Math.round(lantern.fuel)} of ${HR.lantern.fuel} left).`);
       } else if (e.type === 'call') {
@@ -190,6 +194,11 @@ export function createHollow(o) {
     motion.hold('raiseLantern', lantern.raised && !lantern.snuffed && !lantern.out, { span: RL.layer.span, mask: RL.layer.mask, upS: RL.layer.upS, downS: RL.layer.downS });
     reeling = Math.max(0, reeling - dt);
     grace = Math.max(0, grace - dt);
+    if (shove) {
+      const step = Math.min(dt, shove.left);
+      walker.shove(shove.x * step, shove.z * step);
+      if ((shove.left -= dt) <= 0) shove = null;
+    }
     const why = lock.update(dt, candidates());
     if (why === 'moved') o.say('Its target broke: the lock moved to the nearest thing in the light.');
     else if (why === 'off') o.say('Its target broke, and nothing else is in the light: the lock is off.');
