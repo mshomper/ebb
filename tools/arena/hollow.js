@@ -60,7 +60,7 @@ export function createHollow(o) {
   /** The lantern as the stand-ins read it. */
   function lampState() {
     const p = lampAt();
-    return { x: p[0], z: p[2], reachM: lantern.reach(), raised: lantern.raised && lantern.lift > 0.5, snuffed: lantern.snuffed };
+    return { x: p[0], y: p[1], z: p[2], reachM: lantern.reach(), raised: lantern.raised && lantern.lift > 0.5, snuffed: lantern.snuffed };
   }
   /** Is this ground open to a stand-in? */
   const open = (/** @type {number} */ x, /** @type {number} */ z) => {

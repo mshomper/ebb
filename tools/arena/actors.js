@@ -10,12 +10,14 @@
 // recipes/world/hollow.json foes, and here they are drawn as plain shapes showing their tells.
 // Motes' swirl reads the arena's clock for drawing only; where the cluster is comes from the seeded
 // steps. Since H2 (October 27, 2026) the motes are Matt's model, five a swarm (mote-swarm.js), and the
-// lunger is Matt's silt crawler, rigged and moving by crawler-motion.js on the same steps.
+// lunger is Matt's silt crawler, rigged and moving by crawler-motion.js on the same steps; the watcher
+// is the hagstone watcher from the generator, its float, weed and light by watcher-motion.js.
 
 import { ringScale } from '../../src/world/creatures/presence.js';
 import { createFoe } from '../../src/world/hollow/foes.js';
 import { createSwarm } from '../../src/world/hollow/mote-swarm.js';
 import { createCrawlerMotion } from '../../src/world/hollow/crawler-motion.js';
+import { createWatcherMotion } from '../../src/world/hollow/watcher-motion.js';
 import { hash32 } from '../../src/core/rng.js';
 
 /**
@@ -89,8 +91,11 @@ function standIn(kind, at, rec) {
   const swarm = kind === 'motes' && rec.moteAcrossM ? createSwarm(f, H.foes.motes.mote, hash32(rec.seed ?? 1, at.id), rec.moteAcrossM) : null;
   // The lunger is Matt's silt crawler (H2): its rig moved by crawler-motion.js, drawn by tools/arena/crawler-pass.js.
   const crawler = kind === 'lunger' && rec.crawlerModel ? createCrawlerMotion(f, rec.crawlerModel, H.foes.lunger, hash32(rec.seed ?? 1, at.id, 0x637277)) : null;
+  // The watcher is the hagstone from the generator (H2): its float, weed and hole's light moved by
+  // watcher-motion.js, drawn by tools/arena/watcher-pass.js. Its cues (the tell, the call) go to rec.onCue.
+  const watcher = kind === 'watcher' && rec.watcherModel ? createWatcherMotion(f, rec.watcherModel, H.foes.watcher, hash32(rec.seed ?? 1, at.id, 0x776174), rec.onCue) : null;
   return {
-    kind, foe: f, id: at.id, swarm, crawler,
+    kind, foe: f, id: at.id, swarm, crawler, watcher,
     get x() { return f.x; },
     get z() { return f.z; },
     get note() { return `${H.foes[kind].name}: ${f.note}`; },
@@ -103,7 +108,7 @@ function standIn(kind, at, rec) {
     update(dt, you) { return f.update(dt, { you, lamp: you.lamp, open: you.open, crowd: you.crowd }); },
     /** @param {(x: number, z: number) => number} ground */
     shapes(ground) {
-      if (f.broken || crawler) return [];
+      if (f.broken || crawler || watcher) return [];
       // Hit: it flashes pale and hops, tipping back (hurt, 0..1).
       const hurt = Math.min(1, f.hurtS / 0.2), flash = /** @param {number[]} col */ (col) => (hurt > 0 ? col.map((v) => v + (1.6 - v) * hurt) : col);
       const y = ground(f.x, f.z) + Math.sin(Math.min(1, hurt) * Math.PI) * 0.12, c = Math.cos(f.yaw), s = Math.sin(f.yaw), tell = f.step === 'wind', stun = f.stunS > 0 && hurt === 0;
