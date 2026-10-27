@@ -22,7 +22,7 @@
 This is the first place in ebb with enemies. Doc 01 lists "no combat" as a non-goal. The proposal is a single, bounded exception:
 
 - **Combat happens only in the Hollow, and only when the player chooses to go in.** The island, the camp, the rubble passage and the bear's chambers never have enemies.
-- **Nothing from the Hollow ever comes up.** The surface stays exactly as cozy as it is now.
+- **None of the Hollow's things ever come up.** Only materials, keepsakes, plans and the root halls' old seeds do. The surface stays exactly as cozy as it is now.
 - **The island's real creatures are never fought.** The Hollow's things are not animals (see the bestiary).
 - **No death.** When the light gives out, the walker finds their way out in the dark and wakes at the mouth (see when the lantern goes out).
 
@@ -67,14 +67,92 @@ The quiet half of the cave, with no enemies.
 
 A trip is a run down through floors, one after another, until the player decides to head back up or the lantern gives out.
 
-- **Each floor** is a handful of chambers and passages. It has a way down (a shaft, a slope or a rope drop), enemies, finds, and sometimes a feature:
-  - an oil seep that tops up the lantern a little
-  - a crystal pocket
-  - a still pool with something in it for the net
-  - a guardian floor: one strong enemy and a better find
+- **Each floor** is a handful of chambers and passages with a way down, enemies, finds and sometimes a feature: an oil seep, a crystal pocket, a still pool for the net. Some floors are guardian floors. The depths, the floor plan, how enemies fill it and the guardians are below (agreed with Matt, October 27, 2026).
+- **One camera for the whole game.** The island's walker camera follows the walker into the Hollow with the same controls, set a little higher and further back (see Fighting).
 - **Every trip is new.** A floor's layout comes from the island seed, the trip number and the floor's place in the trip. The Hollow is seeded, so saves and replays are exact, but no two trips repeat.
 - **The way up** is always marked. On any floor the walker can climb back out with everything they're carrying. Going up is a walk back to the arch with a fade, not a climb through every floor.
 - **Not simulated while away.** Nothing grows or moves in the Hollow while the game is closed. It has no part in catch-up.
+
+### The depths
+
+Four depths in order, and two flavors that can come up instead. A floor's level (the trip's starting level plus one step per floor; never shown) picks its depth, with soft edges so that near a border either depth can come up. Each depth has its own rock, light, sound, chamber shapes and kinds, so going deeper reads at once. The first time the walker reaches a new depth they say one quiet line (*"The weed's gone. Only stone down here now."*), and the Lamplighter's trail marks it. That is the only sign of depth: no numbers.
+
+| Depth | Looks | Chambers | Lives here | Finds |
+|---|---|---|---|---|
+| **1 The wet shelf** | Wave-worn shelves, weed, shallow rock pools, the sea faint above | Wide and low; puddles that slow you; weed heaps, some of them tanglers | Soot motes, silt crawlers, wrack tanglers, brine eels in the pools | Clay, soot, tangle fibre, the odd hagstone, sea-worn keepsakes |
+| **2 The dripstone** | Columns and hanging stone, tall rooms, the drip echo; long column shadows | Pillared halls that break sight lines; narrow crawls between | Drip wisps on the ceiling, crawlers, the first hagstone watchers (one at a time) | Cave pearls, flint, ochre; oil seeps start here |
+| **3 The silt deeps** | Black still water, mud flats, old tide lines high on the walls; quiet, sounds carry | Long rooms with a deep channel down the middle; causeways; silt that slows you | Barnacle backs on the flats, brine eels in the channels, the first lamp-eaters | Hollow oil, brine salt, barnacle shell, guardian make plans |
+| **4 The glass halls** | Crystal in the walls throws the lantern back in colors; the darkest, bluest rooms | Pools of thrown light with dark between | Tide shades in the gaps, hagstone watchers in groups, lamp-eaters, a few of everything above | Crystal, the best keepsakes, the rarest charms |
+
+**The two flavors**, from depth 2 on, take the place of a depth's usual rock. Each keeps its depth's level, budget and kinds, and uses the same camera and controls:
+
+- **The sponge.** A gyroid lattice: the rock worn into a porous sponge, light leaking every way (the TPMS floor in How it is built). Its chambers open into each other through the lattice instead of passages. It has more finds than any other floor. About 1 floor in 12.
+- **The root halls.** The island's own tree roots, grown down through the ceiling and walls: pale, knotted, alive and dripping, with glow-worm threads between them, the one place in the Hollow where something from above has reached down.
+  - **How often** follows how many trees grow on the island: rare with a few young willows, common once the woodland is in. A keeper who plants trees finds more of them, and nothing above ever needs it.
+  - **How it plays:** root curtains split chambers into lanes. Hollow things are uneasy near living roots and won't cross the thickest tangles, so the floor plays as lit lanes of root with open dark between. Its wrack tanglers are knots of root, not weed.
+  - **Finds:** root-wood (a make ingredient), cave fungi, and now and then an **old seed**, a plant the island hasn't got yet, to plant on the surface (Matt, October 27, 2026). It is the Hollow's one gift to the garden, and never the only way that plant arrives. Taproot's burst is stronger here.
+
+### A floor
+
+```mermaid
+flowchart LR
+  IN[Way in<br/><i>way up, always quiet</i>] --> F1[Fight]
+  F1 --> F2[Fight]
+  F2 --> DN[Way down]
+  F1 --> FI[Find<br/><i>dead end</i>]
+  F2 --> SE[Seep]
+  F1 --> QU[Quiet]
+```
+
+A floor is a small map of chambers joined by short passages: a main path of 3 to 5 chambers and 1 to 3 side chambers, from about 4 chambers near the top to about 8 deep down. Chambers are real rooms with height (columns, hanging stone, ledges), about 12 to 20 m across, and passages bend so one chamber's things can't see into the next. Each depth brings its own chamber shapes (pillars, channels, crystal), each one a blend of blobs meshed with dual contouring.
+
+| Chamber | What it is |
+|---|---|
+| **Way in** | Where the rope drop lands. Always quiet. The way up is marked here, so the walk back is never far |
+| **Fight** | The main chambers, filled from the threat budget (below). The passage ahead stays dim until the chamber is quiet, but the walker can always run through |
+| **Quiet** | No enemies: a still pool for the net, a crystal pocket, a ledge to look out from |
+| **Find** | A dead end with a better find, sometimes guarded by one or two things |
+| **Seep** | An oil seep that tops up the lantern a little. At most one a floor, and not every floor |
+| **Way down** | A shaft, a slope or a rope drop. Going down is a choice: a card says what's left in the lantern, in words ("half a light") |
+
+A floor takes about 2 to 4 minutes. A new keeper's hand lantern lasts about 5 floors, all on the wet shelf and into the dripstone; a seasoned keeper starts in the dripstone and pushes into the glass halls. A short trip is about 10 minutes, a long, careful one 30 to 40.
+
+### Filling a floor
+
+Each fight chamber gets a **threat budget** from the floor's level, about 4 at level 1 rising to about 17 at level 12, and spends it on kinds. Each kind has a cost and a first level, so a harder level brings more things and more of the harder kinds, never new behavior.
+
+| Kind | Cost | From level | Prefers |
+|---|---|---|---|
+| Soot motes (a swarm of 5) | 2 | 1 | Anywhere |
+| Silt crawler | 2 | 1 | Wet floor, shelf, silt |
+| Wrack tangler | 2 | 2 | Weed heaps, beside pools |
+| Brine eel | 3 | 2 | Only chambers with water |
+| Hagstone watcher | 4 | 3 | High spots, chamber centers |
+| Drip wisp | 2 | 3 | Only under a ceiling (dripstone) |
+| Barnacle back | 5 | 5 | Long open chambers |
+| Lamp-eater | 6 | 6 | Dark corners, far from seeps |
+| Tide shade | 6 | 8 | Gaps between pools of light |
+
+- **A cap per chamber:** at most 5 things at once, a mote swarm counting as one. With the camera behind the walker some will be off screen, so fewer is fairer. Past the cap, the budget buys tougher kinds rather than more of them.
+- **Mix rules:** at most two of the large kinds a chamber, and a watcher never shares a chamber with another watcher until depth 4.
+- **A spread on each floor:** one fight chamber is always light (half budget) and one is the floor's hardest.
+- **The gentler Hollow** spends about two thirds of the budget and caps a chamber at 3.
+- The costs, first levels and curve are recipe values in `recipes/world/hollow.json`, checked on the cave-lab page.
+
+### Guardians
+
+A guardian floor is one large chamber built for one strong thing. **A guardian is a great old one of a kind already known**: bigger and stronger, with slower, clearer tells and a small retinue. It keeps that kind's one set of behaviors, so it never breaks the rule that enemies don't learn. Each depth has one.
+
+| Depth | Guardian | What it is |
+|---|---|---|
+| Wet shelf | **The old crawler** | A silt crawler the size of a boat, its front plated with shells. Lunges like any crawler, slower, and the floor shakes. Small crawlers hatch from the silt round it |
+| Dripstone | **The great eye** | A hagstone watcher as big as a boulder, turning in the middle of a pillared hall. When it sees the walker it calls motes and wisps. It is won by moving from pillar to pillar |
+| Silt deeps | **The old back** | A barnacle back as long as the chamber. It charges along the flats and hits the walls hard, and the stone it knocks down makes cover |
+| Glass halls | **The lamp-mother** | A lamp-eater as big as a cottage that drinks the light in the whole chamber. The seeps round the edge are the only light, and small lamp-eaters come to feed |
+
+- **How often:** at most once a trip, from the fourth floor on, with the chance rising each floor after (about 1 in 4 from the fifth).
+- **The prize:** a make plan for gear and a better find. Beaten, the guardian breaks into sand and light like the others.
+- **A guardian's page** in the bestiary sits beside its kind's page, and Unmake works on it once that kind's page is full.
 
 ## How hard it gets: the keeper's measure
 
@@ -164,7 +242,7 @@ Fills from each new kind met, each bestiary page and each floor fully walked.
 
 Decided by Matt, October 26, 2026, and redrawn by him the same day (the second pass, below). Each rank of each track also unlocks one active move, so the four tracks give sixteen. The walker carries only two, one on **Q** and one on **E**. The pair, together with the weapon, lantern and coat, is the player's build, and choosing only two makes them refine it.
 
-- **Every move draws a mark on the floor** (a ring, an arc, a line) before or as it lands, so it reads from the Hollow's high camera.
+- **Every move draws a mark on the floor** (a ring, an arc, a line) before or as it lands, so it reads from the Hollow's raised camera.
 - **Costs follow the lantern-as-health rule.** A *sip* is about one hit's worth of fuel. Moves that don't spend fuel use a short wait, once a floor, once a trip, or seeds and rushlights from the pack.
 - **Raise the lantern is not a move.** Holding the right mouse button raises it for everyone, so it never takes a peg.
 - **Some passives become moves.** The sweep and Kindling burst are moves, unlocked by their ranks. Ember keep and Second wind stay automatic: a safety net shouldn't cost a peg. Old ways stays a passive, so the hidden side passage exists without a peg. Space is everyone's dodge roll, so Tumble upgrades it to pass through enemies untouched, and nothing in Footing is a second dodge.
@@ -310,10 +388,9 @@ Each kind keeps one fixed set of behaviors and never learns, and the set is buil
 - **First version: ranks 1 to 3** of each track (twelve moves). The rank 4 moves come after.
 - **Clips:** the five shared poses (Swing, Plant, Throw, Raise, Kneel) plus Point, on the walker's rig. Swing, Throw, Raise and Kneel are already planned for fighting, the sling, the lantern and planting. Moth lure's moths are shader motion with no rig.
 - **Feel, approved by Matt (October 26, 2026):**
-  - **Aiming:** in the Hollow the cursor is free (a high, fixed camera, not the island's pointer lock). Cast the flame, Taproot and Moth lure land under the cursor, and every other move goes the way the walker faces.
-  - **Hold to aim, tap to fire:** holding Q or E shows the mark and the move goes on release. A tap fires at once at the cursor.
+  - **Aiming and firing** were redrawn on October 27, 2026, with the one camera: tap Q or E to fire at the locked target or the floor dot, with "Ready, then click" as a setting (see Fighting). This replaces the free cursor and "hold to aim, tap to fire".
   - **Plant and Throw come from Meshy's animation library**, picked by Matt and retargeted onto our rig like the walk clips. Point and the hand variants of Raise are made in code.
-  - **The movement arena comes first.** `tools/move-arena.html` gains Q and E pegs, a pick list of the twelve moves, stand-in enemies (one that winds up and lunges, a watcher) and a slider for each timing. It's the first piece of Phase 3, so the feel is settled before any cave is built. The timings start from the feel page (plan-pages folder `hollow-moves-feel-plan.html`).
+  - **The movement arena comes first.** `tools/move-arena.html` gains Q and E pegs, a pick list of the twelve moves, stand-in enemies (one that winds up and lunges, a watcher) and a slider for each timing. It also gets the Hollow camera, Tab lock-on, the floor dot and a switch between tap to fire and ready-then-click, so both are felt before one is fixed. It's the first piece of Phase 3, so the feel is settled before any cave is built. The timings start from the feel page (plan-pages folder `hollow-moves-feel-plan.html`).
 
 ## The lantern
 
@@ -322,25 +399,61 @@ The lantern is how far you can go.
 - **Fuel is made at camp** (see Lanterns below for the fuels). Each trip starts with whatever fuel the walker brings.
 - **It burns down** as you go, and a little faster on deeper floors.
 - **Its light is a real light.** Better lanterns reach further or burn longer (see Lanterns below). Some enemies shy from the light, so a bigger light is a defense.
-- **Recommended: the lantern is also the walker's health.** A hit makes the flame gutter and costs fuel. One thing to watch, drawn as the flame itself, with no hearts or health bar. A long, clean trip goes deep; a scrappy one ends early. The alternative is a separate steadiness meter.
+- **The lantern is also the walker's health** (Matt, October 27, 2026). A hit makes the flame gutter and costs fuel. One thing to watch, drawn as the flame itself, with no hearts or health bar. A long, clean trip goes deep; a scrappy one ends early.
 - **When it runs low**, the light shrinks, enemies grow bolder, and the walker says it's time: *"The light won't last."* The player heads for the way up.
 
 ### When the lantern goes out
 
 - The screen goes dark, and the walker finds their way out by touch. They wake at the mouth with the hook's lantern lit.
 - Everything brought in is kept: the weapon, the coat, the lantern, anything from camp.
-- Part of what was found on this trip is dropped in the dark, a seeded share of it. This is Stardew's rule, and it's what makes turning back in time a real decision.
+- About a third of what was found on this trip is dropped in the dark, a seeded share (Matt, October 27, 2026; a recipe value). This is Stardew's rule, and it's what makes turning back in time a real decision.
 
 ## Fighting
 
-Simple, readable, from a fixed high camera that follows room by room, in the manner of Moonlighter (the WASD walking plan, approved October 26, 2026: W A S D move, Shift runs, Space rolls the way you move).
+Simple and readable, with the same camera and controls as the island (the WASD walking plan, approved October 26, 2026: W A S D move, Shift runs, Space rolls the way you move, the mouse turns the camera). Matt, October 27, 2026: one camera for the whole game, not a fixed high camera in the Hollow. It keeps one set of controls, shows the cave's height, and lets things hang from the ceiling.
+
+### The camera below
+
+The walker camera, with only its recipe numbers changed in the Hollow, so the floor reads:
+
+| | On the island | In the Hollow |
+|---|---|---|
+| Distance behind | 1.8 to 5.2 m (starts 3) | 4 to 7 m (starts 5.5) |
+| Tilt down | -8° to 45° (starts 14°) | 20° to 55° (starts 32°) |
+| Walls in the way | The camera pulls in | Walls between the camera and the walker fade to a soft outline, so the camera never lurches in a tight passage |
+
+Things behind the walker give a sound and a glint at the edge of the light.
+
+### Lock-on: Tab
+
+- **Tab** locks onto the thing nearest the middle of the view. **Tab again** moves to the next one, sweeping left to right, and one more Tab after the last turns the lock off. Nothing is held (Matt: a held lock-on asks too much of the little finger).
+- Only things the walker can see can be locked: in the lantern's light, or glinting at its edge.
+- While locked, the camera keeps the walker and the target framed, and the mouse still nudges it. WASD circles the target and Space rolls round it.
+- When the target breaks, the lock moves to the nearest thing still in view. If nothing is in view, it turns off. It also drops if the target is out of the light for 2 s, and on Esc when no panel is open.
+- The lock is a drawn ring on the floor under the target, in the journal's ink, never an arrow or reticle.
+
+### Aiming: the floor dot
+
+- In the Hollow a small dot always sits on the floor in front of the walker, the way the camera faces.
+- **Tilt sets the range.** No ray is cast from the screen: with a camera behind the walker, a raw ray skims the floor and the dot leaps about. Instead, how far down the camera looks sets how far out the dot is. Looking level puts it 10 m out, looking down brings it in to 2 m. It's smooth and predictable, like aiming a throw in Zelda.
+- **It stays on reachable floor.** The dot walks out along the walk grid and stops before a wall or a drop, never on a ledge the walker can't reach, so a move never fires into rock.
+- When locked, the dot sits under the target instead.
+
+### Q and E: tap to fire
+
+- **Tap Q or E** and the move goes off at once: at the locked target, or at the dot. Moves that work round the walker (Anchor, Snuff, Spring chorus) go off where the walker stands. Nothing is held, so the fingers on WASD never stretch (Matt, October 27, 2026).
+- The move's mark is drawn the instant it fires, so it still reads.
+- **"Ready, then click"**, a setting: tap Q to show the mark at the dot, steer with the mouse, left-click to fire, and tap Q again to put it away. It's for players who want to place Wick snare or Moth lure exactly.
+- Mouse thumb buttons can take Q and E, and Tab can be moved, in Settings.
+
+### What the keys do
 
 - **Swing** the weapon with a left click. Each weapon has its own reach and rhythm.
 - **Dodge roll** on Space, out of the way.
 - **Raise the lantern** by holding the right mouse button. This pushes back light-shy enemies but burns fuel faster.
 - **Q and E** are the two special moves the player chose (see Special moves).
 - **Sling.** It throws pebbles, which the walker already gathers, so the pebble store becomes ammunition. A sling pebble makes a sound where it lands: things nearby go to look, and watchers turn to it. This does the old Toss a pebble move's job without a peg.
-- A gentle lock-on to the nearest enemy, and a **"gentler Hollow"** setting for younger players (Matt's testers are 7 and 10).
+- A **"gentler Hollow"** setting for younger players (Matt's testers are 7 and 10): fewer things in each chamber (see Filling a floor) and half every move's wait.
 
 ## What the walker carries
 
@@ -452,6 +565,7 @@ Keepsakes worn on the belt, one at a time, each with one small effect. A hagston
 | Star-iron | The falling star (F14) |
 | Bone | The rubble passage |
 | Flint, barnacle shell, crystal, cave pearls, soot, oil, brine salt, tangle fibre | The Hollow, from enemies and finds |
+| Root-wood, cave fungi | The root halls |
 
 ## The bestiary: things in the dark
 
@@ -473,6 +587,24 @@ Every kind is also **unsettled by island life**, which is what Taproot and Sprin
 
 - **Each kind keeps one fixed set of behaviors.** Nothing learns or gains new moves as the level rises (Matt, October 25, 2026). A harder level means more enemies on a floor, and more of the harder kinds: soot motes and crawlers at the start, then barnacle backs, lamp-eaters, watchers and tide shades mixed in more and more. Health and damage can scale a little with the level too, as recipe values.
 - **Each kind gets a bestiary page** in the journal the first time it's beaten: a sketch, its habits, its tells, its size, and one "It…" line naming its instinct, so the player learns which tricks work on what. Filling the bestiary is the Hollow lore skill.
+
+**How each kind behaves.** Every kind runs the same steps (rest, notice, close in, wind-up, strike, recover). What differs is what makes it notice, what its tell looks like and the opening it leaves. Timings are starting recipe values.
+
+| Kind | Notices | Tell, then strike | Opening after | Weak to |
+|---|---|---|---|---|
+| **Soot motes** | Anything at the light's edge | Bunch up tight, then a quick dart and nip | Scatter for a moment | Raising the lantern; any sweep |
+| **Silt crawler** | Movement within 5 m | Claws rise for 0.6 s, then a short lunge | Stuck for 1 s; a soft back | Hits from behind; Feint |
+| **Wrack tangler** | The walker within 1.5 m | A ripple in the weed, then a grab that holds | Lies flat once shaken off | Blades cut free; Back step |
+| **Brine eel** | Movement at the water's edge | A bulge in the water, then a lunge out | Stranded on the edge for 1.5 s | Standing back; the harpoon |
+| **Drip wisp** | The walker passing under it | A drop of light falls first, then the wisp | Dazed on the floor | Bolas; stepping aside |
+| **Hagstone watcher** | The lantern in its sight | The hole glows brighter for 1.5 s, then a call | Turns slowly to look again | Snuff; reaching it first; moths |
+| **Barnacle back** | Movement in a straight line | Paws the floor for 1 s, then charges straight | Hits the wall and is stuck 2 s | A dodge to the side; Hook and turn |
+| **Lamp-eater** | The lantern anywhere in the chamber | Its mouth opens to the light, then a touch that drains | Drowsy after feeding | Raising the lantern drives it back; moths |
+| **Tide shade** | Seen only in the lantern's glow | Fades out, reappears beside the walker, then strikes | Solid for 1 s after the strike | Crystal blade; the pearl lantern |
+
+A hit always costs fuel (a sip, more from the large kinds), and the coat takes some of it off.
+
+**Models.** Matt is trying text-to-3D for the first kinds (October 27, 2026). Each kind is still rigged and animated as its form allows; a session builds the rig in code, as for the walker.
 
 ## What comes back up
 
@@ -505,11 +637,12 @@ A fifth trail, alongside the naturalist's, the beachcomber's, the shaper's and t
 - **Walking** uses a walk grid from the mesh's upward-facing surfaces, and enemies path on the same grid.
 - **Enemies** run simple state machines: idle, notice, approach, attack with a tell, recover. The tell is how a player learns them.
 - **Light** is the lantern as a point light with soft shadows. The palette keeps the darks deep blue-green, never black (doc 05).
-- **Recipes:** `recipes/world/cave.json` for the fixed parts and the lantern, and `recipes/world/hollow.json` for floor sizes, enemy tables, the measure's weights, the lag and the drop share.
+- **Recipes:** `recipes/world/cave.json` for the fixed parts and the lantern, and `recipes/world/hollow.json` for the depths and flavors, floor sizes, the threat budget and kind costs, guardians, the measure's weights, the lag, the drop share and the Hollow camera's numbers.
 - **A tool page,** `tools/cave-lab.html`, shows:
   - floors made from seeds side by side
   - the walk grid
   - the measure against floor depth, as curves for different players
+  - each chamber's threat budget and what it bought, for a new and a seasoned keeper
   - how long meshing takes
 
 ## What it would change
@@ -520,7 +653,7 @@ A fifth trail, alongside the naturalist's, the beachcomber's, the shaper's and t
 - **08** terrain: the cave mouth as a placed rock piece.
 - **11, 12** creatures: the bear as the landmark; the Hollow's kinds kept apart from the ecology.
 - **13** progression and journal: the Lamplighter's trail, the bestiary pages.
-- **15** input: swing (left click), dodge roll (Space), raise the lantern (right mouse held), the two special moves (Q and E), sling.
+- **15** input: swing (left click), dodge roll (Space), raise the lantern (right mouse held), the two special moves (Q and E, tap to fire), Tab to lock on and cycle, sling; the Hollow camera's numbers and wall fade.
 - **23** walker: fighting animations (a one-handed swing per weapon, dodge, hit, lantern raise), the five shared move poses plus Point (see Special moves), and a climb.
 - **F13** camp: weapons, lanterns, coats, fuel and ammunition as makes (at most three ingredients each); birch tar at the hearth; the Hollow's materials as inputs.
 - **F10, 12** plants: hazel (woodland tier) and birch, which several makes need.
@@ -534,7 +667,15 @@ A fifth trail, alongside the naturalist's, the beachcomber's, the shaper's and t
 
 - **Tone.** Combat can sour a cozy game. Stardew shows it can live beside farming when it stays optional, bright and short. Keep the enemies strange rather than horrible, and keep the walker's lines calm.
 - **Level scaling.** If the Hollow tracks the player too closely, progress feels pointless. The lag and the per-trip steps are there to prevent it. The cave-lab curves are where to check it.
-- **Scope.** This is the biggest feature ebb would have: combat, enemy AI, a floor generator, nine rigged enemy kinds, many made items and fighting animations. A first version could be the mouth, the arch, three floor kinds and three enemies.
+- **Scope.** This is the biggest feature ebb would have: combat, enemy AI, a floor generator, nine rigged enemy kinds, many made items and fighting animations. The first version is built in pieces, each click-tested on its own:
+  - **H0** the move arena (above)
+  - **H1** the floor maker on the cave-lab page: floors from seeds side by side, as maps and in 3D, with meshing times
+  - **H2** three kinds, rigged and animated and fought in the arena: soot motes, silt crawlers and hagstone watchers, one for each instinct (shies from light, strikes at movement, goes toward light)
+  - **H3** two depths playable, the wet shelf and the dripstone: through the arch, down floors, the lantern burning, the way up
+  - **H4** the threat budget, with the cave-lab curves
+  - **H5** the old crawler, the first guardian floor
+
+  The other six kinds, the silt deeps, the glass halls, the two flavors and the other guardians come after Matt has played this.
 - **The surface must never need it.** Hollow materials make things better, but nothing on the island requires them.
 - **Kid testers.** The gentler setting, and an end to a trip that never feels like punishment.
 
@@ -542,12 +683,9 @@ A fifth trail, alongside the naturalist's, the beachcomber's, the shaper's and t
 
 - Is the one exception to "no combat" right, kept to the Hollow?
 - Does the sea open the cave in a tall cliff the player made (F16's first draft), or is it found in a cliff that's already there?
-- Is the lantern also the walker's health, or is there a separate steadiness?
-- When the light goes out, how much of the trip's finds is dropped: a share, everything found, or nothing?
-- What do the Hollow's things look like? Matt to sketch a direction, or a session to propose some. Who makes their models is Matt's call (CLAUDE.md).
-- Guardian floors: should there be bigger set-piece enemies, and how often?
+- What do the Hollow's things look like? Matt is trying text-to-3D for the first kinds; who makes the rest is Matt's call (CLAUDE.md).
 - Should the player ever see anything of the measure, such as a hint like "the Hollow feels deeper today"?
-- **A character and inventory page** (Matt, October 26, 2026: needed with this build-out). One place to see the walker as equipped: weapon, lantern, coat, charm, the Q and E moves, the four tracks' marks, and what is carried. It needs its own plan: where it opens (a key, the journal, the lantern hook), how it relates to the pack bar and the camp's stores, and how it stays words and drawings, never numbers.
+- **A character and inventory page** (Matt, October 26, 2026: needed with this build-out). The Walker page (doc 23, the I key) now exists with the kit, the pouches and hidden Q and E pegs. With this build-out it gains the weapon and charm, the Q and E moves and the four tracks' marks, still words and drawings, never numbers.
 
 ## Depends on / feeds into
 
