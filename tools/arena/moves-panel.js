@@ -48,6 +48,9 @@ export function createMovesPanel(box, o) {
     <h2>Tune a stand-in</h2>
     <label class="pick">Stand-in <select id="tune-foe">${Object.keys(HR.foes).map((k) => `<option value="${k}">${HR.foes[k].name}</option>`).join('')}</select></label>
     <div id="foe-sliders"></div>
+    <h2>The crowd</h2>
+    <p class="muted">How many may close in at once (attack slots), where the rest wait (the ring), and how hard bodies push apart. Each stand-in's body size is its bodyM above.</p>
+    <div id="crowd-sliders"></div>
     <div class="buttons"><button id="copy-hollow">Copy the Hollow's numbers as recipe blocks</button></div>`;
   const $ = (/** @type {string} */ id) => /** @type {HTMLElement} */ (box.querySelector(`#${id}`));
 
@@ -81,7 +84,8 @@ export function createMovesPanel(box, o) {
       else if (v && typeof v === 'object' && !Array.isArray(v)) for (const [k2, v2] of Object.entries(v)) if (typeof v2 === 'number') rows.push([v, k2, `${k} ${k2}`]);
     }
     rows.forEach(([o2, k, label], i) => {
-      const v = o2[k], max = Math.max(1, Math.ceil(Math.abs(v) * 3)), step = max <= 3 ? 0.01 : max <= 30 ? 0.05 : 1;
+      // Counts (attack slots) move in whole steps.
+      const v = o2[k], max = Math.max(1, Math.ceil(Math.abs(v) * 3)), step = /Slots$/.test(k) ? 1 : max <= 3 ? 0.01 : max <= 30 ? 0.05 : 1;
       const row = document.createElement('div');
       row.className = 'slider';
       row.innerHTML = `<label for="${pre}${i}">${label}</label><input id="${pre}${i}" type="range" min="0" max="${max}" step="${step}" value="${v}"><output for="${pre}${i}"></output>`;
@@ -99,10 +103,12 @@ export function createMovesPanel(box, o) {
   tuneMove.addEventListener('change', () => { showMove(); tuneMove.blur(); });
   tuneFoe.addEventListener('change', () => { showFoe(); tuneFoe.blur(); });
   showMove(); showFoe();
+  if (HR.crowd) sliders($('crowd-sliders'), HR.crowd, 'c');
   $('copy-hollow').addEventListener('click', async (e) => {
     const line = (/** @type {string} */ k, /** @type {any} */ v, /** @type {any} */ was) => `    "${k}": ${JSON.stringify(v)},${JSON.stringify(v) === JSON.stringify(was) ? '' : '   (changed)'}`;
     const text = ['recipes/world/hollow-moves.json moves:', ...ids.map((id) => line(id, MR.moves[id], o.MR0.moves[id])),
       'recipes/world/hollow.json foes:', ...Object.keys(HR.foes).map((k) => line(k, HR.foes[k], o.HR0.foes[k])),
+      'recipes/world/hollow.json:', line('crowd', HR.crowd, o.HR0.crowd),
       'recipes/world/fight-clips.json clips.raiseLantern:', line('layer', o.FC.clips.raiseLantern.layer, o.FC0.clips.raiseLantern.layer)].join('\n');
     o.blocks.value = text;
     try { await navigator.clipboard.writeText(text); o.say('Copied: paste each line over the same entry in those two recipes.'); } catch { o.say('Shown below; copy them from the box.'); }

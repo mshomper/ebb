@@ -26,7 +26,8 @@ import { stream } from '../../core/rng.js';
  *   you: { x: number, z: number, speed: number },
  *   lamp: { x: number, z: number, reachM: number, raised: boolean, snuffed: boolean },
  *   open: (x: number, z: number) => boolean,
- * }} FoeWorld
+ *   crowd?: { may: (id: number) => boolean, waitAt: (id: number) => [number, number] | null, driftShare?: number },
+ * }} FoeWorld crowd (src/world/hollow/crowd.js): whether it holds an attack slot, and where it waits if not
  */
 
 /**
@@ -77,6 +78,7 @@ export function createFoe(kind, id, at, K, seed, sides) {
     /** @type {{ vx: number, vz: number, left: number, world?: { open: (x: number, z: number) => boolean } } | null} */ knock: null, hurtS: 0,
     /** How many hits it has taken, by side. */ hits: { front: 0, side: 0, back: 0 },
     /** What it last did, for the arena's log. */ note: 'Resting.',
+    /** In reach to wind up but waiting for an attack slot (motes, a watcher). */ ready: false,
   };
   /** Its members' phases (the mote cluster), seeded. */
   const members = kind === 'motes' ? Array.from({ length: K.count ?? 7 }, () => [rnd.range(0, 6.283), rnd.range(0.6, 1.4), rnd.range(0.15, 0.45)]) : [];
@@ -128,6 +130,14 @@ export function createFoe(kind, id, at, K, seed, sides) {
     s.t += t;
     const you = w.you, d = Math.hypot(you.x - s.x, you.z - s.z), toYou = Math.atan2(you.x - s.x, you.z - s.z);
     const lampD = Math.hypot(w.lamp.x - s.x, w.lamp.z - s.z);
+    // An attack slot (the crowd): without one it comes no nearer than its place on the waiting ring.
+    const slot = !w.crowd || w.crowd.may(id), wait = slot || !w.crowd ? null : w.crowd.waitAt(id);
+    /** Wait its turn: drift to its place on the ring, facing you. */
+    const waitTurn = () => {
+      if (wait) toward(w, wait[0], wait[1], K.closeMps * (w.crowd?.driftShare ?? 0.6) * pace(), dt, 0.05);
+      s.yaw = toYou; s.note = 'Waiting its turn, facing you.';
+    };
+    if (s.step !== 'close' && s.step !== 'notice') s.ready = false;
     if (kind === 'lunger') {
       const sees = s.alertS > 0 || (d < K.noticeM && you.speed > K.moveMps);
       switch (s.step) {
@@ -135,6 +145,7 @@ export function createFoe(kind, id, at, K, seed, sides) {
         case 'notice': if (s.t >= 0.25) go('close', 'Closing in.'); break;
         case 'close':
           if (d > K.noticeM * 1.6 && s.alertS <= 0) { go('rest', 'Lost you.'); break; }
+          if (!slot) { waitTurn(); break; }
           toward(w, you.x, you.z, K.closeMps * pace(), dt, K.strikeM * 0.8);
           if (d <= K.strikeM) { s.yaw = toYou; go('wind', 'Rearing up: the tell.'); }
           break;
@@ -168,8 +179,9 @@ export function createFoe(kind, id, at, K, seed, sides) {
           turn(Math.atan2(tx - s.x, tz - s.z), dt, K.turnDegPerS * pace());
           const dx = tx - s.x, dz = tz - s.z, l = Math.hypot(dx, dz);
           if (l > K.keepM) move(w, (dx / l) * K.closeMps * t, (dz / l) * K.closeMps * t);
-          if (off(Math.atan2(dx, dz), s.yaw) < 12 * DEG) go('wind', 'Its hole glows brighter: the tell.');
-          else s.step = 'close';
+          s.ready = off(Math.atan2(dx, dz), s.yaw) < 12 * DEG;
+          if (s.ready && slot) go('wind', 'Its hole glows brighter: the tell.');
+          else { s.step = 'close'; if (s.ready) s.note = 'Waiting its turn to call.'; }
           break;
         }
         case 'wind':
@@ -199,6 +211,8 @@ export function createFoe(kind, id, at, K, seed, sides) {
           if (!sees) { go('rest', 'Drifted off.'); break; }
           if (shy()) { s.note = 'Shying from the raised light.'; break; }
           // Close in, but never into the raised light.
+          s.ready = d <= K.strikeM && !keep;
+          if (s.ready && !slot) { waitTurn(); break; }
           const stop = Math.max(K.strikeM * 0.8, keep ? keep - lampD + d : 0);
           toward(w, you.x, you.z, K.closeMps * pace(), dt, stop);
           if (d <= K.strikeM && !keep) { s.yaw = toYou; go('wind', 'Bunching up tight: the tell.'); }
@@ -328,7 +342,7 @@ export function createFoe(kind, id, at, K, seed, sides) {
     }
     return { landed: false };
   }
-  /** Move a thing on open ground (an effect's push). @param {FoeWorld | undefined} w @param {number} dx @param {number} dz */
+  /** Move a thing on open ground (an effect's push, the crowd's spacing). @param {{ open: (x: number, z: number) => boolean } | undefined} w @param {number} dx @param {number} dz */
   function open(w, dx, dz) { if (!w || w.open(s.x + dx, s.z + dz)) { s.x += dx; s.z += dz; } }
 
   return {
@@ -356,6 +370,12 @@ export function createFoe(kind, id, at, K, seed, sides) {
     /** The cluster's members' seeded phases [phase, speed, radius] (motes). */
     members,
     update, take,
+    /** Pushed by the crowd (crowd.js), on open ground only. */
+    nudge: (/** @type {number} */ dx, /** @type {number} */ dz, /** @type {{ open: (x: number, z: number) => boolean } | undefined} */ w) => open(w, dx, dz),
+    /** Being knocked back by a hit (it holds its ground in the crowd). */
+    get knocked() { return !!s.knock; },
+    /** Coming for you, so wanting an attack slot: a lunger from noticing you on; motes and a watcher only once ready to strike. */
+    get wantsSlot() { return s.step === 'wind' || s.step === 'strike' || (kind === 'lunger' ? s.step === 'notice' || s.step === 'close' : s.ready); },
     /** The tuning objects read live, so sliders change it at once. */
     K,
   };

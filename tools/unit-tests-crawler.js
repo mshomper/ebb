@@ -112,6 +112,28 @@ export function addCrawlerTests(test, assert, eq) {
     }
     eq(shuffle.offPair, 0, 'shuffling, never more than a diagonal pair off the ground');
   });
+
+  test(G, 'pushed sideways by the crowd, it sidesteps: its feet step, never slide', async () => {
+    const H = await recipe(), m = await model(), K = H.foes.lunger;
+    const foe = { x: 0, z: 0, yaw: 0, step: 'close', t: 0, stunS: 0, broken: false, hits: { front: 0, side: 0, back: 0 } };
+    const mo = createCrawlerMotion(foe, m, K, 2);
+    /** @type {Record<string, number[] | null>} */ const was = { fl: null, fr: null, hl: null, hr: null };
+    let slide = 0, steps = 0, clock = 0;
+    for (let i = 0; i < 2 / DT; i++) {
+      // Facing ahead, nudged to its left at a crowd's pace.
+      foe.x += 0.5 * DT;
+      mo.update(DT, clock += DT, { ground: () => 0, you: { x: 0, z: 3 } });
+      for (const l of LEGS) {
+        if (mo.feet[l].from) { if (was[l]) steps++; was[l] = null; continue; }
+        const at = mo.toWorld(footAt(m, mo.bones, l));
+        if (was[l]) slide = Math.max(slide, Math.hypot(at[0] - was[l][0], at[1] - was[l][1], at[2] - was[l][2]));
+        was[l] = at;
+      }
+    }
+    assert(steps >= 8, `it sidestepped (${steps} steps)`);
+    assert(slide < 0.002, `no foot slid (${(slide * 1000).toFixed(2)} mm at most a frame)`);
+  });
+
   test(G, 'the tell rears up and lifts the forelegs; the lunge dives plate first; stuck, the plate digs in', async () => {
     const H = await recipe(), m = await model(), K = H.foes.lunger, T = K.crawler.motion;
     const f = createFoe('lunger', 1, { x: 0, z: 0, yaw: 0 }, K, 7, H.swing);

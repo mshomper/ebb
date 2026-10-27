@@ -100,7 +100,7 @@ function standIn(kind, at, rec) {
     size: SIZE[kind],
     ring() { return 0; },
     /** @param {number} dt @param {any} you */
-    update(dt, you) { return f.update(dt, { you, lamp: you.lamp, open: you.open }); },
+    update(dt, you) { return f.update(dt, { you, lamp: you.lamp, open: you.open, crowd: you.crowd }); },
     /** @param {(x: number, z: number) => number} ground */
     shapes(ground) {
       if (f.broken || crawler) return [];

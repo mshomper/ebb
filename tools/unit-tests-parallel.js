@@ -35,6 +35,7 @@ export const PARALLEL = {
   hollow: () => import('./unit-tests-hollow.js').then((m) => m.addHollowTests),
   hollowFloors: () => import('./unit-tests-hollow-floors.js').then((m) => m.addHollowFloorTests),
   crawler: () => import('./unit-tests-crawler.js').then((m) => m.addCrawlerTests),
+  crowd: () => import('./unit-tests-crowd.js').then((m) => m.addCrowdTests),
   figure: () => import('./unit-tests-figure.js').then((m) => m.addFigureTests),
   figureClips: () => import('./unit-tests-figure-clips.js').then((m) => m.addFigureClipTests),
   nets: () => import('./unit-tests-nets.js').then((m) => m.addNetsTests),

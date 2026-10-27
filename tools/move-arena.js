@@ -35,6 +35,7 @@ import { createMoveLayer } from './arena/moves.js';
 import { createMovesPanel } from './arena/moves-panel.js';
 import { loadMoteModel } from '../src/world/hollow/mote-model.js';
 import { createMotePass } from './arena/mote-pass.js';
+import { createCrowd } from '../src/world/hollow/crowd.js';
 import { loadCrawlerModel } from '../src/world/hollow/crawler-model.js';
 import { createCrawlerPass } from './arena/crawler-pass.js';
 
@@ -65,6 +66,8 @@ const motePass = HR && moteModel ? await createMotePass(stage.gpu, moteModel, HR
 // The silt crawler, Matt's model rigged in code (H2), drawn in the stage's pass too.
 const crawlerModel = HR ? await loadCrawlerModel(new URL('../assets/models/hollow/crawler.glb', import.meta.url)) : null;
 const crawlerPass = HR && crawlerModel ? await createCrawlerPass(stage.gpu, crawlerModel, HR.foes.lunger.crawler) : null;
+// The Hollow's crowd (H2): attack slots and bodies kept apart (src/world/hollow/crowd.js).
+const crowd = HR ? createCrowd(HR.crowd, 1) : null;
 
 // ---- the world: ground, water, walk grid, solids ----
 const ground = course.ground;
@@ -383,10 +386,17 @@ function tick(realDt, draw = true) {
   if (hollow?.reeling || hollow?.swinging || moveLayer?.holdsStill) walker.steer(0, 0); else walker.steer(way[0], way[1], keys.run);
   walker.update(dt);
   moveLayer?.afterWalker();
-  const you = youNow();
+  const you = /** @type {any} */ (youNow());
+  // The crowd (H2): who may come in to strike, and where the rest wait; then bodies pushed apart.
+  const crowdFoes = crowd ? actors.filter((a) => a.foe).map((a) => a.foe) : [];
+  if (crowd) { crowd.assign(crowdFoes, you, !!moveLayer?.moves.gentle); you.crowd = crowd; }
   for (const act of actors) {
     const ev = act.update(dt, you);
     if (ev?.length) hollow?.onEvents(ev);
+  }
+  if (crowd && you.open) crowd.spread(crowdFoes, { open: you.open }, dt);
+  // Drawn after the crowd has spaced them, so a nudge plays as a step.
+  for (const act of actors) {
     act.swarm?.update(dt, clockS, { ground, lamp: you.lamp, you });
     act.crawler?.update(dt, clockS, { ground, you });
   }
@@ -429,7 +439,7 @@ function tick(realDt, draw = true) {
 }
 requestAnimationFrame(frame);
 /** For checking from the console: the walker, the actors, the solids. */
-/** @type {any} */ (window).arena = { walker, crawlerPass, motePass, get actors() { return actors; }, get solids() { return solids; }, camera, grid, R, hollow, motion, moveLayer,
+/** @type {any} */ (window).arena = { walker, crawlerPass, motePass, crowd, HR, get actors() { return actors; }, get solids() { return solids; }, camera, grid, R, hollow, motion, moveLayer,
   /** Run on s seconds at once in 60ths (checks from the console, and a hidden tab). @param {number} s */
   run(s) { const n = Math.round(s * 60); for (let i = 0; i < n; i++) tick(1 / 60, i === n - 1); last = performance.now(); },
   /** Hold time still (the view still draws), for checks and screenshots. @param {boolean} on */
