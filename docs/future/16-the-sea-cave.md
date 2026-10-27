@@ -614,6 +614,15 @@ A hit always costs fuel (a sip, more from the large kinds), and the coat takes s
 
 **Models.** Matt is trying text-to-3D for the first kinds (October 27, 2026). Each kind is still rigged and animated as its form allows; a session builds the rig in code, as for the walker.
 
+**The soot mote as built (H2, October 27, 2026).** Matt modelled the mote in nTop: a lumpy ball of soot with two eye sockets, decimated by him to 13,856 triangles and used exactly as he made it (smooth normals, no further cut, no normal map). It is drawn at **20 cm across** (`recipes/world/hollow.json` foes.motes.mote.sizeM), the island's findable scale erring bigger, floating about half a metre up, **five a swarm**. It replaces the move arena's mote stand-in; the game doesn't draw it yet.
+
+- **No bones: the shader moves it** (`src/shaders/lib-mote.wgsl`, the creature rule's swarm case). Per mote: a slow bob and a turn this way and that, a breathing swell out of step across its lumps, a squash with a quiver while it bunches up for its tell, a stretch along the dart, a squash on the nip, a burst outward when it scatters (away from the raised lantern, else away from you), and a short smoky trail of soft dark puffs whenever it moves fast, so its way reads.
+- **Pale eyes in the shader**, placed on Matt's eye discs (the prep carries each disc onto the socket's surface): they blink now and then, each mote on its own seeded clock; open wide and rounder for a moment when the raised lantern first reaches it or a light move lands (quick to open, slow to settle); squint, lids slanting down toward the middle, while it winds up to nip; and glow faintly in the dark.
+- **Never in lockstep.** Each mote keeps the cluster's seeded phase, swirl speed and radius, plus its own seeded lag, height and blinks (`src/world/hollow/mote-swarm.js`), so a swarm drifts loose. The cluster's steps and instincts are H0's, unchanged (`foes.js`).
+- **Made by** `tools/hollow-prep/mote.py` from Matt's OBJ files into `assets/models/hollow/mote.glb` (Y up, facing +z, metres). Close up on `tools/hollow-foes.html`, a turntable with daylight or lantern light and each thing it does.
+
+Five motes are about 69,000 triangles in one instanced draw. The arena ran smoothly with them on this machine, but frame time wasn't measured; if a crowded chamber slows, a lower level of detail for distance is the step to propose, never a cut of Matt's mesh.
+
 ## What comes back up
 
 - **Materials** the surface can't give: flint, clay, ochre, soot, cave pearls, crystal, brine salt, oil. They feed the camp: clay for pots and bowls, ochre and soot for dyes, flint for tools, oil for the lantern.
