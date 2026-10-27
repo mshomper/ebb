@@ -5,10 +5,13 @@
 // (boxes, as props); note says what it last did, for the arena's log. The frog uses the game's own
 // presence numbers (recipes/species/frog.json presence: its ring, scaled by posture and gaze as
 // src/world/creatures/presence.js ringScale, and its calm pace): a source inside the ring faster than
-// the calm pace startles it, and it hops fleeM away. The Hollow's training dummies are the next
-// kind: a wind-up tell, then a swing, timed from their own recipe (doc 23, the arena and the Hollow).
+// the calm pace startles it, and it hops fleeM away. The Hollow's stand-ins (H0, October 27, 2026) are
+// three more kinds, lunger, watcher and motes: their steps run in src/world/hollow/foes.js, timed from
+// recipes/world/hollow.json foes, and here they are drawn as plain shapes showing their tells.
+// Motes' swirl reads the page clock for drawing only; where they are comes from the seeded steps.
 
 import { ringScale } from '../../src/world/creatures/presence.js';
+import { createFoe } from '../../src/world/hollow/foes.js';
 
 /**
  * What the walker is, for the actors: where, speed, posture and the way it looks along the ground.
@@ -63,9 +66,74 @@ function frog(at, P) {
   };
 }
 
+/** A colour drawn unlit (the stage reads a negative colour as light of its own). @param {number[]} c */
+const glow = (c) => c.map((v) => -Math.max(1e-3, v));
+
+/**
+ * A Hollow stand-in (H0; src/world/hollow/foes.js): the thing's steps run there, and this draws it
+ * as plain shapes, showing its tell. update(dt, you) needs the lantern and the open ground in you
+ * (the Hollow layer, tools/arena/hollow.js, adds them) and returns what it did (strikes, calls).
+ * @param {'lunger' | 'watcher' | 'motes'} kind @param {{ x: number, z: number, id: number }} at @param {Record<string, any>} rec
+ */
+function standIn(kind, at, rec) {
+  const H = rec.hollow;
+  const f = createFoe(kind, at.id, at, H.foes[kind], rec.seed ?? 1, H.swing);
+  const SIZE = { lunger: 0.4, watcher: 0.45, motes: 0.5 };
+  return {
+    kind, foe: f, id: at.id,
+    get x() { return f.x; },
+    get z() { return f.z; },
+    get note() { return `${H.foes[kind].name}: ${f.note}`; },
+    get startles() { return 0; },
+    get broken() { return f.broken; },
+    /** Its own radius (m), for hits and the lock ring. */
+    size: SIZE[kind],
+    ring() { return 0; },
+    /** @param {number} dt @param {any} you */
+    update(dt, you) { return f.update(dt, { you, lamp: you.lamp, open: you.open }); },
+    /** @param {(x: number, z: number) => number} ground */
+    shapes(ground) {
+      if (f.broken) return [];
+      const y = ground(f.x, f.z), c = Math.cos(f.yaw), s = Math.sin(f.yaw), tell = f.step === 'wind', stun = f.stunS > 0;
+      /** A point ahead (fwd) and to the side (side) of it, turned with it. @param {number} fwd @param {number} side */
+      const at2 = (fwd, side) => [f.x + s * fwd + c * side, f.z + c * fwd - s * side];
+      if (kind === 'lunger') {
+        const lift = tell ? Math.min(1, f.t / 0.2) * 0.22 : 0, [fx, fz] = at2(0.36, 0);
+        const [lx, lz] = at2(0.42, 0.22), [rx, rz] = at2(0.42, -0.22);
+        const claw = tell ? [0.95, 0.85, 0.7] : [0.5, 0.42, 0.34];
+        return [
+          [f.x, y + 0.16, f.z, 0.32, 0.16, 0.36, f.yaw, ...(stun ? [0.55, 0.62, 0.8] : f.step === 'recover' ? [0.62, 0.5, 0.38] : [0.45, 0.38, 0.3])],
+          // The armored front: a darker plate.
+          [fx, y + 0.2, fz, 0.34, 0.19, 0.06, f.yaw, 0.26, 0.24, 0.22],
+          [lx, y + 0.2 + lift, lz, 0.06, 0.06, 0.14, f.yaw, ...claw],
+          [rx, y + 0.2 + lift, rz, 0.06, 0.06, 0.14, f.yaw, ...claw],
+        ];
+      }
+      if (kind === 'watcher') {
+        const hy = y + 1.5 + Math.sin(f.x * 3 + f.z) * 0.05, [hx, hz] = at2(0.36, 0);
+        const bright = tell ? 0.5 + 0.5 * Math.min(1, f.t / (H.foes.watcher.windS || 1)) : f.step === 'close' || f.step === 'notice' ? 0.35 : 0.15;
+        return [
+          [f.x, hy, f.z, 0.42, 0.4, 0.34, f.yaw, ...(stun ? [0.55, 0.62, 0.8] : [0.5, 0.5, 0.47])],
+          // The hole through it, glowing brighter for its tell.
+          [hx, hy, hz, 0.13, 0.13, 0.04, f.yaw, ...glow([1.6 * bright, 1.3 * bright, 0.7 * bright])],
+        ];
+      }
+      // Motes: a loose swarm round the cluster's middle, bunched tight in the tell.
+      const tight = tell ? 0.35 : f.step === 'recover' ? 1.6 : 1;
+      return f.members.map(([ph, sp, r], i) => {
+        const a = ph + performance.now() / 1000 * sp * 2.2, rr = r * tight;
+        return /** @type {number[]} */ ([f.x + Math.sin(a) * rr, y + 0.6 + Math.sin(a * 1.7 + i) * 0.18 * tight, f.z + Math.cos(a) * rr, 0.05, 0.05, 0.05, a, ...glow([0.32, 0.22, 0.16])]);
+      });
+    },
+  };
+}
+
 /** Actor kinds by name. @type {Record<string, (at: any, recipes: Record<string, any>) => any>} */
 export const KINDS = {
   frog: (at, rec) => frog(at, rec.frog.presence),
+  lunger: (at, rec) => standIn('lunger', at, rec),
+  watcher: (at, rec) => standIn('watcher', at, rec),
+  motes: (at, rec) => standIn('motes', at, rec),
 };
 
 /** @typedef {ReturnType<typeof frog>} Actor */

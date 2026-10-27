@@ -12,9 +12,20 @@ import { materialMaps } from '../src/render/gltf.js';
 import { mapTexture } from '../src/render/passes/props.js';
 
 const SHADER = /* wgsl */ `
-struct U { viewProj: mat4x4f, eye: vec4f, sun: vec4f, place: vec4f, misc: vec4f, water: vec4f };
+struct U { viewProj: mat4x4f, eye: vec4f, sun: vec4f, place: vec4f, misc: vec4f, water: vec4f, lamp: vec4f, dark: vec4f, fade: vec4f };
 // place: x, y, z, yaw; misc: x weights view, y night, z bone count, w the figure's scale (0: 1); water: x level (m, -9 none), y the ground's half size (m)
+// The Hollow (the move arena, H0): lamp: the lantern's x, y, z and reach (m); dark: x 1 when dim and lit by the
+// lantern alone, y the chamber's own light, z the lantern's strength; fade: x a faded wall's fill, y its outline.
 @group(0) @binding(0) var<uniform> u: U;
+
+// The light on a point in the dark: the chamber's own, plus the lantern's warm light falling off to its reach.
+fn lampLight(world: vec3f, n: vec3f) -> vec3f {
+  let d = u.lamp.xyz - world;
+  let dist = length(d);
+  let fall = 1.0 - smoothstep(0.0, max(u.lamp.w, 1e-3), dist);
+  let nl = 0.35 + 0.65 * max(dot(n, d / max(dist, 1e-3)), 0.0);
+  return vec3f(1.0, 0.8, 0.56) * (u.dark.z * fall * fall * nl) + vec3f(u.dark.y);
+}
 @group(0) @binding(1) var<storage, read> bones: array<mat4x4f>;
 @group(0) @binding(2) var<uniform> eyes: FigureEyes;
 // The baked maps (a vertex whose colour slot is (u, v, 2) reads them): colour, and the normal in the
@@ -68,6 +79,7 @@ fn finish(c: vec3f) -> vec4f {
   let albedo = mix(select(i.albedo, tc, mapped), eyes.albedo.rgb, eye * step(u.misc.x, 0.5));
   let sky = (0.55 + 0.35 * n.y) * mix(0.06, 1.0, day);
   var c = albedo * (max(dot(n, l), 0.0) * 2.8 * day + sky);
+  if (u.dark.x > 0.5) { c = albedo * lampLight(i.world, n) * 1.6; }
   // The glow after dark, scaled to this stage's light.
   c += eye * u.misc.y * eyes.size.z * 0.12 * eyes.albedo.rgb;
   // Under the water line, a little darker and bluer.
@@ -100,6 +112,11 @@ struct GroundOut { @builtin(position) pos: vec4f, @location(0) world: vec3f, @lo
   c *= 1.0 - 0.45 * (1.0 - smoothstep(0.3, 1.1, r));
   let l = normalize(u.sun.xyz);
   let day = 1.0 - u.misc.y;
+  if (u.dark.x > 0.5) {
+    // The cave floor: dimmer rock, its grid faint, lit by the lantern.
+    let rock = mix(vec3f(0.36, 0.33, 0.3), vec3f(0.3, 0.29, 0.27), line2 * 0.5);
+    return finish(rock * (1.0 - 0.45 * (1.0 - smoothstep(0.3, 1.1, r))) * lampLight(i.world, normalize(i.n)) * 1.4);
+  }
   c *= max(dot(normalize(i.n), l), 0.0) * 0.9 * day + mix(0.05, 0.55, day);
   let fade = 1.0 - smoothstep(u.water.y * 0.8, u.water.y, max(abs(i.world.x), abs(i.world.z)));
   return finish(mix(vec3f(0.55, 0.52, 0.47) * mix(0.1, 1.0, day), c * 1.3, fade));
@@ -116,23 +133,35 @@ struct WaterOut { @builtin(position) pos: vec4f, @location(0) world: vec3f };
   return o;
 }
 
-struct PropOut { @builtin(position) pos: vec4f, @location(0) n: vec3f, @location(1) c: vec3f };
+struct PropOut { @builtin(position) pos: vec4f, @location(0) n: vec3f, @location(1) c: vec3f, @location(2) world: vec3f };
 
 @vertex fn vsProp(@location(0) p: vec3f, @location(1) n: vec3f, @location(2) c: vec3f) -> PropOut {
   var o: PropOut;
   o.pos = u.viewProj * vec4f(p, 1.0);
   o.n = n;
   o.c = c;
+  o.world = p;
   return o;
 }
 
-@fragment fn fsProp(i: PropOut) -> @location(0) vec4f {
+// A shape's colour lit: by the sun, or in the dark by the lantern. A negative colour is light of its own
+// (marks on the floor, a watcher's glowing hole), drawn as it is.
+fn propColour(i: PropOut) -> vec3f {
+  if (i.c.x < 0.0) { return -i.c; }
+  if (u.dark.x > 0.5) { return i.c * lampLight(i.world, normalize(i.n)) * 1.5; }
   let day = 1.0 - u.misc.y;
   let l = normalize(u.sun.xyz);
-  return finish(i.c * (max(dot(normalize(i.n), l), 0.0) * 2.2 * day + (0.55 + 0.35 * normalize(i.n).y) * mix(0.06, 1.0, day)));
+  return i.c * (max(dot(normalize(i.n), l), 0.0) * 2.2 * day + (0.55 + 0.35 * normalize(i.n).y) * mix(0.06, 1.0, day));
 }
 
+@fragment fn fsProp(i: PropOut) -> @location(0) vec4f { return finish(propColour(i)); }
+
+// A wall in the way, faded (the Hollow camera): a faint fill, and its edges as a soft pale outline.
+@fragment fn fsPropFaded(i: PropOut) -> @location(0) vec4f { return vec4f(finish(propColour(i)).rgb, u.fade.x); }
+@fragment fn fsPropLine(i: PropOut) -> @location(0) vec4f { return vec4f(0.86, 0.82, 0.74, u.fade.y); }
+
 @fragment fn fsWater(i: WaterOut) -> @location(0) vec4f {
+  if (u.dark.x > 0.5) { return vec4f(vec3f(0.3, 0.42, 0.48) * lampLight(i.world, vec3f(0.0, 1.0, 0.0)), 0.55); }
   let day = 1.0 - u.misc.y;
   return vec4f(vec3f(0.42, 0.62, 0.7) * mix(0.1, 1.0, day), 0.45);
 }
@@ -214,10 +243,37 @@ function makeStage(canvas, gpu, lib) {
     primitive: { topology: 'triangle-list' },
     depthStencil,
   });
+  // Walls in the way, faded (the Hollow camera, H0): a see-through fill and an outline of their edges.
+  const blend = /** @type {GPUBlendState} */ ({ color: { srcFactor: 'src-alpha', dstFactor: 'one-minus-src-alpha', operation: 'add' }, alpha: { srcFactor: 'one', dstFactor: 'one-minus-src-alpha', operation: 'add' } });
+  const propBuffers = /** @type {GPUVertexBufferLayout[]} */ ([{ arrayStride: 36, attributes: [
+    { shaderLocation: 0, offset: 0, format: 'float32x3' }, { shaderLocation: 1, offset: 12, format: 'float32x3' }, { shaderLocation: 2, offset: 24, format: 'float32x3' }] }]);
+  const faded = device.createRenderPipeline({
+    label: 'figure-stage-faded', layout: pl,
+    vertex: { module, entryPoint: 'vsProp', buffers: propBuffers },
+    fragment: { module, entryPoint: 'fsPropFaded', targets: [{ format, blend }] },
+    primitive: { topology: 'triangle-list' },
+    depthStencil: { ...depthStencil, depthWriteEnabled: false },
+  });
+  const outline = device.createRenderPipeline({
+    label: 'figure-stage-outline', layout: pl,
+    vertex: { module, entryPoint: 'vsProp', buffers: propBuffers },
+    fragment: { module, entryPoint: 'fsPropLine', targets: [{ format, blend }] },
+    primitive: { topology: 'line-list' },
+    depthStencil: { ...depthStencil, depthWriteEnabled: false },
+  });
   /** @type {{ v: GPUBuffer, n: number } | null} */ let propMesh = null;
+  /** @type {{ v: GPUBuffer, n: number } | null} */ let fadedMesh = null;
+  /** @type {{ v: GPUBuffer, n: number } | null} */ let lineMesh = null;
+  /** @param {Float32Array | null | undefined} f */
+  const vbuf = (f) => {
+    if (!f || !f.length) return null;
+    const v = device.createBuffer({ size: f.byteLength, usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST });
+    device.queue.writeBuffer(v, 0, f);
+    return { v, n: f.length / 9 };
+  };
   /** The ground's half size (m). */
   let groundHalf = 3;
-  const ubuf = device.createBuffer({ size: 160, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
+  const ubuf = device.createBuffer({ size: 224, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
   const bbuf = device.createBuffer({ size: 32 * 64, usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST });
   const ebuf = device.createBuffer({ size: 80, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
   const sampler = device.createSampler({ magFilter: 'linear', minFilter: 'linear', mipmapFilter: 'linear', maxAnisotropy: 8 });
@@ -232,7 +288,7 @@ function makeStage(canvas, gpu, lib) {
     { binding: 0, resource: { buffer: ubuf } }, { binding: 1, resource: { buffer: bbuf } }, { binding: 2, resource: { buffer: ebuf } },
     { binding: 3, resource: colour.createView() }, { binding: 4, resource: normal.createView() }, { binding: 5, resource: sampler }] });
   let group = bind(plain([128, 128, 128, 255]), plain([128, 255, 128, 255]));
-  const u = new Float32Array(40);
+  const u = new Float32Array(56);
   /** @type {{ v: GPUBuffer, i: GPUBuffer, n: number } | null} */ let mesh = null;
   /** @type {{ v: GPUBuffer, i: GPUBuffer, n: number } | null} */ let groundMesh = null;
   /** @type {GPUTexture | null} */ let depth = null;
@@ -309,15 +365,15 @@ function makeStage(canvas, gpu, lib) {
     },
     /**
      * Coloured shapes in world meters, as triangles: 9 floats a vertex (position, normal, colour).
-     * Null clears them. @param {Float32Array | null} tris
+     * Null clears them. A negative colour is drawn unlit, as light of its own. faded: shapes drawn
+     * see-through (fill, triangles) with their edges as an outline (lines, line pairs), as walls in the way.
+     * @param {Float32Array | null} tris @param {{ fill: Float32Array, lines: Float32Array } | null} [fadedShapes]
      */
-    setProps(tris) {
-      propMesh?.v.destroy();
-      propMesh = null;
-      if (!tris || !tris.length) return;
-      const v = device.createBuffer({ size: tris.byteLength, usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST });
-      device.queue.writeBuffer(v, 0, tris);
-      propMesh = { v, n: tris.length / 9 };
+    setProps(tris, fadedShapes = null) {
+      for (const m of [propMesh, fadedMesh, lineMesh]) m?.v.destroy();
+      propMesh = vbuf(tris);
+      fadedMesh = vbuf(fadedShapes?.fill);
+      lineMesh = vbuf(fadedShapes?.lines);
     },
     /** A set view by name, or one of your own ({ yaw, pitch, dist }). @param {keyof typeof VIEWS | { yaw: number, pitch: number, dist: number }} name */
     view(name) { cam.goal = typeof name === 'string' ? { ...VIEWS[name] } : { ...name }; },
@@ -338,7 +394,9 @@ function makeStage(canvas, gpu, lib) {
     /**
      * camera: an outside camera's eye and target (the arena runs the game's own); else the stage's orbit.
      * @param {{ bones: Float32Array, eyes: Float32Array, place: number[], weights: boolean, night: boolean, water: number, follow: number[], dt: number,
-     *   camera?: { eye: ArrayLike<number>, target: ArrayLike<number> }, scale?: number }} f
+     *   camera?: { eye: ArrayLike<number>, target: ArrayLike<number> }, scale?: number,
+     *   lamp?: { at: number[], reachM: number, ambient: number, strength: number }, fade?: number[] }} f
+     *   lamp: dim, lit by the lantern alone (the Hollow); fade: a faded wall's fill and outline opacity
      */
     draw(f) {
       const dpr = Math.min(2, devicePixelRatio || 1);
@@ -371,13 +429,17 @@ function makeStage(canvas, gpu, lib) {
       u.set(f.place, 24);
       u.set([f.weights ? 1 : 0, f.night ? 1 : 0, 0, f.scale ?? 0], 28);
       u.set([f.water, groundHalf, 0, 0], 32);
+      u.set(f.lamp ? [...f.lamp.at, f.lamp.reachM] : [0, 0, 0, 0], 36);
+      u.set(f.lamp ? [1, f.lamp.ambient, f.lamp.strength, 0] : [0, 0, 0, 0], 40);
+      u.set([f.fade?.[0] ?? 0.15, f.fade?.[1] ?? 0.5, 0, 0], 44);
       device.queue.writeBuffer(ubuf, 0, u);
       device.queue.writeBuffer(bbuf, 0, f.bones);
       device.queue.writeBuffer(ebuf, 0, f.eyes);
       const enc = device.createCommandEncoder();
       const night = f.night;
+      const clear = f.lamp ? { r: 0.025, g: 0.025, b: 0.03, a: 1 } : night ? { r: 0.07, g: 0.08, b: 0.12, a: 1 } : { r: 0.93, g: 0.9, b: 0.84, a: 1 };
       const pass = enc.beginRenderPass({
-        colorAttachments: [{ view: context.getCurrentTexture().createView(), clearValue: night ? { r: 0.07, g: 0.08, b: 0.12, a: 1 } : { r: 0.93, g: 0.9, b: 0.84, a: 1 }, loadOp: 'clear', storeOp: 'store' }],
+        colorAttachments: [{ view: context.getCurrentTexture().createView(), clearValue: clear, loadOp: 'clear', storeOp: 'store' }],
         depthStencilAttachment: { view: depth.createView(), depthClearValue: 1, depthLoadOp: 'clear', depthStoreOp: 'store' },
       });
       pass.setBindGroup(0, group);
@@ -385,6 +447,8 @@ function makeStage(canvas, gpu, lib) {
       if (propMesh) { pass.setPipeline(props); pass.setVertexBuffer(0, propMesh.v); pass.draw(propMesh.n); }
       if (mesh) { pass.setPipeline(body); pass.setVertexBuffer(0, mesh.v); pass.setIndexBuffer(mesh.i, 'uint32'); pass.drawIndexed(mesh.n); }
       if (f.water > -5) { pass.setPipeline(water); pass.draw(6); }
+      if (fadedMesh) { pass.setPipeline(faded); pass.setVertexBuffer(0, fadedMesh.v); pass.draw(fadedMesh.n); }
+      if (lineMesh) { pass.setPipeline(outline); pass.setVertexBuffer(0, lineMesh.v); pass.draw(lineMesh.n); }
       pass.end();
       device.queue.submit([enc.finish()]);
     },
