@@ -7,11 +7,12 @@
 import { calm } from './motion.js';
 
 /**
- * @param {{ afterS: number, plain?: boolean, title?: { riseS: number, holdS: number } | null }} opts
+ * @param {{ afterS: number, plain?: boolean, title?: { riseS: number, holdS: number } | null, line?: string }} opts
  *   afterS 0 shows it at once (the reveal opens from it); plain: cream only, with no line and no bar
  *   (a night's rest in the tent has no away message); title: the first rest only (Phase 1 fix F14),
  *   the ebb wordmark and tagline rise large in the middle over riseS, and the screen stays at least
- *   holdS before it fades with the dawn (doc 21's wordmark: Nunito 800, moss green)
+ *   holdS before it fades with the dawn (doc 21's wordmark: Nunito 800, moss green); line: the words
+ *   in place of the away line (a test link's growing, the Tests buttons)
  * @returns {{ progress: (f: number) => void, done: (fadeS?: number) => void }}
  *   done: fade out over fadeS (the reveal's cream opening is slower than the plain screen's)
  */
@@ -24,6 +25,8 @@ export function showCatchingUp(opts) {
   wrap.innerHTML = T ? `<div class="ebb-catchup__title" style="animation-duration:${T.riseS}s"><span class="ebb-catchup__mark">ebb</span><span class="ebb-catchup__tag">a tended island</span></div>`
     : opts.plain ? '<div class="ebb-catchup__bar" aria-hidden="true" style="visibility:hidden"><i></i></div>'
     : '<p class="ebb-catchup__line">The island moved on while you were away</p><div class="ebb-catchup__bar" aria-hidden="true"><i></i></div>';
+  const said = /** @type {HTMLElement | null} */ (wrap.querySelector('.ebb-catchup__line'));
+  if (said && opts.line) said.textContent = opts.line;
   const fill = /** @type {HTMLElement | null} */ (wrap.querySelector('i'));
   document.body.appendChild(wrap);   // blocks input at once; seen only once it fades in
   if (opts.afterS <= 0) { wrap.style.transition = 'none'; wrap.classList.add('is-shown'); }

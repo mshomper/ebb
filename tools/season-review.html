@@ -24,10 +24,12 @@
   ol, ul { margin: 0; padding-left: 22px; display: grid; gap: 4px; }
   .see { border-left: 3px solid var(--moss); padding-left: 12px; margin: 0; }
   .see b { display: block; font-size: 15px; letter-spacing: .04em; text-transform: uppercase; color: var(--moss); }
-  .links { display: flex; flex-wrap: wrap; gap: 8px; }
+  .links { display: grid; gap: 8px; justify-items: start; }
   a.btn, button { font: 700 16px Nunito, system-ui, sans-serif; color: var(--ink); background: var(--paper); border: 1px solid var(--line);
     border-radius: 8px; padding: 9px 14px; text-decoration: none; cursor: pointer; min-height: 44px; display: inline-flex; align-items: center; }
   a.btn:hover, button:hover { border-color: var(--ink); }
+  a.btn.is-setup { background: var(--moss); border-color: var(--moss); color: #fff; }
+  a.btn.is-setup:hover { border-color: var(--ink); }
   .verdict { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
   .verdict button[aria-pressed="true"].pass { background: var(--moss); color: #fff; border-color: var(--moss); }
   .verdict button[aria-pressed="true"].not { background: var(--clay); color: #fff; border-color: var(--clay); }
@@ -47,7 +49,8 @@
   </header>
   <section class="how">
     <p><b>Two ways in.</b> Your own island is saved, so a season can be played over several sittings with the time button at 4x. The test links open throwaway islands that are never saved: each sets up one part of the season so it can be checked in a few minutes.</p>
-    <p>A season is 14 game days. <code>?nointro&amp;day=N</code> opens a fresh island N days in with the first evening done (day 10 is late spring, 15 early summer, 29 early autumn, 43 early winter).</p>
+    <p>A season is 14 game days. <code>?nointro&amp;day=N</code> opens a fresh island N days in with the first evening done (day 10 is late spring, 15 early summer, 29 early autumn, 43 early winter). The island plays those days from day 0 while <i>The island grows</i> shows, a few seconds, so plants have come and spread as if it had been left alone.</p>
+    <p>Each check's green <b>Set up</b> link opens a test island with that check ready to play in under a minute. On a test island, Settings, Tests has <b>Next morning</b> and <b>Skip a day</b>.</p>
   </section>
   <div id="checks"></div>
   <div class="summary">
@@ -61,47 +64,58 @@ const CHECKS = [
   { id: 'herbs', title: 'The tea herbs come by themselves',
     steps: ['On your own island, play through spring (the time button at 4x helps).', 'Watch the shallows, the damp bank, the fire and the sandy turf.', 'Gather from each herb once it has come.'],
     see: 'Water mint, meadowsweet, nettle by the fire and chamomile arrive one after another, each on its own ground. Gathering takes a share, never the whole plant, and the plant shows it was picked until it grows back.',
-    links: [['Your island', '../'], ['Late spring, evening done', '../?nointro&seed=21&day=10']] },
+    setup: ['Herbs grown', '../?nointro&seed=21&plants=herbs&day=10'],
+    links: [['Your island', '../'], ['Late spring, evening done', '../?nointro&seed=21&day=10'], ['Near the first autumn', '../?nointro&seed=21&day=26']] },
   { id: 'dig', title: 'Cord, the shovel and digging',
     steps: ['Twist rush cord at the workbench, then make the shovel.', 'Dig in soil, then in sand above the tide.', 'Come back to a hole a few game hours later.'],
     see: 'The walker kneels and digs; worms, clay and now and then a stone turn up. The hole fills back in over time, and the soil page in the journal fills with what was found.',
+    setup: ['Rushes ready to pick', '../?camp=bench&plants=all&seed=21&day=4'],
     links: [['At the workbench', '../?camp'], ['With the shovel', '../?shovel&nointro&seed=21&day=6']] },
   { id: 'benches', title: 'The benches and the stores',
     steps: ['Build the workbench, then the apothecary bench.', 'Make the drying rack, the mortar and the hamper.', 'Set things down at camp.'],
     see: 'Each bench stands in its glowing ground. Herbs, seed and clumps set down go into the hamper; sticks, stones and clay go to their stores, and the benches draw from them.',
-    links: [['Workbench ground', '../?camp'], ['Both benches built', '../?camp=apothecary']] },
+    setup: ['Both benches built', '../?camp=apothecary'],
+    links: [['Workbench ground', '../?camp']] },
   { id: 'fire', title: 'The star fire, clay pots and the morning after',
     steps: ['Shape a pot at the hearth and leave it by a fire through the night.', 'Rest in the tent, then look at the ring at dawn.'],
     see: 'The fire is a star of logs pushed in as they burn. By morning the pot is fired, and charcoal lumps and a pale heap of ash lie in the ring to gather.',
+    setup: ['A pot ready to fire', '../?camp=hearth&shaped=pot&fire=lit&hour=18'],
     links: [['At the hearth', '../?camp=hearth&fire=lit'], ['The morning after', '../?camp=dawn&hour=7']] },
   { id: 'tea', title: 'A cup of tea',
     steps: ['Lay one or two herbs in the tea pot on a lit hearth and Brew.', 'Sit with the cup.', 'Open the Walker page (I).'],
     see: 'The pot steams, the walker kneels to watch it steep, then sits and sips. The tea\'s boon shows with how long it lasts.',
-    links: [['Teas ready', '../?teas']] },
+    setup: ['A tea ready to brew', '../?teas'],
+    links: [] },
   { id: 'trust', title: 'Treats and slower friendship',
     steps: ['Stand near a frog and give it a treat from the pack (wrack, a leaf pack).', 'Over a few game days, watch its card and journal page.', 'Name a frog that knows you well enough (the second link starts them there).'],
     see: 'The frog comes to the treat. Its trust word moves, more slowly than before, and a liked treat counts for more than plain feeding. One treat a creature a day. The Cliff tool now comes when you name your first frog, not when the frogs are first happy.',
+    setup: ['Creatures one step from their gift', '../?frogs=2&minnows=8&dragonflies=6&turtles=3&trust=0.45'],
     links: [['Treats beside a frog', '../?treats&frogs=2'], ['Frogs ready to name', '../?treats&frogs=2&trust=0.5']] },
   { id: 'carriers', title: 'The satchel and the basket',
     steps: ['At the workbench, make the rush satchel, then the willow basket.', 'Swap back with Wear on the one taken off.'],
     see: 'The bar grows to 8, then 10 pouches as each is put on. The one taken off stands by the workbench with its own card. The figure wears the satchel at the hip and the basket on the back.',
-    links: [['Carrier parts in the pack', '../?camp=carriers']] },
+    setup: ['Carrier parts in the pack', '../?camp=carriers'],
+    links: [] },
   { id: 'plant', title: 'Planting from the bar',
     steps: ['Sow a saved seed, set a moved clump, push in a willow withy.', 'Roll a seed ball at the workbench and sow it.'],
     see: 'Each is picked on the bar, aimed with a pencil ring, and planted by the walker where you click. A clump keeps its size; a withy roots as a young willow; a seed ball lands as three.',
-    links: [['Planting kit', '../?planting&nointro&seed=21&day=6']] },
+    setup: ['Planting kit', '../?planting&nointro&seed=21&day=6'],
+    links: [] },
   { id: 'trail', title: 'The forager\'s trail',
     steps: ['Open the journal, Trails.', 'Gather a plant for the first time and look again.'],
     see: 'Four trails show. The first handful of each plant and of each season is written in for good, and the forager\'s stops fill in turn.',
-    links: [['Your island', '../'], ['A year of gathering', '../?forager']] },
+    setup: ['A year of gathering', '../?forager'],
+    links: [['Your island', '../'], ['Near the first autumn', '../?nointro&seed=21&day=26']] },
   { id: 'save', title: 'An older island still works',
     steps: ['Open your own island saved before the first season was built.', 'Run the determinism page.'],
     see: 'Your island loads, catches up and plays with everything above. The determinism page shows two runs matching after catch-up.',
-    links: [['Your island', '../'], ['Determinism', './determinism.html']] },
+    setup: ['Your island', '../'],
+    links: [['Determinism', './determinism.html']] },
   { id: 'turtles', title: 'Turtle friendship',
     steps: ['In summer, tap a water lily from the bank (or the shallows) on foot and Gather a lily leaf.', 'At the workbench, wrap worms in the lily leaf and tie it with rush cord: Lily leaf parcel.',
       'Kneel on the bank by the turtles and Set out worms from their pouch. The next day, Set out a parcel.', 'Tap a turtle that knows you well enough and name it.'],
     see: 'A turtle slips off its stone, swims to the edge and reaches over to snap up the worms. At a parcel the turtles come together and tear at it with a shake of the head for a while. Each turtle\'s card shows its own word; the one you feed pulls ahead. Naming the first turtle brings the floating reed raft. The journal gains "Takes worms at the water\'s edge" and "Tears at a lily leaf parcel".',
+    setup: ['Turtles one parcel from a name', '../?turtles=3&trust=0.45&treats'],
     links: [['Treats by the turtles', '../?turtles=3&treats'], ['Make a parcel at the bench', '../?camp=bench&turtles=3&treats'], ['Turtles ready to name', '../?turtles=3&trust=0.5']] },
 ];
 
@@ -120,7 +134,7 @@ CHECKS.forEach((c, i) => {
   el.innerHTML = `<h2><span class="num">${i + 1}</span>${esc(c.title)}</h2>
     <ol>${c.steps.map((t) => `<li>${esc(t)}</li>`).join('')}</ol>
     <p class="see"><b>You should see</b>${esc(c.see)}</p>
-    <div class="links">${c.links.map(([t, u]) => `<a class="btn" href="${esc(u)}" target="_blank" rel="noopener">${esc(t)}</a>`).join('')}</div>
+    <div class="links">${[['is-setup', ...c.setup], ...c.links.map((l) => ['', ...l])].map(([k, t, u]) => `<a class="btn ${k}" href="${esc(u)}" target="_blank" rel="noopener">${k ? 'Set up: ' : ''}${esc(t)}</a>`).join('')}</div>
     <div class="verdict">
       <button type="button" class="pass" aria-pressed="false">Pass</button>
       <button type="button" class="not" aria-pressed="false">Not yet</button>
