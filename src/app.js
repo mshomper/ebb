@@ -91,6 +91,7 @@ import { createWhere } from './world/camp/where.js';
 import { attachDesktopInput } from './input/desktop.js';
 import { beginSave, TEST_PARAMS } from './save/autosave.js';
 import { createIntroBoot, introStartHour } from './world/intro/boot.js';
+import { createMorningHints } from './world/hints/morning-live.js';
 import { createBoat } from './world/intro/boat.js';
 import { buildCliffDemo } from './world/terrain/cliff-demo.js';
 import { createWalk } from './world/walk/index.js';
@@ -598,6 +599,11 @@ export async function startApp(canvas, hooks = {}) {
   const intro = createIntroBoot({ R: introRecipe, boatR: boatRecipe, campRecipe, params, testParams: TEST_PARAMS, back, walk, terrain, water,
     land: landRecipe, terrainSeed: subSeed(seed, 'terrain'), orbit: skyRecipe.orbit, clock, camera, boat });
   sim.addSystem(intro);
+  // Morning hints (src/world/hints): one line from the keeper each morning after the first evening.
+  // Not on a test link (they open unsaved, so every visit would be a first morning), except `?nointro`.
+  const morningHints = createMorningHints({ R: await loadRecipe('world/morning-hints'), clock, orbit: skyRecipe.orbit,
+    journalWords: await loadRecipe('world/journal'), enabled: !TEST_PARAMS.some((k) => k !== 'nointro' && params.has(k)) });
+  sim.addSystem(morningHints);
   // Autumn's season markers (doc 13; src/world/finds/autumn-live.js): fungi on the kept logs, and
   // dewy webs in the tall grass on misty mornings. Tapping either is a find.
   const autumn = createAutumn({ world, terrain, water, camera, pieces, growth, recipe: autumnRecipe, seasons: seasonsRecipe, seed });

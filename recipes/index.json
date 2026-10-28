@@ -60,6 +60,7 @@
     "audio/intro": "audio/intro.json",
     "world/boat": "world/boat.json",
     "world/keeper-pages": "world/keeper-pages.json",
+    "world/morning-hints": "world/morning-hints.json",
     "world/camp": "world/camp.json",
     "world/cook": "world/cook.json",
     "world/sketchbook": "world/sketchbook.json",
