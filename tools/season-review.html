@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ebb first season check</title>
+<style>
+  @font-face { font-family: Nunito; src: url(../src/vendor/fonts/nunito-latin-600-normal.woff2) format('woff2'); font-weight: 600; }
+  @font-face { font-family: Nunito; src: url(../src/vendor/fonts/nunito-latin-800-normal.woff2) format('woff2'); font-weight: 800; }
+  @font-face { font-family: Fraunces; src: url(../src/vendor/fonts/fraunces-latin-full-italic.woff2) format('woff2'); font-style: italic; }
+  :root { --paper: #F4EEE4; --card: #FBF7F0; --ink: #2F3A35; --muted: #5E6660; --line: #DCD2C0; --moss: #5F7F5B; --clay: #A8613F; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 600 17px/1.55 Nunito, system-ui, sans-serif; background: var(--paper); color: var(--ink);
+    padding: 24px 16px 48px; overflow-wrap: anywhere; }
+  main { max-width: 760px; margin: 0 auto; display: grid; gap: 16px; }
+  h1 { font-size: 28px; font-weight: 800; margin: 0; }
+  .lede { font: italic 19px/1.5 Fraunces, Georgia, serif; color: var(--muted); margin: 4px 0 0; }
+  .how { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px 18px; display: grid; gap: 8px; }
+  .check { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; display: grid; gap: 10px; min-width: 0; }
+  .check.is-pass { border-color: var(--moss); }
+  .check.is-not { border-color: var(--clay); }
+  .check h2 { font-size: 20px; font-weight: 800; margin: 0; display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+  .num { color: var(--muted); font-size: 16px; }
+  ol, ul { margin: 0; padding-left: 22px; display: grid; gap: 4px; }
+  .see { border-left: 3px solid var(--moss); padding-left: 12px; margin: 0; }
+  .see b { display: block; font-size: 15px; letter-spacing: .04em; text-transform: uppercase; color: var(--moss); }
+  .links { display: flex; flex-wrap: wrap; gap: 8px; }
+  a.btn, button { font: 700 16px Nunito, system-ui, sans-serif; color: var(--ink); background: var(--paper); border: 1px solid var(--line);
+    border-radius: 8px; padding: 9px 14px; text-decoration: none; cursor: pointer; min-height: 44px; display: inline-flex; align-items: center; }
+  a.btn:hover, button:hover { border-color: var(--ink); }
+  .verdict { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .verdict button[aria-pressed="true"].pass { background: var(--moss); color: #fff; border-color: var(--moss); }
+  .verdict button[aria-pressed="true"].not { background: var(--clay); color: #fff; border-color: var(--clay); }
+  textarea { width: 100%; min-height: 64px; font: 600 16px/1.4 Nunito, system-ui, sans-serif; color: var(--ink); background: #fff;
+    border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; resize: vertical; }
+  .summary { position: sticky; bottom: 0; background: var(--paper); padding: 12px 0; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; border-top: 1px solid var(--line); }
+  .summary output { font-size: 17px; }
+  code { font: 15px ui-monospace, Consolas, monospace; background: #EDE5D7; padding: 1px 5px; border-radius: 4px; overflow-wrap: anywhere; }
+  :focus-visible { outline: 3px solid var(--moss); outline-offset: 2px; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>The first season check</h1>
+    <p class="lede">The exit check for Phase 2 of the keeper's camp (doc 20, "The first season"). Walk each check, mark it, and copy the results to Claude. Anything not yet right becomes a fix log, as Phase 1's did.</p>
+  </header>
+  <section class="how">
+    <p><b>Two ways in.</b> Your own island is saved, so a season can be played over several sittings with the time button at 4x. The test links open throwaway islands that are never saved: each sets up one part of the season so it can be checked in a few minutes.</p>
+    <p>A season is 14 game days. <code>?nointro&amp;day=N</code> opens a fresh island N days in with the first evening done (day 10 is late spring, 15 early summer, 29 early autumn, 43 early winter).</p>
+  </section>
+  <div id="checks"></div>
+  <div class="summary">
+    <output id="count">0 of 10 passed</output>
+    <button type="button" id="copy">Copy results</button>
+    <span id="copied" aria-live="polite"></span>
+  </div>
+</main>
+<script type="module">
+const CHECKS = [
+  { id: 'herbs', title: 'The tea herbs come by themselves',
+    steps: ['On your own island, play through spring (the time button at 4x helps).', 'Watch the shallows, the damp bank, the fire and the sandy turf.', 'Gather from each herb once it has come.'],
+    see: 'Water mint, meadowsweet, nettle by the fire and chamomile arrive one after another, each on its own ground. Gathering takes a share, never the whole plant, and the plant shows it was picked until it grows back.',
+    links: [['Your island', '../'], ['Late spring, evening done', '../?nointro&seed=21&day=10']] },
+  { id: 'dig', title: 'Cord, the shovel and digging',
+    steps: ['Twist rush cord at the workbench, then make the shovel.', 'Dig in soil, then in sand above the tide.', 'Come back to a hole a few game hours later.'],
+    see: 'The walker kneels and digs; worms, clay and now and then a stone turn up. The hole fills back in over time, and the soil page in the journal fills with what was found.',
+    links: [['At the workbench', '../?camp'], ['With the shovel', '../?shovel&nointro&seed=21&day=6']] },
+  { id: 'benches', title: 'The benches and the stores',
+    steps: ['Build the workbench, then the apothecary bench.', 'Make the drying rack, the mortar and the hamper.', 'Set things down at camp.'],
+    see: 'Each bench stands in its glowing ground. Herbs, seed and clumps set down go into the hamper; sticks, stones and clay go to their stores, and the benches draw from them.',
+    links: [['Workbench ground', '../?camp'], ['Both benches built', '../?camp=apothecary']] },
+  { id: 'fire', title: 'The star fire, clay pots and the morning after',
+    steps: ['Shape a pot at the hearth and leave it by a fire through the night.', 'Rest in the tent, then look at the ring at dawn.'],
+    see: 'The fire is a star of logs pushed in as they burn. By morning the pot is fired, and charcoal lumps and a pale heap of ash lie in the ring to gather.',
+    links: [['At the hearth', '../?camp=hearth&fire=lit'], ['The morning after', '../?camp=dawn&hour=7']] },
+  { id: 'tea', title: 'A cup of tea',
+    steps: ['Lay one or two herbs in the tea pot on a lit hearth and Brew.', 'Sit with the cup.', 'Open the Walker page (I).'],
+    see: 'The pot steams, the walker kneels to watch it steep, then sits and sips. The tea\'s boon shows with how long it lasts.',
+    links: [['Teas ready', '../?teas']] },
+  { id: 'trust', title: 'Treats and slower friendship',
+    steps: ['Stand near a frog and give it a treat from the pack (wrack, a leaf pack).', 'Over a few game days, watch its card and journal page.'],
+    see: 'The frog comes to the treat. Its trust word moves, more slowly than before, and a liked treat counts for more than plain feeding. One treat a creature a day.',
+    links: [['Treats beside a frog', '../?treats&frogs=2']] },
+  { id: 'carriers', title: 'The satchel and the basket',
+    steps: ['At the workbench, make the rush satchel, then the willow basket.', 'Swap back with Wear on the one taken off.'],
+    see: 'The bar grows to 8, then 10 pouches as each is put on. The one taken off stands by the workbench with its own card. The figure wears the satchel at the hip and the basket on the back.',
+    links: [['Carrier parts in the pack', '../?camp=carriers']] },
+  { id: 'plant', title: 'Planting from the bar',
+    steps: ['Sow a saved seed, set a moved clump, push in a willow withy.', 'Roll a seed ball at the workbench and sow it.'],
+    see: 'Each is picked on the bar, aimed with a pencil ring, and planted by the walker where you click. A clump keeps its size; a withy roots as a young willow; a seed ball lands as three.',
+    links: [['Planting kit', '../?planting&nointro&seed=21&day=6']] },
+  { id: 'trail', title: 'The forager\'s trail',
+    steps: ['Open the journal, Trails.', 'Gather a plant for the first time and look again.'],
+    see: 'Four trails show. The first handful of each plant and of each season is written in for good, and the forager\'s stops fill in turn.',
+    links: [['Your island', '../'], ['A year of gathering', '../?forager']] },
+  { id: 'save', title: 'An older island still works',
+    steps: ['Open your own island saved before the first season was built.', 'Run the determinism page.'],
+    see: 'Your island loads, catches up and plays with everything above. The determinism page shows two runs matching after catch-up.',
+    links: [['Your island', '../'], ['Determinism', './determinism.html']] },
+];
+
+const KEY = 'ebb-season-review';
+let state = {};
+try { state = JSON.parse(localStorage.getItem(KEY) ?? '{}'); } catch { state = {}; }
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch { /* not kept */ } };
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+
+const root = document.getElementById('checks');
+root.style.display = 'grid'; root.style.gap = '16px';
+CHECKS.forEach((c, i) => {
+  const s = state[c.id] ?? {};
+  const el = document.createElement('section');
+  el.className = 'check';
+  el.innerHTML = `<h2><span class="num">${i + 1}</span>${esc(c.title)}</h2>
+    <ol>${c.steps.map((t) => `<li>${esc(t)}</li>`).join('')}</ol>
+    <p class="see"><b>You should see</b>${esc(c.see)}</p>
+    <div class="links">${c.links.map(([t, u]) => `<a class="btn" href="${esc(u)}" target="_blank" rel="noopener">${esc(t)}</a>`).join('')}</div>
+    <div class="verdict">
+      <button type="button" class="pass" aria-pressed="false">Pass</button>
+      <button type="button" class="not" aria-pressed="false">Not yet</button>
+    </div>
+    <label for="note-${c.id}" class="num">Notes</label>
+    <textarea id="note-${c.id}" placeholder="What you saw, if anything was off"></textarea>`;
+  const [pass, not] = el.querySelectorAll('.verdict button');
+  const note = el.querySelector('textarea');
+  note.value = s.note ?? '';
+  const paint = () => {
+    const v = state[c.id]?.v;
+    pass.setAttribute('aria-pressed', String(v === 'pass'));
+    not.setAttribute('aria-pressed', String(v === 'not'));
+    el.classList.toggle('is-pass', v === 'pass');
+    el.classList.toggle('is-not', v === 'not');
+    count();
+  };
+  const set = (v) => { state[c.id] = { ...(state[c.id] ?? {}), v: state[c.id]?.v === v ? null : v }; save(); paint(); };
+  pass.addEventListener('click', () => set('pass'));
+  not.addEventListener('click', () => set('not'));
+  note.addEventListener('input', () => { state[c.id] = { ...(state[c.id] ?? {}), note: note.value }; save(); });
+  root.append(el);
+  paint();
+});
+
+function count() {
+  const n = CHECKS.filter((c) => state[c.id]?.v === 'pass').length;
+  document.getElementById('count').textContent = `${n} of ${CHECKS.length} passed`;
+}
+
+document.getElementById('copy').addEventListener('click', async () => {
+  const lines = CHECKS.map((c, i) => {
+    const s = state[c.id] ?? {};
+    const v = s.v === 'pass' ? 'PASS' : s.v === 'not' ? 'NOT YET' : 'not checked';
+    return `${i + 1}. ${c.title}: ${v}${s.note ? ` (${s.note.trim()})` : ''}`;
+  });
+  const text = `First season check\n${lines.join('\n')}`;
+  const said = document.getElementById('copied');
+  try { await navigator.clipboard.writeText(text); said.textContent = 'Copied. Paste it to Claude.'; }
+  catch { said.textContent = 'Copy failed: select the text below and copy it.'; const pre = document.createElement('pre'); pre.textContent = text; pre.style.whiteSpace = 'pre-wrap'; document.querySelector('main').append(pre); }
+});
+</script>
+</body>
+</html>
