@@ -9,7 +9,7 @@ import { makeBuffer, makeShaderModule } from '../../core/gpu.js';
 
 /** @typedef {import('../frame-graph.js').PassContext} PassContext */
 
-const FLOATS = 56;
+const FLOATS = 60;
 
 /**
  * @typedef {Object} CampFxFrame
@@ -20,6 +20,7 @@ const FLOATS = 56;
  * @property {number[]} wind      the smoke's lean [x, z] (m/s)
  * @property {number} mist        0..1
  * @property {number[] | null} lantern  its glass [x, y, z], null when out
+ * @property {number[] | null} [mothsAt] where the lantern's moths circle [x, y, z] (the lantern, smoothed); the lantern when absent
  * @property {number[] | null} sparks   the steel [x, y, z, seconds since the strike (+10 per earlier strike)], or null
  * @property {boolean} moths      after dark
  * @property {number[] | null} [steam] a pot's steam on the hearth [x, y, z, amount 0..2] (P2e), or null
@@ -78,6 +79,8 @@ export function createCampFxPass(opts) {
         sp ? sp[0] : 0, sp ? sp[1] : 0, sp ? sp[2] : 0, sp ? sp[3] : -1,
         K.sparks, K.sparkS, K.sparkNits, f.moths ? 1 : 0,
       ]);
+      const at = f.mothsAt ?? L;
+      data.set([at ? at[0] : 0, at ? at[1] : 0, at ? at[2] : 0, 0], 56);
       const st = f.steam;
       steamOn = !!st && st[3] > 0 && wisps > 0;
       if (steamOn && st) {
