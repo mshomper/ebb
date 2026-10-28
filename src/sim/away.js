@@ -4,6 +4,8 @@
 //   Back to a hidden tab: the time it was out of sight, at the away rate whatever the time flow
 //   (doc 02; a hidden tab is the player being away).
 //   Pretend I was away (the badge's Saves menu): that many hours now, for testing.
+//   A test link's `?day=N`: the new island's N days from day 0, before it shows; and Settings' Tests
+//   on a test link's island: on to the next morning, or a day.
 // While it runs, world time and saving both wait (a save then would stamp the old island with the
 // time now), and the catching-up screen covers the island if it takes a while. Then the new island
 // and journal go in at once, the clock moves on by the hours run, and `world:caught-up` says what
@@ -49,10 +51,11 @@ export async function mountAway(opts) {
 
   /**
    * Run `hours` game hours now and swap the result in. @param {number} hours @param {string} why
-   * @param {{ skipS?: number, cream?: boolean, title?: { riseS: number, holdS: number } | null }} [o]
+   * @param {{ skipS?: number, cream?: boolean, title?: { riseS: number, holdS: number } | null, line?: string }} [o]
    *   skipS: move the clock this far instead of whole hours (a rest wakes just before sunrise, inside
    *   the last hour run); cream: the cream screen at once and no reveal (a night's rest, docs/future/13
-   *   C-39); title: the ebb title on it (the first rest)
+   *   C-39); title: the ebb title on it (the first rest); line: the screen's own line at once and no
+   *   reveal (a test link's growing, the Tests buttons)
    */
   async function run(hours, why, o = {}) {
     if (busy || hours <= 0) return;
@@ -61,8 +64,8 @@ export async function mountAway(opts) {
     clock.hold(true);
     // Long enough away for the reveal (src/ui/reveal.js): it opens from cream, so the screen is up at
     // once. Settings can turn the reveal off; the notes then wait in the journal.
-    const revealing = !o.cream && hours >= reveal.thresholdHours && get('settings')?.reveal !== false;
-    const screen = showCatchingUp({ afterS: revealing || o.cream ? 0 : recipe.screenAfterS, plain: !!o.cream, title: o.title ?? null });
+    const revealing = !o.cream && !o.line && hours >= reveal.thresholdHours && get('settings')?.reveal !== false;
+    const screen = showCatchingUp({ afterS: revealing || o.cream || o.line ? 0 : recipe.screenAfterS, plain: !!o.cream, title: o.title ?? null, line: o.line });
     const t0 = performance.now();
     try {
       const world = app.world;
@@ -103,6 +106,20 @@ export async function mountAway(opts) {
     else save.hold(false);
   }
 
+  // `?day=N` on a new test island (src/app.js, store slice `testGrow`): its N days run here from day 0
+  // once the island has its habitat and live water, behind the growing line; the clock waited at day 0
+  // until now, and the other test links apply once `done` is set (app.js afterGrow).
+  const grow = get('testGrow');
+  if (grow && !grow.done) {
+    const go = async () => {
+      if (!app.world.env.habitat?.() || !app.water?.sim?.live) { setTimeout(go, 50); return; }
+      await run(grow.hours, 'grow', { line: recipe.growLine });
+      clock.hold(false);
+      update('testGrow', (g) => ({ ...g, done: true }));
+    };
+    go();
+  }
+
   // Back to a hidden tab: the time it was out of sight (short spells add up in the carried minutes).
   let hiddenAt = 0;
   document.addEventListener('visibilitychange', () => {
@@ -141,6 +158,16 @@ export async function mountAway(opts) {
       const a = earned(since);
       await run(a.hours, 'pretend');
       return a;
+    },
+    /**
+     * A test link's island only (Settings, Tests): run on to recipe.testMorningHour tomorrow, or a
+     * whole day, through the hourly tick as time away does, with no reveal.
+     * @param {'morning'|'day'} what
+     */
+    async advance(what) {
+      const H = clock.SECONDS_PER_HOUR, nowS = clock.worldT();
+      const toS = what === 'day' ? nowS + 24 * H : (Math.floor(nowS / (24 * H)) + 1) * 24 * H + (recipe.testMorningHour ?? 6) * H;
+      await run(Math.floor(toS / H) - clock.hourIndex(), 'test', { skipS: toS - nowS, line: recipe.testLine });
     },
   };
 }

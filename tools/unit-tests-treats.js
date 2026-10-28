@@ -2,8 +2,8 @@
 // Treats and friendship pace tests for tools/unit-tests.html (P2h, docs/future/13 section 8): a treat
 // is worth treatFeeds meals once a creature a game day, for a frog and for a school; a tea boon
 // multiplies watching, meals and treats but not the camp's standing presence; trust never goes down
-// or past the ceiling; the trust lab's pace is about 7 played days to every top word without treats
-// and about 5 with a treat a day; kelp, wrack and fallen leaves lie where and when gather.json says;
+// or past the ceiling; the trust lab's pace is about 4.6 played days to every top word without treats
+// and about 3.3 with a treat a day (1.5 times the P2h pace, October 28, 2026); kelp, wrack and fallen leaves lie where and when gather.json says;
 // a treat set out lies, pales and is gone by the hour alone; and who likes what comes from the
 // species recipes.
 
@@ -94,7 +94,7 @@ export function addTreatsTests(test, assert, eq) {
     eq(tick(camp, P, 1.12).fr.frogs[0].trust, 0.32, 'standing presence is not a boon');
   });
 
-  test(G, 'the trust lab: about 7 played days to every top word, about 5 with a treat a day', async () => {
+  test(G, 'the trust lab: about 4.6 played days to every top word, about 3.3 with a treat a day', async () => {
     const recs = await specP, T = await treatsP, C = await cookP;
     const H = T.labHabit;
     const out = [];
@@ -103,11 +103,11 @@ export function addTreatsTests(test, assert, eq) {
       if (rec.id === 'turtle') continue;
       const top = topWord(rec);
       const none = paceCurve(rec, { ...H, treat: false }, 20).at[top];
-      assert(none > 6.3 && none < 7.6, `${rec.id}: ${none?.toFixed(2)} days to ${top} without treats`);
+      assert(none > 4.2 && none < 5.1, `${rec.id}: ${none?.toFixed(2)} days to ${top} without treats`);
       out.push(`${rec.id} ${none.toFixed(1)}`);
       if (!(rec.presence.treatFeeds > 0)) continue;
       const one = paceCurve(rec, { ...H, treat: true }, 20).at[top];
-      assert(one > 4.5 && one < 5.5, `${rec.id}: ${one.toFixed(2)} days with a treat a day`);
+      assert(one > 3 && one < 3.7, `${rec.id}: ${one.toFixed(2)} days with a treat a day`);
       const mead = paceCurve(rec, { ...H, treat: true, boost: C.boons.meadowsweet.trust }, 20).at[top];
       const blend = paceCurve(rec, { ...H, treat: true, boost: C.boons['meadowsweet+chamomile'].trust }, 20).at[top];
       assert(mead < one && blend < mead, `meadowsweet ${mead.toFixed(2)} and the blend ${blend.toFixed(2)} come sooner`);
@@ -183,7 +183,7 @@ export function addTreatsTests(test, assert, eq) {
 
   // ---- Turtle friendship and gifts at naming (Matt, October 27, 2026) ----
 
-  test(G, 'the gift givers come to know you: turtles name within a summer with treats, not without', async () => {
+  test(G, 'the gift givers come to know you: turtles name in about 7.5 played days, about 2.3 with a parcel a day', async () => {
     const recs = await specP, T = await treatsP;
     const H = T.labHabit, by = Object.fromEntries(recs.map((r) => [r.id, r]));
     const known = (/** @type {any} */ rec, /** @type {any} */ h) => paceCurve(rec, { ...H, ...h }, 30).at.known;
@@ -198,9 +198,12 @@ export function addTreatsTests(test, assert, eq) {
     };
     // The first summer holds about 9 played days once the turtles have come.
     assert(days.turtle[1] < 6 && days.turtle[2] < days.turtle[1], `with treats: worms ${days.turtle[1]?.toFixed(1)}, a parcel ${days.turtle[2]?.toFixed(1)}`);
-    assert(days.turtle[0] > 9, `without treats the first summer is not enough (${days.turtle[0]?.toFixed(1)})`);
+    // 1.5 times the October 27 pace (October 28, 2026): a frog's gift in about 3.5 days, 2.5 with treats.
+    assert(days.turtle[0] > 6.8 && days.turtle[0] < 8.2, `without treats about 7.5 (${days.turtle[0]?.toFixed(1)})`);
+    assert(days.turtle[2] > 2 && days.turtle[2] < 2.6, `a parcel a day about 2.3 (${days.turtle[2]?.toFixed(1)})`);
+    assert(days.frog[0] > 3.2 && days.frog[0] < 3.9 && days.frog[1] > 2.2 && days.frog[1] < 2.9, `frogs about 3.5, 2.5 with treats (${days.frog[0]?.toFixed(1)}/${days.frog[1]?.toFixed(1)})`);
     assert(days.frog[0] > days.frog[1] && days.minnow[1] < days.minnow[0], 'a treat a day comes sooner');
-    assert(days.dragonfly[0] > 5 && days.dragonfly[0] < 10, `dragonflies by watching (${days.dragonfly[0]?.toFixed(1)})`);
+    assert(days.dragonfly[0] > 4 && days.dragonfly[0] < 7, `dragonflies by watching (${days.dragonfly[0]?.toFixed(1)})`);
     return Object.entries(days).map(([k, v]) => `${k} ${v.map((d) => d?.toFixed(1)).join('/')}`).join(', ');
   });
 

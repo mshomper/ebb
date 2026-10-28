@@ -306,8 +306,8 @@ export function createCreatures(opts) {
     /** @param {import('../../sim/live-sim.js').FrameInfo} f */
     tick(f) {
       // `?frogs=N`: bring the frogs now, once the island, its water and the journal are up (a tools
-      // page has no journal: there it goes ahead after a few seconds).
-      if (testFrogs && world.env.habitat?.() && water.sim.live) testWait += f.realDt;
+      // page has no journal: there it goes ahead after a few seconds), and after `?day=N`'s growing.
+      if (testFrogs && world.env.habitat?.() && water.sim.live && getStore('testGrow')?.done !== false) testWait += f.realDt;
       if (testFrogs && testWait > 0 && (getStore('journal') || testWait > 3)) {
         const r = bringFrogs(world.state, hourIndex(), world.env, testFrogs);
         testFrogs = 0;

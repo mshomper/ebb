@@ -198,6 +198,31 @@ export function fillTestsPanel(panel, o) {
   }
 }
 
+/**
+ * A test link's island only (quick fixes, October 28, 2026): Next morning and Skip a day, run through
+ * the hourly tick (src/sim/away.js advance), with a line saying when it is now.
+ * @param {HTMLElement} panel
+ * @param {{ away: { advance: (what: 'morning'|'day') => Promise<void> }, button: MakeButton, when: () => string }} o
+ */
+export function fillTimeTests(panel, o) {
+  const r = row();
+  const said = status();
+  for (const [what, text, title] of /** @type {const} */ ([
+    ['morning', 'Next morning', 'Run on to 6 in the morning tomorrow, hour by hour, as time away does'],
+    ['day', 'Skip a day', 'Run on a whole day, hour by hour, as time away does'],
+  ])) {
+    const b = o.button(text, title);
+    b.addEventListener('click', async () => {
+      for (const x of r.querySelectorAll('button')) /** @type {HTMLButtonElement} */ (x).disabled = true;
+      await o.away.advance(what);
+      said.textContent = `Now ${o.when()}`;
+      for (const x of r.querySelectorAll('button')) /** @type {HTMLButtonElement} */ (x).disabled = false;
+    });
+    r.appendChild(b);
+  }
+  panel.append(label('Move time on'), r, said);
+}
+
 /** "3 min ago", "2 hours ago", "4 days ago". @param {number} t UTC ms */
 function ago(t) {
   const m = Math.max(0, Math.round((Date.now() - t) / 60000));
