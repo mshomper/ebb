@@ -7,7 +7,7 @@
 // shadow. A fast swoop of the camera close by startles a school; watching one closely, or tapping
 // it, finds it for the journal (`creature:found`). Nothing here changes the world.
 
-import { emitDeferred } from '../../core/events.js';
+import { emitDeferred, on } from '../../core/events.js';
 import { get as getStore, update as updateStore } from '../../core/store.js';
 import { display, animT, seasonOf, hourIndex, SECONDS_PER_HOUR, HOURS_PER_DAY } from '../../core/clock.js';
 import { createWatching } from './watching.js';
@@ -24,6 +24,7 @@ import { createPatrol, posePatrol } from './patrol.js';
 import { createBask, poseBask } from './bask.js';
 import { cellCenter } from '../ecology/habitat.js';
 import { keyOf } from '../species.js';
+import { turtleId } from './bonds.js';
 
 const BAKE_JOB = { module: './world/creatures/bodies.js', fn: 'bakeVariant' };
 
@@ -123,6 +124,31 @@ export function createSchools(opts) {
     viewer: () => opts.you?.() ?? camera.eye,
   };
   const comeBack = createReturn(recipe.reveal?.growS ?? 0.6);
+
+  // The moment they come to know you (`creature:known` in an hour's events; swarms.js): the nearest
+  // school rises to meet you at the bank, or a dragonfly comes and rests on your hat. On foot only;
+  // above, the note says it.
+  const K = recipe.known ?? {};
+  on('world:ticked', (/** @type {{ events?: any[] }} */ p) => {
+    if (!(p.events ?? []).some((e) => e.name === 'creature:known' && e.payload?.species === key)) return;
+    const me = opts.you?.() ?? null;
+    if (!me) return;
+    if (M.kind === 'patrol') {
+      for (const s of schools.values()) /** @type {any} */ (s).land?.(() => { const y = opts.you?.(); return y ? { x: y[0], y: y[1] + (K.hatM ?? 0.12), z: y[2] } : null; }, K.restS ?? 20);
+      return;
+    }
+    if (M.kind !== 'school') return;
+    // The water nearest you, deep enough for them; the nearest school within reach swirls up to it.
+    let at = null, ad = Infinity;
+    for (let r = 0.3; r <= (K.bankM ?? 3) && !at; r += 0.3) for (let k = 0; k < 16; k++) {
+      const a = (k / 16) * Math.PI * 2, x = me[0] + Math.cos(a) * r, z = me[2] + Math.sin(a) * r;
+      if (water.sampleLive(x, z).depth >= (M.minDepthM ?? 0.1) && r < ad) { ad = r; at = { x, z }; }
+    }
+    if (!at) return;
+    let best = null, bestD = K.reachM ?? 8;
+    for (const s of schools.values()) { const c = s.centre(); const d = Math.hypot(c.x - at.x, c.z - at.z); if (d < bestD) { bestD = d; best = s; } }
+    if (best) { best.feed(at); ripples?.addImpulse(at.x, at.z, 0.3, 0.05); }
+  });
   const bones = new Float32Array(MAX_BONES * 16);
 
   /** The deep spot of a group's pool, from the tick's pools; else its home. @param {any} g */
@@ -250,8 +276,10 @@ export function createSchools(opts) {
           const k = d / (find.tapM + find.tapPerM * far);
           if (k < bestK) {
             bestK = k;
-            const c = M.kind === 'patrol' ? f : s.centre();
-            best = { sp: key, id: s.id, x: c.x, z: c.z };
+            // A turtle is tapped as itself (one: its id, bonds.js), ringed where it is.
+            const one = M.kind === 'bask';
+            const c = M.kind === 'patrol' || one ? f : s.centre();
+            best = { sp: key, id: s.id, x: c.x, z: c.z, ...(one ? { one: turtleId(s.id, s.fish.indexOf(f)) } : {}) };
           }
         }
       }
@@ -286,8 +314,19 @@ export function createSchools(opts) {
      * @param {number} x @param {number} z @param {{ treat: string, tid: number, reachM: number }} t
      */
     treat(x, z, t) {
-      if (water.sampleLive(x, z).depth < 0.1) return 'land';
       if (world.state?.creatures?.[key]?.dormant) return 'none';
+      // Turtles (bask.js): set at the water's edge; the nearest turtle (or, for a treat that is torn
+      // at, the group) slides in, swims over and takes it from the edge, by day.
+      if (M.kind === 'bask') {
+        const T = recipe.treat ?? {}, way = T.ways?.[t.treat] ?? {};
+        let best = null, bestD = t.reachM;
+        for (const s of schools.values()) for (const f of s.fish) { const d = Math.hypot(f.x - x, f.z - z); if (d < bestD) { bestD = d; best = s; } }
+        if (!best || moodNow() !== 'day') return 'none';
+        const ok = /** @type {any} */ (best).treat({ x, z, tid: t.tid, treat: t.treat, eatS: way.eatS ?? 4, shake: !!way.tear, all: !!way.all,
+          waitS: T.noticeS ?? 0 });
+        return ok ? 'coming' : 'none';
+      }
+      if (water.sampleLive(x, z).depth < 0.1) return 'land';
       let best = null, bestD = t.reachM;
       for (const s of schools.values()) { const c = s.centre(); const d = Math.hypot(c.x - x, c.z - z); if (d < bestD) { bestD = d; best = s; } }
       if (!best) return 'none';
@@ -360,6 +399,15 @@ export function createSchools(opts) {
       }
       acc = Math.min(acc + f.realDt, stepS * 6);
       while (acc >= stepS) { clockS += stepS; for (const s of schools.values()) s.step(stepS); acc -= stepS; }
+      // Turtles that have taken a treat from the edge (bask.js): each that ate knows you that much
+      // better (bonds.js), and the treat is off the ground.
+      for (const s of schools.values()) {
+        for (const e of /** @type {any} */ (s).eaten?.() ?? []) {
+          world.state = addSwarmEvent(world.state, key, { kind: 'treat', hour: hourIndex(), treat: e.treat, who: e.who.map((/** @type {number} */ i) => turtleId(s.id, i)) });
+          updateStore('world', () => world.state);
+          emitDeferred('treat:taken', { species: key, id: s.id, treat: e.treat, tid: e.tid });
+        }
+      }
       draw(f.animT);
       // Watching one closely finds it: in the middle of the view, zoomed in, for a moment; or, on
       // foot, standing within reach of it (W3).

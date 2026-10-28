@@ -51,7 +51,7 @@
   </section>
   <div id="checks"></div>
   <div class="summary">
-    <output id="count">0 of 10 passed</output>
+    <output id="count">0 of 11 passed</output>
     <button type="button" id="copy">Copy results</button>
     <span id="copied" aria-live="polite"></span>
   </div>
@@ -79,9 +79,9 @@ const CHECKS = [
     see: 'The pot steams, the walker kneels to watch it steep, then sits and sips. The tea\'s boon shows with how long it lasts.',
     links: [['Teas ready', '../?teas']] },
   { id: 'trust', title: 'Treats and slower friendship',
-    steps: ['Stand near a frog and give it a treat from the pack (wrack, a leaf pack).', 'Over a few game days, watch its card and journal page.'],
-    see: 'The frog comes to the treat. Its trust word moves, more slowly than before, and a liked treat counts for more than plain feeding. One treat a creature a day.',
-    links: [['Treats beside a frog', '../?treats&frogs=2']] },
+    steps: ['Stand near a frog and give it a treat from the pack (wrack, a leaf pack).', 'Over a few game days, watch its card and journal page.', 'Name a frog that knows you well enough (the second link starts them there).'],
+    see: 'The frog comes to the treat. Its trust word moves, more slowly than before, and a liked treat counts for more than plain feeding. One treat a creature a day. The Cliff tool now comes when you name your first frog, not when the frogs are first happy.',
+    links: [['Treats beside a frog', '../?treats&frogs=2'], ['Frogs ready to name', '../?treats&frogs=2&trust=0.5']] },
   { id: 'carriers', title: 'The satchel and the basket',
     steps: ['At the workbench, make the rush satchel, then the willow basket.', 'Swap back with Wear on the one taken off.'],
     see: 'The bar grows to 8, then 10 pouches as each is put on. The one taken off stands by the workbench with its own card. The figure wears the satchel at the hip and the basket on the back.',
@@ -98,6 +98,11 @@ const CHECKS = [
     steps: ['Open your own island saved before the first season was built.', 'Run the determinism page.'],
     see: 'Your island loads, catches up and plays with everything above. The determinism page shows two runs matching after catch-up.',
     links: [['Your island', '../'], ['Determinism', './determinism.html']] },
+  { id: 'turtles', title: 'Turtle friendship',
+    steps: ['In summer, tap a water lily from the bank (or the shallows) on foot and Gather a lily leaf.', 'At the workbench, wrap worms in the lily leaf and tie it with rush cord: Lily leaf parcel.',
+      'Kneel on the bank by the turtles and Set out worms from their pouch. The next day, Set out a parcel.', 'Tap a turtle that knows you well enough and name it.'],
+    see: 'A turtle slips off its stone, swims to the edge and reaches over to snap up the worms. At a parcel the turtles come together and tear at it with a shake of the head for a while. Each turtle\'s card shows its own word; the one you feed pulls ahead. Naming the first turtle brings the floating reed raft. The journal gains "Takes worms at the water\'s edge" and "Tears at a lily leaf parcel".',
+    links: [['Treats by the turtles', '../?turtles=3&treats'], ['Make a parcel at the bench', '../?camp=bench&turtles=3&treats'], ['Turtles ready to name', '../?turtles=3&trust=0.5']] },
 ];
 
 const KEY = 'ebb-season-review';

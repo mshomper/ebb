@@ -31,6 +31,7 @@ import { HOURS_PER_DAY } from '../../core/clock.js';
 import { cellCenter } from '../ecology/habitat.js';
 import { ecologyNow } from '../ecology/coarse.js';
 import { trustWord, maxTrust, treatGain } from './trust.js';
+import { bondTreat } from './bonds.js';
 import { swarmSpecies, keyOf } from '../species.js';
 
 /**
@@ -59,8 +60,11 @@ import { swarmSpecies, keyOf } from '../species.js';
  * @property {Group[]} groups
  * @property {number} [trust]  how well the species here knows you, 0..1, only ever growing (doc 23; absent is 0)
  * @property {number} [fedAt] the hour they last ate food you offered
- * @property {{ kind: 'watched'|'fed'|'treat', minutes?: number, hour: number, treat?: string }[]} [pending]  trust earned in live play, for the next hour
+ * @property {{ kind: 'watched'|'fed'|'treat', minutes?: number, hour: number, treat?: string, who?: number[] }[]} [pending]  trust earned in live play, for the next hour
+ *   (who: the turtles that ate a treat, bonds.js)
  * @property {number} [treatDay] the game day they last had a treat (P2h: one a day counts)
+ * @property {boolean} [known] they have come to know you (trust reached presence.knownTrust; absent until then)
+ * @property {import('./bonds.js').Bond[]} [bonds] turtles only: each one's own trust and name, once it has either
  */
 
 /** @returns {SwarmState} */
@@ -301,7 +305,7 @@ export function testRecipe(rec) {
 /**
  * Trust live play recorded for a school species (watching it quietly, feeding it), for the next
  * hourly tick to apply (doc 23). Pure: a new state.
- * @param {any} state @param {string} key @param {{ kind: 'watched'|'fed'|'treat', minutes?: number, hour: number, treat?: string }} ev
+ * @param {any} state @param {string} key @param {{ kind: 'watched'|'fed'|'treat', minutes?: number, hour: number, treat?: string, who?: number[] }} ev
  */
 export function addSwarmEvent(state, key, ev) {
   const S = state?.creatures?.[key];
@@ -318,7 +322,7 @@ export function addSwarmEvent(state, key, ev) {
 export function applySwarmTrust(S, P, key, boost = 1) {
   /** @type {{ name: string, payload: any }[]} */ const events = [];
   const list = S.pending ?? [];
-  if (!list.length || !P?.bands) { if (S.pending) delete S.pending; return events; }
+  if (!list.length || !P?.bands) { if (S.pending) delete S.pending; knownNow(S, P, key, events); return events; }
   const before = S.trust ?? 0;
   let t = before;
   for (const ev of list) {
@@ -331,17 +335,32 @@ export function applySwarmTrust(S, P, key, boost = 1) {
       events.push({ name: 'creature:ate', payload: { species: key } });
     } else if (ev.kind === 'treat') {
       // A treat (P2h): treatFeeds meals' worth, once a game day for the school; eaten at once.
-      const g = treatGain(P, S.treatDay, ev.hour);
+      const g = treatGain(P, S.treatDay, ev.hour, ev.treat);
       t += g.gain * boost;
       S.treatDay = g.day;
-      events.push({ name: 'creature:ate', payload: { species: key, treat: ev.treat } });
+      // Turtles: each one that ate it knows you that much better again (bonds.js).
+      if (ev.who?.length) bondTreat(S, P, ev.who, ev.hour, ev.treat, boost);
+      events.push({ name: 'creature:ate', payload: { species: key, treat: ev.treat, who: ev.who } });
     }
   }
   delete S.pending;
   S.trust = r4(Math.min(maxTrust(P), Math.max(before, t)));
   const w0 = trustWord(before, P.bands), w1 = trustWord(S.trust, P.bands);
   if (w1 !== w0) events.push({ name: 'creature:trusted', payload: { species: key, word: w1 } });
+  knownNow(S, P, key, events);
   return events;
+}
+
+/**
+ * The first time a school or swarm that cannot be named comes to know you (its trust reaches
+ * presence.knownTrust; minnows, dragonflies): `creature:known` once, and S.known kept (October 27,
+ * 2026: its gift comes then, src/world/expansion.js). An older save already past it is known at its
+ * next hour. Changes S in place. @param {any} S @param {any} P @param {string} key @param {any[]} events
+ */
+function knownNow(S, P, key, events) {
+  if (S.known || P?.knownTrust === undefined || (S.trust ?? 0) < P.knownTrust) return;
+  S.known = true;
+  events.push({ name: 'creature:known', payload: { species: key } });
 }
 
 /** How many in all. @param {SwarmState} S */
@@ -392,6 +411,9 @@ export function bringSwarm(state, hourIndex, env, rec, count) {
   events.push({ name: 'creature:arrived', payload: { species: key, id, x, z, scout: true, count } });
   S.phase = 'settled';
   events.push({ name: 'creature:settled', payload: { species: key, id, x, z, count } });
+  // `&trust=` (a test link) starts them knowing you that well, up to their ceiling: past knownTrust
+  // they come to know you at the next hour, and a turtle that far along can be named.
+  if ((env.testTrust ?? 0) > (S.trust ?? 0) && rec.presence?.bands) S.trust = r4(Math.min(maxTrust(rec.presence), env.testTrust));
   // The pool lists this group from the next hour; for now, say so here too.
   pool.groups = [...(pool.groups ?? []), id];
   return { state: { ...state, creatures: { ...(state.creatures ?? {}), [key]: S } }, events };

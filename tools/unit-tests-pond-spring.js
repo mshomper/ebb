@@ -217,15 +217,15 @@ export function addPondSpringTests(test, assert, eq) {
     eq(!!s2.seasons.dormant.turtles, false, 'summer: awake');
   });
 
-  test(G, 'happy turtles give the floating reed raft, once', async () => {
+  test(G, 'a named turtle gives the floating reed raft, once', async () => {
     const naturalist = await (await fetch('../recipes/world/naturalist.json')).json();
     const words = await (await fetch('../recipes/world/journal.json')).json();
     const R = await loadEcologyRecipes();
     const gifts = { turtles: R.species.turtle.ecology.gift };
-    const g = due({ found: 0, flags: ['turtles:happy'], earned: {}, rewards: [], gifts, words, giftWords: naturalist.gifts });
+    const g = due({ found: 0, flags: ['turtles:known'], earned: {}, rewards: [], gifts, words, giftWords: naturalist.gifts });
     eq(g.length, 1, 'gifts due');
     eq(JSON.stringify(g[0].give), JSON.stringify({ raft: true }), 'what it gives');
     eq(g[0].icon, 'raft', 'its icon');
-    eq(due({ found: 0, flags: ['turtles:happy'], earned: grant({}, g[0]), rewards: [], gifts, words, giftWords: naturalist.gifts }).length, 0, 'not twice');
+    eq(due({ found: 0, flags: ['turtles:known'], earned: grant({}, g[0]), rewards: [], gifts, words, giftWords: naturalist.gifts }).length, 0, 'not twice');
   });
 }

@@ -5,7 +5,7 @@
 ## Locked decisions
 
 - **The only input to tier milestones is species happiness** (`species:happy` from `11-creatures-and-ecology.md`). No experience points, no currency, no crafting trees. Finds, living net catches and keepsakes have their own line, the naturalist's notes, and never count toward milestones. *(October 21, 2026: nets are made from what the island grows, F12; nothing is spent.)*
-- **Two kinds of reward from creatures.** Each species gives one gift (a seed, tool or palette, never a creature) the first time it becomes happy; trust is rewarded by names, calls and portraits, not items (`23-presence.md`). Finds have their own line, the naturalist's notes, which never counts toward milestones. A **tier milestone** fires when the second species of a tier is happy, and that milestone brings new land. Gift list per species: `12-creature-roadmap.md`.
+- **Two kinds of reward from creatures.** Each species gives one gift (a seed, tool or palette, never a creature) the first time one of them comes to know you: the first frog or turtle you name, or the minnows or dragonflies first trusting you to 0.5 (Matt, October 27, 2026; it was the first time the species was happy). Gifts are never bought, and trust is earned only in live play. Trust also brings names, calls and portraits (`23-presence.md`). Finds have their own line, the naturalist's notes, which never counts toward milestones. A **tier milestone** fires when the second species of a tier is happy, and that milestone brings new land. Gift list per species: `12-creature-roadmap.md`.
 - **Five land pieces, one per tier milestone**, in fixed order, each placed by the world seed so every world differs a little.
 - **New land arrives at low tide, while the player is watching.** A milestone reached during catch-up is queued and plays during the reveal or the next low tide in play. Gifts reached offline appear as journal notes in the reveal.
 - **Happiness is not lost by progress.** Once a gift is given it stays. If a species later moves on, its journal page says so gently and it can come back; nothing is taken away.
@@ -28,7 +28,7 @@ Agreed with Matt on October 20, 2026. New things reach the player in five ways, 
 | The beachcomber's trail | The shelf, then the general net, a glass case, the light net, the sinker net, a second shelf, a gold border for a first once-in-a-lifetime, the cabinet frame. Ways to reach the sea and to keep | each family's first keepsake kept, each rarity's first kept, each rare mark first seen (F12) |
 | The shaper's trail | Stepping stones, a lantern, paths, Steps up a cliff face (for the walker), photo frames, the island map, a wind chime. Human touches and places to be | the first time the island has each kind of place: a metre-deep pool, a fish-free pond, a cove, a terrace with a fall, a stream, a meadow in bloom, a reed-ringed pond |
 | The forager's trail (added October 24, 2026; build piece P2k) | The herbarium, a gathering knife, seed papers, a seed scoop, the forager's almanac, a tea caddy, a hazel walking stick, a pressing frame. Ways to gather, keep and press | the first handful of each plant gathered, the first handful in each season, the first seed of each plant saved |
-| Species gifts | One seed or tool per species, when it first settles happy (list in `12-creature-roadmap.md`) | creature happiness |
+| Species gifts | One seed or tool per species, when one of them first comes to know you (a name, or trust 0.5; list in `12-creature-roadmap.md`) | creature trust |
 | Tier milestones | New land, when the second species of a tier is happy | creature happiness |
 
 The first ten game days on the pond tier:
@@ -36,11 +36,11 @@ The first ten game days on the pond tier:
 ```mermaid
 flowchart LR
   E[The first evening<br/>boat, spring, camp,<br/>fire, rest] --> S
-  S[Start<br/>starter kit<br/>grass, reeds, lilies] --> F[Days 3 to 6<br/>frogs settle<br/>gift: the Cliff tool]
-  F -->|Cut digs a deep pool| M[Minnows come<br/>gift: pondweed]
-  S -->|a second, fish-free pond you dig, in summer| D[Dragonflies<br/>gift: springs]
+  S[Start<br/>starter kit<br/>grass, reeds, lilies] --> F[Days 3 to 6<br/>frogs settle<br/>name one: the Cliff tool]
+  F -->|Cut digs a deep pool| M[Minnows come<br/>they know you: pondweed]
+  S -->|a second, fish-free pond you dig, in summer| D[Dragonflies<br/>they know you: springs]
   D -->|spring above a terrace| W[Waterfalls]
-  S -->|a sunny stone by the pond| T[Turtles<br/>gift: reed raft]
+  S -->|a sunny stone by the pond| T[Turtles<br/>name one: reed raft]
   N[10 finds<br/>driftwood on the strandline] --> T
   M --> L[2nd happy species<br/>meadow islet rises]
   D --> L
@@ -81,14 +81,14 @@ The forager's stops (plan page `forager-trail-plan.html`, October 24, 2026): the
 
 ### The gift chain (agreed with Matt, October 20, 2026)
 
-Each gift lets the player make something new, and what they make is part of what draws a later creature. The chain runs forward through the tiers and sometimes loops back to feed an earlier one, or to the naturalist's notes. Gifts are as in doc 12.
+Each gift lets the player make something new, and what they make is part of what draws a later creature. The chain runs forward through the tiers and sometimes loops back to feed an earlier one, or to the naturalist's notes. Gifts are as in doc 12. Since October 27, 2026 each comes when one of the species first comes to know you: you name the first frog or turtle, or the minnows or dragonflies first trust you to 0.5.
 
 | Species | Gift | Lets you make | Which draws in |
 |---|---|---|---|
-| Frogs | Cliff tool | deep pools, terraces, sea walls | minnows; after v1, puffins and kittiwakes on cliffs |
-| Minnows | Pondweed | an underwater meadow | more fish for herons; food for turtles |
-| Dragonflies | Springs | streams, and waterfalls off terraces | otters (running water); damp ground for butterflies; running water on the meadow islet, which has no spring |
-| Turtles | Floating reed raft (Matt, October 21, 2026) | a basking spot out on open water, rising and falling with it | more turtles; herons stand on it to fish. (Carrying driftwood is no longer a gift: it comes with the logs at 10 finds, and toads and slow worms live under a carried log) |
+| Frogs | Cliff tool, when you name the first frog | deep pools, terraces, sea walls | minnows; after v1, puffins and kittiwakes on cliffs |
+| Minnows | Pondweed, when the school first knows you | an underwater meadow | more fish for herons; food for turtles |
+| Dragonflies | Springs, when they first know you | streams, and waterfalls off terraces | otters (running water); damp ground for butterflies; running water on the meadow islet, which has no spring |
+| Turtles | Floating reed raft (Matt, October 21, 2026), when you name the first turtle | a basking spot out on open water, rising and falling with it | more turtles; herons stand on it to fish. (Carrying driftwood is no longer a gift: it comes with the logs at 10 finds, and toads and slow worms live under a carried log) |
 | Bees | Hawthorn | hedges | songbirds nest in them; hedgehogs forage beneath |
 | Butterflies | Stone wall | sunny walls that gather moss | bees bask on them; hedgehogs walk the wall bases |
 | Songbirds | Oak | a tree that grows old | squirrels (nuts); owls (a hollow, once old) |
@@ -230,7 +230,8 @@ Target player: 20 to 40 minutes most evenings, with the game left closed overnig
 |---|---|---|---|
 | The first evening, camp pitched | 0 | the first 10 to 15 minutes | nothing; each beat waits for the player (docs/future/13, section 2) |
 | First frog scout | 1 to 2 | first session | reeds filling in along the pond |
-| Frogs happy (first gift, the Cliff tool) | 3 to 6 | first or second evening | group of 4 and a thick reed margin |
+| Frogs happy | 3 to 6 | first or second evening | group of 4 and a thick reed margin |
+| First frog named (the Cliff tool) | about 4 to 5 played days after they come, with a treat a day | a few evenings in | trust 0.5 (October 27, 2026) |
 | Turtles come | 14 to 20 (summer) | second week of play | only once the water is warm in summer; a sunny stone at a shallow pond with lilies; a carried log makes them happier |
 | Dragonflies come | 15 to 18 (summer) | second week of play | only from the first day of summer, and only over a second, fish-free pond the player dug with reeds along its edge (happy about 3 days later). A rain-fed pond lowers through summer (doc 07); routing the starter brook into it, or digging it below the water table near the shore, keeps it full all summer, and a gently shelving bank keeps a shallow margin at any level |
 | Tier 1 milestone, meadow islet | 6 to 10 | second or third evening | minnows happy (about 4 days after their 1 m deep spot is dug); dragonflies and turtles come only from summer |

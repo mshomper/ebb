@@ -7,6 +7,7 @@
 
 import { TRUST_WORDS, applyTrust } from './trust.js';
 import { applySwarmTrust } from './swarms.js';
+import { turtleTrust } from './bonds.js';
 import { HOURS_PER_DAY } from '../../core/clock.js';
 
 /**
@@ -15,6 +16,7 @@ import { HOURS_PER_DAY } from '../../core/clock.js';
  * @property {number} standMin  real minutes standing near it
  * @property {number} feeds     meals offered, fullH game hours apart
  * @property {boolean} treat    a treat it likes, set out once
+ * @property {string} [treatId] which treat (its worth, presence.treatFeedsOf; the turtles' parcel), else its plain worth
  * @property {number} [boost]   a tea boon's multiplier on every gain (1 without one)
  */
 
@@ -24,15 +26,21 @@ const VISIT_H = 8;
 /**
  * Trust at the end of each played day from nothing, and the played day (fractional, gains spread
  * evenly through the day) each word after Wary is first reached; words past the ceiling are absent.
+ * `known`: the day it first comes to know you (its gift; October 27, 2026): presence.namingTrust (a
+ * frog or a turtle you can name) or knownTrust (minnows, dragonflies). A school that can be named
+ * (the turtles) is followed one animal at a time: the turtle that takes your treats (bonds.js).
  * @param {any} rec the species recipe @param {Habit} h @param {number} [days]
  * @returns {{ trust: number[], at: Record<string, number> }}
  */
 export function paceCurve(rec, h, days = 14) {
   const P = rec.presence, W = P.watch ?? {};
   const swarm = rec.ecology?.kind === 'swarm';
+  const one = swarm && P.namingTrust !== undefined;
   const fullH = (swarm ? P.fullH : rec.feed?.fullH) ?? 6;
   const counted = h.sitMin * (W.sitBoost ?? 1) + h.standMin, cap = (W.capS ?? 600) / 60;
-  const canFeed = (P.feedTrust ?? 0) > 0, canTreat = (P.treatFeeds ?? 0) > 0;
+  // Meals only for a species the Feed tool feeds (its recipe's feed block): a turtle's feedTrust is
+  // only the unit its treats are counted in.
+  const canFeed = (P.feedTrust ?? 0) > 0 && !!rec.feed, canTreat = (P.treatFeeds ?? 0) > 0;
   /** @type {any} */ const fr = { frogs: [{ id: 1, x: 0, z: 0, trust: 0 }], pending: [] };
   /** @type {any} */ const S = { trust: 0 };
   /** @type {number[]} */ const trust = [0];
@@ -41,17 +49,26 @@ export function paceCurve(rec, h, days = 14) {
     /** @type {any[]} */ const evs = [];
     for (let left = counted, i = 0; left > 1e-9; left -= cap, i++) evs.push({ kind: 'watched', id: 1, minutes: Math.min(left, cap), hour: h0 + i });
     if (canFeed) for (let i = 0; i < h.feeds; i++) evs.push({ kind: 'fed', id: 1, hour: h0 + i * fullH });
-    if (canTreat && h.treat) evs.push({ kind: 'treat', id: 1, hour: h0 + 1, treat: 'lab' });
-    if (swarm) { S.pending = evs; applySwarmTrust(S, P, 'lab', h.boost ?? 1); trust.push(S.trust ?? 0); }
+    if (canTreat && h.treat) evs.push({ kind: 'treat', id: 1, hour: h0 + 1, treat: h.treatId ?? 'lab', ...(one ? { who: [1] } : {}) });
+    if (swarm) { S.pending = evs; applySwarmTrust(S, P, 'lab', h.boost ?? 1); trust.push(one ? turtleTrust(S, 1, P) : S.trust ?? 0); }
     else { fr.pending = evs; applyTrust(fr, P, 0, fullH, h.boost ?? 1); trust.push(fr.frogs[0].trust); }
   }
   /** @type {Record<string, number>} */ const at = {};
-  P.bands.forEach((/** @type {number} */ b, /** @type {number} */ i) => {
+  const when = (/** @type {number} */ b) => {
     const d = trust.findIndex((t) => t >= b);
-    if (d > 0) at[TRUST_WORDS[i + 1]] = d - 1 + (b - trust[d - 1]) / Math.max(1e-9, trust[d] - trust[d - 1]);
+    return d > 0 ? d - 1 + (b - trust[d - 1]) / Math.max(1e-9, trust[d] - trust[d - 1]) : undefined;
+  };
+  P.bands.forEach((/** @type {number} */ b, /** @type {number} */ i) => {
+    const d = when(b);
+    if (d !== undefined) at[TRUST_WORDS[i + 1]] = d;
   });
+  const k = knownAt(rec), kd = k === undefined ? undefined : when(k);
+  if (kd !== undefined) at.known = kd;
   return { trust, at };
 }
+
+/** The trust at which a species first comes to know you (its gift), or undefined. @param {any} rec */
+export const knownAt = (rec) => rec.presence?.namingTrust ?? rec.presence?.knownTrust;
 
 /** The top word a species can reach (its ceiling). @param {any} rec */
 export const topWord = (rec) => /** @type {string} */ (rec.presence.ceiling ?? 'bonded');

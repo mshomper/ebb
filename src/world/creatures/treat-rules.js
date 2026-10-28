@@ -46,11 +46,18 @@ export function paleOf(t, hour, R) {
 /**
  * Who likes a pouch kind: each species whose recipe's treat block lists it, in the species order.
  * Pure. @param {string} kind @param {{ key: string, rec: any }[]} species
- * @returns {{ key: string, T: { id: string, kinds: string[], reachM: number } }[]}
+ * @returns {{ key: string, T: { id: string, kinds: string[], reachM: number, idOf?: Record<string, string>, water?: boolean, edge?: { withinM: number, depthM: number } } }[]}
  */
 export function likersOf(kind, species) {
   return species.filter((s) => s.rec?.treat?.kinds?.includes(kind)).map((s) => ({ key: s.key, T: s.rec.treat }));
 }
+
+/**
+ * The treat's own id for a pouch kind: the species' treat.idOf for that kind (the turtles like two,
+ * each with its own Likes line and worth), else its one id. Pure.
+ * @param {string} kind @param {{ id: string, idOf?: Record<string, string> }} T a species' treat block
+ */
+export const treatIdOf = (kind, T) => T.idOf?.[kind] ?? T.id;
 
 /** Is a pouch kind a treat some species likes? Pure. @param {string} kind @param {{ key: string, rec: any }[]} species */
 export const isTreatKind = (kind, species) => likersOf(kind, species).length > 0;

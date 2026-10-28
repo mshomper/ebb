@@ -10,19 +10,32 @@ import { HOURS_PER_DAY } from '../../core/clock.js';
 import { applyTrust } from './trust.js';
 import { applySwarmTrust } from './swarms.js';
 import { lyingAt, paleOf } from './treat-rules.js';
+import { turtleTrust } from './bonds.js';
 
 /** A number as a stable integer for hashing (four places, as trust is kept). @param {number} v */
 const q = (v) => Math.round(v * 10000) | 0;
 
 /**
- * @param {{ worldSeed: number, frog: any, minnow: any, treats: any, days?: number }} a
- *   frog, minnow: the species recipes; treats: recipes/world/treats.json
+ * @param {{ worldSeed: number, frog: any, minnow: any, turtle?: any, treats: any, days?: number }} a
+ *   frog, minnow, turtle: the species recipes (the turtles, October 27, 2026: worms and parcels eaten
+ *   by named turtles, bonds.js); treats: recipes/world/treats.json
  */
 export function treatCheckJob(a) {
-  const days = a.days ?? 30, P = a.frog.presence, M = a.minnow.presence, T = a.treats;
+  const days = a.days ?? 30, P = a.frog.presence, M = a.minnow.presence, T = a.treats, U = a.turtle?.presence;
   const rng = stream(subSeed(a.worldSeed, 'treat-check'), 1);
+  const rng3 = stream(subSeed(a.worldSeed, 'treat-check'), 3);
   /** Each hour's events, frogs then the school. @type {{ f: any[], s: any[] }[]} */
   const hours = [];
+  // The turtles' hours, on their own stream so the frogs' and the school's stay as they were.
+  /** @type {any[][]} */ const turtleHours = [];
+  for (let h = 0; h < days * HOURS_PER_DAY; h++) {
+    /** @type {any[]} */ const u = [];
+    if (U && h % HOURS_PER_DAY >= 8 && h % HOURS_PER_DAY < 18) {
+      if (rng3.next() < 0.25) u.push({ kind: 'watched', minutes: Math.round(rng3.next() * 1000) / 100, hour: h });
+      if (rng3.next() < 0.08) u.push({ kind: 'treat', hour: h, treat: rng3.next() < 0.5 ? 'worms' : 'lily-parcel', who: [1000, 1001, 1002].filter(() => rng3.next() < 0.6) });
+    }
+    turtleHours.push(u);
+  }
   for (let h = 0; h < days * HOURS_PER_DAY; h++) {
     const f = [], s = [];
     const hod = h % HOURS_PER_DAY;
@@ -72,5 +85,12 @@ export function treatCheckJob(a) {
     const later = lying(h);
     read = hash32(read, later.length, ...later.map((t) => q(paleOf(t, h + 0.5, T))));
   }
-  return { each, frogsEach, once, timeline, watched, read, trust: fr.frogs.map((g) => g.trust), school: S.trust ?? 0, set: tid };
+  // The turtles, hour by hour: the group's trust and each one's own share (bonds.js), as hashed.
+  const Tu = /** @type {any} */ ({ trust: 0, groups: [{ id: 1 }] });
+  let turtles = 0;
+  if (U) for (const u of turtleHours) {
+    Tu.pending = u; applySwarmTrust(Tu, U, 'turtles');
+    turtles = hash32(turtles, q(Tu.trust ?? 0), ...[1000, 1001, 1002].map((id) => q(turtleTrust(Tu, id, U))));
+  }
+  return { each, frogsEach, once, timeline, watched, read, turtles, trust: fr.frogs.map((g) => g.trust), school: S.trust ?? 0, set: tid };
 }

@@ -7,6 +7,7 @@
 import { HABITAT_ORIGIN, habitatCell } from '../growth/habitat.js';
 import { measure, present, knownLines, dateOfHour, sketchOf, coverShare, hasCover, isAnimal, COVER_HAS, COVER_FULL, FLOWER, DORMANT } from './observe.js';
 import { trustWord } from '../creatures/trust.js';
+import { bondOf, turtleTrust, namedTurtles } from '../creatures/bonds.js';
 import { springSpots } from '../creatures/spring.js';
 import { openBox } from '../ecology/fields.js';
 
@@ -169,9 +170,11 @@ export function describe(journal, sp, state, hab, words, hour = journal.last) {
   let riddle = rec.riddle;
   for (const h of rec.hints ?? []) if (journal.flags.includes(h.when)) riddle = h.text;
   // The ones you have named (S6c-3), oldest first: "Pip, here since Spring, day 4".
+  // A named turtle (bonds.js) is dated from the day you named it.
   const named = known && rec.trust?.namedLine
-    ? (state?.creatures?.[sp]?.frogs ?? []).filter((/** @type {any} */ f) => f.name)
-      .map((/** @type {any} */ f) => rec.trust.namedLine.replace('{name}', f.name).replace('{date}', dateOfHour(f.since, words)))
+    ? [...(state?.creatures?.[sp]?.frogs ?? []).filter((/** @type {any} */ f) => f.name).map((/** @type {any} */ f) => ({ name: f.name, at: f.since })),
+      ...namedTurtles(sp === 'turtles' ? state?.creatures?.turtles : null).map((b) => ({ name: b.name, at: b.namedAt }))]
+      .map((f) => rec.trust.namedLine.replace('{name}', f.name).replace('{date}', dateOfHour(f.at ?? 0, words)))
     : [];
   // A collection (shells): the ones found, in the recipe's order, and pencil hints for the rest.
   const collection = (rec.collection ?? []).map((/** @type {any} */ c) => {
@@ -208,6 +211,30 @@ export function frogCard(f, state, words, presence) {
   return { sp: 'frogs', name: frog?.name ?? rec.card, sub, icon: rec.icon, text: w && !asleep ? T.lines[w] : rec.stages[asleep ? 1 : 0],
     word: w ? T.words[w] : null, id: f.id ?? null, canName, suggest: canName ? [...pool.slice(start), ...pool.slice(0, start)] : [],
     wx: f.x, wz: f.z, r: words.identify.grassRingM, stage: -1 };
+}
+
+/**
+ * The card for one turtle (a tap on it): how well it knows you as a word, its group's and its own
+ * (bonds.js), and, once that reaches presence.namingTrust, a name to give it, as a frog's.
+ * @param {{ x: number, z: number, id: number }} t the turtle tapped (id: group x 1000 + its place)
+ * @param {any} state @param {any} words @param {any} [presence] recipes/species/turtle.json presence
+ */
+export function turtleCard(t, state, words, presence) {
+  const rec = words.species.turtles;
+  const S = state?.creatures?.turtles;
+  const asleep = !!S?.dormant;
+  const T = rec.trust;
+  const b = bondOf(S, t.id);
+  const trust = presence ? turtleTrust(S, t.id, presence) : 0;
+  const w = presence?.bands && T?.words ? trustWord(trust, presence.bands) : null;
+  const sub = b?.name ? T?.since?.replace('{card}', rec.card).replace('{date}', dateOfHour(b.namedAt ?? 0, words)) ?? rec.card : null;
+  const canName = !b?.name && !asleep && !!presence?.namingTrust && trust >= presence.namingTrust;
+  const taken = new Set(namedTurtles(S).map((x) => x.name));
+  const pool = (T?.names ?? []).filter((/** @type {string} */ n) => !taken.has(n));
+  const start = pool.length ? t.id % pool.length : 0;
+  return { sp: 'turtles', name: b?.name ?? rec.card, sub, icon: rec.icon, text: w && !asleep ? T.lines?.[w] ?? rec.stages[0] : rec.stages[asleep ? 1 : 0],
+    word: w ? T.words[w] : null, id: t.id, canName, suggest: canName ? [...pool.slice(start), ...pool.slice(0, start)] : [],
+    wx: t.x, wz: t.z, r: 0.5, stage: -1 };
 }
 
 /**

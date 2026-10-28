@@ -1,8 +1,11 @@
 // @ts-check
 // Progress (doc 13, docs/future/11): what the island has given you, and when. Three lines feed it:
 // the naturalist's notes, a mark for each kind of find you discover, with a reward at some marks
-// (recipes/world/naturalist.json); species gifts, given the first time a species is happy (its
-// recipe's `gift`); and the beachcomber's trail (recipes/world/beachcomber.json), its stops reached
+// (recipes/world/naturalist.json); species gifts (its recipe's `gift`), given the first time one of
+// that species comes to know you: a frog or a turtle named, a school of minnows or the dragonflies
+// trusting you to presence.knownTrust (the journal flag `<species>:known`; Matt, October 27, 2026;
+// before then a gift came when the species was first happy, and a save that had one keeps it); and
+// the beachcomber's trail (recipes/world/beachcomber.json), its stops reached
 // by the firsts in the saved unlocks (src/world/trails.js: families and rarities kept, marks seen),
 // and the forager's (recipes/world/forager.json, src/world/forager.js: plants and seasons gathered).
 // The first two are read from the journal alone, so live play, catch-up and an old save
@@ -11,7 +14,8 @@
 // journal note of kind 'gift', which the island shows as a quiet card (src/ui/island-notes.js).
 //
 // The model is pure (naturalistLine, due, grant); createProgress wires it to the store and bus.
-// Land pieces (doc 13's tier milestones) will join here when M3 brings the meadow islet.
+// Land pieces (doc 13's tier milestones) will join here when M3 brings the meadow islet: a species
+// being happy (`<species>:happy`) now counts only toward those.
 
 import { emitDeferred } from '../core/events.js';
 import { get, update, subscribe } from '../core/store.js';
@@ -79,7 +83,7 @@ export function naturalistLine(found, rewards, earned, firstOf = () => Infinity)
 
 /**
  * What is due now and not given yet: rewards whose mark is reached, and the gift of every species
- * the journal knows is happy.
+ * the journal knows has come to know you (`<species>:known`).
  * @param {{ found: number, flags: string[], earned: Record<string, any>, rewards: Reward[],
  *   gifts: Record<string, { kind: string, id: string }>, words: any, giftWords: any, stops?: Reward[], forage?: Reward[] }} p
  *   gifts: each species' gift (its recipe's `gift`); words: journal.json (names); giftWords: naturalist.json gifts;
@@ -106,7 +110,7 @@ export function due(p) {
     out.push({ id: r.id, kind: 'forage', give: /** @type {any} */ (r.give), title: r.title ?? '', line: r.line ?? '', icon: r.icon, page: null, trail: 'forage' });
   }
   for (const [sp, g] of Object.entries(p.gifts ?? {})) {
-    if (!g || !p.flags.includes(`${sp}:happy`) || p.earned?.gifts?.[sp]) continue;
+    if (!g || !p.flags.includes(`${sp}:known`) || p.earned?.gifts?.[sp]) continue;
     // Seeds share one set of words; a tool has its own, and its own icon (naturalist.json gifts).
     const seed = g.kind === 'seed';
     const W = seed ? p.giftWords?.seed : p.giftWords?.[g.kind]?.[g.id];

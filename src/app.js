@@ -77,6 +77,7 @@ import { waterCellOf } from './world/water/grid.js';
 import { shorePresence } from './world/journal/shore-presence.js';
 import { createPresence } from './world/creatures/presence.js';
 import { cleanName, nameFrog } from './world/creatures/trust.js';
+import { bondOf, turtleTrust, nameTurtle } from './world/creatures/bonds.js';
 import { lushLook } from './world/growth/lush.js';
 import { createMidges } from './world/ecology/midges-live.js';
 import { SPECIES, keyOf, swarmSpecies } from './world/species.js';
@@ -672,8 +673,34 @@ export async function startApp(canvas, hooks = {}) {
       ...swarmSpecies(speciesRecipes).filter((rec) => rec.treat).map((rec) => ({ key: keyOf(rec), rec, live: schools.find((s) => s.id === keyOf(rec)) ?? null }))] });
   updateStore('treatKinds', () => pack.recipe.kinds.map((/** @type {any} */ k) => k.id).filter((/** @type {string} */ k) => treats.isTreat(k)));
   if (params.has('treats') && !back) { pack.add('wrack', 3); pack.add('leaf-pack', 3); pack.add('leaves', 1); }
+  // `?turtles=N&treats`: worms, two lily leaf parcels, and a lily leaf with worms and cord to make
+  // another at the bench (`&camp=bench`), in place of the frogs' and minnows' treats; you stand on
+  // the bank by the turtles, facing them, so a treat set out lies at the water's edge.
+  if (params.has('treats') && params.has('turtles') && !back) {
+    for (const k of ['wrack', 'leaf-pack', 'leaves']) pack.take(k, 3);
+    // At camp the pouches go to the bench's own kit too, so no made parcels: you make one.
+    pack.add('worms', 3); if (!params.has('camp')) pack.add('lily-parcel', 2); pack.add('lilies.leaf', 1); pack.add('rush-cord', 1);
+    // With `&camp=...` you start at camp instead, to make a parcel at the bench.
+    let stood = params.has('camp');
+    sim.addSystem({ id: 'turtle-treats-test', tick() {
+      const f = stood ? null : schools.find((s) => s.id === 'turtles')?.schools()[0]?.fish[0];
+      if (!f) return;
+      stood = true;
+      const dry = (/** @type {number} */ x, /** @type {number} */ z) => (water.sampleLive(x, z)?.depth ?? 0) <= 0.01;
+      for (const d of [1.6, 2, 2.6, 3.2]) for (let i = 0; i < 16; i++) {
+        // On dry ground, with water a short step toward the turtle: the edge is in reach.
+        const a = (i / 16) * 2 * Math.PI, x = f.x + Math.sin(a) * d, z = f.z + Math.cos(a) * d;
+        const yaw = Math.atan2(f.x - x, f.z - z);
+        if (!dry(x, z) || dry(x + Math.sin(yaw) * 0.9, z + Math.cos(yaw) * 0.9)) continue;
+        if (!walk.placeAt(x, z, yaw, 'stand')) continue;
+        camera.setPose({ ...camera.pose(), target: [x, terrain.sampleHeight(x, z), z], yaw: yaw + Math.PI, distance: campRecipe.rest.viewDistanceM, pitch: (campRecipe.rest.viewPitchDeg * Math.PI) / 180 });
+        walk.downHere();
+        return;
+      }
+    } });
+  }
   // `?treats&frogs=N`: once the frogs are there, you stand on the bank a few steps from one, facing it.
-  if (params.has('treats') && params.has('frogs') && !back) {
+  if (params.has('treats') && params.has('frogs') && !params.has('turtles') && !back) {
     let stood = false;
     sim.addSystem({ id: 'treats-test', tick() {
       const f = stood ? null : creatures.frogs()[0];
@@ -1761,6 +1788,15 @@ export async function startApp(canvas, hooks = {}) {
       // A name for a frog that knows you well enough (S6c-3, the tap card): kept with the island.
       case 'creature.name': {
         const name = cleanName(a.name);
+        // A turtle (bonds.js): its own trust, the group's and what it ate, reaches namingTrust.
+        if (a.sp === 'turtles') {
+          const S = world.state?.creatures?.turtles, P = world.env.recipes?.species?.turtle?.presence;
+          if (!name || !S || !P?.namingTrust || bondOf(S, a.id)?.name || turtleTrust(S, a.id, P) < P.namingTrust) break;
+          world.state = nameTurtle(world.state, a.id, name, clock.hourIndex());
+          updateStore('world', () => world.state);
+          emitDeferred('creature:named', { species: 'turtles', id: a.id, name });
+          break;
+        }
         const f = world.state?.creatures?.frogs?.frogs?.find((/** @type {any} */ g) => g.id === a.id);
         if (!name || !f || f.name || (f.trust ?? 0) < frogRecipe.presence.namingTrust) break;
         world.state = nameFrog(world.state, a.id, name, clock.hourIndex());

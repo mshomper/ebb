@@ -50,7 +50,9 @@
   "presence": { "ringM": 1.8, "ringTrustShrink": 0.8, "ringMinM": 0.4, "calmSpeed": 0.9, "editReachM": 2.5,
     "watch": { "reachM": 3, "minS": 20, "capS": 600, "trustPerMin": 0.004, "stillMps": 0.05, "sitBoost": 2 },
     "multipliers": { "posture": { "stand": 1, "kneel": 0.8, "sit": 0.65 }, "gaze": { "watch": 1.15, "away": 0.9 }, "gazeConeDeg": 30, "light": 1.3 },
-    "feedTrust": 0.015, "treatFeeds": 2.5, "fullH": 6, "ceiling": "familiar", "bands": [0.2, 0.45, 0.65, 0.85] },
+    "feedTrust": 0.015, "treatFeeds": 2.5, "fullH": 6, "ceiling": "familiar", "bands": [0.2, 0.45, 0.65, 0.85], "knownTrust": 0.5 },
+  "_known": "The minnows can't be named, so their gift comes when the school first knows you to presence.knownTrust (Matt, October 27, 2026; src/world/creatures/swarms.js knownNow). The moment (schools.js): if you are on foot, the school nearest the water closest to you (within bankM of you, at most reachM from the school) rises to meet you there.",
+  "known": { "bankM": 3, "reachM": 8 },
   "treat": { "id": "leaf-pack", "kinds": ["leaf-pack"], "reachM": 4, "water": true, "noticeS": 3, "nibbleS": 6, "_doc": "The minnows' treat (P2h, docs/future/13 section 8; recipes/world/treats.json): a leaf pack made at the workbench, set in their pool. After noticeS real seconds the nearest school within reachM swirls up to it, nibbles round it for nibbleS seconds, and then it is eaten." },
   "feed": { "reachM": 4, "messages": {
     "coming": "The minnows have seen it. Watch them swirl up.",

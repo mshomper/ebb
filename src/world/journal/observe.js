@@ -430,12 +430,13 @@ export function noteGift(journal, g, ctx) {
 }
 
 /**
- * You named a frog (S6c-3): the journal writes the moment (creatures.js).
+ * You named a frog (S6c-3) or a turtle: the journal writes the moment (creatures.js).
  * @param {Journal} journal @param {string} name @param {{ state: any, hour: number, words: any }} ctx
+ * @param {string} [sp] frogs or turtles
  * @returns {{ journal: Journal, notes: Note[] }}
  */
-export function namedAnimal(journal, name, ctx) {
-  return namedFrog(journal, name, { ...ctx, date: dateText(ctx.state?.seasons, ctx.words), copy });
+export function namedAnimal(journal, name, ctx, sp = 'frogs') {
+  return namedFrog(journal, name, { ...ctx, date: dateText(ctx.state?.seasons, ctx.words), copy }, sp);
 }
 
 /**
