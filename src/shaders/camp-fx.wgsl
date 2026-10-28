@@ -27,6 +27,7 @@ struct CampFx {
   mothAlb: vec4f,    // rgb albedo, w flap (Hz)
   sparks: vec4f,     // xyz the steel (m), w seconds since the strike (negative: none)
   sparkLook: vec4f,  // x count, y life (s), z nits, w moths on 0..1
+  mothsAt: vec4f,    // xyz where the lantern's moths circle (m): the lantern, smoothed (camp/frame.js)
 };
 
 @group(0) @binding(0) var<uniform> frame: FrameUniforms;
@@ -227,9 +228,9 @@ fn vsMoth(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> M
   let wing = vi / 6u;
   let q = QUAD[vi % 6u];
   let t = fx.burn.z;
-  // Every other moth keeps to the lantern when it is lit.
+  // Every other moth keeps to the lantern when it is lit, round a point that trails its swing.
   let atLantern = (ii % 2u == 1u) && fx.lantern.w > 0.5;
-  let c = select(fx.fire.xyz + vec3f(0.0, 0.2, 0.0), fx.lantern.xyz, atLantern);
+  let c = select(fx.fire.xyz + vec3f(0.0, 0.2, 0.0), fx.mothsAt.xyz, atLantern);
   let rad = mix(fx.moths.y, fx.moths.z, rand(ii, 31u)) * select(1.0, 0.55, atLantern);
   let speed = mix(fx.moths2.z, fx.moths2.w, rand(ii, 32u));
   let a = rand(ii, 33u) * 6.2831853 + t * speed / rad * select(1.0, -1.0, rand(ii, 34u) < 0.5);
