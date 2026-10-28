@@ -1,0 +1,94 @@
+{
+  "type": "hollow-move-fx",
+  "version": 1,
+  "note": "How the Q and E moves look (the move effects, Matt, October 27, 2026: real light on the cave, moths that look like moths, all twelve moves). Read by src/world/hollow/move-fx.js; loaded on tool pages only (tools/move-arena.html, tools/move-fx-lab.html) until H3. Four building blocks: lights (real point lights on the floor, walls, walker and foes: col is linear light, the lantern is about 1.4; reachM how far it falls; lifeS how long; curve: flash (bright then fading), hold (steady then fading over the last fadeS), pulse; flicker 0..1), sparks (glowing points: n, speed and up in m/s as [min, max], lifeS, size in m, col, gravity m/s2 (negative rises), drag per s, stretch: seconds of motion the streak shows, spread: how far round they go in degrees), threads (glowing strands) and moths. Floor marks (col drawn as unlit light) grow in over growS and fade over their life. Every colour is linear light, so the palette at the tonemap still has the last word.",
+  "markGain": 1.6,
+  "markGainNote": "Floor marks are drawn as unlit light; this scales every mark colour on the arena floor.",
+  "maxLightsNote": "Eight effect lights at once; when more are asked for, the brightest win.",
+  "anchor": {
+    "dust": { "n": 22, "speed": [0.6, 1.4], "up": [0.1, 0.4], "lifeS": [0.5, 0.9], "size": [0.05, 0.09], "col": [0.18, 0.15, 0.12], "gravity": 1.5, "drag": 3.5, "stretch": 0, "spread": 360 },
+    "ring": { "growS": 0.12, "col": [0.9, 0.86, 0.78], "widthM": 0.05 },
+    "catchSparks": { "n": 28, "speed": [2.5, 5], "up": [0.4, 1.6], "lifeS": [0.25, 0.5], "size": [0.02, 0.035], "col": [3.2, 1.6, 0.5], "gravity": 6, "drag": 2, "stretch": 0.04, "spread": 90 },
+    "catchLight": { "col": [2.4, 1.3, 0.5], "reachM": 3.2, "lifeS": 0.35, "curve": "flash", "y": 0.8 }
+  },
+  "hookTurn": {
+    "sweepS": 0.22, "col": [1.2, 1.15, 1.0], "widthM": 0.14,
+    "chips": { "n": 10, "speed": [1, 2.2], "up": [0.4, 1.2], "lifeS": [0.3, 0.6], "size": [0.02, 0.03], "col": [1.4, 1.3, 1.1], "gravity": 7, "drag": 1, "stretch": 0.03, "spread": 60 }
+  },
+  "groundline": {
+    "tipLight": { "col": [2.2, 0.95, 0.3], "reachM": 2.6, "y": 0.25, "flicker": 0.3 },
+    "tipRateHz": 70,
+    "tipSparks": { "n": 1, "speed": [0.4, 1.6], "up": [1.2, 2.8], "lifeS": [0.35, 0.7], "size": [0.02, 0.035], "col": [2.6, 1.2, 0.4], "gravity": 7, "drag": 0.6, "stretch": 0.03, "spread": 360 },
+    "chips": { "n": 1, "speed": [0.3, 1.2], "up": [1.5, 3], "lifeS": [0.4, 0.7], "size": [0.025, 0.045], "col": [0.16, 0.13, 0.11], "gravity": 9, "drag": 0.4, "stretch": 0, "spread": 360 },
+    "glowLight": { "col": [1.0, 0.45, 0.15], "reachM": 3.5, "lifeS": 1.0, "curve": "flash", "y": 0.2 }
+  },
+  "castFlame": {
+    "flightS": 0.4, "arcM": 1.1, "fromY": 1.0,
+    "head": { "size": 0.11, "col": [5, 2.4, 0.7] },
+    "trailRateHz": 90,
+    "trail": { "n": 1, "speed": [0.1, 0.5], "up": [0.2, 0.8], "lifeS": [0.25, 0.5], "size": [0.03, 0.06], "col": [3.4, 1.4, 0.35], "gravity": -1.2, "drag": 2, "stretch": 0, "spread": 360 },
+    "flightLight": { "col": [2.6, 1.3, 0.45], "reachM": 3.4, "flicker": 0.35 },
+    "burst": { "n": 70, "speed": [1.5, 4.5], "up": [1, 3.5], "lifeS": [0.4, 1.0], "size": [0.025, 0.05], "col": [4, 1.8, 0.45], "gravity": 5, "drag": 1.4, "stretch": 0.035, "spread": 360 },
+    "embers": { "n": 26, "speed": [0.1, 0.5], "up": [0.4, 1.2], "lifeS": [1.2, 2.6], "size": [0.015, 0.03], "col": [2.6, 1.0, 0.25], "gravity": -0.6, "drag": 1.2, "stretch": 0, "spread": 360 },
+    "burstLight": { "col": [4.2, 2.0, 0.6], "reachM": 4.5, "lifeS": 0.5, "curve": "flash", "y": 0.5 },
+    "glowLight": { "col": [1.3, 0.55, 0.16], "reachM": 2.6, "lifeS": 3, "curve": "hold", "fadeS": 1.2, "flicker": 0.45, "y": 0.25 },
+    "ring": { "growS": 0.15, "col": [2.4, 1.0, 0.3], "widthM": 0.06 },
+    "scorch": { "col": [0.06, 0.04, 0.03] }
+  },
+  "wickSnare": {
+    "flameLight": { "col": [1.4, 0.75, 0.3], "reachM": 1.8, "flicker": 0.5, "y": 0.3 },
+    "flameRateHz": 14,
+    "flame": { "n": 1, "speed": [0, 0.08], "up": [0.25, 0.5], "lifeS": [0.25, 0.45], "size": [0.02, 0.035], "col": [3, 1.5, 0.45], "gravity": -0.3, "drag": 1, "stretch": 0, "spread": 360 },
+    "threads": { "count": 5, "turns": 1.6, "segments": 14, "heightM": 1.0, "growS": 0.35, "widthM": 0.022, "col": [2.6, 2.3, 1.6], "spinPerS": 1.2 },
+    "bindLight": { "col": [2.0, 1.75, 1.2], "reachM": 2.4, "flicker": 0.15, "y": 0.6 },
+    "snap": { "n": 30, "speed": [0.8, 2], "up": [0.3, 1.5], "lifeS": [0.3, 0.7], "size": [0.015, 0.03], "col": [2.6, 2.2, 1.5], "gravity": 2, "drag": 2, "stretch": 0.03, "spread": 360 }
+  },
+  "kindlingBurst": {
+    "sweepS": 0.25, "fromY": 1.0,
+    "beam": { "widthM": 0.35, "col": [3.6, 3.2, 2.3] },
+    "core": { "widthM": 0.09, "col": [6, 5.4, 4] },
+    "sweepLight": { "col": [4.5, 4, 2.8], "reachM": 4.2, "y": 0.9 },
+    "originLight": { "col": [3.0, 2.6, 1.8], "reachM": 3.5, "lifeS": 0.6, "curve": "flash", "y": 1.0 },
+    "sparksPerM": 9,
+    "sparks": { "n": 1, "speed": [0.5, 2], "up": [0.3, 1.8], "lifeS": [0.4, 1.0], "size": [0.015, 0.035], "col": [3.4, 3.0, 2.0], "gravity": 2.5, "drag": 1.6, "stretch": 0.04, "spread": 360 },
+    "lane": { "col": [2.6, 2.3, 1.6] }
+  },
+  "backStep": {
+    "dust": { "n": 14, "speed": [0.3, 1.0], "up": [0.1, 0.4], "lifeS": [0.4, 0.8], "size": [0.045, 0.08], "col": [0.16, 0.14, 0.11], "gravity": 1.2, "drag": 3, "stretch": 0, "spread": 120 },
+    "trailRateHz": 30
+  },
+  "feint": {
+    "sweepS": 0.14, "col": [0.9, 0.86, 0.78], "widthM": 0.08,
+    "motes": { "n": 12, "speed": [0.3, 0.8], "up": [0.2, 0.6], "lifeS": [0.3, 0.6], "size": [0.015, 0.025], "col": [1.2, 1.15, 1.0], "gravity": 0, "drag": 2, "stretch": 0, "spread": 120 }
+  },
+  "snuff": {
+    "puff": { "n": 18, "speed": [0.1, 0.5], "up": [0.3, 0.9], "lifeS": [0.5, 1.2], "size": [0.012, 0.025], "col": [2.2, 0.9, 0.25], "gravity": -0.4, "drag": 1.5, "stretch": 0, "spread": 360 },
+    "emberRateHz": 3,
+    "ember": { "n": 1, "speed": [0, 0.1], "up": [0.15, 0.4], "lifeS": [0.6, 1.2], "size": [0.01, 0.018], "col": [1.8, 0.7, 0.2], "gravity": -0.2, "drag": 1, "stretch": 0, "spread": 360 }
+  },
+  "taproot": {
+    "flightS": 0.35, "arcM": 0.9, "fromY": 1.0,
+    "head": { "size": 0.05, "col": [1.2, 2.4, 0.7] },
+    "trailRateHz": 50,
+    "trail": { "n": 1, "speed": [0.05, 0.3], "up": [0, 0.3], "lifeS": [0.2, 0.4], "size": [0.015, 0.03], "col": [0.7, 1.8, 0.45], "gravity": 0, "drag": 2, "stretch": 0, "spread": 360 },
+    "rootRateHz": 10,
+    "spores": { "n": 1, "speed": [0.05, 0.25], "up": [0.25, 0.6], "lifeS": [0.8, 1.6], "size": [0.015, 0.03], "col": [0.9, 2.0, 0.6], "gravity": -0.15, "drag": 1.2, "stretch": 0, "spread": 360 },
+    "rootLight": { "col": [0.5, 1.4, 0.35], "reachM": 2.0, "flicker": 0.2, "y": 0.4, "pulseHz": 1.4 },
+    "burst": { "n": 60, "speed": [1.5, 4], "up": [0.8, 3], "lifeS": [0.4, 0.9], "size": [0.02, 0.045], "col": [1.4, 3.0, 0.8], "gravity": 5, "drag": 1.5, "stretch": 0.035, "spread": 360 },
+    "burstSpores": { "n": 30, "speed": [0.2, 0.8], "up": [0.3, 1.0], "lifeS": [1.4, 2.8], "size": [0.02, 0.04], "col": [0.8, 1.8, 0.55], "gravity": -0.25, "drag": 1.2, "stretch": 0, "spread": 360 },
+    "burstLight": { "col": [1.6, 3.4, 1.0], "reachM": 4.0, "lifeS": 0.6, "curve": "flash", "y": 0.6 }
+  },
+  "springChorus": {
+    "rings": 3, "ringGapS": 0.28, "ringS": 1.4, "col": [0.6, 1.6, 0.5], "widthM": 0.05,
+    "pulseLight": { "col": [0.8, 2.0, 0.6], "reachM": 6, "lifeS": 1.6, "curve": "pulse", "y": 0.5, "pulseHz": 2.1 },
+    "motes": { "n": 40, "speed": [0, 0.15], "up": [0.15, 0.45], "lifeS": [1.6, 3.2], "size": [0.018, 0.03], "col": [1.0, 2.2, 0.8], "gravity": -0.05, "drag": 0.8, "stretch": 0, "spread": 360, "blink": 2.5 }
+  },
+  "mothLure": {
+    "count": 11, "wingspanM": [0.13, 0.19], "flapHz": [9, 13], "flyMps": 4.2, "hoverY": [0.7, 1.5],
+    "orbitM": [0.25, 0.75], "orbitPerS": [0.9, 1.8], "wander": 0.6, "turnPerS": 6, "glow": 0.55,
+    "light": { "col": [1.3, 1.25, 1.05], "reachM": 3.6, "flicker": 0.12, "y": 1.1 },
+    "dust": { "n": 1, "speed": [0, 0.08], "up": [-0.15, 0.05], "lifeS": [0.8, 1.5], "size": [0.008, 0.014], "col": [1.2, 1.15, 0.95], "gravity": 0.2, "drag": 1, "stretch": 0, "spread": 360 },
+    "dustRateHz": 6,
+    "leaveS": 1.4
+  }
+}

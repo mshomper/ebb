@@ -8,6 +8,7 @@
 // reaches the stand-ins only through their one call (take). The panel is moves-panel.js.
 
 import { createMoves, inRing, onLine, pickTarget } from '../../src/world/hollow/moves.js';
+import { createMoveFx } from '../../src/world/hollow/move-fx.js';
 import { pushRing, pushArc, pushLane, pushDisc, pushBox } from './props.js';
 
 /** Mark colours, unlit: the light's ember, its bright beam, the island's green, the paper and ink. */
@@ -21,12 +22,20 @@ const pushCrack = (out, x0, z0, x1, z1, ground, k) => {
 const scale = (/** @type {number[]} */ c, /** @type {number} */ k) => c.map((v) => v * k);
 
 /**
- * @param {{ MR: any, hollow: any, walker: any, motion: any, FC: any, FR: any, R: any, ground: (x: number, z: number) => number, say: (s: string) => void }} o
- *   MR: hollow-moves.json; FC: fight-clips.json; FR: figure.json (the kneel's mask); R: walker.json (the roll, for Back step)
+ * @param {{ MR: any, hollow: any, walker: any, motion: any, FC: any, FR: any, R: any, FX?: any, ground: (x: number, z: number) => number, say: (s: string) => void }} o
+ *   MR: hollow-moves.json; FC: fight-clips.json; FR: figure.json (the kneel's mask); R: walker.json (the roll, for Back step);
+ *   FX: hollow-move-fx.json, how the moves look (their light, sparks, threads and moths; without it, the plain marks)
  */
 export function createMoveLayer(o) {
   const { MR, hollow, walker, motion, FC, FR, R, ground } = o;
   const moves = createMoves(MR);
+  /** How the moves look (the move effects, October 27, 2026): lights, sparks, threads, moths and floor marks. */
+  const fx = o.FX ? createMoveFx(o.FX, { seed: 1, ground }) : null;
+  /** Roots growing in things (Taproot), by the thing's id, so their burst can be shown. @type {Set<number>} */
+  const rooted = new Set();
+  let swarmN = 0;
+  /** Where a throw leaves the hand: the right hand, about shoulder height (the lantern is in the left). */
+  const hand = () => [walker.x + Math.cos(walker.yaw) * -0.25, ground(walker.x, walker.z) + 1.25, walker.z - Math.sin(walker.yaw) * -0.25];
   /** @type {Record<'Q' | 'E', string>} */ const pegs = { Q: MR.pegs.Q, E: MR.pegs.E };
   /** 'tap': the key fires; 'ready': the key readies, a click fires. */
   let mode = /** @type {'tap' | 'ready'} */ ('tap');
@@ -100,13 +109,14 @@ export function createMoveLayer(o) {
   function act(id, at) {
     const m = M(id), all = foes(), sz = (/** @type {any} */ a) => a.size;
     switch (id) {
-      case 'anchor': bracing = true; break;
+      case 'anchor': bracing = true; fx?.cue('anchor.brace', { x: walker.x, z: walker.z }); break;
       case 'hookTurn': {
         const t = all.find((a) => a.id === at.target);
         if (t && Math.hypot(t.x - walker.x, t.z - walker.z) <= m.reachM) {
           t.foe.take({ kind: 'turn', openS: m.openS });
           const yaw = Math.atan2(t.x - walker.x, t.z - walker.z) + Math.PI;
-          hollow.mark(0.9, (/** @type {number[]} */ out, /** @type {number} */ k) => {
+          if (fx) fx.cue('hookTurn', { x: t.x, z: t.z, r: t.size + 0.35, yaw });
+          else hollow.mark(0.9, (/** @type {number[]} */ out, /** @type {number} */ k) => {
             pushArc(out, t.x, t.z, t.size + 0.35, t.size + 0.48, yaw, 220, ground, scale(C.paper, k));
             const ea = yaw + (110 * Math.PI) / 180, r = t.size + 0.42, ex = t.x + Math.sin(ea) * r, ez = t.z + Math.cos(ea) * r;
             pushLane(out, ex, ez, ex + Math.sin(ea + 2.4) * 0.35, ez + Math.cos(ea + 2.4) * 0.35, 0.1, ground, scale(C.paper, k), 2);
@@ -115,14 +125,18 @@ export function createMoveLayer(o) {
         } else o.say('Hook and turn: nothing close enough.');
         break;
       }
-      case 'groundline': crack = { x: walker.x, z: walker.z, ux: at.ux, uz: at.uz, m: 0, to: m.reachM, done: new Set() }; break;
-      case 'castFlame': hollow.mark(m.activeS, (/** @type {number[]} */ out) => pushRing(out, at.x, at.z, m.ringM, ground, C.ember, 0.05)); break;
-      case 'wickSnare': wick = { x: walker.x, z: walker.z }; break;
+      case 'groundline': crack = { x: walker.x, z: walker.z, ux: at.ux, uz: at.uz, m: 0, to: m.reachM, done: new Set() }; fx?.start('crack', 'crackTip', { x: walker.x, z: walker.z }); break;
+      case 'castFlame':
+        if (fx) fx.cue('castFlame.throw', { from: hand(), x: at.x, z: at.z, ringM: m.ringM, scorchS: m.scorchS, flightS: m.activeS });
+        else hollow.mark(m.activeS, (/** @type {number[]} */ out) => pushRing(out, at.x, at.z, m.ringM, ground, C.ember, 0.05));
+        break;
+      case 'wickSnare': wick = { x: walker.x, z: walker.z }; fx?.start('wick', 'wick', wick); break;
       case 'kindlingBurst': {
         const ex = walker.x + at.ux * m.reachM, ez = walker.z + at.uz * m.reachM;
         for (const { thing } of onLine(all, walker.x, walker.z, ex, ez, m.widthM)) thing.foe.take({ kind: 'throw', toX: ex, toZ: ez, forS: m.stunS, world: world() });
         const x0 = walker.x, z0 = walker.z;
-        hollow.mark(m.fadeS, (/** @type {number[]} */ out, /** @type {number} */ k) => pushLane(out, x0, z0, ex, ez, m.widthM, ground, scale(C.beam, k)));
+        if (fx) fx.cue('kindlingBurst', { x0, z0, x1: ex, z1: ez, fadeS: m.fadeS, widthM: m.widthM });
+        else hollow.mark(m.fadeS, (/** @type {number[]} */ out, /** @type {number} */ k) => pushLane(out, x0, z0, ex, ez, m.widthM, ground, scale(C.beam, k)));
         break;
       }
       case 'backStep': {
@@ -131,6 +145,7 @@ export function createMoveLayer(o) {
         R.steer.roll = { distM: m.reachM, durS: m.activeS, waitS: 0, carryS: 0 };
         if (!walker.roll(-Math.sin(yaw), -Math.cos(yaw))) { R.steer.roll = back.roll; back = null; }
         const s = Math.sin(yaw + Math.PI / 2) * 0.12, c = Math.cos(yaw + Math.PI / 2) * 0.12;
+        fx?.cue('backStep', { x: x0, z: z0, yaw });
         hollow.mark(1.2, (/** @type {number[]} */ out, /** @type {number} */ k) => {
           for (const side of [-1, 1]) pushLane(out, x0 + s * side, z0 + c * side, x0 + s * side + Math.sin(yaw) * 0.3, z0 + c * side + Math.cos(yaw) * 0.3, 0.08, ground, scale(C.paper, k), 2);
         });
@@ -140,21 +155,33 @@ export function createMoveLayer(o) {
         const fx = walker.x + at.ux * m.reachM * 0.6, fz = walker.z + at.uz * m.reachM * 0.6;
         for (const t of inRing(all, walker.x, walker.z, m.drawM, sz)) t.foe.take({ kind: 'feint', x: fx, z: fz });
         const x0 = walker.x, z0 = walker.z, yaw = Math.atan2(at.ux, at.uz);
-        hollow.mark(0.7, (/** @type {number[]} */ out, /** @type {number} */ k) => pushArc(out, x0, z0, m.reachM - 0.1, m.reachM, yaw, m.arcDeg, ground, scale(C.paper, 0.6 * k)));
+        if (fx) fx.cue('feint', { x: x0, z: z0, yaw, r: m.reachM, arcDeg: m.arcDeg });
+        else hollow.mark(0.7, (/** @type {number[]} */ out, /** @type {number} */ k) => pushArc(out, x0, z0, m.reachM - 0.1, m.reachM, yaw, m.arcDeg, ground, scale(C.paper, 0.6 * k)));
         break;
       }
-      case 'snuff': snuffing = true; hollow.lantern.snuff(true); break;
-      case 'taproot': break;   // lands when its flight ends
+      case 'snuff': {
+        snuffing = true; hollow.lantern.snuff(true);
+        const l = hollow.lampAt();
+        fx?.cue('snuff.out', { x: l[0], y: l[1], z: l[2] }); fx?.start('snuff', 'snuff', { x: l[0], y: l[1], z: l[2] });
+        break;
+      }
+      case 'taproot': fx?.cue('taproot.throw', { from: hand(), x: at.x, z: at.z, flightS: m.activeS }); break;   // lands when its flight ends
       case 'springChorus': {
         for (const t of inRing(all, walker.x, walker.z, m.reachM, sz)) t.foe.take({ kind: 'slow', forS: m.slowS });
         const x0 = walker.x, z0 = walker.z;
+        if (fx) { fx.cue('springChorus', { x: x0, z: z0, r: m.reachM }); break; }
         for (let i = 0; i < 3; i++) hollow.mark(1.6, (/** @type {number[]} */ out, /** @type {number} */ k) => {
           const r = Math.max(0.2, (1 - k) * m.reachM * (1 - i * 0.22));
           pushRing(out, x0, z0, r, ground, scale(C.green, k * 0.8), 0.04);
         });
         break;
       }
-      case 'mothLure': swarms.push({ x: walker.x, z: walker.z, tx: at.x, tz: at.z, left: m.lureS }); break;
+      case 'mothLure': {
+        const s = { x: walker.x, z: walker.z, tx: at.x, tz: at.z, left: m.lureS, key: `moths${swarmN++}` };
+        swarms.push(s);
+        fx?.start(s.key, 'swarm', { from: hollow.lampAt(), x: s.x, z: s.z });
+        break;
+      }
     }
   }
 
@@ -166,17 +193,19 @@ export function createMoveLayer(o) {
     if (id === 'castFlame') {
       let n = 0;
       for (const t of inRing(foes(), at.x, at.z, m.ringM, (a) => a.size)) { t.foe.take({ kind: 'hit', fromX: at.x, fromZ: at.z }); n++; }
-      hollow.mark(m.scorchS, (/** @type {number[]} */ out, /** @type {number} */ k) => pushDisc(out, at.x, at.z, m.ringM * 0.8, ground, scale(C.scorch, k)));
+      if (!fx) hollow.mark(m.scorchS, (/** @type {number[]} */ out, /** @type {number} */ k) => pushDisc(out, at.x, at.z, m.ringM * 0.8, ground, scale(C.scorch, k)));
       o.say(n ? `Cast the flame: it burst on ${n}.` : 'Cast the flame: it burst on the floor.');
     }
     if (id === 'taproot') {
       const t = foes().find((a) => a.id === at.target);
-      if (t) t.foe.take({ kind: 'root', burstS: m.burstS, share: m.share, crackS: m.crackS, staggerS: m.staggerS });
+      if (t && t.foe.take({ kind: 'root', burstS: m.burstS, share: m.share, crackS: m.crackS, staggerS: m.staggerS })?.landed !== false && fx) {
+        rooted.add(t.id); fx.start(`root${t.id}`, 'root', { x: t.x, z: t.z, size: t.size });
+      }
       else o.say('Taproot: the seed fell and did nothing.');
     }
   }
 
-  function endSnuff() { if (snuffing) { snuffing = false; hollow.lantern.snuff(false); } }
+  function endSnuff() { if (snuffing) { snuffing = false; hollow.lantern.snuff(false); fx?.stop('snuff'); } }
 
   /** A hit on you during Anchor's brace is caught, and the attacker reels back. @param {any} e */
   hollow.hooks.catchHit = (e) => {
@@ -185,13 +214,16 @@ export function createMoveLayer(o) {
     const a = foes().find((f) => f.id === e.id);
     a?.foe.take({ kind: 'reel', fromX: walker.x, fromZ: walker.z, forS: M('anchor').reelS, pushM: M('anchor').reelM, world: world() });
     const x0 = walker.x, z0 = walker.z;
-    hollow.mark(0.5, (/** @type {number[]} */ out, /** @type {number} */ k) => pushRing(out, x0, z0, M('anchor').ringM, ground, scale(C.ember, 1.4 * k), 0.08));
+    if (fx) fx.cue('anchor.catch', { x: x0, z: z0, tx: a?.x ?? x0, tz: a?.z ?? z0 + 1 });
+    else hollow.mark(0.5, (/** @type {number[]} */ out, /** @type {number} */ k) => pushRing(out, x0, z0, M('anchor').ringM, ground, scale(C.ember, 1.4 * k), 0.08));
     o.say('Anchor caught the hit: no fuel lost, and it reeled back open.');
     return true;
   };
 
   return {
     moves, pegs,
+    /** How the moves look, or null (tools/arena/fx-pass.js draws fx.gpu() each frame). */
+    fx,
     get mode() { return mode; },
     set mode(m) { mode = m; readied = null; },
     get readied() { return readied; },
@@ -224,9 +256,12 @@ export function createMoveLayer(o) {
         const m = M('groundline');
         crack.m = Math.min(crack.to, crack.m + (crack.to / m.activeS) * dt);
         const ex = crack.x + crack.ux * crack.m, ez = crack.z + crack.uz * crack.m;
+        fx?.set('crack', { x: ex, z: ez });
         for (const { thing } of onLine(foes(), crack.x, crack.z, ex, ez, m.widthM)) if (!crack.done.has(thing.id)) { crack.done.add(thing.id); thing.foe.take({ kind: 'stumble', forS: m.stumbleS }); }
         if (crack.m >= crack.to) {
           const c = crack;
+          fx?.stop('crack');
+          fx?.cue('groundline.end', { x0: c.x, z0: c.z, x1: c.x + c.ux * c.to, z1: c.z + c.uz * c.to });
           hollow.mark(1.0, (/** @type {number[]} */ out, /** @type {number} */ k) => pushCrack(out, c.x, c.z, c.x + c.ux * c.to, c.z + c.uz * c.to, ground, k));
           crack = null;
         }
@@ -236,7 +271,9 @@ export function createMoveLayer(o) {
         if (t) {
           t.foe.take({ kind: 'bind', forS: M('wickSnare').bindS });
           const tt = t;
-          hollow.mark(M('wickSnare').bindS, (/** @type {number[]} */ out, /** @type {number} */ k) => { for (const r of [0.2, 0.35, 0.5]) pushRing(out, tt.x, tt.z, tt.size + r, ground, scale(C.beam, 0.7 * k), 0.025); });
+          fx?.stop('wick');
+          if (fx) fx.start(`bind${t.id}`, 'bind', { x: t.x, z: t.z, r: t.size, forS: M('wickSnare').bindS });
+          else hollow.mark(M('wickSnare').bindS, (/** @type {number[]} */ out, /** @type {number} */ k) => { for (const r of [0.2, 0.35, 0.5]) pushRing(out, tt.x, tt.z, tt.size + r, ground, scale(C.beam, 0.7 * k), 0.025); });
           o.say('The wick snare caught it: bound in threads of light.');
           wick = null;
         }
@@ -247,8 +284,19 @@ export function createMoveLayer(o) {
         // Things that go toward light break off and follow the moths.
         for (const a of foes()) if (Math.hypot(a.x - s.x, a.z - s.z) < 14 && (a.foe.lureS ?? 0) < 0.2) a.foe.take({ kind: 'lure', x: s.x, z: s.z, forS: s.left });
         s.left -= dt;
+        fx?.set(s.key, { x: s.x, z: s.z });
+        if (s.left <= 0) fx?.stop(s.key);
       }
       swarms = swarms.filter((s) => s.left > 0);
+      // A root bursts: its thing breaks, or cracks.
+      for (const id of [...rooted]) {
+        const a = foes().find((f) => f.id === id);
+        if (a && a.foe.rootS >= 0 && !a.broken) { fx?.set(`root${id}`, { x: a.x, z: a.z }); continue; }
+        rooted.delete(id); fx?.stop(`root${id}`);
+        const b = a ?? hollow.byId?.(id);
+        if (b) fx?.cue('taproot.burst', { x: b.x, z: b.z, size: b.size });
+      }
+      fx?.update(dt);
     },
     /** The moves' own marks: the wick, the moths, the crack racing out, roots, and a readied move's mark. @param {number[]} out */
     draw(out) {
@@ -259,7 +307,16 @@ export function createMoveLayer(o) {
         pushBox(out, [wick.x, y + 0.1, wick.z], [0.025, 0.1, 0.025], 0, [0.35, 0.3, 0.25]);
         pushBox(out, [wick.x, y + 0.24, wick.z], [0.04, 0.05, 0.04], 0.6, C.ember);
       }
-      for (const s of swarms) for (let i = 0; i < 9; i++) {
+      if (fx) {
+        const g = o.FX.markGain ?? 1, neg = (/** @type {number[]} */ c) => [-c[0] * g, -c[1] * g, -c[2] * g];
+        for (const k of fx.marks()) {
+          if (k.shape === 'ring') pushRing(out, k.x, k.z, /** @type {number} */ (k.r), ground, neg(k.col), k.w ?? 0.05);
+          else if (k.shape === 'disc') pushDisc(out, k.x, k.z, /** @type {number} */ (k.r), ground, neg(k.col));
+          else if (k.shape === 'arc') pushArc(out, k.x, k.z, /** @type {number} */ (k.r0), /** @type {number} */ (k.r1), /** @type {number} */ (k.yaw), /** @type {number} */ (k.deg), ground, neg(k.col));
+          else if (k.shape === 'lane') pushLane(out, k.x, k.z, /** @type {number} */ (k.x1), /** @type {number} */ (k.z1), k.w ?? 0.5, ground, neg(k.col));
+        }
+      }
+      if (!fx) for (const s of swarms) for (let i = 0; i < 9; i++) {
         const a = now * (1.3 + i * 0.17) + i * 2.1, r = 0.25 + 0.15 * Math.sin(now * 0.9 + i);
         pushBox(out, [s.x + Math.sin(a) * r, ground(s.x, s.z) + 0.9 + Math.sin(a * 1.6 + i) * 0.2, s.z + Math.cos(a) * r], [0.035, 0.012, 0.035], a, C.moth);
       }
@@ -282,6 +339,6 @@ export function createMoveLayer(o) {
       }
     },
     /** A new floor: once-a-floor moves, seeds, and the floor's wick come back. */
-    newFloor() { moves.newFloor(); wick = null; swarms = []; endSnuff(); },
+    newFloor() { moves.newFloor(); wick = null; swarms = []; endSnuff(); rooted.clear(); fx?.clear(); },
   };
 }

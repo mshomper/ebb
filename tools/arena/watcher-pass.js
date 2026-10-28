@@ -13,6 +13,7 @@ import { WATCHER_FLOATS, WATCHER_BONES } from '../../src/world/hollow/watcher-mo
 import { DUST_FLOATS } from '../../src/world/hollow/crawler-dust.js';
 import { VERTEX_BYTES } from '../../src/world/creatures/bodies.js';
 import { mapTexture } from '../../src/render/passes/props.js';
+import { fxLightsOf } from './fx-lights.js';
 
 const SHADER = /* wgsl */ `
 struct Frame { viewProj: mat4x4f, eye: vec4f, sun: vec4f, misc: vec4f, lamp: vec4f, dark: vec4f };
@@ -24,6 +25,7 @@ struct Frame { viewProj: mat4x4f, eye: vec4f, sun: vec4f, misc: vec4f, lamp: vec
 @group(0) @binding(5) var albedoMap: texture_2d<f32>;
 @group(0) @binding(6) var normalMap: texture_2d<f32>;
 @group(0) @binding(7) var samp: sampler;
+@group(0) @binding(8) var<uniform> fxl: FxLights;
 
 fn finish(c: vec3f) -> vec4f { let t = c / (1.0 + c); return vec4f(pow(t, vec3f(1.0 / 2.2)), 1.0); }
 
@@ -34,7 +36,7 @@ fn lightAt(world: vec3f, n: vec3f) -> vec4f {
     let dist = length(d);
     let fall = 1.0 - smoothstep(0.0, max(f.lamp.w, 1e-3), dist);
     let nl = 0.35 + 0.65 * max(dot(n, d / max(dist, 1e-3)), 0.0);
-    return vec4f(vec3f(1.0, 0.8, 0.56) * (f.dark.z * fall * fall * nl) * 1.6 + vec3f(f.dark.y), f.dark.z * fall * fall * 1.6);
+    return vec4f(vec3f(1.0, 0.8, 0.56) * (f.dark.z * fall * fall * nl) * 1.6 + vec3f(f.dark.y) + fxLight(world, n) * 1.6, f.dark.z * fall * fall * 1.6);
   }
   let day = 1.0 - f.misc.y;
   return vec4f(vec3f(max(dot(n, normalize(f.sun.xyz)), 0.0) * 2.8 * day + (0.55 + 0.35 * n.y) * mix(0.06, 1.0, day)), 2.8 * day);
@@ -162,12 +164,12 @@ struct DustOut { @builtin(position) pos: vec4f, @location(0) q: vec2f, @location
 const MAX_WATCHERS = 12, MAX_DUST = 1024;
 
 /**
- * @param {{ device: GPUDevice, format: GPUTextureFormat }} gpu the stage's
+ * @param {{ device: GPUDevice, format: GPUTextureFormat, fxLights?: GPUBuffer }} gpu the stage's (fxLights: the move effects' lights)
  * @param {import('../../src/world/hollow/watcher-model.js').WatcherModel} model @param {any} S recipes/world/hollow.json foes.watcher.stone (read live)
  */
 export async function createWatcherPass(gpu, model, S) {
   const { device, format } = gpu;
-  const module = device.createShaderModule({ label: 'watchers', code: (await loadShader('lib-watcher')) + SHADER });
+  const module = device.createShaderModule({ label: 'watchers', code: (await loadShader('lib-watcher')) + (await loadShader('lib-fx-light')) + SHADER });
   module.getCompilationInfo().then((info) => { for (const m of info.messages) console[m.type === 'error' ? 'error' : 'warn'](`[watcher wgsl] ${m.lineNum}:${m.linePos} ${m.message}`); });
   const V = GPUShaderStage.VERTEX, F = GPUShaderStage.FRAGMENT;
   const layout = device.createBindGroupLayout({ entries: [
@@ -179,6 +181,7 @@ export async function createWatcherPass(gpu, model, S) {
     { binding: 5, visibility: F, texture: {} },
     { binding: 6, visibility: F, texture: {} },
     { binding: 7, visibility: F, sampler: {} },
+    { binding: 8, visibility: F, buffer: {} },
   ] });
   const pl = device.createPipelineLayout({ bindGroupLayouts: [layout] });
   const depthStencil = /** @type {GPUDepthStencilState} */ ({ format: 'depth24plus', depthWriteEnabled: true, depthCompare: 'less' });
@@ -229,7 +232,8 @@ export async function createWatcherPass(gpu, model, S) {
   const group = device.createBindGroup({ layout, entries: [
     { binding: 0, resource: { buffer: frameBuf } }, { binding: 1, resource: { buffer: lookBuf } },
     { binding: 2, resource: { buffer: instBuf } }, { binding: 3, resource: { buffer: boneBuf } }, { binding: 4, resource: { buffer: dustBuf } },
-    { binding: 5, resource: albedo.createView() }, { binding: 6, resource: normal.createView() }, { binding: 7, resource: samp }] });
+    { binding: 5, resource: albedo.createView() }, { binding: 6, resource: normal.createView() }, { binding: 7, resource: samp },
+    { binding: 8, resource: { buffer: fxLightsOf(gpu) } }] });
   const frame = new Float32Array(36), lookF = new Float32Array(20);
   const inst = new Float32Array(MAX_WATCHERS * WATCHER_FLOATS), boneF = new Float32Array(MAX_WATCHERS * WATCHER_BONES * 16);
   /** The breakup's bits drawn as the crawler's are: grey grit and motes in the hole's light. */

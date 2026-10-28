@@ -16,6 +16,8 @@ import { arcHits, hitsDue, createSwingChain } from '../src/world/hollow/swing.js
 import { inTheWay } from '../src/world/hollow/occlude.js';
 import { createFoe, sideOf } from '../src/world/hollow/foes.js';
 import { createMoves } from '../src/world/hollow/moves.js';
+import { createMoveFx } from '../src/world/hollow/move-fx.js';
+import { MAX_FX_LIGHTS, MAX_MOTHS } from '../src/world/hollow/fx-layout.js';
 import { loadMoteModel } from '../src/world/hollow/mote-model.js';
 import { createSwarm, MOTE_FLOATS, PUFF_FLOATS } from '../src/world/hollow/mote-swarm.js';
 import { HOLLOW_ICONS } from '../src/ui/icons/icons-hollow.js';
@@ -26,6 +28,7 @@ const G = 'hollow';
 const DT = 1 / 60;
 const recipe = async () => (await fetch('../recipes/world/hollow.json')).json();
 const moveRecipe = async () => (await fetch('../recipes/world/hollow-moves.json')).json();
+const fxRecipe = async () => (await fetch('../recipes/world/hollow-move-fx.json')).json();
 
 /** A flat floor 20 m square with a wall across it at x = 4 and a drop (a pit) at z = -4. */
 function floor() {
@@ -382,5 +385,67 @@ export function addHollowTests(test, assert, eq) {
     lamp.raised = true;
     assert(go(M.eyes.widenInS + 0.02) > 0.95, 'wide at once');
     assert(go(M.eyes.widenOutS + 0.1) < 0.05, 'settled after');
+  });
+
+  // The move effects (October 27, 2026): every move's look runs, stays finite, keeps to its limits and replays the same.
+  test(G, 'every move effect runs: lights stay within eight, nothing goes bad, and the same seed looks the same', async () => {
+    const FX = await fxRecipe();
+    const run = () => {
+      const fx = createMoveFx(FX, { seed: 7, ground: (x) => 0.1 * Math.sin(x) });
+      fx.cue('anchor.brace', { x: 0, z: 0 }); fx.cue('anchor.catch', { x: 0, z: 0, tx: 1, tz: 1 });
+      fx.cue('hookTurn', { x: 1, z: 1, r: 0.8, yaw: 0.3 }); fx.cue('groundline.end', { x0: 0, z0: 0, x1: 6, z1: 0 });
+      fx.cue('castFlame.throw', { from: [0, 1, 0], x: 5, z: 2, ringM: 1.3, scorchS: 3 });
+      fx.cue('kindlingBurst', { x0: 0, z0: 0, x1: 8, z1: 3 }); fx.cue('backStep', { x: 0, z: 0, yaw: 0 });
+      fx.cue('feint', { x: 0, z: 0, yaw: 0, r: 2.5, arcDeg: 120 }); fx.cue('snuff.out', { x: 0, y: 1, z: 0 });
+      fx.cue('taproot.throw', { from: [0, 1, 0], x: 3, z: 3 }); fx.cue('springChorus', { x: 0, z: 0, r: 5 });
+      for (const [k, kind, p] of /** @type {[string, any, any][]} */ ([['w', 'wick', { x: 1, z: 0 }], ['b', 'bind', { x: 2, z: 0, r: 0.4, forS: 1 }], ['c', 'crackTip', { x: 0, z: 0 }],
+        ['r', 'root', { x: 3, z: 3, size: 0.5 }], ['m', 'swarm', { from: [0, 1, 0], x: 6, z: 2 }], ['s', 'snuff', { x: 0, y: 1, z: 0 }]])) fx.start(k, kind, p);
+      let most = 0, out = fx.gpu();
+      for (let i = 0; i < 3 / DT; i++) {
+        fx.update(DT); out = fx.gpu(); most = Math.max(most, out.nLights);
+        const live = [out.sparks.subarray(0, out.nSparks * 12), out.lights, out.threads.subarray(0, out.nThreads * 12), out.moths.subarray(0, out.nMoths * 8)];
+        assert(live.every((a) => a.every(Number.isFinite)), `finite at frame ${i}`);
+      }
+      return { most, sparks: Array.from(out.sparks.subarray(0, 24)), marks: fx.marks().length };
+    };
+    const a = run(), b = run();
+    assert(a.most === MAX_FX_LIGHTS, `as many lights as it can draw (${a.most})`);
+    eq(JSON.stringify(a), JSON.stringify(b), 'the same seed, the same look');
+  });
+
+  test(G, 'moths fly out of the lantern to the lure, circle it, and leave when it ends', async () => {
+    const FX = await fxRecipe(), M = FX.mothLure;
+    const fx = createMoveFx(FX, { seed: 3, ground: () => 0 });
+    fx.start('m', 'swarm', { from: [0, 1, 0], x: 6, z: 0 });
+    for (let i = 0; i < 3 / DT; i++) fx.update(DT);
+    let o = fx.gpu();
+    eq(o.nMoths, Math.min(M.count, MAX_MOTHS), 'every moth out');
+    for (let i = 0; i < o.nMoths; i++) {
+      const x = o.moths[i * 8], z = o.moths[i * 8 + 2], y = o.moths[i * 8 + 1];
+      assert(Math.hypot(x - 6, z) < M.orbitM[1] + 0.8, `moth ${i} round the lure (${x.toFixed(2)}, ${z.toFixed(2)})`);
+      assert(y > M.hoverY[0] - 0.5 && y < M.hoverY[1] + 0.5, `moth ${i} at moth height (${y.toFixed(2)})`);
+    }
+    const phase = o.moths[4];
+    fx.update(DT); o = fx.gpu();
+    assert(o.moths[4] !== phase, 'wings beating');
+    fx.stop('m');
+    for (let i = 0; i < (M.leaveS + 0.2) / DT; i++) fx.update(DT);
+    eq(fx.gpu().nMoths, 0, 'all gone after leaving');
+  });
+
+  test(G, 'a thrown flame flies its arc, then bursts, flashes and leaves a lingering glow and marks', async () => {
+    const FX = await fxRecipe(), C = FX.castFlame;
+    const fx = createMoveFx(FX, { seed: 5, ground: () => 0 });
+    fx.cue('castFlame.throw', { from: [0, 1, 0], x: 6, z: 0, ringM: 1.3, scorchS: 3 });
+    for (let i = 0; i < (C.flightS * 0.5) / DT; i++) fx.update(DT);
+    const mid = fx.gpu();
+    assert(mid.nLights === 1 && mid.lights[0] > 2 && mid.lights[0] < 4, 'the light travels with the flame');
+    for (let i = 0; i < (C.flightS * 0.5 + 0.1) / DT; i++) fx.update(DT);
+    const hit = fx.gpu();
+    assert(hit.nSparks > C.burst.n * 0.8, `burst sparks (${hit.nSparks})`);
+    assert(hit.nLights >= 2, 'a flash and a glow');
+    assert(fx.marks().some((m) => m.shape === 'disc'), 'a scorch on the floor');
+    for (let i = 0; i < 3.2 / DT; i++) fx.update(DT);
+    eq(fx.gpu().nLights, 0, 'the glow dies with the scorch');
   });
 }

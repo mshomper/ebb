@@ -271,6 +271,10 @@ A sixth, **Point**, is one arm held out, the smallest clip in the set. Back step
 
 **Hands.** The lantern hand is never free, so a move that needs a hand (Spring chorus's cupped hand, Snuff's hand over the glass) uses the weapon hand. With the lantern staff, the staff hand holds the light and the other hand does it.
 
+### How the moves look (Matt, October 27, 2026)
+
+Every move shows itself with light, not only a mark on the floor. In the dark of the Hollow, an effect's light falls on the floor, the walls, the walker and the Hollow's things, so a thrown flame lights its way and a beam sweeps the room. Four pieces serve every move: real point lights, glowing sparks (embers, chips, seeds, spores, dust), glowing threads (the wick's binding, the beam) and moths. Moths look like moths, pale and dusty with their wings beating, not glowing specks. Floor marks grow in and fade. No move needs a new body clip for its effect. The numbers live in `recipes/world/hollow-move-fx.json`; `src/world/hollow/move-fx.js` runs them, and `tools/move-fx-lab.html` plays each one alone.
+
 ### The sixteen moves
 
 **Fighting: weapon and body.** Close and natural. Each weapon kind still flavors these: a spear's Groundline runs longer, a club's Anchor reels harder, a knife's Hook and turn is quicker.
