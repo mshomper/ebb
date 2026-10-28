@@ -182,7 +182,7 @@
     { "a": "reeds", "b": "minnows", "ink": "flag:minnows:seen&seen:reeds", "note": "Minnows shelter among the reed stems." },
     { "a": "fresh", "b": "pondweed", "ink": "grows:fresh:pondweed", "note": "Pondweed grows under the fresh water." },
     { "a": "pondweed", "b": "minnows", "ink": "flag:minnows:seen&seen:pondweed", "note": "Minnows hide and feed in the pondweed." },
-    { "a": "minnows", "b": "pondweed", "ink": "flag:minnows:happy", "note": "Happy minnows brought the pondweed's seed." },
+    { "a": "minnows", "b": "pondweed", "ink": "flag:minnows:known", "note": "Minnows that came to know you brought the pondweed's seed." },
     { "a": "fresh", "b": "dragonflies", "ink": "flag:dragonflies:seen&flag:dragonflies:settled", "note": "Dragonflies lay their eggs in still fresh water, where their young grow." },
     { "a": "reeds", "b": "dragonflies", "ink": "flag:dragonflies:seen&seen:reeds", "note": "Dragonflies rest on the reed tips, and their young climb out up the stems." },
     { "a": "midges", "b": "dragonflies", "ink": "flag:dragonflies:seen&flag:midges:seen", "note": "Dragonflies catch midges in flight." },

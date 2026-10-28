@@ -261,7 +261,7 @@
         "leaf": { "text": ["wavy, crinkled", "leaf"], "learn": ["seen"] },
         "stem": { "text": ["rises toward", "the surface"], "learn": ["seen"] },
         "root": { "text": ["creeping root"], "learn": ["spread", "dormant"] } } },
-      "riddle": "Something green might grow under still water, if a happy school of fish brought it.",
+      "riddle": "Something green might grow under still water, if a school of fish that knew you brought it.",
       "amount": [[1, "A sprig of pondweed"], [3, "A few stems of pondweed"], [8, "A patch of pondweed"], [20, "An underwater meadow of pondweed"]],
       "place": "under the still water", "compass": false,
       "none": "No pondweed grows on the island now.",
