@@ -17,7 +17,11 @@ const [treats, cook, ...recs] = await Promise.all([get('world/treats'), get('wor
 /** Main before P2h (36369e4): watching a minute and a meal. */
 const TODAY = { frog: [0.012, 0.06], minnow: [0.012, 0.06], dragonfly: [0.015, 0], damselfly: [0.015, 0], turtle: [0.01, 0] };
 const WORD = (/** @type {string} */ w) => w[0].toUpperCase() + w.slice(1);
-const DAYS = 10;
+const DAYS = 12;
+/** The treats with their own worth, by id. */
+const TREAT_NAMES = /** @type {Record<string, string>} */ ({ worms: 'Worms', 'lily-parcel': 'A lily leaf parcel' });
+/** The four gift givers (October 27, 2026), and what "a treat" is for each. */
+const GIVERS = [['frog', 'Frogs', 'named'], ['minnow', 'Minnows', 'trust 0.5'], ['dragonfly', 'Dragonflies', 'trust 0.5'], ['turtle', 'Turtles', 'named']];
 
 /** The species as tuned (copies), keyed like SPECIES. */
 const R = Object.fromEntries(SPECIES.map(([k], i) => [k, structuredClone(recs[i])]));
@@ -60,6 +64,8 @@ const cards = SPECIES.map(([k, name]) => {
   knobs.className = 'knobs';
   knobs.append(knob(P.watch, 'trustPerMin', 'Watching, a minute', 0, 0.02, 0.0001));
   if ((P.feedTrust ?? 0) > 0) knobs.append(knob(P, 'feedTrust', 'A meal', 0, 0.1, 0.001), knob(P, 'treatFeeds', 'A treat, in meals', 0, 6, 0.1));
+  // The turtles' lily leaf parcel has its own worth (presence.treatFeedsOf).
+  for (const id of Object.keys(P.treatFeedsOf ?? {})) knobs.append(knob(P.treatFeedsOf, id, `${TREAT_NAMES[id] ?? id}, in meals`, 0, 8, 0.1));
   card.innerHTML = `<h2>${name}</h2><div class="legend"></div><div class="chart"></div><table></table>`;
   card.append(knobs);
   $('charts').append(card);
@@ -98,6 +104,7 @@ function draw() {
     s += `<text x="${L - 6}" y="${y(0) - 4}" text-anchor="end">Wary</text>`;
     s += `<line x1="${L}" x2="${W - Rr}" y1="${y(top)}" y2="${y(top)}" stroke="#B0674A" stroke-width="1.5" stroke-dasharray="2 5"/><text x="${L + 6}" y="${y(top) - 5}">as far as it goes</text>`;
     if (P.namingTrust) s += `<line x1="${L}" x2="${W - Rr}" y1="${y(P.namingTrust)}" y2="${y(P.namingTrust)}" stroke="#4A5551" stroke-width="1" stroke-dasharray="1 4"/><text x="${W - Rr - 4}" y="${y(P.namingTrust) - 5}" text-anchor="end">can be named</text>`;
+    else if (P.knownTrust) s += `<line x1="${L}" x2="${W - Rr}" y1="${y(P.knownTrust)}" y2="${y(P.knownTrust)}" stroke="#4A5551" stroke-width="1" stroke-dasharray="1 4"/><text x="${W - Rr - 4}" y="${y(P.knownTrust) - 5}" text-anchor="end">knows you: the gift</text>`;
     for (let d = 0; d <= DAYS; d += 2) s += `<text x="${x(d)}" y="${Hh - 8}" text-anchor="middle">${d}</text>`;
     s += `<line x1="${L}" x2="${W - Rr}" y1="${y(0)}" y2="${y(0)}" stroke="#CFC3AF" stroke-width="2"/>`;
     for (const { c, r } of res) {
@@ -117,10 +124,21 @@ function draw() {
       const rec = R[k], top = topWord(rec), cs = curvesOf(rec);
       return `<tr><td>${name}</td><td>${WORD(top)}</td>${CURVES.map((c) => `<td class="n">${cs.includes(c) ? fmt(run(k, c).at[top]).replace('day ', '') : ''}</td>`).join('')}</tr>`;
     }).join('');
+  // Days to each gift: without treats, with a treat a day (each of the turtles' two).
+  const day = (/** @type {number | undefined} */ d) => (d === undefined ? `later than ${DAYS * 2}` : d.toFixed(1));
+  const rows = GIVERS.map(([k, name, how]) => {
+    const rec = R[k], canTreat = (rec.presence.treatFeeds ?? 0) > 0;
+    const known = (/** @type {any} */ h) => paceCurve(rec, { ...H, ...h }, DAYS * 2).at.known;
+    const ids = Object.keys(rec.treat?.idOf ?? {});
+    const withT = !canTreat ? 'takes no treats' : ids.length ? ids.map((id) => `${TREAT_NAMES[id] ?? id}: ${day(known({ treat: true, treatId: id }))}`).join('; ') : day(known({ treat: true }));
+    return `<tr><td>${name}</td><td>${how}</td><td class="n">${day(known({ treat: false }))}</td><td>${withT}</td></tr>`;
+  });
+  $('gifts').innerHTML = '<tr><th>Gift giver</th><th>Comes at</th><th>No treats</th><th>A treat a day</th></tr>' + rows.join('');
   $('json').value = SPECIES.map(([k]) => {
     const P = R[k].presence;
     const parts = [`"trustPerMin": ${P.watch.trustPerMin}`];
     if ((P.feedTrust ?? 0) > 0) parts.push(`"feedTrust": ${P.feedTrust}`, `"treatFeeds": ${P.treatFeeds}`);
+    if (P.treatFeedsOf) parts.push(`"treatFeedsOf": ${JSON.stringify(P.treatFeedsOf)}`);
     return `${k}.json presence: ${parts.join(', ')}`;
   }).join('\n') + `\ncook.json boons: meadowsweet ${H.meadowsweet}, meadowsweet+chamomile ${H.blend}\ntreats.json labHabit: ${JSON.stringify({ sitMin: H.sitMin, standMin: H.standMin, feeds: H.feeds })}`;
 }

@@ -248,15 +248,15 @@ export function addPondLifeTests(test, assert, eq) {
     return `${texts.length} notes; growth written ${grew} times`;
   });
 
-  test(G, 'happy minnows give pondweed seed, once', async () => {
+  test(G, 'minnows that know you give pondweed seed, once', async () => {
     const naturalist = await (await fetch('../recipes/world/naturalist.json')).json();
     const words = await (await fetch('../recipes/world/journal.json')).json();
     const R = await loadEcologyRecipes();
     const gifts = { minnows: R.species.minnow.ecology.gift };
-    const g = due({ found: 0, flags: ['minnows:happy'], earned: {}, rewards: [], gifts, words, giftWords: naturalist.gifts });
+    const g = due({ found: 0, flags: ['minnows:known'], earned: {}, rewards: [], gifts, words, giftWords: naturalist.gifts });
     eq(g.length, 1, 'gifts due');
     eq(JSON.stringify(g[0].give), JSON.stringify({ seeds: { pondweed: true } }), 'what it gives');
-    eq(due({ found: 0, flags: ['minnows:happy'], earned: grant({}, g[0]), rewards: [], gifts, words, giftWords: naturalist.gifts }).length, 0, 'gifts due after it was given');
+    eq(due({ found: 0, flags: ['minnows:known'], earned: grant({}, g[0]), rewards: [], gifts, words, giftWords: naturalist.gifts }).length, 0, 'gifts due after it was given');
   });
 
   test(G, 'a live school stays in the water, between the bed and the surface, and moves the same way twice', async () => {
@@ -407,11 +407,11 @@ export function addPondLifeTests(test, assert, eq) {
     return `dormant from day ${Math.floor(/** @type {any} */ (dormant).hour / 24) + 1}`;
   });
 
-  test(G, 'happy dragonflies give springs, with their own card', async () => {
+  test(G, 'dragonflies that know you give springs, with their own card', async () => {
     const naturalist = await (await fetch('../recipes/world/naturalist.json')).json();
     const words = await (await fetch('../recipes/world/journal.json')).json();
     const R = await loadEcologyRecipes();
-    const g = due({ found: 0, flags: ['dragonflies:happy'], earned: {}, rewards: [], gifts: { dragonflies: R.species.dragonfly.ecology.gift }, words, giftWords: naturalist.gifts });
+    const g = due({ found: 0, flags: ['dragonflies:known'], earned: {}, rewards: [], gifts: { dragonflies: R.species.dragonfly.ecology.gift }, words, giftWords: naturalist.gifts });
     eq(g.length, 1, 'gifts due');
     eq(JSON.stringify(g[0].give), JSON.stringify({ springs: true }), 'what it gives');
     eq(g[0].icon, 'wellspring', 'its icon');

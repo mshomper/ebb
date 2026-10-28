@@ -446,7 +446,7 @@ const TREAT_JOB = { module: './world/creatures/treat-check.js', fn: 'treatCheckJ
  */
 async function runTreats(worldSeed) {
   const get = (/** @type {string} */ p) => fetch(`../recipes/${p}.json`).then((r) => r.json());
-  const args = { worldSeed, frog: await get('species/frog'), minnow: await get('species/minnow'), treats: await get('world/treats') };
+  const args = { worldSeed, frog: await get('species/frog'), minnow: await get('species/minnow'), turtle: await get('species/turtle'), treats: await get('world/treats') };
   const main = treatCheckJob(args);
   initWorkers({ size: 1 });
   let worker;
@@ -475,6 +475,7 @@ function showTreats(g) {
     row('Frogs: each hour against one late tick', main.frogsEach, main.once, 'Each hourly tick', 'All at once') +
     row('Trust at the month\'s end', main.each, worker.each) +
     row('Treats lying and fading, watched against read later', main.watched, main.read, 'Each hour', 'From the save') +
+    row('Turtles: the group and each one\'s own trust, hour by hour', main.turtles, worker.turtles) +
     `<p class="muted">After 30 game days the frogs know you ${main.trust.map((/** @type {number} */ t) => t.toFixed(3)).join(', ')} and the school ${main.school.toFixed(3)}; ${main.set} treats were set out.</p>`;
 }
 

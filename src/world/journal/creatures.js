@@ -229,9 +229,14 @@ function observeSchool(j, out, ctx, at, sp, rec, note) {
     } else if (e.name === 'species:happy') {
       setFlag(j, `${sp}:happy`);
       if (k.ever) note(rec, 'happy', sp);
+    } else if (e.name === 'creature:known') {
+      // They have come to know you (minnows, dragonflies; swarms.js knownNow): their gift comes now
+      // (src/world/expansion.js), and the note says so.
+      if (setFlag(j, `${sp}:known`) && k.ever) note(rec, 'known', sp);
     } else if (e.name === 'creature:ate' && e.payload.treat) {
-      // They took a treat (P2h): the first time teaches its Likes line, and says so.
-      if (learnOnce(k, `likes:${e.payload.treat}`)) note(rec, 'treat', sp);
+      // They took a treat (P2h): the first time teaches its Likes line, and says so (in that
+      // treat's own words, where it has them: the turtles' two).
+      if (learnOnce(k, `likes:${e.payload.treat}`)) note(rec, rec.notes?.[`treat:${e.payload.treat}`] ? `treat:${e.payload.treat}` : 'treat', sp);
     } else if (e.name === 'creature:ate') {
       // They ate what you offered: noted the first time, and the web's "you" link inks.
       if (learnOnce(k, 'fed') && k.ever) note(rec, 'fed', sp);
@@ -260,6 +265,8 @@ function schoolKnown(j, k, sp, S, season, hour) {
   if (n) k.seasons[season] |= S.dormant ? DORMANT | GROW : GROW;
   if (n && season === 3) learnOnce(k, 'winter');
   if (S?.phase === 'settled' && n) setFlag(j, `${sp}:settled`);
+  // Known (their gift's flag): a school past its knownTrust, or a turtle with a name.
+  if (S?.known || (S?.bonds ?? []).some((/** @type {any} */ b) => b.name)) setFlag(j, `${sp}:known`);
   if (n > k.peak) { k.peak = n; k.peakAt = hour; }
 }
 
@@ -295,6 +302,8 @@ function frogsKnown(j, k, F, season, hour) {
   k.dormant = !!F?.dormant && frogs.length > 0;
   if (frogs.length) k.seasons[season] |= F.dormant ? DORMANT | GROW : GROW;
   if (F?.phase === 'settled' && frogs.length) setFlag(j, 'frogs:settled');
+  // A frog named is a frog that knows you: the frogs' gift's flag (an older save's named frog too).
+  if (frogs.some((/** @type {any} */ f) => f.name)) setFlag(j, 'frogs:known');
   for (const f of frogs) for (const sp of f.near ?? []) setFlag(j, `frogs:${sp}`);
   if (frogs.length > k.peak) { k.peak = frogs.length; k.peakAt = hour; }
 }
@@ -311,17 +320,20 @@ function track(k, value, hour, newHour, words) {
 }
 
 /**
- * You named a frog (S6c-3): the moment is written down.
+ * You named a frog (S6c-3) or a turtle: the moment is written down, and the species is known (its
+ * gift's flag, src/world/expansion.js).
  * @param {Journal} journal @param {string} name
  * @param {{ hour: number, words: any, date: string, copy: (j: Journal) => Journal }} ctx
+ * @param {string} [sp] frogs or turtles
  * @returns {{ journal: Journal, notes: Note[] }}
  */
-export function namedFrog(journal, name, ctx) {
-  const rec = ctx.words.species.frogs;
+export function namedFrog(journal, name, ctx, sp = 'frogs') {
+  const rec = ctx.words.species[sp];
   const t = rec?.notes?.named;
   if (!t || !name) return { journal, notes: [] };
   const j = ctx.copy(journal);
-  /** @type {Note[]} */ const notes = [{ hour: ctx.hour, date: ctx.date, text: t.replace('{name}', name), sp: 'frogs', kind: 'named' }];
+  setFlag(j, `${sp}:known`);
+  /** @type {Note[]} */ const notes = [{ hour: ctx.hour, date: ctx.date, text: t.replace('{name}', name), sp, kind: 'named' }];
   j.notes = [...notes, ...j.notes].slice(0, ctx.words.notesKept);
   return { journal: j, notes };
 }

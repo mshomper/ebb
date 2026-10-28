@@ -11,6 +11,10 @@
 // under the surface, then comes up to hang at the periscope, nose and eyes out, sometimes turned to
 // face you. Its pose follows what it is doing (rigs/turtle.js).
 //
+// Treats (October 27, 2026): worms or a lily leaf parcel set at the water's edge. The nearest turtle
+// (the whole group, for the parcel) slips in, swims to the water just off it and takes it from the
+// edge: its head reaches over and snaps, or tears with a shake of the head (`treat`, `eaten`).
+//
 // Live animation only (never saved): a seeded stream per group and a fixed step rate, as patrol.js.
 // Plain Math is fine here. Numbers from turtle.json's motion block. Same shape as school.js and
 // patrol.js, so the live schools system (schools.js) runs it.
@@ -20,7 +24,7 @@ import { poseState, easeWeights, poseTurtle, noseY, haulPath, haulS, slidePath }
 
 const DEG = Math.PI / 180;
 /** What a turtle does in the water (kept apart from one another there). */
-const WATER_MODES = new Set(['swim', 'under', 'peri', 'peek', 'hide', 'graze', 'bottom']);
+const WATER_MODES = new Set(['swim', 'under', 'peri', 'peek', 'hide', 'graze', 'bottom', 'tear']);
 
 /**
  * @typedef {{ x: number, y: number, z: number, r: number, kind?: string, room?: number, yaw?: number, inWater?: boolean }} Seat
@@ -33,7 +37,7 @@ const WATER_MODES = new Set(['swim', 'under', 'peri', 'peek', 'hide', 'graze', '
  *   slideAt?: number, calm?: boolean, rest?: { x: number, y: number, z: number }, peekAt?: { x: number, z: number },
  *   nudge?: { x: number, z: number, at: number }, spot?: { x: number, z: number, r: number }, food?: { x: number, z: number, under: boolean }, bottom?: boolean,
  *   id: number, t: number, w: Record<string, number>, ph: number, stroke: number, haulK: number, slideK: number,
- *   lookUp: number, jaw: number, wet: number }} Turtle
+ *   lookUp: number, jaw: number, wet: number, shake?: number, treat?: any }} Turtle
  *   and its pose (rigs/turtle.js TurtlePose). seat: the spot it is bound for or on (-1 none); from:
  *   where a climb or slide began; under: until when it stays under; spd: its speed through the water;
  *   depth: how far under the surface it means to swim (0 at the surface); facing: the periscope
@@ -56,6 +60,17 @@ export function createBask(o) {
   const rng = stream(o.seed >>> 0, 0xba5c, o.id);
   /** @type {Turtle[]} */ const fish = [];
   let home = { ...o.home }, t = 0, fleeUntil = -1;
+  const TR = M.treat ?? { edgeSearchM: 1.5, reachM: 0.12, giveUpS: 90, slideS: [1, 2.5], speedShare: 1.2 };
+  /**
+   * Treats set at the water's edge for these turtles (turtle.json treat): where it lies (x, z), the
+   * water just off it where a turtle takes it (ax, az), how long it eats (eatS, shared by all at a
+   * torn treat: until), whether it tears (shake), which turtles have reached it (who, their places).
+   * @typedef {{ tid: number, treat: string, x: number, z: number, ax: number, az: number, eatS: number, shake: boolean, giveUp: number, until?: number, who: Set<number> }} EdgeTreat
+   * @type {EdgeTreat[]}
+   */
+  let edgeTreats = [];
+  /** Treats eaten since the last ask (schools.js records them): the turtles that ate, by place. @type {{ tid: number, treat: string, who: number[] }[]} */
+  let eatenOut = [];
   /** @type {'day'|'night'|'winter'} */ let mood = 'day';
   const range = (/** @type {number[]} */ r) => r[0] + (r[1] - r[0]) * rng.next();
   // The shell's height, drawn: how far one turtle sits above the one it stacks on.
@@ -156,6 +171,31 @@ export function createBask(o) {
       const d = range(S5.fleeM), gx = f.x + Math.sin(f.yaw) * d, gz = f.z + Math.cos(f.yaw) * d;
       if (env.water(gx, gz).depth >= M.minDepthM) f.goal = { x: gx, z: gz };
     }
+  }
+
+  /**
+   * The water just off a treat at the edge, deep enough to swim (walk.swimDepthM): the nearest ring
+   * round it that has some, and on that ring the point nearest home. Null if none within edgeSearchM.
+   * @param {number} x @param {number} z
+   */
+  function edgeWater(x, z) {
+    for (let r = 0.06; r <= TR.edgeSearchM + 1e-6; r += 0.06) {
+      let best = null, bd = Infinity;
+      for (let k = 0; k < 16; k++) {
+        const a = (k / 16) * Math.PI * 2, px = x + Math.cos(a) * r, pz = z + Math.sin(a) * r;
+        if (env.water(px, pz).depth < W.swimDepthM) continue;
+        const d = (px - home.x) ** 2 + (pz - home.z) ** 2;
+        if (d < bd) { bd = d; best = { x: px, z: pz }; }
+      }
+      if (best) return best;
+    }
+    return null;
+  }
+
+  /** Done with a treat: back to swimming about. @param {Turtle} f */
+  function leaveTreat(f) {
+    f.treat = undefined; f.shake = 0;
+    if (f.mode === 'tear') { f.mode = 'swim'; newWander(f); }
   }
 
   /** Begin the slip off its spot, forward, the way it faces the water. @param {Turtle} f */
@@ -312,18 +352,48 @@ export function createBask(o) {
     },
     startle() {
       fleeUntil = t + M.fleeS;
-      // Those on a spot slip off one by one; those swimming dive at once and hide.
+      // Those on a spot slip off one by one; those swimming dive at once and hide. A treat at the
+      // edge is left where it lies.
       slideAll(false);
       for (const f of fish) {
+        leaveTreat(f);
         if (f.mode === 'climb') f.slideAt = t;
         if (['swim', 'under', 'peri', 'peek', 'graze', 'bottom'].includes(f.mode)) hide(f);
       }
     },
     get darting() { return fleeUntil > t; },
     setVisit() {},
-    /** Turtles take no food from you (yet: lily leaves, doc 12). */
+    /** Turtles take no crumbs from the Feed tool: their food is a treat set at the edge (treat). */
     feed() {},
     get feeding() { return false; },
+    /**
+     * A treat set at the water's edge (worms, a lily leaf parcel; treats.js): the nearest turtle (or,
+     * with all, every one) slips off its spot, swims to the water just off it, reaches its head over
+     * the edge and snaps it up (shake: tears at it, shaking its head) for eatS seconds; a torn treat
+     * is shared, all tearing at it until the first one's time is up. False if there is no water near
+     * enough to take it from, or it is not day.
+     * @param {{ x: number, z: number, tid: number, treat: string, eatS: number, shake: boolean, all: boolean }} p
+     */
+    treat(p) {
+      if (mood !== 'day' || !fish.length) return false;
+      const a = edgeWater(p.x, p.z);
+      if (!a) return false;
+      /** @type {EdgeTreat} */ const tr = { tid: p.tid, treat: p.treat, x: p.x, z: p.z, ax: a.x, az: a.z, eatS: p.eatS, shake: p.shake, giveUp: t + TR.giveUpS, who: new Set() };
+      const near = fish.filter((f) => !f.treat && f.mode !== 'slide').sort((f, g) => Math.hypot(f.x - p.x, f.z - p.z) - Math.hypot(g.x - p.x, g.z - p.z));
+      const go = p.all ? near.slice(0, TR.tearMax ?? near.length) : near.slice(0, 1);
+      if (!go.length) return false;
+      for (const f of go) {
+        f.treat = tr;
+        // On its spot: it slips in calmly first, a moment after it sees it set down.
+        if (f.mode === 'bask' || f.mode === 'climb' || f.mode === 'shuffle') {
+          if (f.slideAt === undefined) { f.slideAt = t + range(TR.slideS); f.calm = true; }
+        } else if (WATER_MODES.has(f.mode)) { f.mode = 'swim'; f.depth = 0; f.food = undefined; f.bottom = false; f.facing = false; }
+      }
+      edgeTreats.push(tr);
+      return true;
+    },
+    /** The treats eaten since the last ask, and the turtles (by place) that ate each. */
+    eaten() { const out = eatenOut; eatenOut = []; return out; },
     /** @param {number} dt */
     step(dt) {
       t += dt;
@@ -400,8 +470,10 @@ export function createBask(o) {
           return;
         }
         if (f.mode === 'walk') {
-          // On land or in the shallows (TL3): a slow diagonal walk, to its spot or back to the water.
-          const p = places[f.seat];
+          // On land or in the shallows (TL3): a slow diagonal walk, to its spot or back to the water
+          // (bound for a treat, to the water just off it).
+          const p = f.treat ? undefined : places[f.seat];
+          if (f.treat) f.goal = { x: f.treat.ax, z: f.treat.az };
           const target = p ? p.s : f.goal;
           const dx = target.x - f.x, dz = target.z - f.z, d = Math.hypot(dx, dz);
           turnToward(f, Math.atan2(dx, dz), W.turnRadS, dt);
@@ -483,6 +555,33 @@ export function createBask(o) {
           if (t >= f.until) { f.mode = 'swim'; f.facing = false; f.peekAt = undefined; newWander(f); }
           return;
         }
+        if (f.mode === 'tear') {
+          // At the edge with a treat: held there at the surface, facing it, its head reaching over
+          // the edge to snap (or tear) at it (the pose's tear layer), until its time is up.
+          const tr = f.treat;
+          f.spd *= 1 - Math.min(1, dt * 3);
+          f.ph += dt / (P.swim.strokeS * 2.5);
+          holdDepth(f, dt, 0);
+          if (tr) turnToward(f, Math.atan2(tr.x - f.x, tr.z - f.z), SW.turnRadS, dt);
+          f.shake = tr?.shake ? 1 : 0;
+          if (!tr || t >= (tr.until ?? f.until)) leaveTreat(f);
+          return;
+        }
+        if (f.treat) {
+          // Bound for a treat at the edge: straight to the water just off it, at the surface, a
+          // little quicker than it wanders; there it reaches for it.
+          const tr = f.treat;
+          f.seat = -1; f.depth = 0;
+          const d = paddle(f, tr.ax, tr.az, M.paddleMps * TR.speedShare, dt);
+          holdDepth(f, dt, 0);
+          f.mode = 'swim';
+          if (d < TR.reachM * o.size) {
+            f.mode = 'tear'; tr.who.add(i);
+            tr.until ??= t + tr.eatS;
+            f.until = tr.until;
+          } else if (t >= tr.giveUp) leaveTreat(f);
+          return;
+        }
         // Swimming: to its place by day (if there is one for it), else about home.
         const seatI = i < places.length && t >= f.under ? i : -1;
         f.seat = seatI;
@@ -518,6 +617,13 @@ export function createBask(o) {
           f.mode = 'peri'; f.until = t + range(SW.periS); f.depth = 0;
           f.facing = !!env.viewer && rng.next() < SW.faceChance;
         }
+      });
+      // A treat no turtle is on its way to or at any more: eaten, if one reached it (it lies on, for
+      // nobody, if a fright sent them all off first).
+      edgeTreats = edgeTreats.filter((tr) => {
+        if (fish.some((f) => f.treat === tr)) return true;
+        if (tr.who.size) eatenOut.push({ tid: tr.tid, treat: tr.treat, who: [...tr.who] });
+        return false;
       });
       // Swimmers keep a shell's width apart, never through one another.
       const wet = fish.filter((f) => WATER_MODES.has(f.mode));

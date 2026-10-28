@@ -323,7 +323,7 @@ export function mountIslandNotes(parent, words, naturalist = null) {
       ${id.liftNote ? `<p class="ebb-idcard__suits is-pencil">${esc(id.liftNote)}</p>` : ''}
       ${actRow}
       ${id.canName ? `<form class="ebb-idcard__name" hidden>
-        <label class="ebb-idcard__label" for="ebb-idcard-name">A name for this frog</label>
+        <label class="ebb-idcard__label" for="ebb-idcard-name">A name for this ${id.sp === 'turtles' ? 'turtle' : 'frog'}</label>
         <div class="ebb-idcard__row">
           <input class="ebb-idcard__input" id="ebb-idcard-name" maxlength="24" autocomplete="off" spellcheck="false">
           <button type="button" class="ebb-idcard__chip" data-act="suggest">Suggest one</button>
@@ -456,7 +456,7 @@ export function mountIslandNotes(parent, words, naturalist = null) {
     const name = (input?.value ?? '').trim();
     if (!name) { nameError('Type a name first, or tap Suggest one.'); input?.focus(); return; }
     if (!cleanName(name)) { nameError('A name needs letters.'); input?.focus(); return; }
-    if (id?.id != null) dispatch({ type: 'creature.name', id: id.id, name });
+    if (id?.id != null) dispatch({ type: 'creature.name', id: id.id, name, sp: id.sp });
   });
   card.addEventListener('input', () => nameError(''));
   /** @param {Event} e */

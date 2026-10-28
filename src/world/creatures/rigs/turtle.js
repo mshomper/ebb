@@ -14,15 +14,16 @@
 const DEG = Math.PI / 180;
 
 /** The layers a pose blends, in a fixed order. */
-export const LAYERS = Object.freeze(['swim', 'walk', 'bask', 'peri', 'tuck', 'haul', 'slide', 'graze']);
+export const LAYERS = Object.freeze(['swim', 'walk', 'bask', 'peri', 'tuck', 'haul', 'slide', 'graze', 'tear']);
 
 /**
  * What a turtle is doing, as far as its pose goes (bask.js keeps the rest):
  * @typedef {{ id: number, t: number, mode: string, w: Record<string, number>, ph: number, stroke: number,
- *   haulK: number, slideK: number, look: number, lookUp: number, jaw: number, wet: number, pitch: number, roll: number, bob?: number }} TurtlePose
+ *   haulK: number, slideK: number, look: number, lookUp: number, jaw: number, wet: number, pitch: number, roll: number, bob?: number, shake?: number }} TurtlePose
  *   t: seconds of its own clock; w: each layer's weight; ph: the stroke or stride, in cycles; stroke:
  *   how hard it strokes (0 glides or hangs still, 1 swims); haulK, slideK: progress through a haul-out
- *   or a slide; look, lookUp: where its head turns (radians); jaw: 0..1 open (a bite, a yawn)
+ *   or a slide; look, lookUp: where its head turns (radians); jaw: 0..1 open (a bite, a yawn);
+ *   shake: 1 while it tears at a treat (the head shakes with each bite), 0 or absent otherwise
  */
 
 /** Each mode's layer weights (anything not listed is 0). */
@@ -30,7 +31,7 @@ const MODE_LAYERS = {
   swim: { swim: 1 }, under: { swim: 1, tuck: 0.15 }, glide: { swim: 1 }, walk: { walk: 1 }, bottom: { walk: 1 },
   haul: { haul: 1 }, climb: { haul: 1 }, bask: { bask: 1 }, peri: { peri: 1 }, peek: { peri: 1 },
   slide: { slide: 1 }, hide: { swim: 1, tuck: 0.6 }, low: { peri: 0.35, tuck: 0.25 }, graze: { swim: 0.6, graze: 1 },
-  shuffle: { walk: 0.7, bask: 0.3 },
+  shuffle: { walk: 0.7, bask: 0.3 }, tear: { swim: 0.5, tear: 1 },
 };
 
 /**
@@ -224,6 +225,18 @@ function layers(f, P) {
     const bite = c < G.biteShare ? Math.sin((c / G.biteShare) * Math.PI) : 0;
     const swimHold = swimLimb(frac(f.ph), true, P.swim, 0);
     out.graze = { limbs: [swimHold, swimHold, swimHold, swimHold], ax: { ...ax0(), ext: G.neckOutM + bite * G.jabM, up: -G.headDownDeg * DEG, jaw: bite * G.jawDeg * DEG } };
+  }
+  if (f.w.tear > 1e-3) {
+    // Taking a treat from the water's edge: the neck reaches out and up over the edge, the jaw
+    // snaps; tearing at a parcel (f.shake), each bite shakes the head side to side to tear a piece off.
+    const R = P.tear;
+    const c = frac(t / R.biteS + h01(f.id, 11));
+    const bite = c < R.biteShare ? Math.sin((c / R.biteShare) * Math.PI) : 0;
+    const shake = (f.shake ?? 0) * bite * Math.sin(t * R.shakeHz * Math.PI * 2) * R.shakeDeg * DEG;
+    const hold = swimLimb(frac(f.ph), true, P.swim, 0);
+    // The front flippers brace on the edge, a little forward and down.
+    const brace = { ...hold, sw: -R.braceDeg * DEG, li: -R.braceDeg * DEG * 0.5 };
+    out.tear = { limbs: [brace, brace, hold, hold], ax: { ...ax0(), ext: R.neckOutM + bite * R.jabM, up: (R.neckUpDeg - bite * R.dipDeg) * DEG, yaw: shake, jaw: bite * R.jawDeg * DEG } };
   }
   return out;
 }

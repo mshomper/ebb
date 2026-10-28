@@ -25,6 +25,7 @@
       "nettle.tops": { "type": "herb", "window": [[0, 0.9], [2.0, 2.8]] },
       "chamomile.flowers": { "type": "herb", "window": [1.0, 2.2] },
       "marram.leaves": { "type": "herb", "window": [1.6, 2.4] },
+      "lilies.leaf": { "type": "water", "window": [1.0, 2.0], "note": "October 27, 2026: a lily leaf for the turtles' parcel (cook.json lily-parcel), picked in summer from the bank or the shallows (waterReachM): a pick takes the water type's share and the plant grows it back." },
       "watermint.seed": { "type": "seed", "window": [2.4, 3.05] },
       "meadowsweet.seed": { "type": "seed", "window": [2.0, 3.0] },
       "nettle.seed": { "type": "seed", "window": [2.0, 3.0] },

@@ -1,4 +1,4 @@
-﻿// @ts-check
+// @ts-check
 // The naturalist's notes and species gifts (src/world/expansion.js), and the save upgrade that
 // brought them in (src/save/migrate-naturalist.js), for tools/unit-tests.html.
 
@@ -61,16 +61,16 @@ export function addNaturalistTests(test, assert, eq) {
     assert(!ready(R.rewards.find((/** @type {any} */ r) => r.id === 'lens')), 'the lens not built');
   });
 
-  test(G, 'a happy species gives its gift once, and a seed gift offers that plant', async () => {
+  test(G, 'a species that knows you gives its gift once, and a seed gift offers that plant', async () => {
     const [R, words] = await loaded;
     const p = { found: 0, rewards: R.rewards, gifts: { frogs: { kind: 'seed', id: 'lilies' } }, words, giftWords: R.gifts };
-    eq(due({ ...p, flags: [], earned: {} }).length, 0, 'not happy: nothing');
-    const d = due({ ...p, flags: ['frogs:happy'], earned: {} });
-    eq(d.length, 1, 'happy: the gift');
+    eq(due({ ...p, flags: ['frogs:happy'], earned: {} }).length, 0, 'happy alone: nothing (October 27, 2026)');
+    const d = due({ ...p, flags: ['frogs:known'], earned: {} });
+    eq(d.length, 1, 'known: the gift');
     assert(/lilies/i.test(d[0].line) && /frogs/i.test(d[0].title), 'its words name the plant and the species');
     const earned = grant({ springs: true }, d[0]);
     assert(earned.seeds.lilies && earned.gifts.frogs && earned.springs, 'seed given, earlier unlocks kept');
-    eq(due({ ...p, flags: ['frogs:happy'], earned }).length, 0, 'given once');
+    eq(due({ ...p, flags: ['frogs:known'], earned }).length, 0, 'given once');
   });
 
   test(G, "the frogs' gift is the Cliff tool: its own words and drawn icon, given once", async () => {
@@ -78,18 +78,18 @@ export function addNaturalistTests(test, assert, eq) {
     const frog = await fetch('../recipes/species/frog.json').then((r) => r.json());
     eq(JSON.stringify(frog.ecology.gift), JSON.stringify({ kind: 'tool', id: 'cliffs' }), 'frog.json gift');
     const p = { found: 0, rewards: R.rewards, gifts: { frogs: frog.ecology.gift }, words, giftWords: R.gifts };
-    const d = due({ ...p, flags: ['frogs:happy'], earned: {} });
-    eq(d.length, 1, 'happy: the gift');
+    const d = due({ ...p, flags: ['frogs:known'], earned: {} });
+    eq(d.length, 1, 'known: the gift');
     eq(d[0].icon, 'terrace', 'the terrace icon');
     assert(/frogs/i.test(d[0].title) && /terrace/i.test(d[0].line) && !/[{}]/.test(d[0].title + d[0].line), `card words: ${d[0].title}. ${d[0].line}`);
     const earned = grant({ springs: true }, d[0]);
     assert(earned.cliffs === true && earned.gifts.frogs && earned.springs && !earned.seeds, 'cliffs given, earlier unlocks kept, no seed');
-    eq(due({ ...p, flags: ['frogs:happy'], earned }).length, 0, 'given once');
+    eq(due({ ...p, flags: ['frogs:known'], earned }).length, 0, 'given once');
   });
 
   test(G, 'the same journal gives the same, every time (live, catch-up, a reload)', async () => {
     const [R, words] = await loaded;
-    const j = journalWith({ anemone: 4, periwinkle: 9, lugworm: 22 }, ['frogs:happy']);
+    const j = journalWith({ anemone: 4, periwinkle: 9, lugworm: 22 }, ['frogs:known']);
     const run = () => {
       let e = {};
       for (const g of due({ found: findsFound(j, words).length, flags: j.flags, earned: e, rewards: R.rewards, gifts: { frogs: { kind: 'seed', id: 'lilies' } }, words, giftWords: R.gifts })) e = grant(e, g);

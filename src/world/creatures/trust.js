@@ -24,13 +24,16 @@ export const TRUST_WORDS = /** @type {const} */ (['wary', 'tolerant', 'curious',
  */
 
 /**
- * What a treat earns, and the game day it marks: feedTrust times treatFeeds, nothing if the
- * creature already had one this game day. Never scaled by appetite: a treat is eaten at once.
+ * What a treat earns, and the game day it marks: feedTrust times treatFeeds (or that treat's own
+ * worth in treatFeedsOf, the turtles' lily leaf parcel), nothing if the creature already had one
+ * this game day. Never scaled by appetite: a treat is eaten at once.
  * @param {any} P the species' presence recipe @param {number | undefined} lastDay @param {number} hour
+ * @param {string} [treat] which treat (its id)
  */
-export function treatGain(P, lastDay, hour) {
+export function treatGain(P, lastDay, hour, treat) {
   const day = Math.floor(hour / HOURS_PER_DAY);
-  return { gain: lastDay === day ? 0 : (P.feedTrust ?? 0) * (P.treatFeeds ?? 0), day };
+  const feeds = (treat && P.treatFeedsOf?.[treat]) ?? P.treatFeeds ?? 0;
+  return { gain: lastDay === day ? 0 : (P.feedTrust ?? 0) * feeds, day };
 }
 
 /** Rounded to four places, so saves and catch-up compare exactly. @param {number} v */

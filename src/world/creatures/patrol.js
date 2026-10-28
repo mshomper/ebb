@@ -122,6 +122,18 @@ export function createPatrol(o) {
      * @param {{ x: number, y: number, z: number } | null} p
      */
     setVisit(p) { visit = p; },
+    /**
+     * The moment they come to know you (October 27, 2026): the nearest one flies to where you are
+     * (at(), the top of your hat) and rests there for s seconds, or until you move off.
+     * @param {() => { x: number, y: number, z: number } | null} at @param {number} s
+     */
+    land(at, s) {
+      const p = at();
+      if (!p || mood !== 'day' || !fish.length) return;
+      const f = fish.slice().sort((a, b) => Math.hypot(a.x - p.x, a.z - p.z) - Math.hypot(b.x - p.x, b.z - p.z))[0];
+      f.perch = { ...p }; f.visiting = null; f.mode = 'dart'; f.until = t + 10;
+      /** @type {any} */ (f).onYou = { at, from: { ...p }, s };
+    },
     /** Dragonflies take no food from you. */
     feed() {},
     get feeding() { return false; },
@@ -129,6 +141,14 @@ export function createPatrol(o) {
     step(dt) {
       t += dt;
       for (const f of fish) {
+        // Resting on you: it keeps to your hat while you keep still, and is off once you move.
+        const you = /** @type {any} */ (f).onYou;
+        if (you) {
+          const p = you.at();
+          if (!p || Math.hypot(p.x - you.from.x, p.z - you.from.z) > M.landMoveM || f.mode === 'flee' || (f.mode === 'dart' && t >= f.until)) {
+            /** @type {any} */ (f).onYou = undefined; next(f);
+          } else f.perch = { x: p.x, y: p.y, z: p.z };
+        }
         let target = f.perch ?? f.visiting ?? f.beat[f.at];
         if (f.mode === 'flee') {
           // Up and away, then back to the beat.
@@ -141,7 +161,7 @@ export function createPatrol(o) {
         if (f.mode === 'perch') {
           f.vx = f.vy = f.vz = 0;
           f.x = target.x; f.y = target.y; f.z = target.z;
-          if (mood === 'day' && t >= f.until) next(f);
+          if (mood === 'day' && t >= f.until) { /** @type {any} */ (f).onYou = undefined; next(f); }
         } else if (f.mode === 'hover') {
           // Holding the point, bobbing a little.
           const bob = Math.sin(t * M.bobHz * 6.283 + f.phase * 0.1) * M.bobM;
@@ -155,7 +175,7 @@ export function createPatrol(o) {
           const vx = d > 1e-6 ? (dx / d) * want : 0, vy = d > 1e-6 ? (dy / d) * want : 0, vz = d > 1e-6 ? (dz / d) * want : 0;
           ax = (vx - f.vx) * M.agility; ay = (vy - f.vy) * M.agility; az = (vz - f.vz) * M.agility;
           if (f.mode === 'dart' && (d < 0.04 || t >= f.until)) {
-            if (f.perch) { f.mode = 'perch'; f.until = t + range(M.perchS); }
+            if (f.perch) { f.mode = 'perch'; f.until = t + (/** @type {any} */ (f).onYou?.s ?? range(M.perchS)); }
             else { f.mode = 'hover'; f.until = t + range(M.hoverS); }
           }
         }

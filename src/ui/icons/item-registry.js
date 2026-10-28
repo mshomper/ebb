@@ -39,6 +39,8 @@ export const POUCH_KINDS = /** @type {[string, string, string, string, number][]
   ['bowl', 'bowl', 'Clay bowls', 'T2', 2],
   // P2h: the made leaf pack rides in a pouch until it is set out, and wears its treat glyph.
   ['leaf-pack', 'leaf-pack', 'Leaf pack', 'T2', 2],
+  // The turtles' made treat (October 27, 2026), in its treat glyph.
+  ['lily-parcel', 'lily-parcel', 'Lily leaf parcel', 'T2', 2],
 ]).map(row);
 
 /** Plant parts, '<species>.<part>' (docs/future/13 sections 4.1 and 5.3). @type {ItemRow[]} */
@@ -59,7 +61,7 @@ export const PLANT_PARTS = /** @type {[string, string, string, string, number][]
   ['rose.hips', 'hips', 'Rose hips', 'T4', 5], ['elder.berries', 'elderberries', 'Elderberries', 'T4', 5], ['hawthorn.berries', 'haws', 'Haws', 'T4', 4],
   ['bramble.berries', 'blackberries', 'Blackberries', 'T5', 5], ['strawberry.fruit', 'strawberries', 'Wild strawberries', 'T5', 5], ['juniper.berries', 'juniper', 'Juniper berries', 'T6', 5],
   ['hazel.nuts', 'hazelnuts', 'Hazelnuts', 'T5', 5], ['oak.acorns', 'acorns', 'Acorns', 'T5', 5],
-  ['lilies.leaf', 'lily-leaf', 'Lily leaf', 'T3', 3], ['pondweed.strands', 'pondweed', 'Pondweed', 'T3', 3],
+  ['lilies.leaf', 'lily-leaf', 'Lily leaf', 'T2', 2], ['pondweed.strands', 'pondweed', 'Pondweed', 'T3', 3],
 ]).map(row);
 
 /** Species named two ways in the docs (doc 13's pouch table against the flora recipe ids). */
@@ -96,8 +98,9 @@ export const MAKES = /** @type {[string, string, string, string, number][]} */ (
 
 /** Treats and offerings (docs/future/13 section 8). @type {ItemRow[]} */
 export const TREATS = /** @type {[string, string, string, string, number][]} */ ([
-  ['wrack-heap', 'wrack-heap', 'Wrack heap (frogs)', 'T2', 2], ['leaf-pack', 'leaf-pack', 'Leaf pack (minnows)', 'T2', 2], ['dug-worms', 'worms', 'Worms (turtles, the robin)', 'T2', 3],
-  ['pondweed-bundle', 'pondweed', 'Pondweed bundle (minnows)', 'T3', 3], ['lily-leaf', 'lily-leaf', 'Lily leaf (turtles)', 'T3', 3], ['perch-stick', 'perch-stick', 'Perch stick (dragonflies)', 'T3', 3],
+  ['wrack-heap', 'wrack-heap', 'Wrack heap (frogs)', 'T2', 2], ['leaf-pack', 'leaf-pack', 'Leaf pack (minnows)', 'T2', 2], ['dug-worms', 'worms', 'Worms (turtles, the robin)', 'T2', 2],
+  ['lily-parcel', 'lily-parcel', 'Lily leaf parcel (turtles)', 'T2', 2],
+  ['pondweed-bundle', 'pondweed', 'Pondweed bundle (minnows)', 'T3', 3], ['lily-leaf', 'lily-leaf', 'Lily leaf (turtles)', 'T2', 2], ['perch-stick', 'perch-stick', 'Perch stick (dragonflies)', 'T3', 3],
   ['overripe-fruit', 'offered:strawberries', 'Overripe fruit (butterflies)', 'T4', 4], ['seed-cake', 'seed-cake', 'Seed cake (songbirds)', 'T5', 4],
   ['acorns-stump', 'offered:acorns', 'Acorns on a stump (the jay)', 'T5', 5], ['hazelnuts-stump', 'offered:hazelnuts', 'Hazelnuts in the shell (squirrels)', 'T5', 5],
   ['beetle-bait', 'beetle-bait', 'Beetle bait (hedgehogs)', 'T5', 5], ['chanterelle-branch', 'offered:chanterelle', 'Chanterelle on a branch (squirrels)', 'T5', 5],

@@ -59,8 +59,8 @@ export function addCampMakingTests(test, assert, eq) {
   test(G, 'the workbench is built from two flat stones; the camp page lists the ring, then each first in order', async () => {
     const C = await load('world/cook');
     eq(JSON.stringify(buildKinds(C.builds.workbench)), JSON.stringify(['flat-stones', 'flat-stones']), 'two handfuls of flat stones');
-    eq(makesAt(C, 'workbench').join(), 'rush-cord,shovel,rack,mortar,hamper,hamper2,hearth-stones,cooking-pot,tea-pot,cup,bowl,leaf-pack,satchel,basket,seed-balls',
-      'the workbench knows rush cord, the shovel (P2c), the rack and mortar (S2), the hampers (P2j), the hearth stones and the clay pieces (S4, S5), the leaf pack (P2h), the carriers (P2f) and seed balls (P2g)');
+    eq(makesAt(C, 'workbench').join(), 'rush-cord,shovel,rack,mortar,hamper,hamper2,hearth-stones,cooking-pot,tea-pot,cup,bowl,leaf-pack,satchel,basket,seed-balls,lily-parcel',
+      'the workbench knows rush cord, the shovel (P2c), the rack and mortar (S2), the hampers (P2j), the hearth stones and the clay pieces (S4, S5), the leaf pack (P2h), the carriers (P2f), seed balls (P2g) and the lily leaf parcel for the turtles');
     const camp = { slots: [{ slot: 'ring', kind: 'ring', placedHour: 3 }] };
     assert(!campPageHad({ slots: [] }, cleanCook(null)), 'no page before the ring');
     assert(campPageHad(camp, cleanCook(null)), 'the page once the ring is laid');

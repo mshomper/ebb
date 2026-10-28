@@ -16,7 +16,7 @@ import { weatherAt } from '../weather.js';
 import { tideParams } from '../tide.js';
 import { initialJournal, learn, notePlanted, momentsNow, catchMoments, foundAnimal, foundFind, namedAnimal, flag, noteGift, liftedStone, stormShells } from './observe.js';
 import { journalLook } from './look.js';
-import { describe, identify, showMeSpot, momentKind, frogCard } from './describe.js';
+import { describe, identify, showMeSpot, momentKind, frogCard, turtleCard } from './describe.js';
 import { groundKind, groundCard, groundSurvey, describeGround, groundSpot } from './ground.js';
 import { almanac } from './almanac.js';
 import { describeWeb } from './web.js';
@@ -155,6 +155,8 @@ export function createJournal(opts) {
     for (const s of opts.schools ?? []) {
       const hit = s.at(x, z, y);
       const rec = hit && words.species[hit.sp];
+      // A turtle is one animal with its own trust and maybe a name (bonds.js).
+      if (rec && hit.sp === 'turtles' && hit.one !== undefined) return turtleCard({ x: hit.x, z: hit.z, id: hit.one }, world.state, words, world.env.recipes?.species?.turtle?.presence);
       if (rec) return { sp: hit.sp, name: rec.card ?? rec.name, sub: null, icon: rec.icon, text: rec.stages?.[0] ?? '', wx: hit.x, wz: hit.z, r: 0.6, stage: -1 };
     }
     // Then a find (docs/future/11): smaller still, and found by looking closely.
@@ -455,12 +457,14 @@ export function createJournal(opts) {
       if (p.species === 'frogs' || words.species[p.species]?.kind === 'school') found(p.species);
     }),
     // You named a frog (S6c-3, src/app.js): the moment is written, and its open card takes the name.
+    // A turtle too (bonds.js): its card the same way.
     on('creature:named', (/** @type {{ species: string, id: number, name: string }} */ p) => {
-      if (p.species !== 'frogs') return;
-      commit(namedAnimal(journal, p.name, { state: world.state, hour: hourIndex(), words }));
+      if (p.species !== 'frogs' && p.species !== 'turtles') return;
+      commit(namedAnimal(journal, p.name, { state: world.state, hour: hourIndex(), words }, p.species));
       const c = get('identify');
-      if (c?.sp === 'frogs' && c.id === p.id) {
-        const card = frogCard({ x: c.wx, z: c.wz, id: c.id }, world.state, words, world.env.recipes?.species?.frog?.presence);
+      if (c?.sp === p.species && c.id === p.id) {
+        const card = p.species === 'frogs' ? frogCard({ x: c.wx, z: c.wz, id: c.id }, world.state, words, world.env.recipes?.species?.frog?.presence)
+          : turtleCard({ x: c.wx, z: c.wz, id: c.id }, world.state, words, world.env.recipes?.species?.turtle?.presence);
         update('identify', () => ({ ...c, ...card }));
       }
     }),

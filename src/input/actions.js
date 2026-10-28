@@ -57,7 +57,7 @@ import { emit } from '../core/events.js';
  *   | { type: 'look.palette', id: string }
  *   | { type: 'look.tap', x: number, y: number, source: Source }
  *   | { type: 'ui.identify' }
- *   | { type: 'creature.name', id: number, name: string }
+ *   | { type: 'creature.name', id: number, name: string, sp?: string }
  *   | { type: 'ui.hideHud', hidden?: boolean, source?: Source }
  *   | { type: 'ui.journal', open?: boolean, toggle?: boolean, view?: 'trails'|'living'|'ground'|'web'|'almanac'|'notes'|'shelf', page?: string|null, size?: 'half'|'full', trail?: 'naturalist'|'beach'|'shape' }} Action
  */

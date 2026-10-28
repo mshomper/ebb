@@ -103,6 +103,15 @@ export function createGather(o) {
     return !!w && Number.isFinite(w.surface) && w.surface > o.terrain.sampleHeight(x, z) + 0.02;
   }
 
+  /**
+   * How near the walker must be to take a handful: arm's reach, or for a plant in the water (a lily
+   * leaf) waterReachM, reaching out from the bank or the shallows. @param {any} g
+   */
+  function reachOf(g) {
+    const x = g.spot?.x ?? g.x, z = g.spot?.z ?? g.z;
+    return g.plant !== undefined && (o.water.sampleLive?.(x, z)?.depth ?? 0) > 0.05 ? R.waterReachM ?? R.reachM ?? 0.9 : R.reachM ?? 0.9;
+  }
+
   /** The growth plant a card is about (nearest to its ring's middle, of its species). @param {any} card */
   function plantOf(card) {
     let best = null, bd = 0.25;
@@ -317,7 +326,7 @@ export function createGather(o) {
       const g = c?.gathers?.[n];
       if (!g) return;
       const x = g.spot?.x ?? g.x, z = g.spot?.z ?? g.z;
-      const reach = R.reachM ?? 0.9;
+      const reach = reachOf(g);
       if (o.walk.distTo(x, z) > reach) {
         const y = o.terrain.sampleHeight(x, z);
         if (!o.walk.tap(-1e4, -1e4, [x, y, z], reach)) return;
@@ -374,7 +383,7 @@ export function createGather(o) {
           return;
         }
         const g = pending.g, x = g.spot?.x ?? g.x, z = g.spot?.z ?? g.z;
-        if (o.walk.distTo(x, z) > (R.reachM ?? 0.9) + 0.6) { pending = null; return; }
+        if (o.walk.distTo(x, z) > reachOf(g) + 0.6) { pending = null; return; }
         o.walk.kneelToward(x, z, R.kneelS ?? 1.2, 'gather');
         pending.kneelT = now;
         return;

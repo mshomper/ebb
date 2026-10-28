@@ -261,7 +261,7 @@
         "leaf": { "text": ["wavy, crinkled", "leaf"], "learn": ["seen"] },
         "stem": { "text": ["rises toward", "the surface"], "learn": ["seen"] },
         "root": { "text": ["creeping root"], "learn": ["spread", "dormant"] } } },
-      "riddle": "Something green might grow under still water, if a happy school of fish brought it.",
+      "riddle": "Something green might grow under still water, if a school of fish that knew you brought it.",
       "amount": [[1, "A sprig of pondweed"], [3, "A few stems of pondweed"], [8, "A patch of pondweed"], [20, "An underwater meadow of pondweed"]],
       "place": "under the still water", "compass": false,
       "none": "No pondweed grows on the island now.",
@@ -1568,7 +1568,7 @@
         }
       },
       "gives": [
-        { "pencil": "Something might come of a happy pond one day.", "ink": "Happy frogs bring the Cliff tool.", "when": "frogs:happy" }
+        { "pencil": "Something might come of a frog that knows you one day.", "ink": "The first frog you name brings the Cliff tool.", "when": "frogs:known" }
       ],
       "foundLine": "You found the first frog on {date}.",
       "peakLine": "There were more of them on {date} than there are now.",
@@ -1664,7 +1664,7 @@
         "familiar": "The minnows know you. They rise to meet you at the water's edge."
       } },
       "gives": [
-        { "pencil": "Something might come of a happy pool one day.", "ink": "Happy minnows bring pondweed seed.", "when": "minnows:happy" }
+        { "pencil": "Something might come of a school that knows you one day.", "ink": "Minnows that know you bring pondweed seed.", "when": "minnows:known" }
       ],
       "foundLine": "You found the first minnows on {date}.",
       "notes": {
@@ -1684,7 +1684,8 @@
         "left": "Some of the minnows have moved on.",
         "gone": "The minnows have gone from the pool.",
         "eased": "The minnows have settled again. Their pool suits them.",
-        "happy": "The school turns as one now, silver in the sun."
+        "happy": "The school turns as one now, silver in the sun.",
+        "known": "The minnows know you now. They rise to meet you at the water's edge."
       },
       "uneasy": {
         "waterSummer": "The minnows seem restless: their pool has dropped in the heat, and they like it deep. They may move on in a few days.",
@@ -1732,7 +1733,7 @@
         "curious": "A dragonfly came to hover and look at you."
       } },
       "gives": [
-        { "pencil": "Something might come of a sunny, reedy pond one day.", "ink": "Happy dragonflies bring springs.", "when": "dragonflies:happy" }
+        { "pencil": "Something might come of a dragonfly that knows you one day.", "ink": "Dragonflies that know you bring springs.", "when": "dragonflies:known" }
       ],
       "foundLine": "You found the first southern hawker on {date}.",
       "notes": {
@@ -1752,7 +1753,8 @@
         "eased": "The dragonflies have settled again. Their pond suits them.",
         "dormant": "The last dragonflies have gone. Their young wait under the water.",
         "woke": "The water has warmed. The first dragonfly of the year has climbed out of the pond.",
-        "happy": "The dragonflies patrol the whole pond now, each on its own beat."
+        "happy": "The dragonflies patrol the whole pond now, each on its own beat.",
+        "known": "The dragonflies know you now. One came looking for you, to rest a while."
       },
       "_uneasy": "A9: when their pond starts failing them they wait three days before they go (recipes/species/dragonfly.json arrival.leaveGraceDays). The note and their page say why, by what is failing (src/world/creatures/swarms.js whyFailing); a ...Summer line is used in summer. Show me on the note rings the pond.",
       "uneasy": {
@@ -1869,14 +1871,28 @@
         { "text": "A stone or log at the water's edge to bask on", "learn": ["seen"] },
         { "text": "Summer: they wait for the water to warm", "learn": ["woke", "dormant"] },
         { "text": "Moves on when the pond is drained", "learn": ["left"] },
-        { "text": "Stays on its stone if you come slowly", "learn": ["trust:tolerant"] }
+        { "text": "Stays on its stone if you come slowly", "learn": ["trust:tolerant"] },
+        { "text": "Takes worms at the water's edge", "learn": ["likes:worms"] },
+        { "text": "Tears at a lily leaf parcel", "learn": ["likes:lily-parcel"] }
       ],
-      "_trust": "How well the turtles know you (doc 23), from quiet watching only; the ceiling is Tolerant.",
-      "trust": { "notes": {
-        "tolerant": "The turtles stay on their stones now when you come slowly."
-      } },
+      "_trust": "How well the turtles know you (doc 23; October 27, 2026): the group from quiet watching, and each turtle that much and what it ate from you besides (src/world/creatures/bonds.js), as a word on its card; the ceiling is Curious. lines, since, namedLine and names as the frogs': one that knows you to presence.namingTrust can be named, and the first named brings the raft.",
+      "trust": {
+        "words": { "wary": "Wary", "tolerant": "Tolerant", "curious": "Curious", "familiar": "Familiar", "bonded": "Bonded" },
+        "lines": {
+          "wary": "Watches you from its stone, ready to slide in.",
+          "tolerant": "Stays on its stone if you come slowly.",
+          "curious": "Lifts its head to look at you, and stays."
+        },
+        "since": "{card}, named {date}",
+        "namedLine": "{name}, named {date}",
+        "names": ["Mossback", "Old Penny", "Basil", "Pebble", "Juniper", "Tumble", "Sedge", "Bramble", "Clove", "Hazel", "Slate", "Marigold", "Peat", "Barnaby", "Ember", "Lichen"],
+        "notes": {
+          "tolerant": "The turtles stay on their stones now when you come slowly.",
+          "curious": "The turtles lift their heads to look at you now. One of them knows you."
+        }
+      },
       "gives": [
-        { "pencil": "Something might come of a warm pond with places to bask one day.", "ink": "Happy turtles bring the floating reed raft.", "when": "turtles:happy" }
+        { "pencil": "Something might come of a turtle that knows you one day.", "ink": "The first turtle you name brings the floating reed raft.", "when": "turtles:known" }
       ],
       "foundLine": "You found the first pond turtle on {date}.",
       "notes": {
@@ -1896,7 +1912,10 @@
         "dormant": "The turtles have gone down into the pond mud for the winter.",
         "woke": "The water has warmed. A turtle is basking by the pond again.",
         "eased": "The turtles have settled again. Their pond suits them.",
-        "happy": "The turtles bask together in the sun, stacked on their stones."
+        "happy": "The turtles bask together in the sun, stacked on their stones.",
+        "treat:worms": "A turtle slid in, swam to the edge and snapped up the worms you set out.",
+        "treat:lily-parcel": "The turtles came to the parcel together and tore it to pieces at the water's edge.",
+        "named": "You named a turtle {name}."
       },
       "uneasy": {
         "waterSummer": "The turtles seem restless: their pond has dropped in the heat, and they like it deeper. They may move on in a few days.",

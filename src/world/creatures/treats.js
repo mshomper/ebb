@@ -14,7 +14,7 @@
 
 import { on, emitDeferred } from '../../core/events.js';
 import { get, update } from '../../core/store.js';
-import { cleanTreats, lyingAt, paleOf, likersOf, isTreatKind, TREATS_MAX } from './treat-rules.js';
+import { cleanTreats, lyingAt, paleOf, likersOf, isTreatKind, treatIdOf, TREATS_MAX } from './treat-rules.js';
 
 /** @typedef {import('./treat-rules.js').LyingTreat} LyingTreat */
 
@@ -23,7 +23,7 @@ const r2 = (v) => Math.round(v * 100) / 100;
 
 /**
  * @param {{ recipe: any, species: { key: string, rec: any, live: { treat: (x: number, z: number, t: { treat: string, tid: number, reachM: number }) => string } | null }[],
- *   pack: { take: (kind: string, n: number) => number }, walk: { feedPoint: (aheadM?: number, turnDeg?: number, like?: (x: number, z: number) => boolean) => number[] | null, walker?: { x: number, z: number } },
+ *   pack: { take: (kind: string, n: number) => number }, walk: { feedPoint: (aheadM?: number, turnDeg?: number, like?: (x: number, z: number) => boolean, must?: boolean) => number[] | null, walker?: { x: number, z: number } },
  *   hour: () => number, depth?: (x: number, z: number) => number }} o
  *   recipe: recipes/world/treats.json; species: every species with a treat block, its live module (the
  *   frogs' creatures, a school's schools) or null when it is not on the island; hour: game hours now;
@@ -60,6 +60,18 @@ export function createTreats(o) {
       const swimM = Math.max(0, ...likersOf(kind, o.species).filter(({ T }) => T.water)
         .map(({ key }) => (o.species.find((s) => s.key === key)?.rec?.motion?.minDepthM ?? 0.1) + (R.tossDeeperM ?? 0)));
       const water = !!depth && !!w && swimM > 0;
+      // A treat for the turtles (treat.edge) is set on the bank at the water's edge: dry ground with
+      // water deep enough to swim within edge.withinM, so one can take it from the water.
+      const E = likersOf(kind, o.species).map(({ T }) => T.edge).find(Boolean);
+      /** @param {number} x @param {number} z */
+      const atEdge = (x, z) => {
+        if (!depth || depth(x, z) > 0.03) return false;
+        for (let k = 0; k < 12; k++) {
+          const a = (k / 12) * Math.PI * 2;
+          for (const r of [E.withinM * 0.5, E.withinM]) if (depth(x + Math.cos(a) * r, z + Math.sin(a) * r) >= E.depthM) return true;
+        }
+        return false;
+      };
       /** @param {number} x @param {number} z @returns {number[] | null} */
       const toss = (x, z) => {
         if (!depth || !w) return null;
@@ -72,7 +84,10 @@ export function createTreats(o) {
       };
       // Turned so it lies in view, but toward the water if straight ahead is (a leaf pack for a
       // pool), or on land if that is (wrack for the frogs).
-      const p = o.walk.feedPoint(R.setOutM, R.setOutTurnDeg, water ? (x, z) => !!toss(x, z) : depth && ((x, z) => depth(x, z) > 0.03));
+      const p = E ? o.walk.feedPoint(E.aheadM ?? R.setOutM, R.setOutTurnDeg, atEdge, true)
+        : o.walk.feedPoint(R.setOutM, R.setOutTurnDeg, water ? (x, z) => !!toss(x, z) : depth && ((x, z) => depth(x, z) > 0.03));
+      // Not at the edge (turtles' treats): it stays in the pack, and the line says where it goes.
+      if (p && E && !atEdge(p[0], p[2])) return W.edge ?? '';
       if (!p || o.pack.take(kind, 1) < 1) return '';
       const t = water ? toss(p[0], p[2]) : null;
       if (t) { p[0] = t[0]; p[2] = t[1]; }
@@ -86,7 +101,7 @@ export function createTreats(o) {
       let waits = '';
       for (const { key, T } of likersOf(kind, o.species)) {
         const live = o.species.find((s) => s.key === key)?.live;
-        const r = live?.treat(p[0], p[2], { treat: T.id, tid, reachM: T.reachM }) ?? 'none';
+        const r = live?.treat(p[0], p[2], { treat: treatIdOf(kind, T), tid, reachM: T.reachM }) ?? 'none';
         if (r === 'coming') return W.coming?.[key] ?? W.none ?? '';
         if (r === 'waiting') waits = W.waiting?.[key] ?? '';
       }
