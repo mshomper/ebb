@@ -2,7 +2,7 @@
 
 > Where the sea has worked at a cliff long enough, it opens a mouth. Inside is a chamber that is always the same: tide pools, weed, the sound of the sea. Two ways lead on. One is choked with fallen rock, and digging through it, visit by visit, leads to quiet chambers and a sleeping bear. The other is an old arch with soot marks around it, and the walker won't go through it with empty hands. Beyond it is **the Hollow**: floors that are different every time you go down, things in the dark that don't belong to the island, and a lantern that decides how far you get before you have to turn back. Nothing makes a player go there. It's for the ones who want it, the way the mines are in Stardew Valley.
 
-**Status:** Leaning. Not scheduled: work for a later date. Drafted October 25, 2026, from Matt's ask for a cave with a dungeon-crawling experience, then redrafted the same day to Matt's own design (below). It builds on Matt's pin of October 18, 2026 (caves for a landmark creature such as a bear) and doc 20's M7 line on placed rock pieces for sea caves.
+**Status:** Scheduled on October 27, 2026 (Matt): the first version (H3 to H5) is its own milestone right after M2 (doc 20, "The Hollow, first version"); H0 to H2 are built as test pages. Drafted October 25, 2026, from Matt's ask for a cave with a dungeon-crawling experience, then redrafted the same day to Matt's own design (below). It builds on Matt's pin of October 18, 2026 (caves for a landmark creature such as a bear) and doc 20's M7 line on placed rock pieces for sea caves.
 
 ## Decided so far (Matt, October 25, 2026)
 
@@ -763,7 +763,7 @@ flowchart LR
 - **17, 25** audio: cave reverb, enemy sounds, the lantern's flame.
 - **18** saves: the measure, skills, trip count, rubble progress, the bestiary, the deepest trip.
 - **19** performance: the interior budget.
-- **20** roadmap: a late milestone, after the Headland (M7) at the earliest.
+- **20** roadmap: the first version is its own milestone after M2 (October 27, 2026; first drafted as after the Headland, M7). Deeper floors and the makes that need hazel, the Headland or star iron grow with those milestones.
 
 ## Risks and guardrails
 

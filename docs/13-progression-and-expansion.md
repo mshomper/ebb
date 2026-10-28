@@ -138,7 +138,7 @@ A new island starts in early spring, so it always opens with the pond waking. It
 | Spring (0 to 14), the pond wakes | frogs and their Cliff tool, minnows, most plants, shells and loose stones | frogspawn hatching into tadpoles; the common toad's night walk back to the pond; the first damselflies at the very end |
 | Summer (14 to 28), warm water and wings | dragonflies (from the first day of summer into mid-autumn, and only over a second, fish-free pond the player made with reeds along its edge), gorse, driftwood at about here on the finds line | **turtles arrive only once the water is warm**; froglets leaving the pond; damselflies; sand martins nesting in a sandy face the player cut; common lizards basking on stones and logs among the gorse; moon jellyfish stranded on the strandline |
 | Autumn (28 to 42), leaving and gathering | willow turning yellow, leaf fall | silver eels slipping from the pond to the sea on rainy nights; fungi on carried logs; dewy spiders' webs on misty mornings; the first wintering waders; grey seals hauling out on the sandbar |
-| Winter (42 to 56), the shore's season | frogs asleep, gorse still flowering | turnstones flipping wrack on the strandline; purple sandpipers on rock at the waterline; storm tides leaving the rarest shells; a seal pup on the bar; frost on the logs |
+| Winter (42 to 56), the shore's season | frogs asleep, gorse still flowering | turnstones flipping wrack on the strandline; purple sandpipers on rock at the waterline; **teal on the pond** while the frogs sleep (Matt, October 27, 2026); storm tides leaving the rarest shells; a seal pup on the bar; frost on the logs |
 
 What the player does to bring each one, and its weight (the classes in `docs/future/11`):
 
@@ -154,8 +154,9 @@ What the player does to bring each one, and its weight (the classes in `docs/fut
 | Turtles in summer | warm, still, shallow water, lilies, a basking stone or log | a sunny shallow pond and a basking spot | resident (doc 12) | large, planned anyway |
 | Sand martins | a sheer sandy face 1.5 m or more, near water | cuts a sand cliff with the Cliff tool | swarm, a summer colony | medium |
 | Silver eels | an established pond within 30 m of the sea, wet grass between | keeps a pond for a year | find plus a moment | medium |
-| Turnstones and purple sandpipers | wrack on the strandline; rock at the waterline | builds a rocky sea wall with Terrace and Shift | swarm, a winter flock | medium |
-| Grey seals and a pup | a quiet sandbar or skerry at low tide, nothing walking near | leaves the meadow islet's bar quiet | landmark | large |
+| Turnstones and purple sandpipers | wrack on the strandline (turnstones); a rocky sea wall at the waterline the player built with Terrace and painted rock (sandpipers; the natural rocky point does not count) | leaves wrack on the strandline; builds a sea wall | swarm, a winter flock | medium |
+| Grey seals and a pup | a quiet sandbar at low tide that the player raised (a natural spit does not count), nothing walking near; later the meadow islet's bar | raises a bar in the tide band and leaves it quiet | landmark | large |
+| Teal (added October 27, 2026, Matt) | a pond of about 30 m² or more with a reedy margin and quiet, in winter; they come once the frogs sleep and leave in early spring | keeps a pond with cover through the year | a winter flock of few: dabble, upend, spring straight up off the water; their own rig | medium |
 
 **Build order (agreed):**
 1. The cheap season markers: moon jellyfish, damselflies, fungi and webs, storm-tide shells.
@@ -163,7 +164,8 @@ What the player does to bring each one, and its weight (the classes in `docs/fut
 3. Frogspawn to froglets.
 4. Turtles, arriving in summer.
 5. The shore birds: sand martins, turnstones and purple sandpipers.
-6. Grey seals last, with the meadow islet's sandbar.
+6. Grey seals last, on a quiet sandbar the player raised (later also the meadow islet's).
+7. Teal on the winter pond (added October 27, 2026, Matt), in M2's close (doc 20, B3).
 
 How they feed into each other:
 - Tadpoles feed minnows, dragonfly larvae and herons.
@@ -174,6 +176,14 @@ How they feed into each other:
 - Seals need nothing from the player but quiet.
 
 These finds, fields and visitors sit beside the sixteen species. They fill the journal and the year page's seasons but never count toward tier milestones. Seals are a landmark; whether they also get a species page with a gift is still open.
+
+### Shaped, not found (Matt, October 27, 2026)
+
+Three rules for every species and seasonal life from M2's close on. They teach the player why animals come, and reward shaping over waiting.
+
+1. **A visit first.** Before its home exists, a newcomer comes once in its season and shows itself: a seal surfaces and follows the walker along the shore, a few teal drop onto the pond for an hour, a turnstone runs the strandline ahead of you. The next morning a note gives a gentle hint in plain words ("The seal watched the shore a long while. A quiet bar of sand at low tide might keep it."). This is the frogs' hint, made into a moment the player sees. Visits repeat now and then until the home is made, never nag, and the journal's page and pencil circles carry the same hint.
+2. **The home is shaped, not found.** A species' need is met by ground the player made, never by the island's own generated features: a bar the player raised in the tide band, a sea wall built with Terrace and painted rock, a pond the player dug. The starter island's spit and rocky point are scenery and a starting point, not a home. This reuses what the dragonflies already do (the terrain keeps the island's generated heights, so the habitat knows which ground was shaped).
+3. **Not everyone at once.** The island is small, and homes compete for it. A sea wall takes shore that a sandbar or a sandy beach would use; a fish pond is no dragonfly pond; quiet for seals means no paths or walking near their bar; teal want the same reedy pond the frogs use, at another time of year. A player can't hold every animal at once without giving somewhere else up, and choosing is part of the game. These trade-offs are written as each species' needs (recipes), never as a rule that says no, and the journal's Web shows them so a player can see why.
 
 ### Milestones
 
