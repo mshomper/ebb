@@ -302,10 +302,22 @@ export async function startApp(canvas, hooks = {}) {
   const introHour = introStartHour(introRecipe, skyRecipe.orbit, params, !back, TEST_PARAMS,
     params.has('hour') || params.has('day') || testDay !== '0' || autumnDay !== null);
   if (clock.worldT() === 0 && introHour !== null) clock.reset(introHour * clock.SECONDS_PER_HOUR);
-  if (clock.worldT() === 0) clock.reset((startHour + 24 * startDay) * clock.SECONDS_PER_HOUR);
+  // `?day=N` on a new island grows it (quick fixes, October 28, 2026): the island starts on day 0 and
+  // its N days run through the catch-up before it shows, as if it had been left alone (src/sim/away.js,
+  // store slice `testGrow`). The clock waits until then; the other test links apply on top (afterGrow).
+  const growHours = params.has('day') && !back && clock.worldT() === 0 ? 24 * startDay : 0;
+  if (clock.worldT() === 0) clock.reset((startHour + 24 * startDay - growHours) * clock.SECONDS_PER_HOUR);
+  updateStore('testGrow', (g) => g ?? (growHours > 0 ? { hours: growHours, done: false } : null));
+  if (growHours > 0) clock.hold(true);
+  /** Run a test link's set-up now, or once `?day=N` has grown the island. @param {() => any} fn */
+  const afterGrow = (fn) => {
+    if (getStore('testGrow')?.done !== false) { fn(); return; }
+    const off = subscribeStore('testGrow', (/** @type {any} */ g) => { if (g?.done) { off(); fn(); } });
+  };
   updateStore('meta', (m) => { m.flow = clock.flow(); });
   const env = makeEnv(seed, { seasons: seasonsRecipe, sky: skyRecipe.orbit, water: waterRecipe });
-  // `?trust=0.5` (testing): every frog knows you at least this well from the next hour (S6c, trust.js).
+  // `?trust=0.5` (testing): every frog, school and swarm here knows you at least this well from the next
+  // hour, up to its ceiling (S6c, trust.js; swarms.js).
   /** @type {any} */ (env).testTrust = Math.max(0, Math.min(1, Number.parseFloat(params.get('trust') ?? '0') || 0));
   // A tea's boon on trust (P2e): read as the hour's trust is applied, so it lifts only what live play
   // earned while the tea worked (away time earns no trust to lift). 1 without a tea.
@@ -487,7 +499,7 @@ export async function startApp(canvas, hooks = {}) {
     .map((id) => ({ rec: speciesRecipes[id], count: Math.max(1, Math.min(30, Number.parseInt(params.get(keyOf(speciesRecipes[id])) ?? '12', 10) || 12)) }));
   let swarmWait = 0;
   if (testSwarms.length || params.has('debug')) sim.addSystem({ id: 'swarm-tests', tick(/** @type {any} */ f) {
-    if (!testSwarms.length || !world.env.habitat?.() || !water.sim.live) return;
+    if (!testSwarms.length || !world.env.habitat?.() || !water.sim.live || getStore('testGrow')?.done === false) return;
     swarmWait += f.realDt;
     if (!getStore('journal') && swarmWait < 3) return;
     for (const t of testSwarms.splice(0)) {
@@ -799,7 +811,8 @@ export async function startApp(canvas, hooks = {}) {
   // has the workbench built already; `?camp=apothecary` (S2, P2j) the workbench and the apothecary
   // bench built, the rack, mortar and hamper made, and the pack holding herbs and shells, standing
   // at the apothecary bench.
-  if (params.has('camp') && !back) {
+  // The camp and tea links stamp the hour they set things up: with `?day=N` they wait for the growing.
+  if (params.has('camp') && !back) afterGrow(() => {
     emit('intro:camp-ready', { tent: true, ring: true });
     // `?camp=dawn&hour=7` (P2i): the morning after a fire-night, the ring banked to embers with its
     // charcoal and ash, a handful of withies and a pouch of ash in the pack, standing at the ring.
@@ -824,8 +837,10 @@ export async function startApp(canvas, hooks = {}) {
     if (hearthLink) {
       // `&shaped` is the look of it all at once (tools/hearth-check.html): every piece fired, a pale
       // bowl, cup and tea pot on the bench and a bowl firing. Without it, the tea pot and bowls are
-      // still to shape and fire.
-      camp.hearth.debug.setUp(params.has('shaped') ? { fired: ['cooking-pot', 'tea-pot', 'cup'], shaped: ['bowl', 'cup', 'tea-pot'], firing: ['bowl'] } : {});
+      // still to shape and fire. `&shaped=pot` (the season check's set-up): a tea pot shaped and waiting
+      // pale on the workbench, ready to lay at the fire.
+      camp.hearth.debug.setUp(params.get('shaped') === 'pot' ? { shaped: ['tea-pot'] }
+        : params.has('shaped') ? { fired: ['cooking-pot', 'tea-pot', 'cup'], shaped: ['bowl', 'cup', 'tea-pot'], firing: ['bowl'] } : {});
       const f = params.get('fire');
       if (f === 'lit' || f === 'embers' || f === 'cold') camp.debug.fireAs(f);
     }
@@ -840,12 +855,13 @@ export async function startApp(canvas, hooks = {}) {
         distance: campRecipe.rest.viewDistanceM, pitch: (campRecipe.rest.viewPitchDeg * Math.PI) / 180 });
       walk.downHere();
     }
-  }
+  });
   // `?teas` (a test link, unsaved; P2e): the camp ready, the tea pot fired, full of spring water and on
   // the hearth over a lit fire, the cup fired, the apothecary bench, rack and hamper made with a
   // dried bunch of chamomile on the rack (for Deep rest), a handful of each tea herb in the pack, and
   // you standing at the ring.
-  if (params.has('teas') && !back && !params.has('camp')) {
+  const cookRecipe = await loadRecipe('world/cook');
+  if (params.has('teas') && !back && !params.has('camp')) afterGrow(() => {
     emit('intro:camp-ready', { tent: true, ring: true });
     for (const id of ['workbench', 'apothecary']) camp.stations.debug.buildNow(id);
     for (const m of ['rack', 'mortar', 'hamper']) camp.stations.debug.placeNow(m);
@@ -855,7 +871,7 @@ export async function startApp(canvas, hooks = {}) {
     camp.stations.keeps.rack.hang('chamomile.flowers', 2);
     updateStore('camp', (c) => ({ ...c, slots: c.slots.map((/** @type {any} */ s) => (s.slot === 'pot-tea' || s.kind === 'tea-pot' ? { ...s, water: 'fresh' }
       : s.kind === 'rack' ? { ...s, bunches: (s.bunches ?? []).map((/** @type {[string, number, number]} */ b) => [b[0], b[1], h - 24 * 4]) } : s)) }));
-    for (const herb of Object.values((await loadRecipe('world/cook')).teas.herbs)) pack.add(/** @type {string} */ (herb), 1);
+    for (const herb of Object.values(cookRecipe.teas.herbs)) pack.add(/** @type {string} */ (herb), 1);
     const rp = camp.ringPlace(), pad = getStore('campPad');
     if (rp && pad) {
       const a = Math.atan2(pad.z - rp.z, pad.x - rp.x) - 0.5, sx = rp.x + Math.cos(a) * 1.2, sz = rp.z + Math.sin(a) * 1.2, yaw = Math.atan2(rp.x - sx, rp.z - sz);
@@ -864,7 +880,7 @@ export async function startApp(canvas, hooks = {}) {
         walk.downHere();
       }
     }
-  }
+  });
   // A long, slow look (P2e, src/world/creatures/tea-reveal.js): an unfound creature gives itself away
   // once while that tea lasts. A strong back: the dig's swing keeps pace with its quicker beats.
   const teaReveal = createTeaReveal({ frogs: () => creatures.frogs(), schools, ripples, you: () => (walk.below ? walk.you() : null), spend: () => camp.boons.spendReveal() });

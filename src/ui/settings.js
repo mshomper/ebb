@@ -9,7 +9,8 @@
 //   Controls  dimming the buttons when idle
 //   Quality   Auto or a tier, switched with no reload (when the app offers it)
 //   Saves     back up, open a file, earlier saves, start again, the island switch (saves-menu.js)
-//   Tests     previews and local builds only: Pretend I was away, damage and clock tests
+//   Tests     a test link's island: Next morning and Skip a day; previews and local builds: Pretend
+//             I was away, damage and clock tests
 // The build line sits at the foot. Reads the store slices `meta` and `settings`; every change goes
 // out as an action (time.flow, time.keepGrowing, look.palette, settings.set), except the quality
 // switch, which calls the app's quality API. Styles: settings.css.
@@ -17,7 +18,8 @@
 import { get, subscribe } from '../core/store.js';
 import { dispatch } from '../input/actions.js';
 import { ensureIconSprite, iconSvg } from './icons/icons.js';
-import { fillSavesPanel, fillTestsPanel } from './saves-menu.js';
+import { fillSavesPanel, fillTestsPanel, fillTimeTests } from './saves-menu.js';
+import * as clock from '../core/clock.js';
 
 const FLOWS = [{ id: 0, label: 'Pause' }, { id: 1, label: 'Normal' }, { id: 2, label: '2 times' }, { id: 4, label: '4 times' }];
 const TEXT_SIZES = [100, 115, 130, 160].map((v) => ({ id: v, label: `${v}%` }));
@@ -217,10 +219,21 @@ export function mountSettings(o) {
   const savesBody = el('div', 'ebb-set__group');
   const saves = fillSavesPanel(savesBody, { save: o.save, island: o.island, button });
   section('saves', 'Saves', 'saves', [savesBody], { onOpen: () => { saves.refresh(); } });
-  if (o.build.testing && o.save) {
+  // A test link's island (unsaved) gets Tests too, with Next morning and Skip a day.
+  const testIsland = o.save?.status === 'test' && !!o.save?.pretend?.advance;
+  if ((o.build.testing || testIsland) && o.save) {
     const testsBody = el('div', 'ebb-set__group');
-    testsBody.appendChild(hint('Previews and local builds only.'));
-    fillTestsPanel(testsBody, { save: o.save, button });
+    if (testIsland) {
+      testsBody.appendChild(hint('This test island is never saved.'));
+      fillTimeTests(testsBody, { away: o.save.pretend, button, when: () => {
+        const h = clock.worldT() / clock.SECONDS_PER_HOUR;
+        return `day ${Math.floor(h / 24)}, ${String(Math.floor(h % 24)).padStart(2, '0')}:00`;
+      } });
+    }
+    if (o.build.testing) {
+      testsBody.appendChild(hint('Previews and local builds only.'));
+      fillTestsPanel(testsBody, { save: o.save, button });
+    }
     section('tests', 'Tests', 'tests', [testsBody], { test: true });
   }
 

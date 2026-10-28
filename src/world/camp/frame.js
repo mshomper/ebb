@@ -30,6 +30,37 @@ export function createCampFrame(k) {
   let starRule = null;
   /** The tea pot steeping after Brew (P2e): its steam thickens. */
   let steeping = false;
+  /** Where the lantern's moths circle, its velocity on the spring, and your pace eased (m/s). @type {number[] | null} */
+  let mothsAt = null;
+  const mothsVel = [0, 0, 0];
+  let mothsPace = 0;
+
+  /**
+   * Where the lantern's moths circle now (render-side smoothing, not simulation): a critically
+   * damped spring after the lantern, leaning toward your shoulder while you walk, so the arm's swing
+   * never jerks them and they catch up when you stop.
+   * @param {number} dt real seconds @param {number[] | null} glass the lantern's glass, null when out
+   * @param {boolean} carried
+   */
+  function mothsAnchor(dt, glass, carried) {
+    if (!glass) { mothsAt = null; mothsPace = 0; return null; }
+    const M = R.moths, now = carried ? k.walk.presenceNow?.() : null;
+    const ease = 1 - Math.exp(-dt / Math.max(0.01, M.followS));
+    mothsPace += ((now?.speed ?? 0) - mothsPace) * ease;
+    const lean = now ? M.lean * Math.min(1, mothsPace / Math.max(0.01, M.leanAtMps)) : 0;
+    const to = now ? [0, 1, 2].map((i) => glass[i] + (([now.x, now.y + M.shoulderM, now.z][i]) - glass[i]) * lean) : glass;
+    if (!mothsAt || Math.hypot(to[0] - mothsAt[0], to[1] - mothsAt[1], to[2] - mothsAt[2]) > M.snapM) {
+      mothsAt = [...to]; mothsVel.fill(0); return mothsAt;
+    }
+    // The smooth-damp spring (Game Programming Gems 4, 1.10): critically damped, followS to settle.
+    const w = 2 / Math.max(0.01, M.followS), x = w * dt, e = 1 / (1 + x + 0.48 * x * x + 0.235 * x * x * x);
+    for (let i = 0; i < 3; i++) {
+      const d = mothsAt[i] - to[i], tmp = (mothsVel[i] + w * d) * dt;
+      mothsVel[i] = (mothsVel[i] - w * tmp) * e;
+      mothsAt[i] = to[i] + (d + tmp) * e;
+    }
+    return mothsAt;
+  }
 
   /**
    * The camp drawn now, from the camp state and the fire now.
@@ -121,7 +152,7 @@ export function createCampFrame(k) {
     k.fx.set(r && (flame > 0 || smoke > 0 || lanternGlass || sparks) ? {
       fire: [r.x, r.y + 0.04, r.z], flame, smoke, embers: word === 'embers' ? 1 : 0,
       wind: [Math.cos(dir) * wind, -Math.sin(dir) * wind], mist: w.mist, steam: steamNow(c, word, r),
-      lantern: lanternGlass, sparks, moths: k.sunAlt() < R.moths.atSunDeg * DEG, time,
+      lantern: lanternGlass, mothsAt: mothsAnchor(dt, lanternGlass, lantern === 'carried'), sparks, moths: k.sunAlt() < R.moths.atSunDeg * DEG, time,
     } : null);
   }
 
