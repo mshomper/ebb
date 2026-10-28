@@ -71,6 +71,7 @@ import { createAutumn } from './world/finds/autumn-live.js';
 import { createLift } from './world/pieces/lift.js';
 import { createUnderLogLive } from './world/finds/under-log-live.js';
 import { createSpring } from './world/creatures/spring-live.js';
+import { createHen } from './world/hen/index.js';
 import { moodsOf, mistyAutumnMorning, autumnStartOf } from './world/finds/autumn.js';
 import { HABITAT_CELLS, HABITAT_ORIGIN } from './world/growth/habitat.js';
 import { waterCellOf } from './world/water/grid.js';
@@ -609,6 +610,10 @@ export async function startApp(canvas, hooks = {}) {
     recipes: { frogspawn: speciesRecipes.frogspawn, toad: speciesRecipes.toad, frog: frogRecipe, slowworm: speciesRecipes.slowworm, lizard: speciesRecipes.lizard } });
   sim.addSystem(spring);
   finds.addSource(spring.shown);
+  // The hen (docs/future/15, slice 1; src/world/hen): a wary hen who lives about the scrub once the
+  // island has some. `?hen` (testing, unsaved) puts her under the view at once.
+  const hen = createHen({ recipe: await loadRecipe('species/hen'), seed, world, terrain, water, camera, presence,
+    hours: () => clock.display() / clock.SECONDS_PER_HOUR, test: params.has('hen') });
   // Lift, on foot (docs/future/11 L3a; src/world/pieces/lift.js): a kept log's or a loose stone's card
   // offers Lift within reach, and what lives underneath is rolled for the day.
   const underLogRecipe = await loadRecipe('species/under-log');
@@ -949,6 +954,7 @@ export async function startApp(canvas, hooks = {}) {
     walk.printsPass,
     creatures.pass,
     walk.pass,
+    hen.pass,
     // The gathering knife on the walker's belt (the forager's trail).
     belt.pass,
     ...schools.map((s) => s.pass),
@@ -1944,6 +1950,7 @@ export async function startApp(canvas, hooks = {}) {
     gather.update();
     camera.update(realDt);
     presence.update(realDt);
+    hen.update(realDt);
     updateRing();
     // Plant tool rings, and a breathing ring round whatever the journal's tap card names.
     // The camp pad's dashed edge (CP-01) while a brush ring touches the pad, fading in and out.
