@@ -138,7 +138,7 @@ A new island starts in early spring, so it always opens with the pond waking. It
 | Spring (0 to 14), the pond wakes | frogs and their Cliff tool, minnows, most plants, shells and loose stones | frogspawn hatching into tadpoles; the common toad's night walk back to the pond; the first damselflies at the very end |
 | Summer (14 to 28), warm water and wings | dragonflies (from the first day of summer into mid-autumn, and only over a second, fish-free pond the player made with reeds along its edge), gorse, driftwood at about here on the finds line | **turtles arrive only once the water is warm**; froglets leaving the pond; damselflies; sand martins nesting in a sandy face the player cut; common lizards basking on stones and logs among the gorse; moon jellyfish stranded on the strandline |
 | Autumn (28 to 42), leaving and gathering | willow turning yellow, leaf fall | silver eels slipping from the pond to the sea on rainy nights; fungi on carried logs; dewy spiders' webs on misty mornings; the first wintering waders; grey seals hauling out on the sandbar |
-| Winter (42 to 56), the shore's season | frogs asleep, gorse still flowering | turnstones flipping wrack on the strandline; purple sandpipers on rock at the waterline; storm tides leaving the rarest shells; a seal pup on the bar; frost on the logs |
+| Winter (42 to 56), the shore's season | frogs asleep, gorse still flowering | turnstones flipping wrack on the strandline; purple sandpipers on rock at the waterline; **teal on the pond** while the frogs sleep (Matt, October 27, 2026); storm tides leaving the rarest shells; a seal pup on the bar; frost on the logs |
 
 What the player does to bring each one, and its weight (the classes in `docs/future/11`):
 
@@ -154,8 +154,9 @@ What the player does to bring each one, and its weight (the classes in `docs/fut
 | Turtles in summer | warm, still, shallow water, lilies, a basking stone or log | a sunny shallow pond and a basking spot | resident (doc 12) | large, planned anyway |
 | Sand martins | a sheer sandy face 1.5 m or more, near water | cuts a sand cliff with the Cliff tool | swarm, a summer colony | medium |
 | Silver eels | an established pond within 30 m of the sea, wet grass between | keeps a pond for a year | find plus a moment | medium |
-| Turnstones and purple sandpipers | wrack on the strandline; rock at the waterline | builds a rocky sea wall with Terrace and Shift | swarm, a winter flock | medium |
-| Grey seals and a pup | a quiet sandbar or skerry at low tide, nothing walking near | leaves the meadow islet's bar quiet | landmark | large |
+| Turnstones and purple sandpipers | wrack on the strandline; rock at the waterline (the starter island's rocky point is enough) | leaves wrack on the strandline; may build a rocky sea wall with Terrace | swarm, a winter flock | medium |
+| Grey seals and a pup | a quiet sandbar or skerry at low tide, nothing walking near: the starter island's sand spit, a bar raised with Sculpt, or later the meadow islet's bar | leaves a bar quiet | landmark | large |
+| Teal (added October 27, 2026, Matt) | a pond of about 30 m² or more with a reedy margin and quiet, in winter; they come once the frogs sleep and leave in early spring | keeps a pond with cover through the year | a winter flock of few: dabble, upend, spring straight up off the water; their own rig | medium |
 
 **Build order (agreed):**
 1. The cheap season markers: moon jellyfish, damselflies, fungi and webs, storm-tide shells.
@@ -163,7 +164,8 @@ What the player does to bring each one, and its weight (the classes in `docs/fut
 3. Frogspawn to froglets.
 4. Turtles, arriving in summer.
 5. The shore birds: sand martins, turnstones and purple sandpipers.
-6. Grey seals last, with the meadow islet's sandbar.
+6. Grey seals last, on a quiet sandbar (the spit, a raised bar or the meadow islet's).
+7. Teal on the winter pond (added October 27, 2026, Matt), in M2's close (doc 20, B3).
 
 How they feed into each other:
 - Tadpoles feed minnows, dragonfly larvae and herons.
