@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ebb move effects check</title>
+<link rel="icon" href="../brand/ebb-favicon.svg" type="image/svg+xml">
+<style>
+  @font-face { font-family: 'Nunito'; src: url('../src/vendor/fonts/nunito-latin-600-normal.woff2') format('woff2'); font-weight: 600; }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; max-width: 100%; overflow-x: hidden; }
+  body { background: #1b1d1f; color: #EDE6DA; font: 600 17px/1.45 'Nunito', system-ui, sans-serif; padding: 16px; overflow-wrap: anywhere; }
+  main { max-width: 1200px; margin: 0 auto; display: flex; flex-direction: column; gap: 12px; }
+  canvas { width: 100%; aspect-ratio: 16 / 10; max-height: 82vh; display: block; border-radius: 10px; background: #060607; touch-action: none; }
+  p { margin: 0; }
+</style>
+</head>
+<body>
+<main>
+  <canvas id="view"></canvas>
+  <p id="note">The move effects in the Hollow (tools/arena/fx-pass.js): three effect lights (ember orange, green, pale moth white) circling on the floor and lighting the walker and the pillars with the lantern; a ring of 200 sparks rising and streaking; glowing threads to the walker; 12 moths circling and flapping. Drag to turn the view, wheel to come closer.</p>
+</main>
+<script type="importmap">{ "imports": {
+  "wgpu-matrix": "../src/vendor/wgpu-matrix/wgpu-matrix.module.js" } }</script>
+<script type="module" src="./fx-pass-check.js"></script>
+</body>
+</html>

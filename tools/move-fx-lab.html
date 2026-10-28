@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ebb move effects lab</title>
+<link rel="icon" href="../brand/ebb-favicon.svg" type="image/svg+xml">
+<style>
+  @font-face { font-family: 'Nunito'; src: url('../src/vendor/fonts/nunito-latin-600-normal.woff2') format('woff2'); font-weight: 600; }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; max-width: 100%; overflow-x: hidden; }
+  body { background: #1b1d1f; color: #EDE6DA; font: 600 17px/1.45 'Nunito', system-ui, sans-serif; padding: 16px; overflow-wrap: anywhere; }
+  main { max-width: 1500px; margin: 0 auto; display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start; }
+  .stage { flex: 3 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 10px; }
+  canvas { width: 100%; aspect-ratio: 16 / 10; max-height: 78vh; display: block; border-radius: 10px; background: #060607; touch-action: none; }
+  aside { flex: 1 1 320px; min-width: 0; display: flex; flex-direction: column; gap: 12px; max-height: calc(100vh - 32px); overflow-y: auto; }
+  h1 { font-size: 22px; margin: 0; font-weight: 600; }
+  h2 { font-size: 18px; margin: 4px 0 0; font-weight: 600; color: #D9C8A8; }
+  .moves { display: flex; flex-wrap: wrap; gap: 8px; }
+  button { font: inherit; font-size: 16px; color: #EDE6DA; background: #2a2d30; border: 1px solid #44484c; border-radius: 8px; padding: 6px 12px; cursor: pointer; }
+  button:hover { background: #33373b; }
+  button.on { background: #6b5a3c; border-color: #a88d5c; }
+  .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  label.slider { display: grid; grid-template-columns: minmax(0, 1fr) 70px; gap: 2px 10px; font-size: 15px; }
+  label.slider span { min-width: 0; }
+  label.slider output { text-align: right; color: #D9C8A8; }
+  label.slider input { grid-column: 1 / -1; width: 100%; }
+  label.check { display: flex; gap: 8px; align-items: center; font-size: 16px; }
+  p { margin: 0; }
+  #counts { font-size: 15px; color: #B9B1A4; }
+  textarea { width: 100%; min-height: 120px; font: 15px/1.4 ui-monospace, monospace; background: #111214; color: #EDE6DA; border: 1px solid #44484c; border-radius: 8px; padding: 8px; }
+</style>
+</head>
+<body>
+<main>
+  <div class="stage">
+    <canvas id="view"></canvas>
+    <p id="note">Pick a move to play its effect. The pale block is the walker, holding the lantern; the dark one 5 m ahead is a Hollow thing to aim at. Drag to turn the view, wheel to come closer.</p>
+    <p id="counts"></p>
+  </div>
+  <aside>
+    <h1>Move effects</h1>
+    <div class="moves" id="moves"></div>
+    <div class="row">
+      <button id="again">Play again</button>
+      <label class="check"><input type="checkbox" id="loop" checked> Replay on its own</label>
+    </div>
+    <label class="slider"><span>Lantern strength</span><output id="lampOut"></output><input type="range" id="lamp" min="0" max="2" step="0.05" value="1.2"></label>
+    <label class="slider"><span>How far ahead the thing stands (m)</span><output id="distOut"></output><input type="range" id="dist" min="2" max="9" step="0.5" value="5"></label>
+    <h2 id="tuneTitle">This move's numbers</h2>
+    <div id="tune"></div>
+    <h2>This move's recipe</h2>
+    <p style="font-size:15px">Copy this back into recipes/world/hollow-move-fx.json when a look is right.</p>
+    <textarea id="json" readonly></textarea>
+  </aside>
+</main>
+<script type="importmap">{ "imports": {
+  "wgpu-matrix": "../src/vendor/wgpu-matrix/wgpu-matrix.module.js" } }</script>
+<script type="module" src="./move-fx-lab.js"></script>
+</body>
+</html>

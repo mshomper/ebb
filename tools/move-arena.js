@@ -40,6 +40,7 @@ import { loadCrawlerModel } from '../src/world/hollow/crawler-model.js';
 import { createCrawlerPass } from './arena/crawler-pass.js';
 import { loadWatcherModel } from '../src/world/hollow/watcher-model.js';
 import { createWatcherPass } from './arena/watcher-pass.js';
+import { createFxPass } from './arena/fx-pass.js';
 
 const $ = (/** @type {string} */ id) => /** @type {HTMLElement} */ (document.getElementById(id));
 /** @param {string} p */
@@ -60,6 +61,8 @@ const half = course.sizeM / 2;
 const HR = course.dark ? await recipe('world/hollow') : null;
 const FC = course.dark ? await recipe('world/fight-clips') : null;
 const MR = course.dark ? await recipe('world/hollow-moves') : null;
+// How the moves look (the move effects, October 27, 2026).
+const FXR = course.dark ? await recipe('world/hollow-move-fx') : null;
 /** The Hollow's recipes as loaded, to show what the sliders changed. */
 const HR0 = structuredClone(HR), MR0 = structuredClone(MR), FC0 = structuredClone(FC);
 // The soot motes, Matt's model (H2), drawn in the stage's pass.
@@ -71,6 +74,15 @@ const crawlerPass = HR && crawlerModel ? await createCrawlerPass(stage.gpu, craw
 // The hagstone watcher, from the generator, rigged in code (H2), drawn in the stage's pass too.
 const watcherModel = HR ? await loadWatcherModel(new URL('../assets/models/hollow/watcher.glb', import.meta.url)) : null;
 const watcherPass = HR && watcherModel ? await createWatcherPass(stage.gpu, watcherModel, HR.foes.watcher.stone) : null;
+// The Q and E move effects (doc 16): their lights on the stage and their sparks, threads and moths, in the Hollow.
+const fxPass = HR ? await createFxPass(stage.gpu) : null;
+/** This frame's effects, from the effect engine (src/world/hollow/fx-layout.js); null draws none. @type {import('./arena/fx-pass.js').FxFrame | null} */
+let fxFrame = null;
+/**
+ * Hand the effects for the next frame drawn: their lights go to the stage, the rest to the fx pass.
+ * @param {import('./arena/fx-pass.js').FxFrame & { lights?: Float32Array, nLights?: number } | null} fx
+ */
+function setFx(fx) { stage.setFxLights(fx?.lights ?? null, fx?.nLights); fxFrame = fx; }
 // The Hollow's crowd (H2): attack slots and bodies kept apart (src/world/hollow/crowd.js).
 const crowd = HR ? createCrowd(HR.crowd, 1) : null;
 
@@ -129,7 +141,7 @@ const hollow = HR ? createHollow({
 }) : null;
 const SR = hollow ? await recipe('world/staff') : null;
 // The Q and E moves (H0b).
-const moveLayer = hollow && MR ? createMoveLayer({ MR, hollow, walker, motion, FC, FR, R, ground, say }) : null;
+const moveLayer = hollow && MR ? createMoveLayer({ MR, hollow, walker, motion, FC, FR, R, FX: FXR, ground, say }) : null;
 /** The staff's look: ?staff=a (slim) or b (knotted). */
 const staffLook = SR ? SR.looks[params.get('staff') === 'b' ? 1 : 0].id : '';
 
@@ -432,7 +444,9 @@ function tick(realDt, draw = true) {
     motePass?.set(actors.filter((a) => a.swarm && !a.broken).map((a) => a.swarm), clockS);
     crawlerPass?.set(actors.filter((a) => a.crawler).map((a) => a.crawler));
     watcherPass?.set(actors.filter((a) => a.watcher).map((a) => a.watcher));
-    stage.draw({ extra: motePass || crawlerPass || watcherPass ? (pass, u) => { motePass?.draw(pass, u); crawlerPass?.draw(pass, u); watcherPass?.draw(pass, u); } : undefined, bones: motion.bones, eyes: eyeUniforms(FR.eyes, headBone, r.eyes, eyeBuf), place,
+    // The moves' effects this frame: their lights on the stage, and their sparks, threads and moths.
+    setFx(moveLayer?.fx ? moveLayer.fx.gpu() : null);
+    stage.draw({ extra: motePass || crawlerPass || watcherPass || fxPass ? (pass, u) => { motePass?.draw(pass, u); crawlerPass?.draw(pass, u); watcherPass?.draw(pass, u); if (fxFrame) fxPass?.draw(pass, u, fxFrame); } : undefined, bones: motion.bones, eyes: eyeUniforms(FR.eyes, headBone, r.eyes, eyeBuf), place,
       weights: false, night: false, water: course.waterY, follow: [walker.x, walker.y, walker.z], dt, camera: { eye: e, target: t }, scale: DS,
       ...(hollow && HR ? { lamp: hollow.lamp(), fade: [HR.camera.fade.fillAlpha, HR.camera.fade.outlineAlpha] } : {}) });
     drawTrace(clockS);
@@ -453,7 +467,7 @@ function tick(realDt, draw = true) {
 }
 requestAnimationFrame(frame);
 /** For checking from the console: the walker, the actors, the solids. */
-/** @type {any} */ (window).arena = { walker, crawlerPass, motePass, watcherPass, cues, gpu: stage.gpu, crowd, HR, get actors() { return actors; }, get solids() { return solids; }, camera, grid, R, hollow, motion, moveLayer,
+/** @type {any} */ (window).arena = { walker, crawlerPass, motePass, watcherPass, fxPass, setFx, cues, gpu: stage.gpu, crowd, HR, get actors() { return actors; }, get solids() { return solids; }, camera, grid, R, hollow, motion, moveLayer,
   /** Run on s seconds at once in 60ths (checks from the console, and a hidden tab). @param {number} s */
   run(s) { const n = Math.round(s * 60); for (let i = 0; i < n; i++) tick(1 / 60, i === n - 1); last = performance.now(); },
   /** Hold time still (the view still draws), for checks and screenshots. @param {boolean} on */

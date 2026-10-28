@@ -10,6 +10,7 @@ import { initGpu, loadShader } from '../src/core/gpu.js';
 import { VERTEX_BYTES } from '../src/world/creatures/bodies.js';
 import { materialMaps } from '../src/render/gltf.js';
 import { mapTexture } from '../src/render/passes/props.js';
+import { FX_LIGHT_BYTES, packFxLights } from './arena/fx-lights.js';
 
 const SHADER = /* wgsl */ `
 struct U { viewProj: mat4x4f, eye: vec4f, sun: vec4f, place: vec4f, misc: vec4f, water: vec4f, lamp: vec4f, dark: vec4f, fade: vec4f };
@@ -18,13 +19,14 @@ struct U { viewProj: mat4x4f, eye: vec4f, sun: vec4f, place: vec4f, misc: vec4f,
 // lantern alone, y the chamber's own light, z the lantern's strength; fade: x a faded wall's fill, y its outline.
 @group(0) @binding(0) var<uniform> u: U;
 
-// The light on a point in the dark: the chamber's own, plus the lantern's warm light falling off to its reach.
+// The light on a point in the dark: the chamber's own, plus the lantern's warm light falling off to its reach,
+// plus the move effects' lights (src/shaders/lib-fx-light.wgsl; none set adds nothing).
 fn lampLight(world: vec3f, n: vec3f) -> vec3f {
   let d = u.lamp.xyz - world;
   let dist = length(d);
   let fall = 1.0 - smoothstep(0.0, max(u.lamp.w, 1e-3), dist);
   let nl = 0.35 + 0.65 * max(dot(n, d / max(dist, 1e-3)), 0.0);
-  return vec3f(1.0, 0.8, 0.56) * (u.dark.z * fall * fall * nl) + vec3f(u.dark.y);
+  return vec3f(1.0, 0.8, 0.56) * (u.dark.z * fall * fall * nl) + vec3f(u.dark.y) + fxLight(world, n);
 }
 @group(0) @binding(1) var<storage, read> bones: array<mat4x4f>;
 @group(0) @binding(2) var<uniform> eyes: FigureEyes;
@@ -33,6 +35,7 @@ fn lampLight(world: vec3f, n: vec3f) -> vec3f {
 @group(0) @binding(3) var colourMap: texture_2d<f32>;
 @group(0) @binding(4) var normalMap: texture_2d<f32>;
 @group(0) @binding(5) var mapSampler: sampler;
+@group(0) @binding(6) var<uniform> fxl: FxLights;
 
 struct BodyOut { @builtin(position) pos: vec4f, @location(0) n: vec3f, @location(1) albedo: vec3f, @location(2) world: vec3f,
                  @location(3) rest: vec3f, @location(4) head: f32,
@@ -184,7 +187,7 @@ export const VIEWS = {
 export async function createStage(canvas) {
   const r = await initGpu(canvas);
   if (!r.ok) return { ok: false, reason: r.reason };
-  const lib = await loadShader('lib-figure-eyes');
+  const lib = (await loadShader('lib-figure-eyes')) + '\n' + (await loadShader('lib-fx-light'));
   return { ok: true, stage: makeStage(canvas, r.gpu, lib) };
 }
 
@@ -201,6 +204,7 @@ function makeStage(canvas, gpu, lib) {
       { binding: 3, visibility: GPUShaderStage.FRAGMENT, texture: {} },
       { binding: 4, visibility: GPUShaderStage.FRAGMENT, texture: {} },
       { binding: 5, visibility: GPUShaderStage.FRAGMENT, sampler: {} },
+      { binding: 6, visibility: GPUShaderStage.FRAGMENT, buffer: {} },
     ],
   });
   const pl = device.createPipelineLayout({ bindGroupLayouts: [layout] });
@@ -276,6 +280,9 @@ function makeStage(canvas, gpu, lib) {
   const ubuf = device.createBuffer({ size: 224, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
   const bbuf = device.createBuffer({ size: 32 * 64, usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST });
   const ebuf = device.createBuffer({ size: 80, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
+  // The move effects' lights (tools/arena/fx-lights.js): zero until setFxLights, shared with the passes drawn in extra.
+  const fxbuf = device.createBuffer({ label: 'fx-lights', size: FX_LIGHT_BYTES, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
+  const fxF = new Float32Array(FX_LIGHT_BYTES / 4);
   const sampler = device.createSampler({ magFilter: 'linear', minFilter: 'linear', mipmapFilter: 'linear', maxAnisotropy: 8 });
   /** A 1 by 1 stand-in until the baked maps come. @param {number[]} rgba */
   const plain = (rgba) => {
@@ -286,7 +293,8 @@ function makeStage(canvas, gpu, lib) {
   /** @param {GPUTexture} colour @param {GPUTexture} normal */
   const bind = (colour, normal) => device.createBindGroup({ layout, entries: [
     { binding: 0, resource: { buffer: ubuf } }, { binding: 1, resource: { buffer: bbuf } }, { binding: 2, resource: { buffer: ebuf } },
-    { binding: 3, resource: colour.createView() }, { binding: 4, resource: normal.createView() }, { binding: 5, resource: sampler }] });
+    { binding: 3, resource: colour.createView() }, { binding: 4, resource: normal.createView() }, { binding: 5, resource: sampler },
+    { binding: 6, resource: { buffer: fxbuf } }] });
   let group = bind(plain([128, 128, 128, 255]), plain([128, 255, 128, 255]));
   const u = new Float32Array(56);
   /** @type {{ v: GPUBuffer, i: GPUBuffer, n: number } | null} */ let mesh = null;
@@ -318,8 +326,17 @@ function makeStage(canvas, gpu, lib) {
   canvas.addEventListener('wheel', (e) => { e.preventDefault(); cam.goal.dist = Math.min(12, Math.max(1, cam.goal.dist * Math.exp(e.deltaY * 0.001))); }, { passive: false });
 
   return {
-    /** The device and the canvas format, for passes drawn in the stage's pass (draw's extra). */
-    gpu: { device, format },
+    /**
+     * The device and the canvas format, for passes drawn in the stage's pass (draw's extra), and the
+     * move effects' light buffer (lib-fx-light.wgsl's FxLights) for them to bind.
+     */
+    gpu: { device, format, fxLights: fxbuf },
+    /**
+     * The move effects' lights (src/world/hollow/fx-layout.js: LIGHT_FLOATS each), added to the
+     * lantern in the Hollow on everything drawn. A light with no reach is skipped; null clears them.
+     * @param {Float32Array | null} lights @param {number} [n] how many (else all in the array)
+     */
+    setFxLights(lights, n) { device.queue.writeBuffer(fxbuf, 0, packFxLights(lights, n, fxF)); },
     /**
      * The figure's baked maps, from its GLB (mipmapped; colour read as sRGB). @param {import('../src/render/gltf.js').Glb} glb
      */
