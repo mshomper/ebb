@@ -58,17 +58,15 @@ export function addHintsTests(test, assert, eq) {
     const found = { shells: { ever: true, learned: [] } };
     eq(pickHint(R, { journal: J(['did:gathered'], found), kindOf }, 2)?.id, 'shape', 'a find met: on to shaping (no animal yet, so that one waits)');
     eq(pickHint(R, { journal: J(['did:gathered', 'intro:shape.1'], found), kindOf }, 2)?.id, 'plant', 'shaped in the first evening');
-    eq(pickHint(R, { journal: J(['did:gathered', 'did:shaped', 'did:planted'], found), kindOf }, 3)?.id, 'web', 'no rushes yet: the cord hint waits; the Web');
-    eq(pickHint(R, { journal: J(['did:gathered', 'did:shaped', 'did:planted', 'did:web'], found), kindOf }, 3), null, 'all done: nothing to say');
+    eq(pickHint(R, { journal: J(['did:gathered', 'did:shaped', 'did:planted'], found), kindOf }, 3)?.id, 'cord', 'no rushes yet: the cord hint still comes (reed leaves twist cord too)');
+    eq(pickHint(R, { journal: J(['did:gathered', 'did:shaped', 'did:planted'], found), cook: { made: { 'rush-cord': 40 } }, kindOf }, 3)?.id, 'web', 'cord already made: on to the Web');
+    eq(pickHint(R, { journal: J(['did:gathered', 'did:shaped', 'did:planted', 'did:web'], found), cook: { made: { 'rush-cord': 40 } }, kindOf }, 3), null, 'all done: nothing to say');
     const grownNotFound = { reeds: { ever: true, learned: [] } };
     eq(pickHint(R, { journal: J(['did:gathered'], grownNotFound), kindOf }, 1)?.id, 'finds', 'a plant growing is no find');
   });
 
   test(G, 'a trigger holds a hint back, then sends it ahead of the order', async () => {
     const R = await hintsP, kindOf = kindOfFrom(await journalP);
-    const rushes = { rushes: { ever: true, learned: [] } };
-    eq(pickHint(R, { journal: J([], rushes), kindOf }, 2)?.id, 'cord', 'rushes grow: the cord hint comes first');
-    eq(pickHint(R, { journal: J([], rushes), cook: { made: { 'rush-cord': 40 } }, kindOf }, 2)?.id, 'gather', 'cord already made: passed over');
     eq(pickHint(R, { journal: J(['frogs:sign']), kindOf }, 2)?.id, 'animals', 'frogs came: the animal hint');
     eq(pickHint(R, { journal: J(['frogs:sign'], { frogs: { ever: true, learned: [] } }), kindOf }, 2)?.id, 'gather', 'a frog met already: passed over');
     eq(pickHint(R, { journal: J(['picked:chamomile']), kindOf }, 30)?.id, 'herbs', 'a herb picked, long after the first week');

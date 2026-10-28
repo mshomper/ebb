@@ -17,6 +17,7 @@
     "seedNote": "Seed saving (P2g G1, D1b): a plant past bloom gives its seed, one handful a pouch sowing, once in a while (type seed: a gather takes share of its size, ready again at readyShare). Windows run from the end of its flowering to the autumn. Iris and marsh marigold are never picked (lookOnly), but their seed is saved. A seed part out of its window says nothing on the card.",
     "parts": {
       "reeds.down": { "type": "reed", "share": 0.05, "readyShare": 0.9, "window": [2.0, 3.9] },
+      "reeds.leaves": { "type": "reed", "window": [0.2, 2.8], "note": "October 28, 2026 (Matt): reed leaves from mid spring into autumn, twisted into rush cord at the workbench (cook.json), so cord never waits on rushes coming." },
       "gorse.flowers": { "type": "shrub", "window": [0, 4] },
       "willow.withies": { "type": "willow", "window": [3.0, 4.0] },
       "willow.bark": { "type": "willow", "window": [3.0, 4.0] },
@@ -39,7 +40,8 @@
   },
   "cover": { "note": "Cover plants picked by the cell (docs/future/13 4.2, P2c C1): a pick lowers the 1 m cell's share by coverShare of full, and it grows back toward what the ground supports at the cover's own rate (about a day or two). A cell can be picked while its share is at least readyShare of that target and at least minShare of full. species: each cover plant that gives a part, its part and window (season positions, as plant parts), and the line its card says out of season.",
     "coverShare": 0.25, "readyShare": 0.9, "minShare": 0.35,
-    "species": { "rushes": { "part": "stems", "window": [1.0, 3.0], "outOfSeason": "Too soft yet. The stems toughen in summer.", "seedWindow": [2.0, 3.0] } },
+    "species": { "rushes": { "part": "stems", "window": [0.0, 3.0], "outOfSeason": "Sodden through the winter. Last year's stems dry out by spring.", "seedWindow": [2.0, 3.0],
+      "note": "October 28, 2026 (Matt): spring rushes give last year's dry stems, good for cord, so the first season is never without it; the green stems follow in summer. Winter stays closed." } },
     "seedNote": "seedWindow (P2g G1): when a cover plant's stand gives its seed as well, with no share taken." },
   "weather": { "windyMin": 0.6, "onshoreDot": -0.3, "springMin": 0.5 },
   "bins": { "steepDeg": 20, "ankleM": 0.12, "tapM": 1 },

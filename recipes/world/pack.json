@@ -23,6 +23,7 @@
     { "id": "sticks", "name": "Sticks", "group": "fuel", "sketch": "sticks", "camp": "sticks", "line": "Dry sticks from under the bushes." },
     { "id": "drift-twigs", "name": "Drift twigs", "group": "fuel", "sketch": "drift", "camp": "sticks", "line": "Salt-grey twigs from the tide line." },
     { "id": "reeds.down", "name": "Reed down", "group": "fuel", "sketch": "down", "camp": "heap", "line": "Soft reed down for tinder." },
+    { "id": "reeds.leaves", "name": "Reed leaves", "group": "fibres", "sketch": "coil", "camp": "heap", "line": "Long reed leaves, split and twisted for cord." },
     { "id": "cakes", "name": "King Alfred's cakes", "group": "fuel", "sketch": "cakes", "camp": "heap", "line": "Black knobs from an old log. They hold a spark." },
     { "id": "charcoal", "name": "Charcoal", "group": "fuel", "sketch": "charcoal", "camp": "heap", "line": "Charcoal from the fire's edge. It draws." },
     { "id": "pebbles", "name": "Pebbles", "group": "stones", "sketch": "pebbles", "camp": "stones", "line": "Round stones from the shore." },
