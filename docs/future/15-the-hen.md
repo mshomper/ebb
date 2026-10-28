@@ -2,11 +2,23 @@
 
 > One spring morning a small brown hen walks out of the gorse, scratching. She is feral: no one's, wary, and quite able to look after herself. Over a season she learns the walker, comes to the camp at dusk, follows you while you dig, and starts laying in the nest you made her. Her eggs are the walker's first real meal. If you leave a clutch in spring she sits, and the island has chicks.
 
-**Status:** Seed. Not scheduled. Drafted October 25, 2026, from Matt's ask for a wandering chicken you can befriend that gives eggs.
+**Status:** Slice 1 built on `m2-hen` (October 27, 2026): a wary hen in the scrub. Drafted October 25, 2026, from Matt's ask for a wandering chicken you can befriend that gives eggs.
 
 ## Decided so far
 
-Nothing. These rules carry over:
+Matt, October 27, 2026:
+
+- **She was always here** (option A): feral, from an older keeper's birds. She shows once the island has scrub: at least 3 grown gorse or grey willow bushes together (`recipes/species/hen.json` home).
+- **No cockerel on the island.** Only a distant crow from the far side, now and then, never every morning. **Chicks: yes**, from a clutch left in the nest in spring.
+- **She follows the walker** at Familiar, at a loose 2 to 4 m.
+- **Model:** Matt's supplied "Chicken Rig" by FourthGreen (CC BY-NC 4.0, non-commercial; credited in `assets/models/hen/CREDITS.md`) for now; one of his own later, when needed. Her motion is code on bone roles, so another model drops in. The file's wings carry no skin, so her wings cannot open (flap-up, dust bath) until a model with wing weights comes.
+- **Size:** drawn at 1.15x (0.49 m), just above the walker's knee.
+- **Eggs:** the walker's meal and her grit now; tempera later.
+- **A fifth band, hers alone: Fond.** About 7 game days at Familiar with the walker near most days (time together, never a count of treats). She greets the walker at dawn and settles by the fire beside you, and one morning leaves a tail feather on the camp perch: the **hen-feather hat band**, a paint on whatever hat the walker wears, with a small always-on boon (other creatures stay a little calmer near you).
+
+The slices: 1 a wary hen (built), 2 trust (the four bands, then Fond as 2b), 3 her day (roost, dust bath, rain, sounds, save), 4 eggs (scrape, nest box, pouch, the meal, grit), 5 chicks.
+
+These rules carry over:
 
 - **Creatures are attracted, never bought** (doc 01). The hen comes because the island suits her, like every species.
 - **Every creature is rigged and animated** (CLAUDE.md), including each life stage: chick, pullet, hen.
@@ -147,11 +159,7 @@ Contented murmur while foraging, the egg song after laying, a sharp alarm when t
 
 ## Open questions
 
-- Where does she come from: A (feral, from an older keeper's birds), B or C?
-- Hen alone, or a cockerel and chicks?
-- Should she follow the walker at Familiar, or only come to camp?
-- Who makes her model?
-- Do eggs feed the walker only, or also have the tempera use later?
+All five were answered on October 27, 2026 (Decided so far, above).
 
 ## Depends on / feeds into
 

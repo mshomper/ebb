@@ -39,6 +39,7 @@ export const PARALLEL = {
   crowd: () => import('./unit-tests-crowd.js').then((m) => m.addCrowdTests),
   figure: () => import('./unit-tests-figure.js').then((m) => m.addFigureTests),
   figureClips: () => import('./unit-tests-figure-clips.js').then((m) => m.addFigureClipTests),
+  hen: () => import('./unit-tests-hen.js').then((m) => m.addHenTests),
   nets: () => import('./unit-tests-nets.js').then((m) => m.addNetsTests),
   trails: () => import('./unit-tests-trails.js').then((m) => m.addTrailsTests),
   forager: () => import('./unit-tests-forager.js').then((m) => m.addForagerTests),
