@@ -414,7 +414,9 @@ export function createDig(o) {
       }
       // The shovel in both hands while digging, and while lifting a plant whole (P2g's liftClump).
       const digging = (!!pending && o.walk.acting === 'dig') || o.walk.acting === 'liftClump';
-      const sh = digging ? shovelProp(o.walk.hand('r'), o.walk.hand('l'), A) : hasShovel() ? onPack() : null;
+      // Between digs it is drawn on the pack only if act.back.show (off since October 29, 2026: it hung
+      // in the air through a roll; the Walker page's belt shows it instead).
+      const sh = digging ? shovelProp(o.walk.hand('r'), o.walk.hand('l'), A) : hasShovel() && A.back?.show ? onPack() : null;
       props.setProps(sh ? [sh] : []);
     },
 

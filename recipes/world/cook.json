@@ -11,7 +11,8 @@
 
   "makes": {
     "rush-cord": { "tier": "T2", "at": "workbench", "parts": [["rushes.stems", "marram.leaves", "reeds.leaves"]], "out": "pouch", "gives": "rush-cord", "count": 1, "src": ["G-45", "M-07", "X-18", "resolution 12"] },
-    "shovel": { "tier": "T2", "at": "workbench", "parts": ["sticks", "flat-stones", "rush-cord"], "out": "tool", "max": 1, "src": ["M-08", "DR-20", "resolution 4a"] },
+    "woven-twigs": { "tier": "T1", "at": "workbench", "parts": ["drift-twigs", "drift-twigs"], "out": "pouch", "gives": "woven-twigs", "count": 1, "src": ["October 29, 2026 (Matt): the first shovel's haft before any bush gives sticks"] },
+    "shovel": { "tier": "T2", "at": "workbench", "parts": [["woven-twigs", "sticks"], "flat-stones", "rush-cord"], "out": "tool", "max": 1, "src": ["M-08", "DR-20", "resolution 4a", "October 29, 2026"] },
     "rack": { "tier": "T3", "at": "workbench", "parts": [["willow.withies", "sticks"], ["willow.withies", "sticks"], "rush-cord"], "out": "slot", "slot": "rack", "max": 1, "after": "apothecary", "src": ["3.12", "S2"] },
     "mortar": { "tier": "T3", "at": "workbench", "parts": ["flat-stones", "pebbles"], "out": "slot", "slot": "mortar", "max": 1, "after": "apothecary", "src": ["3.12", "S2"] },
     "hamper": { "tier": "T3", "at": "workbench", "parts": [["rushes.stems", "marram.leaves"], ["rushes.stems", "marram.leaves"], "rush-cord"], "out": "slot", "slot": "store", "max": 1, "src": ["P2j"] },
@@ -100,6 +101,7 @@
     "emptySlot": "An empty slot",
     "laid": "Click a pouch to lay a handful. Click a laid part to take it back.",
     "made": { "shovel": "A shovel, bound tight. It hangs on your pack.", "rush-cord": "Twisted two ways, it holds. A handful of cord.",
+      "woven-twigs": "Drift twigs woven over and under into one springy length. Stiff enough for a shovel's haft.",
       "rack": "A drying rack, lashed tight. It stands beside the bench.", "mortar": "A hollow worn in the stone. A mortar, with a pebble to grind.",
       "hamper": "A lidded hamper of coiled rushes. It goes among the stores.", "hamper2": "A second hamper, a willow lid on top. Twice the room.",
       "dry": "Hung on the rack to dry.", "grind": "Ground fine. A handful of crushed shell.",
@@ -168,12 +170,12 @@
       "teas": "Teas",
       "tastes": "Tried together"
     },
-    "pageNames": { "ring": "Fire ring", "workbench": "Workbench", "shovel": "Shovel", "rush-cord": "Rush cord", "apothecary": "Apothecary bench", "rack": "Drying rack",
+    "pageNames": { "ring": "Fire ring", "workbench": "Workbench", "shovel": "Shovel", "woven-twigs": "Woven twigs", "rush-cord": "Rush cord", "apothecary": "Apothecary bench", "rack": "Drying rack",
       "mortar": "Mortar and pebble", "hamper": "Rush hamper", "hamper2": "Second hamper", "dry": "First herbs drying", "grind": "Crushed shell", "willow-charcoal": "Willow charcoal",
       "hearth-stones": "Hearth stones", "cooking-pot": "Cooking pot, shaped", "tea-pot": "Tea pot, shaped", "cup": "Clay cup, shaped", "bowl": "Clay bowl, shaped",
       "fire-cooking-pot": "Cooking pot, fired", "fire-tea-pot": "Tea pot, fired", "fire-cup": "Clay cup, fired", "fire-bowl": "Clay bowl, fired", "leaf-pack": "Leaf pack",
       "satchel": "Rush satchel, eight pouches", "basket": "Willow basket, ten pouches", "seed-balls": "Seed balls", "lily-parcel": "Lily leaf parcel" },
-    "pageParts": { "ring": "Sticks and stones", "workbench": "Two flat stones", "shovel": "A stick, a flat stone, cord", "rush-cord": "Rushes, reed leaves or marram, twisted",
+    "pageParts": { "ring": "Sticks and stones", "workbench": "Two flat stones", "shovel": "Woven twigs or a stick, a flat stone, cord", "woven-twigs": "Two handfuls of drift twigs, woven", "rush-cord": "Rushes, reed leaves or marram, twisted",
       "apothecary": "Sticks lashed with cord", "rack": "Withies or sticks, cord", "mortar": "A flat stone and a pebble", "hamper": "Rushes coiled, stitched with cord",
       "hamper2": "Rushes, cord, a willow lid", "dry": "A handful of herbs, hung", "grind": "Broken shells, ground", "willow-charcoal": "Withies, a night in the fire",
       "hearth-stones": "Two handfuls of flat stones", "cooking-pot": "Clay, tempered with sand; it wants a night in the fire", "tea-pot": "Clay, tempered with crushed shell; it wants a night in the fire", "cup": "A handful of clay; it wants a night in the fire", "bowl": "A handful of clay; it wants a night in the fire",

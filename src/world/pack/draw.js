@@ -253,6 +253,38 @@ export function createPackDraw(o) {
     }
   }
 
+  // A kind with no pile look of its own (otherModel 'heap', October 29, 2026): a soft mound in its
+  // colour, made the first time one is set down. Keys 'heap:<kind>'.
+  const HP = L.heap ?? {};
+  const heapMeshes = new Set();
+  /** The kind's group, for its mound's colour. @param {string} kind */
+  const groupOf = (kind) => R.kinds?.find((/** @type {any} */ k) => k.id === kind)?.group ?? R.partGroups?.[kind.slice(kind.lastIndexOf('.') + 1)] ?? 'earth';
+  /** @param {string} kind @returns {string} the mesh key */
+  function heapMesh(kind) {
+    const key = `heap:${kind}`;
+    if (!heapMeshes.has(key)) {
+      heapMeshes.add(key);
+      const color = HP.colors?.[kind] ?? P.kinds[kind]?.color ?? HP.groupColors?.[groupOf(kind)] ?? [0.22, 0.16, 0.1];
+      put(pilePass, key, pebbleMesh(hash32(0x4ea7, kind.length, kind.charCodeAt(0)), HP.radiiM ?? [0.3, 0.13, 0.26], HP.lump ?? 0.22, color, HP.sink ?? 0.2));
+    }
+    return key;
+  }
+  /** The piles and K-21 heaps drawn as mounds near f: [kind, x, z, scale, seed]. @param {number[]} f */
+  function moundsNear(f) {
+    const near2 = L.nearM * L.nearM, out = [];
+    for (const p of get('pieces')?.list ?? []) {
+      if (p.kind !== 'pile' || (p.x - f[0]) ** 2 + (p.z - f[1]) ** 2 > near2) continue;
+      const sh = pileShape(p.holds ?? '', p.handfuls ?? 0, R);
+      if (sh.model === 'heap') out.push([p.holds ?? '', p.x, p.z, sh.scale, p.seed >>> 0]);
+    }
+    for (const [kind, x, z, , n] of o.pack?.heaps?.() ?? []) {
+      if ((x - f[0]) ** 2 + (z - f[1]) ** 2 > near2) continue;
+      const sh = pileShape(kind, n, R, true);
+      if (sh.model === 'heap') out.push([kind, x, z, sh.scale, hash32(Math.round(x * 100), Math.round(z * 100), 0x4ea9)]);
+    }
+    return out;
+  }
+
   let dirty = true, clock = 0, since = 0;
   /** @type {number[] | null} */ let lastAt = null;
   const offs = ['gather:done', 'pack:changed', 'pack:set-down', 'pile:changed', 'camp:stamped', 'camp:placed', 'treat:changed'].map((ev) => on(ev, () => { dirty = true; }));
@@ -277,7 +309,7 @@ export function createPackDraw(o) {
       const st = stores.find((s) => s.id === p.slot);
       const yaw = st ? st.yaw : p.yaw, lift = st?.id === 'sticks' ? SR.sticks.look.floorLiftM : 0;
       if (!addLogs(out, sh, p.x, p.z, yaw, p.seed >>> 0, lift)) {
-        out.push({ x: p.x, y: ground(p.x, p.z) - L.sinkM + lift, z: p.z, yaw, size: sh.scale, mesh: `${sh.model}:${sh.stage}` });
+        out.push({ x: p.x, y: ground(p.x, p.z) - L.sinkM + lift, z: p.z, yaw, size: sh.scale, mesh: sh.model === 'heap' ? heapMesh(p.holds ?? '') : `${sh.model}:${sh.stage}` });
       }
     }
     for (const s of stores) {
@@ -310,7 +342,7 @@ export function createPackDraw(o) {
       const sh = pileShape(kind, n, R, true);
       const seed = hash32(Math.round(x * 100), Math.round(z * 100), 0x4ea9);
       const yaw = u01(seed) * 2 * Math.PI;
-      if (!addLogs(out, sh, x, z, yaw, seed)) out.push({ x, y: ground(x, z) - L.sinkM, z, yaw, size: sh.scale, mesh: `${sh.model}:${sh.stage}` });
+      if (!addLogs(out, sh, x, z, yaw, seed)) out.push({ x, y: ground(x, z) - L.sinkM, z, yaw, size: sh.scale, mesh: sh.model === 'heap' ? heapMesh(kind) : `${sh.model}:${sh.stage}` });
     }
     return out.slice(0, L.logMax ?? 160);
   }
@@ -362,6 +394,20 @@ export function createPackDraw(o) {
         const x = t.x + Math.cos(a) * r, z = t.z + Math.sin(a) * r;
         const mesh = `${t.kind}-${Math.floor(u(5) * P.variants)}${t.pale > 0.4 && P.treatPale ? '-pale' : ''}`;
         out.push({ x, y: ground(x, z) + lift, z, yaw: u(3) * 2 * Math.PI, size: (P.scale ?? 1) * (P.treatScale ?? 1) * (0.85 + 0.3 * u(4)) * (1 - 0.4 * t.pale), mesh });
+      }
+    }
+    // A mound set down at camp wears a few of its own pieces on top, when its kind has a pickup shape.
+    const top = (HP.radiiM ?? [0.3, 0.13, 0.26])[1] * (1 - (HP.sink ?? 0.2));
+    for (const [kind, mx, mz, scale, seed] of moundsNear(f)) {
+      const K = P.kinds[/** @type {string} */ (kind)];
+      if (!K) continue;
+      const n = Math.max(1, Math.round((HP.pieces ?? 6) * /** @type {number} */ (scale)));
+      for (let i = 0; i < n && out.length < P.max; i++) {
+        const u = (/** @type {number} */ k) => u01(hash32(/** @type {number} */ (seed), i, k));
+        const r = 0.45 * (HP.radiiM?.[0] ?? 0.3) * /** @type {number} */ (scale) * Math.sqrt(u(1)), a = u(2) * 2 * Math.PI;
+        const x = /** @type {number} */ (mx) + Math.cos(a) * r, z = /** @type {number} */ (mz) + Math.sin(a) * r;
+        const y = ground(/** @type {number} */ (mx), /** @type {number} */ (mz)) - L.sinkM + top * /** @type {number} */ (scale) * (1 - (r / ((HP.radiiM?.[0] ?? 0.3) * /** @type {number} */ (scale))) ** 2);
+        out.push({ x, y, z, yaw: u(3) * 2 * Math.PI, size: (P.scale ?? 1) * 0.6 * (0.85 + 0.3 * u(4)), mesh: `${kind}-${Math.floor(u(5) * P.variants)}` });
       }
     }
     if (!o.gather?.near) return out;

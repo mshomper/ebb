@@ -59,15 +59,29 @@ export function addCampMakingTests(test, assert, eq) {
   test(G, 'the workbench is built from two flat stones; the camp page lists the ring, then each first in order', async () => {
     const C = await load('world/cook');
     eq(JSON.stringify(buildKinds(C.builds.workbench)), JSON.stringify(['flat-stones', 'flat-stones']), 'two handfuls of flat stones');
-    eq(makesAt(C, 'workbench').join(), 'rush-cord,shovel,rack,mortar,hamper,hamper2,hearth-stones,cooking-pot,tea-pot,cup,bowl,leaf-pack,satchel,basket,seed-balls,lily-parcel',
+    eq(makesAt(C, 'workbench').join(), 'rush-cord,woven-twigs,shovel,rack,mortar,hamper,hamper2,hearth-stones,cooking-pot,tea-pot,cup,bowl,leaf-pack,satchel,basket,seed-balls,lily-parcel',
       'the workbench knows rush cord, the shovel (P2c), the rack and mortar (S2), the hampers (P2j), the hearth stones and the clay pieces (S4, S5), the leaf pack (P2h), the carriers (P2f), seed balls (P2g) and the lily leaf parcel for the turtles');
     const camp = { slots: [{ slot: 'ring', kind: 'ring', placedHour: 3 }] };
     assert(!campPageHad({ slots: [] }, cleanCook(null)), 'no page before the ring');
     assert(campPageHad(camp, cleanCook(null)), 'the page once the ring is laid');
     const f = campFirsts(C, camp, { made: { shovel: 30, workbench: 20 } });
     eq(f.map((x) => x.id).join(), 'ring,workbench,shovel', 'oldest first');
-    eq(f[2].parts.join(), 'sticks,flat-stones,rush-cord', 'the shovel drawn from its parts');
-    for (const id of ['ring', 'workbench', 'shovel']) assert(C.words.pageNames[id] && C.words.pageParts[id], `${id} has its words`);
+    eq(f[2].parts.join(), 'woven-twigs,flat-stones,rush-cord', 'the shovel drawn from its parts');
+    for (const id of ['ring', 'workbench', 'shovel', 'woven-twigs']) assert(C.words.pageNames[id] && C.words.pageParts[id], `${id} has its words`);
+  });
+
+  test(G, 'two handfuls of drift twigs weave into woven twigs, which make the first shovel as a stick does (October 29, 2026)', async () => {
+    const C = await load('world/cook'), P = await load('world/pack'), s = cleanCook(null);
+    const one = layout(C, 'workbench', ['drift-twigs'], s);
+    eq(one.make, 'woven-twigs', 'one handful of drift twigs shows woven twigs');
+    eq(JSON.stringify(one.missing), JSON.stringify([['drift-twigs']]), 'with the second handful as its outline');
+    assert(layout(C, 'workbench', ['drift-twigs', 'drift-twigs'], s).complete, 'two handfuls are complete');
+    eq(C.makes['woven-twigs'].gives, 'woven-twigs', 'it gives a handful of woven twigs');
+    assert(layout(C, 'workbench', ['woven-twigs', 'flat-stones', 'rush-cord'], s).complete, 'woven twigs, a flat stone and cord make the shovel');
+    assert(layout(C, 'workbench', ['sticks', 'flat-stones', 'rush-cord'], s).complete, 'a stick still does');
+    const k = P.kinds.find((/** @type {any} */ x) => x.id === 'woven-twigs');
+    assert(k && k.group !== 'fuel', 'woven twigs are in the pack, and never fed to the fire');
+    eq(JSON.stringify(C.builds.apothecary.parts), JSON.stringify([['sticks', 2], ['rush-cord', 1]]), 'the apothecary bench still takes sticks');
   });
 
   test(G, 'the bench and store slots sit on the pad, clear of every other slot, in both land recipes', async () => {

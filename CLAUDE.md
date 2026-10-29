@@ -68,7 +68,7 @@ Full ownership and exports are in `docs/03-tech-stack-and-module-map.md`.
 
 ## Current target
 
-The exit check of Phase 2 of the keeper's camp, the first season (`docs/future/13-keepers-camp.md` section 13): every piece is built, and Matt plays the ten checks on `tools/season-review.html`. Phase 1 passed its exit check on October 23, 2026. Next, once Phase 2 passes: M2's close in three stages (B1 camp Phase 3 with the hen, B2 Steps, stepping stones, photo mode and tuning panel, B3 the meadow islet and the autumn and winter creatures), then the Hollow's first version. Do not start a stage until Matt approves it. See `docs/20-roadmap-and-vertical-slice.md`.
+M2's close. Phase 1 of the keeper's camp passed its exit check on October 23, 2026, and Phase 2, the first season (`docs/future/13-keepers-camp.md` section 13, `tools/season-review.html`), on October 29, 2026. Next: M2's close in three stages (B1 camp Phase 3 with the hen, B2 Steps, stepping stones, photo mode and tuning panel, B3 the meadow islet and the autumn and winter creatures), then the Hollow's first version. Do not start a stage until Matt approves it. See `docs/20-roadmap-and-vertical-slice.md`.
 
 All planting is the walker's (Matt, October 24, 2026): the Plant tool leaves the view from above.
 

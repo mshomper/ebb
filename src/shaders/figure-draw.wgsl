@@ -15,12 +15,42 @@
 // #include lib-lighting
 // #include lib-figure-eyes
 
+// The carrier's straps painted on the coat while one is worn (October 29, 2026; figure.json straps):
+// two bands over the shoulders crossing the back, in the rest pose, so they ride the body.
+struct FigureStraps {
+  line: vec4f,     // xy the left strap's top, zw its foot (rest m, x left, y up); the right mirrors it
+  shape: vec4f,    // x on (0 or 1), y half width (m), z painted behind this rest z, w nothing above this y
+  colour: vec4f,   // rgb linear albedo, w how dark its edge is (a share of the colour)
+};
+
 struct FigureDraw {
   look: vec4f,     // x cloth roughness, y sheen strength, z contact shadow darkness 0..1, w contact radius (body lengths)
   body: vec4f,     // x body length (m, at size 1)
   glint: vec4f,    // unused here (the creature pass's eye glint)
   eyes: FigureEyes,
+  straps: FigureStraps,
 };
+
+/** How much strap covers rest-pose point p (x, 0..1), and how much of that is its dark edge (y). */
+fn figureStraps(p: vec3f, s: FigureStraps) -> vec2f {
+  // No early return: fwidth below needs every fragment of the quad to reach it.
+  let inside = select(0.0, 1.0, s.shape.x > 0.5 && p.z <= s.shape.z && p.y <= s.shape.w);
+  let a = s.line.xy;
+  let b = s.line.zw;
+  var d = 1e3;
+  for (var side = -1.0; side < 1.5; side += 2.0) {
+    let m = vec2f(-side, 1.0);
+    let pa = p.xy - a * m;
+    let ba = (b - a) * m;
+    let t = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0);
+    d = min(d, length(pa - ba * t));
+  }
+  let w = max(fwidth(d), 1e-4);
+  let cover = inside * (1.0 - smoothstep(s.shape.y - w, s.shape.y + w, d));
+  // A darker edge a quarter of the half width in from each side, so the strap reads against the coat.
+  let edge = smoothstep(s.shape.y * 0.7 - w, s.shape.y * 0.7 + w, d);
+  return vec2f(cover, edge);
+}
 
 @group(0) @binding(0) var<uniform> frame: FrameUniforms;
 @group(2) @binding(0) var<uniform> fd: FigureDraw;
@@ -108,7 +138,9 @@ fn fsBody(in: VsOut) -> FsOut {
   let moonVis = select(vis, 1.0, casterIsSun);
   let ao = mix(0.55, 1.0, clamp(n.y * 0.5 + 0.5, 0.0, 1.0));
   let eye = figureEyes(in.rest, in.head, fd.eyes);
-  let albedo = mix(select(in.albedo, mapColour, mapped), fd.eyes.albedo.rgb, eye);
+  let strap = figureStraps(in.rest, fd.straps);
+  let strapColour = fd.straps.colour.rgb * mix(1.0, fd.straps.colour.w, strap.y);
+  let albedo = mix(mix(select(in.albedo, mapColour, mapped), strapColour, strap.x * (1.0 - in.head)), fd.eyes.albedo.rgb, eye);
   let direct = frame.sunIlluminance * max(dot(n, frame.sunDir), 0.0) * sunVis
              + frame.moonIlluminance * max(dot(n, frame.moonDir), 0.0) * moonVis
              + pointIllum(in.world, n, 0.15);

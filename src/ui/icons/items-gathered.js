@@ -28,6 +28,12 @@ export const GATHERED = {
     ${both('d="M3 8.6C6 6.8 9.4 9.4 13 8S18.6 6.8 21 8.4C18.6 9.4 16 9.6 13.2 10S6 10.4 3 8.6Z"')}
     ${both('d="M4.6 13.6C7.6 12.2 10.4 14.4 13.8 13.4S18.4 12.6 20 13.8C18 14.8 16 14.8 14 15.2S7.6 15.6 4.6 13.6Z"')}
     <path d="M7.4 18.4C9.4 17.6 11.4 19 13.6 18.2"/></g>`],
+  // Woven twigs (October 29, 2026): drift twigs plaited over and under into one length, each
+  // crossing a slim strand leaning the other way, a twig end loose at each end.
+  'woven-twigs': ['fuel', `<g transform="rotate(-38 12 12)">
+    ${[[6.2, 32], [10.1, -32], [14, 32], [17.9, -32]].map(([x, a]) =>
+      both(`transform="rotate(${a} ${x} 12)" d="M${x - 3.6} 12C${x - 2} 9.4 ${x + 2} 9.4 ${x + 3.6} 12C${x + 2} 14.6 ${x - 2} 14.6 ${x - 3.6} 12Z"`)).join('')}
+    <path d="M3 12H1.8M21 12H22.2"/></g>`],
   // Reed down: a soft plume on its stalk.
   'reed-down': ['fuel', `<g transform="rotate(-40 12 12)"><path d="M2.5 12.4H9.2"/>
     ${both('d="M9 12.4C9.6 10.2 11.4 9 13.2 9.2C14 7.8 16.4 7.6 17.4 8.8C18.8 8 20.8 9 20.8 10.6C21.8 11.4 21.8 13.4 20.8 14.2C20.8 15.8 18.8 16.8 17.4 16C16.4 17.2 14 17 13.2 15.6C11.4 15.8 9.6 14.6 9 12.4Z"')}
