@@ -150,14 +150,17 @@ export function createSowing(o) {
       return true;
     },
 
-    /** Each frame: the ring follows the pointer (read at most ring.checkHz a second), and a net walk ends in setting it. @param {number} now */
+    /**
+     * Each frame: the ring sits under the pointer (moved every frame; whether it will grow there is
+     * read at most ring.checkHz a second), and a net walk ends in setting it. @param {number} now
+     */
     update(now) {
       const item = held();
       if (!item && get('hand')) api.putAway();
-      if (item && pointer && now - readAt >= 1000 / R.ring.checkHz) {
-        readAt = now;
-        ring = ringAt(item, pointer);
-      } else if (!item || !pointer) ring = null;
+      if (item && pointer) {
+        if (!ring || now - readAt >= 1000 / R.ring.checkHz) { readAt = now; ring = ringAt(item, pointer); }
+        else ring = { ...ring, x: pointer[0], y: pointer[1] + Math.max(0, o.depth(pointer[0], pointer[2])), z: pointer[2] };
+      } else ring = null;
       tosses = tosses.filter((t) => now < t.at + (t.plan.s + Math.max(R.toss.fadeS, R.splash.s + R.splash.gapS * 3, R.puff.s)) * 1000);
       o.planting.update(now);
       // At the spot for a clump or a withy (P2g): kneel and set it in, or push it in.

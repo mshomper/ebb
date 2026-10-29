@@ -12,7 +12,8 @@ import { carriedOn, partIndices } from './carry.js';
 
 export { loadFigureClips } from './clips.js';
 
-const EXTRA = 20;
+/** The eyes' 20 floats, then the painted straps' 12 (figure-draw.wgsl FigureStraps). */
+const EXTRA = 32;
 
 /** Fetch the model named by the recipe (a path from the repo root). @param {any} R */
 export async function loadFigureModel(R) {
@@ -34,6 +35,17 @@ export function eyeUniforms(E, headBone, state, out = new Float32Array(EXTRA)) {
     E.albedo[0], E.albedo[1], E.albedo[2], 0,
     state[0], state[1], state[2], state[3],
     state[4], state[5], state[6] ?? 0, state[7] ?? 0]);
+  return out;
+}
+
+/**
+ * The painted straps' uniforms (figure-draw.wgsl FigureStraps), after the eyes' 20 floats: the
+ * left strap's top and foot (rest m, x and y), on (0 or 1), half width, back z and top y, colour.
+ * @param {any} S recipes/world/figure.json straps @param {boolean} on @param {Float32Array} out
+ */
+export function strapUniforms(S, on, out) {
+  if (!S) return out;
+  out.set([S.from[0], S.from[1], S.to[0], S.to[1], on ? 1 : 0, S.halfWidthM, S.backZ, S.topY, S.colour[0], S.colour[1], S.colour[2], S.edgeShade ?? 1], 20);
   return out;
 }
 
@@ -67,7 +79,7 @@ export function createFigure(o) {
   /** Where the pack stands at camp (the ground under its pivot, world m, and the way its back faces), or null. @type {{ x: number, y: number, z: number, yaw: number } | null} */
   let hung = null;
   const uniforms = new Float32Array(EXTRA);
-  let visible = false;
+  let visible = false, straps = false;
   /** Where the figure stood and faced last frame, for hand(). */
   let at = { x: 0, y: 0, z: 0, yaw: 0 };
   const hands = { l: built.skeleton.findIndex((b) => b.name === 'hand.l'), r: built.skeleton.findIndex((b) => b.name === 'hand.r') };
@@ -113,6 +125,8 @@ export function createFigure(o) {
     },
     /** Set the baked pack down at camp, standing on a spot (world m), or take it up (null; P2f). @param {{ x: number, y: number, z: number, yaw: number } | null} place */
     hangPack(place) { hung = place; },
+    /** Paint the carrier's straps on the coat, or not (October 29, 2026). @param {boolean} on */
+    wearStraps(on) { straps = on; },
     /** Vertices and triangles, for the tools page's cost line. */
     size: { vertices: built.count, triangles: built.indices.length / 3, bytes: built.data.byteLength + built.indices.byteLength },
     /**
@@ -131,7 +145,7 @@ export function createFigure(o) {
       const r = motion.update(dt, s);
       at = { x: s.x, y: s.y, z: s.z, yaw: r.yaw };
       pass.setBeings([{ x: s.x, y: s.y, z: s.z, yaw: r.yaw, size: k, bones: motion.bones }, ...hangs]);
-      pass.setExtra(eyeUniforms(R.eyes, headBone, r.eyes, uniforms));
+      pass.setExtra(strapUniforms(R.straps, straps, eyeUniforms(R.eyes, headBone, r.eyes, uniforms)));
       return r.footfalls;
     },
   };

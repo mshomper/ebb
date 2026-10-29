@@ -822,17 +822,22 @@ export async function startApp(canvas, hooks = {}) {
       for (const [k, n] of [['willow.withies', 1], ['ash', 2], ['sticks', 2]]) pack.add(/** @type {string} */ (k), /** @type {number} */ (n));
     }
     const apo = params.get('camp') === 'apothecary';
+    // `?camp=benches` (the season check's benches set-up, October 29, 2026): both benches built and
+    // nothing made on them yet, the pack holding the rack's, mortar's and hamper's parts.
+    const benchesLink = params.get('camp') === 'benches';
     // `?camp=hearth` (S4, S5): the workbench built, the hearth stones set, the cooking pot and the
     // cup fired in their places, clay, sand and crushed shell in the pack, standing at the ring;
     // `&fire=lit|embers|cold` sets the fire.
     const hearthLink = params.get('camp') === 'hearth';
     // `?camp=carriers` (P2f): the workbench built and the pack holding a satchel's and a basket's parts.
     const carriersLink = params.get('camp') === 'carriers';
-    const kit = carriersLink ? [['rushes.stems', 1], ['willow.withies', 1], ['rush-cord', 4]] : apo ? [['shells', 3], ['watermint.leaves', 2], ['chamomile.flowers', 2], ['sticks', 3], ['pebbles', 2], ['rushes.stems', 3]]
+    const kit = carriersLink ? [['rushes.stems', 1], ['willow.withies', 1], ['rush-cord', 4]]
+      : benchesLink ? [['willow.withies', 1], ['sticks', 1], ['rush-cord', 2], ['flat-stones', 1], ['pebbles', 1], ['rushes.stems', 2], ['clay', 1], ['watermint.leaves', 1]] : apo ? [['shells', 3], ['watermint.leaves', 2], ['chamomile.flowers', 2], ['sticks', 3], ['pebbles', 2], ['rushes.stems', 3]]
       : hearthLink ? [['clay', 3], ['sand', 2], ['crushed-shell', 1], ['sticks', 3]]
       : [['flat-stones', 3], ['sticks', 2], ['rush-cord', 1], ['pebbles', 2]];
     for (const [k, n] of kit) pack.add(/** @type {string} */ (k), /** @type {number} */ (n));
-    if (params.get('camp') === 'bench' || apo || hearthLink || carriersLink) camp.stations.debug.buildNow('workbench');
+    if (params.get('camp') === 'bench' || apo || benchesLink || hearthLink || carriersLink) camp.stations.debug.buildNow('workbench');
+    if (benchesLink) camp.stations.debug.buildNow('apothecary');
     if (apo) { camp.stations.debug.buildNow('apothecary'); for (const m of ['rack', 'mortar', 'hamper']) camp.stations.debug.placeNow(m); }
     if (hearthLink) {
       // `&shaped` is the look of it all at once (tools/hearth-check.html): every piece fired, a pale
@@ -1227,13 +1232,16 @@ export async function startApp(canvas, hooks = {}) {
    * Moving onto another thing hides it until a new rest.
    */
   let hoverAt = 0, restTimer = 0, restX = -1e9, restY = -1e9;
+  /** Where the pointer is on the canvas while something is in hand (CSS pixels), or null: the sowing ring is re-cast under it every frame. */
+  let sowScreen = /** @type {number[] | null} */ (null);
   canvas.addEventListener('pointermove', (e) => {
     if (e.pointerType !== 'mouse') return;
     const C = walkerRecipe.click;
     const ox = e.offsetX, oy = e.offsetY;
     // Something in hand (D1a): the sowing ring follows the pointer, and nothing else is named.
     if (walk.below && getStore('hand')) {
-      sowing.setPointer(e.buttons ? null : groundAt(ox, oy));
+      sowScreen = e.buttons ? null : [ox, oy];
+      sowing.setPointer(sowScreen ? groundAt(ox, oy) : null);
       if (getStore('hover')) updateStore('hover', () => null);
       canvas.classList.remove('ebb-can-use');
       return;
@@ -1259,7 +1267,7 @@ export async function startApp(canvas, hooks = {}) {
     if (getStore('hover')) updateStore('hover', () => null);
     canvas.classList.remove('ebb-can-use');
   };
-  canvas.addEventListener('pointerleave', () => { hoverOff(); sowing.setPointer(null); });
+  canvas.addEventListener('pointerleave', () => { hoverOff(); sowScreen = null; sowing.setPointer(null); });
   canvas.addEventListener('pointerdown', hoverOff);
 
   // ---- walking with the keys and the mouse (WASD; src/world/walk/controls.js) ----
@@ -1270,6 +1278,7 @@ export async function startApp(canvas, hooks = {}) {
     // A card or panel over the view: keys wait, and the pointer is freed to use it.
     open: () => !!getStore('identify') || !!getStore('journalUi')?.open || !!getStore('haul') || !!getStore('shelfPending')
       || !!getStore('sketchbookUi')?.open || !!getStore('stationView') || !!getStore('walkerPageUi')?.open,
+    aiming: () => !!getStore('hand'),
     use: (x, y) => dispatch({ type: 'look.tap', x, y, source: 'mouse' }),
     hover: (x, y) => {
       if (getStore('hand')) { sowing.setPointer(groundAt(x, y)); return; }
@@ -1986,7 +1995,10 @@ export async function startApp(canvas, hooks = {}) {
     // A raising Sculpt brush rings every plant it would cover (rings.js).
     const raising = tools().tool === 'sculpt' && RAISING_MODES.includes(tools().sculptMode);
     const bury = raising ? buryRings(world.state?.growth?.plants ?? [], flora, terrain.ring, growthRecipe.bury) : [];
-    // Planting on foot (D1a): the ring under the pointer, a net walk's end, the tossed seeds.
+    // Planting on foot (D1a): the ring under the pointer, a net walk's end, the tossed seeds. The
+    // pointer's ground point is cast again every frame, so the ring stays under the cursor while the
+    // camera follows or turns (October 29, 2026).
+    if (sowScreen && walk.below && getStore('hand')) sowing.setPointer(groundAt(sowScreen[0], sowScreen[1]));
     sowing.update(now);
     sowOverlay.draw(sowing.visuals(), getStore('view').project3, now);
     terrainPass.setMarks(plantTool.marks(now, !!getStore('hand') && getStore('hand').kind !== 'net', chosen?.pinned ? chosen : null, [...(padMark ? [padMark] : []), ...bury,...(getStore('reveal')?.rings?.(now) ?? []), ...creatures.foodRings(), ...intro.rings(now), ...camp.rings(now / 1000), ...stores.rings(now / 1000)]));

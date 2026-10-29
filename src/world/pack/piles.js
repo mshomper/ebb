@@ -40,7 +40,7 @@ export const pileWord = (handfuls, recipe) => recipe?.words?.pile?.[pileLook(han
  * record's size, which a tap and the grass clear go by). A pile builds up piece by piece at its real
  * size (pile-pieces.js): stage 0, 1 and 2 are the small, good and big heap, stage 3 the full pile
  * (all its handfuls); a K-21 heap is stage 'heap', its bottom few pieces. A kind the look does not
- * list wears the stick pile.
+ * list wears otherModel ('heap': a mound in its own colour).
  * @param {string} kind @param {number} handfuls @param {any} recipe pack.json @param {boolean} [heap]
  * @returns {{ model: string, stage: number | 'heap', scale: number, size: number }}
  */
@@ -50,6 +50,11 @@ export function pileShape(kind, handfuls, recipe, heap = false) {
   const base = model === 'stick-pale' ? 'stick' : model;
   const full = recipe?.piles?.handfuls ?? 12;
   const stage = heap ? 'heap' : handfuls >= full ? 3 : pileLook(handfuls, recipe);
+  // otherModel 'heap' (October 29, 2026): a soft mound in the kind's own colour, scaled by stage.
+  if (model === 'heap') {
+    const H = L.heap ?? {}, scale = stage === 'heap' ? H.heapScale ?? 0.4 : H.stageScales?.[stage] ?? 1;
+    return { model, stage, scale, size: 2 * Math.max(H.radiiM?.[0] ?? 0.3, H.radiiM?.[2] ?? 0.3) * scale };
+  }
   return { model, stage, scale: 1, size: L.footprintM?.[base] ?? (base === 'stone' ? 1.0 : 1.2) };
 }
 

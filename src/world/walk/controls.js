@@ -17,12 +17,14 @@ import { attachMouseLook } from '../../input/mouse-look.js';
  *   camera: import('../../render/camera.js').OrbitCamera,
  *   recipe: any,
  *   open: () => boolean,
+ *   aiming?: () => boolean,
  *   use: (x: number, y: number) => void,
  *   hover: (x: number, y: number) => void,
  *   pan: (dx: number, dy: number) => void,
  * }} o
  *   recipe: recipes/world/walker.json; open: is a card or panel open over the view (keys and mouse
- *   look wait); use: a click at a canvas point (look.tap); hover: the point the dot rests on, a few
+ *   look wait); aiming: is something in hand to sow or place (the pointer stays free, so the first
+ *   click sows where the cursor is, October 29, 2026); use: a click at a canvas point (look.tap); hover: the point the dot rests on, a few
  *   times a second; pan: pan the view from above by a drag delta in pixels
  */
 export function createWalkControls(o) {
@@ -41,7 +43,7 @@ export function createWalkControls(o) {
     },
   });
   const look = attachMouseLook(o.canvas, {
-    wanted: () => walk.below && !o.open(),
+    wanted: () => walk.below && !o.open() && !o.aiming?.(),
     look: (dx, dy) => camera.look(dx, dy, ST.look.degPerPx, ST.look.halfLifeS),
     use: (x, y) => o.use(x, y),
   });

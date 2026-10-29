@@ -39,6 +39,8 @@ export function createCarriers(o) {
     const { worn } = state(), fig = o.walk.figure?.();
     /** @type {any[]} */ const out = [];
     fig?.motion.showPack(!worn);
+    // A made carrier hangs on straps painted over the coat (October 29, 2026).
+    fig?.wearStraps?.(!!worn);
     const R = worn ? WR[worn] : null;
     const on = R && fig ? fig.carried(R.bone, R.at, R.turnDeg ?? [0, 0, 0]) : null;
     if (on && R) out.push({ key: R.model, x: on.x, y: on.y, z: on.z, yaw: on.yaw, pitch: on.pitch, roll: on.roll, scale: R.scale ?? 1 });
