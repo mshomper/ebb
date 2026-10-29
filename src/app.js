@@ -481,7 +481,7 @@ export async function startApp(canvas, hooks = {}) {
   // `hooks.labCamera` (tools/frog-lab.html): the old close camera, whose own eye startles frogs.
   if (hooks.labCamera) camera.setClose(camRecipe.labClose);
   const presence = createPresence({ camera, cameraBody: !!hooks.labCamera, walker: () => walkRef?.presenceNow() ?? null, heightM: walkerRecipe.presence.heightM,
-    ringK: () => getStore('boonLift')?.comfort ?? 1 });
+    ringK: () => getStore('boonLift')?.comfort ?? 1, known: () => getStore('campKnown') ?? null });
   /** Where you are felt on foot (finds, food, finding by watching); null while you are above. */
   const you = () => walkRef?.you() ?? null;
   const creatures = createCreatures({ world, recipe: frogRecipe, terrain, water, ripples, camera, testFrogs, flora, floraFrame: () => floraFrame, presence, you });
@@ -750,7 +750,7 @@ export async function startApp(canvas, hooks = {}) {
   // slots, the fire and the lantern as small lights, smoke and moths, and a night's rest in the tent.
   const camp = createCamp({ recipe: campRecipe, seed, walk, terrain, water, clock, orbit: skyRecipe.orbit, camera, world, piles,
     seasons: seasonsRecipe, lighting, pack, shadowBias: shadowPass.bias, low: tier === 'low', poses: (await loadRecipe('world/figure')).poses,
-    beat: () => intro.live?.intro.current?.id ?? null, cook: await loadRecipe('world/cook') });
+    beat: () => intro.live?.intro.current?.id ?? null, cook: await loadRecipe('world/cook'), sowing: sowingRecipe });
   sim.addSystem(camp);
   ringPlace = camp.ringPlace;
   keeps = camp.stations.keeps;
@@ -831,12 +831,15 @@ export async function startApp(canvas, hooks = {}) {
     const hearthLink = params.get('camp') === 'hearth';
     // `?camp=carriers` (P2f): the workbench built and the pack holding a satchel's and a basket's parts.
     const carriersLink = params.get('camp') === 'carriers';
+    // `?camp=gift` (B1 C1): the workbench built and the pack holding the gift stone's parts.
+    const giftLink = params.get('camp') === 'gift';
     const kit = carriersLink ? [['rushes.stems', 1], ['willow.withies', 1], ['rush-cord', 4]]
+      : giftLink ? [['flat-stones', 1], ['shells', 2]]
       : benchesLink ? [['willow.withies', 1], ['sticks', 1], ['rush-cord', 2], ['flat-stones', 1], ['pebbles', 1], ['rushes.stems', 2], ['clay', 1], ['watermint.leaves', 1]] : apo ? [['shells', 3], ['watermint.leaves', 2], ['chamomile.flowers', 2], ['sticks', 3], ['pebbles', 2], ['rushes.stems', 3]]
       : hearthLink ? [['clay', 3], ['sand', 2], ['crushed-shell', 1], ['sticks', 3]]
       : [['flat-stones', 3], ['sticks', 2], ['rush-cord', 1], ['pebbles', 2]];
     for (const [k, n] of kit) pack.add(/** @type {string} */ (k), /** @type {number} */ (n));
-    if (params.get('camp') === 'bench' || apo || benchesLink || hearthLink || carriersLink) camp.stations.debug.buildNow('workbench');
+    if (params.get('camp') === 'bench' || apo || benchesLink || hearthLink || carriersLink || giftLink) camp.stations.debug.buildNow('workbench');
     if (benchesLink) camp.stations.debug.buildNow('apothecary');
     if (apo) { camp.stations.debug.buildNow('apothecary'); for (const m of ['rack', 'mortar', 'hamper']) camp.stations.debug.placeNow(m); }
     if (hearthLink) {
@@ -989,6 +992,8 @@ export async function startApp(canvas, hooks = {}) {
     keepsakes.pass,
     nets.pass,
     ...packDraw.passes,
+    // The gift stone, what lies on it and the herb bed's edging pebbles (B1 C1).
+    camp.gifts.pass,
     pieces.pass,
     // The camp's tent, fire ring and lantern, drawn with their own paint maps.
     camp.props,

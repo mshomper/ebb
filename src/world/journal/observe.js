@@ -412,6 +412,21 @@ export function liftedStone(journal, ctx, kind = 'stone') {
 }
 
 /**
+ * A line the journal writes once, kept by its flag (the camp becoming a known place, B1 C1:
+ * `camp:known`). A no-op after that, or with no words. @param {Journal} journal @param {string} fl
+ * @param {string} text @param {{ state: any, hour: number, words: any }} ctx @param {string} [kind]
+ * @returns {{ journal: Journal, notes: Note[] }}
+ */
+export function noteOnce(journal, fl, text, ctx, kind = 'camp') {
+  if (!text || journal.flags.includes(fl)) return { journal, notes: [] };
+  const j = copy(journal);
+  j.flags.push(fl);
+  /** @type {Note[]} */ const notes = [{ hour: ctx.hour, date: dateText(ctx.state?.seasons, ctx.words), text, sp: null, kind }];
+  j.notes = [...notes, ...j.notes].slice(0, ctx.words.notesKept);
+  return { journal: j, notes };
+}
+
+/**
  * The island gave you something (world/expansion.js): a naturalist's reward or a species' gift.
  * Written once, as a note of kind 'gift' that carries its title and icon, so the island can show
  * it as a card.

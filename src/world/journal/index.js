@@ -14,7 +14,7 @@ import { hourIndex, display, SECONDS_PER_HOUR, HOURS_PER_DAY } from '../../core/
 import { onAction } from '../../input/actions.js';
 import { weatherAt } from '../weather.js';
 import { tideParams } from '../tide.js';
-import { initialJournal, learn, notePlanted, momentsNow, catchMoments, foundAnimal, foundFind, namedAnimal, flag, noteGift, liftedStone, stormShells } from './observe.js';
+import { initialJournal, learn, notePlanted, momentsNow, catchMoments, foundAnimal, foundFind, namedAnimal, flag, noteGift, noteOnce, liftedStone, stormShells } from './observe.js';
 import { journalLook } from './look.js';
 import { describe, identify, showMeSpot, momentKind, frogCard, turtleCard } from './describe.js';
 import { groundKind, groundCard, groundSurvey, describeGround, groundSpot } from './ground.js';
@@ -452,6 +452,8 @@ export function createJournal(opts) {
     }),
     // The island gave you something (src/world/expansion.js): written once, shown as a card.
     on('progress:gifted', (/** @type {any} */ g) => commit(noteGift(journal, g, { state: world.state, hour: hourIndex(), words }))),
+    // The camp became a known place (B1 C1, src/world/camp/gift-stone.js): written once.
+    on('camp:known-rose', (/** @type {{ text: string }} */ p) => commit(noteOnce(journal, 'camp:known', p.text, { state: world.state, hour: hourIndex(), words }))),
     // Watching a frog (or a school) from close by finds it too (src/world/creatures/index.js, schools.js).
     on('creature:found', (/** @type {{ species: string }} */ p) => {
       if (p.species === 'frogs' || words.species[p.species]?.kind === 'school') found(p.species);

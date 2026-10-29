@@ -10,6 +10,9 @@ import { cleanHolds } from '../pack/store.js';
 import { cleanBunches } from '../pack/piles.js';
 import { cleanPieceFields } from './pots.js';
 import { cleanBoon } from './boons.js';
+import { cleanGifts } from './gifts.js';
+import { cleanKnown } from './known.js';
+import { cleanBed } from './herb-bed.js';
 
 /**
  * @typedef {{ slot: string, kind: string, seed: number, placedHour: number, stack?: number,
@@ -19,8 +22,9 @@ import { cleanBoon } from './boons.js';
  *   a pot's; shaped: the pieces waiting pale on the workbench (S4, S5)
  * @typedef {{ version: number, stamped?: boolean, pad?: any, kit: { tent: 'pack' | 'pitched' | 'boat', lantern: 'pole' | 'carried' },
  *   slots: SlotRecord[], fire: import('./fire.js').Fire, work: import('./work.js').WorkPiece[], rested: { hour: number, at: number } | null, boon?: import('./boons.js').Boon | null,
- *   firstPitchedHour: number | null }} Camp
- *   work: the pieces laid at the fire overnight (work.js, P2i)
+ *   firstPitchedHour: number | null, gifts: import('./gifts.js').Gift[], known: import('./known.js').Known, bed: import('./herb-bed.js').Bed }} Camp
+ *   work: the pieces laid at the fire overnight (work.js, P2i); gifts: what was laid on the gift
+ *   stone (gifts.js); known: the known place (known.js); bed: the herb bed's edging (herb-bed.js) (B1 C1)
  *   Other fields a save carries (E1's, later phases') are kept as they are.
  */
 
@@ -47,7 +51,7 @@ export function cleanCamp(v) {
   const tent = TENT.includes(kitIn.tent) ? kitIn.tent : slots.some((s) => s.kind === 'tent') ? 'pitched' : 'pack';
   const rested = c.rested && Number.isFinite(c.rested.hour) && Number.isFinite(c.rested.at) ? { hour: c.rested.hour, at: c.rested.at } : null;
   return { ...c, version: 1, kit: { ...kitIn, tent, lantern: 'pole' }, slots, fire: cleanFire(c.fire), work: cleanWork(c.work), rested, boon: cleanBoon(c.boon),
-    firstPitchedHour: Number.isFinite(c.firstPitchedHour) ? c.firstPitchedHour : null };
+    firstPitchedHour: Number.isFinite(c.firstPitchedHour) ? c.firstPitchedHour : null, gifts: cleanGifts(c.gifts), known: cleanKnown(c.known), bed: cleanBed(c.bed) };
 }
 
 /** What fills a slot, or null. @param {Camp} c @param {string} slot */
