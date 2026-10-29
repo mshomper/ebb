@@ -115,6 +115,9 @@ export function createSchools(opts) {
     // Reed and rush clumps to rest on (dragonflies): where each stands and how tall it has grown.
     perches: () => (world.state?.growth?.plants ?? []).filter((/** @type {any} */ p) => M.perchOn?.[p.sp] && p.stage >= 2)
       .map((/** @type {any} */ p) => ({ x: p.x, z: p.z, h: M.perchOn[p.sp] * Math.min(1, p.size) })),
+    // Perch sticks stood in the shallows (B1 P1; published by src/world/creatures/perch-sticks.js):
+    // each one's tip, where a dragonfly lands.
+    sticks: () => M.stickChance ? getStore('perchSticks') ?? [] : [],
     // Stones, logs and the raft to bask on (turtles; published by src/world/creatures/spring-live.js).
     seats: () => getStore('seats') ?? [],
     // Plants a turtle grazes (lily leaves, pondweed: motion.habits.grazeOn).
@@ -388,7 +391,9 @@ export function createSchools(opts) {
         const c = s.centre();
         const near = Math.hypot(c.x - fd.x, c.z - fd.z) < 0.5;
         if (fd.treat && near) fd.nibbleS = (fd.nibbleS ?? 0) + f.realDt;
-        if (fd.treat ? (fd.nibbleS ?? 0) >= (recipe.treat?.nibbleS ?? 0) : near) {
+        // Each treat its own time (pondweed is grazed a little longer than a leaf pack is nibbled).
+        const nibble = (fd.treat && recipe.treat?.nibbleSOf?.[fd.treat]) ?? recipe.treat?.nibbleS ?? 0;
+        if (fd.treat ? (fd.nibbleS ?? 0) >= nibble : near) {
           foods = foods.filter((g) => g !== fd);
           if (fd.treat) {
             world.state = addSwarmEvent(world.state, key, { kind: 'treat', hour: hourIndex(), treat: fd.treat });
@@ -406,6 +411,15 @@ export function createSchools(opts) {
           world.state = addSwarmEvent(world.state, key, { kind: 'treat', hour: hourIndex(), treat: e.treat, who: e.who.map((/** @type {number} */ i) => turtleId(s.id, i)) });
           updateStore('world', () => world.state);
           emitDeferred('treat:taken', { species: key, id: s.id, treat: e.treat, tid: e.tid });
+        }
+        // Dragonflies landing on a perch stick (patrol.js): with you on foot near it, their treat.
+        // The stick stays; once a day counts (the hourly tick, treatGain).
+        for (const l of /** @type {any} */ (s).landed?.() ?? []) {
+          const me = opts.you?.() ?? null, T = recipe.treat;
+          if (!T || !me || Math.hypot(me[0] - l.x, me[2] - l.z) > (T.nearM ?? 6)) continue;
+          world.state = addSwarmEvent(world.state, key, { kind: 'treat', hour: hourIndex(), treat: T.id });
+          updateStore('world', () => world.state);
+          emitDeferred('perch:landed', { species: key, id: l.stick });
         }
       }
       draw(f.animT);
