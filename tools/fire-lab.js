@@ -43,6 +43,7 @@ const hasTS = features.has('timestamp-query');
 
 // ---- the sim ----
 const sim = createCampFireSim({ recipe: S, rain: { flame: F.rainFlame, smoke: camp.smoke.rainThick } });
+sim.setTier({ grid: S[S.tiers.high.grid], pressurePasses: S.tiers.high.pressurePasses });
 await sim.setup(device);
 
 // ---- drawing ----
@@ -89,7 +90,7 @@ const sceneGroup = device.createBindGroup({ layout: scenePipe.getBindGroupLayout
 let volSize = [1, 1];
 
 const st = {
-  speed: 1, rainy: false, tod: 0, view: 0, stylize: S.bands.stylize, tier: 'high', scale: 1,
+  speed: 1, rainy: false, tod: 0, view: 0, stylize: S.bands.stylize, tier: 'high', scale: S.tiers.high.scale,
   /** @type {'surge' | 'now'} */ feed: 'surge',
   yaw: 0.7, pitch: VIEWS[0].pitch, dist: VIEWS[0].dist, frame: 0, time: 0,
   hour: 0, ember: 0.6, lastLitT: 0, running: true, warm: S.warmSteps,
@@ -139,7 +140,8 @@ function writeBands() {
 
 /** @returns {{ grid: number[], pressurePasses: number, samples: number, scale: number }} */
 function tierNow() {
-  const t = S.tiers[st.tier];
+  // 'study': the spec's fuller settings at full resolution, to compare with the tiers (all low now).
+  const t = st.tier === 'study' ? { grid: 'grid', pressurePasses: S.pressurePasses, samples: S.samples, scale: 1 } : S.tiers[st.tier];
   return { grid: S[t.grid], pressurePasses: t.pressurePasses, samples: t.samples, scale: t.scale };
 }
 
@@ -225,6 +227,7 @@ canvas.addEventListener('pointermove', (e) => {
 canvas.addEventListener('pointerup', () => { drag = null; });
 canvas.addEventListener('wheel', (e) => { e.preventDefault(); st.dist = Math.min(7, Math.max(1.1, st.dist * Math.exp(e.deltaY * 0.001))); }, { passive: false });
 
+pick($('segScale'), String(st.scale));
 $('meterHigh').style.left = `${(F.highH / F.maxFuelH) * 100}%`;
 resize();
 writeBands();
