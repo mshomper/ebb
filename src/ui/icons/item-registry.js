@@ -35,6 +35,8 @@ export const POUCH_KINDS = /** @type {[string, string, string, string, number][]
   ['old-comb', 'old-comb', 'Old comb', 'T4', 4], ['chanterelle', 'chanterelle', 'Chanterelle', 'T5', 5],
   ['shells', 'shells', 'Broken shells', 'T2', 2], ['crushed-shell', 'crushed-shell', 'Crushed shell', 'T2', 2],
   ['charcoal-sticks', 'charcoal-sticks', 'Charcoal sticks', 'T2', 2],
+  // The first shovel's haft (October 29, 2026): two handfuls of drift twigs woven at the workbench.
+  ['woven-twigs', 'woven-twigs', 'Woven twigs', 'T1', 2],
   // Fired bowls carry in a pouch (S5), one a handful, in the made bowl's glyph.
   ['bowl', 'bowl', 'Clay bowls', 'T2', 2],
   // P2h: the made leaf pack rides in a pouch until it is set out, and wears its treat glyph.

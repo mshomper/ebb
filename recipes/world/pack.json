@@ -56,7 +56,8 @@
     { "id": "charcoal-sticks", "name": "Charcoal sticks", "group": "craft", "sketch": "charcoal", "camp": "heap", "line": "Thin sticks of willow charcoal, for drawing. They wear down as you sketch." },
     { "id": "bowl", "name": "Clay bowls", "group": "craft", "sketch": "mound", "camp": "heap", "line": "Fired clay bowls, nested one in another. A handful is one bowl." },
     { "id": "leaf-pack", "name": "Leaf pack", "group": "craft", "sketch": "leaves", "camp": "heap", "line": "Fallen leaves bound with rush cord, to sink in still water." },
-    { "id": "lily-parcel", "name": "Lily leaf parcel", "group": "craft", "sketch": "leaves", "camp": "heap", "line": "Worms wrapped in a lily leaf and tied with rush cord, for the turtles." }
+    { "id": "lily-parcel", "name": "Lily leaf parcel", "group": "craft", "sketch": "leaves", "camp": "heap", "line": "Worms wrapped in a lily leaf and tied with rush cord, for the turtles." },
+    { "id": "woven-twigs", "name": "Woven twigs", "group": "craft", "sketch": "drift", "camp": "heap", "line": "Drift twigs woven into one springy length, for a shovel's haft." }
   ],
   "piles": { "handfuls": 12, "looks": [3, 8, 12], "rackBunches": 12, "rackHandfuls": 6, "bowlHandfuls": 6,
     "look": {
