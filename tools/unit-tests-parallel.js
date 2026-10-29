@@ -60,6 +60,7 @@ export const PARALLEL = {
   boat: () => import('./unit-tests-boat.js').then((m) => m.addBoatTests),
   intro: () => import('./unit-tests-intro.js').then((m) => m.addIntroTests),
   campFire: () => import('./unit-tests-camp-fire.js').then((m) => m.addCampFireTests),
+  campFireLook: () => import('./unit-tests-camp-fire-look.js').then((m) => m.addCampFireLookTests),
   pack: () => import('./unit-tests-pack.js').then((m) => m.addPackTests),
   gather: () => import('./unit-tests-gather.js').then((m) => m.addGatherTests),
   plantRules: () => import('./unit-tests-plant-rules.js').then((m) => m.addPlantRulesTests),

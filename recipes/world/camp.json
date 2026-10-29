@@ -70,6 +70,28 @@
   "flame": { "cards": 6, "heightM": 0.5, "widthM": 0.26, "nits": 420, "flickerHz": 2.4, "minPx": 3, "glowNits": 14, "glowM": 0.45 },
   "flameNote": "The fire's flame: cards crossed tongues of emissive flame (heightM tall, widthM wide), flickering at flickerHz. minPx: the flame never draws smaller than this on screen, so the camp reads as a small warm point from above (C-38). glowNits, glowM: a soft halo around it.",
 
+  "fireSim": {
+    "grid": [32, 48, 32], "lowGrid": [24, 36, 24],
+    "boxM": [1.2, 1.8, 1.2],
+    "stepS": 0.0166667, "maxStepsPerFrame": 3, "warmSteps": 120,
+    "pressurePasses": 20, "lowPressurePasses": 12,
+    "buoyancy": 4.2, "smokeWeight": 0.35, "cooling": 3.2, "smokeFade": 0.55,
+    "turbulence": 3.4, "damping": 0.5, "emitHeat": 26, "emitSmoke": 3.0,
+    "spots": 6, "levelScale": 0.9, "flareAdd": 0.22,
+    "samples": 40, "lowSamples": 24,
+    "detail": [16, 10, 16], "smokeDensity": 5.0,
+    "bands": { "edge": 0.12, "at": [0.34, 0.58, 0.86], "soft": [0.2, 0.02], "stylize": 0.75,
+      "colors": ["#d93d54", "#fa7838", "#ffbd52", "#ffedbd"] },
+    "halo": 0.35,
+    "feed": { "catchS": 0.9, "flareS": 1.6, "puffS": 1.0, "rise": 0.7, "fall": 0.35, "ease": 2.2 },
+    "tiers": {
+      "high": { "grid": "grid", "pressurePasses": 20, "samples": 40, "scale": 1 },
+      "medium": { "grid": "grid", "pressurePasses": 20, "samples": 32, "scale": 0.5 },
+      "low": { "grid": "lowGrid", "pressurePasses": 12, "samples": 24, "scale": 0.5 }
+    }
+  },
+  "fireSimNote": "The volumetric fire (Matt's fire study, October 29, 2026; tools/fire-lab.html; src/render/passes/camp-fire-sim.js, src/shaders/camp-fire-sim.wgsl): a small smoke and heat fluid on a grid of cells over a box boxM (m) standing on the ring, stepped every stepS seconds (at most maxStepsPerFrame a frame; warmSteps at once when the camp comes into view lit), with pressurePasses Jacobi passes (lowGrid and lowPressurePasses on the low tier). Hot gas rises by buoyancy, smoke weighs smokeWeight; heat cools at cooling a second, smoke fades at smokeFade; curl noise stirs it by turbulence; damping a second. spots hot spots add emitHeat heat and emitSmoke smoke, driven by level = levelScale x shown flame + flareAdd x flare. Drawn by marching samples steps a ray (lowSamples on low), heat broken up by rising noise at detail cycles a meter, smoke at smokeDensity. bands: the painted flame from the collected heat: its edge, the band steps at, softness from soft[0] (soft) to soft[1] (banded), stylize of the way (Matt's 0.75), colors display sRGB rose, orange, amber, cream; halo: the soft orange outside the edge. feed: the catch-then-surge feed of the study (spec section 5, pending Matt): a handful catches after catchS, the flare decays over flareS, the smoke puff over puffS, and the shown flame eases toward the game's at rise and fall (times ease) a second. tiers: grid, pressure passes, samples and the volume's resolution share per quality tier. Visual only, never saved, never in catch-up.",
+
   "smoke": { "count": 40, "lowCount": 24, "lifeS": 10, "riseMps": 0.4, "lean": 1.0, "spreadM": 0.12, "sizeM": [0.16, 1.1], "opacity": 0.09, "albedo": [0.62, 0.62, 0.64], "embersShare": 0.35, "rainThick": 1.9, "mistLow": 0.6, "nearFadeM": [1.0, 2.5], "midgeClearM": 2 },
   "smokeNote": "C-29: count soft puffs (lowCount on the low tier), each living lifeS seconds, rising riseMps and leaning with the weather's wind by lean (meters a second at full wind), growing from sizeM[0] to sizeM[1], at most opacity. albedo: lit by the sky, sun and fire, never painted. embersShare: how much smoke banked embers give; rainThick: thicker in rain; mistLow: in mist it rises this much slower and hangs low. nearFadeM: puffs fade near the eye, so overdraw stays small. Midges keep midgeClearM from it.",
 
