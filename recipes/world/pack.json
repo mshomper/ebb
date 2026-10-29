@@ -40,6 +40,7 @@
     { "id": "nettle.tops", "name": "Nettle tops", "group": "herbs", "camp": "rack", "line": "Young nettle tops, picked with care." },
     { "id": "chamomile.flowers", "name": "Chamomile", "group": "herbs", "camp": "rack", "line": "Chamomile flowers. They smell of apples." },
     { "id": "lilies.leaf", "name": "Lily leaf", "group": "living", "sketch": "leaves", "camp": "heap", "line": "A broad lily leaf, cool and waxy, picked from the pond." },
+    { "id": "pondweed.strands", "name": "Pondweed", "group": "living", "sketch": "kelp", "camp": "heap", "line": "A dripping handful of curled pondweed, pulled from the pond." },
     { "id": "sand", "name": "Sand", "group": "earth", "sketch": "mound", "camp": "heap", "line": "Dry sand from above the tide." },
     { "id": "clay", "name": "Clay", "group": "earth", "sketch": "clay", "camp": "clay", "line": "Blue-grey clay, cool and sticky." },
     { "id": "ash", "name": "Wood ash", "group": "earth", "sketch": "mound", "camp": "heap", "line": "Soft grey ash from the cold ring." },
@@ -98,7 +99,8 @@
       "leaf-pack": { "shape": "pebble", "count": [1, 1], "sizeM": [0.07, 0.09], "heightShare": [0.45, 0.6], "lump": 0.3, "sink": 0.1, "color": [0.22, 0.13, 0.05], "spreadM": 0 },
       "worms": { "shape": "stick", "count": [3, 5], "lenM": [0.05, 0.09], "radiusM": [0.0025, 0.004], "bend": [0.35, 0.7], "color": [0.3, 0.11, 0.09], "spreadM": 0 },
       "lily-parcel": { "shape": "pebble", "count": [1, 1], "sizeM": [0.08, 0.1], "heightShare": [0.4, 0.5], "lump": 0.2, "sink": 0.1, "color": [0.05, 0.13, 0.04], "spreadM": 0 },
-      "lilies.leaf": { "shape": "flat", "count": [1, 1], "sizeM": [0.09, 0.12], "heightShare": [0.06, 0.1], "lump": 0.1, "sink": 0.05, "color": [0.05, 0.15, 0.04], "spreadM": 0 }
+      "lilies.leaf": { "shape": "flat", "count": [1, 1], "sizeM": [0.09, 0.12], "heightShare": [0.06, 0.1], "lump": 0.1, "sink": 0.05, "color": [0.05, 0.15, 0.04], "spreadM": 0 },
+      "pondweed.strands": { "shape": "stick", "count": [4, 7], "lenM": [0.12, 0.22], "radiusM": [0.003, 0.005], "bend": [0.35, 0.7], "color": [0.05, 0.09, 0.03], "spreadM": 0.06 }
     }
   },
   "heaps": { "cap": 6, "tapM": 0.25 },

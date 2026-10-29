@@ -196,6 +196,9 @@ export function createJournal(opts) {
     // Then an open hole you dug (docs/future/13 10.2; src/world/dig): its layer, and Dig deeper.
     const dg = /** @type {any} */ (opts).dig?.cardAt?.(x, z) ?? null;
     if (dg) return dg;
+    // Then a perch stick stood in the shallows (B1 P1; src/world/creatures/perch-sticks.js): Take up.
+    const ps = /** @type {any} */ (opts).perch?.cardAt?.(x, z) ?? null;
+    if (ps) return ps;
     const pc = opts.pieces?.pieceAt(x, z);
     const pw = pc && words.pieces?.[pc.kind];
     if (pw && pc.kind === 'pile') {

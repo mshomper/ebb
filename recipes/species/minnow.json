@@ -50,10 +50,10 @@
   "presence": { "ringM": 1.8, "ringTrustShrink": 0.8, "ringMinM": 0.4, "calmSpeed": 0.9, "editReachM": 2.5,
     "watch": { "reachM": 3, "minS": 20, "capS": 600, "trustPerMin": 0.006, "stillMps": 0.05, "sitBoost": 2 },
     "multipliers": { "posture": { "stand": 1, "kneel": 0.8, "sit": 0.65 }, "gaze": { "watch": 1.15, "away": 0.9 }, "gazeConeDeg": 30, "light": 1.3 },
-    "feedTrust": 0.0225, "treatFeeds": 2.5, "fullH": 6, "ceiling": "familiar", "bands": [0.2, 0.45, 0.65, 0.85], "knownTrust": 0.5 },
+    "feedTrust": 0.0225, "treatFeeds": 2.5, "treatFeedsOf": { "pondweed": 2 }, "fullH": 6, "ceiling": "familiar", "bands": [0.2, 0.45, 0.65, 0.85], "knownTrust": 0.5 },
   "_known": "The minnows can't be named, so their gift comes when the school first knows you to presence.knownTrust (Matt, October 27, 2026; src/world/creatures/swarms.js knownNow). The moment (schools.js): if you are on foot, the school nearest the water closest to you (within bankM of you, at most reachM from the school) rises to meet you there.",
   "known": { "bankM": 3, "reachM": 8 },
-  "treat": { "id": "leaf-pack", "kinds": ["leaf-pack"], "reachM": 4, "water": true, "noticeS": 3, "nibbleS": 6, "_doc": "The minnows' treat (P2h, docs/future/13 section 8; recipes/world/treats.json): a leaf pack made at the workbench, set in their pool. After noticeS real seconds the nearest school within reachM swirls up to it, nibbles round it for nibbleS seconds, and then it is eaten." },
+  "treat": { "id": "leaf-pack", "idOf": { "leaf-pack": "leaf-pack", "pondweed.strands": "pondweed" }, "kinds": ["leaf-pack", "pondweed.strands"], "reachM": 4, "water": true, "noticeS": 3, "nibbleS": 6, "nibbleSOf": { "pondweed": 10 }, "_doc": "The minnows' treat (P2h, docs/future/13 section 8; recipes/world/treats.json): a leaf pack made at the workbench, set in their pool. After noticeS real seconds the nearest school within reachM swirls up to it, nibbles round it for nibbleS seconds, and then it is eaten. A handful of pondweed strands (B1 P1, F-05, October 29, 2026), gathered from grown pondweed, is set out on the water the same way and grazed a little longer (nibbleSOf); it is worth presence.treatFeedsOf meals, a raw handful a little less than the made pack. One treat a day counts, whichever it is." },
   "feed": { "reachM": 4, "messages": {
     "coming": "The minnows have seen it. Watch them swirl up.",
     "none": "No school is near enough to see it. Try the deep water, near the minnows.",
