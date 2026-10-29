@@ -378,10 +378,16 @@ function makeShore(land, seed) {
   const rockDeg = spitDeg + side * (S.rocky.fromSpitDeg[0] + u(2) * (S.rocky.fromSpitDeg[1] - S.rocky.fromSpitDeg[0]));
   /** @param {number} deg @param {any} t */
   const tongue = (deg, t) => ({ dx: det.cos(deg * DEG), dz: det.sin(deg * DEG), len: t.lengthM, half: t.widthM * 0.5 });
+  // The dune (Matt, October 29, 2026): a low sandy mound on the shore beside the camp, either side of
+  // it, so chamomile always has dry sandy turf above the tide.
+  const D = S.dune;
+  const duneDeg = D ? campDeg + (u(3) < 0.5 ? 1 : -1) * (D.fromCampDeg[0] + u(4) * (D.fromCampDeg[1] - D.fromCampDeg[0])) : 0;
   return {
     lobes: makeFbm(seed, L_LOBES, S.lobes), amount: S.lobes.amount,
     campX: pad.fx, campZ: pad.fz, calmIn: det.cos(S.calmDeg * 0.5 * DEG), calmOut: det.cos(S.calmDeg * DEG),
     spit: tongue(spitDeg, S.spit), rocky: tongue(rockDeg, S.rocky), rockyPaint: S.rocky.paint,
+    dune: D ? { dx: det.cos(duneDeg * DEG), dz: det.sin(duneDeg * DEG), halfAlong: D.alongM * 0.5, halfAcross: D.acrossM * 0.5,
+      inland: D.inlandM, height: D.heightM, sand: D.sand } : null,
   };
 }
 
@@ -468,6 +474,14 @@ function sampleCell(c, x, z, out) {
     const rx = px - c.riseX, rz = pz - c.riseZ;
     riseW = bump(Math.sqrt(rx * rx + rz * rz) / L.rise.radius);
     h += landMask * (L.rise.height * riseW + L.detail.amplitude * fbm(c.detail, px, pz));
+  }
+
+  // The dune: a soft mound across the shore ramp along its bearing, crest `inland` from the coast.
+  let duneW = 0;
+  if (sh?.dune) {
+    const du = sh.dune;
+    if (x * du.dx + z * du.dz > 0) duneW = bump(Math.abs(z * du.dx - x * du.dz) / du.halfAlong) * bump(Math.abs(s - du.inland) / du.halfAcross);
+    h += du.height * duneW;
   }
 
   // Basins (ponds and marshes): blend toward a floor above sea level, bank shape smoothstep. A
@@ -613,6 +627,14 @@ function sampleCell(c, x, z, out) {
   if (M.sandFloorM !== undefined && s < L.inlandWidth) {
     const floor = (1 - smoothstep(M.sandFloorM - (M.sandFloorSoftM ?? 0.15), M.sandFloorM, h)) * (1 - basinW);
     if (floor > sand) sand = floor;
+  }
+  // The dune is sandy turf on its crest and back (sand through the grass, never less than its share),
+  // bare sand down its seaward face to the beach; the sand noise roughens its edge.
+  if (duneW > 0) {
+    const du = sh.dune;
+    const face = smoothstep(du.inland - 1, du.inland - 4, s);
+    const share = du.sand + (1 - du.sand) * face;
+    sand = Math.max(sand, share * smoothstep(0.05, 0.45, duneW + 0.15 * fbm(c.sand, x, z)));
   }
   // The rocky point is bare rock out to the water; the pad is grass and soil only.
   if (sh && rockyW > 0) rock = Math.max(rock, sh.rockyPaint * smoothstep(0.25, 0.6, rockyW));

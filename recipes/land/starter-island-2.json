@@ -19,7 +19,9 @@
     "lobes": { "amount": 16, "scale": 0.022, "octaves": 2, "lacunarity": 2, "gain": 0.5 },
     "calmDeg": 40,
     "spit": { "lengthM": 8, "widthM": 12, "fromCampDeg": [110, 250] },
-    "rocky": { "lengthM": 5, "widthM": 12, "fromSpitDeg": [60, 110], "paint": 1 }
+    "rocky": { "lengthM": 5, "widthM": 12, "fromSpitDeg": [60, 110], "paint": 1 },
+    "dune": { "note": "October 29, 2026 (Matt): a low dune on the shore beside the camp, so chamomile always has dry sandy turf above the tide. fromCampDeg: its bearing round from the camp's facing (a range, the side from the seed). alongM, acrossM: its length along the coast and its width across it. inlandM: its crest this far in from the coast. heightM: how much it lifts the ground there. sand: the sand share of its turf (chamomile wants 0.2 to 0.8).",
+      "fromCampDeg": [35, 45], "alongM": 18, "acrossM": 14, "inlandM": 8, "heightM": 0.8, "sand": 0.5 }
   },
   "warp": { "strength": 3, "scale": 0.035, "octaves": 2, "lacunarity": 2, "gain": 0.5 },
   "detail": { "amplitude": 0.3, "scale": 0.09, "octaves": 4, "lacunarity": 2, "gain": 0.5 },
