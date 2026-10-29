@@ -223,6 +223,7 @@ export function addDigTests(test, assert, eq) {
     eq(layout(C, 'workbench', ['rushes.stems'], st).make, 'rush-cord', 'rushes make cord');
     assert(layout(C, 'workbench', ['rushes.stems'], st).complete, 'one handful is all it takes');
     eq(layout(C, 'workbench', ['marram.leaves'], st).make, 'rush-cord', 'marram leaves serve too');
+    eq(layout(C, 'workbench', ['reeds.leaves'], st).make, 'rush-cord', 'and reed leaves, so spring has cord');
     const sh = layout(C, 'workbench', ['sticks', 'flat-stones', 'rush-cord'], st);
     eq(sh.make, 'shovel', 'the shovel'); assert(sh.complete, 'complete with three parts');
     const made = recordMade(st, 'shovel', 40, C.makes.shovel.out === 'tool');
@@ -230,12 +231,14 @@ export function addDigTests(test, assert, eq) {
     eq(layout(C, 'workbench', ['sticks', 'flat-stones', 'rush-cord'], recordMade(made, 'shovel', 41)).make === 'shovel', false, 'only one shovel is ever made');
   });
 
-  test(G, 'rushes: a pick lowers the cell by a quarter and waits until it grows back; out of season, none', async () => {
+  test(G, 'rushes: a pick lowers the cell by a quarter and rests it once thin; out of season, none', async () => {
     const R = await GP;
     eq(coverPick(240, R), 176, 'a quarter of full');
     assert(coverPickable(240, 250, 'rushes', 1.5, R).ok, 'a full stand in summer');
-    eq(coverPickable(176, 250, 'rushes', 1.5, R).why, 'rest', 'picked: let it rest');
-    eq(coverPickable(240, 250, 'rushes', 0.5, R).why, 'season', 'too soft in spring');
+    assert(coverPickable(150, 250, 'rushes', 0.5, R).ok, 'a young, spreading stand gives stems too');
+    eq(coverPickable(60, 250, 'rushes', 1.5, R).why, 'rest', 'picked thin: let it rest');
+    assert(coverPickable(240, 250, 'rushes', 0.5, R).ok, 'last year\'s dry stems in spring');
+    eq(coverPickable(240, 250, 'rushes', 3.5, R).why, 'season', 'sodden in winter');
     eq(coverPickable(240, 250, 'rushes', 1.5, R).part, 'stems', 'its part');
     eq(coverPickable(240, 250, 'grass', 1.5, R).ok, false, 'grass is never picked');
   });

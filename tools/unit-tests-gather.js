@@ -210,7 +210,7 @@ export function addGatherTests(test, assert, eq) {
     const P = partOf('reeds', 'down', R);
     eq(P?.share, 0.05, 'share');
     eq(P?.readyShare, 0.9, 'ready share');
-    eq(partsOf('reeds', R).join(), 'down', 'reeds give down');
+    eq(partsOf('reeds', R).join(), 'down,leaves', 'reeds give down, and leaves for cord');
     const env = { flora: reeds, pos: 3.2 };
     let p = { id: 9, sp: 'reeds', x: 0, z: 0, size: 1, best: 1, stage: STAGE.dormant };
     eq(pickable({ ...p, best: 0.5, size: 0.5 }, 'down', env, R).why, 'young', 'never mature: young');

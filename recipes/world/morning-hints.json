@@ -1,0 +1,44 @@
+{
+  "type": "morning-hints",
+  "version": 1,
+  "note": "Morning hints (Matt, October 28, 2026): after the first evening, one short line in the keeper's voice each morning, so a player is never left with nothing to go on. Read by src/world/hints (morning.js picks, morning-live.js watches) and shown in the island-notes corner (src/ui/island-notes.js) in the first evening's hint style. The day's hint comes at the first quiet daylight moment of each game day: the first evening and any of its lines are over, no keeper card or return reveal is up, and quietS seconds have passed so (after a rest, that is the wake at the tent flap). A click on the line tucks it away; it also fades after showS. Each hint shows once ever and never nags. hints: in order. Each has an id, its words (text), a done test by name (tests below): a hint whose thing is already done is passed over for the next, so an explorer never hears what they already know. withinDays: offered only while the island is younger than this many days (the first week, with room for days that had nothing to say), so an older island never starts hearing first-week hints. when: a trigger by name (tests below); a hint with one waits until it holds, and then goes ahead of the plain order (the animal hint on the morning after a sign of one). The cord hint has no trigger since reed leaves (a starter) twist cord too (Matt, October 28, 2026). showMe: ids for Show me (a journal page Show me can ring: an animal, a plant, a cover such as rushes, or a ground such as shore; finds have no spot to ring), the first one known on the island (met, or a sign of it, or growing here); showMeAlways: offer the first even if none is known yet (an animal's card then keeps the riddle). opens: a journal view the line opens on a click instead of only tucking away (web). tests: each a list of ways to be true, any one enough: flag (a journal flag), prefix (any journal flag starting so), unless (the way does not count if this flag is set: the first evening's Skip sets every beat's flag without doing them), ever (any of these journal species met or grown here), kinds (any journal species of these kinds met), learned (any species page has learned this), made (any of these makes in the cook record). record: island events that set a journal flag the tests read, so what you did is kept with the island. Seasonal visitors (doc 13, 'Shaped, not found': a visitor comes first, then the hint): add a hint with a when test on that visitor's flag; none are built yet.",
+  "flagPrefix": "hint:",
+  "quietS": 4,
+  "showS": 40,
+  "hints": [
+    { "id": "gather", "text": "The tide leaves drift twigs along the beach, and flat stones lie on the rocky shore. Click one, then Gather: the camp will want them.", "done": "gathered", "withinDays": 10 },
+    { "id": "finds", "text": "Look closely along the strandline. Shells, crabs and odd things wash up, and each one you click starts a page in your journal.", "done": "found", "withinDays": 10, "showMe": ["shore"], "showMeAlways": true },
+    { "id": "animals", "text": "Something has come to live by the water. Stay still nearby for a while: creatures come to know a quiet keeper.", "done": "metAnimal", "when": "animalCame", "withinDays": 10, "showMe": ["frogs", "minnows", "turtles", "dragonflies", "damselflies"] },
+    { "id": "shape", "text": "Go up and you can shape the land with Sculpt. A pond with a gentle, reedy edge draws more life than open water.", "done": "shaped", "withinDays": 10 },
+    { "id": "plant", "text": "On foot, the Seed tin on your bar holds reeds, lilies and thrift. Sow a few where they'd like to grow.", "done": "planted", "withinDays": 10 },
+    { "id": "cord", "text": "Reed leaves twist into cord at the workbench, and so do rush stems once rushes grow here (two flat stones at camp lay the workbench). Cord makes a shovel, a basket, the apothecary bench.", "done": "madeCord", "withinDays": 10, "showMe": ["rushes", "reeds", "marram"] },
+    { "id": "web", "text": "The journal's Web shows what needs what. Pencil lines are things still to come. Click here to open it.", "done": "sawWeb", "withinDays": 10, "opens": "web" },
+    { "id": "herbs", "text": "Some of what you've picked will brew. A tea pot, shaped from clay at the workbench and fired overnight, makes a tea that helps for a while.", "done": "brewed", "when": "pickedHerb" },
+    { "id": "treats", "text": "A creature here has begun to know you. Something it likes to eat, set out from that pouch's card on your bar, helps the friendship along.", "done": "gaveTreat", "when": "knowsYou", "showMe": ["frogs", "turtles", "minnows"] },
+    { "id": "gift", "text": "Gifts wait on your gift spot, on your bar when you're on foot. Pick one there and set it where it would do well.", "done": "usedGiftSpot", "when": "giftCame" }
+  ],
+  "tests": {
+    "gathered": [{ "flag": "did:gathered" }, { "prefix": "picked:" }, { "flag": "intro:gather", "unless": "intro:skipped" }],
+    "found": [{ "kinds": ["find"] }],
+    "animalCame": [{ "flag": "frogs:sign" }, { "flag": "minnows:sign" }, { "flag": "turtles:sign" }, { "flag": "dragonflies:sign" }, { "flag": "damselflies:sign" }],
+    "metAnimal": [{ "kinds": ["creature", "school"] }],
+    "shaped": [{ "flag": "did:shaped" }, { "flag": "intro:shape.1" }],
+    "planted": [{ "flag": "did:planted" }, { "flag": "intro:plant.1" }],
+    "madeCord": [{ "made": ["rush-cord"] }],
+    "sawWeb": [{ "flag": "did:web" }],
+    "pickedHerb": [{ "flag": "picked:watermint" }, { "flag": "picked:meadowsweet" }, { "flag": "picked:gorse" }, { "flag": "picked:nettle" }, { "flag": "picked:chamomile" }, { "flag": "picked:willow" }],
+    "brewed": [{ "flag": "did:brewed" }],
+    "knowsYou": [{ "learned": "trust:tolerant" }],
+    "gaveTreat": [{ "flag": "did:treat" }],
+    "giftCame": [{ "flag": "did:gifted" }],
+    "usedGiftSpot": [{ "flag": "did:gift-spot" }]
+  },
+  "record": {
+    "gather:done": "did:gathered",
+    "terrain:stroke-ended": "did:shaped",
+    "growth:planted": "did:planted",
+    "tea:drunk": "did:brewed",
+    "treat:placed": "did:treat",
+    "progress:gifted": "did:gifted"
+  }
+}

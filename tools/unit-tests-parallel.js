@@ -76,6 +76,7 @@ export const PARALLEL = {
   kit: () => import('./unit-tests-kit.js').then((m) => m.addKitTests),
   treats: () => import('./unit-tests-treats.js').then((m) => m.addTreatsTests),
   teas: () => import('./unit-tests-teas.js').then((m) => m.addTeasTests),
+  hints: () => import('./unit-tests-hints.js').then((m) => m.addHintsTests),
   // The audio tests that need no Web Audio (workers have none). The two that render sound through
   // an OfflineAudioContext (pond and keepsake sounds) stay on tools/unit-tests-audio.html, which
   // also still runs all of these, as does `node tools/run-audio-tests.mjs`.

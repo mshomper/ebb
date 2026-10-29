@@ -8,7 +8,7 @@
 // points to it. A note that an animal came, stayed or joined (`showMeKinds`) offers Show me too,
 // so a player who cannot find what arrived is helped to look; the camera never moves.
 //
-// Listens for `note:posted`; reads the store slices `identify`, `tools` and `view`; every choice goes out
+// Listens for `note:posted` and the morning's hint (`morning:hint`, src/world/hints); reads the store slices `identify`, `tools` and `view`; every choice goes out
 // as a `ui.journal` or `ui.identify` action. Timings come from recipes/world/journal.json.
 // Styles: journal.css.
 
@@ -167,6 +167,39 @@ export function mountIslandNotes(parent, words, naturalist = null) {
       setTimeout(() => b.remove(), 700);
     });
     requestAnimationFrame(() => requestAnimationFrame(() => hint.classList.add('is-in')));
+  });
+  // The morning's hint (src/world/hints): one line on paper like the first evening's, with Show me
+  // under it when it offers one. A click on the words tucks it away (or opens the journal's Web, for
+  // the hint about the Web); it also fades after showS. Shown once, never again.
+  const morning = document.createElement('div');
+  morning.className = 'ebb-notes__hint is-morning';
+  /** @type {ReturnType<typeof setTimeout> | undefined} */ let morningTimer;
+  function tuckMorning() {
+    clearTimeout(morningTimer);
+    morning.classList.remove('is-in');
+    setTimeout(() => { if (!morning.classList.contains('is-in')) morning.classList.remove('is-shown'); }, 650);
+  }
+  const offMorning = on('morning:hint', (/** @type {{ text: string, sp: string | null, opens: string | null, showS: number }} */ p) => {
+    morning.innerHTML = `<button type="button" class="ebb-notes__hint-text" title="${p.opens ? 'Open the journal' : 'Tuck this away'}"></button>`;
+    const text = /** @type {HTMLButtonElement} */ (morning.firstElementChild);
+    text.textContent = p.text;
+    text.addEventListener('click', () => {
+      tuckMorning();
+      if (p.opens) dispatch(/** @type {any} */ ({ type: 'ui.journal', open: true, view: p.opens, page: null }));
+    });
+    if (p.sp) {
+      const show = document.createElement('button');
+      show.type = 'button';
+      show.className = 'ebb-notes__show';
+      show.innerHTML = `${iconSvg('find')}<span>${esc(words.showMe?.button ?? 'Show me')}</span>`;
+      show.addEventListener('click', () => dispatch({ type: 'journal.showMe', sp: /** @type {string} */ (p.sp) }));
+      morning.appendChild(show);
+    }
+    root.insertBefore(morning, hint.nextSibling);
+    morning.classList.add('is-shown');
+    requestAnimationFrame(() => requestAnimationFrame(() => morning.classList.add('is-in')));
+    clearTimeout(morningTimer);
+    morningTimer = setTimeout(tuckMorning, (p.showS ?? 40) * 1000);
   });
   /**
    * A gift's card (the naturalist's notes, a species' gift): its drawn icon, its title and line,
@@ -489,6 +522,8 @@ export function mountIslandNotes(parent, words, naturalist = null) {
     offRevealEnd();
     offNotice();
     offHint();
+    offMorning();
+    clearTimeout(morningTimer);
     offMark();
     cancelAnimationFrame(marking);
     introMark.remove();
