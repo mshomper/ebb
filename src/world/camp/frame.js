@@ -1,8 +1,9 @@
 // @ts-check
 // The camp, drawn each frame (docs/future/13 sections 3.5 and E3): the tent and the lantern on its
 // pole (or in your hand off the pad at night), the ring and its wood by the fire's state, the
-// fire's and the lantern's lights, the flame, smoke, embers, sparks and moths (camp-fx.js), and the
-// store slice `campSound` for the camp's held sounds (src/audio/camp-loops.js). Live only.
+// fire's and the lantern's lights, the live fire sim's inputs (camp-fire.js: the flame and its smoke,
+// with the catch-then-surge of a handful fed, fire-look.js), the embers' smoke, sparks and moths
+// (camp-fx.js), and the store slice `campSound` for the camp's held sounds (src/audio/camp-loops.js). Live only.
 
 import { emit } from '../../core/events.js';
 import { get, update } from '../../core/store.js';
@@ -12,18 +13,22 @@ import { fireAt } from './fire.js';
 import { kelvinRgb, flicker } from './light.js';
 import { starLogs, logPlace } from './star.js';
 import { potOnHearth, pieceOf } from './pots.js';
+import { gameFlame, newFireLook, feedLook, stepFireLook } from './fire-look.js';
 
 const DEG = Math.PI / 180;
 
 /**
- * @param {import('./cards.js').CampKit & { o: any, props: any, fx: any, sunAlt: () => number }} k
+ * @param {import('./cards.js').CampKit & { o: any, props: any, fx: any, fire: any, sunAlt: () => number }} k
  *   o: createCamp's options (lighting, world); props, fx: the camp's draw passes
  */
 export function createCampFrame(k) {
   const R = k.R, F = R.fire, o = k.o;
   const fireRgb = kelvinRgb(F.lightK), emberRgb = kelvinRgb(F.emberLightK), lanternRgb = kelvinRgb(R.lantern.lightK);
   /** @type {'pole' | 'carried'} */ let lantern = 'pole';
-  let wasRainy = false, strikeT = -1, strikes = 0, strikeLen = 0, strikeAt = 0, flareT = 0, campSoundKey = '';
+  let wasRainy = false, strikeT = -1, strikes = 0, strikeLen = 0, strikeAt = 0, campSoundKey = '';
+  /** The flame as shown, catching and surging when fed (fire-look.js); fresh: start at the game's size (the camp coming into view). */
+  const look = newFireLook();
+  let lookFresh = true;
   /** The star's logs left out (tools/camp-bench.html: what the star costs to draw). */
   let starHidden = false;
   /** Another rule for laying the star (tools/hearth-check.html: the logs as they lay before). @type {typeof starLogs | null} */
@@ -97,7 +102,12 @@ export function createCampFrame(k) {
       }
     }
     let flame = 0, smoke = 0, embers = 0;
-    flareT = Math.max(0, flareT - dt);
+    const lit = !!r && ringLaid(c) && word === 'lit';
+    const target = lit ? gameFlame(fireNow, F) : 0;
+    if (lookFresh) { look.flame = look.held = target; lookFresh = false; }
+    const shown = stepFireLook(look, dt, target, F, R.fireSim);
+    /** The fire sim's hot spots: the star logs' burnt ends (meters from the fire's foot), each by its glow. @type {number[][]} */
+    const spots = [];
     if (r && ringLaid(c)) {
       list.push({ key: 'ring', x: r.x, y: r.y, z: r.z, yaw: r.yaw, shade: R.props.models.ring.shade });
       embers = word === 'embers' ? 1 : word === 'lit' ? (rainy ? 1 : 0.6) : 0;
@@ -108,13 +118,17 @@ export function createCampFrame(k) {
         const p = logPlace(g, halfX);
         list.push({ key: 'log', x: r.x + cy * p.x + sy * p.z, y: r.y + p.y, z: r.z - sy * p.x + cy * p.z, yaw: r.yaw + p.yaw, roll: g.roll,
           scale: g.size, stretch: g.stretch, endChar: g.endChar, halfX, char: g.endChar > 0 ? 1 : 0, glow: g.glow });
+        // Its burnt inner end, just above it, where the logs meet.
+        const ex = Math.cos(g.a) * g.r, ez = Math.sin(g.a) * g.r, ey = g.y - halfX * g.size * g.stretch * Math.sin(g.roll);
+        spots.push([cy * ex + sy * ez, Math.min(0.2, Math.max(0.03, ey - 0.04)) + 0.03, -sy * ex + cy * ez, Math.min(1, g.glow / (S.glow.lit ?? 0.6))]);
       }
+      // No logs drawn (the bench's star left out): a small ring of spots in the middle.
+      if (!spots.length) for (let i = 0; i < 6; i++) spots.push([Math.cos(i * Math.PI / 3) * S.innerM, 0.08, Math.sin(i * Math.PI / 3) * S.innerM, 1]);
       if (word === 'lit') {
         // High while the ring holds plenty, sinking toward low flames as the fuel burns down (F9);
-        // a handful fed lifts it at once, flaring for a moment.
-        const flare = 1 + (F.flare - 1) * Math.max(0, flareT / F.flareS);
-        flame = (rainy ? F.rainFlame : 1) * (F.lowFlame + (1 - F.lowFlame) * fireNow.level) * flare;
-        smoke = (rainy ? R.smoke.rainThick : 1) * (0.5 + 0.5 * fireNow.level);
+        // a handful fed catches, then surges (fire-look.js). The flame and its smoke are the fire
+        // sim's (camp-fire.js); the puffs are only the embers' now.
+        flame = (rainy ? F.rainFlame : 1) * shown.light;
         lights.push({ x: r.x, y: r.y + F.heightM, z: r.z, rangeM: F.rangeM, cd: F.cd * flame * flicker(time, F.flicker, F.flickerHz, 1), rgb: fireRgb });
       } else if (word === 'embers') {
         smoke = R.smoke.embersShare * (rainy ? R.smoke.rainThick : 1);
@@ -149,9 +163,12 @@ export function createCampFrame(k) {
       if (strikes > 0 && hand) sparks = [hand.x, hand.y, hand.z, (strikeT - strikeAt) + 10 * (strikes - 1)];
     }
     const wind = w.wind * R.smoke.lean, dir = o.world.state?.weather?.today?.windDir ?? 0;
+    const windXZ = [Math.cos(dir) * wind, -Math.sin(dir) * wind];
+    k.fire.set(r && ringLaid(c) ? { foot: [r.x, r.y + 0.04, r.z], lit, level: shown.level, flare: shown.flare, smokePuff: shown.smokePuff,
+      wind: windXZ, rainy, spots, time } : null, dt);
     k.fx.set(r && (flame > 0 || smoke > 0 || lanternGlass || sparks) ? {
       fire: [r.x, r.y + 0.04, r.z], flame, smoke, embers: word === 'embers' ? 1 : 0,
-      wind: [Math.cos(dir) * wind, -Math.sin(dir) * wind], mist: w.mist, steam: steamNow(c, word, r),
+      wind: windXZ, mist: w.mist, steam: steamNow(c, word, r),
       lantern: lanternGlass, mothsAt: mothsAnchor(dt, lanternGlass, lantern === 'carried'), sparks, moths: k.sunAlt() < R.moths.atSunDeg * DEG, time,
     } : null);
   }
@@ -176,15 +193,16 @@ export function createCampFrame(k) {
     draw,
     /** Nothing drawn, lit or heard (the bench's "camp off" half). */
     hide() {
-      k.props.setProps([]); k.fx.set(null); o.lighting.setPoints([]);
+      k.props.setProps([]); k.fx.set(null); k.fire.set(null, 0); o.lighting.setPoints([]);
+      lookFresh = true;
       if (campSoundKey !== 'hidden') { campSoundKey = 'hidden'; update('campSound', () => ({ ring: null, tent: null, fire: 'none', level: 0, rainy: false })); }
     },
     /** The lantern: on its pole or carried (live only). */
     lantern: () => lantern,
     /** The tea pot steeping, or done (P2e). @param {boolean} on */
     steep(on) { steeping = on; },
-    /** A handful fed: the flames lift at once (live only). */
-    flare() { flareT = F.flareS; },
+    /** A handful fed: it catches, then the flames surge (live only; the fuel hours changed already). */
+    flare() { feedLook(look); },
     /** The strike act began: its sparks follow its strikes. @param {number} len the act's length (s) */
     strikeBegin(len) { strikeT = 0; strikes = 0; strikeLen = len; },
     strikeEnd() { strikeT = -1; },

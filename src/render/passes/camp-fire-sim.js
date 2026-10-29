@@ -1,8 +1,8 @@
 // @ts-check
 // The camp fire's live fluid (Matt's fire study, October 29, 2026): smoke and heat on a small grid
 // over a box standing on the ring, stepped at a fixed rate on the GPU (camp-fire-sim.wgsl). F1 uses
-// it in tools/fire-lab.html; F2 wires it into the frame graph before the camp effects pass, fed from
-// the camp's frame (src/world/camp/frame.js). Visual only: never saved, never in catch-up.
+// it in tools/fire-lab.html; the camp fire pass (camp-fire.js) runs it in the game, fed from the
+// camp's frame (src/world/camp/frame.js). Visual only: never saved, never in catch-up.
 // Recipe: camp.json fireSim; its tiers pick the grid and the pressure passes.
 
 import { makeBuffer, makeShaderModule, makeTexture, untrack } from '../../core/gpu.js';
@@ -140,10 +140,13 @@ export function createCampFireSim(opts) {
       for (let s = 0; s < steps; s++) {
         /** @type {GPUComputePassDescriptor} */
         const desc = { label: 'fire-sim' };
-        if (timestampWrites && (s === 0 || s === steps - 1)) {
+        // Either stamp may be left out (the fire pass ends its timing on its own composite).
+        const begin = s === 0 ? timestampWrites?.beginningOfPassWriteIndex : undefined;
+        const end = s === steps - 1 ? timestampWrites?.endOfPassWriteIndex : undefined;
+        if (timestampWrites && (begin !== undefined || end !== undefined)) {
           desc.timestampWrites = { querySet: timestampWrites.querySet };
-          if (s === 0) desc.timestampWrites.beginningOfPassWriteIndex = timestampWrites.beginningOfPassWriteIndex;
-          if (s === steps - 1) desc.timestampWrites.endOfPassWriteIndex = timestampWrites.endOfPassWriteIndex;
+          if (begin !== undefined) desc.timestampWrites.beginningOfPassWriteIndex = begin;
+          if (end !== undefined) desc.timestampWrites.endOfPassWriteIndex = end;
         }
         const pass = enc.beginComputePass(desc);
         pass.setPipeline(pipes.advectVel); pass.setBindGroup(0, groups.advectVel); pass.dispatchWorkgroups(...w);

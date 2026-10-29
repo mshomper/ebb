@@ -1,10 +1,13 @@
 // Tonemap and present (docs/05): pre-exposed HDR + bloom -> Purkinje night shift -> AgX with the
-// palette's look -> palette LUT (two LUTs, crossfaded) -> soft outline -> journal wash -> dither -> screen.
-// Everything before the LUT is physical or perceptual; the palette is the only painted step.
+// palette's look -> palette LUT (two LUTs, crossfaded) -> the camp fire's banded flame -> soft outline
+// -> journal wash -> dither -> screen. Everything before the LUT is physical or perceptual; the palette
+// is the painted step, and the fire's flame (Matt's fire study, October 29, 2026) its one sanctioned
+// exception: painted in display colour from the fire sim's heat, so AgX and the LUT never smear its bands.
 
 // #include common
 // #include lib-hash
 // #include lib-oklab
+// #include lib-fire-bands
 
 struct Post {
   bloomMix: f32, lutFade: f32, lutFrom: u32, lutTo: u32,
@@ -21,6 +24,10 @@ struct Post {
   washPencil: vec3f, washWell: f32,
   washLine: vec4f,      // edge width (px), edge alpha, circle line width (px), circle alpha
   circles: array<vec4f, 3>, // pencil circles: x, z, radius (m), dashes per ring (0 = none)
+  _p3: vec4f,
+  // The camp fire (camp-fire.js): x on, y halo strength; then its bands.
+  fire: vec4f,
+  bands: FireBands,
 };
 
 @group(0) @binding(0) var<uniform> frame: FrameUniforms;
@@ -33,6 +40,7 @@ struct Post {
 @group(2) @binding(6) var depthTex: texture_depth_2d;
 @group(2) @binding(7) var<uniform> post: Post;
 @group(2) @binding(8) var washTex: texture_2d<f32>;   // half a meter a texel: r where it lives, g where it would do well
+@group(2) @binding(9) var fireHeatTex: texture_2d<f32>; // the camp fire's collected heat (camp-fire-draw.wgsl)
 
 const LUM = vec3f(0.2126, 0.7152, 0.0722);
 
@@ -199,8 +207,18 @@ fn fs(in: FullscreenOut) -> @location(0) vec4f {
   // Palette lab before/after split: left of the divider shows the image without the palette.
   if (post.split >= 0.0 && in.uv.x < post.split) { c = display; }
 
+  // The camp fire's flame, painted in its bands over the finished colour; no ink shows through it.
+  var flame = 0.0;
+  if (post.fire.x > 0.5) {
+    let h = textureSampleLevel(fireHeatTex, linearSampler, in.uv, 0.0).r;
+    if (h > 0.0) {
+      flame = fireAlpha(post.bands, h);
+      c = firePaint(post.bands, c, h, post.fire.y);
+    }
+  }
+
   // Soft outline: a darker shade of the pixel's own color in OKLab, never black.
-  let ink = outlineAt(in.uv * frame.renderSize);
+  let ink = outlineAt(in.uv * frame.renderSize) * (1.0 - flame);
   if (ink > 0.0) {
     var lab = linearToOklab(srgbToLinear3(c));
     lab.x *= 1.0 - ink;

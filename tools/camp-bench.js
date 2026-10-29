@@ -18,6 +18,8 @@ const FRAMES = Number(params.get('frames')) || 240;
 /** Budgets (docs/19): the camp's whole extra GPU time, and its own two passes. */
 const BUDGET = { high: 0.5, medium: 0.67, low: 0.67 };
 const PASS_BUDGET = { props: { high: 0.2, medium: 0.25, low: 0.3 }, campfx: { high: 0.2, medium: 0.27, low: 0.3 } };
+/** The live fire sim and its volume (Matt's fire study, October 29, 2026): the same low, half-size fire on every tier. */
+const FIRE_BUDGET = 0.15;
 /** The star fire's six logs (S4), their share of the models' pass (ms): less than the one wood model they replace cost. */
 const STAR_BUDGET = 0.05;
 const ICON_OK = '<svg viewBox="0 0 24 24" fill="none" stroke="#5F7F5B" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M7.5 12.5l3 3 6-6.5"/></svg>';
@@ -25,7 +27,7 @@ const ICON_WARN = '<svg viewBox="0 0 24 24" fill="none" stroke="#B5654A" stroke-
 
 const $ = (/** @type {string} */ id) => /** @type {HTMLElement} */ (document.getElementById(id));
 
-/** @typedef {{ tier: string, on: number[], off: number[], props: number[], fx: number[], star?: number[] }} Run */
+/** @typedef {{ tier: string, on: number[], off: number[], props: number[], fx: number[], fire?: number[], star?: number[] }} Run */
 
 /** @returns {{ queue: number[], runs: Run[] }} */
 function load() {
@@ -66,6 +68,11 @@ function render() {
       `<div class="track"><div class="fill off" style="width:${((a / scale) * 100 || 0).toFixed(1)}%"></div>` +
       `<div class="fill on" style="width:${((b / scale) * 100 || 0).toFixed(1)}%"></div></div>` +
       `<p class="muted">The models' pass ${fmt(pp)} ms, the fire's effects ${fmt(fp)} ms (p50); p95 ${fmt(pct(r.off, 0.95))} off, ${fmt(pct(r.on, 0.95))} on.</p>` +
+      // The fire sim (its steps, volume and composite), against its own budget.
+      (r.fire?.length ? (() => {
+        const fs = pct(r.fire, 0.5), fok = fs <= FIRE_BUDGET + 0.02;
+        return `<div class="label"><span>${fok ? ICON_OK : ICON_WARN} The fire sim and its flame: ${fmt(fs)} ms (p50)</span><span>${fok ? 'within' : 'over'} ${FIRE_BUDGET} ms</span></div>`;
+      })() : '') +
       // The star fire (S4): the models' pass with and without its logs; the hearth and pots stay in both.
       (r.star?.length ? (() => {
         const st = pp - pct(r.star, 0.5), sok = st <= STAR_BUDGET + 0.02;
@@ -101,7 +108,7 @@ if (!result.ok) {
       app.camera.setPose({ ...pose, target: [flap.x, pose.target[1], flap.z], yaw: flap.yaw + Math.PI + 1.25 });
     }
     $('status').textContent = `Run ${runIndex + 1} of ${TIERS.length}: ${tier}. Lighting the fire.`;
-    /** @type {Run} */ const run = { tier, on: [], off: [], props: [], fx: [], star: [] };
+    /** @type {Run} */ const run = { tier, on: [], off: [], props: [], fx: [], fire: [], star: [] };
     /** @type {'wait' | 'on' | 'nostar' | 'off' | 'done'} */ let half = 'wait';
     on('render:timings', (/** @type {any} */ p) => {
       // The star fire (S4): the models' pass again with the star's logs left out.
@@ -112,6 +119,7 @@ if (!result.ok) {
         total += ms;
         if (half === 'on' && name === 'props') run.props.push(ms);
         if (half === 'on' && name === 'campfx') run.fx.push(ms);
+        if (half === 'on' && name === 'campfire') run.fire?.push(ms);
       }
       run[half].push(total);
     });

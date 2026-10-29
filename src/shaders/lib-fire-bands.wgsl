@@ -16,6 +16,12 @@ struct FireBands {
 /** The band width at this stylize: soft at 0, banded at 1. */
 fn fireBandWidth(B: FireBands) -> f32 { return mix(B.look.y, B.look.z, B.look.x); }
 
+/** How much the painted flame covers at collected heat h, 0..1. */
+fn fireAlpha(B: FireBands, h: f32) -> f32 {
+  let w = fireBandWidth(B);
+  return smoothstep(B.c0.w - w, B.c0.w + w, h);
+}
+
 /** The flame's colour for collected heat h. */
 fn fireBandRamp(B: FireBands, h: f32, w: f32) -> vec3f {
   var c = B.c0.rgb;

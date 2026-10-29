@@ -91,14 +91,12 @@ let volSize = [1, 1];
 
 const st = {
   speed: 1, rainy: false, tod: 0, view: 0, stylize: S.bands.stylize, tier: 'high', scale: S.tiers.high.scale,
-  /** @type {'surge' | 'now'} */ feed: 'surge',
   yaw: 0.7, pitch: VIEWS[0].pitch, dist: VIEWS[0].dist, frame: 0, time: 0,
   hour: 0, ember: 0.6, lastLitT: 0, running: true, warm: S.warmSteps,
 };
 // A fresh ring, laid and lit, fed once: burning high with 6 hours of flame.
 let fire = /** @type {any} */ (feedFire(/** @type {any} */ (lightFire(layFire(noFire(), 0), 0, F)), 0, F));
-const look = newFireLook();
-look.flame = gameFlame(fireAt(fire, 0, F), F);
+const look = newFireLook(gameFlame(fireAt(fire, 0, F), F));
 const clock = { acc: 0 };
 
 function resize() {
@@ -187,7 +185,6 @@ function seg(id, fn) {
 }
 /** @param {HTMLElement} el @param {string} v */
 function pick(el, v) { for (const x of el.querySelectorAll('button')) x.setAttribute('aria-pressed', String(/** @type {HTMLElement} */ (x).dataset.v === v)); }
-seg('segFeed', (v) => { st.feed = /** @type {'surge' | 'now'} */ (v); });
 seg('segSpeed', (v) => { st.speed = +v; });
 seg('segRain', (v) => { st.rainy = v === '1'; });
 seg('segTod', (v) => { st.tod = +v; });
@@ -209,7 +206,7 @@ function feed() {
   const lit = feedFire(fire, st.hour, F) ?? lightFire(fire, st.hour, F);
   if (!lit) return;
   fire = lit;
-  feedLook(look, st.feed, F);
+  feedLook(look);
 }
 $('feed').addEventListener('click', feed);
 addEventListener('keydown', (e) => { if (e.code === 'Space') { e.preventDefault(); feed(); } });
@@ -259,7 +256,7 @@ function frame(now) {
   st.hour += (dt * st.speed) / 60;
   const at = fireAt(fire, st.hour, F);
   // Rain lowers the flame in the sim (heat x rainFlame) and its light, as the game's flame does.
-  const shown = stepFireLook(look, dt, gameFlame(at, F), st.feed, F, S);
+  const shown = stepFireLook(look, dt, gameFlame(at, F), F, S);
   const L = shown.level;
   const emberTo = at.word === 'embers' ? 1 : at.word === 'lit' ? 0.6 : 0;
   st.ember += (emberTo - st.ember) * Math.min(1, dt * (at.word === 'cold' ? 0.3 : 1.5));

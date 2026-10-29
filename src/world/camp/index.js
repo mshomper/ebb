@@ -33,6 +33,7 @@ import { shapedOn } from './pots.js';
 import { fireAt, lightFire, feedFire, bankFire, settleFire, fireNights } from './fire.js';
 import { createPropsPass } from '../../render/passes/props.js';
 import { createCampFxPass } from '../../render/passes/camp-fx.js';
+import { createCampFirePass } from '../../render/passes/camp-fire.js';
 import { actLength } from '../figure/acts.js';
 import { steelMesh, flintMesh } from './steel-mesh.js';
 import { hookMesh } from './hook-mesh.js';
@@ -53,19 +54,21 @@ const H = 3600;
 /**
  * @param {{ recipe: any, seed: number, walk: any, terrain: any, clock: any, orbit: any, camera: any,
  *   world: any, seasons: any, lighting: { setPoints: (l: any[]) => void }, pack?: any,
- *   shadowBias?: { depthBias: number, depthBiasSlopeScale: number }, low?: boolean,
+ *   shadowBias?: { depthBias: number, depthBiasSlopeScale: number }, low?: boolean, tier?: string,
  *   beat?: () => string | null, poses?: any, piles?: any, cook?: any, water?: any }} o
  *   cook: recipes/world/cook.json (the stations' makes and builds, S1); water: the live water (Fill the pot, K-26)
  *   piles: E2's piles at camp (src/world/pack/piles-live.js): Feed and Light take a handful from the stick pile
  *   recipe: recipes/world/camp.json; walk: the walker; lighting: the shared light block;
  *   pack: E2's pack (holds, take); beat: the evening's beat now (the director), for its glows;
- *   poses: recipes/world/figure.json poses (how long the strike act is, for its sparks)
+ *   poses: recipes/world/figure.json poses (how long the strike act is, for its sparks); tier: the quality tier (the fire sim's settings)
  */
 export function createCamp(o) {
   const R = o.recipe, W = R.words, F = R.fire;
   const campSeed = subSeed(o.seed, 'camp');
   const props = createPropsPass({ recipe: R.props, bias: o.shadowBias });
   const fx = createCampFxPass({ recipe: R, low: o.low });
+  // The live fire sim and its volume (Matt's fire study): the flame and its smoke while it burns.
+  const firePass = createCampFirePass({ recipe: R, tier: o.tier ?? (o.low ? 'low' : 'high'), getViewProj: () => o.camera?.viewProj ?? null });
   /** Models' tops, once loaded: the tent's height for the camera, the ring's for the flame. */
   /** @type {Record<string, number[]>} */ const bounds = {};
   for (const [key, m] of Object.entries(R.props.models)) {
@@ -184,7 +187,7 @@ export function createCamp(o) {
   /** What the cards and the frame read. @type {import('./cards.js').CampKit} */
   const kit = { R, walk: o.walk, camp, where, player, hourNow, holds, ringNeed, hasFuel, nightNow, restAllowed, beatAllows, weatherNow, near, cookWords: o.cook?.words ?? {}, takeable };
   const holdingPot = () => get('pack')?.holding === 'pot';
-  const frame = createCampFrame({ ...kit, o, props, fx, sunAlt, holdingPot });
+  const frame = createCampFrame({ ...kit, o, props, fx, fire: firePass, sunAlt, holdingPot });
   // The stations (S1, S2): the workbench and the apothecary bench built in their slots, the fire,
   // their workspace, and the keeps (the drying rack and the hamper, P2j).
   const stations = createStations({ ...kit, o, cook: o.cook ?? { builds: {}, makes: {}, words: {} }, change, campSeed, frame });
@@ -417,8 +420,8 @@ export function createCamp(o) {
 
   return {
     id: 'camp',
-    /** The draw passes: the models (with their shadow caster), then the fire's effects after the sky. */
-    props, fx,
+    /** The draw passes: the models (with their shadow caster), then after the sky the fire sim's volume and the fire's other effects. */
+    props, firePass, fx,
     /** A sim system: each frame. @param {{ realDt: number }} f */
     tick(f) {
       if (!hidden) { updateFrame(f.realDt, o.clock.animT()); return; }
