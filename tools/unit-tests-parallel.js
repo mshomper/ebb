@@ -71,11 +71,13 @@ export const PARALLEL = {
   planting: () => import('./unit-tests-planting.js').then((m) => m.addPlantingTests),
   dig: () => import('./unit-tests-dig.js').then((m) => m.addDigTests),
   campMaking: () => import('./unit-tests-camp-making.js').then((m) => m.addCampMakingTests),
+  campKnown: () => import('./unit-tests-camp-known.js').then((m) => m.addCampKnownTests),
   fireProducts: () => import('./unit-tests-fire-products.js').then((m) => m.addFireProductsTests),
   hearth: () => import('./unit-tests-hearth.js').then((m) => m.addHearthTests),
   sketchbook: () => import('./unit-tests-sketchbook.js').then((m) => m.addSketchbookTests),
   kit: () => import('./unit-tests-kit.js').then((m) => m.addKitTests),
   treats: () => import('./unit-tests-treats.js').then((m) => m.addTreatsTests),
+  pondoffer: () => import('./unit-tests-pond-offerings.js').then((m) => m.addPondOfferingsTests),
   teas: () => import('./unit-tests-teas.js').then((m) => m.addTeasTests),
   hints: () => import('./unit-tests-hints.js').then((m) => m.addHintsTests),
   // The audio tests that need no Web Audio (workers have none). The two that render sound through

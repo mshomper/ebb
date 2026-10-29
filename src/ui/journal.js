@@ -204,7 +204,7 @@ export function mountJournal(parent, live, buttonParent = parent) {
     if (ui.view === 'web' && ui.webAt && ui.webAtN !== webAtSeen) { webAtSeen = ui.webAtN; toTrail(ui.webAt); webShelf = null; }
     if (ui.view === 'web' && !webTrail.length) webTrail = [live.web.start];
     const L = /** @type {any} */ (live);
-    const html = ui.view === 'camp' && cookR ? campView(cookR, get('camp'), get('cook'), get('campPad'), words)
+    const html = ui.view === 'camp' && cookR ? campView(cookR, get('camp'), get('cook'), get('campPad'), words, get('campBed'))
       : ui.view === 'keeper' && keeper ? keeperView(keeper, flags, ui.keeper, NEW)
       : ui.view === 'shelf' && shelf ? shelf.html() : ui.view === 'notes' ? keeperEntry(keeper, flags, NEW) + campEntry(cookR, get('camp'), get('cook')) + notesView() : ui.view === 'almanac' ? almanacView()
       : ui.view === 'web' ? webView(live.describeWeb(), live.web, { trail: webTrail, shelf: webShelf })

@@ -1655,7 +1655,8 @@
         { "text": "Moves on when the pool grows shallow or is drained", "learn": ["left"] },
         { "text": "Doesn't mind you close, if you come slowly", "learn": ["trust:tolerant"] },
         { "text": "Swirls up to crumbs you scatter on the water", "learn": ["fed"] },
-        { "text": "Picks at the small life on sunk leaves", "learn": ["likes:leaf-pack"] }
+        { "text": "Picks at the small life on sunk leaves", "learn": ["likes:leaf-pack"] },
+        { "text": "Swirls up to graze the pondweed", "learn": ["likes:pondweed"] }
       ],
       "_trust": "How well the minnows know you (doc 23): one for the whole school, as notes when it moves up; the ceiling is Familiar (recipes/species/minnow.json presence).",
       "trust": { "notes": {
@@ -1679,6 +1680,7 @@
         "joined": "The school of minnows is growing.",
         "fed": "The minnows swirled up to the crumbs you scattered.",
         "treat": "The minnows swirled up to the leaf pack and picked it over.",
+        "treat:pondweed": "The minnows swirled up to the pondweed you set on the water and grazed it to nothing.",
         "scoutLeftUnseen": "The deep water has been still for a while.",
         "thinned": "The school of minnows is smaller than it was.",
         "left": "Some of the minnows have moved on.",
@@ -1725,9 +1727,10 @@
         { "text": "Sunny days, from the start of summer into autumn", "learn": ["joined"] },
         { "text": "Moves on when the pond is drained", "learn": ["left"] },
         { "text": "Doesn't mind you close, if you keep still", "learn": ["trust:tolerant"] },
-        { "text": "Comes to hover and look at you", "learn": ["trust:curious"] }
+        { "text": "Comes to hover and look at you", "learn": ["trust:curious"] },
+        { "text": "Comes back again and again to the same bare perch", "learn": ["likes:perch-stick"] }
       ],
-      "_trust": "How well the dragonflies know you (doc 23), from quiet watching only (they take no food); the ceiling is Curious: a curious one now and then comes to hover near where you look.",
+      "_trust": "How well the dragonflies know you (doc 23), from quiet watching and the perch stick (they take no food: one landing on a stick you stood, with you near, counts as their treat, B1 P1); the ceiling is Curious: a curious one now and then comes to hover near where you look.",
       "trust": { "notes": {
         "tolerant": "The dragonflies let you come a little closer now.",
         "curious": "A dragonfly came to hover and look at you."
@@ -1754,7 +1757,8 @@
         "dormant": "The last dragonflies have gone. Their young wait under the water.",
         "woke": "The water has warmed. The first dragonfly of the year has climbed out of the pond.",
         "happy": "The dragonflies patrol the whole pond now, each on its own beat.",
-        "known": "The dragonflies know you now. One came looking for you, to rest a while."
+        "known": "The dragonflies know you now. One came looking for you, to rest a while.",
+        "treat:perch-stick": "A dragonfly landed on the perch stick you stood in the shallows, and stayed a while."
       },
       "_uneasy": "A9: when their pond starts failing them they wait three days before they go (recipes/species/dragonfly.json arrival.leaveGraceDays). The note and their page say why, by what is failing (src/world/creatures/swarms.js whyFailing); a ...Summer line is used in summer. Show me on the note rings the pond.",
       "uneasy": {

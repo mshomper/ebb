@@ -27,6 +27,7 @@
       "chamomile.flowers": { "type": "herb", "window": [1.0, 2.2] },
       "marram.leaves": { "type": "herb", "window": [1.6, 2.4] },
       "lilies.leaf": { "type": "water", "window": [1.0, 2.0], "note": "October 27, 2026: a lily leaf for the turtles' parcel (cook.json lily-parcel), picked in summer from the bank or the shallows (waterReachM): a pick takes the water type's share and the plant grows it back." },
+      "pondweed.strands": { "type": "water", "share": 0.15, "window": [0.3, 3.1], "note": "B1 P1 (F-05, October 29, 2026): a handful of curled pondweed strands, pulled from a grown pondweed from the bank or the shallows (waterReachM), from mid spring until it dies back in late autumn. The minnows' second treat, set out raw on the water (species minnow.json treat)." },
       "watermint.seed": { "type": "seed", "window": [2.4, 3.05] },
       "meadowsweet.seed": { "type": "seed", "window": [2.0, 3.0] },
       "nettle.seed": { "type": "seed", "window": [2.0, 3.0] },

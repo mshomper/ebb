@@ -1,7 +1,8 @@
 // @ts-check
 // Dragonflies on patrol (M2 southern hawkers; docs 11, 12, 23): each keeps a beat of a few hold
 // points over the water near its group's home. It hovers at one for a moment, bobbing, then darts to
-// the next; now and then it rests on a reed tip, wings still and flat. A fast swoop close by or an
+// the next; now and then it rests on a reed tip, wings still and flat, or on a perch stick you stood
+// in the shallows (B1 P1), which it favours when one is near (landed() hands each landing on). A fast swoop close by or an
 // edit beside it sends it veering up and away, back to its beat a little later. At night it roosts
 // on the reeds. The wings beat on a phase the pose turns into four wing bones (posePatrol).
 //
@@ -15,10 +16,11 @@ import { stream } from '../../core/rng.js';
 /**
  * @typedef {{ x: number, y: number, z: number, vx: number, vy: number, vz: number, phase: number, roll: number, pitch: number,
  *   yaw: number, mode: 'hover'|'dart'|'perch'|'flee', until: number, at: number, beat: { x: number, y: number, z: number }[],
- *   perch: { x: number, y: number, z: number } | null, visiting: { x: number, y: number, z: number } | null, rise: number }} Flyer
+ *   perch: { x: number, y: number, z: number, stick?: string } | null, visiting: { x: number, y: number, z: number } | null, rise: number }} Flyer
  *   visiting: a curious one's look at you (setVisit)
  * @typedef {{ water: (x: number, z: number) => { surface: number, depth: number }, ground: (x: number, z: number) => number,
- *   perches: () => { x: number, z: number, h: number }[] }} PatrolEnv
+ *   perches: () => { x: number, z: number, h: number }[], sticks?: () => { id: string, x: number, y: number, z: number }[] }} PatrolEnv
+ *   sticks: perch sticks stood in the shallows (B1 P1), each one's tip
  */
 
 /**
@@ -61,6 +63,22 @@ export function createPatrol(o) {
     return { x, y: env.ground(x, z) + p.h * range(M.perchShare), z };
   }
 
+  /**
+   * A perch stick near home to rest on, now and then (motion.stickChance), or null: its very tip.
+   * Only by day; at night they roost in the reeds.
+   */
+  function stickNear() {
+    // One at a time on a stick: one another has taken (or is darting to) is passed by.
+    const taken = new Set(fish.map((f) => f.perch?.stick).filter(Boolean));
+    const list = (env.sticks?.() ?? []).filter((p) => !taken.has(p.id) && (p.x - home.x) ** 2 + (p.z - home.z) ** 2 <= M.stickReachM * M.stickReachM);
+    if (!list.length || rng.next() >= M.stickChance) return null;
+    const p = list[rng.int(list.length)];
+    return { x: p.x, y: p.y, z: p.z, stick: p.id };
+  }
+
+  /** Landings on a perch stick since landed() was last asked. @type {{ stick: string, x: number, z: number }[]} */
+  let landings = [];
+
   function spawn(/** @type {number} */ n) {
     for (let i = 0; i < n; i++) {
       const beat = beatFor();
@@ -82,7 +100,7 @@ export function createPatrol(o) {
       return;
     }
     if (mood !== 'day' || (f.mode !== 'perch' && rng.next() < M.perchChance)) {
-      const p = perchNear();
+      const p = (mood === 'day' ? stickNear() : null) ?? perchNear();
       if (p) { f.perch = p; f.mode = 'dart'; f.until = t + 6; return; }
     }
     f.perch = null;
@@ -134,6 +152,8 @@ export function createPatrol(o) {
       f.perch = { ...p }; f.visiting = null; f.mode = 'dart'; f.until = t + 10;
       /** @type {any} */ (f).onYou = { at, from: { ...p }, s };
     },
+    /** The landings on perch sticks since last asked (schools.js: with you near, their treat). */
+    landed() { const l = landings; landings = []; return l; },
     /** Dragonflies take no food from you. */
     feed() {},
     get feeding() { return false; },
@@ -149,6 +169,8 @@ export function createPatrol(o) {
             /** @type {any} */ (f).onYou = undefined; next(f);
           } else f.perch = { x: p.x, y: p.y, z: p.z };
         }
+        // A perch stick taken up under it (or on its way to it): off to something else.
+        if (f.perch?.stick && f.mode !== 'flee' && !(env.sticks?.() ?? []).some((p) => p.id === f.perch?.stick)) next(f);
         let target = f.perch ?? f.visiting ?? f.beat[f.at];
         if (f.mode === 'flee') {
           // Up and away, then back to the beat.
@@ -175,8 +197,11 @@ export function createPatrol(o) {
           const vx = d > 1e-6 ? (dx / d) * want : 0, vy = d > 1e-6 ? (dy / d) * want : 0, vz = d > 1e-6 ? (dz / d) * want : 0;
           ax = (vx - f.vx) * M.agility; ay = (vy - f.vy) * M.agility; az = (vz - f.vz) * M.agility;
           if (f.mode === 'dart' && (d < 0.04 || t >= f.until)) {
-            if (f.perch) { f.mode = 'perch'; f.until = t + (/** @type {any} */ (f).onYou?.s ?? range(M.perchS)); }
-            else { f.mode = 'hover'; f.until = t + range(M.hoverS); }
+            const stick = f.perch?.stick;
+            if (f.perch) {
+              f.mode = 'perch'; f.until = t + (/** @type {any} */ (f).onYou?.s ?? range(stick ? M.stickS : M.perchS));
+              if (stick) landings.push({ stick, x: f.perch.x, z: f.perch.z });
+            } else { f.mode = 'hover'; f.until = t + range(M.hoverS); }
           }
         }
         f.vx += ax * dt; f.vy += ay * dt; f.vz += az * dt;

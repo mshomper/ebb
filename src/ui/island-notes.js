@@ -344,7 +344,9 @@ export function mountIslandNotes(parent, words, naturalist = null) {
     // A pouch's card wears its pouch as the bar draws it (the kind's glyph in the mouth); a kind with no
     // glyph keeps its sketch.
     const pouchIcon = id.kindId ? itemIconFor(id.kindId) : null;
-    const head = id.pouchSketch ? (pouchIcon ? itemPouchSvg(pouchIcon, id.pouchStage ?? 0) : pouchSvg(id.pouchStage ?? 0, id.pouchSketch)) : iconSvg(id.icon);
+    // A placed offering (the perch stick) wears its item glyph.
+    const head = id.pouchSketch ? (pouchIcon ? itemPouchSvg(pouchIcon, id.pouchStage ?? 0) : pouchSvg(id.pouchStage ?? 0, id.pouchSketch))
+      : id.itemIcon && hasItemIcon(id.itemIcon) ? itemIconSvg(id.itemIcon) : iconSvg(id.icon);
     card.innerHTML = `
       <div class="ebb-idcard__head"><span class="ebb-idcard__icon">${head}</span><b>${esc(id.name)}</b>
         ${id.word ? `<span class="ebb-idcard__word">${esc(id.word)}</span>` : ''}

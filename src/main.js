@@ -22,6 +22,7 @@ import { setDriftwoodRecipe, noteLog } from './ui/sketches/driftwood.js';
 import { mountFrogScale } from './ui/frog-scale.js';
 import { createJournal } from './world/journal/index.js';
 import { createProgress } from './world/expansion.js';
+import { hasGiftStone } from './world/camp/gifts.js';
 import { keyOf } from './world/species.js';
 import { loadRecipe } from './core/recipes.js';
 import { on } from './core/events.js';
@@ -115,7 +116,8 @@ startApp(canvas, { onDeviceLost: (rebuilding) => showRebuildingNote(rebuilding),
       const journal = createJournal({ world: r.world, words, island, web, wash, list, creatures: /** @type {any} */ (r).creatures ?? null,
         finds: /** @type {any} */ (r).finds ?? null, keepsakes: /** @type {any} */ (r).keepsakes ?? null, pieces: /** @type {any} */ (r).pieces ?? null, lift: /** @type {any} */ (r).lift ?? null, nets: /** @type {any} */ (r).nets ?? null, shore: /** @type {any} */ (r).shorePresence ?? null,
         schools: /** @type {any} */ (r).schools ?? [], gather: /** @type {any} */ (r).gather ?? null, piles: /** @type {any} */ (r).piles ?? null,
-        camp: /** @type {any} */ (r).camp ?? null, hen: /** @type {any} */ (r).hen ?? null, stores: /** @type {any} */ (r).stores ?? null, dig: /** @type {any} */ (r).dig ?? null });
+        camp: /** @type {any} */ (r).camp ?? null, hen: /** @type {any} */ (r).hen ?? null, stores: /** @type {any} */ (r).stores ?? null, dig: /** @type {any} */ (r).dig ?? null,
+        perch: /** @type {any} */ (r).perchSticks ?? null });
       // One click below walks and uses: the app reads what a point holds from the journal's cards.
       /** @type {any} */ (r).setCards?.(journal.cardAt, words.species);
       mountIslandNotes(document.body, words, naturalist);
@@ -144,7 +146,8 @@ startApp(canvas, { onDeviceLost: (rebuilding) => showRebuildingNote(rebuilding),
       // "Trails"): the general net at four families kept; the rest drawn on the journal's Trails page.
       // The forager's (forager.json): the herbarium, the gathering knife and the almanac, from what you gather.
       const [beachcomber, shaper, forager] = await Promise.all([loadRecipe('world/beachcomber'), loadRecipe('world/shaper'), loadRecipe('world/forager')]);
-      const progress = createProgress({ words, recipe: naturalist, gifts, beachcomber, shaper, forager });
+      // Once the camp's gift stone stands (B1 C1), a gift for the gift spot says it waits on the stone.
+      const progress = createProgress({ words, recipe: naturalist, gifts, beachcomber, shaper, forager, stone: () => hasGiftStone(getStore('camp')) });
       // The Shelf section draws kept keepsakes from their numbers (docs/future/12).
       const [keepsakesRecipe, bottleMessages] = await Promise.all([loadRecipe('world/keepsakes'), loadRecipe('world/bottle-messages')]);
       mountJournal(document.body, { ...journal, naturalist, beachcomber, shaper, forager, gatherRecipe: /** @type {any} */ (r).gather?.recipe ?? null,

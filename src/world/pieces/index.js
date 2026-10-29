@@ -404,6 +404,8 @@ export function createPieces(opts) {
       if (p.kind === 'steps' || p.kind === 'pile') continue;
       // A hole's spoil heap comes from the dig module (extra beings, below).
       if (p.kind === 'hole') continue;
+      // A perch stick is drawn by src/world/creatures/perch-sticks.js (extra beings, below).
+      if (p.kind === 'perch') continue;
       if (p.kind === 'raft') {
         const sh = raftShapeOf(p), i = rafts.indexOf(sh), now = raftNow(p, frameDt);
         // Reeds, not stone: drawn plain (no rock scan) and with no damp ring on the water.
@@ -542,7 +544,7 @@ export function createPieces(opts) {
       /** @type {{ x: number, z: number, r: number, d: number }[]} */ const out = [];
       const put = (/** @type {number} */ x, /** @type {number} */ z, /** @type {number} */ r) => out.push({ x, z, r, d: (x - focus[0]) ** 2 + (z - focus[2]) ** 2 });
       for (const p of [...state().list, ...strandShown]) {
-        if (p.kind === 'steps' || p.kind === 'raft') continue;
+        if (p.kind === 'steps' || p.kind === 'raft' || p.kind === 'perch') continue;
         if (p.kind !== 'log') { put(p.x, p.z, p.size * 0.5 * recipe.grassClear); continue; }
         const len = p.length ?? 1, r = p.size * 0.5 + D.grassClearM;
         const n = Math.min(6, Math.max(2, Math.ceil(len / (r * 1.6))));

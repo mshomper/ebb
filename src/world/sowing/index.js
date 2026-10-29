@@ -14,6 +14,7 @@
 import { emitDeferred } from '../../core/events.js';
 import { get, update } from '../../core/store.js';
 import { tinItems, giftItems, notePlaced, tossPlan, landing, samePick } from './model.js';
+import { stoneWaiting } from '../camp/gifts.js';
 
 /**
  * @typedef {{ x: number, y: number, z: number, r: number, ok: boolean, message: string, flashAt: number }} Ring
@@ -39,7 +40,7 @@ export function createSowing(o) {
   /** What the tin, the gift spot and the net hold now: the tin with what the pack holds to plant (P2g). */
   function items() {
     const u = get('unlocks');
-    return { tin: tinItems(R, get('packView')?.pouches ?? []), gifts: giftItems(R, u), net: !!u?.nets?.general && !!o.nets.nets().length };
+    return { tin: tinItems(R, get('packView')?.pouches ?? []), gifts: giftItems(R, u, stoneWaiting(get('camp'), R)), net: !!u?.nets?.general && !!o.nets.nets().length };
   }
   /** The item in hand as it is now, or null (a gift with none left is gone from the hand). */
   function held() {

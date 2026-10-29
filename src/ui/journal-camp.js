@@ -4,6 +4,8 @@
 // was made of (drawn as the parts' glyphs) and the date. Nothing lists what is still unfound. A row
 // at the top of Notes leads to it once the ring is laid. Pure string building from the camp and
 // cook sections (src/world/camp/model.js, making.js), the pad's slot list and recipes/world/cook.json.
+// B1 C1: each gift laid on the gift stone, with the creature that left it and the date, and what
+// grows in the herb bed (the store slice `campBed`, src/world/camp/gift-stone.js).
 
 import { iconSvg } from './icons/icons.js';
 import { itemIconSvg } from './icons/items.js';
@@ -65,7 +67,7 @@ function campSketch(pad, camp) {
       const deg = f ? Math.atan2(-(f.v - s.v), f.u - s.u) * 180 / Math.PI + 90 : 0;
       parts.push(`<rect x="${x - (s.w / 2) * S}" y="${y - (s.d / 2) * S}" width="${s.w * S}" height="${s.d * S}" rx="3" class="cp-bench" transform="rotate(${deg.toFixed(1)} ${x} ${y})"/>`);
     } else if (s.id === 'rack' && has('rack')) parts.push(`<rect x="${x - (s.w / 2) * S}" y="${y - (s.d / 2) * S}" width="${s.w * S}" height="${s.d * S}" rx="3" class="cp-bench"/>`);
-    else if (['sticks', 'stones', 'clay'].includes(s.id) || (s.id === 'store' && has('store'))) parts.push(`<circle cx="${x}" cy="${y}" r="${(s.r ?? 0.4) * S}" class="cp-store"/>`);
+    else if (['sticks', 'stones', 'clay'].includes(s.id) || ((s.id === 'store' || s.id === 'gift') && has(s.id))) parts.push(`<circle cx="${x}" cy="${y}" r="${(s.r ?? 0.4) * S}" class="cp-store"/>`);
   }
   const w = (2 * R) * S + 20;
   return `<svg class="ebb-camppage__sketch" viewBox="0 0 ${w} ${w}" role="img" aria-label="The camp from above">
@@ -73,10 +75,38 @@ function campSketch(pad, camp) {
 }
 
 /**
+ * The gifts laid on the gift stone, oldest first: what, from whom, and when (B1 C1). '' before the first.
+ * @param {any} C @param {any} camp @param {any} words
+ */
+export function giftsView(C, camp, words) {
+  const P = C.words.page, gifts = [...(camp?.gifts ?? [])].sort((a, b) => a.hour - b.hour);
+  if (!gifts.length) return '';
+  const rows = gifts.map((/** @type {any} */ g) => {
+    const sp = g.from ? words?.species?.[g.from] : null;
+    const who = sp ? ` ${(P.giftFrom ?? 'from the {species}').replace('{species}', String(sp.plural ?? sp.name ?? g.from).toLowerCase())}` : '';
+    const line = `${C.words.giftNames?.[g.kind] ?? g.name ?? g.kind}${who}. ${dateOfHour(g.hour, words)}.`;
+    return `<li class="ebb-camppage__first"><span class="ebb-camppage__line">${esc(line)}</span></li>`;
+  }).join('');
+  return `<h4 class="ebb-camppage__h">${esc(P.gifts)}</h4><ul class="ebb-camppage__list">${rows}</ul>`;
+}
+
+/**
+ * What grows in the herb bed now (B1 C1), once its edging is drawn. '' before.
+ * @param {any} C @param {any} camp @param {{ grows?: string[] } | null | undefined} bed the store slice `campBed` @param {any} words
+ */
+export function bedView(C, camp, bed, words) {
+  const P = C.words.page, grows = bed?.grows ?? [];
+  if (!grows.length && !Number.isFinite(camp?.bed?.edged)) return '';
+  const names = grows.map((sp) => words?.species?.[sp]?.name ?? sp);
+  return `<h4 class="ebb-camppage__h">${esc(P.bed)}</h4><p class="ebb-journal__voice">${esc(names.length ? `${P.bedGrows} ${names.join(', ')}.` : P.bedEmpty ?? '')}</p>`;
+}
+
+/**
  * The camp page. @param {any} C recipes/world/cook.json @param {any} camp @param {any} cook
  * @param {any} pad the live pad @param {any} words recipes/world/journal.json (season names)
+ * @param {{ grows?: string[] } | null} [bed] the store slice `campBed` (what grows in the herb bed)
  */
-export function campView(C, camp, cook, pad, words) {
+export function campView(C, camp, cook, pad, words, bed = null) {
   const P = C.words.page, names = C.words.pageNames ?? {}, made = C.words.pageParts ?? {};
   const back = `<button type="button" class="ebb-shelf__btn" data-view="notes">${iconSvg('back')}<span>${esc(P.back)}</span></button>`;
   const firsts = campFirsts(C, camp, cook);
@@ -91,6 +121,8 @@ export function campView(C, camp, cook, pad, words) {
     ${campSketch(pad, camp)}
     <h4 class="ebb-camppage__h">${esc(P.firsts)}</h4>
     ${rows ? `<ul class="ebb-camppage__list">${rows}</ul>` : `<p class="ebb-journal__voice">${esc(P.empty)}</p>`}
+    ${giftsView(C, camp, words)}
+    ${bedView(C, camp, bed, words)}
     ${teasView(C, cook, words)}</section>`;
 }
 
