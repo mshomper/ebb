@@ -38,8 +38,8 @@
       "gorse.seed": { "type": "seed", "window": [0.6, 1.4] }
     }
   },
-  "cover": { "note": "Cover plants picked by the cell (docs/future/13 4.2, P2c C1): a pick lowers the 1 m cell's share by coverShare of full, and it grows back toward what the ground supports at the cover's own rate (about a day or two). A cell can be picked while its share is at least readyShare of that target and at least minShare of full. species: each cover plant that gives a part, its part and window (season positions, as plant parts), and the line its card says out of season.",
-    "coverShare": 0.25, "readyShare": 0.9, "minShare": 0.35,
+  "cover": { "note": "Cover plants picked by the cell (docs/future/13 4.2, P2c C1): a pick lowers the 1 m cell's share by coverShare of full, and it grows back toward what the ground supports at the cover's own rate (about a day or two). A cell can be picked while its share is at least readyShare of that target and at least minShare of full. species: each cover plant that gives a part, its part and window (season positions, as plant parts), and the line its card says out of season. October 29, 2026 (Matt): a young or spreading bed must give stems too, so readyShare is 0 and only minShare rests a cell (a full cell gives three picks, then rests).",
+    "coverShare": 0.25, "readyShare": 0, "minShare": 0.3,
     "species": { "rushes": { "part": "stems", "window": [0.0, 3.0], "outOfSeason": "Sodden through the winter. Last year's stems dry out by spring.", "seedWindow": [2.0, 3.0],
       "note": "October 28, 2026 (Matt): spring rushes give last year's dry stems, good for cord, so the first season is never without it; the green stems follow in summer. Winter stays closed." } },
     "seedNote": "seedWindow (P2g G1): when a cover plant's stand gives its seed as well, with no share taken." },

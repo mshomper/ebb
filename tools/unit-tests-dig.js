@@ -231,11 +231,12 @@ export function addDigTests(test, assert, eq) {
     eq(layout(C, 'workbench', ['sticks', 'flat-stones', 'rush-cord'], recordMade(made, 'shovel', 41)).make === 'shovel', false, 'only one shovel is ever made');
   });
 
-  test(G, 'rushes: a pick lowers the cell by a quarter and waits until it grows back; out of season, none', async () => {
+  test(G, 'rushes: a pick lowers the cell by a quarter and rests it once thin; out of season, none', async () => {
     const R = await GP;
     eq(coverPick(240, R), 176, 'a quarter of full');
     assert(coverPickable(240, 250, 'rushes', 1.5, R).ok, 'a full stand in summer');
-    eq(coverPickable(176, 250, 'rushes', 1.5, R).why, 'rest', 'picked: let it rest');
+    assert(coverPickable(150, 250, 'rushes', 0.5, R).ok, 'a young, spreading stand gives stems too');
+    eq(coverPickable(60, 250, 'rushes', 1.5, R).why, 'rest', 'picked thin: let it rest');
     assert(coverPickable(240, 250, 'rushes', 0.5, R).ok, 'last year\'s dry stems in spring');
     eq(coverPickable(240, 250, 'rushes', 3.5, R).why, 'season', 'sodden in winter');
     eq(coverPickable(240, 250, 'rushes', 1.5, R).part, 'stems', 'its part');
