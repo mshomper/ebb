@@ -28,9 +28,12 @@ import { cleanHoleFields } from '../dig/holes.js';
 // A hole (docs/future/13 10.8, src/world/dig) is { id, kind: 'hole', x, z, yaw, seed, size, placedHour,
 // depth, layer, cls, dugHour, closedHour, wetH, seep, side } (src/world/dig/holes.js); its spoil heap
 // is drawn by the dig module, and its mouth by the terrain shader (lib-holes.wgsl).
+// A perch stick (B1 P1, src/world/creatures/perch-sticks.js) is { id, kind: 'perch', x, z, yaw, seed,
+// size, placedHour }, as a stone's: size its height from its foot in the pond bed (m). It is drawn by
+// that module, never by the stone pass.
 
 /**
- * @typedef {{ id: string, kind: 'stone' | 'log' | 'stepping' | 'steps' | 'raft' | 'pile', x: number, z: number, yaw: number, seed: number, size: number, length?: number,
+ * @typedef {{ id: string, kind: 'stone' | 'log' | 'stepping' | 'steps' | 'raft' | 'pile' | 'perch', x: number, z: number, yaw: number, seed: number, size: number, length?: number,
  *   rise?: number, run?: string, x2?: number, z2?: number, top?: number, bottom?: number, risers?: number, placedHour: number,
  *   holds?: string, handfuls?: number, slot?: string }} Piece
  *   length: a log's length (m); rise, run: a pond stone's; x2, z2, top, bottom, risers: a flight's (yaw 0);
@@ -40,7 +43,7 @@ import { cleanHoleFields } from '../dig/holes.js';
  */
 
 /** Kinds of piece this build knows. */
-export const PIECE_KINDS = ['stone', 'log', 'stepping', 'steps', 'raft', 'pile', 'hole'];
+export const PIECE_KINDS = ['stone', 'log', 'stepping', 'steps', 'raft', 'pile', 'hole', 'perch'];
 /** The most handfuls a pile holds (recipes/world/pack.json piles.handfuls). */
 export const PILE_HANDFULS = 12;
 

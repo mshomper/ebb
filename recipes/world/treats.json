@@ -19,6 +19,23 @@
   "edgeNote": "edge: what Set out says (and the treat stays in the pack) for a kind set at the water's edge (a species' treat.edge, the turtles') when there is no bank with water close enough around you.",
   "wordsNote": "What the island says after Set out (the pouch card's action for a kind some species likes, recipes/species/<id>.json treat.kinds; its label is pack.json words.setOut). coming and waiting, by species key, when one comes for it; none for anything else, the same line whoever might like it, so the card never tells you whose it is.",
 
+  "perch": {
+    "kind": "sticks", "after": "dragonflies", "aheadM": 0.8, "turnDeg": 60, "wadeM": 1.6, "shallowM": [0.05, 0.4],
+    "aboveM": [0.45, 0.6], "sinkM": 0.1, "radiusM": [0.008, 0.012], "leanDeg": [1, 6], "tipShare": 0.45,
+    "twig": { "atShare": [0.55, 0.75], "lenM": [0.07, 0.12], "deg": 38, "radiusShare": 0.55 },
+    "color": [0.12, 0.085, 0.055], "wetColor": [0.05, 0.04, 0.03],
+    "cap": 4, "takeReachM": 1.8, "cardReachM": 1, "tapM": 0.35, "rayM": 0.1,
+    "words": {
+      "stand": "Stand in the shallows",
+      "stood": "You push the sticks into the soft bed. One stands bare above the water.",
+      "where": "This wants the shallows of a pond. Kneel at the edge, with shallow fresh water in front of you.",
+      "full": "Enough perches stand already. Take one up first.",
+      "name": "Perch stick", "line": "A handful of sticks pushed into the pond bed, one standing bare above the water.",
+      "takeUp": "Take up", "noRoom": "No room in the pack for the sticks.", "far": "Can't reach it from here. Come to the edge beside it."
+    }
+  },
+  "perchNote": "The perch stick (B1 P1, docs/future/13 8.3 F-07, October 29, 2026; src/world/creatures/perch-sticks.js): once the dragonflies are found (after), the sticks pouch's card offers words.stand on foot. You kneel and push one handful of sticks into the bed aheadM in front (turned turnDeg into view, as a treat), or on out along that line up to wadeM, at the first fresh, still water between shallowM deep: a placed piece of kind 'perch', saved with the island. It stands aboveM above the water (more or less, by its seed), its foot sinkM into the bed, radiusM thick, leaning up to leanDeg, with one side twig (twig) and a darker wet foot (wetColor, linear albedo) under the waterline; tipShare of its top is the bare tip a dragonfly lands on. At most cap stand at once. Its card (a tap within tapM of its foot, or a tap whose ray passes within rayM of the stick itself) says its line, opens from the bank (cardReachM past a thing's usual reach, walker.json click.thingReachM, since you cannot wade out to it), and offers Take up within takeReachM on foot, which gives the handful of sticks back. Dragonflies on patrol rest on it now and then (dragonfly.json motion stickChance), and one landing while you are within the treat's nearM is their treat.",
+
   "labHabit": { "sitMin": 6, "standMin": 4, "feeds": 2 },
   "labHabitNote": "The trust lab's keeper (docs/future/13 8.5): each played day (24 real minutes at normal speed) sits near the creature 6 real minutes (each counts watch.sitBoost), stands near it 4, and feeds it twice, at least fullH game hours apart. The game never reads this."
 }
