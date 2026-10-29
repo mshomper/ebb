@@ -9,7 +9,7 @@ The look is soft and natural: physical light, sky and water, ground built from s
 
 ## Where it is
 
-The M1 vertical slice is built and signed off (October 20, 2026). Phase 1 of the keeper's camp, the first evening, is built and played through: a new island opens at dawn on the beach, and ten short beats teach walking, the spring and the first page, pitching the tent, gathering, laying and lighting the fire, shaping, and resting until morning. Next is the groundwork for Phase 2, the first season ([docs/future/13-keepers-camp.md](docs/future/13-keepers-camp.md)).
+The M1 vertical slice is built and signed off (October 20, 2026). Phase 1 of the keeper's camp, the first evening, is built and played through: a new island opens at dawn on the beach, and ten short beats teach walking, the spring and the first page, pitching the tent, gathering, laying and lighting the fire, shaping, and resting until morning. Phase 2, the first season (plant rules, tea herbs, digging, clay, teas, treats and trust; [docs/future/13-keepers-camp.md](docs/future/13-keepers-camp.md)), passed its check on October 29, 2026. Next is M2's close.
 
 Everything built so far, step by step, is in **[docs/progress.md](docs/progress.md)**. The plan ahead is in [docs/20-roadmap-and-vertical-slice.md](docs/20-roadmap-and-vertical-slice.md).
 

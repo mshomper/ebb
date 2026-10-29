@@ -90,7 +90,7 @@ Decided October 22, 2026 (Matt): Phase 1 of the keeper's camp (`docs/future/13-k
 
 Exit check: Matt plays the first evening on a fresh seed, end to end, without reading anything outside the game, and an existing island loads with its camp pad stamped. **Passed October 23, 2026.**
 
-### The first season (keeper's camp Phase 2) — current target
+### The first season (keeper's camp Phase 2)
 
 Decided October 24, 2026 (Matt). A short groundwork step comes first: the rest of the walker's motion (leaning into starts and stops, the head turning to look, a gesture for each action) and the planting sketch (D1). **All planting is the walker's:** the Plant tool leaves the view from above, and seeds and gifts are tossed from where the walker stands (D1a: the seed tin and the gift spot on the walker's bar; the raft simply appears on the pond, no pushing off; the net is set by walking out to the clicked spot). Then Phase 2 in pairs (F13 section 13, with 3.12):
 
@@ -104,11 +104,11 @@ Decided October 24, 2026 (Matt). A short groundwork step comes first: the rest o
 
 **The camp store (P2j)**, added October 24, 2026 (Matt): a simple store at camp with 6 slots, made larger to 12, linked to the workbench, the apothecary bench and the fire, which draw from it. Its material and how it grows are proposed separately for Matt's pick.
 
-**All built by October 27, 2026** (every Phase 2 piece in `docs/progress.md`). Exit check (Matt, October 27, 2026): the ten checks on `tools/season-review.html`, played on his own island and the test links there; anything not yet right becomes a fix log, as Phase 1's did.
+**All built by October 27, 2026** (every Phase 2 piece in `docs/progress.md`). Exit check (Matt, October 27, 2026): the ten checks on `tools/season-review.html`, played on his own island and the test links there; anything not yet right becomes a fix log, as Phase 1's did. **Passed October 29, 2026**, after a fix round from Matt's playthrough (the dune for chamomile, woven twigs for the first shovel, young rush beds giving stems, and the season fixes; `docs/progress.md`).
 
 Later phases of the camp ride with the milestones below: Phase 2 (the first season: plant rules, tea herbs, digging, clay, teas, treats and trust) now comes next, before the rest of M2 (October 24, 2026, below); Phase 3 (pond tier gifts) at M2's close; Phase 4 (meadow herbs, dyes) with M3; Phase 5 (woodland, shore and night) with M4 to M6, each with its species' milestone (F13 section 13).
 
-### M2 — Pond tier complete and the meadow islet
+### M2 — Pond tier complete and the meadow islet — current target
 
 The rest of M2 continues after the first season (changed October 24, 2026), together with the camp's Phase 3. Check the meadow islet's placement against the larger 4 x 4 island first.
 
