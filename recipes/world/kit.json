@@ -28,6 +28,10 @@
     "hand": { "name": "Empty hands", "line": "Nothing in hand. Room for whatever I find." }
   },
   "off": { "lantern": "Leave it on the pole", "hand": "Put it away" },
+  "_bands": "Hat bands (docs/future/15 slice 2b): painted round the crown of whatever hat is worn (recipes/world/figure.json hatBand), always worn once given; worn: the words the hat's card adds on the Walker page.",
+  "bands": {
+    "hen-feather": { "name": "Hen-feather band", "worn": "Round the crown, a band of the hen's barred tail feather. She left it by the fire for me." }
+  },
   "belt": [
     { "id": "shovel", "name": "Shovel", "icon": "shovel", "line": "A stick, a flat stone and cord, bound tight. It hangs on the pack." },
     { "id": "knife", "name": "Gathering knife", "icon": "gathering-knife", "line": "A clean cut leaves a plant less bare, and it is ready again sooner." },

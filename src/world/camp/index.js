@@ -419,6 +419,8 @@ export function createCamp(o) {
     id: 'camp',
     /** The draw passes: the models (with their shadow caster), then the fire's effects after the sky. */
     props, fx,
+    /** Draw more things with the camp's models each frame (the hen's feather by the ring). @param {() => import('../../render/passes/props.js').Prop[]} f */
+    addProps: (f) => frame.addProps(f),
     /** A sim system: each frame. @param {{ realDt: number }} f */
     tick(f) {
       if (!hidden) { updateFrame(f.realDt, o.clock.animT()); return; }

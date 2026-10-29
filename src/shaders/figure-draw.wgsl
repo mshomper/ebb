@@ -14,6 +14,7 @@
 // #include lib-sky
 // #include lib-lighting
 // #include lib-figure-eyes
+// #include lib-figure-band
 
 // The carrier's straps painted on the coat while one is worn (October 29, 2026; figure.json straps):
 // two bands over the shoulders crossing the back, in the rest pose, so they ride the body.
@@ -29,6 +30,7 @@ struct FigureDraw {
   glint: vec4f,    // unused here (the creature pass's eye glint)
   eyes: FigureEyes,
   straps: FigureStraps,
+  band: FigureHatBand,
 };
 
 /** How much strap covers rest-pose point p (x, 0..1), and how much of that is its dark edge (y). */
@@ -140,7 +142,9 @@ fn fsBody(in: VsOut) -> FsOut {
   let eye = figureEyes(in.rest, in.head, fd.eyes);
   let strap = figureStraps(in.rest, fd.straps);
   let strapColour = fd.straps.colour.rgb * mix(1.0, fd.straps.colour.w, strap.y);
-  let albedo = mix(mix(select(in.albedo, mapColour, mapped), strapColour, strap.x * (1.0 - in.head)), fd.eyes.albedo.rgb, eye);
+  let band = figureHatBand(in.rest, fd.band);
+  let cloth = mix(mix(select(in.albedo, mapColour, mapped), strapColour, strap.x * (1.0 - in.head)), band.rgb, band.w);
+  let albedo = mix(cloth, fd.eyes.albedo.rgb, eye);
   let direct = frame.sunIlluminance * max(dot(n, frame.sunDir), 0.0) * sunVis
              + frame.moonIlluminance * max(dot(n, frame.moonDir), 0.0) * moonVis
              + pointIllum(in.world, n, 0.15);

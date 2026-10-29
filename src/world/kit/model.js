@@ -7,7 +7,9 @@
 //   coat      the walker's own coat now; dyed ones in Phase 4, Hollow coats later
 //   carrier   the carrier on the back: null is the starting pack, or a made one (P2f: satchel, basket)
 // Owned things live with the kit, never in a pouch. The save's `kit` section:
-//   { version, hat, lantern, hand, coat, carrier, owned: { hat, lantern, hand, coat, carrier } }
+//   { version, hat, lantern, hand, coat, carrier, owned: { hat, lantern, hand, coat, carrier }, bands }
+// bands: the paints round the hat's crown, worn on whatever hat is worn (the hen's feather band,
+// docs/future/15 slice 2b); kept only once one is given, so a kit without one reads and saves as before.
 // A save without it reads as the walker's own things (as the sketchbook section did). P2f's carrier
 // choice lives here: the pack keeps using its own copy for its pouch rules (src/world/pack/model.js),
 // the save keeps the kit's (joinCarriers on load, packForSave on save), so carriers behave as before.
@@ -20,8 +22,9 @@ export const ALL = /** @type {const} */ ([...SLOTS, 'carrier']);
 /** @typedef {typeof ALL[number]} Slot */
 /**
  * @typedef {{ version: 1, hat: string, lantern: string | null, hand: string | null, coat: string, carrier: string | null,
- *   owned: Record<Slot, string[]> }} Kit
- *   hat and coat are always worn (one choice each until Phase 4); lantern and hand may be empty; carrier null: the starting pack
+ *   owned: Record<Slot, string[]>, bands?: string[] }} Kit
+ *   hat and coat are always worn (one choice each until Phase 4); lantern and hand may be empty; carrier null: the starting pack;
+ *   bands: hat bands, always worn once given
  */
 
 /** What the walker owns from the start, and always keeps. @type {Record<Slot, string[]>} */
@@ -46,8 +49,15 @@ export function cleanKit(v) {
   for (const s of ALL) owned[s] = [...OWN[s], ...ids(o[s]).filter((id) => !OWN[s].includes(id))];
   const pick = (/** @type {Slot} */ s, /** @type {string | null} */ d) => (typeof v[s] === 'string' && owned[s].includes(v[s]) ? v[s] : d);
   return { version: 1, hat: /** @type {string} */ (pick('hat', 'own')), lantern: v.lantern === null ? null : pick('lantern', 'hand'),
-    hand: pick('hand', null), coat: /** @type {string} */ (pick('coat', 'own')), carrier: pick('carrier', null), owned };
+    hand: pick('hand', null), coat: /** @type {string} */ (pick('coat', 'own')), carrier: pick('carrier', null), owned,
+    ...(ids(v.bands).length ? { bands: ids(v.bands) } : {}) };
 }
+
+/** A hat band given (the hen's feather), added once. @param {Kit} k @param {string} id @returns {Kit} */
+export const addBand = (k, id) => (k.bands?.includes(id) ? k : { ...k, bands: [...(k.bands ?? []), id] });
+
+/** Is this hat band worn? @param {Kit | null | undefined} k @param {string} id */
+export const wearsBand = (k, id) => !!k?.bands?.includes(id);
 
 /** Is this owned for the slot? @param {Kit} k @param {Slot} slot @param {string | null} id */
 export const owns = (k, slot, id) => id === null ? slot === 'lantern' || slot === 'hand' || slot === 'carrier' : k.owned[slot].includes(id);

@@ -6,14 +6,15 @@
 // The belt reads the camp's tools (the shovel), the forager's knife, the sketchbook and the net.
 // Answers kit.wear { slot, id }: a hat, coat, lantern or what is in hand at once; a carrier only at
 // camp, through the camp's own Wear (camp.wear, src/world/camp/carriers.js), so carriers behave as
-// they did. Emits kit:worn { slot, id }.
+// they did. Emits kit:worn { slot, id }. A hat band given (the hen's feather, giveBand) is worn at
+// once on whatever hat is worn, and kept: kit:band { id }.
 
 import { get, update, subscribe } from '../../core/store.js';
 import { emitDeferred } from '../../core/events.js';
 import { onAction, dispatch } from '../../input/actions.js';
 import { atCamp } from '../pack/camp.js';
 import { hasForage } from '../forager.js';
-import { cleanKit, own, wearKit, looksOf, ALL } from './model.js';
+import { cleanKit, own, wearKit, looksOf, addBand, ALL } from './model.js';
 
 /**
  * @param {{ recipe: any, pack: any, you: () => number[] | null }} o
@@ -104,6 +105,14 @@ export function createKit(o) {
     looks: () => looksOf(kit(), R),
     /** Wear something (tests; the page dispatches kit.wear). @param {string} slot @param {string | null} id */
     wear: (slot, id) => wear({ slot, id }),
+    /** A hat band given (the hen's feather), worn from now on. @param {string} id */
+    giveBand(id) {
+      const k = addBand(kit(), id);
+      if (k === kit()) return;
+      update('kit', () => k);
+      publish();
+      emitDeferred('kit:band', { id });
+    },
     belt,
     dispose() { for (const off of offs) off(); },
   };

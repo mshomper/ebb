@@ -1,6 +1,8 @@
 // @ts-check
-// The hen lab (docs/future/15, slice 1): every clip of her code motion on its own, and her life on a
-// flat test ground with a walker you place by clicking, so the wary ring can be watched.
+// The hen lab (docs/future/15, slices 1 and 2): every clip of her code motion on its own, and her life
+// on a flat test ground with a walker you place by clicking, so the wary ring can be watched; and her
+// bands: pick how well she knows you (Wary to Fond), sit by the fire ring, dig, set out worms, and
+// switch to dusk or dawn, to see each band's behaviour.
 
 import { createStage } from './hen-lab-stage.js';
 import { loadHenModel } from '../src/world/hen/index.js';
@@ -29,6 +31,11 @@ const HOLD = query.has('hold') ? Number(query.get('hold')) : null;
 
 /** @type {string} */ let mode = 'life';
 let slow = false;
+/** Her band (0 Wary .. 4 Fond), the hour shown, the walker sitting, a treat and a hole. */
+let band = 0, hourOfDay = 12, sitting = false, tid = 0, dayN = 0;
+/** @type {{ x: number, z: number } | null} */ let treat = null;
+/** @type {{ x: number, z: number, t: number } | null} */ let hole = null;
+const FIRE = { x: 5, z: 3 };
 /** The walker: where it stands, and where it walks to (null: standing). @type {{ x: number, z: number, to: { x: number, z: number } | null } | null} */
 let walker = null;
 const life = createHenLife({ R, seed: 0x5eed, ground: () => 0, wet: (x, z) => Math.max(Math.abs(x), Math.abs(z)) > GROUND * 0.9 });
@@ -73,6 +80,7 @@ function clipPose(dt) {
   if (mode === 'peck') { const u = cyc(1.1) * 1.1 / L.peckS; p.peck = u > 1 ? 0 : u < 0.35 ? u / 0.35 : 1 - (u - 0.35) / 0.65; }
   if (mode === 'look') { const u = cyc(3); const on = u > 0.15 && u < 0.75 ? 1 : 0; p.look = { yaw: 0, tilt: (u < 0.5 ? 1 : 1) * M.lookTiltRad * on, down: M.lookDownRad * on }; }
   if (mode === 'alert') p.alert = Math.min(1, Math.max(0, Math.sin(cyc(4) * Math.PI) * 1.6));
+  if (mode === 'settle') p.settle = Math.min(1, Math.max(0, Math.sin(cyc(6) * Math.PI) * 1.6));
   if (mode === 'scratch') {
     // Kick, kick, a step back, a look, two pecks, then again.
     const seq = [['kick', L.kickS, 'l'], ['kick', L.kickS, 'r'], ['back', L.backS], ['look', 0.6], ['peck', L.peckS], ['peck', L.peckS], ['rest', 0.8]];
@@ -100,7 +108,7 @@ function sources() {
   if (!walker) return [];
   const speed = walker.to ? 0.9 : 0;
   return [/** @type {import('../src/world/creatures/presence.js').PresenceSource} */ ({ id: 'walker', kind: 'walker', pos: [walker.x, 0.9, walker.z], speed, editing: false, edits: [],
-    stillS: speed ? 0 : 1, body: true, posture: 'stand', gaze: null, ringK: 1 })];
+    stillS: speed ? 0 : 1, body: true, posture: sitting ? 'sit' : 'stand', gaze: null, ringK: 1 })];
 }
 
 stage.onGroundClick((x, z) => {
@@ -121,7 +129,8 @@ function frame() {
       const h = life.hen, dx = h.x - walker.x, dz = h.z - walker.z, d = Math.hypot(dx, dz);
       if (d > 1) { walker.x += (dx / d) * 0.9 * dt; walker.z += (dz / d) * 0.9 * dt; }
     }
-    life.step(dt, { night: false, sources: sources() });
+    life.step(dt, { night: hourOfDay >= R.hours[1] || hourOfDay < R.hours[0], sources: sources(), band, ring: FIRE, hourOfDay, day: dayN });
+    if (hole && performance.now() / 1000 - hole.t > 30) hole = null;
     poser.pose(life.poseInput(), bones);
     at = life.hen;
     $('mode').textContent = life.hen.mode + (life.hen.act ? `: ${life.hen.act.a}` : '');
@@ -130,8 +139,9 @@ function frame() {
     at = puppet;
     $('mode').textContent = mode;
   }
-  stage.draw(dt, { x: at.x, z: at.z, yaw: at.yaw, size: k, cut: R.body.alphaCut, bones, ringM: mode === 'life' ? R.wary.ringM : 0,
-    walker: mode === 'life' ? walker : null, groundHalf: GROUND, follow: mode !== 'life' });
+  stage.draw(dt, { x: at.x, z: at.z, yaw: at.yaw, size: k, cut: R.body.alphaCut, bones, ringM: mode === 'life' ? (band > 0 ? R.bands[['wary', 'tolerant', 'curious', 'familiar', 'fond'][band]].ringM : R.wary.ringM) : 0,
+    walker: mode === 'life' && walker ? { ...walker, sit: sitting } : null, groundHalf: GROUND, follow: mode !== 'life',
+    fire: mode === 'life' ? FIRE : null, treat: mode === 'life' ? treat : null, hole: mode === 'life' ? hole : null });
   requestAnimationFrame(frame);
 }
 
@@ -153,6 +163,38 @@ $('approach').addEventListener('click', () => {
 });
 $('stop').addEventListener('click', () => { if (walker) walker.to = null; });
 $('away').addEventListener('click', () => { walker = null; });
+for (const b of document.querySelectorAll('[data-band]')) {
+  b.addEventListener('click', () => {
+    band = Number(/** @type {HTMLElement} */ (b).dataset.band);
+    for (const o of document.querySelectorAll('[data-band]')) o.setAttribute('aria-pressed', String(o === b));
+  });
+}
+$('sit').addEventListener('click', () => {
+  sitting = !sitting;
+  // Sitting puts you down beside the fire ring.
+  if (sitting) walker = { x: FIRE.x - 1.1, z: FIRE.z, to: null };
+  $('sit').setAttribute('aria-pressed', String(sitting));
+});
+$('dig').addEventListener('click', () => {
+  if (!walker) return;
+  hole = { x: walker.x + 0.6, z: walker.z, t: performance.now() / 1000 };
+  life.dugAt(hole.x, hole.z);
+});
+$('worms').addEventListener('click', () => {
+  if (!walker) return;
+  treat = { x: walker.x + 0.5, z: walker.z + 0.3 };
+  const r = life.treatAt(treat.x, treat.z, { tid: ++tid, treat: 'worms' }, () => { treat = null; $('note').textContent = 'She ate the worms.'; });
+  $('note').textContent = r === 'coming' ? 'She is coming for the worms.' : r === 'waiting' ? 'She waits until you step back from them.' : 'She is too far away to notice.';
+});
+const setHour = (/** @type {string} */ id, /** @type {number} */ h) => {
+  const on = $(id).getAttribute('aria-pressed') !== 'true';
+  hourOfDay = on ? h : 12;
+  // A new day each dawn, so she greets you again.
+  if (on && id === 'dawn') dayN++;
+  for (const k of ['dusk', 'dawn']) $(k).setAttribute('aria-pressed', String(on && k === id));
+};
+$('dusk').addEventListener('click', () => setHour('dusk', 19.5));
+$('dawn').addEventListener('click', () => setHour('dawn', 6.5));
 $('slow').addEventListener('click', () => { slow = !slow; $('slow').setAttribute('aria-pressed', String(slow)); });
 $('stats').innerHTML = `<dt>Bones</dt><dd>${built.skeleton.length} (from 50 joints)</dd><dt>Triangles</dt><dd>${(built.indices.length / 3).toLocaleString()}</dd>`
   + `<dt>Drawn height</dt><dd>${(built.height * k).toFixed(2)} m (${k}x)</dd><dt>Wary ring</dt><dd>${R.wary.ringM} m</dd>`;

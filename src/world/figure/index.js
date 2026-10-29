@@ -12,8 +12,8 @@ import { carriedOn, partIndices } from './carry.js';
 
 export { loadFigureClips } from './clips.js';
 
-/** The eyes' 20 floats, then the painted straps' 12 (figure-draw.wgsl FigureStraps). */
-const EXTRA = 32;
+/** The eyes' 20 floats, the painted straps' 12 (figure-draw.wgsl FigureStraps), then the hat band's 12 (lib-figure-band.wgsl). */
+const EXTRA = 44;
 
 /** Fetch the model named by the recipe (a path from the repo root). @param {any} R */
 export async function loadFigureModel(R) {
@@ -50,6 +50,18 @@ export function strapUniforms(S, on, out) {
 }
 
 /**
+ * The hat band's uniforms (lib-figure-band.wgsl FigureHatBand), after the straps: on, foot and top
+ * (rest y), the least distance from the crown's axis, the axis (x, z), feathers round, bar shade,
+ * colour and quill. @param {any} B recipes/world/figure.json hatBand @param {boolean} on
+ * @param {Float32Array} out @param {number} [at] where its 12 floats start
+ */
+export function hatBandUniforms(B, on, out, at = 32) {
+  if (!B) return out;
+  out.set([on ? 1 : 0, B.footY, B.topY, B.minR, B.crown[0], B.crown[1], B.feathers, B.barShade, B.colour[0], B.colour[1], B.colour[2], B.quill], at);
+  return out;
+}
+
+/**
  * The figure's draw pass, ready before the model has loaded (the frame graph takes it at boot).
  * @param {any} R recipes/world/figure.json @param {string} [name]
  */
@@ -79,7 +91,7 @@ export function createFigure(o) {
   /** Where the pack stands at camp (the ground under its pivot, world m, and the way its back faces), or null. @type {{ x: number, y: number, z: number, yaw: number } | null} */
   let hung = null;
   const uniforms = new Float32Array(EXTRA);
-  let visible = false, straps = false;
+  let visible = false, straps = false, hatBand = false;
   /** Where the figure stood and faced last frame, for hand(). */
   let at = { x: 0, y: 0, z: 0, yaw: 0 };
   const hands = { l: built.skeleton.findIndex((b) => b.name === 'hand.l'), r: built.skeleton.findIndex((b) => b.name === 'hand.r') };
@@ -127,6 +139,8 @@ export function createFigure(o) {
     hangPack(place) { hung = place; },
     /** Paint the carrier's straps on the coat, or not (October 29, 2026). @param {boolean} on */
     wearStraps(on) { straps = on; },
+    /** Paint the hen-feather band round the hat's crown, or not (docs/future/15 slice 2b). @param {boolean} on */
+    wearHatBand(on) { hatBand = on; },
     /** Vertices and triangles, for the tools page's cost line. */
     size: { vertices: built.count, triangles: built.indices.length / 3, bytes: built.data.byteLength + built.indices.byteLength },
     /**
@@ -145,7 +159,7 @@ export function createFigure(o) {
       const r = motion.update(dt, s);
       at = { x: s.x, y: s.y, z: s.z, yaw: r.yaw };
       pass.setBeings([{ x: s.x, y: s.y, z: s.z, yaw: r.yaw, size: k, bones: motion.bones }, ...hangs]);
-      pass.setExtra(strapUniforms(R.straps, straps, eyeUniforms(R.eyes, headBone, r.eyes, uniforms)));
+      pass.setExtra(hatBandUniforms(R.hatBand, hatBand, strapUniforms(R.straps, straps, eyeUniforms(R.eyes, headBone, r.eyes, uniforms))));
       return r.footfalls;
     },
   };

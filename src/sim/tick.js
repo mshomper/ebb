@@ -12,6 +12,7 @@ import * as ecology from '../world/ecology/coarse.js';
 import * as creatures from '../world/creatures/coarse.js';
 import * as swarms from '../world/creatures/swarms.js';
 import * as spring from '../world/creatures/spring.js';
+import * as hen from '../world/hen/trust.js';
 
 /** @typedef {{name: string, payload: any, hour?: number}} CoarseEvent */
 /** @typedef {(state: any, hourIndex: number, env: Env) => {state: any, events: CoarseEvent[]}} CoarseStep */
@@ -54,6 +55,9 @@ export const COARSE_ORDER = Object.freeze([
   // Spring at the pond (doc 13): frogspawn to froglets on happy frogs, the toad's night walk
   // (src/world/creatures/spring.js). After the swarms, so tadpoles see this hour's minnows.
   { id: 'spring', coarseStep: spring.coarseStep },
+  // The hen's trust and Fond (docs/future/15, slice 2; src/world/hen/trust.js): what live play
+  // recorded near her. Skips until she has been out.
+  { id: 'hen', coarseStep: hen.coarseStep },
 ]);
 
 /**

@@ -14,6 +14,7 @@
 
 import { HABITAT_ORIGIN } from '../growth/habitat.js';
 import { GROW, DORMANT } from './observe.js';
+import { measureHen, observeHen } from './hen.js';
 
 /** @typedef {import('./observe.js').Journal} Journal @typedef {import('./observe.js').Note} Note */
 /** @typedef {import('./observe.js').SpeciesKnowledge} SpeciesKnowledge */
@@ -38,6 +39,8 @@ function learnOnce(k, t) {
  * @param {string} sp @param {any} state @param {any} rec words.species[sp]
  */
 export function measureAnimal(sp, state, rec) {
+  // The hen (docs/future/15): one, where she was last seen (hen.js).
+  if (rec.kind === 'hen') return measureHen(state);
   if (rec.kind === 'school') {
     // A school or swarm with needs (minnows, dragonflies): counted in all, each group a spot.
     const S = state?.creatures?.[sp];
@@ -133,6 +136,9 @@ export function observeAnimals(j, out, ctx, at) {
   // Spring at the pond (src/world/creatures/spring.js): frogspawn laid, hatched, leaving as froglets,
   // and the toad's night walk. Each note offers Show me (kind sign), so a young player can find them.
   observeSpring(j, out, ctx, at);
+
+  // The hen (docs/future/15, slice 2): her words, her treats, her feather (hen.js).
+  observeHen(j, out, ctx, at);
 
   // Midges: known by themselves at the first dusk they gather, once the island draws them (S6b).
   const mrec = words.species.midges;

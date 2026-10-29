@@ -518,3 +518,59 @@ export function midges(p, scale) {
   p.scale(30, 120, 214, scale);
   return p.svg(380, 252, 'Field sketch of a cloud of midges dancing over the reeds, and one midge drawn large');
 }
+
+/** A feral hen's warm brown, her darker tail and wing, her pale yellow legs. */
+const HEN = '#9A6438', HEN_DARK = '#5E3E26', HEN_LEG = '#D8B866';
+
+/**
+ * Feral hen: side on, mid-scratch on a patch of turned soil, standing on one leg while the other
+ * foot rakes back, her body tipped forward, small comb and wattle, a short upturned tail, the wing
+ * folded close (it never opens).
+ * @param {import('./pen.js').Pen} p @param {string} [scale]
+ */
+export function hen(p, scale) {
+  const g = 214;
+  p.tint(`M40 ${g}H236V246H40Z`, WASH.mud, 0.22);
+  // The turned soil under her: a darker scraped patch, crumbs kicked back behind.
+  p.tint(`M70 ${g - 2}C96 ${g - 6} 160 ${g - 6} 186 ${g - 1}C170 ${g + 8} 96 ${g + 9} 70 ${g - 2}Z`, WASH.brown, 0.4);
+  p.line(`M40 ${g}C90 ${g - 3} 170 ${g + 2} 236 ${g - 1}`, 1.3);
+  p.fine(`M84 ${g + 4}l10 -2M120 ${g + 6}l14 1M160 ${g + 4}l10 -1M206 ${g + 12}l16 -2`, 0.8, 0.5);
+  for (const [x, y, r] of [[78, 202, 1.6], [70, 194, 1.2], [84, 190, 1], [64, 206, 1.4], [74, 184, 0.9]]) p.dot(x, y, r, WASH.brown);
+  p.shape(blade(224, g, 228, g - 34, 2.4, 4), WASH.green, 0.42, 1);
+  p.shape(blade(48, g, 44, g - 28, 2.2, -4), WASH.green, 0.42, 1);
+  // The short tail, upturned behind.
+  p.shape('M86 152C78 140 72 126 72 110C80 114 86 120 90 128C90 118 94 108 100 102C103 116 103 130 100 142Z', HEN_DARK, 0.65, 1.3);
+  p.fine('M80 120C84 128 88 136 90 146M96 112C96 124 96 134 96 144', 0.9, 0.6);
+  // The body, tipped forward: the back high at the rump, sloping to the neck.
+  p.shape('M84 146C100 132 136 128 160 136C176 142 188 154 186 170C182 186 160 196 132 196C108 196 88 186 80 170C77 160 79 151 84 146Z', HEN, 0.55, 1.5);
+  // The paler breast.
+  p.tint('M176 156C186 164 186 178 174 188C164 192 152 194 144 194C160 186 174 174 176 156Z', WASH.sand, 0.5);
+  // The folded wing over the flank, its flight feathers lying back along the side.
+  p.shape('M100 148C120 140 152 142 168 152C164 166 148 176 126 178C112 178 100 172 94 164C92 156 95 151 100 148Z', WASH.brown, 0.55, 1.1);
+  p.fine('M98 162l-8 4M104 168l-8 6M112 173l-6 6M120 176l-4 6', 0.9, 0.7);
+  p.fine('M108 152C124 148 144 150 158 156M104 160C120 158 140 162 152 166', 0.8, 0.55);
+  // Speckles on the breast and back.
+  for (const [x, y] of [[176, 166], [170, 174], [180, 176], [162, 180], [130, 138], [146, 138], [116, 140]]) p.fine(`M${x - 2} ${y}l2 2l2 -2`, 0.8, 0.6);
+  // The neck and head reaching forward and down.
+  p.shape('M162 138C172 130 188 130 198 138L206 154C198 160 190 164 184 168C182 156 174 146 162 138Z', HEN, 0.55, 1.3);
+  p.shape('M194 140C196 130 210 128 216 136C220 142 218 152 210 156C202 158 194 152 194 140Z', HEN, 0.55, 1.3);
+  // Small comb and wattle, the beak, the eye.
+  p.shape('M199 132C198 126 202 125 203 129C204 124 208 124 208 128C210 125 214 126 213 131C210 134 203 135 199 132Z', WASH.red, 0.7, 1);
+  p.shape('M212 150C215 155 211 160 207 157C205 154 207 150 212 150Z', WASH.red, 0.7, 0.9);
+  p.shape('M216 139L226 145L215 148Z', WASH.gold, 0.85, 1);
+  p.oval(208, 139, 2.4, 2.2, WASH.gold, 0.9, 0.7);
+  p.dot(208.4, 139, 1.1);
+  // The standing leg: thigh feathers, a straight shank, toes spread on the ground.
+  p.shape('M144 190C146 196 154 198 158 192Z', HEN, 0.6, 1);
+  p.shape('M148 194L153 194L156 212L151 212Z', HEN_LEG, 0.8, 1);
+  p.line(`M153 ${g - 1}L167 ${g + 1}M153 ${g - 1}L161 ${g - 4}M153 ${g - 1}L142 ${g}`, 1.2);
+  // The raking leg, kicked back, toes trailing as they scrape.
+  p.shape('M118 190C120 196 128 198 130 192Z', HEN, 0.6, 1);
+  p.shape('M121 194L126 196L109 209L105 206Z', HEN_LEG, 0.8, 1);
+  p.line('M107 208L91 211M107 208L93 203M107 208L96 215', 1.2);
+  p.label('comb', 250, 66, 206, 127);
+  p.label('tail', 250, 122, 88, 114);
+  p.label('feet', 250, 186, 96, 208);
+  p.scale(30, 124, g, scale);
+  return p.svg(380, 252, 'Field sketch of a small brown feral hen scratching on turned soil, one foot raking back');
+}

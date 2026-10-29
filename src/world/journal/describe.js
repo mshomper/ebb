@@ -9,6 +9,7 @@ import { measure, present, knownLines, dateOfHour, sketchOf, coverShare, hasCove
 import { trustWord } from '../creatures/trust.js';
 import { bondOf, turtleTrust, namedTurtles } from '../creatures/bonds.js';
 import { springSpots } from '../creatures/spring.js';
+import { henCard, namedHen } from './hen.js';
 import { openBox } from '../ecology/fields.js';
 
 /** The island's middle and size from the habitat, cached per habitat. @type {WeakMap<object, { x: number, z: number, r: number }>} */
@@ -173,7 +174,8 @@ export function describe(journal, sp, state, hab, words, hour = journal.last) {
   // A named turtle (bonds.js) is dated from the day you named it.
   const named = known && rec.trust?.namedLine
     ? [...(state?.creatures?.[sp]?.frogs ?? []).filter((/** @type {any} */ f) => f.name).map((/** @type {any} */ f) => ({ name: f.name, at: f.since })),
-      ...namedTurtles(sp === 'turtles' ? state?.creatures?.turtles : null).map((b) => ({ name: b.name, at: b.namedAt }))]
+      ...namedTurtles(sp === 'turtles' ? state?.creatures?.turtles : null).map((b) => ({ name: b.name, at: b.namedAt })),
+      ...(sp === 'hens' ? namedHen(state) : [])]
       .map((f) => rec.trust.namedLine.replace('{name}', f.name).replace('{date}', dateOfHour(f.at ?? 0, words)))
     : [];
   // A collection (shells): the ones found, in the recipe's order, and pencil hints for the rest.
@@ -312,6 +314,7 @@ export function showMeSpot(sp, state, hab, words, near = null) {
     }
     if (!best) return null;
     if (rec.kind === 'creature') return frogCard(best, state, words);
+    if (rec.kind === 'hen') return henCard(best, state, words);
     return { sp, name: rec.name, icon: rec.icon, text: rec.stages[0], wx: best.x, wz: best.z, r: words.identify.ringM, stage: -1 };
   }
   if (rec.kind === 'cover') {
