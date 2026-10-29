@@ -59,13 +59,15 @@ const at = (o, path) => path.split('.').reduce((v, k) => (v == null ? v : v[k]),
  * none shown).
  * @param {any} R recipes/world/sowing.json @param {any} unlocks the live unlocks (test links too);
  *   `earned.placed` counts what was placed
+ * @param {string[]} [waiting] gifts still lying on the camp's gift stone (B1 C1, src/world/camp/gifts.js
+ *   waitingIds): not on the spot until they are taken up there
  * @returns {GiftItem[]}
  */
-export function giftItems(R, unlocks) {
+export function giftItems(R, unlocks, waiting = []) {
   const placed = unlocks?.earned?.placed ?? {};
   /** @type {GiftItem[]} */ const out = [];
   for (const g of R.gifts) {
-    if (!at(unlocks, g.unlock)) continue;
+    if (!at(unlocks, g.unlock) || waiting.includes(g.id)) continue;
     const left = g.count - (placed[g.id] ?? 0);
     if (left > 0) out.push({ kind: 'gift', id: g.id, place: g.place, species: g.species ?? null, icon: g.icon, left });
   }

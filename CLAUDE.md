@@ -58,6 +58,30 @@ Full ownership and exports are in `docs/03-tech-stack-and-module-map.md`.
 
 **Every creature is rigged and animated.** As far as its form allows, every creature, including each life stage (tadpole, froglet, adult), has a basic rig and plays basic animations for what it does: walking, hopping, swimming, flying, breathing at rest. A single posed model sliding across the ground is never acceptable. Swarms of tiny creatures (midges, minnow schools) may use cheap shader motion instead of bones, but they must still move like living things. Build the rig and animations with the creature, not as a later fix.
 
+## Adding a creature
+
+Every new species, swarm or seasonal life goes through this list (Matt, October 29, 2026). Copy it into the plan page, mark each row done, n/a with a reason, or a question for Matt. Look at `recipes/species/turtle.json` and `hen.json` as worked examples. Rules from docs 11 and 12 and the "Shaped, not found" section of `docs/13-progression-and-expansion.md` apply throughout; trust, treats and makes follow `docs/future/13-keepers-camp.md` sections 6 and 8.
+
+**Always:**
+- **Model and rig.** Who makes the model is Matt's call when it is more than a basic shape; note its licence and credit (`assets/models/<id>/CREDITS.md`). A rig and animations for every life stage, motion written against bone roles, as the creature rule says. Drawn at the findable scale (about 2.5 to 3 times real for small creatures; real-metre needs stay real).
+- **Species recipe** (`recipes/species/<id>.json`, registered in `recipes/index.json`): body, motion, `presence` (wary ring, multipliers, bands), `ecology` (needs, activity, dormancy, `arrival` with `leaveGraceDays` for schools and swarms). It never startles from the game camera, only from the walker. Simulation is seeded and catch-up-safe; trust is live only.
+- **How it comes.** Its needs are met by ground the player shaped where "Shaped, not found" says so; a newcomer visits first and leaves a hint note the next morning; homes compete. Its tier, and whether it counts toward a tier milestone (doc 12).
+- **Journal page** (`recipes/world/journal.json`): name, icon, card line, riddle, hints (`<key>:right`, `<key>:sign`), field notes learned by watching, stages and amount lines, pencil-then-ink lines; its place in `journal-list.json`; its nodes and inked edges in `journal-web.json` (what it eats, where it shelters, who eats it). Every card it shows needs a home on a page (no orphan cards).
+- **Sketchbook** (`recipes/world/sketchbook.json` list and `art`): Matt draws the pencil art from `sketchbook-brief.html` (three tiers, `<id>-1..3.png` and moments into `Documents\Ebb\_sketches\`); list the moments it needs.
+- **Icon** in the item icon family (`src/ui/icons/`), same stroke and palette; no glyphs.
+- **Show me and hints:** its Show me rings where it lives; add it to the morning hints' `animalCame` and `showMe` lists where it fits (`recipes/world/morning-hints.json`).
+- **Sound** if it makes one (CC0, `recipes/audio/`), quiet in the soundscape.
+- **Seasons:** when it is active, dormant or away (`recipes/world/seasons.json`), and what its page says while it sleeps.
+- **Saves:** whatever it keeps (trust, names, places) goes in a save section that older saves read without breaking.
+- **Test link** (`?<id>`, and `?trust=` reaching each band) and a set-up link on any review page that checks it.
+
+**Depending on how far trust can go** (`presence.ceiling` and `bands`; F13 section 8):
+- **Watching only** (a ceiling of Tolerant, like damselflies): bands and their behaviour; no treats, no name, no gift. Say so on its page.
+- **Feeding and treats** (`presence.feedTrust` above 0): its `treat` block (kinds, how it takes them, `treatFeeds`), real food or real things only, one treat a creature a day; the treat's lines in `recipes/world/treats.json` (`coming`); any treat that is made gets a make with a **unique set of parts** in `cook.json`, plus its pack kind, icon and gather if new; a "treats" morning hint `showMe` entry; pencil-then-ink lines on its page.
+- **Naming** (named at `namingTrust` 0.5, like frogs, turtles, the hen): the name moment, the name on its card and page. Species that cannot be named (schools, swarms) get a group moment at 0.5 instead (the minnows rise to meet you).
+- **The gift** (doc 12): one gift per species, a seed or a tool, never a creature, at naming or the group's 0.5. `ecology.gift`, its card lines in `recipes/world/naturalist.json` `gifts` (with `stoneLine` for when it is laid on the gift stone), and what it opens next in the gift chain (`docs/13-progression-and-expansion.md`, "The gift chain"). Check it does not repeat another species' gift.
+- **Beyond the top band** (like the hen's Fond): only when Matt asks for it; its own reward, earned by time together, never by counting treats.
+
 ## Testing
 
 - Each feature ships with a short click-test list: what Matt should see and do, in plain language. Put it in the PR description.

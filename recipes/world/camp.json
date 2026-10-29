@@ -3,6 +3,9 @@
   "version": 1,
   "note": "The keeper's camp (docs/future/13). The pad's shape, level and lock fade live in the land recipe's camp block; this holds what the camp says and how its tent, fire ring, lantern, light, smoke and moths look and behave (E3). The pad is locked ground (CP-01): no brush, erosion or boulder moves it, and a loose stone, a spring or a pour of water tapped on it is refused with one quiet line on the island.",
   "words": {
+    "giftStone": { "name": "Gift stone", "lies": "On it:", "empty": "A flat stone with shells set on it. What the creatures give is left here.", "takeUp": "Take up",
+      "toSpot": "Taken up. It is on your gift spot now.", "taken": "Taken up.",
+      "knownRose": "The creatures near camp are getting used to it. They let you a little closer than they used to." },
     "clear": "The camp ground stays clear.",
     "tentSlot": { "name": "Tent ground", "line": "A level patch for your tent, out of the wind." },
     "tent": { "name": "Your tent", "line": "Canvas on two poles, your bedroll rolled inside." },
@@ -156,5 +159,22 @@
   "apothecary": { "mortarAt": [0.3, 0.63, 0.1, 0], "pestleAt": [0.1, 0.63, 0.16, 35] },
   "apothecaryNote": "Where the mortar and pestle sit on the apothecary bench's worktop (m, in the bench's own frame: x across it, y up, z toward where you work; then a turn in degrees). The worktop is 0.63 m up (read from the model).",
   "standing": { "reachM": 30, "trust": 0.01, "minWord": "tolerant" },
-  "standingNote": "CP-13: in catch-up only, once a game day of the absence, each creature already Tolerant or closer whose home lies within reachM of the pad gains trust (a feeding is 0.06)."
+  "standingNote": "CP-13: in catch-up only, once a game day of the absence, each creature already Tolerant or closer whose home lies within reachM of the pad gains trust (a feeding is 0.06).",
+  "giftStone": {
+    "stoneRadiiM": [0.27, 0.05, 0.22], "lump": 0.06, "sink": 0.25, "stoneColor": [0.15, 0.142, 0.13], "lichenColor": [0.36, 0.37, 0.26], "yawDeg": 20,
+    "shells": 4, "shellM": [0.045, 0.06], "shellRingShare": 0.62, "shellColors": [[0.78, 0.7, 0.6], [0.72, 0.56, 0.5], [0.82, 0.78, 0.7]],
+    "giftRingShare": 0.5, "giftApartRad": 1.5, "giftScale": 1.6, "standM": 0.4, "reachM": 0.9,
+    "pass": { "lengthM": 0.4, "shadow": 0.35 },
+    "tokens": {
+      "pondweed": { "shape": "bundle", "count": 5, "lenM": 0.12, "radiusM": 0.006, "color": [0.12, 0.22, 0.06], "tieColor": [0.32, 0.26, 0.16] },
+      "raft": { "shape": "bundle", "count": 6, "lenM": 0.14, "radiusM": 0.007, "color": [0.45, 0.38, 0.22], "tieColor": [0.3, 0.22, 0.12] },
+      "hen-feather": { "shape": "feather", "lenM": 0.11, "widthM": 0.03, "color": [0.36, 0.22, 0.11], "quillColor": [0.78, 0.72, 0.6] },
+      "parcel": { "shape": "parcel", "radiiM": [0.045, 0.03, 0.035], "color": [0.5, 0.44, 0.3] }
+    }
+  },
+  "giftStoneNote": "B1 C1 (docs/future/13 C-14, C-37): the gift stone made at the workbench (cook.json makes gift-stone) and drawn in code in the camp's gift slot. stoneRadiiM: the low flat stone's half sizes (x, y, z; m), lump (how uneven its outline is), sink (share of its height below the ground), stoneColor and the pale flecks of lichenColor (linear), yawDeg its turn from seaward. shells: how many shells sit along its far side, each shellM across (m) at shellRingShare of its radius, coloured from shellColors. A gift laid on it lies at giftRingShare of its radius on the near side, each giftApartRad round from the last, drawn giftScale times its real size (findable scale), and you stand standM off its edge (on the ring's side) and reach it within reachM. pass: the draw pass's contact shadow. tokens: how each kind of gift is drawn on the stone, by its gift id: a 'bundle' of count strands lenM long and radiusM thick tied with tieColor, a 'feather', or a small wrapped 'parcel' (any kind not listed).",
+  "known": { "reachM": 6, "perSeason": 0.25, "ringAtFull": 0.85, "restsPerSeason": 6 },
+  "knownNote": "A known place (C-36): within reachM of the pad's center, every creature's comfort ring is multiplied by 1 - (1 - ringAtFull) * known. known grows by perSeason for each season in which you rested at camp at least restsPerSeason times (Matt's brief, B1: 6; the spec's first draft said 2), up to 1, and never falls.",
+  "bed": { "checkS": 1, "edging": { "spacingM": 0.18, "outM": 0.08, "jitterM": 0.03, "sizeM": [0.08, 0.13], "color": [0.34, 0.32, 0.29], "shades": [1, 0.85, 1.12] } },
+  "bedNote": "The herb bed off the pad (C-24; the land's camp.offPad.bed): looked at every checkS seconds; once a plant stands in it, edging pebbles are drawn round it for good, spacingM apart along each side, outM outside the strip and up to jitterM off the line, sized sizeM (a scale on a 0.5 m pebble shape, so 0.1 is 5 cm across the long way), coloured color in shades."
 }

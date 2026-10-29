@@ -17,6 +17,7 @@ import { openBox } from '../ecology/fields.js';
 import { seasonOf, SECONDS_PER_HOUR } from '../../core/clock.js';
 import { observeAnimals, measureAnimal, foundFrog, foundSchool, namedFrog } from './creatures.js';
 import { buriedLine } from './buried.js';
+import { foundHen } from './hen.js';
 
 /** Season box bits. */
 export const GROW = 1, FLOWER = 2, DORMANT = 4;
@@ -155,7 +156,7 @@ export function measure(sp, state, hab, rec) {
 export const present = (rec, m) => (rec.kind === 'cover' || rec.kind === 'swarm' ? m.count >= rec.amount[0][0] : m.count > 0);
 
 /** Is a page an animal's (frogs, a creature; midges, a swarm)? @param {any} rec words.species[sp] */
-export const isAnimal = (rec) => rec?.kind === 'creature' || rec?.kind === 'swarm' || rec?.kind === 'school';
+export const isAnimal = (rec) => rec?.kind === 'creature' || rec?.kind === 'swarm' || rec?.kind === 'school' || rec?.kind === 'hen';
 
 /**
  * Note `kind` for a species, if its words have one.
@@ -341,12 +342,12 @@ export function learn(journal, sp, trigger, ctx) {
  * You found a frog yourself (a tap on it, or watching it from close by): its page inks and the
  * journal writes the moment (creatures.js).
  * @param {Journal} journal @param {{ state: any, hour: number, words: any }} ctx
- * @param {string} [sp] the page: frogs, or a school (minnows, dragonflies)
+ * @param {string} [sp] the page: frogs, the hen (hen.js), or a school (minnows, dragonflies)
  * @returns {{ journal: Journal, notes: Note[] }}
  */
 export function foundAnimal(journal, ctx, sp = 'frogs') {
   const c = { ...ctx, date: dateText(ctx.state?.seasons, ctx.words), know, copy };
-  return sp === 'frogs' ? foundFrog(journal, c) : foundSchool(journal, sp, c);
+  return sp === 'frogs' ? foundFrog(journal, c) : sp === 'hens' ? foundHen(journal, c) : foundSchool(journal, sp, c);
 }
 
 /**
@@ -407,6 +408,21 @@ export function liftedStone(journal, ctx, kind = 'stone') {
   const j = copy(journal);
   j.flags.push(fl);
   /** @type {Note[]} */ const notes = [{ hour: ctx.hour, date: dateText(ctx.state?.seasons, ctx.words), text, sp: null, kind: 'lifted' }];
+  j.notes = [...notes, ...j.notes].slice(0, ctx.words.notesKept);
+  return { journal: j, notes };
+}
+
+/**
+ * A line the journal writes once, kept by its flag (the camp becoming a known place, B1 C1:
+ * `camp:known`). A no-op after that, or with no words. @param {Journal} journal @param {string} fl
+ * @param {string} text @param {{ state: any, hour: number, words: any }} ctx @param {string} [kind]
+ * @returns {{ journal: Journal, notes: Note[] }}
+ */
+export function noteOnce(journal, fl, text, ctx, kind = 'camp') {
+  if (!text || journal.flags.includes(fl)) return { journal, notes: [] };
+  const j = copy(journal);
+  j.flags.push(fl);
+  /** @type {Note[]} */ const notes = [{ hour: ctx.hour, date: dateText(ctx.state?.seasons, ctx.words), text, sp: null, kind }];
   j.notes = [...notes, ...j.notes].slice(0, ctx.words.notesKept);
   return { journal: j, notes };
 }

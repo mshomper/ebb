@@ -11,8 +11,9 @@ import { materialMaps } from '../src/render/gltf.js';
 import { mapTexture } from '../src/render/passes/props.js';
 
 const SHADER = /* wgsl */ `
-struct U { viewProj: mat4x4f, eye: vec4f, sun: vec4f, place: vec4f, misc: vec4f, walker: vec4f };
-// place: x, y, z, yaw; misc: x size, y alpha cut, z ring (m, 0 none), w half the ground's size; walker: x, z, shown
+struct U { viewProj: mat4x4f, eye: vec4f, sun: vec4f, place: vec4f, misc: vec4f, walker: vec4f, marks: vec4f, marks2: vec4f };
+// place: x, y, z, yaw; misc: x size, y alpha cut, z ring (m, 0 none), w half the ground's size; walker: x, z, shown, sitting;
+// marks: the fire ring's x, z, then a treat's x, z; marks2: a dug hole's x, z, then which are shown (bits: 1 ring, 2 treat, 4 hole)
 @group(0) @binding(0) var<uniform> u: U;
 @group(0) @binding(1) var<storage, read> bones: array<mat4x4f>;
 @group(0) @binding(2) var colourMap: texture_2d<f32>;
@@ -78,7 +79,24 @@ struct GroundOut { @builtin(position) pos: vec4f, @location(0) world: vec3f };
   }
   if (u.walker.z > 0.5) {
     let dw = length(i.world.xz - u.walker.xy);
+    // A sitting walker is drawn wider and lower (a ring round the dark disc).
     c = mix(c, vec3f(0.12, 0.15, 0.14), 1.0 - smoothstep(0.24, 0.27, dw));
+    if (u.walker.w > 0.5) { c = mix(c, vec3f(0.12, 0.15, 0.14), (1.0 - clamp(abs(dw - 0.4) / fwidth(dw) - 1.0, 0.0, 1.0)) * 0.8); }
+  }
+  let bits = u32(u.marks2.w + 0.5);
+  if ((bits & 1u) != 0u) {
+    // The fire ring: a ring of stones round dark ashes.
+    let dr = length(i.world.xz - u.marks.xy);
+    c = mix(c, vec3f(0.18, 0.15, 0.13), 1.0 - smoothstep(0.24, 0.27, dr));
+    c = mix(c, vec3f(0.55, 0.53, 0.5), (1.0 - smoothstep(0.04, 0.07, abs(dr - 0.33))));
+  }
+  if ((bits & 2u) != 0u) {
+    let dt = length(i.world.xz - u.marks.zw);
+    c = mix(c, vec3f(0.62, 0.32, 0.3), 1.0 - smoothstep(0.06, 0.08, dt));
+  }
+  if ((bits & 4u) != 0u) {
+    let dh = length(i.world.xz - u.marks2.xy);
+    c = mix(c, vec3f(0.3, 0.22, 0.15), 1.0 - smoothstep(0.16, 0.2, dh));
   }
   let fade = 1.0 - smoothstep(u.misc.w * 0.8, u.misc.w, max(abs(i.world.x), abs(i.world.z)));
   return finish(mix(vec3f(0.62, 0.6, 0.55), c * 1.25, fade));
@@ -127,7 +145,7 @@ function makeStage(canvas, gpu) {
   const ground = device.createRenderPipeline({ label: 'hen-stage-ground', layout: pl,
     vertex: { module, entryPoint: 'vsGround' }, fragment: { module, entryPoint: 'fsGround', targets: [{ format }] },
     primitive: { topology: 'triangle-list' }, depthStencil });
-  const ubuf = device.createBuffer({ size: 144, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
+  const ubuf = device.createBuffer({ size: 176, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
   const bbuf = device.createBuffer({ size: 32 * 64, usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST });
   const sampler = device.createSampler({ magFilter: 'linear', minFilter: 'linear', mipmapFilter: 'linear', maxAnisotropy: 8 });
   const plain = device.createTexture({ size: [1, 1], format: 'rgba8unorm', usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST });
@@ -137,7 +155,7 @@ function makeStage(canvas, gpu) {
     { binding: 0, resource: { buffer: ubuf } }, { binding: 1, resource: { buffer: bbuf } },
     { binding: 2, resource: t.createView() }, { binding: 3, resource: sampler }] });
   let group = bind(plain);
-  const u = new Float32Array(36);
+  const u = new Float32Array(44);
   /** @type {{ v: GPUBuffer, i: GPUBuffer, n: number } | null} */ let mesh = null;
   /** @type {GPUTexture | null} */ let depth = null;
   let view = /** @type {any} */ (null);
@@ -184,7 +202,8 @@ function makeStage(canvas, gpu) {
     onGroundClick(fn) { onGround = fn; },
     /**
      * Draw a frame. @param {number} dt
-     * @param {{ x: number, z: number, yaw: number, size: number, cut: number, bones: Float32Array, ringM: number, walker: { x: number, z: number } | null, groundHalf: number, follow?: boolean }} s
+     * @param {{ x: number, z: number, yaw: number, size: number, cut: number, bones: Float32Array, ringM: number, walker: { x: number, z: number, sit?: boolean } | null, groundHalf: number, follow?: boolean,
+     *   fire?: { x: number, z: number } | null, treat?: { x: number, z: number } | null, hole?: { x: number, z: number } | null }} s
      */
     draw(dt, s) {
       const w = canvas.clientWidth * devicePixelRatio | 0, h = canvas.clientHeight * devicePixelRatio | 0;
@@ -201,7 +220,8 @@ function makeStage(canvas, gpu) {
       view = mat4.multiply(proj, mat4.lookAt(eye, cam.at, [0, 1, 0]));
       u.set(view, 0);
       u.set([...eye, 1, 0.5, 0.9, 0.4, 0, s.x, 0, s.z, s.yaw, s.size, s.cut, s.ringM, s.groundHalf,
-        s.walker?.x ?? 0, s.walker?.z ?? 0, s.walker ? 1 : 0, 0], 16);
+        s.walker?.x ?? 0, s.walker?.z ?? 0, s.walker ? 1 : 0, s.walker?.sit ? 1 : 0,
+        s.fire?.x ?? 0, s.fire?.z ?? 0, s.treat?.x ?? 0, s.treat?.z ?? 0, s.hole?.x ?? 0, s.hole?.z ?? 0, 0, (s.fire ? 1 : 0) + (s.treat ? 2 : 0) + (s.hole ? 4 : 0)], 16);
       device.queue.writeBuffer(ubuf, 0, u);
       device.queue.writeBuffer(bbuf, 0, s.bones);
       const enc = device.createCommandEncoder();

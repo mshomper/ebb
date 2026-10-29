@@ -72,6 +72,8 @@ import { createLift } from './world/pieces/lift.js';
 import { createUnderLogLive } from './world/finds/under-log-live.js';
 import { createSpring } from './world/creatures/spring-live.js';
 import { createHen } from './world/hen/index.js';
+import { takeFeather, featherLying, nameHen } from './world/hen/trust.js';
+import { featherMesh } from './world/hen/feather.js';
 import { moodsOf, mistyAutumnMorning, autumnStartOf } from './world/finds/autumn.js';
 import { HABITAT_CELLS, HABITAT_ORIGIN } from './world/growth/habitat.js';
 import { waterCellOf } from './world/water/grid.js';
@@ -107,9 +109,10 @@ import { createTeaReveal } from './world/creatures/tea-reveal.js';
 import { setActRate } from './world/figure/acts.js';
 import { ashMarks } from './world/gather/ashes.js';
 import { createDig } from './world/dig/index.js';
+import { createPerchSticks } from './world/creatures/perch-sticks.js';
 import { createSketchbook } from './world/sketchbook/index.js';
 import { createKit } from './world/kit/index.js';
-import { joinCarriers, packForSave } from './world/kit/model.js';
+import { joinCarriers, packForSave, wearsBand } from './world/kit/model.js';
 import { createPiles } from './world/pack/piles-live.js';
 import { setDownAtCamp } from './world/pack/route.js';
 import { createStores } from './world/pack/stores.js';
@@ -371,6 +374,9 @@ export async function startApp(canvas, hooks = {}) {
   // `?damselflies=N` likewise (any still pond suits them anyway).
   if (params.has('damselflies')) speciesRecipes.damselfly = testRecipe(speciesRecipes.damselfly);
   if (params.has('turtles')) speciesRecipes.turtle = testRecipe(speciesRecipes.turtle);
+  // The hen (docs/future/15): not in the species list (she has no needs grid); her trust and Fond
+  // run in the hourly tick from her recipe (src/world/hen/trust.js).
+  speciesRecipes.hen = await loadRecipe('species/hen');
   world.env.recipes.species = speciesRecipes;
   updateStore('world', () => world.state);
   /** One game hour of the shared tick, live. @param {number} hour */
@@ -481,7 +487,8 @@ export async function startApp(canvas, hooks = {}) {
   // `hooks.labCamera` (tools/frog-lab.html): the old close camera, whose own eye startles frogs.
   if (hooks.labCamera) camera.setClose(camRecipe.labClose);
   const presence = createPresence({ camera, cameraBody: !!hooks.labCamera, walker: () => walkRef?.presenceNow() ?? null, heightM: walkerRecipe.presence.heightM,
-    ringK: () => getStore('boonLift')?.comfort ?? 1 });
+    ringK: () => (getStore('boonLift')?.comfort ?? 1) * (wearsBand(getStore('kit'), 'hen-feather') ? speciesRecipes.hen.fond?.calmK ?? 1 : 1),
+    known: () => getStore('campKnown') ?? null });
   /** Where you are felt on foot (finds, food, finding by watching); null while you are above. */
   const you = () => walkRef?.you() ?? null;
   const creatures = createCreatures({ world, recipe: frogRecipe, terrain, water, ripples, camera, testFrogs, flora, floraFrame: () => floraFrame, presence, you });
@@ -628,10 +635,15 @@ export async function startApp(canvas, hooks = {}) {
     recipes: { frogspawn: speciesRecipes.frogspawn, toad: speciesRecipes.toad, frog: frogRecipe, slowworm: speciesRecipes.slowworm, lizard: speciesRecipes.lizard } });
   sim.addSystem(spring);
   finds.addSource(spring.shown);
-  // The hen (docs/future/15, slice 1; src/world/hen): a wary hen who lives about the scrub once the
-  // island has some. `?hen` (testing, unsaved) puts her under the view at once.
-  const hen = createHen({ recipe: await loadRecipe('species/hen'), seed, world, terrain, water, camera, presence,
-    hours: () => clock.display() / clock.SECONDS_PER_HOUR, test: params.has('hen') });
+  // The hen (docs/future/15, slices 1 and 2; src/world/hen): a hen who lives about the scrub once the
+  // island has some, and comes to know you (her trust, saved; Fond and her tail feather). `?hen`
+  // (testing, unsaved) puts her under the view at once; `&trust=0.5` starts her knowing you that
+  // well (0.2 Tolerant, 0.45 Curious, 0.65 Familiar); `&fond` makes her Fond with her feather laid.
+  const hen = createHen({ recipe: speciesRecipes.hen, seed, world, terrain, water, camera, presence,
+    hours: () => clock.display() / clock.SECONDS_PER_HOUR, hourIndex: () => clock.hourIndex(), test: params.has('hen'),
+    testFond: params.has('hen') && params.has('fond'), ring: () => ringPlace?.() ?? null, record: () => updateStore('world', () => world.state) });
+  on('dig:dug', (/** @type {{ x: number, z: number }} */ p) => hen.dug(p.x, p.z));
+  on('world:ticked', () => hen.ticked());
   // Lift, on foot (docs/future/11 L3a; src/world/pieces/lift.js): a kept log's or a loose stone's card
   // offers Lift within reach, and what lives underneath is rolled for the day.
   const underLogRecipe = await loadRecipe('species/under-log');
@@ -689,18 +701,22 @@ export async function startApp(canvas, hooks = {}) {
   // Treats (P2h; src/world/creatures/treats.js): Set out on a pouch's card puts a handful down in front
   // of you and the nearest creature that likes it comes and eats it at once; one nobody wants fades
   // back into the ground. `?treats` (a test link, unsaved): a pouch of wrack, a pouch of leaf packs and
-  // a handful of fallen leaves (with `&camp=bench`, enough to make another leaf pack).
+  // a handful of fallen leaves (with `&camp=bench`, enough to make another leaf pack), and a pouch of
+  // pondweed strands for the minnows (B1 P1).
   const treats = createTreats({ recipe: await loadRecipe('world/treats'), pack, walk, hour: () => clock.worldT() / 3600,
     depth: (x, z) => water.sampleLive(x, z)?.depth ?? 0,
     species: [{ key: 'frogs', rec: frogRecipe, live: creatures },
-      ...swarmSpecies(speciesRecipes).filter((rec) => rec.treat).map((rec) => ({ key: keyOf(rec), rec, live: schools.find((s) => s.id === keyOf(rec)) ?? null }))] });
+      ...swarmSpecies(speciesRecipes).filter((rec) => rec.treat).map((rec) => ({ key: keyOf(rec), rec, live: schools.find((s) => s.id === keyOf(rec)) ?? null })),
+      // The hen (docs/future/15): worms and seedheads, on land; she pecks them up where they lie.
+      { key: 'hens', rec: speciesRecipes.hen, live: { treat: (x, z, t) => hen.treat(x, z, t, (tid) => emitDeferred('treat:taken', { tid })) } }] });
+  on('treat:taken', (/** @type {{ tid?: number }} */ p) => { if (p?.tid !== undefined) hen.treatGone(p.tid); });
   updateStore('treatKinds', () => pack.recipe.kinds.map((/** @type {any} */ k) => k.id).filter((/** @type {string} */ k) => treats.isTreat(k)));
-  if (params.has('treats') && !back) { pack.add('wrack', 3); pack.add('leaf-pack', 3); pack.add('leaves', 1); }
+  if (params.has('treats') && !back) { pack.add('wrack', 3); pack.add('leaf-pack', 3); pack.add('leaves', 1); pack.add('pondweed.strands', 3); }
   // `?turtles=N&treats`: worms, two lily leaf parcels, and a lily leaf with worms and cord to make
   // another at the bench (`&camp=bench`), in place of the frogs' and minnows' treats; you stand on
   // the bank by the turtles, facing them, so a treat set out lies at the water's edge.
   if (params.has('treats') && params.has('turtles') && !back) {
-    for (const k of ['wrack', 'leaf-pack', 'leaves']) pack.take(k, 3);
+    for (const k of ['wrack', 'leaf-pack', 'leaves', 'pondweed.strands']) pack.take(k, 3);
     // At camp the pouches go to the bench's own kit too, so no made parcels: you make one.
     pack.add('worms', 3); if (!params.has('camp')) pack.add('lily-parcel', 2); pack.add('lilies.leaf', 1); pack.add('rush-cord', 1);
     // With `&camp=...` you start at camp instead, to make a parcel at the bench.
@@ -750,9 +766,18 @@ export async function startApp(canvas, hooks = {}) {
   // slots, the fire and the lantern as small lights, smoke and moths, and a night's rest in the tent.
   const camp = createCamp({ recipe: campRecipe, seed, walk, terrain, water, clock, orbit: skyRecipe.orbit, camera, world, piles,
     seasons: seasonsRecipe, lighting, pack, shadowBias: shadowPass.bias, low: tier === 'low', tier, poses: (await loadRecipe('world/figure')).poses,
-    beat: () => intro.live?.intro.current?.id ?? null, cook: await loadRecipe('world/cook') });
+    beat: () => intro.live?.intro.current?.id ?? null, cook: await loadRecipe('world/cook'), sowing: sowingRecipe });
   sim.addSystem(camp);
   ringPlace = camp.ringPlace;
+  // The hen's tail feather (docs/future/15 slice 2b): drawn with the camp's models where it lies.
+  const featherR = speciesRecipes.hen.fond?.feather;
+  if (featherR) {
+    camp.props.addMesh('hen-feather', featherMesh(featherR), featherR.srgb, featherR.rough);
+    camp.addProps(() => {
+      const f = hen.featherAt();
+      return f ? [{ key: 'hen-feather', x: f.x, y: terrain.sampleHeight(f.x, f.z), z: f.z, yaw: f.yaw, scale: featherR.scale }] : [];
+    });
+  }
   keeps = camp.stations.keeps;
   // Solid things the walker cannot pass through (src/world/walk/solids-live.js): camp pieces, logs,
   // stones and the boat.
@@ -786,6 +811,31 @@ export async function startApp(canvas, hooks = {}) {
     worldT: () => clock.worldT(), test: params.has('shovel'), propsRecipe: campRecipe.props, shadowBias: shadowPass.bias, noteKept: (n) => noteKept(n) });
   dig.setKeepsakeWords((n) => keepsakeWords(n, keepsakesRecipe));
   sim.addSystem(dig);
+  // The perch stick (B1 P1; src/world/creatures/perch-sticks.js): once the dragonflies are found, the
+  // sticks pouch's card stands a handful upright in a pond's shallows, a piece they rest on. `?perch`
+  // with `&dragonflies=N` (a test link, unsaved): two handfuls of sticks, and you kneel at the edge
+  // of their pond, facing the shallows.
+  const perchSticks = createPerchSticks({ recipe: await loadRecipe('world/treats'), seed, pieces, pack, walk, terrain, water });
+  sim.addSystem(perchSticks);
+  if (params.has('perch') && !back) {
+    pack.add('sticks', 2);
+    let stood = false;
+    sim.addSystem({ id: 'perch-test', tick() {
+      const home = stood ? null : world.state?.creatures?.dragonflies?.groups?.[0];
+      if (!home) return;
+      const P = perchSticks.recipe, deep = (/** @type {number} */ x, /** @type {number} */ z) => water.sampleLive(x, z)?.depth ?? 0;
+      for (let d = 1; d <= 8 && !stood; d += 0.5) for (let i = 0; i < 24 && !stood; i++) {
+        // Dry ground, with the shallows a step or two in front, toward the pond.
+        const a = (i / 24) * 2 * Math.PI, x = home.x + Math.sin(a) * d, z = home.z + Math.cos(a) * d, yaw = a + Math.PI;
+        if (deep(x, z) > 0.01) continue;
+        const w = deep(x + Math.sin(yaw) * 1.1, z + Math.cos(yaw) * 1.1);
+        if (w < P.shallowM[0] || w > P.shallowM[1] || !walk.placeAt(x, z, yaw, 'stand')) continue;
+        camera.setPose({ ...camera.pose(), target: [x, terrain.sampleHeight(x, z), z], yaw: yaw + Math.PI, distance: campRecipe.rest.viewDistanceM, pitch: (campRecipe.rest.viewPitchDeg * Math.PI) / 180 });
+        walk.downHere();
+        stood = true;
+      }
+    } });
+  }
   shadowPass.addCaster(dig.props.caster);
   // The walker's sketchbook (P2i I5; src/world/sketchbook): Sketch on the here-bar with charcoal
   // sticks in the pack and a creature, plant or find near the middle of the view.
@@ -796,6 +846,8 @@ export async function startApp(canvas, hooks = {}) {
   sim.addSystem(sketchbook);
   // The walker's kit (the Walker page, K1; src/world/kit): hat, lantern, in hand, coat and carrier.
   const kit = createKit({ recipe: await loadRecipe('world/kit'), pack, you: () => (walk.below ? walk.you() : null) });
+  // The hen-feather hat band (docs/future/15 slice 2b): painted round the hat while the kit wears it.
+  sim.addSystem({ id: 'hat-band', tick() { walk.figure?.()?.wearHatBand?.(wearsBand(kit.kit(), 'hen-feather')); } });
   sim.addSystem(kit);
   // `?sketch` (a test link, unsaved): a full pouch of charcoal sticks in the pack.
   if (params.has('sketch') && !back) pack.add('charcoal-sticks', 3);
@@ -831,12 +883,15 @@ export async function startApp(canvas, hooks = {}) {
     const hearthLink = params.get('camp') === 'hearth';
     // `?camp=carriers` (P2f): the workbench built and the pack holding a satchel's and a basket's parts.
     const carriersLink = params.get('camp') === 'carriers';
+    // `?camp=gift` (B1 C1): the workbench built and the pack holding the gift stone's parts.
+    const giftLink = params.get('camp') === 'gift';
     const kit = carriersLink ? [['rushes.stems', 1], ['willow.withies', 1], ['rush-cord', 4]]
+      : giftLink ? [['flat-stones', 1], ['shells', 2]]
       : benchesLink ? [['willow.withies', 1], ['sticks', 1], ['rush-cord', 2], ['flat-stones', 1], ['pebbles', 1], ['rushes.stems', 2], ['clay', 1], ['watermint.leaves', 1]] : apo ? [['shells', 3], ['watermint.leaves', 2], ['chamomile.flowers', 2], ['sticks', 3], ['pebbles', 2], ['rushes.stems', 3]]
       : hearthLink ? [['clay', 3], ['sand', 2], ['crushed-shell', 1], ['sticks', 3]]
       : [['flat-stones', 3], ['sticks', 2], ['rush-cord', 1], ['pebbles', 2]];
     for (const [k, n] of kit) pack.add(/** @type {string} */ (k), /** @type {number} */ (n));
-    if (params.get('camp') === 'bench' || apo || benchesLink || hearthLink || carriersLink) camp.stations.debug.buildNow('workbench');
+    if (params.get('camp') === 'bench' || apo || benchesLink || hearthLink || carriersLink || giftLink) camp.stations.debug.buildNow('workbench');
     if (benchesLink) camp.stations.debug.buildNow('apothecary');
     if (apo) { camp.stations.debug.buildNow('apothecary'); for (const m of ['rack', 'mortar', 'hamper']) camp.stations.debug.placeNow(m); }
     if (hearthLink) {
@@ -989,6 +1044,8 @@ export async function startApp(canvas, hooks = {}) {
     keepsakes.pass,
     nets.pass,
     ...packDraw.passes,
+    // The gift stone, what lies on it and the herb bed's edging pebbles (B1 C1).
+    camp.gifts.pass,
     pieces.pass,
     // The camp's tent, fire ring and lantern, drawn with their own paint maps.
     camp.props,
@@ -1138,6 +1195,9 @@ export async function startApp(canvas, hooks = {}) {
     // under it: the ray is tried against each one's own height.
     const lifted = camp.liftedUnderRay(r.o, r.d);
     if (lifted) return lifted;
+    // A perch stick stands up out of the water (B1 P1): the ray is tried against the stick itself.
+    const stick = perchSticks.underRay(r.o, r.d);
+    if (stick) return /** @type {any} */ (stick);
     for (const h of [0.3, 0.2, 0.12, 0.05]) {
       if (r.d[1] > -1e-4) break;
       const t = (point[1] + h - r.o[1]) / r.d[1];
@@ -1165,7 +1225,8 @@ export async function startApp(canvas, hooks = {}) {
     const card = cards?.cardAt(p[0], p[2], p[1]) ?? null;
     const kind = clickKind(card, cards?.species ?? {});
     const wx = card?.wx ?? p[0], wz = card?.wz ?? p[2];
-    const plan = clickPlan(kind, walk.distTo(wx, wz), card?.r ?? 0, walkerRecipe.click, !!card?.gathers?.length);
+    // A thing out in the water (a perch stick) opens from the bank: its reach is wider than its ring.
+    const plan = clickPlan(kind, walk.distTo(wx, wz), card?.reachR ?? card?.r ?? 0, walkerRecipe.click, !!card?.gathers?.length);
     cardOnArrival = null;
     if (plan.kind === 'card') { emitDeferred('look:tapped', { x: sx, y: sy, point: p }); return; }
     if (!getStore('identify')?.pinned) updateStore('identify', () => null);
@@ -1223,7 +1284,7 @@ export async function startApp(canvas, hooks = {}) {
     const q = pc && p ? [pc.x, p[1], pc.z] : p;
     const card = q ? cards.cardAt(q[0], q[2], q[1]) : null;
     if (!card || !q) return null;
-    const plan = clickPlan(clickKind(card, cards.species), walk.distTo(card.wx ?? q[0], card.wz ?? q[2]), card.r ?? 0, walkerRecipe.click, !!card.gathers?.length);
+    const plan = clickPlan(clickKind(card, cards.species), walk.distTo(card.wx ?? q[0], card.wz ?? q[2]), card.reachR ?? card.r ?? 0, walkerRecipe.click, !!card.gathers?.length);
     if (plan.kind === 'walk') return null;
     const g = card.gathers?.[0];
     const at = g?.spot ? [g.spot.x, g.spot.z] : Number.isFinite(g?.x) ? [g.x, g.z] : [card.wx ?? q[0], card.wz ?? q[2]];
@@ -1824,12 +1885,32 @@ export async function startApp(canvas, hooks = {}) {
       case 'music.pass':
         updateStore('music', (m) => setVerdict(m, a.heart, 'pass'));
         break;
+      // The hen's tail feather taken up (docs/future/15 slice 2b): the hen-feather hat band, worn at once.
+      case 'hen.feather': {
+        if (!featherLying(world.state?.creatures?.hens)) break;
+        world.state = takeFeather(world.state, clock.hourIndex());
+        updateStore('world', () => world.state);
+        kit.giveBand('hen-feather');
+        if (getStore('identify')?.feather) updateStore('identify', () => null);
+        const W = speciesRecipes.hen.fond?.feather?.words ?? {};
+        emitDeferred('progress:gifted', { id: 'hen-feather', title: W.title, line: W.gift, icon: 'feather', page: 'hens' });
+        break;
+      }
       case 'settings.set':
         updateStore('settings', (s) => { Object.assign(s, a.patch); });
         break;
       // A name for a frog that knows you well enough (S6c-3, the tap card): kept with the island.
       case 'creature.name': {
         const name = cleanName(a.name);
+        // The hen (docs/future/15): once she knows you to presence.namingTrust.
+        if (a.sp === 'hens') {
+          const next = nameHen(world.state, name, clock.hourIndex(), speciesRecipes.hen.presence);
+          if (next === world.state) break;
+          world.state = next;
+          updateStore('world', () => world.state);
+          emitDeferred('creature:named', { species: 'hens', id: 1, name });
+          break;
+        }
         // A turtle (bonds.js): its own trust, the group's and what it ate, reaches namingTrust.
         if (a.sp === 'turtles') {
           const S = world.state?.creatures?.turtles, P = world.env.recipes?.species?.turtle?.presence;
@@ -2237,8 +2318,12 @@ export async function startApp(canvas, hooks = {}) {
     intro,
     /** The keeper's camp: the journal asks it what a click at camp lands on; tools read the fire. */
     camp,
+    /** The hen (docs/future/15): taps on her and her feather, her band, the test pages. */
+    hen,
     /** Digging: the journal asks it whether a tap landed on an open hole. */
     dig,
+    /** Perch sticks (B1 P1): the journal asks whether a tap landed on one; tests stand and take them up. */
+    perchSticks,
     /**
      * Testing helpers, on window.ebb with `?debug`: autumn's misty morning and kept logs, skipping to
      * a time of year, and bringing a settled school or swarm. They change this island's time and

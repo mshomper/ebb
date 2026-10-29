@@ -14,9 +14,10 @@ import { hourIndex, display, SECONDS_PER_HOUR, HOURS_PER_DAY } from '../../core/
 import { onAction } from '../../input/actions.js';
 import { weatherAt } from '../weather.js';
 import { tideParams } from '../tide.js';
-import { initialJournal, learn, notePlanted, momentsNow, catchMoments, foundAnimal, foundFind, namedAnimal, flag, noteGift, liftedStone, stormShells } from './observe.js';
+import { initialJournal, learn, notePlanted, momentsNow, catchMoments, foundAnimal, foundFind, namedAnimal, flag, noteGift, noteOnce, liftedStone, stormShells } from './observe.js';
 import { journalLook } from './look.js';
 import { describe, identify, showMeSpot, momentKind, frogCard, turtleCard } from './describe.js';
+import { henCard } from './hen.js';
 import { groundKind, groundCard, groundSurvey, describeGround, groundSpot } from './ground.js';
 import { almanac } from './almanac.js';
 import { describeWeb } from './web.js';
@@ -151,6 +152,12 @@ export function createJournal(opts) {
     // A frog first: they are small, and finding one is the point.
     const frog = creatures?.frogAt(x, z);
     if (frog) return frogCard(frog, world.state, words, world.env.recipes?.species?.frog?.presence);
+    // The hen (docs/future/15): her word and her name; and her tail feather lying at camp.
+    const hen = /** @type {any} */ (opts).hen;
+    const hn = hen?.henAt?.(x, z);
+    if (hn && words.species.hens) return henCard(hn, world.state, words, world.env.recipes?.species?.hen?.presence);
+    const fe = hen?.featherCard?.(x, z) ?? null;
+    if (fe) return fe;
     // Then a school of minnows under the water, or a dragonfly in the air above it.
     for (const s of opts.schools ?? []) {
       const hit = s.at(x, z, y);
@@ -196,6 +203,9 @@ export function createJournal(opts) {
     // Then an open hole you dug (docs/future/13 10.2; src/world/dig): its layer, and Dig deeper.
     const dg = /** @type {any} */ (opts).dig?.cardAt?.(x, z) ?? null;
     if (dg) return dg;
+    // Then a perch stick stood in the shallows (B1 P1; src/world/creatures/perch-sticks.js): Take up.
+    const ps = /** @type {any} */ (opts).perch?.cardAt?.(x, z) ?? null;
+    if (ps) return ps;
     const pc = opts.pieces?.pieceAt(x, z);
     const pw = pc && words.pieces?.[pc.kind];
     if (pw && pc.kind === 'pile') {
@@ -288,7 +298,7 @@ export function createJournal(opts) {
     if (card.keepsake && card.mark) emitDeferred('keepsake:seen', { n: card.mark });
     // The camp's tent and ring (src/world/camp) are not lives or finds, and things to gather on bare
     // ground have a card of their own: no page and no moment for either.
-    if (card.keepsake || card.net || card.camp || card.gatherOnly || card.dig) return;
+    if (card.keepsake || card.net || card.camp || card.gatherOnly || card.dig || card.feather) return;
     // A loose stone or a log: its card offers Lift on foot (src/world/pieces/lift.js); a tap alone
     // looks, and lifts nothing.
     if (card.piece) {
@@ -303,7 +313,7 @@ export function createJournal(opts) {
       return;
     }
     // Tapping a frog, or a school of minnows, is finding it: its page inks (once).
-    if (card.sp === 'frogs' || words.species[card.sp]?.kind === 'school') found(card.sp);
+    if (card.sp === 'frogs' || words.species[card.sp]?.kind === 'school' || words.species[card.sp]?.kind === 'hen') found(card.sp);
     // Tapping a find is finding it, the same way.
     // A shell is found one kind at a time, each written down once.
     const item = /** @type {any} */ (card).item ?? null;
@@ -452,6 +462,8 @@ export function createJournal(opts) {
     }),
     // The island gave you something (src/world/expansion.js): written once, shown as a card.
     on('progress:gifted', (/** @type {any} */ g) => commit(noteGift(journal, g, { state: world.state, hour: hourIndex(), words }))),
+    // The camp became a known place (B1 C1, src/world/camp/gift-stone.js): written once.
+    on('camp:known-rose', (/** @type {{ text: string }} */ p) => commit(noteOnce(journal, 'camp:known', p.text, { state: world.state, hour: hourIndex(), words }))),
     // Watching a frog (or a school) from close by finds it too (src/world/creatures/index.js, schools.js).
     on('creature:found', (/** @type {{ species: string }} */ p) => {
       if (p.species === 'frogs' || words.species[p.species]?.kind === 'school') found(p.species);
@@ -459,11 +471,12 @@ export function createJournal(opts) {
     // You named a frog (S6c-3, src/app.js): the moment is written, and its open card takes the name.
     // A turtle too (bonds.js): its card the same way.
     on('creature:named', (/** @type {{ species: string, id: number, name: string }} */ p) => {
-      if (p.species !== 'frogs' && p.species !== 'turtles') return;
+      if (p.species !== 'frogs' && p.species !== 'turtles' && p.species !== 'hens') return;
       commit(namedAnimal(journal, p.name, { state: world.state, hour: hourIndex(), words }, p.species));
       const c = get('identify');
       if (c?.sp === p.species && c.id === p.id) {
         const card = p.species === 'frogs' ? frogCard({ x: c.wx, z: c.wz, id: c.id }, world.state, words, world.env.recipes?.species?.frog?.presence)
+          : p.species === 'hens' ? henCard({ x: c.wx, z: c.wz }, world.state, words, world.env.recipes?.species?.hen?.presence)
           : turtleCard({ x: c.wx, z: c.wz, id: c.id }, world.state, words, world.env.recipes?.species?.turtle?.presence);
         update('identify', () => ({ ...c, ...card }));
       }
