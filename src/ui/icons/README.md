@@ -54,6 +54,8 @@ Size and color come from CSS: set `width`/`height` on `.icon` and `color` on the
 | `lift` | a log tipping up off the ground line from its far end, the damp patch beneath, a small arc: Lift on a stone's or a log's card, on foot (L3a) |
 | `carry` | a log lifted off the ground line, an arrow up above it: Carry on a stone's or a log's card (yours once driftwood washes up) |
 | `turtle` | a domed shell marked in plates on a stone's top, head raised: the pond turtles' page |
+| `hen` | a small hen in side view on the ground line, comb, beak and a short raised tail: the hen's page and card |
+| `feather` | a single curved tail feather lying aslant, its quill and a few barbs: the hen's tail feather, Take it up, the hat band |
 | `toad` | a squat body low on the ground, walking, its back dotted with warts: the common toad's page |
 | `frogspawn` | jelly eggs in a clump just under a water line, a dark egg in each: the frogspawn page |
 | `slowworm` | a long smooth body in a gentle S on the ground line beside a log's cut end: the slow worm's page |

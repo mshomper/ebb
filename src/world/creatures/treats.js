@@ -62,7 +62,10 @@ export function createTreats(o) {
       const water = !!depth && !!w && swimM > 0;
       // A treat for the turtles (treat.edge) is set on the bank at the water's edge: dry ground with
       // water deep enough to swim within edge.withinM, so one can take it from the water.
-      const E = likersOf(kind, o.species).map(({ T }) => T.edge).find(Boolean);
+      // A creature that takes it on land (the hen's worms) takes it wherever you are; the edge rule
+      // then holds only when you stand at the water's edge.
+      const land = likersOf(kind, o.species).some(({ key, T }) => !T.edge && !T.water && !!o.species.find((s) => s.key === key)?.live);
+      let E = likersOf(kind, o.species).map(({ T }) => T.edge).find(Boolean);
       /** @param {number} x @param {number} z */
       const atEdge = (x, z) => {
         if (!depth || depth(x, z) > 0.03) return false;
@@ -82,6 +85,10 @@ export function createTreats(o) {
         }
         return null;
       };
+      if (E && land) {
+        const at = o.walk.feedPoint(E.aheadM ?? R.setOutM, R.setOutTurnDeg, atEdge, true);
+        if (!at || !atEdge(at[0], at[2])) E = undefined;
+      }
       // Turned so it lies in view, but toward the water if straight ahead is (a leaf pack for a
       // pool), or on land if that is (wrack for the frogs).
       const p = E ? o.walk.feedPoint(E.aheadM ?? R.setOutM, R.setOutTurnDeg, atEdge, true)

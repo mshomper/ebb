@@ -686,6 +686,25 @@ const ICONS = {
     <path d="M7 15.5L6.3 17.8M16.4 15.5L17.1 17.8"/>
     <path d="M8.6 11.2L10.2 13.2M12 8.5V12.4M15.4 11.2L13.8 13.2"/>
     <path d="M2.5 20.5H21.5"/>`,
+  // The feral hen (docs/future/15): from the side, standing on the ground, a small comb and beak,
+  // her short tail raised behind, the wing folded along her flank.
+  hen: `
+    <path ${ACCENT} d="M15.5 8.6C17.6 9.6 18.6 11.4 18 13.4C17.2 16 14.6 17.2 11.6 17.2C8.4 17.2 6 15.6 5.6 12.8L4 6.8C5.8 7.4 7.6 9 8.6 10.4C10.6 10.8 13 10.4 14.6 8.2Z"/>
+    <path d="M15.5 8.6C17.6 9.6 18.6 11.4 18 13.4C17.2 16 14.6 17.2 11.6 17.2C8.4 17.2 6 15.6 5.6 12.8L4 6.8C5.8 7.4 7.6 9 8.6 10.4C10.6 10.8 13 10.4 14.6 8.2"/>
+    <circle cx="16.8" cy="6.8" r="1.9"/>
+    <path d="M15.6 5.2C15.6 4.2 16.5 3.9 16.9 4.6C17.3 3.9 18.3 4.1 18.2 5.1"/>
+    <path d="M18.6 6.3L20.6 7.1L18.6 7.8"/>
+    <circle cx="17.3" cy="6.5" r="0.55" fill="currentColor" stroke="none"/>
+    <path d="M8.8 12.6C10.8 14.6 13.6 14.6 15.4 12.6"/>
+    <path d="M10.5 17.2L10 20.5M13.5 17L14 20.5"/>
+    <path d="M2.5 20.5H21.5"/>`,
+  // A hen's feather (the hen's gift, docs/future/15): one curved tail feather lying corner to
+  // corner, its quill running through the vane and a few barbs drawn off it.
+  feather: `
+    <path ${ACCENT} d="M6.5 17.5C6 12.5 9.5 6.5 19.5 4.5C18.5 13 13 17.5 6.5 17.5Z"/>
+    <path d="M6.5 17.5C6 12.5 9.5 6.5 19.5 4.5C18.5 13 13 17.5 6.5 17.5Z"/>
+    <path d="M3.5 20.5C8 16 13 10.5 19.5 4.5"/>
+    <path d="M9.5 14.8L8.3 11.6M12.4 11.8L11.8 8.4M10.8 13.5L13.6 15.4M13.8 10.4L16.6 11.8"/>`,
   // Common toad (spring marker): squat and low on the ground, walking, its back dotted with warts.
   toad: `
     <path ${ACCENT} d="M3.5 18C3.8 14.4 7.2 12.2 11.5 12C12.4 10.4 15 10.2 16.2 11.6C18.6 12 20.5 13.4 20.5 15C20.5 16.6 18.8 17.4 16.6 17.6L15 18Z"/>

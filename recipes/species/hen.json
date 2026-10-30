@@ -3,8 +3,8 @@
   "id": "hen",
   "key": "hens",
   "name": "Hen",
-  "version": 1,
-  "note": "The feral hen (docs/future/15), slice 1: a wary hen in the scrub, live only (src/world/hen). MODEL: Matt's supplied 'Chicken Rig' by FourthGreen (CC BY-NC 4.0, assets/models/hen/CREDITS.md), already in real metres (0.42 m tall, head toward +z). bones: the kept bones, each named for a joint of the file (its name without the number); every other joint folds into its nearest kept ancestor (the toes into each foot). The file's two wing joints carry no skin (its wings are part of the body), so they are not kept and her wings do not move apart from the body. The Idle clip plays from the file under the code clips (idleW: its share while she stands). body.displayScale 1.15 (Matt 2026-10-27: a hen just above the walker's knee); alphaCut: the feather edges' alpha below which nothing is drawn. HOME: the scrub, a cluster of at least minBushes gorse or grey willow bushes (species) at size minSize or more within clusterM of one another; she lives within rangeM of its middle and stays out of sight while the island has none (`?hen`, testing, unsaved: at once, testAheadM ahead of the view, living within testRangeM). LIFE (src/world/hen/life.js): by day she forages: walks to a seeded spot in her range, then scratches (two backward kicks, alternating feet, a step back, a look down with one eye, one to three pecks), cycles times, then stands a while (idleS) or walks on. WARY (presence): the walker inside wary.ringM (real metres, scaled by posture and gaze as other creatures' rings, and a tea's ringK) makes her freeze upright (alertS), then run (runMps) away from the walker and toward cover, until she is past calmM and has run at least fleeMinS; inside panicShare of the ring she runs at once. The camera above never startles her. At night (outside hours) she walks to the middle of the scrub and stands there. MOTION (src/world/hen/motion.js): code clips on her bones, timed to distance (a stride is strideM of travel, so feet never slide): the walk, the run (longer strides, body low), the kick, the peck, the look, the alert; and the head lock (headLock): while she walks her head holds still in the world, then jumps forward lockM.",
+  "version": 2,
+  "note": "The feral hen (docs/future/15), slice 1: a wary hen in the scrub, live only (src/world/hen). MODEL: Matt's supplied 'Chicken Rig' by FourthGreen (CC BY-NC 4.0, assets/models/hen/CREDITS.md), already in real metres (0.42 m tall, head toward +z). bones: the kept bones, each named for a joint of the file (its name without the number); every other joint folds into its nearest kept ancestor (the toes into each foot). The file's two wing joints carry no skin (its wings are part of the body), so they are not kept and her wings do not move apart from the body. The Idle clip plays from the file under the code clips (idleW: its share while she stands). body.displayScale 1.15 (Matt 2026-10-27: a hen just above the walker's knee); alphaCut: the feather edges' alpha below which nothing is drawn. HOME: the scrub, a cluster of at least minBushes gorse or grey willow bushes (species) at size minSize or more within clusterM of one another; she lives within rangeM of its middle and stays out of sight while the island has none (`?hen`, testing, unsaved: at once, testAheadM ahead of the view, living within testRangeM). LIFE (src/world/hen/life.js): by day she forages: walks to a seeded spot in her range, then scratches (two backward kicks, alternating feet, a step back, a look down with one eye, one to three pecks), cycles times, then stands a while (idleS) or walks on. WARY (presence): the walker inside wary.ringM (real metres, scaled by posture and gaze as other creatures' rings, and a tea's ringK) makes her freeze upright (alertS), then run (runMps) away from the walker and toward cover, until she is past calmM and has run at least fleeMinS; inside panicShare of the ring she runs at once. The camera above never startles her. At night (outside hours) she walks to the middle of the scrub and stands there. MOTION (src/world/hen/motion.js): code clips on her bones, timed to distance (a stride is strideM of travel, so feet never slide): the walk, the run (longer strides, body low), the kick, the peck, the look, the alert; and the head lock (headLock): while she walks her head holds still in the world, then jumps forward lockM. TRUST (slice 2, src/world/hen/trust.js, bands.js): see presence, bands, treat and fond.",
   "model": "assets/models/hen/hen.glb",
   "bones": [
     { "name": "root", "joint": "Root_M" },
@@ -32,15 +32,7 @@
     "wetSpecular": { "roughness": 0.85, "strength": 0.12 },
     "alphaCut": 0.5
   },
-  "home": {
-    "species": ["gorse", "willow"],
-    "minSize": 0.35,
-    "minBushes": 3,
-    "clusterM": 4,
-    "rangeM": 7,
-    "testRangeM": 5,
-    "testAheadM": 8
-  },
+  "home": { "species": ["gorse", "willow"], "minSize": 0.35, "minBushes": 3, "clusterM": 4, "rangeM": 7, "testRangeM": 5, "testAheadM": 8 },
   "hours": [6, 20.5],
   "life": {
     "walkMps": 0.32,
@@ -69,6 +61,86 @@
     "settleS": [2, 4],
     "multipliers": { "posture": { "stand": 1, "kneel": 0.8, "sit": 0.65 }, "gaze": { "watch": 1.15, "away": 0.9 }, "gazeConeDeg": 30 }
   },
+  "presence": {
+    "_trust": "Her trust (F13 section 8, as the frogs'): 0..1, saved (state.creatures.hens), only ever grows. bands: where Tolerant, Curious and Familiar begin; ceiling Familiar. watch: the walker still (slower than stillMps) within reachM of her for at least minS, closed when you move or at capS, earns trustPerMin a real minute (sitting counts sitBoost times). A treat she likes (treat) is worth treatFeeds of feedTrust, once a game day. namingTrust: she can be named then, as the frogs.",
+    "watch": { "reachM": 9, "minS": 20, "capS": 600, "trustPerMin": 0.006, "stillMps": 0.05, "sitBoost": 2 },
+    "multipliers": { "posture": { "stand": 1, "kneel": 0.8, "sit": 0.65 }, "gaze": { "watch": 1.15, "away": 0.9 }, "gazeConeDeg": 30 },
+    "feedTrust": 0.0225,
+    "treatFeeds": 2.5,
+    "bands": [0.2, 0.45, 0.65],
+    "ceiling": "familiar",
+    "namingTrust": 0.5
+  },
+  "bands": {
+    "note": "What she does at each word (src/world/hen/bands.js, life.js). ringM: the walker inside this (real metres, scaled by posture, gaze and the calm boons as other creatures' rings) sends her off: at Wary she freezes then runs (wary above), past it she only steps aside, briskly, to keepM. keepM: how near she forages to a walker within joinM of her (Tolerant on). visitEveryS: Curious and past it, she comes to see you every so often, to visitM, and looks. dig: a hole you dig within dig.noticeM of her (Curious on) brings her to its edge, dig.waitM from it, to wait and peck at the spoil for dig.waitS. follow (Familiar on): a walker moving off past follow.farM and within follow.leashM of her home draws her after you to a loose follow.nearM..farM, running when past follow.runM. dusk (Familiar on): from dusk.fromH to dusk.untilH she goes to the fire ring and settles dusk.ringM from it for the night (until H3 adds a roost); with no ring laid, to her scrub. fond: at dawn (greetH) the first time the walker is within greetSeeM she comes to greetM of you and looks up; while you sit within sitM of the fire ring she settles sitBesideM beside you.",
+    "wary": { "ringM": 6, "keepM": 0 },
+    "tolerant": { "ringM": 2.4, "keepM": 3 },
+    "curious": { "ringM": 1.3, "keepM": 2, "visitM": 1.4, "visitEveryS": [25, 50] },
+    "familiar": { "ringM": 0.8, "keepM": 2, "visitM": 1.1, "visitEveryS": [20, 40] },
+    "fond": { "ringM": 0.6, "keepM": 1.5, "visitM": 0.9, "visitEveryS": [15, 30] },
+    "joinM": 12,
+    "stepMps": 0.7,
+    "dig": { "noticeM": 14, "waitM": 0.55, "waitS": 25 },
+    "follow": { "nearM": 2, "farM": 4, "runM": 7, "leashM": 30 },
+    "dusk": { "fromH": 19, "untilH": 5.5, "ringM": 1.3 },
+    "fondDo": { "greetH": [5, 9], "greetSeeM": 20, "greetM": 0.8, "sitM": 3, "sitBesideM": 0.7 }
+  },
+  "treat": {
+    "id": "worms",
+    "idOf": {
+      "worms": "worms",
+      "nettle.seed": "seedheads",
+      "meadowsweet.seed": "seedheads",
+      "marram.seed": "seedheads",
+      "campion.seed": "seedheads",
+      "chamomile.seed": "seedheads"
+    },
+    "kinds": ["worms", "nettle.seed", "meadowsweet.seed", "marram.seed", "campion.seed", "chamomile.seed"],
+    "reachM": 12,
+    "noticeS": 2,
+    "pecks": 4,
+    "waryClearM": 4,
+    "note": "Treats (F13 section 8, real food only): worms the shovel turned up, and seedheads (a handful of nettle, meadowsweet, marram, campion or chamomile seed). Set out on land within reachM of her, she comes after noticeS and pecks it up (pecks). At Wary she waits until you are waryClearM from it.",
+    "tapM": 0.45
+  },
+  "fond": {
+    "note": "Fond (Matt, October 27, 2026): time together, never a count of treats. She becomes Fond after days whole game days at Familiar, on togetherDays of which the walker was within nearM of her (on foot) for nearHours game hours or more. featherAfterDays mornings later, from featherH, she leaves a tail feather by the fire ring (src/world/hen/feather.js); taken up, it is the hen-feather hat band (feather.onHat: the feather tucked into the hat's band) and its boon: every creature's wary ring times calmK near you.",
+    "days": 7,
+    "togetherDays": 5,
+    "nearM": 8,
+    "nearHours": 2,
+    "featherAfterDays": 1,
+    "featherH": 6,
+    "calmK": 0.85,
+    "feather": {
+      "note": "Her tail feather (src/world/hen/feather.js): lengthM, widthM, bendM, archM its shape (real metres) drawn scale times (findable, as creatures); lies ringM from the fire ring, turnDeg round from the side toward her scrub, turned yawDeg; tapM its tap reach; srgb and rough its look (the camp's props pass). words: its card, and the gift when taken up.",
+      "lengthM": 0.19,
+      "widthM": 0.045,
+      "bendM": 0.025,
+      "archM": 0.01,
+      "scale": 2.2,
+      "ringM": 0.95,
+      "turnDeg": 55,
+      "yawDeg": 70,
+      "tapM": 0.4,
+      "srgb": [120, 82, 46],
+      "rough": 0.8,
+      "words": {
+        "card": "A tail feather",
+        "line": "One of the hen's tail feathers, brown and barred, left by the fire where she sleeps.",
+        "take": "Take it up",
+        "title": "The hen-feather hat band",
+        "gift": "Tucked into the band of your hat. Other creatures seem a little calmer near you now."
+      },
+      "onHat": {
+        "note": "Once taken up, the feather tucked into the hat's dark band (Matt, October 29, 2026): carried by the figure's bone (recipes/world/figure.json bones), its quill's foot at at (rest model metres, x left, y up, z ahead), turned turnDeg (pitch, yaw, roll on the bone), drawn scale times the feather's real size.",
+        "bone": "hat",
+        "at": [0.19, 1.6, -0.03],
+        "turnDeg": [-70, 15, 0],
+        "scale": 1.2
+      }
+    }
+  },
   "motion": {
     "idleW": 1,
     "strideM": 0.2,
@@ -95,6 +167,13 @@
     "alertNeckRad": -0.35,
     "alertBodyRad": -0.12,
     "alertTailRad": 0.25,
-    "headLock": { "lockM": 0.035, "leadM": 0.025, "snapS": 0.07, "share": [0.35, 0.35, 0.3] }
+    "headLock": { "lockM": 0.035, "leadM": 0.025, "snapS": 0.07, "share": [0.35, 0.35, 0.3] },
+    "settleDropM": 0.1,
+    "settleHipRad": -0.5,
+    "settleKneeRad": 1.5,
+    "settleAnkleRad": -1.1,
+    "settleTailRad": -0.12,
+    "settleNeckRad": -0.2,
+    "settleS": 0.8
   }
 }

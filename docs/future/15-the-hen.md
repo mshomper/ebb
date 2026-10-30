@@ -2,7 +2,7 @@
 
 > One spring morning a small brown hen walks out of the gorse, scratching. She is feral: no one's, wary, and quite able to look after herself. Over a season she learns the walker, comes to the camp at dusk, follows you while you dig, and starts laying in the nest you made her. Her eggs are the walker's first real meal. If you leave a clutch in spring she sits, and the island has chicks.
 
-**Status:** Slice 1 built on `m2-hen` (October 27, 2026): a wary hen in the scrub. Drafted October 25, 2026, from Matt's ask for a wandering chicken you can befriend that gives eggs.
+**Status:** Slice 1 built on `m2-hen` (October 27, 2026): a wary hen in the scrub. Slice 2 (trust, then Fond) built on `m2-hen-trust` (October 29, 2026); see "Built: trust and Fond" below. Drafted October 25, 2026, from Matt's ask for a wandering chicken you can befriend that gives eggs.
 
 ## Decided so far
 
@@ -16,7 +16,15 @@ Matt, October 27, 2026:
 - **Eggs:** the walker's meal and her grit now; tempera later.
 - **A fifth band, hers alone: Fond.** About 7 game days at Familiar with the walker near most days (time together, never a count of treats). She greets the walker at dawn and settles by the fire beside you, and one morning leaves a tail feather on the camp perch: the **hen-feather hat band**, a paint on whatever hat the walker wears, with a small always-on boon (other creatures stay a little calmer near you).
 
-The slices: 1 a wary hen (built), 2 trust (the four bands, then Fond as 2b), 3 her day (roost, dust bath, rain, sounds, save), 4 eggs (scrape, nest box, pouch, the meal, grit), 5 chicks.
+The slices: 1 a wary hen (built), 2 trust (the four bands, then Fond as 2b; built), 3 her day (roost, dust bath, rain, sounds, save), 4 eggs (scrape, nest box, pouch, the meal, grit), 5 chicks.
+
+### Built: trust and Fond (slice 2, October 29, 2026)
+
+- **Trust** is saved with the island (`state.creatures.hens`, src/world/hen/trust.js) and applied by the hourly tick from events live play records, as the frogs'. Watching her quietly within 9 m earns it; so does one treat a game day: **worms** the shovel turned up, or **seedheads** (a handful of nettle, meadowsweet, marram, campion or chamomile seed). Feeding from the pouch is not built: treats are her food from you. Named at 0.5, as the frogs.
+- **The bands** (src/world/hen/bands.js chooses, life.js walks it with her clips): Wary runs past 6 m; Tolerant never runs, steps aside inside about 2.4 m and forages about 3 m from you; Curious comes to see you every half minute or so and waits by a hole you dig; Familiar follows you at 2 to 4 m while you stay within 30 m of her scrub, and from 19:00 settles by the fire ring for the night (a new **settle** clip: legs folded under her) until H3 brings the roost; with no ring laid she roosts in the scrub.
+- **Fond** comes after 7 whole game days at Familiar on 5 of which you were within 8 m of her for 2 game hours or more. Days pass while you are away, but none counts as together. At Fond she greets you once each dawn (5:00 to 9:00) and settles beside you while you sit by the fire. The next morning from 6:00 she leaves a **tail feather** by the fire ring; the gift stone can take it over (`hen.useGiftPlace`, and the `hen:feather` event).
+- **The hen-feather hat band**: Take it up on the feather's card. The feather itself is tucked into the hat's dark band, angled up at the side, and rides the hat's bone through every walk and roll (Matt, October 29, 2026: a real feather, not a painted band; hen.json fond.feather.onHat). It is kept in the kit (`kit.bands`, saved; the Walker page's hat card says so), and every creature's wary ring is 0.85 times as wide near you (fond.calmK).
+- Test links: `?hen&trust=0.2` (Tolerant), `0.45` (Curious), `0.65` (Familiar), `?hen&fond&camp` (Fond, her feather by the ring). tools/hen-lab.html shows every band on a test ground.
 
 These rules carry over:
 

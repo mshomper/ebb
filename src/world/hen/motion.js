@@ -3,7 +3,8 @@
 // rig.js kept, over the file's own Idle. Every turn is about a bone's pivot in the rest pose's
 // space (x her left, y up, z forward), as pose.js composes them. The walk and run are timed to
 // distance (phase: strides travelled), so her feet move with the ground; the head lock holds her
-// head still in the world while she walks, then jumps it forward (life.js keeps the offset).
+// head still in the world while she walks, then jumps it forward (life.js keeps the offset). Settled
+// (slice 2: by the fire at dusk, beside the walker), her legs fold under her and she sinks onto them.
 // Live animation only (never saved); plain Math is fine here.
 
 import { axisAngle, poseSkeleton } from '../creatures/pose.js';
@@ -23,6 +24,7 @@ import { qmul, qrot, qslerp, QI, smooth } from '../figure/kinematics.js';
  * @property {{ yaw: number, tilt: number, down: number }} look   radians: turn, one eye to the ground, nod
  * @property {number} alert      0 .. 1 upright and still
  * @property {number} lockM      the head lock: the head's shift forward from where the body carries it (rest m)
+ * @property {number} [settle]   0 .. 1 settled down, legs folded under her (by the fire, slice 2)
  */
 
 const X = [1, 0, 0], Y = [0, 1, 0], Z = [0, 0, 1];
@@ -69,6 +71,7 @@ export function createHenPoser(skeleton, M, idle) {
     const shift = (/** @type {number} */ i, /** @type {number[]} */ d) => { if (i >= 0) code[i].t = code[i].t.map((v, k) => v + d[k]); };
     const walk = Math.min(1, Math.max(0, s.walk)), run = Math.min(1, Math.max(0, s.run));
     const p = Math.min(1, Math.max(0, s.peck));
+    const st = smooth(Math.min(1, Math.max(0, s.settle ?? 0)));
     // The body's tip forward: into a run, a kick or a peck (a hen tips her whole body to reach the
     // ground), back upright when alert.
     const kickLean = s.kick ? M.kickLeanRad * Math.sin(Math.PI * Math.min(1, Math.max(0, s.kick.u))) : 0;
@@ -89,21 +92,22 @@ export function createHenPoser(skeleton, M, idle) {
         lift = Math.max(lift, (M.kickLiftRad / M.liftRad) * Math.sin(Math.PI * Math.min(1, Math.max(0, (k - 0.55) / 0.45))));
       }
       // The legs stand upright however the body tips (hips undo the body's pitch).
-      turn(L.hip, X, hip - lift * 0.35 - pitch);
-      turn(L.knee, X, M.liftRad * lift);
-      turn(L.ankle, X, -M.liftRad * 0.6 * lift);
+      // Settled, the legs fold under her: thigh forward, shank back, the foot flat beneath.
+      turn(L.hip, X, hip - lift * 0.35 - pitch + M.settleHipRad * st);
+      turn(L.knee, X, M.liftRad * lift + M.settleKneeRad * st);
+      turn(L.ankle, X, -M.liftRad * 0.6 * lift + M.settleAnkleRad * st);
       turn(L.toes, X, M.toeCurlRad * lift);
     }
     // The body: a dip at each footfall, a sway side to side, leaning into a run or a kick, upright when alert.
     const bob = M.bobM * walk * (0.5 - 0.5 * Math.cos(2 * TAU * s.phase));
-    shift(B.root, [0, -bob, 0]);
+    shift(B.root, [0, -bob - M.settleDropM * st, 0]);
     turn(B.root, Z, M.rollRad * walk * Math.sin(TAU * s.phase));
     turn(B.root, X, pitch);
     turn(B.tail, Y, M.tailSwayRad * walk * Math.sin(TAU * s.phase));
-    turn(B.tail, X, M.alertTailRad * s.alert);
+    turn(B.tail, X, M.alertTailRad * s.alert + M.settleTailRad * st);
     // The neck and head: a peck swings the neck down and the beak to the ground; alert lifts it.
     const P = M.peckNeckRad;
-    turn(B.n0, X, P[0] * p + M.alertNeckRad * s.alert);
+    turn(B.n0, X, P[0] * p + M.alertNeckRad * s.alert + M.settleNeckRad * st);
     turn(B.n1, X, P[1] * p);
     turn(B.n2, X, P[2] * p + s.look.down * 0.5);
     turn(B.head, X, M.peckHeadRad * p + s.look.down * 0.5);
@@ -116,7 +120,7 @@ export function createHenPoser(skeleton, M, idle) {
     const lock = [stretch[0], bob + stretch[1], s.lockM + stretch[2]];
     [B.n1, B.n2, B.head].forEach((i, k) => shift(i, lock.map((v) => v * H[k])));
     // The Idle clip under it all, faded out as she moves, pecks, kicks or stands alert.
-    const idleW = (M.idleW ?? 1) * (1 - walk) * (1 - p) * (s.kick ? 0 : 1) * (1 - s.alert);
+    const idleW = (M.idleW ?? 1) * (1 - walk) * (1 - p) * (s.kick ? 0 : 1) * (1 - s.alert) * (1 - 0.6 * st);
     return code.map((c, i) => {
       const im = idleMove(i, s.t, idleW);
       const q = im ? qmul(c.q, im.q) : c.q;
@@ -136,4 +140,4 @@ export function createHenPoser(skeleton, M, idle) {
 }
 
 /** A still hen, for tests and the tools page. @returns {HenPose} */
-export const stillPose = () => ({ t: 0, phase: 0, walk: 0, run: 0, kick: null, peck: 0, look: { yaw: 0, tilt: 0, down: 0 }, alert: 0, lockM: 0 });
+export const stillPose = () => ({ t: 0, phase: 0, walk: 0, run: 0, kick: null, peck: 0, look: { yaw: 0, tilt: 0, down: 0 }, alert: 0, lockM: 0, settle: 0 });

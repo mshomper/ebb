@@ -40,6 +40,7 @@ export const PARALLEL = {
   figure: () => import('./unit-tests-figure.js').then((m) => m.addFigureTests),
   figureClips: () => import('./unit-tests-figure-clips.js').then((m) => m.addFigureClipTests),
   hen: () => import('./unit-tests-hen.js').then((m) => m.addHenTests),
+  'hen-trust': () => import('./unit-tests-hen-trust.js').then((m) => m.addHenTrustTests),
   nets: () => import('./unit-tests-nets.js').then((m) => m.addNetsTests),
   trails: () => import('./unit-tests-trails.js').then((m) => m.addTrailsTests),
   forager: () => import('./unit-tests-forager.js').then((m) => m.addForagerTests),

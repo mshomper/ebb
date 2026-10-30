@@ -25,7 +25,7 @@ export function clickKind(card, species) {
   if (card.ground) return 'everywhere';
   const k = species?.[card.sp]?.kind;
   if (k === 'cover') return 'everywhere';
-  if (k === 'creature' || k === 'school' || k === 'swarm' || card.sp === 'frogs') return 'creature';
+  if (k === 'creature' || k === 'school' || k === 'swarm' || k === 'hen' || card.sp === 'frogs') return 'creature';
   return 'thing';
 }
 

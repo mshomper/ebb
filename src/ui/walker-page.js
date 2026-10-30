@@ -192,7 +192,9 @@ export function mountWalkerPage(parent, buttonParent, o) {
     const k = v.kit;
     if (sel.kind === 'slot') {
       const id = k[sel.id], it = item(sel.id, id);
-      return { kitSlot: sel.id, kitId: id, worn: true, owned: true, name: it.name, icon: it.icon, text: it.line, noPage: true };
+      // The hat's bands (the hen's feather) are worn on whatever hat is worn: their words follow its own.
+      const bands = sel.id === 'hat' ? (k.bands ?? []).map((/** @type {string} */ b) => R.bands?.[b]?.worn).filter(Boolean) : [];
+      return { kitSlot: sel.id, kitId: id, worn: true, owned: true, name: it.name, icon: it.icon, text: [it.line, ...bands].join(' '), noPage: true };
     }
     if (sel.kind === 'carrier') {
       const id = carrierId(k), it = item('carrier', id);

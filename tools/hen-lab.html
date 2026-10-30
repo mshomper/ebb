@@ -33,7 +33,7 @@
 <body>
 <main>
   <h1>ebb hen lab</h1>
-  <p class="muted">The hen (docs/future/15, slice 1): Matt's supplied model, moved by code clips over its own Idle. Each clip plays on its own, and Life runs her day on a test ground: click the ground to put the walker down and watch her wary ring. Drag to turn the view, scroll to come closer. <a href="./">All tools</a></p>
+  <p class="muted">The hen (docs/future/15, slices 1 and 2): Matt's supplied model, moved by code clips over its own Idle. Each clip plays on its own, and Life runs her day on a test ground: click the ground to put the walker down, pick how well she knows you, and watch what she does. The fire ring is the grey ring; a treat is a red dot; a dug hole a brown patch. Drag to turn the view, scroll to come closer. <a href="./">All tools</a></p>
   <div class="split">
     <div class="card">
       <canvas id="view" class="view" aria-label="The hen on a test ground"></canvas>
@@ -51,6 +51,7 @@
           <button data-mode="peck" aria-pressed="false">Peck</button>
           <button data-mode="look" aria-pressed="false">Look down</button>
           <button data-mode="alert" aria-pressed="false">Alert</button>
+          <button data-mode="settle" aria-pressed="false">Settle</button>
           <button id="slow" aria-pressed="false">Slow motion</button>
         </div>
       </div>
@@ -60,6 +61,21 @@
           <button id="approach">Walk to her</button>
           <button id="stop">Stand still</button>
           <button id="away">Take away</button>
+          <button id="sit" aria-pressed="false">Sit by the fire</button>
+          <button id="dig">Dig beside you</button>
+          <button id="worms">Set out worms</button>
+        </div>
+      </div>
+      <div class="group">
+        <h2>How well she knows you (Life)</h2>
+        <div class="grid">
+          <button data-band="0" aria-pressed="true">Wary</button>
+          <button data-band="1" aria-pressed="false">Tolerant</button>
+          <button data-band="2" aria-pressed="false">Curious</button>
+          <button data-band="3" aria-pressed="false">Familiar</button>
+          <button data-band="4" aria-pressed="false">Fond</button>
+          <button id="dusk" aria-pressed="false">Dusk</button>
+          <button id="dawn" aria-pressed="false">Dawn</button>
         </div>
       </div>
       <div class="group">
