@@ -144,3 +144,14 @@ export function storyAt(x, z, live, R) {
  * @param {number | null} found
  */
 export const cacheDue = (depth, st, found) => depth === 2 && st.cache && found === null;
+
+/**
+ * Is the marked stone there yet? Once shown it stays (the firsts keep `stone:shown`); before that it
+ * shows when every layer in story.cacheAfter has been dug (the subsoil and the blue-grey clay), the
+ * clay asked only of an island that has a damp bank to dig. @param {string[]} firsts dig.firsts
+ * @param {boolean} bank the island has damp-bank ground @param {any} S dig.json story
+ */
+export function stoneShown(firsts, bank, S) {
+  if (firsts.includes('stone:shown')) return true;
+  return (S.cacheAfter ?? []).every((/** @type {string} */ l) => firsts.includes(`layer:${l}`) || (l === 'clay' && !bank));
+}
