@@ -133,8 +133,8 @@ export function attachDesktopInput(canvas, opts, brush) {
     } else if (e.code === 'KeyJ') {
       dispatch({ type: 'ui.journal', toggle: true });
     } else if (e.code === 'KeyI') {
-      // The Walker page (src/ui/walker-page.js): what the walker wears and carries.
-      dispatch({ type: 'ui.walkerPage', toggle: true });
+      // The Keeper book (src/ui/keeper-book.js): the walker's kit, threads, trails, shelf and camp.
+      dispatch(/** @type {any} */ ({ type: 'ui.keeper', toggle: true }));
     } else if (e.code === 'KeyG') {
       dispatch({ type: get('walk')?.below ? 'walk.up' : 'walk.down', source: 'key' });
     } else if (e.code === 'KeyH') {
@@ -142,7 +142,7 @@ export function attachDesktopInput(canvas, opts, brush) {
     } else if (e.key === 'Escape') {
       // On foot with mouse look, the first Esc only frees the pointer (src/input/mouse-look.js).
       if (escapeFreesPointer()) return;
-      if (get('walkerPageUi')?.open) dispatch({ type: 'ui.walkerPage', open: false });
+      if (get('keeperUi')?.open) dispatch(/** @type {any} */ ({ type: 'ui.keeper', open: false }));
       else if (get('journalUi')?.open) dispatch({ type: 'ui.journal', open: false });
       // A seed, a gift or the net in hand is put away first (D1a).
       else if (get('walk')?.below && get('hand')) dispatch({ type: 'hand.putAway', source: 'key' });

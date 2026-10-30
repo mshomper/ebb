@@ -92,8 +92,8 @@
   pointer-events: auto;
   transition: opacity 200ms ease, transform 240ms ease, visibility 0s;
 }
-.ebb-journal [hidden] { display: none !important; }
-.ebb-journal .icon { width: 24px; height: 24px; display: block; flex: none; }
+:is(.ebb-journal, .ebb-kb__page) [hidden] { display: none !important; }
+:is(.ebb-journal, .ebb-kb__page) .icon { width: 24px; height: 24px; display: block; flex: none; }
 .ebb-journal button { font: inherit; color: inherit; -webkit-tap-highlight-color: transparent; }
 .ebb-journal :focus-visible { outline: 2px solid var(--jr-moss); outline-offset: 2px; }
 

@@ -106,10 +106,11 @@ export function bedView(C, camp, bed, words) {
  * The camp page. @param {any} C recipes/world/cook.json @param {any} camp @param {any} cook
  * @param {any} pad the live pad @param {any} words recipes/world/journal.json (season names)
  * @param {{ grows?: string[] } | null} [bed] the store slice `campBed` (what grows in the herb bed)
+ * @param {boolean} [withBack] a way back to Notes (the Keeper book's Camp tab is its own tab and has none)
  */
-export function campView(C, camp, cook, pad, words, bed = null) {
+export function campView(C, camp, cook, pad, words, bed = null, withBack = true) {
   const P = C.words.page, names = C.words.pageNames ?? {}, made = C.words.pageParts ?? {};
-  const back = `<button type="button" class="ebb-shelf__btn" data-view="notes">${iconSvg('back')}<span>${esc(P.back)}</span></button>`;
+  const back = withBack ? `<button type="button" class="ebb-shelf__btn" data-view="notes">${iconSvg('back')}<span>${esc(P.back)}</span></button>` : '';
   const firsts = campFirsts(C, camp, cook);
   const rows = firsts.map((f) => {
     const glyphs = f.parts.map((k) => { const i = itemIconFor(k); return i ? itemIconSvg(i) : ''; }).join('');

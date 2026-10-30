@@ -1313,6 +1313,22 @@ const ICONS = {
     <path d="M10.2 9.6C10.6 6.8 11.6 4.4 13.2 3C14 2.4 15.2 2.6 15.8 3.4C14.8 3.8 14.4 5 14.6 6.6L14.8 9.6"/>
     <path d="M5.8 10.4C7.6 9.2 16.4 9.2 18.2 10.4C16.4 11.6 7.6 11.6 5.8 10.4Z"/>
     <path d="M12 12.2V20.5M10.6 14.6H11.4M12.6 14.6H13.4"/>`,
+  // The Keeper book (Matt, October 30, 2026): a field book with a soft cover, its binding down the
+  // left, a cord wound round it and tied in a loop at the edge, a ribbon marker hanging below.
+  keeper: `
+    <path ${ACCENT} d="M5.5 3.5H18.5V19H5.5Z"/>
+    <path d="M5.5 3.5H18.5V19H5.5Z"/>
+    <path d="M8 3.5V19"/>
+    <path d="M5.5 11.2H18.5"/>
+    <path d="M18.5 11.2C20.6 10 21.6 11.4 20.4 12.4C19.8 12.9 19 12.6 18.5 12.2"/>
+    <path d="M13.5 19V21.5L14.7 20.6L15.9 21.5V19"/>`,
+  // Threads (the Keeper book's tab): a wooden spool, thread wound round it, its loose end curling away.
+  threads: `
+    <path ${ACCENT} d="M6.5 6H13.5V14H6.5Z"/>
+    <path d="M4.5 4H15.5M4.5 16H15.5"/>
+    <path d="M6.5 4V16M13.5 4V16"/>
+    <path d="M6.5 8L13.5 6.6M6.5 11L13.5 9.6M6.5 14L13.5 12.6"/>
+    <path d="M13.5 12.6C16.4 12.6 18.4 14 17.6 16.4C16.9 18.4 14.6 18.8 15.6 20.2C16.4 21.2 18.6 21 20 20"/>`,
 };
 
 /** Names of every icon in the sprite. */

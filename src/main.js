@@ -14,7 +14,7 @@ import { withCacheLetters } from './ui/journal-keeper.js';
 import { mountIslandNotes } from './ui/island-notes.js';
 import { mountStation } from './ui/station.js';
 import { mountSketchbook } from './ui/sketchbook.js';
-import { mountWalkerPage } from './ui/walker-page.js';
+import { mountKeeperBook } from './ui/keeper-book.js';
 import { createWalkerPortrait } from './ui/walker-portrait.js';
 import { mountHaulTray } from './ui/haul-tray.js';
 import { registerCatchSketches } from './ui/sketches/catch.js';
@@ -151,16 +151,21 @@ startApp(canvas, { onDeviceLost: (rebuilding) => showRebuildingNote(rebuilding),
       const progress = createProgress({ words, recipe: naturalist, gifts, beachcomber, shaper, forager, stone: () => hasGiftStone(getStore('camp')) });
       // The Shelf section draws kept keepsakes from their numbers (docs/future/12).
       const [keepsakesRecipe, bottleMessages] = await Promise.all([loadRecipe('world/keepsakes'), loadRecipe('world/bottle-messages')]);
-      mountJournal(document.body, { ...journal, naturalist, beachcomber, shaper, forager, gatherRecipe: /** @type {any} */ (r).gather?.recipe ?? null,
+      // The journal keeps the island; Trails, the Shelf, the camp page and the keeper's pages are the
+      // Keeper book's (below), which reads the same live journal.
+      const journalLive = { ...journal, naturalist, beachcomber, shaper, forager, gatherRecipe: /** @type {any} */ (r).gather?.recipe ?? null,
         partName: (/** @type {string} */ k) => /** @type {any} */ (r).pack?.nameOf(k) ?? k, progress, shelf: { K: keepsakesRecipe, messages: bottleMessages },
-        keeper: withCacheLetters(await loadRecipe('world/keeper-pages'), await loadRecipe('world/keeper-cache')), cook: await loadRecipe('world/cook') }, hud.layer);
+        keeper: withCacheLetters(await loadRecipe('world/keeper-pages'), await loadRecipe('world/keeper-cache')), cook: await loadRecipe('world/cook') };
+      mountJournal(document.body, journalLive, hud.layer);
       // The walker's sketchbook (P2i I5): its book button beside the journal's, once the first sketch is made.
       mountSketchbook(document.body, hud.layer, { recipe: await loadRecipe('world/sketchbook'), words, describe: (id) => journal.describe(id) });
-      // The Walker page (K2): I or the walker button beside the journal's; the walker in its own small view.
-      if (packApp && /** @type {any} */ (r).kit) {
+      // The Keeper book (I, or its button beside the time button): Kit (the walker in its own small
+      // view), Threads, Trails, Shelf and Camp.
+      {
         const app = /** @type {any} */ (r), kitR = await loadRecipe('world/kit');
-        mountWalkerPage(document.body, hud.layer, { recipe: kitR, words, pack: packApp,
-          portrait: (host) => createWalkerPortrait(host, { device: app.device, figure: app.figureRecipe, R: kitR, pack: packApp }) });
+        mountKeeperBook(document.body, hud.layer, { live: journalLive, words, W: kitR.words, T: null, H: null,
+          kit: packApp && app.kit ? { recipe: kitR, pack: packApp,
+            portrait: (host) => createWalkerPortrait(host, { device: app.device, figure: app.figureRecipe, R: kitR, pack: packApp }) } : null });
       }
       // The first evening's director (src/world/intro): its flags live in the journal, so it starts now.
       /** @type {any} */ (r).intro?.start();

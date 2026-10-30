@@ -1,5 +1,6 @@
 // @ts-check
-// The Walker page (Matt's mock and the plan approved October 26, 2026; K2). Everything the walker
+// The Kit page, the Keeper book's first tab (src/ui/keeper-book.js; once the Walker page: Matt's mock
+// and the plan approved October 26, 2026; K2). Everything the walker
 // wears and carries, in one place, on the journal's paper: the title in Fraunces italic; four kit
 // slots down the left (hat, lantern, in hand, coat), the chosen one ringed in ember with its owned
 // choices popping out beside it; the walker in the middle (src/ui/walker-portrait.js), drag to turn,
@@ -8,10 +9,10 @@
 // 760 px); Q and E in the portrait's top corners once the Hollow is found; the chosen thing's name and the walker's words
 // on a card at the bottom, its actions the item cards' own (src/ui/card-actions.js), so a pouch here
 // offers Set down, Empty and the rest as its card does. A choice not owned is a blank outline, never
-// named. Opened by I or the walker button at the bottom right, beside the time button; Esc or the
-// close button shuts it.
-// Reads the store slices `kitView` (src/world/kit) and `packView` (src/world/pack); keeps
-// `walkerPageUi` { open, sel, pop }. Answers ui.walkerPage { open | toggle }. Styles: walker-page.css.
+// named. The book (its button, title, tabs, opening and closing) is keeper-book.js's; this page draws
+// into the pane it is given while the book is open on Kit.
+// Reads the store slices `kitView` (src/world/kit), `packView` (src/world/pack) and `keeperUi`;
+// keeps `walkerPageUi` { sel, pop }. Styles: walker-page.css.
 
 import { get, update, subscribe } from '../core/store.js';
 import { dispatch, onAction } from '../input/actions.js';
@@ -32,18 +33,18 @@ const PEEK_PEGS = typeof location !== 'undefined' && new URLSearchParams(locatio
 
 /**
  * @typedef {{ kind: 'slot' | 'carrier' | 'pouch' | 'belt', id: string }} Sel
- * @typedef {{ open: boolean, sel: Sel, pop: string | null }} PageUi pop: the slot whose choices show ('carrier' for the strap)
+ * @typedef {{ sel: Sel, pop: string | null }} PageUi pop: the slot whose choices show ('carrier' for the strap)
  */
 
 /**
- * Mount the walker button and the page.
- * @param {HTMLElement} parent @param {HTMLElement} buttonParent the HUD layer
+ * Mount the Kit page in the Keeper book.
+ * @param {HTMLElement} host the book's Kit pane
  * @param {{ recipe: any, words: any, pack: any, portrait?: (host: HTMLElement) => { start: () => void, stop: () => void } }} o
  *   recipe: recipes/world/kit.json; words: recipes/world/journal.json (the card actions read it);
  *   pack: the live pack (kinds, nameOf, recipe); portrait: makes the walker's own small view in a host
  * @returns {() => void} dispose
  */
-export function mountWalkerPage(parent, buttonParent, o) {
+export function mountKitPage(host, o) {
   ensureIconSprite();
   ensureItemSprite();
   const R = o.recipe, W = R.words, PW = o.pack.recipe.words;
@@ -58,21 +59,9 @@ export function mountWalkerPage(parent, buttonParent, o) {
       when: (c) => c?.belt === 'sketchbook' && !!c.owned, action: () => ({ type: 'kit.openBook' }) }),
   ];
 
-  const btnRoot = document.createElement('div');
-  btnRoot.className = 'ebb-wpbtn';
-  btnRoot.innerHTML = `<button type="button" class="ebb-jbtn__btn" aria-label="${esc(W.open)}" title="${esc(W.open)} (I)" aria-expanded="false">${iconSvg('walker', 'ebb-jbtn__icon')}</button>`;
-  const openBtn = /** @type {HTMLButtonElement} */ (btnRoot.querySelector('button'));
-
   const root = document.createElement('div');
-  root.className = 'ebb-wp';
-  root.setAttribute('role', 'dialog');
-  root.setAttribute('aria-label', W.title);
-  root.inert = true;
+  root.className = 'ebb-wp__kitpage';
   root.innerHTML = `
-    <div class="ebb-wp__head">
-      <h2 class="ebb-wp__title">${esc(W.title)}</h2>
-      <button type="button" class="ebb-wp__close" data-close="1" aria-label="${esc(W.close)}" title="${esc(W.close)}">${iconSvg('close')}</button>
-    </div>
     <div class="ebb-wp__body">
       <div class="ebb-wp__kit" data-kit></div>
       <div class="ebb-wp__middle">
@@ -91,7 +80,9 @@ export function mountWalkerPage(parent, buttonParent, o) {
     popEl = $('[data-pop]'), aboutEl = $('[data-about]'), pegsEl = $('[data-pegs]'), bodyEl = $('.ebb-wp__body');
 
   /** @returns {PageUi} */
-  const ui = () => get('walkerPageUi') ?? { open: false, sel: { kind: 'slot', id: 'hat' }, pop: 'hat' };
+  const ui = () => get('walkerPageUi') ?? { sel: { kind: 'slot', id: 'hat' }, pop: 'hat' };
+  /** Is the book open on Kit? */
+  const shown = () => { const k = get('keeperUi'); return !!k?.open && k.tab === 'kit'; };
   /** @param {Partial<PageUi>} p */
   const setUi = (p) => update('walkerPageUi', () => ({ ...ui(), ...p }));
 
@@ -245,14 +236,10 @@ export function mountWalkerPage(parent, buttonParent, o) {
   }
 
   function render() {
-    const u = ui(), v = get('kitView');
-    root.classList.toggle('is-open', u.open);
-    root.inert = !u.open;
-    openBtn.classList.toggle('is-on', u.open);
-    openBtn.setAttribute('aria-expanded', String(u.open));
+    const u = ui(), v = get('kitView'), open = shown();
     // The portrait draws only while the page is open (K3: its cost is the page's alone).
-    if (u.open !== portraitOn && portrait) { portraitOn = u.open; if (u.open) portrait.start(); else portrait.stop(); }
-    if (!u.open || !v) return;
+    if (open !== portraitOn && portrait) { portraitOn = open; if (open) portrait.start(); else portrait.stop(); }
+    if (!open || !v) return;
     const pv = get('packView');
     // A pouch chosen that is gone now (set down, emptied): nothing chosen there any more.
     if (u.sel.kind === 'pouch' && !pv?.pouches?.[Number(u.sel.id)]) { setUi({ sel: { kind: 'slot', id: 'hat' }, pop: null }); return; }
@@ -267,14 +254,12 @@ export function mountWalkerPage(parent, buttonParent, o) {
   /** @param {MouseEvent} e */
   function onClick(e) {
     const b = /** @type {HTMLElement | null} */ (/** @type {HTMLElement} */ (e.target).closest('button'));
-    if (b === openBtn) { dispatch({ type: 'ui.walkerPage', toggle: true }); return; }
     if (!b || /** @type {HTMLButtonElement} */ (b).disabled) {
       // A click on the page outside the pop-out closes it.
       if (ui().pop && !(/** @type {HTMLElement} */ (e.target).closest('[data-pop]'))) { peek = null; setUi({ pop: null }); }
       return;
     }
     const d = b.dataset;
-    if (d.close) { setUi({ open: false }); return; }
     if (d.slot) { peek = null; const u = ui(); setUi({ sel: { kind: 'slot', id: d.slot }, pop: u.pop === d.slot ? null : d.slot }); return; }
     if (d.strap) { peek = null; const u = ui(); setUi({ sel: { kind: 'carrier', id: 'carrier' }, pop: u.pop === 'carrier' ? null : 'carrier' }); return; }
     if (d.choice && d.for) {
@@ -298,49 +283,23 @@ export function mountWalkerPage(parent, buttonParent, o) {
     }
   }
 
-  /** @param {Event} e */
-  const stop = (e) => e.stopPropagation();
-  for (const r of [btnRoot, root]) {
-    r.addEventListener('click', onClick);
-    r.addEventListener('pointerdown', stop);
-    r.addEventListener('pointermove', stop);
-    r.addEventListener('wheel', stop, { passive: true });
-  }
+  root.addEventListener('click', onClick);
+  // The sketchbook on the belt: the book shuts and the sketchbook opens.
   const offAction = onAction((/** @type {any} */ a) => {
-    if (a.type === 'ui.walkerPage') {
-      const open = a.toggle ? !ui().open : !!a.open;
-      // Opening it closes the journal and the sketchbook: one book open at a time.
-      if (open && get('journalUi')?.open) dispatch({ type: 'ui.journal', open: false });
-      if (open && get('sketchbookUi')?.open) update('sketchbookUi', (s) => ({ ...s, open: false }));
-      setUi({ open });
-    }
-    else if (a.type === 'kit.openBook') { setUi({ open: false }); update('sketchbookUi', (s) => ({ ...(s ?? { page: null }), open: true })); }
+    if (a.type === 'kit.openBook') { dispatch({ type: 'ui.keeper', open: false }); update('sketchbookUi', (s) => ({ ...(s ?? { page: null }), open: true })); }
   });
-  // Another panel opening closes this one (the journal, the sketchbook, a station).
-  const closeFor = (/** @type {any} */ x) => { if (x?.open && ui().open) setUi({ open: false }); };
-  const onResize = () => { if (ui().open) render(); };
+  const onResize = () => { if (shown()) render(); };
   addEventListener('resize', onResize);
-  // The button sits just left of the time button, whose width changes with its pips.
-  const timeBtn = document.querySelector('.ebb-time__btn');
-  const fit = () => { if (timeBtn) btnRoot.style.setProperty('--wp-time-w', `${/** @type {HTMLElement} */ (timeBtn).offsetWidth}px`); };
-  const timeObs = timeBtn && typeof ResizeObserver !== 'undefined' ? new ResizeObserver(fit) : null;
-  if (timeBtn) timeObs?.observe(timeBtn);
-  fit();
-  document.documentElement.classList.add('ebb-has-walker-btn');
 
-  const unsubs = [subscribe('walkerPageUi', render), subscribe('kitView', render), subscribe('packView', render),
-    subscribe('journalUi', closeFor), subscribe('sketchbookUi', closeFor), subscribe('stationView', (x) => { if (x && ui().open) setUi({ open: false }); })];
+  const unsubs = [subscribe('walkerPageUi', render), subscribe('kitView', render), subscribe('packView', render), subscribe('keeperUi', render)];
+  host.appendChild(root);
   render();
-  buttonParent.appendChild(btnRoot);
-  parent.appendChild(root);
   return () => {
     for (const u of unsubs) u();
     for (const off of offActs) off();
     offAction();
     removeEventListener('resize', onResize);
-    timeObs?.disconnect();
-    document.documentElement.classList.remove('ebb-has-walker-btn');
     portrait?.stop();
-    btnRoot.remove(); root.remove();
+    root.remove();
   };
 }

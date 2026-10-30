@@ -1,0 +1,142 @@
+/* The Keeper book (src/ui/keeper-book.js; Matt, October 30, 2026): the Walker page's paper and binding
+   (walker-page.css) with a tab row, the Kit page in one pane and the other tabs' pages in another.
+   The pages keep the journal's own styles (journal.css, journal-trails.css, journal-herbarium.css).
+   On Kit the book is as tall as the Kit page; on the other tabs it keeps one height and the page
+   scrolls inside it. Trails widens it on a wide window. Never a sideways scroll, text 15 px and up,
+   48 px targets. */
+
+.ebb-kb { display: flex; flex-direction: column; }
+.ebb-kb:not(.is-kit) { height: min(760px, calc(100vh - 32px)); overflow-y: hidden; }
+.ebb-kb.is-wide { width: min(1000px, calc(100vw - 32px)); }
+.ebb-kb.is-wide.is-four { width: min(1200px, calc(100vw - 32px)); }
+
+/* Five tabs in one row; three and two below 640 px; two to a row below 400 px (an odd last one
+   takes the row). */
+.ebb-kb__nav {
+  flex: none;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 6px;
+  margin: 0 0 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--jr-rule, #DCCFBB);
+}
+.ebb-kb__tab {
+  appearance: none;
+  -webkit-appearance: none;
+  position: relative;
+  min-width: 0;
+  min-height: 48px;
+  margin: 0;
+  padding: 6px 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1.5px solid var(--jr-rule, #DCCFBB);
+  border-radius: 12px;
+  background: transparent;
+  font-weight: 700;
+  font-size: calc(16px * var(--text-scale, 1));
+}
+.ebb-kb__tab:hover { background: rgba(30, 38, 36, 0.05); }
+.ebb-kb__tab[aria-pressed='true'] { background: var(--jr-moss, #5F7F5B); border-color: var(--jr-moss, #5F7F5B); color: var(--jr-paper, #F4EEE4); }
+.ebb-kb__tab .icon { width: 24px; height: 24px; display: block; flex: none; }
+.ebb-kb__tab span { min-width: 0; overflow-wrap: anywhere; }
+.ebb-kb__tab .ebb-new { position: absolute; top: 5px; right: 5px; }
+@media (max-width: 640px) {
+  .ebb-kb__nav { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+  .ebb-kb__tab { grid-column: span 2; }
+  .ebb-kb__tab:nth-child(n + 4) { grid-column: span 3; }
+}
+@media (max-width: 400px) {
+  .ebb-kb__nav { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ebb-kb__tab, .ebb-kb__tab:nth-child(n + 4) { grid-column: auto; justify-content: flex-start; }
+  .ebb-kb__tab:last-child:nth-child(odd) { grid-column: 1 / -1; }
+}
+:root.ebb-text-large .ebb-kb__nav { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+:root.ebb-text-large .ebb-kb__tab, :root.ebb-text-large .ebb-kb__tab:nth-child(n + 4) { grid-column: auto; }
+
+.ebb-kb__page {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  padding: 2px 6px 8px 2px;
+  outline: none;
+}
+
+/* --- Threads (src/ui/keeper-threads.js) --- */
+.ebb-thr { display: grid; gap: 8px; max-width: 720px; min-width: 0; }
+.ebb-thr__head {
+  margin: 14px 0 2px;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--jr-pencil, #8A8478);
+}
+.ebb-thr__head:first-child { margin-top: 0; }
+.ebb-thr__sub { margin: 10px 0 0; font-size: calc(17px * var(--text-scale, 1)); font-weight: 800; color: var(--jr-soft, #4A5551); }
+.ebb-thr__list, .ebb-thr__tries, .ebb-thr__lines { list-style: none; margin: 0; padding: 0; }
+.ebb-thr__row {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 100%;
+  margin: 0;
+  padding: 10px 6px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  border: 0;
+  border-top: 1px solid var(--jr-rule, #DCCFBB);
+  border-radius: 0;
+  background: transparent;
+  text-align: left;
+}
+.ebb-thr__list li:first-child .ebb-thr__row { border-top: 0; }
+.ebb-thr__row:hover { background: rgba(30, 38, 36, 0.05); }
+.ebb-thr__icon { flex: none; width: 28px; height: 28px; margin-top: 2px; color: var(--jr-moss, #5F7F5B); }
+.ebb-thr__icon .icon { width: 28px; height: 28px; display: block; }
+.ebb-thr__text { display: grid; gap: 2px; min-width: 0; flex: 1 1 auto; }
+.ebb-thr__text b { font-weight: 800; font-size: calc(17px * var(--text-scale, 1)); }
+.ebb-thr__text .ebb-journal__voice { font-size: calc(18px * var(--text-scale, 1)); color: var(--jr-soft, #4A5551); }
+.ebb-thr__text .ebb-new { margin-right: 6px; }
+.ebb-thr__chev { flex: none; width: 22px; height: 22px; margin-top: 4px; transform: rotate(90deg); color: var(--jr-pencil, #8A8478); }
+.ebb-thr__row.is-done .ebb-thr__icon { color: var(--jr-pencil, #8A8478); }
+.ebb-thr__try { display: flex; align-items: flex-start; gap: 12px; padding: 10px 6px; border-top: 1px solid var(--jr-rule, #DCCFBB); }
+.ebb-thr__tries li:first-child { border-top: 0; }
+.ebb-thr__try.is-done { color: var(--jr-pencil, #8A8478); }
+.ebb-thr__try.is-done .ebb-thr__icon { color: var(--jr-pencil, #8A8478); }
+.ebb-thr__try.is-done .ebb-journal__voice { color: var(--jr-pencil, #8A8478); text-decoration: line-through; text-decoration-color: rgba(138, 132, 120, 0.6); }
+.ebb-thr__done { font-size: 15px; font-weight: 700; }
+.ebb-thr__show { flex: none; align-self: center; }
+@media (max-width: 520px) {
+  .ebb-thr__try { flex-wrap: wrap; }
+  .ebb-thr__show { margin-left: 40px; }
+}
+.ebb-thr__none { margin: 4px 0; font-size: calc(18px * var(--text-scale, 1)); color: var(--jr-soft, #4A5551); }
+
+/* One thread's page: the keeper's hand. */
+.ebb-thr__page { gap: 6px; }
+.ebb-thr__page > .ebb-shelf__btn { justify-self: start; }
+.ebb-thr__title {
+  margin: 8px 0 0;
+  font-family: var(--font-voice, Fraunces, serif);
+  font-style: italic;
+  font-weight: 500;
+  font-size: calc(28px * var(--text-scale, 1));
+  line-height: 1.15;
+}
+.ebb-thr__begun { margin: 0 0 6px; font-size: 15px; color: var(--jr-pencil, #8A8478); }
+.ebb-thr__lines li { padding: 8px 0; border-top: 1px solid var(--jr-rule, #DCCFBB); }
+.ebb-thr__lines li:first-child { border-top: 0; }
+.ebb-thr__lines p { margin: 0; font-size: calc(19px * var(--text-scale, 1)); line-height: 1.5; }
+.ebb-thr__lines .ebb-new { margin-right: 6px; }
+.ebb-thr__date { display: block; margin-top: 2px; font-size: 15px; color: var(--jr-pencil, #8A8478); }
+.ebb-thr__pencil { margin: 4px 0 0; font-size: calc(19px * var(--text-scale, 1)); color: var(--jr-pencil, #8A8478); }
+.ebb-thr__pages { justify-self: start; margin-top: 8px; }
+
+/* The shelf and the camp page keep the size they had in the journal's narrower panel. */
+.ebb-kb__page > .ebb-shelf { max-width: 600px; }
