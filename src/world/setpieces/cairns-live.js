@@ -45,23 +45,31 @@ export function createCairnsLive(o) {
   const letterWaits = () => { const r = run(); return !!r && list().length >= total() && r.data.read === undefined; };
 
   // ---- hidden while you watch ----
-  /** Cairns that fell during this visit and wait to be out of your way before they show. @type {Set<number>} */
+  /** Cairns that stood up while you play and wait until their spot is out of view. @type {Set<number>} */
   const hidden = new Set();
   let seen = -1;
+  /** Is a ground point in view now: on the screen, in front of the camera, within hideM of it? @param {number} x @param {number} z */
+  function inView(x, z) {
+    const c = o.camera.target, v = get('view');
+    if (Math.hypot(c[0] - x, c[2] - z) > R.hideM || !v?.project) return false;
+    const s = v.project(x, z), m = 40;
+    return !s.behind && s.x > -m && s.y > -m && s.x < innerWidth + m && s.y < innerHeight + m;
+  }
   function watchNew() {
     const n = list().length;
     if (seen < 0) { seen = n; return; }
     for (let i = seen; i < n; i++) hidden.add(i);
     seen = n;
     if (!hidden.size) return;
-    const t = trail(), y = o.walk.you?.(), c = o.camera.target;
+    const t = trail();
+    // Shown the moment you look away (or are far off): it is never seen appearing.
     for (const i of [...hidden]) {
       const p = t?.[i];
-      if (!p) { hidden.delete(i); continue; }
-      const far = (!y || Math.hypot(y[0] - p[0], y[2] - p[1]) > R.hideM) && Math.hypot(c[0] - p[0], c[2] - p[1]) > R.hideM;
-      if (far) hidden.delete(i);
+      if (!p || !inView(p[0], p[1])) hidden.delete(i);
     }
   }
+  /** Cairns that stood up out of sight (away, asleep, a test link) show at once. */
+  const showAll = () => { hidden.clear(); seen = list().length; };
 
   // ---- drawing ----
   /** Baked meshes by their look. @type {Map<string, string>} */ const baked = new Map();
@@ -139,7 +147,8 @@ export function createCairnsLive(o) {
       else if (a.type === 'cairn.read') read();
     }),
     // Cairns that stood up while you were away (or asleep) were never watched: they show at once.
-    on('world:caught-up', () => { hidden.clear(); seen = list().length; }),
+    on('world:caught-up', showAll),
+    on('setpiece:test', (/** @type {any} */ p) => { if (p?.id === ID) showAll(); }),
     registerCardAction({ id: 'cairnadd', icon: 'stone', order: 12, main: (c) => !c.letter, label: W.add, item: () => stoneKind() ?? R.cairn.addKinds[0], chip: 'offer',
       when: (c) => c?.sp === 'setpiece:cairn' && !!get('walk')?.below && !c.full, action: (c) => ({ type: 'cairn.add', cairn: c.cairn }) }),
     registerCardAction({ id: 'cairnread', icon: 'notes', order: 10, main: true, label: W.read,
