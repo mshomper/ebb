@@ -12,6 +12,7 @@
     "world/water": "world/water.json",
     "world/shore": "world/shore.json",
     "world/cove": "world/cove.json",
+    "world/glints": "world/glints.json",
     "world/save": "world/save.json",
     "world/hud": "world/hud.json",
     "world/desktop-only": "world/desktop-only.json",
