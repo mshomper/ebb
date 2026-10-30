@@ -70,7 +70,7 @@ export function createHenLife(o) {
     /** @type {'idle'|'walk'|'act'|'alert'|'flee'|'go'|'settle'|'hop'|'roost'|'shelter'} */ mode: 'idle',
     /** Height off the ground (m): on a roost, or in a flap up or down. */ lift: 0,
     /** A flap up to a roost or down from it: from, to (x, z, lift), seconds in, and which way. @type {{ fx: number, fz: number, fl: number, tx: number, tz: number, tl: number, s: number, up: boolean } | null} */ hop: null,
-    drankDay: -1, dustDay: -1, today: 0, faceTo: /** @type {{ x: number, z: number } | null} */ (null), shelterAt: /** @type {{ x: number, z: number } | null} */ (null), roostS: 0,
+    drankDay: -1, dustDay: -1, laidDay: -1, today: 0, faceTo: /** @type {{ x: number, z: number } | null} */ (null), shelterAt: /** @type {{ x: number, z: number } | null} */ (null), roostS: 0,
     wing: 0, flap: 0, shake: 0, dust: 0, drink: 0, fluff: 0, tuck: 0, crouch: 0, roostYaw: 0,
     /** Where she last roosted (saved by index.js). @type {'scrub'|'perch'|''} */ roostOn: '',
     /** @type {{ side: 'l'|'r', u: number } | null} */ preen: null,
@@ -197,6 +197,10 @@ export function createHenLife(o) {
       hen.queue = [{ a: 'face', s: 0.5 }];
       const n = Math.round(range(D.drinks));
       for (let i = 0; i < n; i++) hen.queue.push({ a: 'dip', s: D.dipS }, { a: 'tip', s: D.tipS });
+      hen.mode = 'act'; hen.act = null;
+    } else if (p.purpose === 'lay') {
+      // On the nest: settled down quiet a while (slice 4); the egg song when she gets up.
+      hen.queue = [{ a: 'sit', s: R.eggs?.layingS ?? 20 }];
       hen.mode = 'act'; hen.act = null;
     } else if (p.purpose === 'dust') {
       hen.dustDay = hen.today;
@@ -334,7 +338,7 @@ export function createHenLife(o) {
      * @param {{ night: boolean, sources: import('../creatures/presence.js').PresenceSource[], band?: number,
      *   ring?: { x: number, z: number } | null, hourOfDay?: number, day?: number,
      *   part?: 'roost'|'dawn'|'midday'|'day', weather?: { rain?: number, cloud?: number } | null,
-     *   perch?: { x: number, z: number, h: number, yaw: number } | null }} c
+     *   perch?: { x: number, z: number, h: number, yaw: number } | null, lay?: { x: number, z: number } | null }} c
      *   band: 0 Wary .. 4 Fond (trust.js henBand); ring: the laid fire ring; hourOfDay, day: the game clock;
      *   part: her part of the day (day.js dayPart; without it, night is roost); weather: now; perch: the camp perch
      */
@@ -367,7 +371,7 @@ export function createHenLife(o) {
         if (hen.mode === 'alert' || hen.mode === 'flee') idle(range(W.settleS) * 0.5);
         // Past Wary she only steps aside, briskly, out to her keeping distance; settled, greeting you,
         // at a treat, waiting by a hole or coming to see you, only if you come right up to her.
-        const near = hen.mode === 'settle' || hen.mode === 'shelter' || ['beside', 'ring', 'greet', 'treat', 'dig', 'visit', 'drink', 'dust', 'shelter'].includes(hen.plan?.purpose ?? '');
+        const near = hen.mode === 'settle' || hen.mode === 'shelter' || ['beside', 'ring', 'greet', 'treat', 'dig', 'visit', 'drink', 'dust', 'shelter', 'lay'].includes(hen.plan?.purpose ?? '');
         if (w && ratio <= (near ? 0.5 : 1) && hen.plan?.purpose !== 'aside') take(asideSpot(R, hen.band, hen, w));
       }
       // Night with no roost to go to: to the middle of the scrub, and stand.
@@ -403,7 +407,8 @@ export function createHenLife(o) {
           greetedDay: hen.greetedDay, treat: T, dig: night ? null : hen.dig, visitDue: !night && hen.band >= 2 && hen.visitAt > 0 && hen.t >= hen.visitAt,
           following: hen.plan?.purpose === 'follow',
           roosting: night || fireNight, roost: bush ? bushRoost(D, bush) : null, perch: c.perch ?? null,
-          shelter: rain && !night ? hen.shelterAt : null, drink, dust: dustDue ? dustFor.at : null });
+          shelter: rain && !night ? hen.shelterAt : null, drink, dust: dustDue ? dustFor.at : null,
+          lay: !night && c.lay && hen.laidDay !== day ? c.lay : null });
         const cur = hen.plan ? PRIORITY[hen.plan.purpose] : 0;
         // Without her day (an older recipe), night keeps her standing at home but for a treat.
         if (plan && !(night && !roosting && plan.purpose !== 'treat')) {
@@ -493,6 +498,7 @@ export function createHenLife(o) {
             const tr = hen.plan?.purpose === 'treat' ? hen.treat : null;
             if (tr) { hen.treat = null; tr.eaten(tr.tid, tr.treat); }
             if (hen.plan?.purpose === 'dig') hen.dig = null;
+            if (hen.plan?.purpose === 'lay') hen.laidDay = hen.today;
             idle();
           } else {
             hen.act = { ...next, u: 0 };
@@ -514,6 +520,7 @@ export function createHenLife(o) {
           // The dust bath: down in the dust, rolling and flicking it over her back with her wings.
           else if (a.a === 'dust') { dust = Math.min(1, u * a.s / 1.2, (1 - u) * a.s / 1.2); settleTo = 1; wingTo = 0.3 * dust; }
           else if (a.a === 'shake') shake = Math.sin(Math.PI * u);
+          else if (a.a === 'sit') settleTo = 1;
           else if (a.a === 'preen') { preen = { side: /** @type {'l'|'r'} */ (a.side), u }; wingTo = 0.2 * Math.sin(Math.PI * u); }
           else if (a.a === 'back') {
             const v = -L.backM / L.backS;

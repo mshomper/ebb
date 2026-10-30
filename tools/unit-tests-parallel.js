@@ -42,6 +42,7 @@ export const PARALLEL = {
   hen: () => import('./unit-tests-hen.js').then((m) => m.addHenTests),
   'hen-trust': () => import('./unit-tests-hen-trust.js').then((m) => m.addHenTrustTests),
   'hen-day': () => import('./unit-tests-hen-day.js').then((m) => m.addHenDayTests),
+  'hen-eggs': () => import('./unit-tests-hen-eggs.js').then((m) => m.addHenEggTests),
   nets: () => import('./unit-tests-nets.js').then((m) => m.addNetsTests),
   trails: () => import('./unit-tests-trails.js').then((m) => m.addTrailsTests),
   forager: () => import('./unit-tests-forager.js').then((m) => m.addForagerTests),

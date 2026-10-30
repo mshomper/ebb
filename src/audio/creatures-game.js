@@ -63,7 +63,7 @@ export function createCreatureSound(mixer, voices, store, recipe, pond) {
   /**
    * The hen's sounds since the last look (docs/future/15 slice 3): her murmur, her alarm, the distant
    * crow, each played where it came from. As the plops: the first look plays nothing, nothing plays
-   * before the first touch. @param {{ n: number, kind: 'murmur'|'alarm'|'crow', pos: number[] }[]} calls
+   * before the first touch. @param {{ n: number, kind: 'murmur'|'alarm'|'crow'|'song', pos: number[] }[]} calls
    */
   function pollHen(calls) {
     const newest = calls.length ? calls[calls.length - 1].n : lastHen;

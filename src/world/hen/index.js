@@ -30,6 +30,9 @@ import { addHenEvent, ensureHen, henBand, henSeenAt, featherLying, applyHen, hen
 import { featherSpot, featherCard } from './feather.js';
 import { dayPart, bareAt, crowHour } from './day.js';
 import { perchSpot, perchRoost, perchCard } from './perch.js';
+import { laysOn, layDayLength, scrapeSpot, henBoxBuilt, nestOf } from './eggs.js';
+import { sunOptsOf } from '../seasons.js';
+import { nestCard, moultCard } from './nest.js';
 import { WATER_CLASS } from '../water/summary.js';
 import { habitatCell } from '../growth/habitat.js';
 import { waterCellOf } from '../water/grid.js';
@@ -53,12 +56,14 @@ export async function loadHenModel(R) {
  *   presence: import('../creatures/presence.js').Presence, hours: () => number, hourIndex: () => number, test?: boolean,
  *   ring?: () => { x: number, z: number } | null, record?: () => void, testFond?: boolean,
  *   weather?: () => { rain?: number, cloud?: number } | null, onPad?: (x: number, z: number) => boolean,
- *   voice?: (kind: 'murmur'|'alarm'|'crow', at: { x: number, y: number, z: number }) => void, sounds?: any }} o
+ *   voice?: (kind: 'murmur'|'alarm'|'crow'|'song', at: { x: number, y: number, z: number }) => void, sounds?: any,
+ *   nestBox?: () => { x: number, z: number, yaw: number } | null, testEggs?: boolean }} o
  *   hours: display time in game hours; hourIndex: the game hour the tick is on; test: `?hen`, under the
  *   view at once; ring: the laid fire ring (camp.ringPlace), or null; record: after an event is
  *   recorded (the store's world slice follows); testFond: `?hen&fond`, Fond and her feather at once;
  *   weather: the weather now; onPad: is a ground point on the camp pad (the perch stands off it);
- *   voice: one of her sounds, where it comes from; sounds: recipes/audio/hen.json (when they are said)
+ *   voice: one of her sounds, where it comes from; sounds: recipes/audio/hen.json (when they are said);
+ *   nestBox: where the nest box stands at camp (slice 4), or null
  */
 export function createHen(o) {
   const R = o.recipe;
@@ -107,6 +112,9 @@ export function createHen(o) {
   // Her feather's card: Take it up gives the hat band (src/app.js hen.feather).
   registerCardAction({ id: 'hen-feather', icon: 'feather', order: 10, main: true, label: R.fond?.feather?.words?.take ?? 'Take it up',
     when: (c) => !!c.feather, action: () => ({ type: 'hen.feather' }) });
+  // A nest with eggs in it (slice 4): Take an egg (src/app.js hen.egg).
+  registerCardAction({ id: 'hen-egg', icon: 'egg', order: 10, main: true, label: R.eggs?.words?.take ?? 'Take an egg',
+    when: (c) => !!c.henNest && c.eggs > 0, action: () => ({ type: 'hen.egg' }) });
   /** @type {ReturnType<typeof createHenPoser> | null} */ let poser = null;
   /** @type {Float32Array | null} */ let bones = null;
   let placed = false, homeIn = 0;
@@ -155,11 +163,18 @@ export function createHen(o) {
       o.world.state = { ...o.world.state, creatures: { ...o.world.state.creatures, hens: H } };
     }
     o.world.state = henSeenAt(o.world.state, life.hen.x, life.hen.z);
+    // `?hen&eggs` (testing): two eggs already in her scrape.
+    if (o.testEggs && R.eggs) {
+      const H1 = o.world.state.creatures.hens, sc = scrapeSpot(R, o.world.state) ?? [life.hen.x + R.eggs.scrapeM, life.hen.z];
+      o.world.state = { ...o.world.state, creatures: { ...o.world.state.creatures, hens: { ...H1, nest: { eggs: 2, where: 'scrape', laid: 2, scrape: sc } } } };
+    }
     o.record?.();
   }
 
   /** Look for her scrub; with `?hen` and none, under the view. Puts her down the first time. */
   function findHome() {
+    // The nest box standing at camp is kept with her, so the hourly tick lays in it (slice 4).
+    if (placed && o.nestBox?.() && saved() && !saved().box) { o.world.state = henBoxBuilt(o.world.state); o.record?.(); }
     const plants = o.world.state?.growth?.plants ?? [];
     const scrub = scrubHome(plants, R.home);
     if (scrub) {
@@ -230,6 +245,37 @@ export function createHen(o) {
     }
   }
 
+  /**
+   * Her nest now (slice 4): the scrape under the scrub, or the nest box at camp, with the eggs in it;
+   * null before she has one. @returns {{ where: 'scrape'|'box', x: number, z: number, eggs: number } | null}
+   */
+  function nestAt() {
+    const N = nestOf(saved());
+    if (!placed || !N) return null;
+    if (N.where === 'box') { const b = o.nestBox?.(); return b ? { where: 'box', x: b.x, z: b.z, eggs: N.eggs } : null; }
+    return N.scrape ? { where: 'scrape', x: N.scrape[0], z: N.scrape[1], eggs: N.eggs } : null;
+  }
+
+  /** Her moulted feather by the roost (autumn), or null. */
+  function moultAt() {
+    const at = nestOf(saved())?.moult?.at;
+    return placed && at ? { x: at[0], z: at[1] } : null;
+  }
+
+  /**
+   * Where she goes to lay this morning, or null: on a laying day (eggs.js laysOn, the same roll the
+   * tick makes), the hour before eggs.layH, to the box once Familiar with one standing, else her scrape
+   * (or under her roost bush before she has one). @param {number} h hour of the day @param {number} day
+   */
+  function layingNow(h, day) {
+    const E = R.eggs;
+    if (!E || h < E.layH - 1 || h >= E.layH || !laysOn(E, subSeed(o.seed, 'hen-eggs'), day, layDayLength(E, day, sunOptsOf(o.world.env)))) return null;
+    const H = saved(), fam = R.presence && henBand(H, R.presence) >= 3, box = o.nestBox?.();
+    if (fam && box) return { x: box.x, z: box.z };
+    const sc = nestOf(H)?.scrape ?? scrapeSpot(R, o.world.state);
+    return sc ? { x: sc[0], z: sc[1] } : null;
+  }
+
   /** Where the feather lies now, or null while none does. */
   function featherAt() {
     if (!placed || !featherLying(saved()) || !R.fond?.feather) return null;
@@ -262,6 +308,20 @@ export function createHen(o) {
     featherAt,
     /** Where the camp perch stands (the camp draws it), or null before she is Familiar. */
     perchAt,
+    /** Her nest and the eggs in it (the app draws them), or null. */
+    nestAt,
+    /** Her moulted feather by the roost (the app draws it), or null. */
+    moultAt,
+    /** A tap on her scrape or the nest box: its card (Take an egg while there are eggs), or null. @param {number} x @param {number} z */
+    nestCard(x, z) {
+      const n = nestAt();
+      return n && R.eggs && Math.hypot(n.x - x, n.z - z) <= R.eggs.draw.tapM ? nestCard(n, n.where, n.eggs, R.eggs.words) : null;
+    },
+    /** A tap on her moulted feather: its card, or null. @param {number} x @param {number} z */
+    moultCard(x, z) {
+      const m = moultAt();
+      return m && R.eggs && Math.hypot(m.x - x, m.z - z) <= 0.4 ? moultCard(m, R.eggs.words) : null;
+    },
     /** A tap on the perch: its card, or null. @param {number} x @param {number} z */
     perchCard(x, z) {
       const p = perchAt();
@@ -300,8 +360,11 @@ export function createHen(o) {
       const sources = o.presence.sources();
       const band = R.presence ? henBand(saved(), R.presence) : 0;
       const p = perchAt();
+      const laidWas = life.hen.laidDay;
       life.step(Math.min(dt, 0.1), { night: h < R.hours[0] || h >= R.hours[1], sources, band, ring: o.ring?.() ?? null, hourOfDay: h, day,
-        part: partNow(), weather: o.weather?.() ?? null, perch: p ? perchRoost(p) : null });
+        part: partNow(), weather: o.weather?.() ?? null, perch: p ? perchRoost(p) : null, lay: layingNow(h, day) });
+      // Up off the nest: her egg song.
+      if (life.hen.laidDay !== laidWas && life.hen.laidDay === day) o.voice?.('song', { x: life.hen.x, y: life.hen.y + 0.3, z: life.hen.z });
       const s = life.hen;
       pass.setExtra([R.body.alphaCut, (D?.fluffM ?? 0) * life.fluff(), 0, 0]);
       // Where she roosts, kept with the island (a load at night puts her back there).

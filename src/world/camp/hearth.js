@@ -196,9 +196,10 @@ export function createHearth(k) {
   function cardAt(x, z) {
     const c = k.camp(), r = k.where.slotAt('ring'), onIt = potOnHearth(c);
     if (r && inSlot(c, 'hearth') && onIt && !k.holdingPot() && Math.hypot(x - r.x, z - r.z) < (H.potCardM ?? 0.22)) {
-      // The tea pot's card is its workspace, where herbs are laid and brewed (P2e, teapot.js).
-      return { ...base, sp: 'camp:pot', camp: 'pot', pot: onIt, onHearth: true, name: CW.pieceNames?.[onIt] ?? onIt, icon: onIt === 'tea-pot' ? 'brew' : 'takeup',
-        text: [CW.pieceLines?.hearth ?? '', waterLine(onIt)].filter(Boolean).join(' '), wx: r.x, wz: r.z, r: 0.5, ...(onIt === 'tea-pot' ? { station: 'teapot' } : {}) };
+      // The tea pot's card is its workspace, where herbs are laid and brewed (P2e, teapot.js); the
+      // cooking pot's, where an egg is cooked (docs/future/15 slice 4, cookpot.js).
+      return { ...base, sp: 'camp:pot', camp: 'pot', pot: onIt, onHearth: true, name: CW.pieceNames?.[onIt] ?? onIt, icon: onIt === 'tea-pot' ? 'brew' : k.cook?.meal ? 'cook' : 'takeup',
+        text: [CW.pieceLines?.hearth ?? '', waterLine(onIt)].filter(Boolean).join(' '), wx: r.x, wz: r.z, r: 0.5, ...(onIt === 'tea-pot' ? { station: 'teapot' } : k.cook?.meal && onIt === 'cooking-pot' ? { station: 'cookpot' } : {}) };
     }
     // A piece firing at the star's edge: how it is coming on, and a bowl done is taken up from here.
     if (r) {

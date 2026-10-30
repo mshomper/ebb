@@ -1,6 +1,6 @@
 // @ts-check
 // The hen's voice (docs/future/15 slice 3; doc 17 "Procedural creature voices"): her contented
-// murmur, her alarm, and the distant crow from the far side, made in code as the frogs' calls are.
+// murmur, her alarm, her egg song (slice 4), and the distant crow from the far side, made in code as the frogs' calls are.
 // A voiced note is a sawtooth through a formant bandpass with a short swell and fall; each sound is
 // a few of those, timed and pitched from recipes/audio/hen.json with a seeded stream, so the same
 // call sounds the same each time it is replayed. The caller places it (voices.js hen()).
@@ -34,7 +34,7 @@ const db = (/** @type {number} */ d) => Math.pow(10, d / 20);
 
 /**
  * Play one of her sounds into dest from `when`. @param {BaseAudioContext} ctx @param {AudioNode} dest
- * @param {'murmur'|'alarm'|'crow'} kind @param {any} R recipes/audio/hen.json
+ * @param {'murmur'|'alarm'|'crow'|'song'} kind @param {any} R recipes/audio/hen.json
  * @param {{ next: () => number, range: (a: number, b: number) => number }} rng @param {number} when audio time
  * @returns {number} when it ends (audio time)
  */
@@ -49,8 +49,9 @@ export function henCall(ctx, dest, kind, R, rng, when) {
       end = note(ctx, dest, t, M.pulseS, fi, fi * (1 - M.glide), g * (1 - 0.12 * i), M.formantHz, M.formantQ);
       t += M.pulseS + rng.range(M.gapS[0], M.gapS[1]);
     }
-  } else if (kind === 'alarm') {
-    const A = R.alarm, n = Math.round(rng.range(A.clucks[0], A.clucks[1])), g = db(A.gainDb);
+  } else if (kind === 'alarm' || kind === 'song') {
+    // The alarm, and the egg song after laying (the same clucks and squawk, softer and lower).
+    const A = R[kind], n = Math.round(rng.range(A.clucks[0], A.clucks[1])), g = db(A.gainDb);
     for (let i = 0; i < n; i++) {
       end = note(ctx, dest, t, A.cluckS, A.f0Hz, A.f0Hz * 0.85, g * 0.7, A.formantHz, A.formantQ);
       t += A.cluckS + A.gapS;

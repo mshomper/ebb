@@ -172,7 +172,7 @@ export function createVoices(mixer, voiceRecipes, seed, opts = {}) {
 
   /**
    * One of the hen's sounds, placed where it comes from: her murmur, her alarm, or the distant crow.
-   * @param {'murmur'|'alarm'|'crow'} kind @param {number[]} pos [x, y, z] @param {number} [when] audio time
+   * @param {'murmur'|'alarm'|'crow'|'song'} kind @param {number[]} pos [x, y, z] @param {number} [when] audio time
    * @returns {boolean} whether it sounds (false without her recipe)
    */
   function hen(kind, pos, when) {

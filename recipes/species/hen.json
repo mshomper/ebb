@@ -68,6 +68,24 @@
     "crowShare": 0.3,
     "crowH": [5, 8]
   },
+  "eggs": {
+    "note": "Her eggs (slice 4, src/world/hen/eggs.js, in the hourly tick so catch-up lays the same). Day length from the sun model sets her laying, answered lagDays late as hens do (so the first days of autumn still have a few and the last of winter none, though their days are as long): none below dayLengthH[0] hours of daylight, her best (one egg every bestEveryDays game days) from dayLengthH[1] up, between them in proportion; so most in late spring and summer, a few at the start of spring and autumn, none in winter. Each game day at layH a seeded roll says whether she lays. Through her autumn moult (moult: season positions, 2 autumn) she lays none, and a moulted feather lies by her roost (seen, not taken). Where: before Familiar, a scrape under the scrub bush she roosts in (scrapeM toward its edge); from Familiar, once the nest box stands at camp, in the box. Eggs wait there, nestMax at most (past that she lays none) until you take them (their card's Take an egg). In the pack an egg is its own pouch kind, a few at most (pack.json egg max). draw: the egg's size (real metres, drawn eggScale times) and look; the scrape's dip. words: the cards. Eggs are never fed to any creature.",
+    "bestEveryDays": 1.2,
+    "dayLengthH": [11.75, 13.5],
+    "lagDays": 5,
+    "layH": 10,
+    "nestMax": 3,
+    "moult": [2.2, 2.6],
+    "scrapeM": 0.45,
+    "layingS": 20,
+    "draw": { "eggM": [0.055, 0.042], "eggScale": 1.6, "srgb": [176, 128, 86], "rough": 0.55, "scrapeR": 0.16, "scrapeSrgb": [92, 70, 50], "bedSrgb": [168, 142, 86], "tapM": 0.45 },
+    "words": {
+      "scrape": "A scrape under the gorse", "scrapeLine": "A shallow hollow scratched under the bush, lined with a few feathers.", "scrapeEggs": ["Empty.", "One brown egg in it.", "Two brown eggs in it.", "Three brown eggs in it."],
+      "nest": "The nest box", "nestLine": "Sticks and rushes by the tent.",
+      "take": "Take an egg", "full": "No room for another egg in the pack.", "took": "An egg, still warm.",
+      "moult": "A moulted feather", "moultLine": "One of the hen's feathers. She is moulting, and lays no eggs for a while."
+    }
+  },
   "perch": {
     "note": "The camp perch (slice 3): two forked sticks and a bar (src/world/hen/perch.js, session-made), standing off the camp pad once she is Familiar: offM from the fire ring toward her scrub, turned turnDeg round, the bar barM long at heightM (real metres), sticks stickR thick. tapM: its card's reach. words: its card.",
     "offM": 2.6,
@@ -146,13 +164,14 @@
     "id": "worms",
     "idOf": {
       "worms": "worms",
+      "grit": "grit",
       "nettle.seed": "seedheads",
       "meadowsweet.seed": "seedheads",
       "marram.seed": "seedheads",
       "campion.seed": "seedheads",
       "chamomile.seed": "seedheads"
     },
-    "kinds": ["worms", "nettle.seed", "meadowsweet.seed", "marram.seed", "campion.seed", "chamomile.seed"],
+    "kinds": ["worms", "nettle.seed", "meadowsweet.seed", "marram.seed", "campion.seed", "chamomile.seed", "grit"],
     "reachM": 12,
     "noticeS": 2,
     "pecks": 4,

@@ -34,7 +34,9 @@
     "basket": { "tier": "T3", "at": "workbench", "parts": ["willow.withies", "rush-cord", "rush-cord"], "out": "carrier", "max": 1, "src": ["4.1", "P2f"] },
     "seed-balls": { "tier": "T2", "at": "workbench", "parts": ["clay", { "part": "seed", "shows": "thrift.seed" }], "out": "pouch", "gives": "{sp}.ball", "count": 1, "src": ["5", "P2g G5"] },
     "lily-parcel": { "tier": "T2", "at": "workbench", "parts": ["worms", "lilies.leaf", "rush-cord"], "out": "pouch", "gives": "lily-parcel", "count": 1, "src": ["F-08", "F-09", "October 27, 2026"] },
-    "gift-stone": { "tier": "T3", "at": "workbench", "parts": ["flat-stones", "shells", "shells"], "out": "slot", "slot": "gift", "max": 1, "src": ["C-14", "C-37", "B1 C1, Matt, October 29, 2026"] }
+    "gift-stone": { "tier": "T3", "at": "workbench", "parts": ["flat-stones", "shells", "shells"], "out": "slot", "slot": "gift", "max": 1, "src": ["C-14", "C-37", "B1 C1, Matt, October 29, 2026"] },
+    "nest-box": { "tier": "T3", "at": "workbench", "parts": ["sticks", "rushes.stems", "rushes.stems"], "out": "slot", "slot": "nest", "max": 1, "src": ["docs/future/15 slice 4", "B1 H4"] },
+    "eggshell-grit": { "tier": "T3", "at": "apothecary", "act": "grind", "parts": ["eggshells"], "out": "pouch", "gives": "grit", "count": 1, "after": "mortar", "src": ["docs/future/15 slice 4", "B1 H4"] }
   },
   "lilyParcelNote": "October 27, 2026 (Matt): the turtles' made treat. A handful of worms wrapped in a lily leaf picked in summer and tied with rush cord, one parcel; set by a basking spot at the water's edge, the turtles tear at it together (recipes/species/turtle.json treat).",
   "seedBallsNote": "P2g G5: a handful of clay and a handful of any plant's saved seed ({ part: 'seed' } takes any '<species>.seed'; its pencil outline wears thrift seed) roll into a handful of seed balls of that species (gives '{sp}.ball', the laid seed's species). Each ball sows a cluster of three on slightly poorer ground (sowing.json ball).",
@@ -63,7 +65,8 @@
     "gorse+chamomile": { "sight": 2.2, "reveal": true, "h": 16 },
     "willow+gorse": { "make": 0.75, "handful": 0.15, "h": 16 },
     "willow+chamomile": { "dried": 1, "rest": ["meadowsweet", "watermint"], "h": 24 },
-    "meadowsweet+watermint": { "trust": 1.05, "walk": 1.05, "h": 24, "after": "willow+chamomile" }
+    "meadowsweet+watermint": { "trust": 1.05, "walk": 1.05, "h": 24, "after": "willow+chamomile" },
+    "meal": { "walk": 1.1, "h": 6, "shows": ["egg"] }
   },
   "boonsNote": "Tea boons (P2e, approved October 25, 2026). Keys are teas.herbs names, a blend's two joined by + in either order. h: game hours on the island it lasts (it counts down only while you are there, never in time away). walk: walk speed; trust: every trust gain (read by trust.js and swarms.js); comfort: a creature's comfort ring (0.9 lets you 10% closer before it shies); sight: how far finds and gather spots show; dig: dig time; make: make time at the stations; burn: how long the fire burns on its fuel; handful: the chance (seeded) of an extra handful at each gather; reveal: an unfound creature gives itself away once, a call or a ripple. dried: how many of the two herbs must come dried off the rack. rest: Deep rest gives no lift itself; rest in the tent while it lasts and you wake with these two herbs' boons together for after's h. A key with after: a boon only that blend gives on waking, never brewed. Boons lift the walker and the walker's friendships, never growth or the land.",
 
@@ -76,6 +79,8 @@
   },
   "teasNote": "Brewing at the tea pot (P2e). herbs: each tea herb's short name and the pack kind it is. strength: the order that decides any other pair (the stronger herb's single boon, with a taste line the first time). steepS: real seconds the pot steeps after Brew (steam rises); sipS: real seconds the walker sits and sips (figure.json gestures.sip). left: the HUD's word for how much is left, by share (words.teaLeft).",
 
+  "mealNote": "The walker's meal (docs/future/15 slice 4; src/world/camp/cookpot.js): the cooking pot on the hearth, full of spring water over a lit fire, is a workspace with two spots: an egg (parts) and, if there is some, a pinch of salt. Cook takes them and the water; the walker kneels to watch it boil (cookS), then sits by the fire to eat (eatS). Its boon (boons.meal, one at a time like the teas) begins, and the shells go into the pack (gives). With salt it is the good breakfast; without, a plain boiled egg (the salt pans are their own piece). The first meal writes a camp-page first (cook made 'meal') and a journal line.",
+  "meal": { "parts": ["egg"], "salt": "sea-salt", "cookS": 4, "eatS": 6, "gives": "eggshells", "boon": "meal" },
   "words": {
     "workbenchSlot": { "name": "Workbench ground", "line": "Level ground facing the fire. A stone slab on a frame would make a bench here.", "needs": "A bench here needs two handfuls of flat stones.", "build": "Build the workbench" },
     "apothecarySlot": { "name": "Bench ground", "line": "Level ground facing the fire. Sticks lashed with cord would make a bench for herbs here.", "needs": "A bench here needs two handfuls of sticks and a handful of rush cord.", "build": "Build the apothecary bench" },
@@ -119,7 +124,9 @@
       "basket": "A basket of woven withies on two cord straps. You put it on, and hang the other by the bench. Two more pouches.",
       "seed-balls": "Seed rolled into clay. Each ball will land as a little cluster, and take where a bare seed would not.",
       "lily-parcel": "Worms folded into a lily leaf and tied with cord. A parcel for the turtles, to set at the water's edge.",
-      "gift-stone": "A flat stone with shells set along its edge. It stands by the tent, for what the creatures leave you." },
+      "gift-stone": "A flat stone with shells set along its edge. It stands by the tent, for what the creatures leave you.",
+      "nest-box": "A box of sticks lined with rushes, set by the tent. A hen might lay in it, if she knows you.",
+      "eggshell-grit": "Ground fine. A handful of eggshell grit, for the hen." },
     "benchFull": "The bench is full of pieces waiting for the fire. Fire one first.",
     "onBench": "On the workbench",
     "benchWaiting": "Waiting for the fire",
@@ -148,12 +155,17 @@
       "steeping": "Steeping.", "rack": "On the rack", "dried": "dried", "noHerbs": "No herbs in the pack, on the rack or in the hamper." },
     "boonNames": { "watermint": "Light on your feet", "meadowsweet": "Easy company", "gorse": "A bright eye", "nettle": "A strong back", "chamomile": "A calm way about you",
       "willow": "Steady hands", "watermint+nettle": "Out all day", "meadowsweet+chamomile": "Old friends", "gorse+chamomile": "A long, slow look",
-      "willow+gorse": "A good day's work", "willow+chamomile": "Deep rest", "meadowsweet+watermint": "Easy company, light on your feet" },
+      "willow+gorse": "A good day's work", "willow+chamomile": "Deep rest", "meadowsweet+watermint": "Easy company, light on your feet",
+      "meal": "Well fed" },
     "boonLines": { "watermint": "Your step is lighter.", "meadowsweet": "Creatures warm to you sooner.", "gorse": "Finds and good picking show from further off.",
       "nettle": "The shovel bites easier.", "chamomile": "Creatures let you come a little closer.", "willow": "Making goes quicker, and the fire lasts longer.",
       "watermint+nettle": "A quick step and an easy shovel.", "meadowsweet+chamomile": "Creatures warm to you, and let you near.",
       "gorse+chamomile": "Finds show from far off, and something hidden may give itself away.", "willow+gorse": "Quick making, and now and then an extra handful.",
-      "willow+chamomile": "Rest in the tent tonight and wake to an easy day.", "meadowsweet+watermint": "Rested well. Easy company and a light step all day." },
+      "willow+chamomile": "Rest in the tent tonight and wake to an easy day.", "meadowsweet+watermint": "Rested well. Easy company and a light step all day.",
+      "meal": "A warm breakfast in you. Your step is stronger for a while." },
+    "cookpot": { "name": "Cooking pot", "cook": "Cook", "laid": "Lay an egg, and a pinch of salt if you have some. Click one to take it back.", "noWater": "The pot is empty. Fill it at the spring first.",
+      "sea": "Sea water. Pour it out and fill it at the spring.", "noFire": "Light the fire under it first.", "noEgg": "An egg first. Lay one from the pack.", "noEggs": "No eggs in the pack.",
+      "cooking": "On the boil.", "plain": "A boiled egg, eaten by the fire.", "salted": "A good breakfast. An egg, with a pinch of salt.", "first": "My first real meal on the island: an egg from the hen, cooked on the hearth.", "shells": "The shells go in the pack." },
     "drank": "{tea} tea. {name}.",
     "teaNames": { "watermint": "Water mint", "meadowsweet": "Meadowsweet", "gorse": "Gorse", "nettle": "Nettle", "chamomile": "Chamomile", "willow": "Willow bark" },
     "tasteNames": { "watermint": "mint", "meadowsweet": "meadowsweet", "gorse": "gorse", "nettle": "nettle", "chamomile": "chamomile", "willow": "willow" },
@@ -183,14 +195,14 @@
       "hearth-stones": "Hearth stones", "cooking-pot": "Cooking pot, shaped", "tea-pot": "Tea pot, shaped", "cup": "Clay cup, shaped", "bowl": "Clay bowl, shaped",
       "fire-cooking-pot": "Cooking pot, fired", "fire-tea-pot": "Tea pot, fired", "fire-cup": "Clay cup, fired", "fire-bowl": "Clay bowl, fired", "leaf-pack": "Leaf pack",
       "satchel": "Rush satchel, eight pouches", "basket": "Willow basket, ten pouches", "seed-balls": "Seed balls", "lily-parcel": "Lily leaf parcel",
-      "gift-stone": "Gift stone" },
+      "gift-stone": "Gift stone", "nest-box": "Nest box", "eggshell-grit": "Eggshell grit", "meal": "An egg, cooked on the hearth" },
     "pageParts": { "ring": "Sticks and stones", "workbench": "Two flat stones", "shovel": "Woven twigs or a stick, a flat stone, cord", "woven-twigs": "Two handfuls of drift twigs, woven", "rush-cord": "Rushes, reed leaves or marram, twisted",
       "apothecary": "Sticks lashed with cord", "rack": "Withies or sticks, cord", "mortar": "A flat stone and a pebble", "hamper": "Rushes coiled, stitched with cord",
       "hamper2": "Rushes, cord, a willow lid", "dry": "A handful of herbs, hung", "grind": "Broken shells, ground", "willow-charcoal": "Withies, a night in the fire",
       "hearth-stones": "Two handfuls of flat stones", "cooking-pot": "Clay, tempered with sand; it wants a night in the fire", "tea-pot": "Clay, tempered with crushed shell; it wants a night in the fire", "cup": "A handful of clay; it wants a night in the fire", "bowl": "A handful of clay; it wants a night in the fire",
       "fire-cooking-pot": "A night in the fire", "fire-tea-pot": "A night in the fire", "fire-cup": "A night in the fire", "fire-bowl": "A night in the fire",
       "leaf-pack": "Fallen leaves, rush cord", "satchel": "Rushes plaited, a cord strap", "basket": "Withies woven, two cord straps", "seed-balls": "Clay and saved seed, rolled", "lily-parcel": "Worms, a lily leaf, rush cord",
-      "gift-stone": "A flat stone, two handfuls of shells" }
+      "gift-stone": "A flat stone, two handfuls of shells", "nest-box": "Sticks, two handfuls of rushes", "eggshell-grit": "The eggshells from a breakfast", "meal": "An egg from the hen" }
   },
   "wordsNote": "Every line the stations and the camp page say. <slot>Slot: a bench's ground card (name, line, needs, and its Build label); builtLines: the line after a build other than the workbench's (built). acts: the apothecary's actions. hamper: the stations' row of what the hamper holds; takeUp, setDownHere, emptySlot: the hamper's and the rack's cards. made: the line after a first make, by make id. workFull, workTake, workWaiting, workDone: the overnight work at the fire (the ring's card). pageNames, pageParts: the camp page's first-made lines, in the walker's hand: name, what it was made of, and the date."
 }

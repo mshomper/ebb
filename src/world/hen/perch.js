@@ -12,7 +12,7 @@
  * layout: position, normal, uv; 8 floats a vertex). @param {number[]} V @param {number[]} I
  * @param {number[]} a @param {number[]} b @param {number} r0 @param {number} r1 @param {number} [sides]
  */
-function stick(V, I, a, b, r0, r1, sides = 7) {
+export function stick(V, I, a, b, r0, r1, sides = 7) {
   const d = [b[0] - a[0], b[1] - a[1], b[2] - a[2]], l = Math.hypot(d[0], d[1], d[2]) || 1;
   const t = d.map((v) => v / l);
   // Two directions across the stick.

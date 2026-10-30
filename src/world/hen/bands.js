@@ -16,14 +16,14 @@
 export const BAND_KEYS = /** @type {const} */ (['wary', 'tolerant', 'curious', 'familiar', 'fond']);
 
 /**
- * @typedef {{ purpose: 'aside'|'treat'|'ring'|'roost'|'shelter'|'greet'|'beside'|'dig'|'drink'|'follow'|'dust'|'visit', x: number, z: number, pace: number,
+ * @typedef {{ purpose: 'aside'|'treat'|'ring'|'roost'|'shelter'|'greet'|'beside'|'lay'|'dig'|'drink'|'follow'|'dust'|'visit', x: number, z: number, pace: number,
  *   h?: number, yaw?: number, look?: { x: number, z: number } }} Plan
  *   purpose: why she goes (higher ones win, PRIORITY); x, z: where; pace: m/s; h: a roost's height
  *   off the ground (m); yaw: how she sits on it; look: what she faces there (the water she drinks)
  */
 
 /** Which plan gives way to which: a plan in hand is dropped only for a higher one. */
-export const PRIORITY = { aside: 9, treat: 8, ring: 7, roost: 7, shelter: 6.5, greet: 6, beside: 6, dig: 5, drink: 4.5, follow: 4, dust: 3.5, visit: 3 };
+export const PRIORITY = { aside: 9, treat: 8, ring: 7, roost: 7, shelter: 6.5, greet: 6, beside: 6, lay: 5.5, dig: 5, drink: 4.5, follow: 4, dust: 3.5, visit: 3 };
 
 /**
  * @typedef {Object} HenSee what she takes in when she chooses
@@ -45,6 +45,7 @@ export const PRIORITY = { aside: 9, treat: 8, ring: 7, roost: 7, shelter: 6.5, g
  * @property {{ x: number, z: number } | null} [shelter] raining: her place under a bush
  * @property {{ x: number, z: number, look: { x: number, z: number } } | null} [drink] dawn: the water's edge, while a drink is due
  * @property {{ x: number, z: number } | null} [dust] midday: the dust-bath patch, while a bath is due
+ * @property {{ x: number, z: number } | null} [lay] a laying morning (slice 4): her scrape or the nest box, while she is due to lay
  */
 
 /** The band's own numbers. @param {any} B recipes/species/hen.json bands @param {number} band */
@@ -102,6 +103,8 @@ export function choosePlan(R, s) {
   }
   // Rain: under a bush, fluffed, until it passes.
   if (s.shelter) return { purpose: 'shelter', x: s.shelter.x, z: s.shelter.z, pace: pace(dHen(s.shelter)) };
+  // A laying morning (slice 4): to the scrape or the nest box, to sit a while.
+  if (s.lay) return { purpose: 'lay', x: s.lay.x, z: s.lay.z, pace: pace(dHen(s.lay)) };
   // Dawn: to the water's edge for a drink (before anything you are doing).
   if (s.drink && (b < 4 || !w || s.greetedDay === s.day)) return { purpose: 'drink', x: s.drink.x, z: s.drink.z, look: s.drink.look, pace: pace(dHen(s.drink)) };
   if (!w) return s.dust ? { purpose: 'dust', x: s.dust.x, z: s.dust.z, pace: pace(dHen(s.dust)) } : null;

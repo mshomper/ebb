@@ -11,10 +11,12 @@
 // Live play records what happened as small events (`pending`); the hourly tick applies them
 // (coarseStep, after the swarms), so an hour watched, a save and a catch-up all agree. While you are
 // away nothing is recorded: the days still pass, but none of them is a day together. Pure and
-// worker-safe. Numbers: recipes/species/hen.json presence and fond.
+// worker-safe. Numbers: recipes/species/hen.json presence and fond. Slice 4 adds her eggs (eggs.js) to the hour.
 
 import { HOURS_PER_DAY } from '../../core/clock.js';
 import { trustWord, maxTrust, treatGain } from '../creatures/trust.js';
+import { applyEggs } from './eggs.js';
+import { sunOptsOf } from '../seasons.js';
 
 /** Her words, lowest first; recipes/world/journal.json hens.trust.words holds how each reads. */
 export const HEN_WORDS = /** @type {const} */ (['wary', 'tolerant', 'curious', 'familiar', 'fond']);
@@ -176,6 +178,8 @@ export function coarseStep(state, hourIndex, env) {
   if (!H0 || !R?.presence || !R.fond) return { state, events: [] };
   /** @type {HenState} */ const H = { ...H0, pending: [...(H0.pending ?? [])] };
   const events = applyHen(H, R, hourIndex, { testTrust: env.testTrust ?? 0, testFond: !!env.testFond, boost: env.trustBoost ?? 1 });
+  // Slice 4: her eggs, laid by day length (eggs.js).
+  events.push(...applyEggs(H, R, hourIndex, state, env.seed ?? 0, sunOptsOf(env)));
   return { state: { ...state, creatures: { ...state.creatures, hens: H } }, events };
 }
 

@@ -2,7 +2,7 @@
 
 > One spring morning a small brown hen walks out of the gorse, scratching. She is feral: no one's, wary, and quite able to look after herself. Over a season she learns the walker, comes to the camp at dusk, follows you while you dig, and starts laying in the nest you made her. Her eggs are the walker's first real meal. If you leave a clutch in spring she sits, and the island has chicks.
 
-**Status:** Slice 1 built on `m2-hen` (October 27, 2026): a wary hen in the scrub. Slice 2 (trust, then Fond) built on `m2-hen-trust` (October 29, 2026); see "Built: trust and Fond" below. Slice 3 (her day) built on `m2-hen-day-eggs` (October 30, 2026); see "Built: her day". Drafted October 25, 2026, from Matt's ask for a wandering chicken you can befriend that gives eggs.
+**Status:** Slice 1 built on `m2-hen` (October 27, 2026): a wary hen in the scrub. Slice 2 (trust, then Fond) built on `m2-hen-trust` (October 29, 2026); see "Built: trust and Fond" below. Slice 3 (her day) built on `m2-hen-day-eggs` (October 30, 2026); see "Built: her day". Slice 4 (eggs) built there too; see "Built: eggs". Drafted October 25, 2026, from Matt's ask for a wandering chicken you can befriend that gives eggs.
 
 ## Decided so far
 
@@ -34,6 +34,17 @@ The slices: 1 a wary hen (built), 2 trust (the four bands, then Fond as 2b; buil
 - **Fluffed**: roosting and in rain her body feathers stand out (the shader pushes them along the normal; her legs stay thin).
 - **Sounds** (recipes/audio/hen.json, src/audio/voices/hen.js): made in code like the frogs' calls rather than recordings: a soft murmur now and then while she forages, the alarm when you frighten her at Wary, and a distant crow from beyond her scrub on about a third of mornings, never every morning.
 - Test links: `?hen&camp&trust=0.65&hour=17.6` (to the perch at dusk), `&hour=5.7` (on the perch, down at sunrise, a drink), `?hen&hour=11.45&weather=clear` (the dust bath), `?hen&weather=rain` (sheltering, with scrub). tools/hen-lab.html has each new clip.
+
+### Built: eggs (slice 4, October 30, 2026)
+
+- **Laying by day length** (src/world/hen/eggs.js, in the hourly tick so catch-up lays the same): none below 11.75 h of daylight, her best (one egg every 1.2 game days) from 13.5 h, in proportion between. She answers the light 5 days late, as hens do, so the first days of autumn still bring a few and the last of winter none, though their days are as long. Through her autumn moult (about a third of the season) she lays none, and a moulted feather lies by her roost (seen, not taken). Each game day at 10:00 a seeded roll says whether she lays; in the hour before, she walks to her nest and settles there a while, then sings the egg song.
+- **Where**: before Familiar, a **scrape** under the scrub bush she roosts in (finding it is a small hunt); from Familiar, once it stands, the **nest box** at camp. Eggs wait there, three at most, until you take them (the card's Take an egg). Eggs left in the scrape stay there.
+- **The nest box**: a workbench make, parts **sticks and two handfuls of rushes** (no other make or build takes these), into the camp's new `nest` slot by the tent. Session-made: a box of sticks in courses with a rush bed.
+- **The egg pouch**: its own pouch kind, three eggs at most (pack.json `max`). Eggs are no creature's treat.
+- **The walker's meal** (src/world/camp/cookpot.js): the cooking pot on the hearth, full of spring water over a lit fire, is now a workspace like the tea pot's: lay an egg, and a pinch of sea salt if you have some, and Cook. The walker kneels to watch it boil, then sits by the fire and eats. Its boon is **Well fed** (a stronger step for 6 game hours, cook.json boons.meal). The first meal is a camp-page first and a journal line. Sea salt is not built yet (the salt pans are their own piece from the sea-salt plan): the meal works with an egg alone as a plain boiled egg, and the salted one is the good breakfast once there is salt. The sea-salt pouch kind and its icon are in, waiting.
+- **Eggshell grit**: the meal leaves eggshells in the pack; ground at the mortar (an apothecary make, parts eggshells) they are grit, the hen's treat (her treat kinds).
+- Journal: her page learns where she lays (scrape, then box) and her moult; notes for her first scrape egg, her first nest-box egg, the moult, grit taken, and the first meal. The camp page names the nest box, the grit and the meal. The forager's trail is left as it is.
+- Test links: `?hen&eggs` (two eggs in her scrape), `?camp=nest` (the nest box's parts at the workbench), `?camp=hearth&fire=lit&eggs` (eggs and salt, the cooking pot full: Cook at once), `?camp=apothecary&eggs` (eggshells for the mortar).
 
 These rules carry over:
 
