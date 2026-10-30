@@ -2,7 +2,8 @@
 // The field journal's hen (docs/future/15, slice 2): her page knows her once you find her yourself (a
 // tap on her), as the frogs'. Each word she reaches (trust.js: Wary to Familiar, then Fond) writes a
 // note and teaches the page what it means; a treat she took teaches its Likes line; her tail
-// feather laid at camp is written down. Her card names her word, and a name once she knows you well
+// feather laid at camp is written down; her first eggs (in the scrape, then the nest box) and her
+// moult too (slice 4). Her card names her word, and a name once she knows you well
 // enough. Pure, like observe.js and creatures.js, so live play and a catch-up write the same journal.
 // Words: recipes/world/journal.json species.hens.
 
@@ -55,6 +56,12 @@ export function observeHen(j, out, ctx, at) {
     } else if (e.name === 'hen:feather') {
       learnOnce(k, 'feather');
       say(rec.notes?.feather, 'sign');
+    } else if (e.name === 'hen:laid') {
+      // Slice 4: her first egg in the scrape, and her first in the nest box.
+      const where = e.payload.where === 'box' ? 'box' : 'scrape';
+      if (learnOnce(k, `eggs:${where}`)) say(rec.notes?.[where === 'box' ? 'nestbox' : 'scrape'], 'sign');
+    } else if (e.name === 'hen:moult') {
+      if (learnOnce(k, 'moult')) say(rec.notes?.moult, 'sign');
     }
   }
   if (k.ever) {

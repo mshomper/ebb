@@ -158,6 +158,12 @@ export function createJournal(opts) {
     if (hn && words.species.hens) return henCard(hn, world.state, words, world.env.recipes?.species?.hen?.presence);
     const fe = hen?.featherCard?.(x, z) ?? null;
     if (fe) return fe;
+    // Her perch at camp (slice 3).
+    const pe = hen?.perchCard?.(x, z) ?? null;
+    if (pe) return pe;
+    // Her scrape or the nest box with its eggs, and her moulted feather (slice 4).
+    const ne = hen?.nestCard?.(x, z) ?? hen?.moultCard?.(x, z) ?? null;
+    if (ne) return ne;
     // Then a school of minnows under the water, or a dragonfly in the air above it.
     for (const s of opts.schools ?? []) {
       const hit = s.at(x, z, y);
@@ -473,6 +479,8 @@ export function createJournal(opts) {
     on('progress:gifted', (/** @type {any} */ g) => commit(noteGift(journal, g, { state: world.state, hour: hourIndex(), words }))),
     // The camp became a known place (B1 C1, src/world/camp/gift-stone.js): written once.
     on('camp:known-rose', (/** @type {{ text: string }} */ p) => commit(noteOnce(journal, 'camp:known', p.text, { state: world.state, hour: hourIndex(), words }))),
+    // The walker's first meal, an egg cooked on the hearth (docs/future/15 slice 4, cookpot.js).
+    on('meal:eaten', (/** @type {{ text?: string }} */ p) => { if (p?.text) commit(noteOnce(journal, 'meal:first', p.text, { state: world.state, hour: hourIndex(), words })); }),
     // Watching a frog (or a school) from close by finds it too (src/world/creatures/index.js, schools.js).
     on('creature:found', (/** @type {{ species: string }} */ p) => {
       if (p.species === 'frogs' || words.species[p.species]?.kind === 'school') found(p.species);

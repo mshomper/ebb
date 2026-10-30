@@ -83,8 +83,12 @@ export function leftWord(share, C) {
   return hit ? C.words?.teaLeft?.[hit[1]] ?? '' : '';
 }
 
-/** A boon's herbs as pack kinds, for its HUD glyphs (a waking blend shows its rest herbs). @param {Boon} b @param {any} C */
+/**
+ * A boon's herbs as pack kinds, for its HUD glyphs (a waking blend shows its rest herbs); a boon that
+ * is not a tea (the walker's meal) names its own (boons.<id>.shows). @param {Boon} b @param {any} C
+ */
 export function herbsOf(b, C) {
+  if (C.boons?.[b.id]?.shows) return C.boons[b.id].shows;
   return b.id.split('+').map((h) => C.teas?.herbs?.[h]).filter(Boolean);
 }
 

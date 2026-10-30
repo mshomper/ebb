@@ -370,8 +370,8 @@ export function createStations(k) {
   const offs = [
     subscribe('identify', (/** @type {any} */ c) => {
       const id = c?.station ?? null;
-      // The tea pot's workspace is its own (teapot.js, P2e).
-      if (!id || id === 'teapot') { if (open) close(); return; }
+      // The tea pot's and the cooking pot's workspaces are their own (teapot.js, P2e; cookpot.js).
+      if (!id || id === 'teapot' || id === 'cookpot') { if (open) close(); return; }
       if (open?.id !== id) { open = { id, laid: [], nothingT: 0, line: null }; makeT = -1; }
       publish();
     }),

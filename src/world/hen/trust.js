@@ -11,10 +11,12 @@
 // Live play records what happened as small events (`pending`); the hourly tick applies them
 // (coarseStep, after the swarms), so an hour watched, a save and a catch-up all agree. While you are
 // away nothing is recorded: the days still pass, but none of them is a day together. Pure and
-// worker-safe. Numbers: recipes/species/hen.json presence and fond.
+// worker-safe. Numbers: recipes/species/hen.json presence and fond. Slice 4 adds her eggs (eggs.js) to the hour.
 
 import { HOURS_PER_DAY } from '../../core/clock.js';
 import { trustWord, maxTrust, treatGain } from '../creatures/trust.js';
+import { applyEggs } from './eggs.js';
+import { sunOptsOf } from '../seasons.js';
 
 /** Her words, lowest first; recipes/world/journal.json hens.trust.words holds how each reads. */
 export const HEN_WORDS = /** @type {const} */ (['wary', 'tolerant', 'curious', 'familiar', 'fond']);
@@ -32,11 +34,22 @@ export const HEN_WORDS = /** @type {const} */ (['wary', 'tolerant', 'curious', '
 /**
  * @typedef {{ trust: number, since: number, day: number, nearH: number, famDays: number, together: number,
  *   pending?: HenEvent[], treatDay?: number, name?: string, namedAt?: number, fond?: number,
- *   feather?: { at: number, taken?: number }, at?: number[] }} HenState
+ *   feather?: { at: number, taken?: number }, at?: number[], roost?: 'scrub'|'perch' }} HenState
  *   since: the game hour she was first out; day: the game day being counted, nearH its hours near;
  *   famDays, together: whole days at Familiar, and of those the days together; fond: the hour she
- *   became Fond; feather: the hour her tail feather was laid, and taken; at: where she was last seen [x, z]
+ *   became Fond; feather: the hour her tail feather was laid, and taken; at: where she was last seen [x, z];
+ *   roost (slice 3): where she last roosted, 'scrub' or 'perch' (older saves have none)
  */
+
+/**
+ * Where she roosted tonight, kept so a load at night puts her back on it. Pure: a new state, or the
+ * same one. @param {any} state @param {'scrub'|'perch'} where
+ */
+export function henRoosted(state, where) {
+  const H = state?.creatures?.hens;
+  if (!H || H.roost === where) return state;
+  return { ...state, creatures: { ...state.creatures, hens: { ...H, roost: where } } };
+}
 
 /** Rounded to four places, so saves and catch-up compare exactly. @param {number} v */
 const r4 = (v) => Math.round(v * 10000) / 10000;
@@ -165,6 +178,8 @@ export function coarseStep(state, hourIndex, env) {
   if (!H0 || !R?.presence || !R.fond) return { state, events: [] };
   /** @type {HenState} */ const H = { ...H0, pending: [...(H0.pending ?? [])] };
   const events = applyHen(H, R, hourIndex, { testTrust: env.testTrust ?? 0, testFond: !!env.testFond, boost: env.trustBoost ?? 1 });
+  // Slice 4: her eggs, laid by day length (eggs.js).
+  events.push(...applyEggs(H, R, hourIndex, state, env.seed ?? 0, sunOptsOf(env)));
   return { state: { ...state, creatures: { ...state.creatures, hens: H } }, events };
 }
 

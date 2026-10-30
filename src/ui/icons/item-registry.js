@@ -43,6 +43,8 @@ export const POUCH_KINDS = /** @type {[string, string, string, string, number][]
   ['leaf-pack', 'leaf-pack', 'Leaf pack', 'T2', 2],
   // The turtles' made treat (October 27, 2026), in its treat glyph.
   ['lily-parcel', 'lily-parcel', 'Lily leaf parcel', 'T2', 2],
+  // The hen's eggs and what comes of them (docs/future/15 slice 4); sea salt waits for the salt pans.
+  ['egg', 'egg', 'Eggs', 'T3', 3], ['eggshells', 'eggshells', 'Eggshells', 'T3', 3], ['grit', 'grit', 'Eggshell grit', 'T3', 3], ['sea-salt', 'sea-salt', 'Sea salt', 'T2', 3],
 ]).map(row);
 
 /** Plant parts, '<species>.<part>' (docs/future/13 sections 4.1 and 5.3). @type {ItemRow[]} */
@@ -101,7 +103,7 @@ export const MAKES = /** @type {[string, string, string, string, number][]} */ (
 /** Treats and offerings (docs/future/13 section 8). @type {ItemRow[]} */
 export const TREATS = /** @type {[string, string, string, string, number][]} */ ([
   ['wrack-heap', 'wrack-heap', 'Wrack heap (frogs)', 'T2', 2], ['leaf-pack', 'leaf-pack', 'Leaf pack (minnows)', 'T2', 2], ['dug-worms', 'worms', 'Worms (turtles, the robin)', 'T2', 2],
-  ['lily-parcel', 'lily-parcel', 'Lily leaf parcel (turtles)', 'T2', 2],
+  ['lily-parcel', 'lily-parcel', 'Lily leaf parcel (turtles)', 'T2', 2], ['eggshell-grit', 'grit', 'Eggshell grit (the hen)', 'T3', 3],
   ['pondweed-bundle', 'pondweed', 'Pondweed bundle (minnows)', 'T3', 3], ['lily-leaf', 'lily-leaf', 'Lily leaf (turtles)', 'T2', 2], ['perch-stick', 'perch-stick', 'Perch stick (dragonflies)', 'T3', 3],
   ['overripe-fruit', 'offered:strawberries', 'Overripe fruit (butterflies)', 'T4', 4], ['seed-cake', 'seed-cake', 'Seed cake (songbirds)', 'T5', 4],
   ['acorns-stump', 'offered:acorns', 'Acorns on a stump (the jay)', 'T5', 5], ['hazelnuts-stump', 'offered:hazelnuts', 'Hazelnuts in the shell (squirrels)', 'T5', 5],
