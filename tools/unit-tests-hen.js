@@ -54,7 +54,7 @@ export function addHenTests(test, assert, eq) {
     for (let v = 0; v < built.count; v++) low = Math.min(low, f[v * 11 + 1]);
     assert(Math.abs(low) < 1e-4, `her soles on y = 0 (lowest ${low})`);
     assert(built.height > 0.38 && built.height < 0.46, `a real hen's height (${built.height.toFixed(3)} m)`);
-    eq(built.indices.length / 3, 1541, 'the model as supplied');
+    eq(built.indices.length / 3 - built.wingTris, 1541, 'the model as supplied (and her wing patches on top, slice 3)');
   });
 
   test(HEN, 'the Idle clip samples to finite moves, and every clip poses finite bones', async () => {

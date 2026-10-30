@@ -86,7 +86,7 @@ function sampleAt(times, values, n, t, interp, quat) {
  * @param {import('../../render/gltf.js').Glb} glb assets/models/hen/hen.glb, read
  * @param {any} R recipes/species/hen.json
  * @param {{ idleFps?: number }} [o]
- * @returns {{ data: ArrayBuffer, indices: Uint32Array, count: number, skeleton: Bone[], idle: IdleClip | null, height: number }}
+ * @returns {{ data: ArrayBuffer, indices: Uint32Array, count: number, skeleton: Bone[], idle: IdleClip | null, height: number, wingVerts: number, wingTris: number }}
  */
 export function buildHen(glb, R, o = {}) {
   const json = glb.json, nodes = json.nodes;
@@ -156,16 +156,75 @@ export function buildHen(glb, R, o = {}) {
   }
   const idx = glb.accessor(prim.indices);
   const indices = idx instanceof Uint32Array ? idx : Uint32Array.from(idx);
-  const data = packMesh({ vertices, count }, outJ, outW);
+  // Her wings (slice 3): the file's wings are painted on her sides and carry no skin, so a copy of
+  // each side's wing patch, lifted a hair off the body, is skinned whole to its wing bone; opened,
+  // the body under it shows its own feathers.
+  const wings = R.wings ? wingPatches(vertices, indices, skeleton, R.wings) : null;
+  const all = wings ? joinWings(vertices, count, outJ, outW, indices, wings, R.wings.liftM) : { vertices, count, outJ, outW, indices };
+  const data = packMesh({ vertices: all.vertices, count: all.count }, all.outJ, all.outW);
   // The clip first, in the file's own space: a move about a pivot is the same once both are shifted.
   const idle = idleClip(json, glb, nodes, parent, restOwn, rest, keptNode, skeleton, o.idleFps ?? 30);
   // Stand her on y = 0: her lowest point is the soles of her feet.
   if (Math.abs(low) > 1e-4) {
     const f = new Float32Array(data);
-    for (let v = 0; v < count; v++) f[v * 11 + 1] -= low;
+    for (let v = 0; v < all.count; v++) f[v * 11 + 1] -= low;
     skeleton.forEach((b) => { b.pivot[1] -= low; });
   }
-  return { data, indices, count, skeleton, idle, height: high - low };
+  return { data, indices: all.indices, count: all.count, skeleton, idle, height: high - low, wingVerts: all.count - count, wingTris: (all.indices.length - indices.length) / 3 };
+}
+
+/**
+ * Each wing's patch (slice 3): the body's triangles whose three corners lie in the wing's region on
+ * its side (rest metres: x times the side past xMin, y and z within their spans), as the body's
+ * vertex numbers and the triangles over them, with the wing bone they go to. Pure.
+ * @param {Float32Array} vertices 9 floats a vertex @param {Uint32Array} indices @param {Bone[]} skeleton
+ * @param {{ bones: { bone: string, side: number }[], xMin: number, y: number[], z: number[] }} W recipes/species/hen.json wings
+ * @returns {{ bone: number, side: number, verts: number[], tris: number[] }[]}
+ */
+export function wingPatches(vertices, indices, skeleton, W) {
+  return W.bones.map((b) => {
+    const bone = skeleton.findIndex((s) => s.name === b.bone);
+    if (bone < 0) throw new Error(`hen: no wing bone ${b.bone}`);
+    const inWing = (/** @type {number} */ v) => {
+      const x = vertices[v * 9] * b.side, y = vertices[v * 9 + 1], z = vertices[v * 9 + 2];
+      return x >= W.xMin && y >= W.y[0] && y <= W.y[1] && z >= W.z[0] && z <= W.z[1];
+    };
+    /** @type {number[]} */ const tris = [];
+    /** @type {Map<number, number>} */ const verts = new Map();
+    for (let i = 0; i < indices.length; i += 3) {
+      const a = indices[i], c = indices[i + 1], d = indices[i + 2];
+      if (!inWing(a) || !inWing(c) || !inWing(d)) continue;
+      for (const v of [a, c, d]) { if (!verts.has(v)) verts.set(v, verts.size); tris.push(/** @type {number} */ (verts.get(v))); }
+    }
+    return { bone, side: b.side, verts: [...verts.keys()], tris };
+  });
+}
+
+/**
+ * The body with each wing patch appended: its vertices copied, lifted liftM along their normals and
+ * skinned whole to the wing bone, its triangles renumbered to the copies.
+ * @param {Float32Array} vertices @param {number} count @param {Uint8Array} outJ @param {Uint8Array} outW
+ * @param {Uint32Array} indices @param {{ bone: number, verts: number[], tris: number[] }[]} wings @param {number} liftM
+ */
+function joinWings(vertices, count, outJ, outW, indices, wings, liftM) {
+  const extra = wings.reduce((s, w) => s + w.verts.length, 0), tris = wings.reduce((s, w) => s + w.tris.length, 0);
+  const V = new Float32Array((count + extra) * 9), J = new Uint8Array((count + extra) * 4), Wt = new Uint8Array((count + extra) * 4);
+  V.set(vertices); J.set(outJ); Wt.set(outW);
+  const I = new Uint32Array(indices.length + tris);
+  I.set(indices);
+  let at = count, ti = indices.length;
+  for (const w of wings) {
+    const base = at;
+    for (const v of w.verts) {
+      const src = vertices.subarray(v * 9, v * 9 + 9);
+      V.set(src, at * 9);
+      for (let a = 0; a < 3; a++) V[at * 9 + a] += src[3 + a] * liftM;
+      J[at * 4] = w.bone; Wt[at * 4] = 255;
+      at++;
+    }
+    for (const t of w.tris) I[ti++] = base + t;
+  }
+  return { vertices: V, count: count + extra, outJ: J, outW: Wt, indices: I };
 }
 
 /**

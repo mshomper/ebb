@@ -2,7 +2,7 @@
 
 > One spring morning a small brown hen walks out of the gorse, scratching. She is feral: no one's, wary, and quite able to look after herself. Over a season she learns the walker, comes to the camp at dusk, follows you while you dig, and starts laying in the nest you made her. Her eggs are the walker's first real meal. If you leave a clutch in spring she sits, and the island has chicks.
 
-**Status:** Slice 1 built on `m2-hen` (October 27, 2026): a wary hen in the scrub. Slice 2 (trust, then Fond) built on `m2-hen-trust` (October 29, 2026); see "Built: trust and Fond" below. Drafted October 25, 2026, from Matt's ask for a wandering chicken you can befriend that gives eggs.
+**Status:** Slice 1 built on `m2-hen` (October 27, 2026): a wary hen in the scrub. Slice 2 (trust, then Fond) built on `m2-hen-trust` (October 29, 2026); see "Built: trust and Fond" below. Slice 3 (her day) built on `m2-hen-day-eggs` (October 30, 2026); see "Built: her day". Drafted October 25, 2026, from Matt's ask for a wandering chicken you can befriend that gives eggs.
 
 ## Decided so far
 
@@ -25,6 +25,15 @@ The slices: 1 a wary hen (built), 2 trust (the four bands, then Fond as 2b; buil
 - **Fond** comes after 7 whole game days at Familiar on 5 of which you were within 8 m of her for 2 game hours or more. Days pass while you are away, but none counts as together. At Fond she greets you once each dawn (5:00 to 9:00) and settles beside you while you sit by the fire. The next morning from 6:00 she leaves a **tail feather** by the fire ring; the gift stone can take it over (`hen.useGiftPlace`, and the `hen:feather` event).
 - **The hen-feather hat band**: Take it up on the feather's card. The feather itself is tucked into the hat's dark band, angled up at the side, and rides the hat's bone through every walk and roll (Matt, October 29, 2026: a real feather, not a painted band; hen.json fond.feather.onHat). It is kept in the kit (`kit.bands`, saved; the Walker page's hat card says so), and every creature's wary ring is 0.85 times as wide near you (fond.calmK).
 - Test links: `?hen&trust=0.2` (Tolerant), `0.45` (Curious), `0.65` (Familiar), `?hen&fond&camp` (Fond, her feather by the ring). tools/hen-lab.html shows every band on a test ground.
+
+### Built: her day (slice 3, October 30, 2026)
+
+- **The sun sets her day** (src/world/hen/day.js): she roosts from just before sunset until sunrise, so winter nights are long and summer evenings late. Dawn: she flaps down, shakes out and walks to the nearest fresh water (a pond or stream, never the sea) to drink, dipping and tipping her head back. Midday, once a day in dry, clear weather: a dust bath on the nearest bare patch (dry, above the tide, no plant near, short grass at most), then she shakes and preens each side. Rain: she stands fluffed at the edge of her scrub's bush until it passes.
+- **Roost**: up into the scrub bush nearest her home, or, once Familiar with a ring laid, on the **camp perch**: two forked sticks and a bar (session-made, src/world/hen/perch.js), standing off the pad 2.6 m from the ring on her scrub's side, which appears when she reaches Familiar. She sits across the bar facing the fire, fluffed, her head tucked. Where she roosted is saved (`hens.roost`); a load at night puts her straight back on it. Fond still settles beside you if you sit by the fire at dusk.
+- **Her wings** (Matt's call): the model's wings are painted on her sides with no skin, so rig.js copies each side's wing patch, lifts it a hair off the body and skins it whole to a wing bone at the file's shoulder joint. They open for the flap up and down, flick in the dust bath, lift a little while she preens, and shiver in a shake. In screenshots they read as wings, so the hop-up fallback was not needed.
+- **Fluffed**: roosting and in rain her body feathers stand out (the shader pushes them along the normal; her legs stay thin).
+- **Sounds** (recipes/audio/hen.json, src/audio/voices/hen.js): made in code like the frogs' calls rather than recordings: a soft murmur now and then while she forages, the alarm when you frighten her at Wary, and a distant crow from beyond her scrub on about a third of mornings, never every morning.
+- Test links: `?hen&camp&trust=0.65&hour=17.6` (to the perch at dusk), `&hour=5.7` (on the perch, down at sunrise, a drink), `?hen&hour=11.45&weather=clear` (the dust bath), `?hen&weather=rain` (sheltering, with scrub). tools/hen-lab.html has each new clip.
 
 These rules carry over:
 

@@ -33,6 +33,9 @@ export const CAMP = {
   // The pressing frame: a small frame split by a cross into four panes, a pressed flower in each, hung by a cord.
   'pressing-frame': ['made', `<path d="M6.4 8L12 3.2L17.6 8"/><rect ${A2} x="4.6" y="8" width="14.8" height="12.6" rx="0.8"/><rect x="4.6" y="8" width="14.8" height="12.6" rx="0.8"/>
     <path d="M12 8V20.6M4.6 14.3H19.4"/>${[[8.3, 11.6], [15.7, 11.6], [8.3, 17.9], [15.7, 17.9]].map(([x, y]) => `<path d="M${x} ${y + 1.4}V${y - 0.4}"/><circle ${A} cx="${x}" cy="${y - 1.2}" r="1.1"/><circle cx="${x}" cy="${y - 1.2}" r="1.1"/>`).join('')}`],
+  // The hen's perch (docs/future/15 slice 3): two forked sticks in the ground, a bar laid across their forks.
+  'hen-perch': ['made', `<rect ${A2} x="3.6" y="9.4" width="16.8" height="2.4" rx="1.2"/><rect x="3.6" y="9.4" width="16.8" height="2.4" rx="1.2"/>
+    <path d="M7 20.6V11.8M17 20.6V11.8M7 11.8L5.4 7.6M7 11.8L8.6 7.8M17 11.8L15.4 7.8M17 11.8L18.6 7.6"/>${BASE}`],
 };
 
 /**
@@ -43,5 +46,6 @@ export const CAMP = {
 export const CAMP_ROWS = [
   ['camp-store', 'camp-store', 'Camp store', 'T2', 2], ['camp-store-grown', 'camp-store-grown', 'Camp store, grown', 'T2', 2],
   ['gathering-knife', 'gathering-knife', 'Gathering knife', 'T2', 2], ['seed-scoop', 'seed-scoop', 'Seed scoop', 'T2', 2], ['tea-caddy', 'tea-caddy', 'Tea caddy', 'T2', 2],
+  ['hen-perch', 'hen-perch', "The hen's perch", 'T3', 3],
   ['walking-stick', 'walking-stick', 'Hazel walking stick', 'T4', 4], ['pressing-frame', 'pressing-frame', 'Pressing frame', 'T4', 4],
 ];

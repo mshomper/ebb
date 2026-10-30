@@ -21,6 +21,8 @@ export function createCreatureSound(mixer, voices, store, recipe, pond) {
   let since = null;
   /** The last plop played, by its number. */
   let lastPlop = -1;
+  /** The last hen sound played, by its number; -1 until the first look. */
+  let lastHen = -1;
   /** The last rise played, by species, by its number; absent until the first look at that species. @type {Map<string, number>} */
   const lastRise = new Map();
   /** Where the ears are, and when (performance.now) a frog last called close to them. */
@@ -32,6 +34,7 @@ export function createCreatureSound(mixer, voices, store, recipe, pond) {
   function poll() {
     const feed = store.get('creatureSound');
     if (feed?.schools && pond) pollRises(feed.schools());
+    if (feed?.hens) pollHen(feed.hens());
     if (!feed?.frogs) return;
     const heard = feed.frogs(since ?? Infinity);
     const first = since === null;
@@ -55,6 +58,19 @@ export function createCreatureSound(mixer, voices, store, recipe, pond) {
       if (age > R.staleS) continue;
       voices.plop(`plop:${p.n}`, p.pos, t0 + Math.max(0, R.leadS - age));
     }
+  }
+
+  /**
+   * The hen's sounds since the last look (docs/future/15 slice 3): her murmur, her alarm, the distant
+   * crow, each played where it came from. As the plops: the first look plays nothing, nothing plays
+   * before the first touch. @param {{ n: number, kind: 'murmur'|'alarm'|'crow', pos: number[] }[]} calls
+   */
+  function pollHen(calls) {
+    const newest = calls.length ? calls[calls.length - 1].n : lastHen;
+    const from = lastHen;
+    lastHen = Math.max(lastHen, newest);
+    if (from < 0 || mixer.ctx.state !== 'running') { if (from < 0) lastHen = Math.max(0, newest); return; }
+    for (const c of calls) if (c.n > from) voices.hen(c.kind, c.pos);
   }
 
   /**

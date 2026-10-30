@@ -158,6 +158,9 @@ export function createJournal(opts) {
     if (hn && words.species.hens) return henCard(hn, world.state, words, world.env.recipes?.species?.hen?.presence);
     const fe = hen?.featherCard?.(x, z) ?? null;
     if (fe) return fe;
+    // Her perch at camp (slice 3).
+    const pe = hen?.perchCard?.(x, z) ?? null;
+    if (pe) return pe;
     // Then a school of minnows under the water, or a dragonfly in the air above it.
     for (const s of opts.schools ?? []) {
       const hit = s.at(x, z, y);

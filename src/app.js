@@ -74,6 +74,7 @@ import { createSpring } from './world/creatures/spring-live.js';
 import { createHen } from './world/hen/index.js';
 import { takeFeather, featherLying, nameHen } from './world/hen/trust.js';
 import { featherMesh } from './world/hen/feather.js';
+import { perchMesh } from './world/hen/perch.js';
 import { moodsOf, mistyAutumnMorning, autumnStartOf } from './world/finds/autumn.js';
 import { HABITAT_CELLS, HABITAT_ORIGIN } from './world/growth/habitat.js';
 import { waterCellOf } from './world/water/grid.js';
@@ -639,9 +640,20 @@ export async function startApp(canvas, hooks = {}) {
   // island has some, and comes to know you (her trust, saved; Fond and her tail feather). `?hen`
   // (testing, unsaved) puts her under the view at once; `&trust=0.5` starts her knowing you that
   // well (0.2 Tolerant, 0.45 Curious, 0.65 Familiar); `&fond` makes her Fond with her feather laid.
+  /** The hen's sounds said lately, numbered, for the sound to play (src/audio/creatures-game.js). @type {{ n: number, kind: 'murmur'|'alarm'|'crow', pos: number[] }[]} */
+  const henHeard = [];
+  let henHeardN = 0;
+  const henSoundRecipe = await loadRecipe('audio/hen');
+  /** `?weather=` previews count for the hen too (a test link can show her shelter or bathe). @type {Record<string, { rain: number, cloud: number }>} */
+  const HEN_PREVIEW_WEATHER = { clear: { rain: 0, cloud: 0.1 }, cloud: { rain: 0, cloud: 0.95 }, rain: { rain: 0.8, cloud: 1 }, mist: { rain: 0, cloud: 0.8 } };
   const hen = createHen({ recipe: speciesRecipes.hen, seed, world, terrain, water, camera, presence,
     hours: () => clock.display() / clock.SECONDS_PER_HOUR, hourIndex: () => clock.hourIndex(), test: params.has('hen'),
-    testFond: params.has('hen') && params.has('fond'), ring: () => ringPlace?.() ?? null, record: () => updateStore('world', () => world.state) });
+    testFond: params.has('hen') && params.has('fond'), ring: () => ringPlace?.() ?? null, record: () => updateStore('world', () => world.state),
+    // Slice 3, her day: the weather sends her under a bush; her perch stands off the camp pad; her
+    // murmur, alarm and the distant crow go to the sound (src/audio reads creatureSound.hens).
+    weather: () => HEN_PREVIEW_WEATHER[getStore('preview')?.weather] ?? weatherAt(world.state?.weather, clock.display(), seasonsRecipe), onPad: (x, z) => onPad(getStore('campPad') ?? null, x, z),
+    sounds: henSoundRecipe, voice: (kind, at) => { henHeard.push({ n: ++henHeardN, kind, pos: [at.x, at.y, at.z] }); if (henHeard.length > 8) henHeard.shift(); } });
+  updateStore('creatureSound', (c) => ({ ...(c ?? {}), hens: () => henHeard }));
   on('dig:dug', (/** @type {{ x: number, z: number }} */ p) => hen.dug(p.x, p.z));
   on('world:ticked', () => hen.ticked());
   // Lift, on foot (docs/future/11 L3a; src/world/pieces/lift.js): a kept log's or a loose stone's card
@@ -783,6 +795,16 @@ export async function startApp(canvas, hooks = {}) {
       const on = H && wearsBand(getStore('kit'), 'hen-feather') ? walk.figure?.()?.carried(H.bone, H.at, H.turnDeg) : null;
       if (on) out.push({ key: 'hen-feather', x: on.x, y: on.y, z: on.z, yaw: on.yaw, pitch: on.pitch, roll: on.roll, scale: H.scale });
       return out;
+    });
+  }
+  // The hen's perch (docs/future/15 slice 3): two forked sticks and a bar off the pad by the fire
+  // ring, once she is Familiar; she roosts on it at night.
+  const perchR = speciesRecipes.hen.perch;
+  if (perchR) {
+    camp.props.addMesh('hen-perch', perchMesh(perchR), perchR.srgb, perchR.rough);
+    camp.addProps(() => {
+      const p = hen.perchAt();
+      return p ? [{ key: 'hen-perch', x: p.x, y: terrain.sampleHeight(p.x, p.z), z: p.z, yaw: p.yaw, scale: 1 }] : [];
     });
   }
   keeps = camp.stations.keeps;
