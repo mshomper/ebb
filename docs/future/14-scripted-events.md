@@ -2,7 +2,7 @@
 
 > Most days on the island are quiet, and they should be. But now and then something happens that the island will remember. A boat comes ashore in a winter storm and breaks up over a week. A star falls into the meadow. Small stone cairns start appearing overnight, and no one is ever seen building them. These are written set pieces: each has a warning, beats that play out over hours or days, a choice or two the player makes by doing things, and a change that stays.
 
-**Status:** Seed. Not scheduled. Drafted October 25, 2026, from Matt's ask for scripted and regularly occurring events, and redrafted the same day after his note that the first draft listed things the game already does. Matt called this set "a great start"; more can be added later.
+**Status:** Seed. Not scheduled. Drafted October 25, 2026, from Matt's ask for scripted and regularly occurring events, and redrafted the same day after his note that the first draft listed things the game already does. Matt called this set "a great start"; more can be added later. October 29, 2026: the shared runner and the first two set pieces, the cairn builder and the passing boat, built on `m2-set-pieces` (see "Built so far" at the end); a plan for all seven is the plan page scripted-events-plan.html.
 
 ## Decided so far
 
@@ -164,3 +164,17 @@ The whale passing close on a calm evening. A total eclipse. A swarm of jellyfish
 
 - Depends on: the first evening's director (src/world/intro), F08 (meteor shower, the weather record), 07 and 10 (tide, weather), 08 (terrain), F10 (logs), F12 (keepsakes, bottles), F13 (camp, stores, makes).
 - Feeds into: F04 (the reef and the bank growing over years), F15 (the hen's arrival), F16 (star-iron, ship's timber, the cairns' trail).
+
+## Built so far
+
+October 29, 2026, on `m2-set-pieces`. Where this differs from "How it runs" above, this is what the game does.
+
+- **The runner** (`src/world/setpieces/runner.js`) is a step in the hourly tick, after the hen, rather than the first evening's director grown larger: the evening stays as it is, and merging them later is a tidy-up. Its state is in the world state (`world.setpieces`), so saving, catch-up and the determinism check carry it with no save section of its own. Older saves start with none.
+- **Recipes:** `recipes/setpieces/<id>.json` (trigger, beats, words, the set piece's own numbers); `recipes/world/setpieces.json` holds the order they may arm in and the spacing (a rest of `gapDays` after each, big ones `bigGapDays` apart, at most `firstYearMax` big ones in the first year).
+- **Beats** fall `afterDays` after the one before (a number or a seeded range), at dawn, dusk or any hour (dawn and dusk follow the season's day length), once their `waitFor` holds. A beat marked `presence` waits through hours away (catch-up sets `env.away`) for the next fitting hour you are on the island. At most one beat an hour.
+- **Choices by doing** are card actions that record a small note in the world state; the next hour's tick applies it through the set piece's rules (`src/world/setpieces/hooks.js`). Conditions the tick cannot see (the camp has stores) come the same way.
+- **Events:** `setpiece:arm`, `setpiece:warn`, `setpiece:beat` (with the beat's id and repeat), `setpiece:choice`, `setpiece:end`.
+- **Journal:** each set piece's page is a keeper page (`recipes/world/keeper-pages.json`), had when it first ends; a page line can be `{ if, line }` or `{ not, line }` on a journal flag, so it follows what you did. Letters (the old keeper's, the boat's) are keeper pages too, and open as a centered card when found.
+- **The cairn builder** (`cairns-live.js`, `cairn-rules.js`): arms in the second spring (or when F16 reports the cave mouth). The trail is planned once on the live island from the camp pad along the longest line of dry land (or toward the old keeper's cache, once the dig reports it). Seven cairns, a dawn every one to three days, drawn in code from stacked flat stones, mossier as the seasons pass; never appearing while you watch. Add a stone (a flat stone or pebble from the pack) and the next cairn has one more than that one holds. Knocking one down is left out for now.
+- **The passing boat** (`boat-live.js`): once the camp has stores, at most once a season on a seeded day; at dusk, when you are there, the keeper's boat model at anchor about 45 m out with a lantern's light and a ship's bell made in code (`src/audio/bell.js`). The mooring stone stands by the stake from then on. A parcel (one handful of herbs, cord or something made at camp) left while it lies there brings, by dawn, the next return (seeds or cord, never what was sent) and the next of eight letters, warmer each time, then short quiet ones. The eighth parcel brings the keeper's gift, a stand-in (three handfuls of cord) until it is chosen.
+- **Test links** (unsaved): `?setpiece=<id>&beat=N` starts a set piece now at step N (a repeated beat counts each time). Tests: `tools/unit-tests-setpieces.js`; two seeded years on `tools/determinism.html`.

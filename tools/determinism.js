@@ -15,6 +15,7 @@ import { campCheckJob } from '../src/world/camp/check.js';
 import { digCheckJob } from '../src/world/dig/check.js';
 import { treatCheckJob } from '../src/world/creatures/treat-check.js';
 import { runPlanting, showPlanting } from './determinism-planting.js';
+import { runSetpieces, showSetpieces } from './determinism-setpieces.js';
 
 const JOB = { module: './world/terrain/landform.js', fn: 'buildBase' };
 /** The island's open chunks, row by row, from its land recipe (useChunks). */
@@ -544,6 +545,12 @@ async function build() {
     } catch (e) {
       console.error('[determinism] planting', e);
       $('detail').textContent += ` The planting check failed: ${e instanceof Error ? e.message : String(e)}`;
+    }
+    try {
+      showSetpieces(await runSetpieces(worldSeed), /** @type {HTMLElement} */ (document.getElementById('plantingCard') ?? $('chunks').closest('.card')), hex, icon);
+    } catch (e) {
+      console.error('[determinism] set pieces', e);
+      $('detail').textContent += ` The set pieces check failed: ${e instanceof Error ? e.message : String(e)}`;
     }
   } catch (e) {
     console.error('[determinism]', e);

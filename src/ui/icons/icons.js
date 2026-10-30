@@ -605,6 +605,30 @@ const ICONS = {
     <path d="M3.5 13L8.5 8.5L12 11.5L14.5 9.5L20.5 14"/>
     <circle cx="16.5" cy="7" r="1.3"/>
     <path d="M12 17.5V21M10 19.4L12 21.2L14 19.4"/>`,
+  // A cairn (docs/future/14, the cairn builder): four flat stones stacked, smaller toward the top,
+  // leaning a little to the right, on the ground line.
+  cairn: `
+    <path ${ACCENT} d="M5 20.5C5 18.6 7.6 17.6 11.6 17.6S18.6 18.6 18.6 20.5Z"/>
+    <path d="M5 20.5C5 18.6 7.6 17.6 11.6 17.6S18.6 18.6 18.6 20.5"/>
+    <path d="M6.8 17.6C6.8 15.9 9 15 12 15S17 15.9 17 17.6"/>
+    <path d="M8.6 15C8.8 13.5 10.4 12.6 12.6 12.6S16 13.4 15.9 14.9"/>
+    <path ${ACCENT} d="M10.4 12.6C10.6 11.1 11.8 10.3 13.4 10.4C14.8 10.5 15.4 11.4 15.2 12.7Z"/>
+    <path d="M10.4 12.6C10.6 11.1 11.8 10.3 13.4 10.4C14.8 10.5 15.4 11.4 15.2 12.7"/>
+    <path d="M14.6 7.5L16.2 5.9" opacity="0.7"/>
+    <path d="M2.5 20.5H21.5"/>`,
+
+  // The passing boat (docs/future/14): a small hull on a wave line, a short mast, and a lantern
+  // hanging at the stern with a soft glow.
+  'boat-lantern': `
+    <path ${ACCENT} d="M3.5 15.5H18.5L16.6 18.5H6.2Z"/>
+    <path d="M3.5 15.5H18.5L16.6 18.5H6.2Z"/>
+    <path d="M10.5 15.5V5.5"/>
+    <path d="M10.5 6.5L15.5 12.5H10.5"/>
+    <path d="M5.5 15.5V11.5"/>
+    <rect x="4.4" y="9" width="2.2" height="2.5" rx="0.6"/>
+    <circle ${ACCENT} cx="5.5" cy="10.2" r="3"/>
+    <path d="M2.5 21C4 20 5.5 20 7 21S10 22 11.5 21S14.5 20 16 21S19 22 21.5 21"/>`,
+
   // Stone, a Sculpt mode (docs/future/10): a rounded boulder resting on the ground, a smaller one against it, and a
   // short drop line above: set a stone here.
   stone: `

@@ -1,7 +1,7 @@
 {
   "type": "keeper-pages",
   "version": 1,
-  "note": "The keeper's own pages (docs/future/13 section 2.4), written in the walker's hand and kept in the journal: the first opens by itself at the spring on the first evening. Each is { id, form, title, body: [lines] } in the letters' light markup (src/ui/journal-letters.js); an empty line starts a new paragraph. Under 60 words each. The first page's text is a stand-in until the story collaborator's arrives. The second (tend) shows as a centered card when you wake from your first rest (or at the first dawn, for a player who never rested), one click closes it, and it is kept here after the first (Phase 1 fix F15; stand-in text, words approved October 25, 2026, until the story collaborator's arrive).",
+  "note": "The keeper's own pages (docs/future/13 section 2.4), written in the walker's hand and kept in the journal: the first opens by itself at the spring on the first evening. Each is { id, form, title, body: [lines] } in the letters' light markup (src/ui/journal-letters.js); an empty line starts a new paragraph. Under 60 words each. The first page's text is a stand-in until the story collaborator's arrives. The second (tend) shows as a centered card when you wake from your first rest (or at the first dawn, for a player who never rested), one click closes it, and it is kept here after the first (Phase 1 fix F15; stand-in text, words approved October 25, 2026, until the story collaborator's arrive). Set pieces add their pages here (docs/future/14; src/world/setpieces/live.js sets keeper:<id> when one is due): the cairns and the old keeper's letter under the last cairn, the passing boat, and the boat's letters (form From the boat, had as each gift is taken up; their order in recipes/setpieces/boat.json). A body line may be { if, line } or { not, line }: shown only when the journal holds (or lacks) that flag, so a page follows what you did.",
   "words": { "entry": "The first page", "entryLine": "In your own hand, from the morning you came.", "entryLineMany": "In your own hand, since the morning you came.", "title": "Keeper's pages", "back": "Back to the notes" },
   "pages": [
     {
@@ -26,6 +26,148 @@
         "Shape the land and let the tide shape it back. Make room for water, plants and shelter, and the creatures will find it, each in its own time.",
         "",
         "The island grows while you are away: ebb, and flow, and ebb again."
+      ]
+    },
+    {
+      "id": "cairns",
+      "form": "Keeper page",
+      "title": "The cairns",
+      "body": [
+        "They came one at a time, at dawn, all that spring. Flat stones, stacked by someone careful. I never saw who.",
+        "",
+        {"if": "setpiece:cairns:added", "line": "I added a stone to one, and the next morning's cairn had one more. Someone was answering."},
+        {"not": "setpiece:cairns:added", "line": "I left them as I found them. Each leaned toward the next, and I followed."},
+        "",
+        "At the end, a letter. I have left them standing."
+      ]
+    },
+    {
+      "id": "cairns-letter",
+      "form": "Letter, in an older hand",
+      "title": "Under the last stone",
+      "body": [
+        "If you are reading this, you followed them all the way. Good. Most never look up from the ground long enough.",
+        "",
+        "I kept this island before you. It kept me, really.",
+        "",
+        "Leave the cairns standing. Someone likes to know the way is still marked."
+      ]
+    },
+    {
+      "id": "boat",
+      "form": "Keeper page",
+      "title": "The lantern on the water",
+      "body": [
+        "A boat lay off the island at dusk, a lantern at its stern, a bell when the swell moved it. It never came closer.",
+        "",
+        {"if": "setpiece:boat:parcel", "line": "I left a parcel on the flat stone by the mooring. By morning the boat was gone, and something lay there in its place."},
+        {"not": "setpiece:boat:parcel", "line": "I watched until the lamp went out. By morning it was gone."},
+        "",
+        "Whoever they are, they know this shore has a keeper now."
+      ]
+    },
+    {
+      "id": "boat-1",
+      "form": "From the boat",
+      "title": "A note, in pencil",
+      "body": [
+        "Thank you for the parcel. We don't stop often. The lamp on your shore was the only one for miles.",
+        "",
+        "Seeds, for whatever ground you have."
+      ]
+    },
+    {
+      "id": "boat-2",
+      "form": "From the boat",
+      "title": "A second note",
+      "body": [
+        "Your herbs kept the whole crossing. The cook asks what the yellow ones were.",
+        "",
+        "We'll look for your light again."
+      ]
+    },
+    {
+      "id": "boat-3",
+      "form": "From the boat",
+      "title": "A note, folded small",
+      "body": [
+        "We had weather off the point last week, and thought of you out there.",
+        "",
+        "Whatever you sent, it smelled of your island. Here is some cord, the good kind."
+      ]
+    },
+    {
+      "id": "boat-4",
+      "form": "From the boat",
+      "title": "A longer note",
+      "body": [
+        "We've started keeping your notes in a tin by the wheel.",
+        "",
+        "When the wind is right we can see your fire from the channel. It is a strange comfort, a fire with no town around it."
+      ]
+    },
+    {
+      "id": "boat-5",
+      "form": "From the boat",
+      "title": "A note, in a careful hand",
+      "body": [
+        "The young one aboard draws your island now, from what you send. Shells along the bottom, a heron in the corner.",
+        "",
+        "Tell us if we have it wrong."
+      ]
+    },
+    {
+      "id": "boat-6",
+      "form": "From the boat",
+      "title": "A note, with a pressed flower",
+      "body": [
+        "A flower from where we put in, for your journal.",
+        "",
+        "We count the seasons by your stone now. Spring, and the lamp on the shore. Summer, and the lamp."
+      ]
+    },
+    {
+      "id": "boat-7",
+      "form": "From the boat",
+      "title": "A note, the paper soft",
+      "body": [
+        "You never ask anything of us, so we've stopped asking what to send. We just send what we would want, if we were you.",
+        "",
+        "Keep well out there."
+      ]
+    },
+    {
+      "id": "boat-8",
+      "form": "From the boat",
+      "title": "A note, tied with cord",
+      "body": [
+        "This is for keeping: the last of a coil that has been aboard longer than any of us.",
+        "",
+        "Use it for something that should last. We are thinking of your island."
+      ]
+    },
+    {
+      "id": "boat-quiet-1",
+      "form": "From the boat",
+      "title": "A short note",
+      "body": [
+        "All well aboard. The light on your shore is still the first we look for."
+      ]
+    },
+    {
+      "id": "boat-quiet-2",
+      "form": "From the boat",
+      "title": "A short note",
+      "body": [
+        "Fair weather this crossing. Thank you, as ever."
+      ]
+    },
+    {
+      "id": "boat-quiet-3",
+      "form": "From the boat",
+      "title": "A short note",
+      "body": [
+        "The tin by the wheel is nearly full. We'll need a second."
       ]
     }
   ]

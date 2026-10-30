@@ -1,0 +1,9 @@
+{
+  "type": "setpieces",
+  "version": 1,
+  "note": "The set pieces (docs/future/14): the shared numbers for the runner (src/world/setpieces/runner.js). order: which set pieces the island has, in the order they may arm (each recipes/setpieces/<id>.json, listed in recipes/index.json as setpieces/<id>). One runs at a time. gapDays: game days of rest after one ends before another may arm; bigGapDays: after a big one (size 'big') before another big one; firstYearMax: the most big set pieces in the island's first year (the small ones, the boat and the cairns, are rare enough by their own triggers). The rest of F14's first set (the great storm, the hard freeze, the wreck, the new bank, the falling star) add their recipes to order and their rules to hooks.js. Test links (unsaved): ?setpiece=<id> starts it now at its first step; &beat=N at step N (a beat with repeat counts each time: cairns 0-6 are the cairns, 7 the letter).",
+  "order": ["boat", "cairns"],
+  "gapDays": 2,
+  "bigGapDays": 7,
+  "firstYearMax": 3
+}

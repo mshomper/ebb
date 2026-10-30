@@ -79,6 +79,7 @@ export const PARALLEL = {
   kit: () => import('./unit-tests-kit.js').then((m) => m.addKitTests),
   treats: () => import('./unit-tests-treats.js').then((m) => m.addTreatsTests),
   pondoffer: () => import('./unit-tests-pond-offerings.js').then((m) => m.addPondOfferingsTests),
+  setpieces: () => import('./unit-tests-setpieces.js').then((m) => m.addSetpiecesTests),
   teas: () => import('./unit-tests-teas.js').then((m) => m.addTeasTests),
   hints: () => import('./unit-tests-hints.js').then((m) => m.addHintsTests),
   // The audio tests that need no Web Audio (workers have none). The two that render sound through

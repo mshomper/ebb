@@ -206,6 +206,11 @@ export function createJournal(opts) {
     // Then a perch stick stood in the shallows (B1 P1; src/world/creatures/perch-sticks.js): Take up.
     const ps = /** @type {any} */ (opts).perch?.cardAt?.(x, z) ?? null;
     if (ps) return ps;
+    // Then what a set piece left (docs/future/14; src/world/setpieces): a cairn, the boat's stone.
+    for (const s of /** @type {any} */ (opts).setpieces ?? []) {
+      const sc = s?.cardAt?.(x, z) ?? null;
+      if (sc) return sc;
+    }
     const pc = opts.pieces?.pieceAt(x, z);
     const pw = pc && words.pieces?.[pc.kind];
     if (pw && pc.kind === 'pile') {

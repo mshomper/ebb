@@ -1,0 +1,173 @@
+{
+  "type": "setpiece",
+  "version": 1,
+  "id": "boat",
+  "note": "The passing boat (docs/future/14): the one way the outside world reaches the island, and it never lands. Played by the set-piece runner (src/world/setpieces/runner.js, hooks.js); drawn and tapped by src/world/setpieces/boat-live.js. trigger: once the camp has stores (a cond note 'stores': the pack or the hamper holds one of parcelKinds), on or after a seeded day of the season (minDay, up to spanDays later); at most once a season. beats: dusk, waiting for you to be on the island (presence): the keeper's boat model far offshore at anchor, a lantern lit, a bell on the wind; then dawn: the boat gone, and if a parcel was left, something lies on the stone in return. The parcel stone stands at the tide line beside the mooring stake from the first dusk on, for good. boat: where it anchors, offM out from the mooring stake along the camp's facing line (further if the water there is shallower than minDepthM), turned sideways (yawDeg), bobbing as the keeper's boat does afloat, its anchor line into the water (the keeper's boat drawn again: src/world/intro/boat.js, Matt's model). lantern: where it hangs (upM above the water, aftM toward the stern), a small light (cd at rangeM, lightK, flicker) lighting the hull from inside it, its path on the water toward you, lit while the boat lies there. bellEveryS: how often the bell sounds while it lies there (real seconds, seeded); bell: its strike note (f0 Hz), level (db on the ambience bus), how long it rings (decayS) and how much distance softens it (cutoffHz; src/audio/bell.js). stone: the parcel stone's distance along the shore from the stake (sideM) and up the beach (upM), its size; reachM: how near you stand. parcelKinds: what a parcel can be (one handful from the pack, the first of these it holds). returns: what comes back, in turn, one per parcel (kind: a pack kind, n handfuls; the next instead when it is what was sent), in step with the letters, which speak of them; keepsakeAfter: the parcel that brings the keeper's gift instead (keepsake). letters: in order, warmer as they go, one with each return; quiet: by turn once they run out. Each is a page id in recipes/world/keeper-pages.json (form \"From the boat\"), had once its gift is taken up; under 60 words; never a name or a face. words: notices and the stone's card. The journal page is the keeper page 'boat' (recipes/world/keeper-pages.json).",
+  "size": "small",
+  "repeat": "season",
+  "trigger": {
+    "all": [
+      {
+        "check": "cond",
+        "name": "stores"
+      },
+      {
+        "check": "seasonDay",
+        "minDay": 2,
+        "spanDays": 9
+      }
+    ]
+  },
+  "beats": [
+    {
+      "id": "dusk",
+      "at": "dusk",
+      "afterDays": 0,
+      "presence": true,
+      "warn": true
+    },
+    {
+      "id": "dawn",
+      "at": "dawn",
+      "afterDays": 0
+    }
+  ],
+  "parcelKinds": [
+    "gorse.flowers",
+    "willow.bark",
+    "lichen-twigs",
+    "watermint.leaves",
+    "meadowsweet.flowers",
+    "nettle.tops",
+    "chamomile.flowers",
+    "rush-cord",
+    "charcoal-sticks",
+    "bowl",
+    "woven-twigs",
+    "crushed-shell",
+    "acorns",
+    "hazelnuts"
+  ],
+  "boat": {
+    "offM": 45,
+    "minDepthM": 1.2,
+    "searchM": 140,
+    "yawDeg": 80,
+    "lantern": {
+      "upM": 0.75,
+      "aftM": 0.85,
+      "cd": 12,
+      "rangeM": 10,
+      "lightK": 2100,
+      "flicker": 0.08,
+      "flickerHz": 2.2
+    },
+    "bellEveryS": [
+      16,
+      30
+    ],
+    "returns": [
+      {
+        "kind": "meadowsweet.seed",
+        "n": 1
+      },
+      {
+        "kind": "chamomile.seed",
+        "n": 1
+      },
+      {
+        "kind": "rush-cord",
+        "n": 2
+      },
+      {
+        "kind": "nettle.seed",
+        "n": 1
+      },
+      {
+        "kind": "campion.seed",
+        "n": 1
+      },
+      {
+        "kind": "rush-cord",
+        "n": 1
+      }
+    ],
+    "keepsakeAfter": 8,
+    "keepsake": {
+      "kind": "rush-cord",
+      "n": 3,
+      "note": "Stand-in until the keeper's gift is chosen (a brass bell from the boat, a keepsake): for now three good handfuls of cord, with the letter that says so."
+    },
+    "letters": [
+      "boat-1",
+      "boat-2",
+      "boat-3",
+      "boat-4",
+      "boat-5",
+      "boat-6",
+      "boat-7",
+      "boat-8"
+    ],
+    "quiet": [
+      "boat-quiet-1",
+      "boat-quiet-2",
+      "boat-quiet-3"
+    ],
+    "bell": {
+      "f0": 620,
+      "db": -30,
+      "decayS": 3.2,
+      "cutoffHz": 2400
+    }
+  },
+  "stone": {
+    "sideM": 1.4,
+    "upM": 0.8,
+    "radiiM": [
+      0.3,
+      0.22
+    ],
+    "thickM": 0.08,
+    "reachM": 0.8,
+    "tapM": 0.45,
+    "color": [
+      0.3,
+      0.29,
+      0.27
+    ]
+  },
+  "parcelLook": {
+    "sizeM": [
+      0.18,
+      0.1,
+      0.14
+    ],
+    "color": [
+      0.42,
+      0.34,
+      0.22
+    ],
+    "cord": [
+      0.5,
+      0.43,
+      0.3
+    ]
+  },
+  "words": {
+    "warn": "A lantern, out on the water. A bell, now and then.",
+    "gone": "The boat is gone.",
+    "goneGift": "The boat is gone. Something lies on the stone by the mooring.",
+    "stoneName": "The mooring stone",
+    "stoneLine": "A good flat stone above the tide line, where a parcel would stay dry.",
+    "stoneBoat": "The boat lies at anchor offshore. A parcel left here would be found by morning.",
+    "stoneLeft": "Your parcel waits on the stone.",
+    "stoneGift": "Something lies here, tied with cord.",
+    "leave": "Leave a parcel",
+    "take": "Take it up",
+    "left": "You leave a parcel on the stone, wrapped against the dew.",
+    "noParcel": "Nothing in the pack to send. Herbs, cord or something made at camp would do.",
+    "taken": "Taken up. There is a note with it, in your journal.",
+    "noRoom": "No room in the pack.",
+    "far": "Closer first."
+  }
+}
