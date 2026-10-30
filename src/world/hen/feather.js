@@ -1,9 +1,10 @@
 // @ts-check
 // The hen's tail feather (docs/future/15, slice 2b): once she is Fond, one morning she leaves a tail
 // feather by the fire ring (trust.js lays it in the hourly tick; this file draws it and gives its
-// card). Taking it up gives the hen-feather hat band: a paint round the walker's hat crown
-// (figure-draw.wgsl, recipes/world/figure.json hatBand) and a small always-on boon, every creature a
-// little calmer near you (fond.calmK on their wary rings, through presence's ringK).
+// card). Taking it up gives the hen-feather hat band: the same feather tucked into the hat's dark
+// band, carried by the hat's bone (fond.feather.onHat; drawn in src/app.js with the camp's models),
+// and a small always-on boon, every creature a little calmer near you (fond.calmK on their wary
+// rings, through presence's ringK).
 //
 // Where it lies: fond.feather.ringM from the ring, turned turnDeg round from the side toward her
 // scrub; with no ring laid, by her scrub. The gift stone (B1 C1, built beside this) can take it over:

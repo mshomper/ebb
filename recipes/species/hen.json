@@ -104,7 +104,7 @@
     "tapM": 0.45
   },
   "fond": {
-    "note": "Fond (Matt, October 27, 2026): time together, never a count of treats. She becomes Fond after days whole game days at Familiar, on togetherDays of which the walker was within nearM of her (on foot) for nearHours game hours or more. featherAfterDays mornings later, from featherH, she leaves a tail feather by the fire ring (src/world/hen/feather.js); taken up, it is the hen-feather hat band (recipes/world/figure.json hatBand) and its boon: every creature's wary ring times calmK near you.",
+    "note": "Fond (Matt, October 27, 2026): time together, never a count of treats. She becomes Fond after days whole game days at Familiar, on togetherDays of which the walker was within nearM of her (on foot) for nearHours game hours or more. featherAfterDays mornings later, from featherH, she leaves a tail feather by the fire ring (src/world/hen/feather.js); taken up, it is the hen-feather hat band (feather.onHat: the feather tucked into the hat's band) and its boon: every creature's wary ring times calmK near you.",
     "days": 7,
     "togetherDays": 5,
     "nearM": 8,
@@ -130,7 +130,14 @@
         "line": "One of the hen's tail feathers, brown and barred, left by the fire where she sleeps.",
         "take": "Take it up",
         "title": "The hen-feather hat band",
-        "gift": "Tucked round the crown of your hat. Other creatures seem a little calmer near you now."
+        "gift": "Tucked into the band of your hat. Other creatures seem a little calmer near you now."
+      },
+      "onHat": {
+        "note": "Once taken up, the feather tucked into the hat's dark band (Matt, October 29, 2026): carried by the figure's bone (recipes/world/figure.json bones), its quill's foot at at (rest model metres, x left, y up, z ahead), turned turnDeg (pitch, yaw, roll on the bone), drawn scale times the feather's real size.",
+        "bone": "hat",
+        "at": [0.19, 1.6, -0.03],
+        "turnDeg": [-70, 15, 0],
+        "scale": 1.2
       }
     }
   },

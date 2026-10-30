@@ -28,9 +28,9 @@
     "hand": { "name": "Empty hands", "line": "Nothing in hand. Room for whatever I find." }
   },
   "off": { "lantern": "Leave it on the pole", "hand": "Put it away" },
-  "_bands": "Hat bands (docs/future/15 slice 2b): painted round the crown of whatever hat is worn (recipes/world/figure.json hatBand), always worn once given; worn: the words the hat's card adds on the Walker page.",
+  "_bands": "Hat bands (docs/future/15 slice 2b): worn in the band of whatever hat is worn (the hen's feather: recipes/species/hen.json fond.feather.onHat), always worn once given; worn: the words the hat's card adds on the Walker page.",
   "bands": {
-    "hen-feather": { "name": "Hen-feather band", "worn": "Round the crown, a band of the hen's barred tail feather. She left it by the fire for me." }
+    "hen-feather": { "name": "Hen-feather band", "worn": "Tucked into the band, one of the hen's barred tail feathers. She left it by the fire for me." }
   },
   "belt": [
     { "id": "shovel", "name": "Shovel", "icon": "shovel", "line": "A stick, a flat stone and cord, bound tight. It hangs on the pack." },
