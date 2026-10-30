@@ -81,10 +81,20 @@ export const bottomOf = (cls, R) => R.layers[cls].bottom;
 
 /**
  * What a press on a hole dug to `depth` layers reaches next: the layer (1-based depth), or the
- * bottom word when there is none. @param {GroundClass} cls @param {number} depth layers dug so far @param {any} R
+ * bottom word when there is none. A class's deep layer (the bank's deeper clay; under a hearth disc
+ * the charcoal band, layers.hearthDeep) is third and needs the keeper's blade: without it the press
+ * says harder, the only sign it is there (docs/future/13 10.3). @param {GroundClass} cls
+ * @param {number} depth layers dug so far @param {any} R
+ * @param {{ hearth?: boolean, blade?: boolean }} [at] on a hearth disc; the blade fitted
  * @returns {{ layer: string, depth: number } | { bottom: string }}
  */
-export function nextLayer(cls, depth, R) {
+export function nextLayer(cls, depth, R, at = {}) {
   const s = stackOf(cls, R);
-  return depth < s.length ? { layer: s[depth], depth: depth + 1 } : { bottom: bottomOf(cls, R) };
+  if (depth < s.length) return { layer: s[depth], depth: depth + 1 };
+  const deep = deepOf(cls, R, at);
+  if (deep && depth === s.length) return depth + 1 <= (at.blade ? R.layers.reach.blade : R.layers.reach.shovel) ? { layer: deep, depth: depth + 1 } : { bottom: 'harder' };
+  return { bottom: bottomOf(cls, R) };
 }
+
+/** A class's deep layer here, or null: the charcoal band under a hearth, else the class's own. @param {GroundClass} cls @param {any} R @param {{ hearth?: boolean }} at */
+export const deepOf = (cls, R, at) => (cls === 'sand' ? null : at.hearth ? R.layers.hearthDeep : R.layers[cls].deep ?? null);

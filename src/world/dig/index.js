@@ -8,20 +8,30 @@
 // rests a day, each patch thins for a season and the island keeps a daily budget (rest.js); nothing
 // is spent. Holes fill by themselves over about three game days; water over one or a stroke across
 // one closes it at once. The store slice `dig` (saved) keeps the season's dug events and the firsts.
-// Emits dig:dug, dig:layer, dig:found, dig:rested, dig:closed and dig:sound.
+// Digging deeper (B1 D1): the island's past under the ground (story-live.js), the old hearths and
+// the marked stone; the keeper's cache at layer 2 beside the stone (once per island: its letter and
+// the keeper's blade, fitted to the shovel at once, saved as dig.cache); with the blade a third
+// layer (deeper clay under a damp bank, the charcoal band under a hearth); sherds near a hearth once
+// the walker has fired a pot; and in winter a sleeping toad near a pond, covered again, with no hole
+// dug near it until spring (sleepers.js, dig.sleepers).
+// Emits dig:dug, dig:layer, dig:found, dig:rested, dig:closed, dig:sound, dig:cache and dig:sleeper.
 
 import { get, update } from '../../core/store.js';
-import { on, emitDeferred } from '../../core/events.js';
+import { on, emit, emitDeferred } from '../../core/events.js';
 import { subSeed, hash32 } from '../../core/rng.js';
 import { dayIndexOf } from '../../core/clock.js';
-import { onAction } from '../../input/actions.js';
+import { onAction, dispatch } from '../../input/actions.js';
 import { offerHere, withdrawHere } from '../../ui/ground-here.js';
 import { registerCardAction } from '../../ui/card-actions.js';
 import { packMesh } from '../creatures/bodies.js';
 import { createPropsPass } from '../../render/passes/props.js';
 import { keep as keepShelf, cleanShelf } from '../keepsakes/shelf.js';
 import { addFirst } from '../trails.js';
-import { groundClass, nextLayer, cellOf } from './layers.js';
+import { groundClass, nextLayer, cellOf, cellCenter } from './layers.js';
+import { createStoryLive } from './story-live.js';
+import { cacheDue, stoneShown } from './story.js';
+import { bladeMesh } from './story-draw.js';
+import { sleeperAt, sleeperNear, nearestSleeper, yearOf } from './sleepers.js';
 import { rested, thinning, budgetLeft, addEvent, seasonEvents, seasonNo, cleanDig } from './rest.js';
 import { digFinds } from './finds.js';
 import { holeNow, wetSince, closeHole, capHoles, holeAt } from './holes.js';
@@ -30,9 +40,11 @@ import { spoilMeshes, spoilBeings, holeMarks, shovelProp } from './draw.js';
 /**
  * @param {{ recipe: any, keepsakes: any, seed: number, world: any, walk: any, terrain: any, water: any, pieces: any,
  *   pack: any, gather: any, presence: any, worldT: () => number, test: boolean, propsRecipe: any, shadowBias?: any,
- *   noteKept: (n: any) => void }} o
+ *   noteKept: (n: any) => void, land: any, terrainSeed: number, piecesRecipe: any, testDig?: string | null }} o
  *   recipe: dig.json; keepsakes: keepsakes.json; test: the `?shovel` link (the shovel in the kit, unsaved);
- *   propsRecipe: camp.json props (the shovel's own props pass); noteKept: app.js, a keepsake kept (its trail firsts)
+ *   propsRecipe: camp.json props (the shovel's own props pass); noteKept: app.js, a keepsake kept (its trail firsts);
+ *   land: the land recipe (its story block); piecesRecipe: pieces.json (the marked stone's bake);
+ *   testDig: the `?dig=` test link (cache, hearth, sherd, sleeper, blade; unsaved)
  */
 export function createDig(o) {
   const R = o.recipe, W = R.words, A = R.act;
@@ -54,7 +66,27 @@ export function createDig(o) {
   }
 
   /** Has the walker the shovel? Made at the workbench (the cook section's tools, src/world/camp/making.js); `?shovel` for testing. */
-  const hasShovel = () => !!(o.test || get('cook')?.tools?.includes('shovel'));
+  const hasShovel = () => !!(o.test || o.testDig || get('cook')?.tools?.includes('shovel'));
+  // The keeper's blade: fitted once the cache is found (dig.cache), or on a test link that needs it.
+  const testBlade = ['hearth', 'sherd', 'blade'].includes(o.testDig ?? '');
+  const hasBlade = () => testBlade || state().cache !== null;
+  props.addMesh('blade', bladeMesh(R.blade), R.blade.srgb, R.blade.roughness);
+  // The island's past: the old hearths and the marked stone (story-live.js).
+  // The marked stone shows once both second layers have been dug (story.cacheAfter), or at once on the cache and blade test links.
+  const testStone = o.testDig === 'cache' || o.testDig === 'blade';
+  const story = createStoryLive({ R, land: o.land, terrainSeed: o.terrainSeed, worldSeed: o.seed, piecesRecipe: o.piecesRecipe, pieces: o.pieces, hab, ground,
+    shown: () => testStone || state().firsts.includes('stone:shown') });
+  /** The first time the ground has been learned: the stone is there from now on, and the morning hint may speak of it. */
+  function reveal() {
+    const f = state().firsts;
+    if (testStone || f.includes('stone:shown') || !stoneShown(f, story.hasBank(), R.story)) return;
+    change((s) => ({ ...s, firsts: [...s.firsts, 'stone:shown'] }));
+    dispatch(/** @type {any} */ ({ type: 'journal.flag', flag: 'dig:marked-stone' }));
+    emitDeferred('dig:stone-shown', {});
+  }
+  /** Has the walker fired a pot of their own (one stands at camp)? The ground offers sherds from then (D-21). */
+  const potFired = () => o.testDig === 'sherd' || (get('camp')?.slots ?? []).some((/** @type {any} */ s) => R.sherd.potKinds.includes(s.kind));
+  const winter = () => (o.world.state?.seasons?.index ?? 0) === 3;
 
   // ---- holes ----
 
@@ -113,6 +145,7 @@ export function createDig(o) {
         out.push({ x: p.x, z: p.z, r: p.size }, { x: p.x2, z: p.z2, r: p.size }, { x: (p.x + p.x2) / 2, z: (p.z + p.z2) / 2, r: p.size });
       } else out.push({ x: p.x, z: p.z, r: p.size * 0.55 });
     }
+    out.push(...story.footprint());
     return out;
   }
   /** The ground class at a point, or why not. @param {number} x @param {number} z */
@@ -197,18 +230,22 @@ export function createDig(o) {
     let cls, depth, layer, k, x, z, hole = null;
     if (p.hole) {
       hole = p.hole;
-      const next = nextLayer(hole.cls, hole.depth, R);
+      const next = nextLayer(hole.cls, hole.depth, R, { hearth: story.at(hole.x, hole.z).hearth, blade: hasBlade() });
       if ('bottom' in next) { refuse(next.bottom); return; }
       ({ layer, depth } = next);
       cls = hole.cls; x = hole.x; z = hole.z; k = cellOf(x, z);
     } else {
       if (!p.at.cls) { refuse('roots'); return; }
       cls = p.at.cls; x = p.at.x; z = p.at.z; k = p.at.k;
+      // A toad sleeps near here this winter: no new hole within keepM of it until spring (DR-19).
+      if (sleeperNear(state().sleepers, x, z, day, winter(), R.sleeper)) { refuse('sleeps'); return; }
       const next = nextLayer(cls, 0, R);
       if ('bottom' in next) return;
       ({ layer, depth } = next);
     }
-    if (rested(seasonEvents(state().events, day), k, day, depth)) { refuse('rest'); return; }
+    // The cache sits outside every rest rule.
+    const cacheHere = cacheDue(depth, story.at(x, z), state().cache);
+    if (!cacheHere && rested(seasonEvents(state().events, day), k, day, depth)) { refuse('rest'); return; }
     o.walk.faceToward(x, z);
     if (!o.walk.act('dig')) return;
     pending = { t: 0, at: p.at ?? null, hole, layer, depth, cls, k, x, z, steps: new Set() };
@@ -234,39 +271,99 @@ export function createDig(o) {
     const w = weather(), season = o.world.state?.seasons?.index ?? 0;
     const ev = seasonEvents(state().events, day);
     const th = thinning(ev, P.k, R);
+    const st = story.at(P.x, P.z);
+    // The keeper's cache, once per island; a sleeping toad in winter. Each its own moment.
+    if (cacheDue(P.depth, st, state().cache)) { findCache(P, day, t); return; }
+    if (season === 3 && P.depth === 1 && P.layer === 'topsoil' && !P.hole && h0 && sleeperAt(seed, day, P.k, h0, state().sleepers, R.sleeper)) { findSleeper(P, day, t); return; }
     const at = {
       seed, cell: P.k, day, layer: P.layer, depth: P.depth, season,
       moisture: h0 ? h0.moisture[P.k] / 255 : 0,
       rainBefore: w?.yesterday?.mood === 'rain', frost: season === 3 && (w?.today?.mood === 'clear' || w?.today?.mood === 'mist'),
       thin: th.share, budgetLeft: budgetLeft(ev, seed, day, R),
+      hearth: st.hearth, nearHearth: st.nearHearth, potFired: potFired(),
     };
     const f = digFinds(at, R, o.keepsakes);
     change((s) => ({ ...s, events: addEvent(s.events, { c: P.k, d: day, l: P.depth, k: f.keepsake ? 1 : 0 }, R) }));
     if (th.firstThin) first(`thin:${seasonNo(day)}`, W.thinned);
-    // The hole: a new one ahead, or the one faced, a layer deeper.
+    const holeId = openHole(P, t, f.seep);
+    if (f.keepsake?.family === 'sherd') first('sherd', W.layers.sherd);
+    if (f.seep) first('layer:seep', W.layers.seep);
+    reveal();
+    showFind(P, f, holeId);
+  }
+
+  /**
+   * The hole: a new one ahead, or the one faced, a layer deeper; dig:dug, and the layer's firsts (its
+   * line in the walker's hand, its band on the soil page, its mark on the naturalist's trail).
+   * @param {NonNullable<typeof pending>} P @param {number} t @param {boolean} seep @returns {string | undefined}
+   */
+  function openHole(P, t, seep) {
     let holeId = P.hole?.id;
     if (P.hole) {
-      changeHoles((list) => list.map((h) => (h.id === P.hole.id ? { ...h, depth: P.depth, layer: P.layer, seep: h.seep || f.seep } : h)));
+      changeHoles((list) => list.map((h) => (h.id === P.hole.id ? { ...h, depth: P.depth, layer: P.layer, seep: h.seep || seep } : h)));
     } else {
       const s = get('pieces');
       const n = s?.nextId ?? 1;
       holeId = `p${n}`;
       const you = o.walk.spot();
       const hole = { id: holeId, kind: 'hole', x: P.x, z: P.z, yaw: you?.yaw ?? 0, seed: hash32(seed, n), size: R.hole.sizeM, placedHour: t,
-        depth: P.depth, layer: P.layer, cls: P.cls, dugHour: t, closedHour: -1, wetH: 0, seep: f.seep, side: 1 };
+        depth: P.depth, layer: P.layer, cls: P.cls, dugHour: t, closedHour: -1, wetH: 0, seep, side: 1 };
       if (s) update('pieces', () => ({ ...s, list: [...s.list, hole], nextId: n + 1 }));
       const capped = capHoles(holes(), isOpen, t, R);
       changeHoles(() => capped.holes);
       for (const id of capped.capped) emitDeferred('dig:closed', { holeId: id, why: 'cap' });
     }
     emitDeferred('dig:dug', { x: P.x, z: P.z, cell: P.k, layer: P.layer, ground: P.cls, holeId });
-    // Firsts: the layer's line in the walker's hand, its band on the soil page, its mark on the naturalist's trail.
     if (first(`layer:${P.layer}`, W.layers[P.layer])) {
       emitDeferred('dig:layer', { layer: P.layer, hour: t });
       noteFirst({ trail: 'nature', kind: 'layer', id: P.layer, hour: Math.floor(t) });
     }
-    if (f.seep) first('layer:seep', W.layers.seep);
-    showFind(P, f, holeId);
+    return holeId;
+  }
+
+  /** The letter's page id for this island (keeper-cache.json, as keeper pages: cache-<key>). */
+  const letterId = () => `cache-${o.land?.story?.letter ?? 'starter'}`;
+  let bladeSay = 0;
+
+  /**
+   * The keeper's cache (10.6.4): the bundle, its letter (a keeper page from now on) and the blade,
+   * fitted at once. Outside every budget and rest rule; the dig is still written (the spot rests).
+   * @param {NonNullable<typeof pending>} P @param {number} day @param {number} t
+   */
+  function findCache(P, day, t) {
+    change((s) => ({ ...s, cache: Math.floor(t), events: addEvent(s.events, { c: P.k, d: day, l: P.depth, k: 0 }, R) }));
+    const holeId = openHole(P, t, false);
+    emitDeferred('dig:sound', { name: 'cache', seed: P.k });
+    emitDeferred('dig:cache', { x: P.x, z: P.z, letter: letterId(), hour: t, text: W.cacheNote });
+    emitDeferred('dig:found', { kind: 'cache', id: 'cache' });
+    dispatch(/** @type {any} */ ({ type: 'journal.flag', flag: `keeper:${letterId()}` }));
+    dispatch(/** @type {any} */ ({ type: 'journal.flag', flag: 'dig:cache' }));
+    first('cache', W.layers.cache);
+    // Said once the card has had a moment: the blade fitted to the handle.
+    bladeSay = 6;
+    update('identify', () => ({ sp: 'soil', name: W.cacheName, sub: null, icon: 'dig', itemIcon: 'keepers-blade', text: W.cacheCard, wx: P.x, wz: P.z, r: 0.3, stage: -1,
+      dig: true, digHole: holeId ?? null, digCache: letterId(), at: performance.now() }));
+  }
+
+  /** Holes with a sleeper in them, covered over once it has been seen. @type {{ id: string, left: number }[]} */
+  const covering = [];
+  /**
+   * A sleeping toad (10.6.8): shown in the open hole for a moment, named, put back and covered; the
+   * hole closes, and no hole is dug within keepM of it this winter. Saved for this winter only.
+   * @param {NonNullable<typeof pending>} P @param {number} day @param {number} t
+   */
+  function findSleeper(P, day, t) {
+    const y = yearOf(day);
+    change((s) => ({ ...s, events: addEvent(s.events, { c: P.k, d: day, l: P.depth, k: 0 }, R),
+      sleepers: [...s.sleepers.filter((q) => q.y === y), { c: P.k, y }] }));
+    const holeId = openHole(P, t, false);
+    const you = o.walk.spot();
+    emitDeferred('dig:sleeper', { x: P.x, z: P.z, yaw: (you?.yaw ?? 0) + Math.PI, showS: R.sleeper.shownS });
+    emitDeferred('dig:found', { kind: 'sleeper', id: 'toads' });
+    first('sleeper', W.layers.sleeper);
+    if (holeId) covering.push({ id: holeId, left: R.sleeper.shownS });
+    update('identify', () => ({ sp: 'toads', name: W.sleeperName, sub: null, icon: 'toad', text: W.sleeperCard, wx: P.x, wz: P.z, r: 0.3, stage: -1,
+      dig: true, digHole: holeId ?? null, at: performance.now() }));
   }
 
   /** @param {any} f */
@@ -371,6 +468,7 @@ export function createDig(o) {
   const offs = [
     registerCardAction({ id: 'digkeep', icon: 'shelf', order: 21, main: true, label: W.keep, when: (c) => !!c?.dig && !!c.digKeepsake, action: () => ({ type: 'dig.keep' }) }),
     registerCardAction({ id: 'digleave', icon: 'release', order: 22, label: W.leave, when: (c) => !!c?.dig && !!c.digKeepsake, action: () => ({ type: 'dig.leave' }) }),
+    registerCardAction({ id: 'digread', icon: 'notes', order: 21, main: true, label: W.readLetter, when: (c) => !!c?.digCache, action: () => ({ type: 'dig.read' }) }),
     registerCardAction({ id: 'digdeeper', icon: 'dig', order: 20, main: true, label: W.deeper,
       when: (c) => !!c?.digHoleCard && !!o.walk.below && hasShovel(), action: () => ({ type: 'dig.press' }) }),
     onAction((/** @type {any} */ a) => {
@@ -378,8 +476,9 @@ export function createDig(o) {
       else if (a.type === 'dig.scoop') scoop();
       else if (a.type === 'dig.keep') keepIt();
       else if (a.type === 'dig.leave') leaveIt();
+      else if (a.type === 'dig.read') { const id = get('identify')?.digCache; if (id) { update('identify', () => null); emit('keeper:card', { id }); } }
     }),
-    on('world:ticked', upkeep),
+    on('world:ticked', () => { upkeep(); reveal(); }),
     on('world:caught-up', upkeep),
     // A stroke of Sculpt, Paint or Water across an open hole closes it (the land's height never changes for a hole).
     on('terrain:stroke-ended', (/** @type {{ rect: { x0: number, z0: number, x1: number, z1: number } | null }} */ p) => {
@@ -388,6 +487,48 @@ export function createDig(o) {
     }),
     on('water:pour-ended', (/** @type {{ x: number, z: number }} */ p) => closeWhere((h) => (h.x - p.x) ** 2 + (h.z - p.z) ** 2 < 4, 'stroke')),
   ];
+
+  // ---- test links ----
+
+  let testWant = o.testDig ?? null, testWait = 0, testNext = 1.5;
+  /**
+   * `?dig=` (unsaved): stand the walker facing the spot. cache: beside the marked stone, the cache a
+   * spade down; hearth and sherd: on the hearth disc with the blade (sherd: as if a pot were fired);
+   * sleeper: in winter, facing a sleeping toad's cell near a pond; blade: the blade fitted, on plain
+   * soil near the marked stone. Waits until the island's ground is up. @param {string} kind @returns {boolean} done
+   */
+  function testSetUp(kind) {
+    const h = hab();
+    if (!h) return false;
+    /** @type {{ x: number, z: number } | null} */ let target = null;
+    const ms = story.spots().cache;
+    if (kind === 'cache') target = ms;
+    // The blade: plain soil a few meters from the marked stone, to try the fitted shovel on.
+    else if (kind === 'blade') target = ms ? { x: ms.x + 2.5, z: ms.z } : null;
+    else if (kind === 'hearth' || kind === 'sherd') target = story.spots().hearths[0] ?? null;
+    else if (kind === 'sleeper') {
+      const from = story.spots().cache ?? story.spots().hearths[0];
+      if (!from) return true;
+      const soil = (/** @type {number} */ c) => { const [cx, cz] = cellCenter(c), g = classAt(cx, cz); return g.cls === 'soil' || g.cls === 'bank'; };
+      const c = nearestSleeper(seed, today(), from.x, from.z, 70, h, soil, R.sleeper);
+      // The ponds may not have filled yet on a fresh island: keep looking for a while.
+      if (c < 0) return testWait > 40;
+      const [cx, cz] = cellCenter(c);
+      target = { x: cx, z: cz };
+    }
+    if (!target) return true;
+    // Stand back from it, facing it (beside the stone: past its footprint, so the dig point is the cache's side).
+    const back = kind === 'cache' ? R.hole.aheadM + R.story.stone.footR + 0.45 : R.hole.aheadM;
+    for (let i = 0; i < 16; i++) {
+      const a = (i / 16) * Math.PI * 2, x = target.x + Math.sin(a) * back, z = target.z + Math.cos(a) * back;
+      if ((o.water.sampleLive?.(x, z)?.depth ?? 0) > 0.02) continue;
+      if (!o.walk.placeAt?.(x, z, a + Math.PI, 'stand')) continue;
+      o.walk.downHere?.();
+      emitDeferred('dig:test-stood', { x, z, yaw: a + Math.PI, target });
+      return true;
+    }
+    return false;
+  }
 
   // The spoil heaps, drawn in the pieces pass.
   o.pieces.addBeings(() => holes().map((h) => ({ hole: h, ...now(h) })).flatMap((e) => spoilBeings([e], ground, R)));
@@ -399,6 +540,8 @@ export function createDig(o) {
     ringM: R.look.fresh.ringM,
     /** For tools and testing: the ground class at a point, and what a press of Dig would do now. */
     classAt, plan,
+    /** The island's past (story-live.js), and whether the keeper's blade is fitted. */
+    story, hasBlade,
     /** The words a dug keepsake's card says (its family's line). @param {(n: any) => string} fn */
     setKeepsakeWords(fn) { keepsakeLine = fn; },
 
@@ -417,7 +560,16 @@ export function createDig(o) {
       // Between digs it is drawn on the pack only if act.back.show (off since October 29, 2026: it hung
       // in the air through a roll; the Walker page's belt shows it instead).
       const sh = digging ? shovelProp(o.walk.hand('r'), o.walk.hand('l'), A) : hasShovel() && A.back?.show ? onPack() : null;
-      props.setProps(sh ? [sh] : []);
+      // The keeper's blade rides in the shovel's own frame, an iron shoe over the wooden edge.
+      props.setProps(sh ? (hasBlade() ? [sh, { ...sh, key: 'blade' }] : [sh]) : []);
+      if (bladeSay > 0 && (bladeSay -= dt) <= 0) first('blade', W.bladeFitted);
+      for (let i = covering.length - 1; i >= 0; i--) {
+        if ((covering[i].left -= dt) > 0) continue;
+        const id = covering[i].id;
+        covering.splice(i, 1);
+        closeWhere((h) => h.id === id, 'sleeper');
+      }
+      if (testWant && (testWait += dt) > testNext) { testNext = testWait + 1; if (testSetUp(testWant)) testWant = null; }
     },
 
     /** The holes' marks for the terrain shader near a point. @param {number[]} focus [x, z] */
@@ -428,6 +580,8 @@ export function createDig(o) {
      * with the shovel. From above, the card only. @param {number} x @param {number} z
      */
     cardAt(x, z) {
+      const ms = story.cardAt(x, z, state().cache !== null);
+      if (ms) return ms;
       const h = holes().find((q) => isOpen(q) && (q.x - x) ** 2 + (q.z - z) ** 2 < (q.size * 0.8) ** 2);
       if (!h) return null;
       return { sp: h.cls === 'sand' ? 'sand' : 'soil', name: W.names[h.layer], sub: null, icon: 'dig', text: `${W.hole} ${W.seen[h.layer] ?? ''}`.trim(),

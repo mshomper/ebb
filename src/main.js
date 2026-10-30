@@ -10,6 +10,7 @@ import { mountTools } from './ui/tools.js';
 import { mountTimeFlow } from './ui/time-flow.js';
 import { mountLook } from './ui/look.js';
 import { mountJournal } from './ui/journal.js';
+import { withCacheLetters } from './ui/journal-keeper.js';
 import { mountIslandNotes } from './ui/island-notes.js';
 import { mountStation } from './ui/station.js';
 import { mountSketchbook } from './ui/sketchbook.js';
@@ -152,7 +153,7 @@ startApp(canvas, { onDeviceLost: (rebuilding) => showRebuildingNote(rebuilding),
       const [keepsakesRecipe, bottleMessages] = await Promise.all([loadRecipe('world/keepsakes'), loadRecipe('world/bottle-messages')]);
       mountJournal(document.body, { ...journal, naturalist, beachcomber, shaper, forager, gatherRecipe: /** @type {any} */ (r).gather?.recipe ?? null,
         partName: (/** @type {string} */ k) => /** @type {any} */ (r).pack?.nameOf(k) ?? k, progress, shelf: { K: keepsakesRecipe, messages: bottleMessages },
-        keeper: await loadRecipe('world/keeper-pages'), cook: await loadRecipe('world/cook') }, hud.layer);
+        keeper: withCacheLetters(await loadRecipe('world/keeper-pages'), await loadRecipe('world/keeper-cache')), cook: await loadRecipe('world/cook') }, hud.layer);
       // The walker's sketchbook (P2i I5): its book button beside the journal's, once the first sketch is made.
       mountSketchbook(document.body, hud.layer, { recipe: await loadRecipe('world/sketchbook'), words, describe: (id) => journal.describe(id) });
       // The Walker page (K2): I or the walker button beside the journal's; the walker in its own small view.

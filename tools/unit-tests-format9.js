@@ -46,7 +46,7 @@ export function addFormat9Tests(test, assert, eq) {
     const live = { camp: { version: 1, pad: { x: 1.5, z: -2 } },
       pack: { version: 1, carriers: [], pouches: [['drift-twigs', 3], ['drift-twigs', 1], ['pebbles', 2]], heaps: [['sticks', 1.5, -2, 4, 1]], holding: null },
       gather: { version: 1, events: [3, 4, 50] },
-      dig: { version: 1, events: [{ c: 4, d: 2, l: 1, k: 0 }], firsts: ['layer:topsoil'] }, cook: { version: 1, made: { workbench: 4 }, count: { workbench: 1 }, tools: [], found: ['tea'] }, dyes: { version: 1, tent: { color: 'ochre', depth: 1 } },
+      dig: { version: 1, events: [{ c: 4, d: 2, l: 1, k: 0 }], firsts: ['layer:topsoil'], cache: null, sleepers: [] }, cook: { version: 1, made: { workbench: 4 }, count: { workbench: 1 }, tools: [], found: ['tea'] }, dyes: { version: 1, tent: { color: 'ochre', depth: 1 } },
       sketchbook: { version: 1, made: 2, wear: 2, first: 5, subjects: { frogs: [{ stage: 1, hour: 5, season: 0, moment: null }, { stage: 0, hour: 6, season: 0, moment: 'dusk' }] } },
       kit: { version: 1, hat: 'own', lantern: null, hand: null, coat: 'own', carrier: 'satchel', owned: { hat: ['own'], lantern: ['hand'], hand: [], coat: ['own'], carrier: ['satchel'] } } };
     const { sections } = snapshot(parts(live));

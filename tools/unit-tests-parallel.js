@@ -71,6 +71,7 @@ export const PARALLEL = {
   sowing: () => import('./unit-tests-sowing.js').then((m) => m.addSowingTests),
   planting: () => import('./unit-tests-planting.js').then((m) => m.addPlantingTests),
   dig: () => import('./unit-tests-dig.js').then((m) => m.addDigTests),
+  digDeeper: () => import('./unit-tests-dig-deeper.js').then((m) => m.addDigDeeperTests),
   campMaking: () => import('./unit-tests-camp-making.js').then((m) => m.addCampMakingTests),
   campKnown: () => import('./unit-tests-camp-known.js').then((m) => m.addCampKnownTests),
   campCanvas: () => import('./unit-tests-camp-canvas.js').then((m) => m.addCampCanvasTests),

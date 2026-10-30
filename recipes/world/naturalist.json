@@ -39,7 +39,7 @@
     "next": "A little further on",
     "later": "One day",
     "where": { "woodlice": "Under the log", "groundbeetle": "Under the log" },
-    "layers": { "topsoil": "Dug: dark topsoil", "subsoil": "Dug: pale subsoil", "clay": "Dug: blue-grey clay", "sand": "Dug: beach sand" },
+    "layers": { "topsoil": "Dug: dark topsoil", "subsoil": "Dug: pale subsoil", "clay": "Dug: blue-grey clay", "sand": "Dug: beach sand", "deepclay": "Dug: the deeper clay", "charcoal": "Dug: the old hearth's charcoal band" },
     "layerNote": "A layer under the ground, seen."
   },
   "gifts": {

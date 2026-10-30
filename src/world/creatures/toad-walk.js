@@ -69,3 +69,32 @@ export function toadMoves(skeleton, legs, a, t, M) {
   }
   return moves;
 }
+
+/**
+ * Bone moves for a toad asleep in the winter ground (docs/future/13 10.6.8, B1 D1): sunk low and
+ * tucked tight, its hind feet drawn in under it by IK and its arms folded close, the head bowed and
+ * the eyes drawn shut; it breathes slowly (the breath at motion.sleep.slow of its pace) and never
+ * blinks. Pure. @param {{ name: string, parent: number, pivot: number[] }[]} skeleton
+ * @param {ReturnType<typeof import('./motion.js').legsOf>} legs @param {number} id
+ * @param {number} t animation seconds @param {any} M toad.json motion
+ * @returns {(BoneMove | null)[]}
+ */
+export function toadSleepMoves(skeleton, legs, id, t, M) {
+  const S = M.sleep;
+  const moves = idleMoves(skeleton, t * S.slow, id, { ...M, blink: { ...M.blink, s: 0 } });
+  const at = (/** @type {string} */ n) => skeleton.findIndex((b) => b.name === n);
+  const torso = at('torso');
+  if (torso >= 0) moves[torso] = { t: [0, -S.sinkM, 0], s: moves[torso]?.s ?? [1, 1, 1] };
+  const head = at('head');
+  if (head >= 0) moves[head] = { q: qaxis([1, 0, 0], S.headDeg * DEG) };
+  for (const eye of ['eye.l', 'eye.r']) { const i = at(eye); if (i >= 0) moves[i] = { s: [1, S.eyeShut, 1], t: [0, -M.blink.retractM, 0] }; }
+  for (const L of legs) {
+    // The hind foot drawn in toward the body and forward, under the flank.
+    const T = [L.A[0] * (1 - S.tuck), L.A[1], L.A[2] + S.tuckM];
+    const ik = twoBoneIK(L.H, L.K, L.A, T);
+    moves[L.thigh] = { q: ik.q1 };
+    moves[L.shank] = { q: ik.q2 };
+    if (L.arm >= 0) moves[L.arm] = { q: qmul(qaxis([1, 0, 0], S.armDeg * DEG), qaxis([0, 0, 1], -L.sign * S.armInDeg * DEG)) };
+  }
+  return moves;
+}

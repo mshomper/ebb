@@ -1399,7 +1399,8 @@
         { "text": "A toad walks where a frog would hop, and its skin is dry and warty.", "learn": ["seen"] },
         { "text": "Toads go back each spring to the pond they were born in, often on a wet night.", "learn": ["seen"] },
         { "text": "By day it hides under stones and logs, and hunts slugs and beetles in the dark.", "learn": ["moment:dusk"] },
-        { "text": "The bumps behind its eyes hold a bitter taste, so few things eat a toad.", "learn": ["moment:rain"] }
+        { "text": "The bumps behind its eyes hold a bitter taste, so few things eat a toad.", "learn": ["moment:rain"] },
+        { "text": "It sleeps the winter dug into soft soil near the pond, tucked up tight, until spring.", "learn": ["asleep"] }
       ],
       "fieldHint": "Look out on other spring nights to learn more.",
       "sketch": { "scale": "about 10 cm", "labels": {
@@ -1408,7 +1409,8 @@
         "eyes": { "text": ["copper", "eyes"], "learn": ["seen"] } } },
       "likes": [
         { "text": "A stone or log near the pond to hide under", "learn": ["seen"] },
-        { "text": "Wet spring nights", "learn": ["moment:rain"] }
+        { "text": "Wet spring nights", "learn": ["moment:rain"] },
+        { "text": "Soft, undug soil near the pond to sleep the winter in", "learn": ["asleep"] }
       ],
       "gives": [
         { "pencil": "Something small might come of this one day.", "ink": "Toads eat the slugs that would eat your plants.", "when": "toads:seen" }
