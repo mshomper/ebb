@@ -38,6 +38,8 @@ export function createKeepsakes(opts) {
   /** @type {any} */ let zonesSeen = null;
   /** @type {import('./shore.js').ShoreKeepsake[]} */ let now = [];
   /** @type {{ id: string, x: number, z: number, n: any }[]} */ let shown = [];
+  /** The ones drawn now, where they lie (their glints, src/world/glints.js). @type {{ id: string, x: number, y: number, z: number, n: any }[]} */
+  let lying = [];
   let clock = 0;
   /** How sheltered each shore cell is (src/world/water/cove.js), for the shore as it is now. @type {Uint8Array | null} */
   let shelter = null;
@@ -114,7 +116,9 @@ export function createKeepsakes(opts) {
       if (clock < 0.25) return;
       clock = 0;
       scan(f);
-      pass.setBeings(now.filter((s) => shown.some((h) => h.id === s.id)).map((s) => ({
+      const drawn = now.filter((s) => shown.some((h) => h.id === s.id));
+      lying = drawn.map((s) => ({ id: s.id, x: s.x, y: terrain.sampleHeight(s.x, s.z), z: s.z, n: s.n }));
+      pass.setBeings(drawn.map((s) => ({
         x: s.x, y: terrain.sampleHeight(s.x, s.z) - 0.001, z: s.z, yaw: s.yaw, size: S.scale, mesh: s.id,
       })));
     },
@@ -131,8 +135,10 @@ export function createKeepsakes(opts) {
       }
       return best;
     },
+    /** The keepsakes drawn now, where they lie on the ground (for their glints). */
+    lying: () => lying,
     /** Leave one where it lies: it goes back to the sea and does not come again. @param {string} id */
-    leave(id) { gone.add(id); now = now.filter((s) => s.id !== id); shown = shown.filter((s) => s.id !== id); },
+    leave(id) { gone.add(id); now = now.filter((s) => s.id !== id); shown = shown.filter((s) => s.id !== id); lying = lying.filter((s) => s.id !== id); },
     /**
      * What the shelf keeps of one on the shore: its numbers, the hour of the tide that left it, and
      * whether that was a spring tide. @param {string} id

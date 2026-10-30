@@ -57,6 +57,8 @@ import { previewSpots } from './world/creatures/preview-spots.js';
 import { createCreatures } from './world/creatures/index.js';
 import { createFinds } from './world/finds/index.js';
 import { createKeepsakes } from './world/keepsakes/index.js';
+import { keepsakeGlints, findGlints } from './world/glints.js';
+import { createGlintsPass } from './render/passes/glints.js';
 import { keepsakeWords } from './world/keepsakes/families/index.js';
 import { keptFamily } from './world/expansion.js';
 import { addFirst, keptFirsts, seenMark, firstsOf, sampleTrails, trailLine } from './world/trails.js';
@@ -563,6 +565,14 @@ export async function startApp(canvas, hooks = {}) {
   const bottleMessages = await loadRecipe('world/bottle-messages');
   /** @type {Map<string, string>} */ const shoreLetters = new Map();
   sim.addSystem(keepsakes);
+  // Beach glints (src/world/glints.js): the keepsakes, bottles most, and a few finds now and then
+  // catch the light, so the eye finds them among the stones and wrack; ground pickups never do.
+  // `?glints=steady` (testing): every glint flashes, one slow two-second pulse after another.
+  const glintsRecipe = params.get('glints') === 'steady' ? { ...(await loadRecipe('world/glints')), everyS: [2, 2], flashS: 2, chance: 1 } : await loadRecipe('world/glints');
+  const glints = createGlintsPass({ recipe: glintsRecipe, time: () => clock.animT() });
+  sim.addSystem({ id: 'glints', tick() {
+    glints.set([...keepsakeGlints(keepsakes.lying(), glintsRecipe), ...findGlints(finds.shown(), (x, z) => terrain.sampleHeight(x, z), glintsRecipe)]);
+  } });
   // The nets (docs/future/12, K6; src/world/nets): cast with the Water tool's Net mode once the
   // beachcomber's trail gives the general net; `?nets` (testing, unsaved) gives it at once, and a
   // net cast there is ready to lift straight away.
@@ -1088,6 +1098,8 @@ export async function startApp(canvas, hooks = {}) {
     // smoke, sparks and moths: after the sky too, so smoke against it shows.
     camp.firePass,
     camp.fx,
+    // Beach glints: added light on the keepsakes and finds, after everything that could hide them.
+    glints,
     exposure,
     bloom,
     tonemap,
@@ -2317,6 +2329,8 @@ export async function startApp(canvas, hooks = {}) {
     finds,
     /** The keepsakes on the strandline (the journal asks it what a tap landed on). */
     keepsakes: keepsakesApi,
+    /** Beach glints (tools, tests): the pass, how many are set now. */
+    glints,
     /** The nets (the journal asks which one a tap landed on; the haul tray reads the recipe). */
     nets: { ...nets, recipe: netsRecipe, keepsakesRecipe },
     /** The placed loose stones (the journal asks which one a tap landed on). */
