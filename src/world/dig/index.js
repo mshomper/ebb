@@ -29,7 +29,7 @@ import { keep as keepShelf, cleanShelf } from '../keepsakes/shelf.js';
 import { addFirst } from '../trails.js';
 import { groundClass, nextLayer, cellOf, cellCenter } from './layers.js';
 import { createStoryLive } from './story-live.js';
-import { cacheDue } from './story.js';
+import { cacheDue, stoneShown } from './story.js';
 import { bladeMesh } from './story-draw.js';
 import { sleeperAt, sleeperNear, nearestSleeper, yearOf } from './sleepers.js';
 import { rested, thinning, budgetLeft, addEvent, seasonEvents, seasonNo, cleanDig } from './rest.js';
@@ -72,7 +72,18 @@ export function createDig(o) {
   const hasBlade = () => testBlade || state().cache !== null;
   props.addMesh('blade', bladeMesh(R.blade), R.blade.srgb, R.blade.roughness);
   // The island's past: the old hearths and the marked stone (story-live.js).
-  const story = createStoryLive({ R, land: o.land, terrainSeed: o.terrainSeed, worldSeed: o.seed, piecesRecipe: o.piecesRecipe, pieces: o.pieces, hab, ground });
+  // The marked stone shows once both second layers have been dug (story.cacheAfter), or at once on the cache and blade test links.
+  const testStone = o.testDig === 'cache' || o.testDig === 'blade';
+  const story = createStoryLive({ R, land: o.land, terrainSeed: o.terrainSeed, worldSeed: o.seed, piecesRecipe: o.piecesRecipe, pieces: o.pieces, hab, ground,
+    shown: () => testStone || state().firsts.includes('stone:shown') });
+  /** The first time the ground has been learned: the stone is there from now on, and the morning hint may speak of it. */
+  function reveal() {
+    const f = state().firsts;
+    if (testStone || f.includes('stone:shown') || !stoneShown(f, story.hasBank(), R.story)) return;
+    change((s) => ({ ...s, firsts: [...s.firsts, 'stone:shown'] }));
+    dispatch(/** @type {any} */ ({ type: 'journal.flag', flag: 'dig:marked-stone' }));
+    emitDeferred('dig:stone-shown', {});
+  }
   /** Has the walker fired a pot of their own (one stands at camp)? The ground offers sherds from then (D-21). */
   const potFired = () => o.testDig === 'sherd' || (get('camp')?.slots ?? []).some((/** @type {any} */ s) => R.sherd.potKinds.includes(s.kind));
   const winter = () => (o.world.state?.seasons?.index ?? 0) === 3;
@@ -277,6 +288,7 @@ export function createDig(o) {
     const holeId = openHole(P, t, f.seep);
     if (f.keepsake?.family === 'sherd') first('sherd', W.layers.sherd);
     if (f.seep) first('layer:seep', W.layers.seep);
+    reveal();
     showFind(P, f, holeId);
   }
 
@@ -325,6 +337,7 @@ export function createDig(o) {
     emitDeferred('dig:cache', { x: P.x, z: P.z, letter: letterId(), hour: t, text: W.cacheNote });
     emitDeferred('dig:found', { kind: 'cache', id: 'cache' });
     dispatch(/** @type {any} */ ({ type: 'journal.flag', flag: `keeper:${letterId()}` }));
+    dispatch(/** @type {any} */ ({ type: 'journal.flag', flag: 'dig:cache' }));
     first('cache', W.layers.cache);
     // Said once the card has had a moment: the blade fitted to the handle.
     bladeSay = 6;
@@ -465,7 +478,7 @@ export function createDig(o) {
       else if (a.type === 'dig.leave') leaveIt();
       else if (a.type === 'dig.read') { const id = get('identify')?.digCache; if (id) { update('identify', () => null); emit('keeper:card', { id }); } }
     }),
-    on('world:ticked', upkeep),
+    on('world:ticked', () => { upkeep(); reveal(); }),
     on('world:caught-up', upkeep),
     // A stroke of Sculpt, Paint or Water across an open hole closes it (the land's height never changes for a hole).
     on('terrain:stroke-ended', (/** @type {{ rect: { x0: number, z0: number, x1: number, z1: number } | null }} */ p) => {
