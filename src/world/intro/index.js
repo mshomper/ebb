@@ -21,7 +21,7 @@ import { CHECKS, CHECK_EVENTS } from './checks.js';
  * What the director does in the world (adapter.js).
  * @typedef {Object} IntroEffects
  * @property {(name: string) => void} act  play a walker act; it reports `walk:act-done { name }`
- * @property {(id: string) => void} openPage  open the journal on a keeper page
+ * @property {(id: string) => void} openPage  open the Keeper book on a keeper page
  * @property {() => void} skipCamp  leave the camp ready (tent up, ring laid cold) and the walker at the flap
  * @property {(text: string) => void} notice  one island notice (older islands)
  * @property {(slot: string) => void} glow  a camp slot glows (older islands' tent patch)

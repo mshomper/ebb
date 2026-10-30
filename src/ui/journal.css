@@ -92,8 +92,8 @@
   pointer-events: auto;
   transition: opacity 200ms ease, transform 240ms ease, visibility 0s;
 }
-.ebb-journal [hidden] { display: none !important; }
-.ebb-journal .icon { width: 24px; height: 24px; display: block; flex: none; }
+:is(.ebb-journal, .ebb-kb__page) [hidden] { display: none !important; }
+:is(.ebb-journal, .ebb-kb__page) .icon { width: 24px; height: 24px; display: block; flex: none; }
 .ebb-journal button { font: inherit; color: inherit; -webkit-tap-highlight-color: transparent; }
 .ebb-journal :focus-visible { outline: 2px solid var(--jr-moss); outline-offset: 2px; }
 
@@ -127,10 +127,11 @@
 }
 .ebb-journal__icon-btn:hover { background: rgba(30, 38, 36, 0.07); }
 
-/* Six sections: three to a row in two even rows (two to a row in a narrow window, below). */
+/* Five sections: three across the first row and two wider ones under them, so both rows stay full
+   (two to a row in a narrow window, below). */
 .ebb-journal__nav {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 6px;
   padding: 4px 16px 10px;
   border-bottom: 1px solid var(--jr-rule);
@@ -149,6 +150,8 @@
   background: transparent;
   cursor: pointer;
 }
+.ebb-journal__nav .ebb-journal__tab { grid-column: span 2; }
+.ebb-journal__nav .ebb-journal__tab:nth-child(n + 4) { grid-column: span 3; }
 .ebb-journal__tab:hover { background: rgba(30, 38, 36, 0.05); }
 .ebb-journal__tab[aria-pressed='true'] { background: var(--jr-moss); border-color: var(--jr-moss); color: var(--jr-paper); }
 
@@ -461,10 +464,11 @@ button.ebb-jnotes__row:hover { background: rgba(30, 38, 36, 0.06); }
    at the end takes the whole row. */
 @media (max-width: 480px) {
   .ebb-journal__nav { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ebb-journal__nav .ebb-journal__tab, .ebb-journal__nav .ebb-journal__tab:nth-child(n + 4) { grid-column: auto; }
   .ebb-journal__tab { min-width: 0; text-align: left; }
   /* With large text a label wraps inside its button rather than running past it. */
   .ebb-journal__tab span { min-width: 0; overflow-wrap: anywhere; }
-  .ebb-journal__tab:last-child:nth-child(odd) { grid-column: 1 / -1; }
+  .ebb-journal__nav .ebb-journal__tab:last-child:nth-child(odd) { grid-column: 1 / -1; }
   /* From 130 percent text (src/ui/motion.js) the buttons take a row each, so no word breaks. */
   :root.ebb-text-large .ebb-journal__nav { grid-template-columns: minmax(0, 1fr); }
 }

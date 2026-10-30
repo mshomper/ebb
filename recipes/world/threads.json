@@ -1,0 +1,94 @@
+{
+  "type": "threads",
+  "version": 1,
+  "note": "Threads (Matt, October 30, 2026; the Keeper book's Threads tab, src/ui/keeper-threads.js). Two parts. Things to try: every morning hint once shown (recipes/world/morning-hints.json and the journal's hint: flags), newest first, its Show me beside it, a done one pencilled out; hints not yet given stay hidden. Long threads: the big stories the island tells, each written by the keeper as it happens. threads: in order; each has an id, a title, a drawn icon (src/ui/icons/), lines and an optional pencil line and end. Each line has an id, a test by name (tests below, read by the morning hints' own test reader, src/world/hints/morning.js) and its words. A thread opens when its first line is written; a line is written, with the game date, the first time its test holds once the line before it has been written, and is kept in the save (the threads section, src/world/threads/model.js), so it never changes afterward. pencil: one soft line under an open thread's last line, never a target or a checklist. end: test names that must all hold for the thread to be finished (finished threads go under the Finished heading); a thread with no end stays open. pages: the thread opens the keeper's pages (src/ui/journal-keeper.js) from its page. Every set piece or story arc adds its thread here (CLAUDE.md, 'Adding a set piece'). Words are drafts in the keeper's voice for Matt to edit.",
+  "words": {
+    "title": "Threads",
+    "try": "Things to try",
+    "tryNone": "Nothing yet. Each morning the keeper may leave a line here.",
+    "long": "Long threads",
+    "longNone": "No long threads yet. The island takes its time.",
+    "finished": "Finished",
+    "begun": "Begun {date}",
+    "back": "Back to Threads",
+    "showMe": "Show me",
+    "done": "Done",
+    "pages": "Read the pages"
+  },
+  "threads": [
+    {
+      "id": "stone",
+      "title": "The marked stone",
+      "icon": "stone",
+      "lines": [
+        { "id": "shown", "test": "stoneShown", "text": "There is a flat stone near camp with a sign scratched into it. I walked past that spot a dozen times. It wasn't there, or I wasn't looking." },
+        { "id": "cache", "test": "cacheFound", "text": "I dug beside the marked stone. A bundle in oiled cloth: a letter, and an old iron blade that fits the shovel's handle." },
+        { "id": "read", "test": "cacheRead", "text": "The letter was for whoever keeps the island next. That's me, it seems." }
+      ],
+      "pencil": "Whoever scratched that sign meant it to be found.",
+      "end": ["cacheRead"]
+    },
+    {
+      "id": "cairns",
+      "title": "The cairns",
+      "icon": "cairn",
+      "lines": [
+        { "id": "one", "test": "cairn1", "text": "A stack of flat stones stood on the island this morning. I didn't build it. Nobody else lives here." },
+        { "id": "two", "test": "cairn2", "text": "Another, a little further on. The first one leans toward it, I'm sure of it." },
+        { "id": "added", "test": "cairnAdded", "text": "I added a stone to one. The next morning's cairn had one more than the last. Someone is answering." },
+        { "id": "four", "test": "cairn4", "text": "Four now, in a line across the island. They're heading somewhere." },
+        { "id": "last", "test": "cairn7", "text": "The last cairn. Something pale is tucked under its top stone." },
+        { "id": "letter", "test": "cairnsLetter", "text": "A letter under the last stone, from the keeper before me. Leave the cairns standing, it says. I will." }
+      ],
+      "pencil": "They seem to be heading somewhere.",
+      "end": ["cairnsLetter"]
+    },
+    {
+      "id": "boat",
+      "title": "A lantern offshore",
+      "icon": "boat-lantern",
+      "lines": [
+        { "id": "dusk", "test": "boatSeen", "text": "A fishing boat lay off the island at dusk, a lantern in its wheelhouse. A bell, now and then. It never came closer." },
+        { "id": "gone", "test": "boatGone", "text": "Gone by morning. There's a flat stone by the mooring, above the tide line. A parcel left there would wait for it." },
+        { "id": "parcel", "test": "boatParcel", "text": "I left a parcel on the stone, wrapped against the dew." },
+        { "id": "first", "test": "boatLetter1", "text": "Something lay on the stone in its place, tied with cord, with a note in pencil. Whoever they are, they know this shore has a keeper now." },
+        { "id": "fourth", "test": "boatLetter4", "text": "The notes from the boat are getting longer. I think we're friends, in our way." },
+        { "id": "eighth", "test": "boatLetter8", "text": "The last note asks for a dock, so the boat can come in. Maybe one day." }
+      ],
+      "pencil": "The lantern will be back, some dusk."
+    },
+    {
+      "id": "keeper",
+      "title": "The old keeper",
+      "icon": "notes",
+      "pages": true,
+      "lines": [
+        { "id": "first", "test": "keeperFirst", "text": "I came in on the morning tide and started these pages. Someone kept this island before me." },
+        { "id": "tend", "test": "keeperTend", "text": "A keeper doesn't build. A keeper tends. I wrote it down so I wouldn't forget." },
+        { "id": "cairns", "test": "cairnsLetter", "text": "A letter under the last cairn, in an older hand. The old keeper walked this island too." },
+        { "id": "cache", "test": "cacheRead", "text": "Another, under the marked stone, with the blade. Nine years, or a short stay. Either way, they left me what they could." }
+      ],
+      "pencil": "There may be more of their pages on the island.",
+      "end": ["cairnsLetter", "cacheRead"]
+    }
+  ],
+  "tests": {
+    "stoneShown": [{ "flag": "dig:marked-stone" }],
+    "cacheFound": [{ "flag": "dig:cache" }],
+    "cacheRead": [{ "flag": "keeper:cache-starter:read" }, { "flag": "keeper:cache-other:read" }],
+    "cairn1": [{ "flag": "setpiece:cairns:1" }],
+    "cairn2": [{ "flag": "setpiece:cairns:2" }],
+    "cairnAdded": [{ "flag": "setpiece:cairns:added" }],
+    "cairn4": [{ "flag": "setpiece:cairns:4" }],
+    "cairn7": [{ "flag": "setpiece:cairns:7" }],
+    "cairnsLetter": [{ "flag": "keeper:cairns-letter" }],
+    "boatSeen": [{ "flag": "setpiece:boat:seen" }],
+    "boatGone": [{ "flag": "keeper:boat" }],
+    "boatParcel": [{ "flag": "setpiece:boat:parcel" }],
+    "boatLetter1": [{ "flag": "keeper:boat-1" }],
+    "boatLetter4": [{ "flag": "keeper:boat-4" }],
+    "boatLetter8": [{ "flag": "keeper:boat-8" }],
+    "keeperFirst": [{ "flag": "keeper:first" }],
+    "keeperTend": [{ "flag": "keeper:tend" }]
+  }
+}

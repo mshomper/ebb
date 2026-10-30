@@ -13,9 +13,10 @@ import { cleanDig, emptyDig } from '../world/dig/rest.js';
 import { cleanCook } from '../world/camp/making.js';
 import { cleanBook, emptyBook } from '../world/sketchbook/model.js';
 import { cleanKit, emptyKit } from '../world/kit/model.js';
+import { cleanThreads, emptyThreads } from '../world/threads/model.js';
 
 /** The sections format 9 brings in, in the order they are written. */
-export const SECTIONS9 = /** @type {const} */ (['camp', 'pack', 'gather', 'dig', 'cook', 'dyes', 'sketchbook', 'kit']);
+export const SECTIONS9 = /** @type {const} */ (['camp', 'pack', 'gather', 'dig', 'cook', 'dyes', 'sketchbook', 'kit', 'threads']);
 
 /** @typedef {typeof SECTIONS9[number]} Section9 */
 
@@ -31,6 +32,7 @@ export function empty9(id) {
   if (id === 'cook') return cleanCook(null);
   if (id === 'sketchbook') return emptyBook();
   if (id === 'kit') return emptyKit();
+  if (id === 'threads') return emptyThreads();
   return { version: 1 };
 }
 
@@ -52,6 +54,9 @@ export function clean9(id, v) {
   // The walker's kit (the Walker page, K1): likewise, a save without it reads as the walker's own
   // things (src/world/kit/model.js).
   if (id === 'kit') return cleanKit(v);
+  // The Keeper book's threads (src/world/threads/model.js): likewise, a save without them reads as
+  // nothing written yet.
+  if (id === 'threads') return cleanThreads(v);
   if (!v || typeof v !== 'object' || Array.isArray(v) || v.version !== 1) return empty9(id);
   const out = structuredClone(v);
   if (id === 'gather' && !Array.isArray(out.events)) out.events = [];

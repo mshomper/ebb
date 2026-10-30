@@ -139,7 +139,9 @@ export function addForagerTests(test, assert, eq) {
     assert(/\.ebb-trails\.is-wide\.is-four \{ grid-template-columns: repeat\(4, minmax\(0, 1fr\)\)/.test(css), 'four columns that may shrink (minmax 0): no horizontal scroll');
     assert(/\.ebb-trails\.is-wide \{ grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/.test(css), 'two by two');
     assert(/\.ebb-trails__tabs \{ display: grid; grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/.test(css), 'the four tabs two by two');
-    assert(/\.ebb-journal\.is-wide\.is-four \{ width: min\(1120px, calc\(100vw/.test(css), 'the panel never wider than the window');
+    // Trails is the Keeper book's now (src/ui/keeper-book.js): the book widens for it, never past the window.
+    const book = await fetch('../src/ui/keeper-book.css').then((r) => r.text());
+    assert(/\.ebb-kb\.is-wide\.is-four \{ width: min\(1200px, calc\(100vw/.test(book), 'the book never wider than the window');
   });
 
   test(G, "no save format change: the forager's firsts and stops come back as they were", () => {

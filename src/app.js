@@ -238,7 +238,7 @@ export async function startApp(canvas, hooks = {}) {
   // Device settings (src/save/prefs.js): kept on this device, never in the island.
   const prefs = loadPrefs();
   updateStore('settings', (s) => {
-    for (const k of ['textSize', 'motion', 'audio', 'hudDim', 'reveal', 'qualityChoice', 'journalList']) if (prefs[k] !== undefined) s[k] = prefs[k];
+    for (const k of ['textSize', 'motion', 'audio', 'hudDim', 'reveal', 'qualityChoice', 'journalList', 'keeperTab']) if (prefs[k] !== undefined) s[k] = prefs[k];
   });
   keepPrefs();
 
@@ -1474,7 +1474,7 @@ export async function startApp(canvas, hooks = {}) {
     canvas, walk, camera, recipe: walkerRecipe,
     // A card or panel over the view: keys wait, and the pointer is freed to use it.
     open: () => !!getStore('identify') || !!getStore('journalUi')?.open || !!getStore('haul') || !!getStore('shelfPending')
-      || !!getStore('sketchbookUi')?.open || !!getStore('stationView') || !!getStore('walkerPageUi')?.open,
+      || !!getStore('sketchbookUi')?.open || !!getStore('stationView') || !!getStore('keeperUi')?.open,
     aiming: () => !!getStore('hand'),
     use: (x, y) => dispatch({ type: 'look.tap', x, y, source: 'mouse' }),
     hover: (x, y) => {
@@ -1852,7 +1852,7 @@ export async function startApp(canvas, hooks = {}) {
         } else {
           updateStore('shelfPending', () => ({ shoreId: a.id, ...k }));
           updateStore('identify', () => null);
-          updateStore('journalUi', (u) => ({ ...(u ?? {}), open: true, view: 'shelf', page: null }));
+          dispatch(/** @type {any} */ ({ type: 'ui.keeper', open: true, tab: 'shelf', page: null }));
         }
         break;
       }
@@ -1898,7 +1898,7 @@ export async function startApp(canvas, hooks = {}) {
         });
         updateStore('identify', () => null);
         updateStore('shelfUi', () => ({ letter }));
-        updateStore('journalUi', (u) => ({ ...(u ?? {}), open: true, view: 'shelf', page: null }));
+        dispatch(/** @type {any} */ ({ type: 'ui.keeper', open: true, tab: 'shelf', page: null }));
         emitDeferred('keepsake:sound', { name: 'letter' });
         break;
       }
@@ -1936,7 +1936,7 @@ export async function startApp(canvas, hooks = {}) {
         } else {
           // A full shelf asks which to let go, in the journal; the tray waits underneath.
           updateStore('shelfPending', () => ({ shoreId: h.haul.keepsake.id, ...k }));
-          updateStore('journalUi', (u) => ({ ...(u ?? {}), open: true, view: 'shelf', page: null }));
+          dispatch(/** @type {any} */ ({ type: 'ui.keeper', open: true, tab: 'shelf', page: null }));
         }
         break;
       }

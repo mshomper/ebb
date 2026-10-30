@@ -145,7 +145,9 @@ Size and color come from CSS: set `width`/`height` on `.icon` and `color` on the
 | `quality` | two stacked layers, the top one raised: Settings > Quality |
 | `saves` | a keepsake box with an arrow going in: Settings > Saves |
 | `tests` | a small flask a third full: Settings > Tests, on previews and local builds only |
-| `walker` | a figure in a tall soft hat with a wide brim and a long coat: the Walker page's button (src/ui/walker-page.js) |
+| `walker` | a figure in a tall soft hat with a wide brim and a long coat: the Keeper book's Kit tab (src/ui/keeper-book.js; once the Walker page's button) |
+| `keeper` | a field book, its binding down the left, a cord wound round it and tied in a loop, a ribbon marker below: the Keeper book's button (src/ui/keeper-book.js) |
+| `threads` | a wooden spool with thread wound round it, its loose end curling away: the Keeper book's Threads tab |
 
 The clock dial (`src/ui/clock-dial.js`) is drawn live in the same style rather than from this sprite: a season ring, the sky's arc over a horizon with the sun or moon on it, and a tide wave with a rising or falling chevron.
 

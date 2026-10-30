@@ -25,7 +25,7 @@
     "nameLast": "The last cairn",
     "lines": ["Flat stones, stacked with care. It leans a little, toward somewhere.", "Another stone has been added since. Someone answered.", "Moss is starting on the lower stones."],
     "lineLetter": "Something pale is tucked under the top stone.",
-    "lineRead": "The trail ends here. The letter is in your journal.",
+    "lineRead": "The trail ends here. The letter is in your Keeper book.",
     "add": "Add a stone",
     "read": "Read the letter",
     "added": "You set a stone on top.",

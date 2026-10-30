@@ -11,7 +11,7 @@
 import { on, emitDeferred } from '../../core/events.js';
 import { get, update, subscribe } from '../../core/store.js';
 import { hourIndex, display, SECONDS_PER_HOUR, HOURS_PER_DAY } from '../../core/clock.js';
-import { onAction } from '../../input/actions.js';
+import { onAction, dispatch } from '../../input/actions.js';
 import { weatherAt } from '../weather.js';
 import { tideParams } from '../tide.js';
 import { initialJournal, learn, notePlanted, momentsNow, catchMoments, foundAnimal, foundFind, namedAnimal, flag, noteGift, noteOnce, liftedStone, stormShells } from './observe.js';
@@ -25,11 +25,12 @@ import { washMap } from './wash.js';
 import { buriedNotice } from './buried.js';
 import { UNDER_PAGES } from '../finds/under-log.js';
 import { stampNotes, markShown, markNotesSeen, markPageSeen, readOf, pageSince, unread, noteState } from './read.js';
+import { keeperOfJournal } from '../keeper/route.js';
 
 /**
  * @typedef {Object} JournalUiSlice
  * @property {boolean} open
- * @property {'trails'|'living'|'ground'|'web'|'almanac'|'notes'|'shelf'|'keeper'|'camp'|'herbarium'} view  keeper: the keeper's pages (src/ui/journal-keeper.js); camp: the camp page (src/ui/journal-camp.js); herbarium: the forager's trail's page (src/ui/journal-herbarium.js)
+ * @property {'living'|'ground'|'web'|'almanac'|'notes'} view  (trails, herbarium, shelf, camp and keeper are the Keeper book's now: src/world/keeper/route.js)
  * @property {string|null} [keeper] the keeper page open, or null for their list
  * @property {'naturalist'|'beach'|'shape'|'forage'} [trail] the trail the Trails page shows when it is not wide enough for all four
  * @property {string|null} page   the page shown in the living or ground view, or null for the list
@@ -520,6 +521,10 @@ export function createJournal(opts) {
         return;
       }
       if (a.type !== 'ui.journal') return;
+      // Trails, the herbarium, the Shelf, the camp page and the keeper's pages moved to the Keeper book
+      // (src/world/keeper/route.js): an older link to one opens it there.
+      const toKeeper = keeperOfJournal(a);
+      if (toKeeper) { dispatch(/** @type {any} */ (toKeeper)); return; }
       /** @type {JournalUiSlice} */ const u = get('journalUi');
       const open = a.toggle ? !u.open : a.open ?? u.open;
       /** @type {Partial<JournalUiSlice>} */ const patch = { open };

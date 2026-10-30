@@ -55,9 +55,9 @@ export function registerCampCards(W, CW = {}) {
     // Every card ties into the journal: the tent's into the keeper's first page, the stations' and
     // the benches' into the camp page (S1, src/ui/journal-camp.js).
     registerCardAction({ id: 'camppage', icon: 'journal', order: 90, label: 'The first page',
-      when: (c) => !!C(c) && !c.station && !c.campPage && C(c) !== 'benchSlot', action: () => ({ type: 'ui.journal', open: true, view: 'keeper', keeper: 'first', page: null }) }),
+      when: (c) => !!C(c) && !c.station && !c.campPage && C(c) !== 'benchSlot', action: () => ({ type: 'ui.keeper', open: true, tab: 'threads', page: 'keeper:first' }) }),
     registerCardAction({ id: 'campmadepage', icon: 'journal', order: 90, label: 'The camp page',
-      when: (c) => !!c?.station || !!c?.campPage || C(c) === 'benchSlot', action: () => ({ type: 'ui.journal', open: true, view: 'camp', page: null }) }),
+      when: (c) => !!c?.station || !!c?.campPage || C(c) === 'benchSlot', action: () => ({ type: 'ui.keeper', open: true, tab: 'camp', page: null }) }),
   ];
 }
 

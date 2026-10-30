@@ -82,6 +82,14 @@ Every new species, swarm or seasonal life goes through this list (Matt, October 
 - **The gift** (doc 12): one gift per species, a seed or a tool, never a creature, at naming or the group's 0.5. `ecology.gift`, its card lines in `recipes/world/naturalist.json` `gifts` (with `stoneLine` for when it is laid on the gift stone), and what it opens next in the gift chain (`docs/13-progression-and-expansion.md`, "The gift chain"). Check it does not repeat another species' gift.
 - **Beyond the top band** (like the hen's Fond): only when Matt asks for it; its own reward, earned by time together, never by counting treats.
 
+## Adding a set piece or story arc
+
+The twin of the list above (Matt, October 30, 2026), for every set piece (`recipes/setpieces/`) or story arc that runs over days:
+- **Its thread** in `recipes/world/threads.json`: a title, a drawn icon, lines in the keeper's voice (American spelling) each with a test in the morning hints' shape (add flags the set piece sets, as `setpiece:<id>:...`, where none fit), one soft pencil line, and its `end` tests (none if it never ends, like the boat).
+- **Its keeper page** if it has one (`recipes/world/keeper-pages.json`), and the thread's `pages` if the thread should open them.
+- **A morning hint** when the player needs a nudge to find it (`recipes/world/morning-hints.json`, a `when` on its first flag).
+- **Test links**: its own, and the thread part-way on `?threads` where it fits.
+
 ## Testing
 
 - Each feature ships with a short click-test list: what Matt should see and do, in plain language. Put it in the PR description.

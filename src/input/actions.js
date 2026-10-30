@@ -59,7 +59,8 @@ import { emit } from '../core/events.js';
  *   | { type: 'ui.identify' }
  *   | { type: 'creature.name', id: number, name: string, sp?: string }
  *   | { type: 'ui.hideHud', hidden?: boolean, source?: Source }
- *   | { type: 'ui.journal', open?: boolean, toggle?: boolean, view?: 'trails'|'living'|'ground'|'web'|'almanac'|'notes'|'shelf', page?: string|null, size?: 'half'|'full', trail?: 'naturalist'|'beach'|'shape' }} Action
+ *   | { type: 'ui.journal', open?: boolean, toggle?: boolean, view?: 'trails'|'living'|'ground'|'web'|'almanac'|'notes'|'shelf', page?: string|null, size?: 'half'|'full', trail?: 'naturalist'|'beach'|'shape' }
+ *   | { type: 'ui.keeper', open?: boolean, toggle?: boolean, tab?: 'kit'|'threads'|'trails'|'shelf'|'camp', page?: string|null, trail?: string }} Action  ui.journal's trails and shelf views (and herbarium, camp, keeper) open the Keeper book (src/world/keeper/route.js)
  */
 
 /** @type {((a: Action) => void)[]} */

@@ -114,7 +114,8 @@ export function createIntroLive(o) {
     },
     onLand: (x, z) => terrain.sampleHeight(x, z) > water.tide + 0.02,
     spring: () => spring,
-    journalOpen: () => !!get('journalUi')?.open,
+    // The first page opens in the Keeper book (its Threads tab); either book open counts.
+    journalOpen: () => !!get('journalUi')?.open || !!get('keeperUi')?.open,
     packHolds: (need) => !!o.pack?.holds(need),
     offPad: (rect, at) => offPadOf(padNow(), rect, at),
     ring: () => slot('ring'),
@@ -146,7 +147,7 @@ export function createIntroLive(o) {
     ctx,
     effects: {
       act: (name) => walk.act(name),
-      openPage: (id) => dispatch(/** @type {any} */ ({ type: 'ui.journal', open: true, view: 'keeper', keeper: id, page: null })),
+      openPage: (id) => dispatch(/** @type {any} */ ({ type: 'ui.keeper', open: true, tab: 'threads', page: `keeper:${id}` })),
       skipCamp: () => {
         emit('intro:camp-ready', { tent: true, ring: true });
         const f = flapOf();

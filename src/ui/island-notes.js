@@ -234,7 +234,7 @@ export function mountIslandNotes(parent, words, naturalist = null) {
     b.addEventListener('click', () => {
       leave();
       dispatch(n.sp ? { type: 'ui.journal', open: true, page: n.sp }
-        : n.trail ? /** @type {any} */ ({ type: 'ui.journal', open: true, view: 'trails', page: null, trail: n.trail }) : { type: 'ui.journal', open: true, view: 'notes' });
+        : n.trail ? /** @type {any} */ ({ type: 'ui.keeper', open: true, tab: 'trails', page: null, trail: n.trail }) : { type: 'ui.journal', open: true, view: 'notes' });
     });
     parent.appendChild(b);
     requestAnimationFrame(() => requestAnimationFrame(() => b.classList.add('is-shown')));

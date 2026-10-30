@@ -1,8 +1,10 @@
 // @ts-check
 // The field journal panel (docs/13, docs/15): the book button at the top right and the journal it
-// opens: a 440 px cream panel on the right, so the island stays in view. Four sections:
-// Living things and Ground (a page each, filled from what has happened on the island), Almanac
-// (today on the island) and Notes. Words only, never numbers or bars.
+// opens: a 440 px cream panel on the right, so the island stays in view. The journal keeps the
+// island (Matt, October 30, 2026): Living things and Ground (a page each, filled from what has
+// happened on the island), the Web, the Almanac (today on the island) and Notes. Words only, never
+// numbers or bars. Trails, the Shelf, the camp page and the keeper's pages are the Keeper book's
+// (src/ui/keeper-book.js); a link here to one of them opens it there.
 //
 // Reads the store slices `journal` and `journalUi` and the live journal (describe, almanac); never
 // writes the store. Every choice goes out as a `ui.journal` or `journal.showMe` action
@@ -15,23 +17,16 @@ import { drawSketch, hasSketch } from './sketches/index.js';
 import { webView, tiesStrip } from './journal-web.js';
 import { nodeOfPage } from '../world/journal/web.js';
 import { livingList, cleanChoice } from '../world/journal/list.js';
-import { createShelfView } from './journal-shelf.js';
-import { trailsView } from './journal-trails.js';
-import { herbariumView } from './journal-herbarium.js';
-import { keeperEntry, keeperView, keeperShown, keeperUnread } from './journal-keeper.js';
-import { campEntry, campView } from './journal-camp.js';
 import { sketchCornerHtml } from './sketchbook.js';
 
 
-/** Sections, in order, with their drawn icons. Trails spans the whole row above the six (doc 13). */
+/** Sections, in order, with their drawn icons. */
 const VIEWS = [
-  { id: 'trails', label: 'Trails', icon: 'trails', wide: true },
   { id: 'living', label: 'Living things', icon: 'plant' },
   { id: 'ground', label: 'Ground', icon: 'soil' },
   { id: 'web', label: 'Web', icon: 'web' },
   { id: 'almanac', label: 'Almanac', icon: 'almanac' },
   { id: 'notes', label: 'Notes', icon: 'notes' },
-  { id: 'shelf', label: 'Shelf', icon: 'shelf' },
 ];
 /** Season box keys, spring first: each box takes its color and drawn mark from these (journal.css, icons.js). */
 const SEASON_KEYS = ['spring', 'summer', 'autumn', 'winter'];
@@ -42,9 +37,6 @@ const MOMENT_ICON = {
 };
 /** Under this window width the panel covers most of the island. */
 const NARROW = '(max-width: 699px)';
-/** From this width the Trails page shows its four trails two by two, in a wider panel; from WIDE4, side by side. */
-const WIDE = '(min-width: 1100px)';
-const WIDE4 = '(min-width: 1400px)';
 
 /**
  * Mount the journal button and panel.
@@ -56,13 +48,6 @@ const WIDE4 = '(min-width: 1400px)';
 export function mountJournal(parent, live, buttonParent = parent) {
   ensureIconSprite();
   const { words, island } = live;
-  // The Shelf section (journal-shelf.js): the keepsakes kept, when the app has handed in their recipes.
-  const shelfLive = /** @type {any} */ (live).shelf;
-  const shelf = shelfLive ? createShelfView({ ...shelfLive, words }) : null;
-  // The keeper's pages (recipes/world/keeper-pages.json), when the app has handed them in.
-  const keeper = /** @type {any} */ (live).keeper ?? null;
-  // The camp page (src/ui/journal-camp.js; S1), when the app has handed in recipes/world/cook.json.
-  const cookR = /** @type {any} */ (live).cook ?? null;
 
   const btnRoot = document.createElement('div');
   btnRoot.className = 'ebb-jbtn';
@@ -81,7 +66,7 @@ export function mountJournal(parent, live, buttonParent = parent) {
       <button type="button" class="ebb-journal__icon-btn" data-act="close" aria-label="Close the journal" title="Close (J)">${iconSvg('close')}</button>
     </header>
     <nav class="ebb-journal__nav" aria-label="Journal sections">
-      ${VIEWS.map((v) => `<button type="button" class="ebb-journal__tab${v.wide ? ' is-wide' : ''}" data-view="${v.id}" aria-pressed="false">${iconSvg(v.icon)}<span>${v.label}</span></button>`).join('')}
+      ${VIEWS.map((v) => `<button type="button" class="ebb-journal__tab" data-view="${v.id}" aria-pressed="false">${iconSvg(v.icon)}<span>${v.label}</span></button>`).join('')}
     </nav>
     <div class="ebb-journal__body" tabindex="-1"></div>`;
   const body = /** @type {HTMLElement} */ (panel.querySelector('.ebb-journal__body'));
@@ -117,7 +102,6 @@ export function mountJournal(parent, live, buttonParent = parent) {
   /** @param {MouseEvent} e */
   function onClick(e) {
     const t = /** @type {HTMLElement} */ (e.target);
-    if (shelf?.click(t, render)) return;
     const node = /** @type {HTMLElement | null} */ (t.closest('[data-web-node]'));
     if (node?.dataset.webNode) { focusWeb(node.dataset.webNode); return; }
     const crumb = /** @type {HTMLElement | null} */ (t.closest('[data-web-trail]'));
@@ -147,9 +131,7 @@ export function mountJournal(parent, live, buttonParent = parent) {
       dispatch({ type: 'journal.showMe', sp: b.dataset.show });
       // In a narrow window the panel would hide what the camera goes to; it closes, and the card leads back.
       if (window.matchMedia(NARROW).matches) dispatch({ type: 'ui.journal', open: false });
-    } else if (b.dataset.view) dispatch(/** @type {any} */ ({ type: 'ui.journal', view: b.dataset.view, page: null, ...(b.dataset.trail ? { trail: b.dataset.trail } : {}),
-      ...(b.dataset.keeper !== undefined ? { keeper: b.dataset.keeper || null } : {}) }));
-    else if (b.dataset.trail) dispatch(/** @type {any} */ ({ type: 'ui.journal', trail: b.dataset.trail }));
+    } else if (b.dataset.view) dispatch(/** @type {any} */ ({ type: 'ui.journal', view: b.dataset.view, page: null, ...(b.dataset.trail ? { trail: b.dataset.trail } : {}) }));
     else if (b.dataset.page) dispatch({ type: 'ui.journal', page: b.dataset.page });
   }
   /** Keep pointer and wheel input on the journal from reaching the island. @param {Event} e */
@@ -174,51 +156,29 @@ export function mountJournal(parent, live, buttonParent = parent) {
     // Read marks: a dot on the book while anything is unread, and on each section that holds it.
     const U = live.unread();
     const inSection = (/** @type {string[]} */ ids) => ids.some((id) => U.pages.has(id));
-    // The keeper's pages (journal-keeper.js) live under Notes: one had and unread marks both.
-    const flags = get('journal')?.flags ?? [];
-    const keeperNew = keeperUnread(keeper, flags);
-    dot(openBtn, U.notes > 0 || U.pages.size > 0 || keeperNew);
+    dot(openBtn, U.notes > 0 || U.pages.size > 0);
     for (const t of tabs) {
       const v = t.dataset.view;
-      dot(t, v === 'notes' ? U.notes > 0 || keeperNew : v === 'living' ? inSection(words.order) : v === 'ground' ? inSection(island.groundOrder) : false);
+      dot(t, v === 'notes' ? U.notes > 0 : v === 'living' ? inSection(words.order) : v === 'ground' ? inSection(island.groundOrder) : false);
     }
     if (!ui.open) return;
-    for (const t of tabs) t.setAttribute('aria-pressed', String(t.dataset.view === (ui.view === 'keeper' || ui.view === 'camp' ? 'notes' : ui.view === 'herbarium' ? 'trails' : ui.view)));
-    // A keeper page open: it shows, and counts as read from now on.
-    if (ui.view === 'keeper') {
-      const shownId = keeperShown(keeper, flags, ui.keeper);
-      if (shownId && !flags.includes(`keeper:${shownId}:read`)) dispatch(/** @type {any} */ ({ type: 'journal.flag', flag: `keeper:${shownId}:read` }));
-    }
+    for (const t of tabs) t.setAttribute('aria-pressed', String(t.dataset.view === ui.view));
     const paged = (ui.view === 'living' || ui.view === 'ground') && !!ui.page && live.hasPage(ui.page);
     backBtn.hidden = !paged;
-    // Trails: on a wide window the panel widens so the four sit two by two, or side by side (journal-trails.css).
-    const wide = ui.view === 'trails' && window.matchMedia(WIDE).matches;
-    const four = wide && window.matchMedia(WIDE4).matches;
-    panel.classList.toggle('is-wide', wide);
-    panel.classList.toggle('is-four', four);
-    const earned = get('unlocks')?.earned ?? {};
     // The Web opens on whatever the journal last showed.
     if (paged) lastShown = nodeOfPage(live.web, ui.page);
     if (ui.view === 'web' && lastShown) { toTrail(lastShown); lastShown = null; webShelf = null; }
     // A note about a thing with no page of its own opens the Web on it.
     if (ui.view === 'web' && ui.webAt && ui.webAtN !== webAtSeen) { webAtSeen = ui.webAtN; toTrail(ui.webAt); webShelf = null; }
     if (ui.view === 'web' && !webTrail.length) webTrail = [live.web.start];
-    const L = /** @type {any} */ (live);
-    const html = ui.view === 'camp' && cookR ? campView(cookR, get('camp'), get('cook'), get('campPad'), words, get('campBed'))
-      : ui.view === 'keeper' && keeper ? keeperView(keeper, flags, ui.keeper, NEW)
-      : ui.view === 'shelf' && shelf ? shelf.html() : ui.view === 'notes' ? keeperEntry(keeper, flags, NEW) + campEntry(cookR, get('camp'), get('cook')) + notesView() : ui.view === 'almanac' ? almanacView()
+    const html = ui.view === 'notes' ? notesView() : ui.view === 'almanac' ? almanacView()
       : ui.view === 'web' ? webView(live.describeWeb(), live.web, { trail: webTrail, shelf: webShelf })
-      : ui.view === 'trails' ? trailsView({ live: L, words, R: L.naturalist, B: L.beachcomber, S: L.shaper, F: L.forager, which: /** @type {any} */ (ui).trail ?? 'naturalist', wide, four,
-        herbarium: !!earned.forage?.herbarium })
-      // The herbarium (the forager's trail): opened from its trail, once given.
-      : ui.view === 'herbarium' && L.forager && earned.forage?.herbarium ? herbariumView({ earned, F: L.forager, words, gather: L.gatherRecipe, partName: L.partName ?? ((/** @type {string} */ k) => k) })
       : paged ? pageView(/** @type {string} */ (ui.page)) : ui.view === 'ground' ? listView(island.groundOrder) : livingView();
     // A new thing in the middle of the Web scrolls back up to its card.
     const key = `${ui.view}|${ui.page}|${ui.view === 'web' ? webTrail[webTrail.length - 1] : ''}`;
     if (html === body.dataset.html) return;
     body.innerHTML = html;
     body.dataset.html = html;
-    if (ui.view === 'shelf') shelf?.after(body);
     if (key !== shownKey) { body.scrollTop = 0; shownKey = key; }
   }
 
@@ -422,20 +382,12 @@ export function mountJournal(parent, live, buttonParent = parent) {
   render();
   // The almanac follows the time shown; refresh it now and then while it is open.
   const timer = setInterval(() => { const u = get('journalUi'); if (u?.open && u.view === 'almanac') render(); }, 2000);
-  const unsubs = [subscribe('journal', render), subscribe('journalUi', render), subscribe('keepsakes', render), subscribe('shelfPending', render), subscribe('shelfUi', render),
-    // A first written (a keepsake kept, a mark seen, a place made) moves the trails on.
-    subscribe('unlocks', () => { const v = get('journalUi')?.view; if (v === 'trails' || v === 'herbarium') render(); }),
-    // Something made or built at camp: the camp page and its row in Notes (S1).
-    subscribe('cook', () => { const v = get('journalUi')?.view; if (v === 'camp' || v === 'notes') render(); })];
-  // The Trails page sits side by side or in tabs by the window's width.
-  const onResize = () => { if (get('journalUi')?.view === 'trails') render(); };
-  window.addEventListener('resize', onResize);
+  const unsubs = [subscribe('journal', render), subscribe('journalUi', render)];
   buttonParent.appendChild(btnRoot);
   parent.appendChild(panel);
 
   return function dispose() {
     for (const u of unsubs) u();
-    window.removeEventListener('resize', onResize);
     clearInterval(timer);
     btnRoot.remove();
     panel.remove();
