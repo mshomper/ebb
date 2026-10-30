@@ -21,7 +21,9 @@ import { trailsView } from './journal-trails.js';
 import { herbariumView } from './journal-herbarium.js';
 import { keeperView, keeperShown, keeperUnread } from './journal-keeper.js';
 import { campView } from './journal-camp.js';
+import { threadsHtml, threadHtml } from './keeper-threads.js';
 import { KEEPER_TABS, keeperUi0, nextKeeperUi } from '../world/keeper/route.js';
+import { threadsUnread, emptyThreads } from '../world/threads/model.js';
 
 /** Each tab's drawn icon. @type {Record<string, string>} */
 const TAB_ICON = { kit: 'walker', threads: 'threads', trails: 'trails', shelf: 'shelf', camp: 'pitch' };
@@ -103,8 +105,10 @@ export function mountKeeperBook(parent, buttonParent, o) {
     if (u.tab === 'camp') return cookR ? campView(cookR, get('camp'), get('cook'), get('campPad'), words, get('campBed'), false) : '';
     // Threads: a keeper page (the old keeper's thread opens them), a thread, or the tab's own page.
     if (u.page?.startsWith('keeper:') && keeper) return keeperView(keeper, flags, u.page.slice(7) || null, NEW);
-    // Until Threads is written, the tab holds the keeper's pages.
-    return keeper ? keeperView(keeper, flags, null, NEW) : '';
+    const input = { T, H, s: { journal: get('journal'), cook: get('cook'), kindOf }, st: get('threads') ?? emptyThreads(), words, newDot: NEW,
+      canShow: (/** @type {string} */ sp) => !!live.describe?.(sp)?.canShow };
+    if (u.page?.startsWith('thread:')) return threadHtml(input, u.page.slice(7)) || threadsHtml(input);
+    return threadsHtml(input);
   }
 
   /** @type {string} */ let shownKey = '';
@@ -116,7 +120,7 @@ export function mountKeeperBook(parent, buttonParent, o) {
     openBtn.setAttribute('aria-expanded', String(u.open));
     // New marks: a keeper page unread, or a thread line not yet seen, on Threads and on the button.
     const flags = get('journal')?.flags ?? [];
-    const threadsNew = keeperUnread(keeper, flags);
+    const threadsNew = keeperUnread(keeper, flags) || threadsUnread(get('threads'));
     dot(openBtn, threadsNew);
     for (const t of tabs) {
       dot(t, t.dataset.tab === 'threads' && threadsNew);
@@ -208,6 +212,7 @@ export function mountKeeperBook(parent, buttonParent, o) {
     if (next.open && get('journalUi')?.open) dispatch({ type: 'ui.journal', open: false });
     if (next.open && get('sketchbookUi')?.open) update('sketchbookUi', (s) => ({ ...s, open: false }));
     // Leaving Threads: its lines count as seen from now on.
+    if (u.open && u.tab === 'threads' && !(next.open && next.tab === 'threads')) dispatch(/** @type {any} */ ({ type: 'threads.seen' }));
     // Opening it puts the tap card away.
     if (next.open && !u.open && get('identify')) update('identify', () => null);
     update('keeperUi', () => next);
@@ -228,7 +233,7 @@ export function mountKeeperBook(parent, buttonParent, o) {
 
   /** Re-render when a slice changes that the shown tab reads. @param {string[]} on */
   const when = (on) => () => { if (on.includes(ui().tab)) render(); };
-  const unsubs = [subscribe('keeperUi', render), subscribe('journal', render),
+  const unsubs = [subscribe('keeperUi', render), subscribe('journal', render), subscribe('threads', render),
     subscribe('keepsakes', when(['shelf'])), subscribe('shelfPending', when(['shelf'])), subscribe('shelfUi', when(['shelf'])),
     subscribe('unlocks', when(['trails'])), subscribe('cook', when(['camp', 'threads'])), subscribe('camp', when(['camp'])), subscribe('campBed', when(['camp'])),
     subscribe('journalUi', closeFor), subscribe('sketchbookUi', closeFor), subscribe('stationView', (x) => { if (x) shut(); })];

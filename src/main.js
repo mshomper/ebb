@@ -15,6 +15,8 @@ import { mountIslandNotes } from './ui/island-notes.js';
 import { mountStation } from './ui/station.js';
 import { mountSketchbook } from './ui/sketchbook.js';
 import { mountKeeperBook } from './ui/keeper-book.js';
+import { createThreads } from './world/threads/live.js';
+import { hourIndex } from './core/clock.js';
 import { createWalkerPortrait } from './ui/walker-portrait.js';
 import { mountHaulTray } from './ui/haul-tray.js';
 import { registerCatchSketches } from './ui/sketches/catch.js';
@@ -157,13 +159,16 @@ startApp(canvas, { onDeviceLost: (rebuilding) => showRebuildingNote(rebuilding),
         partName: (/** @type {string} */ k) => /** @type {any} */ (r).pack?.nameOf(k) ?? k, progress, shelf: { K: keepsakesRecipe, messages: bottleMessages },
         keeper: withCacheLetters(await loadRecipe('world/keeper-pages'), await loadRecipe('world/keeper-cache')), cook: await loadRecipe('world/cook') };
       mountJournal(document.body, journalLive, hud.layer);
+      // Threads (src/world/threads): each long thread's lines written as they happen; `?threads` sets four part-way.
+      const [threadsR, hintsR] = await Promise.all([loadRecipe('world/threads'), loadRecipe('world/morning-hints')]);
+      createThreads({ T: threadsR, hour: hourIndex, journalWords: words, test: new URLSearchParams(location.search).has('threads') });
       // The walker's sketchbook (P2i I5): its book button beside the journal's, once the first sketch is made.
       mountSketchbook(document.body, hud.layer, { recipe: await loadRecipe('world/sketchbook'), words, describe: (id) => journal.describe(id) });
       // The Keeper book (I, or its button beside the time button): Kit (the walker in its own small
       // view), Threads, Trails, Shelf and Camp.
       {
         const app = /** @type {any} */ (r), kitR = await loadRecipe('world/kit');
-        mountKeeperBook(document.body, hud.layer, { live: journalLive, words, W: kitR.words, T: null, H: null,
+        mountKeeperBook(document.body, hud.layer, { live: journalLive, words, W: kitR.words, T: threadsR, H: hintsR,
           kit: packApp && app.kit ? { recipe: kitR, pack: packApp,
             portrait: (host) => createWalkerPortrait(host, { device: app.device, figure: app.figureRecipe, R: kitR, pack: packApp }) } : null });
       }

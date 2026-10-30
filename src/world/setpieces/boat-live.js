@@ -145,8 +145,10 @@ export function createBoatLive(o) {
 
   o.sp.use({
     id: ID,
-    flags(r) {
+    flags(r, s) {
       const f = [];
+      // The boat has lain offshore at least once (its first dusk), for the Threads page (recipes/world/threads.json).
+      if ((r.fell?.length ?? 0) > 0 || (s?.count?.[ID] ?? 0) > 0) f.push('setpiece:boat:seen');
       if ((r.data?.sent ?? 0) > 0) f.push('setpiece:boat:parcel');
       const g = r.data?.gift;
       if (g?.letter && (g.taken !== undefined || g.hour === takenAt)) f.push(`keeper:${g.letter}`);

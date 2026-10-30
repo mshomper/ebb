@@ -150,6 +150,8 @@ export function createCairnsLive(o) {
     id: ID,
     flags(r) {
       const f = [];
+      // One flag for each cairn standing (setpiece:cairns:1 and on), for the Threads page (recipes/world/threads.json).
+      for (let k = 1; k <= Math.min(r.fell?.length ?? 0, total()); k++) f.push(`setpiece:cairns:${k}`);
       if ((r.data?.cairns ?? []).some((/** @type {any} */ k) => k.added > 0)) f.push('setpiece:cairns:added');
       if (r.data?.read !== undefined) f.push('keeper:cairns-letter');
       return f;
