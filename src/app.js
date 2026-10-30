@@ -769,13 +769,20 @@ export async function startApp(canvas, hooks = {}) {
     beat: () => intro.live?.intro.current?.id ?? null, cook: await loadRecipe('world/cook'), sowing: sowingRecipe });
   sim.addSystem(camp);
   ringPlace = camp.ringPlace;
-  // The hen's tail feather (docs/future/15 slice 2b): drawn with the camp's models where it lies.
+  // The hen's tail feather (docs/future/15 slice 2b): drawn with the camp's models where it lies,
+  // and once taken up, tucked into the hat's band, carried by the hat's bone (as a carrier rides the
+  // back, src/world/camp/carriers.js) through every walk and roll.
   const featherR = speciesRecipes.hen.fond?.feather;
   if (featherR) {
     camp.props.addMesh('hen-feather', featherMesh(featherR), featherR.srgb, featherR.rough);
     camp.addProps(() => {
       const f = hen.featherAt();
-      return f ? [{ key: 'hen-feather', x: f.x, y: terrain.sampleHeight(f.x, f.z), z: f.z, yaw: f.yaw, scale: featherR.scale }] : [];
+      /** @type {import('./render/passes/props.js').Prop[]} */
+      const out = f ? [{ key: 'hen-feather', x: f.x, y: terrain.sampleHeight(f.x, f.z), z: f.z, yaw: f.yaw, scale: featherR.scale }] : [];
+      const H = featherR.onHat;
+      const on = H && wearsBand(getStore('kit'), 'hen-feather') ? walk.figure?.()?.carried(H.bone, H.at, H.turnDeg) : null;
+      if (on) out.push({ key: 'hen-feather', x: on.x, y: on.y, z: on.z, yaw: on.yaw, pitch: on.pitch, roll: on.roll, scale: H.scale });
+      return out;
     });
   }
   keeps = camp.stations.keeps;
@@ -846,8 +853,6 @@ export async function startApp(canvas, hooks = {}) {
   sim.addSystem(sketchbook);
   // The walker's kit (the Walker page, K1; src/world/kit): hat, lantern, in hand, coat and carrier.
   const kit = createKit({ recipe: await loadRecipe('world/kit'), pack, you: () => (walk.below ? walk.you() : null) });
-  // The hen-feather hat band (docs/future/15 slice 2b): painted round the hat while the kit wears it.
-  sim.addSystem({ id: 'hat-band', tick() { walk.figure?.()?.wearHatBand?.(wearsBand(kit.kit(), 'hen-feather')); } });
   sim.addSystem(kit);
   // `?sketch` (a test link, unsaved): a full pouch of charcoal sticks in the pack.
   if (params.has('sketch') && !back) pack.add('charcoal-sticks', 3);
