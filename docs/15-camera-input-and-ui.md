@@ -94,7 +94,7 @@ Actions carry normalized units and are plain data, so `tools/input-replay.html` 
 | 1 to 9 | Select tool; same key again returns to look state |
 | [ and ] | Brush smaller, larger |
 | Ctrl+Z; Ctrl+Shift+Z or Ctrl+Y | Undo; redo |
-| J, P, F, H, Esc | Journal, photo, follow hovered creature, hide HUD, close |
+| J, I, P, F, H, Esc | Journal, Keeper book, photo, follow hovered creature, hide HUD, close |
 
 Pen pressure scales brush strength; strokes read `getCoalescedEvents()` for smoothness.
 
@@ -136,9 +136,19 @@ The palette is one row grouped by thin dividers: Land, Water, Life, Build, Creat
 - **Island map:** a hand-drawn style map that adds each land piece as it rises, with player-named places.
 - **Year page:** four season boxes and the closing note.
 
+**The journal keeps the island (Matt, October 30, 2026; menus-plan option B).** The journal has five sections, Living things, Ground, Web, Almanac and Notes, as buttons in two full rows (three, then two wider; two to a row on narrow screens). Trails (with the herbarium), the Shelf (with its letters), the camp page and the old keeper's pages moved to the Keeper book (below), and the journal no longer widens. An older `ui.journal` action for one of those views opens the Keeper book on it instead (`src/world/keeper/route.js`).
+
 **Click to identify (J1).** With no tool chosen, a short still click on the island (the `look.tap` action) opens a small cream card beside the click: the living thing's name, what it is doing in words ("A young clump of reeds"), and "Open its page". It closes after 8 s, on a click elsewhere, or when a tool is chosen. A soft ring on the ground breathes around what was clicked while the card is open. From J1.5 a click on bare ground or water opens the same card for the ground (soil, sand, rock, moss, fresh water, the tide band or the sea), with the plants you know that would suit it. A click at a special moment (in flower, in rain, at dusk, at dawn, in mist, in winter) also fills that moment's frame on the page.
 
 **Island notes (J1).** New journal notes (`note:posted`) appear at the bottom left above the tool bar in Fraunces italic, two at most, each for 6 s; a click opens the journal at that species. They step aside while a tool's card is open in windows narrower than 1180 px, and leave room for the time-flow button in narrow windows.
+
+### Keeper book
+
+`src/ui/keeper-book.js` (Matt, October 30, 2026; it was the Walker page). The journal answers "what lives here?"; the Keeper book answers "what have I done, what do I carry, what is going on?". I or the Keeper button at the bottom right (beside the time button) opens and closes it, Esc closes it, and it remembers its last tab on this device. Same cream paper and binding as the journal, centred, at most 860 px wide (Trails widens it to 1000 px from a 1100 px window, 1200 px from 1400 px). A row of five tabs with drawn icons, one row down to 640 px, then three and two, then two to a row: **Kit** (the walker's hat, lantern, coat, carrier, pouches and belt, `src/ui/walker-page.js`), **Threads** (`src/ui/keeper-threads.js`), **Trails** (with the herbarium), **Shelf** (with letters) and **Camp** (the camp page, its own tab). On the tabs other than Kit the book keeps one height and the page scrolls inside it; never sideways. One book is open at a time: opening it shuts the journal and the sketchbook, and they (or a station) shut it. The figure on the island is still the walker; only the book is called Keeper.
+
+Every link that opened a moved view goes through `ui.keeper { open, tab, page, trail }`: trail rewards and Show me notes, keeper cards and the first evening's page, the camp's "camp page" card action, a keepsake kept from the dig or the haul tray (Shelf), and the test links. New marks move with their tabs: a keeper page unread or a thread line not yet seen puts a dot on Threads and on the Keeper button.
+
+**Threads** has two parts. *Long threads*: the island's big stories (the marked stone, the cairns, the lantern offshore, the old keeper), each a page the keeper writes as it happens, in Fraunces italic with the game date under each line, one soft pencil line under the last while it is open (never a target or a checklist). Open threads come first, finished ones under a Finished heading. The lines, their tests and the words are in `recipes/world/threads.json`; the tests are the morning hints' own (`src/world/hints/morning.js`). A line is written the first time its test holds once the line before it is written, and is kept in the save's `threads` section, so it never changes. The old keeper's thread opens the keeper's pages. *Things to try*: every morning hint once shown, newest first, with its Show me; done ones are pencilled out. Hints not yet given never show. Every new set piece or story arc adds its thread (CLAUDE.md).
 
 ### Settings
 
