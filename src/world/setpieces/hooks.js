@@ -45,20 +45,22 @@ const cairns = {
 };
 
 /**
- * The passing boat: a parcel left on the stone while the boat lies at anchor (a `parcel` note,
- * between dusk and dawn); at dawn, if there was one, a gift in return and the next letter. An untaken
- * gift and the count of parcels sent carry to the next run.
+ * The passing boat: a parcel left on the stone (a `parcel` note), whenever the stone stands: while
+ * the boat lies at anchor, or between its visits, so a night slept through or a visit missed loses
+ * nothing; the boat takes it at its next dawn and leaves a gift in return and the next letter. A
+ * waiting parcel, an untaken gift and the count of parcels sent carry to the next run.
  * @type {Hooks}
  */
 const boat = {
   carry(last) {
     const d = last?.data ?? {};
-    return { sent: d.sent ?? 0, given: d.given ?? 0, ...(d.gift && d.gift.taken === undefined ? { gift: d.gift } : {}) };
+    return { sent: d.sent ?? 0, given: d.given ?? 0, ...(d.gift && d.gift.taken === undefined ? { gift: d.gift } : {}),
+      ...(d.parcel ? { parcel: d.parcel } : {}) };
   },
   onNote(run, note, c) {
     if (note.kind === 'parcel') {
-      // Only while the boat lies at anchor: dusk has fallen, dawn not yet.
-      if (run.fell.length !== 1 || run.data.parcel) return run;
+      // One parcel waits at a time.
+      if (run.data.parcel) return run;
       return { ...run, data: { ...run.data, parcel: { what: note.what, hour: note.hour } } };
     }
     if (note.kind === 'taken') {
@@ -69,17 +71,17 @@ const boat = {
   },
   onStep(run, step, c) {
     if (step.def.id !== 'dawn' || !run.data.parcel) return run;
-    const B = c.R.boat, sent = (run.data.sent ?? 0) + 1, given = run.data.given ?? 0;
-    // The keeper's gift after many seasons; otherwise the returns in turn (the letters speak of
-    // them), passing over one that is what was sent.
+    const B = c.R.boat, sent = (run.data.sent ?? 0) + 1, given = run.data.given ?? 0, parcel = run.data.parcel;
+    // The returns in turn (the letters speak of them), passing over one that is what was sent.
     const R = B.returns, at = (sent - 1) % R.length;
-    const keep = B.keepsakeAfter && sent === B.keepsakeAfter ? B.keepsake : null;
-    const ret = keep ?? (R[at].kind !== run.data.parcel.what ? R[at] : R[(at + 1) % R.length]);
-    // The letters in order, warmer as they go; past the last, the quiet ones by turn (page ids).
+    const ret = R[at].kind !== parcel.what ? R[at] : R[(at + 1) % R.length];
+    // The letters in order, warmer as they go (the last asks for a dock); then the quiet ones by turn (page ids).
     const letters = B.letters, quiet = B.quiet ?? [];
     const letter = given < letters.length ? letters[given] : quiet.length ? quiet[(given - letters.length) % quiet.length] : null;
-    const gift = { kind: ret.kind, n: ret.n ?? 1, keepsake: !!keep, letter, hour: c.hour };
-    return { ...run, data: { ...run.data, sent, given: given + 1, gift } };
+    const gift = { kind: ret.kind, n: ret.n ?? 1, letter, hour: c.hour };
+    // The parcel is taken: the stone is free for the next.
+    const { parcel: _p, ...data } = run.data;
+    return { ...run, data: { ...data, sent, given: given + 1, gift, lastParcel: parcel } };
   },
 };
 

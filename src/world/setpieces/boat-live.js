@@ -1,12 +1,12 @@
 // @ts-check
 // The passing boat, live (docs/future/14): the camp's stores reported to the runner (a `stores`
-// condition), and while the boat lies at anchor (dusk fallen, dawn not yet) the keeper's boat drawn
-// again far offshore (src/world/intro/boat.js, Matt's model), its anchor line into the water, a
-// lantern's light in it (a small light: the hull glows, its path lies on the water), and a bell now
-// and then. The parcel stone stands at
-// the tide line beside the mooring stake from the first dusk on, for good: Leave a parcel on its
-// card while the boat is there; by dawn, what came back lies on it, and Take it up puts it in the
-// pack and opens the letter that came with it. The runner (runner.js, hooks.js) keeps what lasts.
+// condition), and while the boat lies at anchor (dusk fallen, dawn not yet) Matt's fishing vessel
+// far offshore (drawn as the keeper's boat is, src/world/intro/boat.js), its anchor line into the
+// water, a lantern's light in it (the hull glows, its path lies on the water), and a bell now and
+// then. The parcel stone stands at the tide line beside the mooring stake from the first dusk on,
+// for good: Leave a parcel on its card, while the boat is there or any time between its visits (so
+// a visit slept through loses nothing); by the boat's next dawn, what came back lies on it, and Take
+// it up puts it in the pack and opens the letter that came with it. The runner keeps what lasts.
 
 import { get, update } from '../../core/store.js';
 import { emit, emitDeferred } from '../../core/events.js';
@@ -33,7 +33,11 @@ export function createBoatLive(o) {
   const seed = subSeed(o.seed, 'passing-boat');
   const ground = (/** @type {number} */ x, /** @type {number} */ z) => o.terrain.sampleHeight(x, z);
   const sea = () => o.water?.tide ?? 0;
-  const far = createBoat({ recipe: o.boatRecipe, ground, water: o.water });
+  // Matt's fishing vessel, drawn as the keeper's boat is, with its own model, size and float.
+  const V = B.vessel, KB = o.boatRecipe.boat;
+  const vessel = { ...KB, model: { file: V.model, bowTieM: V.bowTieM }, float: V.float,
+    hull: { ...KB.hull, lengthM: V.lengthM, beamM: V.beamM }, rope: { ...KB.rope, radiusM: KB.rope.radiusM * 3, sagM: 0.6 } };
+  const far = createBoat({ recipe: { boat: vessel }, ground, water: o.water });
   far.visible = false;
 
   const run = () => o.sp.runOf(ID);
@@ -43,6 +47,8 @@ export function createBoatLive(o) {
   const stoneStands = () => { const r = run(); return !!r && (r.fell.length > 0 || r.n > 0); };
   /** A gift taken here this visit, before the next hour's tick writes it. */
   let takenAt = -1;
+  /** A parcel waits on the stone (left, perhaps not yet written by the tick). */
+  const parcelWaits = () => !!run()?.data?.parcel || (o.sp.sp().pending ?? []).some((/** @type {any} */ n) => n.id === ID && n.kind === 'parcel');
   const giftNow = () => { const g = run()?.data?.gift; return g && g.taken === undefined && g.hour !== takenAt ? g : null; };
 
   /** Where the stone stands, and where the boat anchors, from the mooring (null before it exists). */
@@ -57,7 +63,7 @@ export function createBoatLive(o) {
     while (d < B.searchM && sea() - ground(m.stake.x + fx * d, m.stake.z + fz * d) < B.minDepthM) d += 2;
     const yaw = Math.atan2(fx, fz) + B.yawDeg * RAD;
     const bx = m.stake.x + fx * d, bz = m.stake.z + fz * d;
-    return { stone, boat: { x: bx, z: bz, yaw }, anchor: { x: bx + Math.sin(yaw) * 3, z: bz + Math.cos(yaw) * 3 } };
+    return { stone, boat: { x: bx, z: bz, yaw }, anchor: { x: bx + Math.sin(yaw) * V.anchorAheadM, z: bz + Math.cos(yaw) * V.anchorAheadM } };
   }
 
   // ---- meshes ----
@@ -76,7 +82,7 @@ export function createBoatLive(o) {
   function lanternAt(t) {
     const p = places();
     if (!p) return null;
-    const F = o.boatRecipe.boat.float, y = sea() + Lt.upM + F.bobM * Math.sin((t / F.bobS) * 2 * Math.PI);
+    const F = V.float, y = sea() + Lt.upM + F.bobM * Math.sin((t / F.bobS) * 2 * Math.PI);
     return [p.boat.x - Math.sin(p.boat.yaw) * Lt.aftM, y, p.boat.z - Math.cos(p.boat.yaw) * Lt.aftM];
   }
   let animT = 0;
@@ -86,7 +92,7 @@ export function createBoatLive(o) {
     const p = places();
     if (!p || !stoneStands()) return [];
     const st = p.stone, gy = ground(st.x, st.z), out = [being(st.x, gy, st.z, 0.6, 'boat-stone', S.radiiM[0])];
-    if ((atAnchor() && run()?.data?.parcel) || giftNow()) out.push(being(st.x, gy + stoneTop, st.z, 1.1, 'boat-parcel', 0.1));
+    if (parcelWaits() || giftNow()) out.push(being(st.x, gy + stoneTop, st.z, 1.1, 'boat-parcel', 0.1));
     return out;
   });
 
@@ -105,7 +111,7 @@ export function createBoatLive(o) {
 
   function leave() {
     const p = places();
-    if (!atAnchor() || run()?.data?.parcel || !p || !o.walk.below) return;
+    if (!stoneStands() || parcelWaits() || !p || !o.walk.below) return;
     if (!inReach()) { notice(W.far); return; }
     const kind = parcelKind();
     if (!kind) { notice(W.noParcel); return; }
@@ -141,7 +147,7 @@ export function createBoatLive(o) {
     id: ID,
     flags(r) {
       const f = [];
-      if ((r.data?.sent ?? 0) > 0 || r.data?.parcel) f.push('setpiece:boat:parcel');
+      if ((r.data?.sent ?? 0) > 0) f.push('setpiece:boat:parcel');
       const g = r.data?.gift;
       if (g?.letter && (g.taken !== undefined || g.hour === takenAt)) f.push(`keeper:${g.letter}`);
       return f;
@@ -181,10 +187,10 @@ export function createBoatLive(o) {
     cardAt(x, z) {
       const p = places();
       if (!p || !stoneStands() || Math.hypot(x - p.stone.x, z - p.stone.z) > S.tapM) return null;
-      const anchor = atAnchor(), left = !!run()?.data?.parcel, g = giftNow();
-      const text = g ? W.stoneGift : anchor && left ? W.stoneLeft : anchor ? W.stoneBoat : W.stoneLine;
+      const anchor = atAnchor(), left = parcelWaits(), g = giftNow();
+      const text = g ? W.stoneGift : left ? W.stoneLeft : anchor ? W.stoneBoat : W.stoneLine;
       return { sp: 'setpiece:boatstone', name: W.stoneName, sub: null, icon: 'boat-lantern', text, wx: p.stone.x, wz: p.stone.z, r: 0.3,
-        reachR: S.reachM, stage: -1, noPage: true, canCarry: false, canLeave: anchor && !left, canTake: !!g };
+        reachR: S.reachM, stage: -1, noPage: true, canCarry: false, canLeave: !left, canTake: !!g };
     },
     /** Tests and the lab. */
     debug: { places, atAnchor, leave, take, giftNow },

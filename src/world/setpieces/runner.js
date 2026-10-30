@@ -219,7 +219,7 @@ export function coarseStep(state, hour, env) {
   if (!busy) {
     for (const id of all.order ?? Object.keys(all.list)) {
       const R = all.list[id];
-      if (!R || !canArm(R, id, sp, hour, state, W)) continue;
+      if (!R || !canArm(R, id, sp, hour, state, W, seed)) continue;
       if (!triggered(R, { state, sp, hour, seed, id })) continue;
       const n = sp.count?.[id] ?? 0;
       const keep = HOOKS[id]?.carry?.(sp.runs[id]) ?? {};
@@ -239,14 +239,17 @@ function ended(sp, id, R, hour, events) {
 }
 
 /**
- * May this set piece arm now? Once-only ones once; seasonal ones once a season; a rest after the
+ * May this set piece arm now? Once-only ones once; seasonal ones once a season; one with `again`
+ * that many game days (seeded) after it last ended; a rest after the
  * last one ended (gapDays), big ones bigGapDays after the last big one, and the first year's cap.
- * @param {any} R @param {string} id @param {any} sp @param {number} hour @param {any} state @param {any} W
+ * @param {any} R @param {string} id @param {any} sp @param {number} hour @param {any} state @param {any} W @param {number} seed
  */
-function canArm(R, id, sp, hour, state, W) {
+function canArm(R, id, sp, hour, state, W, seed) {
   const n = sp.count?.[id] ?? 0, last = sp.runs[id];
   if (R.repeat === 'once' && (n > 0 || last)) return false;
   if (R.repeat === 'season' && last && last.season === seasonKey(state)) return false;
+  // Again after a seeded number of game days since it last ended (`again`: [min, max]).
+  if (R.again && last?.done !== undefined && hour - last.done < pick(R.again, seed, idNum(id), n) * HOURS_PER_DAY) return false;
   if (R.max !== undefined && n >= R.max) return false;
   if (sp.endedAt !== undefined && hour - sp.endedAt < (W.gapDays ?? 0) * HOURS_PER_DAY) return false;
   if (R.size === 'big' && sp.bigEndedAt !== undefined && hour - sp.bigEndedAt < (W.bigGapDays ?? 7) * HOURS_PER_DAY) return false;

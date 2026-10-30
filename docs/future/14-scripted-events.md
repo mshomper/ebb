@@ -10,7 +10,7 @@
 - These rules carry over from doc 01 and shape everything below:
   - Nothing destroys the player's progress. A storm never undoes shaping or harms a creature.
   - No countdowns and no daily-login pressure. A set piece that needs the player waits for them.
-  - The outside world stays distant: no people land on the island and no faces are shown.
+  - The outside world stays distant: no people land on the island and no faces are shown. One possible exception, not decided (Matt, October 29, 2026): the old fisherman from the passing boat might one day come ashore as a companion to the walker (see "Future: the dock, the boat as a home").
 
 ## What a set piece is
 
@@ -104,13 +104,22 @@ A mystery told across weeks.
 
 ### The passing boat
 
-The one way the outside world reaches the island, and it never lands.
+The one way the outside world reaches the island, and it never lands. It is an old fisherman's working boat (Matt's model), and the letters are his.
 
-- **Trigger.** Up to once a season, after the camp has stores (teas, dried herbs, dye skeins).
+- **Trigger.** After the camp has stores, and then every few game days (4 to 7, seeded), so its eight letters take about one game year (Matt, October 29, 2026: once a season was too drawn out).
 - **Beat 1, dusk.** A lantern on the water offshore and a bell, carried on the wind. The boat anchors for the night and never comes close.
-- **The choice.** The walker can leave a parcel on the flat stone at the tide line.
+- **The choice.** The walker can leave a parcel on the flat stone at the tide line, while the boat is there or any time between its visits, so a visit slept through loses nothing.
 - **Beat 2, dawn.** The boat is gone. If a parcel was left, something is there in return: seeds, a tool part, cord, a letter.
-- **Over the years.** The letters get warmer. Whoever is on the boat starts to know the island through what the keeper sends. After many seasons there's a gift worth keeping. This also gives the camp's goods somewhere to go, without a shop.
+- **Over the years.** The letters get warmer. Whoever is on the boat starts to know the island through what the keeper sends. The eighth letter asks the keeper to build a dock so the boat can come in (see below); after it, short quiet notes keep coming. This also gives the camp's goods somewhere to go, without a shop.
+
+## Future: the dock, the boat as a home
+
+Not built; an idea for later (Matt, October 29, 2026).
+
+- **The dock.** The fisherman's last letter asks for a dock out past the mooring, so the boat can come in instead of lying off in the swell. Building it would be a camp build on foot: posts driven into the shallows, planks laid over them (ship's timber from the wreck would suit it).
+- **The boat comes in.** Once the dock stands, the boat ties up at it for good. The fisherman leaves it to the keeper; a last letter says it is the keeper's now.
+- **A home.** Over time the boat becomes where the walker lives: a cabin to rest in instead of the tent, shelves where keepsakes are placed in the world (not only in the journal), and things to decorate it with.
+- **A companion, maybe.** One exception to "no people land" is open: the old fisherman might come ashore and stay, a companion to the walker. Not decided; it would need its own design (how he is shown, what he does, how he fits the cozy rules).
 
 ## More for later
 
@@ -149,7 +158,7 @@ The whale passing close on a calm evening. A total eclipse. A swarm of jellyfish
 
 - **Drama against coziness.** A storm and a wreck can be frightening. The warmth is in the camp: the storm night is spent by the fire, and the wreck is empty and says so.
 - **Too often.** Set pieces are rare on purpose. If one starts to feel routine, space them further.
-- **Story creep.** No people come ashore. The boat's people are only ever a lantern and handwriting.
+- **Story creep.** No people come ashore. The boat's fisherman is only ever a lantern and handwriting, unless the possible exception above is chosen.
 - **Scope.** Each set piece is real work: new pieces, sounds, words and a journal page. Build one at a time, starting with the one that reuses the most.
 
 ## Open questions
@@ -176,5 +185,5 @@ October 29, 2026, on `m2-set-pieces`. Where this differs from "How it runs" abov
 - **Events:** `setpiece:arm`, `setpiece:warn`, `setpiece:beat` (with the beat's id and repeat), `setpiece:choice`, `setpiece:end`.
 - **Journal:** each set piece's page is a keeper page (`recipes/world/keeper-pages.json`), had when it first ends; a page line can be `{ if, line }` or `{ not, line }` on a journal flag, so it follows what you did. Letters (the old keeper's, the boat's) are keeper pages too, and open as a centered card when found.
 - **The cairn builder** (`cairns-live.js`, `cairn-rules.js`): arms in the second spring (or when F16 reports the cave mouth). The trail is planned once on the live island from the camp pad along the longest line of dry land (or toward the old keeper's cache, once the dig reports it). Seven cairns, a dawn every one to three days, drawn in code from stacked flat stones, mossier as the seasons pass; never appearing while you watch. Add a stone (a flat stone or pebble from the pack) and the next cairn has one more than that one holds. Knocking one down is left out for now.
-- **The passing boat** (`boat-live.js`): once the camp has stores, at most once a season on a seeded day; at dusk, when you are there, the keeper's boat model at anchor about 45 m out with a lantern's light and a ship's bell made in code (`src/audio/bell.js`). The mooring stone stands by the stake from then on. A parcel (one handful of herbs, cord or something made at camp) left while it lies there brings, by dawn, the next return (seeds or cord, never what was sent) and the next of eight letters, warmer each time, then short quiet ones. The eighth parcel brings the keeper's gift, a stand-in (three handfuls of cord) until it is chosen.
+- **The passing boat** (`boat-live.js`): Matt's fishing vessel (`assets/models/camp/fishing-boat.glb`, 11 m), once the camp has stores and then every 4 to 7 game days (seeded) after it last left; at dusk, when you are there, it lies at anchor about 70 m out with a lantern's light at the wheelhouse and a ship's bell made in code (`src/audio/bell.js`). The mooring stone stands by the stake from then on. A parcel (one handful of herbs, cord or something made at camp) can be left on it any time; at the boat's next dawn it is taken and the next return lies there (seeds or cord, never what was sent) with the next of the old fisherman's eight letters, warmer each time. The eighth asks for a dock (not built; see "Future: the dock, the boat as a home"); short quiet notes follow.
 - **Test links** (unsaved): `?setpiece=<id>&beat=N` starts a set piece now at step N (a repeated beat counts each time). Tests: `tools/unit-tests-setpieces.js`; two seeded years on `tools/determinism.html`.

@@ -1,12 +1,12 @@
 // @ts-check
 // Set-piece tests for tools/unit-tests.html (docs/future/14): the runner arms a set piece only when
-// its trigger holds (the cairns in the second spring, the boat once the camp has stores and at most
-// once a season); beats fall in order at their hour of day, a beat that needs you waits through
+// its trigger holds (the cairns in the second spring, the boat once the camp has stores, back every
+// few days); beats fall in order at their hour of day, a beat that needs you waits through
 // hours away and falls at the next fitting hour you are there; beats due while away fall in order in
 // catch-up; a save and read back mid-piece changes nothing; the same seed and choices give the same
 // beats; an older save with no set pieces reads; the cairns' choice (a stone added is answered by the
-// next cairn, the letter only once the last stands) and the boat's (a parcel only while it lies at
-// anchor, a gift and the next letter at dawn, an untaken gift kept for the next run); the trail is
+// next cairn, the letter only once the last stands) and the boat's (a parcel left any time waits for
+// its next dawn, a gift and the next letter, an untaken gift kept for the next run); the trail is
 // the same every time and on dry land; the test link's startAt stands on the step asked; and a
 // keeper page's lines follow its flags.
 
@@ -56,18 +56,22 @@ export function addSetpiecesTests(test, assert, eq) {
     assert(s.setpieces.runs.cairns && s.setpieces.runs.cairns.armed === 56 * 24, 'armed at the first hour of the second spring');
   });
 
-  test(G, 'triggers: the boat waits for stores, then comes at most once a season', async () => {
-    const R = await recP, env = envOf(R);
-    const late = at(1, 0, 13);
-    eq(run(late, 500, 24, env).state.setpieces?.runs?.boat, undefined, 'no stores: no boat');
-    let s = addNote(late, { id: '', kind: 'cond', name: 'stores', value: true, hour: 500 });
+  test(G, 'triggers: the boat waits for stores, then comes back every few days', async () => {
+    const R = await recP, env = envOf(R), A = R.list.boat.again;
+    const s0 = at(1, 0, 3);
+    eq(run(s0, 500, 24, env).state.setpieces?.runs?.boat, undefined, 'no stores: no boat');
+    const s = addNote(s0, { id: '', kind: 'cond', name: 'stores', value: true, hour: 500 });
     const r = run(s, 500, 48, env);
-    assert(r.state.setpieces.runs.boat, 'stores and a late day of the season: it arms');
+    assert(r.state.setpieces.runs.boat, 'stores: it arms');
     eq(beatsOf(r.ev).join(), 'boat:dusk:0,boat:dawn:0', 'dusk then dawn');
-    const again = run(r.state, 548, 96, env);
-    eq(beatsOf(again.ev).length, 0, 'not twice in one season');
-    const next = run({ ...again.state, seasons: { ...again.state.seasons, index: 2, day: 13 } }, 700, 48, env);
-    eq(beatsOf(next.ev).join(), 'boat:dusk:0,boat:dawn:0', 'the next season, again');
+    const left = r.state.setpieces.runs.boat.done;
+    const soon = run(r.state, 548, (A[0] - 1) * 24, env);
+    eq(beatsOf(soon.ev).length, 0, `not again within ${A[0]} days`);
+    const later = run(soon.state, 548 + (A[0] - 1) * 24, (A[1] + 2) * 24, env);
+    const dusk = later.ev.find((e) => e.name === 'setpiece:beat' && e.payload.beat === 'dusk');
+    assert(dusk, 'it comes back');
+    const days = (dusk.hour - left) / 24;
+    assert(days >= A[0] - 1 && days <= A[1] + 1, `about ${A[0]} to ${A[1]} days after it left (${days.toFixed(1)})`);
   });
 
   test(G, 'beats fall at their hour of day, in order', async () => {
@@ -117,7 +121,7 @@ export function addSetpiecesTests(test, assert, eq) {
     eq(b.end, a.end, 'the same set pieces at the end');
     eq(setpieceRun({ worldSeed: 4242, recipes, days: 112 }).timeline, a.timeline, 'run again: the same');
     eq(a.counts.cairns, 1, 'the cairns played out once');
-    assert(a.counts.boat >= 4, `the boat came most seasons (${a.counts.boat})`);
+    assert(a.counts.boat >= 8, `the boat came every few days (${a.counts.boat})`);
     // Mid-piece: half the cairns standing, saved, read, run on.
     const env = envOf(R);
     const half = run(at(0, 1), 56 * 24, 10 * 24, env, planWhenArmed).state;
@@ -157,15 +161,20 @@ export function addSetpiecesTests(test, assert, eq) {
     assert(done.ev.some((e) => e.name === 'setpiece:end' && e.payload.id === 'cairns'), 'and says so');
   });
 
-  test(G, 'the boat: a parcel only at anchor; a gift and the next letter at dawn; an untaken gift waits', async () => {
+  test(G, 'the boat: a parcel waits for its next dawn; a gift and the next letter; an untaken gift waits', async () => {
     const R = await recP, env = envOf(R), B = R.list.boat.boat;
     const base = { ...at(1, 0, 13) };
-    // Before dusk: a parcel does nothing.
-    let s = startAt(base, 'boat', 0, 600, env);
-    s = addNote(s, { id: 'boat', kind: 'parcel', what: 'chamomile.flowers', hour: 600 });
-    eq(run(s, 600, 1, env).state.setpieces.runs.boat.data.parcel, undefined, 'no boat yet: no parcel');
+    // Left between visits (the last one gone): it waits, and the next run takes it at its dawn.
+    let w = startAt(base, 'boat', 2, 600, env);
+    w = run(addNote(w, { id: 'boat', kind: 'parcel', what: 'chamomile.flowers', hour: 600 }), 600, 1, env).state;
+    eq(w.setpieces.runs.boat.data.parcel?.what, 'chamomile.flowers', 'left between visits, it waits');
+    const nextRun = startAt({ ...w, seasons: { ...w.seasons, index: 2 } }, 'boat', 1, 900, env);
+    eq(nextRun.setpieces.runs.boat.data.parcel?.what, 'chamomile.flowers', 'carried to the next visit');
+    const taken = run(nextRun, 900, 24, env).state.setpieces.runs.boat.data;
+    eq(taken.gift?.letter, B.letters[0], 'and answered at its dawn');
+    eq(taken.parcel, undefined, 'the stone free again');
     // At anchor: it is left; at dawn a return and the first letter.
-    s = startAt(base, 'boat', 1, 600, env);
+    let s = startAt(base, 'boat', 1, 600, env);
     s = addNote(s, { id: 'boat', kind: 'parcel', what: 'chamomile.flowers', hour: 600 });
     const r = run(s, 600, 24, env);
     const g = r.state.setpieces.runs.boat.data.gift;

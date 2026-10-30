@@ -2,21 +2,11 @@
   "type": "setpiece",
   "version": 1,
   "id": "boat",
-  "note": "The passing boat (docs/future/14): the one way the outside world reaches the island, and it never lands. Played by the set-piece runner (src/world/setpieces/runner.js, hooks.js); drawn and tapped by src/world/setpieces/boat-live.js. trigger: once the camp has stores (a cond note 'stores': the pack or the hamper holds one of parcelKinds), on or after a seeded day of the season (minDay, up to spanDays later); at most once a season. beats: dusk, waiting for you to be on the island (presence): the keeper's boat model far offshore at anchor, a lantern lit, a bell on the wind; then dawn: the boat gone, and if a parcel was left, something lies on the stone in return. The parcel stone stands at the tide line beside the mooring stake from the first dusk on, for good. boat: where it anchors, offM out from the mooring stake along the camp's facing line (further if the water there is shallower than minDepthM), turned sideways (yawDeg), bobbing as the keeper's boat does afloat, its anchor line into the water (the keeper's boat drawn again: src/world/intro/boat.js, Matt's model). lantern: where it hangs (upM above the water, aftM toward the stern), a small light (cd at rangeM, lightK, flicker) lighting the hull from inside it, its path on the water toward you, lit while the boat lies there. bellEveryS: how often the bell sounds while it lies there (real seconds, seeded); bell: its strike note (f0 Hz), level (db on the ambience bus), how long it rings (decayS) and how much distance softens it (cutoffHz; src/audio/bell.js). stone: the parcel stone's distance along the shore from the stake (sideM) and up the beach (upM), its size; reachM: how near you stand. parcelKinds: what a parcel can be (one handful from the pack, the first of these it holds). returns: what comes back, in turn, one per parcel (kind: a pack kind, n handfuls; the next instead when it is what was sent), in step with the letters, which speak of them; keepsakeAfter: the parcel that brings the keeper's gift instead (keepsake). letters: in order, warmer as they go, one with each return; quiet: by turn once they run out. Each is a page id in recipes/world/keeper-pages.json (form \"From the boat\"), had once its gift is taken up; under 60 words; never a name or a face. words: notices and the stone's card. The journal page is the keeper page 'boat' (recipes/world/keeper-pages.json).",
+  "note": "The passing boat (docs/future/14): the one way the outside world reaches the island, and it never lands. Played by the set-piece runner (src/world/setpieces/runner.js, hooks.js); drawn and tapped by src/world/setpieces/boat-live.js. trigger: once the camp has stores (a cond note 'stores': the pack holds one of parcelKinds); again: it comes back that many game days (seeded, [min, max]) after it last left, so the eight letters take about one game year. beats: dusk, waiting for you to be on the island (presence): Matt's fishing vessel far offshore at anchor, a lantern lit, a bell on the wind; then dawn: the boat gone, and if a parcel was waiting, something lies on the stone in return. The parcel stone stands at the tide line beside the mooring stake from the first dusk on, for good. boat: where it anchors, offM out from the mooring stake along the camp's facing line (further if the water there is shallower than minDepthM), turned sideways (yawDeg), bobbing as the keeper's boat does afloat, its anchor line into the water. vessel: Matt's fishing boat (assets/models/camp/fishing-boat.glb, the web copy of Ebb_Fishing+Boat.glb, lengthM long), drawn as the keeper's boat is (src/world/intro/boat.js) with its own float (it sits draftM deep and rides the swell slowly), its anchor anchorAheadM off the bow and the line tied at bowTieM (the model's own meters, bow +z). lantern: where it hangs (upM above the water, aftM toward the stern; negative, toward the bow: the wheelhouse), a small light (cd at rangeM, lightK, flicker) lighting the hull from inside it, its path on the water toward you, lit while the boat lies there. bellEveryS: how often the bell sounds while it lies there (real seconds, seeded); bell: its strike note (f0 Hz), level (db on the ambience bus), how long it rings (decayS) and how much distance softens it (cutoffHz; src/audio/bell.js). stone: the parcel stone's distance along the shore from the stake (sideM) and up the beach (upM), its size; reachM: how near you stand. parcelKinds: what a parcel can be (one handful from the pack, the first of these it holds); it can be left any time the stone stands, while the boat is there or between its visits, and waits for the next dawn the boat is there. returns: what comes back, in turn, one per parcel (kind: a pack kind, n handfuls; the next instead when it is what was sent), in step with the letters, which speak of them. letters: in order, warmer as they go, one with each return, the last asking the keeper to build a dock so the boat can come in (the dock is a future idea, docs/future/14); quiet: by turn once they run out. Each is a page id in recipes/world/keeper-pages.json (form \"From the boat\"), had once its gift is taken up; under 60 words; never a name or a face. words: notices and the stone's card. The journal page is the keeper page 'boat' (recipes/world/keeper-pages.json).",
   "size": "small",
-  "repeat": "season",
   "trigger": {
-    "all": [
-      {
-        "check": "cond",
-        "name": "stores"
-      },
-      {
-        "check": "seasonDay",
-        "minDay": 2,
-        "spanDays": 9
-      }
-    ]
+    "check": "cond",
+    "name": "stores"
   },
   "beats": [
     {
@@ -49,15 +39,15 @@
     "hazelnuts"
   ],
   "boat": {
-    "offM": 45,
-    "minDepthM": 1.2,
+    "offM": 70,
+    "minDepthM": 1.6,
     "searchM": 140,
     "yawDeg": 80,
     "lantern": {
-      "upM": 0.75,
-      "aftM": 0.85,
-      "cd": 12,
-      "rangeM": 10,
+      "upM": 3.4,
+      "aftM": -1.2,
+      "cd": 30,
+      "rangeM": 16,
       "lightK": 2100,
       "flicker": 0.08,
       "flickerHz": 2.2
@@ -92,12 +82,6 @@
         "n": 1
       }
     ],
-    "keepsakeAfter": 8,
-    "keepsake": {
-      "kind": "rush-cord",
-      "n": 3,
-      "note": "Stand-in until the keeper's gift is chosen (a brass bell from the boat, a keepsake): for now three good handfuls of cord, with the letter that says so."
-    },
     "letters": [
       "boat-1",
       "boat-2",
@@ -118,6 +102,26 @@
       "db": -30,
       "decayS": 3.2,
       "cutoffHz": 2400
+    },
+    "vessel": {
+      "model": "assets/models/camp/fishing-boat.glb",
+      "lengthM": 11,
+      "beamM": 3.6,
+      "anchorAheadM": 9,
+      "bowTieM": [
+        0,
+        2.2,
+        5.3
+      ],
+      "float": {
+        "draftM": 0.9,
+        "bobM": 0.06,
+        "bobS": 5.2,
+        "rockDeg": 1.6,
+        "rockS": 6.3,
+        "pitchDeg": 0.6,
+        "pitchS": 7.1
+      }
     }
   },
   "stone": {
@@ -158,9 +162,9 @@
     "gone": "The boat is gone.",
     "goneGift": "The boat is gone. Something lies on the stone by the mooring.",
     "stoneName": "The mooring stone",
-    "stoneLine": "A good flat stone above the tide line, where a parcel would stay dry.",
+    "stoneLine": "A good flat stone above the tide line. A parcel left here would wait for the boat.",
     "stoneBoat": "The boat lies at anchor offshore. A parcel left here would be found by morning.",
-    "stoneLeft": "Your parcel waits on the stone.",
+    "stoneLeft": "Your parcel waits on the stone for the boat.",
     "stoneGift": "Something lies here, tied with cord.",
     "leave": "Leave a parcel",
     "take": "Take it up",
@@ -169,5 +173,10 @@
     "taken": "Taken up. There is a note with it, in your journal.",
     "noRoom": "No room in the pack.",
     "far": "Closer first."
-  }
+  },
+  "repeat": "again",
+  "again": [
+    4,
+    7
+  ]
 }
