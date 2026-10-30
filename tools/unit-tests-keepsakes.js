@@ -60,12 +60,12 @@ export function addKeepsakeTests(test, assert, eq) {
     for (const [key, fam] of Object.entries(K)) if (/** @type {any} */ (fam)?.tiers?.veryRare) assert(/** @type {any} */ (fam).tiers.lifetime, `${key} has a lifetime tier`);
   });
 
-  test(KEEPSAKES, 'bottle letters: forty, chosen by season and rarity, replies only after what they answer', async () => {
+  test(KEEPSAKES, 'bottle letters: eighty (two sets of forty), chosen by season and rarity, replies only after what they answer', async () => {
     const K = await recipe();
     const M = await (await fetch('../recipes/world/bottle-messages.json')).json();
     const order = K.rarity.order;
-    eq(M.letters.length, 40, 'forty letters');
-    eq(new Set(M.letters.map((/** @type {any} */ l) => l.id)).size, 40, 'unique ids');
+    eq(M.letters.length, 80, 'eighty letters');
+    eq(new Set(M.letters.map((/** @type {any} */ l) => l.id)).size, 80, 'unique ids');
     for (const l of M.letters) {
       assert(order.includes(l.rarity) && ['any', 'spring', 'summer', 'autumn', 'winter'].includes(l.season) && l.body.length, `${l.id}: rarity, season, body`);
       assert(!/genuine/i.test(l.body.join(' ')), `${l.id}: words`);
