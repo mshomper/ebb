@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ebb canvas check</title>
+<link rel="icon" href="../brand/ebb-favicon.svg" type="image/svg+xml">
+<style>
+  @font-face { font-family: 'Nunito'; src: url('../src/vendor/fonts/nunito-latin-600-normal.woff2') format('woff2'); font-weight: 600; }
+  @font-face { font-family: 'Nunito'; src: url('../src/vendor/fonts/nunito-latin-800-normal.woff2') format('woff2'); font-weight: 800; }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; max-width: 100%; overflow-x: hidden; }
+  body { background: #F4EEE4; color: #1E2624; font: 600 17px/1.45 'Nunito', system-ui, sans-serif; padding: 16px; overflow-wrap: anywhere; }
+  main { max-width: 1100px; margin: 0 auto; display: flex; flex-direction: column; gap: 12px; }
+  h1 { font-size: 24px; font-weight: 800; margin: 0; }
+  h2 { font-size: 19px; font-weight: 800; margin: 4px 0 0; }
+  p { margin: 0; color: #4A5551; }
+  #view { width: 100%; aspect-ratio: 16 / 9; display: block; border-radius: 14px; background: #1E2624; touch-action: none; }
+  .row { display: flex; flex-wrap: wrap; gap: 8px; }
+  button { font: 800 16px/1.2 'Nunito', system-ui, sans-serif; color: #FBF7F0; background: #4a6a47; border: 0; border-radius: 12px; padding: 10px 14px; cursor: pointer; min-height: 48px; }
+  button[aria-pressed=true] { background: #23361F; }
+  a { color: #4a6a47; }
+  #ages { font-size: 16px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Canvas check</h1>
+  <canvas id="view" aria-label="Tents at several ages"></canvas>
+  <p>Canvas weathering (B1 C2): the tent's canvas pales and greys over the seasons since it was first pitched, gains a few stitched patches from the second season, and its poles silver over three seasons, all eased to a stop after about a year. Your tent is the one nearest the fire, with you by its door; the others are the same tent at other ages, in a row behind it along its ridge, oldest farthest. The real game, drawn as it plays. Nothing here is saved. <a href="./">All tools</a></p>
+  <p id="ages"></p>
+  <h2>The row</h2>
+  <div class="row">
+    <button data-row="0,1,4" aria-pressed="true">New, one season, a year</button>
+    <button data-row="0,1,2,3,4">Every season to a year</button>
+    <button data-row="4,8">A year and two years</button>
+    <button data-sort="1" aria-pressed="false">Show the sort</button>
+  </div>
+  <p>Show the sort colours the row as the shader reads the tent's paint: canvas green, the inner lining blue, wood red (the poles, the stakes and the seams' thread), the bedroll and groundsheet inside grey (left as they are), patches and stitches yellow.</p>
+  <h2>Your tent</h2>
+  <div class="row">
+    <button data-age="0" aria-pressed="true">New</button>
+    <button data-age="1">One season</button>
+    <button data-age="2">Two seasons</button>
+    <button data-age="4">A year</button>
+  </div>
+  <h2>The view</h2>
+  <div class="row">
+    <button data-view="row">The row from one side</button>
+    <button data-view="other">From the other side</button>
+    <button data-view="close">Close to the oldest</button>
+  </div>
+  <div class="row"><a href="?camp=canvas&hour=10">Morning</a> <a href="?camp=canvas&hour=15">Afternoon</a> <a href="?camp=canvas&hour=19.4">Dusk</a></div>
+</main>
+<script src="./boot-guard.js"></script>
+<script type="importmap">{ "imports": {
+  "wgpu-matrix": "../src/vendor/wgpu-matrix/wgpu-matrix.module.js" } }</script>
+<script type="module" src="./canvas-check.js"></script>
+</body>
+</html>

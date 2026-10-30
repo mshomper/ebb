@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "note": "The spade's sounds (docs/future/13 10.4.3, P2c): short CC0 takes played through src/audio/keepsake-sounds.js on the tools bus when src/world/dig emits dig:sound, each peaked at -3 dBFS. The bite at the step names the layer (topsoil a soft muffled thud, subsoil a gritty scrape with stone ticks, clay a wet suck as the blade pulls free, sand a soft hiss); lift as the knees bend; pour as the spoil tips onto its heap (pour-sand on sand); stones the ringing clink of the shovel on stone, when there is nothing deeper to dig. The sound teaches the layer before the eye does. db sets each one's level; pitchCents is a small seeded spread (the dug cell seeds it, so the same spot sounds the same). Sources are in assets/audio/CREDITS.md.",
+  "note": "The spade's sounds (docs/future/13 10.4.3, P2c): short CC0 takes played through src/audio/keepsake-sounds.js on the tools bus when src/world/dig emits dig:sound, each peaked at -3 dBFS. The bite at the step names the layer (topsoil a soft muffled thud, subsoil a gritty scrape with stone ticks, clay a wet suck as the blade pulls free, sand a soft hiss); lift as the knees bend; pour as the spoil tips onto its heap (pour-sand on sand); stones the ringing clink of the shovel on stone, when there is nothing deeper to dig. The sound teaches the layer before the eye does. db sets each one's level; pitchCents is a small seeded spread (the dug cell seeds it, so the same spot sounds the same). Sources are in assets/audio/CREDITS.md. B1 D1 (until CC0 takes of their own): deepclay, the clay takes set lower (cents) for a slow, dense squelch; charcoal, the subsoil's gritty take set higher, a dry crunch; cache, a dull low knock on the bundle. cents: a take's own pitch.",
   "root": "assets/audio/one-shots/dig/",
   "pitchCents": 70,
   "wakeWaitMs": 400,
@@ -12,7 +12,10 @@
     "lift": { "file": "lift", "db": -16 },
     "pour": { "file": "pour", "db": -15 },
     "pour-sand": { "file": "pour-sand", "db": -16 },
-    "stones": { "file": "stones", "db": -14 }
+    "stones": { "file": "stones", "db": -14 },
+    "deepclay": { "files": ["clay-a", "clay-b"], "db": -11, "cents": -400 },
+    "charcoal": { "files": ["subsoil-a", "subsoil-b"], "db": -12, "cents": 300 },
+    "cache": { "file": "topsoil-b", "db": -10, "cents": -700 }
   },
   "preload": []
 }

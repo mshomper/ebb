@@ -104,7 +104,9 @@ export function add(pack, kind, n, kinds, recipe) {
   const own = pack.pouches.filter((p) => p[0] === kind).length;
   const others = pack.pouches.length - own;
   const may = Math.max(own, sizeOf(pack, recipe) - others);
-  const added = Math.min(want, Math.max(0, may * full - total));
+  // A kind with its own cap (the hen's eggs: a few at most, pack.json kinds max) holds no more.
+  const cap = (recipe?.kinds ?? []).find((/** @type {any} */ k) => k.id === kind)?.max ?? Infinity;
+  const added = Math.min(want, Math.max(0, may * full - total), Math.max(0, cap - total));
   if (added === 0) return { pack: normalize(pack, kinds, recipe), added: 0, left: want };
   const pouches = [...pack.pouches.filter((p) => p[0] !== kind), /** @type {Pouch} */ ([kind, total + added])];
   return { pack: { ...copy(pack), pouches: formPouches(pouches, kinds, full) }, added, left: want - added };

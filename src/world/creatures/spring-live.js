@@ -21,7 +21,8 @@ import { MAX_BONES, bodyFor } from './bodies.js';
 import { poseSkeleton, axisAngle } from './pose.js';
 import { frogMoves, legsOf } from './motion.js';
 import { frogletHop, landSquash } from './froglets.js';
-import { toadMoves, toadPhase } from './toad-walk.js';
+import { toadMoves, toadPhase, toadSleepMoves } from './toad-walk.js';
+import { on } from '../../core/events.js';
 import { FROG_BONES } from './rigs/frog.js';
 import { toadAt, initialSpring, nearestPond, clumpBody, tadpoleBody } from './spring.js';
 import { createSunFinds } from './sun-finds.js';
@@ -78,6 +79,10 @@ export function createSpring(opts) {
   bake(landPass, 'toad', { id: 'toad', body: T.body, variant: 0, cellM: T.bake.cellM }, 'toad');
 
   const seed = subSeed(world.env.seed, 'spring-live');
+  // A toad dug up asleep in winter (B1 D1, src/world/dig): it lies in the open hole, tucked and
+  // breathing slowly on its rig, until it is covered over. @type {{ x: number, z: number, yaw: number, left: number } | null}
+  let sleeper = null;
+  const offSleeper = on('dig:sleeper', (/** @type {{ x: number, z: number, yaw: number, showS: number }} */ p) => { sleeper = { x: p.x, z: p.z, yaw: p.yaw, left: p.showS }; });
   /** Taps: what is shown now. @type {{ sp: string, x: number, z: number, item: string | null, reach: number }[]} */ let shown = [];
   let seatsAt = 0;
 
@@ -238,6 +243,15 @@ export function createSpring(opts) {
       land.push({ x: toad.x, y: terrain.sampleHeight(toad.x, toad.z), z: toad.z, yaw: toad.yaw, size: T.body.displayScale, mesh: 'toad', bones });
       taps.push({ sp: 'toads', x: toad.x, z: toad.z, item: null, reach: T.find.tapM });
     }
+    if (sleeper && landPass.hasMesh('toad')) {
+      /** @type {Float32Array | undefined} */ let bones;
+      if (rigs.toad && toadLegs) {
+        bones = new Float32Array(MAX_BONES * 16);
+        poseSkeleton(rigs.toad, toadSleepMoves(rigs.toad, toadLegs, 7, t, T.motion), bones, 0);
+      }
+      // Down in the hole's mouth, a little under the ground line.
+      land.push({ x: sleeper.x, y: terrain.sampleHeight(sleeper.x, sleeper.z) - T.motion.sleep.sinkM * T.body.displayScale * 2, z: sleeper.z, yaw: sleeper.yaw, size: T.body.displayScale, mesh: 'toad', bones });
+    }
     wetPass.setBeings(wet);
     landPass.setBeings(land);
     shown = taps;
@@ -299,11 +313,13 @@ export function createSpring(opts) {
     passes: [wetPass, landPass, ...(sun ? [sun.pass] : [])],
     /** What a tap may land on now (the finds module's addSource). */
     shown: () => (sun ? [...shown, ...sun.shown()] : shown),
+    dispose() { offSleeper(); },
     /** @param {import('../../sim/live-sim.js').FrameInfo} f */
     tick(f) {
       if (!water.sim.live) return;
       if ((seatsAt -= f.realDt) <= 0) { seatsAt = 1; syncSeats(); }
       if (test && (testWait += f.realDt) > 2 && setTest(test)) test = null;
+      if (sleeper && (sleeper.left -= f.realDt) <= 0) sleeper = null;
       draw(f.animT);
       sun?.draw(f.animT);
     },

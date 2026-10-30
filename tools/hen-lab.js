@@ -81,6 +81,15 @@ function clipPose(dt) {
   if (mode === 'look') { const u = cyc(3); const on = u > 0.15 && u < 0.75 ? 1 : 0; p.look = { yaw: 0, tilt: (u < 0.5 ? 1 : 1) * M.lookTiltRad * on, down: M.lookDownRad * on }; }
   if (mode === 'alert') p.alert = Math.min(1, Math.max(0, Math.sin(cyc(4) * Math.PI) * 1.6));
   if (mode === 'settle') p.settle = Math.min(1, Math.max(0, Math.sin(cyc(6) * Math.PI) * 1.6));
+  // Her day (slice 3): the wings, the dust bath, preening, the shake, the drink, the roost.
+  const swell = (/** @type {number} */ s) => Math.min(1, Math.max(0, Math.sin(cyc(s) * Math.PI) * 1.6));
+  if (mode === 'wings') p.wing = swell(4);
+  if (mode === 'flap') { p.wing = 1; p.flap = 1; p.crouch = 0.3; }
+  if (mode === 'dust') { p.dust = swell(10); p.settle = 1; p.wing = 0.3 * p.dust; }
+  if (mode === 'preen') { const u = cyc(6); p.preen = { side: u < 0.5 ? 'l' : 'r', u: (u * 2) % 1 }; p.wing = 0.2 * Math.sin(Math.PI * p.preen.u); }
+  if (mode === 'shake') p.shake = Math.max(0, Math.sin(cyc(2.5) * Math.PI * 2.5));
+  if (mode === 'drink') { const u = cyc(1.4); p.peck = u < 0.4 ? Math.sin(Math.PI * u / 0.4) * 0.9 : 0; p.drink = u >= 0.4 ? Math.sin(Math.PI * (u - 0.4) / 0.6) : 0; }
+  if (mode === 'roost') { p.settle = 1; p.tuck = swell(8); }
   if (mode === 'scratch') {
     // Kick, kick, a step back, a look, two pecks, then again.
     const seq = [['kick', L.kickS, 'l'], ['kick', L.kickS, 'r'], ['back', L.backS], ['look', 0.6], ['peck', L.peckS], ['peck', L.peckS], ['rest', 0.8]];

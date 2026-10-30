@@ -1399,7 +1399,8 @@
         { "text": "A toad walks where a frog would hop, and its skin is dry and warty.", "learn": ["seen"] },
         { "text": "Toads go back each spring to the pond they were born in, often on a wet night.", "learn": ["seen"] },
         { "text": "By day it hides under stones and logs, and hunts slugs and beetles in the dark.", "learn": ["moment:dusk"] },
-        { "text": "The bumps behind its eyes hold a bitter taste, so few things eat a toad.", "learn": ["moment:rain"] }
+        { "text": "The bumps behind its eyes hold a bitter taste, so few things eat a toad.", "learn": ["moment:rain"] },
+        { "text": "It sleeps the winter dug into soft soil near the pond, tucked up tight, until spring.", "learn": ["asleep"] }
       ],
       "fieldHint": "Look out on other spring nights to learn more.",
       "sketch": { "scale": "about 10 cm", "labels": {
@@ -1408,7 +1409,8 @@
         "eyes": { "text": ["copper", "eyes"], "learn": ["seen"] } } },
       "likes": [
         { "text": "A stone or log near the pond to hide under", "learn": ["seen"] },
-        { "text": "Wet spring nights", "learn": ["moment:rain"] }
+        { "text": "Wet spring nights", "learn": ["moment:rain"] },
+        { "text": "Soft, undug soil near the pond to sleep the winter in", "learn": ["asleep"] }
       ],
       "gives": [
         { "pencil": "Something small might come of this one day.", "ink": "Toads eat the slugs that would eat your plants.", "when": "toads:seen" }
@@ -1959,9 +1961,13 @@
         { "text": "Open ground to scratch in, near her scrub", "learn": ["seen"] },
         { "text": "Lets you near if you come slowly, or sit", "learn": ["trust:tolerant"] },
         { "text": "Waits by fresh soil when you dig", "learn": ["trust:curious"] },
-        { "text": "Follows you on short walks, and sleeps by the fire", "learn": ["trust:familiar"] },
+        { "text": "Follows you on short walks, and roosts on the perch by the fire", "learn": ["trust:familiar"] },
         { "text": "Pecks up worms the shovel turned", "learn": ["likes:worms"] },
-        { "text": "Strips a handful of seedheads", "learn": ["likes:seedheads"] }
+        { "text": "Strips a handful of seedheads", "learn": ["likes:seedheads"] },
+        { "text": "Takes eggshell grit, ground from her own shells", "learn": ["likes:grit"] },
+        { "text": "Lays in a scrape hidden under the scrub", "learn": ["eggs:scrape"] },
+        { "text": "Lays in the nest box once she knows you", "learn": ["eggs:box"] },
+        { "text": "Lays most in the long days; none in winter, none while she moults", "learn": ["moult"] }
       ],
       "_trust": "Her words (src/world/hen/trust.js): lines, since, namedLine and names as the frogs'; Fond is the fifth word, hers alone. notes: each word's note when she reaches it.",
       "trust": {
@@ -1993,7 +1999,11 @@
         "treat:seedheads": "The hen stripped the seedheads you set out, every last seed.",
         "treat": "The hen came for what you set out.",
         "feather": "The hen left one of her tail feathers by the fire ring this morning.",
-        "named": "You named the hen {name}."
+        "named": "You named the hen {name}.",
+        "treat:grit": "The hen pecked up every speck of the eggshell grit.",
+        "scrape": "The hen has a scrape under the scrub. She laid an egg in it this morning.",
+        "nestbox": "The hen laid her first egg in the nest box.",
+        "moult": "The hen is moulting: a feather by her roost, and no eggs for a while."
       }
     }
   }

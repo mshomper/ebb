@@ -268,6 +268,20 @@ export const GATHERED = {
   'crushed-shell': ['earth', `${both('d="M3.5 19.5C5.5 14 8.6 11.5 12 11.5S18.5 14 20.5 19.5Z"')}<path d="M2.5 19.5H21.5"/>
     <path d="M8 17L9.2 15.8L10 17.2ZM12.4 14.4L13.8 13.6L13.6 15ZM14.8 17.4L16.2 16.6L16.4 18ZM11 18.2L12.2 17.4L12.6 18.6Z"/>
     <path d="M11.6 8.8L12.6 8.2L12.4 9.4ZM13.4 5.6L14.2 5L14.2 6.2ZM10.8 4.2L11.6 3.6L11.8 4.8Z"/>`],
+  // The hen's eggs (docs/future/15 slice 4): two brown eggs held in a bowl's curve.
+  egg: ['berries', `${both('d="M9.2 6C11.2 6 12.6 8.8 12.6 11.4S11.2 15.4 9.2 15.4S5.8 14 5.8 11.4S7.2 6 9.2 6Z"')}
+    <path ${A2} d="M15.2 8.4C17 8.4 18.2 10.6 18.2 12.8S17 16.2 15.2 16.2S12.2 15 12.2 12.8S13.4 8.4 15.2 8.4Z"/><path d="M15.2 8.4C17 8.4 18.2 10.6 18.2 12.8S17 16.2 15.2 16.2S12.2 15 12.2 12.8S13.4 8.4 15.2 8.4Z"/>
+    <path d="M3.4 13.6C3.8 18 7.4 20.6 12 20.6S20.2 18 20.6 13.6"/>`],
+  // Eggshells (after a breakfast): a heap with two broken half shells on it, their edges jagged.
+  eggshells: ['earth', `${both('d="M3.5 19.5C5.5 16 8.6 14.6 12 14.6S18.5 16 20.5 19.5Z"')}<path d="M2.5 19.5H21.5"/>
+    <path d="M6.4 12.4C6.4 15 7.8 16.4 9.6 16.4S12.8 15 12.8 12.4L11.6 13.2L10.6 11.8L9.4 13L8.2 11.8L7.4 13Z"/>
+    <path d="M12.6 9.4C12.6 12 14 13.4 15.8 13.4S19 12 19 9.4L17.8 10.2L16.8 8.8L15.6 10L14.4 8.8L13.6 10Z"/>`],
+  // Eggshell grit (ground at the mortar for the hen): a pale heap, fine specks on it and falling.
+  grit: ['earth', `${both('d="M3.5 19.5C5.5 14.6 8.6 12.4 12 12.4S18.5 14.6 20.5 19.5Z"')}<path d="M2.5 19.5H21.5"/>
+    ${dot(8.6, 17, 0.6)}${dot(11.4, 15.4, 0.6)}${dot(14.2, 17.4, 0.6)}${dot(12.6, 18.2, 0.6)}${dot(16, 16.2, 0.6)}${dot(12, 8.8, 0.55)}${dot(13.2, 6, 0.55)}${dot(11, 4.4, 0.55)}`],
+  // Sea salt (the salt pans, to come): a little heap of white crystals above the wave line.
+  'sea-salt': ['sea', `${both('d="M5.4 17.4L8.4 11.6L11.2 14.6L13.6 9.6L16.4 13.8L18.6 12.2L19.6 17.4Z"')}
+    <path d="M8.4 11.6V14.4M13.6 9.6V13M18.6 12.2V15"/>${WAVE}`],
 
   // ---- Seeds: the fallback when a plant has no chip or part of its own ----
   // A dry seed head on its stem, seeds dropping from it.

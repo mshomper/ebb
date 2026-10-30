@@ -406,7 +406,7 @@ const DIG_JOB = { module: './world/dig/check.js', fn: 'digCheckJob' };
  */
 async function runDig(worldSeed) {
   const get = (/** @type {string} */ p) => fetch(`../recipes/${p}.json`).then((r) => r.json());
-  const args = { worldSeed, dig: await get('world/dig'), keepsakes: await get('world/keepsakes') };
+  const args = { worldSeed, dig: await get('world/dig'), keepsakes: await get('world/keepsakes'), land: await get('land/starter-island-2') };
   const main = digCheckJob(args);
   initWorkers({ size: 1 });
   let worker;
@@ -435,7 +435,9 @@ function showDig(g) {
     row('Dug events, saved and read back', main.events, worker.events) +
     row('Holes three days on', main.holes, worker.holes) +
     row('The same season, run again', main.first, main.again, 'First run', 'Second run') +
-    `<p class="muted">Over 14 game days of ten digs a day: ${main.worms} worms, ${main.clay} handfuls of clay and ${main.keepsakes} keepsakes (the island's budget holds them to about one a day).</p>`;
+    row('Story spots (the old hearth, the marked stone)', main.story, worker.story) +
+    row('Story spots, placed again', main.story, main.storyAgain, 'First', 'Again') +
+    `<p class="muted">Over 14 game days of ten spots a day, three layers deep with the keeper's blade by an old hearth: ${main.worms} worms, ${main.clay} handfuls of clay and ${main.keepsakes} keepsakes (${main.sherds} of them sherds, once a pot was fired; the island's budget holds them to about one a day). A winter fortnight by a pond found ${main.sleepers} sleeping toads.</p>`;
 }
 
 const TREAT_JOB = { module: './world/creatures/treat-check.js', fn: 'treatCheckJob' };

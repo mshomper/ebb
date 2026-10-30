@@ -75,6 +75,70 @@ export function lathe(m, prof, colors, cx, cz, seg, ridge = () => 1) {
 }
 
 /**
+ * A curved piece cut from a turned surface (a lathe profile swept through part of a turn): a grid
+ * of rows by cols points from at(s, t) (s, t 0..1 across it), each with its outward direction and
+ * colour, given a wall thick. Built as its outer face, its inner face (the colour from at's inner,
+ * set in by thick along the outward direction) and the broken edge between them, normals from the
+ * grid. A sherd is cut this way (src/world/keepsakes/families/sherd.js).
+ * @param {ReturnType<typeof builder>} m @param {number} rows @param {number} cols
+ * @param {(s: number, t: number) => { p: number[], out: number[], c: number[], inner: number[], thick: number }} at
+ */
+export function latheArc(m, rows, cols, at) {
+  /** @type {{ p: number[], out: number[], c: number[], inner: number[], thick: number }[]} */ const g = [];
+  for (let i = 0; i < rows; i++) for (let j = 0; j < cols; j++) g.push(at(i / (rows - 1), j / (cols - 1)));
+  const P = (/** @type {number} */ i, /** @type {number} */ j, /** @type {boolean} */ inner) => {
+    const e = g[i * cols + j];
+    return inner ? e.p.map((v, k) => v - e.out[k] * e.thick) : e.p;
+  };
+  const sub = (/** @type {number[]} */ a, /** @type {number[]} */ b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+  const cross = (/** @type {number[]} */ a, /** @type {number[]} */ b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+  const dot = (/** @type {number[]} */ a, /** @type {number[]} */ b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+  /** A triangle turned so its face points along n. @param {number} a @param {number} b @param {number} c @param {number[][]} q @param {number[]} n */
+  const tri = (a, b, c, q, n) => (dot(cross(sub(q[1], q[0]), sub(q[2], q[0])), n) >= 0 ? m.tri(a, b, c) : m.tri(a, c, b));
+  for (const inner of [false, true]) {
+    /** @type {number[]} */ const id = [];
+    for (let i = 0; i < rows; i++) {
+      for (let j = 0; j < cols; j++) {
+        const e = g[i * cols + j];
+        const a = P(Math.max(0, i - 1), j, inner), b = P(Math.min(rows - 1, i + 1), j, inner);
+        const c = P(i, Math.max(0, j - 1), inner), d = P(i, Math.min(cols - 1, j + 1), inner);
+        let n = cross(sub(b, a), sub(d, c));
+        if (dot(n, e.out) < 0) n = n.map((v) => -v);
+        if (inner) n = n.map((v) => -v);
+        id.push(m.vert(P(i, j, inner), n, inner ? e.inner : e.c));
+      }
+    }
+    for (let i = 0; i + 1 < rows; i++) {
+      for (let j = 0; j + 1 < cols; j++) {
+        const k = i * cols + j, o = g[k].out, n = inner ? o.map((v) => -v) : o;
+        const q = [P(i, j, inner), P(i + 1, j, inner), P(i, j + 1, inner)];
+        tri(id[k], id[k + cols], id[k + 1], q, n);
+        tri(id[k + 1], id[k + cols], id[k + cols + 1], [P(i, j + 1, inner), P(i + 1, j, inner), P(i + 1, j + 1, inner)], n);
+      }
+    }
+  }
+  // The broken edge: round the grid's border, a strip from the outer face to the inner, its own
+  // vertices facing out of the piece and coloured as the clay's core.
+  /** @type {number[][]} */ const ring = [];
+  for (let j = 0; j < cols; j++) ring.push([0, j]);
+  for (let i = 1; i < rows; i++) ring.push([i, cols - 1]);
+  for (let j = cols - 2; j >= 0; j--) ring.push([rows - 1, j]);
+  for (let i = rows - 2; i > 0; i--) ring.push([i, 0]);
+  const mid = g[Math.floor(rows / 2) * cols + Math.floor(cols / 2)].p;
+  for (let r = 0; r < ring.length; r++) {
+    const [i0, j0] = ring[r], [i1, j1] = ring[(r + 1) % ring.length];
+    const a = P(i0, j0, false), b = P(i1, j1, false), c = P(i0, j0, true), d = P(i1, j1, true);
+    let n = cross(sub(b, a), sub(c, a));
+    const away = sub(a, mid);
+    if (dot(n, away) < 0) n = n.map((v) => -v);
+    const col = g[i0 * cols + j0].inner.map((v, k) => (v + g[i0 * cols + j0].c[k]) / 2);
+    const ia = m.vert(a, n, col), ib = m.vert(b, n, col), ic = m.vert(c, n, col), idd = m.vert(d, n, col);
+    tri(ia, ib, ic, [a, b, c], n);
+    tri(ib, idd, ic, [b, d, c], n);
+  }
+}
+
+/**
  * A tube along a path of points with a radius at each (0 closes it to a point), its rings square to
  * the path. @param {ReturnType<typeof builder>} m @param {number[][]} pts @param {number[]} radii
  * @param {number[]} color @param {number} [sides]

@@ -433,6 +433,21 @@ export function landmarks(land, seed) {
 }
 
 /**
+ * The base land at a world point as it was generated (no edits): [height, grass, sand, rock, soil]
+ * (the weights are shares, not bytes). For things placed by the island's seed on its base, such as
+ * the dig's story spots (src/world/dig/story.js). @param {LandRecipe} land @param {number} seed the
+ * terrain sub-seed @returns {(x: number, z: number) => number[]}
+ */
+export function baseSampler(land, seed) {
+  const c = makeContext(land, seed >>> 0), o = islandCenter(land), out = new Float64Array(5);
+  return (x, z) => {
+    sampleCell(c, x - o.x, z - o.z, out);
+    const t = out[1] + out[2] + out[3] + out[4] || 1;
+    return [out[0], out[1] / t, out[2] / t, out[3] / t, out[4] / t];
+  };
+}
+
+/**
  * Base height and material weights at (x, z), measured from the island's center (islandCenter).
  * Writes [h, grass, sand, rock, soil] to out.
  * @param {Ctx} c @param {number} x @param {number} z @param {Float64Array} out

@@ -1274,6 +1274,13 @@ const ICONS = {
     <path d="M17.4 13.2L20.6 10.8M5.6 13.4C3.6 13.4 3 15.6 4.6 16.8"/>
     <path d="M9.4 9.8C9.6 8.8 10.4 8.4 11.6 8.4S13.6 8.8 13.8 9.8"/>
     <path d="M9.8 6.2C9 5 10.6 4.2 9.8 3M13.4 6.2C12.6 5 14.2 4.2 13.4 3"/>`,
+  // Cook: a round-bellied pot with two lugs, an egg in it, steam rising (the cooking pot's Cook, the hen's slice 4).
+  cook: `
+    <path ${ACCENT} d="M4.6 11.4H19.4C19.4 16.4 16.4 19.8 12 19.8S4.6 16.4 4.6 11.4Z"/>
+    <path d="M4.6 11.4H19.4C19.4 16.4 16.4 19.8 12 19.8S4.6 16.4 4.6 11.4Z"/>
+    <path d="M4.6 12.6H2.8M19.4 12.6H21.2M3.5 21H20.5"/>
+    <path d="M10 11.4C10 9.4 10.9 8.2 12 8.2S14 9.4 14 11.4"/>
+    <path d="M8.6 6C7.8 4.8 9.4 4 8.6 2.8M15.4 6C14.6 4.8 16.2 4 15.4 2.8"/>`,
   // Hand: an open hand, the pointer over something a click can use (below).
   hand: `
     <path ${ACCENT} d="M8 12V5.5A1.5 1.5 0 0 1 11 5.5V11V4A1.5 1.5 0 0 1 14 4V11V5.5A1.5 1.5 0 0 1 17 5.5V14C17 18 15 20.5 11.5 20.5C8.5 20.5 7 18.5 5.5 15.5L4.5 13.5A1.4 1.4 0 0 1 7 12.3Z"/>

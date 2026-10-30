@@ -28,7 +28,8 @@ export function campFirsts(C, camp, cook) {
   if (ring) out.push({ id: 'ring', hour: ring.placedHour ?? 0, parts: ['sticks', 'pebbles'] });
   for (const [id, hour] of Object.entries(cook?.made ?? {})) {
     const b = C.builds?.[id], m = C.makes?.[id];
-    const parts = b ? buildKinds(b) : m ? m.parts.map((/** @type {any} */ p) => partKinds(p)[0]) : [];
+    // The walker's meal (docs/future/15 slice 4) is no station make: its parts are the meal's own.
+    const parts = b ? buildKinds(b) : m ? m.parts.map((/** @type {any} */ p) => partKinds(p)[0]) : id === 'meal' && C.meal ? C.meal.parts : [];
     out.push({ id, hour: Number(hour), parts });
   }
   return out.sort((a, b) => a.hour - b.hour);
@@ -67,7 +68,7 @@ function campSketch(pad, camp) {
       const deg = f ? Math.atan2(-(f.v - s.v), f.u - s.u) * 180 / Math.PI + 90 : 0;
       parts.push(`<rect x="${x - (s.w / 2) * S}" y="${y - (s.d / 2) * S}" width="${s.w * S}" height="${s.d * S}" rx="3" class="cp-bench" transform="rotate(${deg.toFixed(1)} ${x} ${y})"/>`);
     } else if (s.id === 'rack' && has('rack')) parts.push(`<rect x="${x - (s.w / 2) * S}" y="${y - (s.d / 2) * S}" width="${s.w * S}" height="${s.d * S}" rx="3" class="cp-bench"/>`);
-    else if (['sticks', 'stones', 'clay'].includes(s.id) || ((s.id === 'store' || s.id === 'gift') && has(s.id))) parts.push(`<circle cx="${x}" cy="${y}" r="${(s.r ?? 0.4) * S}" class="cp-store"/>`);
+    else if (['sticks', 'stones', 'clay'].includes(s.id) || ((s.id === 'store' || s.id === 'gift' || s.id === 'nest') && has(s.id))) parts.push(`<circle cx="${x}" cy="${y}" r="${(s.r ?? 0.4) * S}" class="cp-store"/>`);
   }
   const w = (2 * R) * S + 20;
   return `<svg class="ebb-camppage__sketch" viewBox="0 0 ${w} ${w}" role="img" aria-label="The camp from above">

@@ -25,6 +25,14 @@ import { qmul, qrot, qslerp, QI, smooth } from '../figure/kinematics.js';
  * @property {number} alert      0 .. 1 upright and still
  * @property {number} lockM      the head lock: the head's shift forward from where the body carries it (rest m)
  * @property {number} [settle]   0 .. 1 settled down, legs folded under her (by the fire, slice 2)
+ * @property {number} [wing]     0 .. 1 wings opened (slice 3: the flap up and down, dusting, preening)
+ * @property {number} [flap]     0 .. 1 wings beating (in the flap up or down)
+ * @property {number} [shake]    0 .. 1 shaking out her feathers
+ * @property {number} [dust]     0 .. 1 in the dust bath (rolling, flicking dust)
+ * @property {number} [drink]    0 .. 1 the head tipped back to swallow
+ * @property {{ side: 'l' | 'r', u: number } | null} [preen]   preening one side, u 0..1 through it
+ * @property {number} [tuck]     0 .. 1 the head tucked back over her shoulder (roosting)
+ * @property {number} [crouch]   0 .. 1 crouched to jump, or landing
  */
 
 const X = [1, 0, 0], Y = [0, 1, 0], Z = [0, 0, 1];
@@ -40,8 +48,8 @@ export function createHenPoser(skeleton, M, idle) {
   const at = (/** @type {string} */ n) => skeleton.findIndex((b) => b.name === n);
   const B = {
     root: at('root'), chest: at('chest'), n0: at('neck.0'), n1: at('neck.1'), n2: at('neck.2'), head: at('head'), tail: at('tail'), tip: at('tail.tip'),
-    l: { hip: at('hip.l'), knee: at('knee.l'), ankle: at('ankle.l'), toes: at('toes.l') },
-    r: { hip: at('hip.r'), knee: at('knee.r'), ankle: at('ankle.r'), toes: at('toes.r') },
+    l: { hip: at('hip.l'), knee: at('knee.l'), ankle: at('ankle.l'), toes: at('toes.l'), wing: at('wing.l') },
+    r: { hip: at('hip.r'), knee: at('knee.r'), ankle: at('ankle.r'), toes: at('toes.r'), wing: at('wing.r') },
   };
   const n = skeleton.length;
   // The neck's line at rest, from its base to the head.
@@ -71,11 +79,12 @@ export function createHenPoser(skeleton, M, idle) {
     const shift = (/** @type {number} */ i, /** @type {number[]} */ d) => { if (i >= 0) code[i].t = code[i].t.map((v, k) => v + d[k]); };
     const walk = Math.min(1, Math.max(0, s.walk)), run = Math.min(1, Math.max(0, s.run));
     const p = Math.min(1, Math.max(0, s.peck));
-    const st = smooth(Math.min(1, Math.max(0, s.settle ?? 0)));
+    const crouch = Math.min(1, Math.max(0, s.crouch ?? 0));
+    const st = smooth(Math.min(1, Math.max(0, Math.max(s.settle ?? 0, M.crouchSettle * crouch))));
     // The body's tip forward: into a run, a kick or a peck (a hen tips her whole body to reach the
     // ground), back upright when alert.
     const kickLean = s.kick ? M.kickLeanRad * Math.sin(Math.PI * Math.min(1, Math.max(0, s.kick.u))) : 0;
-    const pitch = M.runPitchRad * run + kickLean + M.peckBodyRad * p + M.alertBodyRad * s.alert;
+    const pitch = M.runPitchRad * run + kickLean + M.peckBodyRad * p + M.alertBodyRad * s.alert + M.crouchPitchRad * crouch;
     const duty = M.duty + (M.runDuty - M.duty) * run;
     const swing = (M.hipSwingRad + (M.runHipSwingRad - M.hipSwingRad) * run) * walk;
     // Legs: a stance that carries the foot back under her, a swing that lifts and brings it forward.
@@ -119,8 +128,47 @@ export function createHenPoser(skeleton, M, idle) {
     const H = M.headLock.share, stretch = neckDir.map((v) => v * M.peckStretchM * p);
     const lock = [stretch[0], bob + stretch[1], s.lockM + stretch[2]];
     [B.n1, B.n2, B.head].forEach((i, k) => shift(i, lock.map((v) => v * H[k])));
+
+    // Her day (slice 3). The wings open about the shoulder's forward line, lower edge out and up,
+    // beating in a flap, flicking in the dust; each side mirrored.
+    const D = M.day ?? {};
+    const shake = Math.min(1, Math.max(0, s.shake ?? 0)), dust = Math.min(1, Math.max(0, s.dust ?? 0));
+    const drink = Math.min(1, Math.max(0, s.drink ?? 0)), tuck = smooth(Math.min(1, Math.max(0, s.tuck ?? 0)));
+    const beat = (s.flap ?? 0) * D.wingBeatRad * Math.sin(TAU * D.flapHz * s.t);
+    const flick = dust * D.dustFlickRad * Math.max(0, Math.sin(TAU * D.dustFlickHz * s.t));
+    const shiver = Math.sin(TAU * D.shakeHz * s.t) * shake;
+    const preenSide = s.preen ? (s.preen.side === 'l' ? 1 : -1) : 0;
+    const pe = s.preen ? Math.min(1, s.preen.u * 6, (1 - s.preen.u) * 6) : 0;
+    for (const side of /** @type {const} */ (['l', 'r'])) {
+      const sg = side === 'l' ? 1 : -1;
+      const open = (s.wing ?? 0) * D.wingOpenRad + beat + flick + Math.abs(shiver) * D.shakeWingRad + (preenSide === sg ? pe * D.preenWingRad : 0);
+      turn(B[side].wing, Z, sg * open);
+      turn(B[side].wing, Y, -sg * (s.wing ?? 0) * D.wingSweepRad);
+    }
+    // A shake: the whole body shivers side to side, the neck a beat behind, the tail fanned.
+    turn(B.root, Z, shiver * D.shakeRollRad);
+    turn(B.n0, Z, -shiver * D.shakeRollRad * 1.4);
+    turn(B.tail, Y, shiver * D.shakeRollRad);
+    // The dust bath: down on her side and back again, slowly, with a jiggle, head low, rubbing.
+    const roll = dust * (D.dustRollRad * Math.sin(TAU * D.dustRollHz * s.t) + D.dustJiggleRad * Math.sin(TAU * D.dustJiggleHz * s.t));
+    turn(B.root, Z, roll);
+    turn(B.n0, X, dust * D.dustNeckRad);
+    turn(B.head, Z, dust * D.dustRubRad * Math.sin(TAU * D.dustRollHz * 2 * s.t));
+    // The drink: the head tipped back to let the water run down.
+    turn(B.n0, X, drink * D.drinkNeckRad[0]);
+    turn(B.n2, X, drink * D.drinkNeckRad[1]);
+    turn(B.head, X, drink * D.drinkHeadRad);
+    // Preening: the neck curled back to the wing on one side, the beak nibbling along the feathers.
+    D.preenYawRad.forEach((/** @type {number} */ a, /** @type {number} */ k) => turn([B.n0, B.n1, B.n2, B.head][k], Y, preenSide * pe * a));
+    turn(B.head, X, pe * (D.preenDownRad + D.preenNibbleRad * Math.sin(TAU * D.preenNibbleHz * s.t)));
+    // Roosting: the head turned back and tucked down on her shoulder.
+    D.tuckYawRad.forEach((/** @type {number} */ a, /** @type {number} */ k) => turn([B.n0, B.n1, B.n2, B.head][k], Y, tuck * a));
+    turn(B.n0, X, tuck * D.tuckNeckRad);
+    turn(B.head, X, tuck * D.tuckHeadRad);
+
     // The Idle clip under it all, faded out as she moves, pecks, kicks or stands alert.
-    const idleW = (M.idleW ?? 1) * (1 - walk) * (1 - p) * (s.kick ? 0 : 1) * (1 - s.alert) * (1 - 0.6 * st);
+    const idleW = (M.idleW ?? 1) * (1 - walk) * (1 - p) * (s.kick ? 0 : 1) * (1 - s.alert) * (1 - 0.6 * st)
+      * (1 - shake) * (1 - dust) * (1 - drink) * (1 - tuck) * (1 - pe) * (1 - (s.wing ?? 0));
     return code.map((c, i) => {
       const im = idleMove(i, s.t, idleW);
       const q = im ? qmul(c.q, im.q) : c.q;

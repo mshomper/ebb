@@ -1,0 +1,13 @@
+{
+  "type": "audio",
+  "id": "hen",
+  "version": 1,
+  "note": "The hen's voice (docs/future/15 slice 3; doc 17 'Procedural creature voices', doc 25 'Creature voices'). Made in code like the frogs' calls (src/audio/voices/hen.js), not recordings, so there is no licence to carry. When: src/world/hen/index.js says each one: a contented murmur every murmurEveryS seconds while she forages or settles (none at night); the alarm once each time the walker frightens her at Wary; the distant crow on some mornings (hen.json day crowShare, crowH), from crowFarM beyond her scrub on the side away from the camp. Each sound is placed where she is (the crow far off) and goes to the creatures bus, quiet in the soundscape: gainDb. murmur: pulses soft 'buk' notes, each pulseS long, gapS apart, its pitch f0Hz gliding down by glide (share), voiced through a formant bandpass at formantHz (Q formantQ). song (slice 4): the egg song when she gets up off the nest, the alarm's shape softer and lower. alarm: clucks sharp notes, then a long squawk (squawkS) rising from squawkHz[0] to [1], brighter (formantHz). crow: four syllables, their pitches syllableHz and lengths syllableS, the last held, softened by the distance and lowpassHz. spatial: refDistance and rolloff of the placed chain (the crow carries further: crowRefDistance).",
+  "murmurEveryS": [6, 14],
+  "crowFarM": 70,
+  "murmur": { "gainDb": -30, "pulses": [2, 4], "pulseS": 0.075, "gapS": [0.1, 0.16], "f0Hz": [260, 320], "glide": 0.25, "formantHz": 850, "formantQ": 3 },
+  "alarm": { "gainDb": -22, "clucks": [3, 5], "cluckS": 0.06, "gapS": 0.11, "f0Hz": 430, "squawkS": 0.38, "squawkHz": [480, 720], "formantHz": 1500, "formantQ": 2.5 },
+  "song": { "gainDb": -27, "clucks": [4, 6], "cluckS": 0.07, "gapS": 0.14, "f0Hz": 380, "squawkS": 0.45, "squawkHz": [430, 600], "formantHz": 1300, "formantQ": 2.5 },
+  "crow": { "gainDb": -30, "syllableHz": [520, 760, 700, 560], "syllableS": [0.16, 0.18, 0.2, 0.7], "gapS": 0.04, "formantHz": 1200, "formantQ": 2, "lowpassHz": 1800 },
+  "spatial": { "refDistance": 2, "rolloff": 1.2, "crowRefDistance": 40 }
+}

@@ -14,7 +14,7 @@ struct HenDraw {
   look: vec4f,     // x feather roughness, y sheen strength, z contact shadow darkness 0..1, w contact radius (body lengths)
   body: vec4f,     // x body length (m, at size 1)
   glint: vec4f,    // unused here (the creature pass's eye glint)
-  cut: vec4f,      // x the colour map's alpha below which nothing is drawn
+  cut: vec4f,      // x the colour map's alpha below which nothing is drawn, y how far her feathers stand out (m: fluffed, slice 3)
 };
 
 @group(0) @binding(0) var<uniform> frame: FrameUniforms;
@@ -63,7 +63,9 @@ fn vsBody(@location(0) position: vec3f, @location(1) normal: vec3f, @location(2)
         + bones[first + joints.z] * weights.z + bones[first + joints.w] * weights.w;
   let posed = (m * vec4f(position, 1.0)).xyz;
   let nPosed = normalize((m * vec4f(normal, 0.0)).xyz + vec3f(0.0, 1e-6, 0.0));
-  let world = place(posed, at, size);
+  // Fluffed (roosting, in rain): the body feathers stand out along the normal; the legs stay thin.
+  let fluffed = posed + nPosed * hd.cut.y * smoothstep(0.15, 0.2, position.y);
+  let world = place(fluffed, at, size);
   let c = cos(at.w);
   let s = sin(at.w);
   var o: VsOut;

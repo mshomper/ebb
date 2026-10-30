@@ -4,12 +4,16 @@
 // chances from finds.js; a simulated year of a keeper digging, through rest.js and finds.js, against
 // the island's budget; one hole's stages from holes.js; the spade's sounds; and a slider for every
 // number in recipes/world/dig.json, with the year run again at once and a copy button.
+// Digging deeper (B1 D1): the island's story spots on the map (the old hearth's disc and its 6 m
+// reach for sherds, the marked stone), a square's third layer with the keeper's blade, and what
+// each deep layer gives before and after the walker has fired a pot.
 
 import { buildIslandModel } from '../src/world/island-model.js';
 import { campOf } from '../src/world/terrain/landform.js';
-import { groundClass, stackOf, bottomOf, nextLayer, cellCenter } from '../src/world/dig/layers.js';
+import { groundClass, stackOf, bottomOf, nextLayer, cellCenter, deepOf, cellOf } from '../src/world/dig/layers.js';
+import { storySpots, liveSpot, storyAt, storyHome } from '../src/world/dig/story.js';
 import { rested, thinning, budgetLeft, budgetOf, addEvent, seasonEvents } from '../src/world/dig/rest.js';
-import { digFinds, digRarityWeights } from '../src/world/dig/finds.js';
+import { digFinds, digRarityWeights, digFamily } from '../src/world/dig/finds.js';
 import { holeNow } from '../src/world/dig/holes.js';
 import { subSeed, hash32 } from '../src/core/rng.js';
 import { HABITAT_CELLS } from '../src/world/growth/habitat.js';
@@ -23,7 +27,8 @@ const SEASONS = ['spring', 'summer', 'autumn', 'winter'];
 const TIERS = ['common', 'uncommon', 'rare', 'very rare', 'once in a lifetime'];
 const COLORS = { soil: '#8B6A4E', bank: '#4E5E66', sand: '#E2CFA4', flats: '#C9D5D8', rock: '#9A9A94', water: '#A9C9D8', camp: '#4A3A2E', piece: '#8B6A4E', outside: '#F4EEE4' };
 const NAMES = { soil: 'soil (dig)', bank: 'damp bank (dig, clay below)', sand: 'dry sand (dig, Scoop sand)', flats: 'wet flats (rake, later)', rock: 'rock', water: 'water', camp: 'camp ground' };
-$('legend').innerHTML = Object.entries(NAMES).map(([k, v]) => `<span><i style="background:${COLORS[/** @type {keyof typeof COLORS} */ (k)]}"></i>${v}</span>`).join('');
+$('legend').innerHTML = Object.entries(NAMES).map(([k, v]) => `<span><i style="background:${COLORS[/** @type {keyof typeof COLORS} */ (k)]}"></i>${v}</span>`).join('') +
+  '<span><i style="background:#2A2622"></i>old hearth (charcoal below), its shaded ring where sherds lean in</span><span><i style="background:#F4EEE4;border:1px solid #1E2624"></i>the marked stone (the cache a spade down)</span>';
 
 /** @type {any} */ let island = null;
 /** @type {{ cls: string | null, why?: string }[]} */ let classes = [];
@@ -37,7 +42,14 @@ async function build() {
   const c = campOf(land);
   island.pad = c ? { x: c.x, z: c.z, r: c.r } : null;
   island.seed = seed;
+  // The story spots (story.js): seeded on the base land, moved off ground that cannot be dug now.
+  const sp = storySpots(land, subSeed(seed, 'terrain'), seed, R.story), home = storyHome(land);
+  const ok = (/** @type {number} */ x, /** @type {number} */ z) => { const g = groundClass(x, z, { hab: island.habitat, pad: island.pad }, R).cls; return g === 'soil' || g === 'bank'; };
+  island.story = { hearths: sp.hearths.map((p) => liveSpot(p, ok, home, R.story)).filter(Boolean), cache: sp.cache ? liveSpot(sp.cache, ok, home, R.story) : null };
+  island.home = home;
   classify();
+  drawStory();
+  showDeeper();
   $('status').textContent = `Seed ${seed}, ${$('land').selectedOptions[0].text}. ${counts()}`;
   runYear();
 }
@@ -70,8 +82,26 @@ let view = { i0: 0, j0: 0, side: HABITAT_CELLS };
 const counts = () => {
   const n = { soil: 0, bank: 0, sand: 0 };
   for (const c of classes) if (c.cls) n[/** @type {'soil'} */ (c.cls)]++;
-  return `Diggable: ${n.soil} m² of soil, ${n.bank} m² of damp bank, ${n.sand} m² of dry sand.`;
+  const S = island.story, d = (/** @type {any} */ p) => Math.hypot(p.x - island.home.x, p.z - island.home.z).toFixed(1);
+  const past = `${S.hearths.length} old hearth${S.hearths.length === 1 ? '' : 's'}${S.hearths.length ? ` (${S.hearths.map(d).join(', ')} m from camp)` : ''}; ${S.cache ? `the marked stone ${d(S.cache)} m from camp` : 'no marked stone'}.`;
+  return `Diggable: ${n.soil} m² of soil, ${n.bank} m² of damp bank, ${n.sand} m² of dry sand. ${past}`;
 };
+
+/** The story spots over the map: each hearth's disc and its sherd reach, the marked stone. */
+function drawStory() {
+  const ctx = $('map').getContext('2d'), S = island.story, T = R.story;
+  const px = (/** @type {number} */ x, /** @type {number} */ z) => { const k = cellOf(x, z), N = HABITAT_CELLS; return [(k % N) - view.i0 + (x - Math.floor(x)), Math.floor(k / N) - view.j0 + (z - Math.floor(z))]; };
+  for (const h of S.hearths) {
+    const [x, y] = px(h.x, h.z);
+    ctx.fillStyle = 'rgba(42, 38, 34, 0.25)'; ctx.beginPath(); ctx.arc(x, y, T.nearHearthM, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#2A2622'; ctx.beginPath(); ctx.arc(x, y, T.hearthR, 0, Math.PI * 2); ctx.fill();
+  }
+  if (S.cache) {
+    const [x, y] = px(S.cache.x, S.cache.z);
+    ctx.fillStyle = '#F4EEE4'; ctx.strokeStyle = '#1E2624'; ctx.lineWidth = 0.4;
+    ctx.beginPath(); ctx.arc(x, y, 1.1, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+  }
+}
 
 // ---- a square ----
 
@@ -88,22 +118,25 @@ function showCell(k) {
   const c = classes[k], season = Number($('season').value), rain = $('rain').checked;
   const h = island.habitat;
   if (!c.cls) { $('cell').innerHTML = `<h2>A square</h2><p>${c.why === 'flats' ? 'The wet flats: the clam rake digs here, later.' : `Not dug here (${c.why}).`}</p>`; return; }
-  const stack = stackOf(/** @type {any} */ (c.cls), R), W = dig0.words;
+  const [cx, cz] = cellCenter(k), st = storyAt(cx, cz, island.story, R.story);
+  const deep = deepOf(/** @type {any} */ (c.cls), R, st);
+  const stack = deep ? [...stackOf(/** @type {any} */ (c.cls), R), deep] : stackOf(/** @type {any} */ (c.cls), R), W = dig0.words;
   // Chances this season, averaged over a few hundred days so they read as rates.
   const rows = stack.map((layer, i) => {
     let worm = 0, keep = 0;
     for (let d = 0; d < 400; d++) {
-      const f = digFinds({ seed: 1, cell: k, day: d, layer, depth: i + 1, season, moisture: h.moisture[k] / 255, rainBefore: rain, frost: false, thin: 1, budgetLeft: 1 }, R, null);
+      const f = digFinds({ seed: 1, cell: k, day: d, layer, depth: i + 1, season, moisture: h.moisture[k] / 255, rainBefore: rain, frost: false, thin: 1, budgetLeft: 1, hearth: st.hearth, nearHearth: st.nearHearth, potFired: true }, R, null);
       if (f.worm) worm++; if (f.rolled) keep++;
     }
-    const w = digRarityWeights({ seed: 1, cell: k, day: 0, layer, depth: i + 1, season, moisture: 0, rainBefore: rain, frost: false, thin: 1, budgetLeft: 1 }, R);
+    const w = digRarityWeights({ seed: 1, cell: k, day: 0, layer, depth: i + 1, season, moisture: 0, rainBefore: rain, frost: false, thin: 1, budgetLeft: 1, hearth: st.hearth }, R);
     const tot = w.reduce((a, b) => a + b, 0) || 1;
-    const clay = layer === 'clay' ? (R.clay.seasons.includes(season) ? 'every dig' : 'none in winter') : '';
-    return `<tr><td>${i + 1}. ${W.names[layer]}</td><td>${(worm / 4).toFixed(0)}%</td><td>${clay}</td><td>${(keep / 4).toFixed(0)}%</td><td>${w.map((x, t) => (x > 0 ? `${TIERS[t]} ${Math.round((100 * x) / tot)}%` : '')).filter(Boolean).join(', ')}</td></tr>`;
+    const clay = (R.clay.layers ?? ['clay']).includes(layer) ? (R.clay.seasons.includes(season) ? 'every dig' : 'none in winter') : '';
+    return `<tr><td>${i + 1}. ${W.names[layer]}${i === 2 ? ' (with the blade)' : ''}</td><td>${(worm / 4).toFixed(0)}%</td><td>${clay}</td><td>${(keep / 4).toFixed(0)}%</td><td>${w.map((x, t) => (x > 0 ? `${TIERS[t]} ${Math.round((100 * x) / tot)}%` : '')).filter(Boolean).join(', ')}</td></tr>`;
   }).join('');
   const bands = stack.map((l, i) => `<div style="display:flex;gap:10px;align-items:center"><span style="display:inline-block;width:120px;height:34px;border-radius:4px;background:${rgb(R.look.walls[l])}"></span><span>${i + 1}. ${W.names[l]}</span></div>`).join('');
   $('cell').innerHTML = `<h2>${NAMES[/** @type {keyof typeof NAMES} */ (c.cls)]}</h2>
-    <div style="display:grid;gap:4px;margin:6px 0">${bands}<span class="muted">Below: ${W[bottomOf(/** @type {any} */ (c.cls), R)]}</span></div>
+    ${st.hearth ? '<p><b>On an old hearth.</b> Its third layer is the charcoal band.</p>' : st.nearHearth ? '<p>Near an old hearth: sherds lean into the subsoil once a pot is fired.</p>' : ''}${st.cache ? '<p><b>By the marked stone.</b> The keeper\'s cache lies a spade down, once.</p>' : ''}
+    <div style="display:grid;gap:4px;margin:6px 0">${bands}<span class="muted">Below: ${W[bottomOf(/** @type {any} */ (c.cls), R)]}${deep ? ' (the third layer needs the keeper\'s blade; before it: ' + W.harder + ')' : ''}</span></div>
     <table><tr><th>Layer</th><th>Worms</th><th>Clay</th><th>Keepsake</th><th>Rarity</th></tr>${rows}</table>
     <p class="muted">Moisture ${(h.moisture[k] / 2.55).toFixed(0)}%, salt ${(h.salt[k] / 2.55).toFixed(0)}%. In ${SEASONS[season]}${rain ? ', after rain' : ''}; keepsakes before the budget and thinning.</p>`;
 }
@@ -215,6 +248,33 @@ for (const [name, s] of Object.entries(sound.sounds)) {
   $('sounds').append(b);
 }
 
+// ---- digging deeper ----
+
+/**
+ * What each deep layer gives (B1 D1): the chance a dig there holds a keepsake, the family shares
+ * before and after the walker has fired a pot, and the rarity at that depth, on and off a hearth.
+ */
+function showDeeper() {
+  const W = dig0.words;
+  const at = (/** @type {any} */ o) => ({ seed: 1, cell: 0, day: 0, layer: 'subsoil', depth: 2, season: 0, moisture: 0, rainBefore: false, frost: false, thin: 1, budgetLeft: 1, ...o });
+  const shares = (/** @type {any} */ o) => {
+    /** @type {Record<string, number>} */ const n = {};
+    for (let i = 0; i < 1000; i++) { const f = digFamily(at(o), (i + 0.5) / 1000, R); if (f) n[f] = (n[f] ?? 0) + 1; }
+    return Object.entries(n).map(([f, c]) => `${f} ${Math.round(c / 10)}%`).join(', ') || 'none';
+  };
+  const rarity = (/** @type {any} */ o) => { const w = digRarityWeights(at(o), R), t = w.reduce((a, b) => a + b, 0) || 1; return w.map((x, i) => { const p = (100 * x) / t; return x > 0 ? `${TIERS[i]} ${p < 1 ? 'under 1' : Math.round(p)}%` : ''; }).filter(Boolean).join(', '); };
+  const rows = [
+    ['Subsoil, near a hearth', { layer: 'subsoil', depth: 2, nearHearth: true }],
+    ['Subsoil, on a hearth', { layer: 'subsoil', depth: 2, nearHearth: true, hearth: true }],
+    [`${W.names.charcoal} (blade)`, { layer: 'charcoal', depth: 3, nearHearth: true, hearth: true }],
+    [`${W.names.deepclay} (blade)`, { layer: 'deepclay', depth: 3 }],
+  ].map(([name, o]) => `<tr><td>${name}</td><td>${Math.round(100 * (R.keepsake.chance[/** @type {any} */ (o).layer] ?? 0))}%</td><td>${shares({ ...o, potFired: false })}</td><td>${shares({ ...o, potFired: true })}</td><td>${rarity(o)}</td></tr>`).join('');
+  $('deeper').innerHTML = `<h2>Digging deeper</h2>
+    <p class="muted">The keeper's blade (from the cache under the marked stone) reaches a third layer: the charcoal band on a hearth, deeper clay under a damp bank. Sherds wait until the walker has fired a pot of their own. Keepsakes before the island's budget and a patch's thinning.</p>
+    <table><tr><th>Layer</th><th>Holds a keepsake</th><th>Families, before a pot</th><th>Families, after</th><th>Rarity</th></tr>${rows}</table>
+    <p class="muted">A sleeping toad in winter: each ${R.sleeper.patchM} m patch within ${R.sleeper.pondM} m of a pond holds one at one 1 m square ${Math.round(R.sleeper.chance * 100)}% of years; once found, no hole within ${R.sleeper.keepM} m until spring.</p>`;
+}
+
 // ---- tuning ----
 
 /** Every number in the recipe's tunable blocks, as [path, value]. */
@@ -224,7 +284,7 @@ function knobs() {
     if (typeof v === 'number') out.push([path, v]);
     else if (v && typeof v === 'object') for (const [k, w] of Object.entries(v)) walk(w, [...path, k]);
   };
-  for (const key of ['keepsake', 'rarity', 'budget', 'rest', 'worms', 'fill', 'ground', 'seep']) walk(R[key], [key]);
+  for (const key of ['keepsake', 'rarity', 'budget', 'rest', 'worms', 'fill', 'ground', 'seep', 'sleeper']) walk(R[key], [key]);
   return out;
 }
 for (const [path, v] of knobs()) {
@@ -238,6 +298,7 @@ for (const [path, v] of knobs()) {
     o[path[path.length - 1]] = Number(input.value);
     out.textContent = input.value;
     runYear();
+    showDeeper();
   });
   $('knobs').append(l);
 }

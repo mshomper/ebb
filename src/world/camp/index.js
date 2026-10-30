@@ -49,6 +49,7 @@ import { createCarriers } from './carriers.js';
 import { createCarry } from './carry.js';
 import { createBoons } from './boons.js';
 import { createTeapot } from './teapot.js';
+import { createCookpot } from './cookpot.js';
 import { createGiftStone } from './gift-stone.js';
 
 const H = 3600;
@@ -68,7 +69,7 @@ const H = 3600;
 export function createCamp(o) {
   const R = o.recipe, W = R.words, F = R.fire;
   const campSeed = subSeed(o.seed, 'camp');
-  const props = createPropsPass({ recipe: R.props, bias: o.shadowBias });
+  const props = createPropsPass({ recipe: R.props, bias: o.shadowBias, canvas: { C: R.canvas, P: R.poles } });
   const fx = createCampFxPass({ recipe: R, low: o.low });
   // The live fire sim and its volume (Matt's fire study): the flame and its smoke while it burns.
   const firePass = createCampFirePass({ recipe: R, tier: o.tier ?? (o.low ? 'low' : 'high'), getViewProj: () => o.camera?.viewProj ?? null });
@@ -209,6 +210,9 @@ export function createCamp(o) {
   // The gift stone and its gifts, the known place and the herb bed (B1 C1).
   const gifts = createGiftStone({ R, CW: o.cook?.words ?? {}, camp, change, where, player, hourNow, campSeed, terrain: o.terrain, world: o.world, sowing: o.sowing });
   teapot = createTeapot({ ...kit, o, cook: o.cook ?? { boons: {}, teas: { herbs: {}, strength: [] }, words: {} }, keeps: stations.keeps, change, frame, boons });
+  // The walker's meal (docs/future/15 slice 4): the cooking pot's workspace, an egg and a pinch of
+  // salt, Cook, the boil and the sit by the fire (cookpot.js).
+  const cookpot = o.cook?.meal ? createCookpot({ ...kit, o, cook: o.cook, keeps: stations.keeps, change, frame, boons }) : null;
 
   // ---- acts: walk, face, play, then the change ----
 
@@ -418,6 +422,7 @@ export function createCamp(o) {
     hearth.settle(dt);
     carry.update(dt);
     teapot?.update(dt);
+    cookpot?.update(dt);
     boons.update(dt);
     gifts.update(dt);
     frame.draw(dt, time, c, fireNow);
@@ -454,6 +459,10 @@ export function createCamp(o) {
     carriers,
     /** The tea's boon and the tea pot (P2e; tests, test links). */
     boons, teapot: () => teapot,
+    /** The cooking pot's meal (docs/future/15 slice 4; tests, test links). */
+    cookpot,
+    /** Where a camp slot is in the world (the hen's nest box stands in `nest`). */
+    slotAt,
     /**
      * The gift stone (B1 C1): its draw pass (`gifts.pass`), `leave(kind, from, name)` to lay
      * something on it (false before it stands), `take()` (tests, test links).
@@ -498,6 +507,18 @@ export function createCamp(o) {
       },
       /** @param {boolean} on */
       hide(on) { hidden = on; },
+      /**
+       * The canvas check (C-35; `?camp=canvas`, tools/canvas-check.html): the tent as first pitched
+       * `seasons` ago, and more tents beside it at `ages` (seasons), or none. Live only, never saved
+       * by a test link.
+       * sort: those tents drawn as the shader sorts their paint (wood red, lining blue, canvas green, patches yellow).
+       * @param {number} seasons @param {number[] | null} [ages] @param {boolean} [sort] @returns {{ x: number, y: number, z: number, yaw: number } | null} where the tent stands
+       */
+      canvasAge(seasons, ages = null, sort = false) {
+        change((c) => ({ ...c, firstPitchedHour: hourNow() - Math.max(0, seasons) * 24 * 14 }));
+        frame.canvasAges(ages, sort);
+        return slotAt('tent');
+      },
       /** The star's logs left out (the bench's star row). @param {boolean} on */
       hideStar(on) { frame.hideStar(on); },
       /** @param {Parameters<typeof frame.starAs>[0]} f */
@@ -512,7 +533,7 @@ export function createCamp(o) {
         update('camp', (c) => ({ ...c, fire: { ...c.fire, ...set, lightings: Math.max(1, c.fire?.lightings ?? 0) } }));
       },
     },
-    dispose() { for (const off of offs) off(); player.dispose(); stations.dispose(); hearth.dispose(); carry.dispose(); gifts.dispose(); teapot?.dispose(); boons.dispose(); carriers.dispose(); },
+    dispose() { for (const off of offs) off(); player.dispose(); stations.dispose(); hearth.dispose(); carry.dispose(); gifts.dispose(); teapot?.dispose(); cookpot?.dispose(); boons.dispose(); carriers.dispose(); },
   };
 }
 

@@ -66,7 +66,8 @@ export function createKeepsakeSounds(mixer, recipe, opts = {}) {
     if (!buf || ctx.state !== 'running') return;
     const src = ctx.createBufferSource();
     src.buffer = buf;
-    src.detune.value = (((h >>> 8) & 0xffff) / 0xffff * 2 - 1) * (recipe.pitchCents ?? 0);
+    // A take's own pitch (cents, the deeper clay a borrowed clay take set lower) and the recipe's wobble.
+    src.detune.value = (s.cents ?? 0) + (((h >>> 8) & 0xffff) / 0xffff * 2 - 1) * (recipe.pitchCents ?? 0);
     const g = ctx.createGain();
     g.gain.value = 10 ** ((s.db ?? 0) / 20);
     // The tools bus, unless the recipe names another (the first evening's far curlew is a creature).

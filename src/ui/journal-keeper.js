@@ -11,6 +11,16 @@ import { iconSvg } from './icons/icons.js';
 /** @param {string} s */
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c] ?? c);
 
+/**
+ * The keeper's pages with the caches' letters after them (recipes/world/keeper-cache.json, B1 D1):
+ * each letter a page cache-<key>, had once the journal holds keeper:cache-<key>. Pure.
+ * @param {any} K keeper-pages.json @param {any} C keeper-cache.json
+ */
+export function withCacheLetters(K, C) {
+  if (!K || !C?.letters) return K;
+  return { ...K, pages: [...(K.pages ?? []), ...Object.entries(C.letters).map(([key, l]) => ({ id: `cache-${key}`, ...(/** @type {any} */ (l)) }))] };
+}
+
 /** The pages had, in the recipe's order. @param {any} K recipes/world/keeper-pages.json @param {string[]} flags */
 export const keeperPagesHad = (K, flags) => (K?.pages ?? []).filter((/** @type {any} */ p) => flags.includes(`keeper:${p.id}`));
 
