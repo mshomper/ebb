@@ -765,7 +765,7 @@ export async function startApp(canvas, hooks = {}) {
   // The keeper's camp (docs/future/13 section 3; src/world/camp): the tent and the fire ring in their
   // slots, the fire and the lantern as small lights, smoke and moths, and a night's rest in the tent.
   const camp = createCamp({ recipe: campRecipe, seed, walk, terrain, water, clock, orbit: skyRecipe.orbit, camera, world, piles,
-    seasons: seasonsRecipe, lighting, pack, shadowBias: shadowPass.bias, low: tier === 'low', poses: (await loadRecipe('world/figure')).poses,
+    seasons: seasonsRecipe, lighting, pack, shadowBias: shadowPass.bias, low: tier === 'low', tier, poses: (await loadRecipe('world/figure')).poses,
     beat: () => intro.live?.intro.current?.id ?? null, cook: await loadRecipe('world/cook'), sowing: sowingRecipe });
   sim.addSystem(camp);
   ringPlace = camp.ringPlace;
@@ -1070,12 +1070,16 @@ export async function startApp(canvas, hooks = {}) {
     createSkyPass(atmosphere, skyRecipe),
     // Waterfalls after the sky, so a curtain seen against the sky is not drawn over (src/render/passes/falls.js).
     fallsPass,
-    // The camp's flame, smoke, sparks and moths: after the sky too, so smoke against it shows.
+    // The camp's fire sim (its flame's heat for the tonemap, its smoke into the HDR), then the embers'
+    // smoke, sparks and moths: after the sky too, so smoke against it shows.
+    camp.firePass,
     camp.fx,
     exposure,
     bloom,
     tonemap,
   ], { tier, lighting });
+  // The banded flame is painted in the tonemap from the fire sim's heat (camp-fire.js).
+  tonemap.setFire(camp.firePass);
   await graph.setup();
   // Quality while playing (src/render/quality-live.js): dynamic resolution and the one automatic
   // tier step down with its calm note.
@@ -1129,6 +1133,7 @@ export async function startApp(canvas, hooks = {}) {
     waterPass.setDetailFade(tierSettings.waterDetailFadeM);
     waterPass.setSSR(tierSettings.waterSSR ?? null);
     if (fallsPass.setTier(tierSettings)) graph.invalidate();
+    if (camp.firePass.setTier(t)) graph.invalidate();
     // Shadows, bloom and the midges follow too. A texture's size is fixed once made, so a new
     // shadow map size re-makes only that map and the lighting group that binds it; new bloom levels
     // re-make the bloom chain at the next resize, which invalidate() forces.

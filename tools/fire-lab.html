@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ebb fire lab</title>
+<link rel="icon" href="../brand/ebb-favicon.svg" type="image/svg+xml">
+<style>
+  @font-face { font-family: 'Nunito'; src: url('../src/vendor/fonts/nunito-latin-600-normal.woff2') format('woff2'); font-weight: 600; }
+  @font-face { font-family: 'Nunito'; src: url('../src/vendor/fonts/nunito-latin-800-normal.woff2') format('woff2'); font-weight: 800; }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #11131c; color: #1E2624; font: 600 16px/1.45 'Nunito', system-ui, sans-serif; }
+  canvas { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; cursor: grab; touch-action: none; }
+  canvas:active { cursor: grabbing; }
+  #panel { position: fixed; left: 16px; top: 16px; width: min(340px, calc(100vw - 32px)); max-height: calc(100vh - 32px); overflow-y: auto; overflow-x: hidden;
+    background: rgba(244, 238, 228, 0.95); border-radius: 16px; padding: 16px; box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25); }
+  h1 { font-size: 24px; font-weight: 800; margin: 0 0 4px; }
+  .sec { border-top: 1px solid #ddd2c2; padding: 12px 0 10px; }
+  .lab { font-size: 15px; font-weight: 800; color: #4A5551; margin-bottom: 6px; }
+  .seg { display: flex; flex-wrap: wrap; gap: 4px; background: #e9dfd0; border-radius: 12px; padding: 4px; }
+  .seg button { flex: 1 1 0; min-width: 0; border: 0; background: transparent; border-radius: 9px; padding: 8px 6px; font: 700 15px/1.2 'Nunito', system-ui, sans-serif; color: #1E2624; cursor: pointer; }
+  .seg button[aria-pressed=true] { background: #23361F; color: #FBF7F0; }
+  .btn { width: 100%; border: 0; border-radius: 12px; background: #c9643a; color: #fff; font: 800 17px/1.2 'Nunito', system-ui, sans-serif; padding: 12px; cursor: pointer; min-height: 48px; }
+  .btn.quiet { background: #4a6a47; font-size: 16px; }
+  .meter { position: relative; height: 14px; border-radius: 7px; background: #e9dfd0; overflow: hidden; margin: 2px 0 6px; }
+  .meter i { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: linear-gradient(90deg, #c9485a, #f08a3c 55%, #ffcd62); border-radius: 7px; }
+  .meter s { position: absolute; top: 0; bottom: 0; width: 2px; background: #3a343066; }
+  .lvl { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 8px; font-size: 16px; margin-bottom: 10px; }
+  .lvl b { font-weight: 800; }
+  input[type=range] { width: 100%; accent-color: #c9643a; }
+  .ends { display: flex; justify-content: space-between; font-size: 15px; color: #4A5551; }
+  .stats { font-size: 15px; color: #4A5551; line-height: 1.6; font-variant-numeric: tabular-nums; }
+  .stats b { color: #1E2624; font-weight: 800; }
+  p { margin: 6px 0 0; font-size: 15px; color: #4A5551; }
+  a { color: #4a6a47; }
+  .gap { height: 10px; }
+</style>
+</head>
+<body>
+<canvas id="c" aria-label="The campfire"></canvas>
+<div id="panel">
+  <h1>Fire lab</h1>
+  <p id="status">Starting</p>
+
+  <div class="sec">
+    <div class="lab">Fire</div>
+    <div class="meter"><i id="meterFill"></i><s id="meterHigh"></s></div>
+    <div class="lvl"><b id="lvlName">Burning high</b><span id="lvlFuel"></span></div>
+    <button class="btn" id="feed">Feed the fire</button>
+    <div class="gap"></div>
+    <div class="lab">Game time</div>
+    <div class="seg" id="segSpeed"><button data-v="0" aria-pressed="false">Pause</button><button data-v="1" aria-pressed="true">1×</button><button data-v="4" aria-pressed="false">4×</button><button data-v="16" aria-pressed="false">16×</button></div>
+    <div class="gap"></div>
+    <div class="seg" id="segRain"><button data-v="0" aria-pressed="true">Dry</button><button data-v="1" aria-pressed="false">Rain</button></div>
+  </div>
+
+  <div class="sec">
+    <div class="lab">Look</div>
+    <input type="range" id="stylize" min="0" max="1" step="0.01" value="0.75" aria-label="Soft to banded">
+    <div class="ends"><span>Soft</span><span id="stylizeNow">75%</span><span>Banded</span></div>
+    <div class="gap"></div>
+    <div class="seg" id="segTod"><button data-v="0" aria-pressed="true">Night</button><button data-v="1" aria-pressed="false">Dusk</button><button data-v="2" aria-pressed="false">Day</button></div>
+  </div>
+
+  <div class="sec">
+    <div class="lab">View</div>
+    <div class="seg" id="segView"><button data-v="0" aria-pressed="true">Game view</button><button data-v="1" aria-pressed="false">Close up</button></div>
+  </div>
+
+  <div class="sec">
+    <div class="lab">Quality tier</div>
+    <div class="seg" id="segTier"><button data-v="high" aria-pressed="true">High</button><button data-v="medium" aria-pressed="false">Medium</button><button data-v="low" aria-pressed="false">Low</button><button data-v="study" aria-pressed="false">Study</button></div>
+    <div class="gap"></div>
+    <div class="lab">Flame resolution</div>
+    <div class="seg" id="segScale"><button data-v="1" aria-pressed="true">Full</button><button data-v="0.5" aria-pressed="false">Half</button></div>
+    <div class="gap"></div>
+    <p>Every tier draws the low settings at half resolution (Matt, October 29). Study is the spec's fuller settings at full resolution, for comparison.</p>
+    <div class="gap"></div>
+    <button class="btn quiet" id="away">Look away, then back (warm-up)</button>
+  </div>
+
+  <div class="sec">
+    <div class="stats" id="stats"></div>
+    <p>Drag to orbit, scroll to zoom. Space feeds the fire. 1 game hour is 1 minute at 1×. The flame follows the game's own fire rules (recipes/world/camp.json). The study Matt chose is <a href="fire-study.html">fire-study.html</a>. <a href="./">All tools</a></p>
+  </div>
+</div>
+<script src="./boot-guard.js"></script>
+<script type="module" src="./fire-lab.js"></script>
+</body>
+</html>

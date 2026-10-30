@@ -1,13 +1,13 @@
 // @ts-check
 // Tonemap and present (docs/05): bloom add, Purkinje, AgX with the palette's look, the palette
-// LUT crossfade, the soft outline, the journal's show-where wash (J2b) and dither, into the canvas. Also reads back single pixels of
+// LUT crossfade, the camp fire's banded flame (painted after the palette, Matt's fire study), the soft outline, the journal's show-where wash (J2b) and dither, into the canvas. Also reads back single pixels of
 // the final image for the palette lab's eyedropper.
 
 import { makeBuffer, makeShaderModule } from '../../../core/gpu.js';
 
 /** @typedef {import('../../frame-graph.js').PassContext} PassContext */
 
-const POST_BYTES = 256;
+const POST_BYTES = 352;
 
 /** '#rrggbb' to [r, g, b] 0..1 (display sRGB, as the palette's output). @param {string} hex */
 const rgb = (hex) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255);
@@ -42,6 +42,9 @@ export function createTonemapPass(opts) {
   /** @type {any} */ let washShown = null;
   let washAmount = 0, washLast = 0, groupDirty = false;
   /** @type {PassContext | null} */ let lastCtx = null;
+  /** The camp fire pass: its heat target and what to paint (camp-fire.js). @type {{ heatView: () => GPUTextureView | null, paint: () => Float32Array } | null} */
+  let fire = null;
+  /** @type {GPUTexture | null} */ let noHeat = null;
   function uploadWash() {
     const m = wash?.map;
     if (!device || !m) return;
@@ -66,6 +69,9 @@ export function createTonemapPass(opts) {
     /** @param {Partial<typeof state>} v */
     set(v) { Object.assign(state, v); },
 
+    /** The camp fire pass whose flame is painted here. @param {{ heatView: () => GPUTextureView | null, paint: () => Float32Array }} f */
+    setFire(f) { fire = f; },
+
     /**
      * The journal's wash to show, or none (store slice `wash`).
      * @param {{ map: import('../../../world/journal/wash.js').WashMap | null, recipe: any } | null} w
@@ -88,6 +94,7 @@ export function createTonemapPass(opts) {
     async setup(ctx) {
       device = ctx.device;
       washTex = device.createTexture({ label: 'journal-wash', size: [1, 1], format: 'rg8unorm', usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST });
+      noHeat = device.createTexture({ label: 'no-fire-heat', size: [1, 1], format: 'r16float', usage: GPUTextureUsage.TEXTURE_BINDING });
       uploadWash();
       swapIsBgra = ctx.format.startsWith('bgra');
       const module = await makeShaderModule(device, 'tonemap');
@@ -104,6 +111,7 @@ export function createTonemapPass(opts) {
           { binding: 6, visibility: F, texture: { sampleType: 'depth' } },
           { binding: 7, visibility: F, buffer: {} },
           { binding: 8, visibility: F, texture: { sampleType: 'float' } },
+          { binding: 9, visibility: F, texture: { sampleType: 'float' } },
         ],
       });
       sampler = device.createSampler({ label: 'tonemap-linear', magFilter: 'linear', minFilter: 'linear', addressModeU: 'clamp-to-edge', addressModeV: 'clamp-to-edge', addressModeW: 'clamp-to-edge' });
@@ -134,6 +142,7 @@ export function createTonemapPass(opts) {
           { binding: 6, resource: ctx.targets.depth.createView() },
           { binding: 7, resource: { buffer: postBuffer } },
           { binding: 8, resource: /** @type {GPUTexture} */ (washTex).createView() },
+          { binding: 9, resource: fire?.heatView() ?? /** @type {GPUTexture} */ (noHeat).createView() },
         ],
       });
     },
@@ -167,6 +176,8 @@ export function createTonemapPass(opts) {
         f[44] = Math.max(1, W.edgePx * px); f[45] = W.edgeAlpha; f[46] = Math.max(1, W.circleWidthPx * px); f[47] = W.circleAlpha;
         M.circles.slice(0, 3).forEach((/** @type {number[]} */ c, /** @type {number} */ i) => { f[48 + i * 4] = c[0]; f[49 + i * 4] = c[1]; f[50 + i * 4] = c[2]; f[51 + i * 4] = W.dashes; });
       }
+      // The camp fire: on, halo strength, then its bands (lib-fire-bands.wgsl FireBands).
+      if (fire) f.set(fire.paint(), 64); else f.fill(0, 64, 88);
       ctx.device.queue.writeBuffer(postBuffer, 0, data);
 
       const swap = ctx.context.getCurrentTexture();

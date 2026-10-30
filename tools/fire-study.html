@@ -1,0 +1,1027 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ebb fire study</title>
+<style>
+  :root{
+    --panel:#f6f1e9; --ink:#3a3430; --muted:#8a7f76; --line:#e2d8cb; --accent:#d9774a; --accent-ink:#7a3a1c;
+    --chip:#efe6da; --chip-on:#3a3430; --chip-on-ink:#f6f1e9;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;overflow:hidden;background:#11131c;font-family:ui-rounded,"SF Pro Rounded","Nunito","Segoe UI",system-ui,sans-serif;color:var(--ink)}
+  canvas{position:fixed;inset:0;width:100vw;height:100vh;display:block;cursor:grab;touch-action:none}
+  canvas:active{cursor:grabbing}
+  #panel{position:fixed;left:16px;top:16px;width:272px;max-height:calc(100vh - 32px);overflow-y:auto;overflow-x:hidden;
+    background:color-mix(in srgb,var(--panel) 94%,transparent);border:1px solid var(--line);border-radius:16px;padding:16px 16px 12px;
+    box-shadow:0 8px 30px rgba(0,0,0,.25)}
+  .brand{display:flex;align-items:baseline;gap:8px;margin-bottom:12px}
+  .brand b{font-size:22px;font-weight:600;letter-spacing:.2px}
+  .brand span{font-size:13px;color:var(--muted)}
+  .sec{border-top:1px solid var(--line);padding:12px 0 10px}
+  .lab{font-size:11px;letter-spacing:.6px;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+  .seg{display:flex;background:var(--chip);border-radius:10px;padding:3px;gap:3px}
+  .seg button{flex:1;min-width:0;border:0;background:transparent;border-radius:8px;padding:7px 6px;font:inherit;font-size:13px;color:var(--ink);cursor:pointer;
+    display:flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap}
+  .seg button.on{background:var(--chip-on);color:var(--chip-on-ink)}
+  .seg button svg{width:15px;height:15px;flex:none}
+  .desc{font-size:12px;color:var(--muted);line-height:1.45;margin-top:8px;min-height:34px}
+  .meter{position:relative;height:12px;border-radius:6px;background:var(--chip);overflow:hidden;margin:2px 0 6px}
+  .meter i{position:absolute;left:0;top:0;bottom:0;width:0;background:linear-gradient(90deg,#c9485a,#f08a3c 55%,#ffcd62);border-radius:6px}
+  .meter s{position:absolute;top:0;bottom:0;width:2px;background:#3a343066}
+  .lvl{display:flex;justify-content:space-between;font-size:13px;margin-bottom:10px}
+  .lvl b{font-weight:600}
+  .row{display:flex;gap:8px;align-items:center}
+  .btn{flex:1;border:0;border-radius:10px;background:var(--accent);color:#fff;font:inherit;font-size:14px;font-weight:600;padding:10px 8px;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;gap:8px}
+  .btn:active{transform:translateY(1px)}
+  .btn svg{width:18px;height:18px}
+  .ghost{flex:1;background:var(--chip);color:var(--ink);font-weight:500}
+  input[type=range]{width:100%;accent-color:var(--accent)}
+  .ends{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:2px}
+  .stats{font-size:11.5px;color:var(--muted);line-height:1.6;font-variant-numeric:tabular-nums}
+  .stats b{color:var(--ink);font-weight:600}
+  .hint{font-size:11.5px;color:var(--muted);margin-top:6px}
+  #err{position:fixed;inset:0;display:none;align-items:center;justify-content:center;color:#f6f1e9;font-size:16px;text-align:center;padding:40px;line-height:1.6}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="err"></div>
+
+<div id="panel">
+  <div class="brand"><b>ebb</b><span>fire study</span></div>
+
+  <div class="sec" style="border-top:0;padding-top:0">
+    <div class="lab">Model</div>
+    <div class="seg" id="segModel">
+      <button data-v="0" class="on">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M4 10h16M4 15h16M10 4v16M15 4v16"/></svg>
+        A · Live sim</button>
+      <button data-v="1">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 15c2.5-3 4.5-3 7 0s4.5 3 7 0 3-2 4-1"/><path d="M3 9c2.5-3 4.5-3 7 0s4.5 3 7 0 3-2 4-1"/></svg>
+        B · Shaped</button>
+    </div>
+    <div class="desc" id="modelDesc"></div>
+  </div>
+
+  <div class="sec">
+    <div class="lab">Fire</div>
+    <div class="meter"><i id="meterFill"></i><s style="left:16.67%" title="Below 1.5 hours the flames sink"></s></div>
+    <div class="lvl"><b id="lvlName">Steady</b><span id="lvlFuel" class="stats"></span></div>
+    <div class="row">
+      <button class="btn" id="btnStick" title="Feed a handful (Space)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19L19 5"/><path d="M11 12l-3-4"/><path d="M15 9l2 3"/></svg>
+        Feed the fire</button>
+    </div>
+    <div style="height:10px"></div>
+    <div class="lab">Game time</div>
+    <div class="seg" id="segSpeed">
+      <button data-v="0">Pause</button>
+      <button data-v="1" class="on">1×</button>
+      <button data-v="2">2×</button>
+      <button data-v="4">4×</button>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="lab">Look</div>
+    <input type="range" id="stylize" min="0" max="1" step="0.01" value="0.75">
+    <div class="ends"><span>Soft</span><span>Banded</span></div>
+    <div style="height:10px"></div>
+    <div class="seg" id="segTod">
+      <button data-v="0" class="on">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg>
+        Night</button>
+      <button data-v="1">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18h18"/><path d="M7 18a5 5 0 0 1 10 0"/><path d="M12 8V5M5.5 11.5l-2-2M18.5 11.5l2-2"/></svg>
+        Dusk</button>
+      <button data-v="2">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.5M12 19v2.5M2.5 12H5M19 12h2.5M5.3 5.3l1.8 1.8M16.9 16.9l1.8 1.8M5.3 18.7l1.8-1.8M16.9 7.1l1.8-1.8"/></svg>
+        Day</button>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="lab">View</div>
+    <div class="seg" id="segView">
+      <button data-v="0" class="on">Game view</button>
+      <button data-v="1">Close up</button>
+    </div>
+  </div>
+
+  <div class="sec" style="padding-bottom:0">
+    <div class="stats" id="stats"></div>
+    <div class="hint">Drag to orbit, scroll to zoom. Space feeds the fire, 1 and 2 switch models. 1 game hour is 1 minute at 1×.</div>
+  </div>
+</div>
+
+<script>
+"use strict";
+// ============================================================================
+// ebb fire study — two flame models over one stylized look, raw WebGPU.
+//  A: small-grid smoke/heat fluid sim (advection, buoyancy, curl noise,
+//     Jacobi pressure), the approach of the three.js volume fire example,
+//     scaled to a campfire.
+//  B: no simulation — a shaped flame field eroded by rising noise.
+// Both feed the same renderer: heat is accumulated along each ray and then
+// mapped through a banded palette, so the flame reads as a painted shape.
+// ============================================================================
+
+const GRID = [32, 48, 32];
+const BOX_MIN = [-0.6, 0.0, -0.6];
+const BOX_SIZE = [1.2, 1.8, 1.2];
+
+const MODEL_DESC = [
+  "A real fluid on a 32 × 48 × 32 grid. Heat rises, curls and leans in the wind; stoking puffs smoke that drifts away.",
+  "No simulation. A flame shape that grows with the fuel, eroded by rising noise. Much cheaper, less reactive."
+];
+
+// --------------------------------------------------------------------------
+// Shared WGSL
+// --------------------------------------------------------------------------
+const WGSL_NOISE = /* wgsl */`
+fn hash3(p: vec3f) -> f32 {
+  var q = fract(p * 0.3183099 + vec3f(0.11, 0.17, 0.13));
+  q = q * 17.0;
+  return fract(q.x * q.y * q.z * (q.x + q.y + q.z));
+}
+fn vnoise(x: vec3f) -> f32 {
+  let i = floor(x); let f = fract(x);
+  let u = f * f * (3.0 - 2.0 * f);
+  let a = hash3(i);
+  let b = hash3(i + vec3f(1,0,0));
+  let c = hash3(i + vec3f(0,1,0));
+  let d = hash3(i + vec3f(1,1,0));
+  let e = hash3(i + vec3f(0,0,1));
+  let g = hash3(i + vec3f(1,0,1));
+  let h = hash3(i + vec3f(0,1,1));
+  let k = hash3(i + vec3f(1,1,1));
+  return mix(mix(mix(a,b,u.x), mix(c,d,u.x), u.y), mix(mix(e,g,u.x), mix(h,k,u.x), u.y), u.z);
+}
+fn fbm3(x: vec3f) -> f32 {
+  var s = 0.0; var a = 0.5; var p = x;
+  for (var i = 0; i < 3; i++) { s += a * vnoise(p); p = p * 2.03 + vec3f(1.7, 9.2, 3.1); a *= 0.5; }
+  return s / 0.875;
+}
+`;
+
+const WGSL_SIM_COMMON = /* wgsl */`
+struct SimU {
+  a: vec4f,   // dt, time, level, flare
+  b: vec4f,   // wind xyz, smoke boost
+  c: vec4f,   // buoyancy, smoke weight, cooling, dissipation
+  d: vec4f,   // turbulence, damping, emit heat, emit smoke
+};
+const N = vec3<i32>(${GRID[0]}, ${GRID[1]}, ${GRID[2]});
+const BOX = vec3f(${BOX_SIZE.join(",")});
+const BMIN = vec3f(${BOX_MIN.join(",")});
+fn inGrid(id: vec3u) -> bool { return all(vec3<i32>(id) < N); }
+fn uvwOf(id: vec3u) -> vec3f { return (vec3f(id) + 0.5) / vec3f(N); }
+fn cl(c: vec3<i32>) -> vec3<i32> { return clamp(c, vec3<i32>(0), N - 1); }
+`;
+
+// Precompute a tiling curl-noise field once.
+const WGSL_CURL = WGSL_SIM_COMMON + /* wgsl */`
+@group(0) @binding(0) var outCurl: texture_storage_3d<rgba16float, write>;
+const P = 4.0;   // lattice cells across the tile — keeps the tile seamless
+fn hp(i: vec3f, s: f32) -> f32 {
+  let w = i - P * floor(i / P);
+  return fract(sin(dot(w + s, vec3f(127.1, 311.7, 74.7))) * 43758.5453);
+}
+fn pn(x: vec3f, s: f32) -> f32 {
+  let i = floor(x); let f = fract(x); let u = f * f * (3.0 - 2.0 * f);
+  return mix(mix(mix(hp(i,s), hp(i+vec3f(1,0,0),s), u.x), mix(hp(i+vec3f(0,1,0),s), hp(i+vec3f(1,1,0),s), u.x), u.y),
+             mix(mix(hp(i+vec3f(0,0,1),s), hp(i+vec3f(1,0,1),s), u.x), mix(hp(i+vec3f(0,1,1),s), hp(i+vec3f(1,1,1),s), u.x), u.y), u.z);
+}
+fn pot(x: vec3f) -> vec3f { return vec3f(pn(x, 0.0), pn(x, 31.4), pn(x, 77.7)); }
+@compute @workgroup_size(4,4,4)
+fn main(@builtin(global_invocation_id) id: vec3u) {
+  if (any(id >= vec3u(32u))) { return; }
+  let x = (vec3f(id) + 0.5) / 32.0 * P;
+  let e = 0.05;
+  let dx = vec3f(e,0,0); let dy = vec3f(0,e,0); let dz = vec3f(0,0,e);
+  let px0 = pot(x - dx); let px1 = pot(x + dx);
+  let py0 = pot(x - dy); let py1 = pot(x + dy);
+  let pz0 = pot(x - dz); let pz1 = pot(x + dz);
+  let c = vec3f((py1.z - py0.z) - (pz1.y - pz0.y),
+                (pz1.x - pz0.x) - (px1.z - px0.z),
+                (px1.y - px0.y) - (py1.x - py0.x)) / (2.0 * e);
+  textureStore(outCurl, vec3<i32>(id), vec4f(c * 0.35, 0.0));
+}
+`;
+
+// 1) advect velocity + forces
+const WGSL_ADVECT_VEL = WGSL_SIM_COMMON + /* wgsl */`
+@group(0) @binding(0) var<uniform> S: SimU;
+@group(0) @binding(1) var velIn: texture_3d<f32>;
+@group(0) @binding(2) var dyeIn: texture_3d<f32>;
+@group(0) @binding(3) var curlT: texture_3d<f32>;
+@group(0) @binding(4) var sClamp: sampler;
+@group(0) @binding(5) var sRep: sampler;
+@group(0) @binding(6) var velOut: texture_storage_3d<rgba16float, write>;
+@compute @workgroup_size(4,4,4)
+fn main(@builtin(global_invocation_id) id: vec3u) {
+  if (!inGrid(id)) { return; }
+  let dt = S.a.x; let t = S.a.y;
+  let uvw = uvwOf(id);
+  let v0 = textureSampleLevel(velIn, sClamp, uvw, 0.0).xyz;
+  let back = uvw - v0 * dt / BOX;
+  var v = textureSampleLevel(velIn, sClamp, back, 0.0).xyz;
+  let dye = textureSampleLevel(dyeIn, sClamp, uvw, 0.0);
+  let smoke = dye.r; let heat = dye.g;
+  // buoyancy: hot gas rises, smoke weighs a little
+  v.y += (heat * S.c.x - smoke * S.c.y) * dt;
+  // turbulence from a scrolling curl field — strong in the flame, gentle in smoke
+  let q1 = uvw * vec3f(1.4, 2.1, 1.4) - vec3f(0.0, t * 0.55, t * 0.07);
+  let q2 = uvw * vec3f(0.6, 0.9, 0.6) - vec3f(t * 0.03, t * 0.16, 0.0);
+  let c1 = textureSampleLevel(curlT, sRep, q1, 0.0).xyz;
+  let c2 = textureSampleLevel(curlT, sRep, q2, 0.0).xyz;
+  v += (c1 * S.d.x * min(heat, 1.5) + c2 * S.d.x * 0.35 * min(smoke, 1.0)) * dt;
+  // wind pulls the upper gas sideways
+  let h = clamp(uvw.y * 1.6, 0.15, 1.0);
+  v.x += (S.b.x - v.x) * 1.2 * h * dt;
+  v.z += (S.b.z - v.z) * 1.2 * h * dt;
+  v *= max(1.0 - S.d.y * dt, 0.0);
+  // soft walls on sides and floor, open top
+  let e2 = min(uvw.xz, 1.0 - uvw.xz);
+  let wall = smoothstep(0.0, 0.07, min(min(e2.x, e2.y), uvw.y * 2.0));
+  v *= wall;
+  textureStore(velOut, vec3<i32>(id), vec4f(v, 0.0));
+}
+`;
+
+// 2) divergence
+const WGSL_DIV = WGSL_SIM_COMMON + /* wgsl */`
+@group(0) @binding(0) var velIn: texture_3d<f32>;
+@group(0) @binding(1) var divOut: texture_storage_3d<r32float, write>;
+@compute @workgroup_size(4,4,4)
+fn main(@builtin(global_invocation_id) id: vec3u) {
+  if (!inGrid(id)) { return; }
+  let c = vec3<i32>(id);
+  let vr = textureLoad(velIn, cl(c + vec3<i32>(1,0,0)), 0).x;
+  let vl = textureLoad(velIn, cl(c - vec3<i32>(1,0,0)), 0).x;
+  let vu = textureLoad(velIn, cl(c + vec3<i32>(0,1,0)), 0).y;
+  let vd = textureLoad(velIn, cl(c - vec3<i32>(0,1,0)), 0).y;
+  let vf = textureLoad(velIn, cl(c + vec3<i32>(0,0,1)), 0).z;
+  let vb = textureLoad(velIn, cl(c - vec3<i32>(0,0,1)), 0).z;
+  textureStore(divOut, c, vec4f(0.5 * ((vr - vl) + (vu - vd) + (vf - vb)), 0, 0, 0));
+}
+`;
+
+// 3) Jacobi pressure iteration (open top: pressure 0 above the grid)
+const WGSL_JACOBI = WGSL_SIM_COMMON + /* wgsl */`
+@group(0) @binding(0) var pIn: texture_3d<f32>;
+@group(0) @binding(1) var divIn: texture_3d<f32>;
+@group(0) @binding(2) var pOut: texture_storage_3d<r32float, write>;
+fn P(c: vec3<i32>) -> f32 {
+  if (c.y >= N.y) { return 0.0; }
+  return textureLoad(pIn, cl(c), 0).x;
+}
+@compute @workgroup_size(4,4,4)
+fn main(@builtin(global_invocation_id) id: vec3u) {
+  if (!inGrid(id)) { return; }
+  let c = vec3<i32>(id);
+  let s = P(c + vec3<i32>(1,0,0)) + P(c - vec3<i32>(1,0,0)) + P(c + vec3<i32>(0,1,0)) +
+          P(c - vec3<i32>(0,1,0)) + P(c + vec3<i32>(0,0,1)) + P(c - vec3<i32>(0,0,1));
+  let d = textureLoad(divIn, c, 0).x;
+  textureStore(pOut, c, vec4f((s - d) / 6.0, 0, 0, 0));
+}
+`;
+
+// 4) subtract pressure gradient
+const WGSL_PROJECT = WGSL_SIM_COMMON + /* wgsl */`
+@group(0) @binding(0) var velIn: texture_3d<f32>;
+@group(0) @binding(1) var pIn: texture_3d<f32>;
+@group(0) @binding(2) var velOut: texture_storage_3d<rgba16float, write>;
+fn P(c: vec3<i32>) -> f32 {
+  if (c.y >= N.y) { return 0.0; }
+  return textureLoad(pIn, cl(c), 0).x;
+}
+@compute @workgroup_size(4,4,4)
+fn main(@builtin(global_invocation_id) id: vec3u) {
+  if (!inGrid(id)) { return; }
+  let c = vec3<i32>(id);
+  let g = 0.5 * vec3f(P(c + vec3<i32>(1,0,0)) - P(c - vec3<i32>(1,0,0)),
+                      P(c + vec3<i32>(0,1,0)) - P(c - vec3<i32>(0,1,0)),
+                      P(c + vec3<i32>(0,0,1)) - P(c - vec3<i32>(0,0,1)));
+  let v = textureLoad(velIn, c, 0).xyz - g;
+  textureStore(velOut, c, vec4f(v, 0.0));
+}
+`;
+
+// 5) advect smoke + heat, cool, fade, inject from the log pile
+const WGSL_ADVECT_DYE = WGSL_SIM_COMMON + WGSL_NOISE + /* wgsl */`
+@group(0) @binding(0) var<uniform> S: SimU;
+@group(0) @binding(1) var dyeIn: texture_3d<f32>;
+@group(0) @binding(2) var velIn: texture_3d<f32>;
+@group(0) @binding(3) var sClamp: sampler;
+@group(0) @binding(4) var dyeOut: texture_storage_3d<rgba16float, write>;
+@compute @workgroup_size(4,4,4)
+fn main(@builtin(global_invocation_id) id: vec3u) {
+  if (!inGrid(id)) { return; }
+  let dt = S.a.x; let t = S.a.y; let L = S.a.z; let flare = S.a.w;
+  let uvw = uvwOf(id);
+  let v = textureSampleLevel(velIn, sClamp, uvw, 0.0).xyz;
+  let d = textureSampleLevel(dyeIn, sClamp, uvw - v * dt / BOX, 0.0);
+  var smoke = d.r * max(1.0 - S.c.w * dt, 0.0);
+  var heat  = d.g * max(1.0 - S.c.z * dt * (1.0 + 0.35 * d.g), 0.0);
+
+  // emitters: a few flickering hot spots on the coal bed, spreading with the level
+  let p = BMIN + uvw * BOX;
+  var src = 0.0;
+  let spread = 0.03 + 0.13 * clamp(L, 0.0, 1.2);
+  let sig = 0.03 + 0.035 * clamp(L, 0.0, 1.2);
+  for (var i = 0; i < 6; i++) {
+    let fi = f32(i);
+    let ang = fi * 1.0472 + 0.35 * sin(t * 0.5 + fi * 1.7);
+    let r = spread * (0.25 + 0.75 * fract(fi * 0.618 + 0.2));
+    let e = vec3f(cos(ang) * r, 0.07 + 0.04 * fract(fi * 0.371), sin(ang) * r);
+    let fl = 0.45 + 0.55 * vnoise(vec3f(fi * 7.1, t * 2.6, 0.0));
+    let dd = p - e;
+    src += exp(-dot(dd, dd) / (sig * sig)) * fl;
+  }
+  let drive = clamp(L, 0.0, 1.3);
+  heat  += S.d.z * drive * src * dt;
+  smoke += S.d.w * (0.25 + 0.6 * drive + S.b.w * 3.0) * src * dt;
+  heat = min(heat, 3.0);
+  smoke = min(smoke, 3.0);
+  // fade at the top and sides so nothing piles up against the box
+  let e2 = min(uvw.xz, 1.0 - uvw.xz);
+  let fade = smoothstep(0.0, 0.1, min(e2.x, e2.y)) * (1.0 - smoothstep(0.82, 1.0, uvw.y));
+  smoke *= mix(1.0, fade, 0.25);
+  heat *= mix(1.0, fade, 0.5);
+  textureStore(dyeOut, vec3<i32>(id), vec4f(smoke, heat, 0.0, 1.0));
+}
+`;
+
+// --------------------------------------------------------------------------
+// Render: SDF camp scene + fire volume, one full-screen pass
+// --------------------------------------------------------------------------
+const WGSL_RENDER = WGSL_NOISE + /* wgsl */`
+struct U {
+  camPos: vec4f,   // xyz, time
+  camFwd: vec4f,   // xyz, aspect
+  camRight: vec4f, // xyz, tan(fov/2)
+  camUp: vec4f,    // xyz, model (0 sim, 1 shaped)
+  fire: vec4f,     // level, flare, stylize, ember glow
+  light: vec4f,    // light pos, intensity
+  lightCol: vec4f, // rgb, flicker
+  sky: vec4f,      // zenith rgb, ambient
+  sky2: vec4f,     // horizon rgb, star amount
+  sun: vec4f,      // dir, intensity
+  sunCol: vec4f,   // rgb, exposure
+  misc: vec4f,     // res x, res y, frame, smoke boost
+  wind: vec4f,     // xyz
+  smokeCol: vec4f, // rgb
+};
+@group(0) @binding(0) var<uniform> u: U;
+@group(0) @binding(1) var dyeT: texture_3d<f32>;
+@group(0) @binding(2) var samp: sampler;
+
+const BMIN = vec3f(${BOX_MIN.join(",")});
+const BOX = vec3f(${BOX_SIZE.join(",")});
+
+struct VSOut { @builtin(position) pos: vec4f, @location(0) uv: vec2f };
+@vertex fn vs(@builtin(vertex_index) i: u32) -> VSOut {
+  var p = array<vec2f,3>(vec2f(-1,-1), vec2f(3,-1), vec2f(-1,3));
+  var o: VSOut; o.pos = vec4f(p[i], 0, 1); o.uv = p[i]; return o;
+}
+
+// ---------- scene ----------
+fn sdEllipsoid(p: vec3f, r: vec3f) -> f32 {
+  let k0 = length(p / r); let k1 = length(p / (r * r));
+  return k0 * (k0 - 1.0) / max(k1, 1e-5);
+}
+fn sdCapsule(p: vec3f, a: vec3f, b: vec3f, r: f32) -> f32 {
+  let pa = p - a; let ba = b - a;
+  let h = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0);
+  return length(pa - ba * h) - r;
+}
+fn rotY(p: vec3f, a: f32) -> vec3f { let c = cos(a); let s = sin(a); return vec3f(c*p.x - s*p.z, p.y, s*p.x + c*p.z); }
+
+const NSTONE = 11;
+const NLOG = 5;
+fn logEnds(i: i32) -> array<vec3f,2> {
+  let a = f32(i) * 6.2831853 / f32(NLOG) + 0.4;
+  let base = vec3f(cos(a) * 0.27, 0.035, sin(a) * 0.27);
+  let top = vec3f(cos(a + 0.5) * 0.035, 0.30, sin(a + 0.5) * 0.035);
+  return array<vec3f,2>(base, top);
+}
+// returns (distance, material): 1 stone, 2 log, 3 coal bed
+fn map(p: vec3f) -> vec2f {
+  var res = vec2f(1e9, 0.0);
+  for (var i = 0; i < NSTONE; i++) {
+    let fi = f32(i);
+    let a = fi * 6.2831853 / f32(NSTONE) + 0.25 * (hash3(vec3f(fi, 1.0, 2.0)) - 0.5);
+    let r = 0.43 + 0.03 * hash3(vec3f(fi, 3.0, 1.0));
+    let c = vec3f(cos(a) * r, 0.02, sin(a) * r);
+    let s = vec3f(0.085 + 0.03 * hash3(vec3f(fi, 5.0, 2.0)), 0.06 + 0.025 * hash3(vec3f(fi, 7.0, 3.0)), 0.07);
+    let q = rotY(p - c, a + hash3(vec3f(fi, 9.0, 4.0)) * 0.6);
+    let d = sdEllipsoid(q, s);
+    if (d < res.x) { res = vec2f(d, 1.0); }
+  }
+  for (var i = 0; i < NLOG; i++) {
+    let e = logEnds(i);
+    let d = sdCapsule(p, e[0], e[1], 0.036 - 0.004 * f32(i % 2));
+    if (d < res.x) { res = vec2f(d, 2.0); }
+  }
+  let dc = sdEllipsoid(p - vec3f(0.0, 0.0, 0.0), vec3f(0.2, 0.04, 0.2)) - 0.008 * vnoise(p * 30.0);
+  if (dc < res.x) { res = vec2f(dc, 3.0); }
+  return res;
+}
+fn calcNormal(p: vec3f) -> vec3f {
+  let e = vec2f(0.0015, 0.0);
+  return normalize(vec3f(map(p + e.xyy).x - map(p - e.xyy).x,
+                         map(p + e.yxy).x - map(p - e.yxy).x,
+                         map(p + e.yyx).x - map(p - e.yyx).x));
+}
+fn sphereHit(ro: vec3f, rd: vec3f, c: vec3f, r: f32) -> vec2f {
+  let oc = ro - c; let b = dot(oc, rd); let h = b * b - dot(oc, oc) + r * r;
+  if (h < 0.0) { return vec2f(-1.0); }
+  let s = sqrt(h); return vec2f(-b - s, -b + s);
+}
+fn softShadow(ro: vec3f, rd: vec3f, maxt: f32) -> f32 {
+  var res = 1.0; var t = 0.02;
+  for (var i = 0; i < 24; i++) {
+    if (t >= maxt) { break; }
+    let h = map(ro + rd * t).x;
+    res = min(res, 10.0 * h / t);
+    if (res < 0.01) { break; }
+    t += clamp(h, 0.01, 0.08);
+  }
+  return clamp(res, 0.0, 1.0);
+}
+
+fn skyColor(rd: vec3f) -> vec3f {
+  let h = clamp(rd.y, -0.1, 1.0);
+  var c = mix(u.sky2.rgb, u.sky.rgb, pow(max(h, 0.0), 0.55));
+  // a hint of sun / moon disc glow
+  let sd = max(dot(rd, u.sun.xyz), 0.0);
+  c += u.sunCol.rgb * (pow(sd, 400.0) * 1.5 + pow(sd, 12.0) * 0.12) * min(u.sun.w, 1.0);
+  // stars at night
+  if (u.sky2.w > 0.0 && rd.y > 0.02) {
+    let g = floor(rd * 220.0);
+    let s = hash3(g);
+    c += vec3f(1.0, 0.95, 0.85) * step(0.9965, s) * u.sky2.w * smoothstep(0.02, 0.3, rd.y);
+  }
+  return c;
+}
+
+fn fireFalloff(d: f32) -> f32 { return 1.0 / (d * d * 6.0 + 0.12); }
+
+fn shade(p: vec3f, n: vec3f, mat: f32, rd: vec3f) -> vec3f {
+  let t = u.camPos.w;
+  let glow = u.fire.w; let L = u.fire.x;
+  var alb = vec3f(0.5);
+  var emis = vec3f(0.0);
+  if (mat < 0.5) {
+    // ground: ash near the ring → earth → soft moss
+    let r = length(p.xz);
+    let n1 = vnoise(vec3f(p.xz * 6.0, 0.0)); let n2 = vnoise(vec3f(p.xz * 1.3, 4.0));
+    let ash = vec3f(0.24, 0.22, 0.22);
+    let earth = vec3f(0.47, 0.40, 0.31) * (0.85 + 0.3 * n1);
+    let moss = mix(vec3f(0.36, 0.47, 0.30), vec3f(0.44, 0.52, 0.32), n2) * (0.9 + 0.2 * n1);
+    alb = mix(ash, earth, smoothstep(0.3, 0.55, r + 0.05 * n1));
+    alb = mix(alb, moss, smoothstep(0.85, 1.6, r + 0.3 * n2));
+  } else if (mat < 1.5) {
+    let n1 = vnoise(p * 18.0);
+    alb = mix(vec3f(0.52, 0.50, 0.49), vec3f(0.62, 0.59, 0.55), n1);
+    // soot on the inside faces
+    let inward = clamp(dot(n, -normalize(vec3f(p.x, 0.0, p.z))), 0.0, 1.0);
+    alb *= 1.0 - 0.45 * inward * smoothstep(0.0, 0.08, p.y + 0.02);
+  } else if (mat < 2.5) {
+    let rr = length(p.xz);
+    let charred = 1.0 - smoothstep(0.05, 0.22, rr);
+    alb = mix(vec3f(0.36, 0.25, 0.18), vec3f(0.09, 0.075, 0.07), charred);
+    // glowing cracks on the charred part
+    let cr = vnoise(vec3f(p.x * 45.0, p.y * 18.0, p.z * 45.0));
+    let crack = smoothstep(0.62, 0.8, cr) * charred;
+    let pulse = 0.75 + 0.25 * vnoise(vec3f(p.xz * 8.0, t * 0.8));
+    emis = mix(vec3f(0.9, 0.22, 0.08), vec3f(1.0, 0.55, 0.18), crack * glow) * crack * glow * pulse * 2.2;
+  } else {
+    // coal bed
+    let c1 = vnoise(p * 34.0 + vec3f(0.0, t * 0.15, 0.0));
+    alb = vec3f(0.08, 0.07, 0.07);
+    let hot = smoothstep(0.35, 0.75, c1) * (1.0 - smoothstep(0.05, 0.2, length(p.xz)) * 0.0);
+    let pulse = 0.7 + 0.3 * vnoise(vec3f(p.xz * 6.0, t * 0.7));
+    emis = mix(vec3f(0.75, 0.12, 0.06), vec3f(1.0, 0.5, 0.15), hot) * (0.25 + hot) * glow * pulse * 2.0;
+  }
+
+  // light
+  let amb = u.sky.w * (0.55 + 0.45 * n.y) * mix(u.sky2.rgb, u.sky.rgb, 0.6);
+  var col = alb * amb;
+  let sunD = max(dot(n, u.sun.xyz), 0.0);
+  col += alb * u.sunCol.rgb * u.sun.w * sunD;
+  // fire light — a vertical capsule rather than a point, with a projected flicker
+  let lp = u.light.xyz;
+  let segA = vec3f(lp.x, 0.12, lp.z);
+  let segB = lp;
+  let ba = segB - segA;
+  let hh = clamp(dot(p - segA, ba) / dot(ba, ba), 0.0, 1.0);
+  let cp = segA + ba * hh;
+  let toL = cp - p; let dl = length(toL); let ldir = toL / dl;
+  let nd = max(dot(n, ldir), 0.0);
+  let sh = softShadow(p + n * 0.004, ldir, dl - 0.05);
+  let proj = 0.82 + 0.36 * vnoise(vec3f(p.xz * 3.5, t * 2.2));
+  col += alb * u.lightCol.rgb * u.light.w * fireFalloff(dl) * nd * mix(0.15, 1.0, sh) * proj;
+  col += emis;
+  return col;
+}
+
+// ---------- flame fields ----------
+fn bandRamp(h: f32, w: f32) -> vec3f {
+  let c0 = vec3f(0.85, 0.24, 0.33);  // rose ember
+  let c1 = vec3f(0.98, 0.47, 0.22);  // orange
+  let c2 = vec3f(1.00, 0.74, 0.32);  // amber
+  let c3 = vec3f(1.00, 0.93, 0.74);  // cream core
+  var c = c0;
+  c = mix(c, c1, smoothstep(0.34 - w, 0.34 + w, h));
+  c = mix(c, c2, smoothstep(0.58 - w, 0.58 + w, h));
+  c = mix(c, c3, smoothstep(0.86 - w, 0.86 + w, h));
+  return c;
+}
+
+// model B: shaped flame (no sim)
+fn shapedHeat(p: vec3f) -> vec2f {
+  let t = u.camPos.w;
+  let L = max(u.fire.x, 0.0);
+  let fh = 0.12 + 0.75 * L + 0.18 * u.fire.y;          // flame height
+  let rb = 0.06 + 0.15 * min(L, 1.2);                  // base radius
+  var q = p;
+  let y01 = clamp((p.y - 0.04) / fh, 0.0, 1.5);
+  // lean with the wind, more at the top
+  q.x -= u.wind.x * 0.45 * y01 * y01 * fh;
+  q.z -= u.wind.z * 0.45 * y01 * y01 * fh;
+  // rising warp
+  let w1 = vec3f(vnoise(q * 4.0 - vec3f(0.0, t * 2.4, 0.0)), 0.0, vnoise(q * 4.0 + vec3f(5.2, -t * 2.4, 1.3))) - 0.5;
+  q += w1 * (0.08 + 0.14 * y01);
+  // several tongues: angular lobes
+  let ang = atan2(q.z, q.x);
+  let lobes = 0.75 + 0.25 * sin(ang * 3.0 + 1.3 * sin(t * 1.1)) * smoothstep(0.1, 0.6, y01);
+  let taper = rb * lobes * pow(max(1.0 - y01, 0.0), 0.8) + 0.005;
+  let r = length(q.xz) / taper;
+  var heat = (1.0 - r) * smoothstep(0.0, 0.04, p.y - 0.02);
+  // erosion by rising noise
+  let er = fbm3(q * vec3f(7.0, 4.5, 7.0) - vec3f(0.0, t * 3.2, 0.0));
+  heat = heat * 1.6 - er * (0.35 + 0.9 * y01) ;
+  heat = clamp(heat, 0.0, 1.5) * smoothstep(1.02, 0.7, y01);
+  // smoke column above the flame, wider as it rises
+  let sy = p.y - fh * 0.75;
+  let sr = 0.07 + 0.22 * max(sy, 0.0);
+  let sx = vec2f(p.x - u.wind.x * 0.9 * max(sy, 0.0), p.z - u.wind.z * 0.9 * max(sy, 0.0));
+  let sn = fbm3(vec3f(sx * 5.0, p.y * 3.0 - t * 0.9));
+  var smoke = exp(-dot(sx, sx) / (sr * sr)) * smoothstep(0.0, 0.15, sy) * (1.0 - smoothstep(0.6, 1.7, p.y));
+  smoke *= smoothstep(0.35, 0.75, sn) * (0.15 + 0.4 * L + 1.6 * u.misc.w);
+  return vec2f(smoke, heat * min(L * 6.0, 1.0));
+}
+
+fn boxHit(ro: vec3f, rd: vec3f) -> vec2f {
+  let inv = 1.0 / rd;
+  let t0 = (BMIN - ro) * inv; let t1 = (BMIN + BOX - ro) * inv;
+  let tmin = min(t0, t1); let tmax = max(t0, t1);
+  return vec2f(max(max(tmin.x, tmin.y), max(tmin.z, 0.0)), min(min(tmax.x, tmax.y), tmax.z));
+}
+
+fn aces(x: vec3f) -> vec3f {
+  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3f(0.0), vec3f(1.0));
+}
+
+@fragment fn fs(in: VSOut) -> @location(0) vec4f {
+  let t = u.camPos.w;
+  let ro = u.camPos.xyz;
+  let rd = normalize(u.camFwd.xyz + u.camRight.xyz * in.uv.x * u.camFwd.w * u.camRight.w + u.camUp.xyz * in.uv.y * u.camRight.w);
+
+  // ---- scene ----
+  var tHit = 1e9; var mat = -1.0;
+  if (rd.y < 0.0) { tHit = -ro.y / rd.y; mat = 0.0; }
+  let bs = sphereHit(ro, rd, vec3f(0.0, 0.12, 0.0), 0.62);
+  if (bs.y > 0.0) {
+    var tt = max(bs.x, 0.0);
+    let tEnd = min(bs.y, tHit);
+    for (var i = 0; i < 90; i++) {
+      if (tt > tEnd) { break; }
+      let h = map(ro + rd * tt);
+      if (h.x < 0.0008 * tt + 0.0004) { tHit = tt; mat = h.y; break; }
+      tt += h.x * 0.9;
+    }
+  }
+  var col: vec3f;
+  if (mat < -0.5) {
+    col = skyColor(rd);
+  } else {
+    let p = ro + rd * tHit;
+    var n = vec3f(0.0, 1.0, 0.0);
+    if (mat > 0.5) { n = calcNormal(p); }
+    col = shade(p, n, mat, rd);
+    // distance haze into the sky
+    let fogT = 1.0 - exp(-max(tHit - 3.0, 0.0) * 0.18);
+    col = mix(col, skyColor(normalize(vec3f(rd.x, 0.02, rd.z))), fogT);
+  }
+  col = aces(col * u.sunCol.w);
+
+  // ---- fire volume ----
+  let bh = boxHit(ro, rd);
+  let tA = bh.x; let tB = min(bh.y, tHit);
+  var heatAcc = 0.0;
+  var trans = 1.0;
+  var smokeAcc = vec3f(0.0);
+  if (tB > tA) {
+    let STEPS = 40;
+    let ds = (tB - tA) / f32(STEPS);
+    let jit = fract(hash3(vec3f(in.pos.xy, u.misc.z * 0.1)) + u.misc.z * 0.618034);
+    var tt = tA + ds * jit;
+    let model = u.camUp.w;
+    for (var i = 0; i < STEPS; i++) {
+      let p = ro + rd * tt;
+      var smoke = 0.0; var heat = 0.0;
+      if (model < 0.5) {
+        let uvw = (p - BMIN) / BOX;
+        let d = textureSampleLevel(dyeT, samp, uvw, 0.0);
+        smoke = d.r; heat = d.g;
+        if (heat > 0.02) {
+          // sub-voxel detail so the coarse grid doesn't read as blur
+          let dn = vnoise(p * vec3f(16.0, 10.0, 16.0) - vec3f(0.0, t * 2.6, 0.0));
+          heat *= 0.55 + 0.9 * dn;
+        }
+        smoke *= 0.7 + 0.6 * vnoise(p * 7.0 - vec3f(0.0, t * 0.6, 0.0));
+      } else {
+        let sh = shapedHeat(p);
+        smoke = sh.x; heat = sh.y;
+      }
+      let sig = smoke * 5.0;
+      // heat is collected as a scalar and mapped through the palette afterwards
+      heat = max(heat - 0.05, 0.0);
+      heatAcc += heat * 5.5 * ds * trans;
+      if (sig > 0.001) {
+        // smoke lit by the sky and warmly from the fire beneath it
+        let dl = length(p - u.light.xyz);
+        let warm = u.lightCol.rgb * u.light.w * 0.06 / (dl * dl * 3.0 + 0.1);
+        let lit = u.smokeCol.rgb * (u.sky.w * 0.9 + u.sun.w * 0.5) + warm;
+        let a = 1.0 - exp(-sig * ds);
+        smokeAcc += trans * a * aces(lit * u.sunCol.w);
+        trans *= 1.0 - a;
+      }
+      tt += ds;
+    }
+  }
+  col = col * trans + smokeAcc;
+
+  // ---- stylized flame composite ----
+  let styl = u.fire.z;
+  let w = mix(0.2, 0.02, styl);
+  let alpha = smoothstep(0.12 - w, 0.12 + w, heatAcc);
+  let fc = bandRamp(heatAcc, w);
+  col = mix(col, fc, alpha * mix(0.85, 1.0, styl));
+  // soft halo just outside the painted shape
+  let halo = smoothstep(0.0, 0.18, heatAcc) * (1.0 - alpha);
+  col += vec3f(1.0, 0.45, 0.2) * halo * 0.35 * min(u.fire.x * 2.0 + 0.2, 1.0);
+  return vec4f(col, 1.0);
+}
+`;
+
+// ============================================================================
+// JS side
+// ============================================================================
+const $ = (id) => document.getElementById(id);
+function fail(msg) { const e = $("err"); e.style.display = "flex"; e.innerHTML = msg; $("panel").style.display = "none"; }
+
+const state = {
+  model: 0, tod: 0, view: 0, speed: 1, stylize: 0.75,
+  // The fire follows Ebb's own rules (recipes/world/camp.json fire, src/world/camp/fire.js):
+  // game hours, 1 game hour = 1 real minute at 1x.
+  hour: 0,             // game hours since the page opened
+  word: "lit",         // lit | embers | cold
+  flameUntil: 4.0,     // a lit fire's flame ends at this game hour
+  emberUntil: 0,       // embers go cold at this game hour
+  flame: 0.0,          // flame size shown, 0..1 of a high fire (eases toward the game's value)
+  heldFlame: 0,        // the size shown while a fed handful is still catching
+  level: 0.0,          // what drives the models
+  flare: 0.0,          // short surge after a handful catches
+  ember: 0.0,          // coal glow
+  pending: [],         // handfuls waiting to catch
+  smokePuff: 0.0,
+  yaw: 0.7, pitch: 0.62, dist: 3.2,
+  frame: 0, time: 0,
+};
+// From Ebb's recipes/world/camp.json "fire" (game hours).
+const FIRE = { flameH: 3, maxFuelH: 9, highH: 1.5, lowFlame: 0.35, emberH: 24 };
+const VIEWS = [{ pitch: 0.62, dist: 3.2 }, { pitch: 0.28, dist: 1.75 }];
+
+// smooth 1D noise for flicker / wind
+function n1(x) { const i = Math.floor(x), f = x - i, u = f * f * (3 - 2 * f);
+  const h = (k) => { const s = Math.sin(k * 127.1 + 311.7) * 43758.5453; return s - Math.floor(s); };
+  return h(i) * (1 - u) + h(i + 1) * u; }
+
+async function main() {
+  if (!navigator.gpu) { fail("This study needs WebGPU.<br>Open it in a recent Chrome or Edge on desktop."); return; }
+  const adapter = await navigator.gpu.requestAdapter({ powerPreference: "high-performance" });
+  if (!adapter) { fail("No WebGPU adapter was found on this machine."); return; }
+  window.__gpuAdapter = adapter;
+  const hasTS = adapter.features.has("timestamp-query");
+  const device = await adapter.requestDevice({ requiredFeatures: hasTS ? ["timestamp-query"] : [] });
+  window.__gpuDevice = device;
+  device.lost.then((i) => fail("The GPU device was lost: " + i.message));
+  device.addEventListener("uncapturederror", (e) => { console.error(e.error.message); });
+
+  const canvas = $("c");
+  const ctx = canvas.getContext("webgpu");
+  const format = navigator.gpu.getPreferredCanvasFormat();
+  ctx.configure({ device, format, alphaMode: "opaque" });
+
+  // ---------- sim resources ----------
+  const size3 = { width: GRID[0], height: GRID[1], depthOrArrayLayers: GRID[2] };
+  const usageRGBA = GPUTextureUsage.STORAGE_BINDING | GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_SRC | GPUTextureUsage.COPY_DST;
+  const mk = (fmt, label, sz = size3) => device.createTexture({ size: sz, dimension: "3d", format: fmt, usage: usageRGBA, label });
+  const velA = mk("rgba16float", "velA"), velB = mk("rgba16float", "velB");
+  const dyeA = mk("rgba16float", "dyeA"), dyeB = mk("rgba16float", "dyeB");
+  const pA = mk("r32float", "pA"), pB = mk("r32float", "pB"), divT = mk("r32float", "div");
+  const curlT = mk("rgba16float", "curl", { width: 32, height: 32, depthOrArrayLayers: 32 });
+
+  const sClamp = device.createSampler({ magFilter: "linear", minFilter: "linear", addressModeU: "clamp-to-edge", addressModeV: "clamp-to-edge", addressModeW: "clamp-to-edge" });
+  const sRep = device.createSampler({ magFilter: "linear", minFilter: "linear", addressModeU: "repeat", addressModeV: "repeat", addressModeW: "repeat" });
+
+  const simUBuf = device.createBuffer({ size: 64, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
+  const renUBuf = device.createBuffer({ size: 16 * 14, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
+
+  async function compute(code, label) {
+    const module = device.createShaderModule({ code, label });
+    const info = await module.getCompilationInfo();
+    for (const m of info.messages) if (m.type === "error") throw new Error(label + ": " + m.message + " (line " + m.lineNum + ")");
+    return device.createComputePipeline({ layout: "auto", compute: { module, entryPoint: "main" }, label });
+  }
+  const pCurl = await compute(WGSL_CURL, "curl");
+  const pAdvV = await compute(WGSL_ADVECT_VEL, "advectVel");
+  const pDiv = await compute(WGSL_DIV, "divergence");
+  const pJac = await compute(WGSL_JACOBI, "jacobi");
+  const pProj = await compute(WGSL_PROJECT, "project");
+  const pAdvD = await compute(WGSL_ADVECT_DYE, "advectDye");
+
+  const v = (t) => t.createView();
+  const bg = (pipe, entries) => device.createBindGroup({ layout: pipe.getBindGroupLayout(0), entries: entries.map((r, i) => ({ binding: i, resource: r })) });
+  const bgCurl = bg(pCurl, [v(curlT)]);
+  const bgAdvV = bg(pAdvV, [{ buffer: simUBuf }, v(velA), v(dyeA), v(curlT), sClamp, sRep, v(velB)]);
+  const bgDiv = bg(pDiv, [v(velB), v(divT)]);
+  const bgJacAB = bg(pJac, [v(pA), v(divT), v(pB)]);
+  const bgJacBA = bg(pJac, [v(pB), v(divT), v(pA)]);
+  const bgProj = bg(pProj, [v(velB), v(pA), v(velA)]);
+  const bgAdvD = bg(pAdvD, [{ buffer: simUBuf }, v(dyeA), v(velA), sClamp, v(dyeB)]);
+
+  // precompute curl noise
+  { const enc = device.createCommandEncoder(); const pass = enc.beginComputePass();
+    pass.setPipeline(pCurl); pass.setBindGroup(0, bgCurl); pass.dispatchWorkgroups(8, 8, 8); pass.end();
+    device.queue.submit([enc.finish()]); }
+
+  // ---------- render pipeline ----------
+  const rMod = device.createShaderModule({ code: WGSL_RENDER, label: "render" });
+  const rInfo = await rMod.getCompilationInfo();
+  for (const m of rInfo.messages) if (m.type === "error") throw new Error("render: " + m.message + " (line " + m.lineNum + ")");
+  const pRender = device.createRenderPipeline({ layout: "auto", vertex: { module: rMod, entryPoint: "vs" },
+    fragment: { module: rMod, entryPoint: "fs", targets: [{ format }] }, primitive: { topology: "triangle-list" } });
+  const bgRender = bg(pRender, [{ buffer: renUBuf }, v(dyeA), sClamp]);
+
+  // ---------- GPU timers: sim (first to last sim pass) and drawing, in ms ----------
+  const gpuT = { simMs: null, drawMs: null, simSteps: 0 };
+  let qs = null, resolveBuf = null; const readPool = [];
+  if (hasTS) {
+    qs = device.createQuerySet({ type: "timestamp", count: 4 });
+    resolveBuf = device.createBuffer({ size: 32, usage: GPUBufferUsage.QUERY_RESOLVE | GPUBufferUsage.COPY_SRC });
+    for (let i = 0; i < 3; i++) readPool.push(device.createBuffer({ size: 32, usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ }));
+  }
+  const avg = (old, v, k = 0.08) => (old == null ? v : old + (v - old) * k);
+  async function readTimers(buf, steps) {
+    try {
+      await buf.mapAsync(GPUMapMode.READ);
+      const t = new BigUint64Array(buf.getMappedRange().slice(0));
+      buf.unmap();
+      const draw = Number(t[3] - t[2]) / 1e6;
+      if (draw > 0 && draw < 1000) gpuT.drawMs = avg(gpuT.drawMs, draw);
+      if (steps > 0) { const sim = Number(t[1] - t[0]) / 1e6 / steps; if (sim > 0 && sim < 1000) gpuT.simMs = avg(gpuT.simMs, sim); }
+    } catch (e) { /* a lost frame of timing is fine */ }
+    readPool.push(buf);
+  }
+
+  const JACOBI = 20;
+  const WG = [GRID[0] / 4, GRID[1] / 4, GRID[2] / 4];
+  function simStep(enc, i, n, timed) {
+    const desc = {};
+    if (timed && (i === 0 || i === n - 1)) {
+      desc.timestampWrites = { querySet: qs };
+      if (i === 0) desc.timestampWrites.beginningOfPassWriteIndex = 0;
+      if (i === n - 1) desc.timestampWrites.endOfPassWriteIndex = 1;
+    }
+    const pass = enc.beginComputePass(desc);
+    pass.setPipeline(pAdvV); pass.setBindGroup(0, bgAdvV); pass.dispatchWorkgroups(...WG);
+    pass.setPipeline(pDiv); pass.setBindGroup(0, bgDiv); pass.dispatchWorkgroups(...WG);
+    pass.setPipeline(pJac);
+    for (let i = 0; i < JACOBI; i++) { pass.setBindGroup(0, i % 2 === 0 ? bgJacAB : bgJacBA); pass.dispatchWorkgroups(...WG); }
+    pass.setPipeline(pProj); pass.setBindGroup(0, bgProj); pass.dispatchWorkgroups(...WG);
+    pass.setPipeline(pAdvD); pass.setBindGroup(0, bgAdvD); pass.dispatchWorkgroups(...WG);
+    pass.end();
+    enc.copyTextureToTexture({ texture: dyeB }, { texture: dyeA }, size3);
+  }
+
+  // ---------- canvas sizing (adaptive resolution keeps the frame rate up) ----------
+  let scale = 1.0;
+  function resize() {
+    const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+    const w = Math.max(2, Math.floor(innerWidth * dpr * scale));
+    const h = Math.max(2, Math.floor(innerHeight * dpr * scale));
+    if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; }
+  }
+  addEventListener("resize", resize); resize();
+
+  // ---------- UI ----------
+  function seg(id, key, cb) {
+    const el = $(id);
+    el.addEventListener("click", (e) => {
+      const b = e.target.closest("button"); if (!b) return;
+      el.querySelectorAll("button").forEach((x) => x.classList.toggle("on", x === b));
+      state[key] = parseFloat(b.dataset.v); cb && cb();
+    });
+  }
+  function setModel(m) {
+    state.model = m;
+    $("segModel").querySelectorAll("button").forEach((x) => x.classList.toggle("on", +x.dataset.v === m));
+    $("modelDesc").textContent = MODEL_DESC[m];
+  }
+  seg("segModel", "model", () => setModel(state.model));
+  seg("segSpeed", "speed");
+  seg("segTod", "tod");
+  seg("segView", "view", () => { state.pitch = VIEWS[state.view].pitch; state.dist = VIEWS[state.view].dist; });
+  $("stylize").addEventListener("input", (e) => (state.stylize = +e.target.value));
+  setModel(0);
+
+  // Feed the fire: a handful adds FIRE.flameH of flame, up to FIRE.maxFuelH held; embers or a
+  // cold ring come back to flame (in the game a cold ring is lit with the steel instead).
+  function addStick() {
+    state.heldFlame = state.flame;
+    if (state.word === "lit") state.flameUntil = Math.min(state.hour + FIRE.maxFuelH, state.flameUntil + FIRE.flameH);
+    else { state.word = "lit"; state.flameUntil = state.hour + FIRE.flameH; }
+    state.pending.push(0.0);
+  }
+  $("btnStick").addEventListener("click", addStick);
+  addEventListener("keydown", (e) => {
+    if (e.code === "Space") { e.preventDefault(); addStick(); }
+    if (e.key === "1") setModel(0);
+    if (e.key === "2") setModel(1);
+  });
+
+  // orbit
+  let drag = null;
+  canvas.addEventListener("pointerdown", (e) => { drag = { x: e.clientX, y: e.clientY }; canvas.setPointerCapture(e.pointerId); });
+  canvas.addEventListener("pointermove", (e) => {
+    if (!drag) return;
+    state.yaw += (e.clientX - drag.x) * 0.006;
+    state.pitch = Math.min(1.35, Math.max(0.08, state.pitch + (e.clientY - drag.y) * 0.005));
+    drag = { x: e.clientX, y: e.clientY };
+  });
+  canvas.addEventListener("pointerup", () => (drag = null));
+  canvas.addEventListener("wheel", (e) => { e.preventDefault(); state.dist = Math.min(7, Math.max(1.1, state.dist * Math.exp(e.deltaY * 0.001))); }, { passive: false });
+
+  // time of day presets: [zenith, horizon, ambient, stars, sunDir, sunI, sunCol, exposure, smoke]
+  const TOD = [
+    { z: [0.05, 0.07, 0.15], h: [0.13, 0.13, 0.24], amb: 0.22, stars: 1, sun: [-0.4, 0.55, -0.5], sunI: 0.12, sunCol: [0.55, 0.62, 0.85], exp: 1.15, smoke: [0.42, 0.42, 0.52] },
+    { z: [0.32, 0.36, 0.58], h: [0.98, 0.62, 0.46], amb: 0.45, stars: 0, sun: [0.75, 0.16, -0.4], sunI: 0.75, sunCol: [1.0, 0.62, 0.42], exp: 1.05, smoke: [0.68, 0.62, 0.66] },
+    { z: [0.42, 0.64, 0.86], h: [0.82, 0.88, 0.92], amb: 0.75, stars: 0, sun: [0.45, 0.8, 0.35], sunI: 1.55, sunCol: [1.0, 0.95, 0.86], exp: 0.95, smoke: [0.78, 0.77, 0.8] },
+  ];
+
+  const simData = new Float32Array(16);
+  const renData = new Float32Array(56);
+  let last = performance.now(), simAcc = 0, msAvg = 16, slowFor = 0, fastFor = 0;
+  const SIM_DT = 1 / 60;
+
+  function frame(now) {
+    const dtReal = Math.min((now - last) / 1000, 0.1); last = now;
+    msAvg += (dtReal * 1000 - msAvg) * 0.05;
+    state.time += dtReal;
+    const t = state.time;
+
+    // ---------- fire behaviour (game clock) ----------
+    state.hour += dtReal * state.speed / 60;
+    if (state.word === "lit" && state.hour >= state.flameUntil) { state.word = "embers"; state.emberUntil = state.flameUntil + FIRE.emberH; }
+    if (state.word === "embers" && state.hour >= state.emberUntil) state.word = "cold";
+    const leftH = state.word === "lit" ? state.flameUntil - state.hour : 0;
+    const gameFlame = state.word === "lit" ? FIRE.lowFlame + (1 - FIRE.lowFlame) * Math.min(1, leftH / FIRE.highH) : 0;
+    // a fed handful takes a moment to catch, then the flames surge
+    for (let i = state.pending.length - 1; i >= 0; i--) {
+      state.pending[i] += dtReal;
+      if (state.pending[i] > 0.9) { state.pending.splice(i, 1); state.flare = 1.0; state.smokePuff = 1.0; }
+    }
+    state.flare *= Math.exp(-dtReal / 1.6);
+    state.smokePuff *= Math.exp(-dtReal / 1.0);
+    const target = state.pending.length ? state.heldFlame : gameFlame;
+    const rate = target > state.flame ? 0.7 : 0.35;
+    state.flame += (target - state.flame) * Math.min(1, rate * dtReal * 2.2);
+    const L = 0.9 * state.flame + 0.22 * state.flare;
+    state.level = L;
+    // coal glow: 0.6 under a burning fire, full as embers, none cold (as camp/frame.js)
+    const emberTarget = state.word === "embers" ? 1 : state.word === "lit" ? 0.6 : 0;
+    state.ember += (emberTarget - state.ember) * Math.min(1, dtReal * (state.word === "cold" ? 0.3 : 1.5));
+
+    // ---------- UI readouts ----------
+    $("meterFill").style.width = Math.min(100, leftH / FIRE.maxFuelH * 100) + "%";
+    let name = state.word === "lit" ? (leftH > FIRE.highH ? "Burning high" : "Low flames") : state.word === "embers" ? "Embers" : "Cold";
+    if (state.pending.length) name = "Catching…";
+    $("lvlName").textContent = name;
+    const hm = (h) => { const m = Math.max(0, Math.round(h * 60)); return `${Math.floor(m / 60)} h ${String(m % 60).padStart(2, "0")} m`; };
+    $("lvlFuel").textContent = state.word === "lit" ? `${hm(leftH)} of flame left`
+      : state.word === "embers" ? `embers for ${hm(state.emberUntil - state.hour)}` : "feed to relight";
+
+    // ---------- wind & flicker ----------
+    const wind = [(n1(t * 0.13) - 0.5) * 0.7, 0, (n1(t * 0.11 + 40) - 0.5) * 0.7];
+    const flick = 0.82 + 0.12 * n1(t * 0.9) + 0.08 * n1(t * 13.0 + 7);
+    const sway = [(n1(t * 3.1) - 0.5) * 0.05 + wind[0] * 0.08, 0, (n1(t * 2.7 + 9) - 0.5) * 0.05 + wind[2] * 0.08];
+
+    // ---------- sim ----------
+    const enc = device.createCommandEncoder();
+    const timed = hasTS && readPool.length > 0;
+    let nSteps = 0;
+    if (state.model === 0) {
+      simAcc = Math.min(simAcc + dtReal, SIM_DT * 3);
+      nSteps = Math.floor(simAcc / SIM_DT + 1e-9);
+      for (let step = 0; step < nSteps; step++) {
+        simAcc -= SIM_DT;
+        simData.set([SIM_DT, t, L, state.flare,
+                     wind[0], 0, wind[2], state.smokePuff,
+                     4.2, 0.35, 3.2, 0.55,
+                     3.4, 0.5, 26.0, 3.0]);
+        device.queue.writeBuffer(simUBuf, 0, simData);
+        simStep(enc, step, nSteps, timed);
+      }
+    }
+
+    // ---------- camera ----------
+    const tgt = [0, 0.32, 0];
+    const cp = Math.cos(state.pitch), sp = Math.sin(state.pitch);
+    const cam = [tgt[0] + Math.cos(state.yaw) * cp * state.dist, tgt[1] + sp * state.dist, tgt[2] + Math.sin(state.yaw) * cp * state.dist];
+    const f = norm(sub(tgt, cam));
+    const r = norm(cross(f, [0, 1, 0]));
+    const up = cross(r, f);
+    const aspect = canvas.width / canvas.height;
+    const tanH = Math.tan((38 * Math.PI / 180) / 2);
+
+    const T = TOD[state.tod];
+    const lightI = 2.1 * Math.pow(Math.max(L, 0), 0.85) * flick + 0.35 * state.ember;
+    const warmth = Math.min(1, L);
+    const lc = [1.0, 0.42 + 0.22 * warmth, 0.16 + 0.12 * warmth];
+    const sunDir = norm(T.sun);
+    renData.set([
+      ...cam, t,
+      ...f, aspect,
+      ...r, tanH,
+      ...up, state.model,
+      L, state.flare, state.stylize, state.ember,
+      sway[0], 0.34 + 0.3 * Math.min(L, 1.2), sway[2], lightI,
+      ...lc, flick,
+      ...T.z, T.amb,
+      ...T.h, T.stars,
+      ...sunDir, T.sunI,
+      ...T.sunCol, T.exp,
+      canvas.width, canvas.height, state.frame % 1000, state.smokePuff,
+      wind[0], 0, wind[2], 0,
+      ...T.smoke, 0,
+    ]);
+    device.queue.writeBuffer(renUBuf, 0, renData);
+
+    const rpDesc = { colorAttachments: [{ view: ctx.getCurrentTexture().createView(), loadOp: "clear", storeOp: "store", clearValue: { r: 0, g: 0, b: 0, a: 1 } }] };
+    if (timed) rpDesc.timestampWrites = { querySet: qs, beginningOfPassWriteIndex: 2, endOfPassWriteIndex: 3 };
+    const pass = enc.beginRenderPass(rpDesc);
+    pass.setPipeline(pRender); pass.setBindGroup(0, bgRender); pass.draw(3); pass.end();
+    let rbuf = null;
+    if (timed) {
+      rbuf = readPool.pop();
+      enc.resolveQuerySet(qs, 0, 4, resolveBuf, 0);
+      enc.copyBufferToBuffer(resolveBuf, 0, rbuf, 0, 32);
+    }
+    device.queue.submit([enc.finish()]);
+    if (rbuf) readTimers(rbuf, nSteps);
+
+    // adaptive resolution
+    if (msAvg > 22) { slowFor += dtReal; fastFor = 0; } else if (msAvg < 12) { fastFor += dtReal; slowFor = 0; } else { slowFor = fastFor = 0; }
+    if (slowFor > 1.5 && scale > 0.5) { scale = Math.max(0.5, scale - 0.1); resize(); slowFor = 0; }
+    if (fastFor > 3 && scale < 1.0) { scale = Math.min(1.0, scale + 0.1); resize(); fastFor = 0; }
+
+    if (state.frame % 10 === 0) {
+      $("stats").innerHTML =
+        `<b>${(1000 / msAvg).toFixed(0)}</b> fps · <b>${msAvg.toFixed(1)}</b> ms per frame<br>` +
+        `render ${canvas.width} × ${canvas.height} (${Math.round(scale * 100)}%)<br>` +
+        (!hasTS ? `GPU timers not available in this browser<br>`
+          : `GPU drawing <b>${gpuT.drawMs == null ? "…" : gpuT.drawMs.toFixed(2)}</b> ms per frame<br>` +
+            (state.model === 0 ? `GPU sim <b>${gpuT.simMs == null ? "…" : gpuT.simMs.toFixed(2)}</b> ms per step, 60 steps a second<br>` : ``)) +
+        (state.model === 0 ? `sim ${GRID.join(" × ")} · ${JACOBI} pressure passes` : `no simulation running`);
+    }
+    state.frame++;
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+}
+function sub(a, b) { return [a[0] - b[0], a[1] - b[1], a[2] - b[2]]; }
+function cross(a, b) { return [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]]; }
+function norm(a) { const l = Math.hypot(a[0], a[1], a[2]) || 1; return [a[0] / l, a[1] / l, a[2] / l]; }
+
+main().catch((e) => { console.error(e); fail("Something went wrong starting the study:<br><code>" + String(e.message || e) + "</code>"); });
+</script>
+</body>
+</html>

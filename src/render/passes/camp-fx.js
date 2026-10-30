@@ -1,6 +1,6 @@
 // @ts-check
 // The camp's fire effects pass (docs/future/13 sections 3.5, C-29 to C-32, C-38; camp-fx.wgsl): the
-// flame and its glow, the lantern's glass, the fire steel's sparks, the smoke and the moths, after
+// flame's halo, the lantern's glass, the fire steel's sparks, the smoke and the moths, after
 // the sky so smoke seen against the sky is not drawn over. Depth tested, never written. The camp
 // (src/world/camp/index.js) says each frame where the fire is and how it burns (set); every particle
 // is placed on the GPU from its seed and the time.
@@ -14,7 +14,7 @@ const FLOATS = 60;
 /**
  * @typedef {Object} CampFxFrame
  * @property {number[]} fire      the flame's foot [x, y, z] (m)
- * @property {number} flame       flame size 0..1 (0: none)
+ * @property {number} flame       flame size 0..1 (0: none), for its halo (the flame itself is camp-fire.js)
  * @property {number} smoke       smoke amount 0..2
  * @property {number} embers      ember glow 0..1
  * @property {number[]} wind      the smoke's lean [x, z] (m/s)
@@ -68,11 +68,11 @@ export function createCampFxPass(opts) {
         f.smoke, S.opacity, f.time, f.embers,
         f.wind[0], S.riseMps, f.wind[1], f.mist,
         L ? L[0] : 0, L ? L[1] : 0, L ? L[2] : 0, L ? 1 : 0,
-        F.heightM, F.widthM, F.nits, F.flickerHz,
+        F.heightM, 0, 0, 0,
         F.glowNits, F.glowM, R.lantern.glassNits, R.lantern.glassM,
         S.lifeS, S.sizeM[0], S.sizeM[1], S.spreadM,
         S.albedo[0], S.albedo[1], S.albedo[2], S.nearFadeM[0],
-        S.nearFadeM[1], puffs, F.minPx, F.cards,
+        S.nearFadeM[1], puffs, F.minPx, 0,
         moths, M.orbitM[0], M.orbitM[1], M.wingM,
         M.heightM[0], M.heightM[1], M.speed[0], M.speed[1],
         M.albedo[0], M.albedo[1], M.albedo[2], M.flapHz,
@@ -137,11 +137,11 @@ export function createCampFxPass(opts) {
       rp.setBindGroup(0, ctx.groups.frame);
       rp.setBindGroup(1, ctx.groups.lighting);
       rp.setBindGroup(2, group);
-      // Moths first (opaque wings), then the smoke over them, then the flame's light added on top.
+      // Moths first (opaque wings), then the smoke over them, then the halo, glass and sparks added on top.
       if (mothsOn) { rp.setPipeline(mothPipe); rp.draw(12, moths); }
       if (smokeOn) { rp.setPipeline(smokePipe); rp.draw(6, puffs); }
       if (steamOn) { rp.setPipeline(smokePipe); rp.setBindGroup(2, steamGroup); rp.draw(6, wisps); rp.setBindGroup(2, group); }
-      if (flameOn) { rp.setPipeline(glowPipe); rp.draw(6, F.cards + 2 + K.sparks); }
+      if (flameOn) { rp.setPipeline(glowPipe); rp.draw(6, 2 + K.sparks); }
       rp.end();
     },
   };

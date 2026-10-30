@@ -1,7 +1,8 @@
-// The camp's fire and what rises from it (docs/future/13 sections 3.5, C-29 to C-32, C-38): the
-// flame (crossed tongues of emissive flame), a soft glow round it and the lantern's lit glass, the
-// fire steel's sparks, the smoke (soft puffs that rise, grow and lean with the wind) and a few
-// moths circling the fire and the lantern after dark. Every particle is placed here from its seed
+// The camp's fire and what rises from it (docs/future/13 sections 3.5, C-29 to C-32, C-38): a soft
+// glow round the flame and the lantern's lit glass, the fire steel's sparks, the embers' smoke (soft
+// puffs that rise, grow and lean with the wind) and a few moths circling the fire and the lantern
+// after dark. The burning fire's flame and smoke are the live fire sim's (camp-fire-draw.wgsl; the
+// flame cards retired, October 29, 2026). Every particle is placed here from its seed
 // and the time, so the CPU only says where the fire is and how it burns. Emission is in nits and
 // pre-exposed into the HDR; the smoke and moths are lit like everything else (sun, moon, sky,
 // the small lights). The palette paints at tonemap (docs/05).
@@ -17,11 +18,11 @@ struct CampFx {
   burn: vec4f,       // x smoke amount 0..2, y smoke opacity, z time (s), w ember glow 0..1
   wind: vec4f,       // xz the smoke's lean (m/s), y rise (m/s), w hang low (mist) 0..1
   lantern: vec4f,    // xyz the lantern's glass (m), w lit 0..1
-  flameLook: vec4f,  // x height (m), y width (m), z nits, w flicker (Hz)
+  flameLook: vec4f,  // x height (m), y, z, w unused
   glowLook: vec4f,   // x fire halo nits, y halo size (m), z lantern glass nits, w glass size (m)
   smokeLook: vec4f,  // x life (s), y first size (m), z last size (m), w spread (m)
   smokeAlb: vec4f,   // rgb albedo, w fade in from this far from the eye (m)
-  smokeMore: vec4f,  // x fully there from this far (m), y count, z flame min size (px), w flame cards
+  smokeMore: vec4f,  // x fully there from this far (m), y count, z halo min size (px), w unused
   moths: vec4f,      // x count, y, z orbit radius (m), w wing (m)
   moths2: vec4f,     // x, y height over the light (m), z, w speed (m/s)
   mothAlb: vec4f,    // rgb albedo, w flap (Hz)
@@ -53,47 +54,31 @@ fn minScale(p: vec3f, sizeM: f32, minPx: f32) -> f32 {
 struct GlowOut {
   @builtin(position) pos: vec4f,
   @location(0) uv: vec2f,
-  @location(1) @interpolate(flat) kind: u32,   // 0 flame tongue, 1 halo, 2 glass, 3 spark
+  @location(1) @interpolate(flat) kind: u32,   // 1 halo, 2 glass, 3 spark
   @location(2) @interpolate(flat) seed: f32,
   @location(3) @interpolate(flat) bright: f32,
 };
 
-// ---- flame, halo, glass and sparks: emission, added ----
+// ---- halo, glass and sparks: emission, added ----
 
 @vertex
 fn vsGlow(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> GlowOut {
   var o: GlowOut;
   let q = QUAD[vi];
-  let cards = u32(fx.smokeMore.w);
   let sparkN = u32(fx.sparkLook.x);
   let t = fx.burn.z;
   var p = vec3f(0.0);
   var size = vec2f(0.0);
   o.uv = q;
   o.bright = 0.0;
-  if (ii < cards) {
-    // A tongue of flame: standing on the fire's foot, a little off the middle, swaying.
-    o.kind = 0u;
-    let s = fx.fire.w;
-    let a = rand(ii, 1u) * 6.2831853;
-    let r = 0.06 * rand(ii, 2u);
-    let h = fx.flameLook.x * s * (0.6 + 0.5 * rand(ii, 3u)) * (0.85 + 0.15 * sin(t * fx.flameLook.w * (1.0 + rand(ii, 4u)) + a));
-    let w = fx.flameLook.y * s * (0.55 + 0.45 * rand(ii, 5u));
-    let k = minScale(fx.fire.xyz, fx.flameLook.y, fx.smokeMore.z);
-    size = vec2f(w, h * 0.5) * k;
-    p = fx.fire.xyz + vec3f(cos(a) * r, h * 0.5 * k, sin(a) * r);
-    // The tip leans with the wind.
-    p += vec3f(fx.wind.x, 0.0, fx.wind.z) * 0.08 * (q.y * 0.5 + 0.5) * h;
-    o.seed = rand(ii, 6u) * 10.0;
-    o.bright = fx.flameLook.z * select(0.0, 1.0, s > 0.0);
-  } else if (ii == cards) {
+  if (ii == 0u) {
     o.kind = 1u;
     let s = max(fx.fire.w, fx.burn.w * 0.35);
     let k = minScale(fx.fire.xyz, fx.glowLook.y, fx.smokeMore.z * 2.0);
     size = vec2f(fx.glowLook.y) * k * (0.6 + 0.4 * s);
     p = fx.fire.xyz + vec3f(0.0, fx.flameLook.x * 0.3, 0.0);
     o.bright = fx.glowLook.x * s;
-  } else if (ii == cards + 1u) {
+  } else if (ii == 1u) {
     o.kind = 2u;
     let k = minScale(fx.lantern.xyz, fx.glowLook.w, fx.smokeMore.z * 0.7);
     size = vec2f(fx.glowLook.w * 2.2) * k;
@@ -102,7 +87,7 @@ fn vsGlow(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> G
   } else {
     // A spark off the steel: out and down, falling, cooling.
     o.kind = 3u;
-    let i = ii - cards - 2u;
+    let i = ii - 2u;
     // sparks.w: seconds since this strike, plus 10 for each strike before it (a new spray each time).
     let strike = floor(max(fx.sparks.w, 0.0) / 10.0);
     let age = fx.sparks.w - strike * 10.0;
@@ -125,19 +110,7 @@ fn vsGlow(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> G
 fn fsGlow(in: GlowOut) -> @location(0) vec4f {
   let u = in.uv;
   var e = vec3f(0.0);
-  if (in.kind == 0u) {
-    // A teardrop, wide at the foot and pointed at the tip, its edge eaten by moving noise.
-    let y = u.y * 0.5 + 0.5;
-    let half = mix(0.75, 0.04, pow(y, 0.8)) * (1.0 - 0.6 * (1.0 - y) * (1.0 - y));
-    let t = fx.burn.z;
-    let n = valueNoise2(vec2f(u.x * 3.0 + in.seed, y * 4.0 - t * 2.7), 151u) * 0.6 + valueNoise2(vec2f(u.x * 7.0 - in.seed, y * 9.0 - t * 4.3), 157u) * 0.4;
-    let d = abs(u.x) / max(half, 1e-3);
-    let body = 1.0 - smoothstep(0.55, 1.0, d + (n - 0.5) * 0.7 * y);
-    let core = 1.0 - smoothstep(0.0, 0.6, d + y * 0.6);
-    // Hot white-gold at the foot and the core, deep orange to red at the tips.
-    let col = mix(mix(vec3f(1.0, 0.42, 0.08), vec3f(1.0, 0.72, 0.32), core), vec3f(0.85, 0.2, 0.03), smoothstep(0.45, 1.0, y));
-    e = col * body * (1.0 - y * 0.35);
-  } else if (in.kind == 1u) {
+  if (in.kind == 1u) {
     let r = length(u);
     e = vec3f(1.0, 0.5, 0.18) * exp(-r * r * 5.0) * (1.0 - smoothstep(0.8, 1.0, r));
   } else if (in.kind == 2u) {
