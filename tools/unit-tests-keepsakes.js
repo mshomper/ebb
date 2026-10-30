@@ -80,12 +80,21 @@ export function addKeepsakeTests(test, assert, eq) {
     assert(!ids(base).includes('03'), 'a spring letter not in summer');
     const a = chooseLetter(1234, base, M, order), b = chooseLetter(1234, base, M, order);
     eq(a?.id, b?.id, 'the same bottle gives the same letter');
-    // Read every eligible letter but one: the next bottle holds the unread one. (In winter, where
-    // no letter read can open a reply; in summer, reading Pip opens Pip's reply, which comes first.)
+    // Read every letter a season offers but one (replies open as their letters are read, so read
+    // until nothing new opens): the next bottle holds the one left unread.
+    /** @param {any} c @param {string} keep */
+    const readAllBut = (c, keep) => {
+      let r = /** @type {string[]} */ ([]);
+      for (;;) {
+        const more = ids({ ...c, read: r }).filter((id) => id !== keep && !r.includes(id));
+        if (!more.length) return r;
+        r = r.concat(more);
+      }
+    };
     const win = { ...base, season: 'winter' };
-    const all = ids(win), left = all[all.length - 1];
-    eq(chooseLetter(99, { ...win, read: all.slice(0, -1) }, M, order)?.id, left, 'an unread letter comes first');
-    eq(chooseLetter(5, { ...base, read: ids(base).filter((id) => id !== '31') }, M, order)?.id, '31', 'a newly opened reply comes when it is the one left');
+    const left = ids(win)[ids(win).length - 1];
+    eq(chooseLetter(99, { ...win, read: readAllBut(win, left) }, M, order)?.id, left, 'an unread letter comes first');
+    eq(chooseLetter(5, { ...base, read: readAllBut(base, '31') }, M, order)?.id, '31', 'a newly opened reply comes when it is the one left');
     let s = readLetter(emptyShelf(), '05');
     s = readLetter(s, '05');
     eq(s.letters.join(), '05', 'a letter is read once');
