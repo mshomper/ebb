@@ -33,7 +33,8 @@
     "satchel": { "tier": "T3", "at": "workbench", "parts": [["rushes.stems", "marram.leaves"], "rush-cord", "rush-cord"], "out": "carrier", "max": 1, "src": ["4.1", "P2f"] },
     "basket": { "tier": "T3", "at": "workbench", "parts": ["willow.withies", "rush-cord", "rush-cord"], "out": "carrier", "max": 1, "src": ["4.1", "P2f"] },
     "seed-balls": { "tier": "T2", "at": "workbench", "parts": ["clay", { "part": "seed", "shows": "thrift.seed" }], "out": "pouch", "gives": "{sp}.ball", "count": 1, "src": ["5", "P2g G5"] },
-    "lily-parcel": { "tier": "T2", "at": "workbench", "parts": ["worms", "lilies.leaf", "rush-cord"], "out": "pouch", "gives": "lily-parcel", "count": 1, "src": ["F-08", "F-09", "October 27, 2026"] }
+    "lily-parcel": { "tier": "T2", "at": "workbench", "parts": ["worms", "lilies.leaf", "rush-cord"], "out": "pouch", "gives": "lily-parcel", "count": 1, "src": ["F-08", "F-09", "October 27, 2026"] },
+    "gift-stone": { "tier": "T3", "at": "workbench", "parts": ["flat-stones", "shells", "shells"], "out": "slot", "slot": "gift", "max": 1, "src": ["C-14", "C-37", "B1 C1, Matt, October 29, 2026"] }
   },
   "lilyParcelNote": "October 27, 2026 (Matt): the turtles' made treat. A handful of worms wrapped in a lily leaf picked in summer and tied with rush cord, one parcel; set by a basking spot at the water's edge, the turtles tear at it together (recipes/species/turtle.json treat).",
   "seedBallsNote": "P2g G5: a handful of clay and a handful of any plant's saved seed ({ part: 'seed' } takes any '<species>.seed'; its pencil outline wears thrift seed) roll into a handful of seed balls of that species (gives '{sp}.ball', the laid seed's species). Each ball sows a cluster of three on slightly poorer ground (sowing.json ball).",
@@ -117,7 +118,8 @@
       "satchel": "A satchel of plaited rushes on a cord strap. You put it on, and hang the old pack by the bench. Two more pouches.",
       "basket": "A basket of woven withies on two cord straps. You put it on, and hang the other by the bench. Two more pouches.",
       "seed-balls": "Seed rolled into clay. Each ball will land as a little cluster, and take where a bare seed would not.",
-      "lily-parcel": "Worms folded into a lily leaf and tied with cord. A parcel for the turtles, to set at the water's edge." },
+      "lily-parcel": "Worms folded into a lily leaf and tied with cord. A parcel for the turtles, to set at the water's edge.",
+      "gift-stone": "A flat stone with shells set along its edge. It stands by the tent, for what the creatures leave you." },
     "benchFull": "The bench is full of pieces waiting for the fire. Fire one first.",
     "onBench": "On the workbench",
     "benchWaiting": "Waiting for the fire",
@@ -168,19 +170,27 @@
       "firsts": "First made",
       "now": "The camp now",
       "teas": "Teas",
-      "tastes": "Tried together"
+      "tastes": "Tried together",
+      "gifts": "Left on the gift stone",
+      "giftFrom": "from the {species}",
+      "bed": "The herb bed",
+      "bedGrows": "Growing in it:",
+      "bedEmpty": "Nothing growing in it just now."
     },
+    "giftNames": { "pondweed": "Pondweed seeds", "raft": "A raft of reeds", "hen-feather": "A tail feather" },
     "pageNames": { "ring": "Fire ring", "workbench": "Workbench", "shovel": "Shovel", "woven-twigs": "Woven twigs", "rush-cord": "Rush cord", "apothecary": "Apothecary bench", "rack": "Drying rack",
       "mortar": "Mortar and pebble", "hamper": "Rush hamper", "hamper2": "Second hamper", "dry": "First herbs drying", "grind": "Crushed shell", "willow-charcoal": "Willow charcoal",
       "hearth-stones": "Hearth stones", "cooking-pot": "Cooking pot, shaped", "tea-pot": "Tea pot, shaped", "cup": "Clay cup, shaped", "bowl": "Clay bowl, shaped",
       "fire-cooking-pot": "Cooking pot, fired", "fire-tea-pot": "Tea pot, fired", "fire-cup": "Clay cup, fired", "fire-bowl": "Clay bowl, fired", "leaf-pack": "Leaf pack",
-      "satchel": "Rush satchel, eight pouches", "basket": "Willow basket, ten pouches", "seed-balls": "Seed balls", "lily-parcel": "Lily leaf parcel" },
+      "satchel": "Rush satchel, eight pouches", "basket": "Willow basket, ten pouches", "seed-balls": "Seed balls", "lily-parcel": "Lily leaf parcel",
+      "gift-stone": "Gift stone" },
     "pageParts": { "ring": "Sticks and stones", "workbench": "Two flat stones", "shovel": "Woven twigs or a stick, a flat stone, cord", "woven-twigs": "Two handfuls of drift twigs, woven", "rush-cord": "Rushes, reed leaves or marram, twisted",
       "apothecary": "Sticks lashed with cord", "rack": "Withies or sticks, cord", "mortar": "A flat stone and a pebble", "hamper": "Rushes coiled, stitched with cord",
       "hamper2": "Rushes, cord, a willow lid", "dry": "A handful of herbs, hung", "grind": "Broken shells, ground", "willow-charcoal": "Withies, a night in the fire",
       "hearth-stones": "Two handfuls of flat stones", "cooking-pot": "Clay, tempered with sand; it wants a night in the fire", "tea-pot": "Clay, tempered with crushed shell; it wants a night in the fire", "cup": "A handful of clay; it wants a night in the fire", "bowl": "A handful of clay; it wants a night in the fire",
       "fire-cooking-pot": "A night in the fire", "fire-tea-pot": "A night in the fire", "fire-cup": "A night in the fire", "fire-bowl": "A night in the fire",
-      "leaf-pack": "Fallen leaves, rush cord", "satchel": "Rushes plaited, a cord strap", "basket": "Withies woven, two cord straps", "seed-balls": "Clay and saved seed, rolled", "lily-parcel": "Worms, a lily leaf, rush cord" }
+      "leaf-pack": "Fallen leaves, rush cord", "satchel": "Rushes plaited, a cord strap", "basket": "Withies woven, two cord straps", "seed-balls": "Clay and saved seed, rolled", "lily-parcel": "Worms, a lily leaf, rush cord",
+      "gift-stone": "A flat stone, two handfuls of shells" }
   },
   "wordsNote": "Every line the stations and the camp page say. <slot>Slot: a bench's ground card (name, line, needs, and its Build label); builtLines: the line after a build other than the workbench's (built). acts: the apothecary's actions. hamper: the stations' row of what the hamper holds; takeUp, setDownHere, emptySlot: the hamper's and the rack's cards. made: the line after a first make, by make id. workFull, workTake, workWaiting, workDone: the overnight work at the fire (the ring's card). pageNames, pageParts: the camp page's first-made lines, in the walker's hand: name, what it was made of, and the date."
 }

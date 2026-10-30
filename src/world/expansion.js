@@ -85,11 +85,12 @@ export function naturalistLine(found, rewards, earned, firstOf = () => Infinity)
  * What is due now and not given yet: rewards whose mark is reached, and the gift of every species
  * the journal knows has come to know you (`<species>:known`).
  * @param {{ found: number, flags: string[], earned: Record<string, any>, rewards: Reward[],
- *   gifts: Record<string, { kind: string, id: string }>, words: any, giftWords: any, stops?: Reward[], forage?: Reward[] }} p
+ *   gifts: Record<string, { kind: string, id: string }>, words: any, giftWords: any, stops?: Reward[], forage?: Reward[], stone?: boolean }} p
  *   gifts: each species' gift (its recipe's `gift`); words: journal.json (names); giftWords: naturalist.json gifts;
  *   stops: the beachcomber's (beachcomber.json), each reached when its need is met by the firsts
  *   (src/world/trails.js; families kept before the firsts were written count too); forage: the
- *   forager's (forager.json), each reached by the forager's firsts
+ *   forager's (forager.json), each reached by the forager's firsts; stone: the gift stone stands at
+ *   camp (B1 C1), so a gift for the gift spot is laid there first and its words say so (stoneLine)
  * @returns {Grant[]}
  */
 export function due(p) {
@@ -118,7 +119,7 @@ export function due(p) {
       .replace('{plant}', lower(p.words?.species?.[g.id]?.name ?? g.id));
     const give = seed ? { seeds: { [g.id]: true } } : { [g.id]: true };
     const icon = (seed ? p.words?.species?.[g.id]?.icon : W?.icon) ?? 'find';
-    out.push({ id: sp, kind: 'gift', give, title: fill(W?.title), line: fill(W?.line), icon, page: sp });
+    out.push({ id: sp, kind: 'gift', give, title: fill(W?.title), line: fill(p.stone && W?.stoneLine ? W.stoneLine : W?.line), icon, page: sp });
   }
   return out;
 }
@@ -156,9 +157,10 @@ export function keptFamily(earned, family) {
 /**
  * Live: watches the journal, and when something is due, gives it (store slice `unlocks`) and says
  * so (`progress:gifted`, which the journal writes as a note and the island shows as a card).
- * @param {{ words: any, recipe: any, gifts: Record<string, { kind: string, id: string }>, beachcomber?: any, shaper?: any, forager?: any }} opts
+ * @param {{ words: any, recipe: any, gifts: Record<string, { kind: string, id: string }>, beachcomber?: any, shaper?: any, forager?: any, stone?: () => boolean }} opts
  *   words: journal.json; recipe: naturalist.json; gifts: each species' gift, by journal id;
- *   beachcomber: beachcomber.json (its stops); shaper: shaper.json (its stops); forager: forager.json (its stops)
+ *   beachcomber: beachcomber.json (its stops); shaper: shaper.json (its stops); forager: forager.json (its stops);
+ *   stone: whether the camp's gift stone stands (B1 C1)
  * @returns {{ line: () => ReturnType<typeof naturalistLine>, beachLine: () => import('./trails.js').TrailEntry[],
  *   shapeLine: () => import('./trails.js').TrailEntry[], forageLine: () => import('./trails.js').TrailEntry[], dispose: () => void }}
  */
@@ -169,7 +171,7 @@ export function createProgress(opts) {
     if (!journal) return;
     const u = get('unlocks') ?? {};
     const grants = due({ found: findsFound(journal, words).length, flags: journal.flags ?? [], earned: u.earned ?? {},
-      rewards: recipe.rewards, gifts: opts.gifts, words, giftWords: recipe.gifts, stops: opts.beachcomber?.stops, forage: opts.forager?.stops });
+      rewards: recipe.rewards, gifts: opts.gifts, words, giftWords: recipe.gifts, stops: opts.beachcomber?.stops, forage: opts.forager?.stops, stone: !!opts.stone?.() });
     if (!grants.length) return;
     let earned = u.earned ?? {};
     for (const g of grants) earned = grant(earned, g);

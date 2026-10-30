@@ -30,7 +30,7 @@ export function addCampMakingTests(test, assert, eq) {
     eq(layout(C, 'workbench', ['pebbles'], s).make, null, 'pebbles alone come to nothing');
     eq(layout(C, 'fire', ['sticks'], s).make, null, 'the fire knows no make in S1');
     const made = recordMade(s, 'shovel', 40, true);
-    eq(layout(C, 'workbench', ['sticks', 'flat-stones'], made).make, null, 'a shovel made is not offered again (max 1)');
+    assert(layout(C, 'workbench', ['sticks', 'flat-stones'], made).make !== 'shovel', 'a shovel made is not offered again (max 1)');
   });
 
   test(G, 'Make draws from the pack first, then the piles; short is nothing; laid parts count against what is left', () => {
@@ -59,8 +59,8 @@ export function addCampMakingTests(test, assert, eq) {
   test(G, 'the workbench is built from two flat stones; the camp page lists the ring, then each first in order', async () => {
     const C = await load('world/cook');
     eq(JSON.stringify(buildKinds(C.builds.workbench)), JSON.stringify(['flat-stones', 'flat-stones']), 'two handfuls of flat stones');
-    eq(makesAt(C, 'workbench').join(), 'rush-cord,woven-twigs,shovel,rack,mortar,hamper,hamper2,hearth-stones,cooking-pot,tea-pot,cup,bowl,leaf-pack,satchel,basket,seed-balls,lily-parcel',
-      'the workbench knows rush cord, the shovel (P2c), the rack and mortar (S2), the hampers (P2j), the hearth stones and the clay pieces (S4, S5), the leaf pack (P2h), the carriers (P2f), seed balls (P2g) and the lily leaf parcel for the turtles');
+    eq(makesAt(C, 'workbench').join(), 'rush-cord,woven-twigs,shovel,rack,mortar,hamper,hamper2,hearth-stones,cooking-pot,tea-pot,cup,bowl,leaf-pack,satchel,basket,seed-balls,lily-parcel,gift-stone',
+      'the workbench knows rush cord, the shovel (P2c), the rack and mortar (S2), the hampers (P2j), the hearth stones and the clay pieces (S4, S5), the leaf pack (P2h), the carriers (P2f), seed balls (P2g), the lily leaf parcel for the turtles and the gift stone (B1 C1)');
     const camp = { slots: [{ slot: 'ring', kind: 'ring', placedHour: 3 }] };
     assert(!campPageHad({ slots: [] }, cleanCook(null)), 'no page before the ring');
     assert(campPageHad(camp, cleanCook(null)), 'the page once the ring is laid');

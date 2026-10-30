@@ -45,7 +45,7 @@
   "gifts": {
     "seed": {
       "title": "A gift from the {species}",
-      "line": "Seeds of {plant}, waiting on your gift spot. Go down, pick them there, and toss them wherever they would grow."
+      "line": "Seeds of {plant}, waiting on your gift spot. Go down, pick them there, and toss them wherever they would grow.", "stoneLine": "Seeds of {plant}, left on the gift stone at camp. Take them up there, and they go to your gift spot."
     },
     "tool": {
       "cliffs": {
@@ -61,7 +61,7 @@
       "raft": {
         "icon": "raft",
         "title": "A gift from the {species}",
-        "line": "A raft of reeds is waiting on your gift spot. Go down, pick it there, and set it on a pond. Turtles bask on it, far from the bank, and it rises and falls with the water."
+        "line": "A raft of reeds is waiting on your gift spot. Go down, pick it there, and set it on a pond. Turtles bask on it, far from the bank, and it rises and falls with the water.", "stoneLine": "A raft of reeds, left on the gift stone at camp. Take it up there, and it goes to your gift spot. Set on a pond, turtles bask on it, far from the bank."
       }
     }
   },

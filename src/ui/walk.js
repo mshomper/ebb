@@ -25,6 +25,7 @@ import { get, subscribe } from '../core/store.js';
 import { dispatch } from '../input/actions.js';
 import { ensureIconSprite, iconSvg } from './icons/icons.js';
 import { tinItems, giftItems, itemLabel, samePick } from '../world/sowing/model.js';
+import { stoneWaiting } from '../world/camp/gifts.js';
 import { itemPouchSvg, ensureItemSprite } from './icons/items.js';
 import { itemIconFor } from './icons/item-registry.js';
 
@@ -75,7 +76,7 @@ export function mountWalk(parent, words, sowing) {
   /** Which menu is open. @type {'tin' | 'gifts' | null} */ let open = null;
 
   /** The items a menu holds now. @param {'tin' | 'gifts'} which */
-  const itemsOf = (which) => (which === 'tin' ? tinItems(sowing, get('packView')?.pouches ?? []) : giftItems(sowing, get('unlocks')));
+  const itemsOf = (which) => (which === 'tin' ? tinItems(sowing, get('packView')?.pouches ?? []) : giftItems(sowing, get('unlocks'), stoneWaiting(get('camp'), sowing)));
   /** A menu item's drawing: the tin's endless seeds their own icons; what the pack holds (P2g) its item glyph in a pouch as full as it is. @param {any} it */
   const drawItem = (it) => {
     const g = it.from ? itemIconFor(it.from) : null;
@@ -88,7 +89,7 @@ export function mountWalk(parent, words, sowing) {
     const below = !!w.below;
     const hasNet = !!get('unlocks')?.nets?.general;
     const hand = get('hand') ?? null;
-    const gifts = giftItems(sowing, get('unlocks'));
+    const gifts = giftItems(sowing, get('unlocks'), stoneWaiting(get('camp'), sowing));
     // The pot in both arms (K-26): no Feed and no Net until it is set down.
     const arms = get('pack')?.holding === 'pot';
     if (!below) open = null;

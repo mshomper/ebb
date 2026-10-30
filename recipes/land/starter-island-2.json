@@ -85,7 +85,7 @@
       { "id": "workbench", "kinds": ["workbench"], "u": 0.3, "v": -1.5, "w": 1.0, "d": 0.66, "faces": "ring", "blocks": true },
       { "id": "apothecary", "kinds": ["apothecary"], "u": 0.3, "v": 1.5, "w": 1.1, "d": 0.69, "faces": "ring", "blocks": true },
       { "id": "store", "kinds": ["hamper"], "u": -0.9, "v": -2.5, "r": 0.3, "blocks": true },
-      { "id": "gift", "kinds": ["giftstone"], "u": -0.9, "v": -1.2, "r": 0.28 },
+      { "id": "gift", "kinds": ["gift-stone"], "u": -0.9, "v": -1.2, "r": 0.28 },
       { "id": "lamp", "kinds": ["lamp"], "u": -0.95, "v": 1.2, "r": 0.08 },
       { "id": "jar", "kinds": ["jar"], "u": -1.6, "v": 1.4, "r": 0.12 },
       { "id": "bath", "kinds": ["birdbath"], "u": 1.6, "v": 2.9, "r": 0.3 },

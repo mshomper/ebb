@@ -24,6 +24,8 @@
  * @property {'stand'|'kneel'|'sit'} [posture]        the walker
  * @property {[number, number] | null} [gaze]        the walker: unit direction it looks along the ground
  * @property {number} [ringK]                        the walker: a tea's lift on every comfort ring (P2e; 1 without one)
+ * @property {{ x: number, z: number, r: number, k: number } | null} [known]  the walker: the camp as a known place (B1 C1,
+ *   docs/future/13 C-36): a creature within r of (x, z) has its comfort ring multiplied by k (ringScale)
  */
 
 /**
@@ -33,11 +35,13 @@
 
 /**
  * @param {{ camera: { eye: ArrayLike<number>, driven: () => boolean }, smoothS?: number, stillMps?: number,
- *   cameraBody?: boolean, walker?: () => WalkerNow | null, heightM?: Record<string, number>, ringK?: () => number }} opts
+ *   cameraBody?: boolean, walker?: () => WalkerNow | null, heightM?: Record<string, number>, ringK?: () => number,
+ *   known?: () => { x: number, z: number, r: number, k: number } | null }} opts
  *   smoothS: how quickly the speed follows the eye (s); stillMps: slower than this counts as still;
  *   cameraBody: whether the camera's own eye is felt (tools: yes; the game: no, only its edits);
  *   walker: you on foot, or null while you are above; heightM: where your body is over your feet, by posture;
- *   ringK: a tea's boon on the comfort rings you meet (P2e: 0.9 lets you 10% closer)
+ *   ringK: a tea's boon on the comfort rings you meet (P2e: 0.9 lets you 10% closer);
+ *   known: the camp's known place (store slice `campKnown`, src/world/camp/gift-stone.js), or null
  */
 export function createPresence(opts) {
   const { camera } = opts;
@@ -79,6 +83,7 @@ export function createPresence(opts) {
         you.posture = w.posture;
         you.gaze = w.gaze;
         you.ringK = opts.ringK?.() ?? 1;
+        you.known = opts.known?.() ?? null;
       } else you.stillS = 0;
     },
 
@@ -95,7 +100,8 @@ export function createPresence(opts) {
 /**
  * How much a source's posture and gaze stretch or shrink a creature's comfort ring (doc 23): lower
  * is smaller, and looking straight at it is larger than looking away. A source with no posture
- * (the camera in a tool page) is 1.
+ * (the camera in a tool page) is 1. Near camp, once it is a known place, the ring shrinks by the
+ * source's `known` share for a creature inside its reach (B1 C1).
  * @param {PresenceSource} s @param {number} x @param {number} z the creature
  * @param {{ posture: Record<string, number>, gaze: { watch: number, away: number }, gazeConeDeg: number }} M
  */
@@ -107,6 +113,8 @@ export function ringScale(s, x, z, M) {
     const cos = (dx * s.gaze[0] + dz * s.gaze[1]) / l;
     k *= cos >= Math.cos((M.gazeConeDeg * Math.PI) / 180) ? M.gaze.watch : M.gaze.away;
   }
+  const n = s.known;
+  if (n && (x - n.x) ** 2 + (z - n.z) ** 2 <= n.r * n.r) k *= n.k;
   return k;
 }
 

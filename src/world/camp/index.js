@@ -20,7 +20,8 @@
 // Split by job: where.js (where things stand), player.js (walk there, play an act), cards.js (the
 // cards and the here-bar), frame.js (drawing each frame, the star fire from star.js), hearth.js (the
 // hearth stones, the pots, the cup and the clay pieces, S4 and S5), carry.js (the pot in both arms,
-// filled at the spring or the sea, K-26 and K-28).
+// filled at the spring or the sea, K-26 and K-28), gift-stone.js (the gift stone and its gifts,
+// the known place and the herb bed, B1 C1).
 
 import { on, emit, emitDeferred } from '../../core/events.js';
 import { get, update } from '../../core/store.js';
@@ -47,6 +48,7 @@ import { createCarriers } from './carriers.js';
 import { createCarry } from './carry.js';
 import { createBoons } from './boons.js';
 import { createTeapot } from './teapot.js';
+import { createGiftStone } from './gift-stone.js';
 
 const H = 3600;
 
@@ -54,8 +56,9 @@ const H = 3600;
  * @param {{ recipe: any, seed: number, walk: any, terrain: any, clock: any, orbit: any, camera: any,
  *   world: any, seasons: any, lighting: { setPoints: (l: any[]) => void }, pack?: any,
  *   shadowBias?: { depthBias: number, depthBiasSlopeScale: number }, low?: boolean,
- *   beat?: () => string | null, poses?: any, piles?: any, cook?: any, water?: any }} o
- *   cook: recipes/world/cook.json (the stations' makes and builds, S1); water: the live water (Fill the pot, K-26)
+ *   beat?: () => string | null, poses?: any, piles?: any, cook?: any, water?: any, sowing?: any }} o
+ *   cook: recipes/world/cook.json (the stations' makes and builds, S1); water: the live water (Fill the pot, K-26);
+ *   sowing: recipes/world/sowing.json (the gifts that go to the gift spot, laid on the gift stone once it stands)
  *   piles: E2's piles at camp (src/world/pack/piles-live.js): Feed and Light take a handful from the stick pile
  *   recipe: recipes/world/camp.json; walk: the walker; lighting: the shared light block;
  *   pack: E2's pack (holds, take); beat: the evening's beat now (the director), for its glows;
@@ -200,6 +203,8 @@ export function createCamp(o) {
   // The tea's boon (P2e, boons.js): one at a time, counting down only while you play; and the tea
   // pot's workspace, Brew, the steep and the sip (teapot.js).
   const boons = createBoons({ cook: o.cook ?? { boons: {} }, change, hourNow });
+  // The gift stone and its gifts, the known place and the herb bed (B1 C1).
+  const gifts = createGiftStone({ R, CW: o.cook?.words ?? {}, camp, change, where, player, hourNow, campSeed, terrain: o.terrain, world: o.world, sowing: o.sowing });
   teapot = createTeapot({ ...kit, o, cook: o.cook ?? { boons: {}, teas: { herbs: {}, strength: [] }, words: {} }, keeps: stations.keeps, change, frame, boons });
 
   // ---- acts: walk, face, play, then the change ----
@@ -411,6 +416,7 @@ export function createCamp(o) {
     carry.update(dt);
     teapot?.update(dt);
     boons.update(dt);
+    gifts.update(dt);
     frame.draw(dt, time, c, fireNow);
   }
   let hidden = false;
@@ -426,7 +432,7 @@ export function createCamp(o) {
     },
     rings,
     /** The card a click at a ground point opens (cards.js). @param {number} x @param {number} z */
-    cardAt: (x, z) => hearth.benchPieceAt(x, z) ?? carriers.cardAt(x, z) ?? stations.cardAt(x, z) ?? hearth.cardAt(x, z) ?? campCardAt(kit, x, z),
+    cardAt: (x, z) => hearth.benchPieceAt(x, z) ?? carriers.cardAt(x, z) ?? stations.cardAt(x, z) ?? gifts.cardAt(x, z) ?? hearth.cardAt(x, z) ?? campCardAt(kit, x, z),
     /**
      * What a view ray meets first among the things sitting up on the hearth and by the fire (a pot,
      * the cup, a piece firing), as the ground point under its middle: tried before the ground, so
@@ -443,6 +449,11 @@ export function createCamp(o) {
     carriers,
     /** The tea's boon and the tea pot (P2e; tests, test links). */
     boons, teapot: () => teapot,
+    /**
+     * The gift stone (B1 C1): its draw pass (`gifts.pass`), `leave(kind, from, name)` to lay
+     * something on it (false before it stands), `take()` (tests, test links).
+     */
+    gifts,
     /** For the evening director: the tent is up; the ring is laid. */
     pitched: () => pitched(camp()),
     ringLaid: () => ringLaid(camp()),
@@ -496,7 +507,7 @@ export function createCamp(o) {
         update('camp', (c) => ({ ...c, fire: { ...c.fire, ...set, lightings: Math.max(1, c.fire?.lightings ?? 0) } }));
       },
     },
-    dispose() { for (const off of offs) off(); player.dispose(); stations.dispose(); hearth.dispose(); carry.dispose(); teapot?.dispose(); boons.dispose(); carriers.dispose(); },
+    dispose() { for (const off of offs) off(); player.dispose(); stations.dispose(); hearth.dispose(); carry.dispose(); gifts.dispose(); teapot?.dispose(); boons.dispose(); carriers.dispose(); },
   };
 }
 
