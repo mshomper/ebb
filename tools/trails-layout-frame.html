@@ -8,17 +8,19 @@
 <link rel="stylesheet" href="../src/ui/journal.css">
 <link rel="stylesheet" href="../src/ui/journal-trails.css">
 <link rel="stylesheet" href="../src/ui/journal-herbarium.css">
+<link rel="stylesheet" href="../src/ui/walker-page.css">
+<link rel="stylesheet" href="../src/ui/keeper-book.css">
 <style>
   html, body { margin: 0; background: #3c4a46; overflow-x: hidden; }
-  /* The panel as the game shows it (no fade in), from the frame's own window size. */
-  .ebb-journal { transition: none; }
+  /* The Keeper book as the game shows it (no fade in), from the frame's own window size. */
+  .ebb-wp { transition: none; }
 </style>
 </head>
 <body>
-<!-- One window of trails-layout.html: the journal panel, open on Trails (or the herbarium with
+<!-- One window of trails-layout.html: the Keeper book, open on Trails (or the herbarium with
      ?herbarium), with the sample of ?trails and ?forager, laid out by the real CSS at this frame's
      width. It posts back whether anything scrolls sideways. -->
-<aside class="ebb-journal is-open" id="ebb-journal"><div class="ebb-journal__body" tabindex="-1"></div></aside>
+<div class="ebb-wp ebb-kb is-open" id="ebb-keeper"><div class="ebb-kb__page" tabindex="-1"></div></div>
 <script type="module">
 import { ensureIconSprite } from '../src/ui/icons/icons.js';
 import { trailsView } from '../src/ui/journal-trails.js';
@@ -35,7 +37,7 @@ for (const g of due({ found: 0, flags: [], earned: e, rewards: [], gifts: {}, wo
 const live = { journal: () => ({ species: {} }), describe: () => ({ icon: 'find', name: 'x' }),
   progress: { line: () => [], beachLine: () => trailLine(firstsOf(e, 'beach'), B.stops, e.beachcomber ?? [], e.kept),
     shapeLine: () => trailLine(firstsOf(e, 'shape'), S.stops, []), forageLine: () => trailLine(forageLineFirsts(e), F.stops, e.forager ?? []) } };
-const panel = document.getElementById('ebb-journal'), body = panel.querySelector('.ebb-journal__body');
+const panel = document.getElementById('ebb-keeper'), body = panel.querySelector('.ebb-kb__page');
 const q = new URLSearchParams(location.search);
 const names = Object.fromEntries(pack.kinds.map((k) => [k.id, k.name]));
 const wide = !q.has('herbarium') && matchMedia('(min-width: 1100px)').matches;

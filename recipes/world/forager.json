@@ -5,7 +5,7 @@
   "stops": [
     { "id": "herbarium", "need": { "plants": 1 }, "icon": "journal", "give": { "forage": { "herbarium": true } },
       "hint": "somewhere to press what you pick", "title": "The herbarium",
-      "line": "A page in the journal where a pressed sprig of each plant you gather lies flat. Open it from the forager's trail." },
+      "line": "A page in your Keeper book where a pressed sprig of each plant you gather lies flat. Open it from the forager's trail." },
     { "id": "knife", "need": { "plants": 4 }, "icon": "gathering-knife", "give": { "forage": { "knife": true } },
       "hint": "a cleaner cut", "title": "A gathering knife",
       "line": "A small knife on your belt. A clean cut leaves a plant less bare, and it is ready again sooner." },

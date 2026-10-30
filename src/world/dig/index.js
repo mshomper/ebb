@@ -423,7 +423,7 @@ export function createDig(o) {
     } else {
       update('shelfPending', () => ({ shoreId: `dig:${c.digHole ?? ''}`, ...k }));
       update('identify', () => null);
-      update('journalUi', (u) => ({ ...(u ?? {}), open: true, view: 'shelf', page: null }));
+      dispatch(/** @type {any} */ ({ type: 'ui.keeper', open: true, tab: 'shelf', page: null }));
     }
   }
   /** Leave it: reburied, and that spot's roll for today is spent. */

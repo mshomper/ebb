@@ -1,17 +1,10 @@
-/* The journal's Trails page (doc 13 "Trails"; src/ui/journal-trails.js). The Trails tab spans the
-   whole row above the six sections, so every row stays full. Four trails: from a 1400 px window the
-   panel widens and they sit side by side; from 1100 px, two by two; below that, four tabs (two by
-   two) show one at a time. Never a horizontal scroll. Each trail has a quiet tint: moss for the
+/* The Trails page, in the Keeper book (doc 13 "Trails"; src/ui/journal-trails.js, keeper-book.js).
+   Four trails: from a 1400 px window the book widens and they sit side by side; from 1100 px, two by
+   two; below that, four tabs (two by two) show one at a time. Never a horizontal scroll. Each trail has a quiet tint: moss for the
    naturalist, sea blue for the beachcomber, earth brown for the shaper, sage for the forager.
    The stops themselves use journal.css's trail styles. */
 
-.ebb-journal__tab.is-wide { grid-column: 1 / -1; }
-@media (max-width: 480px) {
-  /* Seven tabs: Trails across the top, then three even rows of two (journal.css widens an odd last one). */
-  .ebb-journal__nav .ebb-journal__tab:last-child:nth-child(odd):not(.is-wide) { grid-column: auto; }
-}
-.ebb-journal.is-wide { width: min(800px, calc(100vw - 2 * var(--jr-edge))); }
-.ebb-journal.is-wide.is-four { width: min(1120px, calc(100vw - 2 * var(--jr-edge))); }
+/* The Keeper book widens for them (keeper-book.css). */
 
 .ebb-trails { display: grid; gap: 14px; min-width: 0; }
 .ebb-trails.is-wide { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 20px; row-gap: 0; align-items: start; }
